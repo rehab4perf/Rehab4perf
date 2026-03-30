@@ -702,6 +702,9 @@ body {
 <button class="nav-item" onclick="showPage('fonctionnelsMS')" data-page="fonctionnelsMS">
   <span class="icon">💪</span> Tests Fonctionnels MS
 </button>
+<button class="nav-item" onclick="showPage('fonctionnelsRachis')" data-page="fonctionnelsRachis">
+  <span class="icon">🦴</span> Tests Fonctionnels Rachis
+</button>
 <button class="nav-item" onclick="showPage('musculaires')" data-page="musculaires">
   <span class="icon">⚡</span> Tests Musculaires
 </button>
@@ -767,7 +770,7 @@ body {
 <div class="block">
   <div class="block-header grey">Anamnèse</div>
   <div class="form-grid single">
-    <div class="field"><label>Motif de consultation (en propres mots du patient)</label><textarea id="f-motif-patient" placeholder="Douleur au genou droit depuis ma blessure au foot…"></textarea></div>
+    <div class="field"><label>Motif de consultation (en propres mots du patient)</label><textarea id="f-motif-patient" placeholder="Douleur au genou droit depuis ma blessure au foot…" style="min-height:120px"></textarea></div>
     <div class="field"><label>Localisation et description de la douleur</label><textarea id="f-douleur" placeholder="Face antérieure genou D, douleur sourde, 4/10 EVA…"></textarea></div>
   </div>
   <div class="form-grid">
@@ -913,14 +916,6 @@ body {
 <div class="block">
   <div class="block-header grey">Préférences directionnelles McKenzie</div>
   <div class="form-grid single"><div class="field"><label>Préférences directionnelles (centralisation, périphérisation…)</label><textarea id="ra-mckenzie" style="min-height:48px" placeholder="Centralisation en extension…"></textarea></div></div>
-</div>
-
-<div class="block">
-  <div class="block-header red">Bilan Musculaire / Endurance</div>
-  <table class="test-table">
-    <thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
-    <tbody id="tb-ra-musc"></tbody>
-  </table>
 </div>
 
 <div class="block">
@@ -1406,6 +1401,209 @@ body {
   </div>
 </div>
 
+<!-- ══ PAGE: TESTS FONCTIONNELS RACHIS ═════════════════════════ -->
+
+<div class="page" id="page-fonctionnelsRachis">
+  <div class="page-header">
+    <div class="page-icon">🦴</div>
+    <div class="page-title">Tests Fonctionnels — Rachis</div>
+    <div class="page-subtitle" id="hdr-fonc-rachis">—</div>
+  </div>
+  <div class="page-content">
+
+```
+<!-- ── CERVICAUX ─────────────────────────────────────────── -->
+<div style="padding:4px 0 2px;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px">CERVICAUX</div>
+
+<!-- Endurance Fléchisseurs cervicaux -->
+<div class="block">
+  <div class="block-header">① Endurance des Fléchisseurs Cervicaux (Deep Neck Flexor)</div>
+  <div style="padding:1px 0">
+    <div class="measure-row" style="background:var(--surface2)">
+      <div class="col-header" style="grid-column:span 3">Mesure</div>
+      <div class="col-header">Durée (sec)</div>
+      <div class="col-header">Statut</div>
+    </div>
+    <div class="measure-row">
+      <div class="measure-label" style="grid-column:span 3">Temps de maintien (sec) — position décubitus dorsal</div>
+      <div class="measure-input"><input type="number" id="rf-flx-cerv" placeholder="—" oninput="calcRachisStat()"></div>
+      <div class="measure-stat" id="rf-flx-cerv-stat">—</div>
+    </div>
+  </div>
+  <div style="padding:8px 14px;background:var(--accent-l);font-size:12px;color:var(--accent2)">
+    <strong>Norme :</strong> Sujets sains ≈ 39s · Patients cervicalgiques ≈ 24s (Harris et al., 2005) · CMC = 17,8s (Edmondston 2008)
+  </div>
+  <div style="padding:10px 14px;font-size:11px;color:var(--text2);background:var(--surface2);border-top:1px solid var(--border)">
+    <strong>Réalisation :</strong> Décubitus dorsal, genoux fléchis, mains sur abdomen. Rétraction du menton → décoller la tête à ~2,5 cm. Chronomètre déclenché. 
+    <strong>Arrêt :</strong> Perte de la rétraction du menton OU tête touchant la main du thérapeute pendant plus d'1 seconde.
+  </div>
+</div>
+
+<!-- Endurance Extenseurs cervicaux -->
+<div class="block">
+  <div class="block-header">② Endurance des Extenseurs Cervicaux (Deep Neck Extensor)</div>
+  <div style="padding:1px 0">
+    <div class="measure-row" style="background:var(--surface2)">
+      <div class="col-header" style="grid-column:span 3">Mesure</div>
+      <div class="col-header">Durée (sec)</div>
+      <div class="col-header">Statut</div>
+    </div>
+    <div class="measure-row">
+      <div class="measure-label" style="grid-column:span 3">Temps de maintien (sec) — position décubitus ventral</div>
+      <div class="measure-input"><input type="number" id="rf-ext-cerv" placeholder="—" oninput="calcRachisStat()"></div>
+      <div class="measure-stat" id="rf-ext-cerv-stat">—</div>
+    </div>
+  </div>
+  <div style="padding:8px 14px;background:var(--accent-l);font-size:12px;color:var(--accent2)">
+    <strong>Seuil :</strong> Maintien 20 secondes = objectif clinique (Sebastian et al., 2015) · Positif si déviation &gt; 5-10° en extension ou &gt; 10° en flexion
+  </div>
+  <div style="padding:10px 14px;font-size:11px;color:var(--text2);background:var(--surface2);border-top:1px solid var(--border)">
+    <strong>Réalisation :</strong> Décubitus ventral, tête/cou dépassent du bord de table, jonction cervico-thoracique stabilisée. Rétraction du menton + maintien en position neutre 20s.
+    <strong>Positif :</strong> Perte de la « longueur du menton » ou déviation &gt; 5° à l'inclinomètre.
+  </div>
+</div>
+
+<!-- Endurance Latérale Cervicale -->
+<div class="block">
+  <div class="block-header">③ Endurance Latérale Cervicale (Lateral Neck Flexor Test)</div>
+  <div style="padding:1px 0">
+    <div class="measure-row" style="background:var(--surface2)">
+      <div class="col-header">Côté</div>
+      <div class="col-header">Côté Droit (sec)</div>
+      <div class="col-header">Côté Gauche (sec)</div>
+      <div class="col-header">Ratio D/G</div>
+      <div class="col-header">Statut</div>
+    </div>
+    <div class="measure-row">
+      <div class="measure-label">Temps de maintien (sec)</div>
+      <div class="measure-input"><input type="number" id="rf-lat-d" placeholder="—" oninput="calcLNF()"></div>
+      <div class="measure-input"><input type="number" id="rf-lat-g" placeholder="—" oninput="calcLNF()"></div>
+      <div class="measure-stat" id="rf-lat-ratio">—</div>
+      <div class="measure-stat" id="rf-lat-stat">—</div>
+    </div>
+  </div>
+  <div style="padding:8px 14px;background:var(--accent-l);font-size:12px;color:var(--accent2)">
+    <strong>Normes :</strong> Hommes ≈ 120s · Femmes ≈ 90s (Swanson et al., 2020) · Ratio D/G ≥ 70% = seuil clinique pertinent (Cook, 2017)
+  </div>
+  <div style="padding:10px 14px;font-size:11px;color:var(--text2);background:var(--surface2);border-top:1px solid var(--border)">
+    <strong>Réalisation :</strong> Décubitus latéral, bras croisés, coussin sous la tête. Rétraction du menton → aligner méat auditif avec acromion → soulever la tête en position neutre. Essai de 5s, repos 30s, puis test.
+    <strong>Arrêt :</strong> Déviation &gt; 4° (inclinomètre), perte rétraction menton, rotation cervicale, arrêt volontaire. Une seule correction verbale autorisée.
+  </div>
+</div>
+
+<!-- ── LOMBAIRES ──────────────────────────────────────────── -->
+<div style="padding:14px 0 2px;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px">LOMBAIRES</div>
+
+<!-- Sorensen -->
+<div class="block">
+  <div class="block-header">④ Test de Sørensen — Endurance Extenseurs Lombaires</div>
+  <div style="padding:1px 0">
+    <div class="measure-row" style="background:var(--surface2)">
+      <div class="col-header" style="grid-column:span 3">Mesure</div>
+      <div class="col-header">Durée (sec)</div>
+      <div class="col-header">Statut</div>
+    </div>
+    <div class="measure-row">
+      <div class="measure-label" style="grid-column:span 3">Temps de maintien tronc horizontal (sec) — max 240s</div>
+      <div class="measure-input"><input type="number" id="rf-sorensen" placeholder="—" oninput="calcSorensen()"></div>
+      <div class="measure-stat" id="rf-sorensen-stat">—</div>
+    </div>
+    <div class="measure-row" style="background:var(--accent-l)">
+      <div class="measure-label" style="background:var(--accent-l);font-size:.82rem;color:var(--accent2);grid-column:span 3">Interprétation selon seuils de Sørensen (hommes)</div>
+      <div class="measure-stat" id="rf-sorensen-interp" style="background:var(--accent-l);color:var(--accent2);font-size:.82rem;grid-column:span 2">—</div>
+    </div>
+  </div>
+  <div style="padding:8px 14px;font-size:11px;color:var(--text2);background:var(--surface2);border-top:1px solid var(--border)">
+    <strong>Valeurs cliniques :</strong>
+    Sujets sains (Sørensen) : 198s · Sujets sains (Holmström) : 171s · Lombalgiques : 137-163s |
+    <strong>Seuils H :</strong> &lt; 176s = facteur prédictif lombalgie · &gt; 198s = facteur protecteur
+    <br><strong>Réalisation :</strong> Couché ventral sur table, crêtes iliaques au bord. Chevilles/genoux/bassin sanglés. Mains croisées sur épaules, maintien tronc horizontal. Stop si perte de rectitude ou à 240s.
+  </div>
+</div>
+
+<!-- PDSLRT -->
+<div class="block">
+  <div class="block-header">⑤ Prone Double Straight Leg Raise Test (PDSLRT) — Endurance Extenseurs Lombaires</div>
+  <div style="padding:1px 0">
+    <div class="measure-row" style="background:var(--surface2)">
+      <div class="col-header" style="grid-column:span 3">Mesure</div>
+      <div class="col-header">Durée (sec)</div>
+      <div class="col-header">Statut</div>
+    </div>
+    <div class="measure-row">
+      <div class="measure-label" style="grid-column:span 3">Temps de maintien genoux décollés de la table (sec)</div>
+      <div class="measure-input"><input type="number" id="rf-pdslrt" placeholder="—" oninput="calcPDSLRT()"></div>
+      <div class="measure-stat" id="rf-pdslrt-stat">—</div>
+    </div>
+    <div class="measure-row" style="background:var(--accent-l)">
+      <div class="measure-label" style="background:var(--accent-l);font-size:.82rem;color:var(--accent2);grid-column:span 3">Norme selon âge et sexe (auto)</div>
+      <div class="measure-stat" id="rf-pdslrt-norm" style="background:var(--accent-l);color:var(--accent2);font-size:.82rem;grid-column:span 2">Renseignez la date de naissance dans Infos Patient</div>
+    </div>
+  </div>
+  <div style="padding:0">
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <thead>
+        <tr style="background:var(--accent2)">
+          <th style="color:#fff;padding:6px 10px;text-align:left;font-weight:500">Groupe d&apos;âge</th>
+          <th style="color:#fff;padding:6px 10px;text-align:center;font-weight:500">Hommes — Moy. (SD)</th>
+          <th style="color:#fff;padding:6px 10px;text-align:center;font-weight:500">Femmes — Moy. (SD)</th>
+          <th style="color:#fff;padding:6px 10px;text-align:center;font-weight:500">Seuil H / F (sec)</th>
+          <th style="color:#fff;padding:6px 10px;text-align:left;font-weight:500">Source</th>
+        </tr>
+      </thead>
+      <tbody id="pdslrt-norm-table">
+        <tr class="pdslrt-row" data-min="15" data-max="29" style="background:var(--surface)">
+          <td style="padding:5px 10px;border-bottom:1px solid var(--border)">15–29 ans</td>
+          <td style="padding:5px 10px;border-bottom:1px solid var(--border);text-align:center">58,0 ± 28,5</td>
+          <td style="padding:5px 10px;border-bottom:1px solid var(--border);text-align:center">47,7 ± 23,8</td>
+          <td style="padding:5px 10px;border-bottom:1px solid var(--border);text-align:center">≥ 30 (H+F)</td>
+          <td style="padding:5px 10px;border-bottom:1px solid var(--border);color:var(--text2)">McIntosh 1998</td>
+        </tr>
+        <tr class="pdslrt-row" data-min="30" data-max="44" style="background:var(--surface2)">
+          <td style="padding:5px 10px;border-bottom:1px solid var(--border)">30–44 ans</td>
+          <td style="padding:5px 10px;border-bottom:1px solid var(--border);text-align:center">52,4 ± 25,1</td>
+          <td style="padding:5px 10px;border-bottom:1px solid var(--border);text-align:center">42,6 ± 21,9</td>
+          <td style="padding:5px 10px;border-bottom:1px solid var(--border);text-align:center">≥ 30 (H+F)</td>
+          <td style="padding:5px 10px;border-bottom:1px solid var(--border);color:var(--text2)">McIntosh 1998</td>
+        </tr>
+        <tr class="pdslrt-row" data-min="45" data-max="59" style="background:var(--surface)">
+          <td style="padding:5px 10px;border-bottom:1px solid var(--border)">45–59 ans</td>
+          <td style="padding:5px 10px;border-bottom:1px solid var(--border);text-align:center">44,8 ± 22,6</td>
+          <td style="padding:5px 10px;border-bottom:1px solid var(--border);text-align:center">37,3 ± 19,4</td>
+          <td style="padding:5px 10px;border-bottom:1px solid var(--border);text-align:center">≥ 30 (H+F)</td>
+          <td style="padding:5px 10px;border-bottom:1px solid var(--border);color:var(--text2)">McIntosh 1998</td>
+        </tr>
+        <tr class="pdslrt-row" data-min="60" data-max="120" style="background:var(--surface2)">
+          <td style="padding:5px 10px">60 ans et +</td>
+          <td style="padding:5px 10px;text-align:center">35,6 ± 18,4</td>
+          <td style="padding:5px 10px;text-align:center">29,1 ± 15,2</td>
+          <td style="padding:5px 10px;text-align:center">≥ 30 (H) / ≥ 29 (F)</td>
+          <td style="padding:5px 10px;color:var(--text2)">Moreau 2001</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div style="padding:10px 14px;font-size:11px;color:var(--text2);background:var(--surface2);border-top:1px solid var(--border)">
+    <strong>Réalisation :</strong> Décubitus ventral, hanches étendues, mains sous le front, avant-bras perpendiculaires. Soulever les deux jambes jusqu'à décollement des genoux. Score = temps de maintien (sec).
+    <strong>Seuil clinique :</strong> Cut-off H = 30s (sensibilité 96,2%, spécificité 100%) · Cut-off F = 29s (sensibilité 100%, spécificité 92,3%) — Massoud Arab et al., 2007.
+  </div>
+</div>
+
+<!-- Notes libres -->
+<div class="block">
+  <div class="block-header" style="background:var(--accent2)">Observations & Notes cliniques</div>
+  <div class="form-grid single">
+    <div class="field">
+      <label>Notes complémentaires (comparaisons, évolution, contexte)</label>
+      <textarea id="rf-notes" style="min-height:70px" placeholder="Ex : PDSLRT non réalisé car douleur lombaire aiguë — Sorensen 142s, légèrement sous le seuil protecteur…"></textarea>
+    </div>
+  </div>
+</div>
+```
+
+  </div>
+</div>
+
 <!-- ══ PAGE: COMPTE-RENDU ════════════════════════════════════ -->
 
 <div class="page" id="page-cr">
@@ -1601,7 +1799,7 @@ function updateAll() {
 
   // Headers for each page
   const hdrTxt = [fullName, date ? formatDate(date) : null, cote ? ('Côté : ' + cote) : null].filter(Boolean).join(' — ');
-  ['epaule','rachis','hanche','genou','pied','fonc-mi','fonc-ms','musc'].forEach(p => {
+  ['epaule','rachis','hanche','genou','pied','fonc-mi','fonc-ms','fonc-rachis','musc'].forEach(p => {
     const el = document.getElementById('hdr-' + p);
     if (el) el.textContent = hdrTxt;
   });
@@ -1619,6 +1817,9 @@ function updateAll() {
 
   // PSET poids auto (2% PC)
   calcPSET();
+
+  // PDSLRT norme selon age
+  calcPDSLRT();
 
   // Progress
   const fields = document.querySelectorAll('input[type=text],input[type=number],textarea,select');
@@ -2097,6 +2298,7 @@ function loadFromStorage() {
     ['sls','hop','pset','set'].forEach(k => calcLSI(k));
     calcDJ(); calcLunge(); calcHR(); calcMusc();
     calcCKC(); calcSHRT(); calcULRT();
+    calcRachisStat(); calcLNF(); calcSorensen(); calcPDSLRT();
     updateBadges();
   } catch(e) {}
 }
@@ -2227,6 +2429,142 @@ function calcULRT() {
   } else {
     if (elLsi) { elLsi.textContent = '—'; elLsi.style.background = ''; elLsi.style.color = ''; }
     if (elStat) { elStat.textContent = '—'; elStat.style.background = ''; elStat.style.color = ''; }
+  }
+}
+
+
+// ── Tests Fonctionnels Rachis ─────────────────────────────────
+
+function calcRachisStat() {
+  // Fléchisseurs cervicaux
+  var flxEl = document.getElementById('rf-flx-cerv');
+  var flxStat = document.getElementById('rf-flx-cerv-stat');
+  if (flxEl && flxStat) {
+    var v = parseFloat(flxEl.value);
+    if (!isNaN(v)) {
+      var cls = v >= 39 ? 'good' : v >= 24 ? 'warn' : 'bad';
+      flxStat.textContent = v >= 39 ? 'OK (>= normes sains)' : v >= 24 ? 'Limite (>= cervicalgiques)' : 'Deficit (< 24s)';
+      flxStat.style.background = cls === 'good' ? 'var(--green-l)' : cls === 'warn' ? 'var(--orange-l)' : 'var(--red-l)';
+      flxStat.style.color = cls === 'good' ? 'var(--green)' : cls === 'warn' ? 'var(--orange)' : 'var(--red)';
+    } else {
+      flxStat.textContent = '—'; flxStat.style.background = ''; flxStat.style.color = '';
+    }
+  }
+  // Extenseurs cervicaux
+  var extEl = document.getElementById('rf-ext-cerv');
+  var extStat = document.getElementById('rf-ext-cerv-stat');
+  if (extEl && extStat) {
+    var v2 = parseFloat(extEl.value);
+    if (!isNaN(v2)) {
+      var cls2 = v2 >= 20 ? 'good' : 'bad';
+      extStat.textContent = v2 >= 20 ? 'OK (>= 20s)' : 'Insuffisant (< 20s)';
+      extStat.style.background = cls2 === 'good' ? 'var(--green-l)' : 'var(--red-l)';
+      extStat.style.color = cls2 === 'good' ? 'var(--green)' : 'var(--red)';
+    } else {
+      extStat.textContent = '—'; extStat.style.background = ''; extStat.style.color = '';
+    }
+  }
+}
+
+function calcLNF() {
+  var dEl = document.getElementById('rf-lat-d');
+  var gEl = document.getElementById('rf-lat-g');
+  var ratioEl = document.getElementById('rf-lat-ratio');
+  var statEl = document.getElementById('rf-lat-stat');
+  if (!dEl || !gEl || !ratioEl || !statEl) return;
+  var d = parseFloat(dEl.value);
+  var g = parseFloat(gEl.value);
+  if (!isNaN(d) && !isNaN(g) && Math.max(d,g) > 0) {
+    var minV = Math.min(d,g);
+    var maxV = Math.max(d,g);
+    var ratio = minV / maxV * 100;
+    ratioEl.textContent = ratio.toFixed(1) + '%';
+    var cls = ratio >= 70 ? 'good' : 'bad';
+    ratioEl.style.background = cls === 'good' ? 'var(--green-l)' : 'var(--red-l)';
+    ratioEl.style.color = cls === 'good' ? 'var(--green)' : 'var(--red)';
+    statEl.textContent = cls === 'good' ? 'Symetrie OK (>= 70%)' : 'Asymetrie (< 70%)';
+    statEl.style.background = ratioEl.style.background;
+    statEl.style.color = ratioEl.style.color;
+  } else {
+    ratioEl.textContent = '—'; ratioEl.style.background = ''; ratioEl.style.color = '';
+    statEl.textContent = '—'; statEl.style.background = ''; statEl.style.color = '';
+  }
+}
+
+function calcSorensen() {
+  var el = document.getElementById('rf-sorensen');
+  var statEl = document.getElementById('rf-sorensen-stat');
+  var interpEl = document.getElementById('rf-sorensen-interp');
+  if (!el || !statEl) return;
+  var v = parseFloat(el.value);
+  if (!isNaN(v)) {
+    var cls, stat, interp;
+    if (v >= 198) {
+      cls = 'good'; stat = 'Facteur protecteur (>= 198s)';
+      interp = '>= 198s : facteur protecteur (Sorensen)';
+    } else if (v >= 176) {
+      cls = 'warn'; stat = 'Zone intermediaire (176-197s)';
+      interp = '176-197s : sous la moyenne sains, seuil predictif non atteint';
+    } else {
+      cls = 'bad'; stat = 'Facteur de risque (< 176s — H)';
+      interp = "< 176s : facteur predictif lombalgie chez l'homme (Sorensen)";
+    }
+    statEl.textContent = stat;
+    statEl.style.background = cls === 'good' ? 'var(--green-l)' : cls === 'warn' ? 'var(--orange-l)' : 'var(--red-l)';
+    statEl.style.color = cls === 'good' ? 'var(--green)' : cls === 'warn' ? 'var(--orange)' : 'var(--red)';
+    if (interpEl) {
+      interpEl.textContent = interp;
+      interpEl.style.color = cls === 'good' ? 'var(--green)' : cls === 'warn' ? 'var(--orange)' : 'var(--red)';
+    }
+  } else {
+    statEl.textContent = '—'; statEl.style.background = ''; statEl.style.color = '';
+    if (interpEl) { interpEl.textContent = '—'; interpEl.style.color = ''; }
+  }
+}
+
+function calcPDSLRT() {
+  var el = document.getElementById('rf-pdslrt');
+  var statEl = document.getElementById('rf-pdslrt-stat');
+  var normEl = document.getElementById('rf-pdslrt-norm');
+  if (!el || !statEl) return;
+  var v = parseFloat(el.value);
+
+  // Highlight age row
+  var dob = document.getElementById('f-dob') ? document.getElementById('f-dob').value : '';
+  var age = dob ? (new Date().getFullYear() - new Date(dob).getFullYear()) : null;
+  var rows = document.querySelectorAll('.pdslrt-row');
+  var norm = null;
+  for (var i=0; i<rows.length; i++) {
+    var rMin = parseInt(rows[i].getAttribute('data-min'));
+    var rMax = parseInt(rows[i].getAttribute('data-max'));
+    rows[i].style.fontWeight = '400';
+    rows[i].style.background = i%2===0 ? 'var(--surface)' : 'var(--surface2)';
+    if (age !== null && age >= rMin && age <= rMax) {
+      rows[i].style.background = 'var(--accent-l)';
+      rows[i].style.fontWeight = '700';
+      norm = rows[i];
+    }
+  }
+
+  if (normEl) {
+    if (age !== null) {
+      normEl.textContent = age < 30 ? 'Groupe 15-29 ans — Ref H: 58s / F: 47,7s' :
+                           age < 45 ? 'Groupe 30-44 ans — Ref H: 52,4s / F: 42,6s' :
+                           age < 60 ? 'Groupe 45-59 ans — Ref H: 44,8s / F: 37,3s' :
+                                      'Groupe 60+ ans — Ref H: 35,6s / F: 29,1s';
+    } else {
+      normEl.textContent = 'Renseignez la date de naissance dans Infos Patient';
+    }
+  }
+
+  if (!isNaN(v)) {
+    var cutH = 30, cutF = 29;
+    var cls = v >= cutH ? 'good' : 'bad';
+    statEl.textContent = v >= cutH ? 'OK (>= 30s)' : 'Deficit (< 30s H / < 29s F)';
+    statEl.style.background = cls === 'good' ? 'var(--green-l)' : 'var(--red-l)';
+    statEl.style.color = cls === 'good' ? 'var(--green)' : 'var(--red)';
+  } else {
+    statEl.textContent = '—'; statEl.style.background = ''; statEl.style.color = '';
   }
 }
 
