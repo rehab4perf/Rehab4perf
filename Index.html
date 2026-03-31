@@ -36,15 +36,17 @@ z-index: 100;
 }
 
 .logo {
-font-size: 1.05rem;
-font-weight: 700;
+font-family: ‘Georgia’, serif;
+font-size: 1.1rem;
+font-style: italic;
 letter-spacing: -.01em;
 margin-right: 24px;
 flex-shrink: 0;
 user-select: none;
+line-height: 1.2;
 }
 .logo .r { color: var(–accent); }
-.logo .n { color: #fff; font-weight: 900; }
+.logo .n { color: #fff; font-weight: 900; font-style: normal; }
 .logo .p { color: var(–red); }
 
 .tabs {
@@ -58,7 +60,7 @@ display: flex;
 align-items: center;
 gap: 7px;
 padding: 0 18px;
-color: rgba(255,255,255,.55);
+color: rgba(255,255,255,.75);
 font-size: .85rem;
 font-weight: 500;
 cursor: pointer;
@@ -79,7 +81,7 @@ background: rgba(255,255,255,.06);
 .nav-right {
 margin-left: auto;
 font-size: .7rem;
-color: var(–text3);
+color: rgba(255,255,255,.65);
 text-align: right;
 line-height: 1.55;
 }
@@ -112,7 +114,7 @@ nav { padding: 0 10px; }
 
 <nav>
   <div class="logo">
-    <span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span>
+    <span class="r">Rehab</span><span class="n" style="font-family:'Georgia',serif;font-weight:900;font-style:normal">4</span><span class="p">Perf</span>
   </div>
   <div class="tabs">
     <button class="tab active" onclick="show('bilan')" id="tab-bilan">
