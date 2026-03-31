@@ -978,8 +978,8 @@ body {
     <div class="block">
       <div class="block-header grey">Mobilité Hanche</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
-        <div style="background:var(--accent2);color:#fff;padding:7px 14px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div>
         <div style="background:var(--accent2);color:#fff;padding:7px 14px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div>
+        <div style="background:var(--accent2);color:#fff;padding:7px 14px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div>
         <div style="background:var(--surface);padding:10px 12px">
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:7px">
             <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:2px">Flexion</div><input type="text" id="ge-mob-d-flex" placeholder="—" style="font-family:inherit;font-size:.85rem;border:1px solid var(--border);border-radius:4px;padding:3px 6px;width:100%;outline:none"></div>
@@ -991,16 +991,16 @@ body {
           </div>
           <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:2px">Observations côté droit</div><textarea id="ge-mob-d-obs" placeholder="Ex: flexion limitée à 110°, douleur inguinale…" style="font-family:inherit;font-size:.8rem;border:1px solid var(--border);border-radius:4px;padding:4px 6px;width:100%;min-height:44px;resize:vertical;outline:none"></textarea></div>
         </div>
-        <div style="background:var(--surface2);padding:10px 12px">
+        <div style="background:var(--surface);padding:10px 12px">
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:7px">
-            <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:2px">Flexion</div><input type="text" id="ge-mob-g-flex" placeholder="—" style="font-family:inherit;font-size:.85rem;border:1px solid var(--border2);border-radius:4px;padding:3px 6px;width:100%;outline:none;background:var(--surface2)"></div>
-            <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:2px">Extension</div><input type="text" id="ge-mob-g-ext" placeholder="—" style="font-family:inherit;font-size:.85rem;border:1px solid var(--border2);border-radius:4px;padding:3px 6px;width:100%;outline:none;background:var(--surface2)"></div>
+            <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:2px">Flexion</div><input type="text" id="ge-mob-g-flex" placeholder="—" style="font-family:inherit;font-size:.85rem;border:1px solid var(--border2);border-radius:4px;padding:3px 6px;width:100%;outline:none;background:var(--surface)"></div>
+            <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:2px">Extension</div><input type="text" id="ge-mob-g-ext" placeholder="—" style="font-family:inherit;font-size:.85rem;border:1px solid var(--border2);border-radius:4px;padding:3px 6px;width:100%;outline:none;background:var(--surface)"></div>
             <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:2px">RI</div><input type="text" id="ge-mob-g-ri" placeholder="—" style="font-family:inherit;font-size:.85rem;border:1px solid var(--border2);border-radius:4px;padding:3px 6px;width:100%;outline:none;background:var(--surface2)"></div>
             <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:2px">RE</div><input type="text" id="ge-mob-g-re" placeholder="—" style="font-family:inherit;font-size:.85rem;border:1px solid var(--border2);border-radius:4px;padding:3px 6px;width:100%;outline:none;background:var(--surface2)"></div>
             <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:2px">ABD</div><input type="text" id="ge-mob-g-abd" placeholder="—" style="font-family:inherit;font-size:.85rem;border:1px solid var(--border2);border-radius:4px;padding:3px 6px;width:100%;outline:none;background:var(--surface2)"></div>
             <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:2px">ADD</div><input type="text" id="ge-mob-g-add" placeholder="—" style="font-family:inherit;font-size:.85rem;border:1px solid var(--border2);border-radius:4px;padding:3px 6px;width:100%;outline:none;background:var(--surface2)"></div>
           </div>
-          <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:2px">Observations côté gauche</div><textarea id="ge-mob-g-obs" placeholder="Ex: RI déficitaire de 10° par rapport au côté sain…" style="font-family:inherit;font-size:.8rem;border:1px solid var(--border2);border-radius:4px;padding:4px 6px;width:100%;min-height:44px;resize:vertical;outline:none;background:var(--surface2)"></textarea></div>
+          <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:2px">Observations côté gauche</div><textarea id="ge-mob-g-obs" placeholder="Ex: RI déficitaire de 10° par rapport au côté sain…" style="font-family:inherit;font-size:.8rem;border:1px solid var(--border2);border-radius:4px;padding:4px 6px;width:100%;min-height:44px;resize:vertical;outline:none;background:var(--surface)"></textarea></div>
         </div>
       </div>
     </div>
@@ -1013,15 +1013,15 @@ body {
       <div class="col-header">Muscle</div><div class="col-header">Côté sain</div><div class="col-header">Côté atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
-      <div class="measure-label">Quadriceps (EVA ou résistance /10)</div>
-      <div class="measure-input"><input type="number" id="cf-q-cs" step="0.1" placeholder="—" oninput="calcLSI('cf-q')"></div>
-      <div class="measure-input"><input type="number" id="cf-q-ca" step="0.1" placeholder="—" oninput="calcLSI('cf-q')"></div>
+      <div class="measure-label">Quadriceps — Répétitions max</div>
+      <div class="measure-input"><input type="number" id="cf-q-cs" step="1" placeholder="—" oninput="calcLSI('cf-q')"></div>
+      <div class="measure-input"><input type="number" id="cf-q-ca" step="1" placeholder="—" oninput="calcLSI('cf-q')"></div>
       <div class="measure-stat" id="cf-q-lsi">—</div>
       <div class="measure-stat" id="cf-q-stat">—</div>
     </div>
 
   </div>
-  <div style="padding:6px 14px 8px;font-size:.75rem;color:var(--text3)">Contraction isométrique maximale 20s — noter EVA douleur ou score de résistance perçue (0-10) · LSI ≥ 90%</div>
+  <div style="padding:6px 14px 8px;font-size:.75rem;color:var(--text3)">Contraction isométrique maximale 20s — nombre de répétitions · LSI ≥ 90%</div>
 </div>
 
 <div class="block">
@@ -1087,7 +1087,7 @@ body {
       <div class="measure-stat" id="sls-stat">—</div>
     </div>
     <div class="measure-row" style="background:var(--surface2)">
-      <div class="measure-label" style="background:var(--surface2);font-size:.8rem;color:var(--text2)">Hauteur repère EIAS-sol (cm) <span style="font-weight:400;color:var(--text3)">(angle de 90° souhaité)</span></div>
+      <div class="measure-label" style="background:var(--surface2);font-size:.82rem;color:var(--text2);line-height:1.5">Hauteur repère EIAS-sol (cm)<br><span style="font-weight:400;color:var(--text3);font-size:.78rem">(angle de 90° souhaité)</span></div>
       <div class="measure-input" style="background:var(--surface2)"><input type="text" id="sls-hauteur" placeholder="ex: 45 cm"></div>
       <div class="measure-input" style="background:var(--surface2)"></div>
       <div class="measure-stat" style="background:var(--surface2);font-size:.75rem;color:var(--text3)">LSI ≥ 90%</div>
@@ -1125,13 +1125,19 @@ body {
 <div class="block">
   <div class="block-header">③ Test de Réception — 80% Hop Test — Score /3</div>
   <div style="padding:8px 14px 4px;font-size:.82rem;color:var(--text2)">Cocher les critères réussis. <strong>0/3 = non réussi · 1-2/3 = à améliorer · 3/3 = réussi</strong></div>
-  <div style="padding:6px 14px 10px;border-bottom:1px solid var(--border)">
-    <div class="score-card" style="padding:6px 0">
-      <div class="score-pill"><div class="val" id="rec-score-ca">—</div><div class="lbl">Score /3</div></div>
-      <div class="score-pill"><div class="val" id="rec-status">—</div><div class="lbl">Résultat</div></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);margin-bottom:1px">
+    <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ ATTEINT</div>
+    <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ SAIN</div>
+    <div style="background:var(--surface);padding:8px 14px;text-align:center;border-bottom:1px solid var(--border)">
+      <div class="val" id="rec-score-ca" style="font-size:1.4rem;font-weight:700;color:var(--text2)">—</div>
+      <div id="rec-status" style="font-size:.78rem;font-weight:600;margin-top:2px">—</div>
+    </div>
+    <div style="background:var(--surface);padding:8px 14px;text-align:center;border-bottom:1px solid var(--border)">
+      <div class="val" id="rec-score-cs" style="font-size:1.4rem;font-weight:700;color:var(--text2)">—</div>
+      <div id="rec-status-cs" style="font-size:.78rem;font-weight:600;margin-top:2px">—</div>
     </div>
   </div>
-  <div class="criteria-grid" id="rec-criteria"></div>
+  <div id="rec-criteria" style="border-top:1px solid var(--border)"></div>
 </div>
 
 <!-- PLIOMÉTRIE QUALITATIVE -->
@@ -1800,16 +1806,17 @@ function init() {
   // Criteria réception
   const critGrid = document.getElementById('rec-criteria');
   CRITERIA_REC.forEach((c, i) => {
-    critGrid.innerHTML += '<div class="criteria-item">' +
-      '<div style="display:flex;flex-direction:column;gap:4px;min-width:60px">' +
-      '<div style="font-size:.65rem;color:var(--text3);text-align:center">CA</div>' +
-      '<input type="checkbox" id="rec-ca-' + i + '" onchange="calcRec()">' +
+    var rowBg = i % 2 === 0 ? 'var(--surface)' : 'var(--surface2)';
+  critGrid.innerHTML += '<div style="display:grid;grid-template-columns:60px 60px 1fr;background:' + rowBg + ';padding:10px 14px;align-items:center;gap:10px;border-bottom:1px solid var(--border)">' +
+      '<div style="display:flex;flex-direction:column;align-items:center;gap:4px">' +
+      '<div style="font-size:.65rem;color:var(--text3);font-weight:600">CA</div>' +
+      '<input type="checkbox" id="rec-ca-' + i + '" onchange="calcRec()" style="width:18px;height:18px;cursor:pointer;accent-color:var(--green)">' +
       '</div>' +
-      '<div style="display:flex;flex-direction:column;gap:4px;min-width:60px">' +
-      '<div style="font-size:.65rem;color:var(--text3);text-align:center">CS</div>' +
-      '<input type="checkbox" id="rec-cs-' + i + '" onchange="calcRec()">' +
+      '<div style="display:flex;flex-direction:column;align-items:center;gap:4px">' +
+      '<div style="font-size:.65rem;color:var(--text3);font-weight:600">CS</div>' +
+      '<input type="checkbox" id="rec-cs-' + i + '" onchange="calcRec()" style="width:18px;height:18px;cursor:pointer;accent-color:var(--accent)">' +
       '</div>' +
-      '<label for="rec-ca-' + i + '">' + c.label + '<span class="ref">' + c.ref + '</span></label>' +
+      '<label for="rec-ca-' + i + '" style="font-size:.86rem;line-height:1.4;cursor:pointer;color:var(--text)">' + c.label + '<span style="display:block;font-size:.7rem;color:var(--text3);margin-top:1px">' + c.ref + '</span></label>' +
       '</div>';
   });
 
@@ -1970,14 +1977,19 @@ function calcRec() {
     if (elCA && elCA.checked) scoreCA++;
     if (elCS && elCS.checked) scoreCS++;
   }
-  const scEl = document.getElementById('rec-score-ca');
-  const ssEl = document.getElementById('rec-score-cs');
-  const stEl = document.getElementById('rec-status');
-  scEl.textContent = scoreCA;
-  ssEl.textContent = scoreCS;
-  scEl.className = 'val ' + (scoreCA >= 7 ? 'good' : scoreCA >= 5 ? 'warn' : 'bad');
-  stEl.textContent = scoreCA >= 7 ? '✅ Excellent' : scoreCA >= 5 ? '⚠️ Passable' : '❌ Insuffisant';
-  stEl.className = 'val ' + (scoreCA >= 7 ? 'good' : scoreCA >= 5 ? 'warn' : 'bad');
+  var n = CRITERIA_REC.length;
+  var setScore = function(scoreEl, statusEl, score, total, accent) {
+    if (!scoreEl) return;
+    scoreEl.textContent = score + '/' + total;
+    var cls = score === total ? 'good' : score >= 1 ? 'warn' : 'bad';
+    scoreEl.style.color = cls==='good'?'var(--green)':cls==='warn'?'var(--orange)':'var(--red)';
+    if (statusEl) {
+      statusEl.textContent = score===total ? 'Reussi' : score>=1 ? 'A ameliorer' : 'Non reussi';
+      statusEl.style.color = scoreEl.style.color;
+    }
+  };
+  setScore(document.getElementById('rec-score-ca'), document.getElementById('rec-status'), scoreCA, n);
+  setScore(document.getElementById('rec-score-cs'), document.getElementById('rec-status-cs'), scoreCS, n);
 }
 
 function calcPlioq() {
@@ -2742,22 +2754,33 @@ function buildCRTF() {
 
   // Réception
   var recScore = 0;
-  var recTouched = false;
+  var recTouchedCA = false, recTouchedCS = false;
   for (var ri=0; ri<CRITERIA_REC.length; ri++) {
-    var rEl = document.getElementById('rec-ca-' + ri);
-    if (rEl && rEl.checked) { recScore++; recTouched = true; }
+    var rElCA = document.getElementById('rec-ca-' + ri);
+    var rElCS2 = document.getElementById('rec-cs-' + ri);
+    if (rElCA && rElCA.checked) { recScore++; recTouchedCA = true; }
+    if (rElCS2 && rElCS2.checked) recTouchedCS = true;
   }
   var recHtml = '';
-  if (recTouched) {
-    var recCls = recScore===3?'good':recScore>=1?'warn':'bad';
-    var failedCrit = [];
+  var recScoreCS2 = 0;
+  for (var ri3=0; ri3<CRITERIA_REC.length; ri3++) {
+    var csEl3 = document.getElementById('rec-cs-' + ri3);
+    if (csEl3 && csEl3.checked) recScoreCS2++;
+  }
+  if (recTouchedCA || recTouchedCS) {
+    var recCls = recScore===CRITERIA_REC.length?'good':recScore>=1?'warn':'bad';
+    var failedCA = [], failedCS = [];
     for (var ri2=0; ri2<CRITERIA_REC.length; ri2++) {
       var rEl2 = document.getElementById('rec-ca-' + ri2);
-      if (!rEl2 || !rEl2.checked) failedCrit.push(CRITERIA_REC[ri2].label.replace(/^[①-③] /,''));
+      var rEl2cs = document.getElementById('rec-cs-' + ri2);
+      if (!rEl2||!rEl2.checked) failedCA.push(CRITERIA_REC[ri2].label.replace(/^[①-③] /,''));
+      if (!rEl2cs||!rEl2cs.checked) failedCS.push(CRITERIA_REC[ri2].label.replace(/^[①-③] /,''));
     }
-    recHtml += tfRow('Test de Reception — 80% Hop Test', 'Score ' + recScore + '/3',
-      recScore<3?('Criteres non valides : ' + failedCrit.join(' / ')):'Tous les criteres valides',
-      recScore===3?'Reussi':recScore>=1?'A ameliorer':'Non reussi', recCls);
+    if (recTouchedCA) recHtml += tfRow('Reception — Cote Atteint', 'Score ' + recScore + '/' + CRITERIA_REC.length, recScore<CRITERIA_REC.length?'Non valides : '+failedCA.join(' / '):'Tous valides', recScore===CRITERIA_REC.length?'Reussi':recScore>=1?'A ameliorer':'Non reussi', recCls);
+    if (recTouchedCS) {
+      var recClsCS = recScoreCS2===CRITERIA_REC.length?'good':recScoreCS2>=1?'warn':'bad';
+      recHtml += tfRow('Reception — Cote Sain', 'Score ' + recScoreCS2 + '/' + CRITERIA_REC.length, recScoreCS2<CRITERIA_REC.length?'Non valides : '+failedCS.join(' / '):'Tous valides', recScoreCS2===CRITERIA_REC.length?'Reussi':recScoreCS2>=1?'A ameliorer':'Non reussi', recClsCS);
+    }
   }
 
   // Pliométrie qualitative
