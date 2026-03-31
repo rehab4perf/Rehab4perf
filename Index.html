@@ -4,6 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="color-scheme" content="light only">
 <title>Rehab4Perf — Antoine PERONNAUD</title>
 <style>
 :root {
@@ -16,7 +17,8 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; overflow: hidden; }
 body {
-  font-family: var(--font);
+  font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  background: #F7F6F3 !important;
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -25,7 +27,7 @@ body {
 
 /* ── Top nav ─────────────────────────────────────────────── */
 nav {
-background: var(–accent2);
+background: #1A3A5C;
 height: 50px;
 display: flex;
 align-items: center;
@@ -45,9 +47,9 @@ flex-shrink: 0;
 user-select: none;
 line-height: 1.2;
 }
-.logo .r { color: var(–accent); }
+.logo .r { color: #2B5FA6; }
 .logo .n { color: #fff; font-weight: 900; font-style: normal; }
-.logo .p { color: var(–red); }
+.logo .p { color: #C0392B; }
 
 .tabs {
 display: flex;
@@ -66,7 +68,7 @@ font-weight: 500;
 cursor: pointer;
 border: none;
 background: none;
-font-family: var(–font);
+font-family: -apple-system, ‘SF Pro Text’, ‘Helvetica Neue’, sans-serif;
 border-bottom: 3px solid transparent;
 transition: color .15s, background .15s;
 white-space: nowrap;
@@ -74,7 +76,7 @@ white-space: nowrap;
 .tab:hover { color: #fff; background: rgba(255,255,255,.07); }
 .tab.active {
 color: #fff;
-border-bottom-color: var(–accent);
+border-bottom-color: #2B5FA6;
 background: rgba(255,255,255,.06);
 }
 
