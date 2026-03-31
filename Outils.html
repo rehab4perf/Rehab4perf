@@ -8,6 +8,7 @@
 <style>
 :root {
   --bg:        #F7F6F3;
+  color-scheme: light;
   --surface:   #FFFFFF;
   --surface2:  #F1F0ED;
   --border:    #E8E6E1;
@@ -41,6 +42,8 @@ body {
   flex-direction: column;
   overflow: hidden;
 }
+/* Force all text black by default */
+*, *::before, *::after { color: inherit; }
 
 /* ── Sub-tabs ───────────────────────────────────────────── */
 .sub-tabs {
