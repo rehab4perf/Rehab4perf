@@ -867,6 +867,11 @@ body {
 </div>
 
 <div class="block">
+  <div class="block-header grey">Tests Optionnels</div>
+  <div class="form-grid single"><div class="field"><label>Tests complémentaires réalisés en fonction de la situation</label><textarea id="ep-opt" style="min-height:70px" placeholder="Ex: Hawkins-Kennedy modifié — positif, Test de Jobe — douleur 3/10…"></textarea></div></div>
+</div>
+
+<div class="block">
   <div class="block-header">Conclusion — Diagnostic & Éducation patient</div>
   <textarea class="concl-area" id="ep-conclusion" placeholder="Tableau clinique compatible avec une tendinopathie de la coiffe réactive. Éducation réalisée sur le modèle continuum. Programme de réathlétisation progressif…"></textarea>
 </div>
@@ -922,6 +927,11 @@ body {
 </div>
 
 <div class="block">
+  <div class="block-header grey">Tests Optionnels</div>
+  <div class="form-grid single"><div class="field"><label>Tests complémentaires réalisés en fonction de la situation</label><textarea id="ra-opt" style="min-height:70px" placeholder="Ex: Test de Gaenslen — positif D, FABERE — douleur inguinale G…"></textarea></div></div>
+</div>
+
+<div class="block">
   <div class="block-header">Conclusion</div>
   <textarea class="concl-area" id="ra-conclusion" placeholder="Tableau compatible avec une lombalgie discogénique…"></textarea>
 </div>
@@ -954,7 +964,15 @@ body {
     <div class="block"><div class="block-header red">Canal Inguinal</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ha-inguinal"></tbody></table></div>
     <div class="block"><div class="block-header red">Hanche</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ha-hanche"></tbody></table></div>
     </div>
-    <div class="block"><div class="block-header">Conclusion</div><textarea class="concl-area" id="ha-conclusion" placeholder="Tableau compatible avec une pubalgie de type adducteurs…"></textarea></div>
+    <div class="block">
+      <div class="block-header grey">Tests Optionnels</div>
+      <div class="form-grid single"><div class="field"><label>Tests complémentaires réalisés en fonction de la situation</label><textarea id="ha-opt" style="min-height:70px" placeholder="Ex: Test de log-roll — douleur antérieure D, DIRI — positif…"></textarea></div></div>
+    </div>
+
+```
+<div class="block"><div class="block-header">Conclusion</div><textarea class="concl-area" id="ha-conclusion" placeholder="Tableau compatible avec une pubalgie de type adducteurs…"></textarea></div>
+```
+
   </div>
 </div>
 
@@ -1034,6 +1052,11 @@ body {
 </div>
 
 <div class="block"><div class="block-header red">Tests Fonctionnels — Break Tests</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ge-fonc"></tbody></table></div>
+<div class="block">
+  <div class="block-header grey">Tests Optionnels</div>
+  <div class="form-grid single"><div class="field"><label>Tests complémentaires réalisés en fonction de la situation</label><textarea id="ge-opt" style="min-height:70px" placeholder="Ex: Test de Dial — positif à 30° D, Test de compression tibiale — douleur médiale…"></textarea></div></div>
+</div>
+
 <div class="block"><div class="block-header">Conclusion</div><textarea class="concl-area" id="ge-conclusion" placeholder="Post-reconstruction LCA à 6 mois. Déficit quadricipital modéré…"></textarea></div>
 ```
 
@@ -1057,7 +1080,23 @@ body {
     <div class="block"><div class="block-header red">Sous-Talienne</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-pi-st"></tbody></table></div>
     <div class="block"><div class="block-header red">Chopart</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-pi-chopart"></tbody></table></div>
     <div class="block"><div class="block-header red">Tests Fonctionnels</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-pi-fonc"></tbody></table></div>
-    <div class="block"><div class="block-header">Conclusion</div><textarea class="concl-area" id="pi-conclusion" placeholder="Entorse latérale stade II ancienne avec instabilité résiduelle…"></textarea></div>
+    <div class="block">
+      <div class="block-header red">Tests de Force — Cheville (directions)</div>
+      <table class="test-table">
+        <thead><tr><th style="width:40%">Direction</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
+        <tbody id="tb-pi-force"></tbody>
+      </table>
+    </div>
+
+```
+<div class="block">
+  <div class="block-header grey">Tests Optionnels</div>
+  <div class="form-grid single"><div class="field"><label>Tests complémentaires réalisés en fonction de la situation</label><textarea id="pi-opt" style="min-height:70px" placeholder="Ex: Test de compression talofibulaire antérieure — positif D, Test de Kleiger modifié — négatif…"></textarea></div></div>
+</div>
+
+<div class="block"><div class="block-header">Conclusion</div><textarea class="concl-area" id="pi-conclusion" placeholder="Entorse latérale stade II ancienne avec instabilité résiduelle…"></textarea></div>
+```
+
   </div>
 </div>
 
@@ -1091,9 +1130,15 @@ body {
       <div style="background:var(--surface2);padding:4px 8px;display:flex;align-items:center;grid-column:span 4"><input type="text" id="sls-hauteur" placeholder="ex: 45 cm" style="font-family:inherit;font-size:.9rem;border:1.5px solid var(--border2);border-radius:5px;padding:5px 10px;width:100%;outline:none;background:var(--surface)"></div>
     </div>
   </div>
-  <div style="padding:8px 14px 10px;background:var(--surface)">
-    <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations sur l'exécution</div>
-    <textarea id="sls-obs" placeholder="Ex: valgus dynamique côté atteint à partir de la 5ème rép., compensation tronc G, appui controlatéral à 12 rép.…" style="font-family:inherit;font-size:.85rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px 10px;width:100%;min-height:80px;resize:vertical;outline:none;line-height:1.5"></textarea>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+    <div style="background:var(--surface);padding:8px 14px 10px">
+      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
+      <textarea id="sls-obs-ca" placeholder="Ex: valgus dynamique à partir de la 5ème rép., compensation tronc, appui controlatéral…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:70px;resize:vertical;outline:none;line-height:1.5"></textarea>
+    </div>
+    <div style="background:var(--surface2);padding:8px 14px 10px">
+      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
+      <textarea id="sls-obs-cs" placeholder="Ex: exécution symétrique, pas de compensation notable…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:70px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
+    </div>
   </div>
 </div>
 
@@ -1181,7 +1226,7 @@ body {
       <div class="col-header">Mesure</div><div class="col-header">Côté atteint</div><div class="col-header">Côté sain</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
-      <div class="measure-label">Répétitions max (unipodales)</div>
+      <div class="measure-label">Répétitions max (unipodales)<br><span style="font-size:.72rem;color:var(--text3);font-weight:400">Cadence 60 bpm · 1s montée + 1s descente</span></div>
       <div class="measure-input"><input type="number" id="hr-ca" placeholder="—" oninput="calcHR()"></div>
       <div class="measure-input"><input type="number" id="hr-cs" placeholder="—" oninput="calcHR()"></div>
       <div class="measure-stat" id="hr-lsi">—</div>
@@ -1303,7 +1348,129 @@ body {
           <div class="score-pill"><div class="val" id="pic-ij">—</div><div class="lbl">Pic IJ / Poids (>1.7)</div></div>
         </div>
       </div>
+    <!-- SEBT -->
+    <div class="block">
+      <div class="block-header">⑦ mSEBT — modified Star Excursion Balance Test</div>
+
+```
+  <!-- Schéma Y + infos protocole -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+
+    <div style="background:var(--surface);padding:12px 16px">
+      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);margin-bottom:8px">Protocole — Picot et al. 2021</div>
+      <div style="font-size:.78rem;color:var(--text);line-height:1.7">
+        <div><strong>3 directions :</strong> ANT · PM · PL (Y)</div>
+        <div><strong>Essais :</strong> 4 de familiarisation + 3 enregistrés / direction</div>
+        <div><strong>Alternance :</strong> jambe à jambe entre chaque direction (anti-fatigue)</div>
+        <div><strong>Mains :</strong> sur les hanches pendant tout le test</div>
+        <div><strong>Pieds :</strong> nus ou chaussettes · gros orteil sur le centre du Y</div>
+      </div>
     </div>
+
+    <div style="background:var(--surface2);padding:12px 16px">
+      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);margin-bottom:8px">Critères d'échec (essai non comptabilisé)</div>
+      <div style="font-size:.78rem;color:var(--text);line-height:1.7">
+        <div><strong>(a)</strong> Sujet tombe ou perd l'équilibre</div>
+        <div><strong>(b)</strong> Déplace le poids sur le membre de portée au contact</div>
+        <div><strong>(c)</strong> Pied de portée bouge / talon se lève</div>
+        <div><strong>(d)</strong> Mains retirées des hanches</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Saisie des 3 essais par direction -->
+  <div style="padding:8px 16px 4px;background:var(--accent-l);font-size:.78rem;color:var(--accent2);font-weight:500">
+    Saisir la <strong>moyenne des 3 essais</strong> par direction et par côté (cm). Score composite auto-calculé.
+  </div>
+
+  <div style="padding:1px 0">
+    <div class="measure-row" style="background:var(--surface2)">
+      <div class="col-header" style="grid-column:span 1">Direction</div>
+      <div class="col-header">Côté Atteint (cm)</div>
+      <div class="col-header">Côté Sain (cm)</div>
+      <div class="col-header">Diff % normalisée</div>
+      <div class="col-header">Statut</div>
+    </div>
+
+    <div class="measure-row">
+      <div class="measure-label" style="font-weight:700">ANT <span style="font-weight:400;font-size:.72rem;color:var(--text3)">Antérieur · 135°</span></div>
+      <div class="measure-input"><input type="number" id="sebt-ant-ca" placeholder="—" step="0.5" oninput="calcSEBT()"></div>
+      <div class="measure-input"><input type="number" id="sebt-ant-cs" placeholder="—" step="0.5" oninput="calcSEBT()"></div>
+      <div class="measure-stat" id="sebt-ant-diff">—</div>
+      <div class="measure-stat" id="sebt-ant-stat">—</div>
+    </div>
+
+    <div class="measure-row" style="background:var(--surface2)">
+      <div class="measure-label" style="background:var(--surface2);font-weight:700">PM <span style="font-weight:400;font-size:.72rem;color:var(--text3)">Postéro-médial · 90°</span></div>
+      <div class="measure-input" style="background:var(--surface2)"><input type="number" id="sebt-pm-ca" placeholder="—" step="0.5" oninput="calcSEBT()" style="background:var(--surface2)"></div>
+      <div class="measure-input" style="background:var(--surface2)"><input type="number" id="sebt-pm-cs" placeholder="—" step="0.5" oninput="calcSEBT()" style="background:var(--surface2)"></div>
+      <div class="measure-stat" id="sebt-pm-diff" style="background:var(--surface2)">—</div>
+      <div class="measure-stat" id="sebt-pm-stat" style="background:var(--surface2)">—</div>
+    </div>
+
+    <div class="measure-row">
+      <div class="measure-label" style="font-weight:700">PL <span style="font-weight:400;font-size:.72rem;color:var(--text3)">Postéro-latéral · 90°</span></div>
+      <div class="measure-input"><input type="number" id="sebt-pl-ca" placeholder="—" step="0.5" oninput="calcSEBT()"></div>
+      <div class="measure-input"><input type="number" id="sebt-pl-cs" placeholder="—" step="0.5" oninput="calcSEBT()"></div>
+      <div class="measure-stat" id="sebt-pl-diff">—</div>
+      <div class="measure-stat" id="sebt-pl-stat">—</div>
+    </div>
+
+    <!-- Score composite -->
+    <div class="measure-row" style="background:var(--accent-l)">
+      <div class="measure-label" style="background:var(--accent-l);font-weight:700;color:var(--accent2)">Score Composite CA</div>
+      <div class="measure-stat" id="sebt-comp-ca" style="background:var(--accent-l);font-size:1.05rem;font-weight:700;color:var(--accent2);grid-column:span 2">— <span style="font-size:.7rem;font-weight:400;color:var(--accent2)">(ANT+PM+PL) / 3L × 100</span></div>
+      <div class="measure-stat" style="background:var(--accent-l);font-size:.7rem;color:var(--accent2)">Seuil &lt;89% = risque LCA</div>
+      <div class="measure-stat" style="background:var(--accent-l)"></div>
+    </div>
+
+    <div class="measure-row" style="background:var(--surface2)">
+      <div class="measure-label" style="background:var(--surface2);font-weight:700;color:var(--text2)">Score Composite CS</div>
+      <div class="measure-stat" id="sebt-comp-cs" style="background:var(--surface2);font-size:1.05rem;font-weight:700;color:var(--accent2);grid-column:span 2">—</div>
+      <div class="measure-stat" style="background:var(--surface2);font-size:.7rem;color:var(--text3)">Plisky 2006 / Lehr 2013</div>
+      <div class="measure-stat" style="background:var(--surface2)"></div>
+    </div>
+
+  </div>
+
+  <!-- Longueur membre + sensation instabilité -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+    <div style="background:var(--surface);padding:10px 16px;font-size:.78rem;color:var(--text2)">
+      <strong>Longueur membre (ASIS → malléole médiale)</strong><br>
+      <div style="display:flex;gap:16px;margin-top:6px;align-items:center">
+        <span>CA : <input type="number" id="sebt-longueur-ca" placeholder="cm" step="0.5" oninput="calcSEBT()" style="font-family:inherit;font-size:.88rem;border:1px solid var(--border2);border-radius:4px;padding:3px 8px;width:80px;outline:none;background:var(--surface);color:var(--accent2);font-weight:600"></span>
+        <span>CS : <input type="number" id="sebt-longueur-cs" placeholder="cm" step="0.5" oninput="calcSEBT()" style="font-family:inherit;font-size:.88rem;border:1px solid var(--border2);border-radius:4px;padding:3px 8px;width:80px;outline:none;background:var(--surface);color:var(--accent2);font-weight:600"></span>
+      </div>
+    </div>
+    <div style="background:var(--surface2);padding:10px 16px">
+      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text2);margin-bottom:6px">Sensation d'instabilité durant le test ?</div>
+      <div style="display:flex;gap:10px">
+        <label style="font-size:.82rem;cursor:pointer;display:flex;align-items:center;gap:5px">
+          <input type="radio" name="sebt-instab" id="sebt-instab-oui" value="oui" style="accent-color:var(--red)"> Oui
+        </label>
+        <label style="font-size:.82rem;cursor:pointer;display:flex;align-items:center;gap:5px">
+          <input type="radio" name="sebt-instab" id="sebt-instab-non" value="non" style="accent-color:var(--green)"> Non
+        </label>
+      </div>
+      <div id="sebt-instab-obs" style="margin-top:6px">
+        <textarea placeholder="Préciser côté et moment…" style="font-family:inherit;font-size:.78rem;border:1px solid var(--border);border-radius:4px;padding:4px 8px;width:100%;min-height:36px;resize:vertical;outline:none;background:var(--surface2)"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Seuil ANT -->
+  <div style="padding:8px 14px;background:var(--surface2);font-size:.72rem;color:var(--text2);border-top:1px solid var(--border)">
+    <strong style="color:var(--red)">Seuil ANT :</strong> Différence &gt; 4 cm → risque de blessure MSK × 2,5 (Plisky 2006) &nbsp;|&nbsp;
+    <strong style="color:var(--accent2)">Score composite &lt; 89% :</strong> Risque LCA (Lehr 2013) &nbsp;|&nbsp;
+    <strong>Normalisation :</strong> Scores exprimés en % de la longueur du membre (ASIS → malléole médiale de préférence)
+  </div>
+
+</div>
+
+</div>
+```
+
   </div>
 </div>
 
@@ -1381,8 +1548,8 @@ body {
     <strong>Normes :</strong> Hommes ≥ 25 touches · Femmes ≥ 22,9 touches (Taylor et al., 2016)
   </div>
   <div style="padding:10px 14px;font-size:11px;color:var(--text2);background:var(--surface2);border-top:1px solid var(--border)">
-    <strong>Protocole :</strong> Position de planche, mains sous les épaules, 2 repères de tape espacés de 91,4 cm. Toucher alternativement chaque repère avec la main opposée, le plus vite possible pendant 15s. 3 essais, repos 45s entre chaque. Score : meilleure moyenne.
-    <strong>Validité :</strong> Corps en planche rigide, dos plat, pas de rotation excessive du tronc.
+    <strong>Protocole H :</strong> Position de pompes classique (sur les orteils). <strong>F :</strong> Position de pompes sur les genoux. Mains sous les épaules, 2 repères tape espacés de 91,4 cm. Toucher alternativement chaque repère avec la main opposée, le plus vite possible pendant 15s. 3 essais, repos 45s. Score : meilleure moyenne.
+    <strong>Seuils :</strong> Hommes ≥ 23 touches · Femmes ≥ 21 touches. En dessous → risque d'instabilité élevé (Taylor 2015). <strong>Validité :</strong> Corps en planche rigide, dos plat, pas de rotation excessive.
   </div>
 </div>
 
@@ -1463,6 +1630,50 @@ body {
   <div style="padding:10px 14px;font-size:11px;color:var(--text2);background:var(--surface2);border-top:1px solid var(--border)">
     <strong>Protocole :</strong> Gainage sur coudes, dos plat, coudes à 90°, contre un mur (épaule+coude+hanche+cheville). Rotation tronc + RE épaule 90°-90°, toucher un marqueur mural avec le coude, alternativement chaque côté, 15s. 3 essais, repos 45s.
     <strong>Validité :</strong> Dos plat maintenu, angle 90°-90° respecté, genoux hors sol. <strong>Asymétrie significative :</strong> Différence > 10%.
+  </div>
+</div>
+
+<!-- UQYBT -->
+<div class="block">
+  <div class="block-header">⑥ UQYBT — Upper-Quarter Y-Balance Test</div>
+  <div style="padding:8px 14px 4px;font-size:.82rem;color:var(--text2)">
+    Main d'appui au centre du Y en position planche ventrale. Main libre pousse un plot le long de chaque branche. Mesurer D et G. Comparer les 2 côtés.
+  </div>
+  <div style="padding:1px 0">
+    <div class="measure-row" style="background:var(--surface2)">
+      <div class="col-header">Direction</div>
+      <div class="col-header">Côté Droit (cm)</div>
+      <div class="col-header">Côté Gauche (cm)</div>
+      <div class="col-header">Diff %</div>
+      <div class="col-header">Statut</div>
+    </div>
+    <div class="measure-row">
+      <div class="measure-label">Médial</div>
+      <div class="measure-input"><input type="number" id="uqybt-med-d" placeholder="—" step="0.5" oninput="calcUQYBT()"></div>
+      <div class="measure-input"><input type="number" id="uqybt-med-g" placeholder="—" step="0.5" oninput="calcUQYBT()"></div>
+      <div class="measure-stat" id="uqybt-med-diff">—</div>
+      <div class="measure-stat" id="uqybt-med-stat">—</div>
+    </div>
+    <div class="measure-row" style="background:var(--surface2)">
+      <div class="measure-label" style="background:var(--surface2)">Inféro-latéral</div>
+      <div class="measure-input" style="background:var(--surface2)"><input type="number" id="uqybt-il-d" placeholder="—" step="0.5" oninput="calcUQYBT()" style="background:var(--surface2)"></div>
+      <div class="measure-input" style="background:var(--surface2)"><input type="number" id="uqybt-il-g" placeholder="—" step="0.5" oninput="calcUQYBT()" style="background:var(--surface2)"></div>
+      <div class="measure-stat" id="uqybt-il-diff" style="background:var(--surface2)">—</div>
+      <div class="measure-stat" id="uqybt-il-stat" style="background:var(--surface2)">—</div>
+    </div>
+    <div class="measure-row">
+      <div class="measure-label">Supéro-latéral</div>
+      <div class="measure-input"><input type="number" id="uqybt-sl-d" placeholder="—" step="0.5" oninput="calcUQYBT()"></div>
+      <div class="measure-input"><input type="number" id="uqybt-sl-g" placeholder="—" step="0.5" oninput="calcUQYBT()"></div>
+      <div class="measure-stat" id="uqybt-sl-diff">—</div>
+      <div class="measure-stat" id="uqybt-sl-stat">—</div>
+    </div>
+  </div>
+  <div style="padding:8px 14px;background:var(--accent-l);font-size:12px;color:var(--accent2)">
+    <strong>Seuil :</strong> Différence &lt; 5% entre côtés = bon résultat (Taylor 2015). CKCUEST + UQYBT mesurent des constructions différentes — se complètent en batterie de dépistage.
+  </div>
+  <div style="padding:10px 14px;font-size:11px;color:var(--text2);background:var(--surface2);border-top:1px solid var(--border)">
+    <strong>Protocole :</strong> Même matériel que Y-Balance Test MI. Main d'appui au centre du Y. Position planche ventrale stable. Pousser un plot le long de chaque branche. 3 essais par direction, meilleure valeur retenue. Évaluer le MS dont la main est au sol (composante stabilité).
   </div>
 </div>
 ```
@@ -1760,6 +1971,7 @@ const TESTS = {
   'tb-pi-st':   {type:'ortho',items:['Varus / Valgus en flexion dorsale','Cisaillement en flexion dorsale']},
   'tb-pi-chopart':{type:'ortho',items:['Mobilisation Chopart','Neutral Heel Lateral Push Test']},
   'tb-pi-fonc': {type:'ortho',items:['Course interne mollet','Navicular Drop Test (mm)','Avant-pied — équilibre pointes de pied (step)','Médio-pied — équilibre foot bridge','1ère ligne — montée pointes + cale 30° sous hallux','Équilibre classique global (yeux ouverts / yeux fermés)']},
+  'tb-pi-force':{type:'ortho',items:['Flexion plantaire — côté atteint','Flexion plantaire — côté sain','Flexion dorsale — côté atteint','Flexion dorsale — côté sain','Inversion — côté atteint','Inversion — côté sain','Éversion — côté atteint','Éversion — côté sain']},
 };
 
 const CRITERIA_REC = [
@@ -2393,7 +2605,7 @@ function loadFromStorage() {
     calcDJ(); calcLunge(); calcHR(); calcMusc();
     calcCKC(); calcSHRT(); calcULRT();
     calcRachisStat(); calcLNF(); calcSorensen(); calcPDSLRT();
-    calcPlioq2(); calcRec();
+    calcPlioq2(); calcRec(); calcSEBT(); calcUQYBT();
     updateBadges();
   } catch(e) {}
 }
@@ -2892,6 +3104,89 @@ function buildCRTF() {
     content.innerHTML = '<div style="color:var(--text3);font-style:italic;padding:40px 0;text-align:center;font-size:.9rem">Aucun test fonctionnel renseigné.<br>Remplissez les onglets pour générer le compte-rendu.</div>';
   }
 }
+
+// ── SEBT ─────────────────────────────────────────────────
+function calcSEBT() {
+  var dirs = ['ant','pm','pl'];
+  var ca = [], cs = [];
+  var allFilled = true;
+  for (var i=0; i<dirs.length; i++) {
+    var caEl = document.getElementById('sebt-' + dirs[i] + '-ca');
+    var csEl = document.getElementById('sebt-' + dirs[i] + '-cs');
+    var diffEl = document.getElementById('sebt-' + dirs[i] + '-diff');
+    var statEl = document.getElementById('sebt-' + dirs[i] + '-stat');
+    if (!caEl || !csEl) continue;
+    var v1 = parseFloat(caEl.value);
+    var v2 = parseFloat(csEl.value);
+    ca.push(isNaN(v1) ? null : v1);
+    cs.push(isNaN(v2) ? null : v2);
+    if (!isNaN(v1) && !isNaN(v2) && v2 > 0) {
+      var diff = Math.abs(v1 - v2);
+      var diffPct = diff / v2 * 100;
+      var isAnt = dirs[i] === 'ant';
+      var bad = isAnt ? diff > 4 : diffPct > 10;
+      if (diffEl) {
+        diffEl.textContent = diffPct.toFixed(1) + '% (' + diff.toFixed(1) + 'cm)';
+        diffEl.style.background = bad ? 'var(--red-l)' : 'var(--green-l)';
+        diffEl.style.color = bad ? 'var(--red)' : 'var(--green)';
+      }
+      if (statEl) {
+        statEl.textContent = bad ? (isAnt ? '>4cm ⚠️' : 'Asymétrie ⚠️') : 'OK ✅';
+        statEl.style.background = diffEl.style.background;
+        statEl.style.color = diffEl.style.color;
+      }
+    } else {
+      allFilled = false;
+      if (diffEl) { diffEl.textContent = '—'; diffEl.style.background = ''; diffEl.style.color = ''; }
+      if (statEl) { statEl.textContent = '—'; statEl.style.background = ''; statEl.style.color = ''; }
+    }
+  }
+  // Score composite
+  var lgCA = parseFloat(document.getElementById('sebt-longueur-ca') ? document.getElementById('sebt-longueur-ca').value : '');
+  var lgCS = parseFloat(document.getElementById('sebt-longueur-cs') ? document.getElementById('sebt-longueur-cs').value : '');
+  var compCAEl = document.getElementById('sebt-comp-ca');
+  var compCSEl = document.getElementById('sebt-comp-cs');
+  if (compCAEl && ca[0]!==null && ca[1]!==null && ca[2]!==null && !isNaN(lgCA) && lgCA > 0) {
+    var compCA = (ca[0]+ca[1]+ca[2]) / (3*lgCA) * 100;
+    compCAEl.textContent = 'CA : ' + compCA.toFixed(1) + '%';
+    compCAEl.style.color = compCA < 89 ? 'var(--orange)' : 'var(--green)';
+  } else if (compCAEl) { compCAEl.textContent = '—'; }
+  if (compCSEl && cs[0]!==null && cs[1]!==null && cs[2]!==null && !isNaN(lgCS) && lgCS > 0) {
+    var compCS = (cs[0]+cs[1]+cs[2]) / (3*lgCS) * 100;
+    compCSEl.textContent = 'CS : ' + compCS.toFixed(1) + '%';
+    compCSEl.style.color = compCS < 89 ? 'var(--orange)' : 'var(--green)';
+  } else if (compCSEl) { compCSEl.textContent = '—'; }
+}
+
+// ── UQYBT ────────────────────────────────────────────────
+function calcUQYBT() {
+  var dirs = ['med','il','sl'];
+  for (var i=0; i<dirs.length; i++) {
+    var dEl = document.getElementById('uqybt-' + dirs[i] + '-d');
+    var gEl = document.getElementById('uqybt-' + dirs[i] + '-g');
+    var diffEl = document.getElementById('uqybt-' + dirs[i] + '-diff');
+    var statEl = document.getElementById('uqybt-' + dirs[i] + '-stat');
+    if (!dEl || !gEl || !diffEl || !statEl) continue;
+    var vd = parseFloat(dEl.value);
+    var vg = parseFloat(gEl.value);
+    if (!isNaN(vd) && !isNaN(vg) && Math.max(vd,vg) > 0) {
+      var ref = Math.max(vd,vg);
+      var diff = Math.abs(vd-vg);
+      var diffPct = diff/ref*100;
+      var bad = diffPct > 5;
+      diffEl.textContent = diffPct.toFixed(1) + '%';
+      diffEl.style.background = bad ? 'var(--orange-l)' : 'var(--green-l)';
+      diffEl.style.color = bad ? 'var(--orange)' : 'var(--green)';
+      statEl.textContent = bad ? '>5% ⚠️' : 'OK ✅';
+      statEl.style.background = diffEl.style.background;
+      statEl.style.color = diffEl.style.color;
+    } else {
+      diffEl.textContent = '—'; diffEl.style.background = ''; diffEl.style.color = '';
+      statEl.textContent = '—'; statEl.style.background = ''; statEl.style.color = '';
+    }
+  }
+}
+
 // Auto-save on any change
 document.addEventListener('input', () => saveToStorage());
 document.addEventListener('change', () => saveToStorage());
