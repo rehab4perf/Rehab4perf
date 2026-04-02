@@ -1061,8 +1061,6 @@ transition: all .15s;
 @media(max-width:600px){ .nav-user-name { display:none; } }
 
 </style>
-  <!-- Netlify Identity -->
-  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 </head>
 <body>
 
@@ -1076,27 +1074,28 @@ transition: all .15s;
     <div class="login-subtitle">Plateforme clinique · Athletik Lamarck</div>
 
 ```
-<!-- Not logged in -->
-<div id="login-cta">
-  <button class="login-btn" onclick="netlifyIdentity.open('login')">
+<!-- Login form -->
+<div id="login-form-wrap">
+  <div id="login-error" style="display:none;background:#FDECEA;color:#C0392B;border-radius:6px;padding:8px 12px;font-size:.8rem;margin-bottom:12px;text-align:left"></div>
+  <input type="email" id="login-email-input" placeholder="Email" autocomplete="email"
+    style="width:100%;padding:11px 14px;border:1.5px solid #E8E6E1;border-radius:8px;font-size:.95rem;font-family:inherit;outline:none;margin-bottom:10px;box-sizing:border-box">
+  <input type="password" id="login-pass-input" placeholder="Mot de passe" autocomplete="current-password"
+    style="width:100%;padding:11px 14px;border:1.5px solid #E8E6E1;border-radius:8px;font-size:.95rem;font-family:inherit;outline:none;margin-bottom:14px;box-sizing:border-box">
+  <button class="login-btn" id="login-submit-btn" onclick="doLogin()">
     🔐 Se connecter
   </button>
-  <div style="font-size:.72rem;color:#D3D1CB;margin-top:8px">
+  <div style="font-size:.72rem;color:#D3D1CB;margin-top:10px">
     Accès réservé aux praticiens du cabinet
   </div>
 </div>
 
-<!-- Logged in -->
-<div class="login-user-info" id="login-user-info">
+<!-- Logged in state -->
+<div id="login-user-info" style="display:none;flex-direction:column;align-items:center;gap:10px">
   <div class="login-avatar" id="login-avatar">?</div>
-  <div class="login-name" id="login-name">—</div>
-  <div class="login-email" id="login-email">—</div>
-  <button class="login-enter-btn" onclick="enterApp()">
-    ✅ Accéder à la plateforme
-  </button>
-  <button class="login-logout" onclick="netlifyLogout()">
-    Se déconnecter
-  </button>
+  <div class="login-name" id="login-name-display">—</div>
+  <div class="login-email-disp" id="login-email-display" style="font-size:.78rem;color:#9D9B96">—</div>
+  <button class="login-enter-btn" onclick="enterApp()">✅ Accéder à la plateforme</button>
+  <button class="login-logout" onclick="doLogout()">Se déconnecter</button>
 </div>
 ```
 
@@ -4499,93 +4498,164 @@ function showSitePage(id) {
 }
 
 
-// ══ NETLIFY IDENTITY AUTH ══════════════════════════════════
+// ══ AUTH — Netlify Identity API directe ══════════════════
 
-function showLoginScreen() {
-  var ls = document.getElementById('login-screen');
-  if (ls) ls.classList.remove('hidden');
+var NETLIFY_SITE_URL = 'https://rehab4perf.netlify.app';
+var _authToken = null;
+var _authUser  = null;
+
+function doLogin() {
+  var emailEl = document.getElementById('login-email-input');
+  var passEl  = document.getElementById('login-pass-input');
+  var btnEl   = document.getElementById('login-submit-btn');
+  var errEl   = document.getElementById('login-error');
+  if (!emailEl || !passEl) return;
+
+  var email = emailEl.value.trim();
+  var pass  = passEl.value;
+
+  if (!email || !pass) {
+    showLoginError('Veuillez remplir email et mot de passe.');
+    return;
+  }
+
+  btnEl.textContent = 'Connexion…';
+  btnEl.disabled = true;
+  errEl.style.display = 'none';
+
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', NETLIFY_SITE_URL + '/.netlify/identity/token', true);
+  xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState !== 4) return;
+    btnEl.textContent = '🔐 Se connecter';
+    btnEl.disabled = false;
+    if (xhr.status === 200) {
+      try {
+        var data = JSON.parse(xhr.responseText);
+        _authToken = data.access_token;
+        fetchUserInfo(_authToken);
+      } catch(e) {
+        showLoginError('Erreur de connexion. Réessayez.');
+      }
+    } else {
+      try {
+        var err = JSON.parse(xhr.responseText);
+        showLoginError(err.error_description || 'Email ou mot de passe incorrect.');
+      } catch(e) {
+        showLoginError('Email ou mot de passe incorrect.');
+      }
+    }
+  };
+  xhr.send('grant_type=password&username=' + encodeURIComponent(email) + '&password=' + encodeURIComponent(pass));
 }
 
-function hideLoginScreen() {
+function fetchUserInfo(token) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', NETLIFY_SITE_URL + '/.netlify/identity/user', true);
+  xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState !== 4) return;
+    if (xhr.status === 200) {
+      try {
+        var user = JSON.parse(xhr.responseText);
+        _authUser = user;
+        onLoginSuccess(user);
+      } catch(e) { onLoginSuccess(null); }
+    } else {
+      onLoginSuccess(null);
+    }
+  };
+  xhr.send();
+}
+
+function onLoginSuccess(user) {
+  var name = '';
+  if (user && user.user_metadata && user.user_metadata.full_name) {
+    name = user.user_metadata.full_name;
+  } else if (user && user.email) {
+    name = user.email.split('@')[0];
+  }
+  var email = user ? user.email : '';
+  var initials = name ? name.split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2) : '?';
+
+  // Show logged-in state on login screen
+  var formEl  = document.getElementById('login-form-wrap');
+  var infoEl  = document.getElementById('login-user-info');
+  var avatarEl= document.getElementById('login-avatar');
+  var nameEl  = document.getElementById('login-name-display');
+  var emailEl = document.getElementById('login-email-display');
+  if (formEl)  formEl.style.display   = 'none';
+  if (infoEl)  infoEl.style.display   = 'flex';
+  if (avatarEl)avatarEl.textContent   = initials;
+  if (nameEl)  nameEl.textContent     = name || 'Praticien';
+  if (emailEl) emailEl.textContent    = email;
+
+  // Update nav
+  setNavUser(name || email);
+
+  // Save for bilan
+  try { localStorage.setItem('r4p-user-name', name || email); } catch(e) {}
+
+  // Auto-enter app
+  enterApp();
+}
+
+function showLoginError(msg) {
+  var errEl = document.getElementById('login-error');
+  if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; }
+}
+
+function enterApp() {
   var ls = document.getElementById('login-screen');
   if (ls) ls.classList.add('hidden');
 }
 
-function enterApp() {
-  hideLoginScreen();
-}
-
-function netlifyLogout() {
-  netlifyIdentity.logout();
-}
-
-function setUserUI(user) {
-  if (!user) return;
-  var name  = (user.user_metadata && user.user_metadata.full_name) ? user.user_metadata.full_name : user.email.split('@')[0];
-  var email = user.email;
-  var initials = name.split(' ').map(function(w){ return w[0]; }).join('').toUpperCase().slice(0,2);
-
-  // Login screen
-  var ctaEl   = document.getElementById('login-cta');
-  var infoEl  = document.getElementById('login-user-info');
-  var avatarEl= document.getElementById('login-avatar');
-  var nameEl  = document.getElementById('login-name');
-  var emailEl = document.getElementById('login-email');
-  if (ctaEl)   ctaEl.style.display   = 'none';
-  if (infoEl)  infoEl.style.display  = 'flex';
-  if (avatarEl)avatarEl.textContent  = initials;
-  if (nameEl)  nameEl.textContent    = name;
-  if (emailEl) emailEl.textContent   = email;
-
-  // Nav badge
-  var navName   = document.getElementById('nav-user-name');
-  var navLogout = document.getElementById('nav-logout-btn');
-  if (navName)   navName.textContent  = name;
-  if (navLogout) navLogout.style.display = 'block';
-
-  // Save name for bilan/outils auto-fill
-  try { localStorage.setItem('r4p-user-name', name); } catch(e) {}
-}
-
-function clearUserUI() {
-  var ctaEl  = document.getElementById('login-cta');
+function doLogout() {
+  _authToken = null;
+  _authUser  = null;
+  try { localStorage.removeItem('r4p-user-name'); } catch(e) {}
+  var ls = document.getElementById('login-screen');
+  if (ls) ls.classList.remove('hidden');
+  var formEl = document.getElementById('login-form-wrap');
   var infoEl = document.getElementById('login-user-info');
-  if (ctaEl)  ctaEl.style.display  = 'block';
+  if (formEl) formEl.style.display = 'block';
   if (infoEl) infoEl.style.display = 'none';
-  var navLogout = document.getElementById('nav-logout-btn');
+  var errEl  = document.getElementById('login-error');
+  if (errEl)  errEl.style.display  = 'none';
+  setNavUser('');
+  // Clear password field
+  var passEl = document.getElementById('login-pass-input');
+  if (passEl) passEl.value = '';
+}
+
+function setNavUser(name) {
   var navName   = document.getElementById('nav-user-name');
-  if (navLogout) navLogout.style.display = 'none';
-  if (navName)   navName.textContent = '';
-  showLoginScreen();
+  var navLogout = document.getElementById('nav-logout-btn');
+  if (navName)   navName.textContent     = name;
+  if (navLogout) navLogout.style.display = name ? 'block' : 'none';
 }
 
-// Init Netlify Identity
-if (typeof netlifyIdentity !== 'undefined') {
-  netlifyIdentity.on('init', function(user) {
-    if (user) {
-      setUserUI(user);
-      hideLoginScreen();
-    } else {
-      showLoginScreen();
+// Allow Enter key to submit
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    var ls = document.getElementById('login-screen');
+    if (ls && !ls.classList.contains('hidden')) {
+      doLogin();
     }
-  });
+  }
+});
 
-  netlifyIdentity.on('login', function(user) {
-    setUserUI(user);
-    netlifyIdentity.close();
-    hideLoginScreen();
-  });
-
-  netlifyIdentity.on('logout', function() {
-    clearUserUI();
-  });
-
-  netlifyIdentity.init();
-} else {
-  // Dev fallback: hide login screen if Netlify Identity not loaded
-  // (e.g. when viewing file locally without Netlify)
-  hideLoginScreen();
-}
+// Check if already logged in via localStorage token (optional persistence)
+(function() {
+  try {
+    var saved = localStorage.getItem('r4p-user-name');
+    // Don't auto-login — always require password on fresh load for security
+  } catch(e) {}
+  // Show login screen
+  var ls = document.getElementById('login-screen');
+  if (ls) ls.classList.remove('hidden');
+})();
 
 </script>
 
