@@ -1089,6 +1089,19 @@ transition: all .15s;
   </div>
 </div>
 
+<!-- Set password (from invite/recovery link) -->
+<div id="login-setpass-wrap" style="display:none">
+  <div style="font-size:.88rem;font-weight:600;color:#1A1917;margin-bottom:14px">Créer votre mot de passe</div>
+  <div id="setpass-error" style="display:none;background:#FDECEA;color:#C0392B;border-radius:6px;padding:8px 12px;font-size:.8rem;margin-bottom:12px;text-align:left"></div>
+  <input type="password" id="setpass-input" placeholder="Nouveau mot de passe" autocomplete="new-password"
+    style="width:100%;padding:11px 14px;border:1.5px solid #E8E6E1;border-radius:8px;font-size:.95rem;font-family:inherit;outline:none;margin-bottom:10px;box-sizing:border-box">
+  <input type="password" id="setpass-confirm" placeholder="Confirmer le mot de passe" autocomplete="new-password"
+    style="width:100%;padding:11px 14px;border:1.5px solid #E8E6E1;border-radius:8px;font-size:.95rem;font-family:inherit;outline:none;margin-bottom:14px;box-sizing:border-box">
+  <button class="login-btn" id="setpass-btn" onclick="doSetPassword()">
+    ✅ Créer mon mot de passe
+  </button>
+</div>
+
 <!-- Logged in state -->
 <div id="login-user-info" style="display:none;flex-direction:column;align-items:center;gap:10px">
   <div class="login-avatar" id="login-avatar">?</div>
@@ -4646,16 +4659,147 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
-// Check if already logged in via localStorage token (optional persistence)
+// ── Token detection (invite / recovery links) ────────────
 (function() {
-  try {
-    var saved = localStorage.getItem('r4p-user-name');
-    // Don't auto-login — always require password on fresh load for security
-  } catch(e) {}
-  // Show login screen
+  var hash = window.location.hash;
+  var token = null;
+  var tokenType = null;
+
+  // Parse hash params: #invite_token=xxx or #recovery_token=xxx or #access_token=xxx&type=recovery
+  if (hash) {
+    var params = {};
+    hash.replace('#','').split('&').forEach(function(part) {
+      var kv = part.split('=');
+      if (kv.length === 2) params[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1]);
+    });
+
+    if (params['invite_token']) {
+      token = params['invite_token'];
+      tokenType = 'invite';
+    } else if (params['recovery_token']) {
+      token = params['recovery_token'];
+      tokenType = 'recovery';
+    } else if (params['access_token'] && params['type'] === 'recovery') {
+      token = params['access_token'];
+      tokenType = 'recovery_access';
+    }
+  }
+
+  if (token) {
+    // Show set-password form
+    window._pendingToken = token;
+    window._pendingTokenType = tokenType;
+    var formEl    = document.getElementById('login-form-wrap');
+    var setpassEl = document.getElementById('login-setpass-wrap');
+    var titleEl   = document.querySelector('.login-subtitle');
+    if (formEl)    formEl.style.display    = 'none';
+    if (setpassEl) setpassEl.style.display = 'block';
+    if (titleEl)   titleEl.textContent     = tokenType === 'invite' ? 'Créez votre mot de passe pour accéder à la plateforme' : 'Réinitialisez votre mot de passe';
+    // Clean URL
+    history.replaceState(null, '', window.location.pathname);
+  }
+
+  // Always show login screen on load
   var ls = document.getElementById('login-screen');
   if (ls) ls.classList.remove('hidden');
 })();
+
+// ── Set password (invite / recovery) ─────────────────────
+function doSetPassword() {
+  var p1    = document.getElementById('setpass-input');
+  var p2    = document.getElementById('setpass-confirm');
+  var btnEl = document.getElementById('setpass-btn');
+  var errEl = document.getElementById('setpass-error');
+  if (!p1 || !p2) return;
+
+  if (!p1.value || p1.value.length < 6) {
+    errEl.textContent = 'Mot de passe trop court (6 caractères minimum).';
+    errEl.style.display = 'block'; return;
+  }
+  if (p1.value !== p2.value) {
+    errEl.textContent = 'Les mots de passe ne correspondent pas.';
+    errEl.style.display = 'block'; return;
+  }
+
+  btnEl.textContent = 'Enregistrement…';
+  btnEl.disabled = true;
+  errEl.style.display = 'none';
+
+  var token = window._pendingToken;
+  var tokenType = window._pendingTokenType;
+  var endpoint, body, headers;
+
+  if (tokenType === 'recovery_access') {
+    // Already have access token — use it to update password
+    endpoint = NETLIFY_SITE_URL + '/.netlify/identity/user';
+    headers  = {'Content-Type':'application/json','Authorization':'Bearer ' + token};
+    body     = JSON.stringify({password: p1.value});
+    var xhr  = new XMLHttpRequest();
+    xhr.open('PUT', endpoint, true);
+    Object.keys(headers).forEach(function(k){ xhr.setRequestHeader(k, headers[k]); });
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState !== 4) return;
+      btnEl.textContent = '✅ Créer mon mot de passe';
+      btnEl.disabled = false;
+      if (xhr.status === 200) {
+        onPasswordSet(token);
+      } else {
+        errEl.textContent = 'Erreur. Réessayez ou demandez un nouveau lien.';
+        errEl.style.display = 'block';
+      }
+    };
+    xhr.send(body);
+  } else {
+    // Invite or recovery token — exchange first
+    endpoint = NETLIFY_SITE_URL + '/.netlify/identity/token';
+    var grantType = tokenType === 'invite' ? 'invite' : 'recovery';
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', endpoint, true);
+    xhr.setRequestHeader('Content-Type','application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState !== 4) return;
+      if (xhr.status === 200) {
+        try {
+          var data = JSON.parse(xhr.responseText);
+          var accessToken = data.access_token;
+          // Now update password
+          var xhr2 = new XMLHttpRequest();
+          xhr2.open('PUT', NETLIFY_SITE_URL + '/.netlify/identity/user', true);
+          xhr2.setRequestHeader('Content-Type','application/json');
+          xhr2.setRequestHeader('Authorization','Bearer ' + accessToken);
+          xhr2.onreadystatechange = function() {
+            if (xhr2.readyState !== 4) return;
+            btnEl.textContent = '✅ Créer mon mot de passe';
+            btnEl.disabled = false;
+            if (xhr2.status === 200) {
+              onPasswordSet(accessToken);
+            } else {
+              errEl.textContent = 'Erreur lors de la création. Réessayez.';
+              errEl.style.display = 'block';
+            }
+          };
+          xhr2.send(JSON.stringify({password: p1.value}));
+        } catch(e) {
+          btnEl.textContent = '✅ Créer mon mot de passe';
+          btnEl.disabled = false;
+          errEl.textContent = 'Erreur. Réessayez.';
+          errEl.style.display = 'block';
+        }
+      } else {
+        btnEl.textContent = '✅ Créer mon mot de passe';
+        btnEl.disabled = false;
+        errEl.textContent = "Lien expiré. Demandez un nouveau lien d'invitation.";
+        errEl.style.display = 'block';
+      }
+    };
+    xhr.send('grant_type=' + grantType + '&token=' + encodeURIComponent(token));
+  }
+}
+
+function onPasswordSet(accessToken) {
+  window._pendingToken = null;
+  fetchUserInfo(accessToken);
+}
 
 </script>
 
