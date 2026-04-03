@@ -1366,141 +1366,6 @@ body {
           <div class="score-pill"><div class="val" id="pic-ij">—</div><div class="lbl">Pic IJ / Poids (>1.7)</div></div>
         </div>
       </div>
-    <!-- SEBT -->
-    <div class="block">
-      <div class="block-header">⑦ mSEBT — modified Star Excursion Balance Test</div>
-
-```
-  <!-- Schéma Y + infos protocole -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
-
-    <div style="background:var(--surface);padding:12px 16px">
-      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);margin-bottom:8px">Protocole — Picot et al. 2021</div>
-      <div style="font-size:.78rem;color:var(--text);line-height:1.7">
-        <div><strong>3 directions :</strong> ANT · PM · PL (Y)</div>
-        <div><strong>Essais :</strong> 4 de familiarisation + 3 enregistrés / direction</div>
-        <div><strong>Alternance :</strong> jambe à jambe entre chaque direction (anti-fatigue)</div>
-        <div><strong>Mains :</strong> sur les hanches pendant tout le test</div>
-        <div><strong>Pieds :</strong> nus ou chaussettes · gros orteil sur le centre du Y</div>
-      </div>
-    </div>
-
-    <div style="background:var(--surface2);padding:12px 16px">
-      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);margin-bottom:8px">Critères d'échec (essai non comptabilisé)</div>
-      <div style="font-size:.78rem;color:var(--text);line-height:1.7">
-        <div><strong>(a)</strong> Sujet tombe ou perd l'équilibre</div>
-        <div><strong>(b)</strong> Déplace le poids sur le membre de portée au contact</div>
-        <div><strong>(c)</strong> Pied de portée bouge / talon se lève</div>
-        <div><strong>(d)</strong> Mains retirées des hanches</div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- Saisie des 3 essais par direction -->
-  <div style="padding:8px 16px 4px;background:var(--accent-l);font-size:.78rem;color:var(--accent2);font-weight:500">
-    Saisir la <strong>moyenne des 3 essais</strong> par direction et par côté (cm). Score composite auto-calculé.
-  </div>
-
-  <div style="padding:1px 0">
-    <div class="measure-row" style="background:var(--surface2)">
-      <div class="col-header" style="grid-column:span 1">Direction</div>
-      <div class="col-header">Côté Atteint (cm)</div>
-      <div class="col-header">Côté Sain (cm)</div>
-      <div class="col-header">Diff % normalisée</div>
-      <div class="col-header">Statut</div>
-    </div>
-
-    <div class="measure-row">
-      <div class="measure-label" style="font-weight:700">ANT <span style="font-weight:400;font-size:.72rem;color:var(--text3)">Antérieur · 135°</span></div>
-      <div class="measure-input"><input type="number" id="sebt-ant-ca" placeholder="—" step="0.5" oninput="calcSEBT()"></div>
-      <div class="measure-input"><input type="number" id="sebt-ant-cs" placeholder="—" step="0.5" oninput="calcSEBT()"></div>
-      <div class="measure-stat" id="sebt-ant-diff">—</div>
-      <div class="measure-stat" id="sebt-ant-stat">—</div>
-    </div>
-
-    <div class="measure-row" style="background:var(--surface2)">
-      <div class="measure-label" style="background:var(--surface2);font-weight:700">PM <span style="font-weight:400;font-size:.72rem;color:var(--text3)">Postéro-médial · 90°</span></div>
-      <div class="measure-input" style="background:var(--surface2)"><input type="number" id="sebt-pm-ca" placeholder="—" step="0.5" oninput="calcSEBT()" style="background:var(--surface2)"></div>
-      <div class="measure-input" style="background:var(--surface2)"><input type="number" id="sebt-pm-cs" placeholder="—" step="0.5" oninput="calcSEBT()" style="background:var(--surface2)"></div>
-      <div class="measure-stat" id="sebt-pm-diff" style="background:var(--surface2)">—</div>
-      <div class="measure-stat" id="sebt-pm-stat" style="background:var(--surface2)">—</div>
-    </div>
-
-    <div class="measure-row">
-      <div class="measure-label" style="font-weight:700">PL <span style="font-weight:400;font-size:.72rem;color:var(--text3)">Postéro-latéral · 90°</span></div>
-      <div class="measure-input"><input type="number" id="sebt-pl-ca" placeholder="—" step="0.5" oninput="calcSEBT()"></div>
-      <div class="measure-input"><input type="number" id="sebt-pl-cs" placeholder="—" step="0.5" oninput="calcSEBT()"></div>
-      <div class="measure-stat" id="sebt-pl-diff">—</div>
-      <div class="measure-stat" id="sebt-pl-stat">—</div>
-    </div>
-
-    <!-- Score composite -->
-    <div class="measure-row" style="background:var(--accent-l)">
-      <div class="measure-label" style="background:var(--accent-l);font-weight:700;color:var(--accent2)">Score Composite CA</div>
-      <div class="measure-stat" id="sebt-comp-ca" style="background:var(--accent-l);font-size:1.05rem;font-weight:700;color:var(--accent2);grid-column:span 2">— <span style="font-size:.7rem;font-weight:400;color:var(--accent2)">(ANT+PM+PL) / 3L × 100</span></div>
-      <div class="measure-stat" style="background:var(--accent-l);font-size:.7rem;color:var(--accent2)">Seuil &lt;89% = risque LCA</div>
-      <div class="measure-stat" style="background:var(--accent-l)"></div>
-    </div>
-
-    <div class="measure-row" style="background:var(--surface2)">
-      <div class="measure-label" style="background:var(--surface2);font-weight:700;color:var(--text2)">Score Composite CS</div>
-      <div class="measure-stat" id="sebt-comp-cs" style="background:var(--surface2);font-size:1.05rem;font-weight:700;color:var(--accent2);grid-column:span 2">—</div>
-      <div class="measure-stat" style="background:var(--surface2);font-size:.7rem;color:var(--text3)">Plisky 2006 / Lehr 2013</div>
-      <div class="measure-stat" style="background:var(--surface2)"></div>
-    </div>
-
-  </div>
-
-  <!-- Longueur membre + sensation instabilité -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
-    <div style="background:var(--surface);padding:10px 16px;font-size:.78rem;color:var(--text2)">
-      <strong>Longueur membre (ASIS → malléole médiale)</strong><br>
-      <div style="display:flex;gap:16px;margin-top:6px;align-items:center">
-        <span>CA : <input type="number" id="sebt-longueur-ca" placeholder="cm" step="0.5" oninput="calcSEBT()" style="font-family:inherit;font-size:.88rem;border:1px solid var(--border2);border-radius:4px;padding:3px 8px;width:80px;outline:none;background:var(--surface);color:var(--accent2);font-weight:600"></span>
-        <span>CS : <input type="number" id="sebt-longueur-cs" placeholder="cm" step="0.5" oninput="calcSEBT()" style="font-family:inherit;font-size:.88rem;border:1px solid var(--border2);border-radius:4px;padding:3px 8px;width:80px;outline:none;background:var(--surface);color:var(--accent2);font-weight:600"></span>
-      </div>
-    </div>
-    <div style="background:var(--surface2);padding:10px 16px">
-      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text2);margin-bottom:6px">Sensation d'instabilité durant le test ?</div>
-      <div style="display:flex;gap:10px">
-        <label style="font-size:.82rem;cursor:pointer;display:flex;align-items:center;gap:5px">
-          <input type="radio" name="sebt-instab" id="sebt-instab-oui" value="oui" style="accent-color:var(--red)"> Oui
-        </label>
-        <label style="font-size:.82rem;cursor:pointer;display:flex;align-items:center;gap:5px">
-          <input type="radio" name="sebt-instab" id="sebt-instab-non" value="non" style="accent-color:var(--green)"> Non
-        </label>
-      </div>
-      <div id="sebt-instab-obs" style="margin-top:6px">
-        <textarea placeholder="Préciser côté et moment…" style="font-family:inherit;font-size:.78rem;border:1px solid var(--border);border-radius:4px;padding:4px 8px;width:100%;min-height:36px;resize:vertical;outline:none;background:var(--surface2)"></textarea>
-      </div>
-    </div>
-  </div>
-
-  <!-- Seuil ANT -->
-  <div style="padding:8px 14px;background:var(--surface2);font-size:.72rem;color:var(--text2);border-top:1px solid var(--border)">
-    <strong style="color:var(--red)">Seuil ANT :</strong> Différence &gt; 4 cm → risque de blessure MSK × 2,5 (Plisky 2006) &nbsp;|&nbsp;
-    <strong style="color:var(--accent2)">Score composite &lt; 89% :</strong> Risque LCA (Lehr 2013) &nbsp;|&nbsp;
-    <strong>Normalisation :</strong> Scores exprimés en % de la longueur du membre (ASIS → malléole médiale de préférence)
-  </div>
-
-</div>
-
-</div>
-```
-
-  </div>
-</div>
-
-<!-- ══ PAGE: TESTS FONCTIONNELS MS ══════════════════════════ -->
-
-<div class="page" id="page-fonctionnelsMS">
-  <div class="page-header">
-    <div class="page-icon">💪</div>
-    <div class="page-title">Tests Fonctionnels — Membres Supérieurs</div>
-    <div class="page-subtitle" id="hdr-fonc-ms">—</div>
-  </div>
-  <div class="page-content">
 
 ```
 <!-- PSET -->
@@ -1666,25 +1531,25 @@ body {
       <div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
-      <div class="measure-label">Médial</div>
-      <div class="measure-input"><input type="number" id="uqybt-med-d" placeholder="—" step="0.5" oninput="calcUQYBT()"></div>
-      <div class="measure-input"><input type="number" id="uqybt-med-g" placeholder="—" step="0.5" oninput="calcUQYBT()"></div>
-      <div class="measure-stat" id="uqybt-med-diff">—</div>
-      <div class="measure-stat" id="uqybt-med-stat">—</div>
+      <div class="measure-label">Anterieur (ANT)</div>
+      <div class="measure-input"><input type="number" id="uqybt-med-d" placeholder="--" step="0.5" oninput="calcUQYBT()"></div>
+      <div class="measure-input"><input type="number" id="uqybt-med-g" placeholder="--" step="0.5" oninput="calcUQYBT()"></div>
+      <div class="measure-stat" id="uqybt-med-diff">--</div>
+      <div class="measure-stat" id="uqybt-med-stat">--</div>
     </div>
     <div class="measure-row" style="background:var(--surface2)">
-      <div class="measure-label" style="background:var(--surface2)">Inféro-latéral</div>
-      <div class="measure-input" style="background:var(--surface2)"><input type="number" id="uqybt-il-d" placeholder="—" step="0.5" oninput="calcUQYBT()" style="background:var(--surface2)"></div>
-      <div class="measure-input" style="background:var(--surface2)"><input type="number" id="uqybt-il-g" placeholder="—" step="0.5" oninput="calcUQYBT()" style="background:var(--surface2)"></div>
-      <div class="measure-stat" id="uqybt-il-diff" style="background:var(--surface2)">—</div>
-      <div class="measure-stat" id="uqybt-il-stat" style="background:var(--surface2)">—</div>
+      <div class="measure-label" style="background:var(--surface2)">Postero-Medial (PM)</div>
+      <div class="measure-input" style="background:var(--surface2)"><input type="number" id="uqybt-il-d" placeholder="--" step="0.5" oninput="calcUQYBT()" style="background:var(--surface2)"></div>
+      <div class="measure-input" style="background:var(--surface2)"><input type="number" id="uqybt-il-g" placeholder="--" step="0.5" oninput="calcUQYBT()" style="background:var(--surface2)"></div>
+      <div class="measure-stat" id="uqybt-il-diff" style="background:var(--surface2)">--</div>
+      <div class="measure-stat" id="uqybt-il-stat" style="background:var(--surface2)">--</div>
     </div>
     <div class="measure-row">
-      <div class="measure-label">Supéro-latéral</div>
-      <div class="measure-input"><input type="number" id="uqybt-sl-d" placeholder="—" step="0.5" oninput="calcUQYBT()"></div>
-      <div class="measure-input"><input type="number" id="uqybt-sl-g" placeholder="—" step="0.5" oninput="calcUQYBT()"></div>
-      <div class="measure-stat" id="uqybt-sl-diff">—</div>
-      <div class="measure-stat" id="uqybt-sl-stat">—</div>
+      <div class="measure-label">Postero-lateral (PL)</div>
+      <div class="measure-input"><input type="number" id="uqybt-sl-d" placeholder="--" step="0.5" oninput="calcUQYBT()"></div>
+      <div class="measure-input"><input type="number" id="uqybt-sl-g" placeholder="--" step="0.5" oninput="calcUQYBT()"></div>
+      <div class="measure-stat" id="uqybt-sl-diff">--</div>
+      <div class="measure-stat" id="uqybt-sl-stat">--</div>
     </div>
   </div>
   <div style="padding:8px 14px;background:var(--accent-l);font-size:12px;color:var(--accent2)">
@@ -1941,6 +1806,143 @@ body {
 </div>
 
 </main>
+
+<!-- SEBT -->
+
+```
+<div class="block">
+  <div class="block-header">⑦ mSEBT — modified Star Excursion Balance Test</div>
+
+  <!-- Schéma Y + infos protocole -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+
+    <div style="background:var(--surface);padding:12px 16px">
+      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);margin-bottom:8px">Protocole — Picot et al. 2021</div>
+      <div style="font-size:.78rem;color:var(--text);line-height:1.7">
+        <div><strong>3 directions :</strong> ANT · PM · PL (Y)</div>
+        <div><strong>Essais :</strong> 4 de familiarisation + 3 enregistrés / direction</div>
+        <div><strong>Alternance :</strong> jambe à jambe entre chaque direction (anti-fatigue)</div>
+        <div><strong>Mains :</strong> sur les hanches pendant tout le test</div>
+        <div><strong>Pieds :</strong> nus ou chaussettes · gros orteil sur le centre du Y</div>
+      </div>
+    </div>
+
+    <div style="background:var(--surface2);padding:12px 16px">
+      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);margin-bottom:8px">Critères d'échec (essai non comptabilisé)</div>
+      <div style="font-size:.78rem;color:var(--text);line-height:1.7">
+        <div><strong>(a)</strong> Sujet tombe ou perd l'équilibre</div>
+        <div><strong>(b)</strong> Déplace le poids sur le membre de portée au contact</div>
+        <div><strong>(c)</strong> Pied de portée bouge / talon se lève</div>
+        <div><strong>(d)</strong> Mains retirées des hanches</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Saisie des 3 essais par direction -->
+  <div style="padding:8px 16px 4px;background:var(--accent-l);font-size:.78rem;color:var(--accent2);font-weight:500">
+    Saisir la <strong>moyenne des 3 essais</strong> par direction et par côté (cm). Score composite auto-calculé.
+  </div>
+
+  <div style="padding:1px 0">
+    <div class="measure-row" style="background:var(--surface2)">
+      <div class="col-header" style="grid-column:span 1">Direction</div>
+      <div class="col-header">Côté Atteint (cm)</div>
+      <div class="col-header">Côté Sain (cm)</div>
+      <div class="col-header">Diff % normalisée</div>
+      <div class="col-header">Statut</div>
+    </div>
+
+    <div class="measure-row">
+      <div class="measure-label" style="font-weight:700">ANT <span style="font-weight:400;font-size:.72rem;color:var(--text3)">Antérieur · 135°</span></div>
+      <div class="measure-input"><input type="number" id="sebt-ant-ca" placeholder="—" step="0.5" oninput="calcSEBT()"></div>
+      <div class="measure-input"><input type="number" id="sebt-ant-cs" placeholder="—" step="0.5" oninput="calcSEBT()"></div>
+      <div class="measure-stat" id="sebt-ant-diff">—</div>
+      <div class="measure-stat" id="sebt-ant-stat">—</div>
+    </div>
+
+    <div class="measure-row" style="background:var(--surface2)">
+      <div class="measure-label" style="background:var(--surface2);font-weight:700">PM <span style="font-weight:400;font-size:.72rem;color:var(--text3)">Postéro-médial · 90°</span></div>
+      <div class="measure-input" style="background:var(--surface2)"><input type="number" id="sebt-pm-ca" placeholder="—" step="0.5" oninput="calcSEBT()" style="background:var(--surface2)"></div>
+      <div class="measure-input" style="background:var(--surface2)"><input type="number" id="sebt-pm-cs" placeholder="—" step="0.5" oninput="calcSEBT()" style="background:var(--surface2)"></div>
+      <div class="measure-stat" id="sebt-pm-diff" style="background:var(--surface2)">—</div>
+      <div class="measure-stat" id="sebt-pm-stat" style="background:var(--surface2)">—</div>
+    </div>
+
+    <div class="measure-row">
+      <div class="measure-label" style="font-weight:700">PL <span style="font-weight:400;font-size:.72rem;color:var(--text3)">Postéro-latéral · 90°</span></div>
+      <div class="measure-input"><input type="number" id="sebt-pl-ca" placeholder="—" step="0.5" oninput="calcSEBT()"></div>
+      <div class="measure-input"><input type="number" id="sebt-pl-cs" placeholder="—" step="0.5" oninput="calcSEBT()"></div>
+      <div class="measure-stat" id="sebt-pl-diff">—</div>
+      <div class="measure-stat" id="sebt-pl-stat">—</div>
+    </div>
+
+    <!-- Score composite -->
+    <div class="measure-row" style="background:var(--accent-l)">
+      <div class="measure-label" style="background:var(--accent-l);font-weight:700;color:var(--accent2)">Score Composite CA</div>
+      <div class="measure-stat" id="sebt-comp-ca" style="background:var(--accent-l);font-size:1.05rem;font-weight:700;color:var(--accent2);grid-column:span 2">— <span style="font-size:.7rem;font-weight:400;color:var(--accent2)">(ANT+PM+PL) / 3L × 100</span></div>
+      <div class="measure-stat" style="background:var(--accent-l);font-size:.7rem;color:var(--accent2)">Seuil &lt;89% = risque LCA</div>
+      <div class="measure-stat" style="background:var(--accent-l)"></div>
+    </div>
+
+    <div class="measure-row" style="background:var(--surface2)">
+      <div class="measure-label" style="background:var(--surface2);font-weight:700;color:var(--text2)">Score Composite CS</div>
+      <div class="measure-stat" id="sebt-comp-cs" style="background:var(--surface2);font-size:1.05rem;font-weight:700;color:var(--accent2);grid-column:span 2">—</div>
+      <div class="measure-stat" style="background:var(--surface2);font-size:.7rem;color:var(--text3)">Plisky 2006 / Lehr 2013</div>
+      <div class="measure-stat" style="background:var(--surface2)"></div>
+    </div>
+
+  </div>
+
+  <!-- Longueur membre + sensation instabilité -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+    <div style="background:var(--surface);padding:10px 16px;font-size:.78rem;color:var(--text2)">
+      <strong>Longueur membre (ASIS → malléole médiale)</strong><br>
+      <div style="display:flex;gap:16px;margin-top:6px;align-items:center">
+        <span>CA : <input type="number" id="sebt-longueur-ca" placeholder="cm" step="0.5" oninput="calcSEBT()" style="font-family:inherit;font-size:.88rem;border:1px solid var(--border2);border-radius:4px;padding:3px 8px;width:80px;outline:none;background:var(--surface);color:var(--accent2);font-weight:600"></span>
+        <span>CS : <input type="number" id="sebt-longueur-cs" placeholder="cm" step="0.5" oninput="calcSEBT()" style="font-family:inherit;font-size:.88rem;border:1px solid var(--border2);border-radius:4px;padding:3px 8px;width:80px;outline:none;background:var(--surface);color:var(--accent2);font-weight:600"></span>
+      </div>
+    </div>
+    <div style="background:var(--surface2);padding:10px 16px">
+      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text2);margin-bottom:6px">Sensation d'instabilité durant le test ?</div>
+      <div style="display:flex;gap:10px">
+        <label style="font-size:.82rem;cursor:pointer;display:flex;align-items:center;gap:5px">
+          <input type="radio" name="sebt-instab" id="sebt-instab-oui" value="oui" style="accent-color:var(--red)"> Oui
+        </label>
+        <label style="font-size:.82rem;cursor:pointer;display:flex;align-items:center;gap:5px">
+          <input type="radio" name="sebt-instab" id="sebt-instab-non" value="non" style="accent-color:var(--green)"> Non
+        </label>
+      </div>
+      <div id="sebt-instab-obs" style="margin-top:6px">
+        <textarea placeholder="Préciser côté et moment…" style="font-family:inherit;font-size:.78rem;border:1px solid var(--border);border-radius:4px;padding:4px 8px;width:100%;min-height:36px;resize:vertical;outline:none;background:var(--surface2)"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Seuil ANT -->
+  <div style="padding:8px 14px;background:var(--surface2);font-size:.72rem;color:var(--text2);border-top:1px solid var(--border)">
+    <strong style="color:var(--red)">Seuil ANT :</strong> Différence &gt; 4 cm → risque de blessure MSK × 2,5 (Plisky 2006) &nbsp;|&nbsp;
+    <strong style="color:var(--accent2)">Score composite &lt; 89% :</strong> Risque LCA (Lehr 2013) &nbsp;|&nbsp;
+    <strong>Normalisation :</strong> Scores exprimés en % de la longueur du membre (ASIS → malléole médiale de préférence)
+  </div>
+
+</div>
+
+</div>
+```
+
+  </div>
+</div>
+
+<!-- ══ PAGE: TESTS FONCTIONNELS MS ══════════════════════════ -->
+
+<div class="page" id="page-fonctionnelsMS">
+  <div class="page-header">
+    <div class="page-icon">💪</div>
+    <div class="page-title">Tests Fonctionnels — Membres Supérieurs</div>
+    <div class="page-subtitle" id="hdr-fonc-ms">—</div>
+  </div>
+  <div class="page-content">
 
 <!-- ── MODAL ─────────────────────────────────────────────── -->
 
@@ -2531,9 +2533,9 @@ function buildCR() {
   var ulrtEl2 = document.getElementById('ulrt-lsi');
   if (!isNaN(psetCAv)) { var pl = psetCSv>0?(psetCAv/psetCSv*100):NaN; tfMsHtml += crItem('PSET', 'CA=' + psetCAv + '   CS=' + psetCSv + (!isNaN(pl)?'   LSI=' + pl.toFixed(1) + '%':''), statOf2(lsiCls2(psetCAv,psetCSv)), lsiCls2(psetCAv,psetCSv)); }
   if (!isNaN(setCAv))  { var sl = setCSv>0?(setCAv/setCSv*100):NaN; tfMsHtml += crItem('Shoulder Endurance', 'CA=' + setCAv + '   CS=' + setCSv + (!isNaN(sl)?'   LSI=' + sl.toFixed(1) + '%':''), statOf2(lsiCls2(setCAv,setCSv)), lsiCls2(setCAv,setCSv)); }
-  if (ckcEl2 && ckcEl2.textContent && ckcEl2.textContent !== '-') tfMsHtml += crItem('CKCUEST', ckcEl2.textContent, '', 'ok');
-  if (shrtEl2 && shrtEl2.textContent && shrtEl2.textContent !== '-') tfMsHtml += crItem('Side Hold Rotation', shrtEl2.textContent, '', 'ok');
-  if (ulrtEl2 && ulrtEl2.textContent && ulrtEl2.textContent !== '-') tfMsHtml += crItem('ULRT', ulrtEl2.textContent, '', 'ok');
+  if (ckcEl2 && ckcEl2.textContent && ckcEl2.textContent !== '-' && ckcEl2.textContent !== '\u2014' && ckcEl2.textContent !== '--') tfMsHtml += crItem('CKCUEST', ckcEl2.textContent, '', 'ok');
+  if (shrtEl2 && shrtEl2.textContent && shrtEl2.textContent !== '-' && shrtEl2.textContent !== '\u2014' && shrtEl2.textContent !== '--') tfMsHtml += crItem('Side Hold Rotation', shrtEl2.textContent, '', 'ok');
+  if (ulrtEl2 && ulrtEl2.textContent && ulrtEl2.textContent !== '-' && ulrtEl2.textContent !== '\u2014' && ulrtEl2.textContent !== '--') tfMsHtml += crItem('ULRT', ulrtEl2.textContent, '', 'ok');
   addSection('4. Tests Fonctionnels - Membres Superieurs', tfMsHtml);
 
   // 5. Points a travailler
