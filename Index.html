@@ -3324,11 +3324,11 @@ function calcPSET() {
   var poids2 = parseFloat(document.getElementById('f-poids').value);
   var el = document.getElementById('pset-poids-calc');
   if (el) {
-    if (!isNaN(poids) && poids > 0) {
+    if (!isNaN(poids2) && poids2 > 0) {
       var pset = (poids2 * 0.02).toFixed(2);
-      el.textContent = '-> Poids recommandé : ' + pset + ' kg (2% x ' + poids + ' kg)';
+      el.textContent = '-> Poids recommande : ' + pset + ' kg (2% x ' + poids2 + ' kg)';
     } else {
-      el.textContent = '\u2190 Renseignez le poids dans Infos Patient';
+      el.textContent = '<- Renseignez le poids dans Infos Patient';
     }
   }
 }
@@ -4070,8 +4070,7 @@ function calcHSR() {
   }).join('');
 }
 
-// Init
-calcRM();
+// Init deferred to tab open
 
 
 // ?? CALCULATEUR CARDIO ???????????????????????????????????
@@ -4123,8 +4122,8 @@ function calcCardio() {
   // IMC
   if (!isNaN(poids) && !isNaN(taille) && taille > 0) {
     var imc = cRnd(poids / Math.pow(taille/100, 2));
-    s('c-imc', imc + ' kg/m\u00b2');
-    var cat = imc < 18.5 ? 'Insuffisance pondérale' : imc < 25 ? 'Poids normal' : imc < 30 ? 'Surpoids' : 'Obésité';
+    s('c-imc', imc + ' kg/m2');
+    var cat = imc < 18.5 ? 'Insuffisance ponderale' : imc < 25 ? 'Poids normal' : imc < 30 ? 'Surpoids' : 'Obesite';
     var imcCol = (imc < 18.5 || imc >= 30) ? '#C0392B' : imc >= 25 ? '#D4600A' : '#2D6A4F';
     sc('c-imc-cat', cat, imcCol);
   } else { s('c-imc','--'); s('c-imc-cat','--'); }
@@ -4135,99 +4134,140 @@ function calcCardio() {
   var fcmax, fcmaxSrc;
   if (!isNaN(fcmaxM) && fcmaxM > 0) {
     fcmax = Math.round(fcmaxM);
-    fcmaxSrc = 'Mesurée directement';
+    fcmaxSrc = 'Mesuree directement';
   } else {
     fcmax = Math.round(208 - 0.7 * age);
-    fcmaxSrc = 'Tanaka (2001) : 208 \u2212 0.7\u00d7\u00e2ge';
+    fcmaxSrc = 'Tanaka (2001) : 208 - 0.7 x age';
   }
   s('c-fcmax-val', fcmax + ' bpm');
   s('c-fcmax-src', fcmaxSrc);
 
   if (isNaN(fcrep) || fcrep <= 0) {
     s('c-fcres', '-- renseignez FC repos');
-    s('c-fcres-range','');
-    s('c-fcrep-range','');
     return;
   }
 
-  // FC r?serve + plages ?2
-  var fcres    = fcmax - fcrep;
-  var fcresLow = fcmax - (fcrep + 2);   // avec FC repos +2 ? r?serve diminue
-  var fcresHigh= fcmax - (fcrep - 2);   // avec FC repos -2 ? r?serve augmente
+  // FC reserve nominale
+  var fcres = fcmax - fcrep;
   s('c-fcres', fcres + ' bpm');
-  s('c-fcres-range', 'Plage \u00b12 bpm FC repos : ' + fcresLow + '\u2013' + fcresHigh + ' bpm');
-  s('c-fcrep-range', (fcrep-2) + '\u2013' + (fcrep+2) + ' bpm');
+  s('c-fcrep-range', (fcrep - 2) + ' - ' + (fcrep + 2) + ' bpm');
 
-  // VO2max
+  // FC reserve avec fcrep-2 (reserve plus grande) et fcrep+2 (reserve plus petite)
+  var fcres_low  = fcmax - (fcrep - 2);  // fcrep bas -> reserve haute
+  var fcres_high = fcmax - (fcrep + 2);  // fcrep haut -> reserve basse
+
+  // Fonction helper : calcule une tranche "X - Y"
+  function tranche(v_low, v_high) {
+    var lo = Math.min(v_low, v_high);
+    var hi = Math.max(v_low, v_high);
+    if (lo === hi) return lo + ' bpm';
+    return lo + ' - ' + hi + ' bpm';
+  }
+  function trancheKm(spd_low, spd_high) {
+    var lo = cMinKm(Math.max(spd_low, spd_high));
+    var hi = cMinKm(Math.min(spd_low, spd_high));
+    if (lo === hi) return lo + '/km';
+    return lo + ' - ' + hi + '/km';
+  }
+
+  // VO2max et VMA : calculer avec les 2 extremes de fcrep
   var vo2, vo2src, vma, vmasrc;
+  var vo2_low, vo2_high, vma_low, vma_high;
+
   if (!isNaN(cooper) && cooper > 0) {
+    // Cooper : ne depend pas de fcrep, pas de tranche
     vo2 = cRnd((cooper - 504.9) / 44.73);
     vo2src = 'Cooper (' + cooper + ' m)';
     vma = cRnd(cooper / 200, 2);
     vmasrc = 'Cooper : distance/200';
+    vo2_low = vo2; vo2_high = vo2;
+    vma_low = vma; vma_high = vma;
   } else if (!isNaN(leger) && leger > 0) {
+    // Leger-Boucher : ne depend pas de fcrep
     vo2 = cRnd(5.857 * (8 + 0.5*(leger-1)) - 19.458);
-    vo2src = 'Léger-Boucher (palier ' + leger + ')';
+    vo2src = 'Leger-Boucher (palier ' + leger + ')';
     vma = cRnd(8 + 0.5*(leger-1), 2);
-    vmasrc = 'Léger-Boucher (direct)';
+    vmasrc = 'Leger-Boucher (direct)';
+    vo2_low = vo2; vo2_high = vo2;
+    vma_low = vma; vma_high = vma;
   } else {
+    // Uth 2004 : depend de fcrep -> on calcule avec fcrep-2 et fcrep+2
+    vo2_low  = cRnd(15 * (fcmax / (fcrep - 2)));  // fcrep bas -> vo2 haut
+    vo2_high = cRnd(15 * (fcmax / (fcrep + 2)));  // fcrep haut -> vo2 bas
     vo2 = cRnd(15 * (fcmax / fcrep));
-    vo2src = 'Uth 2004 (FCmax/FC repos)';
+    vo2src = 'Uth 2004 (FCmax/FC repos) : environ ' + vo2_high + ' - ' + vo2_low + ' ml/kg/min';
+    vma_low  = cRnd(vo2_low  / 3.5, 2);
+    vma_high = cRnd(vo2_high / 3.5, 2);
     vma = cRnd(vo2 / 3.5, 2);
-    vmasrc = 'Billat : VO\u2082max / 3.5';
+    vmasrc = 'Billat : VMA environ ' + Math.min(vma_low,vma_high) + ' - ' + Math.max(vma_low,vma_high) + ' km/h';
   }
-  s('c-vo2', vo2 + ' ml/kg/min');
-  s('c-vo2-src', vo2src);
-  s('c-vma', vma + ' km/h');
-  s('c-vma-src', vmasrc);
+
+  s('c-vo2',        vo2 + ' ml/kg/min');
+  s('c-vo2-src',    vo2src);
+  s('c-vma',        vma + ' km/h');
+  s('c-vma-src',    vmasrc);
   s('c-vma-allure', cMinKm(vma));
 
-  // Allures table
+  // Allures table : tranche pour chaque zone
   var atbody = document.getElementById('c-allures-tbody');
   if (atbody) {
     atbody.innerHTML = C_ALLURES.map(function(a, i) {
-      var spd  = cRnd(vma * a.pct / 100, 2);
-      var fc   = Math.round(fcrep    + fcres     * a.pct / 100);
-      var fcMi = Math.round((fcrep-2) + fcresLow  * a.pct / 100);
-      var fcMa = Math.round((fcrep+2) + fcresHigh * a.pct / 100);
+      var spd      = cRnd(vma * a.pct / 100, 2);
+      var spd_lo   = cRnd(Math.min(vma_low,vma_high) * a.pct / 100, 2);
+      var spd_hi   = cRnd(Math.max(vma_low,vma_high) * a.pct / 100, 2);
+      // FC Karvonen avec fcrep nominal
+      var fc_nom   = Math.round(fcrep + fcres * a.pct / 100);
+      // FC avec fcrep-2 (repos bas, reserve haute)
+      var fc_lo    = Math.round((fcrep-2) + fcres_low  * a.pct / 100);
+      // FC avec fcrep+2 (repos haut, reserve basse)
+      var fc_hi    = Math.round((fcrep+2) + fcres_high * a.pct / 100);
       var bg = i%2===0?'':'background:#F1F0ED;';
+      var allure_str = spd_lo === spd_hi
+        ? cMinKm(spd) + '/km'
+        : cMinKm(spd_hi) + ' - ' + cMinKm(spd_lo) + '/km';
+      var fc_str = Math.min(fc_lo,fc_hi) + ' - ' + Math.max(fc_lo,fc_hi) + ' bpm';
       return '<tr style="' + bg + '">' +
         '<td style="font-weight:600">' + a.lbl + '</td>' +
         '<td style="font-weight:700;color:#2D6A4F">' + a.pct + '%</td>' +
-        '<td style="font-weight:700;color:#1A3A5C">' + spd + ' km/h</td>' +
-        '<td style="font-weight:700;color:#1A3A5C">' + cMinKm(spd) + '</td>' +
-        '<td>' + fc + ' bpm</td>' +
-        '<td style="color:#2D6A4F">' + fcMi + ' bpm</td>' +
-        '<td style="color:#2D6A4F">' + fcMa + ' bpm</td>' +
+        '<td style="color:#1A3A5C">' + (spd_lo===spd_hi ? spd : Math.min(spd_lo,spd_hi)+' - '+Math.max(spd_lo,spd_hi)) + ' km/h</td>' +
+        '<td style="font-weight:700;color:#1A3A5C">' + allure_str + '</td>' +
+        '<td style="font-weight:600">' + fc_nom + ' bpm</td>' +
+        '<td style="color:#2D6A4F;font-weight:600">' + fc_str + '</td>' +
         '</tr>';
     }).join('');
   }
 
-  // Zones FC
+  // Zones FC : tranche
   var ztbody = document.getElementById('c-zones-tbody');
   if (ztbody) {
     ztbody.innerHTML = C_ZONES.map(function(z, i) {
-      var fcL  = Math.round(fcrep    + fcres     * z.pMin/100);
-      var fcH  = Math.round(fcrep    + fcres     * z.pMax/100);
-      var fcLm = Math.round((fcrep-2) + fcresLow  * z.pMin/100);
-      var fcHM = Math.round((fcrep+2) + fcresHigh * z.pMax/100);
+      // FC nominale
+      var fcL_nom = Math.round(fcrep + fcres * z.pMin/100);
+      var fcH_nom = Math.round(fcrep + fcres * z.pMax/100);
+      // FC avec fcrep-2
+      var fcL_lo  = Math.round((fcrep-2) + fcres_low  * z.pMin/100);
+      var fcH_lo  = Math.round((fcrep-2) + fcres_low  * z.pMax/100);
+      // FC avec fcrep+2
+      var fcL_hi  = Math.round((fcrep+2) + fcres_high * z.pMin/100);
+      var fcH_hi  = Math.round((fcrep+2) + fcres_high * z.pMax/100);
+      var fcMin_tranche = Math.min(fcL_lo, fcL_hi);
+      var fcMax_tranche = Math.max(fcH_lo, fcH_hi);
       var bg = i%2===0?'':'background:#F1F0ED;';
       return '<tr style="' + bg + '">' +
         '<td style="font-weight:700;color:' + Z_COLORS[i] + '">' + z.z + '</td>' +
         '<td style="font-weight:600">' + z.nom + '</td>' +
-        '<td>' + z.pMin + '\u2013' + z.pMax + '%</td>' +
-        '<td style="font-weight:700;color:' + Z_COLORS[i] + '">' + fcL + '\u2013' + fcH + ' bpm</td>' +
-        '<td style="color:#2D6A4F">' + fcLm + ' bpm</td>' +
-        '<td style="color:#2D6A4F">' + fcHM + ' bpm</td>' +
+        '<td>' + z.pMin + '-' + z.pMax + '%</td>' +
+        '<td style="font-weight:700;color:' + Z_COLORS[i] + '">' + fcL_nom + ' - ' + fcH_nom + ' bpm</td>' +
+        '<td style="color:#2D6A4F;font-size:.82rem">env. ' + fcMin_tranche + ' - ' + fcMax_tranche + ' bpm</td>' +
         '<td style="font-size:.78rem;color:#6B6860">' + z.benefit + '</td>' +
         '</tr>';
     }).join('');
   }
 
-  // Sync to CAP header
+  // Sync CAP header
   var z2L = Math.round(fcrep + fcres * 0.60);
   var z2H = Math.round(fcrep + fcres * 0.70);
-  s('cap-allure-info', 'Z2 (jogging S1-S8) : ' + z2L + '\u2013' + z2H + ' bpm \u00b7 VMA : ' + vma + ' km/h');
+  s('cap-allure-info', 'Z2 : ' + z2L + ' - ' + z2H + ' bpm - VMA : ' + vma + ' km/h');
 }
 
 function cardioLoadBilan() {
@@ -4324,7 +4364,7 @@ function capGetAllure() {
 
 function buildCAP() {
   var container = document.getElementById('cap-weeks-container');
-  if (!container) return;
+  if (!container) { setTimeout(buildCAP, 100); return; }
   var info = capGetAllure();
   var infoStr = info ? (' \u00b7 Z2 : ' + info.z2L + '\u2013' + info.z2H + ' bpm' + (info.allure ? ' (' + info.allure + ')' : '')) : '';
   var html = '';
@@ -4372,12 +4412,19 @@ function capLoadBilan() {
 var _origShowTab = showTab;
 showTab = function(id) {
   _origShowTab(id);
-  if (id === 'cardio') { cardioLoadBilan(); }
+  if (id === 'cardio') { cardioLoadBilan(); calcCardio(); }
   if (id === 'cap')    { buildCAP(); capLoadBilan(); }
+  if (id === 'rm')     { calcRM(); }
+  if (id === 'hsr')    { calcHSR(); }
 };
 
 // Init after DOM is ready
-function initOutils() { buildCAP(); capLoadBilan(); }
+function initOutils() {
+  calcRM();
+  calcHSR();
+  buildCAP();
+  capLoadBilan();
+}
 
 
 
@@ -4392,9 +4439,19 @@ function showSitePage(id) {
   var tb = document.getElementById('stab-' + id);
   if (pg) pg.classList.add('active');
   if (tb) tb.classList.add('active');
-  if (id === 'outils' && !window._outilsInited) {
-    window._outilsInited = true;
-    initOutils();
+  if (id === 'outils') {
+    if (!window._outilsInited) {
+      window._outilsInited = true;
+      initOutils();
+    }
+    // Always refresh active tab
+    var activeTab = document.querySelector('.sub-tab.active');
+    if (activeTab) {
+      var tabId = activeTab.id.replace('stab-','');
+      if (tabId === 'rm') calcRM();
+      else if (tabId === 'hsr') calcHSR();
+      else if (tabId === 'cardio') { cardioLoadBilan(); calcCardio(); }
+    }
   }
 }
 
