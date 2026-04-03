@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light only">
-<title>Rehab4Perf — Antoine PERONNAUD</title>
+<title>Rehab4Perf</title>
 <style>
 
 /* ── Variables ────────────────────────────────────────────── */
@@ -884,21 +884,16 @@ body { display:flex; flex-direction:column; height:100vh; overflow:hidden; }
 .site-nav {
 background: #1A3A5C;
 height: 50px;
-display: flex;
-align-items: center;
-padding: 0 20px;
-flex-shrink: 0;
+display: flex; align-items: center;
+padding: 0 20px; flex-shrink: 0;
 box-shadow: 0 2px 10px rgba(0,0,0,.2);
 z-index: 500;
 }
 .site-logo {
 font-family: ‘Georgia’, serif;
-font-size: 1.1rem;
-font-style: italic;
+font-size: 1.1rem; font-style: italic;
 letter-spacing: -.01em;
-margin-right: 24px;
-flex-shrink: 0;
-line-height: 1;
+margin-right: 24px; flex-shrink: 0; line-height: 1;
 }
 .site-logo .r { color: #2B5FA6; }
 .site-logo .n { color: #fff; font-weight: 900; font-style: normal; }
@@ -906,234 +901,163 @@ line-height: 1;
 .site-tabs { display:flex; height:100%; align-items:stretch; gap:2px; }
 .site-tab {
 display:flex; align-items:center; gap:7px;
-padding: 0 18px;
-color: rgba(255,255,255,.65);
+padding: 0 18px; color: rgba(255,255,255,.65);
 font-size: .85rem; font-weight: 500;
 cursor: pointer; border: none; background: none;
 font-family: -apple-system,‘SF Pro Text’,‘Helvetica Neue’,sans-serif;
 border-bottom: 3px solid transparent;
-transition: color .15s, background .15s;
-white-space: nowrap;
+transition: color .15s, background .15s; white-space: nowrap;
 }
 .site-tab:hover { color:#fff; background:rgba(255,255,255,.08); }
 .site-tab.active { color:#fff; border-bottom-color:#2B5FA6; background:rgba(255,255,255,.06); }
-.site-right {
-margin-left: auto;
-font-size: .7rem;
-color: rgba(255,255,255,.45);
-text-align: right;
-line-height: 1.55;
-font-family: -apple-system,‘SF Pro Text’,‘Helvetica Neue’,sans-serif;
-}
 .site-page { display:none; flex:1; overflow:hidden; flex-direction:column; }
 .site-page.active { display:flex; }
 #site-bilan { overflow:hidden; }
 #site-bilan .app-wrapper { flex:1; }
 #site-outils { background:#F7F6F3; flex-direction:column; }
-@media (max-width:600px) {
-.site-nav { padding:0 10px; }
-.site-tab { padding:0 11px; font-size:.8rem; }
-.site-logo { margin-right:12px; font-size:.95rem; }
-.site-right { display:none; }
-}
 
-/* ══ LOGIN SCREEN ════════════════════════════════════════ */
+/* ── LOGIN ──────────────────────────────────────────── */
 #login-screen {
-position: fixed;
-inset: 0;
-background: #1A3A5C;
-display: flex;
-align-items: center;
-justify-content: center;
-z-index: 9999;
-font-family: -apple-system,‘SF Pro Text’,‘Helvetica Neue’,sans-serif;
+position:fixed; inset:0; background:#1A3A5C;
+display:flex; align-items:center; justify-content:center;
+z-index:9999;
+font-family:-apple-system,‘SF Pro Text’,‘Helvetica Neue’,sans-serif;
 }
-#login-screen.hidden { display: none; }
-
+#login-screen.hidden { display:none; }
 .login-box {
-background: #fff;
-border-radius: 16px;
-padding: 40px 36px;
-width: 340px;
-max-width: 90vw;
-text-align: center;
-box-shadow: 0 20px 60px rgba(0,0,0,.3);
+background:#fff; border-radius:16px;
+padding:40px 36px; width:340px; max-width:90vw;
+text-align:center;
+box-shadow:0 20px 60px rgba(0,0,0,.3);
 }
-.login-logo {
-font-family: ‘Georgia’, serif;
-font-size: 1.8rem;
-font-style: italic;
-letter-spacing: -.02em;
-margin-bottom: 6px;
+.login-logo { font-family:‘Georgia’,serif; font-size:1.8rem; font-style:italic; letter-spacing:-.02em; margin-bottom:6px; }
+.login-logo .r { color:#2B5FA6; }
+.login-logo .n { color:#1A3A5C; font-weight:900; font-style:normal; }
+.login-logo .p { color:#C0392B; }
+.login-sub { font-size:.82rem; color:#9D9B96; margin-bottom:28px; }
+.login-input {
+width:100%; padding:11px 14px;
+border:1.5px solid #E8E6E1; border-radius:8px;
+font-size:.95rem; font-family:inherit; outline:none;
+margin-bottom:10px; box-sizing:border-box;
+transition:border-color .15s;
 }
-.login-logo .r { color: #2B5FA6; }
-.login-logo .n { color: #1A3A5C; font-weight: 900; font-style: normal; }
-.login-logo .p { color: #C0392B; }
-.login-subtitle {
-font-size: .82rem;
-color: #9D9B96;
-margin-bottom: 32px;
-font-weight: 400;
-}
+.login-input:focus { border-color:#2B5FA6; }
 .login-btn {
-width: 100%;
-padding: 13px;
-background: #1A3A5C;
-color: #fff;
-border: none;
-border-radius: 8px;
-font-size: .95rem;
-font-weight: 600;
-cursor: pointer;
-font-family: inherit;
-transition: background .15s;
-margin-bottom: 12px;
+width:100%; padding:13px;
+background:#1A3A5C; color:#fff;
+border:none; border-radius:8px;
+font-size:.95rem; font-weight:600;
+cursor:pointer; font-family:inherit;
+transition:background .15s; margin-bottom:10px;
 }
-.login-btn:hover { background: #2B5FA6; }
-.login-user-info {
-display: none;
-flex-direction: column;
-align-items: center;
-gap: 10px;
+.login-btn:hover { background:#2B5FA6; }
+.login-btn:disabled { opacity:.6; cursor:default; }
+.login-error {
+display:none; background:#FDECEA; color:#C0392B;
+border-radius:6px; padding:8px 12px;
+font-size:.8rem; margin-bottom:12px; text-align:left;
 }
+.login-note { font-size:.72rem; color:#D3D1CB; }
+.login-setpass { display:none; }
+.login-setpass-title { font-size:.9rem; font-weight:600; color:#1A1917; margin-bottom:16px; }
+.login-success { display:none; flex-direction:column; align-items:center; gap:8px; }
 .login-avatar {
-width: 48px; height: 48px;
-background: #EEF3FB;
-border-radius: 50%;
-display: flex; align-items: center; justify-content: center;
-font-size: 1.3rem;
-color: #1A3A5C;
-font-weight: 700;
+width:50px; height:50px; background:#EEF3FB;
+border-radius:50%; display:flex; align-items:center;
+justify-content:center; font-size:1.3rem;
+color:#1A3A5C; font-weight:700;
 }
-.login-name { font-size: .95rem; font-weight: 600; color: #1A1917; }
-.login-email { font-size: .78rem; color: #9D9B96; }
+.login-username { font-size:.95rem; font-weight:600; color:#1A1917; }
+.login-useremail { font-size:.78rem; color:#9D9B96; }
 .login-enter-btn {
-width: 100%;
-padding: 13px;
-background: #2D6A4F;
-color: #fff;
-border: none;
-border-radius: 8px;
-font-size: .95rem;
-font-weight: 600;
-cursor: pointer;
-font-family: inherit;
-transition: background .15s;
+width:100%; padding:12px;
+background:#2D6A4F; color:#fff;
+border:none; border-radius:8px;
+font-size:.95rem; font-weight:600;
+cursor:pointer; font-family:inherit;
+transition:background .15s;
 }
-.login-enter-btn:hover { background: #1A3A5C; }
-.login-logout {
-font-size: .75rem;
-color: #9D9B96;
-background: none;
-border: none;
-cursor: pointer;
-font-family: inherit;
-margin-top: 4px;
-text-decoration: underline;
+.login-enter-btn:hover { background:#1A3A5C; }
+.login-logout-link {
+font-size:.75rem; color:#9D9B96; background:none;
+border:none; cursor:pointer; font-family:inherit;
+text-decoration:underline;
 }
-
-/* ── User badge in top nav ────────────────────────────── */
-.nav-user {
-margin-left: auto;
-display: flex;
-align-items: center;
-gap: 10px;
+.nav-user { margin-left:auto; display:flex; align-items:center; gap:10px; }
+.nav-username { font-size:.78rem; color:rgba(255,255,255,.75); font-family:inherit; white-space:nowrap; }
+.nav-logout {
+font-size:.72rem; color:rgba(255,255,255,.55);
+background:none; border:1px solid rgba(255,255,255,.25);
+border-radius:4px; padding:3px 8px; cursor:pointer;
+font-family:inherit; white-space:nowrap; transition:all .15s;
 }
-.nav-user-name {
-font-size: .78rem;
-color: rgba(255,255,255,.75);
-font-family: -apple-system,‘SF Pro Text’,‘Helvetica Neue’,sans-serif;
-white-space: nowrap;
+.nav-logout:hover { color:#fff; border-color:rgba(255,255,255,.5); }
+@media(max-width:600px){
+.site-nav{padding:0 10px;}
+.site-tab{padding:0 10px;font-size:.78rem;}
+.site-logo{margin-right:12px;font-size:.95rem;}
+.nav-username{display:none;}
 }
-.nav-logout-btn {
-font-size: .72rem;
-color: rgba(255,255,255,.5);
-background: none;
-border: 1px solid rgba(255,255,255,.25);
-border-radius: 4px;
-padding: 3px 8px;
-cursor: pointer;
-font-family: inherit;
-white-space: nowrap;
-transition: all .15s;
-}
-.nav-logout-btn:hover { color:#fff; border-color:rgba(255,255,255,.5); }
-@media(max-width:600px){ .nav-user-name { display:none; } }
 
 </style>
 </head>
 <body>
 
-<!-- ══ LOGIN SCREEN ════════════════════════════════════ -->
+<!-- ══ LOGIN ══════════════════════════════════════════════ -->
 
 <div id="login-screen">
   <div class="login-box">
-    <div class="login-logo">
-      <span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span>
-    </div>
-    <div class="login-subtitle">Plateforme clinique · Athletik Lamarck</div>
+    <div class="login-logo"><span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span></div>
+    <div class="login-sub">Plateforme clinique · Athletik Lamarck</div>
 
 ```
-<!-- Login form -->
-<div id="login-form-wrap">
-  <div id="login-error" style="display:none;background:#FDECEA;color:#C0392B;border-radius:6px;padding:8px 12px;font-size:.8rem;margin-bottom:12px;text-align:left"></div>
-  <input type="email" id="login-email-input" placeholder="Email" autocomplete="email"
-    style="width:100%;padding:11px 14px;border:1.5px solid #E8E6E1;border-radius:8px;font-size:.95rem;font-family:inherit;outline:none;margin-bottom:10px;box-sizing:border-box">
-  <input type="password" id="login-pass-input" placeholder="Mot de passe" autocomplete="current-password"
-    style="width:100%;padding:11px 14px;border:1.5px solid #E8E6E1;border-radius:8px;font-size:.95rem;font-family:inherit;outline:none;margin-bottom:14px;box-sizing:border-box">
-  <button class="login-btn" id="login-submit-btn" onclick="doLogin()">
-    🔐 Se connecter
-  </button>
-  <div style="font-size:.72rem;color:#D3D1CB;margin-top:10px">
-    Accès réservé aux praticiens du cabinet
-  </div>
+<div id="lf-error" class="login-error"></div>
+
+<!-- Formulaire connexion -->
+<div id="lf-login">
+  <input type="email" id="lf-email" class="login-input" placeholder="Adresse email" autocomplete="email">
+  <input type="password" id="lf-pass" class="login-input" placeholder="Mot de passe" autocomplete="current-password">
+  <button class="login-btn" id="lf-btn" onclick="doLogin()">🔐 Se connecter</button>
+  <div class="login-note">Accès réservé aux praticiens du cabinet</div>
 </div>
 
-<!-- Set password (from invite/recovery link) -->
-<div id="login-setpass-wrap" style="display:none">
-  <div style="font-size:.88rem;font-weight:600;color:#1A1917;margin-bottom:14px">Créer votre mot de passe</div>
-  <div id="setpass-error" style="display:none;background:#FDECEA;color:#C0392B;border-radius:6px;padding:8px 12px;font-size:.8rem;margin-bottom:12px;text-align:left"></div>
-  <input type="password" id="setpass-input" placeholder="Nouveau mot de passe" autocomplete="new-password"
-    style="width:100%;padding:11px 14px;border:1.5px solid #E8E6E1;border-radius:8px;font-size:.95rem;font-family:inherit;outline:none;margin-bottom:10px;box-sizing:border-box">
-  <input type="password" id="setpass-confirm" placeholder="Confirmer le mot de passe" autocomplete="new-password"
-    style="width:100%;padding:11px 14px;border:1.5px solid #E8E6E1;border-radius:8px;font-size:.95rem;font-family:inherit;outline:none;margin-bottom:14px;box-sizing:border-box">
-  <button class="login-btn" id="setpass-btn" onclick="doSetPassword()">
-    ✅ Créer mon mot de passe
-  </button>
+<!-- Formulaire création / réinitialisation mot de passe -->
+<div id="lf-setpass" class="login-setpass">
+  <div class="login-setpass-title" id="lf-setpass-title">Créer votre mot de passe</div>
+  <input type="password" id="lf-newpass" class="login-input" placeholder="Nouveau mot de passe (6 car. min.)" autocomplete="new-password">
+  <input type="password" id="lf-newpass2" class="login-input" placeholder="Confirmer le mot de passe" autocomplete="new-password">
+  <button class="login-btn" id="lf-setpass-btn" onclick="doSetPassword()">✅ Valider mon mot de passe</button>
 </div>
 
-<!-- Logged in state -->
-<div id="login-user-info" style="display:none;flex-direction:column;align-items:center;gap:10px">
-  <div class="login-avatar" id="login-avatar">?</div>
-  <div class="login-name" id="login-name-display">—</div>
-  <div class="login-email-disp" id="login-email-display" style="font-size:.78rem;color:#9D9B96">—</div>
+<!-- Connecté -->
+<div id="lf-success" class="login-success">
+  <div class="login-avatar" id="lf-avatar">?</div>
+  <div class="login-username" id="lf-uname">—</div>
+  <div class="login-useremail" id="lf-uemail">—</div>
   <button class="login-enter-btn" onclick="enterApp()">✅ Accéder à la plateforme</button>
-  <button class="login-logout" onclick="doLogout()">Se déconnecter</button>
+  <button class="login-logout-link" onclick="doLogout()">Se déconnecter</button>
 </div>
 ```
 
   </div>
 </div>
 
-<!-- ══ TOP NAV ═══════════════════════════════════════════ -->
+<!-- ══ TOP NAV ════════════════════════════════════════════ -->
 
 <nav class="site-nav">
-  <div class="site-logo">
-    <span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span>
-  </div>
+  <div class="site-logo"><span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span></div>
   <div class="site-tabs">
     <button class="site-tab active" onclick="showSitePage('bilan')" id="stab-bilan">📋 Bilan</button>
     <button class="site-tab" onclick="showSitePage('outils')" id="stab-outils">🔧 Outils</button>
   </div>
   <div class="nav-user">
-    <span class="nav-user-name" id="nav-user-name"></span>
-    <button class="nav-logout-btn" id="nav-logout-btn" onclick="netlifyLogout()" style="display:none">
-      Déconnexion
-    </button>
+    <span class="nav-username" id="nav-uname"></span>
+    <button class="nav-logout" id="nav-logout" onclick="doLogout()" style="display:none">Déconnexion</button>
   </div>
 </nav>
 
-<!-- ══ PAGE BILAN ═════════════════════════════════════════ -->
+<!-- ══ PAGE BILAN ══════════════════════════════════════════ -->
 
 <div class="site-page active" id="site-bilan">
 
@@ -2693,7 +2617,7 @@ transition: all .15s;
         <thead>
           <tr>
             <th>Zone</th><th>% VMA</th><th>Vitesse (km/h)</th><th>Allure (min/km)</th>
-            <th>FC cible (Karvonen)</th>
+            <th>FC Karvonen</th><th style="color:#B7DEC9">FC − (FC repos −2)</th><th style="color:#B7DEC9">FC + (FC repos +2)</th>
           </tr>
         </thead>
         <tbody id="c-allures-tbody">
@@ -2708,7 +2632,7 @@ transition: all .15s;
     <div style="overflow-x:auto">
       <table class="tbl" style="min-width:540px">
         <thead>
-          <tr><th>Zone</th><th>Nom</th><th>% FC réserve</th><th>FC min (bpm)</th><th>FC max (bpm)</th><th>Bénéfice</th></tr>
+          <tr><th>Zone</th><th>Nom</th><th>% FC réserve</th><th>FC cible (bpm)</th><th style="color:#B7DEC9">FC min (−2)</th><th style="color:#B7DEC9">FC max (+2)</th><th>Bénéfice</th></tr>
         </thead>
         <tbody id="c-zones-tbody">
           <tr><td colspan="7" style="text-align:center;color:#9D9B96;padding:16px">Renseignez l'âge et la FC au repos pour calculer</td></tr>
@@ -2757,25 +2681,25 @@ transition: all .15s;
 </div>
 
 <script>
-/* ── BILAN JS ───────────────────────────────────────────── */
+/* ?? BILAN JS (ES5) ??????????????????????????????????????? */
 
-// ── DATA ─────────────────────────────────────────────────────
-const TESTS = {
+// ?? DATA ?????????????????????????????????????????????????????
+var TESTS = {
   'tb-ep-instab':{type:'ortho',items:['Appréhension test','Relocation test','Postérieur appréhension test','Inférieur appréhension test']},
-    'tb-ep-fonc': {type:'fonc', items:['Arm Squeeze Test','Cervicales — modulation (ULNT)','Extension thoracique (inspi + rétraction scap.)','Activation coiffe — préhension','Activation coiffe — pré-activation RE','Activation coiffe — contre résistance','Activation coiffe — chaîne croisée','Activation coiffe — bord ulnaire','Inhibition coiffe','Postériorisation GH','SRT (Shoulder Rotation Test)','SAT (Scapular Assistance Test)']},
-  'tb-ep-ortho':{type:'ortho',items:['Mobilisation scapulaire en TM','Extension thoracique au mur (3 contacts + élév. coude 90°)','ADD épaule (adduction horizontale)','GIRD (Glenohumeral Internal Rotation Deficit)','Break test Trapèze inférieur (Y)','Push-up scapulaire (20 reps) / Break test dentelé','Break test R1','Break test R2','Break test élévation antérieure plan de la scap.','Break test Bear Hug (RI)','Test de NEER','Posterior Impingement Test','Hawkins-Kennedy']},
+    'tb-ep-fonc': {type:'fonc', items:['Arm Squeeze Test','Cervicales -- modulation (ULNT)','Extension thoracique (inspi + rétraction scap.)','Activation coiffe -- préhension','Activation coiffe -- pré-activation RE','Activation coiffe -- contre résistance','Activation coiffe -- chaîne croisée','Activation coiffe -- bord ulnaire','Inhibition coiffe','Postériorisation GH','SRT (Shoulder Rotation Test)','SAT (Scapular Assistance Test)']},
+  'tb-ep-ortho':{type:'ortho',items:['Mobilisation scapulaire en TM','Extension thoracique au mur (3 contacts + élév. coude 90\u00b0)','ADD épaule (adduction horizontale)','GIRD (Glenohumeral Internal Rotation Deficit)','Break test Trapèze inférieur (Y)','Push-up scapulaire (20 reps) / Break test dentelé','Break test R1','Break test R2','Break test élévation antérieure plan de la scap.','Break test Bear Hug (RI)','Test de NEER','Posterior Impingement Test','Hawkins-Kennedy']},
   'tb-ra-cerv': {type:'ortho',items:['Spurling A','Rotation latérale + médiale','ULNT 1','ULNT 2a','ULNT 2b','ULNT 3','Distraction cervicale']},
   'tb-ra-lomb': {type:'ortho',items:['SLUMP test','Lasègue (SLR)','Léri']},
   'tb-ra-musc': {type:'ortho',items:['Endurance Flexion cervicale','Endurance Extension cervicale','Endurance Latéroflexion cervicale','Test de Sorensen (lombaires)','Endurance abdominale','Break test abdo']},
-  'tb-ha-global':{type:'ortho',items:['HAGOS (questionnaire — noter score %)','Fulcrum test','Squeeze test 0° (EVA > 6 ?)']},
-  'tb-ha-add':  {type:'ortho',items:['Squeeze test 45°','Étirement ADD']},
+  'tb-ha-global':{type:'ortho',items:['HAGOS (questionnaire -- noter score %)','Fulcrum test','Squeeze test 0\u00b0 (EVA > 6 ?)']},
+  'tb-ha-add':  {type:'ortho',items:['Squeeze test 45\u00b0','Étirement ADD']},
   'tb-ha-pubis':{type:'ortho',items:['Patellar pubic percussion test','Pubis stress test']},
   'tb-ha-flech':{type:'ortho',items:['Contraction résistée Thomas','Étirement fléchisseurs']},
-  'tb-ha-inguinal':{type:'ortho',items:['Break test abdos — droit (CE+CI) + obliques','Transverse Valsalva + toux']},
+  'tb-ha-inguinal':{type:'ortho',items:['Break test abdos -- droit (CE+CI) + obliques','Transverse Valsalva + toux']},
   'tb-ha-hanche':{type:'ortho',items:['BKFO','FADIR','FADIR + extension lombaire (modulation ?)','FADIR + Compression','FADIR + Distraction','Third test','FABER','AB HEER','Test appréhension antérieur','Test de OBER','Test de FADER-R']},
 
   'tb-ge-global':{type:'ortho',items:['Signe du glaçon (épanchement)','Mobilisation flexion + extension']},
-  'tb-ge-lig':  {type:'ortho',items:['Varus 20°/30°','Varus 0°','Valgus 20°/30°','Valgus 0°']},
+  'tb-ge-lig':  {type:'ortho',items:['Varus 20\u00b0/30\u00b0','Varus 0\u00b0','Valgus 20\u00b0/30\u00b0','Valgus 0\u00b0']},
   'tb-ge-lca':  {type:'ortho',items:['Lachman','Test du tiroir antérieur','Test de Lelli']},
   'tb-ge-men':  {type:'ortho',items:['Test de Oudart','Appley','Judet Genety','Thessaly']},
   'tb-ge-rot':  {type:'ortho',items:['Engagement rotulien','Test de Smillie','Accroupissement']},
@@ -2789,29 +2713,29 @@ const TESTS = {
   'tb-pi-conf': {type:'ortho',items:['Grinding','Impaction','Excentrique LFH','Molloy test']},
   'tb-pi-st':   {type:'ortho',items:['Varus / Valgus en flexion dorsale','Cisaillement en flexion dorsale']},
   'tb-pi-chopart':{type:'ortho',items:['Mobilisation Chopart','Neutral Heel Lateral Push Test']},
-  'tb-pi-fonc': {type:'ortho',items:['Course interne mollet','Navicular Drop Test (mm)','Avant-pied — équilibre pointes de pied (step)','Médio-pied — équilibre foot bridge','1ère ligne — montée pointes + cale 30° sous hallux','Équilibre classique global (yeux ouverts / yeux fermés)']},
+  'tb-pi-fonc': {type:'ortho',items:['Course interne mollet','Navicular Drop Test (mm)','Avant-pied -- équilibre pointes de pied (step)','Médio-pied -- équilibre foot bridge','1ère ligne -- montée pointes + cale 30\u00b0 sous hallux','Équilibre classique global (yeux ouverts / yeux fermés)']},
   'tb-pi-force-ca':{type:'ortho',items:['Flexion plantaire','Flexion dorsale','Inversion','Éversion']},
   'tb-pi-force-cs':{type:'ortho',items:['Flexion plantaire','Flexion dorsale','Inversion','Éversion']},
 };
 
-const CRITERIA_REC = [
-  {label:'① Descente fluide sans arrêt jusqu\'à 90°', ref:'Myer 2008'},
-  {label:'② Maintien statique 3s à 90°', ref:'Schmitt 2012'},
-  {label:'③ Contrôle neuromusculaire du genou (valgus dynamique)', ref:'Hewett 2005 (AJSM)'},
+var CRITERIA_REC = [
+  {label:'\u2460 Descente fluide sans arrêt jusqu\'à 90\u00b0', ref:'Myer 2008'},
+  {label:'\u2461 Maintien statique 3s à 90\u00b0', ref:'Schmitt 2012'},
+  {label:'\u2462 Contrôle neuromusculaire du genou (valgus dynamique)', ref:'Hewett 2005 (AJSM)'},
 ];
 
-const MOB = ['Flexion','Extension','Incl. D','Incl. G','Rot. D','Rot. G'];
+var MOB = ['Flexion','Extension','Incl. D','Incl. G','Rot. D','Rot. G'];
 
-// ── INIT ──────────────────────────────────────────────────────
+// ?? INIT ??????????????????????????????????????????????????????
 function init() {
   // Build test tables
-  Object.entries(TESTS).forEach(([id, cfg]) => {
-    const tbody = document.getElementById(id);
-    if (!tbody) return;
-    cfg.items.forEach((name, i) => {
-      const tr = document.createElement('tr');
+  var _tk=Object.keys(TESTS); for(var _ti=0;_ti<_tk.length;_ti++){var id=_tk[_ti];var cfg=TESTS[id];
+    var tbody = document.getElementById(id);
+    if (!tbody) continue;
+    cfg.items.forEach(function(name, i) {
+      var tr = document.createElement('tr');
       var opts = cfg.opts ? cfg.opts : ['Positif', 'Négatif', 'N/A'];
-      var optHtml = '<option value="">—</option>';
+      var optHtml = '<option value="">--</option>';
       for (var oi=0; oi<opts.length; oi++) {
         optHtml += '<option value="' + opts[oi] + '">' + opts[oi] + '</option>';
       }
@@ -2821,20 +2745,20 @@ function init() {
         '<td class="note-cell"><input type="text" placeholder="Observation\u2026" data-note="' + id + '-' + i + '"></td>';
       tbody.appendChild(tr);
     });
-  });
+  }
 
   // Mobility grids
-  ['cerv','thor','lomb'].forEach(seg => {
-    const grid = document.getElementById('mob-' + seg);
+  ['cerv','thor','lomb'].forEach(function(seg) {
+    var grid = document.getElementById('mob-' + seg);
     if (!grid) return;
-    MOB.forEach(m => {
+    MOB.forEach(function(m) {
       grid.innerHTML += '<div class="mobility-item"><label>' + m + '</label><input type="text" placeholder="\u2014" data-mob="' + seg + '-' + m + '"></div>';
     });
   });
 
-  // Criteria réception
-  const critGrid = document.getElementById('rec-criteria');
-  CRITERIA_REC.forEach((c, i) => {
+  // Criteria r?ception
+  var critGrid = document.getElementById('rec-criteria');
+  CRITERIA_REC.forEach(function(c, i) {
     var rowBg = i % 2 === 0 ? 'var(--surface)' : 'var(--surface2)';
   critGrid.innerHTML += '<div style="display:grid;grid-template-columns:60px 60px 1fr;background:' + rowBg + ';padding:10px 14px;align-items:center;gap:10px;border-bottom:1px solid var(--border)">' +
       '<div style="display:flex;flex-direction:column;align-items:center;gap:4px">' +
@@ -2855,10 +2779,10 @@ function init() {
   loadFromStorage();
 }
 
-// ── NAV ───────────────────────────────────────────────────────
+// ?? NAV ???????????????????????????????????????????????????????
 function showPage(id) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  Array.prototype.forEach.call(document.querySelectorAll('.page'), function(p){ p.classList.remove('active'); });
+  Array.prototype.forEach.call(document.querySelectorAll('.nav-item'), function(n){ n.classList.remove('active'); });
   var pg = document.getElementById('page-' + id); if (pg) pg.classList.add('active');
   var nb = document.querySelector('[data-page="' + id + '"]'); if (nb) nb.classList.add('active');
   if (id === 'cr') buildCR();
@@ -2866,7 +2790,7 @@ function showPage(id) {
   saveToStorage();
 }
 
-// ── TEST CHANGE ───────────────────────────────────────────────
+// ?? TEST CHANGE ???????????????????????????????????????????????
 function onTestChange(sel, tableId, idx) {
   var v = sel.value;
   var type = sel.dataset.type;
@@ -2877,59 +2801,59 @@ function onTestChange(sel, tableId, idx) {
 }
 
 function updateBadges() {
-  const sections = {
+  var sections = {
     'epaule': ['tb-ep-fonc','tb-ep-ortho'],
     'rachis': ['tb-ra-cerv','tb-ra-lomb','tb-ra-musc'],
     'hanche': ['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc'],
     'genou':  ['tb-ge-global','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-fonc'],
     'pied':   ['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-fonc'],
   };
-  Object.entries(sections).forEach(([page, tables]) => {
-    let pos = 0;
-    tables.forEach(t => {
-      const tbody = document.getElementById(t);
+  var _sk=Object.keys(sections); for(var _si=0;_si<_sk.length;_si++){var page=_sk[_si];var tables=sections[page];
+    var pos = 0;
+    tables.forEach(function(t) {
+      var tbody = document.getElementById(t);
       if (!tbody) return;
-      tbody.querySelectorAll('select').forEach(s => { if (s.value === 'Positif') pos++; });
+      Array.prototype.forEach.call(tbody.querySelectorAll('select'), function(s){ if (s.value === 'Positif') pos++; });
     });
-    const badge = document.getElementById('badge-' + page);
+    var badge = document.getElementById('badge-' + page);
     if (badge) { badge.style.display = pos > 0 ? '' : 'none'; badge.textContent = pos; }
-  });
+  }
 }
 
-// ── UPDATE ALL ────────────────────────────────────────────────
+// ?? UPDATE ALL ????????????????????????????????????????????????
 function updateAll() {
-  const nom = document.getElementById('f-nom').value;
-  const prenom = document.getElementById('f-prenom').value;
-  const cote = document.getElementById('f-cote').value;
-  const date = document.getElementById('f-date').value;
-  const dob = document.getElementById('f-dob').value;
-  const aclrsi = parseInt(document.getElementById('f-aclrsi').value) || null;
+  var nom = document.getElementById('f-nom').value;
+  var prenom = document.getElementById('f-prenom').value;
+  var cote = document.getElementById('f-cote').value;
+  var date = document.getElementById('f-date').value;
+  var dob = document.getElementById('f-dob').value;
+  var aclrsi = parseInt(document.getElementById('f-aclrsi').value) || null;
 
-  const fullName = [prenom, nom].filter(Boolean).join(' ') || 'Nouveau patient';
+  var fullName = [prenom, nom].filter(Boolean).join(' ') || 'Nouveau patient';
   document.getElementById('sb-name').textContent = fullName;
 
-  let age = null;
+  var age = null;
   if (dob) {
-    const d = new Date(dob);
-    const today = new Date();
+    var d = new Date(dob);
+    var today = new Date();
     age = today.getFullYear() - d.getFullYear() - (today < new Date(today.getFullYear(), d.getMonth(), d.getDate()) ? 1 : 0);
   }
 
-  const meta = [age ? (age + ' ans') : null, cote, date ? formatDate(date) : null].filter(Boolean).join(' · ');
-  document.getElementById('sb-meta').textContent = meta || '—';
+  var meta = [age ? (age + ' ans') : null, cote, date ? formatDate(date) : null].filter(Boolean).join('   ');
+  document.getElementById('sb-meta').textContent = meta || '--';
 
   // Headers for each page
-  const hdrTxt = [fullName, date ? formatDate(date) : null, cote ? ('Côté : ' + cote) : null].filter(Boolean).join(' — ');
-  ['epaule','rachis','hanche','genou','pied','fonc-mi','fonc-ms','fonc-rachis','musc'].forEach(p => {
-    const el = document.getElementById('hdr-' + p);
+  var hdrTxt = [fullName, date ? formatDate(date) : null, cote ? ('Côté : ' + cote) : null].filter(Boolean).join(' -- ');
+  ['epaule','rachis','hanche','genou','pied','fonc-mi','fonc-ms','fonc-rachis','musc'].forEach(function(p) {
+    var el = document.getElementById('hdr-' + p);
     if (el) el.textContent = hdrTxt;
   });
 
   // ACL-RSI
   if (aclrsi !== null) {
-    const interp = document.getElementById('aclrsi-interp');
-    if (aclrsi >= 60) interp.innerHTML = '<span style="color:var(--green);font-weight:600">✅ Seuil ≥ 60% — Confiance suffisante pour RTS (Webster 2018)</span>';
-    else interp.innerHTML = '<span style="color:var(--orange);font-weight:600">⚠️ Score &lt; 60% — Accompagnement psychologique recommandé avant RTS</span>';
+    var interp = document.getElementById('aclrsi-interp');
+    if (aclrsi >= 60) interp.innerHTML = '<span style="color:var(--green);font-weight:600">\u2705 Seuil >= 60% -- Confiance suffisante pour RTS (Webster 2018)</span>';
+    else interp.innerHTML = '<span style="color:var(--orange);font-weight:600"> Score &lt; 60% -- Accompagnement psychologique recommandé avant RTS</span>';
   }
 
   // Heel rise norms highlight
@@ -2943,58 +2867,58 @@ function updateAll() {
   calcPDSLRT();
 
   // Progress
-  const fields = document.querySelectorAll('input[type=text],input[type=number],textarea,select');
-  let filled = 0;
-  fields.forEach(f => { if (f.value && f.value !== '—' && f.value !== '') filled++; });
-  const pct = Math.min(100, Math.round(filled / 60 * 100));
+  var fields = document.querySelectorAll('input[type=text],input[type=number],textarea,select');
+  var filled = 0;
+  Array.prototype.forEach.call(fields, function(f){ if (f.value && f.value !== '--' && f.value !== '') filled++; });
+  var pct = Math.min(100, Math.round(filled / 60 * 100));
   document.getElementById('sb-progress').style.width = pct + '%';
 }
 
 function formatDate(d) {
   if (!d) return '';
-  const [y,m,day] = d.split('-');
+  var parts=d.split('-'); var y=parts[0],m=parts[1],day=parts[2];
   return day + '/' + m + '/' + y;
 }
 
 function highlightNormRow(age) {
-  document.querySelectorAll('#norm-heel-rise tbody tr').forEach(tr => {
+  Array.prototype.forEach.call(document.querySelectorAll('#norm-heel-rise tbody tr'), function(tr) {
     tr.classList.remove('highlight-age');
     if (age !== null) {
-      const min = parseInt(tr.dataset.min), max = parseInt(tr.dataset.max);
+      var min = parseInt(tr.dataset.min), max = parseInt(tr.dataset.max);
       if (age >= min && age <= max) tr.classList.add('highlight-age');
     }
   });
 }
 
-// ── LSI CALC ─────────────────────────────────────────────────
+// ?? LSI CALC ?????????????????????????????????????????????????
 function lsiClass(v, higher=true) {
   if (isNaN(v)) return '';
   if (higher) return v >= 90 ? 'good' : v >= 80 ? 'warn' : 'bad';
   return v <= 110 ? 'good' : 'bad';
 }
 
-function setLSI(lsiEl, statEl, lsi, seuil='≥ 90%', higher=true) {
-  if (isNaN(lsi)) { lsiEl.textContent='—'; lsiEl.className='measure-stat'; statEl.textContent='—'; statEl.className='measure-stat'; return; }
-  const cls = lsiClass(lsi, higher);
+function setLSI(lsiEl, statEl, lsi, seuil='>= 90%', higher=true) {
+  if (isNaN(lsi)) { lsiEl.textContent='--'; lsiEl.className='measure-stat'; statEl.textContent='--'; statEl.className='measure-stat'; return; }
+  var cls = lsiClass(lsi, higher);
   lsiEl.textContent = lsi.toFixed(1) + '%';
   lsiEl.className = 'measure-stat ' + cls;
-  const icons = {good:'✅ Objectif atteint', warn:'⚠️ Acceptable', bad:'❌ Insuffisant'};
-  statEl.textContent = icons[cls] || '—';
+  var icons = {good:'\u2705 Objectif atteint', warn:' Acceptable', bad:'\u274c Insuffisant'};
+  statEl.textContent = icons[cls] || '--';
   statEl.className = 'measure-stat ' + cls;
 }
 
 function calcLSI(key) {
-  const ca = parseFloat(document.getElementById(key + '-ca') ? document.getElementById(key + '-ca').value : '');
-  const cs = parseFloat(document.getElementById(key + '-cs') ? document.getElementById(key + '-cs').value : '');
-  const lsi = cs > 0 ? ca/cs*100 : NaN;
+  var ca = parseFloat(document.getElementById(key + '-ca') ? document.getElementById(key + '-ca').value : '');
+  var cs = parseFloat(document.getElementById(key + '-cs') ? document.getElementById(key + '-cs').value : '');
+  var lsi = cs > 0 ? ca/cs*100 : NaN;
   setLSI(document.getElementById(key + '-lsi'), document.getElementById(key + '-stat'), lsi);
   if (key === 'hop') {
-    const repere = document.getElementById('hop-repere80');
+    var repere = document.getElementById('hop-repere80');
     if (!isNaN(cs) && cs > 0) {
       var repere80Txt = '\uD83D\uDCB0 Repère réception : ' + (cs*0.8).toFixed(1) + ' cm (80% côté sain)';
       if (!isNaN(ca) && ca > 0) repere80Txt += '   |   80% CA = ' + (ca*0.8).toFixed(1) + ' cm';
       repere.textContent = repere80Txt;
-    } else repere.textContent = '—';
+    } else repere.textContent = '--';
   }
 }
 
@@ -3022,13 +2946,13 @@ function calcRec() {
 }
 
 function calcPlioq() {
-  const ca = document.getElementById('plioq-ca').value;
-  const cs = document.getElementById('plioq-cs').value;
-  const good = v => v === 'Excellent' || v === 'Bon';
-  const el = document.getElementById('plioq-stat');
-  if (!ca || !cs) { el.textContent='—'; el.className='measure-stat'; return; }
-  if (good(ca) && good(cs)) { el.textContent='✅ Symétrique'; el.className='measure-stat good'; }
-  else { el.textContent='⚠️ Asymétrie'; el.className='measure-stat warn'; }
+  var ca = document.getElementById('plioq-ca').value;
+  var cs = document.getElementById('plioq-cs').value;
+  var good = function(v){ return v === 'Excellent' || v === 'Bon'; };
+  var el = document.getElementById('plioq-stat');
+  if (!ca || !cs) { el.textContent='--'; el.className='measure-stat'; return; }
+  if (good(ca) && good(cs)) { el.textContent='\u2705 Symétrique'; el.className='measure-stat good'; }
+  else { el.textContent=' Asymétrie'; el.className='measure-stat warn'; }
 }
 
 function calcHR() {
@@ -3079,25 +3003,25 @@ function calcLunge() {
   if (!lsiEl || !statEl) return;
 
   if (isNaN(ca) || isNaN(cs)) {
-    lsiEl.textContent = '—'; lsiEl.className = 'measure-stat';
-    statEl.textContent = '—'; statEl.className = 'measure-stat';
-    if (interpEl) interpEl.textContent = '—';
+    lsiEl.textContent = '--'; lsiEl.className = 'measure-stat';
+    statEl.textContent = '--'; statEl.className = 'measure-stat';
+    if (interpEl) interpEl.textContent = '--';
     return;
   }
 
   var lsi = cs > 0 ? ca/cs*100 : NaN;
-  lsiEl.textContent = !isNaN(lsi) ? (lsi.toFixed(1) + '%') : '—';
+  lsiEl.textContent = !isNaN(lsi) ? (lsi.toFixed(1) + '%') : '--';
   var diff = Math.abs(ca - cs);
   var cls, stat, interp;
   if (ca < 10) {
     cls='bad'; stat='Deficit absolu (< 10 cm)';
-    interp = 'CA = ' + ca + ' cm — inferieur au seuil de 10 cm (Bennell 1998)';
+    interp = 'CA = ' + ca + ' cm -- inferieur au seuil de 10 cm (Bennell 1998)';
   } else if (diff > 1.5) {
     cls='warn'; stat='Asymetrie > 1,5 cm';
     interp = 'Difference = ' + diff.toFixed(1) + ' cm entre les deux cotes (seuil : <= 1,5 cm)';
   } else if (!isNaN(lsi) && lsi < 90) {
     cls='warn'; stat='LSI < 90%';
-    interp = 'LSI = ' + lsi.toFixed(1) + '% — asymetrie relative (Hoch 2011)';
+    interp = 'LSI = ' + lsi.toFixed(1) + '% -- asymetrie relative (Hoch 2011)';
   } else {
     cls='good'; stat='OK Symetrique et suffisant';
     interp = 'CA = ' + ca + ' cm (>=10 cm), diff = ' + diff.toFixed(1) + ' cm (<=1,5 cm)' + (!isNaN(lsi) ? ', LSI = ' + lsi.toFixed(1) + '%' : '');
@@ -3108,44 +3032,44 @@ function calcLunge() {
 }
 
 function calcDJ() {
-  const hca = parseFloat(document.getElementById('dj-h-ca').value);
-  const hcs = parseFloat(document.getElementById('dj-h-cs').value);
-  const tca = parseFloat(document.getElementById('dj-t-ca').value);
-  const tcs = parseFloat(document.getElementById('dj-t-cs').value);
-  const hlsi = hcs > 0 ? hca/hcs*100 : NaN;
-  const tlsi = tcs > 0 ? tca/tcs*100 : NaN;
+  var hca = parseFloat(document.getElementById('dj-h-ca').value);
+  var hcs = parseFloat(document.getElementById('dj-h-cs').value);
+  var tca = parseFloat(document.getElementById('dj-t-ca').value);
+  var tcs = parseFloat(document.getElementById('dj-t-cs').value);
+  var hlsi = hcs > 0 ? hca/hcs*100 : NaN;
+  var tlsi = tcs > 0 ? tca/tcs*100 : NaN;
   setLSI(document.getElementById('dj-h-lsi'), document.getElementById('dj-h-stat'), hlsi);
-  setLSI(document.getElementById('dj-t-lsi'), document.getElementById('dj-t-stat'), tlsi, '≤ 110%', false);
-  const rcaEl = document.getElementById('dj-rsi-ca');
-  const rcsEl = document.getElementById('dj-rsi-cs');
-  const rlsiEl = document.getElementById('dj-rsi-lsi');
-  const rstatEl = document.getElementById('dj-rsi-stat');
-  const rca = (tca > 0 && !isNaN(hca)) ? hca/tca : NaN;
-  const rcs = (tcs > 0 && !isNaN(hcs)) ? hcs/tcs : NaN;
-  rcaEl.textContent = isNaN(rca) ? '—' : rca.toFixed(3);
-  rcsEl.textContent = isNaN(rcs) ? '—' : rcs.toFixed(3);
-  const rlsi = (!isNaN(rca) && !isNaN(rcs) && rcs > 0) ? rca/rcs*100 : NaN;
+  setLSI(document.getElementById('dj-t-lsi'), document.getElementById('dj-t-stat'), tlsi, '<= 110%', false);
+  var rcaEl = document.getElementById('dj-rsi-ca');
+  var rcsEl = document.getElementById('dj-rsi-cs');
+  var rlsiEl = document.getElementById('dj-rsi-lsi');
+  var rstatEl = document.getElementById('dj-rsi-stat');
+  var rca = (tca > 0 && !isNaN(hca)) ? hca/tca : NaN;
+  var rcs = (tcs > 0 && !isNaN(hcs)) ? hcs/tcs : NaN;
+  rcaEl.textContent = isNaN(rca) ? '--' : rca.toFixed(3);
+  rcsEl.textContent = isNaN(rcs) ? '--' : rcs.toFixed(3);
+  var rlsi = (!isNaN(rca) && !isNaN(rcs) && rcs > 0) ? rca/rcs*100 : NaN;
   setLSI(rlsiEl, rstatEl, rlsi);
 }
 
 function calcMusc() {
-  const calc = (ca, cs) => { const v = cs>0 ? (1-ca/cs)*100 : NaN; return v; };
-  const setDef = (id, v) => {
-    const el = document.getElementById(id);
+  var calc = function(ca,cs){ var v = cs>0 ? (1-ca/cs)*100 : NaN; return v; };
+  var setDef = function(id,v) {
+    var el = document.getElementById(id);
     if (!el) return;
-    if (isNaN(v)) { el.textContent='—'; el.className='measure-stat'; return; }
+    if (isNaN(v)) { el.textContent='--'; el.className='measure-stat'; return; }
     el.textContent = v.toFixed(1) + '%';
     el.className = 'measure-stat ' + (v <= 10 ? 'good' : v <= 20 ? 'warn' : 'bad');
   };
-  const qfca = parseFloat(document.getElementById('q-f-ca').value);
-  const qfcs = parseFloat(document.getElementById('q-f-cs').value);
-  const qpca = parseFloat(document.getElementById('q-p-ca').value);
-  const qpcs = parseFloat(document.getElementById('q-p-cs').value);
-  const qrca = parseFloat(document.getElementById('q-r-ca').value);
-  const ijfca = parseFloat(document.getElementById('ij-f-ca').value);
-  const ijfcs = parseFloat(document.getElementById('ij-f-cs').value);
-  const ijpca = parseFloat(document.getElementById('ij-p-ca').value);
-  const ijpcs = parseFloat(document.getElementById('ij-p-cs').value);
+  var qfca = parseFloat(document.getElementById('q-f-ca').value);
+  var qfcs = parseFloat(document.getElementById('q-f-cs').value);
+  var qpca = parseFloat(document.getElementById('q-p-ca').value);
+  var qpcs = parseFloat(document.getElementById('q-p-cs').value);
+  var qrca = parseFloat(document.getElementById('q-r-ca').value);
+  var ijfca = parseFloat(document.getElementById('ij-f-ca').value);
+  var ijfcs = parseFloat(document.getElementById('ij-f-cs').value);
+  var ijpca = parseFloat(document.getElementById('ij-p-ca').value);
+  var ijpcs = parseFloat(document.getElementById('ij-p-cs').value);
   setDef('q-f-def', calc(qfca,qfcs));
   setDef('q-p-def', calc(qpca,qpcs));
   setDef('q-r-def', calc(qrca,parseFloat(document.getElementById('q-r-cs').value)));
@@ -3153,23 +3077,23 @@ function calcMusc() {
   setDef('ij-p-def', calc(ijpca,ijpcs));
   setDef('ij-r-def', calc(parseFloat(document.getElementById('ij-r-ca').value),parseFloat(document.getElementById('ij-r-cs').value)));
 
-  const ratioCA = (qfca>0 && !isNaN(ijfca)) ? ijfca/qfca*100 : NaN;
-  const ratioCS = (qfcs>0 && !isNaN(ijfcs)) ? ijfcs/qfcs*100 : NaN;
-  const poids = parseFloat(document.getElementById('f-poids').value);
+  var ratioCA = (qfca>0 && !isNaN(ijfca)) ? ijfca/qfca*100 : NaN;
+  var ratioCS = (qfcs>0 && !isNaN(ijfcs)) ? ijfcs/qfcs*100 : NaN;
+  var poids = parseFloat(document.getElementById('f-poids').value);
 
-  const setRatio = (id, v, min, max) => {
-    const el = document.getElementById(id); if (!el) return;
-    if (isNaN(v)) { el.textContent='—'; el.className='val'; return; }
+  var setRatio = function(id,v,min,max) {
+    var el = document.getElementById(id); if (!el) return;
+    if (isNaN(v)) { el.textContent='--'; el.className='val'; return; }
     el.textContent = v.toFixed(1)+'%';
     el.className = 'val ' + (v>=min && v<=max ? 'good' : 'warn');
   };
   setRatio('ratio-ca', ratioCA, 60, 70);
   setRatio('ratio-cs', ratioCS, 60, 70);
 
-  const setPic = (id, nm, thr) => {
-    const el = document.getElementById(id); if (!el) return;
-    if (isNaN(nm) || isNaN(poids) || poids<=0) { el.textContent='—'; el.className='val'; return; }
-    const v = nm/poids;
+  var setPic = function(id, nm, thr) {
+    var el = document.getElementById(id); if (!el) return;
+    if (isNaN(nm) || isNaN(poids) || poids<=0) { el.textContent='--'; el.className='val'; return; }
+    var v = nm/poids;
     el.textContent = v.toFixed(2);
     el.className = 'val ' + (v>=thr ? 'good' : 'bad');
   };
@@ -3177,7 +3101,7 @@ function calcMusc() {
   setPic('pic-ij', ijfca, 1.7);
 }
 
-// ── COMPTE-RENDU ─────────────────────────────────────────────
+// ?? COMPTE-RENDU ?????????????????????????????????????????????
 function buildCR() {
   var content = document.getElementById('cr-content');
   if (!content) return;
@@ -3192,7 +3116,7 @@ function buildCR() {
   if (nom || prenom) {
     var age2 = dob ? (new Date().getFullYear() - new Date(dob).getFullYear()) : null;
     var sexeVal = document.getElementById('f-sexe') ? document.getElementById('f-sexe').value : '';
-    var metaTxt = [age2 ? (age2 + ' ans') : null, sexeVal||null, cote, date ? formatDate(date) : null].filter(Boolean).join(' · ');
+    var metaTxt = [age2 ? (age2 + ' ans') : null, sexeVal||null, cote, date ? formatDate(date) : null].filter(Boolean).join('   ');
     content.innerHTML += '<div class="block"><div class="block-header light"><span style="font-size:1rem;font-weight:600;font-family:var(--font-serif)">' + [prenom,nom].filter(Boolean).join(' ') + '</span><span style="margin-left:8px;font-size:.82rem;color:var(--text2)">' + metaTxt + '</span></div></div>';
   }
 
@@ -3291,8 +3215,8 @@ function buildCR() {
   var lsiCls2 = function(ca,cs) { if (!cs||cs<=0||isNaN(ca)||isNaN(cs)) return ''; var v=ca/cs*100; return v>=90?'good':v>=80?'warn':'bad'; };
   var statOf2 = function(cls) { return ({good:'OK',warn:'Acceptable',bad:'Insuffisant'}[cls])||''; };
 
-  if (!isNaN(slsCA)) tfHtml += crItem('SLS', 'CA=' + slsCA + ' rep. · CS=' + slsCS + ' rep. · ' + lsiStr(slsCA,slsCS), statOf2(lsiCls2(slsCA,slsCS)), lsiCls2(slsCA,slsCS));
-  if (!isNaN(hopCA)) tfHtml += crItem('Hop Test', 'CA=' + hopCA + 'cm · CS=' + hopCS + 'cm · ' + lsiStr(hopCA,hopCS) + ' · Repere: ' + (hopCS*0.8).toFixed(1) + 'cm', statOf2(lsiCls2(hopCA,hopCS)), lsiCls2(hopCA,hopCS));
+  if (!isNaN(slsCA)) tfHtml += crItem('SLS', 'CA=' + slsCA + ' rep.   CS=' + slsCS + ' rep.   ' + lsiStr(slsCA,slsCS), statOf2(lsiCls2(slsCA,slsCS)), lsiCls2(slsCA,slsCS));
+  if (!isNaN(hopCA)) tfHtml += crItem('Hop Test', 'CA=' + hopCA + 'cm   CS=' + hopCS + 'cm   ' + lsiStr(hopCA,hopCS) + '   Repere: ' + (hopCS*0.8).toFixed(1) + 'cm', statOf2(lsiCls2(hopCA,hopCS)), lsiCls2(hopCA,hopCS));
 
   var scoreCA2 = 0;
   for (var ci=0; ci<CRITERIA_REC.length; ci++) {
@@ -3304,14 +3228,14 @@ function buildCR() {
     tfHtml += crItem('Reception', 'Score ' + scoreCA2 + '/8', statOf2(rcls), rcls);
   }
 
-  if (!isNaN(hrCA)) tfHtml += crItem('Heel Rise', 'CA=' + hrCA + ' · CS=' + hrCS + ' · ' + lsiStr(hrCA,hrCS), statOf2(lsiCls2(hrCA,hrCS)), lsiCls2(hrCA,hrCS));
+  if (!isNaN(hrCA)) tfHtml += crItem('Heel Rise', 'CA=' + hrCA + '   CS=' + hrCS + '   ' + lsiStr(hrCA,hrCS), statOf2(lsiCls2(hrCA,hrCS)), lsiCls2(hrCA,hrCS));
   if (!isNaN(luCA)) {
     var luDiff2 = Math.abs(luCA-luCS);
     var luBad2 = luCA<10 || luDiff2>1.5;
     var luLsi2 = luCS>0 ? luCA/luCS*100 : NaN;
-    tfHtml += crItem('Lunge WBLT', 'CA=' + luCA + 'cm · CS=' + luCS + 'cm · Diff=' + luDiff2.toFixed(1) + 'cm · ' + lsiStr(luCA,luCS), luBad2 ? 'Deficit' : 'OK', luBad2 ? 'bad' : 'good');
+    tfHtml += crItem('Lunge WBLT', 'CA=' + luCA + 'cm   CS=' + luCS + 'cm   Diff=' + luDiff2.toFixed(1) + 'cm   ' + lsiStr(luCA,luCS), luBad2 ? 'Deficit' : 'OK', luBad2 ? 'bad' : 'good');
   }
-  if (!isNaN(djHca)) tfHtml += crItem('Drop Jump H', 'CA=' + djHca + 'cm · CS=' + djHcs + 'cm · ' + lsiStr(djHca,djHcs), statOf2(lsiCls2(djHca,djHcs)), lsiCls2(djHca,djHcs));
+  if (!isNaN(djHca)) tfHtml += crItem('Drop Jump H', 'CA=' + djHca + 'cm   CS=' + djHcs + 'cm   ' + lsiStr(djHca,djHcs), statOf2(lsiCls2(djHca,djHcs)), lsiCls2(djHca,djHcs));
 
   var qfCA = parseFloat(document.getElementById('q-f-ca') ? document.getElementById('q-f-ca').value : '');
   var qfCS = parseFloat(document.getElementById('q-f-cs') ? document.getElementById('q-f-cs').value : '');
@@ -3319,7 +3243,7 @@ function buildCR() {
   var ijfCS = parseFloat(document.getElementById('ij-f-cs') ? document.getElementById('ij-f-cs').value : '');
   if (!isNaN(qfCA) && !isNaN(qfCS)) { var qd = (1-qfCA/qfCS)*100; tfHtml += crItem('Quadriceps deficit', qd.toFixed(1) + '%', qd<=10?'Normal':'Deficit', qd<=10?'ok':'warn'); }
   if (!isNaN(ijfCA) && !isNaN(ijfCS)) { var ijd = (1-ijfCA/ijfCS)*100; tfHtml += crItem('IJ deficit', ijd.toFixed(1) + '%', ijd<=10?'Normal':'Deficit', ijd<=10?'ok':'warn'); }
-  addSection('3. Tests Fonctionnels & Musculaires — Membres Inferieurs', tfHtml);
+  addSection('3. Tests Fonctionnels & Musculaires -- Membres Inferieurs', tfHtml);
 
   // 4. Tests MS
   var tfMsHtml = '';
@@ -3330,30 +3254,30 @@ function buildCR() {
   var ckcEl2  = document.getElementById('ckc-lsi');
   var shrtEl2 = document.getElementById('shrt-lsi');
   var ulrtEl2 = document.getElementById('ulrt-lsi');
-  if (!isNaN(psetCAv)) { var pl = psetCSv>0?(psetCAv/psetCSv*100):NaN; tfMsHtml += crItem('PSET', 'CA=' + psetCAv + ' · CS=' + psetCSv + (!isNaN(pl)?' · LSI=' + pl.toFixed(1) + '%':''), statOf2(lsiCls2(psetCAv,psetCSv)), lsiCls2(psetCAv,psetCSv)); }
-  if (!isNaN(setCAv))  { var sl = setCSv>0?(setCAv/setCSv*100):NaN; tfMsHtml += crItem('Shoulder Endurance', 'CA=' + setCAv + ' · CS=' + setCSv + (!isNaN(sl)?' · LSI=' + sl.toFixed(1) + '%':''), statOf2(lsiCls2(setCAv,setCSv)), lsiCls2(setCAv,setCSv)); }
-  if (ckcEl2 && ckcEl2.textContent && ckcEl2.textContent !== '—') tfMsHtml += crItem('CKCUEST', ckcEl2.textContent, '', 'ok');
-  if (shrtEl2 && shrtEl2.textContent && shrtEl2.textContent !== '—') tfMsHtml += crItem('Side Hold Rotation', shrtEl2.textContent, '', 'ok');
-  if (ulrtEl2 && ulrtEl2.textContent && ulrtEl2.textContent !== '—') tfMsHtml += crItem('ULRT', ulrtEl2.textContent, '', 'ok');
-  addSection('4. Tests Fonctionnels — Membres Superieurs', tfMsHtml);
+  if (!isNaN(psetCAv)) { var pl = psetCSv>0?(psetCAv/psetCSv*100):NaN; tfMsHtml += crItem('PSET', 'CA=' + psetCAv + '   CS=' + psetCSv + (!isNaN(pl)?'   LSI=' + pl.toFixed(1) + '%':''), statOf2(lsiCls2(psetCAv,psetCSv)), lsiCls2(psetCAv,psetCSv)); }
+  if (!isNaN(setCAv))  { var sl = setCSv>0?(setCAv/setCSv*100):NaN; tfMsHtml += crItem('Shoulder Endurance', 'CA=' + setCAv + '   CS=' + setCSv + (!isNaN(sl)?'   LSI=' + sl.toFixed(1) + '%':''), statOf2(lsiCls2(setCAv,setCSv)), lsiCls2(setCAv,setCSv)); }
+  if (ckcEl2 && ckcEl2.textContent && ckcEl2.textContent !== '--') tfMsHtml += crItem('CKCUEST', ckcEl2.textContent, '', 'ok');
+  if (shrtEl2 && shrtEl2.textContent && shrtEl2.textContent !== '--') tfMsHtml += crItem('Side Hold Rotation', shrtEl2.textContent, '', 'ok');
+  if (ulrtEl2 && ulrtEl2.textContent && ulrtEl2.textContent !== '--') tfMsHtml += crItem('ULRT', ulrtEl2.textContent, '', 'ok');
+  addSection('4. Tests Fonctionnels -- Membres Superieurs', tfMsHtml);
 
   // 5. Points a travailler
   var toWork = [];
   var slsLsi2 = slsCS>0?slsCA/slsCS*100:NaN;
   var hopLsi2 = hopCS>0?hopCA/hopCS*100:NaN;
   var hrLsi2  = hrCS>0?hrCA/hrCS*100:NaN;
-  if (!isNaN(slsLsi2) && slsLsi2<90) toWork.push('Renforcement MI — squat unilateral (LSI SLS < 90%)');
-  if (!isNaN(hopLsi2) && hopLsi2<90) toWork.push('Travail de propulsion — saut unipodal (LSI Hop < 90%)');
-  if (scoreCA2>0 && scoreCA2<7) toWork.push('Qualite de reception — score ' + scoreCA2 + '/8');
+  if (!isNaN(slsLsi2) && slsLsi2<90) toWork.push('Renforcement MI -- squat unilateral (LSI SLS < 90%)');
+  if (!isNaN(hopLsi2) && hopLsi2<90) toWork.push('Travail de propulsion -- saut unipodal (LSI Hop < 90%)');
+  if (scoreCA2>0 && scoreCA2<7) toWork.push('Qualite de reception -- score ' + scoreCA2 + '/8');
   if (!isNaN(luCA) && (luCA<10 || Math.abs(luCA-(luCS||0))>1.5)) toWork.push('Deficit flexion dorsale cheville (Lunge < 10 cm ou asymetrie > 1,5 cm)');
-  if (!isNaN(hrLsi2) && hrLsi2<90) toWork.push('Force du mollet — heel rise progressif (LSI < 90%)');
+  if (!isNaN(hrLsi2) && hrLsi2<90) toWork.push('Force du mollet -- heel rise progressif (LSI < 90%)');
   if (!isNaN(qfCA) && !isNaN(qfCS) && (1-qfCA/qfCS)*100>10) toWork.push('Renforcement quadriceps (deficit > 10%)');
-  if (!isNaN(ijfCA) && !isNaN(ijfCS) && (1-ijfCA/ijfCS)*100>10) toWork.push('Renforcement IJ — nordic hamstring, excentrique');
+  if (!isNaN(ijfCA) && !isNaN(ijfCS) && (1-ijfCA/ijfCS)*100>10) toWork.push('Renforcement IJ -- nordic hamstring, excentrique');
   if (aclrsi && parseInt(aclrsi)<60) toWork.push('Accompagnement psychologique (ACL-RSI < 60%)');
   if (toWork.length > 0) {
     var workHtml = '';
     for (var wi=0; wi<toWork.length; wi++) {
-      workHtml += '<div class="cr-item"><span style="margin-right:6px;color:var(--orange)">→</span><span>' + toWork[wi] + '</span></div>';
+      workHtml += '<div class="cr-item"><span style="margin-right:6px;color:var(--orange)">-></span><span>' + toWork[wi] + '</span></div>';
     }
     addSection('5. Points a Travailler', workHtml);
   }
@@ -3367,10 +3291,10 @@ function openReset() { document.getElementById('modal-reset').classList.add('ope
 function closeReset() { document.getElementById('modal-reset').classList.remove('open'); }
 function doReset() {
   // Clear all inputs
-  document.querySelectorAll('input:not([type=checkbox])').forEach(i => i.value = '');
-  document.querySelectorAll('textarea').forEach(t => t.value = '');
-  document.querySelectorAll('select').forEach(s => { s.selectedIndex = 0; s.className = ''; });
-  document.querySelectorAll('input[type=checkbox]').forEach(c => c.checked = false);
+  Array.prototype.forEach.call(document.querySelectorAll('input:not([type=checkbox])'), function(i){ i.value = ''; });
+  Array.prototype.forEach.call(document.querySelectorAll('textarea'), function(t){ t.value = ''; });
+  Array.prototype.forEach.call(document.querySelectorAll('select'), function(s){ s.selectedIndex = 0; s.className = ''; });
+  Array.prototype.forEach.call(document.querySelectorAll('input[type=checkbox]'), function(c){ c.checked = false; });
 
   // Restore defaults
   document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
@@ -3380,22 +3304,22 @@ function doReset() {
   showPage('infos');
   localStorage.removeItem('athletik-bilan');
   updateAll(); calcRec();
-  showToast('✅ Dossier réinitialisé — Prêt pour un nouveau patient');
+  showToast('\u2705 Dossier réinitialisé -- Prêt pour un nouveau patient');
 }
 
-// ── TOAST ──────────────────────────────────────────────────────
+// ?? TOAST ??????????????????????????????????????????????????????
 function showToast(msg) {
-  const t = document.getElementById('toast');
+  var t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
+  setTimeout(function(){ t.classList.remove('show'); }, 3000);
 }
 
-// ── STORAGE ───────────────────────────────────────────────────
+// ?? STORAGE ???????????????????????????????????????????????????
 function saveToStorage() {
   try {
-    const data = {};
-    document.querySelectorAll('input,textarea,select').forEach(el => {
+    var data = {};
+    Array.prototype.forEach.call(document.querySelectorAll('input,textarea,select'), function(el) {
       if (el.id) {
         if (el.type === 'checkbox') data[el.id] = el.checked;
         else data[el.id] = el.value;
@@ -3407,24 +3331,24 @@ function saveToStorage() {
 
 function loadFromStorage() {
   try {
-    const raw = localStorage.getItem('athletik-bilan');
+    var raw = localStorage.getItem('athletik-bilan');
     if (!raw) return;
-    const data = JSON.parse(raw);
-    Object.entries(data).forEach(([id, val]) => {
-      const el = document.getElementById(id);
+    var data = JSON.parse(raw);
+    var _dk=Object.keys(data); for(var _di=0;_di<_dk.length;_di++){var id=_dk[_di];var val=data[id];
+      var el = document.getElementById(id);
       if (!el) return;
       if (el.type === 'checkbox') el.checked = val;
       else el.value = val;
       // Restore CF classes
       if (el.tagName === 'SELECT' && el.dataset.type) {
-        const v = el.value;
-        const type = el.dataset.type;
+        var v = el.value;
+        var type = el.dataset.type;
         if (v === 'Positif') el.classList.add(type === 'fonc' ? 'positif-fonc' : 'positif-ortho');
         else if (v === 'Négatif') el.classList.add(type === 'fonc' ? 'negatif-fonc' : 'negatif-ortho');
       }
-    });
+    }
     updateAll(); calcRec(); calcPlioq();
-    ['sls','hop','pset','set'].forEach(k => calcLSI(k));
+    ['sls','hop','pset','set'].forEach(function(k){ calcLSI(k); });
     calcDJ(); calcLunge(); calcHR(); calcMusc();
     calcCKC(); calcSHRT(); calcULRT();
     calcRachisStat(); calcLNF(); calcSorensen(); calcPDSLRT();
@@ -3434,21 +3358,21 @@ function loadFromStorage() {
 }
 
 
-// ── PSET poids auto (2% du poids corporel) ────────────────────
+// ?? PSET poids auto (2% du poids corporel) ????????????????????
 function calcPSET() {
-  const poids = parseFloat(document.getElementById('f-poids').value);
-  const el = document.getElementById('pset-poids-calc');
+  var poids2 = parseFloat(document.getElementById('f-poids').value);
+  var el = document.getElementById('pset-poids-calc');
   if (el) {
     if (!isNaN(poids) && poids > 0) {
-      const pset = (poids * 0.02).toFixed(2);
-      el.textContent = '→ Poids recommandé : ' + pset + ' kg (2% × ' + poids + ' kg)';
+      var pset = (poids2 * 0.02).toFixed(2);
+      el.textContent = '-> Poids recommandé : ' + pset + ' kg (2% x ' + poids + ' kg)';
     } else {
-      el.textContent = '← Renseignez le poids dans Infos Patient';
+      el.textContent = '\u2190 Renseignez le poids dans Infos Patient';
     }
   }
 }
 
-// ── CKCUEST — meilleure moyenne sur 3 essais ──────────────────
+// ?? CKCUEST ? meilleure moyenne sur 3 essais ??????????????????
 function calcCKC() {
   var getBest = function(id1, id2, id3) {
     var vals = [
@@ -3468,13 +3392,13 @@ function calcCKC() {
   var elLsi = document.getElementById('ckc-lsi');
   var elStat = document.getElementById('ckc-stat');
 
-  if (elCS) elCS.textContent = isNaN(bestCS) ? '—' : bestCS.toFixed(1);
-  if (elCA) elCA.textContent = isNaN(bestCA) ? '—' : bestCA.toFixed(1);
+  if (elCS) elCS.textContent = isNaN(bestCS) ? '--' : bestCS.toFixed(1);
+  if (elCA) elCA.textContent = isNaN(bestCA) ? '--' : bestCA.toFixed(1);
 
   if (!isNaN(bestCS) && !isNaN(bestCA) && bestCS > 0) {
     var lsi = bestCA / bestCS * 100;
     var cls = lsi >= 90 ? 'good' : lsi >= 75 ? 'warn' : 'bad';
-    var statTxt = lsi >= 90 ? '✅ Symétrie OK' : lsi >= 75 ? '⚠️ Asymétrie modérée' : '❌ Déficit';
+    var statTxt = lsi >= 90 ? '\u2705 Symétrie OK' : lsi >= 75 ? ' Asymétrie modérée' : '\u274c Déficit';
     if (elLsi) {
       elLsi.textContent = 'LSI = ' + lsi.toFixed(1) + '%  |  CA : ' + bestCA.toFixed(1) + ' touches  |  CS : ' + bestCS.toFixed(1) + ' touches';
       elLsi.style.background = cls === 'good' ? 'var(--green-l)' : cls === 'warn' ? 'var(--orange-l)' : 'var(--red-l)';
@@ -3486,12 +3410,12 @@ function calcCKC() {
       elStat.style.color = cls === 'good' ? 'var(--green)' : cls === 'warn' ? 'var(--orange)' : 'var(--red)';
     }
   } else {
-    if (elLsi) { elLsi.textContent = '—'; elLsi.style.background = ''; elLsi.style.color = ''; }
-    if (elStat) { elStat.textContent = '—'; elStat.style.background = ''; elStat.style.color = ''; }
+    if (elLsi) { elLsi.textContent = '--'; elLsi.style.background = ''; elLsi.style.color = ''; }
+    if (elStat) { elStat.textContent = '--'; elStat.style.background = ''; elStat.style.color = ''; }
   }
 }
 
-// ── Side Hold Rotation Test ───────────────────────────────────
+// ?? Side Hold Rotation Test ???????????????????????????????????
 function calcSHRT() {
   var d = parseFloat(document.getElementById('shrt-d') ? document.getElementById('shrt-d').value : '');
   var g = parseFloat(document.getElementById('shrt-g') ? document.getElementById('shrt-g').value : '');
@@ -3507,16 +3431,16 @@ function calcSHRT() {
     lsiEl.textContent = lsi.toFixed(1) + '%';
     lsiEl.style.background = cls === 'good' ? 'var(--green-l)' : cls === 'warn' ? 'var(--orange-l)' : 'var(--red-l)';
     lsiEl.style.color = cls === 'good' ? 'var(--green)' : cls === 'warn' ? 'var(--orange)' : 'var(--red)';
-    statEl.textContent = cls === 'good' ? '✅ Symétrique' : cls === 'warn' ? '⚠️ Asymétrie modérée' : '❌ Déficit';
+    statEl.textContent = cls === 'good' ? '\u2705 Symétrique' : cls === 'warn' ? ' Asymétrie modérée' : '\u274c Déficit';
     statEl.style.background = lsiEl.style.background;
     statEl.style.color = lsiEl.style.color;
   } else {
-    lsiEl.textContent = '—'; lsiEl.style.background = ''; lsiEl.style.color = '';
-    statEl.textContent = '—'; statEl.style.background = ''; statEl.style.color = '';
+    lsiEl.textContent = '--'; lsiEl.style.background = ''; lsiEl.style.color = '';
+    statEl.textContent = '--'; statEl.style.background = ''; statEl.style.color = '';
   }
 }
 
-// ── ULRT — moyenne des 3 essais + LSI D/G ────────────────────
+// ?? ULRT ? moyenne des 3 essais + LSI D/G ????????????????????
 function calcULRT() {
   var getMoy = function(id1, id2, id3) {
     var vals = [
@@ -3536,8 +3460,8 @@ function calcULRT() {
   var elLsi  = document.getElementById('ulrt-lsi');
   var elStat = document.getElementById('ulrt-stat');
 
-  if (elDmoy) elDmoy.textContent = isNaN(moyD) ? '—' : moyD.toFixed(1);
-  if (elGmoy) elGmoy.textContent = isNaN(moyG) ? '—' : moyG.toFixed(1);
+  if (elDmoy) elDmoy.textContent = isNaN(moyD) ? '--' : moyD.toFixed(1);
+  if (elGmoy) elGmoy.textContent = isNaN(moyG) ? '--' : moyG.toFixed(1);
 
   if (!isNaN(moyD) && !isNaN(moyG) && Math.max(moyD,moyG) > 0) {
     var ref = Math.max(moyD, moyG);
@@ -3552,21 +3476,21 @@ function calcULRT() {
       elLsi.style.color = cls === 'good' ? 'var(--green)' : cls === 'warn' ? 'var(--orange)' : 'var(--red)';
     }
     if (elStat) {
-      elStat.textContent = cls === 'good' ? '✅ Symétrique' : cls === 'warn' ? '⚠️ Asymétrie' : '❌ Déficit';
+      elStat.textContent = cls === 'good' ? '\u2705 Symétrique' : cls === 'warn' ? ' Asymétrie' : '\u274c Déficit';
       elStat.style.background = elLsi ? elLsi.style.background : '';
       elStat.style.color = elLsi ? elLsi.style.color : '';
     }
   } else {
-    if (elLsi) { elLsi.textContent = '—'; elLsi.style.background = ''; elLsi.style.color = ''; }
-    if (elStat) { elStat.textContent = '—'; elStat.style.background = ''; elStat.style.color = ''; }
+    if (elLsi) { elLsi.textContent = '--'; elLsi.style.background = ''; elLsi.style.color = ''; }
+    if (elStat) { elStat.textContent = '--'; elStat.style.background = ''; elStat.style.color = ''; }
   }
 }
 
 
-// ── Tests Fonctionnels Rachis ─────────────────────────────────
+// ?? Tests Fonctionnels Rachis ?????????????????????????????????
 
 function calcRachisStat() {
-  // Fléchisseurs cervicaux
+  // Fl?chisseurs cervicaux
   var flxEl = document.getElementById('rf-flx-cerv');
   var flxStat = document.getElementById('rf-flx-cerv-stat');
   if (flxEl && flxStat) {
@@ -3577,7 +3501,7 @@ function calcRachisStat() {
       flxStat.style.background = cls === 'good' ? 'var(--green-l)' : cls === 'warn' ? 'var(--orange-l)' : 'var(--red-l)';
       flxStat.style.color = cls === 'good' ? 'var(--green)' : cls === 'warn' ? 'var(--orange)' : 'var(--red)';
     } else {
-      flxStat.textContent = '—'; flxStat.style.background = ''; flxStat.style.color = '';
+      flxStat.textContent = '--'; flxStat.style.background = ''; flxStat.style.color = '';
     }
   }
   // Extenseurs cervicaux
@@ -3591,7 +3515,7 @@ function calcRachisStat() {
       extStat.style.background = cls2 === 'good' ? 'var(--green-l)' : 'var(--red-l)';
       extStat.style.color = cls2 === 'good' ? 'var(--green)' : 'var(--red)';
     } else {
-      extStat.textContent = '—'; extStat.style.background = ''; extStat.style.color = '';
+      extStat.textContent = '--'; extStat.style.background = ''; extStat.style.color = '';
     }
   }
 }
@@ -3616,8 +3540,8 @@ function calcLNF() {
     statEl.style.background = ratioEl.style.background;
     statEl.style.color = ratioEl.style.color;
   } else {
-    ratioEl.textContent = '—'; ratioEl.style.background = ''; ratioEl.style.color = '';
-    statEl.textContent = '—'; statEl.style.background = ''; statEl.style.color = '';
+    ratioEl.textContent = '--'; ratioEl.style.background = ''; ratioEl.style.color = '';
+    statEl.textContent = '--'; statEl.style.background = ''; statEl.style.color = '';
   }
 }
 
@@ -3636,7 +3560,7 @@ function calcSorensen() {
       cls = 'warn'; stat = 'Zone intermediaire (176-197s)';
       interp = '176-197s : sous la moyenne sains, seuil predictif non atteint';
     } else {
-      cls = 'bad'; stat = 'Facteur de risque (< 176s — H)';
+      cls = 'bad'; stat = 'Facteur de risque (< 176s -- H)';
       interp = "< 176s : facteur predictif lombalgie chez l'homme (Sorensen)";
     }
     statEl.textContent = stat;
@@ -3647,8 +3571,8 @@ function calcSorensen() {
       interpEl.style.color = cls === 'good' ? 'var(--green)' : cls === 'warn' ? 'var(--orange)' : 'var(--red)';
     }
   } else {
-    statEl.textContent = '—'; statEl.style.background = ''; statEl.style.color = '';
-    if (interpEl) { interpEl.textContent = '—'; interpEl.style.color = ''; }
+    statEl.textContent = '--'; statEl.style.background = ''; statEl.style.color = '';
+    if (interpEl) { interpEl.textContent = '--'; interpEl.style.color = ''; }
   }
 }
 
@@ -3678,10 +3602,10 @@ function calcPDSLRT() {
 
   if (normEl) {
     if (age !== null) {
-      normEl.textContent = age < 30 ? 'Groupe 15-29 ans — Ref H: 58s / F: 47,7s' :
-                           age < 45 ? 'Groupe 30-44 ans — Ref H: 52,4s / F: 42,6s' :
-                           age < 60 ? 'Groupe 45-59 ans — Ref H: 44,8s / F: 37,3s' :
-                                      'Groupe 60+ ans — Ref H: 35,6s / F: 29,1s';
+      normEl.textContent = age < 30 ? 'Groupe 15-29 ans -- Ref H: 58s / F: 47,7s' :
+                           age < 45 ? 'Groupe 30-44 ans -- Ref H: 52,4s / F: 42,6s' :
+                           age < 60 ? 'Groupe 45-59 ans -- Ref H: 44,8s / F: 37,3s' :
+                                      'Groupe 60+ ans -- Ref H: 35,6s / F: 29,1s';
     } else {
       normEl.textContent = 'Renseignez la date de naissance dans Infos Patient';
     }
@@ -3694,7 +3618,7 @@ function calcPDSLRT() {
     statEl.style.background = cls === 'good' ? 'var(--green-l)' : 'var(--red-l)';
     statEl.style.color = cls === 'good' ? 'var(--green)' : 'var(--red)';
   } else {
-    statEl.textContent = '—'; statEl.style.background = ''; statEl.style.color = '';
+    statEl.textContent = '--'; statEl.style.background = ''; statEl.style.color = '';
   }
 }
 
@@ -3712,7 +3636,7 @@ function calcPlioq2() {
   var setScore = function(el, score) {
     if (!el) return;
     var cls = score === 2 ? 'good' : 'warn';
-    el.textContent = score + '/2 — ' + (score === 2 ? 'Reussi' : 'A ameliorer');
+    el.textContent = score + '/2 -- ' + (score === 2 ? 'Reussi' : 'A ameliorer');
     el.style.color = score === 2 ? 'var(--green)' : 'var(--orange)';
   };
   setScore(elCA_stat, scores.ca);
@@ -3733,7 +3657,7 @@ function buildCRTF() {
   var age = dob ? (new Date().getFullYear() - new Date(dob).getFullYear()) : null;
   var patName = [prenom,nom].filter(Boolean).join(' ') || 'Patient';
   var sexeV = document.getElementById('f-sexe') ? document.getElementById('f-sexe').value : '';
-  var metaStr = [age?(age+' ans'):null, sexeV||null, cote, dateBilan?formatDate(dateBilan):null].filter(Boolean).join(' · ');
+  var metaStr = [age?(age+' ans'):null, sexeV||null, cote, dateBilan?formatDate(dateBilan):null].filter(Boolean).join('   ');
 
   content.innerHTML += '<div style="margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid var(--border)">' +
     '<div style="font-size:1.1rem;font-weight:700;color:var(--accent2)">' + patName + '</div>' +
@@ -3766,9 +3690,9 @@ function buildCRTF() {
   if (!isNaN(slsCA) || !isNaN(slsCS) || slsObs) {
     var slsLsi = (!isNaN(slsCA)&&!isNaN(slsCS)&&slsCS>0)?slsCA/slsCS*100:NaN;
     var slsCls = !isNaN(slsLsi)?(slsLsi>=90?'good':slsLsi>=80?'warn':'bad'):'';
-    var slsVal = (!isNaN(slsCA)||!isNaN(slsCS)) ? ('CA=' + (isNaN(slsCA)?'—':slsCA) + ' rep. · CS=' + (isNaN(slsCS)?'—':slsCS) + ' rep.') : '';
-    var slsSub = (slsH?'Repere EIAS-sol : ' + slsH + (slsH.indexOf('cm')===-1?' cm':'')+' · ':'') + (!isNaN(slsLsi)?'LSI = '+slsLsi.toFixed(1)+'%':'');
-    if (slsVal) slsHtml += tfRow('Single Leg Squat (90°, 3s/2s)', slsVal, slsSub, !isNaN(slsLsi)?(slsLsi>=90?'✅ LSI >= 90%':'⚠️ LSI < 90%'):'', slsCls);
+    var slsVal = (!isNaN(slsCA)||!isNaN(slsCS)) ? ('CA=' + (isNaN(slsCA)?'--':slsCA) + ' rep.   CS=' + (isNaN(slsCS)?'--':slsCS) + ' rep.') : '';
+    var slsSub = (slsH?'Repere EIAS-sol : ' + slsH + (slsH.indexOf('cm')===-1?' cm':'')+'   ':'') + (!isNaN(slsLsi)?'LSI = '+slsLsi.toFixed(1)+'%':'');
+    if (slsVal) slsHtml += tfRow('Single Leg Squat (90\u00b0, 3s/2s)', slsVal, slsSub, !isNaN(slsLsi)?(slsLsi>=90?'\u2705 LSI >= 90%':' LSI < 90%'):'', slsCls);
     if (slsObs) slsHtml += '<div style="margin:4px 0 8px;padding:6px 10px;background:var(--surface2);border-radius:5px;font-size:.82rem;color:var(--text2);font-style:italic">' + slsObs + '</div>';
   }
 
@@ -3779,13 +3703,13 @@ function buildCRTF() {
   if (!isNaN(hopCA) || !isNaN(hopCS)) {
     var hopLsi = (!isNaN(hopCA)&&!isNaN(hopCS)&&hopCS>0)?hopCA/hopCS*100:NaN;
     var hopCls = !isNaN(hopLsi)?(hopLsi>=90?'good':hopLsi>=80?'warn':'bad'):'';
-    hopHtml += tfRow('Single Hop Test — Distance maximale',
-      'CA=' + (isNaN(hopCA)?'—':hopCA) + ' cm · CS=' + (isNaN(hopCS)?'—':hopCS) + ' cm',
-      (!isNaN(hopLsi)?'LSI = ' + hopLsi.toFixed(1) + '%' : '') + (!isNaN(hopCS)&&hopCS>0?' · Repere 80% = ' + (hopCS*0.8).toFixed(1) + ' cm':''),
-      !isNaN(hopLsi)?(hopLsi>=90?'✅ LSI >= 90%':'⚠️ LSI < 90%'):'', hopCls);
+    hopHtml += tfRow('Single Hop Test -- Distance maximale',
+      'CA=' + (isNaN(hopCA)?'--':hopCA) + ' cm   CS=' + (isNaN(hopCS)?'--':hopCS) + ' cm',
+      (!isNaN(hopLsi)?'LSI = ' + hopLsi.toFixed(1) + '%' : '') + (!isNaN(hopCS)&&hopCS>0?'   Repere 80% = ' + (hopCS*0.8).toFixed(1) + ' cm':''),
+      !isNaN(hopLsi)?(hopLsi>=90?'\u2705 LSI >= 90%':' LSI < 90%'):'', hopCls);
   }
 
-  // Réception
+  // R?ception
   var recScore = 0;
   var recTouchedCA = false, recTouchedCS = false;
   for (var ri=0; ri<CRITERIA_REC.length; ri++) {
@@ -3806,17 +3730,17 @@ function buildCRTF() {
     for (var ri2=0; ri2<CRITERIA_REC.length; ri2++) {
       var rEl2 = document.getElementById('rec-ca-' + ri2);
       var rEl2cs = document.getElementById('rec-cs-' + ri2);
-      if (!rEl2||!rEl2.checked) failedCA.push(CRITERIA_REC[ri2].label.replace(/^[①-③] /,''));
-      if (!rEl2cs||!rEl2cs.checked) failedCS.push(CRITERIA_REC[ri2].label.replace(/^[①-③] /,''));
+      if (!rEl2||!rEl2.checked) failedCA.push(CRITERIA_REC[ri2].label.replace(/^[\u2460-\u2462] /,''));
+      if (!rEl2cs||!rEl2cs.checked) failedCS.push(CRITERIA_REC[ri2].label.replace(/^[\u2460-\u2462] /,''));
     }
-    if (recTouchedCA) recHtml += tfRow('Reception — Cote Atteint', 'Score ' + recScore + '/' + CRITERIA_REC.length, recScore<CRITERIA_REC.length?'Non valides : '+failedCA.join(' / '):'Tous valides', recScore===CRITERIA_REC.length?'Reussi':recScore>=1?'A ameliorer':'Non reussi', recCls);
+    if (recTouchedCA) recHtml += tfRow('Reception -- Cote Atteint', 'Score ' + recScore + '/' + CRITERIA_REC.length, recScore<CRITERIA_REC.length?'Non valides : '+failedCA.join(' / '):'Tous valides', recScore===CRITERIA_REC.length?'Reussi':recScore>=1?'A ameliorer':'Non reussi', recCls);
     if (recTouchedCS) {
       var recClsCS = recScoreCS2===CRITERIA_REC.length?'good':recScoreCS2>=1?'warn':'bad';
-      recHtml += tfRow('Reception — Cote Sain', 'Score ' + recScoreCS2 + '/' + CRITERIA_REC.length, recScoreCS2<CRITERIA_REC.length?'Non valides : '+failedCS.join(' / '):'Tous valides', recScoreCS2===CRITERIA_REC.length?'Reussi':recScoreCS2>=1?'A ameliorer':'Non reussi', recClsCS);
+      recHtml += tfRow('Reception -- Cote Sain', 'Score ' + recScoreCS2 + '/' + CRITERIA_REC.length, recScoreCS2<CRITERIA_REC.length?'Non valides : '+failedCS.join(' / '):'Tous valides', recScoreCS2===CRITERIA_REC.length?'Reussi':recScoreCS2>=1?'A ameliorer':'Non reussi', recClsCS);
     }
   }
 
-  // Pliométrie qualitative
+  // Pliom?trie qualitative
   var plioCA = 0, plioCS = 0, plioTouched = false;
   for (var pi=0; pi<2; pi++) {
     var pca = document.getElementById('plioq-ca-'+pi);
@@ -3827,7 +3751,7 @@ function buildCRTF() {
   var plioHtml = '';
   if (plioTouched) {
     plioHtml += tfRow('Pliometrie Verticale Qualitative',
-      'CA : ' + plioCA + '/2 · CS : ' + plioCS + '/2',
+      'CA : ' + plioCA + '/2   CS : ' + plioCS + '/2',
       'Criteres : raideur du membre / deficit de hauteur',
       plioCA===2?'Reussi':'A ameliorer',
       plioCA===2?'good':'warn');
@@ -3844,10 +3768,10 @@ function buildCRTF() {
     var age2 = dob2?(new Date().getFullYear()-new Date(dob2).getFullYear()):null;
     var norms2 = [{min:20,max:29,th:28,tf:24},{min:30,max:39,th:25,tf:22},{min:40,max:49,th:22,tf:19},{min:50,max:59,th:18,tf:15},{min:60,max:69,th:14,tf:12},{min:70,max:79,th:9,tf:8},{min:80,max:130,th:6,tf:5}];
     var norm2 = age2?norms2.find(function(n){return age2>=n.min&&age2<=n.max;}):null;
-    hrHtml += tfRow('Heel Rise Test — Répétitions max (unipodales)',
-      'CA=' + hrCA + ' rép. · CS=' + (isNaN(hrCS)?'—':hrCS) + ' rép.' + (!isNaN(hrLsi)?' · LSI='+hrLsi.toFixed(1)+'%':''),
+    hrHtml += tfRow('Heel Rise Test -- Répétitions max (unipodales)',
+      'CA=' + hrCA + ' rép.   CS=' + (isNaN(hrCS)?'--':hrCS) + ' rép.' + (!isNaN(hrLsi)?'   LSI='+hrLsi.toFixed(1)+'%':''),
       norm2?('Norme ' + (norm2.min===80?'>= 80':(norm2.min+'-'+norm2.max)) + ' ans : seuil H=' + norm2.th + ' / F=' + norm2.tf + ' rép.'):'',
-      !isNaN(hrLsi)?(hrLsi>=90?'✅ LSI >= 90%':'⚠️ LSI < 90%'):'', hrCls);
+      !isNaN(hrLsi)?(hrLsi>=90?'\u2705 LSI >= 90%':' LSI < 90%'):'', hrCls);
   }
 
   // Lunge WBLT
@@ -3858,10 +3782,10 @@ function buildCRTF() {
     var luDiff = !isNaN(luCS)?Math.abs(luCA-luCS):null;
     var luLsi = luCS>0?luCA/luCS*100:NaN;
     var luBad = luCA<10||(luDiff!==null&&luDiff>1.5);
-    luHtml += tfRow('Lunge WBLT — Flexion Dorsale Cheville',
-      'CA=' + luCA + ' cm · CS=' + (isNaN(luCS)?'—':luCS) + ' cm' + (luDiff!==null?' · Diff='+luDiff.toFixed(1)+'cm':'') + (!isNaN(luLsi)?' · LSI='+luLsi.toFixed(1)+'%':''),
+    luHtml += tfRow('Lunge WBLT -- Flexion Dorsale Cheville',
+      'CA=' + luCA + ' cm   CS=' + (isNaN(luCS)?'--':luCS) + ' cm' + (luDiff!==null?'   Diff='+luDiff.toFixed(1)+'cm':'') + (!isNaN(luLsi)?'   LSI='+luLsi.toFixed(1)+'%':''),
       'Seuil : >= 10 cm et diff <= 1,5 cm',
-      luBad?'⚠️ Deficit':'✅ OK', luBad?'warn':'good');
+      luBad?' Deficit':'\u2705 OK', luBad?'warn':'good');
   }
 
   // Drop Jump
@@ -3871,14 +3795,14 @@ function buildCRTF() {
   if (!isNaN(djHCA)) {
     var djLsi = djHCS>0?djHCA/djHCS*100:NaN;
     var djCls = !isNaN(djLsi)?(djLsi>=90?'good':djLsi>=80?'warn':'bad'):'';
-    djHtml += tfRow('Single Leg Drop Jump — Hauteur de saut',
-      'CA=' + djHCA + ' cm · CS=' + (isNaN(djHCS)?'—':djHCS) + ' cm' + (!isNaN(djLsi)?' · LSI='+djLsi.toFixed(1)+'%':''),
-      '', !isNaN(djLsi)?(djLsi>=90?'✅ LSI >= 90%':'⚠️ LSI < 90%'):'', djCls);
+    djHtml += tfRow('Single Leg Drop Jump -- Hauteur de saut',
+      'CA=' + djHCA + ' cm   CS=' + (isNaN(djHCS)?'--':djHCS) + ' cm' + (!isNaN(djLsi)?'   LSI='+djLsi.toFixed(1)+'%':''),
+      '', !isNaN(djLsi)?(djLsi>=90?'\u2705 LSI >= 90%':' LSI < 90%'):'', djCls);
   }
 
   // Assemble MI section
   var miHtml = slsHtml + hopHtml + recHtml + plioHtml + hrHtml + luHtml + djHtml;
-  addTFSection('Tests Fonctionnels — Membres Inférieurs', miHtml);
+  addTFSection('Tests Fonctionnels -- Membres Inférieurs', miHtml);
 
   // PSET
   var psetCA = parseFloat(document.getElementById('pset-ca')?document.getElementById('pset-ca').value:'');
@@ -3892,19 +3816,19 @@ function buildCRTF() {
   var msHtml = '';
   if (!isNaN(psetCA)) {
     var psetLsi = psetCS>0?psetCA/psetCS*100:NaN;
-    msHtml += tfRow('PSET — Prone Shoulder Endurance Test',
-      'CA=' + psetCA + ' rép. · CS=' + (isNaN(psetCS)?'—':psetCS) + ' rép.' + (!isNaN(psetLsi)?' · LSI='+psetLsi.toFixed(1)+'%':''),
+    msHtml += tfRow('PSET -- Prone Shoulder Endurance Test',
+      'CA=' + psetCA + ' rép.   CS=' + (isNaN(psetCS)?'--':psetCS) + ' rép.' + (!isNaN(psetLsi)?'   LSI='+psetLsi.toFixed(1)+'%':''),
       psetPoidsReel?'Poids utilisé : ' + psetPoidsReel + ' kg':'',
-      !isNaN(psetLsi)?(psetLsi>=90?'✅':'⚠️'):'', !isNaN(psetLsi)?(psetLsi>=90?'good':'warn'):'');
+      !isNaN(psetLsi)?(psetLsi>=90?'\u2705':''):'', !isNaN(psetLsi)?(psetLsi>=90?'good':'warn'):'');
   }
   if (!isNaN(setCA)) {
     var setLsi = setCS>0?setCA/setCS*100:NaN;
-    msHtml += tfRow('Shoulder Endurance Test', 'CA=' + setCA + ' · CS=' + (isNaN(setCS)?'—':setCS) + (!isNaN(setLsi)?' · LSI='+setLsi.toFixed(1)+'%':''), '', !isNaN(setLsi)?(setLsi>=90?'✅':'⚠️'):'', !isNaN(setLsi)?(setLsi>=90?'good':'warn'):'');
+    msHtml += tfRow('Shoulder Endurance Test', 'CA=' + setCA + '   CS=' + (isNaN(setCS)?'--':setCS) + (!isNaN(setLsi)?'   LSI='+setLsi.toFixed(1)+'%':''), '', !isNaN(setLsi)?(setLsi>=90?'\u2705':''):'', !isNaN(setLsi)?(setLsi>=90?'good':'warn'):'');
   }
-  if (ckcEl&&ckcEl.textContent&&ckcEl.textContent!=='—') msHtml += tfRow('CKCUEST Modifié', ckcEl.textContent, '', '', '');
-  if (shrtEl&&shrtEl.textContent&&shrtEl.textContent!=='—') msHtml += tfRow('Side Hold Rotation', 'LSI=' + shrtEl.textContent, '', '', '');
-  if (ulrtEl&&ulrtEl.textContent&&ulrtEl.textContent!=='—') msHtml += tfRow('ULRT', ulrtEl.textContent, '', '', '');
-  addTFSection('Tests Fonctionnels — Membres Supérieurs', msHtml);
+  if (ckcEl&&ckcEl.textContent&&ckcEl.textContent!=='--') msHtml += tfRow('CKCUEST Modifié', ckcEl.textContent, '', '', '');
+  if (shrtEl&&shrtEl.textContent&&shrtEl.textContent!=='--') msHtml += tfRow('Side Hold Rotation', 'LSI=' + shrtEl.textContent, '', '', '');
+  if (ulrtEl&&ulrtEl.textContent&&ulrtEl.textContent!=='--') msHtml += tfRow('ULRT', ulrtEl.textContent, '', '', '');
+  addTFSection('Tests Fonctionnels -- Membres Supérieurs', msHtml);
 
   // Rachis
   var flxV = parseFloat(document.getElementById('rf-flx-cerv')?document.getElementById('rf-flx-cerv').value:'');
@@ -3914,15 +3838,15 @@ function buildCRTF() {
   var sorV = parseFloat(document.getElementById('rf-sorensen')?document.getElementById('rf-sorensen').value:'');
   var pdslV = parseFloat(document.getElementById('rf-pdslrt')?document.getElementById('rf-pdslrt').value:'');
   var rachisHtml = '';
-  if (!isNaN(flxV)) rachisHtml += tfRow('Endurance Fléchisseurs Cervicaux', flxV + 's', 'Ref sujets sains ~39s · cervicalgiques ~24s', flxV>=39?'✅ Normal':flxV>=24?'⚠️ Limite':'❌ Deficit', flxV>=39?'good':flxV>=24?'warn':'bad');
-  if (!isNaN(extV)) rachisHtml += tfRow('Endurance Extenseurs Cervicaux', extV + 's', 'Seuil clinique : 20s', extV>=20?'✅ OK':'❌ Insuffisant', extV>=20?'good':'bad');
+  if (!isNaN(flxV)) rachisHtml += tfRow('Endurance Fléchisseurs Cervicaux', flxV + 's', 'Ref sujets sains ~39s   cervicalgiques ~24s', flxV>=39?'\u2705 Normal':flxV>=24?' Limite':'\u274c Deficit', flxV>=39?'good':flxV>=24?'warn':'bad');
+  if (!isNaN(extV)) rachisHtml += tfRow('Endurance Extenseurs Cervicaux', extV + 's', 'Seuil clinique : 20s', extV>=20?'\u2705 OK':'\u274c Insuffisant', extV>=20?'good':'bad');
   if (!isNaN(latD)&&!isNaN(latG)) {
     var latRatio = Math.min(latD,latG)/Math.max(latD,latG)*100;
-    rachisHtml += tfRow('Endurance Latérale Cervicale (LNF)', 'D=' + latD + 's · G=' + latG + 's', 'Ratio = ' + latRatio.toFixed(1) + '% (seuil >= 70%) · Ref H~120s / F~90s', latRatio>=70?'✅ Symétrie OK':'⚠️ Asymétrie', latRatio>=70?'good':'warn');
+    rachisHtml += tfRow('Endurance Latérale Cervicale (LNF)', 'D=' + latD + 's   G=' + latG + 's', 'Ratio = ' + latRatio.toFixed(1) + '% (seuil >= 70%)   Ref H~120s / F~90s', latRatio>=70?'\u2705 Symétrie OK':' Asymétrie', latRatio>=70?'good':'warn');
   }
-  if (!isNaN(sorV)) rachisHtml += tfRow('Test de Sorensen', sorV + 's', 'Ref sains ~171-198s · seuil H < 176s = facteur risque', sorV>=198?'✅ Facteur protecteur':sorV>=176?'⚠️ Zone intermediaire':'❌ Facteur de risque', sorV>=198?'good':sorV>=176?'warn':'bad');
-  if (!isNaN(pdslV)) rachisHtml += tfRow('PDSLRT', pdslV + 's', 'Cut-off H=30s / F=29s (sensibilité 96-100%)', pdslV>=30?'✅ OK':'❌ Deficit', pdslV>=30?'good':'bad');
-  addTFSection('Tests Fonctionnels — Rachis', rachisHtml);
+  if (!isNaN(sorV)) rachisHtml += tfRow('Test de Sorensen', sorV + 's', 'Ref sains ~171-198s   seuil H < 176s = facteur risque', sorV>=198?'\u2705 Facteur protecteur':sorV>=176?' Zone intermediaire':'\u274c Facteur de risque', sorV>=198?'good':sorV>=176?'warn':'bad');
+  if (!isNaN(pdslV)) rachisHtml += tfRow('PDSLRT', pdslV + 's', 'Cut-off H=30s / F=29s (sensibilité 96-100%)', pdslV>=30?'\u2705 OK':'\u274c Deficit', pdslV>=30?'good':'bad');
+  addTFSection('Tests Fonctionnels -- Rachis', rachisHtml);
 
   // SEBT
   var sebtAntCA = parseFloat(document.getElementById('sebt-ant-ca')?document.getElementById('sebt-ant-ca').value:'');
@@ -3941,17 +3865,17 @@ function buildCRTF() {
       var csV = parseFloat(document.getElementById(sd.csEl)?document.getElementById(sd.csEl).value:'');
       if (!isNaN(sd.ca)) {
         var diff = !isNaN(csV)?Math.abs(sd.ca-csV):null;
-        var diffStr = diff!==null?(sd.lbl==='ANT'?(diff.toFixed(1)+' cm'):(Math.round(diff/Math.max(sd.ca,csV)*100)+'%')):'—';
+        var diffStr = diff!==null?(sd.lbl==='ANT'?(diff.toFixed(1)+' cm'):(Math.round(diff/Math.max(sd.ca,csV)*100)+'%')):'--';
         var bad = diff!==null&&(sd.lbl==='ANT'?diff>4:diff/Math.max(sd.ca,csV)*100>10);
-        sebtHtml += tfRow('SEBT — ' + sd.lbl, 'CA=' + sd.ca + 'cm · CS=' + (isNaN(csV)?'—':csV) + 'cm · Diff=' + diffStr, '', bad?'⚠️ Asymétrie':'✅ OK', bad?'warn':'good');
+        sebtHtml += tfRow('SEBT -- ' + sd.lbl, 'CA=' + sd.ca + 'cm   CS=' + (isNaN(csV)?'--':csV) + 'cm   Diff=' + diffStr, '', bad?' Asymétrie':'\u2705 OK', bad?'warn':'good');
       }
     }
     if (!isNaN(sebtAntCA)&&!isNaN(sebtPmCA)&&!isNaN(sebtPlCA)&&!isNaN(sebtLgCA)&&sebtLgCA>0) {
       var compCA = (sebtAntCA+sebtPmCA+sebtPlCA)/(3*sebtLgCA)*100;
-      sebtHtml += tfRow('SEBT Score Composite CA', compCA.toFixed(1)+'%', 'Seuil >= 89%', compCA>=89?'✅ OK':'⚠️ < 89%', compCA>=89?'good':'warn');
+      sebtHtml += tfRow('SEBT Score Composite CA', compCA.toFixed(1)+'%', 'Seuil >= 89%', compCA>=89?'\u2705 OK':' < 89%', compCA>=89?'good':'warn');
     }
   }
-  addTFSection('mSEBT — Star Excursion Balance Test', sebtHtml);
+  addTFSection('mSEBT -- Star Excursion Balance Test', sebtHtml);
 
   // UQYBT
   var uqDirs = ['med','il','sl'];
@@ -3963,17 +3887,17 @@ function buildCRTF() {
     if (!isNaN(udD)||!isNaN(udG)) {
       var udDiff = (!isNaN(udD)&&!isNaN(udG)&&Math.max(udD,udG)>0)?Math.abs(udD-udG)/Math.max(udD,udG)*100:null;
       var udBad = udDiff!==null&&udDiff>5;
-      uqHtml += tfRow('UQYBT — ' + ud.toUpperCase(), 'D=' + (isNaN(udD)?'—':udD) + 'cm · G=' + (isNaN(udG)?'—':udG) + 'cm' + (udDiff!==null?' · Diff='+udDiff.toFixed(1)+'%':''), 'Seuil < 5%', udBad?'⚠️ > 5%':'✅ OK', udBad?'warn':'good');
+      uqHtml += tfRow('UQYBT -- ' + ud.toUpperCase(), 'D=' + (isNaN(udD)?'--':udD) + 'cm   G=' + (isNaN(udG)?'--':udG) + 'cm' + (udDiff!==null?'   Diff='+udDiff.toFixed(1)+'%':''), 'Seuil < 5%', udBad?' > 5%':'\u2705 OK', udBad?'warn':'good');
     }
   }
-  addTFSection('UQYBT — Upper-Quarter Y-Balance Test', uqHtml);
+  addTFSection('UQYBT -- Upper-Quarter Y-Balance Test', uqHtml);
 
   if (!content.innerHTML.trim() || content.innerHTML === '<div style="margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid var(--border)"></div>') {
     content.innerHTML = '<div style="color:var(--text3);font-style:italic;padding:40px 0;text-align:center;font-size:.9rem">Aucun test fonctionnel renseigné.<br>Remplissez les onglets pour générer le compte-rendu.</div>';
   }
 }
 
-// ── SEBT ─────────────────────────────────────────────────
+// ?? SEBT ?????????????????????????????????????????????????
 function calcSEBT() {
   var dirs = ['ant','pm','pl'];
   var ca = [], cs = [];
@@ -3999,14 +3923,14 @@ function calcSEBT() {
         diffEl.style.color = bad ? 'var(--red)' : 'var(--green)';
       }
       if (statEl) {
-        statEl.textContent = bad ? (isAnt ? '>4cm ⚠️' : 'Asymétrie ⚠️') : 'OK ✅';
+        statEl.textContent = bad ? (isAnt ? '>4cm ' : 'Asymétrie ') : 'OK \u2705';
         statEl.style.background = diffEl.style.background;
         statEl.style.color = diffEl.style.color;
       }
     } else {
       allFilled = false;
-      if (diffEl) { diffEl.textContent = '—'; diffEl.style.background = ''; diffEl.style.color = ''; }
-      if (statEl) { statEl.textContent = '—'; statEl.style.background = ''; statEl.style.color = ''; }
+      if (diffEl) { diffEl.textContent = '--'; diffEl.style.background = ''; diffEl.style.color = ''; }
+      if (statEl) { statEl.textContent = '--'; statEl.style.background = ''; statEl.style.color = ''; }
     }
   }
   // Score composite
@@ -4018,15 +3942,15 @@ function calcSEBT() {
     var compCA = (ca[0]+ca[1]+ca[2]) / (3*lgCA) * 100;
     compCAEl.textContent = 'CA : ' + compCA.toFixed(1) + '%';
     compCAEl.style.color = compCA < 89 ? 'var(--orange)' : 'var(--green)';
-  } else if (compCAEl) { compCAEl.textContent = '—'; }
+  } else if (compCAEl) { compCAEl.textContent = '--'; }
   if (compCSEl && cs[0]!==null && cs[1]!==null && cs[2]!==null && !isNaN(lgCS) && lgCS > 0) {
     var compCS = (cs[0]+cs[1]+cs[2]) / (3*lgCS) * 100;
     compCSEl.textContent = 'CS : ' + compCS.toFixed(1) + '%';
     compCSEl.style.color = compCS < 89 ? 'var(--orange)' : 'var(--green)';
-  } else if (compCSEl) { compCSEl.textContent = '—'; }
+  } else if (compCSEl) { compCSEl.textContent = '--'; }
 }
 
-// ── UQYBT ────────────────────────────────────────────────
+// ?? UQYBT ????????????????????????????????????????????????
 function calcUQYBT() {
   var dirs = ['med','il','sl'];
   for (var i=0; i<dirs.length; i++) {
@@ -4045,27 +3969,27 @@ function calcUQYBT() {
       diffEl.textContent = diffPct.toFixed(1) + '%';
       diffEl.style.background = bad ? 'var(--orange-l)' : 'var(--green-l)';
       diffEl.style.color = bad ? 'var(--orange)' : 'var(--green)';
-      statEl.textContent = bad ? '>5% ⚠️' : 'OK ✅';
+      statEl.textContent = bad ? '>5% ' : 'OK \u2705';
       statEl.style.background = diffEl.style.background;
       statEl.style.color = diffEl.style.color;
     } else {
-      diffEl.textContent = '—'; diffEl.style.background = ''; diffEl.style.color = '';
-      statEl.textContent = '—'; statEl.style.background = ''; statEl.style.color = '';
+      diffEl.textContent = '--'; diffEl.style.background = ''; diffEl.style.color = '';
+      statEl.textContent = '--'; statEl.style.background = ''; statEl.style.color = '';
     }
   }
 }
 
 // Auto-save on any change
-document.addEventListener('input', () => saveToStorage());
-document.addEventListener('change', () => saveToStorage());
+document.addEventListener('input', function(){ saveToStorage(); });
+document.addEventListener('change', function(){ saveToStorage(); });
 
 // Init
 init();
 
 
-/* ── OUTILS JS ──────────────────────────────────────────── */
+/* ?? OUTILS JS ???????????????????????????????????????????? */
 
-// ── Tab navigation ────────────────────────────────────────
+// ?? Tab navigation ????????????????????????????????????????
 function showTab(id) {
   document.querySelectorAll('.sub-tab').forEach(function(t){ t.classList.remove('active'); });
   document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
@@ -4073,7 +3997,7 @@ function showTab(id) {
   document.getElementById('panel-' + id).classList.add('active');
 }
 
-// ── 1RM Formulas ──────────────────────────────────────────
+// ?? 1RM Formulas ??????????????????????????????????????????
 function brzycki(w,r){ return r===1?w:w/(1.0278-0.0278*r); }
 function epley(w,r)  { return r===1?w:w*(1+r/30); }
 function lander(w,r) { return r===1?w:(100*w)/(101.3-2.671*r); }
@@ -4092,26 +4016,26 @@ var FORMULAS = [
 ];
 
 var CHARGES = [
-  {pct:100,reps:'1',    obj:'Force max / Test',          zone:'🔴 Maximale',       cls:'zR'},
-  {pct:95, reps:'2–3',  obj:'Force maximale',            zone:'🟠 Sub-Maximale',   cls:'zO'},
-  {pct:90, reps:'3–4',  obj:'Force / Puissance',         zone:'🟠 Sub-Maximale',   cls:'zO'},
-  {pct:85, reps:'4–6',  obj:'Force fonctionnelle',       zone:'🟡 Élevée',         cls:'zY'},
-  {pct:80, reps:'6–8',  obj:'Hypertrophie / Force',      zone:'🟣 Hypertrophie',   cls:'zV'},
-  {pct:75, reps:'8–10', obj:'Hypertrophie',              zone:'🟣 Hypertrophie',   cls:'zV'},
-  {pct:70, reps:'10–12',obj:'Hypertrophie / Endurance',  zone:'🔵 Modérée-Haute',  cls:'zB'},
-  {pct:65, reps:'12–15',obj:'Endurance de force',        zone:'🟢 Modérée',        cls:'zG'},
-  {pct:60, reps:'15–20',obj:'Endurance musculaire',      zone:'🟢 Modérée',        cls:'zG'},
-  {pct:55, reps:'20–25',obj:'Réathlétisation / Kiné',    zone:'🩵 Faible-Modérée', cls:'zC'},
-  {pct:50, reps:'25–30',obj:'Rééducation active',        zone:'🩵 Rééducation',    cls:'zC'},
-  {pct:40, reps:'30+',  obj:'Activation / Échauffement', zone:'⚪ Activation',     cls:'zW'},
+  {pct:100,reps:'1',    obj:'Force max / Test',          zone:' Maximale',       cls:'zR'},
+  {pct:95, reps:'2-3',  obj:'Force maximale',            zone:' Sub-Maximale',   cls:'zO'},
+  {pct:90, reps:'3-4',  obj:'Force / Puissance',         zone:' Sub-Maximale',   cls:'zO'},
+  {pct:85, reps:'4-6',  obj:'Force fonctionnelle',       zone:' Élevée',         cls:'zY'},
+  {pct:80, reps:'6-8',  obj:'Hypertrophie / Force',      zone:' Hypertrophie',   cls:'zV'},
+  {pct:75, reps:'8-10', obj:'Hypertrophie',              zone:' Hypertrophie',   cls:'zV'},
+  {pct:70, reps:'10-12',obj:'Hypertrophie / Endurance',  zone:' Modérée-Haute',  cls:'zB'},
+  {pct:65, reps:'12-15',obj:'Endurance de force',        zone:' Modérée',        cls:'zG'},
+  {pct:60, reps:'15-20',obj:'Endurance musculaire',      zone:' Modérée',        cls:'zG'},
+  {pct:55, reps:'20-25',obj:'Réathlétisation / Kiné',    zone:'\u1fa75 Faible-Modérée', cls:'zC'},
+  {pct:50, reps:'25-30',obj:'Rééducation active',        zone:'\u1fa75 Rééducation',    cls:'zC'},
+  {pct:40, reps:'30+',  obj:'Activation / Échauffement', zone:' Activation',     cls:'zW'},
 ];
 
 var HSR = [
-  {w:'S1',    rm:'15 RM',pMin:60,pMax:65,reps:15,sets:3,physio:'Activation neuromusculaire · Tolérance au chargement',clinique:'Introduction / Post-chirurgie',tagCls:'o'},
-  {w:'S2–S3', rm:'12 RM',pMin:65,pMax:70,reps:12,sets:4,physio:'Endurance de force · Adaptation tendineuse précoce', clinique:'Rééducation précoce',tagCls:'o'},
-  {w:'S4–S5', rm:'10 RM',pMin:72,pMax:75,reps:10,sets:4,physio:'Hypertrophie fonctionnelle · Remodelage collagène',  clinique:'Renforcement progressif',tagCls:'o'},
-  {w:'S6–S8', rm:'8 RM', pMin:78,pMax:82,reps:8, sets:4,physio:'Force / Hypertrophie · Stimulation tendino-osseuse',clinique:'Renforcement avancé',tagCls:''},
-  {w:'S9–S12',rm:'6 RM', pMin:83,pMax:87,reps:6, sets:4,physio:'Force maximale · Adaptation structurelle complète', clinique:'Retour au sport / Performance',tagCls:'g'},
+  {w:'S1',    rm:'15 RM',pMin:60,pMax:65,reps:15,sets:3,physio:'Activation neuromusculaire   Tolérance au chargement',clinique:'Introduction / Post-chirurgie',tagCls:'o'},
+  {w:'S2-S3', rm:'12 RM',pMin:65,pMax:70,reps:12,sets:4,physio:'Endurance de force   Adaptation tendineuse précoce', clinique:'Rééducation précoce',tagCls:'o'},
+  {w:'S4-S5', rm:'10 RM',pMin:72,pMax:75,reps:10,sets:4,physio:'Hypertrophie fonctionnelle   Remodelage collagène',  clinique:'Renforcement progressif',tagCls:'o'},
+  {w:'S6-S8', rm:'8 RM', pMin:78,pMax:82,reps:8, sets:4,physio:'Force / Hypertrophie   Stimulation tendino-osseuse',clinique:'Renforcement avancé',tagCls:''},
+  {w:'S9-S12',rm:'6 RM', pMin:83,pMax:87,reps:6, sets:4,physio:'Force maximale   Adaptation structurelle complète', clinique:'Retour au sport / Performance',tagCls:'g'},
 ];
 
 function calcRM() {
@@ -4152,12 +4076,12 @@ function calcHSR() {
   var rm = parseFloat(document.getElementById('hsr-ref').value) || 0;
 
   document.getElementById('hsr-tbody').innerHTML = HSR.map(function(p){
-    var cMin = rm > 0 ? rnd(rm*p.pMin/100) + ' kg' : '—';
-    var cMax = rm > 0 ? rnd(rm*p.pMax/100) + ' kg' : '—';
+    var cMin = rm > 0 ? rnd(rm*p.pMin/100) + ' kg' : '--';
+    var cMax = rm > 0 ? rnd(rm*p.pMax/100) + ' kg' : '--';
     return '<tr>' +
       '<td style="font-weight:700;color:var(--accent2)">' + p.w + '</td>' +
       '<td style="font-weight:600">' + p.rm + '</td>' +
-      '<td>' + p.pMin + '–' + p.pMax + '%</td>' +
+      '<td>' + p.pMin + '-' + p.pMax + '%</td>' +
       '<td style="font-weight:700;color:var(--green)">' + cMin + '</td>' +
       '<td style="font-weight:700;color:var(--green)">' + cMax + '</td>' +
       '<td style="font-weight:700;color:var(--accent2)">' + p.reps + '</td>' +
@@ -4173,12 +4097,12 @@ function calcHSR() {
       '<div class="step-badge">' + p.w + '<small>' + p.rm + '</small></div>' +
       '<div>' +
         '<div class="step-title">' + p.clinique + '</div>' +
-        '<div class="step-desc">' + p.sets + ' séries × ' + p.reps + ' reps · ' + p.physio + '</div>' +
+        '<div class="step-desc">' + p.sets + ' séries x ' + p.reps + ' reps   ' + p.physio + '</div>' +
         '<div class="step-tags">' +
-          '<span class="tag ' + p.tagCls + '">' + p.pMin + '–' + p.pMax + '% 1RM</span>' +
+          '<span class="tag ' + p.tagCls + '">' + p.pMin + '-' + p.pMax + '% 1RM</span>' +
           '<span class="tag">' + p.sets + ' séries</span>' +
           '<span class="tag">' + p.reps + ' reps</span>' +
-          (rm > 0 ? '<span class="tag g">' + rnd(rm*p.pMin/100) + '–' + rnd(rm*p.pMax/100) + ' kg</span>' : '') +
+          (rm > 0 ? '<span class="tag g">' + rnd(rm*p.pMin/100) + '-' + rnd(rm*p.pMax/100) + ' kg</span>' : '') +
         '</div>' +
       '</div>' +
       '</div>';
@@ -4189,7 +4113,7 @@ function calcHSR() {
 calcRM();
 
 
-// ══ CALCULATEUR CARDIO ═══════════════════════════════════
+// ?? CALCULATEUR CARDIO ???????????????????????????????????
 
 var C_ALLURES = [
   {lbl:'Récupération',            pct:55},
@@ -4202,17 +4126,17 @@ var C_ALLURES = [
 ];
 
 var C_ZONES = [
-  {z:'Z1', nom:'Récupération active',    pMin:50, pMax:60, benefit:'Récupération · blessures · débutants'},
-  {z:'Z2', nom:'Endurance fondamentale', pMin:60, pMax:70, benefit:'Aérobie de base · brûlage graisses'},
+  {z:'Z1', nom:'Récupération active',    pMin:50, pMax:60, benefit:'Récupération   blessures   débutants'},
+  {z:'Z2', nom:'Endurance fondamentale', pMin:60, pMax:70, benefit:'Aérobie de base   brûlage graisses'},
   {z:'Z3', nom:'Aérobie modéré',         pMin:70, pMax:80, benefit:'Amélioration capacité cardiovasculaire'},
-  {z:'Z4', nom:'Seuil anaérobie',        pMin:80, pMax:90, benefit:'Performance · tolérance lactate'},
-  {z:'Z5', nom:'VO\u2082max / Intensité max', pMin:90, pMax:100, benefit:'VMA · puissance maximale aérobie'},
+  {z:'Z4', nom:'Seuil anaérobie',        pMin:80, pMax:90, benefit:'Performance   tolérance lactate'},
+  {z:'Z5', nom:'VO\u2082max / Intensité max', pMin:90, pMax:100, benefit:'VMA   puissance maximale aérobie'},
 ];
 
 var Z_COLORS = ['#9D9B96','#2D6A4F','#2980B9','#D4600A','#C0392B'];
 
 function cMinKm(spd) {
-  if (!spd || spd <= 0) return '—';
+  if (!spd || spd <= 0) return '--';
   var s = 3600 / spd;
   var m = Math.floor(s / 60);
   var sc = Math.round(s % 60);
@@ -4242,7 +4166,7 @@ function calcCardio() {
     var cat = imc < 18.5 ? 'Insuffisance pondérale' : imc < 25 ? 'Poids normal' : imc < 30 ? 'Surpoids' : 'Obésité';
     var imcCol = (imc < 18.5 || imc >= 30) ? '#C0392B' : imc >= 25 ? '#D4600A' : '#2D6A4F';
     sc('c-imc-cat', cat, imcCol);
-  } else { s('c-imc','—'); s('c-imc-cat','—'); }
+  } else { s('c-imc','--'); s('c-imc-cat','--'); }
 
   if (isNaN(age) || age <= 0) return;
 
@@ -4259,16 +4183,16 @@ function calcCardio() {
   s('c-fcmax-src', fcmaxSrc);
 
   if (isNaN(fcrep) || fcrep <= 0) {
-    s('c-fcres', '— renseignez FC repos');
+    s('c-fcres', '-- renseignez FC repos');
     s('c-fcres-range','');
     s('c-fcrep-range','');
     return;
   }
 
-  // FC réserve + plages ±2
+  // FC r?serve + plages ?2
   var fcres    = fcmax - fcrep;
-  var fcresLow = fcmax - (fcrep + 2);   // avec FC repos +2 → réserve diminue
-  var fcresHigh= fcmax - (fcrep - 2);   // avec FC repos -2 → réserve augmente
+  var fcresLow = fcmax - (fcrep + 2);   // avec FC repos +2 ? r?serve diminue
+  var fcresHigh= fcmax - (fcrep - 2);   // avec FC repos -2 ? r?serve augmente
   s('c-fcres', fcres + ' bpm');
   s('c-fcres-range', 'Plage \u00b12 bpm FC repos : ' + fcresLow + '\u2013' + fcresHigh + ' bpm');
   s('c-fcrep-range', (fcrep-2) + '\u2013' + (fcrep+2) + ' bpm');
@@ -4301,15 +4225,19 @@ function calcCardio() {
   var atbody = document.getElementById('c-allures-tbody');
   if (atbody) {
     atbody.innerHTML = C_ALLURES.map(function(a, i) {
-      var spd = cRnd(vma * a.pct / 100, 2);
-      var fc  = Math.round(fcrep + fcres * a.pct / 100);
-      var bg  = i%2===0?'':'background:#F1F0ED;';
+      var spd  = cRnd(vma * a.pct / 100, 2);
+      var fc   = Math.round(fcrep    + fcres     * a.pct / 100);
+      var fcMi = Math.round((fcrep-2) + fcresLow  * a.pct / 100);
+      var fcMa = Math.round((fcrep+2) + fcresHigh * a.pct / 100);
+      var bg = i%2===0?'':'background:#F1F0ED;';
       return '<tr style="' + bg + '">' +
         '<td style="font-weight:600">' + a.lbl + '</td>' +
         '<td style="font-weight:700;color:#2D6A4F">' + a.pct + '%</td>' +
         '<td style="font-weight:700;color:#1A3A5C">' + spd + ' km/h</td>' +
         '<td style="font-weight:700;color:#1A3A5C">' + cMinKm(spd) + '</td>' +
-        '<td style="font-weight:700">' + fc + ' bpm</td>' +
+        '<td>' + fc + ' bpm</td>' +
+        '<td style="color:#2D6A4F">' + fcMi + ' bpm</td>' +
+        '<td style="color:#2D6A4F">' + fcMa + ' bpm</td>' +
         '</tr>';
     }).join('');
   }
@@ -4360,7 +4288,7 @@ function cardioLoadBilan() {
     if (data['f-taille'] && hEl && !hEl.value) { hEl.value = data['f-taille']; synced.push('taille'); }
     if (data['f-sexe'] && sexEl) { sexEl.value = data['f-sexe'] === 'F' ? '0' : '1'; }
     var nm = ((data['f-prenom']||'') + ' ' + (data['f-nom']||'')).trim();
-    if (nm && nmEl && nmEl.textContent === '—') nmEl.textContent = nm;
+    if (nm && nmEl && nmEl.textContent === '--') nmEl.textContent = nm;
     if (synced.length > 0) {
       var banner = document.getElementById('cardio-banner');
       if (banner) { banner.style.display = 'block'; }
@@ -4371,7 +4299,7 @@ function cardioLoadBilan() {
   } catch(e) {}
 }
 
-// ══ REPRISE CAP ═══════════════════════════════════════════
+// ?? REPRISE CAP ???????????????????????????????????????????
 
 var CAP_DATA = [
   {n:1,  ph:'Phase 1',col:'#1A3A5C',titre:'Initiation marche/course',
@@ -4475,7 +4403,7 @@ function capLoadBilan() {
     var data = JSON.parse(raw);
     var nm = ((data['f-prenom']||'')+' '+(data['f-nom']||'')).trim();
     var el = document.getElementById('cap-patient-name');
-    if (nm && el && el.textContent === '—') el.textContent = nm;
+    if (nm && el && el.textContent === '--') el.textContent = nm;
   } catch(e) {}
 }
 
@@ -4483,7 +4411,7 @@ function capLoadBilan() {
 var _origShowTab = showTab;
 showTab = function(id) {
   _origShowTab(id);
-  if (id === 'cardio') { cardioLoadBilan(); calcCardio(); }
+  if (id === 'cardio') { cardioLoadBilan(); }
   if (id === 'cap')    { buildCAP(); capLoadBilan(); }
 };
 
@@ -4492,131 +4420,103 @@ function initOutils() { buildCAP(); capLoadBilan(); }
 
 
 
-/* ── SHELL JS ───────────────────────────────────────────── */
+/* ?? SHELL + AUTH JS ?????????????????????????????????????? */
 
-// ══ SITE NAVIGATION ═══════════════════════════════════════
+// ?? SITE NAVIGATION ???????????????????????????????????????
 function showSitePage(id) {
-  document.querySelectorAll('.site-page').forEach(function(p){ p.classList.remove('active'); });
-  document.querySelectorAll('.site-tab').forEach(function(t){ t.classList.remove('active'); });
+  Array.prototype.forEach.call(document.querySelectorAll('.site-page'), function(p){ p.classList.remove('active'); });
+  Array.prototype.forEach.call(document.querySelectorAll('.site-tab'), function(t){ t.classList.remove('active'); });
   var pg = document.getElementById('site-' + id);
   var tb = document.getElementById('stab-' + id);
   if (pg) pg.classList.add('active');
   if (tb) tb.classList.add('active');
-  if (id === 'outils') {
-    if (!window._outilsInited) {
-      window._outilsInited = true;
-      initOutils();
-    }
+  if (id === 'outils' && !window._outilsInited) {
+    window._outilsInited = true;
+    initOutils();
   }
 }
 
+// ?? AUTH ??????????????????????????????????????????????????
+var SITE = 'https://rehab4perf.netlify.app';
+var _token = null;
 
-// ══ AUTH — Netlify Identity API directe ══════════════════
+function showLF(id) {
+  var ids = ['lf-login','lf-setpass','lf-success'];
+  for (var i=0; i<ids.length; i++) {
+    var el = document.getElementById(ids[i]);
+    if (el) el.style.display = ids[i] === id ? (id==='lf-success'?'flex':'block') : 'none';
+  }
+}
 
-var NETLIFY_SITE_URL = 'https://rehab4perf.netlify.app';
-var _authToken = null;
-var _authUser  = null;
+function showErr(msg) {
+  var el = document.getElementById('lf-error');
+  if (el) { el.textContent = msg; el.style.display = 'block'; }
+}
+
+function clearErr() {
+  var el = document.getElementById('lf-error');
+  if (el) el.style.display = 'none';
+}
 
 function doLogin() {
-  var emailEl = document.getElementById('login-email-input');
-  var passEl  = document.getElementById('login-pass-input');
-  var btnEl   = document.getElementById('login-submit-btn');
-  var errEl   = document.getElementById('login-error');
-  if (!emailEl || !passEl) return;
-
-  var email = emailEl.value.trim();
-  var pass  = passEl.value;
-
-  if (!email || !pass) {
-    showLoginError('Veuillez remplir email et mot de passe.');
-    return;
-  }
-
-  btnEl.textContent = 'Connexion…';
-  btnEl.disabled = true;
-  errEl.style.display = 'none';
+  clearErr();
+  var email = (document.getElementById('lf-email')||{value:''}).value.trim();
+  var pass  = (document.getElementById('lf-pass') ||{value:''}).value;
+  var btn   = document.getElementById('lf-btn');
+  if (!email || !pass) { showErr('Veuillez remplir email et mot de passe.'); return; }
+  if (btn) { btn.textContent = 'Connexion...'; btn.disabled = true; }
 
   var xhr = new XMLHttpRequest();
-  xhr.open('POST', NETLIFY_SITE_URL + '/.netlify/identity/token', true);
-  xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+  xhr.open('POST', SITE + '/.netlify/identity/token', true);
+  xhr.setRequestHeader('Content-Type','application/x-www-form-urlencoded');
   xhr.onreadystatechange = function() {
     if (xhr.readyState !== 4) return;
-    btnEl.textContent = '🔐 Se connecter';
-    btnEl.disabled = false;
+    if (btn) { btn.textContent = ' Se connecter'; btn.disabled = false; }
     if (xhr.status === 200) {
-      try {
-        var data = JSON.parse(xhr.responseText);
-        _authToken = data.access_token;
-        fetchUserInfo(_authToken);
-      } catch(e) {
-        showLoginError('Erreur de connexion. Réessayez.');
-      }
+      try { _token = JSON.parse(xhr.responseText).access_token; getUserInfo(); }
+      catch(e) { showErr('Erreur inattendue. Réessayez.'); }
     } else {
-      try {
-        var err = JSON.parse(xhr.responseText);
-        showLoginError(err.error_description || 'Email ou mot de passe incorrect.');
-      } catch(e) {
-        showLoginError('Email ou mot de passe incorrect.');
-      }
+      showErr('Email ou mot de passe incorrect.');
     }
   };
-  xhr.send('grant_type=password&username=' + encodeURIComponent(email) + '&password=' + encodeURIComponent(pass));
+  xhr.send('grant_type=password&username='+encodeURIComponent(email)+'&password='+encodeURIComponent(pass));
 }
 
-function fetchUserInfo(token) {
+function getUserInfo() {
   var xhr = new XMLHttpRequest();
-  xhr.open('GET', NETLIFY_SITE_URL + '/.netlify/identity/user', true);
-  xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+  xhr.open('GET', SITE + '/.netlify/identity/user', true);
+  xhr.setRequestHeader('Authorization','Bearer ' + _token);
   xhr.onreadystatechange = function() {
     if (xhr.readyState !== 4) return;
-    if (xhr.status === 200) {
-      try {
-        var user = JSON.parse(xhr.responseText);
-        _authUser = user;
-        onLoginSuccess(user);
-      } catch(e) { onLoginSuccess(null); }
-    } else {
-      onLoginSuccess(null);
-    }
+    var user = null;
+    try { user = JSON.parse(xhr.responseText); } catch(e) {}
+    onLoggedIn(user);
   };
   xhr.send();
 }
 
-function onLoginSuccess(user) {
-  var name = '';
-  if (user && user.user_metadata && user.user_metadata.full_name) {
-    name = user.user_metadata.full_name;
-  } else if (user && user.email) {
-    name = user.email.split('@')[0];
-  }
+function onLoggedIn(user) {
+  var name = user && user.user_metadata && user.user_metadata.full_name
+    ? user.user_metadata.full_name
+    : (user && user.email ? user.email.split('@')[0] : 'Praticien');
   var email = user ? user.email : '';
-  var initials = name ? name.split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2) : '?';
+  var init = name.split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2);
 
-  // Show logged-in state on login screen
-  var formEl  = document.getElementById('login-form-wrap');
-  var infoEl  = document.getElementById('login-user-info');
-  var avatarEl= document.getElementById('login-avatar');
-  var nameEl  = document.getElementById('login-name-display');
-  var emailEl = document.getElementById('login-email-display');
-  if (formEl)  formEl.style.display   = 'none';
-  if (infoEl)  infoEl.style.display   = 'flex';
-  if (avatarEl)avatarEl.textContent   = initials;
-  if (nameEl)  nameEl.textContent     = name || 'Praticien';
-  if (emailEl) emailEl.textContent    = email;
+  var av = document.getElementById('lf-avatar');
+  var un = document.getElementById('lf-uname');
+  var ue = document.getElementById('lf-uemail');
+  if (av) av.textContent = init;
+  if (un) un.textContent = name;
+  if (ue) ue.textContent = email;
+  showLF('lf-success');
 
-  // Update nav
-  setNavUser(name || email);
+  var navU = document.getElementById('nav-uname');
+  var navL = document.getElementById('nav-logout');
+  if (navU) navU.textContent = name;
+  if (navL) navL.style.display = 'inline-block';
 
-  // Save for bilan
-  try { localStorage.setItem('r4p-user-name', name || email); } catch(e) {}
-
-  // Auto-enter app
+  try { localStorage.setItem('r4p-user', name); } catch(e) {}
   enterApp();
-}
-
-function showLoginError(msg) {
-  var errEl = document.getElementById('login-error');
-  if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; }
 }
 
 function enterApp() {
@@ -4625,181 +4525,122 @@ function enterApp() {
 }
 
 function doLogout() {
-  _authToken = null;
-  _authUser  = null;
-  try { localStorage.removeItem('r4p-user-name'); } catch(e) {}
+  _token = null;
+  try { localStorage.removeItem('r4p-user'); } catch(e) {}
   var ls = document.getElementById('login-screen');
   if (ls) ls.classList.remove('hidden');
-  var formEl = document.getElementById('login-form-wrap');
-  var infoEl = document.getElementById('login-user-info');
-  if (formEl) formEl.style.display = 'block';
-  if (infoEl) infoEl.style.display = 'none';
-  var errEl  = document.getElementById('login-error');
-  if (errEl)  errEl.style.display  = 'none';
-  setNavUser('');
-  // Clear password field
-  var passEl = document.getElementById('login-pass-input');
-  if (passEl) passEl.value = '';
+  showLF('lf-login');
+  clearErr();
+  var p = document.getElementById('lf-pass');
+  if (p) p.value = '';
+  var navU = document.getElementById('nav-uname');
+  var navL = document.getElementById('nav-logout');
+  if (navU) navU.textContent = '';
+  if (navL) navL.style.display = 'none';
 }
 
-function setNavUser(name) {
-  var navName   = document.getElementById('nav-user-name');
-  var navLogout = document.getElementById('nav-logout-btn');
-  if (navName)   navName.textContent     = name;
-  if (navLogout) navLogout.style.display = name ? 'block' : 'none';
-}
-
-// Allow Enter key to submit
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') {
-    var ls = document.getElementById('login-screen');
-    if (ls && !ls.classList.contains('hidden')) {
-      doLogin();
-    }
-  }
-});
-
-// ── Token detection (invite / recovery links) ────────────
-(function() {
-  var hash = window.location.hash;
-  var token = null;
-  var tokenType = null;
-
-  // Parse hash params: #invite_token=xxx or #recovery_token=xxx or #access_token=xxx&type=recovery
-  if (hash) {
-    var params = {};
-    hash.replace('#','').split('&').forEach(function(part) {
-      var kv = part.split('=');
-      if (kv.length === 2) params[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1]);
-    });
-
-    if (params['invite_token']) {
-      token = params['invite_token'];
-      tokenType = 'invite';
-    } else if (params['recovery_token']) {
-      token = params['recovery_token'];
-      tokenType = 'recovery';
-    } else if (params['access_token'] && params['type'] === 'recovery') {
-      token = params['access_token'];
-      tokenType = 'recovery_access';
-    }
-  }
-
-  if (token) {
-    // Show set-password form
-    window._pendingToken = token;
-    window._pendingTokenType = tokenType;
-    var formEl    = document.getElementById('login-form-wrap');
-    var setpassEl = document.getElementById('login-setpass-wrap');
-    var titleEl   = document.querySelector('.login-subtitle');
-    if (formEl)    formEl.style.display    = 'none';
-    if (setpassEl) setpassEl.style.display = 'block';
-    if (titleEl)   titleEl.textContent     = tokenType === 'invite' ? 'Créez votre mot de passe pour accéder à la plateforme' : 'Réinitialisez votre mot de passe';
-    // Clean URL
-    history.replaceState(null, '', window.location.pathname);
-  }
-
-  // Always show login screen on load
-  var ls = document.getElementById('login-screen');
-  if (ls) ls.classList.remove('hidden');
-})();
-
-// ── Set password (invite / recovery) ─────────────────────
 function doSetPassword() {
-  var p1    = document.getElementById('setpass-input');
-  var p2    = document.getElementById('setpass-confirm');
-  var btnEl = document.getElementById('setpass-btn');
-  var errEl = document.getElementById('setpass-error');
-  if (!p1 || !p2) return;
+  clearErr();
+  var p1  = (document.getElementById('lf-newpass') ||{value:''}).value;
+  var p2  = (document.getElementById('lf-newpass2')||{value:''}).value;
+  var btn = document.getElementById('lf-setpass-btn');
+  if (p1.length < 6) { showErr('Minimum 6 caractères.'); return; }
+  if (p1 !== p2)     { showErr('Les mots de passe ne correspondent pas.'); return; }
+  if (btn) { btn.textContent = 'Enregistrement...'; btn.disabled = true; }
 
-  if (!p1.value || p1.value.length < 6) {
-    errEl.textContent = 'Mot de passe trop court (6 caractères minimum).';
-    errEl.style.display = 'block'; return;
-  }
-  if (p1.value !== p2.value) {
-    errEl.textContent = 'Les mots de passe ne correspondent pas.';
-    errEl.style.display = 'block'; return;
-  }
+  var tok = window._pendingToken;
+  var typ = window._pendingType;
 
-  btnEl.textContent = 'Enregistrement…';
-  btnEl.disabled = true;
-  errEl.style.display = 'none';
-
-  var token = window._pendingToken;
-  var tokenType = window._pendingTokenType;
-  var endpoint, body, headers;
-
-  if (tokenType === 'recovery_access') {
-    // Already have access token — use it to update password
-    endpoint = NETLIFY_SITE_URL + '/.netlify/identity/user';
-    headers  = {'Content-Type':'application/json','Authorization':'Bearer ' + token};
-    body     = JSON.stringify({password: p1.value});
-    var xhr  = new XMLHttpRequest();
-    xhr.open('PUT', endpoint, true);
-    Object.keys(headers).forEach(function(k){ xhr.setRequestHeader(k, headers[k]); });
-    xhr.onreadystatechange = function() {
-      if (xhr.readyState !== 4) return;
-      btnEl.textContent = '✅ Créer mon mot de passe';
-      btnEl.disabled = false;
-      if (xhr.status === 200) {
-        onPasswordSet(token);
-      } else {
-        errEl.textContent = 'Erreur. Réessayez ou demandez un nouveau lien.';
-        errEl.style.display = 'block';
-      }
-    };
-    xhr.send(body);
+  if (typ === 'access') {
+    // Already have access token ? update password directly
+    updatePassword(tok, p1, btn);
   } else {
-    // Invite or recovery token — exchange first
-    endpoint = NETLIFY_SITE_URL + '/.netlify/identity/token';
-    var grantType = tokenType === 'invite' ? 'invite' : 'recovery';
+    // Exchange invite/recovery token for access token first
     var xhr = new XMLHttpRequest();
-    xhr.open('POST', endpoint, true);
+    xhr.open('POST', SITE + '/.netlify/identity/token', true);
     xhr.setRequestHeader('Content-Type','application/x-www-form-urlencoded');
     xhr.onreadystatechange = function() {
       if (xhr.readyState !== 4) return;
       if (xhr.status === 200) {
         try {
-          var data = JSON.parse(xhr.responseText);
-          var accessToken = data.access_token;
-          // Now update password
-          var xhr2 = new XMLHttpRequest();
-          xhr2.open('PUT', NETLIFY_SITE_URL + '/.netlify/identity/user', true);
-          xhr2.setRequestHeader('Content-Type','application/json');
-          xhr2.setRequestHeader('Authorization','Bearer ' + accessToken);
-          xhr2.onreadystatechange = function() {
-            if (xhr2.readyState !== 4) return;
-            btnEl.textContent = '✅ Créer mon mot de passe';
-            btnEl.disabled = false;
-            if (xhr2.status === 200) {
-              onPasswordSet(accessToken);
-            } else {
-              errEl.textContent = 'Erreur lors de la création. Réessayez.';
-              errEl.style.display = 'block';
-            }
-          };
-          xhr2.send(JSON.stringify({password: p1.value}));
+          var at = JSON.parse(xhr.responseText).access_token;
+          updatePassword(at, p1, btn);
         } catch(e) {
-          btnEl.textContent = '✅ Créer mon mot de passe';
-          btnEl.disabled = false;
-          errEl.textContent = 'Erreur. Réessayez.';
-          errEl.style.display = 'block';
+          if (btn) { btn.textContent = '\u2705 Valider mon mot de passe'; btn.disabled = false; }
+          showErr('Erreur inattendue. Réessayez.');
         }
       } else {
-        btnEl.textContent = '✅ Créer mon mot de passe';
-        btnEl.disabled = false;
-        errEl.textContent = "Lien expiré. Demandez un nouveau lien d'invitation.";
-        errEl.style.display = 'block';
+        if (btn) { btn.textContent = '\u2705 Valider mon mot de passe'; btn.disabled = false; }
+        showErr('Lien expiré. Demandez un nouveau lien.');
       }
     };
-    xhr.send('grant_type=' + grantType + '&token=' + encodeURIComponent(token));
+    var grant = typ === 'invite' ? 'invite' : 'recovery';
+    xhr.send('grant_type=' + grant + '&token=' + encodeURIComponent(tok));
   }
 }
 
-function onPasswordSet(accessToken) {
-  window._pendingToken = null;
-  fetchUserInfo(accessToken);
+function updatePassword(accessToken, newPass, btn) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('PUT', SITE + '/.netlify/identity/user', true);
+  xhr.setRequestHeader('Content-Type','application/json');
+  xhr.setRequestHeader('Authorization','Bearer ' + accessToken);
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState !== 4) return;
+    if (btn) { btn.textContent = '\u2705 Valider mon mot de passe'; btn.disabled = false; }
+    if (xhr.status === 200) {
+      _token = accessToken;
+      getUserInfo();
+    } else {
+      showErr('Erreur lors de la sauvegarde. Réessayez.');
+    }
+  };
+  xhr.send(JSON.stringify({password: newPass}));
 }
+
+// Detect invite/recovery token in URL hash
+(function() {
+  var hash = window.location.hash;
+  if (hash) {
+    var params = {};
+    hash.replace('#','').split('&').forEach(function(part) {
+      var kv = part.split('=');
+      if (kv.length >= 2) params[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1]);
+    });
+    if (params.invite_token) {
+      window._pendingToken = params.invite_token;
+      window._pendingType  = 'invite';
+    } else if (params.recovery_token) {
+      window._pendingToken = params.recovery_token;
+      window._pendingType  = 'recovery';
+    } else if (params.access_token && params.type === 'recovery') {
+      window._pendingToken = params.access_token;
+      window._pendingType  = 'access';
+    }
+    if (window._pendingToken) {
+      var titleEl = document.getElementById('lf-setpass-title');
+      if (titleEl) titleEl.textContent = window._pendingType === 'invite'
+        ? 'Créez votre mot de passe' : 'Réinitialisez votre mot de passe';
+      showLF('lf-setpass');
+      history.replaceState(null,'',window.location.pathname);
+    }
+  }
+  // Show login screen
+  var ls = document.getElementById('login-screen');
+  if (ls) ls.classList.remove('hidden');
+})();
+
+// Enter key on login form
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    var ls = document.getElementById('login-screen');
+    if (ls && !ls.classList.contains('hidden')) {
+      var lfl = document.getElementById('lf-login');
+      var lfs = document.getElementById('lf-setpass');
+      if (lfl && lfl.style.display !== 'none') doLogin();
+      else if (lfs && lfs.style.display !== 'none') doSetPassword();
+    }
+  }
+});
 
 </script>
 
