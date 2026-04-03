@@ -1009,42 +1009,22 @@ font-family:inherit; white-space:nowrap; transition:all .15s;
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo"><span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span></div>
-    <div class="login-sub">Plateforme clinique · Athletik Lamarck</div>
+    <div class="login-sub">Plateforme clinique - Athletik Lamarck</div>
 
 ```
 <div id="lf-error" class="login-error"></div>
 
-<!-- Formulaire connexion -->
-<div id="lf-login">
-  <input type="email" id="lf-email" class="login-input" placeholder="Adresse email" autocomplete="email">
-  <input type="password" id="lf-pass" class="login-input" placeholder="Mot de passe" autocomplete="current-password">
-  <button class="login-btn" id="lf-btn" onclick="doLogin()">🔐 Se connecter</button>
-  <div class="login-note">Accès réservé aux praticiens du cabinet</div>
-</div>
-
-<!-- Formulaire création / réinitialisation mot de passe -->
-<div id="lf-setpass" class="login-setpass">
-  <div class="login-setpass-title" id="lf-setpass-title">Créer votre mot de passe</div>
-  <input type="password" id="lf-newpass" class="login-input" placeholder="Nouveau mot de passe (6 car. min.)" autocomplete="new-password">
-  <input type="password" id="lf-newpass2" class="login-input" placeholder="Confirmer le mot de passe" autocomplete="new-password">
-  <button class="login-btn" id="lf-setpass-btn" onclick="doSetPassword()">✅ Valider mon mot de passe</button>
-</div>
-
-<!-- Connecté -->
-<div id="lf-success" class="login-success">
-  <div class="login-avatar" id="lf-avatar">?</div>
-  <div class="login-username" id="lf-uname">—</div>
-  <div class="login-useremail" id="lf-uemail">—</div>
-  <button class="login-enter-btn" onclick="enterApp()">✅ Accéder à la plateforme</button>
-  <button class="login-logout-link" onclick="doLogout()">Se déconnecter</button>
-</div>
+<input type="password" id="lf-pass" class="login-input"
+  placeholder="Mot de passe"
+  autocomplete="current-password">
+<button class="login-btn" id="lf-btn" onclick="doLogin()">
+  Se connecter
+</button>
+<div class="login-note">Acces reserve aux praticiens du cabinet</div>
 ```
 
   </div>
 </div>
-
-<!-- ══ TOP NAV ════════════════════════════════════════════ -->
-
 <nav class="site-nav">
   <div class="site-logo"><span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span></div>
   <div class="site-tabs">
@@ -4423,6 +4403,7 @@ function initOutils() { buildCAP(); capLoadBilan(); }
 /* ?? SHELL + AUTH JS ?????????????????????????????????????? */
 
 // ?? SITE NAVIGATION ???????????????????????????????????????
+// ====== SITE NAVIGATION ======================================
 function showSitePage(id) {
   Array.prototype.forEach.call(document.querySelectorAll('.site-page'), function(p){ p.classList.remove('active'); });
   Array.prototype.forEach.call(document.querySelectorAll('.site-tab'), function(t){ t.classList.remove('active'); });
@@ -4436,212 +4417,75 @@ function showSitePage(id) {
   }
 }
 
-// ?? AUTH ??????????????????????????????????????????????????
-var SITE = 'https://rehab4perf.netlify.app';
-var _token = null;
+// ====== AUTH - MOT DE PASSE UNIQUE ===========================
+// Pour changer le mot de passe : modifiez la valeur ci-dessous
+var APP_PASSWORD = 'Athletik1718';
 
-function showLF(id) {
-  var ids = ['lf-login','lf-setpass','lf-success'];
-  for (var i=0; i<ids.length; i++) {
-    var el = document.getElementById(ids[i]);
-    if (el) el.style.display = ids[i] === id ? (id==='lf-success'?'flex':'block') : 'none';
+function doLogin() {
+  var passEl = document.getElementById('lf-pass');
+  var errEl  = document.getElementById('lf-error');
+  var btnEl  = document.getElementById('lf-btn');
+  if (!passEl) return;
+  var pass = passEl.value;
+  if (!pass) {
+    showLoginErr('Entrez le mot de passe.');
+    return;
+  }
+  if (pass === APP_PASSWORD) {
+    enterApp();
+    try { sessionStorage.setItem('r4p-auth','1'); } catch(e) {}
+  } else {
+    showLoginErr('Mot de passe incorrect.');
+    passEl.value = '';
+    passEl.focus();
   }
 }
 
-function showErr(msg) {
+function showLoginErr(msg) {
   var el = document.getElementById('lf-error');
   if (el) { el.textContent = msg; el.style.display = 'block'; }
-}
-
-function clearErr() {
-  var el = document.getElementById('lf-error');
-  if (el) el.style.display = 'none';
-}
-
-function doLogin() {
-  clearErr();
-  var email = (document.getElementById('lf-email')||{value:''}).value.trim();
-  var pass  = (document.getElementById('lf-pass') ||{value:''}).value;
-  var btn   = document.getElementById('lf-btn');
-  if (!email || !pass) { showErr('Veuillez remplir email et mot de passe.'); return; }
-  if (btn) { btn.textContent = 'Connexion...'; btn.disabled = true; }
-
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', SITE + '/.netlify/identity/token', true);
-  xhr.setRequestHeader('Content-Type','application/x-www-form-urlencoded');
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState !== 4) return;
-    if (btn) { btn.textContent = ' Se connecter'; btn.disabled = false; }
-    if (xhr.status === 200) {
-      try { _token = JSON.parse(xhr.responseText).access_token; getUserInfo(); }
-      catch(e) { showErr('Erreur inattendue. Réessayez.'); }
-    } else {
-      showErr('Email ou mot de passe incorrect.');
-    }
-  };
-  xhr.send('grant_type=password&username='+encodeURIComponent(email)+'&password='+encodeURIComponent(pass));
-}
-
-function getUserInfo() {
-  var xhr = new XMLHttpRequest();
-  xhr.open('GET', SITE + '/.netlify/identity/user', true);
-  xhr.setRequestHeader('Authorization','Bearer ' + _token);
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState !== 4) return;
-    var user = null;
-    try { user = JSON.parse(xhr.responseText); } catch(e) {}
-    onLoggedIn(user);
-  };
-  xhr.send();
-}
-
-function onLoggedIn(user) {
-  var name = user && user.user_metadata && user.user_metadata.full_name
-    ? user.user_metadata.full_name
-    : (user && user.email ? user.email.split('@')[0] : 'Praticien');
-  var email = user ? user.email : '';
-  var init = name.split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2);
-
-  var av = document.getElementById('lf-avatar');
-  var un = document.getElementById('lf-uname');
-  var ue = document.getElementById('lf-uemail');
-  if (av) av.textContent = init;
-  if (un) un.textContent = name;
-  if (ue) ue.textContent = email;
-  showLF('lf-success');
-
-  var navU = document.getElementById('nav-uname');
-  var navL = document.getElementById('nav-logout');
-  if (navU) navU.textContent = name;
-  if (navL) navL.style.display = 'inline-block';
-
-  try { localStorage.setItem('r4p-user', name); } catch(e) {}
-  enterApp();
 }
 
 function enterApp() {
   var ls = document.getElementById('login-screen');
   if (ls) ls.classList.add('hidden');
+  var navL = document.getElementById('nav-logout');
+  if (navL) navL.style.display = 'inline-block';
 }
 
 function doLogout() {
-  _token = null;
-  try { localStorage.removeItem('r4p-user'); } catch(e) {}
+  try { sessionStorage.removeItem('r4p-auth'); } catch(e) {}
   var ls = document.getElementById('login-screen');
   if (ls) ls.classList.remove('hidden');
-  showLF('lf-login');
-  clearErr();
-  var p = document.getElementById('lf-pass');
-  if (p) p.value = '';
-  var navU = document.getElementById('nav-uname');
+  var passEl = document.getElementById('lf-pass');
+  if (passEl) passEl.value = '';
+  var errEl = document.getElementById('lf-error');
+  if (errEl) errEl.style.display = 'none';
   var navL = document.getElementById('nav-logout');
-  if (navU) navU.textContent = '';
   if (navL) navL.style.display = 'none';
 }
 
-function doSetPassword() {
-  clearErr();
-  var p1  = (document.getElementById('lf-newpass') ||{value:''}).value;
-  var p2  = (document.getElementById('lf-newpass2')||{value:''}).value;
-  var btn = document.getElementById('lf-setpass-btn');
-  if (p1.length < 6) { showErr('Minimum 6 caractères.'); return; }
-  if (p1 !== p2)     { showErr('Les mots de passe ne correspondent pas.'); return; }
-  if (btn) { btn.textContent = 'Enregistrement...'; btn.disabled = true; }
-
-  var tok = window._pendingToken;
-  var typ = window._pendingType;
-
-  if (typ === 'access') {
-    // Already have access token ? update password directly
-    updatePassword(tok, p1, btn);
-  } else {
-    // Exchange invite/recovery token for access token first
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', SITE + '/.netlify/identity/token', true);
-    xhr.setRequestHeader('Content-Type','application/x-www-form-urlencoded');
-    xhr.onreadystatechange = function() {
-      if (xhr.readyState !== 4) return;
-      if (xhr.status === 200) {
-        try {
-          var at = JSON.parse(xhr.responseText).access_token;
-          updatePassword(at, p1, btn);
-        } catch(e) {
-          if (btn) { btn.textContent = '\u2705 Valider mon mot de passe'; btn.disabled = false; }
-          showErr('Erreur inattendue. Réessayez.');
-        }
-      } else {
-        if (btn) { btn.textContent = '\u2705 Valider mon mot de passe'; btn.disabled = false; }
-        showErr('Lien expiré. Demandez un nouveau lien.');
-      }
-    };
-    var grant = typ === 'invite' ? 'invite' : 'recovery';
-    xhr.send('grant_type=' + grant + '&token=' + encodeURIComponent(tok));
-  }
-}
-
-function updatePassword(accessToken, newPass, btn) {
-  var xhr = new XMLHttpRequest();
-  xhr.open('PUT', SITE + '/.netlify/identity/user', true);
-  xhr.setRequestHeader('Content-Type','application/json');
-  xhr.setRequestHeader('Authorization','Bearer ' + accessToken);
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState !== 4) return;
-    if (btn) { btn.textContent = '\u2705 Valider mon mot de passe'; btn.disabled = false; }
-    if (xhr.status === 200) {
-      _token = accessToken;
-      getUserInfo();
-    } else {
-      showErr('Erreur lors de la sauvegarde. Réessayez.');
-    }
-  };
-  xhr.send(JSON.stringify({password: newPass}));
-}
-
-// Detect invite/recovery token in URL hash
-(function() {
-  var hash = window.location.hash;
-  if (hash) {
-    var params = {};
-    hash.replace('#','').split('&').forEach(function(part) {
-      var kv = part.split('=');
-      if (kv.length >= 2) params[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1]);
-    });
-    if (params.invite_token) {
-      window._pendingToken = params.invite_token;
-      window._pendingType  = 'invite';
-    } else if (params.recovery_token) {
-      window._pendingToken = params.recovery_token;
-      window._pendingType  = 'recovery';
-    } else if (params.access_token && params.type === 'recovery') {
-      window._pendingToken = params.access_token;
-      window._pendingType  = 'access';
-    }
-    if (window._pendingToken) {
-      var titleEl = document.getElementById('lf-setpass-title');
-      if (titleEl) titleEl.textContent = window._pendingType === 'invite'
-        ? 'Créez votre mot de passe' : 'Réinitialisez votre mot de passe';
-      showLF('lf-setpass');
-      history.replaceState(null,'',window.location.pathname);
-    }
-  }
-  // Show login screen
-  var ls = document.getElementById('login-screen');
-  if (ls) ls.classList.remove('hidden');
-})();
-
-// Enter key on login form
+// Enter key submits
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Enter') {
     var ls = document.getElementById('login-screen');
-    if (ls && !ls.classList.contains('hidden')) {
-      var lfl = document.getElementById('lf-login');
-      var lfs = document.getElementById('lf-setpass');
-      if (lfl && lfl.style.display !== 'none') doLogin();
-      else if (lfs && lfs.style.display !== 'none') doSetPassword();
-    }
+    if (ls && !ls.classList.contains('hidden')) doLogin();
   }
 });
 
+// Check session on load
+(function() {
+  var authed = false;
+  try { authed = sessionStorage.getItem('r4p-auth') === '1'; } catch(e) {}
+  var ls = document.getElementById('login-screen');
+  if (ls) {
+    if (authed) {
+      ls.classList.add('hidden');
+    } else {
+      ls.classList.remove('hidden');
+    }
+  }
+})();
 </script>
 
 </body>
