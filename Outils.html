@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="color-scheme" content="light only">
+<title>Outils — Rehab4Perf</title>
+<style>
+:root {
+  --bg:        #F7F6F3;
+  --surface:   #FFFFFF;
+  --surface2:  #F1F0ED;
+  --border:    #E8E6E1;
+  --border2:   #D3D1CB;
+  --text:      #1A1917;
+  --text2:     #6B6860;
+  --text3:     #9D9B96;
+  --accent:    #2B5FA6;
+  --accent-l:  #EEF3FB;
+  --accent2:   #1A3A5C;
+  --green:     #2D6A4F;
+  --green-l:   #E8F5EE;
+  --red:       #C0392B;
+  --red-l:     #FDECEA;
+  --orange:    #D4600A;
+  --orange-l:  #FEF3EB;
+  --radius:    8px;
+  --radius-sm: 5px;
+  --shadow:    0 1px 3px rgba(0,0,0,.06), 0 1px 8px rgba(0,0,0,.04);
+  --font-serif: 'Georgia', serif;
+  --font-sans:  -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; -webkit-text-size-adjust: 100%; background: #F7F6F3 !important; }
+body {
+  font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  background: #F7F6F3;
+  color: #1A1917;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+/* Force all text black by default */
+*, *::before, *::after { color: inherit; }
+
+/* ── Sub-tabs ───────────────────────────────────────────── */
+.sub-tabs {
+display: flex;
+background: #FFFFFF;
+border-bottom: 1px solid #E8E6E1;
+padding: 0 20px;
+flex-shrink: 0;
+}
+.sub-tab {
+padding: 13px 18px;
+font-size: .87rem; font-weight: 500;
+color: #6B6860;
+cursor: pointer;
+border: none; background: none;
+font-family: -apple-system, ‘SF Pro Text’, ‘Helvetica Neue’, sans-serif;
+border-bottom: 3px solid transparent;
+margin-bottom: -1px;
+transition: all .12s;
+white-space: nowrap;
+}
+.sub-tab:hover { color: #1A1917; background: #F1F0ED; }
+.sub-tab.active { color: #1A3A5C; border-bottom-color: #2B5FA6; font-weight: 700; }
+
+/* ── Panels ─────────────────────────────────────────────── */
+.panel { display: none; flex: 1; overflow-y: auto; padding: 20px 24px 60px; }
+.panel.active { display: block; }
+
+/* ── Block ──────────────────────────────────────────────── */
+.block {
+background: #FFFFFF;
+border: 1px solid #E8E6E1;
+border-radius: 8px;
+margin-bottom: 16px;
+overflow: hidden;
+box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 8px rgba(0,0,0,.04);
+}
+.block-header {
+padding: 9px 16px;
+font-size: .72rem; font-weight: 700;
+letter-spacing: .06em; text-transform: uppercase;
+color: #fff;
+background: #1A3A5C;
+display: flex; align-items: center; gap: 8px;
+}
+.block-header.org  { background: #D4600A; }
+.block-header.grn  { background: #2D6A4F; }
+.block-header.grey { background: #52514E; }
+
+/* ── RM Inputs ──────────────────────────────────────────── */
+.rm-inputs {
+display: grid;
+grid-template-columns: 1fr 1fr 1fr;
+gap: 1px;
+background: #E8E6E1;
+}
+.rm-field {
+background: #FFFFFF;
+padding: 11px 16px;
+display: flex; flex-direction: column; gap: 5px;
+}
+.rm-field label {
+font-size: .68rem; font-weight: 700;
+text-transform: uppercase; letter-spacing: .05em;
+color: #6B6860;
+}
+.rm-field input, .rm-field select {
+font-family: -apple-system, ‘SF Pro Text’, ‘Helvetica Neue’, sans-serif;
+font-size: 1.05rem; font-weight: 600;
+color: #1A3A5C;
+border: none; outline: none; background: transparent; width: 100%;
+}
+.rm-field input[type=text] { font-weight: 400; color: #1A1917; font-size: .95rem; }
+.rm-field input::placeholder { color: #9D9B96; font-weight: 400; }
+
+/* ── Average bar ────────────────────────────────────────── */
+.avg-bar {
+background: #1A3A5C;
+color: #fff;
+padding: 13px 18px;
+display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+}
+.avg-val { font-size: 2rem; font-weight: 700; line-height: 1; }
+.avg-sub { font-size: .78rem; opacity: .7; margin-top: 3px; }
+.avg-right { margin-left: auto; font-size: .72rem; opacity: .55; text-align: right; line-height: 1.7; }
+
+/* ── Pills ──────────────────────────────────────────────── */
+.pills {
+display: flex; flex-wrap: wrap; gap: 8px;
+padding: 14px 16px;
+}
+.pill {
+background: #F1F0ED;
+border: 1px solid #E8E6E1;
+border-radius: 5px;
+padding: 9px 14px;
+text-align: center; min-width: 100px;
+}
+.pill .pv { font-size: 1.2rem; font-weight: 700; color: #1A3A5C; }
+.pill .pl { font-size: .68rem; color: #6B6860; margin-top: 2px; }
+.pill.best { background: #EEF3FB; border-color: #2B5FA6; }
+.pill.best .pv { font-size: 1.35rem; }
+
+/* ── Tables ─────────────────────────────────────────────── */
+.tbl { width: 100%; border-collapse: collapse; }
+.tbl th {
+background: #1A3A5C; color: #fff;
+padding: 8px 12px; text-align: left;
+font-size: .7rem; font-weight: 600; letter-spacing: .04em;
+}
+.tbl td { padding: 7px 12px; border-bottom: 1px solid #E8E6E1; font-size: .87rem; }
+.tbl tr:last-child td { border-bottom: none; }
+.tbl tr:hover td { background: #F1F0ED; }
+.tbl .num { font-weight: 700; color: #1A3A5C; }
+.tbl .pct { font-weight: 700; }
+.tbl.hsr th { background: #2D6A4F; }
+
+/* Zone colors */
+.zR  { color: #C0392B; font-weight: 600; }
+.zO  { color: #E67E22; font-weight: 600; }
+.zY  { color: #C9A227; font-weight: 600; }
+.zV  { color: #8E44AD; font-weight: 600; }
+.zB  { color: #2980B9; font-weight: 600; }
+.zG  { color: #2D6A4F; font-weight: 600; }
+.zC  { color: #0097A7; font-weight: 600; }
+.zW  { color: #6B6860; }
+
+/* ── HSR sticky ─────────────────────────────────────────── */
+.hsr-sticky {
+position: sticky; top: 0; z-index: 40;
+background: #FFFFFF;
+border-bottom: 2px solid #2B5FA6;
+padding: 10px 18px;
+display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+box-shadow: 0 2px 8px rgba(0,0,0,.07);
+}
+.hsr-sticky label { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #6B6860; }
+.hsr-sticky input {
+font-family: -apple-system, ‘SF Pro Text’, ‘Helvetica Neue’, sans-serif; font-size: 1rem; font-weight: 700;
+border: 1.5px solid #D3D1CB; border-radius: 5px;
+padding: 5px 10px; width: 86px; outline: none;
+color: #1A3A5C; text-align: center; background: #FFFFFF;
+}
+.hsr-sticky input:focus { border-color: #2B5FA6; }
+.hsr-sticky .hint { font-size: .72rem; color: #9D9B96; margin-left: auto; font-style: italic; }
+
+/* ── HSR meta grid ──────────────────────────────────────── */
+.meta-grid {
+display: grid; grid-template-columns: 1fr 1fr;
+gap: 1px; background: #E8E6E1;
+}
+.meta-cell {
+background: #FFFFFF; padding: 11px 16px;
+display: flex; flex-direction: column; gap: 4px;
+}
+.meta-cell label { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #6B6860; }
+.meta-cell .val { font-size: .9rem; font-weight: 600; color: #1A1917; }
+.meta-cell .sub { font-size: .73rem; color: #9D9B96; line-height: 1.4; }
+
+/* ── EVA bar ────────────────────────────────────────────── */
+.eva { display: flex; height: 6px; border-radius: 4px; overflow: hidden; margin: 6px 0 3px; }
+.eva-labels { display: flex; justify-content: space-between; font-size: .63rem; color: #9D9B96; }
+
+/* ── Protocol steps ─────────────────────────────────────── */
+.step {
+display: grid; grid-template-columns: 68px 1fr;
+gap: 14px; align-items: start;
+padding: 13px 16px; border-bottom: 1px solid #E8E6E1;
+}
+.step:last-child { border-bottom: none; }
+.step-badge {
+background: #2D6A4F; color: #fff;
+border-radius: 5px;
+padding: 8px 10px; text-align: center;
+font-weight: 700; font-size: .88rem; line-height: 1.3;
+}
+.step-badge small { display: block; font-size: .65rem; font-weight: 400; opacity: .8; margin-top: 2px; }
+.step-title { font-size: .9rem; font-weight: 700; margin-bottom: 3px; }
+.step-desc  { font-size: .8rem; color: #6B6860; line-height: 1.5; }
+.step-tags  { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.tag { font-size: .68rem; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: #EEF3FB; color: #1A3A5C; }
+.tag.g { background: #E8F5EE; color: #2D6A4F; }
+.tag.o { background: #FEF3EB; color: #D4600A; }
+
+/* ── Footer note ────────────────────────────────────────── */
+.foot-note { padding: 9px 16px; font-size: .7rem; color: #9D9B96; font-style: italic; border-top: 1px solid #E8E6E1; }
+
+@media (max-width: 600px) {
+.panel { padding: 12px 12px 60px; }
+.rm-inputs { grid-template-columns: 1fr 1fr; }
+.meta-grid { grid-template-columns: 1fr; }
+.sub-tab { padding: 11px 12px; font-size: .82rem; }
+}
+</style>
+
+</head>
+<body>
+
+<div class="sub-tabs">
+  <button class="sub-tab active" onclick="showTab('rm')" id="stab-rm">💪 Tableau RM</button>
+  <button class="sub-tab" onclick="showTab('hsr')" id="stab-hsr">📈 Protocole HSR</button>
+  <button class="sub-tab" onclick="showTab('cardio')" id="stab-cardio">❤️ Calculateur Cardio</button>
+  <button class="sub-tab" onclick="showTab('cap')" id="stab-cap">🏃 Reprise CAP</button>
+</div>
+
+<!-- ══ TABLEAU RM ══════════════════════════════════════════ -->
+
+<div class="panel active" id="panel-rm">
+
+  <div class="block">
+    <div class="block-header">💪 Calculateur de Répétition Maximale (1RM)</div>
+    <div class="rm-inputs">
+      <div class="rm-field">
+        <label>Poids soulevé (kg)</label>
+        <input type="number" id="rm-poids" value="70" min="1" max="500" step="0.5" oninput="calcRM()">
+      </div>
+      <div class="rm-field">
+        <label>Répétitions effectuées</label>
+        <input type="number" id="rm-reps" value="5" min="1" max="30" oninput="calcRM()">
+      </div>
+      <div class="rm-field">
+        <label>Exercice (optionnel)</label>
+        <input type="text" id="rm-exo" value="Squat" placeholder="Squat, Bench…">
+      </div>
+    </div>
+    <div class="avg-bar">
+      <div>
+        <div class="avg-val" id="rm-avg">—</div>
+        <div class="avg-sub">1RM Moyen — 6 formules — <span id="rm-exo-lbl"></span></div>
+      </div>
+      <div class="avg-right">Brzycki · Epley · Lander<br>Lombardi · O'Conner · Mayhew</div>
+    </div>
+    <div class="pills" id="rm-pills"></div>
+    <div class="foot-note">⚠ Estimations indicatives. Adaptez les charges à l'état du patient, à la technique et au contexte clinique.</div>
+  </div>
+
+  <div class="block">
+    <div class="block-header org">📊 Tableau des Charges par % du 1RM</div>
+    <table class="tbl">
+      <thead>
+        <tr><th>% 1RM</th><th>Charge</th><th>Reps cibles</th><th>Objectif</th><th>Zone</th></tr>
+      </thead>
+      <tbody id="rm-tbody"></tbody>
+    </table>
+  </div>
+
+</div><!-- /panel-rm -->
+
+<!-- ══ PROTOCOLE HSR ═══════════════════════════════════════ -->
+
+<div class="panel" id="panel-hsr">
+
+  <div class="hsr-sticky">
+    <label>1RM de référence</label>
+    <input type="number" id="hsr-ref" value="80.7" step="0.1" oninput="calcHSR()">
+    <span style="font-size:.88rem;font-weight:700;color:var(--accent2)">kg</span>
+    <span class="hint">← Synchronisé avec le calculateur RM</span>
+  </div>
+
+  <div class="block" style="margin-top:16px">
+    <div class="block-header grn">🏋 Protocole HSR — Heavy Slow Resistance</div>
+    <div style="padding:8px 16px;font-size:.78rem;color:var(--text2);font-style:italic;border-bottom:1px solid var(--border)">
+      Kongsgaard et al. (2009) · Tendinopathie &amp; préparation physique
+    </div>
+    <div class="meta-grid">
+      <div class="meta-cell">
+        <label>⏱ Tempo</label>
+        <div class="val">3s concentrique + 3s excentrique</div>
+        <div class="sub">6 secondes par répétition</div>
+      </div>
+      <div class="meta-cell">
+        <label>📅 Fréquence</label>
+        <div class="val">2 à 3 séances / semaine</div>
+        <div class="sub">Minimum 48–72h entre chaque séance</div>
+      </div>
+      <div class="meta-cell">
+        <label>📈 Progression</label>
+        <div class="val">+2 à 10% par séance</div>
+        <div class="sub">Passage RM inférieure : +20% arbitraire puis ajustement</div>
+      </div>
+      <div class="meta-cell">
+        <label>🩺 Douleur acceptable</label>
+        <div class="val">EVA ≤ 3/10 pendant l'exercice</div>
+        <div class="sub">Pas d'augmentation des symptômes dans les 24h</div>
+        <div class="eva">
+          <div style="background:#4CAF50;flex:3"></div>
+          <div style="background:#8BC34A;flex:2"></div>
+          <div style="background:#CDDC39;flex:2"></div>
+          <div style="background:#FF9800;flex:2"></div>
+          <div style="background:#F44336;flex:1"></div>
+        </div>
+        <div class="eva-labels">
+          <span>0 — OK</span>
+          <span style="color:var(--orange)">3 — Limite</span>
+          <span style="color:var(--red)">10 — Stop</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-header grn">📅 Progression sur 12 Semaines</div>
+    <table class="tbl hsr">
+      <thead>
+        <tr>
+          <th>Semaines</th><th>Intensité</th><th>% 1RM</th>
+          <th>Charge min</th><th>Charge max</th>
+          <th>Reps</th><th>Séries</th>
+          <th>Objectif physiologique</th><th>Contexte clinique</th>
+        </tr>
+      </thead>
+      <tbody id="hsr-tbody"></tbody>
+    </table>
+    <div class="foot-note">📚 Kongsgaard et al. (2009) — Acta Orthopaedica · Morrison &amp; Cook (2022) · Adapter selon EVA, tolérance tendineuse et évaluation clinique individuelle.</div>
+  </div>
+
+</div><!-- /panel-hsr -->
+
+<script>
+// -- Tab navigation ----------------------------------------
+function showTab(id) {
+  document.querySelectorAll('.sub-tab').forEach(function(t){ t.classList.remove('active'); });
+  document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
+  document.getElementById('stab-' + id).classList.add('active');
+  document.getElementById('panel-' + id).classList.add('active');
+}
+
+// -- 1RM Formulas ------------------------------------------
+function brzycki(w,r){ return r===1?w:w/(1.0278-0.0278*r); }
+function epley(w,r)  { return r===1?w:w*(1+r/30); }
+function lander(w,r) { return r===1?w:(100*w)/(101.3-2.671*r); }
+function lombardi(w,r){ return w*Math.pow(r,0.1); }
+function oconner(w,r){ return r===1?w:w*(1+r/40); }
+function mayhew(w,r) { return r===1?w:(100*w)/(52.2+41.9*Math.exp(-0.055*r)); }
+function rnd(v){ return Math.round(v*10)/10; }
+
+var FORMULAS = [
+  {name:'Brzycki', fn:brzycki},
+  {name:'Epley',   fn:epley},
+  {name:'Lander',  fn:lander},
+  {name:'Lombardi',fn:lombardi},
+  {name:"O'Conner",fn:oconner},
+  {name:'Mayhew',  fn:mayhew},
+];
+
+var CHARGES = [
+  {pct:100,reps:'1',    obj:'Force max / Test',          zone:'[MAX] Maximale',       cls:'zR'},
+  {pct:95, reps:'2-3',  obj:'Force maximale',            zone:'[SUB] Sub-Maximale',   cls:'zO'},
+  {pct:90, reps:'3-4',  obj:'Force / Puissance',         zone:'[SUB] Sub-Maximale',   cls:'zO'},
+  {pct:85, reps:'4-6',  obj:'Force fonctionnelle',       zone:'[ELEV] Élevée',         cls:'zY'},
+  {pct:80, reps:'6-8',  obj:'Hypertrophie / Force',      zone:'[HYPER] Hypertrophie',   cls:'zV'},
+  {pct:75, reps:'8-10', obj:'Hypertrophie',              zone:'[HYPER] Hypertrophie',   cls:'zV'},
+  {pct:70, reps:'10-12',obj:'Hypertrophie / Endurance',  zone:'[MOD] Modérée-Haute',  cls:'zB'},
+  {pct:65, reps:'12-15',obj:'Endurance de force',        zone:'[LEGER] Modérée',        cls:'zG'},
+  {pct:60, reps:'15-20',obj:'Endurance musculaire',      zone:'[LEGER] Modérée',        cls:'zG'},
+  {pct:55, reps:'20-25',obj:'Réathlétisation / Kiné',    zone:'[FAIBLE] Faible-Modérée', cls:'zC'},
+  {pct:50, reps:'25-30',obj:'Rééducation active',        zone:'[FAIBLE] Rééducation',    cls:'zC'},
+  {pct:40, reps:'30+',  obj:'Activation / Échauffement', zone:'[ACTIV] Activation',     cls:'zW'},
+];
+
+var HSR = [
+  {w:'S1',    rm:'15 RM',pMin:60,pMax:65,reps:15,sets:3,physio:'Activation neuromusculaire   Tolérance au chargement',clinique:'Introduction / Post-chirurgie',tagCls:'o'},
+  {w:'S2-S3', rm:'12 RM',pMin:65,pMax:70,reps:12,sets:4,physio:'Endurance de force   Adaptation tendineuse précoce', clinique:'Rééducation précoce',tagCls:'o'},
+  {w:'S4-S5', rm:'10 RM',pMin:72,pMax:75,reps:10,sets:4,physio:'Hypertrophie fonctionnelle   Remodelage collagène',  clinique:'Renforcement progressif',tagCls:'o'},
+  {w:'S6-S8', rm:'8 RM', pMin:78,pMax:82,reps:8, sets:4,physio:'Force / Hypertrophie   Stimulation tendino-osseuse',clinique:'Renforcement avancé',tagCls:''},
+  {w:'S9-S12',rm:'6 RM', pMin:83,pMax:87,reps:6, sets:4,physio:'Force maximale   Adaptation structurelle complète', clinique:'Retour au sport / Performance',tagCls:'g'},
+];
+
+function calcRM() {
+  var w = parseFloat(document.getElementById('rm-poids').value) || 0;
+  var r = Math.min(parseInt(document.getElementById('rm-reps').value) || 1, 30);
+  var exo = document.getElementById('rm-exo').value || '';
+  if (w <= 0 || r < 1) return;
+
+  var vals = FORMULAS.map(function(f){ return rnd(f.fn(w,r)); });
+  var avg = rnd(vals.reduce(function(a,b){return a+b;},0) / vals.length);
+
+  document.getElementById('rm-avg').textContent = avg + ' kg';
+  document.getElementById('rm-exo-lbl').textContent = exo;
+
+  document.getElementById('rm-pills').innerHTML = FORMULAS.map(function(f,i){
+    return '<div class="pill' + (i===0?' best':'') + '">' +
+      '<div class="pv">' + vals[i] + ' kg</div>' +
+      '<div class="pl">' + f.name + '</div>' +
+      '</div>';
+  }).join('');
+
+  document.getElementById('rm-tbody').innerHTML = CHARGES.map(function(c){
+    return '<tr>' +
+      '<td class="pct">' + c.pct + '%</td>' +
+      '<td class="num">' + rnd(avg*c.pct/100) + ' kg</td>' +
+      '<td style="color:var(--text2)">' + c.reps + '</td>' +
+      '<td>' + c.obj + '</td>' +
+      '<td class="' + c.cls + '">' + c.zone + '</td>' +
+      '</tr>';
+  }).join('');
+
+  // Sync HSR
+  document.getElementById('hsr-ref').value = avg;
+  calcHSR();
+}
+
+function calcHSR() {
+  var rm = parseFloat(document.getElementById('hsr-ref').value) || 0;
+
+  document.getElementById('hsr-tbody').innerHTML = HSR.map(function(p){
+    var cMin = rm > 0 ? rnd(rm*p.pMin/100) + ' kg' : '--';
+    var cMax = rm > 0 ? rnd(rm*p.pMax/100) + ' kg' : '--';
+    return '<tr>' +
+      '<td style="font-weight:700;color:var(--accent2)">' + p.w + '</td>' +
+      '<td style="font-weight:600">' + p.rm + '</td>' +
+      '<td>' + p.pMin + '-' + p.pMax + '%</td>' +
+      '<td style="font-weight:700;color:var(--green)">' + cMin + '</td>' +
+      '<td style="font-weight:700;color:var(--green)">' + cMax + '</td>' +
+      '<td style="font-weight:700;color:var(--accent2)">' + p.reps + '</td>' +
+      '<td style="font-weight:700;color:var(--accent2)">' + p.sets + '</td>' +
+      '<td style="font-size:.78rem;color:var(--text2)">' + p.physio + '</td>' +
+      '<td style="font-size:.78rem;color:var(--text2)">' + p.clinique + '</td>' +
+      '</tr>';
+  }).join('');
+
+  // Steps
+  document.getElementById('hsr-steps').innerHTML = HSR.map(function(p){
+    return '<div class="step">' +
+      '<div class="step-badge">' + p.w + '<small>' + p.rm + '</small></div>' +
+      '<div>' +
+        '<div class="step-title">' + p.clinique + '</div>' +
+        '<div class="step-desc">' + p.sets + ' séries x ' + p.reps + ' reps   ' + p.physio + '</div>' +
+        '<div class="step-tags">' +
+          '<span class="tag ' + p.tagCls + '">' + p.pMin + '-' + p.pMax + '% 1RM</span>' +
+          '<span class="tag">' + p.sets + ' séries</span>' +
+          '<span class="tag">' + p.reps + ' reps</span>' +
+          (rm > 0 ? '<span class="tag g">' + rnd(rm*p.pMin/100) + '-' + rnd(rm*p.pMax/100) + ' kg</span>' : '') +
+        '</div>' +
+      '</div>' +
+      '</div>';
+  }).join('');
+}
+
+// Init
+calcRM();
+
+
+// == CALCULATEUR CARDIO ===================================
+
+var C_ALLURES = [
+  {lbl:'Récupération',            pct:55},
+  {lbl:'Endurance fondamentale',  pct:70},
+  {lbl:'Allure marathon',         pct:80},
+  {lbl:'Seuil aérobie (SV1)',     pct:85},
+  {lbl:'Seuil anaérobie (SV2)',   pct:92},
+  {lbl:'VMA (100%)',              pct:100},
+  {lbl:'Allure 5 km (~105%)',     pct:105},
+];
+
+var C_ZONES = [
+  {z:'Z1', nom:'Récupération active',    pMin:50, pMax:60, benefit:'Récupération   blessures   débutants'},
+  {z:'Z2', nom:'Endurance fondamentale', pMin:60, pMax:70, benefit:'Aérobie de base   brûlage graisses'},
+  {z:'Z3', nom:'Aérobie modéré',         pMin:70, pMax:80, benefit:'Amélioration capacité cardiovasculaire'},
+  {z:'Z4', nom:'Seuil anaérobie',        pMin:80, pMax:90, benefit:'Performance   tolérance lactate'},
+  {z:'Z5', nom:'VO\u2082max / Intensité max', pMin:90, pMax:100, benefit:'VMA   puissance maximale aérobie'},
+];
+
+var Z_COLORS = ['#9D9B96','#2D6A4F','#2980B9','#D4600A','#C0392B'];
+
+function cMinKm(spd) {
+  if (!spd || spd <= 0) return '--';
+  var s = 3600 / spd;
+  var m = Math.floor(s / 60);
+  var sc = Math.round(s % 60);
+  return m + ':' + (sc < 10 ? '0' : '') + sc + '/km';
+}
+
+function cRnd(v, d) { d = d || 1; return Math.round(v * Math.pow(10,d)) / Math.pow(10,d); }
+
+function g(id) { var e = document.getElementById(id); return e ? e.value : ''; }
+function s(id, v) { var e = document.getElementById(id); if (e) e.textContent = v; }
+function sc(id, v, col) { var e = document.getElementById(id); if (e) { e.textContent = v; if (col) e.style.color = col; } }
+
+function calcCardio() {
+  var age    = parseFloat(g('c-age'));
+  var poids  = parseFloat(g('c-poids'));
+  var taille = parseFloat(g('c-taille'));
+  var fcrep  = parseFloat(g('c-fcrep'));
+  var fcmaxM = parseFloat(g('c-fcmax-m'));
+  var cooper = parseFloat(g('c-cooper'));
+  var leger  = parseFloat(g('c-leger'));
+
+  // IMC
+  if (!isNaN(poids) && !isNaN(taille) && taille > 0) {
+    var imc = cRnd(poids / Math.pow(taille/100, 2));
+    s('c-imc', imc + ' kg/m2');
+    var cat = imc < 18.5 ? 'Insuffisance ponderale' : imc < 25 ? 'Poids normal' : imc < 30 ? 'Surpoids' : 'Obesite';
+    var imcCol = (imc < 18.5 || imc >= 30) ? '#C0392B' : imc >= 25 ? '#D4600A' : '#2D6A4F';
+    sc('c-imc-cat', cat, imcCol);
+  } else { s('c-imc','--'); s('c-imc-cat','--'); }
+
+  if (isNaN(age) || age <= 0) return;
+
+  // FCmax
+  var fcmax, fcmaxSrc;
+  if (!isNaN(fcmaxM) && fcmaxM > 0) {
+    fcmax = Math.round(fcmaxM);
+    fcmaxSrc = 'Mesuree directement';
+  } else {
+    fcmax = Math.round(208 - 0.7 * age);
+    fcmaxSrc = 'Tanaka (2001) : 208 - 0.7 x age';
+  }
+  s('c-fcmax-val', fcmax + ' bpm');
+  s('c-fcmax-src', fcmaxSrc);
+
+  if (isNaN(fcrep) || fcrep <= 0) {
+    s('c-fcres', '-- renseignez FC repos'); return;
+  }
+
+  // FC reserve : nominale + avec fcrep-2 et fcrep+2
+  var fcres      = fcmax - fcrep;
+  var fcres_lo   = fcmax - (fcrep - 2);  // fcrep bas  -> reserve haute
+  var fcres_hi   = fcmax - (fcrep + 2);  // fcrep haut -> reserve basse
+  s('c-fcres', fcres + ' bpm');
+  s('c-fcrep-range', 'Plage : ' + (fcrep-2) + ' - ' + (fcrep+2) + ' bpm');
+
+  // VO2max + VMA : calculer avec les 3 valeurs de fcrep (nominal, -2, +2)
+  var vo2, vma, vo2_lo, vo2_hi, vma_lo, vma_hi;
+
+  if (!isNaN(cooper) && cooper > 0) {
+    vo2 = cRnd((cooper - 504.9) / 44.73);
+    vma = cRnd(cooper / 200, 2);
+    vo2_lo = vo2; vo2_hi = vo2; vma_lo = vma; vma_hi = vma;
+    s('c-vo2-src', 'Cooper (' + cooper + ' m)');
+    s('c-vma-src', 'Cooper : distance / 200');
+  } else if (!isNaN(leger) && leger > 0) {
+    vo2 = cRnd(5.857 * (8 + 0.5*(leger-1)) - 19.458);
+    vma = cRnd(8 + 0.5*(leger-1), 2);
+    vo2_lo = vo2; vo2_hi = vo2; vma_lo = vma; vma_hi = vma;
+    s('c-vo2-src', 'Leger-Boucher (palier ' + leger + ')');
+    s('c-vma-src', 'Leger-Boucher (direct)');
+  } else {
+    // Uth 2004 : depend de fcrep -> tranche avec fcrep-2 et fcrep+2
+    vo2     = cRnd(15 * fcmax / fcrep);
+    vo2_lo  = cRnd(15 * fcmax / (fcrep - 2));  // fcrep-2 -> vo2 plus grand
+    vo2_hi  = cRnd(15 * fcmax / (fcrep + 2));  // fcrep+2 -> vo2 plus petit
+    vma     = cRnd(vo2    / 3.5, 2);
+    vma_lo  = cRnd(vo2_lo / 3.5, 2);
+    vma_hi  = cRnd(vo2_hi / 3.5, 2);
+    s('c-vo2-src', 'Uth 2004 - entre ' + Math.min(vo2_lo,vo2_hi) + ' et ' + Math.max(vo2_lo,vo2_hi) + ' ml/kg/min');
+    s('c-vma-src', 'Billat - entre ' + Math.min(vma_lo,vma_hi) + ' et ' + Math.max(vma_lo,vma_hi) + ' km/h');
+  }
+
+  s('c-vo2', vo2 + ' ml/kg/min');
+  s('c-vma', vma + ' km/h');
+  s('c-vma-allure', cMinKm(vma));
+
+  // Allures : nominale + tranche FC
+  var atbody = document.getElementById('c-allures-tbody');
+  if (atbody) {
+    atbody.innerHTML = C_ALLURES.map(function(a, i) {
+      var spd     = cRnd(vma * a.pct / 100, 2);
+      var spdLo   = cRnd(Math.max(vma_lo,vma_hi) * a.pct / 100, 2);
+      var spdHi   = cRnd(Math.min(vma_lo,vma_hi) * a.pct / 100, 2);
+      var fc_nom  = Math.round(fcrep    + fcres    * a.pct / 100);
+      var fc_lo   = Math.round((fcrep-2) + fcres_lo * a.pct / 100);
+      var fc_hi   = Math.round((fcrep+2) + fcres_hi * a.pct / 100);
+      var allure_str = (vma_lo===vma_hi) ? cMinKm(spd)+'/km' : cMinKm(spdHi)+' a '+cMinKm(spdLo)+'/km';
+      var fc_str  = Math.min(fc_lo,fc_hi) + ' a ' + Math.max(fc_lo,fc_hi) + ' bpm';
+      var bg = i%2===0?'':'background:#F1F0ED;';
+      return '<tr style="' + bg + '">' +
+        '<td style="font-weight:600">' + a.lbl + '</td>' +
+        '<td style="font-weight:700;color:#2D6A4F">' + a.pct + '%</td>' +
+        '<td style="color:#1A3A5C">' + spd + ' km/h</td>' +
+        '<td style="font-weight:700;color:#1A3A5C">' + allure_str + '</td>' +
+        '<td>' + fc_nom + ' bpm</td>' +
+        '<td style="color:#2D6A4F;font-weight:600">' + fc_str + '</td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  // Zones FC : tranche
+  var ztbody = document.getElementById('c-zones-tbody');
+  if (ztbody) {
+    ztbody.innerHTML = C_ZONES.map(function(z, i) {
+      var fcL = Math.round(fcrep + fcres * z.pMin/100);
+      var fcH = Math.round(fcrep + fcres * z.pMax/100);
+      var fcMin_t = Math.round(Math.min((fcrep-2)+fcres_lo*z.pMin/100, (fcrep+2)+fcres_hi*z.pMin/100));
+      var fcMax_t = Math.round(Math.max((fcrep-2)+fcres_lo*z.pMax/100, (fcrep+2)+fcres_hi*z.pMax/100));
+      var bg = i%2===0?'':'background:#F1F0ED;';
+      return '<tr style="' + bg + '">' +
+        '<td style="font-weight:700;color:' + Z_COLORS[i] + '">' + z.z + '</td>' +
+        '<td style="font-weight:600">' + z.nom + '</td>' +
+        '<td>' + z.pMin + '-' + z.pMax + '%</td>' +
+        '<td style="font-weight:700;color:' + Z_COLORS[i] + '">' + fcL + ' a ' + fcH + ' bpm</td>' +
+        '<td style="color:#2D6A4F;font-size:.82rem">env. ' + fcMin_t + ' a ' + fcMax_t + ' bpm</td>' +
+        '<td style="font-size:.78rem;color:#6B6860">' + z.benefit + '</td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  // Sync CAP
+  var z2L = Math.round(fcrep + fcres * 0.60);
+  var z2H = Math.round(fcrep + fcres * 0.70);
+  s('cap-allure-info', 'Z2 : ' + z2L + ' - ' + z2H + ' bpm - VMA : ' + vma + ' km/h');
+}
+
+function cardioLoadBilan() {
+  try {
+    var raw = localStorage.getItem('athletik-bilan');
+    if (!raw) return;
+    var data = JSON.parse(raw);
+    var synced = [];
+    var ageEl  = document.getElementById('c-age');
+    var wEl    = document.getElementById('c-poids');
+    var hEl    = document.getElementById('c-taille');
+    var sexEl  = document.getElementById('c-sex');
+    var nmEl   = document.getElementById('cap-patient-name');
+    if (data['f-dob'] && ageEl && !ageEl.value) {
+      var ag = new Date().getFullYear() - new Date(data['f-dob']).getFullYear();
+      if (ag > 0 && ag < 120) { ageEl.value = ag; synced.push('âge'); }
+    }
+    if (data['f-poids'] && wEl && !wEl.value) { wEl.value = data['f-poids']; synced.push('poids'); }
+    if (data['f-taille'] && hEl && !hEl.value) { hEl.value = data['f-taille']; synced.push('taille'); }
+    if (data['f-sexe'] && sexEl) { sexEl.value = data['f-sexe'] === 'F' ? '0' : '1'; }
+    var nm = ((data['f-prenom']||'') + ' ' + (data['f-nom']||'')).trim();
+    if (nm && nmEl && nmEl.textContent === '--') nmEl.textContent = nm;
+    if (synced.length > 0) {
+      var banner = document.getElementById('cardio-banner');
+      if (banner) { banner.style.display = 'block'; }
+      var sf = document.getElementById('cardio-sync-fields');
+      if (sf) sf.textContent = synced.join(', ');
+      calcCardio();
+    }
+  } catch(e) {}
+}
+
+// == REPRISE CAP ===========================================
+
+var CAP_DATA = [
+  {n:1,  ph:'Phase 1',col:'#1A3A5C',titre:'Initiation marche/course',
+   s:["5'M + 3\u00d7(1'C/1'M)","4\u00d7(1'C/1'M)","5\u00d7(1'C/1'M)","6\u00d7(1'C/1'M)","7\u00d7(1'C/1'M)"],
+   d:['D\u00e9part progressif \u00b7 5 min marche \u00e9chauffement obligatoire','Augmenter 1 r\u00e9p\u00e9tition','','','Fin S1 \u2014 noter le ressenti global']},
+  {n:2,  ph:'Phase 1',col:'#1A3A5C',titre:'Progression alternance',
+   s:["8\u00d7(1'C/1'M)","9\u00d7(1'C/1'M)","10\u00d7(1'C/1'M)","11\u00d7(1'C/1'M)","12\u00d7(1'C/1'M)"],
+   d:['','','Cap des 10 minutes de course cumul\u00e9e','','12 min de course = 12 min de marche']},
+  {n:3,  ph:'Phase 1',col:'#1A3A5C',titre:"Transition vers intervalles 2'/1'",
+   s:["13\u00d7(1'C/1'M)","14\u00d7(1'C/1'M)","15\u00d7(1'C/1'M)","3\u00d7(2'C/1'M)","4\u00d7(2'C/1'M)"],
+   d:['','','15 r\u00e9p\u00e9titions \u00b7 point pivot de la semaine','\ud83d\udd11 Passage aux blocs de 2\u2019 \u2014 attention \u00e0 l\u2019allure','']},
+  {n:4,  ph:'Phase 1',col:'#1A3A5C',titre:"Blocs 2' / 1'",
+   s:["5\u00d7(2'C/1'M)","6\u00d7(2'C/1'M)","7\u00d7(2'C/1'M)","8\u00d7(2'C/1'M)","9\u00d7(2'C/1'M)"],
+   d:['','','14 min de course cumul\u00e9e','','18 min de course cumul\u00e9e']},
+  {n:5,  ph:'Phase 1',col:'#1A3A5C',titre:"Blocs 3' / 1'",
+   s:["10\u00d7(2'C/1'M)","3\u00d7(3'C/1'M)","4\u00d7(3'C/1'M)","5\u00d7(3'C/1'M)","6\u00d7(3'C/1'M)"],
+   d:["Dernier entra\u00eenement en 2'/1'",'\ud83d\udd11 Introduction des blocs de 3 min','','15 min de course cumul\u00e9e','18 min de course cumul\u00e9e']},
+  {n:6,  ph:'Phase 1',col:'#1A3A5C',titre:"Blocs 4' / 1'",
+   s:["7\u00d7(3'C/1'M)","8\u00d7(3'C/1'M)","2\u00d7(4'C/1'M)","3\u00d7(4'C/1'M)","4\u00d7(4'C/1'M)"],
+   d:['21 min de course cumul\u00e9e','24 min de course cumul\u00e9e','\ud83d\udd11 Introduction des blocs de 4 min','12 min de course cumul\u00e9e','16 min de course cumul\u00e9e']},
+  {n:7,  ph:'Phase 1',col:'#1A3A5C',titre:"Grands blocs & transition 9' / 1'",
+   s:["5\u00d7(4'C/1'M)","6\u00d7(4'C/1'M)","1\u00d7(9'C/1'M)","2\u00d7(9'C/1'M)","3\u00d7(9'C/1'M)"],
+   d:['20 min de course cumul\u00e9e','24 min de course cumul\u00e9e','\ud83d\udd11 Premier bloc de 9 minutes','18 min de course \u00b7 2 min de marche','27 min de course cumul\u00e9e']},
+  {n:8,  ph:'Phase 1',col:'#1A3A5C',titre:'Course continue \u2014 objectif 30 min',
+   s:["1\u00d7(14'C/1'M)","2\u00d7(14'C/1'M)","1\u00d720'C","1\u00d725'C","1\u00d730'C"],
+   d:['','28 min de course \u00b7 presque continu','\ud83d\udd11 Premi\u00e8re course continue de 20 min','','\ud83c\udfc6 Objectif atteint \u2014 30 minutes de course continue']},
+  {n:9,  ph:'Phase 2',col:'#2D6A4F',titre:'Consolidation 30 min',
+   s:["1\u00d730' C","1\u00d730' C","1\u00d732' C","1\u00d732' C","1\u00d735' C"],
+   d:['Allure tr\u00e8s facile \u00b7 confirmer la tol\u00e9rance','Focus sur l\u2019allure r\u00e9guli\u00e8re','L\u00e9g\u00e8re progression +2 min','Maintien 32 min','Sortie longue de la semaine']},
+  {n:10, ph:'Phase 2',col:'#2D6A4F',titre:'Introduction du volume',
+   s:["1\u00d730' C","2\u00d715' C / 2'M","1\u00d735' C","2\u00d715' C / 2'M","1\u00d740' C"],
+   d:['R\u00e9cup\u00e9ration \u00b7 allure tr\u00e8s facile','Fractionn\u00e9 moyen avec r\u00e9cup\u00e9ration marche','Course continue progressive','R\u00e9p\u00e9tition du fractionn\u00e9','Sortie longue \u2014 cap sur 40 min']},
+  {n:11, ph:'Phase 2',col:'#2D6A4F',titre:'Progression tempo',
+   s:["1\u00d735' C","3\u00d710' C / 2'M","1\u00d740' C","3\u00d710' C / 2'M","1\u00d745' C"],
+   d:['Allure conversationnelle','3 r\u00e9p\u00e9titions \u2014 noter RPE et douleur','Course continue','R\u00e9p\u00e9tition du fractionn\u00e9','\ud83d\udd11 Sortie longue \u2014 cap sur 45 min']},
+  {n:12, ph:'Phase 2',col:'#D4600A',titre:'D\u00e9charge \u2014 R\u00e9cup\u00e9ration active',
+   s:["1\u00d725' C","2\u00d712' C / 2'M","1\u00d730' C","1\u00d725' C","1\u00d735' C"],
+   d:['Volume r\u00e9duit \u00b7 \u00e9coute du corps','Fractionn\u00e9 court','Allure facile','S\u00e9ance courte','Sortie longue r\u00e9duite']},
+  {n:13, ph:'Phase 2',col:'#2D6A4F',titre:'D\u00e9veloppement endurance',
+   s:["1\u00d740' C","4\u00d78' C / 90''M","1\u00d745' C","4\u00d78' C / 90''M","1\u00d755' C"],
+   d:['Allure conversationnelle','Fractionn\u00e9 long \u2014 allure mod\u00e9r\u00e9e possible','Course continue','R\u00e9p\u00e9tition du fractionn\u00e9','\ud83d\udd11 Sortie longue \u2014 proche de l\u2019heure']},
+  {n:14, ph:'Phase 2',col:'#2D6A4F',titre:'Consolidation finale \ud83c\udfc6',
+   s:["1\u00d740' C","3\u00d712' C / 90''M","1\u00d750' C","3\u00d712' C / 90''M","1\u00d760' C"],
+   d:['Allure facile','Fractionn\u00e9 mod\u00e9r\u00e9','Course continue','Derni\u00e8re s\u00e9ance fractionn\u00e9e','\ud83c\udfc6 Sortie longue finale \u2014 OBJECTIF 1 HEURE !']},
+];
+
+function capGetAllure() {
+  var fcrep = parseFloat(g('c-fcrep'));
+  var age   = parseFloat(g('c-age'));
+  if (isNaN(fcrep)||fcrep<=0||isNaN(age)||age<=0) return null;
+  var fcmaxM = parseFloat(g('c-fcmax-m'));
+  var fcmax = (!isNaN(fcmaxM)&&fcmaxM>0) ? Math.round(fcmaxM) : Math.round(208-0.7*age);
+  var fcres = fcmax - fcrep;
+  var z2L = Math.round(fcrep + fcres*0.60);
+  var z2H = Math.round(fcrep + fcres*0.70);
+  var vmaEl = document.getElementById('c-vma');
+  var vmaV  = vmaEl ? parseFloat(vmaEl.textContent) : NaN;
+  var allureZ2 = !isNaN(vmaV)&&vmaV>0 ? cMinKm(vmaV*0.70) : null;
+  return { z2L:z2L, z2H:z2H, allure:allureZ2 };
+}
+
+function buildCAP() {
+  var container = document.getElementById('cap-weeks-container');
+  if (!container) return;
+  var info = capGetAllure();
+  var infoStr = info ? (' \u00b7 Z2 : ' + info.z2L + '\u2013' + info.z2H + ' bpm' + (info.allure ? ' (' + info.allure + ')' : '')) : '';
+  var html = '';
+  for (var wi=0; wi<CAP_DATA.length; wi++) {
+    var w = CAP_DATA[wi];
+    var seancesHtml = '';
+    for (var si=0; si<w.s.length; si++) {
+      var isKey = w.s[si].indexOf('\ud83d\udd11')!==-1 || w.s[si].indexOf('\ud83c\udfc6')!==-1;
+      var bg = si%2===0?'#FFFFFF':'#F7F6F3';
+      seancesHtml +=
+        '<div style="display:grid;grid-template-columns:28px 150px 1fr;align-items:center;gap:8px;background:'+bg+';padding:9px 14px;border-bottom:1px solid #E8E6E1">' +
+          '<div style="font-size:.7rem;font-weight:700;color:#9D9B96;text-align:center">S'+(si+1)+'</div>' +
+          '<div style="font-size:.92rem;font-weight:'+(isKey?'700':'600')+';color:'+(isKey?w.col:'#1A1917')+';font-family:-apple-system,sans-serif">'+w.s[si]+'</div>' +
+          '<div style="font-size:.78rem;color:#6B6860;font-family:-apple-system,sans-serif">'+(w.d[si]||'')+'</div>' +
+        '</div>';
+    }
+    html +=
+      '<div style="background:#fff;border:1px solid #E8E6E1;border-radius:8px;margin-bottom:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05)">' +
+        '<div style="background:'+w.col+';color:#fff;padding:9px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
+          '<div style="background:rgba(255,255,255,.18);border-radius:20px;padding:2px 10px;font-size:.68rem;font-weight:700;font-family:-apple-system,sans-serif">'+w.ph+'</div>' +
+          '<div style="font-size:.9rem;font-weight:700;font-family:-apple-system,sans-serif">Semaine '+w.n+' \u2014 '+w.titre+'</div>' +
+          (infoStr && w.n <= 8 ? '<div style="margin-left:auto;font-size:.72rem;opacity:.8;font-family:-apple-system,sans-serif">Allure Z2'+infoStr+'</div>' : '') +
+        '</div>' +
+        seancesHtml +
+        '<div style="padding:6px 14px;background:#FEF3EB;font-size:.7rem;color:#C0392B;font-weight:500;font-family:-apple-system,sans-serif">' +
+          '\u26a0 Douleur \u2265 3/10 \u2192 arr\u00eater \u00b7 RPE > 7 \u2192 r\u00e9duire \u00b7 Selon ressenti : r\u00e9p\u00e9ter ou sauter 1\u20132 s\u00e9ances' +
+        '</div>' +
+      '</div>';
+  }
+  container.innerHTML = html;
+}
+
+function capLoadBilan() {
+  try {
+    var raw = localStorage.getItem('athletik-bilan');
+    if (!raw) return;
+    var data = JSON.parse(raw);
+    var nm = ((data['f-prenom']||'')+' '+(data['f-nom']||'')).trim();
+    var el = document.getElementById('cap-patient-name');
+    if (nm && el && el.textContent === '--') el.textContent = nm;
+  } catch(e) {}
+}
+
+// Override showTab to load data on tab open
+var _origShowTab = showTab;
+showTab = function(id) {
+  _origShowTab(id);
+  if (id === 'cardio') { cardioLoadBilan(); }
+  if (id === 'cap')    { buildCAP(); capLoadBilan(); }
+};
+
+// Init after DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+  buildCAP();
+  capLoadBilan();
+});
+
+</script>
+
+<!-- ══ CALCULATEUR CARDIO ══════════════════════════════════ -->
+
+<div class="panel" id="panel-cardio">
+
+  <div id="cardio-banner" style="background:#E8F5EE;border:1px solid #B7DEC9;border-radius:8px;padding:9px 16px;margin-bottom:14px;font-size:.78rem;color:#2D6A4F;display:none">
+    ✅ Données importées depuis le Bilan : <span id="cardio-sync-fields"></span> · Complétez FC au repos pour lancer les calculs.
+  </div>
+
+  <div class="block">
+    <div class="block-header">👤 Données Patient</div>
+    <div class="rm-inputs" style="grid-template-columns:repeat(3,1fr)">
+      <div class="rm-field">
+        <label>Âge (ans)</label>
+        <input type="number" id="c-age" placeholder="25" min="10" max="100" oninput="calcCardio()">
+      </div>
+      <div class="rm-field">
+        <label>Sexe</label>
+        <select id="c-sex" onchange="calcCardio()" style="font-size:.95rem;color:#1A1917;font-weight:600;border:none;outline:none;background:transparent;width:100%;font-family:-apple-system,sans-serif">
+          <option value="1">Homme</option>
+          <option value="0">Femme</option>
+        </select>
+      </div>
+      <div class="rm-field">
+        <label>Poids (kg)</label>
+        <input type="number" id="c-poids" placeholder="70" min="30" max="200" step="0.5" oninput="calcCardio()">
+      </div>
+      <div class="rm-field">
+        <label>Taille (cm)</label>
+        <input type="number" id="c-taille" placeholder="175" min="100" max="230" oninput="calcCardio()">
+      </div>
+      <div class="rm-field">
+        <label>FC au repos (bpm) <span style="font-size:.6rem;color:#9D9B96;font-weight:400">±2 pris en compte</span></label>
+        <input type="number" id="c-fcrep" placeholder="60" min="30" max="120" oninput="calcCardio()">
+      </div>
+      <div class="rm-field">
+        <label>FC max mesurée (optionnel)</label>
+        <input type="number" id="c-fcmax-m" placeholder="Vide = estimée" min="100" max="230" oninput="calcCardio()">
+        <span style="font-size:.62rem;color:#9D9B96">Priorité sur les formules si renseigné</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-header grey">📊 IMC</div>
+    <div class="rm-inputs" style="grid-template-columns:1fr 1fr">
+      <div class="rm-field">
+        <label>IMC calculé</label>
+        <div id="c-imc" style="font-size:1.1rem;font-weight:700;color:#1A3A5C">—</div>
+      </div>
+      <div class="rm-field">
+        <label>Catégorie</label>
+        <div id="c-imc-cat" style="font-size:.9rem;font-weight:600">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-header">💓 Fréquence Cardiaque Maximale</div>
+    <div style="padding:6px 16px 8px;font-size:.73rem;color:#6B6860;border-bottom:1px solid #E8E6E1">
+      Formule retenue : <strong id="c-fcmax-src">—</strong>
+    </div>
+    <div class="rm-inputs" style="grid-template-columns:1fr 1fr 1fr">
+      <div class="rm-field">
+        <label>FC max retenue (bpm)</label>
+        <div id="c-fcmax-val" style="font-size:1.6rem;font-weight:700;color:#1A3A5C">—</div>
+      </div>
+      <div class="rm-field">
+        <label>FC réserve = FCmax − FC repos</label>
+        <div id="c-fcres" style="font-size:1.3rem;font-weight:700;color:#1A3A5C">—</div>
+        <div id="c-fcres-range" style="font-size:.7rem;color:#6B6860;margin-top:3px">—</div>
+      </div>
+      <div class="rm-field">
+        <label>Plage FC repos ±2 bpm</label>
+        <div id="c-fcrep-range" style="font-size:.95rem;font-weight:600;color:#6B6860">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-header grn">🏃 Tests VMA — optionnels (laisser vide si non réalisés)</div>
+    <div style="padding:7px 16px 8px;font-size:.76rem;color:#6B6860;border-bottom:1px solid #E8E6E1">
+      Priorité : Cooper → Léger-Boucher → Estimation FC (Uth 2004). Laisser vide si test non réalisé.
+    </div>
+    <div class="rm-inputs" style="grid-template-columns:1fr 1fr">
+      <div class="rm-field">
+        <label>Distance Cooper (m sur 12 min)</label>
+        <input type="number" id="c-cooper" placeholder="Laisser vide" min="500" max="5000" oninput="calcCardio()">
+        <span style="font-size:.63rem;color:#9D9B96">Protocole : piste 400m · courir 12 min non-stop · mesurer la distance</span>
+      </div>
+      <div class="rm-field">
+        <label>Palier Léger-Boucher atteint (1–16)</label>
+        <input type="number" id="c-leger" placeholder="Laisser vide" min="1" max="16" step="0.5" oninput="calcCardio()">
+        <span style="font-size:.63rem;color:#9D9B96">Protocole : navettes 20m · paliers progressifs toutes les minutes</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-header org">🫁 VO₂max &amp; VMA Estimées</div>
+    <div style="padding:6px 16px 4px;font-size:.72rem;color:#6B6860;border-bottom:1px solid #E8E6E1">
+      Valeur retenue affichée — Cooper prioritaire → Léger-Boucher → Uth 2004 (FC)
+    </div>
+    <div class="rm-inputs" style="grid-template-columns:1fr 1fr 1fr">
+      <div class="rm-field">
+        <label>VO₂max retenue (ml/kg/min)</label>
+        <div id="c-vo2" style="font-size:1.4rem;font-weight:700;color:#1A3A5C">—</div>
+        <div id="c-vo2-src" style="font-size:.68rem;color:#9D9B96;margin-top:2px">—</div>
+      </div>
+      <div class="rm-field">
+        <label>VMA retenue (km/h)</label>
+        <div id="c-vma" style="font-size:1.4rem;font-weight:700;color:#2D6A4F">—</div>
+        <div id="c-vma-src" style="font-size:.68rem;color:#9D9B96;margin-top:2px">—</div>
+      </div>
+      <div class="rm-field">
+        <label>Allure à VMA (min/km)</label>
+        <div id="c-vma-allure" style="font-size:1.1rem;font-weight:700;color:#2D6A4F">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-header grn">🏃 Allures Cibles par % de VMA</div>
+    <div style="overflow-x:auto">
+      <table class="tbl" style="min-width:560px">
+        <thead>
+          <tr>
+            <th>Zone</th><th>% VMA</th><th>Vitesse (km/h)</th><th>Allure (min/km)</th>
+            <th>FC Karvonen</th><th style="color:#B7DEC9">FC − (FC repos −2)</th><th style="color:#B7DEC9">FC + (FC repos +2)</th>
+          </tr>
+        </thead>
+        <tbody id="c-allures-tbody">
+          <tr><td colspan="7" style="text-align:center;color:#9D9B96;padding:16px">Renseignez l'âge et la FC au repos pour calculer</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-header">❤️ 5 Zones d'Entraînement FC (Karvonen)</div>
+    <div style="overflow-x:auto">
+      <table class="tbl" style="min-width:540px">
+        <thead>
+          <tr><th>Zone</th><th>Nom</th><th>% FC réserve</th><th>FC cible (bpm)</th><th style="color:#B7DEC9">FC min (−2)</th><th style="color:#B7DEC9">FC max (+2)</th><th>Bénéfice</th></tr>
+        </thead>
+        <tbody id="c-zones-tbody">
+          <tr><td colspan="7" style="text-align:center;color:#9D9B96;padding:16px">Renseignez l'âge et la FC au repos pour calculer</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="foot-note">
+      Karvonen : FC cible = FC repos + (FC réserve × %) · Colonnes vertes = plage avec ±2 bpm sur la FC au repos
+    </div>
+  </div>
+
+</div><!-- /panel-cardio -->
+
+<!-- ══ REPRISE CAP ══════════════════════════════════════════ -->
+
+<div class="panel" id="panel-cap">
+
+  <div id="cap-header-bar" style="background:#1A3A5C;color:#fff;padding:11px 18px;border-radius:8px;margin-bottom:14px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <div>
+      <div style="font-size:.67rem;opacity:.6;text-transform:uppercase;letter-spacing:.06em;font-family:-apple-system,sans-serif">Programme — Reprise à la Course à Pied</div>
+      <div id="cap-patient-name" style="font-size:1rem;font-weight:700;margin-top:2px;font-family:-apple-system,sans-serif">—</div>
+    </div>
+    <div style="margin-left:auto;text-align:right;font-size:.76rem;opacity:.75;font-family:-apple-system,sans-serif;line-height:1.6">
+      La Clinique du Coureur · 14 semaines<br>
+      <span id="cap-allure-info" style="color:#A8D5B7">—</span>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-header grey">📖 Légende &amp; Règles de Sécurité</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#E8E6E1">
+      <div style="background:#fff;padding:8px 14px;font-size:.82rem"><strong style="color:#1A3A5C">C</strong> = Course — jogging conversationnel</div>
+      <div style="background:#F1F0ED;padding:8px 14px;font-size:.82rem"><strong style="color:#1A3A5C">M</strong> = Marche — récupération active</div>
+      <div style="background:#fff;padding:8px 14px;font-size:.82rem"><strong style="color:#C0392B">⚠ Douleur ≥ 3/10</strong> → arrêter la séance</div>
+      <div style="background:#F1F0ED;padding:8px 14px;font-size:.82rem"><strong style="color:#D4600A">RPE &gt; 7/10</strong> → réduire la séance suivante</div>
+      <div style="background:#fff;padding:8px 14px;font-size:.82rem">Débuter et terminer par <strong>5 min de marche</strong></div>
+      <div style="background:#F1F0ED;padding:8px 14px;font-size:.82rem">4 à 6 séances / semaine · Règle des <strong>10%</strong></div>
+    </div>
+  </div>
+
+  <div id="cap-weeks-container">
+    <div style="text-align:center;padding:40px;color:#9D9B96;font-size:.9rem">Chargement des semaines…</div>
+  </div>
+
+</div><!-- /panel-cap -->
+
+</body>
+</html>
