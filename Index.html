@@ -1006,25 +1006,6 @@ font-family:inherit; white-space:nowrap; transition:all .15s;
 
 <!-- ══ LOGIN ══════════════════════════════════════════════ -->
 
-<div id="login-screen">
-  <div class="login-box">
-    <div class="login-logo"><span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span></div>
-    <div class="login-sub">Plateforme clinique - Athletik Lamarck</div>
-
-```
-<div id="lf-error" class="login-error"></div>
-
-<input type="password" id="lf-pass" class="login-input"
-  placeholder="Mot de passe"
-  autocomplete="off">
-<button class="login-btn" id="lf-btn" onclick="doLogin()">
-  Se connecter
-</button>
-<div class="login-note">Acces reserve aux praticiens du cabinet</div>
-```
-
-  </div>
-</div>
 <nav class="site-nav">
   <div class="site-logo"><span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span></div>
   <div class="site-tabs">
@@ -4417,54 +4398,7 @@ function showSitePage(id) {
   }
 }
 
-// ====== AUTH =================================================
-var APP_PASSWORD = 'Athletik1718';
-
-function doLogin() {
-  var el = document.getElementById('lf-pass');
-  if (!el) return;
-  var entered = el.value;
-  // Remove all whitespace (spaces, tabs, newlines)
-  entered = entered.replace(/\s/g, '');
-  if (entered === APP_PASSWORD) {
-    var ls = document.getElementById('login-screen');
-    if (ls) ls.classList.add('hidden');
-    var nb = document.getElementById('nav-logout');
-    if (nb) nb.style.display = 'inline-block';
-    try { sessionStorage.setItem('r4p-ok','1'); } catch(e) {}
-  } else {
-    var err = document.getElementById('lf-error');
-    if (err) { err.textContent = 'Mot de passe incorrect.'; err.style.display = 'block'; }
-    el.value = '';
-    el.focus();
-  }
-}
-
-function doLogout() {
-  try { sessionStorage.removeItem('r4p-ok'); } catch(e) {}
-  var ls = document.getElementById('login-screen');
-  if (ls) ls.classList.remove('hidden');
-  var el = document.getElementById('lf-pass');
-  if (el) el.value = '';
-  var err = document.getElementById('lf-error');
-  if (err) err.style.display = 'none';
-  var nb = document.getElementById('nav-logout');
-  if (nb) nb.style.display = 'none';
-}
-
-document.addEventListener('keydown', function(e) {
-  if (e.key !== 'Enter') return;
-  var ls = document.getElementById('login-screen');
-  if (ls && !ls.classList.contains('hidden')) doLogin();
-});
-
-(function() {
-  var ok = false;
-  try { ok = sessionStorage.getItem('r4p-ok') === '1'; } catch(e) {}
-  var ls = document.getElementById('login-screen');
-  if (!ls) return;
-  if (ok) { ls.classList.add('hidden'); } else { ls.classList.remove('hidden'); }
-})();
+// No auth required
 </script>
 
 </body>
