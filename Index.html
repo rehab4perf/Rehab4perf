@@ -1016,7 +1016,7 @@ font-family:inherit; white-space:nowrap; transition:all .15s;
 
 <input type="password" id="lf-pass" class="login-input"
   placeholder="Mot de passe"
-  autocomplete="current-password">
+  autocomplete="off">
 <button class="login-btn" id="lf-btn" onclick="doLogin()">
   Se connecter
 </button>
@@ -4426,7 +4426,7 @@ function doLogin() {
   var errEl  = document.getElementById('lf-error');
   var btnEl  = document.getElementById('lf-btn');
   if (!passEl) return;
-  var pass = passEl.value;
+  var pass = passEl.value.trim();
   if (!pass) {
     showLoginErr('Entrez le mot de passe.');
     return;
