@@ -47,11 +47,13 @@ iframe.active { display:block; }
   </div>
   <button class="tab active" id="tab-bilan" onclick="show('bilan')">Bilan clinique</button>
   <button class="tab" id="tab-outils" onclick="show('outils')">Outils</button>
+  <button class="tab" id="tab-prescription" onclick="show('prescription')">Prescription</button>
   <div class="topnav-right">Antoine PERONNAUD<br>Athletik Lamarck</div>
 </div>
 <div class="frame-wrap">
   <iframe id="frame-bilan"  src="bilan.html"  class="active"></iframe>
   <iframe id="frame-outils" src="outils.html"></iframe>
+  <iframe id="frame-prescription" src="prescription.html"></iframe>
 </div>
 <script>
 function show(id) {
