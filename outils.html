@@ -487,11 +487,11 @@ body {
         <thead>
           <tr>
             <th>Zone</th><th>% VMA</th><th>Vitesse (km/h)</th><th>Allure (min/km)</th>
-            <th>FC Karvonen</th><th style="color:#B7DEC9">FC − (FC repos −2)</th><th style="color:#B7DEC9">FC + (FC repos +2)</th>
+            <th>FC Karvonen (fourchette ±2 FC repos)</th>
           </tr>
         </thead>
         <tbody id="c-allures-tbody">
-          <tr><td colspan="7" style="text-align:center;color:#9D9B96;padding:16px">Renseignez l'âge et la FC au repos pour calculer</td></tr>
+          <tr><td colspan="5" style="text-align:center;color:#9D9B96;padding:16px">Renseignez l'âge et la FC au repos pour calculer</td></tr>
         </tbody>
       </table>
     </div>
@@ -502,15 +502,15 @@ body {
     <div style="overflow-x:auto">
       <table class="tbl" style="min-width:540px">
         <thead>
-          <tr><th>Zone</th><th>Nom</th><th>% FC réserve</th><th>FC cible (bpm)</th><th style="color:#B7DEC9">FC min (−2)</th><th style="color:#B7DEC9">FC max (+2)</th><th>Bénéfice</th></tr>
+          <tr><th>Zone</th><th>Nom</th><th>% FC réserve</th><th>FC cible (fourchette ±2 FC repos)</th><th>Bénéfice</th></tr>
         </thead>
         <tbody id="c-zones-tbody">
-          <tr><td colspan="7" style="text-align:center;color:#9D9B96;padding:16px">Renseignez l'âge et la FC au repos pour calculer</td></tr>
+          <tr><td colspan="5" style="text-align:center;color:#9D9B96;padding:16px">Renseignez l'âge et la FC au repos pour calculer</td></tr>
         </tbody>
       </table>
     </div>
     <div class="foot-note">
-      Karvonen : FC cible = FC repos + (FC réserve × %) · Colonnes vertes = plage avec ±2 bpm sur la FC au repos
+      Karvonen : FC cible = FC repos + (FC réserve × %) · Fourchette calculée avec ±2 bpm sur la FC au repos mesurée
     </div>
   </div>
 
@@ -691,7 +691,7 @@ var C_ZONES = [
   {z:'Z2', nom:'Endurance fondamentale', pMin:60, pMax:70, benefit:'Aérobie de base   brûlage graisses'},
   {z:'Z3', nom:'Aérobie modéré',         pMin:70, pMax:80, benefit:'Amélioration capacité cardiovasculaire'},
   {z:'Z4', nom:'Seuil anaérobie',        pMin:80, pMax:90, benefit:'Performance   tolérance lactate'},
-  {z:'Z5', nom:'VO\u2082max / Intensité max', pMin:90, pMax:100, benefit:'VMA   puissance maximale aérobie'},
+  {z:'Z5', nom:'VO\u2082max / Intensité max', pMin:90, pMax:100, benefit:'Développement VO₂max · effort à intensité maximale aérobie tolérable'},
 ];
 
 var Z_COLORS = ['#9D9B96','#2D6A4F','#2980B9','#D4600A','#C0392B'];
@@ -794,15 +794,14 @@ function calcCardio() {
       var fc_nom  = Math.round(fcrep    + fcres    * a.pct / 100);
       var fc_lo   = Math.round((fcrep-2) + fcres_lo * a.pct / 100);
       var fc_hi   = Math.round((fcrep+2) + fcres_hi * a.pct / 100);
-      var allure_str = (vma_lo===vma_hi) ? cMinKm(spd)+'/km' : cMinKm(spdHi)+' a '+cMinKm(spdLo)+'/km';
-      var fc_str  = Math.min(fc_lo,fc_hi) + ' a ' + Math.max(fc_lo,fc_hi) + ' bpm';
+      var allure_str = (vma_lo===vma_hi) ? cMinKm(spd) : 'de ' + cMinKm(spdHi) + ' à ' + cMinKm(spdLo);
+      var fc_str = Math.min(fc_lo,fc_hi) + ' à ' + Math.max(fc_lo,fc_hi) + ' bpm';
       var bg = i%2===0?'':'background:#F1F0ED;';
       return '<tr style="' + bg + '">' +
         '<td style="font-weight:600">' + a.lbl + '</td>' +
         '<td style="font-weight:700;color:#2D6A4F">' + a.pct + '%</td>' +
         '<td style="color:#1A3A5C">' + spd + ' km/h</td>' +
         '<td style="font-weight:700;color:#1A3A5C">' + allure_str + '</td>' +
-        '<td>' + fc_nom + ' bpm</td>' +
         '<td style="color:#2D6A4F;font-weight:600">' + fc_str + '</td>' +
         '</tr>';
     }).join('');
@@ -821,8 +820,7 @@ function calcCardio() {
         '<td style="font-weight:700;color:' + Z_COLORS[i] + '">' + z.z + '</td>' +
         '<td style="font-weight:600">' + z.nom + '</td>' +
         '<td>' + z.pMin + '-' + z.pMax + '%</td>' +
-        '<td style="font-weight:700;color:' + Z_COLORS[i] + '">' + fcL + ' a ' + fcH + ' bpm</td>' +
-        '<td style="color:#2D6A4F;font-size:.82rem">env. ' + fcMin_t + ' a ' + fcMax_t + ' bpm</td>' +
+        '<td style="font-weight:700;color:' + Z_COLORS[i] + '">' + fcMin_t + ' à ' + fcMax_t + ' bpm</td>' +
         '<td style="font-size:.78rem;color:#6B6860">' + z.benefit + '</td>' +
         '</tr>';
     }).join('');
