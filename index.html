@@ -220,11 +220,10 @@ function doLogin(){
   .then(function(r){ return r.json(); })
   .then(function(user){
     _user = user;
+    saveProfile(user);
     document.getElementById('authGate').style.display = 'none';
     updateUserDisplay(user);
-    // Pass token to account iframe
-    var af = document.getElementById('frame-account');
-    af.contentWindow.postMessage({type:'r4p-token',token:_token,user:user},'*');
+    broadcastProfile(user);
   })
   .catch(function(err){
     errEl.textContent = err.message || 'Erreur de connexion.';
@@ -243,10 +242,44 @@ function updateUserDisplay(user){
   el.innerHTML = fullName+'<br>'+(cabinet||'Mon compte');
 }
 
+function saveProfile(user){
+  var meta = user.user_metadata || {};
+  var profile = {
+    prenom: meta.prenom || '',
+    nom: meta.nom || '',
+    am: meta.am || '',
+    tel: meta.tel || '',
+    cabinet: meta.cabinet || '',
+    email: user.email || ''
+  };
+  try { localStorage.setItem('r4p-profile', JSON.stringify(profile)); } catch(e){}
+}
+
+function broadcastProfile(user){
+  var meta = user.user_metadata || {};
+  var profile = {
+    prenom: meta.prenom || '',
+    nom: meta.nom || '',
+    am: meta.am || '',
+    tel: meta.tel || '',
+    cabinet: meta.cabinet || '',
+    email: user.email || ''
+  };
+  // Send token + profile to account iframe
+  var af = document.getElementById('frame-account');
+  if(af && af.contentWindow) af.contentWindow.postMessage({type:'r4p-token',token:_token,user:user},'*');
+  // Broadcast profile to all iframes
+  document.querySelectorAll('iframe').forEach(function(fr){
+    try { fr.contentWindow.postMessage({type:'r4p-profile',profile:profile},'*'); } catch(e){}
+  });
+}
+
 // Listen for messages from account page
 window.addEventListener('message', function(e){
   if(e.data && e.data.type==='r4p-profile-updated'){
     updateUserDisplay(e.data.user);
+    saveProfile(e.data.user);
+    broadcastProfile(e.data.user);
   }
   if(e.data && e.data.type==='r4p-logout'){
     _token=null; _user=null;

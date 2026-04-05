@@ -1874,8 +1874,8 @@ body {
       <button class="print-btn" onclick="window.print()" style="display:flex;align-items:center;gap:8px;padding:10px 20px;background:var(--accent2);color:#fff;border:none;border-radius:var(--radius);font-family:var(--font-sans);font-size:.88rem;font-weight:500;cursor:pointer">🖨 Imprimer / PDF</button>
     </div>
     <div id="cr-tf-content"></div>
-    <div style="margin-top:24px;padding-top:16px;border-top:2px solid var(--border);font-family:var(--font-serif);font-size:1rem;font-weight:700;color:var(--accent2)">
-      Antoine PERONNAUD — Athletik Lamarck<br><span style="font-size:.8rem;color:var(--text2);font-weight:400">N° AM : 757 099 486 · 06 89 63 75 28</span>
+    <div id="signature-tf" style="margin-top:24px;padding-top:16px;border-top:2px solid var(--border);font-family:var(--font-serif);font-size:1rem;font-weight:700;color:var(--accent2)">
+      <span id="sig-tf-name">—</span><br><span id="sig-tf-sub" style="font-size:.8rem;color:var(--text2);font-weight:400"></span>
     </div>
   </div>
 </div>
@@ -1892,8 +1892,8 @@ body {
       <button class="print-btn" onclick="window.print()">🖨 Imprimer / Exporter PDF</button>
     </div>
     <div id="cr-content"></div>
-    <div style="margin-top:32px;padding-top:20px;border-top:2px solid var(--border);font-family:var(--font-serif);font-size:1.1rem;color:var(--accent2)">
-      Antoine PERONNAUD — Athletik Lamarck<br><span style="font-size:.8rem;color:var(--text2);font-weight:400">N° AM : 757 099 486 · 06 89 63 75 28</span>
+    <div id="signature-cr" style="margin-top:32px;padding-top:20px;border-top:2px solid var(--border);font-family:var(--font-serif);font-size:1.1rem;color:var(--accent2)">
+      <span id="sig-cr-name">—</span><br><span id="sig-cr-sub" style="font-size:.8rem;color:var(--text2);font-weight:400"></span>
     </div>
   </div>
 </div>
@@ -2009,7 +2009,35 @@ function init() {
   document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
   updateAll();
   loadFromStorage();
+  applyProfile(getProfile());
 }
+
+/* ── PROFIL UTILISATEUR ── */
+function getProfile(){
+  try { return JSON.parse(localStorage.getItem('r4p-profile')||'{}'); } catch(e){ return {}; }
+}
+
+function applyProfile(p){
+  if(!p || (!p.prenom && !p.nom && !p.am && !p.tel)) return;
+  var name = ((p.prenom||'')+' '+(p.nom||'')).trim() || '—';
+  var cabinet = p.cabinet ? ' — '+p.cabinet : '';
+  var sub = [];
+  if(p.am) sub.push('N° AM : '+p.am);
+  if(p.tel) sub.push(p.tel);
+  var nameHtml = name+cabinet;
+  var subHtml  = sub.join(' · ');
+  var n1 = document.getElementById('sig-tf-name'); if(n1) n1.textContent = nameHtml;
+  var s1 = document.getElementById('sig-tf-sub');  if(s1) s1.textContent = subHtml;
+  var n2 = document.getElementById('sig-cr-name'); if(n2) n2.textContent = nameHtml;
+  var s2 = document.getElementById('sig-cr-sub');  if(s2) s2.textContent = subHtml;
+}
+
+window.addEventListener('message', function(e){
+  if(e.data && e.data.type==='r4p-profile'){
+    try { localStorage.setItem('r4p-profile', JSON.stringify(e.data.profile)); } catch(ex){}
+    applyProfile(e.data.profile);
+  }
+});
 
 // -- NAV -------------------------------------------------------
 function showPage(id) {

@@ -724,10 +724,22 @@ function exportSession(){
   document.getElementById('exportModal').classList.remove('hidden');
 }
 
+function getProfile(){
+  try { return JSON.parse(localStorage.getItem('r4p-profile')||'{}'); } catch(e){ return {}; }
+}
+
 function buildExportHTML(){
   var patient = document.getElementById('patientName').value || 'Patient';
   var date = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
   var notes = _notes;
+  var p = getProfile();
+  var praticien = ((p.prenom||'')+' '+(p.nom||'')).trim() || 'Praticien';
+  var cabinet = p.cabinet || '';
+  var metaParts = [date, praticien];
+  if(cabinet) metaParts.push(cabinet);
+  if(p.am) metaParts.push('N° AM : '+p.am);
+  if(p.tel) metaParts.push(p.tel);
+  var metaLine = metaParts.join(' · ');
 
   var blocksHtml = '';
   blocs.forEach(function(b){
@@ -781,7 +793,7 @@ function buildExportHTML(){
     +'<div class="header">'
     +'<div class="logo"><span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span></div>'
     +'<h1>Prescription d\'exercices – '+escH(patient)+'</h1>'
-    +'<div class="meta">'+date+' · Antoine PERONNAUD · Athletik Lamarck</div>'
+    +'<div class="meta">'+escH(metaLine)+'</div>'
     +'</div>'
     +blocksHtml
     +(notes?'<div class="notes"><div class="notes-label">Notes / Consignes</div><div class="notes-body">'+escH(notes)+'</div></div>':'')
@@ -813,6 +825,12 @@ function copyExportLink(){
 /* ================================================================
    INIT
    ================================================================ */
+window.addEventListener('message', function(e){
+  if(e.data && e.data.type==='r4p-profile'){
+    try { localStorage.setItem('r4p-profile', JSON.stringify(e.data.profile)); } catch(ex){}
+  }
+});
+
 renderLib('');
 </script>
 </body>
