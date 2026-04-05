@@ -1086,13 +1086,16 @@ function downloadOutils(){
     +'</body></html>';
 
   var blob = new Blob([html],{type:'text/html;charset=utf-8'});
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = title.replace(/\s+/g,'_')+'_'+date.replace(/\s/g,'-')+'.html';
+  var blobUrl = URL.createObjectURL(blob);
+  var filename = title.replace(/\s+/g,'_')+'_'+date.replace(/\s/g,'-')+'.html';
+  var topDoc = (window.top || window).document;
+  var a = topDoc.createElement('a');
+  a.href = blobUrl;
+  a.download = filename;
   a.style.display = 'none';
-  document.body.appendChild(a);
+  topDoc.body.appendChild(a);
   a.click();
-  setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 200);
+  setTimeout(function(){ topDoc.body.removeChild(a); URL.revokeObjectURL(blobUrl); }, 300);
   closeExportOutils();
 }
 
