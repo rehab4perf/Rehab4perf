@@ -31,13 +31,23 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   background:rgba(255,255,255,.15); color:#fff; font-size:.82rem; outline:none;
 }
 .search-box::placeholder { color:rgba(255,255,255,.5); }
-.filter-row { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+.filter-row { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; align-items:center; }
 .filter-btn {
-  padding:3px 9px; border-radius:12px; border:1px solid rgba(255,255,255,.3);
+  padding:3px 10px; border-radius:12px; border:1px solid rgba(255,255,255,.3);
   background:none; color:rgba(255,255,255,.75); font-size:.72rem; cursor:pointer;
-  transition:background .15s, color .15s;
+  transition:background .15s, color .15s; white-space:nowrap;
 }
 .filter-btn.active, .filter-btn:hover { background:var(--accent2); border-color:var(--accent2); color:#fff; }
+.filter-select {
+  width:100%; margin-top:6px; padding:6px 8px; border:none; border-radius:6px;
+  background:rgba(255,255,255,.15); color:#fff; font-size:.78rem; outline:none; cursor:pointer;
+  appearance:none; -webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,.6)'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 8px center; padding-right:24px;
+}
+.filter-select option { background:#1A3A5C; color:#fff; }
+.filter-select.active-filter { background-color:rgba(74,144,217,.4); background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,.6)'/%3E%3C/svg%3E"); }
+.filter-label { font-size:.68rem; font-weight:700; color:rgba(255,255,255,.5); letter-spacing:.06em; text-transform:uppercase; margin-top:8px; margin-bottom:2px; }
 
 .lib-scroll { flex:1; overflow-y:auto; padding:8px 0; }
 .lib-section { margin-bottom:4px; }
@@ -228,12 +238,34 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   <div class="sidebar-header">
     <div class="sidebar-title">Bibliothèque d'exercices</div>
     <input class="search-box" type="text" id="searchInput" placeholder="Rechercher un exercice…" oninput="filterLib()">
-    <div class="filter-row" id="filterRow">
-      <button class="filter-btn active" data-filter="all" onclick="setFilter(this,'all')">Tous</button>
-      <button class="filter-btn" data-filter="warmup" onclick="setFilter(this,'warmup')">Warm-up</button>
-      <button class="filter-btn" data-filter="renfo" onclick="setFilter(this,'renfo')">Renfo</button>
-      <button class="filter-btn" data-filter="automassage" onclick="setFilter(this,'automassage')">Auto-massage</button>
+    <div class="filter-row">
+      <button class="filter-btn active" id="filterAll" onclick="setFilterAll()">Tous</button>
     </div>
+    <div class="filter-label">Objectif</div>
+    <select class="filter-select" id="filterType" onchange="applyFilters()">
+      <option value="">— Tous les types —</option>
+      <option value="warmup">Warm-up / Mobilité</option>
+      <option value="renfo">Renforcement</option>
+      <option value="automassage">Auto-massage</option>
+    </select>
+    <div class="filter-label">Partie du corps</div>
+    <select class="filter-select" id="filterZone" onchange="applyFilters()">
+      <option value="">— Toutes les zones —</option>
+      <option value="ÉPAULE">Épaules</option>
+      <option value="COUDE">Coude</option>
+      <option value="POIGNET">Poignet</option>
+      <option value="RACHIS – CERVICAL">Rachis cervical</option>
+      <option value="RACHIS – THORACIQUE">Rachis thoracique</option>
+      <option value="RACHIS – THORACO-LOMBAIRE">Rachis thoraco-lombaire</option>
+      <option value="RACHIS – LOMBAIRE">Rachis lombaire</option>
+      <option value="TRONC / GAINAGE">Tronc / Gainage</option>
+      <option value="HANCHE">Hanche</option>
+      <option value="GENOUX">Genoux</option>
+      <option value="CHEVILLE">Cheville</option>
+      <option value="PIED / HALLUX">Pied / Hallux</option>
+      <option value="PIED">Pied</option>
+      <option value="AUTO-MASSAGE">Auto-massage</option>
+    </select>
   </div>
   <div class="lib-scroll" id="libScroll"></div>
 </aside>
@@ -452,8 +484,7 @@ var LIBRARY = [
    STATE
    ================================================================ */
 var blocs = [];
-var currentFilter = 'all';
-var activeBloc = null; // id of the bloc to add exos to
+var activeBloc = null;
 
 /* ================================================================
    LIBRARY RENDER
@@ -462,23 +493,39 @@ function getTypeLabel(t){ return {warmup:'Warm-up',renfo:'Renfo',automassage:'Au
 function getTypeClass(t){ return t==='renfo'?'renfo':t==='automassage'?'automassage':''; }
 
 function filterLib(){
+  applyFilters();
+}
+
+function setFilterAll(){
+  document.getElementById('filterType').value = '';
+  document.getElementById('filterZone').value = '';
+  document.getElementById('filterAll').classList.add('active');
+  document.getElementById('filterType').classList.remove('active-filter');
+  document.getElementById('filterZone').classList.remove('active-filter');
   var q = document.getElementById('searchInput').value.toLowerCase().trim();
   renderLib(q);
 }
 
-function setFilter(btn, f){
-  currentFilter = f;
-  document.querySelectorAll('.filter-btn').forEach(function(b){ b.classList.remove('active'); });
-  btn.classList.add('active');
-  filterLib();
+function applyFilters(){
+  var typeVal = document.getElementById('filterType').value;
+  var zoneVal = document.getElementById('filterZone').value;
+  // Update "Tous" active state
+  var allBtn = document.getElementById('filterAll');
+  if(typeVal || zoneVal){ allBtn.classList.remove('active'); } else { allBtn.classList.add('active'); }
+  document.getElementById('filterType').classList.toggle('active-filter', !!typeVal);
+  document.getElementById('filterZone').classList.toggle('active-filter', !!zoneVal);
+  var q = document.getElementById('searchInput').value.toLowerCase().trim();
+  renderLib(q, typeVal, zoneVal);
 }
 
-function renderLib(q){
+function renderLib(q, typeFilter, zoneFilter){
   q = (q||'').toLowerCase();
+  typeFilter = typeFilter || document.getElementById('filterType').value;
+  zoneFilter = zoneFilter || document.getElementById('filterZone').value;
   var scroll = document.getElementById('libScroll');
-  // Group by zone within type
   var visible = LIBRARY.filter(function(ex){
-    if(currentFilter!=='all' && ex.type!==currentFilter) return false;
+    if(typeFilter && ex.type!==typeFilter) return false;
+    if(zoneFilter && ex.zone!==zoneFilter) return false;
     if(q && ex.name.toLowerCase().indexOf(q)===-1 && ex.zone.toLowerCase().indexOf(q)===-1 && ex.obj.toLowerCase().indexOf(q)===-1) return false;
     return true;
   });
