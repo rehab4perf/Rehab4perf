@@ -63,13 +63,13 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .editor-toolbar { display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
 .editor-search { flex:1; padding:6px 10px; border:1px solid var(--border); border-radius:6px; font-size:.8rem; outline:none; min-width:120px; }
 .editor-search:focus { border-color:var(--accent2); }
-.exo-edit-row { display:grid; grid-template-columns:1fr 100px 1fr 28px; gap:6px; align-items:center; padding:5px 4px; border-bottom:1px solid #f0f4f8; }
+.exo-edit-row { display:grid; grid-template-columns:1fr 120px 120px 1fr 28px; gap:6px; align-items:center; padding:5px 4px; border-bottom:1px solid #f0f4f8; }
 .exo-edit-row:last-child { border-bottom:none; }
 .exo-edit-row input, .exo-edit-row select { padding:4px 7px; border:1px solid var(--border); border-radius:5px; font-size:.76rem; color:var(--text); outline:none; background:#FAFBFD; width:100%; }
 .exo-edit-row input:focus, .exo-edit-row select:focus { border-color:var(--accent2); background:#fff; }
 .exo-del-edit { background:none; border:none; color:#CBD2DB; cursor:pointer; font-size:1.1rem; padding:2px 4px; }
 .exo-del-edit:hover { color:#E74C3C; }
-.editor-col-header { display:grid; grid-template-columns:1fr 100px 1fr 28px; gap:6px; padding:4px 4px 6px; }
+.editor-col-header { display:grid; grid-template-columns:1fr 120px 120px 1fr 28px; gap:6px; padding:4px 4px 6px; }
 .editor-col-header span { font-size:.65rem; font-weight:700; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; }
 .lib-section { margin-bottom:4px; }
 .lib-section-title {
@@ -311,6 +311,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
       <div class="editor-col-header">
         <span>Nom de l'exercice</span>
         <span>Zone / Catégorie</span>
+        <span>Objectif</span>
         <span>URL Vidéo</span>
         <span></span>
       </div>
@@ -945,9 +946,15 @@ function renderEditor(){
     var zSel = ALL_ZONES.map(function(z){
       return '<option value="'+escH(z)+'"'+(z===e.zone?' selected':'')+'>'+escH(z)+'</option>';
     }).join('');
+    var typeOpts = [
+      {v:'warmup', l:'Warm-up / Mobilité'},
+      {v:'renfo',  l:'Renforcement'},
+      {v:'automassage', l:'Auto-massage'}
+    ].map(function(o){ return '<option value="'+o.v+'"'+(o.v===(e.type||'warmup')?' selected':'')+'>'+o.l+'</option>'; }).join('');
     rows += '<div class="exo-edit-row" data-idx="'+i+'">';
     rows += '<input class="exo-edit-name" type="text" value="'+escH(e.name)+'" placeholder="Nom de l\'exercice" oninput="updateEditorField('+i+',\'name\',this.value)">';
     rows += '<select onchange="updateEditorField('+i+',\'zone\',this.value)">'+zSel+'</select>';
+    rows += '<select onchange="updateEditorField('+i+',\'type\',this.value)">'+typeOpts+'</select>';
     rows += '<input type="url" value="'+escH(e.url||'')+'" placeholder="https://youtu.be/…" oninput="updateEditorField('+i+',\'url\',this.value)">';
     rows += '<button class="exo-del-edit" onclick="deleteEditorRow('+i+')" title="Supprimer">×</button>';
     rows += '</div>';
