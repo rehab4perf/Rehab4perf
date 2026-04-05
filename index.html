@@ -71,52 +71,42 @@ function show(id) {
 }
 
 /* ── NETLIFY IDENTITY ── */
-var _gateEl = null;
+var GATE_HTML = '<div style="font-family:Georgia,serif;font-style:italic;font-size:2rem;color:#fff;margin-bottom:8px">'
+  +'<span style="color:#4A90D9">Rehab</span><span style="font-weight:900;font-style:normal">4</span><span style="color:#E74C3C">Perf</span>'
+  +'</div>'
+  +'<p style="color:rgba(255,255,255,.65);font-size:.85rem;font-family:-apple-system,sans-serif;margin-bottom:24px;text-align:center;">Votre espace kiné personnel</p>'
+  +'<button onclick="netlifyIdentity.open(\'login\')" style="padding:12px 32px;background:#2B5FA6;color:#fff;border:none;border-radius:8px;font-size:.95rem;font-weight:600;cursor:pointer;font-family:-apple-system,sans-serif;">Se connecter</button>'
+  +'<p style="color:rgba(255,255,255,.35);font-size:.72rem;font-family:-apple-system,sans-serif;margin-top:16px;text-align:center;">Accès sur invitation · Contactez Antoine PERONNAUD</p>';
 
-function buildGate(){
+function showGate(){
+  var existing = document.getElementById('authGate');
+  if(existing) return;
   var el = document.createElement('div');
   el.id = 'authGate';
-  el.style.cssText = 'position:fixed;inset:0;background:#1A3A5C;z-index:999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;';
-  el.innerHTML = '<div style="font-family:Georgia,serif;font-style:italic;font-size:1.8rem;color:#fff"><span style="color:#4A90D9">Rehab</span><span style="font-weight:900;font-style:normal">4</span><span style="color:#E74C3C">Perf</span></div>'
-    +'<p style="color:rgba(255,255,255,.6);font-size:.85rem;font-family:-apple-system,sans-serif;">Chargement…</p>';
-  return el;
+  el.style.cssText = 'position:fixed;inset:0;background:#1A3A5C;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;';
+  el.innerHTML = GATE_HTML;
+  document.body.appendChild(el);
+}
+
+function hideGate(){
+  var gate = document.getElementById('authGate');
+  if(gate) gate.remove();
 }
 
 netlifyIdentity.on('init', function(user){
-  var gate = document.getElementById('authGate');
-  if(user){
-    updateUserDisplay(user);
-    if(gate) gate.remove();
-  } else {
-    // Show gate then open login
-    if(!gate){ document.body.appendChild(buildGate()); }
-    setTimeout(function(){ netlifyIdentity.open('login'); }, 400);
-  }
+  if(user){ updateUserDisplay(user); hideGate(); }
+  else { showGate(); }
 });
 
 netlifyIdentity.on('login', function(user){
   netlifyIdentity.close();
   updateUserDisplay(user);
-  var gate = document.getElementById('authGate');
-  if(gate) gate.remove();
+  hideGate();
 });
 
 netlifyIdentity.on('logout', function(){
   updateUserDisplay(null);
-  document.body.appendChild(buildGate());
-  setTimeout(function(){ netlifyIdentity.open('login'); }, 400);
-});
-
-// Listen for messages from account iframe
-window.addEventListener('message', function(e){
-  if(e.data && e.data.type==='r4p-login'){
-    var gate = document.getElementById('authGate');
-    if(gate) gate.remove();
-  }
-  if(e.data && e.data.type==='r4p-logout'){
-    document.body.appendChild(buildGate());
-    setTimeout(function(){ netlifyIdentity.open('login'); }, 400);
-  }
+  showGate();
 });
 
 function updateUserDisplay(user){
