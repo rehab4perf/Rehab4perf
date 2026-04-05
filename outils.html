@@ -1048,54 +1048,87 @@ function getProfile(){
 function downloadOutils(){
   var p = getProfile();
   var praticien = ((p.prenom||'')+' '+(p.nom||'')).trim() || 'Praticien';
-  var cabinet = p.cabinet||''; var am = p.am||''; var tel = p.tel||'';
-  var sigParts = [praticien]; if(cabinet) sigParts.push(cabinet);
-  if(am) sigParts.push('N° AM : '+am); if(tel) sigParts.push(tel);
-  var sig = sigParts.join(' · ');
+  var cabinet = p.cabinet||''; var am = p.am||''; var tel = p.tel||''; var email = p.email||'';
   var date = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
 
-  // Grab the active panel content (detect from DOM, do not rely on _currentTab)
+  // Detect active panel from DOM
   var panel = document.querySelector('.panel.active');
   if(!panel){ closeExportOutils(); return; }
   var tabId = panel.id ? panel.id.replace('panel-','') : '';
   var titles = {'rm':'Tableau 1RM','hsr':'Protocole HSR','cardio':'Calculateur Cardio','cap':'Reprise CAP'};
   var title = titles[tabId]||'Outil';
 
-  var content = panel.cloneNode(true);
-  // Remove interactive inputs label - keep only results
-  content.style.display = 'block';
+  // Clone and clean up interactive elements
+  var clone = panel.cloneNode(true);
+  // Convert inputs → readable value spans
+  clone.querySelectorAll('input').forEach(function(inp){
+    var span = document.createElement('span');
+    span.textContent = inp.value !== undefined && inp.value !== '' ? inp.value : (inp.placeholder||'—');
+    span.className = inp.className;
+    span.style.cssText = 'font-weight:600;color:var(--accent2)';
+    inp.parentNode.replaceChild(span, inp);
+  });
+  clone.querySelectorAll('select').forEach(function(sel){
+    var span = document.createElement('span');
+    span.textContent = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : '—';
+    span.style.cssText = 'font-weight:600;color:var(--accent2)';
+    sel.parentNode.replaceChild(span, sel);
+  });
+  clone.querySelectorAll('textarea').forEach(function(ta){
+    var span = document.createElement('span');
+    span.textContent = ta.value || '—';
+    ta.parentNode.replaceChild(span, ta);
+  });
+  clone.querySelectorAll('button').forEach(function(btn){ btn.remove(); });
+  clone.style.display = 'block';
+  clone.style.overflow = 'visible';
+  clone.style.height = 'auto';
 
-  var html = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">'
-    +'<meta name="viewport" content="width=device-width,initial-scale=1.0">'
+  // Grab CSS from the document (same-origin)
+  var cssText = '';
+  try {
+    Array.from(document.styleSheets).forEach(function(ss){
+      try { Array.from(ss.cssRules).forEach(function(r){ cssText += r.cssText+'\n'; }); } catch(e){}
+    });
+  } catch(e){}
+
+  // Meta header info
+  var metaParts = [praticien];
+  if(cabinet) metaParts.push(cabinet);
+  if(am) metaParts.push('N° AM : '+am);
+  if(tel) metaParts.push(tel);
+  if(email) metaParts.push(email);
+
+  var html = '<!DOCTYPE html><html lang="fr"><head>'
+    +'<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">'
     +'<title>'+title+'</title>'
-    +'<style>*{margin:0;padding:0;box-sizing:border-box}'
-    +'body{font-family:-apple-system,Helvetica Neue,Arial,sans-serif;background:#F0F4F8;color:#1a2433;padding:20px}'
-    +'.header{background:#1A3A5C;color:#fff;padding:16px 20px;border-radius:10px;margin-bottom:18px}'
-    +'.header .logo{font-family:Georgia,serif;font-style:italic;font-size:.9rem;margin-bottom:4px}'
-    +'.header .logo .r{color:#4A90D9}.header .logo .n{font-weight:900;font-style:normal}.header .logo .p{color:#E74C3C}'
-    +'.header h1{font-size:1rem;font-weight:700;margin-bottom:2px}'
-    +'.header .meta{font-size:.75rem;opacity:.7}'
+    +'<style>'+cssText
+    // Overrides for standalone page
+    +'html{font-size:14px}'
+    +'body{display:block!important;height:auto!important;overflow:auto!important;padding:0}'
+    +'.sub-tabs,.export-patient-bar{display:none!important}'
+    +'.panel{display:block!important;overflow:visible!important;height:auto!important;padding:20px 24px 40px}'
+    +'.doc-header{background:#1A3A5C;color:#fff;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}'
+    +'.doc-logo{font-family:Georgia,serif;font-style:italic;font-size:1rem;color:#fff}'
+    +'.doc-logo .r{color:#4A90D9}.doc-logo .n{font-weight:900;font-style:normal}.doc-logo .p{color:#E74C3C}'
+    +'.doc-meta{text-align:right;font-size:.72rem;color:rgba(255,255,255,.85);line-height:1.7}'
+    +'.doc-meta strong{font-size:.78rem;color:#fff}'
     +'</style>'
-    +'<link rel="stylesheet" href="https://rehab4perf.netlify.app/outils.html" disabled>'
     +'</head><body>'
-    +'<div class="header">'
-    +'<div class="logo"><span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span></div>'
-    +'<h1>'+title+'</h1>'
-    +'<div class="meta">'+date+' · '+sig+'</div>'
+    +'<div class="doc-header">'
+    +'<div class="doc-logo"><span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span></div>'
+    +'<div class="doc-meta"><strong>'+metaParts.join(' · ')+'</strong><br>'+date+'</div>'
     +'</div>'
-    + content.outerHTML
+    + clone.outerHTML
     +'</body></html>';
 
-  var blob = new Blob([html],{type:'text/html;charset=utf-8'});
+  var blob    = new Blob([html],{type:'text/html;charset=utf-8'});
   var blobUrl = URL.createObjectURL(blob);
   var filename = title.replace(/\s+/g,'_')+'_'+date.replace(/\s/g,'-')+'.html';
-  var topDoc = (window.top || window).document;
-  var a = topDoc.createElement('a');
-  a.href = blobUrl;
-  a.download = filename;
-  a.style.display = 'none';
-  topDoc.body.appendChild(a);
-  a.click();
+  var topDoc  = (window.top||window).document;
+  var a       = topDoc.createElement('a');
+  a.href      = blobUrl; a.download = filename; a.style.display = 'none';
+  topDoc.body.appendChild(a); a.click();
   setTimeout(function(){ topDoc.body.removeChild(a); URL.revokeObjectURL(blobUrl); }, 300);
   closeExportOutils();
 }
