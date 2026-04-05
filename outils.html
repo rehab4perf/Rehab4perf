@@ -230,6 +230,39 @@ body {
 /* ── Footer note ────────────────────────────────────────── */
 .foot-note { padding: 9px 16px; font-size: .7rem; color: #9D9B96; font-style: italic; border-top: 1px solid #E8E6E1; }
 
+/* ── Export patient button ─────────────────────────────── */
+.export-patient-bar {
+  display:flex; align-items:center; justify-content:flex-end; gap:10px;
+  padding:10px 0 4px; margin-bottom:8px;
+}
+.export-patient-btn {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:8px 16px; background:#2B5FA6; color:#fff; border:none;
+  border-radius:7px; font-size:.8rem; font-weight:600; cursor:pointer;
+  font-family:inherit; transition:background .15s;
+}
+.export-patient-btn:hover { background:#1A3A5C; }
+
+/* ── Export modal ─────────────────────────────────────── */
+#exportOutils-modal {
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:200;
+  align-items:center; justify-content:center;
+}
+#exportOutils-modal.open { display:flex; }
+#exportOutils-modal .modal-box {
+  background:#fff; border-radius:12px; padding:24px; max-width:460px; width:90%;
+  box-shadow:0 20px 60px rgba(0,0,0,.25); position:relative;
+}
+#exportOutils-modal h3 { font-size:.95rem; color:#1A3A5C; margin-bottom:6px; }
+#exportOutils-modal p { font-size:.8rem; color:#6b7a8d; margin-bottom:16px; line-height:1.5; }
+#exportOutils-modal .modal-btns { display:flex; gap:8px; flex-wrap:wrap; }
+.modal-x { position:absolute; top:10px; right:14px; background:none; border:none; font-size:1.3rem; cursor:pointer; color:#aaa; }
+
+@media print {
+  .sub-tabs, .export-patient-bar, #exportOutils-modal { display:none !important; }
+  .panel { display:block !important; overflow:visible; padding:10px; }
+}
+
 @media (max-width: 600px) {
   .panel { padding: 12px 12px 60px; }
   .rm-inputs { grid-template-columns: 1fr 1fr; }
@@ -245,6 +278,20 @@ body {
   <button class="sub-tab" onclick="showTab('hsr')" id="stab-hsr">📈 Protocole HSR</button>
   <button class="sub-tab" onclick="showTab('cardio')" id="stab-cardio">❤️ Calculateur Cardio</button>
   <button class="sub-tab" onclick="showTab('cap')" id="stab-cap">🏃 Reprise CAP</button>
+  <button class="sub-tab" style="margin-left:auto;background:none;color:#2B5FA6;border-bottom:none;font-size:.78rem;" onclick="openExportOutils()">📤 Exporter pour le patient</button>
+</div>
+
+<!-- Export modal -->
+<div id="exportOutils-modal">
+  <div class="modal-box">
+    <button class="modal-x" onclick="closeExportOutils()">×</button>
+    <h3>Exporter l'outil pour le patient</h3>
+    <p>Génère un fichier HTML autonome avec les données de l'onglet actif, prêt à envoyer par email ou messagerie.</p>
+    <div class="modal-btns">
+      <button class="export-patient-btn" onclick="downloadOutils()">⬇ Télécharger HTML</button>
+      <button class="export-patient-btn" style="background:#6b7a8d;" onclick="closeExportOutils()">Annuler</button>
+    </div>
+  </div>
 </div>
 
 <!-- ══ TABLEAU RM ══════════════════════════════════════════ -->
@@ -691,7 +738,7 @@ var C_ZONES = [
   {z:'Z2', nom:'Endurance fondamentale', pMin:60, pMax:70, benefit:'Aérobie de base   brûlage graisses'},
   {z:'Z3', nom:'Aérobie modéré',         pMin:70, pMax:80, benefit:'Amélioration capacité cardiovasculaire'},
   {z:'Z4', nom:'Seuil anaérobie',        pMin:80, pMax:90, benefit:'Performance   tolérance lactate'},
-  {z:'Z5', nom:'VO\u2082max / Intensité max', pMin:90, pMax:100, benefit:'Développement VO₂max · effort à intensité maximale aérobie tolérable'},
+  {z:'Z5', nom:'Anaérobie / Intensité max', pMin:90, pMax:100, benefit:'Filière anaérobie · effort à intensité maximale, au-delà du seuil lactique'},
 ];
 
 var Z_COLORS = ['#9D9B96','#2D6A4F','#2980B9','#D4600A','#C0392B'];
@@ -787,7 +834,7 @@ function calcCardio() {
   // Allures : nominale + tranche FC
   var atbody = document.getElementById('c-allures-tbody');
   if (atbody) {
-    atbody.innerHTML = C_ALLURES.map(function(a, i) {
+    atbody.innerHTML = C_ALLURES.slice().reverse().map(function(a, i) {
       var spd     = cRnd(vma * a.pct / 100, 2);
       var spdLo   = cRnd(Math.max(vma_lo,vma_hi) * a.pct / 100, 2);
       var spdHi   = cRnd(Math.min(vma_lo,vma_hi) * a.pct / 100, 2);
@@ -981,12 +1028,76 @@ showTab = function(id) {
 };
 
 // Init after DOM is ready
-// Called directly at end of file when DOM is ready
 buildCAP();
 capLoadBilan();
 calcRM();
 calcHSR();
 
+// == EXPORT PATIENT ========================================
+var _currentTab = 'rm';
+var _origShowTab2 = showTab;
+showTab = function(id){ _currentTab = id; _origShowTab2 ? _origShowTab2(id) : null; };
+
+function openExportOutils(){ document.getElementById('exportOutils-modal').classList.add('open'); }
+function closeExportOutils(){ document.getElementById('exportOutils-modal').classList.remove('open'); }
+
+function getProfile(){
+  try { return JSON.parse(localStorage.getItem('r4p-profile')||'{}'); } catch(e){ return {}; }
+}
+
+function downloadOutils(){
+  var p = getProfile();
+  var praticien = ((p.prenom||'')+' '+(p.nom||'')).trim() || 'Praticien';
+  var cabinet = p.cabinet||''; var am = p.am||''; var tel = p.tel||'';
+  var sigParts = [praticien]; if(cabinet) sigParts.push(cabinet);
+  if(am) sigParts.push('N° AM : '+am); if(tel) sigParts.push(tel);
+  var sig = sigParts.join(' · ');
+  var date = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+
+  // Grab the active panel content
+  var panel = document.getElementById('panel-'+_currentTab);
+  if(!panel){ closeExportOutils(); return; }
+  var titles = {'rm':'Tableau 1RM','hsr':'Protocole HSR','cardio':'Calculateur Cardio','cap':'Reprise CAP'};
+  var title = titles[_currentTab]||'Outil';
+
+  var content = panel.cloneNode(true);
+  // Remove interactive inputs label - keep only results
+  content.style.display = 'block';
+
+  var html = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">'
+    +'<meta name="viewport" content="width=device-width,initial-scale=1.0">'
+    +'<title>'+title+'</title>'
+    +'<style>*{margin:0;padding:0;box-sizing:border-box}'
+    +'body{font-family:-apple-system,Helvetica Neue,Arial,sans-serif;background:#F0F4F8;color:#1a2433;padding:20px}'
+    +'.header{background:#1A3A5C;color:#fff;padding:16px 20px;border-radius:10px;margin-bottom:18px}'
+    +'.header .logo{font-family:Georgia,serif;font-style:italic;font-size:.9rem;margin-bottom:4px}'
+    +'.header .logo .r{color:#4A90D9}.header .logo .n{font-weight:900;font-style:normal}.header .logo .p{color:#E74C3C}'
+    +'.header h1{font-size:1rem;font-weight:700;margin-bottom:2px}'
+    +'.header .meta{font-size:.75rem;opacity:.7}'
+    +'</style>'
+    +'<link rel="stylesheet" href="https://rehab4perf.netlify.app/outils.html" disabled>'
+    +'</head><body>'
+    +'<div class="header">'
+    +'<div class="logo"><span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span></div>'
+    +'<h1>'+title+'</h1>'
+    +'<div class="meta">'+date+' · '+sig+'</div>'
+    +'</div>'
+    + content.outerHTML
+    +'</body></html>';
+
+  var blob = new Blob([html],{type:'text/html;charset=utf-8'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = title.replace(/\s+/g,'_')+'_'+date.replace(/\s/g,'-')+'.html';
+  a.click();
+  closeExportOutils();
+}
+
+window.addEventListener('message', function(e){
+  if(e.data && e.data.type==='r4p-profile'){
+    try { localStorage.setItem('r4p-profile', JSON.stringify(e.data.profile)); } catch(ex){}
+  }
+});
 
 </script>
 </body>

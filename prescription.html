@@ -51,6 +51,26 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .filter-label { font-size:.65rem; font-weight:700; color:rgba(255,255,255,.45); letter-spacing:.06em; text-transform:uppercase; margin-top:6px; margin-bottom:1px; }
 
 .lib-scroll { flex:1; overflow-y:auto; padding:8px 0; }
+/* Editor modal */
+.editor-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:200; display:none; align-items:flex-start; justify-content:center; overflow-y:auto; padding:24px 16px; }
+.editor-overlay.open { display:flex; }
+.editor-box { background:#fff; border-radius:12px; width:100%; max-width:680px; box-shadow:0 20px 60px rgba(0,0,0,.25); margin:auto; }
+.editor-head { background:var(--navy); color:#fff; padding:14px 18px; border-radius:12px 12px 0 0; display:flex; align-items:center; gap:10px; }
+.editor-head h2 { flex:1; font-size:.9rem; font-weight:700; letter-spacing:.03em; }
+.editor-close { background:none; border:none; color:rgba(255,255,255,.6); font-size:1.4rem; cursor:pointer; line-height:1; }
+.editor-close:hover { color:#fff; }
+.editor-body { padding:14px; max-height:70vh; overflow-y:auto; }
+.editor-toolbar { display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+.editor-search { flex:1; padding:6px 10px; border:1px solid var(--border); border-radius:6px; font-size:.8rem; outline:none; min-width:120px; }
+.editor-search:focus { border-color:var(--accent2); }
+.exo-edit-row { display:grid; grid-template-columns:1fr 100px 1fr 28px; gap:6px; align-items:center; padding:5px 4px; border-bottom:1px solid #f0f4f8; }
+.exo-edit-row:last-child { border-bottom:none; }
+.exo-edit-row input, .exo-edit-row select { padding:4px 7px; border:1px solid var(--border); border-radius:5px; font-size:.76rem; color:var(--text); outline:none; background:#FAFBFD; width:100%; }
+.exo-edit-row input:focus, .exo-edit-row select:focus { border-color:var(--accent2); background:#fff; }
+.exo-del-edit { background:none; border:none; color:#CBD2DB; cursor:pointer; font-size:1.1rem; padding:2px 4px; }
+.exo-del-edit:hover { color:#E74C3C; }
+.editor-col-header { display:grid; grid-template-columns:1fr 100px 1fr 28px; gap:6px; padding:4px 4px 6px; }
+.editor-col-header span { font-size:.65rem; font-weight:700; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; }
 .lib-section { margin-bottom:4px; }
 .lib-section-title {
   padding:6px 14px 4px; font-size:.7rem; font-weight:700;
@@ -268,8 +288,36 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
       <option value="AUTO-MASSAGE">Auto-massage</option>
     </select>
   </div>
+  <div style="padding:6px 14px 8px; display:flex; gap:6px;">
+    <button class="filter-btn" style="background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.3);font-size:.7rem;" onclick="openEditor()">✏️ Éditer la bibliothèque</button>
+  </div>
   <div class="lib-scroll" id="libScroll"></div>
 </aside>
+
+<!-- ═══════ EDITOR MODAL ═══════ -->
+<div class="editor-overlay" id="editorModal">
+  <div class="editor-box">
+    <div class="editor-head">
+      <h2>Éditer la bibliothèque d'exercices</h2>
+      <button class="editor-close" onclick="closeEditor()">×</button>
+    </div>
+    <div class="editor-body">
+      <div class="editor-toolbar">
+        <input class="editor-search" id="editorSearch" type="text" placeholder="Filtrer les exercices…" oninput="renderEditor()">
+        <button class="btn btn-primary" style="font-size:.76rem;padding:6px 12px;" onclick="addNewExo()">+ Ajouter</button>
+        <button class="btn btn-outline" style="font-size:.76rem;padding:6px 12px;" onclick="resetLibrary()">↺ Réinitialiser</button>
+        <button class="btn btn-primary" style="font-size:.76rem;padding:6px 12px;background:#27AE60;border-color:#27AE60;" onclick="saveEditor()">✓ Enregistrer</button>
+      </div>
+      <div class="editor-col-header">
+        <span>Nom de l'exercice</span>
+        <span>Zone / Catégorie</span>
+        <span>URL Vidéo</span>
+        <span></span>
+      </div>
+      <div id="editorList"></div>
+    </div>
+  </div>
+</div>
 
 <!-- ═══════════════════════════════ MAIN ════════════════════════════════ -->
 <div class="main">
@@ -820,6 +868,91 @@ function copyExportLink(){
     alert('Impossible de copier automatiquement. Utilisez "Télécharger" à la place.');
   });
   document.getElementById('exportModal').classList.add('hidden');
+}
+
+/* ================================================================
+   LIBRARY EDITOR
+   ================================================================ */
+var ALL_ZONES = [
+  'ÉPAULE','COUDE','POIGNET',
+  'RACHIS – CERVICAL','RACHIS – THORACIQUE','RACHIS – THORACO-LOMBAIRE','RACHIS – LOMBAIRE',
+  'HANCHE','GENOU','CHEVILLE','PIED / HALLUX','PIED',
+  'ÉPAULES, COUDES','ÉPAULES, THORACIQUES','ÉPAULES','HANCHE, GENOUX','GENOUX',
+  'TRONC / GAINAGE','AUTO-MASSAGE'
+];
+var ALL_TYPES = ['warmup','renfo','automassage'];
+
+// Load custom library from localStorage if exists
+(function(){
+  try {
+    var saved = localStorage.getItem('r4p-library');
+    if(saved){ LIBRARY = JSON.parse(saved); }
+  } catch(e){}
+})();
+
+var _editorData = [];
+
+function openEditor(){
+  _editorData = LIBRARY.map(function(e){ return Object.assign({},e); });
+  renderEditor();
+  document.getElementById('editorModal').classList.add('open');
+  document.getElementById('editorSearch').value = '';
+}
+
+function closeEditor(){
+  document.getElementById('editorModal').classList.remove('open');
+}
+
+function saveEditor(){
+  LIBRARY = _editorData.filter(function(e){ return e.name.trim(); });
+  try { localStorage.setItem('r4p-library', JSON.stringify(LIBRARY)); } catch(ex){}
+  closeEditor();
+  filterLib();
+}
+
+function resetLibrary(){
+  if(!confirm('Réinitialiser la bibliothèque aux exercices par défaut ?')) return;
+  try { localStorage.removeItem('r4p-library'); } catch(ex){}
+  location.reload();
+}
+
+function addNewExo(){
+  _editorData.unshift({id:'c'+Date.now(),name:'',zone:'ÉPAULE',type:'warmup',url:'',obj:''});
+  renderEditor();
+  var el = document.getElementById('editorList').querySelector('input.exo-edit-name');
+  if(el) el.focus();
+}
+
+function deleteEditorRow(idx){
+  _editorData.splice(idx,1);
+  renderEditor();
+}
+
+function updateEditorField(idx, field, val){
+  if(_editorData[idx]) _editorData[idx][field] = val;
+}
+
+function renderEditor(){
+  var q = (document.getElementById('editorSearch').value||'').toLowerCase();
+  var list = document.getElementById('editorList');
+  var zoneOpts = ALL_ZONES.map(function(z){ return '<option value="'+escH(z)+'">'+escH(z)+'</option>'; }).join('');
+  var typeOpts = [['warmup','Warm-up'],['renfo','Renfo'],['automassage','Auto-massage']]
+    .map(function(t){ return '<option value="'+t[0]+'">'+t[1]+'</option>'; }).join('');
+
+  var rows = '';
+  _editorData.forEach(function(e, i){
+    if(q && e.name.toLowerCase().indexOf(q)===-1 && e.zone.toLowerCase().indexOf(q)===-1) return;
+    var zSel = ALL_ZONES.map(function(z){
+      return '<option value="'+escH(z)+'"'+(z===e.zone?' selected':'')+'>'+escH(z)+'</option>';
+    }).join('');
+    rows += '<div class="exo-edit-row" data-idx="'+i+'">';
+    rows += '<input class="exo-edit-name" type="text" value="'+escH(e.name)+'" placeholder="Nom de l\'exercice" oninput="updateEditorField('+i+',\'name\',this.value)">';
+    rows += '<select onchange="updateEditorField('+i+',\'zone\',this.value)">'+zSel+'</select>';
+    rows += '<input type="url" value="'+escH(e.url||'')+'" placeholder="https://youtu.be/…" oninput="updateEditorField('+i+',\'url\',this.value)">';
+    rows += '<button class="exo-del-edit" onclick="deleteEditorRow('+i+')" title="Supprimer">×</button>';
+    rows += '</div>';
+  });
+  list.innerHTML = rows || '<div style="padding:16px;text-align:center;color:var(--muted);font-size:.8rem;">Aucun exercice correspondant</div>';
 }
 
 /* ================================================================
