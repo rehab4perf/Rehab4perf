@@ -156,26 +156,15 @@ function doSetPassword(){
   var rawToken = _inviteToken || _recoveryToken;
   var isInvite = !!_inviteToken;
 
-  // Step 1 : exchange raw token for a session token via /verify
   var verifyType = isInvite ? 'signup' : 'recovery';
   fetch(IDENTITY_URL+'/verify', {
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({token:rawToken, type:verifyType})
+    body:JSON.stringify({token:rawToken, type:verifyType, password:pw})
   })
   .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,data:d}; }); })
   .then(function(res){
     if(!res.ok) throw new Error(res.data.msg || res.data.error_description || 'Token invalide.');
-    var sessionToken = res.data.access_token;
-    // Step 2 : set the password
-    return fetch(IDENTITY_URL+'/user', {
-      method:'PUT',
-      headers:{'Authorization':'Bearer '+sessionToken,'Content-Type':'application/json'},
-      body:JSON.stringify({password:pw})
-    }).then(function(r2){ return r2.json().then(function(d){ return {ok:r2.ok,data:d,token:sessionToken}; }); });
-  })
-  .then(function(res){
-    if(!res.ok) throw new Error(res.data.msg || 'Erreur lors de la définition du mot de passe.');
     _inviteToken = null; _recoveryToken = null;
     document.getElementById('setPasswordGate').style.display = 'none';
     document.getElementById('authGate').style.display = 'flex';
