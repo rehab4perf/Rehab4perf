@@ -841,7 +841,7 @@ function calcCardio() {
       var fc_nom  = Math.round(fcrep    + fcres    * a.pct / 100);
       var fc_lo   = Math.round((fcrep-2) + fcres_lo * a.pct / 100);
       var fc_hi   = Math.round((fcrep+2) + fcres_hi * a.pct / 100);
-      var allure_str = (vma_lo===vma_hi) ? cMinKm(spd) : 'de ' + cMinKm(spdHi) + ' à ' + cMinKm(spdLo);
+      var allure_str = (vma_lo===vma_hi) ? cMinKm(spd) : 'de ' + cMinKm(spdLo) + ' à ' + cMinKm(spdHi);
       var fc_str = Math.min(fc_lo,fc_hi) + ' à ' + Math.max(fc_lo,fc_hi) + ' bpm';
       var bg = i%2===0?'':'background:#F1F0ED;';
       return '<tr style="' + bg + '">' +
@@ -1089,7 +1089,10 @@ function downloadOutils(){
   var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = title.replace(/\s+/g,'_')+'_'+date.replace(/\s/g,'-')+'.html';
+  a.style.display = 'none';
+  document.body.appendChild(a);
   a.click();
+  setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 200);
   closeExportOutils();
 }
 
