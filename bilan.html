@@ -2642,35 +2642,43 @@ function buildCR() {
   });
   // Contraction flash LSI < 90%
   if (!isNaN(cfqCA) && !isNaN(cfqCS) && cfqCS>0 && (cfqCA/cfqCS*100)<90) toWork.push('Renforcement quadriceps isométrique (Contraction Flash LSI < 90%)');
-  // Break tests D/G — toutes régions
-  var breakGroups = [
-    { d:'tb-ge-fonc-d', g:'tb-ge-fonc-g',   region:'Genou' },
-    { d:'tb-ep-force-d', g:'tb-ep-force-g',  region:'Épaule' },
-    { d:'tb-ra-force-d', g:'tb-ra-force-g',  region:'Rachis' },
-    { d:'tb-ha-force-d', g:'tb-ha-force-g',  region:'Hanche' },
+  // Break tests D/G — toutes régions → message clair pour le patient
+  // Map: [tableId, côté, [label patient par index]]
+  var breakMaps = [
+    { d:'tb-ge-fonc-d', g:'tb-ge-fonc-g', labels:[
+        'Renforcement quadriceps', 'Renforcement ischio-jambiers',
+        'Renforcement abducteurs hanche', 'Renforcement adducteurs hanche'] },
+    { d:'tb-ep-force-d', g:'tb-ep-force-g', labels:[
+        'Renforcement trapèze inférieur', 'Renforcement dentelé antérieur',
+        'Renforcement rotateurs épaule (R1)', 'Renforcement rotateurs épaule (R2)',
+        'Renforcement élévateurs épaule', 'Renforcement rotateurs internes épaule'] },
+    { d:'tb-ra-force-d', g:'tb-ra-force-g', labels:[
+        'Renforcement abdominaux', 'Renforcement obliques', 'Renforcement extenseurs rachis'] },
+    { d:'tb-ha-force-d', g:'tb-ha-force-g', labels:[
+        'Renforcement adducteurs hanche', 'Renforcement abdominaux (chaîne hanche)',
+        'Renforcement fléchisseurs hanche'] },
   ];
-  breakGroups.forEach(function(grp){
-    var cfg = TESTS[grp.d];
-    if(!cfg) return;
+  breakMaps.forEach(function(grp){
     [[grp.d,'droit'],[grp.g,'gauche']].forEach(function(pair){
       var tb = document.getElementById(pair[0]);
       if(!tb) return;
       tb.querySelectorAll('tr').forEach(function(tr, i){
         var s = tr.querySelector('select');
         if(s && s.value==='Positif'){
-          toWork.push(grp.region + ' — ' + (cfg.items[i]||'') + ' positif côté ' + pair[1]);
+          var lbl = (grp.labels[i] || 'Renforcement musculaire') + ' ' + pair[1];
+          toWork.push(lbl);
         }
       });
     });
   });
   // Break tests cheville
-  var piForceItems = TESTS['tb-pi-force-ca'] ? TESTS['tb-pi-force-ca'].items : [];
+  var piForceLabels = ['Renforcement flexion plantaire','Renforcement flexion dorsale','Renforcement inverseurs','Renforcement éverseurs'];
   [['tb-pi-force-ca','droit'],['tb-pi-force-cs','gauche']].forEach(function(pair){
     var tb = document.getElementById(pair[0]);
     if(!tb) return;
     tb.querySelectorAll('tr').forEach(function(tr, i){
       var s = tr.querySelector('select');
-      if(s && s.value==='Positif') toWork.push('Cheville — ' + (piForceItems[i]||'') + ' positif côté ' + pair[1]);
+      if(s && s.value==='Positif') toWork.push((piForceLabels[i]||'Renforcement cheville') + ' ' + pair[1]);
     });
   });
   if (toWork.length > 0) {
