@@ -3256,74 +3256,138 @@ init();
 
 // ── EXPORT HTML PATIENT ─────────────────────────────────────
 function exportBilanHTML(type) {
-  var p       = getProfile();
+  var p         = getProfile();
   var praticien = ((p.prenom||'')+' '+(p.nom||'')).trim() || 'Praticien';
-  var cabinet = p.cabinet || '';
-  var am      = p.am  || '';
-  var tel     = p.tel || '';
-  var email   = p.email || '';
-  var date    = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+  var cabinet   = p.cabinet || '';
+  var am        = p.am  || '';
+  var tel       = p.tel || '';
+  var email     = p.email || '';
+  var date      = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
 
   var iscrTF    = type === 'cr-tf';
   var title     = iscrTF ? 'Compte-Rendu Tests Fonctionnels' : 'Compte-Rendu Patient';
   var contentId = iscrTF ? 'cr-tf-content' : 'cr-content';
 
-  // Patient name
   var nom    = (document.getElementById('f-nom')    ||{}).value || '';
   var prenom = (document.getElementById('f-prenom') ||{}).value || '';
+  var dob    = (document.getElementById('f-dob')    ||{}).value || '';
+  var cote   = (document.getElementById('f-cote')   ||{}).value || '';
   var patient = ((prenom+' '+nom).trim()) || '';
+  var age    = dob ? (new Date().getFullYear() - new Date(dob).getFullYear()) + ' ans' : '';
 
   var contentEl = document.getElementById(contentId);
   if (!contentEl) return;
-  var contentHTML = contentEl.innerHTML; // inner content only, without the wrapper div
 
-  // Build clean CSS — no layout CSS from bilan (avoids body{display:flex})
-  var css = [
-    '*{margin:0;padding:0;box-sizing:border-box}',
-    'body{font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;background:#F7F6F3;color:#1A1917;padding:0}',
-    '.page-wrap{max-width:780px;margin:0 auto;padding:24px 28px 40px}',
-    // header bar
-    '.doc-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;',
-    '  padding:10px 16px;background:#1A3A5C;border-radius:8px;margin-bottom:18px}',
-    '.doc-logo{font-family:Georgia,serif;font-style:italic;font-size:1rem;color:#fff}',
-    '.doc-logo .r{color:#4A90D9}.doc-logo .n{font-weight:900;font-style:normal}.doc-logo .p{color:#E74C3C}',
-    '.doc-meta{text-align:right;font-size:.72rem;color:rgba(255,255,255,.8);line-height:1.6}',
-    '.doc-meta strong{font-size:.78rem;color:#fff;font-style:normal}',
-    // title block
-    '.doc-title{margin-bottom:16px;padding-bottom:10px;border-bottom:2px solid #E8E6E1}',
-    '.doc-title h1{font-size:1.05rem;font-weight:700;color:#1A3A5C;margin-bottom:2px}',
-    '.doc-title p{font-size:.78rem;color:#6B6860}',
-    // content rows — reuse bilan inline styles (they are already inline), minimal helpers
-    'div{line-height:1.5}',
-    'span{line-height:inherit}',
-  ].join('\n');
+  // Post-process HTML to tag "Points à travailler" section for orange styling
+  var contentHTML = contentEl.innerHTML
+    .replace(/(<div class="cr-section">)(<h3>5\. Points)/g, '<div class="cr-section cr-alert">$2')
+    .replace(/(<div class="cr-section">)(<h3>2\. Bilan)/g, '<div class="cr-section cr-ortho">$2')
+    .replace(/(<div class="cr-section">)(<h3>[34]\. Tests)/g, '<div class="cr-section cr-tests">$2');
 
-  // Build header meta lines
-  var metaLines = [];
-  metaLines.push('<strong>'+praticien+'</strong>');
-  if(cabinet) metaLines.push(cabinet);
-  if(am) metaLines.push('N° AM : '+am);
-  if(tel) metaLines.push(tel);
-  if(email) metaLines.push(email);
+  var css = `
+*{margin:0;padding:0;box-sizing:border-box}
+html{font-size:14px}
+body{font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;background:#F0F4F8;color:#1A1917;padding:0}
+.page-wrap{max-width:800px;margin:0 auto;padding:0 0 48px}
+
+/* ── HEADER ── */
+.doc-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:14px 24px;background:#1A3A5C}
+.doc-logo{font-family:Georgia,serif;font-style:italic;font-size:1.1rem;color:#fff}
+.doc-logo .r{color:#4A90D9}.doc-logo .n{font-weight:900;font-style:normal}.doc-logo .p{color:#E74C3C}
+.doc-meta{text-align:right;font-size:.72rem;color:rgba(255,255,255,.8);line-height:1.8}
+.doc-meta strong{font-size:.82rem;color:#fff;display:block}
+
+/* ── PATIENT CARD ── */
+.patient-card{background:#fff;margin:0;padding:20px 24px;border-bottom:1px solid #DDE3EC;display:flex;align-items:center;gap:18px}
+.patient-avatar{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#2B5FA6,#1A3A5C);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:700;flex-shrink:0;font-family:Georgia,serif}
+.patient-name{font-size:1.1rem;font-weight:700;color:#1A3A5C;margin-bottom:3px}
+.patient-sub{font-size:.8rem;color:#6B6860}
+.patient-badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.pat-badge{background:#EEF3FB;color:#2B5FA6;border-radius:20px;padding:2px 10px;font-size:.7rem;font-weight:700}
+.pat-badge.orange{background:#FEF3EB;color:#D4600A}
+.doc-date-bar{background:#F7F6F3;padding:8px 24px;font-size:.75rem;color:#6B6860;border-bottom:1px solid #E8E6E1}
+.doc-date-bar span{font-weight:600;color:#1A3A5C}
+
+/* ── BODY ── */
+.doc-body{padding:20px 24px 0}
+
+/* ── PATIENT BLOCK (.block from buildCR) ── */
+.block{display:none}
+
+/* ── SECTIONS ── */
+.cr-section{background:#fff;border-radius:10px;margin-bottom:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08),0 0 0 1px rgba(0,0,0,.04)}
+.cr-section h3{padding:10px 16px;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;background:#1A3A5C;color:#fff;margin:0}
+.cr-ortho h3{background:#2D6A4F}
+.cr-tests h3{background:#2B5FA6}
+.cr-alert h3{background:#D4600A}
+
+/* ── ITEMS ── */
+.cr-item{display:flex;align-items:flex-start;gap:12px;padding:9px 16px;border-bottom:1px solid #F1F0ED;line-height:1.5}
+.cr-item:last-child{border-bottom:none}
+.cr-key{font-size:.78rem;font-weight:600;color:#6B6860;min-width:175px;flex-shrink:0;padding-top:2px}
+.cr-val{flex:1;font-size:.85rem;color:#1A1917;line-height:1.5}
+.cr-tag{display:inline-block;padding:2px 10px;border-radius:20px;font-size:.68rem;font-weight:700;white-space:nowrap;margin-left:8px;vertical-align:middle}
+.cr-tag.ok,.cr-tag.good{background:#E8F5EE;color:#2D6A4F}
+.cr-tag.warn{background:#FEF3EB;color:#D4600A}
+.cr-tag.bad{background:#FDECEA;color:#C0392B}
+
+/* ── SUB-LABELS (inside ortho) ── */
+.cr-section [style*="font-size:.78rem;font-weight:700"]{padding:8px 16px 4px;background:#F7F6F3;display:block;font-size:.7rem!important;color:#2D6A4F!important;letter-spacing:.06em}
+
+/* ── ALERT ITEMS (points à travailler) ── */
+.cr-alert .cr-item{padding:10px 16px;align-items:center;background:#FFF8F5}
+.cr-alert .cr-item:nth-child(odd){background:#fff}
+.cr-alert .cr-item > span:first-child{color:#D4600A;font-weight:700;font-size:1rem;flex-shrink:0}
+
+/* ── EMPTY STATE ── */
+.cr-empty{padding:40px;text-align:center;color:#9D9B96;font-style:italic;font-size:.9rem}
+
+/* ── TF CONTENT (cr-tf sections use inline styles) ── */
+[style*="margin-bottom:20px;padding-bottom:14px"]{background:#fff;border-radius:10px;padding:16px 20px!important;margin-bottom:14px!important;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+[style*="font-size:1.1rem;font-weight:700;color:var(--accent2)"]{font-size:1rem!important;font-weight:700;color:#1A3A5C!important}
+[style*="font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase"]{display:block;padding:10px 0 6px;font-size:.7rem!important;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#2B5FA6!important;border-bottom:2px solid #2B5FA6;margin-bottom:8px}
+[style*="display:flex;align-items:baseline"]{padding:7px 0;border-bottom:1px solid #F1F0ED}
+[style*="margin:4px 0 8px;padding:6px 10px;background:var(--surface2)"]{background:#F7F6F3!important;border-radius:6px;margin:4px 0 10px!important;padding:8px 12px!important;font-size:.82rem;color:#6B6860;font-style:italic}
+`;
+
+  // Build meta block
+  var metaParts = [];
+  if(praticien) metaParts.push('<strong>'+praticien+'</strong>');
+  var metaSub = [cabinet, am?'N° AM : '+am:'', tel, email].filter(Boolean).join(' · ');
+  if(metaSub) metaParts.push(metaSub);
+
+  // Patient initials for avatar
+  var initials = ((prenom[0]||'')+(nom[0]||'')).toUpperCase() || '?';
+  // Patient badges
+  var badges = '';
+  if(cote) badges += '<span class="pat-badge">'+cote+'</span>';
+  if(age)  badges += '<span class="pat-badge">'+age+'</span>';
+  var bilanDate = (document.getElementById('f-date')||{}).value || '';
+  if(bilanDate) badges += '<span class="pat-badge orange">Bilan du '+bilanDate.split('-').reverse().join('/')+'</span>';
 
   var html = '<!DOCTYPE html><html lang="fr"><head>'
-    + '<meta charset="UTF-8">'
-    + '<meta name="viewport" content="width=device-width,initial-scale=1.0">'
+    + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">'
     + '<title>'+title+(patient?' — '+patient:'')+'</title>'
     + '<style>'+css+'</style>'
     + '</head><body><div class="page-wrap">'
-    // slim header
+    // Header
     + '<div class="doc-header">'
     + '<div class="doc-logo"><span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span></div>'
-    + '<div class="doc-meta">'+metaLines.join('<br>')+'<br>'+date+'</div>'
+    + '<div class="doc-meta">'+metaParts.join('<br>')+'</div>'
     + '</div>'
-    // document title
-    + '<div class="doc-title">'
-    + '<h1>'+title+(patient?' — '+patient:'')+'</h1>'
-    + '<p>Généré le '+date+'</p>'
-    + '</div>'
-    // CR content (inline styles from buildCR/buildCRTF are preserved)
+    // Patient card
+    + (patient ? '<div class="patient-card">'
+      + '<div class="patient-avatar">'+initials+'</div>'
+      + '<div><div class="patient-name">'+patient+'</div>'
+      + (badges ? '<div class="patient-badges">'+badges+'</div>' : '')
+      + '</div></div>' : '')
+    // Date bar
+    + '<div class="doc-date-bar">Compte-rendu généré le <span>'+date+'</span></div>'
+    // Content
+    + '<div class="doc-body">'
+    + '<br>'
     + contentHTML
+    + '</div>'
     + '</div></body></html>';
 
   var blob    = new Blob([html], {type:'text/html;charset=utf-8'});
