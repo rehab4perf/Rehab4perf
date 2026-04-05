@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light only">
 <title>Rehab4Perf</title>
-<!-- Netlify Identity Widget -->
-<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 html, body { height:100%; overflow:hidden; background:#1A3A5C; }
@@ -40,9 +38,52 @@ iframe.active { display:block; }
   .topnav { padding:0 10px; } .tab { padding:0 10px; font-size:.78rem; }
   .logo { margin-right:10px; font-size:.92rem; } .topnav-right { display:none; }
 }
+/* Auth gate */
+#authGate {
+  position:fixed; inset:0; background:#1A3A5C; z-index:9999;
+  display:flex; align-items:center; justify-content:center;
+}
+.gate-card {
+  background:#fff; border-radius:14px; padding:36px 32px;
+  max-width:380px; width:90%; text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,.3);
+}
+.gate-logo { font-family:Georgia,serif; font-style:italic; font-size:1.6rem; margin-bottom:4px; }
+.gate-logo .r { color:#4A90D9; }
+.gate-logo .n { color:#1A3A5C; font-weight:900; font-style:normal; }
+.gate-logo .p { color:#E74C3C; }
+.gate-sub { font-size:.8rem; color:#6b7a8d; margin-bottom:22px; }
+.gate-field {
+  width:100%; padding:10px 12px; border:1px solid #dde3ec; border-radius:7px;
+  font-size:.88rem; color:#1a2433; outline:none; margin-bottom:10px;
+  font-family:inherit;
+}
+.gate-field:focus { border-color:#4A90D9; }
+.gate-btn {
+  width:100%; padding:11px; background:#2B5FA6; color:#fff; border:none;
+  border-radius:7px; font-size:.9rem; font-weight:600; cursor:pointer;
+  font-family:inherit; transition:background .15s; margin-top:2px;
+}
+.gate-btn:hover { background:#1A3A5C; }
+.gate-btn:disabled { opacity:.6; cursor:not-allowed; }
+.gate-error { font-size:.78rem; color:#E74C3C; margin-top:8px; min-height:18px; }
+.gate-note { font-size:.7rem; color:#aab; margin-top:14px; line-height:1.5; }
 </style>
 </head>
 <body>
+<!-- Auth Gate -->
+<div id="authGate">
+  <div class="gate-card">
+    <div class="gate-logo"><span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span></div>
+    <p class="gate-sub">Votre espace kiné personnel</p>
+    <input class="gate-field" id="gateEmail" type="email" placeholder="Adresse email" autocomplete="email">
+    <input class="gate-field" id="gatePassword" type="password" placeholder="Mot de passe" autocomplete="current-password">
+    <button class="gate-btn" id="gateBtn" onclick="doLogin()">Se connecter</button>
+    <div class="gate-error" id="gateError"></div>
+    <p class="gate-note">Accès sur invitation uniquement<br>Contactez Antoine PERONNAUD</p>
+  </div>
+</div>
+
 <div class="topnav">
   <div class="logo">
     <span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span>
@@ -59,68 +100,90 @@ iframe.active { display:block; }
   <iframe id="frame-account" src="account.html"></iframe>
 </div>
 <script>
+var IDENTITY_URL = 'https://rehab4perf.netlify.app/.netlify/identity';
+var _token = null;
+var _user  = null;
+
 /* ── TAB SWITCHER ── */
 function show(id) {
   var tabs = document.querySelectorAll('.tab');
   var frames = document.querySelectorAll('iframe');
-  for (var i=0;i<tabs.length;i++) tabs[i].classList.remove('active');
-  for (var i=0;i<frames.length;i++) frames[i].classList.remove('active');
+  for(var i=0;i<tabs.length;i++) tabs[i].classList.remove('active');
+  for(var i=0;i<frames.length;i++) frames[i].classList.remove('active');
   var tab = document.getElementById('tab-'+id);
   if(tab) tab.classList.add('active');
   document.getElementById('frame-'+id).classList.add('active');
 }
 
-/* ── NETLIFY IDENTITY ── */
-var GATE_HTML = '<div style="font-family:Georgia,serif;font-style:italic;font-size:2rem;color:#fff;margin-bottom:8px">'
-  +'<span style="color:#4A90D9">Rehab</span><span style="font-weight:900;font-style:normal">4</span><span style="color:#E74C3C">Perf</span>'
-  +'</div>'
-  +'<p style="color:rgba(255,255,255,.65);font-size:.85rem;font-family:-apple-system,sans-serif;margin-bottom:24px;text-align:center;">Votre espace kiné personnel</p>'
-  +'<button onclick="netlifyIdentity.open(\'login\')" style="padding:12px 32px;background:#2B5FA6;color:#fff;border:none;border-radius:8px;font-size:.95rem;font-weight:600;cursor:pointer;font-family:-apple-system,sans-serif;">Se connecter</button>'
-  +'<p style="color:rgba(255,255,255,.35);font-size:.72rem;font-family:-apple-system,sans-serif;margin-top:16px;text-align:center;">Accès sur invitation · Contactez Antoine PERONNAUD</p>';
+/* ── LOGIN ── */
+document.getElementById('gatePassword').addEventListener('keydown', function(e){
+  if(e.key==='Enter') doLogin();
+});
+document.getElementById('gateEmail').addEventListener('keydown', function(e){
+  if(e.key==='Enter') document.getElementById('gatePassword').focus();
+});
 
-function showGate(){
-  var existing = document.getElementById('authGate');
-  if(existing) return;
-  var el = document.createElement('div');
-  el.id = 'authGate';
-  el.style.cssText = 'position:fixed;inset:0;background:#1A3A5C;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;';
-  el.innerHTML = GATE_HTML;
-  document.body.appendChild(el);
+function doLogin(){
+  var email    = document.getElementById('gateEmail').value.trim();
+  var password = document.getElementById('gatePassword').value;
+  var btn      = document.getElementById('gateBtn');
+  var errEl    = document.getElementById('gateError');
+  if(!email || !password){ errEl.textContent = 'Veuillez remplir email et mot de passe.'; return; }
+  btn.disabled = true; btn.textContent = 'Connexion…'; errEl.textContent = '';
+  fetch(IDENTITY_URL+'/token', {
+    method:'POST',
+    headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:'grant_type=password&username='+encodeURIComponent(email)+'&password='+encodeURIComponent(password)
+  })
+  .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,data:d}; }); })
+  .then(function(res){
+    if(!res.ok) throw new Error(res.data.error_description || 'Identifiants incorrects.');
+    _token = res.data.access_token;
+    return fetch(IDENTITY_URL+'/user', { headers:{'Authorization':'Bearer '+_token} });
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(user){
+    _user = user;
+    document.getElementById('authGate').style.display = 'none';
+    updateUserDisplay(user);
+    // Pass token to account iframe
+    var af = document.getElementById('frame-account');
+    af.contentWindow.postMessage({type:'r4p-token',token:_token,user:user},'*');
+  })
+  .catch(function(err){
+    errEl.textContent = err.message || 'Erreur de connexion.';
+    btn.disabled = false; btn.textContent = 'Se connecter';
+  });
 }
-
-function hideGate(){
-  var gate = document.getElementById('authGate');
-  if(gate) gate.remove();
-}
-
-netlifyIdentity.on('init', function(user){
-  if(user){ updateUserDisplay(user); hideGate(); }
-  else { showGate(); }
-});
-
-netlifyIdentity.on('login', function(user){
-  netlifyIdentity.close();
-  updateUserDisplay(user);
-  hideGate();
-});
-
-netlifyIdentity.on('logout', function(){
-  updateUserDisplay(null);
-  showGate();
-});
 
 function updateUserDisplay(user){
   var el = document.getElementById('userDisplay');
   if(!user){ el.innerHTML = '—<br>—'; return; }
-  var meta = user.user_metadata || {};
-  var prenom = meta.prenom || '';
-  var nom = meta.nom || '';
+  var meta = (user.user_metadata||{});
+  var prenom = meta.prenom||''; var nom = meta.nom||'';
   var fullName = (prenom+' '+nom).trim() || user.email.split('@')[0];
-  var cabinet = meta.cabinet || '';
+  var cabinet = meta.cabinet||'';
+  el.style.color = 'rgba(255,255,255,.85)';
   el.innerHTML = fullName+'<br>'+(cabinet||'Mon compte');
 }
 
-netlifyIdentity.init({ APIUrl: 'https://rehab4perf.netlify.app/.netlify/identity' });
+// Listen for messages from account page
+window.addEventListener('message', function(e){
+  if(e.data && e.data.type==='r4p-profile-updated'){
+    updateUserDisplay(e.data.user);
+  }
+  if(e.data && e.data.type==='r4p-logout'){
+    _token=null; _user=null;
+    updateUserDisplay(null);
+    document.getElementById('gateEmail').value='';
+    document.getElementById('gatePassword').value='';
+    document.getElementById('gateError').textContent='';
+    document.getElementById('gateBtn').disabled=false;
+    document.getElementById('gateBtn').textContent='Se connecter';
+    document.getElementById('authGate').style.display='flex';
+    show('bilan');
+  }
+});
 </script>
 </body>
 </html>

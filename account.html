@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light only">
 <title>Compte utilisateur – Rehab4Perf</title>
-<!-- Netlify Identity Widget -->
-<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 <style>
 :root {
   --navy:#1A3A5C; --accent:#2B5FA6; --accent2:#4A90D9;
@@ -198,25 +196,20 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
 /* ================================================================
    NETLIFY IDENTITY
    ================================================================ */
+var IDENTITY_URL = 'https://rehab4perf.netlify.app/.netlify/identity';
 var currentUser = null;
+var currentToken = null;
 
-netlifyIdentity.on('init', function(user){
-  if(user){ showAccount(user); } else { showLogin(); }
+// Receive token from parent
+window.addEventListener('message', function(e){
+  if(e.data && e.data.type==='r4p-token'){
+    currentToken = e.data.token;
+    showAccount(e.data.user);
+  }
 });
 
-netlifyIdentity.on('login', function(user){
-  netlifyIdentity.close();
-  showAccount(user);
-  // Notify parent frame to refresh UI
-  if(window.parent !== window) window.parent.postMessage({type:'r4p-login',email:user.email},'*');
-});
-
-netlifyIdentity.on('logout', function(){
-  showLogin();
-  if(window.parent !== window) window.parent.postMessage({type:'r4p-logout'},'*');
-});
-
-netlifyIdentity.init({ APIUrl: 'https://rehab4perf.netlify.app/.netlify/identity' });
+// If opened directly, show empty state
+showLogin();
 
 function showLogin(){
   currentUser = null;
@@ -251,27 +244,35 @@ function showAccount(user){
 }
 
 function saveProfile(){
-  if(!currentUser) return;
+  if(!currentUser || !currentToken) return;
   var prenom = document.getElementById('fieldPrenom').value.trim();
   var nom = document.getElementById('fieldNom').value.trim();
   var am = document.getElementById('fieldAM').value.trim();
   var tel = document.getElementById('fieldTel').value.trim();
   var cabinet = document.getElementById('fieldCabinet').value.trim();
 
-  netlifyIdentity.currentUser().update({
-    data: { prenom:prenom, nom:nom, am:am, tel:tel, cabinet:cabinet }
-  }).then(function(user){
+  fetch(IDENTITY_URL+'/user', {
+    method:'PUT',
+    headers:{'Authorization':'Bearer '+currentToken,'Content-Type':'application/json'},
+    body:JSON.stringify({data:{prenom:prenom,nom:nom,am:am,tel:tel,cabinet:cabinet}})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(user){
+    currentUser = user;
     showAccount(user);
+    // Update parent nav display
+    if(window.parent !== window) window.parent.postMessage({type:'r4p-profile-updated',user:user},'*');
     var status = document.getElementById('saveStatus');
     status.style.display = 'inline';
-    setTimeout(function(){ status.style.display = 'none'; }, 2500);
-  }).catch(function(err){
-    alert('Erreur lors de la sauvegarde : '+err.message);
-  });
+    setTimeout(function(){ status.style.display='none'; }, 2500);
+  })
+  .catch(function(err){ alert('Erreur : '+err.message); });
 }
 
 function logout(){
-  netlifyIdentity.logout();
+  currentUser = null; currentToken = null;
+  if(window.parent !== window) window.parent.postMessage({type:'r4p-logout'},'*');
+  showLogin();
 }
 </script>
 </body>
