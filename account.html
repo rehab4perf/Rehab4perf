@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light only">
+<title>Compte utilisateur – Rehab4Perf</title>
+<!-- Netlify Identity Widget -->
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<style>
+:root {
+  --navy:#1A3A5C; --accent:#2B5FA6; --accent2:#4A90D9;
+  --bg:#F0F4F8; --surface:#fff; --text:#1a2433; --muted:#6b7a8d;
+  --border:#dde3ec;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvetica Neue',Arial,sans-serif; color:var(--text); }
+
+/* ── LOGIN SCREEN ── */
+.login-screen {
+  min-height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:24px;
+}
+.login-card {
+  background:var(--surface); border-radius:14px; border:1px solid var(--border);
+  padding:36px 32px; max-width:400px; width:100%; text-align:center;
+  box-shadow:0 8px 32px rgba(0,0,0,.08);
+}
+.login-logo { font-family:Georgia,serif; font-style:italic; font-size:1.4rem; margin-bottom:6px; }
+.login-logo .r { color:#4A90D9; }
+.login-logo .n { color:var(--navy); font-weight:900; font-style:normal; }
+.login-logo .p { color:#E74C3C; }
+.login-subtitle { font-size:.82rem; color:var(--muted); margin-bottom:24px; }
+.login-btn {
+  width:100%; padding:12px; background:var(--accent); color:#fff;
+  border:none; border-radius:8px; font-size:.9rem; font-weight:600;
+  cursor:pointer; transition:background .15s;
+}
+.login-btn:hover { background:var(--navy); }
+.login-note { font-size:.72rem; color:var(--muted); margin-top:14px; line-height:1.5; }
+
+/* ── ACCOUNT SCREEN ── */
+.account-screen { display:none; padding:24px; max-width:640px; margin:0 auto; }
+
+.page-header { margin-bottom:20px; }
+.page-header h1 { font-size:1.1rem; font-weight:700; color:var(--navy); margin-bottom:2px; }
+.page-header p { font-size:.8rem; color:var(--muted); }
+
+.card { background:var(--surface); border-radius:10px; border:1px solid var(--border); padding:20px; margin-bottom:16px; }
+.card-title { font-size:.72rem; font-weight:700; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; margin-bottom:14px; }
+
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.form-group { display:flex; flex-direction:column; gap:4px; }
+.form-group.full { grid-column:1/-1; }
+.form-label { font-size:.72rem; font-weight:600; color:var(--muted); letter-spacing:.04em; text-transform:uppercase; }
+.form-input {
+  padding:8px 10px; border:1px solid var(--border); border-radius:6px;
+  font-size:.85rem; color:var(--text); outline:none; background:#FAFBFD;
+  font-family:inherit;
+}
+.form-input:focus { border-color:var(--accent2); background:#fff; }
+.form-input[readonly] { background:#f5f7fa; color:var(--muted); cursor:not-allowed; }
+
+.btn { padding:9px 18px; border-radius:6px; border:none; font-size:.82rem; font-weight:600; cursor:pointer; transition:background .15s; font-family:inherit; }
+.btn-primary { background:var(--accent); color:#fff; }
+.btn-primary:hover { background:var(--navy); }
+.btn-danger { background:none; color:#E74C3C; border:1px solid #E74C3C; }
+.btn-danger:hover { background:#FEF0EE; }
+
+.btn-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.save-status { font-size:.78rem; color:#27AE60; display:none; }
+
+/* Avatar circle */
+.avatar { width:56px; height:56px; border-radius:50%; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-size:1.3rem; font-weight:700; flex-shrink:0; }
+.user-row { display:flex; align-items:center; gap:14px; margin-bottom:16px; }
+.user-meta h2 { font-size:.95rem; font-weight:700; color:var(--text); }
+.user-meta p { font-size:.78rem; color:var(--muted); }
+
+/* Security section */
+.security-item { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border); }
+.security-item:last-child { border-bottom:none; }
+.security-label { font-size:.82rem; font-weight:600; }
+.security-sub { font-size:.74rem; color:var(--muted); margin-top:1px; }
+.badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:.68rem; font-weight:700; }
+.badge-green { background:#EFF9EE; color:#2D7D46; }
+.badge-blue { background:#EBF3FF; color:#2B5FA6; }
+
+@media (max-width:500px) {
+  .form-grid { grid-template-columns:1fr; }
+  .form-group.full { grid-column:1; }
+  .account-screen { padding:16px; }
+  .login-card { padding:28px 20px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ LOGIN ═══════════ -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">
+      <span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span>
+    </div>
+    <p class="login-subtitle">Connectez-vous pour accéder à votre espace</p>
+    <button class="login-btn" onclick="netlifyIdentity.open()">Se connecter</button>
+    <p class="login-note">Accès sur invitation uniquement.<br>Contactez Antoine PERONNAUD pour obtenir un accès.</p>
+  </div>
+</div>
+
+<!-- ═══════════ ACCOUNT ═══════════ -->
+<div class="account-screen" id="accountScreen">
+
+  <div class="page-header">
+    <h1>Mon compte</h1>
+    <p>Vos informations personnelles et paramètres de session</p>
+  </div>
+
+  <!-- Identité -->
+  <div class="card">
+    <div class="user-row">
+      <div class="avatar" id="avatarCircle">?</div>
+      <div class="user-meta">
+        <h2 id="displayName">—</h2>
+        <p id="displayEmail">—</p>
+      </div>
+    </div>
+    <div class="card-title">Informations professionnelles</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Prénom</label>
+        <input class="form-input" id="fieldPrenom" type="text" placeholder="Jean">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nom</label>
+        <input class="form-input" id="fieldNom" type="text" placeholder="Dupont">
+      </div>
+      <div class="form-group">
+        <label class="form-label">N° ADELI / AM</label>
+        <input class="form-input" id="fieldAM" type="text" placeholder="123456789">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Téléphone</label>
+        <input class="form-input" id="fieldTel" type="tel" placeholder="06 12 34 56 78">
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Email professionnel</label>
+        <input class="form-input" id="fieldEmail" type="email" readonly>
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Cabinet / Structure</label>
+        <input class="form-input" id="fieldCabinet" type="text" placeholder="Athletik Lamarck">
+      </div>
+    </div>
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn btn-primary" onclick="saveProfile()">Enregistrer</button>
+      <span class="save-status" id="saveStatus">✓ Sauvegardé</span>
+    </div>
+  </div>
+
+  <!-- Sécurité -->
+  <div class="card">
+    <div class="card-title">Sécurité & Session</div>
+    <div class="security-item">
+      <div>
+        <div class="security-label">Authentification</div>
+        <div class="security-sub">Compte Netlify Identity sécurisé</div>
+      </div>
+      <span class="badge badge-green">Actif</span>
+    </div>
+    <div class="security-item">
+      <div>
+        <div class="security-label">Accès</div>
+        <div class="security-sub">Sur invitation uniquement</div>
+      </div>
+      <span class="badge badge-blue">Invitation</span>
+    </div>
+    <div class="security-item">
+      <div>
+        <div class="security-label">Mot de passe</div>
+        <div class="security-sub">Modifier votre mot de passe</div>
+      </div>
+      <button class="btn" style="background:none;border:1px solid var(--border);font-size:.76rem;padding:5px 12px;" onclick="netlifyIdentity.open('signup')">Modifier</button>
+    </div>
+  </div>
+
+  <!-- Déconnexion -->
+  <div class="card">
+    <div class="card-title">Session</div>
+    <div class="btn-row">
+      <button class="btn btn-danger" onclick="logout()">Se déconnecter</button>
+      <span style="font-size:.76rem;color:var(--muted);">Vous serez redirigé vers l'écran de connexion</span>
+    </div>
+  </div>
+
+</div><!-- .account-screen -->
+
+<script>
+/* ================================================================
+   NETLIFY IDENTITY
+   ================================================================ */
+var currentUser = null;
+
+netlifyIdentity.on('init', function(user){
+  if(user){ showAccount(user); } else { showLogin(); }
+});
+
+netlifyIdentity.on('login', function(user){
+  netlifyIdentity.close();
+  showAccount(user);
+  // Notify parent frame to refresh UI
+  if(window.parent !== window) window.parent.postMessage({type:'r4p-login',email:user.email},'*');
+});
+
+netlifyIdentity.on('logout', function(){
+  showLogin();
+  if(window.parent !== window) window.parent.postMessage({type:'r4p-logout'},'*');
+});
+
+netlifyIdentity.init({ container: '#loginScreen' });
+
+function showLogin(){
+  currentUser = null;
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('accountScreen').style.display = 'none';
+}
+
+function showAccount(user){
+  currentUser = user;
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('accountScreen').style.display = 'block';
+
+  var email = user.email || '';
+  var meta = user.user_metadata || {};
+  var prenom = meta.prenom || '';
+  var nom = meta.nom || '';
+  var fullName = (prenom+' '+nom).trim() || email.split('@')[0];
+
+  // Avatar initials
+  var initials = ((prenom[0]||'')+(nom[0]||'')).toUpperCase() || email[0].toUpperCase();
+  document.getElementById('avatarCircle').textContent = initials;
+  document.getElementById('displayName').textContent = fullName;
+  document.getElementById('displayEmail').textContent = email;
+
+  // Fill form
+  document.getElementById('fieldPrenom').value = prenom;
+  document.getElementById('fieldNom').value = nom;
+  document.getElementById('fieldAM').value = meta.am || '';
+  document.getElementById('fieldTel').value = meta.tel || '';
+  document.getElementById('fieldEmail').value = email;
+  document.getElementById('fieldCabinet').value = meta.cabinet || '';
+}
+
+function saveProfile(){
+  if(!currentUser) return;
+  var prenom = document.getElementById('fieldPrenom').value.trim();
+  var nom = document.getElementById('fieldNom').value.trim();
+  var am = document.getElementById('fieldAM').value.trim();
+  var tel = document.getElementById('fieldTel').value.trim();
+  var cabinet = document.getElementById('fieldCabinet').value.trim();
+
+  netlifyIdentity.currentUser().update({
+    data: { prenom:prenom, nom:nom, am:am, tel:tel, cabinet:cabinet }
+  }).then(function(user){
+    showAccount(user);
+    var status = document.getElementById('saveStatus');
+    status.style.display = 'inline';
+    setTimeout(function(){ status.style.display = 'none'; }, 2500);
+  }).catch(function(err){
+    alert('Erreur lors de la sauvegarde : '+err.message);
+  });
+}
+
+function logout(){
+  netlifyIdentity.logout();
+}
+</script>
+</body>
+</html>

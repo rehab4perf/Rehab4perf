@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light only">
 <title>Rehab4Perf</title>
+<!-- Netlify Identity Widget -->
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 html, body { height:100%; overflow:hidden; background:#1A3A5C; }
@@ -48,22 +50,87 @@ iframe.active { display:block; }
   <button class="tab active" id="tab-bilan" onclick="show('bilan')">Bilan clinique</button>
   <button class="tab" id="tab-outils" onclick="show('outils')">Outils</button>
   <button class="tab" id="tab-prescription" onclick="show('prescription')">Prescription</button>
-  <div class="topnav-right">Antoine PERONNAUD<br>Athletik Lamarck</div>
+  <div class="topnav-right" id="userDisplay" style="cursor:pointer;" onclick="show('account')" title="Mon compte">—<br>—</div>
 </div>
 <div class="frame-wrap">
   <iframe id="frame-bilan"  src="bilan.html"  class="active"></iframe>
   <iframe id="frame-outils" src="outils.html"></iframe>
   <iframe id="frame-prescription" src="prescription.html"></iframe>
+  <iframe id="frame-account" src="account.html"></iframe>
 </div>
 <script>
+/* ── TAB SWITCHER ── */
 function show(id) {
   var tabs = document.querySelectorAll('.tab');
   var frames = document.querySelectorAll('iframe');
   for (var i=0;i<tabs.length;i++) tabs[i].classList.remove('active');
   for (var i=0;i<frames.length;i++) frames[i].classList.remove('active');
-  document.getElementById('tab-'+id).classList.add('active');
+  var tab = document.getElementById('tab-'+id);
+  if(tab) tab.classList.add('active');
   document.getElementById('frame-'+id).classList.add('active');
 }
+
+/* ── NETLIFY IDENTITY ── */
+var _gateEl = null;
+
+function buildGate(){
+  var el = document.createElement('div');
+  el.id = 'authGate';
+  el.style.cssText = 'position:fixed;inset:0;background:#1A3A5C;z-index:999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;';
+  el.innerHTML = '<div style="font-family:Georgia,serif;font-style:italic;font-size:1.8rem;color:#fff"><span style="color:#4A90D9">Rehab</span><span style="font-weight:900;font-style:normal">4</span><span style="color:#E74C3C">Perf</span></div>'
+    +'<p style="color:rgba(255,255,255,.6);font-size:.85rem;font-family:-apple-system,sans-serif;">Chargement…</p>';
+  return el;
+}
+
+netlifyIdentity.on('init', function(user){
+  var gate = document.getElementById('authGate');
+  if(user){
+    updateUserDisplay(user);
+    if(gate) gate.remove();
+  } else {
+    // Show gate then open login
+    if(!gate){ document.body.appendChild(buildGate()); }
+    setTimeout(function(){ netlifyIdentity.open('login'); }, 400);
+  }
+});
+
+netlifyIdentity.on('login', function(user){
+  netlifyIdentity.close();
+  updateUserDisplay(user);
+  var gate = document.getElementById('authGate');
+  if(gate) gate.remove();
+});
+
+netlifyIdentity.on('logout', function(){
+  updateUserDisplay(null);
+  document.body.appendChild(buildGate());
+  setTimeout(function(){ netlifyIdentity.open('login'); }, 400);
+});
+
+// Listen for messages from account iframe
+window.addEventListener('message', function(e){
+  if(e.data && e.data.type==='r4p-login'){
+    var gate = document.getElementById('authGate');
+    if(gate) gate.remove();
+  }
+  if(e.data && e.data.type==='r4p-logout'){
+    document.body.appendChild(buildGate());
+    setTimeout(function(){ netlifyIdentity.open('login'); }, 400);
+  }
+});
+
+function updateUserDisplay(user){
+  var el = document.getElementById('userDisplay');
+  if(!user){ el.innerHTML = '—<br>—'; return; }
+  var meta = user.user_metadata || {};
+  var prenom = meta.prenom || '';
+  var nom = meta.nom || '';
+  var fullName = (prenom+' '+nom).trim() || user.email.split('@')[0];
+  var cabinet = meta.cabinet || '';
+  el.innerHTML = fullName+'<br>'+(cabinet||'Mon compte');
+}
+
+netlifyIdentity.init();
 </script>
 </body>
 </html>
