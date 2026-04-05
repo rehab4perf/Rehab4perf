@@ -1054,11 +1054,12 @@ function downloadOutils(){
   var sig = sigParts.join(' · ');
   var date = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
 
-  // Grab the active panel content
-  var panel = document.getElementById('panel-'+_currentTab);
+  // Grab the active panel content (detect from DOM, do not rely on _currentTab)
+  var panel = document.querySelector('.panel.active');
   if(!panel){ closeExportOutils(); return; }
+  var tabId = panel.id ? panel.id.replace('panel-','') : '';
   var titles = {'rm':'Tableau 1RM','hsr':'Protocole HSR','cardio':'Calculateur Cardio','cap':'Reprise CAP'};
-  var title = titles[_currentTab]||'Outil';
+  var title = titles[tabId]||'Outil';
 
   var content = panel.cloneNode(true);
   // Remove interactive inputs label - keep only results

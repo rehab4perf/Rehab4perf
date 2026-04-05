@@ -3256,79 +3256,84 @@ init();
 
 // ── EXPORT HTML PATIENT ─────────────────────────────────────
 function exportBilanHTML(type) {
-  var p = getProfile();
+  var p       = getProfile();
   var praticien = ((p.prenom||'')+' '+(p.nom||'')).trim() || 'Praticien';
-  var cabinet   = p.cabinet || '';
-  var am        = p.am  ? 'N° AM : '+p.am : '';
-  var tel       = p.tel || '';
-  var email     = p.email || '';
-  var date      = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
-
-  var sigParts  = [praticien, cabinet, am, tel, email].filter(Boolean);
-  var sig       = sigParts.join(' · ');
+  var cabinet = p.cabinet || '';
+  var am      = p.am  || '';
+  var tel     = p.tel || '';
+  var email   = p.email || '';
+  var date    = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
 
   var iscrTF    = type === 'cr-tf';
   var title     = iscrTF ? 'Compte-Rendu Tests Fonctionnels' : 'Compte-Rendu Patient';
   var contentId = iscrTF ? 'cr-tf-content' : 'cr-content';
-  var sigNameId = iscrTF ? 'sig-tf-name'   : 'sig-cr-name';
-  var sigSubId  = iscrTF ? 'sig-tf-sub'    : 'sig-cr-sub';
 
   // Patient name
-  var nom    = (document.getElementById('f-nom')    || {}).value || '';
-  var prenom = (document.getElementById('f-prenom') || {}).value || '';
+  var nom    = (document.getElementById('f-nom')    ||{}).value || '';
+  var prenom = (document.getElementById('f-prenom') ||{}).value || '';
   var patient = ((prenom+' '+nom).trim()) || '';
 
   var contentEl = document.getElementById(contentId);
   if (!contentEl) return;
-  var contentHTML = contentEl.outerHTML;
+  var contentHTML = contentEl.innerHTML; // inner content only, without the wrapper div
 
-  var sigName = (document.getElementById(sigNameId) || {}).textContent || praticien;
-  var sigSub  = (document.getElementById(sigSubId)  || {}).textContent || sig;
+  // Build clean CSS — no layout CSS from bilan (avoids body{display:flex})
+  var css = [
+    '*{margin:0;padding:0;box-sizing:border-box}',
+    'body{font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;background:#F7F6F3;color:#1A1917;padding:0}',
+    '.page-wrap{max-width:780px;margin:0 auto;padding:24px 28px 40px}',
+    // header bar
+    '.doc-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;',
+    '  padding:10px 16px;background:#1A3A5C;border-radius:8px;margin-bottom:18px}',
+    '.doc-logo{font-family:Georgia,serif;font-style:italic;font-size:1rem;color:#fff}',
+    '.doc-logo .r{color:#4A90D9}.doc-logo .n{font-weight:900;font-style:normal}.doc-logo .p{color:#E74C3C}',
+    '.doc-meta{text-align:right;font-size:.72rem;color:rgba(255,255,255,.8);line-height:1.6}',
+    '.doc-meta strong{font-size:.78rem;color:#fff;font-style:normal}',
+    // title block
+    '.doc-title{margin-bottom:16px;padding-bottom:10px;border-bottom:2px solid #E8E6E1}',
+    '.doc-title h1{font-size:1.05rem;font-weight:700;color:#1A3A5C;margin-bottom:2px}',
+    '.doc-title p{font-size:.78rem;color:#6B6860}',
+    // content rows — reuse bilan inline styles (they are already inline), minimal helpers
+    'div{line-height:1.5}',
+    'span{line-height:inherit}',
+  ].join('\n');
 
-  // Grab all inline styles from document
-  var cssText = '';
-  try {
-    Array.from(document.styleSheets).forEach(function(ss){
-      try { Array.from(ss.cssRules).forEach(function(r){ cssText += r.cssText + '\n'; }); } catch(e){}
-    });
-  } catch(e){}
+  // Build header meta lines
+  var metaLines = [];
+  metaLines.push('<strong>'+praticien+'</strong>');
+  if(cabinet) metaLines.push(cabinet);
+  if(am) metaLines.push('N° AM : '+am);
+  if(tel) metaLines.push(tel);
+  if(email) metaLines.push(email);
 
   var html = '<!DOCTYPE html><html lang="fr"><head>'
     + '<meta charset="UTF-8">'
     + '<meta name="viewport" content="width=device-width,initial-scale=1.0">'
     + '<title>'+title+(patient?' — '+patient:'')+'</title>'
-    + '<style>'+cssText
-    + '.no-print{display:none!important}'
-    + 'body{padding:24px;}'
-    + '.export-header{background:#1A3A5C;color:#fff;padding:16px 20px;border-radius:10px;margin-bottom:20px;font-family:-apple-system,Helvetica Neue,Arial,sans-serif}'
-    + '.export-header .logo{font-family:Georgia,serif;font-style:italic;font-size:.9rem;margin-bottom:4px}'
-    + '.export-header .logo .r{color:#4A90D9}'
-    + '.export-header .logo .n{font-weight:900;font-style:normal}'
-    + '.export-header .logo .p{color:#E74C3C}'
-    + '.export-header h1{font-size:1rem;font-weight:700;margin-bottom:2px}'
-    + '.export-header .meta{font-size:.75rem;opacity:.75}'
-    + '</style>'
-    + '</head><body>'
-    + '<div class="export-header">'
-    + '<div class="logo"><span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span></div>'
+    + '<style>'+css+'</style>'
+    + '</head><body><div class="page-wrap">'
+    // slim header
+    + '<div class="doc-header">'
+    + '<div class="doc-logo"><span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span></div>'
+    + '<div class="doc-meta">'+metaLines.join('<br>')+'<br>'+date+'</div>'
+    + '</div>'
+    // document title
+    + '<div class="doc-title">'
     + '<h1>'+title+(patient?' — '+patient:'')+'</h1>'
-    + '<div class="meta">'+date+' · '+sig+'</div>'
+    + '<p>Généré le '+date+'</p>'
     + '</div>'
+    // CR content (inline styles from buildCR/buildCRTF are preserved)
     + contentHTML
-    + '<div style="margin-top:32px;padding-top:20px;border-top:2px solid #E8E6E1;font-family:Georgia,serif;font-size:1rem;font-weight:700;color:#1A3A5C">'
-    + sigName
-    + '<br><span style="font-size:.8rem;color:#6B6860;font-weight:400">'+sigSub+'</span>'
-    + '</div>'
-    + '</body></html>';
+    + '</div></body></html>';
 
-  var blob     = new Blob([html], {type:'text/html;charset=utf-8'});
-  var blobUrl  = URL.createObjectURL(blob);
+  var blob    = new Blob([html], {type:'text/html;charset=utf-8'});
+  var blobUrl = URL.createObjectURL(blob);
   var fileDate = date.replace(/\s/g,'-');
   var filename = title.replace(/\s+/g,'_')+(patient?'_'+patient.replace(/\s+/g,'_'):'')+'_'+fileDate+'.html';
-  var topDoc   = (window.top || window).document;
-  var a        = topDoc.createElement('a');
-  a.href       = blobUrl;
-  a.download   = filename;
+  var topDoc  = (window.top||window).document;
+  var a       = topDoc.createElement('a');
+  a.href      = blobUrl;
+  a.download  = filename;
   a.style.display = 'none';
   topDoc.body.appendChild(a);
   a.click();
