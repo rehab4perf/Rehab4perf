@@ -216,7 +216,7 @@ netlifyIdentity.on('logout', function(){
   if(window.parent !== window) window.parent.postMessage({type:'r4p-logout'},'*');
 });
 
-netlifyIdentity.init({ container: '#loginScreen' });
+netlifyIdentity.init({ APIUrl: 'https://rehab4perf.netlify.app/.netlify/identity' });
 
 function showLogin(){
   currentUser = null;

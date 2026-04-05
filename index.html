@@ -120,7 +120,7 @@ function updateUserDisplay(user){
   el.innerHTML = fullName+'<br>'+(cabinet||'Mon compte');
 }
 
-netlifyIdentity.init();
+netlifyIdentity.init({ APIUrl: 'https://rehab4perf.netlify.app/.netlify/identity' });
 </script>
 </body>
 </html>
