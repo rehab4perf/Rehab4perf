@@ -117,12 +117,12 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .exo-row {
   display:grid; align-items:start; gap:6px; padding:8px 6px;
   border-bottom:1px solid var(--border);
-  grid-template-columns: 28px 1fr 68px 68px 52px 68px 90px 32px;
+  grid-template-columns: 28px 1fr 60px 60px 48px 60px 76px 130px 32px;
 }
 .exo-row:last-child { border-bottom:none; }
 .exo-col-header {
   display:grid; gap:6px; padding:4px 6px 2px;
-  grid-template-columns: 28px 1fr 68px 68px 52px 68px 90px 32px;
+  grid-template-columns: 28px 1fr 60px 60px 48px 60px 76px 130px 32px;
 }
 .col-lbl { font-size:.65rem; font-weight:700; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; }
 .drag-handle { color:var(--border); cursor:grab; font-size:1rem; display:flex; align-items:center; justify-content:center; user-select:none; }
@@ -178,14 +178,44 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   body { color:#000; background:#fff; }
 }
 
+/* Cible cell */
+.cible-cell { display:flex; gap:3px; align-items:center; }
+.cible-select {
+  padding:4px 4px; border:1px solid var(--border); border-radius:5px;
+  font-size:.72rem; color:var(--text); outline:none; background:#FAFBFD;
+  cursor:pointer; min-width:0; flex:0 0 auto;
+}
+.cible-select:focus { border-color:var(--accent2); background:#fff; }
+.cible-val {
+  width:100%; padding:4px 4px; border:1px solid var(--border); border-radius:5px;
+  font-size:.78rem; color:var(--text); text-align:center; outline:none;
+  background:#FAFBFD; min-width:0;
+}
+.cible-val:focus { border-color:var(--accent2); background:#fff; }
+
+/* Export modal */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:100;
+  display:flex; align-items:center; justify-content:center;
+}
+.modal-overlay.hidden { display:none; }
+.modal {
+  background:#fff; border-radius:12px; padding:24px; max-width:520px; width:90%;
+  box-shadow:0 20px 60px rgba(0,0,0,.25);
+}
+.modal h2 { font-size:.95rem; font-weight:700; color:var(--navy); margin-bottom:6px; }
+.modal p { font-size:.8rem; color:var(--muted); margin-bottom:14px; line-height:1.5; }
+.modal-btns { display:flex; gap:8px; flex-wrap:wrap; }
+.modal-close { position:absolute; top:10px; right:14px; background:none; border:none; font-size:1.4rem; cursor:pointer; color:var(--muted); }
+
 /* Mobile */
 @media (max-width:700px) {
   :root { --sidebar-w:100%; }
   .app { flex-direction:column; }
   .sidebar { width:100%; max-width:100%; max-height:40vh; border-right:none; border-bottom:1px solid var(--border); }
-  .exo-row { grid-template-columns: 1fr 52px 52px 44px 60px 72px 28px; }
+  .exo-row { grid-template-columns: 1fr 48px 48px 42px 56px 68px 110px 28px; }
   .exo-row > .drag-handle { display:none; }
-  .exo-col-header { grid-template-columns: 1fr 52px 52px 44px 60px 72px 28px; }
+  .exo-col-header { grid-template-columns: 1fr 48px 48px 42px 56px 68px 110px 28px; }
   .exo-col-header > .col-lbl:first-child { display:none; }
 }
 </style>
@@ -214,7 +244,8 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
     <h1>Prescription d'exercices</h1>
     <input class="patient-input" type="text" id="patientName" placeholder="Nom du patient" />
     <button class="btn btn-outline" onclick="addBloc()">+ Bloc</button>
-    <button class="btn btn-primary" onclick="window.print()">🖨 Imprimer</button>
+    <button class="btn btn-primary" onclick="exportSession()">📤 Exporter</button>
+    <button class="btn btn-outline" onclick="window.print()">🖨 Imprimer</button>
     <button class="btn btn-danger" onclick="clearSession()">Effacer</button>
   </div>
   <div class="session-area" id="sessionArea">
@@ -226,6 +257,20 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 </div>
 
 </div><!-- .app -->
+
+<!-- Export modal -->
+<div class="modal-overlay hidden" id="exportModal">
+  <div class="modal" style="position:relative;">
+    <button class="modal-close" onclick="document.getElementById('exportModal').classList.add('hidden')">×</button>
+    <h2>Exporter la séance</h2>
+    <p>Génère un fichier HTML autonome avec les liens vidéo cliquables, prêt à envoyer par email ou messagerie.</p>
+    <div class="modal-btns">
+      <button class="btn btn-primary" onclick="downloadExport()">⬇ Télécharger le fichier HTML</button>
+      <button class="btn btn-outline" onclick="copyExportLink()">📋 Copier le HTML</button>
+      <button class="btn btn-outline" onclick="document.getElementById('exportModal').classList.add('hidden')">Annuler</button>
+    </div>
+  </div>
+</div>
 
 <script>
 /* ================================================================
@@ -501,7 +546,7 @@ function addExoFromLib(libId){
   var targetId = activeBloc || blocs[blocs.length-1].id;
   var bloc = blocs.find(function(b){ return b.id===targetId; });
   if(!bloc) return;
-  var row = {id:genId(), libId:ex.id, name:ex.name, url:ex.url, reps:'', duree:'', series:'', cible:ex.obj, tempo:'', recup:''};
+  var row = {id:genId(), libId:ex.id, name:ex.name, url:ex.url, reps:'', duree:'', series:'', cibleType:'RPE', cibleVal:'', obj:ex.obj, tempo:'', recup:''};
   bloc.exos.push(row);
   renderSession();
   renderLib(document.getElementById('searchInput').value.toLowerCase());
@@ -575,22 +620,32 @@ function renderSession(){
       html += '<span class="col-lbl">Séries</span>';
       html += '<span class="col-lbl">Récup</span>';
       html += '<span class="col-lbl">Tempo</span>';
+      html += '<span class="col-lbl">Cible</span>';
       html += '<span></span>';
       html += '</div>';
       b.exos.forEach(function(e){
+        var ct = e.cibleType||'RPE';
         html += '<div class="exo-row">';
         html += '<div class="drag-handle">⋮⋮</div>';
         html += '<div class="exo-name-cell">';
         html += '<div class="exo-name">'+escH(e.name)+'</div>';
         html += '<div class="exo-sub">';
         if(e.url) html += '<a class="vid-link" href="'+escH(e.url)+'" target="_blank">▶ Vidéo</a>';
-        if(e.cible) html += '<span class="lib-tag" style="background:#F3F0FF;color:#5B4FBF;">'+escH(e.cible)+'</span>';
+        if(e.obj) html += '<span class="lib-tag" style="background:#F3F0FF;color:#5B4FBF;">'+escH(e.obj)+'</span>';
         html += '</div></div>';
         html += '<input class="cell-input" type="text" value="'+escH(e.reps)+'" placeholder="—" title="Répétitions" oninput="updateField(\''+b.id+'\',\''+e.id+'\',\'reps\',this.value)">';
         html += '<input class="cell-input" type="text" value="'+escH(e.duree)+'" placeholder="—" title="Durée" oninput="updateField(\''+b.id+'\',\''+e.id+'\',\'duree\',this.value)">';
         html += '<input class="cell-input" type="text" value="'+escH(e.series)+'" placeholder="—" title="Séries" oninput="updateField(\''+b.id+'\',\''+e.id+'\',\'series\',this.value)">';
         html += '<input class="cell-input" type="text" value="'+escH(e.recup)+'" placeholder="—" title="Récupération" oninput="updateField(\''+b.id+'\',\''+e.id+'\',\'recup\',this.value)">';
         html += '<input class="cell-input" type="text" value="'+escH(e.tempo)+'" placeholder="—" title="Tempo" oninput="updateField(\''+b.id+'\',\''+e.id+'\',\'tempo\',this.value)">';
+        html += '<div class="cible-cell">';
+        html += '<select class="cible-select" onchange="updateField(\''+b.id+'\',\''+e.id+'\',\'cibleType\',this.value)">';
+        ['RPE','RIR','Charges'].forEach(function(opt){
+          html += '<option value="'+opt+'"'+(ct===opt?' selected':'')+'>'+opt+'</option>';
+        });
+        html += '</select>';
+        html += '<input class="cible-val" type="text" value="'+escH(e.cibleVal||'')+'" placeholder="—" title="Valeur cible" oninput="updateField(\''+b.id+'\',\''+e.id+'\',\'cibleVal\',this.value)">';
+        html += '</div>';
         html += '<button class="exo-del-btn" onclick="removeExo(\''+b.id+'\',\''+e.id+'\')" title="Retirer"></button>';
         html += '</div>';
       });
@@ -612,6 +667,100 @@ function getNotes(){ return _notes; }
 document.addEventListener('input', function(e){
   if(e.target && e.target.id==='sessionNotes') _notes = e.target.value;
 });
+
+/* ================================================================
+   EXPORT
+   ================================================================ */
+function exportSession(){
+  if(!blocs.length){ alert('Aucun exercice à exporter.'); return; }
+  document.getElementById('exportModal').classList.remove('hidden');
+}
+
+function buildExportHTML(){
+  var patient = document.getElementById('patientName').value || 'Patient';
+  var date = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+  var notes = _notes;
+
+  var blocksHtml = '';
+  blocs.forEach(function(b){
+    if(!b.exos.length) return;
+    blocksHtml += '<div class="bloc">';
+    blocksHtml += '<div class="bloc-header">'+escH(b.title)+'</div>';
+    blocksHtml += '<table>';
+    blocksHtml += '<thead><tr><th>Exercice</th><th>Vidéo</th><th>Reps</th><th>Durée</th><th>Séries</th><th>Récup</th><th>Tempo</th><th>Cible</th></tr></thead>';
+    blocksHtml += '<tbody>';
+    b.exos.forEach(function(e){
+      var cible = e.cibleVal ? (e.cibleType+' '+e.cibleVal) : '—';
+      blocksHtml += '<tr>';
+      blocksHtml += '<td class="exo-name-col">'+escH(e.name)+(e.obj?'<br><span class="tag">'+escH(e.obj)+'</span>':'')+'</td>';
+      blocksHtml += '<td>'+(e.url?'<a href="'+escH(e.url)+'" target="_blank">▶ Vidéo</a>':'—')+'</td>';
+      blocksHtml += '<td>'+(e.reps||'—')+'</td>';
+      blocksHtml += '<td>'+(e.duree||'—')+'</td>';
+      blocksHtml += '<td>'+(e.series||'—')+'</td>';
+      blocksHtml += '<td>'+(e.recup||'—')+'</td>';
+      blocksHtml += '<td>'+(e.tempo||'—')+'</td>';
+      blocksHtml += '<td class="cible-col">'+escH(cible)+'</td>';
+      blocksHtml += '</tr>';
+    });
+    blocksHtml += '</tbody></table></div>';
+  });
+
+  return '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Prescription – '+escH(patient)+'</title><style>'
+    +'*{margin:0;padding:0;box-sizing:border-box}'
+    +'body{font-family:-apple-system,Helvetica Neue,Arial,sans-serif;background:#F0F4F8;color:#1a2433;padding:24px}'
+    +'.header{background:#1A3A5C;color:#fff;padding:18px 24px;border-radius:10px;margin-bottom:20px}'
+    +'.header h1{font-size:1.1rem;font-weight:700;margin-bottom:2px}'
+    +'.header .meta{font-size:.8rem;opacity:.7}'
+    +'.logo{font-size:.85rem;font-style:italic;margin-bottom:8px}'
+    +'.logo .r{color:#4A90D9}.logo .n{font-weight:900;font-style:normal}.logo .p{color:#E74C3C}'
+    +'.bloc{background:#fff;border-radius:10px;border:1px solid #dde3ec;margin-bottom:16px;overflow:hidden}'
+    +'.bloc-header{background:#1A3A5C;color:#fff;padding:10px 16px;font-size:.88rem;font-weight:700;letter-spacing:.04em}'
+    +'table{width:100%;border-collapse:collapse}'
+    +'thead tr{background:#F5F8FF}'
+    +'th{padding:7px 10px;font-size:.68rem;font-weight:700;color:#6b7a8d;text-transform:uppercase;letter-spacing:.06em;text-align:left;border-bottom:1px solid #dde3ec}'
+    +'td{padding:9px 10px;font-size:.8rem;border-bottom:1px solid #f0f4f8;vertical-align:middle}'
+    +'tr:last-child td{border-bottom:none}'
+    +'.exo-name-col{font-weight:600;min-width:160px}'
+    +'.tag{display:inline-block;padding:1px 6px;border-radius:8px;background:#F3F0FF;color:#5B4FBF;font-size:.65rem;font-weight:600;margin-top:3px}'
+    +'a{color:#2B5FA6;text-decoration:none;font-weight:500}'
+    +'a:hover{text-decoration:underline}'
+    +'.cible-col{font-weight:600;color:#1A3A5C}'
+    +'.notes{background:#fff;border-radius:10px;border:1px solid #dde3ec;padding:16px;margin-top:4px}'
+    +'.notes-label{font-size:.7rem;font-weight:700;color:#6b7a8d;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}'
+    +'.notes-body{font-size:.82rem;line-height:1.6;white-space:pre-wrap}'
+    +'@media print{body{background:#fff;padding:10px}.header{border-radius:0}}'
+    +'</style></head><body>'
+    +'<div class="header">'
+    +'<div class="logo"><span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span></div>'
+    +'<h1>Prescription d\'exercices – '+escH(patient)+'</h1>'
+    +'<div class="meta">'+date+' · Antoine PERONNAUD · Athletik Lamarck</div>'
+    +'</div>'
+    +blocksHtml
+    +(notes?'<div class="notes"><div class="notes-label">Notes / Consignes</div><div class="notes-body">'+escH(notes)+'</div></div>':'')
+    +'</body></html>';
+}
+
+function downloadExport(){
+  var html = buildExportHTML();
+  var patient = (document.getElementById('patientName').value||'prescription').replace(/\s+/g,'_');
+  var date = new Date().toISOString().slice(0,10);
+  var blob = new Blob([html],{type:'text/html;charset=utf-8'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'prescription_'+patient+'_'+date+'.html';
+  a.click();
+  document.getElementById('exportModal').classList.add('hidden');
+}
+
+function copyExportLink(){
+  var html = buildExportHTML();
+  navigator.clipboard.writeText(html).then(function(){
+    alert('HTML copié dans le presse-papiers. Vous pouvez le coller dans un email ou un éditeur.');
+  }).catch(function(){
+    alert('Impossible de copier automatiquement. Utilisez "Télécharger" à la place.');
+  });
+  document.getElementById('exportModal').classList.add('hidden');
+}
 
 /* ================================================================
    INIT
