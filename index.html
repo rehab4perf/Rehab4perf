@@ -38,6 +38,11 @@ iframe.active { display:block; }
   .topnav { padding:0 10px; } .tab { padding:0 10px; font-size:.78rem; }
   .logo { margin-right:10px; font-size:.92rem; } .topnav-right { display:none; }
 }
+/* Set password gate */
+#setPasswordGate {
+  position:fixed; inset:0; background:#1A3A5C; z-index:9999;
+  display:none; align-items:center; justify-content:center;
+}
 /* Auth gate */
 #authGate {
   position:fixed; inset:0; background:#1A3A5C; z-index:9999;
@@ -71,6 +76,18 @@ iframe.active { display:block; }
 </style>
 </head>
 <body>
+<!-- Set Password Gate (invite + recovery) -->
+<div id="setPasswordGate">
+  <div class="gate-card">
+    <div class="gate-logo"><span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span></div>
+    <p class="gate-sub" id="setPasswordTitle">Créez votre mot de passe</p>
+    <input class="gate-field" id="spPassword" type="password" placeholder="Nouveau mot de passe" autocomplete="new-password">
+    <input class="gate-field" id="spPassword2" type="password" placeholder="Confirmer le mot de passe" autocomplete="new-password">
+    <button class="gate-btn" id="spBtn" onclick="doSetPassword()">Valider</button>
+    <div class="gate-error" id="spError"></div>
+  </div>
+</div>
+
 <!-- Auth Gate -->
 <div id="authGate">
   <div class="gate-card">
@@ -103,6 +120,64 @@ iframe.active { display:block; }
 var IDENTITY_URL = 'https://rehab4perf.netlify.app/.netlify/identity';
 var _token = null;
 var _user  = null;
+var _inviteToken = null;
+var _recoveryToken = null;
+
+/* ── DETECT INVITE / RECOVERY TOKEN IN URL ── */
+(function(){
+  var hash = window.location.hash;
+  var params = {};
+  hash.replace(/^#/, '').split('&').forEach(function(p){
+    var kv = p.split('='); params[kv[0]] = decodeURIComponent(kv[1]||'');
+  });
+  if(params.invite_token){
+    _inviteToken = params.invite_token;
+    document.getElementById('setPasswordTitle').textContent = 'Créez votre mot de passe';
+    document.getElementById('setPasswordGate').style.display = 'flex';
+    document.getElementById('authGate').style.display = 'none';
+    history.replaceState(null,'',window.location.pathname);
+  } else if(params.recovery_token){
+    _recoveryToken = params.recovery_token;
+    document.getElementById('setPasswordTitle').textContent = 'Réinitialisez votre mot de passe';
+    document.getElementById('setPasswordGate').style.display = 'flex';
+    document.getElementById('authGate').style.display = 'none';
+    history.replaceState(null,'',window.location.pathname);
+  }
+})();
+
+function doSetPassword(){
+  var pw  = document.getElementById('spPassword').value;
+  var pw2 = document.getElementById('spPassword2').value;
+  var btn = document.getElementById('spBtn');
+  var err = document.getElementById('spError');
+  if(pw.length < 8){ err.textContent = 'Minimum 8 caractères.'; return; }
+  if(pw !== pw2){ err.textContent = 'Les mots de passe ne correspondent pas.'; return; }
+  btn.disabled = true; btn.textContent = 'Validation…'; err.textContent = '';
+  var token = _inviteToken || _recoveryToken;
+  var type  = _inviteToken ? 'invite' : 'recovery';
+  fetch(IDENTITY_URL+'/verify', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({token:token, type:type, password:pw})
+  })
+  .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,data:d}; }); })
+  .then(function(res){
+    if(!res.ok) throw new Error(res.data.msg || 'Erreur lors de la validation.');
+    _inviteToken = null; _recoveryToken = null;
+    document.getElementById('setPasswordGate').style.display = 'none';
+    document.getElementById('authGate').style.display = 'flex';
+    document.getElementById('spPassword').value = '';
+    document.getElementById('spPassword2').value = '';
+    btn.disabled = false; btn.textContent = 'Valider';
+    // Auto-fill email if available
+    if(res.data.email) document.getElementById('gateEmail').value = res.data.email;
+    document.getElementById('gatePassword').focus();
+  })
+  .catch(function(e){
+    err.textContent = e.message;
+    btn.disabled = false; btn.textContent = 'Valider';
+  });
+}
 
 /* ── TAB SWITCHER ── */
 function show(id) {
