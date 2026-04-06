@@ -1237,6 +1237,10 @@ body {
           <div class="measure-stat" id="hop-repere80" style="background:var(--accent-l);color:var(--accent2);font-size:.9rem;grid-column:span 4">—</div>
         </div>
       </div>
+      <div style="padding:8px 14px 10px;background:var(--surface)">
+        <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations</div>
+        <textarea id="hop-obs" placeholder="Notes, observations cliniques…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
+      </div>
     </div>
 
     <!-- RÉCEPTION -->
@@ -1256,6 +1260,10 @@ body {
         </div>
       </div>
       <div id="rec-criteria" style="border-top:1px solid var(--border)"></div>
+      <div style="padding:8px 14px 10px;background:var(--surface)">
+        <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations</div>
+        <textarea id="rec-obs" placeholder="Notes, observations cliniques…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
+      </div>
     </div>
 
     <!-- PLIOMÉTRIE QUALITATIVE -->
@@ -1292,6 +1300,10 @@ body {
           <div id="plioq-stat-cs" style="font-size:1rem;font-weight:700;color:var(--text3)">—</div>
         </div>
       </div>
+      <div style="padding:8px 14px 10px;background:var(--surface)">
+        <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations</div>
+        <textarea id="plioq-obs" placeholder="Notes, observations cliniques…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
+      </div>
     </div>
 
     <!-- HEEL RISE -->
@@ -1327,6 +1339,10 @@ body {
           </tbody>
         </table>
       </div>
+      <div style="padding:8px 14px 10px;background:var(--surface)">
+        <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations</div>
+        <textarea id="hr-obs" placeholder="Notes, observations cliniques…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
+      </div>
     </div>
 
     <!-- LUNGE WBLT -->
@@ -1347,6 +1363,10 @@ body {
           <div class="measure-label" style="background:var(--surface2);font-size:.82rem;color:var(--text2)">Interprétation détaillée — auto</div>
           <div class="measure-stat" id="lu-interp" style="background:var(--surface2);grid-column:span 4;font-size:.82rem;text-align:left;padding:6px 14px;color:var(--text2)">—</div>
         </div>
+      </div>
+      <div style="padding:8px 14px 10px;background:var(--surface)">
+        <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations</div>
+        <textarea id="lu-obs" placeholder="Notes, observations cliniques…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
       </div>
     </div>
 
@@ -1378,6 +1398,10 @@ body {
           <div class="measure-stat" id="dj-rsi-lsi">—</div>
           <div class="measure-stat" id="dj-rsi-stat">—</div>
         </div>
+      </div>
+      <div style="padding:8px 14px 10px;background:var(--surface)">
+        <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations</div>
+        <textarea id="dj-obs" placeholder="Notes, observations cliniques…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
       </div>
     </div>
 
@@ -1497,6 +1521,10 @@ body {
         <strong style="color:var(--accent2)">Score composite &lt; 89% :</strong> Risque LCA (Lehr 2013) &nbsp;|&nbsp;
         <strong>Normalisation :</strong> Scores exprimés en % de la longueur du membre (ASIS → malléole médiale de préférence)
       </div>
+      <div style="padding:8px 14px 10px;background:var(--surface)">
+        <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations</div>
+        <textarea id="sebt-obs" placeholder="Notes, observations cliniques…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
+      </div>
 
     </div>
   </div>
@@ -1583,8 +1611,12 @@ body {
         </div>
       </div>
       <div style="padding:10px 14px;font-size:11px;color:var(--text2);background:var(--surface2);border-top:1px solid var(--border)">
-        <strong>Protocole :</strong> Couché ventral, bras hors table, poids tenu. Abduction horizontale 90° + RE épaule, maintien 1s, retour contrôlé. Cadence 30 bpm (métronome). 
+        <strong>Protocole :</strong> Couché ventral, bras hors table, poids tenu. Abduction horizontale 90° + RE épaule, maintien 1s, retour contrôlé. Cadence 30 bpm (métronome).
         <strong>Arrêt :</strong> Incapacité à maintenir 90° d'abduction, perte de rythme, compensations scapulaires ou perte de RE.
+      </div>
+      <div style="padding:8px 14px 10px;background:var(--surface)">
+        <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations</div>
+        <textarea id="pset-obs" placeholder="Notes, observations cliniques…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
       </div>
     </div>
 
@@ -1610,6 +1642,10 @@ body {
         <strong>Protocole H :</strong> Position de pompes classique (sur les orteils). <strong>F :</strong> Position de pompes sur les genoux. Mains sous les épaules, 2 repères tape espacés de 91,4 cm. Toucher alternativement chaque repère avec la main opposée, le plus vite possible pendant 15s. 3 essais, repos 45s. Score : meilleure moyenne.
         <strong>Seuils :</strong> Hommes ≥ 23 touches · Femmes ≥ 21 touches. En dessous → risque d'instabilité élevé (Taylor 2015). <strong>Validité :</strong> Corps en planche rigide, dos plat, pas de rotation excessive.
       </div>
+      <div style="padding:8px 14px 10px;background:var(--surface)">
+        <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations</div>
+        <textarea id="ckc-obs" placeholder="Notes, observations cliniques…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
+      </div>
     </div>
 
     <!-- Side Hold Rotation Test -->
@@ -1630,6 +1666,10 @@ body {
       <div style="padding:10px 14px;font-size:11px;color:var(--text2);background:var(--surface2);border-top:1px solid var(--border)">
         <strong>Protocole :</strong> Gainage latéral, poids sur une main + deux pieds. Rouler sur les orteils, aligner les hanches au sol, croiser la main supérieure par-dessus la ligne imaginaire, revenir. Évaluer D et G séparément pendant 1 minute.
         <strong>Non comptabilisé :</strong> Main en mouvement touche le sol, hanches non parallèles, mouvement incomplet.
+      </div>
+      <div style="padding:8px 14px 10px;background:var(--surface)">
+        <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations</div>
+        <textarea id="shrt-obs" placeholder="Notes, observations cliniques…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
       </div>
     </div>
 
@@ -1656,6 +1696,10 @@ body {
       <div style="padding:10px 14px;font-size:11px;color:var(--text2);background:var(--surface2);border-top:1px solid var(--border)">
         <strong>Protocole :</strong> Debout dos au mur, bras à 90° de flexion, THERABAND fixé à hauteur d'épaule. Tirer vers abduction 90° + RE 90°, cadence croissante +20s par palier (60→90→120→150 bpm).
         <strong>Arrêt :</strong> Fatigue, incapacité à maintenir le rythme, position finale non atteinte après 2 avertissements.
+      </div>
+      <div style="padding:8px 14px 10px;background:var(--surface)">
+        <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations</div>
+        <textarea id="set-obs" placeholder="Notes, observations cliniques…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
       </div>
     </div>
 
@@ -1689,6 +1733,10 @@ body {
       <div style="padding:10px 14px;font-size:11px;color:var(--text2);background:var(--surface2);border-top:1px solid var(--border)">
         <strong>Protocole :</strong> Gainage sur coudes, dos plat, coudes à 90°, contre un mur (épaule+coude+hanche+cheville). Rotation tronc + RE épaule 90°-90°, toucher un marqueur mural avec le coude, alternativement chaque côté, 15s. 3 essais, repos 45s.
         <strong>Validité :</strong> Dos plat maintenu, angle 90°-90° respecté, genoux hors sol. <strong>Asymétrie significative :</strong> Différence > 10%.
+      </div>
+      <div style="padding:8px 14px 10px;background:var(--surface)">
+        <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations</div>
+        <textarea id="ulrt-obs" placeholder="Notes, observations cliniques…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
       </div>
     </div>
 
@@ -1734,6 +1782,10 @@ body {
       <div style="padding:10px 14px;font-size:11px;color:var(--text2);background:var(--surface2);border-top:1px solid var(--border)">
         <strong>Protocole :</strong> Même matériel que Y-Balance Test MI. Main d'appui au centre du Y. Position planche ventrale stable. Pousser un plot le long de chaque branche. 3 essais par direction, meilleure valeur retenue. Évaluer le MS dont la main est au sol (composante stabilité).
       </div>
+      <div style="padding:8px 14px 10px;background:var(--surface)">
+        <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations</div>
+        <textarea id="uqybt-obs" placeholder="Notes, observations cliniques…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
+      </div>
     </div>
 
   </div>
@@ -1771,8 +1823,12 @@ body {
         <strong>Norme :</strong> Sujets sains ≈ 39s · Patients cervicalgiques ≈ 24s (Harris et al., 2005) · CMC = 17,8s (Edmondston 2008)
       </div>
       <div style="padding:10px 14px;font-size:11px;color:var(--text2);background:var(--surface2);border-top:1px solid var(--border)">
-        <strong>Réalisation :</strong> Décubitus dorsal, genoux fléchis, mains sur abdomen. Rétraction du menton → décoller la tête à ~2,5 cm. Chronomètre déclenché. 
+        <strong>Réalisation :</strong> Décubitus dorsal, genoux fléchis, mains sur abdomen. Rétraction du menton → décoller la tête à ~2,5 cm. Chronomètre déclenché.
         <strong>Arrêt :</strong> Perte de la rétraction du menton OU tête touchant la main du thérapeute pendant plus d'1 seconde.
+      </div>
+      <div style="padding:8px 14px 10px;background:var(--surface)">
+        <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations</div>
+        <textarea id="rf-flx-cerv-obs" placeholder="Notes, observations cliniques…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
       </div>
     </div>
 
@@ -1797,6 +1853,10 @@ body {
       <div style="padding:10px 14px;font-size:11px;color:var(--text2);background:var(--surface2);border-top:1px solid var(--border)">
         <strong>Réalisation :</strong> Décubitus ventral, tête/cou dépassent du bord de table, jonction cervico-thoracique stabilisée. Rétraction du menton + maintien en position neutre 20s.
         <strong>Positif :</strong> Perte de la « longueur du menton » ou déviation &gt; 5° à l'inclinomètre.
+      </div>
+      <div style="padding:8px 14px 10px;background:var(--surface)">
+        <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations</div>
+        <textarea id="rf-ext-cerv-obs" placeholder="Notes, observations cliniques…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
       </div>
     </div>
 
@@ -1825,6 +1885,10 @@ body {
       <div style="padding:10px 14px;font-size:11px;color:var(--text2);background:var(--surface2);border-top:1px solid var(--border)">
         <strong>Réalisation :</strong> Décubitus latéral, bras croisés, coussin sous la tête. Rétraction du menton → aligner méat auditif avec acromion → soulever la tête en position neutre. Essai de 5s, repos 30s, puis test.
         <strong>Arrêt :</strong> Déviation &gt; 4° (inclinomètre), perte rétraction menton, rotation cervicale, arrêt volontaire. Une seule correction verbale autorisée.
+      </div>
+      <div style="padding:8px 14px 10px;background:var(--surface)">
+        <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations</div>
+        <textarea id="rf-lat-obs" placeholder="Notes, observations cliniques…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
       </div>
     </div>
 
@@ -1855,6 +1919,10 @@ body {
         Sujets sains (Sørensen) : 198s · Sujets sains (Holmström) : 171s · Lombalgiques : 137-163s |
         <strong>Seuils H :</strong> &lt; 176s = facteur prédictif lombalgie · &gt; 198s = facteur protecteur
         <br><strong>Réalisation :</strong> Couché ventral sur table, crêtes iliaques au bord. Chevilles/genoux/bassin sanglés. Mains croisées sur épaules, maintien tronc horizontal. Stop si perte de rectitude ou à 240s.
+      </div>
+      <div style="padding:8px 14px 10px;background:var(--surface)">
+        <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations</div>
+        <textarea id="rf-sorensen-obs" placeholder="Notes, observations cliniques…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
       </div>
     </div>
 
@@ -1923,6 +1991,10 @@ body {
       <div style="padding:10px 14px;font-size:11px;color:var(--text2);background:var(--surface2);border-top:1px solid var(--border)">
         <strong>Réalisation :</strong> Décubitus ventral, hanches étendues, mains sous le front, avant-bras perpendiculaires. Soulever les deux jambes jusqu'à décollement des genoux. Score = temps de maintien (sec).
         <strong>Seuil clinique :</strong> Cut-off H = 30s (sensibilité 96,2%, spécificité 100%) · Cut-off F = 29s (sensibilité 100%, spécificité 92,3%) — Massoud Arab et al., 2007.
+      </div>
+      <div style="padding:8px 14px 10px;background:var(--surface)">
+        <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations</div>
+        <textarea id="rf-pdslrt-obs" placeholder="Notes, observations cliniques…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
       </div>
     </div>
 
@@ -2589,8 +2661,21 @@ function buildCR() {
   var lsiCls2 = function(ca,cs) { if (!cs||cs<=0||isNaN(ca)||isNaN(cs)) return ''; var v=ca/cs*100; return v>=90?'good':v>=80?'warn':'bad'; };
   var statOf2 = function(cls) { return ({good:'OK',warn:'Acceptable',bad:'Insuffisant'}[cls])||''; };
 
-  if (!isNaN(slsCA)) tfHtml += crItem('SLS', 'CA=' + slsCA + ' rep.   CS=' + slsCS + ' rep.   ' + lsiStr(slsCA,slsCS), statOf2(lsiCls2(slsCA,slsCS)), lsiCls2(slsCA,slsCS));
-  if (!isNaN(hopCA)) tfHtml += crItem('Hop Test', 'CA=' + hopCA + 'cm   CS=' + hopCS + 'cm   ' + lsiStr(hopCA,hopCS) + '   Repere: ' + (hopCS*0.8).toFixed(1) + 'cm', statOf2(lsiCls2(hopCA,hopCS)), lsiCls2(hopCA,hopCS));
+  var obsLine = function(obsId) {
+    var obsVal = (document.getElementById(obsId) || {}).value || '';
+    if (!obsVal.trim()) return '';
+    return '<div class="cr-item"><span class="cr-key" style="color:var(--text3);font-style:italic">Obs.</span><span class="cr-val">' + obsVal.replace(/\n/g,'<br>') + '</span></div>';
+  };
+
+  if (!isNaN(slsCA)) {
+    tfHtml += crItem('SLS', 'CA=' + slsCA + ' rep.   CS=' + slsCS + ' rep.   ' + lsiStr(slsCA,slsCS), statOf2(lsiCls2(slsCA,slsCS)), lsiCls2(slsCA,slsCS));
+    tfHtml += obsLine('sls-obs-ca');
+    tfHtml += obsLine('sls-obs-cs');
+  }
+  if (!isNaN(hopCA)) {
+    tfHtml += crItem('Hop Test', 'CA=' + hopCA + 'cm   CS=' + hopCS + 'cm   ' + lsiStr(hopCA,hopCS) + '   Repere: ' + (hopCS*0.8).toFixed(1) + 'cm', statOf2(lsiCls2(hopCA,hopCS)), lsiCls2(hopCA,hopCS));
+    tfHtml += obsLine('hop-obs');
+  }
 
   var scoreCA2 = 0, scoreCS2c = 0;
   for (var ci=0; ci<CRITERIA_REC.length; ci++) {
@@ -2603,16 +2688,41 @@ function buildCR() {
   if (scoreCA2 > 0 || scoreCS2c > 0) {
     var rcls = recTotal6>=5?'good':recTotal6>=3?'warn':'bad';
     tfHtml += crItem('Reception', 'Score ' + recTotal6 + '/6 (CA=' + scoreCA2 + '/3, CS=' + scoreCS2c + '/3)', statOf2(rcls), rcls);
+    tfHtml += obsLine('rec-obs');
   }
 
-  if (!isNaN(hrCA)) tfHtml += crItem('Heel Rise', 'CA=' + hrCA + '   CS=' + hrCS + '   ' + lsiStr(hrCA,hrCS), statOf2(lsiCls2(hrCA,hrCS)), lsiCls2(hrCA,hrCS));
+  var plioCA2 = 0, plioCS2 = 0, plioTouched2 = false;
+  for (var pi2=0; pi2<2; pi2++) {
+    var pca2 = document.getElementById('plioq-ca-'+pi2);
+    var pcs2 = document.getElementById('plioq-cs-'+pi2);
+    if (pca2 && pca2.checked) { plioCA2++; plioTouched2 = true; }
+    if (pcs2 && pcs2.checked) { plioTouched2 = true; }
+  }
+  if (plioTouched2) {
+    tfHtml += obsLine('plioq-obs');
+  }
+
+  if (!isNaN(hrCA)) {
+    tfHtml += crItem('Heel Rise', 'CA=' + hrCA + '   CS=' + hrCS + '   ' + lsiStr(hrCA,hrCS), statOf2(lsiCls2(hrCA,hrCS)), lsiCls2(hrCA,hrCS));
+    tfHtml += obsLine('hr-obs');
+  }
   if (!isNaN(luCA)) {
     var luDiff2 = Math.abs(luCA-luCS);
     var luBad2 = luCA<10 || luDiff2>1.5;
     var luLsi2 = luCS>0 ? luCA/luCS*100 : NaN;
     tfHtml += crItem('Lunge WBLT', 'CA=' + luCA + 'cm   CS=' + luCS + 'cm   Diff=' + luDiff2.toFixed(1) + 'cm   ' + lsiStr(luCA,luCS), luBad2 ? 'Deficit' : 'OK', luBad2 ? 'bad' : 'good');
+    tfHtml += obsLine('lu-obs');
   }
-  if (!isNaN(djHca)) tfHtml += crItem('Drop Jump H', 'CA=' + djHca + 'cm   CS=' + djHcs + 'cm   ' + lsiStr(djHca,djHcs), statOf2(lsiCls2(djHca,djHcs)), lsiCls2(djHca,djHcs));
+  if (!isNaN(djHca)) {
+    tfHtml += crItem('Drop Jump H', 'CA=' + djHca + 'cm   CS=' + djHcs + 'cm   ' + lsiStr(djHca,djHcs), statOf2(lsiCls2(djHca,djHcs)), lsiCls2(djHca,djHcs));
+    tfHtml += obsLine('dj-obs');
+  }
+  var sebtAntCA2 = parseFloat(document.getElementById('sebt-ant-ca') ? document.getElementById('sebt-ant-ca').value : '');
+  var sebtPmCA2  = parseFloat(document.getElementById('sebt-pm-ca')  ? document.getElementById('sebt-pm-ca').value  : '');
+  var sebtPlCA2  = parseFloat(document.getElementById('sebt-pl-ca')  ? document.getElementById('sebt-pl-ca').value  : '');
+  if (!isNaN(sebtAntCA2) || !isNaN(sebtPmCA2) || !isNaN(sebtPlCA2)) {
+    tfHtml += obsLine('sebt-obs');
+  }
 
   var qfCA = parseFloat(document.getElementById('q-f-ca') ? document.getElementById('q-f-ca').value : '');
   var qfCS = parseFloat(document.getElementById('q-f-cs') ? document.getElementById('q-f-cs').value : '');
@@ -2660,17 +2770,69 @@ function buildCR() {
   var ckcFilled = ['ckc-ca-1','ckc-ca-2','ckc-ca-3'].some(function(id){ var el=document.getElementById(id); return el && el.value !== ''; });
   var shrtFilled = ['shrt-d','shrt-g'].some(function(id){ var el=document.getElementById(id); return el && el.value !== ''; });
   var ulrtFilled = ['ulrt-d1','ulrt-d2','ulrt-d3','ulrt-g1','ulrt-g2','ulrt-g3'].some(function(id){ var el=document.getElementById(id); return el && el.value !== ''; });
-  if (!isNaN(psetCAv)) { var pl = psetCSv>0?(psetCAv/psetCSv*100):NaN; tfMsHtml += crItem('PSET', 'CA=' + psetCAv + '   CS=' + psetCSv + (!isNaN(pl)?'   LSI=' + pl.toFixed(1) + '%':''), statOf2(lsiCls2(psetCAv,psetCSv)), lsiCls2(psetCAv,psetCSv)); }
-  if (!isNaN(setCAv))  { var sl = setCSv>0?(setCAv/setCSv*100):NaN; tfMsHtml += crItem('Shoulder Endurance', 'CA=' + setCAv + '   CS=' + setCSv + (!isNaN(sl)?'   LSI=' + sl.toFixed(1) + '%':''), statOf2(lsiCls2(setCAv,setCSv)), lsiCls2(setCAv,setCSv)); }
+  if (!isNaN(psetCAv)) {
+    var pl = psetCSv>0?(psetCAv/psetCSv*100):NaN;
+    tfMsHtml += crItem('PSET', 'CA=' + psetCAv + '   CS=' + psetCSv + (!isNaN(pl)?'   LSI=' + pl.toFixed(1) + '%':''), statOf2(lsiCls2(psetCAv,psetCSv)), lsiCls2(psetCAv,psetCSv));
+    tfMsHtml += obsLine('pset-obs');
+  }
+  if (!isNaN(setCAv)) {
+    var sl = setCSv>0?(setCAv/setCSv*100):NaN;
+    tfMsHtml += crItem('Shoulder Endurance', 'CA=' + setCAv + '   CS=' + setCSv + (!isNaN(sl)?'   LSI=' + sl.toFixed(1) + '%':''), statOf2(lsiCls2(setCAv,setCSv)), lsiCls2(setCAv,setCSv));
+    tfMsHtml += obsLine('set-obs');
+  }
   if (ckcFilled) {
     var ckcBest = document.getElementById('ckc-ca-best');
     tfMsHtml += crItem('CKCUEST', ckcBest ? ckcBest.textContent : '--', '', '');
+    tfMsHtml += obsLine('ckc-obs');
   }
-  if (shrtFilled && shrtEl2) tfMsHtml += crItem('Side Hold Rotation', shrtEl2.textContent, '', 'ok');
-  if (ulrtFilled && ulrtEl2) tfMsHtml += crItem('ULRT', ulrtEl2.textContent, '', 'ok');
+  if (shrtFilled && shrtEl2) {
+    tfMsHtml += crItem('Side Hold Rotation', shrtEl2.textContent, '', 'ok');
+    tfMsHtml += obsLine('shrt-obs');
+  }
+  if (ulrtFilled && ulrtEl2) {
+    tfMsHtml += crItem('ULRT', ulrtEl2.textContent, '', 'ok');
+    tfMsHtml += obsLine('ulrt-obs');
+  }
+  var uqFilled = ['uqybt-med-d','uqybt-med-g','uqybt-il-d','uqybt-il-g','uqybt-sl-d','uqybt-sl-g'].some(function(id){ var el=document.getElementById(id); return el && el.value !== ''; });
+  if (uqFilled) {
+    tfMsHtml += obsLine('uqybt-obs');
+  }
   addSection('4. Tests Fonctionnels -- Membres Superieurs', tfMsHtml);
 
-  // 5. Points a travailler
+  // 5. Tests fonctionnels Rachis
+  var tfRachisHtml = '';
+  var crFlxV = parseFloat(document.getElementById('rf-flx-cerv') ? document.getElementById('rf-flx-cerv').value : '');
+  var crExtV = parseFloat(document.getElementById('rf-ext-cerv') ? document.getElementById('rf-ext-cerv').value : '');
+  var crLatD = parseFloat(document.getElementById('rf-lat-d')    ? document.getElementById('rf-lat-d').value    : '');
+  var crLatG = parseFloat(document.getElementById('rf-lat-g')    ? document.getElementById('rf-lat-g').value    : '');
+  var crSorV = parseFloat(document.getElementById('rf-sorensen') ? document.getElementById('rf-sorensen').value : '');
+  var crPdslV= parseFloat(document.getElementById('rf-pdslrt')   ? document.getElementById('rf-pdslrt').value   : '');
+  if (!isNaN(crFlxV)) {
+    var flxCls = crFlxV>=39?'good':crFlxV>=24?'warn':'bad';
+    tfRachisHtml += crItem('Endurance Fléchisseurs Cervicaux', crFlxV + 's', crFlxV>=39?'Normal':crFlxV>=24?'Limite':'Deficit', flxCls);
+    tfRachisHtml += obsLine('rf-flx-cerv-obs');
+  }
+  if (!isNaN(crExtV)) {
+    tfRachisHtml += crItem('Endurance Extenseurs Cervicaux', crExtV + 's', crExtV>=20?'OK':'Insuffisant', crExtV>=20?'good':'bad');
+    tfRachisHtml += obsLine('rf-ext-cerv-obs');
+  }
+  if (!isNaN(crLatD) || !isNaN(crLatG)) {
+    var latStr = (!isNaN(crLatD)?'D='+crLatD+'s':'') + (!isNaN(crLatD)&&!isNaN(crLatG)?'   ':'') + (!isNaN(crLatG)?'G='+crLatG+'s':'');
+    tfRachisHtml += crItem('Endurance Latérale Cervicale', latStr, '', '');
+    tfRachisHtml += obsLine('rf-lat-obs');
+  }
+  if (!isNaN(crSorV)) {
+    var sorCls = crSorV>=198?'good':crSorV>=176?'warn':'bad';
+    tfRachisHtml += crItem('Test de Sørensen', crSorV + 's', crSorV>=198?'Facteur protecteur':crSorV>=176?'Zone intermédiaire':'Facteur de risque', sorCls);
+    tfRachisHtml += obsLine('rf-sorensen-obs');
+  }
+  if (!isNaN(crPdslV)) {
+    tfRachisHtml += crItem('PDSLRT', crPdslV + 's', crPdslV>=30?'OK':'Deficit', crPdslV>=30?'good':'bad');
+    tfRachisHtml += obsLine('rf-pdslrt-obs');
+  }
+  addSection('5. Tests Fonctionnels -- Rachis', tfRachisHtml);
+
+  // Points a travailler
   var toWork = [];
   var slsLsi2 = slsCS>0?slsCA/slsCS*100:NaN;
   var hopLsi2 = hopCS>0?hopCA/hopCS*100:NaN;
@@ -2737,7 +2899,7 @@ function buildCR() {
     for (var wi=0; wi<toWork.length; wi++) {
       workHtml += '<div class="cr-item"><span style="margin-right:6px;color:var(--orange)">-></span><span>' + toWork[wi] + '</span></div>';
     }
-    addSection('5. Points a Travailler', workHtml);
+    addSection('6. Points a Travailler', workHtml);
   }
 
   if (!content.innerHTML.trim()) {
