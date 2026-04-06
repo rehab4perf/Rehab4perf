@@ -524,7 +524,7 @@ body {
 .cr-tag.neg-fonc { background: var(--red-l); color: var(--red); }
 .cr-tag.pos-ortho { background: var(--red-l); color: var(--red); }
 .cr-tag.neg-ortho { background: var(--green-l); color: var(--green); }
-.cr-tag.ok   { background: var(--green-l); color: var(--green); }
+.cr-tag.ok, .cr-tag.good { background: var(--green-l); color: var(--green); }
 .cr-tag.warn { background: var(--orange-l); color: var(--orange); }
 .cr-tag.bad  { background: var(--red-l); color: var(--red); }
 .cr-empty { color: var(--text3); font-size: .85rem; font-style: italic; padding: 12px 0; }
@@ -1077,6 +1077,9 @@ body {
 
       </div>
       <div style="padding:6px 14px 8px;font-size:.75rem;color:var(--text3)">Contraction isométrique maximale 20s — nombre de répétitions · LSI ≥ 90%</div>
+      <div style="padding:0 14px 10px">
+        <textarea id="cf-q-obs" placeholder="Observations contraction flash…" rows="2" style="width:100%;margin-top:6px;border-radius:6px;border:1px solid #ddd;padding:6px;font-size:.85rem;resize:vertical;font-family:inherit;outline:none;color:var(--text)"></textarea>
+      </div>
     </div>
 
     <div class="block">
@@ -1089,7 +1092,7 @@ body {
     </div>
 
     <div class="block">
-      <div class="block-header red">Break Tests — Force musculaire</div>
+      <div class="block-header red">Break Test Genou — Force musculaire</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
         <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div>
         <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div>
@@ -1097,11 +1100,28 @@ body {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
         <table class="test-table" style="margin:0;border-radius:0">
           <thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
-          <tbody id="tb-ge-fonc-d"></tbody>
+          <tbody id="tb-ge-knee-d"></tbody>
         </table>
         <table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)">
           <thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
-          <tbody id="tb-ge-fonc-g"></tbody>
+          <tbody id="tb-ge-knee-g"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="block">
+      <div class="block-header red">Break Test Hanche (genou) — Force musculaire</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+        <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div>
+        <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+        <table class="test-table" style="margin:0;border-radius:0">
+          <thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
+          <tbody id="tb-ge-hip-d"></tbody>
+        </table>
+        <table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)">
+          <thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
+          <tbody id="tb-ge-hip-g"></tbody>
         </table>
       </div>
     </div>
@@ -1144,6 +1164,24 @@ body {
         <table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)">
           <thead style="background:var(--accent2)"><tr><th>Direction</th><th style="width:110px">Résultat</th><th>Obs.</th></tr></thead>
           <tbody id="tb-pi-force-cs"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header red">Break Test LFH (Ligament Fibulo-Talien Antérieur)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+        <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div>
+        <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+        <table class="test-table" style="margin:0;border-radius:0">
+          <thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
+          <tbody id="tb-pi-lfh-d"></tbody>
+        </table>
+        <table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)">
+          <thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
+          <tbody id="tb-pi-lfh-g"></tbody>
         </table>
       </div>
     </div>
@@ -1998,14 +2036,16 @@ const TESTS = {
   'tb-ge-sbit': {type:'ortho',items:['Test de Renne','Test de Noble']},
   'tb-ge-plicae':{type:'ortho',items:['Hugston Plicae Test']},
   'tb-ge-ext':  {type:'fonc',items:['Extension passive','Extension active sur table','Extension active en charge'],opts:['Validé','Pas validé','N/A']},
-  'tb-ge-fonc-d':{type:'ortho',items:['Break test Quadriceps','Break test Ischio-jambiers','Break test ABD (sur le côté)','Break test ADD (sur le dos)']},
-  'tb-ge-fonc-g':{type:'ortho',items:['Break test Quadriceps','Break test Ischio-jambiers','Break test ABD (sur le côté)','Break test ADD (sur le dos)']},
+  'tb-ge-knee-d':{type:'ortho',items:['Break test Quadriceps','Break test Ischio-jambiers']},
+  'tb-ge-knee-g':{type:'ortho',items:['Break test Quadriceps','Break test Ischio-jambiers']},
+  'tb-ge-hip-d': {type:'ortho',items:['Break test ABD hanche','Break test ADD hanche']},
+  'tb-ge-hip-g': {type:'ortho',items:['Break test ABD hanche','Break test ADD hanche']},
   'tb-ep-force-d':{type:'ortho',items:['Break test Trapèze inférieur (Y)','Break test Dentelé antérieur','Break test R1','Break test R2','Break test Élévation ant. plan de la scap.','Break test Bear Hug (RI)']},
   'tb-ep-force-g':{type:'ortho',items:['Break test Trapèze inférieur (Y)','Break test Dentelé antérieur','Break test R1','Break test R2','Break test Élévation ant. plan de la scap.','Break test Bear Hug (RI)']},
   'tb-ra-force-d':{type:'ortho',items:['Break test Abdominaux (droits CE+CI)','Break test Obliques','Break test Extenseurs rachis']},
   'tb-ra-force-g':{type:'ortho',items:['Break test Abdominaux (droits CE+CI)','Break test Obliques','Break test Extenseurs rachis']},
-  'tb-ha-force-d':{type:'ortho',items:['Break test Adducteurs','Break test Abdominaux (CE+CI + obliques)','Break test Fléchisseurs hanche']},
-  'tb-ha-force-g':{type:'ortho',items:['Break test Adducteurs','Break test Abdominaux (CE+CI + obliques)','Break test Fléchisseurs hanche']},
+  'tb-ha-force-d':{type:'ortho',items:['Break test Adducteurs','Break test Abdominaux (CE+CI + obliques)','Break test Fléchisseurs hanche','Break test Abduction hanche','Break test Rotation interne hanche','Break test Rotation externe hanche']},
+  'tb-ha-force-g':{type:'ortho',items:['Break test Adducteurs','Break test Abdominaux (CE+CI + obliques)','Break test Fléchisseurs hanche','Break test Abduction hanche','Break test Rotation interne hanche','Break test Rotation externe hanche']},
   'tb-pi-global':{type:'ortho',items:['Liberté articulaire globale','Flexion plantaire','Flexion dorsale']},
   'tb-pi-tt':   {type:'ortho',items:['Reverse antéro-latéral drawer test','Talar tilt test','Cisaillement']},
   'tb-pi-synd': {type:'ortho',items:['Kleiger','Fibular translation test','Tiroir talien transversal','Squeeze test']},
@@ -2015,6 +2055,8 @@ const TESTS = {
   'tb-pi-fonc': {type:'ortho',items:['Course interne mollet','Navicular Drop Test (mm)','Avant-pied -- équilibre pointes de pied (step)','Médio-pied -- équilibre foot bridge','1ère ligne -- montée pointes + cale 30deg sous hallux','Équilibre classique global (yeux ouverts / yeux fermés)']},
   'tb-pi-force-ca':{type:'ortho',items:['Flexion plantaire','Flexion dorsale','Inversion','Éversion']},
   'tb-pi-force-cs':{type:'ortho',items:['Flexion plantaire','Flexion dorsale','Inversion','Éversion']},
+  'tb-pi-lfh-d':  {type:'ortho',items:['LFH (Ligament Fibulo-Talien Antérieur)']},
+  'tb-pi-lfh-g':  {type:'ortho',items:['LFH (Ligament Fibulo-Talien Antérieur)']},
 };
 
 const CRITERIA_REC = [
@@ -2132,8 +2174,8 @@ function updateBadges() {
     'epaule': ['tb-ep-fonc','tb-ep-ortho','tb-ep-force-d','tb-ep-force-g'],
     'rachis': ['tb-ra-cerv','tb-ra-lomb','tb-ra-musc','tb-ra-force-d','tb-ra-force-g'],
     'hanche': ['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-force-d','tb-ha-force-g'],
-    'genou':  ['tb-ge-global','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-fonc-d','tb-ge-fonc-g'],
-    'pied':   ['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-fonc'],
+    'genou':  ['tb-ge-global','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-knee-d','tb-ge-knee-g','tb-ge-hip-d','tb-ge-hip-g'],
+    'pied':   ['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-fonc','tb-pi-lfh-d','tb-pi-lfh-g'],
   };
   Object.entries(sections).forEach(([page, tables]) => {
     let pos = 0;
@@ -2488,8 +2530,8 @@ function buildCR() {
     { label:'EPAULE', fields:[['ep-type','Type'],['ep-marqueur','Marqueur']], tables:['tb-ep-instab','tb-ep-fonc','tb-ep-ortho','tb-ep-force-d','tb-ep-force-g'], concl:'ep-conclusion', opt:'ep-opt' },
     { label:'RACHIS', fields:[['ra-marqueur','Marqueur'],['ra-mckenzie','McKenzie']], tables:['tb-ra-cerv','tb-ra-lomb','tb-ra-musc','tb-ra-force-d','tb-ra-force-g'], concl:'ra-conclusion', opt:'ra-opt' },
     { label:'HANCHE', fields:[['ha-marqueur','Marqueur']], tables:['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-force-d','tb-ha-force-g'], concl:'ha-conclusion', opt:'ha-opt' },
-    { label:'GENOU', fields:[['ge-marqueur','Marqueur']], tables:['tb-ge-global','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-fonc-d','tb-ge-fonc-g'], concl:'ge-conclusion', opt:'ge-opt' },
-    { label:'PIED / CHEVILLE', fields:[['pi-marqueur','Marqueur']], tables:['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-fonc'], concl:'pi-conclusion', opt:'pi-opt' },
+    { label:'GENOU', fields:[['ge-marqueur','Marqueur']], tables:['tb-ge-global','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-knee-d','tb-ge-knee-g','tb-ge-hip-d','tb-ge-hip-g'], concl:'ge-conclusion', opt:'ge-opt' },
+    { label:'PIED / CHEVILLE', fields:[['pi-marqueur','Marqueur']], tables:['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-fonc','tb-pi-lfh-d','tb-pi-lfh-g'], concl:'pi-conclusion', opt:'pi-opt' },
   ];
   var orthoHtml = '';
   for (var oi=0; oi<orthoSections.length; oi++) {
@@ -2512,11 +2554,32 @@ function buildCR() {
       for (var ri=0; ri<rows.length; ri++) {
         var selEl = rows[ri].querySelector('select');
         var noteEl = rows[ri].querySelector('input[type="text"]');
-        if (selEl && selEl.value === 'Positif') {
+        if (selEl && selEl.value && selEl.value !== '' && selEl.value !== '--') {
           var tname = (cfg.items[ri] || '') + sideLabel;
           var noteVal = noteEl ? noteEl.value : '';
           var isFonc = cfg.type === 'fonc';
-          secRows += crItem(tname, noteVal || '-', isFonc ? 'Positif favorable' : 'Positif signe clinique', isFonc ? 'ok' : 'bad');
+          var val = selEl.value;
+          var itemCls, itemStatus;
+          if (val === 'Positif') {
+            itemCls = isFonc ? 'ok' : 'bad';
+            itemStatus = isFonc ? 'Positif favorable' : 'Positif signe clinique';
+          } else if (val === 'Négatif') {
+            itemCls = 'ok';
+            itemStatus = 'Négatif — OK';
+          } else if (val === 'N/A') {
+            itemCls = '';
+            itemStatus = 'N/A';
+          } else if (val === 'Validé') {
+            itemCls = 'ok';
+            itemStatus = 'Validé';
+          } else if (val === 'Pas validé') {
+            itemCls = 'bad';
+            itemStatus = 'Pas validé';
+          } else {
+            itemCls = '';
+            itemStatus = val;
+          }
+          secRows += crItem(tname, noteVal || '-', itemStatus, itemCls);
         }
       }
     }
@@ -2548,14 +2611,17 @@ function buildCR() {
   if (!isNaN(slsCA)) tfHtml += crItem('SLS', 'CA=' + slsCA + ' rep.   CS=' + slsCS + ' rep.   ' + lsiStr(slsCA,slsCS), statOf2(lsiCls2(slsCA,slsCS)), lsiCls2(slsCA,slsCS));
   if (!isNaN(hopCA)) tfHtml += crItem('Hop Test', 'CA=' + hopCA + 'cm   CS=' + hopCS + 'cm   ' + lsiStr(hopCA,hopCS) + '   Repere: ' + (hopCS*0.8).toFixed(1) + 'cm', statOf2(lsiCls2(hopCA,hopCS)), lsiCls2(hopCA,hopCS));
 
-  var scoreCA2 = 0;
+  var scoreCA2 = 0, scoreCS2c = 0;
   for (var ci=0; ci<CRITERIA_REC.length; ci++) {
     var cEl = document.getElementById('rec-ca-' + ci);
+    var cElCS = document.getElementById('rec-cs-' + ci);
     if (cEl && cEl.checked) scoreCA2++;
+    if (cElCS && cElCS.checked) scoreCS2c++;
   }
-  if (scoreCA2 > 0) {
-    var rcls = scoreCA2>=7?'good':scoreCA2>=5?'warn':'bad';
-    tfHtml += crItem('Reception', 'Score ' + scoreCA2 + '/8', statOf2(rcls), rcls);
+  var recTotal6 = scoreCA2 + scoreCS2c;
+  if (scoreCA2 > 0 || scoreCS2c > 0) {
+    var rcls = recTotal6>=5?'good':recTotal6>=3?'warn':'bad';
+    tfHtml += crItem('Reception', 'Score ' + recTotal6 + '/6 (CA=' + scoreCA2 + '/3, CS=' + scoreCS2c + '/3)', statOf2(rcls), rcls);
   }
 
   if (!isNaN(hrCA)) tfHtml += crItem('Heel Rise', 'CA=' + hrCA + '   CS=' + hrCS + '   ' + lsiStr(hrCA,hrCS), statOf2(lsiCls2(hrCA,hrCS)), lsiCls2(hrCA,hrCS));
@@ -2593,8 +2659,10 @@ function buildCR() {
   if (!isNaN(cfqCA)) {
     var cfLsi = (!isNaN(cfqCS) && cfqCS > 0) ? (cfqCA/cfqCS*100) : NaN;
     var cfCls = !isNaN(cfLsi) ? (cfLsi>=90?'good':cfLsi>=80?'warn':'bad') : '';
+    var cfObsEl = document.getElementById('cf-q-obs');
+    var cfObs = cfObsEl ? cfObsEl.value : '';
     tfHtml += crItem('Contraction Flash Isométrique 20s (Quadriceps)',
-      'CA=' + cfqCA + (!isNaN(cfqCS)?' rep.   CS='+cfqCS+' rep.':'') + (!isNaN(cfLsi)?'   LSI='+cfLsi.toFixed(1)+'%':''),
+      'CA=' + cfqCA + (!isNaN(cfqCS)?' rep.   CS='+cfqCS+' rep.':'') + (!isNaN(cfLsi)?'   LSI='+cfLsi.toFixed(1)+'%':'') + (cfObs?' — '+cfObs:''),
       !isNaN(cfLsi)?(cfLsi>=90?'LSI ≥ 90%':'LSI < 90%'):'', cfCls);
   }
   addSection('3. Tests Fonctionnels & Musculaires -- Membres Inferieurs', tfHtml);
@@ -2628,7 +2696,7 @@ function buildCR() {
   var hrLsi2  = hrCS>0?hrCA/hrCS*100:NaN;
   if (!isNaN(slsLsi2) && slsLsi2<90) toWork.push('Renforcement MI -- squat unilateral (LSI SLS < 90%)');
   if (!isNaN(hopLsi2) && hopLsi2<90) toWork.push('Travail de propulsion -- saut unipodal (LSI Hop < 90%)');
-  if (scoreCA2>0 && scoreCA2<7) toWork.push('Qualite de reception -- score ' + scoreCA2 + '/8');
+  if ((scoreCA2>0 || scoreCS2c>0) && recTotal6<5) toWork.push('Qualite de reception -- score ' + recTotal6 + '/6');
   if (!isNaN(luCA) && (luCA<10 || Math.abs(luCA-(luCS||0))>1.5)) toWork.push('Deficit flexion dorsale cheville (Lunge < 10 cm ou asymetrie > 1,5 cm)');
   if (!isNaN(hrLsi2) && hrLsi2<90) toWork.push('Force du mollet -- heel rise progressif (LSI < 90%)');
   if (!isNaN(qfCA) && !isNaN(qfCS) && (1-qfCA/qfCS)*100>10) toWork.push('Renforcement quadriceps (deficit > 10%)');
@@ -2645,8 +2713,9 @@ function buildCR() {
   // Break tests D/G — toutes régions → message clair pour le patient
   // Map: [tableId, côté, [label patient par index]]
   var breakMaps = [
-    { d:'tb-ge-fonc-d', g:'tb-ge-fonc-g', labels:[
-        'Renforcement quadriceps', 'Renforcement ischio-jambiers',
+    { d:'tb-ge-knee-d', g:'tb-ge-knee-g', labels:[
+        'Renforcement quadriceps', 'Renforcement ischio-jambiers'] },
+    { d:'tb-ge-hip-d', g:'tb-ge-hip-g', labels:[
         'Renforcement abducteurs hanche', 'Renforcement adducteurs hanche'] },
     { d:'tb-ep-force-d', g:'tb-ep-force-g', labels:[
         'Renforcement trapèze inférieur', 'Renforcement dentelé antérieur',
@@ -2656,7 +2725,8 @@ function buildCR() {
         'Renforcement abdominaux', 'Renforcement obliques', 'Renforcement extenseurs rachis'] },
     { d:'tb-ha-force-d', g:'tb-ha-force-g', labels:[
         'Renforcement adducteurs hanche', 'Renforcement abdominaux (chaîne hanche)',
-        'Renforcement fléchisseurs hanche'] },
+        'Renforcement fléchisseurs hanche', 'Renforcement abducteurs hanche',
+        'Renforcement rotateurs internes hanche', 'Renforcement rotateurs externes hanche'] },
   ];
   breakMaps.forEach(function(grp){
     [[grp.d,'droit'],[grp.g,'gauche']].forEach(function(pair){
@@ -2669,6 +2739,15 @@ function buildCR() {
           toWork.push(lbl);
         }
       });
+    });
+  });
+  // Break tests LFH
+  [['tb-pi-lfh-d','droit'],['tb-pi-lfh-g','gauche']].forEach(function(pair){
+    var tb = document.getElementById(pair[0]);
+    if(!tb) return;
+    tb.querySelectorAll('tr').forEach(function(tr, i){
+      var s = tr.querySelector('select');
+      if(s && s.value==='Positif') toWork.push('Renforcement stabilisateurs LFH (Ligament Fibulo-Talien Antérieur) ' + pair[1]);
     });
   });
   // Break tests cheville

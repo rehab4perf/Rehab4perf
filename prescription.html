@@ -288,7 +288,13 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
       <option value="AUTO-MASSAGE">Auto-massage</option>
     </select>
   </div>
-  <div style="padding:6px 14px 10px; display:flex; gap:6px; background:var(--navy);">
+  <div style="padding:6px 14px 8px; background:var(--navy);">
+    <div class="filter-label" style="margin-top:0;margin-bottom:3px;">Ajouter au bloc</div>
+    <select class="filter-select" id="target-bloc-select" style="width:100%;">
+      <option value="">— Dernier bloc —</option>
+    </select>
+  </div>
+  <div style="padding:4px 14px 10px; display:flex; gap:6px; background:var(--navy);">
     <button class="filter-btn" style="background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.35);font-size:.72rem;color:#fff;" onclick="openEditor()">✏️ Éditer la bibliothèque</button>
   </div>
   <div class="lib-scroll" id="libScroll"></div>
@@ -639,9 +645,12 @@ function addExoFromLib(libId){
   if(!ex) return;
   // If no bloc, create one
   if(!blocs.length) addBloc();
-  // Use activeBloc or last bloc
-  var targetId = activeBloc || blocs[blocs.length-1].id;
+  // Use target-bloc-select, activeBloc, or last bloc
+  var targetBlocSel = document.getElementById('target-bloc-select');
+  var selectedBlocId = targetBlocSel ? targetBlocSel.value : '';
+  var targetId = selectedBlocId || activeBloc || blocs[blocs.length-1].id;
   var bloc = blocs.find(function(b){ return b.id===targetId; });
+  if(!bloc) { bloc = blocs[blocs.length-1]; targetId = bloc ? bloc.id : null; }
   if(!bloc) return;
   var row = {id:genId(), libId:ex.id, name:ex.name, url:ex.url, reps:'', duree:'', series:'', cibleType:'RPE', cibleVal:'', obj:ex.obj, tempo:'', recup:''};
   bloc.exos.push(row);
@@ -697,6 +706,7 @@ function renderSession(){
   var area = document.getElementById('sessionArea');
   if(!blocs.length){
     area.innerHTML = '<div class="empty-state" id="emptyState"><div class="icon">📋</div><p>Ajoutez un bloc puis sélectionnez des exercices<br>depuis la bibliothèque pour construire votre séance.</p></div>';
+    updateTargetBlocSelect();
     return;
   }
   var html = '';
@@ -756,6 +766,21 @@ function renderSession(){
   html += '<textarea class="notes-ta" id="sessionNotes" placeholder="Conseils, progressions, points d\'attention…">'+escH(getNotes())+'</textarea></div>';
   html += '<button class="add-bloc-btn" onclick="addBloc()">+ Ajouter un bloc</button>';
   area.innerHTML = html;
+  updateTargetBlocSelect();
+}
+
+function updateTargetBlocSelect(){
+  var sel = document.getElementById('target-bloc-select');
+  if(!sel) return;
+  var prev = sel.value;
+  sel.innerHTML = '<option value="">— Dernier bloc —</option>';
+  blocs.forEach(function(b, idx){
+    var opt = document.createElement('option');
+    opt.value = b.id;
+    opt.textContent = 'Bloc ' + (idx+1) + (b.title && b.title!=='BLOC' ? ' — ' + b.title : '');
+    sel.appendChild(opt);
+  });
+  if(prev && blocs.find(function(b){ return b.id===prev; })) sel.value = prev;
 }
 
 var _notes = '';
