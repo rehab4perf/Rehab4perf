@@ -1168,23 +1168,6 @@ body {
       </div>
     </div>
 
-    <div class="block">
-      <div class="block-header red">Break Test LFH (Ligament Fibulo-Talien Antérieur)</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
-        <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div>
-        <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
-        <table class="test-table" style="margin:0;border-radius:0">
-          <thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
-          <tbody id="tb-pi-lfh-d"></tbody>
-        </table>
-        <table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)">
-          <thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
-          <tbody id="tb-pi-lfh-g"></tbody>
-        </table>
-      </div>
-    </div>
 
     <div class="block">
       <div class="block-header grey">Tests Optionnels</div>
@@ -2053,10 +2036,8 @@ const TESTS = {
   'tb-pi-st':   {type:'ortho',items:['Varus / Valgus en flexion dorsale','Cisaillement en flexion dorsale']},
   'tb-pi-chopart':{type:'ortho',items:['Mobilisation Chopart','Neutral Heel Lateral Push Test']},
   'tb-pi-fonc': {type:'ortho',items:['Course interne mollet','Navicular Drop Test (mm)','Avant-pied -- équilibre pointes de pied (step)','Médio-pied -- équilibre foot bridge','1ère ligne -- montée pointes + cale 30deg sous hallux','Équilibre classique global (yeux ouverts / yeux fermés)']},
-  'tb-pi-force-ca':{type:'ortho',items:['Flexion plantaire','Flexion dorsale','Inversion','Éversion']},
-  'tb-pi-force-cs':{type:'ortho',items:['Flexion plantaire','Flexion dorsale','Inversion','Éversion']},
-  'tb-pi-lfh-d':  {type:'ortho',items:['LFH (Ligament Fibulo-Talien Antérieur)']},
-  'tb-pi-lfh-g':  {type:'ortho',items:['LFH (Ligament Fibulo-Talien Antérieur)']},
+  'tb-pi-force-ca':{type:'ortho',items:['Flexion plantaire','Flexion dorsale','Inversion','Éversion','Break test Long Fléchisseur de l\'Hallux (LFH)']},
+  'tb-pi-force-cs':{type:'ortho',items:['Flexion plantaire','Flexion dorsale','Inversion','Éversion','Break test Long Fléchisseur de l\'Hallux (LFH)']},
 };
 
 const CRITERIA_REC = [
@@ -2175,7 +2156,7 @@ function updateBadges() {
     'rachis': ['tb-ra-cerv','tb-ra-lomb','tb-ra-musc','tb-ra-force-d','tb-ra-force-g'],
     'hanche': ['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-force-d','tb-ha-force-g'],
     'genou':  ['tb-ge-global','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-knee-d','tb-ge-knee-g','tb-ge-hip-d','tb-ge-hip-g'],
-    'pied':   ['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-fonc','tb-pi-lfh-d','tb-pi-lfh-g'],
+    'pied':   ['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-fonc'],
   };
   Object.entries(sections).forEach(([page, tables]) => {
     let pos = 0;
@@ -2531,7 +2512,7 @@ function buildCR() {
     { label:'RACHIS', fields:[['ra-marqueur','Marqueur'],['ra-mckenzie','McKenzie']], tables:['tb-ra-cerv','tb-ra-lomb','tb-ra-musc','tb-ra-force-d','tb-ra-force-g'], concl:'ra-conclusion', opt:'ra-opt' },
     { label:'HANCHE', fields:[['ha-marqueur','Marqueur']], tables:['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-force-d','tb-ha-force-g'], concl:'ha-conclusion', opt:'ha-opt' },
     { label:'GENOU', fields:[['ge-marqueur','Marqueur']], tables:['tb-ge-global','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-knee-d','tb-ge-knee-g','tb-ge-hip-d','tb-ge-hip-g'], concl:'ge-conclusion', opt:'ge-opt' },
-    { label:'PIED / CHEVILLE', fields:[['pi-marqueur','Marqueur']], tables:['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-fonc','tb-pi-lfh-d','tb-pi-lfh-g'], concl:'pi-conclusion', opt:'pi-opt' },
+    { label:'PIED / CHEVILLE', fields:[['pi-marqueur','Marqueur']], tables:['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-fonc'], concl:'pi-conclusion', opt:'pi-opt' },
   ];
   var orthoHtml = '';
   for (var oi=0; oi<orthoSections.length; oi++) {
@@ -2741,17 +2722,8 @@ function buildCR() {
       });
     });
   });
-  // Break tests LFH
-  [['tb-pi-lfh-d','droit'],['tb-pi-lfh-g','gauche']].forEach(function(pair){
-    var tb = document.getElementById(pair[0]);
-    if(!tb) return;
-    tb.querySelectorAll('tr').forEach(function(tr, i){
-      var s = tr.querySelector('select');
-      if(s && s.value==='Positif') toWork.push('Renforcement stabilisateurs LFH (Ligament Fibulo-Talien Antérieur) ' + pair[1]);
-    });
-  });
-  // Break tests cheville
-  var piForceLabels = ['Renforcement flexion plantaire','Renforcement flexion dorsale','Renforcement inverseurs','Renforcement éverseurs'];
+  // Break tests cheville + LFH
+  var piForceLabels = ['Renforcement flexion plantaire','Renforcement flexion dorsale','Renforcement inverseurs','Renforcement éverseurs','Renforcement Long Fléchisseur de l\'Hallux (LFH)'];
   [['tb-pi-force-ca','droit'],['tb-pi-force-cs','gauche']].forEach(function(pair){
     var tb = document.getElementById(pair[0]);
     if(!tb) return;
