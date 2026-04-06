@@ -348,11 +348,18 @@ body {
     <input type="date" id="hsr-start-date" style="width:140px" oninput="calcHSR()">
     <label style="margin-left:4px">Semaine de départ</label>
     <select id="hsr-start-week" onchange="calcHSR()" style="font-size:.88rem;font-weight:700;color:var(--accent2);border:1.5px solid var(--border2);border-radius:5px;padding:4px 8px;outline:none;background:#fff;font-family:inherit">
-      <option value="0">S1</option>
-      <option value="1">S2-S3</option>
-      <option value="2">S4-S5</option>
-      <option value="3">S6-S8</option>
-      <option value="4">S9-S12</option>
+      <option value="0">Semaine 1</option>
+      <option value="1">Semaine 2</option>
+      <option value="2">Semaine 3</option>
+      <option value="3">Semaine 4</option>
+      <option value="4">Semaine 5</option>
+      <option value="5">Semaine 6</option>
+      <option value="6">Semaine 7</option>
+      <option value="7">Semaine 8</option>
+      <option value="8">Semaine 9</option>
+      <option value="9">Semaine 10</option>
+      <option value="10">Semaine 11</option>
+      <option value="11">Semaine 12</option>
     </select>
     <span class="hint">← Synchronisé avec le calculateur RM</span>
   </div>
@@ -699,8 +706,15 @@ function calcHSR() {
   var startDateVal = document.getElementById('hsr-start-date').value; // 'YYYY-MM-DD' or ''
   var startWeekIdx = parseInt(document.getElementById('hsr-start-week').value) || 0;
 
-  // HSR_WEEKS: number of weeks per phase [S1=1, S2-S3=2, S4-S5=2, S6-S8=3, S9-S12=4]
-  var HSR_WEEKS_COUNT = [1, 2, 2, 3, 4];
+  // Maps week index (0-11) to phase index (0-4)
+  // Phase 0: week 0 | Phase 1: weeks 1-2 | Phase 2: weeks 3-4 | Phase 3: weeks 5-6-7 | Phase 4: weeks 8-9-10-11
+  var PHASE_WEEKS = [
+    [0],
+    [1, 2],
+    [3, 4],
+    [5, 6, 7],
+    [8, 9, 10, 11]
+  ];
 
   function addDays(date, days) {
     var d = new Date(date);
@@ -710,28 +724,53 @@ function calcHSR() {
   function fmtDay(d) {
     return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2);
   }
+
+  // Returns the phase index (0-4) that contains the given week index (0-11)
+  function phaseOfWeek(weekIdx) {
+    for (var p = 0; p < PHASE_WEEKS.length; p++) {
+      if (PHASE_WEEKS[p].indexOf(weekIdx) !== -1) return p;
+    }
+    return PHASE_WEEKS.length - 1;
+  }
+
+  // Compute the date range string for a phase, given startDate and startWeekIdx
   function dateRange(startDate, phaseIdx) {
     if (!startDate || isNaN(startDate.getTime())) return '';
-    // Compute days offset up to this phase (phases before + start week offset)
-    var offsetDays = 0;
-    for (var i = startWeekIdx; i < phaseIdx; i++) {
-      offsetDays += HSR_WEEKS_COUNT[i] * 7;
+    var weeks = PHASE_WEEKS[phaseIdx];
+    var startPhase = phaseOfWeek(startWeekIdx);
+
+    if (phaseIdx < startPhase) {
+      // Past phase: show full phase dates, dimmed via opacity on the row
+      var firstW = weeks[0];
+      var lastW  = weeks[weeks.length - 1];
+      var from = addDays(startDate, (firstW - startWeekIdx) * 7);
+      var to   = addDays(startDate, (lastW  - startWeekIdx) * 7 + 6);
+      return fmtDay(from) + ' → ' + fmtDay(to);
+    } else if (phaseIdx === startPhase) {
+      // Current phase: start from the selected week, go to end of phase
+      var lastW = weeks[weeks.length - 1];
+      var from  = addDays(startDate, 0); // selected week starts here
+      var to    = addDays(startDate, (lastW - startWeekIdx) * 7 + 6);
+      return fmtDay(from) + ' → ' + fmtDay(to);
+    } else {
+      // Future phase: full phase dates
+      var firstW = weeks[0];
+      var lastW  = weeks[weeks.length - 1];
+      var from = addDays(startDate, (firstW - startWeekIdx) * 7);
+      var to   = addDays(startDate, (lastW  - startWeekIdx) * 7 + 6);
+      return fmtDay(from) + ' → ' + fmtDay(to);
     }
-    if (phaseIdx < startWeekIdx) return '—';
-    var from = addDays(startDate, offsetDays);
-    var weekCount = HSR_WEEKS_COUNT[phaseIdx];
-    var to   = addDays(from, weekCount * 7 - 1);
-    return fmtDay(from) + ' → ' + fmtDay(to);
   }
 
   var startDate = startDateVal ? new Date(startDateVal + 'T00:00:00') : null;
+  var startPhaseIdx = phaseOfWeek(startWeekIdx);
 
   document.getElementById('hsr-tbody').innerHTML = HSR.map(function(p, i){
     var cMin = rm > 0 ? rnd(rm*p.pMin/100) + ' kg' : '--';
     var cMax = rm > 0 ? rnd(rm*p.pMax/100) + ' kg' : '--';
     var dr   = startDate ? dateRange(startDate, i) : '';
     var weekLabel = p.w + (dr ? '<div style="font-size:.68rem;font-weight:500;color:var(--text3);margin-top:2px">'+dr+'</div>' : '');
-    var isPast = (startDate && i < startWeekIdx);
+    var isPast = (startDate && i < startPhaseIdx);
     var rowStyle = isPast ? 'opacity:.4' : '';
     return '<tr style="'+rowStyle+'">' +
       '<td style="font-weight:700;color:var(--accent2)">' + weekLabel + '</td>' +
@@ -749,7 +788,7 @@ function calcHSR() {
   // Steps
   document.getElementById('hsr-steps').innerHTML = HSR.map(function(p, i){
     var dr = startDate ? dateRange(startDate, i) : '';
-    var isPast = (startDate && i < startWeekIdx);
+    var isPast = (startDate && i < startPhaseIdx);
     return '<div class="step"' + (isPast ? ' style="opacity:.4"' : '') + '>' +
       '<div class="step-badge">' + p.w + '<small>' + p.rm + '</small>' + (dr ? '<small style="font-size:.55rem;color:rgba(255,255,255,.75);display:block;margin-top:1px">'+dr+'</small>' : '') + '</div>' +
       '<div>' +
