@@ -52,24 +52,24 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 
 .lib-scroll { flex:1; overflow-y:auto; padding:8px 0; }
 /* Editor modal */
-.editor-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:200; display:none; align-items:flex-start; justify-content:center; overflow-y:auto; padding:24px 16px; }
+.editor-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:200; display:none; align-items:flex-start; justify-content:center; overflow-y:auto; padding:16px; }
 .editor-overlay.open { display:flex; }
-.editor-box { background:#fff; border-radius:12px; width:100%; max-width:680px; box-shadow:0 20px 60px rgba(0,0,0,.25); margin:auto; }
+.editor-box { background:#fff; border-radius:12px; width:100%; max-width:980px; box-shadow:0 20px 60px rgba(0,0,0,.25); margin:auto; }
 .editor-head { background:var(--navy); color:#fff; padding:14px 18px; border-radius:12px 12px 0 0; display:flex; align-items:center; gap:10px; }
 .editor-head h2 { flex:1; font-size:.9rem; font-weight:700; letter-spacing:.03em; }
 .editor-close { background:none; border:none; color:rgba(255,255,255,.6); font-size:1.4rem; cursor:pointer; line-height:1; }
 .editor-close:hover { color:#fff; }
-.editor-body { padding:14px; max-height:70vh; overflow-y:auto; }
+.editor-body { padding:14px; max-height:80vh; overflow-y:auto; }
 .editor-toolbar { display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
 .editor-search { flex:1; padding:6px 10px; border:1px solid var(--border); border-radius:6px; font-size:.8rem; outline:none; min-width:120px; }
 .editor-search:focus { border-color:var(--accent2); }
-.exo-edit-row { display:grid; grid-template-columns:1fr 120px 120px 1fr 140px 28px; gap:6px; align-items:center; padding:5px 4px; border-bottom:1px solid #f0f4f8; }
+.exo-edit-row { display:grid; grid-template-columns:1.6fr 130px 110px 130px 1fr 28px; gap:6px; align-items:center; padding:5px 4px; border-bottom:1px solid #f0f4f8; }
 .exo-edit-row:last-child { border-bottom:none; }
 .exo-edit-row input, .exo-edit-row select { padding:4px 7px; border:1px solid var(--border); border-radius:5px; font-size:.76rem; color:var(--text); outline:none; background:#FAFBFD; width:100%; }
 .exo-edit-row input:focus, .exo-edit-row select:focus { border-color:var(--accent2); background:#fff; }
 .exo-del-edit { background:none; border:none; color:#CBD2DB; cursor:pointer; font-size:1.1rem; padding:2px 4px; }
 .exo-del-edit:hover { color:#E74C3C; }
-.editor-col-header { display:grid; grid-template-columns:1fr 120px 120px 1fr 140px 28px; gap:6px; padding:4px 4px 6px; }
+.editor-col-header { display:grid; grid-template-columns:1.6fr 130px 110px 130px 1fr 28px; gap:6px; padding:4px 4px 6px; }
 .editor-col-header span { font-size:.65rem; font-weight:700; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; }
 .lib-section { margin-bottom:4px; }
 .lib-section-title {
@@ -315,8 +315,8 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
         <span>Nom de l'exercice</span>
         <span>Zone / Catégorie</span>
         <span>Objectif</span>
+        <span>Mouvement (Patterns)</span>
         <span>URL Vidéo</span>
-        <span>Patterns (renfo)</span>
         <span></span>
       </div>
       <div id="editorList"></div>
@@ -667,22 +667,51 @@ function renderLib(q, typeFilter, subFilter){
     if(q && ex.name.toLowerCase().indexOf(q)===-1 && ex.zone.toLowerCase().indexOf(q)===-1 && (ex.obj||'').toLowerCase().indexOf(q)===-1) return false;
     return true;
   });
-  // Group by zone
+  // Determine grouping key based on active filters
+  // If typeFilter = 'renfo' + subFilter active → group by pattern
+  // If typeFilter = 'warmup' or 'automassage' + subFilter active → group by zone
+  // If typeFilter only (no subFilter) → group by zone
+  // If 'Tous' (no typeFilter, no subFilter, no favFilter) → show nothing (empty)
+  var showSectionTitle = !!(typeFilter || subFilter || _favFilter || q);
+  var groupBy; // 'zone' or 'pattern' or 'none'
+  if(!showSectionTitle){
+    groupBy = 'none';
+  } else if(typeFilter === 'renfo' && subFilter){
+    groupBy = 'pattern';
+  } else {
+    groupBy = 'zone';
+  }
+
   var groups = {};
   var order = [];
   visible.forEach(function(ex){
-    var k = ex.type+'||'+ex.zone;
-    if(!groups[k]){ groups[k]={type:ex.type,zone:ex.zone,items:[]}; order.push(k); }
+    var k;
+    if(groupBy === 'pattern'){
+      k = subFilter;
+    } else if(groupBy === 'zone'){
+      k = ex.zone;
+    } else {
+      k = '';
+    }
+    if(!groups[k]){ groups[k]={label:k, items:[]}; order.push(k); }
     groups[k].items.push(ex);
   });
+
   // Get added ids
   var addedIds = {};
   blocs.forEach(function(b){ b.exos.forEach(function(e){ addedIds[e.libId]=true; }); });
+
+  // If no filter active and not favs/search → show empty state
+  if(!showSectionTitle && !q){
+    scroll.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:.8rem;line-height:1.6;">Sélectionnez un objectif<br>pour afficher les exercices.</div>';
+    return;
+  }
+
   var html = '';
   order.forEach(function(k){
     var g = groups[k];
     html += '<div class="lib-section">';
-    html += '<div class="lib-section-title">'+escH(g.zone)+'</div>';
+    if(g.label) html += '<div class="lib-section-title">'+escH(g.label)+'</div>';
     g.items.forEach(function(ex){
       var isAdded = !!addedIds[ex.id];
       var isFav = favs.has(ex.id);
@@ -699,7 +728,7 @@ function renderLib(q, typeFilter, subFilter){
     });
     html += '</div>';
   });
-  if(!html) html = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:.8rem;">Aucun exercice trouvé</div>';
+  if(showSectionTitle && !html) html = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:.8rem;">Aucun exercice trouvé</div>';
   scroll.innerHTML = html;
 }
 
@@ -1043,6 +1072,8 @@ function updateEditorField(idx, field, val){
   if(!_editorData[idx]) return;
   if(field === 'patterns_str'){
     _editorData[idx].patterns = val.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+  } else if(field === 'patterns_sel'){
+    _editorData[idx].patterns = val ? [val] : [];
   } else {
     _editorData[idx][field] = val;
   }
@@ -1066,12 +1097,17 @@ function renderEditor(){
       {v:'renfo',  l:'Renforcement'},
       {v:'automassage', l:'Auto-massage'}
     ].map(function(o){ return '<option value="'+o.v+'"'+(o.v===(e.type||'warmup')?' selected':'')+'>'+o.l+'</option>'; }).join('');
+    var allPatterns = ['Triple flexion','Hinge','Poussé vertical','Poussé horizontal','Tirage vertical','Tirage horizontal'];
+    var exPatterns = e.patterns || [];
+    var patSel = '<option value="">— Aucun —</option>' + allPatterns.map(function(p){
+      return '<option value="'+escH(p)+'"'+(exPatterns.indexOf(p)!==-1?' selected':'')+'>'+escH(p)+'</option>';
+    }).join('');
     rows += '<div class="exo-edit-row" data-idx="'+i+'">';
     rows += '<input class="exo-edit-name" type="text" value="'+escH(e.name)+'" placeholder="Nom de l\'exercice" oninput="updateEditorField('+i+',\'name\',this.value)">';
     rows += '<select onchange="updateEditorField('+i+',\'zone\',this.value)">'+zSel+'</select>';
     rows += '<select onchange="updateEditorField('+i+',\'type\',this.value)">'+typeOpts+'</select>';
+    rows += '<select onchange="updateEditorField('+i+',\'patterns_sel\',this.value)">'+patSel+'</select>';
     rows += '<input type="url" value="'+escH(e.url||'')+'" placeholder="https://youtu.be/…" oninput="updateEditorField('+i+',\'url\',this.value)">';
-    rows += '<input type="text" value="'+escH((e.patterns||[]).join(', '))+'" placeholder="Patterns (virgule)" title="Patterns de mouvement (Triple flexion, Hinge…)" oninput="updateEditorField('+i+',\'patterns_str\',this.value)">';
     rows += '<button class="exo-del-edit" onclick="deleteEditorRow('+i+')" title="Supprimer">×</button>';
     rows += '</div>';
   });
