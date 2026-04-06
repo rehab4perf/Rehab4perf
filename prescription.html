@@ -63,13 +63,13 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .editor-toolbar { display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
 .editor-search { flex:1; padding:6px 10px; border:1px solid var(--border); border-radius:6px; font-size:.8rem; outline:none; min-width:120px; }
 .editor-search:focus { border-color:var(--accent2); }
-.exo-edit-row { display:grid; grid-template-columns:1fr 120px 120px 1fr 28px; gap:6px; align-items:center; padding:5px 4px; border-bottom:1px solid #f0f4f8; }
+.exo-edit-row { display:grid; grid-template-columns:1fr 120px 120px 1fr 140px 28px; gap:6px; align-items:center; padding:5px 4px; border-bottom:1px solid #f0f4f8; }
 .exo-edit-row:last-child { border-bottom:none; }
 .exo-edit-row input, .exo-edit-row select { padding:4px 7px; border:1px solid var(--border); border-radius:5px; font-size:.76rem; color:var(--text); outline:none; background:#FAFBFD; width:100%; }
 .exo-edit-row input:focus, .exo-edit-row select:focus { border-color:var(--accent2); background:#fff; }
 .exo-del-edit { background:none; border:none; color:#CBD2DB; cursor:pointer; font-size:1.1rem; padding:2px 4px; }
 .exo-del-edit:hover { color:#E74C3C; }
-.editor-col-header { display:grid; grid-template-columns:1fr 120px 120px 1fr 28px; gap:6px; padding:4px 4px 6px; }
+.editor-col-header { display:grid; grid-template-columns:1fr 120px 120px 1fr 140px 28px; gap:6px; padding:4px 4px 6px; }
 .editor-col-header span { font-size:.65rem; font-weight:700; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; }
 .lib-section { margin-bottom:4px; }
 .lib-section-title {
@@ -239,6 +239,15 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .modal-btns { display:flex; gap:8px; flex-wrap:wrap; }
 .modal-close { position:absolute; top:10px; right:14px; background:none; border:none; font-size:1.4rem; cursor:pointer; color:var(--muted); }
 
+/* Fav button */
+.fav-btn {
+  background:none; border:none; font-size:1rem; cursor:pointer;
+  color:#CBD2DB; padding:2px 4px; line-height:1;
+  transition:color .15s; flex-shrink:0;
+}
+.fav-btn.active { color:#F5A623; }
+.fav-btn:hover { color:#F5A623; }
+
 /* Mobile */
 @media (max-width:700px) {
   :root { --sidebar-w:100%; }
@@ -261,32 +270,20 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
     <input class="search-box" type="text" id="searchInput" placeholder="Rechercher un exercice…" oninput="filterLib()">
     <div class="filter-row">
       <button class="filter-btn active" id="filterAll" onclick="setFilterAll()">Tous</button>
+      <button class="filter-btn" id="filterFav" onclick="toggleFavFilter()">⭐ Favoris</button>
     </div>
     <div class="filter-label">Objectif</div>
-    <select class="filter-select" id="filterType" onchange="applyFilters()">
-      <option value="">— Tous les types —</option>
+    <select class="filter-select" id="filterType" onchange="onTypeChange()">
+      <option value="">— Tous —</option>
       <option value="warmup">Warm-up / Mobilité</option>
       <option value="renfo">Renforcement</option>
       <option value="automassage">Auto-massage</option>
     </select>
-    <div class="filter-label">Partie du corps</div>
-    <select class="filter-select" id="filterZone" onchange="applyFilters()">
-      <option value="">— Toutes les zones —</option>
-      <option value="ÉPAULE">Épaules</option>
-      <option value="COUDE">Coude</option>
-      <option value="POIGNET">Poignet</option>
-      <option value="RACHIS – CERVICAL">Rachis cervical</option>
-      <option value="RACHIS – THORACIQUE">Rachis thoracique</option>
-      <option value="RACHIS – THORACO-LOMBAIRE">Rachis thoraco-lombaire</option>
-      <option value="RACHIS – LOMBAIRE">Rachis lombaire</option>
-      <option value="TRONC / GAINAGE">Tronc / Gainage</option>
-      <option value="HANCHE">Hanche</option>
-      <option value="GENOUX">Genoux</option>
-      <option value="CHEVILLE">Cheville</option>
-      <option value="PIED / HALLUX">Pied / Hallux</option>
-      <option value="PIED">Pied</option>
-      <option value="AUTO-MASSAGE">Auto-massage</option>
-    </select>
+    <div id="filter-sub-wrap" style="display:none;margin-top:6px;">
+      <div class="filter-label" id="filter-sub-label">Filtre</div>
+      <select class="filter-select" id="filterSub" onchange="applyFilters()">
+      </select>
+    </div>
   </div>
   <div style="padding:6px 14px 8px; background:var(--navy);">
     <div class="filter-label" style="margin-top:0;margin-bottom:3px;">Ajouter au bloc</div>
@@ -319,6 +316,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
         <span>Zone / Catégorie</span>
         <span>Objectif</span>
         <span>URL Vidéo</span>
+        <span>Patterns (renfo)</span>
         <span></span>
       </div>
       <div id="editorList"></div>
@@ -475,65 +473,65 @@ var LIBRARY = [
   {id:'a010',name:"Auto-massage mollets",zone:"AUTO-MASSAGE",type:"automassage",url:"https://youtu.be/dRrvjdwmDtI",obj:""},
   {id:'a011',name:"Auto-massage fibulaire",zone:"AUTO-MASSAGE",type:"automassage",url:"https://youtu.be/MiDNO_4T2WM",obj:""},
   /* ── RENFO : ÉPAULES / COUDES ── */
-  {id:'r001',name:"Rowing bilatéral (banc + haltères)",zone:"ÉPAULES, COUDES",type:"renfo",url:"https://youtu.be/k7wxFOPed_U",obj:""},
-  {id:'r002',name:"Rowing (barre libre)",zone:"ÉPAULES, COUDES",type:"renfo",url:"https://youtu.be/X7rimaqBMqU",obj:""},
-  {id:'r003',name:"Tractions pronation",zone:"ÉPAULES, COUDES",type:"renfo",url:"https://youtu.be/HbkyJKMFqmM",obj:""},
-  {id:'r004',name:"Dips",zone:"ÉPAULES, COUDES",type:"renfo",url:"https://youtu.be/UceGdIvZOM4",obj:""},
-  {id:'r005',name:"Rotation + strict press",zone:"ÉPAULES, THORACIQUES",type:"renfo",url:"https://youtu.be/0pF7uWSFINg",obj:"EXTENSION, ROT G, ROT D"},
-  {id:'r006',name:"Y sur banc",zone:"ÉPAULES",type:"renfo",url:"https://youtu.be/EbJCxOqICGM",obj:"FLEXION"},
-  {id:'r007',name:"RE iso (bande élastique)",zone:"ÉPAULES",type:"renfo",url:"https://youtu.be/F4qScguZBNg",obj:""},
-  {id:'r008',name:"Full can",zone:"ÉPAULES",type:"renfo",url:"https://youtu.be/MW6N5yLYduA",obj:""},
-  {id:'r009',name:"Perfect shrug",zone:"ÉPAULES",type:"renfo",url:"https://youtu.be/EDN6ELI2Q8s",obj:""},
+  {id:'r001',name:"Rowing bilatéral (banc + haltères)",zone:"ÉPAULES, COUDES",type:"renfo",url:"https://youtu.be/k7wxFOPed_U",obj:"",patterns:["Tirage horizontal"]},
+  {id:'r002',name:"Rowing (barre libre)",zone:"ÉPAULES, COUDES",type:"renfo",url:"https://youtu.be/X7rimaqBMqU",obj:"",patterns:["Tirage horizontal"]},
+  {id:'r003',name:"Tractions pronation",zone:"ÉPAULES, COUDES",type:"renfo",url:"https://youtu.be/HbkyJKMFqmM",obj:"",patterns:["Tirage vertical"]},
+  {id:'r004',name:"Dips",zone:"ÉPAULES, COUDES",type:"renfo",url:"https://youtu.be/UceGdIvZOM4",obj:"",patterns:["Poussé vertical"]},
+  {id:'r005',name:"Rotation + strict press",zone:"ÉPAULES, THORACIQUES",type:"renfo",url:"https://youtu.be/0pF7uWSFINg",obj:"EXTENSION, ROT G, ROT D",patterns:["Poussé vertical"]},
+  {id:'r006',name:"Y sur banc",zone:"ÉPAULES",type:"renfo",url:"https://youtu.be/EbJCxOqICGM",obj:"FLEXION",patterns:[]},
+  {id:'r007',name:"RE iso (bande élastique)",zone:"ÉPAULES",type:"renfo",url:"https://youtu.be/F4qScguZBNg",obj:"",patterns:[]},
+  {id:'r008',name:"Full can",zone:"ÉPAULES",type:"renfo",url:"https://youtu.be/MW6N5yLYduA",obj:"",patterns:[]},
+  {id:'r009',name:"Perfect shrug",zone:"ÉPAULES",type:"renfo",url:"https://youtu.be/EDN6ELI2Q8s",obj:"",patterns:[]},
   /* RENFO : HANCHE / GENOUX */
-  {id:'r010',name:"Back squat",zone:"HANCHE, GENOUX",type:"renfo",url:"https://youtu.be/nd08ytRkRno",obj:""},
-  {id:'r011',name:"Front squat",zone:"HANCHE, GENOUX",type:"renfo",url:"https://youtu.be/d8ulCpd7d9M",obj:""},
-  {id:'r012',name:"Pistol squat box",zone:"HANCHE, GENOUX",type:"renfo",url:"https://youtu.be/FIu5-Oa9ZpQ",obj:""},
-  {id:'r013',name:"Deadlift",zone:"HANCHE, GENOUX",type:"renfo",url:"https://youtu.be/ZwcwxKYMGqk",obj:""},
-  {id:'r014',name:"Romanian deadlift",zone:"HANCHE, GENOUX",type:"renfo",url:"https://youtu.be/Iu-CCUSX_Ao",obj:""},
-  {id:'r015',name:"Hip thrust",zone:"HANCHE",type:"renfo",url:"https://youtu.be/BDj2fjfhOFo",obj:""},
-  {id:'r016',name:"Glute bridge swissball",zone:"HANCHE",type:"renfo",url:"https://youtu.be/p_rx7_qvOK4",obj:""},
-  {id:'r017',name:"Glute bridge walk",zone:"HANCHE",type:"renfo",url:"https://youtu.be/gFOvhVOxEuk",obj:""},
-  {id:'r018',name:"Cossack squat (avec variations)",zone:"HANCHE, GENOUX",type:"renfo",url:"https://youtu.be/fZptiFPFgE4",obj:""},
-  {id:'r019',name:"Front lunge",zone:"HANCHE, GENOUX",type:"renfo",url:"https://youtu.be/rFdUl5EGU3k",obj:""},
-  {id:'r020',name:"Reverse lunge (step)",zone:"HANCHE, GENOUX",type:"renfo",url:"https://youtu.be/bz5VD2QrnCE",obj:""},
-  {id:'r021',name:"Reverse lunge (cale pied)",zone:"HANCHE, GENOUX",type:"renfo",url:"https://youtu.be/S3FhvMiKNSI",obj:""},
-  {id:'r022',name:"Bulgarian lunge",zone:"HANCHE, GENOUX",type:"renfo",url:"https://youtu.be/WnRo668nU5k",obj:""},
-  {id:'r023',name:"Pistol lunge",zone:"HANCHE, GENOUX",type:"renfo",url:"https://youtu.be/dkinMBYBSKQ",obj:""},
-  {id:'r024',name:"Bulgarian lunge (focus droit fémoral jambe arrière)",zone:"HANCHE",type:"renfo",url:"https://youtu.be/r-2608D5xFo",obj:""},
-  {id:'r025',name:"Lunge excentrique",zone:"HANCHE, GENOUX",type:"renfo",url:"https://youtu.be/rMcqmH3BgWU",obj:""},
-  {id:'r026',name:"Banded jump lunge (anti valgus)",zone:"GENOUX",type:"renfo",url:"https://youtu.be/qRVlaEkxZKs",obj:""},
-  {id:'r027',name:"Copenhaguen plank (CE + flexion de hanche)",zone:"HANCHE",type:"renfo",url:"https://youtu.be/tmERKqq-Foo",obj:""},
-  {id:'r028',name:"Star plank",zone:"HANCHE",type:"renfo",url:"https://youtu.be/d8ulCpd7d9M",obj:""},
-  {id:'r029',name:"Star plank (genoux)",zone:"HANCHE",type:"renfo",url:"https://youtu.be/HCg8SOSoS4E",obj:""},
-  {id:'r030',name:"ABD hanche mini bande",zone:"HANCHE",type:"renfo",url:"https://youtu.be/QfdySRI7aNQ",obj:""},
-  {id:'r031',name:"Single leg Romanian deadlift (anti valgus)",zone:"HANCHE, GENOUX",type:"renfo",url:"https://youtu.be/URkycEURDPw",obj:""},
+  {id:'r010',name:"Back squat",zone:"HANCHE, GENOUX",type:"renfo",url:"https://youtu.be/nd08ytRkRno",obj:"",patterns:["Triple flexion"]},
+  {id:'r011',name:"Front squat",zone:"HANCHE, GENOUX",type:"renfo",url:"https://youtu.be/d8ulCpd7d9M",obj:"",patterns:["Triple flexion"]},
+  {id:'r012',name:"Pistol squat box",zone:"HANCHE, GENOUX",type:"renfo",url:"https://youtu.be/FIu5-Oa9ZpQ",obj:"",patterns:["Triple flexion"]},
+  {id:'r013',name:"Deadlift",zone:"HANCHE, GENOUX",type:"renfo",url:"https://youtu.be/ZwcwxKYMGqk",obj:"",patterns:["Hinge"]},
+  {id:'r014',name:"Romanian deadlift",zone:"HANCHE, GENOUX",type:"renfo",url:"https://youtu.be/Iu-CCUSX_Ao",obj:"",patterns:["Hinge"]},
+  {id:'r015',name:"Hip thrust",zone:"HANCHE",type:"renfo",url:"https://youtu.be/BDj2fjfhOFo",obj:"",patterns:["Hinge"]},
+  {id:'r016',name:"Glute bridge swissball",zone:"HANCHE",type:"renfo",url:"https://youtu.be/p_rx7_qvOK4",obj:"",patterns:["Hinge"]},
+  {id:'r017',name:"Glute bridge walk",zone:"HANCHE",type:"renfo",url:"https://youtu.be/gFOvhVOxEuk",obj:"",patterns:["Hinge"]},
+  {id:'r018',name:"Cossack squat (avec variations)",zone:"HANCHE, GENOUX",type:"renfo",url:"https://youtu.be/fZptiFPFgE4",obj:"",patterns:["Triple flexion"]},
+  {id:'r019',name:"Front lunge",zone:"HANCHE, GENOUX",type:"renfo",url:"https://youtu.be/rFdUl5EGU3k",obj:"",patterns:["Triple flexion"]},
+  {id:'r020',name:"Reverse lunge (step)",zone:"HANCHE, GENOUX",type:"renfo",url:"https://youtu.be/bz5VD2QrnCE",obj:"",patterns:["Triple flexion"]},
+  {id:'r021',name:"Reverse lunge (cale pied)",zone:"HANCHE, GENOUX",type:"renfo",url:"https://youtu.be/S3FhvMiKNSI",obj:"",patterns:["Triple flexion"]},
+  {id:'r022',name:"Bulgarian lunge",zone:"HANCHE, GENOUX",type:"renfo",url:"https://youtu.be/WnRo668nU5k",obj:"",patterns:["Triple flexion"]},
+  {id:'r023',name:"Pistol lunge",zone:"HANCHE, GENOUX",type:"renfo",url:"https://youtu.be/dkinMBYBSKQ",obj:"",patterns:["Triple flexion"]},
+  {id:'r024',name:"Bulgarian lunge (focus droit fémoral jambe arrière)",zone:"HANCHE",type:"renfo",url:"https://youtu.be/r-2608D5xFo",obj:"",patterns:["Triple flexion"]},
+  {id:'r025',name:"Lunge excentrique",zone:"HANCHE, GENOUX",type:"renfo",url:"https://youtu.be/rMcqmH3BgWU",obj:"",patterns:["Triple flexion"]},
+  {id:'r026',name:"Banded jump lunge (anti valgus)",zone:"GENOUX",type:"renfo",url:"https://youtu.be/qRVlaEkxZKs",obj:"",patterns:["Triple flexion"]},
+  {id:'r027',name:"Copenhaguen plank (CE + flexion de hanche)",zone:"HANCHE",type:"renfo",url:"https://youtu.be/tmERKqq-Foo",obj:"",patterns:[]},
+  {id:'r028',name:"Star plank",zone:"HANCHE",type:"renfo",url:"https://youtu.be/d8ulCpd7d9M",obj:"",patterns:[]},
+  {id:'r029',name:"Star plank (genoux)",zone:"HANCHE",type:"renfo",url:"https://youtu.be/HCg8SOSoS4E",obj:"",patterns:[]},
+  {id:'r030',name:"ABD hanche mini bande",zone:"HANCHE",type:"renfo",url:"https://youtu.be/QfdySRI7aNQ",obj:"",patterns:[]},
+  {id:'r031',name:"Single leg Romanian deadlift (anti valgus)",zone:"HANCHE, GENOUX",type:"renfo",url:"https://youtu.be/URkycEURDPw",obj:"",patterns:["Hinge"]},
   /* RENFO : CHEVILLE */
-  {id:'r032',name:"ISO inversion de cheville",zone:"CHEVILLE",type:"renfo",url:"https://youtu.be/cmmAI6F7gv8",obj:""},
-  {id:'r033',name:"Marche en inversion",zone:"CHEVILLE",type:"renfo",url:"https://youtu.be/Q6K1zDrP_Q4",obj:""},
-  {id:'r034',name:"Proprio anti inversion (bande élastique)",zone:"CHEVILLE",type:"renfo",url:"https://youtu.be/0Q8-gtEtN-A",obj:""},
-  {id:'r035',name:"Proprio anti inversion + pall off (bande élastique)",zone:"CHEVILLE",type:"renfo",url:"https://youtu.be/M_42buOG47w",obj:""},
-  {id:'r036',name:"Inversion de cheville excentrique (bande élastique)",zone:"CHEVILLE",type:"renfo",url:"https://youtu.be/9-L5Z6rBRII",obj:""},
-  {id:'r037',name:"ISO éversion de cheville",zone:"CHEVILLE",type:"renfo",url:"https://youtu.be/qroIPUxRvto",obj:""},
+  {id:'r032',name:"ISO inversion de cheville",zone:"CHEVILLE",type:"renfo",url:"https://youtu.be/cmmAI6F7gv8",obj:"",patterns:[]},
+  {id:'r033',name:"Marche en inversion",zone:"CHEVILLE",type:"renfo",url:"https://youtu.be/Q6K1zDrP_Q4",obj:"",patterns:[]},
+  {id:'r034',name:"Proprio anti inversion (bande élastique)",zone:"CHEVILLE",type:"renfo",url:"https://youtu.be/0Q8-gtEtN-A",obj:"",patterns:[]},
+  {id:'r035',name:"Proprio anti inversion + pall off (bande élastique)",zone:"CHEVILLE",type:"renfo",url:"https://youtu.be/M_42buOG47w",obj:"",patterns:[]},
+  {id:'r036',name:"Inversion de cheville excentrique (bande élastique)",zone:"CHEVILLE",type:"renfo",url:"https://youtu.be/9-L5Z6rBRII",obj:"",patterns:[]},
+  {id:'r037',name:"ISO éversion de cheville",zone:"CHEVILLE",type:"renfo",url:"https://youtu.be/qroIPUxRvto",obj:"",patterns:[]},
   /* RENFO : PIED */
-  {id:'r038',name:"Reverse three point with big toe (unilatéral)",zone:"PIED",type:"renfo",url:"https://youtu.be/hfZ0NK8zaY8",obj:"FORCE HALLUX"},
-  {id:'r039',name:"Reverse three point with big toe (bilatéral)",zone:"PIED",type:"renfo",url:"https://youtu.be/hUK14ld48gk",obj:"FORCE HALLUX"},
-  {id:'r040',name:"Glute bridge with big toe (unilatéral)",zone:"PIED",type:"renfo",url:"https://youtu.be/xLfxLooZDY4",obj:"FORCE HALLUX"},
-  {id:'r041',name:"Short foot",zone:"PIED",type:"renfo",url:"https://youtu.be/52956aAQz4s",obj:"INTRINSÈQUE DU PIED"},
-  {id:'r042',name:"Short foot + équilibre",zone:"PIED",type:"renfo",url:"https://youtu.be/_T2zNWAMN_A",obj:"INTRINSÈQUE DU PIED"},
-  {id:'r043',name:"Dissociation orteils",zone:"PIED",type:"renfo",url:"https://youtu.be/NmM2x5Z_DAs",obj:"INTRINSÈQUE DU PIED"},
+  {id:'r038',name:"Reverse three point with big toe (unilatéral)",zone:"PIED",type:"renfo",url:"https://youtu.be/hfZ0NK8zaY8",obj:"FORCE HALLUX",patterns:[]},
+  {id:'r039',name:"Reverse three point with big toe (bilatéral)",zone:"PIED",type:"renfo",url:"https://youtu.be/hUK14ld48gk",obj:"FORCE HALLUX",patterns:[]},
+  {id:'r040',name:"Glute bridge with big toe (unilatéral)",zone:"PIED",type:"renfo",url:"https://youtu.be/xLfxLooZDY4",obj:"FORCE HALLUX",patterns:["Hinge"]},
+  {id:'r041',name:"Short foot",zone:"PIED",type:"renfo",url:"https://youtu.be/52956aAQz4s",obj:"INTRINSÈQUE DU PIED",patterns:[]},
+  {id:'r042',name:"Short foot + équilibre",zone:"PIED",type:"renfo",url:"https://youtu.be/_T2zNWAMN_A",obj:"INTRINSÈQUE DU PIED",patterns:[]},
+  {id:'r043',name:"Dissociation orteils",zone:"PIED",type:"renfo",url:"https://youtu.be/NmM2x5Z_DAs",obj:"INTRINSÈQUE DU PIED",patterns:[]},
   /* RENFO : TRONC / GAINAGE */
-  {id:'r044',name:"Extension lombaire ISO",zone:"TRONC / GAINAGE",type:"renfo",url:"https://youtu.be/Yb38Ymp4ZgI",obj:""},
-  {id:'r045',name:"Superman",zone:"TRONC / GAINAGE",type:"renfo",url:"https://youtu.be/hpT2zH1zDG4",obj:""},
-  {id:'r046',name:"Twist wood chop (base neutre)",zone:"TRONC / GAINAGE",type:"renfo",url:"https://youtu.be/MnKUuHp90BE",obj:""},
-  {id:'r047',name:"Twist wood chop (fentes)",zone:"TRONC / GAINAGE",type:"renfo",url:"https://youtu.be/FF2SC09iKnE",obj:""},
-  {id:'r048',name:"Pall of press",zone:"TRONC / GAINAGE",type:"renfo",url:"https://youtu.be/7kl5Q9EiqTk",obj:""},
-  {id:'r049',name:"Pall of press (fentes)",zone:"TRONC / GAINAGE",type:"renfo",url:"https://youtu.be/DN-sA2mK-Xk",obj:""},
-  {id:'r050',name:"Single leg pall of press",zone:"TRONC / GAINAGE",type:"renfo",url:"https://youtu.be/LQ5Wu04tfmk",obj:""},
-  {id:'r051',name:"Half kneeling pall of press",zone:"TRONC / GAINAGE",type:"renfo",url:"https://youtu.be/f9QSvXAvs5U",obj:""},
-  {id:'r052',name:"Gainage superman",zone:"TRONC / GAINAGE",type:"renfo",url:"https://youtu.be/uvggCi-0U6g",obj:""},
-  {id:'r053',name:"Hollow hold",zone:"TRONC / GAINAGE",type:"renfo",url:"https://youtu.be/-fLzQxZg35c",obj:""},
-  {id:'r054',name:"Deadbug élastique",zone:"TRONC / GAINAGE",type:"renfo",url:"https://youtu.be/VYzVVtiOdm4",obj:""},
-  {id:'r055',name:"Deadbug avancée + KTLB",zone:"TRONC / GAINAGE",type:"renfo",url:"https://youtu.be/FzJAL1pEGbA",obj:""}
+  {id:'r044',name:"Extension lombaire ISO",zone:"TRONC / GAINAGE",type:"renfo",url:"https://youtu.be/Yb38Ymp4ZgI",obj:"",patterns:[]},
+  {id:'r045',name:"Superman",zone:"TRONC / GAINAGE",type:"renfo",url:"https://youtu.be/hpT2zH1zDG4",obj:"",patterns:[]},
+  {id:'r046',name:"Twist wood chop (base neutre)",zone:"TRONC / GAINAGE",type:"renfo",url:"https://youtu.be/MnKUuHp90BE",obj:"",patterns:[]},
+  {id:'r047',name:"Twist wood chop (fentes)",zone:"TRONC / GAINAGE",type:"renfo",url:"https://youtu.be/FF2SC09iKnE",obj:"",patterns:[]},
+  {id:'r048',name:"Pall of press",zone:"TRONC / GAINAGE",type:"renfo",url:"https://youtu.be/7kl5Q9EiqTk",obj:"",patterns:[]},
+  {id:'r049',name:"Pall of press (fentes)",zone:"TRONC / GAINAGE",type:"renfo",url:"https://youtu.be/DN-sA2mK-Xk",obj:"",patterns:[]},
+  {id:'r050',name:"Single leg pall of press",zone:"TRONC / GAINAGE",type:"renfo",url:"https://youtu.be/LQ5Wu04tfmk",obj:"",patterns:[]},
+  {id:'r051',name:"Half kneeling pall of press",zone:"TRONC / GAINAGE",type:"renfo",url:"https://youtu.be/f9QSvXAvs5U",obj:"",patterns:[]},
+  {id:'r052',name:"Gainage superman",zone:"TRONC / GAINAGE",type:"renfo",url:"https://youtu.be/uvggCi-0U6g",obj:"",patterns:[]},
+  {id:'r053',name:"Hollow hold",zone:"TRONC / GAINAGE",type:"renfo",url:"https://youtu.be/-fLzQxZg35c",obj:"",patterns:[]},
+  {id:'r054',name:"Deadbug élastique",zone:"TRONC / GAINAGE",type:"renfo",url:"https://youtu.be/VYzVVtiOdm4",obj:"",patterns:[]},
+  {id:'r055',name:"Deadbug avancée + KTLB",zone:"TRONC / GAINAGE",type:"renfo",url:"https://youtu.be/FzJAL1pEGbA",obj:"",patterns:[]}
 ];
 
 /* ================================================================
@@ -548,41 +546,125 @@ var activeBloc = null;
 function getTypeLabel(t){ return {warmup:'Warm-up',renfo:'Renfo',automassage:'Auto-massage'}[t]||t; }
 function getTypeClass(t){ return t==='renfo'?'renfo':t==='automassage'?'automassage':''; }
 
+/* ── FAVORITES ── */
+function getFavs(){
+  try { return new Set(JSON.parse(localStorage.getItem('r4p-fav-exos')||'[]')); } catch(e){ return new Set(); }
+}
+function toggleFav(id){
+  var favs = getFavs();
+  if(favs.has(id)) favs.delete(id); else favs.add(id);
+  localStorage.setItem('r4p-fav-exos', JSON.stringify(Array.from(favs)));
+  renderLib();
+}
+
+var _favFilter = false;
+function toggleFavFilter(){
+  _favFilter = !_favFilter;
+  document.getElementById('filterFav').classList.toggle('active', _favFilter);
+  renderLib();
+}
+
+/* ── DECISION-TREE FILTER DATA ── */
+var WARMUP_ZONES = [
+  {val:'RACHIS – CERVICAL', label:'Rachis cervical'},
+  {val:'RACHIS – THORACIQUE', label:'Rachis thoracique'},
+  {val:'RACHIS – THORACO-LOMBAIRE', label:'Rachis thoraco-lombaire'},
+  {val:'RACHIS – LOMBAIRE', label:'Rachis lombaire'},
+  {val:'TRONC / GAINAGE', label:'Tronc / Gainage'},
+  {val:'ÉPAULE', label:'Épaule'},
+  {val:'HANCHE', label:'Hanche'},
+  {val:'GENOU', label:'Genou'},
+  {val:'CHEVILLE', label:'Cheville'},
+  {val:'PIED / HALLUX', label:'Pied / Hallux'},
+];
+var RENFO_PATTERNS = [
+  {val:'Triple flexion', label:'Triple flexion'},
+  {val:'Hinge', label:'Hinge'},
+  {val:'Poussé vertical', label:'Poussé vertical'},
+  {val:'Poussé horizontal', label:'Poussé horizontal'},
+  {val:'Tirage vertical', label:'Tirage vertical'},
+  {val:'Tirage horizontal', label:'Tirage horizontal'},
+];
+var AUTOMASSAGE_ZONES = [
+  {val:'Upper', label:'Upper'},
+  {val:'Lower', label:'Lower'},
+];
+
+function onTypeChange(){
+  var typeVal = document.getElementById('filterType').value;
+  var wrap = document.getElementById('filter-sub-wrap');
+  var subSel = document.getElementById('filterSub');
+  var subLabel = document.getElementById('filter-sub-label');
+  var opts = [];
+  if(typeVal === 'warmup'){
+    subLabel.textContent = 'Articulation';
+    opts = WARMUP_ZONES;
+  } else if(typeVal === 'renfo'){
+    subLabel.textContent = 'Mouvement';
+    opts = RENFO_PATTERNS;
+  } else if(typeVal === 'automassage'){
+    subLabel.textContent = 'Zone';
+    opts = AUTOMASSAGE_ZONES;
+  }
+  if(opts.length){
+    wrap.style.display = '';
+    subSel.innerHTML = '<option value="">— Tous —</option>' + opts.map(function(o){
+      return '<option value="'+o.val+'">'+o.label+'</option>';
+    }).join('');
+  } else {
+    wrap.style.display = 'none';
+    subSel.innerHTML = '';
+  }
+  applyFilters();
+}
+
 function filterLib(){
   applyFilters();
 }
 
 function setFilterAll(){
   document.getElementById('filterType').value = '';
-  document.getElementById('filterZone').value = '';
+  var subSel = document.getElementById('filterSub');
+  if(subSel) subSel.value = '';
+  var subWrap = document.getElementById('filter-sub-wrap');
+  if(subWrap) subWrap.style.display = 'none';
+  _favFilter = false;
+  document.getElementById('filterFav').classList.remove('active');
   document.getElementById('filterAll').classList.add('active');
   document.getElementById('filterType').classList.remove('active-filter');
-  document.getElementById('filterZone').classList.remove('active-filter');
   var q = document.getElementById('searchInput').value.toLowerCase().trim();
   renderLib(q);
 }
 
 function applyFilters(){
   var typeVal = document.getElementById('filterType').value;
-  var zoneVal = document.getElementById('filterZone').value;
-  // Update "Tous" active state
+  var subSel = document.getElementById('filterSub');
+  var subVal = subSel ? subSel.value : '';
   var allBtn = document.getElementById('filterAll');
-  if(typeVal || zoneVal){ allBtn.classList.remove('active'); } else { allBtn.classList.add('active'); }
+  if(typeVal || subVal){ allBtn.classList.remove('active'); } else { allBtn.classList.add('active'); }
   document.getElementById('filterType').classList.toggle('active-filter', !!typeVal);
-  document.getElementById('filterZone').classList.toggle('active-filter', !!zoneVal);
   var q = document.getElementById('searchInput').value.toLowerCase().trim();
-  renderLib(q, typeVal, zoneVal);
+  renderLib(q, typeVal, subVal);
 }
 
-function renderLib(q, typeFilter, zoneFilter){
+function renderLib(q, typeFilter, subFilter){
   q = (q||'').toLowerCase();
-  typeFilter = typeFilter || document.getElementById('filterType').value;
-  zoneFilter = zoneFilter || document.getElementById('filterZone').value;
+  typeFilter = typeFilter !== undefined ? typeFilter : document.getElementById('filterType').value;
+  var subSel = document.getElementById('filterSub');
+  subFilter = subFilter !== undefined ? subFilter : (subSel ? subSel.value : '');
   var scroll = document.getElementById('libScroll');
+  var favs = getFavs();
   var visible = LIBRARY.filter(function(ex){
+    if(_favFilter && !favs.has(ex.id)) return false;
     if(typeFilter && ex.type!==typeFilter) return false;
-    if(zoneFilter && ex.zone!==zoneFilter) return false;
-    if(q && ex.name.toLowerCase().indexOf(q)===-1 && ex.zone.toLowerCase().indexOf(q)===-1 && ex.obj.toLowerCase().indexOf(q)===-1) return false;
+    if(subFilter){
+      if(typeFilter === 'renfo'){
+        if(!ex.patterns || ex.patterns.indexOf(subFilter) === -1) return false;
+      } else {
+        if(ex.zone !== subFilter && (!ex.zones || ex.zones.indexOf(subFilter)===-1)) return false;
+      }
+    }
+    if(q && ex.name.toLowerCase().indexOf(q)===-1 && ex.zone.toLowerCase().indexOf(q)===-1 && (ex.obj||'').toLowerCase().indexOf(q)===-1) return false;
     return true;
   });
   // Group by zone
@@ -603,6 +685,7 @@ function renderLib(q, typeFilter, zoneFilter){
     html += '<div class="lib-section-title">'+escH(g.zone)+'</div>';
     g.items.forEach(function(ex){
       var isAdded = !!addedIds[ex.id];
+      var isFav = favs.has(ex.id);
       html += '<div class="lib-item'+(isAdded?' added':'')+'" id="li-'+ex.id+'">';
       html += '<div class="lib-item-info">';
       html += '<div class="lib-item-name">'+escH(ex.name)+'</div>';
@@ -610,6 +693,7 @@ function renderLib(q, typeFilter, zoneFilter){
       html += '<span class="lib-tag '+getTypeClass(ex.type)+'">'+getTypeLabel(ex.type)+'</span>';
       if(ex.obj) html += '<span class="lib-tag" style="background:#F3F0FF;color:#5B4FBF;">'+escH(ex.obj)+'</span>';
       html += '</div></div>';
+      html += '<button class="fav-btn'+(isFav?' active':'')+'" onclick="event.stopPropagation();toggleFav(\''+ex.id+'\')" title="Favori">★</button>';
       html += '<button class="lib-add-btn" onclick="addExoFromLib(\''+ex.id+'\')" title="Ajouter"></button>';
       html += '</div>';
     });
@@ -628,7 +712,8 @@ function genId(){ return '_'+Math.random().toString(36).slice(2,9); }
 
 function addBloc(){
   var id = genId();
-  blocs.push({id:id, title:'BLOC', exos:[]});
+  var letter = String.fromCharCode(65 + blocs.length);
+  blocs.push({id:id, title:'Bloc '+letter, exos:[]});
   activeBloc = id;
   renderSession();
 }
@@ -777,7 +862,7 @@ function updateTargetBlocSelect(){
   blocs.forEach(function(b, idx){
     var opt = document.createElement('option');
     opt.value = b.id;
-    opt.textContent = 'Bloc ' + (idx+1) + (b.title && b.title!=='BLOC' ? ' — ' + b.title : '');
+    opt.textContent = b.title || ('Bloc ' + (idx+1));
     sel.appendChild(opt);
   });
   if(prev && blocs.find(function(b){ return b.id===prev; })) sel.value = prev;
@@ -943,7 +1028,7 @@ function resetLibrary(){
 }
 
 function addNewExo(){
-  _editorData.unshift({id:'c'+Date.now(),name:'',zone:'ÉPAULE',type:'warmup',url:'',obj:''});
+  _editorData.unshift({id:'c'+Date.now(),name:'',zone:'ÉPAULE',type:'warmup',url:'',obj:'',patterns:[]});
   renderEditor();
   var el = document.getElementById('editorList').querySelector('input.exo-edit-name');
   if(el) el.focus();
@@ -955,7 +1040,12 @@ function deleteEditorRow(idx){
 }
 
 function updateEditorField(idx, field, val){
-  if(_editorData[idx]) _editorData[idx][field] = val;
+  if(!_editorData[idx]) return;
+  if(field === 'patterns_str'){
+    _editorData[idx].patterns = val.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+  } else {
+    _editorData[idx][field] = val;
+  }
 }
 
 function renderEditor(){
@@ -981,6 +1071,7 @@ function renderEditor(){
     rows += '<select onchange="updateEditorField('+i+',\'zone\',this.value)">'+zSel+'</select>';
     rows += '<select onchange="updateEditorField('+i+',\'type\',this.value)">'+typeOpts+'</select>';
     rows += '<input type="url" value="'+escH(e.url||'')+'" placeholder="https://youtu.be/…" oninput="updateEditorField('+i+',\'url\',this.value)">';
+    rows += '<input type="text" value="'+escH((e.patterns||[]).join(', '))+'" placeholder="Patterns (virgule)" title="Patterns de mouvement (Triple flexion, Hinge…)" oninput="updateEditorField('+i+',\'patterns_str\',this.value)">';
     rows += '<button class="exo-del-edit" onclick="deleteEditorRow('+i+')" title="Supprimer">×</button>';
     rows += '</div>';
   });
