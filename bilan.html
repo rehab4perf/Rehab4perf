@@ -989,6 +989,43 @@ body {
     <div class="block"><div class="block-header red">Hanche</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ha-hanche"></tbody></table></div>
 
     <div class="block">
+      <div class="block-header grey">Mobilité de Hanche — Rotations</div>
+      <div style="padding:6px 14px;font-size:.8rem;color:var(--accent2);background:var(--accent-l)">
+        Somme RI + RE doit être ≥ 90° par côté
+      </div>
+      <div style="padding:1px 0">
+        <div class="measure-row" style="background:var(--surface2)">
+          <div class="col-header">Mesure</div>
+          <div class="col-header">Côté Droit (°)</div>
+          <div class="col-header">Côté Gauche (°)</div>
+          <div class="col-header">Somme D</div>
+          <div class="col-header">Somme G</div>
+        </div>
+        <div class="measure-row">
+          <div class="measure-label">Rotation Interne (RI)</div>
+          <div class="measure-input"><input type="number" id="ha-ri-d" placeholder="—" oninput="calcHaMob()"></div>
+          <div class="measure-input"><input type="number" id="ha-ri-g" placeholder="—" oninput="calcHaMob()"></div>
+          <div class="measure-stat" id="ha-mob-sum-d">—</div>
+          <div class="measure-stat" id="ha-mob-sum-g">—</div>
+        </div>
+        <div class="measure-row" style="background:var(--surface2)">
+          <div class="measure-label" style="background:var(--surface2)">Rotation Externe (RE)</div>
+          <div class="measure-input" style="background:var(--surface2)"><input type="number" id="ha-re-d" placeholder="—" oninput="calcHaMob()"></div>
+          <div class="measure-input" style="background:var(--surface2)"><input type="number" id="ha-re-g" placeholder="—" oninput="calcHaMob()"></div>
+          <div class="measure-stat" style="background:var(--surface2)">—</div>
+          <div class="measure-stat" style="background:var(--surface2)">—</div>
+        </div>
+        <div class="measure-row" style="background:var(--accent-l)">
+          <div class="measure-label" style="background:var(--accent-l);font-weight:700;color:var(--accent2)">Total RI + RE</div>
+          <div class="measure-stat" style="background:var(--accent-l)"></div>
+          <div class="measure-stat" style="background:var(--accent-l)"></div>
+          <div class="measure-stat" id="ha-mob-total-d" style="background:var(--accent-l);font-weight:700;font-size:1rem;color:var(--accent2)">—</div>
+          <div class="measure-stat" id="ha-mob-total-g" style="background:var(--accent-l);font-weight:700;font-size:1rem;color:var(--accent2)">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="block">
       <div class="block-header red">Break Tests — Force musculaire</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
         <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div>
@@ -2081,7 +2118,7 @@ const TESTS = {
   'tb-ha-pubis':{type:'ortho',items:['Patellar pubic percussion test','Pubis stress test']},
   'tb-ha-flech':{type:'ortho',items:['Contraction résistée Thomas','Étirement fléchisseurs']},
   'tb-ha-inguinal':{type:'ortho',items:['Break test abdos -- droit (CE+CI) + obliques','Transverse Valsalva + toux']},
-  'tb-ha-hanche':{type:'ortho',items:['BKFO','FADIR','FADIR + extension lombaire (modulation ?)','FADIR + Compression','FADIR + Distraction','Third test','FABER','AB HEER','Test appréhension antérieur','Test de OBER','Test de FADER-R']},
+  'tb-ha-hanche':{type:'ortho',items:['BKFO','FADIR <span style="font-size:.68rem;background:#EBF3FF;color:#2B5FA6;padding:1px 5px;border-radius:4px;font-weight:600;margin-left:4px">FAI</span>','FADIR + extension lombaire (modulation ?)','FADIR + Compression','FADIR + Distraction','Third test <span style="font-size:.68rem;background:#EBF3FF;color:#2B5FA6;padding:1px 5px;border-radius:4px;font-weight:600;margin-left:4px">Labrum</span>','FABER','AB HEER','Test appréhension antérieur <span style="font-size:.68rem;background:#EBF3FF;color:#2B5FA6;padding:1px 5px;border-radius:4px;font-weight:600;margin-left:4px">Micro-instabilité</span>','Test de OBER','Test de FADER-R <span style="font-size:.68rem;background:#EBF3FF;color:#2B5FA6;padding:1px 5px;border-radius:4px;font-weight:600;margin-left:4px">GTPS</span>']},
 
   'tb-ge-global':{type:'ortho',items:['Signe du glaçon (épanchement)','Mobilisation flexion + extension']},
   'tb-ge-lig':  {type:'ortho',items:['Varus 20deg/30deg','Varus 0deg','Valgus 20deg/30deg','Valgus 0deg']},
@@ -2661,20 +2698,20 @@ function buildCR() {
   var lsiCls2 = function(ca,cs) { if (!cs||cs<=0||isNaN(ca)||isNaN(cs)) return ''; var v=ca/cs*100; return v>=90?'good':v>=80?'warn':'bad'; };
   var statOf2 = function(cls) { return ({good:'OK',warn:'Acceptable',bad:'Insuffisant'}[cls])||''; };
 
-  var obsLine = function(obsId) {
+  var obsLine = function(obsId, label) {
     var obsVal = (document.getElementById(obsId) || {}).value || '';
     if (!obsVal.trim()) return '';
-    return '<div class="cr-item"><span class="cr-key" style="color:var(--text3);font-style:italic">Obs.</span><span class="cr-val">' + obsVal.replace(/\n/g,'<br>') + '</span></div>';
+    return '<div class="cr-item"><span class="cr-key" style="color:var(--text3);font-style:italic">'+(label||'Obs.')+'</span><span class="cr-val">' + obsVal.replace(/\n/g,'<br>') + '</span></div>';
   };
 
   if (!isNaN(slsCA)) {
     tfHtml += crItem('SLS', 'CA=' + slsCA + ' rep.   CS=' + slsCS + ' rep.   ' + lsiStr(slsCA,slsCS), statOf2(lsiCls2(slsCA,slsCS)), lsiCls2(slsCA,slsCS));
-    tfHtml += obsLine('sls-obs-ca');
-    tfHtml += obsLine('sls-obs-cs');
+    tfHtml += obsLine('sls-obs-ca', 'Obs. côté atteint');
+    tfHtml += obsLine('sls-obs-cs', 'Obs. côté sain');
   }
   if (!isNaN(hopCA)) {
     tfHtml += crItem('Hop Test', 'CA=' + hopCA + 'cm   CS=' + hopCS + 'cm   ' + lsiStr(hopCA,hopCS) + '   Repere: ' + (hopCS*0.8).toFixed(1) + 'cm', statOf2(lsiCls2(hopCA,hopCS)), lsiCls2(hopCA,hopCS));
-    tfHtml += obsLine('hop-obs');
+    tfHtml += obsLine('hop-obs', 'Obs.');
   }
 
   var scoreCA2 = 0, scoreCS2c = 0;
@@ -2688,7 +2725,7 @@ function buildCR() {
   if (scoreCA2 > 0 || scoreCS2c > 0) {
     var rcls = recTotal6>=5?'good':recTotal6>=3?'warn':'bad';
     tfHtml += crItem('Reception', 'Score ' + recTotal6 + '/6 (CA=' + scoreCA2 + '/3, CS=' + scoreCS2c + '/3)', statOf2(rcls), rcls);
-    tfHtml += obsLine('rec-obs');
+    tfHtml += obsLine('rec-obs', 'Obs.');
   }
 
   var plioCA2 = 0, plioCS2 = 0, plioTouched2 = false;
@@ -2699,29 +2736,29 @@ function buildCR() {
     if (pcs2 && pcs2.checked) { plioTouched2 = true; }
   }
   if (plioTouched2) {
-    tfHtml += obsLine('plioq-obs');
+    tfHtml += obsLine('plioq-obs', 'Obs.');
   }
 
   if (!isNaN(hrCA)) {
     tfHtml += crItem('Heel Rise', 'CA=' + hrCA + '   CS=' + hrCS + '   ' + lsiStr(hrCA,hrCS), statOf2(lsiCls2(hrCA,hrCS)), lsiCls2(hrCA,hrCS));
-    tfHtml += obsLine('hr-obs');
+    tfHtml += obsLine('hr-obs', 'Obs.');
   }
   if (!isNaN(luCA)) {
     var luDiff2 = Math.abs(luCA-luCS);
     var luBad2 = luCA<10 || luDiff2>1.5;
     var luLsi2 = luCS>0 ? luCA/luCS*100 : NaN;
     tfHtml += crItem('Lunge WBLT', 'CA=' + luCA + 'cm   CS=' + luCS + 'cm   Diff=' + luDiff2.toFixed(1) + 'cm   ' + lsiStr(luCA,luCS), luBad2 ? 'Deficit' : 'OK', luBad2 ? 'bad' : 'good');
-    tfHtml += obsLine('lu-obs');
+    tfHtml += obsLine('lu-obs', 'Obs.');
   }
   if (!isNaN(djHca)) {
     tfHtml += crItem('Drop Jump H', 'CA=' + djHca + 'cm   CS=' + djHcs + 'cm   ' + lsiStr(djHca,djHcs), statOf2(lsiCls2(djHca,djHcs)), lsiCls2(djHca,djHcs));
-    tfHtml += obsLine('dj-obs');
+    tfHtml += obsLine('dj-obs', 'Obs.');
   }
   var sebtAntCA2 = parseFloat(document.getElementById('sebt-ant-ca') ? document.getElementById('sebt-ant-ca').value : '');
   var sebtPmCA2  = parseFloat(document.getElementById('sebt-pm-ca')  ? document.getElementById('sebt-pm-ca').value  : '');
   var sebtPlCA2  = parseFloat(document.getElementById('sebt-pl-ca')  ? document.getElementById('sebt-pl-ca').value  : '');
   if (!isNaN(sebtAntCA2) || !isNaN(sebtPmCA2) || !isNaN(sebtPlCA2)) {
-    tfHtml += obsLine('sebt-obs');
+    tfHtml += obsLine('sebt-obs', 'Obs.');
   }
 
   var qfCA = parseFloat(document.getElementById('q-f-ca') ? document.getElementById('q-f-ca').value : '');
@@ -2773,29 +2810,29 @@ function buildCR() {
   if (!isNaN(psetCAv)) {
     var pl = psetCSv>0?(psetCAv/psetCSv*100):NaN;
     tfMsHtml += crItem('PSET', 'CA=' + psetCAv + '   CS=' + psetCSv + (!isNaN(pl)?'   LSI=' + pl.toFixed(1) + '%':''), statOf2(lsiCls2(psetCAv,psetCSv)), lsiCls2(psetCAv,psetCSv));
-    tfMsHtml += obsLine('pset-obs');
+    tfMsHtml += obsLine('pset-obs', 'Obs. côté atteint');
   }
   if (!isNaN(setCAv)) {
     var sl = setCSv>0?(setCAv/setCSv*100):NaN;
     tfMsHtml += crItem('Shoulder Endurance', 'CA=' + setCAv + '   CS=' + setCSv + (!isNaN(sl)?'   LSI=' + sl.toFixed(1) + '%':''), statOf2(lsiCls2(setCAv,setCSv)), lsiCls2(setCAv,setCSv));
-    tfMsHtml += obsLine('set-obs');
+    tfMsHtml += obsLine('set-obs', 'Obs. côté atteint');
   }
   if (ckcFilled) {
     var ckcBest = document.getElementById('ckc-ca-best');
     tfMsHtml += crItem('CKCUEST', ckcBest ? ckcBest.textContent : '--', '', '');
-    tfMsHtml += obsLine('ckc-obs');
+    tfMsHtml += obsLine('ckc-obs', 'Obs.');
   }
   if (shrtFilled && shrtEl2) {
     tfMsHtml += crItem('Side Hold Rotation', shrtEl2.textContent, '', 'ok');
-    tfMsHtml += obsLine('shrt-obs');
+    tfMsHtml += obsLine('shrt-obs', 'Obs.');
   }
   if (ulrtFilled && ulrtEl2) {
     tfMsHtml += crItem('ULRT', ulrtEl2.textContent, '', 'ok');
-    tfMsHtml += obsLine('ulrt-obs');
+    tfMsHtml += obsLine('ulrt-obs', 'Obs.');
   }
   var uqFilled = ['uqybt-med-d','uqybt-med-g','uqybt-il-d','uqybt-il-g','uqybt-sl-d','uqybt-sl-g'].some(function(id){ var el=document.getElementById(id); return el && el.value !== ''; });
   if (uqFilled) {
-    tfMsHtml += obsLine('uqybt-obs');
+    tfMsHtml += obsLine('uqybt-obs', 'Obs.');
   }
   addSection('4. Tests Fonctionnels -- Membres Superieurs', tfMsHtml);
 
@@ -2810,25 +2847,25 @@ function buildCR() {
   if (!isNaN(crFlxV)) {
     var flxCls = crFlxV>=39?'good':crFlxV>=24?'warn':'bad';
     tfRachisHtml += crItem('Endurance Fléchisseurs Cervicaux', crFlxV + 's', crFlxV>=39?'Normal':crFlxV>=24?'Limite':'Deficit', flxCls);
-    tfRachisHtml += obsLine('rf-flx-cerv-obs');
+    tfRachisHtml += obsLine('rf-flx-cerv-obs', 'Obs.');
   }
   if (!isNaN(crExtV)) {
     tfRachisHtml += crItem('Endurance Extenseurs Cervicaux', crExtV + 's', crExtV>=20?'OK':'Insuffisant', crExtV>=20?'good':'bad');
-    tfRachisHtml += obsLine('rf-ext-cerv-obs');
+    tfRachisHtml += obsLine('rf-ext-cerv-obs', 'Obs.');
   }
   if (!isNaN(crLatD) || !isNaN(crLatG)) {
     var latStr = (!isNaN(crLatD)?'D='+crLatD+'s':'') + (!isNaN(crLatD)&&!isNaN(crLatG)?'   ':'') + (!isNaN(crLatG)?'G='+crLatG+'s':'');
     tfRachisHtml += crItem('Endurance Latérale Cervicale', latStr, '', '');
-    tfRachisHtml += obsLine('rf-lat-obs');
+    tfRachisHtml += obsLine('rf-lat-obs', 'Obs.');
   }
   if (!isNaN(crSorV)) {
     var sorCls = crSorV>=198?'good':crSorV>=176?'warn':'bad';
     tfRachisHtml += crItem('Test de Sørensen', crSorV + 's', crSorV>=198?'Facteur protecteur':crSorV>=176?'Zone intermédiaire':'Facteur de risque', sorCls);
-    tfRachisHtml += obsLine('rf-sorensen-obs');
+    tfRachisHtml += obsLine('rf-sorensen-obs', 'Obs.');
   }
   if (!isNaN(crPdslV)) {
     tfRachisHtml += crItem('PDSLRT', crPdslV + 's', crPdslV>=30?'OK':'Deficit', crPdslV>=30?'good':'bad');
-    tfRachisHtml += obsLine('rf-pdslrt-obs');
+    tfRachisHtml += obsLine('rf-pdslrt-obs', 'Obs.');
   }
   addSection('5. Tests Fonctionnels -- Rachis', tfRachisHtml);
 
@@ -2973,6 +3010,7 @@ function loadFromStorage() {
     calcCKC(); calcSHRT(); calcULRT();
     calcRachisStat(); calcLNF(); calcSorensen(); calcPDSLRT();
     calcPlioq2(); calcRec(); calcSEBT(); calcUQYBT();
+    calcHaMob();
     updateBadges();
   } catch(e) {}
 }
@@ -3726,6 +3764,35 @@ body{font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;background:#F0F
   topDoc.body.appendChild(a);
   a.click();
   setTimeout(function(){ topDoc.body.removeChild(a); URL.revokeObjectURL(blobUrl); }, 300);
+}
+
+// -- HANCHE MOBILITÉ RI + RE -----------------------------------
+function calcHaMob() {
+  var riD = parseFloat(document.getElementById('ha-ri-d').value);
+  var riG = parseFloat(document.getElementById('ha-ri-g').value);
+  var reD = parseFloat(document.getElementById('ha-re-d').value);
+  var reG = parseFloat(document.getElementById('ha-re-g').value);
+  function updSum(sumId, totalId, ri, re) {
+    var sumEl  = document.getElementById(sumId);
+    var totEl  = document.getElementById(totalId);
+    if (isNaN(ri) && isNaN(re)) {
+      if (sumEl)  { sumEl.textContent  = '—'; sumEl.style.color  = ''; }
+      if (totEl)  { totEl.textContent  = '—'; totEl.style.color  = ''; }
+      return;
+    }
+    var sum = (isNaN(ri) ? 0 : ri) + (isNaN(re) ? 0 : re);
+    var ok  = sum >= 90;
+    if (sumEl) {
+      sumEl.textContent = sum + '°';
+      sumEl.style.color = ok ? 'var(--green)' : 'var(--red)';
+    }
+    if (totEl) {
+      totEl.textContent = sum + '°' + (ok ? ' ✓' : ' < 90°');
+      totEl.style.color = ok ? 'var(--green)' : 'var(--red)';
+    }
+  }
+  updSum('ha-mob-sum-d', 'ha-mob-total-d', riD, reD);
+  updSum('ha-mob-sum-g', 'ha-mob-total-g', riG, reG);
 }
 </script>
 </body>
