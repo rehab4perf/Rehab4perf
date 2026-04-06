@@ -667,51 +667,65 @@ function renderLib(q, typeFilter, subFilter){
     if(q && ex.name.toLowerCase().indexOf(q)===-1 && ex.zone.toLowerCase().indexOf(q)===-1 && (ex.obj||'').toLowerCase().indexOf(q)===-1) return false;
     return true;
   });
-  // Determine grouping key based on active filters
-  // If typeFilter = 'renfo' + subFilter active → group by pattern
-  // If typeFilter = 'warmup' or 'automassage' + subFilter active → group by zone
-  // If typeFilter only (no subFilter) → group by zone
-  // If 'Tous' (no typeFilter, no subFilter, no favFilter) → show nothing (empty)
-  var showSectionTitle = !!(typeFilter || subFilter || _favFilter || q);
-  var groupBy; // 'zone' or 'pattern' or 'none'
-  if(!showSectionTitle){
-    groupBy = 'none';
-  } else if(typeFilter === 'renfo' && subFilter){
+  // Determine grouping:
+  // - Tous (no typeFilter, no subFilter, no fav, no search) → show all, no headers
+  // - Renfo (no subFilter) → group by pattern
+  // - Renfo + subFilter → single group, no header needed
+  // - Warmup / Automassage (no subFilter) → group by zone
+  // - Warmup / Automassage + subFilter → single group, no header
+  // - Favoris / search → flat list, no headers
+
+  var hasFilter = !!(typeFilter || subFilter || _favFilter || q);
+
+  var groupBy; // 'pattern', 'zone', or 'none'
+  if(typeFilter === 'renfo' && !subFilter){
     groupBy = 'pattern';
-  } else {
+  } else if((typeFilter === 'warmup' || typeFilter === 'automassage') && !subFilter){
     groupBy = 'zone';
+  } else {
+    groupBy = 'none'; // flat list (Tous, subFilter active, fav, search)
   }
 
   var groups = {};
   var order = [];
+  var ALL_PATTERNS_ORDER = ['Triple flexion','Hinge','Poussé vertical','Poussé horizontal','Tirage vertical','Tirage horizontal','Autre'];
   visible.forEach(function(ex){
-    var k;
+    var keys = [];
     if(groupBy === 'pattern'){
-      k = subFilter;
+      keys = (ex.patterns && ex.patterns.length) ? ex.patterns : ['Autre'];
     } else if(groupBy === 'zone'){
-      k = ex.zone;
+      keys = [ex.zone];
     } else {
-      k = '';
+      keys = [''];
     }
-    if(!groups[k]){ groups[k]={label:k, items:[]}; order.push(k); }
-    groups[k].items.push(ex);
+    keys.forEach(function(k){
+      if(!groups[k]){ groups[k]={label:k, items:[]}; order.push(k); }
+      if(groups[k].items.indexOf(ex) === -1) groups[k].items.push(ex);
+    });
   });
+  // Sort pattern groups in defined order
+  if(groupBy === 'pattern'){
+    order.sort(function(a,b){
+      var ia = ALL_PATTERNS_ORDER.indexOf(a); var ib = ALL_PATTERNS_ORDER.indexOf(b);
+      return (ia===-1?99:ia) - (ib===-1?99:ib);
+    });
+  }
 
   // Get added ids
   var addedIds = {};
   blocs.forEach(function(b){ b.exos.forEach(function(e){ addedIds[e.libId]=true; }); });
 
-  // If no filter active and not favs/search → show empty state
-  if(!showSectionTitle && !q){
-    scroll.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:.8rem;line-height:1.6;">Sélectionnez un objectif<br>pour afficher les exercices.</div>';
-    return;
+  // If Tous and no search → show all flat, no section titles
+  // If truly nothing selected (no filter, no fav, no search) → show hint
+  if(!hasFilter){
+    // show all exercises flat, no headers
   }
 
   var html = '';
   order.forEach(function(k){
     var g = groups[k];
     html += '<div class="lib-section">';
-    if(g.label) html += '<div class="lib-section-title">'+escH(g.label)+'</div>';
+    if(g.label && groupBy !== 'none') html += '<div class="lib-section-title">'+escH(g.label)+'</div>';
     g.items.forEach(function(ex){
       var isAdded = !!addedIds[ex.id];
       var isFav = favs.has(ex.id);
@@ -728,7 +742,7 @@ function renderLib(q, typeFilter, subFilter){
     });
     html += '</div>';
   });
-  if(showSectionTitle && !html) html = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:.8rem;">Aucun exercice trouvé</div>';
+  if(!html) html = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:.8rem;">Aucun exercice trouvé</div>';
   scroll.innerHTML = html;
 }
 
@@ -1089,14 +1103,14 @@ function renderEditor(){
   var rows = '';
   _editorData.forEach(function(e, i){
     if(q && e.name.toLowerCase().indexOf(q)===-1 && e.zone.toLowerCase().indexOf(q)===-1) return;
-    var zSel = ALL_ZONES.map(function(z){
+    var zSel = '<option value=""'+((!e.zone)?' selected':'')+'>— Aucun —</option>' + ALL_ZONES.map(function(z){
       return '<option value="'+escH(z)+'"'+(z===e.zone?' selected':'')+'>'+escH(z)+'</option>';
     }).join('');
-    var typeOpts = [
+    var typeOpts = '<option value=""'+((!e.type)?' selected':'')+'>— Aucun —</option>' + [
       {v:'warmup', l:'Warm-up / Mobilité'},
       {v:'renfo',  l:'Renforcement'},
       {v:'automassage', l:'Auto-massage'}
-    ].map(function(o){ return '<option value="'+o.v+'"'+(o.v===(e.type||'warmup')?' selected':'')+'>'+o.l+'</option>'; }).join('');
+    ].map(function(o){ return '<option value="'+o.v+'"'+(o.v===(e.type||'')?' selected':'')+'>'+o.l+'</option>'; }).join('');
     var allPatterns = ['Triple flexion','Hinge','Poussé vertical','Poussé horizontal','Tirage vertical','Tirage horizontal'];
     var exPatterns = e.patterns || [];
     var patSel = '<option value="">— Aucun —</option>' + allPatterns.map(function(p){
