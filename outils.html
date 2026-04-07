@@ -261,6 +261,11 @@ body {
 @media print {
   .sub-tabs, .export-patient-bar, #exportOutils-modal { display:none !important; }
   .panel { display:block !important; overflow:visible; padding:10px; }
+  body > *:not(#prom-modal) { display: none !important; }
+  #prom-modal { position: static !important; background: none !important; padding: 0 !important; display: block !important; }
+  #prom-modal > div { box-shadow: none !important; border-radius: 0 !important; }
+  #prom-modal > div > div:last-child { display: none !important; }
+  #prom-modal-score { display: block !important; }
 }
 
 @media (max-width: 600px) {
@@ -681,6 +686,16 @@ body {
 .prom-tag.rts { background:#E0F9F3; color:#0D9B72; }
 .prom-note { font-size:.76rem; color:#555; line-height:1.5; border-top:1px solid #f0f4f8; padding-top:8px; margin-top:4px; }
 .prom-meta { display:flex; gap:12px; margin-top:8px; font-size:.68rem; color:#999; }
+/* ── PROM questionnaire modal styles ── */
+.prom-q { padding:12px 0; border-bottom:1px solid #f0f4f8; }
+.prom-q:last-child { border-bottom:none; }
+.prom-q-num { font-size:.68rem;font-weight:700;color:#2B5FA6;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px; }
+.prom-q-text { font-size:.85rem;font-weight:500;color:#1a2433;margin-bottom:8px;line-height:1.4; }
+.prom-q-opts { display:flex;flex-direction:column;gap:5px; }
+.prom-q-opts label { font-size:.82rem;color:#444;cursor:pointer;display:flex;align-items:flex-start;gap:6px;line-height:1.4; }
+.prom-q-opts input[type=radio], .prom-q-opts input[type=checkbox] { margin-top:2px;flex-shrink:0;accent-color:#1A3A5C; }
+.prom-section-label { font-size:.72rem;font-weight:700;color:#2B5FA6;text-transform:uppercase;letter-spacing:.06em;background:#F0F4F8;padding:8px 12px;margin:12px -24px;border-left:3px solid #2B5FA6; }
+.prom-intro { font-size:.82rem;color:#666;line-height:1.6;background:#F8FAFC;border-radius:7px;padding:12px 14px;margin-bottom:16px;border:1px solid #dde3ec; }
 /* Section header in grid */
 .prom-section-hdr {
   grid-column: 1 / -1;
@@ -792,7 +807,7 @@ function renderProms(){
     html += '<div class="prom-section-hdr" style="border-bottom-color:'+col+';color:'+col+'">'+cat+'<span class="prom-section-count">'+items.length+' PROM'+(items.length>1?'s':'')+'</span></div>';
     items.forEach(function(p){
       var col2 = PROMS_CAT_COLORS[p.cat]||'#1A3A5C';
-      html += '<div class="prom-card" style="border-left-color:'+col2+'">';
+      html += '<div class="prom-card" style="border-left-color:'+col2+';cursor:pointer;" data-acronym="'+p.acronym.replace(/"/g,'&quot;')+'" onclick="openPromCard(this.getAttribute(\'data-acronym\'))">';
       html += '<div class="prom-acronym" style="color:'+col2+'">'+p.acronym+'</div>';
       html += '<div class="prom-fullname">'+p.name+'</div>';
       html += '<div class="prom-tags">';
@@ -865,6 +880,441 @@ function exportProms(){
 document.getElementById('stab-proms').addEventListener('click', function(){
   setTimeout(renderProms, 50);
 });
+
+/* ── PROM Modal functions ── */
+var _currentPromAcronym = null;
+
+function openPromCard(acronym){
+  var p = PROMS_DATA.find(function(x){ return x.acronym === acronym; });
+  if(!p) return;
+  _currentPromAcronym = acronym;
+  document.getElementById('prom-modal-acronym').textContent = p.acronym;
+  document.getElementById('prom-modal-name').textContent = p.name;
+  document.getElementById('prom-modal-score').style.display = 'none';
+  var body = document.getElementById('prom-modal-body');
+  var q = PROMS_QUESTIONNAIRES[acronym];
+  if(q){
+    body.innerHTML = q.html;
+  } else {
+    body.innerHTML = '<div style="text-align:center;padding:40px;color:#888;">'
+      + '<div style="font-size:2rem;margin-bottom:12px;">📄</div>'
+      + '<div style="font-weight:600;color:#444;margin-bottom:8px;">Questionnaire non intégré</div>'
+      + '<div style="font-size:.83rem;line-height:1.6;max-width:400px;margin:0 auto;">Ce PROM n\'est pas encore disponible en ligne dans Rehab4Perf. Vous pouvez le télécharger depuis les ressources officielles ou les bases validées (OrthoToolKit, PROMIS, etc.).</div>'
+      + '</div>';
+  }
+  document.getElementById('prom-modal').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+
+function closePromModal(){
+  document.getElementById('prom-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function printProm(){
+  window.print();
+}
+
+function calcPromScore(){
+  var acronym = _currentPromAcronym;
+  var q = PROMS_QUESTIONNAIRES[acronym];
+  if(!q || !q.score) return;
+  var result = q.score();
+  var el = document.getElementById('prom-modal-score');
+  el.style.display = 'block';
+  el.innerHTML = '<div style="font-weight:700;color:#1A3A5C;margin-bottom:6px;">Résultat</div>' + result;
+}
+
+/* ── PROMS_QUESTIONNAIRES ── */
+var PROMS_QUESTIONNAIRES = {};
+
+/* Tegner Activity Scale */
+PROMS_QUESTIONNAIRES['Tegner'] = {
+  html: '<div class="prom-intro">Encerclez le niveau qui décrit le mieux le niveau d\'activité physique le plus élevé que vous puissiez pratiquer.</div>'
+    + '<div class="prom-q"><div class="prom-q-num">Niveau d\'activité</div><div class="prom-q-text">Sélectionnez votre niveau d\'activité actuel :</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="tegner" value="0"> <strong>0</strong> — Congé maladie ou pension d\'invalidité en raison de problèmes de genou</label>'
+    + '<label><input type="radio" name="tegner" value="1"> <strong>1</strong> — Travaux sédentaires / travail à la maison. Peut marcher sur terrain plat</label>'
+    + '<label><input type="radio" name="tegner" value="2"> <strong>2</strong> — Travaux légers / marche sur terrain irrégulier possible mais impossible de s\'accroupir ou de courir</label>'
+    + '<label><input type="radio" name="tegner" value="3"> <strong>3</strong> — Travaux légers (infirmière, travaux ménagers légers). Marche possible sur terrain irrégulier mais sport impossible</label>'
+    + '<label><input type="radio" name="tegner" value="4"> <strong>4</strong> — Travail modérément physique (conduite de camion, entretien maison). Cyclisme ou ski de fond, jogging sur terrain plat ≥ 2× par semaine</label>'
+    + '<label><input type="radio" name="tegner" value="5"> <strong>5</strong> — Travail physique lourd (construction). Cyclisme, ski de fond, jogging sur terrain irrégulier ≥ 2× par semaine</label>'
+    + '<label><input type="radio" name="tegner" value="6"> <strong>6</strong> — Sport de loisir : tennis et badminton, handball, basketball, ski alpin, jogging ≥ 5× par semaine</label>'
+    + '<label><input type="radio" name="tegner" value="7"> <strong>7</strong> — Sport de compétition : tennis, athlétisme (course), motocross, handball, basketball. Football ou hockey sur glace en division inférieure</label>'
+    + '<label><input type="radio" name="tegner" value="8"> <strong>8</strong> — Sport de compétition : squash, badminton. Athlétisme (sauts). Ski alpin (compétition)</label>'
+    + '<label><input type="radio" name="tegner" value="9"> <strong>9</strong> — Sport de compétition : football, hockey sur glace, lutte, gymnastique</label>'
+    + '<label><input type="radio" name="tegner" value="10"> <strong>10</strong> — Sport de compétition : football national et international, jeux Olympiques</label>'
+    + '</div></div>',
+  score: function(){
+    var sel = document.querySelector('input[name="tegner"]:checked');
+    if(!sel) return '<div style="color:#C0392B;">Veuillez sélectionner un niveau.</div>';
+    var v = parseInt(sel.value);
+    return '<div>Score Tegner : <strong>'+v+' / 10</strong></div>'
+      + '<div style="font-size:.82rem;color:#555;margin-top:4px;">Niveau '+v+' — '+(v<=2?'Activité très limitée':v<=4?'Activité quotidienne légère à modérée':v<=6?'Sport de loisir / activité régulière':v<=8?'Sport de compétition':v===9?'Sport de compétition de haut niveau':'Sport de compétition international')+'</div>';
+  }
+};
+
+/* Lysholm Knee Score */
+PROMS_QUESTIONNAIRES['Lysholm'] = {
+  html: '<div class="prom-intro">Ce questionnaire évalue la fonction du genou. Répondez à chaque question en choisissant la réponse qui décrit le mieux votre situation actuelle.</div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q1 — Boiterie (max 5 pts)</div><div class="prom-q-text">Avez-vous une boiterie en marchant ?</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="lys1" value="5"> Aucune (5 pts)</label>'
+    + '<label><input type="radio" name="lys1" value="3"> Légère / périodique (3 pts)</label>'
+    + '<label><input type="radio" name="lys1" value="0"> Sévère / constante (0 pt)</label>'
+    + '</div></div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q2 — Aide à la marche (max 5 pts)</div><div class="prom-q-text">Utilisez-vous une aide à la marche ?</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="lys2" value="5"> Aucune (5 pts)</label>'
+    + '<label><input type="radio" name="lys2" value="2"> Canne ou béquille (2 pts)</label>'
+    + '<label><input type="radio" name="lys2" value="0"> Impossible sans aide (0 pt)</label>'
+    + '</div></div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q3 — Blocage (max 15 pts)</div><div class="prom-q-text">Avez-vous des blocages du genou ?</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="lys3" value="15"> Aucun blocage ni sensation de blocage (15 pts)</label>'
+    + '<label><input type="radio" name="lys3" value="10"> Sensation de blocage mais pas de blocage réel (10 pts)</label>'
+    + '<label><input type="radio" name="lys3" value="6"> Blocage occasionnel (6 pts)</label>'
+    + '<label><input type="radio" name="lys3" value="2"> Blocage fréquent (2 pts)</label>'
+    + '<label><input type="radio" name="lys3" value="0"> Genou bloqué à l\'examen (0 pt)</label>'
+    + '</div></div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q4 — Instabilité (max 25 pts)</div><div class="prom-q-text">Votre genou se dérobe-t-il ?</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="lys4" value="25"> Jamais (25 pts)</label>'
+    + '<label><input type="radio" name="lys4" value="20"> Rarement pendant sports ou efforts violents (20 pts)</label>'
+    + '<label><input type="radio" name="lys4" value="15"> Fréquemment pendant sport ou effort violent (15 pts)</label>'
+    + '<label><input type="radio" name="lys4" value="10"> Occasionnellement dans la vie quotidienne (10 pts)</label>'
+    + '<label><input type="radio" name="lys4" value="5"> Souvent dans la vie quotidienne (5 pts)</label>'
+    + '<label><input type="radio" name="lys4" value="0"> À chaque pas (0 pt)</label>'
+    + '</div></div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q5 — Douleur (max 25 pts)</div><div class="prom-q-text">Décrivez votre niveau de douleur au genou :</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="lys5" value="25"> Aucune (25 pts)</label>'
+    + '<label><input type="radio" name="lys5" value="20"> Inconstante, légère pendant effort violent (20 pts)</label>'
+    + '<label><input type="radio" name="lys5" value="15"> Importante lors d\'effort violent (15 pts)</label>'
+    + '<label><input type="radio" name="lys5" value="10"> Importante lors/après marche &gt;2 km (10 pts)</label>'
+    + '<label><input type="radio" name="lys5" value="5"> Importante lors/après marche &lt;2 km (5 pts)</label>'
+    + '<label><input type="radio" name="lys5" value="0"> Constante (0 pt)</label>'
+    + '</div></div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q6 — Gonflement (max 10 pts)</div><div class="prom-q-text">Avez-vous un gonflement du genou ?</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="lys6" value="10"> Jamais (10 pts)</label>'
+    + '<label><input type="radio" name="lys6" value="6"> Après effort violent (6 pts)</label>'
+    + '<label><input type="radio" name="lys6" value="2"> Après effort normal (2 pts)</label>'
+    + '<label><input type="radio" name="lys6" value="0"> Constant (0 pt)</label>'
+    + '</div></div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q7 — Montée des escaliers (max 10 pts)</div><div class="prom-q-text">Comment montez-vous les escaliers ?</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="lys7" value="10"> Aucune difficulté (10 pts)</label>'
+    + '<label><input type="radio" name="lys7" value="6"> Légèrement gêné (6 pts)</label>'
+    + '<label><input type="radio" name="lys7" value="2"> Une marche à la fois (2 pts)</label>'
+    + '<label><input type="radio" name="lys7" value="0"> Impossible (0 pt)</label>'
+    + '</div></div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q8 — Accroupissement (max 5 pts)</div><div class="prom-q-text">Pouvez-vous vous accroupir ?</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="lys8" value="5"> Aucune difficulté (5 pts)</label>'
+    + '<label><input type="radio" name="lys8" value="4"> Légèrement gêné (4 pts)</label>'
+    + '<label><input type="radio" name="lys8" value="2"> Pas au-delà de 90° (2 pts)</label>'
+    + '<label><input type="radio" name="lys8" value="0"> Impossible (0 pt)</label>'
+    + '</div></div>',
+  score: function(){
+    var names = ['lys1','lys2','lys3','lys4','lys5','lys6','lys7','lys8'];
+    var total = 0; var missing = [];
+    names.forEach(function(n,i){
+      var sel = document.querySelector('input[name="'+n+'"]:checked');
+      if(sel) total += parseInt(sel.value);
+      else missing.push('Q'+(i+1));
+    });
+    if(missing.length) return '<div style="color:#C0392B;">Questions non répondues : '+missing.join(', ')+'</div>';
+    var interp = total>=95?'Excellent':total>=84?'Bon':total>=65?'Moyen':'Mauvais';
+    var col = total>=95?'#2D6A4F':total>=84?'#2B5FA6':total>=65?'#D4600A':'#C0392B';
+    return '<div>Score Lysholm : <strong style="font-size:1.2rem;color:'+col+'">'+total+' / 100</strong> — <span style="color:'+col+';font-weight:700;">'+interp+'</span></div>'
+      + '<div style="font-size:.78rem;color:#666;margin-top:6px;">Interprétation : 95-100 = Excellent · 84-94 = Bon · 65-83 = Moyen · &lt;65 = Mauvais</div>';
+  }
+};
+
+/* ACL-RSI */
+PROMS_QUESTIONNAIRES['ACL-RSI'] = {
+  html: (function(){
+    var qs = [
+      'Je suis effrayé(e) à l\'idée de me blesser à nouveau le genou en jouant à mon sport.',
+      'Je trouve frustrant de devoir tenir compte de mon genou lorsque je joue à mon sport.',
+      'J\'ai peur de jouer à mon sport accidentellement.',
+      'Mes pensées concernant mon genou m\'empêchent de jouer à mon sport de façon optimale.',
+      'Je suis nerveux(euse) à l\'idée de jouer à mon sport.',
+      'Je pense à mon genou beaucoup.',
+      'Je me sens incertain(e) par rapport à mon genou lorsque je joue à mon sport.',
+      'Je pense que les autres personnes espèrent que je vais reprendre le sport.',
+      'Je sens de la pression sociale pour reprendre le sport.',
+      'Je suis confiant(e) dans ma capacité à bien performer à mon sport.',
+      'Je suis confiant(e) dans ma capacité à jouer à mon sport sans m\'inquiéter pour mon genou.',
+      'Je suis confiant(e) dans ma capacité à pratiquer mon sport au même niveau qu\'avant ma blessure.'
+    ];
+    var html = '<div class="prom-intro">Pour chaque affirmation, indiquez votre réponse de 0 (pas du tout d\'accord) à 100 (tout à fait d\'accord), par pas de 10.</div>';
+    qs.forEach(function(q,i){
+      html += '<div class="prom-q"><div class="prom-q-num">Q'+(i+1)+'</div><div class="prom-q-text">'+q+'</div><div class="prom-q-opts" style="flex-direction:row;flex-wrap:wrap;gap:4px;">';
+      [0,10,20,30,40,50,60,70,80,90,100].forEach(function(v){
+        html += '<label style="flex-direction:column;align-items:center;gap:2px;min-width:36px;font-size:.76rem;"><input type="radio" name="aclrsi'+(i+1)+'" value="'+v+'"> '+v+'</label>';
+      });
+      html += '</div></div>';
+    });
+    return html;
+  })(),
+  score: function(){
+    var total = 0; var missing = [];
+    for(var i=1;i<=12;i++){
+      var sel = document.querySelector('input[name="aclrsi'+i+'"]:checked');
+      if(sel) total += parseInt(sel.value);
+      else missing.push('Q'+i);
+    }
+    if(missing.length) return '<div style="color:#C0392B;">Questions non répondues : '+missing.join(', ')+'</div>';
+    var score = Math.round(total/12);
+    var col = score>=60?'#2D6A4F':'#C0392B';
+    var interp = score>=60?'Bonne disponibilité psychologique au retour au sport':'Disponibilité psychologique insuffisante (seuil 60%)';
+    return '<div>Score ACL-RSI : <strong style="font-size:1.2rem;color:'+col+'">'+score+' / 100</strong></div>'
+      + '<div style="font-size:.82rem;color:'+col+';font-weight:600;margin-top:4px;">'+interp+'</div>'
+      + '<div style="font-size:.78rem;color:#666;margin-top:4px;">Seuil recommandé : ≥ 60 — Webster (2018). Score = moyenne des 12 réponses.</div>';
+  }
+};
+
+/* EVA */
+PROMS_QUESTIONNAIRES['EVA'] = {
+  html: '<div class="prom-intro">L\'Échelle Visuelle Analogique (EVA) mesure l\'intensité de la douleur ressentie. 0 = aucune douleur, 10 = douleur maximale imaginable.</div>'
+    + '<div class="prom-q"><div class="prom-q-num">Douleur actuelle</div><div class="prom-q-text">Indiquez votre niveau de douleur actuel :</div><div class="prom-q-opts" style="flex-direction:row;flex-wrap:wrap;gap:6px;">'
+    + [0,1,2,3,4,5,6,7,8,9,10].map(function(v){
+        return '<label style="flex-direction:column;align-items:center;gap:3px;min-width:38px;font-size:.82rem;font-weight:'+(v===0||v===10?'700':'400')+';"><input type="radio" name="eva" value="'+v+'"> '+v+'</label>';
+      }).join('')
+    + '</div></div>'
+    + '<div style="display:flex;justify-content:space-between;font-size:.72rem;color:#999;padding:4px 0 0;"><span>Aucune douleur</span><span>Douleur maximale</span></div>',
+  score: function(){
+    var sel = document.querySelector('input[name="eva"]:checked');
+    if(!sel) return '<div style="color:#C0392B;">Veuillez sélectionner une valeur.</div>';
+    var v = parseInt(sel.value);
+    var col = v<=3?'#2D6A4F':v<=6?'#D4600A':'#C0392B';
+    var interp = v===0?'Aucune douleur':v<=3?'Douleur légère':v<=6?'Douleur modérée':'Douleur sévère';
+    return '<div>EVA : <strong style="font-size:1.4rem;color:'+col+'">'+v+' / 10</strong> — <span style="color:'+col+';font-weight:700;">'+interp+'</span></div>';
+  }
+};
+
+/* EN — Échelle Numérique */
+PROMS_QUESTIONNAIRES['EN'] = {
+  html: '<div class="prom-intro">L\'Échelle Numérique (EN) mesure la douleur de 0 à 10. 0 = aucune douleur, 10 = douleur maximale imaginable. MCID = 2 points.</div>'
+    + '<div class="prom-q"><div class="prom-q-num">Douleur actuelle</div><div class="prom-q-text">Indiquez votre niveau de douleur actuel :</div><div class="prom-q-opts" style="flex-direction:row;flex-wrap:wrap;gap:6px;">'
+    + [0,1,2,3,4,5,6,7,8,9,10].map(function(v){
+        var bg = v<=3?'#E8F5EE':v<=6?'#FEF3EB':'#FDECEA';
+        var fc = v<=3?'#2D6A4F':v<=6?'#D4600A':'#C0392B';
+        return '<label style="flex-direction:column;align-items:center;gap:3px;min-width:38px;font-size:.85rem;font-weight:700;background:'+bg+';color:'+fc+';border-radius:5px;padding:4px 2px;"><input type="radio" name="en_scale" value="'+v+'"> '+v+'</label>';
+      }).join('')
+    + '</div></div>'
+    + '<div style="display:flex;justify-content:space-between;font-size:.72rem;color:#999;padding:4px 0 0;"><span>0 = Aucune</span><span>10 = Maximale</span></div>',
+  score: function(){
+    var sel = document.querySelector('input[name="en_scale"]:checked');
+    if(!sel) return '<div style="color:#C0392B;">Veuillez sélectionner une valeur.</div>';
+    var v = parseInt(sel.value);
+    var col = v===0?'#2D6A4F':v<=3?'#2D6A4F':v<=6?'#D4600A':'#C0392B';
+    var interp = v===0?'Aucune douleur':v<=3?'Douleur légère':v<=6?'Douleur modérée':'Douleur sévère';
+    return '<div>EN : <strong style="font-size:1.4rem;color:'+col+'">'+v+' / 10</strong> — <span style="color:'+col+';font-weight:700;">'+interp+'</span></div>'
+      + '<div style="font-size:.78rem;color:#666;margin-top:4px;">0 = aucune · 1-3 = légère · 4-6 = modérée · 7-10 = sévère · MCID = 2 points</div>';
+  }
+};
+
+/* VISA-A */
+PROMS_QUESTIONNAIRES['VISA-A'] = {
+  html: '<div class="prom-intro">Questionnaire VISA-A — Victorian Institute of Sport Assessment (Achille). Score maximum = 100 (asymptomatique, pratique sportive complète).</div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q1</div><div class="prom-q-text">Combien de minutes pouvez-vous rester assis(e) sans douleur ?</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="visa_a1" value="0"> 0 à 10 minutes (0 pt)</label>'
+    + '<label><input type="radio" name="visa_a1" value="4"> 11 à 20 minutes (4 pts)</label>'
+    + '<label><input type="radio" name="visa_a1" value="7"> 21 à 30 minutes (7 pts)</label>'
+    + '<label><input type="radio" name="visa_a1" value="10"> Plus de 30 minutes (10 pts)</label>'
+    + '</div></div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q2</div><div class="prom-q-text">Avez-vous des douleurs en marchant sur terrain plat ?</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="visa_a2" value="0"> Sévère (0 pt)</label>'
+    + '<label><input type="radio" name="visa_a2" value="3"> Modérée (3 pts)</label>'
+    + '<label><input type="radio" name="visa_a2" value="7"> Légère (7 pts)</label>'
+    + '<label><input type="radio" name="visa_a2" value="10"> Aucune (10 pts)</label>'
+    + '</div></div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q3</div><div class="prom-q-text">Avez-vous de la douleur en descendant les escaliers à une cadence normale ?</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="visa_a3" value="0"> Sévère (0 pt)</label>'
+    + '<label><input type="radio" name="visa_a3" value="3"> Modérée (3 pts)</label>'
+    + '<label><input type="radio" name="visa_a3" value="7"> Légère (7 pts)</label>'
+    + '<label><input type="radio" name="visa_a3" value="10"> Aucune (10 pts)</label>'
+    + '</div></div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q4</div><div class="prom-q-text">Avez-vous de la douleur pendant ou après 10 répétitions de montées sur la pointe des pieds, unipodal, debout ?</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="visa_a4" value="0"> Sévère (0 pt)</label>'
+    + '<label><input type="radio" name="visa_a4" value="3"> Modérée (3 pts)</label>'
+    + '<label><input type="radio" name="visa_a4" value="7"> Légère (7 pts)</label>'
+    + '<label><input type="radio" name="visa_a4" value="10"> Aucune (10 pts)</label>'
+    + '</div></div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q5</div><div class="prom-q-text">Avez-vous de la douleur pendant ou après 6 squats unipodaux avec le genou légèrement fléchi ?</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="visa_a5" value="0"> Sévère (0 pt)</label>'
+    + '<label><input type="radio" name="visa_a5" value="3"> Modérée (3 pts)</label>'
+    + '<label><input type="radio" name="visa_a5" value="7"> Légère (7 pts)</label>'
+    + '<label><input type="radio" name="visa_a5" value="10"> Aucune (10 pts)</label>'
+    + '</div></div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q6</div><div class="prom-q-text">Pratiquez-vous actuellement un sport ou une autre activité physique ?</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="visa_a6" value="0"> Non — à cause de la douleur (0 pt)</label>'
+    + '<label><input type="radio" name="visa_a6" value="4"> Entraînement modifié (4 pts)</label>'
+    + '<label><input type="radio" name="visa_a6" value="7"> Entraînement complet mais limité par la douleur (7 pts)</label>'
+    + '<label><input type="radio" name="visa_a6" value="10"> Pratique complète sans limitation (10 pts)</label>'
+    + '</div></div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q7</div><div class="prom-q-text">Effectuez-vous de l\'entraînement ?</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="visa_a7" value="0"> Non (0 pt)</label>'
+    + '<label><input type="radio" name="visa_a7" value="4"> Entraînement adapté (4 pts)</label>'
+    + '<label><input type="radio" name="visa_a7" value="7"> Entraînement complet mais limité par la douleur (7 pts)</label>'
+    + '<label><input type="radio" name="visa_a7" value="10"> Entraînement complet sans limitation (10 pts)</label>'
+    + '</div></div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q8</div><div class="prom-q-text">Combien de répétitions de montées sur la pointe des pieds (unipodal) pouvez-vous réaliser sans douleur ?</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="visa_a8" value="0"> 1 à 10 répétitions (0 pt)</label>'
+    + '<label><input type="radio" name="visa_a8" value="3"> 11 à 20 répétitions (3 pts)</label>'
+    + '<label><input type="radio" name="visa_a8" value="7"> 21 à 30 répétitions (7 pts)</label>'
+    + '<label><input type="radio" name="visa_a8" value="10"> Plus de 30 répétitions sans douleur (10 pts)</label>'
+    + '</div></div>',
+  score: function(){
+    var total = 0; var missing = [];
+    for(var i=1;i<=8;i++){
+      var sel = document.querySelector('input[name="visa_a'+i+'"]:checked');
+      if(sel) total += parseInt(sel.value);
+      else missing.push('Q'+i);
+    }
+    if(missing.length) return '<div style="color:#C0392B;">Questions non répondues : '+missing.join(', ')+'</div>';
+    var interp = total<30?'Sévère':total<60?'Modéré':total<80?'Modéré à bon':'Bon à excellent';
+    var col = total<30?'#C0392B':total<60?'#D4600A':total<80?'#2B5FA6':'#2D6A4F';
+    return '<div>Score VISA-A : <strong style="font-size:1.2rem;color:'+col+'">'+total+' / 100</strong> — <span style="color:'+col+';font-weight:700;">'+interp+'</span></div>'
+      + '<div style="font-size:.78rem;color:#666;margin-top:4px;">&lt;30 = Sévère · 30-59 = Modéré · 60-79 = Modéré à bon · ≥80 = Bon à excellent</div>';
+  }
+};
+
+/* VISA-P */
+PROMS_QUESTIONNAIRES['VISA-P'] = {
+  html: '<div class="prom-intro">Questionnaire VISA-P — Victorian Institute of Sport Assessment (Patella). Score maximum = 100 (asymptomatique, pratique sportive complète).</div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q1</div><div class="prom-q-text">Combien de minutes pouvez-vous rester assis(e) sans douleur au tendon patellaire ?</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="visa_p1" value="0"> 0 à 10 minutes (0 pt)</label>'
+    + '<label><input type="radio" name="visa_p1" value="4"> 11 à 20 minutes (4 pts)</label>'
+    + '<label><input type="radio" name="visa_p1" value="7"> 21 à 30 minutes (7 pts)</label>'
+    + '<label><input type="radio" name="visa_p1" value="10"> Plus de 30 minutes (10 pts)</label>'
+    + '</div></div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q2</div><div class="prom-q-text">Avez-vous de la douleur en descendant les escaliers ?</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="visa_p2" value="0"> Sévère (0 pt)</label>'
+    + '<label><input type="radio" name="visa_p2" value="3"> Modérée (3 pts)</label>'
+    + '<label><input type="radio" name="visa_p2" value="7"> Légère (7 pts)</label>'
+    + '<label><input type="radio" name="visa_p2" value="10"> Aucune (10 pts)</label>'
+    + '</div></div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q3</div><div class="prom-q-text">Avez-vous de la douleur en extension complète du genou, actif ?</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="visa_p3" value="0"> Sévère (0 pt)</label>'
+    + '<label><input type="radio" name="visa_p3" value="3"> Modérée (3 pts)</label>'
+    + '<label><input type="radio" name="visa_p3" value="7"> Légère (7 pts)</label>'
+    + '<label><input type="radio" name="visa_p3" value="10"> Aucune (10 pts)</label>'
+    + '</div></div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q4</div><div class="prom-q-text">Avez-vous de la douleur pendant ou après 10 squats bipodaux ?</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="visa_p4" value="0"> Sévère (0 pt)</label>'
+    + '<label><input type="radio" name="visa_p4" value="3"> Modérée (3 pts)</label>'
+    + '<label><input type="radio" name="visa_p4" value="7"> Légère (7 pts)</label>'
+    + '<label><input type="radio" name="visa_p4" value="10"> Aucune (10 pts)</label>'
+    + '</div></div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q5</div><div class="prom-q-text">Ressentez-vous de la douleur au tendon patellaire lors de vos activités sportives ?</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="visa_p5" value="0"> Douleur constante empêchant toute activité (0 pt)</label>'
+    + '<label><input type="radio" name="visa_p5" value="4"> Douleur au début puis disparaît pendant l\'activité (4 pts)</label>'
+    + '<label><input type="radio" name="visa_p5" value="7"> Douleur pendant l\'activité mais ne vous empêche pas de terminer (7 pts)</label>'
+    + '<label><input type="radio" name="visa_p5" value="10"> Aucune douleur pendant l\'activité (10 pts)</label>'
+    + '</div></div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q6</div><div class="prom-q-text">Avez-vous de la douleur le lendemain de vos activités sportives ?</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="visa_p6" value="0"> Douleur sévère le lendemain (0 pt)</label>'
+    + '<label><input type="radio" name="visa_p6" value="4"> Douleur modérée le lendemain (4 pts)</label>'
+    + '<label><input type="radio" name="visa_p6" value="7"> Légère douleur le lendemain (7 pts)</label>'
+    + '<label><input type="radio" name="visa_p6" value="10"> Aucune douleur le lendemain (10 pts)</label>'
+    + '</div></div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q7</div><div class="prom-q-text">Pratiquez-vous actuellement un sport ou une autre activité physique ?</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="visa_p7" value="0"> Non — à cause de la douleur (0 pt)</label>'
+    + '<label><input type="radio" name="visa_p7" value="4"> Entraînement modifié (4 pts)</label>'
+    + '<label><input type="radio" name="visa_p7" value="7"> Entraînement complet mais limité par la douleur (7 pts)</label>'
+    + '<label><input type="radio" name="visa_p7" value="10"> Pratique complète sans limitation (10 pts)</label>'
+    + '</div></div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q8</div><div class="prom-q-text">Pouvez-vous réaliser des sauts verticaux maximaux sans douleur (10 répétitions) ?</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="visa_p8" value="0"> Non, impossible à cause de la douleur (0 pt)</label>'
+    + '<label><input type="radio" name="visa_p8" value="4"> Oui, avec douleur importante (4 pts)</label>'
+    + '<label><input type="radio" name="visa_p8" value="7"> Oui, avec légère douleur (7 pts)</label>'
+    + '<label><input type="radio" name="visa_p8" value="10"> Oui, sans douleur (10 pts)</label>'
+    + '</div></div>',
+  score: function(){
+    var total = 0; var missing = [];
+    for(var i=1;i<=8;i++){
+      var sel = document.querySelector('input[name="visa_p'+i+'"]:checked');
+      if(sel) total += parseInt(sel.value);
+      else missing.push('Q'+i);
+    }
+    if(missing.length) return '<div style="color:#C0392B;">Questions non répondues : '+missing.join(', ')+'</div>';
+    var interp = total<30?'Sévère':total<60?'Modéré':total<80?'Modéré à bon':'Bon à excellent';
+    var col = total<30?'#C0392B':total<60?'#D4600A':total<80?'#2B5FA6':'#2D6A4F';
+    return '<div>Score VISA-P : <strong style="font-size:1.2rem;color:'+col+'">'+total+' / 100</strong> — <span style="color:'+col+';font-weight:700;">'+interp+'</span></div>'
+      + '<div style="font-size:.78rem;color:#666;margin-top:4px;">&lt;30 = Sévère · 30-59 = Modéré · 60-79 = Modéré à bon · ≥80 = Bon à excellent</div>';
+  }
+};
+
+/* CAIT — Cumberland Ankle Instability Tool */
+PROMS_QUESTIONNAIRES['CAIT'] = {
+  html: '<div class="prom-intro">Cumberland Ankle Instability Tool (CAIT) — 9 items, score maximum 30. Seuil ≤ 27 : instabilité chronique de cheville.</div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q1 — Douleur</div><div class="prom-q-text">J\'ai de la douleur à la cheville :</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="cait1" value="5"> Jamais (5 pts)</label>'
+    + '<label><input type="radio" name="cait1" value="4"> Pendant le sport (4 pts)</label>'
+    + '<label><input type="radio" name="cait1" value="3"> En courant sur terrain plat (3 pts)</label>'
+    + '<label><input type="radio" name="cait1" value="2"> En courant sur terrain irrégulier (2 pts)</label>'
+    + '<label><input type="radio" name="cait1" value="1"> En marchant sur terrain irrégulier (1 pt)</label>'
+    + '<label><input type="radio" name="cait1" value="0"> En marchant sur terrain plat (0 pt)</label>'
+    + '</div></div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q2 — Instabilité générale</div><div class="prom-q-text">Ma cheville est instable lorsque :</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="cait2" value="4"> Jamais (4 pts)</label>'
+    + '<label><input type="radio" name="cait2" value="3"> Parfois pendant le sport (3 pts)</label>'
+    + '<label><input type="radio" name="cait2" value="2"> Souvent pendant le sport (2 pts)</label>'
+    + '<label><input type="radio" name="cait2" value="1"> Parfois pendant la marche quotidienne (1 pt)</label>'
+    + '<label><input type="radio" name="cait2" value="0"> Souvent pendant la marche quotidienne (0 pt)</label>'
+    + '</div></div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q3 — Changement de direction</div><div class="prom-q-text">Quand je tourne brusquement, ma cheville est instable :</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="cait3" value="3"> Jamais (3 pts)</label>'
+    + '<label><input type="radio" name="cait3" value="2"> Parfois lors des activités sportives (2 pts)</label>'
+    + '<label><input type="radio" name="cait3" value="1"> Souvent lors des activités sportives (1 pt)</label>'
+    + '<label><input type="radio" name="cait3" value="0"> Lors de la marche quotidienne (0 pt)</label>'
+    + '</div></div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q4 — Escaliers</div><div class="prom-q-text">En descendant les escaliers, ma cheville est instable :</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="cait4" value="3"> Jamais (3 pts)</label>'
+    + '<label><input type="radio" name="cait4" value="2"> Si je vais vite (2 pts)</label>'
+    + '<label><input type="radio" name="cait4" value="1"> Parfois (1 pt)</label>'
+    + '<label><input type="radio" name="cait4" value="0"> Toujours (0 pt)</label>'
+    + '</div></div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q5 — Appui unipodal</div><div class="prom-q-text">Ma cheville est instable lorsque je me tiens sur une jambe :</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="cait5" value="2"> Jamais (2 pts)</label>'
+    + '<label><input type="radio" name="cait5" value="1"> Sur surface molle (1 pt)</label>'
+    + '<label><input type="radio" name="cait5" value="0"> Sur surface dure (0 pt)</label>'
+    + '</div></div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q6 — Sauts</div><div class="prom-q-text">Ma cheville est instable lorsque :</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="cait6" value="3"> Jamais (3 pts)</label>'
+    + '<label><input type="radio" name="cait6" value="2"> Je saute d\'un côté à l\'autre (2 pts)</label>'
+    + '<label><input type="radio" name="cait6" value="1"> Je saute (1 pt)</label>'
+    + '<label><input type="radio" name="cait6" value="0"> Je cours (0 pt)</label>'
+    + '</div></div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q7 — Course</div><div class="prom-q-text">Ma cheville est instable lorsque :</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="cait7" value="4"> Jamais (4 pts)</label>'
+    + '<label><input type="radio" name="cait7" value="3"> Je cours sur terrain irrégulier (3 pts)</label>'
+    + '<label><input type="radio" name="cait7" value="2"> Je cours sur terrain plat (2 pts)</label>'
+    + '<label><input type="radio" name="cait7" value="1"> Je marche sur terrain irrégulier (1 pt)</label>'
+    + '<label><input type="radio" name="cait7" value="0"> Je marche sur terrain plat (0 pt)</label>'
+    + '</div></div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q8 — Gonflement après entorse</div><div class="prom-q-text">D\'habitude, lorsque j\'ai une entorse :</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="cait8" value="3"> Je n\'ai jamais eu d\'entorse (3 pts)</label>'
+    + '<label><input type="radio" name="cait8" value="2"> Elle n\'est pas enflée (2 pts)</label>'
+    + '<label><input type="radio" name="cait8" value="1"> Elle est légèrement enflée (1 pt)</label>'
+    + '<label><input type="radio" name="cait8" value="0"> Elle est très enflée (0 pt)</label>'
+    + '</div></div>'
+    + '<div class="prom-q"><div class="prom-q-num">Q9 — Récupération après entorse</div><div class="prom-q-text">Après une entorse habituelle, ma cheville est de retour à la normale :</div><div class="prom-q-opts">'
+    + '<label><input type="radio" name="cait9" value="3"> Je n\'ai jamais eu d\'entorse (3 pts)</label>'
+    + '<label><input type="radio" name="cait9" value="2"> En moins d\'un jour (2 pts)</label>'
+    + '<label><input type="radio" name="cait9" value="1"> En 1 à 2 jours (1 pt)</label>'
+    + '<label><input type="radio" name="cait9" value="0"> En plus d\'une semaine (0 pt)</label>'
+    + '</div></div>',
+  score: function(){
+    var total = 0; var missing = [];
+    for(var i=1;i<=9;i++){
+      var sel = document.querySelector('input[name="cait'+i+'"]:checked');
+      if(sel) total += parseInt(sel.value);
+      else missing.push('Q'+i);
+    }
+    if(missing.length) return '<div style="color:#C0392B;">Questions non répondues : '+missing.join(', ')+'</div>';
+    var instable = total<=27;
+    var col = instable?'#C0392B':'#2D6A4F';
+    var interp = instable?'Instabilité chronique de cheville (CAI)':'Cheville stable';
+    return '<div>Score CAIT : <strong style="font-size:1.2rem;color:'+col+'">'+total+' / 30</strong> — <span style="color:'+col+';font-weight:700;">'+interp+'</span></div>'
+      + '<div style="font-size:.78rem;color:#666;margin-top:4px;">Seuil : ≤ 27 = instabilité chronique de cheville · &gt; 27 = cheville stable</div>';
+  }
+};
 </script>
 
 <script>
@@ -1480,5 +1930,26 @@ window.addEventListener('message', function(e){
 });
 
 </script>
+
+<!-- PROM Modal -->
+<div id="prom-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;overflow-y:auto;padding:20px;" onclick="if(event.target===this)closePromModal()">
+  <div style="background:#fff;max-width:760px;margin:0 auto;border-radius:12px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+    <div id="prom-modal-head" style="background:#1A3A5C;color:#fff;padding:18px 24px;display:flex;align-items:center;gap:12px;">
+      <div style="flex:1;">
+        <div id="prom-modal-acronym" style="font-size:1.1rem;font-weight:700;"></div>
+        <div id="prom-modal-name" style="font-size:.78rem;opacity:.75;margin-top:2px;"></div>
+      </div>
+      <button onclick="printProm()" style="padding:7px 14px;background:#4A90D9;color:#fff;border:none;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;">🖨 Imprimer / PDF</button>
+      <button onclick="closePromModal()" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:1.4rem;cursor:pointer;line-height:1;padding:2px 6px;">×</button>
+    </div>
+    <div id="prom-modal-body" style="padding:24px;"></div>
+    <div id="prom-modal-score" style="display:none;background:#F0F4F8;border-top:1px solid #dde3ec;padding:16px 24px;"></div>
+    <div style="padding:12px 24px;border-top:1px solid #dde3ec;display:flex;gap:8px;justify-content:flex-end;">
+      <button onclick="calcPromScore()" style="padding:8px 18px;background:#1A3A5C;color:#fff;border:none;border-radius:6px;font-size:.82rem;font-weight:600;cursor:pointer;">Calculer le score</button>
+      <button onclick="closePromModal()" style="padding:8px 18px;background:none;color:#666;border:1px solid #dde3ec;border-radius:6px;font-size:.82rem;cursor:pointer;">Fermer</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
