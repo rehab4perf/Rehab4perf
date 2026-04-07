@@ -278,6 +278,7 @@ body {
   <button class="sub-tab" onclick="showTab('hsr')" id="stab-hsr">📈 Protocole HSR</button>
   <button class="sub-tab" onclick="showTab('cardio')" id="stab-cardio">❤️ Calculateur Cardio</button>
   <button class="sub-tab" onclick="showTab('cap')" id="stab-cap">🏃 Reprise CAP</button>
+  <button class="sub-tab" onclick="showTab('proms')" id="stab-proms">📋 PROMs</button>
   <button class="sub-tab" style="margin-left:auto;background:none;color:#2B5FA6;border-bottom:none;font-size:.78rem;" onclick="openExportOutils()">📤 Exporter pour le patient</button>
 </div>
 
@@ -613,6 +614,258 @@ body {
   </div>
 
 </div><!-- /panel-cap -->
+
+<!-- ══ PANEL PROMS ══════════════════════════════════════════ -->
+<div class="panel" id="panel-proms">
+
+  <!-- Header -->
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px;">
+    <div>
+      <div style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);margin-bottom:4px;">Référentiel clinique · 2025</div>
+      <div style="font-size:1.4rem;font-weight:700;color:var(--navy);margin-bottom:4px;">PROMs — Kinésithérapie</div>
+      <div style="font-size:.82rem;color:#666;max-width:520px;line-height:1.5;">Questionnaires de résultats rapportés par le patient, classés par articulation et pathologie. Usage quotidien en bilan, suivi et retour au sport.</div>
+    </div>
+    <button onclick="exportProms()" style="padding:8px 16px;background:var(--navy);color:#fff;border:none;border-radius:7px;font-size:.8rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap;">⬇ Exporter pour patient</button>
+  </div>
+
+  <!-- Stats -->
+  <div style="display:flex;gap:24px;flex-wrap:wrap;padding:12px 16px;background:#F5F8FF;border-radius:8px;border:1px solid #dde3ec;margin-bottom:16px;">
+    <div><div style="font-size:1.3rem;font-weight:700;color:var(--navy);" id="proms-count">—</div><div style="font-size:.68rem;color:#888;text-transform:uppercase;letter-spacing:.05em;">PROMs répertoriés</div></div>
+    <div><div style="font-size:1.3rem;font-weight:700;color:var(--navy);">9</div><div style="font-size:.68rem;color:#888;text-transform:uppercase;letter-spacing:.05em;">Catégories</div></div>
+    <div><div style="font-size:1.3rem;font-weight:700;color:#27AE60;">★ Libres</div><div style="font-size:.68rem;color:#888;text-transform:uppercase;letter-spacing:.05em;">Accès libre</div></div>
+    <div><div style="font-size:1.3rem;font-weight:700;color:#2B5FA6;">FR</div><div style="font-size:.68rem;color:#888;text-transform:uppercase;letter-spacing:.05em;">Versions françaises</div></div>
+  </div>
+
+  <!-- Filters -->
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
+    <input type="text" id="proms-search" placeholder="🔍  Rechercher un PROM…" oninput="renderProms()" style="padding:7px 12px;border:1px solid #dde3ec;border-radius:7px;font-size:.8rem;color:#1a2433;outline:none;min-width:200px;max-width:280px;font-family:inherit;">
+    <div id="proms-chips" style="display:flex;gap:6px;flex-wrap:wrap;">
+      <button class="proms-chip proms-chip-active" data-cat="all" onclick="setPromsFilter(this)">Tous</button>
+      <button class="proms-chip" data-cat="Genou" onclick="setPromsFilter(this)">Genou</button>
+      <button class="proms-chip" data-cat="Épaule" onclick="setPromsFilter(this)">Épaule</button>
+      <button class="proms-chip" data-cat="Rachis" onclick="setPromsFilter(this)">Rachis</button>
+      <button class="proms-chip" data-cat="Hanche" onclick="setPromsFilter(this)">Hanche</button>
+      <button class="proms-chip" data-cat="Cheville/Pied" onclick="setPromsFilter(this)">Cheville / Pied</button>
+      <button class="proms-chip" data-cat="Coude/Poignet" onclick="setPromsFilter(this)">Coude / Poignet</button>
+      <button class="proms-chip" data-cat="Douleur" onclick="setPromsFilter(this)">Douleur</button>
+      <button class="proms-chip" data-cat="Sport/RTS" onclick="setPromsFilter(this)">Sport / RTS</button>
+      <button class="proms-chip" data-cat="Général" onclick="setPromsFilter(this)">Général</button>
+    </div>
+  </div>
+
+  <!-- Grid -->
+  <div id="proms-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;"></div>
+
+</div><!-- /panel-proms -->
+
+<style>
+/* ── PROMs chip styles ── */
+.proms-chip {
+  padding:5px 13px; border-radius:20px; font-size:.74rem; font-weight:500;
+  border:1px solid #dde3ec; background:transparent; color:#6b7a8d;
+  cursor:pointer; transition:all .15s; font-family:inherit;
+}
+.proms-chip:hover { border-color:var(--navy); color:var(--navy); }
+.proms-chip-active { background:var(--navy); border-color:var(--navy); color:#fff !important; }
+/* ── PROMs card ── */
+.prom-card {
+  background:#fff; border:1px solid #dde3ec; border-radius:9px;
+  padding:14px 16px; border-left:3px solid #dde3ec;
+  transition:box-shadow .15s, transform .15s;
+}
+.prom-card:hover { box-shadow:0 4px 16px rgba(0,0,0,.07); transform:translateY(-1px); }
+.prom-acronym { font-size:.95rem; font-weight:700; color:var(--navy); margin-bottom:2px; }
+.prom-fullname { font-size:.75rem; color:#888; font-style:italic; margin-bottom:8px; line-height:1.3; }
+.prom-tags { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px; }
+.prom-tag { font-size:.66rem; padding:2px 7px; border-radius:4px; font-weight:600; background:#EBF3FF; color:#2B5FA6; }
+.prom-tag.rts { background:#E0F9F3; color:#0D9B72; }
+.prom-note { font-size:.76rem; color:#555; line-height:1.5; border-top:1px solid #f0f4f8; padding-top:8px; margin-top:4px; }
+.prom-meta { display:flex; gap:12px; margin-top:8px; font-size:.68rem; color:#999; }
+/* Section header in grid */
+.prom-section-hdr {
+  grid-column: 1 / -1;
+  display:flex; align-items:center; gap:10px;
+  padding:6px 0 2px; margin-top:6px;
+  font-size:.78rem; font-weight:700; color:var(--navy);
+  text-transform:uppercase; letter-spacing:.06em;
+  border-bottom:2px solid var(--navy);
+}
+.prom-section-count { margin-left:auto; font-weight:400; color:#888; font-size:.7rem; text-transform:none; letter-spacing:0; }
+</style>
+
+<script>
+/* ── PROMs DATA ── */
+var PROMS_DATA = [
+  {acronym:"IKDC",name:"International Knee Documentation Committee",cat:"Genou",path:["LCA","Ménisque","Cartilage"],items:18,scale:"0–100 (↑=mieux)",free:true,fr:true,note:"Gold standard LCA. Couvre symptômes, fonction, activité.",rts:true},
+  {acronym:"KOOS",name:"Knee Injury and Osteoarthritis Outcome Score",cat:"Genou",path:["LCA","Arthrose","Ménisque"],items:42,scale:"0–100 / 5 sous-scores",free:true,fr:true,note:"5 sous-scores : douleur, symptômes, AVQ, sport, QdV.",rts:false},
+  {acronym:"KOOS-PS",name:"KOOS Physical Function Short Form",cat:"Genou",path:["Arthrose","Chirurgie"],items:7,scale:"0–100",free:true,fr:true,note:"Version courte fonctionnelle du KOOS.",rts:false},
+  {acronym:"WOMAC",name:"Western Ontario McMaster Universities OA Index",cat:"Genou",path:["Arthrose"],items:24,scale:"0–96 (↓=mieux)",free:false,fr:true,note:"Arthrose genou et hanche. Douleur, raideur, fonction.",rts:false},
+  {acronym:"Lysholm",name:"Lysholm Knee Score",cat:"Genou",path:["LCA","Ligamentaire"],items:8,scale:"0–100",free:true,fr:true,note:"Historique, simple. Bien corrélé au niveau d'activité.",rts:false},
+  {acronym:"Tegner",name:"Tegner Activity Scale",cat:"Genou",path:["LCA","Ménisque"],items:1,scale:"0–10",free:true,fr:true,note:"Complète le Lysholm. Niveau d'activité sportive.",rts:true},
+  {acronym:"ACL-RSI",name:"ACL Return to Sport after Injury",cat:"Genou",path:["LCA"],items:12,scale:"0–100 (↑=mieux)",free:true,fr:true,note:"Psychologique. Seuil 60% à 6 mois (Webster 2018).",rts:true},
+  {acronym:"Marx",name:"Marx Activity Rating Scale",cat:"Genou",path:["LCA","Général"],items:4,scale:"0–16",free:true,fr:false,note:"Niveau d'activité sportive. 4 mouvements fondamentaux.",rts:true},
+  {acronym:"KOOS-QoL",name:"KOOS Quality of Life subscale",cat:"Genou",path:["LCA","Arthrose"],items:4,scale:"0–100",free:true,fr:true,note:"Sous-score QdV isolé du KOOS, très utilisé.",rts:false},
+  {acronym:"DASH",name:"Disabilities of the Arm, Shoulder and Hand",cat:"Épaule",path:["Épaule","Coude","Poignet"],items:30,scale:"0–100 (↓=mieux)",free:true,fr:true,note:"Référence membre supérieur. Version QuickDASH (11 items).",rts:false},
+  {acronym:"QuickDASH",name:"Quick DASH (version courte)",cat:"Épaule",path:["Épaule","Coude","Poignet"],items:11,scale:"0–100 (↓=mieux)",free:true,fr:true,note:"Version courte du DASH, usage pratique quotidien.",rts:false},
+  {acronym:"ASES",name:"American Shoulder and Elbow Surgeons Score",cat:"Épaule",path:["Coiffe","Instabilité","Arthrose"],items:11,scale:"0–100",free:true,fr:false,note:"Standard chirurgical. Douleur (EVA) + fonction.",rts:false},
+  {acronym:"SST",name:"Simple Shoulder Test",cat:"Épaule",path:["Coiffe","Arthrose"],items:12,scale:"0–12",free:true,fr:false,note:"Oui/Non, très rapide. Bonne sensibilité au changement.",rts:false},
+  {acronym:"WOSI",name:"Western Ontario Shoulder Instability Index",cat:"Épaule",path:["Instabilité"],items:21,scale:"0–2100 (↓=mieux)",free:true,fr:false,note:"Spécifique instabilité gléno-humérale.",rts:false},
+  {acronym:"WORC",name:"Western Ontario Rotator Cuff Index",cat:"Épaule",path:["Coiffe"],items:21,scale:"0–2100 (↓=mieux)",free:true,fr:false,note:"Spécifique coiffe des rotateurs.",rts:false},
+  {acronym:"Oxford Shoulder",name:"Oxford Shoulder Score",cat:"Épaule",path:["Chirurgie","Prothèse"],items:12,scale:"0–48 (↑=mieux)",free:true,fr:false,note:"Post-chirurgie/prothèse d'épaule.",rts:false},
+  {acronym:"PSFS-Épaule",name:"Patient-Specific Functional Scale",cat:"Épaule",path:["Coiffe","Général"],items:3,scale:"0–10 / activité",free:true,fr:true,note:"Patient choisit 3 activités limitées. Très sensible.",rts:false},
+  {acronym:"ODI",name:"Oswestry Disability Index",cat:"Rachis",path:["Lombaire","Chirurgie rachis"],items:10,scale:"0–100% (↓=mieux)",free:true,fr:true,note:"Gold standard lombalgie. 10 sections, très complet.",rts:false},
+  {acronym:"Roland-Morris",name:"Roland-Morris Disability Questionnaire",cat:"Rachis",path:["Lombaire"],items:24,scale:"0–24 (↓=mieux)",free:true,fr:true,note:"Lombalgie aiguë/subaiguë. Plus rapide que l'ODI.",rts:false},
+  {acronym:"NDI",name:"Neck Disability Index",cat:"Rachis",path:["Cervical"],items:10,scale:"0–100% (↓=mieux)",free:true,fr:true,note:"Référence cervicalgie. Analogue ODI pour le cou.",rts:false},
+  {acronym:"Örebro MSQ",name:"Örebro Musculoskeletal Pain Questionnaire",cat:"Rachis",path:["Lombaire","Douleur chronique"],items:25,scale:"0–210",free:true,fr:true,note:"Dépistage chronicisation. Facteurs psychosociaux.",rts:false},
+  {acronym:"STarT Back",name:"STarT Back Screening Tool",cat:"Rachis",path:["Lombaire"],items:9,scale:"0–9 + sous-score",free:true,fr:true,note:"Triage rapide. 3 niveaux de risque de chronicisation.",rts:false},
+  {acronym:"FABQ",name:"Fear Avoidance Beliefs Questionnaire",cat:"Rachis",path:["Lombaire","Douleur chronique"],items:16,scale:"0–96",free:true,fr:true,note:"Croyances d'évitement. Kinésiophobie au travail/sport.",rts:false},
+  {acronym:"NPRS",name:"Numeric Pain Rating Scale",cat:"Rachis",path:["Cervical","Lombaire"],items:1,scale:"0–10",free:true,fr:true,note:"Simple, universel. MCID = 2 points.",rts:false},
+  {acronym:"HOOS",name:"Hip disability and OA Outcome Score",cat:"Hanche",path:["Arthrose","Chirurgie"],items:40,scale:"0–100 / 5 sous-scores",free:true,fr:true,note:"Analogue du KOOS pour la hanche. 5 sous-scores.",rts:false},
+  {acronym:"HOOS-PS",name:"HOOS Physical Function Short Form",cat:"Hanche",path:["Arthrose","PTH"],items:5,scale:"0–100",free:true,fr:true,note:"Version ultra-courte du HOOS. Post-PTH.",rts:false},
+  {acronym:"iHOT-33",name:"International Hip Outcome Tool",cat:"Hanche",path:["FAI","Labrum","Sportif"],items:33,scale:"0–100 (↑=mieux)",free:true,fr:false,note:"Spécifique conflit fémoro-acétabulaire et sportifs actifs.",rts:true},
+  {acronym:"iHOT-12",name:"iHOT Short Form",cat:"Hanche",path:["FAI","Sportif"],items:12,scale:"0–100",free:true,fr:false,note:"Version courte iHOT, usage pratique.",rts:true},
+  {acronym:"HHS",name:"Harris Hip Score",cat:"Hanche",path:["PTH","Chirurgie"],items:10,scale:"0–100",free:true,fr:false,note:"Historique, très utilisé post-PTH.",rts:false},
+  {acronym:"NAHS",name:"Non-Arthritic Hip Score",cat:"Hanche",path:["FAI","Labrum","Jeune actif"],items:20,scale:"0–100",free:true,fr:false,note:"Patients jeunes et actifs sans arthrose.",rts:false},
+  {acronym:"FAAM",name:"Foot and Ankle Ability Measure",cat:"Cheville/Pied",path:["Entorse","Instabilité","Chirurgie"],items:29,scale:"0–100 (↑=mieux)",free:true,fr:false,note:"Référence cheville. Sous-score AVQ + sport.",rts:true},
+  {acronym:"FAOS",name:"Foot and Ankle Outcome Score",cat:"Cheville/Pied",path:["Entorse","OA","Tendinopathie"],items:42,scale:"0–100 / 5 sous-scores",free:true,fr:true,note:"Analogue KOOS/HOOS pour la cheville.",rts:false},
+  {acronym:"CAIT",name:"Cumberland Ankle Instability Tool",cat:"Cheville/Pied",path:["Instabilité chronique"],items:9,scale:"0–30 (↑=mieux)",free:true,fr:true,note:"Dépistage instabilité chronique cheville. Seuil ≤27.",rts:false},
+  {acronym:"VISA-A",name:"Victorian Institute of Sport Assessment — Achilles",cat:"Cheville/Pied",path:["Tendinopathie Achille"],items:8,scale:"0–100 (↑=mieux)",free:true,fr:true,note:"Gold standard tendinopathie achilléenne.",rts:true},
+  {acronym:"VISA-P",name:"VISA — Patella",cat:"Cheville/Pied",path:["Tendinopathie patellaire"],items:8,scale:"0–100",free:true,fr:true,note:"Tendinopathie patellaire. Analogue VISA-A.",rts:true},
+  {acronym:"AOFAS",name:"American Orthopaedic Foot & Ankle Society Score",cat:"Cheville/Pied",path:["Chirurgie","OA"],items:9,scale:"0–100",free:false,fr:false,note:"Critiqué car clinicien-rapporté en partie. Encore très utilisé.",rts:false},
+  {acronym:"Manchester-Oxford",name:"Manchester-Oxford Foot Questionnaire",cat:"Cheville/Pied",path:["Avant-pied","Hallux"],items:16,scale:"0–100",free:true,fr:false,note:"Spécifique avant-pied et hallux valgus.",rts:false},
+  {acronym:"PRTEE",name:"Patient-Rated Tennis Elbow Evaluation",cat:"Coude/Poignet",path:["Épicondylalgie"],items:15,scale:"0–100 (↓=mieux)",free:true,fr:true,note:"Gold standard épicondylalgie latérale.",rts:false},
+  {acronym:"PRGEE",name:"Patient-Rated Golfer Elbow Evaluation",cat:"Coude/Poignet",path:["Épitrochléalgie"],items:15,scale:"0–100 (↓=mieux)",free:true,fr:false,note:"Analogue PRTEE pour épicondylalgie médiale.",rts:false},
+  {acronym:"PRWE",name:"Patient-Rated Wrist Evaluation",cat:"Coude/Poignet",path:["Poignet","Chirurgie MS"],items:15,scale:"0–100 (↓=mieux)",free:true,fr:true,note:"Douleur + fonction poignet.",rts:false},
+  {acronym:"Boston (CTS)",name:"Boston Carpal Tunnel Questionnaire",cat:"Coude/Poignet",path:["Canal carpien"],items:19,scale:"1–5 (↓=mieux)",free:true,fr:true,note:"Référence syndrome canal carpien.",rts:false},
+  {acronym:"EVA",name:"Échelle Visuelle Analogique",cat:"Douleur",path:["Universel"],items:1,scale:"0–10 cm",free:true,fr:true,note:"Universelle. Réglette ou numérique.",rts:false},
+  {acronym:"EN",name:"Échelle Numérique",cat:"Douleur",path:["Universel"],items:1,scale:"0–10",free:true,fr:true,note:"Plus simple que l'EVA. MCID = 2 points.",rts:false},
+  {acronym:"DN4",name:"Douleur Neuropathique 4 questions",cat:"Douleur",path:["Douleur neuropathique"],items:10,scale:"0–10 (seuil ≥4)",free:true,fr:true,note:"Dépistage composante neuropathique. Validé en français.",rts:false},
+  {acronym:"PCS",name:"Pain Catastrophizing Scale",cat:"Douleur",path:["Chronique","Psychosocial"],items:13,scale:"0–52",free:true,fr:true,note:"Rumination, magnification, impuissance. Important en chronique.",rts:false},
+  {acronym:"TSK",name:"Tampa Scale for Kinesiophobia",cat:"Douleur",path:["Chronique","Kinésiophobie"],items:17,scale:"17–68",free:true,fr:true,note:"Peur du mouvement. Complète le FABQ.",rts:false},
+  {acronym:"PROMIS Pain",name:"PROMIS Pain Interference",cat:"Douleur",path:["Universel","Chronique"],items:8,scale:"T-score",free:true,fr:true,note:"Banque d'items adaptatifs. Interférence de la douleur.",rts:false},
+  {acronym:"BISS",name:"Banff Patella Instability Instrument",cat:"Sport/RTS",path:["Rotule","Instabilité patellaire"],items:37,scale:"0–100",free:true,fr:false,note:"Instabilité patellaire. Spécifique retour au sport.",rts:true},
+  {acronym:"PSFS",name:"Patient-Specific Functional Scale",cat:"Sport/RTS",path:["Universel","Sportif"],items:3,scale:"0–10 / activité",free:true,fr:true,note:"3 activités définies par le patient. Très réactif aux changements.",rts:true},
+  {acronym:"GROC",name:"Global Rating of Change",cat:"Sport/RTS",path:["Universel"],items:1,scale:"-7 à +7",free:true,fr:true,note:"Impression globale de changement. Ancre de signification clinique.",rts:false},
+  {acronym:"RTS-Confidence",name:"Return to Sport Confidence Scale",cat:"Sport/RTS",path:["LCA","Général"],items:1,scale:"0–100%",free:true,fr:false,note:"Confiance au retour au sport. Simple et direct.",rts:true},
+  {acronym:"SANE",name:"Single Assessment Numeric Evaluation",cat:"Sport/RTS",path:["Épaule","Genou"],items:1,scale:"0–100%",free:true,fr:false,note:"1 seule question : comment fonctionne votre articulation ?",rts:true},
+  {acronym:"SF-36",name:"Short Form 36 Health Survey",cat:"Général",path:["Qualité de vie","Chronique"],items:36,scale:"0–100 / 8 domaines",free:false,fr:true,note:"Qualité de vie générale. 8 domaines. Version SF-12 courte.",rts:false},
+  {acronym:"SF-12",name:"Short Form 12",cat:"Général",path:["QdV","Général"],items:12,scale:"Scores physique/mental",free:false,fr:true,note:"Version ultra-courte du SF-36.",rts:false},
+  {acronym:"EQ-5D",name:"EuroQol 5 Dimensions",cat:"Général",path:["QdV","Médico-économique"],items:6,scale:"Index 0–1 + EVA",free:false,fr:true,note:"Très utilisé en recherche. Calcul QALY.",rts:false},
+  {acronym:"HAD",name:"Hospital Anxiety and Depression Scale",cat:"Général",path:["Anxiété","Dépression","Chronique"],items:14,scale:"0–21 / sous-score",free:false,fr:true,note:"Dépistage HAD. Indispensable en douleur chronique.",rts:false},
+  {acronym:"PSQI",name:"Pittsburgh Sleep Quality Index",cat:"Général",path:["Sommeil","Chronique"],items:19,scale:"0–21 (↓=mieux)",free:true,fr:true,note:"Qualité du sommeil. Impact récupération sportive.",rts:false},
+  {acronym:"PSFS (Général)",name:"Patient-Specific Functional Scale",cat:"Général",path:["Universel"],items:3,scale:"0–10 / activité",free:true,fr:true,note:"Utilisable sur toute pathologie. Patient définit ses objectifs.",rts:false},
+];
+
+var PROMS_CAT_ORDER = ["Genou","Épaule","Rachis","Hanche","Cheville/Pied","Coude/Poignet","Douleur","Sport/RTS","Général"];
+var PROMS_CAT_COLORS = {
+  "Genou":"#2D7D46","Épaule":"#C05621","Rachis":"#2B5FA6","Hanche":"#9B2C6B",
+  "Cheville/Pied":"#276749","Coude/Poignet":"#C0392B","Douleur":"#B45309",
+  "Sport/RTS":"#0E7490","Général":"#6D28D9"
+};
+var _promsFilter = 'all';
+
+function setPromsFilter(btn){
+  document.querySelectorAll('.proms-chip').forEach(function(c){ c.classList.remove('proms-chip-active'); });
+  btn.classList.add('proms-chip-active');
+  _promsFilter = btn.getAttribute('data-cat');
+  renderProms();
+}
+
+function renderProms(){
+  var q = (document.getElementById('proms-search').value||'').toLowerCase();
+  var visible = PROMS_DATA.filter(function(p){
+    if(_promsFilter !== 'all' && p.cat !== _promsFilter) return false;
+    if(q && p.acronym.toLowerCase().indexOf(q)===-1 && p.name.toLowerCase().indexOf(q)===-1 &&
+       p.path.join(' ').toLowerCase().indexOf(q)===-1 && p.note.toLowerCase().indexOf(q)===-1) return false;
+    return true;
+  });
+  document.getElementById('proms-count').textContent = PROMS_DATA.length;
+  var grid = document.getElementById('proms-grid');
+  if(!visible.length){ grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px;color:#888;font-size:.85rem;">Aucun PROM trouvé.</div>'; return; }
+  var groups = {}; PROMS_CAT_ORDER.forEach(function(c){ groups[c]=[]; });
+  visible.forEach(function(p){ if(groups[p.cat]) groups[p.cat].push(p); });
+  var html = '';
+  PROMS_CAT_ORDER.forEach(function(cat){
+    var items = groups[cat];
+    if(!items.length) return;
+    var col = PROMS_CAT_COLORS[cat]||'#1A3A5C';
+    html += '<div class="prom-section-hdr" style="border-bottom-color:'+col+';color:'+col+'">'+cat+'<span class="prom-section-count">'+items.length+' PROM'+(items.length>1?'s':'')+'</span></div>';
+    items.forEach(function(p){
+      var col2 = PROMS_CAT_COLORS[p.cat]||'#1A3A5C';
+      html += '<div class="prom-card" style="border-left-color:'+col2+'">';
+      html += '<div class="prom-acronym" style="color:'+col2+'">'+p.acronym+'</div>';
+      html += '<div class="prom-fullname">'+p.name+'</div>';
+      html += '<div class="prom-tags">';
+      p.path.forEach(function(t){ html += '<span class="prom-tag">'+t+'</span>'; });
+      if(p.rts) html += '<span class="prom-tag rts">RTS</span>';
+      html += '</div>';
+      html += '<div class="prom-note">'+p.note+'</div>';
+      html += '<div class="prom-meta">';
+      html += '<span>📊 '+p.scale+'</span>';
+      html += '<span>'+(p.free?'🟢 Libre':'🔴 Payant')+'</span>';
+      html += '<span>'+(p.fr?'🇫🇷 FR dispo':'🌐 EN only')+'</span>';
+      html += '<span>'+p.items+' item'+(p.items>1?'s':'')+'</span>';
+      html += '</div></div>';
+    });
+  });
+  grid.innerHTML = html;
+}
+
+function exportProms(){
+  var css = `body{font-family:-apple-system,Arial,sans-serif;background:#F0F4F8;margin:0;padding:0 0 60px}
+.hdr{background:#1A3A5C;color:#fff;padding:32px 40px 24px}
+.hdr h1{font-size:1.6rem;font-weight:700;margin:0 0 6px}.hdr p{font-size:.85rem;opacity:.75;margin:0}
+.controls{padding:16px 40px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:#fff;border-bottom:1px solid #dde3ec}
+.controls input{padding:7px 12px;border:1px solid #dde3ec;border-radius:7px;font-size:.8rem;min-width:200px}
+.chip{padding:5px 13px;border-radius:20px;font-size:.74rem;font-weight:500;border:1px solid #dde3ec;background:transparent;color:#6b7a8d;cursor:pointer}
+.chip.active{background:#1A3A5C;border-color:#1A3A5C;color:#fff}
+.grid{padding:24px 40px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.sec{grid-column:1/-1;font-weight:700;font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;padding:8px 0 4px;border-bottom:2px solid}
+.card{background:#fff;border:1px solid #dde3ec;border-radius:9px;padding:14px 16px;border-left:3px solid}
+.acr{font-size:.95rem;font-weight:700;margin-bottom:2px}
+.fn{font-size:.75rem;color:#888;font-style:italic;margin-bottom:8px}
+.tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
+.tag{font-size:.66rem;padding:2px 7px;border-radius:4px;font-weight:600;background:#EBF3FF;color:#2B5FA6}
+.tag.rts{background:#E0F9F3;color:#0D9B72}
+.note{font-size:.76rem;color:#555;line-height:1.5;border-top:1px solid #f0f4f8;padding-top:8px;margin-top:4px}
+.meta{display:flex;gap:12px;margin-top:8px;font-size:.68rem;color:#999}`;
+
+  var catColors = {"Genou":"#2D7D46","Épaule":"#C05621","Rachis":"#2B5FA6","Hanche":"#9B2C6B","Cheville/Pied":"#276749","Coude/Poignet":"#C0392B","Douleur":"#B45309","Sport/RTS":"#0E7490","Général":"#6D28D9"};
+  var catOrder = ["Genou","Épaule","Rachis","Hanche","Cheville/Pied","Coude/Poignet","Douleur","Sport/RTS","Général"];
+  var groups = {}; catOrder.forEach(function(c){ groups[c]=[]; });
+  PROMS_DATA.forEach(function(p){ if(groups[p.cat]) groups[p.cat].push(p); });
+  var gridHtml = '';
+  catOrder.forEach(function(cat){
+    var items = groups[cat]; if(!items.length) return;
+    var col = catColors[cat]||'#1A3A5C';
+    gridHtml += '<div class="sec" style="border-color:'+col+';color:'+col+'">'+cat+' <span style="font-weight:400;color:#888;font-size:.7rem">'+items.length+' PROM'+(items.length>1?'s':'')+'</span></div>';
+    items.forEach(function(p){
+      gridHtml += '<div class="card" style="border-left-color:'+col+'">';
+      gridHtml += '<div class="acr" style="color:'+col+'">'+p.acronym+'</div>';
+      gridHtml += '<div class="fn">'+p.name+'</div>';
+      gridHtml += '<div class="tags">'+p.path.map(function(t){ return '<span class="tag">'+t+'</span>'; }).join('')+(p.rts?'<span class="tag rts">RTS</span>':'')+'</div>';
+      gridHtml += '<div class="note">'+p.note+'</div>';
+      gridHtml += '<div class="meta"><span>📊 '+p.scale+'</span><span>'+(p.free?'🟢 Libre':'🔴 Payant')+'</span><span>'+(p.fr?'🇫🇷 FR':'🌐 EN')+'</span><span>'+p.items+' item'+(p.items>1?'s':'')+'</span></div>';
+      gridHtml += '</div>';
+    });
+  });
+  var date = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+  var html = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PROMs — Kinésithérapie</title><style>'+css+'</style></head><body>'
+    +'<div class="hdr"><h1>PROMs — Kinésithérapie</h1><p>Référentiel clinique · '+date+' · '+PROMS_DATA.length+' questionnaires répertoriés</p></div>'
+    +'<div class="grid">'+gridHtml+'</div></body></html>';
+  var blob = new Blob([html],{type:'text/html'});
+  var a = (window.top||window).document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'PROMs_Kinesitherapie.html';
+  (window.top||window).document.body.appendChild(a); a.click();
+  setTimeout(function(){ (window.top||window).document.body.removeChild(a); URL.revokeObjectURL(a.href); },1000);
+}
+
+// Init PROMs on first display
+document.getElementById('stab-proms').addEventListener('click', function(){
+  setTimeout(renderProms, 50);
+});
+</script>
 
 <script>
 
