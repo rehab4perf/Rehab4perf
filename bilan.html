@@ -721,7 +721,7 @@ body {
       <span class="icon">📊</span> CR Tests Fonctionnels
     </button>
     <button class="nav-item" onclick="showPage('cr')" data-page="cr">
-      <span class="icon">📄</span> CR Patient
+      <span class="icon">📄</span> CR Complet
     </button>
   </nav>
 
@@ -2084,7 +2084,7 @@ body {
 <div class="page" id="page-cr">
   <div class="page-header">
     <div class="page-icon">📄</div>
-    <div class="page-title">Compte-Rendu Patient</div>
+    <div class="page-title">CR Complet</div>
     <div class="page-subtitle">Synthèse automatique des données saisies — uniquement les éléments renseignés</div>
   </div>
   <div class="page-content">
@@ -3661,7 +3661,7 @@ function exportBilanHTML(type) {
   var date      = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
 
   var iscrTF    = type === 'cr-tf';
-  var title     = iscrTF ? 'Compte-Rendu Tests Fonctionnels' : 'Compte-Rendu Patient';
+  var title     = iscrTF ? 'Compte-Rendu Tests Fonctionnels' : 'CR Complet';
   var contentId = iscrTF ? 'cr-tf-content' : 'cr-content';
 
   var nom    = ((document.getElementById('f-nom')||{}).value || '').toUpperCase();

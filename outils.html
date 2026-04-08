@@ -1123,6 +1123,8 @@ function openPromCard(acronym){
       + '<div style="font-size:.83rem;line-height:1.6;max-width:400px;margin:0 auto;">Ce PROM n\'est pas encore disponible en ligne dans Rehab4Perf. Vous pouvez le télécharger depuis les ressources officielles ou les bases validées (OrthoToolKit, PROMIS, etc.).</div>'
       + '</div>';
   }
+  var exportBtn = document.getElementById('prom-export-btn');
+  if(exportBtn) exportBtn.style.display = q ? '' : 'none';
   document.getElementById('prom-modal').style.display = 'block';
   document.body.style.overflow = 'hidden';
 }
@@ -1180,6 +1182,105 @@ function openPromFullPage(){
   var w = window.open('','_blank');
   w.document.write(html);
   w.document.close();
+}
+
+function exportPromForPatient(){
+  var acronym = _currentPromAcronym;
+  var p = PROMS_DATA.find(function(x){ return x.acronym === acronym; });
+  var q = PROMS_QUESTIONNAIRES[acronym];
+  if(!p || !q){ return; }
+  var _eh = function(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
+  var nom  = (document.getElementById('prom-pt-nom').value||'').trim();
+  var ddn  = (document.getElementById('prom-pt-ddn').value||'').trim();
+  var date = (document.getElementById('prom-pt-date').value||'').trim() || new Date().toLocaleDateString('fr-FR');
+  var profile = {}; try{ profile = JSON.parse(localStorage.getItem('r4p-profile')||'{}'); }catch(e){}
+  var praticien = ((profile.prenom||'')+' '+(profile.nom||'')).trim();
+  var cabinet   = profile.cabinet||''; var tel = profile.tel||''; var email = profile.email||'';
+  var metaSub = [cabinet,tel,email].filter(Boolean).join(' · ');
+  var initials = nom ? nom.split(/\s+/).map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase() : '?';
+  var scoreFnStr = q.score ? q.score.toString() : 'function(){return "<em>Calcul non disponible</em>";}';
+  var css = '*{margin:0;padding:0;box-sizing:border-box}'
+    +'html{font-size:15px}'
+    +'body{font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;background:#F0F4F8;color:#1A1917;padding:0 0 60px}'
+    +'.wrap{max-width:800px;margin:0 auto}'
+    +'.doc-hdr{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:14px 24px;background:#1A3A5C}'
+    +'.logo{font-family:Georgia,serif;font-style:italic;font-size:1.1rem;color:#fff}'
+    +'.logo .r{color:#4A90D9}.logo .n{font-weight:900;font-style:normal}.logo .p{color:#E74C3C}'
+    +'.doc-meta{text-align:right;font-size:.72rem;color:rgba(255,255,255,.8);line-height:1.8}'
+    +'.doc-meta strong{font-size:.82rem;color:#fff;display:block}'
+    +'.pt-card{background:#fff;padding:18px 24px;border-bottom:1px solid #DDE3EC;display:flex;align-items:center;gap:16px}'
+    +'.pt-avatar{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#2B5FA6,#1A3A5C);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:700;flex-shrink:0;font-family:Georgia,serif}'
+    +'.pt-name{font-size:1.05rem;font-weight:700;color:#1A3A5C;margin-bottom:3px}'
+    +'.badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}'
+    +'.badge{background:#EEF3FB;color:#2B5FA6;border-radius:20px;padding:2px 10px;font-size:.7rem;font-weight:700}'
+    +'.prom-hdr{background:#fff;padding:16px 24px;border-bottom:3px solid #2B5FA6;display:flex;align-items:center;gap:14px}'
+    +'.prom-hdr h1{font-size:1.4rem;font-weight:700;color:#1A3A5C;margin:0 0 3px}'
+    +'.prom-hdr .sub{font-size:.82rem;color:#6B6860;font-style:italic}'
+    +'.scale-badge{background:#EEF3FB;color:#2B5FA6;border-radius:6px;padding:3px 9px;font-size:.72rem;font-weight:700;white-space:nowrap}'
+    +'.body{background:#fff;margin:16px 0;padding:22px 26px;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.08)}'
+    +'.prom-intro{font-size:.85rem;color:#555;line-height:1.65;background:#F8FAFC;border-radius:7px;padding:12px 16px;margin-bottom:20px;border:1px solid #dde3ec}'
+    +'.prom-q{padding:13px 0;border-bottom:1px solid #f0f4f8}'
+    +'.prom-q:last-child{border-bottom:none}'
+    +'.prom-q-num{font-size:.68rem;font-weight:700;color:#2B5FA6;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}'
+    +'.prom-q-text{font-size:.92rem;font-weight:500;color:#1a2433;margin-bottom:10px;line-height:1.45}'
+    +'.prom-q-opts{display:flex;flex-direction:column;gap:6px}'
+    +'.prom-q-opts label{font-size:.88rem;color:#333;display:flex;align-items:flex-start;gap:9px;line-height:1.5;cursor:pointer;padding:6px 10px;border-radius:6px;transition:background .1s}'
+    +'.prom-q-opts label:hover{background:#F5F8FF}'
+    +'.prom-q-opts input[type=radio]{margin-top:3px;flex-shrink:0;accent-color:#1A3A5C;width:15px;height:15px}'
+    +'.prom-section-label{font-size:.72rem;font-weight:700;color:#2B5FA6;text-transform:uppercase;letter-spacing:.06em;background:#EEF3FB;padding:8px 14px;margin:16px -26px;border-left:3px solid #2B5FA6}'
+    +'.score-zone{background:#fff;border-radius:10px;padding:22px 26px;box-shadow:0 1px 4px rgba(0,0,0,.08)}'
+    +'.score-btn{display:block;width:100%;padding:15px;background:#1A3A5C;color:#fff;border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;letter-spacing:.03em;transition:background .15s}'
+    +'.score-btn:hover{background:#2B5FA6}'
+    +'#score-box{display:none;margin-top:18px;padding:18px;background:#F0F4F8;border-radius:8px;border:1px solid #dde3ec;font-size:.92rem;line-height:1.75}'
+    +'.footer{text-align:center;font-size:.72rem;color:#bbb;margin-top:40px;padding-top:16px;border-top:1px solid #dde3ec}'
+    +'@media(max-width:600px){.body,.score-zone{padding:14px;}.prom-section-label{margin:12px -14px;}}'
+    +'@media print{body{background:#fff;padding:0}.wrap{max-width:100%}.score-btn,.footer{display:none!important}#score-box{display:block!important}}';
+  var metaHtml = (praticien||metaSub) ? '<div class="doc-meta">'+(praticien?'<strong>'+_eh(praticien)+'</strong>':'')+(metaSub?_eh(metaSub):'')+'</div>' : '';
+  var ptCardHtml = nom ? '<div class="pt-card"><div class="pt-avatar">'+_eh(initials)+'</div>'
+    +'<div><div class="pt-name">'+_eh(nom)+'</div><div class="badges">'
+    +(ddn?'<span class="badge">Né(e) le '+_eh(ddn)+'</span>':'')
+    +(date?'<span class="badge">'+_eh(date)+'</span>':'')
+    +'</div></div></div>' : '';
+  var footerDate = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+  var jsHelpers = 'function _sum(prefix,n,from){from=from||1;var t=0;for(var i=from;i<=n;i++){var s=document.querySelector(\'input[name="\'+prefix+i+\'"]:checked\');if(s)t+=parseFloat(s.value);}return t;}'
+    +'function _missing(prefix,n,from){from=from||1;var m=[];for(var i=from;i<=n;i++){if(!document.querySelector(\'input[name="\'+prefix+i+\'"]:checked\'))m.push(\'Q\'+i);}return m;}';
+  var htmlOut = '<!DOCTYPE html><html lang="fr"><head>'
+    +'<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+    +'<title>'+_eh(p.acronym)+' — '+_eh(p.name)+'</title>'
+    +'<style>'+css+'</style>'
+    +'</head><body><div class="wrap">'
+    +'<div class="doc-hdr"><div class="logo"><span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span></div>'+metaHtml+'</div>'
+    +ptCardHtml
+    +'<div class="prom-hdr"><div style="flex:1;min-width:0;"><h1>'+_eh(p.acronym)+'</h1><div class="sub">'+_eh(p.name)+'</div></div>'
+    +'<span class="scale-badge">'+_eh(p.scale)+'</span></div>'
+    +'<div class="body">'+q.html+'</div>'
+    +'<div class="score-zone">'
+    +'<button class="score-btn" onclick="calcScore()">📊 Calculer mon score</button>'
+    +'<div id="score-box"></div>'
+    +'</div>'
+    +'<div class="footer">Document généré par <strong>Rehab4Perf</strong> · '+_eh(footerDate)+'</div>'
+    +'</div>'
+    +'<script>'+jsHelpers
+    +'var _sf=('+scoreFnStr+');'
+    +'function calcScore(){'
+    +'var r=_sf();'
+    +'var b=document.getElementById("score-box");'
+    +'b.innerHTML=\'<strong style="font-size:.72rem;color:#1A3A5C;display:block;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">📋 Résultat</strong>\'+r;'
+    +'b.style.display="block";'
+    +'b.scrollIntoView({behavior:"smooth",block:"nearest"});'
+    +'}'
+    +'<\/script>'
+    +'</body></html>';
+  var dateSlug = date.replace(/\//g,'-');
+  var patSlug = nom.split(/\s+/)[0] || 'patient';
+  var filename = 'PROM_'+p.acronym.replace(/[^a-zA-Z0-9]/g,'_')+'_'+patSlug+'_'+dateSlug+'.html';
+  var blob = new Blob([htmlOut],{type:'text/html;charset=utf-8'});
+  var a = (window.top||window).document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  (window.top||window).document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){ (window.top||window).document.body.removeChild(a); URL.revokeObjectURL(a.href); },1000);
 }
 
 function calcPromScore(){
@@ -3214,9 +3315,12 @@ window.addEventListener('message', function(e){
     <!-- Score result -->
     <div id="prom-modal-score" style="display:none;background:#F0F4F8;border-top:1px solid #dde3ec;padding:14px 24px;"></div>
     <!-- Footer actions -->
-    <div style="padding:10px 22px;border-top:1px solid #dde3ec;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;">
-      <button onclick="calcPromScore()" style="padding:8px 18px;background:#1A3A5C;color:#fff;border:none;border-radius:6px;font-size:.82rem;font-weight:600;cursor:pointer;">Calculer le score</button>
-      <button onclick="closePromModal()" style="padding:8px 16px;background:none;color:#666;border:1px solid #dde3ec;border-radius:6px;font-size:.82rem;cursor:pointer;">Fermer</button>
+    <div style="padding:10px 22px;border-top:1px solid #dde3ec;display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap;align-items:center;">
+      <button onclick="exportPromForPatient()" id="prom-export-btn" style="padding:8px 16px;background:#27AE60;color:#fff;border:none;border-radius:6px;font-size:.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">📤 Exporter pour le patient</button>
+      <div style="display:flex;gap:8px;">
+        <button onclick="calcPromScore()" style="padding:8px 18px;background:#1A3A5C;color:#fff;border:none;border-radius:6px;font-size:.82rem;font-weight:600;cursor:pointer;">Calculer le score</button>
+        <button onclick="closePromModal()" style="padding:8px 16px;background:none;color:#666;border:1px solid #dde3ec;border-radius:6px;font-size:.82rem;cursor:pointer;">Fermer</button>
+      </div>
     </div>
   </div>
 </div>
