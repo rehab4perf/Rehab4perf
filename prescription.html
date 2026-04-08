@@ -328,6 +328,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 <div class="main">
   <div class="main-header">
     <h1>Prescription d'exercices</h1>
+    <button class="btn btn-outline" onclick="openCycles()" style="white-space:nowrap;">📅 Cycles</button>
     <input class="patient-input" type="text" id="patientName" placeholder="Nom du patient" />
     <button class="btn btn-outline" onclick="addBloc()">+ Bloc</button>
     <button class="btn btn-primary" onclick="exportSession()">📤 Exporter</button>
@@ -1138,6 +1139,289 @@ window.addEventListener('message', function(e){
 });
 
 renderLib('');
+</script>
+
+<!-- ══ CYCLES MODAL ════════════════════════════════════════════ -->
+<style>
+.cycle-modal-overlay {
+  position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;
+  display:none;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px;
+}
+.cycle-modal-overlay.open { display:flex; }
+.cycle-modal-box {
+  background:#fff;border-radius:12px;width:100%;max-width:860px;
+  box-shadow:0 20px 60px rgba(0,0,0,.28);margin:auto;overflow:hidden;
+}
+.cycle-modal-head {
+  background:#1A3A5C;color:#fff;padding:14px 20px;
+  display:flex;align-items:center;gap:10px;
+}
+.cycle-modal-head h2 { flex:1;font-size:.92rem;font-weight:700;letter-spacing:.03em; }
+.cycle-modal-close {
+  background:none;border:none;color:rgba(255,255,255,.65);
+  font-size:1.5rem;cursor:pointer;line-height:1;
+}
+.cycle-modal-body { padding:20px; }
+.cycle-timeline-wrap {
+  overflow-x:auto;margin-bottom:16px;
+  border:1px solid #dde3ec;border-radius:8px;background:#F7F8FA;
+  min-height:72px;padding:12px;
+}
+.cycle-timeline {
+  display:flex;gap:4px;align-items:stretch;min-height:48px;
+}
+.cycle-block {
+  display:flex;flex-direction:column;justify-content:center;
+  border-radius:6px;padding:6px 10px;color:#fff;font-size:.72rem;
+  font-weight:600;position:relative;flex-shrink:0;min-width:60px;
+  cursor:default;
+}
+.cycle-block-del {
+  position:absolute;top:3px;right:5px;background:none;border:none;
+  color:rgba(255,255,255,.7);font-size:.8rem;cursor:pointer;line-height:1;padding:0;
+}
+.cycle-block-del:hover { color:#fff; }
+.cycle-total {
+  font-size:.78rem;color:#666;text-align:right;margin-top:6px;margin-bottom:14px;
+}
+.cycle-add-section {
+  background:#F7F8FA;border:1px solid #dde3ec;border-radius:8px;padding:16px;
+}
+.cycle-add-section h3 {
+  font-size:.78rem;font-weight:700;color:#1A3A5C;
+  text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;
+}
+.cycle-form-grid {
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:12px;
+}
+.cycle-field label {
+  display:block;font-size:.72rem;font-weight:600;color:#444;margin-bottom:4px;
+}
+.cycle-field input, .cycle-field select {
+  width:100%;padding:7px 10px;border:1px solid #dde3ec;border-radius:6px;
+  font-size:.8rem;font-family:inherit;outline:none;background:#fff;color:#1a2433;
+}
+.cycle-field input:focus, .cycle-field select:focus { border-color:#2B5FA6; }
+.cycle-name-btns {
+  display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;
+}
+.cycle-name-btn {
+  padding:4px 10px;border-radius:5px;border:1px solid #dde3ec;
+  font-size:.72rem;cursor:pointer;background:#fff;color:#555;
+  transition:all .12s;font-family:inherit;
+}
+.cycle-name-btn:hover { border-color:#1A3A5C;color:#1A3A5C; }
+.cycle-name-btn.sel { color:#fff;border-color:transparent; }
+</style>
+
+<div class="cycle-modal-overlay" id="cycle-modal">
+  <div class="cycle-modal-box">
+    <div class="cycle-modal-head">
+      <h2>📅 Planification des cycles d'entraînement</h2>
+      <button class="cycle-modal-close" onclick="closeCycles()">×</button>
+    </div>
+    <div class="cycle-modal-body">
+      <!-- Timeline -->
+      <div class="cycle-timeline-wrap">
+        <div class="cycle-timeline" id="cycle-timeline">
+          <div style="color:#aaa;font-size:.8rem;align-self:center;">Aucun cycle ajouté — utilisez le formulaire ci-dessous.</div>
+        </div>
+      </div>
+      <div class="cycle-total" id="cycle-total"></div>
+
+      <!-- Add form -->
+      <div class="cycle-add-section">
+        <h3>Ajouter un cycle</h3>
+        <div style="margin-bottom:8px;">
+          <div style="font-size:.72rem;font-weight:600;color:#444;margin-bottom:6px;">Nom du cycle</div>
+          <div class="cycle-name-btns" id="cycle-name-btns">
+            <button class="cycle-name-btn" onclick="selectCycleName(this,'Force')">Force</button>
+            <button class="cycle-name-btn" onclick="selectCycleName(this,'Puissance')">Puissance</button>
+            <button class="cycle-name-btn" onclick="selectCycleName(this,'Hypertrophie')">Hypertrophie</button>
+            <button class="cycle-name-btn" onclick="selectCycleName(this,'Endurance de force')">Endurance de force</button>
+            <button class="cycle-name-btn" onclick="selectCycleName(this,'Récupération')">Récupération</button>
+            <button class="cycle-name-btn" onclick="selectCycleName(this,'Réathlétisation')">Réathlétisation</button>
+          </div>
+          <input type="text" id="cycle-nom" placeholder="Ou saisir un nom personnalisé…" style="width:100%;padding:7px 10px;border:1px solid #dde3ec;border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;" oninput="clearCycleNameBtns()">
+        </div>
+        <div class="cycle-form-grid">
+          <div class="cycle-field">
+            <label>Durée</label>
+            <select id="cycle-duree">
+              <option value="1">1 semaine</option>
+              <option value="2">2 semaines</option>
+              <option value="3" selected>3 semaines</option>
+              <option value="4">4 semaines</option>
+              <option value="5">5 semaines</option>
+              <option value="6">6 semaines</option>
+              <option value="8">8 semaines</option>
+              <option value="10">10 semaines</option>
+              <option value="12">12 semaines</option>
+            </select>
+          </div>
+          <div class="cycle-field">
+            <label>Intensité (%1RM / RPE)</label>
+            <select id="cycle-intensite">
+              <option value="50-60% 1RM">50–60% 1RM</option>
+              <option value="60-70% 1RM">60–70% 1RM</option>
+              <option value="70-80% 1RM" selected>70–80% 1RM</option>
+              <option value="80-90% 1RM">80–90% 1RM</option>
+              <option value=">90% 1RM">&gt;90% 1RM</option>
+              <option value="RPE 5-6">RPE 5–6</option>
+              <option value="RPE 6-7">RPE 6–7</option>
+              <option value="RPE 7-8">RPE 7–8</option>
+              <option value="RPE 8-9">RPE 8–9</option>
+              <option value="RPE 9-10">RPE 9–10</option>
+            </select>
+          </div>
+          <div class="cycle-field">
+            <label>Volume (séries × reps)</label>
+            <select id="cycle-volume">
+              <option value="2×15">2×15</option>
+              <option value="3×12">3×12</option>
+              <option value="3×10">3×10</option>
+              <option value="3×8" selected>3×8</option>
+              <option value="4×8">4×8</option>
+              <option value="4×6">4×6</option>
+              <option value="5×5">5×5</option>
+              <option value="5×3">5×3</option>
+              <option value="6×2">6×2</option>
+              <option value="3×15-20">3×15–20</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button onclick="addCycle()" style="padding:8px 18px;background:#1A3A5C;color:#fff;border:none;border-radius:6px;font-size:.82rem;font-weight:600;cursor:pointer;">+ Ajouter le cycle</button>
+          <button onclick="exportCycles()" style="padding:8px 18px;background:none;border:1px solid #2B5FA6;color:#2B5FA6;border-radius:6px;font-size:.82rem;font-weight:600;cursor:pointer;">📥 Exporter</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CYCLES ────────────────────────────────────────────────────
+var _cycles = [];
+try { _cycles = JSON.parse(localStorage.getItem('r4p-cycles')||'[]'); } catch(e){ _cycles=[]; }
+var _cycleColors = {
+  'Force':'#1A3A5C','Puissance':'#C0392B','Hypertrophie':'#2D7D46',
+  'Endurance de force':'#2B5FA6','Récupération':'#D4600A','Réathlétisation':'#9B2C6B'
+};
+function _cycleColor(nom){
+  return _cycleColors[nom] || '#52514E';
+}
+function openCycles(){
+  document.getElementById('cycle-modal').classList.add('open');
+  renderCycleTimeline();
+}
+function closeCycles(){
+  document.getElementById('cycle-modal').classList.remove('open');
+}
+function selectCycleName(btn, name){
+  document.querySelectorAll('.cycle-name-btn').forEach(function(b){
+    b.classList.remove('sel');
+    b.style.background='';b.style.color='';b.style.borderColor='';
+  });
+  btn.classList.add('sel');
+  var col = _cycleColor(name);
+  btn.style.background = col; btn.style.color='#fff'; btn.style.borderColor=col;
+  document.getElementById('cycle-nom').value = name;
+}
+function clearCycleNameBtns(){
+  document.querySelectorAll('.cycle-name-btn').forEach(function(b){
+    b.classList.remove('sel');
+    b.style.background='';b.style.color='';b.style.borderColor='';
+  });
+}
+function addCycle(){
+  var nom = (document.getElementById('cycle-nom').value||'').trim();
+  if(!nom){ alert('Veuillez saisir un nom de cycle.'); return; }
+  var duree = parseInt(document.getElementById('cycle-duree').value)||3;
+  var intensite = document.getElementById('cycle-intensite').value;
+  var volume = document.getElementById('cycle-volume').value;
+  _cycles.push({id:'c'+Date.now(), nom:nom, duree:duree, intensite:intensite, volume:volume});
+  try { localStorage.setItem('r4p-cycles', JSON.stringify(_cycles)); } catch(e){}
+  renderCycleTimeline();
+}
+function deleteCycle(id){
+  _cycles = _cycles.filter(function(c){ return c.id !== id; });
+  try { localStorage.setItem('r4p-cycles', JSON.stringify(_cycles)); } catch(e){}
+  renderCycleTimeline();
+}
+function renderCycleTimeline(){
+  var tl = document.getElementById('cycle-timeline');
+  var tot = document.getElementById('cycle-total');
+  if(!_cycles.length){
+    tl.innerHTML = '<div style="color:#aaa;font-size:.8rem;align-self:center;">Aucun cycle ajouté — utilisez le formulaire ci-dessous.</div>';
+    tot.textContent = '';
+    return;
+  }
+  var totalWeeks = _cycles.reduce(function(s,c){ return s+c.duree; },0);
+  var minW = 60, unitW = Math.max(minW, Math.min(90, 600/totalWeeks));
+  var html = '';
+  _cycles.forEach(function(c){
+    var col = _cycleColor(c.nom);
+    var w = (c.duree * unitW) + 'px';
+    html += '<div class="cycle-block" style="background:'+col+';width:'+w+';" title="'+c.nom+' — '+c.duree+' sem. — '+c.intensite+' — '+c.volume+'">';
+    html += '<button class="cycle-block-del" onclick="deleteCycle(\''+c.id+'\')">×</button>';
+    html += '<div style="font-size:.75rem;font-weight:700;margin-bottom:2px;padding-right:14px;">'+c.nom+'</div>';
+    html += '<div style="font-size:.65rem;opacity:.85;">'+c.duree+' sem.</div>';
+    html += '<div style="font-size:.63rem;opacity:.75;">'+c.intensite+'</div>';
+    html += '<div style="font-size:.63rem;opacity:.75;">'+c.volume+'</div>';
+    html += '</div>';
+  });
+  tl.innerHTML = html;
+  tot.textContent = 'Total : '+totalWeeks+' semaine'+(totalWeeks>1?'s':'');
+}
+function exportCycles(){
+  if(!_cycles.length){ alert('Aucun cycle à exporter.'); return; }
+  var totalWeeks = _cycles.reduce(function(s,c){ return s+c.duree; },0);
+  var date = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+  var patient = (document.getElementById('patientName')||{}).value || '';
+  var blocksHtml = '';
+  _cycles.forEach(function(c){
+    var col = _cycleColor(c.nom);
+    var pct = Math.round(c.duree/totalWeeks*100);
+    blocksHtml += '<div style="flex:0 0 auto;width:'+pct+'%;min-width:80px;background:'+col+';border-radius:7px;padding:12px 14px;color:#fff;">';
+    blocksHtml += '<div style="font-size:.88rem;font-weight:700;margin-bottom:4px;">'+c.nom+'</div>';
+    blocksHtml += '<div style="font-size:.75rem;opacity:.85;">'+c.duree+' semaine'+(c.duree>1?'s':'')+'</div>';
+    blocksHtml += '<div style="font-size:.72rem;opacity:.8;margin-top:2px;">'+c.intensite+'</div>';
+    blocksHtml += '<div style="font-size:.72rem;opacity:.8;">'+c.volume+'</div>';
+    blocksHtml += '</div>';
+  });
+  var html = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Cycles d\'entraînement</title>'
+    +'<style>body{font-family:-apple-system,Arial,sans-serif;background:#F0F4F8;margin:0;padding:0 0 48px}'
+    +'.hdr{background:#1A3A5C;color:#fff;padding:24px 32px}.hdr h1{font-size:1.3rem;font-weight:700;margin:0 0 4px}'
+    +'.hdr p{font-size:.8rem;opacity:.7;margin:0}.body{padding:24px 32px}'
+    +'.tl{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}'
+    +'.total{font-size:.8rem;color:#666;margin-bottom:20px}'
+    +'table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.07)}'
+    +'th{background:#1A3A5C;color:#fff;padding:10px 14px;font-size:.75rem;text-align:left;font-weight:600}'
+    +'td{padding:9px 14px;font-size:.8rem;border-bottom:1px solid #eee;color:#333}'
+    +'tr:last-child td{border-bottom:none}</style></head><body>'
+    +'<div class="hdr"><h1>Planification des cycles d\'entraînement</h1>'
+    +'<p>'+(patient?'Patient : '+patient+' · ':'')+date+' · '+totalWeeks+' semaines au total</p></div>'
+    +'<div class="body">'
+    +'<div class="tl">'+blocksHtml+'</div>'
+    +'<div class="total">Total : '+totalWeeks+' semaine'+(totalWeeks>1?'s':'')+' ('+_cycles.length+' cycle'+(_cycles.length>1?'s':'')+')</div>'
+    +'<table><thead><tr><th>#</th><th>Cycle</th><th>Durée</th><th>Intensité</th><th>Volume</th></tr></thead><tbody>';
+  _cycles.forEach(function(c,i){
+    var col = _cycleColor(c.nom);
+    html += '<tr><td style="color:'+col+';font-weight:700;">'+(i+1)+'</td><td style="font-weight:600;color:'+col+'">'+c.nom+'</td>'
+      +'<td>'+c.duree+' sem.</td><td>'+c.intensite+'</td><td>'+c.volume+'</td></tr>';
+  });
+  html += '</tbody></table></div></body></html>';
+  var blob = new Blob([html],{type:'text/html'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'Cycles_Entrainement.html';
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(a.href); },1000);
+}
+// Close modal on overlay click
+document.getElementById('cycle-modal').addEventListener('click', function(e){
+  if(e.target === this) closeCycles();
+});
 </script>
 </body>
 </html>

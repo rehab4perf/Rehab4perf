@@ -641,12 +641,23 @@ body {
 
 @media print {
   .sidebar, .page-header, .no-print { display: none !important; }
-  .page-content { padding: 0 !important; }
+  .page-content { padding: 0 !important; margin-left: 0 !important; }
   .block { break-inside: avoid; }
+  #print-header { display: block !important; }
 }
 </style>
 </head>
 <body>
+
+<div id="print-header" style="display:none;">
+  <div style="background:#1A3A5C;color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;">
+    <div style="font-family:Georgia,serif;font-style:italic;font-size:1.1rem;">
+      <span style="color:#4A90D9">Rehab</span><span style="font-weight:900;font-style:normal">4</span><span style="color:#E74C3C">Perf</span>
+    </div>
+    <div id="ph-meta" style="text-align:right;font-size:.72rem;color:rgba(255,255,255,.8);"></div>
+  </div>
+  <div id="ph-patient" style="background:#fff;padding:16px 24px;border-bottom:1px solid #DDE3EC;"></div>
+</div>
 
 <!-- ── SIDEBAR ──────────────────────────────────────────── -->
 <aside class="sidebar">
@@ -2566,7 +2577,7 @@ function buildCR() {
   if (!content) return;
   content.innerHTML = '';
 
-  var nom = document.getElementById('f-nom') ? document.getElementById('f-nom').value : '';
+  var nom = document.getElementById('f-nom') ? document.getElementById('f-nom').value.toUpperCase() : '';
   var prenom = document.getElementById('f-prenom') ? document.getElementById('f-prenom').value : '';
   var dob = document.getElementById('f-dob') ? document.getElementById('f-dob').value : '';
   var cote = document.getElementById('f-cote') ? document.getElementById('f-cote').value : '';
@@ -2942,6 +2953,29 @@ function buildCR() {
   if (!content.innerHTML.trim()) {
     content.innerHTML = '<div class="cr-empty">Aucune donnee saisie. Remplissez les onglets pour generer le compte-rendu.</div>';
   }
+  updatePrintHeader();
+}
+
+function updatePrintHeader() {
+  var p = getProfile ? getProfile() : {};
+  var praticien = ((p.prenom||'')+' '+(p.nom||'')).trim() || '';
+  var cabinet = p.cabinet || '';
+  var nom    = ((document.getElementById('f-nom')||{}).value || '').toUpperCase();
+  var prenom = (document.getElementById('f-prenom')||{}).value || '';
+  var dob    = (document.getElementById('f-dob')||{}).value || '';
+  var cote   = (document.getElementById('f-cote')||{}).value || '';
+  var date   = (document.getElementById('f-date')||{}).value || '';
+  var age    = dob ? (new Date().getFullYear() - new Date(dob).getFullYear()) + ' ans' : '';
+  var patName = [prenom, nom].filter(Boolean).join(' ');
+  var dateFmt = date ? new Date(date).toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'}) : '';
+  var metaParts = [praticien, cabinet].filter(Boolean);
+  if(dateFmt) metaParts.push(dateFmt);
+  document.getElementById('ph-meta').innerHTML = metaParts.join('<br>');
+  var patHtml = '';
+  if(patName) patHtml += '<span style="font-size:1rem;font-weight:700;color:#1A3A5C;margin-right:16px;">'+patName+'</span>';
+  var details = [age, cote].filter(Boolean).join(' · ');
+  if(details) patHtml += '<span style="font-size:.82rem;color:#666;">'+details+'</span>';
+  document.getElementById('ph-patient').innerHTML = patHtml || '<span style="color:#aaa;font-size:.82rem;">Patient non renseigné</span>';
 }
 
 function openReset() { document.getElementById('modal-reset').classList.add('open'); }
@@ -3630,7 +3664,7 @@ function exportBilanHTML(type) {
   var title     = iscrTF ? 'Compte-Rendu Tests Fonctionnels' : 'Compte-Rendu Patient';
   var contentId = iscrTF ? 'cr-tf-content' : 'cr-content';
 
-  var nom    = (document.getElementById('f-nom')    ||{}).value || '';
+  var nom    = ((document.getElementById('f-nom')||{}).value || '').toUpperCase();
   var prenom = (document.getElementById('f-prenom') ||{}).value || '';
   var dob    = (document.getElementById('f-dob')    ||{}).value || '';
   var cote   = (document.getElementById('f-cote')   ||{}).value || '';

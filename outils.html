@@ -284,6 +284,7 @@ body {
   <button class="sub-tab" onclick="showTab('cardio')" id="stab-cardio">❤️ Calculateur Cardio</button>
   <button class="sub-tab" onclick="showTab('cap')" id="stab-cap">🏃 Reprise CAP</button>
   <button class="sub-tab" onclick="showTab('proms')" id="stab-proms">📋 PROMs</button>
+  <button class="sub-tab" onclick="showTab('ressources')" id="stab-ressources">📂 Ressources</button>
   <button class="sub-tab" style="margin-left:auto;background:none;color:#2B5FA6;border-bottom:none;font-size:.78rem;" onclick="openExportOutils()">📤 Exporter pour le patient</button>
 </div>
 
@@ -661,6 +662,7 @@ body {
       <button class="proms-chip proms-chip-active" data-avail="all" onclick="setPromsAvailFilter(this)">📋 Tous</button>
       <button class="proms-chip" data-avail="site" onclick="setPromsAvailFilter(this)">✅ Disponible sur le site</button>
       <button class="proms-chip" data-avail="web" onclick="setPromsAvailFilter(this)">🔗 Uniquement sur internet</button>
+      <button class="proms-chip" onclick="togglePromFavFilter(this)">⭐ Favoris</button>
     </div>
   </div>
 
@@ -668,6 +670,75 @@ body {
   <div id="proms-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;"></div>
 
 </div><!-- /panel-proms -->
+
+<!-- ══ PANEL RESSOURCES ══════════════════════════════════════ -->
+<div class="panel" id="panel-ressources">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px;">
+    <div>
+      <div style="font-size:1.4rem;font-weight:700;color:#1A3A5C;margin-bottom:4px;">Ressources documentaires</div>
+      <div style="font-size:.82rem;color:#666;max-width:520px;line-height:1.5;">Centralisez vos liens utiles, notes cliniques et protocoles — organisés par destination (kiné ou patient).</div>
+    </div>
+    <button onclick="openAddRessource()" style="padding:8px 16px;background:#1A3A5C;color:#fff;border:none;border-radius:7px;font-size:.8rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap;">+ Ajouter une ressource</button>
+  </div>
+
+  <!-- Inline add form (hidden by default) -->
+  <div id="ressource-form" style="display:none;background:#fff;border:1px solid #dde3ec;border-radius:9px;padding:18px 20px;margin-bottom:18px;box-shadow:0 1px 6px rgba(0,0,0,.06);">
+    <div style="font-size:.82rem;font-weight:700;color:#1A3A5C;margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em;">Nouvelle ressource</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+      <div>
+        <label style="font-size:.74rem;font-weight:600;color:#444;display:block;margin-bottom:4px;">Titre *</label>
+        <input id="rform-titre" type="text" placeholder="Ex: Protocole genou post-op" style="width:100%;padding:7px 10px;border:1px solid #dde3ec;border-radius:6px;font-size:.82rem;font-family:inherit;outline:none;">
+      </div>
+      <div>
+        <label style="font-size:.74rem;font-weight:600;color:#444;display:block;margin-bottom:4px;">Type</label>
+        <select id="rform-type" style="width:100%;padding:7px 10px;border:1px solid #dde3ec;border-radius:6px;font-size:.82rem;font-family:inherit;outline:none;background:#fff;">
+          <option value="Lien web">Lien web</option>
+          <option value="Note">Note</option>
+          <option value="Protocole">Protocole</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:.74rem;font-weight:600;color:#444;display:block;margin-bottom:4px;">Catégorie</label>
+        <select id="rform-cat" style="width:100%;padding:7px 10px;border:1px solid #dde3ec;border-radius:6px;font-size:.82rem;font-family:inherit;outline:none;background:#fff;">
+          <option value="kine">🩺 Ressources kiné</option>
+          <option value="patient">👤 Ressources patients</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:.74rem;font-weight:600;color:#444;display:block;margin-bottom:4px;">URL ou contenu *</label>
+        <input id="rform-contenu" type="text" placeholder="https://... ou texte de la note" style="width:100%;padding:7px 10px;border:1px solid #dde3ec;border-radius:6px;font-size:.82rem;font-family:inherit;outline:none;">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="saveRessource()" style="padding:7px 16px;background:#1A3A5C;color:#fff;border:none;border-radius:6px;font-size:.8rem;font-weight:600;cursor:pointer;">✓ Enregistrer</button>
+      <button onclick="closeAddRessource()" style="padding:7px 14px;background:none;border:1px solid #dde3ec;border-radius:6px;font-size:.8rem;color:#666;cursor:pointer;">Annuler</button>
+    </div>
+  </div>
+
+  <!-- Two sections -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <!-- Kiné -->
+    <div>
+      <div style="font-size:.78rem;font-weight:700;color:#fff;background:#1A3A5C;padding:8px 14px;border-radius:7px 7px 0 0;letter-spacing:.05em;text-transform:uppercase;">🩺 Ressources kiné</div>
+      <div id="ress-list-kine" style="background:#fff;border:1px solid #dde3ec;border-top:none;border-radius:0 0 7px 7px;min-height:80px;padding:8px 0;"></div>
+    </div>
+    <!-- Patient -->
+    <div>
+      <div style="font-size:.78rem;font-weight:700;color:#fff;background:#2D7D46;padding:8px 14px;border-radius:7px 7px 0 0;letter-spacing:.05em;text-transform:uppercase;">👤 Ressources patients</div>
+      <div id="ress-list-patient" style="background:#fff;border:1px solid #dde3ec;border-top:none;border-radius:0 0 7px 7px;min-height:80px;padding:8px 0;"></div>
+    </div>
+  </div>
+
+  <!-- Note modal -->
+  <div id="ress-note-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9000;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:12px;max-width:560px;width:90%;padding:24px;position:relative;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25);">
+      <button onclick="closeRessNote()" style="position:absolute;top:12px;right:14px;background:none;border:none;font-size:1.4rem;cursor:pointer;color:#888;">×</button>
+      <div style="font-size:.72rem;font-weight:700;color:#2B5FA6;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;" id="ress-note-type">Note</div>
+      <div style="font-size:1rem;font-weight:700;color:#1A3A5C;margin-bottom:14px;" id="ress-note-titre"></div>
+      <div style="font-size:.85rem;color:#444;line-height:1.7;white-space:pre-wrap;" id="ress-note-contenu"></div>
+    </div>
+  </div>
+</div><!-- /panel-ressources -->
 
 <style>
 /* ── PROMs chip styles ── */
@@ -806,6 +877,21 @@ var PROMS_CAT_COLORS = {
 };
 var _promsFilter = 'all';
 var _promsAvailFilter = 'all';
+var _promsFavs = [];
+try { _promsFavs = JSON.parse(localStorage.getItem('r4p-proms-favs')||'[]'); } catch(e){ _promsFavs=[]; }
+var _promsFavFilter = false;
+function togglePromFavFilter(btn){
+  _promsFavFilter = !_promsFavFilter;
+  btn.classList.toggle('proms-chip-active', _promsFavFilter);
+  renderProms();
+}
+function togglePromFav(acronym){
+  var i = _promsFavs.indexOf(acronym);
+  if(i===-1) _promsFavs.push(acronym);
+  else _promsFavs.splice(i,1);
+  try { localStorage.setItem('r4p-proms-favs', JSON.stringify(_promsFavs)); } catch(e){}
+  renderProms();
+}
 
 function setPromsFilter(btn){
   document.querySelectorAll('#proms-chips .proms-chip').forEach(function(c){ c.classList.remove('proms-chip-active'); });
@@ -827,6 +913,7 @@ function renderProms(){
     if(_promsFilter !== 'all' && p.cat !== _promsFilter) return false;
     if(_promsAvailFilter === 'site' && !p.available) return false;
     if(_promsAvailFilter === 'web' && p.available) return false;
+    if(_promsFavFilter && _promsFavs.indexOf(p.acronym)===-1) return false;
     if(q && p.acronym.toLowerCase().indexOf(q)===-1 && p.name.toLowerCase().indexOf(q)===-1 &&
        p.path.join(' ').toLowerCase().indexOf(q)===-1 && p.note.toLowerCase().indexOf(q)===-1) return false;
     return true;
@@ -844,7 +931,9 @@ function renderProms(){
     html += '<div class="prom-section-hdr" style="border-bottom-color:'+col+';color:'+col+'">'+cat+'<span class="prom-section-count">'+items.length+' PROM'+(items.length>1?'s':'')+'</span></div>';
     items.forEach(function(p){
       var col2 = PROMS_CAT_COLORS[p.cat]||'#1A3A5C';
-      html += '<div class="prom-card" style="border-left-color:'+col2+';cursor:pointer;" data-acronym="'+p.acronym.replace(/"/g,'&quot;')+'" onclick="openPromCard(this.getAttribute(\'data-acronym\'))">';
+      var isFav = _promsFavs.indexOf(p.acronym) !== -1;
+      html += '<div class="prom-card" style="border-left-color:'+col2+';cursor:pointer;position:relative;" data-acronym="'+p.acronym.replace(/"/g,'&quot;')+'" onclick="openPromCard(this.getAttribute(\'data-acronym\'))">';
+      html += '<button onclick="event.stopPropagation();togglePromFav(\''+p.acronym.replace(/'/g,"\\'")+'\''+')" style="position:absolute;top:8px;right:8px;background:none;border:none;cursor:pointer;font-size:1.1rem;color:'+(isFav?'#F59E0B':'#ccc')+';transition:color .15s;" title="'+(isFav?'Retirer des favoris':'Ajouter aux favoris')+'">★</button>';
       html += '<div class="prom-acronym" style="color:'+col2+'">'+p.acronym+'</div>';
       html += '<div class="prom-fullname">'+p.name+'</div>';
       html += '<div class="prom-tags">';
@@ -884,8 +973,8 @@ function exportProms(){
 .note{font-size:.76rem;color:#555;line-height:1.5;border-top:1px solid #f0f4f8;padding-top:8px;margin-top:4px}
 .meta{display:flex;gap:12px;margin-top:8px;font-size:.68rem;color:#999}`;
 
-  var catColors = {"Genou":"#2D7D46","Épaule":"#C05621","Rachis":"#2B5FA6","Hanche":"#9B2C6B","Cheville/Pied":"#276749","Coude/Poignet":"#C0392B","Douleur":"#B45309","Sport/RTS":"#0E7490","Général":"#6D28D9"};
-  var catOrder = ["Genou","Épaule","Rachis","Hanche","Cheville/Pied","Coude/Poignet","Douleur","Sport/RTS","Général"];
+  var catColors = {"Genou":"#2D7D46","Épaule":"#C05621","Rachis":"#2B5FA6","Hanche":"#9B2C6B","Cheville/Pied":"#276749","Coude/Poignet":"#C0392B","Douleur":"#B45309","Sport/RTS":"#0E7490","Général":"#6D28D9","Équilibre":"#0F766E"};
+  var catOrder = ["Genou","Épaule","Rachis","Hanche","Cheville/Pied","Coude/Poignet","Douleur","Sport/RTS","Général","Équilibre"];
   var groups = {}; catOrder.forEach(function(c){ groups[c]=[]; });
   PROMS_DATA.forEach(function(p){ if(groups[p.cat]) groups[p.cat].push(p); });
   var gridHtml = '';
@@ -918,6 +1007,96 @@ function exportProms(){
 // Init PROMs on first display
 document.getElementById('stab-proms').addEventListener('click', function(){
   setTimeout(renderProms, 50);
+});
+
+// ── RESSOURCES ────────────────────────────────────────────────
+var _ressources = [];
+try { _ressources = JSON.parse(localStorage.getItem('r4p-ressources')||'[]'); } catch(e){ _ressources=[]; }
+
+function openAddRessource(){
+  document.getElementById('ressource-form').style.display = 'block';
+  document.getElementById('rform-titre').focus();
+}
+function closeAddRessource(){
+  document.getElementById('ressource-form').style.display = 'none';
+  document.getElementById('rform-titre').value = '';
+  document.getElementById('rform-contenu').value = '';
+}
+function saveRessource(){
+  var titre = (document.getElementById('rform-titre').value||'').trim();
+  var contenu = (document.getElementById('rform-contenu').value||'').trim();
+  if(!titre || !contenu){ alert('Veuillez remplir le titre et le contenu/URL.'); return; }
+  var type = document.getElementById('rform-type').value;
+  var cat = document.getElementById('rform-cat').value;
+  var date = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'});
+  var id = 'r' + Date.now();
+  _ressources.push({id:id, titre:titre, type:type, contenu:contenu, categorie:cat, date:date});
+  try { localStorage.setItem('r4p-ressources', JSON.stringify(_ressources)); } catch(e){}
+  closeAddRessource();
+  renderRessources();
+}
+function deleteRessource(id){
+  _ressources = _ressources.filter(function(r){ return r.id !== id; });
+  try { localStorage.setItem('r4p-ressources', JSON.stringify(_ressources)); } catch(e){}
+  renderRessources();
+}
+function consulterRessource(id){
+  var r = _ressources.find(function(x){ return x.id === id; });
+  if(!r) return;
+  if(r.type === 'Lien web'){
+    window.open(r.contenu, '_blank');
+  } else {
+    document.getElementById('ress-note-type').textContent = r.type;
+    document.getElementById('ress-note-titre').textContent = r.titre;
+    document.getElementById('ress-note-contenu').textContent = r.contenu;
+    var m = document.getElementById('ress-note-modal');
+    m.style.display = 'flex';
+  }
+}
+function closeRessNote(){
+  document.getElementById('ress-note-modal').style.display = 'none';
+}
+function copyRessLink(id){
+  var r = _ressources.find(function(x){ return x.id === id; });
+  if(!r) return;
+  try { navigator.clipboard.writeText(r.contenu); } catch(e){}
+}
+function renderRessources(){
+  var typeBadgeColor = {'Lien web':'#2B5FA6','Note':'#D4600A','Protocole':'#2D6A4F'};
+  function renderList(cat, containerId){
+    var list = _ressources.filter(function(r){ return r.categorie === cat; });
+    var el = document.getElementById(containerId);
+    if(!el) return;
+    if(!list.length){
+      el.innerHTML = '<div style="text-align:center;padding:24px 16px;color:#aaa;font-size:.8rem;">Aucune ressource</div>';
+      return;
+    }
+    var html = '';
+    list.forEach(function(r){
+      var bc = typeBadgeColor[r.type] || '#888';
+      html += '<div style="padding:10px 14px;border-bottom:1px solid #f0f4f8;display:flex;align-items:flex-start;gap:10px;">';
+      html += '<div style="flex:1;min-width:0;">';
+      html += '<div style="display:flex;align-items:center;gap:7px;margin-bottom:3px;">';
+      html += '<span style="font-size:.65rem;font-weight:700;color:#fff;background:'+bc+';border-radius:4px;padding:1px 7px;">'+r.type+'</span>';
+      html += '<span style="font-size:.82rem;font-weight:600;color:#1A3A5C;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+r.titre+'</span>';
+      html += '</div>';
+      html += '<div style="font-size:.71rem;color:#aaa;">Ajouté le '+r.date+'</div>';
+      html += '</div>';
+      html += '<div style="display:flex;gap:5px;flex-shrink:0;">';
+      html += '<button onclick="consulterRessource(\''+r.id+'\')" style="padding:4px 9px;font-size:.72rem;background:#1A3A5C;color:#fff;border:none;border-radius:5px;cursor:pointer;">Consulter</button>';
+      if(r.type==='Lien web') html += '<button onclick="copyRessLink(\''+r.id+'\')" style="padding:4px 9px;font-size:.72rem;background:none;border:1px solid #dde3ec;border-radius:5px;cursor:pointer;color:#555;">Copier</button>';
+      html += '<button onclick="deleteRessource(\''+r.id+'\')" style="padding:4px 9px;font-size:.72rem;background:none;border:1px solid #fca5a5;border-radius:5px;cursor:pointer;color:#C0392B;">✕</button>';
+      html += '</div>';
+      html += '</div>';
+    });
+    el.innerHTML = html;
+  }
+  renderList('kine', 'ress-list-kine');
+  renderList('patient', 'ress-list-patient');
+}
+// Init ressources on tab open
+document.getElementById('stab-ressources').addEventListener('click', function(){
+  setTimeout(renderRessources, 50);
 });
 
 /* ── PROM Modal functions ── */
