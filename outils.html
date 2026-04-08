@@ -655,6 +655,7 @@ body {
       <button class="proms-chip" data-cat="Douleur" onclick="setPromsFilter(this)">Douleur</button>
       <button class="proms-chip" data-cat="Sport/RTS" onclick="setPromsFilter(this)">Sport / RTS</button>
       <button class="proms-chip" data-cat="Général" onclick="setPromsFilter(this)">Général</button>
+      <button class="proms-chip" data-cat="Équilibre" onclick="setPromsFilter(this)">Équilibre</button>
     </div>
     <div id="proms-avail-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
       <button class="proms-chip proms-chip-active" data-avail="all" onclick="setPromsAvailFilter(this)">📋 Tous</button>
@@ -774,13 +775,34 @@ var PROMS_DATA = [
   {acronym:"HAD",name:"Hospital Anxiety and Depression Scale",cat:"Général",path:["Anxiété","Dépression","Chronique"],items:14,scale:"0–21 / sous-score",free:false,fr:true,note:"Dépistage HAD. Indispensable en douleur chronique.",rts:false,available:false},
   {acronym:"PSQI",name:"Pittsburgh Sleep Quality Index",cat:"Général",path:["Sommeil","Chronique"],items:19,scale:"0–21 (↓=mieux)",free:true,fr:true,note:"Qualité du sommeil. Impact récupération sportive.",rts:false,available:false},
   {acronym:"PSFS (Général)",name:"Patient-Specific Functional Scale",cat:"Général",path:["Universel"],items:3,scale:"0–10 / activité",free:true,fr:true,note:"Utilisable sur toute pathologie. Patient définit ses objectifs.",rts:false,available:true},
+  /* ── Nouveaux ── */
+  {acronym:"Kujala AKPS",name:"Kujala Anterior Knee Pain Scale (F-AKPS)",cat:"Genou",path:["Rotule","SDPF","Syndrome fémoro-patellaire"],items:13,scale:"0–100 (↑=mieux)",free:true,fr:true,note:"Gold standard douleur antérieure du genou. Syndrome rotulien et SDPF.",rts:false,available:true},
+  {acronym:"FASH",name:"Functional Assessment Scale for Acute Hamstring Injuries",cat:"Genou",path:["Ischio-jambiers","Claquage"],items:10,scale:"0–100 (↑=mieux)",free:true,fr:true,note:"Blessures aiguës des ischio-jambiers. Douleur et reprise sportive.",rts:true,available:true},
+  {acronym:"Constant-Murley",name:"Score de Constant-Murley",cat:"Épaule",path:["Coiffe","Chirurgie","Arthrose épaule"],items:13,scale:"0–100 (↑=mieux)",free:true,fr:true,note:"Gold standard épaule. Douleur, AVQ, mobilité, force. Partiellement clinicien.",rts:false,available:false},
+  {acronym:"SI-RSI",name:"Shoulder Instability-Return to Sport after Injury",cat:"Épaule",path:["Instabilité","Sportif"],items:12,scale:"0–100% (↑=mieux)",free:true,fr:true,note:"Préparation psychologique RTS après instabilité épaule. Analogue ACL-RSI.",rts:true,available:true},
+  {acronym:"HAGOS",name:"Copenhagen Hip and Groin Outcome Score",cat:"Hanche",path:["FAI","Aine","Sportif"],items:37,scale:"0–100 / 6 sous-scores",free:true,fr:true,note:"Douleur hanche et aine chez le sportif actif. 6 sous-scores.",rts:true,available:false},
+  {acronym:"VISA-G",name:"VISA Glutéal — Tendinopathie glutéale",cat:"Hanche",path:["Tendinopathie glutéale","Grand trochanter"],items:8,scale:"0–100 (↑=mieux)",free:true,fr:true,note:"Tendinopathie du moyen fessier / grand trochanter. Analogue VISA-A.",rts:true,available:true},
+  {acronym:"VISA-H",name:"VISA Ischio-jambiers proximal",cat:"Hanche",path:["Tendinopathie IJ","Proximal"],items:8,scale:"0–100 (↑=mieux)",free:true,fr:false,note:"Tendinopathie proximale des ischio-jambiers. Version non validée en FR.",rts:true,available:false},
+  {acronym:"ATRS",name:"Achilles Tendon Total Rupture Score",cat:"Cheville/Pied",path:["Rupture Achille","Post-op"],items:10,scale:"0–100 (↑=mieux)",free:true,fr:true,note:"Gold standard rupture tendon d'Achille. Post-chirurgie ou conservateur.",rts:true,available:true},
+  {acronym:"ALR-RSI",name:"Ankle Ligament Reconstruction — Return to Sport after Injury",cat:"Cheville/Pied",path:["Instabilité cheville","Ligamentoplastie"],items:12,scale:"0–100% (↑=mieux)",free:true,fr:true,note:"Préparation psychologique RTS après ligamentoplastie de cheville.",rts:true,available:true},
+  {acronym:"MTSS Score",name:"Medial Tibial Stress Syndrome Score",cat:"Cheville/Pied",path:["MTSS","Périostite tibiale"],items:4,scale:"0–10 (↓=mieux)",free:true,fr:true,note:"Syndrome de stress tibial médial. Douleur et limitation sportive.",rts:false,available:true},
+  {acronym:"FFI",name:"Foot Function Index",cat:"Cheville/Pied",path:["Pied","Fascia plantaire"],items:23,scale:"0–100 (↓=mieux)",free:true,fr:false,note:"Douleur, incapacité et limitation du pied. 3 sous-scores.",rts:false,available:false},
+  {acronym:"Ankle Function",name:"Ankle Function Score (De Bie 1997)",cat:"Cheville/Pied",path:["Entorse","Fonctionnel"],items:9,scale:"0–100 (↑=mieux)",free:true,fr:true,note:"Évaluation fonctionnelle post-entorse cheville.",rts:false,available:false},
+  {acronym:"CSI",name:"Central Sensitization Inventory",cat:"Douleur",path:["Sensibilisation centrale","Chronique"],items:25,scale:"0–100 (seuil ≥40)",free:true,fr:true,note:"Dépistage sensibilisation centrale. Seuil 40 · Sous-clinique <30 · Modéré 40-49.",rts:false,available:false},
+  {acronym:"PSEQ",name:"Pain Self-Efficacy Questionnaire",cat:"Douleur",path:["Auto-efficacité","Chronique"],items:10,scale:"0–60 (↑=mieux)",free:true,fr:true,note:"Auto-efficacité face à la douleur chronique. Seuil ≥ 40.",rts:false,available:true},
+  {acronym:"Dallas",name:"Auto-questionnaire de Dallas",cat:"Rachis",path:["Lombaire","Douleur chronique"],items:13,scale:"0–100% / 3 sous-scores",free:true,fr:true,note:"Lombalgie chronique. Impact sur AVQ, travail/loisirs, anxiété/dépression.",rts:false,available:true},
+  {acronym:"Nijmegen",name:"Questionnaire de Nijmegen",cat:"Général",path:["Hyperventilation","Respiratoire"],items:16,scale:"0–64 (seuil ≥23)",free:true,fr:true,note:"Dépistage syndrome d'hyperventilation. Seuil ≥ 23/64.",rts:false,available:true},
+  {acronym:"PASIPD",name:"Physical Activity Scale — Persons with Physical Disabilities",cat:"Général",path:["Handicap","Activité physique"],items:13,scale:"MET-h/j",free:true,fr:true,note:"Niveau d'activité physique des personnes en situation de handicap.",rts:false,available:false},
+  {acronym:"MIF",name:"Mesure de l'Indépendance Fonctionnelle",cat:"Général",path:["Neurologique","Rééducation"],items:18,scale:"18–126 (↑=mieux)",free:false,fr:true,note:"Dépendance fonctionnelle en rééducation neurologique. Clinicien requis.",rts:false,available:false},
+  {acronym:"Berg",name:"Berg Balance Scale",cat:"Équilibre",path:["Neurologique","Risque de chute","Rééducation"],items:14,scale:"0–56 (↑=mieux)",free:true,fr:true,note:"Gold standard équilibre. Risque de chute si < 45/56. Clinicien requis.",rts:false,available:false},
+  {acronym:"Tinetti",name:"Tinetti Performance Oriented Mobility Assessment",cat:"Équilibre",path:["Risque de chute","Marche","Gériatrie"],items:16,scale:"0–28 (↑=mieux)",free:true,fr:true,note:"Équilibre et marche. Risque de chute élevé si < 19/28. Clinicien requis.",rts:false,available:false},
 ];
 
-var PROMS_CAT_ORDER = ["Genou","Épaule","Rachis","Hanche","Cheville/Pied","Coude/Poignet","Douleur","Sport/RTS","Général"];
+var PROMS_CAT_ORDER = ["Genou","Épaule","Rachis","Hanche","Cheville/Pied","Coude/Poignet","Douleur","Sport/RTS","Général","Équilibre"];
 var PROMS_CAT_COLORS = {
   "Genou":"#2D7D46","Épaule":"#C05621","Rachis":"#2B5FA6","Hanche":"#9B2C6B",
   "Cheville/Pied":"#276749","Coude/Poignet":"#C0392B","Douleur":"#B45309",
-  "Sport/RTS":"#0E7490","Général":"#6D28D9"
+  "Sport/RTS":"#0E7490","Général":"#6D28D9","Équilibre":"#0F766E"
 };
 var _promsFilter = 'all';
 var _promsAvailFilter = 'all';
@@ -908,6 +930,9 @@ function openPromCard(acronym){
   document.getElementById('prom-modal-acronym').textContent = p.acronym;
   document.getElementById('prom-modal-name').textContent = p.name;
   document.getElementById('prom-modal-score').style.display = 'none';
+  // Set today's date if empty
+  var dateEl = document.getElementById('prom-pt-date');
+  if(!dateEl.value){ var d=new Date(); dateEl.value=('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear(); }
   var body = document.getElementById('prom-modal-body');
   var q = PROMS_QUESTIONNAIRES[acronym];
   if(q){
@@ -930,6 +955,52 @@ function closePromModal(){
 
 function printProm(){
   window.print();
+}
+
+function openPromFullPage(){
+  var acronym = _currentPromAcronym;
+  var p = PROMS_DATA.find(function(x){ return x.acronym === acronym; });
+  var q = PROMS_QUESTIONNAIRES[acronym];
+  if(!p || !q) return;
+  var nom = document.getElementById('prom-pt-nom').value || '';
+  var ddn = document.getElementById('prom-pt-ddn').value || '';
+  var date = document.getElementById('prom-pt-date').value || '';
+  var scoreHtml = '';
+  var scoreEl = document.getElementById('prom-modal-score');
+  if(scoreEl.style.display !== 'none') scoreHtml = scoreEl.innerHTML;
+  var html = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">'
+    + '<title>'+p.acronym+' — '+p.name+'</title>'
+    + '<style>body{font-family:-apple-system,Helvetica Neue,sans-serif;font-size:13px;color:#1a1917;max-width:800px;margin:40px auto;padding:0 20px;} '
+    + 'h1{font-size:1.4rem;font-weight:700;color:#1A3A5C;margin:0 0 4px;} '
+    + '.subtitle{font-size:.82rem;color:#666;margin:0 0 16px;} '
+    + '.pt-info{display:flex;gap:24px;background:#F8FAFC;border:1px solid #dde3ec;border-radius:8px;padding:10px 16px;margin-bottom:20px;font-size:.82rem;} '
+    + '.pt-info span{color:#888;} .pt-info strong{color:#1a1917;} '
+    + '.prom-intro{font-size:.82rem;color:#555;line-height:1.6;background:#F8FAFC;border-radius:6px;padding:10px 14px;margin-bottom:16px;border:1px solid #dde3ec;} '
+    + '.prom-q{padding:10px 0;border-bottom:1px solid #f0f4f8;} '
+    + '.prom-q:last-child{border-bottom:none;} '
+    + '.prom-q-num{font-size:.66rem;font-weight:700;color:#2B5FA6;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;} '
+    + '.prom-q-text{font-size:.85rem;font-weight:500;color:#1a2433;margin-bottom:6px;line-height:1.4;} '
+    + '.prom-q-opts{display:flex;flex-direction:column;gap:5px;} '
+    + '.prom-q-opts label{font-size:.82rem;color:#444;display:flex;align-items:flex-start;gap:6px;line-height:1.4;} '
+    + '.prom-section-label{font-size:.72rem;font-weight:700;color:#2B5FA6;text-transform:uppercase;letter-spacing:.06em;background:#EEF3FB;padding:7px 12px;margin:12px -8px;border-left:3px solid #2B5FA6;} '
+    + '.score-box{background:#F0F4F8;border:1px solid #dde3ec;border-radius:8px;padding:14px;margin-top:16px;} '
+    + 'table{width:100%;border-collapse:collapse;} th,td{padding:7px 10px;} '
+    + '@media print{body{margin:20px auto;}}</style>'
+    + '</head><body>'
+    + '<h1>'+p.acronym+'</h1>'
+    + '<div class="subtitle">'+p.name+'</div>'
+    + '<div class="pt-info">'
+    + (nom?'<div><span>Patient : </span><strong>'+nom+'</strong></div>':'')
+    + (ddn?'<div><span>Date de naissance : </span><strong>'+ddn+'</strong></div>':'')
+    + (date?'<div><span>Date : </span><strong>'+date+'</strong></div>':'')
+    + '</div>'
+    + q.html
+    + (scoreHtml?'<div class="score-box"><strong style="font-size:.78rem;color:#1A3A5C;display:block;margin-bottom:6px;">RÉSULTAT</strong>'+scoreHtml+'</div>':'')
+    + '<script>document.querySelectorAll("input[type=radio]").forEach(function(r){r.setAttribute("onclick","void(0)");});<\/script>'
+    + '</body></html>';
+  var w = window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
 }
 
 function calcPromScore(){
@@ -1946,6 +2017,375 @@ PROMS_QUESTIONNAIRES['SANE'] = {
       +'<div style="font-size:.78rem;color:#666;margin-top:4px;">Score simple et réactif. MCID ≈ 12–18% selon la pathologie.</div>';
   }
 };
+
+/* ═══════════════════════════════════════════════════════════════
+   ATRS — Achilles Tendon Total Rupture Score
+═══════════════════════════════════════════════════════════════ */
+PROMS_QUESTIONNAIRES['ATRS'] = {
+  html: (function(){
+    var qs = [
+      'Êtes-vous limité(e) en raison d\'une perte de <strong>force</strong> dans le mollet / tendon d\'Achille / pied ?',
+      'Êtes-vous limité(e) en raison d\'une <strong>fatigue</strong> dans le mollet / tendon d\'Achille / pied ?',
+      'Êtes-vous limité(e) en raison d\'une <strong>raideur</strong> dans le mollet / tendon d\'Achille / pied ?',
+      'Êtes-vous limité(e) en raison d\'une <strong>douleur</strong> dans le mollet / tendon d\'Achille / pied ?',
+      'Êtes-vous limité(e) dans les <strong>activités de la vie quotidienne</strong> ?',
+      'Êtes-vous limité(e) en <strong>marchant sur des surfaces irrégulières</strong> ?',
+      'Êtes-vous limité(e) lorsque vous <strong>montez rapidement les escaliers ou une côte</strong> ?',
+      'Êtes-vous limité(e) lors d\'activités incluant de la <strong>course à pied</strong> ?',
+      'Êtes-vous limité(e) lors d\'activités incluant du <strong>saut</strong> ?',
+      'Êtes-vous limité(e) en effectuant un <strong>travail physique intense</strong> ?',
+    ];
+    var h = '<div class="prom-intro">Pour chaque question, notez vos limitations de <strong>0 (limitation sévère)</strong> à <strong>10 (aucune limitation)</strong>.</div>';
+    qs.forEach(function(q,i){
+      h += '<div class="prom-q"><div class="prom-q-num">Q'+(i+1)+'</div><div class="prom-q-text">'+q+'</div>'
+        + '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;align-items:center;">'
+        + '<span style="font-size:.72rem;color:#888;white-space:nowrap;">Limitation sévère</span>';
+      for(var v=0;v<=10;v++) h+='<label style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.75rem;min-width:26px;"><input type="radio" name="atrs'+(i+1)+'" value="'+v+'"><span>'+v+'</span></label>';
+      h+='<span style="font-size:.72rem;color:#888;white-space:nowrap;">Aucune limitation</span></div></div>';
+    });
+    return h;
+  })(),
+  score: function(){
+    var t=0,m=_missing('atrs',10);
+    if(m.length) return '<div style="color:#C0392B;">Questions non répondues : '+m.join(', ')+'</div>';
+    t=_sum('atrs',10);
+    var col=t>=70?'#2D6A4F':t>=40?'#D4600A':'#C0392B';
+    return '<div>Score ATRS : <strong style="font-size:1.2rem;color:'+col+'">'+t+' / 100</strong> — <span style="color:'+col+';font-weight:700;">'+(t>=70?'Bonne récupération':t>=40?'Récupération partielle':'Récupération limitée')+'</span></div>'
+      +'<div style="font-size:.78rem;color:#666;margin-top:4px;">↑=mieux. Seuil RTS recommandé ≥ 70/100.</div>';
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   ALR-RSI — Ankle Ligament Reconstruction RSI
+═══════════════════════════════════════════════════════════════ */
+PROMS_QUESTIONNAIRES['ALR-RSI'] = {
+  html: (function(){
+    var qs = [
+      ['Pensez-vous pouvoir pratiquer votre sport au même niveau qu\'auparavant ?','Pas du tout sûr','Totalement sûr'],
+      ['Pensez-vous que vous pourriez vous blesser de nouveau la cheville si vous repreniez le sport ?','Extrêmement probable','Pas du tout probable'],
+      ['Êtes-vous inquiet(e) à l\'idée de reprendre votre sport ?','Extrêmement inquiet','Pas du tout inquiet'],
+      ['Pensez-vous que votre cheville sera stable lors de votre pratique sportive ?','Pas du tout sûr','Totalement sûr'],
+      ['Pensez-vous pouvoir pratiquer votre sport sans vous soucier de votre cheville ?','Pas du tout sûr','Totalement sûr'],
+      ['Craignez-vous de vous blesser de nouveau la cheville lors de votre pratique sportive ?','Crainte extrême','Aucune crainte'],
+      ['Êtes-vous frustré(e) de devoir tenir compte de votre cheville lors de votre pratique sportive ?','Extrêmement frustré','Pas du tout frustré'],
+      ['Pensez-vous que votre cheville peut résister aux contraintes ?','Pas du tout sûr','Totalement sûr'],
+      ['Avez-vous peur de vous reblesser accidentellement la cheville lors de votre pratique sportive ?','Très peur','Pas du tout peur'],
+      ['L\'idée d\'une possible réopération ou rééducation vous empêche-t-elle de pratiquer votre sport ?','Tout le temps','À aucun moment'],
+      ['Êtes-vous confiant(e) en votre capacité à pratiquer votre sport ?','Pas du tout confiant','Totalement confiant'],
+      ['Êtes-vous détendu(e) à l\'idée de pratiquer votre sport ?','Pas du tout détendu','Totalement détendu'],
+    ];
+    var h='<div class="prom-intro">Répondez aux questions concernant le sport principal pratiqué avant la blessure. Cochez la case correspondant à votre situation actuelle.</div>';
+    qs.forEach(function(q,i){
+      h+='<div class="prom-q"><div class="prom-q-num">Q'+(i+1)+'</div><div class="prom-q-text">'+q[0]+'</div>'
+        +'<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;align-items:center;">'
+        +'<span style="font-size:.72rem;color:#888;white-space:nowrap;">'+q[1]+'</span>';
+      for(var v=0;v<=10;v++) h+='<label style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.75rem;min-width:26px;"><input type="radio" name="alrrsi'+(i+1)+'" value="'+v+'"><span>'+v+'</span></label>';
+      h+='<span style="font-size:.72rem;color:#888;white-space:nowrap;">'+q[2]+'</span></div></div>';
+    });
+    return h;
+  })(),
+  score: function(){
+    var t=0,m=_missing('alrrsi',12);
+    if(m.length) return '<div style="color:#C0392B;">Questions non répondues : '+m.join(', ')+'</div>';
+    t=_sum('alrrsi',12);
+    var sc=Math.round(t*100/120);
+    var col=sc>=60?'#2D6A4F':'#C0392B';
+    return '<div>Score ALR-RSI : <strong style="font-size:1.2rem;color:'+col+'">'+sc+' / 100</strong></div>'
+      +'<div style="font-size:.82rem;color:'+col+';font-weight:600;margin-top:4px;">'+(sc>=60?'Bonne disponibilité psychologique':'Disponibilité psychologique insuffisante (seuil 60%)')+'</div>'
+      +'<div style="font-size:.78rem;color:#666;margin-top:4px;">Score = (Somme × 100) / 120. Seuil recommandé ≥ 60.</div>';
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   SI-RSI — Shoulder Instability Return to Sport after Injury
+═══════════════════════════════════════════════════════════════ */
+PROMS_QUESTIONNAIRES['SI-RSI'] = {
+  html: (function(){
+    var qs = [
+      ['Pensez-vous que vous pouvez pratiquer votre sport principal au même niveau ?','Pas du tout sûr(e)','Absolument sûr(e)'],
+      ['Pensez-vous que vous pourriez blesser à nouveau votre épaule en pratiquant votre sport ?','Extrêmement probable','Pas du tout probable'],
+      ['Êtes-vous inquiet(e) à l\'idée de pratiquer votre sport à nouveau ?','Très inquiet(e)','Pas du tout inquiet(e)'],
+      ['Pensez-vous que votre épaule sera stable pendant la pratique de votre sport ?','Pas du tout sûr(e)','Tout à fait sûr(e)'],
+      ['Pensez-vous pouvoir pratiquer votre sport sans vous soucier de votre épaule ?','Pas du tout sûr(e)','Tout à fait sûr(e)'],
+      ['Trouvez-vous frustrant de vous inquiéter pour votre épaule lors de la pratique sportive ?','Très frustrant','Pas du tout frustrant'],
+      ['Craignez-vous de blesser à nouveau votre épaule en pratiquant votre sport ?','Absolument','Pas du tout'],
+      ['Pensez-vous que votre épaule peut résister aux contraintes ?','Pas du tout sûr(e)','Absolument sûr(e)'],
+      ['Avez-vous peur de re-blesser votre épaule accidentellement lors de votre pratique sportive ?','Très peur','Pas du tout'],
+      ['L\'idée d\'une possible réopération ou rééducation vous empêche-t-elle de pratiquer votre sport ?','Tout le temps','À aucun moment'],
+      ['Êtes-vous confiant(e) en votre capacité à pratiquer votre sport ?','Pas du tout confiant(e)','Totalement confiant(e)'],
+      ['Êtes-vous détendu(e) à l\'idée de pratiquer votre sport ?','Pas du tout détendu(e)','Totalement détendu(e)'],
+    ];
+    var h='<div class="prom-intro">Concernant votre sport principal pratiqué avant de vous blesser l\'épaule. Cochez la case entre 0 et 10 selon votre ressenti.</div>';
+    qs.forEach(function(q,i){
+      h+='<div class="prom-q"><div class="prom-q-num">Q'+(i+1)+'</div><div class="prom-q-text">'+q[0]+'</div>'
+        +'<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;align-items:center;">'
+        +'<span style="font-size:.72rem;color:#888;white-space:nowrap;">'+q[1]+'</span>';
+      for(var v=0;v<=10;v++) h+='<label style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.75rem;min-width:26px;"><input type="radio" name="sirsi'+(i+1)+'" value="'+v+'"><span>'+v+'</span></label>';
+      h+='<span style="font-size:.72rem;color:#888;white-space:nowrap;">'+q[2]+'</span></div></div>';
+    });
+    return h;
+  })(),
+  score: function(){
+    var t=0,m=_missing('sirsi',12);
+    if(m.length) return '<div style="color:#C0392B;">Questions non répondues : '+m.join(', ')+'</div>';
+    t=_sum('sirsi',12);
+    var sc=Math.round(t*100/120);
+    var col=sc>=60?'#2D6A4F':'#C0392B';
+    return '<div>Score SI-RSI : <strong style="font-size:1.2rem;color:'+col+'">'+sc+' / 100</strong></div>'
+      +'<div style="font-size:.82rem;color:'+col+';font-weight:600;margin-top:4px;">'+(sc>=60?'Bonne disponibilité psychologique':'Disponibilité psychologique insuffisante (seuil 60%)')+'</div>'
+      +'<div style="font-size:.78rem;color:#666;margin-top:4px;">Score = (Total × 100) / 120. Seuil ≥ 60 recommandé.</div>';
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   Kujala AKPS — Anterior Knee Pain Scale (F-AKPS)
+═══════════════════════════════════════════════════════════════ */
+PROMS_QUESTIONNAIRES['Kujala AKPS'] = {
+  html: '<div class="prom-intro">Entourez la proposition correspondant aux symptômes que vous ressentez <strong>actuellement</strong> au genou.</div>'
+  +_q('kuj1','Boiterie',['Aucune','Légère ou intermittente','Constante'],[5,3,0])
+  +_q('kuj2','Station debout',['Station debout complète sans douleur','Station debout douloureuse','Station debout impossible'],[5,3,0])
+  +_q('kuj3','Marcher',['Illimité sans douleur','Plus de 2 km avec douleur légère','1 à 2 km','Incapable'],[5,3,2,0])
+  +_q('kuj4','Escaliers',['Aucune difficulté','Légère douleur en descendant','Douleur en montant et en descendant','Incapable'],[10,8,5,0])
+  +_q('kuj5','S\'accroupir',['Aucune difficulté','Douloureux si répété','Douloureux à chaque fois','Possible avec décharge partielle du poids','Incapable'],[5,4,3,2,0])
+  +_q('kuj6','Courir',['Aucune difficulté','Douleur après plus de 2 km','Légère douleur dès le début','Douleur sévère','Incapable'],[10,8,6,3,0])
+  +_q('kuj7','Sauter',['Aucune difficulté','Légère difficulté','Douleur constante','Incapable'],[10,7,2,0])
+  +_q('kuj8','Position assise prolongée genoux fléchis',['Aucune difficulté','Douleur après l\'exercice','Douleur constante','Douleur obligeant à étendre les genoux temporairement','Incapable'],[10,8,6,4,0])
+  +_q('kuj9','Douleur',['Aucune','Légère et occasionnelle','Perturbe le sommeil','Occasionnellement sévère','Constante et sévère'],[10,8,6,3,0])
+  +_q('kuj10','Gonflement',['Aucun','Après un effort intense','Après des activités quotidiennes','Tous les soirs','Constant'],[10,8,6,4,0])
+  +_q('kuj11','Douleur rotulienne / subluxation',['Aucune','Occasionnellement dans les activités sportives','Fréquemment dans les activités sportives','Occasionnellement dans les AVQ'],[10,6,2,0])
+  +'<div class="prom-section-label">Items cliniciens — à remplir si évaluation clinique disponible</div>'
+  +_q('kuj12','Amyotrophie de la cuisse',['Aucune','Légère (1–2 cm)','Importante (> 2 cm)'],[5,3,0])
+  +_q('kuj13','Déficit de flexion',['Aucun','Légère limitation (< 10°)','10–20°','20–30°','> 30°'],[5,4,3,2,0]),
+  score: function(){
+    var t=0,m=[];
+    for(var i=1;i<=11;i++){var s=document.querySelector('input[name="kuj'+i+'"]:checked');if(s)t+=parseInt(s.value);else m.push('Q'+i);}
+    if(m.length) return '<div style="color:#C0392B;">Questions non répondues : '+m.join(', ')+'</div>';
+    for(var i=12;i<=13;i++){var s=document.querySelector('input[name="kuj'+i+'"]:checked');if(s)t+=parseInt(s.value);}
+    var col=t>=85?'#2D6A4F':t>=65?'#2B5FA6':t>=50?'#D4600A':'#C0392B';
+    var interp=t>=85?'Excellent':t>=65?'Bon':t>=50?'Acceptable':'Mauvais';
+    return '<div>Score Kujala : <strong style="font-size:1.2rem;color:'+col+'">'+t+' / 100</strong> — <span style="color:'+col+';font-weight:700;">'+interp+'</span></div>'
+      +'<div style="font-size:.78rem;color:#666;margin-top:4px;">≥85 Excellent · 65–84 Bon · 50–64 Acceptable · &lt;50 Mauvais. Items 12–13 ajoutent 10 pts si évaluation clinique.</div>';
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   FASH — Functional Assessment Scale for Acute Hamstring Injuries
+═══════════════════════════════════════════════════════════════ */
+PROMS_QUESTIONNAIRES['FASH'] = {
+  html: '<div class="prom-intro">Répondez aux questions suivantes concernant votre blessure aux <strong>ischio-jambiers</strong>.</div>'
+  +_q('fash1','Évaluez votre douleur et/ou gêne actuelle(s) liées à la lésion :',['0 — Douleur insoutenable','1','2','3','4','5','6','7','8','9','10 — Aucune douleur'],[0,1,2,3,4,5,6,7,8,9,10])
+  +_q('fash2','Pratiquez-vous actuellement votre activité sportive ou physique ?',['Non, plus du tout (0)','Programme d\'entraînement adapté (4)','Niveau convenable mais différent d\'avant (7)','Comme avant la blessure (10)'],[0,4,7,10])
+  +_q('fash3','Intensité de la douleur à la <strong>marche</strong> :',['0 — Douleur insoutenable','1','2','3','4','5','6','7','8','9','10 — Aucune douleur'],[0,1,2,3,4,5,6,7,8,9,10])
+  +_q('fash4','Intensité de la douleur lors du <strong>footing / trot</strong> :',['0 — Douleur insoutenable','1','2','3','4','5','6','7','8','9','10 — Aucune douleur'],[0,1,2,3,4,5,6,7,8,9,10])
+  +_q('fash5','Intensité de la douleur lors d\'une <strong>accélération / sprint 30 m</strong> :',['0 — Douleur insoutenable','1','2','3','4','5','6','7','8','9','10 — Aucune douleur'],[0,1,2,3,4,5,6,7,8,9,10])
+  +_q('fash6','Intensité lors d\'un <strong>étirement statique IJ</strong> (se pencher jambes tendues) :',['0 — Douleur insoutenable','1','2','3','4','5','6','7','8','9','10 — Aucune douleur'],[0,1,2,3,4,5,6,7,8,9,10])
+  +_q('fash7','Intensité lors d\'un <strong>étirement dynamique IJ</strong> (lever la jambe tendue) :',['0 — Douleur insoutenable','1','2','3','4','5','6','7','8','9','10 — Aucune douleur'],[0,1,2,3,4,5,6,7,8,9,10])
+  +_q('fash8','Gêne en <strong>position de fente avant</strong> avec tout le poids du corps :',['0 — Douleur insoutenable','1','2','3','4','5','6','7','8','9','10 — Aucune douleur'],[0,1,2,3,4,5,6,7,8,9,10])
+  +_q('fash9','<strong>Nordic Exercise</strong> — résistance à la chute en avant contrôlée par les IJ :',['Impossible — aucun contrôle (0)','Contrôle < 50% de l\'amplitude (4)','Contrôle > 50% mais pas jusqu\'au sol (7)','Contrôle total jusqu\'au sol (10)'],[0,4,7,10])
+  +_q('fash10','Nombre de <strong>sauts à cloche-pied</strong> de distance maximale réalisables :',['Aucun (0)','Un seul (4)','Deux (5)','Trois ou plus (10)'],[0,4,5,10]),
+  score: function(){
+    var m=_missing('fash',10);
+    if(m.length) return '<div style="color:#C0392B;">Questions non répondues : '+m.join(', ')+'</div>';
+    var t=_sum('fash',10);
+    var col=t>=80?'#2D6A4F':t>=50?'#D4600A':'#C0392B';
+    return '<div>Score FASH : <strong style="font-size:1.2rem;color:'+col+'">'+t+' / 100</strong> — <span style="color:'+col+';font-weight:700;">'+(t>=80?'Impact faible':t>=50?'Impact modéré':'Impact important')+'</span></div>'
+      +'<div style="font-size:.78rem;color:#666;margin-top:4px;">↑=mieux. 100 = aucun impact · 0 = impact maximal sur la fonction.</div>';
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   VISA-G — Victorian Institute of Sport Assessment (Glutéal)
+═══════════════════════════════════════════════════════════════ */
+PROMS_QUESTIONNAIRES['VISA-G'] = {
+  html: '<div class="prom-intro">Toutes les questions concernent votre douleur à la <strong>HANCHE</strong>. Cochez la réponse qui vous correspond le mieux.</div>'
+  +_q('visag1','En temps normal, ma douleur à la hanche est…',['0 — Douleur extrême','1','2','3','4','5','6','7','8','9','10 — Aucune douleur'],[0,1,2,3,4,5,6,7,8,9,10])
+  +_q('visag2','Je peux me coucher sur ma hanche douloureuse :',['Pendant plus d\'une heure (10)','30 min à 1 h puis changer de position (7)','15 à 30 minutes (5)','5 à 15 minutes (2)','Totalement incapable (0)'],[10,7,5,2,0])
+  +_q('visag3','Monter ou descendre une volée de marches :',['Normalement sans douleur (10)','Normalement avec légère douleur (7)','En me tenant à la rampe (5)','Une marche après l\'autre avec la rampe (2)','Impossible (0)'],[10,7,5,2,0])
+  +_q('visag4','Monter ou descendre une rampe ou une pente :',['Normalement sans douleur (10)','Normalement avec légère douleur (7)','Quelques difficultés (5)','Grosses difficultés (2)','Impossible (0)'],[10,7,5,2,0])
+  +_q('visag5','Après 30 min assis(e), se lever et marcher :',['Sans problème (10)','Difficile pendant quelques pas (7)','Dois rester debout un instant (5)','Dois rester debout < 20 s (2)','Dois rester debout > 20 s (0)'],[10,7,5,2,0])
+  +_q('visag6','Travailler dans la maison ou le jardin :',['≥ 1 heure sans problème (10)','30–60 min par tranche (7)','Travail très limité (5)','Travail limité, sans jardinage (2)','Aucun travail possible (0)'],[10,7,5,2,0])
+  +_q('visag7','Exercice physique ou sport régulier :',['Oui, comme avant (10)','Un peu moins qu\'avant (7)','Beaucoup moins qu\'avant (4)','Non, incapable (0)'],[10,7,4,0])
+  +'<div class="prom-section-label">Q8 — Répondez UNIQUEMENT à la partie A, B ou C qui s\'applique à votre situation</div>'
+  +'<div class="prom-q"><div class="prom-q-num">Q8A — Si la douleur vous EMPÊCHE les activités portantes</div><div class="prom-q-text">Combien de temps consacrez-vous par jour aux activités portantes (marche, courses, course à pied…) ?</div><div class="prom-q-opts">'
+  +'<label><input type="radio" name="visag8" value="0"> Seulement me déplacer dans la maison (0)</label>'
+  +'<label><input type="radio" name="visag8" value="2"> Moins de 10 minutes (2)</label>'
+  +'<label><input type="radio" name="visag8" value="5"> 10 à 19 minutes (5)</label>'
+  +'<label><input type="radio" name="visag8" value="7"> 20 à 29 minutes (7)</label>'
+  +'<label><input type="radio" name="visag8" value="10"> Plus de 30 minutes (10)</label></div></div>'
+  +'<div class="prom-q"><div class="prom-q-num">Q8B — Si la douleur EST PRÉSENTE mais ne vous empêche PAS les activités portantes</div><div class="prom-q-text">Combien de temps consacrez-vous par jour ?</div><div class="prom-q-opts">'
+  +'<label><input type="radio" name="visag8" value="0"> Seulement me déplacer dans la maison (0)</label>'
+  +'<label><input type="radio" name="visag8" value="5"> Moins de 10 minutes (5)</label>'
+  +'<label><input type="radio" name="visag8" value="10"> 10 à 19 minutes (10)</label>'
+  +'<label><input type="radio" name="visag8" value="15"> 20 à 29 minutes (15)</label>'
+  +'<label><input type="radio" name="visag8" value="20"> Plus de 30 minutes (20)</label></div></div>'
+  +'<div class="prom-q"><div class="prom-q-num">Q8C — Si vous n\'avez AUCUNE douleur lors des activités portantes</div><div class="prom-q-text">Combien de temps consacrez-vous par jour ?</div><div class="prom-q-opts">'
+  +'<label><input type="radio" name="visag8" value="6"> Seulement me déplacer dans la maison (6)</label>'
+  +'<label><input type="radio" name="visag8" value="12"> Moins de 10 minutes (12)</label>'
+  +'<label><input type="radio" name="visag8" value="18"> 10 à 19 minutes (18)</label>'
+  +'<label><input type="radio" name="visag8" value="24"> 20 à 29 minutes (24)</label>'
+  +'<label><input type="radio" name="visag8" value="30"> Plus de 30 minutes (30)</label></div></div>',
+  score: function(){
+    var m=[];
+    for(var i=1;i<=7;i++){if(!document.querySelector('input[name="visag'+i+'"]:checked'))m.push('Q'+i);}
+    if(!document.querySelector('input[name="visag8"]:checked')) m.push('Q8');
+    if(m.length) return '<div style="color:#C0392B;">Questions non répondues : '+m.join(', ')+'</div>';
+    var t=0;
+    for(var i=1;i<=7;i++) t+=parseInt(document.querySelector('input[name="visag'+i+'"]:checked').value);
+    t+=parseInt(document.querySelector('input[name="visag8"]:checked').value);
+    var col=t>=80?'#2D6A4F':t>=50?'#D4600A':'#C0392B';
+    return '<div>Score VISA-G : <strong style="font-size:1.2rem;color:'+col+'">'+t+' / 100</strong> — <span style="color:'+col+';font-weight:700;">'+(t>=80?'Bon à excellent':t>=50?'Modéré':'Sévère')+'</span></div>'
+      +'<div style="font-size:.78rem;color:#666;margin-top:4px;">100 = asymptomatique. MCID = 4 points. Q8 : choisir UNE seule partie A, B ou C.</div>';
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   MTSS Score — Medial Tibial Stress Syndrome
+═══════════════════════════════════════════════════════════════ */
+PROMS_QUESTIONNAIRES['MTSS Score'] = {
+  html: '<div class="prom-intro">Pensez à la douleur <strong>maximale</strong> ressentie au cours des derniers jours. Si les deux tibias sont douloureux, répondez en pensant au <strong>plus douloureux</strong>.</div>'
+  +_q('mtss1','Activités sportives actuelles :',['Je pratique toutes mes activités sportives habituelles (0)','Je dois réduire mes activités sportives à cause des douleurs (1)','Je ne pratique que des activités alternatives à cause des douleurs (2)','Je ne peux pratiquer aucune activité sportive (3)'],[0,1,2,3])
+  +_q('mtss2','En pratiquant des activités sportives :',['Je n\'ai pas mal au tibia (0)','J\'ai un peu mal au tibia (1)','J\'ai très mal au tibia (2)','Je ne peux pratiquer aucune activité à cause des douleurs (3)'],[0,1,2,3])
+  +_q('mtss3','Lorsque vous marchez :',['Je n\'ai pas mal au tibia (0)','J\'ai un peu mal au tibia (1)','J\'ai très mal au tibia (2)','Je ne peux pas marcher à cause des douleurs (2)'],[0,1,2,2])
+  +_q('mtss4','Au repos (assis ou allongé), mon tibia est :',['Pas douloureux (0)','Sensible (1)','Douloureux (2)','Très douloureux (2)'],[0,1,2,2]),
+  score: function(){
+    var m=_missing('mtss',4);
+    if(m.length) return '<div style="color:#C0392B;">Questions non répondues : '+m.join(', ')+'</div>';
+    var t=_sum('mtss',4);
+    var col=t<=2?'#2D6A4F':t<=5?'#D4600A':'#C0392B';
+    return '<div>Score MTSS : <strong style="font-size:1.2rem;color:'+col+'">'+t+' / 10</strong> — <span style="color:'+col+';font-weight:700;">'+(t<=2?'Symptômes légers':t<=5?'Symptômes modérés':'Symptômes sévères')+'</span></div>'
+      +'<div style="font-size:.78rem;color:#666;margin-top:4px;">↓=mieux. 0 = aucune limitation · 10 = limitation maximale.</div>';
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   PSEQ — Pain Self-Efficacy Questionnaire
+═══════════════════════════════════════════════════════════════ */
+PROMS_QUESTIONNAIRES['PSEQ'] = {
+  html: (function(){
+    var qs = [
+      'Je peux apprécier les choses, malgré la douleur.',
+      'Je peux faire la plupart des tâches ménagères (rangement, vaisselle…) malgré la douleur.',
+      'Je peux rencontrer mes amis ou ma famille aussi souvent que dans le passé, malgré la douleur.',
+      'Je peux gérer ma douleur, dans la plupart des situations.',
+      'Je peux encore travailler malgré la douleur (travail à la maison, bénévole ou rémunéré).',
+      'Je peux encore faire la plupart des activités que j\'apprécie (passe-temps, loisirs…) malgré la douleur.',
+      'Je peux gérer ma douleur sans traitement médicamenteux.',
+      'Je peux encore atteindre la plupart de mes objectifs dans la vie, malgré la douleur.',
+      'Je peux mener une vie normale, malgré la douleur.',
+      'Peu à peu, je peux être plus actif(ve), malgré la douleur.',
+    ];
+    var h='<div class="prom-intro">Dans quelle mesure êtes-vous <strong>capable de réaliser ces activités malgré la douleur</strong> ? (0 = pas du tout certain · 6 = tout à fait certain)</div>';
+    qs.forEach(function(q,i){
+      h+='<div class="prom-q"><div class="prom-q-num">Q'+(i+1)+'</div><div class="prom-q-text">'+q+'</div>'
+        +'<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;align-items:center;">'
+        +'<span style="font-size:.72rem;color:#888;white-space:nowrap;">Pas du tout certain(e)</span>';
+      for(var v=0;v<=6;v++) h+='<label style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.75rem;min-width:28px;"><input type="radio" name="pseq'+(i+1)+'" value="'+v+'"><span>'+v+'</span></label>';
+      h+='<span style="font-size:.72rem;color:#888;white-space:nowrap;">Tout à fait certain(e)</span></div></div>';
+    });
+    return h;
+  })(),
+  score: function(){
+    var m=_missing('pseq',10);
+    if(m.length) return '<div style="color:#C0392B;">Questions non répondues : '+m.join(', ')+'</div>';
+    var t=_sum('pseq',10);
+    var col=t>=40?'#2D6A4F':t>=17?'#D4600A':'#C0392B';
+    return '<div>Score PSEQ : <strong style="font-size:1.2rem;color:'+col+'">'+t+' / 60</strong> — <span style="color:'+col+';font-weight:700;">'+(t>=40?'Bonne auto-efficacité':t>=17?'Auto-efficacité modérée':'Faible auto-efficacité')+'</span></div>'
+      +'<div style="font-size:.78rem;color:#666;margin-top:4px;">↑=mieux. Seuil clinique ≥ 40. &lt;17 = faible · 17–39 = modéré · ≥40 = bonne auto-efficacité.</div>';
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   Nijmegen — Questionnaire de Nijmegen (Hyperventilation)
+═══════════════════════════════════════════════════════════════ */
+PROMS_QUESTIONNAIRES['Nijmegen'] = {
+  html: (function(){
+    var qs = [
+      'Tension nerveuse','Incapacité à respirer profondément','Respiration accélérée ou ralentie',
+      'Respiration courte','Palpitations','Froideur des extrémités','Vertiges','Anxiété',
+      'Poitrine serrée','Douleurs thoraciques','Flou visuel','Fourmillements dans les doigts',
+      'Ankylose des bras et des doigts','Sensation de confusion','Ballonnement abdominal',
+      'Fourmillements péribuccaux',
+    ];
+    var h='<div class="prom-intro">Indiquez la fréquence à laquelle vous avez ressenti chacun des symptômes suivants.</div>'
+      +'<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:.82rem;">'
+      +'<thead><tr style="background:#EEF3FB;">'
+      +'<th style="text-align:left;padding:8px 12px;font-weight:600;color:#1A3A5C;">Symptôme</th>'
+      +'<th style="text-align:center;padding:8px 6px;font-size:.72rem;color:#1A3A5C;">Jamais<br>(0)</th>'
+      +'<th style="text-align:center;padding:8px 6px;font-size:.72rem;color:#1A3A5C;">Rarement<br>(1)</th>'
+      +'<th style="text-align:center;padding:8px 6px;font-size:.72rem;color:#1A3A5C;">Parfois<br>(2)</th>'
+      +'<th style="text-align:center;padding:8px 6px;font-size:.72rem;color:#1A3A5C;">Souvent<br>(3)</th>'
+      +'<th style="text-align:center;padding:8px 6px;font-size:.72rem;color:#1A3A5C;">Très souvent<br>(4)</th>'
+      +'</tr></thead><tbody>';
+    qs.forEach(function(q,i){
+      h+='<tr style="border-bottom:1px solid #f0f4f8;'+(i%2===0?'background:#fafbfc;':'')+'">'
+        +'<td style="padding:9px 12px;">'+q+'</td>';
+      [0,1,2,3,4].forEach(function(v){
+        h+='<td style="text-align:center;padding:9px 6px;"><label><input type="radio" name="nij'+(i+1)+'" value="'+v+'"></label></td>';
+      });
+      h+='</tr>';
+    });
+    h+='</tbody></table></div>';
+    return h;
+  })(),
+  score: function(){
+    var m=_missing('nij',16);
+    if(m.length) return '<div style="color:#C0392B;">Questions non répondues : '+m.join(', ')+'</div>';
+    var t=_sum('nij',16);
+    var col=t>=23?'#C0392B':'#2D6A4F';
+    return '<div>Score Nijmegen : <strong style="font-size:1.2rem;color:'+col+'">'+t+' / 64</strong> — <span style="color:'+col+';font-weight:700;">'+(t>=23?'Seuil atteint — possible syndrome d\'hyperventilation':'Score normal')+'</span></div>'
+      +'<div style="font-size:.78rem;color:#666;margin-top:4px;">Seuil ≥ 23/64 évocateur de syndrome d\'hyperventilation (sensibilité 91%).</div>';
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   Dallas — Auto-questionnaire de Dallas (lombalgie chronique)
+═══════════════════════════════════════════════════════════════ */
+PROMS_QUESTIONNAIRES['Dallas'] = {
+  html: (function(){
+    var make=function(n,lbl,minL,maxL){
+      var h='<div class="prom-q"><div class="prom-q-num">'+n+'</div><div class="prom-q-text">'+lbl+'</div>'
+        +'<div style="display:flex;gap:2px;flex-wrap:wrap;margin-top:6px;align-items:center;">'
+        +'<span style="font-size:.68rem;color:#888;white-space:nowrap;margin-right:2px;">'+minL+'</span>';
+      for(var v=0;v<=10;v++) h+='<label style="display:flex;flex-direction:column;align-items:center;gap:1px;font-size:.68rem;min-width:28px;"><input type="radio" name="dallas'+n+'" value="'+v+'"><span>'+v+'0%</span></label>';
+      h+='<span style="font-size:.68rem;color:#888;white-space:nowrap;margin-left:2px;">'+maxL+'</span></div></div>';
+      return h;
+    };
+    return '<div class="prom-intro">Indiquez dans quelle mesure votre douleur au dos affecte chacune des situations suivantes. <strong>0% = pas du tout · 100% = totalement limitant</strong>.</div>'
+      +'<div class="prom-section-label">Section 1 — Activités quotidiennes (7 items)</div>'
+      +make('D1','Besoin de médicaments contre la douleur pour vous sentir bien','0% = jamais','100% = tout le temps')
+      +make('D2','Perturbation des gestes du quotidien (sortir du lit, s\'habiller…)','0% = pas du tout','100% = impossible')
+      +make('D3','Limitation pour soulever quelque chose','0% = pas du tout','100% = rien soulever')
+      +make('D4','Limitation de la distance de marche par rapport à avant','0% = comme avant','100% = plus du tout')
+      +make('D5','Gêne pour rester assis(e)','0% = pas du tout','100% = impossible')
+      +make('D6','Gêne pour rester debout de façon prolongée','0% = pas du tout','100% = impossible')
+      +make('D7','Perturbation du sommeil','0% = pas du tout','100% = impossible de dormir')
+      +'<div class="prom-section-label">Section 2 — Loisirs et travail (3 items)</div>'
+      +make('D8','Limitation des activités de loisirs','0% = pas du tout','100% = arrêt total')
+      +make('D9','Limitation au travail (professionnel ou occupationnel)','0% = pas du tout','100% = travail impossible')
+      +make('D10','Impact sur la vie sexuelle','0% = pas du tout','100% = impossible')
+      +'<div class="prom-section-label">Section 3 — Anxiété / Dépression (3 items)</div>'
+      +make('D11','Sentiment d\'anxiété ou d\'inquiétude lié à la douleur','0% = pas du tout','100% = anxiété extrême')
+      +make('D12','Sentiment de dépression lié à la douleur','0% = pas du tout','100% = dépression sévère')
+      +make('D13','Peur que l\'activité physique n\'aggrave votre état','0% = aucune peur','100% = peur totale');
+  })(),
+  score: function(){
+    var ns=['D1','D2','D3','D4','D5','D6','D7','D8','D9','D10','D11','D12','D13'];
+    var missing=ns.filter(function(n){return !document.querySelector('input[name="dallas'+n+'"]:checked');});
+    if(missing.length) return '<div style="color:#C0392B;">Questions non répondues : '+missing.join(', ')+'</div>';
+    var g=function(n){return parseInt(document.querySelector('input[name="dallas'+n+'"]:checked').value)*10;};
+    var avq=Math.round((g('D1')+g('D2')+g('D3')+g('D4')+g('D5')+g('D6')+g('D7'))/7);
+    var loi=Math.round((g('D8')+g('D9')+g('D10'))/3);
+    var anx=Math.round((g('D11')+g('D12')+g('D13'))/3);
+    var tot=Math.round((avq+loi+anx)/3);
+    var c=function(v){return v<=25?'#2D6A4F':v<=50?'#D4600A':'#C0392B';};
+    return '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;text-align:center;margin-bottom:8px;">'
+      +'<div><div style="font-size:.72rem;color:#666;">AVQ</div><div style="font-size:1.3rem;font-weight:700;color:'+c(avq)+'">'+avq+'%</div></div>'
+      +'<div><div style="font-size:.72rem;color:#666;">Loisirs/Travail</div><div style="font-size:1.3rem;font-weight:700;color:'+c(loi)+'">'+loi+'%</div></div>'
+      +'<div><div style="font-size:.72rem;color:#666;">Anxiété/Dép.</div><div style="font-size:1.3rem;font-weight:700;color:'+c(anx)+'">'+anx+'%</div></div>'
+      +'<div><div style="font-size:.72rem;color:#666;">Global</div><div style="font-size:1.3rem;font-weight:700;color:'+c(tot)+'">'+tot+'%</div></div>'
+      +'</div><div style="font-size:.78rem;color:#666;">↓=mieux. 0% = pas d\'impact · 100% = impact maximal.</div>';
+  }
+};
 </script>
 
 <script>
@@ -2563,21 +3003,41 @@ window.addEventListener('message', function(e){
 </script>
 
 <!-- PROM Modal -->
-<div id="prom-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;overflow-y:auto;padding:20px;" onclick="if(event.target===this)closePromModal()">
-  <div style="background:#fff;max-width:760px;margin:0 auto;border-radius:12px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3);">
-    <div id="prom-modal-head" style="background:#1A3A5C;color:#fff;padding:18px 24px;display:flex;align-items:center;gap:12px;">
-      <div style="flex:1;">
-        <div id="prom-modal-acronym" style="font-size:1.1rem;font-weight:700;"></div>
-        <div id="prom-modal-name" style="font-size:.78rem;opacity:.75;margin-top:2px;"></div>
+<div id="prom-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;overflow-y:auto;padding:16px;" onclick="if(event.target===this)closePromModal()">
+  <div style="background:#fff;max-width:920px;margin:0 auto;border-radius:12px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.35);">
+    <!-- Header -->
+    <div id="prom-modal-head" style="background:#1A3A5C;color:#fff;padding:16px 22px;display:flex;align-items:center;gap:10px;">
+      <div style="flex:1;min-width:0;">
+        <div id="prom-modal-acronym" style="font-size:1.05rem;font-weight:700;"></div>
+        <div id="prom-modal-name" style="font-size:.75rem;opacity:.75;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
       </div>
-      <button onclick="printProm()" style="padding:7px 14px;background:#4A90D9;color:#fff;border:none;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;">🖨 Imprimer / PDF</button>
-      <button onclick="closePromModal()" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:1.4rem;cursor:pointer;line-height:1;padding:2px 6px;">×</button>
+      <button onclick="openPromFullPage()" title="Ouvrir en pleine page pour impression" style="padding:6px 12px;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:6px;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap;">↗ Pleine page</button>
+      <button onclick="printProm()" style="padding:6px 12px;background:#4A90D9;color:#fff;border:none;border-radius:6px;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap;">🖨 Imprimer</button>
+      <button onclick="closePromModal()" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:1.4rem;cursor:pointer;line-height:1;padding:2px 6px;flex-shrink:0;">×</button>
     </div>
-    <div id="prom-modal-body" style="padding:24px;"></div>
-    <div id="prom-modal-score" style="display:none;background:#F0F4F8;border-top:1px solid #dde3ec;padding:16px 24px;"></div>
-    <div style="padding:12px 24px;border-top:1px solid #dde3ec;display:flex;gap:8px;justify-content:flex-end;">
+    <!-- Patient info bar -->
+    <div style="background:#F8FAFC;border-bottom:1px solid #dde3ec;padding:10px 22px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+      <div style="display:flex;align-items:center;gap:6px;">
+        <label style="font-size:.72rem;font-weight:600;color:#6b7a8d;white-space:nowrap;">Nom / Prénom</label>
+        <input id="prom-pt-nom" type="text" placeholder="Nom Prénom" style="padding:4px 9px;border:1px solid #dde3ec;border-radius:5px;font-size:.78rem;width:160px;font-family:inherit;color:#1a2433;">
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <label style="font-size:.72rem;font-weight:600;color:#6b7a8d;white-space:nowrap;">Date de naissance</label>
+        <input id="prom-pt-ddn" type="text" placeholder="JJ/MM/AAAA" style="padding:4px 9px;border:1px solid #dde3ec;border-radius:5px;font-size:.78rem;width:110px;font-family:inherit;color:#1a2433;">
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <label style="font-size:.72rem;font-weight:600;color:#6b7a8d;white-space:nowrap;">Date</label>
+        <input id="prom-pt-date" type="text" placeholder="JJ/MM/AAAA" style="padding:4px 9px;border:1px solid #dde3ec;border-radius:5px;font-size:.78rem;width:110px;font-family:inherit;color:#1a2433;">
+      </div>
+    </div>
+    <!-- Body -->
+    <div id="prom-modal-body" style="padding:22px 24px;"></div>
+    <!-- Score result -->
+    <div id="prom-modal-score" style="display:none;background:#F0F4F8;border-top:1px solid #dde3ec;padding:14px 24px;"></div>
+    <!-- Footer actions -->
+    <div style="padding:10px 22px;border-top:1px solid #dde3ec;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;">
       <button onclick="calcPromScore()" style="padding:8px 18px;background:#1A3A5C;color:#fff;border:none;border-radius:6px;font-size:.82rem;font-weight:600;cursor:pointer;">Calculer le score</button>
-      <button onclick="closePromModal()" style="padding:8px 18px;background:none;color:#666;border:1px solid #dde3ec;border-radius:6px;font-size:.82rem;cursor:pointer;">Fermer</button>
+      <button onclick="closePromModal()" style="padding:8px 16px;background:none;color:#666;border:1px solid #dde3ec;border-radius:6px;font-size:.82rem;cursor:pointer;">Fermer</button>
     </div>
   </div>
 </div>
