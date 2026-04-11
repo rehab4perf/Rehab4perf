@@ -640,23 +640,67 @@ body {
 .concl-area:focus { background: var(--yellow-l); }
 
 @media print {
-  .sidebar, .page-header, .no-print { display: none !important; }
-  .page-content { padding: 0 !important; margin-left: 0 !important; }
-  .block { break-inside: avoid; }
+  /* ── Reset layout ── */
+  *, *::before, *::after { overflow: visible !important; }
+  html { font-size: 12px !important; }
+  body {
+    display: block !important;
+    background: #fff !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  /* ── Hide chrome ── */
+  .sidebar,
+  .page-header,
+  .no-print { display: none !important; }
+  /* ── Main becomes block ── */
+  .main {
+    display: block !important;
+    width: 100% !important;
+    overflow: visible !important;
+    min-height: 0 !important;
+    height: auto !important;
+  }
+  .page { display: none !important; }
+  .page.active {
+    display: block !important;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
+    flex: none !important;
+  }
+  .page-content {
+    display: block !important;
+    padding: 16px 28px 32px !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    flex: none !important;
+    height: auto !important;
+  }
+  /* ── Document ── */
   #print-header { display: block !important; }
+  .block { break-inside: avoid; page-break-inside: avoid; }
+  .cr-section { break-inside: avoid; page-break-inside: avoid; }
+  /* ── Print header itself ── */
+  #print-header { page-break-after: avoid; }
 }
 </style>
 </head>
 <body>
 
-<div id="print-header" style="display:none;">
-  <div style="background:#1A3A5C;color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;">
-    <div style="font-family:Georgia,serif;font-style:italic;font-size:1.1rem;">
-      <span style="color:#4A90D9">Rehab</span><span style="font-weight:900;font-style:normal">4</span><span style="color:#E74C3C">Perf</span>
+<div id="print-header" style="display:none;margin-bottom:0;">
+  <!-- Bande logo + praticien -->
+  <div style="background:#1A3A5C;color:#fff;padding:12px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;">
+    <div style="font-family:Georgia,serif;font-style:italic;font-size:1.15rem;letter-spacing:-.01em;white-space:nowrap;">
+      <span style="color:#4A90D9">Rehab</span><span style="font-weight:900;font-style:normal;color:#fff">4</span><span style="color:#E74C3C">Perf</span>
+      <span style="font-size:.72rem;font-style:normal;opacity:.55;margin-left:10px;font-weight:400;">Bilan Clinique</span>
     </div>
-    <div id="ph-meta" style="text-align:right;font-size:.72rem;color:rgba(255,255,255,.8);"></div>
+    <div id="ph-meta" style="text-align:right;font-size:.75rem;color:rgba(255,255,255,.85);line-height:1.7;font-family:-apple-system,Helvetica Neue,sans-serif;"></div>
   </div>
-  <div id="ph-patient" style="background:#fff;padding:16px 24px;border-bottom:1px solid #DDE3EC;"></div>
+  <!-- Séparateur coloré fin -->
+  <div style="height:3px;background:linear-gradient(90deg,#2B5FA6,#4A90D9,#E74C3C);"></div>
 </div>
 
 <!-- ── SIDEBAR ──────────────────────────────────────────── -->
@@ -2970,12 +3014,12 @@ function updatePrintHeader() {
   var dateFmt = date ? new Date(date).toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'}) : '';
   var metaParts = [praticien, cabinet].filter(Boolean);
   if(dateFmt) metaParts.push(dateFmt);
-  document.getElementById('ph-meta').innerHTML = metaParts.join('<br>');
-  var patHtml = '';
-  if(patName) patHtml += '<span style="font-size:1rem;font-weight:700;color:#1A3A5C;margin-right:16px;">'+patName+'</span>';
+  var patParts = [];
+  if(patName) patParts.push(patName);
   var details = [age, cote].filter(Boolean).join(' · ');
-  if(details) patHtml += '<span style="font-size:.82rem;color:#666;">'+details+'</span>';
-  document.getElementById('ph-patient').innerHTML = patHtml || '<span style="color:#aaa;font-size:.82rem;">Patient non renseigné</span>';
+  if(details) patParts.push(details);
+  if(patParts.length) metaParts.unshift(patParts.join(' — '));
+  document.getElementById('ph-meta').innerHTML = metaParts.join('<br>');
 }
 
 function openReset() { document.getElementById('modal-reset').classList.add('open'); }
