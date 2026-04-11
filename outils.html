@@ -513,13 +513,18 @@ body {
   <div class="block">
     <div class="block-header grn">🏃 Tests VMA — optionnels (laisser vide si non réalisés)</div>
     <div style="padding:7px 16px 8px;font-size:.76rem;color:#6B6860;border-bottom:1px solid #E8E6E1">
-      Priorité : Cooper → Léger-Boucher → Estimation FC (Uth 2004). Laisser vide si test non réalisé.
+      Priorité : Cooper 12min → Demi-Cooper 6min → Léger-Boucher → Estimation FC (Uth 2004)
     </div>
-    <div class="rm-inputs" style="grid-template-columns:1fr 1fr">
+    <div class="rm-inputs" style="grid-template-columns:1fr 1fr 1fr">
       <div class="rm-field">
         <label>Distance Cooper (m sur 12 min)</label>
         <input type="number" id="c-cooper" placeholder="Laisser vide" min="500" max="5000" oninput="calcCardio()">
         <span style="font-size:.63rem;color:#9D9B96">Protocole : piste 400m · courir 12 min non-stop · mesurer la distance</span>
+      </div>
+      <div class="rm-field">
+        <label>Demi-Cooper (m sur 6 min)</label>
+        <input type="number" id="c-demi-cooper" placeholder="Laisser vide" min="300" max="3000" oninput="calcCardio()">
+        <span style="font-size:.63rem;color:#9D9B96">Profils débutant/intermédiaire · VO₂max = (distance/1000 × 14.49) − 1.38</span>
       </div>
       <div class="rm-field">
         <label>Palier Léger-Boucher atteint (1–16)</label>
@@ -627,7 +632,6 @@ body {
   <!-- Header -->
   <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px;">
     <div>
-      <div style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);margin-bottom:4px;">Référentiel clinique · 2025</div>
       <div style="font-size:1.4rem;font-weight:700;color:var(--navy);margin-bottom:4px;">PROMs — Kinésithérapie</div>
       <div style="font-size:.82rem;color:#666;max-width:520px;line-height:1.5;">Questionnaires de résultats rapportés par le patient, classés par articulation et pathologie. Usage quotidien en bilan, suivi et retour au sport.</div>
     </div>
@@ -691,10 +695,11 @@ body {
       </div>
       <div>
         <label style="font-size:.74rem;font-weight:600;color:#444;display:block;margin-bottom:4px;">Type</label>
-        <select id="rform-type" style="width:100%;padding:7px 10px;border:1px solid #dde3ec;border-radius:6px;font-size:.82rem;font-family:inherit;outline:none;background:#fff;">
+        <select id="rform-type" onchange="onRformTypeChange()" style="width:100%;padding:7px 10px;border:1px solid #dde3ec;border-radius:6px;font-size:.82rem;font-family:inherit;outline:none;background:#fff;">
           <option value="Lien web">Lien web</option>
           <option value="Note">Note</option>
           <option value="Protocole">Protocole</option>
+          <option value="PDF">Fichier PDF</option>
         </select>
       </div>
       <div>
@@ -704,9 +709,13 @@ body {
           <option value="patient">👤 Ressources patients</option>
         </select>
       </div>
-      <div>
+      <div id="rform-contenu-wrap">
         <label style="font-size:.74rem;font-weight:600;color:#444;display:block;margin-bottom:4px;">URL ou contenu *</label>
         <input id="rform-contenu" type="text" placeholder="https://... ou texte de la note" style="width:100%;padding:7px 10px;border:1px solid #dde3ec;border-radius:6px;font-size:.82rem;font-family:inherit;outline:none;">
+        <div id="rform-pdf-wrap" style="display:none;">
+          <input id="rform-pdf" type="file" accept=".pdf" style="width:100%;padding:4px 0;font-size:.8rem;">
+          <span style="font-size:.62rem;color:#9D9B96">Fichier PDF stocké localement (base64)</span>
+        </div>
       </div>
     </div>
     <div style="display:flex;gap:8px;">
@@ -994,7 +1003,7 @@ function exportProms(){
   });
   var date = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
   var html = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PROMs — Kinésithérapie</title><style>'+css+'</style></head><body>'
-    +'<div class="hdr"><h1>PROMs — Kinésithérapie</h1><p>Référentiel clinique · '+date+' · '+PROMS_DATA.length+' questionnaires répertoriés</p></div>'
+    +'<div class="hdr"><h1>PROMs — Kinésithérapie</h1><p>'+PROMS_DATA.length+' questionnaires répertoriés · '+date+'</p></div>'
     +'<div class="grid">'+gridHtml+'</div></body></html>';
   var blob = new Blob([html],{type:'text/html'});
   var a = (window.top||window).document.createElement('a');
@@ -1021,19 +1030,60 @@ function closeAddRessource(){
   document.getElementById('ressource-form').style.display = 'none';
   document.getElementById('rform-titre').value = '';
   document.getElementById('rform-contenu').value = '';
+  document.getElementById('rform-pdf').value = '';
+  document.getElementById('rform-contenu').style.display = '';
+  document.getElementById('rform-pdf-wrap').style.display = 'none';
+  document.getElementById('rform-type').value = 'Lien web';
+}
+function onRformTypeChange(){
+  var type = document.getElementById('rform-type').value;
+  var isPDF = type === 'PDF';
+  document.getElementById('rform-contenu').style.display = isPDF ? 'none' : '';
+  document.getElementById('rform-pdf-wrap').style.display = isPDF ? '' : 'none';
+  if(!isPDF) document.getElementById('rform-contenu').placeholder = type === 'Lien web' ? 'https://...' : 'Texte de la note ou du protocole';
 }
 function saveRessource(){
   var titre = (document.getElementById('rform-titre').value||'').trim();
-  var contenu = (document.getElementById('rform-contenu').value||'').trim();
-  if(!titre || !contenu){ alert('Veuillez remplir le titre et le contenu/URL.'); return; }
   var type = document.getElementById('rform-type').value;
   var cat = document.getElementById('rform-cat').value;
+
+  if(type === 'PDF'){
+    var fileInput = document.getElementById('rform-pdf');
+    if(!titre || !fileInput.files.length){ alert('Veuillez remplir le titre et sélectionner un fichier PDF.'); return; }
+    var file = fileInput.files[0];
+    var reader = new FileReader();
+    reader.onload = function(e){
+      var date = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'});
+      var id = 'r' + Date.now();
+      _ressources.push({id:id, titre:titre, type:'PDF', contenu:e.target.result, categorie:cat, date:date, fileName:file.name});
+      try { localStorage.setItem('r4p-ressources', JSON.stringify(_ressources)); } catch(e2){
+        alert('Fichier trop volumineux pour le stockage local. Essayez un fichier plus petit.');
+        return;
+      }
+      closeAddRessource();
+      renderRessources();
+    };
+    reader.readAsDataURL(file);
+    return;
+  }
+
+  var contenu = (document.getElementById('rform-contenu').value||'').trim();
+  if(!titre || !contenu){ alert('Veuillez remplir le titre et le contenu/URL.'); return; }
   var date = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'});
   var id = 'r' + Date.now();
   _ressources.push({id:id, titre:titre, type:type, contenu:contenu, categorie:cat, date:date});
   try { localStorage.setItem('r4p-ressources', JSON.stringify(_ressources)); } catch(e){}
   closeAddRessource();
   renderRessources();
+}
+function exportRessourcePDF(id){
+  var r = _ressources.find(function(x){ return x.id === id; });
+  if(!r || r.type !== 'PDF') return;
+  var a = document.createElement('a');
+  a.href = r.contenu;
+  a.download = r.fileName || r.titre + '.pdf';
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ document.body.removeChild(a); }, 500);
 }
 function deleteRessource(id){
   _ressources = _ressources.filter(function(r){ return r.id !== id; });
@@ -1045,6 +1095,9 @@ function consulterRessource(id){
   if(!r) return;
   if(r.type === 'Lien web'){
     window.open(r.contenu, '_blank');
+  } else if(r.type === 'PDF'){
+    var win = window.open('', '_blank');
+    win.document.write('<iframe src="' + r.contenu + '" style="width:100%;height:100vh;border:none;"></iframe>');
   } else {
     document.getElementById('ress-note-type').textContent = r.type;
     document.getElementById('ress-note-titre').textContent = r.titre;
@@ -1085,6 +1138,7 @@ function renderRessources(){
       html += '<div style="display:flex;gap:5px;flex-shrink:0;">';
       html += '<button onclick="consulterRessource(\''+r.id+'\')" style="padding:4px 9px;font-size:.72rem;background:#1A3A5C;color:#fff;border:none;border-radius:5px;cursor:pointer;">Consulter</button>';
       if(r.type==='Lien web') html += '<button onclick="copyRessLink(\''+r.id+'\')" style="padding:4px 9px;font-size:.72rem;background:none;border:1px solid #dde3ec;border-radius:5px;cursor:pointer;color:#555;">Copier</button>';
+      if(r.type==='PDF') html += '<button onclick="exportRessourcePDF(\''+r.id+'\')" style="padding:4px 9px;font-size:.72rem;background:none;border:1px solid #27AE60;border-radius:5px;cursor:pointer;color:#27AE60;">📤 Exporter</button>';
       html += '<button onclick="deleteRessource(\''+r.id+'\')" style="padding:4px 9px;font-size:.72rem;background:none;border:1px solid #fca5a5;border-radius:5px;cursor:pointer;color:#C0392B;">✕</button>';
       html += '</div>';
       html += '</div>';
@@ -2904,8 +2958,9 @@ function calcCardio() {
   var taille = parseFloat(g('c-taille'));
   var fcrep  = parseFloat(g('c-fcrep'));
   var fcmaxM = parseFloat(g('c-fcmax-m'));
-  var cooper = parseFloat(g('c-cooper'));
-  var leger  = parseFloat(g('c-leger'));
+  var cooper     = parseFloat(g('c-cooper'));
+  var demiCooper = parseFloat(document.getElementById('c-demi-cooper') ? document.getElementById('c-demi-cooper').value : '');
+  var leger      = parseFloat(g('c-leger'));
 
   // IMC
   if (!isNaN(poids) && !isNaN(taille) && taille > 0) {
@@ -2948,8 +3003,14 @@ function calcCardio() {
     vo2 = cRnd((cooper - 504.9) / 44.73);
     vma = cRnd(cooper / 200, 2);
     vo2_lo = vo2; vo2_hi = vo2; vma_lo = vma; vma_hi = vma;
-    s('c-vo2-src', 'Cooper (' + cooper + ' m)');
+    s('c-vo2-src', 'Cooper 12min (' + cooper + ' m)');
     s('c-vma-src', 'Cooper : distance / 200');
+  } else if (!isNaN(demiCooper) && demiCooper > 0) {
+    vo2 = cRnd((demiCooper / 1000 * 14.49) - 1.38);
+    vma = cRnd(vo2 / 3.5, 2);
+    vo2_lo = vo2; vo2_hi = vo2; vma_lo = vma; vma_hi = vma;
+    s('c-vo2-src', 'Demi-Cooper 6min (' + demiCooper + ' m)');
+    s('c-vma-src', 'Billat (VO₂/3.5)');
   } else if (!isNaN(leger) && leger > 0) {
     vo2 = cRnd(5.857 * (8 + 0.5*(leger-1)) - 19.458);
     vma = cRnd(8 + 0.5*(leger-1), 2);

@@ -799,6 +799,7 @@ body {
         <div class="field"><label>Taille (cm)</label><input type="number" id="f-taille" placeholder="175"></div>
         <div class="field"><label>Côté atteint</label>
           <select id="f-cote" onchange="updateAll()">
+            <option value="">AUCUN CÔTÉ ATTEINT</option>
             <option value="DROIT">DROIT</option>
             <option value="GAUCHE">GAUCHE</option>
             <option value="BILATÉRAL">BILATÉRAL</option>
@@ -956,7 +957,11 @@ body {
   <div class="page-content">
     <div class="block">
       <div class="block-header light">Marqueur</div>
-      <div class="form-grid single"><div class="field"><label>Mouvement / activité qui reproduit la douleur</label><textarea id="ra-marqueur" placeholder="Flexion lombaire avec irradiation L5…" style="min-height:48px"></textarea></div></div>
+      <div class="form-grid single" style="padding:14px 16px 16px;gap:12px;">
+        <div class="field"><label>Mouvement / activité qui reproduit la douleur</label>
+          <textarea id="ra-marqueur" placeholder="Flexion lombaire avec irradiation L5…" style="min-height:72px"></textarea>
+        </div>
+      </div>
     </div>
 
     <div class="block">
@@ -987,7 +992,11 @@ body {
 
     <div class="block">
       <div class="block-header grey">Préférences directionnelles McKenzie</div>
-      <div class="form-grid single"><div class="field"><label>Préférences directionnelles (centralisation, périphérisation…)</label><textarea id="ra-mckenzie" style="min-height:48px" placeholder="Centralisation en extension…"></textarea></div></div>
+      <div class="form-grid single" style="padding:14px 16px 16px;gap:12px;">
+        <div class="field"><label>Préférences directionnelles (centralisation, périphérisation…)</label>
+          <textarea id="ra-mckenzie" style="min-height:80px" placeholder="Ex: centralisation en extension, périphérisation en flexion…&#10;Direction préférentielle : extension&#10;Réponse : centralisation dans le membre inférieur droit"></textarea>
+        </div>
+      </div>
     </div>
 
     <div class="block">
@@ -1034,6 +1043,22 @@ body {
         <div class="field"><label>Marqueur / Mouvement reproducteur</label><textarea id="ha-marqueur" style="min-height:48px" placeholder="Douleur aine à la course…"></textarea></div>
         <div class="field"><label>Pubic clock — Palpation</label><textarea id="ha-pubic" style="min-height:48px" placeholder="Sensibilité 6H (long ADD), ring inguinal douloureux…"></textarea></div>
         <div class="field"><label>Démembrement — Palpation (sartorius, long ADD, psoas, pectiné)</label><textarea id="ha-demembrement" style="min-height:48px" placeholder="Long ADD douloureux à la palpation…"></textarea></div>
+      </div>
+    </div>
+    <!-- HAGOS quick link -->
+    <div class="block" style="border-left:4px solid #2B5FA6;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;gap:12px;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:.78rem;font-weight:700;color:#1A3A5C;margin-bottom:2px;">HAGOS — Copenhagen Hip and Groin Outcome Score</div>
+          <div style="font-size:.72rem;color:#888;">37 items · 6 sous-scores · 0–100 · Sport actif · Hanche/aine</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div>
+            <label style="font-size:.68rem;font-weight:600;color:#666;display:block;margin-bottom:3px;">Score global (%)</label>
+            <input type="number" id="ha-hagos-score" min="0" max="100" placeholder="—" oninput="updateAll()" style="width:80px;padding:5px 8px;border:1.5px solid #dde3ec;border-radius:6px;font-size:.9rem;font-weight:600;color:#1A3A5C;outline:none;text-align:center;">
+          </div>
+          <button onclick="openHagosModal()" style="padding:7px 14px;background:#2B5FA6;color:#fff;border:none;border-radius:7px;font-size:.78rem;font-weight:600;cursor:pointer;white-space:nowrap;">📋 Ouvrir HAGOS</button>
+        </div>
       </div>
     </div>
     <div class="block"><div class="block-header red">Approche Globale + Fracture</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ha-global"></tbody></table></div>
@@ -1278,10 +1303,18 @@ body {
     <div class="page-subtitle" id="hdr-fonc-mi">—</div>
   </div>
   <div class="page-content">
+    <!-- Favorites filter bar -->
+    <div id="tf-fav-bar" style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
+      <button id="tf-fav-btn" onclick="toggleTFFilter()" style="display:flex;align-items:center;gap:5px;padding:6px 14px;border-radius:20px;border:1px solid #dde3ec;background:transparent;font-size:.78rem;font-weight:500;color:#6b7a8d;cursor:pointer;font-family:inherit;transition:all .15s;">☆ Favoris seulement</button>
+      <span style="font-size:.73rem;color:#9D9B96;">Cliquez ★ sur un bloc pour le mettre en favori</span>
+    </div>
 
     <!-- SLS -->
-    <div class="block">
-      <div class="block-header">① Force Fonctionnelle — Single Leg Squat (SLS)</div>
+    <div class="block" data-tf-id="sls">
+      <div class="block-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>① Force Fonctionnelle — Single Leg Squat (SLS)</span>
+        <button class="tf-fav-star" onclick="toggleTFFav('sls',this)" style="background:none;border:none;font-size:1rem;cursor:pointer;color:rgba(255,255,255,.6);padding:0 4px;">☆</button>
+      </div>
       <div style="padding:1px 0">
         <div class="measure-row" style="background:var(--surface2)">
           <div class="col-header">Test</div><div class="col-header">Côté atteint</div><div class="col-header">Côté sain</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
@@ -1311,8 +1344,11 @@ body {
     </div>
 
     <!-- HOP TEST -->
-    <div class="block">
-      <div class="block-header">② Propulsion — Single Hop Test</div>
+    <div class="block" data-tf-id="hop">
+      <div class="block-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>② Propulsion — Single Hop Test</span>
+        <button class="tf-fav-star" onclick="toggleTFFav('hop',this)" style="background:none;border:none;font-size:1rem;cursor:pointer;color:rgba(255,255,255,.6);padding:0 4px;">☆</button>
+      </div>
       <div style="padding:1px 0">
         <div class="measure-row" style="background:var(--surface2)">
           <div class="col-header">Test</div><div class="col-header">Côté atteint (cm)</div><div class="col-header">Côté sain (cm)</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
@@ -1336,8 +1372,11 @@ body {
     </div>
 
     <!-- RÉCEPTION -->
-    <div class="block">
-      <div class="block-header">③ Test de Réception — 80% Hop Test — Score /3</div>
+    <div class="block" data-tf-id="reception">
+      <div class="block-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>③ Test de Réception — 80% Hop Test — Score /3</span>
+        <button class="tf-fav-star" onclick="toggleTFFav('reception',this)" style="background:none;border:none;font-size:1rem;cursor:pointer;color:rgba(255,255,255,.6);padding:0 4px;">☆</button>
+      </div>
       <div style="padding:8px 14px 4px;font-size:.82rem;color:var(--text2)">Cocher les critères réussis. <strong>0/3 = non réussi · 1-2/3 = à améliorer · 3/3 = réussi</strong></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);margin-bottom:1px">
         <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ ATTEINT</div>
@@ -1359,8 +1398,11 @@ body {
     </div>
 
     <!-- PLIOMÉTRIE QUALITATIVE -->
-    <div class="block">
-      <div class="block-header">④ Pliométrie Verticale Qualitative</div>
+    <div class="block" data-tf-id="plioq">
+      <div class="block-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>④ Pliométrie Verticale Qualitative</span>
+        <button class="tf-fav-star" onclick="toggleTFFav('plioq',this)" style="background:none;border:none;font-size:1rem;cursor:pointer;color:rgba(255,255,255,.6);padding:0 4px;">☆</button>
+      </div>
       <div style="padding:8px 14px 4px;font-size:.82rem;color:var(--accent2);background:var(--accent-l);font-weight:500">
         Objectif : temps de contact au sol le + bref possible ET hauteur de saut la + haute possible (rebond type corde à sauter, intensité max)
       </div>
@@ -1399,8 +1441,11 @@ body {
     </div>
 
     <!-- HEEL RISE -->
-    <div class="block">
-      <div class="block-header">⑥ Force du Mollet — Heel Rise Test</div>
+    <div class="block" data-tf-id="heelrise">
+      <div class="block-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>⑥ Force du Mollet — Heel Rise Test</span>
+        <button class="tf-fav-star" onclick="toggleTFFav('heelrise',this)" style="background:none;border:none;font-size:1rem;cursor:pointer;color:rgba(255,255,255,.6);padding:0 4px;">☆</button>
+      </div>
       <div style="padding:1px 0">
         <div class="measure-row" style="background:var(--surface2)">
           <div class="col-header">Mesure</div><div class="col-header">Côté atteint</div><div class="col-header">Côté sain</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
@@ -1438,8 +1483,11 @@ body {
     </div>
 
     <!-- LUNGE WBLT -->
-    <div class="block">
-      <div class="block-header">⑦ Flexion Dorsale de Cheville — Lunge Test WBLT</div>
+    <div class="block" data-tf-id="lunge">
+      <div class="block-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>⑦ Flexion Dorsale de Cheville — Lunge Test WBLT</span>
+        <button class="tf-fav-star" onclick="toggleTFFav('lunge',this)" style="background:none;border:none;font-size:1rem;cursor:pointer;color:rgba(255,255,255,.6);padding:0 4px;">☆</button>
+      </div>
       <div style="padding:1px 0">
         <div class="measure-row" style="background:var(--surface2)">
           <div class="col-header">Mesure</div><div class="col-header">Côté atteint (cm)</div><div class="col-header">Côté sain (cm)</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
@@ -1463,8 +1511,11 @@ body {
     </div>
 
     <!-- DROP JUMP -->
-    <div class="block">
-      <div class="block-header">⑤ Pliométrie Quantitative — Single Leg Drop Jump</div>
+    <div class="block" data-tf-id="dropjump">
+      <div class="block-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>⑤ Pliométrie Quantitative — Single Leg Drop Jump</span>
+        <button class="tf-fav-star" onclick="toggleTFFav('dropjump',this)" style="background:none;border:none;font-size:1rem;cursor:pointer;color:rgba(255,255,255,.6);padding:0 4px;">☆</button>
+      </div>
       <div style="padding:1px 0">
         <div class="measure-row" style="background:var(--surface2)">
           <div class="col-header">Mesure</div><div class="col-header">Côté atteint</div><div class="col-header">Côté sain</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
@@ -1498,8 +1549,11 @@ body {
     </div>
 
     <!-- SEBT -->
-    <div class="block">
-      <div class="block-header">⑦ mSEBT — modified Star Excursion Balance Test</div>
+    <div class="block" data-tf-id="sebt">
+      <div class="block-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>⑦ mSEBT — modified Star Excursion Balance Test</span>
+        <button class="tf-fav-star" onclick="toggleTFFav('sebt',this)" style="background:none;border:none;font-size:1rem;cursor:pointer;color:rgba(255,255,255,.6);padding:0 4px;">☆</button>
+      </div>
 
       <!-- Schéma Y + infos protocole -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
@@ -1675,10 +1729,18 @@ body {
     <div class="page-subtitle" id="hdr-fonc-ms">—</div>
   </div>
   <div class="page-content">
+    <!-- Favorites filter bar -->
+    <div id="tf-ms-fav-bar" style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
+      <button id="tf-ms-fav-btn" onclick="toggleTFFilter('ms')" style="display:flex;align-items:center;gap:5px;padding:6px 14px;border-radius:20px;border:1px solid #dde3ec;background:transparent;font-size:.78rem;font-weight:500;color:#6b7a8d;cursor:pointer;font-family:inherit;transition:all .15s;">☆ Favoris seulement</button>
+      <span style="font-size:.73rem;color:#9D9B96;">Cliquez ★ sur un bloc pour le mettre en favori</span>
+    </div>
 
     <!-- PSET -->
-    <div class="block">
-      <div class="block-header">① PSET — Prone Shoulder Endurance Test</div>
+    <div class="block" data-tf-id="pset">
+      <div class="block-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>① PSET — Prone Shoulder Endurance Test</span>
+        <button class="tf-fav-star" onclick="toggleTFFav('pset',this)" style="background:none;border:none;font-size:1rem;cursor:pointer;color:rgba(255,255,255,.6);padding:0 4px;">☆</button>
+      </div>
       <div style="padding:8px 14px;background:var(--accent-l);font-size:12px;color:var(--accent2);font-weight:500">
         📐 Poids de test = 2% du poids corporel
         <span id="pset-poids-calc" style="margin-left:16px;font-weight:700"></span>
@@ -1713,8 +1775,11 @@ body {
     </div>
 
     <!-- CKCUEST -->
-    <div class="block">
-      <div class="block-header">② CKCUEST Modifié — Closed Kinetic Chain Upper Extremity Stability Test</div>
+    <div class="block" data-tf-id="ckcuest">
+      <div class="block-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>② CKCUEST Modifié — Closed Kinetic Chain Upper Extremity Stability Test</span>
+        <button class="tf-fav-star" onclick="toggleTFFav('ckcuest',this)" style="background:none;border:none;font-size:1rem;cursor:pointer;color:rgba(255,255,255,.6);padding:0 4px;">☆</button>
+      </div>
       <div style="padding:1px 0">
         <div class="measure-row" style="background:var(--surface2)">
           <div class="col-header">Mesure</div><div class="col-header">Essai 1</div><div class="col-header">Essai 2</div><div class="col-header">Essai 3</div><div class="col-header">Meilleur</div>
@@ -1741,8 +1806,11 @@ body {
     </div>
 
     <!-- Side Hold Rotation Test -->
-    <div class="block">
-      <div class="block-header">③ Side Hold Rotation Test</div>
+    <div class="block" data-tf-id="shrt">
+      <div class="block-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>③ Side Hold Rotation Test</span>
+        <button class="tf-fav-star" onclick="toggleTFFav('shrt',this)" style="background:none;border:none;font-size:1rem;cursor:pointer;color:rgba(255,255,255,.6);padding:0 4px;">☆</button>
+      </div>
       <div style="padding:1px 0">
         <div class="measure-row" style="background:var(--surface2)">
           <div class="col-header">Mesure</div><div class="col-header">Côté Droit</div><div class="col-header">Côté Gauche</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
@@ -1766,8 +1834,11 @@ body {
     </div>
 
     <!-- Shoulder Endurance Test -->
-    <div class="block">
-      <div class="block-header">④ Shoulder Endurance Test</div>
+    <div class="block" data-tf-id="set">
+      <div class="block-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>④ Shoulder Endurance Test</span>
+        <button class="tf-fav-star" onclick="toggleTFFav('set',this)" style="background:none;border:none;font-size:1rem;cursor:pointer;color:rgba(255,255,255,.6);padding:0 4px;">☆</button>
+      </div>
       <div style="padding:1px 0">
         <div class="measure-row" style="background:var(--surface2)">
           <div class="col-header">Mesure</div><div class="col-header">Côté sain</div><div class="col-header">Côté atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
@@ -1796,8 +1867,11 @@ body {
     </div>
 
     <!-- ULRT -->
-    <div class="block">
-      <div class="block-header">⑤ ULRT — Upper Limb Rotation Test</div>
+    <div class="block" data-tf-id="ulrt">
+      <div class="block-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>⑤ ULRT — Upper Limb Rotation Test</span>
+        <button class="tf-fav-star" onclick="toggleTFFav('ulrt',this)" style="background:none;border:none;font-size:1rem;cursor:pointer;color:rgba(255,255,255,.6);padding:0 4px;">☆</button>
+      </div>
       <div style="padding:1px 0">
         <div class="measure-row" style="background:var(--surface2)">
           <div class="col-header">Mesure</div><div class="col-header">Essai 1</div><div class="col-header">Essai 2</div><div class="col-header">Essai 3</div><div class="col-header">Moyenne</div>
@@ -1833,8 +1907,11 @@ body {
     </div>
 
     <!-- UQYBT -->
-    <div class="block">
-      <div class="block-header">⑥ UQYBT — Upper-Quarter Y-Balance Test</div>
+    <div class="block" data-tf-id="uqybt">
+      <div class="block-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>⑥ UQYBT — Upper-Quarter Y-Balance Test</span>
+        <button class="tf-fav-star" onclick="toggleTFFav('uqybt',this)" style="background:none;border:none;font-size:1rem;cursor:pointer;color:rgba(255,255,255,.6);padding:0 4px;">☆</button>
+      </div>
       <div style="padding:8px 14px 4px;font-size:.82rem;color:var(--text2)">
         Main d'appui au centre du Y en position planche ventrale. Main libre pousse un plot le long de chaque branche. Mesurer D et G. Comparer les 2 côtés.
       </div>
@@ -1892,13 +1969,21 @@ body {
     <div class="page-subtitle" id="hdr-fonc-rachis">—</div>
   </div>
   <div class="page-content">
+    <!-- Favorites filter bar -->
+    <div id="tf-rachis-fav-bar" style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
+      <button id="tf-rachis-fav-btn" onclick="toggleTFFilter('rachis')" style="display:flex;align-items:center;gap:5px;padding:6px 14px;border-radius:20px;border:1px solid #dde3ec;background:transparent;font-size:.78rem;font-weight:500;color:#6b7a8d;cursor:pointer;font-family:inherit;transition:all .15s;">☆ Favoris seulement</button>
+      <span style="font-size:.73rem;color:#9D9B96;">Cliquez ★ sur un bloc pour le mettre en favori</span>
+    </div>
 
     <!-- ── CERVICAUX ─────────────────────────────────────────── -->
     <div style="padding:4px 0 2px;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px">CERVICAUX</div>
 
     <!-- Endurance Fléchisseurs cervicaux -->
-    <div class="block">
-      <div class="block-header">① Endurance des Fléchisseurs Cervicaux (Deep Neck Flexor)</div>
+    <div class="block" data-tf-id="rf-flx-cerv">
+      <div class="block-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>① Endurance des Fléchisseurs Cervicaux (Deep Neck Flexor)</span>
+        <button class="tf-fav-star" onclick="toggleTFFav('rf-flx-cerv',this)" style="background:none;border:none;font-size:1rem;cursor:pointer;color:rgba(255,255,255,.6);padding:0 4px;">☆</button>
+      </div>
       <div style="padding:1px 0">
         <div class="measure-row" style="background:var(--surface2)">
           <div class="col-header" style="grid-column:span 3">Mesure</div>
@@ -1925,8 +2010,11 @@ body {
     </div>
 
     <!-- Endurance Extenseurs cervicaux -->
-    <div class="block">
-      <div class="block-header">② Endurance des Extenseurs Cervicaux (Deep Neck Extensor)</div>
+    <div class="block" data-tf-id="rf-ext-cerv">
+      <div class="block-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>② Endurance des Extenseurs Cervicaux (Deep Neck Extensor)</span>
+        <button class="tf-fav-star" onclick="toggleTFFav('rf-ext-cerv',this)" style="background:none;border:none;font-size:1rem;cursor:pointer;color:rgba(255,255,255,.6);padding:0 4px;">☆</button>
+      </div>
       <div style="padding:1px 0">
         <div class="measure-row" style="background:var(--surface2)">
           <div class="col-header" style="grid-column:span 3">Mesure</div>
@@ -1953,8 +2041,11 @@ body {
     </div>
 
     <!-- Endurance Latérale Cervicale -->
-    <div class="block">
-      <div class="block-header">③ Endurance Latérale Cervicale (Lateral Neck Flexor Test)</div>
+    <div class="block" data-tf-id="rf-lat-cerv">
+      <div class="block-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>③ Endurance Latérale Cervicale (Lateral Neck Flexor Test)</span>
+        <button class="tf-fav-star" onclick="toggleTFFav('rf-lat-cerv',this)" style="background:none;border:none;font-size:1rem;cursor:pointer;color:rgba(255,255,255,.6);padding:0 4px;">☆</button>
+      </div>
       <div style="padding:1px 0">
         <div class="measure-row" style="background:var(--surface2)">
           <div class="col-header">Côté</div>
@@ -1988,8 +2079,11 @@ body {
     <div style="padding:14px 0 2px;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px">LOMBAIRES</div>
 
     <!-- Sorensen -->
-    <div class="block">
-      <div class="block-header">④ Test de Sørensen — Endurance Extenseurs Lombaires</div>
+    <div class="block" data-tf-id="rf-sorensen">
+      <div class="block-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>④ Test de Sørensen — Endurance Extenseurs Lombaires</span>
+        <button class="tf-fav-star" onclick="toggleTFFav('rf-sorensen',this)" style="background:none;border:none;font-size:1rem;cursor:pointer;color:rgba(255,255,255,.6);padding:0 4px;">☆</button>
+      </div>
       <div style="padding:1px 0">
         <div class="measure-row" style="background:var(--surface2)">
           <div class="col-header" style="grid-column:span 3">Mesure</div>
@@ -2019,8 +2113,11 @@ body {
     </div>
 
     <!-- PDSLRT -->
-    <div class="block">
-      <div class="block-header">⑤ Prone Double Straight Leg Raise Test (PDSLRT) — Endurance Extenseurs Lombaires</div>
+    <div class="block" data-tf-id="rf-pdslrt">
+      <div class="block-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>⑤ Prone Double Straight Leg Raise Test (PDSLRT) — Endurance Extenseurs Lombaires</span>
+        <button class="tf-fav-star" onclick="toggleTFFav('rf-pdslrt',this)" style="background:none;border:none;font-size:1rem;cursor:pointer;color:rgba(255,255,255,.6);padding:0 4px;">☆</button>
+      </div>
       <div style="padding:1px 0">
         <div class="measure-row" style="background:var(--surface2)">
           <div class="col-header" style="grid-column:span 3">Mesure</div>
@@ -2168,7 +2265,7 @@ const TESTS = {
   'tb-ra-cerv': {type:'ortho',items:['Spurling A','Rotation latérale + médiale','ULNT 1','ULNT 2a','ULNT 2b','ULNT 3','Distraction cervicale']},
   'tb-ra-lomb': {type:'ortho',items:['SLUMP test','Lasègue (SLR)','Léri']},
   'tb-ra-musc': {type:'ortho',items:['Endurance Flexion cervicale','Endurance Extension cervicale','Endurance Latéroflexion cervicale','Test de Sorensen (lombaires)','Endurance abdominale','Break test abdo']},
-  'tb-ha-global':{type:'ortho',items:['HAGOS (questionnaire -- noter score %)','Fulcrum test','Squeeze test 0deg (EVA > 6 ?)']},
+  'tb-ha-global':{type:'ortho',items:['HAGOS — Score % (voir questionnaire ci-dessous)','Fulcrum test','Squeeze test 0deg (EVA > 6 ?)']},
   'tb-ha-add':  {type:'ortho',items:['Squeeze test 45deg','Étirement ADD']},
   'tb-ha-pubis':{type:'ortho',items:['Patellar pubic percussion test','Pubis stress test']},
   'tb-ha-flech':{type:'ortho',items:['Contraction résistée Thomas','Étirement fléchisseurs']},
@@ -2264,6 +2361,49 @@ function init() {
   updateAll();
   loadFromStorage();
   applyProfile(getProfile());
+  applyTFFavStars();
+}
+
+function openHagosModal(){
+  alert('Pour remplir le questionnaire HAGOS, allez dans Outils > PROMs et recherchez "HAGOS".');
+}
+
+/* ── TESTS FONCTIONNELS FAVORITES ── */
+function getTFFavs(){
+  try { return new Set(JSON.parse(localStorage.getItem('r4p-tf-favs')||'[]')); } catch(e){ return new Set(); }
+}
+function toggleTFFav(id, btn){
+  var favs = getTFFavs();
+  if(favs.has(id)){ favs.delete(id); } else { favs.add(id); }
+  localStorage.setItem('r4p-tf-favs', JSON.stringify(Array.from(favs)));
+  applyTFFavStars();
+  if(_tfFavFilter) applyTFFavFilter();
+}
+var _tfFavFilter = false;
+var _tfFavFilterPage = '';
+function toggleTFFilter(page){
+  page = page || '';
+  if(_tfFavFilterPage !== page){ _tfFavFilter = true; _tfFavFilterPage = page; }
+  else { _tfFavFilter = !_tfFavFilter; }
+  var btnId = page ? 'tf-' + page + '-fav-btn' : 'tf-fav-btn';
+  var btn = document.getElementById(btnId);
+  if(btn){ btn.style.background = _tfFavFilter ? '#1A3A5C' : 'transparent'; btn.style.color = _tfFavFilter ? '#fff' : '#6b7a8d'; btn.style.borderColor = _tfFavFilter ? '#1A3A5C' : '#dde3ec'; btn.textContent = _tfFavFilter ? '★ Favoris seulement' : '☆ Favoris seulement'; }
+  applyTFFavFilter();
+}
+function applyTFFavStars(){
+  var favs = getTFFavs();
+  document.querySelectorAll('[data-tf-id]').forEach(function(block){
+    var id = block.getAttribute('data-tf-id');
+    var star = block.querySelector('.tf-fav-star');
+    if(star){ star.textContent = favs.has(id) ? '★' : '☆'; star.style.color = favs.has(id) ? '#FFD700' : 'rgba(255,255,255,.6)'; }
+  });
+}
+function applyTFFavFilter(){
+  var favs = getTFFavs();
+  document.querySelectorAll('[data-tf-id]').forEach(function(block){
+    var id = block.getAttribute('data-tf-id');
+    block.style.display = (!_tfFavFilter || favs.has(id)) ? '' : 'none';
+  });
 }
 
 /* ── PROFIL UTILISATEUR ── */
@@ -2642,7 +2782,8 @@ function buildCR() {
     if (!val) return '';
     tag = tag || ''; tagClass = tagClass || '';
     var tagHtml = tag ? '<span class="cr-tag ' + tagClass + '">' + tag + '</span>' : '';
-    return '<div class="cr-item"><span class="cr-key">' + key + '</span><span class="cr-val">' + val + '</span>' + tagHtml + '</div>';
+    var safeVal = val.replace(/\n/g, '<br>');
+    return '<div class="cr-item"><span class="cr-key">' + key + '</span><span class="cr-val" style="white-space:pre-wrap">' + safeVal + '</span>' + tagHtml + '</div>';
   }
 
   // 1. Infos patient
@@ -2726,6 +2867,31 @@ function buildCR() {
           }
           secRows += crItem(tname, noteVal || '-', itemStatus, itemCls);
         }
+      }
+    }
+    // Add rachis mobility by direction
+    if (sec.label === 'RACHIS') {
+      var mobSegs = [['cerv','Cervicales'],['thor','Thoraciques'],['lomb','Lombaires']];
+      mobSegs.forEach(function(seg){
+        var segInputs = document.querySelectorAll('[data-mob^="'+seg[0]+'-"]');
+        var mobParts = [];
+        segInputs.forEach(function(inp){
+          if(inp.value && inp.value.trim()){
+            var dir = (inp.getAttribute('data-mob')||'').split('-').slice(1).join('-');
+            mobParts.push(dir + ' : ' + inp.value.trim());
+          }
+        });
+        if(mobParts.length) secRows += crItem('Mobilité ' + seg[1], mobParts.join('  |  '));
+      });
+    }
+    // Add HAGOS score for HANCHE
+    if (sec.label === 'HANCHE') {
+      var hagosEl = document.getElementById('ha-hagos-score');
+      if(hagosEl && hagosEl.value){
+        var hagosScore = parseInt(hagosEl.value);
+        var hagosCls = hagosScore >= 75 ? 'ok' : hagosScore >= 50 ? 'warn' : 'bad';
+        var hagosTag = hagosScore >= 75 ? 'Bon' : hagosScore >= 50 ? 'Modéré' : 'Altéré';
+        secRows += crItem('HAGOS Score', hagosEl.value + '%', hagosTag, hagosCls);
       }
     }
     var conclEl = document.getElementById(sec.concl);
@@ -3033,13 +3199,28 @@ function doReset() {
 
   // Restore defaults
   document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
-  document.getElementById('f-cote').value = 'DROIT';
+
+  // Reset all measure-stat elements to --
+  document.querySelectorAll('.measure-stat').forEach(function(el){
+    el.textContent = '--'; el.className = 'measure-stat';
+  });
+  // Reset hop repere
+  var rep80 = document.getElementById('hop-repere80');
+  if(rep80){ rep80.textContent = '--'; rep80.className = 'measure-stat'; }
 
   closeReset();
   showPage('infos');
   localStorage.removeItem('athletik-bilan');
   updateAll(); calcRec();
-  showToast(' Dossier réinitialisé -- Prêt pour un nouveau patient');
+  // Recalculate all LSI/status to show -- since inputs are now empty
+  ['sls','hop','pset','set'].forEach(k => calcLSI(k));
+  calcDJ(); calcLunge(); calcHR(); calcMusc();
+  calcCKC(); calcSHRT(); calcULRT();
+  calcRachisStat(); calcLNF(); calcSorensen(); calcPDSLRT();
+  calcPlioq2(); calcRec(); calcSEBT(); calcUQYBT();
+  calcHaMob();
+  updateBadges();
+  showToast(' Dossier réinitialisé — Prêt pour un nouveau patient');
 }
 
 // -- TOAST ------------------------------------------------------
