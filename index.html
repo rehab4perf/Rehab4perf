@@ -39,45 +39,9 @@ iframe.active { display:block; }
   .topnav { padding:0 10px; } .tab { padding:0 10px; font-size:.78rem; }
   .logo { margin-right:10px; font-size:.92rem; } .topnav-right { display:none; }
 }
-
-/* Auth gate */
-#authGate {
-  position:fixed; inset:0; background:#1A3A5C; z-index:9999;
-  display:flex; align-items:center; justify-content:center;
-}
-#authGate.hidden { display:none; }
-.gate-card {
-  background:#fff; border-radius:14px; padding:36px 32px;
-  max-width:380px; width:90%; text-align:center;
-  box-shadow:0 20px 60px rgba(0,0,0,.3);
-}
-.gate-logo { font-family:Georgia,serif; font-style:italic; font-size:1.6rem; margin-bottom:4px; }
-.gate-logo .r { color:#4A90D9; }
-.gate-logo .n { color:#1A3A5C; font-weight:900; font-style:normal; }
-.gate-logo .p { color:#E74C3C; }
-.gate-sub { font-size:.8rem; color:#6b7a8d; margin-bottom:22px; }
-.gate-btn {
-  width:100%; padding:11px; background:#2B5FA6; color:#fff; border:none;
-  border-radius:7px; font-size:.9rem; font-weight:600; cursor:pointer;
-  font-family:inherit; transition:background .15s;
-}
-.gate-btn:hover { background:#1A3A5C; }
-.gate-note { font-size:.7rem; color:#aab; margin-top:14px; line-height:1.5; }
 </style>
-<!-- Netlify Identity Widget — gère session, refresh token, invite, recovery automatiquement -->
-<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 </head>
 <body>
-
-<!-- Auth Gate -->
-<div id="authGate">
-  <div class="gate-card">
-    <div class="gate-logo"><span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span></div>
-    <p class="gate-sub">Votre espace kiné personnel</p>
-    <button class="gate-btn" id="gateBtn" onclick="netlifyIdentity.open('login')">Se connecter</button>
-    <p class="gate-note">Accès sur invitation uniquement<br>Contactez Antoine PERONNAUD</p>
-  </div>
-</div>
 
 <div class="topnav">
   <div class="logo">
@@ -86,17 +50,16 @@ iframe.active { display:block; }
   <button class="tab active" id="tab-bilan" onclick="show('bilan')">Bilan clinique</button>
   <button class="tab" id="tab-outils" onclick="show('outils')">Outils</button>
   <button class="tab" id="tab-prescription" onclick="show('prescription')">Prescription</button>
-  <div class="topnav-right" id="userDisplay" style="cursor:pointer;" onclick="show('account')" title="Mon compte">—<br>—</div>
+  <div class="topnav-right" id="userDisplay" style="cursor:pointer;" onclick="show('account')" title="Mon compte"></div>
 </div>
 <div class="frame-wrap">
-  <iframe id="frame-bilan"  src="bilan.html"  class="active"></iframe>
-  <iframe id="frame-outils" src="outils.html"></iframe>
+  <iframe id="frame-bilan"       src="bilan.html"       class="active"></iframe>
+  <iframe id="frame-outils"      src="outils.html"></iframe>
   <iframe id="frame-prescription" src="prescription.html"></iframe>
-  <iframe id="frame-account" src="account.html"></iframe>
+  <iframe id="frame-account"     src="account.html"></iframe>
 </div>
 
 <script>
-/* ── TAB SWITCHER ── */
 function show(id) {
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
   document.querySelectorAll('iframe').forEach(function(f){ f.classList.remove('active'); });
@@ -105,92 +68,33 @@ function show(id) {
   document.getElementById('frame-'+id).classList.add('active');
 }
 
-/* ── USER DISPLAY ── */
-function updateUserDisplay(user) {
-  var el = document.getElementById('userDisplay');
-  if(!user){ el.innerHTML = '—<br>—'; return; }
-  var meta = (user.user_metadata || {});
-  var prenom = meta.prenom || '';
-  var nom    = meta.nom    || '';
-  var fullName = (prenom+' '+nom).trim() || user.email.split('@')[0];
-  var cabinet  = meta.cabinet || '';
-  el.style.color = 'rgba(255,255,255,.85)';
-  el.innerHTML = fullName + '<br>' + (cabinet || 'Mon compte');
-}
+// Profil utilisateur depuis localStorage
+(function(){
+  try {
+    var p = JSON.parse(localStorage.getItem('r4p-profile')||'{}');
+    if(p.prenom || p.nom) {
+      var name = ((p.prenom||'')+' '+(p.nom||'')).trim();
+      var cab  = p.cabinet || 'Mon compte';
+      var el = document.getElementById('userDisplay');
+      el.style.color = 'rgba(255,255,255,.85)';
+      el.innerHTML = name+'<br>'+cab;
+    }
+  } catch(e){}
+})();
 
-function saveProfile(user) {
-  var meta = user.user_metadata || {};
-  var profile = {
-    prenom:  meta.prenom  || '',
-    nom:     meta.nom     || '',
-    am:      meta.am      || '',
-    tel:     meta.tel     || '',
-    cabinet: meta.cabinet || '',
-    email:   user.email   || ''
-  };
-  try { localStorage.setItem('r4p-profile', JSON.stringify(profile)); } catch(e) {}
-}
-
-function broadcastProfile(user) {
-  var meta = user.user_metadata || {};
-  var profile = {
-    prenom:  meta.prenom  || '',
-    nom:     meta.nom     || '',
-    am:      meta.am      || '',
-    tel:     meta.tel     || '',
-    cabinet: meta.cabinet || '',
-    email:   user.email   || ''
-  };
-  var token = user.token && user.token.access_token;
-  var af = document.getElementById('frame-account');
-  if(af && af.contentWindow) af.contentWindow.postMessage({type:'r4p-token', token:token, user:user}, '*');
-  document.querySelectorAll('iframe').forEach(function(fr){
-    try { fr.contentWindow.postMessage({type:'r4p-profile', profile:profile}, '*'); } catch(e) {}
-  });
-}
-
-function onLoggedIn(user) {
-  document.getElementById('authGate').classList.add('hidden');
-  saveProfile(user);
-  updateUserDisplay(user);
-  broadcastProfile(user);
-}
-
-/* ── NETLIFY IDENTITY CALLBACKS ── */
-// init : appelé au chargement — restaure la session depuis localStorage automatiquement
-netlifyIdentity.on('init', function(user) {
-  if(user) {
-    onLoggedIn(user);
-  }
-  // Sinon authGate reste visible
-});
-
-// login : appelé après connexion réussie via le widget
-netlifyIdentity.on('login', function(user) {
-  netlifyIdentity.close();
-  onLoggedIn(user);
-});
-
-// logout
-netlifyIdentity.on('logout', function() {
-  document.getElementById('authGate').classList.remove('hidden');
-  updateUserDisplay(null);
-  show('bilan');
-});
-
-// Écouter le logout depuis la page compte
-window.addEventListener('message', function(e) {
-  if(e.data && e.data.type === 'r4p-profile-updated') {
-    var user = netlifyIdentity.currentUser();
-    if(user) { updateUserDisplay(user); saveProfile(user); broadcastProfile(user); }
-  }
-  if(e.data && e.data.type === 'r4p-logout') {
-    netlifyIdentity.logout();
+window.addEventListener('message', function(e){
+  if(e.data && e.data.type==='r4p-profile'){
+    try {
+      var p = e.data.profile;
+      localStorage.setItem('r4p-profile', JSON.stringify(p));
+      var name = ((p.prenom||'')+' '+(p.nom||'')).trim();
+      var cab  = p.cabinet || 'Mon compte';
+      var el = document.getElementById('userDisplay');
+      el.style.color = 'rgba(255,255,255,.85)';
+      el.innerHTML = name+'<br>'+cab;
+    } catch(ex){}
   }
 });
-
-/* ── INIT ── */
-netlifyIdentity.init();
 </script>
 </body>
 </html>
