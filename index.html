@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light only">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Rehab4Perf</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -53,13 +56,20 @@ iframe.active { display:block; }
   <div class="topnav-right" id="userDisplay" style="cursor:pointer;" onclick="show('account')" title="Mon compte"></div>
 </div>
 <div class="frame-wrap">
-  <iframe id="frame-bilan"       src="bilan.html?v=4"       class="active"></iframe>
-  <iframe id="frame-outils"      src="outils.html?v=4"></iframe>
-  <iframe id="frame-prescription" src="prescription.html?v=4"></iframe>
-  <iframe id="frame-account"     src="account.html?v=4"></iframe>
+  <iframe id="frame-bilan"        class="active"></iframe>
+  <iframe id="frame-outils"       ></iframe>
+  <iframe id="frame-prescription" ></iframe>
+  <iframe id="frame-account"      ></iframe>
 </div>
 
 <script>
+// Cache-buster unique à chaque chargement — impossible pour le navigateur de servir une vieille version
+var _v = Date.now();
+document.getElementById('frame-bilan').src        = 'bilan.html?_=' + _v;
+document.getElementById('frame-outils').src       = 'outils.html?_=' + _v;
+document.getElementById('frame-prescription').src = 'prescription.html?_=' + _v;
+document.getElementById('frame-account').src      = 'account.html?_=' + _v;
+
 function show(id) {
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
   document.querySelectorAll('iframe').forEach(function(f){ f.classList.remove('active'); });
