@@ -2054,6 +2054,7 @@ function init() {
   document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
   updateAll();
   loadFromStorage();
+  showPage('infos');
 }
 
 // -- NAV -------------------------------------------------------
@@ -3262,6 +3263,8 @@ document.addEventListener('change', () => saveToStorage());
 
 // Init
 init();
+// Double garantie — toujours Infos Patient au démarrage
+window.addEventListener('load', function(){ showPage('infos'); });
 </script>
 
 </body>
