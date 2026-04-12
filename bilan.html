@@ -2441,7 +2441,6 @@ function showPage(id) {
   var nb = document.querySelector('[data-page="' + id + '"]'); if (nb) nb.classList.add('active');
   if (id === 'cr') buildCR();
   if (id === 'cr-tf') buildCRTF();
-  try { localStorage.setItem('r4p-active-page', id); } catch(e) {}
   saveToStorage();
 }
 
@@ -3272,12 +3271,9 @@ function loadFromStorage() {
     calcPlioq2(); calcRec(); calcSEBT(); calcUQYBT();
     calcHaMob();
     updateBadges();
-    // Restore last active page
-    var savedPage = localStorage.getItem('r4p-active-page');
-    if (savedPage && document.getElementById('page-' + savedPage)) {
-      showPage(savedPage);
-    }
   } catch(e) {}
+  // Always land on Infos Patient regardless of previous state
+  try { localStorage.removeItem('r4p-active-page'); } catch(e) {}
 }
 
 
