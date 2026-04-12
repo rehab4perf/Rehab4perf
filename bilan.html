@@ -3879,6 +3879,9 @@ document.addEventListener('change', () => saveToStorage());
 // Init
 init();
 
+// Garantie absolue : toujours Infos Patient au chargement
+window.addEventListener('load', function() { showPage('infos'); });
+
 // ── EXPORT HTML PATIENT ─────────────────────────────────────
 function exportBilanHTML(type) {
   var p         = getProfile();
