@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -29,8 +28,9 @@ html, body { height:100%; overflow:hidden; background:#1A3A5C; }
 .tab:hover { color:rgba(255,255,255,.85); }
 .tab.active { color:#fff; border-bottom-color:#4A90D9; background:rgba(255,255,255,.05); }
 .topnav-right {
-  margin-left:auto; font-size:.68rem; color:rgba(255,255,255,.35);
-  font-family:-apple-system,'Helvetica Neue',sans-serif; line-height:1.5; text-align:right;
+  margin-left:auto; font-size:.72rem; font-weight:500; line-height:1.4;
+  text-align:right; white-space:nowrap; color:rgba(255,255,255,.75);
+  cursor:pointer; font-family:-apple-system,'Helvetica Neue',sans-serif;
 }
 .frame-wrap { position:fixed; top:48px; left:0; right:0; bottom:0; }
 iframe { position:absolute; top:0; left:0; width:100%; height:100%; border:none; display:none; background:#fff; }
@@ -48,21 +48,55 @@ iframe.active { display:block; }
   </div>
   <button class="tab active" id="tab-bilan" onclick="show('bilan')">Bilan clinique</button>
   <button class="tab" id="tab-outils" onclick="show('outils')">Outils</button>
-  <div class="topnav-right">Antoine PERONNAUD<br>Athletik Lamarck</div>
+  <button class="tab" id="tab-prescription" onclick="show('prescription')">Prescription</button>
+  <div class="topnav-right" id="userDisplay" onclick="show('account')" title="Mon compte"></div>
 </div>
 <div class="frame-wrap">
-  <iframe id="frame-bilan"  src="bilan.html"  class="active"></iframe>
-  <iframe id="frame-outils" src="outils.html"></iframe>
+  <iframe id="frame-bilan"        class="active"></iframe>
+  <iframe id="frame-outils"       ></iframe>
+  <iframe id="frame-prescription" ></iframe>
+  <iframe id="frame-account"      ></iframe>
 </div>
+
 <script>
+// Cache-buster : timestamp unique à chaque chargement
+var _v = Date.now();
+document.getElementById('frame-bilan').src        = 'bilan.html?_='+_v;
+document.getElementById('frame-outils').src       = 'outils.html?_='+_v;
+document.getElementById('frame-prescription').src = 'prescription.html?_='+_v;
+document.getElementById('frame-account').src      = 'account.html?_='+_v;
+
 function show(id) {
-  var tabs = document.querySelectorAll('.tab');
-  var frames = document.querySelectorAll('iframe');
-  for (var i=0;i<tabs.length;i++) tabs[i].classList.remove('active');
-  for (var i=0;i<frames.length;i++) frames[i].classList.remove('active');
-  document.getElementById('tab-'+id).classList.add('active');
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+  document.querySelectorAll('iframe').forEach(function(f){ f.classList.remove('active'); });
+  var tab = document.getElementById('tab-'+id);
+  if(tab) tab.classList.add('active');
   document.getElementById('frame-'+id).classList.add('active');
 }
+
+// Profil depuis localStorage
+(function(){
+  try {
+    var p = JSON.parse(localStorage.getItem('r4p-profile')||'{}');
+    if(p.prenom || p.nom) {
+      var name = ((p.prenom||'')+' '+(p.nom||'')).trim();
+      var cab  = p.cabinet || 'Mon compte';
+      document.getElementById('userDisplay').innerHTML = name+'<br>'+cab;
+    }
+  } catch(e){}
+})();
+
+window.addEventListener('message', function(e){
+  if(e.data && e.data.type==='r4p-profile'){
+    try {
+      var p = e.data.profile;
+      localStorage.setItem('r4p-profile', JSON.stringify(p));
+      var name = ((p.prenom||'')+' '+(p.nom||'')).trim();
+      var cab  = p.cabinet || 'Mon compte';
+      document.getElementById('userDisplay').innerHTML = name+'<br>'+cab;
+    } catch(ex){}
+  }
+});
 </script>
 </body>
 </html>

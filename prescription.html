@@ -248,6 +248,112 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .fav-btn.active { color:#F5A623; }
 .fav-btn:hover { color:#F5A623; }
 
+/* ── ONGLETS PRINCIPAUX ── */
+.main-tabs {
+  display:flex; gap:0; border-bottom:1px solid var(--border);
+  background:var(--surface); flex-shrink:0; padding:0 18px;
+}
+.main-tab {
+  padding:10px 18px; border:none; background:none;
+  font-size:.82rem; font-weight:600; color:var(--muted);
+  cursor:pointer; font-family:inherit; border-bottom:3px solid transparent;
+  transition:color .15s; white-space:nowrap;
+}
+.main-tab:hover { color:var(--accent); }
+.main-tab.active { color:var(--navy); border-bottom-color:var(--accent2); }
+.main-panel { display:none; flex:1; overflow:hidden; flex-direction:column; }
+.main-panel.active { display:flex; }
+
+/* ── BIBLIOTHÈQUE DE SÉANCES ── */
+.seances-area { flex:1; overflow-y:auto; padding:16px 18px; }
+.seance-card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:10px; padding:14px 16px; margin-bottom:12px;
+}
+.seance-card-header { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.seance-card-emoji { font-size:1.4rem; flex-shrink:0; }
+.seance-card-title { font-size:.88rem; font-weight:700; color:var(--navy); flex:1; }
+.seance-card-type {
+  font-size:.68rem; font-weight:700; padding:2px 8px; border-radius:10px;
+  background:var(--tag-bg); color:var(--tag-color);
+}
+.seance-card-meta { font-size:.75rem; color:var(--muted); margin-bottom:8px; }
+.seance-card-actions { display:flex; gap:8px; }
+
+/* ── MODAL SAUVEGARDE ── */
+.save-modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:300;
+  display:none; align-items:center; justify-content:center;
+}
+.save-modal-overlay.open { display:flex; }
+.save-modal {
+  background:#fff; border-radius:12px; padding:24px; max-width:440px; width:90%;
+  box-shadow:0 20px 60px rgba(0,0,0,.25);
+}
+.save-modal h2 { font-size:.95rem; font-weight:700; color:var(--navy); margin-bottom:16px; }
+.save-field { margin-bottom:12px; }
+.save-field label { display:block; font-size:.72rem; font-weight:700; color:var(--muted); letter-spacing:.04em; text-transform:uppercase; margin-bottom:4px; }
+.save-field input, .save-field select {
+  width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:6px;
+  font-size:.84rem; color:var(--text); outline:none; font-family:inherit;
+}
+.save-field input:focus, .save-field select:focus { border-color:var(--accent2); }
+.emoji-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+.emoji-opt {
+  width:36px; height:36px; border-radius:8px; border:2px solid transparent;
+  background:var(--bg); font-size:1.2rem; cursor:pointer; display:flex;
+  align-items:center; justify-content:center; transition:border-color .15s;
+}
+.emoji-opt.selected { border-color:var(--accent2); background:var(--tag-bg); }
+.save-modal-btns { display:flex; gap:8px; margin-top:16px; }
+
+/* ── CALENDRIER ── */
+.cal-area { flex:1; overflow-y:auto; padding:16px 18px; }
+.cal-nav { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+.cal-nav h2 { font-size:.95rem; font-weight:700; color:var(--navy); flex:1; }
+.cal-nav-btn { background:none; border:1px solid var(--border); border-radius:6px; padding:4px 10px; cursor:pointer; font-size:.82rem; color:var(--muted); }
+.cal-nav-btn:hover { background:var(--bg); color:var(--navy); }
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+.cal-day-header { text-align:center; font-size:.68rem; font-weight:700; color:var(--muted); letter-spacing:.06em; padding:4px 0; }
+.cal-day {
+  min-height:80px; border:1px solid var(--border); border-radius:6px;
+  padding:4px; background:var(--surface); cursor:pointer; transition:background .12s;
+}
+.cal-day:hover { background:#F0F6FF; }
+.cal-day.other-month { background:var(--bg); opacity:.5; cursor:default; }
+.cal-day.today { border-color:var(--accent2); }
+.cal-day-num { font-size:.72rem; font-weight:700; color:var(--muted); margin-bottom:3px; }
+.cal-day.today .cal-day-num { color:var(--accent2); }
+.cal-session-chip {
+  display:flex; align-items:center; gap:4px; padding:2px 5px; border-radius:4px;
+  font-size:.66rem; font-weight:600; margin-bottom:2px; cursor:pointer;
+  color:#fff; justify-content:space-between;
+}
+.cal-chip-del { background:none; border:none; color:rgba(255,255,255,.7); cursor:pointer; font-size:.75rem; line-height:1; padding:0 1px; }
+.cal-chip-del:hover { color:#fff; }
+
+/* ── PICKER CALENDRIER ── */
+.cal-picker-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:300;
+  display:none; align-items:center; justify-content:center;
+}
+.cal-picker-overlay.open { display:flex; }
+.cal-picker {
+  background:#fff; border-radius:12px; padding:20px; max-width:360px; width:90%;
+  box-shadow:0 20px 60px rgba(0,0,0,.25); max-height:80vh; overflow-y:auto;
+}
+.cal-picker h3 { font-size:.88rem; font-weight:700; color:var(--navy); margin-bottom:12px; }
+.cal-pick-item {
+  display:flex; align-items:center; gap:10px; padding:8px 10px;
+  border-radius:8px; cursor:pointer; transition:background .12s;
+}
+.cal-pick-item:hover { background:var(--bg); }
+.cal-pick-emoji { font-size:1.2rem; }
+.cal-pick-info { flex:1; }
+.cal-pick-name { font-size:.82rem; font-weight:600; color:var(--text); }
+.cal-pick-type { font-size:.7rem; color:var(--muted); }
+.cal-picker-close { width:100%; margin-top:12px; }
+
 /* Mobile */
 @media (max-width:700px) {
   :root { --sidebar-w:100%; }
@@ -326,24 +432,106 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 
 <!-- ═══════════════════════════════ MAIN ════════════════════════════════ -->
 <div class="main">
-  <div class="main-header">
-    <h1>Prescription d'exercices</h1>
-    <button class="btn btn-outline" onclick="openCycles()" style="white-space:nowrap;">📅 Cycles</button>
-    <input class="patient-input" type="text" id="patientName" placeholder="Nom du patient" />
-    <button class="btn btn-outline" onclick="addBloc()">+ Bloc</button>
-    <button class="btn btn-primary" onclick="exportSession()">📤 Exporter</button>
-    <button class="btn btn-outline" onclick="window.print()">🖨 Imprimer</button>
-    <button class="btn btn-danger" onclick="clearSession()">Effacer</button>
+
+  <!-- ONGLETS -->
+  <div class="main-tabs">
+    <button class="main-tab active" id="mtab-seance" onclick="showMainTab('seance')">📋 Séance</button>
+    <button class="main-tab" id="mtab-seances" onclick="showMainTab('seances')">📁 Mes séances</button>
+    <button class="main-tab" id="mtab-cal" onclick="showMainTab('cal')">📅 Calendrier</button>
   </div>
-  <div class="session-area" id="sessionArea">
-    <div class="empty-state" id="emptyState">
-      <div class="icon">📋</div>
-      <p>Ajoutez un bloc puis sélectionnez des exercices<br>depuis la bibliothèque pour construire votre séance.</p>
+
+  <!-- PANEL 1 : SÉANCE (existant) -->
+  <div class="main-panel active" id="mpanel-seance">
+    <div class="main-header">
+      <h1>Prescription d'exercices</h1>
+      <button class="btn btn-outline" onclick="openCycles()" style="white-space:nowrap;">🔄 Cycles</button>
+      <input class="patient-input" type="text" id="patientName" placeholder="Nom du patient" />
+      <button class="btn btn-outline" onclick="addBloc()">+ Bloc</button>
+      <button class="btn btn-outline" onclick="openSaveSession()" style="background:#EFF9EE;color:#2D7D46;border-color:#2D7D46;">💾 Enregistrer</button>
+      <button class="btn btn-primary" onclick="exportSession()">📤 Exporter</button>
+      <button class="btn btn-outline" onclick="window.print()">🖨 Imprimer</button>
+      <button class="btn btn-danger" onclick="clearSession()">Effacer</button>
+    </div>
+    <div class="session-area" id="sessionArea">
+      <div class="empty-state" id="emptyState">
+        <div class="icon">📋</div>
+        <p>Ajoutez un bloc puis sélectionnez des exercices<br>depuis la bibliothèque pour construire votre séance.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANEL 2 : MES SÉANCES -->
+  <div class="main-panel" id="mpanel-seances">
+    <div class="main-header">
+      <h1>Mes séances enregistrées</h1>
+    </div>
+    <div class="seances-area" id="seancesArea">
+      <div class="empty-state" id="emptySeances">
+        <div class="icon">📁</div>
+        <p>Aucune séance enregistrée.<br>Construisez une séance et cliquez sur 💾 Enregistrer.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANEL 3 : CALENDRIER -->
+  <div class="main-panel" id="mpanel-cal">
+    <div class="main-header">
+      <h1>Calendrier</h1>
+    </div>
+    <div class="cal-area">
+      <div class="cal-nav">
+        <button class="cal-nav-btn" onclick="calMove(-1)">◀</button>
+        <h2 id="calTitle"></h2>
+        <button class="cal-nav-btn" onclick="calMove(1)">▶</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+  </div>
+
+</div>
+
+</div><!-- .app -->
+
+<!-- Modal sauvegarde séance -->
+<div class="save-modal-overlay" id="saveModal">
+  <div class="save-modal">
+    <h2>Enregistrer la séance</h2>
+    <div class="save-field">
+      <label>Nom de la séance</label>
+      <input type="text" id="saveNameInput" placeholder="Ex: Renfo genou S3">
+    </div>
+    <div class="save-field">
+      <label>Emoji</label>
+      <div class="emoji-row" id="emojiRow"></div>
+    </div>
+    <div class="save-field">
+      <label>Type</label>
+      <select id="saveTypeInput">
+        <option value="Force">Force</option>
+        <option value="Puissance">Puissance</option>
+        <option value="Hypertrophie">Hypertrophie</option>
+        <option value="Endurance">Endurance</option>
+        <option value="Proprio">Proprioception</option>
+        <option value="Réathlétisation">Réathlétisation</option>
+        <option value="Échauffement">Échauffement</option>
+        <option value="Autre">Autre</option>
+      </select>
+    </div>
+    <div class="save-modal-btns">
+      <button class="btn btn-primary" onclick="doSaveSession()">💾 Enregistrer</button>
+      <button class="btn btn-outline" onclick="closeSaveSession()">Annuler</button>
     </div>
   </div>
 </div>
 
-</div><!-- .app -->
+<!-- Modal picker calendrier -->
+<div class="cal-picker-overlay" id="calPickerOverlay">
+  <div class="cal-picker">
+    <h3 id="calPickerTitle">Ajouter une séance</h3>
+    <div id="calPickerList"></div>
+    <button class="btn btn-outline cal-picker-close" onclick="closeCalPicker()">Fermer</button>
+  </div>
+</div>
 
 <!-- Export modal -->
 <div class="modal-overlay hidden" id="exportModal">
@@ -1423,6 +1611,240 @@ function exportCycles(){
 document.getElementById('cycle-modal').addEventListener('click', function(e){
   if(e.target === this) closeCycles();
 });
+
+/* ================================================================
+   ONGLETS PRINCIPAUX
+   ================================================================ */
+function showMainTab(id) {
+  document.querySelectorAll('.main-tab').forEach(function(t){ t.classList.remove('active'); });
+  document.querySelectorAll('.main-panel').forEach(function(p){ p.classList.remove('active'); });
+  document.getElementById('mtab-'+id).classList.add('active');
+  document.getElementById('mpanel-'+id).classList.add('active');
+  if(id === 'seances') renderSeances();
+  if(id === 'cal') renderCalendar();
+}
+
+/* ================================================================
+   SAUVEGARDE DE SÉANCES
+   ================================================================ */
+var SAVE_EMOJIS = ['💪','🏃','🦵','🦾','⚡','🏋️','🎯','🔄','🧘'];
+var _selectedEmoji = '💪';
+var _savedSeances = [];
+
+function _loadSeances() {
+  try { _savedSeances = JSON.parse(localStorage.getItem('r4p-seances')||'[]'); } catch(e){ _savedSeances=[]; }
+}
+function _persistSeances() {
+  try { localStorage.setItem('r4p-seances', JSON.stringify(_savedSeances)); } catch(e){}
+}
+
+function openSaveSession() {
+  if(!blocs.length){ alert('La séance est vide.'); return; }
+  _loadSeances();
+  var row = document.getElementById('emojiRow');
+  row.innerHTML = '';
+  SAVE_EMOJIS.forEach(function(em){
+    var b = document.createElement('button');
+    b.className = 'emoji-opt' + (em === _selectedEmoji ? ' selected' : '');
+    b.textContent = em;
+    b.onclick = function(){
+      _selectedEmoji = em;
+      document.querySelectorAll('.emoji-opt').forEach(function(x){ x.classList.remove('selected'); });
+      b.classList.add('selected');
+    };
+    row.appendChild(b);
+  });
+  var patient = (document.getElementById('patientName')||{}).value || '';
+  document.getElementById('saveNameInput').value = patient ? 'Séance – '+patient : '';
+  document.getElementById('saveModal').classList.add('open');
+  setTimeout(function(){ document.getElementById('saveNameInput').focus(); }, 100);
+}
+
+function closeSaveSession() {
+  document.getElementById('saveModal').classList.remove('open');
+}
+
+function doSaveSession() {
+  var name = document.getElementById('saveNameInput').value.trim();
+  if(!name){ alert('Donnez un nom à la séance.'); return; }
+  var type = document.getElementById('saveTypeInput').value;
+  _loadSeances();
+  var seance = {
+    id: '_'+Math.random().toString(36).slice(2,9),
+    name: name,
+    emoji: _selectedEmoji,
+    type: type,
+    date: new Date().toLocaleDateString('fr-FR'),
+    blocs: JSON.parse(JSON.stringify(blocs))
+  };
+  _savedSeances.unshift(seance);
+  _persistSeances();
+  closeSaveSession();
+  showMainTab('seances');
+}
+
+function renderSeances() {
+  _loadSeances();
+  var area = document.getElementById('seancesArea');
+  if(!_savedSeances.length){
+    area.innerHTML = '<div class="empty-state"><div class="icon">📁</div><p>Aucune séance enregistrée.<br>Construisez une séance et cliquez sur 💾 Enregistrer.</p></div>';
+    return;
+  }
+  area.innerHTML = _savedSeances.map(function(s){
+    var col = _seanceTypeColor(s.type);
+    var nbExos = (s.blocs||[]).reduce(function(acc,b){ return acc+(b.exos||[]).length; },0);
+    return '<div class="seance-card">'
+      +'<div class="seance-card-header">'
+      +'<span class="seance-card-emoji">'+s.emoji+'</span>'
+      +'<span class="seance-card-title">'+escH(s.name)+'</span>'
+      +'<span class="seance-card-type" style="background:'+col.bg+';color:'+col.fg+'">'+escH(s.type)+'</span>'
+      +'</div>'
+      +'<div class="seance-card-meta">'+s.date+' · '+(s.blocs||[]).length+' bloc(s) · '+nbExos+' exercice(s)</div>'
+      +'<div class="seance-card-actions">'
+      +'<button class="btn btn-primary" style="font-size:.76rem;padding:5px 12px;" onclick="loadSeance(\''+s.id+'\')">📋 Charger</button>'
+      +'<button class="btn btn-danger" style="font-size:.76rem;padding:5px 12px;" onclick="deleteSeance(\''+s.id+'\')">🗑 Supprimer</button>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function loadSeance(id) {
+  _loadSeances();
+  var s = _savedSeances.find(function(x){ return x.id===id; });
+  if(!s) return;
+  if(!confirm('Charger "'+s.name+'" ? La séance en cours sera remplacée.')) return;
+  blocs = JSON.parse(JSON.stringify(s.blocs||[]));
+  activeBloc = blocs.length ? blocs[0].id : null;
+  renderSession();
+  renderLib(document.getElementById('searchInput').value.toLowerCase());
+  showMainTab('seance');
+}
+
+function deleteSeance(id) {
+  _loadSeances();
+  var s = _savedSeances.find(function(x){ return x.id===id; });
+  if(!s || !confirm('Supprimer "'+s.name+'" ?')) return;
+  _savedSeances = _savedSeances.filter(function(x){ return x.id!==id; });
+  _persistSeances();
+  renderSeances();
+}
+
+function _seanceTypeColor(type) {
+  var map = {
+    'Force':          {bg:'#DBEAFE',fg:'#1D4ED8'},
+    'Puissance':      {bg:'#FEE2E2',fg:'#B91C1C'},
+    'Hypertrophie':   {bg:'#EDE9FE',fg:'#6D28D9'},
+    'Endurance':      {bg:'#DCFCE7',fg:'#15803D'},
+    'Proprio':        {bg:'#FEF3C7',fg:'#B45309'},
+    'Réathlétisation':{bg:'#CCFBF1',fg:'#0F766E'},
+    'Échauffement':   {bg:'#FFEDD5',fg:'#C2410C'},
+  };
+  return map[type] || {bg:'#F1F5F9',fg:'#475569'};
+}
+
+/* ================================================================
+   CALENDRIER
+   ================================================================ */
+var _calEvents = [];
+var _calYear = new Date().getFullYear();
+var _calMonth = new Date().getMonth();
+var _calPickerDate = '';
+
+function _loadCalEvents() {
+  try { _calEvents = JSON.parse(localStorage.getItem('r4p-cal-events')||'[]'); } catch(e){ _calEvents=[]; }
+}
+function _persistCalEvents() {
+  try { localStorage.setItem('r4p-cal-events', JSON.stringify(_calEvents)); } catch(e){}
+}
+
+function calMove(dir) {
+  _calMonth += dir;
+  if(_calMonth > 11){ _calMonth=0; _calYear++; }
+  if(_calMonth < 0){ _calMonth=11; _calYear--; }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  _loadCalEvents();
+  _loadSeances();
+  var months = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  document.getElementById('calTitle').textContent = months[_calMonth]+' '+_calYear;
+  var grid = document.getElementById('calGrid');
+  var days = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+  var headers = days.map(function(d){ return '<div class="cal-day-header">'+d+'</div>'; }).join('');
+  var first = new Date(_calYear, _calMonth, 1);
+  var startDow = (first.getDay()+6)%7; // lundi=0
+  var daysInMonth = new Date(_calYear, _calMonth+1, 0).getDate();
+  var today = new Date(); today.setHours(0,0,0,0);
+  var cells = '';
+  // Empty cells before
+  for(var i=0;i<startDow;i++){
+    cells += '<div class="cal-day other-month"></div>';
+  }
+  for(var d=1;d<=daysInMonth;d++){
+    var dateStr = _calYear+'-'+String(_calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    var cellDate = new Date(_calYear,_calMonth,d);
+    var isToday = cellDate.getTime()===today.getTime();
+    var eventsForDay = _calEvents.filter(function(e){ return e.date===dateStr; });
+    var chips = eventsForDay.map(function(ev){
+      var s = _savedSeances.find(function(x){ return x.id===ev.seanceId; });
+      if(!s) return '';
+      var col = _seanceTypeColor(s.type);
+      return '<div class="cal-session-chip" style="background:'+col.fg+';" title="'+escH(s.name)+'">'
+        +'<span>'+s.emoji+' '+escH(s.name.length>10?s.name.slice(0,10)+'…':s.name)+'</span>'
+        +'<button class="cal-chip-del" onclick="event.stopPropagation();removeCalEvent(\''+ev.id+'\')">×</button>'
+        +'</div>';
+    }).join('');
+    cells += '<div class="cal-day'+(isToday?' today':'')+'" onclick="openCalPicker(\''+dateStr+'\')">'
+      +'<div class="cal-day-num">'+d+'</div>'
+      +chips
+      +'</div>';
+  }
+  grid.innerHTML = headers + cells;
+}
+
+function openCalPicker(dateStr) {
+  _loadSeances();
+  if(!_savedSeances.length){ alert('Aucune séance enregistrée. Créez et enregistrez une séance d\'abord.'); return; }
+  _calPickerDate = dateStr;
+  var parts = dateStr.split('-');
+  var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  document.getElementById('calPickerTitle').textContent = 'Ajouter le '+parseInt(parts[2])+' '+months[parseInt(parts[1])-1]+' '+parts[0];
+  var list = document.getElementById('calPickerList');
+  list.innerHTML = _savedSeances.map(function(s){
+    var col = _seanceTypeColor(s.type);
+    return '<div class="cal-pick-item" onclick="addCalEvent(\''+s.id+'\')">'
+      +'<span class="cal-pick-emoji">'+s.emoji+'</span>'
+      +'<div class="cal-pick-info">'
+      +'<div class="cal-pick-name">'+escH(s.name)+'</div>'
+      +'<div class="cal-pick-type" style="color:'+col.fg+'">'+escH(s.type)+'</div>'
+      +'</div></div>';
+  }).join('');
+  document.getElementById('calPickerOverlay').classList.add('open');
+}
+
+function closeCalPicker() {
+  document.getElementById('calPickerOverlay').classList.remove('open');
+}
+
+function addCalEvent(seanceId) {
+  _loadCalEvents();
+  _calEvents.push({ id:'_'+Math.random().toString(36).slice(2,9), date:_calPickerDate, seanceId:seanceId });
+  _persistCalEvents();
+  closeCalPicker();
+  renderCalendar();
+}
+
+function removeCalEvent(evId) {
+  _loadCalEvents();
+  _calEvents = _calEvents.filter(function(e){ return e.id!==evId; });
+  _persistCalEvents();
+  renderCalendar();
+}
+
+// Fermer overlays sur clic extérieur
+document.getElementById('saveModal').addEventListener('click', function(e){ if(e.target===this) closeSaveSession(); });
+document.getElementById('calPickerOverlay').addEventListener('click', function(e){ if(e.target===this) closeCalPicker(); });
 </script>
 </body>
 </html>
