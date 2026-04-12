@@ -123,6 +123,70 @@ var _user  = null;
 var _inviteToken = null;
 var _recoveryToken = null;
 
+/* ── SESSION PERSISTENCE ── */
+function saveSession(tokenData, user) {
+  try {
+    localStorage.setItem('r4p-refresh-token', tokenData.refresh_token || '');
+    localStorage.setItem('r4p-access-token',  tokenData.access_token  || '');
+    var expiresAt = Date.now() + ((tokenData.expires_in || 3600) - 60) * 1000;
+    localStorage.setItem('r4p-token-expiry',  String(expiresAt));
+    if(user) localStorage.setItem('r4p-session-user', JSON.stringify(user));
+  } catch(e) {}
+}
+function clearSession() {
+  ['r4p-refresh-token','r4p-access-token','r4p-token-expiry','r4p-session-user'].forEach(function(k){
+    try { localStorage.removeItem(k); } catch(e) {}
+  });
+}
+function restoreSession() {
+  var refreshToken = localStorage.getItem('r4p-refresh-token');
+  if(!refreshToken) { return; }
+  var accessToken = localStorage.getItem('r4p-access-token');
+  var expiry      = parseInt(localStorage.getItem('r4p-token-expiry') || '0');
+  var cachedUser  = null;
+  try { cachedUser = JSON.parse(localStorage.getItem('r4p-session-user') || 'null'); } catch(e) {}
+  // If access token still valid, use it directly
+  if(accessToken && Date.now() < expiry && cachedUser) {
+    _token = accessToken;
+    _user  = cachedUser;
+    document.getElementById('authGate').style.display = 'none';
+    updateUserDisplay(cachedUser);
+    broadcastProfile(cachedUser);
+    return;
+  }
+  // Try to refresh silently
+  document.getElementById('gateBtn').disabled = true;
+  document.getElementById('gateBtn').textContent = 'Reconnexion…';
+  fetch(IDENTITY_URL + '/token', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    body: 'grant_type=refresh_token&refresh_token=' + encodeURIComponent(refreshToken)
+  })
+  .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+  .then(function(res){
+    if(!res.ok) throw new Error('Session expirée');
+    _token = res.data.access_token;
+    return fetch(IDENTITY_URL + '/user', { headers: {'Authorization': 'Bearer ' + _token} });
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(user){
+    _user = user;
+    saveSession({access_token:_token, refresh_token:refreshToken, expires_in: 3600}, user);
+    saveProfile(user);
+    document.getElementById('authGate').style.display = 'none';
+    document.getElementById('gateBtn').disabled = false;
+    document.getElementById('gateBtn').textContent = 'Se connecter';
+    updateUserDisplay(user);
+    broadcastProfile(user);
+  })
+  .catch(function(){
+    clearSession();
+    document.getElementById('gateBtn').disabled = false;
+    document.getElementById('gateBtn').textContent = 'Se connecter';
+    // authGate reste visible → reconnexion manuelle
+  });
+}
+
 /* ── DETECT INVITE / RECOVERY TOKEN IN URL ── */
 (function(){
   var hash = window.location.hash;
@@ -215,15 +279,17 @@ function doLogin(){
   .then(function(res){
     if(!res.ok) throw new Error(res.data.error_description || 'Identifiants incorrects.');
     _token = res.data.access_token;
-    return fetch(IDENTITY_URL+'/user', { headers:{'Authorization':'Bearer '+_token} });
+    var _tokenData = res.data;
+    return fetch(IDENTITY_URL+'/user', { headers:{'Authorization':'Bearer '+_token} })
+      .then(function(r){ return r.json().then(function(u){ return {user:u, tokenData:_tokenData}; }); });
   })
-  .then(function(r){ return r.json(); })
-  .then(function(user){
-    _user = user;
-    saveProfile(user);
+  .then(function(result){
+    _user = result.user;
+    saveSession(result.tokenData, result.user);
+    saveProfile(result.user);
     document.getElementById('authGate').style.display = 'none';
-    updateUserDisplay(user);
-    broadcastProfile(user);
+    updateUserDisplay(result.user);
+    broadcastProfile(result.user);
   })
   .catch(function(err){
     errEl.textContent = err.message || 'Erreur de connexion.';
@@ -283,6 +349,7 @@ window.addEventListener('message', function(e){
   }
   if(e.data && e.data.type==='r4p-logout'){
     _token=null; _user=null;
+    clearSession();
     updateUserDisplay(null);
     document.getElementById('gateEmail').value='';
     document.getElementById('gatePassword').value='';
@@ -293,6 +360,9 @@ window.addEventListener('message', function(e){
     show('bilan');
   }
 });
+
+// ── AUTO-RESTORE SESSION ON LOAD ──
+restoreSession();
 </script>
 </body>
 </html>
