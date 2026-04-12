@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light only">
-<title>Mon compte – Rehab4Perf</title>
+<title>Compte utilisateur – Rehab4Perf</title>
 <style>
 :root {
   --navy:#1A3A5C; --accent:#2B5FA6; --accent2:#4A90D9;
@@ -12,9 +12,33 @@
   --border:#dde3ec;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
-html,body { min-height:100%; background:var(--bg); font-family:-apple-system,'Helvetica Neue',Arial,sans-serif; color:var(--text); }
+html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvetica Neue',Arial,sans-serif; color:var(--text); }
 
-.account-wrap { padding:24px; max-width:640px; margin:0 auto; }
+/* ── LOGIN SCREEN ── */
+.login-screen {
+  min-height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:24px;
+}
+.login-card {
+  background:var(--surface); border-radius:14px; border:1px solid var(--border);
+  padding:36px 32px; max-width:400px; width:100%; text-align:center;
+  box-shadow:0 8px 32px rgba(0,0,0,.08);
+}
+.login-logo { font-family:Georgia,serif; font-style:italic; font-size:1.4rem; margin-bottom:6px; }
+.login-logo .r { color:#4A90D9; }
+.login-logo .n { color:var(--navy); font-weight:900; font-style:normal; }
+.login-logo .p { color:#E74C3C; }
+.login-subtitle { font-size:.82rem; color:var(--muted); margin-bottom:24px; }
+.login-btn {
+  width:100%; padding:12px; background:var(--accent); color:#fff;
+  border:none; border-radius:8px; font-size:.9rem; font-weight:600;
+  cursor:pointer; transition:background .15s;
+}
+.login-btn:hover { background:var(--navy); }
+.login-note { font-size:.72rem; color:var(--muted); margin-top:14px; line-height:1.5; }
+
+/* ── ACCOUNT SCREEN ── */
+.account-screen { display:none; padding:24px; max-width:640px; margin:0 auto; }
 
 .page-header { margin-bottom:20px; }
 .page-header h1 { font-size:1.1rem; font-weight:700; color:var(--navy); margin-bottom:2px; }
@@ -33,39 +57,60 @@ html,body { min-height:100%; background:var(--bg); font-family:-apple-system,'He
   font-family:inherit;
 }
 .form-input:focus { border-color:var(--accent2); background:#fff; }
+.form-input[readonly] { background:#f5f7fa; color:var(--muted); cursor:not-allowed; }
 
 .btn { padding:9px 18px; border-radius:6px; border:none; font-size:.82rem; font-weight:600; cursor:pointer; transition:background .15s; font-family:inherit; }
 .btn-primary { background:var(--accent); color:#fff; }
 .btn-primary:hover { background:var(--navy); }
+.btn-danger { background:none; color:#E74C3C; border:1px solid #E74C3C; }
+.btn-danger:hover { background:#FEF0EE; }
 
 .btn-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
 .save-status { font-size:.78rem; color:#27AE60; display:none; }
 
+/* Avatar circle */
 .avatar { width:56px; height:56px; border-radius:50%; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-size:1.3rem; font-weight:700; flex-shrink:0; }
 .user-row { display:flex; align-items:center; gap:14px; margin-bottom:16px; }
 .user-meta h2 { font-size:.95rem; font-weight:700; color:var(--text); }
 .user-meta p { font-size:.78rem; color:var(--muted); }
 
-.info-item { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border); }
-.info-item:last-child { border-bottom:none; }
-.info-label { font-size:.82rem; font-weight:600; }
-.info-sub { font-size:.74rem; color:var(--muted); margin-top:1px; }
+/* Security section */
+.security-item { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border); }
+.security-item:last-child { border-bottom:none; }
+.security-label { font-size:.82rem; font-weight:600; }
+.security-sub { font-size:.74rem; color:var(--muted); margin-top:1px; }
 .badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:.68rem; font-weight:700; }
 .badge-green { background:#EFF9EE; color:#2D7D46; }
+.badge-blue { background:#EBF3FF; color:#2B5FA6; }
 
 @media (max-width:500px) {
   .form-grid { grid-template-columns:1fr; }
   .form-group.full { grid-column:1; }
-  .account-wrap { padding:16px; }
+  .account-screen { padding:16px; }
+  .login-card { padding:28px 20px; }
 }
 </style>
 </head>
 <body>
-<div class="account-wrap">
+
+<!-- ═══════════ LOGIN ═══════════ -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">
+      <span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span>
+    </div>
+    <p class="login-subtitle">Connectez-vous pour accéder à votre espace</p>
+    <button class="login-btn" onclick="netlifyIdentity.open()">Se connecter</button>
+    <p class="login-note">Accès sur invitation uniquement.<br>Contactez Antoine PERONNAUD pour obtenir un accès.</p>
+  </div>
+</div>
+
+<!-- ═══════════ ACCOUNT ═══════════ -->
+<div class="account-screen" id="accountScreen">
 
   <div class="page-header">
     <h1>Mon compte</h1>
-    <p>Vos informations professionnelles apparaissent dans les exports et CR patients</p>
+    <p>Vos informations personnelles et paramètres de session</p>
   </div>
 
   <!-- Identité -->
@@ -74,7 +119,7 @@ html,body { min-height:100%; background:var(--bg); font-family:-apple-system,'He
       <div class="avatar" id="avatarCircle">?</div>
       <div class="user-meta">
         <h2 id="displayName">—</h2>
-        <p id="displayCabinet">—</p>
+        <p id="displayEmail">—</p>
       </div>
     </div>
     <div class="card-title">Informations professionnelles</div>
@@ -97,7 +142,7 @@ html,body { min-height:100%; background:var(--bg); font-family:-apple-system,'He
       </div>
       <div class="form-group full">
         <label class="form-label">Email professionnel</label>
-        <input class="form-input" id="fieldEmail" type="email" placeholder="jean.dupont@cabinet.fr">
+        <input class="form-input" id="fieldEmail" type="email" readonly>
       </div>
       <div class="form-group full">
         <label class="form-label">Cabinet / Structure</label>
@@ -110,79 +155,125 @@ html,body { min-height:100%; background:var(--bg); font-family:-apple-system,'He
     </div>
   </div>
 
-  <!-- Accès -->
+  <!-- Sécurité -->
   <div class="card">
-    <div class="card-title">Accès & Sécurité</div>
-    <div class="info-item">
+    <div class="card-title">Sécurité & Session</div>
+    <div class="security-item">
       <div>
-        <div class="info-label">Protection du site</div>
-        <div class="info-sub">Accès sécurisé par mot de passe Netlify</div>
+        <div class="security-label">Authentification</div>
+        <div class="security-sub">Compte Netlify Identity sécurisé</div>
       </div>
       <span class="badge badge-green">Actif</span>
     </div>
-    <div class="info-item">
+    <div class="security-item">
       <div>
-        <div class="info-label">Données locales</div>
-        <div class="info-sub">Bilans et données patients stockés sur cet appareil</div>
+        <div class="security-label">Accès</div>
+        <div class="security-sub">Sur invitation uniquement</div>
       </div>
-      <span class="badge badge-green">Privé</span>
+      <span class="badge badge-blue">Invitation</span>
+    </div>
+    <div class="security-item">
+      <div>
+        <div class="security-label">Mot de passe</div>
+        <div class="security-sub">Modifier votre mot de passe</div>
+      </div>
+      <button class="btn" style="background:none;border:1px solid var(--border);font-size:.76rem;padding:5px 12px;" onclick="netlifyIdentity.open('signup')">Modifier</button>
     </div>
   </div>
 
-</div>
+  <!-- Déconnexion -->
+  <div class="card">
+    <div class="card-title">Session</div>
+    <div class="btn-row">
+      <button class="btn btn-danger" onclick="logout()">Se déconnecter</button>
+      <span style="font-size:.76rem;color:var(--muted);">Vous serez redirigé vers l'écran de connexion</span>
+    </div>
+  </div>
+
+</div><!-- .account-screen -->
 
 <script>
-function getProfile() {
-  try { return JSON.parse(localStorage.getItem('r4p-profile') || '{}'); } catch(e) { return {}; }
-}
+/* ================================================================
+   NETLIFY IDENTITY
+   ================================================================ */
+var IDENTITY_URL = 'https://rehab4perf.netlify.app/.netlify/identity';
+var currentUser = null;
+var currentToken = null;
 
-function loadProfile() {
-  var p = getProfile();
-  var prenom  = p.prenom  || '';
-  var nom     = p.nom     || '';
-  var cabinet = p.cabinet || '';
-  var fullName = (prenom + ' ' + nom).trim();
-
-  document.getElementById('fieldPrenom').value  = prenom;
-  document.getElementById('fieldNom').value     = nom;
-  document.getElementById('fieldAM').value      = p.am  || '';
-  document.getElementById('fieldTel').value     = p.tel || '';
-  document.getElementById('fieldEmail').value   = p.email || '';
-  document.getElementById('fieldCabinet').value = cabinet;
-
-  document.getElementById('displayName').textContent    = fullName || 'Mon compte';
-  document.getElementById('displayCabinet').textContent = cabinet  || '—';
-
-  var initials = ((prenom[0] || '') + (nom[0] || '')).toUpperCase() || '?';
-  document.getElementById('avatarCircle').textContent = initials;
-}
-
-function saveProfile() {
-  var profile = {
-    prenom:  document.getElementById('fieldPrenom').value.trim(),
-    nom:     document.getElementById('fieldNom').value.trim(),
-    am:      document.getElementById('fieldAM').value.trim(),
-    tel:     document.getElementById('fieldTel').value.trim(),
-    email:   document.getElementById('fieldEmail').value.trim(),
-    cabinet: document.getElementById('fieldCabinet').value.trim()
-  };
-  try { localStorage.setItem('r4p-profile', JSON.stringify(profile)); } catch(e) {}
-  loadProfile();
-  // Broadcast to parent (nav display)
-  if(window.parent !== window) {
-    window.parent.postMessage({ type:'r4p-profile', profile:profile }, '*');
+// Receive token from parent
+window.addEventListener('message', function(e){
+  if(e.data && e.data.type==='r4p-token'){
+    currentToken = e.data.token;
+    showAccount(e.data.user);
   }
-  var status = document.getElementById('saveStatus');
-  status.style.display = 'inline';
-  setTimeout(function(){ status.style.display = 'none'; }, 2500);
-}
-
-// Allow Enter to save
-document.addEventListener('keydown', function(e) {
-  if(e.key === 'Enter' && e.target.classList.contains('form-input')) saveProfile();
 });
 
-loadProfile();
+// If opened directly, show empty state
+showLogin();
+
+function showLogin(){
+  currentUser = null;
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('accountScreen').style.display = 'none';
+}
+
+function showAccount(user){
+  currentUser = user;
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('accountScreen').style.display = 'block';
+
+  var email = user.email || '';
+  var meta = user.user_metadata || {};
+  var prenom = meta.prenom || '';
+  var nom = meta.nom || '';
+  var fullName = (prenom+' '+nom).trim() || email.split('@')[0];
+
+  // Avatar initials
+  var initials = ((prenom[0]||'')+(nom[0]||'')).toUpperCase() || email[0].toUpperCase();
+  document.getElementById('avatarCircle').textContent = initials;
+  document.getElementById('displayName').textContent = fullName;
+  document.getElementById('displayEmail').textContent = email;
+
+  // Fill form
+  document.getElementById('fieldPrenom').value = prenom;
+  document.getElementById('fieldNom').value = nom;
+  document.getElementById('fieldAM').value = meta.am || '';
+  document.getElementById('fieldTel').value = meta.tel || '';
+  document.getElementById('fieldEmail').value = email;
+  document.getElementById('fieldCabinet').value = meta.cabinet || '';
+}
+
+function saveProfile(){
+  if(!currentUser || !currentToken) return;
+  var prenom = document.getElementById('fieldPrenom').value.trim();
+  var nom = document.getElementById('fieldNom').value.trim();
+  var am = document.getElementById('fieldAM').value.trim();
+  var tel = document.getElementById('fieldTel').value.trim();
+  var cabinet = document.getElementById('fieldCabinet').value.trim();
+
+  fetch(IDENTITY_URL+'/user', {
+    method:'PUT',
+    headers:{'Authorization':'Bearer '+currentToken,'Content-Type':'application/json'},
+    body:JSON.stringify({data:{prenom:prenom,nom:nom,am:am,tel:tel,cabinet:cabinet}})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(user){
+    currentUser = user;
+    showAccount(user);
+    // Update parent nav display
+    if(window.parent !== window) window.parent.postMessage({type:'r4p-profile-updated',user:user},'*');
+    var status = document.getElementById('saveStatus');
+    status.style.display = 'inline';
+    setTimeout(function(){ status.style.display='none'; }, 2500);
+  })
+  .catch(function(err){ alert('Erreur : '+err.message); });
+}
+
+function logout(){
+  currentUser = null; currentToken = null;
+  if(window.parent !== window) window.parent.postMessage({type:'r4p-logout'},'*');
+  showLogin();
+}
 </script>
 </body>
 </html>
