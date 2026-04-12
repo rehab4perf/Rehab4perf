@@ -798,7 +798,7 @@ body {
 /* ── PROMs DATA ── */
 var PROMS_DATA = [
   {acronym:"IKDC",name:"International Knee Documentation Committee",cat:"Genou",path:["LCA","Ménisque","Cartilage"],items:18,scale:"0–100 (↑=mieux)",free:true,fr:true,note:"Gold standard LCA. Couvre symptômes, fonction, activité.",rts:true,available:false},
-  {acronym:"KOOS",name:"Knee Injury and Osteoarthritis Outcome Score",cat:"Genou",path:["LCA","Arthrose","Ménisque"],items:42,scale:"0–100 / 5 sous-scores",free:true,fr:true,note:"5 sous-scores : douleur, symptômes, AVQ, sport, QdV.",rts:false,available:false},
+  {acronym:"KOOS",name:"Knee Injury and Osteoarthritis Outcome Score",cat:"Genou",path:["LCA","Arthrose","Ménisque"],items:42,scale:"0–100 / 5 sous-scores",free:true,fr:true,note:"5 sous-scores : douleur, symptômes, AVQ, sport, QdV.",rts:false,available:true},
   {acronym:"KOOS-PS",name:"KOOS Physical Function Short Form",cat:"Genou",path:["Arthrose","Chirurgie"],items:7,scale:"0–100",free:true,fr:true,note:"Version courte fonctionnelle du KOOS.",rts:false,available:true},
   {acronym:"WOMAC",name:"Western Ontario McMaster Universities OA Index",cat:"Genou",path:["Arthrose"],items:24,scale:"0–96 (↓=mieux)",free:false,fr:true,note:"Arthrose genou et hanche. Douleur, raideur, fonction.",rts:false,available:false},
   {acronym:"Lysholm",name:"Lysholm Knee Score",cat:"Genou",path:["LCA","Ligamentaire"],items:8,scale:"0–100",free:true,fr:true,note:"Historique, simple. Bien corrélé au niveau d'activité.",rts:false,available:true},
@@ -806,8 +806,8 @@ var PROMS_DATA = [
   {acronym:"ACL-RSI",name:"ACL Return to Sport after Injury",cat:"Genou",path:["LCA"],items:12,scale:"0–100 (↑=mieux)",free:true,fr:true,note:"Psychologique. Seuil 60% à 6 mois (Webster 2018).",rts:true,available:true},
   {acronym:"Marx",name:"Marx Activity Rating Scale",cat:"Genou",path:["LCA","Général"],items:4,scale:"0–16",free:true,fr:false,note:"Niveau d'activité sportive. 4 mouvements fondamentaux.",rts:true,available:true},
   {acronym:"KOOS-QoL",name:"KOOS Quality of Life subscale",cat:"Genou",path:["LCA","Arthrose"],items:4,scale:"0–100",free:true,fr:true,note:"Sous-score QdV isolé du KOOS, très utilisé.",rts:false,available:false},
-  {acronym:"DASH",name:"Disabilities of the Arm, Shoulder and Hand",cat:"Épaule",path:["Épaule","Coude","Poignet"],items:30,scale:"0–100 (↓=mieux)",free:true,fr:true,note:"Référence membre supérieur. Version QuickDASH (11 items).",rts:false,available:false},
-  {acronym:"QuickDASH",name:"Quick DASH (version courte)",cat:"Épaule",path:["Épaule","Coude","Poignet"],items:11,scale:"0–100 (↓=mieux)",free:true,fr:true,note:"Version courte du DASH, usage pratique quotidien.",rts:false,available:false},
+  {acronym:"DASH",name:"Disabilities of the Arm, Shoulder and Hand",cat:"Épaule",path:["Épaule","Coude","Poignet"],items:30,scale:"0–100 (↓=mieux)",free:true,fr:true,note:"Référence membre supérieur. Version QuickDASH (11 items).",rts:false,available:true},
+  {acronym:"QuickDASH",name:"Quick DASH (version courte)",cat:"Épaule",path:["Épaule","Coude","Poignet"],items:11,scale:"0–100 (↓=mieux)",free:true,fr:true,note:"Version courte du DASH, usage pratique quotidien.",rts:false,available:true},
   {acronym:"ASES",name:"American Shoulder and Elbow Surgeons Score",cat:"Épaule",path:["Coiffe","Instabilité","Arthrose"],items:11,scale:"0–100",free:true,fr:false,note:"Standard chirurgical. Douleur (EVA) + fonction.",rts:false,available:false},
   {acronym:"SST",name:"Simple Shoulder Test",cat:"Épaule",path:["Coiffe","Arthrose"],items:12,scale:"0–12",free:true,fr:false,note:"Oui/Non, très rapide. Bonne sensibilité au changement.",rts:false,available:false},
   {acronym:"WOSI",name:"Western Ontario Shoulder Instability Index",cat:"Épaule",path:["Instabilité"],items:21,scale:"0–2100 (↓=mieux)",free:true,fr:false,note:"Spécifique instabilité gléno-humérale.",rts:false,available:false},
@@ -862,7 +862,7 @@ var PROMS_DATA = [
   {acronym:"SI-RSI",name:"Shoulder Instability-Return to Sport after Injury",cat:"Épaule",path:["Instabilité","Sportif"],items:12,scale:"0–100% (↑=mieux)",free:true,fr:true,note:"Préparation psychologique RTS après instabilité épaule. Analogue ACL-RSI.",rts:true,available:true},
   {acronym:"HAGOS",name:"Copenhagen Hip and Groin Outcome Score",cat:"Hanche",path:["FAI","Aine","Sportif"],items:37,scale:"0–100 / 6 sous-scores",free:true,fr:true,note:"Douleur hanche et aine chez le sportif actif. 6 sous-scores.",rts:true,available:false},
   {acronym:"VISA-G",name:"VISA Glutéal — Tendinopathie glutéale",cat:"Hanche",path:["Tendinopathie glutéale","Grand trochanter"],items:8,scale:"0–100 (↑=mieux)",free:true,fr:true,note:"Tendinopathie du moyen fessier / grand trochanter. Analogue VISA-A.",rts:true,available:true},
-  {acronym:"VISA-H",name:"VISA Ischio-jambiers proximal",cat:"Hanche",path:["Tendinopathie IJ","Proximal"],items:8,scale:"0–100 (↑=mieux)",free:true,fr:false,note:"Tendinopathie proximale des ischio-jambiers. Version non validée en FR.",rts:true,available:false},
+  {acronym:"VISA-H",name:"VISA Ischio-jambiers proximal",cat:"Hanche",path:["Tendinopathie IJ","Proximal"],items:8,scale:"0–100 (↑=mieux)",free:true,fr:false,note:"Tendinopathie proximale des ischio-jambiers. Version non validée en FR.",rts:true,available:true},
   {acronym:"ATRS",name:"Achilles Tendon Total Rupture Score",cat:"Cheville/Pied",path:["Rupture Achille","Post-op"],items:10,scale:"0–100 (↑=mieux)",free:true,fr:true,note:"Gold standard rupture tendon d'Achille. Post-chirurgie ou conservateur.",rts:true,available:true},
   {acronym:"ALR-RSI",name:"Ankle Ligament Reconstruction — Return to Sport after Injury",cat:"Cheville/Pied",path:["Instabilité cheville","Ligamentoplastie"],items:12,scale:"0–100% (↑=mieux)",free:true,fr:true,note:"Préparation psychologique RTS après ligamentoplastie de cheville.",rts:true,available:true},
   {acronym:"MTSS Score",name:"Medial Tibial Stress Syndrome Score",cat:"Cheville/Pied",path:["MTSS","Périostite tibiale"],items:4,scale:"0–10 (↓=mieux)",free:true,fr:true,note:"Syndrome de stress tibial médial. Douleur et limitation sportive.",rts:false,available:true},
@@ -874,8 +874,11 @@ var PROMS_DATA = [
   {acronym:"Nijmegen",name:"Questionnaire de Nijmegen",cat:"Général",path:["Hyperventilation","Respiratoire"],items:16,scale:"0–64 (seuil ≥23)",free:true,fr:true,note:"Dépistage syndrome d'hyperventilation. Seuil ≥ 23/64.",rts:false,available:true},
   {acronym:"PASIPD",name:"Physical Activity Scale — Persons with Physical Disabilities",cat:"Général",path:["Handicap","Activité physique"],items:13,scale:"MET-h/j",free:true,fr:true,note:"Niveau d'activité physique des personnes en situation de handicap.",rts:false,available:false},
   {acronym:"MIF",name:"Mesure de l'Indépendance Fonctionnelle",cat:"Général",path:["Neurologique","Rééducation"],items:18,scale:"18–126 (↑=mieux)",free:false,fr:true,note:"Dépendance fonctionnelle en rééducation neurologique. Clinicien requis.",rts:false,available:false},
-  {acronym:"Berg",name:"Berg Balance Scale",cat:"Équilibre",path:["Neurologique","Risque de chute","Rééducation"],items:14,scale:"0–56 (↑=mieux)",free:true,fr:true,note:"Gold standard équilibre. Risque de chute si < 45/56. Clinicien requis.",rts:false,available:false},
-  {acronym:"Tinetti",name:"Tinetti Performance Oriented Mobility Assessment",cat:"Équilibre",path:["Risque de chute","Marche","Gériatrie"],items:16,scale:"0–28 (↑=mieux)",free:true,fr:true,note:"Équilibre et marche. Risque de chute élevé si < 19/28. Clinicien requis.",rts:false,available:false},
+  {acronym:"Berg",name:"Berg Balance Scale",cat:"Équilibre",path:["Neurologique","Risque de chute","Rééducation"],items:14,scale:"0–56 (↑=mieux)",free:true,fr:true,note:"Gold standard équilibre. Risque de chute si < 45/56. Clinicien requis.",rts:false,available:true},
+  {acronym:"Tinetti",name:"Tinetti Performance Oriented Mobility Assessment",cat:"Équilibre",path:["Risque de chute","Marche","Gériatrie"],items:16,scale:"0–28 (↑=mieux)",free:true,fr:true,note:"Équilibre et marche. Risque de chute élevé si < 19/28. Clinicien requis.",rts:false,available:true},
+  {acronym:"FADI",name:"Foot and Ankle Disability Index",cat:"Cheville/Pied",path:["Entorse","Fonctionnel","Instabilité"],items:26,scale:"0–100 (↑=mieux)",free:true,fr:true,note:"Évaluation fonctionnelle pied et cheville. Sous-score sport disponible.",rts:false,available:true},
+  {acronym:"IHOT-12",name:"International Hip Outcome Tool — 12 items",cat:"Hanche",path:["Labrum","Femoroacétabulaire","Hanche"],items:12,scale:"0–100 (↑=mieux)",free:true,fr:true,note:"Version courte IHOT. Douleur, symptômes, fonction, bien-être émotionnel.",rts:false,available:true},
+  {acronym:"IHOT-33",name:"International Hip Outcome Tool — 33 items",cat:"Hanche",path:["Labrum","Femoroacétabulaire","Chirurgie"],items:33,scale:"0–100 (↑=mieux)",free:true,fr:true,note:"Version complète IHOT. 4 domaines : douleur, AVQ, sport, qualité de vie.",rts:false,available:true},
 ];
 
 var PROMS_CAT_ORDER = ["Genou","Épaule","Rachis","Hanche","Cheville/Pied","Coude/Poignet","Douleur","Sport/RTS","Général","Équilibre"];
@@ -2718,6 +2721,466 @@ PROMS_QUESTIONNAIRES['Dallas'] = {
       +'<div><div style="font-size:.72rem;color:#666;">Anxiété/Dép.</div><div style="font-size:1.3rem;font-weight:700;color:'+c(anx)+'">'+anx+'%</div></div>'
       +'<div><div style="font-size:.72rem;color:#666;">Global</div><div style="font-size:1.3rem;font-weight:700;color:'+c(tot)+'">'+tot+'%</div></div>'
       +'</div><div style="font-size:.78rem;color:#666;">↓=mieux. 0% = pas d\'impact · 100% = impact maximal.</div>';
+  }
+};
+
+/* ─── BERG BALANCE SCALE ─────────────────────────────────── */
+PROMS_QUESTIONNAIRES['Berg'] = {
+  html: (function(){
+    var items = [
+      ['B1','Position assise sans appui (2 min)',['0 — Ne peut rester assis sans appui','1 — Peut s\'asseoir 2 min avec surveillance','2 — Peut s\'asseoir 30 s sans appui','3 — Peut s\'asseoir 2 min avec surveillance légère','4 — Peut s\'asseoir en sécurité 2 min']],
+      ['B2','Se lever d\'une chaise',['0 — Nécessite aide pour se lever','1 — Nécessite aide pour se lever','2 — Peut se lever (utilise les mains) avec surveillance','3 — Peut se lever (utilise les mains) de façon indépendante','4 — Peut se lever sans les mains et stabilise de façon indépendante']],
+      ['B3','Transfert',['0 — Nécessite assistance (2 personnes)','1 — Nécessite 1 personne pour sécuriser','2 — Peut transférer avec indications verbales et surveillance','3 — Peut transférer en sécurité avec utilisation des mains','4 — Peut transférer en sécurité avec léger contact des mains']],
+      ['B4','Se tenir debout sans appui (2 min)',['0 — Ne peut se tenir debout 30 s sans appui','1 — Peut se tenir debout 30 s avec surveillance','2 — Peut se tenir debout 30 s sans appui','3 — Peut se tenir debout 2 min avec surveillance','4 — Peut se tenir debout en sécurité 2 min']],
+      ['B5','Position debout, yeux fermés (10 s)',['0 — Nécessite aide pour ne pas tomber','1 — Ne peut fermer les yeux 3 s mais reste stable','2 — Peut rester debout 3 s','3 — Peut rester debout 10 s avec surveillance','4 — Peut se tenir debout en sécurité 10 s']],
+      ['B6','Position debout, pieds joints',['0 — Nécessite aide pour ne pas tomber','1 — Nécessite aide pour maintenir la position 15 s','2 — Peut joindre les pieds mais ne peut maintenir 30 s','3 — Peut joindre les pieds indépendamment mais ne peut maintenir 1 min','4 — Peut joindre les pieds indépendamment et maintenir 1 min']],
+      ['B7','Tendre les bras (debout, bras à 90°)',['0 — Perd l\'équilibre / nécessite aide externe','1 — Tend les bras < 5 cm / nécessite surveillance','2 — Peut tendre > 5 cm en sécurité','3 — Peut tendre > 12 cm en sécurité','4 — Peut tendre > 25 cm en confiance']],
+      ['B8','Ramasser un objet au sol',['0 — Ne peut ramasser / nécessite aide pour ne pas tomber','1 — Ne peut ramasser mais approche à 2-5 cm','2 — Ne peut ramasser mais approche à 2-5 cm avec surveillance','3 — Peut ramasser l\'objet avec surveillance','4 — Peut ramasser l\'objet en sécurité et facilité']],
+      ['B9','Se retourner pour regarder en arrière',['0 — Nécessite aide pour ne pas perdre l\'équilibre','1 — Nécessite surveillance lors de la rotation','2 — Tourne seulement d\'un côté, déplace le poids','3 — Regarde en arrière d\'un côté seulement','4 — Regarde en arrière des deux côtés, déplace bien le poids']],
+      ['B10','Rotation à 360°',['0 — Nécessite aide lors de la rotation','1 — Nécessite surveillance étroite ou indications verbales','2 — Peut tourner 360° en sécurité mais lentement','3 — Peut tourner 360° en sécurité d\'un côté en ≤ 4 s','4 — Peut tourner 360° en sécurité des deux côtés en ≤ 4 s']],
+      ['B11','Poser les pieds sur un tabouret (4 fois)',['0 — Nécessite aide pour ne pas tomber / ne peut effectuer','1 — Peut effectuer > 2 poses avec aide','2 — Peut effectuer 4 poses avec aide minimale','3 — Peut effectuer 4 poses indépendamment avec surveillance','4 — Peut poser 4 fois chaque pied en sécurité sans aide en < 20 s']],
+      ['B12','Position debout, un pied devant l\'autre',['0 — Perd l\'équilibre en marchant ou en se plaçant','1 — Nécessite aide pour se placer mais peut maintenir 15 s','2 — Peut faire un petit pas indépendamment et maintenir 30 s','3 — Peut placer un pied devant l\'autre indépendamment et maintenir 30 s','4 — Peut placer le pied exactement devant l\'autre et maintenir 30 s']],
+      ['B13','Position unipodal',['0 — Ne peut essayer / nécessite aide pour ne pas tomber','1 — Essaie de lever la jambe, ne peut maintenir 3 s mais reste debout','2 — Peut lever la jambe indépendamment et maintenir ≥ 3 s','3 — Peut lever la jambe indépendamment et maintenir 5-10 s','4 — Peut lever la jambe indépendamment et maintenir > 10 s']],
+      ['B14','Se lever, faire une pause, s\'asseoir',['0 — Nécessite aide lors du lever ou de l\'assise','1 — Lève et s\'assoit indépendamment mais instable','2 — Peut se lever et s\'asseoir en utilisant les mains, contrôle la descente','3 — Peut se lever et s\'asseoir en utilisant les mains','4 — Peut se lever et s\'asseoir en sécurité avec utilisation minimale des mains']]
+    ];
+    var h = '<div class="prom-intro"><strong>Berg Balance Scale</strong> — Évaluation observationnelle clinicien. Score 0–56. Risque de chute élevé si &lt; 45/56.</div>';
+    items.forEach(function(it){
+      h += '<div class="prom-q"><div class="prom-q-num">'+it[0]+'</div><div class="prom-q-text">'+it[1]+'</div><div class="prom-q-opts">';
+      it[2].forEach(function(opt,i){ h += '<label><input type="radio" name="berg_'+it[0]+'" value="'+i+'"> '+opt+'</label>'; });
+      h += '</div></div>';
+    });
+    return h;
+  })(),
+  score: function(){
+    var ns=['B1','B2','B3','B4','B5','B6','B7','B8','B9','B10','B11','B12','B13','B14'];
+    var missing=ns.filter(function(n){return !document.querySelector('input[name="berg_'+n+'"]:checked');});
+    if(missing.length) return '<div style="color:#C0392B;">Questions non répondues : '+missing.join(', ')+'</div>';
+    var tot=ns.reduce(function(s,n){return s+parseInt(document.querySelector('input[name="berg_'+n+'"]:checked').value);},0);
+    var risk=tot<20?'Risque élevé (assistance complète)':tot<40?'Risque modéré (aide à la marche recommandée)':tot<45?'Risque faible à modéré':' Équilibre satisfaisant';
+    var col=tot<20?'#C0392B':tot<40?'#D4600A':tot<45?'#2B5FA6':'#2D6A4F';
+    return '<div>Score Berg : <strong style="font-size:1.2rem;color:'+col+'">'+tot+' / 56</strong></div>'
+      +'<div style="font-size:.9rem;font-weight:700;color:'+col+';margin-top:4px;">'+risk+'</div>'
+      +'<div style="font-size:.78rem;color:#666;margin-top:4px;">&lt;20 = dépendant · 20–39 = aide à la marche · 40–44 = risque faible/modéré · ≥45 = indépendant</div>';
+  }
+};
+
+/* ─── TINETTI ─────────────────────────────────────────────── */
+PROMS_QUESTIONNAIRES['Tinetti'] = {
+  html: (function(){
+    var h = '<div class="prom-intro"><strong>Tinetti POMA</strong> — Évaluation clinicien. Équilibre (0–16) + Marche (0–12) = Total (0–28). Risque de chute élevé si &lt; 19/28.</div>';
+    h += '<div class="prom-section-label">Partie 1 — Équilibre (assis et debout)</div>';
+    var eq=[
+      ['T1','Équilibre assis',['0 — S\'incline ou glisse','1 — Stable, en sécurité']],
+      ['T2','Lever d\'une chaise',['0 — Impossible sans aide','1 — Possible mais s\'aide des bras','2 — Possible sans aide des bras']],
+      ['T3','Tentatives pour se lever',['0 — Impossible sans aide','1 — Possible mais nécessite > 1 tentative','2 — Possible en 1 tentative']],
+      ['T4','Équilibre debout (5 s)',['0 — Instable (vacille, pieds écartés, appuie sur support)','1 — Stable mais aide (canne, support)','2 — Stable sans aide ni support']],
+      ['T5','Équilibre debout pieds joints',['0 — Instable','1 — Stable mais appuie sur canne ou support','2 — Stable sans aide']],
+      ['T6','Poussée sternale (3 fois)',['0 — Commence à tomber','1 — Chancellement, s\'agrippe','2 — Stable']],
+      ['T7','Yeux fermés (debout pieds joints)',['0 — Instable','1 — Stable']],
+      ['T8','Rotation à 360°',['0 — Pas discontinus ou instable','1 — Pas continus ou stable']],
+      ['T9','S\'asseoir',['0 — Insécurité (mal évaluer distance, tombe dans le fauteuil)','1 — Utilise les bras ou geste saccadé','2 — En sécurité, mouvement fluide']]
+    ];
+    eq.forEach(function(it){
+      h += '<div class="prom-q"><div class="prom-q-num">'+it[0]+'</div><div class="prom-q-text">'+it[1]+'</div><div class="prom-q-opts">';
+      it[2].forEach(function(opt,i){ h += '<label><input type="radio" name="tinetti_'+it[0]+'" value="'+i+'"> '+opt+'</label>'; });
+      h += '</div></div>';
+    });
+    h += '<div class="prom-section-label">Partie 2 — Marche</div>';
+    var march=[
+      ['T10','Initiation de la marche (après signal)',['0 — Hésitation ou plusieurs tentatives','1 — Pas de problème']],
+      ['T11','Longueur et hauteur du pas droit',['0 — N\'arrive pas à dépasser le pied gauche ou ne lève pas assez le pied','1 — Dépasse le pied gauche, lève suffisamment le pied']],
+      ['T12','Longueur et hauteur du pas gauche',['0 — N\'arrive pas à dépasser le pied droit ou ne lève pas assez le pied','1 — Dépasse le pied droit, lève suffisamment le pied']],
+      ['T13','Symétrie des pas',['0 — Asymétrie notable','1 — Pas droit et gauche identiques']],
+      ['T14','Continuité des pas',['0 — Arrêt ou discontinuité entre les pas','1 — Pas continus']],
+      ['T15','Trajectoire (3 m)',['0 — Déviation marquée','1 — Légère déviation ou aide','2 — Droite sans aide']],
+      ['T16','Tronc',['0 — Balancement marqué ou aide','1 — Pas de balancement mais flexion, douleur ou écartement des bras','2 — Pas de balancement, pas de flexion, pas d\'aide']],
+      ['T17','Largeur du pas en demi-tour',['0 — Talons séparés','1 — Talons rapprochés']]
+    ];
+    march.forEach(function(it){
+      h += '<div class="prom-q"><div class="prom-q-num">'+it[0]+'</div><div class="prom-q-text">'+it[1]+'</div><div class="prom-q-opts">';
+      it[2].forEach(function(opt,i){ h += '<label><input type="radio" name="tinetti_'+it[0]+'" value="'+i+'"> '+opt+'</label>'; });
+      h += '</div></div>';
+    });
+    return h;
+  })(),
+  score: function(){
+    var eq=['T1','T2','T3','T4','T5','T6','T7','T8','T9'];
+    var march=['T10','T11','T12','T13','T14','T15','T16','T17'];
+    var all=eq.concat(march);
+    var missing=all.filter(function(n){return !document.querySelector('input[name="tinetti_'+n+'"]:checked');});
+    if(missing.length) return '<div style="color:#C0392B;">Questions non répondues : '+missing.join(', ')+'</div>';
+    var g=function(n){return parseInt(document.querySelector('input[name="tinetti_'+n+'"]:checked').value);};
+    var scoreEq=eq.reduce(function(s,n){return s+g(n);},0);
+    var scoreMarch=march.reduce(function(s,n){return s+g(n);},0);
+    var tot=scoreEq+scoreMarch;
+    var risk=tot<19?'Risque de chute élevé':tot<24?'Risque de chute modéré':'Risque de chute faible';
+    var col=tot<19?'#C0392B':tot<24?'#D4600A':'#2D6A4F';
+    return '<div style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:8px;">'
+      +'<div><div style="font-size:.72rem;color:#666;">Équilibre</div><div style="font-size:1.3rem;font-weight:700;color:#2B5FA6;">'+scoreEq+'/16</div></div>'
+      +'<div><div style="font-size:.72rem;color:#666;">Marche</div><div style="font-size:1.3rem;font-weight:700;color:#2B5FA6;">'+scoreMarch+'/12</div></div>'
+      +'<div><div style="font-size:.72rem;color:#666;">Total</div><div style="font-size:1.3rem;font-weight:700;color:'+col+'">'+tot+'/28</div></div>'
+      +'</div><div style="font-size:.9rem;font-weight:700;color:'+col+';">'+risk+'</div>'
+      +'<div style="font-size:.78rem;color:#666;margin-top:4px;">&lt;19 = élevé · 19–23 = modéré · ≥24 = faible</div>';
+  }
+};
+
+/* ─── FADI ─────────────────────────────────────────────────── */
+PROMS_QUESTIONNAIRES['FADI'] = {
+  html: (function(){
+    var h = '<div class="prom-intro"><strong>Foot and Ankle Disability Index (FADI)</strong> — Évaluez votre capacité à réaliser les activités suivantes. 4 = aucune difficulté · 0 = impossible.</div>';
+    var items=[
+      ['F1','Se tenir debout'],['F2','Marcher sur terrain plat'],['F3','Marcher pieds nus sur terrain plat'],
+      ['F4','Monter les escaliers'],['F5','Descendre les escaliers'],['F6','Se lever d\'une chaise'],
+      ['F7','Se mettre en position accroupie'],['F8','Courir sur terrain plat'],['F9','Sauter'],
+      ['F10','Courir sur terrain irrégulier'],['F11','Marcher sur terrain irrégulier'],
+      ['F12','Monter/descendre des pentes'],['F13','Marcher sur les pointes des pieds'],
+      ['F14','Démarrer puis s\'arrêter rapidement'],['F15','Faire des changements de direction en courant'],
+      ['F16','Activités récréatives légères'],['F17','Activités récréatives avec risque de mise en charge'],
+      ['F18','Marcher rapidement / courir lentement'],['F19','Douleur au repos'],['F20','Douleur avec activité normale'],
+      ['F21','Douleur le matin au lever'],['F22','Douleur avec marche pieds nus'],
+      ['F23','Douleur avec la mise en charge'],['F24','Douleur après activité'],
+      ['F25','Instabilité sur terrain plat'],['F26','Instabilité sur terrain irrégulier']
+    ];
+    var opts=['4 — Aucune difficulté','3 — Légère difficulté','2 — Difficulté modérée','1 — Difficulté importante','0 — Impossible / NA'];
+    items.forEach(function(it){
+      h += '<div class="prom-q"><div class="prom-q-num">'+it[0]+'</div><div class="prom-q-text">'+it[1]+'</div><div class="prom-q-opts">';
+      opts.forEach(function(opt,i){ h += '<label><input type="radio" name="fadi_'+it[0]+'" value="'+(4-i)+'"> '+opt+'</label>'; });
+      h += '</div></div>';
+    });
+    return h;
+  })(),
+  score: function(){
+    var ns=['F1','F2','F3','F4','F5','F6','F7','F8','F9','F10','F11','F12','F13','F14','F15','F16','F17','F18','F19','F20','F21','F22','F23','F24','F25','F26'];
+    var answered=ns.filter(function(n){return document.querySelector('input[name="fadi_'+n+'"]:checked');});
+    var naItems=answered.filter(function(n){return parseInt(document.querySelector('input[name="fadi_'+n+'"]:checked').value)===0&&['F8','F9','F10'].indexOf(n)!==-1;});
+    if(!answered.length) return '<div style="color:#C0392B;">Aucune réponse.</div>';
+    var validAnswered=answered.filter(function(n){return document.querySelector('input[name="fadi_'+n+'"]:checked').value!=='na';});
+    var tot=validAnswered.reduce(function(s,n){return s+parseInt(document.querySelector('input[name="fadi_'+n+'"]:checked').value);},0);
+    var max=validAnswered.length*4;
+    var pct=max>0?Math.round((tot/max)*100):0;
+    var col=pct>=80?'#2D6A4F':pct>=60?'#2B5FA6':pct>=40?'#D4600A':'#C0392B';
+    return '<div>Score FADI : <strong style="font-size:1.2rem;color:'+col+'">'+pct+' / 100</strong> ('+tot+'/'+max+')</div>'
+      +'<div style="font-size:.78rem;color:#666;margin-top:4px;">↑ = mieux. ≥80% = bon fonctionnel · 60–79% = modéré · &lt;60% = limitation importante</div>';
+  }
+};
+
+/* ─── IHOT-12 ────────────────────────────────────────────── */
+PROMS_QUESTIONNAIRES['IHOT-12'] = {
+  html: (function(){
+    var h = '<div class="prom-intro"><strong>International Hip Outcome Tool — 12 items (iHOT-12)</strong> — Pour chaque question, indiquez sur l\'échelle de 0 à 100 comment vous vous sentez. <strong>0 = problèmes extrêmes · 100 = aucun problème</strong>.</div>';
+    var items=[
+      ['H1','Douleur à la hanche'],['H2','Douleur après des activités modérées'],
+      ['H3','Rigidité ou raideur de la hanche'],['H4','Douleur en descente d\'escalier'],
+      ['H5','Capacité à travailler'],['H6','Capacité à faire votre sport ou activité physique favori(te)'],
+      ['H7','Capacité à faire des activités de loisirs ou récréatives'],
+      ['H8','Pensées négatives liées à votre hanche'],
+      ['H9','Confiance en votre hanche lors des activités'],
+      ['H10','Difficultés à oublier votre hanche'],
+      ['H11','Désirs sexuels non comblés à cause de votre hanche'],
+      ['H12','Préoccupations concernant votre hanche à long terme']
+    ];
+    items.forEach(function(it){
+      h += '<div class="prom-q"><div class="prom-q-num">'+it[0]+'</div><div class="prom-q-text">'+it[1]+'</div>'
+        +'<div style="margin-top:8px;"><div style="display:flex;justify-content:space-between;font-size:.68rem;color:#888;margin-bottom:2px;"><span>0 — Extrême</span><span>100 — Aucun problème</span></div>'
+        +'<input type="range" min="0" max="100" value="50" name="ihot12_'+it[0]+'" style="width:100%;" oninput="document.getElementById(\'v_ihot12_'+it[0]+'\').textContent=this.value">'
+        +'<div style="text-align:center;font-size:.8rem;font-weight:700;color:#2B5FA6;margin-top:2px;"><span id="v_ihot12_'+it[0]+'">50</span></div></div></div>';
+    });
+    return h;
+  })(),
+  score: function(){
+    var ns=['H1','H2','H3','H4','H5','H6','H7','H8','H9','H10','H11','H12'];
+    var tot=ns.reduce(function(s,n){var el=document.querySelector('input[name="ihot12_'+n+'"]');return s+(el?parseInt(el.value):50);},0);
+    var avg=Math.round(tot/ns.length);
+    var col=avg>=75?'#2D6A4F':avg>=50?'#2B5FA6':avg>=25?'#D4600A':'#C0392B';
+    return '<div>Score iHOT-12 : <strong style="font-size:1.2rem;color:'+col+'">'+avg+' / 100</strong></div>'
+      +'<div style="font-size:.78rem;color:#666;margin-top:4px;">↑ = mieux. Score moyen sur 12 items. &lt;40 = limitation importante · 40–69 = modéré · ≥70 = bon</div>';
+  }
+};
+
+/* ─── IHOT-33 ────────────────────────────────────────────── */
+PROMS_QUESTIONNAIRES['IHOT-33'] = {
+  html: (function(){
+    var h = '<div class="prom-intro"><strong>International Hip Outcome Tool — 33 items (iHOT-33)</strong> — Pour chaque question, indiquez sur l\'échelle de 0 à 100. <strong>0 = problème maximal · 100 = aucun problème</strong>.</div>';
+    var sections=[
+      {label:'Symptômes et fonctionnel', items:[
+        ['H1','Douleur ressentie au niveau de la hanche'],['H2','Douleur après des activités légères'],
+        ['H3','Douleur après des activités modérées'],['H4','Douleur après des activités intenses'],
+        ['H5','Rigidité matinale de la hanche'],['H6','Cliquer, coincer ou verrouiller de la hanche'],
+        ['H7','Raideur après une position assise prolongée'],['H8','Boiterie'],
+        ['H9','Difficulté pour s\'accroupir'],['H10','Difficulté à entrer/sortir d\'une voiture']
+      ]},
+      {label:'Travail', items:[
+        ['H11','Difficultés au travail'],['H12','Fatigabilité au travail'],
+        ['H13','Durée de travail réduite à cause de la hanche']
+      ]},
+      {label:'Activités de loisir, sport, récréation', items:[
+        ['H14','Difficulté à faire votre sport principal'],['H15','Difficulté pour courir'],
+        ['H16','Difficulté pour couper et changer de direction'],['H17','Atterrir après un saut'],
+        ['H18','Difficulté à pivoter sur la jambe atteinte'],['H19','Difficulté pour les activités en dehors'],
+        ['H20','Difficulté à monter les escaliers'],['H21','Difficulté à marcher sur terrain irrégulier'],
+        ['H22','Difficulté à marcher longtemps'],['H23','Difficulté à conduire']
+      ]},
+      {label:'Bien-être social et émotionnel', items:[
+        ['H24','Anxiété à cause de la hanche'],['H25','Frustration due à la douleur'],
+        ['H26','Difficultés à dormir dues à la hanche'],['H27','Sentiment de vieillesse prématurée'],
+        ['H28','Pensées négatives générées par la hanche'],['H29','Désirs sexuels non comblés'],
+        ['H30','Difficultés à rester longtemps debout'],['H31','Honte ou conscience excessive de la hanche'],
+        ['H32','Dépendance vis-à-vis des autres'],['H33','Incertitude quant à l\'avenir de la hanche']
+      ]}
+    ];
+    sections.forEach(function(sec){
+      h += '<div class="prom-section-label">'+sec.label+'</div>';
+      sec.items.forEach(function(it){
+        h += '<div class="prom-q"><div class="prom-q-num">'+it[0]+'</div><div class="prom-q-text">'+it[1]+'</div>'
+          +'<div style="margin-top:8px;"><div style="display:flex;justify-content:space-between;font-size:.68rem;color:#888;margin-bottom:2px;"><span>0 — Extrême</span><span>100 — Aucun problème</span></div>'
+          +'<input type="range" min="0" max="100" value="50" name="ihot33_'+it[0]+'" style="width:100%;" oninput="document.getElementById(\'v_ihot33_'+it[0]+'\').textContent=this.value">'
+          +'<div style="text-align:center;font-size:.8rem;font-weight:700;color:#2B5FA6;margin-top:2px;"><span id="v_ihot33_'+it[0]+'">50</span></div></div></div>';
+      });
+    });
+    return h;
+  })(),
+  score: function(){
+    var all=['H1','H2','H3','H4','H5','H6','H7','H8','H9','H10','H11','H12','H13','H14','H15','H16','H17','H18','H19','H20','H21','H22','H23','H24','H25','H26','H27','H28','H29','H30','H31','H32','H33'];
+    var tot=all.reduce(function(s,n){var el=document.querySelector('input[name="ihot33_'+n+'"]');return s+(el?parseInt(el.value):50);},0);
+    var avg=Math.round(tot/all.length);
+    var col=avg>=75?'#2D6A4F':avg>=50?'#2B5FA6':avg>=25?'#D4600A':'#C0392B';
+    return '<div>Score iHOT-33 : <strong style="font-size:1.2rem;color:'+col+'">'+avg+' / 100</strong></div>'
+      +'<div style="font-size:.78rem;color:#666;margin-top:4px;">↑ = mieux. Score moyen sur 33 items. &lt;40 = limitation importante · 40–69 = modéré · ≥70 = bon</div>';
+  }
+};
+
+/* ─── KOOS ──────────────────────────────────────────────── */
+PROMS_QUESTIONNAIRES['KOOS'] = {
+  html: (function(){
+    var h = '<div class="prom-intro"><strong>KOOS — Knee Injury and Osteoarthritis Outcome Score</strong> (version FR). 5 sous-scores : Douleur, Symptômes, AVQ, Sport, QdV. 0 = problèmes extrêmes · 4 = aucun problème.</div>';
+    var sections=[
+      {key:'S', label:'Symptômes', items:[
+        ['S1','Raideur au réveil le matin ?'],['S2','Raideur après repos en journée ?'],
+        ['S3','Gonflement du genou ?'],['S4','Le genou craque, clique ou fait du bruit ?'],
+        ['S5','Le genou accroche ou se bloque ?'],['S6','Le genou peut-il s\'étendre complètement ?'],['S7','Le genou peut-il fléchir complètement ?']
+      ]},
+      {key:'P', label:'Douleur', items:[
+        ['P1','À quelle fréquence ressentez-vous de la douleur ?'],
+        ['P2','Douleur en tournant/pivotant sur le genou ?'],['P3','Douleur en étendant complètement le genou ?'],
+        ['P4','Douleur en fléchissant complètement le genou ?'],['P5','Douleur en marchant sur terrain plat ?'],
+        ['P6','Douleur en montant ou descendant les escaliers ?'],['P7','Douleur la nuit au lit ?'],
+        ['P8','Douleur en position assise ou allongée ?'],['P9','Douleur en restant debout ?']
+      ]},
+      {key:'A', label:'Activités de la vie quotidienne (AVQ)', items:[
+        ['A1','Descendre les escaliers ?'],['A2','Monter les escaliers ?'],['A3','Se lever d\'un siège ?'],
+        ['A4','Rester debout ?'],['A5','Se pencher en avant ?'],['A6','Marcher sur terrain plat ?'],
+        ['A7','Entrer/sortir d\'une voiture ?'],['A8','Faire les courses ?'],['A9','Mettre des chaussettes ou collants ?'],
+        ['A10','Se lever du lit ?'],['A11','Enlever des chaussettes ou collants ?'],['A12','Rester allongé(e) au lit ?'],
+        ['A13','Entrer/sortir de la baignoire ?'],['A14','Rester assis(e) ?'],['A15','S\'asseoir/se lever des toilettes ?'],
+        ['A16','Tâches ménagères lourdes ?'],['A17','Tâches ménagères légères ?']
+      ]},
+      {key:'SP', label:'Activités sportives et récréatives', items:[
+        ['SP1','S\'accroupir ?'],['SP2','Courir ?'],['SP3','Sauter ?'],['SP4','Pivoter sur le genou atteint ?'],['SP5','S\'agenouiller ?']
+      ]},
+      {key:'Q', label:'Qualité de vie', items:[
+        ['Q1','À quelle fréquence êtes-vous conscient(e) de votre genou ?'],
+        ['Q2','Avez-vous modifié votre mode de vie pour éviter les activités potentiellement nuisibles ?'],
+        ['Q3','Dans quelle mesure êtes-vous préoccupé(e) par votre incapacité à faire confiance à votre genou ?'],
+        ['Q4','Globalement, avez-vous des difficultés avec votre genou ?']
+      ]}
+    ];
+    var scaleDefault=['0 — Extrême','1 — Sévère','2 — Modéré','3 — Léger','4 — Aucun'];
+    sections.forEach(function(sec){
+      h += '<div class="prom-section-label">'+sec.label+'</div>';
+      sec.items.forEach(function(it){
+        h += '<div class="prom-q"><div class="prom-q-num">'+it[0]+'</div><div class="prom-q-text">'+it[1]+'</div><div class="prom-q-opts">';
+        scaleDefault.forEach(function(opt,i){ h += '<label><input type="radio" name="koos_'+it[0]+'" value="'+i+'"> '+opt+'</label>'; });
+        h += '</div></div>';
+      });
+    });
+    return h;
+  })(),
+  score: function(){
+    var sections={
+      'S':['S1','S2','S3','S4','S5','S6','S7'],
+      'P':['P1','P2','P3','P4','P5','P6','P7','P8','P9'],
+      'A':['A1','A2','A3','A4','A5','A6','A7','A8','A9','A10','A11','A12','A13','A14','A15','A16','A17'],
+      'SP':['SP1','SP2','SP3','SP4','SP5'],
+      'Q':['Q1','Q2','Q3','Q4']
+    };
+    var labels={'S':'Symptômes','P':'Douleur','A':'AVQ','SP':'Sport','Q':'QdV'};
+    var allMissing=[];
+    Object.keys(sections).forEach(function(k){
+      sections[k].forEach(function(n){if(!document.querySelector('input[name="koos_'+n+'"]:checked')) allMissing.push(n);});
+    });
+    if(allMissing.length>5) return '<div style="color:#C0392B;">Questionnaire incomplet. Répondez à toutes les questions.</div>';
+    var result='<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;">';
+    Object.keys(sections).forEach(function(k){
+      var ns=sections[k];
+      var answered=ns.filter(function(n){return document.querySelector('input[name="koos_'+n+'"]:checked');});
+      if(!answered.length) return;
+      var tot=answered.reduce(function(s,n){return s+parseInt(document.querySelector('input[name="koos_'+n+'"]:checked').value);},0);
+      var pct=Math.round((tot/(answered.length*4))*100);
+      var col=pct>=75?'#2D6A4F':pct>=50?'#2B5FA6':pct>=25?'#D4600A':'#C0392B';
+      result+='<div style="text-align:center;"><div style="font-size:.72rem;color:#666;">'+labels[k]+'</div><div style="font-size:1.2rem;font-weight:700;color:'+col+'">'+pct+'</div></div>';
+    });
+    result+='</div><div style="font-size:.78rem;color:#666;">Scores 0–100 par sous-score. ↑ = mieux. 0 = problèmes extrêmes · 100 = aucun problème.</div>';
+    return result;
+  }
+};
+
+/* ─── DASH ──────────────────────────────────────────────── */
+PROMS_QUESTIONNAIRES['DASH'] = {
+  html: (function(){
+    var h = '<div class="prom-intro"><strong>DASH — Disabilities of the Arm, Shoulder and Hand</strong> (version FR). 30 items. Score 0–100. ↓ = mieux. 1 = sans difficulté · 5 = impossible.</div>';
+    var items=[
+      ['D1','Ouvrir un pot à couvercle neuf ou serré'],['D2','Écrire'],['D3','Tourner une clé'],
+      ['D4','Préparer un repas'],['D5','Pousser une porte battante'],['D6','Poser un objet sur une étagère en hauteur'],
+      ['D7','Réaliser des tâches ménagères lourdes (laver le sol, laver les murs, etc.)'],
+      ['D8','Faire du jardinage ou jardiner'],['D9','Faire votre lit'],
+      ['D10','Porter des sacs de courses ou une mallette'],['D11','Porter un objet lourd (plus de 5 kg)'],
+      ['D12','Changer une ampoule en hauteur'],['D13','Se laver ou se sécher les cheveux'],
+      ['D14','Se laver le dos'],['D15','Enfiler un pullover'],
+      ['D16','Couper de la nourriture avec un couteau'],['D17','Activités récréatives peu fatigantes (jouer aux cartes, tricoter, etc.)'],
+      ['D18','Activités récréatives avec mouvement du bras ou effort (golf, marteau, tennis, etc.)'],
+      ['D19','Activités récréatives où votre bras/épaule/main supporte le poids du corps'],
+      ['D20','Utiliser des transports en commun (voiture, bus, train, etc.)'],
+      ['D21','Activités sexuelles'],['D22','Au cours de la semaine passée, dans quelle mesure votre épaule, bras ou main a-t-elle perturbé vos activités habituelles avec famille, amis, voisins ?'],
+      ['D23','Avez-vous été limité(e) dans vos activités professionnelles ou domestiques en raison de votre épaule, bras ou main ?']
+    ];
+    var opts=['1 — Sans difficulté','2 — Légère difficulté','3 — Difficulté modérée','4 — Grande difficulté','5 — Impossible'];
+    items.forEach(function(it){
+      h += '<div class="prom-q"><div class="prom-q-num">'+it[0]+'</div><div class="prom-q-text">'+it[1]+'</div><div class="prom-q-opts">';
+      opts.forEach(function(opt,i){ h += '<label><input type="radio" name="dash_'+it[0]+'" value="'+(i+1)+'"> '+opt+'</label>'; });
+      h += '</div></div>';
+    });
+    h += '<div class="prom-section-label">Symptômes (7 items)</div>';
+    var symp=[
+      ['D24','Douleur dans l\'épaule, le bras ou la main'],
+      ['D25','Douleur dans l\'épaule, le bras ou la main lors de mouvements spécifiques'],
+      ['D26','Picotements dans l\'épaule, le bras ou la main'],['D27','Faiblesse dans l\'épaule, le bras ou la main'],
+      ['D28','Raideur dans l\'épaule, le bras ou la main'],
+      ['D29','Au cours de la semaine écoulée, dans quelle mesure votre problème d\'épaule, bras ou main a-t-il perturbé votre sommeil ?'],
+      ['D30','Je me sens moins capable, moins confiant(e) ou moins utile en raison de mon problème d\'épaule, bras ou main.']
+    ];
+    var sympOpts=['1 — Aucune','2 — Légère','3 — Modérée','4 — Sévère','5 — Extrême'];
+    symp.forEach(function(it){
+      h += '<div class="prom-q"><div class="prom-q-num">'+it[0]+'</div><div class="prom-q-text">'+it[1]+'</div><div class="prom-q-opts">';
+      sympOpts.forEach(function(opt,i){ h += '<label><input type="radio" name="dash_'+it[0]+'" value="'+(i+1)+'"> '+opt+'</label>'; });
+      h += '</div></div>';
+    });
+    return h;
+  })(),
+  score: function(){
+    var ns=['D1','D2','D3','D4','D5','D6','D7','D8','D9','D10','D11','D12','D13','D14','D15','D16','D17','D18','D19','D20','D21','D22','D23','D24','D25','D26','D27','D28','D29','D30'];
+    var answered=ns.filter(function(n){return document.querySelector('input[name="dash_'+n+'"]:checked');});
+    if(answered.length<27) return '<div style="color:#C0392B;">Renseignez au moins 27 questions sur 30.</div>';
+    var tot=answered.reduce(function(s,n){return s+parseInt(document.querySelector('input[name="dash_'+n+'"]:checked').value);},0);
+    var score=Math.round(((tot/answered.length)-1)*25);
+    var col=score<=20?'#2D6A4F':score<=40?'#2B5FA6':score<=60?'#D4600A':'#C0392B';
+    return '<div>Score DASH : <strong style="font-size:1.2rem;color:'+col+'">'+score+' / 100</strong></div>'
+      +'<div style="font-size:.78rem;color:#666;margin-top:4px;">↓ = mieux. 0 = aucune incapacité · 100 = incapacité totale. Items répondus : '+answered.length+'/30</div>';
+  }
+};
+
+/* ─── QuickDASH ─────────────────────────────────────────── */
+PROMS_QUESTIONNAIRES['QuickDASH'] = {
+  html: (function(){
+    var h = '<div class="prom-intro"><strong>QuickDASH</strong> — Version courte du DASH (11 items). Score 0–100. ↓ = mieux.</div>';
+    var items=[
+      ['Q1','Ouvrir un pot à couvercle neuf ou serré'],['Q2','Réaliser des tâches ménagères lourdes'],
+      ['Q3','Porter un sac de courses ou une mallette'],['Q4','Se laver le dos'],
+      ['Q5','Couper de la nourriture avec un couteau'],['Q6','Activités récréatives nécessitant un effort (tennis, marteau, golf, etc.)'],
+      ['Q7','Votre épaule, bras ou main a-t-elle perturbé vos activités sociales habituelles ?'],
+      ['Q8','Avez-vous été limité(e) dans vos activités professionnelles ou domestiques ?']
+    ];
+    var opts=['1 — Sans difficulté','2 — Légère difficulté','3 — Difficulté modérée','4 — Grande difficulté','5 — Impossible'];
+    items.forEach(function(it){
+      h += '<div class="prom-q"><div class="prom-q-num">'+it[0]+'</div><div class="prom-q-text">'+it[1]+'</div><div class="prom-q-opts">';
+      opts.forEach(function(opt,i){ h += '<label><input type="radio" name="qdash_'+it[0]+'" value="'+(i+1)+'"> '+opt+'</label>'; });
+      h += '</div></div>';
+    });
+    h += '<div class="prom-section-label">Symptômes</div>';
+    var symp=[['Q9','Douleur dans l\'épaule, le bras ou la main'],['Q10','Picotements dans l\'épaule, le bras ou la main'],
+      ['Q11','Mon problème d\'épaule/bras/main a perturbé mon sommeil.']];
+    var sympOpts=['1 — Aucune','2 — Légère','3 — Modérée','4 — Sévère','5 — Extrême'];
+    symp.forEach(function(it){
+      h += '<div class="prom-q"><div class="prom-q-num">'+it[0]+'</div><div class="prom-q-text">'+it[1]+'</div><div class="prom-q-opts">';
+      sympOpts.forEach(function(opt,i){ h += '<label><input type="radio" name="qdash_'+it[0]+'" value="'+(i+1)+'"> '+opt+'</label>'; });
+      h += '</div></div>';
+    });
+    return h;
+  })(),
+  score: function(){
+    var ns=['Q1','Q2','Q3','Q4','Q5','Q6','Q7','Q8','Q9','Q10','Q11'];
+    var answered=ns.filter(function(n){return document.querySelector('input[name="qdash_'+n+'"]:checked');});
+    if(answered.length<10) return '<div style="color:#C0392B;">Renseignez au moins 10 questions sur 11.</div>';
+    var tot=answered.reduce(function(s,n){return s+parseInt(document.querySelector('input[name="qdash_'+n+'"]:checked').value);},0);
+    var score=Math.round(((tot/answered.length)-1)*25);
+    var col=score<=20?'#2D6A4F':score<=40?'#2B5FA6':score<=60?'#D4600A':'#C0392B';
+    return '<div>Score QuickDASH : <strong style="font-size:1.2rem;color:'+col+'">'+score+' / 100</strong></div>'
+      +'<div style="font-size:.78rem;color:#666;margin-top:4px;">↓ = mieux. 0 = aucune incapacité · 100 = incapacité totale. Items répondus : '+answered.length+'/11</div>';
+  }
+};
+
+/* ─── VISA-H ────────────────────────────────────────────── */
+PROMS_QUESTIONNAIRES['VISA-H'] = {
+  html: '<div class="prom-intro"><strong>VISA-H</strong> — Tendinopathie proximale des ischio-jambiers. Score max = 100. ↑ = mieux. (Adaptation VISA-A, non validée en français.)</div>'
+    +'<div class="prom-q"><div class="prom-q-num">Q1</div><div class="prom-q-text">Combien de minutes pouvez-vous rester assis(e) sans douleur au niveau de la fesse/ischion ?</div><div class="prom-q-opts">'
+    +'<label><input type="radio" name="visa_h1" value="0"> 0 à 10 minutes (0 pt)</label>'
+    +'<label><input type="radio" name="visa_h1" value="4"> 11 à 20 minutes (4 pts)</label>'
+    +'<label><input type="radio" name="visa_h1" value="7"> 21 à 30 minutes (7 pts)</label>'
+    +'<label><input type="radio" name="visa_h1" value="10"> Plus de 30 minutes sans douleur (10 pts)</label>'
+    +'</div></div>'
+    +'<div class="prom-q"><div class="prom-q-num">Q2</div><div class="prom-q-text">Avez-vous de la douleur en marchant sur terrain plat ?</div><div class="prom-q-opts">'
+    +'<label><input type="radio" name="visa_h2" value="0"> Sévère (0 pt)</label>'
+    +'<label><input type="radio" name="visa_h2" value="3"> Modérée (3 pts)</label>'
+    +'<label><input type="radio" name="visa_h2" value="7"> Légère (7 pts)</label>'
+    +'<label><input type="radio" name="visa_h2" value="10"> Aucune (10 pts)</label>'
+    +'</div></div>'
+    +'<div class="prom-q"><div class="prom-q-num">Q3</div><div class="prom-q-text">Avez-vous de la douleur en courant ou en montant les escaliers ?</div><div class="prom-q-opts">'
+    +'<label><input type="radio" name="visa_h3" value="0"> Sévère (0 pt)</label>'
+    +'<label><input type="radio" name="visa_h3" value="3"> Modérée (3 pts)</label>'
+    +'<label><input type="radio" name="visa_h3" value="7"> Légère (7 pts)</label>'
+    +'<label><input type="radio" name="visa_h3" value="10"> Aucune (10 pts)</label>'
+    +'</div></div>'
+    +'<div class="prom-q"><div class="prom-q-num">Q4</div><div class="prom-q-text">Avez-vous de la douleur lors d\'exercices en charge genoux fléchis (fentes, squats) ?</div><div class="prom-q-opts">'
+    +'<label><input type="radio" name="visa_h4" value="0"> Sévère (0 pt)</label>'
+    +'<label><input type="radio" name="visa_h4" value="3"> Modérée (3 pts)</label>'
+    +'<label><input type="radio" name="visa_h4" value="7"> Légère (7 pts)</label>'
+    +'<label><input type="radio" name="visa_h4" value="10"> Aucune (10 pts)</label>'
+    +'</div></div>'
+    +'<div class="prom-q"><div class="prom-q-num">Q5</div><div class="prom-q-text">Avez-vous de la douleur lors de sprints ou accélérations ?</div><div class="prom-q-opts">'
+    +'<label><input type="radio" name="visa_h5" value="0"> Sévère (0 pt)</label>'
+    +'<label><input type="radio" name="visa_h5" value="3"> Modérée (3 pts)</label>'
+    +'<label><input type="radio" name="visa_h5" value="7"> Légère (7 pts)</label>'
+    +'<label><input type="radio" name="visa_h5" value="10"> Aucune (10 pts)</label>'
+    +'</div></div>'
+    +'<div class="prom-q"><div class="prom-q-num">Q6</div><div class="prom-q-text">Pratiquez-vous actuellement un sport ou une autre activité physique ?</div><div class="prom-q-opts">'
+    +'<label><input type="radio" name="visa_h6" value="0"> Non — à cause de la douleur (0 pt)</label>'
+    +'<label><input type="radio" name="visa_h6" value="4"> Entraînement modifié (4 pts)</label>'
+    +'<label><input type="radio" name="visa_h6" value="7"> Entraînement complet mais limité par la douleur (7 pts)</label>'
+    +'<label><input type="radio" name="visa_h6" value="10"> Pratique complète sans limitation (10 pts)</label>'
+    +'</div></div>'
+    +'<div class="prom-q"><div class="prom-q-num">Q7</div><div class="prom-q-text">Effectuez-vous de l\'entraînement spécifique ischio-jambiers ?</div><div class="prom-q-opts">'
+    +'<label><input type="radio" name="visa_h7" value="0"> Non (0 pt)</label>'
+    +'<label><input type="radio" name="visa_h7" value="4"> Entraînement adapté (4 pts)</label>'
+    +'<label><input type="radio" name="visa_h7" value="7"> Entraînement complet mais limité par la douleur (7 pts)</label>'
+    +'<label><input type="radio" name="visa_h7" value="10"> Entraînement complet sans limitation (10 pts)</label>'
+    +'</div></div>'
+    +'<div class="prom-q"><div class="prom-q-num">Q8</div><div class="prom-q-text">Combien de répétitions de Nordic Curl (ou pont ischio-jambiers) pouvez-vous réaliser sans douleur ?</div><div class="prom-q-opts">'
+    +'<label><input type="radio" name="visa_h8" value="0"> 1 à 5 répétitions (0 pt)</label>'
+    +'<label><input type="radio" name="visa_h8" value="3"> 6 à 10 répétitions (3 pts)</label>'
+    +'<label><input type="radio" name="visa_h8" value="7"> 11 à 15 répétitions (7 pts)</label>'
+    +'<label><input type="radio" name="visa_h8" value="10"> Plus de 15 répétitions sans douleur (10 pts)</label>'
+    +'</div></div>',
+  score: function(){
+    var total=0; var missing=[];
+    for(var i=1;i<=8;i++){
+      var sel=document.querySelector('input[name="visa_h'+i+'"]:checked');
+      if(sel) total+=parseInt(sel.value);
+      else missing.push('Q'+i);
+    }
+    if(missing.length) return '<div style="color:#C0392B;">Questions non répondues : '+missing.join(', ')+'</div>';
+    var interp=total<30?'Sévère':total<60?'Modéré':total<80?'Modéré à bon':'Bon à excellent';
+    var col=total<30?'#C0392B':total<60?'#D4600A':total<80?'#2B5FA6':'#2D6A4F';
+    return '<div>Score VISA-H : <strong style="font-size:1.2rem;color:'+col+'">'+total+' / 100</strong> — <span style="color:'+col+';font-weight:700;">'+interp+'</span></div>'
+      +'<div style="font-size:.78rem;color:#666;margin-top:4px;">&lt;30 = Sévère · 30–59 = Modéré · 60–79 = Modéré à bon · ≥80 = Bon à excellent</div>';
   }
 };
 </script>
