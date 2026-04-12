@@ -2360,6 +2360,7 @@ function init() {
   document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
   updateAll();
   loadFromStorage();
+  showPage('infos'); // toujours atterrir sur Infos Patient, sans exception
   applyProfile(getProfile());
   applyTFFavStars();
 }
