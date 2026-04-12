@@ -3274,6 +3274,7 @@ function loadFromStorage() {
   } catch(e) {}
   // Always land on Infos Patient regardless of previous state
   try { localStorage.removeItem('r4p-active-page'); } catch(e) {}
+  showPage('infos');
 }
 
 
