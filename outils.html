@@ -639,7 +639,9 @@ function calcRM() {
 function calcHSR() {
   var rm = parseFloat(document.getElementById('hsr-ref').value) || 0;
 
-  document.getElementById('hsr-tbody').innerHTML = HSR.map(function(p){
+  var tbodyEl = document.getElementById('hsr-tbody');
+  if(!tbodyEl) return;
+  tbodyEl.innerHTML = HSR.map(function(p){
     var cMin = rm > 0 ? rnd(rm*p.pMin/100) + ' kg' : '--';
     var cMax = rm > 0 ? rnd(rm*p.pMax/100) + ' kg' : '--';
     return '<tr>' +
@@ -656,7 +658,9 @@ function calcHSR() {
   }).join('');
 
   // Steps
-  document.getElementById('hsr-steps').innerHTML = HSR.map(function(p){
+  var stepsEl = document.getElementById('hsr-steps');
+  if(!stepsEl) return;
+  stepsEl.innerHTML = HSR.map(function(p){
     return '<div class="step">' +
       '<div class="step-badge">' + p.w + '<small>' + p.rm + '</small></div>' +
       '<div>' +
