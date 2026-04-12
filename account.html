@@ -200,7 +200,7 @@ var IDENTITY_URL = 'https://rehab4perf.netlify.app/.netlify/identity';
 var currentUser = null;
 var currentToken = null;
 
-// Receive token from parent
+// Receive token from parent (fallback)
 window.addEventListener('message', function(e){
   if(e.data && e.data.type==='r4p-token'){
     currentToken = e.data.token;
