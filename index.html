@@ -59,18 +59,29 @@ iframe.active { display:block; }
 </div>
 
 <script>
-// Écouteur AVANT de définir le src — sinon l'événement load peut tirer avant l'attachement
-var _frameBilan = document.getElementById('frame-bilan');
-_frameBilan.addEventListener('load', function() {
-  try { this.contentWindow.showPage('infos'); } catch(e) {}
-});
-
-// Cache-buster : timestamp unique à chaque chargement — déclenche le load après l'écouteur
+// Cache-buster : timestamp unique à chaque chargement
 var _v = Date.now();
-_frameBilan.src = 'bilan.html?_='+_v;
+document.getElementById('frame-bilan').src        = 'bilan.html?_='+_v;
 document.getElementById('frame-outils').src       = 'outils.html?_='+_v;
 document.getElementById('frame-prescription').src = 'prescription.html?_='+_v;
 document.getElementById('frame-account').src      = 'account.html?_='+_v;
+
+// Polling : vérifie toutes les 100ms que bilan est prêt, puis force Infos Patient
+// Fonctionne peu importe le cache, la vitesse de chargement ou l'ordre des événements
+(function() {
+  var attempts = 0;
+  var timer = setInterval(function() {
+    attempts++;
+    if (attempts > 50) { clearInterval(timer); return; } // arrêt après 5 secondes
+    try {
+      var win = document.getElementById('frame-bilan').contentWindow;
+      if (win && win.showPage) {
+        win.showPage('infos');
+        clearInterval(timer);
+      }
+    } catch(e) {}
+  }, 100);
+})();
 
 function show(id) {
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
