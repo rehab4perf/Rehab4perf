@@ -66,6 +66,11 @@ document.getElementById('frame-outils').src       = 'outils.html?_='+_v;
 document.getElementById('frame-prescription').src = 'prescription.html?_='+_v;
 document.getElementById('frame-account').src      = 'account.html?_='+_v;
 
+// Garantie absolue : quand bilan charge, forcer Infos Patient depuis le parent
+document.getElementById('frame-bilan').addEventListener('load', function() {
+  try { this.contentWindow.showPage('infos'); } catch(e) {}
+});
+
 function show(id) {
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
   document.querySelectorAll('iframe').forEach(function(f){ f.classList.remove('active'); });
