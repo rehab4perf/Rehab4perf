@@ -59,17 +59,18 @@ iframe.active { display:block; }
 </div>
 
 <script>
-// Cache-buster : timestamp unique à chaque chargement
+// Écouteur AVANT de définir le src — sinon l'événement load peut tirer avant l'attachement
+var _frameBilan = document.getElementById('frame-bilan');
+_frameBilan.addEventListener('load', function() {
+  try { this.contentWindow.showPage('infos'); } catch(e) {}
+});
+
+// Cache-buster : timestamp unique à chaque chargement — déclenche le load après l'écouteur
 var _v = Date.now();
-document.getElementById('frame-bilan').src        = 'bilan.html?_='+_v;
+_frameBilan.src = 'bilan.html?_='+_v;
 document.getElementById('frame-outils').src       = 'outils.html?_='+_v;
 document.getElementById('frame-prescription').src = 'prescription.html?_='+_v;
 document.getElementById('frame-account').src      = 'account.html?_='+_v;
-
-// Garantie absolue : quand bilan charge, forcer Infos Patient depuis le parent
-document.getElementById('frame-bilan').addEventListener('load', function() {
-  try { this.contentWindow.showPage('infos'); } catch(e) {}
-});
 
 function show(id) {
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
