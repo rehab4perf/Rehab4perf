@@ -672,7 +672,6 @@ body {
       <span class="icon">📋</span> Infos Patient
     </button>
 
-```
 <div class="nav-section">Bilan orthopédique</div>
 <button class="nav-item" onclick="showPage('epaule')" data-page="epaule">
   <span class="icon">💪</span> Épaule
@@ -716,7 +715,6 @@ body {
 <button class="nav-item" onclick="showPage('cr')" data-page="cr">
   <span class="icon">📄</span> CR Patient
 </button>
-```
 
   </nav>
 
@@ -777,7 +775,6 @@ body {
       </div>
     </div>
 
-```
 <div class="block">
   <div class="block-header grey">Anamnèse</div>
   <div class="form-grid single">
@@ -819,7 +816,6 @@ body {
     </div>
   </div>
 </div>
-```
 
   </div>
 </div>
@@ -848,7 +844,6 @@ body {
       </div>
     </div>
 
-```
 <div class="block">
   <div class="block-header red">Quick Scan Instabilité — Positif = ❌ (signe clinique)</div>
   <table class="test-table">
@@ -883,7 +878,6 @@ body {
   <div class="block-header">Conclusion — Diagnostic & Éducation patient</div>
   <textarea class="concl-area" id="ep-conclusion" placeholder="Tableau clinique compatible avec une tendinopathie de la coiffe réactive. Éducation réalisée sur le modèle continuum. Programme de réathlétisation progressif…"></textarea>
 </div>
-```
 
   </div>
 </div>
@@ -902,7 +896,6 @@ body {
       <div class="form-grid single"><div class="field"><label>Mouvement / activité qui reproduit la douleur</label><textarea id="ra-marqueur" placeholder="Flexion lombaire avec irradiation L5…" style="min-height:48px"></textarea></div></div>
     </div>
 
-```
 <div class="block">
   <div class="block-header red">Quick Scan Cervical</div>
   <table class="test-table">
@@ -943,7 +936,6 @@ body {
   <div class="block-header">Conclusion</div>
   <textarea class="concl-area" id="ra-conclusion" placeholder="Tableau compatible avec une lombalgie discogénique…"></textarea>
 </div>
-```
 
   </div>
 </div>
@@ -977,9 +969,7 @@ body {
       <div class="form-grid single"><div class="field"><label>Tests complémentaires réalisés en fonction de la situation</label><textarea id="ha-opt" style="min-height:70px" placeholder="Ex: Test de log-roll — douleur antérieure D, DIRI — positif…"></textarea></div></div>
     </div>
 
-```
 <div class="block"><div class="block-header">Conclusion</div><textarea class="concl-area" id="ha-conclusion" placeholder="Tableau compatible avec une pubalgie de type adducteurs…"></textarea></div>
-```
 
   </div>
 </div>
@@ -1031,7 +1021,6 @@ body {
       </div>
     </div>
 
-```
 <div class="block">
   <div class="block-header red">Contraction Flash Isométrique — 20 secondes</div>
   <div style="padding:1px 0">
@@ -1066,7 +1055,6 @@ body {
 </div>
 
 <div class="block"><div class="block-header">Conclusion</div><textarea class="concl-area" id="ge-conclusion" placeholder="Post-reconstruction LCA à 6 mois. Déficit quadricipital modéré…"></textarea></div>
-```
 
   </div>
 </div>
@@ -1106,14 +1094,12 @@ body {
       </div>
     </div>
 
-```
 <div class="block">
   <div class="block-header grey">Tests Optionnels</div>
   <div class="form-grid single"><div class="field"><label>Tests complémentaires réalisés en fonction de la situation</label><textarea id="pi-opt" style="min-height:70px" placeholder="Ex: Test de compression talofibulaire antérieure — positif D, Test de Kleiger modifié — négatif…"></textarea></div></div>
 </div>
 
 <div class="block"><div class="block-header">Conclusion</div><textarea class="concl-area" id="pi-conclusion" placeholder="Entorse latérale stade II ancienne avec instabilité résiduelle…"></textarea></div>
-```
 
   </div>
 </div>
@@ -1128,7 +1114,6 @@ body {
   </div>
   <div class="page-content">
 
-```
 <!-- SLS -->
 <div class="block">
   <div class="block-header">① Force Fonctionnelle — Single Leg Squat (SLS)</div>
@@ -1322,7 +1307,6 @@ body {
     </div>
   </div>
 </div>
-```
 
   </div>
 </div>
@@ -1367,7 +1351,6 @@ body {
         </div>
       </div>
 
-```
 <!-- PSET -->
 <div class="block">
   <div class="block-header">① PSET — Prone Shoulder Endurance Test</div>
@@ -1559,7 +1542,6 @@ body {
     <strong>Protocole :</strong> Même matériel que Y-Balance Test MI. Main d'appui au centre du Y. Position planche ventrale stable. Pousser un plot le long de chaque branche. 3 essais par direction, meilleure valeur retenue. Évaluer le MS dont la main est au sol (composante stabilité).
   </div>
 </div>
-```
 
   </div>
 </div>
@@ -1574,7 +1556,6 @@ body {
   </div>
   <div class="page-content">
 
-```
 <!-- ── CERVICAUX ─────────────────────────────────────────── -->
 <div style="padding:4px 0 2px;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px">CERVICAUX</div>
 
@@ -1762,7 +1743,6 @@ body {
     </div>
   </div>
 </div>
-```
 
   </div>
 </div>
@@ -1809,7 +1789,6 @@ body {
 
 <!-- SEBT -->
 
-```
 <div class="block">
   <div class="block-header">⑦ mSEBT — modified Star Excursion Balance Test</div>
 
@@ -1929,7 +1908,6 @@ body {
 </div>
 
 </div>
-```
 
   </div>
 </div>
@@ -2059,10 +2037,16 @@ function init() {
 
 // -- NAV -------------------------------------------------------
 function showPage(id) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  var pg = document.getElementById('page-' + id); if (pg) pg.classList.add('active');
-  var nb = document.querySelector('[data-page="' + id + '"]'); if (nb) nb.classList.add('active');
+  // Inline styles — priorité absolue sur toute règle CSS
+  document.querySelectorAll('.page').forEach(function(p) {
+    p.style.display = 'none';
+    p.classList.remove('active');
+  });
+  document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+  var pg = document.getElementById('page-' + id);
+  if (pg) { pg.style.display = 'flex'; pg.classList.add('active'); }
+  var nb = document.querySelector('[data-page="' + id + '"]');
+  if (nb) nb.classList.add('active');
   if (id === 'cr') buildCR();
   if (id === 'cr-tf') buildCRTF();
   saveToStorage();
@@ -3261,11 +3245,14 @@ function calcUQYBT() {
 document.addEventListener('input', () => saveToStorage());
 document.addEventListener('change', () => saveToStorage());
 
+// Masquer TOUTES les pages immédiatement (inline style, priorité max)
+document.querySelectorAll('.page').forEach(function(p) { p.style.display = 'none'; });
+
 // Init
-init();
-// Garantie absolue : showPage('infos') après la pile d'exécution courante
+init(); // appelle showPage('infos') à la fin → page-infos s'affiche
+
+// Triple garantie — showPage('infos') après la pile JS courante et après load
 setTimeout(function(){ showPage('infos'); }, 0);
-// Backup si le load arrive plus tard
 window.addEventListener('load', function(){ showPage('infos'); });
 </script>
 
