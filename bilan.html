@@ -3263,7 +3263,9 @@ document.addEventListener('change', () => saveToStorage());
 
 // Init
 init();
-// Double garantie — toujours Infos Patient au démarrage
+// Garantie absolue : showPage('infos') après la pile d'exécution courante
+setTimeout(function(){ showPage('infos'); }, 0);
+// Backup si le load arrive plus tard
 window.addEventListener('load', function(){ showPage('infos'); });
 </script>
 

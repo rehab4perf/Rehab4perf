@@ -52,37 +52,13 @@ iframe.active { display:block; }
   <div class="topnav-right" id="userDisplay" onclick="show('account')" title="Mon compte"></div>
 </div>
 <div class="frame-wrap">
-  <iframe id="frame-bilan"        class="active"></iframe>
-  <iframe id="frame-outils"       ></iframe>
-  <iframe id="frame-prescription" ></iframe>
-  <iframe id="frame-account"      ></iframe>
+  <iframe id="frame-bilan"        src="bilan.html"        class="active"></iframe>
+  <iframe id="frame-outils"       src="outils.html"       ></iframe>
+  <iframe id="frame-prescription" src="prescription.html" ></iframe>
+  <iframe id="frame-account"      src="account.html"      ></iframe>
 </div>
 
 <script>
-// Cache-buster : timestamp unique à chaque chargement
-var _v = Date.now();
-document.getElementById('frame-bilan').src        = 'bilan.html?_='+_v;
-document.getElementById('frame-outils').src       = 'outils.html?_='+_v;
-document.getElementById('frame-prescription').src = 'prescription.html?_='+_v;
-document.getElementById('frame-account').src      = 'account.html?_='+_v;
-
-// Polling : vérifie toutes les 100ms que bilan est prêt, puis force Infos Patient
-// Fonctionne peu importe le cache, la vitesse de chargement ou l'ordre des événements
-(function() {
-  var attempts = 0;
-  var timer = setInterval(function() {
-    attempts++;
-    if (attempts > 50) { clearInterval(timer); return; } // arrêt après 5 secondes
-    try {
-      var win = document.getElementById('frame-bilan').contentWindow;
-      if (win && win.showPage) {
-        win.showPage('infos');
-        clearInterval(timer);
-      }
-    } catch(e) {}
-  }, 100);
-})();
-
 function show(id) {
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
   document.querySelectorAll('iframe').forEach(function(f){ f.classList.remove('active'); });
