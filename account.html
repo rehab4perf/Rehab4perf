@@ -9,7 +9,7 @@
 :root {
   --navy:#1A3A5C; --accent:#2B5FA6; --accent2:#4A90D9;
   --bg:#F0F4F8; --surface:#fff; --text:#1a2433; --muted:#6b7a8d;
-  --border:#dde3ec;
+  --border:#dde3ec; --green:#1a7a3a; --green-l:#eaf7ee;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvetica Neue',Arial,sans-serif; color:var(--text); }
@@ -64,9 +64,12 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
 .btn-primary:hover { background:var(--navy); }
 .btn-danger { background:none; color:#E74C3C; border:1px solid #E74C3C; }
 .btn-danger:hover { background:#FEF0EE; }
+.btn-neutral { background:none; color:var(--text); border:1px solid var(--border); }
+.btn-neutral:hover { background:#f5f7fa; }
 
 .btn-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-.save-status { font-size:.78rem; color:#27AE60; display:none; }
+.save-status { font-size:.78rem; color:var(--green); display:none; }
+.save-error  { font-size:.78rem; color:#E74C3C;      display:none; }
 
 /* Avatar circle */
 .avatar { width:56px; height:56px; border-radius:50%; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-size:1.3rem; font-weight:700; flex-shrink:0; }
@@ -81,7 +84,7 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
 .security-sub { font-size:.74rem; color:var(--muted); margin-top:1px; }
 .badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:.68rem; font-weight:700; }
 .badge-green { background:#EFF9EE; color:#2D7D46; }
-.badge-blue { background:#EBF3FF; color:#2B5FA6; }
+.badge-blue  { background:#EBF3FF; color:#2B5FA6; }
 
 @media (max-width:500px) {
   .form-grid { grid-template-columns:1fr; }
@@ -100,7 +103,7 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
       <span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span>
     </div>
     <p class="login-subtitle">Connectez-vous pour accéder à votre espace</p>
-    <button class="login-btn" onclick="netlifyIdentity.open()">Se connecter</button>
+    <button class="login-btn" onclick="requestLogin()">Se connecter</button>
     <p class="login-note">Accès sur invitation uniquement.<br>Contactez Antoine PERONNAUD pour obtenir un accès.</p>
   </div>
 </div>
@@ -141,7 +144,7 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
         <input class="form-input" id="fieldTel" type="tel" placeholder="06 12 34 56 78">
       </div>
       <div class="form-group full">
-        <label class="form-label">Email professionnel</label>
+        <label class="form-label">Email (compte)</label>
         <input class="form-input" id="fieldEmail" type="email" readonly>
       </div>
       <div class="form-group full">
@@ -152,6 +155,7 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
     <div class="btn-row" style="margin-top:16px;">
       <button class="btn btn-primary" onclick="saveProfile()">Enregistrer</button>
       <span class="save-status" id="saveStatus">✓ Sauvegardé</span>
+      <span class="save-error"  id="saveError">✗ Erreur d'enregistrement</span>
     </div>
   </div>
 
@@ -161,7 +165,7 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
     <div class="security-item">
       <div>
         <div class="security-label">Authentification</div>
-        <div class="security-sub">Compte Netlify Identity sécurisé</div>
+        <div class="security-sub">Compte Netlify Identity — email + mot de passe</div>
       </div>
       <span class="badge badge-green">Actif</span>
     </div>
@@ -175,9 +179,9 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
     <div class="security-item">
       <div>
         <div class="security-label">Mot de passe</div>
-        <div class="security-sub">Modifier votre mot de passe</div>
+        <div class="security-sub">Modifier votre mot de passe via l'interface de connexion</div>
       </div>
-      <button class="btn" style="background:none;border:1px solid var(--border);font-size:.76rem;padding:5px 12px;" onclick="netlifyIdentity.open('signup')">Modifier</button>
+      <button class="btn btn-neutral" style="font-size:.76rem;padding:5px 12px;" onclick="requestLogin()">Modifier</button>
     </div>
   </div>
 
@@ -194,86 +198,127 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
 
 <script>
 /* ================================================================
-   NETLIFY IDENTITY
-   ================================================================ */
+   ÉTAT
+================================================================ */
 var IDENTITY_URL = 'https://rehab4perf.netlify.app/.netlify/identity';
-var currentUser = null;
-var currentToken = null;
+var _user  = null;
+var _token = null;
 
-// Receive token from parent
-window.addEventListener('message', function(e){
-  if(e.data && e.data.type==='r4p-token'){
-    currentToken = e.data.token;
-    showAccount(e.data.user);
+/* ================================================================
+   MESSAGES DU PARENT (Index.html)
+================================================================ */
+window.addEventListener('message', function(e) {
+  if (!e.data || !e.data.type) return;
+
+  if (e.data.type === 'r4p-token') {
+    _user  = e.data.user;
+    _token = e.data.token;
+    showAccount(_user);
+  }
+
+  if (e.data.type === 'r4p-no-user') {
+    _user  = null;
+    _token = null;
+    showLogin();
   }
 });
 
-// If opened directly, show empty state
-showLogin();
-
-function showLogin(){
-  currentUser = null;
-  document.getElementById('loginScreen').style.display = 'flex';
+/* ================================================================
+   AFFICHAGE
+================================================================ */
+function showLogin() {
+  document.getElementById('loginScreen').style.display  = 'flex';
   document.getElementById('accountScreen').style.display = 'none';
 }
 
-function showAccount(user){
-  currentUser = user;
-  document.getElementById('loginScreen').style.display = 'none';
+function showAccount(user) {
+  document.getElementById('loginScreen').style.display  = 'none';
   document.getElementById('accountScreen').style.display = 'block';
 
-  var email = user.email || '';
-  var meta = user.user_metadata || {};
-  var prenom = meta.prenom || '';
-  var nom = meta.nom || '';
-  var fullName = (prenom+' '+nom).trim() || email.split('@')[0];
+  var email  = user.email || '';
+  var meta   = user.user_metadata || {};
+  var prenom = (meta.prenom  || '').trim();
+  var nom    = (meta.nom     || '').trim();
+  var fullName = (prenom + ' ' + nom).trim() || email.split('@')[0];
 
-  // Avatar initials
-  var initials = ((prenom[0]||'')+(nom[0]||'')).toUpperCase() || email[0].toUpperCase();
+  // Avatar initiales
+  var initials = ((prenom[0] || '') + (nom[0] || '')).toUpperCase() || (email[0] || '?').toUpperCase();
   document.getElementById('avatarCircle').textContent = initials;
-  document.getElementById('displayName').textContent = fullName;
+  document.getElementById('displayName').textContent  = fullName;
   document.getElementById('displayEmail').textContent = email;
 
-  // Fill form
-  document.getElementById('fieldPrenom').value = prenom;
-  document.getElementById('fieldNom').value = nom;
-  document.getElementById('fieldAM').value = meta.am || '';
-  document.getElementById('fieldTel').value = meta.tel || '';
-  document.getElementById('fieldEmail').value = email;
+  // Remplissage formulaire
+  document.getElementById('fieldPrenom').value  = prenom;
+  document.getElementById('fieldNom').value     = nom;
+  document.getElementById('fieldAM').value      = meta.am      || '';
+  document.getElementById('fieldTel').value     = meta.tel     || '';
+  document.getElementById('fieldEmail').value   = email;
   document.getElementById('fieldCabinet').value = meta.cabinet || '';
 }
 
-function saveProfile(){
-  if(!currentUser || !currentToken) return;
-  var prenom = document.getElementById('fieldPrenom').value.trim();
-  var nom = document.getElementById('fieldNom').value.trim();
-  var am = document.getElementById('fieldAM').value.trim();
-  var tel = document.getElementById('fieldTel').value.trim();
-  var cabinet = document.getElementById('fieldCabinet').value.trim();
-
-  fetch(IDENTITY_URL+'/user', {
-    method:'PUT',
-    headers:{'Authorization':'Bearer '+currentToken,'Content-Type':'application/json'},
-    body:JSON.stringify({data:{prenom:prenom,nom:nom,am:am,tel:tel,cabinet:cabinet}})
-  })
-  .then(function(r){ return r.json(); })
-  .then(function(user){
-    currentUser = user;
-    showAccount(user);
-    // Update parent nav display
-    if(window.parent !== window) window.parent.postMessage({type:'r4p-profile-updated',user:user},'*');
-    var status = document.getElementById('saveStatus');
-    status.style.display = 'inline';
-    setTimeout(function(){ status.style.display='none'; }, 2500);
-  })
-  .catch(function(err){ alert('Erreur : '+err.message); });
+/* ================================================================
+   ACTIONS
+================================================================ */
+function requestLogin() {
+  window.parent.postMessage({ type: 'r4p-open-login' }, '*');
 }
 
-function logout(){
-  currentUser = null; currentToken = null;
-  if(window.parent !== window) window.parent.postMessage({type:'r4p-logout'},'*');
+function logout() {
+  window.parent.postMessage({ type: 'r4p-logout' }, '*');
   showLogin();
 }
+
+function saveProfile() {
+  if (!_user || !_token) { return; }
+
+  var prenom  = document.getElementById('fieldPrenom').value.trim();
+  var nom     = document.getElementById('fieldNom').value.trim();
+  var am      = document.getElementById('fieldAM').value.trim();
+  var tel     = document.getElementById('fieldTel').value.trim();
+  var cabinet = document.getElementById('fieldCabinet').value.trim();
+
+  var btn = document.querySelector('.btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = 'Enregistrement…'; }
+
+  fetch(IDENTITY_URL + '/user', {
+    method: 'PUT',
+    headers: {
+      'Authorization': 'Bearer ' + _token,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ data: { prenom: prenom, nom: nom, am: am, tel: tel, cabinet: cabinet } })
+  })
+  .then(function(r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  })
+  .then(function(updatedUser) {
+    _user = updatedUser;
+    // Rafraîchir l'affichage local
+    showAccount(updatedUser);
+    // Informer le parent (mise à jour nav)
+    window.parent.postMessage({ type: 'r4p-profile-updated', user: updatedUser }, '*');
+    // Feedback visuel
+    var s = document.getElementById('saveStatus');
+    s.style.display = 'inline';
+    setTimeout(function() { s.style.display = 'none'; }, 3000);
+  })
+  .catch(function(err) {
+    console.error('saveProfile error:', err);
+    var e = document.getElementById('saveError');
+    e.style.display = 'inline';
+    setTimeout(function() { e.style.display = 'none'; }, 4000);
+  })
+  .finally(function() {
+    if (btn) { btn.disabled = false; btn.textContent = 'Enregistrer'; }
+  });
+}
+
+/* ================================================================
+   INIT : par défaut on affiche la page de login (l'iframe attend
+   le postMessage r4p-token du parent pour basculer)
+================================================================ */
+showLogin();
 </script>
 </body>
 </html>
