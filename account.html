@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light only">
 <title>Compte – Rehab4Perf</title>
-<!-- Widget Netlify Identity : gère login/logout/token directement dans cette page -->
+<!-- Widget pour lire l'état de connexion et obtenir le token frais -->
 <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 <style>
 :root {
@@ -16,7 +16,6 @@
 * { margin:0; padding:0; box-sizing:border-box; }
 html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvetica Neue',Arial,sans-serif; color:var(--text); }
 
-/* ── LOGIN ── */
 .login-screen {
   min-height:100%; display:flex; flex-direction:column;
   align-items:center; justify-content:center; padding:24px;
@@ -37,9 +36,7 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
   cursor:pointer; transition:background .15s;
 }
 .login-btn:hover { background:var(--navy); }
-.login-note { font-size:.72rem; color:var(--muted); margin-top:14px; line-height:1.5; }
 
-/* ── COMPTE ── */
 .account-screen { display:none; padding:24px; max-width:640px; margin:0 auto; }
 .page-header { margin-bottom:20px; }
 .page-header h1 { font-size:1.1rem; font-weight:700; color:var(--navy); margin-bottom:2px; }
@@ -86,28 +83,26 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
 .badge-blue  { background:#EBF3FF; color:#2B5FA6; }
 
 @media (max-width:500px) {
-  .form-grid { grid-template-columns:1fr; }
-  .form-group.full { grid-column:1; }
-  .account-screen { padding:16px; }
-  .login-card { padding:28px 20px; }
+  .form-grid { grid-template-columns:1fr; } .form-group.full { grid-column:1; }
+  .account-screen { padding:16px; } .login-card { padding:28px 20px; }
 }
 </style>
 </head>
 <body>
 
-<!-- ═══════════ ÉCRAN DE CONNEXION ═══════════ -->
+<!-- Écran de secours si non connecté (ne devrait pas s'afficher
+     car Index.html redirige vers auth.html avant) -->
 <div class="login-screen" id="loginScreen">
   <div class="login-card">
     <div class="login-logo">
       <span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span>
     </div>
-    <p class="login-subtitle">Connectez-vous pour accéder à votre espace</p>
-    <button class="login-btn" onclick="netlifyIdentity.open('login')">Se connecter</button>
-    <p class="login-note">Accès sur invitation uniquement.<br>Contactez Antoine PERONNAUD pour obtenir un accès.</p>
+    <p class="login-subtitle">Vous n'êtes pas connecté</p>
+    <button class="login-btn" onclick="goToAuth()">Se connecter</button>
   </div>
 </div>
 
-<!-- ═══════════ ÉCRAN COMPTE ═══════════ -->
+<!-- Écran compte -->
 <div class="account-screen" id="accountScreen">
 
   <div class="page-header">
@@ -115,7 +110,7 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
     <p>Vos informations professionnelles</p>
   </div>
 
-  <!-- Identité + formulaire -->
+  <!-- Identité + formulaire profil -->
   <div class="card">
     <div class="user-row">
       <div class="avatar" id="avatarCircle">?</div>
@@ -164,7 +159,7 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
     <div class="security-item">
       <div>
         <div class="security-label">Authentification</div>
-        <div class="security-sub">Email + mot de passe individuel (Netlify Identity)</div>
+        <div class="security-sub">Email + mot de passe individuel</div>
       </div>
       <span class="badge badge-green">Actif</span>
     </div>
@@ -178,10 +173,10 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
     <div class="security-item">
       <div>
         <div class="security-label">Mot de passe</div>
-        <div class="security-sub">Modifier votre mot de passe</div>
+        <div class="security-sub">Un email de réinitialisation sera envoyé</div>
       </div>
       <button class="btn btn-neutral" style="font-size:.76rem;padding:5px 12px;"
-              onclick="netlifyIdentity.open('login')">Modifier</button>
+              onclick="sendPasswordReset()">Modifier</button>
     </div>
   </div>
 
@@ -198,46 +193,37 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
 
 <script>
 /* ================================================================
-   ÉTAT LOCAL
+   CONFIG
 ================================================================ */
 var IDENTITY_URL = 'https://rehab4perf.netlify.app/.netlify/identity';
-var _user  = null;
-var _token = null;
+var _user = null;
 
 /* ================================================================
-   EVENTS NETLIFY IDENTITY
-   Le widget est chargé dans CETTE page → pas de postMessage
-   pour l'auth, pas de timing à gérer.
+   NETLIFY IDENTITY — init dans l'iframe
+   (même localStorage que Index.html → lit l'utilisateur connecté)
 ================================================================ */
-
-// Appelé au chargement : user = utilisateur connecté ou null
 netlifyIdentity.on('init', function(user) {
   if (user) {
-    _user  = user;
-    _token = (user.token || {}).access_token || '';
+    _user = user;
     showAccount(user);
-    notifyParent(user);         // Met à jour la topnav du parent
+    notifyParent(user);
   } else {
+    // Normalement impossible si Index.html a bien redirigé les non-connectés
     showLogin();
   }
 });
 
-// Après une connexion réussie (login ou acceptation invitation)
 netlifyIdentity.on('login', function(user) {
-  _user  = user;
-  _token = (user.token || {}).access_token || '';
+  // Edge case : reconnexion depuis l'iframe
+  _user = user;
   netlifyIdentity.close();
   showAccount(user);
   notifyParent(user);
 });
 
-// Après déconnexion
 netlifyIdentity.on('logout', function() {
-  _user  = null;
-  _token = null;
+  _user = null;
   showLogin();
-  try { localStorage.removeItem('r4p-cached-profile'); } catch(e) {}
-  window.parent.postMessage({ type: 'r4p-logout-done' }, '*');
 });
 
 /* ================================================================
@@ -258,7 +244,8 @@ function showAccount(user) {
   var nom    = (meta.nom     || '').trim();
   var name   = (prenom + ' ' + nom).trim() || email.split('@')[0];
 
-  var initials = ((prenom[0] || '') + (nom[0] || '')).toUpperCase() || (email[0] || '?').toUpperCase();
+  var initials = ((prenom[0] || '') + (nom[0] || '')).toUpperCase()
+               || (email[0] || '?').toUpperCase();
   document.getElementById('avatarCircle').textContent  = initials;
   document.getElementById('displayName').textContent   = name;
   document.getElementById('displayEmail').textContent  = email;
@@ -270,19 +257,50 @@ function showAccount(user) {
   document.getElementById('fieldCabinet').value = meta.cabinet || '';
 }
 
-/* Informe le parent (Index.html) pour mettre à jour la topnav */
+/* ================================================================
+   ACTIONS
+================================================================ */
+
+/* Redirige la page principale (sortir de l'iframe) vers auth.html */
+function goToAuth() {
+  window.parent.location.replace('auth.html');
+}
+
+/* Informe le parent de la mise à jour du profil (topnav) */
 function notifyParent(user) {
   window.parent.postMessage({ type: 'r4p-profile-updated', user: user }, '*');
 }
 
-/* ================================================================
-   SAUVEGARDE PROFIL
-================================================================ */
+/* Déconnexion */
+function doLogout() {
+  netlifyIdentity.logout();
+  // Notifie le parent → celui-ci appelle netlifyIdentity.logout() aussi
+  // puis redirige vers auth.html via l'event 'logout'
+  window.parent.postMessage({ type: 'r4p-logout-done' }, '*');
+}
+
+/* Envoi d'un email de réinitialisation de mot de passe */
+function sendPasswordReset() {
+  var email = (_user && _user.email) || document.getElementById('fieldEmail').value.trim();
+  if (!email) { alert('Email introuvable.'); return; }
+  fetch(IDENTITY_URL + '/recover', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email })
+  })
+  .then(function() {
+    alert('✓ Email de réinitialisation envoyé à ' + email + '\nCliquez sur le lien reçu pour définir un nouveau mot de passe.');
+  })
+  .catch(function(err) {
+    alert('Erreur lors de l\'envoi : ' + err.message);
+  });
+}
+
+/* Sauvegarde du profil via l'API Netlify Identity */
 function saveProfile() {
-  // Récupérer le token frais depuis le widget (évite les tokens expirés)
   var currentUser = netlifyIdentity.currentUser();
-  if (!currentUser) { showLogin(); return; }
-  var freshToken = (currentUser.token || {}).access_token || _token || '';
+  if (!currentUser) { goToAuth(); return; }
+  var token = (currentUser.token || {}).access_token || '';
 
   var prenom  = document.getElementById('fieldPrenom').value.trim();
   var nom     = document.getElementById('fieldNom').value.trim();
@@ -291,17 +309,13 @@ function saveProfile() {
   var cabinet = document.getElementById('fieldCabinet').value.trim();
 
   var btn = document.getElementById('saveBtn');
-  btn.disabled = true;
-  btn.textContent = 'Enregistrement…';
+  btn.disabled = true; btn.textContent = 'Enregistrement…';
   document.getElementById('saveStatus').style.display = 'none';
   document.getElementById('saveError').style.display  = 'none';
 
   fetch(IDENTITY_URL + '/user', {
     method: 'PUT',
-    headers: {
-      'Authorization': 'Bearer ' + freshToken,
-      'Content-Type':  'application/json'
-    },
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
     body: JSON.stringify({ data: { prenom: prenom, nom: nom, am: am, tel: tel, cabinet: cabinet } })
   })
   .then(function(r) {
@@ -318,27 +332,15 @@ function saveProfile() {
   })
   .catch(function(err) {
     console.error('saveProfile:', err);
-    var e = document.getElementById('saveError');
-    e.style.display = 'inline';
-    setTimeout(function() { e.style.display = 'none'; }, 4000);
+    document.getElementById('saveError').style.display = 'inline';
+    setTimeout(function() { document.getElementById('saveError').style.display = 'none'; }, 4000);
   })
   .finally(function() {
-    btn.disabled = false;
-    btn.textContent = 'Enregistrer';
+    btn.disabled = false; btn.textContent = 'Enregistrer';
   });
 }
 
-/* ================================================================
-   DÉCONNEXION
-================================================================ */
-function doLogout() {
-  netlifyIdentity.logout();
-}
-
-/* ================================================================
-   INIT : montrer l'écran de login par défaut (le widget `init`
-   event s'en chargera si l'utilisateur est déjà connecté)
-================================================================ */
+/* Init par défaut */
 showLogin();
 </script>
 </body>

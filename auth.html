@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light only">
+<title>Connexion – Rehab4Perf</title>
+<!-- Le widget Netlify Identity est chargé ICI : il capte automatiquement
+     les #invite_token, #recovery_token, #confirmation_token dans l'URL -->
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<style>
+:root {
+  --navy:#1A3A5C; --accent:#2B5FA6; --accent2:#4A90D9;
+  --red:#E74C3C; --surface:#fff; --bg:#EEF2F7;
+  --text:#1a2433; --muted:#6b7a8d; --border:#d8e0eb;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body {
+  height:100%; background:var(--bg);
+  font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;
+  color:var(--text);
+}
+
+/* ── MISE EN PAGE ── */
+.page {
+  min-height:100vh;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  padding:24px;
+  background: linear-gradient(145deg, #1A3A5C 0%, #2B5FA6 60%, #4A90D9 100%);
+}
+
+/* ── CARTE ── */
+.card {
+  background:var(--surface);
+  border-radius:18px;
+  box-shadow:0 20px 60px rgba(0,0,0,.25);
+  padding:40px 36px 36px;
+  max-width:420px; width:100%;
+  text-align:center;
+}
+
+/* ── LOGO ── */
+.logo {
+  font-family:Georgia,serif; font-style:italic;
+  font-size:2rem; margin-bottom:6px; letter-spacing:-.01em;
+}
+.logo .r { color:var(--accent2); }
+.logo .n { color:var(--navy); font-weight:900; font-style:normal; }
+.logo .p { color:var(--red); }
+.tagline {
+  font-size:.8rem; color:var(--muted); margin-bottom:30px; line-height:1.5;
+}
+
+/* ── DIVIDER ── */
+.divider {
+  height:1px; background:var(--border); margin:0 0 24px;
+}
+
+/* ── BOUTON PRINCIPAL ── */
+.btn-connect {
+  width:100%; padding:14px;
+  background:var(--accent); color:#fff;
+  border:none; border-radius:10px;
+  font-size:.95rem; font-weight:700;
+  cursor:pointer; transition:background .2s, transform .1s;
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  font-family:inherit;
+}
+.btn-connect:hover  { background:var(--navy); }
+.btn-connect:active { transform:scale(.98); }
+.btn-connect svg { flex-shrink:0; }
+
+/* ── NOTE D'INVITATION ── */
+.invite-notice {
+  margin-top:20px;
+  background:#EBF3FF; border:1px solid #C0D8F7;
+  border-radius:9px; padding:12px 14px;
+  font-size:.77rem; color:#1e4a8a; line-height:1.55;
+  text-align:left;
+}
+.invite-notice strong { display:block; margin-bottom:3px; font-size:.8rem; }
+
+/* ── ÉTAT DE CHARGEMENT ── */
+.loading-state {
+  display:none;
+  margin-top:20px; font-size:.8rem; color:var(--muted);
+  gap:8px; align-items:center; justify-content:center;
+}
+.loading-state.visible { display:flex; }
+.spinner {
+  width:16px; height:16px; border:2px solid var(--border);
+  border-top-color:var(--accent2); border-radius:50%;
+  animation:spin .7s linear infinite; flex-shrink:0;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* ── PIED ── */
+.footer {
+  margin-top:28px; font-size:.72rem; color:rgba(255,255,255,.5);
+  text-align:center; line-height:1.6;
+}
+
+@media (max-width:480px) {
+  .card { padding:30px 20px 26px; }
+  .logo { font-size:1.7rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="card">
+
+    <!-- Logo -->
+    <div class="logo">
+      <span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span>
+    </div>
+    <p class="tagline">Bilan clinique · Outils · Prescription<br>Plateforme de kinésithérapie du sport</p>
+
+    <div class="divider"></div>
+
+    <!-- Bouton connexion -->
+    <button class="btn-connect" id="loginBtn" onclick="handleLoginClick()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+        <polyline points="10 17 15 12 10 7"/>
+        <line x1="15" y1="12" x2="3" y2="12"/>
+      </svg>
+      Se connecter
+    </button>
+
+    <!-- Notice invitation -->
+    <div class="invite-notice" id="inviteNotice" style="display:none">
+      <strong>🔑 Création de mot de passe</strong>
+      Le formulaire de définition de votre mot de passe va s'ouvrir automatiquement.
+      Si ce n'est pas le cas, cliquez sur le bouton ci-dessus.
+    </div>
+
+    <!-- Chargement -->
+    <div class="loading-state" id="loadingState">
+      <div class="spinner"></div>
+      <span>Vérification en cours…</span>
+    </div>
+
+  </div>
+
+  <p class="footer">
+    Accès sur invitation uniquement<br>
+    Contactez Antoine PERONNAUD pour obtenir un accès
+  </p>
+
+</div><!-- /.page -->
+
+<script>
+/* ================================================================
+   NETLIFY IDENTITY — PAGE DÉDIÉE À L'AUTH
+   Cette page est chargée directement (pas dans un iframe) et reçoit
+   correctement les hash #invite_token / #recovery_token de Netlify.
+================================================================ */
+
+var _hasToken = false;
+
+// Détection immédiate d'un token dans l'URL
+(function detectToken() {
+  var h = window.location.hash || '';
+  if (h.indexOf('invite_token=') > -1 || h.indexOf('recovery_token=') > -1 || h.indexOf('confirmation_token=') > -1) {
+    _hasToken = true;
+    document.getElementById('inviteNotice').style.display = 'block';
+    // Le widget va automatiquement ouvrir le formulaire de mot de passe
+  }
+})();
+
+/* ---------- Events widget ---------- */
+
+netlifyIdentity.on('init', function(user) {
+  if (user) {
+    // Déjà connecté → aller directement à l'app
+    goToApp();
+  } else {
+    // Pas connecté : si token présent, le widget ouvrira le formulaire automatiquement
+    // Sinon attendre le clic de l'utilisateur
+    hideLoading();
+  }
+});
+
+netlifyIdentity.on('login', function(user) {
+  netlifyIdentity.close();
+  goToApp();
+});
+
+netlifyIdentity.on('error', function(err) {
+  console.error('Identity error:', err);
+  hideLoading();
+});
+
+/* ---------- Actions ---------- */
+
+function handleLoginClick() {
+  netlifyIdentity.open('login');
+}
+
+function goToApp() {
+  showLoading('Connexion réussie, chargement…');
+  // Petit délai pour que le widget finisse d'enregistrer le token
+  setTimeout(function() {
+    window.location.replace('./');
+  }, 400);
+}
+
+function showLoading(msg) {
+  document.getElementById('loginBtn').style.display = 'none';
+  var el = document.getElementById('loadingState');
+  el.querySelector('span').textContent = msg || 'Chargement…';
+  el.classList.add('visible');
+}
+
+function hideLoading() {
+  document.getElementById('loginBtn').style.display = 'flex';
+  document.getElementById('loadingState').classList.remove('visible');
+}
+</script>
+</body>
+</html>
