@@ -641,14 +641,67 @@ body {
 .concl-area:focus { background: var(--yellow-l); }
 
 @media print {
-  .sidebar, .page-header, .no-print { display: none !important; }
-  .page-content { padding: 0 !important; }
-  .block { break-inside: avoid; }
+  /* ── Reset layout ── */
+  *, *::before, *::after { overflow: visible !important; }
+  html { font-size: 12px !important; }
+  body {
+    display: block !important;
+    background: #fff !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  /* ── Hide chrome ── */
+  .sidebar,
+  .page-header,
+  .no-print { display: none !important; }
+  /* ── Main becomes block ── */
+  .main {
+    display: block !important;
+    width: 100% !important;
+    overflow: visible !important;
+    min-height: 0 !important;
+    height: auto !important;
+  }
+  .page { display: none !important; }
+  .page.active {
+    display: block !important;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
+    flex: none !important;
+  }
+  .page-content {
+    display: block !important;
+    padding: 16px 28px 32px !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    flex: none !important;
+    height: auto !important;
+  }
+  /* ── Document ── */
+  #print-header { display: block !important; }
+  .block { break-inside: avoid; page-break-inside: avoid; }
+  .cr-section { break-inside: avoid; page-break-inside: avoid; }
+  /* ── Print header itself ── */
+  #print-header { page-break-after: avoid; }
 }
 </style>
 
 </head>
 <body>
+
+<div id="print-header" style="display:none;margin-bottom:0;">
+  <div style="background:#1A3A5C;color:#fff;padding:12px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;">
+    <div style="font-family:Georgia,serif;font-style:italic;font-size:1.15rem;letter-spacing:-.01em;white-space:nowrap;">
+      <span style="color:#4A90D9">Rehab</span><span style="font-weight:900;font-style:normal;color:#fff">4</span><span style="color:#E74C3C">Perf</span>
+      <span style="font-size:.72rem;font-style:normal;opacity:.55;margin-left:10px;font-weight:400;">Bilan Clinique</span>
+    </div>
+    <div id="ph-meta" style="text-align:right;font-size:.75rem;color:rgba(255,255,255,.85);line-height:1.7;font-family:-apple-system,Helvetica Neue,sans-serif;"></div>
+  </div>
+  <div style="height:3px;background:linear-gradient(90deg,#2B5FA6,#4A90D9,#E74C3C);"></div>
+</div>
 
 <!-- ── SIDEBAR ──────────────────────────────────────────── -->
 
@@ -713,7 +766,7 @@ body {
   <span class="icon">📊</span> CR Tests Fonctionnels
 </button>
 <button class="nav-item" onclick="showPage('cr')" data-page="cr">
-  <span class="icon">📄</span> CR Patient
+  <span class="icon">📄</span> CR Complet
 </button>
 
   </nav>
@@ -870,6 +923,24 @@ body {
 </div>
 
 <div class="block">
+  <div class="block-header red">Break Tests — Force musculaire</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+    <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div>
+    <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+    <table class="test-table" style="margin:0;border-radius:0">
+      <thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
+      <tbody id="tb-ep-force-d"></tbody>
+    </table>
+    <table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)">
+      <thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
+      <tbody id="tb-ep-force-g"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="block">
   <div class="block-header grey">Tests Optionnels</div>
   <div class="form-grid single"><div class="field"><label>Tests complémentaires réalisés en fonction de la situation</label><textarea id="ep-opt" style="min-height:70px" placeholder="Ex: Hawkins-Kennedy modifié — positif, Test de Jobe — douleur 3/10…"></textarea></div></div>
 </div>
@@ -913,6 +984,14 @@ body {
 </div>
 
 <div class="block">
+  <div class="block-header red">Tests Musculaires Rachis</div>
+  <table class="test-table">
+    <thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
+    <tbody id="tb-ra-musc"></tbody>
+  </table>
+</div>
+
+<div class="block">
   <div class="block-header grey">Mobilité du Rachis</div>
   <div style="padding:12px 16px 4px;font-size:.78rem;font-weight:600;color:var(--text2)">CERVICALES</div>
   <div class="mobility-grid" id="mob-cerv"></div>
@@ -924,7 +1003,25 @@ body {
 
 <div class="block">
   <div class="block-header grey">Préférences directionnelles McKenzie</div>
-  <div class="form-grid single"><div class="field"><label>Préférences directionnelles (centralisation, périphérisation…)</label><textarea id="ra-mckenzie" style="min-height:48px" placeholder="Centralisation en extension…"></textarea></div></div>
+  <div class="form-grid single"><div class="field"><label>Préférences directionnelles (centralisation, périphérisation…)</label><textarea id="ra-mckenzie" style="min-height:80px" placeholder="Ex: centralisation en extension, périphérisation en flexion…&#10;Direction préférentielle : extension lombaire&#10;Centralisation complète en 3 directions"></textarea></div></div>
+</div>
+
+<div class="block">
+  <div class="block-header red">Break Tests — Force musculaire</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+    <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div>
+    <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+    <table class="test-table" style="margin:0;border-radius:0">
+      <thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
+      <tbody id="tb-ra-force-d"></tbody>
+    </table>
+    <table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)">
+      <thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
+      <tbody id="tb-ra-force-g"></tbody>
+    </table>
+  </div>
 </div>
 
 <div class="block">
@@ -964,6 +1061,25 @@ body {
     <div class="block"><div class="block-header red">Canal Inguinal</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ha-inguinal"></tbody></table></div>
     <div class="block"><div class="block-header red">Hanche</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ha-hanche"></tbody></table></div>
     </div>
+
+<div class="block">
+  <div class="block-header red">Break Tests — Force musculaire</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+    <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div>
+    <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+    <table class="test-table" style="margin:0;border-radius:0">
+      <thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
+      <tbody id="tb-ha-force-d"></tbody>
+    </table>
+    <table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)">
+      <thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
+      <tbody id="tb-ha-force-g"></tbody>
+    </table>
+  </div>
+</div>
+
     <div class="block">
       <div class="block-header grey">Tests Optionnels</div>
       <div class="form-grid single"><div class="field"><label>Tests complémentaires réalisés en fonction de la situation</label><textarea id="ha-opt" style="min-height:70px" placeholder="Ex: Test de log-roll — douleur antérieure D, DIRI — positif…"></textarea></div></div>
@@ -1049,6 +1165,43 @@ body {
 </div>
 
 <div class="block"><div class="block-header red">Tests Fonctionnels — Break Tests</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ge-fonc"></tbody></table></div>
+
+<div class="block">
+  <div class="block-header red">Break Test Genou — Force musculaire</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+    <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div>
+    <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+    <table class="test-table" style="margin:0;border-radius:0">
+      <thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
+      <tbody id="tb-ge-knee-d"></tbody>
+    </table>
+    <table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)">
+      <thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
+      <tbody id="tb-ge-knee-g"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="block">
+  <div class="block-header red">Break Test Hanche (genou) — Force musculaire</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+    <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div>
+    <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+    <table class="test-table" style="margin:0;border-radius:0">
+      <thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
+      <tbody id="tb-ge-hip-d"></tbody>
+    </table>
+    <table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)">
+      <thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
+      <tbody id="tb-ge-hip-g"></tbody>
+    </table>
+  </div>
+</div>
+
 <div class="block">
   <div class="block-header grey">Tests Optionnels</div>
   <div class="form-grid single"><div class="field"><label>Tests complémentaires réalisés en fonction de la situation</label><textarea id="ge-opt" style="min-height:70px" placeholder="Ex: Test de Dial — positif à 30° D, Test de compression tibiale — douleur médiale…"></textarea></div></div>
@@ -1875,10 +2028,11 @@ body {
   <div class="page-content">
     <div style="display:flex;gap:10px;margin-bottom:20px" class="no-print">
       <button class="print-btn" onclick="window.print()" style="display:flex;align-items:center;gap:8px;padding:10px 20px;background:var(--accent2);color:#fff;border:none;border-radius:var(--radius);font-family:var(--font-sans);font-size:.88rem;font-weight:500;cursor:pointer">🖨 Imprimer / PDF</button>
+      <button class="print-btn" onclick="exportBilanHTML('cr-tf')" style="display:flex;align-items:center;gap:8px;padding:10px 20px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);font-family:var(--font-sans);font-size:.88rem;font-weight:500;cursor:pointer">📥 Exporter HTML</button>
     </div>
     <div id="cr-tf-content"></div>
     <div style="margin-top:24px;padding-top:16px;border-top:2px solid var(--border);font-family:var(--font-serif);font-size:1rem;font-weight:700;color:var(--accent2)">
-      Antoine PERONNAUD — Athletik Lamarck<br><span style="font-size:.8rem;color:var(--text2);font-weight:400">N° AM : 757 099 486 · 06 89 63 75 28</span>
+      <span id="sig-tf-name">Antoine PERONNAUD — Athletik Lamarck</span><br><span id="sig-tf-sub" style="font-size:.8rem;color:var(--text2);font-weight:400">N° AM : 757 099 486 · 06 89 63 75 28</span>
     </div>
   </div>
 </div>
@@ -1888,16 +2042,17 @@ body {
 <div class="page" id="page-cr">
   <div class="page-header">
     <div class="page-icon">📄</div>
-    <div class="page-title">Compte-Rendu Patient</div>
+    <div class="page-title">CR Complet</div>
     <div class="page-subtitle">Synthèse automatique des données saisies — uniquement les éléments renseignés</div>
   </div>
   <div class="page-content">
     <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap" class="no-print">
       <button class="print-btn" onclick="window.print()">🖨 Imprimer / Exporter PDF</button>
+      <button class="print-btn" onclick="exportBilanHTML('cr')" style="background:var(--accent)">📥 Exporter HTML</button>
     </div>
     <div id="cr-content"></div>
     <div style="margin-top:32px;padding-top:20px;border-top:2px solid var(--border);font-family:var(--font-serif);font-size:1.1rem;color:var(--accent2)">
-      Antoine PERONNAUD — Athletik Lamarck<br><span style="font-size:.8rem;color:var(--text2);font-weight:400">N° AM : 757 099 486 · 06 89 63 75 28</span>
+      <span id="sig-cr-name">Antoine PERONNAUD — Athletik Lamarck</span><br><span id="sig-cr-sub" style="font-size:.8rem;color:var(--text2);font-weight:400">N° AM : 757 099 486 · 06 89 63 75 28</span>
     </div>
   </div>
 </div>
@@ -1943,6 +2098,16 @@ const TESTS = {
   'tb-ge-plicae':{type:'ortho',items:['Hugston Plicae Test']},
   'tb-ge-ext':  {type:'fonc',items:['Extension passive','Extension active sur table','Extension active en charge'],opts:['Validé','Pas validé','N/A']},
   'tb-ge-fonc': {type:'ortho',items:['Break test quadriceps','Break test ischio-jambiers','Break test ABD (sur le côté, jambe levée)','Break test ADD (sur le dos)']},
+  'tb-ge-knee-d':{type:'ortho',items:['Break test Quadriceps','Break test Ischio-jambiers']},
+  'tb-ge-knee-g':{type:'ortho',items:['Break test Quadriceps','Break test Ischio-jambiers']},
+  'tb-ge-hip-d': {type:'ortho',items:['Break test ABD hanche','Break test ADD hanche']},
+  'tb-ge-hip-g': {type:'ortho',items:['Break test ABD hanche','Break test ADD hanche']},
+  'tb-ep-force-d':{type:'ortho',items:['Break test Trapèze inférieur (Y)','Break test Dentelé antérieur','Break test R1','Break test R2','Break test Élévation ant. plan de la scap.','Break test Bear Hug (RI)']},
+  'tb-ep-force-g':{type:'ortho',items:['Break test Trapèze inférieur (Y)','Break test Dentelé antérieur','Break test R1','Break test R2','Break test Élévation ant. plan de la scap.','Break test Bear Hug (RI)']},
+  'tb-ra-force-d':{type:'ortho',items:['Break test Abdominaux (droits CE+CI)','Break test Obliques','Break test Extenseurs rachis']},
+  'tb-ra-force-g':{type:'ortho',items:['Break test Abdominaux (droits CE+CI)','Break test Obliques','Break test Extenseurs rachis']},
+  'tb-ha-force-d':{type:'ortho',items:['Break test Adducteurs','Break test Abdominaux (CE+CI + obliques)','Break test Fléchisseurs hanche','Break test Abduction hanche','Break test Rotation interne hanche','Break test Rotation externe hanche']},
+  'tb-ha-force-g':{type:'ortho',items:['Break test Adducteurs','Break test Abdominaux (CE+CI + obliques)','Break test Fléchisseurs hanche','Break test Abduction hanche','Break test Rotation interne hanche','Break test Rotation externe hanche']},
   'tb-pi-global':{type:'ortho',items:['Liberté articulaire globale','Flexion plantaire','Flexion dorsale']},
   'tb-pi-tt':   {type:'ortho',items:['Reverse antéro-latéral drawer test','Talar tilt test','Cisaillement']},
   'tb-pi-synd': {type:'ortho',items:['Kleiger','Fibular translation test','Tiroir talien transversal','Squeeze test']},
@@ -1950,8 +2115,8 @@ const TESTS = {
   'tb-pi-st':   {type:'ortho',items:['Varus / Valgus en flexion dorsale','Cisaillement en flexion dorsale']},
   'tb-pi-chopart':{type:'ortho',items:['Mobilisation Chopart','Neutral Heel Lateral Push Test']},
   'tb-pi-fonc': {type:'ortho',items:['Course interne mollet','Navicular Drop Test (mm)','Avant-pied - équilibre pointes de pied (step)','Médio-pied - équilibre foot bridge','1ère ligne - montée pointes + cale 30deg sous hallux','Équilibre classique global (yeux ouverts / yeux fermés)']},
-  'tb-pi-force-ca':{type:'ortho',items:['Flexion plantaire','Flexion dorsale','Inversion','Éversion']},
-  'tb-pi-force-cs':{type:'ortho',items:['Flexion plantaire','Flexion dorsale','Inversion','Éversion']},
+  'tb-pi-force-ca':{type:'ortho',items:['Flexion plantaire','Flexion dorsale','Inversion','Éversion','Break test Long Fléchisseur de l\'Hallux (LFH)']},
+  'tb-pi-force-cs':{type:'ortho',items:['Flexion plantaire','Flexion dorsale','Inversion','Éversion','Break test Long Fléchisseur de l\'Hallux (LFH)']},
 };
 
 const CRITERIA_REC = [
@@ -2013,8 +2178,43 @@ function init() {
   document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
   updateAll();
   loadFromStorage();
+  applyProfile(getProfile());
   showPage('infos');
 }
+
+// -- PROFILE ---------------------------------------------------
+function getProfile(){
+  try { return JSON.parse(localStorage.getItem('r4p-profile')||'{}'); } catch(e){ return {}; }
+}
+
+function applyProfile(p){
+  if(!p || (!p.prenom && !p.nom && !p.am && !p.tel)) return;
+  var name = ((p.prenom||'')+' '+(p.nom||'')).trim() || '—';
+  var cabinet = p.cabinet ? ' — '+p.cabinet : '';
+  var sub = [];
+  if(p.am) sub.push('N° AM : '+p.am);
+  if(p.tel) sub.push(p.tel);
+  var nameHtml = name+cabinet;
+  var subHtml  = sub.join(' · ');
+  var n1 = document.getElementById('sig-tf-name'); if(n1) n1.textContent = nameHtml;
+  var s1 = document.getElementById('sig-tf-sub');  if(s1) s1.textContent = subHtml;
+  var n2 = document.getElementById('sig-cr-name'); if(n2) n2.textContent = nameHtml;
+  var s2 = document.getElementById('sig-cr-sub');  if(s2) s2.textContent = subHtml;
+  // ph-meta (print header)
+  var phMeta = document.getElementById('ph-meta');
+  if(phMeta) {
+    var metaParts = [nameHtml];
+    if(subHtml) metaParts.push(subHtml);
+    phMeta.innerHTML = metaParts.join('<br>');
+  }
+}
+
+window.addEventListener('message', function(e){
+  if(e.data && e.data.type==='r4p-profile'){
+    try { localStorage.setItem('r4p-profile', JSON.stringify(e.data.profile)); } catch(ex){}
+    applyProfile(e.data.profile);
+  }
+});
 
 // -- NAV -------------------------------------------------------
 function showPage(id) {
@@ -2045,11 +2245,11 @@ function onTestChange(sel, tableId, idx) {
 
 function updateBadges() {
   const sections = {
-    'epaule': ['tb-ep-fonc','tb-ep-ortho'],
-    'rachis': ['tb-ra-cerv','tb-ra-lomb','tb-ra-musc'],
-    'hanche': ['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc'],
-    'genou':  ['tb-ge-global','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-fonc'],
-    'pied':   ['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-fonc'],
+    'epaule': ['tb-ep-fonc','tb-ep-ortho','tb-ep-force-d','tb-ep-force-g'],
+    'rachis': ['tb-ra-cerv','tb-ra-lomb','tb-ra-musc','tb-ra-force-d','tb-ra-force-g'],
+    'hanche': ['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-force-d','tb-ha-force-g'],
+    'genou':  ['tb-ge-global','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-fonc','tb-ge-knee-d','tb-ge-knee-g','tb-ge-hip-d','tb-ge-hip-g'],
+    'pied':   ['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-fonc','tb-pi-force-ca','tb-pi-force-cs'],
   };
   Object.entries(sections).forEach(([page, tables]) => {
     let pos = 0;
@@ -2401,11 +2601,11 @@ function buildCR() {
 
   // 2. Bilan ortho
   var orthoSections = [
-    { label:'EPAULE', fields:[['ep-type','Type'],['ep-marqueur','Marqueur']], tables:['tb-ep-instab','tb-ep-fonc','tb-ep-ortho'], concl:'ep-conclusion', opt:'ep-opt' },
-    { label:'RACHIS', fields:[['ra-marqueur','Marqueur'],['ra-mckenzie','McKenzie']], tables:['tb-ra-cerv','tb-ra-lomb','tb-ra-musc'], concl:'ra-conclusion', opt:'ra-opt' },
-    { label:'HANCHE', fields:[['ha-marqueur','Marqueur']], tables:['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc'], concl:'ha-conclusion', opt:'ha-opt' },
-    { label:'GENOU', fields:[['ge-marqueur','Marqueur']], tables:['tb-ge-global','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-fonc'], concl:'ge-conclusion', opt:'ge-opt' },
-    { label:'PIED / CHEVILLE', fields:[['pi-marqueur','Marqueur']], tables:['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-fonc'], concl:'pi-conclusion', opt:'pi-opt' },
+    { label:'EPAULE', fields:[['ep-type','Type'],['ep-marqueur','Marqueur']], tables:['tb-ep-instab','tb-ep-fonc','tb-ep-ortho','tb-ep-force-d','tb-ep-force-g'], concl:'ep-conclusion', opt:'ep-opt' },
+    { label:'RACHIS', fields:[['ra-marqueur','Marqueur'],['ra-mckenzie','McKenzie']], tables:['tb-ra-cerv','tb-ra-lomb','tb-ra-musc','tb-ra-force-d','tb-ra-force-g'], concl:'ra-conclusion', opt:'ra-opt' },
+    { label:'HANCHE', fields:[['ha-marqueur','Marqueur']], tables:['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-force-d','tb-ha-force-g'], concl:'ha-conclusion', opt:'ha-opt' },
+    { label:'GENOU', fields:[['ge-marqueur','Marqueur']], tables:['tb-ge-global','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-fonc','tb-ge-knee-d','tb-ge-knee-g','tb-ge-hip-d','tb-ge-hip-g'], concl:'ge-conclusion', opt:'ge-opt' },
+    { label:'PIED / CHEVILLE', fields:[['pi-marqueur','Marqueur']], tables:['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-fonc','tb-pi-force-ca','tb-pi-force-cs'], concl:'pi-conclusion', opt:'pi-opt' },
   ];
   var orthoHtml = '';
   for (var oi=0; oi<orthoSections.length; oi++) {
@@ -3220,6 +3420,66 @@ function calcUQYBT() {
       statEl.textContent = '-'; statEl.style.background = ''; statEl.style.color = '';
     }
   }
+}
+
+// -- EXPORT HTML -----------------------------------------------
+function exportBilanHTML(type) {
+  var p         = getProfile();
+  var praticien = ((p.prenom||'')+' '+(p.nom||'')).trim() || 'Praticien';
+  var cabinet   = p.cabinet || '';
+  var am        = p.am  || '';
+  var tel       = p.tel || '';
+  var email     = p.email || '';
+  var date      = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+
+  var iscrTF    = type === 'cr-tf';
+  var title     = iscrTF ? 'Compte-Rendu Tests Fonctionnels' : 'CR Complet';
+  var contentId = iscrTF ? 'cr-tf-content' : 'cr-content';
+
+  var nom    = ((document.getElementById('f-nom')||{}).value || '').toUpperCase();
+  var prenom = (document.getElementById('f-prenom') ||{}).value || '';
+  var dob    = (document.getElementById('f-dob')    ||{}).value || '';
+  var cote   = (document.getElementById('f-cote')   ||{}).value || '';
+  var patient = ((prenom+' '+nom).trim()) || '';
+  var age    = dob ? (new Date().getFullYear() - new Date(dob).getFullYear()) + ' ans' : '';
+
+  var contentEl = document.getElementById(contentId);
+  if (!contentEl) return;
+
+  var contentHTML = contentEl.innerHTML
+    .replace(/(<div class="cr-section">)(<h3>5\. Points)/g, '<div class="cr-section cr-alert">$2')
+    .replace(/(<div class="cr-section">)(<h3>2\. Bilan)/g, '<div class="cr-section cr-ortho">$2')
+    .replace(/(<div class="cr-section">)(<h3>[34]\. Tests)/g, '<div class="cr-section cr-tests">$2');
+
+  var css = `*{margin:0;padding:0;box-sizing:border-box}html{font-size:14px}body{font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;background:#F0F4F8;color:#1A1917;padding:0}.page-wrap{max-width:800px;margin:0 auto;padding:0 0 48px}.doc-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:14px 24px;background:#1A3A5C}.doc-logo{font-family:Georgia,serif;font-style:italic;font-size:1.1rem;color:#fff}.doc-logo .r{color:#4A90D9}.doc-logo .n{font-weight:900;font-style:normal}.doc-logo .p{color:#E74C3C}.doc-meta{text-align:right;font-size:.72rem;color:rgba(255,255,255,.8);line-height:1.8}.doc-meta strong{font-size:.82rem;color:#fff;display:block}.patient-card{background:#fff;margin:0;padding:20px 24px;border-bottom:1px solid #DDE3EC;display:flex;align-items:center;gap:18px}.patient-avatar{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#2B5FA6,#1A3A5C);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:700;flex-shrink:0;font-family:Georgia,serif}.patient-name{font-size:1.1rem;font-weight:700;color:#1A3A5C;margin-bottom:3px}.patient-sub{font-size:.8rem;color:#6B6860}.patient-badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.pat-badge{background:#EEF3FB;color:#2B5FA6;border-radius:20px;padding:2px 10px;font-size:.7rem;font-weight:700}.pat-badge.orange{background:#FEF3EB;color:#D4600A}.doc-date-bar{background:#F7F6F3;padding:8px 24px;font-size:.75rem;color:#6B6860;border-bottom:1px solid #E8E6E1}.doc-date-bar span{font-weight:600;color:#1A3A5C}.doc-body{padding:20px 24px 0}.block{display:none}.cr-section{background:#fff;border-radius:10px;margin-bottom:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08),0 0 0 1px rgba(0,0,0,.04)}.cr-section h3{padding:10px 16px;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;background:#1A3A5C;color:#fff;margin:0}.cr-ortho h3{background:#2D6A4F}.cr-tests h3{background:#2B5FA6}.cr-alert h3{background:#D4600A}.cr-item{display:flex;align-items:flex-start;gap:12px;padding:9px 16px;border-bottom:1px solid #F1F0ED;line-height:1.5}.cr-item:last-child{border-bottom:none}.cr-key{font-size:.78rem;font-weight:600;color:#6B6860;min-width:175px;flex-shrink:0;padding-top:2px}.cr-val{flex:1;font-size:.85rem;color:#1A1917;line-height:1.5}.cr-tag{display:inline-block;padding:2px 10px;border-radius:20px;font-size:.68rem;font-weight:700;white-space:nowrap;margin-left:8px;vertical-align:middle}.cr-tag.ok,.cr-tag.good{background:#E8F5EE;color:#2D6A4F}.cr-tag.warn{background:#FEF3EB;color:#D4600A}.cr-tag.bad{background:#FDECEA;color:#C0392B}.cr-alert .cr-item{padding:10px 16px;align-items:center;background:#FFF8F5}.cr-alert .cr-item:nth-child(odd){background:#fff}.cr-alert .cr-item>span:first-child{color:#D4600A;font-weight:700;font-size:1rem;flex-shrink:0}.cr-empty{padding:40px;text-align:center;color:#9D9B96;font-style:italic;font-size:.9rem}`;
+
+  var metaParts = [];
+  if(praticien) metaParts.push('<strong>'+(praticien+(cabinet?' — '+cabinet:''))+'</strong>');
+  var metaSub = [am?'N° AM : '+am:'', tel, email].filter(Boolean).join(' · ');
+  if(metaSub) metaParts.push(metaSub);
+
+  var initials = ((prenom[0]||'')+(nom[0]||'')).toUpperCase() || '?';
+  var badges = '';
+  if(cote) badges += '<span class="pat-badge">'+cote+'</span>';
+  if(age)  badges += '<span class="pat-badge">'+age+'</span>';
+  var bilanDate = (document.getElementById('f-date')||{}).value || '';
+  if(bilanDate) badges += '<span class="pat-badge orange">Bilan du '+bilanDate.split('-').reverse().join('/')+'</span>';
+
+  var html = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>'+title+(patient?' — '+patient:'')+'</title><style>'+css+'</style></head><body><div class="page-wrap">'
+    + '<div class="doc-header"><div class="doc-logo"><span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span></div><div class="doc-meta">'+metaParts.join('<br>')+'</div></div>'
+    + (patient ? '<div class="patient-card"><div class="patient-avatar">'+initials+'</div><div><div class="patient-name">'+patient+'</div>'+(badges?'<div class="patient-badges">'+badges+'</div>':'')+'</div></div>' : '')
+    + '<div class="doc-date-bar">Compte-rendu généré le <span>'+date+'</span></div>'
+    + '<div class="doc-body"><br>'+contentHTML+'</div>'
+    + '</div></body></html>';
+
+  var blob = new Blob([html], {type:'text/html;charset=utf-8'});
+  var blobUrl = URL.createObjectURL(blob);
+  var filename = title.replace(/\s+/g,'_')+(patient?'_'+patient.replace(/\s+/g,'_'):'')+'_'+date.replace(/\s/g,'-')+'.html';
+  var topDoc = (window.top||window).document;
+  var a = topDoc.createElement('a');
+  a.href = blobUrl; a.download = filename; a.style.display = 'none';
+  topDoc.body.appendChild(a); a.click();
+  setTimeout(function(){ topDoc.body.removeChild(a); URL.revokeObjectURL(blobUrl); }, 300);
 }
 
 // Auto-save on any change
