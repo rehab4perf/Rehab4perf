@@ -1351,7 +1351,7 @@ body {
       <div class="measure-stat" id="hop-stat">—</div>
     </div>
     <div class="measure-row" style="background:var(--surface2)">
-      <div class="measure-label" style="background:var(--surface2);font-size:.8rem;color:var(--text2)">Repère réception (80% côté sain) — auto</div>
+      <div class="measure-label" style="background:var(--surface2);font-size:.8rem;color:var(--text2)">Repère & Seuil RTS — auto</div>
       <div class="measure-stat" id="hop-repere80" style="background:var(--accent-l);color:var(--accent2);font-size:.9rem;grid-column:span 4">—</div>
     </div>
   </div>
@@ -1555,6 +1555,74 @@ body {
     <div style="background:var(--surface2);padding:8px 14px 10px">
       <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
       <textarea id="dj-obs-cs" placeholder="Ex: bonne absorption, posture symétrique…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- SIDE HOP TEST -->
+<div class="block">
+  <div class="block-header">Side Hop Test — Explosivité & Endurance</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+    <div style="background:var(--surface);padding:10px 14px">
+      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);margin-bottom:6px">Installation</div>
+      <div style="font-size:.78rem;color:var(--text);line-height:1.7">
+        <div>📐 2 bandes espacées de <strong>40 cm</strong> sur les extérieurs</div>
+        <div>🦶 Appui unipodal — bras libres</div>
+        <div>⏱ Durée : <strong>30 secondes</strong> par jambe</div>
+        <div>🔄 1 essai par jambe</div>
+      </div>
+    </div>
+    <div style="background:var(--surface2);padding:10px 14px">
+      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);margin-bottom:6px">Critères de validité</div>
+      <div style="font-size:.78rem;color:var(--text);line-height:1.7">
+        <div>⚠ Ne pas mordre l'espace entre les lignes</div>
+        <div>📊 Compter les sauts sur les <strong>15 premières sec</strong> (explosivité)</div>
+        <div>📊 Compter le total sur <strong>30 sec</strong> (endurance)</div>
+      </div>
+    </div>
+  </div>
+  <div style="padding:1px 0">
+    <div class="measure-row" style="background:var(--surface2)">
+      <div class="col-header">Mesure</div>
+      <div class="col-header">Côté atteint</div>
+      <div class="col-header">Côté sain</div>
+      <div class="col-header">LSI %</div>
+      <div class="col-header">Statut</div>
+    </div>
+    <div class="measure-row">
+      <div class="measure-label">Explosivité — Sauts / 15 sec</div>
+      <div class="measure-input"><input type="number" id="sh-exp-ca" step="1" placeholder="—" oninput="calcSideHop()"></div>
+      <div class="measure-input"><input type="number" id="sh-exp-cs" step="1" placeholder="—" oninput="calcSideHop()"></div>
+      <div class="measure-stat" id="sh-exp-lsi">—</div>
+      <div class="measure-stat" id="sh-exp-stat">—</div>
+    </div>
+    <div class="measure-row" style="background:var(--surface2)">
+      <div class="measure-label" style="background:var(--surface2)">Endurance — Sauts / 30 sec</div>
+      <div class="measure-input" style="background:var(--surface2)"><input type="number" id="sh-end-ca" step="1" placeholder="—" oninput="calcSideHop()" style="background:var(--surface2)"></div>
+      <div class="measure-input" style="background:var(--surface2)"><input type="number" id="sh-end-cs" step="1" placeholder="—" oninput="calcSideHop()" style="background:var(--surface2)"></div>
+      <div class="measure-stat" id="sh-end-lsi" style="background:var(--surface2)">—</div>
+      <div class="measure-stat" id="sh-end-stat" style="background:var(--surface2)">—</div>
+    </div>
+    <div class="measure-row">
+      <div class="measure-label" style="font-size:.78rem;color:var(--text2)">Seuil endurance RTS (auto)</div>
+      <div class="measure-stat" id="sh-end-seuil" style="grid-column:span 4;background:var(--accent-l);color:var(--accent2);font-size:.82rem">—</div>
+    </div>
+    <div class="measure-row" style="background:var(--surface2)">
+      <div class="measure-label" style="background:var(--surface2);font-size:.78rem;color:var(--text2)">Seuil explosivité RTS</div>
+      <div class="measure-stat" id="sh-exp-seuil" style="grid-column:span 4;background:var(--surface2);font-size:.82rem;color:var(--text2)">—</div>
+    </div>
+  </div>
+  <div style="padding:6px 14px 8px;font-size:.75rem;color:var(--text3)">
+    RTS Explosivité : ≥ 25 sauts/15s (F) · ≥ 30 sauts/15s (H) &nbsp;|&nbsp; RTS Endurance = 2 × sauts_15s_CS × 90% &nbsp;|&nbsp; LSI ≥ 90%
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+    <div style="background:var(--surface);padding:8px 14px 10px">
+      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
+      <textarea id="sh-obs-ca" placeholder="Ex: perte d'équilibre après 20s, manque de cadence…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
+    </div>
+    <div style="background:var(--surface2);padding:8px 14px 10px">
+      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
+      <textarea id="sh-obs-cs" placeholder="Ex: cadence maintenue, appui stable…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
     </div>
   </div>
 </div>
@@ -1774,6 +1842,23 @@ body {
 <!-- CKCUEST -->
 <div class="block">
   <div class="block-header">② CKCUEST Modifié — Closed Kinetic Chain Upper Extremity Stability Test</div>
+  <div style="padding:10px 14px 12px;background:var(--surface);border-bottom:1px solid var(--border)">
+    <div style="font-size:.74rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Envergure — C7 → Majeur (cm)</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+      <div>
+        <div style="font-size:.7rem;font-weight:600;color:var(--text2);margin-bottom:4px">Bras droit</div>
+        <input type="number" id="ckc-env-d" placeholder="—" oninput="calcCKC()" style="width:100%;font-family:inherit;font-size:.9rem;border:1.5px solid var(--border2);border-radius:5px;padding:5px 8px;outline:none;box-sizing:border-box">
+      </div>
+      <div>
+        <div style="font-size:.7rem;font-weight:600;color:var(--text2);margin-bottom:4px">Bras gauche</div>
+        <input type="number" id="ckc-env-g" placeholder="—" oninput="calcCKC()" style="width:100%;font-family:inherit;font-size:.9rem;border:1.5px solid var(--border2);border-radius:5px;padding:5px 8px;outline:none;box-sizing:border-box">
+      </div>
+      <div>
+        <div style="font-size:.7rem;font-weight:600;color:var(--text2);margin-bottom:4px">Espacement repères — auto</div>
+        <div id="ckc-espacement" style="padding:5px 10px;font-size:.92rem;font-weight:700;color:var(--accent2);background:var(--accent-l);border-radius:5px;text-align:center;min-height:30px;line-height:1.8">—</div>
+      </div>
+    </div>
+  </div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
       <div class="col-header">Mesure</div><div class="col-header">Essai 1</div><div class="col-header">Essai 2</div><div class="col-header">Essai 3</div><div class="col-header">Meilleur</div>
@@ -1799,11 +1884,14 @@ body {
     </div>
   </div>
   <div style="padding:8px 14px;background:var(--accent-l);font-size:12px;color:var(--accent2)">
-    <strong>Normes :</strong> Hommes ≥ 25 touches · Femmes ≥ 22,9 touches (Taylor et al., 2016)
+    <strong>Normes mCKCUEST :</strong> Hommes ≥ 30 touches/15s · Femmes ≥ 25 touches/15s — espacement individualisé = ½ envergure (C7→Majeur)
   </div>
   <div style="padding:10px 14px;font-size:11px;color:var(--text2);background:var(--surface2);border-top:1px solid var(--border)">
-    <strong>Protocole H :</strong> Position de pompes classique (sur les orteils). <strong>F :</strong> Position de pompes sur les genoux. Mains sous les épaules, 2 repères tape espacés de 91,4 cm. Toucher alternativement chaque repère avec la main opposée, le plus vite possible pendant 15s. 3 essais, repos 45s. Score : meilleure moyenne.
-    <strong>Seuils :</strong> Hommes ≥ 23 touches · Femmes ≥ 21 touches. En dessous → risque d'instabilité élevé (Taylor 2015). <strong>Validité :</strong> Corps en planche rigide, dos plat, pas de rotation excessive.
+    <strong>Protocole :</strong> Mesurer l'envergure C7→Majeur D et G. Espacement des repères tape = moyenne des 2 mesures ÷ 2 (½ envergure). Pieds écartés à la largeur des épaules.
+    <strong>Position H :</strong> pompes classiques (sur les orteils) · <strong>F :</strong> pompes sur les genoux.
+    1 essai de familiarisation puis 3 essais de 15 secondes, repos 45 s entre les essais.
+    Toucher alternativement chaque repère avec la main opposée le plus vite possible. Score = meilleur essai.
+    <strong>Invalide :</strong> rotation excessive du tronc, perte de gainage, main ne dépassant pas le repère.
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
@@ -2010,13 +2098,9 @@ body {
     <strong>Arrêt :</strong> Perte de la rétraction du menton OU tête touchant la main du thérapeute pendant plus d'1 seconde.
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
-    <div style="background:var(--surface);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
-      <textarea id="rf-flx-obs-ca" placeholder="Ex: tremblement précoce, perte rétraction à 18s…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
-    </div>
-    <div style="background:var(--surface2);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
-      <textarea id="rf-flx-obs-cs" placeholder="Ex: maintien propre, aucune compensation…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
+    <div style="background:var(--surface);padding:8px 14px 10px;grid-column:span 2">
+      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations</div>
+      <textarea id="rf-flx-obs" placeholder="Ex: tremblement précoce, perte rétraction à 18s, arrêt à 22s…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
     </div>
   </div>
 </div>
@@ -2046,11 +2130,7 @@ body {
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
       <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
-      <textarea id="rf-ext-obs-ca" placeholder="Ex: déviation > 5°, perte longueur menton à 14s…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
-    </div>
-    <div style="background:var(--surface2);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
-      <textarea id="rf-ext-obs-cs" placeholder="Ex: 20s atteint, position neutre maintenue…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
+      <textarea id="rf-ext-obs" placeholder="Ex: déviation > 5°, perte longueur menton à 14s, 20s atteint…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
     </div>
   </div>
 </div>
@@ -2082,13 +2162,9 @@ body {
     <strong>Arrêt :</strong> Déviation &gt; 4° (inclinomètre), perte rétraction menton, rotation cervicale, arrêt volontaire. Une seule correction verbale autorisée.
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
-    <div style="background:var(--surface);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Droit</div>
-      <textarea id="rf-lat-obs-d" placeholder="Ex: déviation > 4° à 85s, correction verbale donnée…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
-    </div>
-    <div style="background:var(--surface2);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Gauche</div>
-      <textarea id="rf-lat-obs-g" placeholder="Ex: position stable, ratio symétrique…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
+    <div style="background:var(--surface);padding:8px 14px 10px;grid-column:span 2">
+      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations</div>
+      <textarea id="rf-lat-obs" placeholder="Ex: D=85s ratio 71% ok / G=120s, déviation > 4° à 85s côté droit…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
     </div>
   </div>
 </div>
@@ -2124,11 +2200,7 @@ body {
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
       <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
-      <textarea id="rf-sor-obs-ca" placeholder="Ex: flexion lombaire à 140s, douleur lombaire basse…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
-    </div>
-    <div style="background:var(--surface2);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
-      <textarea id="rf-sor-obs-cs" placeholder="Ex: maintien propre jusqu'à 198s…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
+      <textarea id="rf-sor-obs" placeholder="Ex: flexion lombaire à 140s, douleur lombaire basse, maintien propre jusqu'à 198s…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
     </div>
   </div>
 </div>
@@ -2202,11 +2274,7 @@ body {
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
       <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
-      <textarea id="rf-pdslrt-obs-ca" placeholder="Ex: arrêt à 22s, douleur lombaire basse unilatérale…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
-    </div>
-    <div style="background:var(--surface2);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
-      <textarea id="rf-pdslrt-obs-cs" placeholder="Ex: 35s atteint, bonne rigidité lombaire…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
+      <textarea id="rf-pdslrt-obs" placeholder="Ex: arrêt à 22s, douleur lombaire basse, 35s atteint, bonne rigidité lombaire…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
     </div>
   </div>
 </div>
@@ -2564,11 +2632,21 @@ function calcLSI(key) {
   setLSI(document.getElementById(key + '-lsi'), document.getElementById(key + '-stat'), lsi);
   if (key === 'hop') {
     const repere = document.getElementById('hop-repere80');
+    var taille = parseFloat(document.getElementById('f-taille')?document.getElementById('f-taille').value:'');
+    var sexeH = document.getElementById('f-sexe')?document.getElementById('f-sexe').value:'';
+    var parts = [];
     if (!isNaN(cs) && cs > 0) {
-      var repere80Txt = '\uD83D\uDCB0 Repère réception : ' + (cs*0.8).toFixed(1) + ' cm (80% côté sain)';
-      if (!isNaN(ca) && ca > 0) repere80Txt += '   |   80% CA = ' + (ca*0.8).toFixed(1) + ' cm';
-      repere.textContent = repere80Txt;
-    } else repere.textContent = '-';
+      parts.push('📏 Repère 80% CS : ' + (cs*0.8).toFixed(1) + ' cm');
+      if (!isNaN(ca) && ca > 0) parts.push('80% CA : ' + (ca*0.8).toFixed(1) + ' cm');
+    }
+    if (!isNaN(taille) && taille > 0) {
+      var pctRTS = sexeH==='F' ? 0.80 : 0.90;
+      var labelRTS = sexeH==='F' ? '80% taille (F)' : sexeH==='H' ? '90% taille (H)' : '90% taille (H) / 80% taille (F)';
+      var seuilRTS = (taille * pctRTS).toFixed(1);
+      parts.push('🎯 Seuil RTS : ≥ ' + seuilRTS + ' cm (' + labelRTS + ')');
+      if (!isNaN(ca) && ca > 0) parts.push('CA : ' + ca + ' cm ' + (ca >= parseFloat(seuilRTS) ? '✓' : '✗'));
+    }
+    if (repere) repere.textContent = parts.length ? parts.join('   |   ') : '—';
   }
 }
 
@@ -3042,6 +3120,22 @@ function calcCKC() {
     return vals.reduce(function(a,b) { return a+b; }, 0) / vals.length;
   };
 
+  // Envergure → espacement repères
+  var envD = parseFloat(document.getElementById('ckc-env-d') ? document.getElementById('ckc-env-d').value : '');
+  var envG = parseFloat(document.getElementById('ckc-env-g') ? document.getElementById('ckc-env-g').value : '');
+  var elEsp = document.getElementById('ckc-espacement');
+  if (elEsp) {
+    if (!isNaN(envD) && !isNaN(envG)) {
+      elEsp.textContent = ((envD + envG) / 2).toFixed(1) + ' cm';
+    } else if (!isNaN(envD)) {
+      elEsp.textContent = (envD / 2).toFixed(1) + ' cm (D seul)';
+    } else if (!isNaN(envG)) {
+      elEsp.textContent = (envG / 2).toFixed(1) + ' cm (G seul)';
+    } else {
+      elEsp.textContent = '—';
+    }
+  }
+
   var bestCS = getBest('ckc-cs-1','ckc-cs-2','ckc-cs-3');
   var bestCA = getBest('ckc-ca-1','ckc-ca-2','ckc-ca-3');
 
@@ -3301,6 +3395,55 @@ function calcPlioq2() {
   setScore(elCS_stat, scores.cs);
 }
 
+function calcSideHop() {
+  var expCA = parseFloat(document.getElementById('sh-exp-ca')?document.getElementById('sh-exp-ca').value:'');
+  var expCS = parseFloat(document.getElementById('sh-exp-cs')?document.getElementById('sh-exp-cs').value:'');
+  var endCA = parseFloat(document.getElementById('sh-end-ca')?document.getElementById('sh-end-ca').value:'');
+  var endCS = parseFloat(document.getElementById('sh-end-cs')?document.getElementById('sh-end-cs').value:'');
+  var expLsiEl = document.getElementById('sh-exp-lsi');
+  var expStatEl = document.getElementById('sh-exp-stat');
+  var endLsiEl = document.getElementById('sh-end-lsi');
+  var endStatEl = document.getElementById('sh-end-stat');
+  var endSeuilEl = document.getElementById('sh-end-seuil');
+  var expSeuilEl = document.getElementById('sh-exp-seuil');
+  var sexe = document.getElementById('f-sexe')?document.getElementById('f-sexe').value:'';
+  // LSI explosivité
+  if (!isNaN(expCA) && !isNaN(expCS) && expCS > 0) {
+    var expLsi = expCA/expCS*100;
+    var expCls = expLsi>=90?'good':expLsi>=80?'warn':'bad';
+    setLSI(expLsiEl, expStatEl, expLsi);
+  } else {
+    if(expLsiEl) expLsiEl.textContent='—';
+    if(expStatEl) expStatEl.textContent='—';
+  }
+  // LSI endurance
+  if (!isNaN(endCA) && !isNaN(endCS) && endCS > 0) {
+    var endLsi = endCA/endCS*100;
+    setLSI(endLsiEl, endStatEl, endLsi);
+  } else {
+    if(endLsiEl) endLsiEl.textContent='—';
+    if(endStatEl) endStatEl.textContent='—';
+  }
+  // Seuil endurance RTS
+  if (!isNaN(expCS) && expCS > 0) {
+    var seuilEnd = (2 * expCS * 0.9).toFixed(0);
+    var seuilEndCA = !isNaN(expCA) && expCA > 0 ? (2 * expCA * 0.9).toFixed(0) : null;
+    var txt = '🎯 Seuil endurance RTS (CS) = 2 × ' + expCS + ' × 90% = ' + seuilEnd + ' sauts/30s';
+    if (seuilEndCA) txt += '   |   CA : seuil = ' + seuilEndCA + ' sauts/30s';
+    if (!isNaN(endCS)) txt += (!isNaN(endCS) && endCS >= parseFloat(seuilEnd) ? '   ✓ CS atteint' : '   ✗ CS non atteint');
+    if (endSeuilEl) endSeuilEl.textContent = txt;
+  } else {
+    if (endSeuilEl) endSeuilEl.textContent = '—';
+  }
+  // Seuil explosivité RTS
+  var seuilExp = sexe==='F'?25:30;
+  var seuilExpLabel = sexe==='F'?'≥ 25 (F)':sexe==='H'?'≥ 30 (H)':'≥ 25 (F) / ≥ 30 (H)';
+  var seuilExpTxt = '🎯 Seuil explosivité RTS : ' + seuilExpLabel + ' sauts/15s';
+  if (!isNaN(expCS)) seuilExpTxt += '   CS : ' + expCS + (expCS >= seuilExp ? ' ✓' : ' ✗');
+  if (!isNaN(expCA)) seuilExpTxt += '   CA : ' + expCA + (expCA >= seuilExp ? ' ✓' : ' ✗');
+  if (expSeuilEl) expSeuilEl.textContent = seuilExpTxt;
+}
+
 function buildCRTF() {
   var content = document.getElementById('cr-tf-content');
   if (!content) return;
@@ -3364,10 +3507,16 @@ function buildCRTF() {
   if (!isNaN(hopCA) || !isNaN(hopCS) || hopObs) {
     var hopLsi = (!isNaN(hopCA)&&!isNaN(hopCS)&&hopCS>0)?hopCA/hopCS*100:NaN;
     var hopCls = !isNaN(hopLsi)?(hopLsi>=90?'good':hopLsi>=80?'warn':'bad'):'';
-    if (!isNaN(hopCA) || !isNaN(hopCS)) hopHtml += tfRow('Single Hop Test - Distance maximale',
-      'CA=' + (isNaN(hopCA)?'-':hopCA) + ' cm   CS=' + (isNaN(hopCS)?'-':hopCS) + ' cm',
-      (!isNaN(hopLsi)?'LSI = ' + hopLsi.toFixed(1) + '%' : '') + (!isNaN(hopCS)&&hopCS>0?'   Repere 80% = ' + (hopCS*0.8).toFixed(1) + ' cm':''),
-      !isNaN(hopLsi)?(hopLsi>=90?' LSI >= 90%':' LSI < 90%'):'', hopCls);
+    if (!isNaN(hopCA) || !isNaN(hopCS)) {
+      var _hopTaille = parseFloat(document.getElementById('f-taille')?document.getElementById('f-taille').value:'');
+      var _hopSexe = document.getElementById('f-sexe')?document.getElementById('f-sexe').value:'';
+      var _hopPct = _hopSexe==='F'?0.80:0.90;
+      var _hopRTSlabel = _hopSexe==='F'?'Seuil RTS >= 80% taille (F)':_hopSexe==='H'?'Seuil RTS >= 90% taille (H)':'Seuil RTS >= 90% taille (H) / 80% (F)';
+      var _hopSub = (!isNaN(hopLsi)?'LSI = '+hopLsi.toFixed(1)+'%   ':'') + (!isNaN(hopCS)&&hopCS>0?'Repere 80% CS = '+(hopCS*0.8).toFixed(1)+' cm   ':'') + (!isNaN(_hopTaille)&&_hopTaille>0?_hopRTSlabel+' = '+(_hopTaille*_hopPct).toFixed(1)+' cm':'');
+      hopHtml += tfRow('Single Hop Test - Distance maximale',
+        'CA='+(isNaN(hopCA)?'-':hopCA)+' cm   CS='+(isNaN(hopCS)?'-':hopCS)+' cm',
+        _hopSub, !isNaN(hopLsi)?(hopLsi>=90?' LSI >= 90%':' LSI < 90%'):'', hopCls);
+    }
     if (hopObs) hopHtml += '<div style="margin:4px 0 8px;padding:6px 10px;background:var(--surface2);border-radius:5px;font-size:.82rem;color:var(--text2);font-style:italic">' + hopObs + '</div>';
   }
 
@@ -3482,8 +3631,37 @@ function buildCRTF() {
     if (djObs) djHtml += '<div style="margin:4px 0 8px;padding:6px 10px;background:var(--surface2);border-radius:5px;font-size:.82rem;color:var(--text2);font-style:italic">' + djObs + '</div>';
   }
 
+  // Side Hop Test
+  var shExpCA = parseFloat(document.getElementById('sh-exp-ca')?document.getElementById('sh-exp-ca').value:'');
+  var shExpCS = parseFloat(document.getElementById('sh-exp-cs')?document.getElementById('sh-exp-cs').value:'');
+  var shEndCA = parseFloat(document.getElementById('sh-end-ca')?document.getElementById('sh-end-ca').value:'');
+  var shEndCS = parseFloat(document.getElementById('sh-end-cs')?document.getElementById('sh-end-cs').value:'');
+  var shObsCA = (document.getElementById('sh-obs-ca')||{}).value||'';
+  var shObsCS = (document.getElementById('sh-obs-cs')||{}).value||'';
+  var shObs = (shObsCA?'CA : '+shObsCA:'')+(shObsCS?(shObsCA?' | ':'')+'CS : '+shObsCS:'');
+  var shHtml = '';
+  if (!isNaN(shExpCA)||!isNaN(shExpCS)||!isNaN(shEndCA)||!isNaN(shEndCS)||shObs) {
+    if (!isNaN(shExpCA)||!isNaN(shExpCS)) {
+      var shExpLsi = (!isNaN(shExpCA)&&!isNaN(shExpCS)&&shExpCS>0)?shExpCA/shExpCS*100:NaN;
+      var shExpCls = !isNaN(shExpLsi)?(shExpLsi>=90?'good':shExpLsi>=80?'warn':'bad'):'';
+      shHtml += tfRow('Side Hop - Explosivité (15s)',
+        'CA='+(!isNaN(shExpCA)?shExpCA:'-')+' sauts   CS='+(!isNaN(shExpCS)?shExpCS:'-')+' sauts'+(!isNaN(shExpLsi)?'   LSI='+shExpLsi.toFixed(1)+'%':''),
+        '', !isNaN(shExpLsi)?(shExpLsi>=90?' LSI >= 90%':' LSI < 90%'):'', shExpCls);
+    }
+    if (!isNaN(shEndCA)||!isNaN(shEndCS)) {
+      var shEndLsi = (!isNaN(shEndCA)&&!isNaN(shEndCS)&&shEndCS>0)?shEndCA/shEndCS*100:NaN;
+      var shEndCls = !isNaN(shEndLsi)?(shEndLsi>=90?'good':shEndLsi>=80?'warn':'bad'):'';
+      var shSeuilEnd = !isNaN(shExpCS)&&shExpCS>0?(2*shExpCS*0.9).toFixed(0)+' sauts/30s (2×CS_15s×90%)':'';
+      shHtml += tfRow('Side Hop - Endurance (30s)',
+        'CA='+(!isNaN(shEndCA)?shEndCA:'-')+' sauts   CS='+(!isNaN(shEndCS)?shEndCS:'-')+' sauts'+(!isNaN(shEndLsi)?'   LSI='+shEndLsi.toFixed(1)+'%':''),
+        shSeuilEnd ? 'Seuil endurance RTS = '+shSeuilEnd : '',
+        !isNaN(shEndLsi)?(shEndLsi>=90?' LSI >= 90%':' LSI < 90%'):'', shEndCls);
+    }
+    if (shObs) shHtml += '<div style="margin:4px 0 8px;padding:6px 10px;background:var(--surface2);border-radius:5px;font-size:.82rem;color:var(--text2);font-style:italic">'+shObs+'</div>';
+  }
+
   // Assemble MI section
-  var miHtml = slsHtml + hopHtml + recHtml + plioHtml + hrHtml + luHtml + djHtml;
+  var miHtml = slsHtml + hopHtml + recHtml + plioHtml + hrHtml + luHtml + djHtml + shHtml;
   addTFSection('Tests Fonctionnels - Membres Inférieurs', miHtml);
 
   // PSET
@@ -3539,24 +3717,24 @@ function buildCRTF() {
   var rachisHtml = '';
   if (!isNaN(flxV)) {
     rachisHtml += tfRow('Endurance Fléchisseurs Cervicaux', flxV + 's', 'Ref sujets sains ~39s   cervicalgiques ~24s', flxV>=39?' Normal':flxV>=24?' Limite':' Deficit', flxV>=39?'good':flxV>=24?'warn':'bad');
-    var _rffo = getObs('rf-flx-obs-ca','rf-flx-obs-cs'); if (_rffo) rachisHtml += obsDiv(_rffo);
+    var _rffo = (document.getElementById('rf-flx-obs')||{}).value||''; if (_rffo) rachisHtml += obsDiv(_rffo);
   }
   if (!isNaN(extV)) {
     rachisHtml += tfRow('Endurance Extenseurs Cervicaux', extV + 's', 'Seuil clinique : 20s', extV>=20?' OK':' Insuffisant', extV>=20?'good':'bad');
-    var _rfeo = getObs('rf-ext-obs-ca','rf-ext-obs-cs'); if (_rfeo) rachisHtml += obsDiv(_rfeo);
+    var _rfeo = (document.getElementById('rf-ext-obs')||{}).value||''; if (_rfeo) rachisHtml += obsDiv(_rfeo);
   }
   if (!isNaN(latD)&&!isNaN(latG)) {
     var latRatio = Math.min(latD,latG)/Math.max(latD,latG)*100;
     rachisHtml += tfRow('Endurance Latérale Cervicale (LNF)', 'D=' + latD + 's   G=' + latG + 's', 'Ratio = ' + latRatio.toFixed(1) + '% (seuil >= 70%)   Ref H~120s / F~90s', latRatio>=70?' Symétrie OK':' Asymétrie', latRatio>=70?'good':'warn');
-    var _rflo = getObs('rf-lat-obs-d','rf-lat-obs-g'); if (_rflo) rachisHtml += obsDiv(_rflo);
+    var _rflo = (document.getElementById('rf-lat-obs')||{}).value||''; if (_rflo) rachisHtml += obsDiv(_rflo);
   }
   if (!isNaN(sorV)) {
     rachisHtml += tfRow('Test de Sorensen', sorV + 's', 'Ref sains ~171-198s   seuil H < 176s = facteur risque', sorV>=198?' Facteur protecteur':sorV>=176?' Zone intermediaire':' Facteur de risque', sorV>=198?'good':sorV>=176?'warn':'bad');
-    var _rfso = getObs('rf-sor-obs-ca','rf-sor-obs-cs'); if (_rfso) rachisHtml += obsDiv(_rfso);
+    var _rfso = (document.getElementById('rf-sor-obs')||{}).value||''; if (_rfso) rachisHtml += obsDiv(_rfso);
   }
   if (!isNaN(pdslV)) {
     rachisHtml += tfRow('PDSLRT', pdslV + 's', 'Cut-off H=30s / F=29s (sensibilité 96-100%)', pdslV>=30?' OK':' Deficit', pdslV>=30?'good':'bad');
-    var _rfpo = getObs('rf-pdslrt-obs-ca','rf-pdslrt-obs-cs'); if (_rfpo) rachisHtml += obsDiv(_rfpo);
+    var _rfpo = (document.getElementById('rf-pdslrt-obs')||{}).value||''; if (_rfpo) rachisHtml += obsDiv(_rfpo);
   }
   addTFSection('Tests Fonctionnels - Rachis', rachisHtml);
 

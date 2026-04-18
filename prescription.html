@@ -477,6 +477,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   <div class="main-panel" id="mpanel-cal">
     <div class="main-header">
       <h1>Calendrier</h1>
+      <button class="btn btn-outline" onclick="openCycles()" style="white-space:nowrap;">🔄 Cycles</button>
     </div>
     <div class="cal-area">
       <div class="cal-nav">
@@ -1478,6 +1479,10 @@ renderLib('');
               <option value="3×15-20">3×15–20</option>
             </select>
           </div>
+          <div class="cycle-field">
+            <label>Date de début</label>
+            <input type="date" id="cycle-start">
+          </div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button onclick="addCycle()" style="padding:8px 18px;background:#1A3A5C;color:#fff;border:none;border-radius:6px;font-size:.82rem;font-weight:600;cursor:pointer;">+ Ajouter le cycle</button>
@@ -1528,7 +1533,8 @@ function addCycle(){
   var duree = parseInt(document.getElementById('cycle-duree').value)||3;
   var intensite = document.getElementById('cycle-intensite').value;
   var volume = document.getElementById('cycle-volume').value;
-  _cycles.push({id:'c'+Date.now(), nom:nom, duree:duree, intensite:intensite, volume:volume});
+  var startDate = document.getElementById('cycle-start').value || '';
+  _cycles.push({id:'c'+Date.now(), nom:nom, duree:duree, intensite:intensite, volume:volume, startDate:startDate});
   try { localStorage.setItem('r4p-cycles', JSON.stringify(_cycles)); } catch(e){}
   renderCycleTimeline();
 }
@@ -1795,9 +1801,24 @@ function renderCalendar() {
         +'<button class="cal-chip-del" onclick="event.stopPropagation();removeCalEvent(\''+ev.id+'\')">×</button>'
         +'</div>';
     }).join('');
+    // Cycles actifs pour ce jour
+    var cycleChips = '';
+    _cycles.forEach(function(cy) {
+      if (!cy.startDate) return;
+      var cyStart = new Date(cy.startDate);
+      cyStart.setHours(0,0,0,0);
+      var cyEnd = new Date(cyStart);
+      cyEnd.setDate(cyEnd.getDate() + cy.duree * 7);
+      if (cellDate >= cyStart && cellDate < cyEnd) {
+        var col = _cycleColor(cy.nom);
+        var weekNum = Math.floor((cellDate - cyStart) / (7*24*3600*1000)) + 1;
+        cycleChips += '<div style="font-size:.6rem;font-weight:700;color:#fff;background:'+col+';border-radius:3px;padding:1px 5px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+cy.nom+' — Semaine '+weekNum+'/'+cy.duree+'">'+cy.nom+' S'+weekNum+'</div>';
+      }
+    });
     cells += '<div class="cal-day'+(isToday?' today':'')+'" onclick="openCalPicker(\''+dateStr+'\')">'
       +'<div class="cal-day-num">'+d+'</div>'
       +chips
+      +cycleChips
       +'</div>';
   }
   grid.innerHTML = headers + cells;
