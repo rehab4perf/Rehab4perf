@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light only">
 <title>Rehab4Perf</title>
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 html, body { height:100%; overflow:hidden; background:#1A3A5C; }
@@ -31,7 +32,9 @@ html, body { height:100%; overflow:hidden; background:#1A3A5C; }
   margin-left:auto; font-size:.72rem; font-weight:500; line-height:1.4;
   text-align:right; white-space:nowrap; color:rgba(255,255,255,.75);
   cursor:pointer; font-family:-apple-system,'Helvetica Neue',sans-serif;
+  transition:color .15s;
 }
+.topnav-right:hover { color:#fff; }
 .frame-wrap { position:fixed; top:48px; left:0; right:0; bottom:0; }
 iframe { position:absolute; top:0; left:0; width:100%; height:100%; border:none; display:none; background:#fff; }
 iframe.active { display:block; }
@@ -46,12 +49,12 @@ iframe.active { display:block; }
   <div class="logo">
     <span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span>
   </div>
-  <button class="tab active" id="tab-bilan" onclick="show('bilan')">Bilan clinique</button>
-  <button class="tab" id="tab-outils" onclick="show('outils')">Outils</button>
-  <button class="tab" id="tab-prescription" onclick="show('prescription')">Prescription</button>
-  <div class="topnav-right" id="userDisplay" onclick="show('account')" title="Mon compte"></div>
+  <button class="tab active" id="tab-bilan"        onclick="show('bilan')">Bilan clinique</button>
+  <button class="tab"        id="tab-outils"       onclick="show('outils')">Outils</button>
+  <button class="tab"        id="tab-prescription" onclick="show('prescription')">Prescription</button>
+  <div class="topnav-right"  id="userDisplay"      onclick="show('account')" title="Mon compte">Mon compte</div>
 </div>
-<div class="frame-wrap">
+<div class="frame-wrap" id="frameWrap">
   <iframe id="frame-bilan"        src="bilan.html"        class="active"></iframe>
   <iframe id="frame-outils"       src="outils.html"       ></iframe>
   <iframe id="frame-prescription" src="prescription.html" ></iframe>
@@ -59,35 +62,81 @@ iframe.active { display:block; }
 </div>
 
 <script>
+/* ═══ REDIRECT TOKENS D'INVITATION / RÉCUPÉRATION ═══
+   Le lien Netlify pointe vers la racine avec un hash :
+   https://rehab4perf.netlify.app/#invite_token=XXX
+   On le capte ici et on redirige vers auth.html qui le traite. */
+(function() {
+  var h = window.location.hash || '';
+  if (h.indexOf('invite_token=') > -1 ||
+      h.indexOf('recovery_token=') > -1 ||
+      h.indexOf('confirmation_token=') > -1) {
+    window.location.replace('auth.html' + h);
+  }
+})();
+
+/* ═══ NAVIGATION ═══ */
 function show(id) {
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
   document.querySelectorAll('iframe').forEach(function(f){ f.classList.remove('active'); });
-  var tab = document.getElementById('tab-'+id);
-  if(tab) tab.classList.add('active');
-  document.getElementById('frame-'+id).classList.add('active');
+  var tab = document.getElementById('tab-' + id);
+  if (tab) tab.classList.add('active');
+  document.getElementById('frame-' + id).classList.add('active');
 }
 
-// Profil depuis localStorage
-(function(){
+/* ═══ TOPNAV — affichage immédiat depuis cache, puis mis à jour ═══ */
+function updateNavFromMeta(meta, email) {
+  var name = ((meta.prenom || '') + ' ' + (meta.nom || '')).trim()
+           || (email || '').split('@')[0] || '';
+  if (!name) return;
+  var cab = meta.cabinet || '';
+  var el  = document.getElementById('userDisplay');
+  el.innerHTML = name + (cab ? '<br><span style="font-size:.65rem;opacity:.7">' + cab + '</span>' : '');
+}
+
+// Affichage immédiat depuis cache localStorage
+(function() {
   try {
-    var p = JSON.parse(localStorage.getItem('r4p-profile')||'{}');
-    if(p.prenom || p.nom) {
-      var name = ((p.prenom||'')+' '+(p.nom||'')).trim();
-      var cab  = p.cabinet || 'Mon compte';
-      document.getElementById('userDisplay').innerHTML = name+'<br>'+cab;
-    }
-  } catch(e){}
+    var p = JSON.parse(localStorage.getItem('r4p-cached-profile') || '{}');
+    if (p.prenom || p.nom) updateNavFromMeta(p, p.email);
+  } catch(e) {}
 })();
 
-window.addEventListener('message', function(e){
-  if(e.data && e.data.type==='r4p-profile'){
+// Mise à jour via Netlify Identity (session active)
+netlifyIdentity.on('init', function(user) {
+  if (user) {
+    var meta = user.user_metadata || {};
+    updateNavFromMeta(meta, user.email);
+  }
+});
+netlifyIdentity.on('login', function(user) {
+  var meta = user.user_metadata || {};
+  updateNavFromMeta(meta, user.email);
+});
+
+/* ═══ MESSAGES DES IFRAMES ═══ */
+window.addEventListener('message', function(e) {
+  if (!e.data || !e.data.type) return;
+
+  // account.html a mis à jour le profil
+  if (e.data.type === 'r4p-profile-updated' && e.data.user) {
+    var meta = e.data.user.user_metadata || {};
     try {
-      var p = e.data.profile;
-      localStorage.setItem('r4p-profile', JSON.stringify(p));
-      var name = ((p.prenom||'')+' '+(p.nom||'')).trim();
-      var cab  = p.cabinet || 'Mon compte';
-      document.getElementById('userDisplay').innerHTML = name+'<br>'+cab;
-    } catch(ex){}
+      localStorage.setItem('r4p-cached-profile', JSON.stringify({
+        prenom: meta.prenom || '', nom: meta.nom || '',
+        cabinet: meta.cabinet || '', email: e.data.user.email || ''
+      }));
+    } catch(ex) {}
+    updateNavFromMeta(meta, e.data.user.email);
+  }
+
+  // account.html demande une déconnexion
+  if (e.data.type === 'r4p-logout-done') {
+    netlifyIdentity.logout();
+    try { localStorage.removeItem('r4p-cached-profile'); } catch(ex) {}
+    document.getElementById('userDisplay').textContent = 'Mon compte';
+    // Aller sur auth.html
+    window.location.replace('auth.html');
   }
 });
 </script>
