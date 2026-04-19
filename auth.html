@@ -340,19 +340,23 @@ function submitInvite() {
 
   setLoading('inviteBtn', true, 'Enregistrement…');
 
-  fetch(API + '/verify', {
+  /* GoTrue selon sa version lit "type" depuis le body JSON OU depuis
+     les paramètres URL — on envoie les deux pour être compatible. */
+  fetch(API + '/verify?type=invite&token=' + encodeURIComponent(_inviteToken), {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify({ type: 'invite', token: _inviteToken, password: pwd1 })
   })
   .then(function(r) {
-    if (!r.ok) return r.json().then(function(d) { throw new Error(d.msg || 'Token invalide ou expiré.'); });
+    if (!r.ok) return r.json().then(function(d) {
+      var msg = d.error_description || d.msg || d.error || 'Erreur inconnue.';
+      throw new Error(msg);
+    });
     return r.json();
   })
   .then(function(data) {
     saveSession(data);
     showMsg('inviteOk', '✓ Mot de passe créé !', 'ok');
-    // Pré-remplir l'email puis basculer vers la connexion
     setTimeout(function() {
       document.getElementById('loginEmail').value = (data.user || {}).email || '';
       var sub = document.getElementById('loginSub');
@@ -363,7 +367,9 @@ function submitInvite() {
   })
   .catch(function(err) {
     var msg = err.message;
-    if (/expired|invalid/i.test(msg)) msg += ' Demandez un nouvel email d\'invitation.';
+    if (/expired|invalid|not found|vérification/i.test(msg) || /requires a verification/i.test(msg)) {
+      msg = 'Lien expiré ou déjà utilisé. Demandez un nouvel email d\'invitation.';
+    }
     showMsg('inviteErr', msg, 'err');
     setLoading('inviteBtn', false, 'Créer le mot de passe');
   });
@@ -383,13 +389,16 @@ function submitRecovery() {
 
   setLoading('recoveryBtn', true, 'Réinitialisation…');
 
-  fetch(API + '/verify', {
+  fetch(API + '/verify?type=recovery&token=' + encodeURIComponent(_recoveryToken), {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify({ type: 'recovery', token: _recoveryToken, password: pwd1 })
   })
   .then(function(r) {
-    if (!r.ok) return r.json().then(function(d) { throw new Error(d.msg || 'Token invalide ou expiré.'); });
+    if (!r.ok) return r.json().then(function(d) {
+      var msg = d.error_description || d.msg || d.error || 'Erreur inconnue.';
+      throw new Error(msg);
+    });
     return r.json();
   })
   .then(function(data) {
@@ -403,7 +412,9 @@ function submitRecovery() {
   })
   .catch(function(err) {
     var msg = err.message;
-    if (/expired|invalid/i.test(msg)) msg += ' Demandez un nouvel email de réinitialisation.';
+    if (/expired|invalid|not found|requires a verification/i.test(msg)) {
+      msg = 'Lien expiré ou déjà utilisé. Demandez un nouvel email de réinitialisation.';
+    }
     showMsg('recoveryErr', msg, 'err');
     setLoading('recoveryBtn', false, 'Réinitialiser');
   });
