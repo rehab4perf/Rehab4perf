@@ -340,25 +340,51 @@ function submitInvite() {
 
   setLoading('inviteBtn', true, 'Enregistrement…');
 
-  /* GoTrue selon sa version lit "type" depuis le body JSON OU depuis
-     les paramètres URL — on envoie les deux pour être compatible. */
-  fetch(API + '/verify?type=invite&token=' + encodeURIComponent(_inviteToken), {
+  /* Flux en 2 étapes :
+     1. Vérifier l'invitation sans mot de passe (obtenir access_token)
+     2. Définir le mot de passe avec ce token via PUT /user */
+  fetch(API + '/verify', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ type: 'invite', token: _inviteToken, password: pwd1 })
+    body:    JSON.stringify({ type: 'invite', token: _inviteToken })
   })
   .then(function(r) {
     if (!r.ok) return r.json().then(function(d) {
-      var msg = d.error_description || d.msg || d.error || 'Erreur inconnue.';
-      throw new Error(msg);
+      throw new Error(d.error_description || d.msg || d.error || 'Erreur vérification (étape 1).');
     });
     return r.json();
   })
-  .then(function(data) {
-    saveSession(data);
+  .then(function(sessionData) {
+    /* Étape 2 : définir le mot de passe */
+    return fetch(API + '/user', {
+      method:  'PUT',
+      headers: {
+        'Authorization': 'Bearer ' + sessionData.access_token,
+        'Content-Type':  'application/json'
+      },
+      body: JSON.stringify({ password: pwd1 })
+    })
+    .then(function(r2) {
+      if (!r2.ok) return r2.json().then(function(d) {
+        throw new Error(d.error_description || d.msg || d.error || 'Erreur définition mot de passe (étape 2).');
+      });
+      return r2.json().then(function(updatedUser) {
+        var s = {
+          access_token:  sessionData.access_token,
+          refresh_token: sessionData.refresh_token || '',
+          expires_at:    Date.now() + ((sessionData.expires_in || 3600) * 1000),
+          user:          updatedUser
+        };
+        localStorage.setItem('r4p-session', JSON.stringify(s));
+        syncProfileCache(updatedUser);
+        return updatedUser;
+      });
+    });
+  })
+  .then(function(user) {
     showMsg('inviteOk', '✓ Mot de passe créé !', 'ok');
     setTimeout(function() {
-      document.getElementById('loginEmail').value = (data.user || {}).email || '';
+      document.getElementById('loginEmail').value = (user || {}).email || '';
       var sub = document.getElementById('loginSub');
       if (sub) sub.textContent = 'Mot de passe créé — connectez-vous maintenant.';
       showMsg('loginOk', '✓ Compte activé. Entrez votre mot de passe pour continuer.', 'ok');
@@ -366,11 +392,8 @@ function submitInvite() {
     }, 1400);
   })
   .catch(function(err) {
-    var msg = err.message;
-    if (/expired|invalid|not found|vérification/i.test(msg) || /requires a verification/i.test(msg)) {
-      msg = 'Lien expiré ou déjà utilisé. Demandez un nouvel email d\'invitation.';
-    }
-    showMsg('inviteErr', msg, 'err');
+    /* Afficher l'erreur brute de GoTrue — utile pour diagnostiquer */
+    showMsg('inviteErr', err.message, 'err');
     setLoading('inviteBtn', false, 'Créer le mot de passe');
   });
 }
