@@ -2958,9 +2958,18 @@ function buildCR() {
   var lsiStr = function(ca,cs) { return cs>0 ? ('LSI = ' + (ca/cs*100).toFixed(1) + '%') : ''; };
   var lsiCls2 = function(ca,cs) { if (!cs||cs<=0||isNaN(ca)||isNaN(cs)) return ''; var v=ca/cs*100; return v>=90?'good':v>=80?'warn':'bad'; };
   var statOf2 = function(cls) { return ({good:'OK',warn:'Acceptable',bad:'Insuffisant'}[cls])||''; };
+  var obsBlock = function(idCA, idCS) {
+    var ca = (document.getElementById(idCA)||{}).value||'';
+    var cs = (document.getElementById(idCS)||{}).value||'';
+    var txt = (ca?'CA : '+ca:'')+(cs?(ca?' | ':'')+'CS : '+cs:'');
+    return txt?'<div style="margin:2px 0 8px;padding:6px 10px;background:var(--surface2);border-radius:5px;font-size:.82rem;color:var(--text2);font-style:italic">'+txt+'</div>':'';
+  };
 
   if (!isNaN(slsCA)) tfHtml += crItem('SLS', 'CA=' + slsCA + ' rep.   CS=' + slsCS + ' rep.   ' + lsiStr(slsCA,slsCS), statOf2(lsiCls2(slsCA,slsCS)), lsiCls2(slsCA,slsCS));
+  tfHtml += obsBlock('sls-obs-ca','sls-obs-cs');
+
   if (!isNaN(hopCA)) tfHtml += crItem('Hop Test', 'CA=' + hopCA + 'cm   CS=' + hopCS + 'cm   ' + lsiStr(hopCA,hopCS) + '   Repere: ' + (hopCS*0.8).toFixed(1) + 'cm', statOf2(lsiCls2(hopCA,hopCS)), lsiCls2(hopCA,hopCS));
+  tfHtml += obsBlock('hop-obs-ca','hop-obs-cs');
 
   var scoreCA2 = 0;
   for (var ci=0; ci<CRITERIA_REC.length; ci++) {
@@ -2971,15 +2980,21 @@ function buildCR() {
     var rcls = scoreCA2>=7?'good':scoreCA2>=5?'warn':'bad';
     tfHtml += crItem('Reception', 'Score ' + scoreCA2 + '/8', statOf2(rcls), rcls);
   }
+  tfHtml += obsBlock('rec-obs-ca','rec-obs-cs');
 
   if (!isNaN(hrCA)) tfHtml += crItem('Heel Rise', 'CA=' + hrCA + '   CS=' + hrCS + '   ' + lsiStr(hrCA,hrCS), statOf2(lsiCls2(hrCA,hrCS)), lsiCls2(hrCA,hrCS));
+  tfHtml += obsBlock('hr-obs-ca','hr-obs-cs');
+
   if (!isNaN(luCA)) {
     var luDiff2 = Math.abs(luCA-luCS);
     var luBad2 = luCA<10 || luDiff2>1.5;
     var luLsi2 = luCS>0 ? luCA/luCS*100 : NaN;
     tfHtml += crItem('Lunge WBLT', 'CA=' + luCA + 'cm   CS=' + luCS + 'cm   Diff=' + luDiff2.toFixed(1) + 'cm   ' + lsiStr(luCA,luCS), luBad2 ? 'Deficit' : 'OK', luBad2 ? 'bad' : 'good');
   }
+  tfHtml += obsBlock('lu-obs-ca','lu-obs-cs');
+
   if (!isNaN(djHca)) tfHtml += crItem('Drop Jump H', 'CA=' + djHca + 'cm   CS=' + djHcs + 'cm   ' + lsiStr(djHca,djHcs), statOf2(lsiCls2(djHca,djHcs)), lsiCls2(djHca,djHcs));
+  tfHtml += obsBlock('dj-obs-ca','dj-obs-cs');
 
   var cfQCA = parseFloat(document.getElementById('cf-q-ca') ? document.getElementById('cf-q-ca').value : '');
   var cfQCS = parseFloat(document.getElementById('cf-q-cs') ? document.getElementById('cf-q-cs').value : '');
@@ -3007,10 +3022,15 @@ function buildCR() {
   var shrtEl2 = document.getElementById('shrt-lsi');
   var ulrtEl2 = document.getElementById('ulrt-lsi');
   if (!isNaN(psetCAv)) { var pl = psetCSv>0?(psetCAv/psetCSv*100):NaN; tfMsHtml += crItem('PSET', 'CA=' + psetCAv + '   CS=' + psetCSv + (!isNaN(pl)?'   LSI=' + pl.toFixed(1) + '%':''), statOf2(lsiCls2(psetCAv,psetCSv)), lsiCls2(psetCAv,psetCSv)); }
+  tfMsHtml += obsBlock('pset-obs-ca','pset-obs-cs');
   if (!isNaN(setCAv))  { var sl = setCSv>0?(setCAv/setCSv*100):NaN; tfMsHtml += crItem('Shoulder Endurance', 'CA=' + setCAv + '   CS=' + setCSv + (!isNaN(sl)?'   LSI=' + sl.toFixed(1) + '%':''), statOf2(lsiCls2(setCAv,setCSv)), lsiCls2(setCAv,setCSv)); }
+  tfMsHtml += obsBlock('set-obs-ca','set-obs-cs');
   if (ckcEl2 && ckcEl2.textContent && ckcEl2.textContent !== '-' && ckcEl2.textContent !== '\u2014' && ckcEl2.textContent !== '--') tfMsHtml += crItem('CKCUEST', ckcEl2.textContent, '', 'ok');
+  tfMsHtml += obsBlock('ckc-obs-ca','ckc-obs-cs');
   if (shrtEl2 && shrtEl2.textContent && shrtEl2.textContent !== '-' && shrtEl2.textContent !== '\u2014' && shrtEl2.textContent !== '--') tfMsHtml += crItem('Side Hold Rotation', shrtEl2.textContent, '', 'ok');
+  tfMsHtml += obsBlock('shrt-obs-ca','shrt-obs-cs');
   if (ulrtEl2 && ulrtEl2.textContent && ulrtEl2.textContent !== '-' && ulrtEl2.textContent !== '\u2014' && ulrtEl2.textContent !== '--') tfMsHtml += crItem('ULRT', ulrtEl2.textContent, '', 'ok');
+  tfMsHtml += obsBlock('ulrt-obs-ca','ulrt-obs-cs');
   addSection('4. Tests Fonctionnels - Membres Superieurs', tfMsHtml);
 
   // 5. Points a travailler
@@ -3502,7 +3522,9 @@ function buildCRTF() {
   var slsCA = parseFloat(document.getElementById('sls-ca')?document.getElementById('sls-ca').value:'');
   var slsCS = parseFloat(document.getElementById('sls-cs')?document.getElementById('sls-cs').value:'');
   var slsH  = document.getElementById('sls-hauteur')?document.getElementById('sls-hauteur').value:'';
-  var slsObs = document.getElementById('sls-obs')?document.getElementById('sls-obs').value:'';
+  var slsObsCA = (document.getElementById('sls-obs-ca')||{}).value||'';
+  var slsObsCS = (document.getElementById('sls-obs-cs')||{}).value||'';
+  var slsObs = (slsObsCA?'CA : '+slsObsCA:'')+(slsObsCS?(slsObsCA?' | ':'')+'CS : '+slsObsCS:'');
   var slsHtml = '';
   if (!isNaN(slsCA) || !isNaN(slsCS) || slsObs) {
     var slsLsi = (!isNaN(slsCA)&&!isNaN(slsCS)&&slsCS>0)?slsCA/slsCS*100:NaN;
