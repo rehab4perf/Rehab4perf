@@ -2918,11 +2918,19 @@ function buildCR() {
       for (var ri=0; ri<rows.length; ri++) {
         var selEl = rows[ri].querySelector('select');
         var noteEl = rows[ri].querySelector('input[type="text"]');
-        if (selEl && selEl.value === 'Positif') {
+        var val = selEl ? selEl.value : '';
+        var isPos = val === 'Positif' || val === 'Validé';
+        var isNeg = val === 'Négatif' || val === 'Pas validé';
+        if (selEl && (isPos || isNeg)) {
           var tname = cfg.items[ri] || '';
           var noteVal = noteEl ? noteEl.value : '';
           var isFonc = cfg.type === 'fonc';
-          secRows += crItem(tname, noteVal || '-', isFonc ? 'Positif favorable' : 'Positif signe clinique', isFonc ? 'ok' : 'bad');
+          var tag, tagCls;
+          if      (val === 'Validé')     { tag = 'Validé';     tagCls = 'ok'; }
+          else if (val === 'Pas validé') { tag = 'Pas validé'; tagCls = 'bad'; }
+          else if (isFonc)               { tag = val; tagCls = isPos ? 'ok'  : 'bad'; }
+          else                           { tag = val; tagCls = isPos ? 'bad' : 'ok';  }
+          secRows += crItem(tname, noteVal || '-', tag, tagCls);
         }
       }
     }
