@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light only">
 <title>Compte – Rehab4Perf</title>
-<!-- Widget pour lire l'état de connexion et obtenir le token frais -->
-<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 <style>
 :root {
   --navy:#1A3A5C; --accent:#2B5FA6; --accent2:#4A90D9;
@@ -90,9 +88,8 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
 </head>
 <body>
 
-<!-- Écran de secours si non connecté (ne devrait pas s'afficher
-     car Index.html redirige vers auth.html avant) -->
-<div class="login-screen" id="loginScreen">
+<!-- Écran de secours si non connecté -->
+<div class="login-screen" id="loginScreen" style="display:none">
   <div class="login-card">
     <div class="login-logo">
       <span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span>
@@ -195,36 +192,87 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
 /* ================================================================
    CONFIG
 ================================================================ */
-var IDENTITY_URL = 'https://rehab4perf.netlify.app/.netlify/identity';
-var _user = null;
+var API = 'https://rehab4perf.netlify.app/.netlify/identity';
 
 /* ================================================================
-   NETLIFY IDENTITY — init dans l'iframe
-   (même localStorage que Index.html → lit l'utilisateur connecté)
+   SESSION — lecture / écriture localStorage
 ================================================================ */
-netlifyIdentity.on('init', function(user) {
-  if (user) {
-    _user = user;
+function getSession() {
+  try { return JSON.parse(localStorage.getItem('r4p-session') || 'null'); } catch(e) { return null; }
+}
+
+function saveSessionData(apiResponse) {
+  var s = {
+    access_token:  apiResponse.access_token,
+    refresh_token: apiResponse.refresh_token || '',
+    expires_at:    Date.now() + ((apiResponse.expires_in || 3600) * 1000),
+    user:          apiResponse.user || {}
+  };
+  localStorage.setItem('r4p-session', JSON.stringify(s));
+  return s;
+}
+
+function syncProfileCache(user) {
+  var meta = user.user_metadata || {};
+  var p = {
+    prenom: meta.prenom || '', nom: meta.nom || '',
+    am: meta.am || '', tel: meta.tel || '',
+    cabinet: meta.cabinet || '', email: user.email || ''
+  };
+  try {
+    localStorage.setItem('r4p-cached-profile', JSON.stringify(p));
+    localStorage.setItem('r4p-profile',        JSON.stringify(p));
+  } catch(e) {}
+  return p;
+}
+
+/* ================================================================
+   TOKEN REFRESH — toujours avoir un token valide avant un appel API
+================================================================ */
+function withFreshToken(callback) {
+  var session = getSession();
+  if (!session || !session.access_token) { goToAuth(); return; }
+
+  var now = Date.now();
+  // Token encore valide (marge 60s)
+  if (now < session.expires_at - 60000) {
+    callback(session.access_token);
+    return;
+  }
+  // Besoin d'un refresh
+  if (!session.refresh_token) { goToAuth(); return; }
+
+  fetch(API + '/token?grant_type=refresh_token', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ refresh_token: session.refresh_token })
+  })
+  .then(function(r) {
+    if (!r.ok) throw new Error('Refresh failed');
+    return r.json();
+  })
+  .then(function(data) {
+    var s = saveSessionData(data);
+    callback(s.access_token);
+  })
+  .catch(function() {
+    localStorage.removeItem('r4p-session');
+    goToAuth();
+  });
+}
+
+/* ================================================================
+   INITIALISATION — afficher l'écran adapté
+================================================================ */
+(function init() {
+  var session = getSession();
+  if (session && session.access_token) {
+    var user = session.user || {};
     showAccount(user);
-    notifyParent(user);
   } else {
-    // Normalement impossible si Index.html a bien redirigé les non-connectés
     showLogin();
   }
-});
-
-netlifyIdentity.on('login', function(user) {
-  // Edge case : reconnexion depuis l'iframe
-  _user = user;
-  netlifyIdentity.close();
-  showAccount(user);
-  notifyParent(user);
-});
-
-netlifyIdentity.on('logout', function() {
-  _user = null;
-  showLogin();
-});
+})();
 
 /* ================================================================
    AFFICHAGE
@@ -261,87 +309,114 @@ function showAccount(user) {
    ACTIONS
 ================================================================ */
 
-/* Redirige la page principale (sortir de l'iframe) vers auth.html */
+/* Redirige la page principale vers auth.html */
 function goToAuth() {
   window.parent.location.replace('auth.html');
 }
 
-/* Informe le parent de la mise à jour du profil (topnav) */
-function notifyParent(user) {
-  window.parent.postMessage({ type: 'r4p-profile-updated', user: user }, '*');
+/* Informe le parent de la mise à jour du profil */
+function notifyParent(profile) {
+  window.parent.postMessage({ type: 'r4p-profile-updated', profile: profile }, '*');
 }
 
 /* Déconnexion */
 function doLogout() {
-  netlifyIdentity.logout();
-  // Notifie le parent → celui-ci appelle netlifyIdentity.logout() aussi
-  // puis redirige vers auth.html via l'event 'logout'
-  window.parent.postMessage({ type: 'r4p-logout-done' }, '*');
+  var session = getSession();
+  var token   = session && session.access_token;
+
+  // Appel GoTrue /logout (best effort, on nettoie même si ça échoue)
+  var logoutDone = function() {
+    try {
+      localStorage.removeItem('r4p-session');
+      localStorage.removeItem('r4p-cached-profile');
+      localStorage.removeItem('r4p-profile');
+    } catch(e) {}
+    window.parent.postMessage({ type: 'r4p-logout-done' }, '*');
+  };
+
+  if (token) {
+    fetch(API + '/logout', {
+      method:  'POST',
+      headers: { 'Authorization': 'Bearer ' + token }
+    })
+    .then(logoutDone)
+    .catch(logoutDone);
+  } else {
+    logoutDone();
+  }
 }
 
-/* Envoi d'un email de réinitialisation de mot de passe */
+/* Envoi email de réinitialisation */
 function sendPasswordReset() {
-  var email = (_user && _user.email) || document.getElementById('fieldEmail').value.trim();
+  var session = getSession();
+  var email   = (session && session.user && session.user.email)
+              || document.getElementById('fieldEmail').value.trim();
   if (!email) { alert('Email introuvable.'); return; }
-  fetch(IDENTITY_URL + '/recover', {
-    method: 'POST',
+
+  fetch(API + '/recover', {
+    method:  'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: email })
+    body:    JSON.stringify({ email: email })
   })
   .then(function() {
     alert('✓ Email de réinitialisation envoyé à ' + email + '\nCliquez sur le lien reçu pour définir un nouveau mot de passe.');
   })
   .catch(function(err) {
-    alert('Erreur lors de l\'envoi : ' + err.message);
+    alert('Erreur lors de l\'envoi. Vérifiez votre connexion.');
   });
 }
 
-/* Sauvegarde du profil via l'API Netlify Identity */
+/* Sauvegarde du profil via l'API GoTrue */
 function saveProfile() {
-  var currentUser = netlifyIdentity.currentUser();
-  if (!currentUser) { goToAuth(); return; }
-  var token = (currentUser.token || {}).access_token || '';
-
-  var prenom  = document.getElementById('fieldPrenom').value.trim();
-  var nom     = document.getElementById('fieldNom').value.trim();
-  var am      = document.getElementById('fieldAM').value.trim();
-  var tel     = document.getElementById('fieldTel').value.trim();
-  var cabinet = document.getElementById('fieldCabinet').value.trim();
-
   var btn = document.getElementById('saveBtn');
   btn.disabled = true; btn.textContent = 'Enregistrement…';
   document.getElementById('saveStatus').style.display = 'none';
   document.getElementById('saveError').style.display  = 'none';
 
-  fetch(IDENTITY_URL + '/user', {
-    method: 'PUT',
-    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ data: { prenom: prenom, nom: nom, am: am, tel: tel, cabinet: cabinet } })
-  })
-  .then(function(r) {
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    return r.json();
-  })
-  .then(function(updatedUser) {
-    _user = updatedUser;
-    showAccount(updatedUser);
-    notifyParent(updatedUser);
-    var s = document.getElementById('saveStatus');
-    s.style.display = 'inline';
-    setTimeout(function() { s.style.display = 'none'; }, 3000);
-  })
-  .catch(function(err) {
-    console.error('saveProfile:', err);
-    document.getElementById('saveError').style.display = 'inline';
-    setTimeout(function() { document.getElementById('saveError').style.display = 'none'; }, 4000);
-  })
-  .finally(function() {
-    btn.disabled = false; btn.textContent = 'Enregistrer';
+  withFreshToken(function(token) {
+    var prenom  = document.getElementById('fieldPrenom').value.trim();
+    var nom     = document.getElementById('fieldNom').value.trim();
+    var am      = document.getElementById('fieldAM').value.trim();
+    var tel     = document.getElementById('fieldTel').value.trim();
+    var cabinet = document.getElementById('fieldCabinet').value.trim();
+
+    fetch(API + '/user', {
+      method:  'PUT',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ data: { prenom: prenom, nom: nom, am: am, tel: tel, cabinet: cabinet } })
+    })
+    .then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function(updatedUser) {
+      // Mettre à jour la session locale avec les nouvelles données
+      var session = getSession();
+      if (session) {
+        session.user = updatedUser;
+        localStorage.setItem('r4p-session', JSON.stringify(session));
+      }
+      // Synchroniser les caches profil
+      var profile = syncProfileCache(updatedUser);
+      // Rafraîchir l'affichage
+      showAccount(updatedUser);
+      // Notifier le parent
+      notifyParent(profile);
+      // Feedback visuel
+      var s = document.getElementById('saveStatus');
+      s.style.display = 'inline';
+      setTimeout(function() { s.style.display = 'none'; }, 3000);
+    })
+    .catch(function(err) {
+      console.error('saveProfile:', err);
+      document.getElementById('saveError').style.display = 'inline';
+      setTimeout(function() { document.getElementById('saveError').style.display = 'none'; }, 4000);
+    })
+    .finally(function() {
+      btn.disabled = false; btn.textContent = 'Enregistrer';
+    });
   });
 }
-
-/* Init par défaut */
-showLogin();
 </script>
 </body>
 </html>

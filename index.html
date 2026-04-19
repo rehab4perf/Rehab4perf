@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light only">
 <title>Rehab4Perf</title>
-<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 html, body { height:100%; overflow:hidden; background:#1A3A5C; }
@@ -68,10 +67,19 @@ iframe.active { display:block; }
    On le capte ici et on redirige vers auth.html qui le traite. */
 (function() {
   var h = window.location.hash || '';
-  if (h.indexOf('invite_token=') > -1 ||
-      h.indexOf('recovery_token=') > -1 ||
-      h.indexOf('confirmation_token=') > -1) {
+  if (h.indexOf('invite_token=')        > -1 ||
+      h.indexOf('recovery_token=')      > -1 ||
+      h.indexOf('confirmation_token=')  > -1) {
     window.location.replace('auth.html' + h);
+    return;
+  }
+
+  /* ═══ VÉRIFICATION SESSION ═══
+     Si pas de session valide → auth.html */
+  var session = null;
+  try { session = JSON.parse(localStorage.getItem('r4p-session') || 'null'); } catch(e) {}
+  if (!session || !session.access_token) {
+    window.location.replace('auth.html');
   }
 })();
 
@@ -84,71 +92,84 @@ function show(id) {
   document.getElementById('frame-' + id).classList.add('active');
 }
 
-/* ═══ TOPNAV — affichage immédiat depuis cache, puis mis à jour ═══ */
-function updateNavFromMeta(meta, email) {
-  var name = ((meta.prenom || '') + ' ' + (meta.nom || '')).trim()
-           || (email || '').split('@')[0] || '';
+/* ═══ TOPNAV — affichage du nom utilisateur ═══ */
+function updateNavFromProfile(profile) {
+  var name = ((profile.prenom || '') + ' ' + (profile.nom || '')).trim()
+           || (profile.email || '').split('@')[0] || '';
   if (!name) return;
-  var cab = meta.cabinet || '';
+  var cab = profile.cabinet || '';
   var el  = document.getElementById('userDisplay');
   el.innerHTML = name + (cab ? '<br><span style="font-size:.65rem;opacity:.7">' + cab + '</span>' : '');
 }
 
-// Affichage immédiat depuis cache localStorage
+// Affichage immédiat depuis le cache localStorage
 (function() {
   try {
+    // Essayer r4p-session en priorité
+    var s = JSON.parse(localStorage.getItem('r4p-session') || 'null');
+    if (s && s.user) {
+      var meta = s.user.user_metadata || {};
+      updateNavFromProfile({
+        prenom: meta.prenom || '', nom: meta.nom || '',
+        cabinet: meta.cabinet || '', email: s.user.email || ''
+      });
+      return;
+    }
+    // Fallback sur le cache profil
     var p = JSON.parse(localStorage.getItem('r4p-cached-profile') || '{}');
-    if (p.prenom || p.nom) updateNavFromMeta(p, p.email);
+    if (p.prenom || p.nom) updateNavFromProfile(p);
   } catch(e) {}
 })();
 
-// Mise à jour via Netlify Identity (session active)
-netlifyIdentity.on('init', function(user) {
-  if (user) {
-    var meta = user.user_metadata || {};
-    updateNavFromMeta(meta, user.email);
-    // Propager le profil à bilan.html au chargement
-    var profileData = { prenom: meta.prenom||'', nom: meta.nom||'', cabinet: meta.cabinet||'', email: user.email||'', am: meta.am||'', tel: meta.tel||'' };
-    try { localStorage.setItem('r4p-profile', JSON.stringify(profileData)); localStorage.setItem('r4p-cached-profile', JSON.stringify(profileData)); } catch(ex) {}
-    setTimeout(function() {
-      var bf = document.getElementById('frame-bilan');
-      if (bf && bf.contentWindow) bf.contentWindow.postMessage({type:'r4p-profile', profile: profileData}, '*');
-    }, 500);
-  }
+// Propager le profil initial à bilan.html après chargement de l'iframe
+window.addEventListener('load', function() {
+  setTimeout(function() { propagateProfileToBilan(); }, 600);
 });
-netlifyIdentity.on('login', function(user) {
-  var meta = user.user_metadata || {};
-  updateNavFromMeta(meta, user.email);
-});
+
+function propagateProfileToBilan() {
+  try {
+    var s = JSON.parse(localStorage.getItem('r4p-session') || 'null');
+    if (!s || !s.user) return;
+    var meta = s.user.user_metadata || {};
+    var profileData = {
+      prenom: meta.prenom || '', nom: meta.nom || '',
+      cabinet: meta.cabinet || '', email: s.user.email || '',
+      am: meta.am || '', tel: meta.tel || ''
+    };
+    var bf = document.getElementById('frame-bilan');
+    if (bf && bf.contentWindow) {
+      bf.contentWindow.postMessage({ type: 'r4p-profile', profile: profileData }, '*');
+    }
+  } catch(e) {}
+}
 
 /* ═══ MESSAGES DES IFRAMES ═══ */
 window.addEventListener('message', function(e) {
   if (!e.data || !e.data.type) return;
 
   // account.html a mis à jour le profil
-  if (e.data.type === 'r4p-profile-updated' && e.data.user) {
-    var meta = e.data.user.user_metadata || {};
-    var profileData = {
-      prenom: meta.prenom || '', nom: meta.nom || '',
-      cabinet: meta.cabinet || '', email: e.data.user.email || '',
-      am: meta.am || '', tel: meta.tel || ''
-    };
+  if (e.data.type === 'r4p-profile-updated' && e.data.profile) {
+    var profile = e.data.profile;
+    updateNavFromProfile(profile);
+    // Mettre à jour les caches
     try {
-      localStorage.setItem('r4p-cached-profile', JSON.stringify(profileData));
-      localStorage.setItem('r4p-profile', JSON.stringify(profileData));
+      localStorage.setItem('r4p-cached-profile', JSON.stringify(profile));
+      localStorage.setItem('r4p-profile',        JSON.stringify(profile));
     } catch(ex) {}
-    updateNavFromMeta(meta, e.data.user.email);
-    // Propager le profil à bilan.html
+    // Propager à bilan.html
     var bf = document.getElementById('frame-bilan');
-    if (bf && bf.contentWindow) bf.contentWindow.postMessage({type:'r4p-profile', profile: profileData}, '*');
+    if (bf && bf.contentWindow) {
+      bf.contentWindow.postMessage({ type: 'r4p-profile', profile: profile }, '*');
+    }
   }
 
   // account.html demande une déconnexion
   if (e.data.type === 'r4p-logout-done') {
-    netlifyIdentity.logout();
-    try { localStorage.removeItem('r4p-cached-profile'); } catch(ex) {}
-    document.getElementById('userDisplay').textContent = 'Mon compte';
-    // Aller sur auth.html
+    try {
+      localStorage.removeItem('r4p-session');
+      localStorage.removeItem('r4p-cached-profile');
+      localStorage.removeItem('r4p-profile');
+    } catch(ex) {}
     window.location.replace('auth.html');
   }
 });

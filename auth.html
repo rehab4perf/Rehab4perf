@@ -5,334 +5,433 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light only">
 <title>Connexion – Rehab4Perf</title>
-<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 <style>
 :root {
   --navy:#1A3A5C; --accent:#2B5FA6; --accent2:#4A90D9; --red:#E74C3C;
   --green:#1a7a3a; --green-l:#eaf7ee;
-  --surface:#fff; --muted:#6b7a8d; --border:#d8e0eb; --bg:#EEF2F7;
+  --muted:#6b7a8d; --border:#d8e0eb;
 }
-*{margin:0;padding:0;box-sizing:border-box;}
-html,body{height:100%;font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;color:#1a2433;}
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; font-family:-apple-system,'Helvetica Neue',Arial,sans-serif; color:#1a2433; }
 
-/* ── PAGE ── */
-.page{
+.page {
   min-height:100vh; display:flex; flex-direction:column;
   align-items:center; justify-content:center; padding:24px;
   background:linear-gradient(150deg,#1A3A5C 0%,#2260a8 55%,#4A90D9 100%);
 }
-
-/* ── CARD ── */
-.card{
-  background:var(--surface); border-radius:18px;
+.card {
+  background:#fff; border-radius:18px;
   box-shadow:0 24px 64px rgba(0,0,0,.28);
-  padding:40px 36px 34px; max-width:420px; width:100%;
+  padding:36px 32px 30px; max-width:400px; width:100%;
 }
 
-/* ── LOGO ── */
-.logo{font-family:Georgia,serif;font-style:italic;font-size:2rem;text-align:center;margin-bottom:5px;}
-.logo .r{color:var(--accent2);}
-.logo .n{color:var(--navy);font-weight:900;font-style:normal;}
-.logo .p{color:var(--red);}
-.tagline{font-size:.78rem;color:var(--muted);text-align:center;margin-bottom:28px;line-height:1.5;}
+/* Logo */
+.logo { font-family:Georgia,serif; font-style:italic; font-size:1.9rem; text-align:center; margin-bottom:4px; }
+.logo .r { color:var(--accent2); }
+.logo .n { color:var(--navy); font-weight:900; font-style:normal; }
+.logo .p { color:var(--red); }
+.tagline { font-size:.75rem; color:var(--muted); text-align:center; margin-bottom:26px; }
 
-/* ── SECTIONS ── */
-.section{display:none;}
-.section.active{display:block;}
+/* Sections */
+.sec { display:none; }
+.sec.on { display:block; }
 
-/* ── BOUTON PRINCIPAL ── */
-.btn-main{
-  width:100%;padding:13px;background:var(--accent);color:#fff;
-  border:none;border-radius:9px;font-size:.92rem;font-weight:700;
-  cursor:pointer;transition:background .18s;font-family:inherit;
-  display:flex;align-items:center;justify-content:center;gap:9px;
+/* Titre de section */
+.sec-title { font-size:.95rem; font-weight:700; color:var(--navy); text-align:center; margin-bottom:5px; }
+.sec-sub   { font-size:.76rem; color:var(--muted); text-align:center; margin-bottom:20px; line-height:1.5; }
+
+/* Champs */
+.field { display:flex; flex-direction:column; gap:5px; margin-bottom:14px; }
+.field label { font-size:.68rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+.field input {
+  padding:10px 12px; border:1.5px solid var(--border); border-radius:8px;
+  font-size:.88rem; color:#1a2433; outline:none; font-family:inherit;
+  transition:border-color .15s, box-shadow .15s;
 }
-.btn-main:hover{background:var(--navy);}
-.btn-main:disabled{opacity:.6;cursor:not-allowed;}
+.field input:focus { border-color:var(--accent2); box-shadow:0 0 0 3px rgba(74,144,217,.12); }
 
-/* ── FORMULAIRE MOT DE PASSE ── */
-.pwd-title{
-  font-size:1rem;font-weight:700;color:var(--navy);
-  margin-bottom:6px;text-align:center;
-}
-.pwd-sub{font-size:.78rem;color:var(--muted);text-align:center;margin-bottom:22px;line-height:1.5;}
+/* Indicateur force */
+.strength-bar { height:3px; border-radius:2px; background:var(--border); margin-top:5px; }
+.strength-bar span { display:block; height:100%; border-radius:2px; width:0; transition:width .3s, background .3s; }
 
-.field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
-.field label{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
-.field input{
-  padding:9px 12px;border:1.5px solid var(--border);border-radius:7px;
-  font-size:.88rem;color:#1a2433;outline:none;font-family:inherit;
-  transition:border-color .15s;
+/* Bouton principal */
+.btn {
+  width:100%; padding:12px; border:none; border-radius:9px;
+  font-size:.9rem; font-weight:700; cursor:pointer;
+  font-family:inherit; transition:background .18s, transform .1s;
+  display:flex; align-items:center; justify-content:center; gap:8px;
 }
-.field input:focus{border-color:var(--accent2);}
+.btn:active { transform:scale(.98); }
+.btn:disabled { opacity:.6; cursor:not-allowed; }
+.btn-primary { background:var(--accent); color:#fff; }
+.btn-primary:hover:not(:disabled) { background:var(--navy); }
 
-/* Indicateur force mot de passe */
-.pwd-strength{height:4px;border-radius:2px;margin-top:4px;transition:all .3s;background:var(--border);}
+/* Lien secondaire */
+.link-btn {
+  display:block; text-align:center; margin-top:14px;
+  font-size:.76rem; color:var(--accent2); cursor:pointer;
+  text-decoration:none; background:none; border:none;
+  font-family:inherit; width:100%;
+}
+.link-btn:hover { color:var(--navy); text-decoration:underline; }
 
-.error-msg{
-  display:none;font-size:.78rem;color:var(--red);
-  background:#fef0ee;border:1px solid #f5c6c0;border-radius:7px;
-  padding:9px 12px;margin-bottom:14px;line-height:1.5;
+/* Messages */
+.msg {
+  border-radius:8px; padding:10px 13px; margin-bottom:14px;
+  font-size:.78rem; line-height:1.5; display:none;
 }
-.success-msg{
-  display:none;font-size:.82rem;color:var(--green);
-  background:var(--green-l);border:1px solid #a8dbb9;border-radius:7px;
-  padding:10px 14px;margin-bottom:14px;text-align:center;line-height:1.5;
-}
+.msg.err { background:#fef0ee; border:1px solid #f5c6c0; color:#c0392b; }
+.msg.ok  { background:var(--green-l); border:1px solid #a8dbb9; color:var(--green); text-align:center; }
 
-/* ── NOTICE ── */
-.login-note{
-  font-size:.72rem;color:var(--muted);text-align:center;
-  margin-top:18px;line-height:1.6;
+/* Spinner */
+.spin {
+  width:15px; height:15px; border:2px solid rgba(255,255,255,.4);
+  border-top-color:#fff; border-radius:50%;
+  animation:rot .6s linear infinite; flex-shrink:0;
 }
+@keyframes rot { to { transform:rotate(360deg); } }
 
-/* ── FOOTER ── */
-.page-footer{
-  margin-top:24px;font-size:.72rem;
-  color:rgba(255,255,255,.45);text-align:center;line-height:1.6;
+.footer {
+  margin-top:22px; font-size:.7rem;
+  color:rgba(255,255,255,.45); text-align:center; line-height:1.6;
 }
-
-/* ── SPINNER ── */
-.spinner{
-  width:16px;height:16px;border:2px solid rgba(255,255,255,.4);
-  border-top-color:#fff;border-radius:50%;
-  animation:spin .65s linear infinite;flex-shrink:0;
-}
-@keyframes spin{to{transform:rotate(360deg);}}
-
-@media(max-width:480px){
-  .card{padding:30px 18px 26px;}
-  .logo{font-size:1.7rem;}
-}
+@media(max-width:440px) { .card { padding:28px 18px 24px; } .logo { font-size:1.6rem; } }
 </style>
 </head>
 <body>
-
 <div class="page">
 <div class="card">
 
-  <div class="logo">
-    <span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span>
-  </div>
+  <div class="logo"><span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span></div>
   <p class="tagline">Bilan clinique · Outils · Prescription</p>
 
-  <!-- ══ SECTION A : Connexion normale ══ -->
-  <div class="section active" id="secLogin">
-    <div id="loginSuccessNote" style="display:none;font-size:.8rem;color:#1a7a3a;background:#eaf7ee;border:1px solid #a8dbb9;border-radius:8px;padding:10px 14px;margin-bottom:18px;text-align:center;line-height:1.5">
-      ✓ Mot de passe créé avec succès !<br>Entrez votre email et votre nouveau mot de passe.
+  <!-- ══ A — CONNEXION ══ -->
+  <div class="sec on" id="secLogin">
+    <p class="sec-title">Connexion</p>
+    <p class="sec-sub" id="loginSub">Entrez vos identifiants pour accéder à Rehab4Perf.</p>
+    <div class="msg err" id="loginErr"></div>
+    <div class="msg ok"  id="loginOk"></div>
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="loginEmail" placeholder="vous@exemple.fr"
+             onkeydown="if(event.key==='Enter')document.getElementById('loginPwd').focus()">
     </div>
-    <button class="btn-main" id="btnLogin" onclick="openLogin()">
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-        <polyline points="10 17 15 12 10 7"/>
-        <line x1="15" y1="12" x2="3" y2="12"/>
-      </svg>
-      Se connecter
-    </button>
-    <p class="login-note">Accès sur invitation uniquement.<br>Contactez Antoine PERONNAUD pour obtenir un accès.</p>
+    <div class="field">
+      <label>Mot de passe</label>
+      <input type="password" id="loginPwd" placeholder="••••••••"
+             onkeydown="if(event.key==='Enter')submitLogin()">
+    </div>
+    <button class="btn btn-primary" id="loginBtn" onclick="submitLogin()">Se connecter</button>
+    <button class="link-btn" onclick="showSec('secForgot')">Mot de passe oublié ?</button>
   </div>
 
-  <!-- ══ SECTION B : Création / réinitialisation de mot de passe ══ -->
-  <div class="section" id="secPassword">
-    <p class="pwd-title" id="pwdTitle">Créer votre mot de passe</p>
-    <p class="pwd-sub"  id="pwdSub">Choisissez un mot de passe sécurisé pour votre compte Rehab4Perf.</p>
-
-    <div class="error-msg"   id="pwdError"></div>
-    <div class="success-msg" id="pwdSuccess"></div>
-
+  <!-- ══ B — INVITATION (créer mot de passe) ══ -->
+  <div class="sec" id="secInvite">
+    <p class="sec-title">Créer votre mot de passe</p>
+    <p class="sec-sub">Choisissez un mot de passe sécurisé pour votre compte Rehab4Perf.</p>
+    <div class="msg err" id="inviteErr"></div>
+    <div class="msg ok"  id="inviteOk"></div>
     <div class="field">
       <label>Nouveau mot de passe</label>
-      <input type="password" id="pwdNew" placeholder="8 caractères minimum" oninput="checkStrength()">
-      <div class="pwd-strength" id="pwdStrengthBar"></div>
+      <input type="password" id="invitePwd" placeholder="8 caractères minimum"
+             oninput="checkStrength('invitePwd','inviteBar')"
+             onkeydown="if(event.key==='Enter')document.getElementById('inviteConfirm').focus()">
+      <div class="strength-bar"><span id="inviteBar"></span></div>
     </div>
     <div class="field">
       <label>Confirmer le mot de passe</label>
-      <input type="password" id="pwdConfirm" placeholder="Répétez le mot de passe"
-             onkeydown="if(event.key==='Enter')submitPassword()">
+      <input type="password" id="inviteConfirm" placeholder="Répétez le mot de passe"
+             onkeydown="if(event.key==='Enter')submitInvite()">
     </div>
+    <button class="btn btn-primary" id="inviteBtn" onclick="submitInvite()">Créer le mot de passe</button>
+  </div>
 
-    <button class="btn-main" id="btnPwd" onclick="submitPassword()">
-      Valider
-    </button>
+  <!-- ══ C — RÉCUPÉRATION (réinitialiser mot de passe) ══ -->
+  <div class="sec" id="secRecovery">
+    <p class="sec-title">Nouveau mot de passe</p>
+    <p class="sec-sub">Choisissez un nouveau mot de passe pour votre compte.</p>
+    <div class="msg err" id="recoveryErr"></div>
+    <div class="msg ok"  id="recoveryOk"></div>
+    <div class="field">
+      <label>Nouveau mot de passe</label>
+      <input type="password" id="recoveryPwd" placeholder="8 caractères minimum"
+             oninput="checkStrength('recoveryPwd','recoveryBar')"
+             onkeydown="if(event.key==='Enter')document.getElementById('recoveryConfirm').focus()">
+      <div class="strength-bar"><span id="recoveryBar"></span></div>
+    </div>
+    <div class="field">
+      <label>Confirmer le mot de passe</label>
+      <input type="password" id="recoveryConfirm" placeholder="Répétez le mot de passe"
+             onkeydown="if(event.key==='Enter')submitRecovery()">
+    </div>
+    <button class="btn btn-primary" id="recoveryBtn" onclick="submitRecovery()">Réinitialiser</button>
+  </div>
+
+  <!-- ══ D — MOT DE PASSE OUBLIÉ ══ -->
+  <div class="sec" id="secForgot">
+    <p class="sec-title">Mot de passe oublié</p>
+    <p class="sec-sub">Entrez votre email — vous recevrez un lien de réinitialisation.</p>
+    <div class="msg err" id="forgotErr"></div>
+    <div class="msg ok"  id="forgotOk"></div>
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="forgotEmail" placeholder="vous@exemple.fr"
+             onkeydown="if(event.key==='Enter')submitForgot()">
+    </div>
+    <button class="btn btn-primary" id="forgotBtn" onclick="submitForgot()">Envoyer le lien</button>
+    <button class="link-btn" onclick="showSec('secLogin')">← Retour à la connexion</button>
   </div>
 
 </div><!-- /.card -->
-
-<p class="page-footer">
-  Rehab4Perf — Plateforme de kinésithérapie du sport<br>
-  Accès sur invitation uniquement
-</p>
+<p class="footer">Rehab4Perf · Accès sur invitation uniquement<br>Contact : Antoine PERONNAUD</p>
 </div><!-- /.page -->
 
 <script>
-/* ═══════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════
    CONFIG
-═══════════════════════════════════════════════════════════ */
-var IDENTITY_URL = 'https://rehab4perf.netlify.app/.netlify/identity';
+═══════════════════════════════════════════════════════ */
+var API = 'https://rehab4perf.netlify.app/.netlify/identity';
 
-/* ═══════════════════════════════════════════════════════════
-   PARSE HASH
-   Les liens Netlify ont la forme :
-   https://rehab4perf.netlify.app/#invite_token=XXX
-   ou #recovery_token=XXX
-═══════════════════════════════════════════════════════════ */
-var _rawHash = (window.location.hash || '').replace(/^#/, '');
-var _hashParams = {};
-_rawHash.split('&').forEach(function(part) {
-  var kv = part.split('=');
-  if (kv.length >= 2) _hashParams[kv[0]] = decodeURIComponent(kv.slice(1).join('='));
+/* ═══════════════════════════════════════════════════════
+   PARSE HASH — détecte invite_token ou recovery_token
+═══════════════════════════════════════════════════════ */
+var _params = {};
+(window.location.hash || '').replace(/^#/, '').split('&').forEach(function(p) {
+  var i = p.indexOf('=');
+  if (i > 0) _params[p.slice(0, i)] = decodeURIComponent(p.slice(i + 1));
 });
+var _inviteToken   = _params['invite_token']   || null;
+var _recoveryToken = _params['recovery_token'] || null;
 
-var _inviteToken   = _hashParams['invite_token']   || null;
-var _recoveryToken = _hashParams['recovery_token'] || null;
-var _tokenType     = _inviteToken ? 'invite' : (_recoveryToken ? 'recovery' : null);
-var _token         = _inviteToken || _recoveryToken || null;
+// Nettoyer le hash de l'URL (cosmétique + sécurité)
+if (_inviteToken || _recoveryToken) history.replaceState(null, '', window.location.pathname);
 
-/* ═══════════════════════════════════════════════════════════
-   INIT : choisir la bonne section au chargement
-═══════════════════════════════════════════════════════════ */
-if (_token) {
-  showSection('secPassword');
-  if (_tokenType === 'recovery') {
-    document.getElementById('pwdTitle').textContent = 'Nouveau mot de passe';
-    document.getElementById('pwdSub').textContent   = 'Entrez et confirmez votre nouveau mot de passe.';
-    document.getElementById('btnPwd').childNodes[0].textContent = 'Réinitialiser';
-  }
-  // Nettoyer le hash de l'URL (cosmétique)
-  history.replaceState(null, '', window.location.pathname);
+/* ═══════════════════════════════════════════════════════
+   SESSION LOCALE
+═══════════════════════════════════════════════════════ */
+function getSession() {
+  try { return JSON.parse(localStorage.getItem('r4p-session') || 'null'); } catch(e) { return null; }
 }
 
-/* Widget Netlify — uniquement pour la connexion normale */
-netlifyIdentity.on('init', function(user) {
-  if (user && !_token) {
-    // Déjà connecté et pas de token → aller directement à l'app
-    goToApp();
-  }
-});
-
-netlifyIdentity.on('login', function(user) {
-  netlifyIdentity.close();
-  goToApp();
-});
-
-/* ═══════════════════════════════════════════════════════════
-   SECTION HELPERS
-═══════════════════════════════════════════════════════════ */
-function showSection(id) {
-  document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
-  document.getElementById(id).classList.add('active');
+function saveSession(apiResponse) {
+  var s = {
+    access_token:  apiResponse.access_token,
+    refresh_token: apiResponse.refresh_token || '',
+    expires_at:    Date.now() + ((apiResponse.expires_in || 3600) * 1000),
+    user:          apiResponse.user || {}
+  };
+  localStorage.setItem('r4p-session', JSON.stringify(s));
+  // Mettre à jour le cache profil pour la topnav et le bilan
+  syncProfileCache(s.user);
+  return s;
 }
 
-function goToApp() {
-  window.location.replace('./');
+function syncProfileCache(user) {
+  var meta = user.user_metadata || {};
+  var p = {
+    prenom: meta.prenom || '', nom: meta.nom || '',
+    am: meta.am || '', tel: meta.tel || '',
+    cabinet: meta.cabinet || '', email: user.email || ''
+  };
+  try {
+    localStorage.setItem('r4p-cached-profile', JSON.stringify(p));
+    localStorage.setItem('r4p-profile', JSON.stringify(p));
+  } catch(e) {}
 }
 
-/* ═══════════════════════════════════════════════════════════
-   SECTION A — CONNEXION NORMALE
-═══════════════════════════════════════════════════════════ */
-function openLogin() {
-  netlifyIdentity.open('login');
-}
-
-/* ═══════════════════════════════════════════════════════════
-   SECTION B — CRÉATION / RÉINITIALISATION DE MOT DE PASSE
-   Appel direct à l'API GoTrue (sans dépendance au widget)
-═══════════════════════════════════════════════════════════ */
-function checkStrength() {
-  var pwd = document.getElementById('pwdNew').value;
-  var bar = document.getElementById('pwdStrengthBar');
-  var score = 0;
-  if (pwd.length >= 8)  score++;
-  if (pwd.length >= 12) score++;
-  if (/[A-Z]/.test(pwd)) score++;
-  if (/[0-9]/.test(pwd)) score++;
-  if (/[^A-Za-z0-9]/.test(pwd)) score++;
-  var colors = ['#E74C3C','#e67e22','#f1c40f','#27ae60','#1a7a3a'];
-  var widths  = ['20%','40%','60%','80%','100%'];
-  bar.style.background = colors[Math.max(0, score-1)] || var(--border);
-  bar.style.width      = score > 0 ? widths[score-1] : '0%';
-}
-
-function setPwdBtn(loading) {
-  var btn = document.getElementById('btnPwd');
-  if (loading) {
-    btn.disabled = true;
-    btn.innerHTML = '<div class="spinner"></div> Enregistrement…';
+/* ═══════════════════════════════════════════════════════
+   INITIALISATION
+═══════════════════════════════════════════════════════ */
+(function init() {
+  if (_inviteToken) {
+    showSec('secInvite');
+  } else if (_recoveryToken) {
+    showSec('secRecovery');
   } else {
-    btn.disabled = false;
-    btn.textContent = _tokenType === 'recovery' ? 'Réinitialiser' : 'Valider';
+    // Vérifier si déjà connecté → aller à l'app
+    var s = getSession();
+    if (s && s.access_token) {
+      window.location.replace('./');
+      return;
+    }
+    showSec('secLogin');
   }
+})();
+
+/* ═══════════════════════════════════════════════════════
+   UI HELPERS
+═══════════════════════════════════════════════════════ */
+function showSec(id) {
+  document.querySelectorAll('.sec').forEach(function(s) { s.classList.remove('on'); });
+  document.getElementById(id).classList.add('on');
 }
 
-function showPwdError(msg) {
-  var el = document.getElementById('pwdError');
-  el.textContent = msg;
+function showMsg(id, text, type) {
+  var el = document.getElementById(id);
+  el.textContent = text;
+  el.className = 'msg ' + type;
   el.style.display = 'block';
-  document.getElementById('pwdSuccess').style.display = 'none';
+}
+function hideMsg(id) { var el = document.getElementById(id); if(el) el.style.display = 'none'; }
+
+function setLoading(btnId, loading, label) {
+  var btn = document.getElementById(btnId);
+  if (!btn) return;
+  btn.disabled = loading;
+  btn.innerHTML = loading
+    ? '<div class="spin"></div> ' + (label || 'Chargement…')
+    : (label || btn.dataset.label || 'Valider');
 }
 
-function hidePwdError() {
-  document.getElementById('pwdError').style.display = 'none';
+// Indicateur force mot de passe
+function checkStrength(inputId, barId) {
+  var pwd = document.getElementById(inputId).value;
+  var bar = document.getElementById(barId);
+  var score = [pwd.length >= 8, pwd.length >= 12, /[A-Z]/.test(pwd), /[0-9]/.test(pwd), /[^A-Za-z0-9]/.test(pwd)]
+              .filter(Boolean).length;
+  var colors = ['#e74c3c','#e67e22','#f1c40f','#27ae60','#1a7a3a'];
+  var widths  = ['20%','40%','60%','80%','100%'];
+  bar.style.background = score > 0 ? colors[score - 1] : '#d8e0eb';
+  bar.style.width      = score > 0 ? widths[score - 1] : '0';
 }
 
-function submitPassword() {
-  var pwd1 = document.getElementById('pwdNew').value;
-  var pwd2 = document.getElementById('pwdConfirm').value;
+/* ═══════════════════════════════════════════════════════
+   A — CONNEXION (email + mot de passe)
+═══════════════════════════════════════════════════════ */
+function submitLogin() {
+  hideMsg('loginErr'); hideMsg('loginOk');
+  var email = (document.getElementById('loginEmail').value || '').trim();
+  var pwd   = document.getElementById('loginPwd').value;
 
-  hidePwdError();
+  if (!email || !pwd) { showMsg('loginErr', 'Veuillez remplir tous les champs.', 'err'); return; }
 
-  if (!pwd1) { showPwdError('Veuillez saisir un mot de passe.'); return; }
-  if (pwd1.length < 8) { showPwdError('Le mot de passe doit faire au moins 8 caractères.'); return; }
-  if (pwd1 !== pwd2) { showPwdError('Les deux mots de passe ne correspondent pas.'); return; }
-  if (!_token) { showPwdError('Lien invalide. Demandez un nouvel email d\'invitation.'); return; }
+  setLoading('loginBtn', true, 'Connexion…');
 
-  setPwdBtn(true);
-
-  fetch(IDENTITY_URL + '/verify', {
-    method: 'POST',
+  fetch(API + '/token?grant_type=password', {
+    method:  'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type: _tokenType, token: _token, password: pwd1 })
+    body:    JSON.stringify({ email: email, password: pwd })
   })
   .then(function(r) {
-    if (!r.ok) {
-      return r.json().then(function(d) {
-        throw new Error(d.msg || d.error_description || ('Erreur HTTP ' + r.status));
-      });
-    }
+    if (!r.ok) return r.json().then(function(d) { throw new Error(d.error_description || d.msg || 'Identifiants incorrects.'); });
     return r.json();
   })
   .then(function(data) {
-    if (!data.access_token) throw new Error('Réponse inattendue du serveur.');
-
-    // Stocker la session Netlify Identity en localStorage
-    // (même format que gotrue-js pour que le widget la retrouve)
-    var userData = Object.assign({}, data.user || {});
-    userData.token = {
-      access_token:  data.access_token,
-      token_type:    data.token_type    || 'bearer',
-      expires_in:    data.expires_in    || 3600,
-      refresh_token: data.refresh_token || ''
-    };
-    try { localStorage.setItem('gotrue.user', JSON.stringify(userData)); } catch(e) {}
-
-    // Succès → basculer vers l'écran de connexion
-    var successEl = document.getElementById('pwdSuccess');
-    successEl.innerHTML = '✓ Mot de passe ' + (_tokenType === 'invite' ? 'créé' : 'réinitialisé') + ' !';
-    successEl.style.display = 'block';
-    setTimeout(function() {
-      showSection('secLogin');
-      var note = document.getElementById('loginSuccessNote');
-      if (note) note.style.display = 'block';
-    }, 1200);
+    saveSession(data);
+    window.location.replace('./');
   })
   .catch(function(err) {
-    console.error('verify error:', err);
-    var msg = err.message || 'Erreur inconnue.';
-    if (msg.toLowerCase().indexOf('expired') > -1 || msg.toLowerCase().indexOf('invalid') > -1) {
-      msg += ' Le lien a peut-être expiré. Demandez un nouvel email.';
-    }
-    showPwdError(msg);
-    setPwdBtn(false);
+    showMsg('loginErr', err.message, 'err');
+    setLoading('loginBtn', false, 'Se connecter');
+  });
+}
+
+/* ═══════════════════════════════════════════════════════
+   B — INVITATION (créer mot de passe)
+═══════════════════════════════════════════════════════ */
+function submitInvite() {
+  hideMsg('inviteErr'); hideMsg('inviteOk');
+  var pwd1 = document.getElementById('invitePwd').value;
+  var pwd2 = document.getElementById('inviteConfirm').value;
+
+  if (pwd1.length < 8) { showMsg('inviteErr', 'Le mot de passe doit faire au moins 8 caractères.', 'err'); return; }
+  if (pwd1 !== pwd2)   { showMsg('inviteErr', 'Les deux mots de passe ne correspondent pas.', 'err'); return; }
+  if (!_inviteToken)   { showMsg('inviteErr', 'Lien invalide. Demandez un nouvel email.', 'err'); return; }
+
+  setLoading('inviteBtn', true, 'Enregistrement…');
+
+  fetch(API + '/verify', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ type: 'invite', token: _inviteToken, password: pwd1 })
+  })
+  .then(function(r) {
+    if (!r.ok) return r.json().then(function(d) { throw new Error(d.msg || 'Token invalide ou expiré.'); });
+    return r.json();
+  })
+  .then(function(data) {
+    saveSession(data);
+    showMsg('inviteOk', '✓ Mot de passe créé !', 'ok');
+    // Pré-remplir l'email puis basculer vers la connexion
+    setTimeout(function() {
+      document.getElementById('loginEmail').value = (data.user || {}).email || '';
+      var sub = document.getElementById('loginSub');
+      if (sub) sub.textContent = 'Mot de passe créé — connectez-vous maintenant.';
+      showMsg('loginOk', '✓ Compte activé. Entrez votre mot de passe pour continuer.', 'ok');
+      showSec('secLogin');
+    }, 1400);
+  })
+  .catch(function(err) {
+    var msg = err.message;
+    if (/expired|invalid/i.test(msg)) msg += ' Demandez un nouvel email d\'invitation.';
+    showMsg('inviteErr', msg, 'err');
+    setLoading('inviteBtn', false, 'Créer le mot de passe');
+  });
+}
+
+/* ═══════════════════════════════════════════════════════
+   C — RÉCUPÉRATION (réinitialiser mot de passe)
+═══════════════════════════════════════════════════════ */
+function submitRecovery() {
+  hideMsg('recoveryErr'); hideMsg('recoveryOk');
+  var pwd1 = document.getElementById('recoveryPwd').value;
+  var pwd2 = document.getElementById('recoveryConfirm').value;
+
+  if (pwd1.length < 8) { showMsg('recoveryErr', 'Le mot de passe doit faire au moins 8 caractères.', 'err'); return; }
+  if (pwd1 !== pwd2)   { showMsg('recoveryErr', 'Les deux mots de passe ne correspondent pas.', 'err'); return; }
+  if (!_recoveryToken) { showMsg('recoveryErr', 'Lien invalide. Utilisez le lien reçu par email.', 'err'); return; }
+
+  setLoading('recoveryBtn', true, 'Réinitialisation…');
+
+  fetch(API + '/verify', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ type: 'recovery', token: _recoveryToken, password: pwd1 })
+  })
+  .then(function(r) {
+    if (!r.ok) return r.json().then(function(d) { throw new Error(d.msg || 'Token invalide ou expiré.'); });
+    return r.json();
+  })
+  .then(function(data) {
+    saveSession(data);
+    showMsg('recoveryOk', '✓ Mot de passe réinitialisé !', 'ok');
+    setTimeout(function() {
+      document.getElementById('loginEmail').value = (data.user || {}).email || '';
+      showMsg('loginOk', '✓ Mot de passe mis à jour — connectez-vous avec votre nouveau mot de passe.', 'ok');
+      showSec('secLogin');
+    }, 1400);
+  })
+  .catch(function(err) {
+    var msg = err.message;
+    if (/expired|invalid/i.test(msg)) msg += ' Demandez un nouvel email de réinitialisation.';
+    showMsg('recoveryErr', msg, 'err');
+    setLoading('recoveryBtn', false, 'Réinitialiser');
+  });
+}
+
+/* ═══════════════════════════════════════════════════════
+   D — MOT DE PASSE OUBLIÉ (envoi email)
+═══════════════════════════════════════════════════════ */
+function submitForgot() {
+  hideMsg('forgotErr'); hideMsg('forgotOk');
+  var email = (document.getElementById('forgotEmail').value || '').trim();
+  if (!email) { showMsg('forgotErr', 'Entrez votre adresse email.', 'err'); return; }
+
+  setLoading('forgotBtn', true, 'Envoi…');
+
+  fetch(API + '/recover', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ email: email })
+  })
+  .then(function(r) {
+    // GoTrue retourne 200 même si l'email n'existe pas (sécurité)
+    showMsg('forgotOk', '✓ Si ce compte existe, un email a été envoyé à ' + email, 'ok');
+    setLoading('forgotBtn', false, 'Envoyer le lien');
+  })
+  .catch(function(err) {
+    showMsg('forgotErr', 'Erreur réseau. Réessayez.', 'err');
+    setLoading('forgotBtn', false, 'Envoyer le lien');
   });
 }
 </script>
