@@ -3033,7 +3033,44 @@ function buildCR() {
   tfMsHtml += obsBlock('ulrt-obs-ca','ulrt-obs-cs');
   addSection('4. Tests Fonctionnels - Membres Superieurs', tfMsHtml);
 
-  // 5. Points a travailler
+  // 5. Tests Fonctionnels Rachis
+  var tfRachisHtml = '';
+  var obsSingle = function(id) {
+    var v = (document.getElementById(id)||{}).value||'';
+    return v ? '<div style="margin:2px 0 8px;padding:6px 10px;background:var(--surface2);border-radius:5px;font-size:.82rem;color:var(--text2);font-style:italic">' + v + '</div>' : '';
+  };
+  var flxV2 = parseFloat(document.getElementById('rf-flx-cerv')?document.getElementById('rf-flx-cerv').value:'');
+  var extV2 = parseFloat(document.getElementById('rf-ext-cerv')?document.getElementById('rf-ext-cerv').value:'');
+  var latD2 = parseFloat(document.getElementById('rf-lat-d')?document.getElementById('rf-lat-d').value:'');
+  var latG2 = parseFloat(document.getElementById('rf-lat-g')?document.getElementById('rf-lat-g').value:'');
+  var sorV2 = parseFloat(document.getElementById('rf-sorensen')?document.getElementById('rf-sorensen').value:'');
+  var pdslV2 = parseFloat(document.getElementById('rf-pdslrt')?document.getElementById('rf-pdslrt').value:'');
+  var rfNotes = (document.getElementById('rf-notes')||{}).value||'';
+  if (!isNaN(flxV2)) {
+    tfRachisHtml += crItem('Endurance Fléchisseurs Cervicaux', flxV2 + 's', flxV2>=39?'Normal':flxV2>=24?'Limite':'Deficit', flxV2>=39?'ok':flxV2>=24?'warn':'bad');
+    tfRachisHtml += obsSingle('rf-flx-obs');
+  }
+  if (!isNaN(extV2)) {
+    tfRachisHtml += crItem('Endurance Extenseurs Cervicaux', extV2 + 's', extV2>=20?'OK':'Insuffisant', extV2>=20?'ok':'bad');
+    tfRachisHtml += obsSingle('rf-ext-obs');
+  }
+  if (!isNaN(latD2) && !isNaN(latG2)) {
+    var latRatio2 = Math.min(latD2,latG2)/Math.max(latD2,latG2)*100;
+    tfRachisHtml += crItem('Endurance Latérale Cervicale', 'D=' + latD2 + 's   G=' + latG2 + 's   Ratio=' + latRatio2.toFixed(1) + '%', latRatio2>=70?'Symétrie OK':'Asymétrie', latRatio2>=70?'ok':'warn');
+    tfRachisHtml += obsSingle('rf-lat-obs');
+  }
+  if (!isNaN(sorV2)) {
+    tfRachisHtml += crItem('Test de Sørensen', sorV2 + 's', sorV2>=198?'Facteur protecteur':sorV2>=176?'Zone intermédiaire':'Facteur de risque', sorV2>=198?'ok':sorV2>=176?'warn':'bad');
+    tfRachisHtml += obsSingle('rf-sor-obs');
+  }
+  if (!isNaN(pdslV2)) {
+    tfRachisHtml += crItem('PDSLRT', pdslV2 + 's', pdslV2>=30?'OK':'Deficit', pdslV2>=30?'ok':'bad');
+    tfRachisHtml += obsSingle('rf-pdslrt-obs');
+  }
+  if (rfNotes) tfRachisHtml += crItem('Notes', rfNotes);
+  addSection('5. Tests Fonctionnels - Rachis', tfRachisHtml);
+
+  // 6. Points a travailler
   var toWork = [];
   var slsLsi2 = slsCS>0?slsCA/slsCS*100:NaN;
   var hopLsi2 = hopCS>0?hopCA/hopCS*100:NaN;
@@ -3051,7 +3088,7 @@ function buildCR() {
     for (var wi=0; wi<toWork.length; wi++) {
       workHtml += '<div class="cr-item"><span style="margin-right:6px;color:var(--orange)">-></span><span>' + toWork[wi] + '</span></div>';
     }
-    addSection('5. Points a Travailler', workHtml);
+    addSection('6. Points a Travailler', workHtml);
   }
 
   if (!content.innerHTML.trim()) {
