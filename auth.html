@@ -118,6 +118,9 @@ html,body{height:100%;font-family:-apple-system,'Helvetica Neue',Arial,sans-seri
 
   <!-- ══ SECTION A : Connexion normale ══ -->
   <div class="section active" id="secLogin">
+    <div id="loginSuccessNote" style="display:none;font-size:.8rem;color:#1a7a3a;background:#eaf7ee;border:1px solid #a8dbb9;border-radius:8px;padding:10px 14px;margin-bottom:18px;text-align:center;line-height:1.5">
+      ✓ Mot de passe créé avec succès !<br>Entrez votre email et votre nouveau mot de passe.
+    </div>
     <button class="btn-main" id="btnLogin" onclick="openLogin()">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
@@ -312,12 +315,15 @@ function submitPassword() {
     };
     try { localStorage.setItem('gotrue.user', JSON.stringify(userData)); } catch(e) {}
 
-    // Succès : rediriger vers l'app
+    // Succès → basculer vers l'écran de connexion
     var successEl = document.getElementById('pwdSuccess');
-    successEl.innerHTML = '✓ Mot de passe ' + (_tokenType === 'invite' ? 'créé' : 'réinitialisé') + ' — redirection…';
+    successEl.innerHTML = '✓ Mot de passe ' + (_tokenType === 'invite' ? 'créé' : 'réinitialisé') + ' !';
     successEl.style.display = 'block';
-
-    setTimeout(goToApp, 1200);
+    setTimeout(function() {
+      showSection('secLogin');
+      var note = document.getElementById('loginSuccessNote');
+      if (note) note.style.display = 'block';
+    }, 1200);
   })
   .catch(function(err) {
     console.error('verify error:', err);

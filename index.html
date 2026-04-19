@@ -107,6 +107,13 @@ netlifyIdentity.on('init', function(user) {
   if (user) {
     var meta = user.user_metadata || {};
     updateNavFromMeta(meta, user.email);
+    // Propager le profil à bilan.html au chargement
+    var profileData = { prenom: meta.prenom||'', nom: meta.nom||'', cabinet: meta.cabinet||'', email: user.email||'', am: meta.am||'', tel: meta.tel||'' };
+    try { localStorage.setItem('r4p-profile', JSON.stringify(profileData)); localStorage.setItem('r4p-cached-profile', JSON.stringify(profileData)); } catch(ex) {}
+    setTimeout(function() {
+      var bf = document.getElementById('frame-bilan');
+      if (bf && bf.contentWindow) bf.contentWindow.postMessage({type:'r4p-profile', profile: profileData}, '*');
+    }, 500);
   }
 });
 netlifyIdentity.on('login', function(user) {
@@ -121,13 +128,19 @@ window.addEventListener('message', function(e) {
   // account.html a mis à jour le profil
   if (e.data.type === 'r4p-profile-updated' && e.data.user) {
     var meta = e.data.user.user_metadata || {};
+    var profileData = {
+      prenom: meta.prenom || '', nom: meta.nom || '',
+      cabinet: meta.cabinet || '', email: e.data.user.email || '',
+      am: meta.am || '', tel: meta.tel || ''
+    };
     try {
-      localStorage.setItem('r4p-cached-profile', JSON.stringify({
-        prenom: meta.prenom || '', nom: meta.nom || '',
-        cabinet: meta.cabinet || '', email: e.data.user.email || ''
-      }));
+      localStorage.setItem('r4p-cached-profile', JSON.stringify(profileData));
+      localStorage.setItem('r4p-profile', JSON.stringify(profileData));
     } catch(ex) {}
     updateNavFromMeta(meta, e.data.user.email);
+    // Propager le profil à bilan.html
+    var bf = document.getElementById('frame-bilan');
+    if (bf && bf.contentWindow) bf.contentWindow.postMessage({type:'r4p-profile', profile: profileData}, '*');
   }
 
   // account.html demande une déconnexion

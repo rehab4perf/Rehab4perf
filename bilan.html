@@ -2459,7 +2459,15 @@ function init() {
 
 // -- PROFILE ---------------------------------------------------
 function getProfile(){
-  try { return JSON.parse(localStorage.getItem('r4p-profile')||'{}'); } catch(e){ return {}; }
+  try {
+    var p = JSON.parse(localStorage.getItem('r4p-profile')||'{}');
+    // Fallback : profil Netlify Identity si r4p-profile vide
+    if (!p.prenom && !p.nom && !p.am) {
+      var cached = JSON.parse(localStorage.getItem('r4p-cached-profile')||'{}');
+      if (cached.prenom || cached.nom || cached.am) return cached;
+    }
+    return p;
+  } catch(e){ return {}; }
 }
 
 function applyProfile(p){
