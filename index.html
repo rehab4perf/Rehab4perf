@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light only">
 <title>Rehab4Perf</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 html, body { height:100%; overflow:hidden; background:#1A3A5C; }
@@ -53,7 +54,7 @@ iframe.active { display:block; }
   <button class="tab"        id="tab-prescription" onclick="show('prescription')">Prescription</button>
   <div class="topnav-right"  id="userDisplay"      onclick="show('account')" title="Mon compte">Mon compte</div>
 </div>
-<div class="frame-wrap" id="frameWrap">
+<div class="frame-wrap">
   <iframe id="frame-bilan"        src="bilan.html"        class="active"></iframe>
   <iframe id="frame-outils"       src="outils.html"       ></iframe>
   <iframe id="frame-prescription" src="prescription.html" ></iframe>
@@ -61,25 +62,24 @@ iframe.active { display:block; }
 </div>
 
 <script>
-/* ═══ REDIRECT TOKENS D'INVITATION / RÉCUPÉRATION ═══
-   Le lien Netlify pointe vers la racine avec un hash :
-   https://rehab4perf.netlify.app/#invite_token=XXX
-   On le capte ici et on redirige vers auth.html qui le traite. */
+var SUPA_URL = 'https://sxdobjodxkwexaspepdm.supabase.co';
+var SUPA_KEY = 'sb_publishable_zEJrmQOnKyRm-Y_NyojaTA_ERrDx4pl';
+var sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+/* ═══ REDIRECT TOKENS SUPABASE (invite / recovery)
+   Supabase redirige vers la racine avec un hash :
+   https://rehab4perf.netlify.app/#access_token=...&type=invite
+   On détecte et redirige vers auth.html qui affiche le bon formulaire. */
 (function() {
   var h = window.location.hash || '';
-  if (h.indexOf('invite_token=')        > -1 ||
-      h.indexOf('recovery_token=')      > -1 ||
-      h.indexOf('confirmation_token=')  > -1) {
+  var type = null;
+  h.replace(/^#/, '').split('&').forEach(function(p) {
+    var i = p.indexOf('=');
+    if (i > 0 && p.slice(0, i) === 'type') type = decodeURIComponent(p.slice(i + 1));
+  });
+  if (type === 'invite' || type === 'recovery') {
     window.location.replace('auth.html' + h);
     return;
-  }
-
-  /* ═══ VÉRIFICATION SESSION ═══
-     Si pas de session valide → auth.html */
-  var session = null;
-  try { session = JSON.parse(localStorage.getItem('r4p-session') || 'null'); } catch(e) {}
-  if (!session || !session.access_token) {
-    window.location.replace('auth.html');
   }
 })();
 
@@ -92,56 +92,60 @@ function show(id) {
   document.getElementById('frame-' + id).classList.add('active');
 }
 
-/* ═══ TOPNAV — affichage du nom utilisateur ═══ */
-function updateNavFromProfile(profile) {
-  var name = ((profile.prenom || '') + ' ' + (profile.nom || '')).trim()
-           || (profile.email || '').split('@')[0] || '';
+/* ═══ TOPNAV ═══ */
+function updateNav(user) {
+  if (!user) return;
+  var meta = user.user_metadata || {};
+  var name = ((meta.prenom || '') + ' ' + (meta.nom || '')).trim() || (user.email || '').split('@')[0];
   if (!name) return;
-  var cab = profile.cabinet || '';
+  var cab = meta.cabinet || '';
   var el  = document.getElementById('userDisplay');
   el.innerHTML = name + (cab ? '<br><span style="font-size:.65rem;opacity:.7">' + cab + '</span>' : '');
 }
 
-// Affichage immédiat depuis le cache localStorage
-(function() {
-  try {
-    // Essayer r4p-session en priorité
-    var s = JSON.parse(localStorage.getItem('r4p-session') || 'null');
-    if (s && s.user) {
-      var meta = s.user.user_metadata || {};
-      updateNavFromProfile({
-        prenom: meta.prenom || '', nom: meta.nom || '',
-        cabinet: meta.cabinet || '', email: s.user.email || ''
-      });
-      return;
-    }
-    // Fallback sur le cache profil
-    var p = JSON.parse(localStorage.getItem('r4p-cached-profile') || '{}');
-    if (p.prenom || p.nom) updateNavFromProfile(p);
-  } catch(e) {}
-})();
+function buildProfile(user) {
+  var meta = (user && user.user_metadata) || {};
+  return { prenom:meta.prenom||'', nom:meta.nom||'', am:meta.am||'', tel:meta.tel||'', cabinet:meta.cabinet||'', email:(user&&user.email)||'' };
+}
 
-// Propager le profil initial à bilan.html après chargement de l'iframe
-window.addEventListener('load', function() {
-  setTimeout(function() { propagateProfileToBilan(); }, 600);
+function syncProfileToStorage(user) {
+  var p = buildProfile(user);
+  try { localStorage.setItem('r4p-cached-profile', JSON.stringify(p)); localStorage.setItem('r4p-profile', JSON.stringify(p)); } catch(e) {}
+  return p;
+}
+
+function propagateToBilan(profile) {
+  var bf = document.getElementById('frame-bilan');
+  if (bf && bf.contentWindow) bf.contentWindow.postMessage({ type:'r4p-profile', profile:profile }, '*');
+}
+
+/* ═══ VÉRIFICATION SESSION & INIT ═══ */
+sb.auth.getSession().then(function(result) {
+  var session = result.data && result.data.session;
+  if (!session) {
+    // Nettoyer les anciens caches et rediriger
+    try { localStorage.removeItem('r4p-session'); localStorage.removeItem('r4p-cached-profile'); localStorage.removeItem('r4p-profile'); } catch(e) {}
+    window.location.replace('auth.html');
+    return;
+  }
+  var user = session.user;
+  updateNav(user);
+  var profile = syncProfileToStorage(user);
+  // Propager à bilan.html après chargement de l'iframe
+  setTimeout(function() { propagateToBilan(profile); }, 600);
 });
 
-function propagateProfileToBilan() {
-  try {
-    var s = JSON.parse(localStorage.getItem('r4p-session') || 'null');
-    if (!s || !s.user) return;
-    var meta = s.user.user_metadata || {};
-    var profileData = {
-      prenom: meta.prenom || '', nom: meta.nom || '',
-      cabinet: meta.cabinet || '', email: s.user.email || '',
-      am: meta.am || '', tel: meta.tel || ''
-    };
-    var bf = document.getElementById('frame-bilan');
-    if (bf && bf.contentWindow) {
-      bf.contentWindow.postMessage({ type: 'r4p-profile', profile: profileData }, '*');
-    }
-  } catch(e) {}
-}
+// Écouter les changements d'état (déconnexion forcée par expiration token)
+sb.auth.onAuthStateChange(function(event, session) {
+  if (event === 'SIGNED_OUT') {
+    window.location.replace('auth.html');
+  }
+  if (event === 'TOKEN_REFRESHED' && session) {
+    var profile = syncProfileToStorage(session.user);
+    updateNav(session.user);
+    propagateToBilan(profile);
+  }
+});
 
 /* ═══ MESSAGES DES IFRAMES ═══ */
 window.addEventListener('message', function(e) {
@@ -150,26 +154,14 @@ window.addEventListener('message', function(e) {
   // account.html a mis à jour le profil
   if (e.data.type === 'r4p-profile-updated' && e.data.profile) {
     var profile = e.data.profile;
-    updateNavFromProfile(profile);
-    // Mettre à jour les caches
-    try {
-      localStorage.setItem('r4p-cached-profile', JSON.stringify(profile));
-      localStorage.setItem('r4p-profile',        JSON.stringify(profile));
-    } catch(ex) {}
-    // Propager à bilan.html
-    var bf = document.getElementById('frame-bilan');
-    if (bf && bf.contentWindow) {
-      bf.contentWindow.postMessage({ type: 'r4p-profile', profile: profile }, '*');
-    }
+    updateNav({ email: profile.email, user_metadata: profile });
+    try { localStorage.setItem('r4p-cached-profile', JSON.stringify(profile)); localStorage.setItem('r4p-profile', JSON.stringify(profile)); } catch(ex) {}
+    propagateToBilan(profile);
   }
 
   // account.html demande une déconnexion
   if (e.data.type === 'r4p-logout-done') {
-    try {
-      localStorage.removeItem('r4p-session');
-      localStorage.removeItem('r4p-cached-profile');
-      localStorage.removeItem('r4p-profile');
-    } catch(ex) {}
+    try { localStorage.removeItem('r4p-cached-profile'); localStorage.removeItem('r4p-profile'); } catch(ex) {}
     window.location.replace('auth.html');
   }
 });

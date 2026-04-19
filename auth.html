@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light only">
 <title>Connexion – Rehab4Perf</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
   --navy:#1A3A5C; --accent:#2B5FA6; --accent2:#4A90D9; --red:#E74C3C;
@@ -25,22 +26,18 @@ html, body { height:100%; font-family:-apple-system,'Helvetica Neue',Arial,sans-
   padding:36px 32px 30px; max-width:400px; width:100%;
 }
 
-/* Logo */
 .logo { font-family:Georgia,serif; font-style:italic; font-size:1.9rem; text-align:center; margin-bottom:4px; }
 .logo .r { color:var(--accent2); }
 .logo .n { color:var(--navy); font-weight:900; font-style:normal; }
 .logo .p { color:var(--red); }
 .tagline { font-size:.75rem; color:var(--muted); text-align:center; margin-bottom:26px; }
 
-/* Sections */
 .sec { display:none; }
 .sec.on { display:block; }
 
-/* Titre de section */
 .sec-title { font-size:.95rem; font-weight:700; color:var(--navy); text-align:center; margin-bottom:5px; }
 .sec-sub   { font-size:.76rem; color:var(--muted); text-align:center; margin-bottom:20px; line-height:1.5; }
 
-/* Champs */
 .field { display:flex; flex-direction:column; gap:5px; margin-bottom:14px; }
 .field label { font-size:.68rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
 .field input {
@@ -50,11 +47,9 @@ html, body { height:100%; font-family:-apple-system,'Helvetica Neue',Arial,sans-
 }
 .field input:focus { border-color:var(--accent2); box-shadow:0 0 0 3px rgba(74,144,217,.12); }
 
-/* Indicateur force */
 .strength-bar { height:3px; border-radius:2px; background:var(--border); margin-top:5px; }
 .strength-bar span { display:block; height:100%; border-radius:2px; width:0; transition:width .3s, background .3s; }
 
-/* Bouton principal */
 .btn {
   width:100%; padding:12px; border:none; border-radius:9px;
   font-size:.9rem; font-weight:700; cursor:pointer;
@@ -66,7 +61,6 @@ html, body { height:100%; font-family:-apple-system,'Helvetica Neue',Arial,sans-
 .btn-primary { background:var(--accent); color:#fff; }
 .btn-primary:hover:not(:disabled) { background:var(--navy); }
 
-/* Lien secondaire */
 .link-btn {
   display:block; text-align:center; margin-top:14px;
   font-size:.76rem; color:var(--accent2); cursor:pointer;
@@ -75,7 +69,6 @@ html, body { height:100%; font-family:-apple-system,'Helvetica Neue',Arial,sans-
 }
 .link-btn:hover { color:var(--navy); text-decoration:underline; }
 
-/* Messages */
 .msg {
   border-radius:8px; padding:10px 13px; margin-bottom:14px;
   font-size:.78rem; line-height:1.5; display:none;
@@ -83,7 +76,6 @@ html, body { height:100%; font-family:-apple-system,'Helvetica Neue',Arial,sans-
 .msg.err { background:#fef0ee; border:1px solid #f5c6c0; color:#c0392b; }
 .msg.ok  { background:var(--green-l); border:1px solid #a8dbb9; color:var(--green); text-align:center; }
 
-/* Spinner */
 .spin {
   width:15px; height:15px; border:2px solid rgba(255,255,255,.4);
   border-top-color:#fff; border-radius:50%;
@@ -106,7 +98,7 @@ html, body { height:100%; font-family:-apple-system,'Helvetica Neue',Arial,sans-
   <p class="tagline">Bilan clinique · Outils · Prescription</p>
 
   <!-- ══ A — CONNEXION ══ -->
-  <div class="sec on" id="secLogin">
+  <div class="sec" id="secLogin">
     <p class="sec-title">Connexion</p>
     <p class="sec-sub" id="loginSub">Entrez vos identifiants pour accéder à Rehab4Perf.</p>
     <div class="msg err" id="loginErr"></div>
@@ -125,7 +117,7 @@ html, body { height:100%; font-family:-apple-system,'Helvetica Neue',Arial,sans-
     <button class="link-btn" onclick="showSec('secForgot')">Mot de passe oublié ?</button>
   </div>
 
-  <!-- ══ B — INVITATION (créer mot de passe) ══ -->
+  <!-- ══ B — INVITATION ══ -->
   <div class="sec" id="secInvite">
     <p class="sec-title">Créer votre mot de passe</p>
     <p class="sec-sub">Choisissez un mot de passe sécurisé pour votre compte Rehab4Perf.</p>
@@ -146,7 +138,7 @@ html, body { height:100%; font-family:-apple-system,'Helvetica Neue',Arial,sans-
     <button class="btn btn-primary" id="inviteBtn" onclick="submitInvite()">Créer le mot de passe</button>
   </div>
 
-  <!-- ══ C — RÉCUPÉRATION (réinitialiser mot de passe) ══ -->
+  <!-- ══ C — RÉCUPÉRATION ══ -->
   <div class="sec" id="secRecovery">
     <p class="sec-title">Nouveau mot de passe</p>
     <p class="sec-sub">Choisissez un nouveau mot de passe pour votre compte.</p>
@@ -188,75 +180,55 @@ html, body { height:100%; font-family:-apple-system,'Helvetica Neue',Arial,sans-
 
 <script>
 /* ═══════════════════════════════════════════════════════
-   CONFIG
+   CONFIG SUPABASE
 ═══════════════════════════════════════════════════════ */
-var API = 'https://rehab4perf.netlify.app/.netlify/identity';
+var SUPA_URL = 'https://sxdobjodxkwexaspepdm.supabase.co';
+var SUPA_KEY = 'sb_publishable_zEJrmQOnKyRm-Y_NyojaTA_ERrDx4pl';
+var sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 
 /* ═══════════════════════════════════════════════════════
-   PARSE HASH — détecte invite_token ou recovery_token
+   LIRE LE TYPE DANS L'URL (invite / recovery)
+   Supabase redirige vers auth.html#access_token=...&type=invite
 ═══════════════════════════════════════════════════════ */
-var _params = {};
-(window.location.hash || '').replace(/^#/, '').split('&').forEach(function(p) {
+var _urlType = null;
+var rawHash = (window.location.hash || '').replace(/^#/, '');
+rawHash.split('&').forEach(function(p) {
   var i = p.indexOf('=');
-  if (i > 0) _params[p.slice(0, i)] = decodeURIComponent(p.slice(i + 1));
+  if (i > 0 && p.slice(0, i) === 'type') _urlType = decodeURIComponent(p.slice(i + 1));
 });
-var _inviteToken   = _params['invite_token']   || null;
-var _recoveryToken = _params['recovery_token'] || null;
-
-// Nettoyer le hash de l'URL (cosmétique + sécurité)
-if (_inviteToken || _recoveryToken) history.replaceState(null, '', window.location.pathname);
-
-/* ═══════════════════════════════════════════════════════
-   SESSION LOCALE
-═══════════════════════════════════════════════════════ */
-function getSession() {
-  try { return JSON.parse(localStorage.getItem('r4p-session') || 'null'); } catch(e) { return null; }
-}
-
-function saveSession(apiResponse) {
-  var s = {
-    access_token:  apiResponse.access_token,
-    refresh_token: apiResponse.refresh_token || '',
-    expires_at:    Date.now() + ((apiResponse.expires_in || 3600) * 1000),
-    user:          apiResponse.user || {}
-  };
-  localStorage.setItem('r4p-session', JSON.stringify(s));
-  // Mettre à jour le cache profil pour la topnav et le bilan
-  syncProfileCache(s.user);
-  return s;
-}
-
-function syncProfileCache(user) {
-  var meta = user.user_metadata || {};
-  var p = {
-    prenom: meta.prenom || '', nom: meta.nom || '',
-    am: meta.am || '', tel: meta.tel || '',
-    cabinet: meta.cabinet || '', email: user.email || ''
-  };
-  try {
-    localStorage.setItem('r4p-cached-profile', JSON.stringify(p));
-    localStorage.setItem('r4p-profile', JSON.stringify(p));
-  } catch(e) {}
+// Aussi vérifier les query params (flow PKCE)
+if (!_urlType) {
+  (window.location.search || '').replace(/^\?/, '').split('&').forEach(function(p) {
+    var i = p.indexOf('=');
+    if (i > 0 && p.slice(0, i) === 'type') _urlType = decodeURIComponent(p.slice(i + 1));
+  });
 }
 
 /* ═══════════════════════════════════════════════════════
-   INITIALISATION
+   INITIALISATION — quelle section afficher
 ═══════════════════════════════════════════════════════ */
-(function init() {
-  if (_inviteToken) {
-    showSec('secInvite');
-  } else if (_recoveryToken) {
+
+// Écouter les événements Supabase (recovery détecté ici)
+sb.auth.onAuthStateChange(function(event, session) {
+  if (event === 'PASSWORD_RECOVERY') {
     showSec('secRecovery');
+  }
+});
+
+// Déterminer l'état initial
+sb.auth.getSession().then(function(result) {
+  var session = result.data && result.data.session;
+
+  if (_urlType === 'invite') {
+    showSec('secInvite');
+  } else if (_urlType === 'recovery') {
+    showSec('secRecovery');
+  } else if (session) {
+    window.location.replace('./');
   } else {
-    // Vérifier si déjà connecté → aller à l'app
-    var s = getSession();
-    if (s && s.access_token) {
-      window.location.replace('./');
-      return;
-    }
     showSec('secLogin');
   }
-})();
+});
 
 /* ═══════════════════════════════════════════════════════
    UI HELPERS
@@ -265,115 +237,83 @@ function showSec(id) {
   document.querySelectorAll('.sec').forEach(function(s) { s.classList.remove('on'); });
   document.getElementById(id).classList.add('on');
 }
-
 function showMsg(id, text, type) {
   var el = document.getElementById(id);
-  el.textContent = text;
-  el.className = 'msg ' + type;
-  el.style.display = 'block';
+  el.textContent = text; el.className = 'msg ' + type; el.style.display = 'block';
 }
-function hideMsg(id) { var el = document.getElementById(id); if(el) el.style.display = 'none'; }
-
+function hideMsg(id) { var el = document.getElementById(id); if (el) el.style.display = 'none'; }
 function setLoading(btnId, loading, label) {
   var btn = document.getElementById(btnId);
-  if (!btn) return;
   btn.disabled = loading;
-  btn.innerHTML = loading
-    ? '<div class="spin"></div> ' + (label || 'Chargement…')
-    : (label || btn.dataset.label || 'Valider');
+  btn.innerHTML = loading ? '<div class="spin"></div> ' + label : label;
 }
-
-// Indicateur force mot de passe
 function checkStrength(inputId, barId) {
   var pwd = document.getElementById(inputId).value;
   var bar = document.getElementById(barId);
-  var score = [pwd.length >= 8, pwd.length >= 12, /[A-Z]/.test(pwd), /[0-9]/.test(pwd), /[^A-Za-z0-9]/.test(pwd)]
-              .filter(Boolean).length;
+  var score = [pwd.length>=8,pwd.length>=12,/[A-Z]/.test(pwd),/[0-9]/.test(pwd),/[^A-Za-z0-9]/.test(pwd)].filter(Boolean).length;
   var colors = ['#e74c3c','#e67e22','#f1c40f','#27ae60','#1a7a3a'];
   var widths  = ['20%','40%','60%','80%','100%'];
-  bar.style.background = score > 0 ? colors[score - 1] : '#d8e0eb';
-  bar.style.width      = score > 0 ? widths[score - 1] : '0';
+  bar.style.background = score > 0 ? colors[score-1] : '#d8e0eb';
+  bar.style.width      = score > 0 ? widths[score-1] : '0';
 }
 
 /* ═══════════════════════════════════════════════════════
-   A — CONNEXION (email + mot de passe)
+   CACHE PROFIL — pour bilan.html
+═══════════════════════════════════════════════════════ */
+function syncProfileCache(user) {
+  if (!user) return;
+  var meta = user.user_metadata || {};
+  var p = { prenom:meta.prenom||'', nom:meta.nom||'', am:meta.am||'', tel:meta.tel||'', cabinet:meta.cabinet||'', email:user.email||'' };
+  try { localStorage.setItem('r4p-cached-profile', JSON.stringify(p)); localStorage.setItem('r4p-profile', JSON.stringify(p)); } catch(e) {}
+}
+
+/* ═══════════════════════════════════════════════════════
+   A — CONNEXION
 ═══════════════════════════════════════════════════════ */
 function submitLogin() {
   hideMsg('loginErr'); hideMsg('loginOk');
   var email = (document.getElementById('loginEmail').value || '').trim();
   var pwd   = document.getElementById('loginPwd').value;
-
   if (!email || !pwd) { showMsg('loginErr', 'Veuillez remplir tous les champs.', 'err'); return; }
-
   setLoading('loginBtn', true, 'Connexion…');
-
-  fetch(API + '/token?grant_type=password', {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ email: email, password: pwd })
-  })
-  .then(function(r) {
-    if (!r.ok) return r.json().then(function(d) { throw new Error(d.error_description || d.msg || 'Identifiants incorrects.'); });
-    return r.json();
-  })
-  .then(function(data) {
-    saveSession(data);
-    window.location.replace('./');
-  })
-  .catch(function(err) {
-    showMsg('loginErr', err.message, 'err');
-    setLoading('loginBtn', false, 'Se connecter');
-  });
+  sb.auth.signInWithPassword({ email: email, password: pwd })
+    .then(function(res) {
+      if (res.error) throw res.error;
+      syncProfileCache(res.data.user);
+      window.location.replace('./');
+    })
+    .catch(function(err) {
+      var msg = err.message || 'Identifiants incorrects.';
+      if (/invalid/i.test(msg)) msg = 'Email ou mot de passe incorrect.';
+      showMsg('loginErr', msg, 'err');
+      setLoading('loginBtn', false, 'Se connecter');
+    });
 }
 
 /* ═══════════════════════════════════════════════════════
    B — INVITATION (créer mot de passe)
+   Supabase a déjà créé la session via le lien — on appelle
+   juste updateUser pour définir le mot de passe.
 ═══════════════════════════════════════════════════════ */
 function submitInvite() {
   hideMsg('inviteErr'); hideMsg('inviteOk');
   var pwd1 = document.getElementById('invitePwd').value;
   var pwd2 = document.getElementById('inviteConfirm').value;
-
   if (pwd1.length < 8) { showMsg('inviteErr', 'Le mot de passe doit faire au moins 8 caractères.', 'err'); return; }
   if (pwd1 !== pwd2)   { showMsg('inviteErr', 'Les deux mots de passe ne correspondent pas.', 'err'); return; }
-  if (!_inviteToken)   { showMsg('inviteErr', 'Lien invalide. Demandez un nouvel email.', 'err'); return; }
-
   setLoading('inviteBtn', true, 'Enregistrement…');
-
-  /* GoTrue Netlify lit "type" et "token" via r.FormValue() — il faut
-     envoyer en application/x-www-form-urlencoded, pas en JSON */
-  var formBody = new URLSearchParams({
-    type:     'invite',
-    token:    _inviteToken,
-    password: pwd1
-  }).toString();
-
-  fetch(API + '/verify', {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body:    formBody
-  })
-  .then(function(r) {
-    if (!r.ok) return r.json().then(function(d) {
-      throw new Error(d.error_description || d.msg || d.error || 'Erreur inconnue (' + r.status + ').');
+  sb.auth.updateUser({ password: pwd1 })
+    .then(function(res) {
+      if (res.error) throw res.error;
+      syncProfileCache(res.data.user);
+      showMsg('inviteOk', '✓ Mot de passe créé ! Redirection…', 'ok');
+      // Déjà connecté → aller directement à l'app
+      setTimeout(function() { window.location.replace('./'); }, 1200);
+    })
+    .catch(function(err) {
+      showMsg('inviteErr', err.message || 'Erreur. Le lien d\'invitation a peut-être expiré.', 'err');
+      setLoading('inviteBtn', false, 'Créer le mot de passe');
     });
-    return r.json();
-  })
-  .then(function(data) {
-    saveSession(data);
-    showMsg('inviteOk', '✓ Mot de passe créé !', 'ok');
-    setTimeout(function() {
-      document.getElementById('loginEmail').value = (data.user || {}).email || '';
-      var sub = document.getElementById('loginSub');
-      if (sub) sub.textContent = 'Mot de passe créé — connectez-vous maintenant.';
-      showMsg('loginOk', '✓ Compte activé. Entrez votre mot de passe pour continuer.', 'ok');
-      showSec('secLogin');
-    }, 1400);
-  })
-  .catch(function(err) {
-    showMsg('inviteErr', err.message, 'err');
-    setLoading('inviteBtn', false, 'Créer le mot de passe');
-  });
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -383,66 +323,43 @@ function submitRecovery() {
   hideMsg('recoveryErr'); hideMsg('recoveryOk');
   var pwd1 = document.getElementById('recoveryPwd').value;
   var pwd2 = document.getElementById('recoveryConfirm').value;
-
   if (pwd1.length < 8) { showMsg('recoveryErr', 'Le mot de passe doit faire au moins 8 caractères.', 'err'); return; }
   if (pwd1 !== pwd2)   { showMsg('recoveryErr', 'Les deux mots de passe ne correspondent pas.', 'err'); return; }
-  if (!_recoveryToken) { showMsg('recoveryErr', 'Lien invalide. Utilisez le lien reçu par email.', 'err'); return; }
-
   setLoading('recoveryBtn', true, 'Réinitialisation…');
-
-  var formBodyR = new URLSearchParams({
-    type:     'recovery',
-    token:    _recoveryToken,
-    password: pwd1
-  }).toString();
-
-  fetch(API + '/verify', {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body:    formBodyR
-  })
-  .then(function(r) {
-    if (!r.ok) return r.json().then(function(d) {
-      throw new Error(d.error_description || d.msg || d.error || 'Erreur inconnue (' + r.status + ').');
+  sb.auth.updateUser({ password: pwd1 })
+    .then(function(res) {
+      if (res.error) throw res.error;
+      syncProfileCache(res.data.user);
+      showMsg('recoveryOk', '✓ Mot de passe mis à jour !', 'ok');
+      setTimeout(function() {
+        document.getElementById('loginEmail').value = (res.data.user || {}).email || '';
+        showMsg('loginOk', '✓ Connectez-vous avec votre nouveau mot de passe.', 'ok');
+        showSec('secLogin');
+      }, 1400);
+    })
+    .catch(function(err) {
+      showMsg('recoveryErr', err.message || 'Erreur. Le lien a peut-être expiré.', 'err');
+      setLoading('recoveryBtn', false, 'Réinitialiser');
     });
-    return r.json();
-  })
-  .then(function(data) {
-    saveSession(data);
-    showMsg('recoveryOk', '✓ Mot de passe réinitialisé !', 'ok');
-    setTimeout(function() {
-      document.getElementById('loginEmail').value = (data.user || {}).email || '';
-      showMsg('loginOk', '✓ Mot de passe mis à jour — connectez-vous avec votre nouveau mot de passe.', 'ok');
-      showSec('secLogin');
-    }, 1400);
-  })
-  .catch(function(err) {
-    showMsg('recoveryErr', err.message, 'err');
-    setLoading('recoveryBtn', false, 'Réinitialiser');
-  });
 }
 
 /* ═══════════════════════════════════════════════════════
-   D — MOT DE PASSE OUBLIÉ (envoi email)
+   D — MOT DE PASSE OUBLIÉ
 ═══════════════════════════════════════════════════════ */
 function submitForgot() {
   hideMsg('forgotErr'); hideMsg('forgotOk');
   var email = (document.getElementById('forgotEmail').value || '').trim();
   if (!email) { showMsg('forgotErr', 'Entrez votre adresse email.', 'err'); return; }
-
   setLoading('forgotBtn', true, 'Envoi…');
-
-  fetch(API + '/recover', {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ email: email })
+  sb.auth.resetPasswordForEmail(email, {
+    redirectTo: 'https://rehab4perf.netlify.app/auth.html'
   })
-  .then(function(r) {
-    // GoTrue retourne 200 même si l'email n'existe pas (sécurité)
+  .then(function(res) {
+    if (res.error) throw res.error;
     showMsg('forgotOk', '✓ Si ce compte existe, un email a été envoyé à ' + email, 'ok');
     setLoading('forgotBtn', false, 'Envoyer le lien');
   })
-  .catch(function(err) {
+  .catch(function() {
     showMsg('forgotErr', 'Erreur réseau. Réessayez.', 'err');
     setLoading('forgotBtn', false, 'Envoyer le lien');
   });
