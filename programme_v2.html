@@ -163,6 +163,38 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .builder-save-btn:hover { background:#245097; }
 .builder-save-btn:disabled { opacity:.6; cursor:default; }
 .builder-body { flex:1; overflow-y:auto; display:flex; flex-direction:column; }
+
+/* ── Exo rows inside builder panel: layout compact 2 rows ── */
+.builder-body .exo-col-header {
+  grid-template-columns: 18px 1fr 36px 36px 30px 42px 48px 22px;
+  gap: 4px;
+}
+/* Hide "Cible" label (8th child) in builder header */
+.builder-body .exo-col-header > *:nth-child(8) { display: none; }
+
+.builder-body .exo-row {
+  grid-template-columns: 18px 1fr 36px 36px 30px 42px 48px 22px;
+  grid-template-rows: auto auto auto;
+  gap: 4px;
+}
+/* Cible cell (8th direct child): push to row 2, span from name col to end */
+.builder-body .exo-row > *:nth-child(8) {
+  grid-column: 2 / -1;
+  grid-row: 2;
+}
+/* Delete button (9th direct child): pin to col 8, row 1 */
+.builder-body .exo-row > *:nth-child(9) {
+  grid-column: 8;
+  grid-row: 1;
+}
+/* Consigne row (10th): full width, row 3 */
+.builder-body .exo-row > *:nth-child(10) {
+  grid-column: 1 / -1;
+  grid-row: 3;
+}
+/* Reduce cell-input font/padding in builder */
+.builder-body .cell-input { font-size:.7rem; padding:4px 3px; }
+
 .builder-date-bar {
   padding:8px 14px; background:#F5F8FF; border-bottom:1px solid var(--border);
   font-size:.76rem; color:var(--accent); font-weight:600; flex-shrink:0;
