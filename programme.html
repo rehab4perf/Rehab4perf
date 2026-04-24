@@ -16,16 +16,45 @@
 * { margin:0; padding:0; box-sizing:border-box; }
 html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-apple-system,'Helvetica Neue',Arial,sans-serif; color:var(--text); }
 
+/* ── TOPBAR ── */
+.topbar {
+  height:48px; background:var(--navy); display:flex; align-items:center;
+  padding:0 14px; gap:10px; flex-shrink:0; z-index:20;
+  border-bottom:1px solid rgba(255,255,255,.1);
+}
+.topbar-logo { color:#fff; font-size:.88rem; font-weight:800; letter-spacing:.04em; white-space:nowrap; }
+.topbar-patient {
+  display:flex; align-items:center; gap:7px; flex:1;
+  font-size:.76rem; color:rgba(255,255,255,.85);
+}
+.topbar-patient-name {
+  background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.25);
+  border-radius:16px; padding:3px 10px; font-weight:600; color:#fff;
+  font-size:.74rem; white-space:nowrap; max-width:200px;
+  overflow:hidden; text-overflow:ellipsis;
+}
+.topbar-patient-empty { color:rgba(255,255,255,.4); font-size:.74rem; font-style:italic; }
+.topbar-right { display:flex; align-items:center; gap:8px; }
+.topbar-btn {
+  background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3);
+  color:#fff; border-radius:8px; padding:5px 12px; font-size:.74rem;
+  cursor:pointer; white-space:nowrap; transition:background .15s; font-family:inherit;
+}
+.topbar-btn:hover { background:rgba(255,255,255,.25); }
+.topbar-btn.primary { background:var(--accent2); border-color:var(--accent2); }
+.topbar-btn.primary:hover { background:#3a80c9; }
+
 /* ── LAYOUT ── */
-.app { display:flex; height:100%; overflow:hidden; }
+.app { display:flex; height:calc(100% - 48px); overflow:hidden; }
 
 /* Sidebar library */
 .sidebar {
   width:var(--sidebar-w); min-width:240px; max-width:360px;
   background:var(--surface); border-right:1px solid var(--border);
   display:flex; flex-direction:column; flex-shrink:0;
-  height:100%; align-self:stretch;
+  height:100%; align-self:stretch; transition:transform .25s;
 }
+.sidebar.collapsed { transform:translateX(-100%); position:absolute; z-index:15; height:calc(100% - 48px); }
 .sidebar-header { padding:12px 14px 10px; background:var(--navy); flex-shrink:0; }
 .sidebar-title { color:#fff; font-size:.78rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; margin-bottom:6px; }
 .search-box {
@@ -104,8 +133,150 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .lib-item.added .lib-add-btn::before { content:'✓'; }
 .lib-item:not(.added) .lib-add-btn::before { content:'+'; }
 
-/* Main prescription zone */
-.main { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
+/* ── CENTRE : Calendrier ── */
+.main {
+  flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0;
+  transition: flex 0.28s cubic-bezier(.4,0,.2,1);
+}
+
+/* ── PANEL BUILDER (droite, slide-in) ── */
+.builder-panel {
+  width:0; min-width:0; max-width:none;
+  background:var(--surface); border-left:0 solid var(--border);
+  display:flex; flex-direction:column; flex-shrink:0; height:100%;
+  overflow:hidden;
+  transition: width .28s cubic-bezier(.4,0,.2,1), border-left-width .28s;
+  position:relative;
+}
+.builder-panel.open {
+  width:480px; min-width:360px;
+  border-left-width:1px;
+}
+.builder-header {
+  padding:10px 14px; background:var(--navy);
+  display:flex; align-items:center; gap:8px; flex-shrink:0;
+}
+.builder-header h2 { font-size:.84rem; font-weight:700; color:#fff; flex:1; }
+.builder-close {
+  background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.25);
+  color:#fff; border-radius:6px; width:28px; height:28px; cursor:pointer;
+  font-size:.9rem; display:flex; align-items:center; justify-content:center;
+}
+/* Toast de partage */
+.share-toast {
+  position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(12px);
+  background:#1A3A5C; color:#fff; border-radius:10px; padding:11px 20px;
+  font-size:.82rem; font-weight:600; box-shadow:0 4px 24px rgba(0,0,0,.28);
+  opacity:0; transition:opacity .22s, transform .22s; z-index:9999;
+  white-space:nowrap; pointer-events:none;
+}
+.share-toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* ── Modal Planifier ── */
+.plan-modal-overlay {
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,.45);
+  backdrop-filter:blur(2px); z-index:8000;
+  align-items:center; justify-content:center; padding:16px;
+}
+.plan-modal-overlay.open { display:flex; }
+.plan-modal {
+  background:#fff; border-radius:12px; width:100%; max-width:360px;
+  box-shadow:0 8px 40px rgba(0,0,0,.22); overflow:hidden;
+}
+.plan-modal-header {
+  background:var(--navy); color:#fff; padding:13px 18px;
+  display:flex; align-items:center; gap:10px;
+}
+.plan-modal-header h3 { flex:1; font-size:.92rem; font-weight:700; }
+.plan-modal-close { background:none; border:none; color:rgba(255,255,255,.7); font-size:1.3rem; cursor:pointer; line-height:1; }
+.plan-modal-body { padding:16px 18px; }
+.plan-modal-hint { font-size:.78rem; color:var(--muted); margin-bottom:12px; }
+.plan-date-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.plan-date-input {
+  flex:1; padding:7px 10px; border:1px solid var(--border); border-radius:7px;
+  font-size:.82rem; color:var(--text); outline:none; font-family:inherit;
+}
+.plan-date-input:focus { border-color:var(--accent2); }
+.plan-date-del {
+  background:none; border:1px solid var(--border); border-radius:6px;
+  color:var(--muted); width:28px; height:28px; cursor:pointer; font-size:1rem;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.plan-date-del:hover { color:#E74C3C; border-color:#E74C3C; }
+.plan-add-btn {
+  background:none; border:1px dashed var(--border); border-radius:7px;
+  color:var(--muted); padding:6px 12px; font-size:.76rem; cursor:pointer; width:100%;
+  margin-top:2px; transition:border-color .15s, color .15s; font-family:inherit;
+}
+.plan-add-btn:hover { border-color:var(--accent2); color:var(--accent2); }
+.plan-modal-footer {
+  padding:12px 18px; border-top:1px solid var(--border);
+  display:flex; justify-content:flex-end; gap:8px;
+}
+
+/* Bouton Planifier dans le header builder */
+.builder-plan-btn {
+  background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3);
+  color:#fff; border-radius:6px; padding:5px 10px; font-size:.72rem;
+  font-weight:600; cursor:pointer; transition:background .15s; white-space:nowrap;
+}
+.builder-plan-btn:hover { background:rgba(255,255,255,.28); }
+
+/* Bouton Partager dans le header builder */
+.builder-share-btn {
+  background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3);
+  color:#fff; border-radius:6px; padding:5px 10px; font-size:.72rem;
+  font-weight:600; cursor:pointer; transition:background .15s; white-space:nowrap;
+}
+.builder-share-btn:hover { background:rgba(255,255,255,.28); }
+.builder-share-btn:disabled { opacity:.5; cursor:default; }
+
+.builder-save-btn {
+  background:#2B5FA6; border:none; color:#fff; border-radius:7px;
+  padding:5px 14px; font-size:.74rem; font-weight:600; cursor:pointer;
+  font-family:inherit; white-space:nowrap; transition:background .15s;
+}
+.builder-save-btn:hover { background:#245097; }
+.builder-save-btn:disabled { opacity:.6; cursor:default; }
+.builder-body { flex:1; overflow-y:auto; display:flex; flex-direction:column; }
+
+/* ── Exo rows inside builder panel: layout compact 2 rows ── */
+.builder-body .exo-col-header {
+  grid-template-columns: 18px 1fr 36px 36px 30px 42px 48px 22px;
+  gap: 4px;
+}
+/* Hide "Cible" label (8th child) in builder header */
+.builder-body .exo-col-header > *:nth-child(8) { display: none; }
+
+.builder-body .exo-row {
+  grid-template-columns: 18px 1fr 36px 36px 30px 42px 48px 22px;
+  grid-template-rows: auto auto auto;
+  gap: 4px;
+}
+/* Cible cell (8th direct child): push to row 2, span from name col to end */
+.builder-body .exo-row > *:nth-child(8) {
+  grid-column: 2 / -1;
+  grid-row: 2;
+}
+/* Delete button (9th direct child): pin to col 8, row 1 */
+.builder-body .exo-row > *:nth-child(9) {
+  grid-column: 8;
+  grid-row: 1;
+}
+/* Consigne row (10th): full width, row 3 */
+.builder-body .exo-row > *:nth-child(10) {
+  grid-column: 1 / -1;
+  grid-row: 3;
+}
+/* Reduce cell-input font/padding in builder */
+.builder-body .cell-input { font-size:.7rem; padding:4px 3px; }
+
+.builder-date-bar {
+  padding:8px 14px; background:#F5F8FF; border-bottom:1px solid var(--border);
+  font-size:.76rem; color:var(--accent); font-weight:600; flex-shrink:0;
+}
+
+/* Main header (conservé dans le builder) */
 .main-header {
   background:var(--surface); border-bottom:1px solid var(--border);
   padding:10px 14px; display:flex; align-items:center; gap:8px; flex-shrink:0;
@@ -358,21 +529,58 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .fav-btn.active { color:#F5A623; }
 .fav-btn:hover { color:#F5A623; }
 
-/* ── ONGLETS PRINCIPAUX ── */
-.main-tabs {
-  display:flex; gap:0; border-bottom:1px solid var(--border);
-  background:var(--surface); flex-shrink:0; padding:0 18px;
-}
-.main-tab {
-  padding:10px 18px; border:none; background:none;
-  font-size:.82rem; font-weight:600; color:var(--muted);
-  cursor:pointer; font-family:inherit; border-bottom:3px solid transparent;
-  transition:color .15s; white-space:nowrap;
-}
-.main-tab:hover { color:var(--accent); }
-.main-tab.active { color:var(--navy); border-bottom-color:var(--accent2); }
+/* Onglets — cachés en v2 (remplacés par le layout 3 colonnes) */
+.main-tabs { display:none; }
 .main-panel { display:none; flex:1; overflow:hidden; flex-direction:column; }
 .main-panel.active { display:flex; }
+
+/* ── CALENDRIER CENTRAL ── */
+.cal-central {
+  flex:1; display:flex; flex-direction:column; overflow:hidden;
+  transition: flex 0.28s cubic-bezier(.4,0,.2,1), opacity 0.2s ease, min-width 0.28s;
+}
+
+/* ── BUILDER MODE : full-center takeover ── */
+/* .main rétrécit, .builder-panel prend sa place */
+.app.builder-mode .main {
+  flex: 0 0 0px !important;
+  min-width: 0 !important;
+  overflow: hidden;
+}
+.app.builder-mode .cal-central {
+  opacity: 0;
+  pointer-events: none;
+}
+.app.builder-mode .builder-panel {
+  flex: 1 1 auto !important;
+  width: 0 !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  border-left: none !important;
+}
+/* Zone de travail : pleine largeur */
+.app.builder-mode .session-area {
+  max-width: none;
+  padding: 20px 28px;
+}
+/* Revenir au layout exo-row large (9 colonnes originales) */
+.app.builder-mode .builder-body .exo-col-header,
+.app.builder-mode .builder-body .exo-row {
+  grid-template-columns: 28px 1fr 60px 60px 48px 60px 76px 180px 32px;
+  grid-template-rows: auto;
+  gap: 6px;
+}
+.app.builder-mode .builder-body .exo-row > *:nth-child(8) { grid-column: auto; grid-row: auto; }
+.app.builder-mode .builder-body .exo-row > *:nth-child(9) { grid-column: auto; grid-row: auto; }
+.app.builder-mode .builder-body .exo-row > *:nth-child(10) { grid-column: 1/-1; grid-row: auto; }
+.app.builder-mode .builder-body .exo-col-header > *:nth-child(8) { display: block; }
+.app.builder-mode .builder-body .cell-input { font-size: .78rem; padding: 5px 6px; }
+.cal-central-header {
+  padding:10px 14px; background:var(--surface); border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:8px; flex-shrink:0;
+}
+.cal-central-header h2 { font-size:.9rem; font-weight:700; color:var(--navy); text-align:center; }
+.cal-central-body { flex:1; overflow-y:auto; padding:12px 14px; }
 
 /* ── BIBLIOTHÈQUE DE SÉANCES ── */
 .seances-area { flex:1; overflow-y:auto; padding:16px 18px; }
@@ -497,6 +705,9 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   .main-header h1 { font-size:.82rem; }
   .btn { padding:6px 10px; font-size:.74rem; }
   .patient-input { width:130px; }
+  /* Builder en overlay plein écran sur tablet */
+  .builder-panel { position:absolute; right:0; top:0; width:100% !important; max-width:100%; height:100%; z-index:15; }
+  .topbar-logo { display:none; }
 }
 
 /* Mobile */
@@ -523,6 +734,21 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 </style>
 </head>
 <body>
+
+<!-- ═══════════════════ TOPBAR ═══════════════════ -->
+<div class="topbar">
+  <div class="topbar-logo">Rehab4Perf</div>
+  <div class="topbar-patient">
+    <span id="topbarPatientEmpty" class="topbar-patient-empty">Aucun patient sélectionné</span>
+    <span id="topbarPatientName" class="topbar-patient-name" style="display:none;"></span>
+  </div>
+  <div class="topbar-right">
+    <button class="topbar-btn" onclick="toggleSidebar()" title="Bibliothèque">☰ Biblio</button>
+    <button class="topbar-btn" onclick="openCycles()">🔄 Cycles</button>
+    <button class="topbar-btn primary" onclick="openBuilderNew()" id="topbarNewBtn">+ Séance</button>
+  </div>
+</div>
+
 <div class="app">
 
 <!-- ═══════════════════════════════ SIDEBAR ═══════════════════════════════ -->
@@ -586,29 +812,35 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   </div>
 </div>
 
-<!-- ═══════════════════════════════ MAIN ════════════════════════════════ -->
+<!-- ═══════════ CENTRE : CALENDRIER ═══════════ -->
 <div class="main">
-
-  <!-- ONGLETS -->
-  <div class="main-tabs">
-    <button class="main-tab active" id="mtab-seance" onclick="showMainTab('seance')">📋 Séance</button>
-    <button class="main-tab" id="mtab-seances" onclick="showMainTab('seances')">📁 Templates</button>
-    <button class="main-tab" id="mtab-cal" onclick="showMainTab('cal')">📅 Calendrier</button>
+  <div class="cal-central">
+    <div class="cal-central-header">
+      <button class="cal-nav-btn" onclick="calMove(-1)">◀</button>
+      <h2 id="calTitle" style="flex:1;text-align:center;"></h2>
+      <button class="cal-nav-btn" onclick="calMove(1)">▶</button>
+      <button class="btn btn-outline" onclick="calToday()" style="font-size:.74rem;padding:4px 10px;margin-left:6px;">Aujourd'hui</button>
+      <button class="btn btn-outline" onclick="shareCalLink()" style="font-size:.74rem;padding:4px 10px;background:#EEF3FB;color:#1A3A5C;border-color:#2B5FA6;">📅 Partager</button>
+    </div>
+    <div class="cal-central-body">
+      <div class="cal-grid" id="calGrid"></div>
+      <div id="upcomingList" style="margin-top:16px;"></div>
+    </div>
   </div>
+</div>
 
-  <!-- PANEL 1 : SÉANCE (existant) -->
-  <div class="main-panel active" id="mpanel-seance">
-    <div class="main-header">
-      <h1>Prescription d'exercices</h1>
-      <div id="patientBadge" style="display:none;background:#EEF3FB;border:1px solid #2B5FA6;border-radius:20px;padding:4px 12px;font-size:.76rem;font-weight:600;color:#1A3A5C;white-space:nowrap;">👤 <span id="patientBadgeName"></span></div>
-      <input class="patient-input" type="text" id="patientName" placeholder="Nom du patient" />
-      <button class="btn btn-outline" onclick="addBloc()">+ Bloc</button>
-      <button id="prog-cloud-save-btn" class="btn btn-outline" onclick="saveProgToCloud()" style="background:#EEF3FB;color:#1A3A5C;border-color:#2B5FA6;white-space:nowrap;">☁️ Sauvegarder</button>
-      <button class="btn btn-outline" onclick="openProgHistory()" style="white-space:nowrap;">📂 Programmes patient</button>
+<!-- ═══════════ BUILDER PANEL (droite) ═══════════ -->
+<div class="builder-panel" id="builderPanel">
+  <div class="builder-header">
+    <h2 id="builderTitle">Nouvelle séance</h2>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <button class="builder-save-btn" id="prog-cloud-save-btn" onclick="saveProgToCloud()">☁️ Sauvegarder</button>
+      <button class="builder-plan-btn" onclick="openPlanModal()">📅 Planifier</button>
+      <button class="builder-share-btn" id="prog-share-btn" onclick="shareBuilderProg()">📤 Partager</button>
+      <button class="btn btn-outline" onclick="openProgHistory()" style="font-size:.72rem;padding:4px 9px;white-space:nowrap;">📂 Programmes</button>
       <div class="more-menu-wrap">
         <button class="more-btn" onclick="toggleMoreMenu(event)" title="Plus d'options">• • •</button>
         <div class="more-dropdown" id="moreDropdown">
-          <button class="more-item" onclick="openCycles();closeMoreMenu()">🔄 Cycles</button>
           <button class="more-item" onclick="openSaveSession();closeMoreMenu()">💾 Sauvegarder comme template</button>
           <button class="more-item" onclick="shareProgLink();closeMoreMenu()">🔗 Partager avec l'athlète</button>
           <button class="more-item" onclick="exportSession();closeMoreMenu()">📤 Exporter HTML</button>
@@ -617,51 +849,70 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
           <button class="more-item danger" onclick="clearSession();closeMoreMenu()">🗑 Effacer la séance</button>
         </div>
       </div>
+      <button class="builder-close" onclick="closeBuilder()" title="Fermer">✕</button>
+    </div>
+  </div>
+  <div class="builder-date-bar" id="builderDateBar"></div>
+  <div class="builder-body">
+    <!-- Champ nom programme -->
+    <div style="padding:8px 14px 0;display:flex;align-items:center;gap:8px;">
+      <input class="patient-input" type="text" id="patientName" placeholder="Nom de la séance / patient" style="flex:1;" />
+      <button class="btn btn-outline" onclick="addBloc()" style="white-space:nowrap;font-size:.76rem;">+ Bloc</button>
     </div>
     <div class="session-area" id="sessionArea">
       <div class="empty-state" id="emptyState">
         <div class="icon">📋</div>
-        <p>Ajoutez un bloc puis sélectionnez des exercices<br>depuis la bibliothèque pour construire votre séance.</p>
+        <p>Ajoutez un bloc puis sélectionnez des exercices<br>depuis la bibliothèque à gauche.</p>
       </div>
     </div>
   </div>
 
-  <!-- PANEL 2 : TEMPLATES -->
-  <div class="main-panel" id="mpanel-seances">
-    <div class="main-header">
-      <h1>Templates de séances</h1>
-      <span style="font-size:.72rem;color:var(--muted);flex:1;">Séances réutilisables · stockées localement sur cet appareil</span>
+  <!-- Templates section dans le bas du builder -->
+  <div style="border-top:1px solid var(--border);flex-shrink:0;">
+    <div style="padding:6px 14px;display:flex;align-items:center;gap:8px;background:#FAFBFD;">
+      <span style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;flex:1;">📁 Templates</span>
+      <button class="btn btn-outline" onclick="openSaveSession()" style="font-size:.68rem;padding:3px 8px;">+ Sauvegarder</button>
     </div>
-    <div class="seances-area" id="seancesArea">
-      <div class="empty-state" id="emptySeances">
-        <div class="icon">📁</div>
-        <p>Aucun template enregistré.<br>Construisez une séance et utilisez <strong>💾 Sauvegarder comme template</strong>.</p>
-      </div>
-    </div>
+    <div class="seances-area" id="seancesArea" style="max-height:180px;overflow-y:auto;"></div>
   </div>
+</div>
 
-  <!-- PANEL 3 : CALENDRIER -->
-  <div class="main-panel" id="mpanel-cal">
-    <div class="main-header">
-      <h1>Calendrier</h1>
-      <span id="calPatientLabel" style="font-size:.78rem;color:var(--muted);flex:1;"></span>
-      <button class="btn btn-outline" onclick="shareCalLink()" style="white-space:nowrap;background:#EEF3FB;color:#1A3A5C;border-color:#2B5FA6;">📅 Partager</button>
-      <button class="btn btn-outline" onclick="openCycles()" style="white-space:nowrap;">🔄 Cycles</button>
-    </div>
-    <div class="cal-area">
-      <div class="cal-nav">
-        <button class="cal-nav-btn" onclick="calMove(-1)">◀</button>
-        <h2 id="calTitle"></h2>
-        <button class="cal-nav-btn" onclick="calMove(1)">▶</button>
-        <button class="btn btn-outline" onclick="calToday()" style="margin-left:8px;font-size:.78rem;padding:4px 12px;">Aujourd'hui</button>
-      </div>
-      <div class="cal-grid" id="calGrid"></div>
-    </div>
-  </div>
-
+<!-- Éléments fantômes pour compatibilité JS (panels cachés) -->
+<div style="display:none;">
+  <div id="mpanel-seance"></div>
+  <div id="mpanel-seances"></div>
+  <div id="mpanel-cal"></div>
+  <div id="mtab-seance"></div>
+  <div id="mtab-seances"></div>
+  <div id="mtab-cal"></div>
+  <div id="patientBadge"><span id="patientBadgeName"></span></div>
+  <div id="calPatientLabel"></div>
+  <span id="topbarPatientSync"></span>
 </div>
 
 </div><!-- .app -->
+
+<!-- Toast partage -->
+<div class="share-toast" id="shareToast"></div>
+
+<!-- Modal Planifier -->
+<div class="plan-modal-overlay" id="planModal" onclick="if(event.target===this)closePlanModal()">
+  <div class="plan-modal">
+    <div class="plan-modal-header">
+      <h3>📅 Planifier la séance</h3>
+      <button class="plan-modal-close" onclick="closePlanModal()">✕</button>
+    </div>
+    <div class="plan-modal-body">
+      <p class="plan-modal-hint">Choisissez un ou plusieurs jours pour assigner cette séance :</p>
+      <div id="planDatesContainer"></div>
+      <button class="plan-add-btn" onclick="addPlanDateRow()">+ Ajouter un autre jour</button>
+    </div>
+    <div class="plan-modal-footer">
+      <button class="btn" onclick="closePlanModal()">Annuler</button>
+      <button class="btn btn-primary" id="planConfirmBtn" onclick="confirmPlan()">📅 Planifier</button>
+    </div>
+  </div>
+</div>
 
 <!-- Modal sauvegarde séance -->
 <div class="save-modal-overlay" id="saveModal">
@@ -1360,23 +1611,71 @@ function closeMoreMenu(){
   var d = document.getElementById('moreDropdown');
   if(d) d.classList.remove('open');
 }
-function shareProgLink(){
-  if(!_currentProgId){
-    alert('Sauvegarde d\'abord le programme en cloud avant de le partager (bouton ☁️ Sauvegarder).');
-    return;
-  }
-  var base = window.location.origin + window.location.pathname.replace('programme.html','') + 'athlete.html';
-  var link = base + '?prog=' + _currentProgId;
+/* ── Toast ── */
+function _showToast(msg){
+  var t = document.getElementById('shareToast');
+  if(!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(function(){ t.classList.remove('show'); }, 3200);
+}
+
+/* ── Génère le lien athlete.html?prog=ID ── */
+function _athleteLink(id){
+  return window.location.href.replace(/\/[^/]+$/, '/athlete.html') + '?prog=' + id;
+}
+
+function _copyLink(id){
+  var link = _athleteLink(id);
   if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(link).then(function(){
-      alert('✅ Lien copié !\n\n' + link + '\n\nEnvoie ce lien à ton athlète — il verra le programme en lecture seule.');
-    }).catch(function(){
-      prompt('Copie ce lien et envoie-le à ton athlète :', link);
-    });
+    navigator.clipboard.writeText(link)
+      .then(function(){ _showToast('📤 Lien copié ! Envoie-le à ton athlète.'); })
+      .catch(function(){ prompt('Copie ce lien :', link); });
   } else {
-    prompt('Copie ce lien et envoie-le à ton athlète :', link);
+    prompt('Copie ce lien :', link);
   }
 }
+
+/* Option A : bouton Partager dans le builder (auto-save si besoin) */
+function shareBuilderProg(){
+  if(_currentProgId){ _copyLink(_currentProgId); return; }
+  if(!_progPatient){ alert('Sélectionnez un patient avant de partager.'); return; }
+  if(!_progUid || !_progToken){ alert('Session non disponible. Sélectionnez à nouveau le patient.'); return; }
+  var btn = document.getElementById('prog-share-btn');
+  if(btn){ btn.disabled=true; btn.textContent='⏳…'; }
+  var nomProg = (document.getElementById('patientName')||{}).value || ('Programme du '+new Date().toLocaleDateString('fr-FR'));
+  var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), notes: getNotes() };
+  var today = new Date().toISOString().split('T')[0];
+  fetch(SUPA_URL_P+'/rest/v1/programmes', {
+    method:'POST', headers:_sbHeaders(),
+    body:JSON.stringify({patient_id:_progPatient.id, praticien_id:_progUid, nom:nomProg, date:today, donnees:donnees})
+  })
+  .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+  .then(function(res){
+    if(btn){ btn.disabled=false; btn.textContent='📤 Partager'; }
+    if(!res.ok){ alert('Erreur : '+JSON.stringify(res.data)); return; }
+    var d = Array.isArray(res.data) ? res.data[0] : res.data;
+    if(d && d.id){
+      _currentProgId = d.id;
+      var sb = document.getElementById('prog-cloud-save-btn');
+      if(sb){ sb.textContent='✓ Sauvegardé'; setTimeout(function(){ sb.textContent='☁️ Sauvegarder'; },2500); }
+      _copyLink(d.id);
+    }
+  })
+  .catch(function(err){
+    if(btn){ btn.disabled=false; btn.textContent='📤 Partager'; }
+    alert('Erreur réseau : '+(err&&err.message||err));
+  });
+}
+
+/* Option B : bouton 📤 dans l'historique des programmes */
+function _shareProgById(id){
+  _copyLink(id);
+}
+
+/* Ancienne fonction (redirige vers la nouvelle) */
+function shareProgLink(){ shareBuilderProg(); }
 document.addEventListener('click', function(e){
   if(!e.target.closest('.more-menu-wrap')) closeMoreMenu();
 });
@@ -1992,8 +2291,8 @@ function _updatePatientUI(){
   // Header templates
   var tmplHeader = document.querySelector('#mpanel-seances .main-header h1');
   if(tmplHeader){ tmplHeader.textContent = nom ? 'Templates — ' + nom : 'Templates de séances'; }
-  // Charger les cycles du patient depuis Supabase (différé pour attendre le 2e bloc script)
-  if(_progPatient) setTimeout(function(){ if(typeof _loadCyclesForPatient==='function') _loadCyclesForPatient(); }, 0);
+  // Charger les cycles du patient depuis Supabase
+  if(_progPatient) setTimeout(function(){ if(typeof _loadCyclesForPatient==="function") _loadCyclesForPatient(); }, 0);
 }
 
 function _sbHeaders(){
@@ -2078,6 +2377,7 @@ function openProgHistory(){
         +'<div style="flex:1;min-width:0;"><div style="font-size:.88rem;font-weight:700;color:#1A3A5C;">'+d+'</div>'
         +'<div style="font-size:.75rem;color:#6B6860;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+_escP(p.nom||'')+'</div></div>'
         +'<button onclick="_loadProg(\''+p.id+'\')" style="background:#1A3A5C;color:#fff;border:none;border-radius:5px;padding:5px 11px;font-size:.75rem;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0;">'+(isCurrent?'✓ Actif':'Charger')+'</button>'
+        +'<button onclick="_shareProgById(\''+p.id+'\')" style="background:rgba(42,95,166,.1);color:#2B5FA6;border:1px solid rgba(42,95,166,.3);border-radius:5px;padding:5px 9px;font-size:.78rem;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Copier le lien de partage">📤</button>'
         +'<button onclick="_deleteProg(\''+p.id+'\',\''+_escP(p.nom||d)+'\')" style="background:none;border:1px solid #E74C3C;color:#E74C3C;border-radius:5px;padding:5px 8px;font-size:.78rem;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Supprimer ce programme">🗑</button>'
         +'</div>';
     }).join('');
@@ -2101,6 +2401,7 @@ function _loadProg(id){
       var pnEl = document.getElementById('patientName');
       if(pnEl) pnEl.value = d.nom || '';
       renderSession();
+      _enterBuilderMode();
       var overlay = document.getElementById('progHistoOverlay');
       if(overlay) overlay.style.display='none';
       var btn = document.getElementById('prog-cloud-save-btn');
@@ -2561,9 +2862,11 @@ function loadSeance(id) {
   if(!confirm('Charger "'+s.name+'" ? La séance en cours sera remplacée.')) return;
   blocs = JSON.parse(JSON.stringify(s.blocs||[]));
   activeBloc = blocs.length ? blocs[0].id : null;
+  _builderDate = '';
   renderSession();
+  _updateBuilderTitle();
   renderLib(document.getElementById('searchInput').value.toLowerCase());
-  showMainTab('seance');
+  _enterBuilderMode();
 }
 
 function deleteSeance(id) {
@@ -2697,6 +3000,8 @@ function _renderCalendarUI() {
       +chips+cycleChips+'</div>';
   }
   grid.innerHTML = headers + cells;
+  // v2 : afficher la liste des prochaines séances sous le calendrier
+  if(typeof _renderUpcoming === 'function') setTimeout(_renderUpcoming, 0);
 }
 
 function openCalPicker(dateStr) {
@@ -2800,20 +3105,247 @@ function removeCalEventCloud(id) {
 // ── Partage du lien calendrier athlète ──
 function shareCalLink() {
   if(!_progPatient){ alert('Sélectionne d\'abord un patient depuis la barre de navigation.'); return; }
-  var base = window.location.origin + window.location.pathname.replace('programme.html','') + 'athlete.html';
-  var link = base + '?patient=' + _progPatient.id;
+  var link = window.location.href.replace(/\/[^/]+$/, '/athlete.html') + '?patient=' + _progPatient.id;
   if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(link).then(function(){
-      alert('✅ Lien calendrier copié !\n\n' + link + '\n\nTon athlète verra son calendrier complet et pourra cliquer sur chaque séance.');
-    }).catch(function(){ prompt('Copie ce lien :', link); });
+    navigator.clipboard.writeText(link)
+      .then(function(){ _showToast('📅 Lien calendrier copié ! Envoie-le à ton athlète.'); })
+      .catch(function(){ prompt('Copie ce lien :', link); });
   } else {
     prompt('Copie ce lien :', link);
   }
 }
 
+/* ── Planifier depuis le builder ── */
+function openPlanModal(){
+  if(!_progPatient){ alert('Sélectionnez un patient avant de planifier.'); return; }
+  var container = document.getElementById('planDatesContainer');
+  container.innerHTML = '';
+  _addPlanDateRow(_builderDate || '');
+  document.getElementById('planModal').classList.add('open');
+}
+
+function closePlanModal(){
+  document.getElementById('planModal').classList.remove('open');
+}
+
+function addPlanDateRow(){ _addPlanDateRow(''); }
+
+function _addPlanDateRow(val){
+  var container = document.getElementById('planDatesContainer');
+  var row = document.createElement('div');
+  row.className = 'plan-date-row';
+  var inp = document.createElement('input');
+  inp.type = 'date'; inp.className = 'plan-date-input'; inp.value = val || '';
+  var del = document.createElement('button');
+  del.className = 'plan-date-del'; del.title = 'Retirer'; del.innerHTML = '&times;';
+  del.onclick = function(){ if(container.children.length > 1) row.remove(); };
+  row.appendChild(inp); row.appendChild(del);
+  container.appendChild(row);
+  if(!val) setTimeout(function(){ inp.focus(); }, 50);
+}
+
+function confirmPlan(){
+  var dates = Array.from(document.querySelectorAll('.plan-date-input'))
+    .map(function(i){ return i.value; }).filter(Boolean);
+  if(!dates.length){ alert('Sélectionnez au moins une date.'); return; }
+  if(!_progPatient){ alert('Sélectionnez un patient.'); return; }
+
+  if(_currentProgId){ _doPlanDates(dates, _currentProgId); return; }
+
+  // Pas encore sauvegardé : auto-save d'abord
+  if(!_progUid || !_progToken){ alert('Session non disponible. Sélectionnez à nouveau le patient.'); return; }
+  var btn = document.getElementById('planConfirmBtn');
+  if(btn){ btn.disabled=true; btn.textContent='⏳ Sauvegarde…'; }
+  var nomProg = (document.getElementById('patientName')||{}).value || ('Programme du '+new Date().toLocaleDateString('fr-FR'));
+  var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), notes: getNotes() };
+  var today = new Date().toISOString().split('T')[0];
+  fetch(SUPA_URL_P+'/rest/v1/programmes', {
+    method:'POST', headers:_sbHeaders(),
+    body:JSON.stringify({patient_id:_progPatient.id, praticien_id:_progUid, nom:nomProg, date:today, donnees:donnees})
+  })
+  .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+  .then(function(res){
+    if(btn){ btn.disabled=false; btn.textContent='📅 Planifier'; }
+    if(!res.ok){ alert('Erreur sauvegarde : '+JSON.stringify(res.data)); return; }
+    var d = Array.isArray(res.data) ? res.data[0] : res.data;
+    if(d && d.id){
+      _currentProgId = d.id;
+      var sb = document.getElementById('prog-cloud-save-btn');
+      if(sb){ sb.textContent='✓ Sauvegardé'; setTimeout(function(){ sb.textContent='☁️ Sauvegarder'; },2500); }
+      _doPlanDates(dates, d.id);
+    }
+  })
+  .catch(function(err){
+    if(btn){ btn.disabled=false; btn.textContent='📅 Planifier'; }
+    alert('Erreur réseau : '+(err&&err.message||err));
+  });
+}
+
+function _doPlanDates(dates, progId){
+  var btn = document.getElementById('planConfirmBtn');
+  if(btn){ btn.disabled=true; btn.textContent='⏳…'; }
+  var promises = dates.map(function(dateStr){
+    return fetch(SUPA_URL_P+'/rest/v1/seances_planifiees', {
+      method:'POST', headers:_sbHeaders(),
+      body:JSON.stringify({patient_id:_progPatient.id, programme_id:progId, praticien_id:_progUid, date:dateStr})
+    }).then(function(r){
+      if(!r.ok) return r.json().then(function(d){ throw new Error(JSON.stringify(d)); });
+    });
+  });
+  Promise.all(promises)
+    .then(function(){
+      if(btn){ btn.disabled=false; btn.textContent='📅 Planifier'; }
+      closePlanModal();
+      _showToast('📅 Séance planifiée sur '+dates.length+' jour'+(dates.length>1?'s':'')+' !');
+      renderCalendar();
+    })
+    .catch(function(err){
+      if(btn){ btn.disabled=false; btn.textContent='📅 Planifier'; }
+      alert('Erreur planification : '+(err&&err.message||err));
+    });
+}
+
 // Fermer overlays sur clic extérieur
 document.getElementById('saveModal').addEventListener('click', function(e){ if(e.target===this) closeSaveSession(); });
 document.getElementById('calPickerOverlay').addEventListener('click', function(e){ if(e.target===this) closeCalPicker(); });
+
+/* ================================================================
+   V2 — FONCTIONS SPÉCIFIQUES AU NOUVEAU LAYOUT
+   ================================================================ */
+
+// ── Topbar patient sync ──
+function _updatePatientUI(){
+  var nom = _progPatient ? ((_progPatient.prenom||'') + ' ' + (_progPatient.nom||'')).trim() : '';
+  // Topbar
+  var empty = document.getElementById('topbarPatientEmpty');
+  var name  = document.getElementById('topbarPatientName');
+  if(empty) empty.style.display = nom ? 'none' : 'inline';
+  if(name){ name.style.display = nom ? 'inline' : 'none'; name.textContent = '👤 ' + nom; }
+  // Elements fantômes (compat)
+  var badge = document.getElementById('patientBadge');
+  var badgeName = document.getElementById('patientBadgeName');
+  if(badge) badge.style.display = nom ? 'flex' : 'none';
+  if(badgeName) badgeName.textContent = nom;
+  var calLbl = document.getElementById('calPatientLabel');
+  if(calLbl) calLbl.textContent = nom ? '👤 ' + nom : '';
+  // Titre builder
+  _updateBuilderTitle();
+  // Cycles
+  if(_progPatient) setTimeout(function(){ if(typeof _loadCyclesForPatient==="function") _loadCyclesForPatient(); }, 0);
+}
+
+// ── Builder panel ──
+var _builderDate = '';
+
+function _enterBuilderMode(){
+  document.getElementById('builderPanel').classList.add('open');
+  document.querySelector('.app').classList.add('builder-mode');
+}
+
+function _exitBuilderMode(){
+  document.getElementById('builderPanel').classList.remove('open');
+  document.querySelector('.app').classList.remove('builder-mode');
+}
+
+function openBuilderForDate(dateStr){
+  _builderDate = dateStr;
+  _updateBuilderTitle();
+  _enterBuilderMode();
+  renderSeances(); // refresh templates
+}
+
+function openBuilderNew(){
+  _builderDate = '';
+  _currentProgId = null;
+  blocs = [];
+  _notes = '';
+  renderSession();
+  _updateBuilderTitle();
+  _enterBuilderMode();
+  renderSeances();
+}
+
+function closeBuilder(){
+  _exitBuilderMode();
+}
+
+function toggleSidebar(){
+  document.querySelector('.sidebar').classList.toggle('collapsed');
+}
+
+function _updateBuilderTitle(){
+  var titleEl = document.getElementById('builderTitle');
+  var dateBar = document.getElementById('builderDateBar');
+  var patNom = _progPatient ? ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim() : '';
+  if(titleEl) titleEl.textContent = patNom || 'Nouvelle séance';
+  if(dateBar){
+    if(_builderDate){
+      var p = _builderDate.split('-');
+      var months = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+      dateBar.textContent = '📅 Séance du ' + parseInt(p[2]) + ' ' + months[parseInt(p[1])-1] + ' ' + p[0];
+      dateBar.style.display = 'block';
+    } else {
+      dateBar.style.display = 'none';
+    }
+  }
+}
+
+// ── Override openCalPicker pour v2 : ouvrir le builder sur le jour cliqué ──
+// On surcharge _renderCalendarUI pour que le clic sur un jour ouvre le builder
+var _v2CalendarReady = false;
+function _v2InitCalendar(){
+  if(_v2CalendarReady) return;
+  _v2CalendarReady = true;
+  // Rendre le calendrier cliquable vers le builder
+  renderCalendar();
+}
+
+// Surcharge de openCalPicker pour v2 : ajoute l'ouverture du builder
+var _origOpenCalPicker = openCalPicker;
+function openCalPicker(dateStr){
+  openBuilderForDate(dateStr);
+  _origOpenCalPicker(dateStr);
+}
+
+// ── Upcoming sessions dans le centre ──
+function _renderUpcoming(){
+  if(!_progPatient) { document.getElementById('upcomingList').innerHTML = ''; return; }
+  var today = new Date().toISOString().split('T')[0];
+  var upcoming = _cloudCalEvents
+    .filter(function(e){ return e.date >= today; })
+    .sort(function(a,b){ return a.date.localeCompare(b.date); })
+    .slice(0,5);
+  if(!upcoming.length){ document.getElementById('upcomingList').innerHTML = ''; return; }
+  var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  var html = '<div style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Prochaines séances</div>';
+  upcoming.forEach(function(ev){
+    var nom = (ev.programmes&&ev.programmes.nom)||'Programme';
+    var p = ev.date.split('-');
+    var lbl = parseInt(p[2])+' '+months[parseInt(p[1])-1];
+    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:9px 12px;margin-bottom:7px;display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="openBuilderForDate(\''+ev.date+'\')">'
+          + '<div style="background:var(--accent);color:#fff;border-radius:7px;padding:5px 9px;font-size:.68rem;font-weight:700;white-space:nowrap;">'+lbl+'</div>'
+          + '<div style="font-size:.82rem;font-weight:600;flex:1;">📋 '+escH(nom)+'</div>'
+          + '<div style="color:var(--muted);font-size:.8rem;">›</div>'
+          + '</div>';
+  });
+  document.getElementById('upcomingList').innerHTML = html;
+}
+
+// ── Init v2 ──
+(function(){
+  // Charger le calendrier au démarrage
+  renderCalendar();
+  // Adapter shareCalLink pour v2 (remplace programme.html par programme_v2.html)
+  var _origShareCal = shareCalLink;
+  shareCalLink = function(){
+    if(!_progPatient){ alert('Sélectionne d\'abord un patient depuis la barre de navigation.'); return; }
+    var base = window.location.origin + window.location.pathname.replace('programme_v2.html','').replace('programme.html','') + 'athlete.html';
+    var link = base + '?patient=' + _progPatient.id;
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(link).then(function(){ alert('✅ Lien calendrier copié !\n\n'+link); }).catch(function(){ prompt('Copie ce lien :',link); });
+    } else { prompt('Copie ce lien :',link); }
+  };
+})();
 </script>
 </body>
 </html>
