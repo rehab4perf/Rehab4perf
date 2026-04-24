@@ -592,7 +592,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   <!-- ONGLETS -->
   <div class="main-tabs">
     <button class="main-tab active" id="mtab-seance" onclick="showMainTab('seance')">📋 Séance</button>
-    <button class="main-tab" id="mtab-seances" onclick="showMainTab('seances')">📁 Mes séances</button>
+    <button class="main-tab" id="mtab-seances" onclick="showMainTab('seances')">📁 Templates</button>
     <button class="main-tab" id="mtab-cal" onclick="showMainTab('cal')">📅 Calendrier</button>
   </div>
 
@@ -600,6 +600,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   <div class="main-panel active" id="mpanel-seance">
     <div class="main-header">
       <h1>Prescription d'exercices</h1>
+      <div id="patientBadge" style="display:none;background:#EEF3FB;border:1px solid #2B5FA6;border-radius:20px;padding:4px 12px;font-size:.76rem;font-weight:600;color:#1A3A5C;white-space:nowrap;">👤 <span id="patientBadgeName"></span></div>
       <input class="patient-input" type="text" id="patientName" placeholder="Nom du patient" />
       <button class="btn btn-outline" onclick="addBloc()">+ Bloc</button>
       <button id="prog-cloud-save-btn" class="btn btn-outline" onclick="saveProgToCloud()" style="background:#EEF3FB;color:#1A3A5C;border-color:#2B5FA6;white-space:nowrap;">☁️ Sauvegarder</button>
@@ -608,7 +609,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
         <button class="more-btn" onclick="toggleMoreMenu(event)" title="Plus d'options">• • •</button>
         <div class="more-dropdown" id="moreDropdown">
           <button class="more-item" onclick="openCycles();closeMoreMenu()">🔄 Cycles</button>
-          <button class="more-item" onclick="openSaveSession();closeMoreMenu()">💾 Enregistrer la séance</button>
+          <button class="more-item" onclick="openSaveSession();closeMoreMenu()">💾 Sauvegarder comme template</button>
           <button class="more-item" onclick="shareProgLink();closeMoreMenu()">🔗 Partager avec l'athlète</button>
           <button class="more-item" onclick="exportSession();closeMoreMenu()">📤 Exporter HTML</button>
           <button class="more-item" onclick="window.print();closeMoreMenu()">🖨 Imprimer</button>
@@ -625,15 +626,16 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
     </div>
   </div>
 
-  <!-- PANEL 2 : MES SÉANCES -->
+  <!-- PANEL 2 : TEMPLATES -->
   <div class="main-panel" id="mpanel-seances">
     <div class="main-header">
-      <h1>Mes séances enregistrées</h1>
+      <h1>Templates de séances</h1>
+      <span style="font-size:.72rem;color:var(--muted);flex:1;">Séances réutilisables · stockées localement sur cet appareil</span>
     </div>
     <div class="seances-area" id="seancesArea">
       <div class="empty-state" id="emptySeances">
         <div class="icon">📁</div>
-        <p>Aucune séance enregistrée.<br>Construisez une séance et cliquez sur 💾 Enregistrer.</p>
+        <p>Aucun template enregistré.<br>Construisez une séance et utilisez <strong>💾 Sauvegarder comme template</strong>.</p>
       </div>
     </div>
   </div>
@@ -1925,11 +1927,12 @@ window.addEventListener('message', function(e){
         _progUid = payload.sub || null;
       } catch(ex){}
     }
-    // Auto-remplir le champ nom du patient
+    // Auto-remplir le champ nom du patient + mettre à jour toute l'UI
     if(_progPatient){
       var pnEl = document.getElementById('patientName');
       if(pnEl && !pnEl.value) pnEl.value = _progPatient.prenom + ' ' + _progPatient.nom;
     }
+    _updatePatientUI();
   }
 });
 
@@ -1971,7 +1974,27 @@ var _progToken     = null;
       if(pnEl && !pnEl.value) pnEl.value = _progPatient.prenom + ' ' + _progPatient.nom;
     }
   } catch(ex){}
+  _updatePatientUI();
 })();
+
+// ── Met à jour tous les éléments UI liés au patient actif ──
+function _updatePatientUI(){
+  var nom = _progPatient ? (_progPatient.prenom||'') + ' ' + (_progPatient.nom||'') : '';
+  nom = nom.trim();
+  // Badge séance
+  var badge = document.getElementById('patientBadge');
+  var badgeName = document.getElementById('patientBadgeName');
+  if(badge){ badge.style.display = nom ? 'flex' : 'none'; }
+  if(badgeName){ badgeName.textContent = nom; }
+  // Label calendrier
+  var calLbl = document.getElementById('calPatientLabel');
+  if(calLbl){ calLbl.textContent = nom ? '👤 ' + nom : ''; }
+  // Header templates
+  var tmplHeader = document.querySelector('#mpanel-seances .main-header h1');
+  if(tmplHeader){ tmplHeader.textContent = nom ? 'Templates — ' + nom : 'Templates de séances'; }
+  // Charger les cycles du patient depuis Supabase
+  if(_progPatient) _loadCyclesForPatient();
+}
 
 function _sbHeaders(){
   return {
@@ -2283,6 +2306,37 @@ renderLib('');
 // ── CYCLES ────────────────────────────────────────────────────
 var _cycles = [];
 try { _cycles = JSON.parse(localStorage.getItem('r4p-cycles')||'[]'); } catch(e){ _cycles=[]; }
+
+// Sauvegarde cycles : Supabase si patient sélectionné, sinon localStorage
+function _saveCyclesToCloud(){
+  try { localStorage.setItem('r4p-cycles', JSON.stringify(_cycles)); } catch(e){}
+  if(!_progPatient || !_progToken) return;
+  fetch(SUPA_URL_P + '/rest/v1/patient_settings', {
+    method: 'POST',
+    headers: Object.assign({}, _sbHeaders(), { 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
+    body: JSON.stringify({ patient_id: _progPatient.id, cycles: _cycles, updated_at: new Date().toISOString() })
+  }).catch(function(err){ console.warn('Cycles cloud save:', err); });
+}
+
+// Charge les cycles depuis Supabase pour le patient actif
+function _loadCyclesForPatient(){
+  if(!_progPatient){ return; }
+  fetch(SUPA_URL_P + '/rest/v1/patient_settings?patient_id=eq.' + _progPatient.id + '&select=cycles', {
+    headers: { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json' }
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    var arr = Array.isArray(data) ? data : [];
+    if(arr.length && Array.isArray(arr[0].cycles)){
+      _cycles = arr[0].cycles;
+      try { localStorage.setItem('r4p-cycles', JSON.stringify(_cycles)); } catch(e){}
+    }
+    renderCycleTimeline();
+    // Rafraîchir le calendrier pour afficher les cycles du patient
+    if(document.getElementById('mpanel-cal').classList.contains('active')) renderCalendar();
+  })
+  .catch(function(){ /* garde les cycles localStorage */ });
+}
 var _cycleColors = {
   'Force':'#1A3A5C','Puissance':'#C0392B','Hypertrophie':'#2D7D46',
   'Endurance de force':'#2B5FA6','Récupération':'#D4600A','Réathlétisation':'#9B2C6B'
@@ -2321,12 +2375,12 @@ function addCycle(){
   var volume = document.getElementById('cycle-volume').value;
   var startDate = document.getElementById('cycle-start').value || '';
   _cycles.push({id:'c'+Date.now(), nom:nom, duree:duree, intensite:intensite, volume:volume, startDate:startDate});
-  try { localStorage.setItem('r4p-cycles', JSON.stringify(_cycles)); } catch(e){}
+  _saveCyclesToCloud();
   renderCycleTimeline();
 }
 function deleteCycle(id){
   _cycles = _cycles.filter(function(c){ return c.id !== id; });
-  try { localStorage.setItem('r4p-cycles', JSON.stringify(_cycles)); } catch(e){}
+  _saveCyclesToCloud();
   renderCycleTimeline();
 }
 function renderCycleTimeline(){

@@ -233,6 +233,8 @@ var SUPA_URL = 'https://sxdobjodxkwexaspepdm.supabase.co';
 var SUPA_KEY = 'sb_publishable_zEJrmQOnKyRm-Y_NyojaTA_ERrDx4pl';
 
 var OBJ_LABELS = { libre:'Libre', endurance:'Endurance', puissance:'Puissance', hypertrophie:'Hypertrophie', forcemax:'Force max' };
+var CYCLE_COLORS = {'Force':'#1A3A5C','Puissance':'#C0392B','Hypertrophie':'#2D7D46','Endurance de force':'#2B5FA6','Récupération':'#D4600A','Réathlétisation':'#9B2C6B'};
+function _cycleColor(nom){ return CYCLE_COLORS[nom] || '#52514E'; }
 var MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 var DAYS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
 
@@ -242,6 +244,7 @@ var _progId = '';
 var _calYear = new Date().getFullYear();
 var _calMonth = new Date().getMonth();
 var _calEvents = []; // [{id, date, programme_id, programmes:{nom}}]
+var _calCycles = []; // cycles du patient depuis patient_settings
 
 function escH(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
@@ -315,14 +318,21 @@ function renderProgInMain(prog){
 function renderCalendar(){
   var btn = document.getElementById('refreshBtn');
   btn.disabled = true; btn.textContent = '⏳';
-  fetch(SUPA_URL + '/rest/v1/seances_planifiees?patient_id=eq.' + _patientId
-      + '&select=id,date,programme_id,programmes(nom)&order=date.asc', {
-    headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
-  })
-  .then(function(r){ return r.json(); })
-  .then(function(data){
+  // Charge séances planifiées ET cycles en parallèle
+  Promise.all([
+    fetch(SUPA_URL + '/rest/v1/seances_planifiees?patient_id=eq.' + _patientId
+        + '&select=id,date,programme_id,programmes(nom)&order=date.asc', {
+      headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
+    }).then(function(r){ return r.json(); }),
+    fetch(SUPA_URL + '/rest/v1/patient_settings?patient_id=eq.' + _patientId + '&select=cycles', {
+      headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
+    }).then(function(r){ return r.json(); })
+  ])
+  .then(function(results){
     btn.disabled = false; btn.textContent = '↻ Actualiser';
-    _calEvents = Array.isArray(data) ? data : [];
+    _calEvents = Array.isArray(results[0]) ? results[0] : [];
+    var settingsArr = Array.isArray(results[1]) ? results[1] : [];
+    _calCycles = (settingsArr.length && Array.isArray(settingsArr[0].cycles)) ? settingsArr[0].cycles : [];
     _renderCalGrid();
     document.getElementById('lastUpdated').textContent = 'Actualisé à ' + new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
   })
@@ -359,9 +369,21 @@ function _renderCalGrid(){
       return '<div class="cal-chip" onclick="event.stopPropagation();openProgModal(\''+escH(ev.programme_id)+'\',\''+escH(nom)+'\')" title="'+escH(nom)+'">'
            + '📋 '+escH(nom.length>10?nom.slice(0,10)+'…':nom)+'</div>';
     }).join('');
+    // Cycles actifs pour ce jour
+    var cycleChips = '';
+    _calCycles.forEach(function(cy){
+      if(!cy.startDate) return;
+      var cyStart = new Date(cy.startDate); cyStart.setHours(0,0,0,0);
+      var cyEnd = new Date(cyStart); cyEnd.setDate(cyEnd.getDate() + cy.duree * 7);
+      if(cellDate >= cyStart && cellDate < cyEnd){
+        var weekNum = Math.floor((cellDate - cyStart) / (7*24*3600*1000)) + 1;
+        var col = _cycleColor(cy.nom);
+        cycleChips += '<div style="font-size:.58rem;font-weight:700;color:#fff;background:'+col+';border-radius:3px;padding:1px 4px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+escH(cy.nom)+' — Semaine '+weekNum+'/'+cy.duree+'">'+escH(cy.nom)+' S'+weekNum+'</div>';
+      }
+    });
     cells += '<div class="cal-day'+(isToday?' today':'')+'">'
            + '<div class="cal-day-num">'+d+'</div>'
-           + chips+'</div>';
+           + chips+cycleChips+'</div>';
   }
 
   var html = '<div class="cal-nav">'
