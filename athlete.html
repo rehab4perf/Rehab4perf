@@ -68,11 +68,17 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
 .bloc-badge.forcemax { background:rgba(248,113,113,.3); }
 
 .methode-card {
-  padding:9px 14px; font-size:.76rem; color:var(--muted);
-  border-bottom:1px solid var(--border); background:#FAFBFD;
-  display:flex; align-items:baseline; gap:6px; flex-wrap:wrap;
+  margin:8px 12px; padding:9px 12px; border-radius:7px; font-size:.76rem;
+  line-height:1.5; border-left:3px solid #6b7a8d;
+  background:#F5F7FA; color:#4a5568;
 }
-.methode-label { font-weight:700; color:var(--accent); }
+.methode-card.mc-endurance    { background:#F0FAF0; border-color:#2D7D46; color:#1a4d28; }
+.methode-card.mc-puissance    { background:#F5F0FF; border-color:#7B2DBF; color:#4a1d8a; }
+.methode-card.mc-hypertrophie { background:#EEF3FB; border-color:#2B5FA6; color:#1a3a6e; }
+.methode-card.mc-forcemax     { background:#FEF0EE; border-color:#C0392B; color:#7a1a10; }
+.methode-card-label { font-weight:700; margin-bottom:3px; font-size:.78rem; }
+.methode-card-desc  { opacity:.9; }
+.methode-card-protocol { margin-top:5px; font-size:.7rem; opacity:.75; }
 
 .exo-list { padding:6px 0; }
 .exo-item { padding:11px 14px; border-bottom:1px solid var(--border); }
@@ -440,6 +446,40 @@ function closeProgModal(){
   document.getElementById('progModal').classList.remove('open');
 }
 
+// ── Dictionnaire méthodes (même source que programme_v2.html) ──
+var METHODES = {
+  libre:     { label:'Libre', methods:[] },
+  endurance: { label:'Endurance de force', methods:[
+    { id:'circuit',   label:'Circuit Training', desc:'Enchaîner tous les exercices · 40s effort / 20s repos par exo · 3min récup entre circuits' },
+    { id:'tabata',    label:'HIIT-Tabata',       desc:'20s effort / 10s repos · 8 tours · RPE 8-9' },
+    { id:'amrap',     label:'AMRAP',             desc:'Max reps en temps fixé · RPE 8-9' },
+    { id:'emom',      label:'EMOM',              desc:'Reps fixées chaque minute · RPE 7-8' },
+    { id:'fortime',   label:'For Time',          desc:'Volume fixé, le plus vite possible · RPE 9' },
+    { id:'deathby',   label:'Death By',          desc:'+1 rép par minute jusqu\'à l\'échec · RPE max' },
+  ]},
+  puissance: { label:'Puissance', methods:[
+    { id:'contraste-ll1', label:'Contraste de charge — option 1', desc:'4 séries · 3 reps à 80% RM + 3 reps légères enchaînées · 3min récup' },
+    { id:'contraste-ll2', label:'Contraste de charge — option 2', desc:'4 séries · 4 reps à 60% RM tempo 2/0/1/0 + 4 reps légères enchaînées · 2-3min récup' },
+    { id:'iso-dyn',       label:'Isométrique-Dynamique',          desc:'3 séries · ISO 3s + repos 7s + ISO 3s + 6 reps actives · 3min récup',          protocol:'ISO 3s → repos 7s → ISO 3s → 6 reps actives' },
+    { id:'concentrique',  label:'Concentrique volontaire',        desc:'3 séries / côté · 5 reps · RPE 5 · 2min récup · vitesse maximale' },
+    { id:'plyometrie',    label:'Plyométrie',                     desc:'3 séries / côté · 4 reps à 30% RM · 2min récup' },
+  ]},
+  hypertrophie: { label:'Hypertrophie', methods:[
+    { id:'biset',       label:'Bi-Set',   desc:'3 séries · Exo 1 : 8 reps @ 75% · Exo 2 : 10 reps @ 12RM · 1min30 récup' },
+    { id:'triset',      label:'Tri-Set',  desc:'3 séries · Exo 1 : 6 reps RIR 2 · Exo 2 : 10 reps RIR 1 · Exo 3 : 10 reps RIR 0 · 2min récup' },
+    { id:'superset',    label:'Super-Set',desc:'3 séries · Exo 1 : 6 reps RPE 8 · Exo 2 : 6 reps tempo 3/2/1/0' },
+    { id:'cluster-hyp', label:'Cluster', desc:'3 séries · 10 reps à 80% RM · 3min récup', protocol:'5 reps → repos 15s → 3 reps → repos 10s → 2 reps → repos 5s → 1 rep → repos 5s → 1 rep' },
+  ]},
+  forcemax: { label:'Force maximale', methods:[
+    { id:'det3rm',          label:'Détermination 3RM',        desc:'4 séries · 3 reps jusqu\'à la 3RM · montée progressive · 1-5min récup' },
+    { id:'cluster-fm',      label:'Cluster',                  desc:'3 séries · 4 reps à 93% de la 1RM · 4-5min récup', protocol:'1 rep → repos 10s → 1 rep → repos 10s → 1 rep → repos 10s → 1 rep' },
+    { id:'pyramidal-fm',    label:'Pyramidal',                desc:'3 reps @ 90% → 2 reps @ 95% → 1 rep @ 97-100% · 4min récup', protocol:'Série 1 : 3 reps @ 90%  ·  Série 2 : 2 reps @ 95%  ·  Série 3 : 1 rep @ 97-100%' },
+    { id:'iso-max',         label:'Isométrie max (Overcoming)',desc:'3 séries · 7s d\'isométrie maximale · 3min récup' },
+    { id:'excentrique-sm',  label:'Excentrique sous-max',     desc:'5 reps à 5RM · tempo 5/0/1/4 · 3min récup' },
+    { id:'excentrique-sup', label:'Excentrique supra-max',    desc:'4 séries · 4 reps à 120% de la RM · 5min récup' },
+  ]},
+};
+
 // ── Construction HTML d'un programme ────────────────
 function buildProgHTML(prog){
   var raw = prog.donnees || [];
@@ -465,7 +505,17 @@ function buildProgHTML(prog){
          +  '<span class="bloc-badge '+escH(obj)+'">'+escH(OBJ_LABELS[obj]||obj)+'</span>'
          +  '</div>';
     if(b.methode){
-      html += '<div class="methode-card"><span class="methode-label">Méthode :</span><span>'+escH(b.methode)+'</span></div>';
+      var objDef = METHODES[obj] || METHODES.libre;
+      var methObj = objDef.methods.find(function(m){ return m.id===b.methode; });
+      if(methObj){
+        html += '<div class="methode-card mc-'+escH(obj)+'">'
+             +  '<div class="methode-card-label">'+escH(objDef.label)+' — '+escH(methObj.label)+'</div>'
+             +  '<div class="methode-card-desc">'+escH(methObj.desc)+'</div>';
+        if(methObj.protocol){
+          html += '<div class="methode-card-protocol">⚙ Structure : '+escH(methObj.protocol)+'</div>';
+        }
+        html += '</div>';
+      }
     }
     html += '<div class="exo-list">';
     (b.exos||[]).forEach(function(e, idx){
