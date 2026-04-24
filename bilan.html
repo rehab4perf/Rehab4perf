@@ -2932,6 +2932,11 @@ function updateAll() {
   calcSHRT();
   calcULRT();
 
+  // Tests Rachis
+  try{ calcRachisStat(); }catch(ex){}
+  try{ calcLNF(); }catch(ex){}
+  try{ calcSorensen(); }catch(ex){}
+
   // Progress
   const fields = document.querySelectorAll('input[type=text],input[type=number],textarea,select');
   let filled = 0;
