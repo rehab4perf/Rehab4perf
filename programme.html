@@ -1903,12 +1903,16 @@ window.addEventListener('message', function(e){
         var payload = JSON.parse(atob(e.data.auth.access_token.split('.')[1]));
         _progUid = payload.sub || null;
       } catch(ex){}
-      // Recréer le client avec le token directement dans les headers HTTP
-      // (évite setSession() async qui bloque les requêtes en contexte iframe)
+      // Recréer le client avec Bearer token + storage no-op
+      // (évite initialize() async et son verrou interne en contexte iframe)
       try {
         sbP = supabase.createClient(SUPA_URL_P, SUPA_KEY_P, {
           global: { headers: { Authorization: 'Bearer ' + e.data.auth.access_token } },
-          auth: { persistSession: false, autoRefreshToken: false }
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            storage: { getItem: function(){ return null; }, setItem: function(){}, removeItem: function(){} }
+          }
         });
       } catch(ex){}
     }
