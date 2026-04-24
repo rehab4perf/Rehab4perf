@@ -1968,7 +1968,7 @@ function saveProgToCloud(){
   var btn = document.getElementById('prog-cloud-save-btn');
   btn.disabled = true; btn.textContent = '⏳ Sauvegarde…';
   var nomProg = (document.getElementById('patientName')||{}).value || ('Programme du '+new Date().toLocaleDateString('fr-FR'));
-  var donnees = JSON.parse(JSON.stringify(session||[]));
+  var donnees = JSON.parse(JSON.stringify(blocs||[]));
   var today = new Date().toISOString().split('T')[0];
   var url, method, body;
   if(_currentProgId){
@@ -2050,7 +2050,7 @@ function _loadProg(id){
       var d = Array.isArray(data) ? data[0] : data;
       if(!d || d.code){ alert('Erreur lors du chargement.'); return; }
       _currentProgId = d.id;
-      session = d.donnees || [];
+      blocs = d.donnees || [];
       var pnEl = document.getElementById('patientName');
       if(pnEl) pnEl.value = d.nom || '';
       renderSession();
@@ -2065,7 +2065,7 @@ function _loadProg(id){
 function _newProgVierge(){
   if(!confirm('Créer un nouveau programme vierge ? (le programme actuel non sauvegardé sera perdu)')) return;
   _currentProgId = null;
-  session = [];
+  blocs = [];
   renderSession();
   var overlay = document.getElementById('progHistoOverlay');
   if(overlay) overlay.style.display='none';
