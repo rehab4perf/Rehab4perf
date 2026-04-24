@@ -3435,11 +3435,17 @@ function buildCR() {
   var tfMsHtml = '';
   var psetCAv = parseFloat(document.getElementById('pset-ca') ? document.getElementById('pset-ca').value : '');
   var psetCSv = parseFloat(document.getElementById('pset-cs') ? document.getElementById('pset-cs').value : '');
+  var psetPoidsReelV = document.getElementById('pset-poids-reel') ? document.getElementById('pset-poids-reel').value : '';
   var setCAv  = parseFloat(document.getElementById('set-ca')  ? document.getElementById('set-ca').value  : '');
   var setCSv  = parseFloat(document.getElementById('set-cs')  ? document.getElementById('set-cs').value  : '');
   var shrtEl2 = document.getElementById('shrt-lsi');
   var ulrtEl2 = document.getElementById('ulrt-lsi');
-  if (!isNaN(psetCAv)) { var pl = psetCSv>0?(psetCAv/psetCSv*100):NaN; tfMsHtml += crItem('PSET', 'CA=' + psetCAv + '   CS=' + psetCSv + (!isNaN(pl)?'   LSI=' + pl.toFixed(1) + '%':''), statOf2(lsiCls2(psetCAv,psetCSv)), lsiCls2(psetCAv,psetCSv)); }
+  if (!isNaN(psetCAv)) {
+    var pl = psetCSv>0?(psetCAv/psetCSv*100):NaN;
+    var psetVal = 'CA=' + psetCAv + '   CS=' + (isNaN(psetCSv)?'-':psetCSv) + (!isNaN(pl)?'   LSI=' + pl.toFixed(1) + '%':'');
+    if (psetPoidsReelV) psetVal += '   — Poids utilisé : ' + psetPoidsReelV + ' kg';
+    tfMsHtml += crItem('PSET', psetVal, statOf2(lsiCls2(psetCAv,psetCSv)), lsiCls2(psetCAv,psetCSv));
+  }
   tfMsHtml += obsBlock('pset-obs-ca','pset-obs-cs');
   if (!isNaN(setCAv))  { var sl = setCSv>0?(setCAv/setCSv*100):NaN; tfMsHtml += crItem('Shoulder Endurance', 'CA=' + setCAv + '   CS=' + setCSv + (!isNaN(sl)?'   LSI=' + sl.toFixed(1) + '%':''), statOf2(lsiCls2(setCAv,setCSv)), lsiCls2(setCAv,setCSv)); }
   tfMsHtml += obsBlock('set-obs-ca','set-obs-cs');
