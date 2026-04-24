@@ -459,7 +459,45 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .main-panel.active { display:flex; }
 
 /* ── CALENDRIER CENTRAL ── */
-.cal-central { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.cal-central {
+  flex:1; display:flex; flex-direction:column; overflow:hidden;
+  transition: flex 0.28s cubic-bezier(.4,0,.2,1), opacity 0.2s ease, min-width 0.28s;
+}
+
+/* ── BUILDER MODE : full-center takeover ── */
+.app.builder-mode .cal-central {
+  flex: 0 0 0px !important;
+  min-width: 0 !important;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+.app.builder-mode .builder-panel {
+  flex: 1;
+  width: auto !important;
+  max-width: none !important;
+  min-width: 0;
+  transform: none !important;
+  border-left: none;
+}
+/* Zone de travail : lisible et centrée */
+.app.builder-mode .session-area {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 20px 28px;
+}
+/* Revenir au layout exo-row large (9 colonnes originales) */
+.app.builder-mode .builder-body .exo-col-header,
+.app.builder-mode .builder-body .exo-row {
+  grid-template-columns: 28px 1fr 60px 60px 48px 60px 76px 180px 32px;
+  grid-template-rows: auto;
+  gap: 6px;
+}
+.app.builder-mode .builder-body .exo-row > *:nth-child(8) { grid-column: auto; grid-row: auto; }
+.app.builder-mode .builder-body .exo-row > *:nth-child(9) { grid-column: auto; grid-row: auto; }
+.app.builder-mode .builder-body .exo-row > *:nth-child(10) { grid-column: 1/-1; grid-row: auto; }
+.app.builder-mode .builder-body .exo-col-header > *:nth-child(8) { display: block; }
+.app.builder-mode .builder-body .cell-input { font-size: .78rem; padding: 5px 6px; }
 .cal-central-header {
   padding:10px 14px; background:var(--surface); border-bottom:1px solid var(--border);
   display:flex; align-items:center; gap:8px; flex-shrink:0;
@@ -2213,6 +2251,7 @@ function _loadProg(id){
       var pnEl = document.getElementById('patientName');
       if(pnEl) pnEl.value = d.nom || '';
       renderSession();
+      _enterBuilderMode();
       var overlay = document.getElementById('progHistoOverlay');
       if(overlay) overlay.style.display='none';
       var btn = document.getElementById('prog-cloud-save-btn');
@@ -2673,9 +2712,11 @@ function loadSeance(id) {
   if(!confirm('Charger "'+s.name+'" ? La séance en cours sera remplacée.')) return;
   blocs = JSON.parse(JSON.stringify(s.blocs||[]));
   activeBloc = blocs.length ? blocs[0].id : null;
+  _builderDate = '';
   renderSession();
+  _updateBuilderTitle();
   renderLib(document.getElementById('searchInput').value.toLowerCase());
-  showMainTab('seance');
+  _enterBuilderMode();
 }
 
 function deleteSeance(id) {
@@ -2957,10 +2998,20 @@ function _updatePatientUI(){
 // ── Builder panel ──
 var _builderDate = '';
 
+function _enterBuilderMode(){
+  document.getElementById('builderPanel').classList.add('open');
+  document.querySelector('.app').classList.add('builder-mode');
+}
+
+function _exitBuilderMode(){
+  document.getElementById('builderPanel').classList.remove('open');
+  document.querySelector('.app').classList.remove('builder-mode');
+}
+
 function openBuilderForDate(dateStr){
   _builderDate = dateStr;
   _updateBuilderTitle();
-  document.getElementById('builderPanel').classList.add('open');
+  _enterBuilderMode();
   renderSeances(); // refresh templates
 }
 
@@ -2971,12 +3022,12 @@ function openBuilderNew(){
   _notes = '';
   renderSession();
   _updateBuilderTitle();
-  document.getElementById('builderPanel').classList.add('open');
+  _enterBuilderMode();
   renderSeances();
 }
 
 function closeBuilder(){
-  document.getElementById('builderPanel').classList.remove('open');
+  _exitBuilderMode();
 }
 
 function toggleSidebar(){
