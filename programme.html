@@ -1897,23 +1897,12 @@ window.addEventListener('message', function(e){
     _progPatient = e.data.patient;
     _currentProgId = null;
     try { localStorage.setItem('r4p-current-patient', e.data.patient ? JSON.stringify(e.data.patient) : ''); } catch(ex){}
-    // Récupérer l'uid depuis le token d'auth envoyé par le parent
+    // Récupérer uid et token depuis le payload JWT envoyé par le parent
     if(e.data.auth && e.data.auth.access_token){
+      _progToken = e.data.auth.access_token;
       try {
-        var payload = JSON.parse(atob(e.data.auth.access_token.split('.')[1]));
+        var payload = JSON.parse(atob(_progToken.split('.')[1]));
         _progUid = payload.sub || null;
-      } catch(ex){}
-      // Recréer le client avec Bearer token + storage no-op
-      // (évite initialize() async et son verrou interne en contexte iframe)
-      try {
-        sbP = supabase.createClient(SUPA_URL_P, SUPA_KEY_P, {
-          global: { headers: { Authorization: 'Bearer ' + e.data.auth.access_token } },
-          auth: {
-            persistSession: false,
-            autoRefreshToken: false,
-            storage: { getItem: function(){ return null; }, setItem: function(){}, removeItem: function(){} }
-          }
-        });
       } catch(ex){}
     }
     // Auto-remplir le champ nom du patient
@@ -1934,15 +1923,20 @@ var sbP = supabase.createClient(SUPA_URL_P, SUPA_KEY_P);
 var _progPatient   = null;
 var _currentProgId = null;
 var _progUid       = null;
+var _progToken     = null;
 
-// Essayer de récupérer l'uid depuis le localStorage Supabase (fallback au chargement)
+// Fallback : récupérer uid + token depuis localStorage au chargement
 (function(){
   try {
     var raw = localStorage.getItem('sb-sxdobjodxkwexaspepdm-auth-token');
     if(raw){
       var parsed = JSON.parse(raw);
       var tok = parsed.access_token || (parsed.currentSession && parsed.currentSession.access_token);
-      if(tok){ var pl = JSON.parse(atob(tok.split('.')[1])); _progUid = pl.sub || null; }
+      if(tok){
+        _progToken = tok;
+        var pl = JSON.parse(atob(tok.split('.')[1]));
+        _progUid = pl.sub || null;
+      }
     }
   } catch(ex){}
 })();
@@ -1959,31 +1953,48 @@ var _progUid       = null;
   } catch(ex){}
 })();
 
+function _sbHeaders(){
+  return {
+    'Authorization': 'Bearer ' + _progToken,
+    'apikey': SUPA_KEY_P,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation'
+  };
+}
+
 function saveProgToCloud(){
   if(!_progPatient){ alert('Sélectionnez un patient depuis la barre de navigation.'); return; }
-  if(!_progUid){ alert('Session non disponible. Veuillez sélectionner à nouveau le patient depuis la barre de navigation.'); return; }
+  if(!_progUid || !_progToken){ alert('Session non disponible. Veuillez sélectionner à nouveau le patient depuis la barre de navigation.'); return; }
   var btn = document.getElementById('prog-cloud-save-btn');
   btn.disabled = true; btn.textContent = '⏳ Sauvegarde…';
   var nomProg = (document.getElementById('patientName')||{}).value || ('Programme du '+new Date().toLocaleDateString('fr-FR'));
   var donnees = JSON.parse(JSON.stringify(session||[]));
   var today = new Date().toISOString().split('T')[0];
-  var p;
+  var url, method, body;
   if(_currentProgId){
-    p = sbP.from('programmes').update({donnees:donnees,nom:nomProg,date:today}).eq('id',_currentProgId).select().single();
+    url = SUPA_URL_P + '/rest/v1/programmes?id=eq.' + _currentProgId;
+    method = 'PATCH';
+    body = JSON.stringify({donnees:donnees, nom:nomProg, date:today});
   } else {
-    p = sbP.from('programmes').insert({patient_id:_progPatient.id,praticien_id:_progUid,nom:nomProg,date:today,donnees:donnees}).select().single();
+    url = SUPA_URL_P + '/rest/v1/programmes';
+    method = 'POST';
+    body = JSON.stringify({patient_id:_progPatient.id, praticien_id:_progUid, nom:nomProg, date:today, donnees:donnees});
   }
-  p.then(function(res){
-    btn.disabled=false;
-    if(res.error){ btn.textContent='☁️ Sauvegarder'; alert('Erreur : '+res.error.message); return; }
-    if(!_currentProgId) _currentProgId = res.data.id;
-    btn.textContent='✓ Sauvegardé !';
-    setTimeout(function(){ btn.textContent='☁️ Sauvegarder'; },2500);
-  }).catch(function(err){
-    btn.disabled=false;
-    btn.textContent='☁️ Sauvegarder';
-    alert('Erreur réseau : '+(err&&err.message||err));
-  });
+  fetch(url, {method:method, headers:_sbHeaders(), body:body})
+    .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, status:r.status, data:d}; }); })
+    .then(function(res){
+      btn.disabled = false;
+      if(!res.ok){ btn.textContent='☁️ Sauvegarder'; alert('Erreur '+res.status+' : '+JSON.stringify(res.data)); return; }
+      var d = Array.isArray(res.data) ? res.data[0] : res.data;
+      if(!_currentProgId && d && d.id) _currentProgId = d.id;
+      btn.textContent = '✓ Sauvegardé !';
+      setTimeout(function(){ btn.textContent='☁️ Sauvegarder'; }, 2500);
+    })
+    .catch(function(err){
+      btn.disabled = false;
+      btn.textContent = '☁️ Sauvegarder';
+      alert('Erreur réseau : '+(err&&err.message||err));
+    });
 }
 
 function openProgHistory(){
@@ -2007,12 +2018,16 @@ function openProgHistory(){
   }
   overlay.style.display = 'flex';
   document.getElementById('progHistoList').innerHTML = '<div style="padding:28px 20px;text-align:center;color:#9D9B96;font-style:italic;">Chargement…</div>';
-  sbP.from('programmes').select('id,nom,date').eq('patient_id',_progPatient.id).order('date',{ascending:false}).then(function(res){
+  var histoUrl = SUPA_URL_P + '/rest/v1/programmes?patient_id=eq.' + _progPatient.id + '&select=id,nom,date&order=date.desc';
+  fetch(histoUrl, {method:'GET', headers:_sbHeaders()})
+    .then(function(r){ return r.json(); })
+    .then(function(data){
     var list = document.getElementById('progHistoList');
-    if(res.error||!res.data.length){
+    if(!data || !data.length){
       list.innerHTML='<div style="padding:28px 20px;text-align:center;color:#9D9B96;font-style:italic;">Aucun programme enregistré pour ce patient.</div>';
       return;
     }
+    var res = { data: data };
     list.innerHTML = res.data.map(function(p){
       var d = p.date ? p.date.split('-').reverse().join('/') : '—';
       var isCurrent = _currentProgId === p.id;
@@ -2028,18 +2043,23 @@ function openProgHistory(){
 function _escP(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function _loadProg(id){
-  sbP.from('programmes').select('*').eq('id',id).single().then(function(res){
-    if(res.error){ alert('Erreur : '+res.error.message); return; }
-    _currentProgId = res.data.id;
-    session = res.data.donnees || [];
-    var pnEl = document.getElementById('patientName');
-    if(pnEl) pnEl.value = res.data.nom || '';
-    renderSession();
-    var overlay = document.getElementById('progHistoOverlay');
-    if(overlay) overlay.style.display='none';
-    var btn = document.getElementById('prog-cloud-save-btn');
-    if(btn){ btn.textContent='✓ Programme chargé'; setTimeout(function(){ btn.textContent='☁️ Sauvegarder'; },2500); }
-  });
+  var url = SUPA_URL_P + '/rest/v1/programmes?id=eq.' + id + '&select=*';
+  fetch(url, {method:'GET', headers:_sbHeaders()})
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      var d = Array.isArray(data) ? data[0] : data;
+      if(!d || d.code){ alert('Erreur lors du chargement.'); return; }
+      _currentProgId = d.id;
+      session = d.donnees || [];
+      var pnEl = document.getElementById('patientName');
+      if(pnEl) pnEl.value = d.nom || '';
+      renderSession();
+      var overlay = document.getElementById('progHistoOverlay');
+      if(overlay) overlay.style.display='none';
+      var btn = document.getElementById('prog-cloud-save-btn');
+      if(btn){ btn.textContent='✓ Programme chargé'; setTimeout(function(){ btn.textContent='☁️ Sauvegarder'; },2500); }
+    })
+    .catch(function(){ alert('Erreur réseau lors du chargement.'); });
 }
 
 function _newProgVierge(){
