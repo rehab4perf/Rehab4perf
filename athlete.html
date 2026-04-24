@@ -16,44 +16,50 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
 
 /* ── HEADER ── */
 .app-header {
-  background:var(--navy); color:#fff; padding:16px 20px 14px;
+  background:var(--navy); color:#fff; padding:14px 16px;
   position:sticky; top:0; z-index:10;
-  display:flex; align-items:center; gap:12px;
+  display:flex; align-items:center; gap:10px;
 }
-.header-logo { font-size:1.1rem; font-weight:800; letter-spacing:.03em; flex:1; }
-.header-sub { font-size:.72rem; color:rgba(255,255,255,.6); margin-top:2px; }
-.refresh-btn {
+.header-logo { font-size:1rem; font-weight:800; letter-spacing:.03em; }
+.header-sub { font-size:.68rem; color:rgba(255,255,255,.6); margin-top:1px; }
+.header-left { flex:1; }
+.header-btn {
   background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3);
-  color:#fff; border-radius:8px; padding:7px 14px; font-size:.78rem; cursor:pointer;
-  display:flex; align-items:center; gap:6px; white-space:nowrap;
-  transition:background .15s;
+  color:#fff; border-radius:8px; padding:6px 12px; font-size:.76rem; cursor:pointer;
+  white-space:nowrap; transition:background .15s;
 }
-.refresh-btn:hover { background:rgba(255,255,255,.25); }
-.refresh-btn:disabled { opacity:.5; cursor:default; }
+.header-btn:hover { background:rgba(255,255,255,.25); }
+.header-btn:disabled { opacity:.5; cursor:default; }
+.back-btn {
+  background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.25);
+  color:#fff; border-radius:8px; padding:6px 12px; font-size:.76rem; cursor:pointer;
+  display:none; align-items:center; gap:6px;
+}
+.back-btn.visible { display:flex; }
 
 /* ── CONTENT ── */
-.content { max-width:720px; margin:0 auto; padding:20px 16px 40px; }
+.content { max-width:760px; margin:0 auto; padding:16px 14px 40px; }
 
 /* ── PROG META ── */
 .prog-meta {
-  background:var(--surface); border-radius:12px; padding:16px 18px;
-  border:1px solid var(--border); margin-bottom:20px;
+  background:var(--surface); border-radius:12px; padding:14px 16px;
+  border:1px solid var(--border); margin-bottom:16px;
 }
-.prog-title { font-size:1.15rem; font-weight:700; color:var(--navy); margin-bottom:4px; }
-.prog-date { font-size:.78rem; color:var(--muted); }
+.prog-title { font-size:1.1rem; font-weight:700; color:var(--navy); margin-bottom:3px; }
+.prog-date { font-size:.76rem; color:var(--muted); }
 
 /* ── BLOC ── */
 .bloc {
   background:var(--surface); border-radius:12px;
-  border:1px solid var(--border); margin-bottom:16px; overflow:hidden;
+  border:1px solid var(--border); margin-bottom:14px; overflow:hidden;
 }
 .bloc-header {
-  padding:12px 16px; background:var(--navy);
+  padding:11px 14px; background:var(--navy);
   display:flex; align-items:center; gap:10px;
 }
-.bloc-title { color:#fff; font-size:.95rem; font-weight:700; flex:1; }
+.bloc-title { color:#fff; font-size:.92rem; font-weight:700; flex:1; }
 .bloc-badge {
-  font-size:.65rem; font-weight:700; padding:3px 8px; border-radius:10px;
+  font-size:.62rem; font-weight:700; padding:3px 8px; border-radius:10px;
   background:rgba(255,255,255,.2); color:rgba(255,255,255,.9); text-transform:uppercase; letter-spacing:.04em;
 }
 .bloc-badge.endurance { background:rgba(56,189,248,.3); }
@@ -61,145 +67,229 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
 .bloc-badge.hypertrophie { background:rgba(167,139,250,.3); }
 .bloc-badge.forcemax { background:rgba(248,113,113,.3); }
 
-/* ── METHODE CARD ── */
 .methode-card {
-  padding:10px 16px; font-size:.78rem; color:var(--muted);
+  padding:9px 14px; font-size:.76rem; color:var(--muted);
   border-bottom:1px solid var(--border); background:#FAFBFD;
   display:flex; align-items:baseline; gap:6px; flex-wrap:wrap;
 }
 .methode-label { font-weight:700; color:var(--accent); }
 
-/* ── EXERCISE ── */
-.exo-list { padding:8px 0; }
-.exo-item { padding:12px 16px; border-bottom:1px solid var(--border); }
+.exo-list { padding:6px 0; }
+.exo-item { padding:11px 14px; border-bottom:1px solid var(--border); }
 .exo-item:last-child { border-bottom:none; }
 .exo-item.chained { border-left:3px solid var(--accent2); }
-
-.exo-name { font-size:.9rem; font-weight:600; color:var(--text); margin-bottom:6px; }
-.exo-tags { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+.exo-name { font-size:.88rem; font-weight:600; color:var(--text); margin-bottom:5px; }
+.exo-tags { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:7px; }
 .exo-tag {
-  font-size:.72rem; padding:3px 8px; border-radius:10px;
-  background:#EBF3FF; color:var(--accent); font-weight:500;
+  font-size:.7rem; padding:3px 8px; border-radius:10px;
+  background:#EBF3FF; color:var(--accent); font-weight:500; text-decoration:none;
 }
 .exo-tag.video { background:#E8F5E9; color:#2E7D32; }
-.exo-tag.cible { background:#FFF3E0; color:#E65100; }
 .exo-tag.chain { background:#F3F0FF; color:#5B4FBF; }
-
 .exo-params {
-  display:grid; grid-template-columns:repeat(auto-fill, minmax(90px, 1fr));
-  gap:6px;
+  display:grid; grid-template-columns:repeat(auto-fill, minmax(85px, 1fr)); gap:5px;
 }
-.param-box {
-  background:var(--bg); border-radius:8px; padding:7px 10px; text-align:center;
-}
-.param-label { font-size:.62rem; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:2px; }
-.param-val { font-size:.88rem; font-weight:700; color:var(--text); }
-.param-val.empty { color:var(--border); }
-
+.param-box { background:var(--bg); border-radius:8px; padding:6px 8px; text-align:center; }
+.param-label { font-size:.6rem; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:2px; }
+.param-val { font-size:.85rem; font-weight:700; color:var(--text); }
 .exo-consigne {
-  margin-top:8px; font-size:.78rem; color:var(--muted);
+  margin-top:7px; font-size:.76rem; color:var(--muted);
   background:#FFFBEB; border-left:3px solid #F59E0B;
-  padding:7px 10px; border-radius:0 6px 6px 0; line-height:1.5;
+  padding:6px 10px; border-radius:0 6px 6px 0; line-height:1.5;
 }
+.chain-link { text-align:center; font-size:.7rem; color:var(--accent2); padding:3px 0; font-weight:600; }
 
-.chain-link {
-  text-align:center; font-size:.72rem; color:var(--accent2);
-  padding:4px 0; font-weight:600; letter-spacing:.03em;
-}
-
-/* ── NOTES ── */
 .notes-bloc {
   background:var(--surface); border-radius:12px; border:1px solid var(--border);
-  padding:16px; margin-bottom:16px;
+  padding:14px; margin-bottom:14px;
 }
-.notes-label { font-size:.72rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:8px; }
-.notes-text { font-size:.85rem; color:var(--text); line-height:1.6; white-space:pre-wrap; }
+.notes-label { font-size:.7rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:7px; }
+.notes-text { font-size:.83rem; color:var(--text); line-height:1.6; white-space:pre-wrap; }
+
+/* ── CALENDAR ── */
+.cal-nav {
+  display:flex; align-items:center; gap:10px; margin-bottom:14px;
+  background:var(--surface); border-radius:12px; border:1px solid var(--border);
+  padding:12px 14px;
+}
+.cal-nav h2 { flex:1; text-align:center; font-size:.95rem; font-weight:700; color:var(--navy); text-transform:capitalize; }
+.cal-nav-btn {
+  background:none; border:1px solid var(--border); border-radius:8px;
+  width:32px; height:32px; cursor:pointer; font-size:.85rem; color:var(--text);
+  display:flex; align-items:center; justify-content:center;
+}
+.cal-nav-btn:hover { background:var(--bg); }
+.cal-today-btn {
+  background:var(--bg); border:1px solid var(--border); border-radius:8px;
+  padding:5px 10px; font-size:.72rem; cursor:pointer; color:var(--text);
+}
+
+.cal-grid {
+  display:grid; grid-template-columns:repeat(7,1fr); gap:3px;
+}
+.cal-day-header {
+  text-align:center; font-size:.62rem; font-weight:700; color:var(--muted);
+  text-transform:uppercase; letter-spacing:.04em; padding:5px 0;
+}
+.cal-day {
+  background:var(--surface); border:1px solid var(--border); border-radius:8px;
+  padding:6px 5px; min-height:64px; cursor:pointer; transition:background .12s;
+}
+.cal-day:hover { background:#F5F8FF; border-color:var(--accent2); }
+.cal-day.other-month { background:transparent; border-color:transparent; cursor:default; min-height:64px; }
+.cal-day.today { border-color:var(--accent); }
+.cal-day-num {
+  font-size:.72rem; font-weight:700; color:var(--muted); margin-bottom:4px; text-align:right;
+}
+.cal-day.today .cal-day-num { color:var(--accent); }
+.cal-chip {
+  font-size:.62rem; font-weight:600; padding:3px 5px; border-radius:5px;
+  background:var(--accent); color:#fff; margin-bottom:2px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  cursor:pointer; transition:opacity .12s;
+}
+.cal-chip:hover { opacity:.85; }
+.cal-empty { color:var(--border); font-size:.65rem; text-align:center; margin-top:8px; }
+
+/* ── MODAL PROGRAMME ── */
+.prog-modal-overlay {
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,.5); z-index:100;
+  align-items:flex-end; justify-content:center;
+}
+.prog-modal-overlay.open { display:flex; }
+.prog-modal {
+  background:var(--bg); width:100%; max-width:600px;
+  border-radius:18px 18px 0 0; max-height:90vh; overflow-y:auto;
+  padding-bottom:20px;
+}
+.prog-modal-header {
+  background:var(--navy); color:#fff;
+  padding:14px 16px; border-radius:18px 18px 0 0;
+  display:flex; align-items:center; gap:10px; position:sticky; top:0; z-index:2;
+}
+.prog-modal-title { flex:1; font-size:.9rem; font-weight:700; }
+.prog-modal-close {
+  background:rgba(255,255,255,.15); border:none; color:#fff;
+  border-radius:50%; width:28px; height:28px; font-size:1rem;
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+}
+.prog-modal-body { padding:14px; }
 
 /* ── STATES ── */
 .loading-state, .error-state, .empty-state {
-  text-align:center; padding:60px 20px; color:var(--muted);
+  text-align:center; padding:50px 20px; color:var(--muted);
 }
 .loading-state .spinner {
-  width:36px; height:36px; border:3px solid var(--border);
+  width:32px; height:32px; border:3px solid var(--border);
   border-top-color:var(--accent); border-radius:50%;
-  animation:spin .8s linear infinite; margin:0 auto 16px;
+  animation:spin .8s linear infinite; margin:0 auto 14px;
 }
 @keyframes spin { to { transform:rotate(360deg); } }
-.error-icon { font-size:2.5rem; margin-bottom:12px; }
-.error-title { font-size:1rem; font-weight:700; color:var(--text); margin-bottom:6px; }
-.error-msg { font-size:.82rem; }
-
-/* ── LAST UPDATED ── */
-.last-updated { text-align:center; font-size:.72rem; color:var(--muted); margin-top:8px; }
-
-/* ── FOOTER ── */
-.footer { text-align:center; font-size:.7rem; color:var(--muted); padding:20px 0 8px; }
+.error-icon { font-size:2.2rem; margin-bottom:10px; }
+.error-title { font-size:.95rem; font-weight:700; color:var(--text); margin-bottom:5px; }
+.error-msg { font-size:.8rem; }
+.last-updated { text-align:center; font-size:.68rem; color:var(--muted); margin-top:8px; }
+.footer { text-align:center; font-size:.68rem; color:var(--muted); padding:16px 0 6px; }
 .footer a { color:var(--accent); text-decoration:none; }
 </style>
 </head>
 <body>
 
 <div class="app-header">
-  <div style="flex:1">
+  <div class="header-left">
     <div class="header-logo">Rehab4Perf</div>
-    <div class="header-sub">Programme athlète</div>
+    <div class="header-sub" id="headerSub">Programme athlète</div>
   </div>
-  <button class="refresh-btn" id="refreshBtn" onclick="loadProg()">↻ Actualiser</button>
+  <button class="header-btn" id="refreshBtn" onclick="refresh()">↻ Actualiser</button>
 </div>
 
 <div class="content">
   <div id="mainContent">
     <div class="loading-state">
       <div class="spinner"></div>
-      <div>Chargement du programme…</div>
+      <div>Chargement…</div>
     </div>
   </div>
   <div class="last-updated" id="lastUpdated"></div>
   <div class="footer">Rehab4Perf &mdash; <a href="https://rehab4perf.netlify.app" target="_blank">rehab4perf.netlify.app</a></div>
 </div>
 
+<!-- Modal détail programme (mode calendrier) -->
+<div class="prog-modal-overlay" id="progModal" onclick="if(event.target===this)closeProgModal()">
+  <div class="prog-modal">
+    <div class="prog-modal-header">
+      <div class="prog-modal-title" id="progModalTitle">Programme</div>
+      <button class="prog-modal-close" onclick="closeProgModal()">✕</button>
+    </div>
+    <div class="prog-modal-body" id="progModalBody">
+      <div class="loading-state"><div class="spinner"></div></div>
+    </div>
+  </div>
+</div>
+
 <script>
 var SUPA_URL = 'https://sxdobjodxkwexaspepdm.supabase.co';
 var SUPA_KEY = 'sb_publishable_zEJrmQOnKyRm-Y_NyojaTA_ERrDx4pl';
 
-var OBJ_LABELS = {
-  libre:'Libre', endurance:'Endurance', puissance:'Puissance',
-  hypertrophie:'Hypertrophie', forcemax:'Force max'
-};
+var OBJ_LABELS = { libre:'Libre', endurance:'Endurance', puissance:'Puissance', hypertrophie:'Hypertrophie', forcemax:'Force max' };
+var MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+var DAYS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+
+var _mode = ''; // 'prog' ou 'cal'
+var _patientId = '';
+var _progId = '';
+var _calYear = new Date().getFullYear();
+var _calMonth = new Date().getMonth();
+var _calEvents = []; // [{id, date, programme_id, programmes:{nom}}]
 
 function escH(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-function getProgId(){
-  var params = new URLSearchParams(window.location.search);
-  return params.get('prog');
-}
-
 function fmtDate(d){
   if(!d) return '';
-  var parts = d.split('-');
-  if(parts.length===3) return parts[2]+'/'+parts[1]+'/'+parts[0];
-  return d;
+  var p = d.split('-');
+  return p.length===3 ? p[2]+'/'+p[1]+'/'+p[0] : d;
 }
 
 function fmtCible(c){
   if(!c) return '';
-  var t = c.type||'RPE';
-  var mn = c.min||''; var mx = c.max||'';
-  if(mn && mx) return t+' '+mn+'–'+mx;
+  var t=c.type||'RPE', mn=c.min||'', mx=c.max||'';
+  if(mn&&mx) return t+' '+mn+'–'+mx;
   if(mn) return t+' '+mn;
   return t;
 }
 
-function loadProg(){
-  var progId = getProgId();
-  if(!progId){
-    showError('Lien invalide', 'Aucun programme spécifié dans l\'URL. Demande le lien à ton praticien.');
-    return;
-  }
-  var btn = document.getElementById('refreshBtn');
-  btn.disabled = true; btn.textContent = '⏳ Chargement…';
+// ── Init ────────────────────────────────────────────
+function init(){
+  var params = new URLSearchParams(window.location.search);
+  _progId = params.get('prog') || '';
+  _patientId = params.get('patient') || '';
 
-  fetch(SUPA_URL + '/rest/v1/programmes?id=eq.' + progId + '&select=*', {
+  if(_patientId){
+    _mode = 'cal';
+    document.getElementById('headerSub').textContent = 'Calendrier athlète';
+    document.getElementById('refreshBtn').onclick = function(){ renderCalendar(); };
+    renderCalendar();
+  } else if(_progId){
+    _mode = 'prog';
+    document.getElementById('headerSub').textContent = 'Programme athlète';
+    document.getElementById('refreshBtn').onclick = function(){ loadProgById(_progId, renderProgInMain); };
+    loadProgById(_progId, renderProgInMain);
+  } else {
+    showError('Lien invalide', 'Aucun programme ni calendrier spécifié. Demande le lien à ton praticien.');
+  }
+}
+
+function refresh(){
+  if(_mode==='cal') renderCalendar();
+  else if(_mode==='prog') loadProgById(_progId, renderProgInMain);
+}
+
+// ── Mode programme unique ────────────────────────────
+function loadProgById(id, callback){
+  var btn = document.getElementById('refreshBtn');
+  btn.disabled = true; btn.textContent = '⏳';
+  fetch(SUPA_URL + '/rest/v1/programmes?id=eq.' + id + '&select=*', {
     headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
   })
   .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, status:r.status, data:d}; }); })
@@ -208,133 +298,197 @@ function loadProg(){
     if(!res.ok){ showError('Erreur '+res.status, JSON.stringify(res.data)); return; }
     var arr = Array.isArray(res.data) ? res.data : [];
     if(!arr.length){ showError('Programme introuvable', 'Ce programme n\'existe plus ou le lien est invalide.'); return; }
-    renderProg(arr[0]);
-    document.getElementById('lastUpdated').textContent = 'Actualisé le ' + new Date().toLocaleDateString('fr-FR') + ' à ' + new Date().toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'});
+    callback(arr[0]);
+    document.getElementById('lastUpdated').textContent = 'Actualisé à ' + new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
   })
   .catch(function(err){
     btn.disabled = false; btn.textContent = '↻ Actualiser';
-    showError('Erreur réseau', err && err.message || String(err));
+    showError('Erreur réseau', err&&err.message||String(err));
   });
 }
 
-function showError(title, msg){
-  document.getElementById('mainContent').innerHTML =
-    '<div class="error-state">'
-    + '<div class="error-icon">⚠️</div>'
-    + '<div class="error-title">'+escH(title)+'</div>'
-    + '<div class="error-msg">'+escH(msg)+'</div>'
-    + '</div>';
+function renderProgInMain(prog){
+  document.getElementById('mainContent').innerHTML = buildProgHTML(prog);
 }
 
-function renderProg(prog){
-  // Rétrocompat : donnees peut être un tableau (ancien) ou {blocs,notes} (nouveau)
-  var raw = prog.donnees || [];
-  var blocs = Array.isArray(raw) ? raw : (raw.blocs || []);
-  var notes = Array.isArray(raw) ? '' : (raw.notes || '');
-  var html = '';
+// ── Mode calendrier ──────────────────────────────────
+function renderCalendar(){
+  var btn = document.getElementById('refreshBtn');
+  btn.disabled = true; btn.textContent = '⏳';
+  fetch(SUPA_URL + '/rest/v1/seances_planifiees?patient_id=eq.' + _patientId
+      + '&select=id,date,programme_id,programmes(nom)&order=date.asc', {
+    headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    btn.disabled = false; btn.textContent = '↻ Actualiser';
+    _calEvents = Array.isArray(data) ? data : [];
+    _renderCalGrid();
+    document.getElementById('lastUpdated').textContent = 'Actualisé à ' + new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  })
+  .catch(function(err){
+    btn.disabled = false; btn.textContent = '↻ Actualiser';
+    showError('Erreur réseau', err&&err.message||String(err));
+  });
+}
 
-  // En-tête programme
-  html += '<div class="prog-meta">'
-       +  '<div class="prog-title">'+escH(prog.nom || 'Programme')+'</div>'
-       +  '<div class="prog-date">📅 '+escH(fmtDate(prog.date))+'</div>'
-       +  '</div>';
+function calMove(dir){
+  _calMonth += dir;
+  if(_calMonth>11){ _calMonth=0; _calYear++; }
+  if(_calMonth<0){ _calMonth=11; _calYear--; }
+  _renderCalGrid();
+}
 
-  if(!blocs.length){
-    html += '<div class="empty-state"><div style="font-size:2rem;margin-bottom:12px">📋</div><div>Ce programme ne contient pas encore d\'exercices.</div></div>';
-    document.getElementById('mainContent').innerHTML = html;
-    return;
+function _renderCalGrid(){
+  var first = new Date(_calYear, _calMonth, 1);
+  var startDow = (first.getDay()+6)%7;
+  var daysInMonth = new Date(_calYear, _calMonth+1, 0).getDate();
+  var today = new Date(); today.setHours(0,0,0,0);
+
+  var headers = DAYS.map(function(d){ return '<div class="cal-day-header">'+d+'</div>'; }).join('');
+  var cells = '';
+  for(var i=0;i<startDow;i++) cells += '<div class="cal-day other-month"></div>';
+
+  for(var d=1;d<=daysInMonth;d++){
+    var dateStr = _calYear+'-'+String(_calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    var cellDate = new Date(_calYear,_calMonth,d);
+    var isToday = cellDate.getTime()===today.getTime();
+    var dayEvs = _calEvents.filter(function(e){ return e.date===dateStr; });
+    var chips = dayEvs.map(function(ev){
+      var nom = (ev.programmes&&ev.programmes.nom)||'Programme';
+      return '<div class="cal-chip" onclick="event.stopPropagation();openProgModal(\''+escH(ev.programme_id)+'\',\''+escH(nom)+'\')" title="'+escH(nom)+'">'
+           + '📋 '+escH(nom.length>10?nom.slice(0,10)+'…':nom)+'</div>';
+    }).join('');
+    cells += '<div class="cal-day'+(isToday?' today':'')+'">'
+           + '<div class="cal-day-num">'+d+'</div>'
+           + chips+'</div>';
   }
 
-  blocs.forEach(function(b){
-    var obj = b.objectif || 'libre';
-    var objLabel = OBJ_LABELS[obj] || obj;
+  var html = '<div class="cal-nav">'
+    + '<button class="cal-nav-btn" onclick="calMove(-1)">◀</button>'
+    + '<h2>'+MONTHS[_calMonth]+' '+_calYear+'</h2>'
+    + '<button class="cal-nav-btn" onclick="calMove(1)">▶</button>'
+    + '</div>'
+    + '<div class="cal-grid">'+headers+cells+'</div>';
 
-    html += '<div class="bloc">';
-
-    // Header bloc
-    html += '<div class="bloc-header">'
-         +  '<div class="bloc-title">'+escH(b.title || 'Bloc')+'</div>'
-         +  '<span class="bloc-badge '+escH(obj)+'">'+escH(objLabel)+'</span>'
-         +  '</div>';
-
-    // Méthode
-    if(b.methode){
-      html += '<div class="methode-card">'
-           +  '<span class="methode-label">Méthode :</span>'
-           +  '<span>'+escH(b.methode)+'</span>'
-           +  '</div>';
-    }
-
-    // Exercices
-    html += '<div class="exo-list">';
-    (b.exos || []).forEach(function(e, idx){
-      var isChained = !!e.chained;
-      html += '<div class="exo-item'+(isChained?' chained':'')+'">';
-
-      // Nom
-      html += '<div class="exo-name">'+escH(e.name)+'</div>';
-
-      // Tags
-      var tagHtml = '';
-      if(e.url) tagHtml += '<a class="exo-tag video" href="'+escH(e.url)+'" target="_blank">▶ Vidéo</a>';
-      if(isChained) tagHtml += '<span class="exo-tag chain">⛓ Enchaîné</span>';
-      if(tagHtml) html += '<div class="exo-tags">'+tagHtml+'</div>';
-
-      // Paramètres
-      var params = [];
-      if(e.series) params.push({label:'Séries', val:e.series});
-      if(e.reps)   params.push({label:'Répétitions', val:e.reps});
-      if(e.duree)  params.push({label:'Durée', val:e.duree});
-      if(e.recup)  params.push({label:'Récupération', val:e.recup});
-      if(e.tempo)  params.push({label:'Tempo', val:e.tempo});
-      // Cibles
-      var cibles = e.cibles && e.cibles.length ? e.cibles : (e.cibleType ? [{type:e.cibleType, min:e.cibleVal||'', max:''}] : []);
-      cibles.forEach(function(c, ci){
-        var cf = fmtCible(c);
-        if(cf) params.push({label:'Cible '+(cibles.length>1?(ci+1):''), val:cf});
-      });
-
-      if(params.length){
-        html += '<div class="exo-params">';
-        params.forEach(function(p){
-          html += '<div class="param-box">'
-               +  '<div class="param-label">'+escH(p.label)+'</div>'
-               +  '<div class="param-val">'+escH(p.val)+'</div>'
-               +  '</div>';
-        });
-        html += '</div>';
-      }
-
-      // Consigne
-      if(e.consigne && e.consigne.trim()){
-        html += '<div class="exo-consigne">💬 '+escH(e.consigne)+'</div>';
-      }
-
-      html += '</div>';
-
-      // Connecteur enchaîné
-      if(isChained && idx < (b.exos||[]).length - 1){
-        html += '<div class="chain-link">↓ enchaîner</div>';
-      }
+  // Séances à venir (liste rapide)
+  var upcoming = _calEvents
+    .filter(function(e){ return e.date >= new Date().toISOString().split('T')[0]; })
+    .sort(function(a,b){ return a.date.localeCompare(b.date); })
+    .slice(0,5);
+  if(upcoming.length){
+    html += '<div style="margin-top:16px;">'
+          + '<div style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Prochaines séances</div>';
+    upcoming.forEach(function(ev){
+      var nom = (ev.programmes&&ev.programmes.nom)||'Programme';
+      var p = ev.date.split('-');
+      var dateLabel = parseInt(p[2])+' '+['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'][parseInt(p[1])-1];
+      html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="openProgModal(\''+escH(ev.programme_id)+'\',\''+escH(nom)+'\')">'
+            + '<div style="background:var(--accent);color:#fff;border-radius:8px;padding:6px 10px;font-size:.7rem;font-weight:700;white-space:nowrap;">'+escH(dateLabel)+'</div>'
+            + '<div style="font-size:.85rem;font-weight:600;">📋 '+escH(nom)+'</div>'
+            + '<div style="margin-left:auto;color:var(--muted);font-size:.8rem;">›</div>'
+            + '</div>';
     });
-    html += '</div>'; // .exo-list
-    html += '</div>'; // .bloc
-  });
-
-  // Notes globales
-  var notesVal = prog.notes || '';
-  if(notesVal && notesVal.trim()){
-    html += '<div class="notes-bloc">'
-         +  '<div class="notes-label">📝 Notes & Consignes</div>'
-         +  '<div class="notes-text">'+escH(notesVal)+'</div>'
-         +  '</div>';
+    html += '</div>';
   }
 
   document.getElementById('mainContent').innerHTML = html;
 }
 
-// Chargement initial
-loadProg();
+// ── Modal programme ──────────────────────────────────
+function openProgModal(progId, nom){
+  document.getElementById('progModalTitle').textContent = nom || 'Programme';
+  document.getElementById('progModalBody').innerHTML = '<div class="loading-state"><div class="spinner"></div></div>';
+  document.getElementById('progModal').classList.add('open');
+  fetch(SUPA_URL + '/rest/v1/programmes?id=eq.' + progId + '&select=*', {
+    headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    var arr = Array.isArray(data) ? data : [];
+    if(!arr.length){ document.getElementById('progModalBody').innerHTML = '<div class="error-state"><div class="error-icon">⚠️</div><div>Programme introuvable.</div></div>'; return; }
+    document.getElementById('progModalBody').innerHTML = buildProgHTML(arr[0]);
+  })
+  .catch(function(err){
+    document.getElementById('progModalBody').innerHTML = '<div class="error-state"><div class="error-icon">⚠️</div><div>Erreur réseau.</div></div>';
+  });
+}
+
+function closeProgModal(){
+  document.getElementById('progModal').classList.remove('open');
+}
+
+// ── Construction HTML d'un programme ────────────────
+function buildProgHTML(prog){
+  var raw = prog.donnees || [];
+  var blocs = Array.isArray(raw) ? raw : (raw.blocs || []);
+  var notes = Array.isArray(raw) ? '' : (raw.notes || '');
+  var html = '';
+
+  html += '<div class="prog-meta">'
+       +  '<div class="prog-title">'+escH(prog.nom||'Programme')+'</div>'
+       +  '<div class="prog-date">📅 '+escH(fmtDate(prog.date))+'</div>'
+       +  '</div>';
+
+  if(!blocs.length){
+    html += '<div class="empty-state"><div style="font-size:2rem;margin-bottom:10px">📋</div><div>Ce programme ne contient pas encore d\'exercices.</div></div>';
+    return html;
+  }
+
+  blocs.forEach(function(b){
+    var obj = b.objectif||'libre';
+    html += '<div class="bloc">'
+         +  '<div class="bloc-header">'
+         +  '<div class="bloc-title">'+escH(b.title||'Bloc')+'</div>'
+         +  '<span class="bloc-badge '+escH(obj)+'">'+escH(OBJ_LABELS[obj]||obj)+'</span>'
+         +  '</div>';
+    if(b.methode){
+      html += '<div class="methode-card"><span class="methode-label">Méthode :</span><span>'+escH(b.methode)+'</span></div>';
+    }
+    html += '<div class="exo-list">';
+    (b.exos||[]).forEach(function(e, idx){
+      var chained = !!e.chained;
+      html += '<div class="exo-item'+(chained?' chained':'')+'">';
+      html += '<div class="exo-name">'+escH(e.name)+'</div>';
+      var tags = '';
+      if(e.url) tags += '<a class="exo-tag video" href="'+escH(e.url)+'" target="_blank">▶ Vidéo</a>';
+      if(chained) tags += '<span class="exo-tag chain">⛓ Enchaîné</span>';
+      if(tags) html += '<div class="exo-tags">'+tags+'</div>';
+      var params = [];
+      if(e.series) params.push({l:'Séries',v:e.series});
+      if(e.reps)   params.push({l:'Répétitions',v:e.reps});
+      if(e.duree)  params.push({l:'Durée',v:e.duree});
+      if(e.recup)  params.push({l:'Récupération',v:e.recup});
+      if(e.tempo)  params.push({l:'Tempo',v:e.tempo});
+      var cibles = e.cibles&&e.cibles.length ? e.cibles : (e.cibleType?[{type:e.cibleType,min:e.cibleVal||'',max:''}]:[]);
+      cibles.forEach(function(c,ci){ var cf=fmtCible(c); if(cf) params.push({l:'Cible'+(cibles.length>1?' '+(ci+1):''),v:cf}); });
+      if(params.length){
+        html += '<div class="exo-params">';
+        params.forEach(function(p){ html += '<div class="param-box"><div class="param-label">'+escH(p.l)+'</div><div class="param-val">'+escH(p.v)+'</div></div>'; });
+        html += '</div>';
+      }
+      if(e.consigne&&e.consigne.trim()) html += '<div class="exo-consigne">💬 '+escH(e.consigne)+'</div>';
+      html += '</div>';
+      if(chained && idx < (b.exos||[]).length-1) html += '<div class="chain-link">↓ enchaîner</div>';
+    });
+    html += '</div></div>';
+  });
+
+  if(notes&&notes.trim()){
+    html += '<div class="notes-bloc"><div class="notes-label">📝 Notes & Consignes</div><div class="notes-text">'+escH(notes)+'</div></div>';
+  }
+  return html;
+}
+
+function showError(title, msg){
+  document.getElementById('mainContent').innerHTML =
+    '<div class="error-state"><div class="error-icon">⚠️</div>'
+    +'<div class="error-title">'+escH(title)+'</div>'
+    +'<div class="error-msg">'+escH(msg)+'</div></div>';
+}
+
+// Lancement
+init();
 </script>
 </body>
 </html>

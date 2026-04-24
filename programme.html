@@ -642,6 +642,8 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   <div class="main-panel" id="mpanel-cal">
     <div class="main-header">
       <h1>Calendrier</h1>
+      <span id="calPatientLabel" style="font-size:.78rem;color:var(--muted);flex:1;"></span>
+      <button class="btn btn-outline" onclick="shareCalLink()" style="white-space:nowrap;background:#EEF3FB;color:#1A3A5C;border-color:#2B5FA6;">📅 Partager</button>
       <button class="btn btn-outline" onclick="openCycles()" style="white-space:nowrap;">🔄 Cycles</button>
     </div>
     <div class="cal-area">
@@ -2539,6 +2541,7 @@ var _calEvents = [];
 var _calYear = new Date().getFullYear();
 var _calMonth = new Date().getMonth();
 var _calPickerDate = '';
+var _cloudCalEvents = []; // événements Supabase pour le patient courant
 
 function _loadCalEvents() {
   try { _calEvents = JSON.parse(localStorage.getItem('r4p-cal-events')||'[]'); } catch(e){ _calEvents=[]; }
@@ -2562,44 +2565,73 @@ function calToday() {
 }
 
 function renderCalendar() {
-  _loadCalEvents();
+  if(_progPatient) {
+    // Mode cloud : charger les séances Supabase pour ce patient
+    var url = SUPA_URL_P + '/rest/v1/seances_planifiees?patient_id=eq.' + _progPatient.id
+            + '&select=id,date,programme_id,programmes(nom)&order=date.asc';
+    fetch(url, { headers: { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json' } })
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        _cloudCalEvents = Array.isArray(data) ? data : [];
+        _renderCalendarUI();
+      })
+      .catch(function(){ _cloudCalEvents = []; _renderCalendarUI(); });
+  } else {
+    _loadCalEvents();
+    _renderCalendarUI();
+  }
+}
+
+function _renderCalendarUI() {
   _loadSeances();
   var months = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
   document.getElementById('calTitle').textContent = months[_calMonth]+' '+_calYear;
+  // Label patient
+  var lbl = document.getElementById('calPatientLabel');
+  if(lbl) lbl.textContent = _progPatient ? ('👤 '+(_progPatient.nom||_progPatient.name||'')) : '';
   var grid = document.getElementById('calGrid');
   var days = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
   var headers = days.map(function(d){ return '<div class="cal-day-header">'+d+'</div>'; }).join('');
   var first = new Date(_calYear, _calMonth, 1);
-  var startDow = (first.getDay()+6)%7; // lundi=0
+  var startDow = (first.getDay()+6)%7;
   var daysInMonth = new Date(_calYear, _calMonth+1, 0).getDate();
   var today = new Date(); today.setHours(0,0,0,0);
   var cells = '';
-  // Empty cells before
-  for(var i=0;i<startDow;i++){
-    cells += '<div class="cal-day other-month"></div>';
-  }
+  for(var i=0;i<startDow;i++){ cells += '<div class="cal-day other-month"></div>'; }
   for(var d=1;d<=daysInMonth;d++){
     var dateStr = _calYear+'-'+String(_calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     var cellDate = new Date(_calYear,_calMonth,d);
     var isToday = cellDate.getTime()===today.getTime();
-    var eventsForDay = _calEvents.filter(function(e){ return e.date===dateStr; });
-    var chips = eventsForDay.map(function(ev){
-      var s = _savedSeances.find(function(x){ return x.id===ev.seanceId; });
-      if(!s) return '';
-      var col = _seanceTypeColor(s.type);
-      return '<div class="cal-session-chip" style="background:'+col.fg+';" title="'+escH(s.name)+'">'
-        +'<span>'+s.emoji+' '+escH(s.name.length>10?s.name.slice(0,10)+'…':s.name)+'</span>'
-        +'<button class="cal-chip-del" onclick="event.stopPropagation();removeCalEvent(\''+ev.id+'\')">×</button>'
-        +'</div>';
-    }).join('');
+    var chips = '';
+    if(_progPatient) {
+      // Chips cloud
+      var dayEvs = _cloudCalEvents.filter(function(e){ return e.date===dateStr; });
+      chips = dayEvs.map(function(ev){
+        var nom = (ev.programmes&&ev.programmes.nom)||'Programme';
+        return '<div class="cal-session-chip" style="background:#2B5FA6;" title="'+escH(nom)+'">'
+          +'<span>📋 '+escH(nom.length>12?nom.slice(0,12)+'…':nom)+'</span>'
+          +'<button class="cal-chip-del" onclick="event.stopPropagation();removeCalEventCloud(\''+ev.id+'\')">×</button>'
+          +'</div>';
+      }).join('');
+    } else {
+      // Chips locaux
+      var eventsForDay = _calEvents.filter(function(e){ return e.date===dateStr; });
+      chips = eventsForDay.map(function(ev){
+        var s = _savedSeances.find(function(x){ return x.id===ev.seanceId; });
+        if(!s) return '';
+        var col = _seanceTypeColor(s.type);
+        return '<div class="cal-session-chip" style="background:'+col.fg+';" title="'+escH(s.name)+'">'
+          +'<span>'+s.emoji+' '+escH(s.name.length>10?s.name.slice(0,10)+'…':s.name)+'</span>'
+          +'<button class="cal-chip-del" onclick="event.stopPropagation();removeCalEvent(\''+ev.id+'\')">×</button>'
+          +'</div>';
+      }).join('');
+    }
     // Cycles actifs pour ce jour
     var cycleChips = '';
     _cycles.forEach(function(cy) {
       if (!cy.startDate) return;
-      var cyStart = new Date(cy.startDate);
-      cyStart.setHours(0,0,0,0);
-      var cyEnd = new Date(cyStart);
-      cyEnd.setDate(cyEnd.getDate() + cy.duree * 7);
+      var cyStart = new Date(cy.startDate); cyStart.setHours(0,0,0,0);
+      var cyEnd = new Date(cyStart); cyEnd.setDate(cyEnd.getDate() + cy.duree * 7);
       if (cellDate >= cyStart && cellDate < cyEnd) {
         var col = _cycleColor(cy.nom);
         var weekNum = Math.floor((cellDate - cyStart) / (7*24*3600*1000)) + 1;
@@ -2608,37 +2640,66 @@ function renderCalendar() {
     });
     cells += '<div class="cal-day'+(isToday?' today':'')+'" onclick="openCalPicker(\''+dateStr+'\')">'
       +'<div class="cal-day-num">'+d+'</div>'
-      +chips
-      +cycleChips
-      +'</div>';
+      +chips+cycleChips+'</div>';
   }
   grid.innerHTML = headers + cells;
 }
 
 function openCalPicker(dateStr) {
-  _loadSeances();
-  if(!_savedSeances.length){ alert('Aucune séance enregistrée. Créez et enregistrez une séance d\'abord.'); return; }
   _calPickerDate = dateStr;
   var parts = dateStr.split('-');
   var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
-  document.getElementById('calPickerTitle').textContent = 'Ajouter le '+parseInt(parts[2])+' '+months[parseInt(parts[1])-1]+' '+parts[0];
+  document.getElementById('calPickerTitle').textContent = 'Planifier le '+parseInt(parts[2])+' '+months[parseInt(parts[1])-1]+' '+parts[0];
   var list = document.getElementById('calPickerList');
-  list.innerHTML = _savedSeances.map(function(s){
-    var col = _seanceTypeColor(s.type);
-    return '<div class="cal-pick-item" onclick="addCalEvent(\''+s.id+'\')">'
-      +'<span class="cal-pick-emoji">'+s.emoji+'</span>'
-      +'<div class="cal-pick-info">'
-      +'<div class="cal-pick-name">'+escH(s.name)+'</div>'
-      +'<div class="cal-pick-type" style="color:'+col.fg+'">'+escH(s.type)+'</div>'
-      +'</div></div>';
-  }).join('');
-  document.getElementById('calPickerOverlay').classList.add('open');
+
+  if(_progPatient && _progToken) {
+    // Mode cloud : afficher les programmes du patient
+    list.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);font-size:.82rem;">Chargement…</div>';
+    document.getElementById('calPickerOverlay').classList.add('open');
+    fetch(SUPA_URL_P + '/rest/v1/programmes?patient_id=eq.' + _progPatient.id + '&select=id,nom,date&order=date.desc', {
+      headers: { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _progToken }
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      var progs = Array.isArray(data) ? data : [];
+      if(!progs.length){
+        list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:.82rem;">Aucun programme cloud pour ce patient.<br>Sauvegarde d\'abord avec ☁️ Sauvegarder.</div>';
+        return;
+      }
+      list.innerHTML = progs.map(function(p){
+        return '<div class="cal-pick-item" onclick="addCalEventCloud(\''+p.id+'\')">'
+          +'<span class="cal-pick-emoji">📋</span>'
+          +'<div class="cal-pick-info">'
+          +'<div class="cal-pick-name">'+escH(p.nom||'Programme')+'</div>'
+          +'<div class="cal-pick-type" style="color:var(--muted)">📅 '+escH(p.date||'')+'</div>'
+          +'</div></div>';
+      }).join('');
+    })
+    .catch(function(){
+      list.innerHTML = '<div style="padding:16px;color:#E74C3C;">Erreur de chargement.</div>';
+    });
+  } else {
+    // Mode local : afficher les séances enregistrées
+    _loadSeances();
+    if(!_savedSeances.length){ alert('Aucune séance enregistrée. Créez et enregistrez une séance d\'abord.'); return; }
+    list.innerHTML = _savedSeances.map(function(s){
+      var col = _seanceTypeColor(s.type);
+      return '<div class="cal-pick-item" onclick="addCalEvent(\''+s.id+'\')">'
+        +'<span class="cal-pick-emoji">'+s.emoji+'</span>'
+        +'<div class="cal-pick-info">'
+        +'<div class="cal-pick-name">'+escH(s.name)+'</div>'
+        +'<div class="cal-pick-type" style="color:'+col.fg+'">'+escH(s.type)+'</div>'
+        +'</div></div>';
+    }).join('');
+    document.getElementById('calPickerOverlay').classList.add('open');
+  }
 }
 
 function closeCalPicker() {
   document.getElementById('calPickerOverlay').classList.remove('open');
 }
 
+// ── Ajout local (séances enregistrées, sans patient sélectionné) ──
 function addCalEvent(seanceId) {
   _loadCalEvents();
   _calEvents.push({ id:'_'+Math.random().toString(36).slice(2,9), date:_calPickerDate, seanceId:seanceId });
@@ -2652,6 +2713,48 @@ function removeCalEvent(evId) {
   _calEvents = _calEvents.filter(function(e){ return e.id!==evId; });
   _persistCalEvents();
   renderCalendar();
+}
+
+// ── Ajout cloud (programmes Supabase, patient sélectionné) ──
+function addCalEventCloud(progId) {
+  if(!_progPatient || !_progUid || !_progToken){ alert('Patient ou session non disponible.'); return; }
+  fetch(SUPA_URL_P + '/rest/v1/seances_planifiees', {
+    method: 'POST',
+    headers: _sbHeaders(),
+    body: JSON.stringify({ patient_id:_progPatient.id, programme_id:progId, praticien_id:_progUid, date:_calPickerDate })
+  })
+  .then(function(r){
+    if(!r.ok){ return r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); }); }
+    closeCalPicker();
+    renderCalendar();
+  })
+  .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
+}
+
+function removeCalEventCloud(id) {
+  if(!confirm('Retirer cette séance du calendrier ?')) return;
+  fetch(SUPA_URL_P + '/rest/v1/seances_planifiees?id=eq.' + id, {
+    method: 'DELETE', headers: _sbHeaders()
+  })
+  .then(function(r){
+    if(!r.ok){ return r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); }); }
+    renderCalendar();
+  })
+  .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
+}
+
+// ── Partage du lien calendrier athlète ──
+function shareCalLink() {
+  if(!_progPatient){ alert('Sélectionne d\'abord un patient depuis la barre de navigation.'); return; }
+  var base = window.location.origin + window.location.pathname.replace('programme.html','') + 'athlete.html';
+  var link = base + '?patient=' + _progPatient.id;
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(link).then(function(){
+      alert('✅ Lien calendrier copié !\n\n' + link + '\n\nTon athlète verra son calendrier complet et pourra cliquer sur chaque séance.');
+    }).catch(function(){ prompt('Copie ce lien :', link); });
+  } else {
+    prompt('Copie ce lien :', link);
+  }
 }
 
 // Fermer overlays sur clic extérieur
