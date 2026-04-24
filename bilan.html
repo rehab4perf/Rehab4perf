@@ -5,6 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rehab4Perf — Bilan Clinique</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 /* ── Variables ────────────────────────────────────────────── */
@@ -133,6 +134,81 @@ body {
   color: var(--text3);
   padding: 14px 10px 4px;
 }
+/* ── Patient save bar ────────────────────────────────────── */
+.sidebar-save {
+  padding: 10px 10px 6px;
+  border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.sidebar-save-patient {
+  font-size: .7rem; color: var(--text2); padding: 0 2px 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sidebar-save-patient strong { color: var(--accent2); }
+.btn-save-bilan {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; padding: 8px 10px; border-radius: 6px; border: none; cursor: pointer;
+  font-family: inherit; font-size: .8rem; font-weight: 600;
+  background: var(--accent); color: #fff; transition: background .12s;
+}
+.btn-save-bilan:hover { background: var(--accent2); }
+.btn-save-bilan:disabled { opacity: .6; cursor: not-allowed; }
+.btn-history-bilan {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; padding: 6px 10px; border-radius: 6px;
+  border: 1.5px solid var(--border2); cursor: pointer;
+  font-family: inherit; font-size: .78rem; font-weight: 500; color: var(--text2);
+  background: none; transition: all .12s;
+}
+.btn-history-bilan:hover { border-color: var(--accent); color: var(--accent2); background: var(--accent-l); }
+
+/* ── Historique modal ────────────────────────────────────── */
+.histo-overlay {
+  display: none; position: fixed; inset: 0; z-index: 9000;
+  background: rgba(0,0,0,.45); backdrop-filter: blur(2px);
+  align-items: flex-start; justify-content: center; padding-top: 60px;
+}
+.histo-overlay.open { display: flex; }
+.histo-card {
+  background: #fff; border-radius: 10px; width: 100%; max-width: 440px;
+  max-height: calc(100vh - 100px); display: flex; flex-direction: column;
+  overflow: hidden; box-shadow: 0 8px 40px rgba(0,0,0,.22);
+}
+.histo-header {
+  background: #1A3A5C; color: #fff; padding: 13px 18px;
+  display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+}
+.histo-header h2 { flex: 1; font-size: .92rem; font-weight: 700; }
+.histo-close {
+  background: none; border: none; color: rgba(255,255,255,.7);
+  font-size: 1.3rem; cursor: pointer; line-height: 1;
+}
+.histo-close:hover { color: #fff; }
+.histo-body { flex: 1; overflow-y: auto; }
+.histo-empty { padding: 28px 20px; text-align: center; color: #9D9B96; font-size: .88rem; font-style: italic; }
+.histo-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; border-bottom: 1px solid #F1F0ED; cursor: pointer;
+  transition: background .1s;
+}
+.histo-item:hover { background: #F7F6F3; }
+.histo-item-date { font-size: .88rem; font-weight: 700; color: #1A3A5C; min-width: 90px; }
+.histo-item-id { font-size: .7rem; color: #9D9B96; }
+.histo-item-load {
+  margin-left: auto; background: #1A3A5C; color: #fff; border: none;
+  border-radius: 5px; padding: 5px 11px; font-size: .75rem; font-weight: 600;
+  cursor: pointer; font-family: inherit; transition: background .12s;
+}
+.histo-item-load:hover { background: #2B5FA6; }
+.histo-item.current { background: #EEF3FB; }
+.histo-new-btn {
+  display: block; width: calc(100% - 32px); margin: 12px 16px;
+  padding: 9px; background: #2D6A4F; color: #fff; border: none;
+  border-radius: 6px; font-size: .82rem; font-weight: 600; cursor: pointer;
+  font-family: inherit; transition: background .12s;
+}
+.histo-new-btn:hover { background: #1A5C3A; }
+
 .sidebar-footer {
   padding: 12px 8px;
   border-top: 1px solid var(--border);
@@ -688,6 +764,35 @@ body {
   /* ── Print header itself ── */
   #print-header { page-break-after: avoid; }
 }
+
+/* ── Responsive (tablet / iPad) ─────────────────────────── */
+@media (max-width: 1024px) {
+  :root { --sidebar-w: 220px; }
+  .page-header { padding: 20px 24px 0; }
+  .page-title { font-size: 1.5rem; }
+}
+@media (max-width: 768px) {
+  :root { --sidebar-w: 200px; }
+  .page-header { padding: 16px 16px 0; }
+  .page-title { font-size: 1.25rem; }
+  .page-content { padding: 16px 12px 32px; overflow-x: hidden; }
+  .block { padding: 14px 12px; }
+  /* Wrap grid forms on small screens */
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr 1fr !important; }
+}
+@media (max-width: 600px) {
+  body { flex-direction: column; }
+  .sidebar { width: 100% !important; min-width: 0 !important; height: auto; position: static; flex-direction: row; flex-wrap: wrap; overflow-y: visible; max-height: 48px; }
+  .sidebar-header, .sidebar-patient { display: none; }
+  .nav { display: flex; flex-direction: row; flex-wrap: nowrap; overflow-x: auto; padding: 0 6px; }
+  .nav-section { display: none; }
+  .nav-item { white-space: nowrap; padding: 10px 10px; font-size: .75rem; border-radius: 0; border-bottom: 3px solid transparent; }
+  .nav-item.active { border-bottom-color: var(--accent); background: var(--accent-l); }
+  .main { min-height: 0; flex: 1; }
+  .page-header { padding: 12px 12px 0; }
+  .page-content { padding: 12px 10px 24px; }
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr !important; }
+}
 </style>
 
 </head>
@@ -772,12 +877,32 @@ body {
 
   </nav>
 
+  <div class="sidebar-save" id="sidebar-save-section">
+    <div class="sidebar-save-patient" id="sb-save-patient">Aucun patient sélectionné</div>
+    <button class="btn-save-bilan" id="bilan-save-btn" onclick="saveBilan()">💾 Sauvegarder le bilan</button>
+    <button class="btn-history-bilan" onclick="openBilanHistory()">📂 Bilans précédents</button>
+  </div>
+
   <div class="sidebar-footer">
     <button class="reset-btn" onclick="openReset()">
       <span>↺</span> Nouveau patient
     </button>
   </div>
 </aside>
+
+<!-- ── Modal historique bilans ───────────────────────────── -->
+<div class="histo-overlay" id="histoOverlay" onclick="closeHistoOnBackdrop(event)">
+  <div class="histo-card">
+    <div class="histo-header">
+      <h2>📂 Bilans enregistrés</h2>
+      <button class="histo-close" onclick="closeHistoModal()">✕</button>
+    </div>
+    <div class="histo-body" id="histoList">
+      <div class="histo-empty">Chargement…</div>
+    </div>
+    <button class="histo-new-btn" onclick="newBilan()">+ Nouveau bilan vierge</button>
+  </div>
+</div>
 
 <!-- ── PAGES ─────────────────────────────────────────────── -->
 
@@ -800,8 +925,8 @@ body {
         <div class="field"><label>Date de naissance</label><input type="date" id="f-dob" oninput="updateAll()"></div>
       </div>
       <div class="form-grid triple">
-        <div class="field"><label>Poids (kg)</label><input type="number" id="f-poids" placeholder="70"></div>
-        <div class="field"><label>Taille (cm)</label><input type="number" id="f-taille" placeholder="175"></div>
+        <div class="field"><label>Poids (kg)</label><input type="number" id="f-poids" placeholder="70" oninput="updateAll()"></div>
+        <div class="field"><label>Taille (cm)</label><input type="number" id="f-taille" placeholder="175" oninput="updateAll()"></div>
         <div class="field"><label>Côté atteint</label>
           <select id="f-cote" onchange="updateAll()">
             <option value="">— Aucun côté atteint</option>
@@ -1186,12 +1311,12 @@ body {
   <div style="padding:6px 14px 8px;font-size:.75rem;color:var(--text3)">Contraction isométrique maximale 20s — nombre de répétitions · LSI ≥ 90%</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
-      <textarea id="cf-obs-ca" placeholder="Ex: douleur en fin de contraction, recrutement difficile…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
+      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
+      <textarea id="cf-obs-cs" placeholder="Ex: douleur en fin de contraction, recrutement difficile…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
     </div>
     <div style="background:var(--surface2);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
-      <textarea id="cf-obs-cs" placeholder="Ex: contraction franche, symétrie qualitative…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
+      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
+      <textarea id="cf-obs-ca" placeholder="Ex: contraction franche, symétrie qualitative…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
     </div>
   </div>
 </div>
@@ -1271,8 +1396,8 @@ body {
     <div class="block">
       <div class="block-header red">Tests de Force — Cheville (Break Tests)</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
-        <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ ATTEINT</div>
-        <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ SAIN</div>
+        <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div>
+        <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
         <table class="test-table" style="margin:0;border-radius:0">
@@ -1311,12 +1436,12 @@ body {
   <div class="block-header">① Force Fonctionnelle — Single Leg Squat (SLS)</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
-      <div class="col-header">Test</div><div class="col-header">Côté atteint</div><div class="col-header">Côté sain</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+      <div class="col-header">Test</div><div class="col-header">Côté sain</div><div class="col-header">Côté atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
       <div class="measure-label">Répétitions max à 90° (tempo 3s/2s)</div>
-      <div class="measure-input"><input type="number" id="sls-ca" placeholder="—" oninput="calcLSI('sls')"></div>
       <div class="measure-input"><input type="number" id="sls-cs" placeholder="—" oninput="calcLSI('sls')"></div>
+      <div class="measure-input"><input type="number" id="sls-ca" placeholder="—" oninput="calcLSI('sls')"></div>
       <div class="measure-stat" id="sls-lsi">—</div>
       <div class="measure-stat" id="sls-stat">—</div>
     </div>
@@ -1327,12 +1452,12 @@ body {
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
-      <textarea id="sls-obs-ca" placeholder="Ex: valgus dynamique à partir de la 5ème rép., compensation tronc, appui controlatéral…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:70px;resize:vertical;outline:none;line-height:1.5"></textarea>
+      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
+      <textarea id="sls-obs-cs" placeholder="Ex: exécution symétrique, pas de compensation notable…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:70px;resize:vertical;outline:none;line-height:1.5"></textarea>
     </div>
     <div style="background:var(--surface2);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
-      <textarea id="sls-obs-cs" placeholder="Ex: exécution symétrique, pas de compensation notable…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:70px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
+      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
+      <textarea id="sls-obs-ca" placeholder="Ex: valgus dynamique à partir de la 5ème rép., compensation tronc, appui controlatéral…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:70px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
     </div>
   </div>
 </div>
@@ -1342,12 +1467,12 @@ body {
   <div class="block-header">② Propulsion — Single Hop Test</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
-      <div class="col-header">Test</div><div class="col-header">Côté atteint (cm)</div><div class="col-header">Côté sain (cm)</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+      <div class="col-header">Test</div><div class="col-header">Côté sain (cm)</div><div class="col-header">Côté atteint (cm)</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
       <div class="measure-label">Distance saut unipodal max</div>
-      <div class="measure-input"><input type="number" id="hop-ca" placeholder="—" oninput="calcLSI('hop')"></div>
       <div class="measure-input"><input type="number" id="hop-cs" placeholder="—" oninput="calcLSI('hop')"></div>
+      <div class="measure-input"><input type="number" id="hop-ca" placeholder="—" oninput="calcLSI('hop')"></div>
       <div class="measure-stat" id="hop-lsi">—</div>
       <div class="measure-stat" id="hop-stat">—</div>
     </div>
@@ -1358,12 +1483,12 @@ body {
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
-      <textarea id="hop-obs-ca" placeholder="Ex: réception asymétrique, valgus à l'atterrissage…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
+      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
+      <textarea id="hop-obs-cs" placeholder="Ex: réception propre, symétrie qualitative…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
     </div>
     <div style="background:var(--surface2);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
-      <textarea id="hop-obs-cs" placeholder="Ex: réception propre, symétrie qualitative…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
+      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
+      <textarea id="hop-obs-ca" placeholder="Ex: réception asymétrique, valgus à l'atterrissage…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
     </div>
   </div>
 </div>
@@ -1373,26 +1498,26 @@ body {
   <div class="block-header">③ Test de Réception — 80% Hop Test — Score /3</div>
   <div style="padding:8px 14px 4px;font-size:.82rem;color:var(--text2)">Cocher les critères réussis. <strong>0/3 = non réussi · 1-2/3 = à améliorer · 3/3 = réussi</strong></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);margin-bottom:1px">
-    <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ ATTEINT</div>
     <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ SAIN</div>
-    <div style="background:var(--surface);padding:8px 14px;text-align:center;border-bottom:1px solid var(--border)">
-      <div class="val" id="rec-score-ca" style="font-size:1.4rem;font-weight:700;color:var(--text2)">—</div>
-      <div id="rec-status" style="font-size:.78rem;font-weight:600;margin-top:2px">—</div>
-    </div>
+    <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ ATTEINT</div>
     <div style="background:var(--surface);padding:8px 14px;text-align:center;border-bottom:1px solid var(--border)">
       <div class="val" id="rec-score-cs" style="font-size:1.4rem;font-weight:700;color:var(--text2)">—</div>
       <div id="rec-status-cs" style="font-size:.78rem;font-weight:600;margin-top:2px">—</div>
+    </div>
+    <div style="background:var(--surface);padding:8px 14px;text-align:center;border-bottom:1px solid var(--border)">
+      <div class="val" id="rec-score-ca" style="font-size:1.4rem;font-weight:700;color:var(--text2)">—</div>
+      <div id="rec-status" style="font-size:.78rem;font-weight:600;margin-top:2px">—</div>
     </div>
   </div>
   <div id="rec-criteria" style="border-top:1px solid var(--border)"></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
-      <textarea id="rec-obs-ca" placeholder="Ex: valgus dynamique marqué, appui trop médial…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
+      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
+      <textarea id="rec-obs-cs" placeholder="Ex: réception stable, bon contrôle genou…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
     </div>
     <div style="background:var(--surface2);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
-      <textarea id="rec-obs-cs" placeholder="Ex: réception stable, bon contrôle genou…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
+      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
+      <textarea id="rec-obs-ca" placeholder="Ex: valgus dynamique marqué, appui trop médial…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
     </div>
   </div>
 </div>
@@ -1408,37 +1533,37 @@ body {
   </div>
   <div style="background:var(--border);padding:1px">
     <div style="background:var(--surface2);display:grid;grid-template-columns:1fr 1fr 1fr;padding:6px 14px;font-size:.7rem;font-weight:700;text-transform:uppercase;color:var(--text2);letter-spacing:.05em;gap:1px">
-      <div>Critère</div><div style="text-align:center">Côté atteint</div><div style="text-align:center">Côté sain</div>
+      <div>Critère</div><div style="text-align:center">Côté sain</div><div style="text-align:center">Côté atteint</div>
     </div>
     <div style="background:var(--surface);display:grid;grid-template-columns:1fr 1fr 1fr;padding:10px 14px;border-bottom:1px solid var(--border);align-items:center;gap:4px">
       <div style="font-size:.85rem;font-weight:500">① Absence de raideur du membre <span style="font-size:.72rem;color:var(--text3);font-weight:400;display:block">Contact au sol bref et élastique</span></div>
-      <div style="text-align:center"><input type="checkbox" id="plioq-ca-0" onchange="calcPlioq2()" style="width:18px;height:18px;cursor:pointer;accent-color:var(--green)"></div>
       <div style="text-align:center"><input type="checkbox" id="plioq-cs-0" onchange="calcPlioq2()" style="width:18px;height:18px;cursor:pointer;accent-color:var(--green)"></div>
+      <div style="text-align:center"><input type="checkbox" id="plioq-ca-0" onchange="calcPlioq2()" style="width:18px;height:18px;cursor:pointer;accent-color:var(--green)"></div>
     </div>
     <div style="background:var(--surface2);display:grid;grid-template-columns:1fr 1fr 1fr;padding:10px 14px;align-items:center;gap:4px">
       <div style="font-size:.85rem;font-weight:500">② Absence de déficit de hauteur <span style="font-size:.72rem;color:var(--text3);font-weight:400;display:block">Hauteur de saut symétrique ou suffisante</span></div>
-      <div style="text-align:center"><input type="checkbox" id="plioq-ca-1" onchange="calcPlioq2()" style="width:18px;height:18px;cursor:pointer;accent-color:var(--green)"></div>
       <div style="text-align:center"><input type="checkbox" id="plioq-cs-1" onchange="calcPlioq2()" style="width:18px;height:18px;cursor:pointer;accent-color:var(--green)"></div>
+      <div style="text-align:center"><input type="checkbox" id="plioq-ca-1" onchange="calcPlioq2()" style="width:18px;height:18px;cursor:pointer;accent-color:var(--green)"></div>
     </div>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 14px">
     <div style="text-align:center">
-      <div style="font-size:.7rem;color:var(--text2);margin-bottom:4px;font-weight:600">CÔTÉ ATTEINT</div>
-      <div id="plioq-stat-ca" style="font-size:1rem;font-weight:700;color:var(--text3)">—</div>
-    </div>
-    <div style="text-align:center">
       <div style="font-size:.7rem;color:var(--text2);margin-bottom:4px;font-weight:600">CÔTÉ SAIN</div>
       <div id="plioq-stat-cs" style="font-size:1rem;font-weight:700;color:var(--text3)">—</div>
+    </div>
+    <div style="text-align:center">
+      <div style="font-size:.7rem;color:var(--text2);margin-bottom:4px;font-weight:600">CÔTÉ ATTEINT</div>
+      <div id="plioq-stat-ca" style="font-size:1rem;font-weight:700;color:var(--text3)">—</div>
     </div>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
-      <textarea id="plioq-obs-ca" placeholder="Ex: temps de contact prolongé, raideur en flexion…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
+      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
+      <textarea id="plioq-obs-cs" placeholder="Ex: rebond élastique, hauteur symétrique…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
     </div>
     <div style="background:var(--surface2);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
-      <textarea id="plioq-obs-cs" placeholder="Ex: rebond élastique, hauteur symétrique…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
+      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
+      <textarea id="plioq-obs-ca" placeholder="Ex: temps de contact prolongé, raideur en flexion…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
     </div>
   </div>
 </div>
@@ -1448,12 +1573,12 @@ body {
   <div class="block-header">⑥ Force du Mollet — Heel Rise Test</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
-      <div class="col-header">Mesure</div><div class="col-header">Côté atteint</div><div class="col-header">Côté sain</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+      <div class="col-header">Mesure</div><div class="col-header">Côté sain</div><div class="col-header">Côté atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
       <div class="measure-label">Répétitions max (unipodales)<br><span style="font-size:.72rem;color:var(--text3);font-weight:400">Cadence 60 bpm · 1s montée + 1s descente</span></div>
-      <div class="measure-input"><input type="number" id="hr-ca" placeholder="—" oninput="calcHR()"></div>
       <div class="measure-input"><input type="number" id="hr-cs" placeholder="—" oninput="calcHR()"></div>
+      <div class="measure-input"><input type="number" id="hr-ca" placeholder="—" oninput="calcHR()"></div>
       <div class="measure-stat" id="hr-lsi">—</div>
       <div class="measure-stat" id="hr-stat">—</div>
     </div>
@@ -1478,12 +1603,12 @@ body {
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
-      <textarea id="hr-obs-ca" placeholder="Ex: douleur mollet en fin de série, manque de cadence…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
+      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
+      <textarea id="hr-obs-cs" placeholder="Ex: amplitude complète, cadence maintenue…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
     </div>
     <div style="background:var(--surface2);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
-      <textarea id="hr-obs-cs" placeholder="Ex: amplitude complète, cadence maintenue…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
+      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
+      <textarea id="hr-obs-ca" placeholder="Ex: douleur mollet en fin de série, manque de cadence…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
     </div>
   </div>
 </div>
@@ -1493,12 +1618,12 @@ body {
   <div class="block-header">⑦ Flexion Dorsale de Cheville — Lunge Test WBLT</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
-      <div class="col-header">Mesure</div><div class="col-header">Côté atteint (cm)</div><div class="col-header">Côté sain (cm)</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+      <div class="col-header">Mesure</div><div class="col-header">Côté sain (cm)</div><div class="col-header">Côté atteint (cm)</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
       <div class="measure-label">Distance pied-mur</div>
-      <div class="measure-input"><input type="number" id="lu-ca" step="0.1" placeholder="—" oninput="calcLunge()"></div>
       <div class="measure-input"><input type="number" id="lu-cs" step="0.1" placeholder="—" oninput="calcLunge()"></div>
+      <div class="measure-input"><input type="number" id="lu-ca" step="0.1" placeholder="—" oninput="calcLunge()"></div>
       <div class="measure-stat" id="lu-lsi">—</div>
       <div class="measure-stat" id="lu-stat">—</div>
     </div>
@@ -1509,12 +1634,12 @@ body {
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
-      <textarea id="lu-obs-ca" placeholder="Ex: douleur antérieure en fin de course, raideur tibio-talienne…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
+      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
+      <textarea id="lu-obs-cs" placeholder="Ex: amplitude optimale, aucune limitation…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
     </div>
     <div style="background:var(--surface2);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
-      <textarea id="lu-obs-cs" placeholder="Ex: amplitude optimale, aucune limitation…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
+      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
+      <textarea id="lu-obs-ca" placeholder="Ex: douleur antérieure en fin de course, raideur tibio-talienne…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
     </div>
   </div>
 </div>
@@ -1524,38 +1649,38 @@ body {
   <div class="block-header">⑤ Pliométrie Quantitative — Single Leg Drop Jump</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
-      <div class="col-header">Mesure</div><div class="col-header">Côté atteint</div><div class="col-header">Côté sain</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+      <div class="col-header">Mesure</div><div class="col-header">Côté sain</div><div class="col-header">Côté atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
       <div class="measure-label">Hauteur saut (cm)</div>
-      <div class="measure-input"><input type="number" id="dj-h-ca" step="0.1" placeholder="—" oninput="calcDJ()"></div>
       <div class="measure-input"><input type="number" id="dj-h-cs" step="0.1" placeholder="—" oninput="calcDJ()"></div>
+      <div class="measure-input"><input type="number" id="dj-h-ca" step="0.1" placeholder="—" oninput="calcDJ()"></div>
       <div class="measure-stat" id="dj-h-lsi">—</div>
       <div class="measure-stat" id="dj-h-stat">—</div>
     </div>
     <div class="measure-row" style="background:var(--surface2)">
       <div class="measure-label" style="background:var(--surface2)">Temps de contact (ms)</div>
-      <div class="measure-input" style="background:var(--surface2)"><input type="number" id="dj-t-ca" placeholder="—" oninput="calcDJ()"></div>
       <div class="measure-input" style="background:var(--surface2)"><input type="number" id="dj-t-cs" placeholder="—" oninput="calcDJ()"></div>
+      <div class="measure-input" style="background:var(--surface2)"><input type="number" id="dj-t-ca" placeholder="—" oninput="calcDJ()"></div>
       <div class="measure-stat" id="dj-t-lsi" style="background:var(--surface2)">—</div>
       <div class="measure-stat" id="dj-t-stat" style="background:var(--surface2)">—</div>
     </div>
     <div class="measure-row">
       <div class="measure-label">RSI (auto-calculé)</div>
-      <div class="measure-stat" id="dj-rsi-ca">—</div>
       <div class="measure-stat" id="dj-rsi-cs">—</div>
+      <div class="measure-stat" id="dj-rsi-ca">—</div>
       <div class="measure-stat" id="dj-rsi-lsi">—</div>
       <div class="measure-stat" id="dj-rsi-stat">—</div>
     </div>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
-      <textarea id="dj-obs-ca" placeholder="Ex: flexion genou réduite à l'atterrissage, valgus dynamique…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
+      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
+      <textarea id="dj-obs-cs" placeholder="Ex: bonne absorption, posture symétrique…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
     </div>
     <div style="background:var(--surface2);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
-      <textarea id="dj-obs-cs" placeholder="Ex: bonne absorption, posture symétrique…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
+      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
+      <textarea id="dj-obs-ca" placeholder="Ex: flexion genou réduite à l'atterrissage, valgus dynamique…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
     </div>
   </div>
 </div>
@@ -1585,22 +1710,22 @@ body {
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
       <div class="col-header">Mesure</div>
-      <div class="col-header">Côté atteint</div>
       <div class="col-header">Côté sain</div>
+      <div class="col-header">Côté atteint</div>
       <div class="col-header">LSI %</div>
       <div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
       <div class="measure-label">Explosivité — Sauts / 15 sec</div>
-      <div class="measure-input"><input type="number" id="sh-exp-ca" step="1" placeholder="—" oninput="calcSideHop()"></div>
       <div class="measure-input"><input type="number" id="sh-exp-cs" step="1" placeholder="—" oninput="calcSideHop()"></div>
+      <div class="measure-input"><input type="number" id="sh-exp-ca" step="1" placeholder="—" oninput="calcSideHop()"></div>
       <div class="measure-stat" id="sh-exp-lsi">—</div>
       <div class="measure-stat" id="sh-exp-stat">—</div>
     </div>
     <div class="measure-row" style="background:var(--surface2)">
       <div class="measure-label" style="background:var(--surface2)">Endurance — Sauts / 30 sec</div>
-      <div class="measure-input" style="background:var(--surface2)"><input type="number" id="sh-end-ca" step="1" placeholder="—" oninput="calcSideHop()" style="background:var(--surface2)"></div>
       <div class="measure-input" style="background:var(--surface2)"><input type="number" id="sh-end-cs" step="1" placeholder="—" oninput="calcSideHop()" style="background:var(--surface2)"></div>
+      <div class="measure-input" style="background:var(--surface2)"><input type="number" id="sh-end-ca" step="1" placeholder="—" oninput="calcSideHop()" style="background:var(--surface2)"></div>
       <div class="measure-stat" id="sh-end-lsi" style="background:var(--surface2)">—</div>
       <div class="measure-stat" id="sh-end-stat" style="background:var(--surface2)">—</div>
     </div>
@@ -1618,12 +1743,12 @@ body {
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
-      <textarea id="sh-obs-ca" placeholder="Ex: perte d'équilibre après 20s, manque de cadence…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
+      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
+      <textarea id="sh-obs-cs" placeholder="Ex: cadence maintenue, appui stable…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
     </div>
     <div style="background:var(--surface2);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
-      <textarea id="sh-obs-cs" placeholder="Ex: cadence maintenue, appui stable…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
+      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
+      <textarea id="sh-obs-ca" placeholder="Ex: perte d'équilibre après 20s, manque de cadence…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
     </div>
   </div>
 </div>
@@ -1661,29 +1786,29 @@ body {
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
       <div class="col-header" style="grid-column:span 1">Direction</div>
-      <div class="col-header">Côté Atteint (cm)</div>
       <div class="col-header">Côté Sain (cm)</div>
+      <div class="col-header">Côté Atteint (cm)</div>
       <div class="col-header">Diff % normalisée</div>
       <div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
       <div class="measure-label" style="font-weight:700">ANT <span style="font-weight:400;font-size:.72rem;color:var(--text3)">Antérieur · 135°</span></div>
-      <div class="measure-input"><input type="number" id="sebt-ant-ca" placeholder="—" step="0.5" oninput="calcSEBT()"></div>
       <div class="measure-input"><input type="number" id="sebt-ant-cs" placeholder="—" step="0.5" oninput="calcSEBT()"></div>
+      <div class="measure-input"><input type="number" id="sebt-ant-ca" placeholder="—" step="0.5" oninput="calcSEBT()"></div>
       <div class="measure-stat" id="sebt-ant-diff">—</div>
       <div class="measure-stat" id="sebt-ant-stat">—</div>
     </div>
     <div class="measure-row" style="background:var(--surface2)">
       <div class="measure-label" style="background:var(--surface2);font-weight:700">PM <span style="font-weight:400;font-size:.72rem;color:var(--text3)">Postéro-médial · 90°</span></div>
-      <div class="measure-input" style="background:var(--surface2)"><input type="number" id="sebt-pm-ca" placeholder="—" step="0.5" oninput="calcSEBT()" style="background:var(--surface2)"></div>
       <div class="measure-input" style="background:var(--surface2)"><input type="number" id="sebt-pm-cs" placeholder="—" step="0.5" oninput="calcSEBT()" style="background:var(--surface2)"></div>
+      <div class="measure-input" style="background:var(--surface2)"><input type="number" id="sebt-pm-ca" placeholder="—" step="0.5" oninput="calcSEBT()" style="background:var(--surface2)"></div>
       <div class="measure-stat" id="sebt-pm-diff" style="background:var(--surface2)">—</div>
       <div class="measure-stat" id="sebt-pm-stat" style="background:var(--surface2)">—</div>
     </div>
     <div class="measure-row">
       <div class="measure-label" style="font-weight:700">PL <span style="font-weight:400;font-size:.72rem;color:var(--text3)">Postéro-latéral · 90°</span></div>
-      <div class="measure-input"><input type="number" id="sebt-pl-ca" placeholder="—" step="0.5" oninput="calcSEBT()"></div>
       <div class="measure-input"><input type="number" id="sebt-pl-cs" placeholder="—" step="0.5" oninput="calcSEBT()"></div>
+      <div class="measure-input"><input type="number" id="sebt-pl-ca" placeholder="—" step="0.5" oninput="calcSEBT()"></div>
       <div class="measure-stat" id="sebt-pl-diff">—</div>
       <div class="measure-stat" id="sebt-pl-stat">—</div>
     </div>
@@ -1726,12 +1851,12 @@ body {
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
-      <textarea id="sebt-obs-ca" placeholder="Ex: perte d'équilibre en ANT, compensation tronc…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
+      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
+      <textarea id="sebt-obs-cs" placeholder="Ex: score composite > 89%, répartition équilibrée…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
     </div>
     <div style="background:var(--surface2);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
-      <textarea id="sebt-obs-cs" placeholder="Ex: score composite > 89%, répartition équilibrée…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
+      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
+      <textarea id="sebt-obs-ca" placeholder="Ex: perte d'équilibre en ANT, compensation tronc…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
     </div>
   </div>
 
@@ -1758,20 +1883,20 @@ body {
       <div class="block-header">Quadriceps</div>
       <div style="padding:1px 0">
         <div class="measure-row" style="background:var(--surface2)">
-          <div class="col-header">Mesure / Mode</div><div class="col-header">Côté atteint (Nm)</div><div class="col-header">Côté sain (Nm)</div><div class="col-header">Déficit %</div><div class="col-header">Norme</div>
+          <div class="col-header">Mesure / Mode</div><div class="col-header">Côté sain (Nm)</div><div class="col-header">Côté atteint (Nm)</div><div class="col-header">Déficit %</div><div class="col-header">Norme</div>
         </div>
-        <div class="measure-row"><div class="measure-label">Force — Concentrique 60°/s</div><div class="measure-input"><input type="number" id="q-f-ca" placeholder="—" oninput="calcMusc()"></div><div class="measure-input"><input type="number" id="q-f-cs" placeholder="—" oninput="calcMusc()"></div><div class="measure-stat" id="q-f-def">—</div><div class="measure-stat" style="font-size:.75rem;color:var(--text3)">Déficit &lt; 10%</div></div>
-        <div class="measure-row" style="background:var(--surface2)"><div class="measure-label" style="background:var(--surface2)">Puissance — Concentrique 240°/s</div><div class="measure-input" style="background:var(--surface2)"><input type="number" id="q-p-ca" placeholder="—" oninput="calcMusc()"></div><div class="measure-input" style="background:var(--surface2)"><input type="number" id="q-p-cs" placeholder="—" oninput="calcMusc()"></div><div class="measure-stat" id="q-p-def" style="background:var(--surface2)">—</div><div class="measure-stat" style="background:var(--surface2);font-size:.75rem;color:var(--text3)">Déficit &lt; 15%</div></div>
-        <div class="measure-row"><div class="measure-label">Résistance — Excentrique 30°/s</div><div class="measure-input"><input type="number" id="q-r-ca" placeholder="—" oninput="calcMusc()"></div><div class="measure-input"><input type="number" id="q-r-cs" placeholder="—" oninput="calcMusc()"></div><div class="measure-stat" id="q-r-def">—</div><div class="measure-stat" style="font-size:.75rem;color:var(--text3)">Déficit &lt; 10%</div></div>
+        <div class="measure-row"><div class="measure-label">Force — Concentrique 60°/s</div><div class="measure-input"><input type="number" id="q-f-cs" placeholder="—" oninput="calcMusc()"></div><div class="measure-input"><input type="number" id="q-f-ca" placeholder="—" oninput="calcMusc()"></div><div class="measure-stat" id="q-f-def">—</div><div class="measure-stat" style="font-size:.75rem;color:var(--text3)">Déficit &lt; 10%</div></div>
+        <div class="measure-row" style="background:var(--surface2)"><div class="measure-label" style="background:var(--surface2)">Puissance — Concentrique 240°/s</div><div class="measure-input" style="background:var(--surface2)"><input type="number" id="q-p-cs" placeholder="—" oninput="calcMusc()"></div><div class="measure-input" style="background:var(--surface2)"><input type="number" id="q-p-ca" placeholder="—" oninput="calcMusc()"></div><div class="measure-stat" id="q-p-def" style="background:var(--surface2)">—</div><div class="measure-stat" style="background:var(--surface2);font-size:.75rem;color:var(--text3)">Déficit &lt; 15%</div></div>
+        <div class="measure-row"><div class="measure-label">Résistance — Excentrique 30°/s</div><div class="measure-input"><input type="number" id="q-r-cs" placeholder="—" oninput="calcMusc()"></div><div class="measure-input"><input type="number" id="q-r-ca" placeholder="—" oninput="calcMusc()"></div><div class="measure-stat" id="q-r-def">—</div><div class="measure-stat" style="font-size:.75rem;color:var(--text3)">Déficit &lt; 10%</div></div>
       </div>
     </div>
     <div class="block">
       <div class="block-header">Ischio-Jambiers</div>
       <div style="padding:1px 0">
-        <div class="measure-row" style="background:var(--surface2)"><div class="col-header">Mesure / Mode</div><div class="col-header">CA (Nm)</div><div class="col-header">CS (Nm)</div><div class="col-header">Déficit %</div><div class="col-header">Norme</div></div>
-        <div class="measure-row"><div class="measure-label">Force — Concentrique 60°/s</div><div class="measure-input"><input type="number" id="ij-f-ca" placeholder="—" oninput="calcMusc()"></div><div class="measure-input"><input type="number" id="ij-f-cs" placeholder="—" oninput="calcMusc()"></div><div class="measure-stat" id="ij-f-def">—</div><div class="measure-stat" style="font-size:.75rem;color:var(--text3)">Déficit &lt; 10%</div></div>
-        <div class="measure-row" style="background:var(--surface2)"><div class="measure-label" style="background:var(--surface2)">Puissance — Concentrique 240°/s</div><div class="measure-input" style="background:var(--surface2)"><input type="number" id="ij-p-ca" placeholder="—" oninput="calcMusc()"></div><div class="measure-input" style="background:var(--surface2)"><input type="number" id="ij-p-cs" placeholder="—" oninput="calcMusc()"></div><div class="measure-stat" id="ij-p-def" style="background:var(--surface2)">—</div><div class="measure-stat" style="background:var(--surface2);font-size:.75rem;color:var(--text3)">Déficit &lt; 15%</div></div>
-        <div class="measure-row"><div class="measure-label">Résistance — Excentrique 30°/s</div><div class="measure-input"><input type="number" id="ij-r-ca" placeholder="—" oninput="calcMusc()"></div><div class="measure-input"><input type="number" id="ij-r-cs" placeholder="—" oninput="calcMusc()"></div><div class="measure-stat" id="ij-r-def">—</div><div class="measure-stat" style="font-size:.75rem;color:var(--text3)">Déficit &lt; 10%</div></div>
+        <div class="measure-row" style="background:var(--surface2)"><div class="col-header">Mesure / Mode</div><div class="col-header">CS (Nm)</div><div class="col-header">CA (Nm)</div><div class="col-header">Déficit %</div><div class="col-header">Norme</div></div>
+        <div class="measure-row"><div class="measure-label">Force — Concentrique 60°/s</div><div class="measure-input"><input type="number" id="ij-f-cs" placeholder="—" oninput="calcMusc()"></div><div class="measure-input"><input type="number" id="ij-f-ca" placeholder="—" oninput="calcMusc()"></div><div class="measure-stat" id="ij-f-def">—</div><div class="measure-stat" style="font-size:.75rem;color:var(--text3)">Déficit &lt; 10%</div></div>
+        <div class="measure-row" style="background:var(--surface2)"><div class="measure-label" style="background:var(--surface2)">Puissance — Concentrique 240°/s</div><div class="measure-input" style="background:var(--surface2)"><input type="number" id="ij-p-cs" placeholder="—" oninput="calcMusc()"></div><div class="measure-input" style="background:var(--surface2)"><input type="number" id="ij-p-ca" placeholder="—" oninput="calcMusc()"></div><div class="measure-stat" id="ij-p-def" style="background:var(--surface2)">—</div><div class="measure-stat" style="background:var(--surface2);font-size:.75rem;color:var(--text3)">Déficit &lt; 15%</div></div>
+        <div class="measure-row"><div class="measure-label">Résistance — Excentrique 30°/s</div><div class="measure-input"><input type="number" id="ij-r-cs" placeholder="—" oninput="calcMusc()"></div><div class="measure-input"><input type="number" id="ij-r-ca" placeholder="—" oninput="calcMusc()"></div><div class="measure-stat" id="ij-r-def">—</div><div class="measure-stat" style="font-size:.75rem;color:var(--text3)">Déficit &lt; 10%</div></div>
       </div>
     </div>
     <div class="block">
@@ -1810,7 +1935,7 @@ body {
       <div class="col-header">Mesure</div><div class="col-header">Côté sain</div><div class="col-header">Côté atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
-      <div class="measure-label">Répétitions max (cadence 30 bpm)</div>
+      <div class="measure-label">Répétitions max (Tempo 2/0/2/0)</div>
       <div class="measure-input"><input type="number" id="pset-cs" placeholder="—" oninput="calcLSI('pset')"></div>
       <div class="measure-input"><input type="number" id="pset-ca" placeholder="—" oninput="calcLSI('pset')"></div>
       <div class="measure-stat" id="pset-lsi">—</div>
@@ -1825,24 +1950,24 @@ body {
     </div>
   </div>
   <div style="padding:10px 14px;font-size:11px;color:var(--text2);background:var(--surface2);border-top:1px solid var(--border)">
-    <strong>Protocole :</strong> Couché ventral, bras hors table, poids tenu. Abduction horizontale 90° + RE épaule, maintien 1s, retour contrôlé. Cadence 30 bpm (métronome).
+    <strong>Protocole :</strong> Couché ventral, bras hors table, poids tenu. Abduction horizontale 90° + RE épaule, maintien 1s, retour contrôlé. Tempo 2/0/2/0.
     <strong>Arrêt :</strong> Incapacité à maintenir 90° d'abduction, perte de rythme, compensations scapulaires ou perte de RE.
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
-      <textarea id="pset-obs-ca" placeholder="Ex: fatigue précoce, compensation scapulaire…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
+      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
+      <textarea id="pset-obs-cs" placeholder="Ex: maintien complet, aucune compensation…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
     </div>
     <div style="background:var(--surface2);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
-      <textarea id="pset-obs-cs" placeholder="Ex: maintien complet, aucune compensation…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
+      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
+      <textarea id="pset-obs-ca" placeholder="Ex: fatigue précoce, compensation scapulaire…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
     </div>
   </div>
 </div>
 
 <!-- CKCUEST -->
 <div class="block">
-  <div class="block-header">② CKCUEST Modifié — Closed Kinetic Chain Upper Extremity Stability Test</div>
+  <div class="block-header">② mCKCUEST — Closed Kinetic Chain Upper Extremity Stability Test</div>
   <div style="padding:10px 14px 12px;background:var(--surface);border-bottom:1px solid var(--border)">
     <div style="font-size:.74rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Envergure — C7 → Majeur (cm)</div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
@@ -1862,47 +1987,68 @@ body {
   </div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
-      <div class="col-header">Mesure</div><div class="col-header">Essai 1</div><div class="col-header">Essai 2</div><div class="col-header">Essai 3</div><div class="col-header">Meilleur</div>
+      <div class="col-header">Séquence</div><div class="col-header">Durée</div><div class="col-header">Touches</div><div class="col-header">Rôle</div><div class="col-header">Résultat</div>
     </div>
     <div class="measure-row">
-      <div class="measure-label">Touches / 15 sec (côté sain)</div>
-      <div class="measure-input"><input type="number" id="ckc-cs-1" placeholder="—" oninput="calcCKC()"></div>
-      <div class="measure-input"><input type="number" id="ckc-cs-2" placeholder="—" oninput="calcCKC()"></div>
-      <div class="measure-input"><input type="number" id="ckc-cs-3" placeholder="—" oninput="calcCKC()"></div>
-      <div class="measure-stat" id="ckc-cs-best" style="font-size:1rem;font-weight:700;color:var(--accent2)">—</div>
+      <div class="measure-label">S0 — Familiarisation</div>
+      <div class="measure-stat" style="font-size:.8rem;color:var(--text2)">15 s</div>
+      <div class="measure-input"><input type="number" id="ckc-s0" placeholder="—" oninput="calcCKC()"></div>
+      <div class="measure-stat" style="font-size:.75rem;color:var(--text2);font-style:italic">Non comptée</div>
+      <div class="measure-stat" style="font-size:.75rem;color:var(--text2)">—</div>
     </div>
     <div class="measure-row" style="background:var(--surface2)">
-      <div class="measure-label" style="background:var(--surface2)">Touches / 15 sec (côté atteint)</div>
-      <div class="measure-input" style="background:var(--surface2)"><input type="number" id="ckc-ca-1" placeholder="—" oninput="calcCKC()" style="background:var(--surface2)"></div>
-      <div class="measure-input" style="background:var(--surface2)"><input type="number" id="ckc-ca-2" placeholder="—" oninput="calcCKC()" style="background:var(--surface2)"></div>
-      <div class="measure-input" style="background:var(--surface2)"><input type="number" id="ckc-ca-3" placeholder="—" oninput="calcCKC()" style="background:var(--surface2)"></div>
-      <div class="measure-stat" id="ckc-ca-best" style="background:var(--surface2);font-size:1rem;font-weight:700;color:var(--accent2)">—</div>
+      <div class="measure-label" style="background:var(--surface2)">S1 — Série (non comptée)</div>
+      <div class="measure-stat" style="font-size:.8rem;color:var(--text2);background:var(--surface2)">15 s</div>
+      <div class="measure-input" style="background:var(--surface2)"><input type="number" id="ckc-s1" placeholder="—" oninput="calcCKC()" style="background:var(--surface2)"></div>
+      <div class="measure-stat" style="font-size:.75rem;color:var(--text2);font-style:italic;background:var(--surface2)">Non comptée</div>
+      <div class="measure-stat" style="font-size:.75rem;color:var(--text2);background:var(--surface2)">—</div>
+    </div>
+    <div class="measure-row" style="background:var(--surface2)">
+      <div class="measure-label" style="background:var(--surface2)">S2 — Série 1</div>
+      <div class="measure-stat" style="font-size:.8rem;color:var(--text2);background:var(--surface2)">15 s</div>
+      <div class="measure-input" style="background:var(--surface2)"><input type="number" id="ckc-s2" placeholder="—" oninput="calcCKC()" style="background:var(--surface2)"></div>
+      <div class="measure-stat" style="font-size:.75rem;color:var(--text2);background:var(--surface2)">Score</div>
+      <div class="measure-stat" id="ckc-s2-stat" style="background:var(--surface2)">—</div>
     </div>
     <div class="measure-row">
-      <div class="measure-label">LSI & Statut</div>
-      <div class="measure-stat" id="ckc-lsi" style="grid-column:span 3">—</div>
-      <div class="measure-stat" id="ckc-stat">—</div>
+      <div class="measure-label">S3 — Série 2</div>
+      <div class="measure-stat" style="font-size:.8rem;color:var(--text2)">15 s</div>
+      <div class="measure-input"><input type="number" id="ckc-s3" placeholder="—" oninput="calcCKC()"></div>
+      <div class="measure-stat" style="font-size:.75rem;color:var(--text2)">Score</div>
+      <div class="measure-stat" id="ckc-s3-stat">—</div>
+    </div>
+    <div class="measure-row" style="background:var(--surface2)">
+      <div class="measure-label" style="background:var(--surface2)">S4 — Endurance (30 der. sec.)</div>
+      <div class="measure-stat" style="font-size:.8rem;color:var(--text2);background:var(--surface2)">60 s</div>
+      <div class="measure-input" style="background:var(--surface2)"><input type="number" id="ckc-s4" placeholder="—" oninput="calcCKC()" style="background:var(--surface2)"></div>
+      <div class="measure-stat" style="font-size:.75rem;color:var(--text2);background:var(--surface2)">MEI</div>
+      <div class="measure-stat" id="ckc-s4-stat" style="background:var(--surface2)">—</div>
+    </div>
+    <div class="measure-row" style="border-top:2px solid var(--border2)">
+      <div class="measure-label" style="font-weight:700">Score mCKCUEST</div>
+      <div class="measure-stat" id="ckc-score" style="font-size:1.05rem;font-weight:700;color:var(--accent2)">—</div>
+      <div class="measure-stat" id="ckc-score-pts" style="grid-column:span 2;font-size:.78rem">—</div>
+      <div class="measure-stat" id="ckc-score-stat">—</div>
+    </div>
+    <div class="measure-row" style="background:var(--surface2)">
+      <div class="measure-label" style="background:var(--surface2);font-weight:700">MEI — Maintien de l'endurance</div>
+      <div class="measure-stat" id="ckc-mei" style="font-size:1.05rem;font-weight:700;color:var(--accent2);background:var(--surface2)">—</div>
+      <div class="measure-stat" id="ckc-mei-pts" style="grid-column:span 2;font-size:.78rem;background:var(--surface2)">—</div>
+      <div class="measure-stat" id="ckc-mei-stat" style="background:var(--surface2)">—</div>
     </div>
   </div>
   <div style="padding:8px 14px;background:var(--accent-l);font-size:12px;color:var(--accent2)">
-    <strong>Normes mCKCUEST :</strong> Hommes ≥ 30 touches/15s · Femmes ≥ 25 touches/15s — espacement individualisé = ½ envergure (C7→Majeur)
+    <strong>Normes Score :</strong> &gt; 21 = 3 pts · 19–21 = 2 pts · &lt; 19 = 1 pt &nbsp;|&nbsp; <strong>MEI :</strong> ≥ 0.90 = maintien optimal
   </div>
   <div style="padding:10px 14px;font-size:11px;color:var(--text2);background:var(--surface2);border-top:1px solid var(--border)">
-    <strong>Protocole :</strong> Mesurer l'envergure C7→Majeur D et G. Espacement des repères tape = moyenne des 2 mesures ÷ 2 (½ envergure). Pieds écartés à la largeur des épaules.
-    <strong>Position H :</strong> pompes classiques (sur les orteils) · <strong>F :</strong> pompes sur les genoux.
-    1 essai de familiarisation puis 3 essais de 15 secondes, repos 45 s entre les essais.
-    Toucher alternativement chaque repère avec la main opposée le plus vite possible. Score = meilleur essai.
+    <strong>Protocole :</strong> Espacement repères = (EnvD + EnvG) ÷ 2. Pieds largeur épaules. <strong>H :</strong> sur les orteils · <strong>F :</strong> sur les genoux.
+    S1 (15s familiarisation, repos 45s) → S2 (15s, repos 45s) → S3 (15s, repos 45s) → S4 (60s continu, relever les touches des 30 dernières secondes).
+    <strong>Score</strong> = (S2 + S3) ÷ 2 &nbsp;·&nbsp; <strong>MEI</strong> = (touches 30 der. sec. S4 ÷ 2) ÷ Score.
     <strong>Invalide :</strong> rotation excessive du tronc, perte de gainage, main ne dépassant pas le repère.
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
-    <div style="background:var(--surface);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
-      <textarea id="ckc-obs-ca" placeholder="Ex: rotation excessive, perte de gainage…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
-    </div>
-    <div style="background:var(--surface2);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
-      <textarea id="ckc-obs-cs" placeholder="Ex: technique propre, planche stable…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
-    </div>
+  <div style="background:var(--surface);padding:8px 14px 10px;border-top:1px solid var(--border)">
+    <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations</div>
+    <textarea id="ckc-obs" placeholder="Ex: rotation excessive en fin de S4, perte de gainage…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
   </div>
 </div>
 
@@ -2416,10 +2562,12 @@ function init() {
       for (var oi=0; oi<opts.length; oi++) {
         optHtml += '<option value="' + opts[oi] + '">' + opts[oi] + '</option>';
       }
+      var selId  = 'sel-' + id + '-' + i;
+      var noteId = 'note-' + id + '-' + i;
       tr.innerHTML = '<td><div class="test-name">' + name + '</div></td>' +
-        '<td class="result-cell"><select data-type="' + cfg.type + '" onchange="onTestChange(this,\'' + id + '\',' + i + ')">' +
+        '<td class="result-cell"><select id="' + selId + '" data-type="' + cfg.type + '" onchange="onTestChange(this,\'' + id + '\',' + i + ')">' +
         optHtml + '</select></td>' +
-        '<td class="note-cell"><input type="text" placeholder="Observation\u2026" data-note="' + id + '-' + i + '"></td>';
+        '<td class="note-cell"><input type="text" id="' + noteId + '" placeholder="Observation\u2026" data-note="' + id + '-' + i + '"></td>';
       tbody.appendChild(tr);
     });
   });
@@ -2429,7 +2577,8 @@ function init() {
     const grid = document.getElementById('mob-' + seg);
     if (!grid) return;
     MOB.forEach(m => {
-      grid.innerHTML += '<div class="mobility-item"><label>' + m + '</label><input type="text" placeholder="\u2014" data-mob="' + seg + '-' + m + '"></div>';
+      var mKey = 'mob-' + seg + '-' + m.replace(/[\s.\/]+/g, '_');
+      grid.innerHTML += '<div class="mobility-item"><label>' + m + '</label><input type="text" id="' + mKey + '" placeholder="\u2014" data-mob="' + seg + '-' + m + '"></div>';
     });
   });
 
@@ -2498,7 +2647,192 @@ window.addEventListener('message', function(e){
     try { localStorage.setItem('r4p-profile', JSON.stringify(e.data.profile)); } catch(ex){}
     applyProfile(e.data.profile);
   }
+  if(e.data && e.data.type==='r4p-patient-selected'){
+    _bilanPatient = e.data.patient;
+    _currentBilanId = null;
+    try { localStorage.setItem('r4p-current-patient', e.data.patient ? JSON.stringify(e.data.patient) : ''); } catch(ex){}
+    // Récupérer l'uid depuis le token d'auth envoyé par le parent
+    if(e.data.auth && e.data.auth.access_token){
+      try {
+        var payload = JSON.parse(atob(e.data.auth.access_token.split('.')[1]));
+        _bilanUid = payload.sub || null;
+      } catch(ex){}
+      try { sbB.auth.setSession(e.data.auth); } catch(ex){}
+    }
+    _updateSaveBar();
+    if(_bilanPatient) _autofillPatientFields(_bilanPatient);
+  }
 });
+
+/* ═══════════════════════════════════════════════════════════
+   SUPABASE — GESTION BILANS
+═══════════════════════════════════════════════════════════ */
+var SUPA_URL_B = 'https://sxdobjodxkwexaspepdm.supabase.co';
+var SUPA_KEY_B = 'sb_publishable_zEJrmQOnKyRm-Y_NyojaTA_ERrDx4pl';
+var sbB = supabase.createClient(SUPA_URL_B, SUPA_KEY_B);
+
+var _bilanPatient   = null;
+var _currentBilanId = null;
+var _bilanUid       = null;
+
+// Essayer de récupérer l'uid depuis le localStorage Supabase (fallback au chargement)
+(function(){
+  try {
+    var raw = localStorage.getItem('sb-sxdobjodxkwexaspepdm-auth-token');
+    if(raw){
+      var parsed = JSON.parse(raw);
+      var tok = parsed.access_token || (parsed.currentSession && parsed.currentSession.access_token);
+      if(tok){ var pl = JSON.parse(atob(tok.split('.')[1])); _bilanUid = pl.sub || null; }
+    }
+  } catch(ex){}
+})();
+
+// Restaurer patient depuis localStorage au chargement
+(function(){
+  try {
+    var sp = localStorage.getItem('r4p-current-patient');
+    if(sp && sp !== '') { _bilanPatient = JSON.parse(sp); _updateSaveBar(); }
+  } catch(ex){}
+})();
+
+function _updateSaveBar(){
+  var el = document.getElementById('sb-save-patient');
+  if(!el) return;
+  if(_bilanPatient){
+    el.innerHTML = 'Patient : <strong>'+_esc2(_bilanPatient.nom)+' '+_esc2(_bilanPatient.prenom)+'</strong>';
+  } else {
+    el.textContent = 'Aucun patient sélectionné';
+  }
+}
+function _esc2(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function _autofillPatientFields(p){
+  var map = {'f-nom':p.nom,'f-prenom':p.prenom,'f-dob':p.ddn||'','f-sexe':p.sexe||''};
+  Object.keys(map).forEach(function(id){
+    var el = document.getElementById(id);
+    if(el && !el.value && map[id]) { el.value = map[id]; }
+  });
+  try { updateAll(); } catch(ex){}
+}
+
+/* ── Sérialisation ─────────────────────────────────────── */
+function _serializeBilan(){
+  var data = {};
+  document.querySelectorAll('input[id],select[id],textarea[id]').forEach(function(el){
+    if(el.closest('#print-header')) return; // ignorer la zone impression
+    if(el.type==='checkbox'||el.type==='radio') data[el.id]=el.checked;
+    else data[el.id]=el.value;
+  });
+  return data;
+}
+
+function _deserializeBilan(data){
+  Object.keys(data).forEach(function(id){
+    var el = document.getElementById(id);
+    if(!el) return;
+    if(el.type==='checkbox'||el.type==='radio') el.checked = !!data[id];
+    else el.value = data[id]||'';
+    // Restaurer les classes couleur des selects de tests ortho/fonc
+    if(el.tagName==='SELECT' && el.dataset.type){
+      var v = el.value; var t = el.dataset.type;
+      el.className = '';
+      if(v==='Positif'||v==='Validé') el.classList.add(t==='fonc'?'positif-fonc':'positif-ortho');
+      else if(v==='Négatif'||v==='Pas validé') el.classList.add(t==='fonc'?'negatif-fonc':'negatif-ortho');
+    }
+    try{ el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); }catch(ex){}
+  });
+  try{ updateAll(); calcRec(); calcPlioq(); }catch(ex){}
+  try{ ['sls','hop','pset','set'].forEach(function(k){ calcLSI(k); }); calcDJ(); calcLunge(); calcHR(); calcMusc(); }catch(ex){}
+  try{ calcCKC(); calcSHRT(); calcULRT(); }catch(ex){}
+  try{ calcRachisStat(); calcLNF(); calcSorensen(); calcPDSLRT(); }catch(ex){}
+  try{ calcPlioq2(); calcSEBT(); calcUQYBT(); updateBadges(); }catch(ex){}
+}
+
+/* ── Sauvegarder ───────────────────────────────────────── */
+function saveBilan(){
+  if(!_bilanPatient){ alert('Sélectionnez un patient depuis la barre de navigation.'); return; }
+  if(!_bilanUid){ alert('Session non disponible. Veuillez sélectionner à nouveau le patient depuis la barre de navigation.'); return; }
+  var btn = document.getElementById('bilan-save-btn');
+  btn.disabled = true; btn.textContent = '⏳ Sauvegarde…';
+  var donnees = _serializeBilan();
+  var today = new Date().toISOString().split('T')[0];
+  var p;
+  if(_currentBilanId){
+    p = sbB.from('bilans').update({donnees:donnees,date:today}).eq('id',_currentBilanId).select().single();
+  } else {
+    p = sbB.from('bilans').insert({patient_id:_bilanPatient.id,praticien_id:_bilanUid,date:today,donnees:donnees}).select().single();
+  }
+  p.then(function(res){
+    btn.disabled=false;
+    if(res.error){ btn.textContent='💾 Sauvegarder le bilan'; alert('Erreur : '+res.error.message); return; }
+    if(!_currentBilanId) _currentBilanId = res.data.id;
+    btn.textContent='✓ Sauvegardé !';
+    setTimeout(function(){ btn.textContent='💾 Sauvegarder le bilan'; },2500);
+  }).catch(function(err){
+    btn.disabled=false;
+    btn.textContent='💾 Sauvegarder le bilan';
+    alert('Erreur réseau : '+(err&&err.message||err));
+  });
+}
+
+/* ── Historique ────────────────────────────────────────── */
+function openBilanHistory(){
+  if(!_bilanPatient){ alert('Sélectionnez un patient depuis la barre de navigation.'); return; }
+  document.getElementById('histoOverlay').classList.add('open');
+  document.getElementById('histoList').innerHTML = '<div class="histo-empty">Chargement…</div>';
+  sbB.from('bilans')
+    .select('id,date,created_at')
+    .eq('patient_id',_bilanPatient.id)
+    .order('date',{ascending:false})
+    .then(function(res){
+      if(res.error||!res.data.length){
+        document.getElementById('histoList').innerHTML='<div class="histo-empty">Aucun bilan enregistré pour ce patient.</div>';
+        return;
+      }
+      document.getElementById('histoList').innerHTML = res.data.map(function(b){
+        var d = b.date ? b.date.split('-').reverse().join('/') : '—';
+        var isCurrent = _currentBilanId === b.id;
+        return '<div class="histo-item'+(isCurrent?' current':'')+'">'
+          +'<div><div class="histo-item-date">'+d+'</div>'
+          +'<div class="histo-item-id">'+(isCurrent?'● En cours':'')+'</div></div>'
+          +'<button class="histo-item-load" onclick="loadBilan(\''+b.id+'\')">Charger</button>'
+          +'</div>';
+      }).join('');
+    });
+}
+
+function loadBilan(id){
+  document.getElementById('histoList').innerHTML='<div class="histo-empty">Chargement…</div>';
+  sbB.from('bilans').select('*').eq('id',id).single().then(function(res){
+    if(res.error){ alert('Erreur : '+res.error.message); closeHistoModal(); return; }
+    _currentBilanId = res.data.id;
+    _deserializeBilan(res.data.donnees||{});
+    closeHistoModal();
+    var btn = document.getElementById('bilan-save-btn');
+    if(btn){ btn.textContent='✓ Bilan chargé'; setTimeout(function(){ btn.textContent='💾 Sauvegarder le bilan'; },2500); }
+  });
+}
+
+function newBilan(){
+  if(!confirm('Créer un nouveau bilan vierge ? (le bilan actuel non sauvegardé sera perdu)')) return;
+  _currentBilanId = null;
+  // Réinitialisation complète — même logique que doReset()
+  document.querySelectorAll('input:not([type=checkbox])').forEach(function(i){ i.value=''; });
+  document.querySelectorAll('textarea').forEach(function(t){ t.value=''; });
+  document.querySelectorAll('select').forEach(function(s){ s.selectedIndex=0; s.className=''; });
+  document.querySelectorAll('input[type=checkbox]').forEach(function(c){ c.checked=false; });
+  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('f-cote').value = 'DROIT';
+  showPage('infos');
+  localStorage.removeItem('athletik-bilan');
+  try{ updateAll(); }catch(ex){}
+  try{ calcRec(); }catch(ex){}
+  if(_bilanPatient) _autofillPatientFields(_bilanPatient);
+  closeHistoModal();
+}
+
+function closeHistoModal(){ document.getElementById('histoOverlay').classList.remove('open'); }
+function closeHistoOnBackdrop(e){ if(e.target===document.getElementById('histoOverlay')) closeHistoModal(); }
 
 // -- NAV -------------------------------------------------------
 function showPage(id) {
@@ -2592,6 +2926,11 @@ function updateAll() {
 
   // PDSLRT norme selon age
   calcPDSLRT();
+
+  // Tests MS
+  calcCKC();
+  calcSHRT();
+  calcULRT();
 
   // Progress
   const fields = document.querySelectorAll('input[type=text],input[type=number],textarea,select');
@@ -2861,6 +3200,9 @@ function buildCR() {
     if (!html || !html.trim()) return;
     content.innerHTML += '<div class="cr-section"><h3>' + title + '</h3>' + html + '</div>';
   }
+  // Convertit \n en <br> pour l'affichage HTML des champs texte
+  function nl2br(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
+
   function crItem(key, val, tag, tagClass) {
     if (!val) return '';
     tag = tag || ''; tagClass = tagClass || '';
@@ -2883,7 +3225,7 @@ function buildCR() {
   for (var ii=0; ii<infosMap.length; ii++) {
     var el2 = document.getElementById(infosMap[ii][0]);
     var v2 = el2 ? el2.value : '';
-    if (v2) infosHtml += crItem(infosMap[ii][1], v2 + infosMap[ii][2]);
+    if (v2) infosHtml += crItem(infosMap[ii][1], nl2br(v2) + infosMap[ii][2]);
   }
   var aclrsiEl = document.getElementById('f-aclrsi');
   var aclrsi = aclrsiEl ? aclrsiEl.value : '';
@@ -2892,6 +3234,20 @@ function buildCR() {
     infosHtml += crItem('ACL-RSI', aclrsi + '%', av>=60 ? '>= 60% OK' : '< 60% Attention', av>=60 ? 'ok' : 'warn');
   }
   addSection('1. Infos Patient & Anamnese', infosHtml);
+
+  // Helpers partagés sections 2 et 3
+  var lsiStr = function(ca,cs) { return cs>0 ? ('LSI = ' + (ca/cs*100).toFixed(1) + '%') : ''; };
+  var lsiCls2 = function(ca,cs) { if (!cs||cs<=0||isNaN(ca)||isNaN(cs)) return ''; var v=ca/cs*100; return v>=90?'good':v>=80?'warn':'bad'; };
+  var statOf2 = function(cls) { return ({good:'OK',warn:'Acceptable',bad:'Insuffisant'}[cls])||''; };
+  var obsBlock = function(idCA, idCS) {
+    var ca = (document.getElementById(idCA)||{}).value||'';
+    var cs = (document.getElementById(idCS)||{}).value||'';
+    var parts = [];
+    if(ca) parts.push('<div><span style="font-weight:600;font-style:normal;">Obs. Côté Atteint :</span><br><span style="padding-left:8px;display:inline-block">'+nl2br(ca)+'</span></div>');
+    if(cs) parts.push('<div><span style="font-weight:600;font-style:normal;">Obs. Côté Sain :</span><br><span style="padding-left:8px;display:inline-block">'+nl2br(cs)+'</span></div>');
+    var txt = parts.join('');
+    return txt?'<div style="margin:2px 0 8px;padding:6px 10px;background:var(--surface2);border-radius:5px;font-size:.82rem;color:var(--text2);font-style:italic">'+txt+'</div>':'';
+  };
 
   // 2. Bilan ortho
   var orthoSections = [
@@ -2907,7 +3263,7 @@ function buildCR() {
     var secRows = '';
     for (var fi=0; fi<sec.fields.length; fi++) {
       var fEl = document.getElementById(sec.fields[fi][0]);
-      if (fEl && fEl.value) secRows += crItem(sec.fields[fi][1], fEl.value);
+      if (fEl && fEl.value) secRows += crItem(sec.fields[fi][1], nl2br(fEl.value));
     }
     for (var ti=0; ti<sec.tables.length; ti++) {
       var tKey = sec.tables[ti];
@@ -2935,10 +3291,55 @@ function buildCR() {
         }
       }
     }
+    // Mobilité hanche (onglet Hanche)
+    if (sec.label === 'HANCHE') {
+      var mobFields = ['flex','ext','ri','re','abd','add'];
+      var mobLabels = ['Flex','Ext','RI','RE','Abd','Add'];
+      function mobSide(prefix, sideLabel) {
+        var vals = mobFields.map(function(f){ return (document.getElementById(prefix+'-'+f)||{}).value||''; });
+        var hasVal = vals.some(function(v){ return v.trim()!==''; });
+        if (!hasVal) return '';
+        var obs = (document.getElementById(prefix+'-obs')||{}).value||'';
+        var valStr = mobLabels.map(function(l,i){ return vals[i]?l+'='+vals[i]:''; }).filter(Boolean).join('   ');
+        var out = crItem('Mobilité Hanche — '+sideLabel, valStr);
+        if (obs) out += '<div style="margin:2px 0 8px;padding:6px 10px;background:var(--surface2);border-radius:5px;font-size:.82rem;color:var(--text2);font-style:italic">Obs. : '+nl2br(obs)+'</div>';
+        return out;
+      }
+      secRows += mobSide('ha-mob-g','Gauche') + mobSide('ha-mob-d','Droit');
+    }
+    // Mobilité hanche (onglet Genou)
+    if (sec.label === 'GENOU') {
+      var geMobFields = ['flex','ext','ri','re','abd','add'];
+      var geMobLabels = ['Flex','Ext','RI','RE','Abd','Add'];
+      function geMobSide(prefix, sideLabel) {
+        var vals = geMobFields.map(function(f){ return (document.getElementById(prefix+'-'+f)||{}).value||''; });
+        var hasVal = vals.some(function(v){ return v.trim()!==''; });
+        if (!hasVal) return '';
+        var obs = (document.getElementById(prefix+'-obs')||{}).value||'';
+        var valStr = geMobLabels.map(function(l,i){ return vals[i]?l+'='+vals[i]:''; }).filter(Boolean).join('   ');
+        var out = crItem('Mobilité Hanche — '+sideLabel, valStr);
+        if (obs) out += '<div style="margin:2px 0 8px;padding:6px 10px;background:var(--surface2);border-radius:5px;font-size:.82rem;color:var(--text2);font-style:italic">Obs. : '+nl2br(obs)+'</div>';
+        return out;
+      }
+      secRows += geMobSide('ge-mob-d','Gauche') + geMobSide('ge-mob-g','Droit');
+      // Contraction Flash Isométrique
+      var cfCA2 = parseFloat((document.getElementById('cf-q-ca')||{}).value||'');
+      var cfCS2 = parseFloat((document.getElementById('cf-q-cs')||{}).value||'');
+      var cfObsCA2 = (document.getElementById('cf-obs-ca')||{}).value||'';
+      var cfObsCS2 = (document.getElementById('cf-obs-cs')||{}).value||'';
+      var cfObs2Parts = []; if(cfObsCA2) cfObs2Parts.push('<div><span style="font-weight:600;font-style:normal;">Obs. Côté Atteint :</span><br><span style="padding-left:8px;display:inline-block">'+nl2br(cfObsCA2)+'</span></div>'); if(cfObsCS2) cfObs2Parts.push('<div><span style="font-weight:600;font-style:normal;">Obs. Côté Sain :</span><br><span style="padding-left:8px;display:inline-block">'+nl2br(cfObsCS2)+'</span></div>');
+      var cfObs2 = cfObs2Parts.join('');
+      if (!isNaN(cfCA2) || !isNaN(cfCS2)) {
+        secRows += crItem('Contraction Flash Isométrique 20s',
+          (!isNaN(cfCA2)?'CA='+cfCA2+' rép.':'') + (!isNaN(cfCS2)?((!isNaN(cfCA2)?'   ':'')+'CS='+cfCS2+' rép.   '+lsiStr(cfCA2,cfCS2)):''),
+          statOf2(lsiCls2(cfCA2,cfCS2)), lsiCls2(cfCA2,cfCS2));
+      }
+      if (cfObs2) secRows += '<div style="margin:2px 0 8px;padding:6px 10px;background:var(--surface2);border-radius:5px;font-size:.82rem;color:var(--text2);font-style:italic">' + cfObs2 + '</div>';
+    }
     var conclEl = document.getElementById(sec.concl);
-    if (conclEl && conclEl.value) secRows += crItem('Conclusion', conclEl.value);
+    if (conclEl && conclEl.value) secRows += crItem('Conclusion', nl2br(conclEl.value));
     var optEl = sec.opt ? document.getElementById(sec.opt) : null;
-    if (optEl && optEl.value) secRows += crItem('Tests Optionnels', optEl.value);
+    if (optEl && optEl.value) secRows += crItem('Tests Optionnels', nl2br(optEl.value));
     if (secRows) orthoHtml += '<div style="margin-bottom:12px"><div style="font-size:.78rem;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">' + sec.label + '</div>' + secRows + '</div>';
   }
   addSection('2. Bilan Orthopedique', orthoHtml);
@@ -2947,8 +3348,11 @@ function buildCR() {
   var tfHtml = '';
   var slsCA = parseFloat(document.getElementById('sls-ca') ? document.getElementById('sls-ca').value : '');
   var slsCS = parseFloat(document.getElementById('sls-cs') ? document.getElementById('sls-cs').value : '');
-  var hopCA = parseFloat(document.getElementById('hop-ca') ? document.getElementById('hop-ca').value : '');
-  var hopCS = parseFloat(document.getElementById('hop-cs') ? document.getElementById('hop-cs').value : '');
+  var slsH2 = (document.getElementById('sls-hauteur')||{}).value||'';
+  var hopCA    = parseFloat(document.getElementById('hop-ca') ? document.getElementById('hop-ca').value : '');
+  var hopCS    = parseFloat(document.getElementById('hop-cs') ? document.getElementById('hop-cs').value : '');
+  var hopTaille = parseFloat((document.getElementById('f-taille')||{}).value||'');
+  var hopSexe   = ((document.getElementById('f-sexe')||{}).value||'');
   var hrCA  = parseFloat(document.getElementById('hr-ca')  ? document.getElementById('hr-ca').value  : '');
   var hrCS  = parseFloat(document.getElementById('hr-cs')  ? document.getElementById('hr-cs').value  : '');
   var luCA  = parseFloat(document.getElementById('lu-ca')  ? document.getElementById('lu-ca').value  : '');
@@ -2956,20 +3360,28 @@ function buildCR() {
   var djHca = parseFloat(document.getElementById('dj-h-ca') ? document.getElementById('dj-h-ca').value : '');
   var djHcs = parseFloat(document.getElementById('dj-h-cs') ? document.getElementById('dj-h-cs').value : '');
 
-  var lsiStr = function(ca,cs) { return cs>0 ? ('LSI = ' + (ca/cs*100).toFixed(1) + '%') : ''; };
-  var lsiCls2 = function(ca,cs) { if (!cs||cs<=0||isNaN(ca)||isNaN(cs)) return ''; var v=ca/cs*100; return v>=90?'good':v>=80?'warn':'bad'; };
-  var statOf2 = function(cls) { return ({good:'OK',warn:'Acceptable',bad:'Insuffisant'}[cls])||''; };
-  var obsBlock = function(idCA, idCS) {
-    var ca = (document.getElementById(idCA)||{}).value||'';
-    var cs = (document.getElementById(idCS)||{}).value||'';
-    var txt = (ca?'Obs. CA : '+ca:'')+(cs?(ca?' | ':'')+'Obs. CS : '+cs:'');
-    return txt?'<div style="margin:2px 0 8px;padding:6px 10px;background:var(--surface2);border-radius:5px;font-size:.82rem;color:var(--text2);font-style:italic">'+txt+'</div>':'';
-  };
-
-  if (!isNaN(slsCA)) tfHtml += crItem('SLS', 'CA=' + slsCA + ' rep.   CS=' + slsCS + ' rep.   ' + lsiStr(slsCA,slsCS), statOf2(lsiCls2(slsCA,slsCS)), lsiCls2(slsCA,slsCS));
+  if (!isNaN(slsCA)) {
+    var slsVal2 = 'CA=' + slsCA + ' rep.   CS=' + slsCS + ' rep.   ' + lsiStr(slsCA,slsCS) + (slsH2 ? '   |   Repère EIAS-sol : ' + slsH2 + (slsH2.indexOf('cm')===-1?' cm':'') : '');
+    tfHtml += crItem('SLS', slsVal2, statOf2(lsiCls2(slsCA,slsCS)), lsiCls2(slsCA,slsCS));
+  }
   tfHtml += obsBlock('sls-obs-ca','sls-obs-cs');
 
-  if (!isNaN(hopCA)) tfHtml += crItem('Hop Test', 'CA=' + hopCA + 'cm   CS=' + hopCS + 'cm   ' + lsiStr(hopCA,hopCS) + '   Repere: ' + (hopCS*0.8).toFixed(1) + 'cm', statOf2(lsiCls2(hopCA,hopCS)), lsiCls2(hopCA,hopCS));
+  if (!isNaN(hopCA)) {
+    var hopDesc = 'CA=' + hopCA + 'cm   CS=' + hopCS + 'cm   ' + lsiStr(hopCA, hopCS);
+    if (!isNaN(hopCS) && hopCS > 0) hopDesc += '   Repère 80% CS = ' + (hopCS * 0.8).toFixed(1) + 'cm';
+    if (!isNaN(hopTaille) && hopTaille > 0) {
+      if (hopSexe === 'F') {
+        var hopSeuil = (hopTaille * 0.80).toFixed(1);
+        hopDesc += '   |   Seuil RTS 80% taille (F) = ' + hopSeuil + 'cm → ' + (hopCA >= parseFloat(hopSeuil) ? '✓ Atteint' : '✗ Non atteint');
+      } else if (hopSexe === 'H') {
+        var hopSeuil = (hopTaille * 0.90).toFixed(1);
+        hopDesc += '   |   Seuil RTS 90% taille (H) = ' + hopSeuil + 'cm → ' + (hopCA >= parseFloat(hopSeuil) ? '✓ Atteint' : '✗ Non atteint');
+      } else {
+        hopDesc += '   |   Seuil RTS : ≥' + (hopTaille * 0.80).toFixed(1) + 'cm (F) / ≥' + (hopTaille * 0.90).toFixed(1) + 'cm (H)';
+      }
+    }
+    tfHtml += crItem('Hop Test', hopDesc, statOf2(lsiCls2(hopCA, hopCS)), lsiCls2(hopCA, hopCS));
+  }
   tfHtml += obsBlock('hop-obs-ca','hop-obs-cs');
 
   var scoreCA2 = 0;
@@ -3005,13 +3417,6 @@ function buildCR() {
   if (!isNaN(shEndCA2)) tfHtml += crItem('Side Hop — Endurance (30s)', 'CA=' + shEndCA2 + ' sauts   CS=' + (isNaN(shEndCS2)?'-':shEndCS2) + ' sauts   ' + lsiStr(shEndCA2,shEndCS2), statOf2(lsiCls2(shEndCA2,shEndCS2)), lsiCls2(shEndCA2,shEndCS2));
   tfHtml += obsBlock('sh-obs-ca','sh-obs-cs');
 
-  var cfQCA = parseFloat(document.getElementById('cf-q-ca') ? document.getElementById('cf-q-ca').value : '');
-  var cfQCS = parseFloat(document.getElementById('cf-q-cs') ? document.getElementById('cf-q-cs').value : '');
-  var cfObsCA = (document.getElementById('cf-obs-ca')||{}).value || '';
-  var cfObsCS = (document.getElementById('cf-obs-cs')||{}).value || '';
-  var cfObs = (cfObsCA ? 'Obs. CA : ' + cfObsCA : '') + (cfObsCS ? (cfObsCA ? ' | ' : '') + 'Obs. CS : ' + cfObsCS : '');
-  if (!isNaN(cfQCA)) tfHtml += crItem('Contraction Flash Quadriceps', 'CA=' + cfQCA + ' rép.   CS=' + (isNaN(cfQCS)?'-':cfQCS) + ' rép.   ' + lsiStr(cfQCA,cfQCS), statOf2(lsiCls2(cfQCA,cfQCS)), lsiCls2(cfQCA,cfQCS));
-  if (cfObs) tfHtml += '<div style="margin:2px 0 8px;padding:6px 10px;background:var(--surface2);border-radius:5px;font-size:.82rem;color:var(--text2);font-style:italic">' + cfObs + '</div>';
 
   var qfCA = parseFloat(document.getElementById('q-f-ca') ? document.getElementById('q-f-ca').value : '');
   var qfCS = parseFloat(document.getElementById('q-f-cs') ? document.getElementById('q-f-cs').value : '');
@@ -3027,18 +3432,41 @@ function buildCR() {
   var psetCSv = parseFloat(document.getElementById('pset-cs') ? document.getElementById('pset-cs').value : '');
   var setCAv  = parseFloat(document.getElementById('set-ca')  ? document.getElementById('set-ca').value  : '');
   var setCSv  = parseFloat(document.getElementById('set-cs')  ? document.getElementById('set-cs').value  : '');
-  var ckcEl2  = document.getElementById('ckc-lsi');
   var shrtEl2 = document.getElementById('shrt-lsi');
   var ulrtEl2 = document.getElementById('ulrt-lsi');
   if (!isNaN(psetCAv)) { var pl = psetCSv>0?(psetCAv/psetCSv*100):NaN; tfMsHtml += crItem('PSET', 'CA=' + psetCAv + '   CS=' + psetCSv + (!isNaN(pl)?'   LSI=' + pl.toFixed(1) + '%':''), statOf2(lsiCls2(psetCAv,psetCSv)), lsiCls2(psetCAv,psetCSv)); }
   tfMsHtml += obsBlock('pset-obs-ca','pset-obs-cs');
   if (!isNaN(setCAv))  { var sl = setCSv>0?(setCAv/setCSv*100):NaN; tfMsHtml += crItem('Shoulder Endurance', 'CA=' + setCAv + '   CS=' + setCSv + (!isNaN(sl)?'   LSI=' + sl.toFixed(1) + '%':''), statOf2(lsiCls2(setCAv,setCSv)), lsiCls2(setCAv,setCSv)); }
   tfMsHtml += obsBlock('set-obs-ca','set-obs-cs');
-  if (ckcEl2 && ckcEl2.textContent && ckcEl2.textContent !== '-' && ckcEl2.textContent !== '\u2014' && ckcEl2.textContent !== '--') tfMsHtml += crItem('CKCUEST', ckcEl2.textContent, '', 'ok');
-  tfMsHtml += obsBlock('ckc-obs-ca','ckc-obs-cs');
-  if (shrtEl2 && shrtEl2.textContent && shrtEl2.textContent !== '-' && shrtEl2.textContent !== '\u2014' && shrtEl2.textContent !== '--') tfMsHtml += crItem('Side Hold Rotation', shrtEl2.textContent, '', 'ok');
+  (function(){
+    var s2 = parseFloat((document.getElementById('ckc-s2')||{}).value||'');
+    var s3 = parseFloat((document.getElementById('ckc-s3')||{}).value||'');
+    var s4 = parseFloat((document.getElementById('ckc-s4')||{}).value||'');
+    if (isNaN(s2) && isNaN(s3) && isNaN(s4)) return;
+    var score = (!isNaN(s2)&&!isNaN(s3))?(s2+s3)/2:(!isNaN(s2)?s2:(!isNaN(s3)?s3:NaN));
+    var mei   = (!isNaN(s4)&&!isNaN(score)&&score>0)?(s4/2)/score:NaN;
+    var sCls  = !isNaN(score)?(score>21?'good':score>=19?'warn':'bad'):'';
+    var mCls  = !isNaN(mei)?(mei>=0.90?'good':mei>=0.70?'warn':'bad'):'';
+    var tagFn = function(c){ return c==='good'?'OK':c==='warn'?'Acceptable':'Insuffisant'; };
+    var ovCls = (sCls==='bad'||mCls==='bad')?'bad':(sCls==='warn'||mCls==='warn')?'warn':(sCls||mCls);
+    var desc  = '';
+    if (!isNaN(score)) desc += 'Score=' + score.toFixed(1) + ' touches' + (sCls?' ('+tagFn(sCls)+')':'');
+    if (!isNaN(mei))   desc += (desc?'   ':'') + 'MEI=' + mei.toFixed(2) + (mCls?' ('+tagFn(mCls)+')':'');
+    tfMsHtml += crItem('mCKCUEST', desc, ovCls?tagFn(ovCls):'', ovCls||'ok');
+    var ckcObs = (document.getElementById('ckc-obs')||{}).value||'';
+    if (ckcObs) tfMsHtml += '<div style="margin:2px 0 8px;padding:6px 10px;background:var(--surface2);border-radius:5px;font-size:.82rem;color:var(--text2);font-style:italic">Obs. : ' + nl2br(ckcObs) + '</div>';
+  })();
+  var lsiClsFn2 = function(v){ return v>=90?'good':v>=80?'warn':'bad'; };
+  var lsiTagFn2 = function(v){ return v>=90?'LSI ≥ 90 % — OK':v>=80?'LSI 80–90 % — Acceptable':'LSI < 80 % — Insuffisant'; };
+  if (shrtEl2 && shrtEl2.textContent && shrtEl2.textContent !== '-' && shrtEl2.textContent !== '\u2014' && shrtEl2.textContent !== '--') {
+    var shrtV2 = parseFloat(shrtEl2.textContent);
+    tfMsHtml += crItem('Side Hold Rotation', shrtEl2.textContent, !isNaN(shrtV2)?lsiTagFn2(shrtV2):'', !isNaN(shrtV2)?lsiClsFn2(shrtV2):'ok');
+  }
   tfMsHtml += obsBlock('shrt-obs-ca','shrt-obs-cs');
-  if (ulrtEl2 && ulrtEl2.textContent && ulrtEl2.textContent !== '-' && ulrtEl2.textContent !== '\u2014' && ulrtEl2.textContent !== '--') tfMsHtml += crItem('ULRT', ulrtEl2.textContent, '', 'ok');
+  if (ulrtEl2 && ulrtEl2.textContent && ulrtEl2.textContent !== '-' && ulrtEl2.textContent !== '\u2014' && ulrtEl2.textContent !== '--') {
+    var ulrtV2 = parseFloat(ulrtEl2.textContent);
+    tfMsHtml += crItem('ULRT', ulrtEl2.textContent, !isNaN(ulrtV2)?lsiTagFn2(ulrtV2):'', !isNaN(ulrtV2)?lsiClsFn2(ulrtV2):'ok');
+  }
   tfMsHtml += obsBlock('ulrt-obs-ca','ulrt-obs-cs');
   addSection('4. Tests Fonctionnels - Membres Superieurs', tfMsHtml);
 
@@ -3046,7 +3474,7 @@ function buildCR() {
   var tfRachisHtml = '';
   var obsSingle = function(id) {
     var v = (document.getElementById(id)||{}).value||'';
-    return v ? '<div style="margin:2px 0 8px;padding:6px 10px;background:var(--surface2);border-radius:5px;font-size:.82rem;color:var(--text2);font-style:italic">Obs. : ' + v + '</div>' : '';
+    return v ? '<div style="margin:2px 0 8px;padding:6px 10px;background:var(--surface2);border-radius:5px;font-size:.82rem;color:var(--text2);font-style:italic">Obs. : ' + nl2br(v) + '</div>' : '';
   };
   var flxV2 = parseFloat(document.getElementById('rf-flx-cerv')?document.getElementById('rf-flx-cerv').value:'');
   var extV2 = parseFloat(document.getElementById('rf-ext-cerv')?document.getElementById('rf-ext-cerv').value:'');
@@ -3081,6 +3509,29 @@ function buildCR() {
 
   // 6. Points a travailler
   var toWork = [];
+
+  // Break tests positifs → points à travailler automatiques
+  var forceTables = [
+    {id:'tb-ha-force-d', side:'Droit'},  {id:'tb-ha-force-g', side:'Gauche'},
+    {id:'tb-ge-knee-d',  side:'Droit'},  {id:'tb-ge-knee-g',  side:'Gauche'},
+    {id:'tb-ge-hip-d',   side:'Droit'},  {id:'tb-ge-hip-g',   side:'Gauche'},
+    {id:'tb-ep-force-d', side:'Droit'},  {id:'tb-ep-force-g', side:'Gauche'},
+    {id:'tb-ra-force-d', side:'Droit'},  {id:'tb-ra-force-g', side:'Gauche'},
+    {id:'tb-pi-force-ca', side:'CA'},    {id:'tb-pi-force-cs', side:'CS'},
+  ];
+  forceTables.forEach(function(ft) {
+    var tbody = document.getElementById(ft.id);
+    if (!tbody) return;
+    tbody.querySelectorAll('tr').forEach(function(row) {
+      var sel = row.querySelector('select');
+      if (!sel || sel.value !== 'Positif') return;
+      var tdEl = row.querySelector('td');
+      if (!tdEl) return;
+      var name = tdEl.textContent.trim().replace(/^Break test\s+/i, '');
+      var item = 'Travailler force ' + name + ' — ' + ft.side;
+      if (toWork.indexOf(item) === -1) toWork.push(item);
+    });
+  });
   var slsLsi2 = slsCS>0?slsCA/slsCS*100:NaN;
   var hopLsi2 = hopCS>0?hopCA/hopCS*100:NaN;
   var hrLsi2  = hrCS>0?hrCA/hrCS*100:NaN;
@@ -3190,63 +3641,94 @@ function calcPSET() {
   }
 }
 
-// -- CKCUEST - meilleure moyenne sur 3 essais ------------------
+// -- mCKCUEST : Score = (S2+S3)/2 ; MEI = (S4_30s/2) / Score ------
 function calcCKC() {
-  var getBest = function(id1, id2, id3) {
-    var vals = [
-      parseFloat(document.getElementById(id1) ? document.getElementById(id1).value : ''),
-      parseFloat(document.getElementById(id2) ? document.getElementById(id2).value : ''),
-      parseFloat(document.getElementById(id3) ? document.getElementById(id3).value : '')
-    ].filter(function(v) { return !isNaN(v); });
-    if (vals.length === 0) return NaN;
-    return vals.reduce(function(a,b) { return a+b; }, 0) / vals.length;
-  };
-
-  // Envergure → espacement repères
-  var envD = parseFloat(document.getElementById('ckc-env-d') ? document.getElementById('ckc-env-d').value : '');
-  var envG = parseFloat(document.getElementById('ckc-env-g') ? document.getElementById('ckc-env-g').value : '');
+  // Envergure → espacement repères (½ envergure)
+  var envD = parseFloat((document.getElementById('ckc-env-d')||{}).value||'');
+  var envG = parseFloat((document.getElementById('ckc-env-g')||{}).value||'');
   var elEsp = document.getElementById('ckc-espacement');
   if (elEsp) {
     if (!isNaN(envD) && !isNaN(envG)) {
       elEsp.textContent = ((envD + envG) / 2).toFixed(1) + ' cm';
     } else if (!isNaN(envD)) {
-      elEsp.textContent = (envD / 2).toFixed(1) + ' cm (D seul)';
+      elEsp.textContent = envD.toFixed(1) + ' cm (D seul)';
     } else if (!isNaN(envG)) {
-      elEsp.textContent = (envG / 2).toFixed(1) + ' cm (G seul)';
+      elEsp.textContent = envG.toFixed(1) + ' cm (G seul)';
     } else {
       elEsp.textContent = '—';
     }
   }
 
-  var bestCS = getBest('ckc-cs-1','ckc-cs-2','ckc-cs-3');
-  var bestCA = getBest('ckc-ca-1','ckc-ca-2','ckc-ca-3');
+  var sexe = ((document.getElementById('f-sexe')||{}).value||'');
+  var s2 = parseFloat((document.getElementById('ckc-s2')||{}).value||'');
+  var s3 = parseFloat((document.getElementById('ckc-s3')||{}).value||'');
+  var s4 = parseFloat((document.getElementById('ckc-s4')||{}).value||'');
 
-  var elCS = document.getElementById('ckc-cs-best');
-  var elCA = document.getElementById('ckc-ca-best');
-  var elLsi = document.getElementById('ckc-lsi');
-  var elStat = document.getElementById('ckc-stat');
+  // Score = moyenne S2 et S3
+  var score = NaN;
+  if (!isNaN(s2) && !isNaN(s3)) score = (s2 + s3) / 2;
+  else if (!isNaN(s2)) score = s2;
+  else if (!isNaN(s3)) score = s3;
 
-  if (elCS) elCS.textContent = isNaN(bestCS) ? '-' : bestCS.toFixed(1);
-  if (elCA) elCA.textContent = isNaN(bestCA) ? '-' : bestCA.toFixed(1);
+  // MEI = (S4 / 2) / Score
+  var mei = NaN;
+  if (!isNaN(s4) && !isNaN(score) && score > 0) mei = (s4 / 2) / score;
 
-  if (!isNaN(bestCS) && !isNaN(bestCA) && bestCS > 0) {
-    var lsi = bestCA / bestCS * 100;
-    var cls = lsi >= 90 ? 'good' : lsi >= 75 ? 'warn' : 'bad';
-    var statTxt = lsi >= 90 ? ' Symétrie OK' : lsi >= 75 ? ' Asymétrie modérée' : ' Déficit';
-    if (elLsi) {
-      elLsi.textContent = 'LSI = ' + lsi.toFixed(1) + '%  |  CA : ' + bestCA.toFixed(1) + ' touches  |  CS : ' + bestCS.toFixed(1) + ' touches';
-      elLsi.style.background = cls === 'good' ? 'var(--green-l)' : cls === 'warn' ? 'var(--orange-l)' : 'var(--red-l)';
-      elLsi.style.color = cls === 'good' ? 'var(--green)' : cls === 'warn' ? 'var(--orange)' : 'var(--red)';
-    }
-    if (elStat) {
-      elStat.textContent = statTxt;
-      elStat.style.background = cls === 'good' ? 'var(--green-l)' : cls === 'warn' ? 'var(--orange-l)' : 'var(--red-l)';
-      elStat.style.color = cls === 'good' ? 'var(--green)' : cls === 'warn' ? 'var(--orange)' : 'var(--red)';
-    }
-  } else {
-    if (elLsi) { elLsi.textContent = '-'; elLsi.style.background = ''; elLsi.style.color = ''; }
-    if (elStat) { elStat.textContent = '-'; elStat.style.background = ''; elStat.style.color = ''; }
+  // Cotation Score
+  var scoreInfo = null;
+  if (!isNaN(score)) {
+    if (score > 21)      scoreInfo = { cls:'good', txt:'3 pts — Excellent (> 21 touches)' };
+    else if (score >= 19) scoreInfo = { cls:'warn', txt:'2 pts — Moyen (19–21 touches)' };
+    else                  scoreInfo = { cls:'bad',  txt:'1 pt — Faible (< 19 touches)' };
   }
+
+  // Cotation MEI
+  var meiInfo = null;
+  if (!isNaN(mei)) {
+    if (mei >= 0.90) meiInfo = { cls:'good', txt:'3 pts — Maintien optimal (≥ 0.90)' };
+    else if (mei >= 0.70) meiInfo = { cls:'warn', txt:'2 pts — Maintien partiel (0.70–0.89)' };
+    else meiInfo = { cls:'bad', txt:'1 pt — Chute de performance (< 0.70)' };
+  }
+
+  var clsBg  = function(c){ return c==='good'?'var(--green-l)':c==='warn'?'var(--orange-l)':'var(--red-l)'; };
+  var clsFg  = function(c){ return c==='good'?'var(--green)':c==='warn'?'var(--orange)':'var(--red)'; };
+  var clsTxt = function(c){ return c==='good'?'✓ OK':c==='warn'?'⚠ Attention':'✗ Déficit'; };
+
+  // Affichage Score
+  var elScore    = document.getElementById('ckc-score');
+  var elScorePts = document.getElementById('ckc-score-pts');
+  var elScoreSt  = document.getElementById('ckc-score-stat');
+  if (elScore)    { elScore.textContent = isNaN(score) ? '—' : score.toFixed(1); }
+  if (elScorePts) { elScorePts.textContent = scoreInfo ? scoreInfo.txt : '—'; elScorePts.style.color = scoreInfo ? clsFg(scoreInfo.cls) : ''; }
+  if (elScoreSt)  {
+    elScoreSt.textContent = scoreInfo ? clsTxt(scoreInfo.cls) : '—';
+    elScoreSt.style.background = scoreInfo ? clsBg(scoreInfo.cls) : '';
+    elScoreSt.style.color      = scoreInfo ? clsFg(scoreInfo.cls) : '';
+  }
+
+  // Affichage MEI
+  var elMei    = document.getElementById('ckc-mei');
+  var elMeiPts = document.getElementById('ckc-mei-pts');
+  var elMeiSt  = document.getElementById('ckc-mei-stat');
+  if (elMei)    { elMei.textContent = isNaN(mei) ? '—' : mei.toFixed(2); }
+  if (elMeiPts) { elMeiPts.textContent = meiInfo ? meiInfo.txt : '—'; elMeiPts.style.color = meiInfo ? clsFg(meiInfo.cls) : ''; }
+  if (elMeiSt)  {
+    elMeiSt.textContent = meiInfo ? clsTxt(meiInfo.cls) : '—';
+    elMeiSt.style.background = meiInfo ? clsBg(meiInfo.cls) : '';
+    elMeiSt.style.color      = meiInfo ? clsFg(meiInfo.cls) : '';
+  }
+
+  // Statut S2 / S3 (repère visuel)
+  var setStatEl = function(id, val) {
+    var el = document.getElementById(id); if (!el) return;
+    if (isNaN(val)) { el.textContent = '—'; el.style.background = ''; el.style.color = ''; return; }
+    var c = val>21?'good':val>=19?'warn':'bad';
+    el.textContent = val + ' tch'; el.style.background = clsBg(c); el.style.color = clsFg(c);
+  };
+  setStatEl('ckc-s2-stat', s2);
+  setStatEl('ckc-s3-stat', s3);
+  var elS4s = document.getElementById('ckc-s4-stat');
+  if (elS4s) { elS4s.textContent = isNaN(s4) ? '—' : s4 + ' tch (30s)'; elS4s.style.background = ''; elS4s.style.color = 'var(--text2)'; }
 }
 
 // -- Side Hold Rotation Test -----------------------------------
@@ -3531,6 +4013,14 @@ function buildCRTF() {
   if (!content) return;
   content.innerHTML = '';
 
+  // S'assurer que les éléments calculés MS sont à jour
+  try { calcCKC(); } catch(ex){}
+  try { calcSHRT(); } catch(ex){}
+  try { calcULRT(); } catch(ex){}
+
+  // Helper — défini ici car nl2br est local à buildCR()
+  function nl2brP(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
+
   // Header patient
   var nom = document.getElementById('f-nom') ? document.getElementById('f-nom').value : '';
   var prenom = document.getElementById('f-prenom') ? document.getElementById('f-prenom').value : '';
@@ -3571,7 +4061,8 @@ function buildCRTF() {
   var slsH  = document.getElementById('sls-hauteur')?document.getElementById('sls-hauteur').value:'';
   var slsObsCA = (document.getElementById('sls-obs-ca')||{}).value||'';
   var slsObsCS = (document.getElementById('sls-obs-cs')||{}).value||'';
-  var slsObs = (slsObsCA?'Obs. CA : '+slsObsCA:'')+(slsObsCS?(slsObsCA?' | ':'')+'Obs. CS : '+slsObsCS:'');
+  var slsObsParts=[]; if(slsObsCA) slsObsParts.push('<div><span style="font-weight:600;font-style:normal;">Obs. Côté Atteint :</span><br><span style="padding-left:8px;display:inline-block">'+nl2brP(slsObsCA)+'</span></div>'); if(slsObsCS) slsObsParts.push('<div><span style="font-weight:600;font-style:normal;">Obs. Côté Sain :</span><br><span style="padding-left:8px;display:inline-block">'+nl2brP(slsObsCS)+'</span></div>');
+  var slsObs = slsObsParts.join('');
   var slsHtml = '';
   if (!isNaN(slsCA) || !isNaN(slsCS) || slsObs) {
     var slsLsi = (!isNaN(slsCA)&&!isNaN(slsCS)&&slsCS>0)?slsCA/slsCS*100:NaN;
@@ -3587,7 +4078,8 @@ function buildCRTF() {
   var hopCS = parseFloat(document.getElementById('hop-cs')?document.getElementById('hop-cs').value:'');
   var hopObsCA = (document.getElementById('hop-obs-ca')||{}).value || '';
   var hopObsCS = (document.getElementById('hop-obs-cs')||{}).value || '';
-  var hopObs = (hopObsCA ? 'Obs. CA : ' + hopObsCA : '') + (hopObsCS ? (hopObsCA ? ' | ' : '') + 'Obs. CS : ' + hopObsCS : '');
+  var hopObsParts=[]; if(hopObsCA) hopObsParts.push('<div><span style="font-weight:600;font-style:normal;">Obs. Côté Atteint :</span><br><span style="padding-left:8px;display:inline-block">'+nl2brP(hopObsCA)+'</span></div>'); if(hopObsCS) hopObsParts.push('<div><span style="font-weight:600;font-style:normal;">Obs. Côté Sain :</span><br><span style="padding-left:8px;display:inline-block">'+nl2brP(hopObsCS)+'</span></div>');
+  var hopObs = hopObsParts.join('');
   var hopHtml = '';
   if (!isNaN(hopCA) || !isNaN(hopCS) || hopObs) {
     var hopLsi = (!isNaN(hopCA)&&!isNaN(hopCS)&&hopCS>0)?hopCA/hopCS*100:NaN;
@@ -3616,7 +4108,8 @@ function buildCRTF() {
   }
   var recObsCA = (document.getElementById('rec-obs-ca')||{}).value || '';
   var recObsCS = (document.getElementById('rec-obs-cs')||{}).value || '';
-  var recObs = (recObsCA ? 'Obs. CA : ' + recObsCA : '') + (recObsCS ? (recObsCA ? ' | ' : '') + 'Obs. CS : ' + recObsCS : '');
+  var recObsParts=[]; if(recObsCA) recObsParts.push('<div><span style="font-weight:600;font-style:normal;">Obs. Côté Atteint :</span><br><span style="padding-left:8px;display:inline-block">'+nl2brP(recObsCA)+'</span></div>'); if(recObsCS) recObsParts.push('<div><span style="font-weight:600;font-style:normal;">Obs. Côté Sain :</span><br><span style="padding-left:8px;display:inline-block">'+nl2brP(recObsCS)+'</span></div>');
+  var recObs = recObsParts.join('');
   var recHtml = '';
   var recScoreCS2 = 0;
   for (var ri3=0; ri3<CRITERIA_REC.length; ri3++) {
@@ -3650,7 +4143,8 @@ function buildCRTF() {
   }
   var plioObsCA = (document.getElementById('plioq-obs-ca')||{}).value || '';
   var plioObsCS = (document.getElementById('plioq-obs-cs')||{}).value || '';
-  var plioObs = (plioObsCA ? 'Obs. CA : ' + plioObsCA : '') + (plioObsCS ? (plioObsCA ? ' | ' : '') + 'Obs. CS : ' + plioObsCS : '');
+  var plioObsParts=[]; if(plioObsCA) plioObsParts.push('<div><span style="font-weight:600;font-style:normal;">Obs. Côté Atteint :</span><br><span style="padding-left:8px;display:inline-block">'+nl2brP(plioObsCA)+'</span></div>'); if(plioObsCS) plioObsParts.push('<div><span style="font-weight:600;font-style:normal;">Obs. Côté Sain :</span><br><span style="padding-left:8px;display:inline-block">'+nl2brP(plioObsCS)+'</span></div>');
+  var plioObs = plioObsParts.join('');
   var plioHtml = '';
   if (plioTouched || plioObs) {
     if (plioTouched) plioHtml += tfRow('Pliometrie Verticale Qualitative',
@@ -3666,7 +4160,8 @@ function buildCRTF() {
   var hrCS = parseFloat(document.getElementById('hr-cs')?document.getElementById('hr-cs').value:'');
   var hrObsCA = (document.getElementById('hr-obs-ca')||{}).value || '';
   var hrObsCS = (document.getElementById('hr-obs-cs')||{}).value || '';
-  var hrObs = (hrObsCA ? 'Obs. CA : ' + hrObsCA : '') + (hrObsCS ? (hrObsCA ? ' | ' : '') + 'Obs. CS : ' + hrObsCS : '');
+  var hrObsParts=[]; if(hrObsCA) hrObsParts.push('<div><span style="font-weight:600;font-style:normal;">Obs. Côté Atteint :</span><br><span style="padding-left:8px;display:inline-block">'+nl2brP(hrObsCA)+'</span></div>'); if(hrObsCS) hrObsParts.push('<div><span style="font-weight:600;font-style:normal;">Obs. Côté Sain :</span><br><span style="padding-left:8px;display:inline-block">'+nl2brP(hrObsCS)+'</span></div>');
+  var hrObs = hrObsParts.join('');
   var hrHtml = '';
   if (!isNaN(hrCA) || hrObs) {
     var hrLsi = hrCS>0?hrCA/hrCS*100:NaN;
@@ -3687,7 +4182,8 @@ function buildCRTF() {
   var luCS = parseFloat(document.getElementById('lu-cs')?document.getElementById('lu-cs').value:'');
   var luObsCA = (document.getElementById('lu-obs-ca')||{}).value || '';
   var luObsCS = (document.getElementById('lu-obs-cs')||{}).value || '';
-  var luObs = (luObsCA ? 'Obs. CA : ' + luObsCA : '') + (luObsCS ? (luObsCA ? ' | ' : '') + 'Obs. CS : ' + luObsCS : '');
+  var luObsParts=[]; if(luObsCA) luObsParts.push('<div><span style="font-weight:600;font-style:normal;">Obs. Côté Atteint :</span><br><span style="padding-left:8px;display:inline-block">'+nl2brP(luObsCA)+'</span></div>'); if(luObsCS) luObsParts.push('<div><span style="font-weight:600;font-style:normal;">Obs. Côté Sain :</span><br><span style="padding-left:8px;display:inline-block">'+nl2brP(luObsCS)+'</span></div>');
+  var luObs = luObsParts.join('');
   var luHtml = '';
   if (!isNaN(luCA) || luObs) {
     var luDiff = !isNaN(luCS)?Math.abs(luCA-luCS):null;
@@ -3705,7 +4201,7 @@ function buildCRTF() {
   var djHCS = parseFloat(document.getElementById('dj-h-cs')?document.getElementById('dj-h-cs').value:'');
   var djObsCA = (document.getElementById('dj-obs-ca')||{}).value || '';
   var djObsCS = (document.getElementById('dj-obs-cs')||{}).value || '';
-  var djObs = (djObsCA ? 'Obs. CA : ' + djObsCA : '') + (djObsCS ? (djObsCA ? ' | ' : '') + 'Obs. CS : ' + djObsCS : '');
+  var djObs = (djObsCA ? '<div><span style="font-weight:600;font-style:normal;">Obs. Côté Atteint :</span><br><span style="padding-left:8px;display:inline-block">'+nl2brP(djObsCA)+'</span></div>' : '') + (djObsCS ? '<div><span style="font-weight:600;font-style:normal;">Obs. Côté Sain :</span><br><span style="padding-left:8px;display:inline-block">'+nl2brP(djObsCS)+'</span></div>' : '');
   var djHtml = '';
   if (!isNaN(djHCA) || djObs) {
     var djLsi = djHCS>0?djHCA/djHCS*100:NaN;
@@ -3723,7 +4219,8 @@ function buildCRTF() {
   var shEndCS = parseFloat(document.getElementById('sh-end-cs')?document.getElementById('sh-end-cs').value:'');
   var shObsCA = (document.getElementById('sh-obs-ca')||{}).value||'';
   var shObsCS = (document.getElementById('sh-obs-cs')||{}).value||'';
-  var shObs = (shObsCA?'Obs. CA : '+shObsCA:'')+(shObsCS?(shObsCA?' | ':'')+'Obs. CS : '+shObsCS:'');
+  var shObsParts=[]; if(shObsCA) shObsParts.push('<div><span style="font-weight:600;font-style:normal;">Obs. Côté Atteint :</span><br><span style="padding-left:8px;display:inline-block">'+nl2brP(shObsCA)+'</span></div>'); if(shObsCS) shObsParts.push('<div><span style="font-weight:600;font-style:normal;">Obs. Côté Sain :</span><br><span style="padding-left:8px;display:inline-block">'+nl2brP(shObsCS)+'</span></div>');
+  var shObs = shObsParts.join('');
   var shHtml = '';
   if (!isNaN(shExpCA)||!isNaN(shExpCS)||!isNaN(shEndCA)||!isNaN(shEndCS)||shObs) {
     if (!isNaN(shExpCA)||!isNaN(shExpCS)) {
@@ -3755,39 +4252,64 @@ function buildCRTF() {
   var setCA = parseFloat(document.getElementById('set-ca')?document.getElementById('set-ca').value:'');
   var setCS = parseFloat(document.getElementById('set-cs')?document.getElementById('set-cs').value:'');
   var psetPoidsReel = document.getElementById('pset-poids-reel')?document.getElementById('pset-poids-reel').value:'';
-  var ckcEl = document.getElementById('ckc-lsi');
   var shrtEl = document.getElementById('shrt-lsi');
   var ulrtEl = document.getElementById('ulrt-lsi');
   var _emptyVals = ['-','—','--',''];
   var obsDiv = function(txt) { return '<div style="margin:4px 0 8px;padding:6px 10px;background:var(--surface2);border-radius:5px;font-size:.82rem;color:var(--text2);font-style:italic">' + txt + '</div>'; };
   var getObs = function(idCA, idCS) {
     var ca = (document.getElementById(idCA)||{}).value||''; var cs = (document.getElementById(idCS)||{}).value||'';
-    return (ca?'Obs. CA : '+ca:'') + (cs?(ca?' | ':'')+'Obs. CS : '+cs:'');
+    var parts = [];
+    if(ca) parts.push('<div><span style="font-weight:600;font-style:normal;">Obs. Côté Atteint :</span><br><span style="padding-left:8px;display:inline-block">'+nl2brP(ca)+'</span></div>');
+    if(cs) parts.push('<div><span style="font-weight:600;font-style:normal;">Obs. Côté Sain :</span><br><span style="padding-left:8px;display:inline-block">'+nl2brP(cs)+'</span></div>');
+    return parts.join('');
   };
   var msHtml = '';
+  var lsiTagFn = function(lsi){ return lsi>=90?'good':lsi>=80?'warn':'bad'; };
+  var lsiLabelFn = function(lsi){ return lsi>=90?'LSI ≥ 90 % — OK':lsi>=80?'LSI 80–90 % — Acceptable':'LSI < 80 % — Insuffisant'; };
   if (!isNaN(psetCA)) {
     var psetLsi = psetCS>0?psetCA/psetCS*100:NaN;
     msHtml += tfRow('PSET - Prone Shoulder Endurance Test',
       'CA=' + psetCA + ' rép.   CS=' + (isNaN(psetCS)?'-':psetCS) + ' rép.' + (!isNaN(psetLsi)?'   LSI='+psetLsi.toFixed(1)+'%':''),
       psetPoidsReel?'Poids utilisé : ' + psetPoidsReel + ' kg':'',
-      !isNaN(psetLsi)?(psetLsi>=90?'':''):'', !isNaN(psetLsi)?(psetLsi>=90?'good':'warn'):'');
+      !isNaN(psetLsi)?lsiLabelFn(psetLsi):'', !isNaN(psetLsi)?lsiTagFn(psetLsi):'');
     var _po = getObs('pset-obs-ca','pset-obs-cs'); if (_po) msHtml += obsDiv(_po);
   }
   if (!isNaN(setCA)) {
     var setLsi = setCS>0?setCA/setCS*100:NaN;
-    msHtml += tfRow('Shoulder Endurance Test', 'CA=' + setCA + '   CS=' + (isNaN(setCS)?'-':setCS) + (!isNaN(setLsi)?'   LSI='+setLsi.toFixed(1)+'%':''), '', !isNaN(setLsi)?(setLsi>=90?'':''):'', !isNaN(setLsi)?(setLsi>=90?'good':'warn'):'');
+    msHtml += tfRow('Shoulder Endurance Test',
+      'CA=' + setCA + '   CS=' + (isNaN(setCS)?'-':setCS) + (!isNaN(setLsi)?'   LSI='+setLsi.toFixed(1)+'%':''),
+      '',
+      !isNaN(setLsi)?lsiLabelFn(setLsi):'', !isNaN(setLsi)?lsiTagFn(setLsi):'');
     var _so = getObs('set-obs-ca','set-obs-cs'); if (_so) msHtml += obsDiv(_so);
   }
-  if (ckcEl&&_emptyVals.indexOf(ckcEl.textContent.trim())===-1) {
-    msHtml += tfRow('CKCUEST Modifié', ckcEl.textContent, '', '', '');
-    var _co = getObs('ckc-obs-ca','ckc-obs-cs'); if (_co) msHtml += obsDiv(_co);
-  }
+  (function(){
+    var s2b = parseFloat((document.getElementById('ckc-s2')||{}).value||'');
+    var s3b = parseFloat((document.getElementById('ckc-s3')||{}).value||'');
+    var s4b = parseFloat((document.getElementById('ckc-s4')||{}).value||'');
+    if (isNaN(s2b) && isNaN(s3b) && isNaN(s4b)) return;
+    var scoreB = (!isNaN(s2b)&&!isNaN(s3b))?(s2b+s3b)/2:(!isNaN(s2b)?s2b:(!isNaN(s3b)?s3b:NaN));
+    var meiB   = (!isNaN(s4b)&&!isNaN(scoreB)&&scoreB>0)?(s4b/2)/scoreB:NaN;
+    var sClsB  = !isNaN(scoreB)?(scoreB>21?'good':scoreB>=19?'warn':'bad'):'';
+    var mClsB  = !isNaN(meiB)?(meiB>=0.90?'good':meiB>=0.70?'warn':'bad'):'';
+    var tagFnB = function(c){ return c==='good'?'OK':c==='warn'?'Acceptable':'Insuffisant'; };
+    var ovClsB = (sClsB==='bad'||mClsB==='bad')?'bad':(sClsB==='warn'||mClsB==='warn')?'warn':(sClsB||mClsB);
+    var descB  = '';
+    if (!isNaN(scoreB)) descB += 'Score=' + scoreB.toFixed(1) + ' touches' + (sClsB?' ('+tagFnB(sClsB)+')':'');
+    if (!isNaN(meiB))   descB += (descB?'   ':'') + 'MEI=' + meiB.toFixed(2) + (mClsB?' ('+tagFnB(mClsB)+')':'');
+    msHtml += tfRow('mCKCUEST', descB, '', ovClsB?tagFnB(ovClsB):'', ovClsB);
+    var _ckcObs2 = (document.getElementById('ckc-obs')||{}).value||'';
+    if (_ckcObs2) msHtml += obsDiv('Obs. : ' + nl2brP(_ckcObs2));
+  })();
   if (shrtEl&&_emptyVals.indexOf(shrtEl.textContent.trim())===-1) {
-    msHtml += tfRow('Side Hold Rotation', 'LSI=' + shrtEl.textContent, '', '', '');
+    var shrtLsiVal = parseFloat(shrtEl.textContent);
+    var shrtCls = !isNaN(shrtLsiVal)?lsiTagFn(shrtLsiVal):'';
+    msHtml += tfRow('Side Hold Rotation Test', 'LSI=' + shrtEl.textContent, '', !isNaN(shrtLsiVal)?lsiLabelFn(shrtLsiVal):'', shrtCls);
     var _sho = getObs('shrt-obs-ca','shrt-obs-cs'); if (_sho) msHtml += obsDiv(_sho);
   }
   if (ulrtEl&&_emptyVals.indexOf(ulrtEl.textContent.trim())===-1) {
-    msHtml += tfRow('ULRT', ulrtEl.textContent, '', '', '');
+    var ulrtLsiVal = parseFloat(ulrtEl.textContent);
+    var ulrtCls = !isNaN(ulrtLsiVal)?lsiTagFn(ulrtLsiVal):'';
+    msHtml += tfRow('ULRT - Upper Limb Rotation Test', ulrtEl.textContent, '', !isNaN(ulrtLsiVal)?lsiLabelFn(ulrtLsiVal):'', ulrtCls);
     var _uo = getObs('ulrt-obs-ca','ulrt-obs-cs'); if (_uo) msHtml += obsDiv(_uo);
   }
   addTFSection('Tests Fonctionnels - Membres Supérieurs', msHtml);
@@ -3830,7 +4352,7 @@ function buildCRTF() {
   var sebtLgCA  = parseFloat(document.getElementById('sebt-longueur-ca')?document.getElementById('sebt-longueur-ca').value:'');
   var sebtObsCA = (document.getElementById('sebt-obs-ca')||{}).value || '';
   var sebtObsCS = (document.getElementById('sebt-obs-cs')||{}).value || '';
-  var sebtObs = (sebtObsCA ? 'Obs. CA : ' + sebtObsCA : '') + (sebtObsCS ? (sebtObsCA ? ' | ' : '') + 'Obs. CS : ' + sebtObsCS : '');
+  var sebtObs = (sebtObsCA ? '<div><span style="font-weight:600;font-style:normal;">Obs. Côté Atteint :</span><br><span style="padding-left:8px;display:inline-block">'+nl2brP(sebtObsCA)+'</span></div>' : '') + (sebtObsCS ? '<div><span style="font-weight:600;font-style:normal;">Obs. Côté Sain :</span><br><span style="padding-left:8px;display:inline-block">'+nl2brP(sebtObsCS)+'</span></div>' : '');
   var sebtHtml = '';
   if (!isNaN(sebtAntCA) || !isNaN(sebtPmCA) || !isNaN(sebtPlCA) || sebtObs) {
     var sebtDirs = [

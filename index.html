@@ -29,7 +29,7 @@ html, body { height:100%; overflow:hidden; background:#1A3A5C; }
 .tab:hover { color:rgba(255,255,255,.85); }
 .tab.active { color:#fff; border-bottom-color:#4A90D9; background:rgba(255,255,255,.05); }
 .topnav-right {
-  margin-left:auto; font-size:.72rem; font-weight:500; line-height:1.4;
+  font-size:.72rem; font-weight:500; line-height:1.4;
   text-align:right; white-space:nowrap; color:rgba(255,255,255,.75);
   cursor:pointer; font-family:-apple-system,'Helvetica Neue',sans-serif;
   transition:color .15s;
@@ -38,9 +38,141 @@ html, body { height:100%; overflow:hidden; background:#1A3A5C; }
 .frame-wrap { position:fixed; top:48px; left:0; right:0; bottom:0; }
 iframe { position:absolute; top:0; left:0; width:100%; height:100%; border:none; display:none; background:#fff; }
 iframe.active { display:block; }
+
+/* ── Patient selector button ─────────────────────────────── */
+.patient-btn {
+  margin-left:auto;
+  display:flex; align-items:center; gap:6px;
+  background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2);
+  border-radius:6px; padding:5px 11px; cursor:pointer;
+  font-family:-apple-system,'Helvetica Neue',sans-serif;
+  font-size:.78rem; font-weight:500; color:rgba(255,255,255,.85);
+  white-space:nowrap; transition:background .15s, border-color .15s;
+  max-width:180px; overflow:hidden;
+}
+.patient-btn:hover { background:rgba(255,255,255,.18); border-color:rgba(255,255,255,.35); }
+.patient-btn.has-patient { background:rgba(74,144,217,.25); border-color:rgba(74,144,217,.5); color:#fff; }
+.patient-btn-label { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* ── Patient modal ───────────────────────────────────────── */
+.pm-overlay {
+  display:none; position:fixed; inset:0; z-index:9999;
+  background:rgba(0,0,0,.5); backdrop-filter:blur(2px);
+  align-items:flex-start; justify-content:center;
+  padding-top:60px;
+}
+.pm-overlay.open { display:flex; }
+.pm-card {
+  background:#fff; border-radius:10px;
+  box-shadow:0 8px 40px rgba(0,0,0,.25);
+  width:100%; max-width:480px; max-height:calc(100vh - 100px);
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.pm-header {
+  background:#1A3A5C; color:#fff;
+  padding:14px 18px; display:flex; align-items:center; gap:10px; flex-shrink:0;
+}
+.pm-header h2 { font-size:.95rem; font-weight:700; flex:1; }
+.pm-close {
+  background:none; border:none; color:rgba(255,255,255,.7);
+  font-size:1.3rem; cursor:pointer; padding:0 2px; line-height:1;
+  transition:color .12s;
+}
+.pm-close:hover { color:#fff; }
+.pm-search-row {
+  padding:12px 16px; border-bottom:1px solid #E8E6E1; flex-shrink:0;
+  display:flex; gap:8px;
+}
+.pm-search {
+  flex:1; border:1.5px solid #D3D1CB; border-radius:6px;
+  padding:7px 11px; font-size:.88rem; font-family:inherit; outline:none;
+}
+.pm-search:focus { border-color:#2B5FA6; }
+.pm-new-btn {
+  background:#1A3A5C; color:#fff; border:none; border-radius:6px;
+  padding:7px 13px; font-size:.8rem; font-weight:600; cursor:pointer;
+  font-family:inherit; white-space:nowrap; transition:background .12s;
+}
+.pm-new-btn:hover { background:#2B5FA6; }
+.pm-body { flex:1; overflow-y:auto; }
+.pm-empty {
+  padding:32px 20px; text-align:center;
+  color:#9D9B96; font-size:.88rem; font-style:italic;
+}
+.pm-patient-item {
+  display:flex; align-items:center; gap:10px;
+  padding:11px 16px; border-bottom:1px solid #F1F0ED;
+  transition:background .1s; cursor:pointer;
+}
+.pm-patient-item:hover { background:#F7F6F3; }
+.pm-patient-item.selected { background:#EEF3FB; }
+.pm-patient-avatar {
+  width:34px; height:34px; border-radius:50%; flex-shrink:0;
+  background:#1A3A5C; color:#fff;
+  display:flex; align-items:center; justify-content:center;
+  font-size:.8rem; font-weight:700;
+}
+.pm-patient-avatar.female { background:#8B5C8B; }
+.pm-patient-info { flex:1; min-width:0; }
+.pm-patient-name { font-size:.88rem; font-weight:700; color:#1A1917; }
+.pm-patient-meta { font-size:.74rem; color:#6B6860; margin-top:1px; }
+.pm-patient-actions { display:flex; gap:6px; flex-shrink:0; }
+.pm-select-btn {
+  background:#1A3A5C; color:#fff; border:none; border-radius:5px;
+  padding:5px 10px; font-size:.74rem; font-weight:600; cursor:pointer;
+  font-family:inherit; transition:background .12s;
+}
+.pm-select-btn:hover { background:#2B5FA6; }
+.pm-select-btn.active { background:#2D6A4F; }
+.pm-del-btn {
+  background:none; border:1.5px solid #E8E6E1; border-radius:5px;
+  color:#C0392B; padding:5px 8px; font-size:.78rem; cursor:pointer;
+  transition:all .12s;
+}
+.pm-del-btn:hover { background:#FDECEA; border-color:#C0392B; }
+
+/* ── Create form ─────────────────────────────────────────── */
+.pm-create-form {
+  display:none; padding:16px; border-bottom:2px solid #E8E6E1;
+  background:#F7F6F3; flex-shrink:0;
+}
+.pm-create-form.open { display:block; }
+.pm-create-form h3 { font-size:.8rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#1A3A5C; margin-bottom:12px; }
+.pm-form-row { display:flex; gap:8px; margin-bottom:8px; }
+.pm-form-field { display:flex; flex-direction:column; gap:3px; flex:1; }
+.pm-form-field label { font-size:.66rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#6B6860; }
+.pm-form-field input, .pm-form-field select {
+  border:1.5px solid #D3D1CB; border-radius:5px;
+  padding:6px 9px; font-size:.85rem; font-family:inherit; outline:none;
+  background:#fff;
+}
+.pm-form-field input:focus, .pm-form-field select:focus { border-color:#2B5FA6; }
+.pm-form-actions { display:flex; gap:8px; margin-top:10px; }
+.pm-save-btn {
+  background:#2D6A4F; color:#fff; border:none; border-radius:6px;
+  padding:7px 16px; font-size:.82rem; font-weight:600; cursor:pointer;
+  font-family:inherit; transition:background .12s;
+}
+.pm-save-btn:hover { background:#1A5C3A; }
+.pm-cancel-btn {
+  background:none; border:1.5px solid #D3D1CB; border-radius:6px;
+  padding:7px 14px; font-size:.82rem; color:#6B6860; cursor:pointer;
+  font-family:inherit; transition:all .12s;
+}
+.pm-cancel-btn:hover { border-color:#9D9B96; color:#1A1917; }
+
+@media (max-width:900px) {
+  .topnav { padding:0 10px; gap:2px; }
+  .tab { padding:0 10px; font-size:.8rem; }
+  .logo { margin-right:10px; }
+  .topnav-right { font-size:.68rem; }
+}
 @media (max-width:600px) {
-  .topnav { padding:0 10px; } .tab { padding:0 10px; font-size:.78rem; }
-  .logo { margin-right:10px; font-size:.92rem; } .topnav-right { display:none; }
+  .topnav { padding:0 8px; } .tab { padding:0 8px; font-size:.75rem; }
+  .logo { margin-right:6px; font-size:.92rem; } .topnav-right { display:none; }
+  .patient-btn { max-width:120px; font-size:.7rem; padding:4px 6px; }
+  .pm-overlay { padding-top:52px; }
+  .pm-card { max-width:100%; border-radius:10px 10px 0 0; }
 }
 </style>
 </head>
@@ -51,13 +183,70 @@ iframe.active { display:block; }
   </div>
   <button class="tab active" id="tab-bilan"        onclick="show('bilan')">Bilan clinique</button>
   <button class="tab"        id="tab-outils"       onclick="show('outils')">Outils</button>
-  <button class="tab"        id="tab-prescription" onclick="show('prescription')">Prescription</button>
-  <div class="topnav-right"  id="userDisplay"      onclick="show('account')" title="Mon compte">Mon compte</div>
+  <button class="tab"        id="tab-prescription" onclick="show('prescription')">Programme</button>
+  <button class="patient-btn" id="patientBtn" onclick="openPatientModal()" title="Sélectionner un patient">
+    <span>👤</span><span class="patient-btn-label" id="patientBtnLabel">Aucun patient</span><span>▾</span>
+  </button>
+  <div class="topnav-right" id="userDisplay" onclick="show('account')" title="Mon compte" style="margin-left:12px;">Mon compte</div>
+</div>
+
+<!-- ── Modal patients ─────────────────────────────────────── -->
+<div class="pm-overlay" id="pmOverlay" onclick="closePMOnBackdrop(event)">
+  <div class="pm-card">
+    <div class="pm-header">
+      <h2>👤 Patients</h2>
+      <button class="pm-close" onclick="closePatientModal()">✕</button>
+    </div>
+
+    <!-- Formulaire création (masqué par défaut) -->
+    <div class="pm-create-form" id="pmCreateForm">
+      <h3>Nouveau patient</h3>
+      <div class="pm-form-row">
+        <div class="pm-form-field" style="flex:0 0 72px">
+          <label>Civilité</label>
+          <select id="pm-civ"><option value="M.">M.</option><option value="Mme.">Mme.</option></select>
+        </div>
+        <div class="pm-form-field">
+          <label>Nom</label>
+          <input type="text" id="pm-nom" placeholder="NOM" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
+        </div>
+        <div class="pm-form-field">
+          <label>Prénom</label>
+          <input type="text" id="pm-prenom" placeholder="Prénom">
+        </div>
+      </div>
+      <div class="pm-form-row">
+        <div class="pm-form-field">
+          <label>Date de naissance</label>
+          <input type="date" id="pm-ddn">
+        </div>
+        <div class="pm-form-field">
+          <label>Sport / Activité</label>
+          <input type="text" id="pm-sport" placeholder="ex: Football, Course…">
+        </div>
+      </div>
+      <div class="pm-form-actions">
+        <button class="pm-save-btn" onclick="createPatient()">✓ Créer</button>
+        <button class="pm-cancel-btn" onclick="toggleCreateForm(false)">Annuler</button>
+      </div>
+    </div>
+
+    <!-- Barre de recherche -->
+    <div class="pm-search-row">
+      <input class="pm-search" id="pmSearch" type="text" placeholder="Rechercher un patient…" oninput="filterPatients()">
+      <button class="pm-new-btn" onclick="toggleCreateForm(true)">+ Nouveau</button>
+    </div>
+
+    <!-- Liste des patients -->
+    <div class="pm-body" id="pmList">
+      <div class="pm-empty">Chargement…</div>
+    </div>
+  </div>
 </div>
 <div class="frame-wrap">
   <iframe id="frame-bilan"        src="bilan.html"        class="active"></iframe>
   <iframe id="frame-outils"       src="outils.html"       ></iframe>
-  <iframe id="frame-prescription" src="prescription.html" ></iframe>
+  <iframe id="frame-prescription" src="programme.html" ></iframe>
   <iframe id="frame-account"      src="account.html"      ></iframe>
 </div>
 
@@ -165,6 +354,189 @@ window.addEventListener('message', function(e) {
     window.location.replace('auth.html');
   }
 });
+
+/* ═══════════════════════════════════════════════════════════
+   GESTION DES PATIENTS
+═══════════════════════════════════════════════════════════ */
+var _allPatients   = [];
+var _currentPatient = null;
+
+// Restaurer le patient courant depuis localStorage
+(function() {
+  try {
+    var stored = localStorage.getItem('r4p-current-patient');
+    if (stored) {
+      _currentPatient = JSON.parse(stored);
+      _updatePatientBtn();
+    }
+  } catch(e) {}
+})();
+
+function _updatePatientBtn() {
+  var btn   = document.getElementById('patientBtn');
+  var label = document.getElementById('patientBtnLabel');
+  if (_currentPatient) {
+    label.textContent = _currentPatient.nom + ' ' + _currentPatient.prenom;
+    btn.classList.add('has-patient');
+  } else {
+    label.textContent = 'Aucun patient';
+    btn.classList.remove('has-patient');
+  }
+}
+
+function _broadcastPatient(p) {
+  sb.auth.getSession().then(function(r) {
+    var sess = r.data && r.data.session;
+    var msg = {
+      type: 'r4p-patient-selected',
+      patient: p,
+      auth: sess ? { access_token: sess.access_token, refresh_token: sess.refresh_token } : null
+    };
+    ['frame-bilan','frame-outils','frame-prescription'].forEach(function(id) {
+      var f = document.getElementById(id);
+      if (f && f.contentWindow) f.contentWindow.postMessage(msg, '*');
+    });
+  });
+}
+
+/* ── Ouvrir / fermer modal ──────────────────────────────── */
+function openPatientModal() {
+  document.getElementById('pmOverlay').classList.add('open');
+  document.getElementById('pmSearch').value = '';
+  loadPatients();
+}
+function closePatientModal() {
+  document.getElementById('pmOverlay').classList.remove('open');
+  toggleCreateForm(false);
+}
+function closePMOnBackdrop(e) {
+  if (e.target === document.getElementById('pmOverlay')) closePatientModal();
+}
+
+/* ── Formulaire création ────────────────────────────────── */
+function toggleCreateForm(show) {
+  var f = document.getElementById('pmCreateForm');
+  if (show) {
+    f.classList.add('open');
+    document.getElementById('pm-nom').focus();
+  } else {
+    f.classList.remove('open');
+    ['pm-civ','pm-nom','pm-prenom','pm-ddn','pm-sport'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.value = id === 'pm-civ' ? 'M.' : '';
+    });
+  }
+}
+
+/* ── Charger la liste ───────────────────────────────────── */
+function loadPatients() {
+  document.getElementById('pmList').innerHTML = '<div class="pm-empty">Chargement…</div>';
+  sb.auth.getSession().then(function(r) {
+    var uid = r.data && r.data.session && r.data.session.user && r.data.session.user.id;
+    if (!uid) return;
+    sb.from('patients')
+      .select('*')
+      .eq('praticien_id', uid)
+      .order('nom', { ascending: true })
+      .then(function(res) {
+        if (res.error) { document.getElementById('pmList').innerHTML = '<div class="pm-empty">Erreur de chargement.</div>'; return; }
+        _allPatients = res.data || [];
+        renderPatients(_allPatients);
+      });
+  });
+}
+
+/* ── Filtrer ────────────────────────────────────────────── */
+function filterPatients() {
+  var q = (document.getElementById('pmSearch').value || '').toLowerCase().trim();
+  if (!q) { renderPatients(_allPatients); return; }
+  renderPatients(_allPatients.filter(function(p) {
+    return (p.nom+' '+p.prenom).toLowerCase().includes(q) || (p.sport||'').toLowerCase().includes(q);
+  }));
+}
+
+/* ── Afficher la liste ──────────────────────────────────── */
+function renderPatients(list) {
+  var el = document.getElementById('pmList');
+  if (!list.length) { el.innerHTML = '<div class="pm-empty">Aucun patient trouvé.</div>'; return; }
+  el.innerHTML = list.map(function(p) {
+    var initials = (p.nom.charAt(0) + (p.prenom.charAt(0)||'')).toUpperCase();
+    var isFemale = (p.sexe === 'F');
+    var ddn = p.ddn ? p.ddn.split('-').reverse().join('/') : '';
+    var meta = [ddn, p.sport].filter(Boolean).join(' · ');
+    var isSelected = _currentPatient && _currentPatient.id === p.id;
+    return '<div class="pm-patient-item'+(isSelected?' selected':'')+'" id="pitem-'+p.id+'">'
+      + '<div class="pm-patient-avatar'+(isFemale?' female':'')+'">'+initials+'</div>'
+      + '<div class="pm-patient-info">'
+      +   '<div class="pm-patient-name">'+_esc(p.nom)+' '+_esc(p.prenom)+'</div>'
+      +   (meta ? '<div class="pm-patient-meta">'+_esc(meta)+'</div>' : '')
+      + '</div>'
+      + '<div class="pm-patient-actions">'
+      +   '<button class="pm-select-btn'+(isSelected?' active':'')+'" onclick="selectPatient(\''+p.id+'\')">'+(isSelected?'✓ Actif':'Sélectionner')+'</button>'
+      +   '<button class="pm-del-btn" onclick="deletePatient(\''+p.id+'\',event)">🗑</button>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function _esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ── Sélectionner un patient ────────────────────────────── */
+function selectPatient(id) {
+  var p = _allPatients.find(function(x){ return x.id === id; });
+  if (!p) return;
+  _currentPatient = p;
+  try { localStorage.setItem('r4p-current-patient', JSON.stringify(p)); } catch(e) {}
+  _updatePatientBtn();
+  _broadcastPatient(p);
+  renderPatients(_allPatients);
+}
+
+/* ── Désélectionner ─────────────────────────────────────── */
+function deselectPatient() {
+  _currentPatient = null;
+  try { localStorage.removeItem('r4p-current-patient'); } catch(e) {}
+  _updatePatientBtn();
+  _broadcastPatient(null);
+}
+
+/* ── Créer un patient ───────────────────────────────────── */
+function createPatient() {
+  var nom    = (document.getElementById('pm-nom').value||'').trim().toUpperCase();
+  var prenom = (document.getElementById('pm-prenom').value||'').trim();
+  var ddn    = document.getElementById('pm-ddn').value || null;
+  var civ    = document.getElementById('pm-civ').value;
+  var sport  = (document.getElementById('pm-sport').value||'').trim();
+  if (!nom || !prenom) { alert('Nom et prénom requis.'); return; }
+  sb.auth.getSession().then(function(r) {
+    var uid = r.data && r.data.session && r.data.session.user && r.data.session.user.id;
+    if (!uid) return;
+    var sexe = civ === 'Mme.' ? 'F' : 'H';
+    sb.from('patients').insert({ praticien_id: uid, nom: nom, prenom: prenom, ddn: ddn, sexe: sexe, sport: sport })
+      .select().single()
+      .then(function(res) {
+        if (res.error) { alert('Erreur : ' + res.error.message); return; }
+        toggleCreateForm(false);
+        _allPatients.push(res.data);
+        _allPatients.sort(function(a,b){ return a.nom.localeCompare(b.nom); });
+        selectPatient(res.data.id);
+      });
+  });
+}
+
+/* ── Supprimer un patient ───────────────────────────────── */
+function deletePatient(id, e) {
+  e.stopPropagation();
+  var p = _allPatients.find(function(x){ return x.id === id; });
+  if (!p) return;
+  if (!confirm('Supprimer ' + p.nom + ' ' + p.prenom + ' et toutes ses données ?')) return;
+  sb.from('patients').delete().eq('id', id).then(function(res) {
+    if (res.error) { alert('Erreur : ' + res.error.message); return; }
+    _allPatients = _allPatients.filter(function(x){ return x.id !== id; });
+    if (_currentPatient && _currentPatient.id === id) deselectPatient();
+    renderPatients(_allPatients);
+  });
+}
 </script>
 </body>
 </html>
