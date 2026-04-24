@@ -2777,6 +2777,8 @@ function _renderCalendarUI() {
       +chips+cycleChips+'</div>';
   }
   grid.innerHTML = headers + cells;
+  // v2 : afficher la liste des prochaines séances sous le calendrier
+  if(typeof _renderUpcoming === 'function') setTimeout(_renderUpcoming, 0);
 }
 
 function openCalPicker(dateStr) {
@@ -3005,13 +3007,6 @@ function _renderUpcoming(){
           + '</div>';
   });
   document.getElementById('upcomingList').innerHTML = html;
-}
-
-// Patch _renderCalendarUI pour appeler _renderUpcoming
-var _origRenderCalendarUI = _renderCalendarUI;
-function _renderCalendarUI(){
-  _origRenderCalendarUI();
-  setTimeout(_renderUpcoming, 0);
 }
 
 // ── Init v2 ──
