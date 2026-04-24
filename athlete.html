@@ -38,7 +38,7 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
 .back-btn.visible { display:flex; }
 
 /* ── CONTENT ── */
-.content { max-width:760px; margin:0 auto; padding:16px 14px 40px; }
+.content { max-width:1100px; margin:0 auto; padding:16px 24px 40px; }
 
 /* ── PROG META ── */
 .prog-meta {
@@ -133,18 +133,18 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
 }
 .cal-day {
   background:var(--surface); border:1px solid var(--border); border-radius:8px;
-  padding:6px 5px; min-height:64px; cursor:pointer; transition:background .12s;
+  padding:8px 7px; min-height:80px; cursor:pointer; transition:background .12s;
 }
 .cal-day:hover { background:#F5F8FF; border-color:var(--accent2); }
 .cal-day.other-month { background:transparent; border-color:transparent; cursor:default; min-height:64px; }
 .cal-day.today { border-color:var(--accent); }
 .cal-day-num {
-  font-size:.72rem; font-weight:700; color:var(--muted); margin-bottom:4px; text-align:right;
+  font-size:.78rem; font-weight:700; color:var(--muted); margin-bottom:5px; text-align:right;
 }
 .cal-day.today .cal-day-num { color:var(--accent); }
 .cal-chip {
-  font-size:.62rem; font-weight:600; padding:3px 5px; border-radius:5px;
-  background:var(--accent); color:#fff; margin-bottom:2px;
+  font-size:.68rem; font-weight:600; padding:4px 6px; border-radius:5px;
+  background:var(--accent); color:#fff; margin-bottom:3px;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   cursor:pointer; transition:opacity .12s;
 }
@@ -159,7 +159,7 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
 }
 .prog-modal-overlay.open { display:flex; }
 .prog-modal {
-  background:var(--bg); width:100%; max-width:600px;
+  background:var(--bg); width:100%; max-width:860px;
   border-radius:18px 18px 0 0; max-height:90vh; overflow-y:auto;
   padding-bottom:20px;
 }
