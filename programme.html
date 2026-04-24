@@ -1992,8 +1992,8 @@ function _updatePatientUI(){
   // Header templates
   var tmplHeader = document.querySelector('#mpanel-seances .main-header h1');
   if(tmplHeader){ tmplHeader.textContent = nom ? 'Templates — ' + nom : 'Templates de séances'; }
-  // Charger les cycles du patient depuis Supabase
-  if(_progPatient) _loadCyclesForPatient();
+  // Charger les cycles du patient depuis Supabase (différé pour attendre le 2e bloc script)
+  if(_progPatient) setTimeout(function(){ if(typeof _loadCyclesForPatient==='function') _loadCyclesForPatient(); }, 0);
 }
 
 function _sbHeaders(){
