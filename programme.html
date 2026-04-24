@@ -1903,7 +1903,14 @@ window.addEventListener('message', function(e){
         var payload = JSON.parse(atob(e.data.auth.access_token.split('.')[1]));
         _progUid = payload.sub || null;
       } catch(ex){}
-      try { sbP.auth.setSession(e.data.auth); } catch(ex){}
+      // Recréer le client avec le token directement dans les headers HTTP
+      // (évite setSession() async qui bloque les requêtes en contexte iframe)
+      try {
+        sbP = supabase.createClient(SUPA_URL_P, SUPA_KEY_P, {
+          global: { headers: { Authorization: 'Bearer ' + e.data.auth.access_token } },
+          auth: { persistSession: false, autoRefreshToken: false }
+        });
+      } catch(ex){}
     }
     // Auto-remplir le champ nom du patient
     if(_progPatient){
