@@ -2027,14 +2027,14 @@ function openProgHistory(){
       list.innerHTML='<div style="padding:28px 20px;text-align:center;color:#9D9B96;font-style:italic;">Aucun programme enregistré pour ce patient.</div>';
       return;
     }
-    var res = { data: data };
-    list.innerHTML = res.data.map(function(p){
+    list.innerHTML = data.map(function(p){
       var d = p.date ? p.date.split('-').reverse().join('/') : '—';
       var isCurrent = _currentProgId === p.id;
-      return '<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #F1F0ED;'+(isCurrent?'background:#EEF3FB;':'')+'">'
-        +'<div style="flex:1;"><div style="font-size:.88rem;font-weight:700;color:#1A3A5C;">'+d+'</div>'
-        +'<div style="font-size:.75rem;color:#6B6860;margin-top:2px;">'+_escP(p.nom||'')+'</div></div>'
-        +'<button onclick="_loadProg(\''+p.id+'\')" style="background:#1A3A5C;color:#fff;border:none;border-radius:5px;padding:5px 11px;font-size:.75rem;font-weight:600;cursor:pointer;font-family:inherit;">'+(isCurrent?'✓ Actif':'Charger')+'</button>'
+      return '<div style="display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid #F1F0ED;'+(isCurrent?'background:#EEF3FB;':'')+'">'
+        +'<div style="flex:1;min-width:0;"><div style="font-size:.88rem;font-weight:700;color:#1A3A5C;">'+d+'</div>'
+        +'<div style="font-size:.75rem;color:#6B6860;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+_escP(p.nom||'')+'</div></div>'
+        +'<button onclick="_loadProg(\''+p.id+'\')" style="background:#1A3A5C;color:#fff;border:none;border-radius:5px;padding:5px 11px;font-size:.75rem;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0;">'+(isCurrent?'✓ Actif':'Charger')+'</button>'
+        +'<button onclick="_deleteProg(\''+p.id+'\',\''+_escP(p.nom||d)+'\')" style="background:none;border:1px solid #E74C3C;color:#E74C3C;border-radius:5px;padding:5px 8px;font-size:.78rem;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Supprimer ce programme">🗑</button>'
         +'</div>';
     }).join('');
   });
@@ -2060,6 +2060,25 @@ function _loadProg(id){
       if(btn){ btn.textContent='✓ Programme chargé'; setTimeout(function(){ btn.textContent='☁️ Sauvegarder'; },2500); }
     })
     .catch(function(){ alert('Erreur réseau lors du chargement.'); });
+}
+
+function _deleteProg(id, nom){
+  if(!confirm('Supprimer le programme "' + nom + '" ?\nCette action est irréversible.')) return;
+  fetch(SUPA_URL_P + '/rest/v1/programmes?id=eq.' + id, {method:'DELETE', headers:_sbHeaders()})
+    .then(function(r){
+      if(!r.ok){ return r.json().then(function(d){ alert('Erreur : ' + JSON.stringify(d)); }); }
+      // Si le programme supprimé était l'actif, réinitialiser
+      if(_currentProgId === id){
+        _currentProgId = null;
+        blocs = [];
+        renderSession();
+        var btn = document.getElementById('prog-cloud-save-btn');
+        if(btn){ btn.textContent='☁️ Sauvegarder'; }
+      }
+      // Rafraîchir la liste
+      openProgHistory();
+    })
+    .catch(function(err){ alert('Erreur réseau : ' + (err&&err.message||err)); });
 }
 
 function _newProgVierge(){
