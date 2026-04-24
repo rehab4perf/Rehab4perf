@@ -162,6 +162,25 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   color:#fff; border-radius:6px; width:28px; height:28px; cursor:pointer;
   font-size:.9rem; display:flex; align-items:center; justify-content:center;
 }
+/* Toast de partage */
+.share-toast {
+  position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(12px);
+  background:#1A3A5C; color:#fff; border-radius:10px; padding:11px 20px;
+  font-size:.82rem; font-weight:600; box-shadow:0 4px 24px rgba(0,0,0,.28);
+  opacity:0; transition:opacity .22s, transform .22s; z-index:9999;
+  white-space:nowrap; pointer-events:none;
+}
+.share-toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* Bouton Partager dans le header builder */
+.builder-share-btn {
+  background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3);
+  color:#fff; border-radius:6px; padding:5px 10px; font-size:.72rem;
+  font-weight:600; cursor:pointer; transition:background .15s; white-space:nowrap;
+}
+.builder-share-btn:hover { background:rgba(255,255,255,.28); }
+.builder-share-btn:disabled { opacity:.5; cursor:default; }
+
 .builder-save-btn {
   background:#2B5FA6; border:none; color:#fff; border-radius:7px;
   padding:5px 14px; font-size:.74rem; font-weight:600; cursor:pointer;
@@ -766,6 +785,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
     <h2 id="builderTitle">Nouvelle séance</h2>
     <div style="display:flex;align-items:center;gap:6px;">
       <button class="builder-save-btn" id="prog-cloud-save-btn" onclick="saveProgToCloud()">☁️ Sauvegarder</button>
+      <button class="builder-share-btn" id="prog-share-btn" onclick="shareBuilderProg()">📤 Partager</button>
       <button class="btn btn-outline" onclick="openProgHistory()" style="font-size:.72rem;padding:4px 9px;white-space:nowrap;">📂 Programmes</button>
       <div class="more-menu-wrap">
         <button class="more-btn" onclick="toggleMoreMenu(event)" title="Plus d'options">• • •</button>
@@ -820,6 +840,9 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 </div>
 
 </div><!-- .app -->
+
+<!-- Toast partage -->
+<div class="share-toast" id="shareToast"></div>
 
 <!-- Modal sauvegarde séance -->
 <div class="save-modal-overlay" id="saveModal">
@@ -1518,23 +1541,71 @@ function closeMoreMenu(){
   var d = document.getElementById('moreDropdown');
   if(d) d.classList.remove('open');
 }
-function shareProgLink(){
-  if(!_currentProgId){
-    alert('Sauvegarde d\'abord le programme en cloud avant de le partager (bouton ☁️ Sauvegarder).');
-    return;
-  }
-  var base = window.location.origin + window.location.pathname.replace('programme.html','') + 'athlete.html';
-  var link = base + '?prog=' + _currentProgId;
+/* ── Toast ── */
+function _showToast(msg){
+  var t = document.getElementById('shareToast');
+  if(!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(function(){ t.classList.remove('show'); }, 3200);
+}
+
+/* ── Génère le lien athlete.html?prog=ID ── */
+function _athleteLink(id){
+  return window.location.href.replace(/\/[^/]+$/, '/athlete.html') + '?prog=' + id;
+}
+
+function _copyLink(id){
+  var link = _athleteLink(id);
   if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(link).then(function(){
-      alert('✅ Lien copié !\n\n' + link + '\n\nEnvoie ce lien à ton athlète — il verra le programme en lecture seule.');
-    }).catch(function(){
-      prompt('Copie ce lien et envoie-le à ton athlète :', link);
-    });
+    navigator.clipboard.writeText(link)
+      .then(function(){ _showToast('📤 Lien copié ! Envoie-le à ton athlète.'); })
+      .catch(function(){ prompt('Copie ce lien :', link); });
   } else {
-    prompt('Copie ce lien et envoie-le à ton athlète :', link);
+    prompt('Copie ce lien :', link);
   }
 }
+
+/* Option A : bouton Partager dans le builder (auto-save si besoin) */
+function shareBuilderProg(){
+  if(_currentProgId){ _copyLink(_currentProgId); return; }
+  if(!_progPatient){ alert('Sélectionnez un patient avant de partager.'); return; }
+  if(!_progUid || !_progToken){ alert('Session non disponible. Sélectionnez à nouveau le patient.'); return; }
+  var btn = document.getElementById('prog-share-btn');
+  if(btn){ btn.disabled=true; btn.textContent='⏳…'; }
+  var nomProg = (document.getElementById('patientName')||{}).value || ('Programme du '+new Date().toLocaleDateString('fr-FR'));
+  var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), notes: getNotes() };
+  var today = new Date().toISOString().split('T')[0];
+  fetch(SUPA_URL_P+'/rest/v1/programmes', {
+    method:'POST', headers:_sbHeaders(),
+    body:JSON.stringify({patient_id:_progPatient.id, praticien_id:_progUid, nom:nomProg, date:today, donnees:donnees})
+  })
+  .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+  .then(function(res){
+    if(btn){ btn.disabled=false; btn.textContent='📤 Partager'; }
+    if(!res.ok){ alert('Erreur : '+JSON.stringify(res.data)); return; }
+    var d = Array.isArray(res.data) ? res.data[0] : res.data;
+    if(d && d.id){
+      _currentProgId = d.id;
+      var sb = document.getElementById('prog-cloud-save-btn');
+      if(sb){ sb.textContent='✓ Sauvegardé'; setTimeout(function(){ sb.textContent='☁️ Sauvegarder'; },2500); }
+      _copyLink(d.id);
+    }
+  })
+  .catch(function(err){
+    if(btn){ btn.disabled=false; btn.textContent='📤 Partager'; }
+    alert('Erreur réseau : '+(err&&err.message||err));
+  });
+}
+
+/* Option B : bouton 📤 dans l'historique des programmes */
+function _shareProgById(id){
+  _copyLink(id);
+}
+
+/* Ancienne fonction (redirige vers la nouvelle) */
+function shareProgLink(){ shareBuilderProg(); }
 document.addEventListener('click', function(e){
   if(!e.target.closest('.more-menu-wrap')) closeMoreMenu();
 });
@@ -2236,6 +2307,7 @@ function openProgHistory(){
         +'<div style="flex:1;min-width:0;"><div style="font-size:.88rem;font-weight:700;color:#1A3A5C;">'+d+'</div>'
         +'<div style="font-size:.75rem;color:#6B6860;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+_escP(p.nom||'')+'</div></div>'
         +'<button onclick="_loadProg(\''+p.id+'\')" style="background:#1A3A5C;color:#fff;border:none;border-radius:5px;padding:5px 11px;font-size:.75rem;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0;">'+(isCurrent?'✓ Actif':'Charger')+'</button>'
+        +'<button onclick="_shareProgById(\''+p.id+'\')" style="background:rgba(42,95,166,.1);color:#2B5FA6;border:1px solid rgba(42,95,166,.3);border-radius:5px;padding:5px 9px;font-size:.78rem;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Copier le lien de partage">📤</button>'
         +'<button onclick="_deleteProg(\''+p.id+'\',\''+_escP(p.nom||d)+'\')" style="background:none;border:1px solid #E74C3C;color:#E74C3C;border-radius:5px;padding:5px 8px;font-size:.78rem;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Supprimer ce programme">🗑</button>'
         +'</div>';
     }).join('');
