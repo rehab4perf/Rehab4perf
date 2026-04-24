@@ -609,6 +609,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
         <div class="more-dropdown" id="moreDropdown">
           <button class="more-item" onclick="openCycles();closeMoreMenu()">🔄 Cycles</button>
           <button class="more-item" onclick="openSaveSession();closeMoreMenu()">💾 Enregistrer la séance</button>
+          <button class="more-item" onclick="shareProgLink();closeMoreMenu()">🔗 Partager avec l'athlète</button>
           <button class="more-item" onclick="exportSession();closeMoreMenu()">📤 Exporter HTML</button>
           <button class="more-item" onclick="window.print();closeMoreMenu()">🖨 Imprimer</button>
           <div class="more-separator"></div>
@@ -1355,6 +1356,23 @@ function closeMoreMenu(){
   var d = document.getElementById('moreDropdown');
   if(d) d.classList.remove('open');
 }
+function shareProgLink(){
+  if(!_currentProgId){
+    alert('Sauvegarde d\'abord le programme en cloud avant de le partager (bouton ☁️ Sauvegarder).');
+    return;
+  }
+  var base = window.location.origin + window.location.pathname.replace('programme.html','') + 'athlete.html';
+  var link = base + '?prog=' + _currentProgId;
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(link).then(function(){
+      alert('✅ Lien copié !\n\n' + link + '\n\nEnvoie ce lien à ton athlète — il verra le programme en lecture seule.');
+    }).catch(function(){
+      prompt('Copie ce lien et envoie-le à ton athlète :', link);
+    });
+  } else {
+    prompt('Copie ce lien et envoie-le à ton athlète :', link);
+  }
+}
 document.addEventListener('click', function(e){
   if(!e.target.closest('.more-menu-wrap')) closeMoreMenu();
 });
@@ -1968,7 +1986,8 @@ function saveProgToCloud(){
   var btn = document.getElementById('prog-cloud-save-btn');
   btn.disabled = true; btn.textContent = '⏳ Sauvegarde…';
   var nomProg = (document.getElementById('patientName')||{}).value || ('Programme du '+new Date().toLocaleDateString('fr-FR'));
-  var donnees = JSON.parse(JSON.stringify(blocs||[]));
+  // Stocke blocs + notes dans donnees (objet) pour rétrocompatibilité sans migration DB
+  var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), notes: getNotes() };
   var today = new Date().toISOString().split('T')[0];
   var url, method, body;
   if(_currentProgId){
@@ -2050,7 +2069,10 @@ function _loadProg(id){
       var d = Array.isArray(data) ? data[0] : data;
       if(!d || d.code){ alert('Erreur lors du chargement.'); return; }
       _currentProgId = d.id;
-      blocs = d.donnees || [];
+      // Rétrocompat : donnees peut être un tableau (ancien) ou {blocs,notes} (nouveau)
+      var raw = d.donnees || [];
+      if(Array.isArray(raw)){ blocs = raw; _notes = ''; }
+      else { blocs = raw.blocs || []; _notes = raw.notes || ''; }
       var pnEl = document.getElementById('patientName');
       if(pnEl) pnEl.value = d.nom || '';
       renderSession();

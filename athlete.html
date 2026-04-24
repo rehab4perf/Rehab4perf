@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light only">
+<title>Mon Programme</title>
+<style>
+:root {
+  --navy:#1A3A5C; --accent:#2B5FA6; --accent2:#4A90D9;
+  --bg:#F0F4F8; --surface:#fff; --text:#1a2433; --muted:#6b7a8d;
+  --border:#dde3ec;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Arial,sans-serif; color:var(--text); min-height:100%; }
+
+/* ── HEADER ── */
+.app-header {
+  background:var(--navy); color:#fff; padding:16px 20px 14px;
+  position:sticky; top:0; z-index:10;
+  display:flex; align-items:center; gap:12px;
+}
+.header-logo { font-size:1.1rem; font-weight:800; letter-spacing:.03em; flex:1; }
+.header-sub { font-size:.72rem; color:rgba(255,255,255,.6); margin-top:2px; }
+.refresh-btn {
+  background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3);
+  color:#fff; border-radius:8px; padding:7px 14px; font-size:.78rem; cursor:pointer;
+  display:flex; align-items:center; gap:6px; white-space:nowrap;
+  transition:background .15s;
+}
+.refresh-btn:hover { background:rgba(255,255,255,.25); }
+.refresh-btn:disabled { opacity:.5; cursor:default; }
+
+/* ── CONTENT ── */
+.content { max-width:720px; margin:0 auto; padding:20px 16px 40px; }
+
+/* ── PROG META ── */
+.prog-meta {
+  background:var(--surface); border-radius:12px; padding:16px 18px;
+  border:1px solid var(--border); margin-bottom:20px;
+}
+.prog-title { font-size:1.15rem; font-weight:700; color:var(--navy); margin-bottom:4px; }
+.prog-date { font-size:.78rem; color:var(--muted); }
+
+/* ── BLOC ── */
+.bloc {
+  background:var(--surface); border-radius:12px;
+  border:1px solid var(--border); margin-bottom:16px; overflow:hidden;
+}
+.bloc-header {
+  padding:12px 16px; background:var(--navy);
+  display:flex; align-items:center; gap:10px;
+}
+.bloc-title { color:#fff; font-size:.95rem; font-weight:700; flex:1; }
+.bloc-badge {
+  font-size:.65rem; font-weight:700; padding:3px 8px; border-radius:10px;
+  background:rgba(255,255,255,.2); color:rgba(255,255,255,.9); text-transform:uppercase; letter-spacing:.04em;
+}
+.bloc-badge.endurance { background:rgba(56,189,248,.3); }
+.bloc-badge.puissance { background:rgba(251,146,60,.3); }
+.bloc-badge.hypertrophie { background:rgba(167,139,250,.3); }
+.bloc-badge.forcemax { background:rgba(248,113,113,.3); }
+
+/* ── METHODE CARD ── */
+.methode-card {
+  padding:10px 16px; font-size:.78rem; color:var(--muted);
+  border-bottom:1px solid var(--border); background:#FAFBFD;
+  display:flex; align-items:baseline; gap:6px; flex-wrap:wrap;
+}
+.methode-label { font-weight:700; color:var(--accent); }
+
+/* ── EXERCISE ── */
+.exo-list { padding:8px 0; }
+.exo-item { padding:12px 16px; border-bottom:1px solid var(--border); }
+.exo-item:last-child { border-bottom:none; }
+.exo-item.chained { border-left:3px solid var(--accent2); }
+
+.exo-name { font-size:.9rem; font-weight:600; color:var(--text); margin-bottom:6px; }
+.exo-tags { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+.exo-tag {
+  font-size:.72rem; padding:3px 8px; border-radius:10px;
+  background:#EBF3FF; color:var(--accent); font-weight:500;
+}
+.exo-tag.video { background:#E8F5E9; color:#2E7D32; }
+.exo-tag.cible { background:#FFF3E0; color:#E65100; }
+.exo-tag.chain { background:#F3F0FF; color:#5B4FBF; }
+
+.exo-params {
+  display:grid; grid-template-columns:repeat(auto-fill, minmax(90px, 1fr));
+  gap:6px;
+}
+.param-box {
+  background:var(--bg); border-radius:8px; padding:7px 10px; text-align:center;
+}
+.param-label { font-size:.62rem; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:2px; }
+.param-val { font-size:.88rem; font-weight:700; color:var(--text); }
+.param-val.empty { color:var(--border); }
+
+.exo-consigne {
+  margin-top:8px; font-size:.78rem; color:var(--muted);
+  background:#FFFBEB; border-left:3px solid #F59E0B;
+  padding:7px 10px; border-radius:0 6px 6px 0; line-height:1.5;
+}
+
+.chain-link {
+  text-align:center; font-size:.72rem; color:var(--accent2);
+  padding:4px 0; font-weight:600; letter-spacing:.03em;
+}
+
+/* ── NOTES ── */
+.notes-bloc {
+  background:var(--surface); border-radius:12px; border:1px solid var(--border);
+  padding:16px; margin-bottom:16px;
+}
+.notes-label { font-size:.72rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:8px; }
+.notes-text { font-size:.85rem; color:var(--text); line-height:1.6; white-space:pre-wrap; }
+
+/* ── STATES ── */
+.loading-state, .error-state, .empty-state {
+  text-align:center; padding:60px 20px; color:var(--muted);
+}
+.loading-state .spinner {
+  width:36px; height:36px; border:3px solid var(--border);
+  border-top-color:var(--accent); border-radius:50%;
+  animation:spin .8s linear infinite; margin:0 auto 16px;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+.error-icon { font-size:2.5rem; margin-bottom:12px; }
+.error-title { font-size:1rem; font-weight:700; color:var(--text); margin-bottom:6px; }
+.error-msg { font-size:.82rem; }
+
+/* ── LAST UPDATED ── */
+.last-updated { text-align:center; font-size:.72rem; color:var(--muted); margin-top:8px; }
+
+/* ── FOOTER ── */
+.footer { text-align:center; font-size:.7rem; color:var(--muted); padding:20px 0 8px; }
+.footer a { color:var(--accent); text-decoration:none; }
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div style="flex:1">
+    <div class="header-logo">Rehab4Perf</div>
+    <div class="header-sub">Programme athlète</div>
+  </div>
+  <button class="refresh-btn" id="refreshBtn" onclick="loadProg()">↻ Actualiser</button>
+</div>
+
+<div class="content">
+  <div id="mainContent">
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <div>Chargement du programme…</div>
+    </div>
+  </div>
+  <div class="last-updated" id="lastUpdated"></div>
+  <div class="footer">Rehab4Perf &mdash; <a href="https://rehab4perf.netlify.app" target="_blank">rehab4perf.netlify.app</a></div>
+</div>
+
+<script>
+var SUPA_URL = 'https://sxdobjodxkwexaspepdm.supabase.co';
+var SUPA_KEY = 'sb_publishable_zEJrmQOnKyRm-Y_NyojaTA_ERrDx4pl';
+
+var OBJ_LABELS = {
+  libre:'Libre', endurance:'Endurance', puissance:'Puissance',
+  hypertrophie:'Hypertrophie', forcemax:'Force max'
+};
+
+function escH(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function getProgId(){
+  var params = new URLSearchParams(window.location.search);
+  return params.get('prog');
+}
+
+function fmtDate(d){
+  if(!d) return '';
+  var parts = d.split('-');
+  if(parts.length===3) return parts[2]+'/'+parts[1]+'/'+parts[0];
+  return d;
+}
+
+function fmtCible(c){
+  if(!c) return '';
+  var t = c.type||'RPE';
+  var mn = c.min||''; var mx = c.max||'';
+  if(mn && mx) return t+' '+mn+'–'+mx;
+  if(mn) return t+' '+mn;
+  return t;
+}
+
+function loadProg(){
+  var progId = getProgId();
+  if(!progId){
+    showError('Lien invalide', 'Aucun programme spécifié dans l\'URL. Demande le lien à ton praticien.');
+    return;
+  }
+  var btn = document.getElementById('refreshBtn');
+  btn.disabled = true; btn.textContent = '⏳ Chargement…';
+
+  fetch(SUPA_URL + '/rest/v1/programmes?id=eq.' + progId + '&select=*', {
+    headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
+  })
+  .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, status:r.status, data:d}; }); })
+  .then(function(res){
+    btn.disabled = false; btn.textContent = '↻ Actualiser';
+    if(!res.ok){ showError('Erreur '+res.status, JSON.stringify(res.data)); return; }
+    var arr = Array.isArray(res.data) ? res.data : [];
+    if(!arr.length){ showError('Programme introuvable', 'Ce programme n\'existe plus ou le lien est invalide.'); return; }
+    renderProg(arr[0]);
+    document.getElementById('lastUpdated').textContent = 'Actualisé le ' + new Date().toLocaleDateString('fr-FR') + ' à ' + new Date().toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'});
+  })
+  .catch(function(err){
+    btn.disabled = false; btn.textContent = '↻ Actualiser';
+    showError('Erreur réseau', err && err.message || String(err));
+  });
+}
+
+function showError(title, msg){
+  document.getElementById('mainContent').innerHTML =
+    '<div class="error-state">'
+    + '<div class="error-icon">⚠️</div>'
+    + '<div class="error-title">'+escH(title)+'</div>'
+    + '<div class="error-msg">'+escH(msg)+'</div>'
+    + '</div>';
+}
+
+function renderProg(prog){
+  // Rétrocompat : donnees peut être un tableau (ancien) ou {blocs,notes} (nouveau)
+  var raw = prog.donnees || [];
+  var blocs = Array.isArray(raw) ? raw : (raw.blocs || []);
+  var notes = Array.isArray(raw) ? '' : (raw.notes || '');
+  var html = '';
+
+  // En-tête programme
+  html += '<div class="prog-meta">'
+       +  '<div class="prog-title">'+escH(prog.nom || 'Programme')+'</div>'
+       +  '<div class="prog-date">📅 '+escH(fmtDate(prog.date))+'</div>'
+       +  '</div>';
+
+  if(!blocs.length){
+    html += '<div class="empty-state"><div style="font-size:2rem;margin-bottom:12px">📋</div><div>Ce programme ne contient pas encore d\'exercices.</div></div>';
+    document.getElementById('mainContent').innerHTML = html;
+    return;
+  }
+
+  blocs.forEach(function(b){
+    var obj = b.objectif || 'libre';
+    var objLabel = OBJ_LABELS[obj] || obj;
+
+    html += '<div class="bloc">';
+
+    // Header bloc
+    html += '<div class="bloc-header">'
+         +  '<div class="bloc-title">'+escH(b.title || 'Bloc')+'</div>'
+         +  '<span class="bloc-badge '+escH(obj)+'">'+escH(objLabel)+'</span>'
+         +  '</div>';
+
+    // Méthode
+    if(b.methode){
+      html += '<div class="methode-card">'
+           +  '<span class="methode-label">Méthode :</span>'
+           +  '<span>'+escH(b.methode)+'</span>'
+           +  '</div>';
+    }
+
+    // Exercices
+    html += '<div class="exo-list">';
+    (b.exos || []).forEach(function(e, idx){
+      var isChained = !!e.chained;
+      html += '<div class="exo-item'+(isChained?' chained':'')+'">';
+
+      // Nom
+      html += '<div class="exo-name">'+escH(e.name)+'</div>';
+
+      // Tags
+      var tagHtml = '';
+      if(e.url) tagHtml += '<a class="exo-tag video" href="'+escH(e.url)+'" target="_blank">▶ Vidéo</a>';
+      if(isChained) tagHtml += '<span class="exo-tag chain">⛓ Enchaîné</span>';
+      if(tagHtml) html += '<div class="exo-tags">'+tagHtml+'</div>';
+
+      // Paramètres
+      var params = [];
+      if(e.series) params.push({label:'Séries', val:e.series});
+      if(e.reps)   params.push({label:'Répétitions', val:e.reps});
+      if(e.duree)  params.push({label:'Durée', val:e.duree});
+      if(e.recup)  params.push({label:'Récupération', val:e.recup});
+      if(e.tempo)  params.push({label:'Tempo', val:e.tempo});
+      // Cibles
+      var cibles = e.cibles && e.cibles.length ? e.cibles : (e.cibleType ? [{type:e.cibleType, min:e.cibleVal||'', max:''}] : []);
+      cibles.forEach(function(c, ci){
+        var cf = fmtCible(c);
+        if(cf) params.push({label:'Cible '+(cibles.length>1?(ci+1):''), val:cf});
+      });
+
+      if(params.length){
+        html += '<div class="exo-params">';
+        params.forEach(function(p){
+          html += '<div class="param-box">'
+               +  '<div class="param-label">'+escH(p.label)+'</div>'
+               +  '<div class="param-val">'+escH(p.val)+'</div>'
+               +  '</div>';
+        });
+        html += '</div>';
+      }
+
+      // Consigne
+      if(e.consigne && e.consigne.trim()){
+        html += '<div class="exo-consigne">💬 '+escH(e.consigne)+'</div>';
+      }
+
+      html += '</div>';
+
+      // Connecteur enchaîné
+      if(isChained && idx < (b.exos||[]).length - 1){
+        html += '<div class="chain-link">↓ enchaîner</div>';
+      }
+    });
+    html += '</div>'; // .exo-list
+    html += '</div>'; // .bloc
+  });
+
+  // Notes globales
+  var notesVal = prog.notes || '';
+  if(notesVal && notesVal.trim()){
+    html += '<div class="notes-bloc">'
+         +  '<div class="notes-label">📝 Notes & Consignes</div>'
+         +  '<div class="notes-text">'+escH(notesVal)+'</div>'
+         +  '</div>';
+  }
+
+  document.getElementById('mainContent').innerHTML = html;
+}
+
+// Chargement initial
+loadProg();
+</script>
+</body>
+</html>
