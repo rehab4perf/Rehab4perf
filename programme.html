@@ -3042,7 +3042,7 @@ function renderCalendar() {
   if(_progPatient) {
     // Mode cloud : charger les séances Supabase pour ce patient
     var url = SUPA_URL_P + '/rest/v1/seances_planifiees?patient_id=eq.' + _progPatient.id
-            + '&select=id,date,programme_id,programmes(nom,donnees)&order=date.asc';
+            + '&select=id,date,programme_id,programmes(nom,donnees),athlete_feedback(rpe,duree_min)&order=date.asc';
     var calHeaders = _progToken
       ? { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _progToken }
       : { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json' };
@@ -3126,6 +3126,9 @@ function _weekBilanHTML(){
        + '</div>';
 }
 
+/* ── Couleur UA sur chips (vert / orange / rouge) ── */
+function _chipUaColor(ua){ if(ua<150) return '#A8F0C0'; if(ua<300) return '#FFD580'; return '#FF9898'; }
+
 /* ── Helper chips partagé mois + semaine ── */
 function _buildDayChips(dateStr, cellDate){
   var chips = '';
@@ -3133,11 +3136,14 @@ function _buildDayChips(dateStr, cellDate){
     var dayEvs = _cloudCalEvents.filter(function(e){ return e.date===dateStr; });
     chips = dayEvs.map(function(ev){
       var nom = (ev.programmes&&ev.programmes.nom)||'Programme';
+      var fb = ev.athlete_feedback;
+      var ua = (fb&&fb.rpe&&fb.duree_min) ? fb.rpe*fb.duree_min : null;
+      var uaSpan = ua ? ' <span style="font-size:.58rem;font-weight:800;padding:1px 4px;border-radius:3px;background:rgba(255,255,255,.22);color:'+_chipUaColor(ua)+';">⚡'+ua+'</span>' : '';
       return '<div class="cal-session-chip" draggable="true" style="background:#2B5FA6;cursor:grab;" title="'+escH(nom)+' — cliquer pour modifier"'
         +' onclick="event.stopPropagation();_openChipInBuilder(\''+ev.programme_id+'\',\''+dateStr+'\')"'
         +' ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')"'
         +' ondragend="_calChipDragEnd(event)">'
-        +'<span>📋 '+escH(nom.length>18?nom.slice(0,18)+'…':nom)+'</span>'
+        +'<span>📋 '+escH(nom.length>16?nom.slice(0,16)+'…':nom)+uaSpan+'</span>'
         +'<button class="cal-chip-del" onclick="event.stopPropagation();removeCalEventCloud(\''+ev.id+'\')">×</button>'
         +'</div>';
     }).join('');

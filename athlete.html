@@ -198,6 +198,38 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
 .last-updated { text-align:center; font-size:.68rem; color:var(--muted); margin-top:8px; }
 .footer { text-align:center; font-size:.68rem; color:var(--muted); padding:16px 0 6px; }
 .footer a { color:var(--accent); text-decoration:none; }
+
+/* ── RPE / UA Card ── */
+.rpe-card {
+  background:linear-gradient(135deg,#F5F7FA,#EEF3FB);
+  border:2px solid var(--accent); border-radius:14px;
+  padding:18px 16px; margin:14px 0 0;
+}
+.rpe-card-title { font-size:.95rem; font-weight:800; color:var(--navy); margin-bottom:5px; }
+.rpe-duree { font-size:.78rem; color:var(--muted); margin-bottom:14px; }
+.rpe-scale-label { font-size:.72rem; font-weight:700; color:var(--text); margin-bottom:9px; text-transform:uppercase; letter-spacing:.05em; }
+.rpe-buttons { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:10px; }
+.rpe-btn {
+  width:42px; height:42px; border-radius:9px; border:2px solid var(--border);
+  background:#fff; font-size:.92rem; font-weight:700; cursor:pointer;
+  transition:all .13s; color:var(--text); font-family:inherit; flex-shrink:0;
+}
+.rpe-btn:hover { border-color:var(--accent); background:#EEF3FB; }
+.rpe-btn.active { background:var(--accent); border-color:var(--accent); color:#fff; transform:scale(1.1); }
+.rpe-desc { font-size:.84rem; font-weight:700; min-height:1.4em; margin-bottom:8px; transition:color .2s; }
+.rpe-ua-display { font-size:1.05rem; font-weight:800; min-height:1.5em; margin-bottom:14px; transition:color .2s; }
+.rpe-already { font-size:.72rem; color:var(--muted); margin-bottom:10px; font-style:italic; }
+.rpe-submit-btn {
+  width:100%; padding:12px; background:var(--accent); color:#fff;
+  border:none; border-radius:10px; font-size:.9rem; font-weight:700;
+  cursor:pointer; transition:background .15s; font-family:inherit;
+}
+.rpe-submit-btn:hover { background:#1a4d8a; }
+.rpe-submit-btn:disabled { opacity:.5; cursor:default; }
+.rpe-success-msg { text-align:center; padding:18px 10px; }
+.rpe-success-ua { font-size:1.5rem; font-weight:800; margin:8px 0 4px; }
+.rpe-success-detail { font-size:.76rem; color:var(--muted); }
+.chip-ua { font-size:.58rem; font-weight:800; padding:1px 4px; border-radius:4px; background:rgba(255,255,255,.28); margin-left:3px; vertical-align:middle; }
 </style>
 </head>
 <body>
@@ -327,7 +359,7 @@ function renderCalendar(){
   // Charge séances planifiées ET cycles en parallèle
   Promise.all([
     fetch(SUPA_URL + '/rest/v1/seances_planifiees?patient_id=eq.' + _patientId
-        + '&select=id,date,programme_id,programmes(nom)&order=date.asc', {
+        + '&select=id,date,programme_id,programmes(nom),athlete_feedback(rpe,duree_min)&order=date.asc', {
       headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
     }).then(function(r){ return r.json(); }),
     fetch(SUPA_URL + '/rest/v1/patient_settings?patient_id=eq.' + _patientId + '&select=cycles', {
@@ -372,8 +404,11 @@ function _renderCalGrid(){
     var dayEvs = _calEvents.filter(function(e){ return e.date===dateStr; });
     var chips = dayEvs.map(function(ev){
       var nom = (ev.programmes&&ev.programmes.nom)||'Programme';
-      return '<div class="cal-chip" onclick="event.stopPropagation();openProgModal(\''+escH(ev.programme_id)+'\',\''+escH(nom)+'\')" title="'+escH(nom)+'">'
-           + '📋 '+escH(nom.length>10?nom.slice(0,10)+'…':nom)+'</div>';
+      var fb = ev.athlete_feedback;
+      var ua = (fb&&fb.rpe&&fb.duree_min) ? fb.rpe*fb.duree_min : null;
+      var uaBadge = ua ? '<span class="chip-ua" style="color:'+_uaColor(ua)+';">⚡'+ua+'</span>' : '';
+      return '<div class="cal-chip" onclick="event.stopPropagation();openProgModal(\''+escH(ev.programme_id)+'\',\''+escH(nom)+'\',\''+escH(ev.id)+'\')" title="'+escH(nom)+'">'
+           + '📋 '+escH(nom.length>10?nom.slice(0,10)+'…':nom)+uaBadge+'</div>';
     }).join('');
     // Cycles actifs pour ce jour
     var cycleChips = '';
@@ -411,10 +446,13 @@ function _renderCalGrid(){
       var nom = (ev.programmes&&ev.programmes.nom)||'Programme';
       var p = ev.date.split('-');
       var dateLabel = parseInt(p[2])+' '+['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'][parseInt(p[1])-1];
-      html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="openProgModal(\''+escH(ev.programme_id)+'\',\''+escH(nom)+'\')">'
+      var fb2 = ev.athlete_feedback;
+      var ua2 = (fb2&&fb2.rpe&&fb2.duree_min) ? fb2.rpe*fb2.duree_min : null;
+      var uaTag = ua2 ? '<span style="font-size:.7rem;font-weight:800;color:'+_uaColor(ua2)+';background:#F5F7FA;border-radius:5px;padding:2px 7px;margin-left:4px;">⚡ '+ua2+' UA</span>' : '';
+      html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="openProgModal(\''+escH(ev.programme_id)+'\',\''+escH(nom)+'\',\''+escH(ev.id)+'\')">'
             + '<div style="background:var(--accent);color:#fff;border-radius:8px;padding:6px 10px;font-size:.7rem;font-weight:700;white-space:nowrap;">'+escH(dateLabel)+'</div>'
-            + '<div style="font-size:.85rem;font-weight:600;">📋 '+escH(nom)+'</div>'
-            + '<div style="margin-left:auto;color:var(--muted);font-size:.8rem;">›</div>'
+            + '<div style="font-size:.85rem;font-weight:600;flex:1;">📋 '+escH(nom)+uaTag+'</div>'
+            + '<div style="color:var(--muted);font-size:.8rem;">›</div>'
             + '</div>';
     });
     html += '</div>';
@@ -424,20 +462,39 @@ function _renderCalGrid(){
 }
 
 // ── Modal programme ──────────────────────────────────
-function openProgModal(progId, nom){
+function openProgModal(progId, nom, seanceId){
   document.getElementById('progModalTitle').textContent = nom || 'Programme';
   document.getElementById('progModalBody').innerHTML = '<div class="loading-state"><div class="spinner"></div></div>';
   document.getElementById('progModal').classList.add('open');
-  fetch(SUPA_URL + '/rest/v1/programmes?id=eq.' + progId + '&select=*', {
-    headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
-  })
-  .then(function(r){ return r.json(); })
-  .then(function(data){
-    var arr = Array.isArray(data) ? data : [];
+  var fetches = [
+    fetch(SUPA_URL + '/rest/v1/programmes?id=eq.' + progId + '&select=*', {
+      headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
+    }).then(function(r){ return r.json(); })
+  ];
+  if(seanceId){
+    fetches.push(
+      fetch(SUPA_URL + '/rest/v1/athlete_feedback?seance_id=eq.' + seanceId, {
+        headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
+      }).then(function(r){ return r.json(); })
+    );
+  }
+  Promise.all(fetches)
+  .then(function(results){
+    var arr = Array.isArray(results[0]) ? results[0] : [];
     if(!arr.length){ document.getElementById('progModalBody').innerHTML = '<div class="error-state"><div class="error-icon">⚠️</div><div>Programme introuvable.</div></div>'; return; }
-    document.getElementById('progModalBody').innerHTML = buildProgHTML(arr[0]);
+    var prog = arr[0];
+    var raw = prog.donnees || [];
+    var blocs = Array.isArray(raw) ? raw : (raw.blocs || []);
+    var existing = null;
+    if(results[1]){
+      var fbArr = Array.isArray(results[1]) ? results[1] : [];
+      existing = fbArr.length ? fbArr[0] : null;
+    }
+    var html = buildProgHTML(prog);
+    if(seanceId) html += buildRpeCard(seanceId, blocs, existing);
+    document.getElementById('progModalBody').innerHTML = html;
   })
-  .catch(function(err){
+  .catch(function(){
     document.getElementById('progModalBody').innerHTML = '<div class="error-state"><div class="error-icon">⚠️</div><div>Erreur réseau.</div></div>';
   });
 }
@@ -557,6 +614,134 @@ function showError(title, msg){
     '<div class="error-state"><div class="error-icon">⚠️</div>'
     +'<div class="error-title">'+escH(title)+'</div>'
     +'<div class="error-msg">'+escH(msg)+'</div></div>';
+}
+
+// ── Calcul durée estimée (miroir de programme.html) ──────────────
+function _parseNum(str){
+  if(!str) return null;
+  str = String(str).trim();
+  if(str==='Max'||str==='max') return 10;
+  if(str.indexOf('+')!==-1){ var p=str.split('+').map(parseFloat).filter(function(n){return !isNaN(n);}); if(p.length) return p.reduce(function(a,b){return a+b;},0); }
+  if(str.match(/^\d[\d-]*\d$/)&&str.indexOf('-')!==-1){ var p2=str.split('-').map(parseFloat).filter(function(n){return !isNaN(n);}); if(p2.length>1) return p2.reduce(function(a,b){return a+b;},0)/p2.length; }
+  var n=parseFloat(str); return isNaN(n)?null:n;
+}
+function _parseMin(str){
+  if(!str) return null;
+  str=String(str).trim().toLowerCase().replace(/\s/g,'');
+  var m;
+  if(m=str.match(/^(\d+)min(\d+)s?$/)) return parseInt(m[1])+parseInt(m[2])/60;
+  if(m=str.match(/^(\d+)min$/)) return parseInt(m[1]);
+  if(m=str.match(/^(\d+)s$/)) return parseInt(m[1])/60;
+  if(m=str.match(/^([\d.]+)-([\d.]+)min$/)) return (parseFloat(m[1])+parseFloat(m[2]))/2;
+  var n=parseFloat(str); return isNaN(n)?null:n;
+}
+function _estimateExoMin(e){
+  var series=_parseNum(e.series); if(!series||series<=0) return null;
+  var recup=_parseMin(e.recup); if(recup===null) recup=0;
+  var work=0;
+  if(e.duree){ var d=_parseMin(e.duree); work=(d!==null)?d:0.5; }
+  else if(e.reps){ var r=_parseNum(e.reps); work=r?(r*4)/60:0.5; }
+  else work=0.5;
+  return series*work+Math.max(0,series-1)*recup;
+}
+function _calcSessionDuree(blocs){
+  var total=0;
+  blocs.forEach(function(b){
+    (b.exos||[]).forEach(function(e){
+      var m=_estimateExoMin(e);
+      if(m&&m>0) total+=m;
+    });
+  });
+  return Math.max(5, Math.round(total));
+}
+
+// ── Borg CR10 (1–10) ─────────────────────────────────────────────
+var BORG_CR10 = [null,
+  {label:'Très faible 😌',   color:'#27AE60'},
+  {label:'Faible 🙂',        color:'#52BE80'},
+  {label:'Modéré 😊',        color:'#A9CC3E'},
+  {label:'Un peu difficile 😐', color:'#F4D03F'},
+  {label:'Difficile 😓',     color:'#E67E22'},
+  {label:'Difficile+ 😤',    color:'#D35400'},
+  {label:'Très difficile 😰',color:'#E74C3C'},
+  {label:'Très difficile+ 🥵',color:'#C0392B'},
+  {label:'Extrêmement difficile 😵',color:'#922B21'},
+  {label:'Maximum 💀',       color:'#641E16'}
+];
+
+function _uaColor(ua){ if(ua<150) return '#27AE60'; if(ua<300) return '#E67E22'; return '#E74C3C'; }
+
+var _currentSeanceId = '';
+var _currentDureeMin = 0;
+var _currentRpe = 0;
+
+function _setRpe(val){
+  _currentRpe = val;
+  document.querySelectorAll('.rpe-btn').forEach(function(btn){
+    btn.classList.toggle('active', parseInt(btn.dataset.val)===val);
+  });
+  var borg = BORG_CR10[val];
+  var descEl = document.getElementById('rpeDesc');
+  var uaEl   = document.getElementById('rpeUaDisplay');
+  if(descEl){ descEl.textContent=borg?borg.label:''; descEl.style.color=borg?borg.color:''; }
+  if(uaEl){
+    var ua = val*_currentDureeMin;
+    uaEl.innerHTML='⚡ Charge estimée : '+val+' × '+_currentDureeMin+' min = <strong>'+ua+' UA</strong>';
+    uaEl.style.color=_uaColor(ua);
+  }
+}
+
+function _submitRpe(){
+  if(!_currentRpe){ alert('Sélectionne ton niveau d\'effort (1–10).'); return; }
+  if(!_currentSeanceId) return;
+  var btn = document.getElementById('rpeSubmitBtn');
+  if(btn){ btn.disabled=true; btn.textContent='⏳ Envoi…'; }
+  fetch(SUPA_URL+'/rest/v1/athlete_feedback', {
+    method:'POST',
+    headers:{'apikey':SUPA_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
+    body:JSON.stringify({seance_id:_currentSeanceId, rpe:_currentRpe, duree_min:_currentDureeMin, submitted_at:new Date().toISOString()})
+  }).then(function(r){
+    if(!r.ok){ return r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); if(btn){btn.disabled=false;btn.textContent='Envoyer mon ressenti';} }); }
+    var ua = _currentRpe*_currentDureeMin;
+    var card = document.getElementById('rpeCard');
+    if(card) card.innerHTML=
+      '<div class="rpe-success-msg">'
+      +'<div style="font-size:1.4rem;">✅</div>'
+      +'<div style="font-weight:700;color:var(--navy);margin:6px 0;">Ressenti enregistré !</div>'
+      +'<div class="rpe-success-ua" style="color:'+_uaColor(ua)+';">⚡ '+ua+' UA</div>'
+      +'<div class="rpe-success-detail">RPE '+_currentRpe+' × '+_currentDureeMin+' min</div>'
+      +'</div>';
+  }).catch(function(){ alert('Erreur réseau. Réessaie.'); if(btn){btn.disabled=false;btn.textContent='Envoyer mon ressenti';} });
+}
+
+function buildRpeCard(seanceId, blocs, existing){
+  _currentSeanceId = seanceId || '';
+  _currentDureeMin = _calcSessionDuree(blocs);
+  _currentRpe = (existing&&existing.rpe) ? existing.rpe : 0;
+
+  var html = '<div class="rpe-card" id="rpeCard">';
+  html += '<div class="rpe-card-title">🏃 Mon ressenti de séance</div>';
+  html += '<div class="rpe-duree">Durée estimée : <strong>~'+_currentDureeMin+' min</strong></div>';
+  html += '<div class="rpe-scale-label">Niveau d\'effort perçu — Borg 1–10</div>';
+  html += '<div class="rpe-buttons">';
+  for(var i=1;i<=10;i++){
+    var active = (_currentRpe===i)?' active':'';
+    html += '<button class="rpe-btn'+active+'" data-val="'+i+'" onclick="_setRpe('+i+')">'+i+'</button>';
+  }
+  html += '</div>';
+  var initBorg = _currentRpe>0 ? BORG_CR10[_currentRpe] : null;
+  html += '<div class="rpe-desc" id="rpeDesc" style="color:'+(initBorg?initBorg.color:'var(--muted)')+'">'
+       +  (initBorg?escH(initBorg.label):'Sélectionne ton niveau d\'effort')+'</div>';
+  if(_currentRpe>0){
+    var initUa = _currentRpe*_currentDureeMin;
+    html += '<div class="rpe-ua-display" id="rpeUaDisplay" style="color:'+_uaColor(initUa)+'">⚡ Charge estimée : '+_currentRpe+' × '+_currentDureeMin+' min = <strong>'+initUa+' UA</strong></div>';
+  } else {
+    html += '<div class="rpe-ua-display" id="rpeUaDisplay"></div>';
+  }
+  if(existing&&existing.rpe) html += '<div class="rpe-already">✓ Déjà envoyé — tu peux modifier ton ressenti</div>';
+  html += '<button class="rpe-submit-btn" id="rpeSubmitBtn" onclick="_submitRpe()">Envoyer mon ressenti</button>';
+  html += '</div>';
+  return html;
 }
 
 // Lancement
