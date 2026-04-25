@@ -920,8 +920,8 @@ body {
     <div class="block">
       <div class="block-header">Identité</div>
       <div class="form-grid triple">
-        <div class="field"><label>Nom</label><input type="text" id="f-nom" placeholder="Dupont" oninput="updateAll()"></div>
-        <div class="field"><label>Prénom</label><input type="text" id="f-prenom" placeholder="Jean" oninput="updateAll()"></div>
+        <div class="field"><label>Nom</label><input type="text" id="f-nom" placeholder="Dupont" autocapitalize="words" oninput="_capInput(this);updateAll()"></div>
+        <div class="field"><label>Prénom</label><input type="text" id="f-prenom" placeholder="Jean" autocapitalize="words" oninput="_capInput(this);updateAll()"></div>
         <div class="field"><label>Date de naissance</label><input type="date" id="f-dob" oninput="updateAll()"></div>
       </div>
       <div class="form-grid triple">
@@ -2706,8 +2706,20 @@ function _updateSaveBar(){
 }
 function _esc2(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+/* Capitalise 1re lettre de chaque mot (accents + tirets) */
+function _capName(str){
+  if(!str) return str;
+  return str.toLowerCase().replace(/(^|[\s\-])([\wÀ-ÿ])/g, function(m, sep, c){ return sep+c.toUpperCase(); });
+}
+/* Applique la capitalisation sur un input en préservant le curseur */
+function _capInput(el){
+  var pos = el.selectionStart;
+  el.value = _capName(el.value);
+  try{ el.setSelectionRange(pos, pos); }catch(e){}
+}
+
 function _autofillPatientFields(p){
-  var map = {'f-nom':p.nom,'f-prenom':p.prenom,'f-dob':p.ddn||'','f-sexe':p.sexe||''};
+  var map = {'f-nom':_capName(p.nom||''),'f-prenom':_capName(p.prenom||''),'f-dob':p.ddn||'','f-sexe':p.sexe||''};
   Object.keys(map).forEach(function(id){
     var el = document.getElementById(id);
     if(el && !el.value && map[id]) { el.value = map[id]; }
