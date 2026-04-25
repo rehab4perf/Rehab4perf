@@ -3391,26 +3391,45 @@ function _calDayDrop(e, targetDate){
   if(e.shiftKey){
     _calDuplicateEvent(drag.progId, targetDate);
   } else {
-    _calMoveEvent(drag.evId, targetDate, drag.date);
+    _calMoveEvent(drag.evId, drag.progId, targetDate, drag.date);
   }
 }
 
-function _calMoveEvent(evId, targetDate, sourceDate){
+function _calMoveEvent(evId, progId, targetDate, sourceDate){
   if(!_progPatient||!_progUid||!_progToken) return;
+  // Stratégie : DELETE + POST (plus fiable que PATCH face aux RLS Supabase)
   fetch(SUPA_URL_P+'/rest/v1/seances_planifiees?id=eq.'+evId, {
-    method:'PATCH', headers:_sbHeaders(),
-    body: JSON.stringify({date: targetDate})
+    method:'DELETE', headers:_sbHeaders()
   })
   .then(function(r){
-    if(!r.ok){ return r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); }); }
+    if(!r.ok){ return r.json().then(function(d){ alert('Erreur suppression : '+JSON.stringify(d)); throw new Error('del'); }); }
+    return fetch(SUPA_URL_P+'/rest/v1/seances_planifiees', {
+      method:'POST', headers:_sbHeaders(),
+      body: JSON.stringify({patient_id:_progPatient.id, programme_id:progId, praticien_id:_progUid, date:targetDate})
+    });
+  })
+  .then(function(r){
+    if(!r || !r.ok){ if(r) r.json().then(function(d){ alert('Erreur création : '+JSON.stringify(d)); }); return; }
+    return r.json();
+  })
+  .then(function(data){
+    if(!data) return;
+    var created = Array.isArray(data) ? data[0] : data;
+    var newId = created && created.id;
     renderCalendar();
     _showToast('📅 Séance déplacée', function(){
-      fetch(SUPA_URL_P+'/rest/v1/seances_planifiees?id=eq.'+evId, {
-        method:'PATCH', headers:_sbHeaders(), body: JSON.stringify({date: sourceDate})
+      // Annuler : supprimer le nouveau, recréer à la date d'origine
+      fetch(SUPA_URL_P+'/rest/v1/seances_planifiees?id=eq.'+newId, {
+        method:'DELETE', headers:_sbHeaders()
+      }).then(function(){
+        return fetch(SUPA_URL_P+'/rest/v1/seances_planifiees', {
+          method:'POST', headers:_sbHeaders(),
+          body: JSON.stringify({patient_id:_progPatient.id, programme_id:progId, praticien_id:_progUid, date:sourceDate})
+        });
       }).then(function(){ renderCalendar(); });
     });
   })
-  .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
+  .catch(function(err){ if(err&&err.message!=='del') alert('Erreur réseau : '+(err.message||err)); });
 }
 
 function _calDuplicateEvent(progId, targetDate){
