@@ -2342,9 +2342,9 @@ window.addEventListener('message', function(e){
     try { localStorage.setItem('r4p-profile', JSON.stringify(e.data.profile)); } catch(ex){}
   }
   if(e.data && e.data.type==='r4p-patient-selected'){
-    _progPatient = e.data.patient;
+    _progPatient = _normalizePatient(e.data.patient);
     _currentProgId = null;
-    try { localStorage.setItem('r4p-current-patient', e.data.patient ? JSON.stringify(e.data.patient) : ''); } catch(ex){}
+    try { localStorage.setItem('r4p-current-patient', e.data.patient ? JSON.stringify(_progPatient) : ''); } catch(ex){}
     // Récupérer uid et token depuis le payload JWT envoyé par le parent
     if(e.data.auth && e.data.auth.access_token){
       _progToken = e.data.auth.access_token;
@@ -2374,6 +2374,18 @@ var _currentProgId = null;
 var _progUid       = null;
 var _progToken     = null;
 
+/* Capitalise la 1re lettre de chaque mot (gère accents + tirets) */
+function _capName(str){
+  if(!str) return str;
+  return str.toLowerCase().replace(/(^|[\s\-])([\wÀ-ÿ])/g, function(m, sep, c){ return sep + c.toUpperCase(); });
+}
+function _normalizePatient(p){
+  if(!p) return p;
+  if(p.prenom) p.prenom = _capName(p.prenom);
+  if(p.nom)    p.nom    = _capName(p.nom);
+  return p;
+}
+
 // Fallback : récupérer uid + token depuis localStorage au chargement
 (function(){
   try {
@@ -2395,7 +2407,7 @@ var _progToken     = null;
   try {
     var sp = localStorage.getItem('r4p-current-patient');
     if(sp && sp !== '') {
-      _progPatient = JSON.parse(sp);
+      _progPatient = _normalizePatient(JSON.parse(sp));
       var pnEl = document.getElementById('patientName');
       if(pnEl && !pnEl.value) pnEl.value = _progPatient.prenom + ' ' + _progPatient.nom;
     }
