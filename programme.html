@@ -2497,6 +2497,7 @@ function _loadProg(id){
 
 // Ouvrir un programme du calendrier dans le builder (clic sur chip)
 function _openChipInBuilder(progId, dateStr){
+  if(_calDragJustEnded || _calDrag) return; // pas d'ouverture en fin de drag
   _builderDate = dateStr;
   _updateBuilderTitle();
   _loadProg(progId);
@@ -3042,7 +3043,10 @@ function renderCalendar() {
     // Mode cloud : charger les séances Supabase pour ce patient
     var url = SUPA_URL_P + '/rest/v1/seances_planifiees?patient_id=eq.' + _progPatient.id
             + '&select=id,date,programme_id,programmes(nom,donnees)&order=date.asc';
-    fetch(url, { headers: { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json' } })
+    var calHeaders = _progToken
+      ? { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _progToken }
+      : { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json' };
+    fetch(url, { headers: calHeaders })
       .then(function(r){ return r.json(); })
       .then(function(data){
         _cloudCalEvents = Array.isArray(data) ? data : [];
@@ -3360,12 +3364,15 @@ function _calChipDragStart(e, evId, progId, date){
   setTimeout(function(){ if(chip) chip.classList.add('dragging'); }, 0);
 }
 
+var _calDragJustEnded = false;
 function _calChipDragEnd(e){
   var chip = e.currentTarget;
   if(chip) chip.classList.remove('dragging');
   document.querySelectorAll('.drag-over,.drag-over-copy').forEach(function(el){
     el.classList.remove('drag-over','drag-over-copy');
   });
+  _calDragJustEnded = true;
+  setTimeout(function(){ _calDragJustEnded = false; }, 250);
 }
 
 function _calDayDragOver(e, dateStr){
