@@ -707,6 +707,16 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .cal-chip-del { background:none; border:none; color:rgba(255,255,255,.7); cursor:pointer; font-size:.75rem; line-height:1; padding:0 1px; }
 .cal-chip-del:hover { color:#fff; }
 
+/* ── Drag & drop calendrier ── */
+.cal-day.drag-over { background:#EBF5FF !important; outline:2px dashed var(--accent2); outline-offset:-2px; }
+.cal-day.drag-over-copy { background:#EDFFF4 !important; outline:2px dashed #27AE60; outline-offset:-2px; }
+.cal-week-cell.drag-over { background:#EBF5FF !important; outline:2px dashed var(--accent2); outline-offset:-2px; }
+.cal-week-cell.drag-over-copy { background:#EDFFF4 !important; outline:2px dashed #27AE60; outline-offset:-2px; }
+.cal-session-chip.dragging { opacity:.35; pointer-events:none; }
+.share-toast.has-undo { pointer-events:auto !important; display:flex !important; align-items:center; gap:12px; white-space:normal; }
+.share-toast .undo-btn { background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.45); color:#fff; border-radius:6px; padding:3px 11px; font-size:.78rem; cursor:pointer; font-family:inherit; font-weight:700; white-space:nowrap; flex-shrink:0; }
+.share-toast .undo-btn:hover { background:rgba(255,255,255,.35); }
+
 /* ── PICKER CALENDRIER ── */
 .cal-picker-overlay {
   position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:300;
@@ -1674,13 +1684,26 @@ function closeMoreMenu(){
   if(d) d.classList.remove('open');
 }
 /* ── Toast ── */
-function _showToast(msg){
+function _showToast(msg, undoFn){
   var t = document.getElementById('shareToast');
   if(!t) return;
-  t.textContent = msg;
-  t.classList.add('show');
   clearTimeout(t._timer);
-  t._timer = setTimeout(function(){ t.classList.remove('show'); }, 3200);
+  t._undoFn = undoFn || null;
+  if(undoFn){
+    t.innerHTML = '<span>'+msg+'</span><button class="undo-btn" id="toastUndoBtn">Annuler</button>';
+    t.classList.add('has-undo');
+    var btn = document.getElementById('toastUndoBtn');
+    if(btn) btn.onclick = function(){
+      t._undoFn && t._undoFn();
+      t.classList.remove('show','has-undo');
+      clearTimeout(t._timer);
+    };
+  } else {
+    t.textContent = msg;
+    t.classList.remove('has-undo');
+  }
+  t.classList.add('show');
+  t._timer = setTimeout(function(){ t.classList.remove('show','has-undo'); }, 4500);
 }
 
 /* ── Génère le lien athlete.html?prog=ID ── */
@@ -3099,7 +3122,9 @@ function _buildDayChips(dateStr, cellDate){
     var dayEvs = _cloudCalEvents.filter(function(e){ return e.date===dateStr; });
     chips = dayEvs.map(function(ev){
       var nom = (ev.programmes&&ev.programmes.nom)||'Programme';
-      return '<div class="cal-session-chip" style="background:#2B5FA6;" title="'+escH(nom)+'">'
+      return '<div class="cal-session-chip" draggable="true" style="background:#2B5FA6;cursor:grab;" title="'+escH(nom)+'"'
+        +' ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')"'
+        +' ondragend="_calChipDragEnd(event)">'
         +'<span>📋 '+escH(nom.length>18?nom.slice(0,18)+'…':nom)+'</span>'
         +'<button class="cal-chip-del" onclick="event.stopPropagation();removeCalEventCloud(\''+ev.id+'\')">×</button>'
         +'</div>';
@@ -3161,7 +3186,11 @@ function _renderWeekUI(){
     var mo = String(cellDate.getMonth()+1).padStart(2,'0');
     var dd = String(cellDate.getDate()).padStart(2,'0');
     var dateStr = y+'-'+mo+'-'+dd;
-    html += '<div class="cal-week-cell'+(isTod?' today-cell':'')+'" onclick="openCalPicker(\''+dateStr+'\')">'
+    html += '<div class="cal-week-cell'+(isTod?' today-cell':'')+'"'
+          +' onclick="openCalPicker(\''+dateStr+'\')"'
+          +' ondragover="_calDayDragOver(event,\''+dateStr+'\')"'
+          +' ondragleave="_calDayDragLeave(event)"'
+          +' ondrop="_calDayDrop(event,\''+dateStr+'\')">'
           + _buildDayChips(dateStr, cellDate)
           + '<div class="cal-week-add">+ Séance</div>'
           + '</div>';
@@ -3201,7 +3230,11 @@ function _renderCalendarUI() {
     var dateStr = _calYear+'-'+String(_calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     var cellDate = new Date(_calYear,_calMonth,d);
     var isToday = cellDate.getTime()===today.getTime();
-    cells += '<div class="cal-day'+(isToday?' today':'')+'" onclick="openCalPicker(\''+dateStr+'\')">'
+    cells += '<div class="cal-day'+(isToday?' today':'')+'"'
+      +' onclick="openCalPicker(\''+dateStr+'\')"'
+      +' ondragover="_calDayDragOver(event,\''+dateStr+'\')"'
+      +' ondragleave="_calDayDragLeave(event)"'
+      +' ondrop="_calDayDrop(event,\''+dateStr+'\')">'
       +'<div class="cal-day-num">'+d+'</div>'
       +_buildDayChips(dateStr, cellDate)+'</div>';
   }
@@ -3304,6 +3337,103 @@ function removeCalEventCloud(id) {
   .then(function(r){
     if(!r.ok){ return r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); }); }
     renderCalendar();
+  })
+  .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
+}
+
+// ── Drag & drop entre jours du calendrier ──
+var _calDrag = null; // {evId, progId, date}
+
+function _calChipDragStart(e, evId, progId, date){
+  _calDrag = {evId: evId, progId: progId, date: date};
+  e.dataTransfer.effectAllowed = 'copyMove';
+  var chip = e.currentTarget;
+  setTimeout(function(){ if(chip) chip.classList.add('dragging'); }, 0);
+}
+
+function _calChipDragEnd(e){
+  var chip = e.currentTarget;
+  if(chip) chip.classList.remove('dragging');
+  document.querySelectorAll('.drag-over,.drag-over-copy').forEach(function(el){
+    el.classList.remove('drag-over','drag-over-copy');
+  });
+}
+
+function _calDayDragOver(e, dateStr){
+  if(!_calDrag) return;
+  e.preventDefault();
+  var cell = e.currentTarget;
+  if(e.shiftKey){
+    cell.classList.remove('drag-over');
+    cell.classList.add('drag-over-copy');
+    e.dataTransfer.dropEffect = 'copy';
+  } else {
+    cell.classList.remove('drag-over-copy');
+    cell.classList.add('drag-over');
+    e.dataTransfer.dropEffect = 'move';
+  }
+}
+
+function _calDayDragLeave(e){
+  var cell = e.currentTarget;
+  if(!cell.contains(e.relatedTarget)){
+    cell.classList.remove('drag-over','drag-over-copy');
+  }
+}
+
+function _calDayDrop(e, targetDate){
+  e.preventDefault();
+  var cell = e.currentTarget;
+  cell.classList.remove('drag-over','drag-over-copy');
+  if(!_calDrag) return;
+  var drag = _calDrag; _calDrag = null;
+  if(drag.date === targetDate) return;
+  if(e.shiftKey){
+    _calDuplicateEvent(drag.progId, targetDate);
+  } else {
+    _calMoveEvent(drag.evId, targetDate, drag.date);
+  }
+}
+
+function _calMoveEvent(evId, targetDate, sourceDate){
+  if(!_progPatient||!_progUid||!_progToken) return;
+  fetch(SUPA_URL_P+'/rest/v1/seances_planifiees?id=eq.'+evId, {
+    method:'PATCH', headers:_sbHeaders(),
+    body: JSON.stringify({date: targetDate})
+  })
+  .then(function(r){
+    if(!r.ok){ return r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); }); }
+    renderCalendar();
+    _showToast('📅 Séance déplacée', function(){
+      fetch(SUPA_URL_P+'/rest/v1/seances_planifiees?id=eq.'+evId, {
+        method:'PATCH', headers:_sbHeaders(), body: JSON.stringify({date: sourceDate})
+      }).then(function(){ renderCalendar(); });
+    });
+  })
+  .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
+}
+
+function _calDuplicateEvent(progId, targetDate){
+  if(!_progPatient||!_progUid||!_progToken) return;
+  fetch(SUPA_URL_P+'/rest/v1/seances_planifiees', {
+    method:'POST', headers:_sbHeaders(),
+    body: JSON.stringify({patient_id:_progPatient.id, programme_id:progId, praticien_id:_progUid, date:targetDate})
+  })
+  .then(function(r){
+    if(!r.ok){ return r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); }); }
+    return r.json();
+  })
+  .then(function(data){
+    if(!data) return;
+    var created = Array.isArray(data) ? data[0] : data;
+    var newId = created && created.id;
+    renderCalendar();
+    _showToast('📋 Séance dupliquée', function(){
+      if(!newId) return;
+      fetch(SUPA_URL_P+'/rest/v1/seances_planifiees?id=eq.'+newId, {
+        method:'DELETE', headers:_sbHeaders()
+      }).then(function(){ renderCalendar(); });
+    });
   })
   .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
 }
