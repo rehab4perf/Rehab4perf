@@ -2495,6 +2495,13 @@ function _loadProg(id){
     .catch(function(){ alert('Erreur réseau lors du chargement.'); });
 }
 
+// Ouvrir un programme du calendrier dans le builder (clic sur chip)
+function _openChipInBuilder(progId, dateStr){
+  _builderDate = dateStr;
+  _updateBuilderTitle();
+  _loadProg(progId);
+}
+
 function _deleteProg(id, nom){
   if(!confirm('Supprimer le programme "' + nom + '" ?\nCette action est irréversible.')) return;
   fetch(SUPA_URL_P + '/rest/v1/programmes?id=eq.' + id, {method:'DELETE', headers:_sbHeaders()})
@@ -3122,7 +3129,8 @@ function _buildDayChips(dateStr, cellDate){
     var dayEvs = _cloudCalEvents.filter(function(e){ return e.date===dateStr; });
     chips = dayEvs.map(function(ev){
       var nom = (ev.programmes&&ev.programmes.nom)||'Programme';
-      return '<div class="cal-session-chip" draggable="true" style="background:#2B5FA6;cursor:grab;" title="'+escH(nom)+'"'
+      return '<div class="cal-session-chip" draggable="true" style="background:#2B5FA6;cursor:grab;" title="'+escH(nom)+' — cliquer pour modifier"'
+        +' onclick="event.stopPropagation();_openChipInBuilder(\''+ev.programme_id+'\',\''+dateStr+'\')"'
         +' ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')"'
         +' ondragend="_calChipDragEnd(event)">'
         +'<span>📋 '+escH(nom.length>18?nom.slice(0,18)+'…':nom)+'</span>'
