@@ -100,6 +100,12 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .stmpl-add-btn:hover { background:#3a80c9; }
 .stmpl-empty  { padding:28px 16px; text-align:center; color:var(--muted); font-style:italic; font-size:.81rem; line-height:1.5; }
 
+/* ── Template save modal ── */
+.tmpl-save-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:600; display:none; align-items:center; justify-content:center; }
+.tmpl-save-overlay.open { display:flex; }
+.tmpl-save-modal { background:#fff; border-radius:12px; padding:22px 24px 18px; width:350px; box-shadow:0 14px 44px rgba(0,0,0,.22); }
+.tmpl-save-modal h2 { font-size:.92rem; font-weight:700; color:var(--navy); margin-bottom:16px; }
+
 /* Quick-add modal */
 .qa-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:500; display:none; align-items:center; justify-content:center; }
 .qa-overlay.open { display:flex; }
@@ -947,6 +953,38 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 
 </aside>
 
+<!-- ═══════ TEMPLATE SAVE MODAL ═══════ -->
+<div class="tmpl-save-overlay" id="templateSaveModal">
+  <div class="tmpl-save-modal">
+    <h2>📋 Sauvegarder comme template</h2>
+    <div class="save-field">
+      <label>Nom du template</label>
+      <input type="text" id="tmplNameInput" placeholder="Ex : Renfo genou — Phase 2">
+    </div>
+    <div class="save-field">
+      <label>Emoji</label>
+      <div class="emoji-row" id="tmplEmojiRow"></div>
+    </div>
+    <div class="save-field">
+      <label>Type</label>
+      <select id="tmplTypeInput">
+        <option value="Force">Force</option>
+        <option value="Puissance">Puissance</option>
+        <option value="Hypertrophie">Hypertrophie</option>
+        <option value="Endurance">Endurance</option>
+        <option value="Proprio">Proprioception</option>
+        <option value="Réathlétisation">Réathlétisation</option>
+        <option value="Échauffement">Échauffement</option>
+        <option value="Autre">Autre</option>
+      </select>
+    </div>
+    <div class="save-modal-btns">
+      <button class="btn btn-primary" onclick="doSaveTemplate()">📋 Enregistrer le template</button>
+      <button class="btn btn-outline" onclick="closeSaveTemplate()">Annuler</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════ QUICK-ADD MODAL ═══════ -->
 <div class="qa-overlay" id="qaOverlay">
   <div class="qa-modal">
@@ -1023,7 +1061,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
       <div class="more-menu-wrap">
         <button class="more-btn" onclick="toggleMoreMenu(event)" title="Plus d'options">• • •</button>
         <div class="more-dropdown" id="moreDropdown">
-          <button class="more-item" onclick="openSaveSession();closeMoreMenu()">💾 Sauvegarder comme template</button>
+          <button class="more-item" onclick="openSaveTemplate();closeMoreMenu()">📋 Sauvegarder comme template</button>
           <button class="more-item" onclick="shareProgLink();closeMoreMenu()">🔗 Partager avec l'athlète</button>
           <button class="more-item" onclick="exportSession();closeMoreMenu()">📤 Exporter HTML</button>
           <button class="more-item" onclick="window.print();closeMoreMenu()">🖨 Imprimer</button>
@@ -1052,10 +1090,10 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   <!-- Templates section dans le bas du builder -->
   <div style="border-top:1px solid var(--border);flex-shrink:0;">
     <div style="padding:6px 14px;display:flex;align-items:center;gap:8px;background:#FAFBFD;">
-      <span style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;flex:1;">📁 Templates</span>
-      <button class="btn btn-outline" onclick="openSaveSession()" style="font-size:.68rem;padding:3px 8px;">+ Sauvegarder</button>
+      <span style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;flex:1;">📋 Mes templates</span>
+      <button class="btn btn-outline" onclick="openSaveTemplate()" style="font-size:.68rem;padding:3px 8px;">+ Enregistrer</button>
     </div>
-    <div class="seances-area" id="seancesArea" style="max-height:180px;overflow-y:auto;"></div>
+    <div class="seances-area" id="templatesBuilderArea" style="max-height:200px;overflow-y:auto;"></div>
   </div>
 </div>
 
@@ -3050,6 +3088,7 @@ function doSaveSession() {
 function renderSeances() {
   _loadSeances();
   var area = document.getElementById('seancesArea');
+  if(!area) return; // zone supprimée, rien à afficher
   if(!_savedSeances.length){
     area.innerHTML = '<div class="empty-state"><div class="icon">📁</div><p>Aucune séance enregistrée.<br>Construisez une séance et cliquez sur 💾 Enregistrer.</p></div>';
     return;
@@ -3855,6 +3894,7 @@ function _doPlanDates(dates, progId){
 
 // Fermer overlays sur clic extérieur
 document.getElementById('saveModal').addEventListener('click', function(e){ if(e.target===this) closeSaveSession(); });
+document.getElementById('templateSaveModal').addEventListener('click', function(e){ if(e.target===this) closeSaveTemplate(); });
 document.getElementById('calPickerOverlay').addEventListener('click', function(e){ if(e.target===this) closeCalPicker(); });
 
 /* ================================================================
@@ -3886,6 +3926,181 @@ function _updatePatientUI(){
   if(_progPatient) setTimeout(function(){ if(typeof _loadCyclesForPatient==="function") _loadCyclesForPatient(); }, 0);
 }
 
+// ══════════════════════════════════════════════
+//  TEMPLATES GLOBAUX (table `templates` Supabase)
+// ══════════════════════════════════════════════
+var _templates        = [];
+var _tmplSelectedEmoji = '💪';
+var _builderFromTemplate = null;
+
+function _loadTemplates(){
+  try { _templates = JSON.parse(localStorage.getItem('r4p-templates')||'[]'); } catch(e){ _templates=[]; }
+}
+function _persistTemplates(){
+  try { localStorage.setItem('r4p-templates', JSON.stringify(_templates)); } catch(e){}
+}
+
+/* ── Ouvrir modal sauvegarde template ── */
+function openSaveTemplate(){
+  if(!blocs.length){ alert('La séance est vide.'); return; }
+  var row = document.getElementById('tmplEmojiRow');
+  row.innerHTML = '';
+  SAVE_EMOJIS.forEach(function(em){
+    var b = document.createElement('button');
+    b.className = 'emoji-opt' + (em === _tmplSelectedEmoji ? ' selected' : '');
+    b.textContent = em;
+    b.onclick = function(){
+      _tmplSelectedEmoji = em;
+      document.querySelectorAll('#tmplEmojiRow .emoji-opt').forEach(function(x){ x.classList.remove('selected'); });
+      b.classList.add('selected');
+    };
+    row.appendChild(b);
+  });
+  document.getElementById('tmplNameInput').value = '';
+  document.getElementById('templateSaveModal').classList.add('open');
+  setTimeout(function(){ document.getElementById('tmplNameInput').focus(); }, 100);
+}
+function closeSaveTemplate(){
+  document.getElementById('templateSaveModal').classList.remove('open');
+}
+
+/* ── Enregistrer le template ── */
+function doSaveTemplate(){
+  var nom = document.getElementById('tmplNameInput').value.trim();
+  if(!nom){ alert('Donnez un nom au template.'); return; }
+  var type    = document.getElementById('tmplTypeInput').value;
+  var donnees = JSON.stringify({ blocs: JSON.parse(JSON.stringify(blocs)) });
+
+  if(_progToken && _progUid){
+    fetch(SUPA_URL_P + '/rest/v1/templates', {
+      method: 'POST',
+      headers: _sbHeaders(),
+      body: JSON.stringify({ praticien_id: _progUid, nom: nom, type: type, emoji: _tmplSelectedEmoji, donnees: donnees })
+    }).then(function(r){
+      if(r.ok){
+        closeSaveTemplate();
+        renderTemplatesInBuilder();
+        renderSidebarTemplates();
+        _showToast('📋 Template « ' + nom + ' » enregistré !');
+      } else {
+        r.json().then(function(d){ alert('Erreur : ' + JSON.stringify(d)); });
+      }
+    }).catch(function(){ alert('Erreur réseau.'); });
+  } else {
+    _loadTemplates();
+    _templates.unshift({
+      id: '_t' + Math.random().toString(36).slice(2,9),
+      nom: nom, type: type, emoji: _tmplSelectedEmoji,
+      created_at: new Date().toISOString(),
+      _blocs: JSON.parse(JSON.stringify(blocs)),
+      _local: true
+    });
+    _persistTemplates();
+    closeSaveTemplate();
+    renderTemplatesInBuilder();
+    renderSidebarTemplates();
+    _showToast('📋 Template « ' + nom + ' » enregistré !');
+  }
+}
+
+/* ── Afficher les templates dans le bas du builder ── */
+function renderTemplatesInBuilder(){
+  var area = document.getElementById('templatesBuilderArea');
+  if(!area) return;
+
+  function _render(list){
+    if(!list.length){
+      area.innerHTML = '<div style="padding:10px 14px;color:var(--muted);font-size:.77rem;font-style:italic;">Aucun template. Créez-en un avec « + Enregistrer ».</div>';
+      return;
+    }
+    area.innerHTML = list.map(function(t){
+      var col = _seanceTypeColor(t.type);
+      var blocs = t._blocs || [];
+      if(!blocs.length && t.donnees){ try { blocs = (JSON.parse(t.donnees).blocs)||[]; } catch(e){} }
+      var nbExos = blocs.reduce(function(a,b){ return a+(b.exos||[]).length; }, 0);
+      var tid = escH(String(t.id));
+      return '<div class="seance-card">'
+        + '<div class="seance-card-header">'
+        + '<span class="seance-card-emoji">' + (t.emoji||'💪') + '</span>'
+        + '<div class="seance-card-info">'
+        + '<div class="seance-card-name">' + escH(t.nom||'Sans nom') + '</div>'
+        + '<div class="seance-card-meta">'
+        + (t.type ? '<span class="seance-card-type" style="background:'+col.bg+';color:'+col.fg+';">' + escH(t.type) + '</span>' : '')
+        + '<span>' + nbExos + ' exo' + (nbExos>1?'s':'') + '</span>'
+        + '</div></div>'
+        + '<div class="seance-card-actions">'
+        + '<button class="btn btn-outline" onclick="loadTemplate(\''+tid+'\')" style="font-size:.68rem;padding:3px 8px;">Charger</button>'
+        + '<button onclick="deleteTemplate(\''+tid+'\')" style="background:none;border:none;color:#CBD2DB;cursor:pointer;font-size:1rem;padding:2px 4px;" title="Supprimer">🗑</button>'
+        + '</div></div></div>';
+    }).join('');
+  }
+
+  if(_progToken && _progUid){
+    area.innerHTML = '<div style="padding:10px 14px;color:var(--muted);font-size:.77rem;">Chargement…</div>';
+    fetch(SUPA_URL_P + '/rest/v1/templates?praticien_id=eq.' + _progUid + '&order=created_at.desc', {
+      headers: _sbHeaders()
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data){ _render(Array.isArray(data) ? data : []); })
+    .catch(function(){ area.innerHTML = '<div style="padding:10px 14px;color:#E74C3C;font-size:.77rem;">Erreur chargement.</div>'; });
+  } else {
+    _loadTemplates();
+    _render(_templates);
+  }
+}
+
+/* ── Charger un template dans le builder ── */
+function loadTemplate(id){
+  function _applyTemplate(t){
+    var d = {};
+    try { d = JSON.parse(t.donnees||'{}'); } catch(e){}
+    blocs = d.blocs ? JSON.parse(JSON.stringify(d.blocs)) : (t._blocs ? JSON.parse(JSON.stringify(t._blocs)) : []);
+    activeBloc = blocs.length ? blocs[0].id : null;
+    _notes = '';
+    _currentProgId = null;
+    _builderFromTemplate = String(t.id);
+    renderSession();
+    _updateBuilderTitle();
+    var pn = document.getElementById('patientName');
+    if(pn) pn.value = t.nom || '';
+  }
+
+  if(_progToken && _progUid){
+    fetch(SUPA_URL_P + '/rest/v1/templates?id=eq.' + id + '&select=*', { headers: _sbHeaders() })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      var t = Array.isArray(data) ? data[0] : null;
+      if(!t){ alert('Template introuvable.'); return; }
+      _applyTemplate(t);
+    })
+    .catch(function(){ alert('Erreur chargement template.'); });
+  } else {
+    _loadTemplates();
+    var t = _templates.find(function(x){ return x.id === id; });
+    if(!t){ alert('Template introuvable.'); return; }
+    _applyTemplate(t);
+  }
+}
+
+/* ── Supprimer un template ── */
+function deleteTemplate(id){
+  if(!confirm('Supprimer ce template ?')) return;
+  if(_progToken && _progUid){
+    fetch(SUPA_URL_P + '/rest/v1/templates?id=eq.' + id, {
+      method: 'DELETE', headers: _sbHeaders()
+    }).then(function(r){
+      if(r.ok){ renderTemplatesInBuilder(); renderSidebarTemplates(); }
+      else { alert('Erreur suppression.'); }
+    }).catch(function(){ alert('Erreur réseau.'); });
+  } else {
+    _loadTemplates();
+    _templates = _templates.filter(function(t){ return t.id !== id; });
+    _persistTemplates();
+    renderTemplatesInBuilder();
+    renderSidebarTemplates();
+  }
+}
+
 // ── Sidebar Templates ──
 var _sidebarProgs = [];
 var _qaProgId = null;
@@ -3895,10 +4110,10 @@ var _qaSelectedDate = '';
 function renderSidebarTemplates(){
   var scroll = document.getElementById('stmplScroll');
   if(!scroll) return;
-  if(_progToken && _progPatient){
+  if(_progToken && _progUid){
     scroll.innerHTML = '<div class="stmpl-empty">Chargement…</div>';
-    fetch(SUPA_URL_P + '/rest/v1/programmes?patient_id=eq.' + _progPatient.id + '&select=id,nom,donnees,date&order=date.desc', {
-      headers: { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _progToken }
+    fetch(SUPA_URL_P + '/rest/v1/templates?praticien_id=eq.' + _progUid + '&order=created_at.desc', {
+      headers: _sbHeaders()
     })
     .then(function(r){ return r.json(); })
     .then(function(data){
@@ -3907,9 +4122,9 @@ function renderSidebarTemplates(){
     })
     .catch(function(){ scroll.innerHTML = '<div class="stmpl-empty">Erreur de chargement.</div>'; });
   } else {
-    _loadSeances();
-    _sidebarProgs = _savedSeances.map(function(s){
-      return { id: s.id, nom: s.name, emoji: s.emoji, type: s.type, _blocs: s.blocs, date: s.date, _local: true };
+    _loadTemplates();
+    _sidebarProgs = _templates.map(function(t){
+      return { id: t.id, nom: t.nom, emoji: t.emoji, type: t.type, _blocs: t._blocs, created_at: t.created_at, _local: true };
     });
     _renderSidebarList();
   }
@@ -3923,10 +4138,9 @@ function _renderSidebarList(){
     return !q || (p.nom||'').toLowerCase().indexOf(q) > -1;
   });
   if(!list.length){
-    scroll.innerHTML = '<div class="stmpl-empty">Aucune séance enregistrée.<br>Construisez et sauvegardez une séance.</div>';
+    scroll.innerHTML = '<div class="stmpl-empty">Aucun template.<br>Créez-en un depuis le builder (📋 Enregistrer).</div>';
     return;
   }
-  var patFullName = _progPatient ? ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim().toLowerCase() : '';
   scroll.innerHTML = list.map(function(p){
     var emoji = p.emoji || '💪';
     var blocs = p._blocs || [];
@@ -3934,18 +4148,20 @@ function _renderSidebarList(){
       try { blocs = (JSON.parse(p.donnees).blocs)||[]; } catch(e){}
     }
     var nbExos = blocs.reduce(function(a,b){ return a+(b.exos||[]).length; }, 0);
-    // Date lisible
-    var dateStr = p.date || '';
-    var dateLbl = dateStr;
-    if(/^\d{4}-\d{2}-\d{2}$/.test(dateStr)){
-      var parts = dateStr.split('-');
-      dateLbl = parts[2]+'/'+parts[1]+'/'+parts[0];
+    // Date lisible depuis created_at
+    var dateRaw = p.created_at || p.date || '';
+    var dateLbl = '';
+    if(dateRaw){
+      var iso = dateRaw.substring(0,10);
+      if(/^\d{4}-\d{2}-\d{2}$/.test(iso)){
+        var pts = iso.split('-');
+        dateLbl = pts[2]+'/'+pts[1]+'/'+pts[0];
+      }
     }
-    var meta = dateLbl;
+    var typeCol = _seanceTypeColor(p.type);
+    var meta = (p.type ? p.type : '') + (dateLbl ? (p.type ? ' · ' : '') + dateLbl : '');
     if(nbExos) meta += (meta ? ' · ' : '') + nbExos + ' exo' + (nbExos>1?'s':'');
-    // Nom : si vide ou identique au nom patient, utiliser date
-    var rawNom = (p.nom||'').trim();
-    var displayNom = rawNom && rawNom.toLowerCase() !== patFullName ? rawNom : (dateLbl ? 'Séance du ' + dateLbl : 'Sans nom');
+    var displayNom = (p.nom||'').trim() || 'Sans nom';
     var pid = escH(String(p.id));
     var pnom = escH(displayNom);
     return '<div class="stmpl-card" onclick="_sidebarLoadProg(\'' + pid + '\')">'
@@ -3965,11 +4181,8 @@ function filterSidebarTemplates(){
 }
 
 function _sidebarLoadProg(id){
-  if(typeof _loadProg === 'function'){
-    _loadProg(id);
-  } else {
-    loadSeance(id);
-  }
+  loadTemplate(id);
+  _enterBuilderMode();
 }
 
 function _openQuickAdd(progId, nom){
@@ -4016,22 +4229,64 @@ function closeQuickAdd(){
 
 function confirmQuickAdd(){
   if(!_qaSelectedDate || !_qaProgId){ closeQuickAdd(); return; }
-  closeQuickAdd();
-  if(_progToken && _progPatient){
-    var body = { patient_id: _progPatient.id, programme_id: _qaProgId, praticien_id: _progUid, date: _qaSelectedDate };
-    var headers = _sbHeaders();
-    headers['Prefer'] = 'return=minimal';
-    fetch(SUPA_URL_P + '/rest/v1/seances_planifiees', {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify(body)
-    }).then(function(r){
-      if(r.ok){ renderCalendar(); }
-      else { r.json().then(function(d){ alert('Erreur : ' + JSON.stringify(d)); }).catch(function(){ alert('Erreur lors de la planification.'); }); }
-    }).catch(function(){ alert('Erreur réseau.'); });
+  if(_progToken && _progPatient && _progUid){
+    if(!_progPatient){ closeQuickAdd(); alert('Sélectionnez un patient avant de planifier.'); return; }
+    closeQuickAdd();
+    // 1. Récupérer le template
+    fetch(SUPA_URL_P + '/rest/v1/templates?id=eq.' + _qaProgId + '&select=nom,donnees,type,emoji', {
+      headers: _sbHeaders()
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      var t = Array.isArray(data) ? data[0] : null;
+      if(!t){ alert('Template introuvable.'); return; }
+      // 2. Créer une copie du programme pour ce patient
+      var hCopy = _sbHeaders(); // Prefer: return=representation par défaut
+      return fetch(SUPA_URL_P + '/rest/v1/programmes', {
+        method: 'POST', headers: hCopy,
+        body: JSON.stringify({
+          patient_id:   _progPatient.id,
+          praticien_id: _progUid,
+          nom:          t.nom,
+          date:         _qaSelectedDate,
+          donnees:      t.donnees
+        })
+      })
+      .then(function(r){ return r.json(); })
+      .then(function(prog){
+        var newProgId = Array.isArray(prog) ? (prog[0]&&prog[0].id) : prog.id;
+        if(!newProgId){ alert('Erreur création programme.'); return; }
+        // 3. Planifier la copie
+        var hPlan = _sbHeaders(); hPlan['Prefer'] = 'return=minimal';
+        return fetch(SUPA_URL_P + '/rest/v1/seances_planifiees', {
+          method: 'POST', headers: hPlan,
+          body: JSON.stringify({ patient_id: _progPatient.id, programme_id: newProgId, praticien_id: _progUid, date: _qaSelectedDate })
+        });
+      })
+      .then(function(r){
+        if(!r) return;
+        if(r.ok){ renderCalendar(); _showToast('📅 Séance planifiée !'); }
+        else { r.json().then(function(d){ alert('Erreur planification : '+JSON.stringify(d)); }); }
+      });
+    })
+    .catch(function(){ alert('Erreur réseau.'); });
   } else {
+    closeQuickAdd();
+    // Mode local : copier le template dans _savedSeances puis ajouter au calendrier
+    _loadTemplates();
+    var t = _templates.find(function(x){ return x.id === _qaProgId; });
+    if(!t){ alert('Template introuvable.'); return; }
+    _loadSeances();
+    var copy = {
+      id: '_' + Math.random().toString(36).slice(2,9),
+      name: t.nom, emoji: t.emoji||'💪', type: t.type||'',
+      date: new Date().toLocaleDateString('fr-FR'),
+      blocs: JSON.parse(JSON.stringify(t._blocs||[]))
+    };
+    _savedSeances.unshift(copy);
+    _persistSeances();
     _loadCalEvents();
-    _calEvents.push({ id: '_' + Math.random().toString(36).slice(2,9), date: _qaSelectedDate, seanceId: _qaProgId });
+    _calEvents.push({ id: '_' + Math.random().toString(36).slice(2,9), date: _qaSelectedDate, seanceId: copy.id });
     _persistCalEvents();
     renderCalendar();
   }
@@ -4047,6 +4302,7 @@ function _enterBuilderMode(){
   var tmpl = document.getElementById('sidebarTemplates');
   if(lib)  lib.style.display  = 'flex';
   if(tmpl) tmpl.style.display = 'none';
+  renderTemplatesInBuilder();
 }
 
 function _exitBuilderMode(){
@@ -4060,20 +4316,20 @@ function _exitBuilderMode(){
 
 function openBuilderForDate(dateStr){
   _builderDate = dateStr;
+  _builderFromTemplate = null;
   _updateBuilderTitle();
   _enterBuilderMode();
-  renderSeances(); // refresh templates
 }
 
 function openBuilderNew(){
   _builderDate = '';
   _currentProgId = null;
+  _builderFromTemplate = null;
   blocs = [];
   _notes = '';
   renderSession();
   _updateBuilderTitle();
   _enterBuilderMode();
-  renderSeances();
 }
 
 function closeBuilder(){
@@ -4139,10 +4395,10 @@ function _renderUpcoming(){
 
 // ── Init v2 ──
 (function(){
-  // Charger le calendrier au démarrage
+  // Charger le calendrier et les templates au démarrage
   renderCalendar();
-  // Charger les templates dans la sidebar
   renderSidebarTemplates();
+  // (renderTemplatesInBuilder est appelé dans _enterBuilderMode)
   // Adapter shareCalLink pour v2 (remplace programme.html par programme_v2.html)
   var _origShareCal = shareCalLink;
   shareCalLink = function(){
