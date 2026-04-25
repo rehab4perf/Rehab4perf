@@ -81,6 +81,43 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .filter-label { font-size:.65rem; font-weight:700; color:rgba(255,255,255,.45); letter-spacing:.06em; text-transform:uppercase; margin-top:6px; margin-bottom:1px; }
 
 .lib-scroll { flex:1; overflow-y:auto; padding:8px 0; }
+
+/* ── Sidebar Templates (mode calendrier) ── */
+#sidebarTemplates { display:flex; flex-direction:column; height:100%; }
+#sidebarLibrary   { display:none; flex-direction:column; height:100%; }
+.stmpl-header { padding:12px 14px 10px; background:var(--navy); flex-shrink:0; }
+.stmpl-title  { color:#fff; font-size:.78rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; margin-bottom:6px; }
+.stmpl-search { width:100%; padding:6px 10px; border:none; border-radius:6px; background:rgba(255,255,255,.15); color:#fff; font-size:.8rem; outline:none; }
+.stmpl-search::placeholder { color:rgba(255,255,255,.5); }
+.stmpl-scroll { flex:1; overflow-y:auto; padding:8px 0; }
+.stmpl-card   { display:flex; align-items:center; gap:8px; padding:9px 12px; border-bottom:1px solid var(--border); cursor:pointer; transition:background .12s; }
+.stmpl-card:hover { background:var(--tag-bg); }
+.stmpl-card-emoji { font-size:1.25rem; flex-shrink:0; }
+.stmpl-card-body  { flex:1; min-width:0; }
+.stmpl-card-name  { font-size:.82rem; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.stmpl-card-meta  { font-size:.71rem; color:var(--muted); margin-top:2px; }
+.stmpl-add-btn    { flex-shrink:0; background:var(--accent2); border:none; color:#fff; border-radius:6px; width:26px; height:26px; font-size:1.1rem; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .12s; }
+.stmpl-add-btn:hover { background:#3a80c9; }
+.stmpl-empty  { padding:28px 16px; text-align:center; color:var(--muted); font-style:italic; font-size:.81rem; line-height:1.5; }
+
+/* Quick-add modal */
+.qa-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:500; display:none; align-items:center; justify-content:center; }
+.qa-overlay.open { display:flex; }
+.qa-modal    { background:#fff; border-radius:12px; padding:20px 22px 18px; width:330px; box-shadow:0 12px 40px rgba(0,0,0,.22); }
+.qa-modal h3 { font-size:.9rem; font-weight:700; color:var(--navy); margin-bottom:4px; }
+.qa-prog-name{ font-size:.78rem; color:var(--muted); margin-bottom:14px; min-height:1em; }
+.qa-days     { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
+.qa-day-btn  { padding:5px 10px; border-radius:8px; border:1px solid var(--border); background:#f5f7fa; color:var(--text); font-size:.75rem; cursor:pointer; transition:background .12s, border-color .12s; white-space:nowrap; }
+.qa-day-btn:hover  { background:var(--tag-bg); border-color:var(--accent2); }
+.qa-day-btn.active { background:var(--accent2); border-color:var(--accent2); color:#fff; }
+.qa-sep      { font-size:.71rem; color:var(--muted); margin-bottom:6px; letter-spacing:.02em; }
+.qa-date-input { width:100%; padding:6px 8px; border:1px solid var(--border); border-radius:6px; font-size:.8rem; outline:none; margin-bottom:14px; color:var(--text); }
+.qa-date-input:focus { border-color:var(--accent2); }
+.qa-actions  { display:flex; gap:8px; justify-content:flex-end; }
+.qa-cancel   { padding:6px 14px; border:1px solid var(--border); border-radius:7px; background:#fff; font-size:.78rem; cursor:pointer; color:var(--text); }
+.qa-confirm  { padding:6px 14px; border:none; border-radius:7px; background:var(--accent2); color:#fff; font-size:.78rem; cursor:pointer; font-weight:600; }
+.qa-confirm:hover { background:#3a80c9; }
+
 /* Editor modal */
 .editor-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:200; display:none; align-items:flex-start; justify-content:center; overflow-y:auto; padding:16px; }
 .editor-overlay.open { display:flex; }
@@ -862,37 +899,68 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 
 <!-- ═══════════════════════════════ SIDEBAR ═══════════════════════════════ -->
 <aside class="sidebar">
-  <div class="sidebar-header">
-    <div class="sidebar-title">Bibliothèque d'exercices</div>
-    <input class="search-box" type="text" id="searchInput" placeholder="Rechercher un exercice…" oninput="filterLib()">
-    <div class="filter-row">
-      <button class="filter-btn active" id="filterAll" onclick="setFilterAll()">Tous</button>
-      <button class="filter-btn" id="filterFav" onclick="toggleFavFilter()">⭐ Favoris</button>
+
+  <!-- ── Panel Templates (mode calendrier, affiché par défaut) ── -->
+  <div id="sidebarTemplates">
+    <div class="stmpl-header">
+      <div class="stmpl-title">Séances &amp; Templates</div>
+      <input class="stmpl-search" type="text" id="stmplSearch" placeholder="Rechercher une séance…" oninput="filterSidebarTemplates()">
     </div>
-    <div class="filter-label">Objectif</div>
-    <select class="filter-select" id="filterType" onchange="onTypeChange()">
-      <option value="">— Tous —</option>
-      <option value="warmup">Warm-up / Mobilité</option>
-      <option value="renfo">Renforcement</option>
-      <option value="automassage">Auto-massage</option>
-    </select>
-    <div id="filter-sub-wrap" style="display:none;margin-top:6px;">
-      <div class="filter-label" id="filter-sub-label">Filtre</div>
-      <select class="filter-select" id="filterSub" onchange="applyFilters()">
+    <div class="stmpl-scroll" id="stmplScroll">
+      <div class="stmpl-empty">Chargement…</div>
+    </div>
+  </div>
+
+  <!-- ── Panel Bibliothèque (mode builder) ── -->
+  <div id="sidebarLibrary">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Bibliothèque d'exercices</div>
+      <input class="search-box" type="text" id="searchInput" placeholder="Rechercher un exercice…" oninput="filterLib()">
+      <div class="filter-row">
+        <button class="filter-btn active" id="filterAll" onclick="setFilterAll()">Tous</button>
+        <button class="filter-btn" id="filterFav" onclick="toggleFavFilter()">⭐ Favoris</button>
+      </div>
+      <div class="filter-label">Objectif</div>
+      <select class="filter-select" id="filterType" onchange="onTypeChange()">
+        <option value="">— Tous —</option>
+        <option value="warmup">Warm-up / Mobilité</option>
+        <option value="renfo">Renforcement</option>
+        <option value="automassage">Auto-massage</option>
+      </select>
+      <div id="filter-sub-wrap" style="display:none;margin-top:6px;">
+        <div class="filter-label" id="filter-sub-label">Filtre</div>
+        <select class="filter-select" id="filterSub" onchange="applyFilters()">
+        </select>
+      </div>
+    </div>
+    <div style="padding:6px 14px 8px; background:var(--navy);">
+      <div class="filter-label" style="margin-top:0;margin-bottom:3px;">Ajouter au bloc</div>
+      <select class="filter-select" id="target-bloc-select" style="width:100%;">
+        <option value="">— Dernier bloc —</option>
       </select>
     </div>
+    <div style="padding:4px 14px 10px; display:flex; gap:6px; background:var(--navy);">
+      <button class="filter-btn" style="background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.35);font-size:.72rem;color:#fff;" onclick="openEditor()">✏️ Éditer la bibliothèque</button>
+    </div>
+    <div class="lib-scroll" id="libScroll"></div>
   </div>
-  <div style="padding:6px 14px 8px; background:var(--navy);">
-    <div class="filter-label" style="margin-top:0;margin-bottom:3px;">Ajouter au bloc</div>
-    <select class="filter-select" id="target-bloc-select" style="width:100%;">
-      <option value="">— Dernier bloc —</option>
-    </select>
-  </div>
-  <div style="padding:4px 14px 10px; display:flex; gap:6px; background:var(--navy);">
-    <button class="filter-btn" style="background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.35);font-size:.72rem;color:#fff;" onclick="openEditor()">✏️ Éditer la bibliothèque</button>
-  </div>
-  <div class="lib-scroll" id="libScroll"></div>
+
 </aside>
+
+<!-- ═══════ QUICK-ADD MODAL ═══════ -->
+<div class="qa-overlay" id="qaOverlay">
+  <div class="qa-modal">
+    <h3>Planifier la séance</h3>
+    <div class="qa-prog-name" id="qaProgName"></div>
+    <div class="qa-days" id="qaDays"></div>
+    <div class="qa-sep">Ou choisir une date :</div>
+    <input class="qa-date-input" type="date" id="qaDateInput" oninput="_qaSelectDate(this.value)">
+    <div class="qa-actions">
+      <button class="qa-cancel" onclick="closeQuickAdd()">Annuler</button>
+      <button class="qa-confirm" onclick="confirmQuickAdd()">Ajouter au calendrier</button>
+    </div>
+  </div>
+</div>
 
 <!-- ═══════ EDITOR MODAL ═══════ -->
 <div class="editor-overlay" id="editorModal">
@@ -2975,6 +3043,8 @@ function doSaveSession() {
   _persistSeances();
   closeSaveSession();
   showMainTab('seances');
+  // Refresh sidebar templates
+  if(typeof renderSidebarTemplates === 'function') renderSidebarTemplates();
 }
 
 function renderSeances() {
@@ -3023,6 +3093,7 @@ function deleteSeance(id) {
   _savedSeances = _savedSeances.filter(function(x){ return x.id!==id; });
   _persistSeances();
   renderSeances();
+  if(typeof renderSidebarTemplates === 'function') renderSidebarTemplates();
 }
 
 function _seanceTypeColor(type) {
@@ -3807,8 +3878,151 @@ function _updatePatientUI(){
   if(calLbl) calLbl.textContent = nom ? '👤 ' + nom : '';
   // Titre builder
   _updateBuilderTitle();
+  // Sidebar templates (si pas en mode builder)
+  if(!document.querySelector('.app').classList.contains('builder-mode')){
+    renderSidebarTemplates();
+  }
   // Cycles
   if(_progPatient) setTimeout(function(){ if(typeof _loadCyclesForPatient==="function") _loadCyclesForPatient(); }, 0);
+}
+
+// ── Sidebar Templates ──
+var _sidebarProgs = [];
+var _qaProgId = null;
+var _qaProgNom = '';
+var _qaSelectedDate = '';
+
+function renderSidebarTemplates(){
+  var scroll = document.getElementById('stmplScroll');
+  if(!scroll) return;
+  if(_progToken && _progPatient){
+    scroll.innerHTML = '<div class="stmpl-empty">Chargement…</div>';
+    fetch(SUPA_URL_P + '/rest/v1/programmes?patient_id=eq.' + _progPatient.id + '&select=id,nom,donnees,date&order=date.desc', {
+      headers: { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _progToken }
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      _sidebarProgs = Array.isArray(data) ? data : [];
+      _renderSidebarList();
+    })
+    .catch(function(){ scroll.innerHTML = '<div class="stmpl-empty">Erreur de chargement.</div>'; });
+  } else {
+    _loadSeances();
+    _sidebarProgs = _savedSeances.map(function(s){
+      return { id: s.id, nom: s.name, emoji: s.emoji, type: s.type, _blocs: s.blocs, date: s.date, _local: true };
+    });
+    _renderSidebarList();
+  }
+}
+
+function _renderSidebarList(){
+  var scroll = document.getElementById('stmplScroll');
+  if(!scroll) return;
+  var q = ((document.getElementById('stmplSearch')||{}).value||'').toLowerCase();
+  var list = _sidebarProgs.filter(function(p){
+    return !q || (p.nom||'').toLowerCase().indexOf(q) > -1;
+  });
+  if(!list.length){
+    scroll.innerHTML = '<div class="stmpl-empty">Aucune séance enregistrée.<br>Construisez et sauvegardez une séance.</div>';
+    return;
+  }
+  scroll.innerHTML = list.map(function(p){
+    var emoji = p.emoji || '💪';
+    var blocs = p._blocs || [];
+    if(!blocs.length && p.donnees){
+      try { blocs = (JSON.parse(p.donnees).blocs)||[]; } catch(e){}
+    }
+    var nbExos = blocs.reduce(function(a,b){ return a+(b.exos||[]).length; }, 0);
+    var meta = '';
+    if(p.date) meta += p.date;
+    if(nbExos) meta += (meta ? ' · ' : '') + nbExos + ' exo' + (nbExos>1?'s':'');
+    var pid = escH(String(p.id));
+    var pnom = escH(p.nom||'Sans nom');
+    return '<div class="stmpl-card" onclick="_sidebarLoadProg(\'' + pid + '\')">'
+      + '<div class="stmpl-card-emoji">' + emoji + '</div>'
+      + '<div class="stmpl-card-body">'
+        + '<div class="stmpl-card-name">' + pnom + '</div>'
+        + (meta ? '<div class="stmpl-card-meta">' + escH(meta) + '</div>' : '')
+      + '</div>'
+      + '<button class="stmpl-add-btn" title="Planifier" '
+        + 'onclick="event.stopPropagation();_openQuickAdd(\'' + pid + '\',\'' + pnom + '\')">+</button>'
+    + '</div>';
+  }).join('');
+}
+
+function filterSidebarTemplates(){
+  _renderSidebarList();
+}
+
+function _sidebarLoadProg(id){
+  if(typeof _loadProg === 'function'){
+    _loadProg(id);
+  } else {
+    loadSeance(id);
+  }
+}
+
+function _openQuickAdd(progId, nom){
+  _qaProgId = progId;
+  _qaProgNom = nom;
+  _qaSelectedDate = '';
+  document.getElementById('qaProgName').textContent = nom;
+  var today = new Date(); today.setHours(0,0,0,0);
+  var fr = ['dim','lun','mar','mer','jeu','ven','sam'];
+  var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  var html = '';
+  for(var i = 0; i < 7; i++){
+    var d = new Date(today.getTime() + i * 86400000);
+    var ds = _dateStr(d);
+    var lbl = i === 0 ? "Aujourd'hui" : i === 1 ? 'Demain'
+      : fr[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()];
+    html += '<button class="qa-day-btn" data-date="' + ds + '" onclick="_qaSelectDate(\'' + ds + '\')">' + lbl + '</button>';
+  }
+  document.getElementById('qaDays').innerHTML = html;
+  var todayStr = _dateStr(today);
+  document.getElementById('qaDateInput').value = todayStr;
+  _qaSelectedDate = todayStr;
+  _qaHighlight(todayStr);
+  document.getElementById('qaOverlay').classList.add('open');
+}
+
+function _qaSelectDate(dateStr){
+  if(!dateStr) return;
+  _qaSelectedDate = dateStr;
+  var inp = document.getElementById('qaDateInput');
+  if(inp) inp.value = dateStr;
+  _qaHighlight(dateStr);
+}
+
+function _qaHighlight(dateStr){
+  document.querySelectorAll('.qa-day-btn').forEach(function(b){
+    b.classList.toggle('active', b.dataset.date === dateStr);
+  });
+}
+
+function closeQuickAdd(){
+  document.getElementById('qaOverlay').classList.remove('open');
+}
+
+function confirmQuickAdd(){
+  if(!_qaSelectedDate || !_qaProgId){ closeQuickAdd(); return; }
+  closeQuickAdd();
+  if(_progToken && _progPatient){
+    var body = { patient_id: _progPatient.id, programme_id: _qaProgId, date: _qaSelectedDate };
+    fetch(SUPA_URL_P + '/rest/v1/seances_planifiees', {
+      method: 'POST',
+      headers: { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _progToken, 'Prefer': 'return=minimal' },
+      body: JSON.stringify(body)
+    }).then(function(r){
+      if(r.ok){ renderCalendar(); }
+      else { alert('Erreur lors de la planification.'); }
+    }).catch(function(){ alert('Erreur réseau.'); });
+  } else {
+    _loadCalEvents();
+    _calEvents.push({ id: '_' + Math.random().toString(36).slice(2,9), date: _qaSelectedDate, seanceId: _qaProgId });
+    _persistCalEvents();
+    renderCalendar();
+  }
 }
 
 // ── Builder panel ──
@@ -3817,11 +4031,19 @@ var _builderDate = '';
 function _enterBuilderMode(){
   document.getElementById('builderPanel').classList.add('open');
   document.querySelector('.app').classList.add('builder-mode');
+  var lib  = document.getElementById('sidebarLibrary');
+  var tmpl = document.getElementById('sidebarTemplates');
+  if(lib)  lib.style.display  = 'flex';
+  if(tmpl) tmpl.style.display = 'none';
 }
 
 function _exitBuilderMode(){
   document.getElementById('builderPanel').classList.remove('open');
   document.querySelector('.app').classList.remove('builder-mode');
+  var lib  = document.getElementById('sidebarLibrary');
+  var tmpl = document.getElementById('sidebarTemplates');
+  if(lib)  lib.style.display  = 'none';
+  if(tmpl){ tmpl.style.display = 'flex'; renderSidebarTemplates(); }
 }
 
 function openBuilderForDate(dateStr){
@@ -3907,6 +4129,8 @@ function _renderUpcoming(){
 (function(){
   // Charger le calendrier au démarrage
   renderCalendar();
+  // Charger les templates dans la sidebar
+  renderSidebarTemplates();
   // Adapter shareCalLink pour v2 (remplace programme.html par programme_v2.html)
   var _origShareCal = shareCalLink;
   shareCalLink = function(){
