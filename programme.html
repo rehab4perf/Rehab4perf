@@ -662,6 +662,25 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 }
 .cal-week-cell:hover .cal-week-add { opacity:1; color:var(--muted); }
 
+/* ── Bilan de charge ── */
+.bilan-title { font-size:.7rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:10px; }
+.bilan-week-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.bilan-week-label { font-size:.7rem; color:var(--muted); width:72px; flex-shrink:0; }
+.bilan-bar-bg { flex:1; background:var(--bg); border-radius:4px; height:7px; overflow:hidden; }
+.bilan-bar { height:100%; border-radius:4px; background:var(--accent2); transition:width .4s ease; }
+.bilan-stats { font-size:.7rem; font-weight:600; color:var(--text); white-space:nowrap; min-width:130px; text-align:right; }
+
+/* Strip bilan vue semaine */
+.cal-week-outer { display:flex; flex-direction:column; gap:6px; }
+.cal-week-bilan {
+  background:#EEF3FB; border-radius:8px; padding:10px 16px;
+  display:flex; align-items:center; gap:24px; flex-wrap:wrap;
+}
+.cal-week-bilan-item { text-align:center; }
+.cal-week-bilan-num { font-size:1.1rem; font-weight:800; color:var(--navy); line-height:1; }
+.cal-week-bilan-lbl { font-size:.63rem; color:var(--muted); margin-top:2px; }
+.cal-week-bilan-title { font-size:.7rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-right:auto; }
+
 /* Toggle Mois / Semaine */
 .cal-view-toggle { display:flex; border:1px solid var(--border); border-radius:7px; overflow:hidden; flex-shrink:0; }
 .cal-view-btn {
@@ -867,6 +886,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
     <div class="cal-central-body">
       <div class="cal-grid" id="calGrid"></div>
       <div id="upcomingList" style="margin-top:16px;"></div>
+      <div id="bilanCharge"></div>
     </div>
   </div>
 </div>
@@ -2991,7 +3011,7 @@ function renderCalendar() {
   if(_progPatient) {
     // Mode cloud : charger les séances Supabase pour ce patient
     var url = SUPA_URL_P + '/rest/v1/seances_planifiees?patient_id=eq.' + _progPatient.id
-            + '&select=id,date,programme_id,programmes(nom)&order=date.asc';
+            + '&select=id,date,programme_id,programmes(nom,donnees)&order=date.asc';
     fetch(url, { headers: { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json' } })
       .then(function(r){ return r.json(); })
       .then(function(data){
@@ -3003,6 +3023,73 @@ function renderCalendar() {
     _loadCalEvents();
     _renderCalendarUI();
   }
+}
+
+/* ── Bilan de charge — helpers ── */
+function _dateStr(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+function _evLoad(ev){
+  var p = ev.programmes;
+  if(!p || !p.donnees) return {blocs:0, exos:0};
+  var raw = p.donnees;
+  var bls = Array.isArray(raw) ? raw : (raw.blocs||[]);
+  return { blocs:bls.length, exos:bls.reduce(function(a,b){ return a+(b.exos||[]).length; },0) };
+}
+
+function _weekLoad(startStr, endStr){
+  var evs = _cloudCalEvents.filter(function(e){ return e.date>=startStr && e.date<=endStr; });
+  var r = {seances:evs.length, blocs:0, exos:0};
+  evs.forEach(function(ev){ var l=_evLoad(ev); r.blocs+=l.blocs; r.exos+=l.exos; });
+  return r;
+}
+
+/* ── Bilan vue mois : rendu dans #bilanCharge ── */
+function _renderBilanCharge(){
+  var el = document.getElementById('bilanCharge');
+  if(!el){ return; }
+  if(!_progPatient || !_cloudCalEvents.length){ el.innerHTML=''; return; }
+  var firstDay = new Date(_calYear, _calMonth, 1);
+  var lastDay  = new Date(_calYear, _calMonth+1, 0);
+  var ws = _getMondayOf(firstDay);
+  var weeks = [];
+  while(ws <= lastDay){
+    weeks.push({s:new Date(ws), e:new Date(ws.getTime()+6*24*60*60*1000)});
+    ws = new Date(ws.getTime()+7*24*60*60*1000);
+  }
+  var withLoad = weeks.map(function(w){
+    return {w:w, l:_weekLoad(_dateStr(w.s),_dateStr(w.e))};
+  }).filter(function(x){ return x.l.seances>0; });
+  if(!withLoad.length){ el.innerHTML=''; return; }
+  var maxEx = Math.max.apply(null, withLoad.map(function(x){ return x.l.exos; }))||1;
+  var mo = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  var html = '<div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px;">'
+           + '<div class="bilan-title">📊 Bilan de charge</div>';
+  withLoad.forEach(function(x){
+    var pct = Math.round(x.l.exos/maxEx*100);
+    var col = pct>75?'#E74C3C':pct>40?'#F59E0B':'var(--accent2)';
+    var lbl = x.w.s.getDate()+' '+mo[x.w.s.getMonth()];
+    html += '<div class="bilan-week-row">'
+          + '<div class="bilan-week-label">'+lbl+'</div>'
+          + '<div class="bilan-bar-bg"><div class="bilan-bar" style="width:'+pct+'%;background:'+col+'"></div></div>'
+          + '<div class="bilan-stats">'+x.l.seances+' séance'+(x.l.seances>1?'s':'')+' · '+x.l.exos+' exos</div>'
+          + '</div>';
+  });
+  el.innerHTML = html+'</div>';
+}
+
+/* ── Bilan vue semaine : strip HTML ── */
+function _weekBilanHTML(){
+  if(!_progPatient||!_calWeekStart) return '';
+  var l = _weekLoad(_dateStr(_calWeekStart), _dateStr(new Date(_calWeekStart.getTime()+6*24*60*60*1000)));
+  if(!l.seances) return '';
+  return '<div class="cal-week-bilan">'
+       + '<div class="cal-week-bilan-title">📊 Bilan de semaine</div>'
+       + '<div class="cal-week-bilan-item"><div class="cal-week-bilan-num">'+l.seances+'</div><div class="cal-week-bilan-lbl">séance'+(l.seances>1?'s':'')+'</div></div>'
+       + (l.blocs?'<div class="cal-week-bilan-item"><div class="cal-week-bilan-num">'+l.blocs+'</div><div class="cal-week-bilan-lbl">blocs</div></div>':'')
+       + (l.exos ?'<div class="cal-week-bilan-item"><div class="cal-week-bilan-num">'+l.exos+'</div><div class="cal-week-bilan-lbl">exercices</div></div>':'')
+       + '</div>';
 }
 
 /* ── Helper chips partagé mois + semaine ── */
@@ -3079,9 +3166,16 @@ function _renderWeekUI(){
           + '<div class="cal-week-add">+ Séance</div>'
           + '</div>';
   }
+  var bilan = _weekBilanHTML();
   var grid = document.getElementById('calGrid');
-  grid.className = 'cal-week-grid';
-  grid.innerHTML = html;
+  if(bilan){
+    grid.className = 'cal-week-outer';
+    grid.innerHTML = bilan + '<div class="cal-week-grid">'+html+'</div>';
+  } else {
+    grid.className = 'cal-week-grid';
+    grid.innerHTML = html;
+  }
+  document.getElementById('bilanCharge').innerHTML = '';
   if(typeof _renderUpcoming==='function') setTimeout(_renderUpcoming,0);
 }
 
@@ -3112,8 +3206,8 @@ function _renderCalendarUI() {
       +_buildDayChips(dateStr, cellDate)+'</div>';
   }
   grid.innerHTML = headers + cells;
-  // v2 : afficher la liste des prochaines séances sous le calendrier
   if(typeof _renderUpcoming === 'function') setTimeout(_renderUpcoming, 0);
+  setTimeout(_renderBilanCharge, 0);
 }
 
 function openCalPicker(dateStr) {
