@@ -3926,6 +3926,7 @@ function _renderSidebarList(){
     scroll.innerHTML = '<div class="stmpl-empty">Aucune séance enregistrée.<br>Construisez et sauvegardez une séance.</div>';
     return;
   }
+  var patFullName = _progPatient ? ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim().toLowerCase() : '';
   scroll.innerHTML = list.map(function(p){
     var emoji = p.emoji || '💪';
     var blocs = p._blocs || [];
@@ -3933,11 +3934,20 @@ function _renderSidebarList(){
       try { blocs = (JSON.parse(p.donnees).blocs)||[]; } catch(e){}
     }
     var nbExos = blocs.reduce(function(a,b){ return a+(b.exos||[]).length; }, 0);
-    var meta = '';
-    if(p.date) meta += p.date;
+    // Date lisible
+    var dateStr = p.date || '';
+    var dateLbl = dateStr;
+    if(/^\d{4}-\d{2}-\d{2}$/.test(dateStr)){
+      var parts = dateStr.split('-');
+      dateLbl = parts[2]+'/'+parts[1]+'/'+parts[0];
+    }
+    var meta = dateLbl;
     if(nbExos) meta += (meta ? ' · ' : '') + nbExos + ' exo' + (nbExos>1?'s':'');
+    // Nom : si vide ou identique au nom patient, utiliser date
+    var rawNom = (p.nom||'').trim();
+    var displayNom = rawNom && rawNom.toLowerCase() !== patFullName ? rawNom : (dateLbl ? 'Séance du ' + dateLbl : 'Sans nom');
     var pid = escH(String(p.id));
-    var pnom = escH(p.nom||'Sans nom');
+    var pnom = escH(displayNom);
     return '<div class="stmpl-card" onclick="_sidebarLoadProg(\'' + pid + '\')">'
       + '<div class="stmpl-card-emoji">' + emoji + '</div>'
       + '<div class="stmpl-card-body">'
@@ -4008,14 +4018,16 @@ function confirmQuickAdd(){
   if(!_qaSelectedDate || !_qaProgId){ closeQuickAdd(); return; }
   closeQuickAdd();
   if(_progToken && _progPatient){
-    var body = { patient_id: _progPatient.id, programme_id: _qaProgId, date: _qaSelectedDate };
+    var body = { patient_id: _progPatient.id, programme_id: _qaProgId, praticien_id: _progUid, date: _qaSelectedDate };
+    var headers = _sbHeaders();
+    headers['Prefer'] = 'return=minimal';
     fetch(SUPA_URL_P + '/rest/v1/seances_planifiees', {
       method: 'POST',
-      headers: { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _progToken, 'Prefer': 'return=minimal' },
+      headers: headers,
       body: JSON.stringify(body)
     }).then(function(r){
       if(r.ok){ renderCalendar(); }
-      else { alert('Erreur lors de la planification.'); }
+      else { r.json().then(function(d){ alert('Erreur : ' + JSON.stringify(d)); }).catch(function(){ alert('Erreur lors de la planification.'); }); }
     }).catch(function(){ alert('Erreur réseau.'); });
   } else {
     _loadCalEvents();
