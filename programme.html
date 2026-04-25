@@ -3244,6 +3244,7 @@ function _renderCalendarUI() {
 }
 
 function openCalPicker(dateStr) {
+  openBuilderForDate(dateStr);
   _calPickerDate = dateStr;
   var parts = dateStr.split('-');
   var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
@@ -3655,12 +3656,7 @@ function _v2InitCalendar(){
   renderCalendar();
 }
 
-// Surcharge de openCalPicker pour v2 : ajoute l'ouverture du builder
-var _origOpenCalPicker = openCalPicker;
-function openCalPicker(dateStr){
-  openBuilderForDate(dateStr);
-  _origOpenCalPicker(dateStr);
-}
+// openCalPicker inclut déjà openBuilderForDate (voir définition originale)
 
 // ── Upcoming sessions dans le centre ──
 function _renderUpcoming(){
