@@ -484,6 +484,44 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .methode-card.obj-hypertrophie { background:#EEF3FB; border-color:#2B5FA6; color:#1a3a6e; }
 .methode-card.obj-forcemax     { background:#FEF0EE; border-color:#C0392B; color:#7a1a10; }
 
+/* ── Blocs Cardio ── */
+.cardio-bloc .bloc-header { background:linear-gradient(135deg,#0E7490,#0891B2); }
+.cardio-bloc .bloc-title-input { color:#fff; }
+.cardio-bloc .bloc-title-input::placeholder { color:rgba(255,255,255,.5); }
+.cardio-tag {
+  display:inline-flex; align-items:center; gap:3px;
+  padding:2px 8px; border-radius:10px; font-size:.68rem; font-weight:700;
+  background:rgba(255,255,255,.2); color:#fff; white-space:nowrap; flex-shrink:0;
+}
+.cardio-form {
+  padding:12px 14px; display:flex; flex-direction:column; gap:10px;
+  background:#F0FAFB; border-bottom:1px solid #B2E4EE;
+}
+.cardio-row { display:flex; gap:10px; flex-wrap:wrap; }
+.cardio-field { display:flex; flex-direction:column; gap:3px; min-width:100px; flex:1; }
+.cardio-lbl { font-size:.67rem; font-weight:700; color:#0E7490; text-transform:uppercase; letter-spacing:.05em; }
+.cardio-sel, .cardio-inp {
+  padding:5px 8px; border:1px solid #B2E4EE; border-radius:6px;
+  font-size:.8rem; color:var(--text); background:#fff; outline:none;
+}
+.cardio-sel:focus, .cardio-inp:focus { border-color:#0891B2; }
+.cardio-txt {
+  width:100%; padding:6px 8px; border:1px solid #B2E4EE; border-radius:6px;
+  font-size:.79rem; color:var(--text); background:#fff; outline:none;
+  resize:vertical; font-family:inherit; min-height:52px;
+}
+.cardio-txt:focus { border-color:#0891B2; }
+.cardio-frac-section {
+  background:#E0F7FA; border:1px solid #B2E4EE; border-radius:8px; padding:10px 12px;
+}
+.cardio-frac-title { font-size:.72rem; font-weight:700; color:#0E7490; margin-bottom:8px; }
+.cardio-add-btn {
+  background:rgba(8,145,178,.12); border:1px solid rgba(8,145,178,.35);
+  color:#0891B2; border-radius:8px; padding:5px 12px; font-size:.74rem;
+  cursor:pointer; white-space:nowrap; transition:background .15s; font-family:inherit;
+}
+.cardio-add-btn:hover { background:rgba(8,145,178,.22); }
+
 /* Print */
 @media print {
   .sidebar, .main-header .btn, .add-bloc-btn, .exo-del-btn, .bloc-del-btn, .drag-handle { display:none !important; }
@@ -1119,6 +1157,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
     <div style="padding:8px 14px 0;display:flex;align-items:center;gap:8px;">
       <input class="patient-input" type="text" id="patientName" placeholder="Nom de la séance / patient" style="flex:1;" />
       <button class="btn btn-outline" onclick="addBloc()" style="white-space:nowrap;font-size:.76rem;">+ Bloc</button>
+      <button class="cardio-add-btn" onclick="addCardioBloc()" title="Ajouter un bloc cardio">🏃 Cardio</button>
     </div>
     <div class="session-area" id="sessionArea">
       <div class="empty-state" id="emptyState">
@@ -1712,6 +1751,101 @@ var OBJ_COLORS = { libre:'#6b7a8d', endurance:'#2D7D46', puissance:'#7B2DBF', hy
 
 function genId(){ return '_'+Math.random().toString(36).slice(2,9); }
 
+/* ══════════════════════════════════════
+   BLOCS CARDIO
+   ══════════════════════════════════════ */
+var CARDIO_ZONES = ['Z1 — Récup','Z2 — Endurance','Z3 — Tempo','Z4 — Seuil','Z5 — VO2max'];
+var CARDIO_SPORTS = [
+  {val:'course',   label:'🏃 Course à pied'},
+  {val:'velo',     label:'🚴 Vélo'},
+  {val:'natation', label:'🏊 Natation'},
+  {val:'general',  label:'⚡ Général / Cross'}
+];
+var CARDIO_EFFORT_TYPES = [
+  {val:'continu',      label:'Continu'},
+  {val:'fractionne',   label:'Fractionné'},
+  {val:'recuperation', label:'Récupération active'}
+];
+
+function addCardioBloc(){
+  var id = genId();
+  var letter = String.fromCharCode(65 + blocs.length);
+  blocs.push({
+    id:id, title:'Bloc '+letter, type:'cardio',
+    sport:'course', effort_type:'continu',
+    duree_totale:'', distance:'', zone_fc:'Z2 — Endurance', allure:'',
+    repetitions:'', duree_effort:'', zone_effort:'Z4 — Seuil',
+    duree_recup:'', zone_recup:'Z1 — Récup', commentaire:'',
+    exos:[]
+  });
+  activeBloc = id;
+  renderSession();
+}
+
+function updateCardioField(id, field, val){
+  var b = blocs.find(function(x){ return x.id===id; });
+  if(!b) return;
+  b[field] = val;
+  if(field==='effort_type') renderSession();
+}
+
+function _renderCardioBloc(b){
+  var isActive = b.id===activeBloc;
+  var zOpts = function(sel){
+    return CARDIO_ZONES.map(function(z){
+      return '<option value="'+z+'"'+(sel===z?' selected':'')+'>'+escH(z)+'</option>';
+    }).join('');
+  };
+  var sportOpts = CARDIO_SPORTS.map(function(s){
+    return '<option value="'+s.val+'"'+(b.sport===s.val?' selected':'')+'>'+s.label+'</option>';
+  }).join('');
+  var effortOpts = CARDIO_EFFORT_TYPES.map(function(e){
+    return '<option value="'+e.val+'"'+(b.effort_type===e.val?' selected':'')+'>'+e.label+'</option>';
+  }).join('');
+  var isFrac = b.effort_type==='fractionne';
+  var bid = b.id;
+
+  var h = '<div class="bloc cardio-bloc" id="bloc-'+bid+'">';
+  // Header
+  h += '<div class="bloc-header" data-blocid="'+bid+'" style="opacity:'+(isActive?'1':'.75')+'" onclick="setActiveBloc(\''+bid+'\')">';
+  h += '<input class="bloc-title-input" value="'+escH(b.title)+'" placeholder="Nom du bloc" oninput="updateBlocTitle(\''+bid+'\',this.value)" onclick="event.stopPropagation()">';
+  h += '<span class="cardio-tag">🏃 Cardio</span>';
+  h += '<button class="bloc-del-btn" onclick="event.stopPropagation();deleteBloc(\''+bid+'\')" title="Supprimer le bloc"></button>';
+  h += '</div>';
+  // Form
+  h += '<div class="cardio-form">';
+  // Row 1 : sport + type effort + durée + distance
+  h += '<div class="cardio-row">';
+  h += '<div class="cardio-field"><label class="cardio-lbl">Sport</label><select class="cardio-sel" onchange="updateCardioField(\''+bid+'\',\'sport\',this.value)">'+sportOpts+'</select></div>';
+  h += '<div class="cardio-field"><label class="cardio-lbl">Type d\'effort</label><select class="cardio-sel" onchange="updateCardioField(\''+bid+'\',\'effort_type\',this.value)">'+effortOpts+'</select></div>';
+  h += '<div class="cardio-field"><label class="cardio-lbl">Durée totale (min)</label><input type="number" class="cardio-inp" min="1" value="'+escH(b.duree_totale||'')+'" placeholder="45" oninput="updateCardioField(\''+bid+'\',\'duree_totale\',this.value)"></div>';
+  h += '<div class="cardio-field"><label class="cardio-lbl">Distance (km)</label><input type="number" class="cardio-inp" min="0" step="0.1" value="'+escH(b.distance||'')+'" placeholder="—" oninput="updateCardioField(\''+bid+'\',\'distance\',this.value)"></div>';
+  h += '</div>';
+  // Row 2 : zone FC + allure
+  h += '<div class="cardio-row">';
+  h += '<div class="cardio-field"><label class="cardio-lbl">Zone FC</label><select class="cardio-sel" onchange="updateCardioField(\''+bid+'\',\'zone_fc\',this.value)">'+zOpts(b.zone_fc)+'</select></div>';
+  h += '<div class="cardio-field"><label class="cardio-lbl">Allure cible</label><input type="text" class="cardio-inp" value="'+escH(b.allure||'')+'" placeholder="5:30 /km — 30 km/h…" oninput="updateCardioField(\''+bid+'\',\'allure\',this.value)"></div>';
+  h += '</div>';
+  // Fractionné
+  if(isFrac){
+    h += '<div class="cardio-frac-section">';
+    h += '<div class="cardio-frac-title">⚡ Détail du fractionné</div>';
+    h += '<div class="cardio-row">';
+    h += '<div class="cardio-field"><label class="cardio-lbl">Répétitions</label><input type="number" class="cardio-inp" min="1" value="'+escH(b.repetitions||'')+'" placeholder="6" oninput="updateCardioField(\''+bid+'\',\'repetitions\',this.value)"></div>';
+    h += '<div class="cardio-field"><label class="cardio-lbl">Durée effort</label><input type="text" class="cardio-inp" value="'+escH(b.duree_effort||'')+'" placeholder="3 min" oninput="updateCardioField(\''+bid+'\',\'duree_effort\',this.value)"></div>';
+    h += '<div class="cardio-field"><label class="cardio-lbl">Zone effort</label><select class="cardio-sel" onchange="updateCardioField(\''+bid+'\',\'zone_effort\',this.value)">'+zOpts(b.zone_effort)+'</select></div>';
+    h += '<div class="cardio-field"><label class="cardio-lbl">Récupération</label><input type="text" class="cardio-inp" value="'+escH(b.duree_recup||'')+'" placeholder="2 min" oninput="updateCardioField(\''+bid+'\',\'duree_recup\',this.value)"></div>';
+    h += '<div class="cardio-field"><label class="cardio-lbl">Zone récup</label><select class="cardio-sel" onchange="updateCardioField(\''+bid+'\',\'zone_recup\',this.value)">'+zOpts(b.zone_recup)+'</select></div>';
+    h += '</div></div>';
+  }
+  // Consignes
+  h += '<div class="cardio-row"><div class="cardio-field" style="flex:1"><label class="cardio-lbl">Consignes</label>';
+  h += '<textarea class="cardio-txt" oninput="updateCardioField(\''+bid+'\',\'commentaire\',this.value)">'+escH(b.commentaire||'')+'</textarea></div></div>';
+  h += '</div>'; // cardio-form
+  h += '</div>'; // bloc
+  return h;
+}
+
 function addBloc(){
   var id = genId();
   var letter = String.fromCharCode(65 + blocs.length);
@@ -2041,6 +2175,21 @@ function fmtMin(min){
   if(min<1) return '< 1 min';
   return '~'+Math.round(min)+' min';
 }
+/* Durée totale de séance (renfo + cardio) — utilisé pour estimation Foster */
+function _estimateSessionMin(blocsArr){
+  var total = 0;
+  (blocsArr||[]).forEach(function(b){
+    if(b.type === 'cardio'){
+      total += parseFloat(b.duree_totale)||0;
+    } else {
+      (b.exos||[]).forEach(function(e){
+        var t = estimateExoMin(e);
+        if(t) total += t;
+      });
+    }
+  });
+  return total;
+}
 
 /* ================================================================
    RENDER SESSION
@@ -2054,6 +2203,9 @@ function renderSession(){
   }
   var html = '';
   blocs.forEach(function(b){
+    // ── Bloc Cardio ──
+    if(b.type === 'cardio'){ html += _renderCardioBloc(b); return; }
+    // ── Bloc Renforcement (existant) ──
     var isActive = b.id===activeBloc;
     html += '<div class="bloc" id="bloc-'+b.id+'">';
     html += '<div class="bloc-header" data-blocid="'+b.id+'" style="opacity:'+(isActive?'1':'.8')+'" onclick="setActiveBloc(\''+b.id+'\')">';
