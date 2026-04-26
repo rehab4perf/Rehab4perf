@@ -99,6 +99,17 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .stmpl-add-btn    { flex-shrink:0; background:var(--accent2); border:none; color:#fff; border-radius:6px; width:26px; height:26px; font-size:1.1rem; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .12s; }
 .stmpl-add-btn:hover { background:#3a80c9; }
 .stmpl-empty  { padding:28px 16px; text-align:center; color:var(--muted); font-style:italic; font-size:.81rem; line-height:1.5; }
+.stmpl-filter-bar { padding:6px 10px 8px; background:var(--navy); }
+.stmpl-cat-select {
+  width:100%; padding:5px 24px 5px 8px; border:none; border-radius:6px;
+  background:rgba(255,255,255,.15); color:#fff; font-size:.75rem; outline:none; cursor:pointer;
+  appearance:none; -webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,.6)'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 8px center;
+}
+.stmpl-cat-select option { background:#1A3A5C; color:#fff; }
+.stmpl-cat-select.has-filter { background-color:rgba(74,144,217,.4); background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,.6)'/%3E%3C/svg%3E"); }
+.stmpl-cat-badge { display:inline-block; padding:1px 7px; border-radius:10px; font-size:.67rem; font-weight:600; margin-right:4px; vertical-align:middle; }
 
 /* ── Template save modal ── */
 .tmpl-save-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:600; display:none; align-items:center; justify-content:center; }
@@ -910,7 +921,20 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   <div id="sidebarTemplates">
     <div class="stmpl-header">
       <div class="stmpl-title">Séances &amp; Templates</div>
-      <input class="stmpl-search" type="text" id="stmplSearch" placeholder="Rechercher une séance…" oninput="filterSidebarTemplates()">
+      <input class="stmpl-search" type="text" id="stmplSearch" placeholder="Rechercher…" oninput="filterSidebarTemplates()">
+    </div>
+    <div class="stmpl-filter-bar">
+      <select class="stmpl-cat-select" id="stmplCatFilter" onchange="filterSidebarTemplates()">
+        <option value="">— Toutes catégories —</option>
+        <option value="Renforcement">💪 Renforcement</option>
+        <option value="Mobilité">🧘 Mobilité</option>
+        <option value="Prépa physique">⚡ Prépa physique</option>
+        <option value="Course à pied">🏃 Course à pied</option>
+        <option value="Vélo">🚴 Vélo</option>
+        <option value="Natation">🏊 Natation</option>
+        <option value="Pathologie">🩺 Pathologie</option>
+        <option value="Autre">📁 Autre</option>
+      </select>
     </div>
     <div class="stmpl-scroll" id="stmplScroll">
       <div class="stmpl-empty">Chargement…</div>
@@ -962,11 +986,25 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
       <input type="text" id="tmplNameInput" placeholder="Ex : Renfo genou — Phase 2">
     </div>
     <div class="save-field">
+      <label>Catégorie</label>
+      <select id="tmplCatInput" onchange="_onTmplCatChange()">
+        <option value="">— Choisir —</option>
+        <option value="Renforcement">💪 Renforcement</option>
+        <option value="Mobilité">🧘 Mobilité</option>
+        <option value="Prépa physique">⚡ Prépa physique</option>
+        <option value="Course à pied">🏃 Course à pied</option>
+        <option value="Vélo">🚴 Vélo</option>
+        <option value="Natation">🏊 Natation</option>
+        <option value="Pathologie">🩺 Pathologie</option>
+        <option value="Autre">📁 Autre</option>
+      </select>
+    </div>
+    <div class="save-field">
       <label>Emoji</label>
       <div class="emoji-row" id="tmplEmojiRow"></div>
     </div>
-    <div class="save-field">
-      <label>Type</label>
+    <div class="save-field" id="tmplTypeWrap">
+      <label>Sous-type</label>
       <select id="tmplTypeInput">
         <option value="Force">Force</option>
         <option value="Puissance">Puissance</option>
@@ -975,6 +1013,9 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
         <option value="Proprio">Proprioception</option>
         <option value="Réathlétisation">Réathlétisation</option>
         <option value="Échauffement">Échauffement</option>
+        <option value="Fractionné">Fractionné</option>
+        <option value="Fond">Fond</option>
+        <option value="Récupération">Récupération</option>
         <option value="Autre">Autre</option>
       </select>
     </div>
@@ -3929,6 +3970,36 @@ function _updatePatientUI(){
 // ══════════════════════════════════════════════
 //  TEMPLATES GLOBAUX (table `templates` Supabase)
 // ══════════════════════════════════════════════
+
+/* Catégories disponibles */
+var TMPL_CATEGORIES = [
+  { val:'Renforcement',   icon:'💪', color:'#DBEAFE', textColor:'#1D4ED8' },
+  { val:'Mobilité',       icon:'🧘', color:'#EDE9FE', textColor:'#6D28D9' },
+  { val:'Prépa physique', icon:'⚡', color:'#FEF3C7', textColor:'#B45309' },
+  { val:'Course à pied',  icon:'🏃', color:'#DCFCE7', textColor:'#15803D' },
+  { val:'Vélo',           icon:'🚴', color:'#D1FAE5', textColor:'#065F46' },
+  { val:'Natation',       icon:'🏊', color:'#CFFAFE', textColor:'#0E7490' },
+  { val:'Pathologie',     icon:'🩺', color:'#FEE2E2', textColor:'#B91C1C' },
+  { val:'Autre',          icon:'📁', color:'#F3F4F6', textColor:'#374151' }
+];
+
+function _tmplCatStyle(cat){
+  var c = TMPL_CATEGORIES.find(function(x){ return x.val === cat; });
+  return c ? { bg: c.color, fg: c.textColor, icon: c.icon } : { bg:'#F3F4F6', fg:'#374151', icon:'📁' };
+}
+
+/* Sous-types par catégorie (pour le champ Type dans le modal) */
+var TMPL_SUBTYPES = {
+  'Renforcement':   ['Force','Puissance','Hypertrophie','Endurance','Proprioception','Réathlétisation','Échauffement','Autre'],
+  'Mobilité':       ['CARs','Étirements','Auto-massage','Activation','Autre'],
+  'Prépa physique': ['Puissance','Vitesse','Endurance','Agilité','Pliométrie','Autre'],
+  'Course à pied':  ['Fond','Fractionné','Tempo','Récupération','Trail','Autre'],
+  'Vélo':           ['Endurance','Fractionné','Force','Récupération','Autre'],
+  'Natation':       ['Endurance','Vitesse','Technique','Récupération','Autre'],
+  'Pathologie':     ['Phase 1','Phase 2','Phase 3','Phase 4','Retour au sport','Autre'],
+  'Autre':          ['Autre']
+};
+
 var _templates        = [];
 var _tmplSelectedEmoji = '💪';
 var _builderFromTemplate = null;
@@ -3941,6 +4012,24 @@ function _persistTemplates(){
 }
 
 /* ── Ouvrir modal sauvegarde template ── */
+/* Met à jour les sous-types et l'emoji suggéré selon la catégorie choisie */
+function _onTmplCatChange(){
+  var cat = document.getElementById('tmplCatInput').value;
+  var subtypes = TMPL_SUBTYPES[cat] || ['Autre'];
+  var sel = document.getElementById('tmplTypeInput');
+  sel.innerHTML = subtypes.map(function(s){
+    return '<option value="'+escH(s)+'">'+escH(s)+'</option>';
+  }).join('');
+  // Suggérer l'emoji de la catégorie
+  var catInfo = TMPL_CATEGORIES.find(function(c){ return c.val === cat; });
+  if(catInfo){
+    _tmplSelectedEmoji = catInfo.icon;
+    document.querySelectorAll('#tmplEmojiRow .emoji-opt').forEach(function(b){
+      b.classList.toggle('selected', b.textContent === catInfo.icon);
+    });
+  }
+}
+
 function openSaveTemplate(){
   if(!blocs.length){ alert('La séance est vide.'); return; }
   var row = document.getElementById('tmplEmojiRow');
@@ -3957,6 +4046,12 @@ function openSaveTemplate(){
     row.appendChild(b);
   });
   document.getElementById('tmplNameInput').value = '';
+  document.getElementById('tmplCatInput').value = '';
+  // Sous-types par défaut (Renforcement)
+  var sel = document.getElementById('tmplTypeInput');
+  sel.innerHTML = (TMPL_SUBTYPES['Renforcement']||[]).map(function(s){
+    return '<option value="'+escH(s)+'">'+escH(s)+'</option>';
+  }).join('');
   document.getElementById('templateSaveModal').classList.add('open');
   setTimeout(function(){ document.getElementById('tmplNameInput').focus(); }, 100);
 }
@@ -3968,6 +4063,7 @@ function closeSaveTemplate(){
 function doSaveTemplate(){
   var nom = document.getElementById('tmplNameInput').value.trim();
   if(!nom){ alert('Donnez un nom au template.'); return; }
+  var cat     = document.getElementById('tmplCatInput').value;
   var type    = document.getElementById('tmplTypeInput').value;
   var donnees = JSON.stringify({ blocs: JSON.parse(JSON.stringify(blocs)) });
 
@@ -3975,7 +4071,7 @@ function doSaveTemplate(){
     fetch(SUPA_URL_P + '/rest/v1/templates', {
       method: 'POST',
       headers: _sbHeaders(),
-      body: JSON.stringify({ praticien_id: _progUid, nom: nom, type: type, emoji: _tmplSelectedEmoji, donnees: donnees })
+      body: JSON.stringify({ praticien_id: _progUid, nom: nom, categorie: cat, type: type, emoji: _tmplSelectedEmoji, donnees: donnees })
     }).then(function(r){
       if(r.ok){
         closeSaveTemplate();
@@ -3990,7 +4086,7 @@ function doSaveTemplate(){
     _loadTemplates();
     _templates.unshift({
       id: '_t' + Math.random().toString(36).slice(2,9),
-      nom: nom, type: type, emoji: _tmplSelectedEmoji,
+      nom: nom, categorie: cat, type: type, emoji: _tmplSelectedEmoji,
       created_at: new Date().toISOString(),
       _blocs: JSON.parse(JSON.stringify(blocs)),
       _local: true
@@ -4014,7 +4110,7 @@ function renderTemplatesInBuilder(){
       return;
     }
     area.innerHTML = list.map(function(t){
-      var col = _seanceTypeColor(t.type);
+      var catSt = _tmplCatStyle(t.categorie||'');
       var blocs = t._blocs || [];
       if(!blocs.length && t.donnees){ try { blocs = (JSON.parse(t.donnees).blocs)||[]; } catch(e){} }
       var nbExos = blocs.reduce(function(a,b){ return a+(b.exos||[]).length; }, 0);
@@ -4025,7 +4121,8 @@ function renderTemplatesInBuilder(){
         + '<div class="seance-card-info">'
         + '<div class="seance-card-name">' + escH(t.nom||'Sans nom') + '</div>'
         + '<div class="seance-card-meta">'
-        + (t.type ? '<span class="seance-card-type" style="background:'+col.bg+';color:'+col.fg+';">' + escH(t.type) + '</span>' : '')
+        + (t.categorie ? '<span class="seance-card-type" style="background:'+catSt.bg+';color:'+catSt.fg+';">' + escH(t.categorie) + '</span>' : '')
+        + (t.type ? '<span class="seance-card-type" style="margin-left:2px;">' + escH(t.type) + '</span>' : '')
         + '<span>' + nbExos + ' exo' + (nbExos>1?'s':'') + '</span>'
         + '</div></div>'
         + '<div class="seance-card-actions">'
@@ -4133,9 +4230,12 @@ function renderSidebarTemplates(){
 function _renderSidebarList(){
   var scroll = document.getElementById('stmplScroll');
   if(!scroll) return;
-  var q = ((document.getElementById('stmplSearch')||{}).value||'').toLowerCase();
+  var q   = ((document.getElementById('stmplSearch')||{}).value||'').toLowerCase();
+  var cat = ((document.getElementById('stmplCatFilter')||{}).value||'');
   var list = _sidebarProgs.filter(function(p){
-    return !q || (p.nom||'').toLowerCase().indexOf(q) > -1;
+    var matchQ   = !q   || (p.nom||'').toLowerCase().indexOf(q) > -1;
+    var matchCat = !cat || (p.categorie||'') === cat;
+    return matchQ && matchCat;
   });
   if(!list.length){
     scroll.innerHTML = '<div class="stmpl-empty">Aucun template.<br>Créez-en un depuis le builder (📋 Enregistrer).</div>';
@@ -4158,9 +4258,12 @@ function _renderSidebarList(){
         dateLbl = pts[2]+'/'+pts[1]+'/'+pts[0];
       }
     }
-    var typeCol = _seanceTypeColor(p.type);
-    var meta = (p.type ? p.type : '') + (dateLbl ? (p.type ? ' · ' : '') + dateLbl : '');
-    if(nbExos) meta += (meta ? ' · ' : '') + nbExos + ' exo' + (nbExos>1?'s':'');
+    var catStyle = _tmplCatStyle(p.categorie||'');
+    var catBadge = p.categorie
+      ? '<span class="stmpl-cat-badge" style="background:'+catStyle.bg+';color:'+catStyle.fg+';">'+escH(p.categorie)+'</span>'
+      : '';
+    var subMeta = (p.type ? p.type : '') + (dateLbl ? (p.type ? ' · ' : '') + dateLbl : '');
+    if(nbExos) subMeta += (subMeta ? ' · ' : '') + nbExos + ' exo' + (nbExos>1?'s':'');
     var displayNom = (p.nom||'').trim() || 'Sans nom';
     var pid = escH(String(p.id));
     var pnom = escH(displayNom);
@@ -4168,7 +4271,7 @@ function _renderSidebarList(){
       + '<div class="stmpl-card-emoji">' + emoji + '</div>'
       + '<div class="stmpl-card-body">'
         + '<div class="stmpl-card-name">' + pnom + '</div>'
-        + (meta ? '<div class="stmpl-card-meta">' + escH(meta) + '</div>' : '')
+        + '<div class="stmpl-card-meta">' + catBadge + (subMeta ? escH(subMeta) : '') + '</div>'
       + '</div>'
       + '<button class="stmpl-add-btn" title="Planifier" '
         + 'onclick="event.stopPropagation();_openQuickAdd(\'' + pid + '\',\'' + pnom + '\')">+</button>'
@@ -4177,6 +4280,8 @@ function _renderSidebarList(){
 }
 
 function filterSidebarTemplates(){
+  var sel = document.getElementById('stmplCatFilter');
+  if(sel) sel.classList.toggle('has-filter', !!sel.value);
   _renderSidebarList();
 }
 
