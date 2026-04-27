@@ -332,6 +332,33 @@ body {
 }
 .field select { cursor: pointer; }
 
+/* ── Imagerie table ──────────────────────────────────────── */
+.img-table-wrap { overflow-x:auto; }
+.img-table { width:100%; border-collapse:collapse; }
+.img-table thead th {
+  background:var(--surface2); color:var(--text2);
+  font-size:.68rem; font-weight:700; letter-spacing:.05em;
+  text-transform:uppercase; padding:7px 14px; text-align:left;
+  border-bottom:2px solid var(--border);
+}
+.img-col-type { width:130px; min-width:110px; }
+.img-col-date { width:120px; min-width:90px; }
+.img-table tbody tr { border-bottom:1px solid var(--border); transition:background .1s; }
+.img-table tbody tr:last-child { border-bottom:none; }
+.img-table tbody tr:hover { background:var(--accent-l); }
+.img-label {
+  font-size:.78rem; font-weight:700; color:var(--text2);
+  padding:9px 14px; white-space:nowrap; vertical-align:middle;
+}
+.img-table tbody td:not(.img-label) { padding:0; vertical-align:middle; }
+.img-cell-input {
+  width:100%; border:none; outline:none; background:transparent;
+  font-family:var(--font-sans); font-size:.84rem; color:var(--text);
+  padding:9px 12px; display:block;
+}
+.img-cell-input:focus { background:var(--accent-l); }
+.img-cell-input::placeholder { color:var(--text2); opacity:.55; }
+
 /* ── Test table ──────────────────────────────────────────── */
 .test-table { width: 100%; border-collapse: collapse; }
 .test-table th {
@@ -965,10 +992,58 @@ body {
     <div class="field"><label>Mécanisme / circonstances déclenchantes</label><textarea id="f-mecanisme" placeholder="Réception unipodale, genou en valgus…"></textarea></div>
     <div class="field"><label>Début des symptômes</label><input type="text" id="f-debut" placeholder="Mars 2025"></div>
   </div>
-  <div class="form-grid triple">
+  <div class="form-grid">
     <div class="field"><label>EVA actuelle (/10)</label><input type="number" id="f-eva" min="0" max="10" placeholder="3"></div>
     <div class="field"><label>EVA max 7 derniers jours</label><input type="number" id="f-eva-max" min="0" max="10" placeholder="5"></div>
-    <div class="field"><label>Imagerie disponible</label><input type="text" id="f-imagerie" placeholder="IRM mars 2025 — rupture LCA"></div>
+  </div>
+  <!-- Imageries disponibles -->
+  <div style="border-top:1px solid var(--border);">
+    <div style="padding:7px 14px 6px;background:var(--surface2);font-size:.68rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text2);">
+      📷 Imageries disponibles
+    </div>
+    <div class="img-table-wrap">
+      <table class="img-table">
+        <thead>
+          <tr>
+            <th class="img-col-type">Type</th>
+            <th class="img-col-date">Date</th>
+            <th>Résultat / observations</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="img-label">Radiographie</td>
+            <td><input class="img-cell-input" type="text" id="f-img-radio-date" placeholder="03/2025"></td>
+            <td><input class="img-cell-input" type="text" id="f-img-radio-obs" placeholder="Pas de lésion osseuse"></td>
+          </tr>
+          <tr>
+            <td class="img-label">IRM</td>
+            <td><input class="img-cell-input" type="text" id="f-img-irm-date" placeholder="15/03/2025"></td>
+            <td><input class="img-cell-input" type="text" id="f-img-irm-obs" placeholder="Rupture LCA totale non rétractée"></td>
+          </tr>
+          <tr>
+            <td class="img-label">Échographie</td>
+            <td><input class="img-cell-input" type="text" id="f-img-echo-date" placeholder=""></td>
+            <td><input class="img-cell-input" type="text" id="f-img-echo-obs" placeholder=""></td>
+          </tr>
+          <tr>
+            <td class="img-label">Scanner (TDM)</td>
+            <td><input class="img-cell-input" type="text" id="f-img-scan-date" placeholder=""></td>
+            <td><input class="img-cell-input" type="text" id="f-img-scan-obs" placeholder=""></td>
+          </tr>
+          <tr>
+            <td class="img-label">Arthroscopie</td>
+            <td><input class="img-cell-input" type="text" id="f-img-arthro-date" placeholder=""></td>
+            <td><input class="img-cell-input" type="text" id="f-img-arthro-obs" placeholder=""></td>
+          </tr>
+          <tr>
+            <td class="img-label">Autre</td>
+            <td><input class="img-cell-input" type="text" id="f-img-autre-date" placeholder=""></td>
+            <td><input class="img-cell-input" type="text" id="f-img-autre-obs" placeholder="Scintigraphie, DEXA…"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
   <div class="form-grid">
     <div class="field"><label>Facteurs aggravants</label><textarea id="f-aggravants" placeholder="Course à pied, descente d'escaliers…" style="min-height:50px"></textarea></div>
@@ -3236,7 +3311,7 @@ function buildCR() {
     ['f-eva','EVA actuelle','/10'],['f-eva-max','EVA max 7j','/10'],
     ['f-aggravants','Aggravants',''],['f-soulagants','Soulagants',''],
     ['f-atcd','Antecedents',''],['f-traitements','Traitements',''],
-    ['f-imagerie','Imagerie',''],['f-objectifs','Objectifs',''],
+    ['f-objectifs','Objectifs',''],
     ['f-retentissement','Retentissement',''],['f-remarques','Remarques',''],
   ];
   for (var ii=0; ii<infosMap.length; ii++) {
@@ -3244,6 +3319,22 @@ function buildCR() {
     var v2 = el2 ? el2.value : '';
     if (v2) infosHtml += crItem(infosMap[ii][1], nl2br(v2) + infosMap[ii][2]);
   }
+  // Imageries disponibles
+  var imLines = [
+    {label:'Radiographie', date:'f-img-radio-date', obs:'f-img-radio-obs'},
+    {label:'IRM',          date:'f-img-irm-date',   obs:'f-img-irm-obs'},
+    {label:'Échographie',  date:'f-img-echo-date',  obs:'f-img-echo-obs'},
+    {label:'Scanner',      date:'f-img-scan-date',  obs:'f-img-scan-obs'},
+    {label:'Arthroscopie', date:'f-img-arthro-date',obs:'f-img-arthro-obs'},
+    {label:'Autre',        date:'f-img-autre-date', obs:'f-img-autre-obs'}
+  ];
+  var imHtml = '';
+  imLines.forEach(function(im){
+    var d = (document.getElementById(im.date)||{}).value||'';
+    var o = (document.getElementById(im.obs)||{}).value||'';
+    if(d||o) imHtml += '<div style="margin-bottom:3px;"><strong>'+im.label+'</strong>'+(d?' — '+d:'')+(o?' : '+o:'')+'</div>';
+  });
+  if(imHtml) infosHtml += crItem('📷 Imageries', imHtml);
   var aclrsiEl = document.getElementById('f-aclrsi');
   var aclrsi = aclrsiEl ? aclrsiEl.value : '';
   if (aclrsi) {
