@@ -3564,6 +3564,45 @@ function buildCR() {
   }
   addSection('2. Bilan Orthopedique', orthoHtml);
 
+  // 2b. LMA
+  var lmaMuscleSel = document.getElementById('lma-sel-muscle');
+  var lmaMuscleVal = lmaMuscleSel ? lmaMuscleSel.value : '';
+  var lmaHtml = '';
+  if (lmaMuscleVal) {
+    var lmaMusclLabel = lmaMuscleSel.options[lmaMuscleSel.selectedIndex].text;
+    var lmaMembreSel  = document.getElementById('lma-sel-membre');
+    var lmaMembreLabel = lmaMembreSel ? lmaMembreSel.options[lmaMembreSel.selectedIndex].text : '';
+    var lmaTbKey = 'tb-lma-' + lmaMuscleVal;
+    var lmaCfg   = TESTS[lmaTbKey];
+    var lmaTbody = document.getElementById(lmaTbKey);
+    if (lmaCfg && lmaTbody) {
+      var lmaRows = lmaTbody.querySelectorAll('tr');
+      for (var li = 0; li < lmaRows.length; li++) {
+        var lmaSelEl  = lmaRows[li].querySelector('select');
+        var lmaNoteEl = lmaRows[li].querySelector('input[type="text"]');
+        var lmaVal    = lmaSelEl ? lmaSelEl.value : '';
+        var lmaIsPos  = lmaVal === 'Positif';
+        var lmaIsNeg  = lmaVal === 'Négatif';
+        if (lmaSelEl && (lmaIsPos || lmaIsNeg)) {
+          var lmaTname  = lmaCfg.items[li] || '';
+          var lmaNoteVal = lmaNoteEl ? lmaNoteEl.value : '';
+          // Pour LMA : Positif = douleur/signe clinique → bad ; Négatif = absence de signe → ok
+          var lmaTag    = lmaVal;
+          var lmaTagCls = lmaIsPos ? 'bad' : 'ok';
+          lmaHtml += crItem(lmaTname, lmaNoteVal || '-', lmaTag, lmaTagCls);
+        }
+      }
+    }
+    var lmaConclEl = document.getElementById('lma-conclusion');
+    if (lmaConclEl && lmaConclEl.value) lmaHtml += crItem('Conclusion', nl2br(lmaConclEl.value));
+    if (lmaHtml) {
+      lmaHtml = '<div style="margin-bottom:6px"><div style="font-size:.78rem;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">'
+              + lmaMembreLabel + ' — ' + lmaMusclLabel
+              + '</div>' + lmaHtml + '</div>';
+    }
+  }
+  if (lmaHtml) addSection('⚡ LMA — Lésion Myo-Aponévrotique', lmaHtml);
+
   // 3. Tests fonctionnels MI
   var tfHtml = '';
   var slsCA = parseFloat(document.getElementById('sls-ca') ? document.getElementById('sls-ca').value : '');
