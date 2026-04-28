@@ -1516,7 +1516,7 @@ body {
       <div class="form-grid double" style="padding:14px 16px 16px;">
         <div class="field">
           <label>Membre</label>
-          <select id="lma-sel-membre" onchange="_lmaUpdateMembre()" style="font-family:var(--font-sans);font-size:.9rem;color:var(--text);border:1.5px solid var(--border2);border-radius:var(--radius-sm);padding:8px 10px;outline:none;width:100%;background:var(--surface)">
+          <select id="lma-sel-membre" onchange="_lmaUpdateMembre()" autocomplete="off" style="font-family:var(--font-sans);font-size:.9rem;color:var(--text);border:1.5px solid var(--border2);border-radius:var(--radius-sm);padding:8px 10px;outline:none;width:100%;background:var(--surface)">
             <option value="">— Choisir —</option>
             <option value="sup">Membres supérieurs</option>
             <option value="inf">Membres inférieurs</option>
@@ -2790,6 +2790,9 @@ function init() {
   updateAll();
   loadFromStorage();
   applyProfile(getProfile());
+  // Forcer le select LMA sur "Choisir" au chargement (le navigateur mémorise la dernière valeur)
+  var lmaSmInit = document.getElementById('lma-sel-membre');
+  if (lmaSmInit) { lmaSmInit.value = ''; _lmaUpdateMembre(); }
   showPage('infos');
 }
 
