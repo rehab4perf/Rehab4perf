@@ -885,6 +885,41 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .share-toast .undo-btn { background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.45); color:#fff; border-radius:6px; padding:3px 11px; font-size:.78rem; cursor:pointer; font-family:inherit; font-weight:700; white-space:nowrap; flex-shrink:0; }
 .share-toast .undo-btn:hover { background:rgba(255,255,255,.35); }
 
+/* ── TOUCH ACTION SHEET ── */
+.touch-sheet-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9000; display:none; }
+.touch-sheet {
+  position:fixed; bottom:0; left:0; right:0; background:#fff;
+  border-radius:18px 18px 0 0; z-index:9001; display:none;
+  padding-bottom:env(safe-area-inset-bottom, 0);
+  box-shadow:0 -4px 30px rgba(0,0,0,.18);
+}
+.touch-sheet-title {
+  font-size:.78rem; font-weight:700; color:var(--muted); letter-spacing:.04em; text-transform:uppercase;
+  padding:14px 20px 10px; border-bottom:1px solid var(--border); text-align:center;
+}
+.touch-sheet-btn {
+  display:block; width:100%; padding:17px 22px; font-size:1rem; text-align:left;
+  background:none; border:none; border-bottom:1px solid var(--border);
+  font-family:inherit; cursor:pointer; color:var(--text); font-weight:500;
+}
+.touch-sheet-btn:active { background:var(--bg); }
+.touch-sheet-btn.danger { color:#e53e3e; font-weight:600; }
+.touch-sheet-cancel { border-top:7px solid var(--bg); border-bottom:none; font-weight:700; text-align:center; color:var(--accent); }
+
+/* ── TOUCH MOVE BANNER ── */
+#touchMoveBanner {
+  position:fixed; bottom:28px; left:50%; transform:translateX(-50%);
+  background:var(--navy); color:#fff; border-radius:14px; padding:11px 18px;
+  display:none; align-items:center; gap:12px; z-index:8500;
+  font-size:.84rem; font-weight:600; box-shadow:0 4px 24px rgba(0,0,0,.3);
+  white-space:nowrap; max-width:90vw;
+}
+#touchMoveBanner button {
+  background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.4);
+  color:#fff; border-radius:8px; padding:4px 12px; font-size:.8rem;
+  cursor:pointer; font-family:inherit; white-space:nowrap; flex-shrink:0;
+}
+
 /* ── PICKER CALENDRIER ── */
 .cal-picker-overlay {
   position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:300;
@@ -1336,6 +1371,23 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
     <div id="calPickerList"></div>
     <button class="btn btn-outline cal-picker-close" onclick="closeCalPicker()">Fermer</button>
   </div>
+</div>
+
+<!-- ═══════ TOUCH ACTION SHEET (iPad/mobile) ═══════ -->
+<div class="touch-sheet-overlay" id="touchSheetOverlay" onclick="closeTouchSheet()"></div>
+<div class="touch-sheet" id="touchSheet">
+  <div class="touch-sheet-title" id="touchSheetTitle">Séance</div>
+  <button class="touch-sheet-btn" onclick="touchSheetOpen()">📋 Ouvrir / modifier</button>
+  <button class="touch-sheet-btn" onclick="touchSheetMove()">↔️ Déplacer vers…</button>
+  <button class="touch-sheet-btn" onclick="touchSheetDuplicate()">📄 Dupliquer vers…</button>
+  <button class="touch-sheet-btn danger" onclick="touchSheetDelete()">🗑 Supprimer</button>
+  <button class="touch-sheet-btn touch-sheet-cancel" onclick="closeTouchSheet()">Annuler</button>
+</div>
+
+<!-- Bannière mode déplacement touch -->
+<div id="touchMoveBanner">
+  <span id="touchMoveBannerTxt">↔️ Tapez sur le jour de destination</span>
+  <button onclick="_cancelTouchMove()">Annuler</button>
 </div>
 
 <!-- Export modal -->
@@ -3725,10 +3777,14 @@ function _buildDayChips(dateStr, cellDate){
       var fb = ev.athlete_feedback;
       var ua = (fb&&fb.rpe&&fb.duree_min) ? fb.rpe*fb.duree_min : null;
       var uaSpan = ua ? ' <span style="font-size:.58rem;font-weight:800;padding:1px 4px;border-radius:3px;background:rgba(255,255,255,.22);color:'+_chipUaColor(ua)+';">⚡'+ua+'</span>' : '';
-      return '<div class="cal-session-chip" draggable="true" style="background:#2B5FA6;cursor:grab;" title="'+escH(nom)+' — cliquer pour modifier"'
-        +' onclick="event.stopPropagation();_openChipInBuilder(\''+ev.programme_id+'\',\''+dateStr+'\')"'
-        +' ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')"'
-        +' ondragend="_calChipDragEnd(event)">'
+      // Enregistrement métadonnées pour touch
+      _chipTouchMeta[ev.id] = {progId: ev.programme_id, dateStr: dateStr, nom: nom};
+      var chipEvtAttrs = _isTouchDevice
+        ? ' ontouchstart="_chipTouchStart(event,\''+ev.id+'\')" ontouchmove="_chipTouchMove(event)" ontouchend="_chipTouchEnd(event,\''+ev.id+'\')"'
+        : ' draggable="true" onclick="event.stopPropagation();_openChipInBuilder(\''+ev.programme_id+'\',\''+dateStr+'\')" ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"';
+      var chipCursor = _isTouchDevice ? 'pointer' : 'grab';
+      return '<div class="cal-session-chip" style="background:#2B5FA6;cursor:'+chipCursor+';" title="'+escH(nom)+' — appui long pour options"'
+        + chipEvtAttrs + '>'
         +'<span>📋 '+escH(nom.length>16?nom.slice(0,16)+'…':nom)+uaSpan+'</span>'
         +'<button class="cal-chip-del" onclick="event.stopPropagation();removeCalEventCloud(\''+ev.id+'\')">×</button>'
         +'</div>';
@@ -3848,6 +3904,15 @@ function _renderCalendarUI() {
 }
 
 function openCalPicker(dateStr) {
+  // Mode déplacement/duplication touch : tap sur une case = destination
+  if(_touchMoveMode){
+    var d = _touchMoveMode; _cancelTouchMove();
+    if(d.dateStr !== dateStr){
+      if(d.duplicate){ _calDuplicateEvent(d.progId, dateStr); }
+      else { _calMoveEvent(d.evId, d.progId, dateStr, d.dateStr); }
+    }
+    return;
+  }
   openBuilderForDate(dateStr);
   _calPickerDate = dateStr;
   var parts = dateStr.split('-');
@@ -3944,6 +4009,98 @@ function removeCalEventCloud(id) {
     renderCalendar();
   })
   .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
+}
+
+// ── Détection touch device ──
+var _isTouchDevice = (('ontouchstart' in window) || (navigator.maxTouchPoints > 0));
+
+// ── Touch action sheet (iPad/mobile) ──
+var _chipTouchMeta   = {};   // evId → {progId, dateStr, nom}
+var _touchSheetData  = null; // données du chip affiché dans l'action sheet
+var _touchMoveMode   = null; // null | {evId, progId, dateStr, duplicate:bool}
+var _touchLongTimer  = null;
+var _touchStartXY    = null;
+var _touchDidLong    = false;
+
+function _chipTouchStart(e, evId){
+  e.stopPropagation();
+  _touchDidLong = false;
+  _touchStartXY = {x: e.touches[0].clientX, y: e.touches[0].clientY};
+  _touchLongTimer = setTimeout(function(){
+    _touchDidLong = true;
+    var d = _chipTouchMeta[evId] || {};
+    _showTouchActionSheet(evId, d.progId, d.dateStr, d.nom || 'Séance');
+  }, 500);
+}
+
+function _chipTouchMove(e){
+  if(!_touchStartXY) return;
+  var dx = e.touches[0].clientX - _touchStartXY.x;
+  var dy = e.touches[0].clientY - _touchStartXY.y;
+  if(dx*dx + dy*dy > 100){ clearTimeout(_touchLongTimer); _touchLongTimer = null; _touchStartXY = null; }
+}
+
+function _chipTouchEnd(e, evId){
+  clearTimeout(_touchLongTimer); _touchLongTimer = null;
+  if(_touchDidLong){ _touchDidLong = false; e.preventDefault(); return; }
+  e.preventDefault();
+  var d = _chipTouchMeta[evId] || {};
+  if(d.progId && d.dateStr) _openChipInBuilder(d.progId, d.dateStr);
+}
+
+function _showTouchActionSheet(evId, progId, dateStr, nom){
+  _touchSheetData = {evId: evId, progId: progId, dateStr: dateStr};
+  var title = document.getElementById('touchSheetTitle');
+  if(title) title.textContent = nom || 'Séance';
+  document.getElementById('touchSheet').style.display = 'block';
+  document.getElementById('touchSheetOverlay').style.display = 'block';
+}
+
+function closeTouchSheet(){
+  document.getElementById('touchSheet').style.display = 'none';
+  document.getElementById('touchSheetOverlay').style.display = 'none';
+  _touchSheetData = null;
+}
+
+function touchSheetOpen(){
+  if(!_touchSheetData) return;
+  var d = _touchSheetData; closeTouchSheet();
+  _openChipInBuilder(d.progId, d.dateStr);
+}
+
+function touchSheetMove(){
+  if(!_touchSheetData) return;
+  _touchMoveMode = {evId: _touchSheetData.evId, progId: _touchSheetData.progId, dateStr: _touchSheetData.dateStr, duplicate: false};
+  closeTouchSheet();
+  var banner = document.getElementById('touchMoveBanner');
+  var txt = document.getElementById('touchMoveBannerTxt');
+  if(txt) txt.textContent = '↔️ Tapez sur le jour de destination pour déplacer';
+  if(banner) banner.style.display = 'flex';
+}
+
+function touchSheetDuplicate(){
+  if(!_touchSheetData) return;
+  _touchMoveMode = {evId: _touchSheetData.evId, progId: _touchSheetData.progId, dateStr: _touchSheetData.dateStr, duplicate: true};
+  closeTouchSheet();
+  var banner = document.getElementById('touchMoveBanner');
+  var txt = document.getElementById('touchMoveBannerTxt');
+  if(txt) txt.textContent = '📄 Tapez sur le jour de destination pour dupliquer';
+  if(banner) banner.style.display = 'flex';
+}
+
+function touchSheetDelete(){
+  if(!_touchSheetData) return;
+  var evId = _touchSheetData.evId; closeTouchSheet();
+  if(confirm('Retirer cette séance du calendrier ?')){
+    fetch(SUPA_URL_P+'/rest/v1/seances_planifiees?id=eq.'+evId, {method:'DELETE', headers:_sbHeaders()})
+      .then(function(r){ if(r.ok) renderCalendar(); });
+  }
+}
+
+function _cancelTouchMove(){
+  _touchMoveMode = null;
+  var banner = document.getElementById('touchMoveBanner');
+  if(banner) banner.style.display = 'none';
 }
 
 // ── Drag & drop entre jours du calendrier ──
