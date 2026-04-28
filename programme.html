@@ -449,6 +449,40 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 }
 .exo-del-btn:hover { color:#E74C3C; }
 .exo-del-btn::before { content:'×'; }
+.yt-thumb-wrap {
+  display:inline-block; position:relative; cursor:pointer; border-radius:5px;
+  overflow:hidden; vertical-align:middle; flex-shrink:0;
+  box-shadow:0 1px 4px rgba(0,0,0,.18);
+}
+.yt-thumb-wrap img { display:block; width:72px; height:40px; object-fit:cover; }
+.yt-thumb-wrap .yt-play {
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  background:rgba(0,0,0,.28); transition:background .15s;
+}
+.yt-thumb-wrap:hover .yt-play, .yt-thumb-wrap:active .yt-play { background:rgba(0,0,0,.48); }
+.yt-thumb-wrap .yt-play::after {
+  content:''; width:0; height:0;
+  border-top:7px solid transparent; border-bottom:7px solid transparent;
+  border-left:12px solid #fff; margin-left:2px;
+}
+/* Modale player YouTube */
+.yt-modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:9500;
+  display:none; align-items:center; justify-content:center; padding:20px;
+}
+.yt-modal-overlay.open { display:flex; }
+.yt-modal-box {
+  background:#000; border-radius:10px; overflow:hidden;
+  width:100%; max-width:720px; aspect-ratio:16/9; position:relative;
+  box-shadow:0 8px 40px rgba(0,0,0,.6);
+}
+.yt-modal-box iframe { width:100%; height:100%; border:none; display:block; }
+.yt-modal-close {
+  position:absolute; top:-38px; right:0; background:none; border:none;
+  color:#fff; font-size:1.6rem; cursor:pointer; line-height:1; opacity:.8;
+}
+.yt-modal-close:hover { opacity:1; }
+
 .vid-link {
   display:inline-flex; align-items:center; gap:3px;
   color:var(--accent2); font-size:.7rem; text-decoration:none;
@@ -1386,6 +1420,14 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   <button class="touch-sheet-btn touch-sheet-cancel" onclick="closeTouchSheet()">Annuler</button>
 </div>
 
+<!-- ═══════ YOUTUBE PLAYER MODAL ═══════ -->
+<div class="yt-modal-overlay" id="ytModalOverlay" onclick="closeYtModal(event)">
+  <div class="yt-modal-box" id="ytModalBox">
+    <button class="yt-modal-close" onclick="closeYtModal()">×</button>
+    <iframe id="ytModalIframe" src="" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+  </div>
+</div>
+
 <!-- Bannière mode déplacement touch -->
 <div id="touchMoveBanner">
   <span id="touchMoveBannerTxt">↔️ Tapez sur le jour de destination</span>
@@ -1799,6 +1841,30 @@ function renderLib(q, typeFilter, subFilter){
    SESSION / BLOCS
    ================================================================ */
 function escH(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── YouTube helpers ──────────────────────────────────────────────────────────
+function _ytId(url){
+  if(!url) return null;
+  var m = url.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+function _ytThumbHtml(url){
+  var id = _ytId(url); if(!id) return null;
+  return '<span class="yt-thumb-wrap" onclick="openYtModal(\''+id+'\')" title="Voir la vidéo">'
+       + '<img src="https://img.youtube.com/vi/'+id+'/hqdefault.jpg" alt="vidéo" loading="lazy">'
+       + '<span class="yt-play"></span>'
+       + '</span>';
+}
+function openYtModal(videoId){
+  document.getElementById('ytModalIframe').src = 'https://www.youtube.com/embed/'+videoId+'?autoplay=1&rel=0';
+  document.getElementById('ytModalOverlay').classList.add('open');
+}
+function closeYtModal(e){
+  if(e && e.target !== document.getElementById('ytModalOverlay')) return;
+  document.getElementById('ytModalIframe').src = '';
+  document.getElementById('ytModalOverlay').classList.remove('open');
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 var METHODES = {
   libre:     { label:'Libre', methods:[] },
@@ -2414,7 +2480,7 @@ function renderSession(){
         html += '<div class="exo-name-cell">';
         html += '<div class="exo-name">'+escH(e.name)+'</div>';
         html += '<div class="exo-sub">';
-        if(e.url) html += '<a class="vid-link" href="'+escH(e.url)+'" target="_blank">▶ Vidéo</a>';
+        if(e.url){ var _vt=_ytThumbHtml(e.url); html += _vt ? _vt : '<a class="vid-link" href="'+escH(e.url)+'" target="_blank">▶ Vidéo</a>'; }
         if(e.obj) html += '<span class="lib-tag" style="background:#F3F0FF;color:#5B4FBF;">'+escH(e.obj)+'</span>';
         var exoMin=estimateExoMin(e); if(exoMin!==null) html+='<span class="time-tag">⏱ '+fmtMin(exoMin)+'</span>';
         if(idx < b.exos.length - 1){
@@ -2574,7 +2640,8 @@ function buildExportHTML(){
       blocksHtml += '<tr'+(chainedRow?' class="chained-row"':'')+'>';
       blocksHtml += '<td class="exo-name-col">'+(chainedRow?'<span class="chain-icon">⛓</span> ':'')
                   + escH(e.name)+(e.obj?'<br><span class="tag">'+escH(e.obj)+'</span>':'')+'</td>';
-      blocksHtml += '<td>'+(e.url?'<a href="'+escH(e.url)+'" target="_blank">▶</a>':'—')+'</td>';
+      var _eVt = e.url ? _ytThumbHtml(e.url) : null;
+      blocksHtml += '<td>'+(_eVt ? _eVt : (e.url ? '<a href="'+escH(e.url)+'" target="_blank">▶</a>' : '—'))+'</td>';
       blocksHtml += '<td>'+(e.reps||'—')+'</td>';
       blocksHtml += '<td>'+(e.duree||'—')+'</td>';
       blocksHtml += '<td>'+(e.series||'—')+'</td>';
@@ -4336,6 +4403,7 @@ function _doPlanDates(dates, progId){
 document.getElementById('saveModal').addEventListener('click', function(e){ if(e.target===this) closeSaveSession(); });
 document.getElementById('templateSaveModal').addEventListener('click', function(e){ if(e.target===this) closeSaveTemplate(); });
 document.getElementById('groupCreateModal').addEventListener('click', function(e){ if(e.target===this) closeCreateGroup(); });
+document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeYtModal(); });
 document.getElementById('calPickerOverlay').addEventListener('click', function(e){ if(e.target===this) closeCalPicker(); });
 
 /* ================================================================
