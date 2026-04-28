@@ -879,6 +879,10 @@ body {
   <span class="icon">🦶</span> Pied / Cheville
   <span class="badge" id="badge-pied" style="display:none">!</span>
 </button>
+<button class="nav-item" onclick="showPage('lma')" data-page="lma">
+  <span class="icon">⚡</span> LMA
+  <span class="badge" id="badge-lma" style="display:none">!</span>
+</button>
 
 <div class="nav-section">Tests objectifs</div>
 <button class="nav-item" onclick="showPage('fonctionnelsMS')" data-page="fonctionnelsMS">
@@ -1492,6 +1496,102 @@ body {
 </div>
 
 <div class="block"><div class="block-header">Conclusion</div><textarea class="concl-area" id="pi-conclusion" placeholder="Entorse latérale stade II ancienne avec instabilité résiduelle…"></textarea></div>
+
+  </div>
+</div>
+
+<!-- ══ PAGE: LMA ══════════════════════════════════════════════ -->
+
+<div class="page" id="page-lma">
+  <div class="page-header">
+    <div class="page-icon">⚡</div>
+    <div class="page-title">LMA — Lésion Myo-Aponévrotique</div>
+    <div class="page-subtitle" id="hdr-lma">—</div>
+  </div>
+  <div class="page-content">
+
+    <!-- Sélecteurs cascadants -->
+    <div class="block">
+      <div class="block-header light">Localisation de la lésion</div>
+      <div class="form-grid double" style="padding:14px 16px 16px;">
+        <div class="field">
+          <label>Membre</label>
+          <select id="lma-sel-membre" onchange="_lmaUpdateMembre()" style="font-family:var(--font-sans);font-size:.9rem;color:var(--text);border:1.5px solid var(--border2);border-radius:var(--radius-sm);padding:8px 10px;outline:none;width:100%;background:var(--surface)">
+            <option value="">— Choisir —</option>
+            <option value="sup">Membres supérieurs</option>
+            <option value="inf">Membres inférieurs</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Muscle</label>
+          <select id="lma-sel-muscle" onchange="_lmaUpdateMuscle()" disabled style="font-family:var(--font-sans);font-size:.9rem;color:var(--text);border:1.5px solid var(--border2);border-radius:var(--radius-sm);padding:8px 10px;outline:none;width:100%;background:var(--surface);opacity:.5">
+            <option value="">— Choisir d'abord un membre —</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── MEMBRES SUPÉRIEURS ── -->
+    <div class="lma-bloc" id="lma-bloc-pecto" style="display:none">
+      <div class="block"><div class="block-header red">Pectoraux</div>
+        <table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
+        <tbody id="tb-lma-pecto"></tbody></table></div>
+    </div>
+
+    <div class="lma-bloc" id="lma-bloc-biceps" style="display:none">
+      <div class="block"><div class="block-header red">Biceps</div>
+        <table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
+        <tbody id="tb-lma-biceps"></tbody></table></div>
+    </div>
+
+    <div class="lma-bloc" id="lma-bloc-triceps" style="display:none">
+      <div class="block"><div class="block-header red">Triceps</div>
+        <table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
+        <tbody id="tb-lma-triceps"></tbody></table></div>
+    </div>
+
+    <div class="lma-bloc" id="lma-bloc-dorsal" style="display:none">
+      <div class="block"><div class="block-header red">Grand dorsal</div>
+        <table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
+        <tbody id="tb-lma-dorsal"></tbody></table></div>
+    </div>
+
+    <div class="lma-bloc" id="lma-bloc-interco" style="display:none">
+      <div class="block"><div class="block-header red">Intercostaux</div>
+        <table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
+        <tbody id="tb-lma-interco"></tbody></table></div>
+    </div>
+
+    <!-- ── MEMBRES INFÉRIEURS ── -->
+    <div class="lma-bloc" id="lma-bloc-ischio" style="display:none">
+      <div class="block"><div class="block-header red">Ischio-jambiers</div>
+        <table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
+        <tbody id="tb-lma-ischio"></tbody></table></div>
+    </div>
+
+    <div class="lma-bloc" id="lma-bloc-quadri" style="display:none">
+      <div class="block"><div class="block-header red">Quadriceps</div>
+        <table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
+        <tbody id="tb-lma-quadri"></tbody></table></div>
+    </div>
+
+    <div class="lma-bloc" id="lma-bloc-adduct" style="display:none">
+      <div class="block"><div class="block-header red">Adducteurs</div>
+        <table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
+        <tbody id="tb-lma-adduct"></tbody></table></div>
+    </div>
+
+    <div class="lma-bloc" id="lma-bloc-mollet" style="display:none">
+      <div class="block"><div class="block-header red">Mollet</div>
+        <table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
+        <tbody id="tb-lma-mollet"></tbody></table></div>
+    </div>
+
+    <!-- Conclusion -->
+    <div class="block" id="lma-bloc-conclusion" style="display:none">
+      <div class="block-header">Conclusion</div>
+      <textarea class="concl-area" id="lma-conclusion" placeholder="Élongation ischio-jambiers proximal droit, stade I…"></textarea>
+    </div>
 
   </div>
 </div>
