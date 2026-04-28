@@ -3801,6 +3801,76 @@ function doReset() {
   showToast(' Dossier réinitialisé - Prêt pour un nouveau patient');
 }
 
+// -- LMA : selects cascadants -----------------------------------
+var _LMA_MUSCLES = {
+  sup: [
+    {val:'pecto',  label:'Pectoraux'},
+    {val:'biceps', label:'Biceps'},
+    {val:'triceps',label:'Triceps'},
+    {val:'dorsal', label:'Grand dorsal'},
+    {val:'interco',label:'Intercostaux'}
+  ],
+  inf: [
+    {val:'ischio', label:'Ischio-jambiers'},
+    {val:'quadri', label:'Quadriceps'},
+    {val:'adduct', label:'Adducteurs'},
+    {val:'mollet', label:'Mollet'}
+  ]
+};
+
+function _lmaUpdateMembre() {
+  var membre = document.getElementById('lma-sel-membre').value;
+  var selMuscle = document.getElementById('lma-sel-muscle');
+
+  // Cacher tous les blocs et la conclusion
+  document.querySelectorAll('.lma-bloc').forEach(function(b){ b.style.display='none'; });
+  document.getElementById('lma-bloc-conclusion').style.display = 'none';
+
+  // Réinitialiser le select muscle
+  selMuscle.innerHTML = '<option value="">— Choisir un muscle —</option>';
+
+  if (!membre) {
+    selMuscle.disabled = true;
+    selMuscle.style.opacity = '.5';
+    return;
+  }
+
+  // Peupler le select muscle selon le membre choisi
+  (_LMA_MUSCLES[membre] || []).forEach(function(m) {
+    var opt = document.createElement('option');
+    opt.value = m.val;
+    opt.textContent = m.label;
+    selMuscle.appendChild(opt);
+  });
+
+  selMuscle.disabled = false;
+  selMuscle.style.opacity = '1';
+}
+
+function _lmaUpdateMuscle() {
+  var muscle = document.getElementById('lma-sel-muscle').value;
+
+  // Cacher tous les blocs musculaires + conclusion
+  document.querySelectorAll('.lma-bloc').forEach(function(b){ b.style.display='none'; });
+  document.getElementById('lma-bloc-conclusion').style.display = 'none';
+
+  if (!muscle) return;
+
+  // Afficher le bloc du muscle sélectionné + conclusion
+  var bloc = document.getElementById('lma-bloc-' + muscle);
+  if (bloc) bloc.style.display = 'block';
+  document.getElementById('lma-bloc-conclusion').style.display = 'block';
+
+  // Mettre à jour le sous-titre du header
+  var selMuscle = document.getElementById('lma-sel-muscle');
+  var label = selMuscle.options[selMuscle.selectedIndex].text;
+  var hdr = document.getElementById('hdr-lma');
+  if (hdr) hdr.textContent = label;
+
+  updateBadges();
+}
+// ---------------------------------------------------------------
+
 // -- TOAST ------------------------------------------------------
 function showToast(msg) {
   const t = document.getElementById('toast');
