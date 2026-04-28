@@ -757,12 +757,13 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .cal-nav h2 { font-size:.95rem; font-weight:700; color:var(--navy); flex:1; }
 .cal-nav-btn { background:none; border:1px solid var(--border); border-radius:6px; padding:4px 10px; cursor:pointer; font-size:.82rem; color:var(--muted); }
 .cal-nav-btn:hover { background:var(--bg); color:var(--navy); }
-.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; user-select:none; -webkit-user-select:none; }
 
 /* ── VUE SEMAINE ── */
 .cal-week-grid {
   display:grid; grid-template-columns:repeat(7,1fr);
   grid-template-rows:auto 1fr; gap:4px;
+  user-select:none; -webkit-user-select:none;
 }
 .cal-week-col-header {
   text-align:center; padding:8px 6px;
@@ -871,6 +872,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   display:flex; align-items:center; gap:4px; padding:2px 5px; border-radius:4px;
   font-size:.66rem; font-weight:600; margin-bottom:2px; cursor:pointer;
   color:#fff; justify-content:space-between;
+  user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;
 }
 .cal-chip-del { background:none; border:none; color:rgba(255,255,255,.7); cursor:pointer; font-size:.75rem; line-height:1; padding:0 1px; }
 .cal-chip-del:hover { color:#fff; }
