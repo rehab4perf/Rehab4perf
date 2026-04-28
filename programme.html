@@ -221,6 +221,31 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .lib-item.added .lib-add-btn::before { content:'✓'; }
 .lib-item:not(.added) .lib-add-btn::before { content:'+'; }
 
+/* ── Bouton aperçu rapide ── */
+.lib-info-btn {
+  width:20px; height:20px; border-radius:50%; border:1px solid var(--border);
+  background:var(--bg); color:var(--muted); font-size:.68rem; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  line-height:1; transition:background .15s, color .15s; padding:0; font-weight:700;
+}
+.lib-info-btn:hover, .lib-info-btn.active { background:var(--accent2); color:#fff; border-color:var(--accent2); }
+
+/* ── Popover aperçu rapide ── */
+.lib-preview-pop {
+  position:fixed; z-index:6000;
+  background:#fff; border:1px solid var(--border); border-radius:12px;
+  padding:13px 15px; box-shadow:0 6px 24px rgba(0,0,0,.14);
+  min-width:210px; max-width:260px;
+  animation:ppFadeIn .12s ease;
+}
+@keyframes ppFadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
+.pp-name  { font-size:.88rem; font-weight:700; color:var(--text); margin-bottom:8px; line-height:1.3; }
+.pp-tags  { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:8px; }
+.pp-thumb { margin-top:8px; }
+.pp-thumb .yt-thumb-wrap img { width:100%; height:auto; max-height:130px; }
+.pp-thumb .yt-thumb-wrap { width:100%; display:block; }
+.pp-nourl { font-size:.72rem; color:var(--muted); margin-top:6px; font-style:italic; }
+
 /* ── CENTRE : Calendrier ── */
 .main {
   flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0;
@@ -1420,6 +1445,10 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   <button class="touch-sheet-btn touch-sheet-cancel" onclick="closeTouchSheet()">Annuler</button>
 </div>
 
+<!-- ═══════ POPOVER APERÇU RAPIDE BIBLIOTHÈQUE ═══════ -->
+<div class="lib-preview-pop" id="libPreviewPop" style="display:none"
+  onmouseenter="_libPreviewKeep()" onmouseleave="_libPreviewLeave()"></div>
+
 <!-- ═══════ YOUTUBE PLAYER MODAL ═══════ -->
 <div class="yt-modal-overlay" id="ytModalOverlay" onclick="closeYtModal(event)">
   <div class="yt-modal-box" id="ytModalBox">
@@ -1820,13 +1849,20 @@ function renderLib(q, typeFilter, subFilter){
     g.items.forEach(function(ex){
       var isAdded = !!addedIds[ex.id];
       var isFav = favs.has(ex.id);
-      html += '<div class="lib-item'+(isAdded?' added':'')+'" id="li-'+ex.id+'">';
+      // Événements hover (desktop) ou tap ℹ (touch) pour l'aperçu rapide
+      var hoverAttrs = _isTouchDevice ? '' :
+        ' onmouseenter="_showLibPreviewDelayed(\''+ex.id+'\',this)" onmouseleave="_hideLibPreview()"';
+      html += '<div class="lib-item'+(isAdded?' added':'')+'" id="li-'+ex.id+'"'+hoverAttrs+'>';
       html += '<div class="lib-item-info">';
       html += '<div class="lib-item-name">'+escH(ex.name)+'</div>';
       html += '<div class="lib-sub">';
       html += '<span class="lib-tag '+getTypeClass(ex.type)+'">'+getTypeLabel(ex.type)+'</span>';
       if(ex.obj) html += '<span class="lib-tag" style="background:#F3F0FF;color:#5B4FBF;">'+escH(ex.obj)+'</span>';
       html += '</div></div>';
+      // Bouton ℹ visible uniquement sur touch (sur desktop le hover suffit)
+      if(_isTouchDevice){
+        html += '<button class="lib-info-btn" id="libinfo-'+ex.id+'" onclick="_toggleLibPreview(event,\''+ex.id+'\')" title="Aperçu">ℹ</button>';
+      }
       html += '<button class="fav-btn'+(isFav?' active':'')+'" onclick="event.stopPropagation();toggleFav(\''+ex.id+'\')" title="Favori">★</button>';
       html += '<button class="lib-add-btn" onclick="addExoFromLib(\''+ex.id+'\')" title="Ajouter"></button>';
       html += '</div>';
@@ -1841,6 +1877,100 @@ function renderLib(q, typeFilter, subFilter){
    SESSION / BLOCS
    ================================================================ */
 function escH(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── Aperçu rapide bibliothèque ───────────────────────────────────────────────
+var _libPreviewTimer  = null;
+var _libPreviewKeepOn = false; // true quand la souris est sur le popover
+var _libPreviewExId   = null;  // exo actuellement affiché
+
+function _buildLibPreviewHtml(ex){
+  var html = '<div class="pp-name">'+escH(ex.name)+'</div>';
+  html += '<div class="pp-tags">';
+  html += '<span class="lib-tag '+getTypeClass(ex.type)+'">'+getTypeLabel(ex.type)+'</span>';
+  if(ex.zone && ex.zone !== ex.name) html += '<span class="lib-tag">'+escH(ex.zone)+'</span>';
+  if(ex.obj)  html += '<span class="lib-tag" style="background:#F3F0FF;color:#5B4FBF;">'+escH(ex.obj)+'</span>';
+  if(ex.patterns && ex.patterns.length) ex.patterns.forEach(function(p){ html += '<span class="lib-tag" style="background:#E8F5E9;color:#2E7D32;">'+escH(p)+'</span>'; });
+  html += '</div>';
+  if(ex.url){
+    var yt = _ytThumbHtml(ex.url);
+    html += '<div class="pp-thumb">'+(yt ? yt : '<span class="pp-nourl">🔗 Lien vidéo disponible</span>')+'</div>';
+  }
+  return html;
+}
+
+function _positionLibPreview(targetEl){
+  var pop = document.getElementById('libPreviewPop');
+  pop.style.display = 'block';
+  var rect = targetEl.getBoundingClientRect();
+  var popW = 250; var popH = pop.offsetHeight || 160;
+  var spaceRight = window.innerWidth - rect.right - 8;
+  var left = spaceRight >= popW ? rect.right + 8 : rect.left - popW - 8;
+  // Sur mobile (sidebar en haut) : positionner en dessous de la sidebar
+  if(window.innerWidth <= 900){ left = Math.max(8, (window.innerWidth - popW) / 2); }
+  var top  = Math.min(rect.top, window.innerHeight - popH - 10);
+  top = Math.max(8, top);
+  pop.style.left = left + 'px';
+  pop.style.top  = top  + 'px';
+}
+
+function _showLibPreviewNow(exId, targetEl){
+  var ex = LIBRARY.find(function(x){ return x.id===exId; });
+  if(!ex) return;
+  _libPreviewExId = exId;
+  var pop = document.getElementById('libPreviewPop');
+  pop.innerHTML = _buildLibPreviewHtml(ex);
+  _positionLibPreview(targetEl);
+  // Sur touch : le thumb doit être cliquable
+  if(_isTouchDevice) pop.style.pointerEvents = 'auto';
+  else pop.style.pointerEvents = 'none';
+  // Marquer le bouton actif
+  document.querySelectorAll('.lib-info-btn').forEach(function(b){ b.classList.remove('active'); });
+  var btn = document.getElementById('libinfo-'+exId);
+  if(btn) btn.classList.add('active');
+}
+
+function _showLibPreviewDelayed(exId, targetEl){
+  clearTimeout(_libPreviewTimer);
+  _libPreviewTimer = setTimeout(function(){ _showLibPreviewNow(exId, targetEl); }, 250);
+}
+
+function _hideLibPreview(){
+  if(_libPreviewKeepOn) return; // souris sur le popover, on attend
+  clearTimeout(_libPreviewTimer); _libPreviewTimer = null;
+  var pop = document.getElementById('libPreviewPop');
+  if(pop) pop.style.display = 'none';
+  document.querySelectorAll('.lib-info-btn').forEach(function(b){ b.classList.remove('active'); });
+  _libPreviewExId = null;
+}
+
+function _libPreviewKeep(){ _libPreviewKeepOn = true; }
+function _libPreviewLeave(){ _libPreviewKeepOn = false; _hideLibPreview(); }
+
+// Touch : tap sur ℹ = toggle
+function _toggleLibPreview(e, exId){
+  e.stopPropagation();
+  var pop = document.getElementById('libPreviewPop');
+  if(_libPreviewExId === exId && pop.style.display !== 'none'){
+    _libPreviewExId = null;
+    _hideLibPreview();
+  } else {
+    _libPreviewKeepOn = false;
+    _showLibPreviewNow(exId, e.currentTarget);
+    // Fermer si tap en dehors
+    setTimeout(function(){
+      document.addEventListener('touchstart', _libPreviewOutsideTap, {once:true, passive:true});
+    }, 50);
+  }
+}
+
+function _libPreviewOutsideTap(e){
+  var pop = document.getElementById('libPreviewPop');
+  if(pop && !pop.contains(e.target)){
+    _libPreviewExId = null;
+    _hideLibPreview();
+  }
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 // ── YouTube helpers ──────────────────────────────────────────────────────────
 function _ytId(url){
