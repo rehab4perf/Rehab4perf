@@ -1312,14 +1312,14 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   <div class="builder-header">
     <h2 id="builderTitle">Nouvelle séance</h2>
     <div style="display:flex;align-items:center;gap:6px;">
-      <button class="builder-save-btn" id="prog-cloud-save-btn" onclick="saveProgToCloud()">☁️ Sauvegarder</button>
+      <button class="builder-save-btn" id="prog-cloud-save-btn" onclick="_builderSaveBtnClick()">💾 Sauvegarder</button>
       <button class="builder-plan-btn" onclick="openPlanModal()">📅 Planifier</button>
       <button class="builder-share-btn" id="prog-share-btn" onclick="shareBuilderProg()">📤 Partager</button>
       <button class="btn btn-outline" onclick="openProgHistory()" style="font-size:.72rem;padding:4px 9px;white-space:nowrap;">📂 Programmes</button>
       <div class="more-menu-wrap">
         <button class="more-btn" onclick="toggleMoreMenu(event)" title="Plus d'options">• • •</button>
         <div class="more-dropdown" id="moreDropdown">
-          <button class="more-item" onclick="openSaveTemplate();closeMoreMenu()">📋 Sauvegarder comme template</button>
+          <button class="more-item" onclick="openSaveTemplate();closeMoreMenu()">📋 Créer un template</button>
           <button class="more-item" onclick="shareProgLink();closeMoreMenu()">🔗 Partager avec l'athlète</button>
           <button class="more-item" onclick="exportSession();closeMoreMenu()">📤 Exporter HTML</button>
           <button class="more-item" onclick="window.print();closeMoreMenu()">🖨 Imprimer</button>
@@ -1350,7 +1350,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   <div style="border-top:1px solid var(--border);flex-shrink:0;">
     <div style="padding:6px 14px;display:flex;align-items:center;gap:8px;background:#FAFBFD;">
       <span style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;flex:1;">📋 Mes templates</span>
-      <button class="btn btn-outline" onclick="openSaveTemplate()" style="font-size:.68rem;padding:3px 8px;">+ Enregistrer</button>
     </div>
     <div class="seances-area" id="templatesBuilderArea" style="max-height:200px;overflow-y:auto;"></div>
   </div>
@@ -4760,6 +4759,51 @@ function renderTemplatesInBuilder(){
 }
 
 /* ── Charger un template dans le builder ── */
+// ── Bouton save contextuel ───────────────────────────────────────────────────
+function _builderSaveBtnClick(){
+  if(_builderFromTemplate) _doUpdateTemplate();
+  else saveProgToCloud();
+}
+
+function _refreshSaveBtn(){
+  var btn = document.getElementById('prog-cloud-save-btn');
+  if(!btn) return;
+  if(_builderFromTemplate){
+    btn.textContent = '🔄 Mettre à jour';
+    btn.title = 'Mettre à jour le template';
+  } else {
+    btn.textContent = '💾 Sauvegarder';
+    btn.title = '';
+  }
+}
+
+function _doUpdateTemplate(){
+  if(!_builderFromTemplate){ saveProgToCloud(); return; }
+  if(!_progToken || !_progUid){ alert('Session non disponible.'); return; }
+  var btn = document.getElementById('prog-cloud-save-btn');
+  btn.disabled = true; btn.textContent = '⏳ Mise à jour…';
+  var nomProg = (document.getElementById('patientName')||{}).value || '';
+  var donnees = JSON.stringify({ blocs: JSON.parse(JSON.stringify(blocs||[])) });
+  fetch(SUPA_URL_P + '/rest/v1/templates?id=eq.' + _builderFromTemplate, {
+    method: 'PATCH',
+    headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=representation'}),
+    body: JSON.stringify({ donnees: donnees, nom: nomProg })
+  })
+  .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, status:r.status, data:d}; }); })
+  .then(function(res){
+    btn.disabled = false;
+    if(!res.ok){ btn.textContent='🔄 Mettre à jour'; alert('Erreur '+res.status+' : '+JSON.stringify(res.data)); return; }
+    btn.textContent = '✓ Mis à jour !';
+    setTimeout(function(){ btn.textContent='🔄 Mettre à jour'; }, 2500);
+    renderSidebarTemplates();
+  })
+  .catch(function(err){
+    btn.disabled = false; btn.textContent = '🔄 Mettre à jour';
+    alert('Erreur réseau : '+(err&&err.message||err));
+  });
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 function loadTemplate(id){
   function _applyTemplate(t){
     var d = {};
@@ -4771,6 +4815,7 @@ function loadTemplate(id){
     _builderFromTemplate = String(t.id);
     renderSession();
     _updateBuilderTitle();
+    _refreshSaveBtn();
     var pn = document.getElementById('patientName');
     if(pn) pn.value = t.nom || '';
   }
@@ -5140,6 +5185,7 @@ function openBuilderForDate(dateStr){
   _builderDate = dateStr;
   _builderFromTemplate = null;
   _updateBuilderTitle();
+  _refreshSaveBtn();
   _enterBuilderMode();
 }
 
@@ -5151,6 +5197,7 @@ function openBuilderNew(){
   _notes = '';
   renderSession();
   _updateBuilderTitle();
+  _refreshSaveBtn();
   _enterBuilderMode();
 }
 
