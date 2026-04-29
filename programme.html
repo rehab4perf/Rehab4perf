@@ -238,9 +238,12 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .editor-close { background:none; border:none; color:rgba(255,255,255,.6); font-size:1.4rem; cursor:pointer; line-height:1; }
 .editor-close:hover { color:#fff; }
 .editor-body { padding:14px; max-height:80vh; overflow-y:auto; }
-.editor-toolbar { display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+.editor-toolbar { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+.editor-toolbar-left  { display:flex; align-items:center; gap:8px; flex:1; min-width:0; }
+.editor-toolbar-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
 .editor-search { flex:1; padding:6px 10px; border:1px solid var(--border); border-radius:6px; font-size:.8rem; outline:none; min-width:120px; }
 .editor-search:focus { border-color:var(--accent2); }
+.editor-count { font-size:.75rem; color:var(--muted); white-space:nowrap; font-weight:500; }
 .exo-edit-row { display:grid; grid-template-columns:1.6fr 130px 110px 130px 1fr 28px; gap:6px; align-items:center; padding:5px 4px; border-bottom:1px solid #f0f4f8; }
 .exo-edit-row:last-child { border-bottom:none; }
 .exo-edit-row input, .exo-edit-row select { padding:4px 7px; border:1px solid var(--border); border-radius:5px; font-size:.76rem; color:var(--text); outline:none; background:#FAFBFD; width:100%; }
@@ -1355,10 +1358,14 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
     </div>
     <div class="editor-body">
       <div class="editor-toolbar">
-        <input class="editor-search" id="editorSearch" type="text" placeholder="Filtrer les exercices…" oninput="renderEditor()">
-        <button class="btn btn-primary" style="font-size:.76rem;padding:6px 12px;" onclick="addNewExo()">+ Ajouter</button>
-        <button class="btn btn-outline" style="font-size:.76rem;padding:6px 12px;" onclick="resetLibrary()">↺ Réinitialiser</button>
-        <button class="btn btn-primary" style="font-size:.76rem;padding:6px 12px;background:#27AE60;border-color:#27AE60;" onclick="saveEditor()">✓ Enregistrer</button>
+        <div class="editor-toolbar-left">
+          <input class="editor-search" id="editorSearch" type="text" placeholder="Filtrer les exercices…" oninput="renderEditor()">
+          <span class="editor-count" id="editorCount"></span>
+        </div>
+        <div class="editor-toolbar-right">
+          <button class="btn btn-outline" style="font-size:.76rem;padding:6px 12px;" onclick="addNewExo()">+ Ajouter</button>
+          <button class="btn btn-primary" style="font-size:.76rem;padding:6px 12px;background:#27AE60;border-color:#27AE60;" onclick="saveEditor()">✓ Enregistrer</button>
+        </div>
       </div>
       <div class="editor-col-header">
         <span>Nom de l'exercice</span>
@@ -3053,6 +3060,13 @@ function renderEditor(){
     rows += '</div>';
   });
   list.innerHTML = rows || '<div style="padding:16px;text-align:center;color:var(--muted);font-size:.8rem;">Aucun exercice correspondant</div>';
+  // Compteur
+  var countEl = document.getElementById('editorCount');
+  if(countEl){
+    var visible = rows ? rows.split('class="exo-edit-row"').length - 1 : 0;
+    var total   = _editorData.length;
+    countEl.textContent = q ? visible + ' / ' + total + ' exercice' + (total>1?'s':'') : total + ' exercice' + (total>1?'s':'');
+  }
 }
 
 /* ================================================================
