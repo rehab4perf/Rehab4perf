@@ -3800,8 +3800,12 @@ function calToday() {
 
 function renderCalendar() {
   if(_progPatient) {
+    // Vider immédiatement pour ne pas afficher les séances d'un autre patient pendant le fetch
+    _cloudCalEvents = [];
+    _renderCalendarUI();
     // Mode cloud : charger les séances Supabase pour ce patient
-    var url = SUPA_URL_P + '/rest/v1/seances_planifiees?patient_id=eq.' + _progPatient.id
+    var _fetchPatientId = _progPatient.id; // capturer l'id au moment du lancement
+    var url = SUPA_URL_P + '/rest/v1/seances_planifiees?patient_id=eq.' + _fetchPatientId
             + '&select=id,date,programme_id,programmes(nom,donnees),athlete_feedback(rpe,duree_min)&order=date.asc';
     var calHeaders = _progToken
       ? { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _progToken }
@@ -3809,11 +3813,14 @@ function renderCalendar() {
     fetch(url, { headers: calHeaders })
       .then(function(r){ return r.json(); })
       .then(function(data){
+        // Ignorer si le patient a changé entre-temps (fetch obsolète)
+        if(!_progPatient || _progPatient.id !== _fetchPatientId) return;
         _cloudCalEvents = Array.isArray(data) ? data : [];
         _renderCalendarUI();
       })
       .catch(function(){ _cloudCalEvents = []; _renderCalendarUI(); });
   } else {
+    _cloudCalEvents = [];
     _loadCalEvents();
     _renderCalendarUI();
   }
