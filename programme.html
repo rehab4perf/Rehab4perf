@@ -250,6 +250,11 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .exo-edit-row input:focus, .exo-edit-row select:focus { border-color:var(--accent2); background:#fff; }
 .exo-del-edit { background:none; border:none; color:#CBD2DB; cursor:pointer; font-size:1.1rem; padding:2px 4px; }
 .exo-del-edit:hover { color:#E74C3C; }
+.exo-url-cell { display:flex; align-items:center; gap:6px; min-width:0; }
+.exo-url-cell input { flex:1; min-width:0; }
+.exo-url-cell .yt-thumb-wrap img { width:54px; height:30px; }
+.exo-url-cell .yt-thumb-wrap .yt-play::after { border-left-width:9px; border-top-width:5px; border-bottom-width:5px; }
+.exo-url-placeholder { width:54px; height:30px; border-radius:5px; background:#f0f4f8; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#CBD2DB; font-size:.65rem; text-align:center; line-height:1.2; }
 .editor-col-header { display:grid; grid-template-columns:1.6fr 130px 110px 130px 1fr 28px; gap:6px; padding:4px 4px 6px; }
 .editor-col-header span { font-size:.65rem; font-weight:700; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; }
 .lib-section { margin-bottom:4px; }
@@ -3018,6 +3023,15 @@ function deleteEditorRow(idx){
   renderEditor();
 }
 
+function updateEditorUrl(idx, val){
+  if(!_editorData[idx]) return;
+  _editorData[idx].url = val;
+  var sp = document.getElementById('exo-thumb-'+idx);
+  if(!sp) return;
+  var html = val ? (_ytThumbHtml(val) || '<div class="exo-url-placeholder">Pas<br>YouTube</div>') : '<div class="exo-url-placeholder">▶</div>';
+  sp.innerHTML = html;
+}
+
 function updateEditorField(idx, field, val){
   if(!_editorData[idx]) return;
   if(field === 'patterns_str'){
@@ -3057,7 +3071,11 @@ function renderEditor(){
     rows += '<select onchange="updateEditorField('+i+',\'zone\',this.value)">'+zSel+'</select>';
     rows += '<select onchange="updateEditorField('+i+',\'type\',this.value)">'+typeOpts+'</select>';
     rows += '<select onchange="updateEditorField('+i+',\'patterns_sel\',this.value)">'+patSel+'</select>';
-    rows += '<input type="url" value="'+escH(e.url||'')+'" placeholder="https://youtu.be/…" oninput="updateEditorField('+i+',\'url\',this.value)">';
+    var thumbHtml = e.url ? (_ytThumbHtml(e.url) || '<div class="exo-url-placeholder">Pas<br>YouTube</div>') : '<div class="exo-url-placeholder">▶</div>';
+    rows += '<div class="exo-url-cell">'
+          + '<span id="exo-thumb-'+i+'">'+thumbHtml+'</span>'
+          + '<input type="url" value="'+escH(e.url||'')+'" placeholder="https://youtu.be/…" oninput="updateEditorUrl('+i+',this.value)">'
+          + '</div>';
     rows += '<button class="exo-del-edit" onclick="deleteEditorRow('+i+')" title="Supprimer">×</button>';
     rows += '</div>';
   });
