@@ -152,6 +152,15 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .stmpl-card-edit    { background:none; border:none; color:#CBD2DB; cursor:pointer; font-size:.78rem; padding:2px 4px; flex-shrink:0; }
 .stmpl-card-edit:hover { color:var(--accent2); }
 .stmpl-group-body   { background:#FAFBFD; }
+/* ── En-têtes de catégorie dans la sidebar ── */
+.stmpl-cat-section  { border-bottom:1px solid var(--border); }
+.stmpl-cat-hdr      { display:flex; align-items:center; gap:6px; padding:6px 12px; cursor:pointer; user-select:none; -webkit-user-select:none; transition:background .1s; }
+.stmpl-cat-hdr:hover { background:#EEF2F7; }
+.stmpl-cat-hdr-icon { font-size:.9rem; flex-shrink:0; }
+.stmpl-cat-hdr-name { font-size:.72rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; flex:1; }
+.stmpl-cat-hdr-count{ font-size:.67rem; color:var(--muted); flex-shrink:0; }
+.stmpl-cat-hdr-toggle{ font-size:.6rem; color:var(--muted); flex-shrink:0; width:10px; }
+.stmpl-cat-body     { }
 .stmpl-phase-card   { padding-left:28px !important; border-left:3px solid var(--accent2) !important; background:#F5F8FF; }
 .stmpl-phase-card:hover { background:#EBF3FF; }
 .stmpl-phase-num    { flex-shrink:0; width:18px; height:18px; border-radius:50%; background:var(--accent2); color:#fff; font-size:.64rem; font-weight:700; display:flex; align-items:center; justify-content:center; }
@@ -5284,59 +5293,110 @@ function renderSidebarTemplates(){
   }
 }
 
+var _collapsedCats = {}; // { 'Renforcement': true } = replié
+
+function _toggleCatSection(catKey){
+  _collapsedCats[catKey] = !_collapsedCats[catKey];
+  _renderSidebarWithGroups();
+}
+
 function _renderSidebarWithGroups(){
   var scroll = document.getElementById('stmplScroll');
   if(!scroll) return;
   var q   = ((document.getElementById('stmplSearch')||{}).value||'').toLowerCase();
-  var cat = ((document.getElementById('stmplCatFilter')||{}).value||'');
+  var catFilter = ((document.getElementById('stmplCatFilter')||{}).value||'');
 
   var html = '<div class="stmpl-group-add-row"><button class="stmpl-new-group-btn" onclick="openCreateGroup()">📁 Nouveau protocole</button></div>';
 
-  var filteredGroups = _groups.filter(function(g){ return !cat||(g.categorie||'')===cat; });
-  var filteredTmpl   = _sidebarProgs.filter(function(p){
-    var mQ = !q   || (p.nom||'').toLowerCase().indexOf(q)>-1 || (p.phase_nom||'').toLowerCase().indexOf(q)>-1;
-    var mC = !cat || (p.categorie||'')===cat;
+  // Filtrer groupes et templates
+  var filteredGroups = _groups.filter(function(g){
+    return !catFilter || (g.categorie||'') === catFilter;
+  });
+  var filteredTmpl = _sidebarProgs.filter(function(p){
+    var mQ = !q || (p.nom||'').toLowerCase().indexOf(q)>-1 || (p.phase_nom||'').toLowerCase().indexOf(q)>-1;
+    var mC = !catFilter || (p.categorie||'') === catFilter;
     return mQ && mC;
   });
-  var grouped = filteredTmpl.filter(function(p){ return p.group_id; });
-  var free    = filteredTmpl.filter(function(p){ return !p.group_id; });
+  var groupedTmpl = filteredTmpl.filter(function(p){ return p.group_id; });
+  var freeTmpl    = filteredTmpl.filter(function(p){ return !p.group_id; });
 
-  filteredGroups.forEach(function(g){
-    var isOpen = !!_expandedGroups[g.id];
-    var gCatSt = _tmplCatStyle(g.categorie||'');
-    var gBadge = g.categorie ? '<span class="stmpl-cat-badge" style="background:'+gCatSt.bg+';color:'+gCatSt.fg+';">'+escH(g.categorie)+'</span>' : '';
-    var phases = grouped.filter(function(p){ return String(p.group_id)===String(g.id); });
-    phases.sort(function(a,b){ return (a.phase_ordre||0)-(b.phase_ordre||0); });
-    var gid = escH(String(g.id));
+  // Construire la liste ordonnée de catégories (ordre défini + "Autre" + sans catégorie)
+  var catOrder = TMPL_CATEGORIES.map(function(c){ return c.val; });
+  // Collecter toutes les cats présentes
+  var catsPresentes = {};
+  filteredGroups.forEach(function(g){ catsPresentes[g.categorie||'']  = true; });
+  freeTmpl.forEach(function(p){       catsPresentes[p.categorie||'']  = true; });
 
-    html += '<div class="stmpl-group">';
-    html += '<div class="stmpl-group-header" onclick="_toggleGroup(\''+gid+'\')">';
-    html += '<span class="stmpl-group-toggle">'+(isOpen?'▼':'▶')+'</span>';
-    html += '<div class="stmpl-group-info"><div class="stmpl-group-name">'+escH(g.nom||'Sans nom')+'</div>';
-    html += '<div style="margin-top:2px;">'+gBadge+'<span style="font-size:.68rem;color:var(--muted);margin-left:4px;">'+phases.length+' phase'+(phases.length!==1?'s':'')+'</span></div></div>';
-    html += '<button class="stmpl-group-edit" onclick="event.stopPropagation();openEditGroup(\''+gid+'\')" title="Modifier">✏️</button>';
-    html += '<button class="stmpl-group-del" onclick="event.stopPropagation();deleteGroup(\''+gid+'\')" title="Supprimer">🗑</button></div>';
-    if(isOpen){
-      html += '<div class="stmpl-group-body">';
-      if(!phases.length) html += '<div class="stmpl-phase-empty">Aucune phase. Enregistrez un template et assignez-le à ce protocole.</div>';
-      phases.forEach(function(p,i){ html += _renderTmplCard(p,true,i+1); });
+  // Trier : ordre TMPL_CATEGORIES d'abord, puis inconnues
+  var allCats = Object.keys(catsPresentes).sort(function(a,b){
+    var ia = catOrder.indexOf(a); var ib = catOrder.indexOf(b);
+    if(ia===-1&&ib===-1) return a.localeCompare(b);
+    if(ia===-1) return 1;
+    if(ib===-1) return -1;
+    return ia-ib;
+  });
+
+  var hasContent = false;
+
+  allCats.forEach(function(catKey){
+    var catInfo = TMPL_CATEGORIES.find(function(c){ return c.val===catKey; }) || { icon:'📁', color:'#F3F4F6', textColor:'#374151' };
+    var catGroups = filteredGroups.filter(function(g){ return (g.categorie||'')===catKey; });
+    var catFree   = freeTmpl.filter(function(p){ return (p.categorie||'')===catKey; });
+    if(!catGroups.length && !catFree.length) return;
+    hasContent = true;
+
+    var count = catGroups.length + catFree.length;
+    var isCollapsed = !!_collapsedCats[catKey];
+    var safeKey = escH(catKey||'__sans__');
+
+    html += '<div class="stmpl-cat-section">';
+    html += '<div class="stmpl-cat-hdr" onclick="_toggleCatSection(\''+safeKey+'\')" style="background:'+catInfo.color+'20;">';
+    html += '<span class="stmpl-cat-hdr-icon">'+catInfo.icon+'</span>';
+    html += '<span class="stmpl-cat-hdr-name" style="color:'+catInfo.textColor+';">'+(catKey||'Sans catégorie')+'</span>';
+    html += '<span class="stmpl-cat-hdr-count">'+count+'</span>';
+    html += '<span class="stmpl-cat-hdr-toggle">'+(isCollapsed?'▶':'▼')+'</span>';
+    html += '</div>';
+
+    if(!isCollapsed){
+      html += '<div class="stmpl-cat-body">';
+
+      // Protocoles de cette catégorie
+      catGroups.forEach(function(g){
+        var isOpen = !!_expandedGroups[g.id];
+        var phases = groupedTmpl.filter(function(p){ return String(p.group_id)===String(g.id); });
+        phases.sort(function(a,b){ return (a.phase_ordre||0)-(b.phase_ordre||0); });
+        var gid = escH(String(g.id));
+        html += '<div class="stmpl-group">';
+        html += '<div class="stmpl-group-header" onclick="_toggleGroup(\''+gid+'\')">';
+        html += '<span class="stmpl-group-toggle">'+(isOpen?'▼':'▶')+'</span>';
+        html += '<div class="stmpl-group-info"><div class="stmpl-group-name">'+escH(g.nom||'Sans nom')+'</div>';
+        html += '<div style="margin-top:2px;"><span style="font-size:.68rem;color:var(--muted);">'+phases.length+' phase'+(phases.length!==1?'s':'')+'</span></div></div>';
+        html += '<button class="stmpl-group-edit" onclick="event.stopPropagation();openEditGroup(\''+gid+'\')" title="Modifier">✏️</button>';
+        html += '<button class="stmpl-group-del" onclick="event.stopPropagation();deleteGroup(\''+gid+'\')" title="Supprimer">🗑</button></div>';
+        if(isOpen){
+          html += '<div class="stmpl-group-body">';
+          if(!phases.length) html += '<div class="stmpl-phase-empty">Aucune phase. Enregistrez un template et assignez-le à ce protocole.</div>';
+          phases.forEach(function(p,i){ html += _renderTmplCard(p,true,i+1); });
+          html += '</div>';
+        }
+        html += '</div>';
+      });
+
+      // Templates libres de cette catégorie (sans badge cat, déjà dans la section)
+      catFree.forEach(function(p){ html += _renderTmplCard(p,false,null,true); });
+
       html += '</div>';
     }
     html += '</div>';
   });
 
-  if(free.length){
-    if(filteredGroups.length) html += '<div class="stmpl-section-sep">Templates libres</div>';
-    free.forEach(function(p){ html += _renderTmplCard(p,false,null); });
-  }
-
-  if(!filteredGroups.length && !free.length){
-    html += '<div class="stmpl-empty">Aucun template'+(cat?' dans cette catégorie':'')+'.<br>Créez-en un depuis le builder (📋 Enregistrer).</div>';
+  if(!hasContent){
+    html += '<div class="stmpl-empty">Aucun template'+(catFilter?' dans cette catégorie':'')+'.<br>Créez-en un depuis le builder (📋 Enregistrer).</div>';
   }
   scroll.innerHTML = html;
 }
 
-function _renderTmplCard(p, isPhase, phaseNum){
+function _renderTmplCard(p, isPhase, phaseNum, hideCat){
   var emoji = p.emoji||'💪';
   var bl = p._blocs||[];
   if(!bl.length && p.donnees){ try{ bl=(JSON.parse(p.donnees).blocs)||[]; }catch(e){} }
@@ -5347,7 +5407,8 @@ function _renderTmplCard(p, isPhase, phaseNum){
   if(nbExos)   sub += (sub?' · ':'')+nbExos+' exo'+(nbExos>1?'s':'');
   if(nbCardio) sub += (sub?' · ':'')+nbCardio+' cardio';
   var catSt  = _tmplCatStyle(p.categorie||'');
-  var catBdg = (!isPhase&&p.categorie) ? '<span class="stmpl-cat-badge" style="background:'+catSt.bg+';color:'+catSt.fg+';">'+escH(p.categorie)+'</span>' : '';
+  // Badge catégorie seulement si pas dans une section catégorie (hideCat=false/undefined) et pas une phase
+  var catBdg = (!isPhase && !hideCat && p.categorie) ? '<span class="stmpl-cat-badge" style="background:'+catSt.bg+';color:'+catSt.fg+';">'+escH(p.categorie)+'</span>' : '';
   var pid  = escH(String(p.id));
   var pnom = escH(dispNom);
   var cls  = 'stmpl-card'+(isPhase?' stmpl-phase-card':'');
