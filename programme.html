@@ -167,6 +167,24 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .tmpl-save-overlay.open { display:flex; }
 .tmpl-save-modal { background:#fff; border-radius:12px; padding:22px 24px 18px; width:350px; box-shadow:0 14px 44px rgba(0,0,0,.22); }
 .tmpl-save-modal h2 { font-size:.92rem; font-weight:700; color:var(--navy); margin-bottom:16px; }
+/* ── Publish to library modal ── */
+.pub-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:700; display:none; align-items:center; justify-content:center; }
+.pub-overlay.open { display:flex; }
+.pub-modal { background:#fff; border-radius:12px; padding:22px 24px 18px; width:340px; box-shadow:0 14px 44px rgba(0,0,0,.22); }
+.pub-modal h2 { font-size:.92rem; font-weight:700; color:var(--navy); margin-bottom:6px; }
+.pub-modal-sub { font-size:.76rem; color:var(--muted); margin-bottom:16px; line-height:1.4; }
+.pub-modal label { font-size:.75rem; font-weight:600; color:var(--text); display:block; margin-bottom:4px; }
+.pub-modal input, .pub-modal textarea { width:100%; padding:7px 10px; border:1px solid var(--border); border-radius:7px; font-size:.8rem; font-family:inherit; box-sizing:border-box; outline:none; }
+.pub-modal textarea { resize:vertical; min-height:60px; }
+.pub-modal input:focus, .pub-modal textarea:focus { border-color:var(--accent2); }
+.pub-tmpl-name { font-weight:600; color:var(--text); background:#F5F8FF; border-radius:7px; padding:7px 10px; font-size:.82rem; margin-bottom:14px; }
+/* Bouton publier sur les cards */
+.tmpl-pub-btn { background:none; border:1px solid #BDD5F0; color:var(--accent2); border-radius:5px; padding:2px 6px; font-size:.75rem; cursor:pointer; transition:background .12s, color .12s; white-space:nowrap; }
+.tmpl-pub-btn:hover { background:var(--accent2); color:#fff; border-color:var(--accent2); }
+.tmpl-pub-btn.published { background:#E8F5E9; border-color:#81C784; color:#2E7D32; cursor:default; }
+/* Bouton supprimer de la bibliothèque */
+.lib-del-btn { background:none; border:none; color:#CBD2DB; cursor:pointer; font-size:.95rem; padding:2px 5px; transition:color .12s; }
+.lib-del-btn:hover { color:#E74C3C; }
 
 /* Quick-add modal */
 .qa-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:500; display:none; align-items:center; justify-content:center; }
@@ -1256,6 +1274,23 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
     <div class="save-modal-btns">
       <button class="btn btn-primary" onclick="doSaveTemplate()">📋 Enregistrer le template</button>
       <button class="btn btn-outline" onclick="closeSaveTemplate()">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ PUBLISH TO LIBRARY MODAL ═══════ -->
+<div class="pub-overlay" id="pubLibModal" onclick="if(event.target===this)closePublishModal()">
+  <div class="pub-modal">
+    <h2>📚 Publier dans la bibliothèque</h2>
+    <p class="pub-modal-sub">Ce template sera visible par tous les praticiens Rehab4Perf. Vous pourrez le supprimer à tout moment.</p>
+    <div class="pub-tmpl-name" id="pubTmplName">—</div>
+    <div style="margin-bottom:12px;">
+      <label>Description (optionnel)</label>
+      <textarea id="pubDescInput" placeholder="Ex : Protocole renfo genou post-LCA, semaine 1 à 4…" rows="3"></textarea>
+    </div>
+    <div class="save-modal-btns">
+      <button class="btn btn-primary" onclick="doPublishTemplate()">📚 Publier</button>
+      <button class="btn btn-outline" onclick="closePublishModal()">Annuler</button>
     </div>
   </div>
 </div>
@@ -4758,6 +4793,7 @@ function renderTemplatesInBuilder(){
         + '</div></div>'
         + '<div class="seance-card-actions">'
         + '<button class="btn btn-outline" onclick="loadTemplate(\''+tid+'\')" style="font-size:.68rem;padding:3px 8px;">Charger</button>'
+        + (_progToken ? '<button class="tmpl-pub-btn" onclick="openPublishModal(\''+tid+'\')" title="Publier dans la bibliothèque">📚</button>' : '')
         + '<button onclick="deleteTemplate(\''+tid+'\')" style="background:none;border:none;color:#CBD2DB;cursor:pointer;font-size:1rem;padding:2px 4px;" title="Supprimer">🗑</button>'
         + '</div></div></div>';
     }).join('');
@@ -4793,16 +4829,16 @@ function renderLibraryTemplates(){
   if(!area) return;
   if(!_progToken){ area.innerHTML='<div style="padding:10px 14px;color:var(--muted);font-size:.77rem;font-style:italic;">Connexion requise.</div>'; return; }
   area.innerHTML='<div style="padding:10px 14px;color:var(--muted);font-size:.77rem;">Chargement…</div>';
-  fetch(SUPA_URL_P+'/rest/v1/templates_library?order=categorie.asc,nom.asc', { headers:_sbHeaders() })
+  fetch(SUPA_URL_P+'/rest/v1/templates_library?order=categorie.asc,nom.asc&select=id,nom,donnees,type,emoji,categorie,description,published_by', { headers:_sbHeaders() })
   .then(function(r){ return r.json(); })
   .then(function(data){
     if(!Array.isArray(data)||!data.length){
-      area.innerHTML='<div style="padding:16px 14px;text-align:center;color:var(--muted);font-size:.77rem;font-style:italic;">La bibliothèque est vide pour l\'instant.</div>';
+      area.innerHTML='<div style="padding:16px 14px;text-align:center;color:var(--muted);font-size:.77rem;font-style:italic;">La bibliothèque est vide pour l\'instant.<br><span style="font-size:.7rem;">Publiez un de vos templates avec 📚</span></div>';
       return;
     }
-    // Mettre le badge avec le nb de templates
-    var badge = document.getElementById('tmplTabLib');
-    if(badge) badge.innerHTML = '🌐 Bibliothèque <span class="tmpl-tab-badge">'+data.length+'</span>';
+    // Badge avec nb de templates
+    var tabBtn = document.getElementById('tmplTabLib');
+    if(tabBtn) tabBtn.innerHTML = '🌐 Bibliothèque <span class="tmpl-tab-badge">'+data.length+'</span>';
 
     // Grouper par catégorie
     var cats = {};
@@ -4821,13 +4857,16 @@ function renderLibraryTemplates(){
         if(t.type) meta.push(escH(t.type));
         if(nbExos) meta.push(nbExos+' exo'+(nbExos>1?'s':''));
         if(t.description) meta.push('<em>'+escH(t.description)+'</em>');
+        var isOwn = _progUid && t.published_by === _progUid;
+        var lid = escH(String(t.id));
         html += '<div class="lib-tmpl-card">'
           +'<div class="lib-tmpl-emoji">'+(t.emoji||'💪')+'</div>'
           +'<div class="lib-tmpl-body">'
-          +'<div class="lib-tmpl-name">'+escH(t.nom||'Sans nom')+'</div>'
+          +'<div class="lib-tmpl-name">'+escH(t.nom||'Sans nom')+(isOwn?'<span style="font-size:.6rem;color:var(--accent2);margin-left:5px;font-weight:600;">● moi</span>':'')+'</div>'
           +(meta.length?'<div class="lib-tmpl-meta">'+meta.join(' · ')+'</div>':'')
           +'</div>'
-          +'<button class="lib-tmpl-load" onclick="loadLibraryTemplate(\''+escH(String(t.id))+'\')">Utiliser</button>'
+          +'<button class="lib-tmpl-load" onclick="loadLibraryTemplate(\''+lid+'\')">Utiliser</button>'
+          +(isOwn?'<button class="lib-del-btn" onclick="unpublishLibTemplate(\''+lid+'\')" title="Retirer de la bibliothèque">🗑</button>':'')
           +'</div>';
       });
     });
@@ -4836,6 +4875,83 @@ function renderLibraryTemplates(){
   .catch(function(){
     area.innerHTML='<div style="padding:10px 14px;color:#E74C3C;font-size:.77rem;">Erreur chargement bibliothèque.</div>';
   });
+}
+
+/* ── Publier un template dans la bibliothèque ── */
+var _pubTmplData = null; // template en cours de publication
+
+function openPublishModal(id){
+  if(!_progToken||!_progUid){ alert('Connexion requise.'); return; }
+  // Chercher le template dans la liste déjà chargée ou via fetch
+  fetch(SUPA_URL_P+'/rest/v1/templates?id=eq.'+id+'&select=*', { headers:_sbHeaders() })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    if(!Array.isArray(data)||!data[0]){ alert('Template introuvable.'); return; }
+    _pubTmplData = data[0];
+    document.getElementById('pubTmplName').textContent = (_pubTmplData.emoji||'📋')+' '+(_pubTmplData.nom||'Sans nom');
+    document.getElementById('pubDescInput').value = _pubTmplData.description||'';
+    document.getElementById('pubLibModal').classList.add('open');
+    setTimeout(function(){ document.getElementById('pubDescInput').focus(); }, 100);
+  })
+  .catch(function(err){ alert('Erreur : '+(err&&err.message||err)); });
+}
+
+function closePublishModal(){
+  document.getElementById('pubLibModal').classList.remove('open');
+  _pubTmplData = null;
+}
+
+function doPublishTemplate(){
+  if(!_pubTmplData||!_progToken||!_progUid){ closePublishModal(); return; }
+  var desc = document.getElementById('pubDescInput').value.trim();
+  var payload = {
+    nom:          _pubTmplData.nom||'Sans nom',
+    donnees:      _pubTmplData.donnees||'{}',
+    type:         _pubTmplData.type||null,
+    emoji:        _pubTmplData.emoji||'💪',
+    categorie:    _pubTmplData.categorie||null,
+    description:  desc||null,
+    published_by: _progUid
+  };
+  var btn = document.querySelector('#pubLibModal .btn-primary');
+  if(btn){ btn.disabled=true; btn.textContent='⏳ Publication…'; }
+  fetch(SUPA_URL_P+'/rest/v1/templates_library', {
+    method:'POST',
+    headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
+    body: JSON.stringify(payload)
+  })
+  .then(function(r){
+    if(btn){ btn.disabled=false; btn.textContent='📚 Publier'; }
+    if(r.ok||r.status===201){
+      closePublishModal();
+      _showToast('📚 Template publié dans la bibliothèque !');
+      // Rafraîchir si l'onglet lib est actif
+      if(_tmplTab==='lib') renderLibraryTemplates();
+    } else {
+      r.text().then(function(t){ alert('Erreur '+r.status+' : '+t); });
+    }
+  })
+  .catch(function(err){
+    if(btn){ btn.disabled=false; btn.textContent='📚 Publier'; }
+    alert('Erreur réseau : '+(err&&err.message||err));
+  });
+}
+
+function unpublishLibTemplate(id){
+  if(!confirm('Retirer ce template de la bibliothèque partagée ?')) return;
+  fetch(SUPA_URL_P+'/rest/v1/templates_library?id=eq.'+id, {
+    method:'DELETE',
+    headers: _sbHeaders()
+  })
+  .then(function(r){
+    if(r.ok||r.status===204){
+      _showToast('🗑 Template retiré de la bibliothèque.');
+      renderLibraryTemplates();
+    } else {
+      r.text().then(function(t){ alert('Erreur '+r.status+' : '+t); });
+    }
+  })
+  .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
 }
 
 function loadLibraryTemplate(id){
