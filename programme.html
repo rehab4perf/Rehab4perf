@@ -147,6 +147,10 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .stmpl-group-name   { font-size:.81rem; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .stmpl-group-del    { background:none; border:none; color:#CBD2DB; cursor:pointer; font-size:.85rem; padding:2px 4px; flex-shrink:0; }
 .stmpl-group-del:hover { color:#E74C3C; }
+.stmpl-group-edit   { background:none; border:none; color:#CBD2DB; cursor:pointer; font-size:.8rem; padding:2px 4px; flex-shrink:0; }
+.stmpl-group-edit:hover { color:var(--accent2); }
+.stmpl-card-edit    { background:none; border:none; color:#CBD2DB; cursor:pointer; font-size:.78rem; padding:2px 4px; flex-shrink:0; }
+.stmpl-card-edit:hover { color:var(--accent2); }
 .stmpl-group-body   { background:#FAFBFD; }
 .stmpl-phase-card   { padding-left:28px !important; border-left:3px solid var(--accent2) !important; background:#F5F8FF; }
 .stmpl-phase-card:hover { background:#EBF3FF; }
@@ -1181,9 +1185,9 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 </aside>
 
 <!-- ═══════ GROUP CREATE MODAL ═══════ -->
-<div class="grp-modal-overlay" id="groupCreateModal">
+<div class="grp-modal-overlay" id="groupCreateModal" onclick="if(event.target===this)closeCreateGroup()">
   <div class="grp-modal">
-    <h2>📁 Nouveau protocole</h2>
+    <h2 id="grpModalTitle">📁 Nouveau protocole</h2>
     <div class="save-field">
       <label>Nom du protocole</label>
       <input type="text" id="grpNameInput" placeholder="Ex : LCA — Protocole complet">
@@ -1207,7 +1211,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
       <textarea id="grpDescInput" placeholder="Protocole post-opératoire LCA…"></textarea>
     </div>
     <div class="save-modal-btns">
-      <button class="btn btn-primary" onclick="doCreateGroup()">📁 Créer le protocole</button>
+      <button class="btn btn-primary" id="grpModalConfirmBtn" onclick="doCreateGroup()">📁 Créer le protocole</button>
       <button class="btn btn-outline" onclick="closeCreateGroup()">Annuler</button>
     </div>
   </div>
@@ -1216,7 +1220,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 <!-- ═══════ TEMPLATE SAVE MODAL ═══════ -->
 <div class="tmpl-save-overlay" id="templateSaveModal">
   <div class="tmpl-save-modal">
-    <h2>📋 Sauvegarder comme template</h2>
+    <h2 id="tmplModalTitle">📋 Sauvegarder comme template</h2>
     <div class="save-field">
       <label>Nom du template</label>
       <input type="text" id="tmplNameInput" placeholder="Ex : Renfo genou — Phase 2">
@@ -1272,7 +1276,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
       </div>
     </div>
     <div class="save-modal-btns">
-      <button class="btn btn-primary" onclick="doSaveTemplate()">📋 Enregistrer le template</button>
+      <button class="btn btn-primary" id="tmplModalConfirmBtn" onclick="doSaveTemplate()">📋 Enregistrer le template</button>
       <button class="btn btn-outline" onclick="closeSaveTemplate()">Annuler</button>
     </div>
   </div>
@@ -4653,6 +4657,7 @@ var TMPL_SUBTYPES = {
 var _templates        = [];
 var _tmplSelectedEmoji = '💪';
 var _builderFromTemplate = null;
+var _tmplEditId = null; // null = création, sinon id du template à modifier
 
 function _loadTemplates(){
   try { _templates = JSON.parse(localStorage.getItem('r4p-templates')||'[]'); } catch(e){ _templates=[]; }
@@ -4680,9 +4685,14 @@ function _onTmplCatChange(){
   }
 }
 
-function openSaveTemplate(){
-  if(!blocs.length){ alert('La séance est vide.'); return; }
+function _openTmplModal(opts){
+  // opts = { nom, cat, type, emoji, groupId, phaseNom, phaseOrdre, editId }
+  _tmplEditId = opts.editId || null;
+  document.getElementById('tmplModalTitle').textContent = _tmplEditId ? '✏️ Modifier le template' : '📋 Sauvegarder comme template';
+  document.getElementById('tmplModalConfirmBtn').textContent = _tmplEditId ? '💾 Enregistrer les modifications' : '📋 Enregistrer le template';
+  // Emoji row
   var row = document.getElementById('tmplEmojiRow');
+  _tmplSelectedEmoji = opts.emoji || '💪';
   row.innerHTML = '';
   SAVE_EMOJIS.forEach(function(em){
     var b = document.createElement('button');
@@ -4695,32 +4705,58 @@ function openSaveTemplate(){
     };
     row.appendChild(b);
   });
-  document.getElementById('tmplNameInput').value = '';
-  document.getElementById('tmplCatInput').value = '';
-  // Sous-types par défaut (Renforcement)
-  var sel = document.getElementById('tmplTypeInput');
-  sel.innerHTML = (TMPL_SUBTYPES['Renforcement']||[]).map(function(s){
-    return '<option value="'+escH(s)+'">'+escH(s)+'</option>';
-  }).join('');
-  // Peupler le select groupe avec les groupes chargés
+  document.getElementById('tmplNameInput').value = opts.nom || '';
+  document.getElementById('tmplCatInput').value  = opts.cat || '';
+  _onTmplCatChange(); // met à jour les sous-types
+  if(opts.type){
+    var sel = document.getElementById('tmplTypeInput');
+    for(var i=0;i<sel.options.length;i++){ if(sel.options[i].value===opts.type){ sel.selectedIndex=i; break; } }
+  }
+  // Groupes
   var grpSel = document.getElementById('tmplGroupInput');
   var grpOpts = '<option value="">— Aucun —</option>';
   (_groups||[]).forEach(function(g){
     grpOpts += '<option value="'+escH(String(g.id))+'">'+escH(g.nom||'Sans nom')+'</option>';
   });
   grpSel.innerHTML = grpOpts;
-  grpSel.value = '';
-  document.getElementById('tmplPhaseWrap').style.display = 'none';
-  document.getElementById('tmplPhaseNomInput').value = '';
-  document.getElementById('tmplPhaseOrdreInput').value = '1';
+  grpSel.value = opts.groupId ? String(opts.groupId) : '';
+  var phWrap = document.getElementById('tmplPhaseWrap');
+  phWrap.style.display = opts.groupId ? 'block' : 'none';
+  document.getElementById('tmplPhaseNomInput').value   = opts.phaseNom  || '';
+  document.getElementById('tmplPhaseOrdreInput').value = opts.phaseOrdre || '1';
   document.getElementById('templateSaveModal').classList.add('open');
   setTimeout(function(){ document.getElementById('tmplNameInput').focus(); }, 100);
 }
-function closeSaveTemplate(){
-  document.getElementById('templateSaveModal').classList.remove('open');
+
+function openEditTemplate(id){
+  if(!_progToken){
+    // local
+    _loadTemplates();
+    var t = _templates.find(function(x){ return String(x.id)===String(id); });
+    if(!t){ alert('Template introuvable.'); return; }
+    _openTmplModal({ editId:id, nom:t.nom, cat:t.categorie, type:t.type, emoji:t.emoji, groupId:t.group_id, phaseNom:t.phase_nom, phaseOrdre:t.phase_ordre });
+    return;
+  }
+  fetch(SUPA_URL_P+'/rest/v1/templates?id=eq.'+id+'&select=*', { headers:_sbHeaders() })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    if(!Array.isArray(data)||!data[0]){ alert('Template introuvable.'); return; }
+    var t = data[0];
+    _openTmplModal({ editId:id, nom:t.nom, cat:t.categorie, type:t.type, emoji:t.emoji, groupId:t.group_id, phaseNom:t.phase_nom, phaseOrdre:t.phase_ordre });
+  })
+  .catch(function(){ alert('Erreur réseau.'); });
 }
 
-/* ── Enregistrer le template ── */
+function openSaveTemplate(){
+  if(!blocs.length){ alert('La séance est vide.'); return; }
+  _openTmplModal({ emoji: _tmplSelectedEmoji });
+}
+function closeSaveTemplate(){
+  document.getElementById('templateSaveModal').classList.remove('open');
+  _tmplEditId = null;
+}
+
+/* ── Enregistrer / Modifier le template ── */
 function doSaveTemplate(){
   var nom = document.getElementById('tmplNameInput').value.trim();
   if(!nom){ alert('Donnez un nom au template.'); return; }
@@ -4729,8 +4765,30 @@ function doSaveTemplate(){
   var groupId    = document.getElementById('tmplGroupInput').value || null;
   var phaseNom   = groupId ? (document.getElementById('tmplPhaseNomInput').value.trim()||'') : '';
   var phaseOrdre = groupId ? (parseInt(document.getElementById('tmplPhaseOrdreInput').value)||1) : 0;
-  var donnees    = JSON.stringify({ blocs: JSON.parse(JSON.stringify(blocs)) });
 
+  if(_tmplEditId){
+    // ── Mode édition : PATCH sans toucher aux blocs ──
+    var id = _tmplEditId;
+    var patch = { nom:nom, categorie:cat, type:type, emoji:_tmplSelectedEmoji, group_id:groupId, phase_nom:phaseNom, phase_ordre:phaseOrdre };
+    if(_progToken && _progUid){
+      fetch(SUPA_URL_P+'/rest/v1/templates?id=eq.'+id, {
+        method:'PATCH', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
+        body: JSON.stringify(patch)
+      }).then(function(r){
+        if(r.ok){ closeSaveTemplate(); renderTemplatesInBuilder(); renderSidebarTemplates(); _showToast('✏️ Template « '+nom+' » mis à jour !'); }
+        else { r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); }); }
+      }).catch(function(){ alert('Erreur réseau.'); });
+    } else {
+      _loadTemplates();
+      var t = _templates.find(function(x){ return String(x.id)===String(id); });
+      if(t){ t.nom=nom; t.categorie=cat; t.type=type; t.emoji=_tmplSelectedEmoji; t.group_id=groupId; t.phase_nom=phaseNom; t.phase_ordre=phaseOrdre; _persistTemplates(); }
+      closeSaveTemplate(); renderTemplatesInBuilder(); renderSidebarTemplates(); _showToast('✏️ Template « '+nom+' » mis à jour !');
+    }
+    return;
+  }
+
+  // ── Mode création ──
+  var donnees = JSON.stringify({ blocs: JSON.parse(JSON.stringify(blocs)) });
   if(_progToken && _progUid){
     fetch(SUPA_URL_P + '/rest/v1/templates', {
       method: 'POST',
@@ -5089,21 +5147,61 @@ function _persistGroups(){
   try { localStorage.setItem('r4p-template-groups', JSON.stringify(_groups)); } catch(e){}
 }
 
+var _grpEditId = null; // null = création, sinon id du groupe à modifier
+
 function openCreateGroup(){
+  _grpEditId = null;
+  document.getElementById('grpModalTitle').textContent = '📁 Nouveau protocole';
+  document.getElementById('grpModalConfirmBtn').textContent = '📁 Créer le protocole';
   document.getElementById('grpNameInput').value = '';
   document.getElementById('grpCatInput').value = '';
   document.getElementById('grpDescInput').value = '';
   document.getElementById('groupCreateModal').classList.add('open');
   setTimeout(function(){ document.getElementById('grpNameInput').focus(); }, 100);
 }
+function openEditGroup(id){
+  var g = (_groups||[]).find(function(x){ return String(x.id)===String(id); });
+  if(!g){ alert('Protocole introuvable.'); return; }
+  _grpEditId = id;
+  document.getElementById('grpModalTitle').textContent = '✏️ Modifier le protocole';
+  document.getElementById('grpModalConfirmBtn').textContent = '💾 Enregistrer';
+  document.getElementById('grpNameInput').value = g.nom||'';
+  document.getElementById('grpCatInput').value = g.categorie||'';
+  document.getElementById('grpDescInput').value = g.description||'';
+  document.getElementById('groupCreateModal').classList.add('open');
+  setTimeout(function(){ document.getElementById('grpNameInput').focus(); }, 100);
+}
 function closeCreateGroup(){
   document.getElementById('groupCreateModal').classList.remove('open');
+  _grpEditId = null;
 }
 function doCreateGroup(){
   var nom = document.getElementById('grpNameInput').value.trim();
   if(!nom){ alert('Donnez un nom au protocole.'); return; }
   var cat  = document.getElementById('grpCatInput').value;
   var desc = document.getElementById('grpDescInput').value.trim();
+
+  if(_grpEditId){
+    // ── Mode édition ──
+    var id = _grpEditId;
+    if(_progToken && _progUid){
+      fetch(SUPA_URL_P + '/rest/v1/template_groups?id=eq.' + id, {
+        method:'PATCH', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
+        body: JSON.stringify({ nom: nom, categorie: cat, description: desc })
+      }).then(function(r){
+        if(r.ok){ closeCreateGroup(); renderSidebarTemplates(); _showToast('✏️ Protocole mis à jour !'); }
+        else { r.json().then(function(d){ alert('Erreur : ' + JSON.stringify(d)); }); }
+      }).catch(function(){ alert('Erreur réseau.'); });
+    } else {
+      _loadGroups();
+      var g = _groups.find(function(x){ return String(x.id)===String(id); });
+      if(g){ g.nom=nom; g.categorie=cat; g.description=desc; _persistGroups(); }
+      closeCreateGroup(); renderSidebarTemplates(); _showToast('✏️ Protocole mis à jour !');
+    }
+    return;
+  }
+
+  // ── Mode création ──
   if(_progToken && _progUid){
     fetch(SUPA_URL_P + '/rest/v1/template_groups', {
       method: 'POST', headers: _sbHeaders(),
@@ -5216,6 +5314,7 @@ function _renderSidebarWithGroups(){
     html += '<span class="stmpl-group-toggle">'+(isOpen?'▼':'▶')+'</span>';
     html += '<div class="stmpl-group-info"><div class="stmpl-group-name">'+escH(g.nom||'Sans nom')+'</div>';
     html += '<div style="margin-top:2px;">'+gBadge+'<span style="font-size:.68rem;color:var(--muted);margin-left:4px;">'+phases.length+' phase'+(phases.length!==1?'s':'')+'</span></div></div>';
+    html += '<button class="stmpl-group-edit" onclick="event.stopPropagation();openEditGroup(\''+gid+'\')" title="Modifier">✏️</button>';
     html += '<button class="stmpl-group-del" onclick="event.stopPropagation();deleteGroup(\''+gid+'\')" title="Supprimer">🗑</button></div>';
     if(isOpen){
       html += '<div class="stmpl-group-body">';
@@ -5257,6 +5356,7 @@ function _renderTmplCard(p, isPhase, phaseNum){
     +phN+'<div class="stmpl-card-emoji">'+emoji+'</div>'
     +'<div class="stmpl-card-body"><div class="stmpl-card-name">'+pnom+'</div>'
     +'<div class="stmpl-card-meta">'+catBdg+(sub?escH(sub):'')+'</div></div>'
+    +'<button class="stmpl-card-edit" title="Modifier" onclick="event.stopPropagation();openEditTemplate(\''+pid+'\')">✏️</button>'
     +'<button class="stmpl-add-btn" title="Planifier" onclick="event.stopPropagation();_openQuickAdd(\''+pid+'\',\''+pnom+'\')">+</button>'
     +'</div>';
 }
