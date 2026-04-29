@@ -4638,6 +4638,8 @@ function _updatePatientUI(){
   }
   // Cycles
   if(_progPatient) setTimeout(function(){ if(typeof _loadCyclesForPatient==="function") _loadCyclesForPatient(); }, 0);
+  // Rafraîchir le calendrier pour le nouveau patient
+  if(typeof renderCalendar === 'function') renderCalendar();
 }
 
 // ══════════════════════════════════════════════
