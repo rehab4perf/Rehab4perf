@@ -5192,10 +5192,11 @@ function _persistGroups(){
 }
 
 var _grpEditId = null; // null = création, sinon id du groupe à modifier
-var _grpLibId  = null; // id de l'entrée templates_library si déjà publié
+var _grpLibId          = null;  // id de l'entrée templates_library si déjà publié
+var _grpLibCheckDone   = false; // true quand la vérification async est terminée
 
 function openCreateGroup(){
-  _grpEditId = null; _grpLibId = null;
+  _grpEditId = null; _grpLibId = null; _grpLibCheckDone = false;
   document.getElementById('grpModalTitle').textContent = '📁 Nouveau protocole';
   document.getElementById('grpModalConfirmBtn').textContent = '📁 Créer le protocole';
   document.getElementById('grpNameInput').value = '';
@@ -5208,7 +5209,7 @@ function openCreateGroup(){
 function openEditGroup(id){
   var g = (_groups||[]).find(function(x){ return String(x.id)===String(id); });
   if(!g){ alert('Protocole introuvable.'); return; }
-  _grpEditId = id; _grpLibId = null;
+  _grpEditId = id; _grpLibId = null; _grpLibCheckDone = false;
   document.getElementById('grpModalTitle').textContent = '✏️ Modifier le protocole';
   document.getElementById('grpModalConfirmBtn').textContent = '💾 Enregistrer';
   document.getElementById('grpNameInput').value = g.nom||'';
@@ -5223,11 +5224,20 @@ function openEditGroup(id){
   libSt.className = 'grp-lib-status';
   libSt.textContent = 'Vérification…';
   if(_progToken && _progUid){
-    fetch(SUPA_URL_P+'/rest/v1/templates_library?published_by=eq.'+_progUid+'&donnees->>source_group_id=eq.'+encodeURIComponent(String(id))+'&select=id', { headers:_sbHeaders() })
+    // Filtre côté client : récupère toutes les entrées de ce praticien puis filtre sur source_group_id
+    fetch(SUPA_URL_P+'/rest/v1/templates_library?published_by=eq.'+encodeURIComponent(_progUid)+'&select=id,donnees', { headers:_sbHeaders() })
     .then(function(r){ return r.json(); })
     .then(function(data){
-      if(Array.isArray(data) && data[0]){
-        _grpLibId = data[0].id;
+      _grpLibCheckDone = true;
+      if(!Array.isArray(data)){ libSt.textContent = 'Non publié — visible uniquement par vous.'; return; }
+      var match = data.find(function(row){
+        try{
+          var d = typeof row.donnees==='string' ? JSON.parse(row.donnees) : row.donnees;
+          return d && String(d.source_group_id) === String(id);
+        }catch(e){ return false; }
+      });
+      if(match){
+        _grpLibId = match.id;
         libTog.checked = true;
         libSt.className = 'grp-lib-status published';
         libSt.textContent = '✓ Publié — visible par tous les praticiens Rehab4Perf.';
@@ -5235,16 +5245,17 @@ function openEditGroup(id){
         libSt.textContent = 'Non publié — visible uniquement par vous.';
       }
     })
-    .catch(function(){ libSt.textContent = 'Impossible de vérifier le statut.'; });
+    .catch(function(){ _grpLibCheckDone = true; libSt.textContent = 'Impossible de vérifier le statut.'; });
   } else {
     libSec.style.display = 'none';
+    _grpLibCheckDone = true;
   }
   document.getElementById('groupCreateModal').classList.add('open');
   setTimeout(function(){ document.getElementById('grpNameInput').focus(); }, 100);
 }
 function closeCreateGroup(){
   document.getElementById('groupCreateModal').classList.remove('open');
-  _grpEditId = null; _grpLibId = null;
+  _grpEditId = null; _grpLibId = null; _grpLibCheckDone = false;
 }
 function doCreateGroup(){
   var nom = document.getElementById('grpNameInput').value.trim();
@@ -5255,20 +5266,28 @@ function doCreateGroup(){
   if(_grpEditId){
     // ── Mode édition ──
     var id = _grpEditId;
-    var wantPublish = document.getElementById('grpLibToggle').checked;
-    var libIdSnap   = _grpLibId; // snapshot avant fermeture
+    var libSec = document.getElementById('grpLibSection');
+    var wantPublish = libSec && libSec.style.display !== 'none'
+      ? document.getElementById('grpLibToggle').checked
+      : false;
+    // Si la vérification async n'est pas encore terminée, attendre
+    if(!_grpLibCheckDone && libSec && libSec.style.display !== 'none'){
+      _showToast('⏳ Vérification en cours, réessayez dans un instant…');
+      return;
+    }
+    var libIdSnap = _grpLibId; // snapshot après vérification complète
     if(_progToken && _progUid){
       fetch(SUPA_URL_P + '/rest/v1/template_groups?id=eq.' + id, {
         method:'PATCH', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
         body: JSON.stringify({ nom: nom, categorie: cat, description: desc })
       }).then(function(r){
-        if(!r.ok){ r.json().then(function(d){ alert('Erreur : ' + JSON.stringify(d)); }); return; }
+        if(!r.ok){ r.text().then(function(t){ alert('Erreur PATCH : ' + t); }); return; }
         closeCreateGroup(); renderSidebarTemplates(); _showToast('✏️ Protocole mis à jour !');
-        // Gérer publication
+        // Gérer publication après fermeture du modal
         if(wantPublish && !libIdSnap)        _doPublishGroup(id, nom, cat, desc);
         else if(wantPublish && libIdSnap)    _doUpdateGroupInLib(libIdSnap, id, nom, cat, desc);
         else if(!wantPublish && libIdSnap)   _doUnpublishGroup(libIdSnap);
-      }).catch(function(){ alert('Erreur réseau.'); });
+      }).catch(function(e){ alert('Erreur réseau : '+(e&&e.message||e)); });
     } else {
       _loadGroups();
       var g = _groups.find(function(x){ return String(x.id)===String(id); });
@@ -5309,32 +5328,44 @@ function _grpLibPayload(groupId, nom, cat, desc){
     categorie:    cat||null,
     description:  desc||null,
     published_by: _progUid,
-    donnees:      JSON.stringify({ source_group_id: String(groupId), phases: phases })
+    donnees:      { source_group_id: String(groupId), phases: phases }
   };
 }
 function _doPublishGroup(groupId, nom, cat, desc){
+  var payload = _grpLibPayload(groupId, nom, cat, desc);
+  console.log('[_doPublishGroup] payload', payload);
   fetch(SUPA_URL_P+'/rest/v1/templates_library', {
     method:'POST',
-    headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
-    body: JSON.stringify(_grpLibPayload(groupId, nom, cat, desc))
+    headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=representation'}),
+    body: JSON.stringify(payload)
   })
   .then(function(r){
-    if(r.ok||r.status===201) _showToast('🌐 Protocole publié dans la bibliothèque !');
-    else r.text().then(function(t){ alert('Erreur publication : '+t); });
+    if(r.ok||r.status===201){
+      _showToast('🌐 Protocole publié dans la bibliothèque !');
+    } else {
+      r.text().then(function(t){
+        console.error('[_doPublishGroup] erreur', r.status, t);
+        alert('Erreur publication ('+r.status+') : '+t);
+      });
+    }
   })
-  .catch(function(e){ alert('Erreur réseau : '+(e&&e.message||e)); });
+  .catch(function(e){ alert('Erreur réseau publication : '+(e&&e.message||e)); });
 }
 function _doUpdateGroupInLib(libId, groupId, nom, cat, desc){
+  var payload = _grpLibPayload(groupId, nom, cat, desc);
   fetch(SUPA_URL_P+'/rest/v1/templates_library?id=eq.'+libId, {
     method:'PATCH',
     headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
-    body: JSON.stringify(_grpLibPayload(groupId, nom, cat, desc))
+    body: JSON.stringify(payload)
   })
   .then(function(r){
     if(r.ok) _showToast('🌐 Bibliothèque mise à jour !');
-    else r.text().then(function(t){ alert('Erreur mise à jour bibliothèque : '+t); });
+    else r.text().then(function(t){
+      console.error('[_doUpdateGroupInLib] erreur', r.status, t);
+      alert('Erreur mise à jour bibliothèque ('+r.status+') : '+t);
+    });
   })
-  .catch(function(e){ alert('Erreur réseau : '+(e&&e.message||e)); });
+  .catch(function(e){ alert('Erreur réseau mise à jour : '+(e&&e.message||e)); });
 }
 function _doUnpublishGroup(libId){
   fetch(SUPA_URL_P+'/rest/v1/templates_library?id=eq.'+libId, {
@@ -5342,9 +5373,12 @@ function _doUnpublishGroup(libId){
   })
   .then(function(r){
     if(r.ok||r.status===204) _showToast('🔒 Protocole retiré de la bibliothèque.');
-    else r.text().then(function(t){ alert('Erreur retrait : '+t); });
+    else r.text().then(function(t){
+      console.error('[_doUnpublishGroup] erreur', r.status, t);
+      alert('Erreur retrait ('+r.status+') : '+t);
+    });
   })
-  .catch(function(e){ alert('Erreur réseau : '+(e&&e.message||e)); });
+  .catch(function(e){ alert('Erreur réseau retrait : '+(e&&e.message||e)); });
 }
 
 function deleteGroup(id){
