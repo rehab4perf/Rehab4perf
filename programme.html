@@ -3283,6 +3283,8 @@ function _newProgVierge(){
   if(overlay) overlay.style.display='none';
 }
 
+// Doit être défini avant renderLib() (utilisé dans renderLib pour hover/touch)
+var _isTouchDevice = (('ontouchstart' in window) || (navigator.maxTouchPoints > 0));
 renderLib('');
 </script>
 
@@ -4275,8 +4277,7 @@ function removeCalEventCloud(id) {
   .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
 }
 
-// ── Détection touch device ──
-var _isTouchDevice = (('ontouchstart' in window) || (navigator.maxTouchPoints > 0));
+// _isTouchDevice défini plus haut, avant renderLib()
 
 // ── Touch action sheet (iPad/mobile) ──
 var _chipTouchMeta   = {};   // evId → {progId, dateStr, nom}
