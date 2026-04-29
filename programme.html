@@ -3054,7 +3054,7 @@ window.addEventListener('message', function(e){
     // Auto-remplir le champ nom du patient + mettre à jour toute l'UI
     if(_progPatient){
       var pnEl = document.getElementById('patientName');
-      if(pnEl && !pnEl.value) pnEl.value = _progPatient.prenom + ' ' + _progPatient.nom;
+      if(pnEl) pnEl.value = _progPatient.prenom + ' ' + _progPatient.nom;
     }
     _updatePatientUI();
   }
@@ -3130,6 +3130,8 @@ function _updatePatientUI(){
   if(tmplHeader){ tmplHeader.textContent = nom ? 'Templates — ' + nom : 'Templates de séances'; }
   // Charger les cycles du patient depuis Supabase
   if(_progPatient) setTimeout(function(){ if(typeof _loadCyclesForPatient==="function") _loadCyclesForPatient(); }, 0);
+  // Rafraîchir le calendrier pour le nouveau patient
+  if(typeof renderCalendar === 'function') renderCalendar();
 }
 
 function _sbHeaders(){
