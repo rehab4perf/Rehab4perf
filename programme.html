@@ -111,6 +111,23 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .stmpl-cat-select.has-filter { background-color:rgba(74,144,217,.4); background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,.6)'/%3E%3C/svg%3E"); }
 .stmpl-cat-badge { display:inline-block; padding:1px 7px; border-radius:10px; font-size:.67rem; font-weight:600; margin-right:4px; vertical-align:middle; }
 
+/* ── Onglets Mes templates / Bibliothèque ── */
+.tmpl-tabs { display:flex; border-bottom:1px solid var(--border); background:#FAFBFD; flex-shrink:0; }
+.tmpl-tab  { flex:1; padding:6px 4px; font-size:.72rem; font-weight:600; color:var(--muted); background:none; border:none; cursor:pointer; letter-spacing:.03em; transition:color .12s, border-bottom .12s; border-bottom:2px solid transparent; }
+.tmpl-tab.active { color:var(--accent2); border-bottom-color:var(--accent2); }
+.tmpl-tab:hover:not(.active) { color:var(--text); }
+/* Badge sur l'onglet bibliothèque */
+.tmpl-tab-badge { display:inline-block; background:var(--accent2); color:#fff; border-radius:8px; font-size:.6rem; padding:1px 5px; margin-left:4px; vertical-align:middle; }
+/* Card bibliothèque */
+.lib-tmpl-card { display:flex; align-items:center; gap:8px; padding:9px 12px; border-bottom:1px solid var(--border); transition:background .12s; }
+.lib-tmpl-card:hover { background:#F5F8FF; }
+.lib-tmpl-emoji { font-size:1.2rem; flex-shrink:0; }
+.lib-tmpl-body  { flex:1; min-width:0; }
+.lib-tmpl-name  { font-size:.8rem; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.lib-tmpl-meta  { font-size:.68rem; color:var(--muted); margin-top:1px; }
+.lib-tmpl-load  { flex-shrink:0; background:var(--accent2); border:none; color:#fff; border-radius:6px; padding:3px 9px; font-size:.68rem; cursor:pointer; transition:background .12s; white-space:nowrap; }
+.lib-tmpl-load:hover { background:#3a80c9; }
+.lib-tmpl-desc  { font-size:.7rem; color:var(--muted); font-style:italic; padding:4px 12px 8px; line-height:1.4; display:none; }
 /* ── Groupes de templates (protocoles) ── */
 .stmpl-group-add-row { padding:6px 10px; background:var(--navy); }
 .stmpl-new-group-btn {
@@ -1348,10 +1365,11 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 
   <!-- Templates section dans le bas du builder -->
   <div style="border-top:1px solid var(--border);flex-shrink:0;">
-    <div style="padding:6px 14px;display:flex;align-items:center;gap:8px;background:#FAFBFD;">
-      <span style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;flex:1;">📋 Mes templates</span>
+    <div class="tmpl-tabs">
+      <button class="tmpl-tab active" id="tmplTabMes" onclick="switchTmplTab('mes')">📋 Mes templates</button>
+      <button class="tmpl-tab" id="tmplTabLib" onclick="switchTmplTab('lib')">🌐 Bibliothèque</button>
     </div>
-    <div class="seances-area" id="templatesBuilderArea" style="max-height:200px;overflow-y:auto;"></div>
+    <div id="templatesBuilderArea" style="max-height:200px;overflow-y:auto;"></div>
   </div>
 </div>
 
@@ -4713,6 +4731,7 @@ function doSaveTemplate(){
 
 /* ── Afficher les templates dans le bas du builder ── */
 function renderTemplatesInBuilder(){
+  if(_tmplTab === 'lib') return; // ne pas écraser l'onglet bibliothèque
   var area = document.getElementById('templatesBuilderArea');
   if(!area) return;
 
@@ -4756,6 +4775,91 @@ function renderTemplatesInBuilder(){
     _loadTemplates();
     _render(_templates);
   }
+}
+
+/* ── Onglets Mes templates / Bibliothèque ── */
+var _tmplTab = 'mes';
+
+function switchTmplTab(tab){
+  _tmplTab = tab;
+  document.getElementById('tmplTabMes').classList.toggle('active', tab==='mes');
+  document.getElementById('tmplTabLib').classList.toggle('active', tab==='lib');
+  if(tab==='mes') renderTemplatesInBuilder();
+  else renderLibraryTemplates();
+}
+
+function renderLibraryTemplates(){
+  var area = document.getElementById('templatesBuilderArea');
+  if(!area) return;
+  if(!_progToken){ area.innerHTML='<div style="padding:10px 14px;color:var(--muted);font-size:.77rem;font-style:italic;">Connexion requise.</div>'; return; }
+  area.innerHTML='<div style="padding:10px 14px;color:var(--muted);font-size:.77rem;">Chargement…</div>';
+  fetch(SUPA_URL_P+'/rest/v1/templates_library?order=categorie.asc,nom.asc', { headers:_sbHeaders() })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    if(!Array.isArray(data)||!data.length){
+      area.innerHTML='<div style="padding:16px 14px;text-align:center;color:var(--muted);font-size:.77rem;font-style:italic;">La bibliothèque est vide pour l\'instant.</div>';
+      return;
+    }
+    // Mettre le badge avec le nb de templates
+    var badge = document.getElementById('tmplTabLib');
+    if(badge) badge.innerHTML = '🌐 Bibliothèque <span class="tmpl-tab-badge">'+data.length+'</span>';
+
+    // Grouper par catégorie
+    var cats = {};
+    data.forEach(function(t){
+      var c = t.categorie||'Autre';
+      if(!cats[c]) cats[c]=[];
+      cats[c].push(t);
+    });
+    var html = '';
+    Object.keys(cats).sort().forEach(function(cat){
+      html += '<div style="padding:5px 12px 2px;font-size:.67rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;background:#F8FAFC;border-bottom:1px solid var(--border);">'+escH(cat)+'</div>';
+      cats[cat].forEach(function(t){
+        var nbExos = 0;
+        try { nbExos = (JSON.parse(t.donnees||'{}').blocs||[]).reduce(function(a,b){ return a+(b.exos||[]).length; },0); } catch(e){}
+        var meta = [];
+        if(t.type) meta.push(escH(t.type));
+        if(nbExos) meta.push(nbExos+' exo'+(nbExos>1?'s':''));
+        if(t.description) meta.push('<em>'+escH(t.description)+'</em>');
+        html += '<div class="lib-tmpl-card">'
+          +'<div class="lib-tmpl-emoji">'+(t.emoji||'💪')+'</div>'
+          +'<div class="lib-tmpl-body">'
+          +'<div class="lib-tmpl-name">'+escH(t.nom||'Sans nom')+'</div>'
+          +(meta.length?'<div class="lib-tmpl-meta">'+meta.join(' · ')+'</div>':'')
+          +'</div>'
+          +'<button class="lib-tmpl-load" onclick="loadLibraryTemplate(\''+escH(String(t.id))+'\')">Utiliser</button>'
+          +'</div>';
+      });
+    });
+    area.innerHTML = html;
+  })
+  .catch(function(){
+    area.innerHTML='<div style="padding:10px 14px;color:#E74C3C;font-size:.77rem;">Erreur chargement bibliothèque.</div>';
+  });
+}
+
+function loadLibraryTemplate(id){
+  if(!_progToken){ alert('Connexion requise.'); return; }
+  fetch(SUPA_URL_P+'/rest/v1/templates_library?id=eq.'+id+'&select=*', { headers:_sbHeaders() })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    if(!Array.isArray(data)||!data[0]){ alert('Template introuvable.'); return; }
+    var t = data[0];
+    var d = {};
+    try { d = JSON.parse(t.donnees||'{}'); } catch(e){}
+    blocs = d.blocs ? JSON.parse(JSON.stringify(d.blocs)) : [];
+    activeBloc = blocs.length ? blocs[0].id : null;
+    _notes = '';
+    _currentProgId = null;
+    _builderFromTemplate = null; // lecture seule — save créera un nouveau programme
+    renderSession();
+    _updateBuilderTitle();
+    _refreshSaveBtn();
+    var pn = document.getElementById('patientName');
+    if(pn && !pn.value) pn.value = t.nom||'';
+    _showToast('🌐 « '+escH(t.nom||'Template')+' » chargé depuis la bibliothèque');
+  })
+  .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
 }
 
 /* ── Charger un template dans le builder ── */
