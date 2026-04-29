@@ -3012,6 +3012,8 @@ function addNewExo(){
 }
 
 function deleteEditorRow(idx){
+  var nom = (_editorData[idx] && _editorData[idx].name) ? _editorData[idx].name : 'cet exercice';
+  if(!confirm('Supprimer « ' + nom + ' » de la bibliothèque ?')) return;
   _editorData.splice(idx,1);
   renderEditor();
 }
