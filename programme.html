@@ -163,6 +163,18 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .stmpl-cat-body     { }
 .stmpl-phase-card   { padding-left:28px !important; border-left:3px solid var(--accent2) !important; background:#F5F8FF; }
 .stmpl-phase-card:hover { background:#EBF3FF; }
+/* ── Toggle switch bibliothèque ── */
+.grp-lib-section { border-top:1px solid var(--border); margin-top:14px; padding-top:14px; }
+.grp-lib-row     { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+.grp-lib-label   { flex:1; font-size:.8rem; font-weight:600; color:var(--text); }
+.grp-lib-status  { font-size:.71rem; color:var(--muted); line-height:1.45; min-height:18px; }
+.grp-lib-status.published { color:#2E7D32; }
+.toggle-sw       { position:relative; display:inline-block; width:38px; height:22px; flex-shrink:0; }
+.toggle-sw input { opacity:0; width:0; height:0; }
+.toggle-sw .sl   { position:absolute; cursor:pointer; inset:0; background:#CBD2DB; border-radius:22px; transition:.2s; }
+.toggle-sw .sl:before { content:''; position:absolute; height:16px; width:16px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+.toggle-sw input:checked + .sl { background:var(--accent2); }
+.toggle-sw input:checked + .sl:before { transform:translateX(16px); }
 .stmpl-phase-num    { flex-shrink:0; width:18px; height:18px; border-radius:50%; background:var(--accent2); color:#fff; font-size:.64rem; font-weight:700; display:flex; align-items:center; justify-content:center; }
 .stmpl-phase-empty  { padding:8px 16px; font-size:.75rem; color:var(--muted); font-style:italic; }
 .stmpl-section-sep  { padding:6px 14px 4px; font-size:.67rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; background:#F0F4F8; border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
@@ -1218,6 +1230,17 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
     <div class="save-field">
       <label>Description (optionnel)</label>
       <textarea id="grpDescInput" placeholder="Protocole post-opératoire LCA…"></textarea>
+    </div>
+    <!-- Section publication — visible seulement en mode édition -->
+    <div class="grp-lib-section" id="grpLibSection" style="display:none;">
+      <div class="grp-lib-row">
+        <span class="grp-lib-label">🌐 Bibliothèque Rehab4Perf</span>
+        <label class="toggle-sw">
+          <input type="checkbox" id="grpLibToggle">
+          <span class="sl"></span>
+        </label>
+      </div>
+      <p class="grp-lib-status" id="grpLibStatus">Vérification…</p>
     </div>
     <div class="save-modal-btns">
       <button class="btn btn-primary" id="grpModalConfirmBtn" onclick="doCreateGroup()">📁 Créer le protocole</button>
@@ -5169,32 +5192,59 @@ function _persistGroups(){
 }
 
 var _grpEditId = null; // null = création, sinon id du groupe à modifier
+var _grpLibId  = null; // id de l'entrée templates_library si déjà publié
 
 function openCreateGroup(){
-  _grpEditId = null;
+  _grpEditId = null; _grpLibId = null;
   document.getElementById('grpModalTitle').textContent = '📁 Nouveau protocole';
   document.getElementById('grpModalConfirmBtn').textContent = '📁 Créer le protocole';
   document.getElementById('grpNameInput').value = '';
   document.getElementById('grpCatInput').value = '';
   document.getElementById('grpDescInput').value = '';
+  document.getElementById('grpLibSection').style.display = 'none';
   document.getElementById('groupCreateModal').classList.add('open');
   setTimeout(function(){ document.getElementById('grpNameInput').focus(); }, 100);
 }
 function openEditGroup(id){
   var g = (_groups||[]).find(function(x){ return String(x.id)===String(id); });
   if(!g){ alert('Protocole introuvable.'); return; }
-  _grpEditId = id;
+  _grpEditId = id; _grpLibId = null;
   document.getElementById('grpModalTitle').textContent = '✏️ Modifier le protocole';
   document.getElementById('grpModalConfirmBtn').textContent = '💾 Enregistrer';
   document.getElementById('grpNameInput').value = g.nom||'';
   document.getElementById('grpCatInput').value = g.categorie||'';
   document.getElementById('grpDescInput').value = g.description||'';
+  // Section publication
+  var libSec = document.getElementById('grpLibSection');
+  var libTog = document.getElementById('grpLibToggle');
+  var libSt  = document.getElementById('grpLibStatus');
+  libSec.style.display = 'block';
+  libTog.checked = false;
+  libSt.className = 'grp-lib-status';
+  libSt.textContent = 'Vérification…';
+  if(_progToken && _progUid){
+    fetch(SUPA_URL_P+'/rest/v1/templates_library?published_by=eq.'+_progUid+'&donnees->>source_group_id=eq.'+encodeURIComponent(String(id))+'&select=id', { headers:_sbHeaders() })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(Array.isArray(data) && data[0]){
+        _grpLibId = data[0].id;
+        libTog.checked = true;
+        libSt.className = 'grp-lib-status published';
+        libSt.textContent = '✓ Publié — visible par tous les praticiens Rehab4Perf.';
+      } else {
+        libSt.textContent = 'Non publié — visible uniquement par vous.';
+      }
+    })
+    .catch(function(){ libSt.textContent = 'Impossible de vérifier le statut.'; });
+  } else {
+    libSec.style.display = 'none';
+  }
   document.getElementById('groupCreateModal').classList.add('open');
   setTimeout(function(){ document.getElementById('grpNameInput').focus(); }, 100);
 }
 function closeCreateGroup(){
   document.getElementById('groupCreateModal').classList.remove('open');
-  _grpEditId = null;
+  _grpEditId = null; _grpLibId = null;
 }
 function doCreateGroup(){
   var nom = document.getElementById('grpNameInput').value.trim();
@@ -5205,13 +5255,19 @@ function doCreateGroup(){
   if(_grpEditId){
     // ── Mode édition ──
     var id = _grpEditId;
+    var wantPublish = document.getElementById('grpLibToggle').checked;
+    var libIdSnap   = _grpLibId; // snapshot avant fermeture
     if(_progToken && _progUid){
       fetch(SUPA_URL_P + '/rest/v1/template_groups?id=eq.' + id, {
         method:'PATCH', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
         body: JSON.stringify({ nom: nom, categorie: cat, description: desc })
       }).then(function(r){
-        if(r.ok){ closeCreateGroup(); renderSidebarTemplates(); _showToast('✏️ Protocole mis à jour !'); }
-        else { r.json().then(function(d){ alert('Erreur : ' + JSON.stringify(d)); }); }
+        if(!r.ok){ r.json().then(function(d){ alert('Erreur : ' + JSON.stringify(d)); }); return; }
+        closeCreateGroup(); renderSidebarTemplates(); _showToast('✏️ Protocole mis à jour !');
+        // Gérer publication
+        if(wantPublish && !libIdSnap)        _doPublishGroup(id, nom, cat, desc);
+        else if(wantPublish && libIdSnap)    _doUpdateGroupInLib(libIdSnap, id, nom, cat, desc);
+        else if(!wantPublish && libIdSnap)   _doUnpublishGroup(libIdSnap);
       }).catch(function(){ alert('Erreur réseau.'); });
     } else {
       _loadGroups();
@@ -5237,6 +5293,58 @@ function doCreateGroup(){
     _persistGroups();
     closeCreateGroup(); renderSidebarTemplates(); _showToast('📁 Protocole « ' + nom + ' » créé !');
   }
+}
+
+/* ── Publication d'un protocole dans la bibliothèque ── */
+function _grpLibPayload(groupId, nom, cat, desc){
+  var catInfo = TMPL_CATEGORIES.find(function(c){ return c.val===cat; }) || { icon:'📁' };
+  var phases = (_sidebarProgs||[])
+    .filter(function(p){ return String(p.group_id)===String(groupId); })
+    .sort(function(a,b){ return (a.phase_ordre||0)-(b.phase_ordre||0); })
+    .map(function(p){ return { id:p.id, nom:p.phase_nom||p.nom, ordre:p.phase_ordre||0, donnees:p.donnees }; });
+  return {
+    nom:          nom,
+    type:         'protocole',
+    emoji:        catInfo.icon,
+    categorie:    cat||null,
+    description:  desc||null,
+    published_by: _progUid,
+    donnees:      JSON.stringify({ source_group_id: String(groupId), phases: phases })
+  };
+}
+function _doPublishGroup(groupId, nom, cat, desc){
+  fetch(SUPA_URL_P+'/rest/v1/templates_library', {
+    method:'POST',
+    headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
+    body: JSON.stringify(_grpLibPayload(groupId, nom, cat, desc))
+  })
+  .then(function(r){
+    if(r.ok||r.status===201) _showToast('🌐 Protocole publié dans la bibliothèque !');
+    else r.text().then(function(t){ alert('Erreur publication : '+t); });
+  })
+  .catch(function(e){ alert('Erreur réseau : '+(e&&e.message||e)); });
+}
+function _doUpdateGroupInLib(libId, groupId, nom, cat, desc){
+  fetch(SUPA_URL_P+'/rest/v1/templates_library?id=eq.'+libId, {
+    method:'PATCH',
+    headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
+    body: JSON.stringify(_grpLibPayload(groupId, nom, cat, desc))
+  })
+  .then(function(r){
+    if(r.ok) _showToast('🌐 Bibliothèque mise à jour !');
+    else r.text().then(function(t){ alert('Erreur mise à jour bibliothèque : '+t); });
+  })
+  .catch(function(e){ alert('Erreur réseau : '+(e&&e.message||e)); });
+}
+function _doUnpublishGroup(libId){
+  fetch(SUPA_URL_P+'/rest/v1/templates_library?id=eq.'+libId, {
+    method:'DELETE', headers:_sbHeaders()
+  })
+  .then(function(r){
+    if(r.ok||r.status===204) _showToast('🔒 Protocole retiré de la bibliothèque.');
+    else r.text().then(function(t){ alert('Erreur retrait : '+t); });
+  })
+  .catch(function(e){ alert('Erreur réseau : '+(e&&e.message||e)); });
 }
 
 function deleteGroup(id){
