@@ -161,6 +161,44 @@ iframe.active { display:block; }
 }
 .pm-cancel-btn:hover { border-color:#9D9B96; color:#1A1917; }
 
+/* ── Context menu ──────────────────────────────────────── */
+.pm-ctx-wrap { position:relative; flex-shrink:0; }
+.pm-ctx-btn {
+  background:none; border:1.5px solid #E8E6E1; border-radius:5px;
+  color:#6B6860; padding:4px 10px; font-size:.9rem; font-weight:700;
+  cursor:pointer; font-family:inherit; transition:all .12s;
+  letter-spacing:.08em; line-height:1;
+}
+.pm-ctx-btn:hover { background:#F7F6F3; border-color:#9D9B96; color:#1A1917; }
+.pm-ctx-menu {
+  display:none; position:absolute; right:0; top:calc(100% + 4px); z-index:200;
+  background:#fff; border-radius:8px;
+  box-shadow:0 4px 20px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.07);
+  min-width:160px; overflow:hidden;
+}
+.pm-ctx-menu.open { display:block; }
+.pm-ctx-item {
+  display:flex; align-items:center; gap:8px;
+  padding:9px 14px; font-size:.82rem; cursor:pointer;
+  color:#1A1917; transition:background .1s;
+  border:none; background:none; width:100%; text-align:left;
+  font-family:inherit;
+}
+.pm-ctx-item:hover { background:#F7F6F3; }
+.pm-ctx-item.active-item { color:#2D6A4F; font-weight:700; }
+.pm-ctx-item.delete-item { color:#C0392B; }
+.pm-ctx-item.delete-item:hover { background:#FDECEA; }
+.pm-ctx-divider { height:1px; background:#E8E6E1; margin:2px 0; }
+
+/* ── Edit form ──────────────────────────────────────────── */
+.pm-edit-form {
+  display:none; padding:16px; border-bottom:2px solid #2B5FA6;
+  background:#EEF3FB; flex-shrink:0;
+}
+.pm-edit-form.open { display:block; }
+.pm-edit-form h3 { font-size:.8rem; font-weight:700; text-transform:uppercase;
+  letter-spacing:.05em; color:#2B5FA6; margin-bottom:12px; }
+
 @media (max-width:900px) {
   .topnav { padding:0 10px; gap:2px; }
   .tab { padding:0 10px; font-size:.8rem; }
@@ -228,6 +266,40 @@ iframe.active { display:block; }
       <div class="pm-form-actions">
         <button class="pm-save-btn" onclick="createPatient()">✓ Créer</button>
         <button class="pm-cancel-btn" onclick="toggleCreateForm(false)">Annuler</button>
+      </div>
+    </div>
+
+    <!-- Formulaire édition (masqué par défaut) -->
+    <div class="pm-edit-form" id="pmEditForm">
+      <h3>✏️ Modifier le patient</h3>
+      <input type="hidden" id="pm-edit-id">
+      <div class="pm-form-row">
+        <div class="pm-form-field" style="flex:0 0 72px">
+          <label>Civilité</label>
+          <select id="pm-edit-civ"><option value="M.">M.</option><option value="Mme.">Mme.</option></select>
+        </div>
+        <div class="pm-form-field">
+          <label>Nom</label>
+          <input type="text" id="pm-edit-nom" placeholder="NOM" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
+        </div>
+        <div class="pm-form-field">
+          <label>Prénom</label>
+          <input type="text" id="pm-edit-prenom" placeholder="Prénom">
+        </div>
+      </div>
+      <div class="pm-form-row">
+        <div class="pm-form-field">
+          <label>Date de naissance</label>
+          <input type="date" id="pm-edit-ddn">
+        </div>
+        <div class="pm-form-field">
+          <label>Sport / Activité</label>
+          <input type="text" id="pm-edit-sport" placeholder="ex: Football, Course…">
+        </div>
+      </div>
+      <div class="pm-form-actions">
+        <button class="pm-save-btn" id="pmEditSaveBtn" onclick="saveEditPatient()">✓ Enregistrer</button>
+        <button class="pm-cancel-btn" onclick="closeEditForm()">Annuler</button>
       </div>
     </div>
 
@@ -465,6 +537,7 @@ function renderPatients(list) {
     var ddn = p.ddn ? p.ddn.split('-').reverse().join('/') : '';
     var meta = [ddn, p.sport].filter(Boolean).join(' · ');
     var isSelected = _currentPatient && _currentPatient.id === p.id;
+    var selLabel = isSelected ? '✓ Patient actif' : 'Sélectionner';
     return '<div class="pm-patient-item'+(isSelected?' selected':'')+'" id="pitem-'+p.id+'">'
       + '<div class="pm-patient-avatar'+(isFemale?' female':'')+'">'+initials+'</div>'
       + '<div class="pm-patient-info">'
@@ -472,11 +545,92 @@ function renderPatients(list) {
       +   (meta ? '<div class="pm-patient-meta">'+_esc(meta)+'</div>' : '')
       + '</div>'
       + '<div class="pm-patient-actions">'
-      +   '<button class="pm-select-btn'+(isSelected?' active':'')+'" onclick="selectPatient(\''+p.id+'\')">'+(isSelected?'✓ Actif':'Sélectionner')+'</button>'
-      +   '<button class="pm-del-btn" onclick="deletePatient(\''+p.id+'\',event)">🗑</button>'
+      +   '<div class="pm-ctx-wrap" id="ctx-wrap-'+p.id+'">'
+      +     '<button class="pm-ctx-btn" onclick="openCtxMenu(\''+p.id+'\',event)" title="Actions">···</button>'
+      +     '<div class="pm-ctx-menu" id="ctx-menu-'+p.id+'">'
+      +       '<button class="pm-ctx-item'+(isSelected?' active-item':'')+'" onclick="selectPatient(\''+p.id+'\');closeCtxMenu()">'+selLabel+'</button>'
+      +       '<button class="pm-ctx-item" onclick="editPatient(\''+p.id+'\')">✏️&nbsp; Modifier</button>'
+      +       '<div class="pm-ctx-divider"></div>'
+      +       '<button class="pm-ctx-item delete-item" onclick="deletePatient(\''+p.id+'\',event)">🗑&nbsp; Supprimer</button>'
+      +     '</div>'
+      +   '</div>'
       + '</div>'
       + '</div>';
   }).join('');
+}
+
+/* ── Menu contextuel ────────────────────────────────────── */
+var _openCtxId = null;
+
+function openCtxMenu(id, e) {
+  e.stopPropagation();
+  if (_openCtxId === id) { closeCtxMenu(); return; }
+  closeCtxMenu();
+  _openCtxId = id;
+  var menu = document.getElementById('ctx-menu-' + id);
+  if (menu) menu.classList.add('open');
+}
+
+function closeCtxMenu() {
+  if (_openCtxId) {
+    var menu = document.getElementById('ctx-menu-' + _openCtxId);
+    if (menu) menu.classList.remove('open');
+    _openCtxId = null;
+  }
+}
+
+document.addEventListener('click', function() { closeCtxMenu(); });
+
+/* ── Modifier un patient ────────────────────────────────── */
+function editPatient(id) {
+  closeCtxMenu();
+  var p = _allPatients.find(function(x){ return x.id === id; });
+  if (!p) return;
+  toggleCreateForm(false); // ferme le formulaire de création si ouvert
+  document.getElementById('pm-edit-id').value    = p.id;
+  document.getElementById('pm-edit-nom').value   = p.nom || '';
+  document.getElementById('pm-edit-prenom').value= p.prenom || '';
+  document.getElementById('pm-edit-ddn').value   = p.ddn || '';
+  document.getElementById('pm-edit-sport').value = p.sport || '';
+  document.getElementById('pm-edit-civ').value   = (p.sexe === 'F') ? 'Mme.' : 'M.';
+  document.getElementById('pmEditForm').classList.add('open');
+  document.getElementById('pm-edit-nom').focus();
+  var item = document.getElementById('pitem-' + id);
+  if (item) item.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function closeEditForm() {
+  document.getElementById('pmEditForm').classList.remove('open');
+}
+
+function saveEditPatient() {
+  var id     = document.getElementById('pm-edit-id').value;
+  var nom    = (document.getElementById('pm-edit-nom').value||'').trim().toUpperCase();
+  var prenom = (document.getElementById('pm-edit-prenom').value||'').trim();
+  var ddn    = document.getElementById('pm-edit-ddn').value || null;
+  var civ    = document.getElementById('pm-edit-civ').value;
+  var sport  = (document.getElementById('pm-edit-sport').value||'').trim();
+  if (!nom || !prenom) { alert('Nom et prénom requis.'); return; }
+  var sexe = civ === 'Mme.' ? 'F' : 'H';
+  var btn = document.getElementById('pmEditSaveBtn');
+  if (btn) { btn.textContent = '…'; btn.disabled = true; }
+  sb.from('patients').update({ nom: nom, prenom: prenom, ddn: ddn, sexe: sexe, sport: sport })
+    .eq('id', id).select().single()
+    .then(function(res) {
+      if (btn) { btn.textContent = '✓ Enregistrer'; btn.disabled = false; }
+      if (res.error) { alert('Erreur : ' + res.error.message); return; }
+      var idx = _allPatients.findIndex(function(x){ return x.id === id; });
+      if (idx !== -1) _allPatients[idx] = res.data;
+      _allPatients.sort(function(a,b){ return a.nom.localeCompare(b.nom); });
+      if (_currentPatient && _currentPatient.id === id) {
+        _currentPatient = res.data;
+        try { localStorage.setItem('r4p-current-patient', JSON.stringify(res.data)); } catch(ex){}
+        _broadcastPatient(res.data);
+        _updatePatientBtn();
+      }
+      closeEditForm();
+      renderPatients(_allPatients);
+    });
 }
 
 function _esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
