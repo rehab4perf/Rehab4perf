@@ -255,6 +255,18 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .exo-url-cell .yt-thumb-wrap img { width:54px; height:30px; }
 .exo-url-cell .yt-thumb-wrap .yt-play::after { border-left-width:9px; border-top-width:5px; border-bottom-width:5px; }
 .exo-url-placeholder { width:54px; height:30px; border-radius:5px; background:#f0f4f8; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#CBD2DB; font-size:.65rem; text-align:center; line-height:1.2; }
+.editor-filters { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 0 8px; border-bottom:1px solid #f0f4f8; margin-bottom:6px; flex-wrap:wrap; }
+.editor-filters-left  { display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
+.editor-filters-right { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+.ef-zone { padding:4px 8px; border:1px solid var(--border); border-radius:6px; font-size:.74rem; color:var(--text); background:#FAFBFD; outline:none; cursor:pointer; }
+.ef-zone:focus { border-color:var(--accent2); }
+.ef-pill { padding:3px 10px; border:1px solid var(--border); border-radius:20px; font-size:.72rem; color:var(--muted); background:#fff; cursor:pointer; transition:all .15s; white-space:nowrap; }
+.ef-pill:hover { border-color:var(--accent2); color:var(--accent2); }
+.ef-pill.active { background:var(--accent2); border-color:var(--accent2); color:#fff; font-weight:600; }
+.ef-toggle { display:flex; align-items:center; gap:5px; font-size:.73rem; color:var(--muted); cursor:pointer; padding:3px 8px; border:1px solid var(--border); border-radius:6px; background:#fff; transition:all .15s; white-space:nowrap; }
+.ef-toggle:hover { border-color:var(--accent2); color:var(--accent2); }
+.ef-toggle.active { background:#FFF3E0; border-color:#F57C00; color:#E65100; font-weight:600; }
+.ef-toggle.active-blue { background:#E3F2FD; border-color:var(--accent2); color:var(--accent2); font-weight:600; }
 .editor-col-header { display:grid; grid-template-columns:1.6fr 130px 110px 130px 1fr 28px; gap:6px; padding:4px 4px 6px; }
 .editor-col-header span { font-size:.65rem; font-weight:700; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; }
 .lib-section { margin-bottom:4px; }
@@ -1370,6 +1382,21 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
         <div class="editor-toolbar-right">
           <button class="btn btn-outline" style="font-size:.76rem;padding:6px 12px;" onclick="addNewExo()">+ Ajouter</button>
           <button class="btn btn-primary" style="font-size:.76rem;padding:6px 12px;background:#27AE60;border-color:#27AE60;" onclick="saveEditor()">✓ Enregistrer</button>
+        </div>
+      </div>
+      <div class="editor-filters">
+        <div class="editor-filters-left">
+          <select class="ef-zone" id="efZone" onchange="renderEditor()">
+            <option value="">— Toutes zones —</option>
+          </select>
+          <button class="ef-pill active" data-type="" onclick="setEfType(this,'')">Tous</button>
+          <button class="ef-pill" data-type="warmup" onclick="setEfType(this,'warmup')">Warm-up</button>
+          <button class="ef-pill" data-type="renfo" onclick="setEfType(this,'renfo')">Renfo</button>
+          <button class="ef-pill" data-type="automassage" onclick="setEfType(this,'automassage')">Auto-massage</button>
+        </div>
+        <div class="editor-filters-right">
+          <button class="ef-toggle" id="efNoVideo" onclick="toggleEfNoVideo()">🎬 Sans vidéo</button>
+          <button class="ef-toggle" id="efAdded"   onclick="toggleEfAdded()">✚ Ajoutés</button>
         </div>
       </div>
       <div class="editor-col-header">
@@ -3004,9 +3031,44 @@ function _loadSupaLibrary(){
 }
 
 var _editorData = [];
-var _editorOriginalIds = []; // IDs présents au moment de l'ouverture de l'éditeur
+var _editorOriginalIds = [];
+var _efType    = '';    // '' | 'warmup' | 'renfo' | 'automassage'
+var _efNoVideo = false;
+var _efAdded   = false;
+
+function setEfType(btn, val){
+  _efType = val;
+  document.querySelectorAll('.ef-pill').forEach(function(b){ b.classList.toggle('active', b.dataset.type === val); });
+  renderEditor();
+}
+function toggleEfNoVideo(){
+  _efNoVideo = !_efNoVideo;
+  document.getElementById('efNoVideo').classList.toggle('active', _efNoVideo);
+  renderEditor();
+}
+function toggleEfAdded(){
+  _efAdded = !_efAdded;
+  var btn = document.getElementById('efAdded');
+  btn.classList.remove('active','active-blue');
+  if(_efAdded) btn.classList.add('active-blue');
+  renderEditor();
+}
+function _populateEfZone(){
+  var sel = document.getElementById('efZone');
+  if(!sel) return;
+  var zones = [];
+  _editorData.forEach(function(e){ if(e.zone && zones.indexOf(e.zone)===-1) zones.push(e.zone); });
+  zones.sort();
+  var cur = sel.value;
+  sel.innerHTML = '<option value="">— Toutes zones —</option>' + zones.map(function(z){ return '<option value="'+escH(z)+'"'+(z===cur?' selected':'')+'>'+escH(z)+'</option>'; }).join('');
+}
 
 function openEditor(){
+  // Réinitialiser les filtres
+  _efType = ''; _efNoVideo = false; _efAdded = false;
+  document.querySelectorAll('.ef-pill').forEach(function(b){ b.classList.toggle('active', b.dataset.type === ''); });
+  var efNv = document.getElementById('efNoVideo'); if(efNv) efNv.classList.remove('active');
+  var efAd = document.getElementById('efAdded');   if(efAd) efAd.classList.remove('active','active-blue');
   document.getElementById('editorModal').classList.add('open');
   document.getElementById('editorSearch').value = '';
   // Recharger depuis Supabase en arrière-plan, puis ouvrir avec données fraîches
@@ -3159,15 +3221,21 @@ function updateEditorField(idx, field, val){
 }
 
 function renderEditor(){
-  var q = (document.getElementById('editorSearch').value||'').toLowerCase();
-  var list = document.getElementById('editorList');
-  var zoneOpts = ALL_ZONES.map(function(z){ return '<option value="'+escH(z)+'">'+escH(z)+'</option>'; }).join('');
-  var typeOpts = [['warmup','Warm-up'],['renfo','Renfo'],['automassage','Auto-massage']]
-    .map(function(t){ return '<option value="'+t[0]+'">'+t[1]+'</option>'; }).join('');
+  var q        = (document.getElementById('editorSearch').value||'').toLowerCase();
+  var efZone   = ((document.getElementById('efZone')||{}).value||'');
+  var list     = document.getElementById('editorList');
+  var defaultIds = new Set(LIBRARY_DEFAULT.map(function(e){ return e.id; }));
+
+  _populateEfZone();
 
   var rows = '';
   _editorData.forEach(function(e, i){
-    if(q && e.name.toLowerCase().indexOf(q)===-1 && e.zone.toLowerCase().indexOf(q)===-1) return;
+    // ── Filtres ──
+    if(q && e.name.toLowerCase().indexOf(q)===-1 && (e.zone||'').toLowerCase().indexOf(q)===-1) return;
+    if(efZone   && e.zone  !== efZone)   return;
+    if(_efType  && e.type  !== _efType)  return;
+    if(_efNoVideo && e.url)              return;
+    if(_efAdded && defaultIds.has(e.id)) return;
     var zSel = '<option value=""'+((!e.zone)?' selected':'')+'>— Aucun —</option>' + ALL_ZONES.map(function(z){
       return '<option value="'+escH(z)+'"'+(z===e.zone?' selected':'')+'>'+escH(z)+'</option>';
     }).join('');
