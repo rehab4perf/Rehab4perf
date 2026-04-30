@@ -324,7 +324,7 @@ body {
   resize: none;
   padding: 0;
 }
-.field textarea { min-height: 64px; line-height: 1.5; }
+.field textarea { min-height: 64px; line-height: 1.5; resize:none; overflow:hidden; }
 .field input:focus, .field select:focus, .field textarea:focus {
   background: var(--accent-l);
   margin: -10px -14px;
@@ -728,6 +728,9 @@ body {
   color: var(--accent2);
 }
 
+/* ── Auto-resize global — tous les textareas ── */
+textarea { resize:none !important; overflow:hidden !important; }
+
 /* ── Conclusion textarea ─────────────────────────────────── */
 .concl-area {
   width: 100%;
@@ -738,7 +741,8 @@ body {
   color: var(--text);
   background: var(--surface);
   border: none;
-  resize: vertical;
+  resize: none;
+  overflow: hidden;
   padding: 14px 16px;
   outline: none;
 }
@@ -4533,6 +4537,24 @@ init(); // appelle showPage('infos') à la fin → page-infos s'affiche
 // Triple garantie — showPage('infos') après la pile JS courante et après load
 setTimeout(function(){ showPage('infos'); }, 0);
 window.addEventListener('load', function(){ showPage('infos'); });
+</script>
+
+<script>
+/* ── Auto-resize tous les textareas ── */
+function autoResizeTa(el){
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+// Délégation globale : chaque saisie dans un textarea déclenche le resize
+document.addEventListener('input', function(e){
+  if(e.target && e.target.tagName === 'TEXTAREA') autoResizeTa(e.target);
+});
+// Au chargement : resize les textareas déjà remplis (localStorage restore)
+window.addEventListener('load', function(){
+  document.querySelectorAll('textarea').forEach(function(ta){
+    if(ta.value) autoResizeTa(ta);
+  });
+});
 </script>
 
 </body>

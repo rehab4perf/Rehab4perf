@@ -606,7 +606,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 /* Notes area */
 .notes-bloc { background:var(--surface); border-radius:10px; border:1px solid var(--border); padding:12px 14px; margin-bottom:14px; }
 .notes-label { font-size:.72rem; font-weight:700; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; margin-bottom:6px; }
-.notes-ta { width:100%; border:1px solid var(--border); border-radius:6px; padding:8px; font-size:.8rem; font-family:inherit; color:var(--text); resize:vertical; min-height:120px; outline:none; }
+.notes-ta { width:100%; border:1px solid var(--border); border-radius:6px; padding:8px; font-size:.8rem; font-family:inherit; color:var(--text); resize:none; min-height:120px; outline:none; overflow:hidden; }
 .notes-ta:focus { border-color:var(--accent2); }
 
 /* Empty state */
@@ -2801,12 +2801,14 @@ function renderSession(){
   });
   // Notes
   html += '<div class="notes-bloc"><div class="notes-label">Notes / Consignes</div>';
-  html += '<textarea class="notes-ta" id="sessionNotes" placeholder="Conseils, progressions, points d\'attention…">'+escH(getNotes())+'</textarea></div>';
+  html += '<textarea class="notes-ta" id="sessionNotes" placeholder="Conseils, progressions, points d\'attention…" oninput="autoResizeTa(this);if(typeof _notes!==\'undefined\')_notes=this.value">'+escH(getNotes())+'</textarea></div>';
   html += '<button class="add-bloc-btn" onclick="addBloc()">+ Ajouter un bloc</button>';
   area.innerHTML = html;
   updateTargetBlocSelect();
-  // Auto-resize des consignes déjà remplies
+  // Auto-resize des consignes déjà remplies + notes
   area.querySelectorAll('.exo-consigne-ta.has-value').forEach(function(ta){ autoResizeTa(ta); });
+  var notesTa = document.getElementById('sessionNotes');
+  if(notesTa && notesTa.value) autoResizeTa(notesTa);
 }
 
 function updateTargetBlocSelect(){
