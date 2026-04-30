@@ -3007,11 +3007,35 @@ var _editorData = [];
 var _editorOriginalIds = []; // IDs présents au moment de l'ouverture de l'éditeur
 
 function openEditor(){
-  _editorOriginalIds = LIBRARY.map(function(e){ return e.id; });
-  _editorData = LIBRARY.map(function(e){ return Object.assign({},e); });
-  renderEditor();
   document.getElementById('editorModal').classList.add('open');
   document.getElementById('editorSearch').value = '';
+  // Recharger depuis Supabase en arrière-plan, puis ouvrir avec données fraîches
+  if(_progToken && _progUid){
+    fetch(SUPA_URL_P + '/rest/v1/exercices_library?order=created_at.asc', { headers: _sbHeaders() })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(data){
+      if(Array.isArray(data)){
+        _supaExoIds = {};
+        data.forEach(function(e){ _supaExoIds[e.id] = true; });
+        var defaultIds = new Set(LIBRARY_DEFAULT.map(function(e){ return e.id; }));
+        var supaExos = data.filter(function(e){ return !defaultIds.has(e.id); })
+          .map(function(e){ return { id:e.id, name:e.name, zone:e.zone||'', type:e.type||'', url:e.url||'', obj:e.obj||'', patterns:Array.isArray(e.patterns)?e.patterns:[], _fromSupa:true }; });
+        LIBRARY = LIBRARY_DEFAULT.concat(supaExos);
+      }
+      _editorOriginalIds = LIBRARY.map(function(e){ return e.id; });
+      _editorData = LIBRARY.map(function(e){ return Object.assign({},e); });
+      renderEditor();
+    })
+    .catch(function(){
+      _editorOriginalIds = LIBRARY.map(function(e){ return e.id; });
+      _editorData = LIBRARY.map(function(e){ return Object.assign({},e); });
+      renderEditor();
+    });
+  } else {
+    _editorOriginalIds = LIBRARY.map(function(e){ return e.id; });
+    _editorData = LIBRARY.map(function(e){ return Object.assign({},e); });
+    renderEditor();
+  }
 }
 
 function closeEditor(){
