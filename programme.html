@@ -2999,6 +2999,19 @@ function closeEditor(){
 function saveEditor(){
   LIBRARY = _editorData.filter(function(e){ return e.name.trim(); });
   try { localStorage.setItem('r4p-library', JSON.stringify(LIBRARY)); } catch(ex){}
+  // Synchroniser les URLs dans la session courante pour les exos déjà ajoutés
+  var sessionUpdated = false;
+  blocs.forEach(function(bloc){
+    (bloc.exos||[]).forEach(function(row){
+      if(!row.libId) return;
+      var libEx = LIBRARY.find(function(x){ return x.id === row.libId; });
+      if(libEx && libEx.url && libEx.url !== row.url){
+        row.url = libEx.url;
+        sessionUpdated = true;
+      }
+    });
+  });
+  if(sessionUpdated) renderSession();
   closeEditor();
   filterLib();
 }
