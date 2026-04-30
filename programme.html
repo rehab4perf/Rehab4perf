@@ -5139,7 +5139,7 @@ function _doUpdateTemplate(){
   var btn = document.getElementById('prog-cloud-save-btn');
   btn.disabled = true; btn.textContent = '⏳ Mise à jour…';
   var nomProg = (document.getElementById('patientName')||{}).value || '';
-  var donnees = JSON.stringify({ blocs: JSON.parse(JSON.stringify(blocs||[])) });
+  var donnees = JSON.stringify({ blocs: JSON.parse(JSON.stringify(blocs||[])), notes: getNotes() });
   fetch(SUPA_URL_P + '/rest/v1/templates?id=eq.' + _builderFromTemplate, {
     method: 'PATCH',
     headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=representation'}),
@@ -5166,7 +5166,7 @@ function loadTemplate(id){
     try { d = JSON.parse(t.donnees||'{}'); } catch(e){}
     blocs = d.blocs ? JSON.parse(JSON.stringify(d.blocs)) : (t._blocs ? JSON.parse(JSON.stringify(t._blocs)) : []);
     activeBloc = blocs.length ? blocs[0].id : null;
-    _notes = '';
+    _notes = d.notes || '';
     _currentProgId = null;
     _builderFromTemplate = String(t.id);
     renderSession();
