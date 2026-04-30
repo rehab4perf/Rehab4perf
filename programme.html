@@ -3118,10 +3118,24 @@ function addNewExo(){
 }
 
 function deleteEditorRow(idx){
-  var nom = (_editorData[idx] && _editorData[idx].name) ? _editorData[idx].name : 'cet exercice';
+  var ex  = _editorData[idx];
+  var nom = (ex && ex.name) ? ex.name : 'cet exercice';
   if(!confirm('Supprimer « ' + nom + ' » de la bibliothèque ?')) return;
-  _editorData.splice(idx,1);
+  var exId = ex ? ex.id : null;
+  _editorData.splice(idx, 1);
+  // Mettre à jour LIBRARY et la sidebar immédiatement
+  LIBRARY = LIBRARY.filter(function(e){ return e.id !== exId; });
   renderEditor();
+  filterLib();
+  // Supprimer en Supabase si c'est un exercice partagé
+  if(exId && _supaExoIds[exId] && _progToken && _progUid){
+    fetch(SUPA_URL_P+'/rest/v1/exercices_library?id=eq.'+exId, {
+      method:'DELETE', headers: _sbHeaders()
+    }).then(function(r){
+      if(r.ok){ delete _supaExoIds[exId]; }
+      else { r.text().then(function(t){ alert('Erreur suppression Supabase : '+t); }); }
+    }).catch(function(e){ alert('Erreur réseau : '+(e&&e.message||e)); });
+  }
 }
 
 function updateEditorUrl(idx, val){
