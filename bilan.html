@@ -2881,6 +2881,8 @@ window.addEventListener('message', function(e){
     // Protection contre la perte de données
     if(_isDiff && _bilanModified){
       if(!confirm('Le bilan actuel contient des modifications non sauvegardées.\nChanger de patient quand même ?')){
+        // Demander au parent de revenir à l'ancien patient
+        try { window.parent.postMessage({ type:'r4p-cancel-patient-switch', patientId: _bilanPatient ? _bilanPatient.id : null }, '*'); } catch(ex){}
         return;
       }
     }

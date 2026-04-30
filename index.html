@@ -420,6 +420,14 @@ window.addEventListener('message', function(e) {
     propagateToBilan(profile);
   }
 
+  // bilan.html a annulé le changement de patient (données non sauvegardées)
+  if (e.data.type === 'r4p-cancel-patient-switch') {
+    _currentPatient = _previousPatient || null;
+    try { localStorage.setItem('r4p-current-patient', _currentPatient ? JSON.stringify(_currentPatient) : ''); } catch(ex) {}
+    _updatePatientBtn();
+    renderPatients(_allPatients);
+  }
+
   // account.html demande une déconnexion
   if (e.data.type === 'r4p-logout-done') {
     try { localStorage.removeItem('r4p-cached-profile'); localStorage.removeItem('r4p-profile'); } catch(ex) {}
@@ -430,8 +438,9 @@ window.addEventListener('message', function(e) {
 /* ═══════════════════════════════════════════════════════════
    GESTION DES PATIENTS
 ═══════════════════════════════════════════════════════════ */
-var _allPatients   = [];
-var _currentPatient = null;
+var _allPatients    = [];
+var _currentPatient  = null;
+var _previousPatient = null; // mémorisé avant chaque switch pour rollback
 
 // Restaurer le patient courant depuis localStorage
 (function() {
@@ -639,6 +648,7 @@ function _esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;
 function selectPatient(id) {
   var p = _allPatients.find(function(x){ return x.id === id; });
   if (!p) return;
+  _previousPatient = _currentPatient; // snapshot pour rollback
   _currentPatient = p;
   try { localStorage.setItem('r4p-current-patient', JSON.stringify(p)); } catch(e) {}
   _updatePatientBtn();
