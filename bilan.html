@@ -824,6 +824,20 @@ textarea { resize:none !important; overflow:hidden !important; }
   .page-content { padding: 12px 10px 24px; }
   .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr !important; }
 }
+/* ── Pain zones ── */
+.pain-zones-wrap { display:flex; flex-direction:column; gap:8px; }
+.pain-zones-list { display:flex; flex-wrap:wrap; gap:6px; min-height:28px; }
+.pz-chip { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; font-size:.78rem; font-weight:600; }
+.pz-chip.cote-d  { background:#E3F2FD; color:#1565C0; border:1px solid #90CAF9; }
+.pz-chip.cote-g  { background:#F3E5F5; color:#6A1B9A; border:1px solid #CE93D8; }
+.pz-chip.cote-bi { background:#E8F5E9; color:#2E7D32; border:1px solid #A5D6A7; }
+.pz-chip-del { background:none; border:none; cursor:pointer; font-size:.9rem; color:inherit; opacity:.6; padding:0; line-height:1; }
+.pz-chip-del:hover { opacity:1; }
+.pain-zone-add { display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-top:4px; }
+.pain-zone-add select { padding:4px 8px; border:1px solid var(--border); border-radius:6px; font-size:.8rem; background:#fff; outline:none; }
+.pain-zone-add select:focus { border-color:var(--accent2); }
+.pz-add-btn { padding:4px 12px; border:1px solid var(--accent2); border-radius:6px; font-size:.78rem; color:var(--accent2); background:#fff; cursor:pointer; font-weight:600; }
+.pz-add-btn:hover { background:var(--accent-l); }
 </style>
 
 </head>
@@ -962,13 +976,32 @@ textarea { resize:none !important; overflow:hidden !important; }
       <div class="form-grid triple">
         <div class="field"><label>Poids (kg)</label><input type="number" id="f-poids" placeholder="70" oninput="updateAll()"></div>
         <div class="field"><label>Taille (cm)</label><input type="number" id="f-taille" placeholder="175" oninput="updateAll()"></div>
-        <div class="field"><label>Côté atteint</label>
-          <select id="f-cote" onchange="updateAll()">
-            <option value="">— Aucun côté atteint</option>
-            <option value="DROIT">DROIT</option>
-            <option value="GAUCHE">GAUCHE</option>
-            <option value="BILATÉRAL">BILATÉRAL</option>
-          </select>
+        <div class="field" style="grid-column:1/-1">
+          <label>Zones douloureuses</label>
+          <div class="pain-zones-wrap">
+            <div class="pain-zones-list" id="pain-zones-list"></div>
+            <div class="pain-zone-add">
+              <select id="pz-zone-sel">
+                <option value="epaule">Épaule</option>
+                <option value="coude">Coude</option>
+                <option value="poignet">Poignet</option>
+                <option value="rachis-c">Rachis Cervical</option>
+                <option value="rachis-l">Rachis Lombaire</option>
+                <option value="hanche">Hanche</option>
+                <option value="genou">Genou</option>
+                <option value="cheville">Cheville</option>
+                <option value="pied">Pied</option>
+              </select>
+              <select id="pz-cote-sel">
+                <option value="DROIT">DROIT</option>
+                <option value="GAUCHE">GAUCHE</option>
+                <option value="BILATÉRAL">BILATÉRAL</option>
+              </select>
+              <button class="pz-add-btn" onclick="addPainZone()">+ Ajouter</button>
+            </div>
+          </div>
+          <input type="hidden" id="f-pain-zones" value="[]">
+          <input type="hidden" id="f-cote" value="">
         </div>
       </div>
       <div class="form-grid">
@@ -2951,6 +2984,7 @@ function _deserializeBilan(data){
   try{ calcCKC(); calcSHRT(); calcULRT(); }catch(ex){}
   try{ calcRachisStat(); calcLNF(); calcSorensen(); calcPDSLRT(); }catch(ex){}
   try{ calcPlioq2(); calcSEBT(); calcUQYBT(); updateBadges(); }catch(ex){}
+  _parsePainZones();
 }
 
 /* ── Sauvegarder ───────────────────────────────────────── */
@@ -3027,7 +3061,7 @@ function newBilan(){
   document.querySelectorAll('select').forEach(function(s){ s.selectedIndex=0; s.className=''; });
   document.querySelectorAll('input[type=checkbox]').forEach(function(c){ c.checked=false; });
   document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
-  document.getElementById('f-cote').value = 'DROIT';
+  _painZones = []; renderPainZones();
   showPage('infos');
   localStorage.removeItem('athletik-bilan');
   try{ updateAll(); }catch(ex){}
@@ -3087,6 +3121,20 @@ function updateBadges() {
   });
 }
 
+// -- Pain zones data (declared early for updateAll) --
+var _painZones = [];
+var PAIN_ZONES_CONFIG = [
+  { key:'epaule',   label:'Épaule',           hdr:['epaule','fonc-ms'] },
+  { key:'coude',    label:'Coude',            hdr:['epaule','fonc-ms'] },
+  { key:'poignet',  label:'Poignet',          hdr:['epaule','fonc-ms'] },
+  { key:'rachis-c', label:'Rachis Cerv.',     hdr:['rachis','fonc-rachis'] },
+  { key:'rachis-l', label:'Rachis Lomb.',     hdr:['rachis','fonc-rachis'] },
+  { key:'hanche',   label:'Hanche',           hdr:['hanche','fonc-mi','musc'] },
+  { key:'genou',    label:'Genou',            hdr:['genou','fonc-mi','musc'] },
+  { key:'cheville', label:'Cheville',         hdr:['pied','fonc-mi'] },
+  { key:'pied',     label:'Pied',             hdr:['pied','fonc-mi'] },
+];
+
 // -- UPDATE ALL ------------------------------------------------
 function updateAll() {
   const nom = document.getElementById('f-nom').value;
@@ -3106,14 +3154,20 @@ function updateAll() {
     age = today.getFullYear() - d.getFullYear() - (today < new Date(today.getFullYear(), d.getMonth(), d.getDate()) ? 1 : 0);
   }
 
-  const meta = [age ? (age + ' ans') : null, cote, date ? formatDate(date) : null].filter(Boolean).join('   ');
+  var cotesMeta = _painZones.map(function(p){
+    var cfg = PAIN_ZONES_CONFIG ? PAIN_ZONES_CONFIG.find(function(z){ return z.key===p.zone; }) : null;
+    return (cfg?cfg.label:p.zone)+' '+p.cote;
+  }).join(' • ');
+  const meta = [age ? (age + ' ans') : null, cotesMeta||cote||null, date ? formatDate(date) : null].filter(Boolean).join('   ');
   document.getElementById('sb-meta').textContent = meta || '-';
 
   // Headers for each page
-  const hdrTxt = [fullName, date ? formatDate(date) : null, cote ? ('Côté : ' + cote) : null].filter(Boolean).join(' - ');
-  ['epaule','rachis','hanche','genou','pied','fonc-mi','fonc-ms','fonc-rachis','musc'].forEach(p => {
-    const el = document.getElementById('hdr-' + p);
-    if (el) el.textContent = hdrTxt;
+  const hdrTxt = [fullName, date ? formatDate(date) : null].filter(Boolean).join(' - ');
+  ['epaule','rachis','hanche','genou','pied','fonc-mi','fonc-ms','fonc-rachis','musc'].forEach(function(p){
+    var el = document.getElementById('hdr-' + p);
+    if(!el) return;
+    var coteStr = getCoteForHdr(p);
+    el.textContent = [fullName, date ? formatDate(date) : null, coteStr ? ('Côté : '+coteStr) : null].filter(Boolean).join(' - ');
   });
 
   // ACL-RSI
@@ -3810,7 +3864,7 @@ function doReset() {
 
   // Restore defaults
   document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
-  document.getElementById('f-cote').value = 'DROIT';
+  _painZones = []; renderPainZones();
 
   closeReset();
   showPage('infos');
@@ -4531,12 +4585,71 @@ document.addEventListener('change', () => saveToStorage());
 // Masquer TOUTES les pages immédiatement (inline style, priorité max)
 document.querySelectorAll('.page').forEach(function(p) { p.style.display = 'none'; });
 
+/* ── Pain zones system ── */
+function getCoteForHdr(hdrKey){
+  var relevant = PAIN_ZONES_CONFIG.filter(function(z){ return z.hdr.indexOf(hdrKey)>-1; });
+  var found = _painZones.filter(function(p){
+    return relevant.some(function(r){ return r.key===p.zone; });
+  });
+  if(!found.length) return '';
+  var cotes = found.map(function(f){ return f.cote; });
+  var unique = cotes.filter(function(v,i,a){ return a.indexOf(v)===i; });
+  if(unique.length===1) return unique[0];
+  return found.map(function(f){
+    var cfg = PAIN_ZONES_CONFIG.find(function(z){ return z.key===f.zone; });
+    return (cfg?cfg.label:'?')+' '+f.cote;
+  }).join(' • ');
+}
+
+function renderPainZones(){
+  var list = document.getElementById('pain-zones-list');
+  if(!list) return;
+  list.innerHTML = _painZones.length ? '' : '<span style="font-size:.78rem;color:var(--muted);font-style:italic;">Aucune zone — patient sans douleur localisée</span>';
+  _painZones.forEach(function(pz, idx){
+    var cfg = PAIN_ZONES_CONFIG.find(function(z){ return z.key===pz.zone; });
+    var cls = pz.cote==='DROIT' ? 'cote-d' : pz.cote==='GAUCHE' ? 'cote-g' : 'cote-bi';
+    var lbl = (cfg?cfg.label:pz.zone) + ' — ' + pz.cote;
+    var chip = '<span class="pz-chip '+cls+'">'+lbl+'<button class="pz-chip-del" onclick="removePainZone('+idx+')" title="Supprimer">×</button></span>';
+    list.innerHTML += chip;
+  });
+  // Sync hidden fields
+  var hf = document.getElementById('f-pain-zones');
+  if(hf) hf.value = JSON.stringify(_painZones);
+  // Sync f-cote for backward compat (primary côté = first zone, or empty)
+  var fc = document.getElementById('f-cote');
+  if(fc) fc.value = _painZones.length ? _painZones[0].cote : '';
+  updateAll();
+}
+
+function addPainZone(){
+  var zone = (document.getElementById('pz-zone-sel')||{}).value;
+  var cote = (document.getElementById('pz-cote-sel')||{}).value;
+  if(!zone||!cote) return;
+  // Prevent exact duplicate
+  var exists = _painZones.some(function(p){ return p.zone===zone && p.cote===cote; });
+  if(exists) return;
+  _painZones.push({ zone:zone, cote:cote });
+  renderPainZones();
+}
+
+function removePainZone(idx){
+  _painZones.splice(idx,1);
+  renderPainZones();
+}
+
+function _parsePainZones(){
+  var hf = document.getElementById('f-pain-zones');
+  if(!hf || !hf.value || hf.value==='[]') { _painZones = []; }
+  else { try{ _painZones = JSON.parse(hf.value)||[]; }catch(e){ _painZones=[]; } }
+  renderPainZones();
+}
+
 // Init
 init(); // appelle showPage('infos') à la fin → page-infos s'affiche
 
 // Triple garantie — showPage('infos') après la pile JS courante et après load
 setTimeout(function(){ showPage('infos'); }, 0);
-window.addEventListener('load', function(){ showPage('infos'); });
+window.addEventListener('load', function(){ showPage('infos'); _parsePainZones(); });
 </script>
 
 <script>
