@@ -3628,7 +3628,7 @@ function _buildAllTestsHtml() {
     if (conclEl && conclEl.value) secRows += crItem('Conclusion', nl2br(conclEl.value));
     var optEl = sec.opt ? document.getElementById(sec.opt) : null;
     if (optEl && optEl.value) secRows += crItem('Tests Optionnels', nl2br(optEl.value));
-    if (secRows) orthoHtml += '<div style="margin-bottom:12px"><div style="font-size:.78rem;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">' + sec.label + '</div>' + secRows + '</div>';
+    if (secRows) orthoHtml += '<div style="margin-bottom:14px"><div style="margin-bottom:8px"><span style="display:inline-block;background:var(--green-l,#E8F5EE);color:var(--green,#2D6A4F);border:1px solid #A5D6A7;border-radius:20px;padding:3px 13px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em">' + sec.label + '</span></div>' + secRows + '</div>';
   }
   addSec('2. Bilan Orthopedique', orthoHtml);
 
