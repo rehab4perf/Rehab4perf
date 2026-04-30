@@ -2876,10 +2876,18 @@ window.addEventListener('message', function(e){
     applyProfile(e.data.profile);
   }
   if(e.data && e.data.type==='r4p-patient-selected'){
-    _bilanPatient = e.data.patient;
+    var _newPat = e.data.patient;
+    var _isDiff = !_bilanPatient || !_newPat || _bilanPatient.id !== _newPat.id;
+    // Protection contre la perte de données
+    if(_isDiff && _bilanModified){
+      if(!confirm('Le bilan actuel contient des modifications non sauvegardées.\nChanger de patient quand même ?')){
+        return;
+      }
+    }
+    _bilanPatient = _newPat;
     _currentBilanId = null;
-    try { localStorage.setItem('r4p-current-patient', e.data.patient ? JSON.stringify(e.data.patient) : ''); } catch(ex){}
-    // Récupérer l'uid depuis le token d'auth envoyé par le parent
+    _bilanModified = false;
+    try { localStorage.setItem('r4p-current-patient', _newPat ? JSON.stringify(_newPat) : ''); } catch(ex){}
     if(e.data.auth && e.data.auth.access_token){
       try {
         var payload = JSON.parse(atob(e.data.auth.access_token.split('.')[1]));
@@ -2888,7 +2896,11 @@ window.addEventListener('message', function(e){
       try { sbB.auth.setSession(e.data.auth); } catch(ex){}
     }
     _updateSaveBar();
-    if(_bilanPatient) _autofillPatientFields(_bilanPatient);
+    if(_bilanPatient && _isDiff){
+      _resetAndLoadPatient(_bilanPatient);
+    } else if(_bilanPatient){
+      _autofillPatientFields(_bilanPatient);
+    }
   }
 });
 
@@ -2902,6 +2914,12 @@ var sbB = supabase.createClient(SUPA_URL_B, SUPA_KEY_B);
 var _bilanPatient   = null;
 var _currentBilanId = null;
 var _bilanUid       = null;
+var _bilanModified  = false;   // true dès qu'une saisie est faite depuis le dernier save/load
+var _suppressDirty  = false;   // true pendant _deserializeBilan pour ne pas polluer le flag
+
+// Marquer le bilan comme modifié à chaque saisie utilisateur
+document.addEventListener('input',  function(){ if(!_suppressDirty) _bilanModified = true; });
+document.addEventListener('change', function(){ if(!_suppressDirty) _bilanModified = true; });
 
 // Essayer de récupérer l'uid depuis le localStorage Supabase (fallback au chargement)
 (function(){
@@ -2955,6 +2973,49 @@ function _autofillPatientFields(p){
   try { updateAll(); } catch(ex){}
 }
 
+/* ── Reset + auto-chargement au changement de patient ──── */
+function _resetBilanFields(){
+  _suppressDirty = true;
+  document.querySelectorAll('input:not([type=checkbox]):not([type=radio])').forEach(function(i){ i.value=''; });
+  document.querySelectorAll('textarea').forEach(function(t){ t.value=''; });
+  document.querySelectorAll('select').forEach(function(s){ s.selectedIndex=0; s.className=''; });
+  document.querySelectorAll('input[type=checkbox],input[type=radio]').forEach(function(c){ c.checked=false; });
+  try{ var fd=document.getElementById('f-date'); if(fd) fd.value=new Date().toISOString().split('T')[0]; }catch(ex){}
+  _painZones=[]; renderPainZones();
+  try{ updateAll(); }catch(ex){} try{ calcRec(); }catch(ex){}
+  _suppressDirty = false;
+  _bilanModified = false;
+}
+
+function _resetAndLoadPatient(p){
+  _resetBilanFields();
+  _autofillPatientFields(p);
+  var btn = document.getElementById('bilan-save-btn');
+  if(btn){ btn.disabled=true; btn.textContent='⏳ Chargement…'; }
+  sbB.from('bilans')
+    .select('*').eq('patient_id', p.id)
+    .order('date',{ascending:false}).limit(1)
+    .then(function(res){
+      if(btn){ btn.disabled=false; btn.textContent='💾 Sauvegarder le bilan'; }
+      if(res.error || !res.data || !res.data.length){
+        _showPatientToast('Nouveau bilan vierge');
+        return;
+      }
+      var b = res.data[0];
+      _currentBilanId = b.id;
+      _deserializeBilan(b.donnees||{});
+      var d = b.date ? b.date.split('-').reverse().join('/') : '—';
+      _showPatientToast('Bilan du '+d+' chargé');
+    });
+}
+
+function _showPatientToast(msg){
+  var el = document.getElementById('sb-save-patient');
+  if(!el) return;
+  el.innerHTML = '<em style="color:var(--accent);font-style:normal">'+msg+'</em>';
+  setTimeout(function(){ _updateSaveBar(); }, 3000);
+}
+
 /* ── Sérialisation ─────────────────────────────────────── */
 function _serializeBilan(){
   var data = {};
@@ -2967,6 +3028,7 @@ function _serializeBilan(){
 }
 
 function _deserializeBilan(data){
+  _suppressDirty = true;
   Object.keys(data).forEach(function(id){
     var el = document.getElementById(id);
     if(!el) return;
@@ -2987,6 +3049,8 @@ function _deserializeBilan(data){
   try{ calcRachisStat(); calcLNF(); calcSorensen(); calcPDSLRT(); }catch(ex){}
   try{ calcPlioq2(); calcSEBT(); calcUQYBT(); updateBadges(); }catch(ex){}
   _parsePainZones();
+  _suppressDirty = false;
+  _bilanModified = false;
 }
 
 /* ── Sauvegarder ───────────────────────────────────────── */
@@ -3007,6 +3071,7 @@ function saveBilan(){
     btn.disabled=false;
     if(res.error){ btn.textContent='💾 Sauvegarder le bilan'; alert('Erreur : '+res.error.message); return; }
     if(!_currentBilanId) _currentBilanId = res.data.id;
+    _bilanModified = false;
     btn.textContent='✓ Sauvegardé !';
     setTimeout(function(){ btn.textContent='💾 Sauvegarder le bilan'; },2500);
   }).catch(function(err){
@@ -3057,17 +3122,9 @@ function loadBilan(id){
 function newBilan(){
   if(!confirm('Créer un nouveau bilan vierge ? (le bilan actuel non sauvegardé sera perdu)')) return;
   _currentBilanId = null;
-  // Réinitialisation complète — même logique que doReset()
-  document.querySelectorAll('input:not([type=checkbox])').forEach(function(i){ i.value=''; });
-  document.querySelectorAll('textarea').forEach(function(t){ t.value=''; });
-  document.querySelectorAll('select').forEach(function(s){ s.selectedIndex=0; s.className=''; });
-  document.querySelectorAll('input[type=checkbox]').forEach(function(c){ c.checked=false; });
-  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
-  _painZones = []; renderPainZones();
+  _resetBilanFields();
   showPage('infos');
   localStorage.removeItem('athletik-bilan');
-  try{ updateAll(); }catch(ex){}
-  try{ calcRec(); }catch(ex){}
   if(_bilanPatient) _autofillPatientFields(_bilanPatient);
   closeHistoModal();
 }
