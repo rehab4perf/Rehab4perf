@@ -1264,6 +1264,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
     </div>
     <div class="save-modal-btns">
       <button class="btn btn-primary" id="grpModalConfirmBtn" onclick="doCreateGroup()">📁 Créer le protocole</button>
+      <button class="btn btn-outline" id="grpDuplicateBtn" style="display:none" onclick="duplicateGroup()">📋 Dupliquer</button>
       <button class="btn btn-outline" onclick="closeCreateGroup()">Annuler</button>
     </div>
   </div>
@@ -1447,6 +1448,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
         <button class="more-btn" onclick="toggleMoreMenu(event)" title="Plus d'options">• • •</button>
         <div class="more-dropdown" id="moreDropdown">
           <button class="more-item" onclick="openSaveTemplate();closeMoreMenu()">📋 Créer un template</button>
+          <button class="more-item" id="moreItemDuplTmpl" style="display:none" onclick="duplicateTemplate();closeMoreMenu()">📋 Dupliquer ce template</button>
           <button class="more-item" onclick="shareProgLink();closeMoreMenu()">🔗 Partager avec l'athlète</button>
           <button class="more-item" onclick="exportSession();closeMoreMenu()">📤 Exporter HTML</button>
           <button class="more-item" onclick="window.print();closeMoreMenu()">🖨 Imprimer</button>
@@ -2464,6 +2466,9 @@ function clearSession(){
 /* ── Menu ⋯ (Plus d'options) ── */
 function toggleMoreMenu(e){
   e.stopPropagation();
+  // Afficher "Dupliquer ce template" seulement si un template est chargé
+  var duplItem = document.getElementById('moreItemDuplTmpl');
+  if(duplItem) duplItem.style.display = _builderFromTemplate ? '' : 'none';
   document.getElementById('moreDropdown').classList.toggle('open');
 }
 function closeMoreMenu(){
@@ -5361,6 +5366,37 @@ function _doUpdateTemplate(){
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
+function duplicateTemplate(){
+  if(!_builderFromTemplate){ _showToast('⚠️ Aucun template chargé.'); return; }
+  if(!_progToken || !_progUid){ alert('Session non disponible.'); return; }
+  var src = (_sidebarProgs||[]).find(function(t){ return String(t.id)===String(_builderFromTemplate); });
+  var newNom = 'Copie de ' + (src ? (src.nom||src.phase_nom||'Template') : 'Template');
+  var donnees = JSON.stringify({ blocs: JSON.parse(JSON.stringify(blocs||[])), notes: getNotes() });
+  var payload = {
+    praticien_id: _progUid,
+    nom: newNom,
+    type: src ? (src.type||null) : null,
+    emoji: src ? (src.emoji||null) : null,
+    categorie: src ? (src.categorie||null) : null,
+    group_id: src ? (src.group_id||null) : null,
+    phase_nom: src ? (src.phase_nom||null) : null,
+    phase_ordre: src ? (src.phase_ordre||0) : 0,
+    donnees: donnees
+  };
+  fetch(SUPA_URL_P+'/rest/v1/templates', {
+    method:'POST',
+    headers: _sbHeaders(),
+    body: JSON.stringify(payload)
+  })
+  .then(function(r){ return r.ok ? r.json() : null; })
+  .then(function(data){
+    if(!data || !data[0]){ alert('Erreur lors de la duplication.'); return; }
+    renderSidebarTemplates();
+    _showToast('📋 Template « '+newNom+' » dupliqué !');
+  })
+  .catch(function(e){ alert('Erreur réseau : '+(e&&e.message||e)); });
+}
+
 function loadTemplate(id){
   function _applyTemplate(t){
     var d = {};
@@ -5438,6 +5474,7 @@ function openCreateGroup(){
   document.getElementById('grpCatInput').value = '';
   document.getElementById('grpDescInput').value = '';
   document.getElementById('grpLibSection').style.display = 'none';
+  document.getElementById('grpDuplicateBtn').style.display = 'none';
   document.getElementById('groupCreateModal').classList.add('open');
   setTimeout(function(){ document.getElementById('grpNameInput').focus(); }, 100);
 }
@@ -5450,6 +5487,7 @@ function openEditGroup(id){
   document.getElementById('grpNameInput').value = g.nom||'';
   document.getElementById('grpCatInput').value = g.categorie||'';
   document.getElementById('grpDescInput').value = g.description||'';
+  document.getElementById('grpDuplicateBtn').style.display = '';
   // Section publication
   var libSec = document.getElementById('grpLibSection');
   var libTog = document.getElementById('grpLibToggle');
@@ -5614,6 +5652,50 @@ function _doUnpublishGroup(libId){
     });
   })
   .catch(function(e){ alert('Erreur réseau retrait : '+(e&&e.message||e)); });
+}
+
+function duplicateGroup(){
+  var id = _grpEditId;
+  if(!id){ alert('Protocole introuvable.'); return; }
+  var g = (_groups||[]).find(function(x){ return String(x.id)===String(id); });
+  if(!g){ alert('Protocole introuvable.'); return; }
+  if(!_progToken || !_progUid){ alert('Session non disponible.'); return; }
+  var newNom = 'Copie de ' + (g.nom||'Protocole');
+  // 1. Créer le nouveau groupe
+  fetch(SUPA_URL_P+'/rest/v1/template_groups', {
+    method:'POST',
+    headers: _sbHeaders(),
+    body: JSON.stringify({ praticien_id:_progUid, nom:newNom, categorie:g.categorie||null, description:g.description||null })
+  })
+  .then(function(r){ return r.ok ? r.json() : null; })
+  .then(function(data){
+    if(!data || !data[0]){ alert('Erreur lors de la duplication du protocole.'); return; }
+    var newGroupId = data[0].id;
+    // 2. Dupliquer les templates du groupe
+    var tmplsToCopy = (_sidebarProgs||[]).filter(function(p){ return String(p.group_id)===String(id); });
+    var copies = tmplsToCopy.map(function(t){
+      return {
+        praticien_id: _progUid,
+        nom: t.nom||t.phase_nom||'',
+        type: t.type||null,
+        emoji: t.emoji||null,
+        categorie: t.categorie||null,
+        group_id: newGroupId,
+        phase_nom: t.phase_nom||null,
+        phase_ordre: t.phase_ordre||0,
+        donnees: t.donnees||null
+      };
+    });
+    var done = 0;
+    if(!copies.length){ closeCreateGroup(); renderSidebarTemplates(); _showToast('📋 Protocole « '+newNom+' » dupliqué !'); return; }
+    copies.forEach(function(c){
+      fetch(SUPA_URL_P+'/rest/v1/templates', {
+        method:'POST', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
+        body: JSON.stringify(c)
+      }).then(function(){ done++; if(done===copies.length){ closeCreateGroup(); renderSidebarTemplates(); _showToast('📋 Protocole « '+newNom+' » dupliqué !'); } });
+    });
+  })
+  .catch(function(e){ alert('Erreur réseau : '+(e&&e.message||e)); });
 }
 
 function deleteGroup(id){
