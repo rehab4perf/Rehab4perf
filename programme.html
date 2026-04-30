@@ -1752,6 +1752,10 @@ var LIBRARY = [
   {id:'r054',name:"Deadbug élastique",zone:"TRONC / GAINAGE",type:"renfo",url:"https://youtu.be/VYzVVtiOdm4",obj:"",patterns:["Core / Gainage"]},
   {id:'r055',name:"Deadbug avancée + KTLB",zone:"TRONC / GAINAGE",type:"renfo",url:"https://youtu.be/FzJAL1pEGbA",obj:"",patterns:["Core / Gainage"]}
 ];
+// Référence immuable des exercices hardcodés (jamais modifiée)
+var LIBRARY_DEFAULT = LIBRARY.slice();
+// IDs des exercices qui viennent de Supabase { id: true }
+var _supaExoIds = {};
 
 /* ================================================================
    STATE
@@ -2975,17 +2979,35 @@ var ALL_ZONES = [
 ];
 var ALL_TYPES = ['warmup','renfo','automassage'];
 
-// Load custom library from localStorage if exists
-(function(){
-  try {
-    var saved = localStorage.getItem('r4p-library');
-    if(saved){ LIBRARY = JSON.parse(saved); }
-  } catch(e){}
-})();
+// Charge les exercices partagés depuis Supabase et les fusionne avec LIBRARY_DEFAULT
+function _loadSupaLibrary(){
+  if(!_progToken || !_progUid) return;
+  fetch(SUPA_URL_P + '/rest/v1/exercices_library?order=created_at.asc', { headers: _sbHeaders() })
+  .then(function(r){ return r.ok ? r.json() : null; })
+  .then(function(data){
+    if(!Array.isArray(data)) return;
+    _supaExoIds = {};
+    data.forEach(function(e){ _supaExoIds[e.id] = true; });
+    var defaultIds = new Set(LIBRARY_DEFAULT.map(function(e){ return e.id; }));
+    var supaExos = data
+      .filter(function(e){ return !defaultIds.has(e.id); })
+      .map(function(e){
+        return { id: e.id, name: e.name, zone: e.zone||'', type: e.type||'',
+                 url: e.url||'', obj: e.obj||'',
+                 patterns: Array.isArray(e.patterns) ? e.patterns : [],
+                 _fromSupa: true };
+      });
+    LIBRARY = LIBRARY_DEFAULT.concat(supaExos);
+    filterLib();
+  })
+  .catch(function(){});
+}
 
 var _editorData = [];
+var _editorOriginalIds = []; // IDs présents au moment de l'ouverture de l'éditeur
 
 function openEditor(){
+  _editorOriginalIds = LIBRARY.map(function(e){ return e.id; });
   _editorData = LIBRARY.map(function(e){ return Object.assign({},e); });
   renderEditor();
   document.getElementById('editorModal').classList.add('open');
@@ -2998,7 +3020,49 @@ function closeEditor(){
 
 function saveEditor(){
   LIBRARY = _editorData.filter(function(e){ return e.name.trim(); });
-  try { localStorage.setItem('r4p-library', JSON.stringify(LIBRARY)); } catch(ex){}
+
+  // ── Sync Supabase ──
+  if(_progToken && _progUid){
+    var defaultIds = new Set(LIBRARY_DEFAULT.map(function(e){ return e.id; }));
+    var currentIds = new Set(LIBRARY.map(function(e){ return e.id; }));
+
+    // POST (nouveau) ou PATCH (modifié) pour tous les exercices non-hardcodés
+    LIBRARY.forEach(function(ex){
+      if(defaultIds.has(ex.id)) return; // exercice hardcodé, on ne touche pas
+      var payload = {
+        id: ex.id, name: ex.name, zone: ex.zone||null, type: ex.type||null,
+        url: ex.url||null, obj: ex.obj||null,
+        patterns: ex.patterns||[],
+        created_by: _progUid
+      };
+      if(_supaExoIds[ex.id]){
+        // Modifier un exercice Supabase existant
+        fetch(SUPA_URL_P+'/rest/v1/exercices_library?id=eq.'+ex.id, {
+          method:'PATCH',
+          headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
+          body: JSON.stringify(payload)
+        });
+      } else {
+        // Créer un nouvel exercice dans Supabase
+        fetch(SUPA_URL_P+'/rest/v1/exercices_library', {
+          method:'POST',
+          headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
+          body: JSON.stringify(payload)
+        }).then(function(r){ if(r.ok) _supaExoIds[ex.id] = true; });
+      }
+    });
+
+    // Supprimer les exercices Supabase retirés de la liste
+    _editorOriginalIds.forEach(function(id){
+      if(defaultIds.has(id)) return;
+      if(!currentIds.has(id) && _supaExoIds[id]){
+        fetch(SUPA_URL_P+'/rest/v1/exercices_library?id=eq.'+id, {
+          method:'DELETE', headers: _sbHeaders()
+        }).then(function(r){ if(r.ok) delete _supaExoIds[id]; });
+      }
+    });
+  }
+
   // Synchroniser les URLs dans la session courante pour les exos déjà ajoutés
   var sessionUpdated = false;
   blocs.forEach(function(bloc){
@@ -3120,6 +3184,7 @@ window.addEventListener('message', function(e){
         var payload = JSON.parse(atob(_progToken.split('.')[1]));
         _progUid = payload.sub || null;
       } catch(ex){}
+      _loadSupaLibrary();
     }
     // Auto-remplir le champ nom du patient + mettre à jour toute l'UI
     if(_progPatient){
@@ -3165,6 +3230,7 @@ function _normalizePatient(p){
         _progToken = tok;
         var pl = JSON.parse(atob(tok.split('.')[1]));
         _progUid = pl.sub || null;
+        _loadSupaLibrary();
       }
     }
   } catch(ex){}
