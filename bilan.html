@@ -3782,12 +3782,28 @@ function buildCR() {
   var dob = document.getElementById('f-dob') ? document.getElementById('f-dob').value : '';
   var cote = document.getElementById('f-cote') ? document.getElementById('f-cote').value : '';
   var date = document.getElementById('f-date') ? document.getElementById('f-date').value : '';
+  var zonesStr = (_painZones&&_painZones.length) ? _painZones.map(function(p){
+    var cfg = PAIN_ZONES_CONFIG.find(function(z){ return z.key===p.zone; });
+    return (cfg?cfg.label:p.zone)+' '+p.cote;
+  }).join(' • ') : cote;
 
   if (nom || prenom) {
     var age2 = dob ? (new Date().getFullYear() - new Date(dob).getFullYear()) : null;
     var sexeVal = document.getElementById('f-sexe') ? document.getElementById('f-sexe').value : '';
-    var metaTxt = [age2 ? (age2 + ' ans') : null, sexeVal||null, cote, date ? formatDate(date) : null].filter(Boolean).join('   ');
-    content.innerHTML += '<div class="block"><div class="block-header light"><span style="font-size:1rem;font-weight:600;font-family:var(--font-serif)">' + [prenom,nom].filter(Boolean).join(' ') + '</span><span style="margin-left:8px;font-size:.82rem;color:var(--text2)">' + metaTxt + '</span></div></div>';
+    var metaTxt = [age2 ? (age2 + ' ans') : null, sexeVal||null, date ? formatDate(date) : null].filter(Boolean).join('   ');
+    var zonesBlockHtml = '';
+    if (_painZones && _painZones.length) {
+      zonesBlockHtml = '<div style="padding:5px 0 2px 0;">' +
+        _painZones.map(function(p){
+          var cfg = PAIN_ZONES_CONFIG.find(function(z){ return z.key===p.zone; });
+          var lbl = cfg ? cfg.label : p.zone;
+          return '<div style="font-size:.82rem;color:var(--text1);line-height:1.7">' + lbl + ' — <strong>' + p.cote + '</strong></div>';
+        }).join('') +
+      '</div>';
+    } else if (zonesStr) {
+      zonesBlockHtml = '<div style="font-size:.82rem;color:var(--text1);padding:4px 0 2px 0">' + zonesStr + '</div>';
+    }
+    content.innerHTML += '<div class="block"><div class="block-header light"><span style="font-size:1rem;font-weight:600;font-family:var(--font-serif)">' + [prenom,nom].filter(Boolean).join(' ') + '</span><span style="margin-left:8px;font-size:.82rem;color:var(--text2)">' + metaTxt + '</span></div>' + zonesBlockHtml + '</div>';
   }
 
   function addSection(title, html) {
@@ -3806,6 +3822,14 @@ function buildCR() {
 
   // 1. Infos patient
   var infosHtml = '';
+  // Zones douloureuses (multi-zone pain system)
+  if (_painZones && _painZones.length) {
+    var zonesItemStr = _painZones.map(function(p){
+      var cfg = PAIN_ZONES_CONFIG.find(function(z){ return z.key===p.zone; });
+      return (cfg?cfg.label:p.zone)+' — '+p.cote;
+    }).join(' • ');
+    infosHtml += crItem('Zones douloureuses', zonesItemStr);
+  }
   var infosMap = [
     ['f-sexe','Sexe',''],['f-activite','Activité professionnelle',''],['f-sport','Sport / Objectif',''],['f-accident','Accident/Op.',''],
     ['f-motif','Motif du bilan',''],['f-motif-patient','Motif (patient)',''],
@@ -4394,11 +4418,26 @@ function buildCRTF() {
   var age = dob ? (new Date().getFullYear() - new Date(dob).getFullYear()) : null;
   var patName = [prenom,nom].filter(Boolean).join(' ') || 'Patient';
   var sexeV = document.getElementById('f-sexe') ? document.getElementById('f-sexe').value : '';
-  var metaStr = [age?(age+' ans'):null, sexeV||null, cote, dateBilan?formatDate(dateBilan):null].filter(Boolean).join('   ');
+  var zonesStr = (_painZones&&_painZones.length) ? _painZones.map(function(p){
+    var cfg = PAIN_ZONES_CONFIG.find(function(z){ return z.key===p.zone; });
+    return (cfg?cfg.label:p.zone)+' '+p.cote;
+  }).join(' • ') : cote;
+  var metaStr = [age?(age+' ans'):null, sexeV||null, dateBilan?formatDate(dateBilan):null].filter(Boolean).join('   ');
+  var zonesLinesTF = '';
+  if (_painZones && _painZones.length) {
+    zonesLinesTF = _painZones.map(function(p){
+      var cfg = PAIN_ZONES_CONFIG.find(function(z){ return z.key===p.zone; });
+      var lbl = cfg ? cfg.label : p.zone;
+      return '<div style="font-size:.82rem;color:var(--text1);line-height:1.7">' + lbl + ' — <strong>' + p.cote + '</strong></div>';
+    }).join('');
+  } else if (zonesStr) {
+    zonesLinesTF = '<div style="font-size:.82rem;color:var(--text1)">' + zonesStr + '</div>';
+  }
 
   content.innerHTML += '<div style="margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid var(--border)">' +
     '<div style="font-size:1.1rem;font-weight:700;color:var(--accent2)">' + patName + '</div>' +
     '<div style="font-size:.82rem;color:var(--text2);margin-top:3px">' + metaStr + '</div>' +
+    (zonesLinesTF ? '<div style="margin-top:5px">' + zonesLinesTF + '</div>' : '') +
     '</div>';
 
   function addTFSection(title, html) {
