@@ -3162,8 +3162,22 @@ function saveEditor(){
     });
   });
   if(sessionUpdated) renderSession();
-  closeEditor();
   filterLib();
+  // Feedback bouton — reste ouvert
+  var saveBtn = document.querySelector('#editorModal .btn-primary[onclick="saveEditor()"]');
+  if(saveBtn){
+    var prev = saveBtn.textContent;
+    saveBtn.textContent = '✓ Enregistré !';
+    saveBtn.style.background = '#1B5E20';
+    saveBtn.style.borderColor = '#1B5E20';
+    saveBtn.disabled = true;
+    setTimeout(function(){
+      saveBtn.textContent = prev;
+      saveBtn.style.background = '';
+      saveBtn.style.borderColor = '';
+      saveBtn.disabled = false;
+    }, 2000);
+  }
 }
 
 function resetLibrary(){
