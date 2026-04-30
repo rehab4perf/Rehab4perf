@@ -5461,15 +5461,22 @@ function renderSidebarTemplates(){
   var scroll = document.getElementById('stmplScroll');
   if(!scroll) return;
   if(_progToken && _progUid){
-    scroll.innerHTML = '<div class="stmpl-empty">Chargement…</div>';
+    // Afficher "Chargement" seulement si pas de données déjà en mémoire
+    if(!_sidebarProgs.length && !_groups.length){
+      scroll.innerHTML = '<div class="stmpl-empty">Chargement…</div>';
+    }
     Promise.all([
-      fetch(SUPA_URL_P+'/rest/v1/template_groups?praticien_id=eq.'+_progUid+'&order=created_at.asc',{headers:_sbHeaders()}).then(function(r){return r.json();}),
-      fetch(SUPA_URL_P+'/rest/v1/templates?praticien_id=eq.'+_progUid+'&order=phase_ordre.asc,created_at.desc',{headers:_sbHeaders()}).then(function(r){return r.json();})
+      fetch(SUPA_URL_P+'/rest/v1/template_groups?praticien_id=eq.'+_progUid+'&order=created_at.asc',{headers:_sbHeaders()}).then(function(r){ return r.ok ? r.json() : null; }),
+      fetch(SUPA_URL_P+'/rest/v1/templates?praticien_id=eq.'+_progUid+'&order=phase_ordre.asc,created_at.desc',{headers:_sbHeaders()}).then(function(r){ return r.ok ? r.json() : null; })
     ]).then(function(res){
-      _groups       = Array.isArray(res[0]) ? res[0] : [];
-      _sidebarProgs = Array.isArray(res[1]) ? res[1] : [];
+      // Ne remplacer les données qu'en cas de réponse valide (évite d'écraser avec une erreur 401)
+      if(Array.isArray(res[0])) _groups       = res[0];
+      if(Array.isArray(res[1])) _sidebarProgs = res[1];
       _renderSidebarWithGroups();
-    }).catch(function(){ scroll.innerHTML='<div class="stmpl-empty">Erreur de chargement.</div>'; });
+    }).catch(function(){
+      // En cas d'erreur réseau, garder les données existantes et re-rendre
+      _renderSidebarWithGroups();
+    });
   } else {
     _loadGroups(); _loadTemplates();
     _sidebarProgs = _templates.map(function(t){
