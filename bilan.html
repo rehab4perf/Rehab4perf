@@ -2975,6 +2975,14 @@ function _autofillPatientFields(p){
   try { updateAll(); } catch(ex){}
 }
 
+/* ── Rafraîchir le CR si la page est déjà visible ──────── */
+function _refreshCRIfVisible(){
+  var active = document.querySelector('.page.active');
+  if(!active) return;
+  if(active.id === 'page-cr')    buildCR();
+  if(active.id === 'page-cr-tf') buildCRTF();
+}
+
 /* ── Reset + auto-chargement au changement de patient ──── */
 function _resetBilanFields(){
   _suppressDirty = true;
@@ -2987,6 +2995,7 @@ function _resetBilanFields(){
   try{ updateAll(); }catch(ex){} try{ calcRec(); }catch(ex){}
   _suppressDirty = false;
   _bilanModified = false;
+  _refreshCRIfVisible();
 }
 
 function _resetAndLoadPatient(p){
@@ -3053,6 +3062,7 @@ function _deserializeBilan(data){
   _parsePainZones();
   _suppressDirty = false;
   _bilanModified = false;
+  _refreshCRIfVisible();
 }
 
 /* ── Sauvegarder ───────────────────────────────────────── */
