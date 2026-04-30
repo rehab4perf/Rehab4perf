@@ -973,10 +973,12 @@ textarea { resize:none !important; overflow:hidden !important; }
         <div class="field"><label>Prénom</label><input type="text" id="f-prenom" placeholder="Jean" autocapitalize="words" oninput="_capInput(this);updateAll()"></div>
         <div class="field"><label>Date de naissance</label><input type="date" id="f-dob" oninput="updateAll()"></div>
       </div>
-      <div class="form-grid triple">
+      <div class="form-grid">
         <div class="field"><label>Poids (kg)</label><input type="number" id="f-poids" placeholder="70" oninput="updateAll()"></div>
         <div class="field"><label>Taille (cm)</label><input type="number" id="f-taille" placeholder="175" oninput="updateAll()"></div>
-        <div class="field" style="grid-column:1/-1">
+      </div>
+      <div class="form-grid single">
+        <div class="field">
           <label>Zones douloureuses</label>
           <div class="pain-zones-wrap">
             <div class="pain-zones-list" id="pain-zones-list"></div>
