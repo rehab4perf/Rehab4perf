@@ -3774,39 +3774,48 @@ function _buildAllTestsHtml() {
 // -------------------------------------------------------------
 
 // -- COMPTE-RENDU ---------------------------------------------
+
+/* Header patient partagé entre CR Complet et CR Tests */
+function _buildCRPatientHeaderHtml() {
+  var nom    = (document.getElementById('f-nom')   ||{}).value || '';
+  var prenom = (document.getElementById('f-prenom')||{}).value || '';
+  var dob    = (document.getElementById('f-dob')   ||{}).value || '';
+  var date   = (document.getElementById('f-date')  ||{}).value || '';
+  var sexe   = (document.getElementById('f-sexe')  ||{}).value || '';
+  var cote   = (document.getElementById('f-cote')  ||{}).value || '';
+  var fullName = [prenom, nom].filter(Boolean).join(' ');
+  if (!fullName) return '';
+  var initials = [prenom, nom].filter(Boolean).map(function(s){ return s.charAt(0).toUpperCase(); }).join('').slice(0, 2);
+  var age = dob ? (new Date().getFullYear() - new Date(dob).getFullYear()) : null;
+  var metaParts = [age ? age + ' ans' : null, sexe||null, date ? formatDate(date) : null].filter(Boolean);
+  // Chips zones
+  var chipsHtml = '';
+  if (_painZones && _painZones.length) {
+    chipsHtml = _painZones.map(function(p) {
+      var cfg = PAIN_ZONES_CONFIG.find(function(z){ return z.key === p.zone; });
+      var lbl = (cfg ? cfg.label : p.zone) + ' — ' + p.cote;
+      var cls = p.cote === 'DROIT' ? 'cote-d' : p.cote === 'GAUCHE' ? 'cote-g' : 'cote-bi';
+      return '<span class="pz-chip ' + cls + '" style="font-size:.75rem;padding:3px 10px">' + lbl + '</span>';
+    }).join('');
+  } else if (cote) {
+    chipsHtml = '<span class="pz-chip cote-d" style="font-size:.75rem;padding:3px 10px">' + cote + '</span>';
+  }
+  return '<div style="background:var(--surface);border-radius:var(--radius);margin-bottom:18px;padding:16px 18px;display:flex;align-items:flex-start;gap:14px;border:1px solid var(--border);box-shadow:0 1px 4px rgba(0,0,0,.06)">' +
+    '<div style="width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:700;flex-shrink:0;font-family:var(--font-serif)">' + initials + '</div>' +
+    '<div style="flex:1;min-width:0">' +
+      '<div style="font-size:1.05rem;font-weight:700;color:var(--accent2);font-family:var(--font-serif);margin-bottom:2px">' + fullName + '</div>' +
+      (metaParts.length ? '<div style="font-size:.78rem;color:var(--text2);margin-bottom:' + (chipsHtml ? '8px' : '0') + '">' + metaParts.join(' · ') + '</div>' : '') +
+      (chipsHtml ? '<div style="display:flex;flex-wrap:wrap;gap:6px">' + chipsHtml + '</div>' : '') +
+    '</div>' +
+  '</div>';
+}
+
 function buildCR() {
   var content = document.getElementById('cr-content');
   if (!content) return;
   content.innerHTML = '';
 
-  var nom = document.getElementById('f-nom') ? document.getElementById('f-nom').value : '';
-  var prenom = document.getElementById('f-prenom') ? document.getElementById('f-prenom').value : '';
-  var dob = document.getElementById('f-dob') ? document.getElementById('f-dob').value : '';
-  var cote = document.getElementById('f-cote') ? document.getElementById('f-cote').value : '';
-  var date = document.getElementById('f-date') ? document.getElementById('f-date').value : '';
-  var zonesStr = (_painZones&&_painZones.length) ? _painZones.map(function(p){
-    var cfg = PAIN_ZONES_CONFIG.find(function(z){ return z.key===p.zone; });
-    return (cfg?cfg.label:p.zone)+' '+p.cote;
-  }).join(' • ') : cote;
-
-  if (nom || prenom) {
-    var age2 = dob ? (new Date().getFullYear() - new Date(dob).getFullYear()) : null;
-    var sexeVal = document.getElementById('f-sexe') ? document.getElementById('f-sexe').value : '';
-    var metaTxt = [age2 ? (age2 + ' ans') : null, sexeVal||null, date ? formatDate(date) : null].filter(Boolean).join('   ');
-    var zonesBlockHtml = '';
-    if (_painZones && _painZones.length) {
-      zonesBlockHtml = '<div style="padding:5px 0 2px 0;">' +
-        _painZones.map(function(p){
-          var cfg = PAIN_ZONES_CONFIG.find(function(z){ return z.key===p.zone; });
-          var lbl = cfg ? cfg.label : p.zone;
-          return '<div style="font-size:.82rem;color:var(--text1);line-height:1.7">' + lbl + ' — <strong>' + p.cote + '</strong></div>';
-        }).join('') +
-      '</div>';
-    } else if (zonesStr) {
-      zonesBlockHtml = '<div style="font-size:.82rem;color:var(--text1);padding:4px 0 2px 0">' + zonesStr + '</div>';
-    }
-    content.innerHTML += '<div class="block"><div class="block-header light"><span style="font-size:1rem;font-weight:600;font-family:var(--font-serif)">' + [prenom,nom].filter(Boolean).join(' ') + '</span><span style="margin-left:8px;font-size:.82rem;color:var(--text2)">' + metaTxt + '</span></div>' + zonesBlockHtml + '</div>';
-  }
+  content.innerHTML += _buildCRPatientHeaderHtml();
 
   function addSection(title, html) {
     if (!html || !html.trim()) return;
@@ -3824,14 +3833,6 @@ function buildCR() {
 
   // 1. Infos patient
   var infosHtml = '';
-  // Zones douloureuses (multi-zone pain system)
-  if (_painZones && _painZones.length) {
-    var zonesItemStr = _painZones.map(function(p){
-      var cfg = PAIN_ZONES_CONFIG.find(function(z){ return z.key===p.zone; });
-      return (cfg?cfg.label:p.zone)+' — '+p.cote;
-    }).join(' • ');
-    infosHtml += crItem('Zones douloureuses', zonesItemStr);
-  }
   var infosMap = [
     ['f-sexe','Sexe',''],['f-activite','Activité professionnelle',''],['f-sport','Sport / Objectif',''],['f-accident','Accident/Op.',''],
     ['f-motif','Motif du bilan',''],['f-motif-patient','Motif (patient)',''],
@@ -4412,35 +4413,7 @@ function buildCRTF() {
   try { calcULRT(); } catch(ex){}
 
   // Header patient
-  var nom = document.getElementById('f-nom') ? document.getElementById('f-nom').value : '';
-  var prenom = document.getElementById('f-prenom') ? document.getElementById('f-prenom').value : '';
-  var dob = document.getElementById('f-dob') ? document.getElementById('f-dob').value : '';
-  var cote = document.getElementById('f-cote') ? document.getElementById('f-cote').value : '';
-  var dateBilan = document.getElementById('f-date') ? document.getElementById('f-date').value : '';
-  var age = dob ? (new Date().getFullYear() - new Date(dob).getFullYear()) : null;
-  var patName = [prenom,nom].filter(Boolean).join(' ') || 'Patient';
-  var sexeV = document.getElementById('f-sexe') ? document.getElementById('f-sexe').value : '';
-  var zonesStr = (_painZones&&_painZones.length) ? _painZones.map(function(p){
-    var cfg = PAIN_ZONES_CONFIG.find(function(z){ return z.key===p.zone; });
-    return (cfg?cfg.label:p.zone)+' '+p.cote;
-  }).join(' • ') : cote;
-  var metaStr = [age?(age+' ans'):null, sexeV||null, dateBilan?formatDate(dateBilan):null].filter(Boolean).join('   ');
-  var zonesLinesTF = '';
-  if (_painZones && _painZones.length) {
-    zonesLinesTF = _painZones.map(function(p){
-      var cfg = PAIN_ZONES_CONFIG.find(function(z){ return z.key===p.zone; });
-      var lbl = cfg ? cfg.label : p.zone;
-      return '<div style="font-size:.82rem;color:var(--text1);line-height:1.7">' + lbl + ' — <strong>' + p.cote + '</strong></div>';
-    }).join('');
-  } else if (zonesStr) {
-    zonesLinesTF = '<div style="font-size:.82rem;color:var(--text1)">' + zonesStr + '</div>';
-  }
-
-  content.innerHTML += '<div style="margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid var(--border)">' +
-    '<div style="font-size:1.1rem;font-weight:700;color:var(--accent2)">' + patName + '</div>' +
-    '<div style="font-size:.82rem;color:var(--text2);margin-top:3px">' + metaStr + '</div>' +
-    (zonesLinesTF ? '<div style="margin-top:5px">' + zonesLinesTF + '</div>' : '') +
-    '</div>';
+  content.innerHTML += _buildCRPatientHeaderHtml();
 
   function addTFSection(title, html) {
     if (!html || !html.trim()) return;
