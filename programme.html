@@ -2460,13 +2460,18 @@ function updateBlocObjectif(id, val){
   var bloc = blocs.find(function(b){ return b.id===id; });
   if(!bloc) return;
   bloc.objectif = val;
-  bloc.methode = '';
+  bloc.methode  = '';
+  // Nouvelle sélection d'objectif → remettre toutes les cases à coché
+  bloc.exos.forEach(function(e){ delete e._methChecked; delete e._methApplied; });
   renderSession();
 }
 
 function updateBlocMethode(id, val){
   var bloc = blocs.find(function(b){ return b.id===id; });
-  if(bloc) bloc.methode = val;
+  if(!bloc) return;
+  bloc.methode = val;
+  // Nouvelle méthode choisie → remettre toutes les cases à coché
+  bloc.exos.forEach(function(e){ delete e._methChecked; delete e._methApplied; });
   renderSession();
 }
 
@@ -2497,12 +2502,13 @@ function applyMethode(id){
     } else if(p.cibleType !== undefined || p.cibleVal !== undefined){
       e.cibles = [{type: p.cibleType||'RPE', min: p.cibleVal||'', max:''}];
     }
-    e.chained = !!(methObj.chained);
-    e._methApplied = true; // flag pour pastille verte
+    e.chained     = !!(methObj.chained);
+    e._methApplied  = true;  // pastille verte
+    e._methChecked  = false; // décocher après application
   });
   if(appliedCount === 0){ _showToast('⚠️ Aucun exercice sélectionné.'); return; }
   renderSession();
-  // Effacer les pastilles après 3s
+  // Effacer les pastilles après 3s (les cases restent décochées)
   setTimeout(function(){
     bloc.exos.forEach(function(e){ delete e._methApplied; });
     renderSession();
@@ -2808,8 +2814,10 @@ function renderSession(){
              +  ' ondrop="exoDrop(event,this,\''+b.id+'\','+idx+')"'
              +  ' ondragend="exoDragEnd()">';
         if(methObj){
+          var isChecked = (e._methChecked !== false); // décoché seulement si explicitement false
           html += '<div class="drag-handle" style="cursor:default;">'
-                + '<input type="checkbox" class="exo-meth-check" id="exo-check-'+b.id+'-'+e.id+'" checked'
+                + '<input type="checkbox" class="exo-meth-check" id="exo-check-'+b.id+'-'+e.id+'"'
+                + (isChecked ? ' checked' : '')
                 + ' style="accent-color:'+objColor+';"'
                 + ' onchange="_onExoCheckChange(this)"'
                 + ' onclick="event.stopPropagation()">'
