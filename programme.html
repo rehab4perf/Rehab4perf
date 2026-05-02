@@ -2302,6 +2302,7 @@ function updateCardioField(id, field, val){
   if(!b) return;
   b[field] = val;
   if(field==='effort_type') renderSession();
+  else _draftSaveLazy();
 }
 
 function _renderCardioBloc(b){
@@ -2415,6 +2416,7 @@ function updateField(blocId, exoId, field, val){
   if(!bloc) return;
   var exo = bloc.exos.find(function(e){ return e.id===exoId; });
   if(exo) exo[field] = val;
+  _draftSaveLazy();
 }
 
 /* ── Cibles multi-tags ── */
@@ -2443,6 +2445,7 @@ function updateCible(blocId, exoId, idx, field, val){
   var e = _getExo(blocId, exoId); if(!e) return;
   _normCibles(e);
   if(e.cibles[idx]) e.cibles[idx][field] = val;
+  _draftSaveLazy();
 }
 
 function toggleExoChain(blocId, exoId){
@@ -2454,6 +2457,7 @@ function toggleExoChain(blocId, exoId){
 function updateBlocTitle(id, val){
   var bloc = blocs.find(function(b){ return b.id===id; });
   if(bloc) bloc.title = val;
+  _draftSaveLazy();
 }
 
 function updateBlocObjectif(id, val){
@@ -2894,7 +2898,7 @@ function renderSession(){
   });
   // Notes
   html += '<div class="notes-bloc"><div class="notes-label">Notes / Consignes</div>';
-  html += '<textarea class="notes-ta" id="sessionNotes" placeholder="Conseils, progressions, points d\'attention…" oninput="autoResizeTa(this);if(typeof _notes!==\'undefined\')_notes=this.value">'+escH(getNotes())+'</textarea></div>';
+  html += '<textarea class="notes-ta" id="sessionNotes" placeholder="Conseils, progressions, points d\'attention…" oninput="autoResizeTa(this);if(typeof _notes!==\'undefined\'){_notes=this.value;_draftSaveLazy();}">'+escH(getNotes())+'</textarea></div>';
   html += '<button class="add-bloc-btn" onclick="addBloc()">+ Ajouter un bloc</button>';
   area.innerHTML = html;
   updateTargetBlocSelect();
@@ -3386,6 +3390,15 @@ function renderEditor(){
 /* ================================================================
    INIT
    ================================================================ */
+// Avertissement fermeture onglet/fenêtre si séance non sauvegardée
+window.addEventListener('beforeunload', function(e){
+  if(typeof _builderSaved !== 'undefined' && !_builderSaved &&
+     typeof blocs !== 'undefined' && blocs && blocs.length){
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
 window.addEventListener('message', function(e){
   if(e.data && e.data.type==='r4p-profile'){
     try { localStorage.setItem('r4p-profile', JSON.stringify(e.data.profile)); } catch(ex){}
@@ -5470,6 +5483,18 @@ function loadLibraryTemplate(id){
 var _DRAFT_KEY     = 'r4p-builder-draft';
 var _builderSaved  = true; // devient false dès qu'on modifie sans sauvegarder
 var _lastSavedHash = ''; // empreinte du contenu au dernier save
+var _draftSaveTimer = null; // timer debounce
+
+// Version debouncée : appelée depuis les updateField/updateCible/notes
+// pour ne pas spammer localStorage à chaque frappe
+function _draftSaveLazy(){
+  if(_draftSaveTimer) clearTimeout(_draftSaveTimer);
+  // Badge immédiat (feedback visuel instantané)
+  _builderSaved = (_sessionHash() === _lastSavedHash);
+  _refreshDraftBadge();
+  // Écriture différée dans localStorage (600ms après la dernière frappe)
+  _draftSaveTimer = setTimeout(function(){ _draftSave(); }, 600);
+}
 
 // Empreinte légère du contenu pour détecter les vrais changements
 function _sessionHash(){
