@@ -650,12 +650,14 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .methode-bar.obj-puissance { background:#F3F0FF; }
 .methode-bar.obj-hypertrophie { background:#EEF3FB; }
 .methode-bar.obj-forcemax  { background:#FEF0EE; }
+.methode-bar.obj-isometrie { background:#FFF8EC; }
 .obj-label { font-size:.7rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; white-space:nowrap; }
 .obj-libre .obj-label     { color:#6b7a8d; }
 .obj-endurance .obj-label { color:#2D7D46; }
 .obj-puissance .obj-label { color:#7B2DBF; }
 .obj-hypertrophie .obj-label { color:#2B5FA6; }
 .obj-forcemax .obj-label  { color:#C0392B; }
+.obj-isometrie .obj-label { color:#B45309; }
 .meth-select {
   padding:3px 22px 3px 8px; border-radius:6px; border:1px solid rgba(0,0,0,.12);
   font-size:.74rem; font-weight:600; cursor:pointer; outline:none;
@@ -673,6 +675,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .obj-puissance .meth-apply-btn { background:#7B2DBF; color:#fff; }
 .obj-hypertrophie .meth-apply-btn { background:#2B5FA6; color:#fff; }
 .obj-forcemax .meth-apply-btn  { background:#C0392B; color:#fff; }
+.obj-isometrie .meth-apply-btn { background:#B45309; color:#fff; }
 .meth-apply-btn:hover { opacity:.85; }
 .methode-card {
   margin:0 8px 8px; padding:8px 12px; border-radius:6px; font-size:.75rem; line-height:1.5;
@@ -682,6 +685,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .methode-card.obj-puissance    { background:#F5F0FF; border-color:#7B2DBF; color:#4a1d8a; }
 .methode-card.obj-hypertrophie { background:#EEF3FB; border-color:#2B5FA6; color:#1a3a6e; }
 .methode-card.obj-forcemax     { background:#FEF0EE; border-color:#C0392B; color:#7a1a10; }
+.methode-card.obj-isometrie    { background:#FFFBEB; border-color:#B45309; color:#78350f; }
 
 /* ── Blocs Cardio ── */
 .cardio-bloc .bloc-header { background:linear-gradient(135deg,#0E7490,#0891B2); }
@@ -2240,9 +2244,24 @@ var METHODES = {
       desc:'4 séries · 4 reps à 120% de la RM · 5min récup',
       params:{ reps:'4', series:'4', recup:'5min', cibles:[{type:'%1RM', min:'120', max:''}] } },
   ]},
+  isometrie: { label:'Isométrie tendon', methods:[
+    { id:'iso-tendon-std',  label:'Isométrie standard',
+      desc:'3 séries · 45s de contraction isométrique · 2min récup · RPE 7',
+      params:{ duree:'45s', series:'3', recup:'2min', cibles:[{type:'RPE', min:'7', max:''}] } },
+    { id:'iso-tendon-prog', label:'Isométrie progressive',
+      desc:'4 séries · 45s → 60s → 60s → 45s · 2min récup · RPE 7-8',
+      protocol:'S1 : 45s · S2 : 60s · S3 : 60s · S4 : 45s',
+      params:{ duree:'45-60s', series:'4', recup:'2min', cibles:[{type:'RPE', min:'7', max:'8'}] } },
+    { id:'iso-tendon-court', label:'Isométrie courte répétée',
+      desc:'5 séries · 30s · 90s récup · RPE 7',
+      params:{ duree:'30s', series:'5', recup:'90s', cibles:[{type:'RPE', min:'7', max:''}] } },
+    { id:'iso-tendon-heavy', label:'Isométrie heavy-load',
+      desc:'4 séries · 45s à charge max tolérable · 3min récup · RPE 8',
+      params:{ duree:'45s', series:'4', recup:'3min', cibles:[{type:'RPE', min:'8', max:''}] } },
+  ]},
 };
 
-var OBJ_COLORS = { libre:'#6b7a8d', endurance:'#2D7D46', puissance:'#7B2DBF', hypertrophie:'#2B5FA6', forcemax:'#C0392B' };
+var OBJ_COLORS = { libre:'#6b7a8d', endurance:'#2D7D46', puissance:'#7B2DBF', hypertrophie:'#2B5FA6', forcemax:'#C0392B', isometrie:'#B45309' };
 
 function genId(){ return '_'+Math.random().toString(36).slice(2,9); }
 
@@ -2720,7 +2739,7 @@ function renderSession(){
     html += '<div class="methode-bar obj-'+obj+'">';
     html += '<span class="obj-label">Objectif :</span>';
     html += '<select class="meth-select" onchange="updateBlocObjectif(\''+b.id+'\',this.value)">';
-    ['libre','endurance','puissance','hypertrophie','forcemax'].forEach(function(k){
+    ['libre','endurance','puissance','hypertrophie','forcemax','isometrie'].forEach(function(k){
       html += '<option value="'+k+'"'+(obj===k?' selected':'')+'>'+escH(METHODES[k].label)+'</option>';
     });
     html += '</select>';
@@ -2894,7 +2913,7 @@ function buildExportHTML(){
   if(p.tel) metaParts.push(p.tel);
   var metaLine = metaParts.join(' · ');
 
-  var OBJ_BGS = { libre:'#F5F7FA', endurance:'#F0FAF0', puissance:'#F5F0FF', hypertrophie:'#EEF3FB', forcemax:'#FEF0EE' };
+  var OBJ_BGS = { libre:'#F5F7FA', endurance:'#F0FAF0', puissance:'#F5F0FF', hypertrophie:'#EEF3FB', forcemax:'#FEF0EE', isometrie:'#FFFBEB' };
 
   var blocksHtml = '';
   blocs.forEach(function(b){
