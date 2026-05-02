@@ -5469,6 +5469,22 @@ function loadLibraryTemplate(id){
 // ══════════════════════════════════════════════
 var _DRAFT_KEY     = 'r4p-builder-draft';
 var _builderSaved  = true; // devient false dès qu'on modifie sans sauvegarder
+var _lastSavedHash = ''; // empreinte du contenu au dernier save
+
+// Empreinte légère du contenu pour détecter les vrais changements
+function _sessionHash(){
+  try {
+    return JSON.stringify((blocs||[]).map(function(b){
+      return { id:b.id, title:b.title, objectif:b.objectif, methode:b.methode,
+        exos:(b.exos||[]).map(function(e){
+          return {id:e.id, name:e.name, reps:e.reps, series:e.series,
+                  duree:e.duree, recup:e.recup, tempo:e.tempo,
+                  cibles:e.cibles, chained:e.chained};
+        })
+      };
+    }));
+  } catch(e){ return ''; }
+}
 
 function _draftSave(){
   // Ne sauve que si le builder est ouvert et contient du contenu
@@ -5476,6 +5492,9 @@ function _draftSave(){
   if(!panel || !panel.classList.contains('open')) return;
   if(!blocs || !blocs.length){ _draftClear(); return; }
   try {
+    var currentHash = _sessionHash();
+    // Si le contenu n'a pas changé depuis le dernier save → pas de badge
+    _builderSaved = (currentHash === _lastSavedHash);
     localStorage.setItem(_DRAFT_KEY, JSON.stringify({
       blocs:        JSON.parse(JSON.stringify(blocs)),
       notes:        _notes || '',
@@ -5485,13 +5504,13 @@ function _draftSave(){
       activePhaseOrdre: _activePhaseOrdre || 1,
       savedAt: new Date().toISOString()
     }));
-    _builderSaved = false;
     _refreshDraftBadge();
   } catch(e){}
 }
 
 function _draftClear(){
   try { localStorage.removeItem(_DRAFT_KEY); } catch(e){}
+  _lastSavedHash = _sessionHash(); // mémorise l'état actuel comme "sauvegardé"
   _builderSaved = true;
   _refreshDraftBadge();
 }
@@ -5504,6 +5523,9 @@ function _draftRestore(){
     if(!raw) return;
     var d = JSON.parse(raw);
     if(!d || !d.blocs || !d.blocs.length) return;
+    // Vérification de contexte : ne proposer la restauration que si on est dans le même protocole
+    if(d.activeGroupId && d.activeGroupId !== _activeGroupId) return;
+    if(!d.activeGroupId && _activeGroupId) return;
     var nbExos = (d.blocs||[]).reduce(function(a,b){ return a+(b.exos||[]).length; },0);
     var ago = '';
     if(d.savedAt){ var t=new Date(d.savedAt); ago=' — '+t.toLocaleDateString('fr-FR')+' '+t.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); }
@@ -5582,6 +5604,7 @@ function _doUpdateTemplate(){
     if(!res.ok){ btn.textContent='🔄 Mettre à jour'; alert('Erreur '+res.status+' : '+JSON.stringify(res.data)); return; }
     btn.textContent = '✓ Mis à jour !';
     setTimeout(function(){ btn.textContent='🔄 Mettre à jour'; }, 2500);
+    _draftClear();
     renderSidebarTemplates();
   })
   .catch(function(err){
