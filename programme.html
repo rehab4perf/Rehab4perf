@@ -350,6 +350,32 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   display:flex; align-items:center; gap:8px; flex-shrink:0;
 }
 .builder-header h2 { font-size:.84rem; font-weight:700; color:#fff; flex:1; }
+/* ── Protocole actif ── */
+.builder-active-badge {
+  display:inline-flex; align-items:center; gap:5px;
+  font-size:.72rem; font-weight:600;
+  background:rgba(255,255,255,.15); color:#fff;
+  padding:3px 10px; border-radius:20px;
+  white-space:nowrap; cursor:pointer;
+  border:1px solid rgba(255,255,255,.25);
+  transition:background .15s;
+}
+.builder-active-badge:hover { background:rgba(255,255,255,.25); }
+.builder-active-badge .badge-clear {
+  opacity:.6; font-size:.85rem; margin-left:3px; line-height:1;
+}
+.builder-active-badge .badge-clear:hover { opacity:1; }
+.stmpl-add-phase-btn {
+  display:flex; align-items:center; gap:5px; width:100%;
+  padding:7px 12px; margin-top:4px;
+  background:none; border:1.5px dashed var(--border,#e0e0e0);
+  border-radius:7px; color:var(--accent2,#1A3A5C);
+  font-size:.78rem; font-weight:600; cursor:pointer;
+  font-family:inherit; transition:all .15s;
+}
+.stmpl-add-phase-btn:hover { background:var(--accent-l,#EEF3FB); border-color:var(--accent2,#1A3A5C); }
+.stmpl-group-header.is-active-grp { background:var(--accent-l,#EEF3FB) !important; }
+.stmpl-group-header.is-active-grp .stmpl-group-name { color:var(--accent2,#1A3A5C); font-weight:700; }
 .builder-close {
   background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.25);
   color:#fff; border-radius:6px; width:28px; height:28px; cursor:pointer;
@@ -1439,6 +1465,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 <div class="builder-panel" id="builderPanel">
   <div class="builder-header">
     <h2 id="builderTitle">Nouvelle séance</h2>
+    <div id="builderActiveGroupBadge" style="display:none"></div>
     <div style="display:flex;align-items:center;gap:6px;">
       <button class="builder-save-btn" id="prog-cloud-save-btn" onclick="_builderSaveBtnClick()">💾 Sauvegarder</button>
       <button class="builder-plan-btn" onclick="openPlanModal()">📅 Planifier</button>
@@ -5008,8 +5035,50 @@ function _openTmplModal(opts){
   phWrap.style.display = opts.groupId ? 'block' : 'none';
   document.getElementById('tmplPhaseNomInput').value   = opts.phaseNom  || '';
   document.getElementById('tmplPhaseOrdreInput').value = opts.phaseOrdre || '1';
+  // Mode simplifié : protocole actif pré-sélectionné
+  var simplified = !_tmplEditId && !!opts._simplified && !!opts.groupId;
+  var nameField   = document.querySelector('#templateSaveModal .save-field:nth-child(2)'); // Nom
+  var catField    = document.getElementById('tmplCatInput')   ? document.getElementById('tmplCatInput').closest('.save-field')   : null;
+  var emojiField  = document.getElementById('tmplEmojiRow')   ? document.getElementById('tmplEmojiRow').closest('.save-field')   : null;
+  var typeWrap    = document.getElementById('tmplTypeWrap');
+  var grpField    = document.getElementById('tmplGroupInput') ? document.getElementById('tmplGroupInput').closest('.save-field')  : null;
+
+  // Trouver ou créer le toggle "Options avancées"
+  var advToggle = document.getElementById('tmplAdvancedToggle');
+  if(!advToggle){
+    advToggle = document.createElement('div');
+    advToggle.id = 'tmplAdvancedToggle';
+    advToggle.style.cssText = 'font-size:.74rem;color:var(--accent2,#1A3A5C);cursor:pointer;padding:4px 0 6px;display:flex;align-items:center;gap:4px;';
+    advToggle.onclick = function(){
+      var hidden = catField && catField.style.display==='none';
+      [catField,emojiField,typeWrap,grpField].forEach(function(el){ if(el) el.style.display = hidden ? '' : 'none'; });
+      advToggle.innerHTML = hidden ? '▲ Moins d\'options' : '▼ Options avancées (catégorie, emoji, type…)';
+    };
+    var btns = document.querySelector('#templateSaveModal .save-modal-btns');
+    if(btns) btns.parentNode.insertBefore(advToggle, btns);
+  }
+
+  if(simplified){
+    document.getElementById('tmplModalTitle').textContent = '📋 Nouvelle phase — '+escH(_activeGroupNom);
+    // Masquer les champs avancés
+    [catField,emojiField,typeWrap,grpField].forEach(function(el){ if(el) el.style.display='none'; });
+    // Afficher et pre-remplir tmplPhaseWrap
+    document.getElementById('tmplPhaseWrap').style.display = 'block';
+    advToggle.innerHTML = '▼ Options avancées (catégorie, emoji, type…)';
+    advToggle.style.display = 'block';
+    // Auto-nommer le template si vide
+    if(!document.getElementById('tmplNameInput').value){
+      document.getElementById('tmplNameInput').value = _activeGroupNom + ' — Phase ' + opts.phaseOrdre;
+    }
+    setTimeout(function(){ document.getElementById('tmplPhaseNomInput').focus(); }, 100);
+  } else {
+    // Mode normal : tout afficher, cacher le toggle
+    [catField,emojiField,typeWrap,grpField].forEach(function(el){ if(el) el.style.display=''; });
+    advToggle.style.display = 'none';
+    setTimeout(function(){ document.getElementById('tmplNameInput').focus(); }, 100);
+  }
+
   document.getElementById('templateSaveModal').classList.add('open');
-  setTimeout(function(){ document.getElementById('tmplNameInput').focus(); }, 100);
 }
 
 function openEditTemplate(id){
@@ -5033,7 +5102,11 @@ function openEditTemplate(id){
 
 function openSaveTemplate(){
   if(!blocs.length){ alert('La séance est vide.'); return; }
-  _openTmplModal({ emoji: _tmplSelectedEmoji });
+  if(_activeGroupId){
+    _openTmplModal({ emoji:_tmplSelectedEmoji, groupId:_activeGroupId, phaseOrdre:_activePhaseOrdre, _simplified:true });
+  } else {
+    _openTmplModal({ emoji: _tmplSelectedEmoji });
+  }
 }
 function closeSaveTemplate(){
   document.getElementById('templateSaveModal').classList.remove('open');
@@ -5042,13 +5115,17 @@ function closeSaveTemplate(){
 
 /* ── Enregistrer / Modifier le template ── */
 function doSaveTemplate(){
-  var nom = document.getElementById('tmplNameInput').value.trim();
-  if(!nom){ alert('Donnez un nom au template.'); return; }
   var cat        = document.getElementById('tmplCatInput').value;
   var type       = document.getElementById('tmplTypeInput').value;
-  var groupId    = document.getElementById('tmplGroupInput').value || null;
+  var groupId    = document.getElementById('tmplGroupInput').value || (_activeGroupId ? String(_activeGroupId) : null);
   var phaseNom   = groupId ? (document.getElementById('tmplPhaseNomInput').value.trim()||'') : '';
   var phaseOrdre = groupId ? (parseInt(document.getElementById('tmplPhaseOrdreInput').value)||1) : 0;
+  // En mode simplifié, le nom du template = nom de la phase s'il est vide
+  var nom = document.getElementById('tmplNameInput').value.trim();
+  if(!nom && phaseNom) nom = (_activeGroupNom ? _activeGroupNom+' — '+phaseNom : phaseNom);
+  if(!nom){ alert('Donnez un nom au template.'); return; }
+  // Ré-injecter pour que le reste de doSaveTemplate() le lise correctement
+  document.getElementById('tmplNameInput').value = nom;
 
   if(_tmplEditId){
     // ── Mode édition : PATCH sans toucher aux blocs ──
@@ -5454,6 +5531,9 @@ function deleteTemplate(id){
 // ══════════════════════════════════════════════
 var _groups = [];
 var _expandedGroups = {};
+var _activeGroupId   = null;
+var _activeGroupNom  = '';
+var _activePhaseOrdre = 1;
 
 function _loadGroups(){
   try { _groups = JSON.parse(localStorage.getItem('r4p-template-groups')||'[]'); } catch(e){ _groups=[]; }
@@ -5723,6 +5803,50 @@ function _toggleGroup(id){
   _renderSidebarWithGroups();
 }
 
+/* ── Protocole actif ── */
+function setActiveGroup(id){
+  var g = (_groups||[]).find(function(x){ return String(x.id)===String(id); });
+  if(!g){ _activeGroupId=null; _activeGroupNom=''; _activePhaseOrdre=1; }
+  else {
+    _activeGroupId = id;
+    _activeGroupNom = g.nom||'';
+    var phases = (_sidebarProgs||[]).filter(function(p){ return String(p.group_id)===String(id); });
+    _activePhaseOrdre = phases.length + 1;
+  }
+  _updateActiveGroupBadge();
+  _renderSidebarWithGroups();
+}
+
+function clearActiveGroup(){
+  _activeGroupId=null; _activeGroupNom=''; _activePhaseOrdre=1;
+  _updateActiveGroupBadge();
+  _renderSidebarWithGroups();
+}
+
+function _updateActiveGroupBadge(){
+  var el = document.getElementById('builderActiveGroupBadge');
+  if(!el) return;
+  if(_activeGroupId && _activeGroupNom){
+    el.style.display = 'inline-flex';
+    el.innerHTML = '<span>📁 '+escH(_activeGroupNom)+'</span>'
+      +'<span class="badge-clear" onclick="event.stopPropagation();clearActiveGroup()" title="Retirer">✕</span>';
+    el.className = 'builder-active-badge';
+  } else {
+    el.style.display = 'none';
+    el.innerHTML = '';
+  }
+}
+
+function addPhaseToGroup(id){
+  setActiveGroup(id);
+  _expandedGroups[id] = true;
+  blocs = [];
+  _notes = '';
+  renderSession();
+  _enterBuilderMode();
+  _showToast('📁 Protocole « '+_activeGroupNom+' » actif — construisez la phase puis enregistrez');
+}
+
 /* Callback onchange du select groupe dans le modal save */
 function _onTmplGroupChange(){
   var gid = document.getElementById('tmplGroupInput').value;
@@ -5845,7 +5969,8 @@ function _renderSidebarWithGroups(){
         phases.sort(function(a,b){ return (a.phase_ordre||0)-(b.phase_ordre||0); });
         var gid = escH(String(g.id));
         html += '<div class="stmpl-group">';
-        html += '<div class="stmpl-group-header" onclick="_toggleGroup(\''+gid+'\')">';
+        var isActiveGrp = _activeGroupId && String(_activeGroupId)===String(g.id);
+        html += '<div class="stmpl-group-header'+(isActiveGrp?' is-active-grp':'')+'" onclick="_toggleGroup(\''+gid+'\')">';
         html += '<span class="stmpl-group-toggle">'+(isOpen?'▼':'▶')+'</span>';
         html += '<div class="stmpl-group-info"><div class="stmpl-group-name">'+escH(g.nom||'Sans nom')+'</div>';
         html += '<div style="margin-top:2px;"><span style="font-size:.68rem;color:var(--muted);">'+phases.length+' phase'+(phases.length!==1?'s':'')+'</span></div></div>';
@@ -5853,8 +5978,9 @@ function _renderSidebarWithGroups(){
         html += '<button class="stmpl-group-del" onclick="event.stopPropagation();deleteGroup(\''+gid+'\')" title="Supprimer">🗑</button></div>';
         if(isOpen){
           html += '<div class="stmpl-group-body">';
-          if(!phases.length) html += '<div class="stmpl-phase-empty">Aucune phase. Enregistrez un template et assignez-le à ce protocole.</div>';
+          if(!phases.length) html += '<div class="stmpl-phase-empty">Aucune phase — cliquez + ci-dessous pour en créer une.</div>';
           phases.forEach(function(p,i){ html += _renderTmplCard(p,true,i+1); });
+          html += '<button class="stmpl-add-phase-btn" onclick="event.stopPropagation();addPhaseToGroup(\''+gid+'\')">＋ Nouvelle phase</button>';
           html += '</div>';
         }
         html += '</div>';
