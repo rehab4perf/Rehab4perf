@@ -1504,9 +1504,10 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 
   <!-- Templates section dans le bas du builder -->
   <div style="border-top:1px solid var(--border);flex-shrink:0;">
-    <div class="tmpl-tabs">
+    <div class="tmpl-tabs" style="padding-right:6px;">
       <button class="tmpl-tab active" id="tmplTabMes" onclick="switchTmplTab('mes')">📋 Mes templates</button>
       <button class="tmpl-tab" id="tmplTabLib" onclick="switchTmplTab('lib')">🌐 Bibliothèque</button>
+      <button id="tmplQuickSaveBtn" onclick="openSaveTemplate()" title="Enregistrer la séance comme template" style="flex-shrink:0;margin:auto 2px auto 4px;padding:3px 9px;background:var(--accent2);border:none;color:#fff;border-radius:6px;font-size:.68rem;font-weight:600;cursor:pointer;white-space:nowrap;line-height:1.4;">＋ Enregistrer</button>
     </div>
     <div id="templatesBuilderArea" style="max-height:200px;overflow-y:auto;"></div>
   </div>
@@ -5191,7 +5192,7 @@ function renderTemplatesInBuilder(){
 
   function _render(list){
     if(!list.length){
-      area.innerHTML = '<div style="padding:10px 14px;color:var(--muted);font-size:.77rem;font-style:italic;">Aucun template. Créez-en un avec « + Enregistrer ».</div>';
+      area.innerHTML = '<div style="padding:10px 14px;color:var(--muted);font-size:.77rem;font-style:italic;">Aucun template. Cliquez « + Enregistrer » ci-dessus pour en créer un.</div>';
       return;
     }
     area.innerHTML = list.map(function(t){
@@ -5400,6 +5401,7 @@ function loadLibraryTemplate(id){
 /* ── Charger un template dans le builder ── */
 // ── Bouton save contextuel ───────────────────────────────────────────────────
 function _builderSaveBtnClick(){
+  if(_activeGroupId){ openSaveTemplate(); return; }
   if(_builderFromTemplate) _doUpdateTemplate();
   else saveProgToCloud();
 }
@@ -5407,12 +5409,18 @@ function _builderSaveBtnClick(){
 function _refreshSaveBtn(){
   var btn = document.getElementById('prog-cloud-save-btn');
   if(!btn) return;
-  if(_builderFromTemplate){
+  if(_activeGroupId){
+    btn.textContent = '📋 Enregistrer la phase';
+    btn.title = 'Enregistrer comme phase dans « ' + _activeGroupNom + ' »';
+    btn.style.background = '#2D6A4F';
+  } else if(_builderFromTemplate){
     btn.textContent = '🔄 Mettre à jour';
     btn.title = 'Mettre à jour le template';
+    btn.style.background = '';
   } else {
     btn.textContent = '💾 Sauvegarder';
     btn.title = '';
+    btn.style.background = '';
   }
 }
 
@@ -5483,6 +5491,9 @@ function loadTemplate(id){
     _notes = d.notes || '';
     _currentProgId = null;
     _builderFromTemplate = String(t.id);
+    // Charger un template existant → pas de mode "nouvelle phase"
+    _activeGroupId=null; _activeGroupNom=''; _activePhaseOrdre=1;
+    _updateActiveGroupBadge();
     renderSession();
     _updateBuilderTitle();
     _refreshSaveBtn();
@@ -5530,7 +5541,7 @@ function deleteTemplate(id){
 //  GROUPES DE TEMPLATES (protocoles / pathologies)
 // ══════════════════════════════════════════════
 var _groups = [];
-var _expandedGroups = {};
+var _expandedGroups = (function(){ try{ return JSON.parse(localStorage.getItem('r4p-expanded-groups')||'{}'); }catch(e){ return {}; } })();
 var _activeGroupId   = null;
 var _activeGroupNom  = '';
 var _activePhaseOrdre = 1;
@@ -5800,6 +5811,7 @@ function deleteGroup(id){
 
 function _toggleGroup(id){
   _expandedGroups[id] = !_expandedGroups[id];
+  try{ localStorage.setItem('r4p-expanded-groups', JSON.stringify(_expandedGroups)); }catch(e){}
   _renderSidebarWithGroups();
 }
 
@@ -5814,12 +5826,14 @@ function setActiveGroup(id){
     _activePhaseOrdre = phases.length + 1;
   }
   _updateActiveGroupBadge();
+  _refreshSaveBtn();
   _renderSidebarWithGroups();
 }
 
 function clearActiveGroup(){
   _activeGroupId=null; _activeGroupNom=''; _activePhaseOrdre=1;
   _updateActiveGroupBadge();
+  _refreshSaveBtn();
   _renderSidebarWithGroups();
 }
 
@@ -5840,11 +5854,13 @@ function _updateActiveGroupBadge(){
 function addPhaseToGroup(id){
   setActiveGroup(id);
   _expandedGroups[id] = true;
+  try{ localStorage.setItem('r4p-expanded-groups', JSON.stringify(_expandedGroups)); }catch(e){}
   blocs = [];
   _notes = '';
   renderSession();
+  _refreshSaveBtn();
   _enterBuilderMode();
-  _showToast('📁 Protocole « '+_activeGroupNom+' » actif — construisez la phase puis enregistrez');
+  _showToast('📁 Protocole « '+_activeGroupNom+' » actif — ajoutez des exercices puis cliquez « Enregistrer la phase »');
 }
 
 /* Callback onchange du select groupe dans le modal save */
@@ -6169,6 +6185,9 @@ function _exitBuilderMode(){
 function openBuilderForDate(dateStr){
   _builderDate = dateStr;
   _builderFromTemplate = null;
+  // Pas de protocole actif quand on ouvre depuis le calendrier
+  _activeGroupId=null; _activeGroupNom=''; _activePhaseOrdre=1;
+  _updateActiveGroupBadge();
   _updateBuilderTitle();
   _refreshSaveBtn();
   _enterBuilderMode();
@@ -6178,6 +6197,9 @@ function openBuilderNew(){
   _builderDate = '';
   _currentProgId = null;
   _builderFromTemplate = null;
+  // Pas de protocole actif quand on ouvre une nouvelle séance depuis + Séance
+  _activeGroupId=null; _activeGroupNom=''; _activePhaseOrdre=1;
+  _updateActiveGroupBadge();
   blocs = [];
   _notes = '';
   renderSession();
