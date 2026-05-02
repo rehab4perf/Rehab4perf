@@ -4713,7 +4713,37 @@ function exportBilanHTML(type) {
 function printBilan(type) {
   var r = _buildBilanHTML(type);
   if (!r) return;
-  var printHtml = r.html.replace('</body>', '<script>window.onload=function(){window.focus();setTimeout(function(){window.print();},300);}<\/script></body>');
+
+  // Barre de navigation "← Retour" — visible à l'écran, masquée à l'impression
+  var backBar = '<style>'
+    + '.print-back-bar{position:fixed;top:0;left:0;right:0;z-index:9999;'
+    + 'display:flex;align-items:center;gap:12px;padding:10px 18px;'
+    + 'background:#1A3A5C;color:#fff;font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;'
+    + 'font-size:.88rem;box-shadow:0 2px 8px rgba(0,0,0,.25);}'
+    + '.print-back-btn{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);'
+    + 'color:#fff;border-radius:7px;padding:6px 14px;font-size:.84rem;font-weight:600;'
+    + 'cursor:pointer;font-family:inherit;transition:background .15s;white-space:nowrap;}'
+    + '.print-back-btn:hover{background:rgba(255,255,255,.3);}'
+    + '.print-back-bar .print-hint{font-size:.78rem;color:rgba(255,255,255,.7);}'
+    + '.print-page-offset{padding-top:48px;}'
+    + '@media print{'
+    + '.print-back-bar{display:none!important;}'
+    + '.print-page-offset{padding-top:0!important;}'
+    + '}'
+    + '</style>'
+    + '<div class="print-back-bar">'
+    + '<button class="print-back-btn" onclick="window.close()">← Retour</button>'
+    + '<span class="print-hint">Utilisez le bouton ci-dessus pour revenir au bilan</span>'
+    + '</div>';
+
+  // Décaler le contenu sous la barre
+  var printHtml = r.html
+    .replace('<body>', '<body><div class="print-page-offset">')
+    .replace('</body>', '</div></body>')
+    .replace('</head>', backBar + '</head>')
+    .replace('</body>',
+      '<script>window.onload=function(){window.focus();setTimeout(function(){window.print();},300);}<\/script></body>');
+
   var win = (window.top||window).open('', '_blank');
   if (!win) { alert('Autorisez les pop-ups pour ce site pour imprimer.'); return; }
   win.document.open();
