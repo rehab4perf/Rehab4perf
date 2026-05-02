@@ -3788,6 +3788,24 @@ renderLib('');
 }
 .cycle-name-btn:hover { border-color:#1A3A5C;color:#1A3A5C; }
 .cycle-name-btn.sel { color:#fff;border-color:transparent; }
+/* ── Stepper durée ── */
+.cycle-stepper {
+  display:flex;align-items:center;gap:0;border:1px solid #dde3ec;
+  border-radius:6px;overflow:hidden;background:#fff;height:34px;
+}
+.cycle-stepper-btn {
+  background:none;border:none;width:34px;height:34px;font-size:1.15rem;
+  cursor:pointer;color:#1A3A5C;font-weight:700;flex-shrink:0;
+  transition:background .12s;display:flex;align-items:center;justify-content:center;
+  user-select:none;-webkit-user-select:none;
+}
+.cycle-stepper-btn:hover { background:#EEF3FB; }
+.cycle-stepper-btn:active { background:#dde8f5; }
+.cycle-stepper-val {
+  flex:1;text-align:center;font-size:.82rem;font-weight:700;
+  color:#1a2433;border-left:1px solid #dde3ec;border-right:1px solid #dde3ec;
+  padding:0 4px;white-space:nowrap;
+}
 </style>
 
 <div class="cycle-modal-overlay" id="cycle-modal">
@@ -3823,51 +3841,20 @@ renderLib('');
         <div class="cycle-form-grid">
           <div class="cycle-field">
             <label>Durée</label>
-            <select id="cycle-duree">
-              <option value="1">1 semaine</option>
-              <option value="2">2 semaines</option>
-              <option value="3" selected>3 semaines</option>
-              <option value="4">4 semaines</option>
-              <option value="5">5 semaines</option>
-              <option value="6">6 semaines</option>
-              <option value="8">8 semaines</option>
-              <option value="10">10 semaines</option>
-              <option value="12">12 semaines</option>
-            </select>
-          </div>
-          <div class="cycle-field">
-            <label>Intensité (%1RM / RPE)</label>
-            <select id="cycle-intensite">
-              <option value="50-60% 1RM">50–60% 1RM</option>
-              <option value="60-70% 1RM">60–70% 1RM</option>
-              <option value="70-80% 1RM" selected>70–80% 1RM</option>
-              <option value="80-90% 1RM">80–90% 1RM</option>
-              <option value=">90% 1RM">&gt;90% 1RM</option>
-              <option value="RPE 5-6">RPE 5–6</option>
-              <option value="RPE 6-7">RPE 6–7</option>
-              <option value="RPE 7-8">RPE 7–8</option>
-              <option value="RPE 8-9">RPE 8–9</option>
-              <option value="RPE 9-10">RPE 9–10</option>
-            </select>
-          </div>
-          <div class="cycle-field">
-            <label>Volume (séries × reps)</label>
-            <select id="cycle-volume">
-              <option value="2×15">2×15</option>
-              <option value="3×12">3×12</option>
-              <option value="3×10">3×10</option>
-              <option value="3×8" selected>3×8</option>
-              <option value="4×8">4×8</option>
-              <option value="4×6">4×6</option>
-              <option value="5×5">5×5</option>
-              <option value="5×3">5×3</option>
-              <option value="6×2">6×2</option>
-              <option value="3×15-20">3×15–20</option>
-            </select>
+            <div class="cycle-stepper">
+              <button class="cycle-stepper-btn" onclick="cycleDureeChange(-1)" title="Moins une semaine">−</button>
+              <span class="cycle-stepper-val" id="cycle-duree-display">3 semaines</span>
+              <button class="cycle-stepper-btn" onclick="cycleDureeChange(+1)" title="Plus une semaine">+</button>
+            </div>
+            <input type="hidden" id="cycle-duree" value="3">
           </div>
           <div class="cycle-field">
             <label>Date de début</label>
             <input type="date" id="cycle-start">
+          </div>
+          <div class="cycle-field" style="grid-column:1/-1;">
+            <label>Objectif / Note <span style="font-weight:400;color:#999;">(optionnel)</span></label>
+            <input type="text" id="cycle-note" placeholder="Ex : Retrouver appui bipodal, Focus contrôle moteur…" maxlength="120">
           </div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -3924,6 +3911,22 @@ function _cycleColor(nom){
 function openCycles(){
   document.getElementById('cycle-modal').classList.add('open');
   renderCycleTimeline();
+  _cycleAutoDate();
+}
+// Pré-remplit la date de début = fin du dernier cycle (ou aujourd'hui)
+function _cycleAutoDate(){
+  var inp = document.getElementById('cycle-start');
+  if(!inp) return;
+  if(_cycles.length){
+    var last = _cycles[_cycles.length-1];
+    if(last.startDate){
+      var d = new Date(last.startDate);
+      d.setDate(d.getDate() + last.duree * 7);
+      inp.value = d.toISOString().split('T')[0];
+      return;
+    }
+  }
+  inp.value = new Date().toISOString().split('T')[0];
 }
 function closeCycles(){
   document.getElementById('cycle-modal').classList.remove('open');
@@ -3944,21 +3947,66 @@ function clearCycleNameBtns(){
     b.style.background='';b.style.color='';b.style.borderColor='';
   });
 }
+function cycleDureeChange(delta){
+  var inp = document.getElementById('cycle-duree');
+  var disp = document.getElementById('cycle-duree-display');
+  var val = Math.min(16, Math.max(1, (parseInt(inp.value)||3) + delta));
+  inp.value = val;
+  disp.textContent = val + (val === 1 ? ' semaine' : ' semaines');
+}
 function addCycle(){
   var nom = (document.getElementById('cycle-nom').value||'').trim();
   if(!nom){ alert('Veuillez saisir un nom de cycle.'); return; }
   var duree = parseInt(document.getElementById('cycle-duree').value)||3;
-  var intensite = document.getElementById('cycle-intensite').value;
-  var volume = document.getElementById('cycle-volume').value;
   var startDate = document.getElementById('cycle-start').value || '';
-  _cycles.push({id:'c'+Date.now(), nom:nom, duree:duree, intensite:intensite, volume:volume, startDate:startDate});
+  var note = (document.getElementById('cycle-note').value||'').trim();
+  _cycles.push({id:'c'+Date.now(), nom:nom, duree:duree, startDate:startDate, note:note});
   _saveCyclesToCloud();
   renderCycleTimeline();
+  // Réinitialiser le formulaire et pré-calculer la prochaine date
+  document.getElementById('cycle-nom').value = '';
+  document.getElementById('cycle-note').value = '';
+  clearCycleNameBtns();
+  _cycleAutoDate();
+  var h3 = document.querySelector('.cycle-add-section h3');
+  if(h3) h3.textContent = 'Ajouter un cycle';
 }
 function deleteCycle(id){
   _cycles = _cycles.filter(function(c){ return c.id !== id; });
   _saveCyclesToCloud();
   renderCycleTimeline();
+}
+function editCycle(id){
+  var c = _cycles.find(function(x){ return x.id===id; });
+  if(!c) return;
+  // Pré-remplir le formulaire avec les valeurs du cycle
+  document.getElementById('cycle-nom').value = c.nom;
+  document.getElementById('cycle-duree').value = c.duree;
+  document.getElementById('cycle-duree-display').textContent = c.duree + (c.duree===1?' semaine':' semaines');
+  document.getElementById('cycle-start').value = c.startDate || '';
+  document.getElementById('cycle-note').value = c.note || '';
+  // Sélectionner le bon bouton de nom
+  clearCycleNameBtns();
+  document.querySelectorAll('.cycle-name-btn').forEach(function(btn){
+    if(btn.textContent.trim()===c.nom){
+      var col = _cycleColor(c.nom);
+      btn.classList.add('sel');
+      btn.style.background=col; btn.style.color='#fff'; btn.style.borderColor=col;
+    }
+  });
+  // Supprimer l'ancien et marquer le formulaire en mode "édition"
+  _cycles = _cycles.filter(function(x){ return x.id!==id; });
+  _saveCyclesToCloud();
+  renderCycleTimeline();
+  // Scroller vers le formulaire et mettre le focus
+  var section = document.querySelector('.cycle-add-section');
+  if(section){ section.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+  var h3 = section && section.querySelector('h3');
+  if(h3) h3.textContent = '✏️ Modifier le cycle';
+  setTimeout(function(){
+    var nomInput = document.getElementById('cycle-nom');
+    if(nomInput) nomInput.focus();
+  }, 200);
 }
 function renderCycleTimeline(){
   var tl = document.getElementById('cycle-timeline');
@@ -3970,18 +4018,50 @@ function renderCycleTimeline(){
   }
   var totalWeeks = _cycles.reduce(function(s,c){ return s+c.duree; },0);
   var minW = 60, unitW = Math.max(minW, Math.min(90, 600/totalWeeks));
+  var today = new Date(); today.setHours(0,0,0,0);
+
+  // Calcul du marqueur "aujourd'hui" : position en semaines depuis le début du premier cycle
+  var todayMarkerPct = null;
+  var firstStart = _cycles[0] && _cycles[0].startDate ? new Date(_cycles[0].startDate) : null;
+  if(firstStart){
+    firstStart.setHours(0,0,0,0);
+    var diffDays = Math.round((today - firstStart) / 86400000);
+    var diffWeeks = diffDays / 7;
+    if(diffWeeks >= 0 && diffWeeks <= totalWeeks){
+      todayMarkerPct = (diffWeeks / totalWeeks) * 100;
+    }
+  }
+
   var html = '';
+  // Conteneur relatif pour le marqueur
+  html += '<div style="position:relative;display:flex;gap:4px;align-items:stretch;min-height:48px;width:100%;">';
+
+  var weekCursor = 1; // compteur de semaines pour la numérotation
   _cycles.forEach(function(c){
     var col = _cycleColor(c.nom);
     var w = (c.duree * unitW) + 'px';
-    html += '<div class="cycle-block" style="background:'+col+';width:'+w+';" title="'+c.nom+' — '+c.duree+' sem. — '+c.intensite+' — '+c.volume+'">';
-    html += '<button class="cycle-block-del" onclick="deleteCycle(\''+c.id+'\')">×</button>';
+    var noteTitle = c.note ? (' — '+c.note) : '';
+    var weekEnd = weekCursor + c.duree - 1;
+    var weekLabel = 'S'+weekCursor + (c.duree > 1 ? '→S'+weekEnd : '');
+    html += '<div class="cycle-block" style="background:'+col+';width:'+w+';flex-shrink:0;cursor:pointer;" title="Cliquer pour modifier" onclick="editCycle(\''+c.id+'\')">';
+    html += '<button class="cycle-block-del" onclick="event.stopPropagation();deleteCycle(\''+c.id+'\')">×</button>';
     html += '<div style="font-size:.75rem;font-weight:700;margin-bottom:2px;padding-right:14px;">'+c.nom+'</div>';
-    html += '<div style="font-size:.65rem;opacity:.85;">'+c.duree+' sem.</div>';
-    html += '<div style="font-size:.63rem;opacity:.75;">'+c.intensite+'</div>';
-    html += '<div style="font-size:.63rem;opacity:.75;">'+c.volume+'</div>';
+    html += '<div style="font-size:.63rem;opacity:.8;">'+weekLabel+' · '+c.duree+' sem.</div>';
+    if(c.note) html += '<div style="font-size:.6rem;opacity:.7;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+c.note+'</div>';
     html += '</div>';
+    weekCursor += c.duree;
   });
+
+  // Marqueur "Aujourd'hui" superposé
+  if(todayMarkerPct !== null){
+    html += '<div style="position:absolute;top:0;bottom:0;left:'+todayMarkerPct+'%;'
+          + 'width:2px;background:#E74C3C;pointer-events:none;z-index:10;">'
+          + '<div style="position:absolute;top:-18px;left:50%;transform:translateX(-50%);'
+          + 'background:#E74C3C;color:#fff;font-size:.58rem;font-weight:700;'
+          + 'padding:1px 5px;border-radius:4px;white-space:nowrap;">Aujourd\'hui</div>'
+          + '</div>';
+  }
+  html += '</div>';
   tl.innerHTML = html;
   tot.textContent = 'Total : '+totalWeeks+' semaine'+(totalWeeks>1?'s':'');
 }
@@ -3997,8 +4077,6 @@ function exportCycles(){
     blocksHtml += '<div style="flex:0 0 auto;width:'+pct+'%;min-width:80px;background:'+col+';border-radius:7px;padding:12px 14px;color:#fff;">';
     blocksHtml += '<div style="font-size:.88rem;font-weight:700;margin-bottom:4px;">'+c.nom+'</div>';
     blocksHtml += '<div style="font-size:.75rem;opacity:.85;">'+c.duree+' semaine'+(c.duree>1?'s':'')+'</div>';
-    blocksHtml += '<div style="font-size:.72rem;opacity:.8;margin-top:2px;">'+c.intensite+'</div>';
-    blocksHtml += '<div style="font-size:.72rem;opacity:.8;">'+c.volume+'</div>';
     blocksHtml += '</div>';
   });
   var html = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Cycles d\'entraînement</title>'
