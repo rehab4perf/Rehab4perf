@@ -3424,6 +3424,14 @@ window.addEventListener('message', function(e){
   if(e.data && e.data.type==='r4p-profile'){
     try { localStorage.setItem('r4p-profile', JSON.stringify(e.data.profile)); } catch(ex){}
   }
+  // Nouveau token reçu depuis index.html après refresh automatique
+  if(e.data && e.data.type==='r4p-token-refreshed' && e.data.access_token){
+    _progToken = e.data.access_token;
+    try {
+      var pl = JSON.parse(atob(_progToken.split('.')[1]));
+      _progUid = pl.sub || null;
+    } catch(ex){}
+  }
   if(e.data && e.data.type==='r4p-patient-selected'){
     _progPatient = _normalizePatient(e.data.patient);
     _currentProgId = null;
@@ -3521,13 +3529,44 @@ function _updatePatientUI(){
   if(typeof renderCalendar === 'function') renderCalendar();
 }
 
+// Tente de lire un token frais depuis le localStorage Supabase
+function _tryRefreshToken(){
+  try {
+    var raw = localStorage.getItem('sb-sxdobjodxkwexaspepdm-auth-token');
+    if(!raw) return false;
+    var parsed = JSON.parse(raw);
+    var tok = parsed.access_token || (parsed.currentSession && parsed.currentSession.access_token);
+    if(!tok || tok === _progToken) return false;
+    _progToken = tok;
+    var pl = JSON.parse(atob(tok.split('.')[1]));
+    _progUid = pl.sub || null;
+    return true;
+  } catch(ex){ return false; }
+}
+
 function _sbHeaders(){
+  // Si le token semble absent, tenter une lecture fraîche depuis localStorage
+  if(!_progToken) _tryRefreshToken();
   return {
     'Authorization': 'Bearer ' + _progToken,
     'apikey': SUPA_KEY_P,
     'Content-Type': 'application/json',
     'Prefer': 'return=representation'
   };
+}
+
+// Gestion centralisée des erreurs réseau — message lisible si JWT expiré
+function _handleApiError(status, data, context){
+  if(status === 401){
+    // Tenter de récupérer un token frais depuis localStorage
+    if(_tryRefreshToken()){
+      _showToast('🔄 Session renouvelée — réessayez la sauvegarde.');
+    } else {
+      _showToast('⚠️ Session expirée — veuillez recharger la page.');
+    }
+    return;
+  }
+  alert('Erreur '+ status + (context ? ' ('+context+')' : '') + ' : ' + JSON.stringify(data));
 }
 
 function saveProgToCloud(){
@@ -3553,7 +3592,7 @@ function saveProgToCloud(){
     .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, status:r.status, data:d}; }); })
     .then(function(res){
       btn.disabled = false;
-      if(!res.ok){ btn.textContent='☁️ Sauvegarder'; alert('Erreur '+res.status+' : '+JSON.stringify(res.data)); return; }
+      if(!res.ok){ btn.textContent='☁️ Sauvegarder'; btn.disabled=false; _handleApiError(res.status, res.data, 'sauvegarde séance'); return; }
       var d = Array.isArray(res.data) ? res.data[0] : res.data;
       if(!_currentProgId && d && d.id) _currentProgId = d.id;
       _draftClear();
@@ -5647,7 +5686,7 @@ function _doUpdateTemplate(){
   .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, status:r.status, data:d}; }); })
   .then(function(res){
     btn.disabled = false;
-    if(!res.ok){ btn.textContent='🔄 Mettre à jour'; alert('Erreur '+res.status+' : '+JSON.stringify(res.data)); return; }
+    if(!res.ok){ btn.textContent='🔄 Mettre à jour'; btn.disabled=false; _handleApiError(res.status, res.data, 'mise à jour template'); return; }
     btn.textContent = '✓ Mis à jour !';
     setTimeout(function(){ btn.textContent='🔄 Mettre à jour'; }, 2500);
     _draftClear();

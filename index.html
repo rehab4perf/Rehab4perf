@@ -396,6 +396,21 @@ sb.auth.getSession().then(function(result) {
   setTimeout(function() { propagateToBilan(profile); }, 600);
 });
 
+// Diffuse le token rafraîchi à toutes les iframes
+function _broadcastFreshToken(session) {
+  if (!session) return;
+  var token = session.access_token;
+  ['frame-bilan','frame-outils','frame-prescription'].forEach(function(id) {
+    var f = document.getElementById(id);
+    if (f && f.contentWindow) {
+      f.contentWindow.postMessage({
+        type: 'r4p-token-refreshed',
+        access_token: token
+      }, '*');
+    }
+  });
+}
+
 // Écouter les changements d'état (déconnexion forcée par expiration token)
 sb.auth.onAuthStateChange(function(event, session) {
   if (event === 'SIGNED_OUT') {
@@ -405,6 +420,7 @@ sb.auth.onAuthStateChange(function(event, session) {
     var profile = syncProfileToStorage(session.user);
     updateNav(session.user);
     propagateToBilan(profile);
+    _broadcastFreshToken(session); // ← propager à toutes les iframes
   }
 });
 
