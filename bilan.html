@@ -188,19 +188,33 @@ body {
 .histo-empty { padding: 28px 20px; text-align: center; color: #9D9B96; font-size: .88rem; font-style: italic; }
 .histo-item {
   display: flex; align-items: center; gap: 12px;
-  padding: 12px 16px; border-bottom: 1px solid #F1F0ED; cursor: pointer;
+  padding: 11px 16px; border-bottom: 1px solid #F1F0ED;
   transition: background .1s;
 }
 .histo-item:hover { background: #F7F6F3; }
-.histo-item-date { font-size: .88rem; font-weight: 700; color: #1A3A5C; min-width: 90px; }
-.histo-item-id { font-size: .7rem; color: #9D9B96; }
+.histo-item-num {
+  flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%;
+  background: #E8EDF5; color: #1A3A5C; font-size: .72rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.histo-item.current .histo-item-num { background: #1A3A5C; color: #fff; }
+.histo-item-info { flex: 1; min-width: 0; }
+.histo-item-date { font-size: .86rem; font-weight: 700; color: #1A3A5C; }
+.histo-item-ago  { font-size: .7rem; color: #9D9B96; margin-top: 1px; }
+.histo-item-badge {
+  flex-shrink: 0; font-size: .67rem; font-weight: 700; padding: 2px 8px;
+  border-radius: 10px; background: #EEF3FB; color: #1A3A5C;
+}
+.histo-item.current .histo-item-badge { background: #D1FAE5; color: #065F46; }
 .histo-item-load {
-  margin-left: auto; background: #1A3A5C; color: #fff; border: none;
+  flex-shrink: 0; margin-left: 6px; background: #1A3A5C; color: #fff; border: none;
   border-radius: 5px; padding: 5px 11px; font-size: .75rem; font-weight: 600;
   cursor: pointer; font-family: inherit; transition: background .12s;
 }
 .histo-item-load:hover { background: #2B5FA6; }
-.histo-item.current { background: #EEF3FB; }
+.histo-item.current .histo-item-load { background: #2D6A4F; }
+.histo-item.current .histo-item-load:hover { background: #1B4332; }
+.histo-item.current { background: #F0FDF4; }
 .histo-new-btn {
   display: block; width: calc(100% - 32px); margin: 12px 16px;
   padding: 9px; background: #2D6A4F; color: #fff; border: none;
@@ -2915,6 +2929,7 @@ var sbB = supabase.createClient(SUPA_URL_B, SUPA_KEY_B);
 
 var _bilanPatient   = null;
 var _currentBilanId = null;
+var _currentBilanDate = null; // date ISO (YYYY-MM-DD) du bilan actuellement chargé
 var _bilanUid       = null;
 var _bilanModified  = false;   // true dès qu'une saisie est faite depuis le dernier save/load
 var _suppressDirty  = false;   // true pendant _deserializeBilan pour ne pas polluer le flag
@@ -3013,7 +3028,8 @@ function _resetAndLoadPatient(p){
         return;
       }
       var b = res.data[0];
-      _currentBilanId = b.id;
+      _currentBilanId   = b.id;
+      _currentBilanDate = b.date || null;
       _deserializeBilan(b.donnees||{});
       var d = b.date ? b.date.split('-').reverse().join('/') : '—';
       _showPatientToast('Bilan du '+d+' chargé');
@@ -3074,18 +3090,22 @@ function saveBilan(){
   var donnees = _serializeBilan();
   var today = new Date().toISOString().split('T')[0];
   var p;
-  if(_currentBilanId){
-    p = sbB.from('bilans').update({donnees:donnees,date:today}).eq('id',_currentBilanId).select().single();
+  // Même journée → update en place (corrections en cours de séance)
+  // Jour différent ou nouveau bilan → snapshot automatique
+  var isNewSnapshot = !(_currentBilanId && _currentBilanDate === today);
+  if(!isNewSnapshot){
+    p = sbB.from('bilans').update({donnees:donnees, date:today}).eq('id',_currentBilanId).select().single();
   } else {
-    p = sbB.from('bilans').insert({patient_id:_bilanPatient.id,praticien_id:_bilanUid,date:today,donnees:donnees}).select().single();
+    p = sbB.from('bilans').insert({patient_id:_bilanPatient.id, praticien_id:_bilanUid, date:today, donnees:donnees}).select().single();
   }
   p.then(function(res){
     btn.disabled=false;
     if(res.error){ btn.textContent='💾 Sauvegarder le bilan'; alert('Erreur : '+res.error.message); return; }
-    if(!_currentBilanId) _currentBilanId = res.data.id;
+    _currentBilanId   = res.data.id;
+    _currentBilanDate = res.data.date || today;
     _bilanModified = false;
-    btn.textContent='✓ Sauvegardé !';
-    setTimeout(function(){ btn.textContent='💾 Sauvegarder le bilan'; },2500);
+    btn.textContent = isNewSnapshot ? '✓ Nouveau bilan enregistré !' : '✓ Sauvegardé !';
+    setTimeout(function(){ btn.textContent='💾 Sauvegarder le bilan'; }, 2500);
   }).catch(function(err){
     btn.disabled=false;
     btn.textContent='💾 Sauvegarder le bilan';
@@ -3107,13 +3127,41 @@ function openBilanHistory(){
         document.getElementById('histoList').innerHTML='<div class="histo-empty">Aucun bilan enregistré pour ce patient.</div>';
         return;
       }
-      document.getElementById('histoList').innerHTML = res.data.map(function(b){
-        var d = b.date ? b.date.split('-').reverse().join('/') : '—';
-        var isCurrent = _currentBilanId === b.id;
+      var total = res.data.length;
+      document.getElementById('histoList').innerHTML = res.data.map(function(b, i){
+        var isCurrent = String(_currentBilanId) === String(b.id);
+        var num = total - i; // numéro chronologique (1 = le plus ancien)
+        // Date lisible
+        var dateStr = '—';
+        if(b.date){
+          var parts = b.date.split('-');
+          var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+          dateStr = parseInt(parts[2],10)+' '+months[parseInt(parts[1],10)-1]+' '+parts[0];
+        }
+        // Délai relatif
+        var agoStr = '';
+        if(b.date){
+          var today = new Date(); today.setHours(0,0,0,0);
+          var bDate = new Date(b.date); bDate.setHours(0,0,0,0);
+          var diffDays = Math.round((today - bDate) / 86400000);
+          if(diffDays === 0)       agoStr = "Aujourd'hui";
+          else if(diffDays === 1)  agoStr = 'Il y a 1 jour';
+          else if(diffDays < 7)   agoStr = 'Il y a '+diffDays+' jours';
+          else if(diffDays < 14)  agoStr = 'Il y a 1 semaine';
+          else if(diffDays < 31)  agoStr = 'Il y a '+Math.floor(diffDays/7)+' semaines';
+          else if(diffDays < 60)  agoStr = 'Il y a 1 mois';
+          else if(diffDays < 365) agoStr = 'Il y a '+Math.floor(diffDays/30)+' mois';
+          else agoStr = 'Il y a '+Math.floor(diffDays/365)+' an'+(diffDays>=730?'s':'');
+        }
+        var label = num === 1 ? 'Bilan initial' : 'Bilan #'+num;
         return '<div class="histo-item'+(isCurrent?' current':'')+'">'
-          +'<div><div class="histo-item-date">'+d+'</div>'
-          +'<div class="histo-item-id">'+(isCurrent?'● En cours':'')+'</div></div>'
-          +'<button class="histo-item-load" onclick="loadBilan(\''+b.id+'\')">Charger</button>'
+          +'<div class="histo-item-num">'+num+'</div>'
+          +'<div class="histo-item-info">'
+          +'<div class="histo-item-date">'+dateStr+'</div>'
+          +'<div class="histo-item-ago">'+agoStr+'</div>'
+          +'</div>'
+          +'<span class="histo-item-badge">'+(isCurrent?'● En cours':label)+'</span>'
+          +'<button class="histo-item-load" onclick="loadBilan(\''+b.id+'\')">'+(isCurrent?'Rechargé':'Charger')+'</button>'
           +'</div>';
       }).join('');
     });
@@ -3123,7 +3171,8 @@ function loadBilan(id){
   document.getElementById('histoList').innerHTML='<div class="histo-empty">Chargement…</div>';
   sbB.from('bilans').select('*').eq('id',id).single().then(function(res){
     if(res.error){ alert('Erreur : '+res.error.message); closeHistoModal(); return; }
-    _currentBilanId = res.data.id;
+    _currentBilanId   = res.data.id;
+    _currentBilanDate = res.data.date || null;
     _deserializeBilan(res.data.donnees||{});
     closeHistoModal();
     var btn = document.getElementById('bilan-save-btn');
