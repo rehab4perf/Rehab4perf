@@ -1466,6 +1466,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   <div class="builder-header">
     <h2 id="builderTitle">Nouvelle séance</h2>
     <div id="builderActiveGroupBadge" style="display:none"></div>
+    <span id="builderDraftBadge" style="display:none;font-size:.65rem;background:#F59E0B;color:#fff;border-radius:10px;padding:2px 7px;font-weight:700;letter-spacing:.03em;flex-shrink:0;">● non sauvegardé</span>
     <div style="display:flex;align-items:center;gap:6px;">
       <button class="builder-save-btn" id="prog-cloud-save-btn" onclick="_builderSaveBtnClick()">💾 Sauvegarder</button>
       <button class="builder-plan-btn" onclick="openPlanModal()">📅 Planifier</button>
@@ -2487,6 +2488,7 @@ function clearSession(){
   blocs = [];
   activeBloc = null;
   document.getElementById('patientName').value = '';
+  _draftClear(); // efface aussi le brouillon
   renderSession();
   renderLib(document.getElementById('searchInput').value.toLowerCase());
 }
@@ -2842,6 +2844,8 @@ function renderSession(){
   area.querySelectorAll('.exo-consigne-ta.has-value').forEach(function(ta){ autoResizeTa(ta); });
   var notesTa = document.getElementById('sessionNotes');
   if(notesTa && notesTa.value) autoResizeTa(notesTa);
+  // Auto-save brouillon après chaque rendu
+  if(typeof _draftSave === 'function') _draftSave();
 }
 
 function updateTargetBlocSelect(){
@@ -3460,6 +3464,7 @@ function saveProgToCloud(){
       if(!res.ok){ btn.textContent='☁️ Sauvegarder'; alert('Erreur '+res.status+' : '+JSON.stringify(res.data)); return; }
       var d = Array.isArray(res.data) ? res.data[0] : res.data;
       if(!_currentProgId && d && d.id) _currentProgId = d.id;
+      _draftClear();
       btn.textContent = '✓ Sauvegardé !';
       setTimeout(function(){ btn.textContent='☁️ Sauvegarder'; }, 2500);
     })
@@ -5158,6 +5163,7 @@ function doSaveTemplate(){
       body: JSON.stringify({ praticien_id:_progUid, nom:nom, categorie:cat, type:type, emoji:_tmplSelectedEmoji, donnees:donnees, group_id:groupId, phase_nom:phaseNom, phase_ordre:phaseOrdre })
     }).then(function(r){
       if(r.ok){
+        _draftClear();
         closeSaveTemplate();
         renderTemplatesInBuilder();
         renderSidebarTemplates();
@@ -5177,6 +5183,7 @@ function doSaveTemplate(){
       _local:true
     });
     _persistTemplates();
+    _draftClear();
     closeSaveTemplate();
     renderTemplatesInBuilder();
     renderSidebarTemplates();
@@ -5399,6 +5406,81 @@ function loadLibraryTemplate(id){
 }
 
 /* ── Charger un template dans le builder ── */
+// ══════════════════════════════════════════════
+//  AUTO-SAVE BROUILLON BUILDER (localStorage)
+// ══════════════════════════════════════════════
+var _DRAFT_KEY     = 'r4p-builder-draft';
+var _builderSaved  = true; // devient false dès qu'on modifie sans sauvegarder
+
+function _draftSave(){
+  // Ne sauve que si le builder est ouvert et contient du contenu
+  var panel = document.getElementById('builderPanel');
+  if(!panel || !panel.classList.contains('open')) return;
+  if(!blocs || !blocs.length){ _draftClear(); return; }
+  try {
+    localStorage.setItem(_DRAFT_KEY, JSON.stringify({
+      blocs:        JSON.parse(JSON.stringify(blocs)),
+      notes:        _notes || '',
+      patientName:  (document.getElementById('patientName')||{}).value || '',
+      activeGroupId:    _activeGroupId    || null,
+      activeGroupNom:   _activeGroupNom   || '',
+      activePhaseOrdre: _activePhaseOrdre || 1,
+      savedAt: new Date().toISOString()
+    }));
+    _builderSaved = false;
+    _refreshDraftBadge();
+  } catch(e){}
+}
+
+function _draftClear(){
+  try { localStorage.removeItem(_DRAFT_KEY); } catch(e){}
+  _builderSaved = true;
+  _refreshDraftBadge();
+}
+
+function _draftRestore(){
+  // Proposer de restaurer uniquement si le builder est vide à l'ouverture
+  if(blocs && blocs.length) return;
+  try {
+    var raw = localStorage.getItem(_DRAFT_KEY);
+    if(!raw) return;
+    var d = JSON.parse(raw);
+    if(!d || !d.blocs || !d.blocs.length) return;
+    var nbExos = (d.blocs||[]).reduce(function(a,b){ return a+(b.exos||[]).length; },0);
+    var ago = '';
+    if(d.savedAt){ var t=new Date(d.savedAt); ago=' — '+t.toLocaleDateString('fr-FR')+' '+t.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); }
+    var msg = '📋 Brouillon non sauvegardé trouvé (' + nbExos + ' exercice'+(nbExos>1?'s':'')+ago+')';
+    if(d.activeGroupNom) msg += '\nProtocole : « ' + d.activeGroupNom + ' »';
+    msg += '\n\nRestaurer ce contenu ?';
+    if(!confirm(msg)) return;
+    blocs = d.blocs;
+    _notes = d.notes || '';
+    if(d.activeGroupId){
+      _activeGroupId    = d.activeGroupId;
+      _activeGroupNom   = d.activeGroupNom   || '';
+      _activePhaseOrdre = d.activePhaseOrdre || 1;
+      _updateActiveGroupBadge();
+    }
+    var pn = document.getElementById('patientName');
+    if(pn && d.patientName) pn.value = d.patientName;
+    renderSession();
+    _refreshSaveBtn();
+    _builderSaved = false;
+    _refreshDraftBadge();
+    _showToast('📋 Brouillon restauré — pensez à sauvegarder !');
+  } catch(e){}
+}
+
+function _refreshDraftBadge(){
+  var el = document.getElementById('builderDraftBadge');
+  if(!el) return;
+  if(!_builderSaved && blocs && blocs.length){
+    el.style.display = 'inline-block';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
 // ── Bouton save contextuel ───────────────────────────────────────────────────
 function _builderSaveBtnClick(){
   if(_activeGroupId){ openSaveTemplate(); return; }
@@ -6171,6 +6253,8 @@ function _enterBuilderMode(){
   if(lib)  lib.style.display  = 'flex';
   if(tmpl) tmpl.style.display = 'none';
   renderTemplatesInBuilder();
+  // Proposer de restaurer le brouillon si le builder est vide
+  setTimeout(_draftRestore, 120);
 }
 
 function _exitBuilderMode(){
@@ -6209,6 +6293,12 @@ function openBuilderNew(){
 }
 
 function closeBuilder(){
+  // B — Alerte si contenu non sauvegardé
+  if(blocs && blocs.length && !_builderSaved){
+    if(!confirm('⚠️ La séance contient du contenu non sauvegardé.\n\nFermer quand même ? (le brouillon sera conservé et restaurable à la prochaine ouverture)')){
+      return;
+    }
+  }
   _exitBuilderMode();
 }
 
