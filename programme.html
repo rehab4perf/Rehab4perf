@@ -145,12 +145,33 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .stmpl-group-toggle { font-size:.65rem; color:var(--muted); flex-shrink:0; width:10px; }
 .stmpl-group-info   { flex:1; min-width:0; }
 .stmpl-group-name   { font-size:.81rem; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.stmpl-group-del    { background:none; border:none; color:#CBD2DB; cursor:pointer; font-size:.85rem; padding:2px 4px; flex-shrink:0; }
-.stmpl-group-del:hover { color:#E74C3C; }
-.stmpl-group-edit   { background:none; border:none; color:#CBD2DB; cursor:pointer; font-size:.8rem; padding:2px 4px; flex-shrink:0; }
-.stmpl-group-edit:hover { color:var(--accent2); }
-.stmpl-card-edit    { background:none; border:none; color:#CBD2DB; cursor:pointer; font-size:.78rem; padding:2px 4px; flex-shrink:0; }
-.stmpl-card-edit:hover { color:var(--accent2); }
+/* ── Kebab menu (···) sidebar ── */
+.stmpl-kebab {
+  flex-shrink:0; background:none; border:none; color:var(--muted);
+  cursor:pointer; font-size:.95rem; padding:2px 5px; border-radius:5px;
+  line-height:1; opacity:0; transition:opacity .15s, background .12s;
+  font-family:inherit; letter-spacing:.05em;
+}
+.stmpl-group-header:hover .stmpl-kebab,
+.stmpl-card:hover .stmpl-kebab,
+.stmpl-kebab:focus { opacity:1; }
+.stmpl-kebab:hover { background:rgba(0,0,0,.07); color:var(--text); }
+/* Dropdown */
+.stmpl-kdrop {
+  position:fixed; z-index:9999;
+  background:var(--surface,#fff); border:1px solid var(--border,#E2E8F0);
+  border-radius:9px; box-shadow:0 6px 20px rgba(0,0,0,.13);
+  min-width:158px; padding:4px 0; overflow:hidden;
+}
+.stmpl-kdrop-item {
+  display:block; width:100%; background:none; border:none;
+  text-align:left; padding:8px 15px; font-size:.81rem;
+  color:var(--text,#1e293b); cursor:pointer; font-family:inherit;
+  transition:background .1s; white-space:nowrap;
+}
+.stmpl-kdrop-item:hover { background:var(--tag-bg,#EEF2F7); }
+.stmpl-kdrop-item.danger { color:#E74C3C; }
+.stmpl-kdrop-item.danger:hover { background:#FEE2E2; }
 .stmpl-group-body   { background:#FAFBFD; }
 /* ── En-têtes de catégorie dans la sidebar ── */
 .stmpl-cat-section  { border-bottom:1px solid var(--border); }
@@ -6106,6 +6127,118 @@ function _toggleCatSection(catKey){
   _renderSidebarWithGroups();
 }
 
+// ── Kebab menu sidebar ──────────────────────────────────────────────────────
+function _openKebab(e, type, id, nom){
+  e.stopPropagation();
+  _closeKebab();
+  var btn  = e.currentTarget;
+  var rect = btn.getBoundingClientRect();
+  var drop = document.createElement('div');
+  drop.className = 'stmpl-kdrop';
+  drop.id = '_sidebarKebab';
+
+  var items = type === 'group'
+    ? [
+        { label: '✏️  Modifier',   action: function(){ openEditGroup(id); } },
+        { label: '📋  Dupliquer',  action: function(){ duplicateGroupById(id); } },
+        { label: '🗑  Supprimer',  action: function(){ deleteGroup(id); }, danger: true }
+      ]
+    : [
+        { label: '✏️  Modifier',   action: function(){ openEditTemplate(id); } },
+        { label: '📋  Dupliquer',  action: function(){ duplicateTemplateById(id); } },
+        { label: '🗑  Supprimer',  action: function(){ deleteTemplate(id); }, danger: true }
+      ];
+
+  items.forEach(function(item){
+    var b = document.createElement('button');
+    b.className = 'stmpl-kdrop-item' + (item.danger ? ' danger' : '');
+    b.textContent = item.label;
+    b.onclick = function(){ _closeKebab(); item.action(); };
+    drop.appendChild(b);
+  });
+
+  document.body.appendChild(drop);
+
+  // Positionnement : aligner le bord droit du dropdown sur le bouton
+  var left = rect.right - drop.offsetWidth;
+  if(left < 4) left = 4;
+  var top  = rect.bottom + 4;
+  if(top + 160 > window.innerHeight) top = rect.top - 164;
+  drop.style.left = left + 'px';
+  drop.style.top  = top  + 'px';
+
+  setTimeout(function(){
+    document.addEventListener('click', _closeKebab, { once: true, capture: true });
+  }, 0);
+}
+
+function _closeKebab(){
+  var el = document.getElementById('_sidebarKebab');
+  if(el) el.remove();
+}
+
+// Duplication template depuis la sidebar (sans besoin que le template soit chargé)
+function duplicateTemplateById(id){
+  if(!_progToken || !_progUid){ alert('Session non disponible.'); return; }
+  var src = (_sidebarProgs||[]).find(function(t){ return String(t.id)===String(id); });
+  if(!src){ alert('Template introuvable.'); return; }
+  var newNom = 'Copie de ' + (src.phase_nom||src.nom||'Template');
+  var payload = {
+    praticien_id: _progUid,
+    nom:        newNom,
+    type:       src.type       || null,
+    emoji:      src.emoji      || null,
+    categorie:  src.categorie  || null,
+    group_id:   src.group_id   || null,
+    phase_nom:  src.phase_nom  || null,
+    phase_ordre:(src.phase_ordre||0) + 0.5, // après l'original
+    donnees:    src.donnees    || null
+  };
+  fetch(SUPA_URL_P+'/rest/v1/templates', {
+    method:'POST', headers: _sbHeaders(), body: JSON.stringify(payload)
+  })
+  .then(function(r){ return r.ok ? r.json() : null; })
+  .then(function(data){
+    if(!data||!data[0]){ alert('Erreur lors de la duplication.'); return; }
+    renderSidebarTemplates();
+    _showToast('📋 « '+newNom+' » dupliqué !');
+  })
+  .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
+}
+
+// Duplication protocole depuis la sidebar (wrapper qui évite d'ouvrir le modal)
+function duplicateGroupById(id){
+  if(!_progToken || !_progUid){ alert('Session non disponible.'); return; }
+  var g = (_groups||[]).find(function(x){ return String(x.id)===String(id); });
+  if(!g){ alert('Protocole introuvable.'); return; }
+  var newNom = 'Copie de ' + (g.nom||'Protocole');
+  fetch(SUPA_URL_P+'/rest/v1/template_groups', {
+    method:'POST', headers: _sbHeaders(),
+    body: JSON.stringify({ praticien_id:_progUid, nom:newNom, categorie:g.categorie||null, description:g.description||null })
+  })
+  .then(function(r){ return r.ok ? r.json() : null; })
+  .then(function(data){
+    if(!data||!data[0]){ alert('Erreur lors de la duplication.'); return; }
+    var newGroupId = data[0].id;
+    var copies = (_sidebarProgs||[]).filter(function(p){ return String(p.group_id)===String(id); })
+      .map(function(t){
+        return { praticien_id:_progUid, nom:t.nom||t.phase_nom||'', type:t.type||null,
+          emoji:t.emoji||null, categorie:t.categorie||null, group_id:newGroupId,
+          phase_nom:t.phase_nom||null, phase_ordre:t.phase_ordre||0, donnees:t.donnees||null };
+      });
+    if(!copies.length){ renderSidebarTemplates(); _showToast('📋 « '+newNom+' » dupliqué !'); return; }
+    var done = 0;
+    copies.forEach(function(c){
+      fetch(SUPA_URL_P+'/rest/v1/templates', {
+        method:'POST', headers: Object.assign({},_sbHeaders(),{'Prefer':'return=minimal'}),
+        body: JSON.stringify(c)
+      }).then(function(){ done++; if(done===copies.length){ renderSidebarTemplates(); _showToast('📋 « '+newNom+' » dupliqué !'); } });
+    });
+  })
+  .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
+}
+// ────────────────────────────────────────────────────────────────────────────
+
 function _renderSidebarWithGroups(){
   var scroll = document.getElementById('stmplScroll');
   if(!scroll) return;
@@ -6178,8 +6311,7 @@ function _renderSidebarWithGroups(){
         html += '<span class="stmpl-group-toggle">'+(isOpen?'▼':'▶')+'</span>';
         html += '<div class="stmpl-group-info"><div class="stmpl-group-name">'+escH(g.nom||'Sans nom')+'</div>';
         html += '<div style="margin-top:2px;"><span style="font-size:.68rem;color:var(--muted);">'+phases.length+' phase'+(phases.length!==1?'s':'')+'</span></div></div>';
-        html += '<button class="stmpl-group-edit" onclick="event.stopPropagation();openEditGroup(\''+gid+'\')" title="Modifier">✏️</button>';
-        html += '<button class="stmpl-group-del" onclick="event.stopPropagation();deleteGroup(\''+gid+'\')" title="Supprimer">🗑</button></div>';
+        html += '<button class="stmpl-kebab" onclick="event.stopPropagation();_openKebab(event,\'group\',\''+gid+'\',\''+escH(g.nom||'')+'\')" title="Actions">···</button></div>';
         if(isOpen){
           html += '<div class="stmpl-group-body">';
           if(!phases.length) html += '<div class="stmpl-phase-empty">Aucune phase — cliquez + ci-dessous pour en créer une.</div>';
@@ -6225,7 +6357,7 @@ function _renderTmplCard(p, isPhase, phaseNum, hideCat){
     +phN+'<div class="stmpl-card-emoji">'+emoji+'</div>'
     +'<div class="stmpl-card-body"><div class="stmpl-card-name">'+pnom+'</div>'
     +'<div class="stmpl-card-meta">'+catBdg+(sub?escH(sub):'')+'</div></div>'
-    +'<button class="stmpl-card-edit" title="Modifier" onclick="event.stopPropagation();openEditTemplate(\''+pid+'\')">✏️</button>'
+    +'<button class="stmpl-kebab" title="Actions" onclick="event.stopPropagation();_openKebab(event,\'tmpl\',\''+pid+'\',\''+pnom+'\')">···</button>'
     +'<button class="stmpl-add-btn" title="Planifier" onclick="event.stopPropagation();_openQuickAdd(\''+pid+'\',\''+pnom+'\')">+</button>'
     +'</div>';
 }
