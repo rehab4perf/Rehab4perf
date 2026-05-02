@@ -2245,19 +2245,9 @@ var METHODES = {
       params:{ reps:'4', series:'4', recup:'5min', cibles:[{type:'%1RM', min:'120', max:''}] } },
   ]},
   isometrie: { label:'Isométrie tendon', methods:[
-    { id:'iso-tendon-std',  label:'Isométrie standard',
+    { id:'iso-tendon-std',  label:'Isométrie tendon',
       desc:'3 séries · 45s de contraction isométrique · 2min récup · RPE 7',
       params:{ duree:'45s', series:'3', recup:'2min', cibles:[{type:'RPE', min:'7', max:''}] } },
-    { id:'iso-tendon-prog', label:'Isométrie progressive',
-      desc:'4 séries · 45s → 60s → 60s → 45s · 2min récup · RPE 7-8',
-      protocol:'S1 : 45s · S2 : 60s · S3 : 60s · S4 : 45s',
-      params:{ duree:'45-60s', series:'4', recup:'2min', cibles:[{type:'RPE', min:'7', max:'8'}] } },
-    { id:'iso-tendon-court', label:'Isométrie courte répétée',
-      desc:'5 séries · 30s · 90s récup · RPE 7',
-      params:{ duree:'30s', series:'5', recup:'90s', cibles:[{type:'RPE', min:'7', max:''}] } },
-    { id:'iso-tendon-heavy', label:'Isométrie heavy-load',
-      desc:'4 séries · 45s à charge max tolérable · 3min récup · RPE 8',
-      params:{ duree:'45s', series:'4', recup:'3min', cibles:[{type:'RPE', min:'8', max:''}] } },
   ]},
 };
 
