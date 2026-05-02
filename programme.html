@@ -550,6 +550,9 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .col-lbl { font-size:.65rem; font-weight:700; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; }
 .drag-handle { color:var(--border); cursor:grab; font-size:1rem; display:flex; align-items:center; justify-content:center; user-select:none; flex-shrink:0; }
 .drag-handle:active { cursor:grabbing; color:var(--accent2); }
+/* Checkbox sélection méthode */
+.exo-meth-check { width:15px; height:15px; cursor:pointer; display:block; flex-shrink:0; }
+.exo-row.meth-unselected { opacity:.35; }
 .exo-row.exo-dragging { opacity:.35; }
 .exo-row.drag-top { box-shadow:inset 0 2px 0 0 var(--accent2); }
 .exo-row.drag-bot { box-shadow:inset 0 -2px 0 0 var(--accent2); }
@@ -2459,6 +2462,11 @@ function updateBlocMethode(id, val){
   renderSession();
 }
 
+function _onExoCheckChange(cb){
+  var row = cb.closest('.exo-row');
+  if(row) row.classList.toggle('meth-unselected', !cb.checked);
+}
+
 function applyMethode(id){
   var bloc = blocs.find(function(b){ return b.id===id; });
   if(!bloc || !bloc.methode) return;
@@ -2466,7 +2474,12 @@ function applyMethode(id){
   var methObj = objDef.methods.find(function(m){ return m.id===bloc.methode; });
   if(!methObj || !methObj.params) return;
   var p = methObj.params;
+  var appliedCount = 0;
   bloc.exos.forEach(function(e){
+    // Vérifier si la checkbox de cet exercice est cochée
+    var cb = document.getElementById('exo-check-'+id+'-'+e.id);
+    if(cb && !cb.checked) return; // ignorer les exercices décochés
+    appliedCount++;
     if(p.reps    !== undefined) e.reps    = p.reps;
     if(p.duree   !== undefined) e.duree   = p.duree;
     if(p.series  !== undefined) e.series  = p.series;
@@ -2477,9 +2490,10 @@ function applyMethode(id){
     } else if(p.cibleType !== undefined || p.cibleVal !== undefined){
       e.cibles = [{type: p.cibleType||'RPE', min: p.cibleVal||'', max:''}];
     }
-    // Propager l'état d'enchaînement de la méthode (sauf pour le dernier exo)
     e.chained = !!(methObj.chained);
   });
+  if(appliedCount === 0){ _showToast('⚠️ Aucun exercice sélectionné.'); return; }
+  _showToast('✅ Méthode appliquée à '+appliedCount+' exercice'+(appliedCount>1?'s':'')+'.');
   renderSession();
 }
 
@@ -2741,7 +2755,7 @@ function renderSession(){
       });
       html += '</select>';
       if(methObj){
-        html += '<button class="meth-apply-btn" onclick="applyMethode(\''+b.id+'\')">Appliquer aux exercices</button>';
+        html += '<button class="meth-apply-btn" onclick="applyMethode(\''+b.id+'\')">Appliquer à la sélection</button>';
       }
     }
     html += '</div>';
@@ -2781,7 +2795,16 @@ function renderSession(){
              +  ' ondragover="exoDragOver(event,this,\''+b.id+'\')"'
              +  ' ondrop="exoDrop(event,this,\''+b.id+'\','+idx+')"'
              +  ' ondragend="exoDragEnd()">';
-        html += '<div class="drag-handle" title="Glisser pour réordonner">⋮⋮</div>';
+        if(methObj){
+          html += '<div class="drag-handle" style="cursor:default;">'
+                + '<input type="checkbox" class="exo-meth-check" id="exo-check-'+b.id+'-'+e.id+'" checked'
+                + ' style="accent-color:'+objColor+';"'
+                + ' onchange="_onExoCheckChange(this)"'
+                + ' onclick="event.stopPropagation()">'
+                + '</div>';
+        } else {
+          html += '<div class="drag-handle" title="Glisser pour réordonner">⋮⋮</div>';
+        }
         html += '<div class="exo-name-cell">';
         html += '<div class="exo-name">'+escH(e.name)+'</div>';
         html += '<div class="exo-sub">';
