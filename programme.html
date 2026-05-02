@@ -3963,6 +3963,7 @@ function addCycle(){
   _cycles.push({id:'c'+Date.now(), nom:nom, duree:duree, startDate:startDate, note:note});
   _saveCyclesToCloud();
   renderCycleTimeline();
+  if(typeof renderCalendar === 'function') renderCalendar();
   // Réinitialiser le formulaire et pré-calculer la prochaine date
   document.getElementById('cycle-nom').value = '';
   document.getElementById('cycle-note').value = '';
@@ -3975,6 +3976,7 @@ function deleteCycle(id){
   _cycles = _cycles.filter(function(c){ return c.id !== id; });
   _saveCyclesToCloud();
   renderCycleTimeline();
+  if(typeof renderCalendar === 'function') renderCalendar();
 }
 function editCycle(id){
   var c = _cycles.find(function(x){ return x.id===id; });
