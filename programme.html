@@ -3056,9 +3056,12 @@ function renderSession(){
   area.innerHTML = html;
   updateTargetBlocSelect();
   // Auto-resize des consignes déjà remplies + notes
-  area.querySelectorAll('.exo-consigne-ta.has-value').forEach(function(ta){ autoResizeTa(ta); });
-  var notesTa = document.getElementById('sessionNotes');
-  if(notesTa && notesTa.value) autoResizeTa(notesTa);
+  // Différé via rAF : le layout doit être calculé avant de mesurer scrollHeight
+  requestAnimationFrame(function(){
+    area.querySelectorAll('.exo-consigne-ta.has-value').forEach(function(ta){ autoResizeTa(ta); });
+    var notesTa = document.getElementById('sessionNotes');
+    if(notesTa && notesTa.value) autoResizeTa(notesTa);
+  });
   // Auto-save brouillon après chaque rendu
   if(typeof _draftSave === 'function') _draftSave();
 }
