@@ -5824,15 +5824,18 @@ function _draftSaveLazy(){
 // Empreinte légère du contenu pour détecter les vrais changements
 function _sessionHash(){
   try {
-    return JSON.stringify((blocs||[]).map(function(b){
-      return { id:b.id, title:b.title, objectif:b.objectif, methode:b.methode,
-        exos:(b.exos||[]).map(function(e){
-          return {id:e.id, name:e.name, reps:e.reps, series:e.series,
-                  duree:e.duree, recup:e.recup, tempo:e.tempo,
-                  cibles:e.cibles, chained:e.chained};
-        })
-      };
-    }));
+    return JSON.stringify({
+      notes: _notes||'',
+      blocs: (blocs||[]).map(function(b){
+        return { id:b.id, title:b.title, objectif:b.objectif, methode:b.methode,
+          exos:(b.exos||[]).map(function(e){
+            return {id:e.id, name:e.name, reps:e.reps, series:e.series,
+                    duree:e.duree, recup:e.recup, tempo:e.tempo,
+                    cibles:e.cibles, chained:e.chained, consigne:e.consigne||''};
+          })
+        };
+      })
+    });
   } catch(e){ return ''; }
 }
 
