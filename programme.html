@@ -94,7 +94,8 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .stmpl-card:hover { background:var(--tag-bg); }
 .stmpl-card-emoji { font-size:1.25rem; flex-shrink:0; }
 .stmpl-card-body  { flex:1; min-width:0; }
-.stmpl-card-name  { font-size:.82rem; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.stmpl-card-name  { font-size:.82rem; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:4px; }
+.stmpl-public-badge { font-size:.7rem; flex-shrink:0; opacity:.75; }
 .stmpl-card-meta  { font-size:.71rem; color:var(--muted); margin-top:2px; }
 .stmpl-add-btn    { flex-shrink:0; background:var(--accent2); border:none; color:#fff; border-radius:6px; width:26px; height:26px; font-size:1.1rem; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .12s; }
 .stmpl-add-btn:hover { background:#3a80c9; }
@@ -1317,7 +1318,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
       </select>
     </div>
     <div style="padding:4px 14px 10px; display:flex; gap:6px; background:var(--navy);">
-      <button class="filter-btn" style="background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.35);font-size:.72rem;color:#fff;" onclick="openEditor()">✏️ Éditer la bibliothèque</button>
+      <button class="filter-btn r4p-admin-only" style="background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.35);font-size:.72rem;color:#fff;" onclick="openEditor()">✏️ Éditer la bibliothèque</button>
     </div>
     <div class="lib-scroll" id="libScroll"></div>
   </div>
@@ -3556,6 +3557,7 @@ window.addEventListener('message', function(e){
       var pl = JSON.parse(atob(_progToken.split('.')[1]));
       _progUid = pl.sub || null;
     } catch(ex){}
+    _loadUserRole();
   }
   if(e.data && e.data.type==='r4p-patient-selected'){
     _progPatient = _normalizePatient(e.data.patient);
@@ -3569,6 +3571,7 @@ window.addEventListener('message', function(e){
         _progUid = payload.sub || null;
       } catch(ex){}
       _loadSupaLibrary();
+      _loadUserRole();
     }
     // Auto-remplir le champ nom du patient + mettre à jour toute l'UI
     if(_progPatient){
@@ -3590,6 +3593,7 @@ var _progPatient   = null;
 var _currentProgId = null;
 var _progUid       = null;
 var _progToken     = null;
+var _userRole      = null; // 'admin' | 'editeur' | 'lecteur' | null
 
 /* Capitalise la 1re lettre de chaque mot (gère accents + tirets) */
 function _capName(str){
@@ -3615,6 +3619,7 @@ function _normalizePatient(p){
         var pl = JSON.parse(atob(tok.split('.')[1]));
         _progUid = pl.sub || null;
         _loadSupaLibrary();
+        _loadUserRole();
       }
     }
   } catch(ex){}
@@ -3678,6 +3683,51 @@ function _sbHeaders(){
     'Content-Type': 'application/json',
     'Prefer': 'return=representation'
   };
+}
+
+/* ── Rôles utilisateur ── */
+function _isAdmin(){ return _userRole === 'admin'; }
+function _isEditor(){ return _userRole === 'admin' || _userRole === 'editeur'; }
+
+function _loadUserRole(){
+  if(!_progToken || !_progUid) return;
+  fetch(SUPA_URL_P + '/rest/v1/praticien_roles?user_id=eq.'+_progUid+'&select=role', { headers: _sbHeaders() })
+  .then(function(r){ return r.ok ? r.json() : null; })
+  .then(function(data){
+    _userRole = (Array.isArray(data) && data[0]) ? data[0].role : 'lecteur';
+    _applyRoleUI();
+  })
+  .catch(function(){ _userRole = 'lecteur'; _applyRoleUI(); });
+}
+
+function _applyRoleUI(){
+  document.querySelectorAll('.r4p-admin-only').forEach(function(el){
+    el.style.display = _isAdmin() ? '' : 'none';
+  });
+  document.querySelectorAll('.r4p-editor-only').forEach(function(el){
+    el.style.display = _isEditor() ? '' : 'none';
+  });
+}
+
+/* ── Toggle public/privé d'un template ou protocole (admin only) ── */
+function _togglePublic(type, id, makePublic){
+  var table = type === 'group' ? 'template_groups' : 'templates';
+  fetch(SUPA_URL_P+'/rest/v1/'+table+'?id=eq.'+id, {
+    method: 'PATCH',
+    headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
+    body: JSON.stringify({ is_public: makePublic })
+  }).then(function(r){
+    if(r.ok){
+      var arr = type === 'group' ? (_groups||[]) : (_sidebarProgs||[]);
+      var item = arr.find(function(x){ return String(x.id)===String(id); });
+      if(item) item.is_public = makePublic;
+      renderSidebarTemplates();
+      renderBuilderLibrary();
+      _showToast(makePublic ? '🌐 Rendu public !' : '🔒 Rendu privé !');
+    } else {
+      r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); });
+    }
+  }).catch(function(){ alert('Erreur réseau.'); });
 }
 
 // Gestion centralisée des erreurs réseau — message lisible si JWT expiré
@@ -5502,8 +5552,8 @@ function renderBuilderLibrary(){
     if(!_groups.length && !_sidebarProgs.length){
       area.innerHTML = '<div style="padding:10px 14px;color:var(--muted);font-size:.77rem;">Chargement…</div>';
       Promise.all([
-        fetch(SUPA_URL_P+'/rest/v1/template_groups?praticien_id=eq.'+_progUid+'&order=created_at.asc',{headers:_sbHeaders()}).then(function(r){ return r.ok?r.json():null; }),
-        fetch(SUPA_URL_P+'/rest/v1/templates?praticien_id=eq.'+_progUid+'&order=phase_ordre.asc,created_at.desc',{headers:_sbHeaders()}).then(function(r){ return r.ok?r.json():null; })
+        fetch(SUPA_URL_P+'/rest/v1/template_groups?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&order=created_at.asc',{headers:_sbHeaders()}).then(function(r){ return r.ok?r.json():null; }),
+        fetch(SUPA_URL_P+'/rest/v1/templates?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&order=phase_ordre.asc,created_at.desc',{headers:_sbHeaders()}).then(function(r){ return r.ok?r.json():null; })
       ]).then(function(res){
         if(Array.isArray(res[0])) _groups=res[0];
         if(Array.isArray(res[1])) _sidebarProgs=res[1];
@@ -6343,8 +6393,8 @@ function renderSidebarTemplates(){
       scroll.innerHTML = '<div class="stmpl-empty">Chargement…</div>';
     }
     Promise.all([
-      fetch(SUPA_URL_P+'/rest/v1/template_groups?praticien_id=eq.'+_progUid+'&order=created_at.asc',{headers:_sbHeaders()}).then(function(r){ return r.ok ? r.json() : null; }),
-      fetch(SUPA_URL_P+'/rest/v1/templates?praticien_id=eq.'+_progUid+'&order=phase_ordre.asc,created_at.desc',{headers:_sbHeaders()}).then(function(r){ return r.ok ? r.json() : null; })
+      fetch(SUPA_URL_P+'/rest/v1/template_groups?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&order=created_at.asc',{headers:_sbHeaders()}).then(function(r){ return r.ok ? r.json() : null; }),
+      fetch(SUPA_URL_P+'/rest/v1/templates?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&order=phase_ordre.asc,created_at.desc',{headers:_sbHeaders()}).then(function(r){ return r.ok ? r.json() : null; })
     ]).then(function(res){
       // Ne remplacer les données qu'en cas de réponse valide (évite d'écraser avec une erreur 401)
       if(Array.isArray(res[0])) _groups       = res[0];
@@ -6399,6 +6449,16 @@ function _openKebab(e, type, id, nom){
         { label: '📋  Dupliquer',  action: function(){ duplicateTemplateById(id); } },
         { label: '🗑  Supprimer',  action: function(){ deleteTemplate(id); }, danger: true }
       ];
+
+  if(_isAdmin()){
+    var _arr = type === 'group' ? (_groups||[]) : (_sidebarProgs||[]);
+    var _item = _arr.find(function(x){ return String(x.id)===String(id); });
+    var _pub = _item && _item.is_public;
+    items.splice(items.length - 1, 0, {
+      label: _pub ? '🔒  Rendre privé' : '🌐  Rendre public',
+      action: (function(t,i,p){ return function(){ _togglePublic(t,i,p); }; })(type, id, !_pub)
+    });
+  }
 
   items.forEach(function(item){
     var b = document.createElement('button');
@@ -6605,9 +6665,10 @@ function _renderTmplCard(p, isPhase, phaseNum, hideCat){
   var pnom = escH(dispNom);
   var cls  = 'stmpl-card'+(isPhase?' stmpl-phase-card':'');
   var phN  = (isPhase&&phaseNum) ? '<span class="stmpl-phase-num">'+phaseNum+'</span>' : '';
+  var pubBdg = p.is_public ? '<span class="stmpl-public-badge" title="Template public">🌐</span>' : '';
   return '<div class="'+cls+'" onclick="_sidebarLoadProg(\''+pid+'\')">'
     +phN+'<div class="stmpl-card-emoji">'+emoji+'</div>'
-    +'<div class="stmpl-card-body"><div class="stmpl-card-name">'+pnom+'</div>'
+    +'<div class="stmpl-card-body"><div class="stmpl-card-name">'+pnom+' '+pubBdg+'</div>'
     +'<div class="stmpl-card-meta">'+catBdg+(sub?escH(sub):'')+'</div></div>'
     +'<button class="stmpl-kebab" title="Actions" onclick="event.stopPropagation();_openKebab(event,\'tmpl\',\''+pid+'\',\''+escJS(dispNom)+'\')">···</button>'
     +'<button class="stmpl-add-btn" title="Planifier" onclick="event.stopPropagation();_openQuickAdd(\''+pid+'\',\''+pnom+'\')">+</button>'
