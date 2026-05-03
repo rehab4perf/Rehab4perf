@@ -6276,10 +6276,16 @@ function renderSidebarTemplates(){
   }
 }
 
-var _collapsedCats = {}; // { 'Renforcement': true } = replié
+// Catégories : fermées par défaut, état persisté en localStorage
+// { 'MOBILITÉ': false } = explicitement ouvert par l'utilisateur
+var _collapsedCats = (function(){
+  try { return JSON.parse(localStorage.getItem('r4p-collapsed-cats')||'{}'); } catch(e){ return {}; }
+})();
 
 function _toggleCatSection(catKey){
-  _collapsedCats[catKey] = !_collapsedCats[catKey];
+  // Par défaut fermé → false = ouvert, undefined/true = fermé
+  _collapsedCats[catKey] = (_collapsedCats[catKey] === false) ? true : false;
+  try { localStorage.setItem('r4p-collapsed-cats', JSON.stringify(_collapsedCats)); } catch(e){}
   _renderSidebarWithGroups();
 }
 
@@ -6441,7 +6447,8 @@ function _renderSidebarWithGroups(){
     hasContent = true;
 
     var count = catGroups.length + catFree.length;
-    var isCollapsed = !!_collapsedCats[catKey];
+    // Fermé par défaut : ouvert seulement si l'utilisateur a explicitement cliqué (valeur === false)
+    var isCollapsed = (_collapsedCats[catKey] !== false);
     var safeKey = escH(catKey||'__sans__');
 
     html += '<div class="stmpl-cat-section">';
