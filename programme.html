@@ -3437,7 +3437,7 @@ function resetLibrary(){
 }
 
 function addNewExo(){
-  _editorData.unshift({id:'c'+Date.now(),name:'',zone:'ÉPAULE',type:'warmup',url:'',obj:'',patterns:[]});
+  _editorData.unshift({id:'c'+Date.now(),name:'',zone:'',type:'',url:'',obj:'',patterns:[]});
   renderEditor();
   var el = document.getElementById('editorList').querySelector('input.exo-edit-name');
   if(el) el.focus();
