@@ -6860,7 +6860,13 @@ function closeBuilder(){
     if(!confirm('⚠️ La séance contient du contenu non sauvegardé.\n\nFermer quand même ?')){
       return;
     }
-    _draftClear(); // OK = on abandonne volontairement, pas de restauration
+    _draftClear();
+  }
+  // Blocs vides : annuler le timer lazy en attente et vider le brouillon
+  // (évite de restaurer un ancien brouillon si l'utilisateur a tout supprimé)
+  if(!blocs || !blocs.length){
+    if(_draftSaveTimer){ clearTimeout(_draftSaveTimer); _draftSaveTimer = null; }
+    _draftClear();
   }
   _exitBuilderMode();
 }
