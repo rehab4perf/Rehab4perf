@@ -2082,6 +2082,8 @@ function renderLib(q, typeFilter, subFilter){
    SESSION / BLOCS
    ================================================================ */
 function escH(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+// Échappe les apostrophes pour usage dans un attribut onclick JS (contexte string JS entre guillemets simples)
+function escJS(s){ return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
 
 // ── Aperçu rapide bibliothèque ───────────────────────────────────────────────
 var _libPreviewTimer  = null;
@@ -6474,7 +6476,7 @@ function _renderSidebarWithGroups(){
         html += '<span class="stmpl-group-toggle">'+(isOpen?'▼':'▶')+'</span>';
         html += '<div class="stmpl-group-info"><div class="stmpl-group-name">'+escH(g.nom||'Sans nom')+'</div>';
         html += '<div style="margin-top:2px;"><span style="font-size:.68rem;color:var(--muted);">'+phases.length+' phase'+(phases.length!==1?'s':'')+'</span></div></div>';
-        html += '<button class="stmpl-kebab" onclick="event.stopPropagation();_openKebab(event,\'group\',\''+gid+'\',\''+escH(g.nom||'')+'\')" title="Actions">···</button></div>';
+        html += '<button class="stmpl-kebab" onclick="event.stopPropagation();_openKebab(event,\'group\',\''+gid+'\',\''+escJS(g.nom||'')+'\')" title="Actions">···</button></div>';
         if(isOpen){
           html += '<div class="stmpl-group-body">';
           if(!phases.length) html += '<div class="stmpl-phase-empty">Aucune phase — cliquez + ci-dessous pour en créer une.</div>';
@@ -6520,7 +6522,7 @@ function _renderTmplCard(p, isPhase, phaseNum, hideCat){
     +phN+'<div class="stmpl-card-emoji">'+emoji+'</div>'
     +'<div class="stmpl-card-body"><div class="stmpl-card-name">'+pnom+'</div>'
     +'<div class="stmpl-card-meta">'+catBdg+(sub?escH(sub):'')+'</div></div>'
-    +'<button class="stmpl-kebab" title="Actions" onclick="event.stopPropagation();_openKebab(event,\'tmpl\',\''+pid+'\',\''+pnom+'\')">···</button>'
+    +'<button class="stmpl-kebab" title="Actions" onclick="event.stopPropagation();_openKebab(event,\'tmpl\',\''+pid+'\',\''+escJS(dispNom)+'\')">···</button>'
     +'<button class="stmpl-add-btn" title="Planifier" onclick="event.stopPropagation();_openQuickAdd(\''+pid+'\',\''+pnom+'\')">+</button>'
     +'</div>';
 }
