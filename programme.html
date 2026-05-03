@@ -115,13 +115,21 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .tmpl-lib-header { display:flex; align-items:center; justify-content:space-between; padding:5px 10px 5px 12px; background:#FAFBFD; border-bottom:1px solid var(--border); flex-shrink:0; }
 .tmpl-lib-title { font-size:.71rem; font-weight:700; color:var(--muted); letter-spacing:.05em; text-transform:uppercase; }
 #templatesBuilderArea { display:flex; height:185px; overflow:hidden; }
-.builder-lib-left { width:40%; border-right:1px solid var(--border); overflow-y:auto; flex-shrink:0; background:#FAFBFD; }
+.builder-lib-left { width:42%; border-right:1px solid var(--border); overflow-y:auto; flex-shrink:0; background:#FAFBFD; }
 .builder-lib-right { flex:1; overflow-y:auto; }
-.builder-lib-group { display:flex; align-items:center; padding:8px 10px 8px 12px; font-size:.75rem; font-weight:600; cursor:pointer; border-bottom:1px solid var(--border); color:var(--text); transition:background .1s; gap:4px; }
+/* Catégorie dans la colonne gauche */
+.blib-cat-hdr { display:flex; align-items:center; gap:3px; padding:5px 7px 5px 9px; border-bottom:1px solid var(--border); cursor:pointer; transition:background .1s; user-select:none; position:sticky; top:0; z-index:2; }
+.blib-cat-hdr:hover { filter:brightness(.96); }
+.blib-cat-icon { font-size:.77rem; flex-shrink:0; line-height:1; }
+.blib-cat-label { font-size:.62rem; font-weight:700; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; letter-spacing:.04em; text-transform:uppercase; }
+.blib-cat-cnt  { font-size:.58rem; font-weight:400; flex-shrink:0; opacity:.65; }
+.blib-cat-arrow { font-size:.48rem; flex-shrink:0; opacity:.55; margin-left:1px; transition:transform .15s; }
+/* Protocole dans la colonne gauche (sous la catégorie) */
+.builder-lib-group { display:flex; align-items:center; padding:7px 8px 7px 16px; font-size:.73rem; font-weight:600; cursor:pointer; border-bottom:1px solid var(--border); color:var(--text); transition:background .1s; gap:4px; }
 .builder-lib-group:hover { background:#F0F4FF; }
 .builder-lib-group.active { background:#EEF4FF; color:var(--accent2); }
 .builder-lib-gname { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.builder-lib-gcnt { font-size:.62rem; color:var(--muted); font-weight:400; flex-shrink:0; }
+.builder-lib-gcnt { font-size:.6rem; color:var(--muted); font-weight:400; flex-shrink:0; }
 .builder-lib-group.active .builder-lib-gcnt { color:var(--accent2); }
 .builder-lib-session { display:flex; align-items:center; gap:7px; padding:7px 10px; border-bottom:1px solid var(--border); transition:background .1s; }
 .builder-lib-session:hover { background:#F5F8FF; }
@@ -5451,7 +5459,16 @@ function doSaveTemplate(){
 }
 
 /* ── Bibliothèque 2 colonnes dans le bas du builder ── */
-var _selectedLibGroup = null;
+var _selectedLibGroup  = null;
+var _libCatCollapsed   = (function(){
+  try { return JSON.parse(localStorage.getItem('r4p-lib-cat-collapsed')||'{}'); } catch(e){ return {}; }
+})();
+
+function _toggleLibCat(catKey){
+  _libCatCollapsed[catKey] = !_libCatCollapsed[catKey];
+  try { localStorage.setItem('r4p-lib-cat-collapsed', JSON.stringify(_libCatCollapsed)); } catch(e){}
+  _renderBuilderLibraryUI();
+}
 
 function renderBuilderLibrary(){
   var area = document.getElementById('templatesBuilderArea');
@@ -5488,10 +5505,10 @@ function _renderBuilderLibraryUI(){
   var groups = _groups || [];
   var progs  = _sidebarProgs || [];
 
-  // Templates sans protocole = groupe virtuel "Sans protocole"
+  // Templates sans protocole = groupe virtuel en fin de liste
   var orphans = progs.filter(function(p){ return !p.group_id; });
   var allGroups = groups.slice();
-  if(orphans.length) allGroups.push({id:'__orphan__', nom:'Sans protocole', _virtual:true});
+  if(orphans.length) allGroups.push({id:'__orphan__', nom:'Sans protocole', categorie:'__orphan_cat__', _virtual:true});
 
   if(!allGroups.length){
     area.innerHTML = '<div style="padding:18px 14px;color:var(--muted);font-size:.77rem;font-style:italic;text-align:center;">'
@@ -5504,19 +5521,55 @@ function _renderBuilderLibraryUI(){
     _selectedLibGroup = allGroups[0].id;
   }
 
-  // Colonne gauche : liste des protocoles
-  var leftHtml = allGroups.map(function(g){
-    var gid = String(g.id);
-    var isActive = String(_selectedLibGroup)===gid;
-    var count = gid==='__orphan__' ? orphans.length
-              : progs.filter(function(p){ return String(p.group_id)===gid; }).length;
-    return '<div class="builder-lib-group'+(isActive?' active':'')+'" onclick="_selectLibGroup(\''+escJS(gid)+'\')" title="'+escH(g.nom||'')+'">'
-      +'<span class="builder-lib-gname">'+escH(g.nom||'Sans nom')+'</span>'
-      +'<span class="builder-lib-gcnt">'+count+'</span>'
-      +'</div>';
-  }).join('');
+  // ── Colonne gauche : grouper par catégorie ──────────────────────────────
+  var catOrder = TMPL_CATEGORIES.map(function(c){ return c.val; });
+  // Construire map catégorie → groupes
+  var catsMap = {};
+  allGroups.forEach(function(g){
+    var cat = g._virtual ? '__orphan_cat__' : (g.categorie||'');
+    if(!catsMap[cat]) catsMap[cat] = [];
+    catsMap[cat].push(g);
+  });
+  // Trier les catégories selon TMPL_CATEGORIES, inconnues après, orphelin en dernier
+  var allCatKeys = Object.keys(catsMap).sort(function(a,b){
+    if(a==='__orphan_cat__') return 1;
+    if(b==='__orphan_cat__') return -1;
+    var ia = catOrder.indexOf(a), ib = catOrder.indexOf(b);
+    if(ia===-1&&ib===-1) return a.localeCompare(b);
+    if(ia===-1) return 1; if(ib===-1) return -1;
+    return ia-ib;
+  });
 
-  // Colonne droite : séances du protocole sélectionné
+  var leftHtml = '';
+  allCatKeys.forEach(function(catKey){
+    var catGroups = catsMap[catKey];
+    var catInfo = TMPL_CATEGORIES.find(function(c){ return c.val===catKey; })
+                || { icon:'📁', color:'#F3F4F6', textColor:'#374151' };
+    var catLabel = catKey==='__orphan_cat__' ? 'Sans protocole' : (catKey||'Sans catégorie');
+    var isCollapsed = !!_libCatCollapsed[catKey]; // ouvert par défaut
+
+    leftHtml += '<div class="blib-cat-hdr" onclick="_toggleLibCat(\''+escJS(catKey)+'\')" style="background:'+catInfo.color+'30;">';
+    leftHtml += '<span class="blib-cat-icon">'+catInfo.icon+'</span>';
+    leftHtml += '<span class="blib-cat-label" style="color:'+catInfo.textColor+';">'+escH(catLabel)+'</span>';
+    leftHtml += '<span class="blib-cat-cnt">'+catGroups.length+'</span>';
+    leftHtml += '<span class="blib-cat-arrow">'+(isCollapsed?'▶':'▼')+'</span>';
+    leftHtml += '</div>';
+
+    if(!isCollapsed){
+      catGroups.forEach(function(g){
+        var gid = String(g.id);
+        var isActive = String(_selectedLibGroup)===gid;
+        var count = gid==='__orphan__' ? orphans.length
+                  : progs.filter(function(p){ return String(p.group_id)===gid; }).length;
+        leftHtml += '<div class="builder-lib-group'+(isActive?' active':'')+'" onclick="_selectLibGroup(\''+escJS(gid)+'\')" title="'+escH(g.nom||'')+'">'
+          +'<span class="builder-lib-gname">'+escH(g.nom||'Sans nom')+'</span>'
+          +'<span class="builder-lib-gcnt">'+count+'</span>'
+          +'</div>';
+      });
+    }
+  });
+
+  // ── Colonne droite : séances du protocole sélectionné ──────────────────
   var phases = (String(_selectedLibGroup)==='__orphan__' ? orphans
     : progs.filter(function(p){ return String(p.group_id)===String(_selectedLibGroup); }))
     .slice().sort(function(a,b){ return (a.phase_ordre||0)-(b.phase_ordre||0); });
