@@ -2079,7 +2079,6 @@ function renderLib(q, typeFilter, subFilter){
       html += '<div class="lib-item-name">'+escH(ex.name)+'</div>';
       html += '<div class="lib-sub">';
       html += '<span class="lib-tag '+getTypeClass(ex.type)+'">'+getTypeLabel(ex.type)+'</span>';
-      if(ex.obj) html += '<span class="lib-tag" style="background:#F3F0FF;color:#5B4FBF;">'+escH(ex.obj)+'</span>';
       html += '</div></div>';
       // Bouton ℹ visible uniquement sur touch (sur desktop le hover suffit)
       if(_isTouchDevice){
@@ -2112,7 +2111,6 @@ function _buildLibPreviewHtml(ex){
   html += '<div class="pp-tags">';
   html += '<span class="lib-tag '+getTypeClass(ex.type)+'">'+getTypeLabel(ex.type)+'</span>';
   if(ex.zone && ex.zone !== ex.name) html += '<span class="lib-tag">'+escH(ex.zone)+'</span>';
-  if(ex.obj)  html += '<span class="lib-tag" style="background:#F3F0FF;color:#5B4FBF;">'+escH(ex.obj)+'</span>';
   if(ex.patterns && ex.patterns.length) ex.patterns.forEach(function(p){ html += '<span class="lib-tag" style="background:#E8F5E9;color:#2E7D32;">'+escH(p)+'</span>'; });
   html += '</div>';
   if(ex.url){
@@ -2919,7 +2917,6 @@ function renderSession(){
         html += '<div class="exo-name">'+escH(e.name)+(e._methApplied ? '<span class="meth-applied-badge">✓ méthode appliquée</span>' : '')+'</div>';
         html += '<div class="exo-sub">';
         if(e.url){ var _vt=_ytThumbHtml(e.url); html += _vt ? _vt : '<a class="vid-link" href="'+escH(e.url)+'" target="_blank">▶ Vidéo</a>'; }
-        if(e.obj) html += '<span class="lib-tag" style="background:#F3F0FF;color:#5B4FBF;">'+escH(e.obj)+'</span>';
         var exoMin=estimateExoMin(e); if(exoMin!==null) html+='<span class="time-tag">⏱ '+fmtMin(exoMin)+'</span>';
         if(idx < b.exos.length - 1){
           html += '<button class="chain-toggle-btn'+(exoChained?' active':'')+'"'
