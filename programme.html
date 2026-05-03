@@ -2263,6 +2263,9 @@ var METHODES = {
       params:{ reps:'4', series:'3', recup:'2min', cibles:[{type:'%1RM', min:'30', max:''}] } },
   ]},
   hypertrophie: { label:'Hypertrophie', methods:[
+    { id:'hyp-classique', label:'Classique',
+      desc:'4 séries · 8-12 reps · 1min30 récup · RPE 8 · 70-80% 1RM',
+      params:{ reps:'8-12', series:'4', recup:"1'30", cibles:[{type:'RPE', min:'8', max:''},{type:'%1RM', min:'70', max:'80'}] } },
     { id:'biset',       label:'Bi-Set', chained:true,
       desc:'3 séries · Exo 1 : 8 reps @ 75% · Exo 2 : 10 reps @ 12RM · 1min30 récup',
       exoLabels:['Exo 1 — 8 reps @ 75%', 'Exo 2 — 10 reps @ 12RM'],
