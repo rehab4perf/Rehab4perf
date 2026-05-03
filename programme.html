@@ -2276,10 +2276,22 @@ var METHODES = {
       desc:'4 séries · 4 reps à 120% de la RM · 5min récup',
       params:{ reps:'4', series:'4', recup:'5min', cibles:[{type:'%1RM', min:'120', max:''}] } },
   ]},
-  isometrie: { label:'Isométrie tendon', methods:[
-    { id:'iso-tendon-std',  label:'Isométrie tendon',
-      desc:'3 séries · 45s de contraction isométrique · 2min récup · RPE 7',
-      params:{ duree:'45s', series:'3', recup:'2min', cibles:[{type:'RPE', min:'7', max:''}] } },
+  isometrie: { label:'Tendinopathie', methods:[
+    { id:'iso-tendon-std',  label:'Isométrie',
+      desc:'3 séries · 45s de contraction isométrique · 2min récup · RPE 4–7',
+      params:{ duree:'45s', series:'3', recup:'2min', cibles:[{type:'RPE', min:'4', max:'7'}] } },
+    { id:'teno-excentrique', label:'Excentrique',
+      desc:'2–4 séries (déf. 3) · Phase excentrique 1\'–1\'30 · 2min récup · RPE 6–8 · 60–90% 1RM',
+      params:{ series:'3', duree:"1'30", recup:"2min", cibles:[{type:'RPE', min:'6', max:'8'},{type:'%1RM', min:'60', max:'90'}] } },
+    { id:'teno-hsr', label:'HSR — Heavy Slow Resistance',
+      desc:'3 séries · 15RM → 6RM (progression) · 2min récup · Tempo 3/0/3/0 · RPE 8–10 · RIR 0–1',
+      params:{ reps:'15', series:'3', recup:'2min', tempo:'3/0/3/0', cibles:[{type:'RPE', min:'8', max:'10'},{type:'RIR', min:'0', max:'1'}] } },
+    { id:'teno-iso-balist', label:'Isométrie balistique / oscillatoire',
+      desc:'2 séries · 6 reps · Maintien 3–5s par rep · 70–100% 1RM · RPE 7–10',
+      params:{ reps:'6', series:'2', duree:'3-5s', cibles:[{type:'%1RM', min:'70', max:'100'},{type:'RPE', min:'7', max:'10'}] } },
+    { id:'teno-exc-supra', label:'Excentrique supra-max',
+      desc:'3 séries · 3 à 6 reps (déf. 5) · 3min récup · 120% 1RM · RPE 9',
+      params:{ reps:'5', series:'3', recup:'3min', cibles:[{type:'%1RM', min:'120', max:''},{type:'RPE', min:'9', max:''}] } },
   ]},
 };
 
