@@ -3271,11 +3271,8 @@ function toggleEfAdded(){
 function _populateEfZone(){
   var sel = document.getElementById('efZone');
   if(!sel) return;
-  var zones = [];
-  _editorData.forEach(function(e){ if(e.zone && zones.indexOf(e.zone)===-1) zones.push(e.zone); });
-  zones.sort();
   var cur = sel.value;
-  sel.innerHTML = '<option value="">— Toutes zones —</option>' + zones.map(function(z){ return '<option value="'+escH(z)+'"'+(z===cur?' selected':'')+'>'+escH(z)+'</option>'; }).join('');
+  sel.innerHTML = '<option value="">— Toutes zones —</option>' + ALL_ZONES.map(function(z){ return '<option value="'+escH(z)+'"'+(z===cur?' selected':'')+'>'+escH(z)+'</option>'; }).join('');
 }
 
 function openEditor(){
