@@ -698,6 +698,13 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   background-repeat:no-repeat; background-position:right 6px center;
   background-color:#fff; color:var(--text); font-family:inherit;
 }
+.meth-select-all-btn {
+  padding:4px 10px; border-radius:6px; border:1px solid currentColor;
+  font-size:.72rem; font-weight:600; cursor:pointer; font-family:inherit;
+  white-space:nowrap; background:none; color:var(--muted,#6b7a8d);
+  transition:background .12s, color .12s; flex-shrink:0;
+}
+.meth-select-all-btn:hover { background:rgba(0,0,0,.06); }
 .meth-apply-btn {
   padding:4px 12px; border-radius:6px; border:none; font-size:.72rem; font-weight:700;
   cursor:pointer; font-family:inherit; white-space:nowrap; transition:opacity .15s;
@@ -2512,6 +2519,20 @@ function updateBlocMethode(id, val){
   renderSession();
 }
 
+function _toggleAllExoChecks(blocId){
+  var bloc = blocs.find(function(b){ return b.id===blocId; });
+  if(!bloc) return;
+  // Si tous cochés → tout décocher, sinon → tout cocher
+  var allChecked = bloc.exos.length > 0 && bloc.exos.every(function(e){ return e._methChecked === true; });
+  var newState = !allChecked;
+  bloc.exos.forEach(function(e){
+    e._methChecked = newState;
+    var cb = document.getElementById('exo-check-'+blocId+'-'+e.id);
+    if(cb) cb.checked = newState;
+  });
+  // Re-render pour mettre à jour le libellé du bouton
+  renderSession();
+}
 function _onExoCheckChange(cb){
   // Persister l'état coché dans le modèle pour survivre aux re-renders
   var bid = cb.id.split('-')[2];
@@ -2816,6 +2837,10 @@ function renderSession(){
       });
       html += '</select>';
       if(methObj){
+        var allChecked = b.exos.length > 0 && b.exos.every(function(e){ return e._methChecked === true; });
+        html += '<button class="meth-select-all-btn" onclick="_toggleAllExoChecks(\''+b.id+'\')" title="'+(allChecked?'Tout désélectionner':'Tout sélectionner')+'">'
+              + (allChecked ? '☑ Tout désélectionner' : '☐ Tout sélectionner')
+              + '</button>';
         html += '<button class="meth-apply-btn" onclick="applyMethode(\''+b.id+'\')">Appliquer à la sélection</button>';
       }
     }
