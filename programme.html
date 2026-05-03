@@ -1378,6 +1378,10 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
       <input type="text" id="tmplNameInput" placeholder="Ex : Renfo genou — Phase 2">
     </div>
     <div class="save-field">
+      <label>Emoji</label>
+      <div class="emoji-row" id="tmplEmojiRow"></div>
+    </div>
+    <div class="save-field">
       <label>Catégorie</label>
       <select id="tmplCatInput" onchange="_onTmplCatChange()">
         <option value="">— Choisir —</option>
@@ -1392,37 +1396,13 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
       </select>
     </div>
     <div class="save-field">
-      <label>Emoji</label>
-      <div class="emoji-row" id="tmplEmojiRow"></div>
-    </div>
-    <div class="save-field" id="tmplTypeWrap">
-      <label>Sous-type</label>
-      <select id="tmplTypeInput">
-        <option value="Force">Force</option>
-        <option value="Puissance">Puissance</option>
-        <option value="Hypertrophie">Hypertrophie</option>
-        <option value="Endurance">Endurance</option>
-        <option value="Proprio">Proprioception</option>
-        <option value="Réathlétisation">Réathlétisation</option>
-        <option value="Échauffement">Échauffement</option>
-        <option value="Fractionné">Fractionné</option>
-        <option value="Fond">Fond</option>
-        <option value="Récupération">Récupération</option>
-        <option value="Autre">Autre</option>
-      </select>
-    </div>
-    <div class="save-field">
-      <label>Ajouter à un protocole (optionnel)</label>
+      <label>Protocole (optionnel)</label>
       <select id="tmplGroupInput" onchange="_onTmplGroupChange()">
         <option value="">— Aucun —</option>
       </select>
     </div>
     <div id="tmplPhaseWrap" style="display:none; padding:10px 12px; background:#EBF3FF; border-radius:8px; margin-top:4px;">
-      <div class="save-field" style="margin-bottom:8px;">
-        <label>Nom de la phase</label>
-        <input type="text" id="tmplPhaseNomInput" placeholder="Phase 1 — Cicatrisation">
-      </div>
-      <div class="save-field">
+      <div class="save-field" style="margin-bottom:0;">
         <label>Ordre d'affichage</label>
         <input type="number" id="tmplPhaseOrdreInput" min="1" value="1" style="width:80px;">
       </div>
@@ -5343,11 +5323,6 @@ function _persistTemplates(){
 /* Met à jour les sous-types et l'emoji suggéré selon la catégorie choisie */
 function _onTmplCatChange(){
   var cat = document.getElementById('tmplCatInput').value;
-  var subtypes = TMPL_SUBTYPES[cat] || ['Autre'];
-  var sel = document.getElementById('tmplTypeInput');
-  sel.innerHTML = subtypes.map(function(s){
-    return '<option value="'+escH(s)+'">'+escH(s)+'</option>';
-  }).join('');
   // Suggérer l'emoji de la catégorie
   var catInfo = TMPL_CATEGORIES.find(function(c){ return c.val === cat; });
   if(catInfo){
@@ -5359,10 +5334,11 @@ function _onTmplCatChange(){
 }
 
 function _openTmplModal(opts){
-  // opts = { nom, cat, type, emoji, groupId, phaseNom, phaseOrdre, editId }
+  // opts = { nom, cat, emoji, groupId, phaseOrdre, editId }
   _tmplEditId = opts.editId || null;
   document.getElementById('tmplModalTitle').textContent = _tmplEditId ? '✏️ Modifier le template' : '📋 Sauvegarder comme template';
   document.getElementById('tmplModalConfirmBtn').textContent = _tmplEditId ? '💾 Enregistrer les modifications' : '📋 Enregistrer le template';
+
   // Emoji row
   var row = document.getElementById('tmplEmojiRow');
   _tmplSelectedEmoji = opts.emoji || '💪';
@@ -5378,14 +5354,12 @@ function _openTmplModal(opts){
     };
     row.appendChild(b);
   });
+
   document.getElementById('tmplNameInput').value = opts.nom || '';
   document.getElementById('tmplCatInput').value  = opts.cat || '';
-  _onTmplCatChange(); // met à jour les sous-types
-  if(opts.type){
-    var sel = document.getElementById('tmplTypeInput');
-    for(var i=0;i<sel.options.length;i++){ if(sel.options[i].value===opts.type){ sel.selectedIndex=i; break; } }
-  }
-  // Groupes
+  _onTmplCatChange();
+
+  // Protocoles
   var grpSel = document.getElementById('tmplGroupInput');
   var grpOpts = '<option value="">— Aucun —</option>';
   (_groups||[]).forEach(function(g){
@@ -5395,51 +5369,17 @@ function _openTmplModal(opts){
   grpSel.value = opts.groupId ? String(opts.groupId) : '';
   var phWrap = document.getElementById('tmplPhaseWrap');
   phWrap.style.display = opts.groupId ? 'block' : 'none';
-  document.getElementById('tmplPhaseNomInput').value   = opts.phaseNom  || '';
   document.getElementById('tmplPhaseOrdreInput').value = opts.phaseOrdre || '1';
-  // Mode simplifié : protocole actif pré-sélectionné
-  var simplified = !_tmplEditId && !!opts._simplified && !!opts.groupId;
-  var nameField   = document.querySelector('#templateSaveModal .save-field:nth-child(2)'); // Nom
-  var catField    = document.getElementById('tmplCatInput')   ? document.getElementById('tmplCatInput').closest('.save-field')   : null;
-  var emojiField  = document.getElementById('tmplEmojiRow')   ? document.getElementById('tmplEmojiRow').closest('.save-field')   : null;
-  var typeWrap    = document.getElementById('tmplTypeWrap');
-  var grpField    = document.getElementById('tmplGroupInput') ? document.getElementById('tmplGroupInput').closest('.save-field')  : null;
 
-  // Trouver ou créer le toggle "Options avancées"
-  var advToggle = document.getElementById('tmplAdvancedToggle');
-  if(!advToggle){
-    advToggle = document.createElement('div');
-    advToggle.id = 'tmplAdvancedToggle';
-    advToggle.style.cssText = 'font-size:.74rem;color:var(--accent2,#1A3A5C);cursor:pointer;padding:4px 0 6px;display:flex;align-items:center;gap:4px;';
-    advToggle.onclick = function(){
-      var hidden = catField && catField.style.display==='none';
-      [catField,emojiField,typeWrap,grpField].forEach(function(el){ if(el) el.style.display = hidden ? '' : 'none'; });
-      advToggle.innerHTML = hidden ? '▲ Moins d\'options' : '▼ Options avancées (catégorie, emoji, type…)';
-    };
-    var btns = document.querySelector('#templateSaveModal .save-modal-btns');
-    if(btns) btns.parentNode.insertBefore(advToggle, btns);
-  }
-
-  if(simplified){
+  // Mode simplifié (nouvelle phase dans un protocole actif) : auto-nommer
+  if(!_tmplEditId && opts._simplified && opts.groupId){
     document.getElementById('tmplModalTitle').textContent = '📋 Nouvelle phase — '+escH(_activeGroupNom);
-    // Masquer les champs avancés
-    [catField,emojiField,typeWrap,grpField].forEach(function(el){ if(el) el.style.display='none'; });
-    // Afficher et pre-remplir tmplPhaseWrap
-    document.getElementById('tmplPhaseWrap').style.display = 'block';
-    advToggle.innerHTML = '▼ Options avancées (catégorie, emoji, type…)';
-    advToggle.style.display = 'block';
-    // Auto-nommer le template si vide
     if(!document.getElementById('tmplNameInput').value){
-      document.getElementById('tmplNameInput').value = _activeGroupNom + ' — Phase ' + opts.phaseOrdre;
+      document.getElementById('tmplNameInput').value = _activeGroupNom + ' — Phase ' + (opts.phaseOrdre||1);
     }
-    setTimeout(function(){ document.getElementById('tmplPhaseNomInput').focus(); }, 100);
-  } else {
-    // Mode normal : tout afficher, cacher le toggle
-    [catField,emojiField,typeWrap,grpField].forEach(function(el){ if(el) el.style.display=''; });
-    advToggle.style.display = 'none';
-    setTimeout(function(){ document.getElementById('tmplNameInput').focus(); }, 100);
   }
 
+  setTimeout(function(){ document.getElementById('tmplNameInput').focus(); }, 100);
   document.getElementById('templateSaveModal').classList.add('open');
 }
 
@@ -5478,21 +5418,15 @@ function closeSaveTemplate(){
 /* ── Enregistrer / Modifier le template ── */
 function doSaveTemplate(){
   var cat        = document.getElementById('tmplCatInput').value;
-  var type       = document.getElementById('tmplTypeInput').value;
   var groupId    = document.getElementById('tmplGroupInput').value || (_activeGroupId ? String(_activeGroupId) : null);
-  var phaseNom   = groupId ? (document.getElementById('tmplPhaseNomInput').value.trim()||'') : '';
   var phaseOrdre = groupId ? (parseInt(document.getElementById('tmplPhaseOrdreInput').value)||1) : 0;
-  // En mode simplifié, le nom du template = nom de la phase s'il est vide
   var nom = document.getElementById('tmplNameInput').value.trim();
-  if(!nom && phaseNom) nom = (_activeGroupNom ? _activeGroupNom+' — '+phaseNom : phaseNom);
   if(!nom){ alert('Donnez un nom au template.'); return; }
-  // Ré-injecter pour que le reste de doSaveTemplate() le lise correctement
-  document.getElementById('tmplNameInput').value = nom;
 
   if(_tmplEditId){
     // ── Mode édition : PATCH sans toucher aux blocs ──
     var id = _tmplEditId;
-    var patch = { nom:nom, categorie:cat, type:type, emoji:_tmplSelectedEmoji, group_id:groupId, phase_nom:phaseNom, phase_ordre:phaseOrdre };
+    var patch = { nom:nom, categorie:cat, emoji:_tmplSelectedEmoji, group_id:groupId, phase_nom:'', phase_ordre:phaseOrdre };
     if(_progToken && _progUid){
       fetch(SUPA_URL_P+'/rest/v1/templates?id=eq.'+id, {
         method:'PATCH', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
@@ -5504,7 +5438,7 @@ function doSaveTemplate(){
     } else {
       _loadTemplates();
       var t = _templates.find(function(x){ return String(x.id)===String(id); });
-      if(t){ t.nom=nom; t.categorie=cat; t.type=type; t.emoji=_tmplSelectedEmoji; t.group_id=groupId; t.phase_nom=phaseNom; t.phase_ordre=phaseOrdre; _persistTemplates(); }
+      if(t){ t.nom=nom; t.categorie=cat; t.emoji=_tmplSelectedEmoji; t.group_id=groupId; t.phase_nom=''; t.phase_ordre=phaseOrdre; _persistTemplates(); }
       closeSaveTemplate(); renderTemplatesInBuilder(); renderSidebarTemplates(); _showToast('✏️ Template « '+nom+' » mis à jour !');
     }
     return;
@@ -5516,7 +5450,7 @@ function doSaveTemplate(){
     fetch(SUPA_URL_P + '/rest/v1/templates', {
       method: 'POST',
       headers: _sbHeaders(),
-      body: JSON.stringify({ praticien_id:_progUid, nom:nom, categorie:cat, type:type, emoji:_tmplSelectedEmoji, donnees:donnees, group_id:groupId, phase_nom:phaseNom, phase_ordre:phaseOrdre })
+      body: JSON.stringify({ praticien_id:_progUid, nom:nom, categorie:cat, emoji:_tmplSelectedEmoji, donnees:donnees, group_id:groupId, phase_nom:'', phase_ordre:phaseOrdre })
     }).then(function(r){
       if(r.ok){
         _draftClear();
@@ -5532,8 +5466,8 @@ function doSaveTemplate(){
     _loadTemplates();
     _templates.unshift({
       id:'_t'+Math.random().toString(36).slice(2,9),
-      nom:nom, categorie:cat, type:type, emoji:_tmplSelectedEmoji,
-      group_id:groupId||null, phase_nom:phaseNom, phase_ordre:phaseOrdre,
+      nom:nom, categorie:cat, emoji:_tmplSelectedEmoji,
+      group_id:groupId||null, phase_nom:'', phase_ordre:phaseOrdre,
       created_at:new Date().toISOString(),
       _blocs:JSON.parse(JSON.stringify(blocs)),
       _local:true
