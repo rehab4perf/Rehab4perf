@@ -6847,11 +6847,11 @@ function openBuilderNew(){
 }
 
 function closeBuilder(){
-  // B — Alerte si contenu non sauvegardé
   if(blocs && blocs.length && !_builderSaved){
-    if(!confirm('⚠️ La séance contient du contenu non sauvegardé.\n\nFermer quand même ? (le brouillon sera conservé et restaurable à la prochaine ouverture)')){
+    if(!confirm('⚠️ La séance contient du contenu non sauvegardé.\n\nFermer quand même ?')){
       return;
     }
+    _draftClear(); // OK = on abandonne volontairement, pas de restauration
   }
   _exitBuilderMode();
 }
