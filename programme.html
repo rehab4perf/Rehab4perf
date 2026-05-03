@@ -603,6 +603,13 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .exo-row.exo-dragging { opacity:.35; }
 .exo-row.drag-top { box-shadow:inset 0 2px 0 0 var(--accent2); }
 .exo-row.drag-bot { box-shadow:inset 0 -2px 0 0 var(--accent2); }
+/* Drag-and-drop des blocs */
+.bloc-drag-handle { color:rgba(255,255,255,.3); cursor:grab; font-size:.85rem; display:flex; align-items:center; justify-content:center; user-select:none; flex-shrink:0; padding:0 3px; opacity:0; transition:opacity .15s; }
+.bloc-header:hover .bloc-drag-handle { opacity:1; }
+.bloc-drag-handle:active { cursor:grabbing; color:#fff; }
+.bloc.bloc-dragging { opacity:.3; }
+.bloc.bloc-drag-top { box-shadow:0 -3px 0 0 var(--accent2), 0 0 0 1px var(--accent2)20; margin-top:3px; }
+.bloc.bloc-drag-bot { box-shadow:0 3px 0 0 var(--accent2), 0 0 0 1px var(--accent2)20; margin-bottom:3px; }
 .exo-consigne-row { grid-column:1/-1; padding:0 4px 4px 34px; }
 .exo-consigne-ta {
   width:100%; min-height:24px; border:1px dashed transparent; border-radius:4px;
@@ -2403,7 +2410,7 @@ function updateCardioField(id, field, val){
   else _draftSaveLazy();
 }
 
-function _renderCardioBloc(b){
+function _renderCardioBloc(b, idx){
   var isActive = b.id===activeBloc;
   var zOpts = function(sel){
     return CARDIO_ZONES.map(function(z){
@@ -2419,9 +2426,10 @@ function _renderCardioBloc(b){
   var isFrac = b.effort_type==='fractionne';
   var bid = b.id;
 
-  var h = '<div class="bloc cardio-bloc" id="bloc-'+bid+'">';
+  var h = '<div class="bloc cardio-bloc" id="bloc-'+bid+'" draggable="true" ondragstart="blocDragStart(event,'+idx+')" ondragover="blocDragOver(event,this,'+idx+')" ondrop="blocDrop(event,this,'+idx+')" ondragend="blocDragEnd()">';
   // Header
   h += '<div class="bloc-header" data-blocid="'+bid+'" style="opacity:'+(isActive?'1':'.75')+'" onclick="setActiveBloc(\''+bid+'\')">';
+  h += '<span class="bloc-drag-handle" onmousedown="event.stopPropagation()" title="Glisser pour réordonner">⋮⋮</span>';
   h += '<input class="bloc-title-input" value="'+escH(b.title)+'" placeholder="Nom du bloc" oninput="updateBlocTitle(\''+bid+'\',this.value)" onclick="event.stopPropagation()">';
   h += '<span class="cardio-tag">🏃 Cardio</span>';
   h += '<button class="bloc-del-btn" onclick="event.stopPropagation();deleteBloc(\''+bid+'\')" title="Supprimer le bloc"></button>';
@@ -2798,6 +2806,52 @@ function exoDragEnd(){
   });
 }
 
+/* ── Drag-and-drop des blocs ────────────────────────────────────────────── */
+var _blocDrag = { fromIdx: null };
+
+function blocDragStart(e, idx){
+  // Ignorer si le drag vient d'un élément interactif (input, select, button)
+  if(['INPUT','SELECT','TEXTAREA','BUTTON'].indexOf(e.target.tagName) > -1){ e.preventDefault(); return; }
+  _blocDrag.fromIdx = idx;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', String(idx));
+  var el = e.currentTarget;
+  setTimeout(function(){ el.classList.add('bloc-dragging'); }, 0);
+}
+
+function blocDragOver(e, el, idx){
+  if(_blocDrag.fromIdx === null) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  var rect = el.getBoundingClientRect();
+  var before = e.clientY < rect.top + rect.height / 2;
+  document.querySelectorAll('#sessionArea .bloc').forEach(function(b){ b.classList.remove('bloc-drag-top','bloc-drag-bot'); });
+  el.classList.add(before ? 'bloc-drag-top' : 'bloc-drag-bot');
+}
+
+function blocDrop(e, el, toIdx){
+  e.preventDefault();
+  if(_blocDrag.fromIdx === null){ blocDragEnd(); return; }
+  var fromIdx = _blocDrag.fromIdx;
+  var rect = el.getBoundingClientRect();
+  var before = e.clientY < rect.top + rect.height / 2;
+  var insertAt = before ? toIdx : toIdx + 1;
+  if(insertAt > fromIdx) insertAt--;
+  blocDragEnd();
+  if(insertAt === fromIdx) return;
+  var moved = blocs.splice(fromIdx, 1)[0];
+  blocs.splice(insertAt, 0, moved);
+  renderSession();
+  _draftSaveLazy();
+}
+
+function blocDragEnd(){
+  _blocDrag.fromIdx = null;
+  document.querySelectorAll('#sessionArea .bloc').forEach(function(b){
+    b.classList.remove('bloc-dragging','bloc-drag-top','bloc-drag-bot');
+  });
+}
+
 /* ================================================================
    TEMPS ESTIMÉ
    ================================================================ */
@@ -2864,13 +2918,14 @@ function renderSession(){
     return;
   }
   var html = '';
-  blocs.forEach(function(b){
+  blocs.forEach(function(b, idx){
     // ── Bloc Cardio ──
-    if(b.type === 'cardio'){ html += _renderCardioBloc(b); return; }
-    // ── Bloc Renforcement (existant) ──
+    if(b.type === 'cardio'){ html += _renderCardioBloc(b, idx); return; }
+    // ── Bloc Renforcement ──
     var isActive = b.id===activeBloc;
-    html += '<div class="bloc" id="bloc-'+b.id+'">';
+    html += '<div class="bloc" id="bloc-'+b.id+'" draggable="true" ondragstart="blocDragStart(event,'+idx+')" ondragover="blocDragOver(event,this,'+idx+')" ondrop="blocDrop(event,this,'+idx+')" ondragend="blocDragEnd()">';
     html += '<div class="bloc-header" data-blocid="'+b.id+'" style="opacity:'+(isActive?'1':'.8')+'" onclick="setActiveBloc(\''+b.id+'\')">';
+    html += '<span class="bloc-drag-handle" title="Glisser pour réordonner">⋮⋮</span>';
     html += '<input class="bloc-title-input" value="'+escH(b.title)+'" placeholder="Nom du bloc" oninput="updateBlocTitle(\''+b.id+'\',this.value)">';
     html += '<button class="bloc-del-btn" onclick="event.stopPropagation();deleteBloc(\''+b.id+'\')" title="Supprimer le bloc"></button>';
     html += '</div>';
