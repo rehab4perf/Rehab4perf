@@ -6446,7 +6446,7 @@ function duplicateTemplateById(id){
     categorie:  src.categorie  || null,
     group_id:   src.group_id   || null,
     phase_nom:  src.phase_nom  || null,
-    phase_ordre:(src.phase_ordre||0) + 0.5, // après l'original
+    phase_ordre:(src.phase_ordre||0) + 1, // après l'original
     donnees:    src.donnees    || null
   };
   fetch(SUPA_URL_P+'/rest/v1/templates', {
