@@ -6015,6 +6015,10 @@ function loadTemplate(id){
     _refreshSaveBtn();
     var pn = document.getElementById('patientName');
     if(pn) pn.value = t.nom || '';
+    // Marquer l'état chargé comme "sauvegardé" pour éviter la pastille parasite
+    _lastSavedHash = _sessionHash();
+    _builderSaved = true;
+    _refreshDraftBadge();
   }
 
   if(_progToken && _progUid){
