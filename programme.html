@@ -1299,6 +1299,8 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
         <option value="warmup">Warm-up / Mobilité</option>
         <option value="renfo">Renforcement</option>
         <option value="automassage">Auto-massage</option>
+        <option value="etirements">Étirements</option>
+        <option value="neurodynamie">Neurodynamie</option>
         <option value="tests">Tests</option>
       </select>
       <div id="filter-sub-wrap" style="display:none;margin-top:6px;">
@@ -1475,6 +1477,8 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
           <button class="ef-pill" data-type="warmup" onclick="setEfType(this,'warmup')">Warm-up</button>
           <button class="ef-pill" data-type="renfo" onclick="setEfType(this,'renfo')">Renfo</button>
           <button class="ef-pill" data-type="automassage" onclick="setEfType(this,'automassage')">Auto-massage</button>
+          <button class="ef-pill" data-type="etirements" onclick="setEfType(this,'etirements')">Étirements</button>
+          <button class="ef-pill" data-type="neurodynamie" onclick="setEfType(this,'neurodynamie')">Neurodynamie</button>
           <button class="ef-pill" data-type="tests" onclick="setEfType(this,'tests')">Tests</button>
         </div>
         <div class="editor-filters-right">
@@ -3507,10 +3511,12 @@ function renderEditor(){
       return '<option value="'+escH(z)+'"'+(z===e.zone?' selected':'')+'>'+escH(z)+'</option>';
     }).join('');
     var typeOpts = '<option value=""'+((!e.type)?' selected':'')+'>— Aucun —</option>' + [
-      {v:'warmup',      l:'Warm-up / Mobilité'},
-      {v:'renfo',       l:'Renforcement'},
-      {v:'automassage', l:'Auto-massage'},
-      {v:'tests',       l:'Tests'}
+      {v:'warmup',       l:'Warm-up / Mobilité'},
+      {v:'renfo',        l:'Renforcement'},
+      {v:'automassage',  l:'Auto-massage'},
+      {v:'etirements',   l:'Étirements'},
+      {v:'neurodynamie', l:'Neurodynamie'},
+      {v:'tests',        l:'Tests'}
     ].map(function(o){ return '<option value="'+o.v+'"'+(o.v===(e.type||'')?' selected':'')+'>'+o.l+'</option>'; }).join('');
     var allPatterns = ['Triple flexion','Hinge','Poussé vertical','Poussé horizontal','Tirage vertical','Tirage horizontal'];
     var exPatterns = e.patterns || [];
