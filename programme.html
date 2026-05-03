@@ -1297,6 +1297,11 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
         <select class="filter-select" id="filterSub" onchange="applyFilters()">
         </select>
       </div>
+      <div id="filter-sub2-wrap" style="display:none;margin-top:6px;">
+        <div class="filter-label">Articulation</div>
+        <select class="filter-select" id="filterSub2" onchange="applyFilters()">
+        </select>
+      </div>
     </div>
     <div style="padding:6px 14px 8px; background:var(--navy);">
       <div class="filter-label" style="margin-top:0;margin-bottom:3px;">Ajouter au bloc</div>
@@ -1931,19 +1936,33 @@ var AUTOMASSAGE_ZONES = [
   {val:'Upper', label:'Upper'},
   {val:'Lower', label:'Lower'},
 ];
+var RENFO_ZONES = [
+  {val:'ÉPAULE',          label:'Épaule'},
+  {val:'COUDE',           label:'Coude'},
+  {val:'POIGNET',         label:'Poignet'},
+  {val:'HANCHE',          label:'Hanche'},
+  {val:'GENOU',           label:'Genou'},
+  {val:'CHEVILLE',        label:'Cheville'},
+  {val:'PIED',            label:'Pied'},
+  {val:'TRONC',           label:'Tronc / Gainage'},
+  {val:'RACHIS',          label:'Rachis'},
+];
 
 function onTypeChange(){
   var typeVal = document.getElementById('filterType').value;
-  var wrap = document.getElementById('filter-sub-wrap');
-  var subSel = document.getElementById('filterSub');
+  var wrap  = document.getElementById('filter-sub-wrap');
+  var wrap2 = document.getElementById('filter-sub2-wrap');
+  var subSel  = document.getElementById('filterSub');
+  var subSel2 = document.getElementById('filterSub2');
   var subLabel = document.getElementById('filter-sub-label');
-  var opts = [];
+  var opts = [], opts2 = [];
   if(typeVal === 'warmup'){
     subLabel.textContent = 'Articulation';
     opts = WARMUP_ZONES;
   } else if(typeVal === 'renfo'){
     subLabel.textContent = 'Mouvement';
-    opts = RENFO_PATTERNS;
+    opts  = RENFO_PATTERNS;
+    opts2 = RENFO_ZONES;
   } else if(typeVal === 'automassage'){
     subLabel.textContent = 'Zone';
     opts = AUTOMASSAGE_ZONES;
@@ -1957,6 +1976,15 @@ function onTypeChange(){
     wrap.style.display = 'none';
     subSel.innerHTML = '';
   }
+  if(opts2.length){
+    wrap2.style.display = '';
+    subSel2.innerHTML = '<option value="">— Toutes —</option>' + opts2.map(function(o){
+      return '<option value="'+o.val+'">'+o.label+'</option>';
+    }).join('');
+  } else {
+    wrap2.style.display = 'none';
+    subSel2.innerHTML = '';
+  }
   applyFilters();
 }
 
@@ -1966,10 +1994,14 @@ function filterLib(){
 
 function setFilterAll(){
   document.getElementById('filterType').value = '';
-  var subSel = document.getElementById('filterSub');
-  if(subSel) subSel.value = '';
-  var subWrap = document.getElementById('filter-sub-wrap');
-  if(subWrap) subWrap.style.display = 'none';
+  var subSel  = document.getElementById('filterSub');
+  var subSel2 = document.getElementById('filterSub2');
+  if(subSel)  subSel.value  = '';
+  if(subSel2) subSel2.value = '';
+  var subWrap  = document.getElementById('filter-sub-wrap');
+  var subWrap2 = document.getElementById('filter-sub2-wrap');
+  if(subWrap)  subWrap.style.display  = 'none';
+  if(subWrap2) subWrap2.style.display = 'none';
   _favFilter = false;
   document.getElementById('filterFav').classList.remove('active');
   document.getElementById('filterAll').classList.add('active');
@@ -1979,26 +2011,31 @@ function setFilterAll(){
 }
 
 function applyFilters(){
-  var typeVal = document.getElementById('filterType').value;
-  var subSel = document.getElementById('filterSub');
-  var subVal = subSel ? subSel.value : '';
-  var allBtn = document.getElementById('filterAll');
-  if(typeVal || subVal){ allBtn.classList.remove('active'); } else { allBtn.classList.add('active'); }
+  var typeVal  = document.getElementById('filterType').value;
+  var subSel   = document.getElementById('filterSub');
+  var subSel2  = document.getElementById('filterSub2');
+  var subVal   = subSel  ? subSel.value  : '';
+  var subVal2  = subSel2 ? subSel2.value : '';
+  var allBtn   = document.getElementById('filterAll');
+  if(typeVal || subVal || subVal2){ allBtn.classList.remove('active'); } else { allBtn.classList.add('active'); }
   document.getElementById('filterType').classList.toggle('active-filter', !!typeVal);
   var q = document.getElementById('searchInput').value.toLowerCase().trim();
-  renderLib(q, typeVal, subVal);
+  renderLib(q, typeVal, subVal, subVal2);
 }
 
-function renderLib(q, typeFilter, subFilter){
+function renderLib(q, typeFilter, subFilter, subFilter2){
   q = (q||'').toLowerCase();
-  typeFilter = typeFilter !== undefined ? typeFilter : document.getElementById('filterType').value;
-  var subSel = document.getElementById('filterSub');
-  subFilter = subFilter !== undefined ? subFilter : (subSel ? subSel.value : '');
+  typeFilter  = typeFilter  !== undefined ? typeFilter  : document.getElementById('filterType').value;
+  var subSel  = document.getElementById('filterSub');
+  var subSel2 = document.getElementById('filterSub2');
+  subFilter  = subFilter  !== undefined ? subFilter  : (subSel  ? subSel.value  : '');
+  subFilter2 = subFilter2 !== undefined ? subFilter2 : (subSel2 ? subSel2.value : '');
   var scroll = document.getElementById('libScroll');
   var favs = getFavs();
   var visible = LIBRARY.filter(function(ex){
     if(_favFilter && !favs.has(ex.id)) return false;
     if(typeFilter && ex.type!==typeFilter) return false;
+    // Filtre mouvement (renfo uniquement)
     if(subFilter){
       if(typeFilter === 'renfo'){
         if(!ex.patterns || ex.patterns.indexOf(subFilter) === -1) return false;
@@ -2006,26 +2043,27 @@ function renderLib(q, typeFilter, subFilter){
         if(ex.zone !== subFilter && (!ex.zones || ex.zones.indexOf(subFilter)===-1)) return false;
       }
     }
+    // Filtre articulation (renfo uniquement — correspondance par sous-chaîne)
+    if(subFilter2 && typeFilter === 'renfo'){
+      if(!ex.zone || ex.zone.toUpperCase().indexOf(subFilter2) === -1) return false;
+    }
     if(q && ex.name.toLowerCase().indexOf(q)===-1 && ex.zone.toLowerCase().indexOf(q)===-1 && (ex.obj||'').toLowerCase().indexOf(q)===-1) return false;
     return true;
   });
-  // Determine grouping:
-  // - Tous (no typeFilter, no subFilter, no fav, no search) → show all, no headers
-  // - Renfo (no subFilter) → group by pattern
-  // - Renfo + subFilter → single group, no header needed
-  // - Warmup / Automassage (no subFilter) → group by zone
-  // - Warmup / Automassage + subFilter → single group, no header
-  // - Favoris / search → flat list, no headers
+  // Regroupement :
+  // - Renfo sans subFilter → par mouvement (même si subFilter2 actif)
+  // - Warmup / Automassage sans subFilter → par zone
+  // - Tous les autres cas → liste plate
 
-  var hasFilter = !!(typeFilter || subFilter || _favFilter || q);
+  var hasFilter = !!(typeFilter || subFilter || subFilter2 || _favFilter || q);
 
   var groupBy; // 'pattern', 'zone', or 'none'
   if(typeFilter === 'renfo' && !subFilter){
-    groupBy = 'pattern';
+    groupBy = 'pattern'; // regroupé par mouvement, même si filtre articulation actif
   } else if((typeFilter === 'warmup' || typeFilter === 'automassage') && !subFilter){
     groupBy = 'zone';
   } else {
-    groupBy = 'none'; // flat list (Tous, subFilter active, fav, search)
+    groupBy = 'none';
   }
 
   var groups = {};
