@@ -111,14 +111,25 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .stmpl-cat-select.has-filter { background-color:rgba(74,144,217,.4); background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,.6)'/%3E%3C/svg%3E"); }
 .stmpl-cat-badge { display:inline-block; padding:1px 7px; border-radius:10px; font-size:.67rem; font-weight:600; margin-right:4px; vertical-align:middle; }
 
-/* ── Onglets Mes templates / Bibliothèque ── */
-.tmpl-tabs { display:flex; border-bottom:1px solid var(--border); background:#FAFBFD; flex-shrink:0; }
-.tmpl-tab  { flex:1; padding:6px 4px; font-size:.72rem; font-weight:600; color:var(--muted); background:none; border:none; cursor:pointer; letter-spacing:.03em; transition:color .12s, border-bottom .12s; border-bottom:2px solid transparent; }
-.tmpl-tab.active { color:var(--accent2); border-bottom-color:var(--accent2); }
-.tmpl-tab:hover:not(.active) { color:var(--text); }
-/* Badge sur l'onglet bibliothèque */
-.tmpl-tab-badge { display:inline-block; background:var(--accent2); color:#fff; border-radius:8px; font-size:.6rem; padding:1px 5px; margin-left:4px; vertical-align:middle; }
-/* Card bibliothèque */
+/* ── Bibliothèque 2 colonnes (bas du builder) ── */
+.tmpl-lib-header { display:flex; align-items:center; justify-content:space-between; padding:5px 10px 5px 12px; background:#FAFBFD; border-bottom:1px solid var(--border); flex-shrink:0; }
+.tmpl-lib-title { font-size:.71rem; font-weight:700; color:var(--muted); letter-spacing:.05em; text-transform:uppercase; }
+#templatesBuilderArea { display:flex; height:185px; overflow:hidden; }
+.builder-lib-left { width:40%; border-right:1px solid var(--border); overflow-y:auto; flex-shrink:0; background:#FAFBFD; }
+.builder-lib-right { flex:1; overflow-y:auto; }
+.builder-lib-group { display:flex; align-items:center; padding:8px 10px 8px 12px; font-size:.75rem; font-weight:600; cursor:pointer; border-bottom:1px solid var(--border); color:var(--text); transition:background .1s; gap:4px; }
+.builder-lib-group:hover { background:#F0F4FF; }
+.builder-lib-group.active { background:#EEF4FF; color:var(--accent2); }
+.builder-lib-gname { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.builder-lib-gcnt { font-size:.62rem; color:var(--muted); font-weight:400; flex-shrink:0; }
+.builder-lib-group.active .builder-lib-gcnt { color:var(--accent2); }
+.builder-lib-session { display:flex; align-items:center; gap:7px; padding:7px 10px; border-bottom:1px solid var(--border); transition:background .1s; }
+.builder-lib-session:hover { background:#F5F8FF; }
+.builder-lib-sname { font-size:.76rem; font-weight:600; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text); }
+.builder-lib-smeta { font-size:.63rem; color:var(--muted); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.builder-lib-load { flex-shrink:0; background:var(--accent2); border:none; color:#fff; border-radius:5px; padding:3px 9px; font-size:.66rem; cursor:pointer; transition:background .12s; white-space:nowrap; }
+.builder-lib-load:hover { background:#3a80c9; }
+/* Rétrocompatibilité (publish modal etc.) */
 .lib-tmpl-card { display:flex; align-items:center; gap:8px; padding:9px 12px; border-bottom:1px solid var(--border); transition:background .12s; }
 .lib-tmpl-card:hover { background:#F5F8FF; }
 .lib-tmpl-emoji { font-size:1.2rem; flex-shrink:0; }
@@ -127,7 +138,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .lib-tmpl-meta  { font-size:.68rem; color:var(--muted); margin-top:1px; }
 .lib-tmpl-load  { flex-shrink:0; background:var(--accent2); border:none; color:#fff; border-radius:6px; padding:3px 9px; font-size:.68rem; cursor:pointer; transition:background .12s; white-space:nowrap; }
 .lib-tmpl-load:hover { background:#3a80c9; }
-.lib-tmpl-desc  { font-size:.7rem; color:var(--muted); font-style:italic; padding:4px 12px 8px; line-height:1.4; display:none; }
 /* ── Groupes de templates (protocoles) ── */
 .stmpl-group-add-row { padding:6px 10px; background:var(--navy); }
 .stmpl-new-group-btn {
@@ -1546,14 +1556,13 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
     </div>
   </div>
 
-  <!-- Templates section dans le bas du builder -->
+  <!-- Bibliothèque dans le bas du builder -->
   <div style="border-top:1px solid var(--border);flex-shrink:0;">
-    <div class="tmpl-tabs" style="padding-right:6px;">
-      <button class="tmpl-tab active" id="tmplTabMes" onclick="switchTmplTab('mes')">📋 Mes templates</button>
-      <button class="tmpl-tab" id="tmplTabLib" onclick="switchTmplTab('lib')">🌐 Bibliothèque</button>
-      <button id="tmplQuickSaveBtn" onclick="openSaveTemplate()" title="Enregistrer la séance comme template" style="flex-shrink:0;margin:auto 2px auto 4px;padding:3px 9px;background:var(--accent2);border:none;color:#fff;border-radius:6px;font-size:.68rem;font-weight:600;cursor:pointer;white-space:nowrap;line-height:1.4;">＋ Enregistrer</button>
+    <div class="tmpl-lib-header">
+      <span class="tmpl-lib-title">📚 Bibliothèque</span>
+      <button id="tmplQuickSaveBtn" onclick="openSaveTemplate()" title="Enregistrer la séance comme template" style="padding:3px 9px;background:var(--accent2);border:none;color:#fff;border-radius:6px;font-size:.68rem;font-weight:600;cursor:pointer;white-space:nowrap;line-height:1.4;">＋ Enregistrer</button>
     </div>
-    <div id="templatesBuilderArea" style="max-height:200px;overflow-y:auto;"></div>
+    <div id="templatesBuilderArea"></div>
   </div>
 </div>
 
@@ -5441,118 +5450,113 @@ function doSaveTemplate(){
   }
 }
 
-/* ── Afficher les templates dans le bas du builder ── */
-function renderTemplatesInBuilder(){
-  if(_tmplTab === 'lib') return; // ne pas écraser l'onglet bibliothèque
+/* ── Bibliothèque 2 colonnes dans le bas du builder ── */
+var _selectedLibGroup = null;
+
+function renderBuilderLibrary(){
   var area = document.getElementById('templatesBuilderArea');
   if(!area) return;
 
-  function _render(list){
-    if(!list.length){
-      area.innerHTML = '<div style="padding:10px 14px;color:var(--muted);font-size:.77rem;font-style:italic;">Aucun template. Cliquez « + Enregistrer » ci-dessus pour en créer un.</div>';
+  if(_progToken && _progUid){
+    // Si aucune donnée en mémoire, charger d'abord
+    if(!_groups.length && !_sidebarProgs.length){
+      area.innerHTML = '<div style="padding:10px 14px;color:var(--muted);font-size:.77rem;">Chargement…</div>';
+      Promise.all([
+        fetch(SUPA_URL_P+'/rest/v1/template_groups?praticien_id=eq.'+_progUid+'&order=created_at.asc',{headers:_sbHeaders()}).then(function(r){ return r.ok?r.json():null; }),
+        fetch(SUPA_URL_P+'/rest/v1/templates?praticien_id=eq.'+_progUid+'&order=phase_ordre.asc,created_at.desc',{headers:_sbHeaders()}).then(function(r){ return r.ok?r.json():null; })
+      ]).then(function(res){
+        if(Array.isArray(res[0])) _groups=res[0];
+        if(Array.isArray(res[1])) _sidebarProgs=res[1];
+        _renderBuilderLibraryUI();
+      }).catch(function(){ _renderBuilderLibraryUI(); });
       return;
     }
-    area.innerHTML = list.map(function(t){
-      var catSt = _tmplCatStyle(t.categorie||'');
-      var blocs = t._blocs || [];
-      if(!blocs.length && t.donnees){ try { blocs = (JSON.parse(t.donnees).blocs)||[]; } catch(e){} }
-      var nbExos = blocs.reduce(function(a,b){ return a+(b.exos||[]).length; }, 0);
-      var tid = escH(String(t.id));
-      return '<div class="seance-card">'
-        + '<div class="seance-card-header">'
-        + '<span class="seance-card-emoji">' + (t.emoji||'💪') + '</span>'
-        + '<div class="seance-card-info">'
-        + '<div class="seance-card-name">' + escH(t.nom||'Sans nom') + '</div>'
-        + '<div class="seance-card-meta">'
-        + (t.categorie ? '<span class="seance-card-type" style="background:'+catSt.bg+';color:'+catSt.fg+';">' + escH(t.categorie) + '</span>' : '')
-        + (t.type ? '<span class="seance-card-type" style="margin-left:2px;">' + escH(t.type) + '</span>' : '')
-        + '<span>' + nbExos + ' exo' + (nbExos>1?'s':'') + '</span>'
-        + '</div></div>'
-        + '<div class="seance-card-actions">'
-        + '<button class="btn btn-outline" onclick="loadTemplate(\''+tid+'\')" style="font-size:.68rem;padding:3px 8px;">Charger</button>'
-        + (_progToken ? '<button class="tmpl-pub-btn" onclick="openPublishModal(\''+tid+'\')" title="Publier dans la bibliothèque">📚</button>' : '')
-        + '<button onclick="deleteTemplate(\''+tid+'\')" style="background:none;border:none;color:#CBD2DB;cursor:pointer;font-size:1rem;padding:2px 4px;" title="Supprimer">🗑</button>'
-        + '</div></div></div>';
+  } else {
+    _loadGroups(); _loadTemplates();
+    _sidebarProgs = _templates.map(function(t){
+      return {id:t.id, nom:t.nom, emoji:t.emoji, type:t.type, categorie:t.categorie||'',
+              group_id:t.group_id||null, phase_nom:t.phase_nom||'', phase_ordre:t.phase_ordre||0, donnees:t.donnees};
+    });
+  }
+  _renderBuilderLibraryUI();
+}
+
+function _renderBuilderLibraryUI(){
+  var area = document.getElementById('templatesBuilderArea');
+  if(!area) return;
+
+  var groups = _groups || [];
+  var progs  = _sidebarProgs || [];
+
+  // Templates sans protocole = groupe virtuel "Sans protocole"
+  var orphans = progs.filter(function(p){ return !p.group_id; });
+  var allGroups = groups.slice();
+  if(orphans.length) allGroups.push({id:'__orphan__', nom:'Sans protocole', _virtual:true});
+
+  if(!allGroups.length){
+    area.innerHTML = '<div style="padding:18px 14px;color:var(--muted);font-size:.77rem;font-style:italic;text-align:center;">'
+      +'Aucun protocole.<br><span style="font-size:.7rem;">Créez un protocole dans la barre latérale pour commencer.</span></div>';
+    return;
+  }
+
+  // Sélection automatique du premier groupe si besoin
+  if(!_selectedLibGroup || !allGroups.find(function(g){ return String(g.id)===String(_selectedLibGroup); })){
+    _selectedLibGroup = allGroups[0].id;
+  }
+
+  // Colonne gauche : liste des protocoles
+  var leftHtml = allGroups.map(function(g){
+    var gid = String(g.id);
+    var isActive = String(_selectedLibGroup)===gid;
+    var count = gid==='__orphan__' ? orphans.length
+              : progs.filter(function(p){ return String(p.group_id)===gid; }).length;
+    return '<div class="builder-lib-group'+(isActive?' active':'')+'" onclick="_selectLibGroup(\''+escJS(gid)+'\')" title="'+escH(g.nom||'')+'">'
+      +'<span class="builder-lib-gname">'+escH(g.nom||'Sans nom')+'</span>'
+      +'<span class="builder-lib-gcnt">'+count+'</span>'
+      +'</div>';
+  }).join('');
+
+  // Colonne droite : séances du protocole sélectionné
+  var phases = (String(_selectedLibGroup)==='__orphan__' ? orphans
+    : progs.filter(function(p){ return String(p.group_id)===String(_selectedLibGroup); }))
+    .slice().sort(function(a,b){ return (a.phase_ordre||0)-(b.phase_ordre||0); });
+
+  var rightHtml;
+  if(!phases.length){
+    rightHtml = '<div style="padding:18px 10px;color:var(--muted);font-size:.74rem;font-style:italic;text-align:center;">Aucune séance dans ce protocole.</div>';
+  } else {
+    rightHtml = phases.map(function(p){
+      var pid = escH(String(p.id));
+      var nbExos = 0;
+      try{ nbExos=(JSON.parse(p.donnees||'{}').blocs||[]).reduce(function(a,b){ return a+(b.exos||[]).length; },0); }catch(e){}
+      var meta = [];
+      if(p.phase_nom) meta.push(escH(p.phase_nom));
+      if(p.type)      meta.push(escH(p.type));
+      if(nbExos)      meta.push(nbExos+' exo'+(nbExos>1?'s':''));
+      return '<div class="builder-lib-session">'
+        +'<span style="font-size:1.05rem;flex-shrink:0;">'+(p.emoji||'💪')+'</span>'
+        +'<div style="flex:1;min-width:0;">'
+        +'<div class="builder-lib-sname">'+escH(p.nom||'Sans nom')+'</div>'
+        +(meta.length?'<div class="builder-lib-smeta">'+meta.join(' · ')+'</div>':'')
+        +'</div>'
+        +'<button class="builder-lib-load" onclick="loadTemplate(\''+pid+'\');_enterBuilderMode();">Charger</button>'
+        +'</div>';
     }).join('');
   }
 
-  if(_progToken && _progUid){
-    area.innerHTML = '<div style="padding:10px 14px;color:var(--muted);font-size:.77rem;">Chargement…</div>';
-    fetch(SUPA_URL_P + '/rest/v1/templates?praticien_id=eq.' + _progUid + '&order=created_at.desc', {
-      headers: _sbHeaders()
-    })
-    .then(function(r){ return r.json(); })
-    .then(function(data){ _render(Array.isArray(data) ? data : []); })
-    .catch(function(){ area.innerHTML = '<div style="padding:10px 14px;color:#E74C3C;font-size:.77rem;">Erreur chargement.</div>'; });
-  } else {
-    _loadTemplates();
-    _render(_templates);
-  }
+  area.innerHTML = '<div class="builder-lib-left">'+leftHtml+'</div>'
+                 +'<div class="builder-lib-right">'+rightHtml+'</div>';
 }
 
-/* ── Onglets Mes templates / Bibliothèque ── */
-var _tmplTab = 'mes';
-
-function switchTmplTab(tab){
-  _tmplTab = tab;
-  document.getElementById('tmplTabMes').classList.toggle('active', tab==='mes');
-  document.getElementById('tmplTabLib').classList.toggle('active', tab==='lib');
-  if(tab==='mes') renderTemplatesInBuilder();
-  else renderLibraryTemplates();
+function _selectLibGroup(gid){
+  _selectedLibGroup = gid;
+  _renderBuilderLibraryUI();
 }
 
-function renderLibraryTemplates(){
-  var area = document.getElementById('templatesBuilderArea');
-  if(!area) return;
-  if(!_progToken){ area.innerHTML='<div style="padding:10px 14px;color:var(--muted);font-size:.77rem;font-style:italic;">Connexion requise.</div>'; return; }
-  area.innerHTML='<div style="padding:10px 14px;color:var(--muted);font-size:.77rem;">Chargement…</div>';
-  fetch(SUPA_URL_P+'/rest/v1/templates_library?order=categorie.asc,nom.asc&select=id,nom,donnees,type,emoji,categorie,description,published_by', { headers:_sbHeaders() })
-  .then(function(r){ return r.json(); })
-  .then(function(data){
-    if(!Array.isArray(data)||!data.length){
-      area.innerHTML='<div style="padding:16px 14px;text-align:center;color:var(--muted);font-size:.77rem;font-style:italic;">La bibliothèque est vide pour l\'instant.<br><span style="font-size:.7rem;">Publiez un de vos templates avec 📚</span></div>';
-      return;
-    }
-    // Badge avec nb de templates
-    var tabBtn = document.getElementById('tmplTabLib');
-    if(tabBtn) tabBtn.innerHTML = '🌐 Bibliothèque <span class="tmpl-tab-badge">'+data.length+'</span>';
-
-    // Grouper par catégorie
-    var cats = {};
-    data.forEach(function(t){
-      var c = t.categorie||'Autre';
-      if(!cats[c]) cats[c]=[];
-      cats[c].push(t);
-    });
-    var html = '';
-    Object.keys(cats).sort().forEach(function(cat){
-      html += '<div style="padding:5px 12px 2px;font-size:.67rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;background:#F8FAFC;border-bottom:1px solid var(--border);">'+escH(cat)+'</div>';
-      cats[cat].forEach(function(t){
-        var nbExos = 0;
-        try { nbExos = (JSON.parse(t.donnees||'{}').blocs||[]).reduce(function(a,b){ return a+(b.exos||[]).length; },0); } catch(e){}
-        var meta = [];
-        if(t.type) meta.push(escH(t.type));
-        if(nbExos) meta.push(nbExos+' exo'+(nbExos>1?'s':''));
-        if(t.description) meta.push('<em>'+escH(t.description)+'</em>');
-        var isOwn = _progUid && t.published_by === _progUid;
-        var lid = escH(String(t.id));
-        html += '<div class="lib-tmpl-card">'
-          +'<div class="lib-tmpl-emoji">'+(t.emoji||'💪')+'</div>'
-          +'<div class="lib-tmpl-body">'
-          +'<div class="lib-tmpl-name">'+escH(t.nom||'Sans nom')+(isOwn?'<span style="font-size:.6rem;color:var(--accent2);margin-left:5px;font-weight:600;">● moi</span>':'')+'</div>'
-          +(meta.length?'<div class="lib-tmpl-meta">'+meta.join(' · ')+'</div>':'')
-          +'</div>'
-          +'<button class="lib-tmpl-load" onclick="loadLibraryTemplate(\''+lid+'\')">Utiliser</button>'
-          +(isOwn?'<button class="lib-del-btn" onclick="unpublishLibTemplate(\''+lid+'\')" title="Retirer de la bibliothèque">🗑</button>':'')
-          +'</div>';
-      });
-    });
-    area.innerHTML = html;
-  })
-  .catch(function(){
-    area.innerHTML='<div style="padding:10px 14px;color:#E74C3C;font-size:.77rem;">Erreur chargement bibliothèque.</div>';
-  });
-}
+/* ── Aliases rétrocompatibilité ── */
+function renderTemplatesInBuilder(){ renderBuilderLibrary(); }
+function renderLibraryTemplates()  { renderBuilderLibrary(); }
+function switchTmplTab()           { renderBuilderLibrary(); }
 
 /* ── Publier un template dans la bibliothèque ── */
 var _pubTmplData = null; // template en cours de publication
@@ -5602,8 +5606,8 @@ function doPublishTemplate(){
     if(r.ok||r.status===201){
       closePublishModal();
       _showToast('📚 Template publié dans la bibliothèque !');
-      // Rafraîchir si l'onglet lib est actif
-      if(_tmplTab==='lib') renderLibraryTemplates();
+      // Rafraîchir la bibliothèque
+      renderBuilderLibrary();
     } else {
       r.text().then(function(t){ alert('Erreur '+r.status+' : '+t); });
     }
