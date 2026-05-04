@@ -3775,6 +3775,55 @@ function _buildAllTestsHtml() {
   var ijfCS = parseFloat((document.getElementById('ij-f-cs')||{}).value||'');
   if (!isNaN(qfCA) && !isNaN(qfCS)) { var qd = (1-qfCA/qfCS)*100; tfHtml += crItem('Quadriceps deficit', qd.toFixed(1) + '%', qd<=10?'Normal':'Deficit', qd<=10?'ok':'warn'); }
   if (!isNaN(ijfCA) && !isNaN(ijfCS)) { var ijd = (1-ijfCA/ijfCS)*100; tfHtml += crItem('IJ deficit', ijd.toFixed(1) + '%', ijd<=10?'Normal':'Deficit', ijd<=10?'ok':'warn'); }
+  // Drop Jump — Temps contact
+  var djTca = parseFloat((document.getElementById('dj-t-ca')||{}).value||'');
+  var djTcs = parseFloat((document.getElementById('dj-t-cs')||{}).value||'');
+  if (!isNaN(djTca)) tfHtml += crItem('Drop Jump — Temps contact', 'CA='+djTca+'ms   CS='+djTcs+'ms   '+lsiStr(djTca,djTcs), statOf2(lsiCls2(djTca,djTcs)), lsiCls2(djTca,djTcs));
+  // Drop Jump — RSI (calculé, affiché en textContent)
+  var djRsiCAv = ((document.getElementById('dj-rsi-ca')||{}).textContent||'').trim();
+  var djRsiCSv = ((document.getElementById('dj-rsi-cs')||{}).textContent||'').trim();
+  var djRsiLsiv = ((document.getElementById('dj-rsi-lsi')||{}).textContent||'').trim();
+  if (djRsiCAv && djRsiCAv !== '-' && parseFloat(djRsiCAv) > 0) {
+    var rsiCls = lsiCls2(parseFloat(djRsiCAv), parseFloat(djRsiCSv));
+    tfHtml += crItem('Drop Jump — RSI', 'CA='+djRsiCAv+'   CS='+djRsiCSv+'   LSI='+djRsiLsiv, statOf2(rsiCls), rsiCls);
+  }
+  // Pliométrie verticale qualitative
+  var plioqCA2 = 0; var plioqCS2 = 0;
+  for (var pi2=0; pi2<2; pi2++) {
+    var pcaEl = document.getElementById('plioq-ca-'+pi2); if(pcaEl && pcaEl.checked) plioqCA2++;
+    var pcsEl = document.getElementById('plioq-cs-'+pi2); if(pcsEl && pcsEl.checked) plioqCS2++;
+  }
+  if (plioqCA2 > 0 || plioqCS2 > 0) {
+    tfHtml += crItem('Pliométrie verticale (qualitative)', 'CA='+plioqCA2+'/2   CS='+plioqCS2+'/2', plioqCA2===2?'Réussi':'À améliorer', plioqCA2===2?'good':'warn');
+  }
+  tfHtml += obsBlock('plioq-obs-ca','plioq-obs-cs');
+  // SEBT
+  var sebtAntCA2 = parseFloat((document.getElementById('sebt-ant-ca')||{}).value||'');
+  var sebtAntCS2 = parseFloat((document.getElementById('sebt-ant-cs')||{}).value||'');
+  var sebtPmCA2  = parseFloat((document.getElementById('sebt-pm-ca')||{}).value||'');
+  var sebtPmCS2  = parseFloat((document.getElementById('sebt-pm-cs')||{}).value||'');
+  var sebtPlCA2  = parseFloat((document.getElementById('sebt-pl-ca')||{}).value||'');
+  var sebtPlCS2  = parseFloat((document.getElementById('sebt-pl-cs')||{}).value||'');
+  var sebtCompCA2 = ((document.getElementById('sebt-comp-ca')||{}).textContent||'').trim();
+  var sebtCompCS2 = ((document.getElementById('sebt-comp-cs')||{}).textContent||'').trim();
+  if (!isNaN(sebtAntCA2)) tfHtml += crItem('SEBT — Antérieur',       'CA='+sebtAntCA2+'cm   CS='+sebtAntCS2+'cm   '+lsiStr(sebtAntCA2,sebtAntCS2), statOf2(lsiCls2(sebtAntCA2,sebtAntCS2)), lsiCls2(sebtAntCA2,sebtAntCS2));
+  if (!isNaN(sebtPmCA2))  tfHtml += crItem('SEBT — Postéro-médial',  'CA='+sebtPmCA2+'cm   CS='+sebtPmCS2+'cm   '+lsiStr(sebtPmCA2,sebtPmCS2),   statOf2(lsiCls2(sebtPmCA2,sebtPmCS2)),   lsiCls2(sebtPmCA2,sebtPmCS2));
+  if (!isNaN(sebtPlCA2))  tfHtml += crItem('SEBT — Postéro-latéral', 'CA='+sebtPlCA2+'cm   CS='+sebtPlCS2+'cm   '+lsiStr(sebtPlCA2,sebtPlCS2),   statOf2(lsiCls2(sebtPlCA2,sebtPlCS2)),   lsiCls2(sebtPlCA2,sebtPlCS2));
+  if (sebtCompCA2 && sebtCompCA2 !== '-') {
+    tfHtml += crItem('SEBT — Score composite', sebtCompCA2.replace('CA : ','')+' (CA)   '+sebtCompCS2.replace('CS : ','')+' (CS)', '', '');
+  }
+  tfHtml += obsBlock('sebt-obs-ca','sebt-obs-cs');
+  // UQYBT
+  var uqDirs = [{id:'med',label:'Médial'},{id:'il',label:'Inféro-latéral'},{id:'sl',label:'Supéro-latéral'}];
+  for (var ui=0; ui<uqDirs.length; ui++) {
+    var uqD = parseFloat((document.getElementById('uqybt-'+uqDirs[ui].id+'-d')||{}).value||'');
+    var uqG = parseFloat((document.getElementById('uqybt-'+uqDirs[ui].id+'-g')||{}).value||'');
+    var uqDiffTxt = ((document.getElementById('uqybt-'+uqDirs[ui].id+'-diff')||{}).textContent||'').trim();
+    if (!isNaN(uqD) && !isNaN(uqG)) {
+      var uqBad = parseFloat(uqDiffTxt) > 5;
+      tfHtml += crItem('UQYBT — '+uqDirs[ui].label, 'D='+uqD+'cm   G='+uqG+'cm   Diff='+uqDiffTxt, uqBad?'>5% Asymétrie':'OK', uqBad?'warn':'good');
+    }
+  }
   addSec('3. Tests Fonctionnels & Musculaires - Membres Inferieurs', tfHtml);
 
   // 4. Tests MS
