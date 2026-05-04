@@ -4041,7 +4041,7 @@ renderLib('');
           </div>
           <div class="cycle-field" style="grid-column:1/-1;">
             <label>Objectif / Note <span style="font-weight:400;color:#999;">(optionnel)</span></label>
-            <input type="text" id="cycle-note" placeholder="Ex : Retrouver appui bipodal, Focus contrôle moteur…" maxlength="120">
+            <textarea id="cycle-note" placeholder="Ex : Retrouver appui bipodal, Focus contrôle moteur…" rows="1" oninput="autoResizeTa(this)" style="width:100%;border:1px solid #d1d5db;border-radius:6px;padding:6px 8px;font-size:.82rem;font-family:inherit;color:var(--text);resize:none;overflow:hidden;outline:none;box-sizing:border-box;"></textarea>
           </div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -4153,7 +4153,8 @@ function addCycle(){
   if(typeof renderCalendar === 'function') renderCalendar();
   // Réinitialiser le formulaire et pré-calculer la prochaine date
   document.getElementById('cycle-nom').value = '';
-  document.getElementById('cycle-note').value = '';
+  var cnEl = document.getElementById('cycle-note');
+  cnEl.value = ''; cnEl.style.height = '';
   clearCycleNameBtns();
   _cycleAutoDate();
   var h3 = document.querySelector('.cycle-add-section h3');
@@ -4173,7 +4174,9 @@ function editCycle(id){
   document.getElementById('cycle-duree').value = c.duree;
   document.getElementById('cycle-duree-display').textContent = c.duree + (c.duree===1?' semaine':' semaines');
   document.getElementById('cycle-start').value = c.startDate || '';
-  document.getElementById('cycle-note').value = c.note || '';
+  var cnEl2 = document.getElementById('cycle-note');
+  cnEl2.value = c.note || '';
+  requestAnimationFrame(function(){ autoResizeTa(cnEl2); });
   // Sélectionner le bon bouton de nom
   clearCycleNameBtns();
   document.querySelectorAll('.cycle-name-btn').forEach(function(btn){
