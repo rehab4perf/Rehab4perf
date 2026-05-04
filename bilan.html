@@ -302,6 +302,9 @@ body {
 .block-header.green  { background: var(--green); }
 .block-header.red    { background: var(--red); }
 .block-header.grey   { background: #52514E; }
+.cr-toggle-label { margin-left:auto; display:inline-flex; align-items:center; gap:5px; font-size:.7rem; font-weight:500; color:rgba(255,255,255,.75); cursor:pointer; white-space:nowrap; text-transform:none; letter-spacing:0; }
+.cr-toggle-label input[type=checkbox] { width:14px; height:14px; accent-color:#4ade80; cursor:pointer; flex-shrink:0; }
+.cr-toggle-label:has(input:checked) { color:#4ade80; font-weight:700; }
 .block-header.light  { background: var(--surface2); color: var(--text); border-bottom: 1px solid var(--border); }
 
 /* ── Form elements ───────────────────────────────────────── */
@@ -1723,7 +1726,9 @@ textarea { resize:none !important; overflow:hidden !important; }
 
 <!-- RÉCEPTION -->
 <div class="block">
-  <div class="block-header">③ Test de Réception — 80% Hop Test — Score /3</div>
+  <div class="block-header">③ Test de Réception — 80% Hop Test — Score /3
+    <label class="cr-toggle-label"><input type="checkbox" id="rec-cr-toggle"> ✓ Inclure dans le CR</label>
+  </div>
   <div style="padding:8px 14px 4px;font-size:.82rem;color:var(--text2)">Cocher les critères réussis. <strong>0/3 = non réussi · 1-2/3 = à améliorer · 3/3 = réussi</strong></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);margin-bottom:1px">
     <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ SAIN</div>
@@ -1752,7 +1757,9 @@ textarea { resize:none !important; overflow:hidden !important; }
 
 <!-- PLIOMÉTRIE QUALITATIVE -->
 <div class="block">
-  <div class="block-header">④ Pliométrie Verticale Qualitative</div>
+  <div class="block-header">④ Pliométrie Verticale Qualitative
+    <label class="cr-toggle-label"><input type="checkbox" id="plioq-cr-toggle"> ✓ Inclure dans le CR</label>
+  </div>
   <div style="padding:8px 14px 4px;font-size:.82rem;color:var(--accent2);background:var(--accent-l);font-weight:500">
     Objectif : temps de contact au sol le + bref possible ET hauteur de saut la + haute possible (rebond type corde à sauter, intensité max)
   </div>
@@ -3404,6 +3411,9 @@ function calcRec() {
   };
   setScore(document.getElementById('rec-score-ca'), document.getElementById('rec-status'), scoreCA, n);
   setScore(document.getElementById('rec-score-cs'), document.getElementById('rec-status-cs'), scoreCS, n);
+  // Auto-activer le toggle CR dès qu'une case est cochée
+  var recTog = document.getElementById('rec-cr-toggle');
+  if (recTog && (scoreCA > 0 || scoreCS > 0)) recTog.checked = true;
 }
 
 function calcPlioq() {
@@ -3754,7 +3764,8 @@ function _buildAllTestsHtml() {
     var cElCA = document.getElementById('rec-ca-'+ci); if (cElCA && cElCA.checked) scoreCA2++;
     var cElCS = document.getElementById('rec-cs-'+ci); if (cElCS && cElCS.checked) scoreCS2++;
   }
-  if (scoreCA2 > 0 || scoreCS2 > 0) {
+  var recCrToggle = document.getElementById('rec-cr-toggle');
+  if ((recCrToggle && recCrToggle.checked) || scoreCA2 > 0 || scoreCS2 > 0) {
     var rclsCA = scoreCA2===recN?'good':scoreCA2>0?'warn':'bad';
     tfHtml += crItem('Réception — 80% Hop Test',
       'CA='+scoreCA2+'/'+recN+'   CS='+scoreCS2+'/'+recN,
@@ -3803,10 +3814,8 @@ function _buildAllTestsHtml() {
     if(pcaEl && pcaEl.checked){ plioqCA2++; plioqTouched = true; }
     if(pcsEl && pcsEl.checked){ plioqCS2++; plioqTouched = true; }
   }
-  // Détecter si le test a été évalué même à 0/2 (stat mis à jour = différent de "—")
-  var plioqStatCA = ((document.getElementById('plioq-stat-ca')||{}).textContent||'').trim();
-  if (!plioqTouched && plioqStatCA && plioqStatCA !== '—') plioqTouched = true;
-  if (plioqTouched) {
+  var plioqCrToggle = document.getElementById('plioq-cr-toggle');
+  if ((plioqCrToggle && plioqCrToggle.checked) || plioqTouched) {
     tfHtml += crItem('Pliométrie verticale (qualitative)', 'CA='+plioqCA2+'/2   CS='+plioqCS2+'/2', plioqCA2===2?'Réussi':'À améliorer', plioqCA2===2?'good':'warn');
   }
   tfHtml += obsBlock('plioq-obs-ca','plioq-obs-cs');
@@ -4531,6 +4540,9 @@ function calcPlioq2() {
   };
   setScore(elCA_stat, scores.ca);
   setScore(elCS_stat, scores.cs);
+  // Auto-activer le toggle CR dès qu'une case est cochée
+  var plioqTog = document.getElementById('plioq-cr-toggle');
+  if (plioqTog && (scores.ca > 0 || scores.cs > 0)) plioqTog.checked = true;
 }
 
 function calcSideHop() {
