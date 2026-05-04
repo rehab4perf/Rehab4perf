@@ -497,6 +497,52 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 }
 .builder-save-btn:hover { background:#245097; }
 .builder-save-btn:disabled { opacity:.6; cursor:default; }
+.builder-update-btn {
+  background:#2D6A4F; border:none; color:#fff; border-radius:7px;
+  padding:5px 13px; font-size:.74rem; font-weight:600; cursor:pointer;
+  font-family:inherit; white-space:nowrap; transition:background .15s;
+  max-width:170px; overflow:hidden; text-overflow:ellipsis;
+}
+.builder-update-btn:hover { background:#215239; }
+.builder-update-btn:disabled { opacity:.6; cursor:default; }
+
+/* ── Save Destination Modal ── */
+#saveDestOverlay {
+  display:none; position:fixed; inset:0; z-index:9500;
+  background:rgba(0,0,0,.5); backdrop-filter:blur(3px);
+  align-items:center; justify-content:center;
+}
+#saveDestOverlay.open { display:flex; }
+#saveDestModal {
+  background:#fff; border-radius:12px; width:100%; max-width:400px;
+  margin:16px; box-shadow:0 12px 48px rgba(0,0,0,.28); overflow:hidden;
+}
+.sdm-header {
+  background:#1A3A5C; color:#fff; padding:14px 18px;
+  display:flex; align-items:center; gap:10px;
+}
+.sdm-header h2 { flex:1; font-size:.92rem; font-weight:700; margin:0; }
+.sdm-header button {
+  background:none; border:none; color:rgba(255,255,255,.7);
+  font-size:1.3rem; cursor:pointer; line-height:1; padding:0;
+}
+.sdm-tiles {
+  display:grid; grid-template-columns:repeat(3,1fr); gap:12px;
+  padding:20px 18px 10px;
+}
+.sdm-tile {
+  border:2px solid #e5e7eb; border-radius:10px; padding:16px 8px;
+  text-align:center; cursor:pointer; transition:border-color .15s, background .15s;
+  user-select:none;
+}
+.sdm-tile:hover { border-color:#2B5FA6; background:#f0f5ff; }
+.sdm-tile.active { border-color:#2B5FA6; background:#eef4ff; }
+.sdm-tile-icon { font-size:1.5rem; margin-bottom:6px; }
+.sdm-tile-label { font-size:.71rem; font-weight:600; color:#374151; line-height:1.3; }
+.sdm-hint {
+  font-size:.72rem; color:#6b7280; text-align:center;
+  padding:4px 18px 18px; min-height:24px; margin:0;
+}
 .builder-body { flex:1; overflow-y:auto; display:flex; flex-direction:column; }
 
 /* ── Exo rows inside builder panel: layout compact 2 rows ── */
@@ -1373,6 +1419,31 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   </div>
 </div>
 
+<!-- ═══════ SAVE DESTINATION MODAL ═══════ -->
+<div id="saveDestOverlay" onclick="if(event.target===this)_closeSaveDest()">
+  <div id="saveDestModal">
+    <div class="sdm-header">
+      <h2>💾 Sauvegarder la séance</h2>
+      <button onclick="_closeSaveDest()">✕</button>
+    </div>
+    <div class="sdm-tiles">
+      <div class="sdm-tile" id="sdm-tile-protocol" onclick="_saveDest('protocol')">
+        <div class="sdm-tile-icon">📁</div>
+        <div class="sdm-tile-label">Dans un protocole</div>
+      </div>
+      <div class="sdm-tile" id="sdm-tile-template" onclick="_saveDest('template')">
+        <div class="sdm-tile-icon">📋</div>
+        <div class="sdm-tile-label">Template standalone</div>
+      </div>
+      <div class="sdm-tile" id="sdm-tile-patient" onclick="_saveDest('patient')">
+        <div class="sdm-tile-icon">👤</div>
+        <div class="sdm-tile-label">Programme patient</div>
+      </div>
+    </div>
+    <p class="sdm-hint" id="sdm-hint"></p>
+  </div>
+</div>
+
 <!-- ═══════ TEMPLATE SAVE MODAL ═══════ -->
 <div class="tmpl-save-overlay" id="templateSaveModal">
   <div class="tmpl-save-modal">
@@ -1529,6 +1600,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
     <span id="builderDraftBadge" style="display:none;font-size:.65rem;background:#F59E0B;color:#fff;border-radius:10px;padding:2px 7px;font-weight:700;letter-spacing:.03em;flex-shrink:0;">● non sauvegardé</span>
     <div style="display:flex;align-items:center;gap:6px;">
       <button class="builder-save-btn" id="prog-cloud-save-btn" onclick="_builderSaveBtnClick()">💾 Sauvegarder</button>
+      <button class="builder-update-btn" id="prog-update-btn" onclick="_doUpdateTemplate()" style="display:none" title="">🔄 Mettre à jour</button>
       <button class="builder-plan-btn" onclick="openPlanModal()">📅 Planifier</button>
       <button class="builder-share-btn" id="prog-share-btn" onclick="shareBuilderProg()">📤 Partager</button>
       <button class="btn btn-outline" onclick="openProgHistory()" style="font-size:.72rem;padding:4px 9px;white-space:nowrap;">📂 Programmes</button>
@@ -3779,16 +3851,15 @@ function saveProgToCloud(){
     .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, status:r.status, data:d}; }); })
     .then(function(res){
       btn.disabled = false;
-      if(!res.ok){ btn.textContent='☁️ Sauvegarder'; btn.disabled=false; _handleApiError(res.status, res.data, 'sauvegarde séance'); return; }
+      if(!res.ok){ btn.disabled=false; _refreshSaveBtn(); _handleApiError(res.status, res.data, 'sauvegarde séance'); return; }
       var d = Array.isArray(res.data) ? res.data[0] : res.data;
       if(!_currentProgId && d && d.id) _currentProgId = d.id;
       _draftClear();
-      btn.textContent = '✓ Sauvegardé !';
-      setTimeout(function(){ btn.textContent='☁️ Sauvegarder'; }, 2500);
+      _showToast('✓ Programme sauvegardé !');
+      btn.disabled = false; _refreshSaveBtn();
     })
     .catch(function(err){
-      btn.disabled = false;
-      btn.textContent = '☁️ Sauvegarder';
+      btn.disabled = false; _refreshSaveBtn();
       alert('Erreur réseau : '+(err&&err.message||err));
     });
 }
@@ -5914,35 +5985,86 @@ function _refreshDraftBadge(){
 }
 
 // ── Bouton save contextuel ───────────────────────────────────────────────────
+/* ── Destination de sauvegarde ── */
+function openSaveDest(){
+  if(!blocs || !blocs.length){ alert('La séance est vide.'); return; }
+  // Hint contextuel
+  var hint = '';
+  if(_activeGroupId){
+    hint = 'Protocole actif : « ' + (_activeGroupNom||'') + ' »';
+  } else if(_builderFromTemplate){
+    var _tCur = (_sidebarProgs||[]).find(function(x){ return String(x.id)===String(_builderFromTemplate); });
+    if(_tCur) hint = 'Template chargé : « ' + (_tCur.nom||'Template') + ' »';
+  } else if(_progPatient){
+    hint = 'Patient : ' + ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim();
+  }
+  document.getElementById('sdm-hint').textContent = hint;
+  // Pré-sélection de la tuile
+  ['protocol','template','patient'].forEach(function(k){
+    document.getElementById('sdm-tile-'+k).classList.remove('active');
+  });
+  if(_activeGroupId){
+    document.getElementById('sdm-tile-protocol').classList.add('active');
+  } else if(_progPatient){
+    document.getElementById('sdm-tile-patient').classList.add('active');
+  } else {
+    document.getElementById('sdm-tile-template').classList.add('active');
+  }
+  document.getElementById('saveDestOverlay').classList.add('open');
+}
+
+function _closeSaveDest(){
+  document.getElementById('saveDestOverlay').classList.remove('open');
+}
+
+function _saveDest(dest){
+  _closeSaveDest();
+  if(dest === 'protocol'){
+    if(_activeGroupId){
+      _openTmplModal({ emoji:_tmplSelectedEmoji, groupId:_activeGroupId, phaseOrdre:_activePhaseOrdre, _simplified:true });
+    } else {
+      // Ouvre le modal template — l'utilisateur choisit le protocole dans le sélecteur
+      _openTmplModal({ emoji:_tmplSelectedEmoji });
+    }
+  } else if(dest === 'template'){
+    _openTmplModal({ emoji:_tmplSelectedEmoji });
+  } else {
+    saveProgToCloud();
+  }
+}
+
 function _builderSaveBtnClick(){
-  if(_activeGroupId){ openSaveTemplate(); return; }
-  if(_builderFromTemplate) _doUpdateTemplate();
-  else saveProgToCloud();
+  openSaveDest();
 }
 
 function _refreshSaveBtn(){
   var btn = document.getElementById('prog-cloud-save-btn');
+  var updBtn = document.getElementById('prog-update-btn');
   if(!btn) return;
-  if(_activeGroupId){
-    btn.textContent = '📋 Enregistrer la phase';
-    btn.title = 'Enregistrer comme phase dans « ' + _activeGroupNom + ' »';
-    btn.style.background = '#2D6A4F';
-  } else if(_builderFromTemplate){
-    btn.textContent = '🔄 Mettre à jour';
-    btn.title = 'Mettre à jour le template';
-    btn.style.background = '';
-  } else {
-    btn.textContent = '💾 Sauvegarder';
-    btn.title = '';
-    btn.style.background = '';
+  // Le bouton "Sauvegarder" ouvre toujours le modal de destination
+  btn.textContent = '💾 Sauvegarder';
+  btn.title = '';
+  btn.style.background = '';
+  // Bouton "Mettre à jour" — visible uniquement quand un template est chargé
+  if(updBtn){
+    if(_builderFromTemplate){
+      var _tRef = (_sidebarProgs||[]).find(function(x){ return String(x.id)===String(_builderFromTemplate); });
+      var _tName = _tRef ? (_tRef.nom||'Template') : 'Template';
+      var _tLabel = _tName.length > 20 ? _tName.substring(0,19)+'…' : _tName;
+      updBtn.textContent = '🔄 ' + _tLabel;
+      updBtn.title = 'Mettre à jour « ' + _tName + ' »';
+      updBtn.style.display = '';
+    } else {
+      updBtn.style.display = 'none';
+    }
   }
 }
 
 function _doUpdateTemplate(){
-  if(!_builderFromTemplate){ saveProgToCloud(); return; }
+  if(!_builderFromTemplate){ openSaveDest(); return; }
   if(!_progToken || !_progUid){ alert('Session non disponible.'); return; }
-  var btn = document.getElementById('prog-cloud-save-btn');
-  btn.disabled = true; btn.textContent = '⏳ Mise à jour…';
+  var btn = document.getElementById('prog-update-btn');
+  if(btn){ btn.disabled = true; btn.textContent = '⏳…'; }
   var nomProg = (document.getElementById('patientName')||{}).value || '';
   var donnees = JSON.stringify({ blocs: JSON.parse(JSON.stringify(blocs||[])), notes: getNotes() });
   fetch(SUPA_URL_P + '/rest/v1/templates?id=eq.' + _builderFromTemplate, {
@@ -5952,15 +6074,16 @@ function _doUpdateTemplate(){
   })
   .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, status:r.status, data:d}; }); })
   .then(function(res){
-    btn.disabled = false;
-    if(!res.ok){ btn.textContent='🔄 Mettre à jour'; btn.disabled=false; _handleApiError(res.status, res.data, 'mise à jour template'); return; }
-    btn.textContent = '✓ Mis à jour !';
-    setTimeout(function(){ btn.textContent='🔄 Mettre à jour'; }, 2500);
+    if(btn) btn.disabled = false;
+    if(!res.ok){ _refreshSaveBtn(); _handleApiError(res.status, res.data, 'mise à jour template'); return; }
+    _showToast('✓ Template mis à jour !');
     _draftClear();
+    _refreshSaveBtn();
     renderSidebarTemplates();
   })
   .catch(function(err){
-    btn.disabled = false; btn.textContent = '🔄 Mettre à jour';
+    if(btn) btn.disabled = false;
+    _refreshSaveBtn();
     alert('Erreur réseau : '+(err&&err.message||err));
   });
 }
