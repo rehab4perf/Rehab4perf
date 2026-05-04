@@ -3014,7 +3014,11 @@ function _resetBilanFields(){
   document.querySelectorAll('input[type=checkbox],input[type=radio]').forEach(function(c){ c.checked=false; });
   try{ var fd=document.getElementById('f-date'); if(fd) fd.value=new Date().toISOString().split('T')[0]; }catch(ex){}
   _painZones=[]; renderPainZones();
-  try{ updateAll(); }catch(ex){} try{ calcRec(); }catch(ex){}
+  // Recalculer TOUTES les fonctions d'affichage dérivées (LSI, RSI, déficits, badges…)
+  try{ updateAll(); calcRec(); calcPlioq(); }catch(ex){}
+  try{ ['sls','hop','pset','set'].forEach(function(k){ calcLSI(k); }); calcDJ(); calcLunge(); calcMusc(); }catch(ex){}
+  try{ calcPlioq2(); calcSEBT(); calcUQYBT(); }catch(ex){}
+  try{ updateBadges(); }catch(ex){}
   _suppressDirty = false;
   _bilanModified = false;
   _refreshCRIfVisible();
