@@ -974,7 +974,7 @@ body {
           </div>
           <div class="presc-field">
             <label>Prénom</label>
-            <input type="text" id="presc-prenom" placeholder="Prénom" oninput="updatePrescDoc()">
+            <input type="text" id="presc-prenom" placeholder="Prénom" oninput="this.value=this.value.replace(/^\w/,function(c){return c.toUpperCase();});updatePrescDoc()">
           </div>
         </div>
         <div class="presc-field-row">
