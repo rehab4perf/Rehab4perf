@@ -367,8 +367,9 @@ var _patientId = '';
 var _progId = '';
 var _calYear = new Date().getFullYear();
 var _calMonth = new Date().getMonth();
-var _calView = 'month'; // 'month' | 'week'
+var _calView = 'month'; // 'month' | 'week' | 'day'
 var _calWeekStart = _getMonday(new Date()); // Lundi de la semaine courante
+var _calDayDate   = (function(){ var d=new Date(); d.setHours(0,0,0,0); return d; }()); // Jour affiché
 var _calEvents = []; // [{id, date, programme_id, programmes:{nom}}]
 var _calCycles = []; // cycles du patient depuis patient_settings
 
@@ -479,10 +480,17 @@ function renderCalendar(){
 function setCalView(view){
   _calView = view;
   if(view === 'week'){
-    // Aller à la semaine qui contient le milieu du mois affiché
     _calWeekStart = _getMonday(new Date(_calYear, _calMonth, 15));
-  } else {
-    // Aller au mois qui contient le début de la semaine affichée
+    _calDayDate   = new Date(_calWeekStart);
+  } else if(view === 'day'){
+    // Aller au jour du milieu du mois / de la semaine courante
+    if(_calView === 'month' || arguments[1] === 'from-month'){
+      _calDayDate = new Date(_calYear, _calMonth, new Date().getDate() || 1);
+    }
+    _calWeekStart = _getMonday(_calDayDate);
+    _calYear  = _calDayDate.getFullYear();
+    _calMonth = _calDayDate.getMonth();
+  } else { // month
     _calYear  = _calWeekStart.getFullYear();
     _calMonth = _calWeekStart.getMonth();
   }
@@ -490,15 +498,33 @@ function setCalView(view){
 }
 
 function goToToday(){
-  var now = new Date();
-  _calYear  = now.getFullYear();
-  _calMonth = now.getMonth();
+  var now = new Date(); now.setHours(0,0,0,0);
+  _calYear      = now.getFullYear();
+  _calMonth     = now.getMonth();
   _calWeekStart = _getMonday(now);
+  _calDayDate   = new Date(now);
+  _renderCalGrid();
+}
+
+function jumpToDay(dateStr){
+  var d = new Date(dateStr); d.setHours(0,0,0,0);
+  _calDayDate   = d;
+  _calWeekStart = _getMonday(d);
+  _calYear  = d.getFullYear();
+  _calMonth = d.getMonth();
+  _calView  = 'day';
   _renderCalGrid();
 }
 
 function calMove(dir){
-  if(_calView === 'week'){
+  if(_calView === 'day'){
+    var dd = new Date(_calDayDate);
+    dd.setDate(dd.getDate() + dir);
+    _calDayDate   = dd;
+    _calWeekStart = _getMonday(dd);
+    _calYear  = dd.getFullYear();
+    _calMonth = dd.getMonth();
+  } else if(_calView === 'week'){
     var ws = new Date(_calWeekStart);
     ws.setDate(ws.getDate() + dir * 7);
     _calWeekStart = ws;
@@ -520,6 +546,7 @@ function _buildCalNav(label){
     + '<div class="view-toggle">'
     + '<button class="view-btn'+(_calView==='month'?' active':'')+'" onclick="setCalView(\'month\')">📅 Mois</button>'
     + '<button class="view-btn'+(_calView==='week'?' active':'')+'" onclick="setCalView(\'week\')">📋 Sem.</button>'
+    + '<button class="view-btn'+(_calView==='day'?' active':'')+'" onclick="setCalView(\'day\')">📆 Jour</button>'
     + '</div>'
     + '</div>';
 }
@@ -550,9 +577,12 @@ function _buildUpcomingHtml(){
   return html + '</div>';
 }
 
-/* ── Rendu principal — dispatch mois / semaine ── */
+/* ── Rendu principal — dispatch mois / semaine / jour ── */
 function _renderCalGrid(){
-  var html = (_calView === 'week') ? _buildWeekHtml() : _buildMonthHtml();
+  var html;
+  if(_calView === 'week')     html = _buildWeekHtml();
+  else if(_calView === 'day') html = _buildDayHtml();
+  else                        html = _buildMonthHtml();
   html += _buildUpcomingHtml();
   document.getElementById('mainContent').innerHTML = html;
 }
@@ -592,7 +622,7 @@ function _buildMonthHtml(){
         cycleChips += '<div style="font-size:.58rem;font-weight:700;color:#fff;background:'+col+';border-radius:3px;padding:1px 4px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+escH(cy.nom)+' — Semaine '+weekNum+'/'+cy.duree+'">'+escH(cy.nom)+' S'+weekNum+'</div>';
       }
     });
-    cells += '<div class="cal-day'+(isToday?' today':'')+'">'
+    cells += '<div class="cal-day'+(isToday?' today':'')+'" onclick="jumpToDay(\''+dateStr+'\')">'
            + '<div class="cal-day-num">'+d+'</div>'
            + chips+cycleChips+'</div>';
   }
@@ -630,7 +660,7 @@ function _buildWeekHtml(){
     var dow = day.getDay()===0 ? 6 : day.getDay()-1; // 0=Lun … 6=Dim
     var dayEvs = _calEvents.filter(function(e){ return e.date===dateStr; });
 
-    html += '<div class="week-col'+(isToday?' today':'')+'"><div class="week-col-header">'
+    html += '<div class="week-col'+(isToday?' today':'')+'"><div class="week-col-header" onclick="jumpToDay(\''+dateStr+'\')" style="cursor:pointer;" title="Voir le détail du jour">'
           + '<div class="week-day-name">'+DAYS[dow]+'</div>'
           + '<div class="week-day-num'+(isToday?' today':'')+'">'+day.getDate()+'</div>'
           + '</div><div class="week-col-body">';
@@ -659,6 +689,66 @@ function _buildWeekHtml(){
     html += '</div></div>';
   });
   html += '</div>';
+  return html;
+}
+
+/* ── Vue JOUR ── */
+function _buildDayHtml(){
+  var DAYS_FULL = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  var MOIS_COURTS = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  var today = new Date(); today.setHours(0,0,0,0);
+  var day = _calDayDate;
+  var isToday = day.getTime() === today.getTime();
+  var dateStr = day.getFullYear()+'-'+String(day.getMonth()+1).padStart(2,'0')+'-'+String(day.getDate()).padStart(2,'0');
+  var navLabel = DAYS_FULL[day.getDay()]+' '+day.getDate()+' '+MOIS_COURTS[day.getMonth()]+' '+day.getFullYear();
+  var dayEvs = _calEvents.filter(function(e){ return e.date===dateStr; });
+
+  var html = _buildCalNav(navLabel);
+
+  // Badge jour actuel
+  if(isToday){
+    html += '<div style="text-align:center;font-size:.72rem;font-weight:700;color:var(--accent);margin-bottom:10px;letter-spacing:.04em;">— Aujourd\'hui —</div>';
+  }
+
+  // Cycles actifs ce jour
+  var cyclesHtml = '';
+  _calCycles.forEach(function(cy){
+    if(!cy.startDate) return;
+    var cyStart = new Date(cy.startDate); cyStart.setHours(0,0,0,0);
+    var cyEnd = new Date(cyStart); cyEnd.setDate(cyEnd.getDate()+cy.duree*7);
+    if(day>=cyStart && day<cyEnd){
+      var weekNum = Math.floor((day-cyStart)/(7*24*3600*1000))+1;
+      var col = _cycleColor(cy.nom);
+      cyclesHtml += '<div style="background:'+col+';color:#fff;border-radius:8px;padding:8px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;">'
+        + '<span style="font-size:.8rem;font-weight:700;">⚡ '+escH(cy.nom)+'</span>'
+        + '<span style="font-size:.72rem;opacity:.85;margin-left:auto;">Semaine '+weekNum+' / '+cy.duree+'</span>'
+        + '</div>';
+    }
+  });
+  if(cyclesHtml) html += cyclesHtml;
+
+  // Séances du jour
+  if(!dayEvs.length){
+    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:36px 16px;text-align:center;color:var(--muted);">'
+          + '<div style="font-size:2rem;margin-bottom:10px;">😴</div>'
+          + '<div style="font-size:.88rem;font-weight:600;">Pas de séance prévue ce jour</div>'
+          + '</div>';
+  } else {
+    dayEvs.forEach(function(ev){
+      var nom = (ev.programmes&&ev.programmes.nom)||'Programme';
+      var fb = ev.athlete_feedback;
+      var ua = (fb&&fb.rpe&&fb.duree_min) ? fb.rpe*fb.duree_min : null;
+      var uaTag = ua ? '<span style="font-size:.75rem;font-weight:800;color:'+_uaColor(ua)+';background:#F5F7FA;border-radius:6px;padding:3px 9px;">⚡ '+ua+' UA</span>' : '';
+      html += '<div style="background:var(--surface);border:2px solid var(--accent);border-radius:12px;padding:16px;margin-bottom:10px;cursor:pointer;transition:box-shadow .15s;" onclick="openProgModal(\''+escH(ev.programme_id)+'\',\''+escH(nom)+'\',\''+escH(ev.id)+'\')" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(43,95,166,.18)\'" onmouseout="this.style.boxShadow=\'none\'">'
+            + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">'
+            + '<div style="font-size:1rem;font-weight:700;color:var(--navy);flex:1;">📋 '+escH(nom)+'</div>'
+            + uaTag
+            + '</div>'
+            + '<div style="font-size:.75rem;color:var(--accent);font-weight:600;">Voir le programme  ›</div>'
+            + '</div>';
+    });
+  }
+
   return html;
 }
 
