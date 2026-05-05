@@ -290,6 +290,34 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .exo-edit-row input:focus, .exo-edit-row select:focus { border-color:var(--accent2); background:#fff; }
 .exo-del-edit { background:none; border:none; color:#CBD2DB; cursor:pointer; font-size:1.1rem; padding:2px 4px; }
 .exo-del-edit:hover { color:#E74C3C; }
+/* ── Zone multi-select ── */
+.zone-ms-wrap { position:relative; }
+.zone-ms-btn {
+  width:100%; padding:4px 7px; border:1px solid var(--border); border-radius:5px;
+  font-size:.74rem; color:var(--text); background:#FAFBFD; cursor:pointer;
+  text-align:left; font-family:inherit; display:flex; align-items:center;
+  justify-content:space-between; gap:3px; overflow:hidden;
+}
+.zone-ms-btn:focus, .zone-ms-btn.open { border-color:var(--accent2); background:#fff; outline:none; }
+.zone-ms-btn-label { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.zone-ms-btn-arrow { color:var(--muted); font-size:.6rem; flex-shrink:0; }
+.zone-ms-pop {
+  display:none; position:absolute; top:calc(100% + 2px); left:0; z-index:900;
+  background:#fff; border:1px solid #d1d9e6; border-radius:8px;
+  box-shadow:0 4px 20px rgba(0,0,0,.13); min-width:190px; padding:4px 0;
+}
+.zone-ms-pop.open { display:block; }
+.zone-ms-item {
+  display:flex; align-items:center; gap:8px;
+  padding:5px 12px; font-size:.74rem; cursor:pointer; user-select:none;
+  transition:background .1s;
+}
+.zone-ms-item:hover { background:#f0f5ff; }
+.zone-ms-item input[type=checkbox] {
+  width:13px; height:13px; accent-color:var(--accent2);
+  flex-shrink:0; pointer-events:none;
+}
+.zone-ms-item.checked { font-weight:600; color:var(--accent2); }
 .exo-url-cell { display:flex; align-items:center; gap:6px; min-width:0; }
 .exo-url-cell input { flex:1; min-width:0; }
 .exo-url-cell .yt-thumb-wrap img { width:54px; height:30px; }
@@ -2106,7 +2134,8 @@ function renderLib(q, typeFilter, subFilter, subFilter2){
       if(typeFilter === 'renfo'){
         if(!ex.patterns || ex.patterns.indexOf(subFilter) === -1) return false;
       } else {
-        if(ex.zone !== subFilter && (!ex.zones || ex.zones.indexOf(subFilter)===-1)) return false;
+        var _rzArr = ex.zone ? ex.zone.split(',').map(function(z){ return z.trim(); }) : [];
+      if(_rzArr.indexOf(subFilter) === -1 && (!ex.zones || ex.zones.indexOf(subFilter)===-1)) return false;
       }
     }
     // Filtre articulation (renfo uniquement — correspondance par sous-chaîne)
@@ -2140,7 +2169,7 @@ function renderLib(q, typeFilter, subFilter, subFilter2){
     if(groupBy === 'pattern'){
       keys = (ex.patterns && ex.patterns.length) ? ex.patterns : ['Autre'];
     } else if(groupBy === 'zone'){
-      keys = [ex.zone];
+      keys = ex.zone ? ex.zone.split(',').map(function(z){ return z.trim(); }).filter(Boolean) : [''];
     } else {
       keys = [''];
     }
@@ -2214,7 +2243,7 @@ function _buildLibPreviewHtml(ex){
   var html = '<div class="pp-name">'+escH(ex.name)+'</div>';
   html += '<div class="pp-tags">';
   html += '<span class="lib-tag '+getTypeClass(ex.type)+'">'+getTypeLabel(ex.type)+'</span>';
-  if(ex.zone && ex.zone !== ex.name) html += '<span class="lib-tag">'+escH(ex.zone)+'</span>';
+  if(ex.zone){ ex.zone.split(',').forEach(function(z){ z=z.trim(); if(z && z!==ex.name) html+='<span class="lib-tag">'+escH(z)+'</span>'; }); }
   if(ex.patterns && ex.patterns.length) ex.patterns.forEach(function(p){ html += '<span class="lib-tag" style="background:#E8F5E9;color:#2E7D32;">'+escH(p)+'</span>'; });
   html += '</div>';
   if(ex.url){
@@ -3556,6 +3585,66 @@ function updateEditorUrl(idx, val){
   sp.innerHTML = html;
 }
 
+/* ── Zone multi-select ── */
+var _zonePopActive = null;
+
+function _zoneLabel(zoneStr){
+  if(!zoneStr) return '— Aucune —';
+  var parts = zoneStr.split(',').map(function(z){ return z.trim(); }).filter(Boolean);
+  if(parts.length === 0) return '— Aucune —';
+  if(parts.length === 1) return parts[0];
+  return parts.length + ' zones';
+}
+
+function _zonePopOpen(idx, event){
+  event && event.stopPropagation();
+  if(_zonePopActive === idx){ _zonePopClose(); return; }
+  _zonePopClose();
+  _zonePopActive = idx;
+  var pop = document.getElementById('zone-ms-pop-'+idx);
+  var btn = document.getElementById('zone-ms-btn-'+idx);
+  if(pop) pop.classList.add('open');
+  if(btn) btn.classList.add('open');
+}
+
+function _zonePopClose(){
+  if(_zonePopActive === null) return;
+  var pop = document.getElementById('zone-ms-pop-'+_zonePopActive);
+  var btn = document.getElementById('zone-ms-btn-'+_zonePopActive);
+  if(pop) pop.classList.remove('open');
+  if(btn) btn.classList.remove('open');
+  _zonePopActive = null;
+}
+
+function _zoneToggle(idx, zone, event){
+  event && event.stopPropagation();
+  if(!_editorData[idx]) return;
+  var cur = (_editorData[idx].zone||'').split(',').map(function(z){ return z.trim(); }).filter(Boolean);
+  var pos = cur.indexOf(zone);
+  if(pos === -1) cur.push(zone);
+  else cur.splice(pos, 1);
+  _editorData[idx].zone = cur.join(',');
+  // Mettre à jour le label du bouton
+  var lbl = document.getElementById('zone-ms-lbl-'+idx);
+  if(lbl) lbl.textContent = _zoneLabel(_editorData[idx].zone);
+  // Mettre à jour l'état visuel de l'item
+  var pop = document.getElementById('zone-ms-pop-'+idx);
+  if(pop){
+    var item = pop.querySelector('[data-zone="'+zone+'"]');
+    if(item){
+      var nowChecked = pos === -1;
+      item.classList.toggle('checked', nowChecked);
+      var cb = item.querySelector('input[type=checkbox]');
+      if(cb) cb.checked = nowChecked;
+    }
+  }
+}
+
+// Fermer le popover zone au clic en dehors
+document.addEventListener('click', function(){
+  if(_zonePopActive !== null) _zonePopClose();
+});
+
 function updateEditorField(idx, field, val){
   if(!_editorData[idx]) return;
   if(field === 'patterns_str'){
@@ -3578,14 +3667,24 @@ function renderEditor(){
   var rows = '';
   _editorData.forEach(function(e, i){
     // ── Filtres ──
+    var _eZoneArr = (e.zone||'').split(',').map(function(z){ return z.trim(); }).filter(Boolean);
     if(q && e.name.toLowerCase().indexOf(q)===-1 && (e.zone||'').toLowerCase().indexOf(q)===-1) return;
-    if(efZone   && e.zone  !== efZone)   return;
+    if(efZone   && _eZoneArr.indexOf(efZone) === -1) return;
     if(_efType  && e.type  !== _efType)  return;
     if(_efNoVideo && e.url)              return;
     if(_efAdded && defaultIds.has(e.id)) return;
-    var zSel = '<option value=""'+((!e.zone)?' selected':'')+'>— Aucun —</option>' + ALL_ZONES.map(function(z){
-      return '<option value="'+escH(z)+'"'+(z===e.zone?' selected':'')+'>'+escH(z)+'</option>';
+    // Zone multi-select widget
+    var _zMsItems = ALL_ZONES.map(function(z){
+      var chk = _eZoneArr.indexOf(z) !== -1;
+      return '<div class="zone-ms-item'+(chk?' checked':'')+'" data-zone="'+escH(z)+'" onclick="_zoneToggle('+i+',\''+z+'\',event)">'
+        + '<input type="checkbox"'+(chk?' checked':'')+'>'+escH(z)+'</div>';
     }).join('');
+    var zMsHtml = '<div class="zone-ms-wrap">'
+      +'<button type="button" class="zone-ms-btn" id="zone-ms-btn-'+i+'" onclick="_zonePopOpen('+i+',event)">'
+      +'<span class="zone-ms-btn-label" id="zone-ms-lbl-'+i+'">'+escH(_zoneLabel(e.zone||''))+'</span>'
+      +'<span class="zone-ms-btn-arrow">▾</span></button>'
+      +'<div class="zone-ms-pop" id="zone-ms-pop-'+i+'">'+_zMsItems+'</div>'
+      +'</div>';
     var typeOpts = '<option value=""'+((!e.type)?' selected':'')+'>— Aucun —</option>' + [
       {v:'warmup',       l:'Warm-up / Mobilité'},
       {v:'renfo',        l:'Renforcement'},
@@ -3601,7 +3700,7 @@ function renderEditor(){
     }).join('');
     rows += '<div class="exo-edit-row" data-idx="'+i+'">';
     rows += '<input class="exo-edit-name" type="text" value="'+escH(e.name)+'" placeholder="Nom de l\'exercice" oninput="updateEditorField('+i+',\'name\',this.value)">';
-    rows += '<select onchange="updateEditorField('+i+',\'zone\',this.value)">'+zSel+'</select>';
+    rows += zMsHtml;
     rows += '<select onchange="updateEditorField('+i+',\'type\',this.value)">'+typeOpts+'</select>';
     rows += '<select onchange="updateEditorField('+i+',\'patterns_sel\',this.value)">'+patSel+'</select>';
     var thumbHtml = e.url ? (_ytThumbHtml(e.url) || '<div class="exo-url-placeholder">Pas<br>YouTube</div>') : '<div class="exo-url-placeholder">▶</div>';
