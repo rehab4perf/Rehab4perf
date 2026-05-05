@@ -2681,15 +2681,19 @@ function applyMethode(id){
     var cb = document.getElementById('exo-check-'+id+'-'+e.id);
     if(cb && !cb.checked) return; // ignorer les exercices décochés
     appliedCount++;
-    if(p.reps    !== undefined) e.reps    = p.reps;
-    if(p.duree   !== undefined) e.duree   = p.duree;
-    if(p.series  !== undefined) e.series  = p.series;
-    if(p.recup   !== undefined) e.recup   = p.recup;
-    if(p.tempo   !== undefined) e.tempo   = p.tempo;
+    // On écrase TOUS les champs couverables : si la méthode ne les définit pas,
+    // on efface la valeur résiduelle d'une méthode précédente.
+    e.reps   = p.reps   !== undefined ? p.reps   : '';
+    e.duree  = p.duree  !== undefined ? p.duree  : '';
+    e.series = p.series !== undefined ? p.series : '';
+    e.recup  = p.recup  !== undefined ? p.recup  : '';
+    e.tempo  = p.tempo  !== undefined ? p.tempo  : '';
     if(p.cibles !== undefined){
       e.cibles = JSON.parse(JSON.stringify(p.cibles));
     } else if(p.cibleType !== undefined || p.cibleVal !== undefined){
       e.cibles = [{type: p.cibleType||'RPE', min: p.cibleVal||'', max:''}];
+    } else {
+      e.cibles = [];
     }
     e.chained     = !!(methObj.chained);
     e._methApplied  = true;  // pastille verte
