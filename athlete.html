@@ -147,21 +147,35 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
 
 /* ── CALENDAR ── */
 .cal-nav {
-  display:flex; align-items:center; gap:10px; margin-bottom:14px;
+  display:flex; align-items:center; gap:8px; margin-bottom:14px;
   background:var(--surface); border-radius:12px; border:1px solid var(--border);
-  padding:12px 14px;
+  padding:10px 14px; flex-wrap:wrap;
 }
-.cal-nav h2 { flex:1; text-align:center; font-size:.95rem; font-weight:700; color:var(--navy); text-transform:capitalize; }
+.cal-nav h2 { flex:1; text-align:center; font-size:.92rem; font-weight:700; color:var(--navy); text-transform:capitalize; min-width:120px; }
 .cal-nav-btn {
   background:none; border:1px solid var(--border); border-radius:8px;
   width:32px; height:32px; cursor:pointer; font-size:.85rem; color:var(--text);
-  display:flex; align-items:center; justify-content:center;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
 }
 .cal-nav-btn:hover { background:var(--bg); }
 .cal-today-btn {
   background:var(--bg); border:1px solid var(--border); border-radius:8px;
-  padding:5px 10px; font-size:.72rem; cursor:pointer; color:var(--text);
+  padding:5px 10px; font-size:.72rem; cursor:pointer; color:var(--text); flex-shrink:0;
 }
+/* Vue toggle mois/semaine */
+.view-toggle {
+  display:flex; gap:2px; background:var(--bg); border-radius:8px; padding:3px; flex-shrink:0;
+}
+.view-btn {
+  padding:4px 10px; border:none; border-radius:6px; font-size:.72rem;
+  cursor:pointer; color:var(--muted); background:transparent;
+  transition:all .15s; font-family:inherit; white-space:nowrap;
+}
+.view-btn.active {
+  background:#fff; color:var(--accent); font-weight:700;
+  box-shadow:0 1px 3px rgba(0,0,0,.1);
+}
+.view-btn:hover:not(.active) { color:var(--text); }
 
 .cal-grid {
   display:grid; grid-template-columns:repeat(7,1fr); gap:3px;
@@ -189,6 +203,45 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
 }
 .cal-chip:hover { opacity:.85; }
 .cal-empty { color:var(--border); font-size:.65rem; text-align:center; margin-top:8px; }
+
+/* ── VUE SEMAINE ── */
+.week-grid {
+  display:grid; grid-template-columns:repeat(7,1fr); gap:5px; margin-bottom:14px;
+}
+.week-col {
+  background:var(--surface); border:1px solid var(--border); border-radius:10px;
+  overflow:hidden; min-height:110px;
+}
+.week-col.today { border-color:var(--accent); border-width:2px; }
+.week-col-header {
+  padding:6px 6px 5px; border-bottom:1px solid var(--border);
+  text-align:center; background:var(--bg);
+}
+.week-day-name {
+  font-size:.58rem; font-weight:700; color:var(--muted);
+  text-transform:uppercase; letter-spacing:.04em; margin-bottom:2px;
+}
+.week-day-num { font-size:.82rem; font-weight:700; color:var(--text); }
+.week-day-num.today { color:var(--accent); }
+.week-col-body { padding:5px 4px; }
+.week-event {
+  background:var(--accent); color:#fff; border-radius:6px;
+  padding:5px 6px; margin-bottom:4px; cursor:pointer; transition:opacity .12s;
+}
+.week-event:hover { opacity:.82; }
+.week-event-name { font-size:.67rem; font-weight:600; line-height:1.35; word-break:break-word; }
+.week-event-ua { font-size:.6rem; font-weight:700; margin-top:2px; }
+.week-cycle {
+  font-size:.56rem; font-weight:700; color:#fff; border-radius:3px;
+  padding:1px 4px; margin-top:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.week-empty { text-align:center; color:var(--border); font-size:.62rem; padding:12px 0; }
+@media(max-width:600px){
+  .week-grid { grid-template-columns:repeat(7,1fr); gap:3px; }
+  .week-event-name { font-size:.6rem; }
+  .week-day-name { font-size:.52rem; }
+  .week-day-num { font-size:.75rem; }
+}
 
 /* ── MODAL PROGRAMME ── */
 .prog-modal-overlay {
@@ -314,8 +367,18 @@ var _patientId = '';
 var _progId = '';
 var _calYear = new Date().getFullYear();
 var _calMonth = new Date().getMonth();
+var _calView = 'month'; // 'month' | 'week'
+var _calWeekStart = _getMonday(new Date()); // Lundi de la semaine courante
 var _calEvents = []; // [{id, date, programme_id, programmes:{nom}}]
 var _calCycles = []; // cycles du patient depuis patient_settings
+
+function _getMonday(d){
+  var dt = new Date(d); dt.setHours(0,0,0,0);
+  var day = dt.getDay();
+  var diff = (day === 0) ? -6 : 1 - day;
+  dt.setDate(dt.getDate() + diff);
+  return dt;
+}
 
 function escH(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
@@ -413,14 +476,89 @@ function renderCalendar(){
   });
 }
 
-function calMove(dir){
-  _calMonth += dir;
-  if(_calMonth>11){ _calMonth=0; _calYear++; }
-  if(_calMonth<0){ _calMonth=11; _calYear--; }
+function setCalView(view){
+  _calView = view;
+  if(view === 'week'){
+    // Aller à la semaine qui contient le milieu du mois affiché
+    _calWeekStart = _getMonday(new Date(_calYear, _calMonth, 15));
+  } else {
+    // Aller au mois qui contient le début de la semaine affichée
+    _calYear  = _calWeekStart.getFullYear();
+    _calMonth = _calWeekStart.getMonth();
+  }
   _renderCalGrid();
 }
 
+function goToToday(){
+  var now = new Date();
+  _calYear  = now.getFullYear();
+  _calMonth = now.getMonth();
+  _calWeekStart = _getMonday(now);
+  _renderCalGrid();
+}
+
+function calMove(dir){
+  if(_calView === 'week'){
+    var ws = new Date(_calWeekStart);
+    ws.setDate(ws.getDate() + dir * 7);
+    _calWeekStart = ws;
+  } else {
+    _calMonth += dir;
+    if(_calMonth > 11){ _calMonth = 0; _calYear++; }
+    if(_calMonth < 0) { _calMonth = 11; _calYear--; }
+  }
+  _renderCalGrid();
+}
+
+/* ── Barre de navigation commune ── */
+function _buildCalNav(label){
+  return '<div class="cal-nav">'
+    + '<button class="cal-nav-btn" onclick="calMove(-1)">◀</button>'
+    + '<h2>'+escH(label)+'</h2>'
+    + '<button class="cal-nav-btn" onclick="calMove(1)">▶</button>'
+    + '<button class="cal-today-btn" onclick="goToToday()">Aujourd\'hui</button>'
+    + '<div class="view-toggle">'
+    + '<button class="view-btn'+(_calView==='month'?' active':'')+'" onclick="setCalView(\'month\')">📅 Mois</button>'
+    + '<button class="view-btn'+(_calView==='week'?' active':'')+'" onclick="setCalView(\'week\')">📋 Sem.</button>'
+    + '</div>'
+    + '</div>';
+}
+
+/* ── Bloc "Prochaines séances" commun ── */
+function _buildUpcomingHtml(){
+  var MOIS_COURTS = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  var upcoming = _calEvents
+    .filter(function(e){ return e.date >= new Date().toISOString().split('T')[0]; })
+    .sort(function(a,b){ return a.date.localeCompare(b.date); })
+    .slice(0,5);
+  if(!upcoming.length) return '';
+  var html = '<div style="margin-top:16px;">'
+    + '<div style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Prochaines séances</div>';
+  upcoming.forEach(function(ev){
+    var nom = (ev.programmes&&ev.programmes.nom)||'Programme';
+    var p = ev.date.split('-');
+    var dateLabel = parseInt(p[2])+' '+MOIS_COURTS[parseInt(p[1])-1];
+    var fb2 = ev.athlete_feedback;
+    var ua2 = (fb2&&fb2.rpe&&fb2.duree_min) ? fb2.rpe*fb2.duree_min : null;
+    var uaTag = ua2 ? '<span style="font-size:.7rem;font-weight:800;color:'+_uaColor(ua2)+';background:#F5F7FA;border-radius:5px;padding:2px 7px;margin-left:4px;">⚡ '+ua2+' UA</span>' : '';
+    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="openProgModal(\''+escH(ev.programme_id)+'\',\''+escH(nom)+'\',\''+escH(ev.id)+'\')">'
+          + '<div style="background:var(--accent);color:#fff;border-radius:8px;padding:6px 10px;font-size:.7rem;font-weight:700;white-space:nowrap;">'+escH(dateLabel)+'</div>'
+          + '<div style="font-size:.85rem;font-weight:600;flex:1;">📋 '+escH(nom)+uaTag+'</div>'
+          + '<div style="color:var(--muted);font-size:.8rem;">›</div>'
+          + '</div>';
+  });
+  return html + '</div>';
+}
+
+/* ── Rendu principal — dispatch mois / semaine ── */
 function _renderCalGrid(){
+  var html = (_calView === 'week') ? _buildWeekHtml() : _buildMonthHtml();
+  html += _buildUpcomingHtml();
+  document.getElementById('mainContent').innerHTML = html;
+}
+
+/* ── Vue MOIS ── */
+function _buildMonthHtml(){
   var first = new Date(_calYear, _calMonth, 1);
   var startDow = (first.getDay()+6)%7;
   var daysInMonth = new Date(_calYear, _calMonth+1, 0).getDate();
@@ -443,7 +581,6 @@ function _renderCalGrid(){
       return '<div class="cal-chip" onclick="event.stopPropagation();openProgModal(\''+escH(ev.programme_id)+'\',\''+escH(nom)+'\',\''+escH(ev.id)+'\')" title="'+escH(nom)+'">'
            + '📋 '+escH(nom.length>10?nom.slice(0,10)+'…':nom)+uaBadge+'</div>';
     }).join('');
-    // Cycles actifs pour ce jour
     var cycleChips = '';
     _calCycles.forEach(function(cy){
       if(!cy.startDate) return;
@@ -460,38 +597,69 @@ function _renderCalGrid(){
            + chips+cycleChips+'</div>';
   }
 
-  var html = '<div class="cal-nav">'
-    + '<button class="cal-nav-btn" onclick="calMove(-1)">◀</button>'
-    + '<h2>'+MONTHS[_calMonth]+' '+_calYear+'</h2>'
-    + '<button class="cal-nav-btn" onclick="calMove(1)">▶</button>'
-    + '</div>'
+  return _buildCalNav(MONTHS[_calMonth]+' '+_calYear)
     + '<div class="cal-grid">'+headers+cells+'</div>';
+}
 
-  // Séances à venir (liste rapide)
-  var upcoming = _calEvents
-    .filter(function(e){ return e.date >= new Date().toISOString().split('T')[0]; })
-    .sort(function(a,b){ return a.date.localeCompare(b.date); })
-    .slice(0,5);
-  if(upcoming.length){
-    html += '<div style="margin-top:16px;">'
-          + '<div style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Prochaines séances</div>';
-    upcoming.forEach(function(ev){
-      var nom = (ev.programmes&&ev.programmes.nom)||'Programme';
-      var p = ev.date.split('-');
-      var dateLabel = parseInt(p[2])+' '+['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'][parseInt(p[1])-1];
-      var fb2 = ev.athlete_feedback;
-      var ua2 = (fb2&&fb2.rpe&&fb2.duree_min) ? fb2.rpe*fb2.duree_min : null;
-      var uaTag = ua2 ? '<span style="font-size:.7rem;font-weight:800;color:'+_uaColor(ua2)+';background:#F5F7FA;border-radius:5px;padding:2px 7px;margin-left:4px;">⚡ '+ua2+' UA</span>' : '';
-      html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="openProgModal(\''+escH(ev.programme_id)+'\',\''+escH(nom)+'\',\''+escH(ev.id)+'\')">'
-            + '<div style="background:var(--accent);color:#fff;border-radius:8px;padding:6px 10px;font-size:.7rem;font-weight:700;white-space:nowrap;">'+escH(dateLabel)+'</div>'
-            + '<div style="font-size:.85rem;font-weight:600;flex:1;">📋 '+escH(nom)+uaTag+'</div>'
-            + '<div style="color:var(--muted);font-size:.8rem;">›</div>'
-            + '</div>';
-    });
-    html += '</div>';
+/* ── Vue SEMAINE ── */
+function _buildWeekHtml(){
+  var today = new Date(); today.setHours(0,0,0,0);
+  var MOIS_COURTS = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  var days = [];
+  for(var i=0;i<7;i++){
+    var d = new Date(_calWeekStart);
+    d.setDate(d.getDate()+i);
+    days.push(d);
+  }
+  // Label de la barre nav
+  var d0 = days[0], d6 = days[6];
+  var navLabel;
+  if(d0.getMonth()===d6.getMonth()){
+    navLabel = d0.getDate()+'–'+d6.getDate()+' '+MONTHS[d0.getMonth()]+' '+d0.getFullYear();
+  } else {
+    navLabel = d0.getDate()+' '+MOIS_COURTS[d0.getMonth()]
+             + ' – '+d6.getDate()+' '+MOIS_COURTS[d6.getMonth()]
+             + ' '+d6.getFullYear();
   }
 
-  document.getElementById('mainContent').innerHTML = html;
+  var html = _buildCalNav(navLabel);
+  html += '<div class="week-grid">';
+  days.forEach(function(day){
+    var dateStr = day.getFullYear()+'-'+String(day.getMonth()+1).padStart(2,'0')+'-'+String(day.getDate()).padStart(2,'0');
+    var isToday = day.getTime()===today.getTime();
+    var dow = day.getDay()===0 ? 6 : day.getDay()-1; // 0=Lun … 6=Dim
+    var dayEvs = _calEvents.filter(function(e){ return e.date===dateStr; });
+
+    html += '<div class="week-col'+(isToday?' today':'')+'"><div class="week-col-header">'
+          + '<div class="week-day-name">'+DAYS[dow]+'</div>'
+          + '<div class="week-day-num'+(isToday?' today':'')+'">'+day.getDate()+'</div>'
+          + '</div><div class="week-col-body">';
+
+    dayEvs.forEach(function(ev){
+      var nom = (ev.programmes&&ev.programmes.nom)||'Programme';
+      var fb = ev.athlete_feedback;
+      var ua = (fb&&fb.rpe&&fb.duree_min) ? fb.rpe*fb.duree_min : null;
+      var uaHtml = ua ? '<div class="week-event-ua" style="color:'+_uaColor(ua)+';">⚡'+ua+' UA</div>' : '';
+      html += '<div class="week-event" onclick="openProgModal(\''+escH(ev.programme_id)+'\',\''+escH(nom)+'\',\''+escH(ev.id)+'\')">'
+            + '<div class="week-event-name">📋 '+escH(nom)+'</div>'
+            + uaHtml+'</div>';
+    });
+
+    _calCycles.forEach(function(cy){
+      if(!cy.startDate) return;
+      var cyStart = new Date(cy.startDate); cyStart.setHours(0,0,0,0);
+      var cyEnd = new Date(cyStart); cyEnd.setDate(cyEnd.getDate()+cy.duree*7);
+      if(day>=cyStart && day<cyEnd){
+        var weekNum = Math.floor((day-cyStart)/(7*24*3600*1000))+1;
+        html += '<div class="week-cycle" style="background:'+_cycleColor(cy.nom)+'" title="'+escH(cy.nom)+' — Sem. '+weekNum+'/'+cy.duree+'">'+escH(cy.nom)+' S'+weekNum+'</div>';
+      }
+    });
+
+    if(!dayEvs.length) html += '<div class="week-empty">—</div>';
+    html += '</div></div>';
+  });
+  html += '</div>';
+  return html;
 }
 
 // ── Modal programme ──────────────────────────────────
