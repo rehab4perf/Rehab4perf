@@ -3925,6 +3925,8 @@ function _buildAllTestsHtml() {
 
   // 6. Points à travailler
   var toWork = [];
+
+  // ── Break tests force (wording : "Renforcer [muscle]") ──────────────────
   var forceTables = [
     {id:'tb-ha-force-d', side:'Droit'},  {id:'tb-ha-force-g', side:'Gauche'},
     {id:'tb-ge-knee-d',  side:'Droit'},  {id:'tb-ge-knee-g',  side:'Gauche'},
@@ -3939,21 +3941,105 @@ function _buildAllTestsHtml() {
       var sel = row.querySelector('select'); if (!sel || sel.value !== 'Positif') return;
       var tdEl = row.querySelector('td'); if (!tdEl) return;
       var name = tdEl.textContent.trim().replace(/^Break test\s+/i, '');
-      var item = 'Travailler force ' + name + ' — ' + ft.side;
+      var item = 'Renforcer ' + name + ' — ' + ft.side;
       if (toWork.indexOf(item) === -1) toWork.push(item);
     });
   });
+
+  // ── Tests fonctionnels épaule (tb-ep-fonc) ──────────────────────────────
+  var epFoncTbody = document.getElementById('tb-ep-fonc');
+  if (epFoncTbody) {
+    epFoncTbody.querySelectorAll('tr').forEach(function(row) {
+      var sel = row.querySelector('select'); if (!sel || sel.value !== 'Positif') return;
+      var tdEl = row.querySelector('td'); if (!tdEl) return;
+      var name = tdEl.textContent.trim();
+      var item = null;
+      if (name.indexOf('Activation coiffe') !== -1) {
+        item = 'Renforcement de la coiffe des rotateurs';
+      } else if (name === 'Inhibition coiffe') {
+        item = 'Surcharge de la coiffe — renforcer les grands muscles stabilisateurs';
+      } else if (name === 'Postériorisation GH') {
+        item = 'Renforcer les muscles postérieurs de l\'épaule';
+      } else if (name.indexOf('Extension thoracique') !== -1) {
+        item = 'Travailler l\'extension thoracique';
+      } else if (name.indexOf('SAT') !== -1) {
+        item = 'Renforcer les muscles de la sonnette latérale : trapèze supérieur, élévateur de la scapula, dentelé antérieur';
+      } else if (name.indexOf('SRT') !== -1) {
+        item = 'Renforcer les stabilisateurs de l\'omoplate : rhomboïdes, trapèze moyen et inférieur, dentelé antérieur';
+      }
+      if (item && toWork.indexOf(item) === -1) toWork.push(item);
+    });
+  }
+
+  // ── PSET ─────────────────────────────────────────────────────────────────
+  if (!isNaN(psetCAv) && psetCSv > 0) {
+    var psetLsiTW = psetCAv / psetCSv * 100;
+    if (psetLsiTW < 90) toWork.push('Renforcer la coiffe des rotateurs postérieure gléno-humérale (PSET LSI ' + psetLsiTW.toFixed(1) + '%)');
+  }
+
+  // ── mCKCUEST ─────────────────────────────────────────────────────────────
+  (function(){
+    var s2 = parseFloat((document.getElementById('ckc-s2')||{}).value||'');
+    var s3 = parseFloat((document.getElementById('ckc-s3')||{}).value||'');
+    var s4 = parseFloat((document.getElementById('ckc-s4')||{}).value||'');
+    if (isNaN(s2) && isNaN(s3) && isNaN(s4)) return;
+    var ckcScore = (!isNaN(s2)&&!isNaN(s3))?(s2+s3)/2:(!isNaN(s2)?s2:(!isNaN(s3)?s3:NaN));
+    var ckcMei   = (!isNaN(s4)&&!isNaN(ckcScore)&&ckcScore>0)?(s4/2)/ckcScore:NaN;
+    if (!isNaN(ckcScore) && ckcScore < 19) toWork.push('Renforcement de la stabilité de l\'épaule — explosivité (mCKCUEST score ' + ckcScore.toFixed(1) + ' < 19)');
+    if (!isNaN(ckcMei)   && ckcMei   < 0.70) toWork.push('Renforcement de la stabilité de l\'épaule — endurance (mCKCUEST MEI ' + ckcMei.toFixed(2) + ' < 0.70)');
+  })();
+
+  // ── Tests fonctionnels rachis ─────────────────────────────────────────────
+  if (!isNaN(flxV2) && flxV2 < 39) toWork.push('Renforcement des fléchisseurs cervicaux' + (flxV2 < 24 ? ' (déficit important)' : ' (insuffisant)'));
+  if (!isNaN(extV2) && extV2 < 20) toWork.push('Renforcement des extenseurs cervicaux');
+  if (!isNaN(latD2) && !isNaN(latG2) && latD2 > 0 && latG2 > 0) {
+    var latRatioTW = Math.min(latD2, latG2) / Math.max(latD2, latG2) * 100;
+    if (latRatioTW < 70) {
+      var latWeakerTW = latD2 < latG2 ? 'droit' : 'gauche';
+      toWork.push('Renforcement des latéraux cervicaux côté ' + latWeakerTW + ' (asymétrie ' + (100-latRatioTW).toFixed(1) + '%)');
+    }
+  }
+  if (!isNaN(sorV2) && sorV2 < 176) toWork.push('Renforcement des extenseurs lombaires (Test de Sørensen ' + sorV2 + 's — insuffisant)');
+  if (!isNaN(pdslV2) && pdslV2 < 30) toWork.push('Renforcement des stabilisateurs lombaires (PDSLRT ' + pdslV2 + 's < 30s)');
+
+  // ── Tests fonctionnels MI ─────────────────────────────────────────────────
   var slsLsi2 = slsCS>0?slsCA/slsCS*100:NaN;
   var hopLsi2 = hopCS>0?hopCA/hopCS*100:NaN;
   var hrLsi2  = hrCS>0?hrCA/hrCS*100:NaN;
-  if (!isNaN(slsLsi2) && slsLsi2<90) toWork.push('Renforcement MI - squat unilateral (LSI SLS < 90%)');
-  if (!isNaN(hopLsi2) && hopLsi2<90) toWork.push('Travail de propulsion - saut unipodal (LSI Hop < 90%)');
-  if (scoreCA2>0 && scoreCA2<7) toWork.push('Qualite de reception - score ' + scoreCA2 + '/8');
-  if (!isNaN(luCA) && (luCA<10 || Math.abs(luCA-(luCS||0))>1.5)) toWork.push('Deficit flexion dorsale cheville (Lunge < 10 cm ou asymetrie > 1,5 cm)');
-  if (!isNaN(hrLsi2) && hrLsi2<90) toWork.push('Force du mollet - heel rise progressif (LSI < 90%)');
-  if (!isNaN(qfCA) && !isNaN(qfCS) && (1-qfCA/qfCS)*100>10) toWork.push('Renforcement quadriceps (deficit > 10%)');
-  if (!isNaN(ijfCA) && !isNaN(ijfCS) && (1-ijfCA/ijfCS)*100>10) toWork.push('Renforcement IJ - nordic hamstring, excentrique');
+  if (!isNaN(slsLsi2) && slsLsi2<90) toWork.push('Renforcement MI — squat unilatéral (LSI SLS ' + slsLsi2.toFixed(1) + '%)');
+  if (!isNaN(hopLsi2) && hopLsi2<90) toWork.push('Travail de propulsion — saut unipodal (LSI Hop ' + hopLsi2.toFixed(1) + '%)');
+  if (scoreCA2>0 && scoreCA2<7) toWork.push('Améliorer la qualité de réception (score ' + scoreCA2 + '/8)');
+  if (!isNaN(luCA) && (luCA<10 || Math.abs(luCA-(luCS||0))>1.5)) toWork.push('Déficit de flexion dorsale de cheville (Lunge ' + luCA + 'cm — < 10 cm ou asymétrie > 1,5 cm)');
+  if (!isNaN(hrLsi2) && hrLsi2<90) toWork.push('Renforcement du mollet — Heel Rise progressif (LSI ' + hrLsi2.toFixed(1) + '%)');
+  if (!isNaN(qfCA) && !isNaN(qfCS) && qfCS>0 && (1-qfCA/qfCS)*100>10) toWork.push('Renforcement quadriceps (déficit ' + ((1-qfCA/qfCS)*100).toFixed(1) + '%)');
+  if (!isNaN(ijfCA) && !isNaN(ijfCS) && ijfCS>0 && (1-ijfCA/ijfCS)*100>10) toWork.push('Renforcement ischio-jambiers — Nordic Hamstring, excentrique (déficit ' + ((1-ijfCA/ijfCS)*100).toFixed(1) + '%)');
+  // Drop Jump H
+  var djLsiTW = (!isNaN(djHca)&&djHcs>0)?djHca/djHcs*100:NaN;
+  if (!isNaN(djLsiTW) && djLsiTW<90) toWork.push('Travail pliométrique — explosivité verticale (DJ LSI ' + djLsiTW.toFixed(1) + '%)');
+  // Side Hop
+  var shExpLsiTW = (!isNaN(shExpCA2)&&!isNaN(shExpCS2)&&shExpCS2>0)?shExpCA2/shExpCS2*100:NaN;
+  var shEndLsiTW = (!isNaN(shEndCA2)&&!isNaN(shEndCS2)&&shEndCS2>0)?shEndCA2/shEndCS2*100:NaN;
+  if (!isNaN(shExpLsiTW) && shExpLsiTW<90) toWork.push('Travail latéral explosif — Side Hop 15s (LSI ' + shExpLsiTW.toFixed(1) + '%)');
+  if (!isNaN(shEndLsiTW) && shEndLsiTW<90) toWork.push('Travail latéral endurance — Side Hop 30s (LSI ' + shEndLsiTW.toFixed(1) + '%)');
+  // SEBT
+  var sebtDeficit = false;
+  if (!isNaN(sebtAntCA2)&&!isNaN(sebtAntCS2)&&sebtAntCS2>0&&sebtAntCA2/sebtAntCS2*100<90){ sebtDeficit=true; toWork.push('Améliorer contrôle postural dynamique — SEBT antérieur (LSI ' + (sebtAntCA2/sebtAntCS2*100).toFixed(1) + '%)'); }
+  if (!isNaN(sebtPmCA2) &&!isNaN(sebtPmCS2) &&sebtPmCS2>0 &&sebtPmCA2/sebtPmCS2*100<90) { sebtDeficit=true; toWork.push('Améliorer contrôle postural dynamique — SEBT postéro-médial (LSI ' + (sebtPmCA2/sebtPmCS2*100).toFixed(1) + '%)'); }
+  if (!isNaN(sebtPlCA2) &&!isNaN(sebtPlCS2) &&sebtPlCS2>0 &&sebtPlCA2/sebtPlCS2*100<90) { sebtDeficit=true; toWork.push('Améliorer contrôle postural dynamique — SEBT postéro-latéral (LSI ' + (sebtPlCA2/sebtPlCS2*100).toFixed(1) + '%)'); }
+  // UQYBT
+  for (var twi=0; twi<uqDirs.length; twi++) {
+    var twDiffTxt = ((document.getElementById('uqybt-'+uqDirs[twi].id+'-diff')||{}).textContent||'').trim();
+    var twDiff = parseFloat(twDiffTxt);
+    if (!isNaN(twDiff) && twDiff > 5) {
+      var twItem = 'Asymétrie contrôle postural MS — UQYBT ' + uqDirs[twi].label + ' (diff ' + twDiffTxt + '%)';
+      if (toWork.indexOf(twItem) === -1) toWork.push(twItem);
+    }
+  }
+  // Pliométrie qualitative
+  if (plioqTouched && plioqCA2 < 2) toWork.push('Améliorer qualité pliométrique et coordination (score CA ' + plioqCA2 + '/2)');
+  // Psychologique
   if (aclrsi && parseInt(aclrsi)<60) toWork.push('Accompagnement psychologique (ACL-RSI < 60%)');
+
   if (toWork.length > 0) {
     var workHtml = '';
     for (var wi=0; wi<toWork.length; wi++) {
