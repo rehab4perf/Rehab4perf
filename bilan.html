@@ -3927,13 +3927,17 @@ function _buildAllTestsHtml() {
   var toWork = [];
 
   // ── Break tests force (wording : "Renforcer [muscle]") ──────────────────
+  // Résoudre CA/CS en côté anatomique réel (f-cote = 'DROIT' | 'GAUCHE')
+  var _cotePrimaire = ((document.getElementById('f-cote')||{}).value||'').toUpperCase();
+  var _labelCA = _cotePrimaire === 'DROIT' ? 'Droit' : _cotePrimaire === 'GAUCHE' ? 'Gauche' : 'CA';
+  var _labelCS = _cotePrimaire === 'DROIT' ? 'Gauche' : _cotePrimaire === 'GAUCHE' ? 'Droit' : 'CS';
   var forceTables = [
     {id:'tb-ha-force-d', side:'Droit'},  {id:'tb-ha-force-g', side:'Gauche'},
     {id:'tb-ge-knee-d',  side:'Droit'},  {id:'tb-ge-knee-g',  side:'Gauche'},
     {id:'tb-ge-hip-d',   side:'Droit'},  {id:'tb-ge-hip-g',   side:'Gauche'},
     {id:'tb-ep-force-d', side:'Droit'},  {id:'tb-ep-force-g', side:'Gauche'},
     {id:'tb-ra-force-d', side:'Droit'},  {id:'tb-ra-force-g', side:'Gauche'},
-    {id:'tb-pi-force-ca', side:'CA'},    {id:'tb-pi-force-cs', side:'CS'},
+    {id:'tb-pi-force-ca', side:_labelCA}, {id:'tb-pi-force-cs', side:_labelCS},
   ];
   forceTables.forEach(function(ft) {
     var tbody = document.getElementById(ft.id); if (!tbody) return;
