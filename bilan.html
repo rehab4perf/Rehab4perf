@@ -3484,8 +3484,8 @@ function calcLunge() {
     return;
   }
 
-  var lsi = cs > 0 ? ca/cs*100 : NaN;
-  lsiEl.textContent = !isNaN(lsi) ? (lsi.toFixed(1) + '%') : '-';
+  var lsi = (cs !== 0 && !isNaN(cs)) ? ca/cs*100 : NaN;
+  lsiEl.textContent = !isNaN(lsi) ? (lsi < 0 ? '< 0%' : lsi.toFixed(1) + '%') : '-';
   var diff = Math.abs(ca - cs);
   var cls, stat, interp;
   if (ca < 10) {
@@ -3589,7 +3589,7 @@ function _buildAllTestsHtml() {
     return '<div class="cr-item"><span class="cr-key">' + key + '</span><span class="cr-val">' + val + '</span>' + tagHtml + '</div>';
   }
 
-  var lsiStr  = function(ca,cs) { return cs>0 ? ('LSI = ' + (ca/cs*100).toFixed(1) + '%') : ''; };
+  var lsiStr  = function(ca,cs) { if (!cs||cs<=0||isNaN(ca)||isNaN(cs)) return ''; var v=ca/cs*100; return v<0 ? 'LSI < 0%' : 'LSI = '+v.toFixed(1)+'%'; };
   var lsiCls2 = function(ca,cs) { if (!cs||cs<=0||isNaN(ca)||isNaN(cs)) return ''; var v=ca/cs*100; return v>=90?'good':v>=80?'warn':'bad'; };
   var statOf2 = function(cls)   { return ({good:'OK',warn:'Acceptable',bad:'Insuffisant'}[cls])||''; };
   var obsBlock = function(idCA, idCS) {
