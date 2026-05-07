@@ -3835,7 +3835,7 @@ function _buildAllTestsHtml() {
   if (!isNaN(sebtAntCA2)) tfHtml += crItem('SEBT — Antérieur',       'CA='+sebtAntCA2+'cm   CS='+sebtAntCS2+'cm   '+lsiStr(sebtAntCA2,sebtAntCS2), statOf2(lsiCls2(sebtAntCA2,sebtAntCS2)), lsiCls2(sebtAntCA2,sebtAntCS2));
   if (!isNaN(sebtPmCA2))  tfHtml += crItem('SEBT — Postéro-médial',  'CA='+sebtPmCA2+'cm   CS='+sebtPmCS2+'cm   '+lsiStr(sebtPmCA2,sebtPmCS2),   statOf2(lsiCls2(sebtPmCA2,sebtPmCS2)),   lsiCls2(sebtPmCA2,sebtPmCS2));
   if (!isNaN(sebtPlCA2))  tfHtml += crItem('SEBT — Postéro-latéral', 'CA='+sebtPlCA2+'cm   CS='+sebtPlCS2+'cm   '+lsiStr(sebtPlCA2,sebtPlCS2),   statOf2(lsiCls2(sebtPlCA2,sebtPlCS2)),   lsiCls2(sebtPlCA2,sebtPlCS2));
-  if (sebtCompCA2 && sebtCompCA2 !== '-') {
+  if (sebtCompCA2 && sebtCompCA2.indexOf('CA :') === 0) {
     tfHtml += crItem('SEBT — Score composite', sebtCompCA2.replace('CA : ','')+' (CA)   '+sebtCompCS2.replace('CS : ','')+' (CS)', '', '');
   }
   tfHtml += obsBlock('sebt-obs-ca','sebt-obs-cs');
