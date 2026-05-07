@@ -4352,7 +4352,19 @@ function _buildAllTestsHtml() {
   var hrLsi2  = hrCS>0?hrCA/hrCS*100:NaN;
   if (!isNaN(slsLsi2) && slsLsi2<90) toWork.push('Renforcement MI — squat unilatéral (LSI SLS ' + slsLsi2.toFixed(1) + '%)');
   if (!isNaN(hopLsi2) && hopLsi2<90) toWork.push('Travail de propulsion — saut unipodal (LSI Hop ' + hopLsi2.toFixed(1) + '%)');
-  if (scoreCA2>0 && scoreCA2<7) toWork.push('Améliorer la qualité de réception (score ' + scoreCA2 + '/8)');
+  // Test de réception — par critère non validé côté atteint
+  (function(){
+    // Le test est considéré comme rempli si le toggle CR est coché OU si au moins un critère CA ou CS est coché
+    var recCrTog2 = document.getElementById('rec-cr-toggle');
+    var recDone = (recCrTog2 && recCrTog2.checked) || scoreCA2 > 0 || scoreCS2 > 0;
+    if (!recDone) return;
+    var rec0CA = document.getElementById('rec-ca-0'); // Descente fluide
+    var rec1CA = document.getElementById('rec-ca-1'); // Maintien statique
+    var rec2CA = document.getElementById('rec-ca-2'); // Contrôle neuromusculaire
+    if (rec0CA && !rec0CA.checked) toWork.push('Renforcer le quadriceps en excentrique — descente fluide non obtenue (test réception)');
+    if (rec1CA && !rec1CA.checked) toWork.push('Travailler la stabilité statique du genou — maintien 3s à 90° non obtenu (test réception)');
+    if (rec2CA && !rec2CA.checked) toWork.push('Travailler le contrôle neuromusculaire du genou — valgus dynamique non contrôlé (test réception)');
+  })();
   if (!isNaN(luCA) && (luCA<10 || Math.abs(luCA-(luCS||0))>1.5)) toWork.push('Déficit de flexion dorsale de cheville (Lunge ' + luCA + 'cm — < 10 cm ou asymétrie > 1,5 cm)');
   if (!isNaN(hrLsi2) && hrLsi2<90) toWork.push('Renforcement du mollet — Heel Rise progressif (LSI ' + hrLsi2.toFixed(1) + '%)');
   if (!isNaN(qfCA) && !isNaN(qfCS) && qfCS>0 && (1-qfCA/qfCS)*100>10) toWork.push('Renforcement quadriceps (déficit ' + ((1-qfCA/qfCS)*100).toFixed(1) + '%)');
