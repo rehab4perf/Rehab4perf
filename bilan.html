@@ -3835,12 +3835,21 @@ function _buildAllTestsHtml() {
   var lsiStr  = function(ca,cs) { if (!cs||cs<=0||isNaN(ca)||isNaN(cs)) return ''; var v=ca/cs*100; return v<0 ? 'LSI < 0%' : 'LSI = '+v.toFixed(1)+'%'; };
   var lsiCls2 = function(ca,cs) { if (!cs||cs<=0||isNaN(ca)||isNaN(cs)) return ''; var v=ca/cs*100; return v>=90?'good':v>=80?'warn':'bad'; };
   var statOf2 = function(cls)   { return ({good:'OK',warn:'Acceptable',bad:'Insuffisant'}[cls])||''; };
+
+  // ── Résolution du côté atteint ────────────────────────────────
+  var _cotePrimaire = ((document.getElementById('f-cote')||{}).value||'').toUpperCase();
+  var _isBilateral  = (_cotePrimaire !== 'DROIT' && _cotePrimaire !== 'GAUCHE');
+  // Pour unilatéral : CA = côté douloureux, CS = côté sain
+  // Pour bilatéral  : Gauche en premier (sens de lecture), Droit en second
+  var _labelCA = _cotePrimaire === 'DROIT' ? 'Droit' : _cotePrimaire === 'GAUCHE' ? 'Gauche' : 'Gauche';
+  var _labelCS = _cotePrimaire === 'DROIT' ? 'Gauche' : _cotePrimaire === 'GAUCHE' ? 'Droit' : 'Droit';
+
   var obsBlock = function(idCA, idCS) {
     var ca = (document.getElementById(idCA)||{}).value||'';
     var cs = (document.getElementById(idCS)||{}).value||'';
     var parts = [];
-    if(ca) parts.push('<div><span style="font-weight:600;font-style:normal;">Obs. Côté Atteint :</span><br><span style="padding-left:8px;display:inline-block">'+nl2br(ca)+'</span></div>');
-    if(cs) parts.push('<div><span style="font-weight:600;font-style:normal;">Obs. Côté Sain :</span><br><span style="padding-left:8px;display:inline-block">'+nl2br(cs)+'</span></div>');
+    if(ca) parts.push('<div><span style="font-weight:600;font-style:normal;">Obs. '+_labelCA+' :</span><br><span style="padding-left:8px;display:inline-block">'+nl2br(ca)+'</span></div>');
+    if(cs) parts.push('<div><span style="font-weight:600;font-style:normal;">Obs. '+_labelCS+' :</span><br><span style="padding-left:8px;display:inline-block">'+nl2br(cs)+'</span></div>');
     var txt = parts.join('');
     return txt?'<div style="margin:2px 0 8px;padding:6px 10px;background:var(--surface2);border-radius:5px;font-size:.82rem;color:var(--text2);font-style:italic">'+txt+'</div>':'';
   };
@@ -4022,7 +4031,7 @@ function _buildAllTestsHtml() {
       var cfObs2 = (document.getElementById('cf-obs-ca')||{}).value||'';
       if (sec.label === 'GENOU' && !isNaN(cfCA2)) {
         secRows += crItem('Contraction Flash Isométrique 20s',
-          'CA='+cfCA2+'N   CS='+(isNaN(cfCS2)?'-':cfCS2)+'N   '+lsiStr(cfCA2,cfCS2),
+          _labelCA+'='+cfCA2+'N   '+_labelCS+'='+(isNaN(cfCS2)?'-':cfCS2)+'N   '+lsiStr(cfCA2,cfCS2),
           statOf2(lsiCls2(cfCA2,cfCS2)), lsiCls2(cfCA2,cfCS2));
       }
       if (sec.label === 'GENOU' && cfObs2) secRows += '<div style="margin:2px 0 8px;padding:6px 10px;background:var(--surface2);border-radius:5px;font-size:.82rem;color:var(--text2);font-style:italic">' + cfObs2 + '</div>';
@@ -4088,12 +4097,12 @@ function _buildAllTestsHtml() {
   var djHca = parseFloat((document.getElementById('dj-h-ca')||{}).value||'');
   var djHcs = parseFloat((document.getElementById('dj-h-cs')||{}).value||'');
   if (!isNaN(slsCA)) {
-    var slsVal2 = 'CA=' + slsCA + ' rep.   CS=' + slsCS + ' rep.   ' + lsiStr(slsCA,slsCS) + (slsH2 ? '   |   Repère EIAS-sol : ' + slsH2 + (slsH2.indexOf('cm')===-1?' cm':'') : '');
+    var slsVal2 = _labelCA+'='+slsCA+' rep.   '+_labelCS+'='+slsCS+' rep.   '+lsiStr(slsCA,slsCS)+(slsH2?'   |   Repère EIAS-sol : '+slsH2+(slsH2.indexOf('cm')===-1?' cm':''):'');
     tfHtml += crItem('SLS', slsVal2, statOf2(lsiCls2(slsCA,slsCS)), lsiCls2(slsCA,slsCS));
   }
   tfHtml += obsBlock('sls-obs-ca','sls-obs-cs');
   if (!isNaN(hopCA)) {
-    var hopDesc = 'CA=' + hopCA + 'cm   CS=' + hopCS + 'cm   ' + lsiStr(hopCA, hopCS);
+    var hopDesc = _labelCA+'='+hopCA+'cm   '+_labelCS+'='+hopCS+'cm   '+lsiStr(hopCA, hopCS);
     if (!isNaN(hopCS) && hopCS > 0) hopDesc += '   Repère 80% CS = ' + (hopCS * 0.8).toFixed(1) + 'cm';
     if (!isNaN(hopTaille) && hopTaille > 0) {
       if (hopSexe === 'F') { var hopSeuil = (hopTaille * 0.80).toFixed(1); hopDesc += '   |   Seuil RTS 80% taille (F) = ' + hopSeuil + 'cm → ' + (hopCA >= parseFloat(hopSeuil) ? '✓ Atteint' : '✗ Non atteint'); }
@@ -4112,25 +4121,25 @@ function _buildAllTestsHtml() {
   if ((recCrToggle && recCrToggle.checked) || scoreCA2 > 0 || scoreCS2 > 0) {
     var rclsCA = scoreCA2===recN?'good':scoreCA2>0?'warn':'bad';
     tfHtml += crItem('Réception — 80% Hop Test',
-      'CA='+scoreCA2+'/'+recN+'   CS='+scoreCS2+'/'+recN,
+      _labelCA+'='+scoreCA2+'/'+recN+'   '+_labelCS+'='+scoreCS2+'/'+recN,
       statOf2(rclsCA), rclsCA);
   }
   tfHtml += obsBlock('rec-obs-ca','rec-obs-cs');
-  if (!isNaN(hrCA)) tfHtml += crItem('Heel Rise', 'CA=' + hrCA + '   CS=' + hrCS + '   ' + lsiStr(hrCA,hrCS), statOf2(lsiCls2(hrCA,hrCS)), lsiCls2(hrCA,hrCS));
+  if (!isNaN(hrCA)) tfHtml += crItem('Heel Rise', _labelCA+'='+hrCA+'   '+_labelCS+'='+hrCS+'   '+lsiStr(hrCA,hrCS), statOf2(lsiCls2(hrCA,hrCS)), lsiCls2(hrCA,hrCS));
   tfHtml += obsBlock('hr-obs-ca','hr-obs-cs');
   if (!isNaN(luCA)) {
     var luDiff2 = Math.abs(luCA-luCS); var luBad2 = luCA<10 || luDiff2>1.5;
-    tfHtml += crItem('Lunge WBLT', 'CA=' + luCA + 'cm   CS=' + luCS + 'cm   Diff=' + luDiff2.toFixed(1) + 'cm   ' + lsiStr(luCA,luCS), luBad2 ? 'Deficit' : 'OK', luBad2 ? 'bad' : 'good');
+    tfHtml += crItem('Lunge WBLT', _labelCA+'='+luCA+'cm   '+_labelCS+'='+luCS+'cm   Diff='+luDiff2.toFixed(1)+'cm   '+lsiStr(luCA,luCS), luBad2?'Deficit':'OK', luBad2?'bad':'good');
   }
   tfHtml += obsBlock('lu-obs-ca','lu-obs-cs');
-  if (!isNaN(djHca)) tfHtml += crItem('Drop Jump H', 'CA=' + djHca + 'cm   CS=' + djHcs + 'cm   ' + lsiStr(djHca,djHcs), statOf2(lsiCls2(djHca,djHcs)), lsiCls2(djHca,djHcs));
+  if (!isNaN(djHca)) tfHtml += crItem('Drop Jump H', _labelCA+'='+djHca+'cm   '+_labelCS+'='+djHcs+'cm   '+lsiStr(djHca,djHcs), statOf2(lsiCls2(djHca,djHcs)), lsiCls2(djHca,djHcs));
   tfHtml += obsBlock('dj-obs-ca','dj-obs-cs');
   var shExpCA2 = parseFloat((document.getElementById('sh-exp-ca')||{}).value||'');
   var shExpCS2 = parseFloat((document.getElementById('sh-exp-cs')||{}).value||'');
   var shEndCA2 = parseFloat((document.getElementById('sh-end-ca')||{}).value||'');
   var shEndCS2 = parseFloat((document.getElementById('sh-end-cs')||{}).value||'');
-  if (!isNaN(shExpCA2)) tfHtml += crItem('Side Hop — Explosivité (15s)', 'CA=' + shExpCA2 + ' sauts   CS=' + (isNaN(shExpCS2)?'-':shExpCS2) + ' sauts   ' + lsiStr(shExpCA2,shExpCS2), statOf2(lsiCls2(shExpCA2,shExpCS2)), lsiCls2(shExpCA2,shExpCS2));
-  if (!isNaN(shEndCA2)) tfHtml += crItem('Side Hop — Endurance (30s)', 'CA=' + shEndCA2 + ' sauts   CS=' + (isNaN(shEndCS2)?'-':shEndCS2) + ' sauts   ' + lsiStr(shEndCA2,shEndCS2), statOf2(lsiCls2(shEndCA2,shEndCS2)), lsiCls2(shEndCA2,shEndCS2));
+  if (!isNaN(shExpCA2)) tfHtml += crItem('Side Hop — Explosivité (15s)', _labelCA+'='+shExpCA2+' sauts   '+_labelCS+'='+(isNaN(shExpCS2)?'-':shExpCS2)+' sauts   '+lsiStr(shExpCA2,shExpCS2), statOf2(lsiCls2(shExpCA2,shExpCS2)), lsiCls2(shExpCA2,shExpCS2));
+  if (!isNaN(shEndCA2)) tfHtml += crItem('Side Hop — Endurance (30s)', _labelCA+'='+shEndCA2+' sauts   '+_labelCS+'='+(isNaN(shEndCS2)?'-':shEndCS2)+' sauts   '+lsiStr(shEndCA2,shEndCS2), statOf2(lsiCls2(shEndCA2,shEndCS2)), lsiCls2(shEndCA2,shEndCS2));
   tfHtml += obsBlock('sh-obs-ca','sh-obs-cs');
   var qfCA = parseFloat((document.getElementById('q-f-ca')||{}).value||'');
   var qfCS = parseFloat((document.getElementById('q-f-cs')||{}).value||'');
@@ -4141,14 +4150,14 @@ function _buildAllTestsHtml() {
   // Drop Jump — Temps contact
   var djTca = parseFloat((document.getElementById('dj-t-ca')||{}).value||'');
   var djTcs = parseFloat((document.getElementById('dj-t-cs')||{}).value||'');
-  if (!isNaN(djTca)) tfHtml += crItem('Drop Jump — Temps contact', 'CA='+djTca+'ms   CS='+djTcs+'ms   '+lsiStr(djTca,djTcs), statOf2(lsiCls2(djTca,djTcs)), lsiCls2(djTca,djTcs));
+  if (!isNaN(djTca)) tfHtml += crItem('Drop Jump — Temps contact', _labelCA+'='+djTca+'ms   '+_labelCS+'='+djTcs+'ms   '+lsiStr(djTca,djTcs), statOf2(lsiCls2(djTca,djTcs)), lsiCls2(djTca,djTcs));
   // Drop Jump — RSI (calculé, affiché en textContent)
   var djRsiCAv = ((document.getElementById('dj-rsi-ca')||{}).textContent||'').trim();
   var djRsiCSv = ((document.getElementById('dj-rsi-cs')||{}).textContent||'').trim();
   var djRsiLsiv = ((document.getElementById('dj-rsi-lsi')||{}).textContent||'').trim();
   if (djRsiCAv && djRsiCAv !== '-' && parseFloat(djRsiCAv) > 0) {
     var rsiCls = lsiCls2(parseFloat(djRsiCAv), parseFloat(djRsiCSv));
-    tfHtml += crItem('Drop Jump — RSI', 'CA='+djRsiCAv+'   CS='+djRsiCSv+'   LSI='+djRsiLsiv, statOf2(rsiCls), rsiCls);
+    tfHtml += crItem('Drop Jump — RSI', _labelCA+'='+djRsiCAv+'   '+_labelCS+'='+djRsiCSv+'   LSI='+djRsiLsiv, statOf2(rsiCls), rsiCls);
   }
   // Pliométrie verticale qualitative
   var plioqCA2 = 0; var plioqCS2 = 0; var plioqTouched = false;
@@ -4160,7 +4169,7 @@ function _buildAllTestsHtml() {
   }
   var plioqCrToggle = document.getElementById('plioq-cr-toggle');
   if ((plioqCrToggle && plioqCrToggle.checked) || plioqTouched) {
-    tfHtml += crItem('Pliométrie verticale (qualitative)', 'CA='+plioqCA2+'/2   CS='+plioqCS2+'/2', plioqCA2===2?'Réussi':'À améliorer', plioqCA2===2?'good':'warn');
+    tfHtml += crItem('Pliométrie verticale (qualitative)', _labelCA+'='+plioqCA2+'/2   '+_labelCS+'='+plioqCS2+'/2', plioqCA2===2?'Réussi':'À améliorer', plioqCA2===2?'good':'warn');
   }
   tfHtml += obsBlock('plioq-obs-ca','plioq-obs-cs');
   // SEBT
@@ -4172,11 +4181,11 @@ function _buildAllTestsHtml() {
   var sebtPlCS2  = parseFloat((document.getElementById('sebt-pl-cs')||{}).value||'');
   var sebtCompCA2 = ((document.getElementById('sebt-comp-ca')||{}).textContent||'').trim();
   var sebtCompCS2 = ((document.getElementById('sebt-comp-cs')||{}).textContent||'').trim();
-  if (!isNaN(sebtAntCA2)) tfHtml += crItem('SEBT — Antérieur',       'CA='+sebtAntCA2+'cm   CS='+sebtAntCS2+'cm   '+lsiStr(sebtAntCA2,sebtAntCS2), statOf2(lsiCls2(sebtAntCA2,sebtAntCS2)), lsiCls2(sebtAntCA2,sebtAntCS2));
-  if (!isNaN(sebtPmCA2))  tfHtml += crItem('SEBT — Postéro-médial',  'CA='+sebtPmCA2+'cm   CS='+sebtPmCS2+'cm   '+lsiStr(sebtPmCA2,sebtPmCS2),   statOf2(lsiCls2(sebtPmCA2,sebtPmCS2)),   lsiCls2(sebtPmCA2,sebtPmCS2));
-  if (!isNaN(sebtPlCA2))  tfHtml += crItem('SEBT — Postéro-latéral', 'CA='+sebtPlCA2+'cm   CS='+sebtPlCS2+'cm   '+lsiStr(sebtPlCA2,sebtPlCS2),   statOf2(lsiCls2(sebtPlCA2,sebtPlCS2)),   lsiCls2(sebtPlCA2,sebtPlCS2));
+  if (!isNaN(sebtAntCA2)) tfHtml += crItem('SEBT — Antérieur',       _labelCA+'='+sebtAntCA2+'cm   '+_labelCS+'='+sebtAntCS2+'cm   '+lsiStr(sebtAntCA2,sebtAntCS2), statOf2(lsiCls2(sebtAntCA2,sebtAntCS2)), lsiCls2(sebtAntCA2,sebtAntCS2));
+  if (!isNaN(sebtPmCA2))  tfHtml += crItem('SEBT — Postéro-médial',  _labelCA+'='+sebtPmCA2+'cm   '+_labelCS+'='+sebtPmCS2+'cm   '+lsiStr(sebtPmCA2,sebtPmCS2),   statOf2(lsiCls2(sebtPmCA2,sebtPmCS2)),   lsiCls2(sebtPmCA2,sebtPmCS2));
+  if (!isNaN(sebtPlCA2))  tfHtml += crItem('SEBT — Postéro-latéral', _labelCA+'='+sebtPlCA2+'cm   '+_labelCS+'='+sebtPlCS2+'cm   '+lsiStr(sebtPlCA2,sebtPlCS2),   statOf2(lsiCls2(sebtPlCA2,sebtPlCS2)),   lsiCls2(sebtPlCA2,sebtPlCS2));
   if (sebtCompCA2 && sebtCompCA2.indexOf('CA :') === 0) {
-    tfHtml += crItem('SEBT — Score composite', sebtCompCA2.replace('CA : ','')+' (CA)   '+sebtCompCS2.replace('CS : ','')+' (CS)', '', '');
+    tfHtml += crItem('SEBT — Score composite', sebtCompCA2.replace('CA : ','')+' ('+_labelCA+')   '+sebtCompCS2.replace('CS : ','')+' ('+_labelCS+')', '', '');
   }
   tfHtml += obsBlock('sebt-obs-ca','sebt-obs-cs');
   // UQYBT
@@ -4203,12 +4212,12 @@ function _buildAllTestsHtml() {
   var ulrtEl2 = document.getElementById('ulrt-lsi');
   if (!isNaN(psetCAv)) {
     var pl = psetCSv>0?(psetCAv/psetCSv*100):NaN;
-    var psetVal = 'CA=' + psetCAv + '   CS=' + (isNaN(psetCSv)?'-':psetCSv) + (!isNaN(pl)?'   LSI=' + pl.toFixed(1) + '%':'');
+    var psetVal = _labelCA+'='+psetCAv+'   '+_labelCS+'='+(isNaN(psetCSv)?'-':psetCSv)+(!isNaN(pl)?'   LSI='+pl.toFixed(1)+'%':'');
     if (psetPoidsReelV) psetVal += '   — Poids utilisé : ' + psetPoidsReelV + ' kg';
     tfMsHtml += crItem('PSET', psetVal, statOf2(lsiCls2(psetCAv,psetCSv)), lsiCls2(psetCAv,psetCSv));
   }
   tfMsHtml += obsBlock('pset-obs-ca','pset-obs-cs');
-  if (!isNaN(setCAv))  { var sl = setCSv>0?(setCAv/setCSv*100):NaN; tfMsHtml += crItem('Shoulder Endurance', 'CA=' + setCAv + '   CS=' + setCSv + (!isNaN(sl)?'   LSI=' + sl.toFixed(1) + '%':''), statOf2(lsiCls2(setCAv,setCSv)), lsiCls2(setCAv,setCSv)); }
+  if (!isNaN(setCAv))  { var sl = setCSv>0?(setCAv/setCSv*100):NaN; tfMsHtml += crItem('Shoulder Endurance', _labelCA+'='+setCAv+'   '+_labelCS+'='+setCSv+(!isNaN(sl)?'   LSI='+sl.toFixed(1)+'%':''), statOf2(lsiCls2(setCAv,setCSv)), lsiCls2(setCAv,setCSv)); }
   tfMsHtml += obsBlock('set-obs-ca','set-obs-cs');
   (function(){
     var s2 = parseFloat((document.getElementById('ckc-s2')||{}).value||'');
@@ -4267,10 +4276,6 @@ function _buildAllTestsHtml() {
   var toWork = [];
 
   // ── Break tests force (wording : "Renforcer [muscle]") ──────────────────
-  // Résoudre CA/CS en côté anatomique réel (f-cote = 'DROIT' | 'GAUCHE')
-  var _cotePrimaire = ((document.getElementById('f-cote')||{}).value||'').toUpperCase();
-  var _labelCA = _cotePrimaire === 'DROIT' ? 'Droit' : _cotePrimaire === 'GAUCHE' ? 'Gauche' : 'CA';
-  var _labelCS = _cotePrimaire === 'DROIT' ? 'Gauche' : _cotePrimaire === 'GAUCHE' ? 'Droit' : 'CS';
   var forceTables = [
     {id:'tb-ha-force-d', side:'Droit'},  {id:'tb-ha-force-g', side:'Gauche'},
     {id:'tb-ge-knee-d',  side:'Droit'},  {id:'tb-ge-knee-g',  side:'Gauche'},
