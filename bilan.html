@@ -3040,7 +3040,7 @@ function _resetAndLoadPatient(p){
       }
       var b = res.data[0];
       _currentBilanId   = b.id;
-      _currentBilanDate = b.date || null;
+      _currentBilanDate = b.date ? b.date.split('T')[0] : null;
       _deserializeBilan(b.donnees||{});
       var d = b.date ? b.date.split('-').reverse().join('/') : '—';
       _showPatientToast('Bilan du '+d+' chargé');
@@ -3099,7 +3099,9 @@ function saveBilan(){
   var btn = document.getElementById('bilan-save-btn');
   btn.disabled = true; btn.textContent = '⏳ Sauvegarde…';
   var donnees = _serializeBilan();
-  var today = new Date().toISOString().split('T')[0];
+  // Utiliser la date LOCALE (pas toISOString qui est UTC et peut décaler d'un jour)
+  var _dn = new Date();
+  var today = _dn.getFullYear()+'-'+String(_dn.getMonth()+1).padStart(2,'0')+'-'+String(_dn.getDate()).padStart(2,'0');
   var p;
   // Même journée → update en place (corrections en cours de séance)
   // Jour différent ou nouveau bilan → snapshot automatique
@@ -3113,7 +3115,8 @@ function saveBilan(){
     btn.disabled=false;
     if(res.error){ btn.textContent='💾 Sauvegarder le bilan'; alert('Erreur : '+res.error.message); return; }
     _currentBilanId   = res.data.id;
-    _currentBilanDate = res.data.date || today;
+    // Normaliser la date (Supabase peut renvoyer un timestamp complet '2026-05-07T00:00:00+00:00')
+    _currentBilanDate = res.data.date ? res.data.date.split('T')[0] : today;
     _bilanModified = false;
     btn.textContent = isNewSnapshot ? '✓ Nouveau bilan enregistré !' : '✓ Sauvegardé !';
     setTimeout(function(){ btn.textContent='💾 Sauvegarder le bilan'; }, 2500);
@@ -3183,7 +3186,7 @@ function loadBilan(id){
   sbB.from('bilans').select('*').eq('id',id).single().then(function(res){
     if(res.error){ alert('Erreur : '+res.error.message); closeHistoModal(); return; }
     _currentBilanId   = res.data.id;
-    _currentBilanDate = res.data.date || null;
+    _currentBilanDate = res.data.date ? res.data.date.split('T')[0] : null;
     _deserializeBilan(res.data.donnees||{});
     closeHistoModal();
     var btn = document.getElementById('bilan-save-btn');
