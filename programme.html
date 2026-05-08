@@ -3875,6 +3875,7 @@ function _sbHeaders(){
 /* ── Rôles utilisateur ── */
 function _isAdmin(){ return _userRole === 'admin'; }
 function _isEditor(){ return _userRole === 'admin' || _userRole === 'editeur'; }
+function _isReader(){ return _userRole === 'lecteur'; }
 
 function _loadUserRole(){
   if(!_progToken || !_progUid) return;
@@ -5666,7 +5667,7 @@ function doSaveTemplate(){
     // ── Mode édition : PATCH sans toucher aux blocs ──
     var id = _tmplEditId;
     var patch = { nom:nom, categorie:cat, emoji:_tmplSelectedEmoji, group_id:groupId, phase_nom:'', phase_ordre:phaseOrdre };
-    if(_progToken && _progUid){
+    if(_progToken && _progUid && !_isReader()){
       fetch(SUPA_URL_P+'/rest/v1/templates?id=eq.'+id, {
         method:'PATCH', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
         body: JSON.stringify(patch)
@@ -5685,7 +5686,7 @@ function doSaveTemplate(){
 
   // ── Mode création ──
   var donnees = JSON.stringify({ blocs: JSON.parse(JSON.stringify(blocs)) });
-  if(_progToken && _progUid){
+  if(_progToken && _progUid && !_isReader()){
     fetch(SUPA_URL_P + '/rest/v1/templates', {
       method: 'POST',
       headers: _sbHeaders(),
@@ -6385,7 +6386,7 @@ function doCreateGroup(){
       return;
     }
     var libIdSnap = _grpLibId; // snapshot après vérification complète
-    if(_progToken && _progUid){
+    if(_progToken && _progUid && !_isReader()){
       fetch(SUPA_URL_P + '/rest/v1/template_groups?id=eq.' + id, {
         method:'PATCH', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
         body: JSON.stringify({ nom: nom, categorie: cat, description: desc })
@@ -6407,7 +6408,7 @@ function doCreateGroup(){
   }
 
   // ── Mode création ──
-  if(_progToken && _progUid){
+  if(_progToken && _progUid && !_isReader()){
     fetch(SUPA_URL_P + '/rest/v1/template_groups', {
       method: 'POST', headers: _sbHeaders(),
       body: JSON.stringify({ praticien_id: _progUid, nom: nom, categorie: cat, description: desc })
@@ -6670,7 +6671,7 @@ function _toggleCatSection(catKey){
 }
 
 // ── Kebab menu sidebar ──────────────────────────────────────────────────────
-function _openKebab(e, type, id, nom){
+function _openKebab(e, type, id, nom, ownerId){
   e.stopPropagation();
   _closeKebab();
   var btn  = e.currentTarget;
@@ -6679,17 +6680,23 @@ function _openKebab(e, type, id, nom){
   drop.className = 'stmpl-kdrop';
   drop.id = '_sidebarKebab';
 
-  var items = type === 'group'
-    ? [
-        { label: '✏️  Modifier',   action: function(){ openEditGroup(id); } },
-        { label: '📋  Dupliquer',  action: function(){ duplicateGroupById(id); } },
-        { label: '🗑  Supprimer',  action: function(){ deleteGroup(id); }, danger: true }
-      ]
-    : [
-        { label: '✏️  Modifier',   action: function(){ openEditTemplate(id); } },
-        { label: '📋  Dupliquer',  action: function(){ duplicateTemplateById(id); } },
-        { label: '🗑  Supprimer',  action: function(){ deleteTemplate(id); }, danger: true }
-      ];
+  // Modifier/Supprimer uniquement si le contenu appartient à l'utilisateur connecté (ou admin)
+  var isOwner = !ownerId || String(ownerId) === String(_progUid) || _isAdmin();
+
+  var items = [];
+  if(isOwner){
+    items.push(type === 'group'
+      ? { label: '✏️  Modifier', action: function(){ openEditGroup(id); } }
+      : { label: '✏️  Modifier', action: function(){ openEditTemplate(id); } });
+  }
+  items.push(type === 'group'
+    ? { label: '📋  Dupliquer', action: function(){ duplicateGroupById(id); } }
+    : { label: '📋  Dupliquer', action: function(){ duplicateTemplateById(id); } });
+  if(isOwner){
+    items.push(type === 'group'
+      ? { label: '🗑  Supprimer', action: function(){ deleteGroup(id); }, danger: true }
+      : { label: '🗑  Supprimer', action: function(){ deleteTemplate(id); }, danger: true });
+  }
 
   if(_isAdmin()){
     var _arr = type === 'group' ? (_groups||[]) : (_sidebarProgs||[]);
@@ -6731,10 +6738,27 @@ function _closeKebab(){
 
 // Duplication template depuis la sidebar (sans besoin que le template soit chargé)
 function duplicateTemplateById(id){
-  if(!_progToken || !_progUid){ alert('Session non disponible.'); return; }
   var src = (_sidebarProgs||[]).find(function(t){ return String(t.id)===String(id); });
+  if(!src){ _loadTemplates(); src = _templates.find(function(t){ return String(t.id)===String(id); }); }
   if(!src){ alert('Template introuvable.'); return; }
   var newNom = 'Copie de ' + (src.phase_nom||src.nom||'Template');
+  // Lecteur : duplication en localStorage uniquement
+  if(_isReader()){
+    _loadTemplates();
+    _templates.unshift({
+      id:'_t'+Math.random().toString(36).slice(2,9),
+      nom:newNom, categorie:src.categorie||'', emoji:src.emoji||'💪',
+      group_id:null, phase_nom:'', phase_ordre:0,
+      created_at:new Date().toISOString(),
+      donnees:src.donnees||JSON.stringify({blocs:src._blocs||[]}),
+      _local:true
+    });
+    _persistTemplates();
+    renderSidebarTemplates();
+    _showToast('📋 « '+newNom+' » dupliqué (local) !');
+    return;
+  }
+  if(!_progToken || !_progUid){ alert('Session non disponible.'); return; }
   var payload = {
     praticien_id: _progUid,
     nom:        newNom,
@@ -6760,10 +6784,28 @@ function duplicateTemplateById(id){
 
 // Duplication protocole depuis la sidebar (wrapper qui évite d'ouvrir le modal)
 function duplicateGroupById(id){
-  if(!_progToken || !_progUid){ alert('Session non disponible.'); return; }
   var g = (_groups||[]).find(function(x){ return String(x.id)===String(id); });
   if(!g){ alert('Protocole introuvable.'); return; }
   var newNom = 'Copie de ' + (g.nom||'Protocole');
+  // Lecteur : duplication locale uniquement
+  if(_isReader()){
+    _loadGroups();
+    var newGid = '_g'+Math.random().toString(36).slice(2,9);
+    _groups.unshift({ id:newGid, nom:newNom, categorie:g.categorie||null, description:g.description||null, created_at:new Date().toISOString(), _local:true });
+    _persistGroups();
+    var phases = (_sidebarProgs||[]).filter(function(p){ return String(p.group_id)===String(id); });
+    if(phases.length){
+      _loadTemplates();
+      phases.forEach(function(t){
+        _templates.unshift({ id:'_t'+Math.random().toString(36).slice(2,9), nom:t.nom||t.phase_nom||'', categorie:t.categorie||'', emoji:t.emoji||'💪', group_id:newGid, phase_nom:t.phase_nom||'', phase_ordre:t.phase_ordre||0, donnees:t.donnees||null, created_at:new Date().toISOString(), _local:true });
+      });
+      _persistTemplates();
+    }
+    renderSidebarTemplates();
+    _showToast('📋 « '+newNom+' » dupliqué (local) !');
+    return;
+  }
+  if(!_progToken || !_progUid){ alert('Session non disponible.'); return; }
   fetch(SUPA_URL_P+'/rest/v1/template_groups', {
     method:'POST', headers: _sbHeaders(),
     body: JSON.stringify({ praticien_id:_progUid, nom:newNom, categorie:g.categorie||null, description:g.description||null })
@@ -6864,7 +6906,7 @@ function _renderSidebarWithGroups(){
         html += '<span class="stmpl-group-toggle">'+(isOpen?'▼':'▶')+'</span>';
         html += '<div class="stmpl-group-info"><div class="stmpl-group-name">'+escH(g.nom||'Sans nom')+'</div>';
         html += '<div style="margin-top:2px;"><span style="font-size:.68rem;color:var(--muted);">'+phases.length+' phase'+(phases.length!==1?'s':'')+'</span></div></div>';
-        html += '<button class="stmpl-kebab" onclick="event.stopPropagation();_openKebab(event,\'group\',\''+gid+'\',\''+escJS(g.nom||'')+'\')" title="Actions">···</button></div>';
+        html += '<button class="stmpl-kebab" onclick="event.stopPropagation();_openKebab(event,\'group\',\''+gid+'\',\''+escJS(g.nom||'')+'\',\''+escJS(String(g.praticien_id||''))+'\')" title="Actions">···</button></div>';
         if(isOpen){
           html += '<div class="stmpl-group-body">';
           if(!phases.length) html += '<div class="stmpl-phase-empty">Aucune phase — cliquez + ci-dessous pour en créer une.</div>';
@@ -6911,7 +6953,7 @@ function _renderTmplCard(p, isPhase, phaseNum, hideCat){
     +phN+'<div class="stmpl-card-emoji">'+emoji+'</div>'
     +'<div class="stmpl-card-body"><div class="stmpl-card-name">'+pnom+' '+pubBdg+'</div>'
     +'<div class="stmpl-card-meta">'+catBdg+(sub?escH(sub):'')+'</div></div>'
-    +'<button class="stmpl-kebab" title="Actions" onclick="event.stopPropagation();_openKebab(event,\'tmpl\',\''+pid+'\',\''+escJS(dispNom)+'\')">···</button>'
+    +'<button class="stmpl-kebab" title="Actions" onclick="event.stopPropagation();_openKebab(event,\'tmpl\',\''+pid+'\',\''+escJS(dispNom)+'\',\''+escJS(String(p.praticien_id||''))+'\')" >···</button>'
     +'<button class="stmpl-add-btn" title="Planifier" onclick="event.stopPropagation();_openQuickAdd(\''+pid+'\',\''+pnom+'\')">+</button>'
     +'</div>';
 }
