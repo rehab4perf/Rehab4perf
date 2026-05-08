@@ -1460,15 +1460,15 @@ textarea { resize:none !important; overflow:hidden !important; }
 <div class="block">
   <div class="block-header red">Break Tests — Force musculaire</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
-    <div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div>
-    <div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div>
+    <div class="sl-d" data-col="d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div>
+    <div class="sl-g" data-col="g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
-    <table class="test-table" style="margin:0;border-radius:0">
+    <table class="test-table" data-col="d" style="margin:0;border-radius:0">
       <thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
       <tbody id="tb-ra-force-d"></tbody>
     </table>
-    <table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)">
+    <table class="test-table" data-col="g" style="margin:0;border-radius:0;background:var(--surface2)">
       <thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
       <tbody id="tb-ra-force-g"></tbody>
     </table>
@@ -1514,9 +1514,9 @@ textarea { resize:none !important; overflow:hidden !important; }
     <div class="block">
       <div class="block-header grey">Mobilité de Hanche</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
-        <div class="sl-g" style="background:var(--accent2);color:#fff;padding:7px 14px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div>
-        <div class="sl-d" style="background:var(--accent2);color:#fff;padding:7px 14px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div>
-        <div style="background:var(--surface);padding:10px 12px">
+        <div class="sl-g" data-col="g" style="background:var(--accent2);color:#fff;padding:7px 14px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div>
+        <div class="sl-d" data-col="d" style="background:var(--accent2);color:#fff;padding:7px 14px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div>
+        <div style="background:var(--surface);padding:10px 12px" data-col="g">
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:7px">
             <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:2px">Flexion <span style="color:var(--text3)">(n=120°)</span></div><input type="number" id="ha-mob-g-flex" min="0" max="145" placeholder="—" class="rom-num" style="width:100%" oninput="updateRomBar(this)"><div class="rom-bar-wrap"><div class="rom-bar-fill" id="ha-mob-g-flex-bar"></div><div class="rom-norm-tick" style="left:82.8%"></div></div><div id="ha-mob-g-flex-stat" class="rom-stat empty">—</div></div>
             <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:2px">Extension <span style="color:var(--text3)">(n=20°)</span></div><input type="number" id="ha-mob-g-ext" min="0" max="35" placeholder="—" class="rom-num" style="width:100%" oninput="updateRomBar(this)"><div class="rom-bar-wrap"><div class="rom-bar-fill" id="ha-mob-g-ext-bar"></div><div class="rom-norm-tick" style="left:57.1%"></div></div><div id="ha-mob-g-ext-stat" class="rom-stat empty">—</div></div>
@@ -1527,7 +1527,7 @@ textarea { resize:none !important; overflow:hidden !important; }
           </div>
           <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:2px">Observations côté gauche</div><textarea id="ha-mob-g-obs" placeholder="Ex: RI limitée à 15°, douleur inguinale en flexion…" style="font-family:inherit;font-size:.8rem;border:1px solid var(--border);border-radius:4px;padding:4px 6px;width:100%;min-height:44px;resize:vertical;outline:none"></textarea></div>
         </div>
-        <div style="background:var(--surface);padding:10px 12px">
+        <div style="background:var(--surface);padding:10px 12px" data-col="d">
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:7px">
             <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:2px">Flexion <span style="color:var(--text3)">(n=120°)</span></div><input type="number" id="ha-mob-d-flex" min="0" max="145" placeholder="—" class="rom-num" style="width:100%" oninput="updateRomBar(this)"><div class="rom-bar-wrap"><div class="rom-bar-fill" id="ha-mob-d-flex-bar"></div><div class="rom-norm-tick" style="left:82.8%"></div></div><div id="ha-mob-d-flex-stat" class="rom-stat empty">—</div></div>
             <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:2px">Extension <span style="color:var(--text3)">(n=20°)</span></div><input type="number" id="ha-mob-d-ext" min="0" max="35" placeholder="—" class="rom-num" style="width:100%" oninput="updateRomBar(this)"><div class="rom-bar-wrap"><div class="rom-bar-fill" id="ha-mob-d-ext-bar"></div><div class="rom-norm-tick" style="left:57.1%"></div></div><div id="ha-mob-d-ext-stat" class="rom-stat empty">—</div></div>
@@ -1545,15 +1545,15 @@ textarea { resize:none !important; overflow:hidden !important; }
 <div class="block">
   <div class="block-header red">Break Tests — Force musculaire</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
-    <div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div>
-    <div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div>
+    <div class="sl-g" data-col="g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div>
+    <div class="sl-d" data-col="d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
-    <table class="test-table" style="margin:0;border-radius:0">
+    <table class="test-table" data-col="g" style="margin:0;border-radius:0">
       <thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
       <tbody id="tb-ha-force-g"></tbody>
     </table>
-    <table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)">
+    <table class="test-table" data-col="d" style="margin:0;border-radius:0;background:var(--surface2)">
       <thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
       <tbody id="tb-ha-force-d"></tbody>
     </table>
@@ -1590,9 +1590,9 @@ textarea { resize:none !important; overflow:hidden !important; }
     <div class="block">
       <div class="block-header grey">Mobilité Hanche</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
-        <div class="sl-g" style="background:var(--accent2);color:#fff;padding:7px 14px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div>
-        <div class="sl-d" style="background:var(--accent2);color:#fff;padding:7px 14px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div>
-        <div style="background:var(--surface);padding:10px 12px">
+        <div class="sl-g" data-col="g" style="background:var(--accent2);color:#fff;padding:7px 14px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div>
+        <div class="sl-d" data-col="d" style="background:var(--accent2);color:#fff;padding:7px 14px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div>
+        <div style="background:var(--surface);padding:10px 12px" data-col="g">
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:7px">
             <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:2px">Flexion</div><input type="text" id="ge-mob-g-flex" placeholder="—" style="font-family:inherit;font-size:.85rem;border:1px solid var(--border2);border-radius:4px;padding:3px 6px;width:100%;outline:none;background:var(--surface)"></div>
             <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:2px">Extension</div><input type="text" id="ge-mob-g-ext" placeholder="—" style="font-family:inherit;font-size:.85rem;border:1px solid var(--border2);border-radius:4px;padding:3px 6px;width:100%;outline:none;background:var(--surface)"></div>
@@ -1603,7 +1603,7 @@ textarea { resize:none !important; overflow:hidden !important; }
           </div>
           <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:2px">Observations côté gauche</div><textarea id="ge-mob-g-obs" placeholder="Ex: RI déficitaire de 10° par rapport au côté sain…" style="font-family:inherit;font-size:.8rem;border:1px solid var(--border2);border-radius:4px;padding:4px 6px;width:100%;min-height:44px;resize:vertical;outline:none;background:var(--surface)"></textarea></div>
         </div>
-        <div style="background:var(--surface);padding:10px 12px">
+        <div style="background:var(--surface);padding:10px 12px" data-col="d">
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:7px">
             <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:2px">Flexion</div><input type="text" id="ge-mob-d-flex" placeholder="—" style="font-family:inherit;font-size:.85rem;border:1px solid var(--border);border-radius:4px;padding:3px 6px;width:100%;outline:none"></div>
             <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:2px">Extension</div><input type="text" id="ge-mob-d-ext" placeholder="—" style="font-family:inherit;font-size:.85rem;border:1px solid var(--border);border-radius:4px;padding:3px 6px;width:100%;outline:none"></div>
@@ -1657,15 +1657,15 @@ textarea { resize:none !important; overflow:hidden !important; }
 <div class="block">
   <div class="block-header red">Break Test Genou — Force musculaire</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
-    <div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div>
-    <div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div>
+    <div class="sl-g" data-col="g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div>
+    <div class="sl-d" data-col="d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
-    <table class="test-table" style="margin:0;border-radius:0">
+    <table class="test-table" data-col="g" style="margin:0;border-radius:0">
       <thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
       <tbody id="tb-ge-knee-g"></tbody>
     </table>
-    <table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)">
+    <table class="test-table" data-col="d" style="margin:0;border-radius:0;background:var(--surface2)">
       <thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
       <tbody id="tb-ge-knee-d"></tbody>
     </table>
@@ -1675,15 +1675,15 @@ textarea { resize:none !important; overflow:hidden !important; }
 <div class="block">
   <div class="block-header red">Break Test Hanche (genou) — Force musculaire</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
-    <div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div>
-    <div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div>
+    <div class="sl-g" data-col="g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div>
+    <div class="sl-d" data-col="d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
-    <table class="test-table" style="margin:0;border-radius:0">
+    <table class="test-table" data-col="g" style="margin:0;border-radius:0">
       <thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
       <tbody id="tb-ge-hip-g"></tbody>
     </table>
-    <table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)">
+    <table class="test-table" data-col="d" style="margin:0;border-radius:0;background:var(--surface2)">
       <thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
       <tbody id="tb-ge-hip-d"></tbody>
     </table>
@@ -1738,15 +1738,15 @@ textarea { resize:none !important; overflow:hidden !important; }
     <div class="block">
       <div class="block-header red">Tests de Force — Cheville (Break Tests)</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
-        <div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div>
-        <div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div>
+        <div class="sl-g" data-col="g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div>
+        <div class="sl-d" data-col="d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
-        <table class="test-table" style="margin:0;border-radius:0">
+        <table class="test-table" data-col="g" style="margin:0;border-radius:0">
           <thead><tr><th>Direction</th><th style="width:110px">Résultat</th><th>Obs.</th></tr></thead>
           <tbody id="tb-pi-force-ca"></tbody>
         </table>
-        <table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)">
+        <table class="test-table" data-col="d" style="margin:0;border-radius:0;background:var(--surface2)">
           <thead style="background:var(--accent2)"><tr><th>Direction</th><th style="width:110px">Résultat</th><th>Obs.</th></tr></thead>
           <tbody id="tb-pi-force-cs"></tbody>
         </table>
@@ -2523,12 +2523,12 @@ textarea { resize:none !important; overflow:hidden !important; }
   <div class="block-header">③ Side Hold Rotation Test</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
-      <div class="col-header">Mesure</div><div class="col-header sl-g">Côté Gauche</div><div class="col-header sl-d">Côté Droit</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+      <div class="col-header">Mesure</div><div class="col-header sl-g" data-col="g">Côté Gauche</div><div class="col-header sl-d" data-col="d">Côté Droit</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
       <div class="measure-label">Répétitions valides / 1 min</div>
-      <div class="measure-input"><input type="number" id="shrt-g" placeholder="—" oninput="calcSHRT()"></div>
-      <div class="measure-input"><input type="number" id="shrt-d" placeholder="—" oninput="calcSHRT()"></div>
+      <div class="measure-input" data-col="g"><input type="number" id="shrt-g" placeholder="—" oninput="calcSHRT()"></div>
+      <div class="measure-input" data-col="d"><input type="number" id="shrt-d" placeholder="—" oninput="calcSHRT()"></div>
       <div class="measure-stat" id="shrt-lsi">—</div>
       <div class="measure-stat" id="shrt-stat">—</div>
     </div>
@@ -2592,14 +2592,14 @@ textarea { resize:none !important; overflow:hidden !important; }
     <div class="measure-row" style="background:var(--surface2)">
       <div class="col-header">Mesure</div><div class="col-header">Essai 1</div><div class="col-header">Essai 2</div><div class="col-header">Essai 3</div><div class="col-header">Moyenne</div>
     </div>
-    <div class="measure-row">
+    <div class="measure-row" data-col="g">
       <div class="measure-label sl-g">Touches / 15 sec (côté Gauche)</div>
       <div class="measure-input"><input type="number" id="ulrt-g1" placeholder="—" oninput="calcULRT()"></div>
       <div class="measure-input"><input type="number" id="ulrt-g2" placeholder="—" oninput="calcULRT()"></div>
       <div class="measure-input"><input type="number" id="ulrt-g3" placeholder="—" oninput="calcULRT()"></div>
       <div class="measure-stat" id="ulrt-g-moy" style="font-size:1rem;font-weight:700;color:var(--accent2)">—</div>
     </div>
-    <div class="measure-row" style="background:var(--surface2)">
+    <div class="measure-row" data-col="d" style="background:var(--surface2)">
       <div class="measure-label sl-d" style="background:var(--surface2)">Touches / 15 sec (côté Droit)</div>
       <div class="measure-input" style="background:var(--surface2)"><input type="number" id="ulrt-d1" placeholder="—" oninput="calcULRT()" style="background:var(--surface2)"></div>
       <div class="measure-input" style="background:var(--surface2)"><input type="number" id="ulrt-d2" placeholder="—" oninput="calcULRT()" style="background:var(--surface2)"></div>
@@ -2637,29 +2637,29 @@ textarea { resize:none !important; overflow:hidden !important; }
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
       <div class="col-header">Direction</div>
-      <div class="col-header sl-g">Côté Gauche (cm)</div>
-      <div class="col-header sl-d">Côté Droit (cm)</div>
+      <div class="col-header sl-g" data-col="g">Côté Gauche (cm)</div>
+      <div class="col-header sl-d" data-col="d">Côté Droit (cm)</div>
       <div class="col-header">Diff %</div>
       <div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
       <div class="measure-label">Latéral (LAT)</div>
-      <div class="measure-input"><input type="number" id="uqybt-med-g" placeholder="--" step="0.5" oninput="calcUQYBT()"></div>
-      <div class="measure-input"><input type="number" id="uqybt-med-d" placeholder="--" step="0.5" oninput="calcUQYBT()"></div>
+      <div class="measure-input" data-col="g"><input type="number" id="uqybt-med-g" placeholder="--" step="0.5" oninput="calcUQYBT()"></div>
+      <div class="measure-input" data-col="d"><input type="number" id="uqybt-med-d" placeholder="--" step="0.5" oninput="calcUQYBT()"></div>
       <div class="measure-stat" id="uqybt-med-diff">--</div>
       <div class="measure-stat" id="uqybt-med-stat">--</div>
     </div>
     <div class="measure-row" style="background:var(--surface2)">
       <div class="measure-label" style="background:var(--surface2)">Inféro-Médial (IM)</div>
-      <div class="measure-input" style="background:var(--surface2)"><input type="number" id="uqybt-il-g" placeholder="--" step="0.5" oninput="calcUQYBT()" style="background:var(--surface2)"></div>
-      <div class="measure-input" style="background:var(--surface2)"><input type="number" id="uqybt-il-d" placeholder="--" step="0.5" oninput="calcUQYBT()" style="background:var(--surface2)"></div>
+      <div class="measure-input" data-col="g" style="background:var(--surface2)"><input type="number" id="uqybt-il-g" placeholder="--" step="0.5" oninput="calcUQYBT()" style="background:var(--surface2)"></div>
+      <div class="measure-input" data-col="d" style="background:var(--surface2)"><input type="number" id="uqybt-il-d" placeholder="--" step="0.5" oninput="calcUQYBT()" style="background:var(--surface2)"></div>
       <div class="measure-stat" id="uqybt-il-diff" style="background:var(--surface2)">--</div>
       <div class="measure-stat" id="uqybt-il-stat" style="background:var(--surface2)">--</div>
     </div>
     <div class="measure-row">
       <div class="measure-label">Supéro-Médial (SM)</div>
-      <div class="measure-input"><input type="number" id="uqybt-sl-g" placeholder="--" step="0.5" oninput="calcUQYBT()"></div>
-      <div class="measure-input"><input type="number" id="uqybt-sl-d" placeholder="--" step="0.5" oninput="calcUQYBT()"></div>
+      <div class="measure-input" data-col="g"><input type="number" id="uqybt-sl-g" placeholder="--" step="0.5" oninput="calcUQYBT()"></div>
+      <div class="measure-input" data-col="d"><input type="number" id="uqybt-sl-d" placeholder="--" step="0.5" oninput="calcUQYBT()"></div>
       <div class="measure-stat" id="uqybt-sl-diff">--</div>
       <div class="measure-stat" id="uqybt-sl-stat">--</div>
     </div>
@@ -2754,15 +2754,15 @@ textarea { resize:none !important; overflow:hidden !important; }
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
       <div class="col-header">Côté</div>
-      <div class="col-header sl-g">Côté Gauche (sec)</div>
-      <div class="col-header sl-d">Côté Droit (sec)</div>
+      <div class="col-header sl-g" data-col="g">Côté Gauche (sec)</div>
+      <div class="col-header sl-d" data-col="d">Côté Droit (sec)</div>
       <div class="col-header">Ratio D/G</div>
       <div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
       <div class="measure-label">Temps de maintien (sec)</div>
-      <div class="measure-input"><input type="number" id="rf-lat-g" placeholder="—" oninput="calcLNF()"></div>
-      <div class="measure-input"><input type="number" id="rf-lat-d" placeholder="—" oninput="calcLNF()"></div>
+      <div class="measure-input" data-col="g"><input type="number" id="rf-lat-g" placeholder="—" oninput="calcLNF()"></div>
+      <div class="measure-input" data-col="d"><input type="number" id="rf-lat-d" placeholder="—" oninput="calcLNF()"></div>
       <div class="measure-stat" id="rf-lat-ratio">—</div>
       <div class="measure-stat" id="rf-lat-stat">—</div>
     </div>
@@ -5685,6 +5685,45 @@ function _getCoteForScope(zones) {
   return unique.length === 1 ? unique[0] : 'BILATÉRAL';
 }
 
+function _applyColOrder(container, cote) {
+  var gFirst = (cote !== 'GAUCHE'); // G goes first unless G is Atteint (cote=GAUCHE)
+
+  // --- Part 1: elements with data-col="g"/"d" ---
+  // Collect unique parent elements that have at least one direct [data-col="g"] child
+  var allG = Array.prototype.slice.call(container.querySelectorAll('[data-col="g"]'));
+  var parents = [];
+  allG.forEach(function(el) {
+    var p = el.parentNode;
+    if (parents.indexOf(p) < 0) parents.push(p);
+  });
+  parents.forEach(function(parent) {
+    var gEls = Array.prototype.slice.call(parent.querySelectorAll(':scope > [data-col="g"]'));
+    var dEls = Array.prototype.slice.call(parent.querySelectorAll(':scope > [data-col="d"]'));
+    if (!gEls.length || !dEls.length) return;
+    // Is G currently before D?
+    var gBeforeD = !!(gEls[0].compareDocumentPosition(dEls[0]) & Node.DOCUMENT_POSITION_FOLLOWING);
+    if (gFirst && !gBeforeD) {
+      // Restore G first
+      gEls.forEach(function(gEl, i) { if (dEls[i]) parent.insertBefore(gEl, dEls[i]); });
+    } else if (!gFirst && gBeforeD) {
+      // Put D first (Sain first when G=Atteint)
+      dEls.forEach(function(dEl, i) { if (gEls[i]) parent.insertBefore(dEl, gEls[i]); });
+    }
+  });
+
+  // --- Part 2: ROM tables (swap col index 1 ↔ 2 in each row) ---
+  container.querySelectorAll('table.rom-block').forEach(function(table) {
+    var isSwapped = table.dataset.colState === 'swapped';
+    var needSwap = !gFirst;
+    if (needSwap !== isSwapped) {
+      table.querySelectorAll('tr').forEach(function(row) {
+        if (row.children.length >= 3) row.insertBefore(row.children[2], row.children[1]);
+      });
+      table.dataset.colState = needSwap ? 'swapped' : 'default';
+    }
+  });
+}
+
 function _applyLabels(container, cote) {
   var bilateral = (cote !== 'DROIT' && cote !== 'GAUCHE');
   var droitAtteint = (cote === 'DROIT');
@@ -5724,6 +5763,8 @@ function _applyLabels(container, cote) {
         .replace(/\bGauche\b/g,'Sain').replace(/\bgauche\b/g,'sain').replace(/\bGAUCHE\b/g,'SAIN');
     }
   });
+  // Apply column order: Sain always first, Atteint second
+  _applyColOrder(container, cote);
 }
 
 function _updateSideLabels(){
