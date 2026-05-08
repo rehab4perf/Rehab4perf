@@ -4547,9 +4547,22 @@ function _buildAllTestsHtml() {
       if (!isNaN(csN) && csN > 0) {
         // Mode Newton / LSI
         if (ft.key === 'ep-dent') {
-          if (csN < 20) { var i1 = ft.label + ' — ' + _labelCS; if (toWork.indexOf(i1)<0) toWork.push(i1); }
-          if (!isNaN(caN) && caN < 20) { var i2 = ft.label + ' — ' + _labelCA; if (toWork.indexOf(i2)<0) toWork.push(i2); }
-          if (!isNaN(caN) && csN > 0 && caN/csN*100 < 90) { var i3 = ft.label + ' — ' + _labelCA + ' (LSI ' + (caN/csN*100).toFixed(0) + '%)'; if (toWork.indexOf(i3)<0) toWork.push(i3); }
+          // CS side — une seule entrée consolidée
+          if (csN < 20) {
+            var dentCS = ft.label + ' — ' + _labelCS + ' (' + csN + ' rép < 20)';
+            if (toWork.indexOf(dentCS) < 0) toWork.push(dentCS);
+          }
+          // CA side — fusionner reps ET LSI en une seule entrée
+          if (!isNaN(caN)) {
+            var lsiDent = csN > 0 ? caN / csN * 100 : NaN;
+            var caReasons = [];
+            if (caN < 20) caReasons.push(caN + ' rép < 20');
+            if (!isNaN(lsiDent) && lsiDent < 90) caReasons.push('LSI ' + lsiDent.toFixed(0) + '%');
+            if (caReasons.length > 0) {
+              var dentCA = ft.label + ' — ' + _labelCA + ' (' + caReasons.join(', ') + ')';
+              if (toWork.indexOf(dentCA) < 0) toWork.push(dentCA);
+            }
+          }
         } else {
           if (!isNaN(caN) && csN > 0 && caN/csN*100 < 90) { var i4 = ft.label + ' — ' + _labelCA + ' (LSI ' + (caN/csN*100).toFixed(0) + '%)'; if (toWork.indexOf(i4)<0) toWork.push(i4); }
         }
