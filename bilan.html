@@ -3405,9 +3405,13 @@ function _resetBilanFields(){
   _painZones=[]; renderPainZones();
   // Recalculer TOUTES les fonctions d'affichage dérivées (LSI, RSI, déficits, badges…)
   try{ updateAll(); calcRec(); calcPlioq(); }catch(ex){}
-  try{ ['sls','hop','pset','set'].forEach(function(k){ calcLSI(k); }); calcDJ(); calcLunge(); calcMusc(); }catch(ex){}
-  try{ calcPlioq2(); calcSEBT(); calcUQYBT(); }catch(ex){}
-  try{ updateBadges(); }catch(ex){}
+  try{ ['sls','hop','pset','set'].forEach(function(k){ calcLSI(k); }); calcDJ(); calcLunge(); calcHR(); calcMusc(); }catch(ex){}
+  try{ calcPlioq2(); calcSEBT(); calcUQYBT(); calcSideHop(); }catch(ex){}
+  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-abd','ep-bht'].forEach(calcEpForce); }catch(ex){}
+  try{ updateBadges(); _initAllRomBars(); }catch(ex){}
+  // Éléments non couverts par les fonctions ci-dessus
+  try{ var ai=document.getElementById('aclrsi-interp'); if(ai) ai.innerHTML='Renseignez le score ACL-RSI'; }catch(ex){}
+  try{ var hl=document.getElementById('hdr-lma'); if(hl) hl.textContent='—'; }catch(ex){}
   _suppressDirty = false;
   _bilanModified = false;
   _refreshCRIfVisible();
@@ -4795,20 +4799,10 @@ function buildCR() {
 function openReset() { document.getElementById('modal-reset').classList.add('open'); }
 function closeReset() { document.getElementById('modal-reset').classList.remove('open'); }
 function doReset() {
-  // Clear all inputs
-  document.querySelectorAll('input:not([type=checkbox])').forEach(i => i.value = '');
-  document.querySelectorAll('textarea').forEach(t => t.value = '');
-  document.querySelectorAll('select').forEach(s => { s.selectedIndex = 0; s.className = ''; });
-  document.querySelectorAll('input[type=checkbox]').forEach(c => c.checked = false);
-
-  // Restore defaults
-  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
-  _painZones = []; renderPainZones();
-
+  _resetBilanFields();
   closeReset();
   showPage('infos');
   localStorage.removeItem('athletik-bilan');
-  updateAll(); calcRec();
   showToast(' Dossier réinitialisé - Prêt pour un nouveau patient');
 }
 
