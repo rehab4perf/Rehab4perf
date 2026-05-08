@@ -518,6 +518,31 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .builder-share-btn:hover { background:rgba(255,255,255,.28); }
 .builder-share-btn:disabled { opacity:.5; cursor:default; }
 
+/* ── Mode lecture seule : template public chargé par un lecteur ── */
+#builderPanel.r4p-readonly .exo-del-btn,
+#builderPanel.r4p-readonly .bloc-del-btn,
+#builderPanel.r4p-readonly .drag-handle,
+#builderPanel.r4p-readonly .bloc-drag-handle,
+#builderPanel.r4p-readonly .add-bloc-btn,
+#builderPanel.r4p-readonly .cardio-add-btn,
+#builderPanel.r4p-readonly .chain-toggle-btn,
+#builderPanel.r4p-readonly .builder-save-btn,
+#builderPanel.r4p-readonly .builder-update-btn,
+#builderPanel.r4p-readonly .cible-add,
+#builderPanel.r4p-readonly .cible-del,
+#builderPanel.r4p-readonly button[onclick*="addBloc"],
+#builderPanel.r4p-readonly button[onclick*="addCardio"] { display:none !important; }
+#builderPanel.r4p-readonly .cell-input,
+#builderPanel.r4p-readonly .notes-ta,
+#builderPanel.r4p-readonly select { pointer-events:none; opacity:.7; background:transparent; }
+#builderPanel.r4p-readonly [draggable] { draggable:false; }
+.builder-ro-banner {
+  display:none; align-items:center; gap:6px;
+  background:#FFF8E1; border-bottom:1px solid #F9A825;
+  padding:6px 14px; font-size:.73rem; color:#795548; font-weight:600;
+}
+#builderPanel.r4p-readonly .builder-ro-banner { display:flex; }
+
 .builder-save-btn {
   background:#2B5FA6; border:none; color:#fff; border-radius:7px;
   padding:5px 14px; font-size:.74rem; font-weight:600; cursor:pointer;
@@ -1622,6 +1647,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 
 <!-- ═══════════ BUILDER PANEL (droite) ═══════════ -->
 <div class="builder-panel" id="builderPanel">
+  <div class="builder-ro-banner">🔒 Template public — lecture seule. Dupliquez-le pour le modifier.</div>
   <div class="builder-header">
     <h2 id="builderTitle">Nouvelle séance</h2>
     <div id="builderActiveGroupBadge" style="display:none"></div>
@@ -5582,7 +5608,17 @@ var TMPL_SUBTYPES = {
 var _templates        = [];
 var _tmplSelectedEmoji = '💪';
 var _builderFromTemplate = null;
+var _builderReadOnly = false; // true = template public d'un autre user chargé par lecteur
 var _tmplEditId = null; // null = création, sinon id du template à modifier
+
+function _applyBuilderReadOnly(readOnly){
+  _builderReadOnly = readOnly;
+  var panel = document.getElementById('builderPanel');
+  if(panel){
+    if(readOnly) panel.classList.add('r4p-readonly');
+    else panel.classList.remove('r4p-readonly');
+  }
+}
 
 function _loadTemplates(){
   try { _templates = JSON.parse(localStorage.getItem('r4p-templates')||'[]'); } catch(e){ _templates=[]; }
@@ -5999,6 +6035,7 @@ function loadLibraryTemplate(id){
     _notes = '';
     _currentProgId = null;
     _builderFromTemplate = null; // lecture seule — save créera un nouveau programme
+    _applyBuilderReadOnly(false);
     renderSession();
     _updateBuilderTitle();
     _refreshSaveBtn();
@@ -6267,6 +6304,9 @@ function loadTemplate(id){
     _notes = d.notes || '';
     _currentProgId = null;
     _builderFromTemplate = String(t.id);
+    // Lecture seule si lecteur chargeant un template qui ne lui appartient pas
+    var notOwner = t.praticien_id && String(t.praticien_id) !== String(_progUid);
+    _applyBuilderReadOnly(_isReader() && !!notOwner);
     // Charger un template existant → pas de mode "nouvelle phase"
     _activeGroupId=null; _activeGroupNom=''; _activePhaseOrdre=1;
     _updateActiveGroupBadge();
@@ -6275,6 +6315,8 @@ function loadTemplate(id){
     _refreshSaveBtn();
     var pn = document.getElementById('patientName');
     if(pn) pn.value = t.nom || '';
+    if(_builderReadOnly && pn) pn.readOnly = true;
+    else if(pn) pn.readOnly = false;
     // Marquer l'état chargé comme "sauvegardé" pour éviter la pastille parasite
     _lastSavedHash = _sessionHash();
     _builderSaved = true;
@@ -7137,6 +7179,7 @@ function _exitBuilderMode(){
 function openBuilderForDate(dateStr){
   _builderDate = dateStr;
   _builderFromTemplate = null;
+  _applyBuilderReadOnly(false);
   // Pas de protocole actif quand on ouvre depuis le calendrier
   _activeGroupId=null; _activeGroupNom=''; _activePhaseOrdre=1;
   _updateActiveGroupBadge();
@@ -7149,6 +7192,7 @@ function openBuilderNew(){
   _builderDate = '';
   _currentProgId = null;
   _builderFromTemplate = null;
+  _applyBuilderReadOnly(false);
   // Pas de protocole actif quand on ouvre une nouvelle séance depuis + Séance
   _activeGroupId=null; _activeGroupNom=''; _activePhaseOrdre=1;
   _updateActiveGroupBadge();
