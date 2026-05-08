@@ -1211,6 +1211,14 @@ textarea { resize:none !important; overflow:hidden !important; }
 
 
 <div class="block">
+  <div class="block-header red">Quick Scan Épaule Irritable — Positif = ❌ (signe clinique)</div>
+  <table class="test-table">
+    <thead><tr><th style="width:50%">Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
+    <tbody id="tb-ep-irrit"></tbody>
+  </table>
+</div>
+
+<div class="block">
   <div class="block-header green">Quick Scan Fonctionnel — Positif = ✅ (signe favorable)</div>
   <table class="test-table">
     <thead><tr><th style="width:50%">Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
@@ -2851,6 +2859,13 @@ textarea { resize:none !important; overflow:hidden !important; }
 <script>
 // -- DATA -----------------------------------------------------
 const TESTS = {
+  'tb-ep-irrit':{type:'ortho',items:[
+    'Arm Squeeze Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Compression du tiers moyen du bras → Douleur = origine épaule</span>',
+    'ULNT 1 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf médian</span>',
+    'ULNT 2 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf médian</span>',
+    'ULNT 3 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf radial</span>',
+    'ULNT 4 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf ulnaire</span>',
+  ]},
   'tb-ep-trau-gh':{type:'ortho',items:[
     'Appréhension test (antérieure) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">ABD + RE → Appréhension</span>',
     'Relocation test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">ABD + RE + pression tête humérale → Absence d\'appréhension</span>',
@@ -3937,7 +3952,7 @@ function _buildAllTestsHtml() {
 
   // 2. Bilan ortho
   var orthoSections = [
-    { label:'EPAULE', fields:[['ep-type','Type'],['ep-marqueur','Marqueur']], tables:['tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho','tb-ep-force-d','tb-ep-force-g'], concl:'ep-conclusion', opt:'ep-opt' },
+    { label:'EPAULE', fields:[['ep-type','Type'],['ep-marqueur','Marqueur']], tables:['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho','tb-ep-force-d','tb-ep-force-g'], concl:'ep-conclusion', opt:'ep-opt' },
     { label:'RACHIS', fields:[['ra-marqueur','Marqueur'],['ra-mckenzie','McKenzie']], tables:['tb-ra-cerv','tb-ra-lomb','tb-ra-musc','tb-ra-force-d','tb-ra-force-g'], concl:'ra-conclusion', opt:'ra-opt' },
     { label:'HANCHE', fields:[['ha-marqueur','Marqueur']], tables:['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-force-d','tb-ha-force-g'], concl:'ha-conclusion', opt:'ha-opt' },
     { label:'GENOU', fields:[['ge-marqueur','Marqueur']], tables:['tb-ge-global','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-knee-d','tb-ge-knee-g','tb-ge-hip-d','tb-ge-hip-g'], concl:'ge-conclusion', opt:'ge-opt' },
