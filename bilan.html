@@ -1491,7 +1491,7 @@ textarea { resize:none !important; overflow:hidden !important; }
   <div class="block-header red">Contraction Flash Isométrique — 20 secondes</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
-      <div class="col-header">Muscle</div><div class="col-header">Côté sain</div><div class="col-header">Côté atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+      <div class="col-header">Muscle</div><div class="col-header sl-cs">Côté sain</div><div class="col-header sl-ca">Côté atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
       <div class="measure-label">Quadriceps — Répétitions max</div>
@@ -1505,11 +1505,11 @@ textarea { resize:none !important; overflow:hidden !important; }
   <div style="padding:6px 14px 8px;font-size:.75rem;color:var(--text3)">Contraction isométrique maximale 20s — nombre de répétitions · LSI ≥ 90%</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
+      <div class="sl-cs" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
       <textarea id="cf-obs-cs" placeholder="Ex: douleur en fin de contraction, recrutement difficile…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
     </div>
     <div style="background:var(--surface2);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
+      <div class="sl-ca" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
       <textarea id="cf-obs-ca" placeholder="Ex: contraction franche, symétrie qualitative…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
     </div>
   </div>
@@ -1768,7 +1768,7 @@ textarea { resize:none !important; overflow:hidden !important; }
   <div class="block-header">① Force Fonctionnelle — Single Leg Squat (SLS)</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
-      <div class="col-header">Test</div><div class="col-header">Côté sain</div><div class="col-header">Côté atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+      <div class="col-header">Test</div><div class="col-header sl-cs">Côté sain</div><div class="col-header sl-ca">Côté atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
       <div class="measure-label">Répétitions max à 90° (tempo 3s/2s)</div>
@@ -1784,11 +1784,11 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
+      <div class="sl-cs" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
       <textarea id="sls-obs-cs" placeholder="Ex: exécution symétrique, pas de compensation notable…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:70px;resize:vertical;outline:none;line-height:1.5"></textarea>
     </div>
     <div style="background:var(--surface2);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
+      <div class="sl-ca" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
       <textarea id="sls-obs-ca" placeholder="Ex: valgus dynamique à partir de la 5ème rép., compensation tronc, appui controlatéral…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:70px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
     </div>
   </div>
@@ -1799,7 +1799,7 @@ textarea { resize:none !important; overflow:hidden !important; }
   <div class="block-header">② Propulsion — Single Hop Test</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
-      <div class="col-header">Test</div><div class="col-header">Côté sain (cm)</div><div class="col-header">Côté atteint (cm)</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+      <div class="col-header">Test</div><div class="col-header sl-cs">Côté sain (cm)</div><div class="col-header sl-ca">Côté atteint (cm)</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
       <div class="measure-label">Distance saut unipodal max</div>
@@ -1815,11 +1815,11 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
+      <div class="sl-cs" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
       <textarea id="hop-obs-cs" placeholder="Ex: réception propre, symétrie qualitative…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
     </div>
     <div style="background:var(--surface2);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
+      <div class="sl-ca" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
       <textarea id="hop-obs-ca" placeholder="Ex: réception asymétrique, valgus à l'atterrissage…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
     </div>
   </div>
@@ -1832,8 +1832,8 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
   <div style="padding:8px 14px 4px;font-size:.82rem;color:var(--text2)">Cocher les critères réussis. <strong>0/3 = non réussi · 1-2/3 = à améliorer · 3/3 = réussi</strong></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);margin-bottom:1px">
-    <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ SAIN</div>
-    <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ ATTEINT</div>
+    <div class="sl-cs" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ SAIN</div>
+    <div class="sl-ca" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ ATTEINT</div>
     <div style="background:var(--surface);padding:8px 14px;text-align:center;border-bottom:1px solid var(--border)">
       <div class="val" id="rec-score-cs" style="font-size:1.4rem;font-weight:700;color:var(--text2)">—</div>
       <div id="rec-status-cs" style="font-size:.78rem;font-weight:600;margin-top:2px">—</div>
@@ -1846,11 +1846,11 @@ textarea { resize:none !important; overflow:hidden !important; }
   <div id="rec-criteria" style="border-top:1px solid var(--border)"></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
+      <div class="sl-cs" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
       <textarea id="rec-obs-cs" placeholder="Ex: réception stable, bon contrôle genou…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
     </div>
     <div style="background:var(--surface2);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
+      <div class="sl-ca" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
       <textarea id="rec-obs-ca" placeholder="Ex: valgus dynamique marqué, appui trop médial…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
     </div>
   </div>
@@ -1869,7 +1869,7 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
   <div style="background:var(--border);padding:1px">
     <div style="background:var(--surface2);display:grid;grid-template-columns:1fr 1fr 1fr;padding:6px 14px;font-size:.7rem;font-weight:700;text-transform:uppercase;color:var(--text2);letter-spacing:.05em;gap:1px">
-      <div>Critère</div><div style="text-align:center">Côté sain</div><div style="text-align:center">Côté atteint</div>
+      <div>Critère</div><div class="sl-cs" style="text-align:center">Côté sain</div><div class="sl-ca" style="text-align:center">Côté atteint</div>
     </div>
     <div style="background:var(--surface);display:grid;grid-template-columns:1fr 1fr 1fr;padding:10px 14px;border-bottom:1px solid var(--border);align-items:center;gap:4px">
       <div style="font-size:.85rem;font-weight:500">① Absence de raideur du membre <span style="font-size:.72rem;color:var(--text3);font-weight:400;display:block">Contact au sol bref et élastique</span></div>
@@ -1884,21 +1884,21 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 14px">
     <div style="text-align:center">
-      <div style="font-size:.7rem;color:var(--text2);margin-bottom:4px;font-weight:600">CÔTÉ SAIN</div>
+      <div class="sl-cs" style="font-size:.7rem;color:var(--text2);margin-bottom:4px;font-weight:600">CÔTÉ SAIN</div>
       <div id="plioq-stat-cs" style="font-size:1rem;font-weight:700;color:var(--text3)">—</div>
     </div>
     <div style="text-align:center">
-      <div style="font-size:.7rem;color:var(--text2);margin-bottom:4px;font-weight:600">CÔTÉ ATTEINT</div>
+      <div class="sl-ca" style="font-size:.7rem;color:var(--text2);margin-bottom:4px;font-weight:600">CÔTÉ ATTEINT</div>
       <div id="plioq-stat-ca" style="font-size:1rem;font-weight:700;color:var(--text3)">—</div>
     </div>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
+      <div class="sl-cs" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
       <textarea id="plioq-obs-cs" placeholder="Ex: rebond élastique, hauteur symétrique…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
     </div>
     <div style="background:var(--surface2);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
+      <div class="sl-ca" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
       <textarea id="plioq-obs-ca" placeholder="Ex: temps de contact prolongé, raideur en flexion…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
     </div>
   </div>
@@ -1909,7 +1909,7 @@ textarea { resize:none !important; overflow:hidden !important; }
   <div class="block-header">⑥ Force du Mollet — Heel Rise Test</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
-      <div class="col-header">Mesure</div><div class="col-header">Côté sain</div><div class="col-header">Côté atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+      <div class="col-header">Mesure</div><div class="col-header sl-cs">Côté sain</div><div class="col-header sl-ca">Côté atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
       <div class="measure-label">Répétitions max (unipodales)<br><span style="font-size:.72rem;color:var(--text3);font-weight:400">Cadence 60 bpm · 1s montée + 1s descente</span></div>
@@ -1939,11 +1939,11 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
+      <div class="sl-cs" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
       <textarea id="hr-obs-cs" placeholder="Ex: amplitude complète, cadence maintenue…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
     </div>
     <div style="background:var(--surface2);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
+      <div class="sl-ca" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
       <textarea id="hr-obs-ca" placeholder="Ex: douleur mollet en fin de série, manque de cadence…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
     </div>
   </div>
@@ -1954,7 +1954,7 @@ textarea { resize:none !important; overflow:hidden !important; }
   <div class="block-header">⑦ Flexion Dorsale de Cheville — Lunge Test WBLT</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
-      <div class="col-header">Mesure</div><div class="col-header">Côté sain (cm)</div><div class="col-header">Côté atteint (cm)</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+      <div class="col-header">Mesure</div><div class="col-header sl-cs">Côté sain (cm)</div><div class="col-header sl-ca">Côté atteint (cm)</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
       <div class="measure-label">Distance pied-mur</div>
@@ -1970,11 +1970,11 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
+      <div class="sl-cs" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
       <textarea id="lu-obs-cs" placeholder="Ex: amplitude optimale, aucune limitation…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
     </div>
     <div style="background:var(--surface2);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
+      <div class="sl-ca" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
       <textarea id="lu-obs-ca" placeholder="Ex: douleur antérieure en fin de course, raideur tibio-talienne…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
     </div>
   </div>
@@ -1985,7 +1985,7 @@ textarea { resize:none !important; overflow:hidden !important; }
   <div class="block-header">⑤ Pliométrie Quantitative — Single Leg Drop Jump</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
-      <div class="col-header">Mesure</div><div class="col-header">Côté sain</div><div class="col-header">Côté atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+      <div class="col-header">Mesure</div><div class="col-header sl-cs">Côté sain</div><div class="col-header sl-ca">Côté atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
       <div class="measure-label">Hauteur saut (cm)</div>
@@ -2011,11 +2011,11 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
+      <div class="sl-cs" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
       <textarea id="dj-obs-cs" placeholder="Ex: bonne absorption, posture symétrique…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
     </div>
     <div style="background:var(--surface2);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
+      <div class="sl-ca" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
       <textarea id="dj-obs-ca" placeholder="Ex: flexion genou réduite à l'atterrissage, valgus dynamique…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
     </div>
   </div>
@@ -2046,8 +2046,8 @@ textarea { resize:none !important; overflow:hidden !important; }
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
       <div class="col-header">Mesure</div>
-      <div class="col-header">Côté sain</div>
-      <div class="col-header">Côté atteint</div>
+      <div class="col-header sl-cs">Côté sain</div>
+      <div class="col-header sl-ca">Côté atteint</div>
       <div class="col-header">LSI %</div>
       <div class="col-header">Statut</div>
     </div>
@@ -2079,11 +2079,11 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
+      <div class="sl-cs" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
       <textarea id="sh-obs-cs" placeholder="Ex: cadence maintenue, appui stable…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
     </div>
     <div style="background:var(--surface2);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
+      <div class="sl-ca" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
       <textarea id="sh-obs-ca" placeholder="Ex: perte d'équilibre après 20s, manque de cadence…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
     </div>
   </div>
@@ -2122,8 +2122,8 @@ textarea { resize:none !important; overflow:hidden !important; }
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
       <div class="col-header" style="grid-column:span 1">Direction</div>
-      <div class="col-header">Côté Sain (cm)</div>
-      <div class="col-header">Côté Atteint (cm)</div>
+      <div class="col-header sl-cs">Côté Sain (cm)</div>
+      <div class="col-header sl-ca">Côté Atteint (cm)</div>
       <div class="col-header">Diff % normalisée</div>
       <div class="col-header">Statut</div>
     </div>
@@ -2187,11 +2187,11 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
+      <div class="sl-cs" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
       <textarea id="sebt-obs-cs" placeholder="Ex: score composite > 89%, répartition équilibrée…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
     </div>
     <div style="background:var(--surface2);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
+      <div class="sl-ca" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
       <textarea id="sebt-obs-ca" placeholder="Ex: perte d'équilibre en ANT, compensation tronc…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
     </div>
   </div>
@@ -2219,7 +2219,7 @@ textarea { resize:none !important; overflow:hidden !important; }
       <div class="block-header">Quadriceps</div>
       <div style="padding:1px 0">
         <div class="measure-row" style="background:var(--surface2)">
-          <div class="col-header">Mesure / Mode</div><div class="col-header">Côté sain (Nm)</div><div class="col-header">Côté atteint (Nm)</div><div class="col-header">Déficit %</div><div class="col-header">Norme</div>
+          <div class="col-header">Mesure / Mode</div><div class="col-header sl-cs">Côté sain (Nm)</div><div class="col-header sl-ca">Côté atteint (Nm)</div><div class="col-header">Déficit %</div><div class="col-header">Norme</div>
         </div>
         <div class="measure-row"><div class="measure-label">Force — Concentrique 60°/s</div><div class="measure-input"><input type="number" id="q-f-cs" placeholder="—" oninput="calcMusc()"></div><div class="measure-input"><input type="number" id="q-f-ca" placeholder="—" oninput="calcMusc()"></div><div class="measure-stat" id="q-f-def">—</div><div class="measure-stat" style="font-size:.75rem;color:var(--text3)">Déficit &lt; 10%</div></div>
         <div class="measure-row" style="background:var(--surface2)"><div class="measure-label" style="background:var(--surface2)">Puissance — Concentrique 240°/s</div><div class="measure-input" style="background:var(--surface2)"><input type="number" id="q-p-cs" placeholder="—" oninput="calcMusc()"></div><div class="measure-input" style="background:var(--surface2)"><input type="number" id="q-p-ca" placeholder="—" oninput="calcMusc()"></div><div class="measure-stat" id="q-p-def" style="background:var(--surface2)">—</div><div class="measure-stat" style="background:var(--surface2);font-size:.75rem;color:var(--text3)">Déficit &lt; 15%</div></div>
@@ -2268,7 +2268,7 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
-      <div class="col-header">Mesure</div><div class="col-header">Côté sain</div><div class="col-header">Côté atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+      <div class="col-header">Mesure</div><div class="col-header sl-cs">Côté sain</div><div class="col-header sl-ca">Côté atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
       <div class="measure-label">Répétitions max (Tempo 2/0/2/0)</div>
@@ -2291,11 +2291,11 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
+      <div class="sl-cs" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
       <textarea id="pset-obs-cs" placeholder="Ex: maintien complet, aucune compensation…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
     </div>
     <div style="background:var(--surface2);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
+      <div class="sl-ca" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
       <textarea id="pset-obs-ca" placeholder="Ex: fatigue précoce, compensation scapulaire…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
     </div>
   </div>
@@ -2409,11 +2409,11 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
+      <div class="sl-ca" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
       <textarea id="shrt-obs-ca" placeholder="Ex: chute du bassin, fatigue épaule après 30s…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
     </div>
     <div style="background:var(--surface2);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
+      <div class="sl-cs" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
       <textarea id="shrt-obs-cs" placeholder="Ex: position stable, amplitude complète…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
     </div>
   </div>
@@ -2424,7 +2424,7 @@ textarea { resize:none !important; overflow:hidden !important; }
   <div class="block-header">④ Shoulder Endurance Test</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
-      <div class="col-header">Mesure</div><div class="col-header">Côté sain</div><div class="col-header">Côté atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+      <div class="col-header">Mesure</div><div class="col-header sl-cs">Côté sain</div><div class="col-header sl-ca">Côté atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
       <div class="measure-label">Total répétitions (ou palier d'arrêt)</div>
@@ -2445,11 +2445,11 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
+      <div class="sl-ca" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
       <textarea id="set-obs-ca" placeholder="Ex: arrêt palier 90 bpm, perte RE en fin de mouvement…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
     </div>
     <div style="background:var(--surface2);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
+      <div class="sl-cs" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
       <textarea id="set-obs-cs" placeholder="Ex: palier 120 bpm atteint, technique propre…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
     </div>
   </div>
@@ -2488,11 +2488,11 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
+      <div class="sl-ca" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
       <textarea id="ulrt-obs-ca" placeholder="Ex: rotation tronc réduite, perte de gainage latéral…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5"></textarea>
     </div>
     <div style="background:var(--surface2);padding:8px 14px 10px">
-      <div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
+      <div class="sl-cs" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
       <textarea id="ulrt-obs-cs" placeholder="Ex: amplitude complète, position stable…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
     </div>
   </div>
@@ -5317,6 +5317,7 @@ function renderPainZones(){
   var fc = document.getElementById('f-cote');
   if(fc) fc.value = _painZones.length ? _painZones[0].cote : '';
   updateAll();
+  if(typeof _updateSideLabels === 'function') _updateSideLabels();
 }
 
 function addPainZone(){
@@ -5335,11 +5336,31 @@ function removePainZone(idx){
   renderPainZones();
 }
 
+function _updateSideLabels(){
+  var cote = ((document.getElementById('f-cote')||{}).value||'').toUpperCase();
+  var bilateral = (cote !== 'DROIT' && cote !== 'GAUCHE');
+  document.querySelectorAll('.sl-cs').forEach(function(el){
+    if(!el.dataset.slOrig) el.dataset.slOrig = el.textContent;
+    el.textContent = el.dataset.slOrig
+      .replace(/\bSain\b/g,  bilateral ? 'Gauche' : 'Sain')
+      .replace(/\bsain\b/g,  bilateral ? 'gauche' : 'sain')
+      .replace(/\bSAIN\b/g,  bilateral ? 'GAUCHE' : 'SAIN');
+  });
+  document.querySelectorAll('.sl-ca').forEach(function(el){
+    if(!el.dataset.slOrig) el.dataset.slOrig = el.textContent;
+    el.textContent = el.dataset.slOrig
+      .replace(/\bAtteint\b/g, bilateral ? 'Droit'   : 'Atteint')
+      .replace(/\batteint\b/g, bilateral ? 'droit'   : 'atteint')
+      .replace(/\bATTEINT\b/g, bilateral ? 'DROIT'   : 'ATTEINT');
+  });
+}
+
 function _parsePainZones(){
   var hf = document.getElementById('f-pain-zones');
   if(!hf || !hf.value || hf.value==='[]') { _painZones = []; }
   else { try{ _painZones = JSON.parse(hf.value)||[]; }catch(e){ _painZones=[]; } }
   renderPainZones();
+  _updateSideLabels();
 }
 
 // Init
