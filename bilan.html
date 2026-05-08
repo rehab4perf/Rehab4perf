@@ -1961,19 +1961,25 @@ textarea { resize:none !important; overflow:hidden !important; }
     <label class="cr-toggle-label"><input type="checkbox" id="rec-cr-toggle"> ✓ Inclure dans le CR</label>
   </div>
   <div style="padding:8px 14px 4px;font-size:.82rem;color:var(--text2)">Cocher les critères réussis. <strong>0/3 = non réussi · 1-2/3 = à améliorer · 3/3 = réussi</strong></div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);margin-bottom:1px">
-    <div class="sl-cs" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ SAIN</div>
-    <div class="sl-ca" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ ATTEINT</div>
-    <div style="background:var(--surface);padding:8px 14px;text-align:center;border-bottom:1px solid var(--border)">
-      <div class="val" id="rec-score-cs" style="font-size:1.4rem;font-weight:700;color:var(--text2)">—</div>
-      <div id="rec-status-cs" style="font-size:.78rem;font-weight:600;margin-top:2px">—</div>
+  <!-- En-tête 3 colonnes -->
+  <div style="display:grid;grid-template-columns:1fr 90px 90px;background:var(--accent2);padding:6px 14px;gap:8px">
+    <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.75)">Critère</div>
+    <div class="sl-cs" style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#fff;text-align:center">Sain</div>
+    <div class="sl-ca" style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#fff;text-align:center">Atteint</div>
+  </div>
+  <!-- Ligne score -->
+  <div style="display:grid;grid-template-columns:1fr 90px 90px;background:var(--surface);padding:8px 14px;gap:8px;border-bottom:2px solid var(--border)">
+    <div style="font-size:.8rem;color:var(--text3);font-weight:500;display:flex;align-items:center">Score</div>
+    <div style="text-align:center">
+      <div class="val" id="rec-score-cs" style="font-size:1.15rem;font-weight:700;color:var(--text2);line-height:1.2">—</div>
+      <div id="rec-status-cs" style="font-size:.68rem;font-weight:600;margin-top:1px">—</div>
     </div>
-    <div style="background:var(--surface);padding:8px 14px;text-align:center;border-bottom:1px solid var(--border)">
-      <div class="val" id="rec-score-ca" style="font-size:1.4rem;font-weight:700;color:var(--text2)">—</div>
-      <div id="rec-status" style="font-size:.78rem;font-weight:600;margin-top:2px">—</div>
+    <div style="text-align:center">
+      <div class="val" id="rec-score-ca" style="font-size:1.15rem;font-weight:700;color:var(--text2);line-height:1.2">—</div>
+      <div id="rec-status" style="font-size:.68rem;font-weight:600;margin-top:1px">—</div>
     </div>
   </div>
-  <div id="rec-criteria" style="border-top:1px solid var(--border)"></div>
+  <div id="rec-criteria"></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
       <div class="sl-cs" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
@@ -3221,16 +3227,10 @@ function init() {
   const critGrid = document.getElementById('rec-criteria');
   CRITERIA_REC.forEach((c, i) => {
     var rowBg = i % 2 === 0 ? 'var(--surface)' : 'var(--surface2)';
-  critGrid.innerHTML += '<div style="display:grid;grid-template-columns:60px 60px 1fr;background:' + rowBg + ';padding:10px 14px;align-items:center;gap:10px;border-bottom:1px solid var(--border)">' +
-      '<div style="display:flex;flex-direction:column;align-items:center;gap:4px">' +
-      '<div style="font-size:.65rem;color:var(--text3);font-weight:600">CS</div>' +
-      '<input type="checkbox" id="rec-cs-' + i + '" onchange="calcRec()" style="width:18px;height:18px;cursor:pointer;accent-color:var(--accent)">' +
-      '</div>' +
-      '<div style="display:flex;flex-direction:column;align-items:center;gap:4px">' +
-      '<div style="font-size:.65rem;color:var(--text3);font-weight:600">CA</div>' +
-      '<input type="checkbox" id="rec-ca-' + i + '" onchange="calcRec()" style="width:18px;height:18px;cursor:pointer;accent-color:var(--green)">' +
-      '</div>' +
-      '<label for="rec-ca-' + i + '" style="font-size:.86rem;line-height:1.4;cursor:pointer;color:var(--text)">' + c.label + '<span style="display:block;font-size:.7rem;color:var(--text3);margin-top:1px">' + c.ref + '</span></label>' +
+  critGrid.innerHTML += '<div style="display:grid;grid-template-columns:1fr 90px 90px;background:' + rowBg + ';padding:10px 14px;align-items:center;gap:8px;border-bottom:1px solid var(--border)">' +
+      '<div style="font-size:.86rem;line-height:1.4;color:var(--text)">' + c.label + '<span style="display:block;font-size:.7rem;color:var(--text3);margin-top:1px">' + c.ref + '</span></div>' +
+      '<div style="text-align:center"><input type="checkbox" id="rec-cs-' + i + '" onchange="calcRec()" style="width:18px;height:18px;cursor:pointer;accent-color:var(--accent)"></div>' +
+      '<div style="text-align:center"><input type="checkbox" id="rec-ca-' + i + '" onchange="calcRec()" style="width:18px;height:18px;cursor:pointer;accent-color:var(--green)"></div>' +
       '</div>';
   });
 
