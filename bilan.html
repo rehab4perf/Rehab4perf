@@ -1292,7 +1292,7 @@ textarea { resize:none !important; overflow:hidden !important; }
     </div>
     <!-- Rotateurs latéraux R1 -->
     <div class="measure-row">
-      <div class="measure-label">Rotateurs latéraux R1</div>
+      <div class="measure-label">Rotateurs latéraux RE1</div>
       <div class="measure-input"><input type="number" id="ep-rl1-cs" min="0" placeholder="— N" oninput="calcEpForce('ep-rl1')"></div>
       <div class="measure-input"><input type="number" id="ep-rl1-ca" min="0" placeholder="— N" oninput="calcEpForce('ep-rl1')"></div>
       <div class="measure-stat" id="ep-rl1-lsi">—</div>
@@ -1306,7 +1306,7 @@ textarea { resize:none !important; overflow:hidden !important; }
     </div>
     <!-- Rotateurs latéraux R2 -->
     <div class="measure-row">
-      <div class="measure-label">Rotateurs latéraux R2</div>
+      <div class="measure-label">Rotateurs latéraux RE2</div>
       <div class="measure-input"><input type="number" id="ep-rl2-cs" min="0" placeholder="— N" oninput="calcEpForce('ep-rl2')"></div>
       <div class="measure-input"><input type="number" id="ep-rl2-ca" min="0" placeholder="— N" oninput="calcEpForce('ep-rl2')"></div>
       <div class="measure-stat" id="ep-rl2-lsi">—</div>
@@ -4100,7 +4100,7 @@ function _buildAllTestsHtml() {
         var isPos = val === 'Positif' || val === 'Validé';
         var isNeg = val === 'Négatif' || val === 'Pas validé';
         if (selEl && (isPos || isNeg)) {
-          var tname = cfg.items[ri] || '';
+          var tname = (cfg.items[ri] || '').replace(/<[^>]*>/g, '').trim();
           var noteVal = noteEl ? noteEl.value : '';
           var isFonc = cfg.type === 'fonc';
           var tag, tagCls;
@@ -4147,6 +4147,48 @@ function _buildAllTestsHtml() {
       ], true);
     }
     if (sec.label === 'EPAULE') {
+      // GIRD
+      var girdCS = parseFloat((document.getElementById('gird-cs')||{}).value);
+      var girdCA = parseFloat((document.getElementById('gird-ca')||{}).value);
+      if (!isNaN(girdCS) && !isNaN(girdCA)) {
+        var girdDiff = girdCS - girdCA;
+        var girdTag = girdDiff > 15 ? 'Positif' : 'Négatif';
+        var girdCls = girdDiff > 15 ? 'bad' : 'ok';
+        secRows += crItem('GIRD — RI', 'CS=' + girdCS + '° CA=' + girdCA + '° (diff ' + (girdDiff>=0?'+':'') + girdDiff.toFixed(0) + '°)', girdTag, girdCls);
+      }
+      // Force break tests
+      var epForceTests = [
+        {key:'ep-trap', label:'Trapèze inf. — Y Test'},
+        {key:'ep-dent', label:'Dentelé ant. — Push up+'},
+        {key:'ep-rl1',  label:'Rotateurs lat. RE1'},
+        {key:'ep-rl2',  label:'Rotateurs lat. RE2'},
+        {key:'ep-abd',  label:'Élévation antérieure'},
+        {key:'ep-bht',  label:'Bear Hug Test'},
+      ];
+      epForceTests.forEach(function(ft) {
+        var csN = parseFloat((document.getElementById(ft.key+'-cs')||{}).value);
+        var caN = parseFloat((document.getElementById(ft.key+'-ca')||{}).value);
+        var csA = (document.getElementById(ft.key+'-apr-cs')||{}).value||'';
+        var caA = (document.getElementById(ft.key+'-apr-ca')||{}).value||'';
+        if (!isNaN(csN) && csN > 0) {
+          var lsiV = !isNaN(caN) ? caN/csN*100 : NaN;
+          var isDent = ft.key === 'ep-dent';
+          var isPos = isDent ? (csN < 20 || (!isNaN(caN) && caN < 20) || (!isNaN(lsiV) && lsiV < 90))
+                             : (!isNaN(lsiV) && lsiV < 90);
+          var valStr = (isDent ? 'CS=' + csN + ' rép' : 'CS=' + csN + ' N') +
+                       (!isNaN(caN) ? (isDent ? ' CA=' + caN + ' rép' : ' CA=' + caN + ' N') : '') +
+                       (!isNaN(lsiV) ? ' LSI=' + lsiV.toFixed(0) + '%' : '');
+          secRows += crItem(ft.label, valStr, isPos ? 'Positif' : 'Négatif', isPos ? 'bad' : 'ok');
+        } else if (csA || caA) {
+          var parts = [];
+          if (csA) parts.push(_labelCS + '=' + csA);
+          if (caA) parts.push(_labelCA + '=' + caA);
+          var anyPos = csA === 'Positif' || caA === 'Positif';
+          if (anyPos || csA === 'Négatif' || caA === 'Négatif') {
+            secRows += crItem(ft.label, parts.join(' · '), anyPos ? 'Positif' : 'Négatif', anyPos ? 'bad' : 'ok');
+          }
+        }
+      });
       secRows += romCrTable('Amplitudes Articulaires — Épaule (°)', [
         {label:'Flexion',          dId:'rom-ep-d-flex',  gId:'rom-ep-g-flex'},
         {label:'Extension',        dId:'rom-ep-d-ext',   gId:'rom-ep-g-ext'},
@@ -4486,6 +4528,56 @@ function _buildAllTestsHtml() {
       if (item && toWork.indexOf(item) === -1) toWork.push(item);
     });
   }
+
+  // ── Force épaule (break tests + dentelé) ────────────────────────────────
+  (function(){
+    var epForceMap = [
+      {key:'ep-trap', label:'Renforcer le trapèze inférieur'},
+      {key:'ep-dent', label:'Renforcer le dentelé antérieur'},
+      {key:'ep-rl1',  label:'Renforcer les rotateurs externes RE1'},
+      {key:'ep-rl2',  label:'Renforcer les rotateurs externes RE2'},
+      {key:'ep-abd',  label:'Renforcer les élévateurs de l\'épaule'},
+      {key:'ep-bht',  label:'Renforcer le sub-scapulaire'},
+    ];
+    epForceMap.forEach(function(ft) {
+      var csN = parseFloat((document.getElementById(ft.key+'-cs')||{}).value);
+      var caN = parseFloat((document.getElementById(ft.key+'-ca')||{}).value);
+      var csA = (document.getElementById(ft.key+'-apr-cs')||{}).value||'';
+      var caA = (document.getElementById(ft.key+'-apr-ca')||{}).value||'';
+      if (!isNaN(csN) && csN > 0) {
+        // Mode Newton / LSI
+        if (ft.key === 'ep-dent') {
+          if (csN < 20) { var i1 = ft.label + ' — ' + _labelCS; if (toWork.indexOf(i1)<0) toWork.push(i1); }
+          if (!isNaN(caN) && caN < 20) { var i2 = ft.label + ' — ' + _labelCA; if (toWork.indexOf(i2)<0) toWork.push(i2); }
+          if (!isNaN(caN) && csN > 0 && caN/csN*100 < 90) { var i3 = ft.label + ' — ' + _labelCA + ' (LSI ' + (caN/csN*100).toFixed(0) + '%)'; if (toWork.indexOf(i3)<0) toWork.push(i3); }
+        } else {
+          if (!isNaN(caN) && csN > 0 && caN/csN*100 < 90) { var i4 = ft.label + ' — ' + _labelCA + ' (LSI ' + (caN/csN*100).toFixed(0) + '%)'; if (toWork.indexOf(i4)<0) toWork.push(i4); }
+        }
+      } else {
+        // Mode appréciation
+        if (csA === 'Positif') { var i5 = ft.label + ' — ' + _labelCS; if (toWork.indexOf(i5)<0) toWork.push(i5); }
+        if (caA === 'Positif') { var i6 = ft.label + ' — ' + _labelCA; if (toWork.indexOf(i6)<0) toWork.push(i6); }
+      }
+    });
+    // GIRD
+    var girdCS2 = parseFloat((document.getElementById('gird-cs')||{}).value);
+    var girdCA2 = parseFloat((document.getElementById('gird-ca')||{}).value);
+    if (!isNaN(girdCS2) && !isNaN(girdCA2) && girdCS2 - girdCA2 > 15) {
+      toWork.push('Travailler le gain en rotation interne gléno-humérale — ' + _labelCA + ' (GIRD ' + (girdCS2-girdCA2).toFixed(0) + '°)');
+    }
+    // ULNT positifs (tb-ep-irrit)
+    var irritTbody = document.getElementById('tb-ep-irrit');
+    if (irritTbody) {
+      var ulntPos = [];
+      irritTbody.querySelectorAll('tr').forEach(function(row) {
+        var sel = row.querySelector('select'); if (!sel || sel.value !== 'Positif') return;
+        var td = row.querySelector('td'); if (!td) return;
+        var name = td.textContent.trim();
+        if (name.indexOf('ULNT') !== -1) ulntPos.push(name.replace(/\s+/g,' '));
+      });
+      if (ulntPos.length) toWork.push('Mobilisation neurale — ' + ulntPos.join(', ') + ' positif(s)');
+    }
+  })();
 
   // ── PSET ─────────────────────────────────────────────────────────────────
   if (!isNaN(psetCAv) && psetCSv > 0) {
@@ -5542,12 +5634,26 @@ function calcEpForce(key) {
   if (!isNaN(cs) && cs > 0) {
     var lsi = !isNaN(ca) ? ca / cs * 100 : NaN;
     lsiEl.textContent = isNaN(lsi) ? '—' : lsi.toFixed(0) + '%';
-    if (isNaN(lsi)) {
-      statEl.textContent = '—'; statEl.className = 'measure-stat';
-    } else if (lsi >= 90) {
-      statEl.textContent = '✅ ≥ 90%'; statEl.className = 'measure-stat good';
+    // Dentelé : positif si CS < 20 OU CA < 20 OU LSI < 90%
+    if (key === 'ep-dent') {
+      var dentPos = cs < 20 || (!isNaN(ca) && ca < 20) || (!isNaN(lsi) && lsi < 90);
+      if (dentPos) {
+        var reasons = [];
+        if (cs < 20) reasons.push('CS ' + cs + ' rép < 20');
+        if (!isNaN(ca) && ca < 20) reasons.push('CA ' + ca + ' rép < 20');
+        if (!isNaN(lsi) && lsi < 90) reasons.push('LSI ' + lsi.toFixed(0) + '%');
+        statEl.textContent = '❌ ' + reasons.join(' · '); statEl.className = 'measure-stat bad';
+      } else {
+        statEl.textContent = '✅ OK'; statEl.className = 'measure-stat good';
+      }
     } else {
-      statEl.textContent = '❌ ' + lsi.toFixed(0) + '%'; statEl.className = 'measure-stat bad';
+      if (isNaN(lsi)) {
+        statEl.textContent = '—'; statEl.className = 'measure-stat';
+      } else if (lsi >= 90) {
+        statEl.textContent = '✅ ≥ 90%'; statEl.className = 'measure-stat good';
+      } else {
+        statEl.textContent = '❌ ' + lsi.toFixed(0) + '%'; statEl.className = 'measure-stat bad';
+      }
     }
   } else {
     lsiEl.textContent = '—';
