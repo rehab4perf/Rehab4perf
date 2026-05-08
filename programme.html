@@ -2238,6 +2238,7 @@ function escJS(s){ return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'"
 var _libPreviewTimer  = null;
 var _libPreviewKeepOn = false; // true quand la souris est sur le popover
 var _libPreviewExId   = null;  // exo actuellement affiché
+var _libHideTimer     = null;  // délai avant fermeture (desktop)
 
 function _buildLibPreviewHtml(ex){
   var html = '<div class="pp-name">'+escH(ex.name)+'</div>';
@@ -2275,9 +2276,10 @@ function _showLibPreviewNow(exId, targetEl){
   var pop = document.getElementById('libPreviewPop');
   pop.innerHTML = _buildLibPreviewHtml(ex);
   _positionLibPreview(targetEl);
-  // Sur touch : le thumb doit être cliquable
-  if(_isTouchDevice) pop.style.pointerEvents = 'auto';
-  else pop.style.pointerEvents = 'none';
+  // Toujours activer les pointer-events : sur desktop pour que _libPreviewKeep
+  // fonctionne (annule la fermeture quand la souris entre dans le popup),
+  // sur touch pour que le thumb soit cliquable
+  pop.style.pointerEvents = 'auto';
   // Marquer le bouton actif
   document.querySelectorAll('.lib-info-btn').forEach(function(b){ b.classList.remove('active'); });
   var btn = document.getElementById('libinfo-'+exId);
@@ -2292,13 +2294,23 @@ function _showLibPreviewDelayed(exId, targetEl){
 function _hideLibPreview(){
   if(_libPreviewKeepOn) return; // souris sur le popover, on attend
   clearTimeout(_libPreviewTimer); _libPreviewTimer = null;
-  var pop = document.getElementById('libPreviewPop');
-  if(pop) pop.style.display = 'none';
-  document.querySelectorAll('.lib-info-btn').forEach(function(b){ b.classList.remove('active'); });
-  _libPreviewExId = null;
+  clearTimeout(_libHideTimer);
+  // Sur desktop : délai de 220ms pour permettre à la souris de rejoindre le popup
+  // Sur touch   : fermeture immédiate (le ℹ gère son propre cycle)
+  var delay = _isTouchDevice ? 0 : 220;
+  _libHideTimer = setTimeout(function(){
+    if(_libPreviewKeepOn) return; // la souris est entrée dans le popup entre-temps
+    var pop = document.getElementById('libPreviewPop');
+    if(pop) pop.style.display = 'none';
+    document.querySelectorAll('.lib-info-btn').forEach(function(b){ b.classList.remove('active'); });
+    _libPreviewExId = null;
+  }, delay);
 }
 
-function _libPreviewKeep(){ _libPreviewKeepOn = true; }
+function _libPreviewKeep(){
+  _libPreviewKeepOn = true;
+  clearTimeout(_libHideTimer); // annule la fermeture en cours si la souris rejoint le popup
+}
 function _libPreviewLeave(){ _libPreviewKeepOn = false; _hideLibPreview(); }
 
 // Touch : tap sur ℹ = toggle
