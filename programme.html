@@ -3909,9 +3909,29 @@ function _togglePublic(type, id, makePublic){
       var arr = type === 'group' ? (_groups||[]) : (_sidebarProgs||[]);
       var item = arr.find(function(x){ return String(x.id)===String(id); });
       if(item) item.is_public = makePublic;
-      renderSidebarTemplates();
-      renderBuilderLibrary();
-      _showToast(makePublic ? '🌐 Rendu public !' : '🔒 Rendu privé !');
+      // Cascade is_public sur toutes les phases du groupe
+      if(type === 'group'){
+        fetch(SUPA_URL_P+'/rest/v1/templates?group_id=eq.'+id, {
+          method: 'PATCH',
+          headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
+          body: JSON.stringify({ is_public: makePublic })
+        }).then(function(){
+          (_sidebarProgs||[]).forEach(function(p){
+            if(String(p.group_id)===String(id)) p.is_public = makePublic;
+          });
+          renderSidebarTemplates();
+          renderBuilderLibrary();
+          _showToast(makePublic ? '🌐 Rendu public (protocole + phases) !' : '🔒 Rendu privé !');
+        }).catch(function(){
+          renderSidebarTemplates();
+          renderBuilderLibrary();
+          _showToast(makePublic ? '🌐 Groupe public — erreur mise à jour phases.' : '🔒 Rendu privé !');
+        });
+      } else {
+        renderSidebarTemplates();
+        renderBuilderLibrary();
+        _showToast(makePublic ? '🌐 Rendu public !' : '🔒 Rendu privé !');
+      }
     } else {
       r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); });
     }
@@ -5686,11 +5706,13 @@ function doSaveTemplate(){
 
   // ── Mode création ──
   var donnees = JSON.stringify({ blocs: JSON.parse(JSON.stringify(blocs)) });
+  // Hériter is_public du groupe parent si celui-ci est déjà public
+  var parentGroupPublic = !!(groupId && (_groups||[]).find(function(g){ return String(g.id)===String(groupId) && g.is_public; }));
   if(_progToken && _progUid && !_isReader()){
     fetch(SUPA_URL_P + '/rest/v1/templates', {
       method: 'POST',
       headers: _sbHeaders(),
-      body: JSON.stringify({ praticien_id:_progUid, nom:nom, categorie:cat, emoji:_tmplSelectedEmoji, donnees:donnees, group_id:groupId, phase_nom:'', phase_ordre:phaseOrdre })
+      body: JSON.stringify({ praticien_id:_progUid, nom:nom, categorie:cat, emoji:_tmplSelectedEmoji, donnees:donnees, group_id:groupId, phase_nom:'', phase_ordre:phaseOrdre, is_public:parentGroupPublic })
     }).then(function(r){
       if(r.ok){
         _draftClear();
