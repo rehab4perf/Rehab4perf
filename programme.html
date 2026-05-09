@@ -519,17 +519,31 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .builder-share-btn:disabled { opacity:.5; cursor:default; }
 
 /* ── Mode lecture seule : template public chargé par un lecteur ── */
-#builderPanel.r4p-readonly .exo-del-btn,
-#builderPanel.r4p-readonly .bloc-del-btn,
+/*
+ * PRINCIPE (Option B) : le layout grid est identique au mode normal.
+ * Les éléments de structure (drag, delete) restent dans le flux via
+ * visibility:hidden → zéro risque de décalage si le builder évolue.
+ * Seuls les boutons d'action hors-grille sont cachés avec display:none.
+ */
+
+/* Éléments de grille → invisibles mais gardent leur espace */
 #builderPanel.r4p-readonly .drag-handle,
 #builderPanel.r4p-readonly .bloc-drag-handle,
+#builderPanel.r4p-readonly .exo-del-btn,
+#builderPanel.r4p-readonly .bloc-del-btn { visibility:hidden; pointer-events:none; }
+
+/* Boutons d'action hors-grille → complètement masqués */
 #builderPanel.r4p-readonly .add-bloc-btn,
 #builderPanel.r4p-readonly .cardio-add-btn,
 #builderPanel.r4p-readonly .chain-toggle-btn,
 #builderPanel.r4p-readonly .builder-save-btn,
 #builderPanel.r4p-readonly .builder-update-btn,
 #builderPanel.r4p-readonly .cible-add-btn,
-#builderPanel.r4p-readonly .cible-del-btn { display:none !important; }
+#builderPanel.r4p-readonly .cible-del-btn,
+#builderPanel.r4p-readonly .methode-bar,
+#builderPanel.r4p-readonly #tmplQuickSaveBtn,
+#builderPanel.r4p-readonly button[onclick*="addBloc"] { display:none !important; }
+
 /* Champs : apparence identique au mode normal, juste non-interactifs */
 #builderPanel.r4p-readonly .cell-input,
 #builderPanel.r4p-readonly .cible-min-input,
@@ -538,10 +552,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 #builderPanel.r4p-readonly .exo-consigne-ta,
 #builderPanel.r4p-readonly .notes-ta,
 #builderPanel.r4p-readonly .exo-meth-check { pointer-events:none; }
-/* Grille exo-row : supprimer colonnes drag(28px) et delete(32px) — le nom retrouve 1fr */
-.app.builder-mode #builderPanel.r4p-readonly .builder-body .exo-row {
-  grid-template-columns: 1fr 60px 60px 48px 60px 76px 180px;
-}
 .builder-ro-banner {
   display:none; align-items:center; gap:6px;
   background:#FFF8E1; border-bottom:1px solid #F9A825;
