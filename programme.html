@@ -1366,6 +1366,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   <div class="topbar-right">
     <button class="topbar-btn" onclick="toggleSidebar()" title="Bibliothèque">☰ Biblio</button>
     <button class="topbar-btn" onclick="openCycles()">🔄 Cycles</button>
+    <button class="topbar-btn" onclick="openProtoPanel()">📚 Protocoles</button>
     <button class="topbar-btn primary" onclick="openBuilderNew()" id="topbarNewBtn">+ Séance</button>
   </div>
 </div>
@@ -1720,9 +1721,11 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   <div id="mpanel-seance"></div>
   <div id="mpanel-seances"></div>
   <div id="mpanel-cal"></div>
+  <div id="mpanel-proto"></div>
   <div id="mtab-seance"></div>
   <div id="mtab-seances"></div>
   <div id="mtab-cal"></div>
+  <div id="mtab-proto"></div>
   <div id="patientBadge"><span id="patientBadgeName"></span></div>
   <div id="calPatientLabel"></div>
   <span id="topbarPatientSync"></span>
@@ -4244,6 +4247,165 @@ renderLib('');
 }
 </style>
 
+<!-- ══ PROTOCOLES OVERLAY ══════════════════════════════════════════ -->
+<style>
+/* --- Overlay fullscreen --- */
+.proto-overlay {
+  position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:400;
+  display:none;align-items:flex-start;justify-content:center;overflow-y:auto;padding:16px;
+}
+.proto-overlay.open { display:flex; }
+.proto-box {
+  background:#fff;border-radius:14px;width:100%;max-width:900px;
+  box-shadow:0 24px 64px rgba(0,0,0,.3);margin:auto;overflow:hidden;
+}
+/* --- Header --- */
+.proto-head {
+  background:linear-gradient(135deg,#1A3A5C 0%,#2B5FA6 100%);
+  color:#fff;padding:16px 20px;display:flex;align-items:center;gap:12px;
+}
+.proto-head h2 { flex:1;font-size:1rem;font-weight:700;letter-spacing:.02em; }
+.proto-head-close {
+  background:none;border:none;color:rgba(255,255,255,.7);
+  font-size:1.6rem;cursor:pointer;line-height:1;transition:color .15s;
+}
+.proto-head-close:hover { color:#fff; }
+/* --- Body --- */
+.proto-body { padding:20px; }
+/* --- Protocol card --- */
+.proto-card {
+  border:1px solid #E2E8F0;border-radius:10px;overflow:hidden;margin-bottom:16px;
+}
+.proto-card-header {
+  display:flex;align-items:center;gap:10px;padding:12px 16px;
+  background:#F8FAFC;cursor:pointer;user-select:none;transition:background .15s;
+}
+.proto-card-header:hover { background:#EEF3FB; }
+.proto-card-header-icon { font-size:1.3rem; }
+.proto-card-header-info { flex:1; }
+.proto-card-header-info h3 { font-size:.9rem;font-weight:700;color:#1A3A5C;margin:0 0 2px; }
+.proto-card-header-meta { font-size:.72rem;color:#6B7280; }
+.proto-card-header-actions { display:flex;align-items:center;gap:8px; }
+.proto-card-chevron {
+  font-size:.9rem;color:#9CA3AF;transition:transform .2s;display:inline-block;
+}
+.proto-card.open .proto-card-chevron { transform:rotate(90deg); }
+.proto-card-body { display:none;border-top:1px solid #E2E8F0; }
+.proto-card.open .proto-card-body { display:block; }
+/* --- Timeline phases --- */
+.proto-timeline {
+  display:flex;gap:0;overflow-x:auto;padding:16px 16px 8px;
+  border-bottom:1px solid #E2E8F0;background:#FAFAFA;
+}
+.proto-phase-dot {
+  display:flex;flex-direction:column;align-items:center;flex:1;min-width:100px;position:relative;
+}
+.proto-phase-dot:not(:last-child)::after {
+  content:'';position:absolute;top:14px;left:50%;width:100%;height:2px;
+  background:linear-gradient(90deg,#CBD5E1,#CBD5E1);z-index:0;
+}
+.proto-phase-circle {
+  width:28px;height:28px;border-radius:50%;border:2px solid;
+  display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:700;
+  background:#fff;z-index:1;position:relative;
+}
+.proto-phase-label {
+  font-size:.64rem;color:#6B7280;margin-top:5px;text-align:center;line-height:1.25;
+}
+.proto-phase-weeks {
+  font-size:.6rem;color:#9CA3AF;text-align:center;
+}
+/* --- Phase accordion --- */
+.proto-phases-list { padding:12px 16px;display:flex;flex-direction:column;gap:10px; }
+.proto-phase-item {
+  border-radius:8px;overflow:hidden;border:1px solid;
+}
+.proto-phase-item-header {
+  display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;
+  user-select:none;font-size:.82rem;font-weight:600;transition:filter .15s;
+}
+.proto-phase-item-header:hover { filter:brightness(.96); }
+.proto-phase-item-chevron { font-size:.8rem;transition:transform .2s;margin-left:auto;color:#6B7280; }
+.proto-phase-item.open .proto-phase-item-chevron { transform:rotate(90deg); }
+.proto-phase-content { display:none;padding:12px 14px;background:#fff;font-size:.8rem; }
+.proto-phase-item.open .proto-phase-content { display:block; }
+/* --- Section labels in phase content --- */
+.proto-section-label {
+  font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  color:#6B7280;margin:10px 0 5px;
+}
+.proto-section-label:first-child { margin-top:0; }
+/* --- Lists --- */
+.proto-list { list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px; }
+.proto-list li {
+  display:flex;align-items:flex-start;gap:7px;font-size:.78rem;color:#374151;line-height:1.4;
+}
+.proto-list li::before { content:'›';color:#9CA3AF;flex-shrink:0;margin-top:.05em; }
+/* --- Weekly content --- */
+.proto-week-row {
+  display:flex;gap:8px;margin-bottom:6px;align-items:flex-start;
+}
+.proto-week-badge {
+  flex-shrink:0;font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:10px;
+  background:#EEF3FB;color:#2B5FA6;white-space:nowrap;margin-top:1px;
+}
+.proto-week-text { font-size:.78rem;color:#374151;line-height:1.4; }
+/* --- Criteria checkboxes --- */
+.proto-criteria-item {
+  display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid #F1F5F9;
+}
+.proto-criteria-item:last-child { border-bottom:none; }
+.proto-criteria-cb { width:15px;height:15px;flex-shrink:0;cursor:pointer;margin-top:2px;accent-color:#16A34A; }
+.proto-criteria-text {
+  font-size:.78rem;color:#374151;line-height:1.4;transition:color .15s;
+}
+.proto-criteria-item.checked .proto-criteria-text { text-decoration:line-through;color:#9CA3AF; }
+/* --- Action footer --- */
+.proto-card-footer {
+  padding:14px 16px;border-top:1px solid #E2E8F0;background:#F8FAFC;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.proto-use-btn {
+  display:inline-flex;align-items:center;gap:6px;padding:8px 16px;
+  background:#1A3A5C;color:#fff;border:none;border-radius:7px;
+  font-size:.8rem;font-weight:600;cursor:pointer;transition:background .15s;font-family:inherit;
+}
+.proto-use-btn:hover { background:#16305A; }
+.proto-use-btn:disabled { opacity:.5;cursor:not-allowed; }
+.proto-use-btn.secondary {
+  background:#fff;color:#1A3A5C;border:1px solid #CBD5E1;
+}
+.proto-use-btn.secondary:hover { background:#EEF3FB; }
+.proto-use-btn.danger { background:#DC2626; }
+.proto-use-btn.danger:hover { background:#B91C1C; }
+.proto-footer-info { flex:1;font-size:.72rem;color:#9CA3AF;font-style:italic; }
+/* --- Empty state --- */
+.proto-empty {
+  text-align:center;padding:40px 20px;color:#9CA3AF;font-size:.85rem;
+}
+/* --- Progress indicator --- */
+.proto-progress-bar-wrap {
+  height:4px;background:#E5E7EB;border-radius:2px;margin:8px 0 4px;overflow:hidden;
+}
+.proto-progress-bar {
+  height:100%;border-radius:2px;background:#16A34A;transition:width .3s;
+}
+.proto-progress-label { font-size:.68rem;color:#6B7280; }
+</style>
+
+<div class="proto-overlay" id="proto-overlay" onclick="if(event.target===this)closeProtoPanel()">
+  <div class="proto-box">
+    <div class="proto-head">
+      <span style="font-size:1.4rem;">📚</span>
+      <h2>Protocoles de référence</h2>
+      <button class="proto-head-close" onclick="closeProtoPanel()">×</button>
+    </div>
+    <div class="proto-body" id="proto-body">
+      <div class="proto-empty">Chargement…</div>
+    </div>
+  </div>
+</div>
+
 <div class="cycle-modal-overlay" id="cycle-modal">
   <div class="cycle-modal-box">
     <div class="cycle-modal-head">
@@ -4564,6 +4726,7 @@ function showMainTab(id) {
   document.getElementById('mpanel-'+id).classList.add('active');
   if(id === 'seances') renderSeances();
   if(id === 'cal') renderCalendar();
+  if(id === 'proto') renderProtocols();
 }
 
 /* ================================================================
@@ -7291,6 +7454,458 @@ function _renderUpcoming(){
           + '</div>';
   });
   document.getElementById('upcomingList').innerHTML = html;
+}
+
+/* ================================================================
+   PROTOCOLES DE RÉFÉRENCE
+   ================================================================ */
+
+/* ─── Données ─────────────────────────────────────────────────── */
+var PROTOCOLS_REF = [
+  {
+    id: 'latarjet',
+    name: 'Post-Latarjet',
+    icon: '🦴',
+    category: 'Pathologie',
+    source: 'Dr B. Khatir + Kinesport',
+    duration: '6 mois (S0 → S24)',
+    phases: [
+      {
+        id: 'p1',
+        name: 'Phase 1 — Immobilisation',
+        weeks: 'S0 → S3',
+        color: '#EFF6FF',
+        borderColor: '#3B82F6',
+        objectives: [
+          'Contrôle de la douleur et de l\'œdème',
+          'Préservation de la mobilité distale (coude, poignet, main)',
+          'Contraction musculaire isométrique péri-scapulaire précoce',
+          'Éducation posturale'
+        ],
+        precautions: [
+          'Écharpe stricte 3 semaines',
+          'Aucune rotation externe passive',
+          'Pas de mise en charge du membre supérieur',
+          'Éviter les positions en appui sur le coude opéré'
+        ],
+        weekly: [
+          { week: 'S0–S1', content: 'Glaçage, travail distal (doigts/poignet), isométrie légère deltoïde en position neutre, éducation portage écharpe' },
+          { week: 'S1–S3', content: 'Mobilisation douce flexion/abduction passive ≤ 60°, isométrie sous-scapulaire à 0°, massage cicatriciel dès J15' }
+        ],
+        exitCriteria: [
+          'Écharpe retirée selon prescription chirurgicale (J21)',
+          'Mobilité passive : flex ≥ 90°, abd ≥ 60°, RE ≤ 0°',
+          'Absence de douleur au repos (EVA < 2)'
+        ]
+      },
+      {
+        id: 'p2',
+        name: 'Phase 2 — Récupération des amplitudes',
+        weeks: 'S3 → S6',
+        color: '#F0FDF4',
+        borderColor: '#22C55E',
+        objectives: [
+          'Récupérer les amplitudes passives complètes',
+          'Début de travail musculaire actif en chaîne ouverte',
+          'Stabilisation scapulaire active',
+          'Proprioception précoce en décharge'
+        ],
+        precautions: [
+          'RE limitée à 0° jusqu\'à S6 (accord chirurgien)',
+          'Pas de port de charge > 1 kg',
+          'Éviter les mouvements combinés (ABD + RE)',
+          'Contrôle douleur post-séance < 3/10'
+        ],
+        weekly: [
+          { week: 'S3–S4', content: 'Mobilisation active-aidée en flex/abd, renforcement isométrique deltoïde et coiffe en positions non provocantes, stretching capsule postérieure' },
+          { week: 'S4–S6', content: 'Renforcement concentrique coiffe (RE/RI) à 0°–30° abd, travail rythme scapulo-huméral, proprioception membre en l\'air, hydrokinesithérapie si disponible' }
+        ],
+        exitCriteria: [
+          'Flexion active ≥ 150°, abduction ≥ 120°',
+          'RE active ≥ 30° (si autorisation chirurgien)',
+          'Force isométrique coiffe ≥ 60% côté sain (Daniels ≥ 3+)',
+          'Absence d\'arc douloureux'
+        ]
+      },
+      {
+        id: 'p3',
+        name: 'Phase 3 — Renforcement musculaire',
+        weeks: 'S6 → S12',
+        color: '#FFFBEB',
+        borderColor: '#F59E0B',
+        objectives: [
+          'Renforcement progressif coiffe des rotateurs et deltoïde',
+          'Récupération des amplitudes complètes en RE',
+          'Travail en chaîne cinétique fermée',
+          'Stabilisation dynamique gléno-humérale'
+        ],
+        precautions: [
+          'Pas d\'appui axial bras tendu avant S10',
+          'Renforcement RE progressif : éviter la tension en fin d\'amplitude avant S10',
+          'Pas de traction axiale sur le membre (port de charges lourdes)',
+          'Contrôle du rythme scapulo-huméral à chaque exercice'
+        ],
+        weekly: [
+          { week: 'S6–S8', content: 'Renforcement excentrique coiffe, travail proprioceptif sur plan instable, poulie + élastiques, mobilisation complète en RE progressive' },
+          { week: 'S8–S10', content: 'Renforcement deltoïde en secteur fonctionnel, gainages avec membres supérieurs, appuis sur mains prudemment chargés' },
+          { week: 'S10–S12', content: 'Circuit musculaire fonctionnel, départs en positions variées, normalisation du schéma moteur lancé bras' }
+        ],
+        exitCriteria: [
+          'Amplitudes complètes symétriques',
+          'Force coiffe ≥ 80% côté sain (dynamomètre)',
+          'Test d\'appui statique sur mains > 30 s sans douleur',
+          'Contrôle du rythme scapulo-huméral normalisé'
+        ]
+      },
+      {
+        id: 'p4',
+        name: 'Phase 4 — Réathlétisation',
+        weeks: 'S12 → S20',
+        color: '#FFF7ED',
+        borderColor: '#F97316',
+        objectives: [
+          'Reprise progressive des gestes sportifs',
+          'Travail pliométrique membre supérieur',
+          'Renforcement haute vélocité',
+          'Proprioception avancée et contrôle neuro-musculaire'
+        ],
+        precautions: [
+          'Progression individualisée selon bilan fonctionnel',
+          'Pas de contact avant S16',
+          'Surveillance signe d\'irritation (douleur nocturne, œdème)',
+          'Accord médical pour reprise des entraînements'
+        ],
+        weekly: [
+          { week: 'S12–S16', content: 'Lancer progressif (distance et intensité), exercices pliométriques sur mur, travail en suspension, circuit proprioceptif avancé' },
+          { week: 'S16–S20', content: 'Simulation gestes sportifs spécifiques, entraînements partiels sans contact, test isocinétique de contrôle, travail haute vélocité' }
+        ],
+        exitCriteria: [
+          'Test isocinétique : ratio RE/RI ≥ 66%, déficit < 15% côté sain',
+          'Test pliométrique : asymétrie < 15%',
+          'Test fonctionnel sport-spécifique validé',
+          'Absence de douleur ou d\'appréhension aux tests'
+        ]
+      },
+      {
+        id: 'p5',
+        name: 'Phase 5 — Retour à la compétition',
+        weeks: 'S20 → S24',
+        color: '#FDF4FF',
+        borderColor: '#A855F7',
+        objectives: [
+          'Validation du retour compétition par critères objectifs',
+          'Consolidation acquis proprioceptifs et musculaires',
+          'Préparation psychologique au retour',
+          'Mise en place programme de prévention récidive'
+        ],
+        precautions: [
+          'Retour contact uniquement si TOUS les critères de phase 4 sont atteints',
+          'Suivi médical obligatoire avant validation',
+          'Orthèse de protection sportive recommandée 1ère saison',
+          'Programme d\'entretien à domicile obligatoire'
+        ],
+        weekly: [
+          { week: 'S20–S22', content: 'Entraînements collectifs complets sans restriction, travail préventif ciblé (renforcement excentrique, proprioception), simulation compétition' },
+          { week: 'S22–S24', content: 'Retour compétition progressive, bilan final kinésithérapique, remise programme entretien, suivi 3–6 mois planifié' }
+        ],
+        exitCriteria: [
+          'Tous critères phase 4 validés',
+          'Score WOSI > 80% ou DASH < 20',
+          'Accord chirurgien + kinésithérapeute + médecin',
+          'Patient confiant (appréhension EVA < 2/10)'
+        ]
+      }
+    ]
+  }
+];
+
+/* ─── Ouvrir / Fermer overlay ────────────────────────────────── */
+function openProtoPanel() {
+  var ov = document.getElementById('proto-overlay');
+  if(ov){ ov.classList.add('open'); renderProtocols(); }
+}
+function closeProtoPanel() {
+  var ov = document.getElementById('proto-overlay');
+  if(ov) ov.classList.remove('open');
+}
+
+/* ─── Rendu principal ────────────────────────────────────────── */
+function renderProtocols() {
+  var body = document.getElementById('proto-body');
+  if(!body) return;
+  if(!PROTOCOLS_REF || !PROTOCOLS_REF.length){
+    body.innerHTML = '<div class="proto-empty">Aucun protocole disponible.</div>';
+    return;
+  }
+  var html = '';
+  PROTOCOLS_REF.forEach(function(proto){
+    html += _renderProtocolCard(proto);
+  });
+  body.innerHTML = html;
+  /* Appliquer la visibilité des éléments admin/éditeur après rendu dynamique */
+  if(typeof _applyRoleUI === 'function') _applyRoleUI();
+}
+
+function _renderProtocolCard(proto) {
+  var phaseDots = proto.phases.map(function(ph, i){
+    return '<div class="proto-phase-dot">'
+      + '<div class="proto-phase-circle" style="border-color:'+ph.borderColor+';color:'+ph.borderColor+'">'+(i+1)+'</div>'
+      + '<div class="proto-phase-label">'+_escHtml(ph.name.split('—')[1]||ph.name).trim()+'</div>'
+      + '<div class="proto-phase-weeks">'+_escHtml(ph.weeks)+'</div>'
+      + '</div>';
+  }).join('');
+
+  var phasesAccordion = proto.phases.map(function(ph, i){
+    return _renderPhaseItem(proto.id, ph, i);
+  }).join('');
+
+  var canUse = !_isReader();
+  var adminActions = _isAdmin()
+    ? '<button class="proto-use-btn danger r4p-admin-only" style="margin-left:auto;" onclick="_protoDelete(\''+proto.id+'\')" title="Supprimer ce protocole (admin)">🗑 Supprimer</button>'
+    : '';
+
+  var useBtn = canUse
+    ? '<button class="proto-use-btn" onclick="useFullProtocol(\''+proto.id+'\')" id="proto-use-full-'+proto.id+'">▶ Utiliser ce protocole</button>'
+    : '<span class="proto-footer-info">Lecture seule — contactez l\'admin pour utiliser ce protocole.</span>';
+
+  return '<div class="proto-card" id="proto-card-'+proto.id+'">'
+    + '<div class="proto-card-header" onclick="_toggleProtoCard(\''+proto.id+'\')">'
+    + '<span class="proto-card-header-icon">'+proto.icon+'</span>'
+    + '<div class="proto-card-header-info">'
+    + '<h3>'+_escHtml(proto.name)+'</h3>'
+    + '<div class="proto-card-header-meta">'+_escHtml(proto.source)+' · '+_escHtml(proto.duration)+'</div>'
+    + '</div>'
+    + '<span class="proto-card-chevron">›</span>'
+    + '</div>'
+    + '<div class="proto-card-body">'
+    + '<div class="proto-timeline">'+phaseDots+'</div>'
+    + '<div class="proto-phases-list">'+phasesAccordion+'</div>'
+    + '<div class="proto-card-footer">'+useBtn+adminActions+'</div>'
+    + '</div>'
+    + '</div>';
+}
+
+function _renderPhaseItem(protoId, ph, idx) {
+  var checks = _protoGetChecks(protoId, ph.id);
+  var total = ph.exitCriteria.length;
+  var done = ph.exitCriteria.filter(function(_, i){ return checks[i]; }).length;
+  var pct = total ? Math.round(done/total*100) : 0;
+
+  var objList = ph.objectives.map(function(o){ return '<li>'+_escHtml(o)+'</li>'; }).join('');
+  var precList = ph.precautions.map(function(p){ return '<li>'+_escHtml(p)+'</li>'; }).join('');
+  var weekRows = ph.weekly.map(function(w){
+    return '<div class="proto-week-row"><span class="proto-week-badge">'+_escHtml(w.week)+'</span><span class="proto-week-text">'+_escHtml(w.content)+'</span></div>';
+  }).join('');
+  var criteriaItems = ph.exitCriteria.map(function(c, i){
+    var isChecked = checks[i] ? true : false;
+    return '<div class="proto-criteria-item'+(isChecked?' checked':'')+'" id="proto-ci-'+protoId+'-'+ph.id+'-'+i+'">'
+      + '<input type="checkbox" class="proto-criteria-cb" '+(isChecked?'checked':'')+' onchange="_protoSetCheck(\''+protoId+'\',\''+ph.id+'\','+i+',this.checked)">'
+      + '<span class="proto-criteria-text">'+_escHtml(c)+'</span>'
+      + '</div>';
+  }).join('');
+
+  var usePhaseBtn = !_isReader()
+    ? '<button class="proto-use-btn secondary" onclick="useProtoPhase(\''+protoId+'\',\''+ph.id+'\')" style="margin-top:10px;font-size:.75rem;padding:6px 12px;">+ Créer séance depuis cette phase</button>'
+    : '';
+
+  return '<div class="proto-phase-item" id="proto-phase-'+protoId+'-'+ph.id+'" style="border-color:'+ph.borderColor+'">'
+    + '<div class="proto-phase-item-header" style="background:'+ph.color+'" onclick="_toggleProtoPhase(\''+protoId+'\',\''+ph.id+'\')">'
+    + '<span style="font-size:.9rem;font-weight:700;color:'+ph.borderColor+'">Phase '+(idx+1)+'</span>'
+    + '<span style="flex:1;margin-left:8px;">'+_escHtml(ph.name.replace(/Phase \d+ — /,''))+'</span>'
+    + '<span style="font-size:.7rem;color:#6B7280;margin-right:4px;">'+ph.weeks+'</span>'
+    + '<span class="proto-phase-item-chevron">›</span>'
+    + '</div>'
+    + '<div class="proto-phase-content">'
+    + '<div class="proto-section-label">🎯 Objectifs</div>'
+    + '<ul class="proto-list">'+objList+'</ul>'
+    + '<div class="proto-section-label">⚠️ Précautions</div>'
+    + '<ul class="proto-list">'+precList+'</ul>'
+    + '<div class="proto-section-label">📅 Contenu hebdomadaire</div>'
+    + weekRows
+    + '<div class="proto-section-label">✅ Critères de sortie de phase</div>'
+    + '<div class="proto-progress-bar-wrap"><div class="proto-progress-bar" style="width:'+pct+'%"></div></div>'
+    + '<div class="proto-progress-label">'+done+' / '+total+' critères validés</div>'
+    + criteriaItems
+    + usePhaseBtn
+    + '</div>'
+    + '</div>';
+}
+
+/* ─── Accordéon cards ────────────────────────────────────────── */
+function _toggleProtoCard(protoId) {
+  var card = document.getElementById('proto-card-'+protoId);
+  if(card) card.classList.toggle('open');
+}
+function _toggleProtoPhase(protoId, phaseId) {
+  var item = document.getElementById('proto-phase-'+protoId+'-'+phaseId);
+  if(item) item.classList.toggle('open');
+}
+
+/* ─── Cases à cocher critères (localStorage) ─────────────────── */
+function _protoChecksKey(protoId, phaseId) {
+  var patId = _progPatient ? String(_progPatient.id) : 'nopt';
+  return 'r4p-proto-checks-'+patId+'-'+protoId+'-'+phaseId;
+}
+function _protoGetChecks(protoId, phaseId) {
+  try {
+    var raw = localStorage.getItem(_protoChecksKey(protoId, phaseId));
+    return raw ? JSON.parse(raw) : {};
+  } catch(e){ return {}; }
+}
+function _protoSetCheck(protoId, phaseId, idx, checked) {
+  var checks = _protoGetChecks(protoId, phaseId);
+  checks[idx] = checked;
+  try{ localStorage.setItem(_protoChecksKey(protoId, phaseId), JSON.stringify(checks)); } catch(e){}
+  /* Update UI */
+  var ciEl = document.getElementById('proto-ci-'+protoId+'-'+phaseId+'-'+idx);
+  if(ciEl){ if(checked) ciEl.classList.add('checked'); else ciEl.classList.remove('checked'); }
+  /* Update progress bar */
+  var proto = PROTOCOLS_REF.find(function(p){ return p.id===protoId; });
+  if(!proto) return;
+  var ph = proto.phases.find(function(p){ return p.id===phaseId; });
+  if(!ph) return;
+  var allChecks = _protoGetChecks(protoId, phaseId);
+  var total = ph.exitCriteria.length;
+  var done = ph.exitCriteria.filter(function(_, i){ return allChecks[i]; }).length;
+  var pct = total ? Math.round(done/total*100) : 0;
+  var phItem = document.getElementById('proto-phase-'+protoId+'-'+phaseId);
+  if(phItem){
+    var bar = phItem.querySelector('.proto-progress-bar');
+    var lbl = phItem.querySelector('.proto-progress-label');
+    if(bar) bar.style.width = pct+'%';
+    if(lbl) lbl.textContent = done+' / '+total+' critères validés';
+  }
+}
+
+/* ─── Utiliser protocole complet (crée groupe + phases Supabase) ─ */
+function useFullProtocol(protoId) {
+  if(_isReader()){ _showToast('Accès lecture seule.'); return; }
+  if(!_progPatient){ _showToast('Sélectionne d\'abord un patient.'); return; }
+  var proto = PROTOCOLS_REF.find(function(p){ return p.id===protoId; });
+  if(!proto){ _showToast('Protocole introuvable.'); return; }
+  var btn = document.getElementById('proto-use-full-'+protoId);
+  if(btn){ btn.disabled = true; btn.textContent = '⏳ Création…'; }
+
+  /* Créer le groupe de templates */
+  fetch(SUPA_URL_P+'/rest/v1/template_groups', {
+    method:'POST',
+    headers: Object.assign({},_sbHeaders(),{'Prefer':'return=representation'}),
+    body: JSON.stringify({
+      user_id: _progUid,
+      name: proto.name,
+      emoji: proto.icon,
+      category: proto.category,
+      color: '#EFF6FF',
+      is_public: false
+    })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(grpArr){
+    var grp = Array.isArray(grpArr) ? grpArr[0] : grpArr;
+    if(!grp || !grp.id) throw new Error('Création groupe échouée');
+    /* Créer un template (séance-type) par phase */
+    var chain = Promise.resolve();
+    proto.phases.forEach(function(ph){
+      chain = chain.then(function(){
+        return _createProtoPhaseTemplate(grp.id, proto, ph);
+      });
+    });
+    return chain.then(function(){ return grp; });
+  })
+  .then(function(grp){
+    _showToast('✅ Protocole «'+proto.name+'» créé dans votre bibliothèque !');
+    if(btn){ btn.disabled = false; btn.textContent = '▶ Utiliser ce protocole'; }
+    renderSidebarTemplates();
+  })
+  .catch(function(err){
+    console.error(err);
+    _showToast('Erreur lors de la création du protocole.', true);
+    if(btn){ btn.disabled = false; btn.textContent = '▶ Utiliser ce protocole'; }
+  });
+}
+
+function _createProtoPhaseTemplate(groupId, proto, ph) {
+  var notes = _buildPhaseNotes(ph);
+  return fetch(SUPA_URL_P+'/rest/v1/templates', {
+    method:'POST',
+    headers: Object.assign({},_sbHeaders(),{'Prefer':'return=representation'}),
+    body: JSON.stringify({
+      user_id: _progUid,
+      group_id: groupId,
+      name: ph.name,
+      emoji: '📋',
+      category: proto.category,
+      donnees: JSON.stringify({ blocs: [], notes: notes }),
+      is_public: false
+    })
+  })
+  .then(function(r){ return r.json(); });
+}
+
+function _buildPhaseNotes(ph) {
+  var lines = [];
+  lines.push('OBJECTIFS :');
+  ph.objectives.forEach(function(o){ lines.push('- '+o); });
+  lines.push('');
+  lines.push('PRÉCAUTIONS :');
+  ph.precautions.forEach(function(p){ lines.push('- '+p); });
+  lines.push('');
+  lines.push('CONTENU HEBDOMADAIRE :');
+  ph.weekly.forEach(function(w){ lines.push('['+w.week+'] '+w.content); });
+  lines.push('');
+  lines.push('CRITÈRES DE SORTIE :');
+  ph.exitCriteria.forEach(function(c){ lines.push('- '+c); });
+  return lines.join('\n');
+}
+
+/* ─── Utiliser une phase seule ───────────────────────────────── */
+function useProtoPhase(protoId, phaseId) {
+  if(_isReader()){ _showToast('Accès lecture seule.'); return; }
+  if(!_progPatient){ _showToast('Sélectionne d\'abord un patient.'); return; }
+  var proto = PROTOCOLS_REF.find(function(p){ return p.id===protoId; });
+  if(!proto) return;
+  var ph = proto.phases.find(function(p){ return p.id===phaseId; });
+  if(!ph) return;
+  var notes = _buildPhaseNotes(ph);
+
+  fetch(SUPA_URL_P+'/rest/v1/templates', {
+    method:'POST',
+    headers: Object.assign({},_sbHeaders(),{'Prefer':'return=representation'}),
+    body: JSON.stringify({
+      user_id: _progUid,
+      group_id: null,
+      name: proto.name+' — '+ph.name,
+      emoji: '📋',
+      category: proto.category,
+      donnees: JSON.stringify({ blocs: [], notes: notes }),
+      is_public: false
+    })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(){
+    _showToast('✅ Séance «'+ph.name+'» ajoutée à la bibliothèque !');
+    renderSidebarTemplates();
+  })
+  .catch(function(err){
+    console.error(err);
+    _showToast('Erreur lors de la création de la séance.', true);
+  });
+}
+
+/* ─── Supprimer un protocole (admin only) ────────────────────── */
+function _protoDelete(protoId) {
+  if(!_isAdmin()){ _showToast('Action réservée à l\'admin.'); return; }
+  /* Pour les protocoles de référence statiques (pas en BDD), on les masque localement */
+  PROTOCOLS_REF = PROTOCOLS_REF.filter(function(p){ return p.id !== protoId; });
+  renderProtocols();
+  _showToast('Protocole supprimé (session en cours).');
+}
+
+/* ─── Utilitaire escaping ────────────────────────────────────── */
+function _escHtml(str) {
+  return String(str||'')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 // ── Init v2 ──
