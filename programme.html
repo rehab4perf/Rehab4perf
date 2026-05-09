@@ -538,6 +538,10 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 #builderPanel.r4p-readonly .exo-consigne-ta,
 #builderPanel.r4p-readonly .notes-ta,
 #builderPanel.r4p-readonly .exo-meth-check { pointer-events:none; }
+/* Grille exo-row : supprimer colonnes drag(28px) et delete(32px) — le nom retrouve 1fr */
+.app.builder-mode #builderPanel.r4p-readonly .builder-body .exo-row {
+  grid-template-columns: 1fr 60px 60px 48px 60px 76px 180px;
+}
 .builder-ro-banner {
   display:none; align-items:center; gap:6px;
   background:#FFF8E1; border-bottom:1px solid #F9A825;
