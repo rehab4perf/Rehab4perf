@@ -7880,8 +7880,8 @@ function useProtoPhase(protoId, phaseId) {
       donnees: JSON.stringify({ blocs: [], notes: notes })
     })
   })
-  .then(function(r){ return r.json(); })
-  .then(function(){
+  .then(function(r){
+    if(!r.ok) return r.text().then(function(t){ throw new Error(t); });
     _showToast('✅ Séance «'+ph.name+'» ajoutée à la bibliothèque !');
     renderSidebarTemplates();
   })
