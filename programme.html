@@ -528,14 +528,16 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 #builderPanel.r4p-readonly .chain-toggle-btn,
 #builderPanel.r4p-readonly .builder-save-btn,
 #builderPanel.r4p-readonly .builder-update-btn,
-#builderPanel.r4p-readonly .cible-add,
-#builderPanel.r4p-readonly .cible-del,
-#builderPanel.r4p-readonly button[onclick*="addBloc"],
-#builderPanel.r4p-readonly button[onclick*="addCardio"] { display:none !important; }
+#builderPanel.r4p-readonly .cible-add-btn,
+#builderPanel.r4p-readonly .cible-del-btn { display:none !important; }
+/* Champs : apparence identique au mode normal, juste non-interactifs */
 #builderPanel.r4p-readonly .cell-input,
+#builderPanel.r4p-readonly .cible-min-input,
+#builderPanel.r4p-readonly .cible-max-input,
+#builderPanel.r4p-readonly .cible-type-sel,
+#builderPanel.r4p-readonly .exo-consigne-ta,
 #builderPanel.r4p-readonly .notes-ta,
-#builderPanel.r4p-readonly select { pointer-events:none; opacity:.7; background:transparent; }
-#builderPanel.r4p-readonly [draggable] { draggable:false; }
+#builderPanel.r4p-readonly .exo-meth-check { pointer-events:none; }
 .builder-ro-banner {
   display:none; align-items:center; gap:6px;
   background:#FFF8E1; border-bottom:1px solid #F9A825;
