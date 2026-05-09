@@ -7463,6 +7463,106 @@ function _renderUpcoming(){
 /* ─── Données ─────────────────────────────────────────────────── */
 var PROTOCOLS_REF = [
   {
+    id: 'lca',
+    name: 'Post-LCA',
+    icon: '🦵',
+    category: 'Pathologie',
+    source: 'Antoine Peronnaud',
+    duration: '4–6 mois',
+    isBuiltin: true,
+    phases: [
+      {
+        id: 'p1',
+        name: 'Phase 1 — Post-opératoire immédiat',
+        weeks: '',
+        color: '#EFF6FF',
+        borderColor: '#3B82F6',
+        objectives: [
+          'Contrôle de la douleur et réduction de l\'épanchement (genou sec)',
+          'Récupération de l\'extension passive complète (0°)',
+          'Activation sélective du vaste médial (VM)',
+          'Reprise de la marche sans boiterie'
+        ],
+        precautions: [
+          'Différencier les exercices selon l\'état du genou (irritable vs tolérant)',
+          'Surveiller l\'épanchement après chaque séance',
+          'Progression uniquement si genou sec en début de séance'
+        ],
+        weekly: [
+          { week: 'Genou irritable', content: 'Isométrie IJ (couché ventral, RPE 3–5), contractions quadriceps + compex assis genou tendu puis fléchi — consigne "Remonter la rotule"' },
+          { week: 'Genou tolérant', content: 'IJ excentrique, chaise isométrique bi/unipodal, extension genou isométrique 90° swissball, TKE, extension genou allongé' }
+        ],
+        exitCriteria: [
+          'Genou sec',
+          'Extension passive = 0°',
+          'Marche sans boiterie',
+          'Contraction sélective du VM validée',
+          'Test du mur : contact mollet identique côté sain/opéré',
+          'Test SLS : 3 squats unipodaux sans tremblement, extension comparable côté sain',
+          '3 séances de renforcement consécutives sans douleur'
+        ]
+      },
+      {
+        id: 'p2',
+        name: 'Phase 2 — Renforcement & contrôle neuromusculaire',
+        weeks: '',
+        color: '#F0FDF4',
+        borderColor: '#22C55E',
+        objectives: [
+          'Renforcement musculaire progressif (chaîne postérieure + quadriceps)',
+          'Récupération de l\'amplitude articulaire complète',
+          'Contrôle excentrique du quadriceps',
+          'Activation et intégration du transverse'
+        ],
+        precautions: [
+          'Surveiller l\'épanchement après augmentation de charge',
+          'Progression des charges contrôlée (départ ≤ 50% 1RM)',
+          'Contrôle du valgus dynamique sur tous les exercices unipodaux',
+          'Pas de passage en phase 3 avant genou sec sous charge'
+        ],
+        weekly: [
+          { week: 'Bloc A', content: '15–25 reps × 4 séries, ≤ 50% 1RM, récup 1\'30 : Back squat, Front squat, Pistol squat box, Cossack squat, Front lunge, Deadlift, Romanian DL, Hip thrust, Glute bridge (swissball + walk), Single leg RDL anti-valgus, Pall of press (debout + fentes), Deadbug élastique' }
+        ],
+        exitCriteria: [
+          'Amplitude articulaire complète en flexion/extension',
+          'Contrôle excentrique du quadriceps validé',
+          'Activation et intégration du transverse',
+          'Genou sec après augmentation de la charge d\'entraînement'
+        ]
+      },
+      {
+        id: 'p3',
+        name: 'Phase 3 — Course / Sauts / Agilité / Travail Métabolique',
+        weeks: '',
+        color: '#FFF7ED',
+        borderColor: '#F97316',
+        objectives: [
+          'Renforcement haute intensité (70–80% 1RM)',
+          'Reprise progressive de la course (Zone 2)',
+          'Validation des tests fonctionnels de symétrie',
+          'Travail d\'agilité et réathlétisation sport-spécifique'
+        ],
+        precautions: [
+          'Tests fonctionnels validés avant reprise de la course',
+          'Pas de sauts/réceptions avant symétrie confirmée',
+          'Surveiller le stiff landing à chaque exercice pliométrique',
+          'Accord médical avant reprise compétition'
+        ],
+        weekly: [
+          { week: 'Bloc renfo', content: '8–12 reps × 4 séries, RPE 8 / 70–80% 1RM : mêmes exercices que phase 2 en charges lourdes' },
+          { week: 'Tests fonctionnels', content: 'Évaluation symétrie (protocole adapté à l\'athlète)' },
+          { week: 'Bloc cardio', content: 'Course continue Zone 2, progression 5 → 20 min à 65% VMA' }
+        ],
+        exitCriteria: [
+          'Symétrie aux tests fonctionnels',
+          'Course sans douleur 20 min à 65% VMA (Zone 2)',
+          'Absence de stiff landing à la réception',
+          'Réussite des tests fonctionnels sport-spécifiques'
+        ]
+      }
+    ]
+  },
+  {
     id: 'latarjet',
     name: 'Post-Latarjet',
     icon: '🦴',
@@ -7730,7 +7830,7 @@ function _renderPhaseItem(protoId, ph, idx) {
     + '<span style="font-size:.9rem;font-weight:700;color:'+ph.borderColor+'">Phase '+(idx+1)+'</span>'
     + currentBadge
     + '<span style="flex:1;margin-left:8px;">'+_escHtml(ph.name.replace(/Phase \d+ — /,''))+'</span>'
-    + '<span style="font-size:.7rem;color:#6B7280;margin-right:4px;">'+ph.weeks+'</span>'
+    + (ph.weeks ? '<span style="font-size:.7rem;color:#6B7280;margin-right:4px;">'+ph.weeks+'</span>' : '')
     + '<span class="proto-phase-item-chevron">›</span>'
     + '</div>'
     + '<div class="proto-phase-content">'
