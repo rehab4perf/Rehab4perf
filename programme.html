@@ -7789,25 +7789,23 @@ function useFullProtocol(protoId) {
   /* Créer le groupe de templates */
   fetch(SUPA_URL_P+'/rest/v1/template_groups', {
     method:'POST',
-    headers: Object.assign({},_sbHeaders(),{'Prefer':'return=representation'}),
+    headers: _sbHeaders(),
     body: JSON.stringify({
-      user_id: _progUid,
-      name: proto.name,
-      emoji: proto.icon,
-      category: proto.category,
-      color: '#EFF6FF',
-      is_public: false
+      praticien_id: _progUid,
+      nom: proto.name,
+      categorie: proto.category,
+      description: proto.source + ' · ' + proto.duration
     })
   })
-  .then(function(r){ return r.json(); })
+  .then(function(r){ return r.ok ? r.json() : r.json().then(function(d){ throw new Error(JSON.stringify(d)); }); })
   .then(function(grpArr){
     var grp = Array.isArray(grpArr) ? grpArr[0] : grpArr;
     if(!grp || !grp.id) throw new Error('Création groupe échouée');
     /* Créer un template (séance-type) par phase */
     var chain = Promise.resolve();
-    proto.phases.forEach(function(ph){
+    proto.phases.forEach(function(ph, idx){
       chain = chain.then(function(){
-        return _createProtoPhaseTemplate(grp.id, proto, ph);
+        return _createProtoPhaseTemplate(grp.id, proto, ph, idx);
       });
     });
     return chain.then(function(){ return grp; });
@@ -7824,22 +7822,22 @@ function useFullProtocol(protoId) {
   });
 }
 
-function _createProtoPhaseTemplate(groupId, proto, ph) {
+function _createProtoPhaseTemplate(groupId, proto, ph, phaseIndex) {
   var notes = _buildPhaseNotes(ph);
   return fetch(SUPA_URL_P+'/rest/v1/templates', {
     method:'POST',
-    headers: Object.assign({},_sbHeaders(),{'Prefer':'return=representation'}),
+    headers: Object.assign({},_sbHeaders(),{'Prefer':'return=minimal'}),
     body: JSON.stringify({
-      user_id: _progUid,
+      praticien_id: _progUid,
       group_id: groupId,
-      name: ph.name,
+      nom: ph.name,
       emoji: '📋',
-      category: proto.category,
-      donnees: JSON.stringify({ blocs: [], notes: notes }),
-      is_public: false
+      categorie: proto.category,
+      phase_nom: ph.name,
+      phase_ordre: phaseIndex || 0,
+      donnees: JSON.stringify({ blocs: [], notes: notes })
     })
-  })
-  .then(function(r){ return r.json(); });
+  });
 }
 
 function _buildPhaseNotes(ph) {
@@ -7870,15 +7868,16 @@ function useProtoPhase(protoId, phaseId) {
 
   fetch(SUPA_URL_P+'/rest/v1/templates', {
     method:'POST',
-    headers: Object.assign({},_sbHeaders(),{'Prefer':'return=representation'}),
+    headers: Object.assign({},_sbHeaders(),{'Prefer':'return=minimal'}),
     body: JSON.stringify({
-      user_id: _progUid,
+      praticien_id: _progUid,
       group_id: null,
-      name: proto.name+' — '+ph.name,
+      nom: proto.name+' — '+ph.name,
       emoji: '📋',
-      category: proto.category,
-      donnees: JSON.stringify({ blocs: [], notes: notes }),
-      is_public: false
+      categorie: proto.category,
+      phase_nom: ph.name,
+      phase_ordre: 0,
+      donnees: JSON.stringify({ blocs: [], notes: notes })
     })
   })
   .then(function(r){ return r.json(); })
