@@ -5184,6 +5184,24 @@ function _weekBilanHTML(){
 /* ── Couleur UA sur chips (vert / orange / rouge) ── */
 function _chipUaColor(ua){ if(ua<150) return '#A8F0C0'; if(ua<300) return '#FFD580'; return '#FF9898'; }
 
+/* ── Couleur protocole sur chips calendrier ── */
+function _protoPhaseChipStyle(donnees){
+  if(!donnees) return null;
+  var raw = donnees;
+  if(typeof raw === 'string'){ try{ raw = JSON.parse(raw); }catch(e){ return null; } }
+  var lp = raw && raw.linkedPhase;
+  if(!lp || !lp.protoId || !lp.phaseId) return null;
+  if(typeof PROTOCOLS_REF === 'undefined') return null;
+  var proto = PROTOCOLS_REF.find(function(p){ return p.id===lp.protoId; });
+  if(!proto) return null;
+  var phase = proto.phases.find(function(ph){ return ph.id===lp.phaseId; });
+  if(!phase) return null;
+  // Extraire numéro de phase : "Phase 2 — ..." → "Ph.2"
+  var mPh = phase.name.match(/Phase\s*(\d+)/i);
+  var phShort = mPh ? 'Ph.'+mPh[1] : phase.name.slice(0,4);
+  return { bg: phase.color, border: phase.borderColor, label: proto.name+' · '+phShort };
+}
+
 /* ── Helper chips partagé mois + semaine ── */
 function _buildDayChips(dateStr, cellDate){
   var chips = '';
@@ -5194,16 +5212,25 @@ function _buildDayChips(dateStr, cellDate){
       var fb = ev.athlete_feedback;
       var ua = (fb&&fb.rpe&&fb.duree_min) ? fb.rpe*fb.duree_min : null;
       var uaSpan = ua ? ' <span style="font-size:.58rem;font-weight:800;padding:1px 4px;border-radius:3px;background:rgba(255,255,255,.22);color:'+_chipUaColor(ua)+';">⚡'+ua+'</span>' : '';
+      // Couleur de phase protocole (si séance liée)
+      var phStyle = _protoPhaseChipStyle(ev.programmes && ev.programmes.donnees);
+      var chipBg    = phStyle ? phStyle.bg    : '#2B5FA6';
+      var chipColor = phStyle ? '#1E3A5F'     : '#fff';
+      var chipExtra = phStyle ? ';border-left:3px solid '+phStyle.border+';padding-left:4px;' : '';
+      var phaseTag  = phStyle
+        ? ' <span style="font-size:.55rem;background:'+phStyle.border+';color:#fff;border-radius:2px;padding:0 3px;white-space:nowrap;flex-shrink:0;">'+escH(phStyle.label)+'</span>'
+        : '';
       // Enregistrement métadonnées pour touch
       _chipTouchMeta[ev.id] = {progId: ev.programme_id, dateStr: dateStr, nom: nom};
       var chipEvtAttrs = _isTouchDevice
         ? ' ontouchstart="_chipTouchStart(event,\''+ev.id+'\')" ontouchmove="_chipTouchMove(event)" ontouchend="_chipTouchEnd(event,\''+ev.id+'\')"'
         : ' draggable="true" onclick="event.stopPropagation();_openChipInBuilder(\''+ev.programme_id+'\',\''+dateStr+'\')" ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"';
       var chipCursor = _isTouchDevice ? 'pointer' : 'grab';
-      return '<div class="cal-session-chip" style="background:#2B5FA6;cursor:'+chipCursor+';" title="'+escH(nom)+' — appui long pour options"'
+      return '<div class="cal-session-chip" style="background:'+chipBg+';color:'+chipColor+';cursor:'+chipCursor+chipExtra+';" title="'+escH(nom)+' — appui long pour options"'
         + chipEvtAttrs + '>'
-        +'<span>📋 '+escH(nom.length>16?nom.slice(0,16)+'…':nom)+uaSpan+'</span>'
-        +'<button class="cal-chip-del" onclick="event.stopPropagation();removeCalEventCloud(\''+ev.id+'\')">×</button>'
+        +'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📋 '+escH(nom.length>14?nom.slice(0,14)+'…':nom)+uaSpan+'</span>'
+        +phaseTag
+        +'<button class="cal-chip-del" style="color:'+(phStyle?'rgba(30,58,95,.5)':'rgba(255,255,255,.7)')+'" onclick="event.stopPropagation();removeCalEventCloud(\''+ev.id+'\')">×</button>'
         +'</div>';
     }).join('');
   } else {
