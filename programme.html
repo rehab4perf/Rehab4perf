@@ -450,9 +450,10 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   font-size:.9rem; display:flex; align-items:center; justify-content:center;
 }
 /* ── Onglets sidebar builder ── */
-.sb-tabs { display:flex; background:rgba(0,0,0,.3); border-bottom:1px solid rgba(255,255,255,.1); flex-shrink:0; }
-.sb-tab-btn { flex:1; padding:7px 4px; font-size:.68rem; font-weight:600; color:rgba(255,255,255,.4); background:none; border:none; border-bottom:2px solid transparent; cursor:pointer; transition:color .15s,border-color .15s; font-family:inherit; }
-.sb-tab-btn.active { color:#fff; border-bottom-color:#60A5FA; }
+.sb-tabs { display:flex; background:#0F2540; border-bottom:2px solid rgba(255,255,255,.1); flex-shrink:0; }
+.sb-tab-btn { flex:1; padding:8px 4px; font-size:.72rem; font-weight:600; color:rgba(255,255,255,.6); background:none; border:none; border-bottom:2px solid transparent; margin-bottom:-2px; cursor:pointer; transition:color .15s,border-color .15s,background .15s; font-family:inherit; }
+.sb-tab-btn:hover { color:#fff; background:rgba(255,255,255,.06); }
+.sb-tab-btn.active { color:#fff; border-bottom-color:#60A5FA; background:rgba(96,165,250,.08); }
 #sb-tab-lib { display:flex; flex-direction:column; flex:1; overflow:hidden; }
 #sb-tab-picker { display:none; flex-direction:column; flex:1; overflow:hidden; }
 /* ── Picker templates ── */
