@@ -4494,6 +4494,43 @@ renderLib('');
   height:100%;border-radius:2px;background:#16A34A;transition:width .3s;
 }
 .proto-progress-label { font-size:.68rem;color:#6B7280; }
+/* --- Type badge --- */
+.proto-type-badge {
+  font-size:.56rem;font-weight:700;padding:1px 6px;border-radius:5px;
+  margin-left:7px;vertical-align:middle;letter-spacing:.05em;text-transform:uppercase;
+}
+.proto-type-badge--rehab { background:#EEF3FB;color:#2B5FA6; }
+.proto-type-badge--library { background:#ECFDF5;color:#059669; }
+/* --- Library card body --- */
+.proto-lib-body { padding:16px 16px 4px; }
+.proto-lib-desc {
+  font-size:.8rem;color:#374151;line-height:1.55;
+  padding:11px 14px;background:#F8FAFC;border-radius:7px;
+  border:1px solid #E2E8F0;margin-bottom:12px;
+}
+.proto-lib-blocs { margin-bottom:12px; }
+.proto-lib-bloc-title {
+  font-size:.72rem;font-weight:700;color:#1A3A5C;
+  padding:7px 12px;background:#EEF3FB;border-radius:6px 6px 0 0;
+  border:1px solid #DBEAFE;border-bottom:none;
+}
+.proto-lib-bloc-exos {
+  padding:4px 12px 8px;background:#fff;
+  border:1px solid #DBEAFE;border-radius:0 0 6px 6px;
+  margin-bottom:8px;
+}
+.proto-lib-exo-row {
+  display:flex;align-items:center;gap:7px;padding:4px 0;
+  border-bottom:1px solid #F1F5F9;font-size:.77rem;color:#374151;
+}
+.proto-lib-exo-row:last-child { border-bottom:none; }
+.proto-lib-builder-btn {
+  display:inline-flex;align-items:center;gap:6px;padding:8px 16px;
+  background:#1A3A5C;color:#fff;border:none;border-radius:7px;
+  font-size:.8rem;font-weight:600;cursor:pointer;transition:background .15s;
+  font-family:inherit;
+}
+.proto-lib-builder-btn:hover { background:#16305A; }
 </style>
 
 <div class="proto-overlay" id="proto-overlay" onclick="if(event.target===this)closeProtoPanel()">
@@ -7919,6 +7956,7 @@ function _renderUpcoming(){
 var PROTOCOLS_REF = [
   {
     id: 'lca',
+    type: 'rehab',
     name: 'LCA',
     icon: '🦵',
     category: 'Pathologie',
@@ -8019,6 +8057,7 @@ var PROTOCOLS_REF = [
   },
   {
     id: 'latarjet',
+    type: 'rehab',
     name: 'Latarjet',
     icon: '🦴',
     category: 'Pathologie',
@@ -8287,6 +8326,8 @@ function _renderProtocolsSync() {
 
 /* ─── Rendu d'une carte protocole ────────────────────────────── */
 function _renderProtocolCard(proto) {
+  if(proto.type === 'library') return _renderProtocolCardLibrary(proto);
+
   var data = _protoPatientData[proto.id] || { pp: null, checks: {} };
   var pp = data.pp;
   var currentPhaseId = pp ? (pp.current_phase_id||null) : _protoGetCurrentPhaseLocal(proto.id);
@@ -8330,7 +8371,8 @@ function _renderProtocolCard(proto) {
     + '<span class="proto-card-header-icon">'+proto.icon+'</span>'
     + '<div class="proto-card-header-info">'
     + '<h3>'+_escHtml(proto.name)+'</h3>'
-    + '<div class="proto-card-header-meta">'+_escHtml(proto.source)+' · '+_escHtml(proto.duration)+'</div>'
+    + '<div class="proto-card-header-meta">'+_escHtml(proto.source)+' · '+_escHtml(proto.duration)
+      + '<span class="proto-type-badge proto-type-badge--rehab">Rééducation</span></div>'
     + '</div>'
     + '<span class="proto-card-chevron">›</span>'
     + '</div>'
@@ -8341,6 +8383,104 @@ function _renderProtocolCard(proto) {
     + '<div class="proto-card-footer">'+_renderProtoFooter(proto, pp)+'</div>'
     + '</div>'
     + '</div>';
+}
+
+/* ─── Carte protocole type "library" ─────────────────────────── */
+function _renderProtocolCardLibrary(proto) {
+  var data = _protoPatientData[proto.id] || { pp: null };
+  var pp = data.pp;
+
+  /* Bannière patient */
+  var activeBanner = '';
+  if(_progPatient && pp) {
+    var patName = _escHtml((_progPatient.prenom||'')+' '+(_progPatient.nom||''));
+    if(pp.status === 'active') {
+      var startStr = pp.started_at ? new Date(pp.started_at).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) : '';
+      activeBanner = '<div class="proto-active-banner proto-active-banner--active">✅ Actif pour <strong>'+patName.trim()+'</strong>'+(startStr?' · depuis le '+startStr:'')+'</div>';
+    } else {
+      var stLbl = {paused:'⏸ En pause',completed:'✔️ Terminé',abandoned:'Abandonné'}[pp.status]||pp.status;
+      activeBanner = '<div class="proto-active-banner proto-active-banner--inactive">'+stLbl+' pour <strong>'+patName.trim()+'</strong></div>';
+    }
+  }
+
+  /* Description */
+  var descHtml = proto.description
+    ? '<div class="proto-lib-desc">'+_escHtml(proto.description)+'</div>'
+    : '';
+
+  /* Blocs */
+  var blocsHtml = '';
+  if(proto.blocs && proto.blocs.length) {
+    blocsHtml = '<div class="proto-lib-blocs">';
+    proto.blocs.forEach(function(b){
+      blocsHtml += '<div class="proto-lib-bloc-title">'+_escHtml(b.title||'Bloc')+'</div>';
+      blocsHtml += '<div class="proto-lib-bloc-exos">';
+      (b.exos||[]).forEach(function(e){
+        var detail = [];
+        if(e.series && e.reps)  detail.push(e.series+'×'+e.reps);
+        else if(e.series && e.duree) detail.push(e.series+'×'+e.duree+'s');
+        else if(e.reps)  detail.push(e.reps);
+        else if(e.duree) detail.push(e.duree+'s');
+        if(e.recup) detail.push('↺ '+e.recup+'s');
+        blocsHtml += '<div class="proto-lib-exo-row">'
+          + '<span style="flex:1;">'+_escHtml(e.name||'Exercice')+'</span>'
+          + (detail.length ? '<span style="font-size:.7rem;color:#6B7280;white-space:nowrap;">'+detail.join(' · ')+'</span>' : '')
+          + '</div>';
+      });
+      blocsHtml += '</div>';
+    });
+    blocsHtml += '</div>';
+  }
+
+  /* Bouton builder direct */
+  var builderBtn = !_isReader()
+    ? '<button class="proto-lib-builder-btn" onclick="_protoOpenLibraryInBuilder(\''+proto.id+'\')">▶ Créer une séance</button>'
+    : '';
+
+  return '<div class="proto-card" id="proto-card-'+proto.id+'">'
+    + '<div class="proto-card-header" onclick="_toggleProtoCard(\''+proto.id+'\')">'
+    + '<span class="proto-card-header-icon">'+proto.icon+'</span>'
+    + '<div class="proto-card-header-info">'
+    + '<h3>'+_escHtml(proto.name)+'</h3>'
+    + '<div class="proto-card-header-meta">'+_escHtml(proto.source)+' · '+_escHtml(proto.duration||'')
+      + '<span class="proto-type-badge proto-type-badge--library">Bibliothèque</span></div>'
+    + '</div>'
+    + '<span class="proto-card-chevron">›</span>'
+    + '</div>'
+    + '<div class="proto-card-body">'
+    + '<div class="proto-lib-body">'
+    + activeBanner
+    + descHtml
+    + blocsHtml
+    + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'+builderBtn+'</div>'
+    + '</div>'
+    + '<div class="proto-card-footer">'+_renderProtoFooter(proto, pp)+'</div>'
+    + '</div>'
+    + '</div>';
+}
+
+/* ─── Ouvre un protocole library dans le builder ─────────────── */
+function _protoOpenLibraryInBuilder(protoId) {
+  var proto = (PROTOCOLS_REF||[]).find(function(p){ return p.id === protoId; });
+  if(!proto) return;
+  closeProtoPanel();
+  if(typeof _enterBuilderMode === 'function') {
+    _enterBuilderMode();
+    // Si des blocs sont définis, les charger
+    if(proto.blocs && proto.blocs.length && typeof addBloc === 'function') {
+      blocs = [];
+      proto.blocs.forEach(function(srcBloc){
+        var newBloc = { id: genId(), title: srcBloc.title||'Bloc', exos: [], objectif:'', methode:'' };
+        (srcBloc.exos||[]).forEach(function(e){
+          var ne = JSON.parse(JSON.stringify(e));
+          ne.id = genId();
+          newBloc.exos.push(ne);
+        });
+        blocs.push(newBloc);
+      });
+      if(typeof renderSession === 'function') renderSession();
+    }
+  }
 }
 
 function _renderProtoFooter(proto, pp) {
