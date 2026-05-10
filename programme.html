@@ -4379,6 +4379,17 @@ renderLib('');
 .proto-use-btn.danger { background:#DC2626; }
 .proto-use-btn.danger:hover { background:#B91C1C; }
 .proto-footer-info { flex:1;font-size:.72rem;color:#9CA3AF;font-style:italic; }
+/* --- Bannière statut patient --- */
+.proto-active-banner {
+  margin:0 0 10px;padding:8px 14px;border-radius:7px;font-size:.78rem;
+  border:1px solid;line-height:1.4;
+}
+.proto-active-banner--active {
+  background:#F0FDF4;color:#15803D;border-color:#86EFAC;
+}
+.proto-active-banner--inactive {
+  background:#FEF3C7;color:#92400E;border-color:#FCD34D;
+}
 /* --- Empty state --- */
 .proto-empty {
   text-align:center;padding:40px 20px;color:#9CA3AF;font-size:.85rem;
@@ -7721,6 +7732,10 @@ var PROTOCOLS_REF = [
 ];
 
 /* ─── Ouvrir / Fermer overlay ────────────────────────────────── */
+/* ─── Cache données patient-protocole (Supabase) ────────────── */
+var _protoPatientData = {};
+// Structure : { protocolId: { pp: patient_protocol|null, checks: { phaseId: { idx: bool } } } }
+
 function openProtoPanel() {
   var ov = document.getElementById('proto-overlay');
   if(ov){ ov.classList.add('open'); renderProtocols(); }
@@ -7730,7 +7745,7 @@ function closeProtoPanel() {
   if(ov) ov.classList.remove('open');
 }
 
-/* ─── Rendu principal ────────────────────────────────────────── */
+/* ─── Rendu principal (async Supabase → render sync) ─────────── */
 function renderProtocols() {
   var body = document.getElementById('proto-body');
   if(!body) return;
@@ -7738,43 +7753,108 @@ function renderProtocols() {
     body.innerHTML = '<div class="proto-empty">Aucun protocole disponible.</div>';
     return;
   }
-  var html = '';
-  PROTOCOLS_REF.forEach(function(proto){
-    html += _renderProtocolCard(proto);
+  body.innerHTML = '<div class="proto-empty" style="padding:30px 0;">⏳ Chargement…</div>';
+
+  if(!_progPatient || !_progUid) {
+    _protoPatientData = {};
+    _renderProtocolsSync();
+    return;
+  }
+
+  /* 1. Charger patient_protocols pour ce patient */
+  fetch(SUPA_URL_P + '/rest/v1/patient_protocols?patient_id=eq.' + _progPatient.id
+    + '&praticien_id=eq.' + _progUid + '&select=*&order=created_at.desc',
+    { headers: _sbHeaders() })
+  .then(function(r){ return r.ok ? r.json() : []; })
+  .then(function(pps){
+    pps = pps || [];
+    var ppMap = {};
+    pps.forEach(function(pp){ if(!ppMap[pp.protocol_id]) ppMap[pp.protocol_id] = pp; });
+
+    var activePpIds = pps.filter(function(pp){ return pp.status==='active'; }).map(function(pp){ return pp.id; });
+    if(!activePpIds.length){
+      _protoPatientData = {};
+      PROTOCOLS_REF.forEach(function(proto){ _protoPatientData[proto.id] = { pp: ppMap[proto.id]||null, checks: {} }; });
+      _renderProtocolsSync();
+      return;
+    }
+
+    /* 2. Charger les critères cochés pour les protocoles actifs */
+    var orFilter = activePpIds.map(function(id){ return 'patient_protocol_id.eq.'+id; }).join(',');
+    fetch(SUPA_URL_P + '/rest/v1/protocol_criteria_checks?or=('+orFilter+')&select=*',
+      { headers: _sbHeaders() })
+    .then(function(r){ return r.ok ? r.json() : []; })
+    .then(function(checks){
+      checks = checks || [];
+      var checksByPp = {};
+      checks.forEach(function(c){
+        if(!checksByPp[c.patient_protocol_id]) checksByPp[c.patient_protocol_id] = {};
+        if(!checksByPp[c.patient_protocol_id][c.phase_id]) checksByPp[c.patient_protocol_id][c.phase_id] = {};
+        checksByPp[c.patient_protocol_id][c.phase_id][c.criteria_index] = c.checked;
+      });
+      _protoPatientData = {};
+      PROTOCOLS_REF.forEach(function(proto){
+        var pp = ppMap[proto.id] || null;
+        var ch = pp ? (checksByPp[pp.id] || {}) : {};
+        _protoPatientData[proto.id] = { pp: pp, checks: ch };
+      });
+      _renderProtocolsSync();
+    });
+  })
+  .catch(function(){
+    _protoPatientData = {};
+    _renderProtocolsSync();
   });
+}
+
+function _renderProtocolsSync() {
+  var body = document.getElementById('proto-body');
+  if(!body) return;
+  var html = '';
+  PROTOCOLS_REF.forEach(function(proto){ html += _renderProtocolCard(proto); });
   body.innerHTML = html;
-  /* Appliquer la visibilité des éléments admin/éditeur après rendu dynamique */
   if(typeof _applyRoleUI === 'function') _applyRoleUI();
 }
 
+/* ─── Rendu d'une carte protocole ────────────────────────────── */
 function _renderProtocolCard(proto) {
-  var currentPhaseId = _protoGetCurrentPhase(proto.id);
+  var data = _protoPatientData[proto.id] || { pp: null, checks: {} };
+  var pp = data.pp;
+  var currentPhaseId = pp ? (pp.current_phase_id||null) : _protoGetCurrentPhaseLocal(proto.id);
+  var phaseIndex = proto.phases.findIndex(function(p){ return p.id === currentPhaseId; });
+
+  /* Timeline */
   var phaseDots = proto.phases.map(function(ph, i){
     var isCurrent = ph.id === currentPhaseId;
+    var isDone = phaseIndex > -1 && i < phaseIndex;
     var circleStyle = isCurrent
       ? 'border-color:'+ph.borderColor+';background:'+ph.borderColor+';color:#fff;box-shadow:0 0 0 3px '+ph.borderColor+'44;'
-      : 'border-color:'+ph.borderColor+';color:'+ph.borderColor+';';
+      : isDone
+        ? 'border-color:'+ph.borderColor+';background:'+ph.borderColor+'22;color:'+ph.borderColor+';'
+        : 'border-color:'+ph.borderColor+';color:'+ph.borderColor+';';
     return '<div class="proto-phase-dot">'
-      + '<div class="proto-phase-circle" style="'+circleStyle+'">'+(i+1)+'</div>'
-      + '<div class="proto-phase-label" style="'+(isCurrent?'font-weight:700;color:#1A3A5C;':'')+'">'+_escHtml(ph.name.split('—')[1]||ph.name).trim()+'</div>'
-      + '<div class="proto-phase-weeks">'+_escHtml(ph.weeks)+'</div>'
+      + '<div class="proto-phase-circle" style="'+circleStyle+'">'+(isDone?'✓':(i+1))+'</div>'
+      + '<div class="proto-phase-label" style="'+(isCurrent?'font-weight:700;color:#1A3A5C;':'')+'">'+_escHtml((ph.name.split('—')[1]||ph.name).trim())+'</div>'
+      + (ph.weeks ? '<div class="proto-phase-weeks">'+_escHtml(ph.weeks)+'</div>' : '')
       + '</div>';
   }).join('');
 
   var phasesAccordion = proto.phases.map(function(ph, i){
-    return _renderPhaseItem(proto.id, ph, i);
+    return _renderPhaseItem(proto.id, ph, i, data, currentPhaseId);
   }).join('');
 
-  var canUse = !_isReader();
-  var adminActions = _isAdmin()
-    ? (proto.isBuiltin
-        ? '<button class="proto-use-btn secondary r4p-admin-only" style="margin-left:auto;opacity:.45;cursor:not-allowed;" disabled title="Protocole de référence — non supprimable">🔒 Référence</button>'
-        : '<button class="proto-use-btn danger r4p-admin-only" style="margin-left:auto;" onclick="_protoDelete(\''+proto.id+'\')" title="Supprimer ce protocole (admin)">🗑 Supprimer</button>')
-    : '';
-
-  var useBtn = canUse
-    ? '<button class="proto-use-btn" onclick="useFullProtocol(\''+proto.id+'\')" id="proto-use-full-'+proto.id+'">▶ Utiliser ce protocole</button>'
-    : '<span class="proto-footer-info">Lecture seule — contactez l\'admin pour utiliser ce protocole.</span>';
+  /* Bannière statut patient */
+  var activeBanner = '';
+  if(_progPatient && pp) {
+    var patName = _escHtml((_progPatient.prenom||'')+' '+(_progPatient.nom||''));
+    if(pp.status === 'active') {
+      var startStr = pp.started_at ? new Date(pp.started_at).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) : '';
+      activeBanner = '<div class="proto-active-banner proto-active-banner--active">✅ Actif pour <strong>'+patName.trim()+'</strong>'+(startStr?' · depuis le '+startStr:'')+'</div>';
+    } else {
+      var stLbl = {paused:'⏸ En pause',completed:'✔️ Terminé',abandoned:'Abandonné'}[pp.status]||pp.status;
+      activeBanner = '<div class="proto-active-banner proto-active-banner--inactive">'+stLbl+' pour <strong>'+patName.trim()+'</strong></div>';
+    }
+  }
 
   return '<div class="proto-card" id="proto-card-'+proto.id+'">'
     + '<div class="proto-card-header" onclick="_toggleProtoCard(\''+proto.id+'\')">'
@@ -7786,51 +7866,72 @@ function _renderProtocolCard(proto) {
     + '<span class="proto-card-chevron">›</span>'
     + '</div>'
     + '<div class="proto-card-body">'
+    + activeBanner
     + '<div class="proto-timeline">'+phaseDots+'</div>'
     + '<div class="proto-phases-list">'+phasesAccordion+'</div>'
-    + '<div class="proto-card-footer">'+useBtn+adminActions+'</div>'
+    + '<div class="proto-card-footer">'+_renderProtoFooter(proto, pp)+'</div>'
     + '</div>'
     + '</div>';
 }
 
-function _renderPhaseItem(protoId, ph, idx) {
-  var checks = _protoGetChecks(protoId, ph.id);
+function _renderProtoFooter(proto, pp) {
+  if(!_progPatient) return '<span class="proto-footer-info">Sélectionne un patient pour assigner ce protocole.</span>';
+  if(pp && pp.status === 'active') {
+    var adminBtns = _isAdmin()
+      ? '<button class="proto-use-btn secondary r4p-admin-only" style="font-size:.73rem;padding:5px 11px;" onclick="_protoUpdateStatus(\''+proto.id+'\',\'paused\')">⏸ Pause</button>'
+        + '<button class="proto-use-btn danger r4p-admin-only" style="font-size:.73rem;padding:5px 11px;" onclick="_protoUpdateStatus(\''+proto.id+'\',\'completed\')">✔️ Terminer</button>'
+      : '';
+    return '<span class="proto-footer-info" style="color:#16A34A;font-weight:600;">Protocole en cours</span><div style="flex:1"></div>'+adminBtns;
+  }
+  if(pp) {
+    var stLbl2 = {paused:'En pause',completed:'Terminé',abandoned:'Abandonné'}[pp.status]||pp.status;
+    return '<span class="proto-footer-info">Statut : '+stLbl2+'</span>'
+      + (!_isReader() ? '<button class="proto-use-btn secondary" style="font-size:.73rem;padding:5px 11px;" onclick="_protoUpdateStatus(\''+proto.id+'\',\'active\')">↩ Réactiver</button>' : '');
+  }
+  if(!_isReader()) return '<button class="proto-use-btn" onclick="assignProtocol(\''+proto.id+'\')" id="proto-assign-btn-'+proto.id+'">📋 Assigner à ce patient</button>';
+  return '<span class="proto-footer-info">Lecture seule.</span>';
+}
+
+/* ─── Rendu d'une phase ──────────────────────────────────────── */
+function _renderPhaseItem(protoId, ph, idx, data, currentPhaseId) {
+  var checks = (data && data.checks && data.checks[ph.id]) || {};
   var total = ph.exitCriteria.length;
   var done = ph.exitCriteria.filter(function(_, i){ return checks[i]; }).length;
   var pct = total ? Math.round(done/total*100) : 0;
-  var isCurrent = _protoGetCurrentPhase(protoId) === ph.id;
+  var isCurrent = ph.id === currentPhaseId;
+  var allDone = total > 0 && done === total;
 
-  var objList = ph.objectives.map(function(o){ return '<li>'+_escHtml(o)+'</li>'; }).join('');
+  var objList  = ph.objectives.map(function(o){ return '<li>'+_escHtml(o)+'</li>'; }).join('');
   var precList = ph.precautions.map(function(p){ return '<li>'+_escHtml(p)+'</li>'; }).join('');
   var weekRows = ph.weekly.map(function(w){
     return '<div class="proto-week-row"><span class="proto-week-badge">'+_escHtml(w.week)+'</span><span class="proto-week-text">'+_escHtml(w.content)+'</span></div>';
   }).join('');
   var criteriaItems = ph.exitCriteria.map(function(c, i){
-    var isChecked = checks[i] ? true : false;
+    var isChecked = !!checks[i];
     return '<div class="proto-criteria-item'+(isChecked?' checked':'')+'" id="proto-ci-'+protoId+'-'+ph.id+'-'+i+'">'
       + '<input type="checkbox" class="proto-criteria-cb" '+(isChecked?'checked':'')+' onchange="_protoSetCheck(\''+protoId+'\',\''+ph.id+'\','+i+',this.checked)">'
       + '<span class="proto-criteria-text">'+_escHtml(c)+'</span>'
       + '</div>';
   }).join('');
 
+  var currentBadge = isCurrent ? '<span style="font-size:.62rem;font-weight:700;background:'+ph.borderColor+';color:#fff;padding:1px 7px;border-radius:8px;margin-left:6px;white-space:nowrap;">EN COURS</span>' : '';
+  var doneBadge = (!isCurrent && allDone) ? '<span style="font-size:.62rem;font-weight:700;background:#16A34A;color:#fff;padding:1px 7px;border-radius:8px;margin-left:6px;white-space:nowrap;">✓ VALIDÉ</span>' : '';
+
   var markBtn = _progPatient && !_isReader()
     ? (isCurrent
-        ? '<button class="proto-use-btn secondary" onclick="_protoMarkCurrentPhase(\''+protoId+'\',null)" style="margin-top:10px;font-size:.75rem;padding:6px 12px;border-color:'+ph.borderColor+';color:'+ph.borderColor+';">📍 Phase en cours ✓ (retirer)</button>'
-        : '<button class="proto-use-btn secondary" onclick="_protoMarkCurrentPhase(\''+protoId+'\',\''+ph.id+'\')" style="margin-top:10px;font-size:.75rem;padding:6px 12px;">📍 Définir comme phase en cours</button>')
+        ? '<button class="proto-use-btn secondary" onclick="_protoMarkCurrentPhase(\''+protoId+'\',null)" style="font-size:.73rem;padding:5px 11px;border-color:'+ph.borderColor+';color:'+ph.borderColor+';">📍 Active ✓ (retirer)</button>'
+        : '<button class="proto-use-btn secondary" onclick="_protoMarkCurrentPhase(\''+protoId+'\',\''+ph.id+'\')" style="font-size:.73rem;padding:5px 11px;">📍 Définir active</button>')
     : '';
-  var usePhaseBtn = !_isReader()
-    ? '<button class="proto-use-btn secondary" onclick="useProtoPhase(\''+protoId+'\',\''+ph.id+'\')" style="margin-top:10px;font-size:.75rem;padding:6px 12px;">+ Créer séance depuis cette phase</button>'
+  var builderBtn = !_isReader()
+    ? '<button class="proto-use-btn secondary" onclick="_protoOpenInBuilder(\''+protoId+'\',\''+ph.id+'\')" style="font-size:.73rem;padding:5px 11px;">▶ Ouvrir dans le builder</button>'
     : '';
 
-  var currentBadge = isCurrent
-    ? '<span style="font-size:.62rem;font-weight:700;background:'+ph.borderColor+';color:#fff;padding:1px 7px;border-radius:8px;margin-left:6px;white-space:nowrap;">EN COURS</span>'
-    : '';
   return '<div class="proto-phase-item" id="proto-phase-'+protoId+'-'+ph.id+'" style="border-color:'+ph.borderColor+(isCurrent?';box-shadow:0 0 0 2px '+ph.borderColor+'55;':'')+'">'
     + '<div class="proto-phase-item-header" style="background:'+ph.color+'" onclick="_toggleProtoPhase(\''+protoId+'\',\''+ph.id+'\')">'
     + '<span style="font-size:.9rem;font-weight:700;color:'+ph.borderColor+'">Phase '+(idx+1)+'</span>'
-    + currentBadge
+    + currentBadge + doneBadge
     + '<span style="flex:1;margin-left:8px;">'+_escHtml(ph.name.replace(/Phase \d+ — /,''))+'</span>'
-    + (ph.weeks ? '<span style="font-size:.7rem;color:#6B7280;margin-right:4px;">'+ph.weeks+'</span>' : '')
+    + (ph.weeks ? '<span style="font-size:.7rem;color:#6B7280;margin-right:4px;">'+_escHtml(ph.weeks)+'</span>' : '')
     + '<span class="proto-phase-item-chevron">›</span>'
     + '</div>'
     + '<div class="proto-phase-content">'
@@ -7842,35 +7943,38 @@ function _renderPhaseItem(protoId, ph, idx) {
     + weekRows
     + '<div class="proto-section-label">✅ Critères de sortie de phase</div>'
     + '<div class="proto-progress-bar-wrap"><div class="proto-progress-bar" style="width:'+pct+'%"></div></div>'
-    + '<div class="proto-progress-label">'+done+' / '+total+' critères validés</div>'
+    + '<div class="proto-progress-label">'+done+' / '+total+' critères validés'+(allDone?' 🎉':'')+'</div>'
     + criteriaItems
-    + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
-    + markBtn
-    + usePhaseBtn
-    + '</div>'
+    + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">'+markBtn+builderBtn+'</div>'
     + '</div>'
     + '</div>';
 }
 
-/* ─── Phase en cours par patient ────────────────────────────── */
+/* ─── Phase en cours ─────────────────────────────────────────── */
 function _protoCurrentPhaseKey(protoId) {
   var patId = _progPatient ? String(_progPatient.id) : 'nopt';
   return 'r4p-proto-phase-' + patId + '-' + protoId;
 }
-function _protoGetCurrentPhase(protoId) {
+function _protoGetCurrentPhaseLocal(protoId) {
   return localStorage.getItem(_protoCurrentPhaseKey(protoId)) || null;
 }
+function _protoGetCurrentPhase(protoId) {
+  var data = _protoPatientData[protoId];
+  if(data && data.pp) return data.pp.current_phase_id || null;
+  return _protoGetCurrentPhaseLocal(protoId);
+}
 function _protoMarkCurrentPhase(protoId, phaseId) {
-  if(phaseId) {
-    localStorage.setItem(_protoCurrentPhaseKey(protoId), phaseId);
+  var data = _protoPatientData[protoId];
+  if(data && data.pp && data.pp.status === 'active') {
+    _protoUpdatePhase(protoId, phaseId);
   } else {
-    localStorage.removeItem(_protoCurrentPhaseKey(protoId));
+    if(phaseId) localStorage.setItem(_protoCurrentPhaseKey(protoId), phaseId);
+    else localStorage.removeItem(_protoCurrentPhaseKey(protoId));
+    renderProtocols();
   }
-  renderProtocols();
-  /* Ré-ouvrir les cards/phases qui étaient ouvertes */
 }
 
-/* ─── Accordéon cards ────────────────────────────────────────── */
+/* ─── Accordéon ─────────────────────────────────────────────── */
 function _toggleProtoCard(protoId) {
   var card = document.getElementById('proto-card-'+protoId);
   if(card) card.classList.toggle('open');
@@ -7880,25 +7984,37 @@ function _toggleProtoPhase(protoId, phaseId) {
   if(item) item.classList.toggle('open');
 }
 
-/* ─── Cases à cocher critères (localStorage) ─────────────────── */
+/* ─── Critères : Supabase si protocole actif, localStorage sinon ─ */
 function _protoChecksKey(protoId, phaseId) {
   var patId = _progPatient ? String(_progPatient.id) : 'nopt';
   return 'r4p-proto-checks-'+patId+'-'+protoId+'-'+phaseId;
 }
 function _protoGetChecks(protoId, phaseId) {
-  try {
-    var raw = localStorage.getItem(_protoChecksKey(protoId, phaseId));
-    return raw ? JSON.parse(raw) : {};
-  } catch(e){ return {}; }
+  var data = _protoPatientData[protoId];
+  if(data && data.pp && data.pp.status === 'active') return data.checks[phaseId] || {};
+  try { var raw = localStorage.getItem(_protoChecksKey(protoId, phaseId)); return raw ? JSON.parse(raw) : {}; } catch(e){ return {}; }
 }
 function _protoSetCheck(protoId, phaseId, idx, checked) {
-  var checks = _protoGetChecks(protoId, phaseId);
-  checks[idx] = checked;
-  try{ localStorage.setItem(_protoChecksKey(protoId, phaseId), JSON.stringify(checks)); } catch(e){}
-  /* Update UI */
+  var data = _protoPatientData[protoId];
+  if(data && data.pp && data.pp.status === 'active') {
+    /* Mise à jour cache local */
+    if(!data.checks[phaseId]) data.checks[phaseId] = {};
+    data.checks[phaseId][idx] = checked;
+    /* Upsert Supabase */
+    fetch(SUPA_URL_P + '/rest/v1/protocol_criteria_checks', {
+      method: 'POST',
+      headers: Object.assign({}, _sbHeaders(), {'Prefer':'resolution=merge-duplicates,return=minimal'}),
+      body: JSON.stringify({ patient_protocol_id: data.pp.id, phase_id: phaseId, criteria_index: idx, checked: checked, checked_at: checked ? new Date().toISOString() : null })
+    }).catch(function(e){ console.error('Criteria sync:', e); });
+  } else {
+    /* localStorage fallback */
+    var lsChecks = _protoGetChecks(protoId, phaseId);
+    lsChecks[idx] = checked;
+    try{ localStorage.setItem(_protoChecksKey(protoId, phaseId), JSON.stringify(lsChecks)); }catch(e){}
+  }
+  /* Mise à jour DOM */
   var ciEl = document.getElementById('proto-ci-'+protoId+'-'+phaseId+'-'+idx);
   if(ciEl){ if(checked) ciEl.classList.add('checked'); else ciEl.classList.remove('checked'); }
-  /* Update progress bar */
   var proto = PROTOCOLS_REF.find(function(p){ return p.id===protoId; });
   if(!proto) return;
   var ph = proto.phases.find(function(p){ return p.id===phaseId; });
@@ -7912,83 +8028,77 @@ function _protoSetCheck(protoId, phaseId, idx, checked) {
     var bar = phItem.querySelector('.proto-progress-bar');
     var lbl = phItem.querySelector('.proto-progress-label');
     if(bar) bar.style.width = pct+'%';
-    if(lbl) lbl.textContent = done+' / '+total+' critères validés';
+    if(lbl) lbl.textContent = done+' / '+total+' critères validés'+(done===total&&total>0?' 🎉':'');
   }
+  if(done === total && total > 0) _showToast('🎉 Tous les critères de la phase '+ph.name.split('—')[0].trim()+' validés !');
 }
 
-/* ─── Utiliser protocole complet (crée groupe + phases Supabase) ─ */
-function useFullProtocol(protoId) {
+/* ─── Assigner protocole au patient ─────────────────────────── */
+function assignProtocol(protoId) {
   if(_isReader()){ _showToast('Accès lecture seule.'); return; }
   if(!_progPatient){ _showToast('Sélectionne d\'abord un patient.'); return; }
   var proto = PROTOCOLS_REF.find(function(p){ return p.id===protoId; });
-  if(!proto){ _showToast('Protocole introuvable.'); return; }
-
-  /* ── Anti-doublons : vérifier si un groupe identique existe déjà ── */
-  var patientLabel = (_progPatient.prenom||'') + ' ' + (_progPatient.nom||'');
-  var groupName = proto.name + ' — ' + patientLabel.trim();
-  var existing = (_groups||[]).find(function(g){ return g.nom === groupName; });
-  if(existing){
-    _showToast('⚠️ Un protocole «'+groupName+'» existe déjà dans la bibliothèque.');
-    return;
-  }
-
-  var btn = document.getElementById('proto-use-full-'+protoId);
-  if(btn){ btn.disabled = true; btn.textContent = '⏳ Création…'; }
-
-  /* Créer le groupe de templates */
-  fetch(SUPA_URL_P+'/rest/v1/template_groups', {
-    method:'POST',
-    headers: _sbHeaders(),
-    body: JSON.stringify({
-      praticien_id: _progUid,
-      nom: groupName,
-      categorie: proto.category,
-      description: proto.source + ' · ' + proto.duration + ' · ' + patientLabel.trim()
-    })
+  if(!proto) return;
+  var data = _protoPatientData[protoId];
+  if(data && data.pp && data.pp.status === 'active'){ _showToast('Protocole déjà actif pour ce patient.'); return; }
+  var btn = document.getElementById('proto-assign-btn-'+protoId);
+  if(btn){ btn.disabled = true; btn.textContent = '⏳…'; }
+  fetch(SUPA_URL_P + '/rest/v1/patient_protocols', {
+    method: 'POST', headers: _sbHeaders(),
+    body: JSON.stringify({ praticien_id: _progUid, patient_id: _progPatient.id, protocol_id: protoId, protocol_name: proto.name, current_phase_id: proto.phases[0] ? proto.phases[0].id : null, status: 'active' })
   })
   .then(function(r){ return r.ok ? r.json() : r.json().then(function(d){ throw new Error(JSON.stringify(d)); }); })
-  .then(function(grpArr){
-    var grp = Array.isArray(grpArr) ? grpArr[0] : grpArr;
-    if(!grp || !grp.id) throw new Error('Création groupe échouée');
-    /* Créer un template (séance-type) par phase */
-    var chain = Promise.resolve();
-    proto.phases.forEach(function(ph, idx){
-      chain = chain.then(function(){
-        return _createProtoPhaseTemplate(grp.id, proto, ph, idx);
-      });
-    });
-    return chain.then(function(){ return grp; });
+  .then(function(){
+    _showToast('✅ Protocole '+_escHtml(proto.name)+' assigné à '+_escHtml((_progPatient.prenom||'')+' '+(_progPatient.nom||''))+' !');
+    renderProtocols();
   })
-  .then(function(grp){
-    _showToast('✅ «'+groupName+'» créé dans la bibliothèque !');
-    if(btn){ btn.disabled = false; btn.textContent = '▶ Utiliser ce protocole'; }
-    renderSidebarTemplates();
-  })
-  .catch(function(err){
-    console.error(err);
-    _showToast('Erreur lors de la création du protocole.', true);
-    if(btn){ btn.disabled = false; btn.textContent = '▶ Utiliser ce protocole'; }
-  });
+  .catch(function(err){ console.error(err); _showToast('Erreur assignation.', true); if(btn){ btn.disabled=false; btn.textContent='📋 Assigner à ce patient'; } });
 }
 
-function _createProtoPhaseTemplate(groupId, proto, ph, phaseIndex) {
-  var notes = _buildPhaseNotes(ph);
-  return fetch(SUPA_URL_P+'/rest/v1/templates', {
-    method:'POST',
-    headers: Object.assign({},_sbHeaders(),{'Prefer':'return=minimal'}),
-    body: JSON.stringify({
-      praticien_id: _progUid,
-      group_id: groupId,
-      nom: ph.name,
-      emoji: '📋',
-      categorie: proto.category,
-      phase_nom: ph.name,
-      phase_ordre: phaseIndex || 0,
-      donnees: JSON.stringify({ blocs: [], notes: notes })
-    })
-  });
+/* ─── Mettre à jour statut patient_protocol ─────────────────── */
+function _protoUpdateStatus(protoId, newStatus) {
+  var data = _protoPatientData[protoId];
+  if(!data || !data.pp) return;
+  fetch(SUPA_URL_P + '/rest/v1/patient_protocols?id=eq.'+data.pp.id, {
+    method: 'PATCH', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
+    body: JSON.stringify({ status: newStatus, updated_at: new Date().toISOString() })
+  }).then(function(r){
+    if(r.ok){ _showToast(({active:'↩ Protocole réactivé !', paused:'⏸ Mis en pause.', completed:'✔️ Terminé !', abandoned:'Abandonné.'})[newStatus]||'Statut mis à jour.'); renderProtocols(); }
+  }).catch(function(){ _showToast('Erreur mise à jour statut.', true); });
 }
 
+/* ─── Mettre à jour la phase active (Supabase) ──────────────── */
+function _protoUpdatePhase(protoId, phaseId) {
+  var data = _protoPatientData[protoId];
+  if(!data || !data.pp) return;
+  fetch(SUPA_URL_P + '/rest/v1/patient_protocols?id=eq.'+data.pp.id, {
+    method: 'PATCH', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
+    body: JSON.stringify({ current_phase_id: phaseId||null, phase_started_at: phaseId ? new Date().toISOString() : null, updated_at: new Date().toISOString() })
+  }).then(function(r){
+    if(r.ok && data.pp){ data.pp.current_phase_id = phaseId||null; renderProtocols(); }
+  }).catch(function(){ _showToast('Erreur mise à jour phase.', true); });
+}
+
+/* ─── Ouvrir une phase dans le builder ──────────────────────── */
+function _protoOpenInBuilder(protoId, phaseId) {
+  if(_isReader()){ _showToast('Accès lecture seule.'); return; }
+  var proto = PROTOCOLS_REF.find(function(p){ return p.id===protoId; });
+  if(!proto) return;
+  var ph = proto.phases.find(function(p){ return p.id===phaseId; });
+  if(!ph) return;
+  closeProtoPanel();
+  blocs = []; activeBloc = null;
+  _notes = _buildPhaseNotes(ph);
+  _currentProgId = null; _builderFromTemplate = null; _builderDate = '';
+  _lastSavedHash = ''; _builderSaved = false;
+  renderSession(); _updateBuilderTitle();
+  if(typeof _refreshSaveBtn === 'function') _refreshSaveBtn();
+  if(typeof _refreshDraftBadge === 'function') _refreshDraftBadge();
+  _enterBuilderMode();
+  _showToast('📋 Builder ouvert — '+_escHtml(ph.name));
+}
+
+/* ─── Notes pré-remplies pour le builder ────────────────────── */
 function _buildPhaseNotes(ph) {
   var lines = [];
   lines.push('OBJECTIFS :');
@@ -8003,50 +8113,6 @@ function _buildPhaseNotes(ph) {
   lines.push('CRITÈRES DE SORTIE :');
   ph.exitCriteria.forEach(function(c){ lines.push('- '+c); });
   return lines.join('\n');
-}
-
-/* ─── Utiliser une phase seule ───────────────────────────────── */
-function useProtoPhase(protoId, phaseId) {
-  if(_isReader()){ _showToast('Accès lecture seule.'); return; }
-  if(!_progPatient){ _showToast('Sélectionne d\'abord un patient.'); return; }
-  var proto = PROTOCOLS_REF.find(function(p){ return p.id===protoId; });
-  if(!proto) return;
-  var ph = proto.phases.find(function(p){ return p.id===phaseId; });
-  if(!ph) return;
-  var notes = _buildPhaseNotes(ph);
-
-  fetch(SUPA_URL_P+'/rest/v1/templates', {
-    method:'POST',
-    headers: Object.assign({},_sbHeaders(),{'Prefer':'return=minimal'}),
-    body: JSON.stringify({
-      praticien_id: _progUid,
-      group_id: null,
-      nom: proto.name+' — '+ph.name,
-      emoji: '📋',
-      categorie: proto.category,
-      phase_nom: ph.name,
-      phase_ordre: 0,
-      donnees: JSON.stringify({ blocs: [], notes: notes })
-    })
-  })
-  .then(function(r){
-    if(!r.ok) return r.text().then(function(t){ throw new Error(t); });
-    _showToast('✅ Séance «'+ph.name+'» ajoutée à la bibliothèque !');
-    renderSidebarTemplates();
-  })
-  .catch(function(err){
-    console.error(err);
-    _showToast('Erreur lors de la création de la séance.', true);
-  });
-}
-
-/* ─── Supprimer un protocole (admin only) ────────────────────── */
-function _protoDelete(protoId) {
-  if(!_isAdmin()){ _showToast('Action réservée à l\'admin.'); return; }
-  /* Pour les protocoles de référence statiques (pas en BDD), on les masque localement */
-  PROTOCOLS_REF = PROTOCOLS_REF.filter(function(p){ return p.id !== protoId; });
-  renderProtocols();
-  _showToast('Protocole supprimé (session en cours).');
 }
 
 /* ─── Utilitaire escaping ────────────────────────────────────── */
