@@ -454,8 +454,11 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .sb-tab-btn { flex:1; padding:8px 4px; font-size:.72rem; font-weight:600; color:rgba(255,255,255,.6); background:none; border:none; border-bottom:2px solid transparent; margin-bottom:-2px; cursor:pointer; transition:color .15s,border-color .15s,background .15s; font-family:inherit; }
 .sb-tab-btn:hover { color:#fff; background:rgba(255,255,255,.06); }
 .sb-tab-btn.active { color:#fff; border-bottom-color:#60A5FA; background:rgba(96,165,250,.08); }
-#sb-tab-lib { display:flex; flex-direction:column; flex:1; overflow:hidden; }
-#sb-tab-picker { display:none; flex-direction:column; flex:1; overflow:hidden; }
+#sb-tab-lib { display:flex; flex-direction:column; flex:1; overflow:hidden; background:var(--surface); min-height:0; }
+#sb-tab-picker { display:none; flex-direction:column; flex:1; overflow:hidden; min-height:0; }
+/* Forcer masquage en mode builder via CSS (filet de sécurité) */
+.app.builder-mode #sidebarTemplates { display:none !important; }
+.app.builder-mode #sidebarLibrary { display:flex !important; }
 /* ── Picker templates ── */
 .picker-header { padding:8px 10px; background:rgba(0,0,0,.15); flex-shrink:0; }
 .picker-search { background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); color:#fff; border-radius:5px; padding:5px 9px; font-size:.74rem; width:100%; box-sizing:border-box; outline:none; }
@@ -6272,6 +6275,9 @@ function _switchSidebarTab(tab){
     if(picker) picker.style.display = 'none';
     if(btnLib)  btnLib.classList.add('active');
     if(btnPick) btnPick.classList.remove('active');
+    // S'assurer que la bibliothèque est peuplée
+    var si = document.getElementById('searchInput');
+    if(typeof renderLib === 'function') renderLib(si ? si.value.toLowerCase() : '');
   }
 }
 
