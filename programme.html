@@ -559,6 +559,26 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 }
 #builderPanel.r4p-readonly .builder-ro-banner { display:flex; }
 
+#builder-proto-banner {
+  margin:6px 10px 0; border-radius:8px; font-size:.78rem; line-height:1.45;
+  border:1px solid #93C5FD; background:#EFF6FF; color:#1D4ED8;
+  padding:8px 12px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+}
+#builder-proto-banner .bpb-phase { font-weight:700; }
+#builder-proto-banner .bpb-link-btn {
+  margin-left:auto; background:#2563EB; color:#fff; border:none; border-radius:6px;
+  padding:3px 10px; font-size:.74rem; font-weight:600; cursor:pointer; white-space:nowrap;
+  font-family:inherit; transition:background .15s;
+}
+#builder-proto-banner .bpb-link-btn:hover { background:#1D4ED8; }
+#builder-proto-banner.bpb-linked {
+  background:#F0FDF4; border-color:#86EFAC; color:#15803D;
+}
+#builder-proto-banner.bpb-linked .bpb-link-btn {
+  background:#16A34A;
+}
+#builder-proto-banner.bpb-linked .bpb-link-btn:hover { background:#15803D; }
+
 .builder-save-btn {
   background:#2B5FA6; border:none; color:#fff; border-radius:7px;
   padding:5px 14px; font-size:.74rem; font-weight:600; cursor:pointer;
@@ -1691,6 +1711,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
     </div>
   </div>
   <div class="builder-date-bar" id="builderDateBar"></div>
+  <div id="builder-proto-banner" style="display:none;"></div>
   <div class="builder-body">
     <!-- Champ nom programme -->
     <div style="padding:8px 14px 0;display:flex;align-items:center;gap:8px;">
@@ -4017,6 +4038,7 @@ function saveProgToCloud(){
   var nomProg = (document.getElementById('patientName')||{}).value || ('Programme du '+new Date().toLocaleDateString('fr-FR'));
   // Stocke blocs + notes dans donnees (objet) pour rétrocompatibilité sans migration DB
   var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), notes: getNotes() };
+  if(_builderLinkedPhase) donnees.linkedPhase = _builderLinkedPhase;
   var today = new Date().toISOString().split('T')[0];
   var url, method, body;
   if(_currentProgId){
@@ -4101,8 +4123,8 @@ function _loadProg(id){
       _currentProgId = d.id;
       // Rétrocompat : donnees peut être un tableau (ancien) ou {blocs,notes} (nouveau)
       var raw = d.donnees || [];
-      if(Array.isArray(raw)){ blocs = raw; _notes = ''; }
-      else { blocs = raw.blocs || []; _notes = raw.notes || ''; }
+      if(Array.isArray(raw)){ blocs = raw; _notes = ''; _builderLinkedPhase = null; }
+      else { blocs = raw.blocs || []; _notes = raw.notes || ''; _builderLinkedPhase = raw.linkedPhase || null; }
       var pnEl = document.getElementById('patientName');
       if(pnEl) pnEl.value = d.nom || '';
       renderSession();
@@ -6504,7 +6526,7 @@ function loadTemplate(id){
     _updateBuilderTitle();
     _refreshSaveBtn();
     var pn = document.getElementById('patientName');
-    if(pn) pn.value = t.nom || '';
+    if(pn && !pn.value) pn.value = t.nom || '';
     if(_builderReadOnly && pn) pn.readOnly = true;
     else if(pn) pn.readOnly = false;
     // Marquer l'état chargé comme "sauvegardé" pour éviter la pastille parasite
@@ -7344,6 +7366,7 @@ function confirmQuickAdd(){
 
 // ── Builder panel ──
 var _builderDate = '';
+var _builderLinkedPhase = null; // { protoId, phaseId, ppId, phaseName, protoName } quand lié à une phase
 
 function _enterBuilderMode(){
   document.getElementById('builderPanel').classList.add('open');
@@ -7355,6 +7378,74 @@ function _enterBuilderMode(){
   renderTemplatesInBuilder();
   // Proposer de restaurer le brouillon si le builder est vide
   setTimeout(_draftRestore, 120);
+  // Bandeau protocole contextuel
+  _builderLoadProtoContext();
+}
+
+// ── Bandeau protocole dans le builder ──
+function _builderLoadProtoContext(){
+  var banner = document.getElementById('builder-proto-banner');
+  if(!banner) return;
+  banner.style.display = 'none';
+  banner.className = '';
+  if(!_progPatient || !_progUid) return;
+
+  fetch(SUPA_URL_P + '/rest/v1/patient_protocols?patient_id=eq.' + _progPatient.id
+    + '&praticien_id=eq.' + _progUid + '&status=eq.active&select=*&limit=1', { headers: _sbHeaders() })
+  .then(function(r){ return r.ok ? r.json() : []; })
+  .then(function(pps){
+    if(!pps || !pps.length) return;
+    var pp = pps[0];
+    // Trouver le protocole et la phase courante dans PROTOCOLS_REF
+    var proto = (typeof PROTOCOLS_REF !== 'undefined' ? PROTOCOLS_REF : []).find(function(p){ return p.id === pp.protocol_id; });
+    var phase = proto ? proto.phases.find(function(ph){ return ph.id === pp.current_phase_id; }) : null;
+    if(!proto || !phase) return;
+
+    var patName = (_progPatient.prenom || '') + ' ' + (_progPatient.nom || '');
+    _builderRenderProtoBanner(banner, pp, proto, phase, patName.trim());
+  }).catch(function(){});
+}
+
+function _builderRenderProtoBanner(banner, pp, proto, phase, patName){
+  var isLinked = _builderLinkedPhase && _builderLinkedPhase.ppId === pp.id && _builderLinkedPhase.phaseId === phase.id;
+  var btnLabel = isLinked ? '✓ Lié à cette phase' : 'Lier à cette phase';
+  var btnClick = isLinked
+    ? 'onclick="_builderUnlinkPhase()"'
+    : 'onclick="_builderLinkToPhase(\'' + proto.id + '\',\'' + phase.id + '\',\'' + pp.id + '\',\'' + phase.name.replace(/'/g,'') + '\',\'' + proto.name + '\')"';
+
+  banner.innerHTML =
+    '<span>' + (patName ? '<strong>' + patName + '</strong> · ' : '') +
+    proto.name + ' — <span class="bpb-phase">' + phase.name + '</span></span>' +
+    '<button class="bpb-link-btn" ' + btnClick + '>' + btnLabel + '</button>';
+
+  banner.className = isLinked ? 'bpb-linked' : '';
+  banner.style.display = 'flex';
+}
+
+function _builderLinkToPhase(protoId, phaseId, ppId, phaseName, protoName){
+  _builderLinkedPhase = { protoId: protoId, phaseId: phaseId, ppId: ppId, phaseName: phaseName, protoName: protoName };
+  // Refresh banner appearance
+  var banner = document.getElementById('builder-proto-banner');
+  if(banner){
+    banner.className = 'bpb-linked';
+    var btn = banner.querySelector('.bpb-link-btn');
+    if(btn){ btn.textContent = '✓ Lié à cette phase'; btn.setAttribute('onclick','_builderUnlinkPhase()'); }
+  }
+  _showToast('📎 Séance liée à ' + protoName + ' — ' + phaseName);
+}
+
+function _builderUnlinkPhase(){
+  _builderLinkedPhase = null;
+  var banner = document.getElementById('builder-proto-banner');
+  if(banner){
+    banner.className = '';
+    var btn = banner.querySelector('.bpb-link-btn');
+    if(btn){
+      // Reconstruct link from banner text (simpler: just reload context)
+      _builderLoadProtoContext();
+    }
+  }
+  _showToast('🔗 Liaison retirée');
 }
 
 function _exitBuilderMode(){
@@ -7364,6 +7455,10 @@ function _exitBuilderMode(){
   var tmpl = document.getElementById('sidebarTemplates');
   if(lib)  lib.style.display  = 'none';
   if(tmpl){ tmpl.style.display = 'flex'; renderSidebarTemplates(); }
+  // Réinitialiser la liaison de phase
+  _builderLinkedPhase = null;
+  var banner = document.getElementById('builder-proto-banner');
+  if(banner){ banner.style.display = 'none'; banner.innerHTML = ''; banner.className = ''; }
 }
 
 function openBuilderForDate(dateStr){
@@ -8091,6 +8186,17 @@ function _protoOpenInBuilder(protoId, phaseId) {
   _notes = _buildPhaseNotes(ph);
   _currentProgId = null; _builderFromTemplate = null; _builderDate = '';
   _lastSavedHash = ''; _builderSaved = false;
+  // Pré-lier à la phase si un patient_protocol actif existe en cache
+  var ppId = null;
+  if(_protoPatientData && _protoPatientData[protoId] && _protoPatientData[protoId].pp){
+    ppId = _protoPatientData[protoId].pp.id;
+  }
+  if(ppId){
+    _builderLinkedPhase = { protoId: protoId, phaseId: phaseId, ppId: ppId,
+      phaseName: ph.name, protoName: proto.name };
+  } else {
+    _builderLinkedPhase = null;
+  }
   renderSession(); _updateBuilderTitle();
   if(typeof _refreshSaveBtn === 'function') _refreshSaveBtn();
   if(typeof _refreshDraftBadge === 'function') _refreshDraftBadge();
