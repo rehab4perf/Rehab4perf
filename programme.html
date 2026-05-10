@@ -4531,6 +4531,43 @@ renderLib('');
   font-family:inherit;
 }
 .proto-lib-builder-btn:hover { background:#16305A; }
+/* --- Arbre décisionnel (library protocol) --- */
+.proto-dt-entry {
+  padding:10px 14px;background:#F0F7FF;border-radius:7px;
+  border:1px solid #BFDBFE;margin-bottom:12px;
+}
+.proto-dt-entry-label { font-size:.6rem;font-weight:700;color:#3B82F6;text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px; }
+.proto-dt-entry-name  { font-size:.82rem;font-weight:700;color:#1A3A5C; }
+.proto-dt-entry-desc  { font-size:.72rem;color:#6B7280;margin-top:2px;line-height:1.4; }
+.proto-dt-branches    { display:flex;flex-direction:column;gap:8px; }
+.proto-dt-branch      { border-radius:8px;border:1.5px solid #CBD5E1;overflow:hidden; }
+.proto-dt-branch-hdr  {
+  display:flex;align-items:center;gap:8px;padding:9px 12px;
+  cursor:pointer;user-select:none;transition:filter .15s;
+}
+.proto-dt-branch-hdr:hover { filter:brightness(.95); }
+.proto-dt-branch-arrow  { font-size:.65rem;transition:transform .18s;flex-shrink:0; }
+.proto-dt-branch.open .proto-dt-branch-arrow { transform:rotate(90deg); }
+.proto-dt-branch-label  { flex:1;font-size:.82rem;font-weight:700; }
+.proto-dt-branch-body   { display:none;padding:10px 12px 6px;background:#fff;border-top:1px solid #E2E8F0; }
+.proto-dt-branch.open .proto-dt-branch-body { display:block; }
+.proto-dt-bloc          { margin-bottom:9px;border-radius:6px;overflow:hidden;border:1px solid #E2E8F0; }
+.proto-dt-bloc--test    { border-color:#BFDBFE; }
+.proto-dt-bloc--rehab   { border-color:#BBF7D0; }
+.proto-dt-bloc-title    { padding:5px 10px;font-size:.7rem;font-weight:700;background:#F8FAFC;border-bottom:1px solid #E2E8F0;display:flex;align-items:center;gap:5px; }
+.proto-dt-bloc--test  .proto-dt-bloc-title { background:#EFF6FF;border-color:#BFDBFE; }
+.proto-dt-bloc--rehab .proto-dt-bloc-title { background:#F0FDF4;border-color:#BBF7D0; }
+.proto-dt-tag           { font-size:.58rem;font-weight:700;padding:1px 5px;border-radius:4px;text-transform:uppercase;letter-spacing:.04em; }
+.proto-dt-tag--test     { background:#DBEAFE;color:#1D4ED8; }
+.proto-dt-tag--rehab    { background:#DCFCE7;color:#15803D; }
+.proto-dt-exo           { padding:5px 10px;border-bottom:1px solid #F1F5F9;display:flex;flex-direction:column;gap:3px; }
+.proto-dt-exo:last-child { border-bottom:none; }
+.proto-dt-exo-link      { font-size:.77rem;color:#2B5FA6;text-decoration:none;font-weight:500; }
+.proto-dt-exo-link:hover { text-decoration:underline; }
+.proto-dt-exo-name      { font-size:.77rem;color:#374151; }
+.proto-dt-consigne      { padding:4px 8px;background:#FFFBEB;border-radius:4px;border-left:2px solid #F59E0B; }
+.proto-dt-consigne-line { font-size:.7rem;color:#92400E;line-height:1.45; }
+.proto-dt-branch-actions { display:flex;justify-content:flex-end;padding:2px 0 4px; }
 </style>
 
 <div class="proto-overlay" id="proto-overlay" onclick="if(event.target===this)closeProtoPanel()">
@@ -8211,6 +8248,132 @@ var PROTOCOLS_REF = [
         ]
       }
     ]
+  },
+
+  /* ── Flexion dorsale cheville ── */
+  {
+    id: 'flexion-dorsale-cheville',
+    type: 'library',
+    name: 'Flexion dorsale cheville',
+    icon: '🦶',
+    category: 'Mobilité',
+    source: 'Antoine Peronnaud',
+    duration: 'Séance unique',
+    description: 'Arbre décisionnel pour le bilan et le traitement des limitations en flexion dorsale de cheville. Identifier la localisation du blocage au WBLT, puis discriminer la structure responsable.',
+    entryTest: {
+      name: 'WBLT (Weight Bearing Lunge Test)',
+      description: 'Identifier la localisation de la sensation de blocage'
+    },
+    branches: [
+      {
+        id: 'anterieur',
+        label: 'Antérieur',
+        color: '#EFF6FF',
+        borderColor: '#3B82F6',
+        blocs: [
+          { id: '_tj9zmz4', title: 'Test', exos: [
+            { id: '_r7z372w', libId: 'c1777818298038',
+              name: 'Posterior talar glide test',
+              url: 'https://youtu.be/ypwvbBcF6Y4?is=dkwhUnVcaT7Ib4Kn',
+              consigne: 'Asymétrie > 4° => talocrural\nAsymétrie < 4° => chopart',
+              reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' }
+          ]},
+          { id: '_gvlp333', title: 'Rehab Asymétrie > 4° — TALO-CRURAL', exos: [
+            { id: '_bqvm0st', libId: 'c1777818482390', name: 'Mobilisation antéro-postérieur du talus',           url: 'https://youtu.be/J0gO8BfHsEs?is=ikhKlmON8di5zc13', reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' },
+            { id: '_q6bpztc', libId: 'c1777818554296', name: 'Mobilisation antéro-postérieur du talus (Mulligan)', url: 'https://youtu.be/GHcsdaiS0WE?is=vTKAVVU7vqVuux75',  reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' }
+          ]},
+          { id: '_ydtofis', title: 'Rehab Asymétrie < 4° — CHOPART', exos: [
+            { id: '_c00jdbj', libId: 'c1777818801958', name: 'Mobilisation transverse du tarse',          url: 'https://youtu.be/myFVAxjCzqk?is=DkWceAmMl2sXgKwC', reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' },
+            { id: '_82qg1tp', libId: 'c1777818837489', name: 'Mobilisation transverse du tarse (Mulligan)', url: 'https://youtu.be/uSPRHeoCgf8?is=ci4X1gPsi5IVZBhK',  reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' }
+          ]}
+        ]
+      },
+      {
+        id: 'antero-lateral',
+        label: 'Antéro-latéral',
+        color: '#FFFBEB',
+        borderColor: '#F59E0B',
+        blocs: [
+          { id: '_esz4w0g', title: 'TEST', exos: [
+            { id: '_k128375', libId: 'c1777819009753',
+              name: 'Kleiger test (syndesmose)',
+              url: 'https://youtu.be/nJbnquuD5Sg?is=_s7Bh-N2aWJkvWqR',
+              consigne: 'Si test + : Syndesmose\nSi test - : Conflit antéro-latéral',
+              reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' }
+          ]},
+          { id: '_0djpi7e', title: 'Rehab (syndesmose + conflit antéro-latéral)', exos: [
+            { id: '_ejtflv9', libId: 'c1777819303073', name: 'Mobilisation antéro-postérieur tibiofibulaire',           url: 'https://youtu.be/KjYh_650wwM?is=bp1u_QzDdwLqp8Yw', reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' },
+            { id: '_xa58rxg', libId: 'c1777819362407', name: 'Mobilisation antéro-postérieur tibiofibulaire (Mulligan)', url: 'https://youtu.be/P1VWOTCQz-Y?is=7shVEAXN016H47cA', reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' }
+          ]}
+        ]
+      },
+      {
+        id: 'medial-retromall',
+        label: 'Médial rétromalléolaire',
+        color: '#F0FDF4',
+        borderColor: '#22C55E',
+        blocs: [
+          { id: '_o533xwd', title: 'Test', exos: [
+            { id: '_6rub6r3', libId: 'c1777838105421',
+              name: 'WBLT + Hallux dorsiflexion',
+              url: '',
+              consigne: 'Comparer au WBLT classique :\n— Si douleur augmente ou ROM diminue > 1,5 cm → LTFH\n— Sinon → Sous-talienne',
+              reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' }
+          ]},
+          { id: '_o2su0lp', title: 'LTFH', exos: [
+            { id: '_mjypvne', libId: 'c1777838290074', name: 'Étirement du LTFH', url: 'https://youtu.be/7gp0SbtW0wE?is=Lq4w483qi_bRbHzu', reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' }
+          ]},
+          { id: '_03u2nnk', title: 'Sous-talienne', exos: [
+            { id: '_az1qjh8', libId: 'c1777838353809', name: 'Mobilisation médio-latéral de la sous-talienne',  url: 'https://youtu.be/TzFkSfU99ec?is=iA2n8p4ZPkdQ04is', reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' },
+            { id: '_jod455s', libId: 'c1777838411460', name: 'Mobilisation latéro-médial de la sous-talienne', url: 'https://youtu.be/s4k0jqDIkc8?is=U175aAz_h6aW0hYD',  reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' }
+          ]}
+        ]
+      },
+      {
+        id: 'lateral-retromall',
+        label: 'Latéral rétromalléolaire',
+        color: '#FFF7ED',
+        borderColor: '#F97316',
+        blocs: [
+          { id: '_xbenezg', title: 'Test', exos: [
+            { id: '_xa9h85l', libId: 'c1777838591737',
+              name: 'WBLT + inversion',
+              url: '',
+              consigne: 'Comparer au WBLT classique :\n— Si douleur augmente ou ROM diminue > 1,5 cm → Tendinopathie des fibulaires\n— Sinon → Tibiofibulaire inférieur',
+              reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' }
+          ]},
+          { id: '_1fes75o', title: 'Fibulaires', exos: [
+            { id: '_rku1i5i', libId: 'c1777838776758', name: 'Étirement des fibulaires',         url: 'https://youtu.be/1djX7cIsBMg?is=A4mg7Cd0cYAgsN8Q', reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' },
+            { id: '_dim6mf7', libId: 'c1777839390292', name: 'Éversion de cheville isométrique', url: 'https://youtu.be/QmquJBw2JT0?is=TlsYYb6YFToouoIx', reps:'', duree:'45s', series:'3', recup:'120', tempo:'', chained:false, cibles:[{type:'RPE',min:'4',max:'7'}], obj:'' }
+          ]},
+          { id: '_z5j97hq', title: 'Tibiofibulaire inférieur', exos: [
+            { id: '_rjvl5cy', libId: 'c1777839473325', name: 'Mobilisation postéro-antérieur tibiofibulaire inférieur',           url: 'https://youtu.be/_qC0jRbA5l0?is=ZLC1816sRPN9xCso', reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' },
+            { id: '_que0pa0', libId: 'c1777839527912', name: 'Mobilisation postéro-antérieur tibiofibulaire inférieur (Mulligan)', url: 'https://youtu.be/GVu-sH0zF5I?is=lXdCXQM5GnFaCQbL', reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' }
+          ]}
+        ]
+      },
+      {
+        id: 'posterieur',
+        label: 'Postérieur',
+        color: '#FDF4FF',
+        borderColor: '#A855F7',
+        blocs: [
+          { id: '_i2uo0ll', title: 'Test', exos: [
+            { id: '_7ko0pd7', libId: 'c1777839734378',
+              name: 'SLUMP test',
+              url: 'https://youtu.be/HFGfP84uwEo?is=jeEWYFV8cO65D_zK',
+              consigne: 'Si douleur augmente ou ROM diminue → Mécanosensibilité neurale (nerf tibial)\nSinon → Raideur du triceps sural',
+              reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' }
+          ]},
+          { id: '_yqxlgf4', title: 'Nerf tibial', exos: [
+            { id: '_2cqnaaz', libId: 'c1777839934435', name: 'Neurodynamie nerf tibial', url: 'https://youtu.be/qZZIy5zAnBQ?is=Wx7Wp5PXdRv-cfcn', reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' }
+          ]},
+          { id: '_g6ir442', title: 'Triceps sural', exos: [
+            { id: '_ep0tez7', libId: 'c1777840032716', name: 'Étirement du triceps sural', url: 'https://youtu.be/J-nbiHzMKHc?is=VTQfzs2-KkvEuPEF', reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' }
+          ]}
+        ]
+      }
+    ]
   }
 ];
 
@@ -8408,9 +8571,58 @@ function _renderProtocolCardLibrary(proto) {
     ? '<div class="proto-lib-desc">'+_escHtml(proto.description)+'</div>'
     : '';
 
-  /* Blocs */
+  /* Arbre décisionnel (branches) */
   var blocsHtml = '';
-  if(proto.blocs && proto.blocs.length) {
+  if(proto.branches && proto.branches.length) {
+    /* Test d'entrée */
+    if(proto.entryTest) {
+      blocsHtml += '<div class="proto-dt-entry">'
+        + '<div class="proto-dt-entry-label">🔬 Test d\'entrée</div>'
+        + '<div class="proto-dt-entry-name">'+_escHtml(proto.entryTest.name)+'</div>'
+        + (proto.entryTest.description ? '<div class="proto-dt-entry-desc">'+_escHtml(proto.entryTest.description)+'</div>' : '')
+        + '</div>';
+    }
+    blocsHtml += '<div class="proto-dt-branches">';
+    proto.branches.forEach(function(branch){
+      var bId = 'proto-dt-br-'+proto.id+'-'+branch.id;
+      blocsHtml += '<div class="proto-dt-branch" id="'+bId+'" style="border-color:'+branch.borderColor+';">';
+      blocsHtml += '<div class="proto-dt-branch-hdr" onclick="_toggleDtBranch(\''+bId+'\')" style="background:'+branch.color+';">'
+        + '<span class="proto-dt-branch-arrow" style="color:'+branch.borderColor+';">▸</span>'
+        + '<span class="proto-dt-branch-label" style="color:'+branch.borderColor+';">'+_escHtml(branch.label)+'</span>'
+        + '</div>';
+      blocsHtml += '<div class="proto-dt-branch-body">';
+      branch.blocs.forEach(function(bloc, bi){
+        var isTest = bi === 0;
+        blocsHtml += '<div class="proto-dt-bloc '+(isTest?'proto-dt-bloc--test':'proto-dt-bloc--rehab')+'">';
+        blocsHtml += '<div class="proto-dt-bloc-title">'
+          + '<span class="proto-dt-tag '+(isTest?'proto-dt-tag--test':'proto-dt-tag--rehab')+'">'+(isTest?'TEST':'REHAB')+'</span>'
+          + ' '+_escHtml(bloc.title)+'</div>';
+        (bloc.exos||[]).forEach(function(exo){
+          blocsHtml += '<div class="proto-dt-exo">';
+          if(exo.url) blocsHtml += '<a class="proto-dt-exo-link" href="'+exo.url+'" target="_blank" rel="noopener">▶ '+_escHtml(exo.name)+'</a>';
+          else        blocsHtml += '<span class="proto-dt-exo-name">'+_escHtml(exo.name)+'</span>';
+          if(exo.consigne){
+            blocsHtml += '<div class="proto-dt-consigne">';
+            exo.consigne.split('\n').filter(Boolean).forEach(function(l){
+              blocsHtml += '<div class="proto-dt-consigne-line">'+_escHtml(l)+'</div>';
+            });
+            blocsHtml += '</div>';
+          }
+          blocsHtml += '</div>';
+        });
+        blocsHtml += '</div>';
+      });
+      if(!_isReader()){
+        blocsHtml += '<div class="proto-dt-branch-actions">'
+          + '<button class="proto-lib-builder-btn" style="font-size:.73rem;padding:5px 12px;" onclick="_protoOpenBranchInBuilder(\''+proto.id+'\',\''+branch.id+'\')">▶ Créer une séance</button>'
+          + '</div>';
+      }
+      blocsHtml += '</div></div>'; /* branch-body + branch */
+    });
+    blocsHtml += '</div>'; /* proto-dt-branches */
+
+  } else if(proto.blocs && proto.blocs.length) {
+    /* Blocs simples (pas d'arbre) */
     blocsHtml = '<div class="proto-lib-blocs">';
     proto.blocs.forEach(function(b){
       blocsHtml += '<div class="proto-lib-bloc-title">'+_escHtml(b.title||'Bloc')+'</div>';
@@ -8432,8 +8644,8 @@ function _renderProtocolCardLibrary(proto) {
     blocsHtml += '</div>';
   }
 
-  /* Bouton builder direct */
-  var builderBtn = !_isReader()
+  /* Bouton builder (seulement si pas de branches — chaque branche a le sien) */
+  var builderBtn = (!proto.branches || !proto.branches.length) && !_isReader()
     ? '<button class="proto-lib-builder-btn" onclick="_protoOpenLibraryInBuilder(\''+proto.id+'\')">▶ Créer une séance</button>'
     : '';
 
@@ -8457,6 +8669,35 @@ function _renderProtocolCardLibrary(proto) {
     + '<div class="proto-card-footer">'+_renderProtoFooter(proto, pp)+'</div>'
     + '</div>'
     + '</div>';
+}
+
+/* ─── Toggle branche de l'arbre décisionnel ──────────────────── */
+function _toggleDtBranch(bId) {
+  var el = document.getElementById(bId);
+  if(el) el.classList.toggle('open');
+}
+
+/* ─── Ouvre une branche dans le builder ──────────────────────── */
+function _protoOpenBranchInBuilder(protoId, branchId) {
+  var proto = (PROTOCOLS_REF||[]).find(function(p){ return p.id === protoId; });
+  if(!proto || !proto.branches) return;
+  var branch = proto.branches.find(function(b){ return b.id === branchId; });
+  if(!branch) return;
+  closeProtoPanel();
+  if(typeof _enterBuilderMode === 'function') _enterBuilderMode();
+  if(branch.blocs && branch.blocs.length) {
+    blocs = [];
+    branch.blocs.forEach(function(srcBloc){
+      var nb = { id: genId(), title: srcBloc.title||'Bloc', exos: [], objectif:'', methode:'' };
+      (srcBloc.exos||[]).forEach(function(e){
+        var ne = JSON.parse(JSON.stringify(e));
+        ne.id = genId();
+        nb.exos.push(ne);
+      });
+      blocs.push(nb);
+    });
+    if(typeof renderSession === 'function') renderSession();
+  }
 }
 
 /* ─── Ouvre un protocole library dans le builder ─────────────── */
