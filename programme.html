@@ -8058,9 +8058,6 @@ function _renderPhaseItem(protoId, ph, idx, data, currentPhaseId) {
 
   var objList  = ph.objectives.map(function(o){ return '<li>'+_escHtml(o)+'</li>'; }).join('');
   var precList = ph.precautions.map(function(p){ return '<li>'+_escHtml(p)+'</li>'; }).join('');
-  var weekRows = ph.weekly.map(function(w){
-    return '<div class="proto-week-row"><span class="proto-week-badge">'+_escHtml(w.week)+'</span><span class="proto-week-text">'+_escHtml(w.content)+'</span></div>';
-  }).join('');
   var criteriaItems = ph.exitCriteria.map(function(c, i){
     var isChecked = !!checks[i];
     return '<div class="proto-criteria-item'+(isChecked?' checked':'')+'" id="proto-ci-'+protoId+'-'+ph.id+'-'+i+'">'
@@ -8095,8 +8092,6 @@ function _renderPhaseItem(protoId, ph, idx, data, currentPhaseId) {
     + '<ul class="proto-list">'+objList+'</ul>'
     + '<div class="proto-section-label">⚠️ Précautions</div>'
     + '<ul class="proto-list">'+precList+'</ul>'
-    + '<div class="proto-section-label">📅 Contenu hebdomadaire</div>'
-    + weekRows
     + '<div class="proto-section-label">✅ Critères de sortie de phase</div>'
     + '<div class="proto-progress-bar-wrap"><div class="proto-progress-bar" style="width:'+pct+'%"></div></div>'
     + '<div class="proto-progress-label">'+done+' / '+total+' critères validés'+(allDone?' 🎉':'')+'</div>'
