@@ -449,6 +449,45 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   color:#fff; border-radius:6px; width:28px; height:28px; cursor:pointer;
   font-size:.9rem; display:flex; align-items:center; justify-content:center;
 }
+/* ── Onglets sidebar builder ── */
+.sb-tabs { display:flex; background:rgba(0,0,0,.3); border-bottom:1px solid rgba(255,255,255,.1); flex-shrink:0; }
+.sb-tab-btn { flex:1; padding:7px 4px; font-size:.68rem; font-weight:600; color:rgba(255,255,255,.4); background:none; border:none; border-bottom:2px solid transparent; cursor:pointer; transition:color .15s,border-color .15s; font-family:inherit; }
+.sb-tab-btn.active { color:#fff; border-bottom-color:#60A5FA; }
+#sb-tab-lib { display:flex; flex-direction:column; flex:1; overflow:hidden; }
+#sb-tab-picker { display:none; flex-direction:column; flex:1; overflow:hidden; }
+/* ── Picker templates ── */
+.picker-header { padding:8px 10px; background:rgba(0,0,0,.15); flex-shrink:0; }
+.picker-search { background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); color:#fff; border-radius:5px; padding:5px 9px; font-size:.74rem; width:100%; box-sizing:border-box; outline:none; }
+.picker-search::placeholder { color:rgba(255,255,255,.3); }
+.picker-scroll { flex:1; overflow-y:auto; }
+.picker-cat-label { padding:7px 10px 3px; font-size:.62rem; font-weight:700; color:rgba(255,255,255,.3); text-transform:uppercase; letter-spacing:.07em; }
+.picker-group-hdr { display:flex; align-items:center; gap:6px; padding:7px 10px; cursor:pointer; transition:background .1s; }
+.picker-group-hdr:hover { background:rgba(255,255,255,.06); }
+.picker-group-name { flex:1; font-size:.77rem; font-weight:600; color:#C7D2E0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.picker-chevron { font-size:.6rem; color:rgba(255,255,255,.3); transition:transform .15s; flex-shrink:0; }
+.picker-group.open > .picker-group-hdr .picker-chevron,
+.picker-tmpl.open > .picker-tmpl-hdr .picker-chevron,
+.picker-bloc.open > .picker-bloc-hdr .picker-chevron { transform:rotate(90deg); }
+.picker-group-body,.picker-tmpl-body,.picker-bloc-body { display:none; }
+.picker-group.open > .picker-group-body,
+.picker-tmpl.open > .picker-tmpl-body,
+.picker-bloc.open > .picker-bloc-body { display:block; }
+.picker-tmpl { border-top:1px solid rgba(255,255,255,.04); }
+.picker-tmpl-hdr { display:flex; align-items:center; gap:5px; padding:5px 10px 5px 20px; cursor:pointer; transition:background .1s; }
+.picker-tmpl-hdr:hover { background:rgba(0,0,0,.2); }
+.picker-tmpl-name { flex:1; font-size:.73rem; color:rgba(255,255,255,.65); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.picker-tmpl-body { background:rgba(0,0,0,.15); }
+.picker-bloc-hdr { display:flex; align-items:center; gap:5px; padding:4px 10px 4px 28px; cursor:pointer; transition:background .1s; }
+.picker-bloc-hdr:hover { background:rgba(255,255,255,.04); }
+.picker-bloc-title { flex:1; font-size:.7rem; font-weight:700; color:rgba(255,255,255,.45); }
+.picker-exo-row { display:flex; align-items:center; padding:3px 8px 3px 36px; gap:5px; transition:background .1s; }
+.picker-exo-row:hover { background:rgba(255,255,255,.05); }
+.picker-exo-name { flex:1; font-size:.71rem; color:rgba(255,255,255,.6); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.picker-plus { background:rgba(255,255,255,.1); border:none; color:#fff; border-radius:3px; width:18px; height:18px; font-size:.85rem; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; line-height:1; transition:background .1s; padding:0; }
+.picker-plus:hover { background:#2563EB; }
+.picker-add-all { margin:3px 10px 5px 20px; padding:3px 8px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.1); color:rgba(255,255,255,.5); border-radius:4px; font-size:.67rem; cursor:pointer; font-family:inherit; transition:background .1s; display:inline-block; }
+.picker-add-all:hover { background:rgba(255,255,255,.14); color:#fff; }
+.picker-empty { padding:20px 14px; text-align:center; font-size:.74rem; color:rgba(255,255,255,.35); font-style:italic; }
 /* ── Bouton retour ← universel ── */
 .btn-back {
   background:none; border:none; color:rgba(255,255,255,.5); cursor:pointer;
@@ -1429,6 +1468,13 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 
   <!-- ── Panel Bibliothèque (mode builder) ── -->
   <div id="sidebarLibrary">
+    <!-- Onglets -->
+    <div class="sb-tabs">
+      <button class="sb-tab-btn active" id="sb-tab-btn-lib" onclick="_switchSidebarTab('lib')">📚 Exercices</button>
+      <button class="sb-tab-btn" id="sb-tab-btn-picker" onclick="_switchSidebarTab('picker')">📋 Templates</button>
+    </div>
+    <!-- Contenu onglet Exercices -->
+    <div id="sb-tab-lib">
     <div class="sidebar-header">
       <div class="sidebar-title">Bibliothèque d'exercices</div>
       <input class="search-box" type="text" id="searchInput" placeholder="Rechercher un exercice…" oninput="filterLib()">
@@ -1467,6 +1513,16 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
       <button class="filter-btn r4p-admin-only" style="background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.35);font-size:.72rem;color:#fff;" onclick="openEditor()">✏️ Éditer la bibliothèque</button>
     </div>
     <div class="lib-scroll" id="libScroll"></div>
+    </div><!-- /sb-tab-lib -->
+    <!-- Contenu onglet Templates picker -->
+    <div id="sb-tab-picker">
+      <div class="picker-header">
+        <input class="picker-search" id="pickerSearch" type="text" placeholder="Rechercher un exercice…" oninput="_pickerFilter(this.value)">
+      </div>
+      <div class="picker-scroll" id="sb-picker-scroll">
+        <div class="picker-empty">Ouvre le builder pour accéder aux templates.</div>
+      </div>
+    </div><!-- /sb-tab-picker -->
   </div>
 
 </aside>
@@ -6194,6 +6250,252 @@ function renderTemplatesInBuilder(){ renderBuilderLibrary(); }
 function renderLibraryTemplates()  { renderBuilderLibrary(); }
 function switchTmplTab()           { renderBuilderLibrary(); }
 
+/* ══════════════════════════════════════════════════════════
+   SIDEBAR PICKER — onglet Templates dans le builder
+   ══════════════════════════════════════════════════════════ */
+var _sbPickerSearch = '';
+
+function _switchSidebarTab(tab){
+  var lib    = document.getElementById('sb-tab-lib');
+  var picker = document.getElementById('sb-tab-picker');
+  var btnLib = document.getElementById('sb-tab-btn-lib');
+  var btnPick= document.getElementById('sb-tab-btn-picker');
+  if(tab === 'picker'){
+    if(lib)    lib.style.display    = 'none';
+    if(picker) picker.style.display = 'flex';
+    if(btnLib)  btnLib.classList.remove('active');
+    if(btnPick) btnPick.classList.add('active');
+    _renderSidebarPicker();
+  } else {
+    if(lib)    lib.style.display    = 'flex';
+    if(picker) picker.style.display = 'none';
+    if(btnLib)  btnLib.classList.add('active');
+    if(btnPick) btnPick.classList.remove('active');
+  }
+}
+
+function _pickerFilter(val){
+  _sbPickerSearch = (val||'').trim();
+  _renderSidebarPicker();
+}
+
+function _renderSidebarPicker(){
+  var scroll = document.getElementById('sb-picker-scroll');
+  if(!scroll) return;
+  var search = _sbPickerSearch.toLowerCase();
+  var groups  = _groups || [];
+  var progs   = _sidebarProgs || [];
+
+  /* Données pas encore chargées → déclencher le chargement */
+  if(!groups.length && !progs.length && _progToken && _progUid){
+    scroll.innerHTML = '<div class="picker-empty">Chargement…</div>';
+    Promise.all([
+      fetch(SUPA_URL_P+'/rest/v1/template_groups?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&order=created_at.asc',{headers:_sbHeaders()}).then(function(r){return r.ok?r.json():[];}),
+      fetch(SUPA_URL_P+'/rest/v1/templates?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&order=phase_ordre.asc,created_at.desc',{headers:_sbHeaders()}).then(function(r){return r.ok?r.json():[];})
+    ]).then(function(res){
+      if(Array.isArray(res[0])) _groups = res[0];
+      if(Array.isArray(res[1])) _sidebarProgs = res[1];
+      _renderSidebarPicker();
+    }).catch(function(){ scroll.innerHTML = '<div class="picker-empty">Erreur de chargement.</div>'; });
+    return;
+  }
+
+  /* ── Rendu ── */
+  var html = '';
+  var catOrder = (typeof TMPL_CATEGORIES!=='undefined') ? TMPL_CATEGORIES.map(function(c){return c.val;}) : [];
+
+  /* Grouper par catégorie */
+  var catsMap = {};
+  groups.forEach(function(g){
+    var cat = g.categorie||'';
+    if(!catsMap[cat]) catsMap[cat]=[];
+    catsMap[cat].push(g);
+  });
+
+  /* Templates sans groupe */
+  var orphans = progs.filter(function(p){return !p.group_id;});
+
+  var catKeys = Object.keys(catsMap).sort(function(a,b){
+    var ia=catOrder.indexOf(a), ib=catOrder.indexOf(b);
+    if(ia===-1&&ib===-1) return a.localeCompare(b);
+    if(ia===-1) return 1; if(ib===-1) return -1;
+    return ia-ib;
+  });
+
+  catKeys.forEach(function(catKey){
+    var catGroups = catsMap[catKey];
+    var catInfo = (typeof TMPL_CATEGORIES!=='undefined') ? TMPL_CATEGORIES.find(function(c){return c.val===catKey;}) : null;
+    var catLabel = catInfo ? (catInfo.icon+' '+catKey) : (catKey||'Autre');
+
+    /* Filtrer groupes avec contenu */
+    var visible = catGroups.filter(function(g){
+      var gProgs = progs.filter(function(p){return String(p.group_id)===String(g.id);});
+      return search ? gProgs.some(function(p){return _pickerProgMatches(p,search);}) : gProgs.length>0;
+    });
+    if(!visible.length) return;
+
+    html += '<div class="picker-cat-label">'+escH(catLabel)+'</div>';
+    visible.forEach(function(g){
+      var gProgs = progs.filter(function(p){return String(p.group_id)===String(g.id);});
+      if(search) gProgs = gProgs.filter(function(p){return _pickerProgMatches(p,search);});
+      if(!gProgs.length) return;
+      var gid = 'pg-'+String(g.id).replace(/[^a-z0-9]/gi,'');
+      html += '<div class="picker-group" id="'+gid+'">';
+      html += '<div class="picker-group-hdr" onclick="_pickerToggle(\''+gid+'\')">';
+      html += '<span class="picker-group-name">'+escH(g.nom)+'</span>';
+      html += '<span class="picker-chevron">›</span></div>';
+      html += '<div class="picker-group-body">';
+      gProgs.forEach(function(p){ html += _pickerRenderTemplate(p, search); });
+      html += '</div></div>';
+    });
+  });
+
+  /* Orphelins */
+  if(orphans.length){
+    var visOrph = search ? orphans.filter(function(p){return _pickerProgMatches(p,search);}) : orphans;
+    if(visOrph.length){
+      html += '<div class="picker-cat-label">📁 Sans protocole</div>';
+      visOrph.forEach(function(p){ html += _pickerRenderTemplate(p, search); });
+    }
+  }
+
+  if(!html) html = '<div class="picker-empty">'+(search?'Aucun résultat pour « '+escH(_sbPickerSearch)+' »':'Aucun template disponible.')+'</div>';
+  scroll.innerHTML = html;
+
+  /* Auto-dépliage si recherche active */
+  if(search){
+    scroll.querySelectorAll('.picker-group,.picker-tmpl,.picker-bloc').forEach(function(el){el.classList.add('open');});
+  }
+}
+
+function _pickerRenderTemplate(p, search){
+  var pid = 'pt-'+String(p.id).replace(/[^a-z0-9]/gi,'');
+  var donnees = p.donnees;
+  if(typeof donnees==='string'){ try{donnees=JSON.parse(donnees);}catch(e){donnees=null;} }
+  var srcBlocs = (donnees&&donnees.blocs)||[];
+
+  var h = '<div class="picker-tmpl" id="'+pid+'">';
+  h += '<div class="picker-tmpl-hdr" onclick="_pickerToggle(\''+pid+'\')">';
+  h += '<span>'+escH(p.emoji||'📋')+'</span>';
+  h += '<span class="picker-tmpl-name">'+escH(p.nom)+'</span>';
+  h += '<span class="picker-chevron">›</span></div>';
+  h += '<div class="picker-tmpl-body">';
+
+  if(!srcBlocs.length){
+    h += '<div style="padding:5px 10px 5px 28px;font-size:.7rem;color:rgba(255,255,255,.3);font-style:italic;">Aucun exercice</div>';
+  } else {
+    h += '<button class="picker-add-all" onclick="_addAllBlocsFromTemplate(\''+p.id+'\')">+ Ajouter tous les blocs</button>';
+    srcBlocs.forEach(function(bloc, bi){
+      if(bloc.type==='cardio'){
+        h += '<div class="picker-exo-row">';
+        h += '<span class="picker-exo-name">🏃 '+escH(bloc.title||'Cardio')+'</span>';
+        h += '<button class="picker-plus" onclick="_addBlocFromPicker(\''+p.id+'\','+bi+')" title="Ajouter ce bloc">+</button>';
+        h += '</div>';
+      } else {
+        var bid = 'pb-'+String(p.id).replace(/[^a-z0-9]/gi,'')+'-'+bi;
+        h += '<div class="picker-bloc" id="'+bid+'">';
+        h += '<div class="picker-bloc-hdr" onclick="_pickerToggle(\''+bid+'\')">';
+        h += '<span class="picker-chevron">›</span>';
+        h += '<span class="picker-bloc-title">'+escH(bloc.title||'Bloc')+'</span>';
+        h += '<button class="picker-plus" onclick="event.stopPropagation();_addBlocFromPicker(\''+p.id+'\','+bi+')" title="Ajouter tout le bloc">+</button>';
+        h += '</div>';
+        h += '<div class="picker-bloc-body">';
+        (bloc.exos||[]).forEach(function(exo,ei){
+          h += '<div class="picker-exo-row">';
+          h += '<span class="picker-exo-name">'+escH(exo.name||'Exercice')+'</span>';
+          h += '<button class="picker-plus" onclick="_addExoFromPicker(\''+p.id+'\','+bi+','+ei+')" title="Ajouter">+</button>';
+          h += '</div>';
+        });
+        h += '</div></div>';
+      }
+    });
+  }
+  h += '</div></div>';
+  return h;
+}
+
+function _pickerProgMatches(p, search){
+  if(!search) return true;
+  if((p.nom||'').toLowerCase().indexOf(search)>-1) return true;
+  var donnees = p.donnees;
+  if(typeof donnees==='string'){try{donnees=JSON.parse(donnees);}catch(e){donnees=null;}}
+  if(!donnees||!donnees.blocs) return false;
+  return donnees.blocs.some(function(b){
+    if((b.title||'').toLowerCase().indexOf(search)>-1) return true;
+    return (b.exos||[]).some(function(e){return (e.name||'').toLowerCase().indexOf(search)>-1;});
+  });
+}
+
+function _pickerToggle(id){
+  var el = document.getElementById(id);
+  if(el) el.classList.toggle('open');
+}
+
+/* Ajouter un exercice unique dans le bloc actif */
+function _addExoFromPicker(tmplId, blocIdx, exoIdx){
+  var p = (_sidebarProgs||[]).find(function(x){return String(x.id)===String(tmplId);});
+  if(!p) return;
+  var donnees = p.donnees;
+  if(typeof donnees==='string'){try{donnees=JSON.parse(donnees);}catch(e){donnees=null;}}
+  var srcBloc = donnees&&donnees.blocs&&donnees.blocs[blocIdx];
+  if(!srcBloc) return;
+  var srcExo = srcBloc.exos&&srcBloc.exos[exoIdx];
+  if(!srcExo) return;
+
+  if(!blocs.length) addBloc();
+  var sel = document.getElementById('target-bloc-select');
+  var targetId = (sel&&sel.value) || activeBloc || (blocs.length&&blocs[blocs.length-1].id);
+  var bloc = blocs.find(function(b){return b.id===targetId;}) || blocs[blocs.length-1];
+  if(!bloc) return;
+
+  var newExo = JSON.parse(JSON.stringify(srcExo));
+  newExo.id = genId();
+  bloc.exos.push(newExo);
+  activeBloc = bloc.id;
+  renderSession();
+  _showToast('✚ '+escH(srcExo.name||'Exercice')+' ajouté');
+  var el = document.getElementById('bloc-'+bloc.id);
+  if(el) el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+/* Ajouter un bloc entier (clone) */
+function _addBlocFromPicker(tmplId, blocIdx){
+  var p = (_sidebarProgs||[]).find(function(x){return String(x.id)===String(tmplId);});
+  if(!p) return;
+  var donnees = p.donnees;
+  if(typeof donnees==='string'){try{donnees=JSON.parse(donnees);}catch(e){donnees=null;}}
+  var srcBloc = donnees&&donnees.blocs&&donnees.blocs[blocIdx];
+  if(!srcBloc) return;
+
+  var newBloc = JSON.parse(JSON.stringify(srcBloc));
+  newBloc.id = genId();
+  newBloc.exos = (newBloc.exos||[]).map(function(e){return Object.assign({},e,{id:genId()});});
+  blocs.push(newBloc);
+  activeBloc = newBloc.id;
+  renderSession();
+  _showToast('✚ Bloc « '+escH(newBloc.title||'Bloc')+' » ajouté');
+  var el = document.getElementById('bloc-'+newBloc.id);
+  if(el) el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+/* Ajouter tous les blocs d'un template */
+function _addAllBlocsFromTemplate(tmplId){
+  var p = (_sidebarProgs||[]).find(function(x){return String(x.id)===String(tmplId);});
+  if(!p) return;
+  var donnees = p.donnees;
+  if(typeof donnees==='string'){try{donnees=JSON.parse(donnees);}catch(e){donnees=null;}}
+  if(!donnees||!donnees.blocs||!donnees.blocs.length) return;
+  donnees.blocs.forEach(function(srcBloc){
+    var newBloc = JSON.parse(JSON.stringify(srcBloc));
+    newBloc.id = genId();
+    newBloc.exos = (newBloc.exos||[]).map(function(e){return Object.assign({},e,{id:genId()});});
+    blocs.push(newBloc);
+    activeBloc = newBloc.id;
+  });
+  renderSession();
+  _showToast('✚ '+donnees.blocs.length+' blocs ajoutés');
+}
+
 /* ── Publier un template dans la bibliothèque ── */
 var _pubTmplData = null; // template en cours de publication
 
@@ -7413,6 +7715,8 @@ function _enterBuilderMode(){
   var tmpl = document.getElementById('sidebarTemplates');
   if(lib)  lib.style.display  = 'flex';
   if(tmpl) tmpl.style.display = 'none';
+  // Toujours démarrer sur l'onglet exercices
+  _switchSidebarTab('lib');
   renderTemplatesInBuilder();
   // Proposer de restaurer le brouillon si le builder est vide
   setTimeout(_draftRestore, 120);
