@@ -455,15 +455,15 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .sb-tab-btn:hover { color:#fff; background:rgba(255,255,255,.06); }
 .sb-tab-btn.active { color:#fff; border-bottom-color:#60A5FA; background:rgba(96,165,250,.08); }
 #sb-tab-lib { display:flex; flex-direction:column; flex:1; overflow:hidden; background:var(--surface); min-height:0; }
-#sb-tab-picker { display:none; flex-direction:column; flex:1; overflow:hidden; min-height:0; }
+#sb-tab-picker { display:none; flex-direction:column; flex:1; overflow:hidden; min-height:0; background:#0F2540; }
 /* Forcer masquage en mode builder via CSS (filet de sécurité) */
 .app.builder-mode #sidebarTemplates { display:none !important; }
 .app.builder-mode #sidebarLibrary { display:flex !important; }
 /* ── Picker templates ── */
-.picker-header { padding:8px 10px; background:rgba(0,0,0,.15); flex-shrink:0; }
+.picker-header { padding:8px 10px; background:rgba(0,0,0,.25); flex-shrink:0; }
 .picker-search { background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); color:#fff; border-radius:5px; padding:5px 9px; font-size:.74rem; width:100%; box-sizing:border-box; outline:none; }
 .picker-search::placeholder { color:rgba(255,255,255,.3); }
-.picker-scroll { flex:1; overflow-y:auto; }
+.picker-scroll { flex:1; overflow-y:auto; background:#0F2540; }
 .picker-cat-label { padding:7px 10px 3px; font-size:.62rem; font-weight:700; color:rgba(255,255,255,.3); text-transform:uppercase; letter-spacing:.07em; }
 .picker-group-hdr { display:flex; align-items:center; gap:6px; padding:7px 10px; cursor:pointer; transition:background .1s; }
 .picker-group-hdr:hover { background:rgba(255,255,255,.06); }
