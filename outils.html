@@ -252,6 +252,24 @@ body {
 }
 .export-patient-btn:hover { background:#1A3A5C; }
 
+/* ── Save-to-dossier button ───────────────────────────── */
+.dossier-save-btn {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:7px 14px; background:#2D6A4F; color:#fff; border:none;
+  border-radius:7px; font-size:.8rem; font-weight:600; cursor:pointer;
+  font-family:inherit; transition:background .15s; white-space:nowrap;
+}
+.dossier-save-btn:hover { background:#1B4332; }
+.dossier-save-btn:disabled { background:#9D9B96; cursor:default; }
+
+/* ── Outils toast ─────────────────────────────────────── */
+#outils-toast {
+  position:fixed; bottom:28px; left:50%; transform:translateX(-50%);
+  background:#1A3A5C; color:#fff; padding:10px 22px; border-radius:8px;
+  font-size:.82rem; font-weight:600; z-index:99999; pointer-events:none;
+  opacity:0; transition:opacity .2s; white-space:nowrap; box-shadow:0 4px 16px rgba(0,0,0,.25);
+}
+
 /* ── Export modal ─────────────────────────────────────── */
 #exportOutils-modal {
   display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:200;
@@ -436,6 +454,12 @@ body {
       <tbody id="hsr-tbody"></tbody>
     </table>
     <div class="foot-note">📚 Kongsgaard et al. (2009) — Acta Orthopaedica · Morrison &amp; Cook (2022) · Adapter selon EVA, tolérance tendineuse et évaluation clinique individuelle.</div>
+  </div>
+
+  <!-- Save HSR to patient dossier -->
+  <div style="display:flex;align-items:center;gap:10px;justify-content:flex-end;padding:6px 0 2px;">
+    <span id="hsr-patient-label" style="font-size:.75rem;color:#6B6860;font-style:italic;"></span>
+    <button class="dossier-save-btn" id="hsr-save-dossier-btn" onclick="saveHsrToDossier()">💾 Sauvegarder dans le dossier patient</button>
   </div>
 
 </div><!-- /panel-hsr -->
@@ -1006,7 +1030,7 @@ body {
       <div class="presc-card-body" style="padding:0">
         <div id="presc-doc">
           <div class="presc-doc-header">
-            <div class="presc-doc-header-left">
+            <div class="presc-doc-header-left" id="presc-doc-praticien">
               <strong>PERONNAUD Antoine</strong><br>
               Masseur Kinésithérapeute du Sport.<br>
               N°AM : 757 099 486
@@ -1051,6 +1075,11 @@ body {
   var dd = String(today.getDate()).padStart(2,'0');
   document.getElementById('presc-date').value = yyyy+'-'+mm+'-'+dd;
   updatePrescDoc();
+  // Header praticien depuis le profil en cache
+  try {
+    var p = JSON.parse(localStorage.getItem('r4p-profile') || '{}');
+    if(p && (p.prenom || p.nom || p.am)) _updatePrescHeader(p);
+  } catch(e) {}
 })();
 
 function _prescFormatDate(val) {
@@ -1058,6 +1087,18 @@ function _prescFormatDate(val) {
   var p = val.split('-');
   if (p.length !== 3) return '—';
   return p[2]+'/'+p[1]+'/'+p[0];
+}
+
+function _updatePrescHeader(profile) {
+  var el = document.getElementById('presc-doc-praticien');
+  if(!el) return;
+  var prenom = (profile.prenom || '').trim();
+  var nom    = (profile.nom    || '').trim().toUpperCase();
+  var am     = (profile.am     || '').trim();
+  var fullName = [prenom, nom].filter(Boolean).join(' ') || 'Praticien';
+  el.innerHTML = '<strong>' + fullName + '</strong><br>'
+    + 'Masseur Kinésithérapeute du Sport.<br>'
+    + 'N°AM : ' + (am || '—');
 }
 
 function updatePrescDoc() {
@@ -4203,8 +4244,169 @@ function downloadOutils(){
 window.addEventListener('message', function(e){
   if(e.data && e.data.type==='r4p-profile'){
     try { localStorage.setItem('r4p-profile', JSON.stringify(e.data.profile)); } catch(ex){}
+    _updatePrescHeader(e.data.profile || {});
   }
 });
+
+// == SAUVEGARDE DOSSIER PATIENT ============================
+
+function _showOutilsToast(msg, isError) {
+  var t = document.getElementById('outils-toast');
+  t.textContent = msg;
+  t.style.background = isError ? '#C0392B' : '#2D6A4F';
+  t.style.opacity = '1';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(function(){ t.style.opacity = '0'; }, 3000);
+}
+
+function _getOutilsPatient() {
+  try { return JSON.parse(localStorage.getItem('r4p-current-patient') || 'null'); } catch(e){ return null; }
+}
+
+function _getOutilsPatientName() {
+  var p = _getOutilsPatient();
+  if (!p) return null;
+  var nom = ((p.prenom||'') + ' ' + (p.nom||'')).trim();
+  if (!nom) nom = p.nom || p.prenom || p.email || 'Patient';
+  return nom;
+}
+
+function _updateOutilsPatientBtns() {
+  var name = _getOutilsPatientName();
+  // HSR button
+  var hsrBtn = document.getElementById('hsr-save-dossier-btn');
+  var hsrLbl = document.getElementById('hsr-patient-label');
+  if (hsrBtn) {
+    if (name) {
+      hsrBtn.textContent = '💾 Sauvegarder dans le dossier';
+      hsrBtn.disabled = false;
+      if (hsrLbl) { hsrLbl.textContent = 'Patient : ' + name; }
+    } else {
+      hsrBtn.textContent = '💾 Sauvegarder dans le dossier';
+      hsrBtn.disabled = true;
+      if (hsrLbl) { hsrLbl.textContent = 'Aucun patient actif'; }
+    }
+  }
+  // PROM button — visibility managed by openPromCard / calcPromScore
+  var promBtn = document.getElementById('prom-save-dossier-btn');
+  if (promBtn) {
+    promBtn.title = name ? 'Patient : ' + name : 'Aucun patient actif';
+  }
+}
+
+function _saveOutilsData(key, value) {
+  // Persist in a dedicated key that bilan.html never overwrites
+  try {
+    var store = {};
+    try { store = JSON.parse(localStorage.getItem('r4p-outils-data') || '{}'); } catch(e) {}
+    store[key] = value;
+    localStorage.setItem('r4p-outils-data', JSON.stringify(store));
+  } catch(e) {}
+}
+
+function saveHsrToDossier() {
+  var patient = _getOutilsPatient();
+  if (!patient) {
+    _showOutilsToast('⚠️ Aucun patient actif — ouvrez un dossier depuis la navigation.', true);
+    return;
+  }
+  var ref       = document.getElementById('hsr-ref').value || '';
+  var startDate = document.getElementById('hsr-start-date').value || '';
+  var startWeek = document.getElementById('hsr-start-week').value || '0';
+  var weekEl    = document.getElementById('hsr-start-week');
+  var weekText  = weekEl && weekEl.options[weekEl.selectedIndex] ? weekEl.options[weekEl.selectedIndex].text : ('Semaine '+(parseInt(startWeek)+1));
+
+  try {
+    _saveOutilsData('hsr', {
+      ref: ref, startDate: startDate, startWeek: startWeek,
+      weekLabel: weekText, savedAt: new Date().toISOString(),
+      patientId: patient.id || null
+    });
+    var patName = _getOutilsPatientName();
+    _showOutilsToast('✅ Protocole HSR sauvegardé' + (patName ? ' — ' + patName : '') + ' !');
+  } catch(e) {
+    _showOutilsToast('⚠️ Erreur lors de la sauvegarde.', true);
+  }
+}
+
+function savePromToDossier() {
+  var patient = _getOutilsPatient();
+  if (!patient) {
+    _showOutilsToast('⚠️ Aucun patient actif — ouvrez un dossier depuis la navigation.', true);
+    return;
+  }
+  var acronym = _currentPromAcronym;
+  var scoreEl = document.getElementById('prom-modal-score');
+  if (!scoreEl || scoreEl.style.display === 'none') {
+    _showOutilsToast('⚠️ Calculez le score d\'abord.', true);
+    return;
+  }
+
+  // Extract numeric value from score text (pattern: "XX / YY")
+  var scoreText = scoreEl.textContent || scoreEl.innerText || '';
+  var numMatch  = scoreText.match(/(\d+(?:\.\d+)?)\s*\/\s*(\d+)/);
+  var numScore  = numMatch ? parseFloat(numMatch[1]) : null;
+  var maxScore  = numMatch ? parseFloat(numMatch[2]) : null;
+
+  try {
+    // Persist in dedicated outils store
+    var safeAcronym = (acronym || '').replace(/[^a-zA-Z0-9]/g, '_');
+    _saveOutilsData('prom_' + safeAcronym, {
+      score: numScore, max: maxScore,
+      savedAt: new Date().toISOString(),
+      patientId: patient.id || null
+    });
+
+    // For ACL-RSI: also relay to bilan.html via postMessage so it updates the f-aclrsi field live
+    if (acronym === 'ACL-RSI' && numScore !== null) {
+      try {
+        window.parent.postMessage({
+          type: 'r4p-outils-save',
+          field: 'f-aclrsi',
+          value: String(Math.round(numScore))
+        }, '*');
+      } catch(ex) {}
+    }
+
+    var patName = _getOutilsPatientName();
+    var displayScore = numScore !== null ? (numScore + (maxScore ? ' / ' + maxScore : '')) : 'enregistré';
+    _showOutilsToast('✅ ' + acronym + ' : ' + displayScore + (patName ? ' — ' + patName : '') + ' sauvegardé !');
+  } catch(e) {
+    _showOutilsToast('⚠️ Erreur lors de la sauvegarde.', true);
+  }
+}
+
+// Show PROM save button only after score is computed
+var _origCalcPromScore = calcPromScore;
+calcPromScore = function(){
+  _origCalcPromScore();
+  var btn = document.getElementById('prom-save-dossier-btn');
+  if (btn) {
+    var patient = _getOutilsPatient();
+    btn.style.display = '';  // always show after score computed
+    btn.disabled = !patient;
+    var patName = _getOutilsPatientName();
+    btn.textContent = patName ? '💾 Sauvegarder — ' + patName.split(' ')[0] : '💾 Sauvegarder (aucun patient)';
+  }
+};
+
+// Reset save button when modal opens
+var _origOpenPromCard = openPromCard;
+openPromCard = function(acronym){
+  _origOpenPromCard(acronym);
+  var btn = document.getElementById('prom-save-dossier-btn');
+  if (btn) { btn.style.display = 'none'; }
+};
+
+// Hook into tab switching to refresh patient info
+var _origShowTab3 = showTab;
+showTab = function(id){
+  _origShowTab3(id);
+  _updateOutilsPatientBtns();
+};
+
+// Init on load
+_updateOutilsPatientBtns();
 
 </script>
 
@@ -4243,13 +4445,16 @@ window.addEventListener('message', function(e){
     <!-- Footer actions -->
     <div style="padding:10px 22px;border-top:1px solid #dde3ec;display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap;align-items:center;">
       <button onclick="exportPromForPatient()" id="prom-export-btn" style="padding:8px 16px;background:#27AE60;color:#fff;border:none;border-radius:6px;font-size:.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">📤 Exporter pour le patient</button>
-      <div style="display:flex;gap:8px;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <button class="dossier-save-btn" id="prom-save-dossier-btn" onclick="savePromToDossier()" style="display:none;">💾 Sauvegarder dans le dossier</button>
         <button onclick="calcPromScore()" style="padding:8px 18px;background:#1A3A5C;color:#fff;border:none;border-radius:6px;font-size:.82rem;font-weight:600;cursor:pointer;">Calculer le score</button>
         <button onclick="closePromModal()" style="padding:8px 16px;background:none;color:#666;border:1px solid #dde3ec;border-radius:6px;font-size:.82rem;cursor:pointer;">Fermer</button>
       </div>
     </div>
   </div>
 </div>
+
+<div id="outils-toast"></div>
 
 </body>
 </html>

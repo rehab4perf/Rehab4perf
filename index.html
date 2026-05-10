@@ -378,6 +378,8 @@ function syncProfileToStorage(user) {
 function propagateToBilan(profile) {
   var bf = document.getElementById('frame-bilan');
   if (bf && bf.contentWindow) bf.contentWindow.postMessage({ type:'r4p-profile', profile:profile }, '*');
+  var of = document.getElementById('frame-outils');
+  if (of && of.contentWindow) of.contentWindow.postMessage({ type:'r4p-profile', profile:profile }, '*');
 }
 
 /* ═══ VÉRIFICATION SESSION & INIT ═══ */
@@ -448,6 +450,14 @@ window.addEventListener('message', function(e) {
   if (e.data.type === 'r4p-logout-done') {
     try { localStorage.removeItem('r4p-cached-profile'); localStorage.removeItem('r4p-profile'); } catch(ex) {}
     window.location.replace('auth.html');
+  }
+
+  // outils.html a sauvegardé un score → relayer à bilan.html pour mise à jour live
+  if (e.data.type === 'r4p-outils-save') {
+    var bilanFrame = document.getElementById('frame-bilan');
+    if (bilanFrame && bilanFrame.contentWindow) {
+      bilanFrame.contentWindow.postMessage(e.data, '*');
+    }
   }
 });
 
