@@ -7883,25 +7883,50 @@ function renderProtocols() {
     return;
   }
 
-  /* 1. Charger patient_protocols pour ce patient */
-  fetch(SUPA_URL_P + '/rest/v1/patient_protocols?patient_id=eq.' + _progPatient.id
+  var patientId = _progPatient.id;
+
+  /* Fetch 1 : patient_protocols  |  Fetch 2 : seances pour stats */
+  var fetchPPs = fetch(SUPA_URL_P + '/rest/v1/patient_protocols?patient_id=eq.' + patientId
     + '&praticien_id=eq.' + _progUid + '&select=*&order=created_at.desc',
-    { headers: _sbHeaders() })
-  .then(function(r){ return r.ok ? r.json() : []; })
-  .then(function(pps){
-    pps = pps || [];
+    { headers: _sbHeaders() }).then(function(r){ return r.ok ? r.json() : []; });
+
+  var fetchSeances = fetch(SUPA_URL_P + '/rest/v1/seances_planifiees?patient_id=eq.' + patientId
+    + '&select=id,programmes(donnees),athlete_feedback(rpe)',
+    { headers: _sbHeaders() }).then(function(r){ return r.ok ? r.json() : []; });
+
+  Promise.all([fetchPPs, fetchSeances])
+  .then(function(results){
+    var pps      = results[0] || [];
+    var seances  = results[1] || [];
+
+    /* ── Construire seancesStats : { protoId → { phaseId → {planned,done} } } ── */
+    var seancesStats = {};
+    seances.forEach(function(ev){
+      var donnees = ev.programmes && ev.programmes.donnees;
+      if(typeof donnees === 'string'){ try{ donnees = JSON.parse(donnees); }catch(e){ donnees = null; } }
+      var lp = donnees && donnees.linkedPhase;
+      if(!lp || !lp.protoId || !lp.phaseId) return;
+      if(!seancesStats[lp.protoId]) seancesStats[lp.protoId] = {};
+      if(!seancesStats[lp.protoId][lp.phaseId]) seancesStats[lp.protoId][lp.phaseId] = { planned: 0, done: 0 };
+      seancesStats[lp.protoId][lp.phaseId].planned++;
+      if(ev.athlete_feedback && ev.athlete_feedback.rpe) seancesStats[lp.protoId][lp.phaseId].done++;
+    });
+
+    /* ── ppMap ── */
     var ppMap = {};
     pps.forEach(function(pp){ if(!ppMap[pp.protocol_id]) ppMap[pp.protocol_id] = pp; });
 
     var activePpIds = pps.filter(function(pp){ return pp.status==='active'; }).map(function(pp){ return pp.id; });
     if(!activePpIds.length){
       _protoPatientData = {};
-      PROTOCOLS_REF.forEach(function(proto){ _protoPatientData[proto.id] = { pp: ppMap[proto.id]||null, checks: {} }; });
+      PROTOCOLS_REF.forEach(function(proto){
+        _protoPatientData[proto.id] = { pp: ppMap[proto.id]||null, checks: {}, seancesStats: seancesStats[proto.id]||{} };
+      });
       _renderProtocolsSync();
       return;
     }
 
-    /* 2. Charger les critères cochés pour les protocoles actifs */
+    /* Fetch 3 : critères cochés (seulement si protocoles actifs) */
     var orFilter = activePpIds.map(function(id){ return 'patient_protocol_id.eq.'+id; }).join(',');
     fetch(SUPA_URL_P + '/rest/v1/protocol_criteria_checks?or=('+orFilter+')&select=*',
       { headers: _sbHeaders() })
@@ -7918,7 +7943,7 @@ function renderProtocols() {
       PROTOCOLS_REF.forEach(function(proto){
         var pp = ppMap[proto.id] || null;
         var ch = pp ? (checksByPp[pp.id] || {}) : {};
-        _protoPatientData[proto.id] = { pp: pp, checks: ch };
+        _protoPatientData[proto.id] = { pp: pp, checks: ch, seancesStats: seancesStats[proto.id]||{} };
       });
       _renderProtocolsSync();
     });
@@ -8023,6 +8048,14 @@ function _renderPhaseItem(protoId, ph, idx, data, currentPhaseId) {
   var isCurrent = ph.id === currentPhaseId;
   var allDone = total > 0 && done === total;
 
+  /* ── Stats séances ── */
+  var phStats = (data && data.seancesStats && data.seancesStats[ph.id]) || null;
+  var statsPill = '';
+  if(phStats && phStats.planned > 0){
+    var doneStr = phStats.done > 0 ? ' · <span style="color:#16A34A;font-weight:700;">✓ '+phStats.done+' réalisée'+(phStats.done>1?'s':'')+'</span>' : '';
+    statsPill = '<span style="font-size:.62rem;background:rgba(255,255,255,.65);border:1px solid '+ph.borderColor+'55;color:#374151;border-radius:6px;padding:1px 7px;white-space:nowrap;margin-right:4px;">📋 '+phStats.planned+' séance'+(phStats.planned>1?'s':'')+doneStr+'</span>';
+  }
+
   var objList  = ph.objectives.map(function(o){ return '<li>'+_escHtml(o)+'</li>'; }).join('');
   var precList = ph.precautions.map(function(p){ return '<li>'+_escHtml(p)+'</li>'; }).join('');
   var weekRows = ph.weekly.map(function(w){
@@ -8053,6 +8086,7 @@ function _renderPhaseItem(protoId, ph, idx, data, currentPhaseId) {
     + '<span style="font-size:.9rem;font-weight:700;color:'+ph.borderColor+'">Phase '+(idx+1)+'</span>'
     + currentBadge + doneBadge
     + '<span style="flex:1;margin-left:8px;">'+_escHtml(ph.name.replace(/Phase \d+ — /,''))+'</span>'
+    + statsPill
     + (ph.weeks ? '<span style="font-size:.7rem;color:#6B7280;margin-right:4px;">'+_escHtml(ph.weeks)+'</span>' : '')
     + '<span class="proto-phase-item-chevron">›</span>'
     + '</div>'
