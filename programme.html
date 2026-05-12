@@ -9849,20 +9849,18 @@ function _protoOpenLibraryInBuilder(protoId) {
 
 function _renderProtoFooter(proto, pp) {
   if(!_progPatient) return '<span class="proto-footer-info">Sélectionne un patient pour assigner ce protocole.</span>';
-  var unassignBtn = _isAdmin() ? '<button class="proto-use-btn danger r4p-admin-only" style="font-size:.7rem;padding:4px 9px;opacity:.6;" onclick="_protoUnassign(\''+proto.id+'\')" title="Supprimer l\'assignation">✕ Désassigner</button>' : '';
+  var unassignBtn = '<button class="proto-use-btn danger" style="font-size:.7rem;padding:4px 9px;opacity:.6;" onclick="_protoUnassign(\''+proto.id+'\')" title="Supprimer l\'assignation">✕ Désassigner</button>';
   if(pp && pp.status === 'active') {
-    var adminBtns = _isAdmin()
-      ? unassignBtn
-        + '<button class="proto-use-btn secondary r4p-admin-only" style="font-size:.73rem;padding:5px 11px;" onclick="_protoStatusModal(\''+proto.id+'\',\'paused\')">⏸ Pause</button>'
-        + '<button class="proto-use-btn danger r4p-admin-only" style="font-size:.73rem;padding:5px 11px;" onclick="_protoStatusModal(\''+proto.id+'\',\'completed\')">✔️ Terminer</button>'
-      : '';
-    return '<span class="proto-footer-info" style="color:#16A34A;font-weight:600;">Protocole en cours</span><div style="flex:1"></div>'+adminBtns;
+    var actionBtns = unassignBtn
+      + '<button class="proto-use-btn secondary" style="font-size:.73rem;padding:5px 11px;" onclick="_protoStatusModal(\''+proto.id+'\',\'paused\')">⏸ Pause</button>'
+      + '<button class="proto-use-btn danger" style="font-size:.73rem;padding:5px 11px;" onclick="_protoStatusModal(\''+proto.id+'\',\'completed\')">✔️ Terminer</button>';
+    return '<span class="proto-footer-info" style="color:#16A34A;font-weight:600;">Protocole en cours</span><div style="flex:1"></div>'+actionBtns;
   }
   if(pp) {
     var stLbl2 = {paused:'En pause',completed:'Terminé',abandoned:'Abandonné'}[pp.status]||pp.status;
     var noteStr = pp.status_note ? ' · <em>'+_escHtml(pp.status_note)+'</em>' : '';
     return '<span class="proto-footer-info">Statut : '+stLbl2+noteStr+'</span>'
-      + (_isAdmin() ? unassignBtn + '<button class="proto-use-btn secondary r4p-admin-only" style="font-size:.73rem;padding:5px 11px;" onclick="_protoStatusModal(\''+proto.id+'\',\'active\')">↩ Réactiver</button>' : '');
+      + unassignBtn + '<button class="proto-use-btn secondary" style="font-size:.73rem;padding:5px 11px;" onclick="_protoStatusModal(\''+proto.id+'\',\'active\')">↩ Réactiver</button>';
   }
   return '<button class="proto-use-btn" onclick="assignProtocol(\''+proto.id+'\')" id="proto-assign-btn-'+proto.id+'">📋 Assigner à ce patient</button>';
   return '<span class="proto-footer-info">Lecture seule.</span>';
@@ -10130,7 +10128,6 @@ function _protoTlSaveHistory(protoId, history) {
 
 /* ─── Désassigner le protocole (supprimer patient_protocol) ─── */
 function _protoUnassign(protoId) {
-  if(!_isAdmin()){ return; }
   var data = _protoPatientData[protoId];
   if(!data || !data.pp) return;
   var patName = _progPatient ? ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim() : 'ce patient';
