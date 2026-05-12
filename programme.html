@@ -9998,28 +9998,67 @@ function _protoGetChecks(protoId, phaseId) {
   /* Fallback localStorage si pas de patient sélectionné */
   try { var raw = localStorage.getItem(_protoChecksKey(protoId, phaseId)); return raw ? JSON.parse(raw) : {}; } catch(e){ return {}; }
 }
+/* ─── Auto-assignation au premier cochage ────────────────────── */
+function _protoAutoAssign(protoId, callback) {
+  if(!_progPatient || !_progToken || !_progUid) return;
+  var proto = _getAllProtocols().find(function(p){ return String(p.id)===String(protoId); });
+  if(!proto) return;
+  var data = _protoPatientData[protoId];
+  if(data && data.pp){ callback && callback(data.pp); return; }
+  var now = new Date().toISOString();
+  var firstPhaseId = (proto.phases && proto.phases[0]) ? proto.phases[0].id : null;
+  fetch(SUPA_URL_P + '/rest/v1/patient_protocols', {
+    method: 'POST',
+    headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=representation'}),
+    body: JSON.stringify({
+      praticien_id: _progUid, patient_id: _progPatient.id,
+      protocol_id: protoId, protocol_name: proto.name,
+      current_phase_id: firstPhaseId, status: 'active',
+      history: [{ type: 'assigned', at: now, note: null }]
+    })
+  })
+  .then(function(r){ return r.ok ? r.json() : null; })
+  .then(function(rows){
+    var newPp = Array.isArray(rows) ? rows[0] : rows;
+    if(!newPp){ _showToast('Erreur assignation automatique.', true); return; }
+    if(!_protoPatientData[protoId]) _protoPatientData[protoId] = { checks:{}, checkedAt:{}, seancesStats:{} };
+    _protoPatientData[protoId].pp = newPp;
+    var patName = ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim();
+    _showToast('📋 Protocole assigné automatiquement à '+escH(patName));
+    callback && callback(newPp);
+  })
+  .catch(function(){ _showToast('Erreur assignation automatique.', true); });
+}
+
 function _protoSetCheck(protoId, phaseId, idx, checked) {
   var data = _protoPatientData[protoId];
   if(!data) return; /* sécurité : pas de patient sélectionné */
-  /* Mise à jour cache local */
+  var now = new Date().toISOString();
+
+  /* Mise à jour cache local immédiate (pour affichage DOM) */
   if(!data.checks[phaseId]) data.checks[phaseId] = {};
   data.checks[phaseId][idx] = checked;
   if(!data.checkedAt) data.checkedAt = {};
   if(!data.checkedAt[phaseId]) data.checkedAt[phaseId] = {};
-  var now = new Date().toISOString();
   data.checkedAt[phaseId][idx] = checked ? now : null;
-  if(data && data.pp) {
-    /* Upsert Supabase — tous statuts */
+
+  function _saveCheck(ppId) {
     fetch(SUPA_URL_P + '/rest/v1/protocol_criteria_checks', {
       method: 'POST',
       headers: Object.assign({}, _sbHeaders(), {'Prefer':'resolution=merge-duplicates,return=minimal'}),
-      body: JSON.stringify({ patient_protocol_id: data.pp.id, phase_id: phaseId, criteria_index: idx, checked: checked, checked_at: checked ? now : null })
+      body: JSON.stringify({ patient_protocol_id: ppId, phase_id: phaseId, criteria_index: idx, checked: checked, checked_at: checked ? now : null })
     }).catch(function(e){ console.error('Criteria sync:', e); });
-  } else {
-    /* localStorage fallback si pas de patient_protocol */
-    var lsChecks = _protoGetChecks(protoId, phaseId);
-    lsChecks[idx] = checked;
-    try{ localStorage.setItem(_protoChecksKey(protoId, phaseId), JSON.stringify(lsChecks)); }catch(e){}
+  }
+
+  if(data.pp) {
+    /* Protocole déjà assigné → upsert direct */
+    _saveCheck(data.pp.id);
+  } else if(_progPatient) {
+    /* Pas encore assigné → auto-assigner puis sauvegarder */
+    _protoAutoAssign(protoId, function(newPp){
+      _saveCheck(newPp.id);
+      renderProtocols();
+    });
   }
   /* Mise à jour DOM — classe + date inline */
   var ciEl = document.getElementById('proto-ci-'+protoId+'-'+phaseId+'-'+idx);
