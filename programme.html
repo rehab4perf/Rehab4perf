@@ -9993,11 +9993,14 @@ function _protoChecksKey(protoId, phaseId) {
 }
 function _protoGetChecks(protoId, phaseId) {
   var data = _protoPatientData[protoId];
-  if(data && data.pp && data.pp.status === 'active') return data.checks[phaseId] || {};
+  /* Si protocole assigné (quel que soit le statut) → lire le cache Supabase */
+  if(data && data.pp) return data.checks[phaseId] || {};
+  /* Fallback localStorage si pas de patient sélectionné */
   try { var raw = localStorage.getItem(_protoChecksKey(protoId, phaseId)); return raw ? JSON.parse(raw) : {}; } catch(e){ return {}; }
 }
 function _protoSetCheck(protoId, phaseId, idx, checked) {
   var data = _protoPatientData[protoId];
+  if(!data) return; /* sécurité : pas de patient sélectionné */
   /* Mise à jour cache local */
   if(!data.checks[phaseId]) data.checks[phaseId] = {};
   data.checks[phaseId][idx] = checked;
