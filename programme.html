@@ -112,32 +112,9 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .stmpl-cat-select.has-filter { background-color:rgba(74,144,217,.4); background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,.6)'/%3E%3C/svg%3E"); }
 .stmpl-cat-badge { display:inline-block; padding:1px 7px; border-radius:10px; font-size:.67rem; font-weight:600; margin-right:4px; vertical-align:middle; }
 
-/* ── Bibliothèque 2 colonnes (bas du builder) ── */
-.tmpl-lib-header { display:flex; align-items:center; justify-content:space-between; padding:5px 10px 5px 12px; background:#FAFBFD; border-bottom:1px solid var(--border); flex-shrink:0; }
-.tmpl-lib-title { font-size:.71rem; font-weight:700; color:var(--muted); letter-spacing:.05em; text-transform:uppercase; }
-#templatesBuilderArea { display:flex; height:185px; overflow:hidden; }
-.builder-lib-left { width:42%; border-right:1px solid var(--border); overflow-y:auto; flex-shrink:0; background:#FAFBFD; }
-.builder-lib-right { flex:1; overflow-y:auto; }
-/* Catégorie dans la colonne gauche */
-.blib-cat-hdr { display:flex; align-items:center; gap:3px; padding:5px 7px 5px 9px; border-bottom:1px solid var(--border); cursor:pointer; transition:background .1s; user-select:none; position:sticky; top:0; z-index:2; }
-.blib-cat-hdr:hover { filter:brightness(.96); }
-.blib-cat-icon { font-size:.77rem; flex-shrink:0; line-height:1; }
-.blib-cat-label { font-size:.62rem; font-weight:700; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; letter-spacing:.04em; text-transform:uppercase; }
-.blib-cat-cnt  { font-size:.58rem; font-weight:400; flex-shrink:0; opacity:.65; }
-.blib-cat-arrow { font-size:.48rem; flex-shrink:0; opacity:.55; margin-left:1px; transition:transform .15s; }
-/* Protocole dans la colonne gauche (sous la catégorie) */
-.builder-lib-group { display:flex; align-items:center; padding:7px 8px 7px 16px; font-size:.73rem; font-weight:600; cursor:pointer; border-bottom:1px solid var(--border); color:var(--text); transition:background .1s; gap:4px; }
-.builder-lib-group:hover { background:#F0F4FF; }
-.builder-lib-group.active { background:#EEF4FF; color:var(--accent2); }
-.builder-lib-gname { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.builder-lib-gcnt { font-size:.6rem; color:var(--muted); font-weight:400; flex-shrink:0; }
-.builder-lib-group.active .builder-lib-gcnt { color:var(--accent2); }
-.builder-lib-session { display:flex; align-items:center; gap:7px; padding:7px 10px; border-bottom:1px solid var(--border); transition:background .1s; }
-.builder-lib-session:hover { background:#F5F8FF; }
-.builder-lib-sname { font-size:.76rem; font-weight:600; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text); }
-.builder-lib-smeta { font-size:.63rem; color:var(--muted); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.builder-lib-load { flex-shrink:0; background:var(--accent2); border:none; color:#fff; border-radius:5px; padding:3px 9px; font-size:.66rem; cursor:pointer; transition:background .12s; white-space:nowrap; }
-.builder-lib-load:hover { background:#3a80c9; }
+/* ── Bouton charger template dans le picker sidebar ── */
+.picker-load-btn { background:rgba(255,255,255,.1); border:none; color:rgba(255,255,255,.65); border-radius:3px; width:22px; height:18px; font-size:.75rem; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:background .1s, color .1s; padding:0; line-height:1; }
+.picker-load-btn:hover { background:#2563EB; color:#fff; }
 /* Rétrocompatibilité (publish modal etc.) */
 .lib-tmpl-card { display:flex; align-items:center; gap:8px; padding:9px 12px; border-bottom:1px solid var(--border); transition:background .12s; }
 .lib-tmpl-card:hover { background:#F5F8FF; }
@@ -597,7 +574,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 #builderPanel.r4p-readonly .cible-add-btn,
 #builderPanel.r4p-readonly .cible-del-btn,
 #builderPanel.r4p-readonly .methode-bar,
-#builderPanel.r4p-readonly #tmplQuickSaveBtn,
 #builderPanel.r4p-readonly button[onclick*="addBloc"] { display:none !important; }
 
 /* Champs : apparence identique au mode normal, juste non-interactifs */
@@ -1772,9 +1748,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
       <div class="more-menu-wrap">
         <button class="more-btn" onclick="toggleMoreMenu(event)" title="Plus d'options">• • •</button>
         <div class="more-dropdown" id="moreDropdown">
-          <button class="more-item" onclick="openSaveTemplate();closeMoreMenu()">📋 Créer un template</button>
           <button class="more-item" id="moreItemDuplTmpl" style="display:none" onclick="duplicateTemplate();closeMoreMenu()">📋 Dupliquer ce template</button>
-          <button class="more-item" onclick="shareProgLink();closeMoreMenu()">🔗 Partager avec l'athlète</button>
           <button class="more-item" onclick="exportSession();closeMoreMenu()">📤 Exporter HTML</button>
           <button class="more-item" onclick="window.print();closeMoreMenu()">🖨 Imprimer</button>
           <div class="more-separator"></div>
@@ -1801,29 +1775,16 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
     </div>
   </div>
 
-  <!-- Bibliothèque dans le bas du builder -->
-  <div style="border-top:1px solid var(--border);flex-shrink:0;">
-    <div class="tmpl-lib-header">
-      <span class="tmpl-lib-title">📚 Bibliothèque</span>
-      <button id="tmplQuickSaveBtn" onclick="openSaveTemplate()" title="Enregistrer la séance comme template" style="padding:3px 9px;background:var(--accent2);border:none;color:#fff;border-radius:6px;font-size:.68rem;font-weight:600;cursor:pointer;white-space:nowrap;line-height:1.4;">＋ Enregistrer</button>
-    </div>
-    <div id="templatesBuilderArea"></div>
-  </div>
+  <!-- #templatesBuilderArea conservé vide pour rétrocompatibilité JS -->
+  <div id="templatesBuilderArea" style="display:none;"></div>
 </div>
 
-<!-- Éléments fantômes pour compatibilité JS (panels cachés) -->
+<!-- Éléments fantômes actifs (référencés en JS) -->
 <div style="display:none;">
-  <div id="mpanel-seance"></div>
   <div id="mpanel-seances"></div>
   <div id="mpanel-cal"></div>
-  <div id="mpanel-proto"></div>
-  <div id="mtab-seance"></div>
-  <div id="mtab-seances"></div>
-  <div id="mtab-cal"></div>
-  <div id="mtab-proto"></div>
   <div id="patientBadge"><span id="patientBadgeName"></span></div>
   <div id="calPatientLabel"></div>
-  <span id="topbarPatientSync"></span>
 </div>
 
 </div><!-- .app -->
@@ -2997,8 +2958,6 @@ function _shareProgById(id){
   _copyLink(id);
 }
 
-/* Ancienne fonction (redirige vers la nouvelle) */
-function shareProgLink(){ shareBuilderProg(); }
 document.addEventListener('click', function(e){
   if(!e.target.closest('.more-menu-wrap')) closeMoreMenu();
 });
@@ -6207,7 +6166,7 @@ function _toggleLibCat(catKey){
 
 function renderBuilderLibrary(){
   var area = document.getElementById('templatesBuilderArea');
-  if(!area) return;
+  if(!area || area.style.display === 'none') return;
 
   if(_progToken && _progUid){
     // Si aucune donnée en mémoire, charger d'abord
@@ -6477,6 +6436,7 @@ function _pickerRenderTemplate(p, search){
   h += '<div class="picker-tmpl-hdr" onclick="_pickerToggle(\''+pid+'\')">';
   h += '<span>'+escH(p.emoji||'📋')+'</span>';
   h += '<span class="picker-tmpl-name">'+escH(p.nom)+'</span>';
+  if(!_isReader()) h += '<button class="picker-load-btn" onclick="event.stopPropagation();loadTemplate(\''+escJS(String(p.id))+'\');_enterBuilderMode();" title="Charger cette séance dans le builder">⤓</button>';
   h += '<span class="picker-chevron">›</span></div>';
   h += '<div class="picker-tmpl-body">';
 
