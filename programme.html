@@ -7239,21 +7239,44 @@ function duplicateGroup(){
 }
 
 function deleteGroup(id){
-  if(!confirm('Supprimer ce protocole ? Les templates associés seront conservés mais détachés.')) return;
+  /* Compter les phases associées pour l'avertissement */
+  var phases = (_sidebarProgs||[]).filter(function(p){ return String(p.group_id)===String(id); });
+  var group   = (_groups||[]).find(function(g){ return String(g.id)===String(id); });
+  var groupName = group ? (group.nom||'ce protocole') : 'ce protocole';
+
+  var msg = 'Supprimer le protocole « ' + groupName + ' » ?';
+  if(phases.length > 0){
+    var phaseList = phases.map(function(p){ return '• ' + (p.nom||'Sans nom'); }).join('\n');
+    msg += '\n\n⚠️ ' + phases.length + ' séance' + (phases.length>1?'s':'') + ' associée' + (phases.length>1?'s':'') + ' seront également supprimée' + (phases.length>1?'s':'') + ' :\n' + phaseList;
+  }
+  msg += '\n\nCette action est irréversible.';
+
+  if(!confirm(msg)) return;
+
   if(_progToken && _progUid){
-    fetch(SUPA_URL_P + '/rest/v1/template_groups?id=eq.' + id, {
-      method:'DELETE', headers:_sbHeaders()
+    /* 1. Supprimer les phases du groupe, puis 2. supprimer le groupe */
+    var deleteTemplates = phases.length > 0
+      ? fetch(SUPA_URL_P + '/rest/v1/templates?group_id=eq.' + id, { method:'DELETE', headers:_sbHeaders() })
+      : Promise.resolve({ ok:true });
+
+    deleteTemplates.then(function(r){
+      if(!r.ok){ alert('Erreur lors de la suppression des séances.'); return; }
+      return fetch(SUPA_URL_P + '/rest/v1/template_groups?id=eq.' + id, { method:'DELETE', headers:_sbHeaders() });
     }).then(function(r){
-      if(r.ok){ renderSidebarTemplates(); }
-      else { alert('Erreur suppression.'); }
+      if(!r || !r.ok){ alert('Erreur lors de la suppression du protocole.'); return; }
+      /* Mettre à jour le cache local */
+      _sidebarProgs = (_sidebarProgs||[]).filter(function(p){ return String(p.group_id)!==String(id); });
+      renderSidebarTemplates();
     }).catch(function(){ alert('Erreur réseau.'); });
+
   } else {
     _loadGroups();
     _groups = _groups.filter(function(g){ return g.id !== id; });
     _persistGroups();
     _loadTemplates();
-    _templates.forEach(function(t){ if(t.group_id===id){ t.group_id=null; t.phase_nom=''; t.phase_ordre=0; } });
+    _templates = _templates.filter(function(t){ return t.group_id !== id; });
     _persistTemplates();
+    _sidebarProgs = (_sidebarProgs||[]).filter(function(p){ return String(p.group_id)!==String(id); });
     renderSidebarTemplates();
   }
 }
