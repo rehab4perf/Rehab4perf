@@ -3285,6 +3285,15 @@ window.addEventListener('message', function(e){
     try { localStorage.setItem('r4p-profile', JSON.stringify(e.data.profile)); } catch(ex){}
     applyProfile(e.data.profile);
   }
+  // Score reçu depuis Outils.html → mettre à jour le champ du bilan en live
+  if(e.data && e.data.type==='r4p-outils-save' && e.data.field){
+    var targetEl = document.getElementById(e.data.field);
+    if(targetEl){
+      targetEl.value = String(e.data.value || '');
+      try{ targetEl.dispatchEvent(new Event('input',{bubbles:true})); }catch(ex){}
+      try{ targetEl.dispatchEvent(new Event('change',{bubbles:true})); }catch(ex){}
+    }
+  }
   if(e.data && e.data.type==='r4p-patient-selected'){
     var _newPat = e.data.patient;
     var _isDiff = !_bilanPatient || !_newPat || _bilanPatient.id !== _newPat.id;
@@ -4649,6 +4658,15 @@ function _buildAllTestsHtml() {
   if (!isNaN(luCA) && (luCA<10 || Math.abs(luCA-(luCS||0))>1.5)) toWork.push('Déficit de flexion dorsale de cheville (Lunge ' + luCA + 'cm — < 10 cm ou asymétrie > 1,5 cm)');
   if (!isNaN(hrLsi2) && hrLsi2<90) toWork.push('Renforcement du mollet — Heel Rise progressif (LSI ' + hrLsi2.toFixed(1) + '%)');
   if (!isNaN(qfCA) && !isNaN(qfCS) && qfCS>0 && (1-qfCA/qfCS)*100>10) toWork.push('Renforcement quadriceps (déficit ' + ((1-qfCA/qfCS)*100).toFixed(1) + '%)');
+  // Flash Isométrique 20s (cf-q-ca / cf-q-cs) — distinct de l'isokinétique
+  (function(){
+    var cfqCA = parseFloat((document.getElementById('cf-q-ca')||{}).value||'');
+    var cfqCS = parseFloat((document.getElementById('cf-q-cs')||{}).value||'');
+    if (!isNaN(cfqCA) && !isNaN(cfqCS) && cfqCS>0) {
+      var cfqLsi = cfqCA/cfqCS*100;
+      if (cfqLsi < 90) toWork.push('Renforcement quadriceps isométrique (Flash 20s — LSI ' + cfqLsi.toFixed(1) + '%)');
+    }
+  })();
   if (!isNaN(ijfCA) && !isNaN(ijfCS) && ijfCS>0 && (1-ijfCA/ijfCS)*100>10) toWork.push('Renforcement ischio-jambiers — Nordic Hamstring, excentrique (déficit ' + ((1-ijfCA/ijfCS)*100).toFixed(1) + '%)');
   // Drop Jump H
   var djLsiTW = (!isNaN(djHca)&&djHcs>0)?djHca/djHcs*100:NaN;
