@@ -4398,6 +4398,35 @@ renderLib('');
 .pe-weekly-cnt-inp:focus { border-color:#4A90D9; }
 .pe-add-phase-btn { background:none; border:2px dashed #b8c5d8; border-radius:9px; padding:10px; font-size:.78rem; color:#6b7a8d; cursor:pointer; font-family:inherit; width:100%; text-align:center; transition:border-color .15s,color .15s; margin-top:2px; }
 .pe-add-phase-btn:hover { border-color:#4A90D9; color:#1A3A5C; }
+/* --- Library visual editor --- */
+.pe-lib-mode-toggle { display:flex; gap:6px; margin-bottom:8px; }
+.pe-lib-mode-btn { flex:1; padding:7px 10px; border:1.5px solid #d8e0eb; border-radius:7px; background:#f8fafc; font-size:.78rem; font-weight:600; color:#6b7a8d; cursor:pointer; font-family:inherit; text-align:center; transition:all .15s; }
+.pe-lib-mode-btn.active { border-color:#4A90D9; background:#EFF6FF; color:#1A3A5C; }
+.pe-entry-test-wrap { background:#FFFBEB; border:1.5px solid #FDE68A; border-radius:8px; padding:10px 12px; display:flex; flex-direction:column; gap:5px; margin-bottom:8px; }
+.pe-entry-test-lbl { font-size:.63rem; font-weight:700; color:#92400E; text-transform:uppercase; letter-spacing:.05em; }
+.pe-entry-test-inp { padding:6px 9px; border:1.5px solid #FDE68A; border-radius:6px; font-size:.8rem; font-family:inherit; outline:none; color:#1a2433; background:#fff; }
+.pe-entry-test-inp:focus { border-color:#F59E0B; }
+.pe-branch-card { border:1.5px solid #d8e0eb; border-radius:9px; overflow:hidden; margin-bottom:6px; }
+.pe-branch-head { display:flex; align-items:center; gap:6px; padding:8px 10px; background:#f4f7fb; cursor:pointer; user-select:none; }
+.pe-branch-label-inp { flex:1; border:none; background:transparent; font-size:.82rem; font-weight:700; color:#1A3A5C; font-family:inherit; outline:none; min-width:0; padding:2px 4px; border-radius:4px; }
+.pe-branch-label-inp:focus { background:#fff; border-bottom:1.5px solid #4A90D9; }
+.pe-branch-body { display:none; padding:10px 12px; border-top:1px solid #e8edf5; flex-direction:column; gap:5px; }
+.pe-branch-card.open .pe-branch-body { display:flex; }
+.pe-branch-toggle { color:#9ca3af; font-size:.85rem; transition:transform .2s; flex-shrink:0; pointer-events:none; }
+.pe-branch-card.open .pe-branch-toggle { transform:rotate(90deg); }
+.pe-bloc-card { border:1px solid #e2e8f0; border-radius:7px; overflow:hidden; margin-bottom:5px; }
+.pe-bloc-head { display:flex; align-items:center; gap:6px; padding:7px 10px; background:#FAFAFA; cursor:pointer; user-select:none; }
+.pe-bloc-title-inp { flex:1; border:none; background:transparent; font-size:.78rem; font-weight:600; color:#374151; font-family:inherit; outline:none; padding:1px 3px; border-radius:3px; min-width:0; }
+.pe-bloc-title-inp:focus { background:#fff; border-bottom:1px solid #4A90D9; }
+.pe-bloc-body { display:none; padding:8px 10px; border-top:1px solid #f0f4f8; flex-direction:column; gap:4px; }
+.pe-bloc-card.open .pe-bloc-body { display:flex; }
+.pe-bloc-toggle { color:#9ca3af; font-size:.78rem; transition:transform .2s; flex-shrink:0; pointer-events:none; }
+.pe-bloc-card.open .pe-bloc-toggle { transform:rotate(90deg); }
+.pe-exo-row { display:flex; align-items:center; gap:5px; margin-bottom:3px; }
+.pe-exo-name { flex:1; padding:5px 8px; border:1.5px solid #d8e0eb; border-radius:6px; font-size:.76rem; font-family:inherit; outline:none; color:#1a2433; }
+.pe-exo-name:focus { border-color:#4A90D9; }
+.pe-exo-url { flex:0 0 140px; padding:5px 8px; border:1.5px solid #d8e0eb; border-radius:6px; font-size:.71rem; font-family:inherit; outline:none; color:#6b7a8d; }
+.pe-exo-url:focus { border-color:#4A90D9; }
 /* --- Body --- */
 .proto-body { padding:20px; }
 /* --- Protocol card --- */
@@ -4684,14 +4713,19 @@ renderLib('');
         <div id="pe-phases-editor"></div>
         <button class="pe-add-phase-btn" onclick="_peAddPhase()">+ Ajouter une phase</button>
       </div>
-      <!-- Éditeur JSON (library) -->
-      <div id="pe-json-wrap">
-        <div class="pe-field">
-          <label id="pe-content-label">Contenu JSON</label>
-          <div class="pe-hint" id="pe-content-hint"></div>
-          <textarea id="pe-content" rows="14" placeholder="{ }" style="font-family:'SF Mono',Menlo,monospace;font-size:.74rem;line-height:1.5;"></textarea>
-          <div class="pe-err" id="pe-content-err" style="display:none"></div>
+      <!-- Éditeur visuel bibliothèque (library) -->
+      <div id="pe-lib-wrap" style="display:none">
+        <div style="font-size:.63rem;font-weight:700;color:#6b7a8d;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Structure du contenu</div>
+        <div class="pe-lib-mode-toggle">
+          <button class="pe-lib-mode-btn active" id="pe-lib-btn-tree"  onclick="_peLibSetMode('tree')">🌿 Arbre décisionnel</button>
+          <button class="pe-lib-mode-btn"         id="pe-lib-btn-blocs" onclick="_peLibSetMode('blocs')">📦 Blocs simples</button>
         </div>
+        <div class="pe-entry-test-wrap" id="pe-entry-test-wrap">
+          <div class="pe-entry-test-lbl">⚡ Test d'entrée (optionnel)</div>
+          <input type="text" id="pe-entry-test-inp" class="pe-entry-test-inp" placeholder="Décrivez le test d'entrée…">
+        </div>
+        <div id="pe-lib-editor"></div>
+        <button class="pe-add-phase-btn" id="pe-lib-add-btn" onclick="_peAddBranch()">+ Ajouter une branche</button>
       </div>
     </div>
     <div class="proto-edit-footer">
@@ -8847,6 +8881,272 @@ function _peGetPhasesData(){
   });
 }
 
+/* ── Éditeur visuel bibliothèque ── */
+var _peLibData  = {mode:'tree',entryTest:'',branches:[],blocs:[]};
+var _peOpenBranches = {};
+var _peOpenBlocs    = {};
+
+function _peInitLibrary(proto){
+  var hasBranches = proto && proto.branches && proto.branches.length;
+  var hasBlocs    = proto && proto.blocs    && proto.blocs.length && !hasBranches;
+  var etRaw = proto && proto.entryTest;
+  var etText = etRaw ? (typeof etRaw === 'string' ? etRaw : (etRaw.description||etRaw.name||'')) : '';
+  _peLibData = {
+    mode: hasBlocs ? 'blocs' : 'tree',
+    entryTest: etText,
+    branches: hasBranches ? proto.branches.map(function(b,i){
+      var uid = String(b.id||('br'+i+'_'+Date.now()));
+      return {_uid:uid,id:b.id||uid,label:b.label||b.name||'',color:b.color||'#EFF6FF',borderColor:b.borderColor||'#3B82F6',
+        blocs: _peMapBlocsIn(b.blocs||[])};
+    }) : [],
+    blocs: hasBlocs ? _peMapBlocsIn(proto.blocs) : []
+  };
+  _peOpenBranches = {};
+  _peOpenBlocs    = {};
+  if(_peLibData.branches.length) _peOpenBranches[_peLibData.branches[0]._uid] = true;
+  if(_peLibData.blocs.length)    _peOpenBlocs[_peLibData.blocs[0]._uid]       = true;
+  _peRenderLibEditor();
+  _peLibUpdateUI();
+}
+
+function _peMapBlocsIn(blocs){
+  return (blocs||[]).map(function(bl,j){
+    var uid = String(bl.id||('bl'+j+'_'+Date.now()));
+    return {_uid:uid,id:bl.id||uid,title:bl.title||'',
+      exos:(bl.exos||[]).map(function(e,k){
+        var euid = String(e.id||('ex'+k+'_'+Date.now()));
+        return {_uid:euid,id:e.id||euid,name:e.name||'',url:e.url||''};
+      })};
+  });
+}
+
+function _peLibSetMode(mode){
+  _peSyncLibFromDom();
+  _peLibData.mode = mode;
+  _peRenderLibEditor();
+  _peLibUpdateUI();
+}
+
+function _peLibUpdateUI(){
+  var isTree = _peLibData.mode === 'tree';
+  var btnT = document.getElementById('pe-lib-btn-tree');
+  var btnB = document.getElementById('pe-lib-btn-blocs');
+  var etW  = document.getElementById('pe-entry-test-wrap');
+  var addB = document.getElementById('pe-lib-add-btn');
+  if(btnT) btnT.className = 'pe-lib-mode-btn'+(isTree?' active':'');
+  if(btnB) btnB.className = 'pe-lib-mode-btn'+(!isTree?' active':'');
+  if(etW)  etW.style.display  = isTree ? '' : 'none';
+  if(addB) addB.textContent   = isTree ? '+ Ajouter une branche' : '+ Ajouter un bloc';
+}
+
+function _peSyncLibFromDom(){
+  var etInp = document.getElementById('pe-entry-test-inp');
+  if(etInp) _peLibData.entryTest = etInp.value;
+  if(_peLibData.mode === 'tree'){
+    _peLibData.branches.forEach(function(branch){
+      var el = document.getElementById('pe-br-'+branch._uid);
+      if(!el) return;
+      branch.label       = el.querySelector('.pe-branch-label-inp').value;
+      branch.borderColor = el.querySelector('.pe-br-bordercol').value;
+      branch.color       = el.querySelector('.pe-br-bgcol').value;
+      branch.blocs.forEach(function(bloc){ _peSyncBlocFromDom(bloc); });
+    });
+  } else {
+    _peLibData.blocs.forEach(function(bloc){ _peSyncBlocFromDom(bloc); });
+  }
+}
+
+function _peSyncBlocFromDom(bloc){
+  var el = document.getElementById('pe-bl-'+bloc._uid);
+  if(!el) return;
+  var t = el.querySelector('.pe-bloc-title-inp');
+  if(t) bloc.title = t.value;
+  var names = el.querySelectorAll('.pe-exo-name');
+  var urls  = el.querySelectorAll('.pe-exo-url');
+  bloc.exos.forEach(function(exo,i){
+    if(names[i]) exo.name = names[i].value;
+    if(urls[i])  exo.url  = urls[i].value;
+  });
+}
+
+function _peRenderLibEditor(){
+  var container = document.getElementById('pe-lib-editor');
+  if(!container) return;
+  var h = '';
+  var isTree = _peLibData.mode === 'tree';
+  if(isTree){
+    _peLibData.branches.forEach(function(branch,i){
+      var uid = branch._uid;
+      var isOpen = !!_peOpenBranches[uid];
+      var bc = branch.borderColor||'#3B82F6';
+      var bg = branch.color||'#EFF6FF';
+      h += '<div class="pe-branch-card'+(isOpen?' open':'')+'" id="pe-br-'+uid+'" style="border-left:3px solid '+bc+'">';
+      h += '<div class="pe-branch-head" onclick="_peToggleBranch(\''+uid+'\')">';
+      h += '<input type="color" class="pe-br-bordercol" value="'+bc+'" onclick="event.stopPropagation()" title="Couleur bordure" style="width:22px;height:20px;border:none;background:none;padding:0;cursor:pointer;flex-shrink:0;">';
+      h += '<input type="color" class="pe-br-bgcol"     value="'+bg+'" onclick="event.stopPropagation()" title="Couleur fond"    style="width:22px;height:20px;border:none;background:none;padding:0;cursor:pointer;flex-shrink:0;">';
+      h += '<input type="text" class="pe-branch-label-inp" value="'+_escHtml(branch.label||'')+'" placeholder="Nom de la branche" onclick="event.stopPropagation()">';
+      if(i>0)                              h += '<button class="pe-ph-move" onclick="event.stopPropagation();_peMoveBranch(\''+uid+'\',-1)" title="Monter">↑</button>';
+      if(i<_peLibData.branches.length-1)   h += '<button class="pe-ph-move" onclick="event.stopPropagation();_peMoveBranch(\''+uid+'\',1)"  title="Descendre">↓</button>';
+      h += '<button class="pe-ph-del" onclick="event.stopPropagation();_peRemoveBranch(\''+uid+'\')" title="Supprimer">×</button>';
+      h += '<span class="pe-branch-toggle">›</span>';
+      h += '</div>';
+      h += '<div class="pe-branch-body">';
+      branch.blocs.forEach(function(bloc,j){ h += _peRenderBlocCard(bloc,j,branch.blocs.length,uid); });
+      h += '<button class="pe-list-add-btn" onclick="_peAddBloc(\''+uid+'\')">+ Ajouter un bloc</button>';
+      h += '</div></div>';
+    });
+  } else {
+    _peLibData.blocs.forEach(function(bloc,j){ h += _peRenderBlocCard(bloc,j,_peLibData.blocs.length,'__root__'); });
+  }
+  container.innerHTML = h;
+}
+
+function _peRenderBlocCard(bloc,j,total,branchUid){
+  var uid  = bloc._uid;
+  var buid = branchUid || '__root__';
+  var isOpen = !!_peOpenBlocs[uid];
+  var h = '<div class="pe-bloc-card'+(isOpen?' open':'')+'" id="pe-bl-'+uid+'">';
+  h += '<div class="pe-bloc-head" onclick="_peToggleBloc(\''+uid+'\')">';
+  h += '<span style="font-size:.8rem;flex-shrink:0;">📋</span>';
+  h += '<input type="text" class="pe-bloc-title-inp" value="'+_escHtml(bloc.title||'')+'" placeholder="Titre du bloc" onclick="event.stopPropagation()">';
+  if(j>0)        h += '<button class="pe-ph-move" onclick="event.stopPropagation();_peMoveBloc(\''+buid+'\',\''+uid+'\',-1)" title="Monter">↑</button>';
+  if(j<total-1)  h += '<button class="pe-ph-move" onclick="event.stopPropagation();_peMoveBloc(\''+buid+'\',\''+uid+'\',1)"  title="Descendre">↓</button>';
+  h += '<button class="pe-ph-del" onclick="event.stopPropagation();_peRemoveBloc(\''+buid+'\',\''+uid+'\')" title="Supprimer">×</button>';
+  h += '<span class="pe-bloc-toggle">›</span>';
+  h += '</div>';
+  h += '<div class="pe-bloc-body">';
+  if((bloc.exos||[]).length){
+    h += '<div style="display:flex;gap:4px;margin-bottom:3px;font-size:.62rem;font-weight:700;color:#6b7a8d;text-transform:uppercase;">';
+    h += '<span style="flex:1">Exercice</span><span style="flex:0 0 140px">URL vidéo</span><span style="width:22px"></span></div>';
+  }
+  (bloc.exos||[]).forEach(function(exo,k){
+    h += '<div class="pe-exo-row">';
+    h += '<input type="text" class="pe-exo-name" value="'+_escHtml(exo.name||'')+'" placeholder="Nom de l\'exercice">';
+    h += '<input type="text" class="pe-exo-url"  value="'+_escHtml(exo.url||'')+'"  placeholder="URL YouTube…">';
+    h += '<button class="pe-list-del" onclick="_peRemoveExo(\''+buid+'\',\''+uid+'\','+k+')">×</button>';
+    h += '</div>';
+  });
+  h += '<button class="pe-list-add-btn" onclick="_peAddExo(\''+buid+'\',\''+uid+'\')">+ Ajouter un exercice</button>';
+  h += '</div></div>';
+  return h;
+}
+
+function _peToggleBranch(uid){ _peSyncLibFromDom(); _peOpenBranches[uid]=!_peOpenBranches[uid]; _peRenderLibEditor(); }
+function _peToggleBloc(uid){   _peSyncLibFromDom(); _peOpenBlocs[uid]=!_peOpenBlocs[uid];       _peRenderLibEditor(); }
+
+function _peAddBranch(){
+  _peSyncLibFromDom();
+  var isTree = _peLibData.mode==='tree';
+  var col = _PE_COLORS[(_peLibData.branches.length+_peLibData.blocs.length)%_PE_COLORS.length];
+  if(isTree){
+    var uid='br'+Date.now();
+    _peLibData.branches.push({_uid:uid,id:uid,label:'Branche '+(_peLibData.branches.length+1),color:col.color,borderColor:col.borderColor,blocs:[]});
+    _peOpenBranches[uid]=true;
+  } else {
+    var buid='bl'+Date.now();
+    _peLibData.blocs.push({_uid:buid,id:buid,title:'Bloc '+(_peLibData.blocs.length+1),exos:[]});
+    _peOpenBlocs[buid]=true;
+  }
+  _peRenderLibEditor();
+}
+
+function _peRemoveBranch(uid){
+  if(!confirm('Supprimer cette branche et tous ses blocs ?')) return;
+  _peSyncLibFromDom();
+  _peLibData.branches = _peLibData.branches.filter(function(b){return b._uid!==uid;});
+  delete _peOpenBranches[uid];
+  _peRenderLibEditor();
+}
+
+function _peMoveBranch(uid,dir){
+  _peSyncLibFromDom();
+  var arr=_peLibData.branches, idx=arr.findIndex(function(b){return b._uid===uid;}), ni=idx+dir;
+  if(idx<0||ni<0||ni>=arr.length) return;
+  var tmp=arr[idx]; arr[idx]=arr[ni]; arr[ni]=tmp;
+  _peRenderLibEditor();
+}
+
+function _peFindBloc(branchUid,blocUid){
+  if(branchUid==='__root__'||!branchUid) return _peLibData.blocs.find(function(b){return b._uid===blocUid;});
+  var branch=_peLibData.branches.find(function(b){return b._uid===branchUid;});
+  return branch ? branch.blocs.find(function(b){return b._uid===blocUid;}) : null;
+}
+
+function _peGetBlocArr(branchUid){
+  if(branchUid==='__root__'||!branchUid) return _peLibData.blocs;
+  var branch=_peLibData.branches.find(function(b){return b._uid===branchUid;});
+  return branch ? branch.blocs : [];
+}
+
+function _peAddBloc(branchUid){
+  _peSyncLibFromDom();
+  var uid='bl'+Date.now();
+  _peGetBlocArr(branchUid).push({_uid:uid,id:uid,title:'Bloc',exos:[]});
+  _peOpenBlocs[uid]=true;
+  _peRenderLibEditor();
+}
+
+function _peRemoveBloc(branchUid,blocUid){
+  _peSyncLibFromDom();
+  var arr=_peGetBlocArr(branchUid);
+  var idx=arr.findIndex(function(b){return b._uid===blocUid;});
+  if(idx>=0) arr.splice(idx,1);
+  delete _peOpenBlocs[blocUid];
+  _peRenderLibEditor();
+}
+
+function _peMoveBloc(branchUid,blocUid,dir){
+  _peSyncLibFromDom();
+  var arr=_peGetBlocArr(branchUid), idx=arr.findIndex(function(b){return b._uid===blocUid;}), ni=idx+dir;
+  if(idx<0||ni<0||ni>=arr.length) return;
+  var tmp=arr[idx]; arr[idx]=arr[ni]; arr[ni]=tmp;
+  _peRenderLibEditor();
+}
+
+function _peAddExo(branchUid,blocUid){
+  _peSyncLibFromDom();
+  var bloc=_peFindBloc(branchUid,blocUid); if(!bloc) return;
+  var uid='ex'+Date.now();
+  if(!bloc.exos) bloc.exos=[];
+  bloc.exos.push({_uid:uid,id:uid,name:'',url:''});
+  _peOpenBlocs[blocUid]=true;
+  _peRenderLibEditor();
+  setTimeout(function(){
+    var el=document.getElementById('pe-bl-'+blocUid); if(!el) return;
+    var inps=el.querySelectorAll('.pe-exo-name');
+    if(inps.length) inps[inps.length-1].focus();
+  },40);
+}
+
+function _peRemoveExo(branchUid,blocUid,idx){
+  _peSyncLibFromDom();
+  var bloc=_peFindBloc(branchUid,blocUid); if(!bloc||!bloc.exos) return;
+  bloc.exos.splice(idx,1);
+  _peRenderLibEditor();
+}
+
+function _peGetLibData(){
+  _peSyncLibFromDom();
+  var etInp=document.getElementById('pe-entry-test-inp');
+  var etText=etInp ? etInp.value.trim() : _peLibData.entryTest;
+  var result={};
+  if(_peLibData.mode==='tree'){
+    if(etText) result.entryTest={description:etText};
+    result.branches=_peLibData.branches.map(function(b){
+      return {id:b.id||b._uid,label:b.label||'',color:b.color||'#EFF6FF',borderColor:b.borderColor||'#3B82F6',blocs:_peMapBlocsOut(b.blocs||[])};
+    });
+  } else {
+    result.blocs=_peMapBlocsOut(_peLibData.blocs||[]);
+  }
+  return result;
+}
+
+function _peMapBlocsOut(blocs){
+  return blocs.map(function(bl){
+    return {id:bl.id||bl._uid,title:bl.title||'',exos:(bl.exos||[]).map(function(e){return {id:e.id||e._uid,name:e.name||'',url:e.url||''}; })};
+  });
+}
+
 /* ── Éditeur ── */
 var _peEditId = null;
 
@@ -8873,14 +9173,7 @@ function openProtoEditor(protoId){
   if(type === 'rehab'){
     _peInitPhases(proto ? proto.phases : []);
   } else {
-    var content = {};
-    if(proto){
-      if(proto.branches)  content.branches  = proto.branches;
-      if(proto.blocs)     content.blocs     = proto.blocs;
-      if(proto.entryTest) content.entryTest = proto.entryTest;
-    }
-    document.getElementById('pe-content').value = Object.keys(content).length ? JSON.stringify(content, null, 2) : '';
-    document.getElementById('pe-content-err').style.display = 'none';
+    _peInitLibrary(proto||null);
   }
   _peTypeChange();
   document.getElementById('protoEditOverlay').style.display = 'flex';
@@ -8892,21 +9185,17 @@ function closeProtoEditor(){
 }
 
 function _peTypeChange(fromSelect){
-  var type = document.getElementById('pe-type').value;
+  var type       = document.getElementById('pe-type').value;
   var phasesWrap = document.getElementById('pe-phases-wrap');
-  var jsonWrap   = document.getElementById('pe-json-wrap');
+  var libWrap    = document.getElementById('pe-lib-wrap');
   if(type === 'rehab'){
     if(phasesWrap) phasesWrap.style.display = '';
-    if(jsonWrap)   jsonWrap.style.display   = 'none';
-    /* Si changement depuis le <select>, initialiser l'éditeur vide */
+    if(libWrap)    libWrap.style.display    = 'none';
     if(fromSelect) _peInitPhases([]);
   } else {
     if(phasesWrap) phasesWrap.style.display = 'none';
-    if(jsonWrap)   jsonWrap.style.display   = '';
-    var hint  = document.getElementById('pe-content-hint');
-    var label = document.getElementById('pe-content-label');
-    if(label) label.textContent = 'Contenu JSON — Arbre décisionnel ou blocs simples';
-    if(hint)  hint.innerHTML = '<strong>Arbre décisionnel :</strong> <code>{"entryTest":{...},"branches":[{id,label,color,borderColor,blocs:[{title,exos:[{name,url,consigne}]}]}]}</code><br><strong>Blocs simples :</strong> <code>{"blocs":[{title,exos:[{name,url,series,reps,duree,recup}]}]}</code>';
+    if(libWrap)    libWrap.style.display    = '';
+    if(fromSelect) _peInitLibrary(null);
   }
 }
 
@@ -8916,22 +9205,7 @@ function _saveProtoEditor(){
 
   var type = document.getElementById('pe-type').value;
   var content = {};
-
-  if(type === 'rehab'){
-    content.phases = _peGetPhasesData();
-  } else {
-    var contentRaw = (document.getElementById('pe-content').value||'').trim();
-    if(contentRaw){
-      try { content = JSON.parse(contentRaw); }
-      catch(e){
-        var errEl = document.getElementById('pe-content-err');
-        errEl.textContent = 'JSON invalide : ' + e.message;
-        errEl.style.display = 'block';
-        return;
-      }
-    }
-    document.getElementById('pe-content-err').style.display = 'none';
-  }
+  if(type === 'rehab') content.phases = _peGetPhasesData();
 
   var newId = _peEditId || ('custom-' + Date.now());
 
@@ -8947,9 +9221,10 @@ function _saveProtoEditor(){
     isCustom: true,
   };
   if(type === 'library'){
-    if(content.branches)  proto.branches  = content.branches;
-    if(content.blocs)     proto.blocs     = content.blocs;
-    if(content.entryTest) proto.entryTest = content.entryTest;
+    var libData = _peGetLibData();
+    if(libData.branches)  proto.branches  = libData.branches;
+    if(libData.blocs)     proto.blocs     = libData.blocs;
+    if(libData.entryTest) proto.entryTest = libData.entryTest;
   } else {
     proto.phases = content.phases || [];
   }
@@ -8973,8 +9248,10 @@ function _deleteCustomProto(id){
 }
 
 function _peExportJson(){
-  var raw = (document.getElementById('pe-content').value||'').trim();
-  if(!raw){ alert('Aucun contenu à exporter.'); return; }
+  var type = document.getElementById('pe-type').value;
+  var data = type === 'rehab' ? {phases: _peGetPhasesData()} : _peGetLibData();
+  var raw  = JSON.stringify(data, null, 2);
+  if(!raw || raw === '{}'){ alert('Aucun contenu à exporter.'); return; }
   var blob = new Blob([raw], {type:'application/json'});
   var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
