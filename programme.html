@@ -9545,18 +9545,17 @@ function renderProtocols() {
     var ppMap = {};
     pps.forEach(function(pp){ if(!ppMap[pp.protocol_id]) ppMap[pp.protocol_id] = pp; });
 
-    var activePpIds = pps.filter(function(pp){ return pp.status==='active'; }).map(function(pp){ return pp.id; });
-    if(!activePpIds.length){
+    /* Fetch 3 : critères cochés pour tous les protocoles assignés */
+    var allPpIds = pps.map(function(pp){ return pp.id; });
+    if(!allPpIds.length){
       _protoPatientData = {};
       _getAllProtocols().forEach(function(proto){
-        _protoPatientData[proto.id] = { pp: ppMap[proto.id]||null, checks: {}, seancesStats: seancesStats[proto.id]||{} };
+        _protoPatientData[proto.id] = { pp: ppMap[proto.id]||null, checks: {}, checkedAt: {}, seancesStats: seancesStats[proto.id]||{} };
       });
       _renderProtocolsSync();
       return;
     }
-
-    /* Fetch 3 : critères cochés (seulement si protocoles actifs) */
-    var orFilter = activePpIds.map(function(id){ return 'patient_protocol_id.eq.'+id; }).join(',');
+    var orFilter = allPpIds.map(function(id){ return 'patient_protocol_id.eq.'+id; }).join(',');
     fetch(SUPA_URL_P + '/rest/v1/protocol_criteria_checks?or=('+orFilter+')&select=*',
       { headers: _sbHeaders() })
     .then(function(r){ return r.ok ? r.json() : []; })
@@ -9999,21 +9998,22 @@ function _protoGetChecks(protoId, phaseId) {
 }
 function _protoSetCheck(protoId, phaseId, idx, checked) {
   var data = _protoPatientData[protoId];
-  if(data && data.pp && data.pp.status === 'active') {
-    /* Mise à jour cache local */
-    if(!data.checks[phaseId]) data.checks[phaseId] = {};
-    data.checks[phaseId][idx] = checked;
-    if(!data.checkedAt) data.checkedAt = {};
-    if(!data.checkedAt[phaseId]) data.checkedAt[phaseId] = {};
-    data.checkedAt[phaseId][idx] = checked ? new Date().toISOString() : null;
-    /* Upsert Supabase */
+  /* Mise à jour cache local */
+  if(!data.checks[phaseId]) data.checks[phaseId] = {};
+  data.checks[phaseId][idx] = checked;
+  if(!data.checkedAt) data.checkedAt = {};
+  if(!data.checkedAt[phaseId]) data.checkedAt[phaseId] = {};
+  var now = new Date().toISOString();
+  data.checkedAt[phaseId][idx] = checked ? now : null;
+  if(data && data.pp) {
+    /* Upsert Supabase — tous statuts */
     fetch(SUPA_URL_P + '/rest/v1/protocol_criteria_checks', {
       method: 'POST',
       headers: Object.assign({}, _sbHeaders(), {'Prefer':'resolution=merge-duplicates,return=minimal'}),
-      body: JSON.stringify({ patient_protocol_id: data.pp.id, phase_id: phaseId, criteria_index: idx, checked: checked, checked_at: checked ? new Date().toISOString() : null })
+      body: JSON.stringify({ patient_protocol_id: data.pp.id, phase_id: phaseId, criteria_index: idx, checked: checked, checked_at: checked ? now : null })
     }).catch(function(e){ console.error('Criteria sync:', e); });
   } else {
-    /* localStorage fallback */
+    /* localStorage fallback si pas de patient_protocol */
     var lsChecks = _protoGetChecks(protoId, phaseId);
     lsChecks[idx] = checked;
     try{ localStorage.setItem(_protoChecksKey(protoId, phaseId), JSON.stringify(lsChecks)); }catch(e){}
