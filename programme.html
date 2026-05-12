@@ -479,7 +479,8 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .picker-bloc-title { flex:1; font-size:.7rem; font-weight:700; color:rgba(255,255,255,.45); }
 .picker-exo-row { display:flex; align-items:center; padding:3px 8px 3px 36px; gap:6px; transition:background .1s; }
 .picker-exo-row:hover { background:rgba(255,255,255,.05); }
-.picker-exo-name { flex:1; font-size:.71rem; color:rgba(255,255,255,.6); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.picker-exo-name { flex:1; font-size:.71rem; color:rgba(255,255,255,.6); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; }
+.picker-exo-name.expanded { white-space:normal; overflow:visible; text-overflow:unset; color:rgba(255,255,255,.85); }
 .picker-exo-row .yt-thumb-wrap img { width:44px;height:25px; }
 .picker-exo-row .yt-thumb-wrap .yt-play::after { border-left-width:7px;border-top-width:4px;border-bottom-width:4px; }
 @media (min-width:768px) and (pointer:coarse) {
@@ -6701,7 +6702,7 @@ function _pickerRenderTemplate(p, search, addedLibIds){
     srcBlocs.forEach(function(bloc, bi){
       if(bloc.type==='cardio'){
         h += '<div class="picker-exo-row">';
-        h += '<span class="picker-exo-name">🏃 '+escH(bloc.title||'Cardio')+'</span>';
+        h += '<span class="picker-exo-name" title="'+escH(bloc.title||'Cardio')+'" onclick="_pickerToggleWrap(this)">🏃 '+escH(bloc.title||'Cardio')+'</span>';
         h += '<button class="picker-plus" onclick="_addBlocFromPicker(\''+p.id+'\','+bi+')" title="Ajouter ce bloc">+</button>';
         h += '</div>';
       } else {
@@ -6723,7 +6724,7 @@ function _pickerRenderTemplate(p, search, addedLibIds){
           var dattr    = exo.libId ? ' data-libid="'+escH(exo.libId)+'"' : '';
           h += '<div class="picker-exo-row'+(isAdded?' pex-added':'')+'"'+dattr+'>';
           if(_pkThumb) h += _pkThumb;
-          h += '<span class="picker-exo-name">'+(exo.url?'<span style="color:#F97316;font-size:.6rem;margin-right:3px;flex-shrink:0;">▶</span>':'')+escH(exo.name||'Exercice')+'</span>';
+          h += '<span class="picker-exo-name" title="'+escH(exo.name||'Exercice')+'" onclick="_pickerToggleWrap(this)">'+(exo.url?'<span style="color:#F97316;font-size:.6rem;margin-right:3px;flex-shrink:0;">▶</span>':'')+escH(exo.name||'Exercice')+'</span>';
           h += '<button class="picker-plus" onclick="_addExoFromPicker(\''+p.id+'\','+bi+','+ei+')" title="Ajouter">+</button>';
           h += '</div>';
         });
@@ -6751,6 +6752,9 @@ function _pickerProgMatches(p, search){
 function _pickerToggle(id){
   var el = document.getElementById(id);
   if(el) el.classList.toggle('open');
+}
+function _pickerToggleWrap(el){
+  el.classList.toggle('expanded');
 }
 
 /* Ajouter un exercice unique dans le bloc actif */
