@@ -1393,6 +1393,55 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .cal-pick-type { font-size:.7rem; color:var(--muted); }
 .cal-picker-close { width:100%; margin-top:12px; }
 
+/* ── Contexte calendrier : menu choix action ── */
+.cal-ctx-btn {
+  display:flex; align-items:center; gap:13px; width:100%;
+  padding:13px 14px; background:#F8FAFC; border:1px solid #E2E8F0;
+  border-radius:10px; cursor:pointer; font-size:.88rem; font-weight:600;
+  color:var(--navy); text-align:left; transition:background .15s,border-color .15s;
+  margin-bottom:8px; font-family:inherit;
+}
+.cal-ctx-btn:last-child { margin-bottom:0; }
+.cal-ctx-btn:hover { background:#EFF6FF; border-color:#BFDBFE; }
+.cal-ctx-btn-icon { font-size:1.5rem; line-height:1; flex-shrink:0; }
+.cal-ctx-btn-body { display:flex; flex-direction:column; gap:2px; }
+.cal-ctx-btn-desc { font-size:.71rem; color:var(--muted); font-weight:400; }
+/* ── Formulaire note ── */
+.cal-note-back { background:none; border:none; cursor:pointer; font-size:.78rem;
+  color:var(--muted); text-align:left; margin-bottom:6px; padding:0;
+  font-family:inherit; display:inline-flex; align-items:center; gap:4px; }
+.cal-note-back:hover { color:var(--navy); }
+.cal-note-inp {
+  border:1px solid #E2E8F0; border-radius:8px; padding:9px 12px;
+  font-size:.85rem; outline:none; font-family:inherit; width:100%; box-sizing:border-box;
+}
+.cal-note-inp:focus { border-color:#6366F1; box-shadow:0 0 0 3px rgba(99,102,241,.12); }
+.cal-note-textarea {
+  border:1px solid #E2E8F0; border-radius:8px; padding:9px 12px;
+  font-size:.85rem; outline:none; resize:vertical; min-height:90px;
+  font-family:inherit; width:100%; box-sizing:border-box;
+}
+.cal-note-textarea:focus { border-color:#6366F1; box-shadow:0 0 0 3px rgba(99,102,241,.12); }
+.cal-note-save {
+  background:#6366F1; color:#fff; border:none; border-radius:8px;
+  padding:10px; font-size:.88rem; font-weight:600; cursor:pointer; font-family:inherit;
+}
+.cal-note-save:hover { background:#4F46E5; }
+.cal-note-save.danger { background:#EF4444; }
+.cal-note-save.danger:hover { background:#DC2626; }
+/* ── Chips notes sur les cases calendrier ── */
+.cal-note-chip {
+  display:flex; align-items:center; gap:4px; background:#EEF2FF;
+  color:#4338CA; border-radius:4px; font-size:.62rem; padding:2px 5px;
+  margin-top:2px; cursor:pointer; max-width:100%;
+}
+.cal-note-chip-text { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0; }
+.cal-note-chip-del {
+  background:none; border:none; cursor:pointer; color:rgba(67,56,202,.35);
+  font-size:.82rem; padding:0; line-height:1; flex-shrink:0;
+}
+.cal-note-chip-del:hover { color:#E74C3C; }
+
 /* ── Menu déroulant ⋯ ── */
 .more-menu-wrap { position:relative; flex-shrink:0; }
 .more-btn {
@@ -5661,6 +5710,15 @@ function _buildDayChips(dateStr, cellDate){
       chips += '<div style="font-size:.6rem;font-weight:700;color:#fff;background:'+col+';border-radius:3px;padding:1px 5px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+cy.nom+' S'+wn+'</div>';
     }
   });
+  // Notes calendrier
+  _loadCalNotes();
+  _calNotes.filter(function(n){ return n.date === dateStr; }).forEach(function(note){
+    var lbl = note.title || (note.text ? note.text.slice(0,22)+(note.text.length>22?'…':'') : 'Note');
+    chips += '<div class="cal-note-chip" onclick="event.stopPropagation();_openCalNoteView(\''+note.id+'\')" title="'+escH((note.title?note.title+'\n':'')+note.text)+'">'
+      +'<span>📝</span><span class="cal-note-chip-text">'+escH(lbl)+'</span>'
+      +'<button class="cal-note-chip-del" onclick="event.stopPropagation();_deleteCalNote(\''+note.id+'\')">×</button>'
+      +'</div>';
+  });
   return chips;
 }
 
@@ -5763,8 +5821,29 @@ function openCalPicker(dateStr) {
     }
     return;
   }
-  openBuilderForDate(dateStr);
   _calPickerDate = dateStr;
+  var parts = dateStr.split('-');
+  var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  var dateLbl = parseInt(parts[2])+' '+months[parseInt(parts[1])-1]+' '+parts[0];
+  document.getElementById('calPickerTitle').textContent = dateLbl;
+  var list = document.getElementById('calPickerList');
+  // Menu contextuel : choix de l'action
+  list.innerHTML =
+    '<button class="cal-ctx-btn" onclick="_openCalSessionPicker(\''+dateStr+'\')">'
+      +'<span class="cal-ctx-btn-icon">📋</span>'
+      +'<span class="cal-ctx-btn-body"><span>Planifier une séance</span>'
+      +'<span class="cal-ctx-btn-desc">Ajouter un programme à cette date</span></span>'
+    +'</button>'
+    +'<button class="cal-ctx-btn" onclick="_openCalNoteForm(\''+dateStr+'\')">'
+      +'<span class="cal-ctx-btn-icon">📝</span>'
+      +'<span class="cal-ctx-btn-body"><span>Ajouter une note</span>'
+      +'<span class="cal-ctx-btn-desc">Rappel, événement, observation…</span></span>'
+    +'</button>';
+  document.getElementById('calPickerOverlay').classList.add('open');
+}
+
+function _openCalSessionPicker(dateStr) {
+  openBuilderForDate(dateStr);
   var parts = dateStr.split('-');
   var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
   document.getElementById('calPickerTitle').textContent = 'Planifier le '+parseInt(parts[2])+' '+months[parseInt(parts[1])-1]+' '+parts[0];
@@ -5773,7 +5852,6 @@ function openCalPicker(dateStr) {
   if(_progPatient && _progToken) {
     // Mode cloud : afficher les programmes du patient
     list.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);font-size:.82rem;">Chargement…</div>';
-    document.getElementById('calPickerOverlay').classList.add('open');
     fetch(SUPA_URL_P + '/rest/v1/programmes?patient_id=eq.' + _progPatient.id + '&select=id,nom,date&order=date.desc', {
       headers: { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _progToken }
     })
@@ -5784,14 +5862,15 @@ function openCalPicker(dateStr) {
         list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:.82rem;">Aucun programme cloud pour ce patient.<br>Sauvegarde d\'abord avec ☁️ Sauvegarder.</div>';
         return;
       }
-      list.innerHTML = progs.map(function(p){
-        return '<div class="cal-pick-item" onclick="addCalEventCloud(\''+p.id+'\')">'
-          +'<span class="cal-pick-emoji">📋</span>'
-          +'<div class="cal-pick-info">'
-          +'<div class="cal-pick-name">'+escH(p.nom||'Programme')+'</div>'
-          +'<div class="cal-pick-type" style="color:var(--muted)">📅 '+escH(p.date||'')+'</div>'
-          +'</div></div>';
-      }).join('');
+      list.innerHTML = '<button class="cal-note-back" onclick="openCalPicker(\''+dateStr+'\')">← Retour</button>'
+        + progs.map(function(p){
+          return '<div class="cal-pick-item" onclick="addCalEventCloud(\''+p.id+'\')">'
+            +'<span class="cal-pick-emoji">📋</span>'
+            +'<div class="cal-pick-info">'
+            +'<div class="cal-pick-name">'+escH(p.nom||'Programme')+'</div>'
+            +'<div class="cal-pick-type" style="color:var(--muted)">📅 '+escH(p.date||'')+'</div>'
+            +'</div></div>';
+        }).join('');
     })
     .catch(function(){
       list.innerHTML = '<div style="padding:16px;color:#E74C3C;">Erreur de chargement.</div>';
@@ -5799,17 +5878,21 @@ function openCalPicker(dateStr) {
   } else {
     // Mode local : afficher les séances enregistrées
     _loadSeances();
-    if(!_savedSeances.length){ alert('Aucune séance enregistrée. Créez et enregistrez une séance d\'abord.'); return; }
-    list.innerHTML = _savedSeances.map(function(s){
-      var col = _seanceTypeColor(s.type);
-      return '<div class="cal-pick-item" onclick="addCalEvent(\''+s.id+'\')">'
-        +'<span class="cal-pick-emoji">'+s.emoji+'</span>'
-        +'<div class="cal-pick-info">'
-        +'<div class="cal-pick-name">'+escH(s.name)+'</div>'
-        +'<div class="cal-pick-type" style="color:'+col.fg+'">'+escH(s.type)+'</div>'
-        +'</div></div>';
-    }).join('');
-    document.getElementById('calPickerOverlay').classList.add('open');
+    if(!_savedSeances.length){
+      list.innerHTML = '<button class="cal-note-back" onclick="openCalPicker(\''+dateStr+'\')">← Retour</button>'
+        +'<div style="padding:20px;text-align:center;color:var(--muted);font-size:.82rem;">Aucune séance enregistrée.<br>Créez et enregistrez une séance d\'abord.</div>';
+      return;
+    }
+    list.innerHTML = '<button class="cal-note-back" onclick="openCalPicker(\''+dateStr+'\')">← Retour</button>'
+      + _savedSeances.map(function(s){
+        var col = _seanceTypeColor(s.type);
+        return '<div class="cal-pick-item" onclick="addCalEvent(\''+s.id+'\')">'
+          +'<span class="cal-pick-emoji">'+s.emoji+'</span>'
+          +'<div class="cal-pick-info">'
+          +'<div class="cal-pick-name">'+escH(s.name)+'</div>'
+          +'<div class="cal-pick-type" style="color:'+col.fg+'">'+escH(s.type)+'</div>'
+          +'</div></div>';
+      }).join('');
   }
 }
 
@@ -5859,6 +5942,91 @@ function removeCalEventCloud(id) {
     renderCalendar();
   })
   .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
+}
+
+// ── Notes calendrier ──────────────────────────────────────────────────────────
+var _CAL_NOTES_KEY = 'r4p_cal_notes';
+var _calNotes = [];
+
+function _loadCalNotes(){
+  try { _calNotes = JSON.parse(localStorage.getItem(_CAL_NOTES_KEY)||'[]'); } catch(e){ _calNotes = []; }
+}
+function _persistCalNotes(){
+  localStorage.setItem(_CAL_NOTES_KEY, JSON.stringify(_calNotes));
+}
+
+function _openCalNoteForm(dateStr) {
+  var parts = dateStr.split('-');
+  var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  document.getElementById('calPickerTitle').textContent = 'Nouvelle note — '+parseInt(parts[2])+' '+months[parseInt(parts[1])-1]+' '+parts[0];
+  var list = document.getElementById('calPickerList');
+  list.innerHTML = '<div class="cal-note-form">'
+    +'<button class="cal-note-back" onclick="openCalPicker(\''+dateStr+'\')">← Retour</button>'
+    +'<input class="cal-note-inp" id="calNoteTitle" type="text" placeholder="Titre (optionnel)" />'
+    +'<textarea class="cal-note-textarea" id="calNoteText" placeholder="Note, rappel, observation…"></textarea>'
+    +'<button class="cal-note-save" onclick="_saveCalNote(\''+dateStr+'\')">Enregistrer</button>'
+    +'</div>';
+  setTimeout(function(){ var el = document.getElementById('calNoteTitle'); if(el) el.focus(); }, 60);
+}
+
+function _saveCalNote(dateStr) {
+  var title = (document.getElementById('calNoteTitle')||{}).value || '';
+  var text  = (document.getElementById('calNoteText')||{}).value  || '';
+  if(!title.trim() && !text.trim()){ _showToast('La note est vide.', true); return; }
+  _loadCalNotes();
+  _calNotes.push({ id:'note_'+Math.random().toString(36).slice(2,9), date:dateStr, title:title.trim(), text:text.trim(), createdAt:new Date().toISOString() });
+  _persistCalNotes();
+  closeCalPicker();
+  renderCalendar();
+  _showToast('📝 Note enregistrée');
+}
+
+function _openCalNoteView(noteId) {
+  _loadCalNotes();
+  var note = _calNotes.find(function(n){ return n.id === noteId; });
+  if(!note) return;
+  _calPickerDate = note.date;
+  var parts = note.date.split('-');
+  var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  document.getElementById('calPickerTitle').textContent = 'Note — '+parseInt(parts[2])+' '+months[parseInt(parts[1])-1]+' '+parts[0];
+  var list = document.getElementById('calPickerList');
+  list.innerHTML = '<div class="cal-note-form">'
+    +'<button class="cal-note-back" onclick="openCalPicker(\''+note.date+'\')">← Retour</button>'
+    +'<input class="cal-note-inp" id="calNoteTitle" type="text" placeholder="Titre (optionnel)" value="'+escH(note.title||'')+'" />'
+    +'<textarea class="cal-note-textarea" id="calNoteText" placeholder="Note, rappel, observation…">'+escH(note.text||'')+'</textarea>'
+    +'<div style="display:flex;gap:8px;">'
+    +'<button class="cal-note-save" style="flex:1;" onclick="_updateCalNote(\''+noteId+'\')">Mettre à jour</button>'
+    +'<button class="cal-note-save danger" style="flex:0 0 auto;" onclick="_deleteCalNoteAndClose(\''+noteId+'\',\''+note.date+'\')">🗑</button>'
+    +'</div>'
+    +'</div>';
+  document.getElementById('calPickerOverlay').classList.add('open');
+}
+
+function _updateCalNote(noteId) {
+  var title = (document.getElementById('calNoteTitle')||{}).value || '';
+  var text  = (document.getElementById('calNoteText')||{}).value  || '';
+  if(!title.trim() && !text.trim()){ _showToast('La note est vide.', true); return; }
+  _loadCalNotes();
+  var note = _calNotes.find(function(n){ return n.id === noteId; });
+  if(!note) return;
+  note.title = title.trim(); note.text = text.trim();
+  _persistCalNotes();
+  closeCalPicker();
+  renderCalendar();
+  _showToast('📝 Note mise à jour');
+}
+
+function _deleteCalNote(noteId) {
+  _loadCalNotes();
+  _calNotes = _calNotes.filter(function(n){ return n.id !== noteId; });
+  _persistCalNotes();
+  renderCalendar();
+}
+
+function _deleteCalNoteAndClose(noteId, dateStr) {
+  _deleteCalNote(noteId);
+  closeCalPicker();
+  _showToast('Note supprimée');
 }
 
 // _isTouchDevice défini plus haut, avant renderLib()
