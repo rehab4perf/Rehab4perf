@@ -512,6 +512,14 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .picker-exo-row.pex-added .picker-plus::before { content:'✓'; }
 .picker-bloc.pbloc-done > .picker-bloc-hdr .picker-bloc-title::after { content:' ✓'; font-size:.62rem; color:rgba(39,174,96,.7); }
 .picker-empty { padding:20px 14px; text-align:center; font-size:.74rem; color:rgba(255,255,255,.35); font-style:italic; }
+/* Favoris picker */
+.picker-fav-btn { background:none; border:none; cursor:pointer; font-size:.88rem; padding:2px 4px; color:rgba(255,255,255,.25); line-height:1; flex-shrink:0; transition:color .15s; }
+.picker-fav-btn:hover { color:#F5A623; }
+.picker-fav-btn.active { color:#F5A623; }
+.picker-favs-section { border-bottom:1px solid rgba(245,166,35,.18); margin-bottom:4px; padding-bottom:4px; }
+.picker-favs-label { padding:6px 10px 3px; font-size:.65rem; font-weight:700; color:rgba(245,166,35,.7); letter-spacing:.05em; text-transform:uppercase; }
+.picker-favs-section .picker-tmpl { border-top:none; }
+.picker-favs-section .picker-tmpl-hdr { padding-left:10px; }
 /* ── Bouton retour ← universel ── */
 .btn-back {
   background:none; border:none; color:rgba(255,255,255,.5); cursor:pointer;
@@ -6586,6 +6594,18 @@ function _renderSidebarPicker(){
   var addedLibIds = {};
   (blocs||[]).forEach(function(b){ (b.exos||[]).forEach(function(e){ if(e.libId) addedLibIds[e.libId]=true; }); });
 
+  /* ── Section Favoris ── */
+  var pickerFavSet = _getPickerFavs();
+  if(pickerFavSet.size > 0 && !search){
+    var favProgs = progs.filter(function(p){ return pickerFavSet.has(String(p.id)); });
+    if(favProgs.length){
+      html += '<div class="picker-favs-section">';
+      html += '<div class="picker-favs-label">⭐ Favoris</div>';
+      favProgs.forEach(function(p){ html += _pickerRenderTemplate(p, search, addedLibIds); });
+      html += '</div>';
+    }
+  }
+
   /* Grouper par catégorie */
   var catsMap = {};
   groups.forEach(function(g){
@@ -6660,12 +6680,14 @@ function _pickerRenderTemplate(p, search, addedLibIds){
   var srcBlocs = (donnees&&donnees.blocs)||[];
   addedLibIds = addedLibIds || {};
 
+  var isFavPicker = _getPickerFavs().has(String(p.id));
   var h = '<div class="picker-tmpl" id="'+pid+'">';
   var totalExos = srcBlocs.reduce(function(a,b){ return a+(b.exos||[]).length; },0);
   h += '<div class="picker-tmpl-hdr" onclick="_pickerToggle(\''+pid+'\')">';
   h += '<span>'+escH(p.emoji||'📋')+'</span>';
   h += '<span class="picker-tmpl-name">'+escH(p.nom)+'</span>';
   if(totalExos) h += '<span style="font-size:.63rem;color:rgba(255,255,255,.38);flex-shrink:0;margin-left:2px;">'+totalExos+' ex.</span>';
+  h += '<button class="picker-fav-btn'+(isFavPicker?' active':'')+'" onclick="event.stopPropagation();_togglePickerFav(\''+escJS(String(p.id))+'\')" title="Épingler en favoris">★</button>';
   if(!_isReader()) h += '<button class="picker-load-btn" onclick="event.stopPropagation();loadTemplate(\''+escJS(String(p.id))+'\');_enterBuilderMode();" title="Charger cette séance dans le builder">⤓</button>';
   h += '<span class="picker-chevron">›</span></div>';
   h += '<div class="picker-tmpl-body">';
@@ -6776,6 +6798,21 @@ function _addBlocFromPicker(tmplId, blocIdx){
   _showToast('✚ Bloc « '+escH(newBloc.title||'Bloc')+' » ajouté');
   var el = document.getElementById('bloc-'+newBloc.id);
   if(el) el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+/* ── Favoris picker (templates épinglés) ── */
+function _getPickerFavs(){
+  try{ return new Set(JSON.parse(localStorage.getItem('r4p_picker_favs')||'[]')); }
+  catch(e){ return new Set(); }
+}
+function _togglePickerFav(id){
+  var favs = _getPickerFavs();
+  if(favs.has(String(id))) favs.delete(String(id)); else favs.add(String(id));
+  localStorage.setItem('r4p_picker_favs', JSON.stringify(Array.from(favs)));
+  /* Mettre à jour le bouton immédiatement + re-render la section favoris */
+  var btn = document.querySelector('.picker-fav-btn[onclick*="'+id+'"]');
+  if(btn) btn.classList.toggle('active', favs.has(String(id)));
+  _renderSidebarPicker();
 }
 
 /* ── Helpers état "déjà ajouté" ── */
