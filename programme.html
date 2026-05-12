@@ -4627,6 +4627,11 @@ renderLib('');
 
 /* --- Critère de sortie : date de dernière validation --- */
 .proto-ci-date { font-size:.6rem; color:#16A34A; margin-left:6px; font-style:italic; opacity:.8; white-space:nowrap; }
+.proto-ci-date-wrap { display:inline-flex; align-items:center; gap:3px; }
+.proto-ci-cal-btn { background:none; border:none; cursor:pointer; font-size:.65rem; padding:0 2px; opacity:.5; line-height:1; vertical-align:middle; }
+.proto-ci-cal-btn:hover { opacity:1; }
+.proto-ci-date-inp { font-size:.65rem; border:1px solid #86EFAC; border-radius:4px; padding:1px 4px; color:#16A34A; background:#F0FDF4; font-family:inherit; margin-left:4px; }
+.proto-ci-date-inp:focus { outline:none; border-color:#16A34A; }
 
 /* --- Timeline protocole --- */
 .proto-timeline-wrap { margin:0 0 12px; padding:10px 14px; background:#F8FAFC; border-radius:8px; border:1px solid #E2E8F0; }
@@ -9888,12 +9893,20 @@ function _renderPhaseItem(protoId, ph, idx, data, currentPhaseId) {
   var criteriaItems = ph.exitCriteria.map(function(c, i){
     var isChecked = !!checks[i];
     var chAt = data && data.checkedAt && data.checkedAt[ph.id] && data.checkedAt[ph.id][i];
-    var dateStr = (isChecked && chAt)
-      ? '<span class="proto-ci-date">validé le '+new Date(chAt).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})+'</span>'
-      : '';
+    var calId   = 'proto-ci-cal-'+protoId+'-'+escH(ph.id)+'-'+i;
+    var dateStr = '';
+    if(isChecked){
+      var dateLbl = chAt
+        ? 'validé le '+new Date(chAt).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})
+        : 'validé';
+      dateStr = '<span class="proto-ci-date-wrap">'
+        + '<span class="proto-ci-date" id="proto-ci-datelbl-'+protoId+'-'+escH(ph.id)+'-'+i+'">'+dateLbl+'</span>'
+        + '<button class="proto-ci-cal-btn" onclick="event.stopPropagation();_protoEditCheckedAt(\''+escJS(String(protoId))+'\',\''+escJS(ph.id)+'\','+i+')" title="Modifier la date">📅</button>'
+        + '</span>';
+    }
     return '<div class="proto-criteria-item'+(isChecked?' checked':'')+'" id="proto-ci-'+protoId+'-'+ph.id+'-'+i+'">'
       + '<input type="checkbox" class="proto-criteria-cb" '+(isChecked?'checked':'')+' onchange="_protoSetCheck(\''+protoId+'\',\''+ph.id+'\','+i+',this.checked)">'
-      + '<span class="proto-criteria-text">'+_escHtml(c)+dateStr+'</span>'
+      + '<span class="proto-criteria-text">'+_escHtml(c)+' '+dateStr+'</span>'
       + '</div>';
   }).join('');
 
@@ -10024,6 +10037,48 @@ function _protoSetCheck(protoId, phaseId, idx, checked) {
     if(lbl) lbl.textContent = done+' / '+total+' critères validés'+(done===total&&total>0?' 🎉':'');
   }
   if(done === total && total > 0) _showToast('🎉 Tous les critères de la phase '+ph.name.split('—')[0].trim()+' validés !');
+}
+
+/* ─── Modifier la date de validation d'un critère ───────────── */
+function _protoEditCheckedAt(protoId, phaseId, idx) {
+  var data = _protoPatientData[protoId];
+  if(!data || !data.pp) return;
+  var calId  = 'proto-ci-cal-'+protoId+'-'+phaseId+'-'+idx;
+  var lblId  = 'proto-ci-datelbl-'+protoId+'-'+phaseId+'-'+idx;
+  var lblEl  = document.getElementById(lblId);
+  if(!lblEl) return;
+  /* Éviter double ouverture */
+  if(document.getElementById(calId)) return;
+  var chAt = data.checkedAt && data.checkedAt[phaseId] && data.checkedAt[phaseId][idx];
+  var todayStr = (chAt ? new Date(chAt) : new Date()).toISOString().slice(0,10);
+  /* Injecter le champ date après le label */
+  var inp = document.createElement('input');
+  inp.type = 'date'; inp.id = calId; inp.className = 'proto-ci-date-inp';
+  inp.value = todayStr; inp.max = new Date().toISOString().slice(0,10);
+  lblEl.parentNode.insertBefore(inp, lblEl.nextSibling);
+  inp.focus();
+  function _commit(){
+    var val = inp.value;
+    if(!val){ inp.remove(); return; }
+    var iso = new Date(val+'T12:00:00').toISOString();
+    /* Mise à jour cache */
+    if(!data.checkedAt) data.checkedAt = {};
+    if(!data.checkedAt[phaseId]) data.checkedAt[phaseId] = {};
+    data.checkedAt[phaseId][idx] = iso;
+    /* Mise à jour Supabase */
+    fetch(SUPA_URL_P + '/rest/v1/protocol_criteria_checks', {
+      method: 'POST',
+      headers: Object.assign({}, _sbHeaders(), {'Prefer':'resolution=merge-duplicates,return=minimal'}),
+      body: JSON.stringify({ patient_protocol_id: data.pp.id, phase_id: phaseId, criteria_index: idx, checked: true, checked_at: iso })
+    }).catch(function(e){ console.error('checked_at update:', e); });
+    /* Mise à jour label sans re-render complet */
+    lblEl.textContent = 'validé le '+new Date(iso).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'});
+    inp.remove();
+    _showToast('📅 Date mise à jour');
+  }
+  inp.addEventListener('change', _commit);
+  inp.addEventListener('blur',   function(){ setTimeout(function(){ if(document.getElementById(calId)) inp.remove(); }, 150); });
+  inp.addEventListener('keydown',function(e){ if(e.key==='Enter') _commit(); if(e.key==='Escape') inp.remove(); });
 }
 
 /* ─── Timeline protocole ─────────────────────────────────────── */
