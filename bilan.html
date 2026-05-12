@@ -4586,6 +4586,28 @@ function _buildAllTestsHtml() {
     });
   });
 
+  // ── Mobilité rachis insuffisante ────────────────────────────────────────
+  (function(){
+    var segLbl = { cerv:'cervicale', thor:'thoracique', lomb:'lombaire' };
+    var dirLbl = {
+      'Flexion':   'la flexion',
+      'Extension': "l’extension",
+      'Incl. D':   "l’inclinaison droite",
+      'Incl. G':   "l’inclinaison gauche",
+      'Rot. D':    'la rotation droite',
+      'Rot. G':    'la rotation gauche',
+    };
+    ['cerv','thor','lomb'].forEach(function(seg) {
+      MOB.forEach(function(m) {
+        var mKey = 'mob-' + seg + '-' + m.replace(/[\s.\/]+/g, '_') + '-st';
+        var stEl = document.getElementById(mKey);
+        if (!stEl || stEl.value !== 'insuffisant') return;
+        var item = 'Travailler ' + (dirLbl[m] || m.toLowerCase()) + ' ' + segLbl[seg];
+        if (toWork.indexOf(item) === -1) toWork.push(item);
+      });
+    });
+  })();
+
   // ── Tests fonctionnels épaule (tb-ep-fonc) ──────────────────────────────
   var epFoncTbody = document.getElementById('tb-ep-fonc');
   if (epFoncTbody) {
