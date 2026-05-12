@@ -4647,6 +4647,16 @@ renderLib('');
 .proto-tl-label { font-size:.72rem; font-weight:600; color:#374151; }
 .proto-tl-note  { font-size:.68rem; color:#6B7280; font-style:italic; margin-top:1px; }
 .proto-tl-date  { font-size:.62rem; color:#9CA3AF; margin-left:6px; }
+.proto-tl-admin { display:none; gap:4px; margin-left:auto; flex-shrink:0; }
+.proto-tl-event:hover .proto-tl-admin { display:flex; }
+.proto-tl-admin-btn { background:none; border:none; cursor:pointer; font-size:.7rem; padding:1px 4px; border-radius:4px; color:#9CA3AF; transition:background .1s,color .1s; line-height:1.4; }
+.proto-tl-admin-btn:hover { background:#F1F5F9; color:#374151; }
+.proto-tl-admin-btn.del:hover { background:#FEE2E2; color:#DC2626; }
+.proto-tl-edit-wrap { margin-top:4px; display:flex; gap:4px; }
+.proto-tl-edit-inp { flex:1; border:1px solid #CBD5E1; border-radius:6px; padding:4px 8px; font-size:.72rem; font-family:inherit; color:#374151; }
+.proto-tl-edit-inp:focus { outline:none; border-color:#3B82F6; }
+.proto-tl-edit-save { padding:3px 10px; background:#1A3A5C; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:.72rem; font-family:inherit; }
+.proto-tl-edit-cancel { padding:3px 8px; background:#F1F5F9; color:#475569; border:none; border-radius:6px; cursor:pointer; font-size:.72rem; font-family:inherit; }
 
 /* --- Modal note de statut --- */
 .proto-status-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:3000; display:flex; align-items:center; justify-content:center; }
@@ -9643,7 +9653,7 @@ function _renderProtocolCard(proto) {
     + '</div>'
     + '<div class="proto-card-body">'
     + activeBanner
-    + _renderProtoTimeline(pp)
+    + _renderProtoTimeline(pp, proto.id)
     + '<div class="proto-timeline">'+phaseDots+'</div>'
     + '<div class="proto-phases-list">'+phasesAccordion+'</div>'
     + '<div class="proto-card-footer">'+_renderProtoFooter(proto, pp)+'</div>'
@@ -9777,7 +9787,7 @@ function _renderProtocolCardLibrary(proto) {
     + '<div class="proto-card-body">'
     + '<div class="proto-lib-body">'
     + activeBanner
-    + _renderProtoTimeline(pp)
+    + _renderProtoTimeline(pp, proto.id)
     + descHtml
     + blocsHtml
     + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'+builderBtn+'</div>'
@@ -9842,9 +9852,11 @@ function _protoOpenLibraryInBuilder(protoId) {
 
 function _renderProtoFooter(proto, pp) {
   if(!_progPatient) return '<span class="proto-footer-info">Sélectionne un patient pour assigner ce protocole.</span>';
+  var unassignBtn = _isAdmin() ? '<button class="proto-use-btn danger r4p-admin-only" style="font-size:.7rem;padding:4px 9px;opacity:.6;" onclick="_protoUnassign(\''+proto.id+'\')" title="Supprimer l\'assignation">✕ Désassigner</button>' : '';
   if(pp && pp.status === 'active') {
     var adminBtns = _isAdmin()
-      ? '<button class="proto-use-btn secondary r4p-admin-only" style="font-size:.73rem;padding:5px 11px;" onclick="_protoStatusModal(\''+proto.id+'\',\'paused\')">⏸ Pause</button>'
+      ? unassignBtn
+        + '<button class="proto-use-btn secondary r4p-admin-only" style="font-size:.73rem;padding:5px 11px;" onclick="_protoStatusModal(\''+proto.id+'\',\'paused\')">⏸ Pause</button>'
         + '<button class="proto-use-btn danger r4p-admin-only" style="font-size:.73rem;padding:5px 11px;" onclick="_protoStatusModal(\''+proto.id+'\',\'completed\')">✔️ Terminer</button>'
       : '';
     return '<span class="proto-footer-info" style="color:#16A34A;font-weight:600;">Protocole en cours</span><div style="flex:1"></div>'+adminBtns;
@@ -9853,7 +9865,7 @@ function _renderProtoFooter(proto, pp) {
     var stLbl2 = {paused:'En pause',completed:'Terminé',abandoned:'Abandonné'}[pp.status]||pp.status;
     var noteStr = pp.status_note ? ' · <em>'+_escHtml(pp.status_note)+'</em>' : '';
     return '<span class="proto-footer-info">Statut : '+stLbl2+noteStr+'</span>'
-      + (_isAdmin() ? '<button class="proto-use-btn secondary r4p-admin-only" style="font-size:.73rem;padding:5px 11px;" onclick="_protoStatusModal(\''+proto.id+'\',\'active\')">↩ Réactiver</button>' : '');
+      + (_isAdmin() ? unassignBtn + '<button class="proto-use-btn secondary r4p-admin-only" style="font-size:.73rem;padding:5px 11px;" onclick="_protoStatusModal(\''+proto.id+'\',\'active\')">↩ Réactiver</button>' : '');
   }
   if(!_isReader()) return '<button class="proto-use-btn" onclick="assignProtocol(\''+proto.id+'\')" id="proto-assign-btn-'+proto.id+'">📋 Assigner à ce patient</button>';
   return '<span class="proto-footer-info">Lecture seule.</span>';
@@ -10022,32 +10034,40 @@ function _protoSetCheck(protoId, phaseId, idx, checked) {
 }
 
 /* ─── Timeline protocole ─────────────────────────────────────── */
-function _renderProtoTimeline(pp) {
+function _renderProtoTimeline(pp, protoId) {
   if(!pp) return '';
   var history = Array.isArray(pp.history) ? pp.history : [];
-  /* Ajouter l'événement d'assignation depuis started_at si history vide */
   if(!history.length && pp.started_at) {
     history = [{ type: 'assigned', at: pp.started_at, note: null }];
   }
   if(!history.length) return '';
+  var isAdmin = _isAdmin();
   var TYPE_META = {
-    assigned:  { dot: 'assigned',  label: 'Assigné' },
-    phase_changed: { dot: 'phase', label: 'Changement de phase' },
-    paused:    { dot: 'paused',    label: '⏸ Mis en pause' },
-    active:    { dot: 'active',    label: '↩ Réactivé' },
-    completed: { dot: 'completed', label: '✔️ Terminé' },
-    abandoned: { dot: 'abandoned', label: 'Abandonné' }
+    assigned:      { dot: 'assigned',  label: 'Assigné' },
+    phase_changed: { dot: 'phase',     label: 'Changement de phase' },
+    paused:        { dot: 'paused',    label: '⏸ Mis en pause' },
+    active:        { dot: 'active',    label: '↩ Réactivé' },
+    completed:     { dot: 'completed', label: '✔️ Terminé' },
+    abandoned:     { dot: 'abandoned', label: 'Abandonné' }
   };
-  var items = history.map(function(ev){
+  var pid = protoId ? escJS(String(protoId)) : '';
+  var items = history.map(function(ev, idx){
     var meta = TYPE_META[ev.type] || { dot: '', label: ev.type };
     var dateStr = ev.at ? new Date(ev.at).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}) : '';
-    var noteHtml = ev.note ? '<div class="proto-tl-note">'+_escHtml(ev.note)+'</div>' : '';
+    var noteHtml = ev.note ? '<div class="proto-tl-note" id="proto-tl-note-'+pid+'-'+idx+'">'+_escHtml(ev.note)+'</div>' : '<div class="proto-tl-note" id="proto-tl-note-'+pid+'-'+idx+'"></div>';
     var phaseHtml = ev.phaseName ? '<div class="proto-tl-note">'+_escHtml(ev.phaseName)+'</div>' : '';
-    return '<div class="proto-tl-event">'
+    var adminHtml = isAdmin
+      ? '<div class="proto-tl-admin">'
+        + '<button class="proto-tl-admin-btn" onclick="event.stopPropagation();_protoTlEditNote(\''+pid+'\','+idx+')" title="Modifier la note">✏️</button>'
+        + (idx > 0 ? '<button class="proto-tl-admin-btn del" onclick="event.stopPropagation();_protoTlDeleteEvent(\''+pid+'\','+idx+')" title="Supprimer cet événement">🗑</button>' : '')
+        + '</div>'
+      : '';
+    return '<div class="proto-tl-event" id="proto-tl-ev-'+pid+'-'+idx+'">'
       + '<div class="proto-tl-dot proto-tl-dot--'+meta.dot+'"></div>'
       + '<div class="proto-tl-content">'
       + '<span class="proto-tl-label">'+meta.label+'</span>'
       + '<span class="proto-tl-date">'+dateStr+'</span>'
+      + adminHtml
       + noteHtml + phaseHtml
       + '</div></div>';
   }).join('');
@@ -10055,6 +10075,77 @@ function _renderProtoTimeline(pp) {
     + '<div class="proto-timeline-title">📋 Historique</div>'
     + '<div class="proto-tl-list">'+items+'</div>'
     + '</div>';
+}
+
+/* ─── Édition inline de la note d'un événement timeline ─────── */
+function _protoTlEditNote(protoId, idx) {
+  var data = _protoPatientData[protoId];
+  if(!data || !data.pp) return;
+  var history = Array.isArray(data.pp.history) ? data.pp.history : [];
+  var ev = history[idx];
+  if(!ev) return;
+  var noteEl = document.getElementById('proto-tl-note-'+escH(String(protoId))+'-'+idx);
+  if(!noteEl) return;
+  if(noteEl.querySelector('.proto-tl-edit-wrap')) return; /* déjà ouvert */
+  var currentNote = ev.note || '';
+  noteEl.innerHTML = '<div class="proto-tl-edit-wrap">'
+    + '<input class="proto-tl-edit-inp" id="proto-tl-inp-'+idx+'" type="text" value="'+escH(currentNote)+'" placeholder="Note clinique…">'
+    + '<button class="proto-tl-edit-save" onclick="_protoTlSaveNote(\''+escJS(String(protoId))+'\','+idx+')">OK</button>'
+    + '<button class="proto-tl-edit-cancel" onclick="renderProtocols()">✕</button>'
+    + '</div>';
+  var inp = document.getElementById('proto-tl-inp-'+idx);
+  if(inp){ inp.focus(); inp.addEventListener('keydown', function(e){ if(e.key==='Enter') _protoTlSaveNote(protoId,idx); if(e.key==='Escape') renderProtocols(); }); }
+}
+function _protoTlSaveNote(protoId, idx) {
+  var inp = document.getElementById('proto-tl-inp-'+idx);
+  if(!inp) return;
+  var note = inp.value.trim();
+  var data = _protoPatientData[protoId];
+  if(!data || !data.pp) return;
+  var history = Array.isArray(data.pp.history) ? data.pp.history.slice() : [];
+  if(!history[idx]) return;
+  history[idx] = Object.assign({}, history[idx], { note: note || null });
+  _protoTlSaveHistory(protoId, history);
+}
+
+/* ─── Supprimer un événement de la timeline ──────────────────── */
+function _protoTlDeleteEvent(protoId, idx) {
+  var data = _protoPatientData[protoId];
+  if(!data || !data.pp) return;
+  var history = Array.isArray(data.pp.history) ? data.pp.history.slice() : [];
+  if(!history[idx] || idx === 0) return; /* on ne supprime pas l'assignation */
+  if(!confirm('Supprimer cet événement de l\'historique ?')) return;
+  history.splice(idx, 1);
+  _protoTlSaveHistory(protoId, history);
+}
+
+/* ─── Sauvegarder history mis à jour ─────────────────────────── */
+function _protoTlSaveHistory(protoId, history) {
+  var data = _protoPatientData[protoId];
+  if(!data || !data.pp) return;
+  data.pp.history = history;
+  fetch(SUPA_URL_P + '/rest/v1/patient_protocols?id=eq.'+data.pp.id, {
+    method: 'PATCH', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
+    body: JSON.stringify({ history: history, updated_at: new Date().toISOString() })
+  }).then(function(r){
+    if(r.ok){ _showToast('Historique mis à jour.'); renderProtocols(); }
+    else { _showToast('Erreur sauvegarde historique.', true); }
+  }).catch(function(){ _showToast('Erreur sauvegarde historique.', true); });
+}
+
+/* ─── Désassigner le protocole (supprimer patient_protocol) ─── */
+function _protoUnassign(protoId) {
+  if(!_isAdmin()){ return; }
+  var data = _protoPatientData[protoId];
+  if(!data || !data.pp) return;
+  var patName = _progPatient ? ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim() : 'ce patient';
+  if(!confirm('Supprimer l\'assignation de ce protocole pour '+patName+' ?\nL\'historique et les critères cochés seront effacés.')) return;
+  fetch(SUPA_URL_P + '/rest/v1/patient_protocols?id=eq.'+data.pp.id, {
+    method: 'DELETE', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'})
+  }).then(function(r){
+    if(r.ok){ _showToast('Assignation supprimée.'); renderProtocols(); }
+    else { _showToast('Erreur suppression.', true); }
+  }).catch(function(){ _showToast('Erreur suppression.', true); });
 }
 
 /* ─── Assigner protocole au patient ─────────────────────────── */
