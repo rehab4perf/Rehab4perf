@@ -6545,6 +6545,8 @@ function _renderSidebarPicker(){
     catsMap[cat].push(g);
   });
 
+  /* Filtrer les entrées techniques */
+  progs = progs.filter(function(p){ return (p.nom||'') !== '__r4p_protocols_meta__'; });
   /* Templates sans groupe */
   var orphans = progs.filter(function(p){return !p.group_id;});
 
@@ -6608,9 +6610,11 @@ function _pickerRenderTemplate(p, search){
   var srcBlocs = (donnees&&donnees.blocs)||[];
 
   var h = '<div class="picker-tmpl" id="'+pid+'">';
+  var totalExos = srcBlocs.reduce(function(a,b){ return a+(b.exos||[]).length; },0);
   h += '<div class="picker-tmpl-hdr" onclick="_pickerToggle(\''+pid+'\')">';
   h += '<span>'+escH(p.emoji||'📋')+'</span>';
   h += '<span class="picker-tmpl-name">'+escH(p.nom)+'</span>';
+  if(totalExos) h += '<span style="font-size:.63rem;color:rgba(255,255,255,.38);flex-shrink:0;margin-left:2px;">'+totalExos+' ex.</span>';
   if(!_isReader()) h += '<button class="picker-load-btn" onclick="event.stopPropagation();loadTemplate(\''+escJS(String(p.id))+'\');_enterBuilderMode();" title="Charger cette séance dans le builder">⤓</button>';
   h += '<span class="picker-chevron">›</span></div>';
   h += '<div class="picker-tmpl-body">';
@@ -6628,9 +6632,11 @@ function _pickerRenderTemplate(p, search){
       } else {
         var bid = 'pb-'+String(p.id).replace(/[^a-z0-9]/gi,'')+'-'+bi;
         h += '<div class="picker-bloc" id="'+bid+'">';
+        var nbExBloc = (bloc.exos||[]).length;
         h += '<div class="picker-bloc-hdr" onclick="_pickerToggle(\''+bid+'\')">';
         h += '<span class="picker-chevron">›</span>';
         h += '<span class="picker-bloc-title">'+escH(bloc.title||'Bloc')+'</span>';
+        if(nbExBloc) h += '<span style="font-size:.62rem;color:rgba(255,255,255,.35);flex-shrink:0;margin-left:2px;">'+nbExBloc+'</span>';
         h += '<button class="picker-plus" onclick="event.stopPropagation();_addBlocFromPicker(\''+p.id+'\','+bi+')" title="Ajouter tout le bloc">+</button>';
         h += '</div>';
         h += '<div class="picker-bloc-body">';
@@ -6638,7 +6644,7 @@ function _pickerRenderTemplate(p, search){
           var _pkThumb = exo.url ? _ytThumbHtml(exo.url) : null;
           h += '<div class="picker-exo-row">';
           if(_pkThumb) h += _pkThumb;
-          h += '<span class="picker-exo-name">'+escH(exo.name||'Exercice')+'</span>';
+          h += '<span class="picker-exo-name">'+(exo.url?'<span style="color:#F97316;font-size:.6rem;margin-right:3px;flex-shrink:0;">▶</span>':'')+escH(exo.name||'Exercice')+'</span>';
           h += '<button class="picker-plus" onclick="_addExoFromPicker(\''+p.id+'\','+bi+','+ei+')" title="Ajouter">+</button>';
           h += '</div>';
         });
@@ -7733,6 +7739,7 @@ function _renderSidebarWithGroups(){
     return !catFilter || (g.categorie||'') === catFilter;
   });
   var filteredTmpl = _sidebarProgs.filter(function(p){
+    if((p.nom||'')==='__r4p_protocols_meta__') return false;
     var mQ = !q || (p.nom||'').toLowerCase().indexOf(q)>-1 || (p.phase_nom||'').toLowerCase().indexOf(q)>-1;
     var mC = !catFilter || (p.categorie||'') === catFilter;
     return mQ && mC;
@@ -7824,10 +7831,12 @@ function _renderTmplCard(p, isPhase, phaseNum, hideCat){
   if(!bl.length && p.donnees){ try{ bl=(JSON.parse(p.donnees).blocs)||[]; }catch(e){} }
   var nbExos   = bl.reduce(function(a,b){ return a+(b.exos||[]).length; },0);
   var nbCardio = bl.filter(function(b){ return b.type==='cardio'; }).length;
+  var nbVideo  = bl.reduce(function(a,b){ return a+(b.exos||[]).filter(function(e){return !!e.url;}).length; },0);
   var dispNom  = isPhase ? (p.phase_nom||p.nom||'Sans nom') : (p.nom||'Sans nom');
   var sub = (!isPhase&&p.type) ? p.type : '';
   if(nbExos)   sub += (sub?' · ':'')+nbExos+' exo'+(nbExos>1?'s':'');
   if(nbCardio) sub += (sub?' · ':'')+nbCardio+' cardio';
+  if(nbVideo)  sub += (sub?' · ':'')+'▶ '+nbVideo;
   var catSt  = _tmplCatStyle(p.categorie||'');
   // Badge catégorie seulement si pas dans une section catégorie (hideCat=false/undefined) et pas une phase
   var catBdg = (!isPhase && !hideCat && p.categorie) ? '<span class="stmpl-cat-badge" style="background:'+catSt.bg+';color:'+catSt.fg+';">'+escH(p.categorie)+'</span>' : '';
