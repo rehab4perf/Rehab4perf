@@ -504,6 +504,13 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .picker-plus:hover { background:#2563EB; }
 .picker-add-all { margin:3px 10px 5px 20px; padding:3px 8px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.1); color:rgba(255,255,255,.5); border-radius:4px; font-size:.67rem; cursor:pointer; font-family:inherit; transition:background .1s; display:inline-block; }
 .picker-add-all:hover { background:rgba(255,255,255,.14); color:#fff; }
+.picker-add-all-phases { margin:2px 10px 6px; padding:4px 10px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); color:rgba(255,255,255,.45); border-radius:4px; font-size:.67rem; cursor:pointer; font-family:inherit; transition:background .1s; display:block; width:calc(100% - 20px); text-align:left; }
+.picker-add-all-phases:hover { background:rgba(255,255,255,.12); color:#fff; }
+/* Exercices / blocs déjà dans le builder */
+.picker-exo-row.pex-added { opacity:.38; }
+.picker-exo-row.pex-added .picker-plus { background:rgba(39,174,96,.45); pointer-events:none; }
+.picker-exo-row.pex-added .picker-plus::before { content:'✓'; }
+.picker-bloc.pbloc-done > .picker-bloc-hdr .picker-bloc-title::after { content:' ✓'; font-size:.62rem; color:rgba(39,174,96,.7); }
 .picker-empty { padding:20px 14px; text-align:center; font-size:.74rem; color:rgba(255,255,255,.35); font-style:italic; }
 /* ── Bouton retour ← universel ── */
 .btn-back {
@@ -6575,6 +6582,9 @@ function _renderSidebarPicker(){
   /* ── Rendu ── */
   var html = '';
   var catOrder = (typeof TMPL_CATEGORIES!=='undefined') ? TMPL_CATEGORIES.map(function(c){return c.val;}) : [];
+  /* Calcul des exercices déjà dans le builder */
+  var addedLibIds = {};
+  (blocs||[]).forEach(function(b){ (b.exos||[]).forEach(function(e){ if(e.libId) addedLibIds[e.libId]=true; }); });
 
   /* Grouper par catégorie */
   var catsMap = {};
@@ -6619,7 +6629,8 @@ function _renderSidebarPicker(){
       html += '<span class="picker-group-name">'+escH(g.nom)+'</span>';
       html += '<span class="picker-chevron">›</span></div>';
       html += '<div class="picker-group-body">';
-      gProgs.forEach(function(p){ html += _pickerRenderTemplate(p, search); });
+      if(gProgs.length > 1) html += '<button class="picker-add-all-phases" onclick="_addAllPhasesFromGroup(\''+escJS(String(g.id))+'\')">+ Toutes les phases ('+gProgs.length+')</button>';
+      gProgs.forEach(function(p){ html += _pickerRenderTemplate(p, search, addedLibIds); });
       html += '</div></div>';
     });
   });
@@ -6629,7 +6640,7 @@ function _renderSidebarPicker(){
     var visOrph = search ? orphans.filter(function(p){return _pickerProgMatches(p,search);}) : orphans;
     if(visOrph.length){
       html += '<div class="picker-cat-label">📁 Sans protocole</div>';
-      visOrph.forEach(function(p){ html += _pickerRenderTemplate(p, search); });
+      visOrph.forEach(function(p){ html += _pickerRenderTemplate(p, search, addedLibIds); });
     }
   }
 
@@ -6642,11 +6653,12 @@ function _renderSidebarPicker(){
   }
 }
 
-function _pickerRenderTemplate(p, search){
+function _pickerRenderTemplate(p, search, addedLibIds){
   var pid = 'pt-'+String(p.id).replace(/[^a-z0-9]/gi,'');
   var donnees = p.donnees;
   if(typeof donnees==='string'){ try{donnees=JSON.parse(donnees);}catch(e){donnees=null;} }
   var srcBlocs = (donnees&&donnees.blocs)||[];
+  addedLibIds = addedLibIds || {};
 
   var h = '<div class="picker-tmpl" id="'+pid+'">';
   var totalExos = srcBlocs.reduce(function(a,b){ return a+(b.exos||[]).length; },0);
@@ -6678,15 +6690,20 @@ function _pickerRenderTemplate(p, search){
         if(nbExBloc) h += '<span style="font-size:.62rem;color:rgba(255,255,255,.35);flex-shrink:0;margin-left:2px;">'+nbExBloc+'</span>';
         h += '<button class="picker-plus" onclick="event.stopPropagation();_addBlocFromPicker(\''+p.id+'\','+bi+')" title="Ajouter tout le bloc">+</button>';
         h += '</div>';
+        var exosAdded = (bloc.exos||[]).filter(function(e){ return e.libId && addedLibIds[e.libId]; }).length;
+        var allDone   = (bloc.exos||[]).length > 0 && exosAdded === (bloc.exos||[]).length;
         h += '<div class="picker-bloc-body">';
         (bloc.exos||[]).forEach(function(exo,ei){
           var _pkThumb = exo.url ? _ytThumbHtml(exo.url) : null;
-          h += '<div class="picker-exo-row">';
+          var isAdded  = !!(exo.libId && addedLibIds[exo.libId]);
+          var dattr    = exo.libId ? ' data-libid="'+escH(exo.libId)+'"' : '';
+          h += '<div class="picker-exo-row'+(isAdded?' pex-added':'')+'"'+dattr+'>';
           if(_pkThumb) h += _pkThumb;
           h += '<span class="picker-exo-name">'+(exo.url?'<span style="color:#F97316;font-size:.6rem;margin-right:3px;flex-shrink:0;">▶</span>':'')+escH(exo.name||'Exercice')+'</span>';
           h += '<button class="picker-plus" onclick="_addExoFromPicker(\''+p.id+'\','+bi+','+ei+')" title="Ajouter">+</button>';
           h += '</div>';
         });
+        if(allDone) h = h.replace('<div class="picker-bloc" id="'+bid+'">', '<div class="picker-bloc pbloc-done" id="'+bid+'">');
         h += '</div></div>';
       }
     });
@@ -6734,6 +6751,7 @@ function _addExoFromPicker(tmplId, blocIdx, exoIdx){
   bloc.exos.push(newExo);
   activeBloc = bloc.id;
   renderSession();
+  _pickerRefreshAddedState();
   _showToast('✚ '+escH(srcExo.name||'Exercice')+' ajouté');
   var el = document.getElementById('bloc-'+bloc.id);
   if(el) el.scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -6754,9 +6772,53 @@ function _addBlocFromPicker(tmplId, blocIdx){
   blocs.push(newBloc);
   activeBloc = newBloc.id;
   renderSession();
+  _pickerRefreshAddedState();
   _showToast('✚ Bloc « '+escH(newBloc.title||'Bloc')+' » ajouté');
   var el = document.getElementById('bloc-'+newBloc.id);
   if(el) el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+/* ── Helpers état "déjà ajouté" ── */
+function _getAddedLibIds(){
+  var ids = {};
+  (blocs||[]).forEach(function(b){ (b.exos||[]).forEach(function(e){ if(e.libId) ids[e.libId]=true; }); });
+  return ids;
+}
+
+function _pickerRefreshAddedState(){
+  var scroll = document.getElementById('sb-picker-scroll');
+  if(!scroll) return;
+  var ids = _getAddedLibIds();
+  scroll.querySelectorAll('.picker-exo-row[data-libid]').forEach(function(row){
+    row.classList.toggle('pex-added', !!ids[row.dataset.libid]);
+  });
+  scroll.querySelectorAll('.picker-bloc').forEach(function(bloc){
+    var rows = bloc.querySelectorAll('.picker-exo-row[data-libid]');
+    if(!rows.length) return;
+    var allDone = Array.prototype.every.call(rows, function(r){ return r.classList.contains('pex-added'); });
+    bloc.classList.toggle('pbloc-done', allDone);
+  });
+}
+
+/* Ajouter toutes les phases d'un protocole */
+function _addAllPhasesFromGroup(groupId){
+  var phases = (_sidebarProgs||[]).filter(function(p){ return String(p.group_id)===String(groupId) && (p.nom||'')!=='__r4p_protocols_meta__'; });
+  phases.sort(function(a,b){ return (a.phase_ordre||0)-(b.phase_ordre||0); });
+  var total = 0;
+  phases.forEach(function(p){
+    var donnees = p.donnees;
+    if(typeof donnees==='string'){try{donnees=JSON.parse(donnees);}catch(e){donnees=null;}}
+    if(!donnees||!donnees.blocs) return;
+    donnees.blocs.forEach(function(srcBloc){
+      var newBloc = JSON.parse(JSON.stringify(srcBloc));
+      newBloc.id = genId();
+      newBloc.exos = (newBloc.exos||[]).map(function(e){return Object.assign({},e,{id:genId()});});
+      blocs.push(newBloc);
+      activeBloc = newBloc.id;
+      total++;
+    });
+  });
+  if(total){ renderSession(); _showToast('✚ '+total+' blocs ajoutés ('+phases.length+' phases)'); _pickerRefreshAddedState(); }
 }
 
 /* Ajouter tous les blocs d'un template */
@@ -6774,6 +6836,7 @@ function _addAllBlocsFromTemplate(tmplId){
     activeBloc = newBloc.id;
   });
   renderSession();
+  _pickerRefreshAddedState();
   _showToast('✚ '+donnees.blocs.length+' blocs ajoutés');
 }
 
