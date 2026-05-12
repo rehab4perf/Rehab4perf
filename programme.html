@@ -4367,6 +4367,37 @@ renderLib('');
 .proto-edit-footer { display:flex; justify-content:flex-end; align-items:center; gap:8px; padding:12px 18px; border-top:1px solid #E8E6E1; flex-shrink:0; }
 .pe-export-btn { font-size:.72rem; color:#6b7a8d; background:none; border:1px solid #d8e0eb; border-radius:6px; padding:5px 10px; cursor:pointer; font-family:inherit; margin-right:auto; }
 .pe-export-btn:hover { background:#F8FAFC; }
+/* --- Phase visual editor --- */
+.pe-phase-card { border:1.5px solid #d8e0eb; border-radius:9px; overflow:hidden; margin-bottom:6px; }
+.pe-phase-card-head { display:flex; align-items:center; gap:6px; padding:8px 10px; background:#f4f7fb; cursor:pointer; user-select:none; }
+.pe-ph-name-inp { flex:1; border:none; background:transparent; font-size:.8rem; font-weight:700; color:#1A3A5C; font-family:inherit; outline:none; min-width:0; padding:2px 4px; cursor:text; border-radius:4px; }
+.pe-ph-name-inp:focus { background:#fff; border-bottom:1.5px solid #4A90D9; }
+.pe-ph-weeks-inp { flex:0 0 80px; border:1px solid #d8e0eb; background:#fff; font-size:.71rem; color:#6b7a8d; font-family:inherit; outline:none; padding:3px 6px; border-radius:5px; }
+.pe-ph-weeks-inp:focus { border-color:#4A90D9; }
+.pe-ph-move { background:none; border:none; color:#9ca3af; cursor:pointer; font-size:.78rem; padding:2px 4px; border-radius:3px; line-height:1; }
+.pe-ph-move:hover { background:#e8edf5; color:#1A3A5C; }
+.pe-ph-del { background:none; border:none; color:#dc2626; cursor:pointer; font-size:.95rem; padding:2px 5px; border-radius:3px; }
+.pe-ph-del:hover { background:#fee2e2; }
+.pe-ph-toggle { color:#9ca3af; font-size:.85rem; transition:transform .2s; display:inline-block; flex-shrink:0; pointer-events:none; }
+.pe-phase-card.open .pe-ph-toggle { transform:rotate(90deg); }
+.pe-phase-card-body { display:none; padding:12px; border-top:1px solid #e8edf5; flex-direction:column; gap:10px; }
+.pe-phase-card.open .pe-phase-card-body { display:flex; }
+.pe-list-section { display:flex; flex-direction:column; gap:4px; }
+.pe-list-lbl { font-size:.63rem; font-weight:700; color:#6b7a8d; text-transform:uppercase; letter-spacing:.05em; }
+.pe-list-item { display:flex; align-items:center; gap:5px; margin-bottom:3px; }
+.pe-list-inp { flex:1; padding:5px 8px; border:1.5px solid #d8e0eb; border-radius:6px; font-size:.78rem; outline:none; font-family:inherit; color:#1a2433; }
+.pe-list-inp:focus { border-color:#4A90D9; }
+.pe-list-del { background:none; border:none; color:#dc2626; cursor:pointer; font-size:.9rem; padding:2px 5px; border-radius:3px; flex-shrink:0; line-height:1; }
+.pe-list-del:hover { background:#fee2e2; }
+.pe-list-add-btn { background:none; border:1.5px dashed #b8c5d8; border-radius:6px; padding:5px 10px; font-size:.73rem; color:#6b7a8d; cursor:pointer; font-family:inherit; width:100%; text-align:left; transition:border-color .15s,color .15s; }
+.pe-list-add-btn:hover { border-color:#4A90D9; color:#1A3A5C; }
+.pe-weekly-row { display:flex; gap:6px; align-items:center; margin-bottom:3px; }
+.pe-weekly-lbl-inp { flex:0 0 110px; padding:5px 8px; border:1.5px solid #d8e0eb; border-radius:6px; font-size:.75rem; font-weight:600; outline:none; font-family:inherit; color:#1a2433; }
+.pe-weekly-lbl-inp:focus { border-color:#4A90D9; }
+.pe-weekly-cnt-inp { flex:1; padding:5px 8px; border:1.5px solid #d8e0eb; border-radius:6px; font-size:.75rem; outline:none; font-family:inherit; color:#1a2433; }
+.pe-weekly-cnt-inp:focus { border-color:#4A90D9; }
+.pe-add-phase-btn { background:none; border:2px dashed #b8c5d8; border-radius:9px; padding:10px; font-size:.78rem; color:#6b7a8d; cursor:pointer; font-family:inherit; width:100%; text-align:center; transition:border-color .15s,color .15s; margin-top:2px; }
+.pe-add-phase-btn:hover { border-color:#4A90D9; color:#1A3A5C; }
 /* --- Body --- */
 .proto-body { padding:20px; }
 /* --- Protocol card --- */
@@ -4623,7 +4654,7 @@ renderLib('');
       <div class="proto-edit-row">
         <div class="pe-field">
           <label>Type</label>
-          <select id="pe-type" onchange="_peTypeChange()">
+          <select id="pe-type" onchange="_peTypeChange(true)">
             <option value="library">Bibliothèque (arbre décisionnel / blocs)</option>
             <option value="rehab">Rééducation (phases progressives)</option>
           </select>
@@ -4647,11 +4678,20 @@ renderLib('');
         <label>Description courte</label>
         <textarea id="pe-description" rows="2" placeholder="Description affichée sur la carte…"></textarea>
       </div>
-      <div class="pe-field">
-        <label id="pe-content-label">Contenu JSON</label>
-        <div class="pe-hint" id="pe-content-hint"></div>
-        <textarea id="pe-content" rows="14" placeholder="{ }" style="font-family:'SF Mono',Menlo,monospace;font-size:.74rem;line-height:1.5;"></textarea>
-        <div class="pe-err" id="pe-content-err" style="display:none"></div>
+      <!-- Éditeur visuel de phases (rehab) -->
+      <div id="pe-phases-wrap" style="display:none">
+        <div style="font-size:.63rem;font-weight:700;color:#6b7a8d;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Phases de rééducation</div>
+        <div id="pe-phases-editor"></div>
+        <button class="pe-add-phase-btn" onclick="_peAddPhase()">+ Ajouter une phase</button>
+      </div>
+      <!-- Éditeur JSON (library) -->
+      <div id="pe-json-wrap">
+        <div class="pe-field">
+          <label id="pe-content-label">Contenu JSON</label>
+          <div class="pe-hint" id="pe-content-hint"></div>
+          <textarea id="pe-content" rows="14" placeholder="{ }" style="font-family:'SF Mono',Menlo,monospace;font-size:.74rem;line-height:1.5;"></textarea>
+          <div class="pe-err" id="pe-content-err" style="display:none"></div>
+        </div>
       </div>
     </div>
     <div class="proto-edit-footer">
@@ -8589,6 +8629,224 @@ function _fetchCustomProtocolsFromSupabase(callback){
   .catch(function(){ callback && callback(); });
 }
 
+/* ── Éditeur visuel de phases ── */
+var _pePhasesData = [];
+var _peOpenPhases = {};
+var _PE_COLORS = [
+  {color:'#EFF6FF',borderColor:'#3B82F6'},
+  {color:'#F0FDF4',borderColor:'#22C55E'},
+  {color:'#FFF7ED',borderColor:'#F97316'},
+  {color:'#FDF4FF',borderColor:'#A855F7'},
+  {color:'#FFF1F2',borderColor:'#F43F5E'},
+  {color:'#FFFBEB',borderColor:'#EAB308'},
+];
+
+function _peInitPhases(phases){
+  _pePhasesData = (phases||[]).map(function(p,i){
+    var uid = p.id ? String(p.id) : ('ph'+i+Date.now());
+    return Object.assign({},p,{_uid:uid});
+  });
+  _peOpenPhases = {};
+  if(_pePhasesData.length) _peOpenPhases[_pePhasesData[0]._uid] = true;
+  _peRenderPhasesEditor();
+}
+
+function _peSyncPhasesFromDom(){
+  _pePhasesData.forEach(function(phase){
+    var el = document.getElementById('pe-ph-'+phase._uid);
+    if(!el) return;
+    phase.name = el.querySelector('.pe-ph-name-inp').value;
+    phase.weeks = el.querySelector('.pe-ph-weeks-inp').value;
+    phase.borderColor = el.querySelector('.pe-ph-bordercol').value;
+    phase.color = el.querySelector('.pe-ph-bgcol').value;
+    phase.objectives  = _peReadList(el,'objectives');
+    phase.precautions = _peReadList(el,'precautions');
+    phase.exitCriteria = _peReadList(el,'exitcriteria');
+    phase.weekly = _peReadWeekly(el);
+  });
+}
+
+function _peReadList(phaseEl,key){
+  var nodes = phaseEl.querySelectorAll('.pe-list-'+key+' .pe-list-inp');
+  return Array.prototype.map.call(nodes,function(i){return i.value;}).filter(function(v){return v.trim();});
+}
+
+function _peReadWeekly(phaseEl){
+  var rows = phaseEl.querySelectorAll('.pe-weekly-rows .pe-weekly-row');
+  var result = [];
+  rows.forEach(function(row){
+    var w = row.querySelector('.pe-weekly-lbl-inp').value;
+    var c = row.querySelector('.pe-weekly-cnt-inp').value;
+    if(w.trim()||c.trim()) result.push({week:w,content:c});
+  });
+  return result;
+}
+
+function _peRenderPhasesEditor(){
+  var container = document.getElementById('pe-phases-editor');
+  if(!container) return;
+  var h = '';
+  _pePhasesData.forEach(function(phase,i){
+    var uid = phase._uid;
+    var isOpen = !!_peOpenPhases[uid];
+    var bc = phase.borderColor||'#3B82F6';
+    var bg = phase.color||'#EFF6FF';
+    h += '<div class="pe-phase-card'+(isOpen?' open':'')+'" id="pe-ph-'+uid+'">';
+    h += '<div class="pe-phase-card-head" onclick="_peTogglePhase(\''+uid+'\')" style="border-left:3px solid '+bc+'">';
+    h += '<input type="color" class="pe-ph-bordercol" value="'+bc+'" onclick="event.stopPropagation()" title="Couleur bordure" style="width:22px;height:20px;border:none;background:none;padding:0;cursor:pointer;flex-shrink:0;">';
+    h += '<input type="color" class="pe-ph-bgcol"     value="'+bg+'" onclick="event.stopPropagation()" title="Couleur fond"    style="width:22px;height:20px;border:none;background:none;padding:0;cursor:pointer;flex-shrink:0;">';
+    h += '<input type="text" class="pe-ph-name-inp" value="'+_escHtml(phase.name||'')+'" placeholder="Nom de la phase" onclick="event.stopPropagation()">';
+    h += '<input type="text" class="pe-ph-weeks-inp" value="'+_escHtml(phase.weeks||'')+'" placeholder="Durée…" onclick="event.stopPropagation()">';
+    if(i>0)                          h += '<button class="pe-ph-move" onclick="event.stopPropagation();_peMovePhase(\''+uid+'\',-1)" title="Monter">↑</button>';
+    if(i<_pePhasesData.length-1)     h += '<button class="pe-ph-move" onclick="event.stopPropagation();_peMovePhase(\''+uid+'\',1)"  title="Descendre">↓</button>';
+    h += '<button class="pe-ph-del" onclick="event.stopPropagation();_peRemovePhase(\''+uid+'\')" title="Supprimer cette phase">×</button>';
+    h += '<span class="pe-ph-toggle">›</span>';
+    h += '</div>';
+    h += '<div class="pe-phase-card-body">';
+    h += _peRenderList(uid,'objectives', 'Objectifs',         phase.objectives||[],  'Objectif…',        '+ Ajouter un objectif');
+    h += _peRenderList(uid,'precautions','Précautions',        phase.precautions||[], 'Précaution…',      '+ Ajouter une précaution');
+    h += _peRenderList(uid,'exitcriteria','Critères de sortie',phase.exitCriteria||[],'Critère…',         '+ Ajouter un critère');
+    h += _peRenderWeeklySection(uid, phase.weekly||[]);
+    h += '</div>';
+    h += '</div>';
+  });
+  container.innerHTML = h;
+}
+
+function _peRenderList(uid,key,label,items,placeholder,addLabel){
+  var h = '<div class="pe-list-section"><div class="pe-list-lbl">'+label+'</div>';
+  h += '<div class="pe-list-'+key+'">';
+  items.forEach(function(item,j){
+    h += '<div class="pe-list-item">';
+    h += '<input type="text" class="pe-list-inp" value="'+_escHtml(item)+'" placeholder="'+_escHtml(placeholder)+'">';
+    h += '<button class="pe-list-del" onclick="_peRemoveListItem(\''+uid+'\',\''+key+'\','+j+')">×</button>';
+    h += '</div>';
+  });
+  h += '</div>';
+  h += '<button class="pe-list-add-btn" onclick="_peAddListItem(\''+uid+'\',\''+key+'\')">'+addLabel+'</button>';
+  h += '</div>';
+  return h;
+}
+
+function _peRenderWeeklySection(uid,weekly){
+  var h = '<div class="pe-list-section"><div class="pe-list-lbl">Contenu hebdomadaire / par sous-phase</div>';
+  h += '<div class="pe-weekly-rows">';
+  weekly.forEach(function(w,j){
+    h += '<div class="pe-weekly-row">';
+    h += '<input type="text" class="pe-weekly-lbl-inp" value="'+_escHtml(w.week||'')+'" placeholder="Semaine / stade…">';
+    h += '<input type="text" class="pe-weekly-cnt-inp" value="'+_escHtml(w.content||'')+'" placeholder="Contenu, exercices…">';
+    h += '<button class="pe-list-del" onclick="_peRemoveWeekly(\''+uid+'\','+j+')">×</button>';
+    h += '</div>';
+  });
+  h += '</div>';
+  h += '<button class="pe-list-add-btn" onclick="_peAddWeekly(\''+uid+'\')">+ Ajouter un contenu</button>';
+  h += '</div>';
+  return h;
+}
+
+function _peTogglePhase(uid){
+  _peSyncPhasesFromDom();
+  _peOpenPhases[uid] = !_peOpenPhases[uid];
+  _peRenderPhasesEditor();
+}
+
+function _peAddPhase(){
+  _peSyncPhasesFromDom();
+  var i = _pePhasesData.length;
+  var col = _PE_COLORS[i % _PE_COLORS.length];
+  var uid = 'ph'+Date.now();
+  _pePhasesData.push({_uid:uid,id:uid,name:'Phase '+(i+1),weeks:'',color:col.color,borderColor:col.borderColor,objectives:[],precautions:[],exitCriteria:[],weekly:[]});
+  _peOpenPhases[uid] = true;
+  _peRenderPhasesEditor();
+}
+
+function _peRemovePhase(uid){
+  if(!confirm('Supprimer cette phase ?')) return;
+  _peSyncPhasesFromDom();
+  _pePhasesData = _pePhasesData.filter(function(p){return p._uid!==uid;});
+  delete _peOpenPhases[uid];
+  _peRenderPhasesEditor();
+}
+
+function _peMovePhase(uid,dir){
+  _peSyncPhasesFromDom();
+  var idx = _pePhasesData.findIndex(function(p){return p._uid===uid;});
+  if(idx<0) return;
+  var ni = idx+dir;
+  if(ni<0||ni>=_pePhasesData.length) return;
+  var tmp = _pePhasesData[idx]; _pePhasesData[idx] = _pePhasesData[ni]; _pePhasesData[ni] = tmp;
+  _peRenderPhasesEditor();
+}
+
+function _peAddListItem(uid,key){
+  _peSyncPhasesFromDom();
+  var phase = _pePhasesData.find(function(p){return p._uid===uid;});
+  if(!phase) return;
+  var km = {objectives:'objectives',precautions:'precautions',exitcriteria:'exitCriteria'};
+  var rk = km[key]||key;
+  if(!phase[rk]) phase[rk]=[];
+  phase[rk].push('');
+  _peOpenPhases[uid]=true;
+  _peRenderPhasesEditor();
+  setTimeout(function(){
+    var el=document.getElementById('pe-ph-'+uid);
+    if(!el) return;
+    var inps=el.querySelectorAll('.pe-list-'+key+' .pe-list-inp');
+    if(inps.length) inps[inps.length-1].focus();
+  },40);
+}
+
+function _peRemoveListItem(uid,key,idx){
+  _peSyncPhasesFromDom();
+  var phase = _pePhasesData.find(function(p){return p._uid===uid;});
+  if(!phase) return;
+  var km = {objectives:'objectives',precautions:'precautions',exitcriteria:'exitCriteria'};
+  var rk = km[key]||key;
+  if(phase[rk]) phase[rk].splice(idx,1);
+  _peRenderPhasesEditor();
+}
+
+function _peAddWeekly(uid){
+  _peSyncPhasesFromDom();
+  var phase = _pePhasesData.find(function(p){return p._uid===uid;});
+  if(!phase) return;
+  if(!phase.weekly) phase.weekly=[];
+  phase.weekly.push({week:'',content:''});
+  _peOpenPhases[uid]=true;
+  _peRenderPhasesEditor();
+  setTimeout(function(){
+    var el=document.getElementById('pe-ph-'+uid);
+    if(!el) return;
+    var rows=el.querySelectorAll('.pe-weekly-rows .pe-weekly-row');
+    if(rows.length) rows[rows.length-1].querySelector('.pe-weekly-lbl-inp').focus();
+  },40);
+}
+
+function _peRemoveWeekly(uid,idx){
+  _peSyncPhasesFromDom();
+  var phase = _pePhasesData.find(function(p){return p._uid===uid;});
+  if(!phase||!phase.weekly) return;
+  phase.weekly.splice(idx,1);
+  _peRenderPhasesEditor();
+}
+
+function _peGetPhasesData(){
+  _peSyncPhasesFromDom();
+  return _pePhasesData.map(function(p){
+    return {
+      id: p.id||p._uid,
+      name: p.name||'',
+      weeks: p.weeks||'',
+      color: p.color||'#EFF6FF',
+      borderColor: p.borderColor||'#3B82F6',
+      objectives:  p.objectives||[],
+      precautions: p.precautions||[],
+      exitCriteria: p.exitCriteria||[],
+      weekly: p.weekly||[]
+    };
+  });
+}
+
 /* ── Éditeur ── */
 var _peEditId = null;
 
@@ -8610,16 +8868,20 @@ function openProtoEditor(protoId){
   document.getElementById('pe-duration').value    = proto ? (proto.duration||'') : '';
   document.getElementById('pe-description').value = proto ? (proto.description||'') : '';
 
-  /* Contenu JSON */
-  var content = {};
-  if(proto){
-    if(proto.branches)  content.branches  = proto.branches;
-    if(proto.blocs)     content.blocs     = proto.blocs;
-    if(proto.entryTest) content.entryTest = proto.entryTest;
-    if(proto.phases)    content.phases    = proto.phases;
+  /* Contenu selon type */
+  var type = proto ? (proto.type||'library') : 'library';
+  if(type === 'rehab'){
+    _peInitPhases(proto ? proto.phases : []);
+  } else {
+    var content = {};
+    if(proto){
+      if(proto.branches)  content.branches  = proto.branches;
+      if(proto.blocs)     content.blocs     = proto.blocs;
+      if(proto.entryTest) content.entryTest = proto.entryTest;
+    }
+    document.getElementById('pe-content').value = Object.keys(content).length ? JSON.stringify(content, null, 2) : '';
+    document.getElementById('pe-content-err').style.display = 'none';
   }
-  document.getElementById('pe-content').value = Object.keys(content).length ? JSON.stringify(content, null, 2) : '';
-  document.getElementById('pe-content-err').style.display = 'none';
   _peTypeChange();
   document.getElementById('protoEditOverlay').style.display = 'flex';
 }
@@ -8629,16 +8891,22 @@ function closeProtoEditor(){
   _peEditId = null;
 }
 
-function _peTypeChange(){
+function _peTypeChange(fromSelect){
   var type = document.getElementById('pe-type').value;
-  var hint = document.getElementById('pe-content-hint');
-  var label = document.getElementById('pe-content-label');
-  if(type === 'library'){
-    label.textContent = 'Contenu JSON — Arbre décisionnel ou blocs simples';
-    hint.innerHTML = '<strong>Arbre décisionnel :</strong> <code>{"entryTest":{...},"branches":[{id,label,color,borderColor,blocs:[{title,exos:[{name,url,consigne}]}]}]}</code><br><strong>Blocs simples :</strong> <code>{"blocs":[{title,exos:[{name,url,series,reps,duree,recup}]}]}</code>';
+  var phasesWrap = document.getElementById('pe-phases-wrap');
+  var jsonWrap   = document.getElementById('pe-json-wrap');
+  if(type === 'rehab'){
+    if(phasesWrap) phasesWrap.style.display = '';
+    if(jsonWrap)   jsonWrap.style.display   = 'none';
+    /* Si changement depuis le <select>, initialiser l'éditeur vide */
+    if(fromSelect) _peInitPhases([]);
   } else {
-    label.textContent = 'Contenu JSON — Phases de rééducation';
-    hint.innerHTML = '<code>{"phases":[{id,name,weeks,color,borderColor,objectives:[],precautions:[],exitCriteria:[],weekly:[{week,content}]}]}</code>';
+    if(phasesWrap) phasesWrap.style.display = 'none';
+    if(jsonWrap)   jsonWrap.style.display   = '';
+    var hint  = document.getElementById('pe-content-hint');
+    var label = document.getElementById('pe-content-label');
+    if(label) label.textContent = 'Contenu JSON — Arbre décisionnel ou blocs simples';
+    if(hint)  hint.innerHTML = '<strong>Arbre décisionnel :</strong> <code>{"entryTest":{...},"branches":[{id,label,color,borderColor,blocs:[{title,exos:[{name,url,consigne}]}]}]}</code><br><strong>Blocs simples :</strong> <code>{"blocs":[{title,exos:[{name,url,series,reps,duree,recup}]}]}</code>';
   }
 }
 
@@ -8646,20 +8914,25 @@ function _saveProtoEditor(){
   var name = document.getElementById('pe-name').value.trim();
   if(!name){ alert('Le nom est obligatoire.'); return; }
 
-  var contentRaw = (document.getElementById('pe-content').value||'').trim();
-  var content = {};
-  if(contentRaw){
-    try { content = JSON.parse(contentRaw); }
-    catch(e){
-      var errEl = document.getElementById('pe-content-err');
-      errEl.textContent = 'JSON invalide : ' + e.message;
-      errEl.style.display = 'block';
-      return;
-    }
-  }
-  document.getElementById('pe-content-err').style.display = 'none';
-
   var type = document.getElementById('pe-type').value;
+  var content = {};
+
+  if(type === 'rehab'){
+    content.phases = _peGetPhasesData();
+  } else {
+    var contentRaw = (document.getElementById('pe-content').value||'').trim();
+    if(contentRaw){
+      try { content = JSON.parse(contentRaw); }
+      catch(e){
+        var errEl = document.getElementById('pe-content-err');
+        errEl.textContent = 'JSON invalide : ' + e.message;
+        errEl.style.display = 'block';
+        return;
+      }
+    }
+    document.getElementById('pe-content-err').style.display = 'none';
+  }
+
   var newId = _peEditId || ('custom-' + Date.now());
 
   var proto = {
@@ -8678,7 +8951,7 @@ function _saveProtoEditor(){
     if(content.blocs)     proto.blocs     = content.blocs;
     if(content.entryTest) proto.entryTest = content.entryTest;
   } else {
-    if(content.phases) proto.phases = content.phases;
+    proto.phases = content.phases || [];
   }
 
   /* Remplacer si l'ID existe déjà dans _customProtocols, sinon ajouter */
