@@ -8518,7 +8518,9 @@ function _loadCustomProtocols(){
 }
 
 function _getAllProtocols(){
-  return _customProtocols.concat(PROTOCOLS_REF);
+  /* Si _customProtocols est peuplé, on l'utilise seul.
+     Sinon fallback sur PROTOCOLS_REF (avant migration). */
+  return _customProtocols.length ? _customProtocols : PROTOCOLS_REF;
 }
 
 function _saveCustomProtocols(callback){
@@ -8558,6 +8560,17 @@ function _fetchCustomProtocolsFromSupabase(callback){
         try{ localStorage.setItem('r4p-custom-protocols', JSON.stringify(_customProtocols)); }catch(e){}
       }
     }
+    /* Migration : si toujours vide, seeder depuis PROTOCOLS_REF */
+    if(!_customProtocols.length){
+      _customProtocols = PROTOCOLS_REF.map(function(p){
+        var c = JSON.parse(JSON.stringify(p));
+        delete c.isBuiltin;
+        c.isCustom = true;
+        return c;
+      });
+      _saveCustomProtocols(function(){ callback && callback(); });
+      return;
+    }
     callback && callback();
   })
   .catch(function(){ callback && callback(); });
@@ -8572,15 +8585,10 @@ function openProtoEditor(protoId){
   var proto = null;
 
   if(!isNew){
-    /* Chercher dans custom d'abord, puis built-in */
-    proto = _customProtocols.find(function(p){ return p.id === protoId; })
-         || PROTOCOLS_REF.find(function(p){ return p.id === protoId; });
+    proto = _getAllProtocols().find(function(p){ return p.id === protoId; });
   }
 
-  /* Si built-in : forker (nouvelle entrée custom, même ID) */
-  var isBuiltinFork = proto && proto.isBuiltin;
-
-  document.getElementById('protoEditTitle').textContent = isNew ? 'Nouveau protocole' : (isBuiltinFork ? 'Modifier (copie)' : 'Modifier le protocole');
+  document.getElementById('protoEditTitle').textContent = isNew ? 'Nouveau protocole' : 'Modifier le protocole';
   document.getElementById('pe-icon').value        = proto ? (proto.icon||'') : '';
   document.getElementById('pe-name').value        = proto ? (proto.name||'') : '';
   document.getElementById('pe-type').value        = proto ? (proto.type||'library') : 'library';
@@ -8836,7 +8844,7 @@ function _renderProtocolCard(proto) {
     + '</div>'
     + ((_isAdmin()) ? '<div class="proto-admin-btns r4p-admin-only" onclick="event.stopPropagation()">'
       + '<button class="proto-admin-btn proto-admin-btn--edit" onclick="openProtoEditor(\''+proto.id+'\')">✏️</button>'
-      + (!proto.isBuiltin ? '<button class="proto-admin-btn proto-admin-btn--del" onclick="_deleteCustomProto(\''+proto.id+'\')">🗑</button>' : '')
+      + '<button class="proto-admin-btn proto-admin-btn--del" onclick="_deleteCustomProto(\''+proto.id+'\')">🗑</button>'
       + '</div>' : '')
     + '<span class="proto-card-chevron">›</span>'
     + '</div>'
@@ -8968,7 +8976,7 @@ function _renderProtocolCardLibrary(proto) {
     + '</div>'
     + ((_isAdmin()) ? '<div class="proto-admin-btns r4p-admin-only" onclick="event.stopPropagation()">'
       + '<button class="proto-admin-btn proto-admin-btn--edit" onclick="openProtoEditor(\''+proto.id+'\')">✏️</button>'
-      + (!proto.isBuiltin ? '<button class="proto-admin-btn proto-admin-btn--del" onclick="_deleteCustomProto(\''+proto.id+'\')">🗑</button>' : '')
+      + '<button class="proto-admin-btn proto-admin-btn--del" onclick="_deleteCustomProto(\''+proto.id+'\')">🗑</button>'
       + '</div>' : '')
     + '<span class="proto-card-chevron">›</span>'
     + '</div>'
