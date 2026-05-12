@@ -10018,9 +10018,24 @@ function _protoSetCheck(protoId, phaseId, idx, checked) {
     lsChecks[idx] = checked;
     try{ localStorage.setItem(_protoChecksKey(protoId, phaseId), JSON.stringify(lsChecks)); }catch(e){}
   }
-  /* Mise à jour DOM */
+  /* Mise à jour DOM — classe + date inline */
   var ciEl = document.getElementById('proto-ci-'+protoId+'-'+phaseId+'-'+idx);
-  if(ciEl){ if(checked) ciEl.classList.add('checked'); else ciEl.classList.remove('checked'); }
+  if(ciEl){
+    if(checked) ciEl.classList.add('checked'); else ciEl.classList.remove('checked');
+    var txtEl = ciEl.querySelector('.proto-criteria-text');
+    if(txtEl){
+      var existingWrap = txtEl.querySelector('.proto-ci-date-wrap');
+      if(existingWrap) existingWrap.remove();
+      if(checked){
+        var dateLbl = now ? 'validé le '+new Date(now).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}) : 'validé';
+        var wrap = document.createElement('span');
+        wrap.className = 'proto-ci-date-wrap';
+        wrap.innerHTML = '<span class="proto-ci-date" id="proto-ci-datelbl-'+protoId+'-'+phaseId+'-'+idx+'">'+dateLbl+'</span>'
+          + '<button class="proto-ci-cal-btn" onclick="event.stopPropagation();_protoEditCheckedAt(\''+escJS(String(protoId))+'\',\''+escJS(phaseId)+'\','+idx+')" title="Modifier la date">📅</button>';
+        txtEl.appendChild(wrap);
+      }
+    }
+  }
   var proto = PROTOCOLS_REF.find(function(p){ return p.id===protoId; });
   if(!proto) return;
   var ph = proto.phases.find(function(p){ return p.id===phaseId; });
