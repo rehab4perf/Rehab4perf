@@ -4293,7 +4293,7 @@ function _buildAllTestsHtml() {
           mobRows += '<tr style="border-top:1px solid var(--border)">'
             + '<td style="padding:3px 8px;font-size:.8rem;color:var(--text2)">'+m+'</td>'
             + '<td style="padding:3px 8px;font-size:.8rem;text-align:center">'+stTag+'</td>'
-            + '<td style="padding:3px 8px;font-size:.78rem;color:var(--text2);font-style:italic">'+escH(ntVal)+'</td>'
+            + '<td style="padding:3px 8px;font-size:.78rem;color:var(--text2);font-style:italic">'+nl2br(ntVal)+'</td>'
             + '</tr>';
         });
         if (anyMob) {
