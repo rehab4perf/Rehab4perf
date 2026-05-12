@@ -3964,7 +3964,7 @@ var _progPatient   = null;
 var _currentProgId = null;
 var _progUid       = null;
 var _progToken     = null;
-var _userRole      = null; // 'admin' | 'editeur' | 'lecteur' | null
+var _userRole      = null; // 'admin' | 'lecteur' | null
 
 /* Capitalise la 1re lettre de chaque mot (gère accents + tirets) */
 function _capName(str){
@@ -4058,7 +4058,7 @@ function _sbHeaders(){
 
 /* ── Rôles utilisateur ── */
 function _isAdmin(){ return _userRole === 'admin'; }
-function _isEditor(){ return _userRole === 'admin' || _userRole === 'editeur'; }
+function _isEditor(){ return _isAdmin(); } // editeur supprimé — alias admin
 function _isReader(){ return _userRole === 'lecteur'; }
 
 function _loadUserRole(){
@@ -6738,7 +6738,7 @@ function _pickerRenderTemplate(p, search, addedLibIds){
   h += '<span class="picker-tmpl-name">'+escH(p.nom)+'</span>';
   if(totalExos) h += '<span style="font-size:.63rem;color:rgba(255,255,255,.38);flex-shrink:0;margin-left:2px;">'+totalExos+' ex.</span>';
   h += '<button class="picker-fav-btn'+(isFavPicker?' active':'')+'" onclick="event.stopPropagation();_togglePickerFav(\''+escJS(String(p.id))+'\')" title="Épingler en favoris">★</button>';
-  if(!_isReader()) h += '<button class="picker-load-btn" onclick="event.stopPropagation();loadTemplate(\''+escJS(String(p.id))+'\');_enterBuilderMode();" title="Charger cette séance dans le builder">⤓</button>';
+  h += '<button class="picker-load-btn" onclick="event.stopPropagation();loadTemplate(\''+escJS(String(p.id))+'\');_enterBuilderMode();" title="Charger cette séance dans le builder">⤓</button>';
   h += '<span class="picker-chevron">›</span></div>';
   h += '<div class="picker-tmpl-body">';
 
@@ -7290,9 +7290,8 @@ function loadTemplate(id){
     _notes = d.notes || '';
     _currentProgId = null;
     _builderFromTemplate = String(t.id);
-    // Lecture seule si lecteur chargeant un template qui ne lui appartient pas
-    var notOwner = t.praticien_id && String(t.praticien_id) !== String(_progUid);
-    _applyBuilderReadOnly(_isReader() && !!notOwner);
+    // Tous les utilisateurs peuvent composer des séances depuis n'importe quel template
+    _applyBuilderReadOnly(false);
     // Charger un template existant → pas de mode "nouvelle phase"
     _activeGroupId=null; _activeGroupNom=''; _activePhaseOrdre=1;
     _updateActiveGroupBadge();
@@ -9729,11 +9728,9 @@ function _renderProtocolCardLibrary(proto) {
         });
         blocsHtml += '</div>';
       });
-      if(!_isReader()){
-        blocsHtml += '<div class="proto-dt-branch-actions">'
-          + '<button class="proto-lib-builder-btn" style="font-size:.73rem;padding:5px 12px;" onclick="_protoOpenBranchInBuilder(\''+proto.id+'\',\''+branch.id+'\')">▶ Créer une séance</button>'
-          + '</div>';
-      }
+      blocsHtml += '<div class="proto-dt-branch-actions">'
+        + '<button class="proto-lib-builder-btn" style="font-size:.73rem;padding:5px 12px;" onclick="_protoOpenBranchInBuilder(\''+proto.id+'\',\''+branch.id+'\')">▶ Créer une séance</button>'
+        + '</div>';
       blocsHtml += '</div></div>'; /* branch-body + branch */
     });
     blocsHtml += '</div>'; /* proto-dt-branches */
@@ -9766,7 +9763,7 @@ function _renderProtocolCardLibrary(proto) {
   }
 
   /* Bouton builder (seulement si pas de branches — chaque branche a le sien) */
-  var builderBtn = (!proto.branches || !proto.branches.length) && !_isReader()
+  var builderBtn = (!proto.branches || !proto.branches.length)
     ? '<button class="proto-lib-builder-btn" onclick="_protoOpenLibraryInBuilder(\''+proto.id+'\')">▶ Créer une séance</button>'
     : '';
 
@@ -9867,7 +9864,7 @@ function _renderProtoFooter(proto, pp) {
     return '<span class="proto-footer-info">Statut : '+stLbl2+noteStr+'</span>'
       + (_isAdmin() ? unassignBtn + '<button class="proto-use-btn secondary r4p-admin-only" style="font-size:.73rem;padding:5px 11px;" onclick="_protoStatusModal(\''+proto.id+'\',\'active\')">↩ Réactiver</button>' : '');
   }
-  if(!_isReader()) return '<button class="proto-use-btn" onclick="assignProtocol(\''+proto.id+'\')" id="proto-assign-btn-'+proto.id+'">📋 Assigner à ce patient</button>';
+  return '<button class="proto-use-btn" onclick="assignProtocol(\''+proto.id+'\')" id="proto-assign-btn-'+proto.id+'">📋 Assigner à ce patient</button>';
   return '<span class="proto-footer-info">Lecture seule.</span>';
 }
 
@@ -9905,14 +9902,12 @@ function _renderPhaseItem(protoId, ph, idx, data, currentPhaseId) {
   var currentBadge = isCurrent ? '<span style="font-size:.62rem;font-weight:700;background:'+ph.borderColor+';color:#fff;padding:1px 7px;border-radius:8px;margin-left:6px;white-space:nowrap;">EN COURS</span>' : '';
   var doneBadge = (!isCurrent && allDone) ? '<span style="font-size:.62rem;font-weight:700;background:#16A34A;color:#fff;padding:1px 7px;border-radius:8px;margin-left:6px;white-space:nowrap;">✓ VALIDÉ</span>' : '';
 
-  var markBtn = _progPatient && !_isReader()
+  var markBtn = !!_progPatient
     ? (isCurrent
         ? '<button class="proto-use-btn secondary" onclick="_protoMarkCurrentPhase(\''+protoId+'\',null)" style="font-size:.73rem;padding:5px 11px;border-color:'+ph.borderColor+';color:'+ph.borderColor+';">📍 Active ✓ (retirer)</button>'
         : '<button class="proto-use-btn secondary" onclick="_protoMarkCurrentPhase(\''+protoId+'\',\''+ph.id+'\')" style="font-size:.73rem;padding:5px 11px;">📍 Définir active</button>')
     : '';
-  var builderBtn = !_isReader()
-    ? '<button class="proto-use-btn secondary" onclick="_protoOpenInBuilder(\''+protoId+'\',\''+ph.id+'\')" style="font-size:.73rem;padding:5px 11px;">▶ Ouvrir dans le builder</button>'
-    : '';
+  var builderBtn = '<button class="proto-use-btn secondary" onclick="_protoOpenInBuilder(\''+protoId+'\',\''+ph.id+'\')" style="font-size:.73rem;padding:5px 11px;">▶ Ouvrir dans le builder</button>';
 
   return '<div class="proto-phase-item" id="proto-phase-'+protoId+'-'+ph.id+'" style="border-color:'+ph.borderColor+(isCurrent?';box-shadow:0 0 0 2px '+ph.borderColor+'55;':'')+'">'
     + '<div class="proto-phase-item-header" style="background:'+ph.color+'" onclick="_toggleProtoPhase(\''+protoId+'\',\''+ph.id+'\')">'
@@ -10150,7 +10145,6 @@ function _protoUnassign(protoId) {
 
 /* ─── Assigner protocole au patient ─────────────────────────── */
 function assignProtocol(protoId) {
-  if(_isReader()){ _showToast('Accès lecture seule.'); return; }
   if(!_progPatient){ _showToast('Sélectionne d\'abord un patient.'); return; }
   var proto = PROTOCOLS_REF.find(function(p){ return p.id===protoId; });
   if(!proto) return;
@@ -10235,7 +10229,6 @@ function _protoUpdatePhase(protoId, phaseId) {
 
 /* ─── Ouvrir une phase dans le builder ──────────────────────── */
 function _protoOpenInBuilder(protoId, phaseId) {
-  if(_isReader()){ _showToast('Accès lecture seule.'); return; }
   var proto = PROTOCOLS_REF.find(function(p){ return p.id===protoId; });
   if(!proto) return;
   var ph = proto.phases.find(function(p){ return p.id===phaseId; });
