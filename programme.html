@@ -10057,7 +10057,13 @@ function _protoSetCheck(protoId, phaseId, idx, checked) {
     /* Pas encore assigné → auto-assigner puis sauvegarder */
     _protoAutoAssign(protoId, function(newPp){
       _saveCheck(newPp.id);
-      renderProtocols();
+      /* Mise à jour ciblée du footer uniquement — sans re-render global */
+      var card = document.getElementById('proto-card-'+protoId);
+      if(card){
+        var footer = card.querySelector('.proto-card-footer');
+        var proto  = _getAllProtocols().find(function(p){ return String(p.id)===String(protoId); });
+        if(footer && proto) footer.innerHTML = _renderProtoFooter(proto, newPp);
+      }
     });
   }
   /* Mise à jour DOM — classe + date inline */
