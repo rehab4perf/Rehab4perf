@@ -474,6 +474,39 @@ body {
   color: var(--text);
 }
 
+/* ── Mobilité Rachis — statut qualitatif ── */
+.mob-dir-row {
+  display: grid;
+  grid-template-columns: 100px 136px 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.mob-dir-row:last-child { border-bottom: none; }
+.mob-dir-label { font-size: .8rem; font-weight: 600; color: var(--text); }
+.mob-status-sel {
+  border-radius: 20px; border: 1.5px solid #D1D5DB;
+  padding: 4px 26px 4px 11px; font-size: .76rem; font-weight: 600;
+  cursor: pointer; outline: none; background: #fff;
+  font-family: var(--font-sans); color: var(--text2);
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236B7280'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 9px center;
+  transition: background-color .15s, border-color .15s, color .15s;
+}
+.mob-status-sel.st-ok          { background-color:#DCFCE7; border-color:#86EFAC; color:#16A34A; }
+.mob-status-sel.st-acceptable  { background-color:#FEF9C3; border-color:#FDE047; color:#92400E; }
+.mob-status-sel.st-insuffisant { background-color:#FEE2E2; border-color:#FCA5A5; color:#DC2626; }
+.mob-note-inp {
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 9px; font-size: .77rem; outline: none;
+  font-family: var(--font-sans); color: var(--text);
+  background: transparent; width: 100%; box-sizing: border-box;
+}
+.mob-note-inp:focus { border-color: var(--accent); }
+.mob-note-inp::placeholder { color: var(--text3); font-style: italic; }
+
 /* ── ROM Widget ──────────────────────────────────────────── */
 .rom-block { width:100%; border-collapse:collapse; font-size:.82rem; }
 .rom-block thead th { background:var(--accent2); color:#fff; padding:6px 10px; font-size:.72rem; font-weight:700; text-align:center; }
@@ -3143,6 +3176,11 @@ var ROM_CONFIG = {
   'rom-pi-g-ev':   {norm:15, max:30, label:'Éversion G'},
 };
 
+function _mobStatusChange(sel) {
+  sel.className = 'mob-status-sel';
+  if (sel.value) sel.classList.add('st-' + sel.value);
+}
+
 function updateRomBar(el) {
   var id = el.id;
   var cfg = ROM_CONFIG[id];
@@ -3200,27 +3238,46 @@ function init() {
     });
   });
 
-  // Mobility grids \u2014 number inputs + barre de progression ROM
-  ['cerv','thor','lomb'].forEach(seg => {
-    const grid = document.getElementById('mob-' + seg);
+  // Mobility grids \u2014 statut qualitatif + note de marqueur
+  var MOB_PLACEHOLDERS = {
+    'cerv-Flexion':    'Ex\u00a0: menton\u2011sternum 0\u00a0cm\u2026',
+    'cerv-Extension':  'Ex\u00a0: occiput\u2011mur 0\u00a0cm\u2026',
+    'cerv-Incl__D':    'Ex\u00a0: oreille\u2011\u00e9paule 12\u00a0cm\u2026',
+    'cerv-Incl__G':    'Ex\u00a0: oreille\u2011\u00e9paule 12\u00a0cm\u2026',
+    'cerv-Rot__D':     'Ex\u00a0: menton\u2011acromion 0\u00a0cm\u2026',
+    'cerv-Rot__G':     'Ex\u00a0: menton\u2011acromion 0\u00a0cm\u2026',
+    'thor-Flexion':    'Ex\u00a0: DDS 5\u00a0cm, cyphose\u2026',
+    'thor-Extension':  'Ex\u00a0: sternum\u2011table 20\u00a0cm\u2026',
+    'thor-Incl__D':    'Ex\u00a0: sym\u00e9trique D=G\u2026',
+    'thor-Incl__G':    'Ex\u00a0: sym\u00e9trique D=G\u2026',
+    'thor-Rot__D':     'Ex\u00a0: \u00e9paule\u2011mur 3\u00a0cm\u2026',
+    'thor-Rot__G':     'Ex\u00a0: \u00e9paule\u2011mur 3\u00a0cm\u2026',
+    'lomb-Flexion':    'Ex\u00a0: DDS 5\u00a0cm, Schober 14\u00a0cm\u2026',
+    'lomb-Extension':  'Ex\u00a0: Schober extension 8\u00a0cm\u2026',
+    'lomb-Incl__D':    'Ex\u00a0: majeur\u2011sol 23\u00a0cm\u2026',
+    'lomb-Incl__G':    'Ex\u00a0: majeur\u2011sol 23\u00a0cm\u2026',
+    'lomb-Rot__D':     'Ex\u00a0: \u00e9paule\u2011genou 18\u00a0cm\u2026',
+    'lomb-Rot__G':     'Ex\u00a0: \u00e9paule\u2011genou 18\u00a0cm\u2026',
+  };
+  ['cerv','thor','lomb'].forEach(function(seg) {
+    var grid = document.getElementById('mob-' + seg);
     if (!grid) return;
-    MOB.forEach(m => {
+    grid.className = ''; // retire mobility-grid (grille 6 colonnes)
+    grid.innerHTML = MOB.map(function(m) {
       var mKey = 'mob-' + seg + '-' + m.replace(/[\s.\/]+/g, '_');
-      var cfg = ROM_CONFIG[mKey];
-      var maxAttr = cfg ? ' max="' + cfg.max + '"' : '';
-      var normPct = cfg ? (cfg.norm / cfg.max * 100).toFixed(1) : '70';
-      grid.innerHTML +=
-        '<div class="mobility-item">'
-        + '<label>' + m + '</label>'
-        + '<div style="display:flex;align-items:center;gap:3px;justify-content:center">'
-        + '<input type="number" id="' + mKey + '" min="0"' + maxAttr + ' placeholder="\u2014" class="rom-num" style="width:46px" oninput="updateRomBar(this)" data-mob="' + seg + '-' + m + '">'
-        + '<span class="rom-deg">\u00b0</span>'
-        + '</div>'
-        + '<div class="rom-bar-wrap" style="margin:4px 0 2px"><div class="rom-bar-fill" id="' + mKey + '-bar"></div>'
-        + '<div class="rom-norm-tick" style="left:' + normPct + '%"></div></div>'
-        + '<div id="' + mKey + '-stat" class="rom-stat empty" style="font-size:.58rem;padding:0 4px">\u2014</div>'
+      var phKey = seg + '-' + m.replace(/[\s.\/]+/g, '_');
+      var ph = MOB_PLACEHOLDERS[phKey] || 'Marqueur, mesure\u2026';
+      return '<div class="mob-dir-row">'
+        + '<span class="mob-dir-label">' + m + '</span>'
+        + '<select class="mob-status-sel" id="' + mKey + '-st" onchange="_mobStatusChange(this)">'
+        + '<option value="">\u2014</option>'
+        + '<option value="ok">\u2713\u00a0OK</option>'
+        + '<option value="acceptable">~\u00a0Acceptable</option>'
+        + '<option value="insuffisant">\u2717\u00a0Insuffisant</option>'
+        + '</select>'
+        + '<input type="text" class="mob-note-inp" id="' + mKey + '-nt" placeholder="' + ph + '">'
         + '</div>';
-    });
+    }).join('');
   });
 
   // Criteria réception
@@ -4214,30 +4271,42 @@ function _buildAllTestsHtml() {
       ], true);
     }
     if (sec.label === 'RACHIS') {
-      secRows += romCrTable('Mobilité Cervicale (°)', [
-        {label:'Flexion',    dId:'mob-cerv-Flexion'},
-        {label:'Extension',  dId:'mob-cerv-Extension'},
-        {label:'Incl. D',    dId:'mob-cerv-Incl_D'},
-        {label:'Incl. G',    dId:'mob-cerv-Incl_G'},
-        {label:'Rot. D',     dId:'mob-cerv-Rot_D'},
-        {label:'Rot. G',     dId:'mob-cerv-Rot_G'},
-      ], false);
-      secRows += romCrTable('Mobilité Thoracique (°)', [
-        {label:'Flexion',    dId:'mob-thor-Flexion'},
-        {label:'Extension',  dId:'mob-thor-Extension'},
-        {label:'Incl. D',    dId:'mob-thor-Incl_D'},
-        {label:'Incl. G',    dId:'mob-thor-Incl_G'},
-        {label:'Rot. D',     dId:'mob-thor-Rot_D'},
-        {label:'Rot. G',     dId:'mob-thor-Rot_G'},
-      ], false);
-      secRows += romCrTable('Mobilité Lombaire (°)', [
-        {label:'Flexion',    dId:'mob-lomb-Flexion'},
-        {label:'Extension',  dId:'mob-lomb-Extension'},
-        {label:'Incl. D',    dId:'mob-lomb-Incl_D'},
-        {label:'Incl. G',    dId:'mob-lomb-Incl_G'},
-        {label:'Rot. D',     dId:'mob-lomb-Rot_D'},
-        {label:'Rot. G',     dId:'mob-lomb-Rot_G'},
-      ], false);
+      // Mobilité rachis — statut qualitatif
+      var mobSegments = [
+        { title:'Mobilité Cervicale', seg:'cerv' },
+        { title:'Mobilité Thoracique', seg:'thor' },
+        { title:'Mobilité Lombaire',   seg:'lomb' },
+      ];
+      var stLblMap = { ok:'OK', acceptable:'Acceptable', insuffisant:'Insuffisant' };
+      var stClsMap = { ok:'ok', acceptable:'warn', insuffisant:'bad' };
+      mobSegments.forEach(function(ms) {
+        var anyMob = false, mobRows = '';
+        MOB.forEach(function(m) {
+          var mKey = 'mob-' + ms.seg + '-' + m.replace(/[\s.\/]+/g, '_');
+          var stEl = document.getElementById(mKey + '-st');
+          var ntEl = document.getElementById(mKey + '-nt');
+          var stVal = stEl ? stEl.value : '';
+          var ntVal = ntEl ? ntEl.value.trim() : '';
+          if (!stVal && !ntVal) return;
+          anyMob = true;
+          var stTag = stVal ? ('<span class="cr-tag '+stClsMap[stVal]+'">'+stLblMap[stVal]+'</span>') : '';
+          mobRows += '<tr style="border-top:1px solid var(--border)">'
+            + '<td style="padding:3px 8px;font-size:.8rem;color:var(--text2)">'+m+'</td>'
+            + '<td style="padding:3px 8px;font-size:.8rem;text-align:center">'+stTag+'</td>'
+            + '<td style="padding:3px 8px;font-size:.78rem;color:var(--text2);font-style:italic">'+escH(ntVal)+'</td>'
+            + '</tr>';
+        });
+        if (anyMob) {
+          secRows += '<div style="margin:4px 0 10px">'
+            + '<div style="font-size:.77rem;font-weight:600;color:var(--text2);margin-bottom:3px">'+ms.title+'</div>'
+            + '<table style="width:100%;border-collapse:collapse">'
+            + '<thead><tr style="background:var(--surface2)">'
+            + '<th style="padding:3px 8px;text-align:left;font-size:.72rem;color:var(--text3);font-weight:600">Mouvement</th>'
+            + '<th style="padding:3px 8px;text-align:center;font-size:.72rem;color:var(--text3);font-weight:600">Statut</th>'
+            + '<th style="padding:3px 8px;text-align:left;font-size:.72rem;color:var(--text3);font-weight:600">Marqueur</th>'
+            + '</tr></thead><tbody>'+mobRows+'</tbody></table></div>';
+        }
+      });
     }
     if (sec.label === 'PIED / CHEVILLE') {
       secRows += romCrTable('Amplitudes Articulaires — Cheville/Pied (°)', [
@@ -4933,6 +5002,8 @@ function loadFromStorage() {
         if (v === 'Positif') el.classList.add(type === 'fonc' ? 'positif-fonc' : 'positif-ortho');
         else if (v === 'Négatif') el.classList.add(type === 'fonc' ? 'negatif-fonc' : 'negatif-ortho');
       }
+      // Restore mob status colors
+      if (el.classList.contains('mob-status-sel') && el.value) _mobStatusChange(el);
     });
     updateAll(); calcRec(); calcPlioq();
     ['sls','hop','pset','set'].forEach(k => calcLSI(k));
