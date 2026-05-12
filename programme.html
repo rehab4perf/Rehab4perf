@@ -1263,6 +1263,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .bilan-wc-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:9px; }
 .bilan-wc-label { font-size:.76rem; font-weight:700; color:var(--navy); }
 .bilan-wc-charge { font-size:1rem; font-weight:800; color:var(--accent); }
+.bilan-wc-total { text-align:right; margin-top:3px; margin-bottom:6px; }
 .bilan-day-bars { display:flex; gap:3px; align-items:flex-end; height:30px; margin-bottom:4px; }
 .bilan-day-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; }
 .bilan-day-bar { width:100%; border-radius:3px 3px 0 0; min-height:2px; }
@@ -5431,9 +5432,7 @@ function _renderBilanCharge(){
             + ' – '+end.getDate()+' '+mo[end.getMonth()];
 
     html += '<div class="bilan-week-card">';
-    html += '<div class="bilan-wc-head"><span class="bilan-wc-label">'+lbl+'</span>'
-          + (hasFb ? '<span class="bilan-wc-charge">⚡ '+stats.charge+' UA</span>' : '')
-          + '</div>';
+    html += '<div class="bilan-wc-head"><span class="bilan-wc-label">'+lbl+'</span></div>';
 
     if(hasFb){
       // Mini barres UA par jour
@@ -5448,6 +5447,7 @@ function _renderBilanCharge(){
               + '</div>';
       }
       html += '</div>';
+      html += '<div class="bilan-wc-total"><span class="bilan-wc-charge">⚡ '+stats.charge+' UA</span></div>';
 
       // Indicators
       var monB = _monBadge(stats.monotonie);
