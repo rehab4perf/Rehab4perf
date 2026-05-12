@@ -5945,14 +5945,18 @@ function removeCalEventCloud(id) {
 }
 
 // ── Notes calendrier ──────────────────────────────────────────────────────────
-var _CAL_NOTES_KEY = 'r4p_cal_notes';
 var _calNotes = [];
 
+// Clé scopée par patient — identique au comportement des séances
+function _calNotesKey(){
+  return _progPatient ? 'r4p_cal_notes_' + _progPatient.id : 'r4p_cal_notes';
+}
+
 function _loadCalNotes(){
-  try { _calNotes = JSON.parse(localStorage.getItem(_CAL_NOTES_KEY)||'[]'); } catch(e){ _calNotes = []; }
+  try { _calNotes = JSON.parse(localStorage.getItem(_calNotesKey())||'[]'); } catch(e){ _calNotes = []; }
 }
 function _persistCalNotes(){
-  localStorage.setItem(_CAL_NOTES_KEY, JSON.stringify(_calNotes));
+  localStorage.setItem(_calNotesKey(), JSON.stringify(_calNotes));
 }
 
 function _openCalNoteForm(dateStr) {
