@@ -4341,6 +4341,32 @@ renderLib('');
   font-size:1.6rem;cursor:pointer;line-height:1;transition:color .15s;
 }
 .proto-head-close:hover { color:#fff; }
+.proto-head-add-btn { background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.35); color:#fff; border-radius:7px; padding:4px 12px; font-size:.74rem; font-weight:600; cursor:pointer; font-family:inherit; transition:background .15s; }
+.proto-head-add-btn:hover { background:rgba(255,255,255,.28); }
+.proto-admin-btns { display:flex; gap:4px; flex-shrink:0; position:relative; z-index:2; margin-right:6px; }
+.proto-admin-btn { border:none; border-radius:5px; padding:3px 9px; font-size:.7rem; cursor:pointer; font-family:inherit; font-weight:600; white-space:nowrap; transition:background .13s; line-height:1.4; }
+.proto-admin-btn--edit { background:#EEF3FB; color:#2B5FA6; }
+.proto-admin-btn--edit:hover { background:#DBEAFE; }
+.proto-admin-btn--del { background:#FEF2F2; color:#DC2626; }
+.proto-admin-btn--del:hover { background:#FEE2E2; }
+/* Modal éditeur protocole */
+.proto-edit-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9000; display:flex; align-items:center; justify-content:center; padding:16px; }
+.proto-edit-modal { background:#fff; border-radius:14px; width:100%; max-width:640px; max-height:92vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,.28); }
+.proto-edit-head { display:flex; align-items:center; gap:10px; padding:14px 18px; background:#1A3A5C; border-radius:14px 14px 0 0; flex-shrink:0; }
+.proto-edit-head h3 { flex:1; color:#fff; font-size:.9rem; font-weight:700; margin:0; }
+.proto-edit-head-close { background:none; border:none; color:rgba(255,255,255,.7); font-size:1.4rem; cursor:pointer; line-height:1; padding:0 2px; }
+.proto-edit-head-close:hover { color:#fff; }
+.proto-edit-body { padding:18px 20px; overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:12px; }
+.proto-edit-row { display:flex; gap:10px; }
+.pe-field { display:flex; flex-direction:column; gap:4px; flex:1; min-width:0; }
+.pe-field label { font-size:.66rem; font-weight:700; color:#6b7a8d; text-transform:uppercase; letter-spacing:.05em; }
+.pe-field input, .pe-field select, .pe-field textarea { padding:8px 10px; border:1.5px solid #d8e0eb; border-radius:7px; font-size:.82rem; outline:none; font-family:inherit; color:#1a2433; transition:border-color .15s; resize:vertical; }
+.pe-field input:focus, .pe-field select:focus, .pe-field textarea:focus { border-color:#4A90D9; box-shadow:0 0 0 3px rgba(74,144,217,.1); }
+.pe-hint { font-size:.69rem; color:#6b7a8d; background:#F8FAFC; border-radius:5px; padding:6px 10px; border-left:2px solid #4A90D9; line-height:1.5; }
+.pe-err { font-size:.72rem; color:#DC2626; margin-top:3px; }
+.proto-edit-footer { display:flex; justify-content:flex-end; align-items:center; gap:8px; padding:12px 18px; border-top:1px solid #E8E6E1; flex-shrink:0; }
+.pe-export-btn { font-size:.72rem; color:#6b7a8d; background:none; border:1px solid #d8e0eb; border-radius:6px; padding:5px 10px; cursor:pointer; font-family:inherit; margin-right:auto; }
+.pe-export-btn:hover { background:#F8FAFC; }
 /* --- Body --- */
 .proto-body { padding:20px; }
 /* --- Protocol card --- */
@@ -4567,10 +4593,71 @@ renderLib('');
       <button class="btn-back" onclick="_protoGoBack()" title="Retour">←</button>
       <span style="font-size:1.4rem;">📚</span>
       <h2>Protocoles de référence</h2>
+      <button class="r4p-admin-only proto-head-add-btn" style="display:none" onclick="openProtoEditor(null)">+ Ajouter</button>
       <button class="proto-head-close" onclick="closeProtoPanel()">×</button>
     </div>
     <div class="proto-body" id="proto-body">
       <div class="proto-empty">Chargement…</div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal éditeur protocoles (admin) -->
+<div class="proto-edit-overlay" id="protoEditOverlay" style="display:none" onclick="if(event.target===this)closeProtoEditor()">
+  <div class="proto-edit-modal">
+    <div class="proto-edit-head">
+      <h3 id="protoEditTitle">Nouveau protocole</h3>
+      <button class="proto-edit-head-close" onclick="closeProtoEditor()">×</button>
+    </div>
+    <div class="proto-edit-body">
+      <div class="proto-edit-row">
+        <div class="pe-field" style="flex:0 0 80px">
+          <label>Icône</label>
+          <input type="text" id="pe-icon" placeholder="🦵" maxlength="4" style="text-align:center;font-size:1.2rem">
+        </div>
+        <div class="pe-field">
+          <label>Nom du protocole *</label>
+          <input type="text" id="pe-name" placeholder="Ex : Entorse cheville">
+        </div>
+      </div>
+      <div class="proto-edit-row">
+        <div class="pe-field">
+          <label>Type</label>
+          <select id="pe-type" onchange="_peTypeChange()">
+            <option value="library">Bibliothèque (arbre décisionnel / blocs)</option>
+            <option value="rehab">Rééducation (phases progressives)</option>
+          </select>
+        </div>
+        <div class="pe-field">
+          <label>Catégorie</label>
+          <input type="text" id="pe-category" placeholder="Ex : Mobilité, Pathologie…">
+        </div>
+      </div>
+      <div class="proto-edit-row">
+        <div class="pe-field">
+          <label>Source / Auteur</label>
+          <input type="text" id="pe-source" placeholder="Ex : Antoine Peronnaud">
+        </div>
+        <div class="pe-field">
+          <label>Durée estimée</label>
+          <input type="text" id="pe-duration" placeholder="Ex : Séance unique, 3 mois…">
+        </div>
+      </div>
+      <div class="pe-field">
+        <label>Description courte</label>
+        <textarea id="pe-description" rows="2" placeholder="Description affichée sur la carte…"></textarea>
+      </div>
+      <div class="pe-field">
+        <label id="pe-content-label">Contenu JSON</label>
+        <div class="pe-hint" id="pe-content-hint"></div>
+        <textarea id="pe-content" rows="14" placeholder="{ }" style="font-family:'SF Mono',Menlo,monospace;font-size:.74rem;line-height:1.5;"></textarea>
+        <div class="pe-err" id="pe-content-err" style="display:none"></div>
+      </div>
+    </div>
+    <div class="proto-edit-footer">
+      <button class="pe-export-btn" onclick="_peExportJson()" title="Exporter le contenu JSON actuel">⬇ Exporter JSON</button>
+      <button class="btn btn-outline" onclick="closeProtoEditor()" style="font-size:.8rem">Annuler</button>
+      <button class="btn btn-primary" onclick="_saveProtoEditor()" style="font-size:.8rem">💾 Enregistrer</button>
     </div>
   </div>
 </div>
@@ -8401,18 +8488,211 @@ var _protoPatientData = {};
 
 function openProtoPanel() {
   var ov = document.getElementById('proto-overlay');
-  if(ov){ ov.classList.add('open'); renderProtocols(); }
+  if(!ov) return;
+  ov.classList.add('open');
+  _loadCustomProtocols();
+  if(_progToken && _progUid){
+    _fetchCustomProtocolsFromSupabase(function(){ renderProtocols(); });
+  } else {
+    renderProtocols();
+  }
 }
 function closeProtoPanel() {
   var ov = document.getElementById('proto-overlay');
   if(ov) ov.classList.remove('open');
 }
 
+/* ══════════════════════════════════════════════════════
+   PROTOCOLES CUSTOM — Admin CRUD
+   ══════════════════════════════════════════════════════ */
+var _customProtocols  = [];
+var _customProtoSupaId = null; // ID du record Supabase meta
+
+function _loadCustomProtocols(){
+  try {
+    var raw = localStorage.getItem('r4p-custom-protocols');
+    _customProtocols = raw ? JSON.parse(raw) : [];
+    var sid = localStorage.getItem('r4p-custom-protocols-sid');
+    if(sid) _customProtoSupaId = sid;
+  } catch(e){ _customProtocols = []; }
+}
+
+function _getAllProtocols(){
+  return _customProtocols.concat(PROTOCOLS_REF);
+}
+
+function _saveCustomProtocols(callback){
+  /* 1. LocalStorage (immédiat) */
+  try { localStorage.setItem('r4p-custom-protocols', JSON.stringify(_customProtocols)); } catch(e){}
+  /* 2. Supabase sync (si connecté) */
+  if(!_progToken || !_progUid){ if(callback) callback(); return; }
+  var donnees = JSON.stringify({ protocols: _customProtocols });
+  var body = JSON.stringify({ praticien_id: _progUid, nom: '__r4p_protocols_meta__', type: '__meta__', is_public: true, donnees: donnees });
+  if(_customProtoSupaId){
+    fetch(SUPA_URL_P+'/rest/v1/templates?id=eq.'+_customProtoSupaId, {
+      method:'PATCH', headers: Object.assign({}, _sbHeaders(), {'Content-Type':'application/json'}), body: body
+    }).then(function(r){ if(callback) callback(); });
+  } else {
+    fetch(SUPA_URL_P+'/rest/v1/templates', {
+      method:'POST', headers: Object.assign({}, _sbHeaders(), {'Content-Type':'application/json','Prefer':'return=representation'}), body: body
+    }).then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(rows){
+      if(rows && rows.length){ _customProtoSupaId = rows[0].id; try{ localStorage.setItem('r4p-custom-protocols-sid', String(rows[0].id)); }catch(e){} }
+      if(callback) callback();
+    });
+  }
+}
+
+function _fetchCustomProtocolsFromSupabase(callback){
+  if(!_progToken || !_progUid){ callback && callback(); return; }
+  fetch(SUPA_URL_P+'/rest/v1/templates?nom=eq.__r4p_protocols_meta__&praticien_id=eq.'+_progUid+'&select=id,donnees&limit=1', {headers:_sbHeaders()})
+  .then(function(r){ return r.ok ? r.json() : []; })
+  .then(function(rows){
+    if(rows && rows.length){
+      _customProtoSupaId = rows[0].id;
+      try{ localStorage.setItem('r4p-custom-protocols-sid', String(rows[0].id)); }catch(e){}
+      var d = rows[0].donnees;
+      if(typeof d === 'string') try{ d = JSON.parse(d); }catch(e){ d = null; }
+      if(d && Array.isArray(d.protocols)){
+        _customProtocols = d.protocols;
+        try{ localStorage.setItem('r4p-custom-protocols', JSON.stringify(_customProtocols)); }catch(e){}
+      }
+    }
+    callback && callback();
+  })
+  .catch(function(){ callback && callback(); });
+}
+
+/* ── Éditeur ── */
+var _peEditId = null;
+
+function openProtoEditor(protoId){
+  _peEditId = protoId;
+  var isNew = !protoId;
+  var proto = null;
+
+  if(!isNew){
+    /* Chercher dans custom d'abord, puis built-in */
+    proto = _customProtocols.find(function(p){ return p.id === protoId; })
+         || PROTOCOLS_REF.find(function(p){ return p.id === protoId; });
+  }
+
+  /* Si built-in : forker (nouvelle entrée custom, même ID) */
+  var isBuiltinFork = proto && proto.isBuiltin;
+
+  document.getElementById('protoEditTitle').textContent = isNew ? 'Nouveau protocole' : (isBuiltinFork ? 'Modifier (copie)' : 'Modifier le protocole');
+  document.getElementById('pe-icon').value        = proto ? (proto.icon||'') : '';
+  document.getElementById('pe-name').value        = proto ? (proto.name||'') : '';
+  document.getElementById('pe-type').value        = proto ? (proto.type||'library') : 'library';
+  document.getElementById('pe-category').value    = proto ? (proto.category||'') : '';
+  document.getElementById('pe-source').value      = proto ? (proto.source||'') : '';
+  document.getElementById('pe-duration').value    = proto ? (proto.duration||'') : '';
+  document.getElementById('pe-description').value = proto ? (proto.description||'') : '';
+
+  /* Contenu JSON */
+  var content = {};
+  if(proto){
+    if(proto.branches)  content.branches  = proto.branches;
+    if(proto.blocs)     content.blocs     = proto.blocs;
+    if(proto.entryTest) content.entryTest = proto.entryTest;
+    if(proto.phases)    content.phases    = proto.phases;
+  }
+  document.getElementById('pe-content').value = Object.keys(content).length ? JSON.stringify(content, null, 2) : '';
+  document.getElementById('pe-content-err').style.display = 'none';
+  _peTypeChange();
+  document.getElementById('protoEditOverlay').style.display = 'flex';
+}
+
+function closeProtoEditor(){
+  document.getElementById('protoEditOverlay').style.display = 'none';
+  _peEditId = null;
+}
+
+function _peTypeChange(){
+  var type = document.getElementById('pe-type').value;
+  var hint = document.getElementById('pe-content-hint');
+  var label = document.getElementById('pe-content-label');
+  if(type === 'library'){
+    label.textContent = 'Contenu JSON — Arbre décisionnel ou blocs simples';
+    hint.innerHTML = '<strong>Arbre décisionnel :</strong> <code>{"entryTest":{...},"branches":[{id,label,color,borderColor,blocs:[{title,exos:[{name,url,consigne}]}]}]}</code><br><strong>Blocs simples :</strong> <code>{"blocs":[{title,exos:[{name,url,series,reps,duree,recup}]}]}</code>';
+  } else {
+    label.textContent = 'Contenu JSON — Phases de rééducation';
+    hint.innerHTML = '<code>{"phases":[{id,name,weeks,color,borderColor,objectives:[],precautions:[],exitCriteria:[],weekly:[{week,content}]}]}</code>';
+  }
+}
+
+function _saveProtoEditor(){
+  var name = document.getElementById('pe-name').value.trim();
+  if(!name){ alert('Le nom est obligatoire.'); return; }
+
+  var contentRaw = (document.getElementById('pe-content').value||'').trim();
+  var content = {};
+  if(contentRaw){
+    try { content = JSON.parse(contentRaw); }
+    catch(e){
+      var errEl = document.getElementById('pe-content-err');
+      errEl.textContent = 'JSON invalide : ' + e.message;
+      errEl.style.display = 'block';
+      return;
+    }
+  }
+  document.getElementById('pe-content-err').style.display = 'none';
+
+  var type = document.getElementById('pe-type').value;
+  var newId = _peEditId || ('custom-' + Date.now());
+
+  var proto = {
+    id: newId,
+    type: type,
+    name: name,
+    icon: document.getElementById('pe-icon').value.trim() || '📋',
+    category: document.getElementById('pe-category').value.trim(),
+    source: document.getElementById('pe-source').value.trim(),
+    duration: document.getElementById('pe-duration').value.trim(),
+    description: document.getElementById('pe-description').value.trim(),
+    isCustom: true,
+  };
+  if(type === 'library'){
+    if(content.branches)  proto.branches  = content.branches;
+    if(content.blocs)     proto.blocs     = content.blocs;
+    if(content.entryTest) proto.entryTest = content.entryTest;
+  } else {
+    if(content.phases) proto.phases = content.phases;
+  }
+
+  /* Remplacer si l'ID existe déjà dans _customProtocols, sinon ajouter */
+  var idx = _customProtocols.findIndex(function(p){ return p.id === newId; });
+  if(idx >= 0) _customProtocols[idx] = proto;
+  else _customProtocols.push(proto);
+
+  _saveCustomProtocols(function(){
+    closeProtoEditor();
+    renderProtocols();
+  });
+}
+
+function _deleteCustomProto(id){
+  var proto = _customProtocols.find(function(p){ return p.id === id; });
+  if(!proto || !confirm('Supprimer le protocole « '+(proto.name||id)+' » ?')) return;
+  _customProtocols = _customProtocols.filter(function(p){ return p.id !== id; });
+  _saveCustomProtocols(function(){ renderProtocols(); });
+}
+
+function _peExportJson(){
+  var raw = (document.getElementById('pe-content').value||'').trim();
+  if(!raw){ alert('Aucun contenu à exporter.'); return; }
+  var blob = new Blob([raw], {type:'application/json'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (document.getElementById('pe-name').value.trim()||'protocole') + '.json';
+  a.click();
+}
+
 /* ─── Rendu principal (async Supabase → render sync) ─────────── */
 function renderProtocols() {
   var body = document.getElementById('proto-body');
   if(!body) return;
-  if(!PROTOCOLS_REF || !PROTOCOLS_REF.length){
+  if(!_getAllProtocols().length){
     body.innerHTML = '<div class="proto-empty">Aucun protocole disponible.</div>';
     return;
   }
@@ -8460,7 +8740,7 @@ function renderProtocols() {
     var activePpIds = pps.filter(function(pp){ return pp.status==='active'; }).map(function(pp){ return pp.id; });
     if(!activePpIds.length){
       _protoPatientData = {};
-      PROTOCOLS_REF.forEach(function(proto){
+      _getAllProtocols().forEach(function(proto){
         _protoPatientData[proto.id] = { pp: ppMap[proto.id]||null, checks: {}, seancesStats: seancesStats[proto.id]||{} };
       });
       _renderProtocolsSync();
@@ -8481,7 +8761,7 @@ function renderProtocols() {
         checksByPp[c.patient_protocol_id][c.phase_id][c.criteria_index] = c.checked;
       });
       _protoPatientData = {};
-      PROTOCOLS_REF.forEach(function(proto){
+      _getAllProtocols().forEach(function(proto){
         var pp = ppMap[proto.id] || null;
         var ch = pp ? (checksByPp[pp.id] || {}) : {};
         _protoPatientData[proto.id] = { pp: pp, checks: ch, seancesStats: seancesStats[proto.id]||{} };
@@ -8499,7 +8779,7 @@ function _renderProtocolsSync() {
   var body = document.getElementById('proto-body');
   if(!body) return;
   var html = '';
-  PROTOCOLS_REF.forEach(function(proto){ html += _renderProtocolCard(proto); });
+  _getAllProtocols().forEach(function(proto){ html += _renderProtocolCard(proto); });
   body.innerHTML = html;
   if(typeof _applyRoleUI === 'function') _applyRoleUI();
 }
@@ -8554,6 +8834,10 @@ function _renderProtocolCard(proto) {
     + '<div class="proto-card-header-meta">'+_escHtml(proto.source)+' · '+_escHtml(proto.duration)
       + '<span class="proto-type-badge proto-type-badge--rehab">Rééducation</span></div>'
     + '</div>'
+    + ((_isAdmin()) ? '<div class="proto-admin-btns r4p-admin-only" onclick="event.stopPropagation()">'
+      + '<button class="proto-admin-btn proto-admin-btn--edit" onclick="openProtoEditor(\''+proto.id+'\')">✏️</button>'
+      + (!proto.isBuiltin ? '<button class="proto-admin-btn proto-admin-btn--del" onclick="_deleteCustomProto(\''+proto.id+'\')">🗑</button>' : '')
+      + '</div>' : '')
     + '<span class="proto-card-chevron">›</span>'
     + '</div>'
     + '<div class="proto-card-body">'
@@ -8682,6 +8966,10 @@ function _renderProtocolCardLibrary(proto) {
     + '<div class="proto-card-header-meta">'+_escHtml(proto.source)+' · '+_escHtml(proto.duration||'')
       + '<span class="proto-type-badge proto-type-badge--library">Bibliothèque</span></div>'
     + '</div>'
+    + ((_isAdmin()) ? '<div class="proto-admin-btns r4p-admin-only" onclick="event.stopPropagation()">'
+      + '<button class="proto-admin-btn proto-admin-btn--edit" onclick="openProtoEditor(\''+proto.id+'\')">✏️</button>'
+      + (!proto.isBuiltin ? '<button class="proto-admin-btn proto-admin-btn--del" onclick="_deleteCustomProto(\''+proto.id+'\')">🗑</button>' : '')
+      + '</div>' : '')
     + '<span class="proto-card-chevron">›</span>'
     + '</div>'
     + '<div class="proto-card-body">'
