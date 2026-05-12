@@ -101,6 +101,12 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .stmpl-add-btn:hover { background:#3a80c9; }
 .stmpl-empty  { padding:28px 16px; text-align:center; color:var(--muted); font-style:italic; font-size:.81rem; line-height:1.5; }
 .stmpl-filter-bar { padding:6px 10px 8px; background:var(--navy); }
+.stmpl-collapse-row { display:flex; gap:4px; padding:0 10px 7px; background:var(--navy); }
+.stmpl-collapse-btn { flex:1; background:none; border:1px solid rgba(255,255,255,.14); border-radius:5px; padding:3px 6px; font-size:.66rem; color:rgba(255,255,255,.4); cursor:pointer; font-family:inherit; transition:background .12s,color .12s; }
+.stmpl-collapse-btn:hover { background:rgba(255,255,255,.1); color:rgba(255,255,255,.85); }
+.picker-collapse-row { display:flex; gap:4px; padding:4px 8px 6px; background:rgba(0,0,0,.18); }
+.picker-collapse-btn { flex:1; background:none; border:1px solid rgba(255,255,255,.11); border-radius:5px; padding:3px 6px; font-size:.65rem; color:rgba(255,255,255,.38); cursor:pointer; font-family:inherit; transition:background .1s,color .1s; }
+.picker-collapse-btn:hover { background:rgba(255,255,255,.08); color:rgba(255,255,255,.8); }
 .stmpl-cat-select {
   width:100%; padding:5px 24px 5px 8px; border:none; border-radius:6px;
   background:rgba(255,255,255,.15); color:#fff; font-size:.75rem; outline:none; cursor:pointer;
@@ -1472,6 +1478,10 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
         <option value="Autre">📁 Autre</option>
       </select>
     </div>
+    <div class="stmpl-collapse-row">
+      <button class="stmpl-collapse-btn" onclick="_stmplExpandAll()" title="Tout déplier">↕ Tout déplier</button>
+      <button class="stmpl-collapse-btn" onclick="_stmplCollapseAll()" title="Tout replier">↕ Tout replier</button>
+    </div>
     <div class="stmpl-scroll" id="stmplScroll">
       <div class="stmpl-empty">Chargement…</div>
     </div>
@@ -1529,6 +1539,10 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
     <div id="sb-tab-picker">
       <div class="picker-header">
         <input class="picker-search" id="pickerSearch" type="text" placeholder="Rechercher un exercice…" oninput="_pickerFilter(this.value)">
+      </div>
+      <div class="picker-collapse-row">
+        <button class="picker-collapse-btn" onclick="_pickerExpandAll()">↕ Tout déplier</button>
+        <button class="picker-collapse-btn" onclick="_pickerCollapseAll()">↕ Tout replier</button>
       </div>
       <div class="picker-scroll" id="sb-picker-scroll">
         <div class="picker-empty">Ouvre le builder pour accéder aux templates.</div>
@@ -7883,6 +7897,38 @@ function filterSidebarTemplates(){
   var sel = document.getElementById('stmplCatFilter');
   if(sel) sel.classList.toggle('has-filter', !!sel.value);
   _renderSidebarWithGroups();
+}
+
+/* ── Collapse / Expand all — sidebar templates ── */
+function _stmplCollapseAll(){
+  (_groups||[]).forEach(function(g){ _expandedGroups[String(g.id)] = false; });
+  var seen = {};
+  (_groups||[]).forEach(function(g){ seen[g.categorie||''] = true; });
+  Object.keys(seen).forEach(function(k){ _collapsedCats[k] = true; });
+  try{ localStorage.setItem('r4p-expanded-groups', JSON.stringify(_expandedGroups)); }catch(e){}
+  try{ localStorage.setItem('r4p-collapsed-cats',  JSON.stringify(_collapsedCats));  }catch(e){}
+  _renderSidebarWithGroups();
+}
+
+function _stmplExpandAll(){
+  (_groups||[]).forEach(function(g){ _expandedGroups[String(g.id)] = true; });
+  var seen = {};
+  (_groups||[]).forEach(function(g){ seen[g.categorie||''] = true; });
+  Object.keys(seen).forEach(function(k){ _collapsedCats[k] = false; });
+  try{ localStorage.setItem('r4p-expanded-groups', JSON.stringify(_expandedGroups)); }catch(e){}
+  try{ localStorage.setItem('r4p-collapsed-cats',  JSON.stringify(_collapsedCats));  }catch(e){}
+  _renderSidebarWithGroups();
+}
+
+/* ── Collapse / Expand all — picker ── */
+function _pickerCollapseAll(){
+  var scroll = document.getElementById('sb-picker-scroll');
+  if(scroll) scroll.querySelectorAll('.picker-group,.picker-tmpl,.picker-bloc').forEach(function(el){ el.classList.remove('open'); });
+}
+
+function _pickerExpandAll(){
+  var scroll = document.getElementById('sb-picker-scroll');
+  if(scroll) scroll.querySelectorAll('.picker-group,.picker-tmpl,.picker-bloc').forEach(function(el){ el.classList.add('open'); });
 }
 
 function _sidebarLoadProg(id){
