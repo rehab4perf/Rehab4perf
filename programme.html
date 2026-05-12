@@ -8571,6 +8571,19 @@ function _fetchCustomProtocolsFromSupabase(callback){
       _saveCustomProtocols(function(){ callback && callback(); });
       return;
     }
+    /* Merge : ajouter les entrees PROTOCOLS_REF manquantes (rattrapage migration partielle) */
+    var existingIds = _customProtocols.map(function(p){ return p.id; });
+    var missing = PROTOCOLS_REF.filter(function(p){ return existingIds.indexOf(p.id) === -1; });
+    if(missing.length){
+      missing.forEach(function(p){
+        var c = JSON.parse(JSON.stringify(p));
+        delete c.isBuiltin;
+        c.isCustom = true;
+        _customProtocols.push(c);
+      });
+      _saveCustomProtocols(function(){ callback && callback(); });
+      return;
+    }
     callback && callback();
   })
   .catch(function(){ callback && callback(); });
