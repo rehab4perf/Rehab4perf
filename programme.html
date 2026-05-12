@@ -484,9 +484,15 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .picker-bloc-hdr { display:flex; align-items:center; gap:5px; padding:4px 10px 4px 28px; cursor:pointer; transition:background .1s; }
 .picker-bloc-hdr:hover { background:rgba(255,255,255,.04); }
 .picker-bloc-title { flex:1; font-size:.7rem; font-weight:700; color:rgba(255,255,255,.45); }
-.picker-exo-row { display:flex; align-items:center; padding:3px 8px 3px 36px; gap:5px; transition:background .1s; }
+.picker-exo-row { display:flex; align-items:center; padding:3px 8px 3px 36px; gap:6px; transition:background .1s; }
 .picker-exo-row:hover { background:rgba(255,255,255,.05); }
 .picker-exo-name { flex:1; font-size:.71rem; color:rgba(255,255,255,.6); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.picker-exo-row .yt-thumb-wrap img { width:44px;height:25px; }
+.picker-exo-row .yt-thumb-wrap .yt-play::after { border-left-width:7px;border-top-width:4px;border-bottom-width:4px; }
+@media (min-width:768px) and (pointer:coarse) {
+  .picker-exo-row .yt-thumb-wrap img { width:64px;height:36px; }
+  .picker-exo-row .yt-thumb-wrap .yt-play::after { border-left-width:10px;border-top-width:6px;border-bottom-width:6px; }
+}
 .picker-plus { background:rgba(255,255,255,.1); border:none; color:#fff; border-radius:3px; width:18px; height:18px; font-size:.85rem; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; line-height:1; transition:background .1s; padding:0; }
 .picker-plus:hover { background:#2563EB; }
 .picker-add-all { margin:3px 10px 5px 20px; padding:3px 8px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.1); color:rgba(255,255,255,.5); border-radius:4px; font-size:.67rem; cursor:pointer; font-family:inherit; transition:background .1s; display:inline-block; }
@@ -4568,6 +4574,18 @@ renderLib('');
 .proto-dt-consigne      { padding:4px 8px;background:#FFFBEB;border-radius:4px;border-left:2px solid #F59E0B; }
 .proto-dt-consigne-line { font-size:.7rem;color:#92400E;line-height:1.45; }
 .proto-dt-branch-actions { display:flex;justify-content:flex-end;padding:2px 0 4px; }
+/* ── Vignettes vidéo dans les cartes protocoles ── */
+.proto-dt-exo-main { display:flex;align-items:flex-start;gap:8px; }
+.proto-dt-exo .yt-thumb-wrap img  { width:64px;height:36px; }
+.proto-lib-exo-row { align-items:flex-start; }
+.proto-lib-exo-row .yt-thumb-wrap img { width:64px;height:36px; }
+/* iPad : touch targets plus grands */
+@media (min-width:768px) and (pointer:coarse) {
+  .proto-dt-exo .yt-thumb-wrap img,
+  .proto-lib-exo-row .yt-thumb-wrap img { width:88px;height:50px; }
+  .proto-dt-exo .yt-thumb-wrap .yt-play::after { border-left-width:14px;border-top-width:8px;border-bottom-width:8px; }
+  .proto-lib-exo-row .yt-thumb-wrap .yt-play::after { border-left-width:14px;border-top-width:8px;border-bottom-width:8px; }
+}
 </style>
 
 <div class="proto-overlay" id="proto-overlay" onclick="if(event.target===this)closeProtoPanel()">
@@ -6482,7 +6500,9 @@ function _pickerRenderTemplate(p, search){
         h += '</div>';
         h += '<div class="picker-bloc-body">';
         (bloc.exos||[]).forEach(function(exo,ei){
+          var _pkThumb = exo.url ? _ytThumbHtml(exo.url) : null;
           h += '<div class="picker-exo-row">';
+          if(_pkThumb) h += _pkThumb;
           h += '<span class="picker-exo-name">'+escH(exo.name||'Exercice')+'</span>';
           h += '<button class="picker-plus" onclick="_addExoFromPicker(\''+p.id+'\','+bi+','+ei+')" title="Ajouter">+</button>';
           h += '</div>';
@@ -8599,8 +8619,12 @@ function _renderProtocolCardLibrary(proto) {
           + ' '+_escHtml(bloc.title)+'</div>';
         (bloc.exos||[]).forEach(function(exo){
           blocsHtml += '<div class="proto-dt-exo">';
-          if(exo.url) blocsHtml += '<a class="proto-dt-exo-link" href="'+exo.url+'" target="_blank" rel="noopener">▶ '+_escHtml(exo.name)+'</a>';
+          var _dtThumb = exo.url ? _ytThumbHtml(exo.url) : null;
+          blocsHtml += '<div class="proto-dt-exo-main">';
+          if(_dtThumb) blocsHtml += _dtThumb;
+          if(exo.url) blocsHtml += '<a class="proto-dt-exo-link" href="'+exo.url+'" target="_blank" rel="noopener">'+_escHtml(exo.name)+'</a>';
           else        blocsHtml += '<span class="proto-dt-exo-name">'+_escHtml(exo.name)+'</span>';
+          blocsHtml += '</div>';
           if(exo.consigne){
             blocsHtml += '<div class="proto-dt-consigne">';
             exo.consigne.split('\n').filter(Boolean).forEach(function(l){
@@ -8634,9 +8658,13 @@ function _renderProtocolCardLibrary(proto) {
         else if(e.reps)  detail.push(e.reps);
         else if(e.duree) detail.push(e.duree+'s');
         if(e.recup) detail.push('↺ '+e.recup+'s');
+        var _libThumb = e.url ? _ytThumbHtml(e.url) : null;
         blocsHtml += '<div class="proto-lib-exo-row">'
-          + '<span style="flex:1;">'+_escHtml(e.name||'Exercice')+'</span>'
-          + (detail.length ? '<span style="font-size:.7rem;color:#6B7280;white-space:nowrap;">'+detail.join(' · ')+'</span>' : '')
+          + (_libThumb || '')
+          + '<div style="flex:1;min-width:0;">'
+          + '<span style="display:block;">'+_escHtml(e.name||'Exercice')+'</span>'
+          + (detail.length ? '<span style="font-size:.7rem;color:#6B7280;">'+detail.join(' · ')+'</span>' : '')
+          + '</div>'
           + '</div>';
       });
       blocsHtml += '</div>';
