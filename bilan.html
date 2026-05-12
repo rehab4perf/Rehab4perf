@@ -1498,6 +1498,10 @@ textarea { resize:none !important; overflow:hidden !important; }
       <tbody id="tb-ra-force-d"></tbody>
     </table>
   </div>
+  <table class="test-table" style="margin:0;border-radius:0;border-top:2px solid var(--border)">
+    <thead><tr><th>Test unique</th><th style="width:130px">Résultat</th><th>Obs.</th></tr></thead>
+    <tbody id="tb-ra-transverse"></tbody>
+  </table>
 </div>
 
 <div class="block">
@@ -3053,8 +3057,9 @@ const TESTS = {
   'tb-ge-knee-g':{type:'ortho',items:['Break test Quadriceps','Break test Ischio-jambiers']},
   'tb-ge-hip-d': {type:'ortho',items:['Break test ABD hanche','Break test ADD hanche']},
   'tb-ge-hip-g': {type:'ortho',items:['Break test ABD hanche','Break test ADD hanche']},
-  'tb-ra-force-d':{type:'ortho',items:['Break test Abdominaux (droits CE+CI)','Break test Obliques','Break test Extenseurs rachis','Test du transverse (toux + valsalva)']},
-  'tb-ra-force-g':{type:'ortho',items:['Break test Abdominaux (droits CE+CI)','Break test Obliques','Break test Extenseurs rachis','Test du transverse (toux + valsalva)']},
+  'tb-ra-force-d':{type:'ortho',items:['Break test Abdominaux (droits CE+CI)','Break test Obliques','Break test Extenseurs rachis']},
+  'tb-ra-force-g':{type:'ortho',items:['Break test Abdominaux (droits CE+CI)','Break test Obliques','Break test Extenseurs rachis']},
+  'tb-ra-transverse':{type:'ortho',items:['Test du transverse (toux + valsalva)']},
   'tb-ha-force-d':{type:'ortho',items:['Break test Adducteurs','Break test Abdominaux (CE+CI + obliques)','Break test Fléchisseurs hanche','Break test Abduction hanche','Break test Rotation interne hanche','Break test Rotation externe hanche']},
   'tb-ha-force-g':{type:'ortho',items:['Break test Adducteurs','Break test Abdominaux (CE+CI + obliques)','Break test Fléchisseurs hanche','Break test Abduction hanche','Break test Rotation interne hanche','Break test Rotation externe hanche']},
   'tb-pi-global':{type:'ortho',items:['Liberté articulaire globale','Flexion plantaire','Flexion dorsale']},
@@ -3706,7 +3711,7 @@ function onTestChange(sel, tableId, idx) {
 function updateBadges() {
   const sections = {
     'epaule': ['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho-mob','tb-ep-ortho-conf'],
-    'rachis': ['tb-ra-cerv','tb-ra-lomb','tb-ra-force-d','tb-ra-force-g'],
+    'rachis': ['tb-ra-cerv','tb-ra-lomb','tb-ra-force-d','tb-ra-force-g','tb-ra-transverse'],
     'hanche': ['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-force-d','tb-ha-force-g'],
     'genou':  ['tb-ge-global','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-knee-d','tb-ge-knee-g','tb-ge-hip-d','tb-ge-hip-g'],
     'pied':   ['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-fonc','tb-pi-force-ca','tb-pi-force-cs'],
@@ -4134,7 +4139,7 @@ function _buildAllTestsHtml() {
   // 2. Bilan ortho
   var orthoSections = [
     { label:'EPAULE', fields:[['ep-type','Type'],['ep-marqueur','Marqueur']], tables:['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho-mob','tb-ep-ortho-conf'], concl:'ep-conclusion', opt:'ep-opt' },
-    { label:'RACHIS', fields:[['ra-marqueur','Marqueur'],['ra-mckenzie','McKenzie']], tables:['tb-ra-cerv','tb-ra-lomb','tb-ra-force-d','tb-ra-force-g'], concl:'ra-conclusion', opt:'ra-opt' },
+    { label:'RACHIS', fields:[['ra-marqueur','Marqueur'],['ra-mckenzie','McKenzie']], tables:['tb-ra-cerv','tb-ra-lomb','tb-ra-force-d','tb-ra-force-g','tb-ra-transverse'], concl:'ra-conclusion', opt:'ra-opt' },
     { label:'HANCHE', fields:[['ha-marqueur','Marqueur']], tables:['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-force-d','tb-ha-force-g'], concl:'ha-conclusion', opt:'ha-opt' },
     { label:'GENOU', fields:[['ge-marqueur','Marqueur']], tables:['tb-ge-global','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-knee-d','tb-ge-knee-g','tb-ge-hip-d','tb-ge-hip-g'], concl:'ge-conclusion', opt:'ge-opt' },
     { label:'PIED / CHEVILLE', fields:[['pi-marqueur','Marqueur']], tables:['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-fonc','tb-pi-force-ca','tb-pi-force-cs'], concl:'pi-conclusion', opt:'pi-opt' },
@@ -4576,6 +4581,14 @@ function _buildAllTestsHtml() {
       if (toWork.indexOf(item) === -1) toWork.push(item);
     });
   });
+
+  // ── Test du transverse ──────────────────────────────────────────────────
+  (function(){
+    var tbody = document.getElementById('tb-ra-transverse'); if (!tbody) return;
+    var row = tbody.querySelector('tr'); if (!row) return;
+    var sel = row.querySelector('select');
+    if (sel && sel.value === 'Positif') toWork.push("Travailler l'activation du transverse");
+  })();
 
   // ── Mobilité rachis insuffisante ────────────────────────────────────────
   (function(){
