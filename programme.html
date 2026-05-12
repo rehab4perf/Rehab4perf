@@ -574,7 +574,8 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 #builderPanel.r4p-readonly .cible-add-btn,
 #builderPanel.r4p-readonly .cible-del-btn,
 #builderPanel.r4p-readonly .methode-bar,
-#builderPanel.r4p-readonly button[onclick*="addBloc"] { display:none !important; }
+#builderPanel.r4p-readonly button[onclick*="addBloc"],
+#builderPanel.r4p-readonly #clearBlocsBtn { display:none !important; }
 
 /* Champs : apparence identique au mode normal, juste non-interactifs */
 #builderPanel.r4p-readonly .cell-input,
@@ -1766,6 +1767,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
       <input class="patient-input" type="text" id="patientName" placeholder="Nom de la séance / patient" style="flex:1;" />
       <button class="btn btn-outline" onclick="addBloc()" style="white-space:nowrap;font-size:.76rem;">+ Bloc</button>
       <button class="cardio-add-btn" onclick="addCardioBloc()" title="Ajouter un bloc cardio">🏃 Cardio</button>
+      <button id="clearBlocsBtn" onclick="clearBlocs()" title="Vider tous les blocs" style="display:none;background:none;border:1px solid #e0b0b0;color:#c0392b;border-radius:7px;padding:4px 10px;font-size:.74rem;cursor:pointer;white-space:nowrap;font-family:inherit;transition:background .15s;">🗑 Vider</button>
     </div>
     <div class="session-area" id="sessionArea">
       <div class="empty-state" id="emptyState">
@@ -2859,6 +2861,16 @@ function setActiveBloc(id){
   });
 }
 
+function clearBlocs(){
+  if(!blocs.length) return;
+  if(!confirm('Vider tous les blocs ?')) return;
+  blocs = [];
+  activeBloc = null;
+  _draftSave();
+  renderSession();
+  renderLib(document.getElementById('searchInput').value.toLowerCase());
+}
+
 function clearSession(){
   if(blocs.length===0) return;
   if(!confirm('Effacer toute la séance ?')) return;
@@ -3116,6 +3128,8 @@ function _estimateSessionMin(blocsArr){
    ================================================================ */
 function renderSession(){
   var area = document.getElementById('sessionArea');
+  var clearBtn = document.getElementById('clearBlocsBtn');
+  if(clearBtn) clearBtn.style.display = blocs.length ? '' : 'none';
   if(!blocs.length){
     area.innerHTML = '<div class="empty-state" id="emptyState"><div class="icon">📋</div><p>Ajoutez un bloc puis sélectionnez des exercices<br>depuis la bibliothèque pour construire votre séance.</p></div>';
     updateTargetBlocSelect();
