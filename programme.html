@@ -3353,6 +3353,8 @@ function renderSession(){
   });
   // Auto-save brouillon après chaque rendu
   if(typeof _draftSave === 'function') _draftSave();
+  // Sync état "déjà ajouté" dans le picker
+  if(typeof _pickerRefreshAddedState === 'function') _pickerRefreshAddedState();
 }
 
 function updateTargetBlocSelect(){
