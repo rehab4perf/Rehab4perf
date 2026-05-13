@@ -8961,6 +8961,135 @@ var PROTOCOLS_REF = [
         ]
       }
     ]
+  },
+  {
+    id: 'menisque',
+    type: 'rehab',
+    name: 'Réparation Méniscale',
+    icon: '🦵',
+    category: 'Pathologie',
+    source: 'Kinesport',
+    duration: 'Variable selon critères',
+    isBuiltin: true,
+    phases: [
+      {
+        id: 'p1',
+        name: 'Phase 1 — Post-lésionnelle / Mouvement protégé',
+        weeks: '',
+        color: '#EFF6FF',
+        borderColor: '#3B82F6',
+        objectives: [
+          'Protéger la cicatrisation des tissus réparés',
+          'Réduire la douleur et l\'œdème au niveau du genou, du pied et de la cheville',
+          'Rétablir l\'extension complète du genou',
+          'Restaurer les quadriceps et l\'activation des muscles environnants'
+        ],
+        precautions: [
+          'Protection maximale — pas de course, saut ou activité pliométrique',
+          'Mise en charge modifiée et/ou assistée',
+          'Déchirures stables : MEC autorisée sous couvert attelle verrouillée en extension 4 semaines → déverrouillage semaines 5/6 → sevrage > 6 semaines',
+          'Déchirures instables : MEC proscrite 4 semaines → MEC progressive > 4 semaines → déverrouillage à 90° > 6 semaines → sevrage quand marche qualitative'
+        ],
+        weekly: [
+          { week: 'Exercices', content: 'Mobilité patellaire · Extension complète de genou · Flexion progressive selon recommandations postopératoires · Stabilisation du tronc · Renforcement autour de la hanche · Recrutement quadricipital progressif sans douleur fémoro-patellaire · Marche selon consignes postopératoires · Équilibre bipodal selon consignes postopératoires' }
+        ],
+        exitCriteria: [
+          'Absence d\'épanchement actif',
+          'Mobilité patellaire normale',
+          '20 levées de jambe sans faiblesse des extenseurs',
+          'Extension active complète du genou',
+          'Démarche normale sans compensation bassin/tronc',
+          'Activation du quadriceps validée',
+          'Qualité trophique du genou',
+          'Autorisation médicale pour mise en charge complète'
+        ]
+      },
+      {
+        id: 'p2',
+        name: 'Phase 2 — À faible impact',
+        weeks: '',
+        color: '#F0FDF4',
+        borderColor: '#22C55E',
+        objectives: [
+          'Rétablir l\'amplitude articulaire passive complète',
+          'Rétablir la cinématique de mise en charge symétrique',
+          'Rétablir l\'équilibre jambe opérée / jambe controlatérale',
+          'Normaliser le schéma de marche sans assistance',
+          'Retour au travail léger (bureau, conduite)',
+          'Retour sport faible impact (natation, cyclisme, marche linéaire 2×/semaine)'
+        ],
+        precautions: [],
+        weekly: [
+          { week: 'Exercices', content: 'Maintenir extension genou · Progression de la flexion selon restrictions · Pratique aquatique · Stabilisation du tronc · Renforcement chaîne postérieure · Exercices chaîne fermée bipodal → unipodal · Exercices chaîne ouverte sans douleur · Exercices cardiovasculaires' }
+        ],
+        exitCriteria: [
+          'Montée/descente escaliers sans compensations',
+          'Pas de douleur post-activité > 24h',
+          'Squat 75° qualitatif sans douleur',
+          'Station unipodale 30s sans perte d\'équilibre ni douleur',
+          'Démarche normale (escaliers)',
+          'Qualités biomécaniques et proprioceptives validées'
+        ]
+      },
+      {
+        id: 'p3',
+        name: 'Phase 3 — Linéaire / Force & Course',
+        weeks: '',
+        color: '#FFF7ED',
+        borderColor: '#F97316',
+        objectives: [
+          'Maintenir l\'amplitude articulaire passive complète',
+          'Rétablir la stabilité durant les activités unipodales',
+          'Rétablir le schéma de course',
+          'Retour à l\'activité professionnelle',
+          'Retour sport amateur (Tegner 4–5)'
+        ],
+        precautions: [
+          'Autorisation requise pour reprise course/saut (généralement pas avant 3 mois post-réparation méniscale)',
+          'Pas de changement de direction'
+        ],
+        weekly: [],
+        exitCriteria: [
+          'Douleur < 2/10 durant les exercices',
+          'Pas de valgus dynamique en unipodal',
+          'Single Leg Step Down sans ou léger valgus',
+          'Force LSI > 80%',
+          'Récupération force symétrique',
+          'Schéma de course normal',
+          'Pas de douleur pendant ni après les activités'
+        ]
+      },
+      {
+        id: 'p4',
+        name: 'Phase 4 — Retour à l\'activité (Impact élevé)',
+        weeks: '',
+        color: '#FDF4FF',
+        borderColor: '#A855F7',
+        objectives: [
+          'Progression course/agilité en interval training',
+          'Contrôle réception bipodale/unipodale sans compensation inter-membres',
+          'Retour sport de contact amateur',
+          'Retour compétition / haut niveau (Tegner 6–10)'
+        ],
+        precautions: [
+          'Réservé aux patients ayant un objectif d\'activité Tegner 6 à 10'
+        ],
+        weekly: [
+          { week: 'Exercices', content: 'Force et endurance sur les exercices de la phase 3 · Progression pliométrie / agilité / sauts · Puissance · Rééducation neuromusculaire · Gainage et stabilisation · Entraînements spécifiques au sport · Exercices cardiovasculaires' }
+        ],
+        exitCriteria: [
+          'Pas d\'œdème',
+          'Circonférence cuisse Δ < 1,5 cm',
+          'Amplitude articulaire égale',
+          'Single Leg Step Down sans valgus dynamique',
+          'Single hop / Triple hop / Triple crossover hop / 6m hop / 505 Test validés',
+          'ACL-RSI > 65%',
+          'Tests de sauts LSI > 90%',
+          'Force isocinétisme quadriceps > 90% côté opposé',
+          '505 test > 90% côté opposé'
+        ]
+      }
+    ]
   }
 ];
 
