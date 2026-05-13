@@ -4871,6 +4871,12 @@ renderLib('');
           <input type="text" id="pe-duration" placeholder="Ex : Séance unique, 3 mois…">
         </div>
       </div>
+      <div class="proto-edit-row">
+        <div class="pe-field">
+          <label>Articulation</label>
+          <input type="text" id="pe-joint" placeholder="Ex : Genou, Épaule, Cheville…">
+        </div>
+      </div>
       <div class="pe-field">
         <label>Description courte</label>
         <textarea id="pe-description" rows="2" placeholder="Description affichée sur la carte…"></textarea>
@@ -9249,7 +9255,15 @@ function _loadCustomProtocols(){
 function _getAllProtocols(){
   /* Si _customProtocols est peuplé, on l'utilise seul.
      Sinon fallback sur PROTOCOLS_REF (avant migration). */
-  return _customProtocols.length ? _customProtocols : PROTOCOLS_REF;
+  var protos = _customProtocols.length ? _customProtocols : PROTOCOLS_REF;
+  /* Merge le champ joint depuis PROTOCOLS_REF pour les protocoles qui ne l'ont pas encore */
+  return protos.map(function(p){
+    if(!p.joint){
+      var ref = PROTOCOLS_REF.find(function(r){ return r.id === p.id; });
+      if(ref && ref.joint) return Object.assign({}, p, { joint: ref.joint });
+    }
+    return p;
+  });
 }
 
 function _saveCustomProtocols(callback){
@@ -9821,6 +9835,7 @@ function openProtoEditor(protoId){
   document.getElementById('pe-category').value    = proto ? (proto.category||'') : '';
   document.getElementById('pe-source').value      = proto ? (proto.source||'') : '';
   document.getElementById('pe-duration').value    = proto ? (proto.duration||'') : '';
+  document.getElementById('pe-joint').value       = proto ? (proto.joint||'') : '';
   document.getElementById('pe-description').value = proto ? (proto.description||'') : '';
 
   /* Contenu selon type */
@@ -9872,6 +9887,7 @@ function _saveProtoEditor(){
     category: document.getElementById('pe-category').value.trim(),
     source: document.getElementById('pe-source').value.trim(),
     duration: document.getElementById('pe-duration').value.trim(),
+    joint: document.getElementById('pe-joint').value.trim(),
     description: document.getElementById('pe-description').value.trim(),
     isCustom: true,
   };
