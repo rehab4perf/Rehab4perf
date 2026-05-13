@@ -9090,6 +9090,110 @@ var PROTOCOLS_REF = [
         ]
       }
     ]
+  },
+  {
+    id: 'lcm-chirurgical',
+    type: 'rehab',
+    name: 'LCM post-chirurgical',
+    icon: '🦵',
+    category: 'Pathologie',
+    source: 'Kinesport',
+    duration: '20 semaines (RTP 6–9 mois)',
+    isBuiltin: true,
+    phases: [
+      {
+        id: 'p1',
+        name: 'Phase 1 — Post-opératoire',
+        weeks: 'S0 → S6',
+        color: '#EFF6FF',
+        borderColor: '#3B82F6',
+        objectives: [
+          'Amplitude de mouvement',
+          'Marche',
+          'Soins de la plaie',
+          'Contrôle douleur et œdème',
+          'Renforcement précoce'
+        ],
+        precautions: [
+          'Attelle articulée : 0–90° de flexion les 4 premières semaines, puis 130° à 6 semaines',
+          'ROM passive les 2 premières semaines → active assistée → active',
+          'ROM complète attendue à 6–8 semaines (peut prendre jusqu\'à 6–10 semaines)',
+          'Marche en décharge ou pas-simulé durant les 6 premières semaines',
+          'Ablation des sutures 10–14 jours post-op'
+        ],
+        weekly: [
+          { week: 'Exercices', content: 'Mobilisation rotulienne, tissus mous et cicatriciels · Vélo stationnaire selon amplitudes tolérées · Réduction œdème : drainage, cryothérapie, pressothérapie · Récupération activation quadriceps · Renforcement muscles de hanche (adducteurs, abducteurs, extenseurs) · Activation pompe tricipitale avec maintien de l\'attelle' }
+        ],
+        exitCriteria: [
+          'Pas de douleur durant la mobilisation 0–90°',
+          'Sweep test (0–1+)',
+          'Lever jambe tendue sans perte d\'activation du quadriceps',
+          'Marche sans béquille, sans boiterie et sans douleur avec attelle déverrouillée',
+          'Douleur, œdème, ROM et activation quadriceps contrôlés'
+        ]
+      },
+      {
+        id: 'p2',
+        name: 'Phase 2 — Contrôle Moteur',
+        weeks: 'S6 → S12',
+        color: '#F0FDF4',
+        borderColor: '#22C55E',
+        objectives: [
+          'Récupération de la force',
+          'Correction des facteurs causaux',
+          'Course en ligne à faible intensité'
+        ],
+        precautions: [
+          'Renforcement chaîne fermée possible à partir de 6 semaines post-op si contrôle quadricipital',
+          'Leg Press limité à 70° sur les premières séances en chaîne fermée',
+          'Vigilance sur les facteurs de causalité : valgus genou, faiblesse abducteurs/rotateurs externes hanche, pronation pied, faiblesse du tronc',
+          'Reprise course : balnéothérapie → tapis → terrain'
+        ],
+        weekly: [
+          { week: 'Exercices', content: 'Renforcement progressif chaîne ouverte → chaîne fermée · Stabilisateurs dynamiques du genou (quadriceps, ischio-jambiers) · Stabilisateurs sus- et sous-jacents (bassin, glutéaux, triceps sural) · Course en ligne à faible intensité progressive (distances spécifiques au sport)' }
+        ],
+        exitCriteria: [
+          'LSI > 80%',
+          'Pas de valgus de genou dans les exercices de réhabilitation',
+          'Pas de valgus ni de douleur lors du jogging en ligne',
+          'Récupération d\'une force symétrique',
+          'Correction biomécanique validée',
+          'Course en ligne qualitative'
+        ]
+      },
+      {
+        id: 'p3',
+        name: 'Phase 3 — Retour au sport',
+        weeks: 'S12 → RTP',
+        color: '#FFF7ED',
+        borderColor: '#F97316',
+        objectives: [
+          'Progresser de la course à faible intensité au sprint',
+          'Travail du changement de direction',
+          'Incorporer renforcement fonctionnel',
+          'Récupération des performances physiques'
+        ],
+        precautions: [
+          'Vigilance absolue sur le valgus de genou lors des changements de direction',
+          'Progression COD : excentrique décélération → poussée → COD complet',
+          'Adaptation au sport, à la position et aux capacités du sportif'
+        ],
+        weekly: [
+          { week: 'Exercices', content: 'Progression course : distance spécifique au sport → volume → intensité → sprint · Changements de direction progressifs · Renforcement fonctionnel : proprioception, pliométrie, agilité, exercices spécifiques au sport · Prévention secondaire' }
+        ],
+        exitCriteria: [
+          'ROM similaire au côté opposé',
+          'Pas de douleur à la palpation du LCM',
+          'Signe du glaçon négatif',
+          'Valgus stress test négatif (pas d\'instabilité)',
+          'LSI > 90% quadriceps et ischio-jambiers',
+          'Pas de douleur au sprint',
+          'Pas de douleur ni valgus lors des COD, pliométrie et agilité',
+          'LSI > 90% au 505 test',
+          'Amplitude, stabilité articulaire, force musculaire et performances physiques adéquates'
+        ]
+      }
+    ]
   }
 ];
 
