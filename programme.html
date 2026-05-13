@@ -4536,6 +4536,10 @@ renderLib('');
 .pe-exo-url:focus { border-color:#4A90D9; }
 /* --- Body --- */
 .proto-body { padding:20px; }
+/* --- Protocol filter bar --- */
+.proto-filter-bar { padding:12px 20px 0; display:flex; align-items:center; gap:10px; }
+.proto-joint-sel { border:1px solid #CBD5E1; border-radius:20px; padding:5px 28px 5px 12px; font-size:.8rem; font-family:inherit; color:#334155; background:#F8FAFC url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2364748B'/%3E%3C/svg%3E") no-repeat right 10px center; background-size:10px; appearance:none; -webkit-appearance:none; cursor:pointer; transition:border-color .15s; }
+.proto-joint-sel:focus { outline:none; border-color:#6366F1; }
 /* --- Protocol card --- */
 .proto-card {
   border:1px solid #E2E8F0;border-radius:10px;overflow:hidden;margin-bottom:16px;
@@ -4814,6 +4818,11 @@ renderLib('');
       <h2>Protocoles de référence</h2>
       <button class="r4p-admin-only proto-head-add-btn" style="display:none" onclick="openProtoEditor(null)">+ Ajouter</button>
       <button class="proto-head-close" onclick="closeProtoPanel()">×</button>
+    </div>
+    <div class="proto-filter-bar">
+      <select class="proto-joint-sel" id="proto-joint-filter" onchange="_renderProtocolsSync()">
+        <option value="">Toutes les articulations</option>
+      </select>
     </div>
     <div class="proto-body" id="proto-body">
       <div class="proto-empty">Chargement…</div>
@@ -8584,6 +8593,7 @@ var PROTOCOLS_REF = [
     name: 'LCA',
     icon: '🦵',
     category: 'Pathologie',
+    joint: 'Genou',
     source: 'Antoine Peronnaud',
     duration: '4–6 mois',
     isBuiltin: true,
@@ -8685,6 +8695,7 @@ var PROTOCOLS_REF = [
     name: 'Latarjet',
     icon: '🦴',
     category: 'Pathologie',
+    joint: 'Épaule',
     source: 'Dr B. Khatir + Kinesport',
     duration: '6 mois (S0 → S24)',
     isBuiltin: true,
@@ -8968,6 +8979,7 @@ var PROTOCOLS_REF = [
     name: 'Réparation Méniscale',
     icon: '🦵',
     category: 'Pathologie',
+    joint: 'Genou',
     source: 'Kinesport',
     duration: 'Variable selon critères',
     isBuiltin: true,
@@ -9099,6 +9111,7 @@ var PROTOCOLS_REF = [
     category: 'Pathologie',
     source: 'Kinesport',
     duration: '20 semaines (RTP 6–9 mois)',
+    joint: 'Genou',
     isBuiltin: true,
     phases: [
       {
@@ -9997,8 +10010,31 @@ function renderProtocols() {
 function _renderProtocolsSync() {
   var body = document.getElementById('proto-body');
   if(!body) return;
+  var allProtos = _getAllProtocols();
+
+  /* rebuild joint filter options */
+  var filterSel = document.getElementById('proto-joint-filter');
+  if(filterSel) {
+    var joints = [];
+    allProtos.forEach(function(p){ if(p.joint && joints.indexOf(p.joint) === -1) joints.push(p.joint); });
+    joints.sort();
+    var currentVal = filterSel.value;
+    filterSel.innerHTML = '<option value="">Toutes les articulations</option>'
+      + joints.map(function(j){ return '<option value="' + j + '"' + (j === currentVal ? ' selected' : '') + '>' + j + '</option>'; }).join('');
+  }
+
+  /* filter by selected joint */
+  var selectedJoint = filterSel ? filterSel.value : '';
+  var filtered = selectedJoint
+    ? allProtos.filter(function(p){ return p.joint === selectedJoint; })
+    : allProtos;
+
   var html = '';
-  _getAllProtocols().forEach(function(proto){ html += _renderProtocolCard(proto); });
+  if(filtered.length === 0) {
+    html = '<div class="proto-empty">Aucun protocole pour cette articulation.</div>';
+  } else {
+    filtered.forEach(function(proto){ html += _renderProtocolCard(proto); });
+  }
   body.innerHTML = html;
   if(typeof _applyRoleUI === 'function') _applyRoleUI();
 }
