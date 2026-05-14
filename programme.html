@@ -10861,7 +10861,7 @@ function _protoUpdatePhase(protoId, phaseId) {
 
 /* ─── Ouvrir une phase dans le builder ──────────────────────── */
 function _protoOpenInBuilder(protoId, phaseId) {
-  var proto = PROTOCOLS_REF.find(function(p){ return p.id===protoId; });
+  var proto = _getAllProtocols().find(function(p){ return p.id===protoId; });
   if(!proto) return;
   var ph = proto.phases.find(function(p){ return p.id===phaseId; });
   if(!ph) return;
