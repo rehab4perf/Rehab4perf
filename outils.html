@@ -453,6 +453,17 @@ body {
 .cr-tpl-btn { flex:1; padding:7px 4px; border-radius:7px; border:1.5px solid var(--border); background:var(--surface2); font-size:.68rem; font-weight:600; font-family:inherit; cursor:pointer; color:var(--text2); transition:all .15s; text-align:center; line-height:1.4; }
 .cr-tpl-btn:hover { border-color:var(--border2); color:var(--text); }
 .cr-tpl-btn.active { background:var(--accent2); border-color:var(--accent2); color:#fff; }
+/* Signs 3-state */
+.cr-sign-row { display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border); gap:8px; }
+.cr-sign-row:last-of-type { border-bottom:none; }
+.cr-sign-label { font-size:.81rem; color:var(--text); flex:1; line-height:1.3; }
+.cr-sign-cycle { padding:4px 10px; border-radius:5px; border:1.5px solid var(--border); background:var(--surface2); font-size:.71rem; font-weight:600; font-family:inherit; cursor:pointer; white-space:nowrap; transition:all .15s; color:var(--text2); min-width:88px; text-align:center; }
+.cr-sign-cycle.st-valide { background:#E8F5EE; border-color:#2D6A4F; color:#2D6A4F; }
+.cr-sign-cycle.st-cours  { background:#FEF3EB; border-color:#D4600A; color:#D4600A; }
+/* Amplitude with status */
+.cr-amp-row { display:flex; align-items:flex-end; gap:4px; }
+.cr-amp-row input { flex:1; min-width:0; }
+.cr-amp-row select { width:88px; font-size:.7rem; flex-shrink:0; padding:7px 4px; }
 </style>
 </head>
 <body>
@@ -1281,17 +1292,15 @@ body {
 
         <div class="cr-section-hdr">Pathologie</div>
         <div class="cr-patho-grid">
-          <button class="cr-patho-btn" data-key="genou_ligament"   onclick="crSelectPatho(this)">Ligament genou</button>
-          <button class="cr-patho-btn" data-key="genou_menisque"   onclick="crSelectPatho(this)">Ménisque</button>
-          <button class="cr-patho-btn" data-key="genou_femoropat"  onclick="crSelectPatho(this)">Fémoro-patellaire</button>
-          <button class="cr-patho-btn" data-key="genou_sideration" onclick="crSelectPatho(this)">Sidération quad.</button>
-          <button class="cr-patho-btn" data-key="cheville"         onclick="crSelectPatho(this)">Entorse cheville</button>
-          <button class="cr-patho-btn" data-key="hanche"           onclick="crSelectPatho(this)">Hanche / Labrum</button>
-          <button class="cr-patho-btn" data-key="epaule_coiffe"    onclick="crSelectPatho(this)">Coiffe épaule</button>
-          <button class="cr-patho-btn" data-key="epaule_instab"    onclick="crSelectPatho(this)">Instabilité épaule</button>
-          <button class="cr-patho-btn" data-key="lombalgie"        onclick="crSelectPatho(this)">Lombalgie</button>
-          <button class="cr-patho-btn" data-key="reprise_cap"      onclick="crSelectPatho(this)">Reprise CAP</button>
-          <button class="cr-patho-btn" data-key="autre"            onclick="crSelectPatho(this)">Autre</button>
+          <button class="cr-patho-btn" data-key="lca"               onclick="crSelectPatho(this)">Ligament croisé antérieur</button>
+          <button class="cr-patho-btn" data-key="lcp"               onclick="crSelectPatho(this)">Ligament croisé postérieur</button>
+          <button class="cr-patho-btn" data-key="meniscectomie"     onclick="crSelectPatho(this)">Méniscectomie</button>
+          <button class="cr-patho-btn" data-key="suture_meniscale"  onclick="crSelectPatho(this)">Suture méniscale</button>
+          <button class="cr-patho-btn" data-key="latarjet"          onclick="crSelectPatho(this)">Latarjet</button>
+          <button class="cr-patho-btn" data-key="ligamento_cheville" onclick="crSelectPatho(this)">Ligamentoplastie cheville</button>
+          <button class="cr-patho-btn" data-key="entorse"           onclick="crSelectPatho(this)">Entorse</button>
+          <button class="cr-patho-btn" data-key="syndrome_rotulien" onclick="crSelectPatho(this)">Syndrome rotulien</button>
+          <button class="cr-patho-btn" data-key="autre"             onclick="crSelectPatho(this)">Autre</button>
         </div>
         <div class="cr-fg">
           <label for="cr-patho-detail">Précisions / Diagnostic complet</label>
@@ -1301,11 +1310,11 @@ body {
         <div class="cr-section-hdr">Bilan clinique</div>
         <div class="cr-field-group">
           <div class="cr-field-group-title">Amplitudes articulaires</div>
-          <div class="cr-grid4">
-            <div class="cr-fg"><label id="cr-lbl-ext-p">Ext. passive</label><input type="text" id="cr-amp-ext-p" placeholder="°"></div>
-            <div class="cr-fg"><label id="cr-lbl-ext-a">Ext. active</label><input type="text" id="cr-amp-ext-a" placeholder="°"></div>
-            <div class="cr-fg"><label id="cr-lbl-flex-p">Flex. passive</label><input type="text" id="cr-amp-flex-p" placeholder="°"></div>
-            <div class="cr-fg"><label id="cr-lbl-flex-a">Flex. active</label><input type="text" id="cr-amp-flex-a" placeholder="°"></div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div class="cr-fg"><label id="cr-lbl-ext-p">Ext. passive</label><div class="cr-amp-row"><input type="text" id="cr-amp-ext-p" placeholder="°"><select id="cr-amp-ext-p-stat"><option value="">—</option><option value="valide">✓ Validé</option><option value="cours">⟳ En cours</option></select></div></div>
+            <div class="cr-fg"><label id="cr-lbl-ext-a">Ext. active</label><div class="cr-amp-row"><input type="text" id="cr-amp-ext-a" placeholder="°"><select id="cr-amp-ext-a-stat"><option value="">—</option><option value="valide">✓ Validé</option><option value="cours">⟳ En cours</option></select></div></div>
+            <div class="cr-fg"><label id="cr-lbl-flex-p">Flex. passive</label><div class="cr-amp-row"><input type="text" id="cr-amp-flex-p" placeholder="°"><select id="cr-amp-flex-p-stat"><option value="">—</option><option value="valide">✓ Validé</option><option value="cours">⟳ En cours</option></select></div></div>
+            <div class="cr-fg"><label id="cr-lbl-flex-a">Flex. active</label><div class="cr-amp-row"><input type="text" id="cr-amp-flex-a" placeholder="°"><select id="cr-amp-flex-a-stat"><option value="">—</option><option value="valide">✓ Validé</option><option value="cours">⟳ En cours</option></select></div></div>
           </div>
         </div>
         <div class="cr-field-group cr-block-hidden" id="cr-block-force">
@@ -1338,11 +1347,12 @@ body {
         </div>
         <div class="cr-field-group">
           <div class="cr-field-group-title">Signes cliniques</div>
-          <div class="cr-toggle-row" onclick="crToggleSign('cr-sign-epanchement')"><div class="cr-toggle-track" id="cr-sign-epanchement"><div class="cr-toggle-thumb"></div></div><span style="font-size:.82rem">Épanchement articulaire</span></div>
-          <div class="cr-toggle-row" onclick="crToggleSign('cr-sign-sec')"><div class="cr-toggle-track" id="cr-sign-sec"><div class="cr-toggle-thumb"></div></div><span style="font-size:.82rem">Genou sec</span></div>
-          <div class="cr-toggle-row" onclick="crToggleSign('cr-sign-douleur')"><div class="cr-toggle-track" id="cr-sign-douleur"><div class="cr-toggle-thumb"></div></div><span style="font-size:.82rem">Douleur résiduelle</span></div>
-          <div class="cr-toggle-row" onclick="crToggleSign('cr-sign-mobilite')"><div class="cr-toggle-track" id="cr-sign-mobilite"><div class="cr-toggle-thumb"></div></div><span style="font-size:.82rem">Mobilité patellaire OK</span></div>
-          <div class="cr-toggle-row" onclick="crToggleSign('cr-sign-boiterie')"><div class="cr-toggle-track" id="cr-sign-boiterie"><div class="cr-toggle-thumb"></div></div><span style="font-size:.82rem">Boiterie</span></div>
+          <div class="cr-sign-row"><span class="cr-sign-label">Épanchement articulaire</span><button class="cr-sign-cycle" id="cr-sign-btn-epanchement" onclick="crCycleSign('epanchement')">—</button></div>
+          <div class="cr-sign-row"><span class="cr-sign-label">Genou sec</span><button class="cr-sign-cycle" id="cr-sign-btn-sec" onclick="crCycleSign('sec')">—</button></div>
+          <div class="cr-sign-row"><span class="cr-sign-label">Douleur résiduelle</span><button class="cr-sign-cycle" id="cr-sign-btn-douleur" onclick="crCycleSign('douleur')">—</button></div>
+          <div class="cr-sign-row"><span class="cr-sign-label">Mobilité patellaire</span><button class="cr-sign-cycle" id="cr-sign-btn-mobilite" onclick="crCycleSign('mobilite')">—</button></div>
+          <div class="cr-sign-row"><span class="cr-sign-label">Boiterie</span><button class="cr-sign-cycle" id="cr-sign-btn-boiterie" onclick="crCycleSign('boiterie')">—</button></div>
+          <div class="cr-sign-row"><span class="cr-sign-label">Verrouillage actif en extension</span><button class="cr-sign-cycle" id="cr-sign-btn-verrou" onclick="crCycleSign('verrou')">—</button></div>
           <div class="cr-fg" style="margin-top:8px">
             <label for="cr-signes-libre">Précisions</label>
             <input type="text" id="cr-signes-libre" placeholder="Remarques cliniques complémentaires…">
@@ -1436,6 +1446,7 @@ body {
         <span class="cr-preview-label">Prévisualisation</span>
         <button class="cr-btn-import" onclick="crImportPatient()" title="Associer les infos du bilan et du dossier patient">⬇ Associer les infos patient</button>
         <button class="cr-btn-copy" onclick="crCopyLetter()" title="Copier le texte">⎘ Copier</button>
+        <button class="cr-btn-copy" onclick="crReset()" title="Réinitialiser le formulaire" style="border-color:#C0392B;color:#C0392B;">↺ Réinit.</button>
         <button class="cr-btn-copy" onclick="crExportPDF()" title="Exporter en PDF / Imprimer" style="border-color:var(--accent2);color:var(--accent2);">🖨 PDF</button>
         <button class="cr-btn-copy" onclick="crExportEmail()" title="Ouvrir dans le client mail" style="border-color:var(--green);color:var(--green);">✉ Mail</button>
       </div>
@@ -4840,10 +4851,17 @@ _updateOutilsPatientBtns();
   // State
   var crPatho = null;
   var crLsiOn = false;
-  var crSigns = { 'cr-sign-epanchement': false, 'cr-sign-sec': false, 'cr-sign-douleur': false, 'cr-sign-mobilite': false, 'cr-sign-boiterie': false };
-  var CR_PATHO_FORCE = ['genou_ligament','genou_menisque','genou_femoropat','genou_sideration','hanche'];
-  var CR_PATHO_FONCT = ['genou_ligament','genou_sideration'];
-  var CR_PATHO_EPAULE = ['epaule_coiffe','epaule_instab'];
+  var crSigns = { epanchement:0, sec:0, douleur:0, mobilite:0, boiterie:0, verrou:0 };
+  var crPatientSexe = ''; // 'M', 'F', ou '' (neutre)
+  // Genre : retourne forme neutre si sexe inconnu
+  function crF(neutre, masc, fem) {
+    if (crPatientSexe === 'M') return masc;
+    if (crPatientSexe === 'F') return fem;
+    return neutre;
+  }
+  var CR_PATHO_FORCE = ['lca','lcp','meniscectomie','suture_meniscale','syndrome_rotulien'];
+  var CR_PATHO_FONCT = ['lca','lcp','meniscectomie','suture_meniscale'];
+  var CR_PATHO_EPAULE = ['latarjet'];
 
   window.crSelectPatho = function(btn) {
     if (btn.classList.contains('active')) { btn.classList.remove('active'); crPatho = null; }
@@ -4871,10 +4889,14 @@ _updateOutilsPatientBtns();
       var el = document.getElementById(id); if (el) el.textContent = labels[i];
     });
   }
-  window.crToggleSign = function(id) {
-    crSigns[id] = !crSigns[id];
-    var el = document.getElementById(id);
-    if (el) { if (crSigns[id]) el.classList.add('on'); else el.classList.remove('on'); }
+  window.crCycleSign = function(key) {
+    crSigns[key] = ((crSigns[key] || 0) + 1) % 3;
+    var btn = document.getElementById('cr-sign-btn-' + key);
+    if (!btn) return;
+    var labels = ['—', '✓ Validé', '⟳ En cours'];
+    var cls    = ['', 'st-valide', 'st-cours'];
+    btn.textContent = labels[crSigns[key]];
+    btn.className   = 'cr-sign-cycle ' + cls[crSigns[key]];
   };
   window.crToggleLSI = function() {
     crLsiOn = !crLsiOn;
@@ -4892,10 +4914,17 @@ _updateOutilsPatientBtns();
   function crStripDeg(s) { return s.replace(/°\s*$/, ''); }
 
   function crPathoLabel(key) {
-    var m = { genou_ligament:'Ligament du genou', genou_menisque:'Ménisque', genou_femoropat:'Syndrome fémoro-patellaire',
-      genou_sideration:'Sidération du quadriceps', cheville:'Entorse de cheville', hanche:'Pathologie de hanche / Labrum',
-      epaule_coiffe:'Pathologie de la coiffe des rotateurs', epaule_instab:'Instabilité d\'épaule',
-      lombalgie:'Lombalgie', reprise_cap:'Reprise de l\'activité physique', autre:'Autre' };
+    var m = {
+      lca:                'Ligament croisé antérieur',
+      lcp:                'Ligament croisé postérieur',
+      meniscectomie:      'Méniscectomie',
+      suture_meniscale:   'Suture méniscale',
+      latarjet:           'Latarjet',
+      ligamento_cheville: 'Ligamentoplastie de cheville',
+      entorse:            'Entorse',
+      syndrome_rotulien:  'Syndrome rotulien',
+      autre:              'Autre'
+    };
     return m[key] || key;
   }
   function crPhaseLabel(v) {
@@ -4949,7 +4978,7 @@ _updateOutilsPatientBtns();
     lines.push(greeting); lines.push('');
 
     // 2. Objet
-    var patRef = patNom ? patNom : 'votre patient(e)';
+    var patRef = patNom ? patNom : crF('votre patient(e)', 'votre patient', 'votre patiente');
     var verb = objet ? crObjetVerb(objet) : null;
     var objetPhrase = verb
       ? 'Je me permets ' + verb + ' ' + patRef + '.'
@@ -4958,8 +4987,8 @@ _updateOutilsPatientBtns();
 
     // 3. Identité patient
     if (patNom || patDob || patEvt || patPEC || crPatho) {
-      var patLine = patNom || 'votre patient(e)';
-      if (patDob)  patLine += ', né(e) le ' + patDob;
+      var patLine = patNom || crF('votre patient(e)', 'votre patient', 'votre patiente');
+      if (patDob)  patLine += ', ' + crF('né(e)', 'né', 'née') + ' le ' + patDob;
       if (patCote) patLine += ', côté ' + patCote.toLowerCase();
       lines.push('Patient : ' + patLine + '.');
       var diagLine = crPatho ? crPathoLabel(crPatho) : '';
@@ -4977,10 +5006,24 @@ _updateOutilsPatientBtns();
     var aLabels = isEpaule
       ? ['Antépulsion passive','Abduction','Rotation externe','Rotation interne']
       : ['Extension passive','Extension active','Flexion passive','Flexion active'];
-    var aVals = ['cr-amp-ext-p','cr-amp-ext-a','cr-amp-flex-p','cr-amp-flex-a'].map(crV).map(crStripDeg);
-    var ampParts = [];
-    aVals.forEach(function(v, i) { if (v) ampParts.push(aLabels[i] + ' : ' + v + '°'); });
-    if (ampParts.length) { lines.push('Amplitudes articulaires : ' + ampParts.join(' / ') + '.'); lines.push(''); }
+    var aIds     = ['cr-amp-ext-p','cr-amp-ext-a','cr-amp-flex-p','cr-amp-flex-a'];
+    var aStatIds = ['cr-amp-ext-p-stat','cr-amp-ext-a-stat','cr-amp-flex-p-stat','cr-amp-flex-a-stat'];
+    var ampValide = [], ampCours = [], ampNeutral = [];
+    aIds.forEach(function(id, i) {
+      var v = crStripDeg(crV(id)); if (!v) return;
+      var stat = crV(aStatIds[i]);
+      var txt = aLabels[i] + ' : ' + v + '°';
+      if (stat === 'valide') ampValide.push(txt);
+      else if (stat === 'cours') ampCours.push(txt);
+      else ampNeutral.push(txt);
+    });
+    if (ampValide.length || ampCours.length || ampNeutral.length) {
+      lines.push('Amplitudes articulaires :');
+      ampValide.forEach(function(s){ lines.push('  ✓ ' + s + ' (validé)'); });
+      ampCours.forEach(function(s){ lines.push('  ⟳ ' + s + ' (en cours d\'acquisition)'); });
+      ampNeutral.forEach(function(s){ lines.push('  - ' + s); });
+      lines.push('');
+    }
 
     // 6. Force + LSI
     if (!document.getElementById('cr-block-force').classList.contains('cr-block-hidden')) {
@@ -5013,14 +5056,22 @@ _updateOutilsPatientBtns();
       if (fonct.length) { lines.push('Tests fonctionnels : ' + fonct.join(' — ') + '.'); lines.push(''); }
     }
 
-    // 8. Signes cliniques — tirets
-    var signLabels = { 'cr-sign-epanchement':'Épanchement articulaire', 'cr-sign-sec':'Genou sec',
-      'cr-sign-douleur':'Douleur résiduelle', 'cr-sign-mobilite':'Mobilité patellaire conservée', 'cr-sign-boiterie':'Boiterie observée' };
-    var activeSigns = Object.keys(crSigns).filter(function(k){ return crSigns[k]; }).map(function(k){ return signLabels[k]; });
+    // 8. Signes cliniques — 3 états groupés
+    var signDefs = [
+      { key:'epanchement', valide:'Épanchement absent',                    cours:'Épanchement articulaire résiduel' },
+      { key:'sec',         valide:'Genou sec',                             cours:'Genou sec en cours d\'acquisition' },
+      { key:'douleur',     valide:'Absence de douleur résiduelle',         cours:'Douleur résiduelle présente' },
+      { key:'mobilite',    valide:'Mobilité patellaire conservée',          cours:'Mobilité patellaire en cours de récupération' },
+      { key:'boiterie',    valide:'Absence de boiterie',                   cours:'Boiterie observée' },
+      { key:'verrou',      valide:'Verrouillage actif en extension acquis', cours:'Verrouillage actif en extension en cours d\'acquisition' }
+    ];
+    var valideSigns = [], coursSigns = [];
+    signDefs.forEach(function(s){ if(crSigns[s.key]===1) valideSigns.push(s.valide); else if(crSigns[s.key]===2) coursSigns.push(s.cours); });
     var signesLibre = crV('cr-signes-libre');
-    if (activeSigns.length || signesLibre) {
+    if (valideSigns.length || coursSigns.length || signesLibre) {
       lines.push('Signes cliniques :');
-      activeSigns.forEach(function(s){ lines.push('  - ' + s); });
+      valideSigns.forEach(function(s){ lines.push('  ✓ ' + s); });
+      coursSigns.forEach(function(s){ lines.push('  ⟳ ' + s); });
       if (signesLibre) lines.push('  - ' + signesLibre);
       lines.push('');
     }
@@ -5036,6 +5087,8 @@ _updateOutilsPatientBtns();
     lines.push('Je reste à votre disposition pour tout complément d\'information.');
     lines.push(''); lines.push('Cordialement,'); lines.push('');
     lines.push(crProfile.name);
+    if (crProfile.title)   lines.push(crProfile.title);
+    if (crProfile.cabinet) lines.push(crProfile.cabinet);
     return lines.join('\n');
   }
 
@@ -5067,11 +5120,11 @@ _updateOutilsPatientBtns();
     lines.push(greeting); lines.push('');
 
     // Intro spécifique début PEC
-    var intro = 'Je vous informe de la prise en charge rééducative de votre patient(e)';
+    var intro = 'Je vous informe de la prise en charge rééducative de ' + crF('votre patient(e)', 'votre patient', 'votre patiente');
     if (patNom) intro += ' ' + patNom;
-    if (patDob) intro += ', né(e) le ' + patDob;
+    if (patDob) intro += ', ' + crF('né(e)', 'né', 'née') + ' le ' + patDob;
     var contextParts = [];
-    if (patPEC) contextParts.push('reçu(e) en consultation initiale le ' + patPEC);
+    if (patPEC) contextParts.push(crF('reçu(e)', 'reçu', 'reçue') + ' en consultation initiale le ' + patPEC);
     if (joursStr) contextParts.push(joursStr + ' post-opératoire');
     if (patEvt) { var diagCtx = crPatho ? crPathoLabel(crPatho) : ''; if (pathoDetail) diagCtx = diagCtx ? diagCtx + ' — ' + pathoDetail : pathoDetail; if (diagCtx) contextParts.push('de sa ' + diagCtx.toLowerCase()); }
     if (contextParts.length) intro += ', ' + contextParts.join(', ');
@@ -5095,19 +5148,40 @@ _updateOutilsPatientBtns();
     var aLabels = isEpaule
       ? ['Antépulsion passive','Abduction','Rotation externe','Rotation interne']
       : ['Extension passive','Extension active','Flexion passive','Flexion active'];
-    var aVals = ['cr-amp-ext-p','cr-amp-ext-a','cr-amp-flex-p','cr-amp-flex-a'].map(crV).map(crStripDeg);
-    var ampParts = [];
-    aVals.forEach(function(v, i) { if (v) ampParts.push(aLabels[i] + ' : ' + v + '°'); });
-    if (ampParts.length) { lines.push('Amplitudes articulaires : ' + ampParts.join(' / ') + '.'); }
+    var aIds     = ['cr-amp-ext-p','cr-amp-ext-a','cr-amp-flex-p','cr-amp-flex-a'];
+    var aStatIds = ['cr-amp-ext-p-stat','cr-amp-ext-a-stat','cr-amp-flex-p-stat','cr-amp-flex-a-stat'];
+    var ampValide = [], ampCours = [], ampNeutral = [];
+    aIds.forEach(function(id, i) {
+      var v = crStripDeg(crV(id)); if (!v) return;
+      var stat = crV(aStatIds[i]);
+      var txt = aLabels[i] + ' : ' + v + '°';
+      if (stat === 'valide') ampValide.push(txt);
+      else if (stat === 'cours') ampCours.push(txt);
+      else ampNeutral.push(txt);
+    });
+    if (ampValide.length || ampCours.length || ampNeutral.length) {
+      lines.push('Amplitudes articulaires :');
+      ampValide.forEach(function(s){ lines.push('  ✓ ' + s + ' (validé)'); });
+      ampCours.forEach(function(s){ lines.push('  ⟳ ' + s + ' (en cours d\'acquisition)'); });
+      ampNeutral.forEach(function(s){ lines.push('  - ' + s); });
+    }
 
-    // Signes cliniques
-    var signLabels = { 'cr-sign-epanchement':'Épanchement articulaire', 'cr-sign-sec':'Genou sec',
-      'cr-sign-douleur':'Douleur résiduelle', 'cr-sign-mobilite':'Mobilité patellaire conservée', 'cr-sign-boiterie':'Boiterie observée' };
-    var activeSigns = Object.keys(crSigns).filter(function(k){ return crSigns[k]; }).map(function(k){ return signLabels[k]; });
+    // Signes cliniques — 3 états groupés
+    var signDefs = [
+      { key:'epanchement', valide:'Épanchement absent',                    cours:'Épanchement articulaire résiduel' },
+      { key:'sec',         valide:'Genou sec',                             cours:'Genou sec en cours d\'acquisition' },
+      { key:'douleur',     valide:'Absence de douleur résiduelle',         cours:'Douleur résiduelle présente' },
+      { key:'mobilite',    valide:'Mobilité patellaire conservée',          cours:'Mobilité patellaire en cours de récupération' },
+      { key:'boiterie',    valide:'Absence de boiterie',                   cours:'Boiterie observée' },
+      { key:'verrou',      valide:'Verrouillage actif en extension acquis', cours:'Verrouillage actif en extension en cours d\'acquisition' }
+    ];
+    var valideSigns = [], coursSigns = [];
+    signDefs.forEach(function(s){ if(crSigns[s.key]===1) valideSigns.push(s.valide); else if(crSigns[s.key]===2) coursSigns.push(s.cours); });
     var signesLibre = crV('cr-signes-libre');
-    if (activeSigns.length || signesLibre) {
+    if (valideSigns.length || coursSigns.length || signesLibre) {
       lines.push('Signes cliniques :');
-      activeSigns.forEach(function(s){ lines.push('  - ' + s); });
+      valideSigns.forEach(function(s){ lines.push('  ✓ ' + s); });
+      coursSigns.forEach(function(s){ lines.push('  ⟳ ' + s); });
       if (signesLibre) lines.push('  - ' + signesLibre);
     }
 
@@ -5132,10 +5206,12 @@ _updateOutilsPatientBtns();
 
     // Closing
     var dispo = crV('cr-dispo');
-    lines.push('Je reste naturellement disponible pour tout échange ou question concernant la prise en charge de votre patient(e).');
+    lines.push('Je reste naturellement disponible pour tout échange ou question concernant la prise en charge de ' + crF('votre patient(e)', 'votre patient', 'votre patiente') + '.');
     if (dispo) lines.push('Disponibilités : ' + dispo + '.');
     lines.push(''); lines.push('Cordialement,'); lines.push('');
     lines.push(crProfile.name);
+    if (crProfile.title)   lines.push(crProfile.title);
+    if (crProfile.cabinet) lines.push(crProfile.cabinet);
     return lines.join('\n');
   }
 
@@ -5211,6 +5287,27 @@ _updateOutilsPatientBtns();
     });
   }
 
+  window.crReset = function() {
+    if (!confirm('Réinitialiser tous les champs du formulaire ?')) return;
+    document.querySelectorAll('#panel-cr input[type="text"], #panel-cr input[type="date"], #panel-cr input[type="number"]').forEach(function(el){ el.value = ''; });
+    document.querySelectorAll('#panel-cr select').forEach(function(el){ el.value = ''; });
+    document.querySelectorAll('#panel-cr textarea').forEach(function(el){ el.value = ''; crAutoExpand(el); });
+    crPatho = null;
+    crPatientSexe = '';
+    document.querySelectorAll('.cr-patho-btn').forEach(function(b){ b.classList.remove('active'); });
+    Object.keys(crSigns).forEach(function(k){
+      crSigns[k] = 0;
+      var btn = document.getElementById('cr-sign-btn-' + k);
+      if (btn) { btn.textContent = '—'; btn.className = 'cr-sign-cycle'; }
+    });
+    if (crLsiOn) crToggleLSI();
+    crUpdateBlocks();
+    crSetTemplate('suivi');
+    var body = document.getElementById('cr-letter-body');
+    if (body) body.innerHTML = '<span class="letter-empty">Remplissez le formulaire et cliquez sur « ✦ Générer le courrier ».</span>';
+    _crToast('Formulaire réinitialisé');
+  };
+
   window.crGenerate = function() {
     var text = crBuildLetter();
     var body = document.getElementById('cr-letter-body');
@@ -5258,6 +5355,10 @@ _updateOutilsPatientBtns();
       var nom    = nomBilan    || (pat.nom    || '').trim();
       var prenom = prenomBilan || (pat.prenom || '').trim();
       var sexe   = sexeBilan   || (pat.sexe   || '').trim();
+      // Détecter le genre pour conjugaison
+      if (sexe === 'M' || sexe.toLowerCase() === 'masculin' || sexe === 'H') crPatientSexe = 'M';
+      else if (sexe === 'F' || sexe.toLowerCase() === 'féminin' || sexe.toLowerCase() === 'feminin') crPatientSexe = 'F';
+      else crPatientSexe = '';
       var nomEl  = document.getElementById('cr-pat-nom');
       if (nomEl && (nom || prenom)) {
         var civ = sexe === 'F' ? 'Mme' : (nom || prenom ? 'M.' : '');
