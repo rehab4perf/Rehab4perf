@@ -1259,6 +1259,11 @@ body {
           <input type="text" id="cr-dest-spec" placeholder="Chirurgien orthopédiste">
         </div>
 
+        <div class="cr-fg" style="margin-bottom:12px;">
+          <label for="cr-objet-txt" style="font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text2);">Objet du courrier</label>
+          <input type="text" id="cr-objet-txt" placeholder="ex. Suivi de prise en charge — LCA Droit" style="font-weight:600;">
+        </div>
+
         <div class="cr-section-hdr">Patient</div>
         <div class="cr-form-row">
           <div class="cr-fg">
@@ -1420,19 +1425,6 @@ body {
             <label for="cr-dispo">Jours / contact</label>
             <input type="text" id="cr-dispo" placeholder="ex. Lun, Mer, Ven · 06 XX XX XX XX">
           </div>
-        </div>
-
-        <div class="cr-section-hdr">Objet du courrier</div>
-        <div class="cr-fg">
-          <label for="cr-objet">Nature</label>
-          <select id="cr-objet">
-            <option value="">— Sélectionner —</option>
-            <option value="information">Information</option>
-            <option value="avis">Demande d'avis</option>
-            <option value="autorisation">Autorisation reprise sport</option>
-            <option value="imagerie">Imagerie complémentaire</option>
-            <option value="consultation">Demande de consultation</option>
-          </select>
         </div>
 
         <button class="cr-btn-gen" onclick="crGenerate()">✦ Générer le courrier</button>
@@ -4870,6 +4862,7 @@ _updateOutilsPatientBtns();
       btn.classList.add('active'); crPatho = btn.dataset.key;
     }
     crUpdateBlocks(); crUpdateAmpLabels();
+    crAutoFillObjet();
   };
   function crUpdateBlocks() {
     crToggleBlock('cr-block-force',     crPatho && CR_PATHO_FORCE.indexOf(crPatho) !== -1);
@@ -4941,15 +4934,6 @@ _updateOutilsPatientBtns();
       stagnation:'actuellement en plateau fonctionnel, ce qui oriente vers une réévaluation des objectifs' };
     return m[v] || v;
   }
-  function crObjetVerb(v) {
-    var m = { information:'de vous informer de l\'état d\'avancement de la rééducation concernant',
-      avis:'de solliciter votre avis spécialisé concernant',
-      autorisation:'de vous soumettre une demande d\'autorisation de reprise sportive pour',
-      imagerie:'de demander votre avis concernant la réalisation d\'un bilan d\'imagerie complémentaire pour',
-      consultation:'de vous adresser' };
-    return m[v] || null;
-  }
-
   // Auto-expand textarea
   window.crAutoExpand = function(el) {
     el.style.height = 'auto';
@@ -4965,7 +4949,7 @@ _updateOutilsPatientBtns();
     var patEvt  = crFmtDate(crV('cr-pat-date-evt'));
     var patPEC  = crFmtDate(crV('cr-pat-date-pec'));
     var patCote = crV('cr-pat-cote');
-    var pathoDetail = crV('cr-patho-detail'), objet = crV('cr-objet');
+    var pathoDetail = crV('cr-patho-detail');
     var phase = crV('cr-phase'), evolution = crV('cr-evolution');
     var commentaire = crV('cr-commentaire'), plan = crV('cr-plan');
     var isEpaule = crPatho && CR_PATHO_EPAULE.indexOf(crPatho) !== -1;
@@ -4978,12 +4962,10 @@ _updateOutilsPatientBtns();
     lines.push(greeting); lines.push('');
 
     // 2. Objet
+    var objetTxt = crV('cr-objet-txt');
+    if (objetTxt) { lines.push('Objet : ' + objetTxt); lines.push(''); }
     var patRef = patNom ? patNom : crF('votre patient(e)', 'votre patient', 'votre patiente');
-    var verb = objet ? crObjetVerb(objet) : null;
-    var objetPhrase = verb
-      ? 'Je me permets ' + verb + ' ' + patRef + '.'
-      : 'Je vous adresse ce compte-rendu de rééducation' + (patNom ? ' concernant ' + patNom : '') + '.';
-    lines.push(objetPhrase); lines.push('');
+    lines.push('Je vous adresse ce compte-rendu de rééducation' + (patNom ? ' concernant ' + patNom : '') + '.'); lines.push('');
 
     // 3. Identité patient
     if (patNom || patDob || patEvt || patPEC || crPatho) {
@@ -5118,6 +5100,10 @@ _updateOutilsPatientBtns();
       greeting = 'Chère consœur' + (destSpec ? ', ' + destSpec : '') + ',';
     }
     lines.push(greeting); lines.push('');
+
+    // Objet
+    var objetTxtDebut = crV('cr-objet-txt');
+    if (objetTxtDebut) { lines.push('Objet : ' + objetTxtDebut); lines.push(''); }
 
     // Intro spécifique début PEC
     var intro = 'Je vous informe de la prise en charge rééducative de ' + crF('votre patient(e)', 'votre patient', 'votre patiente');
@@ -5272,7 +5258,18 @@ _updateOutilsPatientBtns();
       if (btn) btn.classList.toggle('active', t === tpl);
     });
     crUpdateTemplateSections();
+    crAutoFillObjet();
   };
+
+  function crAutoFillObjet() {
+    var el = document.getElementById('cr-objet-txt');
+    if (!el || el.value) return; // ne pas écraser si déjà rempli
+    var pathoLbl = crPatho ? crPathoLabel(crPatho) : '';
+    var cote     = (document.getElementById('cr-pat-cote') || {}).value || '';
+    var suffix   = (pathoLbl ? ' — ' + pathoLbl : '') + (cote ? ' ' + cote : '');
+    var map = { debut:'Début de prise en charge', suivi:'Suivi de rééducation', rts:'Bilan de fin de prise en charge / RTS', avis:'Demande d\'avis médical' };
+    el.value = (map[crTemplate] || '') + suffix;
+  }
 
   function crUpdateTemplateSections() {
     var showProto = crTemplate === 'debut' || crTemplate === 'rts';
@@ -5303,6 +5300,7 @@ _updateOutilsPatientBtns();
     if (crLsiOn) crToggleLSI();
     crUpdateBlocks();
     crSetTemplate('suivi');
+    var objEl = document.getElementById('cr-objet-txt'); if (objEl) objEl.value = '';
     var body = document.getElementById('cr-letter-body');
     if (body) body.innerHTML = '<span class="letter-empty">Remplissez le formulaire et cliquez sur « ✦ Générer le courrier ».</span>';
     _crToast('Formulaire réinitialisé');
