@@ -5252,18 +5252,13 @@ _updateOutilsPatientBtns();
       var filled = 0;
 
       // ── Nom / civilité ────────────────────────────────────────
-      var nomBilan   = (bilan['f-nom']    || '').trim();
-      var prenomBilan= (bilan['f-prenom'] || '').trim();
-      var sexeBilan  = (bilan['f-sexe']   || '').trim();
-      var nomPat     = (pat.nom    || '').trim();
-      var prenomPat  = (pat.prenom || '').trim();
-      var sexePat    = (pat.sexe   || '').trim();
-
-      var nom    = nomBilan    || nomPat;
-      var prenom = prenomBilan || prenomPat;
-      var sexe   = sexeBilan   || sexePat;
-
-      var nomEl = document.getElementById('cr-pat-nom');
+      var nomBilan    = (bilan['f-nom']    || '').trim();
+      var prenomBilan = (bilan['f-prenom'] || '').trim();
+      var sexeBilan   = (bilan['f-sexe']   || '').trim();
+      var nom    = nomBilan    || (pat.nom    || '').trim();
+      var prenom = prenomBilan || (pat.prenom || '').trim();
+      var sexe   = sexeBilan   || (pat.sexe   || '').trim();
+      var nomEl  = document.getElementById('cr-pat-nom');
       if (nomEl && (nom || prenom)) {
         var civ = sexe === 'F' ? 'Mme' : (nom || prenom ? 'M.' : '');
         nomEl.value = [civ, nom.toUpperCase(), prenom].filter(Boolean).join(' ');
@@ -5272,16 +5267,16 @@ _updateOutilsPatientBtns();
 
       // ── Date de naissance ─────────────────────────────────────
       var dobEl = document.getElementById('cr-pat-dob');
-      var dob = bilan['f-dob'] || pat.ddn || '';
+      var dob   = bilan['f-dob'] || pat.ddn || '';
       if (dobEl && dob) { dobEl.value = dob; filled++; }
 
       // ── Date du bilan → date début prise en charge ───────────
-      var pecEl = document.getElementById('cr-pat-date-pec');
+      var pecEl     = document.getElementById('cr-pat-date-pec');
       var dateBilan = bilan['f-date'] || '';
       if (pecEl && dateBilan) { pecEl.value = dateBilan; filled++; }
 
-      // ── Côté atteint ─────────────────────────────────────────
-      var coteEl = document.getElementById('cr-pat-cote');
+      // ── Côté atteint ──────────────────────────────────────────
+      var coteEl    = document.getElementById('cr-pat-cote');
       var coteBilan = (bilan['f-cote'] || '').trim().toLowerCase();
       if (coteEl && coteBilan) {
         var coteMap = { 'droit':'Droit', 'gauche':'Gauche', 'bilatéral':'Bilatéral', 'bilateral':'Bilatéral' };
@@ -5290,13 +5285,80 @@ _updateOutilsPatientBtns();
       }
 
       // ── Médecin prescripteur → Destinataire (si vide) ────────
-      var destEl = document.getElementById('cr-dest-nom');
+      var destEl  = document.getElementById('cr-dest-nom');
       var medecin = (bilan['f-medecin'] || '').trim();
       if (destEl && medecin && !destEl.value.trim()) { destEl.value = medecin; filled++; }
 
+      // ── EVA → signes libres ───────────────────────────────────
+      var eva = (bilan['f-eva'] || '').toString().trim();
+      var evaMax = (bilan['f-eva-max'] || '').toString().trim();
+      var signesEl = document.getElementById('cr-signes-libre');
+      if (signesEl && (eva || evaMax) && !signesEl.value.trim()) {
+        var evaStr = '';
+        if (eva) evaStr = 'EVA repos : ' + eva + '/10';
+        if (evaMax) evaStr += (evaStr ? ' — ' : '') + 'EVA max : ' + evaMax + '/10';
+        signesEl.value = evaStr;
+        filled++;
+      }
+
+      // ── Force quadriceps (cf-q) ───────────────────────────────
+      var fQca = (bilan['cf-q-ca'] || '').toString().trim();
+      var fQcs = (bilan['cf-q-cs'] || '').toString().trim();
+      var forceEl = document.getElementById('cr-force-quad');
+      if (forceEl && (fQca || fQcs) && !forceEl.value.trim()) {
+        forceEl.value = fQca && fQcs ? fQca + ' / ' + fQcs + ' (atteint / sain)' : fQca || fQcs;
+        // Afficher le bloc force
+        var bf = document.getElementById('cr-block-force');
+        if (bf) bf.classList.remove('cr-block-hidden');
+        filled++;
+      }
+
+      // ── LSI quad ─────────────────────────────────────────────
+      var lsiQRaw = (bilan['cf-q-lsi'] || '').toString().trim().replace('%','').trim();
+      var lsiQEl  = document.getElementById('cr-lsi-quad');
+      if (lsiQEl && lsiQRaw && !isNaN(parseFloat(lsiQRaw)) && !lsiQEl.value.trim()) {
+        lsiQEl.value = parseFloat(lsiQRaw).toFixed(0);
+        // Activer le toggle LSI si pas déjà actif
+        if (!crLsiOn) crToggleLSI();
+        var bf2 = document.getElementById('cr-block-force');
+        if (bf2) bf2.classList.remove('cr-block-hidden');
+        filled++;
+      }
+
+      // ── Hop test ─────────────────────────────────────────────
+      var hopCa  = (bilan['hop-ca'] || '').toString().trim();
+      var hopCs  = (bilan['hop-cs'] || '').toString().trim();
+      var hopEl  = document.getElementById('cr-hop-test');
+      if (hopEl && (hopCa || hopCs) && !hopEl.value.trim()) {
+        hopEl.value = hopCa && hopCs ? hopCa + ' / ' + hopCs + ' cm (atteint / sain)' : (hopCa || hopCs) + ' cm';
+        var bfonct = document.getElementById('cr-block-fonctionnel');
+        if (bfonct) bfonct.classList.remove('cr-block-hidden');
+        filled++;
+      }
+
+      // ── LSI hop ───────────────────────────────────────────────
+      var lsiHopRaw = (bilan['hop-lsi'] || '').toString().trim().replace('%','').trim();
+      var lsiHopEl  = document.getElementById('cr-lsi-hop');
+      if (lsiHopEl && lsiHopRaw && !isNaN(parseFloat(lsiHopRaw)) && !lsiHopEl.value.trim()) {
+        lsiHopEl.value = parseFloat(lsiHopRaw).toFixed(0);
+        var bfonct2 = document.getElementById('cr-block-fonctionnel');
+        if (bfonct2) bfonct2.classList.remove('cr-block-hidden');
+        filled++;
+      }
+
+      // ── ACL-RSI ───────────────────────────────────────────────
+      var aclRsiVal = (bilan['f-aclrsi'] || '').toString().trim();
+      var aclRsiEl  = document.getElementById('cr-acl-rsi');
+      if (aclRsiEl && aclRsiVal && !aclRsiEl.value.trim()) {
+        aclRsiEl.value = aclRsiVal;
+        var bfonct3 = document.getElementById('cr-block-fonctionnel');
+        if (bfonct3) bfonct3.classList.remove('cr-block-hidden');
+        filled++;
+      }
+
       if (filled > 0) _crToast(filled + ' champ' + (filled > 1 ? 's' : '') + ' associé' + (filled > 1 ? 's' : '') + ' ✓');
       else _crToast('Aucune donnée patient disponible — ouvrez un bilan d\'abord');
-    } catch(e) { _crToast('Impossible d\'associer le patient'); }
+    } catch(e) { console.error(e); _crToast('Impossible d\'associer le patient'); }
   };
 })();
 
