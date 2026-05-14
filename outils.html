@@ -1391,7 +1391,7 @@ body {
     <main class="cr-right">
       <div class="cr-preview-bar">
         <span class="cr-preview-label">Prévisualisation</span>
-        <button class="cr-btn-import" onclick="crImportPatient()" title="Importer les infos du patient ouvert">⬇ Importer patient</button>
+        <button class="cr-btn-import" onclick="crImportPatient()" title="Associer les infos du bilan et du dossier patient">⬇ Associer les infos patient</button>
         <button class="cr-btn-copy" onclick="crCopyLetter()" title="Copier le texte">⎘ Copier</button>
         <button class="cr-btn-copy" onclick="crExportPDF()" title="Exporter en PDF / Imprimer" style="border-color:var(--accent2);color:var(--accent2);">🖨 PDF</button>
         <button class="cr-btn-copy" onclick="crExportEmail()" title="Ouvrir dans le client mail" style="border-color:var(--green);color:var(--green);">✉ Mail</button>
@@ -5075,27 +5075,62 @@ _updateOutilsPatientBtns();
     t._crTimer = setTimeout(function(){ t.style.opacity='0'; }, 2200);
   }
 
-  // Import patient depuis le dossier actif (r4p-current-patient)
+  // Associer les infos patient — lit athletik-bilan (Bilan.html) + r4p-current-patient
   window.crImportPatient = function() {
     try {
-      var pat = _getOutilsPatient();
-      if (!pat) { _crToast('Aucun patient actif — sélectionnez un patient d\'abord'); return; }
+      // Lire les deux sources
+      var bilan = {};
+      try { bilan = JSON.parse(localStorage.getItem('athletik-bilan') || '{}'); } catch(e) {}
+      var pat = _getOutilsPatient() || {};
 
-      // Nom (avec civilité selon sexe si disponible)
+      var filled = 0;
+
+      // ── Nom / civilité ────────────────────────────────────────
+      var nomBilan   = (bilan['f-nom']    || '').trim();
+      var prenomBilan= (bilan['f-prenom'] || '').trim();
+      var sexeBilan  = (bilan['f-sexe']   || '').trim();
+      var nomPat     = (pat.nom    || '').trim();
+      var prenomPat  = (pat.prenom || '').trim();
+      var sexePat    = (pat.sexe   || '').trim();
+
+      var nom    = nomBilan    || nomPat;
+      var prenom = prenomBilan || prenomPat;
+      var sexe   = sexeBilan   || sexePat;
+
       var nomEl = document.getElementById('cr-pat-nom');
-      if (nomEl && (pat.nom || pat.prenom)) {
-        var civ = '';
-        if (pat.sexe) civ = pat.sexe === 'F' ? 'Mme' : 'M.';
-        var fullNom = [civ, (pat.nom||'').toUpperCase(), pat.prenom||''].filter(Boolean).join(' ');
-        nomEl.value = fullNom;
+      if (nomEl && (nom || prenom)) {
+        var civ = sexe === 'F' ? 'Mme' : (nom || prenom ? 'M.' : '');
+        nomEl.value = [civ, nom.toUpperCase(), prenom].filter(Boolean).join(' ');
+        filled++;
       }
 
-      // Date de naissance
+      // ── Date de naissance ─────────────────────────────────────
       var dobEl = document.getElementById('cr-pat-dob');
-      if (dobEl && pat.ddn) dobEl.value = pat.ddn;
+      var dob = bilan['f-dob'] || pat.ddn || '';
+      if (dobEl && dob) { dobEl.value = dob; filled++; }
 
-      _crToast('Infos patient importées ✓');
-    } catch(e) { _crToast('Impossible d\'importer le patient'); }
+      // ── Date du bilan → date début prise en charge ───────────
+      var pecEl = document.getElementById('cr-pat-date-pec');
+      var dateBilan = bilan['f-date'] || '';
+      if (pecEl && dateBilan) { pecEl.value = dateBilan; filled++; }
+
+      // ── Côté atteint ─────────────────────────────────────────
+      var coteEl = document.getElementById('cr-pat-cote');
+      var coteBilan = (bilan['f-cote'] || '').trim().toLowerCase();
+      if (coteEl && coteBilan) {
+        var coteMap = { 'droit':'Droit', 'gauche':'Gauche', 'bilatéral':'Bilatéral', 'bilateral':'Bilatéral' };
+        var coteVal = coteMap[coteBilan] || '';
+        if (coteVal) { coteEl.value = coteVal; filled++; }
+      }
+
+      // ── Médecin prescripteur → Destinataire (si vide) ────────
+      var destEl = document.getElementById('cr-dest-nom');
+      var medecin = (bilan['f-medecin'] || '').trim();
+      if (destEl && medecin && !destEl.value.trim()) { destEl.value = medecin; filled++; }
+
+      if (filled > 0) _crToast(filled + ' champ' + (filled > 1 ? 's' : '') + ' associé' + (filled > 1 ? 's' : '') + ' ✓');
+      else _crToast('Aucune donnée patient disponible — ouvrez un bilan d\'abord');
+    } catch(e) { _crToast('Impossible d\'associer le patient'); }
   };
 })();
 
