@@ -464,6 +464,7 @@ body {
 .cr-amp-articulation-row select { flex:1; }
 .cr-amp-cfg-btn { background:none; border:1px solid var(--border2); border-radius:var(--radius-sm); padding:6px 9px; font-size:.8rem; cursor:pointer; color:var(--text2); white-space:nowrap; }
 .cr-amp-cfg-btn:hover { border-color:var(--accent); color:var(--accent); }
+.cr-amp-cfg-btn::after { content:' 🔐'; font-size:.65rem; opacity:.5; }
 .cr-cfg-articu-checks { display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; }
 .cr-cfg-articu-checks label { display:flex; align-items:center; gap:4px; font-size:.75rem; cursor:pointer; background:var(--surface2); border:1px solid var(--border); border-radius:4px; padding:3px 7px; }
 .cr-cfg-articu-checks input[type=checkbox] { margin:0; cursor:pointer; }
@@ -4987,6 +4988,7 @@ _updateOutilsPatientBtns();
   var _crCfgDraft = null;
 
   window.crOpenAmpConfig = function() {
+    if (!crAdminCheck()) return;
     _crCfgDraft = JSON.parse(JSON.stringify(crAmpConfig));
     crRenderCfgModal();
     var ov = document.getElementById('cr-cfg-overlay');
@@ -5278,6 +5280,24 @@ _updateOutilsPatientBtns();
     return JSON.parse(JSON.stringify(CR_PATHO_DEFAULTS));
   })();
   var crArticuSelected = ''; // articulation sélectionnée dans le select principal
+
+  // ── Admin PIN ─────────────────────────────────────────────────
+  var crAdminUnlocked = false;
+  var CR_ADMIN_DEFAULT_PIN = 'r4p';
+
+  function crAdminCheck() {
+    if (crAdminUnlocked) return true;
+    var storedPin = localStorage.getItem('crAdminPin') || CR_ADMIN_DEFAULT_PIN;
+    var entered = window.prompt('🔐 Accès admin\n\nEntrez le code PIN pour accéder à la configuration :');
+    if (entered === null) return false; // annulé
+    if (entered === storedPin) {
+      crAdminUnlocked = true;
+      _crToast('Accès admin activé pour cette session');
+      return true;
+    }
+    _crToast('Code PIN incorrect');
+    return false;
+  }
 
   // State
   var crPatho = null;
