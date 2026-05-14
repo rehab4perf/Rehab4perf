@@ -5160,6 +5160,20 @@ _updateOutilsPatientBtns();
   function crBuildLetter() {
     if (crTemplate === 'debut') return crBuildDebutLetter();
 
+    // Rafraîchir le profil depuis localStorage au moment de générer
+    try {
+      var _raw = localStorage.getItem('r4p-profile');
+      if (_raw) {
+        var _p = JSON.parse(_raw); var _m = _p.user_metadata || _p;
+        if (_m.prenom || _m.nom) crProfile.name = ((_m.prenom||'') + ' ' + (_m.nom||'')).trim().toUpperCase();
+        if (_m.cabinet) crProfile.cabinet = _m.cabinet;
+        if (_m.tel)     crProfile.tel     = _m.tel;
+        if (_m.am)      crProfile.am      = _m.am;
+        if (_m.email)   crProfile.email   = _m.email;
+      }
+    } catch(_e) {}
+    if (!crProfile.name) crProfile.name = 'Antoine PERONNAUD';
+
     var lines = [];
     var destNom = crV('cr-dest-nom'), destSpec = crV('cr-dest-spec');
     var patNom  = crV('cr-pat-nom'),  patDob   = crFmtDate(crV('cr-pat-dob'));
@@ -5291,6 +5305,20 @@ _updateOutilsPatientBtns();
 
   // ── Template D : Début de prise en charge ────────────────────
   function crBuildDebutLetter() {
+    // Rafraîchir le profil depuis localStorage au moment de générer
+    try {
+      var _raw = localStorage.getItem('r4p-profile');
+      if (_raw) {
+        var _p = JSON.parse(_raw); var _m = _p.user_metadata || _p;
+        if (_m.prenom || _m.nom) crProfile.name = ((_m.prenom||'') + ' ' + (_m.nom||'')).trim().toUpperCase();
+        if (_m.cabinet) crProfile.cabinet = _m.cabinet;
+        if (_m.tel)     crProfile.tel     = _m.tel;
+        if (_m.am)      crProfile.am      = _m.am;
+        if (_m.email)   crProfile.email   = _m.email;
+      }
+    } catch(_e) {}
+    if (!crProfile.name) crProfile.name = 'Antoine PERONNAUD';
+
     var lines = [];
     var destNom = crV('cr-dest-nom'), destSpec = crV('cr-dest-spec');
     var patNom  = crV('cr-pat-nom'),  patDob  = crFmtDate(crV('cr-pat-dob'));
