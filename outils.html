@@ -4757,7 +4757,7 @@ _updateOutilsPatientBtns();
 ════════════════════════════════════════════════════════════ */
 (function initCR() {
   // Profile
-  var crProfile = { name: '', title: 'Kinésithérapeute — Rehab4Perf', cabinet: '', tel: '', email: '' };
+  var crProfile = { name: '', title: 'Kinésithérapeute — Rehab4Perf', cabinet: '', tel: '', am: '', email: '' };
   try {
     var raw = localStorage.getItem('r4p-profile');
     if (raw) {
@@ -4766,16 +4766,23 @@ _updateOutilsPatientBtns();
       if (m.prenom || m.nom) crProfile.name = ((m.prenom||'') + ' ' + (m.nom||'')).trim().toUpperCase();
       if (m.cabinet) crProfile.cabinet = m.cabinet;
       if (m.tel)     crProfile.tel     = m.tel;
+      if (m.am)      crProfile.am      = m.am;
       if (m.email)   crProfile.email   = m.email;
     }
   } catch(e) {}
   if (!crProfile.name) crProfile.name = 'Antoine PERONNAUD';
   if (!crProfile.email) crProfile.email = 'ap.kine92@gmail.com';
-  var nameEl = document.getElementById('cr-lp-name');
+  var nameEl  = document.getElementById('cr-lp-name');
   var titleEl = document.getElementById('cr-lp-title');
-  var dateEl = document.getElementById('cr-letter-date');
+  var dateEl  = document.getElementById('cr-letter-date');
   if (nameEl) nameEl.textContent = crProfile.name;
-  if (titleEl) titleEl.textContent = crProfile.title + (crProfile.cabinet ? ' — ' + crProfile.cabinet : '');
+  // Ligne sous le nom : titre — cabinet, puis AM + tél sur même ligne
+  var subtitleParts = [crProfile.title];
+  if (crProfile.cabinet) subtitleParts[0] += ' — ' + crProfile.cabinet;
+  var metaParts = [];
+  if (crProfile.am)  metaParts.push('N° AM ' + crProfile.am);
+  if (crProfile.tel) metaParts.push(crProfile.tel);
+  if (titleEl) titleEl.innerHTML = subtitleParts[0] + (metaParts.length ? '<br><span style="font-size:.76rem;color:var(--text3)">' + metaParts.join(' · ') + '</span>' : '');
   if (dateEl) {
     var now = new Date();
     dateEl.textContent = now.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -4969,6 +4976,7 @@ _updateOutilsPatientBtns();
     lines.push(''); lines.push('Cordialement,'); lines.push('');
     lines.push(crProfile.name); lines.push(crProfile.title);
     if (crProfile.cabinet) lines.push(crProfile.cabinet);
+    if (crProfile.am)      lines.push('N° AM : ' + crProfile.am);
     if (crProfile.tel)     lines.push('Tél. : ' + crProfile.tel);
     if (crProfile.email)   lines.push(crProfile.email);
     return lines.join('\n');
@@ -5004,23 +5012,26 @@ _updateOutilsPatientBtns();
     t._crTimer = setTimeout(function(){ t.style.opacity='0'; }, 2200);
   }
 
-  // Import patient from currently open dossier
+  // Import patient depuis le dossier actif (r4p-current-patient)
   window.crImportPatient = function() {
     try {
-      var pat = null;
-      // Try _progPatient (parent frame if in iframe) or window
-      if (typeof _progPatient !== 'undefined' && _progPatient) pat = _progPatient;
-      else if (window.parent && window.parent._progPatient) pat = window.parent._progPatient;
-      if (!pat) { _crToast('Aucun patient ouvert dans le programme'); return; }
+      var pat = _getOutilsPatient();
+      if (!pat) { _crToast('Aucun patient actif — sélectionnez un patient d\'abord'); return; }
+
+      // Nom (avec civilité selon sexe si disponible)
       var nomEl = document.getElementById('cr-pat-nom');
-      if (nomEl && pat.nom) nomEl.value = (pat.civilite ? pat.civilite + ' ' : '') + pat.nom + (pat.prenom ? ' ' + pat.prenom : '');
+      if (nomEl && (pat.nom || pat.prenom)) {
+        var civ = '';
+        if (pat.sexe) civ = pat.sexe === 'F' ? 'Mme' : 'M.';
+        var fullNom = [civ, (pat.nom||'').toUpperCase(), pat.prenom||''].filter(Boolean).join(' ');
+        nomEl.value = fullNom;
+      }
+
+      // Date de naissance
       var dobEl = document.getElementById('cr-pat-dob');
       if (dobEl && pat.ddn) dobEl.value = pat.ddn;
-      var evtEl = document.getElementById('cr-pat-date-evt');
-      if (evtEl && pat.date_blessure) evtEl.value = pat.date_blessure;
-      var coteEl = document.getElementById('cr-pat-cote');
-      if (coteEl && pat.cote) { var opts = coteEl.options; for (var i=0;i<opts.length;i++) { if (opts[i].value.toLowerCase()===pat.cote.toLowerCase()) { coteEl.value = opts[i].value; break; } } }
-      _crToast('Patient importé');
+
+      _crToast('Infos patient importées ✓');
     } catch(e) { _crToast('Impossible d\'importer le patient'); }
   };
 })();
