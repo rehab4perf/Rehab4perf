@@ -449,6 +449,10 @@ body {
   .cr-left-scroll { overflow: visible; max-height: none; }
   .cr-right { min-height: 500px; }
 }
+.cr-tpl-row { display:flex; gap:5px; margin-bottom:14px; }
+.cr-tpl-btn { flex:1; padding:7px 4px; border-radius:7px; border:1.5px solid var(--border); background:var(--surface2); font-size:.68rem; font-weight:600; font-family:inherit; cursor:pointer; color:var(--text2); transition:all .15s; text-align:center; line-height:1.4; }
+.cr-tpl-btn:hover { border-color:var(--border2); color:var(--text); }
+.cr-tpl-btn.active { background:var(--accent2); border-color:var(--accent2); color:#fff; }
 </style>
 </head>
 <body>
@@ -1223,6 +1227,17 @@ body {
     <aside class="cr-left">
       <div class="cr-left-scroll">
 
+        <!-- Sélecteur de template -->
+        <div style="margin-bottom:14px;">
+          <div style="font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:7px;">Type de courrier</div>
+          <div class="cr-tpl-row">
+            <button class="cr-tpl-btn" onclick="crSetTemplate('debut')" id="cr-tpl-debut">🏁<br>Début PEC</button>
+            <button class="cr-tpl-btn active" onclick="crSetTemplate('suivi')" id="cr-tpl-suivi">📊<br>Suivi</button>
+            <button class="cr-tpl-btn" onclick="crSetTemplate('rts')" id="cr-tpl-rts">🏃<br>Fin / RTS</button>
+            <button class="cr-tpl-btn" onclick="crSetTemplate('avis')" id="cr-tpl-avis">⚠️<br>Avis</button>
+          </div>
+        </div>
+
         <div class="cr-section-hdr" style="margin-top:0">Destinataire</div>
         <div class="cr-fg">
           <label for="cr-dest-nom">Titre &amp; Nom du médecin</label>
@@ -1367,6 +1382,34 @@ body {
         <div class="cr-fg">
           <label for="cr-plan">Détail du plan</label>
           <textarea id="cr-plan" rows="4" placeholder="ex. Poursuite du renforcement isocinétique 3×/sem, travail proprioception, reprise course J+21…" oninput="crAutoExpand(this)"></textarea>
+        </div>
+
+        <!-- Protocole retenu (visible: debut, rts) -->
+        <div class="cr-section-hdr" id="cr-hdr-protocole" style="display:none">Protocole retenu</div>
+        <div id="cr-block-protocole" style="display:none">
+          <div class="cr-fg">
+            <label for="cr-proto-nom">Nom du protocole</label>
+            <input type="text" id="cr-proto-nom" placeholder="ex. LCA — Reconstruction DIDT (Kinesport)">
+          </div>
+          <div class="cr-form-row">
+            <div class="cr-fg">
+              <label for="cr-proto-freq">Fréquence</label>
+              <input type="text" id="cr-proto-freq" placeholder="ex. 3 séances / semaine">
+            </div>
+          </div>
+          <div class="cr-fg">
+            <label for="cr-proto-objectifs">Objectifs à J+30</label>
+            <textarea id="cr-proto-objectifs" rows="2" oninput="crAutoExpand(this)" placeholder="ex. extension 0°, flexion 120°, appui complet…"></textarea>
+          </div>
+        </div>
+
+        <!-- Disponibilités (visible: debut uniquement) -->
+        <div class="cr-section-hdr" id="cr-hdr-dispo" style="display:none">Disponibilités</div>
+        <div id="cr-block-dispo" style="display:none">
+          <div class="cr-fg">
+            <label for="cr-dispo">Jours / contact</label>
+            <input type="text" id="cr-dispo" placeholder="ex. Lun, Mer, Ven · 06 XX XX XX XX">
+          </div>
         </div>
 
         <div class="cr-section-hdr">Objet du courrier</div>
@@ -4885,11 +4928,13 @@ _updateOutilsPatientBtns();
   };
 
   function crBuildLetter() {
+    if (crTemplate === 'debut') return crBuildDebutLetter();
+
     var lines = [];
     var destNom = crV('cr-dest-nom'), destSpec = crV('cr-dest-spec');
     var patNom  = crV('cr-pat-nom'),  patDob   = crFmtDate(crV('cr-pat-dob'));
-    var patEvt  = crFmtDate(crV('cr-pat-date-evt'));  // date accident/opération
-    var patPEC  = crFmtDate(crV('cr-pat-date-pec'));  // date début prise en charge
+    var patEvt  = crFmtDate(crV('cr-pat-date-evt'));
+    var patPEC  = crFmtDate(crV('cr-pat-date-pec'));
     var patCote = crV('cr-pat-cote');
     var pathoDetail = crV('cr-patho-detail'), objet = crV('cr-objet');
     var phase = crV('cr-phase'), evolution = crV('cr-evolution');
@@ -4917,14 +4962,10 @@ _updateOutilsPatientBtns();
       if (patDob)  patLine += ', né(e) le ' + patDob;
       if (patCote) patLine += ', côté ' + patCote.toLowerCase();
       lines.push('Patient : ' + patLine + '.');
-
-      // Diagnostic
       var diagLine = crPatho ? crPathoLabel(crPatho) : '';
       if (pathoDetail) diagLine = diagLine ? diagLine + ' — ' + pathoDetail : pathoDetail;
       if (patEvt) diagLine += (diagLine ? ', ' : '') + 'opération / accident le ' + patEvt;
       if (diagLine) lines.push('Diagnostic : ' + diagLine + '.');
-
-      // Prise en charge séparée
       if (patPEC) lines.push('Prise en charge rééducative débutée le ' + patPEC + '.');
       lines.push('');
     }
@@ -4932,7 +4973,7 @@ _updateOutilsPatientBtns();
     // 4. Phase
     if (phase) { lines.push('Stade de rééducation : ' + crPhaseLabel(phase) + '.'); lines.push(''); }
 
-    // 5. Amplitudes (strip trailing °)
+    // 5. Amplitudes
     var aLabels = isEpaule
       ? ['Antépulsion passive','Abduction','Rotation externe','Rotation interne']
       : ['Extension passive','Extension active','Flexion passive','Flexion active'];
@@ -4991,8 +5032,108 @@ _updateOutilsPatientBtns();
     // 10. Plan
     if (plan) { lines.push('Plan de traitement :'); lines.push(plan); lines.push(''); }
 
-    // 11. Closing — nom uniquement (infos praticien déjà dans l'en-tête)
+    // 11. Closing
     lines.push('Je reste à votre disposition pour tout complément d\'information.');
+    lines.push(''); lines.push('Cordialement,'); lines.push('');
+    lines.push(crProfile.name);
+    return lines.join('\n');
+  }
+
+  // ── Template D : Début de prise en charge ────────────────────
+  function crBuildDebutLetter() {
+    var lines = [];
+    var destNom = crV('cr-dest-nom'), destSpec = crV('cr-dest-spec');
+    var patNom  = crV('cr-pat-nom'),  patDob  = crFmtDate(crV('cr-pat-dob'));
+    var patEvt  = crFmtDate(crV('cr-pat-date-evt'));
+    var patPEC  = crFmtDate(crV('cr-pat-date-pec'));
+    var patCote = crV('cr-pat-cote');
+    var pathoDetail = crV('cr-patho-detail');
+    var isEpaule = crPatho && CR_PATHO_EPAULE.indexOf(crPatho) !== -1;
+
+    // Calcul J+
+    var joursStr = '';
+    if (crV('cr-pat-date-evt') && crV('cr-pat-date-pec')) {
+      var dEvt = new Date(crV('cr-pat-date-evt'));
+      var dPEC = new Date(crV('cr-pat-date-pec'));
+      var diff = Math.round((dPEC - dEvt) / (1000 * 60 * 60 * 24));
+      if (!isNaN(diff) && diff >= 0) joursStr = 'J+' + diff;
+    }
+
+    // Salutation
+    var greeting = destNom ? 'Cher confrère' + (destSpec ? ', ' + destSpec : '') + ',' : 'Confrère,';
+    if (destNom && /^(Dr\.?\s+)?[A-Z][a-z]+(ine|elle|ette|ance|ence|ie)\b/.test(destNom.replace(/^Dr\.?\s+/,''))) {
+      greeting = 'Chère consœur' + (destSpec ? ', ' + destSpec : '') + ',';
+    }
+    lines.push(greeting); lines.push('');
+
+    // Intro spécifique début PEC
+    var intro = 'Je vous informe de la prise en charge rééducative de votre patient(e)';
+    if (patNom) intro += ' ' + patNom;
+    if (patDob) intro += ', né(e) le ' + patDob;
+    var contextParts = [];
+    if (patPEC) contextParts.push('reçu(e) en consultation initiale le ' + patPEC);
+    if (joursStr) contextParts.push(joursStr + ' post-opératoire');
+    if (patEvt) { var diagCtx = crPatho ? crPathoLabel(crPatho) : ''; if (pathoDetail) diagCtx = diagCtx ? diagCtx + ' — ' + pathoDetail : pathoDetail; if (diagCtx) contextParts.push('de sa ' + diagCtx.toLowerCase()); }
+    if (contextParts.length) intro += ', ' + contextParts.join(', ');
+    intro += '.';
+    lines.push(intro); lines.push('');
+
+    // Diagnostic / côté
+    if (crPatho || pathoDetail || patEvt || patCote) {
+      var diagLine = crPatho ? crPathoLabel(crPatho) : '';
+      if (pathoDetail) diagLine = diagLine ? diagLine + ' — ' + pathoDetail : pathoDetail;
+      if (patEvt) diagLine += (diagLine ? ', ' : '') + 'opération / accident le ' + patEvt;
+      if (patCote) diagLine += (diagLine ? ' — ' : '') + 'côté ' + patCote.toLowerCase();
+      if (diagLine) { lines.push('Diagnostic : ' + diagLine + '.'); lines.push(''); }
+    }
+
+    // Bilan initial
+    lines.push('── BILAN INITIAL' + (joursStr ? ' (' + joursStr + ')' : '') + ' ──────────────────────────────────');
+    lines.push('');
+
+    // Amplitudes
+    var aLabels = isEpaule
+      ? ['Antépulsion passive','Abduction','Rotation externe','Rotation interne']
+      : ['Extension passive','Extension active','Flexion passive','Flexion active'];
+    var aVals = ['cr-amp-ext-p','cr-amp-ext-a','cr-amp-flex-p','cr-amp-flex-a'].map(crV).map(crStripDeg);
+    var ampParts = [];
+    aVals.forEach(function(v, i) { if (v) ampParts.push(aLabels[i] + ' : ' + v + '°'); });
+    if (ampParts.length) { lines.push('Amplitudes articulaires : ' + ampParts.join(' / ') + '.'); }
+
+    // Signes cliniques
+    var signLabels = { 'cr-sign-epanchement':'Épanchement articulaire', 'cr-sign-sec':'Genou sec',
+      'cr-sign-douleur':'Douleur résiduelle', 'cr-sign-mobilite':'Mobilité patellaire conservée', 'cr-sign-boiterie':'Boiterie observée' };
+    var activeSigns = Object.keys(crSigns).filter(function(k){ return crSigns[k]; }).map(function(k){ return signLabels[k]; });
+    var signesLibre = crV('cr-signes-libre');
+    if (activeSigns.length || signesLibre) {
+      lines.push('Signes cliniques :');
+      activeSigns.forEach(function(s){ lines.push('  - ' + s); });
+      if (signesLibre) lines.push('  - ' + signesLibre);
+    }
+
+    var commentaire = crV('cr-commentaire');
+    if (commentaire) { lines.push(''); lines.push(commentaire); }
+    lines.push('');
+
+    // Protocole
+    var protoNom   = crV('cr-proto-nom');
+    var protoFreq  = crV('cr-proto-freq');
+    var protoObj   = crV('cr-proto-objectifs');
+    var phase      = crV('cr-phase');
+    if (protoNom || protoFreq || protoObj || phase) {
+      lines.push('── PROTOCOLE RETENU ───────────────────────────────────────');
+      lines.push('');
+      if (protoNom) lines.push('Protocole : ' + protoNom);
+      if (phase)    lines.push('Phase de départ : ' + crPhaseLabel(phase));
+      if (protoFreq) lines.push('Fréquence : ' + protoFreq);
+      if (protoObj) { lines.push('Objectifs à J+30 :'); lines.push(protoObj); }
+      lines.push('');
+    }
+
+    // Closing
+    var dispo = crV('cr-dispo');
+    lines.push('Je reste naturellement disponible pour tout échange ou question concernant la prise en charge de votre patient(e).');
+    if (dispo) lines.push('Disponibilités : ' + dispo + '.');
     lines.push(''); lines.push('Cordialement,'); lines.push('');
     lines.push(crProfile.name);
     return lines.join('\n');
@@ -5044,6 +5185,31 @@ _updateOutilsPatientBtns();
     var bodyEnc = encodeURIComponent(text);
     window.location.href = 'mailto:?subject=' + subject + '&body=' + bodyEnc;
   };
+
+  // ── Template selector ────────────────────────────────────────
+  var crTemplate = 'suivi';
+
+  window.crSetTemplate = function(tpl) {
+    crTemplate = tpl;
+    ['debut','suivi','rts','avis'].forEach(function(t) {
+      var btn = document.getElementById('cr-tpl-' + t);
+      if (btn) btn.classList.toggle('active', t === tpl);
+    });
+    crUpdateTemplateSections();
+  };
+
+  function crUpdateTemplateSections() {
+    var showProto = crTemplate === 'debut' || crTemplate === 'rts';
+    var showDispo = crTemplate === 'debut';
+    ['cr-hdr-protocole','cr-block-protocole'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = showProto ? '' : 'none';
+    });
+    ['cr-hdr-dispo','cr-block-dispo'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = showDispo ? '' : 'none';
+    });
+  }
 
   window.crGenerate = function() {
     var text = crBuildLetter();
