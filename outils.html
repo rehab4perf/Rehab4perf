@@ -375,7 +375,7 @@ body {
   border-color: var(--accent); box-shadow: 0 0 0 3px rgba(43,95,166,.10);
 }
 .cr-fg select { cursor: pointer; }
-.cr-fg textarea { resize: vertical; min-height: 64px; line-height: 1.5; }
+.cr-fg textarea { resize: none; min-height: 64px; line-height: 1.5; overflow-y: hidden; }
 .cr-field-group {
   background: var(--surface2); border: 1px solid var(--border);
   border-radius: var(--radius); padding: 10px; margin-bottom: 8px;
@@ -1259,6 +1259,10 @@ body {
             </select>
           </div>
         </div>
+        <div class="cr-fg">
+          <label for="cr-pat-date-pec">Date début prise en charge</label>
+          <input type="date" id="cr-pat-date-pec">
+        </div>
 
         <div class="cr-section-hdr">Pathologie</div>
         <div class="cr-patho-grid">
@@ -1356,13 +1360,13 @@ body {
         </div>
         <div class="cr-fg">
           <label for="cr-commentaire">Commentaire libre</label>
-          <textarea id="cr-commentaire" rows="3" placeholder="Observations particulières, contexte du patient…"></textarea>
+          <textarea id="cr-commentaire" rows="3" placeholder="Observations particulières, contexte du patient…" oninput="crAutoExpand(this)"></textarea>
         </div>
 
         <div class="cr-section-hdr">Plan de traitement</div>
         <div class="cr-fg">
           <label for="cr-plan">Détail du plan</label>
-          <textarea id="cr-plan" rows="4" placeholder="ex. Poursuite du renforcement isocinétique 3×/sem, travail proprioception, reprise course J+21…"></textarea>
+          <textarea id="cr-plan" rows="4" placeholder="ex. Poursuite du renforcement isocinétique 3×/sem, travail proprioception, reprise course J+21…" oninput="crAutoExpand(this)"></textarea>
         </div>
 
         <div class="cr-section-hdr">Objet du courrier</div>
@@ -1388,7 +1392,9 @@ body {
       <div class="cr-preview-bar">
         <span class="cr-preview-label">Prévisualisation</span>
         <button class="cr-btn-import" onclick="crImportPatient()" title="Importer les infos du patient ouvert">⬇ Importer patient</button>
-        <button class="cr-btn-copy" onclick="crCopyLetter()">⎘ Copier</button>
+        <button class="cr-btn-copy" onclick="crCopyLetter()" title="Copier le texte">⎘ Copier</button>
+        <button class="cr-btn-copy" onclick="crExportPDF()" title="Exporter en PDF / Imprimer" style="border-color:var(--accent2);color:var(--accent2);">🖨 PDF</button>
+        <button class="cr-btn-copy" onclick="crExportEmail()" title="Ouvrir dans le client mail" style="border-color:var(--green);color:var(--green);">✉ Mail</button>
       </div>
       <div class="cr-preview-scroll">
         <div class="letter-card">
@@ -4872,11 +4878,19 @@ _updateOutilsPatientBtns();
     return m[v] || null;
   }
 
+  // Auto-expand textarea
+  window.crAutoExpand = function(el) {
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  };
+
   function crBuildLetter() {
     var lines = [];
     var destNom = crV('cr-dest-nom'), destSpec = crV('cr-dest-spec');
     var patNom  = crV('cr-pat-nom'),  patDob   = crFmtDate(crV('cr-pat-dob'));
-    var patEvt  = crFmtDate(crV('cr-pat-date-evt')), patCote = crV('cr-pat-cote');
+    var patEvt  = crFmtDate(crV('cr-pat-date-evt'));  // date accident/opération
+    var patPEC  = crFmtDate(crV('cr-pat-date-pec'));  // date début prise en charge
+    var patCote = crV('cr-pat-cote');
     var pathoDetail = crV('cr-patho-detail'), objet = crV('cr-objet');
     var phase = crV('cr-phase'), evolution = crV('cr-evolution');
     var commentaire = crV('cr-commentaire'), plan = crV('cr-plan');
@@ -4897,16 +4911,21 @@ _updateOutilsPatientBtns();
       : 'Je vous adresse ce compte-rendu de rééducation' + (patNom ? ' concernant ' + patNom : '') + '.';
     lines.push(objetPhrase); lines.push('');
 
-    // 3. Identité patient + diagnostic
-    if (patNom || patDob || patEvt || crPatho) {
+    // 3. Identité patient
+    if (patNom || patDob || patEvt || patPEC || crPatho) {
       var patLine = patNom || 'votre patient(e)';
-      if (patDob) patLine += ', né(e) le ' + patDob;
+      if (patDob)  patLine += ', né(e) le ' + patDob;
       if (patCote) patLine += ', côté ' + patCote.toLowerCase();
       lines.push('Patient : ' + patLine + '.');
+
+      // Diagnostic
       var diagLine = crPatho ? crPathoLabel(crPatho) : '';
       if (pathoDetail) diagLine = diagLine ? diagLine + ' — ' + pathoDetail : pathoDetail;
-      if (patEvt) diagLine += (diagLine ? ', ' : '') + 'prise en charge depuis le ' + patEvt;
+      if (patEvt) diagLine += (diagLine ? ', ' : '') + 'opération / accident le ' + patEvt;
       if (diagLine) lines.push('Diagnostic : ' + diagLine + '.');
+
+      // Prise en charge séparée
+      if (patPEC) lines.push('Prise en charge rééducative débutée le ' + patPEC + '.');
       lines.push('');
     }
 
@@ -4927,7 +4946,7 @@ _updateOutilsPatientBtns();
       var fQ = crV('cr-force-quad'), fIJ = crV('cr-force-ij');
       var lQ = crV('cr-lsi-quad'),   lIJ = crV('cr-lsi-ij');
       var fp = [];
-      if (fQ) fp.push('Quadriceps : ' + fQ);
+      if (fQ)  fp.push('Quadriceps : ' + fQ);
       if (fIJ) fp.push('Ischio-jambiers : ' + fIJ);
       if (fp.length) {
         var fl = 'Bilan de force : ' + fp.join(' / ') + '.';
@@ -4953,15 +4972,16 @@ _updateOutilsPatientBtns();
       if (fonct.length) { lines.push('Tests fonctionnels : ' + fonct.join(' — ') + '.'); lines.push(''); }
     }
 
-    // 8. Signes cliniques
-    var signLabels = { 'cr-sign-epanchement':'épanchement articulaire', 'cr-sign-sec':'genou sec',
-      'cr-sign-douleur':'douleur résiduelle', 'cr-sign-mobilite':'mobilité patellaire conservée', 'cr-sign-boiterie':'boiterie observée' };
+    // 8. Signes cliniques — tirets
+    var signLabels = { 'cr-sign-epanchement':'Épanchement articulaire', 'cr-sign-sec':'Genou sec',
+      'cr-sign-douleur':'Douleur résiduelle', 'cr-sign-mobilite':'Mobilité patellaire conservée', 'cr-sign-boiterie':'Boiterie observée' };
     var activeSigns = Object.keys(crSigns).filter(function(k){ return crSigns[k]; }).map(function(k){ return signLabels[k]; });
     var signesLibre = crV('cr-signes-libre');
     if (activeSigns.length || signesLibre) {
-      var sl = activeSigns.length ? 'Signes cliniques : ' + activeSigns.join(', ') + '.' : '';
-      if (signesLibre) sl = sl ? sl + ' ' + signesLibre + '.' : 'Signes cliniques : ' + signesLibre + '.';
-      lines.push(sl); lines.push('');
+      lines.push('Signes cliniques :');
+      activeSigns.forEach(function(s){ lines.push('  - ' + s); });
+      if (signesLibre) lines.push('  - ' + signesLibre);
+      lines.push('');
     }
 
     // 9. Évolution
@@ -4971,16 +4991,59 @@ _updateOutilsPatientBtns();
     // 10. Plan
     if (plan) { lines.push('Plan de traitement :'); lines.push(plan); lines.push(''); }
 
-    // 11. Closing
+    // 11. Closing — nom uniquement (infos praticien déjà dans l'en-tête)
     lines.push('Je reste à votre disposition pour tout complément d\'information.');
     lines.push(''); lines.push('Cordialement,'); lines.push('');
-    lines.push(crProfile.name); lines.push(crProfile.title);
-    if (crProfile.cabinet) lines.push(crProfile.cabinet);
-    if (crProfile.am)      lines.push('N° AM : ' + crProfile.am);
-    if (crProfile.tel)     lines.push('Tél. : ' + crProfile.tel);
-    if (crProfile.email)   lines.push(crProfile.email);
+    lines.push(crProfile.name);
     return lines.join('\n');
   }
+
+  // Export PDF — ouvre une fenêtre dédiée et lance l'impression
+  window.crExportPDF = function() {
+    var body = document.getElementById('cr-letter-body');
+    var text = body ? body.textContent : '';
+    if (!text || (body && body.querySelector('.letter-empty'))) { _crToast('Générez d\'abord le courrier'); return; }
+    var nameEl  = document.getElementById('cr-lp-name');
+    var titleEl = document.getElementById('cr-lp-title');
+    var dateEl  = document.getElementById('cr-letter-date');
+    var practName  = nameEl  ? nameEl.textContent  : crProfile.name;
+    var practTitle = titleEl ? titleEl.innerText    : crProfile.title;
+    var letterDate = dateEl  ? dateEl.textContent   : '';
+    var textEsc = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    var titleEsc = practTitle.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    var html = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">'
+      + '<title>CR — ' + practName + '</title>'
+      + '<style>*{box-sizing:border-box;margin:0;padding:0}'
+      + 'body{font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;font-size:13px;color:#1A1917;background:#fff;padding:40px 48px}'
+      + '.hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}'
+      + '.pract{font-size:.82rem;line-height:1.7;color:#555}'
+      + '.pract strong{font-size:.93rem;color:#1A1917;display:block}'
+      + '.date{font-size:.82rem;color:#555;white-space:nowrap}'
+      + 'hr{border:none;border-top:2px solid #1A3A5C;margin:12px 0 22px}'
+      + '.body{font-size:13px;line-height:1.85;white-space:pre-wrap}'
+      + '@media print{body{padding:20mm 22mm}@page{margin:0}}'
+      + '</style></head><body>'
+      + '<div class="hdr"><div class="pract"><strong>' + practName + '</strong>' + titleEsc + '</div>'
+      + '<div class="date">' + letterDate + '</div></div>'
+      + '<hr>'
+      + '<div class="body">' + textEsc + '</div>'
+      + '<script>window.onload=function(){window.print();}<\/script>'
+      + '</body></html>';
+    var w = window.open('', '_blank');
+    if (w) { w.document.write(html); w.document.close(); }
+    else { _crToast('Autorisez les pop-ups pour exporter en PDF'); }
+  };
+
+  // Export email — ouvre le client mail avec le courrier
+  window.crExportEmail = function() {
+    var body = document.getElementById('cr-letter-body');
+    var text = body ? body.textContent : '';
+    if (!text || (body && body.querySelector('.letter-empty'))) { _crToast('Générez d\'abord le courrier'); return; }
+    var patNom  = crV('cr-pat-nom');
+    var subject = encodeURIComponent('Compte-rendu de rééducation' + (patNom ? ' — ' + patNom : ''));
+    var bodyEnc = encodeURIComponent(text);
+    window.location.href = 'mailto:?subject=' + subject + '&body=' + bodyEnc;
+  };
 
   window.crGenerate = function() {
     var text = crBuildLetter();
