@@ -1376,13 +1376,11 @@ body {
           </div>
         </div>
         <div class="cr-field-group">
-          <div class="cr-field-group-title">Signes cliniques</div>
-          <div class="cr-sign-row"><span class="cr-sign-label">Épanchement articulaire</span><button class="cr-sign-cycle" id="cr-sign-btn-epanchement" onclick="crCycleSign('epanchement')">—</button></div>
-          <div class="cr-sign-row"><span class="cr-sign-label">Genou sec</span><button class="cr-sign-cycle" id="cr-sign-btn-sec" onclick="crCycleSign('sec')">—</button></div>
-          <div class="cr-sign-row"><span class="cr-sign-label">Douleur résiduelle</span><button class="cr-sign-cycle" id="cr-sign-btn-douleur" onclick="crCycleSign('douleur')">—</button></div>
-          <div class="cr-sign-row"><span class="cr-sign-label">Mobilité patellaire</span><button class="cr-sign-cycle" id="cr-sign-btn-mobilite" onclick="crCycleSign('mobilite')">—</button></div>
-          <div class="cr-sign-row"><span class="cr-sign-label">Boiterie</span><button class="cr-sign-cycle" id="cr-sign-btn-boiterie" onclick="crCycleSign('boiterie')">—</button></div>
-          <div class="cr-sign-row"><span class="cr-sign-label">Verrouillage actif en extension</span><button class="cr-sign-cycle" id="cr-sign-btn-verrou" onclick="crCycleSign('verrou')">—</button></div>
+          <div class="cr-field-group-title" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>Signes cliniques</span>
+            <button class="cr-amp-cfg-btn" onclick="crOpenSignConfig()" title="Configurer les signes (admin)" style="font-size:.7rem;padding:3px 7px;">⚙</button>
+          </div>
+          <div id="cr-sign-rows-container"></div>
           <div class="cr-fg" style="margin-top:8px">
             <label for="cr-signes-libre">Précisions</label>
             <input type="text" id="cr-signes-libre" placeholder="Remarques cliniques complémentaires…">
@@ -5176,6 +5174,92 @@ _updateOutilsPatientBtns();
     _crToast('Pathologies enregistrées');
   };
 
+  var _crSignDraft = null;
+
+  window.crOpenSignConfig = function() {
+    if (!crAdminCheck()) return;
+    _crSignDraft = JSON.parse(JSON.stringify(crSignConfig));
+    crRenderSignModal();
+    var ov = document.getElementById('cr-sign-cfg-overlay');
+    if (ov) ov.classList.add('open');
+  };
+  window.crCloseSignConfig = function() {
+    var ov = document.getElementById('cr-sign-cfg-overlay');
+    if (ov) ov.classList.remove('open');
+    _crSignDraft = null;
+  };
+
+  function crRenderSignModal() {
+    var body = document.getElementById('cr-sign-cfg-body');
+    if (!body || !_crSignDraft) return;
+    body.innerHTML = '';
+    _crSignDraft.forEach(function(s, idx) {
+      var item = document.createElement('div');
+      item.className = 'cr-cfg-articu-item';
+      item.dataset.idx = idx;
+      item.innerHTML = '<div class="cr-cfg-articu-hdr">'
+        + '<input type="text" class="scfg-label" value="' + (s.label||'') + '" placeholder="Label du signe">'
+        + '<button class="cr-cfg-del" onclick="crSignDelItem(' + idx + ')">✕</button>'
+        + '</div>'
+        + '<div class="cr-cfg-articu-body">'
+        + '<div class="cr-cfg-mesure-row"><label style="width:80px;font-size:.72rem;color:var(--text2);">✓ Validé</label>'
+        + '<input type="text" class="scfg-valide" value="' + (s.valide||'') + '" placeholder="Texte si validé" style="flex:1"></div>'
+        + '<div class="cr-cfg-mesure-row"><label style="width:80px;font-size:.72rem;color:var(--text2);">⟳ En cours</label>'
+        + '<input type="text" class="scfg-cours" value="' + (s.cours||'') + '" placeholder="Texte si en cours" style="flex:1"></div>'
+        + '</div>';
+      body.appendChild(item);
+    });
+    var addRow = document.createElement('div');
+    addRow.innerHTML = '<div class="cr-cfg-add-articu-row" style="margin-top:10px;">'
+      + '<input type="text" id="cr-scfg-new-label" placeholder="Nouveau signe clinique" style="flex:1">'
+      + '<button class="cr-cfg-save-btn" onclick="crSignAddItem()" style="padding:6px 12px;font-size:.78rem;">+ Ajouter</button>'
+      + '</div>';
+    body.appendChild(addRow);
+  }
+
+  window.crSignDelItem = function(idx) {
+    if (!_crSignDraft) return;
+    _crSignDraft.splice(idx, 1);
+    crRenderSignModal();
+  };
+  window.crSignAddItem = function() {
+    if (!_crSignDraft) return;
+    var inp = document.getElementById('cr-scfg-new-label');
+    var lbl = inp ? inp.value.trim() : '';
+    if (!lbl) return;
+    var key = 'sign_' + Date.now();
+    _crSignDraft.push({ key:key, label:lbl, valide:'', cours:'' });
+    if (inp) inp.value = '';
+    crRenderSignModal();
+  };
+
+  function crSyncSignDraftFromDOM() {
+    if (!_crSignDraft) return;
+    var body = document.getElementById('cr-sign-cfg-body');
+    if (!body) return;
+    body.querySelectorAll('.cr-cfg-articu-item').forEach(function(item) {
+      var idx = parseInt(item.dataset.idx);
+      if (isNaN(idx) || !_crSignDraft[idx]) return;
+      var lbl = item.querySelector('.scfg-label');
+      var v   = item.querySelector('.scfg-valide');
+      var c   = item.querySelector('.scfg-cours');
+      if (lbl) _crSignDraft[idx].label  = lbl.value.trim();
+      if (v)   _crSignDraft[idx].valide = v.value.trim();
+      if (c)   _crSignDraft[idx].cours  = c.value.trim();
+    });
+  }
+
+  window.crSaveSignConfig = function() {
+    crSyncSignDraftFromDOM();
+    crSignConfig = _crSignDraft;
+    crSigns = {};
+    crSignConfig.forEach(function(s){ crSigns[s.key] = 0; });
+    try { localStorage.setItem('crSignConfig', JSON.stringify(crSignConfig)); } catch(e) {}
+    crRenderSignRows();
+    crCloseSignConfig();
+    _crToast('Signes cliniques enregistrés');
+  };
+
   // ── Pathologie config ─────────────────────────────────────────
   var CR_PATHO_DEFAULTS = [
     { key:'lca',               label:'Ligament croisé antérieur',   articulations:['genou'] },
@@ -5198,7 +5282,20 @@ _updateOutilsPatientBtns();
   // State
   var crPatho = null;
   var crLsiOn = false;
-  var crSigns = { epanchement:0, sec:0, douleur:0, mobilite:0, boiterie:0, verrou:0 };
+  // ── Sign config ───────────────────────────────────────────────
+  var CR_SIGN_DEFAULTS = [
+    { key:'epanchement', label:'Épanchement articulaire',      valide:'Épanchement absent',                     cours:'Épanchement articulaire résiduel' },
+    { key:'sec',         label:'Genou sec',                    valide:'Genou sec',                              cours:'Genou sec en cours d\'acquisition' },
+    { key:'douleur',     label:'Douleur résiduelle',           valide:'Absence de douleur résiduelle',          cours:'Douleur résiduelle présente' },
+    { key:'mobilite',    label:'Mobilité patellaire',          valide:'Mobilité patellaire conservée',           cours:'Mobilité patellaire en cours de récupération' },
+    { key:'boiterie',    label:'Boiterie',                     valide:'Absence de boiterie',                    cours:'Boiterie observée' },
+    { key:'verrou',      label:'Verrouillage actif extension', valide:'Verrouillage actif en extension acquis',  cours:'Verrouillage actif en extension en cours d\'acquisition' }
+  ];
+  var crSignConfig = (function() {
+    try { var s = localStorage.getItem('crSignConfig'); if (s) return JSON.parse(s); } catch(e) {}
+    return JSON.parse(JSON.stringify(CR_SIGN_DEFAULTS));
+  })();
+  var crSigns = {}; // peuplé dynamiquement par crRenderSignRows()
   var crPatientSexe = ''; // 'M', 'F', ou '' (neutre)
   // Genre : retourne forme neutre si sexe inconnu
   function crF(neutre, masc, fem) {
@@ -5238,6 +5335,23 @@ _updateOutilsPatientBtns();
       var el = document.getElementById(id); if (el) el.textContent = labels[i];
     });
   }
+  function crRenderSignRows() {
+    var container = document.getElementById('cr-sign-rows-container');
+    if (!container) return;
+    container.innerHTML = '';
+    crSignConfig.forEach(function(s) {
+      if (!crSigns.hasOwnProperty(s.key)) crSigns[s.key] = 0;
+      var row = document.createElement('div');
+      row.className = 'cr-sign-row';
+      var state = crSigns[s.key] || 0;
+      var labels = ['—','✓ Validé','⟳ En cours'];
+      var cls    = ['','st-valide','st-cours'];
+      row.innerHTML = '<span class="cr-sign-label">' + s.label + '</span>'
+        + '<button class="cr-sign-cycle ' + cls[state] + '" id="cr-sign-btn-' + s.key + '" onclick="crCycleSign(\'' + s.key + '\')">' + labels[state] + '</button>';
+      container.appendChild(row);
+    });
+  }
+
   window.crCycleSign = function(key) {
     crSigns[key] = ((crSigns[key] || 0) + 1) % 3;
     var btn = document.getElementById('cr-sign-btn-' + key);
@@ -5408,14 +5522,7 @@ _updateOutilsPatientBtns();
     }
 
     // 8. Signes cliniques — 3 états groupés
-    var signDefs = [
-      { key:'epanchement', valide:'Épanchement absent',                    cours:'Épanchement articulaire résiduel' },
-      { key:'sec',         valide:'Genou sec',                             cours:'Genou sec en cours d\'acquisition' },
-      { key:'douleur',     valide:'Absence de douleur résiduelle',         cours:'Douleur résiduelle présente' },
-      { key:'mobilite',    valide:'Mobilité patellaire conservée',          cours:'Mobilité patellaire en cours de récupération' },
-      { key:'boiterie',    valide:'Absence de boiterie',                   cours:'Boiterie observée' },
-      { key:'verrou',      valide:'Verrouillage actif en extension acquis', cours:'Verrouillage actif en extension en cours d\'acquisition' }
-    ];
+    var signDefs = crSignConfig; // utilise la config dynamique
     var valideSigns = [], coursSigns = [];
     signDefs.forEach(function(s){ if(crSigns[s.key]===1) valideSigns.push(s.valide); else if(crSigns[s.key]===2) coursSigns.push(s.cours); });
     var signesLibre = crV('cr-signes-libre');
@@ -5534,14 +5641,7 @@ _updateOutilsPatientBtns();
     }
 
     // Signes cliniques — 3 états groupés
-    var signDefs = [
-      { key:'epanchement', valide:'Épanchement absent',                    cours:'Épanchement articulaire résiduel' },
-      { key:'sec',         valide:'Genou sec',                             cours:'Genou sec en cours d\'acquisition' },
-      { key:'douleur',     valide:'Absence de douleur résiduelle',         cours:'Douleur résiduelle présente' },
-      { key:'mobilite',    valide:'Mobilité patellaire conservée',          cours:'Mobilité patellaire en cours de récupération' },
-      { key:'boiterie',    valide:'Absence de boiterie',                   cours:'Boiterie observée' },
-      { key:'verrou',      valide:'Verrouillage actif en extension acquis', cours:'Verrouillage actif en extension en cours d\'acquisition' }
-    ];
+    var signDefs = crSignConfig; // utilise la config dynamique
     var valideSigns = [], coursSigns = [];
     signDefs.forEach(function(s){ if(crSigns[s.key]===1) valideSigns.push(s.valide); else if(crSigns[s.key]===2) coursSigns.push(s.cours); });
     var signesLibre = crV('cr-signes-libre');
@@ -5678,11 +5778,10 @@ _updateOutilsPatientBtns();
     var ampFields = document.getElementById('cr-amp-fields');
     if (ampFields) ampFields.innerHTML = '';
     document.querySelectorAll('.cr-patho-btn').forEach(function(b){ b.classList.remove('active'); });
-    Object.keys(crSigns).forEach(function(k){
-      crSigns[k] = 0;
-      var btn = document.getElementById('cr-sign-btn-' + k);
-      if (btn) { btn.textContent = '—'; btn.className = 'cr-sign-cycle'; }
+    crSignConfig.forEach(function(s){
+      crSigns[s.key] = 0;
     });
+    crRenderSignRows();
     if (crLsiOn) crToggleLSI();
     crUpdateBlocks();
     crSetTemplate('suivi');
@@ -5847,6 +5946,7 @@ _updateOutilsPatientBtns();
   };
 
   crInitAmpSelect();
+  crRenderSignRows();
 })();
 
 </script>
@@ -5898,6 +5998,21 @@ _updateOutilsPatientBtns();
 <div id="outils-toast"></div>
 
 <!-- CR Amplitude Config Modal -->
+<!-- CR Sign Config Modal -->
+<div class="cr-cfg-overlay" id="cr-sign-cfg-overlay" onclick="if(event.target===this)crCloseSignConfig()">
+  <div class="cr-cfg-modal" style="width:600px;">
+    <div class="cr-cfg-modal-hdr">
+      <span>⚙ Configurer les signes cliniques</span>
+      <button class="cr-cfg-del" onclick="crCloseSignConfig()">✕</button>
+    </div>
+    <div class="cr-cfg-modal-body" id="cr-sign-cfg-body"></div>
+    <div class="cr-cfg-modal-footer">
+      <button class="cr-cfg-cancel-btn" onclick="crCloseSignConfig()">Annuler</button>
+      <button class="cr-cfg-save-btn" onclick="crSaveSignConfig()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <!-- CR Pathologie Config Modal -->
 <div class="cr-cfg-overlay" id="cr-patho-cfg-overlay" onclick="if(event.target===this)crClosePathoConfig()">
   <div class="cr-cfg-modal" style="width:560px;">
