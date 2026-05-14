@@ -838,6 +838,19 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .exo-consigne-ta.has-value { border-color:var(--border); background:var(--surface2); color:var(--text2); }
 .exo-name-cell { min-width:0; }
 .exo-name { font-size:.8rem; font-weight:600; color:var(--text); line-height:1.3; }
+.exo-name-input {
+  font-size:.8rem; font-weight:600; color:var(--text); font-family:inherit;
+  border:none; border-bottom:1px dashed var(--border2); background:transparent;
+  width:100%; outline:none; padding:0 0 1px;
+}
+.exo-name-input:focus { border-bottom-color:var(--accent2); }
+.exo-name-input::placeholder { font-weight:400; color:var(--muted); font-style:italic; }
+.add-free-exo-btn {
+  background:none; border:1px dashed var(--border2); color:var(--muted);
+  border-radius:5px; padding:5px 12px; font-size:.72rem; cursor:pointer;
+  font-family:inherit; transition:all .15s; display:block; margin:6px auto 4px;
+}
+.add-free-exo-btn:hover { border-color:var(--accent2); color:var(--accent2); }
 .exo-sub { display:flex; gap:6px; flex-wrap:wrap; margin-top:2px; }
 .cell-input {
   width:100%; padding:4px 6px; border:1px solid var(--border); border-radius:5px;
@@ -2823,6 +2836,30 @@ function addExoFromLib(libId){
   if(el) el.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
+function addFreeExo(blocId) {
+  var bloc = blocs.find(function(b){ return b.id === blocId; });
+  if(!bloc) return;
+  bloc.exos.push({ id:genId(), free:true, name:'', url:'',
+    reps:'', duree:'', series:'',
+    cibles:[{type:'RPE', min:'', max:''}],
+    tempo:'', recup:'', chained:false, consigne:'' });
+  activeBloc = blocId;
+  renderSession();
+  setTimeout(function(){
+    var inputs = document.querySelectorAll('.exo-name-input');
+    if(inputs.length) inputs[inputs.length-1].focus();
+  }, 40);
+}
+
+function updateExoName(blocId, exoId, value) {
+  var bloc = blocs.find(function(b){ return b.id === blocId; });
+  if(!bloc) return;
+  var exo = bloc.exos.find(function(e){ return e.id === exoId; });
+  if(!exo) return;
+  exo.name = value;
+  if(typeof _draftSaveLazy === 'function') _draftSaveLazy();
+}
+
 function autoResizeTa(el){
   el.style.height = 'auto';
   el.style.height = el.scrollHeight + 'px';
@@ -3340,7 +3377,11 @@ function renderSession(){
           html += '<div class="drag-handle" title="Glisser pour réordonner">⋮⋮</div>';
         }
         html += '<div class="exo-name-cell">';
-        html += '<div class="exo-name">'+escH(e.name)+(e._methApplied ? '<span class="meth-applied-badge">✓ méthode appliquée</span>' : '')+'</div>';
+        if(e.free){
+          html += '<input class="exo-name-input" type="text" value="'+escH(e.name||'')+'" placeholder="Nom de l\'exercice…" oninput="updateExoName(\''+b.id+'\',\''+e.id+'\',this.value)">';
+        } else {
+          html += '<div class="exo-name">'+escH(e.name)+(e._methApplied ? '<span class="meth-applied-badge">✓ méthode appliquée</span>' : '')+'</div>';
+        }
         html += '<div class="exo-sub">';
         if(e.url){ var _vt=_ytThumbHtml(e.url); html += _vt ? _vt : '<a class="vid-link" href="'+escH(e.url)+'" target="_blank">▶ Vidéo</a>'; }
         var exoMin=estimateExoMin(e); if(exoMin!==null) html+='<span class="time-tag">⏱ '+fmtMin(exoMin)+'</span>';
@@ -3397,6 +3438,7 @@ function renderSession(){
     } else {
       html += '<div style="padding:14px;text-align:center;color:var(--muted);font-size:.78rem;">Cliquez sur un exercice dans la bibliothèque pour l\'ajouter ici</div>';
     }
+    html += '<button class="add-free-exo-btn" onclick="addFreeExo(\''+b.id+'\')">✚ Exercice libre</button>';
     html += '</div></div>'; // .bloc-body .bloc
   });
   // Notes
