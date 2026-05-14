@@ -5281,9 +5281,10 @@ _updateOutilsPatientBtns();
   })();
   var crArticuSelected = ''; // articulation sélectionnée dans le select principal
 
-  // ── Admin — basé sur le rôle Supabase ────────────────────────
+  // ── Admin — vérifié par email (compte Supabase connecté) ─────
+  var CR_ADMIN_EMAIL = 'ap.kine92@gmail.com';
   function crAdminCheck() {
-    if (crProfile.role === 'admin') return true;
+    if (crProfile.email === CR_ADMIN_EMAIL) return true;
     _crToast('⛔ Configuration réservée à l\'administrateur');
     return false;
   }

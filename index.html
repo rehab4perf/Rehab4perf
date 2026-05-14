@@ -366,9 +366,7 @@ function updateNav(user) {
 
 function buildProfile(user) {
   var meta = (user && user.user_metadata) || {};
-  var appMeta = (user && user.app_metadata) || {};
-  var role = appMeta.role || meta.role || 'reader';
-  return { prenom:meta.prenom||'', nom:meta.nom||'', am:meta.am||'', tel:meta.tel||'', cabinet:meta.cabinet||'', email:(user&&user.email)||'', role:role };
+  return { prenom:meta.prenom||'', nom:meta.nom||'', am:meta.am||'', tel:meta.tel||'', cabinet:meta.cabinet||'', email:(user&&user.email)||'' };
 }
 
 function syncProfileToStorage(user) {
