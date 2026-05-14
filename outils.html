@@ -460,6 +460,30 @@ body {
 .cr-sign-cycle { padding:4px 10px; border-radius:5px; border:1.5px solid var(--border); background:var(--surface2); font-size:.71rem; font-weight:600; font-family:inherit; cursor:pointer; white-space:nowrap; transition:all .15s; color:var(--text2); min-width:88px; text-align:center; }
 .cr-sign-cycle.st-valide { background:#E8F5EE; border-color:#2D6A4F; color:#2D6A4F; }
 .cr-sign-cycle.st-cours  { background:#FEF3EB; border-color:#D4600A; color:#D4600A; }
+.cr-amp-articulation-row { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+.cr-amp-articulation-row select { flex:1; }
+.cr-amp-cfg-btn { background:none; border:1px solid var(--border2); border-radius:var(--radius-sm); padding:6px 9px; font-size:.8rem; cursor:pointer; color:var(--text2); white-space:nowrap; }
+.cr-amp-cfg-btn:hover { border-color:var(--accent); color:var(--accent); }
+/* Config modal */
+.cr-cfg-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; align-items:center; justify-content:center; }
+.cr-cfg-overlay.open { display:flex; }
+.cr-cfg-modal { background:#fff; border-radius:10px; width:520px; max-width:94vw; max-height:80vh; display:flex; flex-direction:column; box-shadow:0 8px 32px rgba(0,0,0,.18); }
+.cr-cfg-modal-hdr { padding:14px 18px; font-weight:700; font-size:.93rem; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.cr-cfg-modal-body { flex:1; overflow-y:auto; padding:16px 18px; }
+.cr-cfg-modal-footer { padding:10px 18px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:8px; }
+.cr-cfg-articu-item { border:1px solid var(--border); border-radius:7px; margin-bottom:10px; overflow:hidden; }
+.cr-cfg-articu-hdr { background:var(--surface2); padding:8px 12px; display:flex; align-items:center; gap:8px; font-weight:600; font-size:.83rem; }
+.cr-cfg-articu-hdr input { flex:1; background:transparent; border:none; font-weight:600; font-size:.83rem; font-family:inherit; outline:none; }
+.cr-cfg-articu-body { padding:8px 12px; display:flex; flex-direction:column; gap:5px; }
+.cr-cfg-mesure-row { display:flex; align-items:center; gap:6px; }
+.cr-cfg-mesure-row input { flex:1; }
+.cr-cfg-mesure-row .cr-cfg-unit { width:52px; }
+.cr-cfg-del { background:none; border:none; cursor:pointer; color:var(--red); font-size:1rem; padding:2px 5px; }
+.cr-cfg-add-btn { background:none; border:1px dashed var(--border2); border-radius:5px; width:100%; padding:6px; font-size:.78rem; cursor:pointer; color:var(--text3); margin-top:4px; }
+.cr-cfg-add-btn:hover { border-color:var(--accent); color:var(--accent); }
+.cr-cfg-add-articu-row { display:flex; gap:8px; margin-top:8px; }
+.cr-cfg-save-btn { background:var(--accent); color:#fff; border:none; border-radius:6px; padding:8px 18px; font-size:.83rem; font-weight:600; cursor:pointer; }
+.cr-cfg-cancel-btn { background:none; border:1px solid var(--border2); border-radius:6px; padding:8px 14px; font-size:.83rem; cursor:pointer; }
 /* Amplitude with status */
 .cr-amp-row { display:flex; align-items:flex-end; gap:4px; }
 .cr-amp-row input { flex:1; min-width:0; }
@@ -1315,12 +1339,13 @@ body {
         <div class="cr-section-hdr">Bilan clinique</div>
         <div class="cr-field-group">
           <div class="cr-field-group-title">Amplitudes articulaires</div>
-          <div style="display:flex;flex-direction:column;gap:6px;">
-            <div class="cr-fg"><label id="cr-lbl-ext-p">Ext. passive</label><div class="cr-amp-row"><input type="text" id="cr-amp-ext-p" placeholder="°"><select id="cr-amp-ext-p-stat"><option value="">—</option><option value="valide">✓ Validé</option><option value="cours">⟳ En cours</option></select></div></div>
-            <div class="cr-fg"><label id="cr-lbl-ext-a">Ext. active</label><div class="cr-amp-row"><input type="text" id="cr-amp-ext-a" placeholder="°"><select id="cr-amp-ext-a-stat"><option value="">—</option><option value="valide">✓ Validé</option><option value="cours">⟳ En cours</option></select></div></div>
-            <div class="cr-fg"><label id="cr-lbl-flex-p">Flex. passive</label><div class="cr-amp-row"><input type="text" id="cr-amp-flex-p" placeholder="°"><select id="cr-amp-flex-p-stat"><option value="">—</option><option value="valide">✓ Validé</option><option value="cours">⟳ En cours</option></select></div></div>
-            <div class="cr-fg"><label id="cr-lbl-flex-a">Flex. active</label><div class="cr-amp-row"><input type="text" id="cr-amp-flex-a" placeholder="°"><select id="cr-amp-flex-a-stat"><option value="">—</option><option value="valide">✓ Validé</option><option value="cours">⟳ En cours</option></select></div></div>
+          <div class="cr-amp-articulation-row">
+            <select id="cr-amp-articu" onchange="crRenderAmpFields()">
+              <option value="">— Articulation —</option>
+            </select>
+            <button class="cr-amp-cfg-btn" onclick="crOpenAmpConfig()" title="Configurer les articulations">⚙ Config</button>
           </div>
+          <div id="cr-amp-fields" style="display:flex;flex-direction:column;gap:6px;"></div>
         </div>
         <div class="cr-field-group cr-block-hidden" id="cr-block-force">
           <div class="cr-field-group-title">Force musculaire</div>
@@ -4840,6 +4865,197 @@ _updateOutilsPatientBtns();
     dateEl.textContent = now.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
   }
 
+  // ── Amplitude config ─────────────────────────────────────────
+  var CR_AMP_DEFAULTS = {
+    genou: { label: 'Genou', mesures: [
+      { id:'ext-p',      label:'Extension passive',     unit:'°' },
+      { id:'ext-a',      label:'Extension active',      unit:'°' },
+      { id:'ext-charge', label:'Extension en charge',   unit:'°' },
+      { id:'flex-p',     label:'Flexion passive',       unit:'°' },
+      { id:'flex-a',     label:'Flexion active',        unit:'°' }
+    ]},
+    epaule: { label: 'Épaule', mesures: [
+      { id:'elev-ant',    label:'Élévation antérieure', unit:'°' },
+      { id:'rot-ext-r1',  label:'Rotation externe R1',  unit:'°' },
+      { id:'rot-ext-r2',  label:'Rotation externe R2',  unit:'°' },
+      { id:'abduction',   label:'Abduction',            unit:'°' },
+      { id:'main-dos',    label:'Main-dos',             unit:'cm'}
+    ]},
+    cheville: { label: 'Cheville', mesures: [
+      { id:'flex-dors',   label:'Flexion dorsale',      unit:'°' },
+      { id:'flex-plant',  label:'Flexion plantaire',    unit:'°' },
+      { id:'inversion',   label:'Inversion',            unit:'°' },
+      { id:'eversion',    label:'Éversion',             unit:'°' }
+    ]}
+  };
+  var crAmpConfig = (function() {
+    try { var s = localStorage.getItem('crAmpConfig'); if (s) return JSON.parse(s); } catch(e) {}
+    return JSON.parse(JSON.stringify(CR_AMP_DEFAULTS));
+  })();
+  var crAmpArticu = ''; // articulation sélectionnée
+
+  // Mapping pathologie → articulation
+  var CR_PATHO_ARTICU = {
+    lca:'genou', lcp:'genou', meniscectomie:'genou', suture_meniscale:'genou', syndrome_rotulien:'genou',
+    latarjet:'epaule',
+    ligamento_cheville:'cheville', entorse:'cheville'
+  };
+
+  function crInitAmpSelect() {
+    var sel = document.getElementById('cr-amp-articu');
+    if (!sel) return;
+    var cur = sel.value;
+    sel.innerHTML = '<option value="">— Articulation —</option>';
+    Object.keys(crAmpConfig).forEach(function(k) {
+      var opt = document.createElement('option');
+      opt.value = k; opt.textContent = crAmpConfig[k].label;
+      sel.appendChild(opt);
+    });
+    if (cur && crAmpConfig[cur]) sel.value = cur;
+  }
+
+  window.crRenderAmpFields = function() {
+    crAmpArticu = (document.getElementById('cr-amp-articu') || {}).value || '';
+    var container = document.getElementById('cr-amp-fields');
+    if (!container) return;
+    container.innerHTML = '';
+    if (!crAmpArticu || !crAmpConfig[crAmpArticu]) return;
+    crAmpConfig[crAmpArticu].mesures.forEach(function(m) {
+      var fid  = 'cr-dyn-' + m.id;
+      var sid  = fid + '-stat';
+      var div  = document.createElement('div');
+      div.className = 'cr-fg';
+      div.innerHTML = '<label for="' + fid + '">' + m.label + '</label>'
+        + '<div class="cr-amp-row">'
+        + '<input type="text" id="' + fid + '" placeholder="' + m.unit + '">'
+        + '<select id="' + sid + '">'
+        + '<option value="">—</option>'
+        + '<option value="valide">✓ Validé</option>'
+        + '<option value="cours">⟳ En cours</option>'
+        + '</select></div>';
+      container.appendChild(div);
+    });
+  };
+
+  // Auto-sélection articulation quand pathologie cliquée
+  function crAutoSelectArticu(pathoKey) {
+    var articu = CR_PATHO_ARTICU[pathoKey] || '';
+    if (!articu) return;
+    var sel = document.getElementById('cr-amp-articu');
+    if (sel && crAmpConfig[articu]) {
+      sel.value = articu;
+      crRenderAmpFields();
+    }
+  }
+
+  // ── Config modal ──────────────────────────────────────────────
+  var _crCfgDraft = null;
+
+  window.crOpenAmpConfig = function() {
+    _crCfgDraft = JSON.parse(JSON.stringify(crAmpConfig));
+    crRenderCfgModal();
+    var ov = document.getElementById('cr-cfg-overlay');
+    if (ov) ov.classList.add('open');
+  };
+  window.crCloseAmpConfig = function() {
+    var ov = document.getElementById('cr-cfg-overlay');
+    if (ov) ov.classList.remove('open');
+    _crCfgDraft = null;
+  };
+  window.crCloseCfgIfBg = function(e) {
+    if (e.target === document.getElementById('cr-cfg-overlay')) crCloseAmpConfig();
+  };
+
+  function crRenderCfgModal() {
+    var body = document.getElementById('cr-cfg-modal-body');
+    if (!body || !_crCfgDraft) return;
+    body.innerHTML = '';
+    Object.keys(_crCfgDraft).forEach(function(k) {
+      var articu = _crCfgDraft[k];
+      var item = document.createElement('div');
+      item.className = 'cr-cfg-articu-item';
+      item.dataset.key = k;
+      var mesuresHtml = articu.mesures.map(function(m, i) {
+        return '<div class="cr-cfg-mesure-row" data-idx="' + i + '">'
+          + '<input type="text" class="cfg-m-label" value="' + m.label + '" placeholder="Nom mesure">'
+          + '<input type="text" class="cfg-m-unit cr-cfg-unit" value="' + m.unit + '" placeholder="°">'
+          + '<button class="cr-cfg-del" onclick="crCfgDelMesure(\'' + k + '\',' + i + ')">✕</button>'
+          + '</div>';
+      }).join('');
+      item.innerHTML = '<div class="cr-cfg-articu-hdr">'
+        + '<input type="text" class="cfg-a-label" value="' + articu.label + '" placeholder="Nom articulation">'
+        + '<button class="cr-cfg-del" onclick="crCfgDelArticu(\'' + k + '\')">✕ Supprimer</button>'
+        + '</div>'
+        + '<div class="cr-cfg-articu-body">' + mesuresHtml
+        + '<button class="cr-cfg-add-btn" onclick="crCfgAddMesure(\'' + k + '\')">+ Ajouter une mesure</button>'
+        + '</div>';
+      body.appendChild(item);
+    });
+    // Add new articulation
+    var addRow = document.createElement('div');
+    addRow.className = 'cr-cfg-add-articu-row';
+    addRow.innerHTML = '<input type="text" id="cr-cfg-new-articu" placeholder="Nouvelle articulation (ex. Hanche)" style="flex:1">'
+      + '<button class="cr-cfg-save-btn" onclick="crCfgAddArticu()" style="padding:6px 12px;font-size:.78rem;">+ Ajouter</button>';
+    body.appendChild(addRow);
+  }
+
+  window.crCfgDelArticu = function(k) {
+    if (!_crCfgDraft) return;
+    delete _crCfgDraft[k];
+    crRenderCfgModal();
+  };
+  window.crCfgDelMesure = function(k, idx) {
+    if (!_crCfgDraft || !_crCfgDraft[k]) return;
+    _crCfgDraft[k].mesures.splice(idx, 1);
+    crRenderCfgModal();
+  };
+  window.crCfgAddMesure = function(k) {
+    if (!_crCfgDraft || !_crCfgDraft[k]) return;
+    _crCfgDraft[k].mesures.push({ id: 'custom-' + Date.now(), label: '', unit: '°' });
+    crRenderCfgModal();
+  };
+  window.crCfgAddArticu = function() {
+    if (!_crCfgDraft) return;
+    var inp = document.getElementById('cr-cfg-new-articu');
+    var lbl = inp ? inp.value.trim() : '';
+    if (!lbl) return;
+    var key = lbl.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    _crCfgDraft[key] = { label: lbl, mesures: [{ id: key + '-1', label: '', unit: '°' }] };
+    if (inp) inp.value = '';
+    crRenderCfgModal();
+  };
+
+  // Sync draft from DOM before saving
+  function crSyncDraftFromDOM() {
+    if (!_crCfgDraft) return;
+    var body = document.getElementById('cr-cfg-modal-body');
+    if (!body) return;
+    body.querySelectorAll('.cr-cfg-articu-item').forEach(function(item) {
+      var k = item.dataset.key;
+      if (!_crCfgDraft[k]) return;
+      var lbl = item.querySelector('.cfg-a-label');
+      if (lbl) _crCfgDraft[k].label = lbl.value.trim() || _crCfgDraft[k].label;
+      item.querySelectorAll('.cr-cfg-mesure-row').forEach(function(row, i) {
+        var m = _crCfgDraft[k].mesures[i];
+        if (!m) return;
+        var ml = row.querySelector('.cfg-m-label');
+        var mu = row.querySelector('.cfg-m-unit');
+        if (ml) m.label = ml.value.trim() || m.label;
+        if (mu) m.unit  = mu.value.trim() || m.unit;
+      });
+    });
+  }
+
+  window.crSaveAmpConfig = function() {
+    crSyncDraftFromDOM();
+    crAmpConfig = _crCfgDraft;
+    try { localStorage.setItem('crAmpConfig', JSON.stringify(crAmpConfig)); } catch(e) {}
+    crInitAmpSelect();
+    crRenderAmpFields();
+    crCloseAmpConfig();
+    _crToast('Configuration enregistrée');
+  };
+
   // State
   var crPatho = null;
   var crLsiOn = false;
@@ -4863,6 +5079,7 @@ _updateOutilsPatientBtns();
     }
     crUpdateBlocks(); crUpdateAmpLabels();
     crAutoFillObjet();
+    crAutoSelectArticu(crPatho);
   };
   function crUpdateBlocks() {
     crToggleBlock('cr-block-force',     crPatho && CR_PATHO_FORCE.indexOf(crPatho) !== -1);
@@ -4952,7 +5169,6 @@ _updateOutilsPatientBtns();
     var pathoDetail = crV('cr-patho-detail');
     var phase = crV('cr-phase'), evolution = crV('cr-evolution');
     var commentaire = crV('cr-commentaire'), plan = crV('cr-plan');
-    var isEpaule = crPatho && CR_PATHO_EPAULE.indexOf(crPatho) !== -1;
 
     // 1. Salutation
     var greeting = destNom ? 'Cher confrère' + (destSpec ? ', ' + destSpec : '') + ',' : 'Confrère,';
@@ -4984,22 +5200,21 @@ _updateOutilsPatientBtns();
     // 4. Phase
     if (phase) { lines.push('Stade de rééducation : ' + crPhaseLabel(phase) + '.'); lines.push(''); }
 
-    // 5. Amplitudes
-    var aLabels = isEpaule
-      ? ['Antépulsion passive','Abduction','Rotation externe','Rotation interne']
-      : ['Extension passive','Extension active','Flexion passive','Flexion active'];
-    var aIds     = ['cr-amp-ext-p','cr-amp-ext-a','cr-amp-flex-p','cr-amp-flex-a'];
-    var aStatIds = ['cr-amp-ext-p-stat','cr-amp-ext-a-stat','cr-amp-flex-p-stat','cr-amp-flex-a-stat'];
+    // 5. Amplitudes (dynamiques)
     var ampValide = [], ampCours = [], ampNeutral = [];
-    aIds.forEach(function(id, i) {
-      var v    = crStripDeg(crV(id));
-      var stat = crV(aStatIds[i]);
-      if (!v && !stat) return;
-      var txt = aLabels[i] + (v ? ' : ' + v + '°' : '');
-      if (stat === 'valide') ampValide.push(txt);
-      else if (stat === 'cours') ampCours.push(txt);
-      else ampNeutral.push(txt);
-    });
+    if (crAmpArticu && crAmpConfig[crAmpArticu]) {
+      crAmpConfig[crAmpArticu].mesures.forEach(function(m) {
+        var fid  = 'cr-dyn-' + m.id;
+        var sid  = fid + '-stat';
+        var v    = crStripDeg(crV(fid));
+        var stat = crV(sid);
+        if (!v && !stat) return;
+        var txt = m.label + (v ? ' : ' + v + ' ' + m.unit : '');
+        if (stat === 'valide') ampValide.push(txt);
+        else if (stat === 'cours') ampCours.push(txt);
+        else ampNeutral.push(txt);
+      });
+    }
     if (ampValide.length || ampCours.length || ampNeutral.length) {
       lines.push('Amplitudes articulaires :');
       ampValide.forEach(function(s){ lines.push('  ✓ ' + s + ' (validé)'); });
@@ -5083,7 +5298,6 @@ _updateOutilsPatientBtns();
     var patPEC  = crFmtDate(crV('cr-pat-date-pec'));
     var patCote = crV('cr-pat-cote');
     var pathoDetail = crV('cr-patho-detail');
-    var isEpaule = crPatho && CR_PATHO_EPAULE.indexOf(crPatho) !== -1;
 
     // Calcul J+
     var joursStr = '';
@@ -5130,22 +5344,21 @@ _updateOutilsPatientBtns();
     lines.push('── BILAN INITIAL' + (joursStr ? ' (' + joursStr + ')' : '') + ' ──────────────────────────────────');
     lines.push('');
 
-    // Amplitudes
-    var aLabels = isEpaule
-      ? ['Antépulsion passive','Abduction','Rotation externe','Rotation interne']
-      : ['Extension passive','Extension active','Flexion passive','Flexion active'];
-    var aIds     = ['cr-amp-ext-p','cr-amp-ext-a','cr-amp-flex-p','cr-amp-flex-a'];
-    var aStatIds = ['cr-amp-ext-p-stat','cr-amp-ext-a-stat','cr-amp-flex-p-stat','cr-amp-flex-a-stat'];
+    // Amplitudes (dynamiques)
     var ampValide = [], ampCours = [], ampNeutral = [];
-    aIds.forEach(function(id, i) {
-      var v    = crStripDeg(crV(id));
-      var stat = crV(aStatIds[i]);
-      if (!v && !stat) return;
-      var txt = aLabels[i] + (v ? ' : ' + v + '°' : '');
-      if (stat === 'valide') ampValide.push(txt);
-      else if (stat === 'cours') ampCours.push(txt);
-      else ampNeutral.push(txt);
-    });
+    if (crAmpArticu && crAmpConfig[crAmpArticu]) {
+      crAmpConfig[crAmpArticu].mesures.forEach(function(m) {
+        var fid  = 'cr-dyn-' + m.id;
+        var sid  = fid + '-stat';
+        var v    = crStripDeg(crV(fid));
+        var stat = crV(sid);
+        if (!v && !stat) return;
+        var txt = m.label + (v ? ' : ' + v + ' ' + m.unit : '');
+        if (stat === 'valide') ampValide.push(txt);
+        else if (stat === 'cours') ampCours.push(txt);
+        else ampNeutral.push(txt);
+      });
+    }
     if (ampValide.length || ampCours.length || ampNeutral.length) {
       lines.push('Amplitudes articulaires :');
       ampValide.forEach(function(s){ lines.push('  ✓ ' + s + ' (validé)'); });
@@ -5291,6 +5504,11 @@ _updateOutilsPatientBtns();
     document.querySelectorAll('#panel-cr textarea').forEach(function(el){ el.value = ''; crAutoExpand(el); });
     crPatho = null;
     crPatientSexe = '';
+    crAmpArticu = '';
+    var articuSel = document.getElementById('cr-amp-articu');
+    if (articuSel) articuSel.value = '';
+    var ampFields = document.getElementById('cr-amp-fields');
+    if (ampFields) ampFields.innerHTML = '';
     document.querySelectorAll('.cr-patho-btn').forEach(function(b){ b.classList.remove('active'); });
     Object.keys(crSigns).forEach(function(k){
       crSigns[k] = 0;
@@ -5459,6 +5677,8 @@ _updateOutilsPatientBtns();
       else _crToast('Aucune donnée patient disponible — ouvrez un bilan d\'abord');
     } catch(e) { console.error(e); _crToast('Impossible d\'associer le patient'); }
   };
+
+  crInitAmpSelect();
 })();
 
 </script>
@@ -5508,6 +5728,21 @@ _updateOutilsPatientBtns();
 </div>
 
 <div id="outils-toast"></div>
+
+<!-- CR Amplitude Config Modal -->
+<div class="cr-cfg-overlay" id="cr-cfg-overlay" onclick="crCloseCfgIfBg(event)">
+  <div class="cr-cfg-modal">
+    <div class="cr-cfg-modal-hdr">
+      <span>⚙ Configurer les articulations</span>
+      <button class="cr-cfg-del" onclick="crCloseAmpConfig()">✕</button>
+    </div>
+    <div class="cr-cfg-modal-body" id="cr-cfg-modal-body"></div>
+    <div class="cr-cfg-modal-footer">
+      <button class="cr-cfg-cancel-btn" onclick="crCloseAmpConfig()">Annuler</button>
+      <button class="cr-cfg-save-btn" onclick="crSaveAmpConfig()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
