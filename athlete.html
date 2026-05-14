@@ -202,6 +202,13 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
   cursor:pointer; transition:opacity .12s;
 }
 .cal-chip:hover { opacity:.85; }
+.cal-msg-chip {
+  font-size:.66rem; font-weight:600; padding:3px 6px; border-radius:5px;
+  background:#EEF2FF; color:#4338CA; border:1px solid #C7D2FE;
+  margin-bottom:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  cursor:pointer; transition:opacity .12s;
+}
+.cal-msg-chip:hover { opacity:.8; }
 .cal-empty { color:var(--border); font-size:.65rem; text-align:center; margin-top:8px; }
 
 /* ── VUE SEMAINE ── */
@@ -352,6 +359,17 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
   </div>
 </div>
 
+<!-- Modal message patient -->
+<div class="prog-modal-overlay" id="msgModal" onclick="if(event.target===this)closeMsgModal()">
+  <div class="prog-modal" style="max-width:480px;">
+    <div class="prog-modal-header" style="background:#4338CA;">
+      <div class="prog-modal-title" id="msgModalTitle" style="color:#fff;">Message de ton praticien</div>
+      <button class="prog-modal-close" onclick="closeMsgModal()" style="color:#fff;">✕</button>
+    </div>
+    <div class="prog-modal-body" id="msgModalBody" style="padding:20px;"></div>
+  </div>
+</div>
+
 <script>
 var SUPA_URL = 'https://sxdobjodxkwexaspepdm.supabase.co';
 var SUPA_KEY = 'sb_publishable_zEJrmQOnKyRm-Y_NyojaTA_ERrDx4pl';
@@ -370,8 +388,9 @@ var _calMonth = new Date().getMonth();
 var _calView = 'month'; // 'month' | 'week' | 'day'
 var _calWeekStart = _getMonday(new Date()); // Lundi de la semaine courante
 var _calDayDate   = (function(){ var d=new Date(); d.setHours(0,0,0,0); return d; }()); // Jour affiché
-var _calEvents = []; // [{id, date, programme_id, programmes:{nom}}]
-var _calCycles = []; // cycles du patient depuis patient_settings
+var _calEvents   = []; // [{id, date, programme_id, programmes:{nom}}]
+var _calCycles   = []; // cycles du patient depuis patient_settings
+var _calMessages = []; // [{id, date, title, body}] messages patient visibles
 
 function _getMonday(d){
   var dt = new Date(d); dt.setHours(0,0,0,0);
@@ -453,7 +472,7 @@ function renderProgInMain(prog){
 function renderCalendar(){
   var btn = document.getElementById('refreshBtn');
   btn.disabled = true; btn.textContent = '⏳';
-  // Charge séances planifiées ET cycles en parallèle
+  // Charge séances planifiées, cycles ET messages patient en parallèle
   Promise.all([
     fetch(SUPA_URL + '/rest/v1/seances_planifiees?patient_id=eq.' + _patientId
         + '&select=id,date,programme_id,programmes(nom),athlete_feedback(rpe,duree_min)&order=date.asc', {
@@ -461,13 +480,17 @@ function renderCalendar(){
     }).then(function(r){ return r.json(); }),
     fetch(SUPA_URL + '/rest/v1/patient_settings?patient_id=eq.' + _patientId + '&select=cycles', {
       headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
+    }).then(function(r){ return r.json(); }),
+    fetch(SUPA_URL + '/rest/v1/patient_messages?patient_id=eq.' + _patientId + '&order=date.asc', {
+      headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
     }).then(function(r){ return r.json(); })
   ])
   .then(function(results){
     btn.disabled = false; btn.textContent = '↻ Actualiser';
-    _calEvents = Array.isArray(results[0]) ? results[0] : [];
+    _calEvents   = Array.isArray(results[0]) ? results[0] : [];
     var settingsArr = Array.isArray(results[1]) ? results[1] : [];
-    _calCycles = (settingsArr.length && Array.isArray(settingsArr[0].cycles)) ? settingsArr[0].cycles : [];
+    _calCycles   = (settingsArr.length && Array.isArray(settingsArr[0].cycles)) ? settingsArr[0].cycles : [];
+    _calMessages = Array.isArray(results[2]) ? results[2] : [];
     _renderCalGrid();
     document.getElementById('lastUpdated').textContent = 'Actualisé à ' + new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
   })
@@ -611,6 +634,10 @@ function _buildMonthHtml(){
       return '<div class="cal-chip" onclick="event.stopPropagation();openProgModal(\''+escH(ev.programme_id)+'\',\''+escH(nom)+'\',\''+escH(ev.id)+'\')" title="'+escH(nom)+'">'
            + '📋 '+escH(nom.length>10?nom.slice(0,10)+'…':nom)+uaBadge+'</div>';
     }).join('');
+    var msgChips = _calMessages.filter(function(m){ return m.date===dateStr; }).map(function(m){
+      var lbl = m.title || (m.body ? m.body.slice(0,18)+(m.body.length>18?'…':'') : 'Message');
+      return '<div class="cal-msg-chip" onclick="event.stopPropagation();_openMsgModal(\''+escH(m.id)+'\')" title="'+escH((m.title?m.title+'\n':'')+m.body)+'">💬 '+escH(lbl)+'</div>';
+    }).join('');
     var cycleChips = '';
     _calCycles.forEach(function(cy){
       if(!cy.startDate) return;
@@ -624,7 +651,7 @@ function _buildMonthHtml(){
     });
     cells += '<div class="cal-day'+(isToday?' today':'')+'" onclick="jumpToDay(\''+dateStr+'\')">'
            + '<div class="cal-day-num">'+d+'</div>'
-           + chips+cycleChips+'</div>';
+           + chips+msgChips+cycleChips+'</div>';
   }
 
   return _buildCalNav(MONTHS[_calMonth]+' '+_calYear)
@@ -675,6 +702,11 @@ function _buildWeekHtml(){
             + uaHtml+'</div>';
     });
 
+    _calMessages.filter(function(m){ return m.date===dateStr; }).forEach(function(m){
+      var lbl = m.title || (m.body ? m.body.slice(0,20)+(m.body.length>20?'…':'') : 'Message');
+      html += '<div class="cal-msg-chip" style="margin:2px 0;" onclick="event.stopPropagation();_openMsgModal(\''+escH(m.id)+'\')">💬 '+escH(lbl)+'</div>';
+    });
+
     _calCycles.forEach(function(cy){
       if(!cy.startDate) return;
       var cyStart = new Date(cy.startDate); cyStart.setHours(0,0,0,0);
@@ -685,7 +717,8 @@ function _buildWeekHtml(){
       }
     });
 
-    if(!dayEvs.length) html += '<div class="week-empty">—</div>';
+    var dayMsgs = _calMessages.filter(function(m){ return m.date===dateStr; });
+    if(!dayEvs.length && !dayMsgs.length) html += '<div class="week-empty">—</div>';
     html += '</div></div>';
   });
   html += '</div>';
@@ -727,8 +760,10 @@ function _buildDayHtml(){
   });
   if(cyclesHtml) html += cyclesHtml;
 
+  var dayMsgs = _calMessages.filter(function(m){ return m.date===dateStr; });
+
   // Séances du jour
-  if(!dayEvs.length){
+  if(!dayEvs.length && !dayMsgs.length){
     html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:36px 16px;text-align:center;color:var(--muted);">'
           + '<div style="font-size:2rem;margin-bottom:10px;">😴</div>'
           + '<div style="font-size:.88rem;font-weight:600;">Pas de séance prévue ce jour</div>'
@@ -745,6 +780,15 @@ function _buildDayHtml(){
             + uaTag
             + '</div>'
             + '<div style="font-size:.75rem;color:var(--accent);font-weight:600;">Voir le programme  ›</div>'
+            + '</div>';
+    });
+    // Messages patient du jour
+    dayMsgs.forEach(function(m){
+      html += '<div style="background:#EEF2FF;border:2px solid #C7D2FE;border-radius:12px;padding:14px 16px;margin-bottom:10px;cursor:pointer;" onclick="_openMsgModal(\''+escH(m.id)+'\')">'
+            + '<div style="font-size:.72rem;font-weight:700;color:#6366F1;margin-bottom:4px;letter-spacing:.04em;">💬 MESSAGE DE TON PRATICIEN</div>'
+            + (m.title ? '<div style="font-size:.92rem;font-weight:700;color:#3730A3;margin-bottom:4px;">'+escH(m.title)+'</div>' : '')
+            + '<div style="font-size:.82rem;color:#4338CA;white-space:pre-wrap;">'+escH(m.body ? (m.body.length>120 ? m.body.slice(0,120)+'…' : m.body) : '')+'</div>'
+            + (m.body && m.body.length>120 ? '<div style="font-size:.72rem;color:#6366F1;margin-top:6px;font-weight:600;">Lire la suite ›</div>' : '')
             + '</div>';
     });
   }
@@ -792,6 +836,23 @@ function openProgModal(progId, nom, seanceId){
 
 function closeProgModal(){
   document.getElementById('progModal').classList.remove('open');
+}
+
+function _openMsgModal(msgId){
+  var m = _calMessages.find(function(x){ return x.id === msgId; });
+  if(!m) return;
+  document.getElementById('msgModalTitle').textContent = m.title || 'Message de ton praticien';
+  var MOIS = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  var parts = m.date.split('-');
+  var dateLbl = parseInt(parts[2])+' '+MOIS[parseInt(parts[1])-1]+' '+parts[0];
+  document.getElementById('msgModalBody').innerHTML =
+    '<div style="font-size:.72rem;color:#6366F1;font-weight:600;margin-bottom:12px;">📅 '+escH(dateLbl)+'</div>'
+    +'<div style="font-size:.92rem;color:#1e1b4b;white-space:pre-wrap;line-height:1.6;">'+escH(m.body||'')+'</div>';
+  document.getElementById('msgModal').classList.add('open');
+}
+
+function closeMsgModal(){
+  document.getElementById('msgModal').classList.remove('open');
 }
 
 // ── Dictionnaire méthodes (même source que programme_v2.html) ──

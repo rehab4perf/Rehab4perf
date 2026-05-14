@@ -1429,15 +1429,25 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .cal-note-save:hover { background:#4F46E5; }
 .cal-note-save.danger { background:#EF4444; }
 .cal-note-save.danger:hover { background:#DC2626; }
+/* ── Sélecteur de type de note ── */
+.cal-note-type-row { display:flex; gap:6px; margin-bottom:10px; }
+.cal-note-type-btn {
+  flex:1; padding:8px 6px; border-radius:9px; border:2px solid #E2E8F0;
+  background:#fff; font-family:inherit; font-size:.78rem; font-weight:600;
+  cursor:pointer; transition:all .15s; color:var(--muted);
+}
+.cal-note-type-btn.sel-clinique { border-color:#64748B; background:#F1F5F9; color:#334155; }
+.cal-note-type-btn.sel-patient  { border-color:#6366F1; background:#EEF2FF; color:#4338CA; }
 /* ── Chips notes sur les cases calendrier ── */
 .cal-note-chip {
-  display:flex; align-items:center; gap:4px; background:#EEF2FF;
-  color:#4338CA; border-radius:4px; font-size:.62rem; padding:2px 5px;
-  margin-top:2px; cursor:pointer; max-width:100%;
+  display:flex; align-items:center; gap:4px; border-radius:4px;
+  font-size:.62rem; padding:2px 5px; margin-top:2px; cursor:pointer; max-width:100%;
 }
+.cal-note-chip.chip-clinique { background:#E2E8F0; color:#334155; }
+.cal-note-chip.chip-patient  { background:#EEF2FF; color:#4338CA; }
 .cal-note-chip-text { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0; }
 .cal-note-chip-del {
-  background:none; border:none; cursor:pointer; color:rgba(67,56,202,.35);
+  background:none; border:none; cursor:pointer; color:rgba(100,116,139,.4);
   font-size:.82rem; padding:0; line-height:1; flex-shrink:0;
 }
 .cal-note-chip-del:hover { color:#E74C3C; }
@@ -5729,8 +5739,9 @@ function _buildDayChips(dateStr, cellDate){
   _loadCalNotes();
   _calNotes.filter(function(n){ return n.date === dateStr; }).forEach(function(note){
     var lbl = note.title || (note.text ? note.text.slice(0,22)+(note.text.length>22?'…':'') : 'Note');
-    chips += '<div class="cal-note-chip" onclick="event.stopPropagation();_openCalNoteView(\''+note.id+'\')" title="'+escH((note.title?note.title+'\n':'')+note.text)+'">'
-      +'<span>📝</span><span class="cal-note-chip-text">'+escH(lbl)+'</span>'
+    var isPatient = note.type === 'patient';
+    chips += '<div class="cal-note-chip '+(isPatient?'chip-patient':'chip-clinique')+'" onclick="event.stopPropagation();_openCalNoteView(\''+note.id+'\')" title="'+escH((note.title?note.title+'\n':'')+note.text)+'">'
+      +'<span>'+(isPatient?'💬':'🔒')+'</span><span class="cal-note-chip-text">'+escH(lbl)+'</span>'
       +'<button class="cal-note-chip-del" onclick="event.stopPropagation();_deleteCalNote(\''+note.id+'\')">×</button>'
       +'</div>';
   });
@@ -5960,7 +5971,8 @@ function removeCalEventCloud(id) {
 }
 
 // ── Notes calendrier ──────────────────────────────────────────────────────────
-var _calNotes = [];
+var _calNotes    = [];
+var _noteFormType = 'clinique'; // type actif dans le formulaire
 
 // Clé scopée par patient — identique au comportement des séances
 function _calNotesKey(){
@@ -5974,13 +5986,48 @@ function _persistCalNotes(){
   localStorage.setItem(_calNotesKey(), JSON.stringify(_calNotes));
 }
 
+/* ── Sélection du type dans le formulaire ── */
+function _setNoteType(type) {
+  _noteFormType = type;
+  document.querySelectorAll('.cal-note-type-btn').forEach(function(b){
+    b.className = 'cal-note-type-btn' + (b.dataset.type === type ? ' sel-' + type : '');
+  });
+}
+
+function _noteTypeRow(active) {
+  return '<div class="cal-note-type-row">'
+    +'<button class="cal-note-type-btn'+(active==='clinique'?' sel-clinique':'')+'" data-type="clinique" onclick="_setNoteType(\'clinique\')">🔒 Note clinique</button>'
+    +'<button class="cal-note-type-btn'+(active==='patient'?' sel-patient':'')+'" data-type="patient" onclick="_setNoteType(\'patient\')">💬 Message patient</button>'
+    +'</div>';
+}
+
+/* ── Supabase : push / delete messages patient ── */
+function _pushPatientMsg(note) {
+  if(!_progToken || !_progUid || !_progPatient) return;
+  fetch(SUPA_URL_P+'/rest/v1/patient_messages', {
+    method: 'POST',
+    headers: Object.assign({}, _sbHeaders(), {'Prefer':'resolution=merge-duplicates,return=minimal'}),
+    body: JSON.stringify({ id:note.id, patient_id:_progPatient.id, praticien_id:_progUid,
+      date:note.date, title:note.title||'', body:note.text||'' })
+  }).catch(function(e){ console.warn('_pushPatientMsg error', e); });
+}
+
+function _deletePatientMsg(noteId) {
+  if(!_progToken || !_progUid) return;
+  fetch(SUPA_URL_P+'/rest/v1/patient_messages?id=eq.'+noteId, {
+    method: 'DELETE', headers: _sbHeaders()
+  }).catch(function(e){ console.warn('_deletePatientMsg error', e); });
+}
+
 function _openCalNoteForm(dateStr) {
+  _noteFormType = 'clinique';
   var parts = dateStr.split('-');
   var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
   document.getElementById('calPickerTitle').textContent = 'Nouvelle note — '+parseInt(parts[2])+' '+months[parseInt(parts[1])-1]+' '+parts[0];
   var list = document.getElementById('calPickerList');
   list.innerHTML = '<div class="cal-note-form">'
     +'<button class="cal-note-back" onclick="openCalPicker(\''+dateStr+'\')">← Retour</button>'
+    +_noteTypeRow('clinique')
     +'<input class="cal-note-inp" id="calNoteTitle" type="text" placeholder="Titre (optionnel)" />'
     +'<textarea class="cal-note-textarea" id="calNoteText" placeholder="Note, rappel, observation…"></textarea>'
     +'<button class="cal-note-save" onclick="_saveCalNote(\''+dateStr+'\')">Enregistrer</button>'
@@ -5993,17 +6040,21 @@ function _saveCalNote(dateStr) {
   var text  = (document.getElementById('calNoteText')||{}).value  || '';
   if(!title.trim() && !text.trim()){ _showToast('La note est vide.', true); return; }
   _loadCalNotes();
-  _calNotes.push({ id:'note_'+Math.random().toString(36).slice(2,9), date:dateStr, title:title.trim(), text:text.trim(), createdAt:new Date().toISOString() });
+  var note = { id:'note_'+Math.random().toString(36).slice(2,9), date:dateStr,
+    title:title.trim(), text:text.trim(), type:_noteFormType, createdAt:new Date().toISOString() };
+  _calNotes.push(note);
   _persistCalNotes();
+  if(note.type === 'patient') _pushPatientMsg(note);
   closeCalPicker();
   renderCalendar();
-  _showToast('📝 Note enregistrée');
+  _showToast(note.type === 'patient' ? '💬 Message envoyé au patient' : '📝 Note enregistrée');
 }
 
 function _openCalNoteView(noteId) {
   _loadCalNotes();
   var note = _calNotes.find(function(n){ return n.id === noteId; });
   if(!note) return;
+  _noteFormType = note.type || 'clinique';
   _calPickerDate = note.date;
   var parts = note.date.split('-');
   var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
@@ -6011,6 +6062,7 @@ function _openCalNoteView(noteId) {
   var list = document.getElementById('calPickerList');
   list.innerHTML = '<div class="cal-note-form">'
     +'<button class="cal-note-back" onclick="openCalPicker(\''+note.date+'\')">← Retour</button>'
+    +_noteTypeRow(_noteFormType)
     +'<input class="cal-note-inp" id="calNoteTitle" type="text" placeholder="Titre (optionnel)" value="'+escH(note.title||'')+'" />'
     +'<textarea class="cal-note-textarea" id="calNoteText" placeholder="Note, rappel, observation…">'+escH(note.text||'')+'</textarea>'
     +'<div style="display:flex;gap:8px;">'
@@ -6028,15 +6080,23 @@ function _updateCalNote(noteId) {
   _loadCalNotes();
   var note = _calNotes.find(function(n){ return n.id === noteId; });
   if(!note) return;
-  note.title = title.trim(); note.text = text.trim();
+  var prevType = note.type || 'clinique';
+  note.title = title.trim(); note.text = text.trim(); note.type = _noteFormType;
   _persistCalNotes();
+  if(note.type === 'patient') {
+    _pushPatientMsg(note); // upsert
+  } else if(prevType === 'patient') {
+    _deletePatientMsg(noteId); // était patient, devient clinique → retirer de Supabase
+  }
   closeCalPicker();
   renderCalendar();
-  _showToast('📝 Note mise à jour');
+  _showToast(note.type === 'patient' ? '💬 Message mis à jour' : '📝 Note mise à jour');
 }
 
 function _deleteCalNote(noteId) {
   _loadCalNotes();
+  var note = _calNotes.find(function(n){ return n.id === noteId; });
+  if(note && (note.type === 'patient')) _deletePatientMsg(noteId);
   _calNotes = _calNotes.filter(function(n){ return n.id !== noteId; });
   _persistCalNotes();
   renderCalendar();
