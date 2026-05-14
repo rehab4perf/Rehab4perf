@@ -1303,7 +1303,7 @@ body {
           <button class="cr-patho-btn" data-key="autre"             onclick="crSelectPatho(this)">Autre</button>
         </div>
         <div class="cr-fg">
-          <label for="cr-patho-detail">Précisions / Diagnostic complet</label>
+          <label for="cr-patho-detail">Détail pathologie</label>
           <input type="text" id="cr-patho-detail" placeholder="ex. rupture LCA — reconstruction DIDT">
         </div>
 
@@ -4989,12 +4989,12 @@ _updateOutilsPatientBtns();
     if (patNom || patDob || patEvt || patPEC || crPatho) {
       var patLine = patNom || crF('votre patient(e)', 'votre patient', 'votre patiente');
       if (patDob)  patLine += ', ' + crF('né(e)', 'né', 'née') + ' le ' + patDob;
-      if (patCote) patLine += ', côté ' + patCote.toLowerCase();
       lines.push('Patient : ' + patLine + '.');
       var diagLine = crPatho ? crPathoLabel(crPatho) : '';
       if (pathoDetail) diagLine = diagLine ? diagLine + ' — ' + pathoDetail : pathoDetail;
+      if (patCote) diagLine += (diagLine ? ' — ' : '') + patCote;
       if (patEvt) diagLine += (diagLine ? ', ' : '') + 'opération / accident le ' + patEvt;
-      if (diagLine) lines.push('Diagnostic : ' + diagLine + '.');
+      if (diagLine) lines.push('Pathologie : ' + diagLine + '.');
       if (patPEC) lines.push('Prise en charge rééducative débutée le ' + patPEC + '.');
       lines.push('');
     }
@@ -5087,7 +5087,6 @@ _updateOutilsPatientBtns();
     lines.push('Je reste à votre disposition pour tout complément d\'information.');
     lines.push(''); lines.push('Cordialement,'); lines.push('');
     lines.push(crProfile.name);
-    if (crProfile.title)   lines.push(crProfile.title);
     if (crProfile.cabinet) lines.push(crProfile.cabinet);
     return lines.join('\n');
   }
@@ -5137,7 +5136,7 @@ _updateOutilsPatientBtns();
       if (pathoDetail) diagLine = diagLine ? diagLine + ' — ' + pathoDetail : pathoDetail;
       if (patEvt) diagLine += (diagLine ? ', ' : '') + 'opération / accident le ' + patEvt;
       if (patCote) diagLine += (diagLine ? ' — ' : '') + 'côté ' + patCote.toLowerCase();
-      if (diagLine) { lines.push('Diagnostic : ' + diagLine + '.'); lines.push(''); }
+      if (diagLine) { lines.push('Pathologie : ' + diagLine + '.'); lines.push(''); }
     }
 
     // Bilan initial
@@ -5210,7 +5209,6 @@ _updateOutilsPatientBtns();
     if (dispo) lines.push('Disponibilités : ' + dispo + '.');
     lines.push(''); lines.push('Cordialement,'); lines.push('');
     lines.push(crProfile.name);
-    if (crProfile.title)   lines.push(crProfile.title);
     if (crProfile.cabinet) lines.push(crProfile.cabinet);
     return lines.join('\n');
   }
