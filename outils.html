@@ -464,6 +464,9 @@ body {
 .cr-amp-articulation-row select { flex:1; }
 .cr-amp-cfg-btn { background:none; border:1px solid var(--border2); border-radius:var(--radius-sm); padding:6px 9px; font-size:.8rem; cursor:pointer; color:var(--text2); white-space:nowrap; }
 .cr-amp-cfg-btn:hover { border-color:var(--accent); color:var(--accent); }
+.cr-cfg-articu-checks { display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; }
+.cr-cfg-articu-checks label { display:flex; align-items:center; gap:4px; font-size:.75rem; cursor:pointer; background:var(--surface2); border:1px solid var(--border); border-radius:4px; padding:3px 7px; }
+.cr-cfg-articu-checks input[type=checkbox] { margin:0; cursor:pointer; }
 /* Config modal */
 .cr-cfg-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; align-items:center; justify-content:center; }
 .cr-cfg-overlay.open { display:flex; }
@@ -1319,18 +1322,16 @@ body {
           <input type="date" id="cr-pat-date-pec">
         </div>
 
-        <div class="cr-section-hdr">Pathologie</div>
-        <div class="cr-patho-grid">
-          <button class="cr-patho-btn" data-key="lca"               onclick="crSelectPatho(this)">Ligament croisé antérieur</button>
-          <button class="cr-patho-btn" data-key="lcp"               onclick="crSelectPatho(this)">Ligament croisé postérieur</button>
-          <button class="cr-patho-btn" data-key="meniscectomie"     onclick="crSelectPatho(this)">Méniscectomie</button>
-          <button class="cr-patho-btn" data-key="suture_meniscale"  onclick="crSelectPatho(this)">Suture méniscale</button>
-          <button class="cr-patho-btn" data-key="latarjet"          onclick="crSelectPatho(this)">Latarjet</button>
-          <button class="cr-patho-btn" data-key="ligamento_cheville" onclick="crSelectPatho(this)">Ligamentoplastie cheville</button>
-          <button class="cr-patho-btn" data-key="entorse"           onclick="crSelectPatho(this)">Entorse</button>
-          <button class="cr-patho-btn" data-key="syndrome_rotulien" onclick="crSelectPatho(this)">Syndrome rotulien</button>
-          <button class="cr-patho-btn" data-key="autre"             onclick="crSelectPatho(this)">Autre</button>
+        <div class="cr-section-hdr" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>Pathologie</span>
+          <button class="cr-amp-cfg-btn" onclick="crOpenPathoConfig()" title="Configurer les pathologies (admin)">⚙</button>
         </div>
+        <div class="cr-amp-articulation-row" style="margin-bottom:8px;">
+          <select id="cr-articu-main" onchange="crOnArticuChange()">
+            <option value="">— Toutes les articulations —</option>
+          </select>
+        </div>
+        <div class="cr-patho-grid" id="cr-patho-grid-dynamic"></div>
         <div class="cr-fg">
           <label for="cr-patho-detail">Détail pathologie</label>
           <input type="text" id="cr-patho-detail" placeholder="ex. rupture LCA — reconstruction DIDT">
@@ -1338,14 +1339,13 @@ body {
 
         <div class="cr-section-hdr">Bilan clinique</div>
         <div class="cr-field-group">
-          <div class="cr-field-group-title">Amplitudes articulaires</div>
-          <div class="cr-amp-articulation-row">
-            <select id="cr-amp-articu" onchange="crRenderAmpFields()">
-              <option value="">— Articulation —</option>
-            </select>
-            <button class="cr-amp-cfg-btn" onclick="crOpenAmpConfig()" title="Configurer les articulations">⚙ Config</button>
+          <div class="cr-field-group-title" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>Amplitudes articulaires</span>
+            <button class="cr-amp-cfg-btn" onclick="crOpenAmpConfig()" title="Configurer les articulations (admin)" style="font-size:.7rem;padding:3px 7px;">⚙</button>
           </div>
-          <div id="cr-amp-fields" style="display:flex;flex-direction:column;gap:6px;"></div>
+          <div id="cr-amp-fields" style="display:flex;flex-direction:column;gap:6px;margin-top:6px;">
+            <span style="font-size:.78rem;color:var(--text3);font-style:italic;">Sélectionnez une articulation ci-dessus</span>
+          </div>
         </div>
         <div class="cr-field-group cr-block-hidden" id="cr-block-force">
           <div class="cr-field-group-title">Force musculaire</div>
@@ -4902,24 +4902,58 @@ _updateOutilsPatientBtns();
   };
 
   function crInitAmpSelect() {
-    var sel = document.getElementById('cr-amp-articu');
+    // Peuple le select principal (dans la section Pathologie)
+    var sel = document.getElementById('cr-articu-main');
     if (!sel) return;
     var cur = sel.value;
-    sel.innerHTML = '<option value="">— Articulation —</option>';
+    sel.innerHTML = '<option value="">— Toutes les articulations —</option>';
     Object.keys(crAmpConfig).forEach(function(k) {
       var opt = document.createElement('option');
       opt.value = k; opt.textContent = crAmpConfig[k].label;
       sel.appendChild(opt);
     });
     if (cur && crAmpConfig[cur]) sel.value = cur;
+    crRenderPathoButtons(); // render les pathologies au démarrage
+  }
+
+  window.crOnArticuChange = function() {
+    var sel = document.getElementById('cr-articu-main');
+    crArticuSelected = sel ? sel.value : '';
+    crAmpArticu = crArticuSelected;
+    crRenderPathoButtons();
+    crRenderAmpFields();
+  };
+
+  function crRenderPathoButtons() {
+    var grid = document.getElementById('cr-patho-grid-dynamic');
+    if (!grid) return;
+    grid.innerHTML = '';
+    var list = crPathoConfig.filter(function(p) {
+      if (!crArticuSelected) return true;
+      return p.articulations.indexOf(crArticuSelected) !== -1;
+    });
+    if (list.length === 0) {
+      grid.innerHTML = '<span style="font-size:.78rem;color:var(--text3);font-style:italic;">Aucune pathologie pour cette articulation</span>';
+      return;
+    }
+    list.forEach(function(p) {
+      var btn = document.createElement('button');
+      btn.className = 'cr-patho-btn' + (crPatho === p.key ? ' active' : '');
+      btn.dataset.key = p.key;
+      btn.onclick = function() { crSelectPatho(this); };
+      btn.textContent = p.label;
+      grid.appendChild(btn);
+    });
   }
 
   window.crRenderAmpFields = function() {
-    crAmpArticu = (document.getElementById('cr-amp-articu') || {}).value || '';
     var container = document.getElementById('cr-amp-fields');
     if (!container) return;
     container.innerHTML = '';
-    if (!crAmpArticu || !crAmpConfig[crAmpArticu]) return;
+    if (!crAmpArticu || !crAmpConfig[crAmpArticu]) {
+      container.innerHTML = '<span style="font-size:.78rem;color:var(--text3);font-style:italic;">Sélectionnez une articulation ci-dessus</span>';
+      return;
+    }
     crAmpConfig[crAmpArticu].mesures.forEach(function(m) {
       var fid  = 'cr-dyn-' + m.id;
       var sid  = fid + '-stat';
@@ -4939,11 +4973,14 @@ _updateOutilsPatientBtns();
 
   // Auto-sélection articulation quand pathologie cliquée
   function crAutoSelectArticu(pathoKey) {
-    var articu = CR_PATHO_ARTICU[pathoKey] || '';
-    if (!articu) return;
-    var sel = document.getElementById('cr-amp-articu');
+    var p = crPathoConfig.find(function(x){ return x.key === pathoKey; });
+    if (!p || !p.articulations || !p.articulations.length) return;
+    var articu = p.articulations[0];
+    var sel = document.getElementById('cr-articu-main');
     if (sel && crAmpConfig[articu]) {
       sel.value = articu;
+      crArticuSelected = articu;
+      crAmpArticu = articu;
       crRenderAmpFields();
     }
   }
@@ -5055,6 +5092,108 @@ _updateOutilsPatientBtns();
     crCloseAmpConfig();
     _crToast('Configuration enregistrée');
   };
+
+  var _crPathoDraft = null;
+
+  window.crOpenPathoConfig = function() {
+    if (!crAdminCheck()) return;
+    _crPathoDraft = JSON.parse(JSON.stringify(crPathoConfig));
+    crRenderPathoModal();
+    var ov = document.getElementById('cr-patho-cfg-overlay');
+    if (ov) ov.classList.add('open');
+  };
+  window.crClosePathoConfig = function() {
+    var ov = document.getElementById('cr-patho-cfg-overlay');
+    if (ov) ov.classList.remove('open');
+    _crPathoDraft = null;
+  };
+
+  function crRenderPathoModal() {
+    var body = document.getElementById('cr-patho-cfg-body');
+    if (!body || !_crPathoDraft) return;
+    body.innerHTML = '';
+    _crPathoDraft.forEach(function(p, idx) {
+      var item = document.createElement('div');
+      item.className = 'cr-cfg-articu-item';
+      item.dataset.idx = idx;
+      var articuChecks = Object.keys(crAmpConfig).map(function(k) {
+        var checked = p.articulations.indexOf(k) !== -1 ? 'checked' : '';
+        return '<label><input type="checkbox" class="pcfg-articu" value="' + k + '" ' + checked + '>' + crAmpConfig[k].label + '</label>';
+      }).join('');
+      item.innerHTML = '<div class="cr-cfg-articu-hdr">'
+        + '<input type="text" class="pcfg-label" value="' + p.label + '" placeholder="Nom pathologie">'
+        + '<button class="cr-cfg-del" onclick="crPathoDelItem(' + idx + ')">✕</button>'
+        + '</div>'
+        + '<div style="padding:6px 12px 10px;"><div style="font-size:.72rem;font-weight:700;color:var(--text2);margin-bottom:4px;">ARTICULATIONS</div>'
+        + '<div class="cr-cfg-articu-checks">' + articuChecks + '</div></div>';
+      body.appendChild(item);
+    });
+    // Add new
+    var addRow = document.createElement('div');
+    addRow.innerHTML = '<div class="cr-cfg-add-articu-row" style="margin-top:10px;">'
+      + '<input type="text" id="cr-pcfg-new-label" placeholder="Nouvelle pathologie" style="flex:1">'
+      + '<button class="cr-cfg-save-btn" onclick="crPathoAddItem()" style="padding:6px 12px;font-size:.78rem;">+ Ajouter</button>'
+      + '</div>';
+    body.appendChild(addRow);
+  }
+
+  window.crPathoDelItem = function(idx) {
+    if (!_crPathoDraft) return;
+    _crPathoDraft.splice(idx, 1);
+    crRenderPathoModal();
+  };
+  window.crPathoAddItem = function() {
+    if (!_crPathoDraft) return;
+    var inp = document.getElementById('cr-pcfg-new-label');
+    var lbl = inp ? inp.value.trim() : '';
+    if (!lbl) return;
+    var key = lbl.toLowerCase().replace(/[^a-z0-9]/g,'_').replace(/_+/g,'_');
+    _crPathoDraft.push({ key: key, label: lbl, articulations: [] });
+    if (inp) inp.value = '';
+    crRenderPathoModal();
+  };
+
+  function crSyncPathoDraftFromDOM() {
+    if (!_crPathoDraft) return;
+    var body = document.getElementById('cr-patho-cfg-body');
+    if (!body) return;
+    body.querySelectorAll('.cr-cfg-articu-item').forEach(function(item) {
+      var idx = parseInt(item.dataset.idx);
+      if (isNaN(idx) || !_crPathoDraft[idx]) return;
+      var lbl = item.querySelector('.pcfg-label');
+      if (lbl) _crPathoDraft[idx].label = lbl.value.trim() || _crPathoDraft[idx].label;
+      var checks = item.querySelectorAll('.pcfg-articu:checked');
+      _crPathoDraft[idx].articulations = Array.from(checks).map(function(c){ return c.value; });
+    });
+  }
+
+  window.crSavePathoConfig = function() {
+    crSyncPathoDraftFromDOM();
+    crPathoConfig = _crPathoDraft;
+    try { localStorage.setItem('crPathoConfig', JSON.stringify(crPathoConfig)); } catch(e) {}
+    crRenderPathoButtons();
+    crClosePathoConfig();
+    _crToast('Pathologies enregistrées');
+  };
+
+  // ── Pathologie config ─────────────────────────────────────────
+  var CR_PATHO_DEFAULTS = [
+    { key:'lca',               label:'Ligament croisé antérieur',   articulations:['genou'] },
+    { key:'lcp',               label:'Ligament croisé postérieur',  articulations:['genou'] },
+    { key:'meniscectomie',     label:'Méniscectomie',               articulations:['genou'] },
+    { key:'suture_meniscale',  label:'Suture méniscale',            articulations:['genou'] },
+    { key:'syndrome_rotulien', label:'Syndrome rotulien',           articulations:['genou'] },
+    { key:'latarjet',          label:'Latarjet',                    articulations:['epaule'] },
+    { key:'ligamento_cheville',label:'Ligamentoplastie cheville',   articulations:['cheville'] },
+    { key:'entorse',           label:'Entorse',                     articulations:['genou','epaule','cheville'] },
+    { key:'tendinopathie',     label:'Tendinopathie',               articulations:['genou','epaule','cheville','hanche'] },
+    { key:'autre',             label:'Autre',                       articulations:['genou','epaule','cheville','hanche'] }
+  ];
+  var crPathoConfig = (function() {
+    try { var s = localStorage.getItem('crPathoConfig'); if (s) return JSON.parse(s); } catch(e) {}
+    return JSON.parse(JSON.stringify(CR_PATHO_DEFAULTS));
+  })();
+  var crArticuSelected = ''; // articulation sélectionnée dans le select principal
 
   // State
   var crPatho = null;
@@ -5533,8 +5672,9 @@ _updateOutilsPatientBtns();
     crPatho = null;
     crPatientSexe = '';
     crAmpArticu = '';
-    var articuSel = document.getElementById('cr-amp-articu');
-    if (articuSel) articuSel.value = '';
+    crArticuSelected = '';
+    var articuSelMain = document.getElementById('cr-articu-main');
+    if (articuSelMain) articuSelMain.value = '';
     var ampFields = document.getElementById('cr-amp-fields');
     if (ampFields) ampFields.innerHTML = '';
     document.querySelectorAll('.cr-patho-btn').forEach(function(b){ b.classList.remove('active'); });
@@ -5758,6 +5898,21 @@ _updateOutilsPatientBtns();
 <div id="outils-toast"></div>
 
 <!-- CR Amplitude Config Modal -->
+<!-- CR Pathologie Config Modal -->
+<div class="cr-cfg-overlay" id="cr-patho-cfg-overlay" onclick="if(event.target===this)crClosePathoConfig()">
+  <div class="cr-cfg-modal" style="width:560px;">
+    <div class="cr-cfg-modal-hdr">
+      <span>⚙ Configurer les pathologies</span>
+      <button class="cr-cfg-del" onclick="crClosePathoConfig()">✕</button>
+    </div>
+    <div class="cr-cfg-modal-body" id="cr-patho-cfg-body"></div>
+    <div class="cr-cfg-modal-footer">
+      <button class="cr-cfg-cancel-btn" onclick="crClosePathoConfig()">Annuler</button>
+      <button class="cr-cfg-save-btn" onclick="crSavePathoConfig()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <div class="cr-cfg-overlay" id="cr-cfg-overlay" onclick="crCloseCfgIfBg(event)">
   <div class="cr-cfg-modal">
     <div class="cr-cfg-modal-hdr">
