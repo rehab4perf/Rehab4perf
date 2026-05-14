@@ -5010,9 +5010,10 @@ _updateOutilsPatientBtns();
     var aStatIds = ['cr-amp-ext-p-stat','cr-amp-ext-a-stat','cr-amp-flex-p-stat','cr-amp-flex-a-stat'];
     var ampValide = [], ampCours = [], ampNeutral = [];
     aIds.forEach(function(id, i) {
-      var v = crStripDeg(crV(id)); if (!v) return;
+      var v    = crStripDeg(crV(id));
       var stat = crV(aStatIds[i]);
-      var txt = aLabels[i] + ' : ' + v + '°';
+      if (!v && !stat) return;
+      var txt = aLabels[i] + (v ? ' : ' + v + '°' : '');
       if (stat === 'valide') ampValide.push(txt);
       else if (stat === 'cours') ampCours.push(txt);
       else ampNeutral.push(txt);
@@ -5151,9 +5152,10 @@ _updateOutilsPatientBtns();
     var aStatIds = ['cr-amp-ext-p-stat','cr-amp-ext-a-stat','cr-amp-flex-p-stat','cr-amp-flex-a-stat'];
     var ampValide = [], ampCours = [], ampNeutral = [];
     aIds.forEach(function(id, i) {
-      var v = crStripDeg(crV(id)); if (!v) return;
+      var v    = crStripDeg(crV(id));
       var stat = crV(aStatIds[i]);
-      var txt = aLabels[i] + ' : ' + v + '°';
+      if (!v && !stat) return;
+      var txt = aLabels[i] + (v ? ' : ' + v + '°' : '');
       if (stat === 'valide') ampValide.push(txt);
       else if (stat === 'cours') ampCours.push(txt);
       else ampNeutral.push(txt);
