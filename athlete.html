@@ -163,6 +163,23 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
 .pain-btn[data-v="10"] { color:#922B21; }
 .pain-btn.selected { background:currentColor; color:#fff !important; }
 
+/* Session note */
+.session-note-section { background:var(--surface); border-radius:12px; border:1px solid var(--border); padding:14px 16px; margin-top:14px; }
+.session-note-title { font-size:.82rem; font-weight:700; color:var(--navy); margin-bottom:8px; }
+.session-note-ta {
+  width:100%; border:1px solid var(--border); border-radius:8px;
+  padding:10px 12px; font-size:.85rem; font-family:inherit; color:var(--text);
+  resize:none; min-height:90px; outline:none; line-height:1.5;
+}
+.session-note-ta:focus { border-color:var(--accent2); }
+.session-note-save-btn {
+  margin-top:8px; background:var(--accent); color:#fff; border:none;
+  border-radius:8px; padding:8px 18px; font-size:.82rem; font-weight:600;
+  cursor:pointer; width:100%;
+}
+.session-note-save-btn:hover { background:var(--accent2); }
+.session-note-saved { font-size:.75rem; color:#27AE60; margin-top:5px; text-align:center; display:none; }
+
 .notes-bloc {
   background:var(--surface); border-radius:12px; border:1px solid var(--border);
   padding:14px; margin-bottom:14px;
@@ -851,8 +868,9 @@ function openProgModal(progId, nom, seanceId){
       existing = fbArr.length ? fbArr[0] : null;
     }
     _loadPainRatings();
+    _loadSessionNote();
     var html = buildProgHTML(prog);
-    if(seanceId) html += buildRpeCard(seanceId, blocs, existing);
+    if(seanceId) html += buildSessionNoteCard() + buildRpeCard(seanceId, blocs, existing);
     document.getElementById('progModalBody').innerHTML = html;
   })
   .catch(function(){
@@ -1125,6 +1143,37 @@ function _submitRpe(){
       +'<div class="rpe-success-detail">RPE '+_currentRpe+' × '+_currentDureeMin+' min</div>'
       +'</div>';
   }).catch(function(){ alert('Erreur réseau. Réessaie.'); if(btn){btn.disabled=false;btn.textContent='Envoyer mon ressenti';} });
+}
+
+// ── Note de séance ────────────────────────────────────────────
+var _sessionNote = '';
+
+function _loadSessionNote(){
+  if(!_currentSeanceId) return;
+  try {
+    var raw = localStorage.getItem('r4p-snote-'+_currentSeanceId);
+    _sessionNote = raw ? JSON.parse(raw) : '';
+  } catch(e){ _sessionNote = ''; }
+}
+
+window._saveSessionNote = function(){
+  var ta = document.getElementById('sessionNoteTA');
+  if(!ta) return;
+  _sessionNote = ta.value;
+  if(_currentSeanceId) {
+    try { localStorage.setItem('r4p-snote-'+_currentSeanceId, JSON.stringify(_sessionNote)); } catch(e){}
+  }
+  var savedEl = document.getElementById('sessionNoteSaved');
+  if(savedEl){ savedEl.style.display='block'; setTimeout(function(){ savedEl.style.display='none'; },2000); }
+};
+
+function buildSessionNoteCard(){
+  return '<div class="session-note-section">'
+    + '<div class="session-note-title">📝 Ma note de séance</div>'
+    + '<textarea id="sessionNoteTA" class="session-note-ta" placeholder="Comment s\'est passée cette séance ? Douleurs, difficultés, sensations…">'+escH(_sessionNote)+'</textarea>'
+    + '<button class="session-note-save-btn" onclick="_saveSessionNote()">💾 Enregistrer ma note</button>'
+    + '<div class="session-note-saved" id="sessionNoteSaved">✓ Note enregistrée</div>'
+    + '</div>';
 }
 
 function buildRpeCard(seanceId, blocs, existing){
