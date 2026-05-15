@@ -138,6 +138,31 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
 }
 .chain-link { text-align:center; font-size:.7rem; color:var(--accent2); padding:3px 0; font-weight:600; }
 
+/* Pain rating per exercise */
+.exo-pain { margin-top:8px; }
+.exo-pain-label { font-size:.68rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom:5px; }
+.exo-pain-btns { display:flex; gap:3px; flex-wrap:wrap; }
+.pain-btn {
+  width:28px; height:28px; border-radius:6px; border:1.5px solid transparent;
+  font-size:.72rem; font-weight:700; cursor:pointer; display:flex;
+  align-items:center; justify-content:center; transition:transform .1s, border-color .1s;
+  background:#f0f4f8; color:#6b7a8d;
+}
+.pain-btn:active { transform:scale(.92); }
+.pain-btn.selected { border-color: currentColor; }
+.pain-btn[data-v="0"]  { color:#27AE60; }
+.pain-btn[data-v="1"]  { color:#2ECC71; }
+.pain-btn[data-v="2"]  { color:#82D03E; }
+.pain-btn[data-v="3"]  { color:#A9CC3E; }
+.pain-btn[data-v="4"]  { color:#F4D03F; }
+.pain-btn[data-v="5"]  { color:#F39C12; }
+.pain-btn[data-v="6"]  { color:#E67E22; }
+.pain-btn[data-v="7"]  { color:#D35400; }
+.pain-btn[data-v="8"]  { color:#E74C3C; }
+.pain-btn[data-v="9"]  { color:#C0392B; }
+.pain-btn[data-v="10"] { color:#922B21; }
+.pain-btn.selected { background:currentColor; color:#fff !important; }
+
 .notes-bloc {
   background:var(--surface); border-radius:12px; border:1px solid var(--border);
   padding:14px; margin-bottom:14px;
@@ -825,6 +850,7 @@ function openProgModal(progId, nom, seanceId){
       var fbArr = Array.isArray(results[1]) ? results[1] : [];
       existing = fbArr.length ? fbArr[0] : null;
     }
+    _loadPainRatings();
     var html = buildProgHTML(prog);
     if(seanceId) html += buildRpeCard(seanceId, blocs, existing);
     document.getElementById('progModalBody').innerHTML = html;
@@ -889,6 +915,32 @@ var METHODES = {
   ]},
 };
 
+// ── Pain ratings per exercise ─────────────────────────────────
+var _painRatings = {}; // { 'exoKey': 0-10 }
+
+function _exoKey(blocIdx, exoIdx){ return 'b'+blocIdx+'e'+exoIdx; }
+
+function _loadPainRatings(){
+  if(!_currentSeanceId) return;
+  try {
+    var raw = localStorage.getItem('r4p-pain-'+_currentSeanceId);
+    _painRatings = raw ? JSON.parse(raw) : {};
+  } catch(e){ _painRatings = {}; }
+}
+
+function _savePainRatings(){
+  if(!_currentSeanceId) return;
+  try { localStorage.setItem('r4p-pain-'+_currentSeanceId, JSON.stringify(_painRatings)); } catch(e){}
+}
+
+window._setPain = function(key, val){
+  _painRatings[key] = val;
+  _savePainRatings();
+  document.querySelectorAll('.pain-btn[data-key="'+key+'"]').forEach(function(btn){
+    btn.classList.toggle('selected', parseInt(btn.dataset.v) === val);
+  });
+};
+
 // ── Construction HTML d'un programme ────────────────
 function buildProgHTML(prog){
   var raw = prog.donnees || [];
@@ -906,7 +958,7 @@ function buildProgHTML(prog){
     return html;
   }
 
-  blocs.forEach(function(b){
+  blocs.forEach(function(b, bIdx){
     var obj = b.objectif||'libre';
     html += '<div class="bloc">'
          +  '<div class="bloc-header">'
@@ -928,6 +980,8 @@ function buildProgHTML(prog){
     }
     html += '<div class="exo-list">';
     (b.exos||[]).forEach(function(e, idx){
+      var _eKey = _exoKey(bIdx, idx);
+      var _curPain = _painRatings[_eKey];
       var chained = !!e.chained;
       html += '<div class="exo-item'+(chained?' chained':'')+'">';
       html += '<div class="exo-name">'+escH(e.name)+'</div>';
@@ -949,6 +1003,13 @@ function buildProgHTML(prog){
         html += '</div>';
       }
       if(e.consigne&&e.consigne.trim()) html += '<div class="exo-consigne">💬 '+escH(e.consigne)+'</div>';
+      // Pain rating
+      html += '<div class="exo-pain"><div class="exo-pain-label">🩹 Douleur</div><div class="exo-pain-btns">';
+      for(var _pv=0; _pv<=10; _pv++){
+        var _sel = (_curPain===_pv) ? ' selected' : '';
+        html += '<button class="pain-btn'+_sel+'" data-v="'+_pv+'" data-key="'+_eKey+'" onclick="_setPain(\''+_eKey+'\','+_pv+')">'+_pv+'</button>';
+      }
+      html += '</div></div>';
       html += '</div>';
       if(chained && idx < (b.exos||[]).length-1) html += '<div class="chain-link">↓ enchaîner</div>';
     });
