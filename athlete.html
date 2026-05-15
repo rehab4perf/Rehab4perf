@@ -181,27 +181,6 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
 .session-note-saved { font-size:.75rem; color:#27AE60; margin-top:5px; text-align:center; display:none; }
 
 /* Patient persistent note */
-.patient-msg-card {
-  background:linear-gradient(135deg, #EEF3FB 0%, #f8f9ff 100%);
-  border:1.5px solid #BDD0EF; border-radius:14px;
-  padding:16px; margin-bottom:16px;
-}
-.patient-msg-header { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
-.patient-msg-icon { font-size:1.3rem; }
-.patient-msg-title { font-size:.88rem; font-weight:700; color:var(--navy); }
-.patient-msg-sub { font-size:.72rem; color:var(--muted); margin-top:1px; }
-.patient-msg-ta {
-  width:100%; border:1px solid #BDD0EF; border-radius:8px;
-  padding:10px 12px; font-size:.85rem; font-family:inherit; color:var(--text);
-  resize:none; min-height:80px; outline:none; line-height:1.5; background:#fff;
-}
-.patient-msg-ta:focus { border-color:var(--accent); }
-.patient-msg-save-btn {
-  margin-top:8px; background:var(--navy); color:#fff; border:none;
-  border-radius:8px; padding:8px 18px; font-size:.82rem; font-weight:600;
-  cursor:pointer; width:100%;
-}
-.patient-msg-saved { font-size:.75rem; color:#27AE60; margin-top:5px; text-align:center; display:none; }
 
 .notes-bloc {
   background:var(--surface); border-radius:12px; border:1px solid var(--border);
@@ -672,7 +651,6 @@ function _renderCalGrid(){
   else if(_calView === 'day') html = _buildDayHtml();
   else                        html = _buildMonthHtml();
   html += _buildUpcomingHtml();
-  html = buildPatientMsgCard() + html;
   document.getElementById('mainContent').innerHTML = html;
 }
 
@@ -1075,7 +1053,7 @@ function showError(title, msg){
 function _parseNum(str){
   if(!str) return null;
   str = String(str).trim();
-  if(str==='Max'||str==='max') return 10;
+  if(str==='Max'||str==='max') return 20;
   if(str.indexOf('+')!==-1){ var p=str.split('+').map(parseFloat).filter(function(n){return !isNaN(n);}); if(p.length) return p.reduce(function(a,b){return a+b;},0); }
   if(str.match(/^\d[\d-]*\d$/)&&str.indexOf('-')!==-1){ var p2=str.split('-').map(parseFloat).filter(function(n){return !isNaN(n);}); if(p2.length>1) return p2.reduce(function(a,b){return a+b;},0)/p2.length; }
   var n=parseFloat(str); return isNaN(n)?null:n;
@@ -1200,37 +1178,6 @@ function buildSessionNoteCard(){
     + '</div>';
 }
 
-// ── Note persistante patient → praticien ─────────────────────
-var _patientMsgKey = function(){ return 'r4p-pmsg-' + (_patientId || 'default'); };
-
-function _loadPatientMsg(){
-  try {
-    var raw = localStorage.getItem(_patientMsgKey());
-    return raw ? JSON.parse(raw) : '';
-  } catch(e){ return ''; }
-}
-
-window._savePatientMsg = function(){
-  var ta = document.getElementById('patientMsgTA');
-  if(!ta) return;
-  try { localStorage.setItem(_patientMsgKey(), JSON.stringify(ta.value)); } catch(e){}
-  var s = document.getElementById('patientMsgSaved');
-  if(s){ s.style.display='block'; setTimeout(function(){ s.style.display='none'; }, 2000); }
-};
-
-function buildPatientMsgCard(){
-  var msg = _loadPatientMsg();
-  return '<div class="patient-msg-card">'
-    + '<div class="patient-msg-header">'
-    + '<div class="patient-msg-icon">💬</div>'
-    + '<div><div class="patient-msg-title">Mon message à mon kiné</div>'
-    + '<div class="patient-msg-sub">Une seule note · modifiable à tout moment · visible par votre praticien</div></div>'
-    + '</div>'
-    + '<textarea id="patientMsgTA" class="patient-msg-ta" placeholder="Ex : Je ressens toujours une gêne en extension complète depuis 3 jours…">'+escH(msg)+'</textarea>'
-    + '<button class="patient-msg-save-btn" onclick="_savePatientMsg()">📩 Envoyer au kiné</button>'
-    + '<div class="patient-msg-saved" id="patientMsgSaved">✓ Message enregistré</div>'
-    + '</div>';
-}
 
 function buildRpeCard(seanceId, blocs, existing){
   _currentSeanceId = seanceId || '';
