@@ -5506,18 +5506,17 @@ _updateOutilsPatientBtns();
       var fQ = crV('cr-force-quad'), fIJ = crV('cr-force-ij');
       var lQ = crV('cr-lsi-quad'),   lIJ = crV('cr-lsi-ij');
       var fp = [];
-      if (fQ)  fp.push('Quadriceps : ' + fQ);
-      if (fIJ) fp.push('Ischio-jambiers : ' + fIJ);
+      if (fQ)  fp.push('  - Quadriceps : ' + fQ);
+      if (fIJ) fp.push('  - Ischio-jambiers : ' + fIJ);
       if (fp.length) {
-        var fl = 'Bilan de force : ' + fp.join(' / ') + '.';
+        lines.push('Bilan de force :');
+        fp.forEach(function(l){ lines.push(l); });
         if (crLsiOn && (lQ || lIJ)) {
-          fl += ' LSI isocinétique —';
-          if (lQ) fl += ' Quadriceps : ' + lQ + '%';
-          if (lQ && lIJ) fl += ',';
-          if (lIJ) fl += ' IJ : ' + lIJ + '%';
-          fl += '.';
+          lines.push('  LSI isocinétique :');
+          if (lQ)  lines.push('  - Quadriceps : ' + lQ + '%');
+          if (lIJ) lines.push('  - Ischio-jambiers : ' + lIJ + '%');
         }
-        lines.push(fl); lines.push('');
+        lines.push('');
       }
     }
 
