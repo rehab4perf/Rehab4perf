@@ -1499,7 +1499,15 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   .btn { padding:6px 10px; font-size:.74rem; }
   .patient-input { width:130px; }
   /* Builder en overlay plein écran sur tablet */
-  .builder-panel { position:absolute; right:0; top:0; width:100% !important; max-width:100%; height:100%; z-index:15; }
+  .builder-panel {
+    position:absolute; right:0; top:0;
+    width:100% !important; max-width:100%; height:100%; z-index:15;
+    transform:translateX(100%);          /* caché hors-écran par défaut */
+    transition:transform .28s cubic-bezier(.4,0,.2,1);
+  }
+  /* Visible uniquement quand explicitement ouvert */
+  .builder-panel.open,
+  .app.builder-mode .builder-panel { transform:translateX(0); }
   .topbar-logo { display:none; }
 }
 
