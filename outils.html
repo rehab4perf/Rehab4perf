@@ -5744,28 +5744,35 @@ _updateOutilsPatientBtns();
     else { _crToast('Autorisez les pop-ups pour exporter en PDF'); }
   };
 
-  // Export email — copie le courrier et ouvre le portail Gmail
+  // Export email — ouvre Gmail inbox avec fenêtre de composition pré-remplie
   window.crExportEmail = function() {
     var bodyEl = document.getElementById('cr-letter-body');
     var text = bodyEl ? bodyEl.textContent : '';
     if (!text || (bodyEl && bodyEl.querySelector('.letter-empty'))) { _crToast('Générez d\'abord le courrier'); return; }
-    // 1. Copier dans le presse-papier
-    var doCopy = function() {
+    var patNom    = crV('cr-pat-nom');
+    var destEmail = crV('cr-dest-email') || '';
+    var subject   = encodeURIComponent('Compte-rendu de rééducation' + (patNom ? ' — ' + patNom : ''));
+    var bodyEnc   = encodeURIComponent(text);
+    // URL Gmail compose : ouvre l'inbox avec la fenêtre de rédaction flottante
+    // Sans u/N → Gmail utilise le compte actif ; l'utilisateur peut changer via son avatar
+    var url = 'https://mail.google.com/mail/?view=cm&fs=1'
+      + (destEmail ? '&to=' + encodeURIComponent(destEmail) : '')
+      + '&su=' + subject
+      + '&body=' + bodyEnc;
+    // Fallback presse-papier si URL trop longue (lettres très longues)
+    if (url.length > 7500) {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).catch(function(){});
       } else {
-        try {
-          var ta = document.createElement('textarea');
-          ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
-          document.body.appendChild(ta); ta.select();
-          document.execCommand('copy'); document.body.removeChild(ta);
-        } catch(e) {}
+        try { var ta = document.createElement('textarea'); ta.value = text;
+          ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta);
+          ta.select(); document.execCommand('copy'); document.body.removeChild(ta); } catch(e) {}
       }
-    };
-    doCopy();
-    // 2. Ouvrir le portail Gmail (inbox) — fonctionne sur web et redirige vers l'app si configurée
-    window.open('https://mail.google.com/mail/u/0/', '_blank');
-    _crToast('📋 Courrier copié — collez-le dans un nouveau message Gmail');
+      window.open('https://mail.google.com/mail/?view=cm&fs=1' + (destEmail ? '&to=' + encodeURIComponent(destEmail) : '') + '&su=' + subject, '_blank');
+      _crToast('📋 Texte copié (lettre longue) — collez dans la fenêtre Gmail');
+      return;
+    }
+    window.open(url, '_blank');
   };
 
   // ── Template selector ────────────────────────────────────────
@@ -5789,8 +5796,7 @@ _updateOutilsPatientBtns();
     if (!el) return;
     if (_objetEdited && !force) return; // respecter la saisie manuelle
     var pathoLbl = crPatho ? crPathoLabel(crPatho) : '';
-    var cote     = (document.getElementById('cr-pat-cote') || {}).value || '';
-    var suffix   = (pathoLbl ? ' — ' + pathoLbl : '') + (cote ? ' ' + cote : '');
+    var suffix   = pathoLbl ? ' — ' + pathoLbl : '';
     var map = { debut:'Début de prise en charge', suivi:'Suivi de rééducation', rts:'Bilan de fin de prise en charge / RTS', avis:'Demande d\'avis médical' };
     el.value = (map[crTemplate] || '') + suffix;
   }
