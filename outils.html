@@ -47,11 +47,20 @@ body {
 /* ── Sub-tabs ───────────────────────────────────────────── */
 .sub-tabs {
   display: flex;
+  flex-wrap: nowrap;
   background: #FFFFFF;
   border-bottom: 1px solid #E8E6E1;
   padding: 0 20px;
   flex-shrink: 0;
+  /* Scrollable horizontalement quand le contenu dépasse (portrait iPad) */
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
+.sub-tabs::-webkit-scrollbar { display: none; }
 .sub-tab {
   padding: 13px 18px;
   font-size: .87rem; font-weight: 500;
@@ -63,25 +72,17 @@ body {
   margin-bottom: -1px;
   transition: all .12s;
   white-space: nowrap;
+  flex-shrink: 0; /* empêche les boutons de se comprimer */
 }
 .sub-tab:hover { color: #1A1917; background: #F1F0ED; }
 .sub-tab.active { color: #1A3A5C; border-bottom-color: #2B5FA6; font-weight: 700; }
-/* Barre scrollable sur tablette/portrait (iPad Air portrait = 820px) */
+.sub-tab-export { background:none !important; color:#2B5FA6; border-bottom:none; font-size:.78rem; }
+/* Labels — toujours complets (la barre scrolle) */
 .tab-full { display: inline; }
 .tab-short { display: none; }
 @media (max-width: 900px) {
-  .sub-tabs {
-    padding: 0 4px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    flex-wrap: nowrap;
-  }
-  .sub-tabs::-webkit-scrollbar { display: none; }
-  .sub-tab { padding: 11px 12px; font-size: .8rem; flex-shrink: 0; }
+  .sub-tabs { padding: 0 4px; }
+  .sub-tab { padding: 11px 12px; font-size: .8rem; }
 }
 
 /* ── Panels ─────────────────────────────────────────────── */
@@ -512,7 +513,7 @@ body {
   <button class="sub-tab" onclick="showTab('ressources')" id="stab-ressources">📂 <span class="tab-full">Ressources</span><span class="tab-short">Res.</span></button>
   <button class="sub-tab" onclick="showTab('prescriptions')" id="stab-prescriptions">📋 <span class="tab-full">Prescriptions</span><span class="tab-short">Ordonnance</span></button>
   <button class="sub-tab" onclick="showTab('cr')" id="stab-cr">✉️ <span class="tab-full">CR </span>Médecin</button>
-  <button class="sub-tab" style="margin-left:auto;background:none;color:#2B5FA6;border-bottom:none;font-size:.78rem;" onclick="openExportOutils()">📤 <span class="tab-full">Exporter pour le patient</span><span class="tab-short">Exporter</span></button>
+  <button class="sub-tab sub-tab-export" onclick="openExportOutils()">📤 <span class="tab-full">Exporter</span><span class="tab-short">Exporter</span></button>
 </div>
 
 <!-- Export modal -->
