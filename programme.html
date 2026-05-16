@@ -4335,16 +4335,32 @@ function _brzycki(kg, reps) {
 /* Extrait, depuis un tableau de programmes Supabase [{id,nom,date,donnees}],
    un dictionnaire { "Nom exercice normalisé" → [{date, kg, reps, rm1, progNom}] }
    trié par date croissante. Ne garde que les entrées avec cibles.type==='kg'. */
-function _extractExoLoads(programmes) {
+/* Accepte un tableau de séances : [{date, programme_id, programmes:{nom,donnees}}]
+   Déduplique par programme_id (même programme sur plusieurs séances = 1 seul point,
+   à la date de la 1ère séance qui l'utilise). */
+function _extractExoLoads(seances) {
+  // 1. Dédupliquer : un point par programme_id unique, date = première séance
+  var seenProgIds = {};
+  var progList = [];
+  seances.forEach(function(s) {
+    var pid = s.programme_id;
+    var prog = s.programmes;
+    if(!pid || !prog) return;
+    if(!seenProgIds[pid]) {
+      seenProgIds[pid] = true;
+      progList.push({ date: s.date || '', donnees: prog.donnees, nom: prog.nom || '' });
+    }
+  });
+
+  // 2. Extraire les exercices en kg de chaque programme
   var map = {};
-  programmes.forEach(function(prog) {
+  progList.forEach(function(prog) {
     var raw = prog.donnees || {};
     var blocs = Array.isArray(raw) ? raw : (raw.blocs || []);
     blocs.forEach(function(bloc) {
       (bloc.exos || []).forEach(function(exo) {
         var name = (exo.name || '').trim();
         if(!name) return;
-        // Cherche une cible de type kg
         var kgCible = null;
         (exo.cibles || []).forEach(function(c) {
           if(c.type === 'kg' && c.min && parseFloat(c.min) > 0) kgCible = c;
@@ -4354,20 +4370,15 @@ function _extractExoLoads(programmes) {
         var reps = parseFloat(exo.reps);
         if(isNaN(kg) || kg <= 0) return;
         var rm1 = _brzycki(kg, reps);
-        if(!rm1) rm1 = kg; // si reps inconnues, on utilise le poids brut
+        if(!rm1) rm1 = kg;
         var key = name.toLowerCase().replace(/\s+/g,' ');
         if(!map[key]) map[key] = { label: name, points: [] };
-        map[key].points.push({
-          date: prog.date || '',
-          kg: kg,
-          reps: isNaN(reps) ? null : reps,
-          rm1: rm1,
-          progNom: prog.nom || prog.date || ''
-        });
+        map[key].points.push({ date: prog.date, kg: kg, reps: isNaN(reps)?null:reps, rm1: rm1, progNom: prog.nom });
       });
     });
   });
-  // Trier par date, ne garder que ceux avec ≥2 points
+
+  // 3. Trier par date, garder seulement ≥2 points
   var result = {};
   Object.keys(map).forEach(function(key) {
     var pts = map[key].points.sort(function(a,b){ return a.date < b.date ? -1 : 1; });
@@ -4558,15 +4569,16 @@ function openChargesEvo() {
   var overlay = document.getElementById('pevoOverlay');
   overlay.classList.add('open');
   var body = document.getElementById('pevoBody');
-  body.innerHTML = '<div class="pevo-loading">Chargement des programmes…</div>';
+  body.innerHTML = '<div class="pevo-loading">Chargement des séances…</div>';
   _pevoData = null;
-  // Charger tous les programmes du patient avec leurs données complètes
-  var url = SUPA_URL_P + '/rest/v1/programmes?patient_id=eq.' + _progPatient.id + '&select=id,nom,date,donnees&order=date.asc';
+  // Charger toutes les séances du patient avec les données du programme lié
+  var url = SUPA_URL_P + '/rest/v1/seances_planifiees?patient_id=eq.' + _progPatient.id
+    + '&select=id,date,programme_id,programmes(nom,donnees)&order=date.asc';
   fetch(url, {method:'GET', headers:_sbHeaders()})
     .then(function(r){ return r.json(); })
     .then(function(data){
       if(!Array.isArray(data) || !data.length){
-        body.innerHTML = '<div class="pevo-empty">Aucun programme enregistré pour ce patient.</div>';
+        body.innerHTML = '<div class="pevo-empty">Aucune séance planifiée pour ce patient.</div>';
         return;
       }
       _pevoData = _extractExoLoads(data);
