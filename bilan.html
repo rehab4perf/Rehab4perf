@@ -3036,7 +3036,15 @@ const TESTS = {
     'Posterior impingement test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Geste de l\'armé passif → Douleur (conflit postéro-supérieur)</span>',
     'Hawkins-Kennedy <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">RI passive max à 90° d\'élévation → Douleur (conflit sous-coracoïdien)</span>',
   ]},
-  'tb-ra-cerv': {type:'ortho',items:['Spurling A','Rotation latérale + médiale','ULNT 1','ULNT 2a','ULNT 2b','ULNT 3','Distraction cervicale']},
+  'tb-ra-cerv': {type:'ortho',items:[
+    'Spurling A',
+    'Rotation latérale + médiale',
+    'ULNT 1 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf médian</span>',
+    'ULNT 2 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf médian</span>',
+    'ULNT 3 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf radial</span>',
+    'ULNT 4 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf ulnaire</span>',
+    'Distraction cervicale'
+  ]},
   'tb-ra-lomb': {type:'ortho',items:['SLUMP test','Lasègue (SLR)','Léri']},
   'tb-ha-global':{type:'ortho',items:['HAGOS (questionnaire - noter score %)','Fulcrum test','Squeeze test 0° (EVA > 6 ?)']},
   'tb-ha-add':  {type:'ortho',items:['Squeeze test 45°','Étirement ADD']},
@@ -4716,6 +4724,20 @@ function _buildAllTestsHtml() {
     var ckcMei   = (!isNaN(s4)&&!isNaN(ckcScore)&&ckcScore>0)?(s4/2)/ckcScore:NaN;
     if (!isNaN(ckcScore) && ckcScore < 19) toWork.push('Renforcement de la stabilité de l\'épaule — explosivité (mCKCUEST score ' + ckcScore.toFixed(1) + ' < 19)');
     if (!isNaN(ckcMei)   && ckcMei   < 0.70) toWork.push('Renforcement de la stabilité de l\'épaule — endurance (mCKCUEST MEI ' + ckcMei.toFixed(2) + ' < 0.70)');
+  })();
+
+  // ── ULNT positifs rachis cervical (tb-ra-cerv) ───────────────────────────
+  (function(){
+    var cervTbody = document.getElementById('tb-ra-cerv');
+    if (!cervTbody) return;
+    var ulntPos = [];
+    cervTbody.querySelectorAll('tr').forEach(function(row) {
+      var sel = row.querySelector('select'); if (!sel || sel.value !== 'Positif') return;
+      var td = row.querySelector('td'); if (!td) return;
+      var name = td.textContent.trim();
+      if (name.indexOf('ULNT') !== -1) ulntPos.push(name.replace(/\s+/g,' '));
+    });
+    if (ulntPos.length) toWork.push('Mobilisation neurale cervicale — ' + ulntPos.join(', ') + ' positif(s)');
   })();
 
   // ── Tests fonctionnels rachis ─────────────────────────────────────────────
