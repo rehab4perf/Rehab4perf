@@ -7,36 +7,35 @@
 <title>Outils — Rehab4Perf</title>
 <style>
 :root {
-  --bg:        #F5F5F7;
+  --bg:        #F7F6F3;
   --surface:   #FFFFFF;
-  --surface2:  rgba(0,0,0,0.04);
-  --border:    rgba(0,0,0,0.08);
-  --border2:   rgba(0,0,0,0.15);
-  --text:      #1D1D1F;
-  --text2:     #6E6E73;
-  --text3:     #AEAEB2;
-  --accent:    #0071E3;
-  --accent-l:  rgba(0,113,227,0.08);
-  --accent2:   #1D1D1F;
+  --surface2:  #F1F0ED;
+  --border:    #E8E6E1;
+  --border2:   #D3D1CB;
+  --text:      #1A1917;
+  --text2:     #6B6860;
+  --text3:     #9D9B96;
+  --accent:    #2B5FA6;
+  --accent-l:  #EEF3FB;
+  --accent2:   #1A3A5C;
   --green:     #2D6A4F;
   --green-l:   #E8F5EE;
   --red:       #C0392B;
   --red-l:     #FDECEA;
   --orange:    #D4600A;
   --orange-l:  #FEF3EB;
-  --radius:    12px;
-  --radius-sm: 8px;
-  --shadow:    0 1px 4px rgba(0,0,0,0.06);
-  --shadow-md: 0 4px 24px rgba(0,0,0,0.10);
-  --font-serif: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
-  --font-sans:  -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  --radius:    8px;
+  --radius-sm: 5px;
+  --shadow:    0 1px 3px rgba(0,0,0,.06), 0 1px 8px rgba(0,0,0,.04);
+  --font-serif: 'Georgia', serif;
+  --font-sans:  -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { font-size: 14px; -webkit-text-size-adjust: 100%; background: var(--bg) !important; }
+html { font-size: 14px; -webkit-text-size-adjust: 100%; background: #F7F6F3 !important; }
 body {
-  font-family: var(--font-sans);
-  background: var(--bg);
-  color: var(--text);
+  font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  background: #F7F6F3;
+  color: #1A1917;
   height: 100vh;
   display: flex;
   flex-direction: column;
@@ -49,40 +48,35 @@ body {
 .sub-tabs {
   display: flex;
   flex-wrap: nowrap;
-  background: rgba(255,255,255,0.85);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid var(--border);
-  padding: 0 16px;
+  background: #FFFFFF;
+  border-bottom: 1px solid #E8E6E1;
+  padding: 0 20px;
   flex-shrink: 0;
-  align-items: center;
+  /* Scrollable horizontalement quand le contenu dépasse (portrait iPad) */
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  gap: 2px;
-  min-height: 48px;
 }
 .sub-tabs::-webkit-scrollbar { display: none; }
 .sub-tab {
-  padding: 6px 14px;
-  height: 34px;
-  font-size: .84rem; font-weight: 500;
-  color: var(--text2);
+  padding: 13px 18px;
+  font-size: .87rem; font-weight: 500;
+  color: #6B6860;
   cursor: pointer;
   border: none; background: none;
-  font-family: var(--font-sans);
-  border-radius: 100px;
+  font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -1px;
   transition: all .12s;
   white-space: nowrap;
-  flex-shrink: 0;
-  display: flex; align-items: center;
+  flex-shrink: 0; /* empêche les boutons de se comprimer */
 }
-.sub-tab:hover { color: var(--text); background: rgba(0,0,0,0.05); }
-.sub-tab.active { color: var(--accent); background: var(--accent-l); font-weight: 600; }
-.sub-tab-export { background:none !important; color:var(--accent); font-size:.78rem; }
+.sub-tab:hover { color: #1A1917; background: #F1F0ED; }
+.sub-tab.active { color: #1A3A5C; border-bottom-color: #2B5FA6; font-weight: 700; }
+.sub-tab-export { background:none !important; color:#2B5FA6; border-bottom:none; font-size:.78rem; }
 /* Labels — toujours complets (la barre scrolle) */
 .tab-full { display: inline; }
 .tab-short { display: none; }
@@ -97,19 +91,19 @@ body {
 
 /* ── Block ──────────────────────────────────────────────── */
 .block {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  background: #FFFFFF;
+  border: 1px solid #E8E6E1;
+  border-radius: 8px;
   margin-bottom: 16px;
   overflow: hidden;
-  box-shadow: var(--shadow);
+  box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 8px rgba(0,0,0,.04);
 }
 .block-header {
   padding: 9px 16px;
   font-size: .72rem; font-weight: 700;
   letter-spacing: .06em; text-transform: uppercase;
   color: #fff;
-  background: var(--accent2);
+  background: #1A3A5C;
   display: flex; align-items: center; gap: 8px;
 }
 .block-header.org  { background: #D4600A; }
@@ -121,30 +115,30 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 1px;
-  background: var(--border);
+  background: #E8E6E1;
 }
 .rm-field {
-  background: var(--surface);
+  background: #FFFFFF;
   padding: 11px 16px;
   display: flex; flex-direction: column; gap: 5px;
 }
 .rm-field label {
   font-size: .68rem; font-weight: 700;
   text-transform: uppercase; letter-spacing: .05em;
-  color: var(--text2);
+  color: #6B6860;
 }
 .rm-field input, .rm-field select {
-  font-family: var(--font-sans);
+  font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
   font-size: 1.05rem; font-weight: 600;
-  color: var(--accent);
+  color: #1A3A5C;
   border: none; outline: none; background: transparent; width: 100%;
 }
-.rm-field input[type=text] { font-weight: 400; color: var(--text); font-size: .95rem; }
-.rm-field input::placeholder { color: var(--text3); font-weight: 400; }
+.rm-field input[type=text] { font-weight: 400; color: #1A1917; font-size: .95rem; }
+.rm-field input::placeholder { color: #9D9B96; font-weight: 400; }
 
 /* ── Average bar ────────────────────────────────────────── */
 .avg-bar {
-  background: var(--accent2);
+  background: #1A3A5C;
   color: #fff;
   padding: 13px 18px;
   display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
@@ -159,30 +153,30 @@ body {
   padding: 14px 16px;
 }
 .pill {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  background: #F1F0ED;
+  border: 1px solid #E8E6E1;
+  border-radius: 5px;
   padding: 9px 14px;
   text-align: center; min-width: 100px;
 }
-.pill .pv { font-size: 1.2rem; font-weight: 700; color: var(--accent); }
-.pill .pl { font-size: .68rem; color: var(--text2); margin-top: 2px; }
-.pill.best { background: var(--accent-l); border-color: rgba(0,113,227,.3); }
+.pill .pv { font-size: 1.2rem; font-weight: 700; color: #1A3A5C; }
+.pill .pl { font-size: .68rem; color: #6B6860; margin-top: 2px; }
+.pill.best { background: #EEF3FB; border-color: #2B5FA6; }
 .pill.best .pv { font-size: 1.35rem; }
 
 /* ── Tables ─────────────────────────────────────────────── */
 .tbl { width: 100%; border-collapse: collapse; }
 .tbl th {
-  background: var(--accent2); color: #fff;
+  background: #1A3A5C; color: #fff;
   padding: 8px 12px; text-align: left;
   font-size: .7rem; font-weight: 600; letter-spacing: .04em;
 }
-.tbl td { padding: 7px 12px; border-bottom: 1px solid var(--border); font-size: .87rem; }
+.tbl td { padding: 7px 12px; border-bottom: 1px solid #E8E6E1; font-size: .87rem; }
 .tbl tr:last-child td { border-bottom: none; }
-.tbl tr:hover td { background: var(--surface2); }
-.tbl .num { font-weight: 700; color: var(--accent); }
+.tbl tr:hover td { background: #F1F0ED; }
+.tbl .num { font-weight: 700; color: #1A3A5C; }
 .tbl .pct { font-weight: 700; }
-.tbl.hsr th { background: var(--green); }
+.tbl.hsr th { background: #2D6A4F; }
 
 /* Zone colors */
 .zR  { color: #C0392B; font-weight: 600; }
@@ -197,15 +191,13 @@ body {
 /* ── HSR sticky ─────────────────────────────────────────── */
 .hsr-sticky {
   position: sticky; top: 0; z-index: 40;
-  background: rgba(255,255,255,0.85);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  border-bottom: 2px solid var(--accent);
+  background: #FFFFFF;
+  border-bottom: 2px solid #2B5FA6;
   padding: 10px 18px;
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-  box-shadow: var(--shadow);
+  box-shadow: 0 2px 8px rgba(0,0,0,.07);
 }
-.hsr-sticky label { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text2); }
+.hsr-sticky label { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #6B6860; }
 .hsr-sticky input {
   font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif; font-size: 1rem; font-weight: 700;
   border: 1.5px solid #D3D1CB; border-radius: 5px;
