@@ -4276,13 +4276,16 @@ function _doSaveProgCloud(nomProg, donnees, today, btn){
     var d = Array.isArray(res.data) ? res.data[0] : res.data;
     if(isNew && d && d.id){
       _currentProgId = d.id;
-      // Relier uniquement la séance actuelle au nouveau programme indépendant
+      // Relier uniquement la séance actuelle au nouveau programme indépendant,
+      // puis rafraîchir le calendrier pour que le chip pointe vers le nouveau programme_id.
       if(seanceId){
         fetch(SUPA_URL_P + '/rest/v1/seances_planifiees?id=eq.' + seanceId, {
           method:'PATCH',
           headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
           body: JSON.stringify({programme_id: d.id})
-        }).catch(function(e){ console.warn('Mise à jour programme_id séance échouée :', e); });
+        })
+        .then(function(){ renderCalendar(); })
+        .catch(function(e){ console.warn('Mise à jour programme_id séance échouée :', e); });
       }
     }
     _draftClear();
