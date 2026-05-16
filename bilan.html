@@ -3053,6 +3053,10 @@ textarea { resize:none !important; overflow:hidden !important; }
     <div class="page-title">Évolution</div>
     <div class="page-subtitle">Suivi longitudinal des marqueurs cliniques — bilans sauvegardés</div>
   </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;padding:12px 16px 0;border-bottom:1px solid var(--border)" id="evo-toolbar" class="no-print">
+    <button class="print-btn" onclick="printEvolution()" style="font-size:.78rem;padding:6px 14px">🖨 Imprimer / PDF patient</button>
+    <button class="print-btn" onclick="exportEvolutionHTML()" style="font-size:.78rem;padding:6px 14px;background:var(--accent);color:#fff;border-color:var(--accent)">📥 Exporter HTML (à envoyer)</button>
+  </div>
   <div class="page-content" id="evolution-content">
     <div class="evo-empty">Sélectionnez un patient avec au moins 2 bilans pour afficher les courbes d'évolution.</div>
   </div>
@@ -3623,92 +3627,131 @@ function _showPatientToast(msg){
 
 /* ── Évolution : configuration des métriques suivies ───── */
 var TRACKED_METRICS = [
-  // Douleur
-  {id:'f-eva',          label:'Douleur EVA (repos)',    unit:'/10', dir:'down', cat:'Douleur'},
-  {id:'f-eva-max',      label:'EVA max (7 jours)',       unit:'/10', dir:'down', cat:'Douleur'},
-  {id:'f-aclrsi',       label:'ACL-RSI Score',           unit:'%',   dir:'up',   cat:'Douleur'},
-  // Épaule ROM
-  {id:'rom-ep-d-flex',  label:'Flex. épaule D',          unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
-  {id:'rom-ep-g-flex',  label:'Flex. épaule G',          unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
-  {id:'rom-ep-d-abd',   label:'Abduction épaule D',      unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
-  {id:'rom-ep-g-abd',   label:'Abduction épaule G',      unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
-  {id:'rom-ep-d-re0',   label:'RE épaule D (0°)',        unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
-  {id:'rom-ep-g-re0',   label:'RE épaule G (0°)',        unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
-  {id:'rom-ep-d-ri0',   label:'RI épaule D (0°)',        unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
-  {id:'rom-ep-g-ri0',   label:'RI épaule G (0°)',        unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
-  {id:'rom-ep-d-re90',  label:'RE épaule D (90°)',       unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
-  {id:'rom-ep-g-re90',  label:'RE épaule G (90°)',       unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
-  {id:'gird-ca',        label:'GIRD (côté atteint)',      unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
-  // Force épaule (bruts)
-  {id:'ep-rl1-ca',      label:'RL1 (côté atteint)',       unit:'N',   dir:'up',   cat:'Épaule — Force'},
-  {id:'ep-rl1-cs',      label:'RL1 (côté sain)',          unit:'N',   dir:'up',   cat:'Épaule — Force'},
-  {id:'ep-rl2-ca',      label:'RL2 (côté atteint)',       unit:'N',   dir:'up',   cat:'Épaule — Force'},
-  {id:'ep-rl2-cs',      label:'RL2 (côté sain)',          unit:'N',   dir:'up',   cat:'Épaule — Force'},
-  {id:'ep-abd-ca',      label:'Abducteurs (atteint)',     unit:'N',   dir:'up',   cat:'Épaule — Force'},
-  {id:'ep-abd-cs',      label:'Abducteurs (sain)',        unit:'N',   dir:'up',   cat:'Épaule — Force'},
-  {id:'ep-bht-ca',      label:'BHT (côté atteint)',       unit:'N',   dir:'up',   cat:'Épaule — Force'},
-  {id:'ep-bht-cs',      label:'BHT (côté sain)',          unit:'N',   dir:'up',   cat:'Épaule — Force'},
-  // Hanche ROM
-  {id:'ha-mob-d-flex',  label:'Flex. hanche D',          unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
-  {id:'ha-mob-g-flex',  label:'Flex. hanche G',          unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
-  {id:'ha-mob-d-ext',   label:'Ext. hanche D',           unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
-  {id:'ha-mob-g-ext',   label:'Ext. hanche G',           unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
-  {id:'ha-mob-d-ri',    label:'RI hanche D',             unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
-  {id:'ha-mob-g-ri',    label:'RI hanche G',             unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
-  {id:'ha-mob-d-re',    label:'RE hanche D',             unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
-  {id:'ha-mob-g-re',    label:'RE hanche G',             unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
-  {id:'ha-mob-d-abd',   label:'Abduction hanche D',      unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
-  {id:'ha-mob-g-abd',   label:'Abduction hanche G',      unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
-  // Genou ROM
-  {id:'rom-ge-d-flexa', label:'Flex. genou D (actif)',   unit:'°',   dir:'up',   cat:'Genou — Mobilité'},
-  {id:'rom-ge-g-flexa', label:'Flex. genou G (actif)',   unit:'°',   dir:'up',   cat:'Genou — Mobilité'},
-  {id:'rom-ge-d-flexp', label:'Flex. genou D (passif)',  unit:'°',   dir:'up',   cat:'Genou — Mobilité'},
-  {id:'rom-ge-g-flexp', label:'Flex. genou G (passif)',  unit:'°',   dir:'up',   cat:'Genou — Mobilité'},
-  {id:'rom-ge-d-ext',   label:'Ext. genou D',            unit:'°',   dir:'up',   cat:'Genou — Mobilité'},
-  {id:'rom-ge-g-ext',   label:'Ext. genou G',            unit:'°',   dir:'up',   cat:'Genou — Mobilité'},
-  // Tests fonctionnels
-  {id:'pset-ca',        label:'SLS (côté atteint)',       unit:'rép', dir:'up',   cat:'Tests Fonctionnels'},
-  {id:'pset-cs',        label:'SLS (côté sain)',          unit:'rép', dir:'up',   cat:'Tests Fonctionnels'},
-  {id:'shrt-d',         label:'SHRT D',                  unit:'cm',  dir:'up',   cat:'Tests Fonctionnels'},
-  {id:'shrt-g',         label:'SHRT G',                  unit:'cm',  dir:'up',   cat:'Tests Fonctionnels'},
-  {id:'set-ca',         label:'SET (côté atteint)',       unit:'s',   dir:'up',   cat:'Tests Fonctionnels'},
-  {id:'set-cs',         label:'SET (côté sain)',          unit:'s',   dir:'up',   cat:'Tests Fonctionnels'},
-  {id:'uqybt-med-d',    label:'UQYBT Méd. D',            unit:'cm',  dir:'up',   cat:'Tests Fonctionnels'},
-  {id:'uqybt-med-g',    label:'UQYBT Méd. G',            unit:'cm',  dir:'up',   cat:'Tests Fonctionnels'},
-  {id:'uqybt-il-d',     label:'UQYBT IL D',              unit:'cm',  dir:'up',   cat:'Tests Fonctionnels'},
-  {id:'uqybt-il-g',     label:'UQYBT IL G',              unit:'cm',  dir:'up',   cat:'Tests Fonctionnels'},
-  {id:'uqybt-sl-d',     label:'UQYBT SL D',              unit:'cm',  dir:'up',   cat:'Tests Fonctionnels'},
-  {id:'uqybt-sl-g',     label:'UQYBT SL G',              unit:'cm',  dir:'up',   cat:'Tests Fonctionnels'},
+  // ── Douleur ──────────────────────────────────────────────
+  {id:'f-eva',          label:'Douleur EVA (repos)',        unit:'/10', dir:'down', cat:'Douleur'},
+  {id:'f-eva-max',      label:'EVA max (7 jours)',           unit:'/10', dir:'down', cat:'Douleur'},
+  {id:'f-aclrsi',       label:'ACL-RSI Score',               unit:'%',   dir:'up',   cat:'Douleur'},
+  // ── Épaule — Mobilité ────────────────────────────────────
+  {id:'rom-ep-d-flex',  label:'Flex. épaule D',              unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
+  {id:'rom-ep-g-flex',  label:'Flex. épaule G',              unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
+  {id:'rom-ep-d-abd',   label:'Abduction épaule D',          unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
+  {id:'rom-ep-g-abd',   label:'Abduction épaule G',          unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
+  {id:'rom-ep-d-re0',   label:'RE épaule D (0°)',            unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
+  {id:'rom-ep-g-re0',   label:'RE épaule G (0°)',            unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
+  {id:'rom-ep-d-ri0',   label:'RI épaule D (0°)',            unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
+  {id:'rom-ep-g-ri0',   label:'RI épaule G (0°)',            unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
+  {id:'rom-ep-d-re90',  label:'RE épaule D (90°)',           unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
+  {id:'rom-ep-g-re90',  label:'RE épaule G (90°)',           unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
+  {id:'gird-ca',        label:'GIRD (côté atteint)',          unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
+  // ── Épaule — Force ──────────────────────────────────────
+  {id:'ep-rl1-ca',      label:'RL1 (côté atteint)',           unit:'N',   dir:'up',   cat:'Épaule — Force'},
+  {id:'ep-rl1-cs',      label:'RL1 (côté sain)',              unit:'N',   dir:'up',   cat:'Épaule — Force'},
+  {id:'ep-rl2-ca',      label:'RL2 (côté atteint)',           unit:'N',   dir:'up',   cat:'Épaule — Force'},
+  {id:'ep-rl2-cs',      label:'RL2 (côté sain)',              unit:'N',   dir:'up',   cat:'Épaule — Force'},
+  {id:'ep-abd-ca',      label:'Abducteurs (atteint)',         unit:'N',   dir:'up',   cat:'Épaule — Force'},
+  {id:'ep-abd-cs',      label:'Abducteurs (sain)',            unit:'N',   dir:'up',   cat:'Épaule — Force'},
+  {id:'ep-bht-ca',      label:'BHT (côté atteint)',           unit:'N',   dir:'up',   cat:'Épaule — Force'},
+  {id:'ep-bht-cs',      label:'BHT (côté sain)',              unit:'N',   dir:'up',   cat:'Épaule — Force'},
+  // ── Hanche — Mobilité ───────────────────────────────────
+  {id:'ha-mob-d-flex',  label:'Flex. hanche D',              unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
+  {id:'ha-mob-g-flex',  label:'Flex. hanche G',              unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
+  {id:'ha-mob-d-ext',   label:'Ext. hanche D',               unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
+  {id:'ha-mob-g-ext',   label:'Ext. hanche G',               unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
+  {id:'ha-mob-d-ri',    label:'RI hanche D',                 unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
+  {id:'ha-mob-g-ri',    label:'RI hanche G',                 unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
+  {id:'ha-mob-d-re',    label:'RE hanche D',                 unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
+  {id:'ha-mob-g-re',    label:'RE hanche G',                 unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
+  {id:'ha-mob-d-abd',   label:'Abduction hanche D',          unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
+  {id:'ha-mob-g-abd',   label:'Abduction hanche G',          unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
+  // ── Genou — Mobilité ────────────────────────────────────
+  {id:'rom-ge-d-flexa', label:'Flex. genou D (actif)',        unit:'°',   dir:'up',   cat:'Genou — Mobilité'},
+  {id:'rom-ge-g-flexa', label:'Flex. genou G (actif)',        unit:'°',   dir:'up',   cat:'Genou — Mobilité'},
+  {id:'rom-ge-d-flexp', label:'Flex. genou D (passif)',       unit:'°',   dir:'up',   cat:'Genou — Mobilité'},
+  {id:'rom-ge-g-flexp', label:'Flex. genou G (passif)',       unit:'°',   dir:'up',   cat:'Genou — Mobilité'},
+  {id:'rom-ge-d-ext',   label:'Ext. genou D',                unit:'°',   dir:'up',   cat:'Genou — Mobilité'},
+  {id:'rom-ge-g-ext',   label:'Ext. genou G',                unit:'°',   dir:'up',   cat:'Genou — Mobilité'},
+  // ── Tests Fonctionnels MI ────────────────────────────────
+  {id:'sls-ca',         label:'SLS (côté atteint)',           unit:'rép', dir:'up',   cat:'Tests Fonctionnels MI'},
+  {id:'sls-cs',         label:'SLS (côté sain)',              unit:'rép', dir:'up',   cat:'Tests Fonctionnels MI'},
+  {id:'hop-ca',         label:'Hop Test (côté atteint)',      unit:'cm',  dir:'up',   cat:'Tests Fonctionnels MI'},
+  {id:'hop-cs',         label:'Hop Test (côté sain)',         unit:'cm',  dir:'up',   cat:'Tests Fonctionnels MI'},
+  {id:'lu-ca',          label:'Lunge WBLT (côté atteint)',    unit:'cm',  dir:'up',   cat:'Tests Fonctionnels MI'},
+  {id:'lu-cs',          label:'Lunge WBLT (côté sain)',       unit:'cm',  dir:'up',   cat:'Tests Fonctionnels MI'},
+  {id:'dj-h-ca',        label:'Drop Jump hauteur (atteint)',  unit:'cm',  dir:'up',   cat:'Tests Fonctionnels MI'},
+  {id:'dj-h-cs',        label:'Drop Jump hauteur (sain)',     unit:'cm',  dir:'up',   cat:'Tests Fonctionnels MI'},
+  {id:'dj-t-ca',        label:'Drop Jump contact (atteint)', unit:'ms',  dir:'down', cat:'Tests Fonctionnels MI'},
+  {id:'dj-t-cs',        label:'Drop Jump contact (sain)',    unit:'ms',  dir:'down', cat:'Tests Fonctionnels MI'},
+  {id:'sebt-ant-ca',    label:'SEBT Antérieur (atteint)',     unit:'cm',  dir:'up',   cat:'Tests Fonctionnels MI'},
+  {id:'sebt-ant-cs',    label:'SEBT Antérieur (sain)',        unit:'cm',  dir:'up',   cat:'Tests Fonctionnels MI'},
+  {id:'sebt-pm-ca',     label:'SEBT Postéro-médial (atteint)',unit:'cm',  dir:'up',   cat:'Tests Fonctionnels MI'},
+  {id:'sebt-pm-cs',     label:'SEBT Postéro-médial (sain)',   unit:'cm',  dir:'up',   cat:'Tests Fonctionnels MI'},
+  {id:'sebt-pl-ca',     label:'SEBT Postéro-latéral (atteint)',unit:'cm', dir:'up',   cat:'Tests Fonctionnels MI'},
+  {id:'sebt-pl-cs',     label:'SEBT Postéro-latéral (sain)',  unit:'cm', dir:'up',   cat:'Tests Fonctionnels MI'},
+  {id:'uqybt-med-d',    label:'UQYBT Médial D',               unit:'cm',  dir:'up',   cat:'Tests Fonctionnels MI'},
+  {id:'uqybt-med-g',    label:'UQYBT Médial G',               unit:'cm',  dir:'up',   cat:'Tests Fonctionnels MI'},
+  {id:'uqybt-il-d',     label:'UQYBT Inféro-latéral D',       unit:'cm',  dir:'up',   cat:'Tests Fonctionnels MI'},
+  {id:'uqybt-il-g',     label:'UQYBT Inféro-latéral G',       unit:'cm',  dir:'up',   cat:'Tests Fonctionnels MI'},
+  {id:'uqybt-sl-d',     label:'UQYBT Supéro-latéral D',       unit:'cm',  dir:'up',   cat:'Tests Fonctionnels MI'},
+  {id:'uqybt-sl-g',     label:'UQYBT Supéro-latéral G',       unit:'cm',  dir:'up',   cat:'Tests Fonctionnels MI'},
+  {id:'set-ca',         label:'SET (côté atteint)',            unit:'s',   dir:'up',   cat:'Tests Fonctionnels MI'},
+  {id:'set-cs',         label:'SET (côté sain)',               unit:'s',   dir:'up',   cat:'Tests Fonctionnels MI'},
+  // ── Tests Fonctionnels MS ────────────────────────────────
+  {id:'pset-ca',        label:'PSET (côté atteint)',           unit:'rép', dir:'up',   cat:'Tests Fonctionnels MS'},
+  {id:'pset-cs',        label:'PSET (côté sain)',              unit:'rép', dir:'up',   cat:'Tests Fonctionnels MS'},
+  {id:'shrt-d',         label:'SHRT D',                       unit:'cm',  dir:'up',   cat:'Tests Fonctionnels MS'},
+  {id:'shrt-g',         label:'SHRT G',                       unit:'cm',  dir:'up',   cat:'Tests Fonctionnels MS'},
+  {id:'ckc-s2',         label:'mCKCUEST S1 (touches)',        unit:'',    dir:'up',   cat:'Tests Fonctionnels MS'},
+  {id:'ckc-s3',         label:'mCKCUEST S2 (touches)',        unit:'',    dir:'up',   cat:'Tests Fonctionnels MS'},
+  {id:'ckc-s4',         label:'mCKCUEST S4 endurance',        unit:'',    dir:'up',   cat:'Tests Fonctionnels MS'},
+  // ULRT : moyenne des 3 essais par côté (métrique calculée)
+  {id:'ulrt-g-avg', label:'ULRT G (moy. 3 essais)', unit:'cm', dir:'up', cat:'Tests Fonctionnels MS',
+    compute: function(d){ var vs=[parseFloat(d['ulrt-g1']),parseFloat(d['ulrt-g2']),parseFloat(d['ulrt-g3'])].filter(function(v){return !isNaN(v);}); return vs.length?vs.reduce(function(a,b){return a+b;},0)/vs.length:NaN; }},
+  {id:'ulrt-d-avg', label:'ULRT D (moy. 3 essais)', unit:'cm', dir:'up', cat:'Tests Fonctionnels MS',
+    compute: function(d){ var vs=[parseFloat(d['ulrt-d1']),parseFloat(d['ulrt-d2']),parseFloat(d['ulrt-d3'])].filter(function(v){return !isNaN(v);}); return vs.length?vs.reduce(function(a,b){return a+b;},0)/vs.length:NaN; }},
+  // ── Tests Fonctionnels Rachis ────────────────────────────
+  {id:'rf-flx-cerv',    label:'Endurance fléchisseurs cerv.',  unit:'s',   dir:'up',   cat:'Tests Fonctionnels Rachis'},
+  {id:'rf-ext-cerv',    label:'Endurance extenseurs cerv.',    unit:'s',   dir:'up',   cat:'Tests Fonctionnels Rachis'},
+  {id:'rf-lat-g',       label:'Endurance latérale cerv. G',    unit:'s',   dir:'up',   cat:'Tests Fonctionnels Rachis'},
+  {id:'rf-lat-d',       label:'Endurance latérale cerv. D',    unit:'s',   dir:'up',   cat:'Tests Fonctionnels Rachis'},
+  {id:'rf-sorensen',    label:'Sørensen (ext. lombaires)',      unit:'s',   dir:'up',   cat:'Tests Fonctionnels Rachis'},
+  {id:'rf-pdslrt',      label:'PDSLRT (lombaires)',             unit:'s',   dir:'up',   cat:'Tests Fonctionnels Rachis'},
 ];
+
+/* ── Helper : lire la valeur d'une métrique (simple ou calculée) ── */
+function _getMetricVal(m, donnees){
+  if(m.compute) return m.compute(donnees);
+  return parseFloat((donnees||{})[m.id]);
+}
 
 /* ── Option C : deltas inline ──────────────────────────── */
 function _renderDeltas(prevData){
-  // Supprimer les anciens badges
   document.querySelectorAll('.evo-delta').forEach(function(el){ el.remove(); });
   if(!prevData) return;
   TRACKED_METRICS.forEach(function(m){
+    // Les métriques calculées n'ont pas d'élément DOM direct → skip
+    if(m.compute) return;
     var el = document.getElementById(m.id);
     if(!el) return;
-    var curVal = parseFloat(el.value);
+    var curVal  = parseFloat(el.value);
     var prevVal = parseFloat(prevData[m.id]);
     if(isNaN(curVal) || isNaN(prevVal)) return;
     var diff = curVal - prevVal;
     if(diff === 0) return;
     var isGood = (m.dir === 'up') ? diff > 0 : diff < 0;
     var sign   = diff > 0 ? '+' : '';
+    var pct    = prevVal !== 0 ? Math.round(Math.abs(diff) / Math.abs(prevVal) * 100) : null;
+    var pctStr = pct !== null ? ' (' + (diff>0?'+':'−') + pct + '%)' : '';
     var cls    = isGood ? 'evo-pos' : 'evo-neg';
     var badge  = document.createElement('span');
     badge.className = 'evo-delta ' + cls;
-    badge.textContent = sign + diff.toFixed(0) + m.unit;
+    badge.textContent = sign + diff.toFixed(0) + m.unit + pctStr;
     badge.title = 'Bilan précédent : ' + prevVal.toFixed(0) + m.unit;
-    // Insérer après le champ
     el.parentNode.insertBefore(badge, el.nextSibling);
   });
 }
 
 /* ── Option A : page évolution ─────────────────────────── */
 function _buildSparkline(values){
-  // values = tableau chronologique (du plus ancien au plus récent) de numbers
   var W = 80, H = 30, PAD = 4;
   var min = Math.min.apply(null, values);
   var max = Math.max.apply(null, values);
@@ -3729,74 +3772,216 @@ function _buildSparkline(values){
 function _renderEvolutionPage(){
   var container = document.getElementById('evolution-content');
   if(!container) return;
-  // Bilans triés du plus ancien au plus récent pour les sparklines
-  var bilansAsc = _allBilans.slice().reverse(); // _allBilans est desc
+  var bilansAsc = _allBilans.slice().reverse(); // desc → asc
   if(bilansAsc.length < 2){
     container.innerHTML = '<div class="evo-empty">Ce patient n\'a que '
       + (bilansAsc.length === 0 ? 'aucun' : '1')
       + ' bilan sauvegardé. Il en faut au moins 2 pour afficher l\'évolution.</div>';
     return;
   }
-  // Dates pour entête de colonnes (courtes)
   var dates = bilansAsc.map(function(b){
     if(!b.date) return '—';
     var p = b.date.split('-');
     return p[2]+'/'+p[1]+'/'+(p[0].slice(2));
   });
-  // Grouper par catégorie
   var cats = {};
   TRACKED_METRICS.forEach(function(m){ if(!cats[m.cat]) cats[m.cat]=[]; cats[m.cat].push(m); });
 
   var html = '<div class="evo-intro">📅 '+ bilansAsc.length +' bilans — du '
-    + dates[0] +' au '+ dates[dates.length-1]
-    +'</div>';
+    + dates[0] +' au '+ dates[dates.length-1] +'</div>';
 
   Object.keys(cats).forEach(function(cat){
     var metrics = cats[cat];
-    // Garder seulement les métriques qui ont au moins 2 valeurs renseignées
     var active = metrics.filter(function(m){
-      var vals = bilansAsc.map(function(b){ return parseFloat((b.donnees||{})[m.id]); });
+      var vals = bilansAsc.map(function(b){ return _getMetricVal(m, b.donnees||{}); });
       return vals.filter(function(v){ return !isNaN(v); }).length >= 2;
     });
     if(!active.length) return;
 
-    // En-têtes des colonnes de valeurs (limités à 5 derniers pour lisibilité)
-    var colDates = dates.length > 5 ? dates.slice(dates.length - 5) : dates;
+    var colDates  = dates.length > 5 ? dates.slice(dates.length - 5) : dates;
     var colBilans = bilansAsc.length > 5 ? bilansAsc.slice(bilansAsc.length - 5) : bilansAsc;
 
     html += '<div class="evo-block"><div class="evo-block-title">'+cat+'</div>';
     html += '<table class="evo-table"><thead><tr>'
-      + '<th>Marqueur</th>'
-      + '<th class="center">Courbe</th>';
+      + '<th>Marqueur</th><th class="center">Courbe</th>';
     colDates.forEach(function(d){ html += '<th class="center">'+d+'</th>'; });
-    html += '<th class="center">Δ total</th></tr></thead><tbody>';
+    html += '<th class="center">Δ total</th><th class="center">% progr.</th></tr></thead><tbody>';
 
     active.forEach(function(m){
-      var allVals = bilansAsc.map(function(b){ return parseFloat((b.donnees||{})[m.id]); });
-      var colVals = colBilans.map(function(b){ return parseFloat((b.donnees||{})[m.id]); });
+      var allVals = bilansAsc.map(function(b){ return _getMetricVal(m, b.donnees||{}); });
+      var colVals = colBilans.map(function(b){ return _getMetricVal(m, b.donnees||{}); });
       var sparkVals = allVals.filter(function(v){ return !isNaN(v); });
-      // Delta entre première et dernière valeur renseignée
       var firstIdx = allVals.findIndex(function(v){ return !isNaN(v); });
       var lastIdx  = allVals.length - 1 - allVals.slice().reverse().findIndex(function(v){ return !isNaN(v); });
-      var delta    = allVals[lastIdx] - allVals[firstIdx];
+      var firstVal = allVals[firstIdx];
+      var lastVal  = allVals[lastIdx];
+      var delta    = lastVal - firstVal;
       var isGood   = m.dir === 'up' ? delta >= 0 : delta <= 0;
       var sign     = delta >= 0 ? '+' : '';
       var deltaCls = delta === 0 ? 'evo-neutral' : (isGood ? 'evo-pos' : 'evo-neg');
+      // % de progression : base = |firstVal| pour gérer les valeurs négatives
+      // (ex: -5cm → +10cm = +300% relatif à l'amplitude de départ de 5cm)
+      // On n'affiche pas le % si base = 0 (division impossible)
+      var pct = (firstVal !== 0) ? (delta / Math.abs(firstVal) * 100) : null;
+      var pctDisplay = pct !== null
+        ? (Math.abs(pct) > 999 ? (pct>0?'>':'<')+' 999%' : (pct>=0?'+':'')+pct.toFixed(0)+'%')
+        : null;
+      var pctStr = pctDisplay !== null
+        ? '<span class="'+deltaCls+'">'+pctDisplay+'</span>'
+        : '<span class="evo-na">—</span>';
 
       html += '<tr class="evo-row">';
       html += '<td class="evo-metric-name">'+m.label+'</td>';
       html += '<td class="evo-spark">'+(sparkVals.length >= 2 ? _buildSparkline(sparkVals) : '—')+'</td>';
       colVals.forEach(function(v){
-        html += '<td class="evo-val">'+(isNaN(v) ? '<span class="evo-na">—</span>' : v.toFixed(0)+m.unit)+'</td>';
+        var decimals = m.unit === 'cm' && v % 1 !== 0 ? 1 : 0;
+        html += '<td class="evo-val">'+(isNaN(v) ? '<span class="evo-na">—</span>' : v.toFixed(decimals)+m.unit)+'</td>';
       });
-      html += '<td class="evo-delta-col '+deltaCls+'">'
-        + (delta === 0 ? '=' : sign+delta.toFixed(0)+m.unit)
-        +'</td></tr>';
+      html += '<td class="evo-delta-col '+deltaCls+'">'+(delta === 0 ? '=' : sign+delta.toFixed(0)+m.unit)+'</td>';
+      html += '<td class="evo-delta-col">'+pctStr+'</td>';
+      html += '</tr>';
     });
     html += '</tbody></table></div>';
   });
 
   container.innerHTML = html;
+}
+
+/* ── Export / Impression Évolution ────────────────────── */
+function _buildEvolutionHTML(){
+  // S'assurer que le contenu est rendu
+  _renderEvolutionPage();
+  var container = document.getElementById('evolution-content');
+  if(!container) return null;
+
+  // Infos praticien
+  var p = getProfile ? getProfile() : {};
+  var praticien = ((p.prenom||'')+' '+(p.nom||'')).trim() || 'Antoine PERONNAUD';
+  var cabinet   = p.cabinet || 'Athletik Lamarck';
+  var am        = p.am  || '';
+  var tel       = p.tel || '';
+  var email     = p.email || '';
+
+  // Infos patient
+  var nom    = ((document.getElementById('f-nom') ||{}).value||'').toUpperCase();
+  var prenom = (document.getElementById('f-prenom')||{}).value||'';
+  var dob    = (document.getElementById('f-dob')  ||{}).value||'';
+  var patient = (prenom+' '+nom).trim();
+  var age    = dob ? (new Date().getFullYear()-new Date(dob).getFullYear())+' ans' : '';
+  var initials = ((prenom[0]||'')+(nom[0]||'')).toUpperCase()||'?';
+  var date   = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+
+  // Nombre de bilans
+  var nbBilans = _allBilans.length;
+  var datesRange = '';
+  if(nbBilans >= 2){
+    var oldest = _allBilans[_allBilans.length-1];
+    var newest = _allBilans[0];
+    var fmt = function(d){ if(!d) return '?'; var p=d.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; };
+    datesRange = fmt(oldest.date)+' → '+fmt(newest.date);
+  }
+
+  // Récupérer le HTML des tables (déjà rendu, inclut SVG)
+  // Retirer les balises qui ne font pas sens dans un export standalone
+  var contentHTML = container.innerHTML
+    .replace(/class="evo-intro"[^>]*>/g, 'class="evo-intro" style="display:none">')  // masquer, on met notre propre résumé
+    ;
+
+  var metaSub = [am?'N° AM : '+am:'', tel, email].filter(Boolean).join(' · ');
+
+  // CSS standalone — inclut les variables + styles évolution
+  var css = ':root{--green:#2D6A4F;--green-l:#E8F5EE;--red:#C0392B;--red-l:#FDECEA;--border:#E8E6E1;--text:#1A1917;--text2:#6B6860;--text3:#9D9B96;--accent2:#1A3A5C;--surface2:#F1F0ED;--surface:#FFFFFF;--accent:#2B5FA6;--accent-l:#EEF3FB}'
+    + '*{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+    + 'html{font-size:14px}body{font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;background:#F0F4F8;color:#1A1917;padding:0}'
+    + '.page-wrap{max-width:860px;margin:0 auto;padding:0 0 48px}'
+    + '.doc-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:14px 24px;background:#1A3A5C}'
+    + '.doc-logo{font-family:Georgia,serif;font-style:italic;font-size:1.1rem;color:#fff}'
+    + '.doc-logo .r{color:#4A90D9}.doc-logo .n{font-weight:900;font-style:normal}.doc-logo .p{color:#E74C3C}'
+    + '.doc-meta{text-align:right;font-size:.72rem;color:rgba(255,255,255,.8);line-height:1.8}'
+    + '.doc-meta strong{font-size:.82rem;color:#fff;display:block}'
+    + '.patient-card{background:#fff;padding:20px 24px;border-bottom:1px solid #DDE3EC;display:flex;align-items:center;gap:18px}'
+    + '.patient-avatar{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#2B5FA6,#1A3A5C);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:700;flex-shrink:0}'
+    + '.patient-name{font-size:1.1rem;font-weight:700;color:#1A3A5C;margin-bottom:3px}'
+    + '.patient-sub{font-size:.8rem;color:#6B6860}'
+    + '.summary-bar{background:#EEF3FB;padding:10px 24px;border-bottom:1px solid #D3D9F0;font-size:.82rem;color:#1A3A5C;display:flex;gap:24px;flex-wrap:wrap}'
+    + '.summary-bar span{font-weight:600}'
+    + '.doc-date-bar{background:#F7F6F3;padding:8px 24px;font-size:.75rem;color:#6B6860;border-bottom:1px solid #E8E6E1}'
+    + '.doc-date-bar span{font-weight:600;color:#1A3A5C}'
+    + '.doc-body{padding:20px 24px 0}'
+    + '.evo-block{margin-bottom:24px}'
+    + '.evo-block-title{font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#1A3A5C;padding:6px 0 6px;border-bottom:2px solid #EEF3FB;margin-bottom:6px}'
+    + '.evo-table{width:100%;border-collapse:collapse;font-size:.83rem}'
+    + '.evo-table th{background:#F1F0ED;color:#6B6860;font-size:.68rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;padding:7px 10px;border-bottom:1px solid #E8E6E1;text-align:left}'
+    + '.evo-table th.center{text-align:center}'
+    + '.evo-row td{border-bottom:1px solid #E8E6E1;padding:7px 10px;vertical-align:middle}'
+    + '.evo-metric-name{font-weight:500;color:#1A1917}'
+    + '.evo-spark{text-align:center}'
+    + '.evo-val{font-weight:600;text-align:center;color:#6B6860}'
+    + '.evo-delta-col{font-weight:700;text-align:center}'
+    + '.evo-pos{color:#2D6A4F}.evo-neg{color:#C0392B}.evo-neutral{color:#9D9B96}'
+    + '.evo-na{color:#9D9B96;font-style:italic;font-size:.78rem}'
+    + '.evo-intro{display:none}'  // masqué dans export (on a le summary-bar)
+    + '.spark-svg{display:block;margin:0 auto;overflow:visible}'
+    + '.print-btn-wrap{padding:12px 24px;border-bottom:1px solid #E8E6E1;background:#fff}'
+    + '.print-btn-inner{background:#2B5FA6;color:#fff;border:none;border-radius:7px;padding:8px 18px;font-size:.84rem;font-weight:600;cursor:pointer;font-family:inherit}'
+    + '@media print{.print-btn-wrap{display:none!important}.doc-header{background:#1A3A5C!important}.evo-block{break-inside:avoid}.doc-body{padding:12px 24px 0}}'
+    ;
+
+  var metaParts = [];
+  if(praticien) metaParts.push('<strong>'+(praticien+(cabinet?' — '+cabinet:''))+'</strong>');
+  if(metaSub)   metaParts.push(metaSub);
+
+  var html = '<!DOCTYPE html><html lang="fr"><head>'
+    + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">'
+    + '<title>Suivi Évolution — '+(patient||'Patient')+'</title>'
+    + '<style>'+css+'</style></head><body><div class="page-wrap">'
+    // Header
+    + '<div class="doc-header"><div class="doc-logo"><span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span></div>'
+    + '<div class="doc-meta">'+metaParts.join('<br>')+'</div></div>'
+    // Bouton impression (visible à l'écran, masqué à l'impression)
+    + '<div class="print-btn-wrap"><button class="print-btn-inner" onclick="window.print()">🖨 Imprimer / Exporter PDF</button></div>'
+    // Patient card
+    + (patient ? '<div class="patient-card"><div class="patient-avatar" style="font-family:Georgia,serif">'+initials+'</div>'
+      + '<div><div class="patient-name">'+patient+'</div>'
+      + (age ? '<div class="patient-sub">'+age+'</div>' : '')
+      + '</div></div>' : '')
+    // Résumé
+    + '<div class="summary-bar">'
+    + '📅 <span>'+nbBilans+' bilans</span> enregistrés'
+    + (datesRange ? ' &nbsp;·&nbsp; Période : <span>'+datesRange+'</span>' : '')
+    + ' &nbsp;·&nbsp; Export généré le <span>'+date+'</span>'
+    + '</div>'
+    + '<div class="doc-date-bar">Praticien : <span>'+praticien+(cabinet?' — '+cabinet:'')+'</span></div>'
+    // Contenu
+    + '<div class="doc-body"><br>'+contentHTML+'</div>'
+    + '</div></body></html>';
+
+  return { html: html, patient: patient, date: date };
+}
+
+function exportEvolutionHTML(){
+  if(_allBilans.length < 2){ alert('Il faut au moins 2 bilans pour exporter l\'évolution.'); return; }
+  var r = _buildEvolutionHTML();
+  if(!r) return;
+  var blob = new Blob([r.html], {type:'text/html;charset=utf-8'});
+  var blobUrl = URL.createObjectURL(blob);
+  var filename = 'Evolution'+(r.patient?'_'+r.patient.replace(/\s+/g,'_'):'')+'_'+r.date.replace(/\s/g,'-').replace(/,/g,'')+'.html';
+  var topDoc = (window.top||window).document;
+  var a = topDoc.createElement('a');
+  a.href = blobUrl; a.download = filename; a.style.display='none';
+  topDoc.body.appendChild(a); a.click();
+  setTimeout(function(){ topDoc.body.removeChild(a); URL.revokeObjectURL(blobUrl); }, 300);
+}
+
+function printEvolution(){
+  if(_allBilans.length < 2){ alert('Il faut au moins 2 bilans pour imprimer l\'évolution.'); return; }
+  var r = _buildEvolutionHTML();
+  if(!r) return;
+  var printHtml = r.html.replace('</body>',
+    '<script>window.onload=function(){window.focus();setTimeout(function(){window.print();},400);}<\/script></body>');
+  var win = (window.top||window).open('','_blank');
+  if(!win){ alert('Autorisez les pop-ups pour imprimer.'); return; }
+  win.document.open(); win.document.write(printHtml); win.document.close();
 }
 
 /* ── Sérialisation ─────────────────────────────────────── */
