@@ -4155,8 +4155,12 @@ function _buildEvolutionHTML(){
   }
 
   // Récupérer uniquement les graphiques sélectionnés (cochés)
+  // Si aucun n'est coché, tout inclure (évite un export vide)
   var exportClone = container.cloneNode(true);
-  exportClone.querySelectorAll('.evo-chart-card.evo-unselected').forEach(function(el){el.remove();});
+  var hasSelected = exportClone.querySelectorAll('.evo-chart-card:not(.evo-unselected)').length > 0;
+  if(hasSelected){
+    exportClone.querySelectorAll('.evo-chart-card.evo-unselected').forEach(function(el){el.remove();});
+  }
   exportClone.querySelectorAll('.evo-chart-check').forEach(function(el){el.remove();});
   // Nettoyer les blocs catégorie vides
   exportClone.querySelectorAll('.evo-block').forEach(function(bl){
