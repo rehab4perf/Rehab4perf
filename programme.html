@@ -4245,22 +4245,17 @@ function saveProgToCloud(){
   if(_builderLinkedPhase) donnees.linkedPhase = _builderLinkedPhase;
   var today = new Date().toISOString().split('T')[0];
 
-  // Si ce programme vient d'une séance calendrier, vérifier s'il est partagé avec d'autres séances.
-  // Si oui, créer automatiquement un nouvel enregistrement indépendant (copie implicite).
+  // Si ce programme vient d'une séance calendrier, vérifier localement (dans _cloudCalEvents déjà chargé)
+  // si ce programme_id est partagé par plusieurs séances. Si oui, forcer un INSERT indépendant.
   if(_currentProgId && _currentSeanceId){
-    fetch(SUPA_URL_P + '/rest/v1/seances_planifiees?programme_id=eq.' + _currentProgId + '&select=id', {method:'GET', headers:_sbHeaders()})
-    .then(function(r){ return r.json(); })
-    .then(function(rows){
-      if(Array.isArray(rows) && rows.length > 1){
-        // Programme partagé → forcer la création d'une copie indépendante
-        _currentProgId = null;
-      }
-      _doSaveProgCloud(nomProg, donnees, today, btn);
-    })
-    .catch(function(){ _doSaveProgCloud(nomProg, donnees, today, btn); });
-  } else {
-    _doSaveProgCloud(nomProg, donnees, today, btn);
+    var sharedCount = (_cloudCalEvents||[]).filter(function(ev){
+      return ev.programme_id === _currentProgId;
+    }).length;
+    if(sharedCount > 1){
+      _currentProgId = null; // forcer la création d'un programme indépendant
+    }
   }
+  _doSaveProgCloud(nomProg, donnees, today, btn);
 }
 
 function _doSaveProgCloud(nomProg, donnees, today, btn){
