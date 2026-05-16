@@ -1507,7 +1507,16 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   }
   /* Visible uniquement quand explicitement ouvert */
   .builder-panel.open,
-  .app.builder-mode .builder-panel { transform:translateX(0); }
+  .app.builder-mode .builder-panel {
+    transform:translateX(0);
+    width:100% !important; /* override .app.builder-mode .builder-panel { width:0 } */
+  }
+  /* En portrait le builder est en overlay absolu — le main reste dans le layout */
+  .app.builder-mode .main {
+    flex:1 1 auto !important;
+    min-width:0 !important;
+    overflow:auto;
+  }
   .topbar-logo { display:none; }
 }
 
