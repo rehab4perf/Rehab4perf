@@ -5744,7 +5744,7 @@ _updateOutilsPatientBtns();
     else { _crToast('Autorisez les pop-ups pour exporter en PDF'); }
   };
 
-  // Export email — ouvre Gmail inbox avec fenêtre de composition pré-remplie
+  // Export email — inbox Gmail + compose flottant pré-rempli + copie presse-papier
   window.crExportEmail = function() {
     var bodyEl = document.getElementById('cr-letter-body');
     var text = bodyEl ? bodyEl.textContent : '';
@@ -5753,26 +5753,36 @@ _updateOutilsPatientBtns();
     var destEmail = crV('cr-dest-email') || '';
     var subject   = encodeURIComponent('Compte-rendu de rééducation' + (patNom ? ' — ' + patNom : ''));
     var bodyEnc   = encodeURIComponent(text);
-    // URL Gmail compose : ouvre l'inbox avec la fenêtre de rédaction flottante
-    // Sans u/N → Gmail utilise le compte actif ; l'utilisateur peut changer via son avatar
-    var url = 'https://mail.google.com/mail/?view=cm&fs=1'
-      + (destEmail ? '&to=' + encodeURIComponent(destEmail) : '')
-      + '&su=' + subject
-      + '&body=' + bodyEnc;
-    // Fallback presse-papier si URL trop longue (lettres très longues)
-    if (url.length > 7500) {
+
+    // Copie systématique dans le presse-papier (utile si changement de compte)
+    var _copy = function() {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).catch(function(){});
       } else {
-        try { var ta = document.createElement('textarea'); ta.value = text;
-          ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta);
-          ta.select(); document.execCommand('copy'); document.body.removeChild(ta); } catch(e) {}
+        try {
+          var ta = document.createElement('textarea');
+          ta.value = text; ta.style.cssText = 'position:fixed;opacity:0';
+          document.body.appendChild(ta); ta.select();
+          document.execCommand('copy'); document.body.removeChild(ta);
+        } catch(e) {}
       }
-      window.open('https://mail.google.com/mail/?view=cm&fs=1' + (destEmail ? '&to=' + encodeURIComponent(destEmail) : '') + '&su=' + subject, '_blank');
-      _crToast('📋 Texte copié (lettre longue) — collez dans la fenêtre Gmail');
+    };
+    _copy();
+
+    // URL sans fs=1 → compose flottant par-dessus l'inbox (pas plein écran)
+    var base = 'https://mail.google.com/mail/?view=cm'
+      + (destEmail ? '&to=' + encodeURIComponent(destEmail) : '')
+      + '&su=' + subject;
+    var url  = base + '&body=' + bodyEnc;
+
+    // Si URL trop longue, ouvre le compose sans le corps (déjà dans le presse-papier)
+    if (url.length > 7500) {
+      window.open(base, '_blank');
+      _crToast('📋 Courrier copié — collez dans la fenêtre Gmail (⌘V)');
       return;
     }
     window.open(url, '_blank');
+    _crToast('📋 Courrier copié — si vous changez de compte, collez avec ⌘V');
   };
 
   // ── Template selector ────────────────────────────────────────
