@@ -3957,7 +3957,7 @@ function _buildChartD(valsA, valsB, dates, opts){
   return '<svg class="evo-chart-svg" data-chart="D" data-id="'+id+'" viewBox="0 0 '+VW+' '+VH+'" style="width:100%;overflow:visible">'+html+'</svg>';
 }
 
-/* ── Événements tooltip (desktop hover + touch iPad) ─── */
+/* ── Événements tooltip (Pointer Events API — souris + touch unifiés) ─── */
 function _attachChartEvents(){
   var container=document.getElementById('evolution-content');
   if(!container)return;
@@ -3996,16 +3996,20 @@ function _attachChartEvents(){
     g.setAttribute('visibility','visible');
   }
   function hideG(svgEl,ttId){var g=svgEl.getElementById(ttId);if(g)g.setAttribute('visibility','hidden');}
+  function hideAll(svgEl){svgEl.querySelectorAll('[id^="tt"]').forEach(function(g){g.setAttribute('visibility','hidden');});}
 
   // Chart B
   container.querySelectorAll('.evo-hit').forEach(function(el){
     var svgEl=el.closest('svg'), ttId=el.dataset.tt;
     var show=function(){posB(svgEl,ttId,parseFloat(el.dataset.x),parseFloat(el.dataset.y),el.dataset.l1,el.dataset.l2);};
     var hide=function(){hideG(svgEl,ttId);};
-    el.addEventListener('mouseenter',show);
-    el.addEventListener('mouseleave',hide);
-    el.addEventListener('click',function(e){e.stopPropagation();var g=svgEl.getElementById(ttId);(g&&g.getAttribute('visibility')==='visible')?hide():show();});
-    el.addEventListener('touchstart',function(e){e.preventDefault();var g=svgEl.getElementById(ttId);(g&&g.getAttribute('visibility')==='visible')?hide():show();},{passive:false});
+    el.addEventListener('pointerenter',function(e){if(e.pointerType==='mouse')show();});
+    el.addEventListener('pointerleave',function(e){if(e.pointerType==='mouse')hide();});
+    el.addEventListener('pointerdown',function(e){
+      e.stopPropagation();
+      var g=svgEl.getElementById(ttId);
+      (g&&g.getAttribute('visibility')==='visible')?hide():show();
+    });
   });
 
   // Chart D
@@ -4013,17 +4017,18 @@ function _attachChartEvents(){
     var svgEl=el.closest('svg'), ttId=el.dataset.tt;
     var show=function(){posD(svgEl,ttId,parseFloat(el.dataset.x),parseFloat(el.dataset.ya),parseFloat(el.dataset.yb),el.dataset.date,el.dataset.la,el.dataset.lb);};
     var hide=function(){hideG(svgEl,ttId);};
-    el.addEventListener('mouseenter',show);
-    el.addEventListener('mouseleave',hide);
-    el.addEventListener('click',function(e){e.stopPropagation();var g=svgEl.getElementById(ttId);(g&&g.getAttribute('visibility')==='visible')?hide():show();});
-    el.addEventListener('touchstart',function(e){e.preventDefault();var g=svgEl.getElementById(ttId);(g&&g.getAttribute('visibility')==='visible')?hide():show();},{passive:false});
+    el.addEventListener('pointerenter',function(e){if(e.pointerType==='mouse')show();});
+    el.addEventListener('pointerleave',function(e){if(e.pointerType==='mouse')hide();});
+    el.addEventListener('pointerdown',function(e){
+      e.stopPropagation();
+      var g=svgEl.getElementById(ttId);
+      (g&&g.getAttribute('visibility')==='visible')?hide():show();
+    });
   });
 
-  // Clic fond SVG → ferme tooltip ouvert
+  // Tap fond SVG → ferme tous les tooltips ouverts
   container.querySelectorAll('.evo-chart-svg').forEach(function(svgEl){
-    svgEl.addEventListener('click',function(){
-      svgEl.querySelectorAll('[id^="tt"]').forEach(function(g){g.setAttribute('visibility','hidden');});
-    });
+    svgEl.addEventListener('pointerdown',function(){hideAll(svgEl);});
   });
 }
 
