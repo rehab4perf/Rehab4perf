@@ -2008,10 +2008,10 @@ textarea { resize:none !important; overflow:hidden !important; }
 
 <!-- RÉCEPTION -->
 <div class="block">
-  <div class="block-header">③ Test de Réception — 80% Hop Test — Score /3
+  <div class="block-header">③ Test de Réception — 80% Hop Test — Score /5
     <label class="cr-toggle-label"><input type="checkbox" id="rec-cr-toggle"> ✓ Inclure dans le CR</label>
   </div>
-  <div style="padding:8px 14px 4px;font-size:.82rem;color:var(--text2)">Cocher les critères réussis. <strong>0/3 = non réussi · 1-2/3 = à améliorer · 3/3 = réussi</strong></div>
+  <div style="padding:8px 14px 4px;font-size:.82rem;color:var(--text2)">Cocher les critères réussis. <strong>0/5 = non réussi · 1-4/5 = à améliorer · 5/5 = réussi</strong></div>
   <!-- En-tête 3 colonnes -->
   <div style="display:grid;grid-template-columns:1fr 90px 90px;background:var(--accent2);padding:6px 14px;gap:8px">
     <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.75)">Critère</div>
@@ -3115,9 +3115,11 @@ const TESTS = {
 };
 
 const CRITERIA_REC = [
+  {label:' Le talon a dépassé le repère de 80%', ref:'Critère de distance'},
   {label:' Descente fluide sans arrêt jusqu\'à 90°', ref:'Myer 2008'},
   {label:' Maintien statique 3s à 90°', ref:'Schmitt 2012'},
   {label:' Contrôle neuromusculaire du genou (valgus dynamique)', ref:'Hewett 2005 (AJSM)'},
+  {label:' Contrôle du tronc (TSB)', ref:'Trunk Sway & Balance'},
 ];
 
 const MOB = ['Flexion','Extension','Incl. D','Incl. G','Rot. D','Rot. G'];
@@ -4787,12 +4789,16 @@ function _buildAllTestsHtml() {
     var recCrTog2 = document.getElementById('rec-cr-toggle');
     var recDone = (recCrTog2 && recCrTog2.checked) || scoreCA2 > 0 || scoreCS2 > 0;
     if (!recDone) return;
-    var rec0CA = document.getElementById('rec-ca-0'); // Descente fluide
-    var rec1CA = document.getElementById('rec-ca-1'); // Maintien statique
-    var rec2CA = document.getElementById('rec-ca-2'); // Contrôle neuromusculaire
-    if (rec0CA && !rec0CA.checked) toWork.push('Renforcer le quadriceps en excentrique — descente fluide non obtenue (test réception)');
-    if (rec1CA && !rec1CA.checked) toWork.push('Travailler la stabilité statique du genou — maintien 3s à 90° non obtenu (test réception)');
-    if (rec2CA && !rec2CA.checked) toWork.push('Travailler le contrôle neuromusculaire du genou — valgus dynamique non contrôlé (test réception)');
+    var rec0CA = document.getElementById('rec-ca-0'); // Talon > repère 80%
+    var rec1CA = document.getElementById('rec-ca-1'); // Descente fluide
+    var rec2CA = document.getElementById('rec-ca-2'); // Maintien statique
+    var rec3CA = document.getElementById('rec-ca-3'); // Contrôle neuromusculaire
+    var rec4CA = document.getElementById('rec-ca-4'); // Contrôle du tronc (TSB)
+    if (rec0CA && !rec0CA.checked) toWork.push('Travailler la propulsion — le talon n\'a pas dépassé le repère de 80% (test réception)');
+    if (rec1CA && !rec1CA.checked) toWork.push('Renforcer le quadriceps en excentrique — descente fluide non obtenue (test réception)');
+    if (rec2CA && !rec2CA.checked) toWork.push('Travailler la stabilité statique du genou — maintien 3s à 90° non obtenu (test réception)');
+    if (rec3CA && !rec3CA.checked) toWork.push('Travailler le contrôle neuromusculaire du genou — valgus dynamique non contrôlé (test réception)');
+    if (rec4CA && !rec4CA.checked) toWork.push('Travailler le contrôle du tronc');
   })();
   if (!isNaN(luCA) && (luCA<10 || Math.abs(luCA-(luCS||0))>1.5)) toWork.push('Déficit de flexion dorsale de cheville (Lunge ' + luCA + 'cm — < 10 cm ou asymétrie > 1,5 cm)');
   if (!isNaN(hrLsi2) && hrLsi2<90) toWork.push('Renforcement du mollet — Heel Rise progressif (LSI ' + hrLsi2.toFixed(1) + '%)');

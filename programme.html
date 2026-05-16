@@ -1465,32 +1465,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 }
 .cal-note-chip-del:hover { color:#E74C3C; }
 
-/* ── Menu déroulant ⋯ ── */
-.more-menu-wrap { position:relative; flex-shrink:0; }
-.more-btn {
-  padding:7px 12px; border-radius:6px; border:1px solid var(--border);
-  background:none; color:var(--muted); font-size:1rem; cursor:pointer;
-  font-family:inherit; letter-spacing:.05em; transition:background .12s, color .12s;
-  white-space:nowrap;
-}
-.more-btn:hover { background:var(--bg); color:var(--text); }
-.more-dropdown {
-  display:none; position:absolute; top:calc(100% + 6px); right:0;
-  background:#fff; border:1px solid var(--border); border-radius:10px;
-  box-shadow:0 8px 28px rgba(0,0,0,.13); z-index:500;
-  min-width:210px; padding:5px 0; overflow:hidden;
-}
-.more-dropdown.open { display:block; }
-.more-item {
-  display:flex; align-items:center; gap:10px;
-  padding:10px 16px; font-size:.83rem; cursor:pointer;
-  color:var(--text); font-family:inherit; background:none; border:none;
-  width:100%; text-align:left; transition:background .1s;
-}
-.more-item:hover { background:var(--bg); }
-.more-item.danger { color:#E74C3C; }
-.more-item.danger:hover { background:#FEF0EE; }
-.more-separator { height:1px; background:var(--border); margin:4px 0; }
 
 /* Tablet (iPad) */
 @media (max-width:1024px) {
@@ -1875,16 +1849,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
       <button class="builder-plan-btn" onclick="openPlanModal()">📅 Planifier</button>
       <button class="builder-share-btn" id="prog-share-btn" onclick="shareBuilderProg()">📤 Partager</button>
       <button class="btn btn-outline" onclick="openProgHistory()" style="font-size:.72rem;padding:4px 9px;white-space:nowrap;">📂 Programmes</button>
-      <div class="more-menu-wrap">
-        <button class="more-btn" onclick="toggleMoreMenu(event)" title="Plus d'options">• • •</button>
-        <div class="more-dropdown" id="moreDropdown">
-          <button class="more-item" id="moreItemDuplTmpl" style="display:none" onclick="duplicateTemplate();closeMoreMenu()">📋 Dupliquer ce template</button>
-          <button class="more-item" onclick="exportSession();closeMoreMenu()">📤 Exporter HTML</button>
-          <button class="more-item" onclick="window.print();closeMoreMenu()">🖨 Imprimer</button>
-          <div class="more-separator"></div>
-          <button class="more-item danger" onclick="clearSession();closeMoreMenu()">🗑 Effacer la séance</button>
-        </div>
-      </div>
       <button class="builder-close" onclick="closeBuilder()" title="Fermer">✕</button>
     </div>
   </div>
@@ -3036,18 +3000,6 @@ function clearSession(){
   renderLib(document.getElementById('searchInput').value.toLowerCase());
 }
 
-/* ── Menu ⋯ (Plus d'options) ── */
-function toggleMoreMenu(e){
-  e.stopPropagation();
-  // Afficher "Dupliquer ce template" seulement si un template est chargé
-  var duplItem = document.getElementById('moreItemDuplTmpl');
-  if(duplItem) duplItem.style.display = _builderFromTemplate ? '' : 'none';
-  document.getElementById('moreDropdown').classList.toggle('open');
-}
-function closeMoreMenu(){
-  var d = document.getElementById('moreDropdown');
-  if(d) d.classList.remove('open');
-}
 /* ── Toast ── */
 function _showToast(msg, undoFn){
   var t = document.getElementById('shareToast');
@@ -3124,9 +3076,6 @@ function _shareProgById(id){
   _copyLink(id);
 }
 
-document.addEventListener('click', function(e){
-  if(!e.target.closest('.more-menu-wrap')) closeMoreMenu();
-});
 
 /* ================================================================
    DRAG & DROP EXERCICES
