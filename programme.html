@@ -4339,15 +4339,16 @@ function _brzycki(kg, reps) {
    Déduplique par programme_id (même programme sur plusieurs séances = 1 seul point,
    à la date de la 1ère séance qui l'utilise). */
 function _extractExoLoads(seances) {
-  // 1. Dédupliquer : un point par programme_id unique, date = première séance
-  var seenProgIds = {};
+  // 1. Dédupliquer par (date + programme_id) : même programme sur jours différents = points séparés
+  var seenKeys = {};
   var progList = [];
   seances.forEach(function(s) {
     var pid = s.programme_id;
     var prog = s.programmes;
     if(!pid || !prog) return;
-    if(!seenProgIds[pid]) {
-      seenProgIds[pid] = true;
+    var key = (s.date || '') + '|' + pid;
+    if(!seenKeys[key]) {
+      seenKeys[key] = true;
       progList.push({ date: s.date || '', donnees: prog.donnees, nom: prog.nom || '' });
     }
   });
@@ -4493,9 +4494,8 @@ function _renderPevoCharts(exoData, selectedKeys) {
   var body = document.getElementById('pevoBody');
   if(!body) return;
   var allKeys = Object.keys(exoData);
-  var dbg = (typeof _pevoDebugBlock === 'function') ? _pevoDebugBlock() : '';
   if(!allKeys.length){
-    body.innerHTML = dbg + '<div class="pevo-empty">Aucun exercice avec charge en kg prescrite sur plusieurs séances.</div>';
+    body.innerHTML = '<div class="pevo-empty">Aucun exercice avec charge en kg prescrite sur plusieurs séances.</div>';
     return;
   }
   var patId = _progPatient ? _progPatient.id : 'local';
@@ -4534,8 +4534,7 @@ function _renderPevoCharts(exoData, selectedKeys) {
       +'</div></div>'
       +svg+'</div>';
   });
-  body.innerHTML = dbg
-    +'<div class="pevo-select-section">'
+  body.innerHTML = '<div class="pevo-select-section">'
     +'<div class="pevo-select-title">Exercices disponibles ('+allKeys.length+')</div>'
     +'<div class="pevo-selall-row">'
     +'<button class="pevo-selall-btn" onclick="_pevoSelectAll(true)">✓ Tout sélectionner</button>'
@@ -4578,25 +4577,8 @@ function openChargesEvo() {
   fetch(url, {method:'GET', headers:_sbHeaders()})
     .then(function(r){ return r.json(); })
     .then(function(data){
-      // ── DEBUG ────────────────────────────────────────────────────
-      var lines = [];
-      lines.push('patient_id : ' + _progPatient.id);
-      lines.push('séances    : ' + (Array.isArray(data) ? data.length : 'ERREUR — ' + JSON.stringify(data)));
-      if(Array.isArray(data)) data.slice(0,6).forEach(function(s,i){
-        var prog = s.programmes;
-        var kgExos = [];
-        if(prog && prog.donnees){
-          var raw = prog.donnees, blocs = Array.isArray(raw)?raw:(raw.blocs||[]);
-          blocs.forEach(function(b){ (b.exos||[]).forEach(function(e){
-            (e.cibles||[]).forEach(function(c){ if(c.type==='kg'&&c.min) kgExos.push(e.name+' '+c.min+'kg'); });
-          });});
-        }
-        lines.push('['+(i+1)+'] '+s.date+' | prog_id:'+s.programme_id+' | prog:'+(prog?'OK':'NULL')+' | kg:['+kgExos.join(', ')+']');
-      });
-      window._pevoDebug = lines.join('\n');
-      // ── FIN DEBUG ─────────────────────────────────────────────────
       if(!Array.isArray(data) || !data.length){
-        body.innerHTML = _pevoDebugBlock() + '<div class="pevo-empty">Aucune séance planifiée pour ce patient.</div>';
+        body.innerHTML = '<div class="pevo-empty">Aucune séance planifiée pour ce patient.</div>';
         return;
       }
       _pevoData = _extractExoLoads(data);
@@ -4604,10 +4586,6 @@ function openChargesEvo() {
       _renderPevoCharts(_pevoData, sel);
     })
     .catch(function(err){ body.innerHTML = '<div class="pevo-empty">Erreur réseau : '+(err&&err.message||err)+'</div>'; });
-}
-
-function _pevoDebugBlock(){
-  return '<div style="font-size:.7rem;font-family:monospace;background:#1A3A5C;color:#7AB8FF;padding:10px 14px;border-radius:8px;margin-bottom:12px;white-space:pre-wrap;word-break:break-all;">'+(window._pevoDebug||'')+'</div>';
 }
 
 function closeChargesEvo() {
