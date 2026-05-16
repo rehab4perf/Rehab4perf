@@ -4608,6 +4608,15 @@ function _buildPevoExportHTML(){
   var patNom = ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim();
   var initials = (((_progPatient.prenom||'')[0]||'')+((_progPatient.nom||'')[0]||'')).toUpperCase()||'?';
   var date = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+  var prof = getProfile();
+  var praticienNom = ((prof.prenom||'')+' '+(prof.nom||'')).trim() || 'Praticien';
+  var praticienMeta = [praticienNom];
+  if(prof.cabinet) praticienMeta.push(prof.cabinet);
+  if(prof.am) praticienMeta.push('N° AM : '+prof.am);
+  if(prof.tel) praticienMeta.push(prof.tel);
+  if(prof.email) praticienMeta.push(prof.email);
+  var praticienMetaHTML = praticienMeta.map(function(s,i){ return i===0 ? '<strong>'+s+'</strong>' : s; }).join('<br>');
+
 
   var css = ':root{--accent:#2B5FA6;--accent-l:#EEF3FB;--navy:#1A3A5C;--text:#1A1917;--muted:#6B6860;--border:#E8E6E1;--surface:#fff;--bg:#F0F4F8}'
     +'*{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
@@ -4640,7 +4649,7 @@ function _buildPevoExportHTML(){
     +'<title>Évolution des charges — '+patNom+'</title>'
     +'<style>'+css+'</style></head><body><div class="page-wrap">'
     +'<div class="doc-header"><div class="doc-logo"><span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span></div>'
-    +'<div class="doc-meta"><strong>Évolution des charges</strong>'+date+'</div></div>'
+    +'<div class="doc-meta"><strong>Évolution des charges</strong><br>'+date+'<br><br>'+praticienMetaHTML+'</div></div>'
     +'<div class="patient-card"><div class="patient-avatar">'+initials+'</div>'
     +'<div><div class="patient-name">'+patNom+'</div></div></div>'
     +'<div class="summary-bar">📊 Évolution des charges prescrites · Export généré le '+date+'</div>'
