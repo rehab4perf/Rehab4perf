@@ -4577,15 +4577,44 @@ function openChargesEvo() {
   fetch(url, {method:'GET', headers:_sbHeaders()})
     .then(function(r){ return r.json(); })
     .then(function(data){
+      // ── DEBUG TEMPORAIRE ──────────────────────────────────────────
+      var debugInfo = '<div style="font-size:.72rem;font-family:monospace;background:#1A3A5C;color:#7AB8FF;padding:12px 14px;border-radius:8px;margin-bottom:14px;white-space:pre-wrap;word-break:break-all;">';
+      debugInfo += 'patient_id: ' + _progPatient.id + '\n';
+      debugInfo += 'séances trouvées: ' + (Array.isArray(data) ? data.length : 'erreur') + '\n\n';
+      if(Array.isArray(data) && data.length){
+        data.slice(0,5).forEach(function(s,i){
+          debugInfo += '── Séance ' + (i+1) + ' ──\n';
+          debugInfo += 'date: ' + s.date + '\n';
+          debugInfo += 'programme_id: ' + s.programme_id + '\n';
+          debugInfo += 'programmes: ' + (s.programmes ? 'OK (nom: '+s.programmes.nom+')' : 'NULL') + '\n';
+          if(s.programmes && s.programmes.donnees){
+            var raw = s.programmes.donnees;
+            var blocs = Array.isArray(raw) ? raw : (raw.blocs || []);
+            var exoCount = blocs.reduce(function(a,b){return a+(b.exos||[]).length;},0);
+            var kgExos = [];
+            blocs.forEach(function(b){ (b.exos||[]).forEach(function(e){
+              (e.cibles||[]).forEach(function(c){ if(c.type==='kg'&&c.min) kgExos.push(e.name+' '+c.min+'kg'); });
+            });});
+            debugInfo += 'nb exos: ' + exoCount + '\n';
+            debugInfo += 'exos kg: ' + (kgExos.length ? kgExos.join(', ') : 'aucun') + '\n';
+          }
+          debugInfo += '\n';
+        });
+      }
+      debugInfo += '</div>';
+      // ── FIN DEBUG ─────────────────────────────────────────────────
       if(!Array.isArray(data) || !data.length){
-        body.innerHTML = '<div class="pevo-empty">Aucune séance planifiée pour ce patient.</div>';
+        body.innerHTML = debugInfo + '<div class="pevo-empty">Aucune séance planifiée pour ce patient.</div>';
         return;
       }
       _pevoData = _extractExoLoads(data);
       var sel = _pevoGetSel(_progPatient.id);
+      body.innerHTML = debugInfo; // afficher debug avant les charts
+      var tmpDiv = document.createElement('div');
+      document.getElementById('pevoBody').appendChild(tmpDiv);
       _renderPevoCharts(_pevoData, sel);
     })
-    .catch(function(){ body.innerHTML = '<div class="pevo-empty">Erreur réseau. Vérifiez votre connexion.</div>'; });
+    .catch(function(err){ body.innerHTML = '<div class="pevo-empty">Erreur réseau : '+(err&&err.message||err)+'</div>'; });
 }
 
 function closeChargesEvo() {
