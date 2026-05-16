@@ -5744,20 +5744,28 @@ _updateOutilsPatientBtns();
     else { _crToast('Autorisez les pop-ups pour exporter en PDF'); }
   };
 
-  // Export email — ouvre Gmail web compose avec le courrier pré-rempli
+  // Export email — copie le courrier et ouvre le portail Gmail
   window.crExportEmail = function() {
-    var body = document.getElementById('cr-letter-body');
-    var text = body ? body.textContent : '';
-    if (!text || (body && body.querySelector('.letter-empty'))) { _crToast('Générez d\'abord le courrier'); return; }
-    var patNom  = crV('cr-pat-nom');
-    var destEmail = crV('cr-dest-email') || '';
-    var subject = encodeURIComponent('Compte-rendu de rééducation' + (patNom ? ' — ' + patNom : ''));
-    var bodyEnc = encodeURIComponent(text);
-    var gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1'
-      + (destEmail ? '&to=' + encodeURIComponent(destEmail) : '')
-      + '&su=' + subject
-      + '&body=' + bodyEnc;
-    window.open(gmailUrl, '_blank');
+    var bodyEl = document.getElementById('cr-letter-body');
+    var text = bodyEl ? bodyEl.textContent : '';
+    if (!text || (bodyEl && bodyEl.querySelector('.letter-empty'))) { _crToast('Générez d\'abord le courrier'); return; }
+    // 1. Copier dans le presse-papier
+    var doCopy = function() {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).catch(function(){});
+      } else {
+        try {
+          var ta = document.createElement('textarea');
+          ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+          document.body.appendChild(ta); ta.select();
+          document.execCommand('copy'); document.body.removeChild(ta);
+        } catch(e) {}
+      }
+    };
+    doCopy();
+    // 2. Ouvrir le portail Gmail (inbox) — fonctionne sur web et redirige vers l'app si configurée
+    window.open('https://mail.google.com/mail/u/0/', '_blank');
+    _crToast('📋 Courrier copié — collez-le dans un nouveau message Gmail');
   };
 
   // ── Template selector ────────────────────────────────────────
@@ -5770,18 +5778,28 @@ _updateOutilsPatientBtns();
       if (btn) btn.classList.toggle('active', t === tpl);
     });
     crUpdateTemplateSections();
+    _objetEdited = false;   // clic sur un template = réinitialise l'objet
     crAutoFillObjet();
   };
 
-  function crAutoFillObjet() {
+  var _objetEdited = false; // true si l'utilisateur a tapé manuellement dans le champ
+
+  function crAutoFillObjet(force) {
     var el = document.getElementById('cr-objet-txt');
-    if (!el || el.value) return; // ne pas écraser si déjà rempli
+    if (!el) return;
+    if (_objetEdited && !force) return; // respecter la saisie manuelle
     var pathoLbl = crPatho ? crPathoLabel(crPatho) : '';
     var cote     = (document.getElementById('cr-pat-cote') || {}).value || '';
     var suffix   = (pathoLbl ? ' — ' + pathoLbl : '') + (cote ? ' ' + cote : '');
     var map = { debut:'Début de prise en charge', suivi:'Suivi de rééducation', rts:'Bilan de fin de prise en charge / RTS', avis:'Demande d\'avis médical' };
     el.value = (map[crTemplate] || '') + suffix;
   }
+
+  // Marquer le champ comme édité manuellement pour ne plus l'écraser
+  (function() {
+    var el = document.getElementById('cr-objet-txt');
+    if (el) el.addEventListener('input', function() { _objetEdited = true; });
+  })();
 
   function crUpdateTemplateSections() {
     var showProto = crTemplate === 'debut' || crTemplate === 'rts';
@@ -5816,6 +5834,7 @@ _updateOutilsPatientBtns();
     crRenderSignRows();
     if (crLsiOn) crToggleLSI();
     crUpdateBlocks();
+    _objetEdited = false;
     crSetTemplate('suivi');
     var objEl = document.getElementById('cr-objet-txt'); if (objEl) objEl.value = '';
     var body = document.getElementById('cr-letter-body');
