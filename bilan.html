@@ -956,6 +956,30 @@ textarea { resize:none !important; overflow:hidden !important; }
 .pain-zone-add select:focus { border-color:var(--accent2); }
 .pz-add-btn { padding:4px 12px; border:1px solid var(--accent2); border-radius:6px; font-size:.78rem; color:var(--accent2); background:#fff; cursor:pointer; font-weight:600; }
 .pz-add-btn:hover { background:var(--accent-l); }
+
+/* ── Évolution ──────────────────────────────────────────── */
+.evo-delta { display:inline-flex; align-items:center; font-size:.62rem; font-weight:700; padding:1px 6px; border-radius:10px; margin-left:5px; white-space:nowrap; vertical-align:middle; }
+.evo-delta.evo-pos { background:var(--green-l); color:var(--green); }
+.evo-delta.evo-neg { background:var(--red-l); color:var(--red); }
+.evo-delta.evo-neu { background:var(--surface2); color:var(--text2); }
+.evo-empty { padding:48px 20px; text-align:center; color:var(--text3); font-style:italic; font-size:.9rem; }
+.evo-intro { font-size:.8rem; color:var(--text2); margin-bottom:20px; padding:10px 14px; background:var(--surface2); border-radius:8px; }
+.evo-block { margin-bottom:24px; }
+.evo-block-title { font-size:.7rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--accent2); padding:6px 0 6px; border-bottom:2px solid var(--accent-l); margin-bottom:6px; }
+.evo-table { width:100%; border-collapse:collapse; font-size:.83rem; }
+.evo-table th { background:var(--surface2); color:var(--text2); font-size:.68rem; font-weight:600; letter-spacing:.05em; text-transform:uppercase; padding:7px 10px; border-bottom:1px solid var(--border); text-align:left; }
+.evo-table th.center { text-align:center; }
+.evo-row td { border-bottom:1px solid var(--border); padding:7px 10px; }
+.evo-metric-name { font-weight:500; color:var(--text); }
+.evo-spark { text-align:center; }
+.evo-val { font-weight:600; text-align:center; color:var(--text2); }
+.evo-val-last { font-weight:700; text-align:center; color:var(--accent2); }
+.evo-delta-col { font-weight:700; text-align:center; }
+.evo-pos { color:var(--green); }
+.evo-neg { color:var(--red); }
+.evo-neutral { color:var(--text3); }
+.evo-na { color:var(--text3); font-style:italic; font-size:.78rem; }
+.spark-svg { display:block; margin:0 auto; overflow:visible; }
 </style>
 
 </head>
@@ -1040,6 +1064,9 @@ textarea { resize:none !important; overflow:hidden !important; }
 </button>
 <button class="nav-item" onclick="showPage('cr')" data-page="cr">
   <span class="icon">📄</span> CR Complet
+</button>
+<button class="nav-item" onclick="showPage('evolution')" data-page="evolution">
+  <span class="icon">📈</span> Évolution
 </button>
 
   </nav>
@@ -3020,6 +3047,17 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
 </div>
 
+<div class="page" id="page-evolution">
+  <div class="page-header">
+    <div class="page-icon">📈</div>
+    <div class="page-title">Évolution</div>
+    <div class="page-subtitle">Suivi longitudinal des marqueurs cliniques — bilans sauvegardés</div>
+  </div>
+  <div class="page-content" id="evolution-content">
+    <div class="evo-empty">Sélectionnez un patient avec au moins 2 bilans pour afficher les courbes d'évolution.</div>
+  </div>
+</div>
+
 </main>
 
 <!-- ── MODAL ─────────────────────────────────────────────── -->
@@ -3440,6 +3478,8 @@ var _currentBilanDate = null; // date ISO (YYYY-MM-DD) du bilan actuellement cha
 var _bilanUid       = null;
 var _bilanModified  = false;   // true dès qu'une saisie est faite depuis le dernier save/load
 var _suppressDirty  = false;   // true pendant _deserializeBilan pour ne pas polluer le flag
+var _prevDonnees    = null;    // donnees du bilan précédent (pour deltas inline)
+var _allBilans      = [];      // tous les bilans du patient (pour la page évolution)
 
 // Marquer le bilan comme modifié à chaque saisie utilisateur
 document.addEventListener('input',  function(){ if(!_suppressDirty) _bilanModified = true; });
@@ -3540,23 +3580,32 @@ function _resetBilanFields(){
 function _resetAndLoadPatient(p){
   _resetBilanFields();
   _autofillPatientFields(p);
+  _prevDonnees = null;
+  _allBilans   = [];
   var btn = document.getElementById('bilan-save-btn');
   if(btn){ btn.disabled=true; btn.textContent='⏳ Chargement…'; }
   sbB.from('bilans')
     .select('*').eq('patient_id', p.id)
-    .order('date',{ascending:false}).limit(1)
+    .order('date',{ascending:false}).limit(50)
     .then(function(res){
       if(btn){ btn.disabled=false; btn.textContent='💾 Sauvegarder le bilan'; }
       if(res.error || !res.data || !res.data.length){
         _showPatientToast('Nouveau bilan vierge');
+        _renderEvolutionPage();
         return;
       }
+      _allBilans = res.data; // du plus récent au plus ancien
       var b = res.data[0];
       _currentBilanId   = b.id;
       _currentBilanDate = b.date ? b.date.split('T')[0] : null;
       _deserializeBilan(b.donnees||{});
+      if(res.data.length >= 2){
+        _prevDonnees = res.data[1].donnees || {};
+        _renderDeltas(_prevDonnees);
+      }
       var d = b.date ? b.date.split('-').reverse().join('/') : '—';
       _showPatientToast('Bilan du '+d+' chargé');
+      _renderEvolutionPage();
     });
 }
 
@@ -3565,6 +3614,184 @@ function _showPatientToast(msg){
   if(!el) return;
   el.innerHTML = '<em style="color:var(--accent);font-style:normal">'+msg+'</em>';
   setTimeout(function(){ _updateSaveBar(); }, 3000);
+}
+
+/* ── Évolution : configuration des métriques suivies ───── */
+var TRACKED_METRICS = [
+  // Douleur
+  {id:'f-eva',          label:'Douleur EVA (repos)',    unit:'/10', dir:'down', cat:'Douleur'},
+  {id:'f-eva-max',      label:'EVA max (7 jours)',       unit:'/10', dir:'down', cat:'Douleur'},
+  {id:'f-aclrsi',       label:'ACL-RSI Score',           unit:'%',   dir:'up',   cat:'Douleur'},
+  // Épaule ROM
+  {id:'rom-ep-d-flex',  label:'Flex. épaule D',          unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
+  {id:'rom-ep-g-flex',  label:'Flex. épaule G',          unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
+  {id:'rom-ep-d-abd',   label:'Abduction épaule D',      unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
+  {id:'rom-ep-g-abd',   label:'Abduction épaule G',      unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
+  {id:'rom-ep-d-re0',   label:'RE épaule D (0°)',        unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
+  {id:'rom-ep-g-re0',   label:'RE épaule G (0°)',        unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
+  {id:'rom-ep-d-ri0',   label:'RI épaule D (0°)',        unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
+  {id:'rom-ep-g-ri0',   label:'RI épaule G (0°)',        unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
+  {id:'rom-ep-d-re90',  label:'RE épaule D (90°)',       unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
+  {id:'rom-ep-g-re90',  label:'RE épaule G (90°)',       unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
+  {id:'gird-ca',        label:'GIRD (côté atteint)',      unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
+  // Force épaule (bruts)
+  {id:'ep-rl1-ca',      label:'RL1 (côté atteint)',       unit:'N',   dir:'up',   cat:'Épaule — Force'},
+  {id:'ep-rl1-cs',      label:'RL1 (côté sain)',          unit:'N',   dir:'up',   cat:'Épaule — Force'},
+  {id:'ep-rl2-ca',      label:'RL2 (côté atteint)',       unit:'N',   dir:'up',   cat:'Épaule — Force'},
+  {id:'ep-rl2-cs',      label:'RL2 (côté sain)',          unit:'N',   dir:'up',   cat:'Épaule — Force'},
+  {id:'ep-abd-ca',      label:'Abducteurs (atteint)',     unit:'N',   dir:'up',   cat:'Épaule — Force'},
+  {id:'ep-abd-cs',      label:'Abducteurs (sain)',        unit:'N',   dir:'up',   cat:'Épaule — Force'},
+  {id:'ep-bht-ca',      label:'BHT (côté atteint)',       unit:'N',   dir:'up',   cat:'Épaule — Force'},
+  {id:'ep-bht-cs',      label:'BHT (côté sain)',          unit:'N',   dir:'up',   cat:'Épaule — Force'},
+  // Hanche ROM
+  {id:'ha-mob-d-flex',  label:'Flex. hanche D',          unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
+  {id:'ha-mob-g-flex',  label:'Flex. hanche G',          unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
+  {id:'ha-mob-d-ext',   label:'Ext. hanche D',           unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
+  {id:'ha-mob-g-ext',   label:'Ext. hanche G',           unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
+  {id:'ha-mob-d-ri',    label:'RI hanche D',             unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
+  {id:'ha-mob-g-ri',    label:'RI hanche G',             unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
+  {id:'ha-mob-d-re',    label:'RE hanche D',             unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
+  {id:'ha-mob-g-re',    label:'RE hanche G',             unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
+  {id:'ha-mob-d-abd',   label:'Abduction hanche D',      unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
+  {id:'ha-mob-g-abd',   label:'Abduction hanche G',      unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
+  // Genou ROM
+  {id:'rom-ge-d-flexa', label:'Flex. genou D (actif)',   unit:'°',   dir:'up',   cat:'Genou — Mobilité'},
+  {id:'rom-ge-g-flexa', label:'Flex. genou G (actif)',   unit:'°',   dir:'up',   cat:'Genou — Mobilité'},
+  {id:'rom-ge-d-flexp', label:'Flex. genou D (passif)',  unit:'°',   dir:'up',   cat:'Genou — Mobilité'},
+  {id:'rom-ge-g-flexp', label:'Flex. genou G (passif)',  unit:'°',   dir:'up',   cat:'Genou — Mobilité'},
+  {id:'rom-ge-d-ext',   label:'Ext. genou D',            unit:'°',   dir:'up',   cat:'Genou — Mobilité'},
+  {id:'rom-ge-g-ext',   label:'Ext. genou G',            unit:'°',   dir:'up',   cat:'Genou — Mobilité'},
+  // Tests fonctionnels
+  {id:'pset-ca',        label:'SLS (côté atteint)',       unit:'rép', dir:'up',   cat:'Tests Fonctionnels'},
+  {id:'pset-cs',        label:'SLS (côté sain)',          unit:'rép', dir:'up',   cat:'Tests Fonctionnels'},
+  {id:'shrt-d',         label:'SHRT D',                  unit:'cm',  dir:'up',   cat:'Tests Fonctionnels'},
+  {id:'shrt-g',         label:'SHRT G',                  unit:'cm',  dir:'up',   cat:'Tests Fonctionnels'},
+  {id:'set-ca',         label:'SET (côté atteint)',       unit:'s',   dir:'up',   cat:'Tests Fonctionnels'},
+  {id:'set-cs',         label:'SET (côté sain)',          unit:'s',   dir:'up',   cat:'Tests Fonctionnels'},
+  {id:'uqybt-med-d',    label:'UQYBT Méd. D',            unit:'cm',  dir:'up',   cat:'Tests Fonctionnels'},
+  {id:'uqybt-med-g',    label:'UQYBT Méd. G',            unit:'cm',  dir:'up',   cat:'Tests Fonctionnels'},
+  {id:'uqybt-il-d',     label:'UQYBT IL D',              unit:'cm',  dir:'up',   cat:'Tests Fonctionnels'},
+  {id:'uqybt-il-g',     label:'UQYBT IL G',              unit:'cm',  dir:'up',   cat:'Tests Fonctionnels'},
+  {id:'uqybt-sl-d',     label:'UQYBT SL D',              unit:'cm',  dir:'up',   cat:'Tests Fonctionnels'},
+  {id:'uqybt-sl-g',     label:'UQYBT SL G',              unit:'cm',  dir:'up',   cat:'Tests Fonctionnels'},
+];
+
+/* ── Option C : deltas inline ──────────────────────────── */
+function _renderDeltas(prevData){
+  // Supprimer les anciens badges
+  document.querySelectorAll('.evo-delta').forEach(function(el){ el.remove(); });
+  if(!prevData) return;
+  TRACKED_METRICS.forEach(function(m){
+    var el = document.getElementById(m.id);
+    if(!el) return;
+    var curVal = parseFloat(el.value);
+    var prevVal = parseFloat(prevData[m.id]);
+    if(isNaN(curVal) || isNaN(prevVal)) return;
+    var diff = curVal - prevVal;
+    if(diff === 0) return;
+    var isGood = (m.dir === 'up') ? diff > 0 : diff < 0;
+    var sign   = diff > 0 ? '+' : '';
+    var cls    = isGood ? 'evo-pos' : 'evo-neg';
+    var badge  = document.createElement('span');
+    badge.className = 'evo-delta ' + cls;
+    badge.textContent = sign + diff.toFixed(0) + m.unit;
+    badge.title = 'Bilan précédent : ' + prevVal.toFixed(0) + m.unit;
+    // Insérer après le champ
+    el.parentNode.insertBefore(badge, el.nextSibling);
+  });
+}
+
+/* ── Option A : page évolution ─────────────────────────── */
+function _buildSparkline(values){
+  // values = tableau chronologique (du plus ancien au plus récent) de numbers
+  var W = 80, H = 30, PAD = 4;
+  var min = Math.min.apply(null, values);
+  var max = Math.max.apply(null, values);
+  var range = max - min || 1;
+  var pts = values.map(function(v, i){
+    var x = PAD + (i / Math.max(values.length - 1, 1)) * (W - PAD*2);
+    var y = (H - PAD) - ((v - min) / range) * (H - PAD*2);
+    return x.toFixed(1) + ',' + y.toFixed(1);
+  });
+  var lastX = pts[pts.length-1].split(',')[0];
+  var lastY = pts[pts.length-1].split(',')[1];
+  return '<svg class="spark-svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'">'
+    + '<polyline points="'+pts.join(' ')+'" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>'
+    + '<circle cx="'+lastX+'" cy="'+lastY+'" r="2.5" fill="var(--accent)"/>'
+    + '</svg>';
+}
+
+function _renderEvolutionPage(){
+  var container = document.getElementById('evolution-content');
+  if(!container) return;
+  // Bilans triés du plus ancien au plus récent pour les sparklines
+  var bilansAsc = _allBilans.slice().reverse(); // _allBilans est desc
+  if(bilansAsc.length < 2){
+    container.innerHTML = '<div class="evo-empty">Ce patient n\'a que '
+      + (bilansAsc.length === 0 ? 'aucun' : '1')
+      + ' bilan sauvegardé. Il en faut au moins 2 pour afficher l\'évolution.</div>';
+    return;
+  }
+  // Dates pour entête de colonnes (courtes)
+  var dates = bilansAsc.map(function(b){
+    if(!b.date) return '—';
+    var p = b.date.split('-');
+    return p[2]+'/'+p[1]+'/'+(p[0].slice(2));
+  });
+  // Grouper par catégorie
+  var cats = {};
+  TRACKED_METRICS.forEach(function(m){ if(!cats[m.cat]) cats[m.cat]=[]; cats[m.cat].push(m); });
+
+  var html = '<div class="evo-intro">📅 '+ bilansAsc.length +' bilans — du '
+    + dates[0] +' au '+ dates[dates.length-1]
+    +'</div>';
+
+  Object.keys(cats).forEach(function(cat){
+    var metrics = cats[cat];
+    // Garder seulement les métriques qui ont au moins 2 valeurs renseignées
+    var active = metrics.filter(function(m){
+      var vals = bilansAsc.map(function(b){ return parseFloat((b.donnees||{})[m.id]); });
+      return vals.filter(function(v){ return !isNaN(v); }).length >= 2;
+    });
+    if(!active.length) return;
+
+    // En-têtes des colonnes de valeurs (limités à 5 derniers pour lisibilité)
+    var colDates = dates.length > 5 ? dates.slice(dates.length - 5) : dates;
+    var colBilans = bilansAsc.length > 5 ? bilansAsc.slice(bilansAsc.length - 5) : bilansAsc;
+
+    html += '<div class="evo-block"><div class="evo-block-title">'+cat+'</div>';
+    html += '<table class="evo-table"><thead><tr>'
+      + '<th>Marqueur</th>'
+      + '<th class="center">Courbe</th>';
+    colDates.forEach(function(d){ html += '<th class="center">'+d+'</th>'; });
+    html += '<th class="center">Δ total</th></tr></thead><tbody>';
+
+    active.forEach(function(m){
+      var allVals = bilansAsc.map(function(b){ return parseFloat((b.donnees||{})[m.id]); });
+      var colVals = colBilans.map(function(b){ return parseFloat((b.donnees||{})[m.id]); });
+      var sparkVals = allVals.filter(function(v){ return !isNaN(v); });
+      // Delta entre première et dernière valeur renseignée
+      var firstIdx = allVals.findIndex(function(v){ return !isNaN(v); });
+      var lastIdx  = allVals.length - 1 - allVals.slice().reverse().findIndex(function(v){ return !isNaN(v); });
+      var delta    = allVals[lastIdx] - allVals[firstIdx];
+      var isGood   = m.dir === 'up' ? delta >= 0 : delta <= 0;
+      var sign     = delta >= 0 ? '+' : '';
+      var deltaCls = delta === 0 ? 'evo-neutral' : (isGood ? 'evo-pos' : 'evo-neg');
+
+      html += '<tr class="evo-row">';
+      html += '<td class="evo-metric-name">'+m.label+'</td>';
+      html += '<td class="evo-spark">'+(sparkVals.length >= 2 ? _buildSparkline(sparkVals) : '—')+'</td>';
+      colVals.forEach(function(v){
+        html += '<td class="evo-val">'+(isNaN(v) ? '<span class="evo-na">—</span>' : v.toFixed(0)+m.unit)+'</td>';
+      });
+      html += '<td class="evo-delta-col '+deltaCls+'">'
+        + (delta === 0 ? '=' : sign+delta.toFixed(0)+m.unit)
+        +'</td></tr>';
+    });
+    html += '</tbody></table></div>';
+  });
+
+  container.innerHTML = html;
 }
 
 /* ── Sérialisation ─────────────────────────────────────── */
@@ -3656,6 +3883,18 @@ function saveBilan(){
         _bilanModified = false;
         btn.textContent = isNew ? '✓ Nouveau bilan enregistré !' : '✓ Sauvegardé !';
         setTimeout(function(){ btn.textContent='💾 Sauvegarder le bilan'; }, 2500);
+        // Rafraîchir les données d'évolution après sauvegarde
+        sbB.from('bilans').select('*').eq('patient_id',_bilanPatient.id)
+          .order('date',{ascending:false}).limit(50)
+          .then(function(r2){
+            if(!r2.error && r2.data && r2.data.length){
+              _allBilans = r2.data;
+              _prevDonnees = r2.data.length >= 2 ? (r2.data[1].donnees||{}) : null;
+              document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
+              if(_prevDonnees) _renderDeltas(_prevDonnees);
+              _renderEvolutionPage();
+            }
+          });
       });
     }).catch(function(err){
       btn.disabled = false;
@@ -3758,6 +3997,7 @@ function showPage(id) {
   if (nb) nb.classList.add('active');
   if (id === 'cr') buildCR();
   if (id === 'cr-tf') buildCRTF();
+  if (id === 'evolution') _renderEvolutionPage();
   saveToStorage();
 }
 
@@ -4994,8 +5234,12 @@ function openReset() { document.getElementById('modal-reset').classList.add('ope
 function closeReset() { document.getElementById('modal-reset').classList.remove('open'); }
 function doReset() {
   _bilanPatient = null;
+  _prevDonnees  = null;
+  _allBilans    = [];
   localStorage.removeItem('r4p-current-patient');
   _resetBilanFields();
+  document.querySelectorAll('.evo-delta').forEach(function(el){ el.remove(); });
+  _renderEvolutionPage();
   _updateSaveBar();
   closeReset();
   showPage('infos');
