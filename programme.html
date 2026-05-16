@@ -1498,25 +1498,10 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   .main-header h1 { font-size:.82rem; }
   .btn { padding:6px 10px; font-size:.74rem; }
   .patient-input { width:130px; }
-  /* Builder en overlay plein écran sur tablet */
-  .builder-panel {
-    position:absolute; right:0; top:0;
-    width:100% !important; max-width:100%; height:100%; z-index:15;
-    transform:translateX(100%);          /* caché hors-écran par défaut */
-    transition:transform .28s cubic-bezier(.4,0,.2,1);
-  }
-  /* Visible uniquement quand explicitement ouvert */
-  .builder-panel.open,
-  .app.builder-mode .builder-panel {
-    transform:translateX(0);
-    width:100% !important; /* override .app.builder-mode .builder-panel { width:0 } */
-  }
-  /* En portrait le builder est en overlay absolu — le main reste dans le layout */
-  .app.builder-mode .main {
-    flex:1 1 auto !important;
-    min-width:0 !important;
-    overflow:auto;
-  }
+  /* En portrait, le builder reste dans le flux flex (même mécanique que desktop).
+     Le panel est caché via width:0/overflow:hidden par défaut — pas d'overlay absolu.
+     La sidebar bibliothèque reste visible à gauche quand le builder est ouvert. */
+  .app.builder-mode .sidebar { width:210px !important; min-width:180px !important; }
   .topbar-logo { display:none; }
 }
 
