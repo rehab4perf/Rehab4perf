@@ -4217,9 +4217,7 @@ function _buildEvolutionHTML(){
     + '.evo-kpi.evo-neutral{background:#F1F0ED;color:#6B6860;}'
     + '.evo-chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}'
     + '@media(max-width:600px){.evo-chart-grid{grid-template-columns:1fr;}}'
-    + '.print-btn-wrap{padding:12px 24px;border-bottom:1px solid #E8E6E1;background:#fff}'
-    + '.print-btn-inner{background:#2B5FA6;color:#fff;border:none;border-radius:7px;padding:8px 18px;font-size:.84rem;font-weight:600;cursor:pointer;font-family:inherit}'
-    + '@media print{.print-btn-wrap{display:none!important}.doc-header{background:#1A3A5C!important}.evo-block{break-inside:avoid}.doc-body{padding:12px 24px 0}}'
+    + '@media print{.doc-header{background:#1A3A5C!important}.evo-block{break-inside:avoid}.doc-body{padding:12px 24px 0}}'
     ;
 
   var metaParts = [];
@@ -4234,7 +4232,6 @@ function _buildEvolutionHTML(){
     + '<div class="doc-header"><div class="doc-logo"><span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span></div>'
     + '<div class="doc-meta">'+metaParts.join('<br>')+'</div></div>'
     // Bouton impression (visible à l'écran, masqué à l'impression)
-    + '<div class="print-btn-wrap"><button class="print-btn-inner" onclick="window.print()">🖨 Imprimer / Exporter PDF</button></div>'
     // Patient card
     + (patient ? '<div class="patient-card"><div class="patient-avatar" style="font-family:Georgia,serif">'+initials+'</div>'
       + '<div><div class="patient-name">'+patient+'</div>'
