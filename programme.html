@@ -4058,9 +4058,10 @@ var SUPA_URL_P = 'https://sxdobjodxkwexaspepdm.supabase.co';
 var SUPA_KEY_P = 'sb_publishable_zEJrmQOnKyRm-Y_NyojaTA_ERrDx4pl';
 var sbP = supabase.createClient(SUPA_URL_P, SUPA_KEY_P);
 
-var _progPatient   = null;
-var _currentProgId = null;
-var _progUid       = null;
+var _progPatient    = null;
+var _currentProgId  = null;
+var _currentSeanceId = null; // ID de la séance calendrier ouverte dans le builder (null si chargée depuis l'historique)
+var _progUid        = null;
 var _progToken     = null;
 var _userRole      = null; // 'admin' | 'lecteur' | null
 
@@ -4240,35 +4241,63 @@ function saveProgToCloud(){
   var btn = document.getElementById('prog-cloud-save-btn');
   btn.disabled = true; btn.textContent = '⏳ Sauvegarde…';
   var nomProg = (document.getElementById('patientName')||{}).value || ('Programme du '+new Date().toLocaleDateString('fr-FR'));
-  // Stocke blocs + notes dans donnees (objet) pour rétrocompatibilité sans migration DB
   var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), notes: getNotes() };
   if(_builderLinkedPhase) donnees.linkedPhase = _builderLinkedPhase;
   var today = new Date().toISOString().split('T')[0];
-  var url, method, body;
-  if(_currentProgId){
-    url = SUPA_URL_P + '/rest/v1/programmes?id=eq.' + _currentProgId;
-    method = 'PATCH';
-    body = JSON.stringify({donnees:donnees, nom:nomProg, date:today});
-  } else {
-    url = SUPA_URL_P + '/rest/v1/programmes';
-    method = 'POST';
-    body = JSON.stringify({patient_id:_progPatient.id, praticien_id:_progUid, nom:nomProg, date:today, donnees:donnees});
-  }
-  fetch(url, {method:method, headers:_sbHeaders(), body:body})
-    .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, status:r.status, data:d}; }); })
-    .then(function(res){
-      btn.disabled = false;
-      if(!res.ok){ btn.disabled=false; _refreshSaveBtn(); _handleApiError(res.status, res.data, 'sauvegarde séance'); return; }
-      var d = Array.isArray(res.data) ? res.data[0] : res.data;
-      if(!_currentProgId && d && d.id) _currentProgId = d.id;
-      _draftClear();
-      _showToast('✓ Programme sauvegardé !');
-      btn.disabled = false; _refreshSaveBtn();
+
+  // Si ce programme vient d'une séance calendrier, vérifier s'il est partagé avec d'autres séances.
+  // Si oui, créer automatiquement un nouvel enregistrement indépendant (copie implicite).
+  if(_currentProgId && _currentSeanceId){
+    fetch(SUPA_URL_P + '/rest/v1/seances_planifiees?programme_id=eq.' + _currentProgId + '&select=id', {method:'GET', headers:_sbHeaders()})
+    .then(function(r){ return r.json(); })
+    .then(function(rows){
+      if(Array.isArray(rows) && rows.length > 1){
+        // Programme partagé → forcer la création d'une copie indépendante
+        _currentProgId = null;
+      }
+      _doSaveProgCloud(nomProg, donnees, today, btn);
     })
-    .catch(function(err){
-      btn.disabled = false; _refreshSaveBtn();
-      alert('Erreur réseau : '+(err&&err.message||err));
-    });
+    .catch(function(){ _doSaveProgCloud(nomProg, donnees, today, btn); });
+  } else {
+    _doSaveProgCloud(nomProg, donnees, today, btn);
+  }
+}
+
+function _doSaveProgCloud(nomProg, donnees, today, btn){
+  var isNew = !_currentProgId;
+  var seanceId = _currentSeanceId; // capturer avant l'async
+  var url = isNew
+    ? (SUPA_URL_P + '/rest/v1/programmes')
+    : (SUPA_URL_P + '/rest/v1/programmes?id=eq.' + _currentProgId);
+  var method = isNew ? 'POST' : 'PATCH';
+  var payload = isNew
+    ? {patient_id:_progPatient.id, praticien_id:_progUid, nom:nomProg, date:today, donnees:donnees}
+    : {donnees:donnees, nom:nomProg, date:today};
+  fetch(url, {method:method, headers:_sbHeaders(), body:JSON.stringify(payload)})
+  .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, status:r.status, data:d}; }); })
+  .then(function(res){
+    btn.disabled = false;
+    if(!res.ok){ _refreshSaveBtn(); _handleApiError(res.status, res.data, 'sauvegarde séance'); return; }
+    var d = Array.isArray(res.data) ? res.data[0] : res.data;
+    if(isNew && d && d.id){
+      _currentProgId = d.id;
+      // Relier uniquement la séance actuelle au nouveau programme indépendant
+      if(seanceId){
+        fetch(SUPA_URL_P + '/rest/v1/seances_planifiees?id=eq.' + seanceId, {
+          method:'PATCH',
+          headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
+          body: JSON.stringify({programme_id: d.id})
+        }).catch(function(e){ console.warn('Mise à jour programme_id séance échouée :', e); });
+      }
+    }
+    _draftClear();
+    _showToast('✓ Programme sauvegardé !');
+    _refreshSaveBtn();
+  })
+  .catch(function(err){
+    btn.disabled = false; _refreshSaveBtn();
+    alert('Erreur réseau : '+(err&&err.message||err));
+  });
 }
 
 function openProgHistory(){
@@ -4592,7 +4621,8 @@ function closeChargesEvo() {
   document.getElementById('pevoOverlay').classList.remove('open');
 }
 
-function _loadProg(id){
+function _loadProg(id, seanceId){
+  _currentSeanceId = seanceId || null; // null si chargé depuis l'historique ou la bibliothèque
   var url = SUPA_URL_P + '/rest/v1/programmes?id=eq.' + id + '&select=*';
   fetch(url, {method:'GET', headers:_sbHeaders()})
     .then(function(r){ return r.json(); })
@@ -4611,17 +4641,17 @@ function _loadProg(id){
       var overlay = document.getElementById('progHistoOverlay');
       if(overlay) overlay.style.display='none';
       var btn = document.getElementById('prog-cloud-save-btn');
-      if(btn){ btn.textContent='✓ Programme chargé'; setTimeout(function(){ btn.textContent='☁️ Sauvegarder'; },2500); }
+      if(btn){ btn.textContent='✓ Programme chargé'; setTimeout(function(){ _refreshSaveBtn(); },2500); }
     })
     .catch(function(){ alert('Erreur réseau lors du chargement.'); });
 }
 
 // Ouvrir un programme du calendrier dans le builder (clic sur chip)
-function _openChipInBuilder(progId, dateStr){
+function _openChipInBuilder(progId, dateStr, seanceId){
   if(_calDragJustEnded || _calDrag) return; // pas d'ouverture en fin de drag
   _builderDate = dateStr;
   _updateBuilderTitle();
-  _loadProg(progId);
+  _loadProg(progId, seanceId); // transmet l'ID de séance pour la détection de partage
 }
 
 function _deleteProg(id, nom){
@@ -6014,10 +6044,10 @@ function _buildDayChips(dateStr, cellDate){
         ? ' <span style="font-size:.55rem;background:'+phStyle.border+';color:#fff;border-radius:2px;padding:0 3px;white-space:nowrap;flex-shrink:0;">'+escH(phStyle.label)+'</span>'
         : '';
       // Enregistrement métadonnées pour touch
-      _chipTouchMeta[ev.id] = {progId: ev.programme_id, dateStr: dateStr, nom: nom};
+      _chipTouchMeta[ev.id] = {progId: ev.programme_id, dateStr: dateStr, nom: nom, seanceId: ev.id};
       var chipEvtAttrs = _isTouchDevice
         ? ' ontouchstart="_chipTouchStart(event,\''+ev.id+'\')" ontouchmove="_chipTouchMove(event)" ontouchend="_chipTouchEnd(event,\''+ev.id+'\')"'
-        : ' draggable="true" onclick="event.stopPropagation();_openChipInBuilder(\''+ev.programme_id+'\',\''+dateStr+'\')" ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"';
+        : ' draggable="true" onclick="event.stopPropagation();_openChipInBuilder(\''+ev.programme_id+'\',\''+dateStr+'\',\''+ev.id+'\')" ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"';
       var chipCursor = _isTouchDevice ? 'pointer' : 'grab';
       return '<div class="cal-session-chip" style="background:'+chipBg+';color:'+chipColor+';cursor:'+chipCursor+chipExtra+';" title="'+escH(nom)+' — appui long pour options"'
         + chipEvtAttrs + '>'
@@ -6455,7 +6485,7 @@ function _chipTouchEnd(e, evId){
   if(_touchDidLong){ _touchDidLong = false; e.preventDefault(); return; }
   e.preventDefault();
   var d = _chipTouchMeta[evId] || {};
-  if(d.progId && d.dateStr) _openChipInBuilder(d.progId, d.dateStr);
+  if(d.progId && d.dateStr) _openChipInBuilder(d.progId, d.dateStr, d.seanceId);
 }
 
 function _showTouchActionSheet(evId, progId, dateStr, nom){
@@ -6479,7 +6509,7 @@ function closeTouchSheet(){
 function touchSheetOpen(){
   if(!_touchSheetData) return;
   var d = _touchSheetData; closeTouchSheet();
-  _openChipInBuilder(d.progId, d.dateStr);
+  _openChipInBuilder(d.progId, d.dateStr, d.evId);
 }
 
 function touchSheetMove(){
@@ -7760,17 +7790,30 @@ function _saveDest(dest){
 }
 
 function _builderSaveBtnClick(){
-  openSaveDest();
+  // Si le builder est ouvert depuis une séance calendrier, sauvegarder directement
+  // en "programme patient" sans passer par le modal de destination.
+  if(_currentSeanceId){
+    if(!blocs || !blocs.length){ alert('La séance est vide.'); return; }
+    saveProgToCloud();
+  } else {
+    openSaveDest();
+  }
 }
 
 function _refreshSaveBtn(){
   var btn = document.getElementById('prog-cloud-save-btn');
   var updBtn = document.getElementById('prog-update-btn');
   if(!btn) return;
-  // Le bouton "Sauvegarder" ouvre toujours le modal de destination
-  btn.textContent = '💾 Sauvegarder';
-  btn.title = '';
-  btn.style.background = '';
+  // Contexte calendrier → sauvegarde directe sans modal
+  if(_currentSeanceId){
+    btn.textContent = '💾 Enregistrer la séance';
+    btn.title = 'Sauvegarder directement comme programme patient';
+    btn.style.background = '';
+  } else {
+    btn.textContent = '💾 Sauvegarder';
+    btn.title = '';
+    btn.style.background = '';
+  }
   // Bouton "Mettre à jour" — visible uniquement quand un template est chargé
   if(updBtn){
     if(_builderFromTemplate){
