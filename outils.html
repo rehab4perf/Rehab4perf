@@ -75,6 +75,24 @@ body {
   .tab-full { display: none; }
   .tab-short { display: inline; }
 }
+/* Barre scrollable en portrait (iPad portrait ~768px, petits écrans) */
+@media (max-width: 768px) {
+  .sub-tabs {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    scrollbar-width: none;        /* Firefox */
+    -ms-overflow-style: none;     /* IE/Edge */
+    padding: 0 4px;
+    flex-wrap: nowrap;
+  }
+  .sub-tabs::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+  /* Afficher les labels complets — la barre scrolle, pas besoin de raccourcir */
+  .tab-full { display: inline; }
+  .tab-short { display: none; }
+  .sub-tab { padding: 11px 12px; font-size: .8rem; flex-shrink: 0; }
+}
 
 /* ── Panels ─────────────────────────────────────────────── */
 .panel { display: none; flex: 1; overflow-y: auto; overflow-x: hidden; padding: 20px 24px 60px; }
@@ -4049,8 +4067,17 @@ PROMS_QUESTIONNAIRES['VISA-H'] = {
 function showTab(id) {
   document.querySelectorAll('.sub-tab').forEach(function(t){ t.classList.remove('active'); });
   document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
-  document.getElementById('stab-' + id).classList.add('active');
+  var activeBtn = document.getElementById('stab-' + id);
+  activeBtn.classList.add('active');
   document.getElementById('panel-' + id).classList.add('active');
+  // Auto-scroll l'onglet actif au centre de la barre (portrait)
+  var bar = document.querySelector('.sub-tabs');
+  if (bar && bar.scrollWidth > bar.clientWidth) {
+    var btnLeft  = activeBtn.offsetLeft;
+    var btnWidth = activeBtn.offsetWidth;
+    var barWidth = bar.clientWidth;
+    bar.scrollTo({ left: btnLeft - (barWidth - btnWidth) / 2, behavior: 'smooth' });
+  }
 }
 
 // -- 1RM Formulas ------------------------------------------
