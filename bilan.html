@@ -5001,6 +5001,7 @@ function doReset() {
   showPage('infos');
   localStorage.removeItem('athletik-bilan');
   showToast('Dossier réinitialisé — Prêt pour un nouveau patient');
+  try { window.parent.postMessage({ type: 'r4p-patient-reset' }, '*'); } catch(ex) {}
 }
 
 // -- LMA : selects cascadants -----------------------------------

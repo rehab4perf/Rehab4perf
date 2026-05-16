@@ -459,6 +459,11 @@ window.addEventListener('message', function(e) {
       bilanFrame.contentWindow.postMessage(e.data, '*');
     }
   }
+
+  // bilan.html a réinitialisé le dossier → déselectionner le patient dans la topnav
+  if (e.data.type === 'r4p-patient-reset') {
+    deselectPatient();
+  }
 });
 
 /* ═══════════════════════════════════════════════════════════
