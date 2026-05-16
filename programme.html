@@ -6649,10 +6649,16 @@ function _calDuplicateEvent(progId, targetDate){
   .then(function(data){
     var src = Array.isArray(data) ? data[0] : data;
     if(!src){ alert('Programme source introuvable.'); return; }
+    // Mettre à jour le nom si auto-généré ("Séance du X mois") pour refléter la nouvelle date
+    var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+    var tp = targetDate.split('-');
+    var targetLabel = 'Séance du '+parseInt(tp[2])+' '+months[parseInt(tp[1])-1];
+    var srcNom = src.nom || '';
+    var nomCopie = /^Séance du \d/.test(srcNom) ? targetLabel : srcNom;
     var today = new Date().toISOString().split('T')[0];
     fetch(SUPA_URL_P+'/rest/v1/programmes', {
       method:'POST', headers:_sbHeaders(),
-      body:JSON.stringify({patient_id:_progPatient.id, praticien_id:_progUid, nom:src.nom||'Programme', date:today, donnees:src.donnees})
+      body:JSON.stringify({patient_id:_progPatient.id, praticien_id:_progUid, nom:nomCopie, date:today, donnees:src.donnees})
     })
     .then(function(r2){ return r2.json().then(function(d){ return {ok:r2.ok, data:d}; }); })
     .then(function(res){
