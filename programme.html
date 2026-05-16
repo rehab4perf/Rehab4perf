@@ -1500,6 +1500,38 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   .exo-col-header { grid-template-columns: 1fr 48px 48px 42px 56px 68px 160px 28px; }
   .exo-col-header > .col-lbl:first-child { display:none; }
 }
+
+/* ── Évolution des charges ─────────────────────────────── */
+.pevo-overlay { display:none; position:fixed; inset:0; z-index:9100; background:rgba(0,0,0,.48); backdrop-filter:blur(2px); align-items:flex-start; justify-content:center; padding:50px 12px 12px; overflow-y:auto; }
+.pevo-overlay.open { display:flex; }
+.pevo-panel { background:#fff; border-radius:12px; width:100%; max-width:860px; min-height:200px; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 12px 48px rgba(0,0,0,.22); }
+.pevo-header { background:#1A3A5C; color:#fff; padding:13px 18px; display:flex; align-items:center; gap:10px; flex-shrink:0; }
+.pevo-header h2 { flex:1; font-size:.92rem; font-weight:700; margin:0; }
+.pevo-close { background:none; border:none; color:rgba(255,255,255,.7); font-size:1.3rem; cursor:pointer; padding:0 4px; }
+.pevo-body { flex:1; overflow-y:auto; padding:18px 20px 24px; }
+.pevo-empty { text-align:center; color:#9D9B96; font-style:italic; padding:32px 20px; }
+.pevo-select-section { margin-bottom:18px; }
+.pevo-select-title { font-size:.72rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:#1A3A5C; margin-bottom:10px; }
+.pevo-exo-pills { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:8px; }
+.pevo-pill { display:inline-flex; align-items:center; gap:5px; padding:5px 10px; border:1.5px solid #D3D1CB; border-radius:20px; font-size:.74rem; color:#6B6860; cursor:pointer; user-select:none; transition:all .15s; background:#fff; }
+.pevo-pill input { width:13px; height:13px; accent-color:#2B5FA6; cursor:pointer; }
+.pevo-pill.active { border-color:#2B5FA6; background:#EEF3FB; color:#1A3A5C; font-weight:600; }
+.pevo-selall-row { display:flex; gap:8px; margin-bottom:14px; }
+.pevo-selall-btn { font-size:.71rem; padding:3px 10px; border:1px solid #D3D1CB; border-radius:6px; background:#fff; color:#6B6860; cursor:pointer; }
+.pevo-selall-btn:hover { background:#F1F0ED; color:#1A3A5C; }
+.pevo-charts { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+@media(max-width:600px){ .pevo-charts { grid-template-columns:1fr; } }
+.pevo-card { background:#fff; border:1px solid #E8E6E1; border-radius:10px; padding:14px 16px 10px; }
+.pevo-card-header { display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+.pevo-card-title { font-size:.82rem; font-weight:700; color:#1A1917; }
+.pevo-card-kpis { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.pevo-kpi-neutral { font-size:.71rem; color:#6B6860; }
+.pevo-kpi-strong { font-size:.71rem; font-weight:700; color:#1A3A5C; }
+.pevo-kpi { font-size:.71rem; font-weight:700; padding:2px 7px; border-radius:10px; }
+.pevo-kpi.pos { background:#E8F5EE; color:#2D6A4F; }
+.pevo-kpi.neg { background:#FDECEA; color:#C0392B; }
+.pevo-kpi.neutral { background:#F1F0ED; color:#6B6860; }
+.pevo-loading { text-align:center; color:#9D9B96; font-style:italic; padding:20px; }
 </style>
 </head>
 <body>
@@ -1515,6 +1547,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
     <button class="topbar-btn" onclick="toggleSidebar()" title="Bibliothèque">☰ Biblio</button>
     <button class="topbar-btn" onclick="openCycles()">🔄 Cycles</button>
     <button class="topbar-btn" onclick="openProtoPanel()">📚 Protocoles</button>
+    <button class="topbar-btn" onclick="openChargesEvo()" id="topbarEvoBtn">📈 Évolution</button>
     <button class="topbar-btn primary" onclick="openBuilderNew()" id="topbarNewBtn">+ Séance</button>
   </div>
 </div>
@@ -1886,6 +1919,19 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 
 <!-- Toast partage -->
 <div class="share-toast" id="shareToast"></div>
+
+<!-- ── Modal Évolution des charges ───────────────────── -->
+<div class="pevo-overlay" id="pevoOverlay" onclick="if(event.target===this)closeChargesEvo()">
+  <div class="pevo-panel">
+    <div class="pevo-header">
+      <h2>📈 Évolution des charges</h2>
+      <button class="pevo-close" onclick="closeChargesEvo()">✕</button>
+    </div>
+    <div class="pevo-body" id="pevoBody">
+      <div class="pevo-loading">Chargement…</div>
+    </div>
+  </div>
+</div>
 
 <!-- Modal Planifier -->
 <div class="plan-modal-overlay" id="planModal" onclick="if(event.target===this)closePlanModal()">
@@ -4271,6 +4317,268 @@ function openProgHistory(){
 }
 
 function _escP(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ================================================================
+   ÉVOLUTION DES CHARGES
+   ================================================================ */
+
+/* Formule Brzycki : 1RM estimé depuis poids × reps.
+   Valide pour reps 1–36. Retourne null si non applicable. */
+function _brzycki(kg, reps) {
+  kg = parseFloat(kg); reps = parseFloat(reps);
+  if(isNaN(kg) || isNaN(reps) || kg <= 0 || reps <= 0) return null;
+  if(reps === 1) return kg;
+  if(reps >= 37) return null; // formule non valide au-delà
+  return Math.round((kg * 36 / (37 - reps)) * 10) / 10;
+}
+
+/* Extrait, depuis un tableau de programmes Supabase [{id,nom,date,donnees}],
+   un dictionnaire { "Nom exercice normalisé" → [{date, kg, reps, rm1, progNom}] }
+   trié par date croissante. Ne garde que les entrées avec cibles.type==='kg'. */
+function _extractExoLoads(programmes) {
+  var map = {};
+  programmes.forEach(function(prog) {
+    var raw = prog.donnees || {};
+    var blocs = Array.isArray(raw) ? raw : (raw.blocs || []);
+    blocs.forEach(function(bloc) {
+      (bloc.exos || []).forEach(function(exo) {
+        var name = (exo.name || '').trim();
+        if(!name) return;
+        // Cherche une cible de type kg
+        var kgCible = null;
+        (exo.cibles || []).forEach(function(c) {
+          if(c.type === 'kg' && c.min && parseFloat(c.min) > 0) kgCible = c;
+        });
+        if(!kgCible) return;
+        var kg = parseFloat(kgCible.min);
+        var reps = parseFloat(exo.reps);
+        if(isNaN(kg) || kg <= 0) return;
+        var rm1 = _brzycki(kg, reps);
+        if(!rm1) rm1 = kg; // si reps inconnues, on utilise le poids brut
+        var key = name.toLowerCase().replace(/\s+/g,' ');
+        if(!map[key]) map[key] = { label: name, points: [] };
+        map[key].points.push({
+          date: prog.date || '',
+          kg: kg,
+          reps: isNaN(reps) ? null : reps,
+          rm1: rm1,
+          progNom: prog.nom || prog.date || ''
+        });
+      });
+    });
+  });
+  // Trier par date, ne garder que ceux avec ≥2 points
+  var result = {};
+  Object.keys(map).forEach(function(key) {
+    var pts = map[key].points.sort(function(a,b){ return a.date < b.date ? -1 : 1; });
+    if(pts.length >= 2) result[key] = { label: map[key].label, points: pts };
+  });
+  return result;
+}
+
+/* Construit un SVG bezier (chart B adapté) pour l'évolution 1RM d'un exercice.
+   vals = tableau de nombres (1RM estimé), dates = labels JJ/MM, chartId = int unique */
+function _buildPevoChart(vals, dates, chartId) {
+  var VW=500, VH=115;
+  var PAD={top:18, right:22, bottom:34, left:42};
+  var valid = vals.filter(function(v){ return !isNaN(v); });
+  if(valid.length < 2) return '';
+  var minV=Math.min.apply(null,valid), maxV=Math.max.apply(null,valid);
+  var pad=Math.max(1,(maxV-minV)*0.15); minV-=pad; maxV+=pad;
+  var rangeV=maxV-minV||1, n=vals.length;
+  var id='pevo'+chartId;
+  function pt(i,v){ return {x:PAD.left+(i/Math.max(n-1,1))*(VW-PAD.left-PAD.right), y:(VH-PAD.bottom)-((v-minV)/rangeV)*(VH-PAD.top-PAD.bottom)}; }
+  var pts = vals.map(function(v,i){ var p=pt(i,isNaN(v)?minV:v); return {x:p.x,y:p.y,v:v,date:dates[i],valid:!isNaN(v)}; });
+  var html = '<defs><linearGradient id="gpevo'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2B5FA6" stop-opacity="0.25"/><stop offset="100%" stop-color="#2B5FA6" stop-opacity="0.02"/></linearGradient></defs>';
+  // Grille
+  var step=Math.max(1,Math.ceil((maxV-minV)/4));
+  for(var gv=Math.round(minV);gv<=maxV+step;gv+=step){
+    var gy=(VH-PAD.bottom)-((gv-minV)/rangeV)*(VH-PAD.top-PAD.bottom);
+    if(gy<PAD.top||gy>VH-PAD.bottom+2) continue;
+    html+='<line x1="'+PAD.left+'" y1="'+gy.toFixed(1)+'" x2="'+(VW-PAD.right)+'" y2="'+gy.toFixed(1)+'" stroke="#EBEBEB" stroke-width="1" stroke-dasharray="3,3"/>';
+    html+='<text x="'+(PAD.left-5)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="end" font-size="9" fill="#C0BDB8">'+Math.round(gv)+'</text>';
+  }
+  // Dates X
+  var shownD={};
+  pts.forEach(function(p){ if(shownD[p.date])return; shownD[p.date]=true; html+='<text x="'+p.x.toFixed(1)+'" y="'+(VH-PAD.bottom+13)+'" text-anchor="middle" font-size="9" fill="#C0BDB8">'+p.date+'</text>'; });
+  html+='<line x1="'+PAD.left+'" y1="'+(VH-PAD.bottom)+'" x2="'+(VW-PAD.right)+'" y2="'+(VH-PAD.bottom)+'" stroke="#E8E6E1" stroke-width="1"/>';
+  // Courbe bezier + aire
+  var vp=pts.filter(function(p){ return p.valid; });
+  if(vp.length>=2){
+    var lp='M '+vp[0].x.toFixed(1)+','+vp[0].y.toFixed(1);
+    for(var i=1;i<vp.length;i++){ var cx=(vp[i-1].x+vp[i].x)/2; lp+=' C '+cx.toFixed(1)+','+vp[i-1].y.toFixed(1)+' '+cx.toFixed(1)+','+vp[i].y.toFixed(1)+' '+vp[i].x.toFixed(1)+','+vp[i].y.toFixed(1); }
+    var by=VH-PAD.bottom;
+    html+='<path d="'+lp+' L '+vp[vp.length-1].x.toFixed(1)+','+by+' L '+vp[0].x.toFixed(1)+','+by+' Z" fill="url(#gpevo'+id+')"/>';
+    html+='<path d="'+lp+'" fill="none" stroke="#2B5FA6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
+  }
+  // Points + tooltips
+  pts.forEach(function(p,i){
+    if(!p.valid) return;
+    var isFirst=!pts.slice(0,i).some(function(q){return q.valid;});
+    var isLast=!pts.slice(i+1).some(function(q){return q.valid;});
+    var val=p.v.toFixed(1)+'kg';
+    if(isLast){
+      html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="7" fill="#2B5FA6" opacity="0.15"/>';
+      html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4.5" fill="#2B5FA6"/>';
+      html+='<text x="'+p.x.toFixed(1)+'" y="'+(p.y-12).toFixed(1)+'" text-anchor="middle" font-size="10" font-weight="700" fill="#1A3A5C">'+val+'</text>';
+    } else {
+      html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isFirst?4:3.5)+'" fill="#fff" stroke="#2B5FA6" stroke-width="'+(isFirst?2:1.5)+'"/>';
+      if(isFirst) html+='<text x="'+p.x.toFixed(1)+'" y="'+(p.y-9).toFixed(1)+'" text-anchor="middle" font-size="9" fill="#9D9B96">'+val+'</text>';
+      // Hit area pour tooltip
+      html+='<circle class="pevo-hit" cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="18" fill="transparent" data-tt="tt'+id+'" data-x="'+p.x.toFixed(1)+'" data-y="'+p.y.toFixed(1)+'" data-l1="'+val+'" data-l2="'+p.date+'" style="cursor:pointer"/>';
+    }
+  });
+  // Tooltip SVG
+  html+='<g id="tt'+id+'" visibility="hidden" style="pointer-events:none"><rect id="tt'+id+'-bg" rx="7" fill="#1A3A5C" opacity="0.93" width="84" height="36"/><text id="tt'+id+'-l1" font-size="11" font-weight="700" fill="#fff" text-anchor="middle"/><text id="tt'+id+'-l2" font-size="9" fill="rgba(255,255,255,0.65)" text-anchor="middle"/></g>';
+  return '<svg class="pevo-chart-svg" viewBox="0 0 '+VW+' '+VH+'" style="width:100%;overflow:visible">'+html+'</svg>';
+}
+
+/* État de sélection par patient : { patientId → Set(exoKey) } en localStorage */
+function _pevoGetSel(patientId) {
+  try { return new Set(JSON.parse(localStorage.getItem('r4p-pevo-sel-'+patientId)||'[]')); } catch(e){ return new Set(); }
+}
+function _pevoSaveSel(patientId, sel) {
+  try { localStorage.setItem('r4p-pevo-sel-'+patientId, JSON.stringify(Array.from(sel))); } catch(e){}
+}
+
+var _pevoData = null;      // { exoKey → {label, points} } — données chargées
+var _pevoChartCtr = 0;     // compteur unique pour IDs SVG
+
+/* Attache les events tooltip sur les hit areas (même logique que bilan.html) */
+var _pevoTtOpen = null;
+function _attachPevoEvents() {
+  if(!document._pevoDocListener){
+    document._pevoDocListener = true;
+    document.addEventListener('pointerdown', function(){ _closePevoTt(); });
+  }
+  var body = document.getElementById('pevoBody');
+  if(!body) return;
+  body.querySelectorAll('.pevo-hit').forEach(function(el){
+    var svgEl = el.closest('svg'), ttId = el.dataset.tt;
+    var show = function(){
+      var g=svgEl.getElementById(ttId); if(!g) return;
+      var bg=svgEl.getElementById(ttId+'-bg'), t1=svgEl.getElementById(ttId+'-l1'), t2=svgEl.getElementById(ttId+'-l2');
+      var W=84,H=36,VW2=500, x=parseFloat(el.dataset.x), y=parseFloat(el.dataset.y);
+      var tx=Math.max(2,Math.min(x-W/2,VW2-W-2)), ty=y-H-12; if(ty<2) ty=y+14;
+      bg.setAttribute('x',tx); bg.setAttribute('y',ty);
+      t1.setAttribute('x',tx+W/2); t1.setAttribute('y',ty+15); t1.textContent=el.dataset.l1;
+      t2.setAttribute('x',tx+W/2); t2.setAttribute('y',ty+29); t2.textContent=el.dataset.l2;
+      g.setAttribute('visibility','visible');
+      _pevoTtOpen = {svgEl:svgEl, ttId:ttId};
+    };
+    el.addEventListener('pointerenter', function(e){ if(e.pointerType==='mouse') show(); });
+    el.addEventListener('pointerleave', function(e){ if(e.pointerType==='mouse') _closePevoTt(); });
+    el.addEventListener('pointerdown', function(e){
+      e.stopPropagation();
+      if(_pevoTtOpen && _pevoTtOpen.ttId===ttId){ _closePevoTt(); } else { _closePevoTt(); show(); }
+    });
+  });
+}
+function _closePevoTt(){
+  if(_pevoTtOpen){ var g=_pevoTtOpen.svgEl.getElementById(_pevoTtOpen.ttId); if(g) g.setAttribute('visibility','hidden'); _pevoTtOpen=null; }
+}
+
+function _renderPevoCharts(exoData, selectedKeys) {
+  var body = document.getElementById('pevoBody');
+  if(!body) return;
+  var allKeys = Object.keys(exoData);
+  if(!allKeys.length){
+    body.innerHTML = '<div class="pevo-empty">Aucun exercice avec charge en kg prescrite sur plusieurs séances.</div>';
+    return;
+  }
+  var patId = _progPatient ? _progPatient.id : 'local';
+  // Pills de sélection
+  var pillsHtml = allKeys.map(function(key){
+    var active = selectedKeys.has(key);
+    return '<label class="pevo-pill'+(active?' active':'')+'">'
+      +'<input type="checkbox" '+(active?'checked':'')+' onchange="_pevoToggle(\''+key+'\')">'
+      +_escP(exoData[key].label)
+      +'</label>';
+  }).join('');
+  var chartsHtml = '';
+  _pevoChartCtr = 0;
+  allKeys.forEach(function(key){
+    if(!selectedKeys.has(key)) return;
+    _pevoChartCtr++;
+    var grp = exoData[key];
+    var pts = grp.points;
+    var vals = pts.map(function(p){ return p.rm1; });
+    var dates = pts.map(function(p){ var d=p.date?p.date.split('-'):['','','']; return (d[2]||'?')+'/'+(d[1]||'?'); });
+    var first = pts[0].rm1, last = pts[pts.length-1].rm1;
+    var delta = last - first, sign = delta>=0?'+':'';
+    var pct = first>0 ? (delta/first*100) : null;
+    var pctStr = pct!==null?' ('+(Math.abs(pct)>999?(pct>0?'>':'<')+' 999%':(pct>=0?'+':'')+pct.toFixed(0)+'%')+')':'';
+    var cls = delta===0?'neutral':(delta>0?'pos':'neg');
+    var svg = _buildPevoChart(vals, dates, _pevoChartCtr);
+    if(!svg) return;
+    chartsHtml += '<div class="pevo-card">'
+      +'<div class="pevo-card-header">'
+      +'<span class="pevo-card-title">'+_escP(grp.label)+'</span>'
+      +'<div class="pevo-card-kpis">'
+      +'<span class="pevo-kpi-neutral">Début : '+first.toFixed(1)+'kg</span>'
+      +'<span class="pevo-kpi-neutral">→</span>'
+      +'<span class="pevo-kpi-strong">Actuel : '+last.toFixed(1)+'kg</span>'
+      +'<span class="pevo-kpi '+cls+'">'+sign+delta.toFixed(1)+'kg'+pctStr+'</span>'
+      +'</div></div>'
+      +svg+'</div>';
+  });
+  body.innerHTML =
+    '<div class="pevo-select-section">'
+    +'<div class="pevo-select-title">Exercices disponibles ('+allKeys.length+')</div>'
+    +'<div class="pevo-selall-row">'
+    +'<button class="pevo-selall-btn" onclick="_pevoSelectAll(true)">✓ Tout sélectionner</button>'
+    +'<button class="pevo-selall-btn" onclick="_pevoSelectAll(false)">✗ Tout désélectionner</button>'
+    +'</div>'
+    +'<div class="pevo-exo-pills" id="pevoPills">'+pillsHtml+'</div>'
+    +'</div>'
+    +(chartsHtml ? '<div class="pevo-charts" id="pevoChartsGrid">'+chartsHtml+'</div>'
+                 : '<div class="pevo-empty">Cochez un exercice ci-dessus pour afficher sa courbe.</div>');
+  _attachPevoEvents();
+}
+
+function _pevoToggle(key) {
+  if(!_pevoData || !_progPatient) return;
+  var patId = _progPatient.id;
+  var sel = _pevoGetSel(patId);
+  if(sel.has(key)) sel.delete(key); else sel.add(key);
+  _pevoSaveSel(patId, sel);
+  _renderPevoCharts(_pevoData, sel);
+}
+
+function _pevoSelectAll(state) {
+  if(!_pevoData || !_progPatient) return;
+  var patId = _progPatient.id;
+  var sel = state ? new Set(Object.keys(_pevoData)) : new Set();
+  _pevoSaveSel(patId, sel);
+  _renderPevoCharts(_pevoData, sel);
+}
+
+function openChargesEvo() {
+  if(!_progPatient){ alert('Sélectionnez un patient d\'abord.'); return; }
+  var overlay = document.getElementById('pevoOverlay');
+  overlay.classList.add('open');
+  var body = document.getElementById('pevoBody');
+  body.innerHTML = '<div class="pevo-loading">Chargement des programmes…</div>';
+  _pevoData = null;
+  // Charger tous les programmes du patient avec leurs données complètes
+  var url = SUPA_URL_P + '/rest/v1/programmes?patient_id=eq.' + _progPatient.id + '&select=id,nom,date,donnees&order=date.asc';
+  fetch(url, {method:'GET', headers:_sbHeaders()})
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(!Array.isArray(data) || !data.length){
+        body.innerHTML = '<div class="pevo-empty">Aucun programme enregistré pour ce patient.</div>';
+        return;
+      }
+      _pevoData = _extractExoLoads(data);
+      var sel = _pevoGetSel(_progPatient.id);
+      _renderPevoCharts(_pevoData, sel);
+    })
+    .catch(function(){ body.innerHTML = '<div class="pevo-empty">Erreur réseau. Vérifiez votre connexion.</div>'; });
+}
+
+function closeChargesEvo() {
+  document.getElementById('pevoOverlay').classList.remove('open');
+}
 
 function _loadProg(id){
   var url = SUPA_URL_P + '/rest/v1/programmes?id=eq.' + id + '&select=*';
