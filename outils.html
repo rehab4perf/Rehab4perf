@@ -66,31 +66,21 @@ body {
 }
 .sub-tab:hover { color: #1A1917; background: #F1F0ED; }
 .sub-tab.active { color: #1A3A5C; border-bottom-color: #2B5FA6; font-weight: 700; }
-/* Labels courts sur tablette */
+/* Barre scrollable sur tablette/portrait (iPad Air portrait = 820px) */
 .tab-full { display: inline; }
 .tab-short { display: none; }
 @media (max-width: 900px) {
-  .sub-tabs { padding: 0 8px; }
-  .sub-tab { padding: 11px 10px; font-size: .78rem; }
-  .tab-full { display: none; }
-  .tab-short { display: inline; }
-}
-/* Barre scrollable en portrait (iPad portrait ~768px, petits écrans) */
-@media (max-width: 768px) {
   .sub-tabs {
+    padding: 0 4px;
     overflow-x: auto;
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
-    scrollbar-width: none;        /* Firefox */
-    -ms-overflow-style: none;     /* IE/Edge */
-    padding: 0 4px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     flex-wrap: nowrap;
   }
-  .sub-tabs::-webkit-scrollbar { display: none; } /* Chrome/Safari */
-  /* Afficher les labels complets — la barre scrolle, pas besoin de raccourcir */
-  .tab-full { display: inline; }
-  .tab-short { display: none; }
+  .sub-tabs::-webkit-scrollbar { display: none; }
   .sub-tab { padding: 11px 12px; font-size: .8rem; flex-shrink: 0; }
 }
 
