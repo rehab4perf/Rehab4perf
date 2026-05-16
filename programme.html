@@ -695,7 +695,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   font-size:1.3rem; cursor:pointer; line-height:1; padding:0;
 }
 .sdm-tiles {
-  display:grid; grid-template-columns:repeat(3,1fr); gap:12px;
+  display:grid; grid-template-columns:repeat(2,1fr); gap:12px;
   padding:20px 18px 10px;
 }
 .sdm-tile {
@@ -1703,17 +1703,14 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
       <button onclick="_closeSaveDest()">✕</button>
     </div>
     <div class="sdm-tiles">
-      <div class="sdm-tile" id="sdm-tile-protocol" onclick="_saveDest('protocol')">
-        <div class="sdm-tile-icon">📁</div>
-        <div class="sdm-tile-label">Dans un protocole</div>
-      </div>
-      <div class="sdm-tile" id="sdm-tile-template" onclick="_saveDest('template')">
-        <div class="sdm-tile-icon">📋</div>
-        <div class="sdm-tile-label">Template standalone</div>
-      </div>
       <div class="sdm-tile" id="sdm-tile-patient" onclick="_saveDest('patient')">
         <div class="sdm-tile-icon">👤</div>
         <div class="sdm-tile-label">Programme patient</div>
+      </div>
+      <div class="sdm-tile" id="sdm-tile-library" onclick="_saveDest('library')">
+        <div class="sdm-tile-icon">📚</div>
+        <div class="sdm-tile-label">Bibliothèque</div>
+        <div class="sdm-tile-sub" style="font-size:.62rem;color:#6b7280;margin-top:2px;">Template / Protocole</div>
       </div>
     </div>
     <p class="sdm-hint" id="sdm-hint"></p>
@@ -1879,7 +1876,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
     <div style="display:flex;align-items:center;gap:6px;">
       <button class="builder-save-btn" id="prog-cloud-save-btn" onclick="_builderSaveBtnClick()">💾 Sauvegarder</button>
       <button class="builder-update-btn" id="prog-update-btn" onclick="_doUpdateTemplate()" style="display:none" title="">🔄 Mettre à jour</button>
-      <button class="builder-plan-btn" onclick="openPlanModal()">📅 Planifier</button>
+      <button class="builder-plan-btn" id="builder-plan-btn" onclick="openPlanModal()">📅 Planifier</button>
       <button class="builder-share-btn" id="prog-share-btn" onclick="shareBuilderProg()">📤 Partager</button>
       <button class="btn btn-outline" onclick="openProgHistory()" style="font-size:.72rem;padding:4px 9px;white-space:nowrap;">📂 Programmes</button>
       <button class="builder-close" onclick="closeBuilder()" title="Fermer">✕</button>
@@ -6194,12 +6191,16 @@ function openCalPicker(dateStr) {
   var dateLbl = parseInt(parts[2])+' '+months[parseInt(parts[1])-1]+' '+parts[0];
   document.getElementById('calPickerTitle').textContent = dateLbl;
   var list = document.getElementById('calPickerList');
-  // Menu contextuel : choix de l'action
   list.innerHTML =
-    '<button class="cal-ctx-btn" onclick="_openCalSessionPicker(\''+dateStr+'\')">'
+    '<button class="cal-ctx-btn" onclick="_openBuilderNewForDate(\''+dateStr+'\')">'
+      +'<span class="cal-ctx-btn-icon">✏️</span>'
+      +'<span class="cal-ctx-btn-body"><span>Nouvelle séance</span>'
+      +'<span class="cal-ctx-btn-desc">Créer et planifier une séance pour cette date</span></span>'
+    +'</button>'
+    +'<button class="cal-ctx-btn" onclick="_openCalExistingPicker(\''+dateStr+'\')">'
       +'<span class="cal-ctx-btn-icon">📋</span>'
-      +'<span class="cal-ctx-btn-body"><span>Planifier une séance</span>'
-      +'<span class="cal-ctx-btn-desc">Ajouter un programme à cette date</span></span>'
+      +'<span class="cal-ctx-btn-body"><span>Ajouter une séance existante</span>'
+      +'<span class="cal-ctx-btn-desc">Planifier un programme déjà enregistré</span></span>'
     +'</button>'
     +'<button class="cal-ctx-btn" onclick="_openCalNoteForm(\''+dateStr+'\')">'
       +'<span class="cal-ctx-btn-icon">📝</span>'
@@ -6209,8 +6210,8 @@ function openCalPicker(dateStr) {
   document.getElementById('calPickerOverlay').classList.add('open');
 }
 
-function _openCalSessionPicker(dateStr) {
-  openBuilderForDate(dateStr);
+function _openCalExistingPicker(dateStr) {
+  _calPickerDate = dateStr;
   var parts = dateStr.split('-');
   var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
   document.getElementById('calPickerTitle').textContent = 'Planifier le '+parseInt(parts[2])+' '+months[parseInt(parts[1])-1]+' '+parts[0];
@@ -6226,7 +6227,8 @@ function _openCalSessionPicker(dateStr) {
     .then(function(data){
       var progs = Array.isArray(data) ? data : [];
       if(!progs.length){
-        list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:.82rem;">Aucun programme cloud pour ce patient.<br>Sauvegarde d\'abord avec ☁️ Sauvegarder.</div>';
+        list.innerHTML = '<button class="cal-note-back" onclick="openCalPicker(\''+dateStr+'\')">← Retour</button>'
+          + '<div style="padding:20px;text-align:center;color:var(--muted);font-size:.82rem;">Aucun programme enregistré.<br>Créez une nouvelle séance d\'abord.</div>';
         return;
       }
       list.innerHTML = '<button class="cal-note-back" onclick="openCalPicker(\''+dateStr+'\')">← Retour</button>'
@@ -6243,11 +6245,11 @@ function _openCalSessionPicker(dateStr) {
       list.innerHTML = '<div style="padding:16px;color:#E74C3C;">Erreur de chargement.</div>';
     });
   } else {
-    // Mode local : afficher les séances enregistrées
+    // Mode local
     _loadSeances();
     if(!_savedSeances.length){
       list.innerHTML = '<button class="cal-note-back" onclick="openCalPicker(\''+dateStr+'\')">← Retour</button>'
-        +'<div style="padding:20px;text-align:center;color:var(--muted);font-size:.82rem;">Aucune séance enregistrée.<br>Créez et enregistrez une séance d\'abord.</div>';
+        +'<div style="padding:20px;text-align:center;color:var(--muted);font-size:.82rem;">Aucune séance enregistrée.</div>';
       return;
     }
     list.innerHTML = '<button class="cal-note-back" onclick="openCalPicker(\''+dateStr+'\')">← Retour</button>'
@@ -6641,25 +6643,45 @@ function _calMoveEvent(evId, progId, targetDate, sourceDate){
 
 function _calDuplicateEvent(progId, targetDate){
   if(!_progPatient||!_progUid||!_progToken) return;
-  fetch(SUPA_URL_P+'/rest/v1/seances_planifiees', {
-    method:'POST', headers:_sbHeaders(),
-    body: JSON.stringify({patient_id:_progPatient.id, programme_id:progId, praticien_id:_progUid, date:targetDate})
-  })
-  .then(function(r){
-    if(!r.ok){ return r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); }); }
-    return r.json();
-  })
+  // Copie profonde : nouveau programme indépendant + nouvelle séance planifiée
+  fetch(SUPA_URL_P+'/rest/v1/programmes?id=eq.'+progId+'&select=nom,donnees', {method:'GET', headers:_sbHeaders()})
+  .then(function(r){ return r.json(); })
   .then(function(data){
-    if(!data) return;
-    var created = Array.isArray(data) ? data[0] : data;
-    var newId = created && created.id;
-    renderCalendar();
-    _showToast('📋 Séance dupliquée', function(){
-      if(!newId) return;
-      fetch(SUPA_URL_P+'/rest/v1/seances_planifiees?id=eq.'+newId, {
-        method:'DELETE', headers:_sbHeaders()
-      }).then(function(){ renderCalendar(); });
-    });
+    var src = Array.isArray(data) ? data[0] : data;
+    if(!src){ alert('Programme source introuvable.'); return; }
+    var today = new Date().toISOString().split('T')[0];
+    fetch(SUPA_URL_P+'/rest/v1/programmes', {
+      method:'POST', headers:_sbHeaders(),
+      body:JSON.stringify({patient_id:_progPatient.id, praticien_id:_progUid, nom:src.nom||'Programme', date:today, donnees:src.donnees})
+    })
+    .then(function(r2){ return r2.json().then(function(d){ return {ok:r2.ok, data:d}; }); })
+    .then(function(res){
+      if(!res.ok){ alert('Erreur création programme copie.'); return; }
+      var d = Array.isArray(res.data) ? res.data[0] : res.data;
+      if(!d||!d.id){ alert('Programme non créé.'); return; }
+      var newProgId = d.id;
+      fetch(SUPA_URL_P+'/rest/v1/seances_planifiees', {
+        method:'POST', headers:_sbHeaders(),
+        body:JSON.stringify({patient_id:_progPatient.id, programme_id:newProgId, praticien_id:_progUid, date:targetDate})
+      })
+      .then(function(r3){ return r3.json().then(function(d2){ return {ok:r3.ok, data:d2}; }); })
+      .then(function(res3){
+        if(!res3.ok){ alert('Erreur planification copie.'); return; }
+        var created = Array.isArray(res3.data) ? res3.data[0] : res3.data;
+        var newSeanceId = created && created.id;
+        renderCalendar();
+        _showToast('📋 Séance dupliquée (copie indépendante)', function(){
+          if(!newSeanceId) return;
+          fetch(SUPA_URL_P+'/rest/v1/seances_planifiees?id=eq.'+newSeanceId, {method:'DELETE', headers:_sbHeaders()})
+          .then(function(){
+            fetch(SUPA_URL_P+'/rest/v1/programmes?id=eq.'+newProgId, {method:'DELETE', headers:_sbHeaders()})
+            .then(function(){ renderCalendar(); });
+          });
+        });
+      })
+      .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
+    })
+    .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
   })
   .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
 }
@@ -7754,15 +7776,17 @@ function openSaveDest(){
   }
   document.getElementById('sdm-hint').textContent = hint;
   // Pré-sélection de la tuile
-  ['protocol','template','patient'].forEach(function(k){
-    document.getElementById('sdm-tile-'+k).classList.remove('active');
+  ['patient','library'].forEach(function(k){
+    var el = document.getElementById('sdm-tile-'+k);
+    if(el) el.classList.remove('active');
   });
-  if(_activeGroupId){
-    document.getElementById('sdm-tile-protocol').classList.add('active');
-  } else if(_progPatient){
+  // Afficher la tuile "Programme patient" seulement si patient sélectionné
+  var tilePatient = document.getElementById('sdm-tile-patient');
+  if(tilePatient) tilePatient.style.display = _progPatient ? '' : 'none';
+  if(_progPatient){
     document.getElementById('sdm-tile-patient').classList.add('active');
   } else {
-    document.getElementById('sdm-tile-template').classList.add('active');
+    document.getElementById('sdm-tile-library').classList.add('active');
   }
   document.getElementById('saveDestOverlay').classList.add('open');
 }
@@ -7773,27 +7797,27 @@ function _closeSaveDest(){
 
 function _saveDest(dest){
   _closeSaveDest();
-  if(dest === 'protocol'){
+  if(dest === 'library'){
     if(_activeGroupId){
       _openTmplModal({ emoji:_tmplSelectedEmoji, groupId:_activeGroupId, phaseOrdre:_activePhaseOrdre, _simplified:true });
     } else {
-      // Ouvre le modal template — l'utilisateur choisit le protocole dans le sélecteur
       _openTmplModal({ emoji:_tmplSelectedEmoji });
     }
-  } else if(dest === 'template'){
-    _openTmplModal({ emoji:_tmplSelectedEmoji });
   } else {
     saveProgToCloud();
   }
 }
 
 function _builderSaveBtnClick(){
-  // Si le builder est ouvert depuis une séance calendrier, sauvegarder directement
-  // en "programme patient" sans passer par le modal de destination.
+  if(!blocs || !blocs.length){ alert('La séance est vide.'); return; }
   if(_currentSeanceId){
-    if(!blocs || !blocs.length){ alert('La séance est vide.'); return; }
+    // Contexte B : modification d'un chip existant → save direct
     saveProgToCloud();
+  } else if(_builderDate && !_currentProgId){
+    // Contexte A : nouvelle séance depuis le calendrier → save + planifier + fermer
+    _saveAndPlanForDate();
   } else {
+    // Contexte C : builder libre → modal de destination
     openSaveDest();
   }
 }
@@ -7801,18 +7825,26 @@ function _builderSaveBtnClick(){
 function _refreshSaveBtn(){
   var btn = document.getElementById('prog-cloud-save-btn');
   var updBtn = document.getElementById('prog-update-btn');
+  var planBtn = document.getElementById('builder-plan-btn');
   if(!btn) return;
-  // Contexte calendrier → sauvegarde directe sans modal
-  if(_currentSeanceId){
+  var isContexteA = _builderDate && !_currentProgId && !_currentSeanceId;
+  var isContexteB = !!_currentSeanceId;
+  if(isContexteB){
     btn.textContent = '💾 Enregistrer la séance';
-    btn.title = 'Sauvegarder directement comme programme patient';
-    btn.style.background = '';
+    btn.title = 'Sauvegarder les modifications';
+  } else if(isContexteA){
+    var p = _builderDate.split('-');
+    var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+    btn.textContent = '💾 Enregistrer — ' + parseInt(p[2]) + ' ' + months[parseInt(p[1])-1];
+    btn.title = 'Sauvegarder et planifier sur cette date';
   } else {
     btn.textContent = '💾 Sauvegarder';
     btn.title = '';
-    btn.style.background = '';
   }
-  // Bouton "Mettre à jour" — visible uniquement quand un template est chargé
+  btn.style.background = '';
+  // "Planifier" uniquement en Contexte C
+  if(planBtn) planBtn.style.display = (isContexteA || isContexteB) ? 'none' : '';
+  // Bouton "Mettre à jour template"
   if(updBtn){
     if(_builderFromTemplate){
       var _tRef = (_sidebarProgs||[]).find(function(x){ return String(x.id)===String(_builderFromTemplate); });
@@ -8912,6 +8944,74 @@ function openBuilderForDate(dateStr){
   _enterBuilderMode();
 }
 
+function _resetBuilderState(){
+  blocs = [];
+  _notes = '';
+  activeBloc = null;
+  _currentProgId = null;
+  _currentSeanceId = null;
+  _builderDate = '';
+  _builderFromTemplate = null;
+  _builderLinkedPhase = null;
+  var pn = document.getElementById('patientName');
+  if(pn) pn.value = '';
+  renderSession();
+  _updateBuilderTitle();
+  _refreshSaveBtn();
+}
+
+function _openBuilderNewForDate(dateStr){
+  closeCalPicker();
+  _resetBuilderState();
+  _builderDate = dateStr;
+  _applyBuilderReadOnly(false);
+  _activeGroupId=null; _activeGroupNom=''; _activePhaseOrdre=1;
+  _updateActiveGroupBadge();
+  _updateBuilderTitle();
+  _refreshSaveBtn();
+  _enterBuilderMode();
+}
+
+function _saveAndPlanForDate(){
+  if(!_progPatient){ alert('Sélectionnez un patient depuis la barre de navigation.'); return; }
+  if(!_progUid || !_progToken){ alert('Session non disponible.'); return; }
+  if(!blocs || !blocs.length){ alert('La séance est vide.'); return; }
+  if(!_builderDate){ return; }
+  var btn = document.getElementById('prog-cloud-save-btn');
+  btn.disabled = true; btn.textContent = '⏳ Sauvegarde…';
+  var p = _builderDate.split('-');
+  var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  var nomProg = (document.getElementById('patientName')||{}).value || ('Séance du '+parseInt(p[2])+' '+months[parseInt(p[1])-1]);
+  var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), notes: getNotes() };
+  var today = new Date().toISOString().split('T')[0];
+  var dateToSchedule = _builderDate;
+  fetch(SUPA_URL_P + '/rest/v1/programmes', {
+    method:'POST', headers:_sbHeaders(),
+    body:JSON.stringify({patient_id:_progPatient.id, praticien_id:_progUid, nom:nomProg, date:today, donnees:donnees})
+  })
+  .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, status:r.status, data:d}; }); })
+  .then(function(res){
+    if(!res.ok){ btn.disabled=false; _refreshSaveBtn(); _handleApiError(res.status, res.data, 'création programme'); return; }
+    var d = Array.isArray(res.data) ? res.data[0] : res.data;
+    if(!d||!d.id){ btn.disabled=false; _refreshSaveBtn(); alert('Programme non créé.'); return; }
+    fetch(SUPA_URL_P + '/rest/v1/seances_planifiees', {
+      method:'POST', headers:_sbHeaders(),
+      body:JSON.stringify({patient_id:_progPatient.id, programme_id:d.id, praticien_id:_progUid, date:dateToSchedule})
+    })
+    .then(function(r2){
+      btn.disabled = false;
+      if(!r2.ok){ r2.json().then(function(e){ alert('Erreur planification : '+JSON.stringify(e)); }); _refreshSaveBtn(); return; }
+      _draftClear();
+      _showToast('✓ Séance planifiée le '+parseInt(p[2])+' '+months[parseInt(p[1])-1]+' !');
+      _resetBuilderState();
+      closeBuilder();
+      renderCalendar();
+    })
+    .catch(function(err){ btn.disabled=false; _refreshSaveBtn(); alert('Erreur réseau : '+(err&&err.message||err)); });
+  })
+  .catch(function(err){ btn.disabled=false; _refreshSaveBtn(); alert('Erreur réseau : '+(err&&err.message||err)); });
+}
+
 function openBuilderNew(){
   _builderDate = '';
   _currentProgId = null;
@@ -8992,7 +9092,7 @@ function _renderUpcoming(){
     var nom = (ev.programmes&&ev.programmes.nom)||'Programme';
     var p = ev.date.split('-');
     var lbl = parseInt(p[2])+' '+months[parseInt(p[1])-1];
-    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:9px 12px;margin-bottom:7px;display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="openBuilderForDate(\''+ev.date+'\')">'
+    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:9px 12px;margin-bottom:7px;display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="_openChipInBuilder(\''+ev.programme_id+'\',\''+ev.date+'\',\''+ev.id+'\')">'
           + '<div style="background:var(--accent);color:#fff;border-radius:7px;padding:5px 9px;font-size:.68rem;font-weight:700;white-space:nowrap;">'+lbl+'</div>'
           + '<div style="font-size:.82rem;font-weight:600;flex:1;">📋 '+escH(nom)+'</div>'
           + '<div style="color:var(--muted);font-size:.8rem;">›</div>'
