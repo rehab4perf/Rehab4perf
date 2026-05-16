@@ -3933,8 +3933,8 @@ function _buildChartD(valsA, valsB, dates, opts){
   ptsA.forEach(function(p){if(p.valid)lastA=p;}); ptsB.forEach(function(p){if(p.valid)lastB=p;});
   var decA=opts.unit==='cm'&&lastA&&lastA.v%1!==0?1:0;
   var decB=opts.unit==='cm'&&lastB&&lastB.v%1!==0?1:0;
-  if(lastA) html+='<text x="'+lastA.x.toFixed(1)+'" y="'+(lastA.y+16).toFixed(1)+'" text-anchor="middle" font-size="9" font-weight="700" fill="'+colorA+'">'+lastA.v.toFixed(decA)+opts.unit+'</text>';
-  if(lastB) html+='<text x="'+lastB.x.toFixed(1)+'" y="'+(lastB.y-8).toFixed(1)+'" text-anchor="middle" font-size="9" font-weight="700" fill="'+colorB+'">'+lastB.v.toFixed(decB)+opts.unit+'</text>';
+  if(lastA) html+='<text x="'+(lastA.x-10).toFixed(1)+'" y="'+(lastA.y+14).toFixed(1)+'" text-anchor="end" font-size="9" font-weight="700" fill="'+colorA+'">'+lastA.v.toFixed(decA)+opts.unit+'</text>';
+  if(lastB) html+='<text x="'+(lastB.x-10).toFixed(1)+'" y="'+(lastB.y-6).toFixed(1)+'" text-anchor="end" font-size="9" font-weight="700" fill="'+colorB+'">'+lastB.v.toFixed(decB)+opts.unit+'</text>';
   // Légende
   var lx=VW-PAD.right+8;
   html+='<rect x="'+lx+'" y="'+PAD.top+'" width="8" height="8" rx="2" fill="'+colorA+'"/><text x="'+(lx+11)+'" y="'+(PAD.top+7)+'" font-size="8.5" fill="'+colorA+'" font-weight="600">'+opts.labelA+'</text>';
