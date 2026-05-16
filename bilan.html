@@ -3501,7 +3501,12 @@ document.addEventListener('change', function(){ if(!_suppressDirty) _bilanModifi
 (function(){
   try {
     var sp = localStorage.getItem('r4p-current-patient');
-    if(sp && sp !== '') { _bilanPatient = JSON.parse(sp); }
+    if(sp && sp !== '') {
+      _bilanPatient = JSON.parse(sp);
+      // Charger tous les bilans Supabase pour avoir _allBilans + _prevDonnees
+      // (exécuté après l'auth auto-restaurée par le client Supabase)
+      setTimeout(function(){ _resetAndLoadPatient(_bilanPatient); }, 0);
+    }
     _updateSaveBar();
   } catch(ex){}
 })();
@@ -3967,13 +3972,24 @@ function loadBilan(id){
     closeHistoModal();
     var btn = document.getElementById('bilan-save-btn');
     if(btn){ btn.textContent='✓ Bilan chargé'; setTimeout(function(){ btn.textContent='💾 Sauvegarder le bilan'; },2500); }
+    // Mettre à jour deltas inline : trouver le bilan précédent dans _allBilans
+    document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
+    var idx = _allBilans.findIndex(function(b){ return b.id === id; });
+    if(idx !== -1 && idx + 1 < _allBilans.length){
+      _prevDonnees = _allBilans[idx + 1].donnees || {};
+      _renderDeltas(_prevDonnees);
+    } else {
+      _prevDonnees = null;
+    }
   });
 }
 
 function newBilan(){
   if(!confirm('Créer un nouveau bilan vierge ? (le bilan actuel non sauvegardé sera perdu)')) return;
   _currentBilanId = null;
+  _prevDonnees    = null;
   _resetBilanFields();
+  document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
   showPage('infos');
   localStorage.removeItem('athletik-bilan');
   if(_bilanPatient) _autofillPatientFields(_bilanPatient);
