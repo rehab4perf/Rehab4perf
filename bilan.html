@@ -4122,10 +4122,10 @@ function _selectAllCharts(state){
 
 /* ── Export / Impression Évolution ────────────────────── */
 function _buildEvolutionHTML(){
-  // S'assurer que le contenu est rendu
-  _renderEvolutionPage();
   var container = document.getElementById('evolution-content');
   if(!container) return null;
+  // Ne rendre que si le contenu est absent — évite d'écraser les sélections de l'utilisateur
+  if(!container.querySelector('.evo-chart-card')) _renderEvolutionPage();
 
   // Infos praticien
   var p = getProfile ? getProfile() : {};
