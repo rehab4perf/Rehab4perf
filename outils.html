@@ -854,6 +854,14 @@ body {
     </div>
   </div>
 
+  <!-- Barre d'export — apparaît dès qu'une semaine est sélectionnée -->
+  <div id="cap-export-bar" style="display:none;position:sticky;top:0;z-index:10;background:#1A3A5C;color:#fff;padding:10px 16px;border-radius:8px;margin-bottom:12px;display:none;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font-size:.82rem;font-weight:600;" id="cap-sel-label">0 semaine sélectionnée</span>
+    <button onclick="capSelectAll()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:4px 12px;font-size:.76rem;cursor:pointer;font-family:inherit">Tout sélectionner</button>
+    <button onclick="capDeselectAll()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:4px 12px;font-size:.76rem;cursor:pointer;font-family:inherit">Tout désélectionner</button>
+    <button onclick="capExportSelection()" style="margin-left:auto;background:#2D6A4F;border:none;color:#fff;border-radius:6px;padding:7px 18px;font-size:.82rem;font-weight:700;cursor:pointer;font-family:inherit">📤 Exporter la sélection</button>
+  </div>
+
   <div id="cap-weeks-container">
     <div style="text-align:center;padding:40px;color:#9D9B96;font-size:.9rem">Chargement des semaines…</div>
   </div>
@@ -4540,8 +4548,11 @@ function buildCAP() {
         '</div>';
     }
     html +=
-      '<div style="background:#fff;border:1px solid #E8E6E1;border-radius:8px;margin-bottom:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05)">' +
+      '<div style="background:#fff;border:1px solid #E8E6E1;border-radius:8px;margin-bottom:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05)" id="cap-week-'+w.n+'">' +
         '<div style="background:'+w.col+';color:#fff;padding:9px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
+          '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;flex-shrink:0">' +
+            '<input type="checkbox" id="cap-chk-'+w.n+'" onchange="capUpdateSelection()" style="width:16px;height:16px;cursor:pointer;accent-color:#fff;flex-shrink:0">' +
+          '</label>' +
           '<div style="background:rgba(255,255,255,.18);border-radius:20px;padding:2px 10px;font-size:.68rem;font-weight:700;font-family:-apple-system,sans-serif">'+w.ph+'</div>' +
           '<div style="font-size:.9rem;font-weight:700;font-family:-apple-system,sans-serif">Semaine '+w.n+' \u2014 '+w.titre+'</div>' +
           (infoStr && w.n <= 8 ? '<div style="margin-left:auto;font-size:.72rem;opacity:.8;font-family:-apple-system,sans-serif">Allure Z2'+infoStr+'</div>' : '') +
@@ -4553,6 +4564,105 @@ function buildCAP() {
       '</div>';
   }
   container.innerHTML = html;
+  capUpdateSelection();
+}
+
+function capUpdateSelection() {
+  var sel = CAP_DATA.filter(function(w) {
+    var chk = document.getElementById('cap-chk-'+w.n);
+    return chk && chk.checked;
+  });
+  var bar = document.getElementById('cap-export-bar');
+  var lbl = document.getElementById('cap-sel-label');
+  if (!bar) return;
+  bar.style.display = sel.length > 0 ? 'flex' : 'none';
+  if (lbl) lbl.textContent = sel.length + ' semaine' + (sel.length > 1 ? 's' : '') + ' s\u00e9lectionn\u00e9e' + (sel.length > 1 ? 's' : '');
+}
+
+function capSelectAll() {
+  CAP_DATA.forEach(function(w) {
+    var chk = document.getElementById('cap-chk-'+w.n);
+    if (chk) chk.checked = true;
+  });
+  capUpdateSelection();
+}
+
+function capDeselectAll() {
+  CAP_DATA.forEach(function(w) {
+    var chk = document.getElementById('cap-chk-'+w.n);
+    if (chk) chk.checked = false;
+  });
+  capUpdateSelection();
+}
+
+function capExportSelection() {
+  var sel = CAP_DATA.filter(function(w) {
+    var chk = document.getElementById('cap-chk-'+w.n);
+    return chk && chk.checked;
+  });
+  if (!sel.length) return;
+
+  var patNom  = (document.getElementById('cap-patient-name') || {}).textContent || '';
+  var allureEl = document.getElementById('cap-allure-info');
+  var allureTxt = allureEl ? allureEl.textContent : '';
+
+  // G\u00e9n\u00e9rer le HTML des semaines s\u00e9lectionn\u00e9es
+  var weeksHtml = '';
+  sel.forEach(function(w) {
+    var seancesHtml = '';
+    for (var si = 0; si < w.s.length; si++) {
+      var isKey = w.s[si].indexOf('\ud83d\udd11') !== -1 || w.s[si].indexOf('\ud83c\udfc6') !== -1;
+      var bg = si % 2 === 0 ? '#FFFFFF' : '#F7F6F3';
+      seancesHtml +=
+        '<div style="display:grid;grid-template-columns:28px 160px 1fr;align-items:center;gap:8px;background:'+bg+';padding:10px 14px;border-bottom:1px solid #E8E6E1">' +
+          '<div style="font-size:.7rem;font-weight:700;color:#9D9B96;text-align:center">S'+(si+1)+'</div>' +
+          '<div style="font-size:.92rem;font-weight:'+(isKey?'700':'600')+';color:'+(isKey?w.col:'#1A1917')+'">'+w.s[si]+'</div>' +
+          '<div style="font-size:.78rem;color:#6B6860">'+(w.d[si]||'')+'</div>' +
+        '</div>';
+    }
+    weeksHtml +=
+      '<div style="background:#fff;border:1px solid #E8E6E1;border-radius:10px;margin-bottom:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)">' +
+        '<div style="background:'+w.col+';color:#fff;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
+          '<div style="background:rgba(255,255,255,.18);border-radius:20px;padding:2px 10px;font-size:.68rem;font-weight:700">'+w.ph+'</div>' +
+          '<div style="font-size:.92rem;font-weight:700">Semaine '+w.n+' \u2014 '+w.titre+'</div>' +
+        '</div>' +
+        seancesHtml +
+        '<div style="padding:7px 14px;background:#FEF3EB;font-size:.72rem;color:#C0392B;font-weight:500">' +
+          '\u26a0 Douleur \u2265 3/10 \u2192 arr\u00eater \u00b7 RPE > 7 \u2192 r\u00e9duire \u00b7 Selon ressenti : r\u00e9p\u00e9ter ou sauter 1\u20132 s\u00e9ances' +
+        '</div>' +
+      '</div>';
+  });
+
+  var html = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">'
+    + '<meta name="viewport" content="width=device-width,initial-scale=1">'
+    + '<title>Programme CAP'+(patNom && patNom !== '\u2014' ? ' \u2014 '+patNom : '')+'</title>'
+    + '<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;background:#F7F6F3;color:#1A1917;padding:20px 16px 48px}'
+    + '.wrap{max-width:720px;margin:0 auto}'
+    + '.doc-header{background:#1A3A5C;color:#fff;border-radius:10px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}'
+    + '.legend{background:#fff;border:1px solid #E8E6E1;border-radius:10px;padding:14px 16px;margin-bottom:18px;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#E8E6E1}'
+    + '.legend-cell{background:#fff;padding:8px 12px;font-size:.82rem}'
+    + '@media print{body{background:#fff!important}.doc-header{background:#1A3A5C!important}}'
+    + '</style></head><body><div class="wrap">'
+    + '<div class="doc-header">'
+    +   '<div><div style="font-size:.67rem;opacity:.6;text-transform:uppercase;letter-spacing:.06em">Programme \u2014 Reprise \u00e0 la Course \u00e0 Pied</div>'
+    +   '<div style="font-size:1.05rem;font-weight:700;margin-top:3px">'+(patNom && patNom !== '\u2014' ? patNom : 'Programme CAP')+'</div></div>'
+    +   '<div style="text-align:right;font-size:.76rem;opacity:.75;line-height:1.6">'
+    +     'La Clinique du Coureur \u00b7 '+sel.length+' semaine'+(sel.length>1?'s':'')+' s\u00e9lectionn\u00e9e'+(sel.length>1?'s':'')+'<br>'
+    +     (allureTxt && allureTxt !== '\u2014' ? '<span style="color:#A8D5B7">'+allureTxt+'</span>' : '')
+    +   '</div>'
+    + '</div>'
+    + '<div class="legend">'
+    +   '<div class="legend-cell"><strong style="color:#1A3A5C">C</strong> = Course \u2014 jogging conversationnel</div>'
+    +   '<div class="legend-cell" style="background:#F7F6F3"><strong style="color:#1A3A5C">M</strong> = Marche \u2014 r\u00e9cup\u00e9ration active</div>'
+    +   '<div class="legend-cell"><strong style="color:#C0392B">\u26a0 Douleur \u2265 3/10</strong> \u2192 arr\u00eater la s\u00e9ance</div>'
+    +   '<div class="legend-cell" style="background:#F7F6F3">D\u00e9buter et terminer par <strong>5 min de marche</strong></div>'
+    + '</div>'
+    + weeksHtml
+    + '</div></body></html>';
+
+  var win = window.open('', '_blank');
+  if (win) { win.document.write(html); win.document.close(); }
+  else { alert('Autorisez les pop-ups pour exporter.'); }
 }
 
 function capLoadBilan() {
