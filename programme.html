@@ -4616,8 +4616,6 @@ function _buildPevoExportHTML(){
   var email = prof.email || '';
   var metaSub = [am?'N° AM : '+am:'', tel, email].filter(Boolean).join(' · ');
   var metaParts = [];
-  metaParts.push('<strong>Évolution des charges</strong>');
-  metaParts.push(date);
   if(praticienNom) metaParts.push('<strong>'+(praticienNom+(cabinet?' — '+cabinet:''))+'</strong>');
   if(metaSub) metaParts.push(metaSub);
   var praticienMetaHTML = metaParts.join('<br>');
