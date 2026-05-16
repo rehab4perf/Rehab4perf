@@ -1294,6 +1294,10 @@ body {
           <label for="cr-dest-spec">Spécialité <span style="text-transform:none;font-weight:400">(optionnel)</span></label>
           <input type="text" id="cr-dest-spec" placeholder="Chirurgien orthopédiste">
         </div>
+        <div class="cr-fg">
+          <label for="cr-dest-email">Email du médecin <span style="text-transform:none;font-weight:400">(optionnel — pré-remplit Gmail)</span></label>
+          <input type="email" id="cr-dest-email" placeholder="docteur.martin@cabinet.fr">
+        </div>
 
         <div class="cr-fg" style="margin-bottom:12px;">
           <label for="cr-objet-txt" style="font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text2);">Objet du courrier</label>
@@ -5467,10 +5471,7 @@ _updateOutilsPatientBtns();
     var commentaire = crV('cr-commentaire'), plan = crV('cr-plan');
 
     // 1. Salutation
-    var greeting = destNom ? 'Cher confrère' + (destSpec ? ', ' + destSpec : '') + ',' : 'Confrère,';
-    if (destNom && /^(Dr\.?\s+)?[A-Z][a-z]+(ine|elle|ette|ance|ence|ie)\b/.test(destNom.replace(/^Dr\.?\s+/,''))) {
-      greeting = 'Chère consœur' + (destSpec ? ', ' + destSpec : '') + ',';
-    }
+    var greeting = 'Bonjour Docteur,';
     lines.push(greeting); lines.push('');
 
     // 2. Objet
@@ -5612,10 +5613,7 @@ _updateOutilsPatientBtns();
     }
 
     // Salutation
-    var greeting = destNom ? 'Cher confrère' + (destSpec ? ', ' + destSpec : '') + ',' : 'Confrère,';
-    if (destNom && /^(Dr\.?\s+)?[A-Z][a-z]+(ine|elle|ette|ance|ence|ie)\b/.test(destNom.replace(/^Dr\.?\s+/,''))) {
-      greeting = 'Chère consœur' + (destSpec ? ', ' + destSpec : '') + ',';
-    }
+    var greeting = 'Bonjour Docteur,';
     lines.push(greeting); lines.push('');
 
     // Objet
@@ -5746,15 +5744,20 @@ _updateOutilsPatientBtns();
     else { _crToast('Autorisez les pop-ups pour exporter en PDF'); }
   };
 
-  // Export email — ouvre le client mail avec le courrier
+  // Export email — ouvre Gmail web compose avec le courrier pré-rempli
   window.crExportEmail = function() {
     var body = document.getElementById('cr-letter-body');
     var text = body ? body.textContent : '';
     if (!text || (body && body.querySelector('.letter-empty'))) { _crToast('Générez d\'abord le courrier'); return; }
     var patNom  = crV('cr-pat-nom');
+    var destEmail = crV('cr-dest-email') || '';
     var subject = encodeURIComponent('Compte-rendu de rééducation' + (patNom ? ' — ' + patNom : ''));
     var bodyEnc = encodeURIComponent(text);
-    window.location.href = 'mailto:?subject=' + subject + '&body=' + bodyEnc;
+    var gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1'
+      + (destEmail ? '&to=' + encodeURIComponent(destEmail) : '')
+      + '&su=' + subject
+      + '&body=' + bodyEnc;
+    window.open(gmailUrl, '_blank');
   };
 
   // ── Template selector ────────────────────────────────────────
