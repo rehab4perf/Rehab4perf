@@ -980,6 +980,18 @@ textarea { resize:none !important; overflow:hidden !important; }
 .evo-neutral { color:var(--text3); }
 .evo-na { color:var(--text3); font-style:italic; font-size:.78rem; }
 .spark-svg { display:block; margin:0 auto; overflow:visible; }
+.evo-chart-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 16px 10px; }
+.evo-chart-header { display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+.evo-chart-title { font-size:.82rem; font-weight:700; color:var(--text); }
+.evo-chart-kpis { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.evo-kpi-neutral { font-size:.72rem; color:var(--text2); }
+.evo-kpi-strong { font-size:.72rem; font-weight:700; color:var(--accent2); }
+.evo-kpi { font-size:.72rem; font-weight:700; padding:2px 7px; border-radius:10px; }
+.evo-kpi.evo-pos { background:var(--green-l); color:var(--green); }
+.evo-kpi.evo-neg { background:var(--red-l); color:var(--red); }
+.evo-kpi.evo-neutral { background:var(--surface2); color:var(--text2); }
+.evo-chart-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media(max-width:700px) { .evo-chart-grid { grid-template-columns:1fr; } }
 </style>
 
 </head>
@@ -3482,6 +3494,7 @@ var _currentBilanDate = null; // date ISO (YYYY-MM-DD) du bilan actuellement cha
 var _bilanUid       = null;
 var _bilanModified  = false;   // true dès qu'une saisie est faite depuis le dernier save/load
 var _suppressDirty  = false;   // true pendant _deserializeBilan pour ne pas polluer le flag
+var _chartCounter = 0;
 var _prevDonnees    = null;    // donnees du bilan précédent (pour deltas inline)
 var _allBilans      = [];      // tous les bilans du patient (pour la page évolution)
 
@@ -3717,6 +3730,54 @@ var TRACKED_METRICS = [
   {id:'rf-pdslrt',      label:'PDSLRT (lombaires)',             unit:'s',   dir:'up',   cat:'Tests Fonctionnels Rachis'},
 ];
 
+/* ── Configuration des graphiques d'évolution ─────────── */
+var CHART_GROUPS = [
+  // ─ Douleur ─
+  {cat:'Douleur', title:'Douleur EVA (repos)', type:'single', idA:'f-eva', unit:'/10', dir:'down', labelA:'EVA'},
+  {cat:'Douleur', title:'EVA max (7 jours)', type:'single', idA:'f-eva-max', unit:'/10', dir:'down', labelA:'EVA max'},
+  {cat:'Douleur', title:'ACL-RSI Score', type:'single', idA:'f-aclrsi', unit:'%', dir:'up', labelA:'ACL-RSI'},
+  // ─ Épaule — Mobilité ─
+  {cat:'Épaule — Mobilité', title:'Flexion épaule D vs G', type:'dual', idA:'rom-ep-d-flex', idB:'rom-ep-g-flex', unit:'°', dir:'up', labelA:'Côté D', labelB:'Côté G'},
+  {cat:'Épaule — Mobilité', title:'RE épaule D vs G (0°)', type:'dual', idA:'rom-ep-d-re0', idB:'rom-ep-g-re0', unit:'°', dir:'up', labelA:'Côté D', labelB:'Côté G'},
+  {cat:'Épaule — Mobilité', title:'RI épaule D vs G (0°)', type:'dual', idA:'rom-ep-d-ri0', idB:'rom-ep-g-ri0', unit:'°', dir:'up', labelA:'Côté D', labelB:'Côté G'},
+  {cat:'Épaule — Mobilité', title:'RE épaule D vs G (90°)', type:'dual', idA:'rom-ep-d-re90', idB:'rom-ep-g-re90', unit:'°', dir:'up', labelA:'Côté D', labelB:'Côté G'},
+  {cat:'Épaule — Mobilité', title:'GIRD (côté atteint)', type:'single', idA:'gird-ca', unit:'°', dir:'up', labelA:'GIRD'},
+  // ─ Épaule — Force ─
+  {cat:'Épaule — Force', title:'RL1 — Atteint vs Sain', type:'dual', idA:'ep-rl1-ca', idB:'ep-rl1-cs', unit:'N', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Épaule — Force', title:'RL2 — Atteint vs Sain', type:'dual', idA:'ep-rl2-ca', idB:'ep-rl2-cs', unit:'N', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Épaule — Force', title:'Abducteurs — Atteint vs Sain', type:'dual', idA:'ep-abd-ca', idB:'ep-abd-cs', unit:'N', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Épaule — Force', title:'BHT — Atteint vs Sain', type:'dual', idA:'ep-bht-ca', idB:'ep-bht-cs', unit:'N', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  // ─ Hanche — Mobilité ─
+  {cat:'Hanche — Mobilité', title:'Flexion hanche D vs G', type:'dual', idA:'ha-mob-d-flex', idB:'ha-mob-g-flex', unit:'°', dir:'up', labelA:'Côté D', labelB:'Côté G'},
+  {cat:'Hanche — Mobilité', title:'RI hanche D vs G', type:'dual', idA:'ha-mob-d-ri', idB:'ha-mob-g-ri', unit:'°', dir:'up', labelA:'Côté D', labelB:'Côté G'},
+  {cat:'Hanche — Mobilité', title:'RE hanche D vs G', type:'dual', idA:'ha-mob-d-re', idB:'ha-mob-g-re', unit:'°', dir:'up', labelA:'Côté D', labelB:'Côté G'},
+  // ─ Genou — Mobilité ─
+  {cat:'Genou — Mobilité', title:'Flexion genou D vs G (actif)', type:'dual', idA:'rom-ge-d-flexa', idB:'rom-ge-g-flexa', unit:'°', dir:'up', labelA:'Côté D', labelB:'Côté G'},
+  {cat:'Genou — Mobilité', title:'Flexion genou D vs G (passif)', type:'dual', idA:'rom-ge-d-flexp', idB:'rom-ge-g-flexp', unit:'°', dir:'up', labelA:'Côté D', labelB:'Côté G'},
+  // ─ Tests Fonctionnels MI ─
+  {cat:'Tests Fonctionnels MI', title:'SLS — Atteint vs Sain', type:'dual', idA:'sls-ca', idB:'sls-cs', unit:'rép', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Tests Fonctionnels MI', title:'Hop Test — Atteint vs Sain', type:'dual', idA:'hop-ca', idB:'hop-cs', unit:'cm', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Tests Fonctionnels MI', title:'Lunge WBLT — Atteint vs Sain', type:'dual', idA:'lu-ca', idB:'lu-cs', unit:'cm', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Tests Fonctionnels MI', title:'Drop Jump hauteur — Atteint vs Sain', type:'dual', idA:'dj-h-ca', idB:'dj-h-cs', unit:'cm', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Tests Fonctionnels MI', title:'SEBT Antérieur — Atteint vs Sain', type:'dual', idA:'sebt-ant-ca', idB:'sebt-ant-cs', unit:'cm', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Tests Fonctionnels MI', title:'SEBT Postéro-médial — Atteint vs Sain', type:'dual', idA:'sebt-pm-ca', idB:'sebt-pm-cs', unit:'cm', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Tests Fonctionnels MI', title:'SET — Atteint vs Sain', type:'dual', idA:'set-ca', idB:'set-cs', unit:'s', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Tests Fonctionnels MI', title:'UQYBT Médial — D vs G', type:'dual', idA:'uqybt-med-d', idB:'uqybt-med-g', unit:'cm', dir:'up', labelA:'Côté D', labelB:'Côté G'},
+  {cat:'Tests Fonctionnels MI', title:'UQYBT Inféro-latéral — D vs G', type:'dual', idA:'uqybt-il-d', idB:'uqybt-il-g', unit:'cm', dir:'up', labelA:'Côté D', labelB:'Côté G'},
+  // ─ Tests Fonctionnels MS ─
+  {cat:'Tests Fonctionnels MS', title:'PSET — Atteint vs Sain', type:'dual', idA:'pset-ca', idB:'pset-cs', unit:'rép', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Tests Fonctionnels MS', title:'SHRT — D vs G', type:'dual', idA:'shrt-d', idB:'shrt-g', unit:'cm', dir:'up', labelA:'Côté D', labelB:'Côté G'},
+  {cat:'Tests Fonctionnels MS', title:'ULRT — moy. D vs G', type:'dual',
+    computeA:function(d){var vs=[parseFloat(d['ulrt-d1']),parseFloat(d['ulrt-d2']),parseFloat(d['ulrt-d3'])].filter(function(v){return !isNaN(v);});return vs.length?vs.reduce(function(a,b){return a+b;},0)/vs.length:NaN;},
+    computeB:function(d){var vs=[parseFloat(d['ulrt-g1']),parseFloat(d['ulrt-g2']),parseFloat(d['ulrt-g3'])].filter(function(v){return !isNaN(v);});return vs.length?vs.reduce(function(a,b){return a+b;},0)/vs.length:NaN;},
+    unit:'cm', dir:'up', labelA:'Côté D', labelB:'Côté G'},
+  // ─ Tests Fonctionnels Rachis ─
+  {cat:'Tests Fonctionnels Rachis', title:'Endurance fléchisseurs cerv.', type:'single', idA:'rf-flx-cerv', unit:'s', dir:'up', labelA:'Maintien'},
+  {cat:'Tests Fonctionnels Rachis', title:'Endurance extenseurs cerv.', type:'single', idA:'rf-ext-cerv', unit:'s', dir:'up', labelA:'Maintien'},
+  {cat:'Tests Fonctionnels Rachis', title:'Endurance latérale cerv. D vs G', type:'dual', idA:'rf-lat-d', idB:'rf-lat-g', unit:'s', dir:'up', labelA:'Côté D', labelB:'Côté G'},
+  {cat:'Tests Fonctionnels Rachis', title:'Sørensen — Ext. lombaires', type:'single', idA:'rf-sorensen', unit:'s', dir:'up', labelA:'Maintien'},
+];
+
 /* ── Helper : lire la valeur d'une métrique (simple ou calculée) ── */
 function _getMetricVal(m, donnees){
   if(m.compute) return m.compute(donnees);
@@ -3750,101 +3811,276 @@ function _renderDeltas(prevData){
   });
 }
 
-/* ── Option A : page évolution ─────────────────────────── */
-function _buildSparkline(values){
-  var W = 80, H = 30, PAD = 4;
-  var min = Math.min.apply(null, values);
-  var max = Math.max.apply(null, values);
-  var range = max - min || 1;
-  var pts = values.map(function(v, i){
-    var x = PAD + (i / Math.max(values.length - 1, 1)) * (W - PAD*2);
-    var y = (H - PAD) - ((v - min) / range) * (H - PAD*2);
-    return x.toFixed(1) + ',' + y.toFixed(1);
+/* ── Builders de graphiques SVG ───────────────────────── */
+function _buildChartB(valsA, dates, opts){
+  var id  = opts.chartId;
+  var VW  = 500, VH = 120;
+  var PAD = {top:18, right:22, bottom:34, left:38};
+  var validA = valsA.filter(function(v){return !isNaN(v);});
+  if(validA.length < 2) return '';
+  var minV = Math.min.apply(null,validA); var maxV = Math.max.apply(null,validA);
+  var pad  = Math.max(1,(maxV-minV)*0.12); minV -= pad; maxV += pad;
+  var rangeV = maxV - minV || 1;
+  var n = valsA.length;
+  function pt(i,v){ return {x:PAD.left+(i/Math.max(n-1,1))*(VW-PAD.left-PAD.right), y:(VH-PAD.bottom)-((v-minV)/rangeV)*(VH-PAD.top-PAD.bottom)}; }
+  var pts = valsA.map(function(v,i){ var p=pt(i,isNaN(v)?minV:v); return {x:p.x,y:p.y,v:v,date:dates[i],valid:!isNaN(v)}; });
+  var html = '<defs><linearGradient id="gb'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2B5FA6" stop-opacity="0.28"/><stop offset="100%" stop-color="#2B5FA6" stop-opacity="0.02"/></linearGradient></defs>';
+  // Grille
+  var step=Math.max(1,Math.ceil((maxV-minV)/4));
+  for(var gv=Math.round(minV);gv<=maxV+step;gv+=step){
+    var gy=(VH-PAD.bottom)-((gv-minV)/rangeV)*(VH-PAD.top-PAD.bottom);
+    if(gy<PAD.top||gy>VH-PAD.bottom+2) continue;
+    html+='<line x1="'+PAD.left+'" y1="'+gy.toFixed(1)+'" x2="'+(VW-PAD.right)+'" y2="'+gy.toFixed(1)+'" stroke="#EBEBEB" stroke-width="1" stroke-dasharray="3,3"/>';
+    html+='<text x="'+(PAD.left-5)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="end" font-size="9" fill="#C0BDB8">'+Math.round(gv)+'</text>';
+  }
+  // Dates X (dédupliquées)
+  var shownD={};
+  pts.forEach(function(p){if(shownD[p.date])return;shownD[p.date]=true;html+='<text x="'+p.x.toFixed(1)+'" y="'+(VH-PAD.bottom+13)+'" text-anchor="middle" font-size="9" fill="#C0BDB8">'+p.date+'</text>';});
+  // Axe X
+  html+='<line x1="'+PAD.left+'" y1="'+(VH-PAD.bottom)+'" x2="'+(VW-PAD.right)+'" y2="'+(VH-PAD.bottom)+'" stroke="#E8E6E1" stroke-width="1"/>';
+  // Courbe bezier
+  var vp=pts.filter(function(p){return p.valid;});
+  if(vp.length>=2){
+    var lp='M '+vp[0].x.toFixed(1)+','+vp[0].y.toFixed(1);
+    for(var i=1;i<vp.length;i++){var cx=(vp[i-1].x+vp[i].x)/2;lp+=' C '+cx.toFixed(1)+','+vp[i-1].y.toFixed(1)+' '+cx.toFixed(1)+','+vp[i].y.toFixed(1)+' '+vp[i].x.toFixed(1)+','+vp[i].y.toFixed(1);}
+    var by=VH-PAD.bottom;
+    html+='<path d="'+lp+' L '+vp[vp.length-1].x.toFixed(1)+','+by+' L '+vp[0].x.toFixed(1)+','+by+' Z" fill="url(#gb'+id+')"/>';
+    html+='<path d="'+lp+'" fill="none" stroke="#2B5FA6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
+  }
+  // Points + hit areas
+  pts.forEach(function(p,i){
+    if(!p.valid)return;
+    var isFirst=!pts.slice(0,i).some(function(q){return q.valid;});
+    var isLast=!pts.slice(i+1).some(function(q){return q.valid;});
+    var dec=opts.unit==='cm'&&p.v%1!==0?1:0;
+    if(isLast){
+      html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="7" fill="#2B5FA6" opacity="0.15"/>';
+      html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4.5" fill="#2B5FA6"/>';
+      html+='<text x="'+p.x.toFixed(1)+'" y="'+(p.y-12).toFixed(1)+'" text-anchor="middle" font-size="10" font-weight="700" fill="#1A3A5C">'+p.v.toFixed(dec)+opts.unit+'</text>';
+    } else {
+      html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isFirst?3.5:3)+'" fill="#fff" stroke="#2B5FA6" stroke-width="'+(isFirst?2:1.5)+'" opacity="'+(isFirst?1:0.65)+'"/>';
+      if(isFirst) html+='<text x="'+p.x.toFixed(1)+'" y="'+(p.y-9).toFixed(1)+'" text-anchor="middle" font-size="9" fill="#9D9B96">'+p.v.toFixed(dec)+opts.unit+'</text>';
+      html+='<circle class="evo-hit" cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="18" fill="transparent" data-tt="ttB'+id+'" data-x="'+p.x.toFixed(1)+'" data-y="'+p.y.toFixed(1)+'" data-l1="'+p.v.toFixed(dec)+opts.unit+'" data-l2="'+p.date+'" style="cursor:pointer"/>';
+    }
   });
-  var lastX = pts[pts.length-1].split(',')[0];
-  var lastY = pts[pts.length-1].split(',')[1];
-  return '<svg class="spark-svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'">'
-    + '<polyline points="'+pts.join(' ')+'" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>'
-    + '<circle cx="'+lastX+'" cy="'+lastY+'" r="2.5" fill="var(--accent)"/>'
-    + '</svg>';
+  // Tooltip
+  html+='<g id="ttB'+id+'" visibility="hidden" style="pointer-events:none"><rect id="ttB'+id+'-bg" rx="7" fill="#1A3A5C" opacity="0.93" width="84" height="36"/><text id="ttB'+id+'-l1" font-size="11" font-weight="700" fill="#fff" text-anchor="middle"/><text id="ttB'+id+'-l2" font-size="9" fill="rgba(255,255,255,0.65)" text-anchor="middle"/></g>';
+  return '<svg class="evo-chart-svg" data-chart="B" data-id="'+id+'" viewBox="0 0 '+VW+' '+VH+'" style="width:100%;overflow:visible">'+html+'</svg>';
 }
 
+function _buildChartD(valsA, valsB, dates, opts){
+  var id=opts.chartId, colorA=opts.colorA||'#2B5FA6', colorB=opts.colorB||'#2D6A4F';
+  var VW=500, VH=130;
+  var PAD={top:20, right:88, bottom:34, left:38};
+  var allV=valsA.concat(valsB).filter(function(v){return !isNaN(v);});
+  if(allV.length<2)return '';
+  var minV=Math.min.apply(null,allV), maxV=Math.max.apply(null,allV);
+  var pad=Math.max(1,(maxV-minV)*0.12); minV-=pad; maxV+=pad;
+  var rangeV=maxV-minV||1, n=Math.max(valsA.length,valsB.length);
+  function pt(vals,i){var v=vals[i];return {x:PAD.left+(i/Math.max(n-1,1))*(VW-PAD.left-PAD.right),y:(VH-PAD.bottom)-((v-minV)/rangeV)*(VH-PAD.top-PAD.bottom),v:v,valid:!isNaN(v)};}
+  var ptsA=valsA.map(function(v,i){return Object.assign(pt(valsA,i),{date:dates[i]});});
+  var ptsB=valsB.map(function(v,i){return Object.assign(pt(valsB,i),{date:dates[i]});});
+  var html='<defs><linearGradient id="gd'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#C0392B" stop-opacity="0.18"/><stop offset="100%" stop-color="#C0392B" stop-opacity="0.02"/></linearGradient></defs>';
+  // Grille
+  var step=Math.max(1,Math.ceil((maxV-minV)/4));
+  for(var gv=Math.round(minV);gv<=maxV+step;gv+=step){
+    var gy=(VH-PAD.bottom)-((gv-minV)/rangeV)*(VH-PAD.top-PAD.bottom);
+    if(gy<PAD.top||gy>VH-PAD.bottom+2)continue;
+    html+='<line x1="'+PAD.left+'" y1="'+gy.toFixed(1)+'" x2="'+(VW-PAD.right)+'" y2="'+gy.toFixed(1)+'" stroke="#EBEBEB" stroke-width="1" stroke-dasharray="3,3"/>';
+    html+='<text x="'+(PAD.left-5)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="end" font-size="9" fill="#C0BDB8">'+Math.round(gv)+'</text>';
+  }
+  // Dates X
+  var shownD={};
+  ptsA.forEach(function(p){if(shownD[p.date])return;shownD[p.date]=true;html+='<text x="'+p.x.toFixed(1)+'" y="'+(VH-PAD.bottom+13)+'" text-anchor="middle" font-size="9" fill="#C0BDB8">'+p.date+'</text>';});
+  // Axe X
+  html+='<line x1="'+PAD.left+'" y1="'+(VH-PAD.bottom)+'" x2="'+(VW-PAD.right)+'" y2="'+(VH-PAD.bottom)+'" stroke="#E8E6E1" stroke-width="1"/>';
+  // Zone déficit
+  var vpA=ptsA.filter(function(p){return p.valid;}), vpB=ptsB.filter(function(p){return p.valid;});
+  if(vpA.length>=2&&vpB.length>=2){
+    var aD='M '+vpB.map(function(p){return p.x.toFixed(1)+','+p.y.toFixed(1);}).join(' L ')+' L '+vpA.slice().reverse().map(function(p){return p.x.toFixed(1)+','+p.y.toFixed(1);}).join(' L ')+' Z';
+    html+='<path d="'+aD+'" fill="url(#gd'+id+')"/>';
+  }
+  // Courbes
+  if(vpB.length>=2) html+='<polyline points="'+vpB.map(function(p){return p.x.toFixed(1)+','+p.y.toFixed(1);}).join(' ')+'" fill="none" stroke="'+colorB+'" stroke-width="2" stroke-dasharray="6,3" stroke-linecap="round"/>';
+  if(vpA.length>=2) html+='<polyline points="'+vpA.map(function(p){return p.x.toFixed(1)+','+p.y.toFixed(1);}).join(' ')+'" fill="none" stroke="'+colorA+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+  // Points A
+  ptsA.forEach(function(p,i){
+    if(!p.valid)return;
+    var isFirst=!ptsA.slice(0,i).some(function(q){return q.valid;});
+    var isLast=!ptsA.slice(i+1).some(function(q){return q.valid;});
+    if(isLast){html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="7" fill="'+colorA+'" opacity="0.15"/><circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4.5" fill="'+colorA+'"/>';}
+    else{html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isFirst?3.5:3)+'" fill="#fff" stroke="'+colorA+'" stroke-width="'+(isFirst?2:1.5)+'" opacity="'+(isFirst?1:0.65)+'">';}
+  });
+  // Points B
+  ptsB.forEach(function(p,i){
+    if(!p.valid)return;
+    var isFirst=!ptsB.slice(0,i).some(function(q){return q.valid;});
+    var isLast=!ptsB.slice(i+1).some(function(q){return q.valid;});
+    if(isLast){html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4" fill="'+colorB+'"/>';}
+    else{html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isFirst?3:2.5)+'" fill="#fff" stroke="'+colorB+'" stroke-width="1.5" opacity="'+(isFirst?1:0.65)+'">';}
+  });
+  // Labels derniers points
+  var lastA=null,lastB=null;
+  ptsA.forEach(function(p){if(p.valid)lastA=p;}); ptsB.forEach(function(p){if(p.valid)lastB=p;});
+  var decA=opts.unit==='cm'&&lastA&&lastA.v%1!==0?1:0;
+  var decB=opts.unit==='cm'&&lastB&&lastB.v%1!==0?1:0;
+  if(lastA) html+='<text x="'+(lastA.x+8)+'" y="'+(lastA.y+4).toFixed(1)+'" font-size="9" font-weight="700" fill="'+colorA+'">'+lastA.v.toFixed(decA)+opts.unit+'</text>';
+  if(lastB) html+='<text x="'+(lastB.x+8)+'" y="'+(lastB.y+4).toFixed(1)+'" font-size="9" font-weight="700" fill="'+colorB+'">'+lastB.v.toFixed(decB)+opts.unit+'</text>';
+  // Légende
+  var lx=VW-PAD.right+8;
+  html+='<rect x="'+lx+'" y="'+PAD.top+'" width="8" height="8" rx="2" fill="'+colorA+'"/><text x="'+(lx+11)+'" y="'+(PAD.top+7)+'" font-size="8.5" fill="'+colorA+'" font-weight="600">'+opts.labelA+'</text>';
+  html+='<rect x="'+lx+'" y="'+(PAD.top+14)+'" width="8" height="8" rx="2" fill="'+colorB+'"/><text x="'+(lx+11)+'" y="'+(PAD.top+21)+'" font-size="8.5" fill="'+colorB+'" font-weight="600">'+opts.labelB+'</text>';
+  // Hit areas
+  ptsA.forEach(function(pA,i){
+    if(!pA||!pA.valid)return;
+    var isLastA=!ptsA.slice(i+1).some(function(q){return q.valid;});
+    if(isLastA)return;
+    var pB=ptsB[i];
+    var midY=pB&&pB.valid?(pA.y+pB.y)/2:pA.y;
+    var decA2=opts.unit==='cm'&&pA.v%1!==0?1:0;
+    var decB2=pB&&pB.valid&&opts.unit==='cm'&&pB.v%1!==0?1:0;
+    var vA=pA.v.toFixed(decA2)+opts.unit;
+    var vB=pB&&pB.valid?pB.v.toFixed(decB2)+opts.unit:'—';
+    html+='<circle class="evo-hit-d" cx="'+pA.x.toFixed(1)+'" cy="'+midY.toFixed(1)+'" r="20" fill="transparent" data-tt="ttD'+id+'" data-x="'+pA.x.toFixed(1)+'" data-ya="'+pA.y.toFixed(1)+'" data-yb="'+(pB&&pB.valid?pB.y.toFixed(1):pA.y.toFixed(1))+'" data-la="'+opts.labelA+': '+vA+'" data-lb="'+opts.labelB+': '+vB+'" data-date="'+pA.date+'" style="cursor:pointer"/>';
+  });
+  // Tooltip
+  html+='<g id="ttD'+id+'" visibility="hidden" style="pointer-events:none"><rect id="ttD'+id+'-bg" rx="8" fill="#1A3A5C" opacity="0.94" width="120" height="52"/><text id="ttD'+id+'-date" font-size="8.5" fill="rgba(255,255,255,0.6)" text-anchor="middle"/><circle id="ttD'+id+'-dotA" r="4" fill="'+colorA+'"/><text id="ttD'+id+'-la" font-size="10" font-weight="700" fill="#7AB8FF"/><circle id="ttD'+id+'-dotB" r="4" fill="'+colorB+'"/><text id="ttD'+id+'-lb" font-size="10" font-weight="700" fill="#6ED9A0"/></g>';
+  return '<svg class="evo-chart-svg" data-chart="D" data-id="'+id+'" viewBox="0 0 '+VW+' '+VH+'" style="width:100%;overflow:visible">'+html+'</svg>';
+}
+
+/* ── Événements tooltip (desktop hover + touch iPad) ─── */
+function _attachChartEvents(){
+  var container=document.getElementById('evolution-content');
+  if(!container)return;
+
+  function posB(svgEl,ttId,x,y,l1,l2){
+    var g=svgEl.getElementById(ttId); if(!g)return;
+    var bg=svgEl.getElementById(ttId+'-bg');
+    var t1=svgEl.getElementById(ttId+'-l1');
+    var t2=svgEl.getElementById(ttId+'-l2');
+    var W=84,H=36,VW2=500;
+    var tx=Math.max(2,Math.min(x-W/2,VW2-W-2));
+    var ty=y-H-12; if(ty<2)ty=y+14;
+    bg.setAttribute('x',tx);bg.setAttribute('y',ty);
+    var cx=tx+W/2;
+    t1.setAttribute('x',cx);t1.setAttribute('y',ty+15);t1.textContent=l1;
+    t2.setAttribute('x',cx);t2.setAttribute('y',ty+29);t2.textContent=l2;
+    g.setAttribute('visibility','visible');
+  }
+  function posD(svgEl,ttId,x,ya,yb,date,la,lb){
+    var g=svgEl.getElementById(ttId); if(!g)return;
+    var bg=svgEl.getElementById(ttId+'-bg');
+    var dtEl=svgEl.getElementById(ttId+'-date');
+    var dotA=svgEl.getElementById(ttId+'-dotA');
+    var laEl=svgEl.getElementById(ttId+'-la');
+    var dotB=svgEl.getElementById(ttId+'-dotB');
+    var lbEl=svgEl.getElementById(ttId+'-lb');
+    var W=120,H=52,VW2=500;
+    var tx=Math.max(2,Math.min(x-W/2,VW2-W-2));
+    var ty=Math.min(ya,yb)-H-14; if(ty<2)ty=Math.max(ya,yb)+10;
+    bg.setAttribute('x',tx);bg.setAttribute('y',ty);
+    dtEl.setAttribute('x',tx+W/2);dtEl.setAttribute('y',ty+13);dtEl.textContent=date;
+    dotA.setAttribute('cx',tx+12);dotA.setAttribute('cy',ty+27);
+    laEl.setAttribute('x',tx+20);laEl.setAttribute('y',ty+31);laEl.textContent=la;
+    dotB.setAttribute('cx',tx+12);dotB.setAttribute('cy',ty+43);
+    lbEl.setAttribute('x',tx+20);lbEl.setAttribute('y',ty+47);lbEl.textContent=lb;
+    g.setAttribute('visibility','visible');
+  }
+  function hideG(svgEl,ttId){var g=svgEl.getElementById(ttId);if(g)g.setAttribute('visibility','hidden');}
+
+  // Chart B
+  container.querySelectorAll('.evo-hit').forEach(function(el){
+    var svgEl=el.closest('svg'), ttId=el.dataset.tt;
+    var show=function(){posB(svgEl,ttId,parseFloat(el.dataset.x),parseFloat(el.dataset.y),el.dataset.l1,el.dataset.l2);};
+    var hide=function(){hideG(svgEl,ttId);};
+    el.addEventListener('mouseenter',show);
+    el.addEventListener('mouseleave',hide);
+    el.addEventListener('click',function(e){e.stopPropagation();var g=svgEl.getElementById(ttId);(g&&g.getAttribute('visibility')==='visible')?hide():show();});
+    el.addEventListener('touchstart',function(e){e.preventDefault();var g=svgEl.getElementById(ttId);(g&&g.getAttribute('visibility')==='visible')?hide():show();},{passive:false});
+  });
+
+  // Chart D
+  container.querySelectorAll('.evo-hit-d').forEach(function(el){
+    var svgEl=el.closest('svg'), ttId=el.dataset.tt;
+    var show=function(){posD(svgEl,ttId,parseFloat(el.dataset.x),parseFloat(el.dataset.ya),parseFloat(el.dataset.yb),el.dataset.date,el.dataset.la,el.dataset.lb);};
+    var hide=function(){hideG(svgEl,ttId);};
+    el.addEventListener('mouseenter',show);
+    el.addEventListener('mouseleave',hide);
+    el.addEventListener('click',function(e){e.stopPropagation();var g=svgEl.getElementById(ttId);(g&&g.getAttribute('visibility')==='visible')?hide():show();});
+    el.addEventListener('touchstart',function(e){e.preventDefault();var g=svgEl.getElementById(ttId);(g&&g.getAttribute('visibility')==='visible')?hide():show();},{passive:false});
+  });
+
+  // Clic fond SVG → ferme tooltip ouvert
+  container.querySelectorAll('.evo-chart-svg').forEach(function(svgEl){
+    svgEl.addEventListener('click',function(){
+      svgEl.querySelectorAll('[id^="tt"]').forEach(function(g){g.setAttribute('visibility','hidden');});
+    });
+  });
+}
+
+/* ── Page Évolution ─────────────────────────────────────── */
 function _renderEvolutionPage(){
-  var container = document.getElementById('evolution-content');
-  if(!container) return;
-  var bilansAsc = _allBilans.slice().reverse(); // desc → asc
-  if(bilansAsc.length < 2){
-    container.innerHTML = '<div class="evo-empty">Ce patient n\'a que '
-      + (bilansAsc.length === 0 ? 'aucun' : '1')
-      + ' bilan sauvegardé. Il en faut au moins 2 pour afficher l\'évolution.</div>';
+  var container=document.getElementById('evolution-content');
+  if(!container)return;
+  var bilansAsc=_allBilans.slice().reverse();
+  if(bilansAsc.length<2){
+    container.innerHTML='<div class="evo-empty">Ce patient n\'a que '+(bilansAsc.length===0?'aucun':'1')+' bilan sauvegardé. Il en faut au moins 2 pour afficher l\'évolution.</div>';
     return;
   }
-  var dates = bilansAsc.map(function(b){
-    if(!b.date) return '—';
-    var p = b.date.split('-');
-    return p[2]+'/'+p[1]+'/'+(p[0].slice(2));
+  var dates=bilansAsc.map(function(b){
+    if(!b.date)return '—';
+    var p=b.date.split('-'); return p[2]+'/'+p[1];
   });
-  var cats = {};
-  TRACKED_METRICS.forEach(function(m){ if(!cats[m.cat]) cats[m.cat]=[]; cats[m.cat].push(m); });
-
-  var html = '<div class="evo-intro">📅 '+ bilansAsc.length +' bilans — du '
-    + dates[0] +' au '+ dates[dates.length-1] +'</div>';
+  _chartCounter=0;
+  var cats={};
+  CHART_GROUPS.forEach(function(grp){if(!cats[grp.cat])cats[grp.cat]=[];cats[grp.cat].push(grp);});
+  var html='<div class="evo-intro">📅 '+bilansAsc.length+' bilans — du '+dates[0]+' au '+dates[dates.length-1]+'</div>';
 
   Object.keys(cats).forEach(function(cat){
-    var metrics = cats[cat];
-    var active = metrics.filter(function(m){
-      var vals = bilansAsc.map(function(b){ return _getMetricVal(m, b.donnees||{}); });
-      return vals.filter(function(v){ return !isNaN(v); }).length >= 2;
+    var groups=cats[cat], catHtml='';
+    groups.forEach(function(grp){
+      _chartCounter++;
+      var id=_chartCounter;
+      var valsA=bilansAsc.map(function(b){var d=b.donnees||{};return grp.computeA?grp.computeA(d):parseFloat(d[grp.idA]||'');});
+      var validA=valsA.filter(function(v){return !isNaN(v);});
+      if(validA.length<2)return;
+      // Stats
+      var firstA=NaN, lastA=NaN;
+      valsA.forEach(function(v){if(!isNaN(v)&&isNaN(firstA))firstA=v;});
+      valsA.slice().reverse().forEach(function(v){if(!isNaN(v)&&isNaN(lastA))lastA=v;});
+      var deltaA=lastA-firstA;
+      var isGood=grp.dir==='up'?deltaA>=0:deltaA<=0;
+      var sign=deltaA>=0?'+':'';
+      var pct=firstA!==0?(deltaA/Math.abs(firstA)*100):null;
+      var pctStr=pct!==null?' ('+(Math.abs(pct)>999?(pct>0?'>':'<')+' 999%':(pct>=0?'+':'')+pct.toFixed(0)+'%')+')':'';
+      var deltaCls=deltaA===0?'evo-neutral':(isGood?'evo-pos':'evo-neg');
+      var dec=grp.unit==='cm'&&firstA%1!==0?1:0;
+      var decL=grp.unit==='cm'&&lastA%1!==0?1:0;
+      // Chart SVG
+      var chartSvg='';
+      if(grp.type==='dual'){
+        var valsB=bilansAsc.map(function(b){var d=b.donnees||{};return grp.computeB?grp.computeB(d):parseFloat(d[grp.idB]||'');});
+        chartSvg=_buildChartD(valsA,valsB,dates,{unit:grp.unit,dir:grp.dir,labelA:grp.labelA,labelB:grp.labelB,chartId:id,colorA:'#2B5FA6',colorB:'#2D6A4F'});
+      } else {
+        chartSvg=_buildChartB(valsA,dates,{unit:grp.unit,dir:grp.dir,labelA:grp.labelA,chartId:id});
+      }
+      if(!chartSvg)return;
+      catHtml+='<div class="evo-chart-card">'
+        +'<div class="evo-chart-header">'
+        +'<span class="evo-chart-title">'+grp.title+'</span>'
+        +'<div class="evo-chart-kpis">'
+        +'<span class="evo-kpi-neutral">Début : '+firstA.toFixed(dec)+grp.unit+'</span>'
+        +'<span class="evo-kpi-neutral">→</span>'
+        +'<span class="evo-kpi-strong">Actuel : '+lastA.toFixed(decL)+grp.unit+'</span>'
+        +'<span class="evo-kpi '+deltaCls+'">'+sign+deltaA.toFixed(0)+grp.unit+pctStr+'</span>'
+        +'</div></div>'
+        +chartSvg+'</div>';
     });
-    if(!active.length) return;
-
-    var colDates  = dates.length > 5 ? dates.slice(dates.length - 5) : dates;
-    var colBilans = bilansAsc.length > 5 ? bilansAsc.slice(bilansAsc.length - 5) : bilansAsc;
-
-    html += '<div class="evo-block"><div class="evo-block-title">'+cat+'</div>';
-    html += '<table class="evo-table"><thead><tr>'
-      + '<th>Marqueur</th><th class="center">Courbe</th>';
-    colDates.forEach(function(d){ html += '<th class="center">'+d+'</th>'; });
-    html += '<th class="center">Δ total</th><th class="center">% progr.</th></tr></thead><tbody>';
-
-    active.forEach(function(m){
-      var allVals = bilansAsc.map(function(b){ return _getMetricVal(m, b.donnees||{}); });
-      var colVals = colBilans.map(function(b){ return _getMetricVal(m, b.donnees||{}); });
-      var sparkVals = allVals.filter(function(v){ return !isNaN(v); });
-      var firstIdx = allVals.findIndex(function(v){ return !isNaN(v); });
-      var lastIdx  = allVals.length - 1 - allVals.slice().reverse().findIndex(function(v){ return !isNaN(v); });
-      var firstVal = allVals[firstIdx];
-      var lastVal  = allVals[lastIdx];
-      var delta    = lastVal - firstVal;
-      var isGood   = m.dir === 'up' ? delta >= 0 : delta <= 0;
-      var sign     = delta >= 0 ? '+' : '';
-      var deltaCls = delta === 0 ? 'evo-neutral' : (isGood ? 'evo-pos' : 'evo-neg');
-      // % de progression : base = |firstVal| pour gérer les valeurs négatives
-      // (ex: -5cm → +10cm = +300% relatif à l'amplitude de départ de 5cm)
-      // On n'affiche pas le % si base = 0 (division impossible)
-      var pct = (firstVal !== 0) ? (delta / Math.abs(firstVal) * 100) : null;
-      var pctDisplay = pct !== null
-        ? (Math.abs(pct) > 999 ? (pct>0?'>':'<')+' 999%' : (pct>=0?'+':'')+pct.toFixed(0)+'%')
-        : null;
-      var pctStr = pctDisplay !== null
-        ? '<span class="'+deltaCls+'">'+pctDisplay+'</span>'
-        : '<span class="evo-na">—</span>';
-
-      html += '<tr class="evo-row">';
-      html += '<td class="evo-metric-name">'+m.label+'</td>';
-      html += '<td class="evo-spark">'+(sparkVals.length >= 2 ? _buildSparkline(sparkVals) : '—')+'</td>';
-      colVals.forEach(function(v){
-        var decimals = m.unit === 'cm' && v % 1 !== 0 ? 1 : 0;
-        html += '<td class="evo-val">'+(isNaN(v) ? '<span class="evo-na">—</span>' : v.toFixed(decimals)+m.unit)+'</td>';
-      });
-      html += '<td class="evo-delta-col '+deltaCls+'">'+(delta === 0 ? '=' : sign+delta.toFixed(0)+m.unit)+'</td>';
-      html += '<td class="evo-delta-col">'+pctStr+'</td>';
-      html += '</tr>';
-    });
-    html += '</tbody></table></div>';
+    if(!catHtml)return;
+    html+='<div class="evo-block"><div class="evo-block-title">'+cat+'</div><div class="evo-chart-grid">'+catHtml+'</div></div>';
   });
-
-  container.innerHTML = html;
+  container.innerHTML=html;
+  _attachChartEvents();
 }
 
 /* ── Export / Impression Évolution ────────────────────── */
@@ -3922,6 +4158,18 @@ function _buildEvolutionHTML(){
     + '.evo-na{color:#9D9B96;font-style:italic;font-size:.78rem}'
     + '.evo-intro{display:none}'  // masqué dans export (on a le summary-bar)
     + '.spark-svg{display:block;margin:0 auto;overflow:visible}'
+    + '.evo-chart-card{background:#fff;border:1px solid #E8E6E1;border-radius:10px;padding:14px 16px 10px;}'
+    + '.evo-chart-header{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:10px;}'
+    + '.evo-chart-title{font-size:.82rem;font-weight:700;color:#1A1917;}'
+    + '.evo-chart-kpis{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}'
+    + '.evo-kpi-neutral{font-size:.72rem;color:#6B6860;}'
+    + '.evo-kpi-strong{font-size:.72rem;font-weight:700;color:#1A3A5C;}'
+    + '.evo-kpi{font-size:.72rem;font-weight:700;padding:2px 7px;border-radius:10px;}'
+    + '.evo-kpi.evo-pos{background:#E8F5EE;color:#2D6A4F;}'
+    + '.evo-kpi.evo-neg{background:#FDECEA;color:#C0392B;}'
+    + '.evo-kpi.evo-neutral{background:#F1F0ED;color:#6B6860;}'
+    + '.evo-chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}'
+    + '@media(max-width:600px){.evo-chart-grid{grid-template-columns:1fr;}}'
     + '.print-btn-wrap{padding:12px 24px;border-bottom:1px solid #E8E6E1;background:#fff}'
     + '.print-btn-inner{background:#2B5FA6;color:#fff;border:none;border-radius:7px;padding:8px 18px;font-size:.84rem;font-weight:600;cursor:pointer;font-family:inherit}'
     + '@media print{.print-btn-wrap{display:none!important}.doc-header{background:#1A3A5C!important}.evo-block{break-inside:avoid}.doc-body{padding:12px 24px 0}}'
