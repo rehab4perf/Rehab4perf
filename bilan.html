@@ -992,6 +992,11 @@ textarea { resize:none !important; overflow:hidden !important; }
 .evo-kpi.evo-neutral { background:var(--surface2); color:var(--text2); }
 .evo-chart-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 @media(max-width:700px) { .evo-chart-grid { grid-template-columns:1fr; } }
+.evo-chart-card.evo-unselected { opacity:.38; transition:opacity .18s; }
+.evo-check-wrap { display:flex; align-items:center; gap:6px; }
+.evo-chart-check { width:15px; height:15px; accent-color:var(--accent); cursor:pointer; flex-shrink:0; }
+.evo-sel-btn { font-size:.72rem; padding:4px 11px; border:1px solid var(--border2); border-radius:6px; background:var(--surface); color:var(--text2); cursor:pointer; white-space:nowrap; }
+.evo-sel-btn:hover { background:var(--surface2); color:var(--text); }
 </style>
 
 </head>
@@ -3068,6 +3073,8 @@ textarea { resize:none !important; overflow:hidden !important; }
   <div style="display:flex;gap:8px;flex-wrap:wrap;padding:12px 16px 0;border-bottom:1px solid var(--border)" id="evo-toolbar" class="no-print">
     <button class="print-btn" onclick="printEvolution()" style="font-size:.78rem;padding:6px 14px">🖨 Imprimer / PDF patient</button>
     <button class="print-btn" onclick="exportEvolutionHTML()" style="font-size:.78rem;padding:6px 14px;background:var(--accent);color:#fff;border-color:var(--accent)">📥 Exporter HTML (à envoyer)</button>
+    <button class="evo-sel-btn no-print" onclick="_selectAllCharts(true)">✓ Tout sélectionner</button>
+    <button class="evo-sel-btn no-print" onclick="_selectAllCharts(false)">✗ Tout désélectionner</button>
   </div>
   <div class="page-content" id="evolution-content">
     <div class="evo-empty">Sélectionnez un patient avec au moins 2 bilans pour afficher les courbes d'évolution.</div>
@@ -3909,15 +3916,17 @@ function _buildChartD(valsA, valsB, dates, opts){
     var isFirst=!ptsA.slice(0,i).some(function(q){return q.valid;});
     var isLast=!ptsA.slice(i+1).some(function(q){return q.valid;});
     if(isLast){html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="7" fill="'+colorA+'" opacity="0.15"/><circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4.5" fill="'+colorA+'"/>';}
-    else{html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isFirst?3.5:3)+'" fill="#fff" stroke="'+colorA+'" stroke-width="'+(isFirst?2:1.5)+'" opacity="'+(isFirst?1:0.65)+'">';}
+    else if(isFirst){html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="5" fill="#fff" stroke="'+colorA+'" stroke-width="2.5"/>';}
+    else{html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4" fill="'+colorA+'" opacity="0.8"/>';}
   });
   // Points B
   ptsB.forEach(function(p,i){
     if(!p.valid)return;
     var isFirst=!ptsB.slice(0,i).some(function(q){return q.valid;});
     var isLast=!ptsB.slice(i+1).some(function(q){return q.valid;});
-    if(isLast){html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4" fill="'+colorB+'"/>';}
-    else{html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isFirst?3:2.5)+'" fill="#fff" stroke="'+colorB+'" stroke-width="1.5" opacity="'+(isFirst?1:0.65)+'">';}
+    if(isLast){html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4.5" fill="'+colorB+'"/>';}
+    else if(isFirst){html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4.5" fill="#fff" stroke="'+colorB+'" stroke-width="2"/>';}
+    else{html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3.5" fill="'+colorB+'" opacity="0.8"/>';}
   });
   // Labels derniers points
   var lastA=null,lastB=null;
@@ -3936,7 +3945,7 @@ function _buildChartD(valsA, valsB, dates, opts){
     var isLastA=!ptsA.slice(i+1).some(function(q){return q.valid;});
     if(isLastA)return;
     var pB=ptsB[i];
-    var midY=pB&&pB.valid?(pA.y+pB.y)/2:pA.y;
+    var midY=pA.y;
     var decA2=opts.unit==='cm'&&pA.v%1!==0?1:0;
     var decB2=pB&&pB.valid&&opts.unit==='cm'&&pB.v%1!==0?1:0;
     var vA=pA.v.toFixed(decA2)+opts.unit;
@@ -4065,9 +4074,9 @@ function _renderEvolutionPage(){
         chartSvg=_buildChartB(valsA,dates,{unit:grp.unit,dir:grp.dir,labelA:grp.labelA,chartId:id});
       }
       if(!chartSvg)return;
-      catHtml+='<div class="evo-chart-card">'
+      catHtml+='<div class="evo-chart-card evo-unselected" data-chart-id="'+id+'">'
         +'<div class="evo-chart-header">'
-        +'<span class="evo-chart-title">'+grp.title+'</span>'
+        +'<div class="evo-check-wrap"><input type="checkbox" class="evo-chart-check no-print" onchange="this.closest(\'.evo-chart-card\').classList.toggle(\'evo-unselected\',!this.checked)"><span class="evo-chart-title">'+grp.title+'</span></div>'
         +'<div class="evo-chart-kpis">'
         +'<span class="evo-kpi-neutral">Début : '+firstA.toFixed(dec)+grp.unit+'</span>'
         +'<span class="evo-kpi-neutral">→</span>'
@@ -4081,6 +4090,16 @@ function _renderEvolutionPage(){
   });
   container.innerHTML=html;
   _attachChartEvents();
+}
+
+/* ── Sélection graphiques ────────────────────────────── */
+function _selectAllCharts(state){
+  var container=document.getElementById('evolution-content');
+  if(!container)return;
+  container.querySelectorAll('.evo-chart-check').forEach(function(cb){
+    cb.checked=state;
+    cb.closest('.evo-chart-card').classList.toggle('evo-unselected',!state);
+  });
 }
 
 /* ── Export / Impression Évolution ────────────────────── */
@@ -4117,10 +4136,16 @@ function _buildEvolutionHTML(){
     datesRange = fmt(oldest.date)+' → '+fmt(newest.date);
   }
 
-  // Récupérer le HTML des tables (déjà rendu, inclut SVG)
-  // Retirer les balises qui ne font pas sens dans un export standalone
-  var contentHTML = container.innerHTML
-    .replace(/class="evo-intro"[^>]*>/g, 'class="evo-intro" style="display:none">')  // masquer, on met notre propre résumé
+  // Récupérer uniquement les graphiques sélectionnés (cochés)
+  var exportClone = container.cloneNode(true);
+  exportClone.querySelectorAll('.evo-chart-card.evo-unselected').forEach(function(el){el.remove();});
+  exportClone.querySelectorAll('.evo-chart-check').forEach(function(el){el.remove();});
+  // Nettoyer les blocs catégorie vides
+  exportClone.querySelectorAll('.evo-block').forEach(function(bl){
+    if(!bl.querySelector('.evo-chart-card'))bl.remove();
+  });
+  var contentHTML = exportClone.innerHTML
+    .replace(/class="evo-intro"[^>]*>/g, 'class="evo-intro" style="display:none">')
     ;
 
   var metaSub = [am?'N° AM : '+am:'', tel, email].filter(Boolean).join(' · ');
