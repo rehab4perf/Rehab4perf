@@ -153,6 +153,23 @@ body {
 }
 .btn-save-bilan:hover { background: var(--accent2); }
 .btn-save-bilan:disabled { opacity: .6; cursor: not-allowed; }
+/* ── État "aucun patient" ── */
+.patient-name.no-patient {
+  color: var(--text3);
+  font-style: italic;
+  font-weight: 400;
+}
+.sidebar-save-patient.no-patient {
+  color: #B45309;
+  font-weight: 600;
+}
+.btn-save-bilan.no-patient {
+  background: none;
+  color: #B45309;
+  border: 1.5px solid #FCD34D;
+  box-shadow: none;
+}
+.btn-save-bilan.no-patient:hover { background: #FFFBEB; }
 .btn-history-bilan {
   display: flex; align-items: center; justify-content: center; gap: 6px;
   width: 100%; padding: 6px 10px; border-radius: 6px;
@@ -3444,17 +3461,26 @@ document.addEventListener('change', function(){ if(!_suppressDirty) _bilanModifi
 (function(){
   try {
     var sp = localStorage.getItem('r4p-current-patient');
-    if(sp && sp !== '') { _bilanPatient = JSON.parse(sp); _updateSaveBar(); }
+    if(sp && sp !== '') { _bilanPatient = JSON.parse(sp); }
+    _updateSaveBar();
   } catch(ex){}
 })();
 
 function _updateSaveBar(){
   var el = document.getElementById('sb-save-patient');
+  var btn = document.getElementById('bilan-save-btn');
+  var nameEl = document.getElementById('sb-name');
   if(!el) return;
   if(_bilanPatient){
     el.innerHTML = 'Patient : <strong>'+_esc2(_bilanPatient.nom)+' '+_esc2(_bilanPatient.prenom)+'</strong>';
+    el.classList.remove('no-patient');
+    if(btn) btn.classList.remove('no-patient');
+    if(nameEl) nameEl.classList.remove('no-patient');
   } else {
-    el.textContent = 'Aucun patient sélectionné';
+    el.innerHTML = '⚠️ Aucun patient sélectionné';
+    el.classList.add('no-patient');
+    if(btn){ btn.classList.add('no-patient'); btn.textContent = '💾 Sauvegarder le bilan'; }
+    if(nameEl){ nameEl.textContent = 'Nouveau patient à créer'; nameEl.classList.add('no-patient'); }
   }
 }
 function _esc2(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -3589,8 +3615,13 @@ function _deserializeBilan(data){
 
 /* ── Sauvegarder ───────────────────────────────────────── */
 function saveBilan(){
-  if(!_bilanPatient){ alert('Sélectionnez un patient depuis la barre de navigation.'); return; }
-  if(!_bilanUid){ alert('Session non disponible. Veuillez sélectionner à nouveau le patient depuis la barre de navigation.'); return; }
+  if(!_bilanPatient){
+    showToast('⚠️ Aucun patient sélectionné — choisissez un patient depuis l\'accueil');
+    var saveEl = document.getElementById('sb-save-patient');
+    if(saveEl){ saveEl.style.transition='background .2s'; saveEl.style.background='#FEF3C7'; setTimeout(function(){ saveEl.style.background=''; },1500); }
+    return;
+  }
+  if(!_bilanUid){ showToast('⚠️ Session expirée — sélectionnez à nouveau le patient depuis l\'accueil'); return; }
   var btn = document.getElementById('bilan-save-btn');
   btn.disabled = true; btn.textContent = '⏳ Sauvegarde…';
   var donnees = _serializeBilan();
@@ -4962,11 +4993,14 @@ function buildCR() {
 function openReset() { document.getElementById('modal-reset').classList.add('open'); }
 function closeReset() { document.getElementById('modal-reset').classList.remove('open'); }
 function doReset() {
+  _bilanPatient = null;
+  localStorage.removeItem('r4p-current-patient');
   _resetBilanFields();
+  _updateSaveBar();
   closeReset();
   showPage('infos');
   localStorage.removeItem('athletik-bilan');
-  showToast(' Dossier réinitialisé - Prêt pour un nouveau patient');
+  showToast('Dossier réinitialisé — Prêt pour un nouveau patient');
 }
 
 // -- LMA : selects cascadants -----------------------------------
