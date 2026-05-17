@@ -469,6 +469,8 @@ body {
 .cr-sign-cycle { padding:4px 10px; border-radius:5px; border:1.5px solid var(--border); background:var(--surface2); font-size:.71rem; font-weight:600; font-family:inherit; cursor:pointer; white-space:nowrap; transition:all .15s; color:var(--text2); min-width:88px; text-align:center; }
 .cr-sign-cycle.st-valide { background:#E8F5EE; border-color:#2D6A4F; color:#2D6A4F; }
 .cr-sign-cycle.st-cours  { background:#FEF3EB; border-color:#D4600A; color:#D4600A; }
+.cr-test-cycle.st-pos { background:#FDECEA; border-color:#C0392B; color:#C0392B; }
+.cr-test-cycle.st-neg { background:#E8F5EE; border-color:#2D6A4F; color:#2D6A4F; }
 .cr-amp-articulation-row { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
 .cr-amp-articulation-row select { flex:1; }
 .cr-amp-cfg-btn { background:none; border:1px solid var(--border2); border-radius:var(--radius-sm); padding:6px 9px; font-size:.8rem; cursor:pointer; color:var(--text2); white-space:nowrap; }
@@ -1406,6 +1408,14 @@ body {
             <label for="cr-signes-libre">Précisions</label>
             <input type="text" id="cr-signes-libre" placeholder="Remarques cliniques complémentaires…">
           </div>
+        </div>
+
+        <div class="cr-field-group">
+          <div class="cr-field-group-title" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>Tests cliniques</span>
+            <button class="cr-amp-cfg-btn" onclick="crOpenTestConfig()" title="Configurer les tests (admin)" style="font-size:.7rem;padding:3px 7px;">⚙</button>
+          </div>
+          <div id="cr-test-rows-container"></div>
         </div>
 
         <div class="cr-section-hdr">Contexte &amp; Évolution</div>
@@ -5053,6 +5063,8 @@ _updateOutilsPatientBtns();
     crAmpArticu = crArticuSelected;
     crRenderPathoButtons();
     crRenderAmpFields();
+    crRenderSignRows();
+    crRenderTestRows();
   };
 
   function crRenderPathoButtons() {
@@ -5244,6 +5256,22 @@ _updateOutilsPatientBtns();
     var body = document.getElementById('cr-patho-cfg-body');
     if (!body || !_crPathoDraft) return;
     body.innerHTML = '';
+    // Section Articulations
+    var articuSection = document.createElement('div');
+    articuSection.style.cssText = 'margin-bottom:14px;padding-bottom:12px;border-bottom:2px solid var(--border)';
+    var articuHtml = '<div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text2);margin-bottom:8px;">Articulations</div>';
+    articuHtml += Object.keys(crAmpConfig).map(function(k){
+      return '<div class="cr-cfg-mesure-row" data-articu-key="'+k+'">'
+        +'<input type="text" class="pcfg-articu-label cfg-a-label" value="'+crAmpConfig[k].label+'" placeholder="Nom articulation">'
+        +'<button class="cr-cfg-del" onclick="crPathoDelArticu(\''+k+'\')">✕</button>'
+        +'</div>';
+    }).join('');
+    articuHtml += '<div class="cr-cfg-add-articu-row" style="margin-top:6px;">'
+      +'<input type="text" id="cr-patho-new-articu" placeholder="Nouvelle articulation (ex. Hanche)" style="flex:1">'
+      +'<button class="cr-cfg-save-btn" onclick="crPathoAddArticu()" style="padding:6px 12px;font-size:.78rem;">+ Ajouter</button>'
+      +'</div>';
+    articuSection.innerHTML = articuHtml;
+    body.insertBefore(articuSection, body.firstChild);
     _crPathoDraft.forEach(function(p, idx) {
       var item = document.createElement('div');
       item.className = 'cr-cfg-articu-item';
@@ -5285,6 +5313,28 @@ _updateOutilsPatientBtns();
     crRenderPathoModal();
   };
 
+  window.crPathoAddArticu = function() {
+    var inp = document.getElementById('cr-patho-new-articu');
+    var lbl = inp ? inp.value.trim() : '';
+    if (!lbl) return;
+    var key = lbl.toLowerCase().replace(/[éèêë]/g,'e').replace(/[àâä]/g,'a').replace(/[ùûü]/g,'u').replace(/[îï]/g,'i').replace(/[ôö]/g,'o').replace(/[^a-z0-9]/g,'_').replace(/_+/g,'_');
+    if (crAmpConfig[key]) return;
+    crAmpConfig[key] = { label: lbl, mesures: [] };
+    if (inp) inp.value = '';
+    crRenderPathoModal();
+  };
+  window.crPathoDelArticu = function(key) {
+    if (!confirm('Supprimer l\'articulation "' + (crAmpConfig[key] ? crAmpConfig[key].label : key) + '" ?\n\nSes mesures ROM seront aussi supprimées.')) return;
+    delete crAmpConfig[key];
+    // Remove from all patho associations
+    if (_crPathoDraft) {
+      _crPathoDraft.forEach(function(p){
+        p.articulations = p.articulations.filter(function(a){ return a !== key; });
+      });
+    }
+    crRenderPathoModal();
+  };
+
   function crSyncPathoDraftFromDOM() {
     if (!_crPathoDraft) return;
     var body = document.getElementById('cr-patho-cfg-body');
@@ -5297,12 +5347,22 @@ _updateOutilsPatientBtns();
       var checks = item.querySelectorAll('.pcfg-articu:checked');
       _crPathoDraft[idx].articulations = Array.from(checks).map(function(c){ return c.value; });
     });
+    // Sync articulation label edits
+    body.querySelectorAll('[data-articu-key]').forEach(function(row){
+      var k = row.dataset.articuKey;
+      if (!crAmpConfig[k]) return;
+      var lbl = row.querySelector('.pcfg-articu-label');
+      if (lbl && lbl.value.trim()) crAmpConfig[k].label = lbl.value.trim();
+    });
   }
 
   window.crSavePathoConfig = function() {
     crSyncPathoDraftFromDOM();
     crPathoConfig = _crPathoDraft;
     try { localStorage.setItem('crPathoConfig', JSON.stringify(crPathoConfig)); } catch(e) {}
+    try { localStorage.setItem('crAmpConfig', JSON.stringify(crAmpConfig)); } catch(e) {}
+    crInitAmpSelect();
+    crRenderAmpFields();
     crRenderPathoButtons();
     crClosePathoConfig();
     _crToast('Pathologies enregistrées');
@@ -5331,6 +5391,11 @@ _updateOutilsPatientBtns();
       var item = document.createElement('div');
       item.className = 'cr-cfg-articu-item';
       item.dataset.idx = idx;
+      var articuChecks = Object.keys(crAmpConfig).map(function(k){
+        var checked = (s.articulations||[]).indexOf(k) !== -1 ? 'checked' : '';
+        return '<label style="font-size:.72rem;display:inline-flex;align-items:center;gap:3px;margin-right:8px;">'
+          +'<input type="checkbox" class="scfg-articu" value="'+k+'" '+checked+'> '+crAmpConfig[k].label+'</label>';
+      }).join('');
       item.innerHTML = '<div class="cr-cfg-articu-hdr">'
         + '<input type="text" class="scfg-label" value="' + (s.label||'') + '" placeholder="Label du signe">'
         + '<button class="cr-cfg-del" onclick="crSignDelItem(' + idx + ')">✕</button>'
@@ -5340,6 +5405,7 @@ _updateOutilsPatientBtns();
         + '<input type="text" class="scfg-valide" value="' + (s.valide||'') + '" placeholder="Texte si validé" style="flex:1"></div>'
         + '<div class="cr-cfg-mesure-row"><label style="width:80px;font-size:.72rem;color:var(--text2);">⟳ En cours</label>'
         + '<input type="text" class="scfg-cours" value="' + (s.cours||'') + '" placeholder="Texte si en cours" style="flex:1"></div>'
+        + '<div style="padding:4px 0"><div style="font-size:.72rem;font-weight:700;color:var(--text2);margin-bottom:4px;">ARTICULATIONS (laisser vide = toujours affiché)</div><div>' + articuChecks + '</div></div>'
         + '</div>';
       body.appendChild(item);
     });
@@ -5380,6 +5446,8 @@ _updateOutilsPatientBtns();
       if (lbl) _crSignDraft[idx].label  = lbl.value.trim();
       if (v)   _crSignDraft[idx].valide = v.value.trim();
       if (c)   _crSignDraft[idx].cours  = c.value.trim();
+      var ac = item.querySelectorAll('.scfg-articu:checked');
+      _crSignDraft[idx].articulations = Array.from(ac).map(function(c){ return c.value; });
     });
   }
 
@@ -5392,6 +5460,132 @@ _updateOutilsPatientBtns();
     crRenderSignRows();
     crCloseSignConfig();
     _crToast('Signes cliniques enregistrés');
+  };
+
+  // ── Tests cliniques ───────────────────────────────────────────
+  var CR_TEST_DEFAULTS = [];
+  var crTestsConfig = (function() {
+    try { var s = localStorage.getItem('crTestsConfig'); if (s) return JSON.parse(s); } catch(e) {}
+    return JSON.parse(JSON.stringify(CR_TEST_DEFAULTS));
+  })();
+  var crTests = {};
+
+  function crRenderTestRows() {
+    var container = document.getElementById('cr-test-rows-container');
+    if (!container) return;
+    container.innerHTML = '';
+    var filtered = crTestsConfig.filter(function(t){
+      if (crArticuSelected && t.articulations && t.articulations.length > 0) {
+        return t.articulations.indexOf(crArticuSelected) !== -1;
+      }
+      return true;
+    });
+    if (!filtered.length) {
+      container.innerHTML = '<span style="font-size:.78rem;color:var(--text3);font-style:italic;">Aucun test pour cette articulation. Configurez via ⚙</span>';
+      return;
+    }
+    filtered.forEach(function(t) {
+      if (!crTests.hasOwnProperty(t.key)) crTests[t.key] = 0;
+      var row = document.createElement('div');
+      row.className = 'cr-sign-row';
+      var state = crTests[t.key] || 0;
+      var labels = ['—','❌ Positif','✓ Négatif'];
+      var cls    = ['','st-pos','st-neg'];
+      row.innerHTML = '<span class="cr-sign-label">' + t.label + '</span>'
+        + '<button class="cr-sign-cycle cr-test-cycle ' + cls[state] + '" id="cr-test-btn-' + t.key + '" onclick="crCycleTest(\'' + t.key + '\')">' + labels[state] + '</button>';
+      container.appendChild(row);
+    });
+  }
+  window.crCycleTest = function(key) {
+    crTests[key] = ((crTests[key] || 0) + 1) % 3;
+    var btn = document.getElementById('cr-test-btn-' + key);
+    if (!btn) return;
+    var labels = ['—','❌ Positif','✓ Négatif'];
+    var cls    = ['','st-pos','st-neg'];
+    btn.textContent = labels[crTests[key]];
+    btn.className   = 'cr-sign-cycle cr-test-cycle ' + cls[crTests[key]];
+  };
+
+  var _crTestDraft = null;
+  window.crOpenTestConfig = function() {
+    if (!crAdminCheck()) return;
+    _crTestDraft = JSON.parse(JSON.stringify(crTestsConfig));
+    crRenderTestModal();
+    var ov = document.getElementById('cr-tests-cfg-overlay');
+    if (ov) ov.classList.add('open');
+  };
+  window.crCloseTestConfig = function() {
+    var ov = document.getElementById('cr-tests-cfg-overlay');
+    if (ov) ov.classList.remove('open');
+    _crTestDraft = null;
+  };
+  function crRenderTestModal() {
+    var body = document.getElementById('cr-tests-cfg-body');
+    if (!body || !_crTestDraft) return;
+    body.innerHTML = '';
+    _crTestDraft.forEach(function(t, idx) {
+      var item = document.createElement('div');
+      item.className = 'cr-cfg-articu-item';
+      item.dataset.idx = idx;
+      var articuChecks = Object.keys(crAmpConfig).map(function(k){
+        var checked = (t.articulations||[]).indexOf(k) !== -1 ? 'checked' : '';
+        return '<label style="font-size:.72rem;display:inline-flex;align-items:center;gap:3px;margin-right:8px;">'
+          +'<input type="checkbox" class="tcfg-articu" value="'+k+'" '+checked+'> '+crAmpConfig[k].label+'</label>';
+      }).join('');
+      item.innerHTML = '<div class="cr-cfg-articu-hdr">'
+        + '<input type="text" class="tcfg-label" value="' + (t.label||'') + '" placeholder="Nom du test">'
+        + '<button class="cr-cfg-del" onclick="crTestDelItem(' + idx + ')">✕</button>'
+        + '</div>'
+        + '<div class="cr-cfg-articu-body">'
+        + '<div style="font-size:.72rem;font-weight:700;color:var(--text2);margin-bottom:4px;">ARTICULATIONS (laisser vide = toujours affiché)</div>'
+        + '<div>' + articuChecks + '</div>'
+        + '</div>';
+      body.appendChild(item);
+    });
+    var addRow = document.createElement('div');
+    addRow.innerHTML = '<div class="cr-cfg-add-articu-row" style="margin-top:10px;">'
+      + '<input type="text" id="cr-tcfg-new-label" placeholder="Nouveau test clinique" style="flex:1">'
+      + '<button class="cr-cfg-save-btn" onclick="crTestAddItem()" style="padding:6px 12px;font-size:.78rem;">+ Ajouter</button>'
+      + '</div>';
+    body.appendChild(addRow);
+  }
+  window.crTestDelItem = function(idx) {
+    if (!_crTestDraft) return;
+    _crTestDraft.splice(idx, 1);
+    crRenderTestModal();
+  };
+  window.crTestAddItem = function() {
+    if (!_crTestDraft) return;
+    var inp = document.getElementById('cr-tcfg-new-label');
+    var lbl = inp ? inp.value.trim() : '';
+    if (!lbl) return;
+    var key = 'test_' + Date.now();
+    _crTestDraft.push({ key:key, label:lbl, articulations:[] });
+    if (inp) inp.value = '';
+    crRenderTestModal();
+  };
+  function crSyncTestDraftFromDOM() {
+    if (!_crTestDraft) return;
+    var body = document.getElementById('cr-tests-cfg-body');
+    if (!body) return;
+    body.querySelectorAll('.cr-cfg-articu-item').forEach(function(item) {
+      var idx = parseInt(item.dataset.idx);
+      if (isNaN(idx) || !_crTestDraft[idx]) return;
+      var lbl = item.querySelector('.tcfg-label');
+      if (lbl) _crTestDraft[idx].label = lbl.value.trim() || _crTestDraft[idx].label;
+      var ac = item.querySelectorAll('.tcfg-articu:checked');
+      _crTestDraft[idx].articulations = Array.from(ac).map(function(c){ return c.value; });
+    });
+  }
+  window.crSaveTestConfig = function() {
+    crSyncTestDraftFromDOM();
+    crTestsConfig = _crTestDraft;
+    crTests = {};
+    crTestsConfig.forEach(function(t){ crTests[t.key] = 0; });
+    try { localStorage.setItem('crTestsConfig', JSON.stringify(crTestsConfig)); } catch(e) {}
+    crRenderTestRows();
+    crCloseTestConfig();
+    _crToast('Tests cliniques enregistrés');
   };
 
   // ── Pathologie config ─────────────────────────────────────────
@@ -5426,12 +5620,12 @@ _updateOutilsPatientBtns();
   var crLsiOn = false;
   // ── Sign config ───────────────────────────────────────────────
   var CR_SIGN_DEFAULTS = [
-    { key:'epanchement', label:'Épanchement articulaire',      valide:'Épanchement absent',                     cours:'Épanchement articulaire résiduel' },
-    { key:'sec',         label:'Genou sec',                    valide:'Genou sec',                              cours:'Genou sec en cours d\'acquisition' },
-    { key:'douleur',     label:'Douleur résiduelle',           valide:'Absence de douleur résiduelle',          cours:'Douleur résiduelle présente' },
-    { key:'mobilite',    label:'Mobilité patellaire',          valide:'Mobilité patellaire conservée',           cours:'Mobilité patellaire en cours de récupération' },
-    { key:'boiterie',    label:'Boiterie',                     valide:'Absence de boiterie',                    cours:'Boiterie observée' },
-    { key:'verrou',      label:'Verrouillage actif extension', valide:'Verrouillage actif en extension acquis',  cours:'Verrouillage actif en extension en cours d\'acquisition' }
+    { key:'epanchement', label:'Épanchement articulaire',      valide:'Épanchement absent',                     cours:'Épanchement articulaire résiduel',                          articulations:['genou'] },
+    { key:'sec',         label:'Genou sec',                    valide:'Genou sec',                              cours:'Genou sec en cours d\'acquisition',                          articulations:['genou'] },
+    { key:'douleur',     label:'Douleur résiduelle',           valide:'Absence de douleur résiduelle',          cours:'Douleur résiduelle présente',                                articulations:[] },
+    { key:'mobilite',    label:'Mobilité patellaire',          valide:'Mobilité patellaire conservée',          cours:'Mobilité patellaire en cours de récupération',               articulations:['genou'] },
+    { key:'boiterie',    label:'Boiterie',                     valide:'Absence de boiterie',                    cours:'Boiterie observée',                                          articulations:['genou','hanche','cheville'] },
+    { key:'verrou',      label:'Verrouillage actif extension', valide:'Verrouillage actif en extension acquis', cours:'Verrouillage actif en extension en cours d\'acquisition',    articulations:['genou'] }
   ];
   var crSignConfig = (function() {
     try { var s = localStorage.getItem('crSignConfig'); if (s) return JSON.parse(s); } catch(e) {}
@@ -5482,6 +5676,10 @@ _updateOutilsPatientBtns();
     if (!container) return;
     container.innerHTML = '';
     crSignConfig.forEach(function(s) {
+      // Filter: if sign has articulations set AND an articulation is selected, only show if match
+      if (crArticuSelected && s.articulations && s.articulations.length > 0) {
+        if (s.articulations.indexOf(crArticuSelected) === -1) return;
+      }
       if (!crSigns.hasOwnProperty(s.key)) crSigns[s.key] = 0;
       var row = document.createElement('div');
       row.className = 'cr-sign-row';
@@ -5673,6 +5871,19 @@ _updateOutilsPatientBtns();
       lines.push('');
     }
 
+    // 8b. Tests cliniques
+    var positifTests = [], negatifTests = [];
+    crTestsConfig.forEach(function(t){
+      if (crTests[t.key] === 1) positifTests.push(t.label);
+      else if (crTests[t.key] === 2) negatifTests.push(t.label);
+    });
+    if (positifTests.length || negatifTests.length) {
+      lines.push('Tests cliniques :');
+      positifTests.forEach(function(t){ lines.push('  ❌ ' + t + ' — Positif'); });
+      negatifTests.forEach(function(t){ lines.push('  ✓ ' + t + ' — Négatif'); });
+      lines.push('');
+    }
+
     // 9. Évolution
     if (commentaire) { lines.push(commentaire); lines.push(''); }
     else if (evolution) { lines.push('L\'évolution est ' + crEvolLabel(evolution) + '.'); lines.push(''); }
@@ -5787,6 +5998,18 @@ _updateOutilsPatientBtns();
       valideSigns.forEach(function(s){ lines.push('  ✓ ' + s); });
       coursSigns.forEach(function(s){ lines.push('  ⟳ ' + s); });
       if (signesLibre) lines.push('  - ' + signesLibre);
+    }
+
+    // Tests cliniques
+    var positifTestsD = [], negatifTestsD = [];
+    crTestsConfig.forEach(function(t){
+      if (crTests[t.key] === 1) positifTestsD.push(t.label);
+      else if (crTests[t.key] === 2) negatifTestsD.push(t.label);
+    });
+    if (positifTestsD.length || negatifTestsD.length) {
+      lines.push('Tests cliniques :');
+      positifTestsD.forEach(function(t){ lines.push('  ❌ ' + t + ' — Positif'); });
+      negatifTestsD.forEach(function(t){ lines.push('  ✓ ' + t + ' — Négatif'); });
     }
 
     var commentaire = crV('cr-commentaire');
@@ -5958,6 +6181,8 @@ _updateOutilsPatientBtns();
       crSigns[s.key] = 0;
     });
     crRenderSignRows();
+    crTestsConfig.forEach(function(t){ crTests[t.key] = 0; });
+    crRenderTestRows();
     if (crLsiOn) crToggleLSI();
     crUpdateBlocks();
     _objetEdited = false;
@@ -6124,6 +6349,7 @@ _updateOutilsPatientBtns();
 
   crInitAmpSelect();
   crRenderSignRows();
+  crRenderTestRows();
 })();
 
 </script>
@@ -6201,6 +6427,21 @@ _updateOutilsPatientBtns();
     <div class="cr-cfg-modal-footer">
       <button class="cr-cfg-cancel-btn" onclick="crClosePathoConfig()">Annuler</button>
       <button class="cr-cfg-save-btn" onclick="crSavePathoConfig()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- CR Tests Config Modal -->
+<div class="cr-cfg-overlay" id="cr-tests-cfg-overlay" onclick="if(event.target===this)crCloseTestConfig()">
+  <div class="cr-cfg-modal" style="width:600px;">
+    <div class="cr-cfg-modal-hdr">
+      <span>⚙ Configurer les tests cliniques</span>
+      <button class="cr-cfg-del" onclick="crCloseTestConfig()">✕</button>
+    </div>
+    <div class="cr-cfg-modal-body" id="cr-tests-cfg-body"></div>
+    <div class="cr-cfg-modal-footer">
+      <button class="cr-cfg-cancel-btn" onclick="crCloseTestConfig()">Annuler</button>
+      <button class="cr-cfg-save-btn" onclick="crSaveTestConfig()">💾 Enregistrer</button>
     </div>
   </div>
 </div>
