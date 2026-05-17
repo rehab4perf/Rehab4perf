@@ -6166,8 +6166,9 @@ _updateOutilsPatientBtns();
     var textEsc    = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     var titleEsc   = practTitle.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
+    var patNomPDF = crV('cr-pat-nom') || '';
     var html = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">'
-      + '<title>CR — ' + practName + '</title>'
+      + '<title>CR — ' + (patNomPDF || practName) + '</title>'
       + '<style>'
       + '*{box-sizing:border-box;margin:0;padding:0}'
       + 'body{font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;font-size:13px;color:#1A1917;background:#fff}'
