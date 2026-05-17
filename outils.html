@@ -5208,21 +5208,25 @@ _updateOutilsPatientBtns();
 
   window.crCfgDelArticu = function(k) {
     if (!_crCfgDraft) return;
+    crSyncDraftFromDOM();
     delete _crCfgDraft[k];
     crRenderCfgModal();
   };
   window.crCfgDelMesure = function(k, idx) {
     if (!_crCfgDraft || !_crCfgDraft[k]) return;
+    crSyncDraftFromDOM();
     _crCfgDraft[k].mesures.splice(idx, 1);
     crRenderCfgModal();
   };
   window.crCfgAddMesure = function(k) {
     if (!_crCfgDraft || !_crCfgDraft[k]) return;
+    crSyncDraftFromDOM();
     _crCfgDraft[k].mesures.push({ id: 'custom-' + Date.now(), label: '', unit: '°' });
     crRenderCfgModal();
   };
   window.crCfgAddArticu = function() {
     if (!_crCfgDraft) return;
+    crSyncDraftFromDOM();
     var inp = document.getElementById('cr-cfg-new-articu');
     var lbl = inp ? inp.value.trim() : '';
     if (!lbl) return;
@@ -5342,11 +5346,13 @@ _updateOutilsPatientBtns();
 
   window.crPathoDelItem = function(idx) {
     if (!_crPathoDraft) return;
+    crSyncPathoDraftFromDOM();
     _crPathoDraft.splice(idx, 1);
     crRenderPathoModal();
   };
   window.crPathoAddItem = function() {
     if (!_crPathoDraft) return;
+    crSyncPathoDraftFromDOM();
     var inp = document.getElementById('cr-pcfg-new-label');
     var lbl = inp ? inp.value.trim() : '';
     if (!lbl) return;
@@ -5363,6 +5369,7 @@ _updateOutilsPatientBtns();
   };
 
   window.crPathoAddArticu = function() {
+    crSyncPathoDraftFromDOM();
     var inp = document.getElementById('cr-patho-new-articu');
     var lbl = inp ? inp.value.trim() : '';
     if (!lbl) return;
@@ -5373,6 +5380,7 @@ _updateOutilsPatientBtns();
     crRenderPathoModal();
   };
   window.crPathoDelArticu = function(key) {
+    crSyncPathoDraftFromDOM();
     if (!confirm('Supprimer l\'articulation "' + (crAmpConfig[key] ? crAmpConfig[key].label : key) + '" ?\n\nSes mesures ROM seront aussi supprimées.')) return;
     delete crAmpConfig[key];
     // Remove from all patho associations
@@ -5471,11 +5479,13 @@ _updateOutilsPatientBtns();
 
   window.crSignDelItem = function(idx) {
     if (!_crSignDraft) return;
+    crSyncSignDraftFromDOM();
     _crSignDraft.splice(idx, 1);
     crRenderSignModal();
   };
   window.crSignAddItem = function() {
     if (!_crSignDraft) return;
+    crSyncSignDraftFromDOM();
     var inp = document.getElementById('cr-scfg-new-label');
     var lbl = inp ? inp.value.trim() : '';
     if (!lbl) return;
@@ -5610,11 +5620,13 @@ _updateOutilsPatientBtns();
   }
   window.crTestDelItem = function(idx) {
     if (!_crTestDraft) return;
+    crSyncTestDraftFromDOM();
     _crTestDraft.splice(idx, 1);
     crRenderTestModal();
   };
   window.crTestAddItem = function() {
     if (!_crTestDraft) return;
+    crSyncTestDraftFromDOM();
     var inp = document.getElementById('cr-tcfg-new-label');
     var lbl = inp ? inp.value.trim() : '';
     if (!lbl) return;
