@@ -5378,6 +5378,11 @@ renderLib('');
         <button class="pe-add-phase-btn" id="pe-lib-add-btn" onclick="_peAddBranch()">+ Ajouter une branche</button>
       </div>
     </div>
+    <div class="proto-edit-row" id="pe-rappels-section">
+      <label style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#1A3A5C;">Rappels automatiques</label>
+      <div id="pe-rappels-list" style="margin-top:8px"></div>
+      <button type="button" onclick="_peAddRappel()" style="margin-top:6px;width:100%;padding:6px;border:1px dashed #D3D1CB;border-radius:5px;background:none;cursor:pointer;font-size:.78rem;color:#6B6860;font-family:inherit">+ Ajouter un rappel</button>
+    </div>
     <div class="proto-edit-footer">
       <button class="pe-export-btn" onclick="_peExportJson()" title="Exporter le contenu JSON actuel">⬇ Exporter JSON</button>
       <button class="btn btn-outline" onclick="closeProtoEditor()" style="font-size:.8rem">Annuler</button>
@@ -6457,6 +6462,33 @@ function _persistCalNotes(){
   localStorage.setItem(_calNotesKey(), JSON.stringify(_calNotes));
 }
 
+function _addCalNoteIfNotDupe(dateStr, title, text) {
+  _loadCalNotes();
+  var exists = _calNotes.some(function(n){ return n.date===dateStr && n.title===title; });
+  if(exists) return false;
+  _calNotes.push({ id:'note_'+Math.random().toString(36).slice(2,9), date:dateStr, title:title.trim(), text:(text||'').trim(), type:'clinique', createdAt:new Date().toISOString() });
+  _persistCalNotes();
+  return true;
+}
+
+function _addDays(dateStr, n) {
+  var d = new Date(dateStr); d.setDate(d.getDate()+n);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+function _fmtDateFr(dateStr) {
+  if(!dateStr) return '';
+  var p = dateStr.split('-');
+  return (p[2]||'?')+'/'+(p[1]||'?')+'/'+(p[0]||'?');
+}
+
+function _saveJ0(patientId, dateStr) {
+  try { localStorage.setItem('r4p-j0-'+patientId, dateStr); } catch(e){}
+}
+function _getJ0(patientId) {
+  try { return localStorage.getItem('r4p-j0-'+patientId)||''; } catch(e){ return ''; }
+}
+
 /* ── Sélection du type dans le formulaire ── */
 function _setNoteType(type) {
   _noteFormType = type;
@@ -6490,8 +6522,16 @@ function _deletePatientMsg(noteId) {
   }).catch(function(e){ console.warn('_deletePatientMsg error', e); });
 }
 
+function _nextVersionTitle(title) {
+  if(!title) return '';
+  var match = title.match(/^(.*?)\s*[Vv](\d+)\s*$/);
+  if(match) return match[1].trim() + ' V' + (parseInt(match[2])+1);
+  return title + ' V2';
+}
+
 function _openCalNoteForm(dateStr) {
   _noteFormType = 'clinique';
+  _calPickerDate = dateStr;
   var parts = dateStr.split('-');
   var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
   document.getElementById('calPickerTitle').textContent = 'Nouvelle note — '+parseInt(parts[2])+' '+months[parseInt(parts[1])-1]+' '+parts[0];
@@ -6501,10 +6541,50 @@ function _openCalNoteForm(dateStr) {
     +_noteTypeRow('clinique')
     +'<input class="cal-note-inp" id="calNoteTitle" type="text" placeholder="Titre (optionnel)" />'
     +'<textarea class="cal-note-textarea" id="calNoteText" placeholder="Note, rappel, observation…"></textarea>'
+    +'<div id="note-followup-toggle-row" style="display:flex;align-items:center;gap:8px;margin:10px 0 6px">'
+    +'<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.78rem;color:#6B6860">'
+    +'<input type="checkbox" id="note-followup-chk" onchange="_toggleFollowupFields()" style="accent-color:#2B5FA6">'
+    +'🔁 Planifier un suivi'
+    +'</label>'
+    +'</div>'
+    +'<div id="note-followup-fields" style="display:none;background:#F7F6F3;border-radius:7px;padding:10px;margin-bottom:8px">'
+    +'<div style="display:flex;gap:8px;align-items:center;margin-bottom:7px">'
+    +'<span style="font-size:.75rem;color:#6B6860;white-space:nowrap">Dans</span>'
+    +'<input type="number" id="note-followup-days" value="35" min="1" style="width:56px;border:1px solid #D3D1CB;border-radius:5px;padding:4px 6px;font-size:.82rem;font-family:inherit" oninput="_updateFollowupDate()">'
+    +'<span style="font-size:.75rem;color:#6B6860;white-space:nowrap">jours →</span>'
+    +'<span id="note-followup-date-label" style="font-size:.75rem;color:#2D6A4F;font-weight:600"></span>'
+    +'</div>'
+    +'<input type="text" id="note-followup-title" placeholder="Titre du suivi" style="width:100%;border:1px solid #D3D1CB;border-radius:5px;padding:5px 8px;font-size:.82rem;font-family:inherit;box-sizing:border-box">'
+    +'</div>'
     +'<button class="cal-note-save" onclick="_saveCalNote(\''+dateStr+'\')">Enregistrer</button>'
     +'</div>';
   setTimeout(function(){ var el = document.getElementById('calNoteTitle'); if(el) el.focus(); }, 60);
+  // Auto-suggest follow-up title
+  setTimeout(function(){
+    var titleEl = document.getElementById('calNoteTitle');
+    titleEl && titleEl.addEventListener('input', function(){
+      var ftEl = document.getElementById('note-followup-title');
+      if(ftEl && !ftEl._touched) ftEl.value = _nextVersionTitle(titleEl.value);
+    });
+    var ftEl = document.getElementById('note-followup-title');
+    if(ftEl) ftEl.addEventListener('input', function(){ ftEl._touched = true; });
+  }, 80);
 }
+
+window._toggleFollowupFields = function() {
+  var chk = document.getElementById('note-followup-chk');
+  var fields = document.getElementById('note-followup-fields');
+  if(!fields) return;
+  fields.style.display = chk && chk.checked ? '' : 'none';
+  if(chk && chk.checked) _updateFollowupDate();
+};
+
+window._updateFollowupDate = function() {
+  var days = parseInt((document.getElementById('note-followup-days')||{}).value)||35;
+  var lbl = document.getElementById('note-followup-date-label');
+  if(!lbl || !_calPickerDate) return;
+  lbl.textContent = _fmtDateFr(_addDays(_calPickerDate, days));
+};
 
 function _saveCalNote(dateStr) {
   var title = (document.getElementById('calNoteTitle')||{}).value || '';
@@ -6516,6 +6596,16 @@ function _saveCalNote(dateStr) {
   _calNotes.push(note);
   _persistCalNotes();
   if(note.type === 'patient') _pushPatientMsg(note);
+  // Créer le suivi si toggle actif
+  var followupChk = document.getElementById('note-followup-chk');
+  if(followupChk && followupChk.checked) {
+    var fDays = parseInt((document.getElementById('note-followup-days')||{}).value)||35;
+    var fTitle = ((document.getElementById('note-followup-title')||{}).value||'').trim();
+    if(fTitle) {
+      var fDate = _addDays(dateStr, fDays);
+      _addCalNoteIfNotDupe(fDate, fTitle, '');
+    }
+  }
   closeCalPicker();
   renderCalendar();
   _showToast(note.type === 'patient' ? '💬 Message envoyé au patient' : '📝 Note enregistrée');
@@ -9240,6 +9330,13 @@ function _renderUpcoming(){
    ================================================================ */
 
 /* ─── Données ─────────────────────────────────────────────────── */
+var _PROTO_RAPPELS_DEFAULTS = {
+  'lca':             [{ jPlus:0, title:'🔪 Opération — LCA' }, { jPlus:45, title:'CR médecin à réaliser' }, { jPlus:150, title:'CR médecin à réaliser' }, { jPlus:270, title:'CR médecin à réaliser' }],
+  'latarjet':        [{ jPlus:0, title:'🔪 Opération — Latarjet' }, { jPlus:45, title:'CR médecin à réaliser' }, { jPlus:180, title:'CR médecin à réaliser' }],
+  'menisque':        [{ jPlus:0, title:'🔪 Opération — Ménisque' }, { jPlus:45, title:'CR médecin à réaliser' }, { jPlus:90, title:'CR médecin à réaliser' }, { jPlus:180, title:'CR médecin à réaliser' }],
+  'lcm-chirurgical': [{ jPlus:0, title:'🔪 Opération — LCM' }, { jPlus:45, title:'CR médecin à réaliser' }, { jPlus:150, title:'CR médecin à réaliser' }]
+};
+
 var PROTOCOLS_REF = [
   {
     id: 'lca',
@@ -10494,12 +10591,53 @@ function openProtoEditor(protoId){
     _peInitLibrary(proto||null);
   }
   _peTypeChange();
+  // Rappels
+  var rappels = proto ? (proto.rappels || _PROTO_RAPPELS_DEFAULTS[proto.id] || []) : [];
+  _peRenderRappels(rappels);
   document.getElementById('protoEditOverlay').style.display = 'flex';
 }
 
 function closeProtoEditor(){
   document.getElementById('protoEditOverlay').style.display = 'none';
   _peEditId = null;
+}
+
+function _peRenderRappels(rappels) {
+  var list = document.getElementById('pe-rappels-list');
+  if(!list) return;
+  list.innerHTML = rappels.map(function(r, i) {
+    return '<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px" data-ridx="'+i+'">'
+      +'<span style="font-size:.72rem;color:#6B6860;white-space:nowrap">J+</span>'
+      +'<input type="number" class="pe-rapp-jplus" value="'+r.jPlus+'" min="0" style="width:56px;border:1px solid #D3D1CB;border-radius:5px;padding:4px 6px;font-size:.78rem;font-family:inherit">'
+      +'<input type="text" class="pe-rapp-title" value="'+escH(r.title||'')+'" placeholder="Titre du rappel" style="flex:1;border:1px solid #D3D1CB;border-radius:5px;padding:4px 8px;font-size:.78rem;font-family:inherit">'
+      +'<button onclick="_peDelRappel('+i+')" style="border:none;background:none;cursor:pointer;color:#C0392B;font-size:1rem;padding:0 4px">✕</button>'
+      +'</div>';
+  }).join('') || '<span style="font-size:.75rem;color:#9D9B96;font-style:italic">Aucun rappel défini</span>';
+}
+
+window._peAddRappel = function() {
+  var rappels = _peGetRappels();
+  rappels.push({ jPlus: 45, title: 'CR médecin à réaliser' });
+  _peRenderRappels(rappels);
+};
+
+window._peDelRappel = function(idx) {
+  var rappels = _peGetRappels();
+  rappels.splice(idx, 1);
+  _peRenderRappels(rappels);
+};
+
+function _peGetRappels() {
+  var list = document.getElementById('pe-rappels-list');
+  if(!list) return [];
+  var rows = list.querySelectorAll('[data-ridx]');
+  var result = [];
+  rows.forEach(function(row) {
+    var jp = row.querySelector('.pe-rapp-jplus');
+    var tl = row.querySelector('.pe-rapp-title');
+    if(jp && tl) result.push({ jPlus: parseInt(jp.value)||0, title: tl.value.trim() });
+  });
+  return result;
 }
 
 function _peTypeChange(fromSelect){
@@ -10526,6 +10664,7 @@ function _saveProtoEditor(){
   if(type === 'rehab') content.phases = _peGetPhasesData();
 
   var newId = _peEditId || ('custom-' + Date.now());
+  var rappels = _peGetRappels();
 
   var proto = {
     id: newId,
@@ -10537,6 +10676,7 @@ function _saveProtoEditor(){
     duration: document.getElementById('pe-duration').value.trim(),
     joint: document.getElementById('pe-joint').value.trim(),
     description: document.getElementById('pe-description').value.trim(),
+    rappels: rappels,
     isCustom: true,
   };
   if(type === 'library'){
@@ -11366,7 +11506,8 @@ function _protoUnassign(protoId) {
 /* ─── Assigner protocole au patient ─────────────────────────── */
 function assignProtocol(protoId) {
   if(!_progPatient){ _showToast('Sélectionne d\'abord un patient.'); return; }
-  var proto = PROTOCOLS_REF.find(function(p){ return p.id===protoId; });
+  var proto = _getAllProtocols().find(function(p){ return p.id===protoId; });
+  if(!proto) proto = PROTOCOLS_REF.find(function(p){ return p.id===protoId; });
   if(!proto) return;
   var data = _protoPatientData[protoId];
   if(data && data.pp && data.pp.status === 'active'){ _showToast('Protocole déjà actif pour ce patient.'); return; }
@@ -11374,15 +11515,149 @@ function assignProtocol(protoId) {
   if(btn){ btn.disabled = true; btn.textContent = '⏳…'; }
   fetch(SUPA_URL_P + '/rest/v1/patient_protocols', {
     method: 'POST', headers: _sbHeaders(),
-    body: JSON.stringify({ praticien_id: _progUid, patient_id: _progPatient.id, protocol_id: protoId, protocol_name: proto.name, current_phase_id: proto.phases[0] ? proto.phases[0].id : null, status: 'active', history: [{ type: 'assigned', at: new Date().toISOString(), note: null }] })
+    body: JSON.stringify({ praticien_id: _progUid, patient_id: _progPatient.id, protocol_id: protoId, protocol_name: proto.name, current_phase_id: proto.phases && proto.phases[0] ? proto.phases[0].id : null, status: 'active', history: [{ type: 'assigned', at: new Date().toISOString(), note: null }] })
   })
   .then(function(r){ return r.ok ? r.json() : r.json().then(function(d){ throw new Error(JSON.stringify(d)); }); })
   .then(function(){
     _showToast('✅ Protocole '+_escHtml(proto.name)+' assigné à '+_escHtml((_progPatient.prenom||'')+' '+(_progPatient.nom||''))+' !');
     renderProtocols();
+    // Ouvrir modal rappels
+    var protoFull = _getAllProtocols().find(function(p){ return p.id===protoId; }) || PROTOCOLS_REF.find(function(p){ return p.id===protoId; });
+    if(protoFull) setTimeout(function(){ _openRappelsModal(protoFull); }, 400);
   })
   .catch(function(err){ console.error(err); _showToast('Erreur assignation.', true); if(btn){ btn.disabled=false; btn.textContent='📋 Assigner à ce patient'; } });
 }
+
+/* ─── Modal rappels automatiques ────────────────────────────── */
+function _openRappelsModal(proto, onClose) {
+  var defaultRappels = (proto.rappels && proto.rappels.length)
+    ? JSON.parse(JSON.stringify(proto.rappels))
+    : (_PROTO_RAPPELS_DEFAULTS[proto.id] || [{ jPlus:45, title:'CR médecin à réaliser' }, { jPlus:180, title:'CR médecin à réaliser' }]);
+
+  var patId = _progPatient ? _progPatient.id : null;
+  var savedJ0 = patId ? _getJ0(patId) : '';
+
+  function _renderModal(j0val) {
+    var existing = document.getElementById('rappels-modal-overlay');
+    if(existing) existing.remove();
+
+    var today = new Date();
+    var rows = defaultRappels.map(function(r, i) {
+      var targetDate = j0val ? _addDays(j0val, r.jPlus) : '';
+      var isPast = targetDate && new Date(targetDate) < today;
+      var dateLabel = targetDate ? (' — <span style="color:'+(isPast?'#C0392B':'#2D6A4F')+'">'+_fmtDateFr(targetDate)+(isPast?' ⚠️ passée':'')+'</span>') : '';
+      var jLabel = r.jPlus === 0 ? 'J0' : 'J+'+r.jPlus;
+      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'
+        +'<input type="checkbox" id="rapp-chk-'+i+'" checked style="width:16px;height:16px;accent-color:#2B5FA6;flex-shrink:0">'
+        +'<span style="font-size:.72rem;font-weight:700;color:#2B5FA6;min-width:36px">'+jLabel+'</span>'
+        +'<input type="text" id="rapp-title-'+i+'" value="'+escH(r.title)+'" style="flex:1;border:1px solid #D3D1CB;border-radius:5px;padding:4px 8px;font-size:.78rem;font-family:inherit">'
+        +'<span style="font-size:.72rem;color:#6B6860;white-space:nowrap">'+dateLabel+'</span>'
+        +'</div>';
+    }).join('');
+
+    var ov = document.createElement('div');
+    ov.id = 'rappels-modal-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.innerHTML = '<div style="background:#fff;border-radius:12px;width:100%;max-width:480px;box-shadow:0 12px 48px rgba(0,0,0,.22);overflow:hidden">'
+      +'<div style="background:#1A3A5C;color:#fff;padding:13px 18px;display:flex;align-items:center;gap:10px">'
+      +'<span style="font-size:.92rem;font-weight:700;flex:1">📅 Rappels — '+escH(proto.name||'Protocole')+'</span>'
+      +'<button onclick="document.getElementById(\'rappels-modal-overlay\').remove()" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:1.3rem;cursor:pointer;padding:0 4px">×</button>'
+      +'</div>'
+      +'<div style="padding:16px 18px 20px">'
+      +'<div style="margin-bottom:14px">'
+      +'<label style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#1A3A5C;display:block;margin-bottom:6px">Date de référence (J0)</label>'
+      +'<div style="display:flex;gap:8px;align-items:center">'
+      +'<input type="date" id="rapp-j0-input" value="'+j0val+'" style="flex:1;border:1px solid #D3D1CB;border-radius:6px;padding:6px 10px;font-size:.85rem;font-family:inherit" onchange="_rappelsUpdateDates()">'
+      +'</div>'
+      +'</div>'
+      +'<div style="margin-bottom:14px">'
+      +'<label style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#1A3A5C;display:block;margin-bottom:8px">Rappels à créer</label>'
+      +'<div id="rapp-rows">'+rows+'</div>'
+      +'</div>'
+      +'<div style="display:flex;gap:8px;justify-content:flex-end">'
+      +'<button onclick="document.getElementById(\'rappels-modal-overlay\').remove()" style="padding:7px 16px;border:1px solid #D3D1CB;border-radius:7px;background:#fff;cursor:pointer;font-family:inherit;font-size:.82rem">Ignorer</button>'
+      +'<button onclick="_confirmRappels('+JSON.stringify(defaultRappels).replace(/"/g,"'")+',\''+proto.id+'\')" style="padding:7px 16px;border:none;border-radius:7px;background:#2B5FA6;color:#fff;cursor:pointer;font-weight:600;font-family:inherit;font-size:.82rem">✓ Créer les rappels</button>'
+      +'</div>'
+      +'</div>'
+      +'</div>';
+    document.body.appendChild(ov);
+    // Stocker defaultRappels dans la modal pour _rappelsUpdateDates
+    ov._defaultRappels = defaultRappels;
+  }
+
+  if(patId && _progToken) {
+    fetch(SUPA_URL_P+'/rest/v1/bilans?patient_id=eq.'+patId+'&select=donnees&order=date.desc&limit=1', { headers: _sbHeaders() })
+    .then(function(r){ return r.ok ? r.json() : []; })
+    .then(function(rows) {
+      var d = rows && rows.length ? (rows[0].donnees||{}) : {};
+      var j0 = d['f-date-op'] || d['f-date-accident'] || savedJ0 || '';
+      _renderModal(j0);
+    })
+    .catch(function() {
+      try { var lb = JSON.parse(localStorage.getItem('athletik-bilan')||'{}'); var j0 = lb['f-date-op']||lb['f-date-accident']||savedJ0||''; _renderModal(j0); } catch(e){ _renderModal(savedJ0); }
+    });
+  } else {
+    try { var lb = JSON.parse(localStorage.getItem('athletik-bilan')||'{}'); var j0 = lb['f-date-op']||lb['f-date-accident']||savedJ0||''; _renderModal(j0); } catch(e){ _renderModal(savedJ0); }
+  }
+}
+
+window._rappelsUpdateDates = function() {
+  var j0 = (document.getElementById('rapp-j0-input')||{}).value||'';
+  if(!j0) return;
+  var ov = document.getElementById('rappels-modal-overlay');
+  if(!ov) return;
+  var defaultRappels = ov._defaultRappels || [];
+  // Récupérer l'état actuel des checkboxes et titres
+  var states = defaultRappels.map(function(r, i) {
+    var chk = document.getElementById('rapp-chk-'+i);
+    var titleEl = document.getElementById('rapp-title-'+i);
+    return { checked: chk ? chk.checked : true, title: titleEl ? titleEl.value : r.title };
+  });
+  // Mettre à jour les rappels avec les titres édités
+  var updatedRappels = defaultRappels.map(function(r, i) {
+    return { jPlus: r.jPlus, title: states[i].title };
+  });
+  ov._defaultRappels = updatedRappels;
+  // Re-rendre les lignes avec les nouvelles dates
+  var today = new Date();
+  var rows = updatedRappels.map(function(r, i) {
+    var targetDate = _addDays(j0, r.jPlus);
+    var isPast = new Date(targetDate) < today;
+    var dateLabel = ' — <span style="color:'+(isPast?'#C0392B':'#2D6A4F')+'">'+_fmtDateFr(targetDate)+(isPast?' ⚠️ passée':'')+'</span>';
+    var jLabel = r.jPlus === 0 ? 'J0' : 'J+'+r.jPlus;
+    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'
+      +'<input type="checkbox" id="rapp-chk-'+i+'"'+(states[i].checked?' checked':'')+' style="width:16px;height:16px;accent-color:#2B5FA6;flex-shrink:0">'
+      +'<span style="font-size:.72rem;font-weight:700;color:#2B5FA6;min-width:36px">'+jLabel+'</span>'
+      +'<input type="text" id="rapp-title-'+i+'" value="'+escH(r.title)+'" style="flex:1;border:1px solid #D3D1CB;border-radius:5px;padding:4px 8px;font-size:.78rem;font-family:inherit">'
+      +'<span style="font-size:.72rem;color:#6B6860;white-space:nowrap">'+dateLabel+'</span>'
+      +'</div>';
+  }).join('');
+  var rowsEl = document.getElementById('rapp-rows');
+  if(rowsEl) rowsEl.innerHTML = rows;
+};
+
+window._confirmRappels = function(defaultRappels, protoId) {
+  var j0 = (document.getElementById('rapp-j0-input')||{}).value||'';
+  if(!j0) { _showToast('Saisissez la date de référence.', true); return; }
+
+  var patId = _progPatient ? _progPatient.id : null;
+  if(patId) _saveJ0(patId, j0);
+
+  var created = 0;
+  defaultRappels.forEach(function(r, i) {
+    var chk = document.getElementById('rapp-chk-'+i);
+    var titleEl = document.getElementById('rapp-title-'+i);
+    if(!chk || !chk.checked) return;
+    var title = titleEl ? titleEl.value.trim() : r.title;
+    if(!title) return;
+    var targetDate = _addDays(j0, r.jPlus);
+    if(_addCalNoteIfNotDupe(targetDate, title, '')) created++;
+  });
+
+  document.getElementById('rappels-modal-overlay').remove();
+  renderCalendar();
+  _showToast(created > 0 ? '📅 '+created+' rappel(s) créé(s) dans l\'agenda' : 'Aucun rappel ajouté (déjà existants)');
+};
 
 /* ─── Modal note de statut ───────────────────────────────────── */
 var _STATUS_LABELS = { paused:'⏸ Mettre en pause', active:'↩ Réactiver', completed:'✔️ Terminer', abandoned:'Abandonner' };
