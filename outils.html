@@ -5047,6 +5047,13 @@ _updateOutilsPatientBtns();
   var crAmpConfig = JSON.parse(JSON.stringify(CR_AMP_DEFAULTS));
   var crAmpArticu = ''; // articulation sélectionnée
 
+  var CR_STATUTS_DEFAULTS = [
+    { key: 'valide', icon: '✓', label: 'Validé',   cr: 'validé' },
+    { key: 'cours',  icon: '⟳', label: 'En cours', cr: "en cours d'acquisition" }
+  ];
+  var crStatutsConfig = JSON.parse(JSON.stringify(CR_STATUTS_DEFAULTS));
+  var _crStatutsDraft = null;
+
   // Mapping pathologie → articulation
   var CR_PATHO_ARTICU = {
     lca:'genou', lcp:'genou', meniscectomie:'genou', suture_meniscale:'genou', syndrome_rotulien:'genou',
@@ -5119,8 +5126,7 @@ _updateOutilsPatientBtns();
         + '<input type="text" id="' + fid + '" placeholder="' + m.unit + '">'
         + '<select id="' + sid + '">'
         + '<option value="">—</option>'
-        + '<option value="valide">✓ Validé</option>'
-        + '<option value="cours">⟳ En cours</option>'
+        + crStatutsConfig.map(function(s){ return '<option value="'+s.key+'">'+s.icon+' '+s.label+'</option>'; }).join('')
         + '</select></div>';
       container.appendChild(div);
     });
@@ -5146,6 +5152,7 @@ _updateOutilsPatientBtns();
   window.crOpenAmpConfig = function() {
     if (!crAdminCheck()) return;
     _crCfgDraft = JSON.parse(JSON.stringify(crAmpConfig));
+    _crStatutsDraft = JSON.parse(JSON.stringify(crStatutsConfig));
     crRenderCfgModal();
     var ov = document.getElementById('cr-cfg-overlay');
     if (ov) ov.classList.add('open');
@@ -5154,6 +5161,7 @@ _updateOutilsPatientBtns();
     var ov = document.getElementById('cr-cfg-overlay');
     if (ov) ov.classList.remove('open');
     _crCfgDraft = null;
+    _crStatutsDraft = null;
   };
   window.crCloseCfgIfBg = function(e) {
     if (e.target === document.getElementById('cr-cfg-overlay')) crCloseAmpConfig();
@@ -5181,6 +5189,30 @@ _updateOutilsPatientBtns();
     var body = document.getElementById('cr-cfg-modal-body');
     if (!body || !_crCfgDraft) return;
     body.innerHTML = '';
+
+    // Section statuts en haut
+    var statutsSection = document.createElement('div');
+    statutsSection.style.cssText = 'margin-bottom:18px;border:1px solid var(--border);border-radius:8px;overflow:hidden';
+    var statutsRows = (_crStatutsDraft || crStatutsConfig).map(function(s, i) {
+      var upDis = i === 0 ? ' disabled' : '';
+      var dnDis = i === (_crStatutsDraft||crStatutsConfig).length - 1 ? ' disabled' : '';
+      return '<div class="cr-cfg-mesure-row cr-stat-row" data-sidx="'+i+'">'
+        + '<button class="cr-cfg-move-btn"'+upDis+' onclick="crCfgMoveStatut('+i+',\'up\')">&#9650;</button>'
+        + '<button class="cr-cfg-move-btn"'+dnDis+' onclick="crCfgMoveStatut('+i+',\'down\')">&#9660;</button>'
+        + '<input type="text" class="cfg-stat-icon cr-cfg-unit" value="'+s.icon+'" placeholder="✓" style="width:36px;text-align:center">'
+        + '<input type="text" class="cfg-stat-label cfg-m-label" value="'+s.label+'" placeholder="Label select">'
+        + '<input type="text" class="cfg-stat-cr" value="'+s.cr+'" placeholder="Texte dans le CR" style="flex:1.5">'
+        + '<button class="cr-cfg-del" onclick="crCfgDelStatut('+i+')">✕</button>'
+        + '</div>';
+    }).join('');
+    statutsSection.innerHTML = '<div class="cr-cfg-articu-hdr" style="background:var(--surface2,#F7F6F3)">'
+      + '<span style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text2)">Statuts disponibles</span>'
+      + '</div>'
+      + '<div class="cr-cfg-articu-body">' + statutsRows
+      + '<button class="cr-cfg-add-btn" onclick="crCfgAddStatut()">+ Ajouter un statut</button>'
+      + '</div>';
+    body.appendChild(statutsSection);
+
     var keys = Object.keys(_crCfgDraft);
     keys.forEach(function(k, kIdx) {
       var articu = _crCfgDraft[k];
@@ -5262,8 +5294,26 @@ _updateOutilsPatientBtns();
     crRenderCfgModal();
   };
 
+  // Sync statuts depuis DOM → _crStatutsDraft
+  function crSyncStatutsFromDOM() {
+    if (!_crStatutsDraft) return;
+    var body = document.getElementById('cr-cfg-modal-body');
+    if (!body) return;
+    body.querySelectorAll('.cr-stat-row').forEach(function(row, i) {
+      var s = _crStatutsDraft[i];
+      if (!s) return;
+      var icon = row.querySelector('.cfg-stat-icon');
+      var lbl  = row.querySelector('.cfg-stat-label');
+      var cr   = row.querySelector('.cfg-stat-cr');
+      if (icon) s.icon  = icon.value.trim() || s.icon;
+      if (lbl)  s.label = lbl.value.trim()  || s.label;
+      if (cr)   s.cr    = cr.value.trim()   || s.cr;
+    });
+  }
+
   // Sync draft from DOM before saving
   function crSyncDraftFromDOM() {
+    if (_crStatutsDraft) crSyncStatutsFromDOM();
     if (!_crCfgDraft) return;
     var body = document.getElementById('cr-cfg-modal-body');
     if (!body) return;
@@ -5283,13 +5333,35 @@ _updateOutilsPatientBtns();
     });
   }
 
+  window.crCfgAddStatut = function() {
+    if (!_crStatutsDraft) return;
+    crSyncDraftFromDOM(); crSyncStatutsFromDOM();
+    _crStatutsDraft.push({ key: 'statut-' + Date.now(), icon: '·', label: '', cr: '' });
+    crRenderCfgModal();
+  };
+  window.crCfgDelStatut = function(idx) {
+    if (!_crStatutsDraft) return;
+    crSyncDraftFromDOM(); crSyncStatutsFromDOM();
+    _crStatutsDraft.splice(idx, 1);
+    crRenderCfgModal();
+  };
+  window.crCfgMoveStatut = function(idx, dir) {
+    if (!_crStatutsDraft) return;
+    crSyncDraftFromDOM(); crSyncStatutsFromDOM();
+    _crSwapArr(_crStatutsDraft, idx, dir);
+    crRenderCfgModal();
+  };
+
   window.crSaveAmpConfig = function() {
     crSyncDraftFromDOM();
+    crSyncStatutsFromDOM();
     crAmpConfig = _crCfgDraft;
+    if (_crStatutsDraft) crStatutsConfig = _crStatutsDraft;
     crInitAmpSelect();
     crRenderAmpFields();
     crCloseAmpConfig();
-    try { localStorage.setItem('crAmpConfig', JSON.stringify(crAmpConfig)); } catch(e) {}
+    try { localStorage.setItem('crAmpConfig',    JSON.stringify(crAmpConfig));    } catch(e) {}
+    try { localStorage.setItem('crStatutsConfig',JSON.stringify(crStatutsConfig));} catch(e) {}
     crSaveGlobalConfig();
   };
 
@@ -5912,7 +5984,8 @@ _updateOutilsPatientBtns();
     if (phase) { lines.push('Stade de rééducation : ' + crPhaseLabel(phase) + '.'); lines.push(''); }
 
     // 5. Amplitudes (dynamiques)
-    var ampValide = [], ampCours = [], ampNeutral = [];
+    var ampByStatus = {}, ampNeutral = [];
+    crStatutsConfig.forEach(function(s){ ampByStatus[s.key] = []; });
     if (crAmpArticu && crAmpConfig[crAmpArticu]) {
       crAmpConfig[crAmpArticu].mesures.forEach(function(m) {
         var fid  = 'cr-dyn-' + m.id;
@@ -5921,15 +5994,18 @@ _updateOutilsPatientBtns();
         var stat = crV(sid);
         if (!v && !stat) return;
         var txt = m.label + (v ? ' : ' + v + ' ' + m.unit : '');
-        if (stat === 'valide') ampValide.push(txt);
-        else if (stat === 'cours') ampCours.push(txt);
+        if (ampByStatus[stat] !== undefined) ampByStatus[stat].push(txt);
         else ampNeutral.push(txt);
       });
     }
-    if (ampValide.length || ampCours.length || ampNeutral.length) {
+    var hasAmp = ampNeutral.length || crStatutsConfig.some(function(s){ return (ampByStatus[s.key]||[]).length; });
+    if (hasAmp) {
       lines.push('Amplitudes articulaires :');
-      ampValide.forEach(function(s){ lines.push('  ✓ ' + s + ' (validé)'); });
-      ampCours.forEach(function(s){ lines.push('  ⟳ ' + s + ' (en cours d\'acquisition)'); });
+      crStatutsConfig.forEach(function(s) {
+        (ampByStatus[s.key] || []).forEach(function(txt) {
+          lines.push('  ' + s.icon + ' ' + txt + ' (' + s.cr + ')');
+        });
+      });
       ampNeutral.forEach(function(s){ lines.push('  - ' + s); });
       lines.push('');
     }
@@ -6082,7 +6158,8 @@ _updateOutilsPatientBtns();
     lines.push('');
 
     // Amplitudes (dynamiques)
-    var ampValide = [], ampCours = [], ampNeutral = [];
+    var ampByStatus = {}, ampNeutral = [];
+    crStatutsConfig.forEach(function(s){ ampByStatus[s.key] = []; });
     if (crAmpArticu && crAmpConfig[crAmpArticu]) {
       crAmpConfig[crAmpArticu].mesures.forEach(function(m) {
         var fid  = 'cr-dyn-' + m.id;
@@ -6091,15 +6168,18 @@ _updateOutilsPatientBtns();
         var stat = crV(sid);
         if (!v && !stat) return;
         var txt = m.label + (v ? ' : ' + v + ' ' + m.unit : '');
-        if (stat === 'valide') ampValide.push(txt);
-        else if (stat === 'cours') ampCours.push(txt);
+        if (ampByStatus[stat] !== undefined) ampByStatus[stat].push(txt);
         else ampNeutral.push(txt);
       });
     }
-    if (ampValide.length || ampCours.length || ampNeutral.length) {
+    var hasAmp = ampNeutral.length || crStatutsConfig.some(function(s){ return (ampByStatus[s.key]||[]).length; });
+    if (hasAmp) {
       lines.push('Amplitudes articulaires :');
-      ampValide.forEach(function(s){ lines.push('  ✓ ' + s + ' (validé)'); });
-      ampCours.forEach(function(s){ lines.push('  ⟳ ' + s + ' (en cours d\'acquisition)'); });
+      crStatutsConfig.forEach(function(s) {
+        (ampByStatus[s.key] || []).forEach(function(txt) {
+          lines.push('  ' + s.icon + ' ' + txt + ' (' + s.cr + ')');
+        });
+      });
       ampNeutral.forEach(function(s){ lines.push('  - ' + s); });
     }
 
@@ -6547,22 +6627,24 @@ _updateOutilsPatientBtns();
     var d = donnees;
     if (typeof d === 'string') try { d = JSON.parse(d); } catch(e) { d = null; }
     if (!d) return;
-    if (d.ampConfig)   { crAmpConfig    = d.ampConfig;   try { localStorage.setItem('crAmpConfig',    JSON.stringify(d.ampConfig));   } catch(e){} }
-    if (d.pathoConfig) { crPathoConfig  = d.pathoConfig; try { localStorage.setItem('crPathoConfig',  JSON.stringify(d.pathoConfig)); } catch(e){} }
-    if (d.signConfig)  { crSignConfig   = d.signConfig;  try { localStorage.setItem('crSignConfig',   JSON.stringify(d.signConfig));  } catch(e){} }
-    if (d.testsConfig) { crTestsConfig  = d.testsConfig; try { localStorage.setItem('crTestsConfig',  JSON.stringify(d.testsConfig)); } catch(e){} }
+    if (d.ampConfig)     { crAmpConfig    = d.ampConfig;     try { localStorage.setItem('crAmpConfig',    JSON.stringify(d.ampConfig));     } catch(e){} }
+    if (d.pathoConfig)   { crPathoConfig  = d.pathoConfig;   try { localStorage.setItem('crPathoConfig',  JSON.stringify(d.pathoConfig));   } catch(e){} }
+    if (d.signConfig)    { crSignConfig   = d.signConfig;    try { localStorage.setItem('crSignConfig',   JSON.stringify(d.signConfig));    } catch(e){} }
+    if (d.testsConfig)   { crTestsConfig  = d.testsConfig;   try { localStorage.setItem('crTestsConfig',  JSON.stringify(d.testsConfig));   } catch(e){} }
+    if (d.statutsConfig) { crStatutsConfig = d.statutsConfig; try { localStorage.setItem('crStatutsConfig', JSON.stringify(d.statutsConfig)); } catch(e){} }
   }
 
   function crSaveGlobalConfig() {
     // 1. localStorage immediat (toujours)
-    try { localStorage.setItem('crAmpConfig',   JSON.stringify(crAmpConfig));   } catch(e){}
-    try { localStorage.setItem('crPathoConfig', JSON.stringify(crPathoConfig)); } catch(e){}
-    try { localStorage.setItem('crSignConfig',  JSON.stringify(crSignConfig));  } catch(e){}
-    try { localStorage.setItem('crTestsConfig', JSON.stringify(crTestsConfig)); } catch(e){}
+    try { localStorage.setItem('crAmpConfig',    JSON.stringify(crAmpConfig));    } catch(e){}
+    try { localStorage.setItem('crPathoConfig',  JSON.stringify(crPathoConfig));  } catch(e){}
+    try { localStorage.setItem('crSignConfig',   JSON.stringify(crSignConfig));   } catch(e){}
+    try { localStorage.setItem('crTestsConfig',  JSON.stringify(crTestsConfig));  } catch(e){}
+    try { localStorage.setItem('crStatutsConfig',JSON.stringify(crStatutsConfig));} catch(e){}
     // 2. Supabase (si connecte)
     _crRefreshToken();
     if (!_crToken || !_crUid) { _crToast('Config sauvegardee localement (reconnectez-vous pour sync global)'); return; }
-    var donnees = { ampConfig: crAmpConfig, pathoConfig: crPathoConfig, signConfig: crSignConfig, testsConfig: crTestsConfig };
+    var donnees = { ampConfig: crAmpConfig, pathoConfig: crPathoConfig, signConfig: crSignConfig, testsConfig: crTestsConfig, statutsConfig: crStatutsConfig };
     var body = JSON.stringify({ praticien_id: _crUid, nom: CR_SUPA_NOM, type: '__meta__', is_public: true, donnees: donnees });
     if (_crConfigSupaId) {
       fetch(CR_SUPA_URL + '/rest/v1/templates?id=eq.' + _crConfigSupaId, {
@@ -6608,18 +6690,20 @@ _updateOutilsPatientBtns();
       try { localStorage.setItem('r4p-cr-config-sid', String(rows[0].id)); } catch(e){}
       _crApplyConfig(rows[0].donnees);
     } else {
-      try { var a = JSON.parse(localStorage.getItem('crAmpConfig'));   if (a) crAmpConfig   = a; } catch(e){}
-      try { var p = JSON.parse(localStorage.getItem('crPathoConfig')); if (p) crPathoConfig = p; } catch(e){}
-      try { var s = JSON.parse(localStorage.getItem('crSignConfig'));  if (s) crSignConfig  = s; } catch(e){}
-      try { var t = JSON.parse(localStorage.getItem('crTestsConfig')); if (t) crTestsConfig = t; } catch(e){}
+      try { var a = JSON.parse(localStorage.getItem('crAmpConfig'));     if (a) crAmpConfig     = a; } catch(e){}
+      try { var p = JSON.parse(localStorage.getItem('crPathoConfig'));   if (p) crPathoConfig   = p; } catch(e){}
+      try { var s = JSON.parse(localStorage.getItem('crSignConfig'));    if (s) crSignConfig    = s; } catch(e){}
+      try { var t = JSON.parse(localStorage.getItem('crTestsConfig'));   if (t) crTestsConfig   = t; } catch(e){}
+      try { var _ls = localStorage.getItem('crStatutsConfig'); if (_ls) crStatutsConfig = JSON.parse(_ls); } catch(e){}
     }
   })
   .catch(function(e){
     console.warn('cr-config: Supabase fetch echoue, fallback localStorage', e);
-    try { var a = JSON.parse(localStorage.getItem('crAmpConfig'));   if (a) crAmpConfig   = a; } catch(e2){}
-    try { var p = JSON.parse(localStorage.getItem('crPathoConfig')); if (p) crPathoConfig = p; } catch(e2){}
-    try { var s = JSON.parse(localStorage.getItem('crSignConfig'));  if (s) crSignConfig  = s; } catch(e2){}
-    try { var t = JSON.parse(localStorage.getItem('crTestsConfig')); if (t) crTestsConfig = t; } catch(e2){}
+    try { var a = JSON.parse(localStorage.getItem('crAmpConfig'));     if (a) crAmpConfig     = a; } catch(e2){}
+    try { var p = JSON.parse(localStorage.getItem('crPathoConfig'));   if (p) crPathoConfig   = p; } catch(e2){}
+    try { var s = JSON.parse(localStorage.getItem('crSignConfig'));    if (s) crSignConfig    = s; } catch(e2){}
+    try { var t = JSON.parse(localStorage.getItem('crTestsConfig'));   if (t) crTestsConfig   = t; } catch(e2){}
+    try { var _ls2 = localStorage.getItem('crStatutsConfig'); if (_ls2) crStatutsConfig = JSON.parse(_ls2); } catch(e2){}
   })
   .then(function(){ _crInitUI(); });
 })();
