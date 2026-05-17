@@ -4139,9 +4139,10 @@ function _renderEvolutionPage(){
       var dec=grp.unit==='cm'&&firstA%1!==0?1:0;
       var decL=grp.unit==='cm'&&lastA%1!==0?1:0;
       // Chart SVG + dual stats
-      var chartSvg='', lastB_val=NaN, lsiHtml='';
+      var chartSvg='', lastB_val=NaN, firstB_val=NaN, lsiHtml='';
       if(grp.type==='dual'){
         var valsB=bilansAsc.map(function(b){var d=b.donnees||{};return grp.computeB?grp.computeB(d):parseFloat(d[grp.idB]||'');});
+        valsB.forEach(function(v){if(!isNaN(v)&&isNaN(firstB_val))firstB_val=v;});
         valsB.slice().reverse().forEach(function(v){if(!isNaN(v)&&isNaN(lastB_val))lastB_val=v;});
         if(!isNaN(lastA) && !isNaN(lastB_val) && Math.max(lastA,lastB_val)>0){
           var lsiVal=Math.round(Math.min(lastA,lastB_val)/Math.max(lastA,lastB_val)*100);
@@ -4153,9 +4154,22 @@ function _renderEvolutionPage(){
         chartSvg=_buildChartB(valsA,dates,{unit:grp.unit,dir:grp.dir,labelA:grp.labelA,chartId:id});
       }
       if(!chartSvg)return;
+      // Progression % pour chaque côté (dual)
+      function _pctBadge(first,last,dir,color){
+        if(isNaN(first)||isNaN(last)||first===0)return '';
+        var d=last-first, pct=Math.round(d/Math.abs(first)*100);
+        if(pct===0)return '';
+        var good=dir==='up'?d>=0:d<=0;
+        var cls=d===0?'evo-neutral':(good?'evo-pos':'evo-neg');
+        return '<span class="evo-kpi '+cls+'" style="font-size:.65rem">'+(pct>0?'+':'')+pct+'%</span>';
+      }
       var kpisHtml = grp.type==='dual'
         ? '<span class="evo-kpi-neutral" style="color:#2B5FA6;font-weight:700">'+grp.labelA+' : '+lastA.toFixed(decL)+grp.unit+'</span>'
+          +_pctBadge(firstA,lastA,grp.dir,'#2B5FA6')
+          +'<span class="evo-kpi-neutral" style="color:var(--border);padding:0 2px">|</span>'
           +'<span class="evo-kpi-neutral" style="color:#2D6A4F;font-weight:700">'+(!isNaN(lastB_val)?grp.labelB+' : '+lastB_val.toFixed(decL)+grp.unit:'—')+'</span>'
+          +(!isNaN(lastB_val)?_pctBadge(firstB_val,lastB_val,grp.dir,'#2D6A4F'):'')
+          +'<span class="evo-kpi-neutral" style="color:var(--border);padding:0 2px">|</span>'
           +lsiHtml
         : '<span class="evo-kpi-neutral">Début : '+firstA.toFixed(dec)+grp.unit+'</span>'
           +'<span class="evo-kpi-neutral">→</span>'
