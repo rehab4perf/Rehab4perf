@@ -6413,6 +6413,14 @@ _updateOutilsPatientBtns();
       var dateBilan = bilan['f-date'] || '';
       if (pecEl && dateBilan) { pecEl.value = dateBilan; filled++; }
 
+      // ── Date accident + date opération (depuis bilan.html) ───
+      var accEl = document.getElementById('cr-pat-date-accident');
+      var opEl  = document.getElementById('cr-pat-date-op');
+      var dateAcc = bilan['f-date-accident'] || '';
+      var dateOp  = bilan['f-date-op']  || '';
+      if (accEl && dateAcc) { accEl.value = dateAcc; filled++; }
+      if (opEl  && dateOp)  { opEl.value  = dateOp;  filled++; }
+
       // ── Côté atteint ──────────────────────────────────────────
       var coteEl    = document.getElementById('cr-pat-cote');
       var coteBilan = (bilan['f-cote'] || '').trim().toLowerCase();

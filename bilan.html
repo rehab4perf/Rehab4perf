@@ -1182,7 +1182,10 @@ textarea { resize:none !important; overflow:hidden !important; }
       </div>
       <div class="form-grid triple">
         <div class="field"><label>Date du bilan</label><input type="date" id="f-date" oninput="updateAll()"></div>
-        <div class="field"><label>Date accident / opération</label><input type="text" id="f-accident" placeholder="12/01/2025 — LCA D"></div>
+        <div class="field"><label>Date d'accident</label><input type="date" id="f-date-accident" oninput="updateAll()"></div>
+        <div class="field"><label>Date d'opération <span style="font-size:.7em;opacity:.55">(si chir.)</span></label><input type="date" id="f-date-op" oninput="updateAll()"></div>
+      </div>
+      <div class="form-grid single">
         <div class="field"><label>Motif du bilan</label><input type="text" id="f-motif" placeholder="Bilan pré-RTS"></div>
       </div>
     </div>
@@ -5718,7 +5721,7 @@ function buildCR() {
   // 1. Infos patient
   var infosHtml = '';
   var infosMap = [
-    ['f-sexe','Sexe',''],['f-activite','Activité professionnelle',''],['f-sport','Sport / Objectif',''],['f-accident','Accident/Op.',''],
+    ['f-sexe','Sexe',''],['f-activite','Activité professionnelle',''],['f-sport','Sport / Objectif',''],['f-date-accident','Date accident',''],['f-date-op','Date opération',''],
     ['f-motif','Motif du bilan',''],['f-motif-patient','Motif (patient)',''],
     ['f-douleur','Douleur',''],['f-debut','Debut',''],['f-mecanisme','Mecanisme',''],
     ['f-eva','EVA actuelle','/10'],['f-eva-max','EVA max 7j','/10'],
