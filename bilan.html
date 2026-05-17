@@ -997,6 +997,22 @@ textarea { resize:none !important; overflow:hidden !important; }
 .evo-chart-check { width:15px; height:15px; accent-color:var(--accent); cursor:pointer; flex-shrink:0; }
 .evo-sel-btn { font-size:.72rem; padding:4px 11px; border:1px solid var(--border2); border-radius:6px; background:var(--surface); color:var(--text2); cursor:pointer; white-space:nowrap; }
 .evo-sel-btn:hover { background:var(--surface2); color:var(--text); }
+.sc-add-row { display:flex; flex-direction:column; gap:8px; padding:12px 14px; background:var(--surface2); border-radius:8px; margin-bottom:10px; }
+.sc-input-row { display:flex; gap:8px; }
+.sc-input { flex:1; font-family:var(--font-sans); font-size:.85rem; border:1px solid var(--border); border-radius:6px; padding:7px 10px; outline:none; background:var(--surface); color:var(--text); }
+.sc-input:focus { border-color:var(--accent); }
+.sc-add-btn { padding:7px 14px; background:var(--accent); color:#fff; border:none; border-radius:6px; font-family:var(--font-sans); font-size:.82rem; font-weight:600; cursor:pointer; white-space:nowrap; }
+.sc-arts-row { display:flex; flex-wrap:wrap; gap:6px; }
+.sc-art-chip { padding:4px 10px; border-radius:20px; font-size:.72rem; font-weight:600; cursor:pointer; background:var(--surface); border:1.5px solid var(--border); color:var(--text2); transition:all .15s; user-select:none; }
+.sc-art-chip.selected { background:var(--accent-l); border-color:var(--accent); color:var(--accent2); }
+.sc-list { display:flex; flex-direction:column; gap:6px; }
+.sc-item { display:flex; align-items:center; gap:8px; padding:8px 10px; background:var(--surface); border:1px solid var(--border); border-radius:8px; flex-wrap:wrap; }
+.sc-item-label { font-size:.85rem; color:var(--text); flex:1; min-width:120px; }
+.sc-item-arts { display:flex; gap:4px; flex-wrap:wrap; }
+.sc-item-art { padding:2px 8px; border-radius:12px; font-size:.68rem; font-weight:700; background:var(--accent-l); color:var(--accent2); }
+.sc-del-btn { background:none; border:none; cursor:pointer; color:var(--text3); font-size:.9rem; padding:2px 4px; border-radius:4px; }
+.sc-del-btn:hover { background:var(--red-l); color:var(--red); }
+.sc-empty { font-size:.8rem; color:var(--text3); font-style:italic; padding:6px 0; }
 </style>
 
 </head>
@@ -1274,6 +1290,28 @@ textarea { resize:none !important; overflow:hidden !important; }
     <div class="field" style="grid-column:span 2"><label>Interprétation</label>
       <div id="aclrsi-interp" class="text-muted" style="padding:2px 0">Renseignez le score ACL-RSI</div>
     </div>
+  </div>
+</div>
+
+<!-- Signes cliniques -->
+<div class="block">
+  <div class="block-header" style="background:var(--accent2)">Signes Cliniques</div>
+  <div style="padding:12px 14px">
+    <div class="sc-add-row">
+      <div class="sc-arts-row" id="sc-arts-picker">
+        <span class="sc-art-chip" data-art="Épaule" onclick="_toggleScArt(this)">Épaule</span>
+        <span class="sc-art-chip" data-art="Rachis" onclick="_toggleScArt(this)">Rachis</span>
+        <span class="sc-art-chip" data-art="Hanche" onclick="_toggleScArt(this)">Hanche</span>
+        <span class="sc-art-chip" data-art="Genou" onclick="_toggleScArt(this)">Genou</span>
+        <span class="sc-art-chip" data-art="Pied / Cheville" onclick="_toggleScArt(this)">Pied / Cheville</span>
+        <span class="sc-art-chip" data-art="Global" onclick="_toggleScArt(this)">Global</span>
+      </div>
+      <div class="sc-input-row">
+        <input class="sc-input" id="sc-input" type="text" placeholder="Décrire le signe clinique…" onkeydown="if(event.key==='Enter')addSigneClinique()">
+        <button class="sc-add-btn" onclick="addSigneClinique()">+ Ajouter</button>
+      </div>
+    </div>
+    <div class="sc-list" id="sc-list"></div>
   </div>
 </div>
 
@@ -3504,6 +3542,7 @@ var _suppressDirty  = false;   // true pendant _deserializeBilan pour ne pas pol
 var _chartCounter = 0;
 var _prevDonnees    = null;    // donnees du bilan précédent (pour deltas inline)
 var _allBilans      = [];      // tous les bilans du patient (pour la page évolution)
+var _signesCliniques = [];    // [{id:'sc-1', label:'Boiterie droite', arts:['Genou','Hanche']}]
 
 // Marquer le bilan comme modifié à chaque saisie utilisateur
 document.addEventListener('input',  function(){ if(!_suppressDirty) _bilanModified = true; });
@@ -3933,8 +3972,24 @@ function _buildChartD(valsA, valsB, dates, opts){
   ptsA.forEach(function(p){if(p.valid)lastA=p;}); ptsB.forEach(function(p){if(p.valid)lastB=p;});
   var decA=opts.unit==='cm'&&lastA&&lastA.v%1!==0?1:0;
   var decB=opts.unit==='cm'&&lastB&&lastB.v%1!==0?1:0;
-  if(lastA) html+='<text x="'+(lastA.x-10).toFixed(1)+'" y="'+(lastA.y+14).toFixed(1)+'" text-anchor="end" font-size="9" font-weight="700" fill="'+colorA+'">'+lastA.v.toFixed(decA)+opts.unit+'</text>';
-  if(lastB) html+='<text x="'+(lastB.x-10).toFixed(1)+'" y="'+(lastB.y-6).toFixed(1)+'" text-anchor="end" font-size="9" font-weight="700" fill="'+colorB+'">'+lastB.v.toFixed(decB)+opts.unit+'</text>';
+  if(lastA && lastB){
+    // Avoid label overlap: if lines are close, force A below, B above
+    var gap = Math.abs(lastA.y - lastB.y);
+    var aIsAbove = lastA.y <= lastB.y; // smaller y = higher on SVG
+    var lyA, lyB;
+    if(gap < 18){
+      lyA = Math.min(lastA.y, lastB.y) + 14; // A always below both
+      lyB = Math.min(lastA.y, lastB.y) - 6;  // B always above both
+    } else {
+      lyA = lastA.y + (aIsAbove ? -6 : 14);
+      lyB = lastB.y + (aIsAbove ? 14 : -6);
+    }
+    html+='<text x="'+(lastA.x-10).toFixed(1)+'" y="'+lyA.toFixed(1)+'" text-anchor="end" font-size="9" font-weight="700" fill="'+colorA+'">'+lastA.v.toFixed(decA)+opts.unit+'</text>';
+    html+='<text x="'+(lastB.x-10).toFixed(1)+'" y="'+lyB.toFixed(1)+'" text-anchor="end" font-size="9" font-weight="700" fill="'+colorB+'">'+lastB.v.toFixed(decB)+opts.unit+'</text>';
+  } else {
+    if(lastA) html+='<text x="'+(lastA.x-10).toFixed(1)+'" y="'+(lastA.y+14).toFixed(1)+'" text-anchor="end" font-size="9" font-weight="700" fill="'+colorA+'">'+lastA.v.toFixed(decA)+opts.unit+'</text>';
+    if(lastB) html+='<text x="'+(lastB.x-10).toFixed(1)+'" y="'+(lastB.y-6).toFixed(1)+'" text-anchor="end" font-size="9" font-weight="700" fill="'+colorB+'">'+lastB.v.toFixed(decB)+opts.unit+'</text>';
+  }
   // Légende
   var lx=VW-PAD.right+8;
   html+='<rect x="'+lx+'" y="'+PAD.top+'" width="8" height="8" rx="2" fill="'+colorA+'"/><text x="'+(lx+11)+'" y="'+(PAD.top+7)+'" font-size="8.5" fill="'+colorA+'" font-weight="600">'+opts.labelA+'</text>';
@@ -4083,24 +4138,33 @@ function _renderEvolutionPage(){
       var deltaCls=deltaA===0?'evo-neutral':(isGood?'evo-pos':'evo-neg');
       var dec=grp.unit==='cm'&&firstA%1!==0?1:0;
       var decL=grp.unit==='cm'&&lastA%1!==0?1:0;
-      // Chart SVG
-      var chartSvg='';
+      // Chart SVG + dual stats
+      var chartSvg='', lastB_val=NaN, lsiHtml='';
       if(grp.type==='dual'){
         var valsB=bilansAsc.map(function(b){var d=b.donnees||{};return grp.computeB?grp.computeB(d):parseFloat(d[grp.idB]||'');});
+        valsB.slice().reverse().forEach(function(v){if(!isNaN(v)&&isNaN(lastB_val))lastB_val=v;});
+        if(!isNaN(lastA) && !isNaN(lastB_val) && Math.max(lastA,lastB_val)>0){
+          var lsiVal=Math.round(Math.min(lastA,lastB_val)/Math.max(lastA,lastB_val)*100);
+          var lsiCls=lsiVal>=90?'evo-pos':lsiVal>=75?'evo-neutral':'evo-neg';
+          lsiHtml='<span class="evo-kpi '+lsiCls+'">LSI '+lsiVal+'%</span>';
+        }
         chartSvg=_buildChartD(valsA,valsB,dates,{unit:grp.unit,dir:grp.dir,labelA:grp.labelA,labelB:grp.labelB,chartId:id,colorA:'#2B5FA6',colorB:'#2D6A4F'});
       } else {
         chartSvg=_buildChartB(valsA,dates,{unit:grp.unit,dir:grp.dir,labelA:grp.labelA,chartId:id});
       }
       if(!chartSvg)return;
+      var kpisHtml = grp.type==='dual'
+        ? '<span class="evo-kpi-neutral" style="color:#2B5FA6;font-weight:700">'+grp.labelA+' : '+lastA.toFixed(decL)+grp.unit+'</span>'
+          +'<span class="evo-kpi-neutral" style="color:#2D6A4F;font-weight:700">'+(!isNaN(lastB_val)?grp.labelB+' : '+lastB_val.toFixed(decL)+grp.unit:'—')+'</span>'
+          +lsiHtml
+        : '<span class="evo-kpi-neutral">Début : '+firstA.toFixed(dec)+grp.unit+'</span>'
+          +'<span class="evo-kpi-neutral">→</span>'
+          +'<span class="evo-kpi-strong">Actuel : '+lastA.toFixed(decL)+grp.unit+'</span>'
+          +'<span class="evo-kpi '+deltaCls+'">'+sign+deltaA.toFixed(0)+grp.unit+pctStr+'</span>';
       catHtml+='<div class="evo-chart-card evo-unselected" data-chart-id="'+id+'">'
         +'<div class="evo-chart-header">'
         +'<div class="evo-check-wrap"><input type="checkbox" class="evo-chart-check no-print" onchange="this.closest(\'.evo-chart-card\').classList.toggle(\'evo-unselected\',!this.checked)"><span class="evo-chart-title">'+grp.title+'</span></div>'
-        +'<div class="evo-chart-kpis">'
-        +'<span class="evo-kpi-neutral">Début : '+firstA.toFixed(dec)+grp.unit+'</span>'
-        +'<span class="evo-kpi-neutral">→</span>'
-        +'<span class="evo-kpi-strong">Actuel : '+lastA.toFixed(decL)+grp.unit+'</span>'
-        +'<span class="evo-kpi '+deltaCls+'">'+sign+deltaA.toFixed(0)+grp.unit+pctStr+'</span>'
-        +'</div></div>'
+        +'<div class="evo-chart-kpis">'+kpisHtml+'</div></div>'
         +chartSvg+'</div>';
     });
     if(!catHtml)return;
@@ -4284,6 +4348,7 @@ function _serializeBilan(){
     if(el.type==='checkbox'||el.type==='radio') data[el.id]=el.checked;
     else data[el.id]=el.value;
   });
+  data.signesCliniques = _signesCliniques;
   return data;
 }
 
@@ -4317,6 +4382,8 @@ function _deserializeBilan(data){
   try{ _initAllRomBars(); }catch(ex){}
   try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-abd','ep-bht'].forEach(calcEpForce); }catch(ex){}
   _parsePainZones();
+  _signesCliniques = Array.isArray(data.signesCliniques) ? data.signesCliniques : [];
+  _renderSignesCliniques();
   _suppressDirty = false;
   _bilanModified = false;
   _refreshCRIfVisible();
@@ -5653,6 +5720,44 @@ function _buildCRPatientHeaderHtml() {
   '</div>';
 }
 
+function _toggleScArt(btn){
+  btn.classList.toggle('selected');
+}
+
+function _renderSignesCliniques(){
+  var list = document.getElementById('sc-list');
+  if(!list) return;
+  if(!_signesCliniques.length){ list.innerHTML='<div class="sc-empty">Aucun signe clinique ajouté.</div>'; return; }
+  list.innerHTML = _signesCliniques.map(function(s){
+    var artsHtml = s.arts.map(function(a){ return '<span class="sc-item-art">'+a+'</span>'; }).join('');
+    return '<div class="sc-item" data-sc-id="'+s.id+'">'
+      +'<span class="sc-item-label">'+s.label+'</span>'
+      +'<div class="sc-item-arts">'+artsHtml+'</div>'
+      +'<button class="sc-del-btn" onclick="removeSigneClinique(\''+s.id+'\')" title="Supprimer">🗑</button>'
+      +'</div>';
+  }).join('');
+}
+
+function addSigneClinique(){
+  var inp = document.getElementById('sc-input');
+  if(!inp) return;
+  var label = inp.value.trim();
+  if(!label){ inp.focus(); return; }
+  var arts = Array.from(document.querySelectorAll('#sc-arts-picker .sc-art-chip.selected')).map(function(c){ return c.dataset.art; });
+  _signesCliniques.push({ id:'sc-'+Date.now(), label:label, arts:arts });
+  inp.value = '';
+  document.querySelectorAll('#sc-arts-picker .sc-art-chip').forEach(function(c){ c.classList.remove('selected'); });
+  _renderSignesCliniques();
+}
+
+function removeSigneClinique(id){
+  var sc = _signesCliniques.find(function(s){ return s.id===id; });
+  if(!sc) return;
+  if(!confirm('Supprimer le signe clinique "'+sc.label+'" ?\n\nCette action est irréversible.')) return;
+  _signesCliniques = _signesCliniques.filter(function(s){ return s.id!==id; });
+  _renderSignesCliniques();
+}
+
 function buildCR() {
   var content = document.getElementById('cr-content');
   if (!content) return;
@@ -5715,6 +5820,22 @@ function buildCR() {
   }
   addSection('1. Infos Patient & Anamnese', infosHtml);
 
+  // Signes cliniques par articulation
+  if(_signesCliniques.length){
+    var allArts = ['Épaule','Rachis','Hanche','Genou','Pied / Cheville','Global'];
+    var scHtml = '';
+    var noArt = _signesCliniques.filter(function(s){ return !s.arts || !s.arts.length; });
+    allArts.forEach(function(art){
+      var signs = _signesCliniques.filter(function(s){ return s.arts && s.arts.indexOf(art) !== -1; });
+      if(!signs.length) return;
+      scHtml += '<div class="cr-item"><span class="cr-key">'+art+'</span><span class="cr-val">'+signs.map(function(s){ return s.label; }).join('<br>')+'</span></div>';
+    });
+    if(noArt.length){
+      scHtml += '<div class="cr-item"><span class="cr-key">Non classifié</span><span class="cr-val">'+noArt.map(function(s){ return s.label; }).join('<br>')+'</span></div>';
+    }
+    if(scHtml) addSection('Signes Cliniques', scHtml);
+  }
+
   // Sections 2→6 : délégué à _buildAllTestsHtml()
   _buildAllTestsHtml().forEach(function(sec){ addSection(sec.title, sec.html); });
 
@@ -5729,8 +5850,10 @@ function doReset() {
   _bilanPatient = null;
   _prevDonnees  = null;
   _allBilans    = [];
+  _signesCliniques = [];
   localStorage.removeItem('r4p-current-patient');
   _resetBilanFields();
+  _renderSignesCliniques();
   document.querySelectorAll('.evo-delta').forEach(function(el){ el.remove(); });
   _renderEvolutionPage();
   _updateSaveBar();
@@ -6729,7 +6852,7 @@ init(); // appelle showPage('infos') à la fin → page-infos s'affiche
 
 // Triple garantie — showPage('infos') après la pile JS courante et après load
 setTimeout(function(){ showPage('infos'); }, 0);
-window.addEventListener('load', function(){ showPage('infos'); _parsePainZones(); });
+window.addEventListener('load', function(){ showPage('infos'); _parsePainZones(); _renderSignesCliniques(); });
 </script>
 
 <script>
