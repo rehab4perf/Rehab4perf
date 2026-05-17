@@ -65,7 +65,7 @@ iframe.active { display:block; }
 .pm-card {
   background:#fff; border-radius:10px;
   box-shadow:0 8px 40px rgba(0,0,0,.25);
-  width:100%; max-width:480px; max-height:calc(100vh - 72px);
+  width:100%; max-width:480px; min-height:340px; max-height:calc(100vh - 72px);
   display:flex; flex-direction:column; overflow:hidden;
   font-family:-apple-system,'Helvetica Neue',sans-serif;
 }
@@ -163,7 +163,7 @@ iframe.active { display:block; }
 .pm-cancel-btn:hover { border-color:#9D9B96; color:#1A1917; }
 
 /* ── Context menu ──────────────────────────────────────── */
-.pm-ctx-wrap { position:relative; flex-shrink:0; }
+.pm-ctx-wrap { flex-shrink:0; }
 .pm-ctx-btn {
   background:none; border:1.5px solid #E8E6E1; border-radius:5px;
   color:#6B6860; padding:4px 10px; font-size:.9rem; font-weight:700;
@@ -171,13 +171,13 @@ iframe.active { display:block; }
   letter-spacing:.08em; line-height:1;
 }
 .pm-ctx-btn:hover { background:#F7F6F3; border-color:#9D9B96; color:#1A1917; }
+/* Menu global fixe — positionné par JS, jamais clipé par overflow */
 .pm-ctx-menu {
-  display:none; position:absolute; right:0; top:calc(100% + 4px); z-index:200;
   background:#fff; border-radius:8px;
   box-shadow:0 4px 20px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.07);
   min-width:160px; overflow:hidden;
+  font-family:-apple-system,'Helvetica Neue',sans-serif;
 }
-.pm-ctx-menu.open { display:block; }
 .pm-ctx-item {
   display:flex; align-items:center; gap:8px;
   padding:9px 14px; font-size:.82rem; cursor:pointer;
@@ -521,6 +521,7 @@ function openPatientModal() {
 function closePatientModal() {
   document.getElementById('pmOverlay').classList.remove('open');
   toggleCreateForm(false);
+  closeCtxMenu();
 }
 function closePMOnBackdrop(e) {
   if (e.target === document.getElementById('pmOverlay')) closePatientModal();
@@ -570,6 +571,7 @@ function filterPatients() {
 
 /* ── Afficher la liste ──────────────────────────────────── */
 function renderPatients(list) {
+  closeCtxMenu();
   var el = document.getElementById('pmList');
   if (!list.length) { el.innerHTML = '<div class="pm-empty">Aucun patient trouvé.</div>'; return; }
   el.innerHTML = list.map(function(p) {
@@ -586,38 +588,68 @@ function renderPatients(list) {
       +   (meta ? '<div class="pm-patient-meta">'+_esc(meta)+'</div>' : '')
       + '</div>'
       + '<div class="pm-patient-actions">'
-      +   '<div class="pm-ctx-wrap" id="ctx-wrap-'+p.id+'">'
+      +   '<div class="pm-ctx-wrap">'
       +     '<button class="pm-ctx-btn" onclick="openCtxMenu(\''+p.id+'\',event)" title="Actions">···</button>'
-      +     '<div class="pm-ctx-menu" id="ctx-menu-'+p.id+'">'
-      +       '<button class="pm-ctx-item'+(isSelected?' active-item':'')+'" onclick="selectPatient(\''+p.id+'\');closeCtxMenu()">'+selLabel+'</button>'
-      +       '<button class="pm-ctx-item" onclick="editPatient(\''+p.id+'\')">✏️&nbsp; Modifier</button>'
-      +       '<div class="pm-ctx-divider"></div>'
-      +       '<button class="pm-ctx-item delete-item" onclick="deletePatient(\''+p.id+'\',event)">🗑&nbsp; Supprimer</button>'
-      +     '</div>'
       +   '</div>'
       + '</div>'
       + '</div>';
   }).join('');
 }
 
-/* ── Menu contextuel ────────────────────────────────────── */
+/* ── Menu contextuel global (position:fixed — jamais clipé) ── */
 var _openCtxId = null;
+
+function _getGlobalMenu() {
+  var m = document.getElementById('pmGlobalCtxMenu');
+  if (!m) {
+    m = document.createElement('div');
+    m.id = 'pmGlobalCtxMenu';
+    m.className = 'pm-ctx-menu';
+    m.style.cssText = 'position:fixed;display:none;z-index:10001;';
+    document.body.appendChild(m);
+  }
+  return m;
+}
 
 function openCtxMenu(id, e) {
   e.stopPropagation();
   if (_openCtxId === id) { closeCtxMenu(); return; }
   closeCtxMenu();
   _openCtxId = id;
-  var menu = document.getElementById('ctx-menu-' + id);
-  if (menu) menu.classList.add('open');
+
+  var p = _allPatients.find(function(x){ return x.id === id; });
+  if (!p) return;
+  var isSelected = _currentPatient && _currentPatient.id === id;
+  var selLabel = isSelected ? '✓ Patient actif' : 'Sélectionner';
+
+  var menu = _getGlobalMenu();
+  menu.innerHTML = [
+    '<button class="pm-ctx-item'+(isSelected?' active-item':'')+'" onclick="selectPatient(\''+id+'\');closeCtxMenu()">'+selLabel+'</button>',
+    '<button class="pm-ctx-item" onclick="editPatient(\''+id+'\')">✏️&nbsp; Modifier</button>',
+    '<div class="pm-ctx-divider"></div>',
+    '<button class="pm-ctx-item delete-item" onclick="deletePatient(\''+id+'\',event)">🗑&nbsp; Supprimer</button>'
+  ].join('');
+
+  // Afficher pour mesurer, puis positionner
+  menu.style.display = 'block';
+  var btn = e.currentTarget;
+  var rect = btn.getBoundingClientRect();
+  var menuW = menu.offsetWidth;
+  var menuH = menu.offsetHeight;
+  var top  = rect.bottom + 4;
+  var left = rect.right - menuW;
+  // Débordement bas → ouvrir vers le haut
+  if (top + menuH > window.innerHeight - 8) top = rect.top - menuH - 4;
+  // Débordement gauche → recaler
+  if (left < 8) left = 8;
+  menu.style.top  = top  + 'px';
+  menu.style.left = left + 'px';
 }
 
 function closeCtxMenu() {
-  if (_openCtxId) {
-    var menu = document.getElementById('ctx-menu-' + _openCtxId);
-    if (menu) menu.classList.remove('open');
-    _openCtxId = null;
-  }
+  var m = document.getElementById('pmGlobalCtxMenu');
+  if (m) m.style.display = 'none';
+  _openCtxId = null;
 }
 
 document.addEventListener('click', function() { closeCtxMenu(); });
