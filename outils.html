@@ -493,6 +493,8 @@ body {
 .cr-cfg-mesure-row input { flex:1; }
 .cr-cfg-mesure-row .cr-cfg-unit { width:52px; }
 .cr-cfg-del { background:none; border:none; cursor:pointer; color:var(--red); font-size:1rem; padding:2px 5px; }
+.cr-cfg-move-btn { background:none; border:none; cursor:pointer; color:var(--text3); font-size:.8rem; padding:2px 4px; line-height:1; }
+.cr-cfg-move-btn:disabled, .cr-cfg-move-btn[disabled] { opacity:.3; pointer-events:none; }
 .cr-cfg-add-btn { background:none; border:1px dashed var(--border2); border-radius:5px; width:100%; padding:6px; font-size:.78rem; cursor:pointer; color:var(--text3); margin-top:4px; }
 .cr-cfg-add-btn:hover { border-color:var(--accent); color:var(--accent); }
 .cr-cfg-add-articu-row { display:flex; gap:8px; margin-top:8px; }
@@ -5144,23 +5146,50 @@ _updateOutilsPatientBtns();
     if (e.target === document.getElementById('cr-cfg-overlay')) crCloseAmpConfig();
   };
 
+  // ── Helpers de réordonnement ──────────────────────────────────
+  function _crSwapArr(arr, idx, dir) {
+    var j = dir === 'up' ? idx - 1 : idx + 1;
+    if (j < 0 || j >= arr.length) return;
+    var tmp = arr[idx]; arr[idx] = arr[j]; arr[j] = tmp;
+  }
+  function _crSwapObjKeys(obj, key, dir) {
+    var keys = Object.keys(obj);
+    var idx = keys.indexOf(key);
+    var j = dir === 'up' ? idx - 1 : idx + 1;
+    if (j < 0 || j >= keys.length) return obj;
+    var newKeys = keys.slice();
+    var tmp = newKeys[idx]; newKeys[idx] = newKeys[j]; newKeys[j] = tmp;
+    var newObj = {};
+    newKeys.forEach(function(k){ newObj[k] = obj[k]; });
+    return newObj;
+  }
+
   function crRenderCfgModal() {
     var body = document.getElementById('cr-cfg-modal-body');
     if (!body || !_crCfgDraft) return;
     body.innerHTML = '';
-    Object.keys(_crCfgDraft).forEach(function(k) {
+    var keys = Object.keys(_crCfgDraft);
+    keys.forEach(function(k, kIdx) {
       var articu = _crCfgDraft[k];
       var item = document.createElement('div');
       item.className = 'cr-cfg-articu-item';
       item.dataset.key = k;
       var mesuresHtml = articu.mesures.map(function(m, i) {
+        var upDis  = i === 0 ? ' disabled' : '';
+        var dnDis  = i === articu.mesures.length - 1 ? ' disabled' : '';
         return '<div class="cr-cfg-mesure-row" data-idx="' + i + '">'
+          + '<button class="cr-cfg-move-btn"' + upDis + ' onclick="crCfgMoveMesure(\'' + k + '\',' + i + ',\'up\')">&#9650;</button>'
+          + '<button class="cr-cfg-move-btn"' + dnDis + ' onclick="crCfgMoveMesure(\'' + k + '\',' + i + ',\'down\')">&#9660;</button>'
           + '<input type="text" class="cfg-m-label" value="' + m.label + '" placeholder="Nom mesure">'
           + '<input type="text" class="cfg-m-unit cr-cfg-unit" value="' + m.unit + '" placeholder="°">'
           + '<button class="cr-cfg-del" onclick="crCfgDelMesure(\'' + k + '\',' + i + ')">✕</button>'
           + '</div>';
       }).join('');
+      var upDis  = kIdx === 0 ? ' disabled' : '';
+      var dnDis  = kIdx === keys.length - 1 ? ' disabled' : '';
       item.innerHTML = '<div class="cr-cfg-articu-hdr">'
+        + '<button class="cr-cfg-move-btn"' + upDis + ' onclick="crCfgMoveArticu(\'' + k + '\',\'up\')">&#9650;</button>'
+        + '<button class="cr-cfg-move-btn"' + dnDis + ' onclick="crCfgMoveArticu(\'' + k + '\',\'down\')">&#9660;</button>'
         + '<input type="text" class="cfg-a-label" value="' + articu.label + '" placeholder="Nom articulation">'
         + '<button class="cr-cfg-del" onclick="crCfgDelArticu(\'' + k + '\')">✕ Supprimer</button>'
         + '</div>'
@@ -5203,6 +5232,19 @@ _updateOutilsPatientBtns();
     crRenderCfgModal();
   };
 
+  window.crCfgMoveArticu = function(key, dir) {
+    if (!_crCfgDraft) return;
+    crSyncDraftFromDOM();
+    _crCfgDraft = _crSwapObjKeys(_crCfgDraft, key, dir);
+    crRenderCfgModal();
+  };
+  window.crCfgMoveMesure = function(key, idx, dir) {
+    if (!_crCfgDraft || !_crCfgDraft[key]) return;
+    crSyncDraftFromDOM();
+    _crSwapArr(_crCfgDraft[key].mesures, idx, dir);
+    crRenderCfgModal();
+  };
+
   // Sync draft from DOM before saving
   function crSyncDraftFromDOM() {
     if (!_crCfgDraft) return;
@@ -5230,6 +5272,7 @@ _updateOutilsPatientBtns();
     crInitAmpSelect();
     crRenderAmpFields();
     crCloseAmpConfig();
+    try { localStorage.setItem('crAmpConfig', JSON.stringify(crAmpConfig)); } catch(e) {}
     crSaveGlobalConfig();
   };
 
@@ -5276,7 +5319,11 @@ _updateOutilsPatientBtns();
         var checked = p.articulations.indexOf(k) !== -1 ? 'checked' : '';
         return '<label><input type="checkbox" class="pcfg-articu" value="' + k + '" ' + checked + '>' + crAmpConfig[k].label + '</label>';
       }).join('');
+      var upDis = idx === 0 ? ' disabled' : '';
+      var dnDis = idx === _crPathoDraft.length - 1 ? ' disabled' : '';
       item.innerHTML = '<div class="cr-cfg-articu-hdr">'
+        + '<button class="cr-cfg-move-btn"' + upDis + ' onclick="crPathoMoveItem(' + idx + ',\'up\')">&#9650;</button>'
+        + '<button class="cr-cfg-move-btn"' + dnDis + ' onclick="crPathoMoveItem(' + idx + ',\'down\')">&#9660;</button>'
         + '<input type="text" class="pcfg-label" value="' + p.label + '" placeholder="Nom pathologie">'
         + '<button class="cr-cfg-del" onclick="crPathoDelItem(' + idx + ')">✕</button>'
         + '</div>'
@@ -5306,6 +5353,12 @@ _updateOutilsPatientBtns();
     var key = lbl.toLowerCase().replace(/[^a-z0-9]/g,'_').replace(/_+/g,'_');
     _crPathoDraft.push({ key: key, label: lbl, articulations: [] });
     if (inp) inp.value = '';
+    crRenderPathoModal();
+  };
+  window.crPathoMoveItem = function(idx, dir) {
+    if (!_crPathoDraft) return;
+    crSyncPathoDraftFromDOM();
+    _crSwapArr(_crPathoDraft, idx, dir);
     crRenderPathoModal();
   };
 
@@ -5359,6 +5412,7 @@ _updateOutilsPatientBtns();
     crRenderAmpFields();
     crRenderPathoButtons();
     crClosePathoConfig();
+    try { localStorage.setItem('crPathoConfig', JSON.stringify(crPathoConfig)); } catch(e) {}
     crSaveGlobalConfig();
   };
 
@@ -5390,7 +5444,11 @@ _updateOutilsPatientBtns();
         return '<label style="font-size:.72rem;display:inline-flex;align-items:center;gap:3px;margin-right:8px;">'
           +'<input type="checkbox" class="scfg-articu" value="'+k+'" '+checked+'> '+crAmpConfig[k].label+'</label>';
       }).join('');
+      var upDis = idx === 0 ? ' disabled' : '';
+      var dnDis = idx === _crSignDraft.length - 1 ? ' disabled' : '';
       item.innerHTML = '<div class="cr-cfg-articu-hdr">'
+        + '<button class="cr-cfg-move-btn"' + upDis + ' onclick="crSignMoveItem(' + idx + ',\'up\')">&#9650;</button>'
+        + '<button class="cr-cfg-move-btn"' + dnDis + ' onclick="crSignMoveItem(' + idx + ',\'down\')">&#9660;</button>'
         + '<input type="text" class="scfg-label" value="' + (s.label||'') + '" placeholder="Label du signe">'
         + '<button class="cr-cfg-del" onclick="crSignDelItem(' + idx + ')">✕</button>'
         + '</div>'
@@ -5426,6 +5484,12 @@ _updateOutilsPatientBtns();
     if (inp) inp.value = '';
     crRenderSignModal();
   };
+  window.crSignMoveItem = function(idx, dir) {
+    if (!_crSignDraft) return;
+    crSyncSignDraftFromDOM();
+    _crSwapArr(_crSignDraft, idx, dir);
+    crRenderSignModal();
+  };
 
   function crSyncSignDraftFromDOM() {
     if (!_crSignDraft) return;
@@ -5452,6 +5516,7 @@ _updateOutilsPatientBtns();
     crSignConfig.forEach(function(s){ crSigns[s.key] = 0; });
     crRenderSignRows();
     crCloseSignConfig();
+    try { localStorage.setItem('crSignConfig', JSON.stringify(crSignConfig)); } catch(e) {}
     crSaveGlobalConfig();
   };
 
@@ -5522,7 +5587,11 @@ _updateOutilsPatientBtns();
         return '<label style="font-size:.72rem;display:inline-flex;align-items:center;gap:3px;margin-right:8px;">'
           +'<input type="checkbox" class="tcfg-articu" value="'+k+'" '+checked+'> '+crAmpConfig[k].label+'</label>';
       }).join('');
+      var upDis = idx === 0 ? ' disabled' : '';
+      var dnDis = idx === _crTestDraft.length - 1 ? ' disabled' : '';
       item.innerHTML = '<div class="cr-cfg-articu-hdr">'
+        + '<button class="cr-cfg-move-btn"' + upDis + ' onclick="crTestMoveItem(' + idx + ',\'up\')">&#9650;</button>'
+        + '<button class="cr-cfg-move-btn"' + dnDis + ' onclick="crTestMoveItem(' + idx + ',\'down\')">&#9660;</button>'
         + '<input type="text" class="tcfg-label" value="' + (t.label||'') + '" placeholder="Nom du test">'
         + '<button class="cr-cfg-del" onclick="crTestDelItem(' + idx + ')">✕</button>'
         + '</div>'
@@ -5554,6 +5623,12 @@ _updateOutilsPatientBtns();
     if (inp) inp.value = '';
     crRenderTestModal();
   };
+  window.crTestMoveItem = function(idx, dir) {
+    if (!_crTestDraft) return;
+    crSyncTestDraftFromDOM();
+    _crSwapArr(_crTestDraft, idx, dir);
+    crRenderTestModal();
+  };
   function crSyncTestDraftFromDOM() {
     if (!_crTestDraft) return;
     var body = document.getElementById('cr-tests-cfg-body');
@@ -5574,6 +5649,7 @@ _updateOutilsPatientBtns();
     crTestsConfig.forEach(function(t){ crTests[t.key] = 0; });
     crRenderTestRows();
     crCloseTestConfig();
+    try { localStorage.setItem('crTestsConfig', JSON.stringify(crTestsConfig)); } catch(e) {}
     crSaveGlobalConfig();
   };
 
@@ -6355,12 +6431,18 @@ _updateOutilsPatientBtns();
   fetch('https://raw.githubusercontent.com/rehab4perf/Rehab4perf/main/config/cr-config.json?t=' + Date.now())
     .then(function(r){ if (!r.ok) throw new Error('fetch failed'); return r.json(); })
     .then(function(cfg){
-      if (cfg.ampConfig)   crAmpConfig    = cfg.ampConfig;
-      if (cfg.pathoConfig) crPathoConfig  = cfg.pathoConfig;
-      if (cfg.signConfig)  crSignConfig   = cfg.signConfig;
-      if (cfg.testsConfig) crTestsConfig  = cfg.testsConfig;
+      if (cfg.ampConfig)   { crAmpConfig    = cfg.ampConfig;   try { localStorage.setItem('crAmpConfig',    JSON.stringify(cfg.ampConfig));   } catch(e){} }
+      if (cfg.pathoConfig) { crPathoConfig  = cfg.pathoConfig; try { localStorage.setItem('crPathoConfig',  JSON.stringify(cfg.pathoConfig)); } catch(e){} }
+      if (cfg.signConfig)  { crSignConfig   = cfg.signConfig;  try { localStorage.setItem('crSignConfig',   JSON.stringify(cfg.signConfig));  } catch(e){} }
+      if (cfg.testsConfig) { crTestsConfig  = cfg.testsConfig; try { localStorage.setItem('crTestsConfig',  JSON.stringify(cfg.testsConfig)); } catch(e){} }
     })
-    .catch(function(e){ console.warn('cr-config: fallback sur les valeurs par défaut', e); })
+    .catch(function(e){
+      console.warn('cr-config: fetch GitHub échoué, tentative localStorage', e);
+      try { var a = JSON.parse(localStorage.getItem('crAmpConfig'));    if (a) crAmpConfig    = a; } catch(e2){}
+      try { var p = JSON.parse(localStorage.getItem('crPathoConfig'));  if (p) crPathoConfig  = p; } catch(e2){}
+      try { var s = JSON.parse(localStorage.getItem('crSignConfig'));   if (s) crSignConfig   = s; } catch(e2){}
+      try { var t = JSON.parse(localStorage.getItem('crTestsConfig'));  if (t) crTestsConfig  = t; } catch(e2){}
+    })
     .then(function(){
       crInitAmpSelect();
       crRenderSignRows();
