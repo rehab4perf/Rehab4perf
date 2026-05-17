@@ -4352,14 +4352,18 @@ function _escP(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;
    ÉVOLUTION DES CHARGES
    ================================================================ */
 
-/* Formule Brzycki : 1RM estimé depuis poids × reps.
-   Valide pour reps 1–36. Retourne null si non applicable. */
-function _brzycki(kg, reps) {
-  kg = parseFloat(kg); reps = parseFloat(reps);
-  if(isNaN(kg) || isNaN(reps) || kg <= 0 || reps <= 0) return null;
-  if(reps === 1) return kg;
-  if(reps >= 37) return null; // formule non valide au-delà
-  return Math.round((kg * 36 / (37 - reps)) * 10) / 10;
+/* Estimation 1RM :
+   - Brzycki pour 1–36 reps (précision optimale en force)
+   - Epley pour > 36 reps (endurance, pas de limite haute)
+   - kg par défaut = 1 si absent/nul (poids de corps ≈ négligeable) */
+function _1rm(kg, reps) {
+  reps = parseFloat(reps);
+  if(isNaN(reps) || reps <= 0) return null;
+  kg = parseFloat(kg);
+  if(isNaN(kg) || kg <= 0) kg = 0.1;        // poids de corps → 0.1 kg par défaut (quasi nul)
+  if(reps === 1) return Math.round(kg * 10) / 10;
+  if(reps <= 36) return Math.round((kg * 36 / (37 - reps)) * 10) / 10;  // Brzycki
+  return Math.round((kg * (1 + reps / 30)) * 10) / 10;                   // Epley
 }
 
 /* Extrait, depuis un tableau de programmes Supabase [{id,nom,date,donnees}],
@@ -4383,7 +4387,7 @@ function _extractExoLoads(seances) {
     }
   });
 
-  // 2. Extraire les exercices en kg de chaque programme
+  // 2. Extraire les exercices (kg OU reps seules) de chaque programme
   var map = {};
   progList.forEach(function(prog) {
     var raw = prog.donnees || {};
@@ -4392,19 +4396,25 @@ function _extractExoLoads(seances) {
       (bloc.exos || []).forEach(function(exo) {
         var name = (exo.name || '').trim();
         if(!name) return;
+        var reps = parseFloat(exo.reps);
+        if(isNaN(reps) || reps <= 0) return;          // besoin d'au moins des reps
         var kgCible = null;
         (exo.cibles || []).forEach(function(c) {
-          if(c.type === 'kg' && c.min && parseFloat(c.min) > 0) kgCible = c;
+          if(c.type === 'kg' && (parseFloat(c.min) > 0 || parseFloat(c.max) > 0)) kgCible = c;
         });
-        if(!kgCible) return;
-        var kg = parseFloat(kgCible.min);
-        var reps = parseFloat(exo.reps);
-        if(isNaN(kg) || kg <= 0) return;
-        var rm1 = _brzycki(kg, reps);
-        if(!rm1) rm1 = kg;
+        // Min seul → min / Max seul → max / Les deux → moyenne
+        var kg = 0;
+        if(kgCible) {
+          var kMin = parseFloat(kgCible.min) || 0;
+          var kMax = parseFloat(kgCible.max) || 0;
+          kg = (kMin > 0 && kMax > 0) ? (kMin + kMax) / 2 : (kMin || kMax);
+        }
+        var bw  = !kgCible || kg <= 0;                // poids de corps / sans charge
+        var rm1 = _1rm(kg, reps);
+        if(!rm1) return;
         var key = name.toLowerCase().replace(/\s+/g,' ');
         if(!map[key]) map[key] = { label: name, points: [] };
-        map[key].points.push({ date: prog.date, kg: kg, reps: isNaN(reps)?null:reps, rm1: rm1, progNom: prog.nom });
+        map[key].points.push({ date: prog.date, kg: bw?0:kg, reps: reps, rm1: rm1, bw: bw, progNom: prog.nom });
       });
     });
   });
@@ -4418,9 +4428,12 @@ function _extractExoLoads(seances) {
   return result;
 }
 
-/* Construit un SVG bezier (chart B adapté) pour l'évolution 1RM d'un exercice.
-   vals = tableau de nombres (1RM estimé), dates = labels JJ/MM, chartId = int unique */
-function _buildPevoChart(vals, dates, chartId) {
+/* Construit un SVG bezier pour l'évolution 1RM d'un exercice.
+   vals  = tableau de nombres (1RM estimé)
+   dates = labels JJ/MM
+   meta  = [{bw:bool, reps:number, kg:number}] — pour colorer PdC vs chargé */
+function _buildPevoChart(vals, dates, chartId, meta) {
+  meta = meta || [];
   var VW=500, VH=115;
   var PAD={top:18, right:22, bottom:34, left:42};
   var valid = vals.filter(function(v){ return !isNaN(v); });
@@ -4429,9 +4442,21 @@ function _buildPevoChart(vals, dates, chartId) {
   var pad=Math.max(1,(maxV-minV)*0.15); minV-=pad; maxV+=pad;
   var rangeV=maxV-minV||1, n=vals.length;
   var id='pevo'+chartId;
+  // Couleur principale : vert si 100% poids de corps, bleu sinon
+  var allBw = meta.length && meta.every(function(m){ return m.bw; });
+  var C = allBw ? '#2D6A4F' : '#2B5FA6';
+  var CL = allBw ? 'rgba(45,106,79,' : 'rgba(43,95,166,';
   function pt(i,v){ return {x:PAD.left+(i/Math.max(n-1,1))*(VW-PAD.left-PAD.right), y:(VH-PAD.bottom)-((v-minV)/rangeV)*(VH-PAD.top-PAD.bottom)}; }
-  var pts = vals.map(function(v,i){ var p=pt(i,isNaN(v)?minV:v); return {x:p.x,y:p.y,v:v,date:dates[i],valid:!isNaN(v)}; });
-  var html = '<defs><linearGradient id="gpevo'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2B5FA6" stop-opacity="0.25"/><stop offset="100%" stop-color="#2B5FA6" stop-opacity="0.02"/></linearGradient></defs>';
+  var pts = vals.map(function(v,i){
+    var p=pt(i,isNaN(v)?minV:v);
+    var m=meta[i]||{};
+    return {x:p.x,y:p.y,v:v,date:dates[i],valid:!isNaN(v),bw:!!m.bw,reps:m.reps,kg:m.kg};
+  });
+  var html = '<defs>'
+    +'<linearGradient id="gpevo'+id+'" x1="0" y1="0" x2="0" y2="1">'
+    +'<stop offset="0%" stop-color="'+C+'" stop-opacity="0.25"/>'
+    +'<stop offset="100%" stop-color="'+C+'" stop-opacity="0.02"/>'
+    +'</linearGradient></defs>';
   // Grille
   var step=Math.max(1,Math.ceil((maxV-minV)/4));
   for(var gv=Math.round(minV);gv<=maxV+step;gv+=step){
@@ -4451,22 +4476,24 @@ function _buildPevoChart(vals, dates, chartId) {
     for(var i=1;i<vp.length;i++){ var cx=(vp[i-1].x+vp[i].x)/2; lp+=' C '+cx.toFixed(1)+','+vp[i-1].y.toFixed(1)+' '+cx.toFixed(1)+','+vp[i].y.toFixed(1)+' '+vp[i].x.toFixed(1)+','+vp[i].y.toFixed(1); }
     var by=VH-PAD.bottom;
     html+='<path d="'+lp+' L '+vp[vp.length-1].x.toFixed(1)+','+by+' L '+vp[0].x.toFixed(1)+','+by+' Z" fill="url(#gpevo'+id+')"/>';
-    html+='<path d="'+lp+'" fill="none" stroke="#2B5FA6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
+    html+='<path d="'+lp+'" fill="none" stroke="'+C+'" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
   }
   // Points + tooltips
   pts.forEach(function(p,i){
     if(!p.valid) return;
     var isFirst=!pts.slice(0,i).some(function(q){return q.valid;});
     var isLast=!pts.slice(i+1).some(function(q){return q.valid;});
-    var val=p.v.toFixed(1)+'kg';
+    // Label : "Xreps PdC" pour bodyweight, "X.Xkg" pour chargé
+    var val = p.bw ? (p.reps ? p.reps+'reps PdC' : p.v.toFixed(1)+'kg') : p.v.toFixed(1)+'kg';
+    // Couleur du point : vert si PdC, bleu si chargé (même sur courbe mixte)
+    var pc = p.bw ? '#2D6A4F' : '#2B5FA6';
     if(isLast){
-      html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="7" fill="#2B5FA6" opacity="0.15"/>';
-      html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4.5" fill="#2B5FA6"/>';
+      html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="7" fill="'+pc+'" opacity="0.15"/>';
+      html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4.5" fill="'+pc+'"/>';
       html+='<text x="'+p.x.toFixed(1)+'" y="'+(p.y-12).toFixed(1)+'" text-anchor="middle" font-size="10" font-weight="700" fill="#1A3A5C">'+val+'</text>';
     } else {
-      html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isFirst?4:3.5)+'" fill="#fff" stroke="#2B5FA6" stroke-width="'+(isFirst?2:1.5)+'"/>';
+      html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isFirst?4:3.5)+'" fill="#fff" stroke="'+pc+'" stroke-width="'+(isFirst?2:1.5)+'"/>';
       if(isFirst) html+='<text x="'+p.x.toFixed(1)+'" y="'+(p.y-9).toFixed(1)+'" text-anchor="middle" font-size="9" fill="#9D9B96">'+val+'</text>';
-      // Hit area pour tooltip
       html+='<circle class="pevo-hit" cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="18" fill="transparent" data-tt="tt'+id+'" data-x="'+p.x.toFixed(1)+'" data-y="'+p.y.toFixed(1)+'" data-l1="'+val+'" data-l2="'+p.date+'" style="cursor:pointer"/>';
     }
   });
@@ -4525,7 +4552,7 @@ function _renderPevoCharts(exoData, selectedKeys) {
   if(!body) return;
   var allKeys = Object.keys(exoData);
   if(!allKeys.length){
-    body.innerHTML = '<div class="pevo-empty">Aucun exercice avec charge en kg prescrite sur plusieurs séances.</div>';
+    body.innerHTML = '<div class="pevo-empty">Aucun exercice avec répétitions prescrites sur plusieurs séances.</div>';
     return;
   }
   var patId = _progPatient ? _progPatient.id : 'local';
@@ -4544,23 +4571,28 @@ function _renderPevoCharts(exoData, selectedKeys) {
     _pevoChartCtr++;
     var grp = exoData[key];
     var pts = grp.points;
-    var vals = pts.map(function(p){ return p.rm1; });
+    var vals  = pts.map(function(p){ return p.rm1; });
     var dates = pts.map(function(p){ var d=p.date?p.date.split('-'):['','','']; return (d[2]||'?')+'/'+(d[1]||'?'); });
+    var meta  = pts.map(function(p){ return {bw:p.bw, reps:p.reps, kg:p.kg}; });
     var first = pts[0].rm1, last = pts[pts.length-1].rm1;
     var delta = last - first, sign = delta>=0?'+':'';
     var pct = first>0 ? (delta/first*100) : null;
     var pctStr = pct!==null?' ('+(Math.abs(pct)>999?(pct>0?'>':'<')+' 999%':(pct>=0?'+':'')+pct.toFixed(0)+'%')+')':'';
     var cls = delta===0?'neutral':(delta>0?'pos':'neg');
-    var svg = _buildPevoChart(vals, dates, _pevoChartCtr);
+    // Labels KPI : afficher reps si PdC, kg si chargé
+    var fLabel = pts[0].bw   ? pts[0].reps+'reps PdC'                  : first.toFixed(1)+'kg';
+    var lLabel = pts[pts.length-1].bw ? pts[pts.length-1].reps+'reps PdC' : last.toFixed(1)+'kg';
+    var dLabel = sign+delta.toFixed(1)+'kg'+pctStr;
+    var svg = _buildPevoChart(vals, dates, _pevoChartCtr, meta);
     if(!svg) return;
     chartsHtml += '<div class="pevo-card">'
       +'<div class="pevo-card-header">'
       +'<span class="pevo-card-title">'+_escP(grp.label)+'</span>'
       +'<div class="pevo-card-kpis">'
-      +'<span class="pevo-kpi-neutral">Début : '+first.toFixed(1)+'kg</span>'
+      +'<span class="pevo-kpi-neutral">Début : '+fLabel+'</span>'
       +'<span class="pevo-kpi-neutral">→</span>'
-      +'<span class="pevo-kpi-strong">Actuel : '+last.toFixed(1)+'kg</span>'
-      +'<span class="pevo-kpi '+cls+'">'+sign+delta.toFixed(1)+'kg'+pctStr+'</span>'
+      +'<span class="pevo-kpi-strong">Actuel : '+lLabel+'</span>'
+      +'<span class="pevo-kpi '+cls+'">'+dLabel+'</span>'
       +'</div></div>'
       +svg+'</div>';
   });
