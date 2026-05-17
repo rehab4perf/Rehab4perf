@@ -6406,52 +6406,116 @@ _updateOutilsPatientBtns();
     } catch(e) { console.error(e); _crToast('Impossible d\'associer le patient'); }
   };
 
-  // ── Config globale partagée ───────────────────────────────────
-  var CR_ADMIN_KEY = 'R4P_cr_4dm1n_2025';
+  // ── Supabase — config CR partagée (même système que programme.html) ──
+  var CR_SUPA_URL = 'https://sxdobjodxkwexaspepdm.supabase.co';
+  var CR_SUPA_KEY = 'sb_publishable_zEJrmQOnKyRm-Y_NyojaTA_ERrDx4pl';
+  var CR_SUPA_NOM = '__cr_config__';
+  var _crToken    = null;
+  var _crUid      = null;
+  var _crConfigSupaId = (function(){ try { return localStorage.getItem('r4p-cr-config-sid') || null; } catch(e){ return null; } })();
 
-  function crSaveGlobalConfig() {
-    var config = {
-      version: 1,
-      ampConfig:   crAmpConfig,
-      pathoConfig: crPathoConfig,
-      signConfig:  crSignConfig,
-      testsConfig: crTestsConfig
-    };
-    fetch('/.netlify/functions/save-cr-config', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Admin-Key': CR_ADMIN_KEY },
-      body: JSON.stringify(config)
-    }).then(function(r){ return r.json(); }).then(function(j){
-      if (j.ok) _crToast('✅ Config sauvegardée pour tous les utilisateurs');
-      else       _crToast('❌ Erreur : ' + (j.error || 'inconnue'));
-    }).catch(function(){ _crToast('❌ Erreur réseau lors de la sauvegarde'); });
+  function _crRefreshToken() {
+    try {
+      var raw = localStorage.getItem('sb-sxdobjodxkwexaspepdm-auth-token');
+      if (!raw) return false;
+      var parsed = JSON.parse(raw);
+      var tok = parsed.access_token || (parsed.currentSession && parsed.currentSession.access_token);
+      if (!tok) return false;
+      _crToken = tok;
+      var pl = JSON.parse(atob(tok.split('.')[1]));
+      _crUid = pl.sub || null;
+      return true;
+    } catch(e) { return false; }
   }
 
-  // Charge la config depuis GitHub, puis init l'UI
-  fetch('https://raw.githubusercontent.com/rehab4perf/Rehab4perf/main/config/cr-config.json?t=' + Date.now())
-    .then(function(r){ if (!r.ok) throw new Error('fetch failed'); return r.json(); })
-    .then(function(cfg){
-      if (cfg.ampConfig)   { crAmpConfig    = cfg.ampConfig;   try { localStorage.setItem('crAmpConfig',    JSON.stringify(cfg.ampConfig));   } catch(e){} }
-      if (cfg.pathoConfig) { crPathoConfig  = cfg.pathoConfig; try { localStorage.setItem('crPathoConfig',  JSON.stringify(cfg.pathoConfig)); } catch(e){} }
-      if (cfg.signConfig)  { crSignConfig   = cfg.signConfig;  try { localStorage.setItem('crSignConfig',   JSON.stringify(cfg.signConfig));  } catch(e){} }
-      if (cfg.testsConfig) { crTestsConfig  = cfg.testsConfig; try { localStorage.setItem('crTestsConfig',  JSON.stringify(cfg.testsConfig)); } catch(e){} }
-    })
-    .catch(function(e){
-      console.warn('cr-config: fetch GitHub échoué, tentative localStorage', e);
-      try { var a = JSON.parse(localStorage.getItem('crAmpConfig'));    if (a) crAmpConfig    = a; } catch(e2){}
-      try { var p = JSON.parse(localStorage.getItem('crPathoConfig'));  if (p) crPathoConfig  = p; } catch(e2){}
-      try { var s = JSON.parse(localStorage.getItem('crSignConfig'));   if (s) crSignConfig   = s; } catch(e2){}
-      try { var t = JSON.parse(localStorage.getItem('crTestsConfig'));  if (t) crTestsConfig  = t; } catch(e2){}
-    })
-    .then(function(){
-      crInitAmpSelect();
-      crRenderSignRows();
-      crRenderTestRows();
-      // Masquer les boutons ⚙️ pour les non-admins
-      if (crProfile.email !== CR_ADMIN_EMAIL) {
-        document.querySelectorAll('.cr-amp-cfg-btn').forEach(function(b){ b.style.display = 'none'; });
-      }
-    });
+  function _crSbHeaders() {
+    if (!_crToken) _crRefreshToken();
+    return {
+      'Authorization': 'Bearer ' + _crToken,
+      'apikey': CR_SUPA_KEY,
+      'Content-Type': 'application/json'
+    };
+  }
+
+  function _crApplyConfig(donnees) {
+    var d = donnees;
+    if (typeof d === 'string') try { d = JSON.parse(d); } catch(e) { d = null; }
+    if (!d) return;
+    if (d.ampConfig)   { crAmpConfig    = d.ampConfig;   try { localStorage.setItem('crAmpConfig',    JSON.stringify(d.ampConfig));   } catch(e){} }
+    if (d.pathoConfig) { crPathoConfig  = d.pathoConfig; try { localStorage.setItem('crPathoConfig',  JSON.stringify(d.pathoConfig)); } catch(e){} }
+    if (d.signConfig)  { crSignConfig   = d.signConfig;  try { localStorage.setItem('crSignConfig',   JSON.stringify(d.signConfig));  } catch(e){} }
+    if (d.testsConfig) { crTestsConfig  = d.testsConfig; try { localStorage.setItem('crTestsConfig',  JSON.stringify(d.testsConfig)); } catch(e){} }
+  }
+
+  function crSaveGlobalConfig() {
+    // 1. localStorage immediat (toujours)
+    try { localStorage.setItem('crAmpConfig',   JSON.stringify(crAmpConfig));   } catch(e){}
+    try { localStorage.setItem('crPathoConfig', JSON.stringify(crPathoConfig)); } catch(e){}
+    try { localStorage.setItem('crSignConfig',  JSON.stringify(crSignConfig));  } catch(e){}
+    try { localStorage.setItem('crTestsConfig', JSON.stringify(crTestsConfig)); } catch(e){}
+    // 2. Supabase (si connecte)
+    _crRefreshToken();
+    if (!_crToken || !_crUid) { _crToast('Config sauvegardee localement (reconnectez-vous pour sync global)'); return; }
+    var donnees = { ampConfig: crAmpConfig, pathoConfig: crPathoConfig, signConfig: crSignConfig, testsConfig: crTestsConfig };
+    var body = JSON.stringify({ praticien_id: _crUid, nom: CR_SUPA_NOM, type: '__meta__', is_public: true, donnees: donnees });
+    if (_crConfigSupaId) {
+      fetch(CR_SUPA_URL + '/rest/v1/templates?id=eq.' + _crConfigSupaId, {
+        method: 'PATCH', headers: _crSbHeaders(), body: body
+      }).then(function(r){
+        if (r.ok) _crToast('Config sauvegardee pour tous les utilisateurs');
+        else _crToast('Erreur Supabase (' + r.status + ')');
+      }).catch(function(){ _crToast('Erreur reseau'); });
+    } else {
+      fetch(CR_SUPA_URL + '/rest/v1/templates', {
+        method: 'POST',
+        headers: Object.assign({}, _crSbHeaders(), { 'Prefer': 'return=representation' }),
+        body: body
+      }).then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(rows){
+        if (rows && rows.length) {
+          _crConfigSupaId = rows[0].id;
+          try { localStorage.setItem('r4p-cr-config-sid', String(rows[0].id)); } catch(e){}
+        }
+        _crToast('Config sauvegardee pour tous les utilisateurs');
+      }).catch(function(){ _crToast('Erreur reseau'); });
+    }
+  }
+
+  // ── Bootstrap : charge la config puis init l'UI ──────────────
+  function _crInitUI() {
+    crInitAmpSelect();
+    crRenderSignRows();
+    crRenderTestRows();
+    if (crProfile.email !== CR_ADMIN_EMAIL) {
+      document.querySelectorAll('.cr-amp-cfg-btn').forEach(function(b){ b.style.display = 'none'; });
+    }
+  }
+
+  _crRefreshToken();
+  fetch(CR_SUPA_URL + '/rest/v1/templates?nom=eq.' + CR_SUPA_NOM + '&is_public=eq.true&select=id,donnees&limit=1', {
+    headers: { 'apikey': CR_SUPA_KEY, 'Content-Type': 'application/json' }
+  })
+  .then(function(r){ return r.ok ? r.json() : []; })
+  .then(function(rows){
+    if (rows && rows.length) {
+      _crConfigSupaId = rows[0].id;
+      try { localStorage.setItem('r4p-cr-config-sid', String(rows[0].id)); } catch(e){}
+      _crApplyConfig(rows[0].donnees);
+    } else {
+      try { var a = JSON.parse(localStorage.getItem('crAmpConfig'));   if (a) crAmpConfig   = a; } catch(e){}
+      try { var p = JSON.parse(localStorage.getItem('crPathoConfig')); if (p) crPathoConfig = p; } catch(e){}
+      try { var s = JSON.parse(localStorage.getItem('crSignConfig'));  if (s) crSignConfig  = s; } catch(e){}
+      try { var t = JSON.parse(localStorage.getItem('crTestsConfig')); if (t) crTestsConfig = t; } catch(e){}
+    }
+  })
+  .catch(function(e){
+    console.warn('cr-config: Supabase fetch echoue, fallback localStorage', e);
+    try { var a = JSON.parse(localStorage.getItem('crAmpConfig'));   if (a) crAmpConfig   = a; } catch(e2){}
+    try { var p = JSON.parse(localStorage.getItem('crPathoConfig')); if (p) crPathoConfig = p; } catch(e2){}
+    try { var s = JSON.parse(localStorage.getItem('crSignConfig'));  if (s) crSignConfig  = s; } catch(e2){}
+    try { var t = JSON.parse(localStorage.getItem('crTestsConfig')); if (t) crTestsConfig = t; } catch(e2){}
+  })
+  .then(function(){ _crInitUI(); });
 })();
 
 </script>
