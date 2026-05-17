@@ -5897,6 +5897,8 @@ _updateOutilsPatientBtns();
       lines.push('Patient : ' + patLine + '.');
       var diagLine = crPatho ? crPathoLabel(crPatho) : '';
       if (pathoDetail) diagLine = diagLine ? diagLine + ' — ' + pathoDetail : pathoDetail;
+      var articuLabel = crAmpArticu && crAmpConfig[crAmpArticu] ? crAmpConfig[crAmpArticu].label : '';
+      if (articuLabel) diagLine += (diagLine ? ' — ' : '') + articuLabel;
       if (patCote) diagLine += (diagLine ? ' — ' : '') + patCote;
       if (patAccident) diagLine += (diagLine ? ', ' : '') + crF('accidenté', 'accidenté', 'accidentée') + ' le ' + patAccident;
       if (patOp)       diagLine += (diagLine ? ', ' : '') + crF('opéré', 'opéré', 'opérée') + ' le ' + patOp;
@@ -6067,6 +6069,8 @@ _updateOutilsPatientBtns();
     if (crPatho || pathoDetail || patAccident || patOp || patCote) {
       var diagLine = crPatho ? crPathoLabel(crPatho) : '';
       if (pathoDetail) diagLine = diagLine ? diagLine + ' — ' + pathoDetail : pathoDetail;
+      var articuLabel2 = crAmpArticu && crAmpConfig[crAmpArticu] ? crAmpConfig[crAmpArticu].label : '';
+      if (articuLabel2) diagLine += (diagLine ? ' — ' : '') + articuLabel2;
       if (patAccident) diagLine += (diagLine ? ', ' : '') + crF('accidenté', 'accidenté', 'accidentée') + ' le ' + patAccident;
       if (patOp)       diagLine += (diagLine ? ', ' : '') + crF('opéré', 'opéré', 'opérée') + ' le ' + patOp;
       if (patCote) diagLine += (diagLine ? ' — ' : '') + 'côté ' + patCote.toLowerCase();
