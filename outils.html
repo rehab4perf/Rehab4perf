@@ -1319,8 +1319,15 @@ body {
         <div class="cr-section-hdr">Patient</div>
         <div class="cr-form-row">
           <div class="cr-fg">
-            <label for="cr-pat-nom">Civilité &amp; Nom</label>
-            <input type="text" id="cr-pat-nom" placeholder="M. Dupont Paul">
+            <label>Civilité &amp; Nom</label>
+            <div style="display:flex;gap:6px;">
+              <select id="cr-pat-civ" style="flex:0 0 68px;" onchange="crUpdateGender()">
+                <option value="">—</option>
+                <option value="M.">M.</option>
+                <option value="Mme">Mme</option>
+              </select>
+              <input type="text" id="cr-pat-nom" placeholder="Dupont Paul" style="flex:1">
+            </div>
           </div>
           <div class="cr-fg">
             <label for="cr-pat-dob">Date de naissance</label>
@@ -1329,9 +1336,15 @@ body {
         </div>
         <div class="cr-form-row">
           <div class="cr-fg">
-            <label for="cr-pat-date-evt">Date accident / opération</label>
-            <input type="date" id="cr-pat-date-evt">
+            <label>Date d'accident</label>
+            <input type="date" id="cr-pat-date-accident">
           </div>
+          <div class="cr-fg">
+            <label>Date d'opération <span style="font-size:.7rem;color:var(--text3)">(si chirurgie)</span></label>
+            <input type="date" id="cr-pat-date-op">
+          </div>
+        </div>
+        <div class="cr-form-row">
           <div class="cr-fg">
             <label for="cr-pat-cote">Côté atteint</label>
             <select id="cr-pat-cote">
@@ -5710,6 +5723,10 @@ _updateOutilsPatientBtns();
     if (crPatientSexe === 'F') return fem;
     return neutre;
   }
+  window.crUpdateGender = function() {
+    var civ = (document.getElementById('cr-pat-civ') || {}).value || '';
+    crPatientSexe = civ === 'Mme' ? 'F' : (civ === 'M.' ? 'M' : '');
+  };
   var CR_PATHO_FORCE = ['lca','lcp','meniscectomie','suture_meniscale','syndrome_rotulien'];
   var CR_PATHO_FONCT = ['lca','lcp','meniscectomie','suture_meniscale'];
   var CR_PATHO_EPAULE = ['latarjet'];
@@ -5841,13 +5858,27 @@ _updateOutilsPatientBtns();
 
     var lines = [];
     var destNom = crV('cr-dest-nom'), destSpec = crV('cr-dest-spec');
+    var patCiv  = crV('cr-pat-civ');
+    if (patCiv) crPatientSexe = patCiv === 'Mme' ? 'F' : 'M';
     var patNom  = crV('cr-pat-nom'),  patDob   = crFmtDate(crV('cr-pat-dob'));
-    var patEvt  = crFmtDate(crV('cr-pat-date-evt'));
+    var patAccident = crFmtDate(crV('cr-pat-date-accident'));
+    var patOp       = crFmtDate(crV('cr-pat-date-op'));
     var patPEC  = crFmtDate(crV('cr-pat-date-pec'));
     var patCote = crV('cr-pat-cote');
     var pathoDetail = crV('cr-patho-detail');
     var phase = crV('cr-phase'), evolution = crV('cr-evolution');
     var commentaire = crV('cr-commentaire'), plan = crV('cr-plan');
+
+    // J+ par rapport à aujourd'hui (date de rédaction)
+    var joursStr = '';
+    var _refDateStr = crV('cr-pat-date-op') || crV('cr-pat-date-accident');
+    var _isOp = !!crV('cr-pat-date-op');
+    if (_refDateStr) {
+      var _today = new Date(); _today.setHours(0,0,0,0);
+      var _dRef  = new Date(_refDateStr);
+      var _diff  = Math.round((_today - _dRef) / (1000 * 60 * 60 * 24));
+      if (!isNaN(_diff) && _diff >= 0) joursStr = 'J+' + _diff;
+    }
 
     // 1. Salutation
     var greeting = 'Bonjour Docteur,';
@@ -5860,14 +5891,16 @@ _updateOutilsPatientBtns();
     lines.push('Je vous adresse ce compte-rendu de rééducation' + (patNom ? ' concernant ' + patNom : '') + '.'); lines.push('');
 
     // 3. Identité patient
-    if (patNom || patDob || patEvt || patPEC || crPatho) {
-      var patLine = patNom || crF('votre patient(e)', 'votre patient', 'votre patiente');
-      if (patDob)  patLine += ', ' + crF('né(e)', 'né', 'née') + ' le ' + patDob;
+    if (patNom || patDob || patAccident || patOp || patPEC || crPatho) {
+      var patLine = (patCiv ? patCiv + ' ' : '') + (patNom || crF('votre patient', 'votre patient', 'votre patiente'));
+      if (patDob)  patLine += ', ' + crF('né', 'né', 'née') + ' le ' + patDob;
       lines.push('Patient : ' + patLine + '.');
       var diagLine = crPatho ? crPathoLabel(crPatho) : '';
       if (pathoDetail) diagLine = diagLine ? diagLine + ' — ' + pathoDetail : pathoDetail;
       if (patCote) diagLine += (diagLine ? ' — ' : '') + patCote;
-      if (patEvt) diagLine += (diagLine ? ', ' : '') + 'opération / accident le ' + patEvt;
+      if (patAccident) diagLine += (diagLine ? ', ' : '') + crF('accidenté', 'accidenté', 'accidentée') + ' le ' + patAccident;
+      if (patOp)       diagLine += (diagLine ? ', ' : '') + crF('opéré', 'opéré', 'opérée') + ' le ' + patOp;
+      if (joursStr)    diagLine += (diagLine ? ' — ' : '') + joursStr + (_isOp ? ' post-opératoire' : ' post-traumatique');
       if (diagLine) lines.push('Pathologie : ' + diagLine + '.');
       if (patPEC) lines.push('Prise en charge rééducative débutée le ' + patPEC + '.');
       lines.push('');
@@ -5989,18 +6022,23 @@ _updateOutilsPatientBtns();
 
     var lines = [];
     var destNom = crV('cr-dest-nom'), destSpec = crV('cr-dest-spec');
+    var patCiv  = crV('cr-pat-civ');
+    if (patCiv) crPatientSexe = patCiv === 'Mme' ? 'F' : 'M';
     var patNom  = crV('cr-pat-nom'),  patDob  = crFmtDate(crV('cr-pat-dob'));
-    var patEvt  = crFmtDate(crV('cr-pat-date-evt'));
+    var patAccident = crFmtDate(crV('cr-pat-date-accident'));
+    var patOp       = crFmtDate(crV('cr-pat-date-op'));
     var patPEC  = crFmtDate(crV('cr-pat-date-pec'));
     var patCote = crV('cr-pat-cote');
     var pathoDetail = crV('cr-patho-detail');
 
-    // Calcul J+
+    // Calcul J+ (date opération ou accident → date début PEC)
     var joursStr = '';
-    if (crV('cr-pat-date-evt') && crV('cr-pat-date-pec')) {
-      var dEvt = new Date(crV('cr-pat-date-evt'));
+    var _refDateStr = crV('cr-pat-date-op') || crV('cr-pat-date-accident');
+    var _isOp = !!crV('cr-pat-date-op');
+    if (_refDateStr && crV('cr-pat-date-pec')) {
+      var dRef = new Date(_refDateStr);
       var dPEC = new Date(crV('cr-pat-date-pec'));
-      var diff = Math.round((dPEC - dEvt) / (1000 * 60 * 60 * 24));
+      var diff = Math.round((dPEC - dRef) / (1000 * 60 * 60 * 24));
       if (!isNaN(diff) && diff >= 0) joursStr = 'J+' + diff;
     }
 
@@ -6013,28 +6051,30 @@ _updateOutilsPatientBtns();
     if (objetTxtDebut) { lines.push('Objet : ' + objetTxtDebut); lines.push(''); }
 
     // Intro spécifique début PEC
-    var intro = 'Je vous informe de la prise en charge rééducative de ' + crF('votre patient(e)', 'votre patient', 'votre patiente');
-    if (patNom) intro += ' ' + patNom;
-    if (patDob) intro += ', ' + crF('né(e)', 'né', 'née') + ' le ' + patDob;
+    var intro = 'Je vous informe de la prise en charge rééducative de ' + crF('votre patient', 'votre patient', 'votre patiente');
+    if (patCiv && patNom) intro = 'Je vous informe de la prise en charge rééducative de ' + patCiv + ' ' + patNom;
+    else if (patNom) intro += ' ' + patNom;
+    if (patDob) intro += ', ' + crF('né', 'né', 'née') + ' le ' + patDob;
     var contextParts = [];
-    if (patPEC) contextParts.push(crF('reçu(e)', 'reçu', 'reçue') + ' en consultation initiale le ' + patPEC);
-    if (joursStr) contextParts.push(joursStr + ' post-opératoire');
-    if (patEvt) { var diagCtx = crPatho ? crPathoLabel(crPatho) : ''; if (pathoDetail) diagCtx = diagCtx ? diagCtx + ' — ' + pathoDetail : pathoDetail; if (diagCtx) contextParts.push('de sa ' + diagCtx.toLowerCase()); }
+    if (patPEC) contextParts.push(crF('reçu', 'reçu', 'reçue') + ' en consultation initiale le ' + patPEC);
+    if (joursStr) contextParts.push(joursStr + ' ' + (_isOp ? 'post-opératoire' : 'post-traumatique'));
+    if (patAccident || patOp) { var diagCtx = crPatho ? crPathoLabel(crPatho) : ''; if (pathoDetail) diagCtx = diagCtx ? diagCtx + ' — ' + pathoDetail : pathoDetail; if (diagCtx) contextParts.push('de sa ' + diagCtx.toLowerCase()); }
     if (contextParts.length) intro += ', ' + contextParts.join(', ');
     intro += '.';
     lines.push(intro); lines.push('');
 
     // Diagnostic / côté
-    if (crPatho || pathoDetail || patEvt || patCote) {
+    if (crPatho || pathoDetail || patAccident || patOp || patCote) {
       var diagLine = crPatho ? crPathoLabel(crPatho) : '';
       if (pathoDetail) diagLine = diagLine ? diagLine + ' — ' + pathoDetail : pathoDetail;
-      if (patEvt) diagLine += (diagLine ? ', ' : '') + 'opération / accident le ' + patEvt;
+      if (patAccident) diagLine += (diagLine ? ', ' : '') + crF('accidenté', 'accidenté', 'accidentée') + ' le ' + patAccident;
+      if (patOp)       diagLine += (diagLine ? ', ' : '') + crF('opéré', 'opéré', 'opérée') + ' le ' + patOp;
       if (patCote) diagLine += (diagLine ? ' — ' : '') + 'côté ' + patCote.toLowerCase();
       if (diagLine) { lines.push('Pathologie : ' + diagLine + '.'); lines.push(''); }
     }
 
     // Bilan initial
-    lines.push('── BILAN INITIAL' + (joursStr ? ' (' + joursStr + ')' : '') + ' ──────────────────────────────────');
+    lines.push('── BILAN INITIAL' + (joursStr ? ' (' + joursStr + (_isOp ? ' post-op.' : ' post-trauma.') + ')' : '') + ' ──────────────────────────────────');
     lines.push('');
 
     // Amplitudes (dynamiques)
@@ -6315,10 +6355,13 @@ _updateOutilsPatientBtns();
       if (sexe === 'M' || sexe.toLowerCase() === 'masculin' || sexe === 'H') crPatientSexe = 'M';
       else if (sexe === 'F' || sexe.toLowerCase() === 'féminin' || sexe.toLowerCase() === 'feminin') crPatientSexe = 'F';
       else crPatientSexe = '';
+      var civEl  = document.getElementById('cr-pat-civ');
       var nomEl  = document.getElementById('cr-pat-nom');
       if (nomEl && (nom || prenom)) {
-        var civ = sexe === 'F' ? 'Mme' : (nom || prenom ? 'M.' : '');
-        nomEl.value = [civ, nom.toUpperCase(), prenom].filter(Boolean).join(' ');
+        var civVal = sexe === 'F' ? 'Mme' : 'M.';
+        if (civEl) civEl.value = civVal;
+        crPatientSexe = sexe === 'F' ? 'F' : 'M';
+        nomEl.value = [nom.toUpperCase(), prenom].filter(Boolean).join(' ');
         filled++;
       }
 
