@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "ampConfig": {
+    "genou": {
+      "label": "Genou",
+      "mesures": [
+        { "id": "ext-p",      "label": "Extension passive",   "unit": "°" },
+        { "id": "ext-a",      "label": "Extension active",    "unit": "°" },
+        { "id": "ext-charge", "label": "Extension en charge", "unit": "°" },
+        { "id": "flex-p",     "label": "Flexion passive",     "unit": "°" },
+        { "id": "flex-a",     "label": "Flexion active",      "unit": "°" }
+      ]
+    },
+    "epaule": {
+      "label": "Épaule",
+      "mesures": [
+        { "id": "elev-ant",   "label": "Élévation antérieure", "unit": "°" },
+        { "id": "rot-ext-r1", "label": "Rotation externe R1",  "unit": "°" },
+        { "id": "rot-ext-r2", "label": "Rotation externe R2",  "unit": "°" },
+        { "id": "abduction",  "label": "Abduction",            "unit": "°" },
+        { "id": "main-dos",   "label": "Main-dos",             "unit": "cm" }
+      ]
+    },
+    "cheville": {
+      "label": "Cheville",
+      "mesures": [
+        { "id": "flex-dors",  "label": "Flexion dorsale",   "unit": "°" },
+        { "id": "flex-plant", "label": "Flexion plantaire", "unit": "°" },
+        { "id": "inversion",  "label": "Inversion",         "unit": "°" },
+        { "id": "eversion",   "label": "Éversion",          "unit": "°" }
+      ]
+    }
+  },
+  "pathoConfig": [
+    { "key": "lca",               "label": "Ligament croisé antérieur",  "articulations": ["genou"] },
+    { "key": "lcp",               "label": "Ligament croisé postérieur", "articulations": ["genou"] },
+    { "key": "meniscectomie",     "label": "Méniscectomie",              "articulations": ["genou"] },
+    { "key": "suture_meniscale",  "label": "Suture méniscale",           "articulations": ["genou"] },
+    { "key": "syndrome_rotulien", "label": "Syndrome rotulien",          "articulations": ["genou"] },
+    { "key": "latarjet",          "label": "Latarjet",                   "articulations": ["epaule"] },
+    { "key": "ligamento_cheville","label": "Ligamentoplastie cheville",  "articulations": ["cheville"] },
+    { "key": "entorse",           "label": "Entorse",                    "articulations": ["genou","epaule","cheville"] },
+    { "key": "tendinopathie",     "label": "Tendinopathie",              "articulations": ["genou","epaule","cheville","hanche"] },
+    { "key": "autre",             "label": "Autre",                      "articulations": ["genou","epaule","cheville","hanche"] }
+  ],
+  "signConfig": [
+    { "key": "epanchement", "label": "Épanchement articulaire",      "valide": "Épanchement absent",                              "cours": "Épanchement articulaire résiduel",                       "articulations": ["genou"] },
+    { "key": "sec",         "label": "Genou sec",                    "valide": "Genou sec",                                        "cours": "Genou sec en cours d'acquisition",                       "articulations": ["genou"] },
+    { "key": "douleur",     "label": "Douleur résiduelle",           "valide": "Absence de douleur résiduelle",                    "cours": "Douleur résiduelle présente",                            "articulations": [] },
+    { "key": "mobilite",    "label": "Mobilité patellaire",          "valide": "Mobilité patellaire conservée",                    "cours": "Mobilité patellaire en cours de récupération",           "articulations": ["genou"] },
+    { "key": "boiterie",    "label": "Boiterie",                     "valide": "Absence de boiterie",                              "cours": "Boiterie observée",                                      "articulations": ["genou","hanche","cheville"] },
+    { "key": "verrou",      "label": "Verrouillage actif extension", "valide": "Verrouillage actif en extension acquis",           "cours": "Verrouillage actif en extension en cours d'acquisition", "articulations": ["genou"] }
+  ],
+  "testsConfig": []
+}

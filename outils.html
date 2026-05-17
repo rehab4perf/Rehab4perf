@@ -5029,10 +5029,7 @@ _updateOutilsPatientBtns();
       { id:'eversion',    label:'Éversion',             unit:'°' }
     ]}
   };
-  var crAmpConfig = (function() {
-    try { var s = localStorage.getItem('crAmpConfig'); if (s) return JSON.parse(s); } catch(e) {}
-    return JSON.parse(JSON.stringify(CR_AMP_DEFAULTS));
-  })();
+  var crAmpConfig = JSON.parse(JSON.stringify(CR_AMP_DEFAULTS));
   var crAmpArticu = ''; // articulation sélectionnée
 
   // Mapping pathologie → articulation
@@ -5230,11 +5227,10 @@ _updateOutilsPatientBtns();
   window.crSaveAmpConfig = function() {
     crSyncDraftFromDOM();
     crAmpConfig = _crCfgDraft;
-    try { localStorage.setItem('crAmpConfig', JSON.stringify(crAmpConfig)); } catch(e) {}
     crInitAmpSelect();
     crRenderAmpFields();
     crCloseAmpConfig();
-    _crToast('Configuration enregistrée');
+    crSaveGlobalConfig();
   };
 
   var _crPathoDraft = null;
@@ -5359,13 +5355,11 @@ _updateOutilsPatientBtns();
   window.crSavePathoConfig = function() {
     crSyncPathoDraftFromDOM();
     crPathoConfig = _crPathoDraft;
-    try { localStorage.setItem('crPathoConfig', JSON.stringify(crPathoConfig)); } catch(e) {}
-    try { localStorage.setItem('crAmpConfig', JSON.stringify(crAmpConfig)); } catch(e) {}
     crInitAmpSelect();
     crRenderAmpFields();
     crRenderPathoButtons();
     crClosePathoConfig();
-    _crToast('Pathologies enregistrées');
+    crSaveGlobalConfig();
   };
 
   var _crSignDraft = null;
@@ -5456,18 +5450,14 @@ _updateOutilsPatientBtns();
     crSignConfig = _crSignDraft;
     crSigns = {};
     crSignConfig.forEach(function(s){ crSigns[s.key] = 0; });
-    try { localStorage.setItem('crSignConfig', JSON.stringify(crSignConfig)); } catch(e) {}
     crRenderSignRows();
     crCloseSignConfig();
-    _crToast('Signes cliniques enregistrés');
+    crSaveGlobalConfig();
   };
 
   // ── Tests cliniques ───────────────────────────────────────────
   var CR_TEST_DEFAULTS = [];
-  var crTestsConfig = (function() {
-    try { var s = localStorage.getItem('crTestsConfig'); if (s) return JSON.parse(s); } catch(e) {}
-    return JSON.parse(JSON.stringify(CR_TEST_DEFAULTS));
-  })();
+  var crTestsConfig = JSON.parse(JSON.stringify(CR_TEST_DEFAULTS));
   var crTests = {};
 
   function crRenderTestRows() {
@@ -5582,10 +5572,9 @@ _updateOutilsPatientBtns();
     crTestsConfig = _crTestDraft;
     crTests = {};
     crTestsConfig.forEach(function(t){ crTests[t.key] = 0; });
-    try { localStorage.setItem('crTestsConfig', JSON.stringify(crTestsConfig)); } catch(e) {}
     crRenderTestRows();
     crCloseTestConfig();
-    _crToast('Tests cliniques enregistrés');
+    crSaveGlobalConfig();
   };
 
   // ── Pathologie config ─────────────────────────────────────────
@@ -5601,10 +5590,7 @@ _updateOutilsPatientBtns();
     { key:'tendinopathie',     label:'Tendinopathie',               articulations:['genou','epaule','cheville','hanche'] },
     { key:'autre',             label:'Autre',                       articulations:['genou','epaule','cheville','hanche'] }
   ];
-  var crPathoConfig = (function() {
-    try { var s = localStorage.getItem('crPathoConfig'); if (s) return JSON.parse(s); } catch(e) {}
-    return JSON.parse(JSON.stringify(CR_PATHO_DEFAULTS));
-  })();
+  var crPathoConfig = JSON.parse(JSON.stringify(CR_PATHO_DEFAULTS));
   var crArticuSelected = ''; // articulation sélectionnée dans le select principal
 
   // ── Admin — vérifié par email (compte Supabase connecté) ─────
@@ -5627,10 +5613,7 @@ _updateOutilsPatientBtns();
     { key:'boiterie',    label:'Boiterie',                     valide:'Absence de boiterie',                    cours:'Boiterie observée',                                          articulations:['genou','hanche','cheville'] },
     { key:'verrou',      label:'Verrouillage actif extension', valide:'Verrouillage actif en extension acquis', cours:'Verrouillage actif en extension en cours d\'acquisition',    articulations:['genou'] }
   ];
-  var crSignConfig = (function() {
-    try { var s = localStorage.getItem('crSignConfig'); if (s) return JSON.parse(s); } catch(e) {}
-    return JSON.parse(JSON.stringify(CR_SIGN_DEFAULTS));
-  })();
+  var crSignConfig = JSON.parse(JSON.stringify(CR_SIGN_DEFAULTS));
   var crSigns = {}; // peuplé dynamiquement par crRenderSignRows()
   var crPatientSexe = ''; // 'M', 'F', ou '' (neutre)
   // Genre : retourne forme neutre si sexe inconnu
@@ -6347,9 +6330,46 @@ _updateOutilsPatientBtns();
     } catch(e) { console.error(e); _crToast('Impossible d\'associer le patient'); }
   };
 
-  crInitAmpSelect();
-  crRenderSignRows();
-  crRenderTestRows();
+  // ── Config globale partagée ───────────────────────────────────
+  var CR_ADMIN_KEY = 'R4P_cr_4dm1n_2025';
+
+  function crSaveGlobalConfig() {
+    var config = {
+      version: 1,
+      ampConfig:   crAmpConfig,
+      pathoConfig: crPathoConfig,
+      signConfig:  crSignConfig,
+      testsConfig: crTestsConfig
+    };
+    fetch('/.netlify/functions/save-cr-config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Key': CR_ADMIN_KEY },
+      body: JSON.stringify(config)
+    }).then(function(r){ return r.json(); }).then(function(j){
+      if (j.ok) _crToast('✅ Config sauvegardée pour tous les utilisateurs');
+      else       _crToast('❌ Erreur : ' + (j.error || 'inconnue'));
+    }).catch(function(){ _crToast('❌ Erreur réseau lors de la sauvegarde'); });
+  }
+
+  // Charge la config depuis GitHub, puis init l'UI
+  fetch('https://raw.githubusercontent.com/rehab4perf/Rehab4perf/main/config/cr-config.json?t=' + Date.now())
+    .then(function(r){ if (!r.ok) throw new Error('fetch failed'); return r.json(); })
+    .then(function(cfg){
+      if (cfg.ampConfig)   crAmpConfig    = cfg.ampConfig;
+      if (cfg.pathoConfig) crPathoConfig  = cfg.pathoConfig;
+      if (cfg.signConfig)  crSignConfig   = cfg.signConfig;
+      if (cfg.testsConfig) crTestsConfig  = cfg.testsConfig;
+    })
+    .catch(function(e){ console.warn('cr-config: fallback sur les valeurs par défaut', e); })
+    .then(function(){
+      crInitAmpSelect();
+      crRenderSignRows();
+      crRenderTestRows();
+      // Masquer les boutons ⚙️ pour les non-admins
+      if (crProfile.email !== CR_ADMIN_EMAIL) {
+        document.querySelectorAll('.cr-amp-cfg-btn').forEach(function(b){ b.style.display = 'none'; });
+      }
+    });
 })();
 
 </script>
