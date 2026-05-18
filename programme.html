@@ -6007,7 +6007,7 @@ function showMainTab(id) {
   document.getElementById('mtab-'+id).classList.add('active');
   document.getElementById('mpanel-'+id).classList.add('active');
   if(id === 'seances') renderSeances();
-  if(id === 'cal') renderCalendar();
+  if(id === 'cal'){ _syncCalNotesIfNeeded(); renderCalendar(); }
   if(id === 'proto') renderProtocols();
 }
 
@@ -6752,7 +6752,17 @@ function _calNotesKey(){
   return _progPatient ? 'r4p_cal_notes_' + _progPatient.id : 'r4p_cal_notes';
 }
 
-var _calNotesSyncedFor = null; // patient id déjà synchronisé
+var _calNotesSyncedFor = null; // patient id du dernier sync
+var _calNotesSyncedAt  = 0;    // timestamp (ms) du dernier sync
+var _NOTES_SYNC_TTL    = 30000; // re-sync si > 30 s
+
+/* Génère un UUID v4 compatible avec les colonnes uuid de Supabase */
+function _genUUID(){
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c){
+    var r = Math.random()*16|0, v = c==='x' ? r : (r&0x3|0x8);
+    return v.toString(16);
+  });
+}
 
 function _loadCalNotes(){
   try { _calNotes = JSON.parse(localStorage.getItem(_calNotesKey())||'[]'); } catch(e){ _calNotes = []; }
@@ -6792,8 +6802,15 @@ function _syncCalNotesFromSupabase(){
 
 function _syncCalNotesIfNeeded(){
   if(!_progPatient) return;
-  if(_calNotesSyncedFor === _progPatient.id) return;
-  _calNotesSyncedFor = _progPatient.id;
+  var now = Date.now();
+  // Changement de patient → forcer sync immédiat
+  if(_calNotesSyncedFor !== _progPatient.id){
+    _calNotesSyncedFor = _progPatient.id;
+    _calNotesSyncedAt  = 0;
+  }
+  // Limiter à une requête par TTL (60 s)
+  if(now - _calNotesSyncedAt < _NOTES_SYNC_TTL) return;
+  _calNotesSyncedAt = now;
   _syncCalNotesFromSupabase();
 }
 
@@ -6805,7 +6822,15 @@ function _pushClinicalNote(note){
     headers: Object.assign({}, _sbHeaders(), {'Prefer':'resolution=merge-duplicates,return=minimal'}),
     body: JSON.stringify({ id:note.id, patient_id:_progPatient.id, praticien_id:_progUid,
       date:note.date, title:note.title||'', body:note.text||'', created_at:note.createdAt||new Date().toISOString() })
-  }).catch(function(e){ console.warn('_pushClinicalNote error', e); });
+  }).then(function(r){
+    if(!r.ok){
+      r.text().then(function(t){ console.warn('_pushClinicalNote failed', r.status, t); });
+      _showToast('⚠️ Note non synchronisée — vérifiez votre connexion', true);
+    }
+  }).catch(function(e){
+    console.warn('_pushClinicalNote error', e);
+    _showToast('⚠️ Note non synchronisée — vérifiez votre connexion', true);
+  });
 }
 
 function _deleteClinicalNote(noteId){
@@ -6819,7 +6844,7 @@ function _addCalNoteIfNotDupe(dateStr, title, text) {
   _loadCalNotes();
   var exists = _calNotes.some(function(n){ return n.date===dateStr && n.title===title; });
   if(exists) return false;
-  _calNotes.push({ id:'note_'+Math.random().toString(36).slice(2,9), date:dateStr, title:title.trim(), text:(text||'').trim(), type:'clinique', createdAt:new Date().toISOString() });
+  _calNotes.push({ id:_genUUID(), date:dateStr, title:title.trim(), text:(text||'').trim(), type:'clinique', createdAt:new Date().toISOString() });
   _persistCalNotes();
   return true;
 }
@@ -6944,7 +6969,7 @@ function _saveCalNote(dateStr) {
   var text  = (document.getElementById('calNoteText')||{}).value  || '';
   if(!title.trim() && !text.trim()){ _showToast('La note est vide.', true); return; }
   _loadCalNotes();
-  var note = { id:'note_'+Math.random().toString(36).slice(2,9), date:dateStr,
+  var note = { id:_genUUID(), date:dateStr,
     title:title.trim(), text:text.trim(), type:_noteFormType, createdAt:new Date().toISOString() };
   _calNotes.push(note);
   _persistCalNotes();
@@ -12177,6 +12202,9 @@ function _escHtml(str) {
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
+
+// ── Sync périodique des notes cliniques (60 s) ──
+setInterval(_syncCalNotesIfNeeded, 60000);
 
 // ── Init v2 ──
 (function(){
