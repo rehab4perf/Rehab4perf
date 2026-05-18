@@ -1575,6 +1575,13 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .pevo-kpi.neg { background:#FDECEA; color:#C0392B; }
 .pevo-kpi.neutral { background:#F1F0ED; color:#6B6860; }
 .pevo-loading { text-align:center; color:#9D9B96; font-style:italic; padding:20px; }
+/* Pevo — section douleur NRS */
+.pevo-nrs-section { margin-top:24px; padding-top:20px; border-top:1px solid #E8E6E1; }
+.pevo-nrs-title { font-size:.72rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:#1A3A5C; margin-bottom:12px; display:flex; align-items:center; gap:6px; }
+.pevo-nrs-cards { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+@media(max-width:600px){ .pevo-nrs-cards { grid-template-columns:1fr; } }
+.pevo-nrs-card { background:#fff; border:1px solid #E8E6E1; border-radius:10px; padding:12px 16px 8px; }
+.pevo-nrs-card-title { font-size:.78rem; font-weight:700; color:#1A1917; margin-bottom:4px; }
 </style>
 </head>
 <body>
@@ -4558,6 +4565,95 @@ function _extractExoLoads(seances) {
   return result;
 }
 
+/* Extrait les données NRS (douleur) par exercice à partir des séances chargées. */
+function _extractExoNRS(seances) {
+  var seenKeys = {};
+  var progList = [];
+  seances.forEach(function(s) {
+    var pid = s.programme_id;
+    var prog = s.programmes;
+    if(!pid || !prog) return;
+    var key = (s.date || '') + '|' + pid;
+    if(!seenKeys[key]) {
+      seenKeys[key] = true;
+      progList.push({ date: s.date || '', donnees: prog.donnees });
+    }
+  });
+
+  var map = {};
+  progList.forEach(function(prog) {
+    var raw = prog.donnees || {};
+    var blocs = Array.isArray(raw) ? raw : (raw.blocs || []);
+    blocs.forEach(function(bloc) {
+      (bloc.exos || []).forEach(function(exo) {
+        var name = (exo.name || '').trim();
+        if(!name) return;
+        if(exo.nrs === null || exo.nrs === undefined) return;
+        var key = name.toLowerCase().replace(/\s+/g,' ');
+        if(!map[key]) map[key] = { nom: name, pts: [] };
+        map[key].pts.push({ date: prog.date, nrs: exo.nrs });
+      });
+    });
+  });
+
+  var result = {};
+  Object.keys(map).forEach(function(key) {
+    var pts = map[key].pts.sort(function(a,b){ return a.date < b.date ? -1 : 1; });
+    if(pts.length >= 2) result[key] = { nom: map[key].nom, pts: pts };
+  });
+  return result;
+}
+
+/* SVG mini-courbe NRS pour le modal Évolution (axe Y fixe 0-10). */
+function _buildPevoNrsChart(pts, chartId) {
+  if(!pts || pts.length < 2) return '';
+  var VW=500, VH=110;
+  var PAD={top:18, right:18, bottom:30, left:34};
+  var n = pts.length;
+  var minV=0, maxV=10, rangeV=10;
+  function pxy(i, v){ return { x: PAD.left+(i/Math.max(n-1,1))*(VW-PAD.left-PAD.right), y: (VH-PAD.bottom)-((v-minV)/rangeV)*(VH-PAD.top-PAD.bottom) }; }
+  var C = '#7C3AED';
+  var gId = 'gnrs'+chartId.replace(/[^a-z0-9]/gi,'');
+  var html = '<defs><linearGradient id="'+gId+'" x1="0" y1="0" x2="0" y2="1">'
+    +'<stop offset="0%" stop-color="'+C+'" stop-opacity="0.2"/>'
+    +'<stop offset="100%" stop-color="'+C+'" stop-opacity="0.02"/>'
+    +'</linearGradient></defs>';
+  // Grille Y
+  [0,2,4,6,8,10].forEach(function(gv){
+    var gy = pxy(0, gv).y;
+    html += '<line x1="'+PAD.left+'" y1="'+gy.toFixed(1)+'" x2="'+(VW-PAD.right)+'" y2="'+gy.toFixed(1)+'" stroke="#EBEBEB" stroke-width="1" stroke-dasharray="3,3"/>';
+    html += '<text x="'+(PAD.left-5)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="end" font-size="9" fill="#C0BDB8">'+gv+'</text>';
+  });
+  // Axe X
+  var dates = pts.map(function(p){ var d=p.date?p.date.split('-'):['','','']; return (d[2]||'?')+'/'+(d[1]||'?'); });
+  var shownD = {};
+  pts.forEach(function(p, i){
+    var date = dates[i]; if(shownD[date]) return; shownD[date]=true;
+    html += '<text x="'+pxy(i, p.nrs).x.toFixed(1)+'" y="'+(VH-PAD.bottom+12)+'" text-anchor="middle" font-size="9" fill="#C0BDB8">'+date+'</text>';
+  });
+  html += '<line x1="'+PAD.left+'" y1="'+(VH-PAD.bottom)+'" x2="'+(VW-PAD.right)+'" y2="'+(VH-PAD.bottom)+'" stroke="#E8E6E1" stroke-width="1"/>';
+  // Courbe bézier
+  var vp = pts.map(function(p, i){ var q=pxy(i, p.nrs); return {x:q.x, y:q.y, nrs:p.nrs, date:dates[i]}; });
+  var lp = 'M '+vp[0].x.toFixed(1)+','+vp[0].y.toFixed(1);
+  for(var i=1; i<vp.length; i++){ var cx=(vp[i-1].x+vp[i].x)/2; lp+=' C '+cx.toFixed(1)+','+vp[i-1].y.toFixed(1)+' '+cx.toFixed(1)+','+vp[i].y.toFixed(1)+' '+vp[i].x.toFixed(1)+','+vp[i].y.toFixed(1); }
+  var by = VH-PAD.bottom;
+  html += '<path d="'+lp+' L '+vp[vp.length-1].x.toFixed(1)+','+by+' L '+vp[0].x.toFixed(1)+','+by+' Z" fill="url(#'+gId+')"/>';
+  html += '<path d="'+lp+'" fill="none" stroke="'+C+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+  // Points
+  vp.forEach(function(p, i){
+    var isFirst=i===0, isLast=i===vp.length-1;
+    if(isLast){
+      html += '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="6" fill="'+C+'" opacity="0.15"/>';
+      html += '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4" fill="'+C+'"/>';
+      html += '<text x="'+p.x.toFixed(1)+'" y="'+(p.y-12).toFixed(1)+'" text-anchor="middle" font-size="10" font-weight="700" fill="#1A3A5C">'+p.nrs+'/10</text>';
+    } else {
+      html += '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isFirst?3.5:3)+'" fill="#fff" stroke="'+C+'" stroke-width="'+(isFirst?2:1.5)+'"/>';
+      if(isFirst) html += '<text x="'+p.x.toFixed(1)+'" y="'+(p.y-9).toFixed(1)+'" text-anchor="middle" font-size="9" fill="#9D9B96">'+p.nrs+'/10</text>';
+    }
+  });
+  return '<svg viewBox="0 0 '+VW+' '+VH+'" style="width:100%;overflow:visible">'+html+'</svg>';
+}
+
 /* Construit un SVG bezier pour l'évolution 1RM d'un exercice.
    vals  = tableau de nombres (1RM estimé)
    dates = labels JJ/MM
@@ -4641,6 +4737,7 @@ function _pevoSaveSel(patientId, sel) {
 }
 
 var _pevoData = null;      // { exoKey → {label, points} } — données chargées
+var _pevoNrsData = null;   // { exoKey → {nom, pts:[{date,nrs}]} } — données NRS
 var _pevoChartCtr = 0;     // compteur unique pour IDs SVG
 
 /* Attache les events tooltip sur les hit areas (même logique que bilan.html) */
@@ -4726,6 +4823,39 @@ function _renderPevoCharts(exoData, selectedKeys) {
       +'</div></div>'
       +svg+'</div>';
   });
+  // Section NRS douleur
+  var nrsHtml = '';
+  if(_pevoNrsData && Object.keys(_pevoNrsData).length) {
+    var nrsCardsHtml = '';
+    var nrsCtr = 0;
+    Object.keys(_pevoNrsData).forEach(function(key){
+      nrsCtr++;
+      var grp = _pevoNrsData[key];
+      var first = grp.pts[0].nrs, last = grp.pts[grp.pts.length-1].nrs;
+      var delta = last - first;
+      var sign = delta > 0 ? '+' : '';
+      // Baisse douleur = bon → cls "pos" ; hausse = "neg"
+      var deltaCls = delta <= 0 ? 'pos' : 'neg';
+      var nrsSvg = _buildPevoNrsChart(grp.pts, 'n'+nrsCtr);
+      if(!nrsSvg) return;
+      nrsCardsHtml += '<div class="pevo-nrs-card">'
+        +'<div class="pevo-nrs-card-title">💢 '+_escP(grp.nom)+'</div>'
+        +'<div class="pevo-card-kpis" style="margin-bottom:6px">'
+        +'<span class="pevo-kpi-neutral">Début : '+first+'/10</span>'
+        +'<span class="pevo-kpi-neutral">→</span>'
+        +'<span class="pevo-kpi-strong">Actuel : '+last+'/10</span>'
+        +'<span class="pevo-kpi '+deltaCls+'">'+sign+delta+'</span>'
+        +'</div>'
+        +nrsSvg+'</div>';
+    });
+    if(nrsCardsHtml) {
+      nrsHtml = '<div class="pevo-nrs-section">'
+        +'<div class="pevo-nrs-title">💢 Douleur par exercice (NRS 0–10)</div>'
+        +'<div class="pevo-nrs-cards">'+nrsCardsHtml+'</div>'
+        +'</div>';
+    }
+  }
+
   body.innerHTML = '<div class="pevo-select-section">'
     +'<div class="pevo-select-title">Exercices disponibles ('+allKeys.length+')</div>'
     +'<div class="pevo-selall-row">'
@@ -4735,7 +4865,8 @@ function _renderPevoCharts(exoData, selectedKeys) {
     +'<div class="pevo-exo-pills" id="pevoPills">'+pillsHtml+'</div>'
     +'</div>'
     +(chartsHtml ? '<div class="pevo-charts" id="pevoChartsGrid">'+chartsHtml+'</div>'
-                 : '<div class="pevo-empty">Cochez un exercice ci-dessus pour afficher sa courbe.</div>');
+                 : '<div class="pevo-empty">Cochez un exercice ci-dessus pour afficher sa courbe.</div>')
+    +nrsHtml;
   _attachPevoEvents();
 }
 
@@ -4864,6 +4995,7 @@ function openChargesEvo() {
         return;
       }
       _pevoData = _extractExoLoads(data);
+      _pevoNrsData = _extractExoNRS(data);
       var sel = _pevoGetSel(_progPatient.id);
       _renderPevoCharts(_pevoData, sel);
     })
