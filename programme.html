@@ -852,6 +852,31 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .exo-consigne-ta:focus { border-color:var(--accent2); background:var(--surface2); color:var(--text); }
 .exo-consigne-ta::placeholder { color:var(--muted); font-style:italic; font-size:.72rem; }
 .exo-consigne-ta.has-value { border-color:var(--border); background:var(--surface2); color:var(--text2); }
+/* NRS badge inline dans la consigne row */
+.exo-consigne-inner { display:flex; align-items:flex-start; gap:6px; width:100%; }
+.nrs-badge {
+  flex-shrink:0; background:none; border:1px solid #CBD2DB; border-radius:5px;
+  padding:2px 7px; font-size:.62rem; cursor:pointer; font-family:inherit;
+  color:#9AA0A8; line-height:1.6; transition:all .15s; white-space:nowrap; margin-top:1px;
+}
+.nrs-badge:hover { border-color:var(--accent2); color:var(--accent2); }
+#_nrsGlobalPop {
+  background:#fff; border:1px solid #E2E8F0; border-radius:10px;
+  box-shadow:0 8px 28px rgba(0,0,0,.16); padding:8px 10px;
+  display:none; flex-wrap:wrap; gap:4px; align-items:center; max-width:290px;
+}
+.nrs-pop-btn {
+  width:26px; height:26px; border-radius:6px; border:1px solid #E2E8F0;
+  background:#F8FAFC; font-size:.76rem; font-weight:600; cursor:pointer;
+  font-family:inherit; transition:all .1s; line-height:1;
+}
+.nrs-pop-btn:hover { background:#EEF2FF; border-color:#6366F1; color:#4338CA; }
+.nrs-pop-btn.nrs-active { color:#fff; border-color:transparent; }
+.nrs-pop-clear {
+  width:26px; height:26px; border-radius:6px; border:1px solid #FECACA;
+  background:#FFF5F5; font-size:.76rem; cursor:pointer; font-family:inherit; color:#DC2626; line-height:1;
+}
+.nrs-pop-clear:hover { background:#FEE2E2; }
 .exo-name-cell { min-width:0; }
 .exo-name { font-size:.8rem; font-weight:600; color:var(--text); line-height:1.3; }
 .exo-name-input {
@@ -1234,7 +1259,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .cal-nav h2 { font-size:.95rem; font-weight:700; color:var(--navy); flex:1; }
 .cal-nav-btn { background:none; border:1px solid var(--border); border-radius:6px; padding:4px 10px; cursor:pointer; font-size:.82rem; color:var(--muted); }
 .cal-nav-btn:hover { background:var(--bg); color:var(--navy); }
-.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; user-select:none; -webkit-user-select:none; }
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); grid-auto-rows:88px; gap:2px; user-select:none; -webkit-user-select:none; }
 
 /* ── VUE SEMAINE ── */
 .cal-week-grid {
@@ -1338,7 +1363,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .cal-view-btn:not(.active):hover { background:var(--bg); }
 .cal-day-header { text-align:center; font-size:.68rem; font-weight:700; color:var(--muted); letter-spacing:.06em; padding:4px 0; }
 .cal-day {
-  min-height:80px; border:1px solid var(--border); border-radius:6px;
+  height:88px; overflow:hidden; border:1px solid var(--border); border-radius:6px;
   padding:4px; background:var(--surface); cursor:pointer; transition:background .12s;
 }
 .cal-day:hover { background:#F0F6FF; }
@@ -1474,7 +1499,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 }
 .cal-note-chip.chip-clinique { background:#E2E8F0; color:#334155; }
 .cal-note-chip.chip-patient  { background:#EEF2FF; color:#4338CA; }
-.cal-note-chip-text { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0; }
+.cal-note-chip-text { overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; white-space:normal; flex:1; min-width:0; }
 .cal-note-chip-del {
   background:none; border:none; cursor:pointer; color:rgba(100,116,139,.4);
   font-size:.82rem; padding:0; line-height:1; flex-shrink:0;
@@ -2858,7 +2883,7 @@ function addExoFromLib(libId){
   var bloc = blocs.find(function(b){ return b.id===targetId; });
   if(!bloc) { bloc = blocs[blocs.length-1]; targetId = bloc ? bloc.id : null; }
   if(!bloc) return;
-  var row = {id:genId(), libId:ex.id, name:ex.name, url:ex.url, reps:'', duree:'', series:'', cibles:[{type:'RPE', min:'', max:''}], obj:ex.obj, tempo:'', recup:'', chained:false, consigne:'', perCote:false};
+  var row = {id:genId(), libId:ex.id, name:ex.name, url:ex.url, reps:'', duree:'', series:'', cibles:[{type:'RPE', min:'', max:''}], obj:ex.obj, tempo:'', recup:'', chained:false, consigne:'', perCote:false, nrs:null};
   bloc.exos.push(row);
   renderSession();
   renderLib(document.getElementById('searchInput').value.toLowerCase());
@@ -2873,7 +2898,7 @@ function addFreeExo(blocId) {
   bloc.exos.push({ id:genId(), free:true, name:'', url:'',
     reps:'', duree:'', series:'',
     cibles:[{type:'RPE', min:'', max:''}],
-    tempo:'', recup:'', chained:false, consigne:'', perCote:false });
+    tempo:'', recup:'', chained:false, consigne:'', perCote:false, nrs:null });
   activeBloc = blocId;
   renderSession();
   setTimeout(function(){
@@ -2910,6 +2935,72 @@ function updateField(blocId, exoId, field, val){
   var exo = bloc.exos.find(function(e){ return e.id===exoId; });
   if(exo) exo[field] = val;
   _draftSaveLazy();
+}
+
+/* ── NRS douleur par exercice ── */
+var _openNrsId = null;
+
+function _getNrsPop(){
+  var p = document.getElementById('_nrsGlobalPop');
+  if(!p){
+    p = document.createElement('div');
+    p.id = '_nrsGlobalPop';
+    p.style.cssText = 'position:fixed;display:none;z-index:5000;flex-wrap:wrap;gap:4px;align-items:center;max-width:290px;background:#fff;border:1px solid #E2E8F0;border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.16);padding:8px 10px;';
+    document.body.appendChild(p);
+    document.addEventListener('pointerdown', function(e){ if(!p.contains(e.target)) _closeNrsPop(); }, true);
+  }
+  return p;
+}
+
+function toggleNrsPop(blocId, exoId, e){
+  e.stopPropagation();
+  var key = blocId+'-'+exoId;
+  if(_openNrsId === key){ _closeNrsPop(); return; }
+  _closeNrsPop();
+  _openNrsId = key;
+  var bloc = blocs.find(function(b){ return b.id===blocId; });
+  var exo = bloc ? bloc.exos.find(function(ex){ return ex.id===exoId; }) : null;
+  if(!exo) return;
+  var pop = _getNrsPop();
+  var btns = '';
+  for(var i=0; i<=10; i++){
+    var active = exo.nrs === i;
+    var col = i<=3 ? '#16A34A' : i<=6 ? '#F59E0B' : '#DC2626';
+    btns += '<button class="nrs-pop-btn'+(active?' nrs-active':'')+'" style="'+(active?'background:'+col+';':'')+'font-size:.76rem;" onclick="setNrs(\''+blocId+'\',\''+exoId+'\','+i+')">'+i+'</button>';
+  }
+  btns += '<button class="nrs-pop-clear" onclick="setNrs(\''+blocId+'\',\''+exoId+'\',null)" title="Effacer">✕</button>';
+  pop.innerHTML = btns;
+  pop.style.display = 'flex';
+  var rect = e.currentTarget.getBoundingClientRect();
+  var popW = 290, popH = 50;
+  var top = rect.bottom + 4;
+  var left = rect.left;
+  if(top + popH > window.innerHeight - 8) top = rect.top - popH - 4;
+  if(left + popW > window.innerWidth - 8) left = window.innerWidth - popW - 8;
+  pop.style.top = top+'px'; pop.style.left = left+'px';
+}
+
+function _closeNrsPop(){
+  var p = document.getElementById('_nrsGlobalPop');
+  if(p) p.style.display = 'none';
+  _openNrsId = null;
+}
+
+function setNrs(blocId, exoId, val){
+  var bloc = blocs.find(function(b){ return b.id===blocId; });
+  if(!bloc) return;
+  var exo = bloc.exos.find(function(e){ return e.id===exoId; });
+  if(!exo) return;
+  exo.nrs = val;
+  _draftSaveLazy();
+  var badge = document.querySelector('[data-nrs="'+blocId+'-'+exoId+'"]');
+  if(badge){
+    var col = val === null ? '#9AA0A8' : val<=3 ? '#16A34A' : val<=6 ? '#F59E0B' : '#DC2626';
+    badge.textContent = val !== null ? '💢 '+val+'/10' : '💢 —';
+    badge.style.color = col;
+    badge.style.borderColor = val !== null ? col : '#CBD2DB';
+  }
+  _closeNrsPop();
 }
 
 function togglePerCote(blocId, exoId){
@@ -3447,13 +3538,19 @@ function renderSession(){
         html += '<button class="cible-add-btn" onclick="addCible(\''+b.id+'\',\''+e.id+'\')">＋ cible</button>';
         html += '</div>';
         html += '<button class="exo-del-btn" onclick="removeExo(\''+b.id+'\',\''+e.id+'\')" title="Retirer"></button>';
-        // Consignes par exercice
+        // Consignes + NRS par exercice
         var consigneVal = e.consigne || '';
+        var nrsVal = (e.nrs !== null && e.nrs !== undefined) ? e.nrs : null;
+        var nrsTxt = nrsVal !== null ? '💢 '+nrsVal+'/10' : '💢 —';
+        var nrsCol = nrsVal === null ? '#9AA0A8' : nrsVal <= 3 ? '#16A34A' : nrsVal <= 6 ? '#F59E0B' : '#DC2626';
         html += '<div class="exo-consigne-row">'
+             +  '<div class="exo-consigne-inner">'
+             +  '<button class="nrs-badge" data-nrs="'+b.id+'-'+e.id+'" style="color:'+nrsCol+';border-color:'+(nrsVal!==null?nrsCol:'#CBD2DB')+'" onclick="toggleNrsPop(\''+b.id+'\',\''+e.id+'\',event)" title="Douleur NRS (0-10)">'+nrsTxt+'</button>'
              +  '<textarea class="exo-consigne-ta'+(consigneVal?' has-value':'')+'"'
              +  ' placeholder="💬 Consignes spécifiques…"'
              +  ' oninput="updateField(\''+b.id+'\',\''+e.id+'\',\'consigne\',this.value);this.classList.toggle(\'has-value\',!!this.value.trim());autoResizeTa(this)"'
              +  '>'+escH(consigneVal)+'</textarea>'
+             +  '</div>'
              +  '</div>';
         html += '</div>';
         // Connecteur entre exercices enchaînés
@@ -4158,6 +4255,9 @@ function _updatePatientUI(){
   if(tmplHeader){ tmplHeader.textContent = nom ? 'Templates — ' + nom : 'Templates de séances'; }
   // Charger les cycles du patient depuis Supabase
   if(_progPatient) setTimeout(function(){ if(typeof _loadCyclesForPatient==="function") _loadCyclesForPatient(); }, 0);
+  // Sync des notes cliniques depuis Supabase (une fois par patient)
+  _calNotesSyncedFor = null; // forcer le re-sync au changement de patient
+  setTimeout(_syncCalNotesIfNeeded, 200);
   // Rafraîchir le calendrier pour le nouveau patient
   if(typeof renderCalendar === 'function') renderCalendar();
 }
@@ -6485,11 +6585,67 @@ function _calNotesKey(){
   return _progPatient ? 'r4p_cal_notes_' + _progPatient.id : 'r4p_cal_notes';
 }
 
+var _calNotesSyncedFor = null; // patient id déjà synchronisé
+
 function _loadCalNotes(){
   try { _calNotes = JSON.parse(localStorage.getItem(_calNotesKey())||'[]'); } catch(e){ _calNotes = []; }
 }
+
 function _persistCalNotes(){
   localStorage.setItem(_calNotesKey(), JSON.stringify(_calNotes));
+}
+
+/* ── Sync Supabase → localStorage (async, une fois par patient) ── */
+function _syncCalNotesFromSupabase(){
+  if(!_progPatient || !_progToken || !_progUid) return;
+  fetch(SUPA_URL_P+'/rest/v1/clinical_notes?patient_id=eq.'+_progPatient.id+'&praticien_id=eq.'+_progUid+'&order=created_at.asc',
+    { headers: _sbHeaders() })
+  .then(function(r){ return r.ok ? r.json() : null; })
+  .then(function(rows){
+    if(!rows) return;
+    // Construire la liste distante
+    var remoteNotes = rows.map(function(r){
+      return { id:r.id, date:r.date, title:r.title||'', text:r.body||'', type:'clinique', createdAt:r.created_at||'' };
+    });
+    // Charger les notes locales (localStorage)
+    var localNotes = [];
+    try { localNotes = JSON.parse(localStorage.getItem(_calNotesKey())||'[]'); } catch(e){}
+    // Fusionner : Supabase = source de vérité pour 'clinique'. Conserver les 'patient' locales.
+    var patientNotes = localNotes.filter(function(n){ return n.type === 'patient'; });
+    var merged = remoteNotes.concat(patientNotes);
+    // Migrer les notes cliniques locales non encore sur Supabase
+    var remoteIds = remoteNotes.map(function(n){ return n.id; });
+    var toMigrate = localNotes.filter(function(n){ return n.type === 'clinique' && remoteIds.indexOf(n.id) === -1; });
+    toMigrate.forEach(function(note){ _pushClinicalNote(note); merged.push(note); });
+    _calNotes = merged;
+    localStorage.setItem(_calNotesKey(), JSON.stringify(_calNotes));
+    renderCalendar();
+  }).catch(function(){});
+}
+
+function _syncCalNotesIfNeeded(){
+  if(!_progPatient) return;
+  if(_calNotesSyncedFor === _progPatient.id) return;
+  _calNotesSyncedFor = _progPatient.id;
+  _syncCalNotesFromSupabase();
+}
+
+/* ── Push / delete notes cliniques sur Supabase ── */
+function _pushClinicalNote(note){
+  if(!_progToken || !_progUid || !_progPatient) return;
+  fetch(SUPA_URL_P+'/rest/v1/clinical_notes', {
+    method: 'POST',
+    headers: Object.assign({}, _sbHeaders(), {'Prefer':'resolution=merge-duplicates,return=minimal'}),
+    body: JSON.stringify({ id:note.id, patient_id:_progPatient.id, praticien_id:_progUid,
+      date:note.date, title:note.title||'', body:note.text||'', created_at:note.createdAt||new Date().toISOString() })
+  }).catch(function(e){ console.warn('_pushClinicalNote error', e); });
+}
+
+function _deleteClinicalNote(noteId){
+  if(!_progToken || !_progUid) return;
+  fetch(SUPA_URL_P+'/rest/v1/clinical_notes?id=eq.'+noteId, {
+    method: 'DELETE', headers: _sbHeaders()
+  }).catch(function(e){ console.warn('_deleteClinicalNote error', e); });
 }
 
 function _addCalNoteIfNotDupe(dateStr, title, text) {
@@ -6626,6 +6782,7 @@ function _saveCalNote(dateStr) {
   _calNotes.push(note);
   _persistCalNotes();
   if(note.type === 'patient') _pushPatientMsg(note);
+  else if(note.type === 'clinique') _pushClinicalNote(note);
   // Créer le suivi si toggle actif
   var followupChk = document.getElementById('note-followup-chk');
   if(followupChk && followupChk.checked) {
@@ -6676,8 +6833,14 @@ function _updateCalNote(noteId) {
   _persistCalNotes();
   if(note.type === 'patient') {
     _pushPatientMsg(note); // upsert
+    if(prevType === 'clinique') _deleteClinicalNote(noteId); // était clinique → retirer
+  } else if(note.type === 'clinique') {
+    _pushClinicalNote(note); // upsert
+    if(prevType === 'patient') _deletePatientMsg(noteId); // était patient → retirer
   } else if(prevType === 'patient') {
-    _deletePatientMsg(noteId); // était patient, devient clinique → retirer de Supabase
+    _deletePatientMsg(noteId);
+  } else if(prevType === 'clinique') {
+    _deleteClinicalNote(noteId);
   }
   closeCalPicker();
   renderCalendar();
@@ -6687,7 +6850,8 @@ function _updateCalNote(noteId) {
 function _deleteCalNote(noteId) {
   _loadCalNotes();
   var note = _calNotes.find(function(n){ return n.id === noteId; });
-  if(note && (note.type === 'patient')) _deletePatientMsg(noteId);
+  if(note && note.type === 'patient') _deletePatientMsg(noteId);
+  if(note && note.type === 'clinique') _deleteClinicalNote(noteId);
   _calNotes = _calNotes.filter(function(n){ return n.id !== noteId; });
   _persistCalNotes();
   renderCalendar();
@@ -7931,7 +8095,7 @@ function _sessionHash(){
           exos:(b.exos||[]).map(function(e){
             return {id:e.id, name:e.name, reps:e.reps, series:e.series,
                     duree:e.duree, recup:e.recup, tempo:e.tempo,
-                    cibles:e.cibles, chained:e.chained, consigne:e.consigne||''};
+                    cibles:e.cibles, chained:e.chained, consigne:e.consigne||'', nrs:e.nrs||null};
           })
         };
       })

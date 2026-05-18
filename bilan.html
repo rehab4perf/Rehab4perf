@@ -1018,6 +1018,18 @@ textarea { resize:none !important; overflow:hidden !important; }
 .evo-chart-check { width:15px; height:15px; accent-color:var(--accent); cursor:pointer; flex-shrink:0; }
 .evo-sel-btn { font-size:.72rem; padding:4px 11px; border:1px solid var(--border2); border-radius:6px; background:var(--surface); color:var(--text2); cursor:pointer; white-space:nowrap; }
 .evo-sel-btn:hover { background:var(--surface2); color:var(--text); }
+/* Pills de toggle par ligne */
+.evo-line-toggles { display:flex; gap:5px; flex-wrap:wrap; margin-top:6px; }
+.evo-line-pill {
+  display:inline-flex; align-items:center; gap:4px; font-size:.65rem; font-weight:600;
+  padding:2px 9px; border-radius:20px; border:1.5px solid; cursor:pointer;
+  font-family:inherit; transition:all .15s; line-height:1.6; background:#fff;
+}
+.evo-line-pill.active { color:#fff; }
+.evo-line-pill:not(.active) { background:#fff !important; opacity:.45; }
+/* Courbe douleur */
+.evo-pain-block { margin-bottom:20px; }
+.evo-pain-empty { font-size:.78rem; color:var(--text3); font-style:italic; padding:12px 0; }
 </style>
 
 </head>
@@ -3965,8 +3977,20 @@ function _buildChartD(valsA, valsB, dates, opts){
     var aD='M '+vpB.map(function(p){return p.x.toFixed(1)+','+p.y.toFixed(1);}).join(' L ')+' L '+vpA.slice().reverse().map(function(p){return p.x.toFixed(1)+','+p.y.toFixed(1);}).join(' L ')+' Z';
     html+='<path d="'+aD+'" fill="url(#gd'+id+')"/>';
   }
-  // Courbes
+  // Courbes — groupées par data-line pour toggle
+  html += '<g data-line="B">';
   if(vpB.length>=2) html+='<polyline points="'+vpB.map(function(p){return p.x.toFixed(1)+','+p.y.toFixed(1);}).join(' ')+'" fill="none" stroke="'+colorB+'" stroke-width="2" stroke-dasharray="6,3" stroke-linecap="round"/>';
+  // Points B
+  ptsB.forEach(function(p,i){
+    if(!p.valid)return;
+    var isFirst=!ptsB.slice(0,i).some(function(q){return q.valid;});
+    var isLast=!ptsB.slice(i+1).some(function(q){return q.valid;});
+    if(isLast){html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4.5" fill="'+colorB+'"/>';}
+    else if(isFirst){html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4.5" fill="#fff" stroke="'+colorB+'" stroke-width="2"/>';}
+    else{html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3.5" fill="'+colorB+'" opacity="0.8"/>';}
+  });
+  html += '</g>';
+  html += '<g data-line="A">';
   if(vpA.length>=2) html+='<polyline points="'+vpA.map(function(p){return p.x.toFixed(1)+','+p.y.toFixed(1);}).join(' ')+'" fill="none" stroke="'+colorA+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
   // Points A
   ptsA.forEach(function(p,i){
@@ -3977,42 +4001,33 @@ function _buildChartD(valsA, valsB, dates, opts){
     else if(isFirst){html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="5" fill="#fff" stroke="'+colorA+'" stroke-width="2.5"/>';}
     else{html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4" fill="'+colorA+'" opacity="0.8"/>';}
   });
-  // Points B
-  ptsB.forEach(function(p,i){
-    if(!p.valid)return;
-    var isFirst=!ptsB.slice(0,i).some(function(q){return q.valid;});
-    var isLast=!ptsB.slice(i+1).some(function(q){return q.valid;});
-    if(isLast){html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4.5" fill="'+colorB+'"/>';}
-    else if(isFirst){html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4.5" fill="#fff" stroke="'+colorB+'" stroke-width="2"/>';}
-    else{html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3.5" fill="'+colorB+'" opacity="0.8"/>';}
-  });
+  html += '</g>';
   // Labels derniers points
   var lastA=null,lastB=null;
   ptsA.forEach(function(p){if(p.valid)lastA=p;}); ptsB.forEach(function(p){if(p.valid)lastB=p;});
   var decA=opts.unit==='cm'&&lastA&&lastA.v%1!==0?1:0;
   var decB=opts.unit==='cm'&&lastB&&lastB.v%1!==0?1:0;
   if(lastA && lastB){
-    // Avoid label overlap: if lines are close, force A below, B above
     var gap = Math.abs(lastA.y - lastB.y);
-    var aIsAbove = lastA.y <= lastB.y; // smaller y = higher on SVG
+    var aIsAbove = lastA.y <= lastB.y;
     var lyA, lyB;
     if(gap < 18){
-      lyA = Math.min(lastA.y, lastB.y) + 14; // A always below both
-      lyB = Math.min(lastA.y, lastB.y) - 6;  // B always above both
+      lyA = Math.min(lastA.y, lastB.y) + 14;
+      lyB = Math.min(lastA.y, lastB.y) - 6;
     } else {
       lyA = lastA.y + (aIsAbove ? -6 : 14);
       lyB = lastB.y + (aIsAbove ? 14 : -6);
     }
-    html+='<text x="'+(lastA.x-10).toFixed(1)+'" y="'+lyA.toFixed(1)+'" text-anchor="end" font-size="9" font-weight="700" fill="'+colorA+'">'+lastA.v.toFixed(decA)+opts.unit+'</text>';
-    html+='<text x="'+(lastB.x-10).toFixed(1)+'" y="'+lyB.toFixed(1)+'" text-anchor="end" font-size="9" font-weight="700" fill="'+colorB+'">'+lastB.v.toFixed(decB)+opts.unit+'</text>';
+    html+='<text data-line="A" x="'+(lastA.x-10).toFixed(1)+'" y="'+lyA.toFixed(1)+'" text-anchor="end" font-size="9" font-weight="700" fill="'+colorA+'">'+lastA.v.toFixed(decA)+opts.unit+'</text>';
+    html+='<text data-line="B" x="'+(lastB.x-10).toFixed(1)+'" y="'+lyB.toFixed(1)+'" text-anchor="end" font-size="9" font-weight="700" fill="'+colorB+'">'+lastB.v.toFixed(decB)+opts.unit+'</text>';
   } else {
-    if(lastA) html+='<text x="'+(lastA.x-10).toFixed(1)+'" y="'+(lastA.y+14).toFixed(1)+'" text-anchor="end" font-size="9" font-weight="700" fill="'+colorA+'">'+lastA.v.toFixed(decA)+opts.unit+'</text>';
-    if(lastB) html+='<text x="'+(lastB.x-10).toFixed(1)+'" y="'+(lastB.y-6).toFixed(1)+'" text-anchor="end" font-size="9" font-weight="700" fill="'+colorB+'">'+lastB.v.toFixed(decB)+opts.unit+'</text>';
+    if(lastA) html+='<text data-line="A" x="'+(lastA.x-10).toFixed(1)+'" y="'+(lastA.y+14).toFixed(1)+'" text-anchor="end" font-size="9" font-weight="700" fill="'+colorA+'">'+lastA.v.toFixed(decA)+opts.unit+'</text>';
+    if(lastB) html+='<text data-line="B" x="'+(lastB.x-10).toFixed(1)+'" y="'+(lastB.y-6).toFixed(1)+'" text-anchor="end" font-size="9" font-weight="700" fill="'+colorB+'">'+lastB.v.toFixed(decB)+opts.unit+'</text>';
   }
   // Légende
   var lx=VW-PAD.right+8;
-  html+='<rect x="'+lx+'" y="'+PAD.top+'" width="8" height="8" rx="2" fill="'+colorA+'"/><text x="'+(lx+11)+'" y="'+(PAD.top+7)+'" font-size="8.5" fill="'+colorA+'" font-weight="600">'+opts.labelA+'</text>';
-  html+='<rect x="'+lx+'" y="'+(PAD.top+14)+'" width="8" height="8" rx="2" fill="'+colorB+'"/><text x="'+(lx+11)+'" y="'+(PAD.top+21)+'" font-size="8.5" fill="'+colorB+'" font-weight="600">'+opts.labelB+'</text>';
+  html+='<rect data-line="A" x="'+lx+'" y="'+PAD.top+'" width="8" height="8" rx="2" fill="'+colorA+'"/><text data-line="A" x="'+(lx+11)+'" y="'+(PAD.top+7)+'" font-size="8.5" fill="'+colorA+'" font-weight="600">'+opts.labelA+'</text>';
+  html+='<rect data-line="B" x="'+lx+'" y="'+(PAD.top+14)+'" width="8" height="8" rx="2" fill="'+colorB+'"/><text data-line="B" x="'+(lx+11)+'" y="'+(PAD.top+21)+'" font-size="8.5" fill="'+colorB+'" font-weight="600">'+opts.labelB+'</text>';
   // Hit areas
   ptsA.forEach(function(pA,i){
     if(!pA||!pA.valid)return;
@@ -4199,10 +4214,20 @@ function _renderEvolutionPage(){
           +'<span class="evo-kpi-neutral">→</span>'
           +'<span class="evo-kpi-strong">Actuel : '+lastA.toFixed(decL)+grp.unit+'</span>'
           +'<span class="evo-kpi '+deltaCls+'">'+sign+deltaA.toFixed(0)+grp.unit+pctStr+'</span>';
+      // Pills toggle lignes (dual uniquement)
+      var pillsHtml = '';
+      if(grp.type === 'dual'){
+        var colorPillA = '#2B5FA6', colorPillB = '#2D6A4F';
+        pillsHtml = '<div class="evo-line-toggles">'
+          +'<button class="evo-line-pill active" style="color:'+colorPillA+';border-color:'+colorPillA+';background:'+colorPillA+'" onclick="toggleEvoPill(this,'+id+',\'A\')" data-line="A">● '+grp.labelA+'</button>'
+          +'<button class="evo-line-pill active" style="color:'+colorPillB+';border-color:'+colorPillB+';background:'+colorPillB+'" onclick="toggleEvoPill(this,'+id+',\'B\')" data-line="B">● '+grp.labelB+'</button>'
+          +'</div>';
+      }
       catHtml+='<div class="evo-chart-card evo-unselected" data-chart-id="'+id+'">'
         +'<div class="evo-chart-header">'
         +'<div class="evo-check-wrap"><input type="checkbox" class="evo-chart-check no-print" onchange="this.closest(\'.evo-chart-card\').classList.toggle(\'evo-unselected\',!this.checked)"><span class="evo-chart-title">'+grp.title+'</span></div>'
         +'<div class="evo-chart-kpis">'+kpisHtml+'</div></div>'
+        +pillsHtml
         +chartSvg+'</div>';
     });
     if(!catHtml)return;
@@ -4210,6 +4235,166 @@ function _renderEvolutionPage(){
   });
   container.innerHTML=html;
   _attachChartEvents();
+  // Ajouter la section douleur par séance (async)
+  _renderPainSection(container);
+}
+
+/* ── Toggle par ligne dans chart dual ── */
+function toggleEvoPill(btn, chartId, line){
+  btn.classList.toggle('active');
+  var show = btn.classList.contains('active');
+  var svg = document.querySelector('svg[data-id="'+chartId+'"]');
+  if(!svg) return;
+  svg.querySelectorAll('[data-line="'+line+'"]').forEach(function(el){
+    el.style.display = show ? '' : 'none';
+  });
+}
+
+/* ── Section douleur par séance (depuis les sessions builder) ── */
+var _NRS_COLORS = ['#7C3AED','#DB2777','#D97706','#0891B2','#16A34A','#DC2626','#2563EB','#9333EA'];
+
+function _renderPainSection(container){
+  if(!_bilanPatient || !_bilanUid) return;
+  // Fetch seances
+  sbB.from('seances_planifiees')
+    .select('date,programme_id')
+    .eq('patient_id', _bilanPatient.id)
+    .eq('praticien_id', _bilanUid)
+    .order('date', {ascending:true})
+    .then(function(res){
+      if(res.error || !res.data || !res.data.length) return;
+      var seances = res.data.filter(function(s){ return s.programme_id; });
+      if(!seances.length) return;
+      var progIds = seances.map(function(s){ return s.programme_id; });
+      // Fetch programmes en batch
+      sbB.from('programmes')
+        .select('id,donnees')
+        .in('id', progIds)
+        .then(function(res2){
+          if(res2.error || !res2.data) return;
+          var progMap = {};
+          res2.data.forEach(function(p){ progMap[p.id] = p.donnees; });
+          // Extraire NRS par exercice
+          var exoSeries = {}; // { nomExo: [{date, nrs}] }
+          seances.forEach(function(s){
+            var donnees = progMap[s.programme_id];
+            if(!donnees || !donnees.blocs) return;
+            var dateStr = s.date ? s.date.split('T')[0] : null;
+            if(!dateStr) return;
+            var p = dateStr.split('-'); var dateFmt = p[2]+'/'+p[1];
+            donnees.blocs.forEach(function(bloc){
+              if(!bloc.exos) return;
+              bloc.exos.forEach(function(exo){
+                if(exo.nrs === null || exo.nrs === undefined) return;
+                var nom = (exo.name || 'Exercice').trim();
+                if(!exoSeries[nom]) exoSeries[nom] = [];
+                exoSeries[nom].push({ date:dateFmt, nrs:exo.nrs, ts:dateStr });
+              });
+            });
+          });
+          // Filtrer : garder seulement les exos avec ≥2 points
+          var series = [];
+          Object.keys(exoSeries).forEach(function(nom){
+            var pts = exoSeries[nom];
+            if(pts.length >= 2) series.push({ nom:nom, pts:pts });
+          });
+          if(!series.length) return;
+          // Construire l'HTML de la section
+          _appendPainBlock(container, series);
+        }).catch(function(){});
+    }).catch(function(){});
+}
+
+function _appendPainBlock(container, series){
+  if(!container) return;
+  var chartId = 'pain';
+  var colorIdx = 0;
+  // Pills
+  var pillsHtml = series.map(function(s, i){
+    var col = _NRS_COLORS[i % _NRS_COLORS.length];
+    return '<button class="evo-line-pill active" style="color:'+col+';border-color:'+col+';background:'+col+'" onclick="toggleEvoPill(this,\''+chartId+'\',\'s'+i+'\')" data-line="s'+i+'">● '+s.nom+'</button>';
+  }).join('');
+  // Build SVG multi-lignes
+  var svg = _buildChartMultiNRS(series, chartId);
+  if(!svg) return;
+  var block = document.createElement('div');
+  block.className = 'evo-block evo-pain-block';
+  block.innerHTML = '<div class="evo-block-title">Douleur par séance (NRS 0-10)</div>'
+    +'<div class="evo-chart-card evo-unselected" data-chart-id="'+chartId+'">'
+    +'<div class="evo-chart-header">'
+    +'<div class="evo-check-wrap"><input type="checkbox" class="evo-chart-check no-print" onchange="this.closest(\'.evo-chart-card\').classList.toggle(\'evo-unselected\',!this.checked)"><span class="evo-chart-title">Douleur par exercice</span></div>'
+    +'</div>'
+    +'<div class="evo-line-toggles">'+pillsHtml+'</div>'
+    +svg+'</div>';
+  // Insérer en premier dans le container
+  container.insertBefore(block, container.firstChild);
+  // Attacher les tooltip events
+  _attachChartEvents();
+}
+
+function _buildChartMultiNRS(series, chartId){
+  var VW=500, VH=130;
+  var PAD={top:20, right:20, bottom:34, left:38};
+  // Collecter toutes les dates uniques triées
+  var allDates = [];
+  series.forEach(function(s){ s.pts.forEach(function(p){ if(allDates.indexOf(p.ts) === -1) allDates.push(p.ts); }); });
+  allDates.sort();
+  if(allDates.length < 2) return '';
+  var datesFmt = allDates.map(function(d){ var p=d.split('-'); return p[2]+'/'+p[1]; });
+  var n = allDates.length;
+  var minV=0, maxV=10, rangeV=10;
+  var html = '';
+  // Grille Y (0..10 par 2)
+  for(var gv=0; gv<=10; gv+=2){
+    var gy=(VH-PAD.bottom)-((gv-minV)/rangeV)*(VH-PAD.top-PAD.bottom);
+    html+='<line x1="'+PAD.left+'" y1="'+gy.toFixed(1)+'" x2="'+(VW-PAD.right)+'" y2="'+gy.toFixed(1)+'" stroke="#EBEBEB" stroke-width="1" stroke-dasharray="3,3"/>';
+    html+='<text x="'+(PAD.left-5)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="end" font-size="9" fill="#C0BDB8">'+gv+'</text>';
+  }
+  // Axe X + dates
+  html+='<line x1="'+PAD.left+'" y1="'+(VH-PAD.bottom)+'" x2="'+(VW-PAD.right)+'" y2="'+(VH-PAD.bottom)+'" stroke="#E8E6E1" stroke-width="1"/>';
+  var shownD={};
+  datesFmt.forEach(function(d,i){
+    if(shownD[d]) return; shownD[d]=true;
+    var x=PAD.left+(i/Math.max(n-1,1))*(VW-PAD.left-PAD.right);
+    html+='<text x="'+x.toFixed(1)+'" y="'+(VH-PAD.bottom+13)+'" text-anchor="middle" font-size="9" fill="#C0BDB8">'+d+'</text>';
+  });
+  // Lignes par exercice
+  series.forEach(function(s, si){
+    var col = _NRS_COLORS[si % _NRS_COLORS.length];
+    // Construire les points sur l'axe de dates commun
+    var pts = allDates.map(function(ts, i){
+      var pt = s.pts.find(function(p){ return p.ts === ts; });
+      var v = pt ? pt.nrs : null;
+      var x = PAD.left+(i/Math.max(n-1,1))*(VW-PAD.left-PAD.right);
+      var y = v !== null ? (VH-PAD.bottom)-((v-minV)/rangeV)*(VH-PAD.top-PAD.bottom) : null;
+      return {x:x, y:y, v:v, date:datesFmt[i]};
+    });
+    // Segments continus (sauter les nulls)
+    var lineParts = [];
+    var seg = [];
+    pts.forEach(function(p){
+      if(p.y !== null){ seg.push(p); }
+      else { if(seg.length >= 2) lineParts.push(seg); seg = []; }
+    });
+    if(seg.length >= 2) lineParts.push(seg);
+    html += '<g data-line="s'+si+'">';
+    lineParts.forEach(function(seg){
+      html += '<polyline points="'+seg.map(function(p){ return p.x.toFixed(1)+','+p.y.toFixed(1); }).join(' ')+'" fill="none" stroke="'+col+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+    });
+    // Points
+    pts.forEach(function(p, i){
+      if(p.y === null) return;
+      var isLast = !pts.slice(i+1).some(function(q){ return q.y !== null; });
+      if(isLast){
+        html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="5" fill="'+col+'"/>';
+        html+='<text x="'+p.x.toFixed(1)+'" y="'+(p.y-9).toFixed(1)+'" text-anchor="middle" font-size="9" font-weight="700" fill="'+col+'">'+p.v+'/10</text>';
+      } else {
+        html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3.5" fill="'+col+'" opacity="0.8"/>';
+      }
+    });
+    html += '</g>';
+  });
+  return '<svg class="evo-chart-svg" data-chart="PAIN" data-id="'+chartId+'" viewBox="0 0 '+VW+' '+VH+'" style="width:100%;overflow:visible">'+html+'</svg>';
 }
 
 /* ── Sélection graphiques ────────────────────────────── */
