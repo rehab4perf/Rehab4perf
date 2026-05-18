@@ -239,6 +239,13 @@ body {
   font-family: inherit; transition: background .12s;
 }
 .histo-new-btn:hover { background: #1A5C3A; }
+.histo-item-del {
+  flex-shrink: 0; background: none; border: 1.5px solid #E8E6E1;
+  border-radius: 5px; color: #C0392B; padding: 5px 8px;
+  font-size: .78rem; cursor: pointer; font-family: inherit;
+  transition: all .12s; line-height: 1;
+}
+.histo-item-del:hover { background: #FDECEA; border-color: #C0392B; }
 
 .sidebar-footer {
   padding: 12px 8px;
@@ -4521,6 +4528,7 @@ function openBilanHistory(){
           else agoStr = 'Il y a '+Math.floor(diffDays/365)+' an'+(diffDays>=730?'s':'');
         }
         var label = num === 1 ? 'Bilan initial' : 'Bilan #'+num;
+        var isInitial = num === 1;
         return '<div class="histo-item'+(isCurrent?' current':'')+'">'
           +'<div class="histo-item-num">'+num+'</div>'
           +'<div class="histo-item-info">'
@@ -4529,6 +4537,7 @@ function openBilanHistory(){
           +'</div>'
           +'<span class="histo-item-badge">'+(isCurrent?'● En cours':label)+'</span>'
           +'<button class="histo-item-load" onclick="loadBilan(\''+b.id+'\')">'+(isCurrent?'Rechargé':'Charger')+'</button>'
+          +'<button class="histo-item-del" onclick="deleteBilan(\''+b.id+'\',\''+dateStr+'\','+(isInitial?'true':'false')+',event)" title="Supprimer ce bilan">🗑</button>'
           +'</div>';
       }).join('');
     });
@@ -4566,6 +4575,61 @@ function newBilan(){
   localStorage.removeItem('athletik-bilan');
   if(_bilanPatient) _autofillPatientFields(_bilanPatient);
   closeHistoModal();
+}
+
+function deleteBilan(id, dateStr, isInitial, e) {
+  if (e) e.stopPropagation();
+  var msg = 'Supprimer le bilan du ' + dateStr + ' ?'
+    + (isInitial ? '\n\n⚠ Attention : il s\'agit du bilan initial de ce patient.' : '')
+    + '\n\nCette action est irréversible — les données seront définitivement perdues.';
+  if (!confirm(msg)) return;
+
+  sbB.from('bilans').delete().eq('id', id).then(function(res) {
+    if (res.error) { alert('Erreur lors de la suppression : ' + res.error.message); return; }
+
+    // Mise à jour locale
+    var wasActive = String(_currentBilanId) === String(id);
+    _allBilans = _allBilans.filter(function(b){ return String(b.id) !== String(id); });
+
+    if (wasActive) {
+      // Bilan actif supprimé → charger le plus récent restant, sinon vierge
+      _currentBilanId = null;
+      _currentBilanDate = null;
+      _prevDonnees = null;
+      document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
+      if (_allBilans.length > 0) {
+        // Charger le bilan le plus récent restant silencieusement
+        sbB.from('bilans').select('*').eq('id', _allBilans[0].id).single().then(function(r) {
+          if (!r.error && r.data) {
+            _currentBilanId   = r.data.id;
+            _currentBilanDate = r.data.date ? r.data.date.split('T')[0] : null;
+            _deserializeBilan(r.data.donnees || {});
+            if (_allBilans.length >= 2) {
+              _prevDonnees = _allBilans[1].donnees || {};
+              _renderDeltas(_prevDonnees);
+            }
+            showToast('🗑 Bilan supprimé — bilan précédent rechargé');
+          }
+          _renderEvolutionPage();
+        });
+      } else {
+        _resetBilanFields();
+        _renderEvolutionPage();
+        showToast('🗑 Bilan supprimé');
+      }
+    } else {
+      // Bilan non actif : recalc _prevDonnees si nécessaire
+      var idx = _allBilans.findIndex(function(b){ return String(b.id) === String(_currentBilanId); });
+      _prevDonnees = (idx !== -1 && idx + 1 < _allBilans.length) ? (_allBilans[idx + 1].donnees || {}) : null;
+      document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
+      if (_prevDonnees) _renderDeltas(_prevDonnees);
+      _renderEvolutionPage();
+      showToast('🗑 Bilan supprimé');
+    }
+
+    // Rafraîchir la liste de l'historique
+    openBilanHistory();
+  });
 }
 
 function closeHistoModal(){ document.getElementById('histoOverlay').classList.remove('open'); }
