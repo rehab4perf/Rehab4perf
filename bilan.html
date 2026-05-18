@@ -593,6 +593,20 @@ body {
   padding: 6px 8px;
   display: flex;
   align-items: center;
+  position: relative;
+}
+/* Badge delta dans une cellule de saisie : overlay coin sup-droit, n'affecte pas l'input */
+.measure-input .evo-delta {
+  position: absolute;
+  top: 2px; right: 4px;
+  font-size: .52rem;
+  margin: 0;
+  pointer-events: none;
+  z-index: 1;
+  max-width: calc(100% - 8px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .measure-input input {
   font-family: var(--font-sans);
@@ -3823,18 +3837,38 @@ function _renderDeltas(prevData){
 }
 
 /* ── Builders de graphiques SVG ───────────────────────── */
+/* ── Détection outliers : MAD × 10 (robuste même si IQR = 0) ── */
+function _robustFence(arr){
+  var valid=arr.filter(function(v){return !isNaN(v);});
+  if(valid.length<2)return null;
+  var sorted=valid.slice().sort(function(a,b){return a-b;});
+  var mid=Math.floor((sorted.length-1)/2);
+  var median=sorted.length%2===0?(sorted[mid]+sorted[mid+1])/2:sorted[mid];
+  var absDevs=sorted.map(function(v){return Math.abs(v-median);}).sort(function(a,b){return a-b;});
+  var mad=absDevs[Math.floor((absDevs.length-1)/2)];
+  var scale=mad>0?mad:Math.max(Math.abs(median),1);
+  return {lo:median-10*scale, hi:median+10*scale, median:median};
+}
+
 function _buildChartB(valsA, dates, opts){
   var id  = opts.chartId;
   var VW  = 500, VH = 120;
   var PAD = {top:18, right:22, bottom:34, left:38};
   var validA = valsA.filter(function(v){return !isNaN(v);});
   if(validA.length < 2) return '';
-  var minV = Math.min.apply(null,validA); var maxV = Math.max.apply(null,validA);
+  var fence = _robustFence(validA);
+  var clippedA = fence ? validA.filter(function(v){return v>=fence.lo&&v<=fence.hi;}) : validA;
+  if(clippedA.length < 2) clippedA = validA; // fallback si tout est outlier
+  var minV = Math.min.apply(null,clippedA); var maxV = Math.max.apply(null,clippedA);
   var pad  = Math.max(1,(maxV-minV)*0.12); minV -= pad; maxV += pad;
   var rangeV = maxV - minV || 1;
   var n = valsA.length;
-  function pt(i,v){ return {x:PAD.left+(i/Math.max(n-1,1))*(VW-PAD.left-PAD.right), y:(VH-PAD.bottom)-((v-minV)/rangeV)*(VH-PAD.top-PAD.bottom)}; }
-  var pts = valsA.map(function(v,i){ var p=pt(i,isNaN(v)?minV:v); return {x:p.x,y:p.y,v:v,date:dates[i],valid:!isNaN(v)}; });
+  var pts = valsA.map(function(v,i){
+    var inF = !isNaN(v) && (fence ? v>=fence.lo&&v<=fence.hi : true);
+    var x=PAD.left+(i/Math.max(n-1,1))*(VW-PAD.left-PAD.right);
+    var y=inF?(VH-PAD.bottom)-((v-minV)/rangeV)*(VH-PAD.top-PAD.bottom):(VH-PAD.bottom);
+    return {x:x,y:y,v:v,date:dates[i],valid:inF};
+  });
   var html = '<defs><linearGradient id="gb'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2B5FA6" stop-opacity="0.28"/><stop offset="100%" stop-color="#2B5FA6" stop-opacity="0.02"/></linearGradient></defs>';
   // Grille
   var step=Math.max(1,Math.ceil((maxV-minV)/4));
@@ -3885,19 +3919,17 @@ function _buildChartD(valsA, valsB, dates, opts){
   var PAD={top:20, right:88, bottom:34, left:38};
   var allV=valsA.concat(valsB).filter(function(v){return !isNaN(v);});
   if(allV.length<2)return '';
-  var minV=Math.min.apply(null,allV), maxV=Math.max.apply(null,allV);
-  // Cap : évite qu'une valeur extrême écrase l'axe. Si la range dépasse 10× l'IQR, on la bride.
-  var sorted=allV.slice().sort(function(a,b){return a-b;});
-  var q1=sorted[Math.floor(sorted.length*0.25)], q3=sorted[Math.ceil(sorted.length*0.75)-1]||sorted[sorted.length-1];
-  var iqr=q3-q1;
-  if(iqr>0){
-    var loFence=q1-3*iqr, hiFence=q3+3*iqr;
-    var clipped=allV.filter(function(v){return v>=loFence&&v<=hiFence;});
-    if(clipped.length>=2){ minV=Math.min.apply(null,clipped); maxV=Math.max.apply(null,clipped); }
-  }
+  var fence=_robustFence(allV);
+  var clipped=fence?allV.filter(function(v){return v>=fence.lo&&v<=fence.hi;}):allV;
+  if(clipped.length<2)clipped=allV;
+  var minV=Math.min.apply(null,clipped), maxV=Math.max.apply(null,clipped);
   var pad=Math.max(1,(maxV-minV)*0.12); minV-=pad; maxV+=pad;
   var rangeV=maxV-minV||1, n=Math.max(valsA.length,valsB.length);
-  function pt(vals,i){var v=vals[i];return {x:PAD.left+(i/Math.max(n-1,1))*(VW-PAD.left-PAD.right),y:(VH-PAD.bottom)-((v-minV)/rangeV)*(VH-PAD.top-PAD.bottom),v:v,valid:!isNaN(v)};}
+  function pt(vals,i){
+    var v=vals[i];
+    var inF=!isNaN(v)&&(fence?v>=fence.lo&&v<=fence.hi:true);
+    return {x:PAD.left+(i/Math.max(n-1,1))*(VW-PAD.left-PAD.right),y:inF?(VH-PAD.bottom)-((v-minV)/rangeV)*(VH-PAD.top-PAD.bottom):(VH-PAD.bottom),v:v,valid:inF};
+  }
   var ptsA=valsA.map(function(v,i){return Object.assign(pt(valsA,i),{date:dates[i]});});
   var ptsB=valsB.map(function(v,i){return Object.assign(pt(valsB,i),{date:dates[i]});});
   var html='<defs><linearGradient id="gd'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#C0392B" stop-opacity="0.18"/><stop offset="100%" stop-color="#C0392B" stop-opacity="0.02"/></linearGradient></defs>';
@@ -4106,10 +4138,15 @@ function _renderEvolutionPage(){
       var valsA=bilansAsc.map(function(b){var d=b.donnees||{};return grp.computeA?grp.computeA(d):parseFloat(d[grp.idA]||'');});
       var validA=valsA.filter(function(v){return !isNaN(v);});
       if(validA.length<2)return;
-      // Stats
+      // Fence MAD pour KPI (évite d'afficher une valeur outlier comme "Actuel")
+      var fenceKPI=_robustFence(validA);
+      // Stats : firstA/lastA sur valeurs non-outlier si possible
       var firstA=NaN, lastA=NaN;
-      valsA.forEach(function(v){if(!isNaN(v)&&isNaN(firstA))firstA=v;});
-      valsA.slice().reverse().forEach(function(v){if(!isNaN(v)&&isNaN(lastA))lastA=v;});
+      valsA.forEach(function(v){if(!isNaN(v)&&(!fenceKPI||v>=fenceKPI.lo&&v<=fenceKPI.hi)&&isNaN(firstA))firstA=v;});
+      valsA.slice().reverse().forEach(function(v){if(!isNaN(v)&&(!fenceKPI||v>=fenceKPI.lo&&v<=fenceKPI.hi)&&isNaN(lastA))lastA=v;});
+      // Fallback : si toutes les valeurs sont hors fence (cas extrême), prendre la vraie dernière
+      if(isNaN(firstA)){valsA.forEach(function(v){if(!isNaN(v)&&isNaN(firstA))firstA=v;});}
+      if(isNaN(lastA)){valsA.slice().reverse().forEach(function(v){if(!isNaN(v)&&isNaN(lastA))lastA=v;});}
       var deltaA=lastA-firstA;
       var isGood=grp.dir==='up'?deltaA>=0:deltaA<=0;
       var sign=deltaA>=0?'+':'';
