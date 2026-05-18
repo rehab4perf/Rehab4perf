@@ -1575,13 +1575,16 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .pevo-kpi.neg { background:#FDECEA; color:#C0392B; }
 .pevo-kpi.neutral { background:#F1F0ED; color:#6B6860; }
 .pevo-loading { text-align:center; color:#9D9B96; font-style:italic; padding:20px; }
-/* Pevo — section douleur NRS */
-.pevo-nrs-section { margin-top:24px; padding-top:20px; border-top:1px solid #E8E6E1; }
-.pevo-nrs-title { font-size:.72rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:#1A3A5C; margin-bottom:12px; display:flex; align-items:center; gap:6px; }
-.pevo-nrs-cards { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-@media(max-width:600px){ .pevo-nrs-cards { grid-template-columns:1fr; } }
-.pevo-nrs-card { background:#fff; border:1px solid #E8E6E1; border-radius:10px; padding:12px 16px 8px; }
-.pevo-nrs-card-title { font-size:.78rem; font-weight:700; color:#1A1917; margin-bottom:4px; }
+/* Pevo — pills toggle charge/douleur */
+.pevo-pill-toggles { display:flex; gap:5px; flex-wrap:wrap; margin:5px 0 3px; }
+.pevo-line-pill {
+  display:inline-flex; align-items:center; gap:4px; font-size:.60rem; font-weight:600;
+  padding:2px 8px; border-radius:4px; border:1.5px solid; cursor:pointer;
+  font-family:inherit; transition:opacity .15s; line-height:1.5; background:#fff;
+  letter-spacing:.01em;
+}
+.pevo-line-pill.active { opacity:1; }
+.pevo-line-pill:not(.active) { opacity:.3; }
 </style>
 </head>
 <body>
@@ -4658,10 +4661,14 @@ function _buildPevoNrsChart(pts, chartId) {
    vals  = tableau de nombres (1RM estimé)
    dates = labels JJ/MM
    meta  = [{bw:bool, reps:number, kg:number}] — pour colorer PdC vs chargé */
-function _buildPevoChart(vals, dates, chartId, meta) {
+function _buildPevoChart(vals, dates, chartId, meta, nrsPts) {
   meta = meta || [];
+  nrsPts = nrsPts || null;
   var VW=500, VH=115;
-  var PAD={top:18, right:22, bottom:34, left:42};
+  // Determine si NRS a assez de points valides
+  var nrsValidArr = nrsPts ? nrsPts.filter(function(v){ return v!==null && !isNaN(v); }) : [];
+  var hasNrs = nrsValidArr.length >= 2;
+  var PAD={top:18, right: hasNrs ? 38 : 22, bottom:34, left:42};
   var valid = vals.filter(function(v){ return !isNaN(v); });
   if(valid.length < 2) return '';
   var minV=Math.min.apply(null,valid), maxV=Math.max.apply(null,valid);
@@ -4671,8 +4678,9 @@ function _buildPevoChart(vals, dates, chartId, meta) {
   // Couleur principale : vert si 100% poids de corps, bleu sinon
   var allBw = meta.length && meta.every(function(m){ return m.bw; });
   var C = allBw ? '#2D6A4F' : '#2B5FA6';
-  var CL = allBw ? 'rgba(45,106,79,' : 'rgba(43,95,166,';
+  var CNRS = '#7C3AED';
   function pt(i,v){ return {x:PAD.left+(i/Math.max(n-1,1))*(VW-PAD.left-PAD.right), y:(VH-PAD.bottom)-((v-minV)/rangeV)*(VH-PAD.top-PAD.bottom)}; }
+  function nrsPt(i,v){ return {x:PAD.left+(i/Math.max(n-1,1))*(VW-PAD.left-PAD.right), y:(VH-PAD.bottom)-(v/10)*(VH-PAD.top-PAD.bottom)}; }
   var pts = vals.map(function(v,i){
     var p=pt(i,isNaN(v)?minV:v);
     var m=meta[i]||{};
@@ -4683,7 +4691,7 @@ function _buildPevoChart(vals, dates, chartId, meta) {
     +'<stop offset="0%" stop-color="'+C+'" stop-opacity="0.25"/>'
     +'<stop offset="100%" stop-color="'+C+'" stop-opacity="0.02"/>'
     +'</linearGradient></defs>';
-  // Grille
+  // Grille (partagée)
   var step=Math.max(1,Math.ceil((maxV-minV)/4));
   for(var gv=Math.round(minV);gv<=maxV+step;gv+=step){
     var gy=(VH-PAD.bottom)-((gv-minV)/rangeV)*(VH-PAD.top-PAD.bottom);
@@ -4691,11 +4699,20 @@ function _buildPevoChart(vals, dates, chartId, meta) {
     html+='<line x1="'+PAD.left+'" y1="'+gy.toFixed(1)+'" x2="'+(VW-PAD.right)+'" y2="'+gy.toFixed(1)+'" stroke="#EBEBEB" stroke-width="1" stroke-dasharray="3,3"/>';
     html+='<text x="'+(PAD.left-5)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="end" font-size="9" fill="#C0BDB8">'+Math.round(gv)+'</text>';
   }
-  // Dates X
+  // Dates X (partagées)
   var shownD={};
   pts.forEach(function(p){ if(shownD[p.date])return; shownD[p.date]=true; html+='<text x="'+p.x.toFixed(1)+'" y="'+(VH-PAD.bottom+13)+'" text-anchor="middle" font-size="9" fill="#C0BDB8">'+p.date+'</text>'; });
   html+='<line x1="'+PAD.left+'" y1="'+(VH-PAD.bottom)+'" x2="'+(VW-PAD.right)+'" y2="'+(VH-PAD.bottom)+'" stroke="#E8E6E1" stroke-width="1"/>';
-  // Courbe bezier + aire
+  // Axe NRS droit (si présent)
+  if(hasNrs){
+    html+='<line x1="'+(VW-PAD.right)+'" y1="'+PAD.top+'" x2="'+(VW-PAD.right)+'" y2="'+(VH-PAD.bottom)+'" stroke="#EDE8F9" stroke-width="1"/>';
+    [0,5,10].forEach(function(v){
+      var gy=(VH-PAD.bottom)-(v/10)*(VH-PAD.top-PAD.bottom);
+      html+='<text x="'+(VW-PAD.right+5)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="start" font-size="8" fill="#A89BDA">'+v+'</text>';
+    });
+  }
+  // ── Groupe Charge ──────────────────────────────────────────
+  html += '<g data-line="charge">';
   var vp=pts.filter(function(p){ return p.valid; });
   if(vp.length>=2){
     var lp='M '+vp[0].x.toFixed(1)+','+vp[0].y.toFixed(1);
@@ -4704,14 +4721,11 @@ function _buildPevoChart(vals, dates, chartId, meta) {
     html+='<path d="'+lp+' L '+vp[vp.length-1].x.toFixed(1)+','+by+' L '+vp[0].x.toFixed(1)+','+by+' Z" fill="url(#gpevo'+id+')"/>';
     html+='<path d="'+lp+'" fill="none" stroke="'+C+'" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
   }
-  // Points + tooltips
   pts.forEach(function(p,i){
     if(!p.valid) return;
     var isFirst=!pts.slice(0,i).some(function(q){return q.valid;});
     var isLast=!pts.slice(i+1).some(function(q){return q.valid;});
-    // Label : "Xreps PdC" pour bodyweight, "X.Xkg" pour chargé
     var val = p.bw ? (p.reps ? p.reps+'reps PdC' : p.v.toFixed(1)+'kg') : p.v.toFixed(1)+'kg';
-    // Couleur du point : vert si PdC, bleu si chargé (même sur courbe mixte)
     var pc = p.bw ? '#2D6A4F' : '#2B5FA6';
     if(isLast){
       html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="7" fill="'+pc+'" opacity="0.15"/>';
@@ -4723,9 +4737,33 @@ function _buildPevoChart(vals, dates, chartId, meta) {
       html+='<circle class="pevo-hit" cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="18" fill="transparent" data-tt="tt'+id+'" data-x="'+p.x.toFixed(1)+'" data-y="'+p.y.toFixed(1)+'" data-l1="'+val+'" data-l2="'+p.date+'" style="cursor:pointer"/>';
     }
   });
-  // Tooltip SVG
   html+='<g id="tt'+id+'" visibility="hidden" style="pointer-events:none"><rect id="tt'+id+'-bg" rx="7" fill="#1A3A5C" opacity="0.93" width="84" height="36"/><text id="tt'+id+'-l1" font-size="11" font-weight="700" fill="#fff" text-anchor="middle"/><text id="tt'+id+'-l2" font-size="9" fill="rgba(255,255,255,0.65)" text-anchor="middle"/></g>';
-  return '<svg class="pevo-chart-svg" viewBox="0 0 '+VW+' '+VH+'" style="width:100%;overflow:visible">'+html+'</svg>';
+  html += '</g>';
+  // ── Groupe NRS (courbe douleur) ────────────────────────────
+  if(hasNrs){
+    html += '<g data-line="nrs">';
+    var nrsVp = [];
+    nrsPts.forEach(function(v, i){
+      if(v!==null && !isNaN(v)){ var q=nrsPt(i,v); nrsVp.push({x:q.x,y:q.y,v:v,date:dates[i]}); }
+    });
+    if(nrsVp.length>=2){
+      var nlp='M '+nrsVp[0].x.toFixed(1)+','+nrsVp[0].y.toFixed(1);
+      for(var ni=1;ni<nrsVp.length;ni++){ var ncx=(nrsVp[ni-1].x+nrsVp[ni].x)/2; nlp+=' C '+ncx.toFixed(1)+','+nrsVp[ni-1].y.toFixed(1)+' '+ncx.toFixed(1)+','+nrsVp[ni].y.toFixed(1)+' '+nrsVp[ni].x.toFixed(1)+','+nrsVp[ni].y.toFixed(1); }
+      html+='<path d="'+nlp+'" fill="none" stroke="'+CNRS+'" stroke-width="1.8" stroke-dasharray="4,2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+      nrsVp.forEach(function(p,ni){
+        var isLast=ni===nrsVp.length-1, isFirst=ni===0;
+        if(isLast){
+          html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4.5" fill="'+CNRS+'"/>';
+          var lblY = p.y < VH/2 ? p.y+14 : p.y-10;
+          html+='<text x="'+p.x.toFixed(1)+'" y="'+lblY.toFixed(1)+'" text-anchor="middle" font-size="8" font-weight="700" fill="'+CNRS+'">'+p.v+'/10</text>';
+        } else {
+          html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isFirst?3:2.5)+'" fill="#fff" stroke="'+CNRS+'" stroke-width="1.5"/>';
+        }
+      });
+    }
+    html += '</g>';
+  }
+  return '<svg class="pevo-chart-svg" data-pevo-id="pevo'+chartId+'" viewBox="0 0 '+VW+' '+VH+'" style="width:100%;overflow:visible">'+html+'</svg>';
 }
 
 /* État de sélection par patient : { patientId → Set(exoKey) } en localStorage */
@@ -4810,8 +4848,27 @@ function _renderPevoCharts(exoData, selectedKeys) {
     var fLabel = pts[0].bw   ? pts[0].reps+'reps PdC'                  : first.toFixed(1)+'kg';
     var lLabel = pts[pts.length-1].bw ? pts[pts.length-1].reps+'reps PdC' : last.toFixed(1)+'kg';
     var dLabel = sign+delta.toFixed(1)+'kg'+pctStr;
-    var svg = _buildPevoChart(vals, dates, _pevoChartCtr, meta);
+    // Aligner les pts NRS sur les pts de charge (même timeline)
+    var nrsPts = null, hasNrsData = false;
+    if(_pevoNrsData && _pevoNrsData[key]) {
+      var nrsMap = {};
+      _pevoNrsData[key].pts.forEach(function(p){ nrsMap[p.date] = p.nrs; });
+      nrsPts = pts.map(function(p){ return (nrsMap[p.date] !== undefined && nrsMap[p.date] !== null) ? nrsMap[p.date] : null; });
+      hasNrsData = nrsPts.filter(function(v){ return v !== null; }).length >= 2;
+    }
+    var svg = _buildPevoChart(vals, dates, _pevoChartCtr, meta, nrsPts);
     if(!svg) return;
+    // Pills toggle charge / douleur (si NRS disponible)
+    var allBwMeta = meta.length && meta.every(function(m){ return m.bw; });
+    var chargeColor = allBwMeta ? '#2D6A4F' : '#2B5FA6';
+    var pillToggleHtml = '';
+    if(hasNrsData) {
+      var _ctr = _pevoChartCtr;
+      pillToggleHtml = '<div class="pevo-pill-toggles">'
+        +'<button class="pevo-line-pill active" style="color:'+chargeColor+';border-color:'+chargeColor+'" onclick="togglePevoPill(this,\'pevo'+_ctr+'\',\'charge\')">● Charge</button>'
+        +'<button class="pevo-line-pill active" style="color:#7C3AED;border-color:#7C3AED" onclick="togglePevoPill(this,\'pevo'+_ctr+'\',\'nrs\')">● Douleur</button>'
+        +'</div>';
+    }
     chartsHtml += '<div class="pevo-card">'
       +'<div class="pevo-card-header">'
       +'<span class="pevo-card-title">'+_escP(grp.label)+'</span>'
@@ -4821,40 +4878,9 @@ function _renderPevoCharts(exoData, selectedKeys) {
       +'<span class="pevo-kpi-strong">Actuel : '+lLabel+'</span>'
       +'<span class="pevo-kpi '+cls+'">'+dLabel+'</span>'
       +'</div></div>'
+      +pillToggleHtml
       +svg+'</div>';
   });
-  // Section NRS douleur
-  var nrsHtml = '';
-  if(_pevoNrsData && Object.keys(_pevoNrsData).length) {
-    var nrsCardsHtml = '';
-    var nrsCtr = 0;
-    Object.keys(_pevoNrsData).forEach(function(key){
-      nrsCtr++;
-      var grp = _pevoNrsData[key];
-      var first = grp.pts[0].nrs, last = grp.pts[grp.pts.length-1].nrs;
-      var delta = last - first;
-      var sign = delta > 0 ? '+' : '';
-      // Baisse douleur = bon → cls "pos" ; hausse = "neg"
-      var deltaCls = delta <= 0 ? 'pos' : 'neg';
-      var nrsSvg = _buildPevoNrsChart(grp.pts, 'n'+nrsCtr);
-      if(!nrsSvg) return;
-      nrsCardsHtml += '<div class="pevo-nrs-card">'
-        +'<div class="pevo-nrs-card-title">💢 '+_escP(grp.nom)+'</div>'
-        +'<div class="pevo-card-kpis" style="margin-bottom:6px">'
-        +'<span class="pevo-kpi-neutral">Début : '+first+'/10</span>'
-        +'<span class="pevo-kpi-neutral">→</span>'
-        +'<span class="pevo-kpi-strong">Actuel : '+last+'/10</span>'
-        +'<span class="pevo-kpi '+deltaCls+'">'+sign+delta+'</span>'
-        +'</div>'
-        +nrsSvg+'</div>';
-    });
-    if(nrsCardsHtml) {
-      nrsHtml = '<div class="pevo-nrs-section">'
-        +'<div class="pevo-nrs-title">💢 Douleur par exercice (NRS 0–10)</div>'
-        +'<div class="pevo-nrs-cards">'+nrsCardsHtml+'</div>'
-        +'</div>';
-    }
-  }
 
   body.innerHTML = '<div class="pevo-select-section">'
     +'<div class="pevo-select-title">Exercices disponibles ('+allKeys.length+')</div>'
@@ -4865,9 +4891,18 @@ function _renderPevoCharts(exoData, selectedKeys) {
     +'<div class="pevo-exo-pills" id="pevoPills">'+pillsHtml+'</div>'
     +'</div>'
     +(chartsHtml ? '<div class="pevo-charts" id="pevoChartsGrid">'+chartsHtml+'</div>'
-                 : '<div class="pevo-empty">Cochez un exercice ci-dessus pour afficher sa courbe.</div>')
-    +nrsHtml;
+                 : '<div class="pevo-empty">Cochez un exercice ci-dessus pour afficher sa courbe.</div>');
   _attachPevoEvents();
+}
+
+function togglePevoPill(btn, svgId, line) {
+  btn.classList.toggle('active');
+  var show = btn.classList.contains('active');
+  var svg = document.querySelector('svg[data-pevo-id="'+svgId+'"]');
+  if(!svg) return;
+  svg.querySelectorAll('[data-line="'+line+'"]').forEach(function(el){
+    el.style.display = show ? '' : 'none';
+  });
 }
 
 function _pevoToggle(key) {
