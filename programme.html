@@ -657,6 +657,13 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   background:#16A34A;
 }
 #builder-proto-banner.bpb-linked .bpb-link-btn:hover { background:#15803D; }
+#builder-proto-banner.bpb-done {
+  background:#F0FDF4; border-color:#86EFAC; color:#15803D;
+}
+#builder-proto-banner .bpb-done-badge {
+  margin-left:auto; background:#16A34A; color:#fff; border-radius:6px;
+  padding:3px 10px; font-size:.74rem; font-weight:600; white-space:nowrap;
+}
 
 .builder-save-btn {
   background:#2B5FA6; border:none; color:#fff; border-radius:7px;
@@ -743,6 +750,15 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 }
 /* Reduce cell-input font/padding in builder */
 .builder-body .cell-input { font-size:.7rem; padding:4px 3px; }
+/* Reps + par côté wrapper */
+.reps-wrap { display:flex; flex-direction:column; gap:2px; align-items:stretch; }
+.percote-toggle {
+  font-size:.57rem; padding:1px 3px; border:1px solid #CBD2DB; border-radius:4px;
+  background:#F5F7FA; color:#9AA0A8; cursor:pointer; font-family:inherit;
+  line-height:1.4; text-align:center; transition:all .15s; white-space:nowrap;
+}
+.percote-toggle:hover { border-color:var(--accent2); color:var(--accent2); }
+.percote-toggle.active { background:#EEF4FF; border-color:#2563EB; color:#2563EB; font-weight:700; }
 
 .builder-date-bar {
   padding:8px 14px; background:#F5F8FF; border-bottom:1px solid var(--border);
@@ -2842,7 +2858,7 @@ function addExoFromLib(libId){
   var bloc = blocs.find(function(b){ return b.id===targetId; });
   if(!bloc) { bloc = blocs[blocs.length-1]; targetId = bloc ? bloc.id : null; }
   if(!bloc) return;
-  var row = {id:genId(), libId:ex.id, name:ex.name, url:ex.url, reps:'', duree:'', series:'', cibles:[{type:'RPE', min:'', max:''}], obj:ex.obj, tempo:'', recup:'', chained:false, consigne:''};
+  var row = {id:genId(), libId:ex.id, name:ex.name, url:ex.url, reps:'', duree:'', series:'', cibles:[{type:'RPE', min:'', max:''}], obj:ex.obj, tempo:'', recup:'', chained:false, consigne:'', perCote:false};
   bloc.exos.push(row);
   renderSession();
   renderLib(document.getElementById('searchInput').value.toLowerCase());
@@ -2857,7 +2873,7 @@ function addFreeExo(blocId) {
   bloc.exos.push({ id:genId(), free:true, name:'', url:'',
     reps:'', duree:'', series:'',
     cibles:[{type:'RPE', min:'', max:''}],
-    tempo:'', recup:'', chained:false, consigne:'' });
+    tempo:'', recup:'', chained:false, consigne:'', perCote:false });
   activeBloc = blocId;
   renderSession();
   setTimeout(function(){
@@ -2894,6 +2910,17 @@ function updateField(blocId, exoId, field, val){
   var exo = bloc.exos.find(function(e){ return e.id===exoId; });
   if(exo) exo[field] = val;
   _draftSaveLazy();
+}
+
+function togglePerCote(blocId, exoId){
+  var bloc = blocs.find(function(b){ return b.id===blocId; });
+  if(!bloc) return;
+  var exo = bloc.exos.find(function(e){ return e.id===exoId; });
+  if(!exo) return;
+  exo.perCote = !exo.perCote;
+  _draftSaveLazy();
+  var btn = document.querySelector('[data-percote="'+blocId+'-'+exoId+'"]');
+  if(btn) btn.classList.toggle('active', exo.perCote);
 }
 
 /* ── Cibles multi-tags ── */
@@ -3394,7 +3421,10 @@ function renderSession(){
                +  '</button>';
         }
         html += '</div></div>';
-        html += '<input class="cell-input" type="text" value="'+escH(e.reps)+'" placeholder="—" title="Répétitions" oninput="updateField(\''+b.id+'\',\''+e.id+'\',\'reps\',this.value)">';
+        html += '<div class="reps-wrap">'
+             +  '<input class="cell-input" type="text" value="'+escH(e.reps)+'" placeholder="—" title="Répétitions" oninput="updateField(\''+b.id+'\',\''+e.id+'\',\'reps\',this.value)">'
+             +  '<button class="percote-toggle'+(e.perCote?' active':'')+'" data-percote="'+b.id+'-'+e.id+'" onclick="togglePerCote(\''+b.id+'\',\''+e.id+'\')" title="Par côté">/côté</button>'
+             +  '</div>';
         html += '<input class="cell-input" type="text" value="'+escH(e.duree)+'" placeholder="—" title="Durée" oninput="updateField(\''+b.id+'\',\''+e.id+'\',\'duree\',this.value)">';
         html += '<input class="cell-input" type="text" value="'+escH(e.series)+'" placeholder="—" title="Séries" oninput="updateField(\''+b.id+'\',\''+e.id+'\',\'series\',this.value)">';
         html += '<input class="cell-input" type="text" value="'+escH(e.recup)+'" placeholder="—" title="Récupération" oninput="updateField(\''+b.id+'\',\''+e.id+'\',\'recup\',this.value)">';
@@ -9091,14 +9121,56 @@ function _builderLoadProtoContext(){
   .then(function(pps){
     if(!pps || !pps.length) return;
     var pp = pps[0];
-    // Trouver le protocole et la phase courante dans PROTOCOLS_REF
     var proto = (typeof PROTOCOLS_REF !== 'undefined' ? PROTOCOLS_REF : []).find(function(p){ return p.id === pp.protocol_id; });
-    var phase = proto ? proto.phases.find(function(ph){ return ph.id === pp.current_phase_id; }) : null;
-    if(!proto || !phase) return;
+    if(!proto) return;
+    var currentPhaseIdx = proto.phases.findIndex(function(ph){ return ph.id === pp.current_phase_id; });
+    if(currentPhaseIdx < 0) return;
 
-    var patName = (_progPatient.prenom || '') + ' ' + (_progPatient.nom || '');
-    _builderRenderProtoBanner(banner, pp, proto, phase, patName.trim());
+    var patName = ((_progPatient.prenom || '') + ' ' + (_progPatient.nom || '')).trim();
+
+    // Fetch criteria checks pour calculer allDone sur chaque phase
+    return fetch(SUPA_URL_P + '/rest/v1/protocol_criteria_checks?patient_protocol_id=eq.' + pp.id + '&select=*',
+      { headers: _sbHeaders() })
+    .then(function(r){ return r.ok ? r.json() : []; })
+    .then(function(rows){
+      rows = rows || [];
+      // checksMap[phaseId][criteriaIndex] = bool
+      var checksMap = {};
+      rows.forEach(function(c){
+        if(!checksMap[c.phase_id]) checksMap[c.phase_id] = {};
+        checksMap[c.phase_id][c.criteria_index] = !!c.checked;
+      });
+
+      // Remonter depuis la phase courante jusqu'à la première phase non-terminée
+      var targetPhase = null;
+      for(var i = currentPhaseIdx; i < proto.phases.length; i++){
+        var ph = proto.phases[i];
+        var phChecks = checksMap[ph.id] || {};
+        var total = ph.exitCriteria ? ph.exitCriteria.length : 0;
+        var done = total > 0
+          ? ph.exitCriteria.filter(function(_, ci){ return phChecks[ci]; }).length
+          : 0;
+        var phAllDone = total > 0 && done === total;
+        if(!phAllDone){ targetPhase = ph; break; }
+      }
+
+      if(!targetPhase){
+        // Toutes les phases depuis la courante sont terminées
+        _builderRenderProtoBannerDone(banner, proto, patName);
+      } else {
+        _builderRenderProtoBanner(banner, pp, proto, targetPhase, patName);
+      }
+    });
   }).catch(function(){});
+}
+
+function _builderRenderProtoBannerDone(banner, proto, patName){
+  banner.innerHTML =
+    '<span>' + (patName ? '<strong>' + patName + '</strong> · ' : '') +
+    proto.name + ' — <span class="bpb-phase">🏁 Protocole terminé</span></span>' +
+    '<span class="bpb-done-badge">Toutes les phases validées ✓</span>';
+  banner.className = 'bpb-done';
+  banner.style.display = 'flex';
 }
 
 function _builderRenderProtoBanner(banner, pp, proto, phase, patName){
