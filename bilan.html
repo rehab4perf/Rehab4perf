@@ -3192,21 +3192,21 @@ const TESTS = {
     'Distraction cervicale'
   ]},
   'tb-ra-cerv-neuro-g': {type:'ortho',items:[
-    'Rotation cervicale G <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Positif si &lt; 60°</span>',
-    'ULNT 1 G <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf médian</span>',
-    'ULNT 2 G <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf médian</span>',
-    'ULNT 3 G <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf radial</span>',
-    'ULNT 4 G <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf ulnaire</span>'
+    'Rotation cervicale <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Positif si &lt; 60°</span>',
+    'ULNT 1 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf médian</span>',
+    'ULNT 2 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf médian</span>',
+    'ULNT 3 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf radial</span>',
+    'ULNT 4 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf ulnaire</span>'
   ]},
   'tb-ra-cerv-neuro-d': {type:'ortho',items:[
-    'Rotation cervicale D <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Positif si &lt; 60°</span>',
-    'ULNT 1 D <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf médian</span>',
-    'ULNT 2 D <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf médian</span>',
-    'ULNT 3 D <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf radial</span>',
-    'ULNT 4 D <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf ulnaire</span>'
+    'Rotation cervicale <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Positif si &lt; 60°</span>',
+    'ULNT 1 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf médian</span>',
+    'ULNT 2 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf médian</span>',
+    'ULNT 3 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf radial</span>',
+    'ULNT 4 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf ulnaire</span>'
   ]},
-  'tb-ra-lomb-g': {type:'ortho',items:['SLUMP test G','Lasègue G (SLR)','Léri G']},
-  'tb-ra-lomb-d': {type:'ortho',items:['SLUMP test D','Lasègue D (SLR)','Léri D']},
+  'tb-ra-lomb-g': {type:'ortho',items:['SLUMP test','Lasègue (SLR)','Léri']},
+  'tb-ra-lomb-d': {type:'ortho',items:['SLUMP test','Lasègue (SLR)','Léri']},
   'tb-ha-global':{type:'ortho',items:['HAGOS (questionnaire - noter score %)','Fulcrum test','Squeeze test 0° (EVA > 6 ?)']},
   'tb-ha-add':  {type:'ortho',items:['Squeeze test 45°','Étirement ADD']},
   'tb-ha-pubis':{type:'ortho',items:['Patellar pubic percussion test','Pubis stress test']},
@@ -5733,14 +5733,14 @@ function _buildAllTestsHtml() {
   // ── Tests nerveux cervicaux D/G (Rotations + ULNT) ───────────────────────
   (function(){
     var rotPos = [], ulntPos = [];
-    ['tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d'].forEach(function(tbId){
-      var tbody = document.getElementById(tbId); if (!tbody) return;
+    [{id:'tb-ra-cerv-neuro-g', side:'Gauche'},{id:'tb-ra-cerv-neuro-d', side:'Droit'}].forEach(function(t){
+      var tbody = document.getElementById(t.id); if (!tbody) return;
       tbody.querySelectorAll('tr').forEach(function(row) {
         var sel = row.querySelector('select'); if (!sel || sel.value !== 'Positif') return;
         var td = row.querySelector('td'); if (!td) return;
         var name = td.textContent.trim().replace(/\s+/g,' ');
-        if (name.indexOf('Rotation') !== -1) rotPos.push(name);
-        else if (name.indexOf('ULNT') !== -1) ulntPos.push(name);
+        if (name.indexOf('Rotation') !== -1) rotPos.push(name + ' — ' + t.side);
+        else if (name.indexOf('ULNT') !== -1) ulntPos.push(name + ' — ' + t.side);
       });
     });
     if (rotPos.length) toWork.push('Restriction rotation cervicale — ' + rotPos.join(', ') + ' (< 60°)');
@@ -5749,12 +5749,12 @@ function _buildAllTestsHtml() {
   // ── Tests nerveux lombaires D/G (Slump / Lasègue / Léri) ─────────────────
   (function(){
     var lombPos = [];
-    ['tb-ra-lomb-g','tb-ra-lomb-d'].forEach(function(tbId){
-      var tbody = document.getElementById(tbId); if (!tbody) return;
+    [{id:'tb-ra-lomb-g', side:'Gauche'},{id:'tb-ra-lomb-d', side:'Droit'}].forEach(function(t){
+      var tbody = document.getElementById(t.id); if (!tbody) return;
       tbody.querySelectorAll('tr').forEach(function(row) {
         var sel = row.querySelector('select'); if (!sel || sel.value !== 'Positif') return;
         var td = row.querySelector('td'); if (!td) return;
-        lombPos.push(td.textContent.trim().replace(/\s+/g,' '));
+        lombPos.push(td.textContent.trim().replace(/\s+/g,' ') + ' — ' + t.side);
       });
     });
     if (lombPos.length) toWork.push('Mobilisation neurale lombaire — ' + lombPos.join(', ') + ' positif(s)');
