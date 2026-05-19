@@ -4496,8 +4496,8 @@ function _updatePatientUI(){
   // Charger les cycles du patient depuis Supabase
   if(_progPatient) setTimeout(function(){ if(typeof _loadCyclesForPatient==="function") _loadCyclesForPatient(); }, 0);
   // Sync des notes cliniques depuis Supabase (une fois par patient)
-  _calNotesSyncedFor = null; // forcer le re-sync au changement de patient
-  setTimeout(_syncCalNotesIfNeeded, 200);
+  if(typeof _calNotesSyncedFor !== 'undefined') _calNotesSyncedFor = null;
+  setTimeout(function(){ if(typeof _syncCalNotesIfNeeded === 'function') _syncCalNotesIfNeeded(); }, 200);
   // Rafraîchir le calendrier pour le nouveau patient
   if(typeof renderCalendar === 'function') renderCalendar();
 }
@@ -9806,7 +9806,7 @@ function _renderSidebarWithGroups(){
     var safeKey = escH(catKey||'__sans__');
 
     html += '<div class="stmpl-cat-section">';
-    html += '<div class="stmpl-cat-hdr" onclick="_toggleCatSection(\''+safeKey+'\')" style="background:'+catInfo.color+'20;">';
+    html += '<div class="stmpl-cat-hdr" onclick="_toggleCatSection(\''+escJS(catKey)+'\')" style="background:'+catInfo.color+'20;">';
     html += '<span class="stmpl-cat-hdr-icon">'+catInfo.icon+'</span>';
     html += '<span class="stmpl-cat-hdr-name" style="color:'+catInfo.textColor+';">'+(catKey||'Sans catégorie')+'</span>';
     html += '<span class="stmpl-cat-hdr-count">'+count+'</span>';
