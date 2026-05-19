@@ -489,7 +489,7 @@ function _updatePatientBtn() {
   var btn   = document.getElementById('patientBtn');
   var label = document.getElementById('patientBtnLabel');
   if (_currentPatient) {
-    label.textContent = _currentPatient.nom + ' ' + _currentPatient.prenom;
+    label.textContent = _currentPatient.nom + ' ' + _capFirst(_currentPatient.prenom);
     btn.classList.add('has-patient');
   } else {
     label.textContent = 'Aucun patient';
@@ -570,6 +570,11 @@ function filterPatients() {
 }
 
 /* ── Afficher la liste ──────────────────────────────────── */
+function _capFirst(str) {
+  if(!str) return str;
+  return str.toLowerCase().replace(/(^|[\s\-])([\wÀ-ÿ])/g, function(m, sep, c){ return sep + c.toUpperCase(); });
+}
+
 function renderPatients(list) {
   closeCtxMenu();
   var el = document.getElementById('pmList');
@@ -584,7 +589,7 @@ function renderPatients(list) {
     return '<div class="pm-patient-item'+(isSelected?' selected':'')+'" id="pitem-'+p.id+'">'
       + '<div class="pm-patient-avatar'+(isFemale?' female':'')+'">'+initials+'</div>'
       + '<div class="pm-patient-info">'
-      +   '<div class="pm-patient-name">'+_esc(p.nom)+' '+_esc(p.prenom)+'</div>'
+      +   '<div class="pm-patient-name">'+_esc(p.nom)+' '+_esc(_capFirst(p.prenom))+'</div>'
       +   (meta ? '<div class="pm-patient-meta">'+_esc(meta)+'</div>' : '')
       + '</div>'
       + '<div class="pm-patient-actions">'
@@ -679,7 +684,7 @@ function closeEditForm() {
 function saveEditPatient() {
   var id     = document.getElementById('pm-edit-id').value;
   var nom    = (document.getElementById('pm-edit-nom').value||'').trim().toUpperCase();
-  var prenom = (document.getElementById('pm-edit-prenom').value||'').trim();
+  var prenom = _capFirst((document.getElementById('pm-edit-prenom').value||'').trim());
   var ddn    = document.getElementById('pm-edit-ddn').value || null;
   var civ    = document.getElementById('pm-edit-civ').value;
   var sport  = (document.getElementById('pm-edit-sport').value||'').trim();
@@ -732,7 +737,7 @@ function deselectPatient() {
 /* ── Créer un patient ───────────────────────────────────── */
 function createPatient() {
   var nom    = (document.getElementById('pm-nom').value||'').trim().toUpperCase();
-  var prenom = (document.getElementById('pm-prenom').value||'').trim();
+  var prenom = _capFirst((document.getElementById('pm-prenom').value||'').trim());
   var ddn    = document.getElementById('pm-ddn').value || null;
   var civ    = document.getElementById('pm-civ').value;
   var sport  = (document.getElementById('pm-sport').value||'').trim();
