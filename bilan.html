@@ -1029,8 +1029,6 @@ textarea { resize:none !important; overflow:hidden !important; }
 .evo-line-pill.active { opacity:1; }
 .evo-line-pill:not(.active) { opacity:.3; background:#fff !important; }
 /* Courbe douleur */
-.evo-pain-block { margin-bottom:20px; }
-.evo-pain-empty { font-size:.78rem; color:var(--text3); font-style:italic; padding:12px 0; }
 </style>
 
 </head>
@@ -1304,15 +1302,6 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
 </div>
 
-<div class="block">
-  <div class="block-header" style="background:var(--green)">Évaluation psychologique — ACL-RSI</div>
-  <div class="form-grid triple">
-    <div class="field"><label>Score ACL-RSI (%)</label><input type="number" id="f-aclrsi" min="0" max="100" placeholder="68" oninput="updateAll()"></div>
-    <div class="field" style="grid-column:span 2"><label>Interprétation</label>
-      <div id="aclrsi-interp" class="text-muted" style="padding:2px 0">Renseignez le score ACL-RSI</div>
-    </div>
-  </div>
-</div>
 
 
   </div>
@@ -1578,14 +1567,38 @@ textarea { resize:none !important; overflow:hidden !important; }
     <thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
     <tbody id="tb-ra-cerv"></tbody>
   </table>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);margin-top:1px">
+    <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">GAUCHE</div>
+    <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">DROIT</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+    <table class="test-table" style="margin:0;border-radius:0">
+      <thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
+      <tbody id="tb-ra-cerv-neuro-g"></tbody>
+    </table>
+    <table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)">
+      <thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
+      <tbody id="tb-ra-cerv-neuro-d"></tbody>
+    </table>
+  </div>
 </div>
 
 <div class="block">
   <div class="block-header red">Quick Scan Lombaire</div>
-  <table class="test-table">
-    <thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
-    <tbody id="tb-ra-lomb"></tbody>
-  </table>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+    <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">GAUCHE</div>
+    <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">DROIT</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+    <table class="test-table" style="margin:0;border-radius:0">
+      <thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
+      <tbody id="tb-ra-lomb-g"></tbody>
+    </table>
+    <table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)">
+      <thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
+      <tbody id="tb-ra-lomb-d"></tbody>
+    </table>
+  </div>
 </div>
 
 <div class="block">
@@ -3176,14 +3189,24 @@ const TESTS = {
   ]},
   'tb-ra-cerv': {type:'ortho',items:[
     'Spurling A',
-    'Rotations cervicales <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Positif si &lt; 60°</span>',
-    'ULNT 1 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf médian</span>',
-    'ULNT 2 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf médian</span>',
-    'ULNT 3 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf radial</span>',
-    'ULNT 4 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf ulnaire</span>',
     'Distraction cervicale'
   ]},
-  'tb-ra-lomb': {type:'ortho',items:['SLUMP test','Lasègue (SLR)','Léri']},
+  'tb-ra-cerv-neuro-g': {type:'ortho',items:[
+    'Rotation cervicale G <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Positif si &lt; 60°</span>',
+    'ULNT 1 G <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf médian</span>',
+    'ULNT 2 G <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf médian</span>',
+    'ULNT 3 G <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf radial</span>',
+    'ULNT 4 G <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf ulnaire</span>'
+  ]},
+  'tb-ra-cerv-neuro-d': {type:'ortho',items:[
+    'Rotation cervicale D <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Positif si &lt; 60°</span>',
+    'ULNT 1 D <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf médian</span>',
+    'ULNT 2 D <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf médian</span>',
+    'ULNT 3 D <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf radial</span>',
+    'ULNT 4 D <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf ulnaire</span>'
+  ]},
+  'tb-ra-lomb-g': {type:'ortho',items:['SLUMP test G','Lasègue G (SLR)','Léri G']},
+  'tb-ra-lomb-d': {type:'ortho',items:['SLUMP test D','Lasègue D (SLR)','Léri D']},
   'tb-ha-global':{type:'ortho',items:['HAGOS (questionnaire - noter score %)','Fulcrum test','Squeeze test 0° (EVA > 6 ?)']},
   'tb-ha-add':  {type:'ortho',items:['Squeeze test 45°','Étirement ADD']},
   'tb-ha-pubis':{type:'ortho',items:['Patellar pubic percussion test','Pubis stress test']},
@@ -3637,7 +3660,6 @@ function _resetBilanFields(){
   try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-abd','ep-bht'].forEach(calcEpForce); }catch(ex){}
   try{ updateBadges(); _initAllRomBars(); }catch(ex){}
   // Éléments non couverts par les fonctions ci-dessus
-  try{ var ai=document.getElementById('aclrsi-interp'); if(ai) ai.innerHTML='Renseignez le score ACL-RSI'; }catch(ex){}
   try{ var hl=document.getElementById('hdr-lma'); if(hl) hl.textContent='—'; }catch(ex){}
   _suppressDirty = false;
   _bilanModified = false;
@@ -3688,7 +3710,6 @@ var TRACKED_METRICS = [
   // ── Douleur ──────────────────────────────────────────────
   {id:'f-eva',          label:'Douleur EVA (repos)',        unit:'/10', dir:'down', cat:'Douleur'},
   {id:'f-eva-max',      label:'EVA max (7 jours)',           unit:'/10', dir:'down', cat:'Douleur'},
-  {id:'f-aclrsi',       label:'ACL-RSI Score',               unit:'%',   dir:'up',   cat:'Douleur'},
   // ── Épaule — Mobilité ────────────────────────────────────
   {id:'rom-ep-d-flex',  label:'Flex. épaule D',              unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
   {id:'rom-ep-g-flex',  label:'Flex. épaule G',              unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
@@ -3780,7 +3801,6 @@ var CHART_GROUPS = [
   // ─ Douleur ─
   {cat:'Douleur', title:'Douleur EVA (repos)', type:'single', idA:'f-eva', unit:'/10', dir:'down', labelA:'EVA'},
   {cat:'Douleur', title:'EVA max (7 jours)', type:'single', idA:'f-eva-max', unit:'/10', dir:'down', labelA:'EVA max'},
-  {cat:'Douleur', title:'ACL-RSI Score', type:'single', idA:'f-aclrsi', unit:'%', dir:'up', labelA:'ACL-RSI'},
   // ─ Épaule — Mobilité ─
   {cat:'Épaule — Mobilité', title:'Flexion épaule D vs G', type:'dual', idA:'rom-ep-d-flex', idB:'rom-ep-g-flex', unit:'°', dir:'up', labelA:'Côté D', labelB:'Côté G'},
   {cat:'Épaule — Mobilité', title:'RE épaule D vs G (0°)', type:'dual', idA:'rom-ep-d-re0', idB:'rom-ep-g-re0', unit:'°', dir:'up', labelA:'Côté D', labelB:'Côté G'},
@@ -4236,8 +4256,6 @@ function _renderEvolutionPage(){
   });
   container.innerHTML=html;
   _attachChartEvents();
-  // Ajouter la section douleur par séance (async)
-  _renderPainSection(container);
 }
 
 /* ── Toggle par ligne dans chart dual ── */
@@ -4251,152 +4269,6 @@ function toggleEvoPill(btn, chartId, line){
   });
 }
 
-/* ── Section douleur par séance (depuis les sessions builder) ── */
-var _NRS_COLORS = ['#7C3AED','#DB2777','#D97706','#0891B2','#16A34A','#DC2626','#2563EB','#9333EA'];
-
-function _renderPainSection(container){
-  if(!_bilanPatient || !_bilanUid) return;
-  // Fetch seances
-  sbB.from('seances_planifiees')
-    .select('date,programme_id')
-    .eq('patient_id', _bilanPatient.id)
-    .eq('praticien_id', _bilanUid)
-    .order('date', {ascending:true})
-    .then(function(res){
-      if(res.error || !res.data || !res.data.length) return;
-      var seances = res.data.filter(function(s){ return s.programme_id; });
-      if(!seances.length) return;
-      var progIds = seances.map(function(s){ return s.programme_id; });
-      // Fetch programmes en batch
-      sbB.from('programmes')
-        .select('id,donnees')
-        .in('id', progIds)
-        .then(function(res2){
-          if(res2.error || !res2.data) return;
-          var progMap = {};
-          res2.data.forEach(function(p){ progMap[p.id] = p.donnees; });
-          // Extraire NRS par exercice
-          var exoSeries = {}; // { nomExo: [{date, nrs}] }
-          seances.forEach(function(s){
-            var donnees = progMap[s.programme_id];
-            if(!donnees || !donnees.blocs) return;
-            var dateStr = s.date ? s.date.split('T')[0] : null;
-            if(!dateStr) return;
-            var p = dateStr.split('-'); var dateFmt = p[2]+'/'+p[1];
-            donnees.blocs.forEach(function(bloc){
-              if(!bloc.exos) return;
-              bloc.exos.forEach(function(exo){
-                if(exo.nrs === null || exo.nrs === undefined) return;
-                var nom = (exo.name || 'Exercice').trim();
-                if(!exoSeries[nom]) exoSeries[nom] = [];
-                exoSeries[nom].push({ date:dateFmt, nrs:exo.nrs, ts:dateStr });
-              });
-            });
-          });
-          // Filtrer : garder seulement les exos avec ≥2 points
-          var series = [];
-          Object.keys(exoSeries).forEach(function(nom){
-            var pts = exoSeries[nom];
-            if(pts.length >= 2) series.push({ nom:nom, pts:pts });
-          });
-          if(!series.length) return;
-          // Construire l'HTML de la section
-          _appendPainBlock(container, series);
-        }).catch(function(){});
-    }).catch(function(){});
-}
-
-function _appendPainBlock(container, series){
-  if(!container) return;
-  var chartId = 'pain';
-  var colorIdx = 0;
-  // Pills
-  var pillsHtml = series.map(function(s, i){
-    var col = _NRS_COLORS[i % _NRS_COLORS.length];
-    return '<button class="evo-line-pill active" style="color:'+col+';border-color:'+col+'" onclick="toggleEvoPill(this,\''+chartId+'\',\'s'+i+'\')" data-line="s'+i+'">● '+s.nom+'</button>';
-  }).join('');
-  // Build SVG multi-lignes
-  var svg = _buildChartMultiNRS(series, chartId);
-  if(!svg) return;
-  var block = document.createElement('div');
-  block.className = 'evo-block evo-pain-block';
-  block.innerHTML = '<div class="evo-block-title">Douleur par séance (NRS 0-10)</div>'
-    +'<div class="evo-chart-card evo-unselected" data-chart-id="'+chartId+'">'
-    +'<div class="evo-chart-header">'
-    +'<div class="evo-check-wrap"><input type="checkbox" class="evo-chart-check no-print" onchange="this.closest(\'.evo-chart-card\').classList.toggle(\'evo-unselected\',!this.checked)"><span class="evo-chart-title">Douleur par exercice</span></div>'
-    +'</div>'
-    +'<div class="evo-line-toggles">'+pillsHtml+'</div>'
-    +svg+'</div>';
-  // Insérer en premier dans le container
-  container.insertBefore(block, container.firstChild);
-  // Attacher les tooltip events
-  _attachChartEvents();
-}
-
-function _buildChartMultiNRS(series, chartId){
-  var VW=500, VH=130;
-  var PAD={top:20, right:20, bottom:34, left:38};
-  // Collecter toutes les dates uniques triées
-  var allDates = [];
-  series.forEach(function(s){ s.pts.forEach(function(p){ if(allDates.indexOf(p.ts) === -1) allDates.push(p.ts); }); });
-  allDates.sort();
-  if(allDates.length < 2) return '';
-  var datesFmt = allDates.map(function(d){ var p=d.split('-'); return p[2]+'/'+p[1]; });
-  var n = allDates.length;
-  var minV=0, maxV=10, rangeV=10;
-  var html = '';
-  // Grille Y (0..10 par 2)
-  for(var gv=0; gv<=10; gv+=2){
-    var gy=(VH-PAD.bottom)-((gv-minV)/rangeV)*(VH-PAD.top-PAD.bottom);
-    html+='<line x1="'+PAD.left+'" y1="'+gy.toFixed(1)+'" x2="'+(VW-PAD.right)+'" y2="'+gy.toFixed(1)+'" stroke="#EBEBEB" stroke-width="1" stroke-dasharray="3,3"/>';
-    html+='<text x="'+(PAD.left-5)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="end" font-size="9" fill="#C0BDB8">'+gv+'</text>';
-  }
-  // Axe X + dates
-  html+='<line x1="'+PAD.left+'" y1="'+(VH-PAD.bottom)+'" x2="'+(VW-PAD.right)+'" y2="'+(VH-PAD.bottom)+'" stroke="#E8E6E1" stroke-width="1"/>';
-  var shownD={};
-  datesFmt.forEach(function(d,i){
-    if(shownD[d]) return; shownD[d]=true;
-    var x=PAD.left+(i/Math.max(n-1,1))*(VW-PAD.left-PAD.right);
-    html+='<text x="'+x.toFixed(1)+'" y="'+(VH-PAD.bottom+13)+'" text-anchor="middle" font-size="9" fill="#C0BDB8">'+d+'</text>';
-  });
-  // Lignes par exercice
-  series.forEach(function(s, si){
-    var col = _NRS_COLORS[si % _NRS_COLORS.length];
-    // Construire les points sur l'axe de dates commun
-    var pts = allDates.map(function(ts, i){
-      var pt = s.pts.find(function(p){ return p.ts === ts; });
-      var v = pt ? pt.nrs : null;
-      var x = PAD.left+(i/Math.max(n-1,1))*(VW-PAD.left-PAD.right);
-      var y = v !== null ? (VH-PAD.bottom)-((v-minV)/rangeV)*(VH-PAD.top-PAD.bottom) : null;
-      return {x:x, y:y, v:v, date:datesFmt[i]};
-    });
-    // Segments continus (sauter les nulls)
-    var lineParts = [];
-    var seg = [];
-    pts.forEach(function(p){
-      if(p.y !== null){ seg.push(p); }
-      else { if(seg.length >= 2) lineParts.push(seg); seg = []; }
-    });
-    if(seg.length >= 2) lineParts.push(seg);
-    html += '<g data-line="s'+si+'">';
-    lineParts.forEach(function(seg){
-      html += '<polyline points="'+seg.map(function(p){ return p.x.toFixed(1)+','+p.y.toFixed(1); }).join(' ')+'" fill="none" stroke="'+col+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
-    });
-    // Points
-    pts.forEach(function(p, i){
-      if(p.y === null) return;
-      var isLast = !pts.slice(i+1).some(function(q){ return q.y !== null; });
-      if(isLast){
-        html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="5" fill="'+col+'"/>';
-        html+='<text x="'+p.x.toFixed(1)+'" y="'+(p.y-9).toFixed(1)+'" text-anchor="middle" font-size="9" font-weight="700" fill="'+col+'">'+p.v+'/10</text>';
-      } else {
-        html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3.5" fill="'+col+'" opacity="0.8"/>';
-      }
-    });
-    html += '</g>';
-  });
-  return '<svg class="evo-chart-svg" data-chart="PAIN" data-id="'+chartId+'" viewBox="0 0 '+VW+' '+VH+'" style="width:100%;overflow:visible">'+html+'</svg>';
-}
 
 /* ── Sélection graphiques ────────────────────────────── */
 function _selectAllCharts(state){
@@ -4852,7 +4724,7 @@ function onTestChange(sel, tableId, idx) {
 function updateBadges() {
   const sections = {
     'epaule': ['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho-mob','tb-ep-ortho-conf'],
-    'rachis': ['tb-ra-cerv','tb-ra-lomb','tb-ra-force-d','tb-ra-force-g','tb-ra-transverse'],
+    'rachis': ['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-force-d','tb-ra-force-g','tb-ra-transverse'],
     'hanche': ['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-force-d','tb-ha-force-g'],
     'genou':  ['tb-ge-global','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-knee-d','tb-ge-knee-g','tb-ge-hip-d','tb-ge-hip-g'],
     'pied':   ['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-fonc','tb-pi-force-ca','tb-pi-force-cs'],
@@ -4891,8 +4763,6 @@ function updateAll() {
   const cote = document.getElementById('f-cote').value;
   const date = document.getElementById('f-date').value;
   const dob = document.getElementById('f-dob').value;
-  const aclrsi = parseInt(document.getElementById('f-aclrsi').value) || null;
-
   const fullName = [prenom, nom].filter(Boolean).join(' ') || 'Nouveau patient';
   document.getElementById('sb-name').textContent = fullName;
 
@@ -4918,13 +4788,6 @@ function updateAll() {
     var coteStr = getCoteForHdr(p);
     el.textContent = [fullName, date ? formatDate(date) : null, coteStr ? ('Côté : '+coteStr) : null].filter(Boolean).join(' - ');
   });
-
-  // ACL-RSI
-  if (aclrsi !== null) {
-    const interp = document.getElementById('aclrsi-interp');
-    if (aclrsi >= 60) interp.innerHTML = '<span style="color:var(--green);font-weight:600"> Seuil >= 60% - Confiance suffisante pour RTS (Webster 2018)</span>';
-    else interp.innerHTML = '<span style="color:var(--orange);font-weight:600"> Score &lt; 60% - Accompagnement psychologique recommandé avant RTS</span>';
-  }
 
   // Heel rise norms highlight
   highlightNormRow(age);
@@ -5285,13 +5148,10 @@ function _buildAllTestsHtml() {
         :'<th style="padding:3px 8px;text-align:center;font-size:.72rem;color:var(--text3);font-weight:600">Valeur</th>')
       +'</tr></thead><tbody>'+rowsHtml+'</tbody></table></div>';
   }
-  // aclrsi relu ici pour section 6
-  var aclrsi = (document.getElementById('f-aclrsi')||{}).value||'';
-
   // 2. Bilan ortho
   var orthoSections = [
     { label:'EPAULE', fields:[['ep-type','Type'],['ep-marqueur','Marqueur']], tables:['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho-mob','tb-ep-ortho-conf'], concl:'ep-conclusion', opt:'ep-opt' },
-    { label:'RACHIS', fields:[['ra-marqueur','Marqueur'],['ra-mckenzie','McKenzie']], tables:['tb-ra-cerv','tb-ra-lomb','tb-ra-force-d','tb-ra-force-g','tb-ra-transverse'], concl:'ra-conclusion', opt:'ra-opt' },
+    { label:'RACHIS', fields:[['ra-marqueur','Marqueur'],['ra-mckenzie','McKenzie']], tables:['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-force-d','tb-ra-force-g','tb-ra-transverse'], concl:'ra-conclusion', opt:'ra-opt' },
     { label:'HANCHE', fields:[['ha-marqueur','Marqueur']], tables:['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-force-d','tb-ha-force-g'], concl:'ha-conclusion', opt:'ha-opt' },
     { label:'GENOU', fields:[['ge-marqueur','Marqueur']], tables:['tb-ge-global','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-knee-d','tb-ge-knee-g','tb-ge-hip-d','tb-ge-hip-g'], concl:'ge-conclusion', opt:'ge-opt' },
     { label:'PIED / CHEVILLE', fields:[['pi-marqueur','Marqueur']], tables:['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-fonc','tb-pi-force-ca','tb-pi-force-cs'], concl:'pi-conclusion', opt:'pi-opt' },
@@ -5870,18 +5730,34 @@ function _buildAllTestsHtml() {
     if (!isNaN(ckcMei)   && ckcMei   < 0.70) toWork.push('Renforcement de la stabilité de l\'épaule — endurance (mCKCUEST MEI ' + ckcMei.toFixed(2) + ' < 0.70)');
   })();
 
-  // ── ULNT positifs rachis cervical (tb-ra-cerv) ───────────────────────────
+  // ── Tests nerveux cervicaux D/G (Rotations + ULNT) ───────────────────────
   (function(){
-    var cervTbody = document.getElementById('tb-ra-cerv');
-    if (!cervTbody) return;
-    var ulntPos = [];
-    cervTbody.querySelectorAll('tr').forEach(function(row) {
-      var sel = row.querySelector('select'); if (!sel || sel.value !== 'Positif') return;
-      var td = row.querySelector('td'); if (!td) return;
-      var name = td.textContent.trim();
-      if (name.indexOf('ULNT') !== -1) ulntPos.push(name.replace(/\s+/g,' '));
+    var rotPos = [], ulntPos = [];
+    ['tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d'].forEach(function(tbId){
+      var tbody = document.getElementById(tbId); if (!tbody) return;
+      tbody.querySelectorAll('tr').forEach(function(row) {
+        var sel = row.querySelector('select'); if (!sel || sel.value !== 'Positif') return;
+        var td = row.querySelector('td'); if (!td) return;
+        var name = td.textContent.trim().replace(/\s+/g,' ');
+        if (name.indexOf('Rotation') !== -1) rotPos.push(name);
+        else if (name.indexOf('ULNT') !== -1) ulntPos.push(name);
+      });
     });
+    if (rotPos.length) toWork.push('Restriction rotation cervicale — ' + rotPos.join(', ') + ' (< 60°)');
     if (ulntPos.length) toWork.push('Mobilisation neurale cervicale — ' + ulntPos.join(', ') + ' positif(s)');
+  })();
+  // ── Tests nerveux lombaires D/G (Slump / Lasègue / Léri) ─────────────────
+  (function(){
+    var lombPos = [];
+    ['tb-ra-lomb-g','tb-ra-lomb-d'].forEach(function(tbId){
+      var tbody = document.getElementById(tbId); if (!tbody) return;
+      tbody.querySelectorAll('tr').forEach(function(row) {
+        var sel = row.querySelector('select'); if (!sel || sel.value !== 'Positif') return;
+        var td = row.querySelector('td'); if (!td) return;
+        lombPos.push(td.textContent.trim().replace(/\s+/g,' '));
+      });
+    });
+    if (lombPos.length) toWork.push('Mobilisation neurale lombaire — ' + lombPos.join(', ') + ' positif(s)');
   })();
 
   // ── Tests fonctionnels rachis ─────────────────────────────────────────────
@@ -5957,9 +5833,6 @@ function _buildAllTestsHtml() {
   }
   // Pliométrie qualitative
   if (plioqTouched && plioqCA2 < 2) toWork.push('Améliorer qualité pliométrique et coordination (score CA ' + plioqCA2 + '/2)');
-  // Psychologique
-  if (aclrsi && parseInt(aclrsi)<60) toWork.push('Accompagnement psychologique (ACL-RSI < 60%)');
-
   if (toWork.length > 0) {
     var workHtml = '';
     for (var wi=0; wi<toWork.length; wi++) {
@@ -6064,12 +5937,6 @@ function buildCR() {
     if(d||o) imHtml += '<div style="margin-bottom:3px;"><strong>'+im.label+'</strong>'+(d?' — '+d:'')+(o?' : '+o:'')+'</div>';
   });
   if(imHtml) infosHtml += crItem('📷 Imageries', imHtml);
-  var aclrsiEl = document.getElementById('f-aclrsi');
-  var aclrsi = aclrsiEl ? aclrsiEl.value : '';
-  if (aclrsi) {
-    var av = parseInt(aclrsi);
-    infosHtml += crItem('ACL-RSI', aclrsi + '%', av>=60 ? '>= 60% OK' : '< 60% Attention', av>=60 ? 'ok' : 'warn');
-  }
   addSection('1. Infos Patient & Anamnese', infosHtml);
 
   // Sections 2→6 : délégué à _buildAllTestsHtml()
