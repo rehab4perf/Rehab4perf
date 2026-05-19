@@ -1379,7 +1379,8 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 }
 .cal-chip-del { background:none; border:none; color:rgba(255,255,255,.7); cursor:pointer; font-size:.75rem; line-height:1; padding:0 1px; }
 .cal-chip-del:hover { color:#fff; }
-.cal-chip-more { background:none; border:none; color:rgba(255,255,255,.85); cursor:pointer; font-size:.80rem; line-height:1; padding:0 3px 0 0; flex-shrink:0; -webkit-tap-highlight-color:transparent; }
+.cal-chip-more { background:none; border:none; color:rgba(255,255,255,.9); cursor:pointer; font-size:.85rem; line-height:1; padding:0 3px 0 0; flex-shrink:0; -webkit-tap-highlight-color:transparent; }
+@media (hover:hover) and (pointer:fine) { .cal-chip-more { display:none; } }
 
 /* ── Drag & drop calendrier ── */
 .cal-day.drag-over { background:#EBF5FF !important; outline:2px dashed var(--accent2); outline-offset:-2px; }
@@ -2560,8 +2561,10 @@ function _positionLibPreview(targetEl){
   var popW = 250; var popH = pop.offsetHeight || 160;
   var spaceRight = window.innerWidth - rect.right - 8;
   var left = spaceRight >= popW ? rect.right + 8 : rect.left - popW - 8;
-  // Sur mobile (sidebar en haut) : positionner en dessous de la sidebar
-  if(window.innerWidth <= 900){ left = Math.max(8, (window.innerWidth - popW) / 2); }
+  // Sur mobile (sidebar en haut) : centrer horizontalement
+  if(window.innerWidth <= 900){ left = (window.innerWidth - popW) / 2; }
+  // Guard : rester dans la fenêtre
+  left = Math.max(8, Math.min(left, window.innerWidth - popW - 8));
   var top  = Math.min(rect.top, window.innerHeight - popH - 10);
   top = Math.max(8, top);
   pop.style.left = left + 'px';
@@ -2883,6 +2886,7 @@ function deleteBloc(id){
 }
 
 function addExoFromLib(libId){
+  _hideLibPreview();
   var ex = LIBRARY.find(function(e){ return e.id===libId; });
   if(!ex) return;
   // If no bloc, create one
@@ -5070,6 +5074,7 @@ function _loadProg(id, seanceId){
 // Ouvrir un programme du calendrier dans le builder (clic sur chip)
 function _openChipInBuilder(progId, dateStr, seanceId){
   if(_calDragJustEnded || _calDrag) return; // pas d'ouverture en fin de drag
+  _hideLibPreview();
   _builderDate = dateStr;
   _updateBuilderTitle();
   _loadProg(progId, seanceId); // transmet l'ID de séance pour la détection de partage
@@ -6003,6 +6008,7 @@ document.getElementById('cycle-modal').addEventListener('click', function(e){
    ONGLETS PRINCIPAUX
    ================================================================ */
 function showMainTab(id) {
+  _hideLibPreview();
   document.querySelectorAll('.main-tab').forEach(function(t){ t.classList.remove('active'); });
   document.querySelectorAll('.main-panel').forEach(function(p){ p.classList.remove('active'); });
   document.getElementById('mtab-'+id).classList.add('active');
@@ -6475,9 +6481,7 @@ function _buildDayChips(dateStr, cellDate){
         ? ' ontouchstart="_chipTouchStart(event,\''+ev.id+'\')" ontouchmove="_chipTouchMove(event)" ontouchend="_chipTouchEnd(event,\''+ev.id+'\')"'
         : ' draggable="true" onclick="event.stopPropagation();_openChipInBuilder(\''+ev.programme_id+'\',\''+dateStr+'\',\''+ev.id+'\')" ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"';
       var chipCursor = _isTouchDevice ? 'pointer' : 'grab';
-      var moreBtn = _isTouchDevice
-        ? '<button class="cal-chip-more" ontouchend="event.stopPropagation();event.preventDefault();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\','+JSON.stringify(nom)+')">⋮</button>'
-        : '';
+      var moreBtn = '<button class="cal-chip-more" ontouchend="event.stopPropagation();event.preventDefault();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')">⋮</button>';
       return '<div class="cal-session-chip" style="background:'+chipBg+';color:'+chipColor+';cursor:'+chipCursor+chipExtra+';" title="'+escH(nom)+'"'
         + chipEvtAttrs + '>'
         +moreBtn
