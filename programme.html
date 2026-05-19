@@ -351,6 +351,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 }
 .lib-tag.renfo { background:#EFF9EE; color:#2D7D46; }
 .lib-tag.automassage { background:#FFF4EC; color:#C05621; }
+.lib-tag.therapie_manuelle { background:#F3F0FF; color:#5B21B6; }
 .lib-add-btn {
   width:24px; height:24px; border-radius:50%; border:none;
   background:var(--accent2); color:#fff; font-size:1rem; cursor:pointer;
@@ -1879,6 +1880,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
           <button class="ef-pill" data-type="etirements" onclick="setEfType(this,'etirements')">Étirements</button>
           <button class="ef-pill" data-type="neurodynamie" onclick="setEfType(this,'neurodynamie')">Neurodynamie</button>
           <button class="ef-pill" data-type="tests" onclick="setEfType(this,'tests')">Tests</button>
+          <button class="ef-pill" data-type="therapie_manuelle" onclick="setEfType(this,'therapie_manuelle')">Thérapie manuelle</button>
         </div>
         <div class="editor-filters-right">
           <button class="ef-toggle" id="efNoVideo" onclick="toggleEfNoVideo()">🎬 Sans vidéo</button>
@@ -2282,8 +2284,8 @@ var activeBloc = null;
 /* ================================================================
    LIBRARY RENDER
    ================================================================ */
-function getTypeLabel(t){ return {warmup:'Warm-up',renfo:'Renfo',automassage:'Auto-massage'}[t]||t; }
-function getTypeClass(t){ return t==='renfo'?'renfo':t==='automassage'?'automassage':''; }
+function getTypeLabel(t){ return {warmup:'Warm-up',renfo:'Renfo',automassage:'Auto-massage',therapie_manuelle:'Thérapie manuelle'}[t]||t; }
+function getTypeClass(t){ return {renfo:'renfo',automassage:'automassage',therapie_manuelle:'therapie_manuelle'}[t]||''; }
 
 /* ── FAVORITES ── */
 function getFavs(){
@@ -4113,12 +4115,13 @@ function renderEditor(){
       +'<div class="zone-ms-pop" id="zone-ms-pop-'+i+'">'+_zMsItems+'</div>'
       +'</div>';
     var typeOpts = '<option value=""'+((!e.type)?' selected':'')+'>— Aucun —</option>' + [
-      {v:'warmup',       l:'Warm-up / Mobilité'},
-      {v:'renfo',        l:'Renforcement'},
-      {v:'automassage',  l:'Auto-massage'},
-      {v:'etirements',   l:'Étirements'},
-      {v:'neurodynamie', l:'Neurodynamie'},
-      {v:'tests',        l:'Tests'}
+      {v:'warmup',           l:'Warm-up / Mobilité'},
+      {v:'renfo',            l:'Renforcement'},
+      {v:'automassage',      l:'Auto-massage'},
+      {v:'etirements',       l:'Étirements'},
+      {v:'neurodynamie',     l:'Neurodynamie'},
+      {v:'tests',            l:'Tests'},
+      {v:'therapie_manuelle',l:'Thérapie manuelle'}
     ].map(function(o){ return '<option value="'+o.v+'"'+(o.v===(e.type||'')?' selected':'')+'>'+o.l+'</option>'; }).join('');
     var allPatterns = ['Triple flexion','Hinge','Poussé vertical','Poussé horizontal','Tirage vertical','Tirage horizontal'];
     var exPatterns = e.patterns || [];
