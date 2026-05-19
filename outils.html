@@ -1498,6 +1498,22 @@ body {
 
         <button class="cr-btn-gen" onclick="crGenerate()">✦ Générer le courrier</button>
 
+        <!-- Évolution dans le PDF -->
+        <div id="cr-evo-panel" style="display:none;margin-top:14px;padding:12px 14px;background:var(--surface2,#F7F6F3);border-radius:8px;border:1px solid var(--border,#E8E6E1)">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.82rem;font-weight:600;color:var(--text,#1A1917)">
+            <input type="checkbox" id="cr-evo-toggle" onchange="_crOnEvoToggle()">
+            📈 Inclure les graphiques d'évolution
+          </label>
+          <div id="cr-evo-grid" style="display:none;margin-top:10px">
+            <div style="font-size:.72rem;font-weight:600;color:#6B6860;margin-bottom:8px">Graphiques à inclure :</div>
+            <div id="cr-evo-checks" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+            <div style="margin-top:10px;display:flex;gap:6px">
+              <button onclick="_crEvoCheckAll(true)" style="font-size:.72rem;padding:4px 10px;background:#fff;border:1px solid var(--border,#E8E6E1);border-radius:6px;cursor:pointer;font-family:inherit">Tout cocher</button>
+              <button onclick="_crEvoCheckAll(false)" style="font-size:.72rem;padding:4px 10px;background:#fff;border:1px solid var(--border,#E8E6E1);border-radius:6px;cursor:pointer;font-family:inherit">Tout décocher</button>
+            </div>
+          </div>
+        </div>
+
       </div><!-- /cr-left-scroll -->
     </aside>
 
@@ -4979,6 +4995,9 @@ var _origShowTab3 = showTab;
 showTab = function(id){
   _origShowTab3(id);
   _updateOutilsPatientBtns();
+  if (id === 'cr' && typeof window._crUpdateEvoPanel === 'function') {
+    window._crUpdateEvoPanel();
+  }
 };
 
 // Init on load
@@ -6268,6 +6287,12 @@ _updateOutilsPatientBtns();
       + '.date{font-size:.82rem;color:#555;white-space:nowrap}'
       + 'hr{border:none;border-top:2px solid #1A3A5C;margin:7px 0 14px}'
       + '#cr-body{white-space:pre-wrap;line-height:1.72}'
+      + 'svg{max-width:100%;height:auto;display:block}'
+      + '.cr-evo-section{margin-top:24px;padding-top:16px;border-top:2px solid #1A3A5C}'
+      + '.cr-evo-section-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#1A3A5C;margin-bottom:14px}'
+      + '.cr-evo-chart{margin-bottom:20px;page-break-inside:avoid}'
+      + '.cr-evo-chart-lbl{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#6B6860;margin-bottom:6px}'
+      + '.cr-evo-svg{border:1px solid #E8E6E1;border-radius:6px;overflow:hidden}'
       + '@media print{'
       + '#cr-topbar{display:none!important}'
       + '#cr-page{margin:0!important;padding:0!important;max-width:none!important}'
@@ -6285,6 +6310,7 @@ _updateOutilsPatientBtns();
       + '<div class="date">' + letterDate + '</div></div>'
       + '<hr>'
       + '<div id="cr-body">' + textEsc + '</div>'
+      + _crGetEvoSectionHtml()
       + '</div>'
       + '<script>'
       + 'window.onload=function(){'
@@ -6706,6 +6732,111 @@ _updateOutilsPatientBtns();
     try { var _ls2 = localStorage.getItem('crStatutsConfig'); if (_ls2) crStatutsConfig = JSON.parse(_ls2); } catch(e2){}
   })
   .then(function(){ _crInitUI(); });
+
+  // ── Évolution dans le PDF ──────────────────────────────────
+  function _crGetEvoCards() {
+    try {
+      var bilanFrame = window.parent && window.parent.document.getElementById('frame-bilan');
+      if (!bilanFrame || !bilanFrame.contentWindow) return [];
+      var bw = bilanFrame.contentWindow;
+      var container = bw.document.getElementById('evolution-content');
+      if (!container) return [];
+      if (!container.querySelector('.evo-chart-card') && typeof bw._renderEvolutionPage === 'function') {
+        bw._renderEvolutionPage();
+      }
+      return Array.from(container.querySelectorAll('.evo-chart-card'));
+    } catch(e) { return []; }
+  }
+
+  function _crEvoHasEnough() {
+    try {
+      var bw = window.parent.document.getElementById('frame-bilan').contentWindow;
+      return !!(bw._allBilans && bw._allBilans.length >= 2);
+    } catch(e) { return false; }
+  }
+
+  window._crUpdateEvoPanel = function() {
+    var panel = document.getElementById('cr-evo-panel');
+    if (!panel) return;
+    var ok = _crEvoHasEnough();
+    panel.style.display = ok ? '' : 'none';
+    if (!ok) {
+      var toggle = document.getElementById('cr-evo-toggle');
+      var grid   = document.getElementById('cr-evo-grid');
+      if (toggle) toggle.checked = false;
+      if (grid)   grid.style.display = 'none';
+    }
+  };
+
+  window._crOnEvoToggle = function() {
+    var toggle = document.getElementById('cr-evo-toggle');
+    var grid   = document.getElementById('cr-evo-grid');
+    if (!grid) return;
+    var on = toggle && toggle.checked;
+    grid.style.display = on ? '' : 'none';
+    if (on) window._crBuildEvoPicker();
+  };
+
+  window._crBuildEvoPicker = function() {
+    var checksDiv = document.getElementById('cr-evo-checks');
+    if (!checksDiv) return;
+    var cards = _crGetEvoCards();
+    var prev = {};
+    checksDiv.querySelectorAll('input[type="checkbox"]').forEach(function(cb){
+      prev[cb.dataset.chartId] = cb.checked;
+    });
+    checksDiv.innerHTML = '';
+    if (!cards.length) {
+      checksDiv.innerHTML = '<em style="font-size:.78rem;color:#9D9B96">Aucun graphique disponible.</em>';
+      return;
+    }
+    cards.forEach(function(card) {
+      var id    = card.dataset.chartId;
+      var title = (card.querySelector('.evo-chart-title') || {}).textContent || id;
+      var isChecked = (id in prev) ? prev[id] : true;
+      var label = document.createElement('label');
+      label.style.cssText = 'display:flex;align-items:center;gap:6px;cursor:pointer;padding:4px 10px;background:#fff;border-radius:6px;border:1px solid #E8E6E1;font-size:.76rem;color:#1A1917';
+      var cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.dataset.chartId = id;
+      cb.checked = isChecked;
+      label.appendChild(cb);
+      label.appendChild(document.createTextNode(title));
+      checksDiv.appendChild(label);
+    });
+  };
+
+  window._crEvoCheckAll = function(state) {
+    document.querySelectorAll('#cr-evo-checks input[type="checkbox"]').forEach(function(cb){
+      cb.checked = state;
+    });
+  };
+
+  function _crGetEvoSectionHtml() {
+    var toggle = document.getElementById('cr-evo-toggle');
+    if (!toggle || !toggle.checked) return '';
+    var cards = _crGetEvoCards();
+    if (!cards.length) return '';
+    var checks = Array.from(document.querySelectorAll('#cr-evo-checks input[type="checkbox"]:checked'));
+    if (!checks.length) return '';
+    var html = '<div class="cr-evo-section">'
+      + '<div class="cr-evo-section-title">Graphiques d\'évolution</div>';
+    checks.forEach(function(cb) {
+      var id   = cb.dataset.chartId;
+      var card = cards.find(function(c){ return c.dataset.chartId === id; });
+      if (!card) return;
+      var title = (card.querySelector('.evo-chart-title') || {}).textContent || '';
+      var svg   = card.querySelector('svg');
+      if (!svg) return;
+      html += '<div class="cr-evo-chart">'
+            + '<div class="cr-evo-chart-lbl">' + title + '</div>'
+            + '<div class="cr-evo-svg">' + svg.outerHTML + '</div>'
+            + '</div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
 })();
 
 </script>
