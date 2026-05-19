@@ -1059,6 +1059,62 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 }
 .cardio-add-btn:hover { background:rgba(8,145,178,.22); }
 
+/* ── Cibles cardio ── */
+.cardio-cible-section { display:flex; flex-direction:column; gap:5px; }
+.cardio-cible-lbl { font-size:.67rem; font-weight:700; color:#0E7490; text-transform:uppercase; letter-spacing:.05em; }
+.cardio-cible-tag { display:flex; align-items:center; gap:5px; flex-wrap:nowrap; }
+.cardio-cible-type-sel {
+  flex:0 0 70px; width:70px; padding:4px 3px; border:1px solid #B2E4EE;
+  border-radius:5px; font-size:.72rem; color:var(--text); background:#fff;
+  outline:none; cursor:pointer; appearance:none; -webkit-appearance:none; text-align:center;
+}
+.cardio-cible-type-sel:focus { border-color:#0891B2; }
+.cardio-cible-val {
+  flex:1 1 0; min-width:0; max-width:72px; padding:4px 6px; border:1px solid #B2E4EE;
+  border-radius:5px; font-size:.78rem; color:var(--text); text-align:center;
+  outline:none; background:#fff;
+}
+.cardio-cible-val:focus { border-color:#0891B2; }
+.cardio-cible-dash { font-size:.68rem; color:#6ABFCC; flex-shrink:0; user-select:none; }
+.cardio-cible-del {
+  background:none; border:none; color:#9D9B96; font-size:.85rem;
+  cursor:pointer; padding:0 2px; line-height:1; flex-shrink:0;
+}
+.cardio-cible-del:hover { color:#DC2626; }
+.cardio-cible-add {
+  align-self:flex-start; font-size:.7rem; padding:3px 9px;
+  background:rgba(8,145,178,.1); border:1px solid rgba(8,145,178,.3);
+  color:#0891B2; border-radius:6px; cursor:pointer; font-family:inherit;
+  margin-top:2px;
+}
+.cardio-cible-add:hover { background:rgba(8,145,178,.2); }
+
+/* ── EMOM minutes ── */
+.emom-minute-card {
+  background:#fff; border:1px solid #B2E4EE; border-radius:8px;
+  padding:10px 12px; margin-bottom:8px;
+}
+.emom-minute-hdr {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:8px;
+}
+.emom-minute-num {
+  font-size:.73rem; font-weight:700; color:#0E7490;
+  text-transform:uppercase; letter-spacing:.05em;
+}
+.emom-minute-del {
+  background:none; border:none; color:#9D9B96; font-size:1rem;
+  cursor:pointer; padding:0; line-height:1;
+}
+.emom-minute-del:hover { color:#DC2626; }
+.emom-add-minute-btn {
+  width:100%; padding:7px; margin-top:4px;
+  background:rgba(8,145,178,.08); border:1px dashed rgba(8,145,178,.4);
+  color:#0891B2; border-radius:8px; font-size:.78rem;
+  cursor:pointer; font-family:inherit; transition:background .15s;
+}
+.emom-add-minute-btn:hover { background:rgba(8,145,178,.18); }
+
 /* Print */
 @media print {
   .sidebar, .main-header .btn, .add-bloc-btn, .exo-del-btn, .bloc-del-btn, .drag-handle { display:none !important; }
@@ -2793,6 +2849,7 @@ var CARDIO_EFFORT_TYPES = [
   {val:'recuperation', label:'Récupération active'},
   {val:'emom',         label:'EMOM'}
 ];
+var CARDIO_CIBLE_TYPES = ['bpm', 'allure', 'watts', 'zone FC', '%FC', 'RPE'];
 
 function addCardioBloc(){
   var id = genId();
@@ -2800,10 +2857,13 @@ function addCardioBloc(){
   blocs.push({
     id:id, title:'Bloc '+letter, type:'cardio',
     sport:'course', effort_type:'continu',
-    duree_totale:'', distance:'', zone_fc:'Z2 — Endurance', allure:'',
-    repetitions:'', duree_effort:'', zone_effort:'Z4 — Seuil',
-    duree_recup:'', zone_recup:'Z1 — Récup', commentaire:'',
-    emom_seuil:'', emom_allure:'', emom_watts:'',
+    duree_totale:'', distance:'',
+    cibles:[{type:'bpm', min:'', max:''}],
+    repetitions:'', duree_effort:'', duree_recup:'',
+    frac_cibles:[{type:'bpm', min:'', max:''}],
+    frac_recup_cibles:[{type:'bpm', min:'', max:''}],
+    emom_exos:[],
+    commentaire:'',
     exos:[]
   });
   activeBloc = id;
@@ -2818,22 +2878,130 @@ function updateCardioField(id, field, val){
   else _draftSaveLazy();
 }
 
+/* ── Cibles cardio (scope: 'cibles' | 'frac_cibles' | 'frac_recup_cibles') ── */
+function _ensureCardioCibles(b, scope){
+  if(!b[scope] || !b[scope].length) b[scope] = [{type:'bpm', min:'', max:''}];
+}
+function addCardioCible(blocId, scope){
+  var b = blocs.find(function(x){ return x.id===blocId; });
+  if(!b) return;
+  _ensureCardioCibles(b, scope);
+  b[scope].push({type:'bpm', min:'', max:''});
+  renderSession();
+}
+function removeCardioCible(blocId, scope, idx){
+  var b = blocs.find(function(x){ return x.id===blocId; });
+  if(!b || !b[scope]) return;
+  b[scope].splice(idx, 1);
+  if(!b[scope].length) b[scope] = [{type:'bpm', min:'', max:''}];
+  renderSession();
+}
+function updateCardioCible(blocId, scope, idx, field, val){
+  var b = blocs.find(function(x){ return x.id===blocId; });
+  if(!b || !b[scope] || !b[scope][idx]) return;
+  b[scope][idx][field] = val;
+  _draftSaveLazy();
+}
+
+/* ── EMOM exercises ── */
+function addEmomExo(blocId){
+  var b = blocs.find(function(x){ return x.id===blocId; });
+  if(!b) return;
+  if(!b.emom_exos) b.emom_exos = [];
+  b.emom_exos.push({id:genId(), sport:'course', cibles:[{type:'bpm', min:'', max:''}]});
+  renderSession();
+}
+function removeEmomExo(blocId, exoId){
+  var b = blocs.find(function(x){ return x.id===blocId; });
+  if(!b || !b.emom_exos) return;
+  b.emom_exos = b.emom_exos.filter(function(e){ return e.id !== exoId; });
+  renderSession();
+}
+function updateEmomExoSport(blocId, exoId, val){
+  var b = blocs.find(function(x){ return x.id===blocId; });
+  if(!b || !b.emom_exos) return;
+  var e = b.emom_exos.find(function(x){ return x.id===exoId; });
+  if(e){ e.sport = val; _draftSaveLazy(); }
+}
+function addEmomCible(blocId, exoId){
+  var b = blocs.find(function(x){ return x.id===blocId; });
+  if(!b || !b.emom_exos) return;
+  var e = b.emom_exos.find(function(x){ return x.id===exoId; });
+  if(!e) return;
+  if(!e.cibles) e.cibles = [];
+  e.cibles.push({type:'bpm', min:'', max:''});
+  renderSession();
+}
+function removeEmomCible(blocId, exoId, idx){
+  var b = blocs.find(function(x){ return x.id===blocId; });
+  if(!b || !b.emom_exos) return;
+  var e = b.emom_exos.find(function(x){ return x.id===exoId; });
+  if(!e || !e.cibles) return;
+  e.cibles.splice(idx, 1);
+  if(!e.cibles.length) e.cibles = [{type:'bpm', min:'', max:''}];
+  renderSession();
+}
+function updateEmomCible(blocId, exoId, idx, field, val){
+  var b = blocs.find(function(x){ return x.id===blocId; });
+  if(!b || !b.emom_exos) return;
+  var e = b.emom_exos.find(function(x){ return x.id===exoId; });
+  if(!e || !e.cibles || !e.cibles[idx]) return;
+  e.cibles[idx][field] = val;
+  _draftSaveLazy();
+}
+
+/* Rend une section de cibles cardio (réutilisé pour main / frac effort / frac récup) */
+function _renderCardioCibles(bid, scope, arr, label){
+  if(!arr || !arr.length) arr = [{type:'bpm', min:'', max:''}];
+  var h = '<div class="cardio-cible-section">';
+  h += '<div class="cardio-cible-lbl">'+escH(label)+'</div>';
+  arr.forEach(function(c, ci){
+    var tOpts = CARDIO_CIBLE_TYPES.map(function(t){
+      return '<option value="'+t+'"'+(c.type===t?' selected':'')+'>'+t+'</option>';
+    }).join('');
+    h += '<div class="cardio-cible-tag">';
+    h += '<select class="cardio-cible-type-sel" onchange="updateCardioCible(\''+bid+'\',\''+scope+'\','+ci+',\'type\',this.value)">'+tOpts+'</select>';
+    h += '<input class="cardio-cible-val" type="text" value="'+escH(c.min||'')+'" placeholder="—" oninput="updateCardioCible(\''+bid+'\',\''+scope+'\','+ci+',\'min\',this.value)">';
+    h += '<span class="cardio-cible-dash">–</span>';
+    h += '<input class="cardio-cible-val" type="text" value="'+escH(c.max||'')+'" placeholder="max" oninput="updateCardioCible(\''+bid+'\',\''+scope+'\','+ci+',\'max\',this.value)">';
+    if(arr.length > 1){
+      h += '<button class="cardio-cible-del" onclick="removeCardioCible(\''+bid+'\',\''+scope+'\','+ci+')" title="Retirer">×</button>';
+    }
+    h += '</div>';
+  });
+  h += '<button class="cardio-cible-add" onclick="addCardioCible(\''+bid+'\',\''+scope+'\')">＋ cible</button>';
+  h += '</div>';
+  return h;
+}
+
 function _renderCardioBloc(b, idx){
   var isActive = b.id===activeBloc;
-  var zOpts = function(sel){
-    return CARDIO_ZONES.map(function(z){
-      return '<option value="'+z+'"'+(sel===z?' selected':'')+'>'+escH(z)+'</option>';
-    }).join('');
-  };
+  var bid = b.id;
+  var isFrac = b.effort_type==='fractionne';
+  var isEmom = b.effort_type==='emom';
+
+  // Compat descendante : migrer les anciens champs vers cibles
+  if(!b.cibles || !b.cibles.length){
+    if(b.allure || b.zone_fc){
+      b.cibles = [{type: b.allure ? 'allure' : 'zone FC', min: b.allure || b.zone_fc || '', max:''}];
+    } else {
+      b.cibles = [{type:'bpm', min:'', max:''}];
+    }
+  }
+  if(!b.frac_cibles || !b.frac_cibles.length){
+    b.frac_cibles = [{type: b.zone_effort ? 'zone FC' : 'bpm', min: b.zone_effort||'', max:''}];
+  }
+  if(!b.frac_recup_cibles || !b.frac_recup_cibles.length){
+    b.frac_recup_cibles = [{type: b.zone_recup ? 'zone FC' : 'bpm', min: b.zone_recup||'', max:''}];
+  }
+  if(!b.emom_exos) b.emom_exos = [];
+
   var sportOpts = CARDIO_SPORTS.map(function(s){
     return '<option value="'+s.val+'"'+(b.sport===s.val?' selected':'')+'>'+s.label+'</option>';
   }).join('');
   var effortOpts = CARDIO_EFFORT_TYPES.map(function(e){
     return '<option value="'+e.val+'"'+(b.effort_type===e.val?' selected':'')+'>'+e.label+'</option>';
   }).join('');
-  var isFrac = b.effort_type==='fractionne';
-  var isEmom = b.effort_type==='emom';
-  var bid = b.id;
 
   var h = '<div class="bloc cardio-bloc" id="bloc-'+bid+'" draggable="true" ondragstart="blocDragStart(event,'+idx+')" ondragover="blocDragOver(event,this,'+idx+')" ondrop="blocDrop(event,this,'+idx+')" ondragend="blocDragEnd()">';
   // Header
@@ -2843,43 +3011,81 @@ function _renderCardioBloc(b, idx){
   h += '<span class="cardio-tag">🏃 Cardio</span>';
   h += '<button class="bloc-del-btn" onclick="event.stopPropagation();deleteBloc(\''+bid+'\')" title="Supprimer le bloc"></button>';
   h += '</div>';
+
   // Form
   h += '<div class="cardio-form">';
-  // Row 1 : sport + type effort + durée + distance
+
+  // Row 1 : sport + type effort + durée totale + distance
   h += '<div class="cardio-row">';
   h += '<div class="cardio-field"><label class="cardio-lbl">Sport</label><select class="cardio-sel" onchange="updateCardioField(\''+bid+'\',\'sport\',this.value)">'+sportOpts+'</select></div>';
   h += '<div class="cardio-field"><label class="cardio-lbl">Type d\'effort</label><select class="cardio-sel" onchange="updateCardioField(\''+bid+'\',\'effort_type\',this.value)">'+effortOpts+'</select></div>';
   h += '<div class="cardio-field"><label class="cardio-lbl">Durée totale (min)</label><input type="number" class="cardio-inp" min="1" value="'+escH(b.duree_totale||'')+'" placeholder="45" oninput="updateCardioField(\''+bid+'\',\'duree_totale\',this.value)"></div>';
   h += '<div class="cardio-field"><label class="cardio-lbl">Distance (km)</label><input type="number" class="cardio-inp" min="0" step="0.1" value="'+escH(b.distance||'')+'" placeholder="—" oninput="updateCardioField(\''+bid+'\',\'distance\',this.value)"></div>';
   h += '</div>';
-  // Row 2 : zone FC + allure
-  h += '<div class="cardio-row">';
-  h += '<div class="cardio-field"><label class="cardio-lbl">Zone FC</label><select class="cardio-sel" onchange="updateCardioField(\''+bid+'\',\'zone_fc\',this.value)">'+zOpts(b.zone_fc)+'</select></div>';
-  h += '<div class="cardio-field"><label class="cardio-lbl">Allure cible</label><input type="text" class="cardio-inp" value="'+escH(b.allure||'')+'" placeholder="5:30 /km — 30 km/h…" oninput="updateCardioField(\''+bid+'\',\'allure\',this.value)"></div>';
-  h += '</div>';
-  // Fractionné
+
+  // Row 2 : cibles (pour continu et récupération active seulement)
+  if(!isFrac && !isEmom){
+    h += _renderCardioCibles(bid, 'cibles', b.cibles, 'Cibles');
+  }
+
+  // ── Fractionné ──────────────────────────────────────────────────────
   if(isFrac){
     h += '<div class="cardio-frac-section">';
     h += '<div class="cardio-frac-title">⚡ Détail du fractionné</div>';
     h += '<div class="cardio-row">';
     h += '<div class="cardio-field"><label class="cardio-lbl">Répétitions</label><input type="number" class="cardio-inp" min="1" value="'+escH(b.repetitions||'')+'" placeholder="6" oninput="updateCardioField(\''+bid+'\',\'repetitions\',this.value)"></div>';
     h += '<div class="cardio-field"><label class="cardio-lbl">Durée effort</label><input type="text" class="cardio-inp" value="'+escH(b.duree_effort||'')+'" placeholder="3 min" oninput="updateCardioField(\''+bid+'\',\'duree_effort\',this.value)"></div>';
-    h += '<div class="cardio-field"><label class="cardio-lbl">Zone effort</label><select class="cardio-sel" onchange="updateCardioField(\''+bid+'\',\'zone_effort\',this.value)">'+zOpts(b.zone_effort)+'</select></div>';
     h += '<div class="cardio-field"><label class="cardio-lbl">Récupération</label><input type="text" class="cardio-inp" value="'+escH(b.duree_recup||'')+'" placeholder="2 min" oninput="updateCardioField(\''+bid+'\',\'duree_recup\',this.value)"></div>';
-    h += '<div class="cardio-field"><label class="cardio-lbl">Zone récup</label><select class="cardio-sel" onchange="updateCardioField(\''+bid+'\',\'zone_recup\',this.value)">'+zOpts(b.zone_recup)+'</select></div>';
-    h += '</div></div>';
+    h += '</div>';
+    h += _renderCardioCibles(bid, 'frac_cibles', b.frac_cibles, 'Cibles effort');
+    h += _renderCardioCibles(bid, 'frac_recup_cibles', b.frac_recup_cibles, 'Cibles récupération');
+    h += '</div>';
   }
-  // EMOM
+
+  // ── EMOM ────────────────────────────────────────────────────────────
   if(isEmom){
     h += '<div class="cardio-frac-section">';
     h += '<div class="cardio-frac-title">🔄 Détail EMOM</div>';
-    h += '<div class="cardio-row">';
-    h += '<div class="cardio-field"><label class="cardio-lbl">Zone FC effort</label><select class="cardio-sel" onchange="updateCardioField(\''+bid+'\',\'zone_effort\',this.value)">'+zOpts(b.zone_effort||'Z4 — Seuil')+'</select></div>';
-    h += '<div class="cardio-field"><label class="cardio-lbl">Seuil</label><input type="text" class="cardio-inp" value="'+escH(b.emom_seuil||'')+'" placeholder="ex : 170 bpm, 300W…" oninput="updateCardioField(\''+bid+'\',\'emom_seuil\',this.value)"></div>';
-    h += '<div class="cardio-field"><label class="cardio-lbl">Allure cible</label><input type="text" class="cardio-inp" value="'+escH(b.emom_allure||'')+'" placeholder="5:30 /km…" oninput="updateCardioField(\''+bid+'\',\'emom_allure\',this.value)"></div>';
-    h += '<div class="cardio-field"><label class="cardio-lbl">Watts</label><input type="number" class="cardio-inp" min="0" value="'+escH(b.emom_watts||'')+'" placeholder="250" oninput="updateCardioField(\''+bid+'\',\'emom_watts\',this.value)"></div>';
-    h += '</div></div>';
+    var emomExos = b.emom_exos || [];
+    emomExos.forEach(function(ex, ei){
+      var exSportOpts = CARDIO_SPORTS.map(function(s){
+        return '<option value="'+s.val+'"'+(ex.sport===s.val?' selected':'')+'>'+s.label+'</option>';
+      }).join('');
+      var exCibles = ex.cibles || [{type:'bpm', min:'', max:''}];
+      var exId = ex.id;
+      h += '<div class="emom-minute-card">';
+      h += '<div class="emom-minute-hdr">';
+      h += '<span class="emom-minute-num">Minute '+(ei+1)+'</span>';
+      h += '<button class="emom-minute-del" onclick="removeEmomExo(\''+bid+'\',\''+exId+'\')" title="Supprimer">×</button>';
+      h += '</div>';
+      h += '<div class="cardio-row" style="margin-bottom:8px">';
+      h += '<div class="cardio-field"><label class="cardio-lbl">Exercice</label><select class="cardio-sel" onchange="updateEmomExoSport(\''+bid+'\',\''+exId+'\',this.value)">'+exSportOpts+'</select></div>';
+      h += '</div>';
+      // Cibles EMOM
+      h += '<div class="cardio-cible-section">';
+      h += '<div class="cardio-cible-lbl">Cibles</div>';
+      exCibles.forEach(function(c, ci){
+        var tOpts = CARDIO_CIBLE_TYPES.map(function(t){
+          return '<option value="'+t+'"'+(c.type===t?' selected':'')+'>'+t+'</option>';
+        }).join('');
+        h += '<div class="cardio-cible-tag">';
+        h += '<select class="cardio-cible-type-sel" onchange="updateEmomCible(\''+bid+'\',\''+exId+'\','+ci+',\'type\',this.value)">'+tOpts+'</select>';
+        h += '<input class="cardio-cible-val" type="text" value="'+escH(c.min||'')+'" placeholder="—" oninput="updateEmomCible(\''+bid+'\',\''+exId+'\','+ci+',\'min\',this.value)">';
+        h += '<span class="cardio-cible-dash">–</span>';
+        h += '<input class="cardio-cible-val" type="text" value="'+escH(c.max||'')+'" placeholder="max" oninput="updateEmomCible(\''+bid+'\',\''+exId+'\','+ci+',\'max\',this.value)">';
+        if(exCibles.length > 1){
+          h += '<button class="cardio-cible-del" onclick="removeEmomCible(\''+bid+'\',\''+exId+'\','+ci+')" title="Retirer">×</button>';
+        }
+        h += '</div>';
+      });
+      h += '<button class="cardio-cible-add" onclick="addEmomCible(\''+bid+'\',\''+exId+'\')">＋ cible</button>';
+      h += '</div>';
+      h += '</div>'; // emom-minute-card
+    });
+    h += '<button class="emom-add-minute-btn" onclick="addEmomExo(\''+bid+'\')">＋ Ajouter une minute</button>';
+    h += '</div>'; // cardio-frac-section
   }
+
   // Consignes
   h += '<div class="cardio-row"><div class="cardio-field" style="flex:1"><label class="cardio-lbl">Consignes</label>';
   h += '<textarea class="cardio-txt" oninput="updateCardioField(\''+bid+'\',\'commentaire\',this.value)">'+escH(b.commentaire||'')+'</textarea></div></div>';
@@ -5232,7 +5438,9 @@ function _renderPevoCharts(exoData, selectedKeys) {
                    : '<div class="pevo-empty">Cochez un exercice ci-dessus pour afficher sa courbe.</div>');
   }
 
-  body.innerHTML = rmSection + dureeSectionHtml + cardioSectionHtml;
+  var sep = '<div style="height:32px"></div>';
+  var parts = [rmSection, dureeSectionHtml, cardioSectionHtml].filter(function(s){ return !!s; });
+  body.innerHTML = parts.join(sep);
   _attachPevoEvents();
 }
 
