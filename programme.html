@@ -3122,7 +3122,7 @@ function addExoFromLib(libId){
   var bloc = blocs.find(function(b){ return b.id===targetId; });
   if(!bloc) { bloc = blocs[blocs.length-1]; targetId = bloc ? bloc.id : null; }
   if(!bloc) return;
-  var row = {id:genId(), libId:ex.id, name:ex.name, url:ex.url, reps:'', duree:'', series:'', cibles:[{type:'RPE', min:'', max:''}], obj:ex.obj, tempo:'', recup:'', chained:false, consigne:'', perCote:false, nrs:null};
+  var row = {id:genId(), libId:ex.id, name:ex.name, url:ex.url, reps:'', duree:'', series:'', cibles:[{type:'kg', min:'', max:''}], obj:ex.obj, tempo:'', recup:'', chained:false, consigne:'', perCote:false, nrs:null};
   bloc.exos.push(row);
   renderSession();
   renderLib(document.getElementById('searchInput').value.toLowerCase());
@@ -3136,7 +3136,7 @@ function addFreeExo(blocId) {
   if(!bloc) return;
   bloc.exos.push({ id:genId(), free:true, name:'', url:'',
     reps:'', duree:'', series:'',
-    cibles:[{type:'RPE', min:'', max:''}],
+    cibles:[{type:'kg', min:'', max:''}],
     tempo:'', recup:'', chained:false, consigne:'', perCote:false, nrs:null });
   activeBloc = blocId;
   renderSession();
@@ -3260,12 +3260,12 @@ function _getExo(blocId, exoId){
 }
 function _normCibles(e){
   if(!e.cibles || !e.cibles.length)
-    e.cibles = [{type: e.cibleType||'RPE', min: e.cibleVal||'', max:''}];
+    e.cibles = [{type: e.cibleType||'kg', min: e.cibleVal||'', max:''}];
 }
 function addCible(blocId, exoId){
   var e = _getExo(blocId, exoId); if(!e) return;
   _normCibles(e);
-  e.cibles.push({type:'RPE', min:'', max:''});
+  e.cibles.push({type:'kg', min:'', max:''});
   renderSession();
 }
 function removeCible(blocId, exoId, idx){
@@ -3764,7 +3764,7 @@ function renderSession(){
         cibles.forEach(function(c, ci){
           html += '<div class="cible-tag">';
           html += '<select class="cible-type-sel" onchange="updateCible(\''+b.id+'\',\''+e.id+'\','+ci+',\'type\',this.value)">';
-          ['RPE','RIR','kg','%1RM','Vitesse'].forEach(function(opt){
+          ['kg','RPE','RIR','%1RM','Vitesse'].forEach(function(opt){
             html += '<option value="'+opt+'"'+(c.type===opt?' selected':'')+'>'+opt+'</option>';
           });
           html += '</select>';
