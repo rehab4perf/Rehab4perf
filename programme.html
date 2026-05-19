@@ -7096,7 +7096,7 @@ function _buildDayChips(dateStr, cellDate){
     var isPatient = note.type === 'patient';
     chips += '<div class="cal-note-chip '+(isPatient?'chip-patient':'chip-clinique')+'" onclick="event.stopPropagation();_openCalNoteView(\''+note.id+'\')" title="'+escH((note.title?note.title+'\n':'')+note.text)+'">'
       +'<span>'+(isPatient?'💬':'🔒')+'</span><span class="cal-note-chip-text">'+escH(lbl)+'</span>'
-      +'<button class="cal-note-chip-del" onclick="event.stopPropagation();_deleteCalNote(\''+note.id+'\')">×</button>'
+      +'<button class="cal-note-chip-del" onclick="event.stopPropagation();_confirmDeleteNote(function(){_deleteCalNote(\''+note.id+'\');})">×</button>'
       +'</div>';
   });
   return chips;
@@ -7637,9 +7637,45 @@ function _deleteCalNote(noteId) {
 }
 
 function _deleteCalNoteAndClose(noteId, dateStr) {
-  _deleteCalNote(noteId);
-  closeCalPicker();
-  _showToast('Note supprimée');
+  _confirmDeleteNote(function(){
+    _deleteCalNote(noteId);
+    closeCalPicker();
+    _showToast('Note supprimée');
+  });
+}
+
+/* ── Modale de confirmation avant suppression d'une note ── */
+function _confirmDeleteNote(onConfirm) {
+  // Réutiliser la modale si elle existe déjà
+  var existing = document.getElementById('del-note-confirm-modal');
+  if(existing) existing.remove();
+
+  var overlay = document.createElement('div');
+  overlay.id = 'del-note-confirm-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99999;display:flex;align-items:center;justify-content:center;';
+
+  overlay.innerHTML = ''
+    +'<div style="background:#fff;border-radius:14px;padding:28px 24px 20px;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.22);text-align:center;">'
+    +'  <div style="font-size:2rem;margin-bottom:10px;">🗑️</div>'
+    +'  <p style="font-size:1rem;font-weight:600;margin:0 0 6px;">Supprimer cette note ?</p>'
+    +'  <p style="font-size:.875rem;color:#666;margin:0 0 22px;">Cette action est irréversible. La note sera définitivement supprimée.</p>'
+    +'  <div style="display:flex;gap:10px;justify-content:center;">'
+    +'    <button id="del-note-cancel" style="flex:1;padding:10px 0;border-radius:8px;border:1.5px solid #d1d5db;background:#fff;font-size:.9rem;font-weight:500;cursor:pointer;color:#374151;">Annuler</button>'
+    +'    <button id="del-note-ok" style="flex:1;padding:10px 0;border-radius:8px;border:none;background:#ef4444;color:#fff;font-size:.9rem;font-weight:600;cursor:pointer;">Supprimer</button>'
+    +'  </div>'
+    +'</div>';
+
+  document.body.appendChild(overlay);
+
+  function _close(){ overlay.remove(); }
+
+  document.getElementById('del-note-cancel').addEventListener('click', _close);
+  document.getElementById('del-note-ok').addEventListener('click', function(){
+    _close();
+    onConfirm();
+  });
+  // Clic hors modale = annuler
+  overlay.addEventListener('click', function(e){ if(e.target === overlay) _close(); });
 }
 
 // _isTouchDevice défini plus haut, avant renderLib()
