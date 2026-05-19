@@ -246,6 +246,31 @@ body {
   transition: all .12s; line-height: 1;
 }
 .histo-item-del:hover { background: #FDECEA; border-color: #C0392B; }
+.histo-item-edit {
+  flex-shrink: 0; background: none; border: 1.5px solid #E8E6E1;
+  border-radius: 5px; color: #6B6860; padding: 5px 7px;
+  font-size: .75rem; cursor: pointer; font-family: inherit;
+  transition: all .12s; line-height: 1;
+}
+.histo-item-edit:hover { background: #F0F4FB; border-color: #2B5FA6; color: #2B5FA6; }
+.histo-date-edit-wrap {
+  display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0;
+}
+.histo-date-input {
+  font-family: inherit; font-size: .82rem; font-weight: 700; color: #1A3A5C;
+  border: 1.5px solid #2B5FA6; border-radius: 5px; padding: 2px 6px;
+  outline: none; background: #EEF3FB; width: 140px;
+}
+.histo-date-confirm {
+  background: #2D6A4F; color: #fff; border: none; border-radius: 5px;
+  padding: 3px 9px; font-size: .75rem; font-weight: 600; cursor: pointer;
+  font-family: inherit;
+}
+.histo-date-cancel {
+  background: none; border: 1.5px solid #E8E6E1; border-radius: 5px;
+  color: #9D9B96; padding: 3px 7px; font-size: .75rem; cursor: pointer;
+  font-family: inherit;
+}
 
 .sidebar-footer {
   padding: 12px 8px;
@@ -4618,42 +4643,148 @@ function openBilanHistory(){
       document.getElementById('histoList').innerHTML = res.data.map(function(b, i){
         var isCurrent = String(_currentBilanId) === String(b.id);
         var num = total - i; // numéro chronologique (1 = le plus ancien)
-        // Date lisible
-        var dateStr = '—';
-        if(b.date){
-          var parts = b.date.split('-');
-          var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
-          dateStr = parseInt(parts[2],10)+' '+months[parseInt(parts[1],10)-1]+' '+parts[0];
-        }
-        // Délai relatif
-        var agoStr = '';
-        if(b.date){
-          var today = new Date(); today.setHours(0,0,0,0);
-          var bDate = new Date(b.date); bDate.setHours(0,0,0,0);
-          var diffDays = Math.round((today - bDate) / 86400000);
-          if(diffDays === 0)       agoStr = "Aujourd'hui";
-          else if(diffDays === 1)  agoStr = 'Il y a 1 jour';
-          else if(diffDays < 7)   agoStr = 'Il y a '+diffDays+' jours';
-          else if(diffDays < 14)  agoStr = 'Il y a 1 semaine';
-          else if(diffDays < 31)  agoStr = 'Il y a '+Math.floor(diffDays/7)+' semaines';
-          else if(diffDays < 60)  agoStr = 'Il y a 1 mois';
-          else if(diffDays < 365) agoStr = 'Il y a '+Math.floor(diffDays/30)+' mois';
-          else agoStr = 'Il y a '+Math.floor(diffDays/365)+' an'+(diffDays>=730?'s':'');
-        }
+        // Date lisible + délai relatif (via helpers)
+        var isoForHelper = b.date ? b.date.split('T')[0] : '';
+        var dateStr = _isoToReadable(isoForHelper);
+        var agoStr  = _isoToAgo(isoForHelper);
         var label = num === 1 ? 'Bilan initial' : 'Bilan #'+num;
         var isInitial = num === 1;
-        return '<div class="histo-item'+(isCurrent?' current':'')+'">'
+        var isoDate = b.date ? b.date.split('T')[0] : '';
+        return '<div class="histo-item'+(isCurrent?' current':'')+'" id="histo-row-'+b.id+'">'
           +'<div class="histo-item-num">'+num+'</div>'
           +'<div class="histo-item-info">'
-          +'<div class="histo-item-date">'+dateStr+'</div>'
-          +'<div class="histo-item-ago">'+agoStr+'</div>'
+          +'<div class="histo-item-date" id="histo-date-label-'+b.id+'">'+dateStr+'</div>'
+          +'<div class="histo-item-ago" id="histo-ago-label-'+b.id+'">'+agoStr+'</div>'
           +'</div>'
           +'<span class="histo-item-badge">'+(isCurrent?'● En cours':label)+'</span>'
+          +'<button class="histo-item-edit" onclick="_startEditBilanDate(\''+b.id+'\',\''+isoDate+'\')" title="Modifier la date">✏️</button>'
           +'<button class="histo-item-load" onclick="loadBilan(\''+b.id+'\')">'+(isCurrent?'Rechargé':'Charger')+'</button>'
           +'<button class="histo-item-del" onclick="deleteBilan(\''+b.id+'\',\''+dateStr+'\','+(isInitial?'true':'false')+',event)" title="Supprimer ce bilan">🗑</button>'
           +'</div>';
       }).join('');
     });
+}
+
+/* ── Édition de date dans l'historique ─────────────────── */
+function _startEditBilanDate(bilanId, isoDate) {
+  // Si une autre ligne est en cours d'édition, l'annuler d'abord
+  var existing = document.querySelector('.histo-date-edit-wrap');
+  if (existing) {
+    var existingId = existing.dataset.bilanId;
+    if (existingId) _cancelEditBilanDate(existingId);
+  }
+
+  var infoDiv  = document.querySelector('#histo-row-'+bilanId+' .histo-item-info');
+  var editBtn  = document.querySelector('#histo-row-'+bilanId+' .histo-item-edit');
+  if (!infoDiv) return;
+
+  // Masquer le bouton crayon
+  if (editBtn) editBtn.style.display = 'none';
+
+  // Remplacer le contenu du histo-item-info par un champ date
+  infoDiv.innerHTML =
+    '<div class="histo-date-edit-wrap" data-bilan-id="'+bilanId+'" data-orig="'+isoDate+'">'
+    + '<input class="histo-date-input" id="histo-date-inp-'+bilanId+'" type="date" value="'+isoDate+'">'
+    + '<button class="histo-date-confirm" onclick="_confirmEditBilanDate(\''+bilanId+'\')">✓</button>'
+    + '<button class="histo-date-cancel" onclick="_cancelEditBilanDate(\''+bilanId+'\')">✕</button>'
+    + '</div>';
+
+  var inp = document.getElementById('histo-date-inp-'+bilanId);
+  if (inp) {
+    inp.focus();
+    inp.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter')  _confirmEditBilanDate(bilanId);
+      if (e.key === 'Escape') _cancelEditBilanDate(bilanId);
+    });
+  }
+}
+
+function _cancelEditBilanDate(bilanId) {
+  // Retrouver la date d'origine depuis le dataset
+  var wrap = document.querySelector('.histo-date-edit-wrap[data-bilan-id="'+bilanId+'"]');
+  var origIso = wrap ? wrap.dataset.orig : '';
+
+  var infoDiv = document.querySelector('#histo-row-'+bilanId+' .histo-item-info');
+  var editBtn = document.querySelector('#histo-row-'+bilanId+' .histo-item-edit');
+  if (!infoDiv) return;
+
+  // Reconstruire l'affichage original
+  var dateStr = _isoToReadable(origIso);
+  var agoStr  = _isoToAgo(origIso);
+  infoDiv.innerHTML =
+    '<div class="histo-item-date" id="histo-date-label-'+bilanId+'">'+dateStr+'</div>'
+    +'<div class="histo-item-ago"  id="histo-ago-label-'+bilanId+'">'+agoStr+'</div>';
+  if (editBtn) editBtn.style.display = '';
+}
+
+function _confirmEditBilanDate(bilanId) {
+  var inp = document.getElementById('histo-date-inp-'+bilanId);
+  if (!inp) return;
+  var newDate = inp.value;
+  if (!newDate) { _cancelEditBilanDate(bilanId); return; }
+
+  // No-op si date identique
+  var wrap = document.querySelector('.histo-date-edit-wrap[data-bilan-id="'+bilanId+'"]');
+  if (wrap && wrap.dataset.orig === newDate) { _cancelEditBilanDate(bilanId); return; }
+
+  // Vérifier doublon dans _allBilans (autre bilan que celui-ci à cette date)
+  var conflict = _allBilans.find(function(b){
+    return String(b.id) !== String(bilanId) && b.date && b.date.split('T')[0] === newDate;
+  });
+  if (conflict) {
+    var conflictStr = _isoToReadable(newDate);
+    if (!confirm('⚠️ Un bilan du ' + conflictStr + ' existe déjà pour ce patient.\n\nVoulez-vous quand même changer la date ? Les deux bilans coexisteront.')) {
+      return;
+    }
+  }
+
+  // Mise à jour Supabase
+  sbB.from('bilans').update({ date: newDate }).eq('id', bilanId).then(function(res) {
+    if (res.error) { alert('Erreur lors de la mise à jour : ' + res.error.message); return; }
+
+    // Mise à jour locale de _allBilans
+    var entry = _allBilans.find(function(b){ return String(b.id) === String(bilanId); });
+    if (entry) entry.date = newDate;
+
+    // Si c'est le bilan actif, mettre à jour _currentBilanDate
+    if (String(_currentBilanId) === String(bilanId)) {
+      _currentBilanDate = newDate;
+    }
+
+    // Recalculer _prevDonnees selon le nouvel ordre
+    _allBilans.sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+    var idx = _allBilans.findIndex(function(b){ return String(b.id) === String(_currentBilanId); });
+    _prevDonnees = (idx !== -1 && idx + 1 < _allBilans.length) ? (_allBilans[idx+1].donnees || {}) : null;
+    document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
+    if (_prevDonnees) _renderDeltas(_prevDonnees);
+    _renderEvolutionPage();
+
+    showToast('✓ Date mise à jour');
+    // Recharger l'affichage du modal
+    openBilanHistory();
+  });
+}
+
+// Helpers de formatage date (réutilisables)
+function _isoToReadable(iso) {
+  if (!iso) return '—';
+  var parts  = iso.split('-');
+  var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  return parseInt(parts[2],10)+' '+months[parseInt(parts[1],10)-1]+' '+parts[0];
+}
+function _isoToAgo(iso) {
+  if (!iso) return '';
+  var today = new Date(); today.setHours(0,0,0,0);
+  var d     = new Date(iso); d.setHours(0,0,0,0);
+  var diff  = Math.round((today - d) / 86400000);
+  if (diff === 0)      return "Aujourd'hui";
+  if (diff === 1)      return 'Il y a 1 jour';
+  if (diff < 7)        return 'Il y a '+diff+' jours';
+  if (diff < 14)       return 'Il y a 1 semaine';
+  if (diff < 31)       return 'Il y a '+Math.floor(diff/7)+' semaines';
+  if (diff < 60)       return 'Il y a 1 mois';
+  if (diff < 365)      return 'Il y a '+Math.floor(diff/30)+' mois';
+  return 'Il y a '+Math.floor(diff/365)+' an'+(diff>=730?'s':'');
 }
 
 function loadBilan(id){
