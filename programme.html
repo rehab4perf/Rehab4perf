@@ -7378,11 +7378,9 @@ function _syncCalNotesFromSupabase(){
     try { localNotes = JSON.parse(localStorage.getItem(_calNotesKey())||'[]'); } catch(e){}
     // Fusionner : Supabase = source de vérité pour 'clinique'. Conserver les 'patient' locales.
     var patientNotes = localNotes.filter(function(n){ return n.type === 'patient'; });
+    // Supabase = source de vérité absolue pour 'clinique'.
+    // Ne jamais re-pousser les notes locales absentes du remote : elles ont été supprimées sur un autre appareil.
     var merged = remoteNotes.concat(patientNotes);
-    // Migrer les notes cliniques locales non encore sur Supabase
-    var remoteIds = remoteNotes.map(function(n){ return n.id; });
-    var toMigrate = localNotes.filter(function(n){ return n.type === 'clinique' && remoteIds.indexOf(n.id) === -1; });
-    toMigrate.forEach(function(note){ _pushClinicalNote(note); merged.push(note); });
     _calNotes = merged;
     localStorage.setItem(_calNotesKey(), JSON.stringify(_calNotes));
     renderCalendar();
