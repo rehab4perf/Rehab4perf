@@ -7507,8 +7507,11 @@ function _addCalNoteIfNotDupe(dateStr, title, text) {
   _loadCalNotes();
   var exists = _calNotes.some(function(n){ return n.date===dateStr && n.title===title; });
   if(exists) return false;
-  _calNotes.push({ id:_genUUID(), date:dateStr, title:title.trim(), text:(text||'').trim(), type:'clinique', createdAt:new Date().toISOString() });
+  var note = { id:_genUUID(), date:dateStr, title:title.trim(), text:(text||'').trim(), type:'clinique', createdAt:new Date().toISOString() };
+  _calNotes.push(note);
   _persistCalNotes();
+  // Synchroniser immédiatement sur Supabase pour survivre au prochain sync
+  _pushClinicalNote(note);
   return true;
 }
 
@@ -10170,13 +10173,27 @@ function _builderLoadProtoContext(){
   banner.className = '';
   if(!_progPatient || !_progUid) return;
 
+  // Si une phase est déjà liée (ex: ouverture depuis _protoOpenInBuilder),
+  // afficher directement le bon protocole sans aller chercher le "premier actif" sur Supabase
+  if(_builderLinkedPhase && _builderLinkedPhase.protoId){
+    var lpProto = _getAllProtocols().find(function(p){ return p.id === _builderLinkedPhase.protoId; });
+    var lpPh    = lpProto && lpProto.phases.find(function(p){ return p.id === _builderLinkedPhase.phaseId; });
+    if(lpProto && lpPh){
+      var patName = ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim();
+      var fakePp  = { id: _builderLinkedPhase.ppId };
+      _builderRenderProtoBanner(banner, fakePp, lpProto, lpPh, patName);
+      return;
+    }
+  }
+
   fetch(SUPA_URL_P + '/rest/v1/patient_protocols?patient_id=eq.' + _progPatient.id
-    + '&praticien_id=eq.' + _progUid + '&status=eq.active&select=*&limit=1', { headers: _sbHeaders() })
+    + '&praticien_id=eq.' + _progUid + '&status=eq.active&select=*&order=created_at.desc&limit=1', { headers: _sbHeaders() })
   .then(function(r){ return r.ok ? r.json() : []; })
   .then(function(pps){
     if(!pps || !pps.length) return;
     var pp = pps[0];
-    var proto = (typeof PROTOCOLS_REF !== 'undefined' ? PROTOCOLS_REF : []).find(function(p){ return p.id === pp.protocol_id; });
+    var proto = _getAllProtocols().find(function(p){ return p.id === pp.protocol_id; })
+      || (typeof PROTOCOLS_REF !== 'undefined' ? PROTOCOLS_REF : []).find(function(p){ return p.id === pp.protocol_id; });
     if(!proto) return;
     var currentPhaseIdx = proto.phases.findIndex(function(ph){ return ph.id === pp.current_phase_id; });
     if(currentPhaseIdx < 0) return;

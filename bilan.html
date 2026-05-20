@@ -4356,11 +4356,14 @@ var QUAL_GROUPS = [
 /* Calcule le score (0..count) d'un test depuis donnees sérialisées.
    Retourne NaN si aucun champ n'est présent dans donnees (test non renseigné). */
 function _qualScore(donnees, prefix, count){
-  var hasData = false;
+  /* Retourne NaN si aucune case n'est cochée (=test non réalisé).
+     Un score 0 n'est retourné que si au moins une case est explicitement
+     présente comme true (test réalisé, critères non validés). */
+  var hasAnyTrue = false;
   for(var i=0; i<count; i++){
-    if(donnees[prefix+'-'+i] !== undefined){ hasData=true; break; }
+    if(donnees[prefix+'-'+i]===true){ hasAnyTrue=true; break; }
   }
-  if(!hasData) return NaN;
+  if(!hasAnyTrue) return NaN;
   var score=0;
   for(var i=0; i<count; i++){
     if(donnees[prefix+'-'+i]===true) score++;
@@ -4506,7 +4509,14 @@ function _renderEvolutionPage(){
       var id=_chartCounter;
       var valsA=bilansAsc.map(function(b){var d=b.donnees||{};return grp.computeA?grp.computeA(d):parseFloat(d[grp.idA]||'');});
       var validA=valsA.filter(function(v){return !isNaN(v);});
-      if(validA.length<2)return;
+      // Pour les graphiques dual (Atteint vs Sain), les deux côtés doivent avoir ≥2 valeurs
+      if(grp.type==='dual'){
+        var valsB_check=bilansAsc.map(function(b){var d=b.donnees||{};return grp.computeB?grp.computeB(d):parseFloat(d[grp.idB]||'');});
+        var validB_check=valsB_check.filter(function(v){return !isNaN(v);});
+        if(validA.length<2||validB_check.length<2)return;
+      } else {
+        if(validA.length<2)return;
+      }
       // Fence MAD pour KPI (évite d'afficher une valeur outlier comme "Actuel")
       var fenceKPI=_robustFence(validA);
       // Stats : firstA/lastA sur valeurs non-outlier si possible
