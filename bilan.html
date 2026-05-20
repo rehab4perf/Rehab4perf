@@ -2087,6 +2087,14 @@ textarea { resize:none !important; overflow:hidden !important; }
         <tbody id="tb-lma-mollet"></tbody></table></div>
     </div>
 
+    <!-- Marqueur de douleur -->
+    <div class="block" id="lma-bloc-marqueur" style="display:none">
+      <div class="block-header light">Marqueur</div>
+      <div class="form-grid single"><div class="field"><label>Mouvement / activité qui reproduit la douleur</label>
+        <textarea id="lma-marqueur" style="min-height:48px" placeholder="Ex: douleur en palpation du ventre musculaire, reproduction à la résistance isométrique…"></textarea>
+      </div></div>
+    </div>
+
     <!-- Conclusion -->
     <div class="block" id="lma-bloc-conclusion" style="display:none">
       <div class="block-header">Conclusion</div>
@@ -4603,6 +4611,7 @@ function saveBilan(){
         _currentBilanId   = res.data.id;
         _currentBilanDate = res.data.date ? res.data.date.split('T')[0] : today;
         _bilanModified = false;
+        _syncBilanDatesNotes();
         btn.textContent = isNew ? '✓ Nouveau bilan enregistré !' : '✓ Sauvegardé !';
         setTimeout(function(){ btn.textContent='💾 Sauvegarder le bilan'; }, 2500);
         // Rafraîchir les données d'évolution après sauvegarde
@@ -4623,6 +4632,73 @@ function saveBilan(){
       btn.textContent = '💾 Sauvegarder le bilan';
       alert('Erreur réseau : '+(err&&err.message||err));
     });
+}
+
+/* ── Génère un UUID v4 (pour les notes cliniques) ── */
+function _genUUID_bilan() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = Math.random()*16|0, v = c==='x' ? r : (r&0x3|0x8);
+    return v.toString(16);
+  });
+}
+
+/* ── Synchronise les notes "dates clés" dans clinical_notes après save bilan ──
+   Pour chaque date (opération, accident) :
+   - Date renseignée → upsert de la note (création ou mise à jour de la date)
+   - Date effacée    → suppression de la note
+   Stratégie : chercher par (patient_id + praticien_id + title) pour éviter
+   les doublons sans contraindre le format d'ID.                              */
+function _syncBilanDatesNotes() {
+  if (!_bilanPatient || !_bilanUid) return;
+  var patId = _bilanPatient.id;
+  var uid   = _bilanUid;
+
+  var entries = [
+    { field: 'f-date-op',       title: '📅 Date d\'opération' },
+    { field: 'f-date-accident', title: '🤕 Date d\'accident'  }
+  ];
+
+  entries.forEach(function(entry) {
+    var dateVal = (document.getElementById(entry.field) || {}).value || '';
+    var title   = entry.title;
+
+    // Chercher si une note existe déjà pour ce patient + praticien + titre
+    sbB.from('clinical_notes')
+      .select('id')
+      .eq('patient_id',   patId)
+      .eq('praticien_id', uid)
+      .eq('title',        title)
+      .limit(1)
+      .then(function(res) {
+        if (res.error) { console.warn('_syncBilanDatesNotes select error', res.error); return; }
+        var existing = (res.data && res.data.length) ? res.data[0] : null;
+
+        if (dateVal) {
+          if (existing) {
+            // Note existante → mettre à jour la date si elle a changé
+            sbB.from('clinical_notes').update({ date: dateVal })
+              .eq('id', existing.id)
+              .then(function(u){ if(u.error) console.warn('_syncBilanDatesNotes update error', u.error); });
+          } else {
+            // Pas encore de note → créer
+            sbB.from('clinical_notes').insert({
+              id:           _genUUID_bilan(),
+              patient_id:   patId,
+              praticien_id: uid,
+              date:         dateVal,
+              title:        title,
+              body:         '',
+              created_at:   new Date().toISOString()
+            }).then(function(i){ if(i.error) console.warn('_syncBilanDatesNotes insert error', i.error); });
+          }
+        } else if (existing) {
+          // Date effacée et note existante → supprimer
+          sbB.from('clinical_notes').delete()
+            .eq('id', existing.id)
+            .then(function(d){ if(d.error) console.warn('_syncBilanDatesNotes delete error', d.error); });
+        }
+      });
+  });
 }
 
 /* ── Historique ────────────────────────────────────────── */
@@ -5567,6 +5643,8 @@ function _buildAllTestsHtml() {
         }
       }
     }
+    var lmaMarqEl = document.getElementById('lma-marqueur');
+    if (lmaMarqEl && lmaMarqEl.value) lmaHtml += crItem('Marqueur', nl2br(lmaMarqEl.value));
     var lmaConclEl = document.getElementById('lma-conclusion');
     if (lmaConclEl && lmaConclEl.value) lmaHtml += crItem('Conclusion', nl2br(lmaConclEl.value));
     if (lmaHtml) {
@@ -6280,8 +6358,9 @@ function _lmaUpdateMembre() {
   var membre = document.getElementById('lma-sel-membre').value;
   var selMuscle = document.getElementById('lma-sel-muscle');
 
-  // Cacher tous les blocs et la conclusion
+  // Cacher tous les blocs, le marqueur et la conclusion
   document.querySelectorAll('.lma-bloc').forEach(function(b){ b.style.display='none'; });
+  document.getElementById('lma-bloc-marqueur').style.display  = 'none';
   document.getElementById('lma-bloc-conclusion').style.display = 'none';
 
   // Réinitialiser le select muscle
@@ -6308,15 +6387,17 @@ function _lmaUpdateMembre() {
 function _lmaUpdateMuscle() {
   var muscle = document.getElementById('lma-sel-muscle').value;
 
-  // Cacher tous les blocs musculaires + conclusion
+  // Cacher tous les blocs musculaires + marqueur + conclusion
   document.querySelectorAll('.lma-bloc').forEach(function(b){ b.style.display='none'; });
+  document.getElementById('lma-bloc-marqueur').style.display  = 'none';
   document.getElementById('lma-bloc-conclusion').style.display = 'none';
 
   if (!muscle) return;
 
-  // Afficher le bloc du muscle sélectionné + conclusion
+  // Afficher le bloc du muscle sélectionné + marqueur + conclusion
   var bloc = document.getElementById('lma-bloc-' + muscle);
   if (bloc) bloc.style.display = 'block';
+  document.getElementById('lma-bloc-marqueur').style.display  = 'block';
   document.getElementById('lma-bloc-conclusion').style.display = 'block';
 
   // Mettre à jour le sous-titre du header

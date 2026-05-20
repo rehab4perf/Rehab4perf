@@ -4948,23 +4948,34 @@ function _extractCardioLoads(seances) {
 }
 
 /* SVG courbe durée (axe Y en secondes, labels formatés Xm Ys). */
-function _buildPevoDureeChart(pts, chartId) {
+function _buildPevoDureeChart(pts, chartId, nrsPts) {
   if(!pts || pts.length < 2) return '';
+  nrsPts = nrsPts || null;
+  var nrsValidArr = nrsPts ? nrsPts.filter(function(v){ return v !== null && !isNaN(v); }) : [];
+  var hasNrs = nrsValidArr.length >= 2;
   var vals = pts.map(function(p){ return p.secs; });
   var dates = pts.map(function(p){ var d=p.date?p.date.split('-'):['','','']; return (d[2]||'?')+'/'+(d[1]||'?'); });
   var VW=500, VH=110;
-  var PAD={top:18, right:22, bottom:30, left:46};
+  var PAD={top:18, right: hasNrs ? 38 : 22, bottom:30, left:46};
   var C = '#D97706';
+  var CNRS = '#7C3AED';
   var minV = Math.min.apply(null, vals), maxV = Math.max.apply(null, vals);
   var pad = Math.max(1, (maxV-minV)*0.15); minV = Math.max(0, minV-pad); maxV = maxV+pad;
   var rangeV = maxV - minV || 1;
   var n = pts.length;
-  var gId = 'gduree'+String(chartId).replace(/[^a-z0-9]/gi,'');
+  var svgId = 'pevo'+String(chartId).replace(/[^a-z0-9]/gi,'');
+  var gId   = 'gduree'+svgId;
+  var gNrsId = 'gnrsduree'+svgId;
   function pxy(i,v){ return {x:PAD.left+(i/Math.max(n-1,1))*(VW-PAD.left-PAD.right), y:(VH-PAD.bottom)-((v-minV)/rangeV)*(VH-PAD.top-PAD.bottom)}; }
-  var html = '<defs><linearGradient id="'+gId+'" x1="0" y1="0" x2="0" y2="1">'
+  function nrsPt(i,v){ return {x:PAD.left+(i/Math.max(n-1,1))*(VW-PAD.left-PAD.right), y:(VH-PAD.bottom)-(v/10)*(VH-PAD.top-PAD.bottom)}; }
+  var html = '<defs>'
+    +'<linearGradient id="'+gId+'" x1="0" y1="0" x2="0" y2="1">'
     +'<stop offset="0%" stop-color="'+C+'" stop-opacity="0.22"/>'
     +'<stop offset="100%" stop-color="'+C+'" stop-opacity="0.02"/>'
-    +'</linearGradient></defs>';
+    +'</linearGradient>'
+    +(hasNrs ? '<linearGradient id="'+gNrsId+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+CNRS+'" stop-opacity="0.18"/><stop offset="100%" stop-color="'+CNRS+'" stop-opacity="0.02"/></linearGradient>' : '')
+    +'</defs>';
+  // Grille Y gauche
   var step = Math.max(1, Math.ceil((maxV-minV)/4));
   for(var gv=Math.round(minV); gv<=maxV+step; gv+=step){
     var gy=(VH-PAD.bottom)-((gv-minV)/rangeV)*(VH-PAD.top-PAD.bottom);
@@ -4972,13 +4983,24 @@ function _buildPevoDureeChart(pts, chartId) {
     html+='<line x1="'+PAD.left+'" y1="'+gy.toFixed(1)+'" x2="'+(VW-PAD.right)+'" y2="'+gy.toFixed(1)+'" stroke="#EBEBEB" stroke-width="1" stroke-dasharray="3,3"/>';
     html+='<text x="'+(PAD.left-5)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="end" font-size="9" fill="#C0BDB8">'+_formatDuree(Math.max(0,Math.round(gv)))+'</text>';
   }
+  // Axe NRS droit
+  if(hasNrs){
+    html+='<line x1="'+(VW-PAD.right)+'" y1="'+PAD.top+'" x2="'+(VW-PAD.right)+'" y2="'+(VH-PAD.bottom)+'" stroke="#EDE8F9" stroke-width="1"/>';
+    [0,5,10].forEach(function(v){
+      var gy2=(VH-PAD.bottom)-(v/10)*(VH-PAD.top-PAD.bottom);
+      html+='<text x="'+(VW-PAD.right+5)+'" y="'+(gy2+4).toFixed(1)+'" text-anchor="start" font-size="8" fill="#A89BDA">'+v+'</text>';
+    });
+  }
+  // Dates X
   var shownD={};
   pts.forEach(function(p,i){ var dt=dates[i]; if(shownD[dt])return; shownD[dt]=true; html+='<text x="'+pxy(i,p.secs).x.toFixed(1)+'" y="'+(VH-PAD.bottom+12)+'" text-anchor="middle" font-size="9" fill="#C0BDB8">'+dt+'</text>'; });
   html+='<line x1="'+PAD.left+'" y1="'+(VH-PAD.bottom)+'" x2="'+(VW-PAD.right)+'" y2="'+(VH-PAD.bottom)+'" stroke="#E8E6E1" stroke-width="1"/>';
+  // Courbe durée
   var vp=pts.map(function(p,i){ var q=pxy(i,p.secs); return {x:q.x,y:q.y,secs:p.secs,date:dates[i]}; });
   var lp='M '+vp[0].x.toFixed(1)+','+vp[0].y.toFixed(1);
   for(var i=1;i<vp.length;i++){ var cx=(vp[i-1].x+vp[i].x)/2; lp+=' C '+cx.toFixed(1)+','+vp[i-1].y.toFixed(1)+' '+cx.toFixed(1)+','+vp[i].y.toFixed(1)+' '+vp[i].x.toFixed(1)+','+vp[i].y.toFixed(1); }
   var by=VH-PAD.bottom;
+  html+='<g data-line="duree">';
   html+='<path d="'+lp+' L '+vp[vp.length-1].x.toFixed(1)+','+by+' L '+vp[0].x.toFixed(1)+','+by+' Z" fill="url(#'+gId+')"/>';
   html+='<path d="'+lp+'" fill="none" stroke="'+C+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
   vp.forEach(function(p,i){
@@ -4993,7 +5015,31 @@ function _buildPevoDureeChart(pts, chartId) {
       if(isFirst) html+='<text x="'+p.x.toFixed(1)+'" y="'+(p.y-9).toFixed(1)+'" text-anchor="middle" font-size="9" fill="#9D9B96">'+lbl+'</text>';
     }
   });
-  return '<svg viewBox="0 0 '+VW+' '+VH+'" style="width:100%;overflow:visible">'+html+'</svg>';
+  html+='</g>';
+  // Courbe NRS (si dispo)
+  if(hasNrs){
+    var nvp = nrsPts.map(function(v,i){ var q=nrsPt(i,v===null?0:v); return {x:q.x,y:q.y,nrs:v,valid:v!==null}; });
+    var validNvp = nvp.filter(function(p){ return p.valid; });
+    if(validNvp.length >= 2){
+      var nlp='M '+validNvp[0].x.toFixed(1)+','+validNvp[0].y.toFixed(1);
+      for(var ni=1;ni<validNvp.length;ni++){ var ncx=(validNvp[ni-1].x+validNvp[ni].x)/2; nlp+=' C '+ncx.toFixed(1)+','+validNvp[ni-1].y.toFixed(1)+' '+ncx.toFixed(1)+','+validNvp[ni].y.toFixed(1)+' '+validNvp[ni].x.toFixed(1)+','+validNvp[ni].y.toFixed(1); }
+      html+='<g data-line="nrs">';
+      html+='<path d="'+nlp+' L '+validNvp[validNvp.length-1].x.toFixed(1)+','+by+' L '+validNvp[0].x.toFixed(1)+','+by+' Z" fill="url(#'+gNrsId+')" opacity="0.6"/>';
+      html+='<path d="'+nlp+'" fill="none" stroke="'+CNRS+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="5,3"/>';
+      validNvp.forEach(function(p,ni){
+        var isLast=ni===validNvp.length-1, isFirst=ni===0;
+        if(isLast){
+          html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="5" fill="'+CNRS+'" opacity="0.18"/>';
+          html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3.5" fill="'+CNRS+'"/>';
+          html+='<text x="'+p.x.toFixed(1)+'" y="'+(p.y-10).toFixed(1)+'" text-anchor="middle" font-size="9" font-weight="700" fill="'+CNRS+'">'+p.nrs+'/10</text>';
+        } else if(isFirst){
+          html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3" fill="#fff" stroke="'+CNRS+'" stroke-width="1.5"/>';
+        }
+      });
+      html+='</g>';
+    }
+  }
+  return '<svg data-pevo-id="'+svgId+'" viewBox="0 0 '+VW+' '+VH+'" style="width:100%;overflow:visible">'+html+'</svg>';
 }
 
 /* SVG courbe cardio (axe Y en km). */
@@ -5356,8 +5402,26 @@ function _renderPevoCharts(exoData, selectedKeys) {
       var first = pts[0].secs, last = pts[pts.length-1].secs;
       var delta = last - first, sign = delta>=0?'+':'';
       var cls = delta===0?'neutral':(delta>0?'pos':'neg');
-      var svg = _buildPevoDureeChart(pts, _pevoChartCtr);
+      // Chercher les NRS pour cet exercice (clé sans suffixe __duree)
+      var exoKeyNrs = key.replace(/__duree$/, '');
+      var nrsPts = null, hasNrsData = false;
+      if(_pevoNrsData && _pevoNrsData[exoKeyNrs]) {
+        var nrsMap = {};
+        _pevoNrsData[exoKeyNrs].pts.forEach(function(p){ nrsMap[p.date] = p.nrs; });
+        nrsPts = pts.map(function(p){ return (nrsMap[p.date] !== undefined && nrsMap[p.date] !== null) ? nrsMap[p.date] : null; });
+        hasNrsData = nrsPts.filter(function(v){ return v !== null; }).length >= 2;
+      }
+      var svg = _buildPevoDureeChart(pts, _pevoChartCtr, nrsPts);
       if(!svg) return;
+      // Pills toggle durée / douleur
+      var dureeToggleHtml = '';
+      if(hasNrsData) {
+        var _dctr = _pevoChartCtr;
+        dureeToggleHtml = '<div class="pevo-pill-toggles">'
+          +'<button class="pevo-line-pill active" style="color:#D97706;border-color:#D97706" onclick="togglePevoPill(this,\'pevo'+_dctr+'\',\'duree\')">● Durée</button>'
+          +'<button class="pevo-line-pill active" style="color:#7C3AED;border-color:#7C3AED" onclick="togglePevoPill(this,\'pevo'+_dctr+'\',\'nrs\')">● Douleur</button>'
+          +'</div>';
+      }
       dureeChartsHtml += '<div class="pevo-card">'
         +'<div class="pevo-card-header">'
         +'<span class="pevo-card-title">'+_escP(grp.label)+'</span>'
@@ -5367,6 +5431,7 @@ function _renderPevoCharts(exoData, selectedKeys) {
         +'<span class="pevo-kpi-strong">Actuel : '+_formatDuree(last)+'</span>'
         +'<span class="pevo-kpi '+cls+'">'+(sign)+_formatDuree(Math.abs(delta))+'</span>'
         +'</div></div>'
+        +dureeToggleHtml
         +svg+'</div>';
     });
     dureeSectionHtml = '<div class="pevo-select-section">'

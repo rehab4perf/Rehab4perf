@@ -63,17 +63,17 @@ iframe.active { display:block; }
 }
 .pm-overlay.open { display:flex; }
 .pm-card {
-  background:#fff; border-radius:10px;
-  box-shadow:0 8px 40px rgba(0,0,0,.25);
-  width:100%; max-width:480px; min-height:340px; max-height:calc(100vh - 72px);
+  background:#fff; border-radius:14px;
+  box-shadow:0 12px 48px rgba(0,0,0,.28);
+  width:calc(100% - 24px); max-width:560px; min-height:340px; max-height:calc(100vh - 72px);
   display:flex; flex-direction:column; overflow:hidden;
   font-family:-apple-system,'Helvetica Neue',sans-serif;
 }
 .pm-header {
   background:#1A3A5C; color:#fff;
-  padding:14px 18px; display:flex; align-items:center; gap:10px; flex-shrink:0;
+  padding:16px 20px; display:flex; align-items:center; gap:10px; flex-shrink:0;
 }
-.pm-header h2 { font-size:.95rem; font-weight:700; flex:1; }
+.pm-header h2 { font-size:1rem; font-weight:700; flex:1; }
 .pm-close {
   background:none; border:none; color:rgba(255,255,255,.7);
   font-size:1.3rem; cursor:pointer; padding:0 2px; line-height:1;
@@ -82,17 +82,19 @@ iframe.active { display:block; }
 .pm-close:hover { color:#fff; }
 .pm-search-row {
   padding:12px 16px; border-bottom:1px solid #E8E6E1; flex-shrink:0;
-  display:flex; gap:8px;
+  display:flex; gap:8px; align-items:center;
 }
 .pm-search {
-  flex:1; border:1.5px solid #D3D1CB; border-radius:6px;
-  padding:7px 11px; font-size:.9rem; font-family:inherit; outline:none;
+  flex:1; border:1.5px solid #D3D1CB; border-radius:8px;
+  padding:9px 13px; font-size:.95rem; font-family:inherit; outline:none;
+  min-height:44px;
 }
-.pm-search:focus { border-color:#2B5FA6; }
+.pm-search:focus { border-color:#2B5FA6; box-shadow:0 0 0 3px rgba(43,95,166,.1); }
 .pm-new-btn {
-  background:#1A3A5C; color:#fff; border:none; border-radius:6px;
-  padding:7px 13px; font-size:.8rem; font-weight:600; cursor:pointer;
+  background:#1A3A5C; color:#fff; border:none; border-radius:8px;
+  padding:9px 16px; font-size:.82rem; font-weight:600; cursor:pointer;
   font-family:inherit; white-space:nowrap; transition:background .12s;
+  min-height:44px;
 }
 .pm-new-btn:hover { background:#2B5FA6; }
 .pm-body { flex:1; overflow-y:auto; min-height:80px; }
@@ -101,8 +103,8 @@ iframe.active { display:block; }
   color:#9D9B96; font-size:.88rem; font-style:italic;
 }
 .pm-patient-item {
-  display:flex; align-items:center; gap:10px;
-  padding:11px 16px; border-bottom:1px solid #F1F0ED;
+  display:flex; align-items:center; gap:12px;
+  padding:13px 20px; border-bottom:1px solid #F1F0ED;
   transition:background .1s; cursor:pointer;
 }
 .pm-patient-item:hover { background:#F7F6F3; }
@@ -119,9 +121,9 @@ iframe.active { display:block; }
 .pm-patient-meta { font-size:.79rem; color:#6B6860; margin-top:1px; }
 .pm-patient-actions { display:flex; gap:6px; flex-shrink:0; }
 .pm-select-btn {
-  background:#1A3A5C; color:#fff; border:none; border-radius:5px;
-  padding:5px 10px; font-size:.74rem; font-weight:600; cursor:pointer;
-  font-family:inherit; transition:background .12s;
+  background:#1A3A5C; color:#fff; border:none; border-radius:7px;
+  padding:7px 13px; font-size:.78rem; font-weight:600; cursor:pointer;
+  font-family:inherit; transition:background .12s; min-height:36px;
 }
 .pm-select-btn:hover { background:#2B5FA6; }
 .pm-select-btn.active { background:#2D6A4F; }
@@ -134,31 +136,33 @@ iframe.active { display:block; }
 
 /* ── Create form ─────────────────────────────────────────── */
 .pm-create-form {
-  display:none; padding:16px; border-bottom:2px solid #E8E6E1;
+  display:none; padding:18px 20px; border-bottom:2px solid #E8E6E1;
   background:#F7F6F3; flex-shrink:0;
 }
 .pm-create-form.open { display:block; }
-.pm-create-form h3 { font-size:.8rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#1A3A5C; margin-bottom:12px; }
-.pm-form-row { display:flex; gap:8px; margin-bottom:8px; }
-.pm-form-field { display:flex; flex-direction:column; gap:3px; flex:1; }
+.pm-create-form h3 { font-size:.78rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#1A3A5C; margin-bottom:14px; }
+.pm-form-row { display:flex; gap:10px; margin-bottom:10px; }
+.pm-form-field { display:flex; flex-direction:column; gap:4px; flex:1; }
 .pm-form-field label { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#6B6860; }
 .pm-form-field input, .pm-form-field select {
-  border:1.5px solid #D3D1CB; border-radius:5px;
-  padding:6px 9px; font-size:.9rem; font-family:inherit; outline:none;
-  background:#fff;
+  border:1.5px solid #D3D1CB; border-radius:8px;
+  padding:9px 12px; font-size:.95rem; font-family:inherit; outline:none;
+  background:#fff; min-height:44px; transition:border-color .12s, box-shadow .12s;
 }
-.pm-form-field input:focus, .pm-form-field select:focus { border-color:#2B5FA6; }
-.pm-form-actions { display:flex; gap:8px; margin-top:10px; }
+.pm-form-field input:focus, .pm-form-field select:focus {
+  border-color:#2B5FA6; box-shadow:0 0 0 3px rgba(43,95,166,.1);
+}
+.pm-form-actions { display:flex; gap:10px; margin-top:14px; }
 .pm-save-btn {
-  background:#2D6A4F; color:#fff; border:none; border-radius:6px;
-  padding:7px 16px; font-size:.82rem; font-weight:600; cursor:pointer;
-  font-family:inherit; transition:background .12s;
+  flex:1; background:#2D6A4F; color:#fff; border:none; border-radius:8px;
+  padding:10px 16px; font-size:.88rem; font-weight:600; cursor:pointer;
+  font-family:inherit; transition:background .12s; min-height:44px;
 }
 .pm-save-btn:hover { background:#1A5C3A; }
 .pm-cancel-btn {
-  background:none; border:1.5px solid #D3D1CB; border-radius:6px;
-  padding:7px 14px; font-size:.82rem; color:#6B6860; cursor:pointer;
-  font-family:inherit; transition:all .12s;
+  background:none; border:1.5px solid #D3D1CB; border-radius:8px;
+  padding:10px 16px; font-size:.88rem; color:#6B6860; cursor:pointer;
+  font-family:inherit; transition:all .12s; min-height:44px;
 }
 .pm-cancel-btn:hover { border-color:#9D9B96; color:#1A1917; }
 
@@ -193,12 +197,12 @@ iframe.active { display:block; }
 
 /* ── Edit form ──────────────────────────────────────────── */
 .pm-edit-form {
-  display:none; padding:16px; border-bottom:2px solid #2B5FA6;
+  display:none; padding:18px 20px; border-bottom:2px solid #2B5FA6;
   background:#EEF3FB; flex-shrink:0;
 }
 .pm-edit-form.open { display:block; }
-.pm-edit-form h3 { font-size:.8rem; font-weight:700; text-transform:uppercase;
-  letter-spacing:.05em; color:#2B5FA6; margin-bottom:12px; }
+.pm-edit-form h3 { font-size:.78rem; font-weight:700; text-transform:uppercase;
+  letter-spacing:.06em; color:#2B5FA6; margin-bottom:14px; }
 
 @media (max-width:900px) {
   .topnav { padding:0 10px; gap:2px; }
@@ -241,7 +245,7 @@ iframe.active { display:block; }
     <div class="pm-create-form" id="pmCreateForm">
       <h3>Nouveau patient</h3>
       <div class="pm-form-row">
-        <div class="pm-form-field" style="flex:0 0 72px">
+        <div class="pm-form-field" style="flex:0 0 90px">
           <label>Civilité</label>
           <select id="pm-civ"><option value="M.">M.</option><option value="Mme.">Mme.</option></select>
         </div>
@@ -275,7 +279,7 @@ iframe.active { display:block; }
       <h3>✏️ Modifier le patient</h3>
       <input type="hidden" id="pm-edit-id">
       <div class="pm-form-row">
-        <div class="pm-form-field" style="flex:0 0 72px">
+        <div class="pm-form-field" style="flex:0 0 90px">
           <label>Civilité</label>
           <select id="pm-edit-civ"><option value="M.">M.</option><option value="Mme.">Mme.</option></select>
         </div>
