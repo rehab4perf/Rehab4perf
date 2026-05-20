@@ -1080,6 +1080,12 @@ textarea { resize:none !important; overflow:hidden !important; }
 .qual-score-badge.ok  { background:#DCFCE7; color:#16A34A; }
 .qual-score-badge.warn{ background:#FEF3C7; color:#D97706; }
 .qual-score-badge.bad { background:#FEE2E2; color:#DC2626; }
+/* Tableau qualitatif repliable */
+.qual-grid-collapsible { display:none; }
+.qual-grid-collapsible.open { display:block; }
+.qual-toggle-btn { display:flex; align-items:center; justify-content:center; gap:5px; width:100%; margin-top:10px; padding:6px 0; border:none; border-top:1px solid var(--border); background:transparent; color:var(--text3); font-size:.72rem; font-weight:600; cursor:pointer; font-family:inherit; letter-spacing:.02em; transition:color .15s; }
+.qual-toggle-btn:hover { color:var(--accent2); }
+@media print { .qual-grid-collapsible { display:block !important; } .qual-toggle-btn { display:none !important; } }
 /* Courbe douleur */
 </style>
 
@@ -4615,7 +4621,8 @@ function _renderEvolutionPage(){
       +'<div class="evo-chart-kpis">'+kpisHtml+'</div></div>'
       +pillsHtml
       +chartSvg
-      +gridHtml
+      +'<div class="qual-grid-collapsible" id="qgrid-'+qid+'">'+gridHtml+'</div>'
+      +'<button class="qual-toggle-btn no-print" onclick="toggleQualGrid(this,\'qgrid-'+qid+'\')" aria-expanded="false">▼ Voir le tableau détaillé</button>'
       +'</div>';
   });
   if(qualHtml){
@@ -4635,6 +4642,15 @@ function toggleEvoPill(btn, chartId, line){
   svg.querySelectorAll('[data-line="'+line+'"]').forEach(function(el){
     el.style.display = show ? '' : 'none';
   });
+}
+
+/* ── Dépliage tableau qualitatif ── */
+function toggleQualGrid(btn, gridId){
+  var el = document.getElementById(gridId);
+  if(!el) return;
+  var open = el.classList.toggle('open');
+  btn.setAttribute('aria-expanded', String(open));
+  btn.textContent = open ? '▲ Masquer le tableau' : '▼ Voir le tableau détaillé';
 }
 
 /* ── Toggle par ligne dans chart qualitatif ── */
