@@ -147,11 +147,22 @@ iframe.active { display:block; }
 .pm-form-field input, .pm-form-field select {
   border:1.5px solid #D3D1CB; border-radius:8px;
   padding:9px 12px; font-size:.95rem; font-family:inherit; outline:none;
-  background:#fff; min-height:44px; transition:border-color .12s, box-shadow .12s;
+  background:#fff; height:46px; box-sizing:border-box;
+  transition:border-color .12s, box-shadow .12s;
 }
 .pm-form-field input:focus, .pm-form-field select:focus {
   border-color:#2B5FA6; box-shadow:0 0 0 3px rgba(43,95,166,.1);
 }
+/* Champ date bascule */
+.pm-date-wrap { display:flex; align-items:stretch; gap:6px; }
+.pm-date-wrap input { flex:1; min-width:0; }
+.pm-date-toggle-btn {
+  flex-shrink:0; width:38px; height:46px; box-sizing:border-box;
+  border:1.5px solid #D3D1CB; border-radius:8px; background:#fff;
+  font-size:1rem; cursor:pointer; display:flex; align-items:center;
+  justify-content:center; color:#6B6860; transition:border-color .12s, color .12s;
+}
+.pm-date-toggle-btn:hover { border-color:#2B5FA6; color:#2B5FA6; }
 .pm-form-actions { display:flex; gap:10px; margin-top:14px; }
 .pm-save-btn {
   flex:1; background:#2D6A4F; color:#fff; border:none; border-radius:8px;
@@ -261,7 +272,11 @@ iframe.active { display:block; }
       <div class="pm-form-row">
         <div class="pm-form-field">
           <label>Date de naissance</label>
-          <input type="date" id="pm-ddn">
+          <div class="pm-date-wrap">
+            <input type="date" id="pm-ddn">
+            <input type="text" id="pm-ddn-txt" placeholder="JJ/MM/AAAA" style="display:none" oninput="syncDateText('pm-ddn')">
+            <button type="button" class="pm-date-toggle-btn" onclick="toggleDateMode('pm-ddn')" title="Saisir manuellement">✎</button>
+          </div>
         </div>
         <div class="pm-form-field">
           <label>Sport / Activité</label>
@@ -295,7 +310,11 @@ iframe.active { display:block; }
       <div class="pm-form-row">
         <div class="pm-form-field">
           <label>Date de naissance</label>
-          <input type="date" id="pm-edit-ddn">
+          <div class="pm-date-wrap">
+            <input type="date" id="pm-edit-ddn">
+            <input type="text" id="pm-edit-ddn-txt" placeholder="JJ/MM/AAAA" style="display:none" oninput="syncDateText('pm-edit-ddn')">
+            <button type="button" class="pm-date-toggle-btn" onclick="toggleDateMode('pm-edit-ddn')" title="Saisir manuellement">✎</button>
+          </div>
         </div>
         <div class="pm-form-field">
           <label>Sport / Activité</label>
@@ -532,6 +551,48 @@ function closePMOnBackdrop(e) {
 }
 
 /* ── Formulaire création ────────────────────────────────── */
+/* ── Bascule saisie date (picker ↔ texte manuel) ─────────── */
+function resetDateField(baseId) {
+  var nat = document.getElementById(baseId);
+  var txt = document.getElementById(baseId + '-txt');
+  if (!nat) return;
+  nat.value = ''; nat.style.display = '';
+  if (txt) { txt.value = ''; txt.style.display = 'none'; }
+  var wrap = nat.closest ? nat.closest('.pm-date-wrap') : nat.parentElement;
+  if (wrap) {
+    var btn = wrap.querySelector('.pm-date-toggle-btn');
+    if (btn) { btn.textContent = '✎'; btn.title = 'Saisir manuellement'; }
+  }
+}
+function syncDateText(baseId) {
+  var nat = document.getElementById(baseId);
+  var txt = document.getElementById(baseId + '-txt');
+  if (!nat || !txt) return;
+  var m = txt.value.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  nat.value = m ? m[3] + '-' + m[2].padStart(2,'0') + '-' + m[1].padStart(2,'0') : '';
+}
+function toggleDateMode(baseId) {
+  var nat = document.getElementById(baseId);
+  var txt = document.getElementById(baseId + '-txt');
+  if (!nat || !txt) return;
+  var wrap = nat.closest ? nat.closest('.pm-date-wrap') : nat.parentElement;
+  var btn  = wrap ? wrap.querySelector('.pm-date-toggle-btn') : null;
+  var toText = txt.style.display === 'none';
+  if (toText) {
+    // → mode texte
+    var v = nat.value;
+    if (v) { var p=v.split('-'); txt.value=p[2]+'/'+p[1]+'/'+p[0]; } else { txt.value=''; }
+    nat.style.display = 'none'; txt.style.display = '';
+    if (btn) { btn.textContent = '📅'; btn.title = 'Utiliser le sélecteur'; }
+    txt.focus();
+  } else {
+    // → mode picker
+    syncDateText(baseId);
+    txt.style.display = 'none'; nat.style.display = '';
+    if (btn) { btn.textContent = '✎'; btn.title = 'Saisir manuellement'; }
+  }
+}
+
 function toggleCreateForm(show) {
   var f = document.getElementById('pmCreateForm');
   if (show) {
@@ -539,10 +600,11 @@ function toggleCreateForm(show) {
     document.getElementById('pm-nom').focus();
   } else {
     f.classList.remove('open');
-    ['pm-civ','pm-nom','pm-prenom','pm-ddn','pm-sport'].forEach(function(id) {
+    ['pm-civ','pm-nom','pm-prenom','pm-sport'].forEach(function(id) {
       var el = document.getElementById(id);
       if (el) el.value = id === 'pm-civ' ? 'M.' : '';
     });
+    resetDateField('pm-ddn');
   }
 }
 
@@ -669,6 +731,7 @@ function editPatient(id) {
   var p = _allPatients.find(function(x){ return x.id === id; });
   if (!p) return;
   toggleCreateForm(false); // ferme le formulaire de création si ouvert
+  resetDateField('pm-edit-ddn');
   document.getElementById('pm-edit-id').value    = p.id;
   document.getElementById('pm-edit-nom').value   = p.nom || '';
   document.getElementById('pm-edit-prenom').value= p.prenom || '';
