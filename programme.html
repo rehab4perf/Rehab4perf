@@ -2886,7 +2886,11 @@ function addCardioCible(blocId, scope){
   var b = blocs.find(function(x){ return x.id===blocId; });
   if(!b) return;
   _ensureCardioCibles(b, scope);
-  b[scope].push({type:'bpm', min:'', max:''});
+  var arr = b[scope];
+  var lastType = arr[arr.length - 1].type;
+  var idx = CARDIO_CIBLE_TYPES.indexOf(lastType);
+  var nextType = CARDIO_CIBLE_TYPES[(idx + 1) % CARDIO_CIBLE_TYPES.length];
+  arr.push({type: nextType, min:'', max:''});
   renderSession();
 }
 function removeCardioCible(blocId, scope, idx){
@@ -2929,7 +2933,10 @@ function addEmomCible(blocId, exoId){
   var e = b.emom_exos.find(function(x){ return x.id===exoId; });
   if(!e) return;
   if(!e.cibles) e.cibles = [];
-  e.cibles.push({type:'bpm', min:'', max:''});
+  var lastType = e.cibles.length ? e.cibles[e.cibles.length - 1].type : null;
+  var idx = lastType !== null ? CARDIO_CIBLE_TYPES.indexOf(lastType) : -1;
+  var nextType = CARDIO_CIBLE_TYPES[(idx + 1) % CARDIO_CIBLE_TYPES.length];
+  e.cibles.push({type: nextType, min:'', max:''});
   renderSession();
 }
 function removeEmomCible(blocId, exoId, idx){
@@ -3262,10 +3269,14 @@ function _normCibles(e){
   if(!e.cibles || !e.cibles.length)
     e.cibles = [{type: e.cibleType||'kg', min: e.cibleVal||'', max:''}];
 }
+var _EXO_CIBLE_SEQ = ['kg','RPE','RIR','%1RM','Vitesse'];
 function addCible(blocId, exoId){
   var e = _getExo(blocId, exoId); if(!e) return;
   _normCibles(e);
-  e.cibles.push({type:'kg', min:'', max:''});
+  var lastType = e.cibles[e.cibles.length - 1].type;
+  var idx = _EXO_CIBLE_SEQ.indexOf(lastType);
+  var nextType = _EXO_CIBLE_SEQ[(idx + 1) % _EXO_CIBLE_SEQ.length];
+  e.cibles.push({type: nextType, min:'', max:''});
   renderSession();
 }
 function removeCible(blocId, exoId, idx){

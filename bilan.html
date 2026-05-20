@@ -1053,6 +1053,27 @@ textarea { resize:none !important; overflow:hidden !important; }
 }
 .evo-line-pill.active { opacity:1; }
 .evo-line-pill:not(.active) { opacity:.3; background:#fff !important; }
+/* ── Évolution qualitative ── */
+.qual-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 16px 12px; }
+.qual-card-header { display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+.qual-card-title { font-size:.82rem; font-weight:700; color:var(--text); }
+.qual-kpis { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.qual-grid-wrap { overflow-x:auto; margin-top:10px; }
+.qual-grid { width:100%; border-collapse:collapse; font-size:.72rem; }
+.qual-grid th { background:var(--surface2); color:var(--text2); font-weight:700; padding:5px 8px; text-align:center; border:1px solid var(--border); white-space:nowrap; }
+.qual-grid th.qual-crit-hdr { text-align:left; min-width:120px; }
+.qual-grid td { padding:4px 6px; border:1px solid var(--border); text-align:center; vertical-align:middle; white-space:nowrap; }
+.qual-grid td.qual-crit-lbl { text-align:left; color:var(--text2); font-weight:500; padding:4px 10px; background:var(--surface); }
+.qual-grid td.qual-crit-side { text-align:left; color:var(--text3); font-size:.65rem; font-weight:600; padding:3px 10px; background:var(--surface2); text-transform:uppercase; letter-spacing:.04em; }
+.qual-chip { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:6px; font-size:.75rem; font-weight:700; }
+.qual-chip.ok  { background:#DCFCE7; color:#16A34A; }
+.qual-chip.bad { background:#FEE2E2; color:#DC2626; }
+.qual-chip.na  { background:var(--surface2); color:var(--text3); }
+.qual-score-row { display:flex; align-items:center; gap:6px; }
+.qual-score-badge { font-size:.82rem; font-weight:700; padding:2px 8px; border-radius:6px; }
+.qual-score-badge.ok  { background:#DCFCE7; color:#16A34A; }
+.qual-score-badge.warn{ background:#FEF3C7; color:#D97706; }
+.qual-score-badge.bad { background:#FEE2E2; color:#DC2626; }
 /* Courbe douleur */
 </style>
 
@@ -4243,6 +4264,141 @@ function _attachChartEvents(){
   });
 }
 
+/* ── Tests Fonctionnels Qualitatifs — config & helpers ──── */
+var QUAL_GROUPS = [
+  {
+    id:'reception',
+    title:'Réception — Qualité de mouvement',
+    prefixA:'rec-cs', prefixB:'rec-ca',
+    labelA:'Côté sain', labelB:'Côté atteint',
+    count:5,
+    criteria:['Talon au repère 80%','Descente fluide à 90°','Maintien 3s à 90°','Contrôle neuromusculaire genou','Contrôle du tronc (TSB)']
+  },
+  {
+    id:'plioq',
+    title:'Pliométrie Qualitative',
+    prefixA:'plioq-cs', prefixB:'plioq-ca',
+    labelA:'Côté sain', labelB:'Côté atteint',
+    count:2,
+    criteria:['Absence de raideur du membre','Absence de déficit de hauteur']
+  }
+];
+
+/* Calcule le score (0..count) d'un test depuis donnees sérialisées.
+   Retourne NaN si aucun champ n'est présent dans donnees (test non renseigné). */
+function _qualScore(donnees, prefix, count){
+  var hasData = false;
+  for(var i=0; i<count; i++){
+    if(donnees[prefix+'-'+i] !== undefined){ hasData=true; break; }
+  }
+  if(!hasData) return NaN;
+  var score=0;
+  for(var i=0; i<count; i++){
+    if(donnees[prefix+'-'+i]===true) score++;
+  }
+  return score;
+}
+
+/* Construit le SVG de courbe de score (entier 0..maxVal) pour CA et CS. */
+function _buildQualChart(scoresA, scoresB, dates, opts){
+  opts = opts || {};
+  var maxVal = opts.maxVal || 5;
+  var colorA = '#2B5FA6', colorB = '#16A34A';
+  var VW=500, VH=110;
+  var PAD={top:18, right:22, bottom:30, left:32};
+  var id = opts.chartId || 0;
+  var n = scoresA.length;
+  var validA = scoresA.filter(function(v){ return !isNaN(v); });
+  var validB = scoresB.filter(function(v){ return !isNaN(v); });
+  if(validA.length < 2 && validB.length < 2) return '';
+  function pxy(i, v){ return { x: PAD.left+(i/Math.max(n-1,1))*(VW-PAD.left-PAD.right), y: (VH-PAD.bottom)-(v/maxVal)*(VH-PAD.top-PAD.bottom) }; }
+  var html = '<defs>';
+  ['A','B'].forEach(function(s){
+    var c = s==='A'?colorA:colorB;
+    html += '<linearGradient id="qg'+s+id+'" x1="0" y1="0" x2="0" y2="1">'
+      +'<stop offset="0%" stop-color="'+c+'" stop-opacity="0.2"/>'
+      +'<stop offset="100%" stop-color="'+c+'" stop-opacity="0.02"/></linearGradient>';
+  });
+  html += '</defs>';
+  // Grille Y (0, mid, max)
+  [0, Math.round(maxVal/2), maxVal].forEach(function(gv){
+    var gy = (VH-PAD.bottom)-(gv/maxVal)*(VH-PAD.top-PAD.bottom);
+    html += '<line x1="'+PAD.left+'" y1="'+gy.toFixed(1)+'" x2="'+(VW-PAD.right)+'" y2="'+gy.toFixed(1)+'" stroke="#EBEBEB" stroke-width="1" stroke-dasharray="3,3"/>';
+    html += '<text x="'+(PAD.left-4)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="end" font-size="9" fill="#C0BDB8">'+gv+'</text>';
+  });
+  // Axe X + dates
+  html += '<line x1="'+PAD.left+'" y1="'+(VH-PAD.bottom)+'" x2="'+(VW-PAD.right)+'" y2="'+(VH-PAD.bottom)+'" stroke="#E8E6E1" stroke-width="1"/>';
+  var shownD={};
+  scoresA.forEach(function(v,i){ var dt=dates[i]; if(shownD[dt])return; shownD[dt]=true; html+='<text x="'+pxy(i,0).x.toFixed(1)+'" y="'+(VH-PAD.bottom+12)+'" text-anchor="middle" font-size="9" fill="#C0BDB8">'+dt+'</text>'; });
+  // Courbe A (CS) et B (CA)
+  [[scoresA,'A',colorA],[scoresB,'B',colorB]].forEach(function(row){
+    var scores=row[0], side=row[1], c=row[2];
+    var valid=scores.map(function(v,i){ return {v:v,i:i}; }).filter(function(p){ return !isNaN(p.v); });
+    if(valid.length < 2) return;
+    var vp = valid.map(function(p){ var q=pxy(p.i,p.v); return {x:q.x,y:q.y,v:p.v,date:dates[p.i]}; });
+    var lp='M '+vp[0].x.toFixed(1)+','+vp[0].y.toFixed(1);
+    for(var ii=1;ii<vp.length;ii++){ var cx=(vp[ii-1].x+vp[ii].x)/2; lp+=' C '+cx.toFixed(1)+','+vp[ii-1].y.toFixed(1)+' '+cx.toFixed(1)+','+vp[ii].y.toFixed(1)+' '+vp[ii].x.toFixed(1)+','+vp[ii].y.toFixed(1); }
+    var by=VH-PAD.bottom;
+    html += '<g data-line="'+side+'">';
+    html += '<path d="'+lp+' L '+vp[vp.length-1].x.toFixed(1)+','+by+' L '+vp[0].x.toFixed(1)+','+by+' Z" fill="url(#qg'+side+id+')"/>';
+    html += '<path d="'+lp+'" fill="none" stroke="'+c+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+    vp.forEach(function(p,ii){
+      var isLast=ii===vp.length-1, isFirst=ii===0;
+      var lbl=p.v+'/'+maxVal;
+      if(isLast){
+        html += '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="6" fill="'+c+'" opacity="0.18"/>';
+        html += '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4" fill="'+c+'"/>';
+        html += '<text x="'+p.x.toFixed(1)+'" y="'+(p.y-12).toFixed(1)+'" text-anchor="middle" font-size="10" font-weight="700" fill="#1A3A5C">'+lbl+'</text>';
+      } else {
+        html += '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isFirst?3.5:3)+'" fill="#fff" stroke="'+c+'" stroke-width="'+(isFirst?2:1.5)+'"/>';
+        if(isFirst) html += '<text x="'+p.x.toFixed(1)+'" y="'+(p.y-9).toFixed(1)+'" text-anchor="middle" font-size="9" fill="#9D9B96">'+lbl+'</text>';
+      }
+    });
+    html += '</g>';
+  });
+  return '<svg data-qual-id="qual'+id+'" viewBox="0 0 '+VW+' '+VH+'" style="width:100%;overflow:visible">'+html+'</svg>';
+}
+
+/* Construit le tableau couleur critère × bilan. */
+function _buildQualGrid(bilansAsc, dates, grp){
+  var html = '<div class="qual-grid-wrap"><table class="qual-grid">';
+  // Header
+  html += '<thead><tr><th class="qual-crit-hdr">Critère</th>';
+  dates.forEach(function(d){ html += '<th>'+d+'</th>'; });
+  html += '</tr></thead><tbody>';
+  // Lignes critères
+  grp.criteria.forEach(function(label, ci){
+    // Ligne critère label
+    html += '<tr><td class="qual-crit-lbl" rowspan="2">'+label+'</td>';
+    // Côté sain (A)
+    bilansAsc.forEach(function(b){
+      var v = (b.donnees||{})[grp.prefixA+'-'+ci];
+      var chip = v===true ? '<span class="qual-chip ok">✓</span>' : (v===false ? '<span class="qual-chip bad">✗</span>' : '<span class="qual-chip na">—</span>');
+      html += '<td>'+chip+'</td>';
+    });
+    html += '</tr><tr>';
+    // Côté atteint (B)
+    bilansAsc.forEach(function(b){
+      var v = (b.donnees||{})[grp.prefixB+'-'+ci];
+      var chip = v===true ? '<span class="qual-chip ok">✓</span>' : (v===false ? '<span class="qual-chip bad">✗</span>' : '<span class="qual-chip na">—</span>');
+      html += '<td>'+chip+'</td>';
+    });
+    html += '</tr>';
+  });
+  // Ligne score
+  html += '<tr><td class="qual-crit-lbl" style="font-weight:700">Score</td>';
+  bilansAsc.forEach(function(b, bi){
+    var sa = _qualScore(b.donnees||{}, grp.prefixA, grp.count);
+    var sb = _qualScore(b.donnees||{}, grp.prefixB, grp.count);
+    var maxV = grp.count;
+    function badge(sc){ if(isNaN(sc)) return '<span class="qual-chip na">—</span>'; var cls=sc===maxV?'ok':sc>0?'warn':'bad'; return '<span class="qual-score-badge '+cls+'">'+sc+'/'+maxV+'</span>'; }
+    html += '<td style="vertical-align:middle"><div style="display:flex;flex-direction:column;gap:3px;align-items:center"><div style="font-size:.6rem;color:#2B5FA6;font-weight:600">CS</div>'+badge(sa)+'<div style="font-size:.6rem;color:#16A34A;font-weight:600">CA</div>'+badge(sb)+'</div></td>';
+  });
+  html += '</tr>';
+  html += '</tbody></table></div>';
+  return html;
+}
+
 /* ── Page Évolution ─────────────────────────────────────── */
 function _renderEvolutionPage(){
   var container=document.getElementById('evolution-content');
@@ -4342,6 +4498,45 @@ function _renderEvolutionPage(){
     if(!catHtml)return;
     html+='<div class="evo-block"><div class="evo-block-title">'+cat+'</div><div class="evo-chart-grid">'+catHtml+'</div></div>';
   });
+  // ── Section Tests Fonctionnels Qualitatifs ──
+  var qualHtml = '';
+  QUAL_GROUPS.forEach(function(grp){
+    _chartCounter++;
+    var qid = _chartCounter;
+    var scoresA = bilansAsc.map(function(b){ return _qualScore(b.donnees||{}, grp.prefixA, grp.count); });
+    var scoresB = bilansAsc.map(function(b){ return _qualScore(b.donnees||{}, grp.prefixB, grp.count); });
+    var validA = scoresA.filter(function(v){ return !isNaN(v); });
+    var validB = scoresB.filter(function(v){ return !isNaN(v); });
+    if(validA.length < 2 && validB.length < 2) return;
+    var chartSvg = _buildQualChart(scoresA, scoresB, dates, {maxVal: grp.count, chartId: qid, labelA: grp.labelA, labelB: grp.labelB});
+    if(!chartSvg) return;
+    var gridHtml = _buildQualGrid(bilansAsc, dates, grp);
+    // KPIs : score CS / CA dernier bilan
+    var lastA = NaN, lastB = NaN;
+    scoresA.slice().reverse().forEach(function(v){ if(!isNaN(v) && isNaN(lastA)) lastA = v; });
+    scoresB.slice().reverse().forEach(function(v){ if(!isNaN(v) && isNaN(lastB)) lastB = v; });
+    var kpisHtml = '';
+    if(!isNaN(lastA)) kpisHtml += '<span class="evo-kpi-neutral" style="color:#2B5FA6;font-weight:700">'+grp.labelA+' : '+lastA+'/'+grp.count+'</span>';
+    if(!isNaN(lastA) && !isNaN(lastB)) kpisHtml += '<span class="evo-kpi-neutral" style="color:var(--border);padding:0 4px">|</span>';
+    if(!isNaN(lastB)) kpisHtml += '<span class="evo-kpi-neutral" style="color:#16A34A;font-weight:700">'+grp.labelB+' : '+lastB+'/'+grp.count+'</span>';
+    // Pills toggle lignes
+    var pillsHtml = '<div class="evo-line-toggles">'
+      +'<button class="evo-line-pill active" style="color:#2B5FA6;border-color:#2B5FA6" onclick="toggleQualPill(this,\'qual'+qid+'\',\'A\')" data-line="A">● '+grp.labelA+'</button>'
+      +'<button class="evo-line-pill active" style="color:#16A34A;border-color:#16A34A" onclick="toggleQualPill(this,\'qual'+qid+'\',\'B\')" data-line="B">● '+grp.labelB+'</button>'
+      +'</div>';
+    qualHtml += '<div class="evo-chart-card evo-unselected" data-chart-id="qual'+qid+'">'
+      +'<div class="evo-chart-header">'
+      +'<div class="evo-check-wrap"><input type="checkbox" class="evo-chart-check no-print" onchange="this.closest(\'.evo-chart-card\').classList.toggle(\'evo-unselected\',!this.checked)"><span class="evo-chart-title">'+grp.title+'</span></div>'
+      +'<div class="evo-chart-kpis">'+kpisHtml+'</div></div>'
+      +pillsHtml
+      +chartSvg
+      +gridHtml
+      +'</div>';
+  });
+  if(qualHtml){
+    html += '<div class="evo-block"><div class="evo-block-title">🧩 Tests Fonctionnels Qualitatifs — MI</div><div class="evo-chart-grid">'+qualHtml+'</div></div>';
+  }
+
   container.innerHTML=html;
   _attachChartEvents();
 }
@@ -4351,6 +4546,17 @@ function toggleEvoPill(btn, chartId, line){
   btn.classList.toggle('active');
   var show = btn.classList.contains('active');
   var svg = document.querySelector('svg[data-id="'+chartId+'"]');
+  if(!svg) return;
+  svg.querySelectorAll('[data-line="'+line+'"]').forEach(function(el){
+    el.style.display = show ? '' : 'none';
+  });
+}
+
+/* ── Toggle par ligne dans chart qualitatif ── */
+function toggleQualPill(btn, qualId, line){
+  btn.classList.toggle('active');
+  var show = btn.classList.contains('active');
+  var svg = document.querySelector('svg[data-qual-id="'+qualId+'"]');
   if(!svg) return;
   svg.querySelectorAll('[data-line="'+line+'"]').forEach(function(el){
     el.style.display = show ? '' : 'none';
