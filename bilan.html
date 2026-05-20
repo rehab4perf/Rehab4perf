@@ -1053,6 +1053,12 @@ textarea { resize:none !important; overflow:hidden !important; }
 }
 .evo-line-pill.active { opacity:1; }
 .evo-line-pill:not(.active) { opacity:.3; background:#fff !important; }
+/* ── Bande de condition de test ── */
+.evo-cond-strip { display:flex; align-items:center; gap:4px; flex-wrap:wrap; margin-top:6px; padding-top:5px; border-top:1px solid var(--border); }
+.evo-cond-label { font-size:.6rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text3); white-space:nowrap; }
+.evo-cond-chip { font-size:.64rem; font-weight:500; padding:2px 7px; border-radius:4px; background:var(--surface2); color:var(--text2); border:1px solid var(--border); white-space:nowrap; }
+.evo-cond-chip.changed { background:#FEF3C7; color:#92400E; border-color:#FDE68A; }
+.evo-cond-warn { font-size:.68rem; font-weight:600; padding:2px 7px; border-radius:10px; background:#FEF3C7; color:#92400E; }
 /* ── Évolution qualitative ── */
 .qual-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 16px 12px; }
 .qual-card-header { display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
@@ -2385,6 +2391,10 @@ textarea { resize:none !important; overflow:hidden !important; }
       <div class="measure-stat" id="dj-rsi-ca">—</div>
       <div class="measure-stat" id="dj-rsi-lsi">—</div>
       <div class="measure-stat" id="dj-rsi-stat">—</div>
+    </div>
+    <div class="measure-row" style="background:var(--surface2)">
+      <div class="measure-label" style="background:var(--surface2);font-size:.82rem;color:var(--text2);line-height:1.5">Hauteur de boîte (cm)<br><span style="font-weight:400;color:var(--text3);font-size:.78rem">(protocole standard : 30 cm)</span></div>
+      <div style="background:var(--surface2);padding:4px 8px;display:flex;align-items:center;grid-column:span 4"><input type="number" id="dj-hauteur-boite" step="1" min="1" placeholder="ex : 30" style="font-family:inherit;font-size:.9rem;border:1.5px solid var(--border2);border-radius:5px;padding:5px 10px;width:100%;outline:none;background:var(--surface)"></div>
     </div>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
@@ -3929,17 +3939,17 @@ var CHART_GROUPS = [
   {cat:'Genou — Mobilité', title:'Flexion genou D vs G (actif)', type:'dual', idA:'rom-ge-d-flexa', idB:'rom-ge-g-flexa', unit:'°', dir:'up', labelA:'Côté D', labelB:'Côté G'},
   {cat:'Genou — Mobilité', title:'Flexion genou D vs G (passif)', type:'dual', idA:'rom-ge-d-flexp', idB:'rom-ge-g-flexp', unit:'°', dir:'up', labelA:'Côté D', labelB:'Côté G'},
   // ─ Tests Fonctionnels MI ─
-  {cat:'Tests Fonctionnels MI', title:'SLS — Atteint vs Sain', type:'dual', idA:'sls-ca', idB:'sls-cs', unit:'rép', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Tests Fonctionnels MI', title:'SLS — Atteint vs Sain', type:'dual', idA:'sls-ca', idB:'sls-cs', unit:'rép', dir:'up', labelA:'Atteint', labelB:'Sain', condId:'sls-hauteur'},
   {cat:'Tests Fonctionnels MI', title:'Hop Test — Atteint vs Sain', type:'dual', idA:'hop-ca', idB:'hop-cs', unit:'cm', dir:'up', labelA:'Atteint', labelB:'Sain'},
   {cat:'Tests Fonctionnels MI', title:'Lunge WBLT — Atteint vs Sain', type:'dual', idA:'lu-ca', idB:'lu-cs', unit:'cm', dir:'up', labelA:'Atteint', labelB:'Sain'},
-  {cat:'Tests Fonctionnels MI', title:'Drop Jump hauteur — Atteint vs Sain', type:'dual', idA:'dj-h-ca', idB:'dj-h-cs', unit:'cm', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Tests Fonctionnels MI', title:'Drop Jump hauteur — Atteint vs Sain', type:'dual', idA:'dj-h-ca', idB:'dj-h-cs', unit:'cm', dir:'up', labelA:'Atteint', labelB:'Sain', condId:'dj-hauteur-boite', condUnit:'cm'},
   {cat:'Tests Fonctionnels MI', title:'SEBT Antérieur — Atteint vs Sain', type:'dual', idA:'sebt-ant-ca', idB:'sebt-ant-cs', unit:'cm', dir:'up', labelA:'Atteint', labelB:'Sain'},
   {cat:'Tests Fonctionnels MI', title:'SEBT Postéro-médial — Atteint vs Sain', type:'dual', idA:'sebt-pm-ca', idB:'sebt-pm-cs', unit:'cm', dir:'up', labelA:'Atteint', labelB:'Sain'},
   {cat:'Tests Fonctionnels MI', title:'SET — Atteint vs Sain', type:'dual', idA:'set-ca', idB:'set-cs', unit:'s', dir:'up', labelA:'Atteint', labelB:'Sain'},
   {cat:'Tests Fonctionnels MI', title:'UQYBT Médial — D vs G', type:'dual', idA:'uqybt-med-d', idB:'uqybt-med-g', unit:'cm', dir:'up', labelA:'Côté D', labelB:'Côté G'},
   {cat:'Tests Fonctionnels MI', title:'UQYBT Inféro-latéral — D vs G', type:'dual', idA:'uqybt-il-d', idB:'uqybt-il-g', unit:'cm', dir:'up', labelA:'Côté D', labelB:'Côté G'},
   // ─ Tests Fonctionnels MS ─
-  {cat:'Tests Fonctionnels MS', title:'PSET — Atteint vs Sain', type:'dual', idA:'pset-ca', idB:'pset-cs', unit:'rép', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Tests Fonctionnels MS', title:'PSET — Atteint vs Sain', type:'dual', idA:'pset-ca', idB:'pset-cs', unit:'rép', dir:'up', labelA:'Atteint', labelB:'Sain', condId:'pset-poids-reel', condUnit:'kg'},
   {cat:'Tests Fonctionnels MS', title:'SHRT — D vs G', type:'dual', idA:'shrt-d', idB:'shrt-g', unit:'cm', dir:'up', labelA:'Côté D', labelB:'Côté G'},
   {cat:'Tests Fonctionnels MS', title:'ULRT — moy. D vs G', type:'dual',
     computeA:function(d){var vs=[parseFloat(d['ulrt-d1']),parseFloat(d['ulrt-d2']),parseFloat(d['ulrt-d3'])].filter(function(v){return !isNaN(v);});return vs.length?vs.reduce(function(a,b){return a+b;},0)/vs.length:NaN;},
@@ -4399,6 +4409,19 @@ function _buildQualGrid(bilansAsc, dates, grp){
   return html;
 }
 
+/* Formate une valeur de condition pour affichage (ex: "1,4 kg", "30 cm", "45 cm + 1 brique") */
+function _fmtCond(rawVal, grp){
+  var s = String(rawVal === undefined || rawVal === null ? '' : rawVal).trim();
+  if(!s) return '';
+  if(grp.condUnit){
+    var n = parseFloat(s);
+    if(isNaN(n)) return '';
+    var dec = (n % 1 === 0) ? String(Math.round(n)) : n.toFixed(1).replace('.', ',');
+    return dec + ' ' + grp.condUnit;
+  }
+  return s;
+}
+
 /* ── Page Évolution ─────────────────────────────────────── */
 function _renderEvolutionPage(){
   var container=document.getElementById('evolution-content');
@@ -4488,12 +4511,37 @@ function _renderEvolutionPage(){
           +'<button class="evo-line-pill active" style="color:'+colorPillB+';border-color:'+colorPillB+'" onclick="toggleEvoPill(this,'+id+',\'B\')" data-line="B">● '+grp.labelB+'</button>'
           +'</div>';
       }
+      // ── Bande de condition (si condId et conditions variables) ──
+      var condStripHtml = '';
+      if(grp.condId){
+        var rawConds = bilansAsc.map(function(b){ return (b.donnees||{})[grp.condId]; });
+        var fmtConds = rawConds.map(function(v){ return _fmtCond(v, grp); });
+        var normConds = fmtConds.map(function(v){ return v.toLowerCase(); });
+        var nonEmptyNC = normConds.filter(function(c){ return c !== ''; });
+        var uniqueNC = nonEmptyNC.filter(function(c, i, a){ return a.indexOf(c) === i; });
+        if(uniqueNC.length > 1){
+          kpisHtml += ' <span class="evo-cond-warn">⚠ Conditions variables</span>';
+          condStripHtml = '<div class="evo-cond-strip"><span class="evo-cond-label">Conditions&nbsp;:&nbsp;</span>';
+          var prevNC = '';
+          normConds.forEach(function(nc, i){
+            if(!nc){
+              condStripHtml += '<span class="evo-cond-chip" style="opacity:.45;font-style:italic">—</span>';
+            } else {
+              var chg = prevNC !== '' && nc !== prevNC;
+              condStripHtml += '<span class="evo-cond-chip'+(chg?' changed':'')+'">'+fmtConds[i]+'</span>';
+              prevNC = nc;
+            }
+          });
+          condStripHtml += '</div>';
+        }
+      }
       catHtml+='<div class="evo-chart-card evo-unselected" data-chart-id="'+id+'">'
         +'<div class="evo-chart-header">'
         +'<div class="evo-check-wrap"><input type="checkbox" class="evo-chart-check no-print" onchange="this.closest(\'.evo-chart-card\').classList.toggle(\'evo-unselected\',!this.checked)"><span class="evo-chart-title">'+grp.title+'</span></div>'
         +'<div class="evo-chart-kpis">'+kpisHtml+'</div></div>'
         +pillsHtml
-        +chartSvg+'</div>';
+        +chartSvg
+        +condStripHtml+'</div>';
     });
     if(!catHtml)return;
     html+='<div class="evo-block"><div class="evo-block-title">'+cat+'</div><div class="evo-chart-grid">'+catHtml+'</div></div>';
@@ -4671,6 +4719,11 @@ function _buildEvolutionHTML(){
     + '.evo-kpi.evo-neutral{background:#F1F0ED;color:#6B6860;}'
     + '.evo-chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}'
     + '@media(max-width:600px){.evo-chart-grid{grid-template-columns:1fr;}}'
+    + '.evo-cond-strip{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-top:6px;padding-top:5px;border-top:1px solid #E8E6E1;}'
+    + '.evo-cond-label{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#9D9B96;white-space:nowrap;}'
+    + '.evo-cond-chip{font-size:.64rem;font-weight:500;padding:2px 7px;border-radius:4px;background:#F1F0ED;color:#6B6860;border:1px solid #E8E6E1;white-space:nowrap;}'
+    + '.evo-cond-chip.changed{background:#FEF3C7;color:#92400E;border-color:#FDE68A;}'
+    + '.evo-cond-warn{font-size:.68rem;font-weight:600;padding:2px 7px;border-radius:10px;background:#FEF3C7;color:#92400E;}'
     + '@media print{.doc-header{background:#1A3A5C!important}.evo-block{break-inside:avoid}.doc-body{padding:12px 24px 0}}'
     ;
 
