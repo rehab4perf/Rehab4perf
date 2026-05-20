@@ -4074,8 +4074,16 @@ function _buildChartB(valsA, dates, opts){
 
 function _buildChartD(valsA, valsB, dates, opts){
   var id=opts.chartId, colorA=opts.colorA||'#2B5FA6', colorB=opts.colorB||'#2D6A4F';
-  var VW=500, VH=130;
-  var PAD={top:20, right:88, bottom:34, left:38};
+  var VW=500;
+  // Déterminer si des bandes de condition seront dessinées (nécessite plus de place en bas)
+  var _hasBands = (function(){
+    var c=opts.conditions; if(!c||!c.length) return false;
+    var eff=[],last=''; c.forEach(function(v){if(v)last=v;eff.push(last);});
+    var u=[]; eff.forEach(function(v){if(v&&u.indexOf(v)<0)u.push(v);}); return u.length>1;
+  })();
+  var VH  = _hasBands ? 152 : 130;
+  var PAD = {top:20, right:88, bottom: _hasBands ? 56 : 34, left:38};
+  // Axe Y restant fixe : VH-PAD.bottom = 96 dans les deux cas
   var allV=valsA.concat(valsB).filter(function(v){return !isNaN(v);});
   if(allV.length<2)return '';
   var fence=_robustFence(allV);
@@ -4130,14 +4138,11 @@ function _buildChartD(valsA, valsB, dates, opts){
       html += '<rect x="'+xL.toFixed(1)+'" y="'+PAD.top+'" width="'+zW.toFixed(1)+'" height="'+zH+'" fill="'+cl.fill+'"/>';
       // Ligne de changement (sauf première zone)
       if(zi>0) html += '<line x1="'+xL.toFixed(1)+'" y1="'+PAD.top+'" x2="'+xL.toFixed(1)+'" y2="'+(VH-PAD.bottom)+'" stroke="'+cl.stroke+'" stroke-width="1.5" stroke-dasharray="4,3"/>';
-      // Étiquette (pill en haut de la bande)
+      // Étiquette sous l'axe X (dans la zone PAD.bottom élargie)
       var lx = (xL+xR)/2;
-      var lbl = z.c.length>12 ? z.c.substring(0,11)+'…' : z.c;
-      var tW = Math.min(zW-4, lbl.length*5.2+10);
-      if(tW>12){
-        html += '<rect x="'+(lx-tW/2).toFixed(1)+'" y="'+(PAD.top+2)+'" width="'+tW.toFixed(1)+'" height="11" rx="3" fill="'+cl.solid+'" opacity="0.92"/>';
-        html += '<text x="'+lx.toFixed(1)+'" y="'+(PAD.top+11)+'" text-anchor="middle" font-size="7.5" font-weight="700" fill="'+cl.text+'">'+lbl+'</text>';
-      }
+      var lbl = z.c.length>13 ? z.c.substring(0,12)+'…' : z.c;
+      var labelY = VH-PAD.bottom+26; // ~14px sous les dates
+      html += '<text x="'+lx.toFixed(1)+'" y="'+labelY+'" text-anchor="middle" font-size="8.5" font-weight="700" fill="'+cl.text+'">'+lbl+'</text>';
     });
   })();
   // Grille
