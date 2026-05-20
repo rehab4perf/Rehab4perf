@@ -4092,6 +4092,54 @@ function _buildChartD(valsA, valsB, dates, opts){
   var ptsA=valsA.map(function(v,i){return Object.assign(pt(valsA,i),{date:dates[i]});});
   var ptsB=valsB.map(function(v,i){return Object.assign(pt(valsB,i),{date:dates[i]});});
   var html='<defs><linearGradient id="gd'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#C0392B" stop-opacity="0.18"/><stop offset="100%" stop-color="#C0392B" stop-opacity="0.02"/></linearGradient></defs>';
+  // ── Zones de condition ──
+  (function(){
+    var conds = opts.conditions;
+    if(!conds || !conds.length) return;
+    var ZCOL = [
+      {fill:'rgba(245,158,11,0.10)',solid:'#FEF3C7',stroke:'rgba(180,115,7,0.30)',text:'#92400E'},
+      {fill:'rgba(124,58,237,0.10)',solid:'#EDE9FE',stroke:'rgba(90,40,180,0.30)',text:'#5B21B6'},
+      {fill:'rgba(6,182,212,0.10)', solid:'#CFFAFE',stroke:'rgba(4,130,155,0.30)',text:'#0E7490'},
+      {fill:'rgba(244,63,94,0.10)', solid:'#FFE4E6',stroke:'rgba(180,30,60,0.30)',text:'#9F1239'},
+      {fill:'rgba(34,197,94,0.10)', solid:'#DCFCE7',stroke:'rgba(20,140,60,0.30)',text:'#166534'},
+    ];
+    // Propagation avant de la condition connue la plus récente
+    var eff = [], last = '';
+    conds.forEach(function(c){ if(c) last=c; eff.push(last); });
+    // Ordre d'apparition des conditions
+    var order = [];
+    eff.forEach(function(c){ if(c && order.indexOf(c)<0) order.push(c); });
+    if(order.length < 2) return; // rien si toutes identiques
+    // Construction des zones contiguës
+    var zones = [], curZ = null;
+    eff.forEach(function(c, i){
+      if(!c){ curZ=null; return; }
+      if(!curZ || curZ.c !== c){ curZ={c:c,s:i,e:i}; zones.push(curZ); }
+      else { curZ.e=i; }
+    });
+    // Couleur par condition
+    var ci = {};
+    order.forEach(function(c,idx){ ci[c]=idx; });
+    function px(i){ return PAD.left+(i/Math.max(n-1,1))*(VW-PAD.left-PAD.right); }
+    zones.forEach(function(z, zi){
+      var cl = ZCOL[ci[z.c] % ZCOL.length];
+      var xL = zi===0 ? PAD.left : (px(z.s)+px(z.s-1))/2;
+      var xR = z.e===n-1 ? VW-PAD.right : (px(z.e)+px(z.e+1))/2;
+      var zW = xR-xL, zH = VH-PAD.top-PAD.bottom;
+      // Bande
+      html += '<rect x="'+xL.toFixed(1)+'" y="'+PAD.top+'" width="'+zW.toFixed(1)+'" height="'+zH+'" fill="'+cl.fill+'"/>';
+      // Ligne de changement (sauf première zone)
+      if(zi>0) html += '<line x1="'+xL.toFixed(1)+'" y1="'+PAD.top+'" x2="'+xL.toFixed(1)+'" y2="'+(VH-PAD.bottom)+'" stroke="'+cl.stroke+'" stroke-width="1.5" stroke-dasharray="4,3"/>';
+      // Étiquette (pill en haut de la bande)
+      var lx = (xL+xR)/2;
+      var lbl = z.c.length>12 ? z.c.substring(0,11)+'…' : z.c;
+      var tW = Math.min(zW-4, lbl.length*5.2+10);
+      if(tW>12){
+        html += '<rect x="'+(lx-tW/2).toFixed(1)+'" y="'+(PAD.top+2)+'" width="'+tW.toFixed(1)+'" height="11" rx="3" fill="'+cl.solid+'" opacity="0.92"/>';
+        html += '<text x="'+lx.toFixed(1)+'" y="'+(PAD.top+11)+'" text-anchor="middle" font-size="7.5" font-weight="700" fill="'+cl.text+'">'+lbl+'</text>';
+      }
+    });
+  })();
   // Grille
   var step=Math.max(1,Math.ceil((maxV-minV)/4));
   for(var gv=Math.round(minV);gv<=maxV+step;gv+=step){
@@ -4476,7 +4524,9 @@ function _renderEvolutionPage(){
           var lsiCls=lsiVal>=90?'evo-pos':lsiVal>=75?'evo-neutral':'evo-neg';
           lsiHtml='<span class="evo-kpi '+lsiCls+'">LSI '+lsiVal+'%</span>';
         }
-        chartSvg=_buildChartD(valsA,valsB,dates,{unit:grp.unit,dir:grp.dir,labelA:grp.labelA,labelB:grp.labelB,chartId:id,colorA:'#2B5FA6',colorB:'#2D6A4F'});
+        var _dOpts={unit:grp.unit,dir:grp.dir,labelA:grp.labelA,labelB:grp.labelB,chartId:id,colorA:'#2B5FA6',colorB:'#2D6A4F'};
+        if(grp.condId) _dOpts.conditions=bilansAsc.map(function(b){return _fmtCond((b.donnees||{})[grp.condId],grp);});
+        chartSvg=_buildChartD(valsA,valsB,dates,_dOpts);
       } else {
         chartSvg=_buildChartB(valsA,dates,{unit:grp.unit,dir:grp.dir,labelA:grp.labelA,chartId:id});
       }
@@ -4511,37 +4561,19 @@ function _renderEvolutionPage(){
           +'<button class="evo-line-pill active" style="color:'+colorPillB+';border-color:'+colorPillB+'" onclick="toggleEvoPill(this,'+id+',\'B\')" data-line="B">● '+grp.labelB+'</button>'
           +'</div>';
       }
-      // ── Bande de condition (si condId et conditions variables) ──
-      var condStripHtml = '';
+      // ── Badge ⚠ si conditions variables (les zones sont rendues dans le SVG) ──
       if(grp.condId){
-        var rawConds = bilansAsc.map(function(b){ return (b.donnees||{})[grp.condId]; });
-        var fmtConds = rawConds.map(function(v){ return _fmtCond(v, grp); });
-        var normConds = fmtConds.map(function(v){ return v.toLowerCase(); });
-        var nonEmptyNC = normConds.filter(function(c){ return c !== ''; });
-        var uniqueNC = nonEmptyNC.filter(function(c, i, a){ return a.indexOf(c) === i; });
-        if(uniqueNC.length > 1){
-          kpisHtml += ' <span class="evo-cond-warn">⚠ Conditions variables</span>';
-          condStripHtml = '<div class="evo-cond-strip"><span class="evo-cond-label">Conditions&nbsp;:&nbsp;</span>';
-          var prevNC = '';
-          normConds.forEach(function(nc, i){
-            if(!nc){
-              condStripHtml += '<span class="evo-cond-chip" style="opacity:.45;font-style:italic">—</span>';
-            } else {
-              var chg = prevNC !== '' && nc !== prevNC;
-              condStripHtml += '<span class="evo-cond-chip'+(chg?' changed':'')+'">'+fmtConds[i]+'</span>';
-              prevNC = nc;
-            }
-          });
-          condStripHtml += '</div>';
-        }
+        var _fc=bilansAsc.map(function(b){return _fmtCond((b.donnees||{})[grp.condId],grp).toLowerCase();});
+        var _ne=_fc.filter(function(c){return c!=='';});
+        var _un=_ne.filter(function(c,i,a){return a.indexOf(c)===i;});
+        if(_un.length>1) kpisHtml+=' <span class="evo-cond-warn">⚠ Conditions variables</span>';
       }
       catHtml+='<div class="evo-chart-card evo-unselected" data-chart-id="'+id+'">'
         +'<div class="evo-chart-header">'
         +'<div class="evo-check-wrap"><input type="checkbox" class="evo-chart-check no-print" onchange="this.closest(\'.evo-chart-card\').classList.toggle(\'evo-unselected\',!this.checked)"><span class="evo-chart-title">'+grp.title+'</span></div>'
         +'<div class="evo-chart-kpis">'+kpisHtml+'</div></div>'
         +pillsHtml
-        +chartSvg
-        +condStripHtml+'</div>';
+        +chartSvg+'</div>';
     });
     if(!catHtml)return;
     html+='<div class="evo-block"><div class="evo-block-title">'+cat+'</div><div class="evo-chart-grid">'+catHtml+'</div></div>';
