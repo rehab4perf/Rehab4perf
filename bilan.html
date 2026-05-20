@@ -178,6 +178,15 @@ body {
   background: none; transition: all .12s;
 }
 .btn-history-bilan:hover { border-color: var(--accent); color: var(--accent2); background: var(--accent-l); }
+.btn-suivi-bilan {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; padding: 6px 10px; border-radius: 6px;
+  border: 1.5px solid #0D9488; cursor: pointer;
+  font-family: inherit; font-size: .78rem; font-weight: 600; color: #0D9488;
+  background: none; transition: all .12s;
+}
+.btn-suivi-bilan:hover { background: #F0FDFA; border-color: #0F766E; color: #0F766E; }
+.btn-suivi-bilan:disabled { opacity: .35; cursor: not-allowed; }
 
 /* ── Historique modal ────────────────────────────────────── */
 .histo-overlay {
@@ -1181,6 +1190,7 @@ textarea { resize:none !important; overflow:hidden !important; }
   <div class="sidebar-save" id="sidebar-save-section">
     <div class="sidebar-save-patient" id="sb-save-patient">Aucun patient sélectionné</div>
     <button class="btn-save-bilan" id="bilan-save-btn" onclick="saveBilan()">💾 Sauvegarder le bilan</button>
+    <button class="btn-suivi-bilan" id="bilan-suivi-btn" onclick="newBilanSuivi()" title="Efface les mesures, conserve le contexte du dossier">📋 Bilan de suivi</button>
     <button class="btn-history-bilan" onclick="openBilanHistory()">📂 Bilans précédents</button>
   </div>
 
@@ -3724,6 +3734,7 @@ document.addEventListener('change', function(){ if(!_suppressDirty) _bilanModifi
 function _updateSaveBar(){
   var el = document.getElementById('sb-save-patient');
   var btn = document.getElementById('bilan-save-btn');
+  var suiviBtn = document.getElementById('bilan-suivi-btn');
   var nameEl = document.getElementById('sb-name');
   if(!el) return;
   if(_bilanPatient){
@@ -3731,11 +3742,13 @@ function _updateSaveBar(){
     el.classList.remove('no-patient');
     if(btn) btn.classList.remove('no-patient');
     if(nameEl) nameEl.classList.remove('no-patient');
+    if(suiviBtn) suiviBtn.disabled = false;
   } else {
     el.innerHTML = '⚠️ Aucun patient sélectionné';
     el.classList.add('no-patient');
     if(btn){ btn.classList.add('no-patient'); btn.textContent = '💾 Sauvegarder le bilan'; }
     if(nameEl){ nameEl.textContent = 'Nouveau patient à créer'; nameEl.classList.add('no-patient'); }
+    if(suiviBtn) suiviBtn.disabled = true;
   }
 }
 function _esc2(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -5205,6 +5218,78 @@ function loadBilan(id){
       _prevDonnees = null;
     }
   });
+}
+
+/* ── Champs "contexte permanent" reportés dans un bilan de suivi ── */
+var _SUIVI_CARRY_FIELDS = [
+  // Dates clés + latéralité
+  'f-date-op','f-date-accident','f-cote',
+  // Anamnèse
+  'f-motif','f-motif-patient','f-mecanisme','f-debut',
+  'f-aggravants','f-soulagants','f-atcd','f-traitements',
+  'f-retentissement','f-remarques','f-objectifs',
+  // Sport / Activité / Anthropométrie
+  'f-sport','f-activite','f-poids','f-taille',
+  // Imagerie (6 modalités × date + observations)
+  'f-img-radio-date','f-img-radio-obs',
+  'f-img-irm-date',  'f-img-irm-obs',
+  'f-img-echo-date', 'f-img-echo-obs',
+  'f-img-scan-date', 'f-img-scan-obs',
+  'f-img-arthro-date','f-img-arthro-obs',
+  'f-img-autre-date','f-img-autre-obs'
+];
+
+function newBilanSuivi(){
+  if(!_bilanPatient){
+    showToast('⚠️ Sélectionnez d\'abord un patient depuis l\'accueil.');
+    return;
+  }
+  if(!_allBilans || !_allBilans.length){
+    showToast('⚠️ Aucun bilan précédent — sauvegardez d\'abord le bilan initial.');
+    return;
+  }
+  var lastDate = _allBilans[0].date ? _allBilans[0].date.split('T')[0] : '';
+  var lastLabel = lastDate ? _isoToReadable(lastDate) : 'précédent';
+  if(!confirm(
+    'Créer un bilan de suivi ?\n\n'
+    +'✔ Conservé : anamnèse, dates clés, imagerie, objectifs, poids/taille, traitements\n'
+    +'✖ Effacé : EVA, douleur, ROM, tous les tests\n\n'
+    +'Contexte reporté depuis le bilan du '+lastLabel+'.\n'
+    +'Les données non sauvegardées seront perdues.'
+  )) return;
+
+  // Récupérer le contexte du dernier bilan sauvegardé
+  var lastDonnees = _allBilans[0].donnees || {};
+
+  // Tout effacer
+  _currentBilanId = null;
+  _prevDonnees    = null;
+  _resetBilanFields();
+  document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
+
+  // Remettre identité patient (nom, prénom, dob, sexe)
+  _autofillPatientFields(_bilanPatient);
+
+  // Reporter les champs contextuels depuis le dernier bilan
+  _SUIVI_CARRY_FIELDS.forEach(function(id){
+    var val = lastDonnees[id];
+    if(val === undefined || val === null || val === '') return;
+    var el = document.getElementById(id);
+    if(!el) return;
+    if(el.type === 'checkbox' || el.type === 'radio') el.checked = !!val;
+    else el.value = val;
+  });
+
+  // Date du bilan = aujourd'hui
+  var fd = document.getElementById('f-date');
+  if(fd){
+    var t = new Date();
+    fd.value = t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+  }
+
+  try{ updateAll(); }catch(ex){}
+  showPage('infos');
+  showToast('📋 Bilan de suivi prêt — contexte reporté du '+lastLabel);
 }
 
 function newBilan(){
