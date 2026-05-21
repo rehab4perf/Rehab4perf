@@ -5503,7 +5503,18 @@ function _isoToAgo(iso) {
   return 'Il y a '+Math.floor(diff/365)+' an'+(diff>=730?'s':'');
 }
 
+/* ── Guard IDOR : vérifie que l'id appartient bien au patient chargé ──
+   _allBilans est peuplé dès le chargement patient ; si vide (état
+   transitoire), on laisse passer — les RLS Supabase font le reste. */
+function _assertBilanOwnership(id){
+  if(!_allBilans || !_allBilans.length) return true;
+  var ok = _allBilans.some(function(b){ return String(b.id) === String(id); });
+  if(!ok) console.warn('[r4p] Bilan ID non autorisé :', id);
+  return ok;
+}
+
 function loadBilan(id){
+  if(!_assertBilanOwnership(id)) return;
   document.getElementById('histoList').innerHTML='<div class="histo-empty">Chargement…</div>';
   sbB.from('bilans').select('*').eq('id',id).single().then(function(res){
     if(res.error){ alert('Erreur : '+res.error.message); closeHistoModal(); return; }
@@ -5979,6 +5990,7 @@ function _saveSuiviRapide(){
 
 function deleteBilan(id, dateStr, isInitial, e) {
   if (e) e.stopPropagation();
+  if(!_assertBilanOwnership(id)) return;
   var msg = 'Supprimer le bilan du ' + dateStr + ' ?'
     + (isInitial ? '\n\n⚠ Attention : il s\'agit du bilan initial de ce patient.' : '')
     + '\n\nCette action est irréversible — les données seront définitivement perdues.';
