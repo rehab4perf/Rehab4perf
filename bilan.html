@@ -3463,6 +3463,17 @@ textarea { resize:none !important; overflow:hidden !important; }
 
 
 <script>
+/* ── Constantes localStorage ─────────────────────────────────────────
+   Source unique de vérité pour toutes les clés de stockage local.
+   Modifier ici = propagé partout dans ce fichier. ────────────────── */
+var R4P_KEYS = {
+  PATIENT        : 'r4p-current-patient',
+  PROFILE        : 'r4p-profile',
+  CACHED_PROFILE : 'r4p-cached-profile',
+  BILAN_DRAFT    : 'athletik-bilan',
+  SUPABASE_AUTH  : 'sb-sxdobjodxkwexaspepdm-auth-token'
+};
+
 // -- DATA -----------------------------------------------------
 const TESTS = {
   'tb-ep-irrit':{type:'ortho',items:[
@@ -3883,17 +3894,6 @@ window.addEventListener('message', function(e){
 /* ═══════════════════════════════════════════════════════════
    SUPABASE — GESTION BILANS
 ═══════════════════════════════════════════════════════════ */
-/* ── Constantes localStorage ─────────────────────────────────────────
-   Source unique de vérité pour toutes les clés de stockage local.
-   Modifier ici = propagé partout dans ce fichier. ────────────────── */
-var R4P_KEYS = {
-  PATIENT        : 'r4p-current-patient',
-  PROFILE        : 'r4p-profile',
-  CACHED_PROFILE : 'r4p-cached-profile',
-  BILAN_DRAFT    : R4P_KEYS.BILAN_DRAFT,
-  SUPABASE_AUTH  : 'sb-sxdobjodxkwexaspepdm-auth-token'
-};
-
 var SUPA_URL_B = 'https://sxdobjodxkwexaspepdm.supabase.co';
 var SUPA_KEY_B = 'sb_publishable_zEJrmQOnKyRm-Y_NyojaTA_ERrDx4pl';
 var sbB = supabase.createClient(SUPA_URL_B, SUPA_KEY_B);

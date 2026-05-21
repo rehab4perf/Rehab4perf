@@ -2153,6 +2153,33 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 </div>
 
 <script>
+/* ── Constantes localStorage ─────────────────────────────────────────
+   Source unique de vérité pour toutes les clés de stockage local.
+   Modifier ici = propagé partout dans ce fichier. ────────────────── */
+var R4P_KEYS = {
+  PATIENT              : 'r4p-current-patient',
+  PROFILE              : 'r4p-profile',
+  BILAN_DRAFT          : 'athletik-bilan',
+  SUPABASE_AUTH        : 'sb-sxdobjodxkwexaspepdm-auth-token',
+  CAL_EVENTS           : 'r4p-cal-events',
+  CYCLES               : 'r4p-cycles',
+  SEANCES              : 'r4p-seances',
+  TEMPLATES            : 'r4p-templates',
+  TEMPLATE_GROUPS      : 'r4p-template-groups',
+  CUSTOM_PROTOCOLS     : 'r4p-custom-protocols',
+  CUSTOM_PROTOCOLS_SID : 'r4p-custom-protocols-sid',
+  FAV_EXOS             : 'r4p-fav-exos',
+  PICKER_FAVS          : 'r4p_picker_favs',
+  LIBRARY              : 'r4p-library',
+  EXPANDED_GROUPS      : 'r4p-expanded-groups',
+  COLLAPSED_CATS       : 'r4p-collapsed-cats',
+  LIB_CAT_COLLAPSED    : 'r4p-lib-cat-collapsed',
+  J0_PREFIX            : 'r4p-j0-',
+  PEVO_SEL_PREFIX      : 'r4p-pevo-sel-',
+  PEVO_DUREE_PREFIX    : 'r4p-pevo-duree-',
+  PEVO_CARDIO_PREFIX   : 'r4p-pevo-cardio-'
+};
+
 /* ================================================================
    EXERCISE DATABASE
    ================================================================ */
@@ -4436,33 +4463,6 @@ window.addEventListener('message', function(e){
 /* ═══════════════════════════════════════════════════════════
    SUPABASE — PROGRAMMES
 ═══════════════════════════════════════════════════════════ */
-/* ── Constantes localStorage ─────────────────────────────────────────
-   Source unique de vérité pour toutes les clés de stockage local.
-   Modifier ici = propagé partout dans ce fichier. ────────────────── */
-var R4P_KEYS = {
-  PATIENT              : R4P_KEYS.PATIENT,
-  PROFILE              : 'r4p-profile',
-  BILAN_DRAFT          : R4P_KEYS.BILAN_DRAFT,
-  SUPABASE_AUTH        : R4P_KEYS.SUPABASE_AUTH,
-  CAL_EVENTS           : R4P_KEYS.CAL_EVENTS,
-  CYCLES               : R4P_KEYS.CYCLES,
-  SEANCES              : R4P_KEYS.SEANCES,
-  TEMPLATES            : R4P_KEYS.TEMPLATES,
-  TEMPLATE_GROUPS      : R4P_KEYS.TEMPLATE_GROUPS,
-  CUSTOM_PROTOCOLS     : R4P_KEYS.CUSTOM_PROTOCOLS,
-  CUSTOM_PROTOCOLS_SID : R4P_KEYS.CUSTOM_PROTOCOLS_SID,
-  FAV_EXOS             : R4P_KEYS.FAV_EXOS,
-  PICKER_FAVS          : R4P_KEYS.PICKER_FAVS,
-  LIBRARY              : R4P_KEYS.LIBRARY,
-  EXPANDED_GROUPS      : R4P_KEYS.EXPANDED_GROUPS,
-  COLLAPSED_CATS       : R4P_KEYS.COLLAPSED_CATS,
-  LIB_CAT_COLLAPSED    : R4P_KEYS.LIB_CAT_COLLAPSED,
-  J0_PREFIX            : R4P_KEYS.J0_PREFIX,
-  PEVO_SEL_PREFIX      : R4P_KEYS.PEVO_SEL_PREFIX,
-  PEVO_DUREE_PREFIX    : R4P_KEYS.PEVO_DUREE_PREFIX,
-  PEVO_CARDIO_PREFIX   : R4P_KEYS.PEVO_CARDIO_PREFIX
-};
-
 var SUPA_URL_P = 'https://sxdobjodxkwexaspepdm.supabase.co';
 var SUPA_KEY_P = 'sb_publishable_zEJrmQOnKyRm-Y_NyojaTA_ERrDx4pl';
 var sbP = supabase.createClient(SUPA_URL_P, SUPA_KEY_P);
