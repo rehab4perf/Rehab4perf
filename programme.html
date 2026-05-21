@@ -4639,7 +4639,8 @@ function saveProgToCloud(){
       _currentProgId = null; // forcer la création d'un programme indépendant
     }
   }
-  _doSaveProgCloud(nomProg, donnees, today, btn);
+  var saveDate = _builderDate || today;
+  _doSaveProgCloud(nomProg, donnees, saveDate, btn);
 }
 
 function _doSaveProgCloud(nomProg, donnees, today, btn){
@@ -4675,6 +4676,7 @@ function _doSaveProgCloud(nomProg, donnees, today, btn){
     _draftClear();
     _showToast('✓ Programme sauvegardé !');
     _refreshSaveBtn();
+    _updateBuilderTitle();
   })
   .catch(function(err){
     btn.disabled = false; _refreshSaveBtn();
@@ -7134,7 +7136,8 @@ function _buildDayChips(dateStr, cellDate){
         ? ' ontouchstart="_chipTouchStart(event,\''+ev.id+'\')" ontouchmove="_chipTouchMove(event)" ontouchend="_chipTouchEnd(event,\''+ev.id+'\')"'
         : ' draggable="true" onclick="event.stopPropagation();_openChipInBuilder(\''+ev.programme_id+'\',\''+dateStr+'\',\''+ev.id+'\')" ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"';
       var chipCursor = _isTouchDevice ? 'pointer' : 'grab';
-      var moreBtn = '<button class="cal-chip-more" ontouchend="event.stopPropagation();event.preventDefault();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')">⋮</button>';
+      var moreBtnColor = phStyle ? 'color:rgba(30,58,95,.7);' : '';
+      var moreBtn = '<button class="cal-chip-more" style="'+moreBtnColor+'" ontouchend="event.stopPropagation();event.preventDefault();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')">⋮</button>';
       return '<div class="cal-session-chip" style="background:'+chipBg+';color:'+chipColor+';cursor:'+chipCursor+chipExtra+';" title="'+escH(nom)+'"'
         + chipEvtAttrs + '>'
         +moreBtn

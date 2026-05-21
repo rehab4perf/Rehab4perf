@@ -288,6 +288,28 @@ body {
   transition: border-color .12s;
 }
 .suivi-rapide-obs:focus { outline:none; border-color:var(--accent); background:#fff; }
+/* Notes libres */
+.suivi-rapide-notes-block {
+  margin:12px 0 4px;
+  background:var(--surface);
+  border:1.5px solid var(--border2);
+  border-radius:8px;
+  overflow:hidden;
+}
+.suivi-rapide-notes-title {
+  font-size:.74rem; font-weight:700; color:var(--text2);
+  text-transform:uppercase; letter-spacing:.06em;
+  padding:7px 12px 5px; background:var(--surface2);
+  border-bottom:1px solid var(--border);
+}
+.suivi-rapide-notes-area {
+  width:100%; min-height:90px; padding:8px 12px;
+  border:none; resize:vertical;
+  font-family:inherit; font-size:.84rem; color:var(--text);
+  background:var(--bg); line-height:1.5;
+  box-sizing:border-box;
+}
+.suivi-rapide-notes-area:focus { outline:none; background:#fff; }
 /* Qual */
 .suivi-rapide-qual-block { padding:12px 14px; border-bottom:1px solid var(--border); }
 .suivi-rapide-qual-block:last-child { border-bottom:none; }
@@ -3409,6 +3431,9 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
 </div>
 
+<!-- Champ suivi rapide — notes libres (utilisé comme holder DOM pour sérialisation) -->
+<textarea id="f-suivi-notes" style="display:none"></textarea>
+
 <!-- ── PAGE SUIVI RAPIDE ─────────────────────────────────── -->
 <div class="page" id="page-suivi-rapide">
   <div class="page-header">
@@ -5510,7 +5535,9 @@ var _SUIVI_CARRY_FIELDS = [
   'f-img-echo-date', 'f-img-echo-obs',
   'f-img-scan-date', 'f-img-scan-obs',
   'f-img-arthro-date','f-img-arthro-obs',
-  'f-img-autre-date','f-img-autre-obs'
+  'f-img-autre-date','f-img-autre-obs',
+  // Notes libres suivi rapide
+  'f-suivi-notes'
 ];
 
 function newBilanSuivi(){
@@ -5794,7 +5821,18 @@ function _renderSuiviRapide(){
     html+='</div>';
   }
 
-  /* ── 9. Footer sticky ── */
+  /* ── 9. Bloc notes libres (toujours visible) ── */
+  var notesEl = document.getElementById('f-suivi-notes');
+  var notesVal = notesEl ? notesEl.value : '';
+  _suiviRapideInitial['f-suivi-notes'] = notesVal;
+  html += '<div class="suivi-rapide-notes-block">'
+    + '<div class="suivi-rapide-notes-title">Notes libres</div>'
+    + '<textarea class="suivi-rapide-notes-area" data-metric-id="f-suivi-notes"'
+    + ' placeholder="Observations, contexte, points d\'attention, remarques libres…"'
+    + '>'+_esc2(notesVal)+'</textarea>'
+    + '</div>';
+
+  /* ── 10. Footer sticky ── */
   html+='<div class="suivi-rapide-footer">'
     +'<div class="suivi-rapide-footer-info" id="suivi-rapide-delta-info">Aucune modification</div>'
     +'<button class="suivi-rapide-save-btn" onclick="_saveSuiviRapide()">⚡ Enregistrer la mise à jour</button>'
@@ -5820,8 +5858,8 @@ function _computeSuiviRapideDelta(){
     } else {
       var curV  = el.value;
       var initV = _suiviRapideInitial[mid] !== undefined ? String(_suiviRapideInitial[mid]) : '';
-      // Changed AND non-vide = mesure saisie aujourd'hui
-      if(curV !== initV && curV !== '') delta[mid] = curV;
+      // Changed AND (non-vide OU textarea — les notes libres peuvent être vidées)
+      if(curV !== initV && (curV !== '' || el.tagName === 'TEXTAREA')) delta[mid] = curV;
     }
   });
   return delta;
