@@ -3949,7 +3949,7 @@ function _updateSaveBar(){
     if(suiviBtn) suiviBtn.disabled = true;
   }
 }
-function _esc2(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function _esc2(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 /* ── Mode consultation historique ─────────────────────────── */
 function _enterHistoMode(bilanDate){

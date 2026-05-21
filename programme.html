@@ -4721,16 +4721,14 @@ function openProgHistory(){
       var isCurrent = _currentProgId === p.id;
       return '<div style="display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid #F1F0ED;'+(isCurrent?'background:#EEF3FB;':'')+'">'
         +'<div style="flex:1;min-width:0;"><div style="font-size:.88rem;font-weight:700;color:#1A3A5C;">'+d+'</div>'
-        +'<div style="font-size:.75rem;color:#6B6860;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+_escP(p.nom||'')+'</div></div>'
+        +'<div style="font-size:.75rem;color:#6B6860;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+escH(p.nom||'')+'</div></div>'
         +'<button onclick="_loadProg(\''+p.id+'\')" style="background:#1A3A5C;color:#fff;border:none;border-radius:5px;padding:5px 11px;font-size:.75rem;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0;">'+(isCurrent?'✓ Actif':'Charger')+'</button>'
         +'<button onclick="_shareProgById(\''+p.id+'\')" style="background:rgba(42,95,166,.1);color:#2B5FA6;border:1px solid rgba(42,95,166,.3);border-radius:5px;padding:5px 9px;font-size:.78rem;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Copier le lien de partage">📤</button>'
-        +'<button onclick="_deleteProg(\''+p.id+'\',\''+_escP(p.nom||d)+'\')" style="background:none;border:1px solid #E74C3C;color:#E74C3C;border-radius:5px;padding:5px 8px;font-size:.78rem;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Supprimer ce programme">🗑</button>'
+        +'<button onclick="_deleteProg(\''+p.id+'\',\''+escJS(p.nom||d)+'\')" style="background:none;border:1px solid #E74C3C;color:#E74C3C;border-radius:5px;padding:5px 8px;font-size:.78rem;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Supprimer ce programme">🗑</button>'
         +'</div>';
     }).join('');
   });
 }
-
-function _escP(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 /* ================================================================
    ÉVOLUTION DES CHARGES
@@ -5340,7 +5338,7 @@ function _renderPevoCharts(exoData, selectedKeys) {
     var active = selectedKeys.has(key);
     return '<label class="pevo-pill'+(active?' active':'')+'">'
       +'<input type="checkbox" '+(active?'checked':'')+' onchange="_pevoToggle(\''+key+'\')">'
-      +_escP(exoData[key].label)
+      +escH(exoData[key].label)
       +'</label>';
   }).join('');
   var chartsHtml = '';
@@ -5385,7 +5383,7 @@ function _renderPevoCharts(exoData, selectedKeys) {
     }
     chartsHtml += '<div class="pevo-card">'
       +'<div class="pevo-card-header">'
-      +'<span class="pevo-card-title">'+_escP(grp.label)+'</span>'
+      +'<span class="pevo-card-title">'+escH(grp.label)+'</span>'
       +'<div class="pevo-card-kpis">'
       +'<span class="pevo-kpi-neutral">Début : '+fLabel+'</span>'
       +'<span class="pevo-kpi-neutral">→</span>'
@@ -5405,7 +5403,7 @@ function _renderPevoCharts(exoData, selectedKeys) {
       var active = dureeSel.has(key);
       return '<label class="pevo-pill'+(active?' active':'')+'">'
         +'<input type="checkbox" '+(active?'checked':'')+' onchange="_pevoToggleDuree(\''+key+'\')">'
-        +_escP(_pevoDureeData[key].label)+'</label>';
+        +escH(_pevoDureeData[key].label)+'</label>';
     }).join('');
     var dureeChartsHtml = '';
     dureeKeys.forEach(function(key){
@@ -5438,7 +5436,7 @@ function _renderPevoCharts(exoData, selectedKeys) {
       }
       dureeChartsHtml += '<div class="pevo-card">'
         +'<div class="pevo-card-header">'
-        +'<span class="pevo-card-title">'+_escP(grp.label)+'</span>'
+        +'<span class="pevo-card-title">'+escH(grp.label)+'</span>'
         +'<div class="pevo-card-kpis">'
         +'<span class="pevo-kpi-neutral">Début : '+_formatDuree(first)+'</span>'
         +'<span class="pevo-kpi-neutral">→</span>'
@@ -5468,7 +5466,7 @@ function _renderPevoCharts(exoData, selectedKeys) {
       var active = cardioSel.has(key);
       return '<label class="pevo-pill'+(active?' active':'')+'">'
         +'<input type="checkbox" '+(active?'checked':'')+' onchange="_pevoToggleCardio(\''+key+'\')">'
-        +_escP(_pevoCardioData[key].label)+'</label>';
+        +escH(_pevoCardioData[key].label)+'</label>';
     }).join('');
     var cardioChartsHtml = '';
     cardioKeys.forEach(function(key){
@@ -5483,7 +5481,7 @@ function _renderPevoCharts(exoData, selectedKeys) {
       if(!svg) return;
       cardioChartsHtml += '<div class="pevo-card">'
         +'<div class="pevo-card-header">'
-        +'<span class="pevo-card-title">'+_escP(grp.label)+'</span>'
+        +'<span class="pevo-card-title">'+escH(grp.label)+'</span>'
         +'<div class="pevo-card-kpis">'
         +'<span class="pevo-kpi-neutral">Début : '+first.toFixed(1)+' km</span>'
         +'<span class="pevo-kpi-neutral">→</span>'
