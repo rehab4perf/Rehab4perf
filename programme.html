@@ -4397,6 +4397,7 @@ window.addEventListener('beforeunload', function(e){
 });
 
 window.addEventListener('message', function(e){
+  if(e.origin !== window.location.origin) return;
   if(e.data && e.data.type==='r4p-profile'){
     try { localStorage.setItem('r4p-profile', JSON.stringify(e.data.profile)); } catch(ex){}
   }

@@ -401,9 +401,9 @@ function syncProfileToStorage(user) {
 
 function propagateToBilan(profile) {
   var bf = document.getElementById('frame-bilan');
-  if (bf && bf.contentWindow) bf.contentWindow.postMessage({ type:'r4p-profile', profile:profile }, '*');
+  if (bf && bf.contentWindow) bf.contentWindow.postMessage({ type:'r4p-profile', profile:profile }, window.location.origin);
   var of = document.getElementById('frame-outils');
-  if (of && of.contentWindow) of.contentWindow.postMessage({ type:'r4p-profile', profile:profile }, '*');
+  if (of && of.contentWindow) of.contentWindow.postMessage({ type:'r4p-profile', profile:profile }, window.location.origin);
 }
 
 /* ═══ VÉRIFICATION SESSION & INIT ═══ */
@@ -432,7 +432,7 @@ function _broadcastFreshToken(session) {
       f.contentWindow.postMessage({
         type: 'r4p-token-refreshed',
         access_token: token
-      }, '*');
+      }, window.location.origin);
     }
   });
 }
@@ -452,6 +452,7 @@ sb.auth.onAuthStateChange(function(event, session) {
 
 /* ═══ MESSAGES DES IFRAMES ═══ */
 window.addEventListener('message', function(e) {
+  if (e.origin !== window.location.origin) return;
   if (!e.data || !e.data.type) return;
 
   // account.html a mis à jour le profil
@@ -480,7 +481,7 @@ window.addEventListener('message', function(e) {
   if (e.data.type === 'r4p-outils-save') {
     var bilanFrame = document.getElementById('frame-bilan');
     if (bilanFrame && bilanFrame.contentWindow) {
-      bilanFrame.contentWindow.postMessage(e.data, '*');
+      bilanFrame.contentWindow.postMessage(e.data, window.location.origin);
     }
   }
 
@@ -530,7 +531,7 @@ function _broadcastPatient(p) {
     };
     ['frame-bilan','frame-outils','frame-prescription'].forEach(function(id) {
       var f = document.getElementById(id);
-      if (f && f.contentWindow) f.contentWindow.postMessage(msg, '*');
+      if (f && f.contentWindow) f.contentWindow.postMessage(msg, window.location.origin);
     });
   });
 }
