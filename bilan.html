@@ -228,20 +228,45 @@ body {
   text-transform:uppercase; letter-spacing:.05em; color:var(--text2);
   background: var(--surface2); border-bottom:1px solid var(--border);
 }
-/* Grille de champs */
-.suivi-rapide-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr));
-  gap: 0;
+/* Conteneur de blocs-tests dans une catégorie */
+.suivi-rapide-blocks {
+  display: flex; flex-wrap: wrap; gap: 12px; padding: 12px;
 }
+/* Carte d'un test */
+.suivi-rapide-test-block {
+  flex: 1; min-width: 200px; max-width: 380px;
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--radius); padding: 10px 14px;
+  box-shadow: var(--shadow);
+}
+.suivi-rapide-test-title {
+  font-size: .69rem; font-weight: 700; color: var(--accent2);
+  letter-spacing: .05em; text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px; margin-bottom: 8px;
+}
+.suivi-rapide-test-fields { display: flex; flex-direction: column; gap: 5px; }
+/* Champ individuel dans une carte */
+.suivi-rapide-field {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.suivi-rapide-field-cond {
+  background: var(--surface2); border-radius: 4px;
+  padding: 4px 8px; margin-bottom: 2px;
+}
+.suivi-rapide-field-label {
+  font-size: .75rem; color: var(--text2); flex: 1;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.suivi-rapide-field-label.cond { color: var(--text3); font-style: italic; }
+.suivi-rapide-input-text { width: 120px !important; text-align: left !important; }
+/* Ancienne grille plate (conservée mais plus utilisée) */
 .suivi-rapide-row {
   display: flex; flex-direction: column;
   padding: 8px 14px; border-bottom: 1px solid var(--border);
-  border-right: 1px solid var(--border);
 }
-.suivi-rapide-row:last-child { border-bottom: none; }
 .suivi-rapide-label {
   font-size:.75rem; color:var(--text2); margin-bottom:4px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .suivi-rapide-input-wrap {
   display: flex; align-items: center; gap: 6px;
@@ -5576,22 +5601,102 @@ function _renderSuiviRapide(){
     return;
   }
 
-  /* ── 1. Métriques numériques actives (au moins 1 valeur dans l'historique) ── */
-  var activeByCat = {};
-  TRACKED_METRICS.forEach(function(m){
-    if(m.compute) return; // métriques calculées (ULRT avg) → exclues
-    var hasVal = _allBilans.some(function(b){
-      return !isNaN(parseFloat((b.donnees||{})[m.id]));
+  /* ── 1. IDs déjà couverts par CHART_GROUPS (pour détecter les orphelins) ── */
+  var coveredIds = {};
+  CHART_GROUPS.forEach(function(grp){
+    if(grp.idA) coveredIds[grp.idA] = true;
+    if(grp.idB) coveredIds[grp.idB] = true;
+  });
+  // dj-t-ca/cs sont orphelins mais seront injectés dans le bloc Drop Jump
+  coveredIds['dj-t-ca'] = true;
+  coveredIds['dj-t-cs'] = true;
+
+  /* ── 2. Construction des blocs par catégorie depuis CHART_GROUPS ── */
+  var blocksByCat = {};
+
+  CHART_GROUPS.forEach(function(grp){
+    if(grp.computeA || grp.computeB) return; // pas d'IDs DOM directs (ULRT)
+    // Actif si au moins 1 valeur dans l'historique
+    var active = _allBilans.some(function(b){
+      var d = b.donnees||{};
+      if(grp.idA && !isNaN(parseFloat(d[grp.idA]))) return true;
+      if(grp.idB && !isNaN(parseFloat(d[grp.idB]))) return true;
+      if(grp.condId){ var cv=d[grp.condId]; if(cv!==undefined&&cv!==null&&cv!=='') return true; }
+      return false;
     });
-    if(!hasVal) return;
-    if(!activeByCat[m.cat]) activeByCat[m.cat] = [];
-    activeByCat[m.cat].push(m);
+    if(!active) return;
+
+    var fields = [];
+    // Paramètre de condition en tête du bloc (si présent)
+    if(grp.condId){
+      var condDomEl = document.getElementById(grp.condId);
+      var condType  = condDomEl ? (condDomEl.type||'text') : 'text';
+      var condLabel = grp.condId==='sls-hauteur'      ? 'Hauteur de marche'
+                    : grp.condId==='dj-hauteur-boite' ? 'Hauteur boîte'
+                    : grp.condId==='pset-poids-reel'  ? 'Poids réel'
+                    : grp.condId;
+      fields.push({id:grp.condId, label:condLabel, unit:grp.condUnit||'', type:condType, isCond:true});
+    }
+    if(grp.idA) fields.push({id:grp.idA, label:grp.labelA||grp.idA, unit:grp.unit||'', type:'number'});
+    if(grp.idB) fields.push({id:grp.idB, label:grp.labelB||grp.idB, unit:grp.unit||'', type:'number'});
+
+    // Cas spécial Drop Jump : injecter les temps de contact si renseignés
+    if(grp.idA === 'dj-h-ca'){
+      var hasDjT = _allBilans.some(function(b){
+        var d=b.donnees||{};
+        return !isNaN(parseFloat(d['dj-t-ca']))||!isNaN(parseFloat(d['dj-t-cs']));
+      });
+      if(hasDjT){
+        fields.push({id:'dj-t-ca', label:'Tps contact (atteint)', unit:'ms', type:'number'});
+        fields.push({id:'dj-t-cs', label:'Tps contact (sain)',    unit:'ms', type:'number'});
+      }
+    }
+
+    if(!blocksByCat[grp.cat]) blocksByCat[grp.cat]=[];
+    blocksByCat[grp.cat].push({title:grp.title, fields:fields, isEva: grp.idA==='f-eva'});
   });
 
-  /* ── 2. Groupes qualitatifs actifs ── */
+  /* ── 3. Métriques orphelines (TRACKED_METRICS sans CHART_GROUP) ── */
+  function _findPartnerOrphan(id, allIds){
+    if(id.endsWith('-ca')){ var p=id.slice(0,-3)+'-cs'; if(allIds.indexOf(p)!==-1)return p; }
+    if(id.endsWith('-cs')){ var p=id.slice(0,-3)+'-ca'; if(allIds.indexOf(p)!==-1)return p; }
+    var pts=id.split('-');
+    if(pts[pts.length-1]==='d'){ var p2=pts.slice(0,-1).join('-')+'-g'; if(allIds.indexOf(p2)!==-1)return p2; }
+    if(pts[pts.length-1]==='g'){ var p2=pts.slice(0,-1).join('-')+'-d'; if(allIds.indexOf(p2)!==-1)return p2; }
+    var wg=id.replace(/-d-/,'-g-'); if(wg!==id&&allIds.indexOf(wg)!==-1)return wg;
+    return null;
+  }
+  function _stripSide(lbl){
+    return lbl.replace(/\s*\(atteint\)/gi,'').replace(/\s*\(sain\)/gi,'').replace(/\s+[DG]$/,'').trim();
+  }
+
+  var orphansByCat = {};
+  TRACKED_METRICS.forEach(function(m){
+    if(m.compute||coveredIds[m.id]) return;
+    var hasVal=_allBilans.some(function(b){return !isNaN(parseFloat((b.donnees||{})[m.id]));});
+    if(!hasVal) return;
+    if(!orphansByCat[m.cat]) orphansByCat[m.cat]=[];
+    orphansByCat[m.cat].push(m);
+  });
+  Object.keys(orphansByCat).forEach(function(cat){
+    var orphans=orphansByCat[cat], allIds=orphans.map(function(m){return m.id;}), seen={};
+    orphans.forEach(function(m){
+      if(seen[m.id]) return;
+      seen[m.id]=true;
+      var pid=_findPartnerOrphan(m.id,allIds);
+      var partner=pid?orphans.find(function(o){return o.id===pid;}):null;
+      if(partner) seen[partner.id]=true;
+      var fields=[{id:m.id,label:m.label,unit:m.unit,type:'number'}];
+      if(partner) fields.push({id:partner.id,label:partner.label,unit:partner.unit,type:'number'});
+      if(!blocksByCat[cat]) blocksByCat[cat]=[];
+      blocksByCat[cat].push({title:partner?_stripSide(m.label):m.label, fields:fields});
+    });
+  });
+
+  /* ── 4. Groupes qualitatifs actifs ── */
   var activeQuals = QUAL_GROUPS.filter(function(grp){
     return _allBilans.some(function(b){
-      var d = b.donnees||{};
+      var d=b.donnees||{};
       for(var i=0;i<grp.count;i++){
         if(d[grp.prefixA+'-'+i]===true||d[grp.prefixB+'-'+i]===true) return true;
       }
@@ -5599,90 +5704,103 @@ function _renderSuiviRapide(){
     });
   });
 
-  var hasContent = Object.keys(activeByCat).length>0 || activeQuals.length>0;
+  var hasContent = Object.keys(blocksByCat).length>0||activeQuals.length>0;
   if(!hasContent){
-    container.innerHTML='<div class="suivi-rapide-empty">Aucune donnée de suivi identifiée pour ce patient.<br>Les métriques apparaîtront ici dès qu\'elles auront été renseignées dans le bilan.</div>';
+    container.innerHTML='<div class="suivi-rapide-empty">Aucune donnée de suivi identifiée.<br>Les métriques apparaîtront ici dès qu\'elles auront été renseignées dans le bilan.</div>';
     return;
   }
 
-  /* ── 3. Capture initial depuis le DOM (état mémoire courant) ── */
+  /* ── 5. Capture initial depuis le DOM ── */
   _suiviRapideInitial = {};
 
+  /* ── 6. Helper rendu d'un champ ── */
+  function _renderField(f){
+    var domEl=document.getElementById(f.id);
+    var val=domEl?domEl.value:'';
+    _suiviRapideInitial[f.id]=val;
+    var inputEl;
+    if(f.type==='text'){
+      inputEl='<input type="text" class="suivi-rapide-input suivi-rapide-input-text"'
+        +' data-metric-id="'+f.id+'" value="'+_esc2(val)+'" autocomplete="off" placeholder="ex: 45 cm">';
+    } else {
+      inputEl='<input type="number" class="suivi-rapide-input"'
+        +' data-metric-id="'+f.id+'" value="'+_esc2(val)+'" step="any" min="0" autocomplete="off">';
+    }
+    var unitSpan=(f.unit&&!f.isCond)?'<span class="suivi-rapide-unit">'+_esc2(f.unit)+'</span>':'';
+    var labelCls=f.isCond?'suivi-rapide-field-label cond':'suivi-rapide-field-label';
+    var fieldCls=f.isCond?'suivi-rapide-field suivi-rapide-field-cond':'suivi-rapide-field';
+    var labelTxt=(f.isCond&&f.unit)?_esc2(f.label+' ('+f.unit+')'):_esc2(f.label);
+    return '<div class="'+fieldCls+'">'
+      +'<div class="'+labelCls+'">'+labelTxt+'</div>'
+      +'<div class="suivi-rapide-input-wrap">'+inputEl+unitSpan+'</div>'
+      +'</div>';
+  }
+
+  /* ── 7. Rendu principal ── */
   var html = '<div class="suivi-rapide-header"><div class="suivi-rapide-info">'
     +'Seuls les champs <strong>modifiés</strong> créeront un nouveau point sur les graphiques d\'évolution. '
     +'Les champs non touchés ne génèrent aucune écriture.'
     +'</div></div>';
 
-  /* ── 4. Métriques numériques par catégorie ── */
-  Object.keys(activeByCat).forEach(function(cat){
-    html += '<div class="suivi-rapide-cat">'
+  Object.keys(blocksByCat).forEach(function(cat){
+    var blocks=blocksByCat[cat];
+    if(!blocks.length) return;
+    html+='<div class="suivi-rapide-cat">'
       +'<div class="suivi-rapide-cat-title">'+_esc2(cat)+'</div>'
-      +'<div class="suivi-rapide-grid">';
-    activeByCat[cat].forEach(function(m){
-      var el = document.getElementById(m.id);
-      var val = el ? el.value : '';
-      _suiviRapideInitial[m.id] = val;
-
-      // EVA → observation textarea associée
-      var obsHtml = '';
-      if(m.id === 'f-eva'){
-        var obsEl = document.getElementById('f-eva-obs');
-        var obsVal = obsEl ? obsEl.value : '';
-        _suiviRapideInitial['f-eva-obs'] = obsVal;
-        obsHtml = '<textarea class="suivi-rapide-obs" data-metric-id="f-eva-obs"'
+      +'<div class="suivi-rapide-blocks">';
+    blocks.forEach(function(block){
+      html+='<div class="suivi-rapide-test-block">'
+        +'<div class="suivi-rapide-test-title">'+_esc2(block.title)+'</div>'
+        +'<div class="suivi-rapide-test-fields">';
+      block.fields.forEach(function(f){ html+=_renderField(f); });
+      html+='</div>';
+      if(block.isEva){
+        var obsEl=document.getElementById('f-eva-obs');
+        var obsVal=obsEl?obsEl.value:'';
+        _suiviRapideInitial['f-eva-obs']=obsVal;
+        html+='<textarea class="suivi-rapide-obs" data-metric-id="f-eva-obs"'
           +' placeholder="Observations douleur (localisation, type…)" rows="2">'+_esc2(obsVal)+'</textarea>';
       }
-      html += '<div class="suivi-rapide-row">'
-        +'<div class="suivi-rapide-label">'+_esc2(m.label)+'</div>'
-        +'<div class="suivi-rapide-input-wrap">'
-        +'<input type="number" class="suivi-rapide-input" data-metric-id="'+m.id
-        +'" value="'+_esc2(val)+'" step="any" min="0" autocomplete="off">'
-        +'<span class="suivi-rapide-unit">'+_esc2(m.unit)+'</span>'
-        +'</div>'+obsHtml+'</div>';
+      html+='</div>';
     });
-    html += '</div></div>';
+    html+='</div></div>';
   });
 
-  /* ── 5. Tests qualitatifs ── */
+  /* ── 8. Tests qualitatifs ── */
   if(activeQuals.length){
-    html += '<div class="suivi-rapide-cat"><div class="suivi-rapide-cat-title">Tests qualitatifs</div>';
+    html+='<div class="suivi-rapide-cat"><div class="suivi-rapide-cat-title">Tests qualitatifs</div>';
     activeQuals.forEach(function(grp){
-      html += '<div class="suivi-rapide-qual-block">'
+      html+='<div class="suivi-rapide-qual-block">'
         +'<div class="suivi-rapide-qual-title">'+_esc2(grp.title)+'</div>'
         +'<table class="suivi-rapide-qual-table"><thead><tr>'
         +'<th>Critère</th><th>'+_esc2(grp.labelA)+'</th><th>'+_esc2(grp.labelB)+'</th>'
         +'</tr></thead><tbody>';
       grp.criteria.forEach(function(label,ci){
-        var elA = document.getElementById(grp.prefixA+'-'+ci);
-        var elB = document.getElementById(grp.prefixB+'-'+ci);
-        var chkA = elA ? elA.checked : false;
-        var chkB = elB ? elB.checked : false;
-        _suiviRapideInitial[grp.prefixA+'-'+ci] = chkA;
-        _suiviRapideInitial[grp.prefixB+'-'+ci] = chkB;
-        html += '<tr>'
+        var elA=document.getElementById(grp.prefixA+'-'+ci);
+        var elB=document.getElementById(grp.prefixB+'-'+ci);
+        var chkA=elA?elA.checked:false, chkB=elB?elB.checked:false;
+        _suiviRapideInitial[grp.prefixA+'-'+ci]=chkA;
+        _suiviRapideInitial[grp.prefixB+'-'+ci]=chkB;
+        html+='<tr>'
           +'<td class="suivi-rapide-qual-crit">'+_esc2(label)+'</td>'
-          +'<td class="suivi-rapide-qual-cell">'
-          +'<input type="checkbox" class="suivi-rapide-check" data-metric-id="'+grp.prefixA+'-'+ci
-          +'" data-is-cb="1"'+(chkA?' checked':'')+'></td>'
-          +'<td class="suivi-rapide-qual-cell">'
-          +'<input type="checkbox" class="suivi-rapide-check" data-metric-id="'+grp.prefixB+'-'+ci
-          +'" data-is-cb="1"'+(chkB?' checked':'')+'></td>'
+          +'<td class="suivi-rapide-qual-cell"><input type="checkbox" class="suivi-rapide-check"'
+          +' data-metric-id="'+grp.prefixA+'-'+ci+'" data-is-cb="1"'+(chkA?' checked':'')+'></td>'
+          +'<td class="suivi-rapide-qual-cell"><input type="checkbox" class="suivi-rapide-check"'
+          +' data-metric-id="'+grp.prefixB+'-'+ci+'" data-is-cb="1"'+(chkB?' checked':'')+'></td>'
           +'</tr>';
       });
-      html += '</tbody></table></div>';
+      html+='</tbody></table></div>';
     });
-    html += '</div>';
+    html+='</div>';
   }
 
-  /* ── 6. Footer sticky ── */
-  html += '<div class="suivi-rapide-footer">'
+  /* ── 9. Footer sticky ── */
+  html+='<div class="suivi-rapide-footer">'
     +'<div class="suivi-rapide-footer-info" id="suivi-rapide-delta-info">Aucune modification</div>'
     +'<button class="suivi-rapide-save-btn" onclick="_saveSuiviRapide()">⚡ Enregistrer la mise à jour</button>'
     +'</div>';
 
   container.innerHTML = html;
-
-  /* ── 7. Live delta counter ── */
   container.addEventListener('input',  _updateSuiviRapideDeltaInfo);
   container.addEventListener('change', _updateSuiviRapideDeltaInfo);
 }
