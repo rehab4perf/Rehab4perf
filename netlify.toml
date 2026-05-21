@@ -1,6 +1,18 @@
 [[headers]]
   for = "/*"
   [headers.values]
+    # Clickjacking protection
     X-Frame-Options = "SAMEORIGIN"
+    # MIME-sniffing protection
     X-Content-Type-Options = "nosniff"
+    # Referrer privacy
     Referrer-Policy = "strict-origin-when-cross-origin"
+    # Force HTTPS (1 an, sous-domaines inclus)
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+    # Content Security Policy
+    # - script-src  : app inline + SDK Supabase via jsdelivr
+    # - style-src   : styles inline (app ne charge aucun CSS externe)
+    # - connect-src : appels REST/Auth vers Supabase uniquement
+    # - img-src     : data: pour les graphiques canvas exportés
+    # - font-src    : polices locales uniquement
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self' https://sxdobjodxkwexaspepdm.supabase.co; img-src 'self' data: blob:; font-src 'self'; object-src 'none'; base-uri 'self';"
