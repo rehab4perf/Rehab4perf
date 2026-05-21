@@ -4066,6 +4066,8 @@ function _resetAndLoadPatient(p){
       if(res.error || !res.data || !res.data.length){
         _showPatientToast('Nouveau bilan vierge');
         _renderEvolutionPage();
+        var srPg = document.getElementById('page-suivi-rapide');
+        if(srPg && srPg.classList.contains('active')) _renderSuiviRapide();
         return;
       }
       _allBilans = res.data; // du plus récent au plus ancien
@@ -4083,6 +4085,9 @@ function _resetAndLoadPatient(p){
       var d = b.date ? b.date.split('-').reverse().join('/') : '—';
       _showPatientToast('Bilan du '+d+' chargé');
       _renderEvolutionPage();
+      // Rafraîchir le suivi rapide si l'onglet est déjà ouvert
+      var srPg = document.getElementById('page-suivi-rapide');
+      if(srPg && srPg.classList.contains('active')) _renderSuiviRapide();
     });
 }
 
