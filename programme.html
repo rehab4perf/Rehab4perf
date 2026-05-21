@@ -2346,12 +2346,12 @@ function getTypeClass(t){ return {renfo:'renfo',automassage:'automassage',therap
 
 /* ── FAVORITES ── */
 function getFavs(){
-  try { return new Set(JSON.parse(localStorage.getItem('r4p-fav-exos')||'[]')); } catch(e){ return new Set(); }
+  try { return new Set(JSON.parse(localStorage.getItem(R4P_KEYS.FAV_EXOS)||'[]')); } catch(e){ return new Set(); }
 }
 function toggleFav(id){
   var favs = getFavs();
   if(favs.has(id)) favs.delete(id); else favs.add(id);
-  localStorage.setItem('r4p-fav-exos', JSON.stringify(Array.from(favs)));
+  localStorage.setItem(R4P_KEYS.FAV_EXOS, JSON.stringify(Array.from(favs)));
   renderLib();
 }
 
@@ -3867,7 +3867,7 @@ function exportSession(){
 }
 
 function getProfile(){
-  try { return JSON.parse(localStorage.getItem('r4p-profile')||'{}'); } catch(e){ return {}; }
+  try { return JSON.parse(localStorage.getItem(R4P_KEYS.PROFILE)||'{}'); } catch(e){ return {}; }
 }
 
 function buildExportHTML(){
@@ -4206,7 +4206,7 @@ function saveEditor(){
 
 function resetLibrary(){
   if(!confirm('Réinitialiser la bibliothèque aux exercices par défaut ?')) return;
-  try { localStorage.removeItem('r4p-library'); } catch(ex){}
+  try { localStorage.removeItem(R4P_KEYS.LIBRARY); } catch(ex){}
   location.reload();
 }
 
@@ -4399,7 +4399,7 @@ window.addEventListener('beforeunload', function(e){
 window.addEventListener('message', function(e){
   if(e.origin !== window.location.origin) return;
   if(e.data && e.data.type==='r4p-profile'){
-    try { localStorage.setItem('r4p-profile', JSON.stringify(e.data.profile)); } catch(ex){}
+    try { localStorage.setItem(R4P_KEYS.PROFILE, JSON.stringify(e.data.profile)); } catch(ex){}
   }
   // Nouveau token reçu depuis index.html après refresh automatique
   if(e.data && e.data.type==='r4p-token-refreshed' && e.data.access_token){
@@ -4413,7 +4413,7 @@ window.addEventListener('message', function(e){
   if(e.data && e.data.type==='r4p-patient-selected'){
     _progPatient = _normalizePatient(e.data.patient);
     _currentProgId = null;
-    try { localStorage.setItem('r4p-current-patient', e.data.patient ? JSON.stringify(_progPatient) : ''); } catch(ex){}
+    try { localStorage.setItem(R4P_KEYS.PATIENT, e.data.patient ? JSON.stringify(_progPatient) : ''); } catch(ex){}
     // Récupérer uid et token depuis le payload JWT envoyé par le parent
     if(e.data.auth && e.data.auth.access_token){
       _progToken = e.data.auth.access_token;
@@ -4436,6 +4436,33 @@ window.addEventListener('message', function(e){
 /* ═══════════════════════════════════════════════════════════
    SUPABASE — PROGRAMMES
 ═══════════════════════════════════════════════════════════ */
+/* ── Constantes localStorage ─────────────────────────────────────────
+   Source unique de vérité pour toutes les clés de stockage local.
+   Modifier ici = propagé partout dans ce fichier. ────────────────── */
+var R4P_KEYS = {
+  PATIENT              : R4P_KEYS.PATIENT,
+  PROFILE              : 'r4p-profile',
+  BILAN_DRAFT          : R4P_KEYS.BILAN_DRAFT,
+  SUPABASE_AUTH        : R4P_KEYS.SUPABASE_AUTH,
+  CAL_EVENTS           : R4P_KEYS.CAL_EVENTS,
+  CYCLES               : R4P_KEYS.CYCLES,
+  SEANCES              : R4P_KEYS.SEANCES,
+  TEMPLATES            : R4P_KEYS.TEMPLATES,
+  TEMPLATE_GROUPS      : R4P_KEYS.TEMPLATE_GROUPS,
+  CUSTOM_PROTOCOLS     : R4P_KEYS.CUSTOM_PROTOCOLS,
+  CUSTOM_PROTOCOLS_SID : R4P_KEYS.CUSTOM_PROTOCOLS_SID,
+  FAV_EXOS             : R4P_KEYS.FAV_EXOS,
+  PICKER_FAVS          : R4P_KEYS.PICKER_FAVS,
+  LIBRARY              : R4P_KEYS.LIBRARY,
+  EXPANDED_GROUPS      : R4P_KEYS.EXPANDED_GROUPS,
+  COLLAPSED_CATS       : R4P_KEYS.COLLAPSED_CATS,
+  LIB_CAT_COLLAPSED    : R4P_KEYS.LIB_CAT_COLLAPSED,
+  J0_PREFIX            : R4P_KEYS.J0_PREFIX,
+  PEVO_SEL_PREFIX      : R4P_KEYS.PEVO_SEL_PREFIX,
+  PEVO_DUREE_PREFIX    : R4P_KEYS.PEVO_DUREE_PREFIX,
+  PEVO_CARDIO_PREFIX   : R4P_KEYS.PEVO_CARDIO_PREFIX
+};
+
 var SUPA_URL_P = 'https://sxdobjodxkwexaspepdm.supabase.co';
 var SUPA_KEY_P = 'sb_publishable_zEJrmQOnKyRm-Y_NyojaTA_ERrDx4pl';
 var sbP = supabase.createClient(SUPA_URL_P, SUPA_KEY_P);
@@ -4462,7 +4489,7 @@ function _normalizePatient(p){
 // Fallback : récupérer uid + token depuis localStorage au chargement
 (function(){
   try {
-    var raw = localStorage.getItem('sb-sxdobjodxkwexaspepdm-auth-token');
+    var raw = localStorage.getItem(R4P_KEYS.SUPABASE_AUTH);
     if(raw){
       var parsed = JSON.parse(raw);
       var tok = parsed.access_token || (parsed.currentSession && parsed.currentSession.access_token);
@@ -4480,7 +4507,7 @@ function _normalizePatient(p){
 // Restaurer patient depuis localStorage
 (function(){
   try {
-    var sp = localStorage.getItem('r4p-current-patient');
+    var sp = localStorage.getItem(R4P_KEYS.PATIENT);
     if(sp && sp !== '') {
       _progPatient = _normalizePatient(JSON.parse(sp));
       var pnEl = document.getElementById('patientName');
@@ -4517,7 +4544,7 @@ function _updatePatientUI(){
 // Tente de lire un token frais depuis le localStorage Supabase
 function _tryRefreshToken(){
   try {
-    var raw = localStorage.getItem('sb-sxdobjodxkwexaspepdm-auth-token');
+    var raw = localStorage.getItem(R4P_KEYS.SUPABASE_AUTH);
     if(!raw) return false;
     var parsed = JSON.parse(raw);
     var tok = parsed.access_token || (parsed.currentSession && parsed.currentSession.access_token);
@@ -5264,22 +5291,22 @@ function _buildPevoChart(vals, dates, chartId, meta, nrsPts) {
 
 /* État de sélection par patient : { patientId → Set(exoKey) } en localStorage */
 function _pevoGetSel(patientId) {
-  try { return new Set(JSON.parse(localStorage.getItem('r4p-pevo-sel-'+patientId)||'[]')); } catch(e){ return new Set(); }
+  try { return new Set(JSON.parse(localStorage.getItem(R4P_KEYS.PEVO_SEL_PREFIX+patientId)||'[]')); } catch(e){ return new Set(); }
 }
 function _pevoSaveSel(patientId, sel) {
-  try { localStorage.setItem('r4p-pevo-sel-'+patientId, JSON.stringify(Array.from(sel))); } catch(e){}
+  try { localStorage.setItem(R4P_KEYS.PEVO_SEL_PREFIX+patientId, JSON.stringify(Array.from(sel))); } catch(e){}
 }
 function _pevoGetDureeSel(patId) {
-  try { return new Set(JSON.parse(localStorage.getItem('r4p-pevo-duree-'+patId)||'[]')); } catch(e){ return new Set(); }
+  try { return new Set(JSON.parse(localStorage.getItem(R4P_KEYS.PEVO_DUREE_PREFIX+patId)||'[]')); } catch(e){ return new Set(); }
 }
 function _pevoSaveDureeSel(patId, sel) {
-  try { localStorage.setItem('r4p-pevo-duree-'+patId, JSON.stringify(Array.from(sel))); } catch(e){}
+  try { localStorage.setItem(R4P_KEYS.PEVO_DUREE_PREFIX+patId, JSON.stringify(Array.from(sel))); } catch(e){}
 }
 function _pevoGetCardioSel(patId) {
-  try { return new Set(JSON.parse(localStorage.getItem('r4p-pevo-cardio-'+patId)||'[]')); } catch(e){ return new Set(); }
+  try { return new Set(JSON.parse(localStorage.getItem(R4P_KEYS.PEVO_CARDIO_PREFIX+patId)||'[]')); } catch(e){ return new Set(); }
 }
 function _pevoSaveCardioSel(patId, sel) {
-  try { localStorage.setItem('r4p-pevo-cardio-'+patId, JSON.stringify(Array.from(sel))); } catch(e){}
+  try { localStorage.setItem(R4P_KEYS.PEVO_CARDIO_PREFIX+patId, JSON.stringify(Array.from(sel))); } catch(e){}
 }
 
 var _pevoData = null;      // { exoKey → {label, points} } — données chargées
@@ -6409,11 +6436,11 @@ renderLib('');
 <script>
 // ── CYCLES ────────────────────────────────────────────────────
 var _cycles = [];
-try { _cycles = JSON.parse(localStorage.getItem('r4p-cycles')||'[]'); } catch(e){ _cycles=[]; }
+try { _cycles = JSON.parse(localStorage.getItem(R4P_KEYS.CYCLES)||'[]'); } catch(e){ _cycles=[]; }
 
 // Sauvegarde cycles : Supabase si patient sélectionné, sinon localStorage
 function _saveCyclesToCloud(){
-  try { localStorage.setItem('r4p-cycles', JSON.stringify(_cycles)); } catch(e){}
+  try { localStorage.setItem(R4P_KEYS.CYCLES, JSON.stringify(_cycles)); } catch(e){}
   if(!_progPatient || !_progToken) return;
   fetch(SUPA_URL_P + '/rest/v1/patient_settings', {
     method: 'POST',
@@ -6433,7 +6460,7 @@ function _loadCyclesForPatient(){
     var arr = Array.isArray(data) ? data : [];
     if(arr.length && Array.isArray(arr[0].cycles)){
       _cycles = arr[0].cycles;
-      try { localStorage.setItem('r4p-cycles', JSON.stringify(_cycles)); } catch(e){}
+      try { localStorage.setItem(R4P_KEYS.CYCLES, JSON.stringify(_cycles)); } catch(e){}
     }
     renderCycleTimeline();
     // Rafraîchir le calendrier pour afficher les cycles du patient
@@ -6680,10 +6707,10 @@ var _selectedEmoji = '💪';
 var _savedSeances = [];
 
 function _loadSeances() {
-  try { _savedSeances = JSON.parse(localStorage.getItem('r4p-seances')||'[]'); } catch(e){ _savedSeances=[]; }
+  try { _savedSeances = JSON.parse(localStorage.getItem(R4P_KEYS.SEANCES)||'[]'); } catch(e){ _savedSeances=[]; }
 }
 function _persistSeances() {
-  try { localStorage.setItem('r4p-seances', JSON.stringify(_savedSeances)); } catch(e){}
+  try { localStorage.setItem(R4P_KEYS.SEANCES, JSON.stringify(_savedSeances)); } catch(e){}
 }
 
 function openSaveSession() {
@@ -6824,10 +6851,10 @@ function setCalView(v){
 }
 
 function _loadCalEvents() {
-  try { _calEvents = JSON.parse(localStorage.getItem('r4p-cal-events')||'[]'); } catch(e){ _calEvents=[]; }
+  try { _calEvents = JSON.parse(localStorage.getItem(R4P_KEYS.CAL_EVENTS)||'[]'); } catch(e){ _calEvents=[]; }
 }
 function _persistCalEvents() {
-  try { localStorage.setItem('r4p-cal-events', JSON.stringify(_calEvents)); } catch(e){}
+  try { localStorage.setItem(R4P_KEYS.CAL_EVENTS, JSON.stringify(_calEvents)); } catch(e){}
 }
 
 function calMove(dir) {
@@ -7529,10 +7556,10 @@ function _fmtDateFr(dateStr) {
 }
 
 function _saveJ0(patientId, dateStr) {
-  try { localStorage.setItem('r4p-j0-'+patientId, dateStr); } catch(e){}
+  try { localStorage.setItem(R4P_KEYS.J0_PREFIX+patientId, dateStr); } catch(e){}
 }
 function _getJ0(patientId) {
-  try { return localStorage.getItem('r4p-j0-'+patientId)||''; } catch(e){ return ''; }
+  try { return localStorage.getItem(R4P_KEYS.J0_PREFIX+patientId)||''; } catch(e){ return ''; }
 }
 
 /* ── Sélection du type dans le formulaire ── */
@@ -8190,10 +8217,10 @@ function _applyBuilderReadOnly(readOnly){
 }
 
 function _loadTemplates(){
-  try { _templates = JSON.parse(localStorage.getItem('r4p-templates')||'[]'); } catch(e){ _templates=[]; }
+  try { _templates = JSON.parse(localStorage.getItem(R4P_KEYS.TEMPLATES)||'[]'); } catch(e){ _templates=[]; }
 }
 function _persistTemplates(){
-  try { localStorage.setItem('r4p-templates', JSON.stringify(_templates)); } catch(e){}
+  try { localStorage.setItem(R4P_KEYS.TEMPLATES, JSON.stringify(_templates)); } catch(e){}
 }
 
 /* ── Ouvrir modal sauvegarde template ── */
@@ -8363,12 +8390,12 @@ function doSaveTemplate(){
 /* ── Bibliothèque 2 colonnes dans le bas du builder ── */
 var _selectedLibGroup  = null;
 var _libCatCollapsed   = (function(){
-  try { return JSON.parse(localStorage.getItem('r4p-lib-cat-collapsed')||'{}'); } catch(e){ return {}; }
+  try { return JSON.parse(localStorage.getItem(R4P_KEYS.LIB_CAT_COLLAPSED)||'{}'); } catch(e){ return {}; }
 })();
 
 function _toggleLibCat(catKey){
   _libCatCollapsed[catKey] = !_libCatCollapsed[catKey];
-  try { localStorage.setItem('r4p-lib-cat-collapsed', JSON.stringify(_libCatCollapsed)); } catch(e){}
+  try { localStorage.setItem(R4P_KEYS.LIB_CAT_COLLAPSED, JSON.stringify(_libCatCollapsed)); } catch(e){}
   _renderBuilderLibraryUI();
 }
 
@@ -8784,13 +8811,13 @@ function _addBlocFromPicker(tmplId, blocIdx){
 
 /* ── Favoris picker (templates épinglés) ── */
 function _getPickerFavs(){
-  try{ return new Set(JSON.parse(localStorage.getItem('r4p_picker_favs')||'[]')); }
+  try{ return new Set(JSON.parse(localStorage.getItem(R4P_KEYS.PICKER_FAVS)||'[]')); }
   catch(e){ return new Set(); }
 }
 function _togglePickerFav(id){
   var favs = _getPickerFavs();
   if(favs.has(String(id))) favs.delete(String(id)); else favs.add(String(id));
-  localStorage.setItem('r4p_picker_favs', JSON.stringify(Array.from(favs)));
+  localStorage.setItem(R4P_KEYS.PICKER_FAVS, JSON.stringify(Array.from(favs)));
   /* Mettre à jour le bouton immédiatement + re-render la section favoris */
   var btn = document.querySelector('.picker-fav-btn[onclick*="'+id+'"]');
   if(btn) btn.classList.toggle('active', favs.has(String(id)));
@@ -9300,16 +9327,16 @@ function deleteTemplate(id){
 //  GROUPES DE TEMPLATES (protocoles / pathologies)
 // ══════════════════════════════════════════════
 var _groups = [];
-var _expandedGroups = (function(){ try{ return JSON.parse(localStorage.getItem('r4p-expanded-groups')||'{}'); }catch(e){ return {}; } })();
+var _expandedGroups = (function(){ try{ return JSON.parse(localStorage.getItem(R4P_KEYS.EXPANDED_GROUPS)||'{}'); }catch(e){ return {}; } })();
 var _activeGroupId   = null;
 var _activeGroupNom  = '';
 var _activePhaseOrdre = 1;
 
 function _loadGroups(){
-  try { _groups = JSON.parse(localStorage.getItem('r4p-template-groups')||'[]'); } catch(e){ _groups=[]; }
+  try { _groups = JSON.parse(localStorage.getItem(R4P_KEYS.TEMPLATE_GROUPS)||'[]'); } catch(e){ _groups=[]; }
 }
 function _persistGroups(){
-  try { localStorage.setItem('r4p-template-groups', JSON.stringify(_groups)); } catch(e){}
+  try { localStorage.setItem(R4P_KEYS.TEMPLATE_GROUPS, JSON.stringify(_groups)); } catch(e){}
 }
 
 var _grpEditId = null; // null = création, sinon id du groupe à modifier
@@ -9593,7 +9620,7 @@ function deleteGroup(id){
 
 function _toggleGroup(id){
   _expandedGroups[id] = !_expandedGroups[id];
-  try{ localStorage.setItem('r4p-expanded-groups', JSON.stringify(_expandedGroups)); }catch(e){}
+  try{ localStorage.setItem(R4P_KEYS.EXPANDED_GROUPS, JSON.stringify(_expandedGroups)); }catch(e){}
   _renderSidebarWithGroups();
 }
 
@@ -9636,7 +9663,7 @@ function _updateActiveGroupBadge(){
 function addPhaseToGroup(id){
   setActiveGroup(id);
   _expandedGroups[id] = true;
-  try{ localStorage.setItem('r4p-expanded-groups', JSON.stringify(_expandedGroups)); }catch(e){}
+  try{ localStorage.setItem(R4P_KEYS.EXPANDED_GROUPS, JSON.stringify(_expandedGroups)); }catch(e){}
   blocs = [];
   _notes = '';
   renderSession();
@@ -9696,13 +9723,13 @@ function renderSidebarTemplates(){
 // Catégories : fermées par défaut, état persisté en localStorage
 // { 'MOBILITÉ': false } = explicitement ouvert par l'utilisateur
 var _collapsedCats = (function(){
-  try { return JSON.parse(localStorage.getItem('r4p-collapsed-cats')||'{}'); } catch(e){ return {}; }
+  try { return JSON.parse(localStorage.getItem(R4P_KEYS.COLLAPSED_CATS)||'{}'); } catch(e){ return {}; }
 })();
 
 function _toggleCatSection(catKey){
   // Par défaut fermé → false = ouvert, undefined/true = fermé
   _collapsedCats[catKey] = (_collapsedCats[catKey] === false) ? true : false;
-  try { localStorage.setItem('r4p-collapsed-cats', JSON.stringify(_collapsedCats)); } catch(e){}
+  try { localStorage.setItem(R4P_KEYS.COLLAPSED_CATS, JSON.stringify(_collapsedCats)); } catch(e){}
   _renderSidebarWithGroups();
 }
 
@@ -10009,8 +10036,8 @@ function _stmplCollapseAll(){
   var seen = {};
   (_groups||[]).forEach(function(g){ seen[g.categorie||''] = true; });
   Object.keys(seen).forEach(function(k){ _collapsedCats[k] = true; });
-  try{ localStorage.setItem('r4p-expanded-groups', JSON.stringify(_expandedGroups)); }catch(e){}
-  try{ localStorage.setItem('r4p-collapsed-cats',  JSON.stringify(_collapsedCats));  }catch(e){}
+  try{ localStorage.setItem(R4P_KEYS.EXPANDED_GROUPS, JSON.stringify(_expandedGroups)); }catch(e){}
+  try{ localStorage.setItem(R4P_KEYS.COLLAPSED_CATS,  JSON.stringify(_collapsedCats));  }catch(e){}
   _renderSidebarWithGroups();
 }
 
@@ -10019,8 +10046,8 @@ function _stmplExpandAll(){
   var seen = {};
   (_groups||[]).forEach(function(g){ seen[g.categorie||''] = true; });
   Object.keys(seen).forEach(function(k){ _collapsedCats[k] = false; });
-  try{ localStorage.setItem('r4p-expanded-groups', JSON.stringify(_expandedGroups)); }catch(e){}
-  try{ localStorage.setItem('r4p-collapsed-cats',  JSON.stringify(_collapsedCats));  }catch(e){}
+  try{ localStorage.setItem(R4P_KEYS.EXPANDED_GROUPS, JSON.stringify(_expandedGroups)); }catch(e){}
+  try{ localStorage.setItem(R4P_KEYS.COLLAPSED_CATS,  JSON.stringify(_collapsedCats));  }catch(e){}
   _renderSidebarWithGroups();
 }
 
@@ -11136,9 +11163,9 @@ var _customProtoSupaId = null; // ID du record Supabase meta
 
 function _loadCustomProtocols(){
   try {
-    var raw = localStorage.getItem('r4p-custom-protocols');
+    var raw = localStorage.getItem(R4P_KEYS.CUSTOM_PROTOCOLS);
     _customProtocols = raw ? JSON.parse(raw) : [];
-    var sid = localStorage.getItem('r4p-custom-protocols-sid');
+    var sid = localStorage.getItem(R4P_KEYS.CUSTOM_PROTOCOLS_SID);
     if(sid) _customProtoSupaId = sid;
   } catch(e){ _customProtocols = []; }
 }
@@ -11159,7 +11186,7 @@ function _getAllProtocols(){
 
 function _saveCustomProtocols(callback){
   /* 1. LocalStorage (immédiat) */
-  try { localStorage.setItem('r4p-custom-protocols', JSON.stringify(_customProtocols)); } catch(e){}
+  try { localStorage.setItem(R4P_KEYS.CUSTOM_PROTOCOLS, JSON.stringify(_customProtocols)); } catch(e){}
   /* 2. Supabase sync (si connecté) */
   if(!_progToken || !_progUid){ if(callback) callback(); return; }
   var donnees = JSON.stringify({ protocols: _customProtocols });
@@ -11173,7 +11200,7 @@ function _saveCustomProtocols(callback){
       method:'POST', headers: Object.assign({}, _sbHeaders(), {'Content-Type':'application/json','Prefer':'return=representation'}), body: body
     }).then(function(r){ return r.ok ? r.json() : null; })
     .then(function(rows){
-      if(rows && rows.length){ _customProtoSupaId = rows[0].id; try{ localStorage.setItem('r4p-custom-protocols-sid', String(rows[0].id)); }catch(e){} }
+      if(rows && rows.length){ _customProtoSupaId = rows[0].id; try{ localStorage.setItem(R4P_KEYS.CUSTOM_PROTOCOLS_SID, String(rows[0].id)); }catch(e){} }
       if(callback) callback();
     });
   }
@@ -11186,12 +11213,12 @@ function _fetchCustomProtocolsFromSupabase(callback){
   .then(function(rows){
     if(rows && rows.length){
       _customProtoSupaId = rows[0].id;
-      try{ localStorage.setItem('r4p-custom-protocols-sid', String(rows[0].id)); }catch(e){}
+      try{ localStorage.setItem(R4P_KEYS.CUSTOM_PROTOCOLS_SID, String(rows[0].id)); }catch(e){}
       var d = rows[0].donnees;
       if(typeof d === 'string') try{ d = JSON.parse(d); }catch(e){ d = null; }
       if(d && Array.isArray(d.protocols)){
         _customProtocols = d.protocols;
-        try{ localStorage.setItem('r4p-custom-protocols', JSON.stringify(_customProtocols)); }catch(e){}
+        try{ localStorage.setItem(R4P_KEYS.CUSTOM_PROTOCOLS, JSON.stringify(_customProtocols)); }catch(e){}
       }
     }
     /* Migration : si toujours vide, seeder depuis PROTOCOLS_REF */
@@ -12740,10 +12767,10 @@ function _openRappelsModal(proto, onClose) {
       _renderModal(j0);
     })
     .catch(function() {
-      try { var lb = JSON.parse(localStorage.getItem('athletik-bilan')||'{}'); var j0 = lb['f-date-op']||lb['f-date-accident']||savedJ0||''; _renderModal(j0); } catch(e){ _renderModal(savedJ0); }
+      try { var lb = JSON.parse(localStorage.getItem(R4P_KEYS.BILAN_DRAFT)||'{}'); var j0 = lb['f-date-op']||lb['f-date-accident']||savedJ0||''; _renderModal(j0); } catch(e){ _renderModal(savedJ0); }
     });
   } else {
-    try { var lb = JSON.parse(localStorage.getItem('athletik-bilan')||'{}'); var j0 = lb['f-date-op']||lb['f-date-accident']||savedJ0||''; _renderModal(j0); } catch(e){ _renderModal(savedJ0); }
+    try { var lb = JSON.parse(localStorage.getItem(R4P_KEYS.BILAN_DRAFT)||'{}'); var j0 = lb['f-date-op']||lb['f-date-accident']||savedJ0||''; _renderModal(j0); } catch(e){ _renderModal(savedJ0); }
   }
 }
 

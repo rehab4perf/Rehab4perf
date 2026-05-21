@@ -347,6 +347,17 @@ iframe.active { display:block; }
 </div>
 
 <script>
+/* ── Constantes localStorage ─────────────────────────────────────────
+   Source unique de vérité pour toutes les clés de stockage local.
+   Modifier ici = propagé partout dans ce fichier. ────────────────── */
+var R4P_KEYS = {
+  PATIENT        : R4P_KEYS.PATIENT,
+  PROFILE        : 'r4p-profile',
+  CACHED_PROFILE : R4P_KEYS.CACHED_PROFILE,
+  SESSION        : R4P_KEYS.SESSION,
+  SUPABASE_AUTH  : 'sb-sxdobjodxkwexaspepdm-auth-token'
+};
+
 var SUPA_URL = 'https://sxdobjodxkwexaspepdm.supabase.co';
 var SUPA_KEY = 'sb_publishable_zEJrmQOnKyRm-Y_NyojaTA_ERrDx4pl';
 var sb = supabase.createClient(SUPA_URL, SUPA_KEY);
@@ -395,7 +406,7 @@ function buildProfile(user) {
 
 function syncProfileToStorage(user) {
   var p = buildProfile(user);
-  try { localStorage.setItem('r4p-cached-profile', JSON.stringify(p)); localStorage.setItem('r4p-profile', JSON.stringify(p)); } catch(e) {}
+  try { localStorage.setItem(R4P_KEYS.CACHED_PROFILE, JSON.stringify(p)); localStorage.setItem(R4P_KEYS.PROFILE, JSON.stringify(p)); } catch(e) {}
   return p;
 }
 
@@ -411,7 +422,7 @@ sb.auth.getSession().then(function(result) {
   var session = result.data && result.data.session;
   if (!session) {
     // Nettoyer les anciens caches et rediriger
-    try { localStorage.removeItem('r4p-session'); localStorage.removeItem('r4p-cached-profile'); localStorage.removeItem('r4p-profile'); } catch(e) {}
+    try { localStorage.removeItem(R4P_KEYS.SESSION); localStorage.removeItem(R4P_KEYS.CACHED_PROFILE); localStorage.removeItem(R4P_KEYS.PROFILE); } catch(e) {}
     window.location.replace('auth.html');
     return;
   }
@@ -459,21 +470,21 @@ window.addEventListener('message', function(e) {
   if (e.data.type === 'r4p-profile-updated' && e.data.profile) {
     var profile = e.data.profile;
     updateNav({ email: profile.email, user_metadata: profile });
-    try { localStorage.setItem('r4p-cached-profile', JSON.stringify(profile)); localStorage.setItem('r4p-profile', JSON.stringify(profile)); } catch(ex) {}
+    try { localStorage.setItem(R4P_KEYS.CACHED_PROFILE, JSON.stringify(profile)); localStorage.setItem(R4P_KEYS.PROFILE, JSON.stringify(profile)); } catch(ex) {}
     propagateToBilan(profile);
   }
 
   // bilan.html a annulé le changement de patient (données non sauvegardées)
   if (e.data.type === 'r4p-cancel-patient-switch') {
     _currentPatient = _previousPatient || null;
-    try { localStorage.setItem('r4p-current-patient', _currentPatient ? JSON.stringify(_currentPatient) : ''); } catch(ex) {}
+    try { localStorage.setItem(R4P_KEYS.PATIENT, _currentPatient ? JSON.stringify(_currentPatient) : ''); } catch(ex) {}
     _updatePatientBtn();
     renderPatients(_allPatients);
   }
 
   // account.html demande une déconnexion
   if (e.data.type === 'r4p-logout-done') {
-    try { localStorage.removeItem('r4p-cached-profile'); localStorage.removeItem('r4p-profile'); } catch(ex) {}
+    try { localStorage.removeItem(R4P_KEYS.CACHED_PROFILE); localStorage.removeItem(R4P_KEYS.PROFILE); } catch(ex) {}
     window.location.replace('auth.html');
   }
 
@@ -501,7 +512,7 @@ var _previousPatient = null; // mémorisé avant chaque switch pour rollback
 // Restaurer le patient courant depuis localStorage
 (function() {
   try {
-    var stored = localStorage.getItem('r4p-current-patient');
+    var stored = localStorage.getItem(R4P_KEYS.PATIENT);
     if (stored) {
       _currentPatient = JSON.parse(stored);
       _updatePatientBtn();
@@ -770,7 +781,7 @@ function saveEditPatient() {
       _allPatients.sort(function(a,b){ return a.nom.localeCompare(b.nom); });
       if (_currentPatient && _currentPatient.id === id) {
         _currentPatient = res.data;
-        try { localStorage.setItem('r4p-current-patient', JSON.stringify(res.data)); } catch(ex){}
+        try { localStorage.setItem(R4P_KEYS.PATIENT, JSON.stringify(res.data)); } catch(ex){}
         _broadcastPatient(res.data);
         _updatePatientBtn();
       }
@@ -787,7 +798,7 @@ function selectPatient(id) {
   if (!p) return;
   _previousPatient = _currentPatient; // snapshot pour rollback
   _currentPatient = p;
-  try { localStorage.setItem('r4p-current-patient', JSON.stringify(p)); } catch(e) {}
+  try { localStorage.setItem(R4P_KEYS.PATIENT, JSON.stringify(p)); } catch(e) {}
   _updatePatientBtn();
   _broadcastPatient(p);
   renderPatients(_allPatients);
@@ -797,7 +808,7 @@ function selectPatient(id) {
 /* ── Désélectionner ─────────────────────────────────────── */
 function deselectPatient() {
   _currentPatient = null;
-  try { localStorage.removeItem('r4p-current-patient'); } catch(e) {}
+  try { localStorage.removeItem(R4P_KEYS.PATIENT); } catch(e) {}
   _updatePatientBtn();
   _broadcastPatient(null);
 }

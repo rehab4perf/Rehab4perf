@@ -3802,10 +3802,10 @@ function init() {
 // -- PROFILE ---------------------------------------------------
 function getProfile(){
   try {
-    var p = JSON.parse(localStorage.getItem('r4p-profile')||'{}');
+    var p = JSON.parse(localStorage.getItem(R4P_KEYS.PROFILE)||'{}');
     // Fallback : profil Netlify Identity si r4p-profile vide
     if (!p.prenom && !p.nom && !p.am) {
-      var cached = JSON.parse(localStorage.getItem('r4p-cached-profile')||'{}');
+      var cached = JSON.parse(localStorage.getItem(R4P_KEYS.CACHED_PROFILE)||'{}');
       if (cached.prenom || cached.nom || cached.am) return cached;
     }
     return p;
@@ -3837,7 +3837,7 @@ function applyProfile(p){
 window.addEventListener('message', function(e){
   if(e.origin !== window.location.origin) return;
   if(e.data && e.data.type==='r4p-profile'){
-    try { localStorage.setItem('r4p-profile', JSON.stringify(e.data.profile)); } catch(ex){}
+    try { localStorage.setItem(R4P_KEYS.PROFILE, JSON.stringify(e.data.profile)); } catch(ex){}
     applyProfile(e.data.profile);
   }
   // Score reçu depuis Outils.html → mettre à jour le champ du bilan en live
@@ -3863,7 +3863,7 @@ window.addEventListener('message', function(e){
     _bilanPatient = _newPat;
     _currentBilanId = null;
     _bilanModified = false;
-    try { localStorage.setItem('r4p-current-patient', _newPat ? JSON.stringify(_newPat) : ''); } catch(ex){}
+    try { localStorage.setItem(R4P_KEYS.PATIENT, _newPat ? JSON.stringify(_newPat) : ''); } catch(ex){}
     if(e.data.auth && e.data.auth.access_token){
       try {
         var payload = JSON.parse(atob(e.data.auth.access_token.split('.')[1]));
@@ -3883,6 +3883,17 @@ window.addEventListener('message', function(e){
 /* ═══════════════════════════════════════════════════════════
    SUPABASE — GESTION BILANS
 ═══════════════════════════════════════════════════════════ */
+/* ── Constantes localStorage ─────────────────────────────────────────
+   Source unique de vérité pour toutes les clés de stockage local.
+   Modifier ici = propagé partout dans ce fichier. ────────────────── */
+var R4P_KEYS = {
+  PATIENT        : 'r4p-current-patient',
+  PROFILE        : 'r4p-profile',
+  CACHED_PROFILE : 'r4p-cached-profile',
+  BILAN_DRAFT    : R4P_KEYS.BILAN_DRAFT,
+  SUPABASE_AUTH  : 'sb-sxdobjodxkwexaspepdm-auth-token'
+};
+
 var SUPA_URL_B = 'https://sxdobjodxkwexaspepdm.supabase.co';
 var SUPA_KEY_B = 'sb_publishable_zEJrmQOnKyRm-Y_NyojaTA_ERrDx4pl';
 var sbB = supabase.createClient(SUPA_URL_B, SUPA_KEY_B);
@@ -3906,7 +3917,7 @@ document.addEventListener('change', function(){ if(!_suppressDirty) _bilanModifi
 // Essayer de récupérer l'uid depuis le localStorage Supabase (fallback au chargement)
 (function(){
   try {
-    var raw = localStorage.getItem('sb-sxdobjodxkwexaspepdm-auth-token');
+    var raw = localStorage.getItem(R4P_KEYS.SUPABASE_AUTH);
     if(raw){
       var parsed = JSON.parse(raw);
       var tok = parsed.access_token || (parsed.currentSession && parsed.currentSession.access_token);
@@ -3918,7 +3929,7 @@ document.addEventListener('change', function(){ if(!_suppressDirty) _bilanModifi
 // Restaurer patient depuis localStorage au chargement
 (function(){
   try {
-    var sp = localStorage.getItem('r4p-current-patient');
+    var sp = localStorage.getItem(R4P_KEYS.PATIENT);
     if(sp && sp !== '') {
       _bilanPatient = JSON.parse(sp);
       // Charger tous les bilans Supabase pour avoir _allBilans + _prevDonnees
@@ -5622,7 +5633,7 @@ function newBilan(){
   _resetBilanFields();
   document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
   showPage('infos');
-  localStorage.removeItem('athletik-bilan');
+  localStorage.removeItem(R4P_KEYS.BILAN_DRAFT);
   if(_bilanPatient) _autofillPatientFields(_bilanPatient);
   closeHistoModal();
 }
@@ -7418,14 +7429,14 @@ function doReset() {
   _bilanPatient = null;
   _prevDonnees  = null;
   _allBilans    = [];
-  localStorage.removeItem('r4p-current-patient');
+  localStorage.removeItem(R4P_KEYS.PATIENT);
   _resetBilanFields();
   document.querySelectorAll('.evo-delta').forEach(function(el){ el.remove(); });
   _renderEvolutionPage();
   _updateSaveBar();
   closeReset();
   showPage('infos');
-  localStorage.removeItem('athletik-bilan');
+  localStorage.removeItem(R4P_KEYS.BILAN_DRAFT);
   showToast('Dossier réinitialisé — Prêt pour un nouveau patient');
   try { window.parent.postMessage({ type: 'r4p-patient-reset' }, window.location.origin); } catch(ex) {}
 }
@@ -7521,13 +7532,13 @@ function saveToStorage() {
         else data[el.id] = el.value;
       }
     });
-    localStorage.setItem('athletik-bilan', JSON.stringify(data));
+    localStorage.setItem(R4P_KEYS.BILAN_DRAFT, JSON.stringify(data));
   } catch(e) {}
 }
 
 function loadFromStorage() {
   try {
-    const raw = localStorage.getItem('athletik-bilan');
+    const raw = localStorage.getItem(R4P_KEYS.BILAN_DRAFT);
     if (!raw) return;
     const data = JSON.parse(raw);
     Object.entries(data).forEach(([id, val]) => {
