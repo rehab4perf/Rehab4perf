@@ -187,6 +187,23 @@ body {
 }
 .btn-suivi-bilan:hover { background: #F0FDFA; border-color: #0F766E; color: #0F766E; }
 .btn-suivi-bilan:disabled { opacity: .35; cursor: not-allowed; }
+/* ── Mode consultation historique ── */
+.histo-mode-banner {
+  display: none;
+  background: #FEF3C7; border: 1.5px solid #F59E0B;
+  border-radius: 6px; padding: 6px 8px;
+  font-size: .72rem; color: #92400E; line-height: 1.4;
+}
+.histo-mode-banner.active { display: block; }
+.histo-mode-banner strong { display: block; font-size: .73rem; color: #78350F; margin-bottom: 2px; }
+.btn-exit-histo {
+  display: block; width: 100%; margin-top: 5px;
+  padding: 4px 6px; border-radius: 4px;
+  border: 1px solid #F59E0B; cursor: pointer;
+  font-family: inherit; font-size: .72rem; font-weight: 500;
+  color: #92400E; background: #FFFBEB; transition: all .12s;
+}
+.btn-exit-histo:hover { background: #FEF3C7; border-color: #D97706; }
 
 /* ── Historique modal ────────────────────────────────────── */
 .histo-overlay {
@@ -1192,6 +1209,11 @@ textarea { resize:none !important; overflow:hidden !important; }
     <button class="btn-save-bilan" id="bilan-save-btn" onclick="saveBilan()">💾 Sauvegarder le bilan</button>
     <button class="btn-suivi-bilan" id="bilan-suivi-btn" onclick="newBilanSuivi()" title="Efface les mesures, conserve le contexte du dossier">📋 Bilan de suivi</button>
     <button class="btn-history-bilan" onclick="openBilanHistory()">📂 Bilans précédents</button>
+    <div class="histo-mode-banner" id="histo-mode-banner">
+      <strong>📅 Mode consultation</strong>
+      <span id="histo-mode-label">Bilan du —</span>
+      <button class="btn-exit-histo" onclick="exitHistoMode()">↩ Revenir au bilan actuel</button>
+    </div>
   </div>
 
   <div class="sidebar-footer">
@@ -3696,6 +3718,7 @@ var _currentBilanId = null;
 var _currentBilanDate = null; // date ISO (YYYY-MM-DD) du bilan actuellement chargé
 var _bilanUid       = null;
 var _bilanModified  = false;   // true dès qu'une saisie est faite depuis le dernier save/load
+var _bilanHistoMode = false;   // true quand on consulte/édite un bilan historique (non-latest)
 var _suppressDirty  = false;   // true pendant _deserializeBilan pour ne pas polluer le flag
 var _chartCounter = 0;
 var _prevDonnees    = null;    // donnees du bilan précédent (pour deltas inline)
@@ -3753,6 +3776,55 @@ function _updateSaveBar(){
 }
 function _esc2(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+/* ── Mode consultation historique ─────────────────────────── */
+function _enterHistoMode(bilanDate){
+  _bilanHistoMode = true;
+  var banner  = document.getElementById('histo-mode-banner');
+  var label   = document.getElementById('histo-mode-label');
+  var btn     = document.getElementById('bilan-save-btn');
+  var readable = bilanDate ? _isoToReadable(bilanDate) : '—';
+  if(label)  label.textContent = 'Bilan du ' + readable;
+  if(banner) banner.classList.add('active');
+  if(btn)    btn.textContent = '💾 Mettre à jour ce bilan';
+}
+
+function _exitHistoMode(){
+  _bilanHistoMode = false;
+  var banner = document.getElementById('histo-mode-banner');
+  var btn    = document.getElementById('bilan-save-btn');
+  if(banner) banner.classList.remove('active');
+  if(btn && _bilanPatient) btn.textContent = '💾 Sauvegarder le bilan';
+}
+
+/* Bouton "↩ Revenir au bilan actuel" — recharge le bilan le plus récent */
+function exitHistoMode(){
+  if(_bilanModified && !confirm('Quitter le mode consultation ? Les modifications non sauvegardées de ce bilan seront perdues.')) return;
+  _exitHistoMode();
+  if(_allBilans && _allBilans.length){
+    var latest = _allBilans[0];
+    _currentBilanId   = latest.id;
+    _currentBilanDate = latest.date ? latest.date.split('T')[0] : null;
+    _suppressDirty = true;
+    _resetBilanFields();
+    _autofillPatientFields(_bilanPatient);
+    _deserializeBilan(latest.donnees || {});
+    _suppressDirty = false;
+    _bilanModified = false;
+    document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
+    if(_allBilans.length >= 2){
+      _prevDonnees = _allBilans[1].donnees || {};
+      _renderDeltas(_prevDonnees);
+    } else {
+      _prevDonnees = null;
+    }
+    showToast('↩ Retour au bilan du ' + _isoToReadable(latest.date ? latest.date.split('T')[0] : ''));
+  } else {
+    _resetBilanFields();
+    if(_bilanPatient) _autofillPatientFields(_bilanPatient);
+    showToast('↩ Mode consultation quitté');
+  }
+}
+
 /* Capitalise 1re lettre de chaque mot (accents + tirets) */
 function _capName(str){
   if(!str) return str;
@@ -3805,6 +3877,7 @@ function _resetBilanFields(){
 }
 
 function _resetAndLoadPatient(p){
+  _exitHistoMode();
   _resetBilanFields();
   _autofillPatientFields(p);
   _prevDonnees = null;
@@ -4917,6 +4990,34 @@ function saveBilan(){
   var btn = document.getElementById('bilan-save-btn');
   btn.disabled = true; btn.textContent = '⏳ Sauvegarde…';
   var donnees = _serializeBilan();
+
+  /* ── Mode consultation : on patche le bilan historique à sa date originale ── */
+  if(_bilanHistoMode && _currentBilanId){
+    sbB.from('bilans').update({donnees:donnees}).eq('id', _currentBilanId).select().single()
+      .then(function(res){
+        btn.disabled = false;
+        if(res.error){ btn.textContent='💾 Mettre à jour ce bilan'; alert('Erreur : '+res.error.message); return; }
+        _bilanModified = false;
+        _syncBilanDatesNotes();
+        btn.textContent = '✓ Bilan mis à jour !';
+        setTimeout(function(){ btn.textContent='💾 Mettre à jour ce bilan'; }, 2500);
+        // Rafraîchir _allBilans
+        sbB.from('bilans').select('*').eq('patient_id',_bilanPatient.id)
+          .order('date',{ascending:false}).limit(50)
+          .then(function(r2){
+            if(!r2.error && r2.data && r2.data.length){
+              _allBilans = r2.data;
+              _renderEvolutionPage();
+            }
+          });
+      }).catch(function(err){
+        btn.disabled = false;
+        btn.textContent = '💾 Mettre à jour ce bilan';
+        alert('Erreur réseau : '+(err&&err.message||err));
+      });
+    return;
+  }
+
   // Date locale (évite le décalage UTC de toISOString)
   var _dn = new Date();
   var today = _dn.getFullYear()+'-'+String(_dn.getMonth()+1).padStart(2,'0')+'-'+String(_dn.getDate()).padStart(2,'0');
@@ -5206,8 +5307,8 @@ function loadBilan(id){
     _currentBilanDate = res.data.date ? res.data.date.split('T')[0] : null;
     _deserializeBilan(res.data.donnees||{});
     closeHistoModal();
-    var btn = document.getElementById('bilan-save-btn');
-    if(btn){ btn.textContent='✓ Bilan chargé'; setTimeout(function(){ btn.textContent='💾 Sauvegarder le bilan'; },2500); }
+    // Entrer en mode consultation (sauvegarde = patch à la date originale)
+    _enterHistoMode(_currentBilanDate);
     // Mettre à jour deltas inline : trouver le bilan précédent dans _allBilans
     document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
     var idx = _allBilans.findIndex(function(b){ return b.id === id; });
@@ -5222,8 +5323,8 @@ function loadBilan(id){
 
 /* ── Champs "contexte permanent" reportés dans un bilan de suivi ── */
 var _SUIVI_CARRY_FIELDS = [
-  // Dates clés + latéralité
-  'f-date-op','f-date-accident','f-cote',
+  // Dates clés + latéralité + zones douloureuses
+  'f-date-op','f-date-accident','f-cote','f-pain-zones',
   // Anamnèse
   'f-motif','f-motif-patient','f-mecanisme','f-debut',
   'f-aggravants','f-soulagants','f-atcd','f-traitements',
@@ -5261,7 +5362,8 @@ function newBilanSuivi(){
   // Récupérer le contexte du dernier bilan sauvegardé
   var lastDonnees = _allBilans[0].donnees || {};
 
-  // Tout effacer
+  // Tout effacer (quitter le mode consultation si actif)
+  _exitHistoMode();
   _currentBilanId = null;
   _prevDonnees    = null;
   _resetBilanFields();
@@ -5280,6 +5382,9 @@ function newBilanSuivi(){
     else el.value = val;
   });
 
+  // Reconstruire les zones douloureuses depuis f-pain-zones restauré
+  try{ _parsePainZones(); }catch(ex){}
+
   // Date du bilan = aujourd'hui
   var fd = document.getElementById('f-date');
   if(fd){
@@ -5294,6 +5399,7 @@ function newBilanSuivi(){
 
 function newBilan(){
   if(!confirm('Créer un nouveau bilan vierge ? (le bilan actuel non sauvegardé sera perdu)')) return;
+  _exitHistoMode();
   _currentBilanId = null;
   _prevDonnees    = null;
   _resetBilanFields();
