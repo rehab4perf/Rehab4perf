@@ -1,0 +1,6534 @@
+// ── CYCLES ────────────────────────────────────────────────────
+var _cycles = [];
+try { _cycles = JSON.parse(localStorage.getItem(R4P_KEYS.CYCLES)||'[]'); } catch(e){ _cycles=[]; }
+
+// Sauvegarde cycles : Supabase si patient sélectionné, sinon localStorage
+function _saveCyclesToCloud(){
+  try { localStorage.setItem(R4P_KEYS.CYCLES, JSON.stringify(_cycles)); } catch(e){}
+  if(!_progPatient || !_progToken) return;
+  _fetchRetry(SUPA_URL_P + '/rest/v1/patient_settings', {
+    method: 'POST',
+    headers: Object.assign({}, _sbHeaders(), { 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
+    body: JSON.stringify({ patient_id: _progPatient.id, cycles: _cycles, updated_at: new Date().toISOString() })
+  }).catch(function(err){ console.warn('Cycles cloud save:', err); });
+}
+
+// Charge les cycles depuis Supabase pour le patient actif
+function _loadCyclesForPatient(){
+  if(!_progPatient){ return; }
+  _fetchRetry(SUPA_URL_P + '/rest/v1/patient_settings?patient_id=eq.' + _progPatient.id + '&select=cycles', {
+    headers: { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json' }
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    var arr = Array.isArray(data) ? data : [];
+    if(arr.length && Array.isArray(arr[0].cycles)){
+      _cycles = arr[0].cycles;
+      try { localStorage.setItem(R4P_KEYS.CYCLES, JSON.stringify(_cycles)); } catch(e){}
+    }
+    renderCycleTimeline();
+    // Rafraîchir le calendrier pour afficher les cycles du patient
+    if(document.getElementById('mpanel-cal').classList.contains('active')) renderCalendar();
+  })
+  .catch(function(){ /* garde les cycles localStorage */ });
+}
+var _cycleColors = {
+  'Force':'var(--navy)','Puissance':'#C0392B','Hypertrophie':'#2D7D46',
+  'Endurance de force':'var(--accent)','Récupération':'#D4600A','Réathlétisation':'#9B2C6B'
+};
+function _cycleColor(nom){
+  return _cycleColors[nom] || '#52514E';
+}
+function openCycles(){
+  document.getElementById('cycle-modal').classList.add('open');
+  renderCycleTimeline();
+  _cycleAutoDate();
+}
+// Pré-remplit la date de début = fin du dernier cycle (ou aujourd'hui)
+function _cycleAutoDate(){
+  var inp = document.getElementById('cycle-start');
+  if(!inp) return;
+  if(_cycles.length){
+    var last = _cycles[_cycles.length-1];
+    if(last.startDate){
+      var d = new Date(last.startDate);
+      d.setDate(d.getDate() + last.duree * 7);
+      inp.value = d.toISOString().split('T')[0];
+      return;
+    }
+  }
+  inp.value = new Date().toISOString().split('T')[0];
+}
+function closeCycles(){
+  document.getElementById('cycle-modal').classList.remove('open');
+}
+function selectCycleName(btn, name){
+  document.querySelectorAll('.cycle-name-btn').forEach(function(b){
+    b.classList.remove('sel');
+    b.style.background='';b.style.color='';b.style.borderColor='';
+  });
+  btn.classList.add('sel');
+  var col = _cycleColor(name);
+  btn.style.background = col; btn.style.color='#fff'; btn.style.borderColor=col;
+  document.getElementById('cycle-nom').value = name;
+}
+function clearCycleNameBtns(){
+  document.querySelectorAll('.cycle-name-btn').forEach(function(b){
+    b.classList.remove('sel');
+    b.style.background='';b.style.color='';b.style.borderColor='';
+  });
+}
+function cycleDureeChange(delta){
+  var inp = document.getElementById('cycle-duree');
+  var disp = document.getElementById('cycle-duree-display');
+  var val = Math.min(16, Math.max(1, (parseInt(inp.value)||3) + delta));
+  inp.value = val;
+  disp.textContent = val + (val === 1 ? ' semaine' : ' semaines');
+}
+function addCycle(){
+  var nom = (document.getElementById('cycle-nom').value||'').trim();
+  if(!nom){ alert('Veuillez saisir un nom de cycle.'); return; }
+  var duree = parseInt(document.getElementById('cycle-duree').value)||3;
+  var startDate = document.getElementById('cycle-start').value || '';
+  var note = (document.getElementById('cycle-note').value||'').trim();
+  _cycles.push({id:'c'+Date.now(), nom:nom, duree:duree, startDate:startDate, note:note});
+  _saveCyclesToCloud();
+  renderCycleTimeline();
+  if(typeof renderCalendar === 'function') renderCalendar();
+  // Réinitialiser le formulaire et pré-calculer la prochaine date
+  document.getElementById('cycle-nom').value = '';
+  var cnEl = document.getElementById('cycle-note');
+  cnEl.value = ''; cnEl.style.height = '';
+  clearCycleNameBtns();
+  _cycleAutoDate();
+  var h3 = document.querySelector('.cycle-add-section h3');
+  if(h3) h3.textContent = 'Ajouter un cycle';
+}
+function deleteCycle(id){
+  _cycles = _cycles.filter(function(c){ return c.id !== id; });
+  _saveCyclesToCloud();
+  renderCycleTimeline();
+  if(typeof renderCalendar === 'function') renderCalendar();
+}
+function editCycle(id){
+  var c = _cycles.find(function(x){ return x.id===id; });
+  if(!c) return;
+  // Pré-remplir le formulaire avec les valeurs du cycle
+  document.getElementById('cycle-nom').value = c.nom;
+  document.getElementById('cycle-duree').value = c.duree;
+  document.getElementById('cycle-duree-display').textContent = c.duree + (c.duree===1?' semaine':' semaines');
+  document.getElementById('cycle-start').value = c.startDate || '';
+  var cnEl2 = document.getElementById('cycle-note');
+  cnEl2.value = c.note || '';
+  requestAnimationFrame(function(){ autoResizeTa(cnEl2); });
+  // Sélectionner le bon bouton de nom
+  clearCycleNameBtns();
+  document.querySelectorAll('.cycle-name-btn').forEach(function(btn){
+    if(btn.textContent.trim()===c.nom){
+      var col = _cycleColor(c.nom);
+      btn.classList.add('sel');
+      btn.style.background=col; btn.style.color='#fff'; btn.style.borderColor=col;
+    }
+  });
+  // Supprimer l'ancien et marquer le formulaire en mode "édition"
+  _cycles = _cycles.filter(function(x){ return x.id!==id; });
+  _saveCyclesToCloud();
+  renderCycleTimeline();
+  // Scroller vers le formulaire et mettre le focus
+  var section = document.querySelector('.cycle-add-section');
+  if(section){ section.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+  var h3 = section && section.querySelector('h3');
+  if(h3) h3.textContent = '✏️ Modifier le cycle';
+  setTimeout(function(){
+    var nomInput = document.getElementById('cycle-nom');
+    if(nomInput) nomInput.focus();
+  }, 200);
+}
+function renderCycleTimeline(){
+  var tl = document.getElementById('cycle-timeline');
+  var tot = document.getElementById('cycle-total');
+  if(!_cycles.length){
+    tl.innerHTML = '<div style="color:#aaa;font-size:.8rem;align-self:center;">Aucun cycle ajouté — utilisez le formulaire ci-dessous.</div>';
+    tot.textContent = '';
+    return;
+  }
+  var totalWeeks = _cycles.reduce(function(s,c){ return s+c.duree; },0);
+  var minW = 60, unitW = Math.max(minW, Math.min(90, 600/totalWeeks));
+  var today = new Date(); today.setHours(0,0,0,0);
+
+  // Calcul du marqueur "aujourd'hui" : position en semaines depuis le début du premier cycle
+  var todayMarkerPct = null;
+  var firstStart = _cycles[0] && _cycles[0].startDate ? new Date(_cycles[0].startDate) : null;
+  if(firstStart){
+    firstStart.setHours(0,0,0,0);
+    var diffDays = Math.round((today - firstStart) / 86400000);
+    var diffWeeks = diffDays / 7;
+    if(diffWeeks >= 0 && diffWeeks <= totalWeeks){
+      todayMarkerPct = (diffWeeks / totalWeeks) * 100;
+    }
+  }
+
+  var html = '';
+  // Conteneur relatif pour le marqueur
+  html += '<div style="position:relative;display:flex;gap:4px;align-items:stretch;min-height:48px;width:100%;">';
+
+  var weekCursor = 1; // compteur de semaines pour la numérotation
+  _cycles.forEach(function(c){
+    var col = _cycleColor(c.nom);
+    var w = (c.duree * unitW) + 'px';
+    var noteTitle = c.note ? (' — '+c.note) : '';
+    var weekEnd = weekCursor + c.duree - 1;
+    var weekLabel = 'S'+weekCursor + (c.duree > 1 ? '→S'+weekEnd : '');
+    html += '<div class="cycle-block" style="background:'+col+';width:'+w+';flex-shrink:0;cursor:pointer;" title="Cliquer pour modifier" onclick="editCycle(\''+c.id+'\')">';
+    html += '<button class="cycle-block-del" onclick="event.stopPropagation();deleteCycle(\''+c.id+'\')">×</button>';
+    html += '<div style="font-size:.75rem;font-weight:700;margin-bottom:2px;padding-right:14px;">'+c.nom+'</div>';
+    html += '<div style="font-size:.63rem;opacity:.8;">'+weekLabel+' · '+c.duree+' sem.</div>';
+    if(c.note) html += '<div style="font-size:.6rem;opacity:.7;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+c.note+'</div>';
+    html += '</div>';
+    weekCursor += c.duree;
+  });
+
+  // Marqueur "Aujourd'hui" superposé
+  if(todayMarkerPct !== null){
+    html += '<div style="position:absolute;top:0;bottom:0;left:'+todayMarkerPct+'%;'
+          + 'width:2px;background:var(--red);pointer-events:none;z-index:10;">'
+          + '<div style="position:absolute;top:-18px;left:50%;transform:translateX(-50%);'
+          + 'background:var(--red);color:#fff;font-size:.58rem;font-weight:700;'
+          + 'padding:1px 5px;border-radius:4px;white-space:nowrap;">Aujourd\'hui</div>'
+          + '</div>';
+  }
+  html += '</div>';
+  tl.innerHTML = html;
+  tot.textContent = 'Total : '+totalWeeks+' semaine'+(totalWeeks>1?'s':'');
+}
+function exportCycles(){
+  if(!_cycles.length){ alert('Aucun cycle à exporter.'); return; }
+  var totalWeeks = _cycles.reduce(function(s,c){ return s+c.duree; },0);
+  var date = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+  var patient = (document.getElementById('patientName')||{}).value || '';
+  var blocksHtml = '';
+  _cycles.forEach(function(c){
+    var col = _cycleColor(c.nom);
+    var pct = Math.round(c.duree/totalWeeks*100);
+    blocksHtml += '<div style="flex:0 0 auto;width:'+pct+'%;min-width:80px;background:'+col+';border-radius:7px;padding:12px 14px;color:#fff;">';
+    blocksHtml += '<div style="font-size:.88rem;font-weight:700;margin-bottom:4px;">'+c.nom+'</div>';
+    blocksHtml += '<div style="font-size:.75rem;opacity:.85;">'+c.duree+' semaine'+(c.duree>1?'s':'')+'</div>';
+    blocksHtml += '</div>';
+  });
+  var html = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Cycles d\'entraînement</title>'
+    +'<style>body{font-family:-apple-system,Arial,sans-serif;background:#F0F4F8;margin:0;padding:0 0 48px}'
+    +'.hdr{background:var(--navy);color:#fff;padding:24px 32px}.hdr h1{font-size:1.3rem;font-weight:700;margin:0 0 4px}'
+    +'.hdr p{font-size:.8rem;opacity:.7;margin:0}.body{padding:24px 32px}'
+    +'.tl{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}'
+    +'.total{font-size:.8rem;color:#666;margin-bottom:20px}'
+    +'table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.07)}'
+    +'th{background:var(--navy);color:#fff;padding:10px 14px;font-size:.75rem;text-align:left;font-weight:600}'
+    +'td{padding:9px 14px;font-size:.8rem;border-bottom:1px solid #eee;color:#333}'
+    +'tr:last-child td{border-bottom:none}</style></head><body>'
+    +'<div class="hdr"><h1>Planification des cycles d\'entraînement</h1>'
+    +'<p>'+(patient?'Patient : '+patient+' · ':'')+date+' · '+totalWeeks+' semaines au total</p></div>'
+    +'<div class="body">'
+    +'<div class="tl">'+blocksHtml+'</div>'
+    +'<div class="total">Total : '+totalWeeks+' semaine'+(totalWeeks>1?'s':'')+' ('+_cycles.length+' cycle'+(_cycles.length>1?'s':'')+')</div>'
+    +'<table><thead><tr><th>#</th><th>Cycle</th><th>Durée</th><th>Intensité</th><th>Volume</th></tr></thead><tbody>';
+  _cycles.forEach(function(c,i){
+    var col = _cycleColor(c.nom);
+    html += '<tr><td style="color:'+col+';font-weight:700;">'+(i+1)+'</td><td style="font-weight:600;color:'+col+'">'+c.nom+'</td>'
+      +'<td>'+c.duree+' sem.</td><td>'+c.intensite+'</td><td>'+c.volume+'</td></tr>';
+  });
+  html += '</tbody></table></div></body></html>';
+  var blob = new Blob([html],{type:'text/html'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'Cycles_Entrainement.html';
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(a.href); },1000);
+}
+// Close modal on overlay click
+document.getElementById('cycle-modal').addEventListener('click', function(e){
+  if(e.target === this) closeCycles();
+});
+
+/* ================================================================
+   ONGLETS PRINCIPAUX
+   ================================================================ */
+function showMainTab(id) {
+  _hideLibPreview();
+  document.querySelectorAll('.main-tab').forEach(function(t){ t.classList.remove('active'); });
+  document.querySelectorAll('.main-panel').forEach(function(p){ p.classList.remove('active'); });
+  document.getElementById('mtab-'+id).classList.add('active');
+  document.getElementById('mpanel-'+id).classList.add('active');
+  if(id === 'seances') renderSeances();
+  if(id === 'cal'){ _syncCalNotesIfNeeded(); renderCalendar(); }
+  if(id === 'proto') renderProtocols();
+}
+
+/* ================================================================
+   SAUVEGARDE DE SÉANCES
+   ================================================================ */
+var SAVE_EMOJIS = ['💪','🏃','🦵','🦾','⚡','🏋️','🎯','🔄','🧘'];
+var _selectedEmoji = '💪';
+var _savedSeances = [];
+
+function _loadSeances() {
+  try { _savedSeances = JSON.parse(localStorage.getItem(R4P_KEYS.SEANCES)||'[]'); } catch(e){ _savedSeances=[]; }
+}
+function _persistSeances() {
+  try { localStorage.setItem(R4P_KEYS.SEANCES, JSON.stringify(_savedSeances)); } catch(e){}
+}
+
+function openSaveSession() {
+  if(!blocs.length){ alert('La séance est vide.'); return; }
+  _loadSeances();
+  var row = document.getElementById('emojiRow');
+  row.innerHTML = '';
+  SAVE_EMOJIS.forEach(function(em){
+    var b = document.createElement('button');
+    b.className = 'emoji-opt' + (em === _selectedEmoji ? ' selected' : '');
+    b.textContent = em;
+    b.onclick = function(){
+      _selectedEmoji = em;
+      document.querySelectorAll('.emoji-opt').forEach(function(x){ x.classList.remove('selected'); });
+      b.classList.add('selected');
+    };
+    row.appendChild(b);
+  });
+  var patient = (document.getElementById('patientName')||{}).value || '';
+  document.getElementById('saveNameInput').value = patient ? 'Séance – '+patient : '';
+  document.getElementById('saveModal').classList.add('open');
+  setTimeout(function(){ document.getElementById('saveNameInput').focus(); }, 100);
+}
+
+function closeSaveSession() {
+  document.getElementById('saveModal').classList.remove('open');
+}
+
+function doSaveSession() {
+  var name = document.getElementById('saveNameInput').value.trim();
+  if(!name){ alert('Donnez un nom à la séance.'); return; }
+  var type = document.getElementById('saveTypeInput').value;
+  _loadSeances();
+  var seance = {
+    id: '_'+Math.random().toString(36).slice(2,9),
+    name: name,
+    emoji: _selectedEmoji,
+    type: type,
+    date: new Date().toLocaleDateString('fr-FR'),
+    blocs: JSON.parse(JSON.stringify(blocs))
+  };
+  _savedSeances.unshift(seance);
+  _persistSeances();
+  closeSaveSession();
+  showMainTab('seances');
+  // Refresh sidebar templates
+  if(typeof renderSidebarTemplates === 'function') renderSidebarTemplates();
+}
+
+function renderSeances() {
+  _loadSeances();
+  var area = document.getElementById('seancesArea');
+  if(!area) return; // zone supprimée, rien à afficher
+  if(!_savedSeances.length){
+    area.innerHTML = '<div class="empty-state"><div class="icon">📁</div><p>Aucune séance enregistrée.<br>Construisez une séance et cliquez sur 💾 Enregistrer.</p></div>';
+    return;
+  }
+  area.innerHTML = _savedSeances.map(function(s){
+    var col = _seanceTypeColor(s.type);
+    var nbExos = (s.blocs||[]).reduce(function(acc,b){ return acc+(b.exos||[]).length; },0);
+    return '<div class="seance-card">'
+      +'<div class="seance-card-header">'
+      +'<span class="seance-card-emoji">'+s.emoji+'</span>'
+      +'<span class="seance-card-title">'+escH(s.name)+'</span>'
+      +'<span class="seance-card-type" style="background:'+col.bg+';color:'+col.fg+'">'+escH(s.type)+'</span>'
+      +'</div>'
+      +'<div class="seance-card-meta">'+s.date+' · '+(s.blocs||[]).length+' bloc(s) · '+nbExos+' exercice(s)</div>'
+      +'<div class="seance-card-actions">'
+      +'<button class="btn btn-primary" style="font-size:.76rem;padding:5px 12px;" onclick="loadSeance(\''+s.id+'\')">📋 Charger</button>'
+      +'<button class="btn btn-danger" style="font-size:.76rem;padding:5px 12px;" onclick="deleteSeance(\''+s.id+'\')">🗑 Supprimer</button>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function loadSeance(id) {
+  _loadSeances();
+  var s = _savedSeances.find(function(x){ return x.id===id; });
+  if(!s) return;
+  if(!confirm('Charger "'+s.name+'" ? La séance en cours sera remplacée.')) return;
+  blocs = JSON.parse(JSON.stringify(s.blocs||[]));
+  activeBloc = blocs.length ? blocs[0].id : null;
+  _builderDate = '';
+  renderSession();
+  _updateBuilderTitle();
+  renderLib(document.getElementById('searchInput').value.toLowerCase());
+  _enterBuilderMode();
+}
+
+function deleteSeance(id) {
+  _loadSeances();
+  var s = _savedSeances.find(function(x){ return x.id===id; });
+  if(!s || !confirm('Supprimer "'+s.name+'" ?')) return;
+  _savedSeances = _savedSeances.filter(function(x){ return x.id!==id; });
+  _persistSeances();
+  renderSeances();
+  if(typeof renderSidebarTemplates === 'function') renderSidebarTemplates();
+}
+
+function _seanceTypeColor(type) {
+  var map = {
+    'Force':          {bg:'#DBEAFE',fg:'#1D4ED8'},
+    'Puissance':      {bg:'#FEE2E2',fg:'#B91C1C'},
+    'Hypertrophie':   {bg:'#EDE9FE',fg:'#6D28D9'},
+    'Endurance':      {bg:'#DCFCE7',fg:'#15803D'},
+    'Proprio':        {bg:'#FEF3C7',fg:'#B45309'},
+    'Réathlétisation':{bg:'#CCFBF1',fg:'#0F766E'},
+    'Échauffement':   {bg:'#FFEDD5',fg:'#C2410C'},
+  };
+  return map[type] || {bg:'#F1F5F9',fg:'#475569'};
+}
+
+/* ================================================================
+   CALENDRIER
+   ================================================================ */
+var _calEvents = [];
+var _calYear = new Date().getFullYear();
+var _calMonth = new Date().getMonth();
+var _calPickerDate = '';
+var _cloudCalEvents = [];
+var _calView = 'month';      // 'month' | 'week'
+var _calWeekStart = null;    // Date (lundi de la semaine affichée)
+
+function _getMondayOf(date){
+  var d = new Date(date); d.setHours(0,0,0,0);
+  var day = d.getDay();
+  d.setDate(d.getDate() + (day===0 ? -6 : 1-day));
+  return d;
+}
+
+function setCalView(v){
+  _calView = v;
+  if(v==='week' && !_calWeekStart) _calWeekStart = _getMondayOf(new Date());
+  document.querySelectorAll('.cal-view-btn').forEach(function(b){
+    b.classList.toggle('active', b.dataset.view===v);
+  });
+  renderCalendar();
+}
+
+function _loadCalEvents() {
+  try { _calEvents = JSON.parse(localStorage.getItem(R4P_KEYS.CAL_EVENTS)||'[]'); } catch(e){ _calEvents=[]; }
+}
+function _persistCalEvents() {
+  try { localStorage.setItem(R4P_KEYS.CAL_EVENTS, JSON.stringify(_calEvents)); } catch(e){}
+}
+
+function calMove(dir) {
+  if(_calView==='week'){
+    if(!_calWeekStart) _calWeekStart = _getMondayOf(new Date());
+    _calWeekStart = new Date(_calWeekStart.getTime() + dir*7*24*60*60*1000);
+  } else {
+    _calMonth += dir;
+    if(_calMonth>11){ _calMonth=0; _calYear++; }
+    if(_calMonth<0){ _calMonth=11; _calYear--; }
+  }
+  renderCalendar();
+}
+
+function calToday() {
+  var now = new Date();
+  _calYear = now.getFullYear();
+  _calMonth = now.getMonth();
+  _calWeekStart = _getMondayOf(now);
+  renderCalendar();
+}
+
+function renderCalendar() {
+  if(_progPatient) {
+    // Vider immédiatement pour ne pas afficher les séances d'un autre patient pendant le fetch
+    _cloudCalEvents = [];
+    _renderCalendarUI();
+    // Mode cloud : charger les séances Supabase pour ce patient
+    var _fetchPatientId = _progPatient.id; // capturer l'id au moment du lancement
+    var url = SUPA_URL_P + '/rest/v1/seances_planifiees?patient_id=eq.' + _fetchPatientId
+            + '&select=id,date,programme_id,programmes(nom,donnees),athlete_feedback(rpe,duree_min)&order=date.asc';
+    var calHeaders = _progToken
+      ? { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _progToken }
+      : { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json' };
+    _fetchRetry(url, { headers: calHeaders })
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        // Ignorer si le patient a changé entre-temps (fetch obsolète)
+        if(!_progPatient || _progPatient.id !== _fetchPatientId) return;
+        _cloudCalEvents = Array.isArray(data) ? data : [];
+        _renderCalendarUI();
+      })
+      .catch(function(){ _cloudCalEvents = []; _renderCalendarUI(); });
+  } else {
+    _cloudCalEvents = [];
+    _loadCalEvents();
+    _renderCalendarUI();
+  }
+}
+
+/* ── Bilan de charge — helpers ── */
+function _dateStr(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+/* ── Construit le map date → UA totale (0 si pas de feedback) ── */
+function _buildUaMap(){
+  var map = {};
+  _cloudCalEvents.forEach(function(ev){
+    var fb = ev.athlete_feedback;
+    if(fb && fb.rpe && fb.duree_min){
+      map[ev.date] = (map[ev.date]||0) + fb.rpe * fb.duree_min;
+    }
+  });
+  return map;
+}
+
+/* ── Stats Foster pour une semaine (lundi en Date) ── */
+function _calcWeekStats(mondayDate, uaMap){
+  var days = [];
+  for(var i=0;i<7;i++){
+    var d = new Date(mondayDate.getTime()+i*24*60*60*1000);
+    days.push(uaMap[_dateStr(d)]||0);
+  }
+  var charge = days.reduce(function(a,b){return a+b;},0);
+  var moy = charge/7;
+  var variance = days.reduce(function(a,b){return a+Math.pow(b-moy,2);},0)/7;
+  var ecart = Math.sqrt(variance);
+  var monotonie = ecart>0.001 ? Math.round(moy/ecart*100)/100 : null;
+  var strain = monotonie!==null ? Math.round(charge*monotonie) : null;
+  return {charge:charge, moy:Math.round(moy*10)/10, ecart:Math.round(ecart*10)/10, monotonie:monotonie, strain:strain, days:days};
+}
+
+/* ── ACWR (7j / 28j) ── */
+function _calcACWR(uaMap){
+  var today = new Date(); today.setHours(0,0,0,0);
+  var sum7=0, sum28=0;
+  for(var i=0;i<28;i++){
+    var d = new Date(today.getTime()-i*24*60*60*1000);
+    var ua = uaMap[_dateStr(d)]||0;
+    if(i<7) sum7+=ua;
+    sum28+=ua;
+  }
+  var chronic = sum28/4; // charge hebdomadaire chronique moyenne
+  var ratio = chronic>0 ? Math.round(sum7/chronic*100)/100 : null;
+  return {aigue:sum7, chronic:Math.round(chronic), ratio:ratio};
+}
+
+/* ── Couleur + badge monotonie ── */
+function _monBadge(m){
+  if(m===null) return {cls:'bi-grey',txt:'N/A'};
+  if(m<1.5)   return {cls:'bi-green',txt:'✓ Bonne variabilité'};
+  if(m<2.0)   return {cls:'bi-orange',txt:'⚠ Vigilance'};
+  return          {cls:'bi-red',txt:'🔴 Monotonie élevée'};
+}
+/* ── Couleur + badge ACWR ── */
+function _acwrBadge(r){
+  if(r===null)    return {cls:'bi-grey',txt:'Données insuffisantes',color:'#888'};
+  if(r<0.8)       return {cls:'bi-orange',txt:'Sous-charge',color:'#E67E22'};
+  if(r<=1.3)      return {cls:'bi-green',txt:'✓ Sweet spot',color:'#27AE60'};
+  if(r<=1.5)      return {cls:'bi-orange',txt:'⚠ Prudence',color:'#E67E22'};
+  return              {cls:'bi-red',txt:'🔴 Zone à risque',color:'var(--red)'};
+}
+/* ── Progression % ── */
+function _progBadge(pct){
+  if(pct===null)    return {cls:'bi-grey',txt:'—'};
+  var s = (pct>=0?'+':'')+Math.round(pct)+'%';
+  if(pct<=10)       return {cls:'bi-green',txt:s+' ✓'};
+  if(pct<=15)       return {cls:'bi-orange',txt:s+' ⚠'};
+  return                {cls:'bi-red',txt:s+' 🔴'};
+}
+
+/* ── Bilan vue mois : rendu dans #bilanCharge ── */
+function _renderBilanCharge(){
+  var el = document.getElementById('bilanCharge');
+  if(!el) return;
+  if(!_progPatient || !_cloudCalEvents.length){ el.innerHTML=''; return; }
+
+  var uaMap = _buildUaMap();
+  // Vérifier qu'il y a au moins un feedback dans le mois
+  var firstDay = new Date(_calYear,_calMonth,1);
+  var lastDay  = new Date(_calYear,_calMonth+1,0);
+  var ws = _getMondayOf(firstDay);
+  var weeks = [];
+  while(ws<=lastDay){
+    weeks.push(new Date(ws));
+    ws = new Date(ws.getTime()+7*24*60*60*1000);
+  }
+  // Semaines avec au moins 1 séance planifiée
+  var activeWeeks = weeks.filter(function(mon){
+    var end = new Date(mon.getTime()+6*24*60*60*1000);
+    return _cloudCalEvents.some(function(e){ return e.date>=_dateStr(mon)&&e.date<=_dateStr(end); });
+  });
+  if(!activeWeeks.length){ el.innerHTML=''; return; }
+
+  var mo = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  var dayNames = ['L','M','M','J','V','S','D'];
+  var html = '<div class="bilan-foster"><div class="bilan-foster-title">📊 Bilan de charge</div>';
+
+  // Carte par semaine
+  activeWeeks.forEach(function(mon, wi){
+    var end = new Date(mon.getTime()+6*24*60*60*1000);
+    var stats = _calcWeekStats(mon, uaMap);
+    var hasFb = stats.charge > 0;
+    var lbl = mon.getDate()+' '+mo[mon.getMonth()]
+            + (mon.getFullYear()!==end.getFullYear()?' '+mon.getFullYear():'')
+            + ' – '+end.getDate()+' '+mo[end.getMonth()];
+
+    html += '<div class="bilan-week-card">';
+    html += '<div class="bilan-wc-head"><span class="bilan-wc-label">'+lbl+'</span></div>';
+
+    if(hasFb){
+      // Mini barres UA par jour
+      var maxDay = Math.max.apply(null,stats.days)||1;
+      html += '<div class="bilan-day-bars">';
+      for(var i=0;i<7;i++){
+        var h = Math.max(2, Math.round(stats.days[i]/maxDay*30));
+        var col = stats.days[i]===0?'var(--border)':stats.days[i]<150?'#27AE60':stats.days[i]<300?'#E67E22':'var(--red)';
+        html += '<div class="bilan-day-col">'
+              + '<div class="bilan-day-bar" style="height:'+h+'px;background:'+col+';"></div>'
+              + '<div class="bilan-day-lbl">'+dayNames[i]+'</div>'
+              + '</div>';
+      }
+      html += '</div>';
+      html += '<div class="bilan-wc-total"><span class="bilan-wc-charge">⚡ '+stats.charge+' UA</span></div>';
+
+      // Indicators
+      var monB = _monBadge(stats.monotonie);
+      // Progression vs semaine précédente
+      var prevMon = new Date(mon.getTime()-7*24*60*60*1000);
+      var prevStats = _calcWeekStats(prevMon, uaMap);
+      var progPct = prevStats.charge>0 ? (stats.charge-prevStats.charge)/prevStats.charge*100 : null;
+      var progB = _progBadge(progPct);
+
+      html += '<div class="bilan-indicators">';
+      html += '<div class="bilan-ind"><div class="bilan-ind-val">'+(stats.monotonie!==null?stats.monotonie:'—')+'</div>'
+            + '<div class="bilan-ind-lbl">Monotonie</div>'
+            + '<div class="bilan-ind-badge '+monB.cls+'">'+monB.txt+'</div></div>';
+      html += '<div class="bilan-ind"><div class="bilan-ind-val">'+(stats.strain!==null?stats.strain:'—')+'</div>'
+            + '<div class="bilan-ind-lbl">Strain</div>'
+            + '<div class="bilan-ind-badge bi-grey">Charge × Mono.</div></div>';
+      html += '<div class="bilan-ind"><div class="bilan-ind-val">'+stats.moy+'</div>'
+            + '<div class="bilan-ind-lbl">Moy. / jour</div>'
+            + '<div class="bilan-ind-badge '+progB.cls+'">Prog. '+progB.txt+'</div></div>';
+      html += '</div>';
+    } else {
+      html += '<div class="bilan-no-fb">⏳ En attente des retours athlète (RPE)</div>';
+    }
+    html += '</div>';
+  });
+
+  // ACWR global
+  var acwr = _calcACWR(uaMap);
+  if(acwr.ratio!==null){
+    var ab = _acwrBadge(acwr.ratio);
+    // Position du marqueur : ratio 0→2, clampé 0-100%
+    var markerPct = Math.min(100,Math.max(0, acwr.ratio/2*100));
+    html += '<div class="bilan-acwr-card">'
+          + '<div class="bilan-acwr-title">ACWR — Ratio Charge Aiguë / Chronique</div>'
+          + '<div class="bilan-acwr-vals">'
+          + '<div class="bilan-acwr-val"><div class="bilan-acwr-val-num" style="color:'+ab.color+';">'+acwr.ratio+'</div><div class="bilan-acwr-val-lbl">Ratio ACWR</div></div>'
+          + '<div class="bilan-acwr-val"><div class="bilan-acwr-val-num">'+acwr.aigue+'</div><div class="bilan-acwr-val-lbl">Charge 7j (aiguë)</div></div>'
+          + '<div class="bilan-acwr-val"><div class="bilan-acwr-val-num">'+acwr.chronic+'</div><div class="bilan-acwr-val-lbl">Charge chronique / sem.</div></div>'
+          + '</div>'
+          + '<div class="bilan-acwr-bar-wrap">'
+          + '<div class="bilan-acwr-marker" style="left:'+markerPct+'%;background:'+ab.color+';"></div>'
+          + '</div>'
+          + '<div class="bilan-acwr-zones"><span>Sous-charge<br>&lt;0.8</span><span>✓ Sweet spot<br>0.8–1.3</span><span>⚠ Prudence<br>1.3–1.5</span><span>🔴 Risque<br>&gt;1.5</span></div>'
+          + '<div class="bilan-prog"><span class="bilan-ind-badge '+ab.cls+'">'+ab.txt+'</span></div>'
+          + '</div>';
+  }
+
+  el.innerHTML = html+'</div>';
+}
+
+/* ── Bilan vue semaine : strip Foster complet ── */
+function _weekBilanHTML(){
+  if(!_progPatient||!_calWeekStart) return '';
+  var hasSeances = _cloudCalEvents.some(function(e){
+    var end = new Date(_calWeekStart.getTime()+6*24*60*60*1000);
+    return e.date>=_dateStr(_calWeekStart)&&e.date<=_dateStr(end);
+  });
+  if(!hasSeances) return '';
+
+  var uaMap = _buildUaMap();
+  var stats  = _calcWeekStats(_calWeekStart, uaMap);
+  var acwr   = _calcACWR(uaMap);
+  var monB   = _monBadge(stats.monotonie);
+  var acwrB  = _acwrBadge(acwr.ratio);
+
+  var html = '<div class="bilan-week-foster">';
+  // Charge
+  html += '<div class="bilan-wf-item"><div class="bilan-wf-val" style="color:var(--accent);">⚡ '+stats.charge+'</div><div class="bilan-wf-lbl">UA cette semaine</div></div>';
+  if(stats.charge>0){
+    // Monotonie
+    html += '<div class="bilan-wf-item"><div class="bilan-wf-val">'+(stats.monotonie!==null?stats.monotonie:'—')+'</div>'
+          + '<div class="bilan-wf-lbl">Monotonie</div>'
+          + '<div class="bilan-wf-badge '+monB.cls+'">'+monB.txt+'</div></div>';
+    // Strain
+    html += '<div class="bilan-wf-item"><div class="bilan-wf-val">'+(stats.strain!==null?stats.strain:'—')+'</div>'
+          + '<div class="bilan-wf-lbl">Strain</div></div>';
+    // ACWR
+    html += '<div class="bilan-wf-item"><div class="bilan-wf-val" style="color:'+(acwrB.color||'var(--navy)')+';">'+(acwr.ratio!==null?acwr.ratio:'—')+'</div>'
+          + '<div class="bilan-wf-lbl">ACWR</div>'
+          + (acwr.ratio?'<div class="bilan-wf-badge '+acwrB.cls+'">'+acwrB.txt+'</div>':'')+'</div>';
+  } else {
+    html += '<div class="bilan-wf-item" style="flex:3;"><div class="bilan-wf-lbl" style="padding:4px 0;">⏳ En attente des retours RPE de l\'athlète</div></div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+/* ── Couleur UA sur chips (vert / orange / rouge) ── */
+function _chipUaColor(ua){ if(ua<150) return '#A8F0C0'; if(ua<300) return '#FFD580'; return '#FF9898'; }
+
+/* ── Couleur protocole sur chips calendrier ── */
+function _protoPhaseChipStyle(donnees){
+  if(!donnees) return null;
+  var raw = donnees;
+  if(typeof raw === 'string'){ try{ raw = JSON.parse(raw); }catch(e){ return null; } }
+  var lp = raw && raw.linkedPhase;
+  if(!lp || !lp.protoId || !lp.phaseId) return null;
+  if(typeof PROTOCOLS_REF === 'undefined') return null;
+  var proto = PROTOCOLS_REF.find(function(p){ return p.id===lp.protoId; });
+  if(!proto) return null;
+  var phase = proto.phases.find(function(ph){ return ph.id===lp.phaseId; });
+  if(!phase) return null;
+  // Extraire numéro de phase : "Phase 2 — ..." → "Ph.2"
+  var mPh = phase.name.match(/Phase\s*(\d+)/i);
+  var phShort = mPh ? 'Ph.'+mPh[1] : phase.name.slice(0,4);
+  return { bg: phase.color, border: phase.borderColor, label: proto.name+' · '+phShort };
+}
+
+/* ── Helper chips partagé mois + semaine ── */
+function _buildDayChips(dateStr, cellDate){
+  var chips = '';
+  if(_progPatient){
+    var dayEvs = _cloudCalEvents.filter(function(e){ return e.date===dateStr; });
+    chips = dayEvs.map(function(ev){
+      var nom = (ev.programmes&&ev.programmes.nom)||'Programme';
+      var fb = ev.athlete_feedback;
+      var ua = (fb&&fb.rpe&&fb.duree_min) ? fb.rpe*fb.duree_min : null;
+      var uaSpan = ua ? ' <span style="font-size:.58rem;font-weight:800;padding:1px 4px;border-radius:3px;background:rgba(255,255,255,.22);color:'+_chipUaColor(ua)+';">⚡'+ua+'</span>' : '';
+      // Couleur de phase protocole (si séance liée)
+      var phStyle = _protoPhaseChipStyle(ev.programmes && ev.programmes.donnees);
+      var chipBg    = phStyle ? phStyle.bg    : 'var(--accent)';
+      var chipColor = phStyle ? '#1E3A5F'     : '#fff';
+      var chipExtra = phStyle ? ';border-left:3px solid '+phStyle.border+';padding-left:4px;' : '';
+      var phaseTag  = phStyle
+        ? ' <span style="font-size:.55rem;background:'+phStyle.border+';color:#fff;border-radius:2px;padding:0 3px;white-space:nowrap;flex-shrink:0;">'+escH(phStyle.label)+'</span>'
+        : '';
+      // Enregistrement métadonnées pour touch
+      _chipTouchMeta[ev.id] = {progId: ev.programme_id, dateStr: dateStr, nom: nom, seanceId: ev.id};
+      var chipEvtAttrs = _isTouchDevice
+        ? ' ontouchstart="_chipTouchStart(event,\''+ev.id+'\')" ontouchmove="_chipTouchMove(event)" ontouchend="_chipTouchEnd(event,\''+ev.id+'\')"'
+        : ' draggable="true" onclick="event.stopPropagation();_openChipInBuilder(\''+ev.programme_id+'\',\''+dateStr+'\',\''+ev.id+'\')" ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"';
+      var chipCursor = _isTouchDevice ? 'pointer' : 'grab';
+      var moreBtnColor = phStyle ? 'color:rgba(30,58,95,.7);' : '';
+      var moreBtn = '<button class="cal-chip-more" style="'+moreBtnColor+'" ontouchend="event.stopPropagation();event.preventDefault();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')">⋮</button>';
+      return '<div class="cal-session-chip" style="background:'+chipBg+';color:'+chipColor+';cursor:'+chipCursor+chipExtra+';" title="'+escH(nom)+'"'
+        + chipEvtAttrs + '>'
+        +moreBtn
+        +'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">📋 '+escH(nom.length>14?nom.slice(0,14)+'…':nom)+uaSpan+'</span>'
+        +phaseTag
+        +'<button class="cal-chip-del" style="color:'+(phStyle?'rgba(30,58,95,.5)':'rgba(255,255,255,.7)')+'" onclick="event.stopPropagation();removeCalEventCloud(\''+ev.id+'\')">×</button>'
+        +'</div>';
+    }).join('');
+  } else {
+    var eventsForDay = _calEvents.filter(function(e){ return e.date===dateStr; });
+    chips = eventsForDay.map(function(ev){
+      var s = _savedSeances.find(function(x){ return x.id===ev.seanceId; });
+      if(!s) return '';
+      var col = _seanceTypeColor(s.type);
+      return '<div class="cal-session-chip" style="background:'+col.fg+';" title="'+escH(s.name)+'">'
+        +'<span>'+s.emoji+' '+escH(s.name.length>14?s.name.slice(0,14)+'…':s.name)+'</span>'
+        +'<button class="cal-chip-del" onclick="event.stopPropagation();removeCalEvent(\''+ev.id+'\')">×</button>'
+        +'</div>';
+    }).join('');
+  }
+  _cycles.forEach(function(cy){
+    if(!cy.startDate) return;
+    var cyStart = new Date(cy.startDate); cyStart.setHours(0,0,0,0);
+    var cyEnd = new Date(cyStart); cyEnd.setDate(cyEnd.getDate()+cy.duree*7);
+    if(cellDate>=cyStart && cellDate<cyEnd){
+      var col = _cycleColor(cy.nom);
+      var wn = Math.floor((cellDate-cyStart)/(7*24*3600*1000))+1;
+      chips += '<div style="font-size:.6rem;font-weight:700;color:#fff;background:'+col+';border-radius:3px;padding:1px 5px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+cy.nom+' S'+wn+'</div>';
+    }
+  });
+  // Notes calendrier
+  _loadCalNotes();
+  _calNotes.filter(function(n){ return n.date === dateStr; }).forEach(function(note){
+    var lbl = note.title || (note.text ? note.text.slice(0,22)+(note.text.length>22?'…':'') : 'Note');
+    var isPatient = note.type === 'patient';
+    chips += '<div class="cal-note-chip '+(isPatient?'chip-patient':'chip-clinique')+'" onclick="event.stopPropagation();_openCalNoteView(\''+note.id+'\')" title="'+escH((note.title?note.title+'\n':'')+note.text)+'">'
+      +'<span>'+(isPatient?'💬':'🔒')+'</span><span class="cal-note-chip-text">'+escH(lbl)+'</span>'
+      +'<button class="cal-note-chip-del" onclick="event.stopPropagation();_confirmDeleteNote(function(){_deleteCalNote(\''+note.id+'\');})">×</button>'
+      +'</div>';
+  });
+  return chips;
+}
+
+/* ── Vue semaine ── */
+function _renderWeekUI(){
+  _loadSeances();
+  if(!_calWeekStart) _calWeekStart = _getMondayOf(new Date());
+  var mshort = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  var days   = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+  var wEnd   = new Date(_calWeekStart.getTime()+6*24*60*60*1000);
+  var title  = 'Sem. '+_calWeekStart.getDate()+' '+mshort[_calWeekStart.getMonth()];
+  if(_calWeekStart.getFullYear()!==wEnd.getFullYear()) title+=' '+_calWeekStart.getFullYear();
+  title += ' – '+wEnd.getDate()+' '+mshort[wEnd.getMonth()]+' '+wEnd.getFullYear();
+  document.getElementById('calTitle').textContent = title;
+  var lbl = document.getElementById('calPatientLabel');
+  if(lbl) lbl.textContent = _progPatient ? '👤 '+(_progPatient.nom||_progPatient.name||'') : '';
+  var today = new Date(); today.setHours(0,0,0,0);
+  var html = '';
+  // Row 1 : colonnes d'en-têtes
+  for(var i=0;i<7;i++){
+    var d = new Date(_calWeekStart.getTime()+i*24*60*60*1000);
+    var isTod = d.getTime()===today.getTime();
+    html += '<div class="cal-week-col-header'+(isTod?' today-header':'')+'">'
+          + '<div class="cal-week-day-name">'+days[i]+'</div>'
+          + '<div class="cal-week-day-num'+(isTod?' today-num':'')+'">'+(d.getDate())+'</div>'
+          + '</div>';
+  }
+  // Row 2 : cellules de jours
+  for(var i=0;i<7;i++){
+    var cellDate = new Date(_calWeekStart.getTime()+i*24*60*60*1000); cellDate.setHours(0,0,0,0);
+    var isTod = cellDate.getTime()===today.getTime();
+    var y  = cellDate.getFullYear();
+    var mo = String(cellDate.getMonth()+1).padStart(2,'0');
+    var dd = String(cellDate.getDate()).padStart(2,'0');
+    var dateStr = y+'-'+mo+'-'+dd;
+    html += '<div class="cal-week-cell'+(isTod?' today-cell':'')+'"'
+          +' onclick="openCalPicker(\''+dateStr+'\')"'
+          +' ondragover="_calDayDragOver(event,\''+dateStr+'\')"'
+          +' ondragleave="_calDayDragLeave(event)"'
+          +' ondrop="_calDayDrop(event,\''+dateStr+'\')">'
+          + _buildDayChips(dateStr, cellDate)
+          + '<div class="cal-week-add">+ Séance</div>'
+          + '</div>';
+  }
+  var bilan = _weekBilanHTML();
+  var grid = document.getElementById('calGrid');
+  if(bilan){
+    grid.className = 'cal-week-outer';
+    grid.innerHTML = bilan + '<div class="cal-week-grid">'+html+'</div>';
+  } else {
+    grid.className = 'cal-week-grid';
+    grid.innerHTML = html;
+  }
+  document.getElementById('bilanCharge').innerHTML = '';
+  if(typeof _renderUpcoming==='function') setTimeout(_renderUpcoming,0);
+}
+
+function _renderCalendarUI() {
+  if(_calView==='week'){ _renderWeekUI(); return; }
+  _loadSeances();
+  var months = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  document.getElementById('calGrid').className = 'cal-grid';
+  document.getElementById('calTitle').textContent = months[_calMonth]+' '+_calYear;
+  // Label patient
+  var lbl = document.getElementById('calPatientLabel');
+  if(lbl) lbl.textContent = _progPatient ? ('👤 '+(_progPatient.nom||_progPatient.name||'')) : '';
+  var grid = document.getElementById('calGrid');
+  var days = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+  var headers = days.map(function(d){ return '<div class="cal-day-header">'+d+'</div>'; }).join('');
+  var first = new Date(_calYear, _calMonth, 1);
+  var startDow = (first.getDay()+6)%7;
+  var daysInMonth = new Date(_calYear, _calMonth+1, 0).getDate();
+  var today = new Date(); today.setHours(0,0,0,0);
+  var cells = '';
+  for(var i=0;i<startDow;i++){ cells += '<div class="cal-day other-month"></div>'; }
+  for(var d=1;d<=daysInMonth;d++){
+    var dateStr = _calYear+'-'+String(_calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    var cellDate = new Date(_calYear,_calMonth,d);
+    var isToday = cellDate.getTime()===today.getTime();
+    cells += '<div class="cal-day'+(isToday?' today':'')+'"'
+      +' onclick="openCalPicker(\''+dateStr+'\')"'
+      +' ondragover="_calDayDragOver(event,\''+dateStr+'\')"'
+      +' ondragleave="_calDayDragLeave(event)"'
+      +' ondrop="_calDayDrop(event,\''+dateStr+'\')">'
+      +'<div class="cal-day-num">'+d+'</div>'
+      +_buildDayChips(dateStr, cellDate)+'</div>';
+  }
+  grid.innerHTML = headers + cells;
+  if(typeof _renderUpcoming === 'function') setTimeout(_renderUpcoming, 0);
+  setTimeout(_renderBilanCharge, 0);
+}
+
+function openCalPicker(dateStr) {
+  // Mode déplacement/duplication touch : tap sur une case = destination
+  if(_touchMoveMode){
+    var d = _touchMoveMode; _cancelTouchMove();
+    if(d.dateStr !== dateStr){
+      if(d.duplicate){ _calDuplicateEvent(d.progId, dateStr); }
+      else { _calMoveEvent(d.evId, d.progId, dateStr, d.dateStr); }
+    }
+    return;
+  }
+  _calPickerDate = dateStr;
+  var parts = dateStr.split('-');
+  var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  var dateLbl = parseInt(parts[2])+' '+months[parseInt(parts[1])-1]+' '+parts[0];
+  document.getElementById('calPickerTitle').textContent = dateLbl;
+  var list = document.getElementById('calPickerList');
+  list.innerHTML =
+    '<button class="cal-ctx-btn" onclick="_openBuilderNewForDate(\''+dateStr+'\')">'
+      +'<span class="cal-ctx-btn-icon">✏️</span>'
+      +'<span class="cal-ctx-btn-body"><span>Nouvelle séance</span>'
+      +'<span class="cal-ctx-btn-desc">Créer et planifier une séance pour cette date</span></span>'
+    +'</button>'
+    +'<button class="cal-ctx-btn" onclick="_openCalExistingPicker(\''+dateStr+'\')">'
+      +'<span class="cal-ctx-btn-icon">📋</span>'
+      +'<span class="cal-ctx-btn-body"><span>Ajouter une séance existante</span>'
+      +'<span class="cal-ctx-btn-desc">Planifier un programme déjà enregistré</span></span>'
+    +'</button>'
+    +'<button class="cal-ctx-btn" onclick="_openCalNoteForm(\''+dateStr+'\')">'
+      +'<span class="cal-ctx-btn-icon">📝</span>'
+      +'<span class="cal-ctx-btn-body"><span>Ajouter une note</span>'
+      +'<span class="cal-ctx-btn-desc">Rappel, événement, observation…</span></span>'
+    +'</button>';
+  document.getElementById('calPickerOverlay').classList.add('open');
+}
+
+function _openCalExistingPicker(dateStr) {
+  _calPickerDate = dateStr;
+  var parts = dateStr.split('-');
+  var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  document.getElementById('calPickerTitle').textContent = 'Planifier le '+parseInt(parts[2])+' '+months[parseInt(parts[1])-1]+' '+parts[0];
+  var list = document.getElementById('calPickerList');
+
+  if(_progPatient && _progToken) {
+    // Mode cloud : afficher les programmes du patient
+    list.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);font-size:.82rem;">Chargement…</div>';
+    _fetchRetry(SUPA_URL_P + '/rest/v1/programmes?patient_id=eq.' + _progPatient.id + '&select=id,nom,date&order=date.desc', {
+      headers: { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _progToken }
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      var progs = Array.isArray(data) ? data : [];
+      if(!progs.length){
+        list.innerHTML = '<button class="cal-note-back" onclick="openCalPicker(\''+dateStr+'\')">← Retour</button>'
+          + '<div style="padding:20px;text-align:center;color:var(--muted);font-size:.82rem;">Aucun programme enregistré.<br>Créez une nouvelle séance d\'abord.</div>';
+        return;
+      }
+      list.innerHTML = '<button class="cal-note-back" onclick="openCalPicker(\''+dateStr+'\')">← Retour</button>'
+        + progs.map(function(p){
+          return '<div class="cal-pick-item" onclick="addCalEventCloud(\''+p.id+'\')">'
+            +'<span class="cal-pick-emoji">📋</span>'
+            +'<div class="cal-pick-info">'
+            +'<div class="cal-pick-name">'+escH(p.nom||'Programme')+'</div>'
+            +'<div class="cal-pick-type" style="color:var(--muted)">📅 '+escH(p.date||'')+'</div>'
+            +'</div></div>';
+        }).join('');
+    })
+    .catch(function(){
+      list.innerHTML = '<div style="padding:16px;color:var(--red);">Erreur de chargement.</div>';
+    });
+  } else {
+    // Mode local
+    _loadSeances();
+    if(!_savedSeances.length){
+      list.innerHTML = '<button class="cal-note-back" onclick="openCalPicker(\''+dateStr+'\')">← Retour</button>'
+        +'<div style="padding:20px;text-align:center;color:var(--muted);font-size:.82rem;">Aucune séance enregistrée.</div>';
+      return;
+    }
+    list.innerHTML = '<button class="cal-note-back" onclick="openCalPicker(\''+dateStr+'\')">← Retour</button>'
+      + _savedSeances.map(function(s){
+        var col = _seanceTypeColor(s.type);
+        return '<div class="cal-pick-item" onclick="addCalEvent(\''+s.id+'\')">'
+          +'<span class="cal-pick-emoji">'+s.emoji+'</span>'
+          +'<div class="cal-pick-info">'
+          +'<div class="cal-pick-name">'+escH(s.name)+'</div>'
+          +'<div class="cal-pick-type" style="color:'+col.fg+'">'+escH(s.type)+'</div>'
+          +'</div></div>';
+      }).join('');
+  }
+}
+
+function closeCalPicker() {
+  document.getElementById('calPickerOverlay').classList.remove('open');
+}
+
+// ── Ajout local (séances enregistrées, sans patient sélectionné) ──
+function addCalEvent(seanceId) {
+  _loadCalEvents();
+  _calEvents.push({ id:'_'+Math.random().toString(36).slice(2,9), date:_calPickerDate, seanceId:seanceId });
+  _persistCalEvents();
+  closeCalPicker();
+  renderCalendar();
+}
+
+function removeCalEvent(evId) {
+  _loadCalEvents();
+  _calEvents = _calEvents.filter(function(e){ return e.id!==evId; });
+  _persistCalEvents();
+  renderCalendar();
+}
+
+// ── Ajout cloud (programmes Supabase, patient sélectionné) ──
+function addCalEventCloud(progId) {
+  if(!_progPatient || !_progUid || !_progToken){ alert('Patient ou session non disponible.'); return; }
+  _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees', {
+    method: 'POST',
+    headers: _sbHeaders(),
+    body: JSON.stringify({ patient_id:_progPatient.id, programme_id:progId, praticien_id:_progUid, date:_calPickerDate })
+  })
+  .then(function(r){
+    if(!r.ok){ return r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); }); }
+    closeCalPicker();
+    renderCalendar();
+  })
+  .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
+}
+
+function removeCalEventCloud(id) {
+  if(!confirm('Retirer cette séance du calendrier ?')) return;
+  _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees?id=eq.' + id, {
+    method: 'DELETE', headers: _sbHeaders()
+  })
+  .then(function(r){
+    if(!r.ok){ return r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); }); }
+    renderCalendar();
+  })
+  .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
+}
+
+// ── Notes calendrier ──────────────────────────────────────────────────────────
+var _calNotes    = [];
+var _noteFormType = 'clinique'; // type actif dans le formulaire
+
+// Clé scopée par patient — identique au comportement des séances
+function _calNotesKey(){
+  return _progPatient ? 'r4p_cal_notes_' + _progPatient.id : 'r4p_cal_notes';
+}
+
+var _calNotesSyncedFor = null; // patient id du dernier sync
+var _calNotesSyncedAt  = 0;    // timestamp (ms) du dernier sync
+var _NOTES_SYNC_TTL    = 30000; // re-sync si > 30 s
+
+/* Génère un UUID v4 compatible avec les colonnes uuid de Supabase */
+function _genUUID(){
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c){
+    var r = Math.random()*16|0, v = c==='x' ? r : (r&0x3|0x8);
+    return v.toString(16);
+  });
+}
+
+function _loadCalNotes(){
+  try { _calNotes = JSON.parse(localStorage.getItem(_calNotesKey())||'[]'); } catch(e){ _calNotes = []; }
+}
+
+function _persistCalNotes(){
+  localStorage.setItem(_calNotesKey(), JSON.stringify(_calNotes));
+}
+
+/* ── Sync Supabase → localStorage (async, une fois par patient) ── */
+function _syncCalNotesFromSupabase(){
+  if(!_progPatient || !_progToken || !_progUid) return;
+  _fetchRetry(SUPA_URL_P+'/rest/v1/clinical_notes?patient_id=eq.'+_progPatient.id+'&praticien_id=eq.'+_progUid+'&order=created_at.asc',
+    { headers: _sbHeaders() })
+  .then(function(r){
+    if(!r.ok){ r.text().then(function(t){ console.warn('_syncCalNotesFromSupabase GET failed', r.status, t); }); return null; }
+    return r.json();
+  })
+  .then(function(rows){
+    if(!rows) return;
+    // Construire la liste distante
+    var remoteNotes = rows.map(function(r){
+      return { id:r.id, date:r.date, title:r.title||'', text:r.body||'', type:'clinique', createdAt:r.created_at||'' };
+    });
+    // Charger les notes locales (localStorage)
+    var localNotes = [];
+    try { localNotes = JSON.parse(localStorage.getItem(_calNotesKey())||'[]'); } catch(e){}
+    // Fusionner : Supabase = source de vérité pour 'clinique'. Conserver les 'patient' locales.
+    var patientNotes = localNotes.filter(function(n){ return n.type === 'patient'; });
+    // Supabase = source de vérité absolue pour 'clinique'.
+    // Ne jamais re-pousser les notes locales absentes du remote : elles ont été supprimées sur un autre appareil.
+    var merged = remoteNotes.concat(patientNotes);
+    _calNotes = merged;
+    localStorage.setItem(_calNotesKey(), JSON.stringify(_calNotes));
+    renderCalendar();
+  }).catch(function(){});
+}
+
+function _syncCalNotesIfNeeded(){
+  if(!_progPatient) return;
+  var now = Date.now();
+  // Changement de patient → forcer sync immédiat
+  if(_calNotesSyncedFor !== _progPatient.id){
+    _calNotesSyncedFor = _progPatient.id;
+    _calNotesSyncedAt  = 0;
+  }
+  // Limiter à une requête par TTL (60 s)
+  if(now - _calNotesSyncedAt < _NOTES_SYNC_TTL) return;
+  _calNotesSyncedAt = now;
+  _syncCalNotesFromSupabase();
+}
+
+/* ── Push / delete notes cliniques sur Supabase ── */
+function _pushClinicalNote(note){
+  if(!_progToken || !_progUid || !_progPatient) return;
+  _fetchRetry(SUPA_URL_P+'/rest/v1/clinical_notes', {
+    method: 'POST',
+    headers: Object.assign({}, _sbHeaders(), {'Prefer':'resolution=merge-duplicates,return=minimal'}),
+    body: JSON.stringify({ id:note.id, patient_id:_progPatient.id, praticien_id:_progUid,
+      date:note.date, title:note.title||'', body:note.text||'', created_at:note.createdAt||new Date().toISOString() })
+  }).then(function(r){
+    if(!r.ok){
+      r.text().then(function(t){ console.warn('_pushClinicalNote failed', r.status, t); });
+      _showToast('⚠️ Note non synchronisée — vérifiez votre connexion', true);
+    }
+  }).catch(function(e){
+    console.warn('_pushClinicalNote error', e);
+    _showToast('⚠️ Note non synchronisée — vérifiez votre connexion', true);
+  });
+}
+
+function _deleteClinicalNote(noteId){
+  if(!_progToken || !_progUid) return;
+  _fetchRetry(SUPA_URL_P+'/rest/v1/clinical_notes?id=eq.'+noteId, {
+    method: 'DELETE', headers: _sbHeaders()
+  }).catch(function(e){ console.warn('_deleteClinicalNote error', e); });
+}
+
+function _addCalNoteIfNotDupe(dateStr, title, text) {
+  _loadCalNotes();
+  var exists = _calNotes.some(function(n){ return n.date===dateStr && n.title===title; });
+  if(exists) return false;
+  var note = { id:_genUUID(), date:dateStr, title:title.trim(), text:(text||'').trim(), type:'clinique', createdAt:new Date().toISOString() };
+  _calNotes.push(note);
+  _persistCalNotes();
+  // Synchroniser immédiatement sur Supabase pour survivre au prochain sync
+  _pushClinicalNote(note);
+  return true;
+}
+
+function _addDays(dateStr, n) {
+  var d = new Date(dateStr); d.setDate(d.getDate()+n);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+function _fmtDateFr(dateStr) {
+  if(!dateStr) return '';
+  var p = dateStr.split('-');
+  return (p[2]||'?')+'/'+(p[1]||'?')+'/'+(p[0]||'?');
+}
+
+function _saveJ0(patientId, dateStr) {
+  try { localStorage.setItem(R4P_KEYS.J0_PREFIX+patientId, dateStr); } catch(e){}
+}
+function _getJ0(patientId) {
+  try { return localStorage.getItem(R4P_KEYS.J0_PREFIX+patientId)||''; } catch(e){ return ''; }
+}
+
+/* ── Sélection du type dans le formulaire ── */
+function _setNoteType(type) {
+  _noteFormType = type;
+  document.querySelectorAll('.cal-note-type-btn').forEach(function(b){
+    b.className = 'cal-note-type-btn' + (b.dataset.type === type ? ' sel-' + type : '');
+  });
+}
+
+function _noteTypeRow(active) {
+  return '<div class="cal-note-type-row">'
+    +'<button class="cal-note-type-btn'+(active==='clinique'?' sel-clinique':'')+'" data-type="clinique" onclick="_setNoteType(\'clinique\')">🔒 Note clinique</button>'
+    +'<button class="cal-note-type-btn'+(active==='patient'?' sel-patient':'')+'" data-type="patient" onclick="_setNoteType(\'patient\')">💬 Message patient</button>'
+    +'</div>';
+}
+
+/* ── Supabase : push / delete messages patient ── */
+function _pushPatientMsg(note) {
+  if(!_progToken || !_progUid || !_progPatient) return;
+  _fetchRetry(SUPA_URL_P+'/rest/v1/patient_messages', {
+    method: 'POST',
+    headers: Object.assign({}, _sbHeaders(), {'Prefer':'resolution=merge-duplicates,return=minimal'}),
+    body: JSON.stringify({ id:note.id, patient_id:_progPatient.id, praticien_id:_progUid,
+      date:note.date, title:note.title||'', body:note.text||'' })
+  }).catch(function(e){ console.warn('_pushPatientMsg error', e); });
+}
+
+function _deletePatientMsg(noteId) {
+  if(!_progToken || !_progUid) return;
+  _fetchRetry(SUPA_URL_P+'/rest/v1/patient_messages?id=eq.'+noteId, {
+    method: 'DELETE', headers: _sbHeaders()
+  }).catch(function(e){ console.warn('_deletePatientMsg error', e); });
+}
+
+function _nextVersionTitle(title) {
+  if(!title) return '';
+  var match = title.match(/^(.*?)\s*[Vv](\d+)\s*$/);
+  if(match) return match[1].trim() + ' V' + (parseInt(match[2])+1);
+  return title + ' V2';
+}
+
+function _openCalNoteForm(dateStr) {
+  _noteFormType = 'clinique';
+  _calPickerDate = dateStr;
+  var parts = dateStr.split('-');
+  var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  document.getElementById('calPickerTitle').textContent = 'Nouvelle note — '+parseInt(parts[2])+' '+months[parseInt(parts[1])-1]+' '+parts[0];
+  var list = document.getElementById('calPickerList');
+  list.innerHTML = '<div class="cal-note-form">'
+    +'<button class="cal-note-back" onclick="openCalPicker(\''+dateStr+'\')">← Retour</button>'
+    +_noteTypeRow('clinique')
+    +'<input class="cal-note-inp" id="calNoteTitle" type="text" placeholder="Titre (optionnel)" />'
+    +'<textarea class="cal-note-textarea" id="calNoteText" placeholder="Note, rappel, observation…"></textarea>'
+    +'<div id="note-followup-toggle-row" style="display:flex;align-items:center;gap:8px;margin:10px 0 6px">'
+    +'<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.78rem;color:#6B6860">'
+    +'<input type="checkbox" id="note-followup-chk" onchange="_toggleFollowupFields()" style="accent-color:var(--accent)">'
+    +'🔁 Planifier un suivi'
+    +'</label>'
+    +'</div>'
+    +'<div id="note-followup-fields" style="display:none;background:#F7F6F3;border-radius:7px;padding:10px;margin-bottom:8px">'
+    +'<div style="display:flex;gap:8px;align-items:center;margin-bottom:7px">'
+    +'<span style="font-size:.75rem;color:#6B6860;white-space:nowrap">Dans</span>'
+    +'<input type="number" id="note-followup-days" value="35" min="1" style="width:56px;border:1px solid #D3D1CB;border-radius:5px;padding:4px 6px;font-size:.82rem;font-family:inherit" oninput="_updateFollowupDate()">'
+    +'<span style="font-size:.75rem;color:#6B6860;white-space:nowrap">jours →</span>'
+    +'<span id="note-followup-date-label" style="font-size:.75rem;color:#2D6A4F;font-weight:600"></span>'
+    +'</div>'
+    +'<input type="text" id="note-followup-title" placeholder="Titre du suivi" style="width:100%;border:1px solid #D3D1CB;border-radius:5px;padding:5px 8px;font-size:.82rem;font-family:inherit;box-sizing:border-box">'
+    +'</div>'
+    +'<button class="cal-note-save" onclick="_saveCalNote(\''+dateStr+'\')">Enregistrer</button>'
+    +'</div>';
+  setTimeout(function(){ var el = document.getElementById('calNoteTitle'); if(el) el.focus(); }, 60);
+  // Auto-suggest follow-up title
+  setTimeout(function(){
+    var titleEl = document.getElementById('calNoteTitle');
+    titleEl && titleEl.addEventListener('input', function(){
+      var ftEl = document.getElementById('note-followup-title');
+      if(ftEl && !ftEl._touched) ftEl.value = _nextVersionTitle(titleEl.value);
+    });
+    var ftEl = document.getElementById('note-followup-title');
+    if(ftEl) ftEl.addEventListener('input', function(){ ftEl._touched = true; });
+  }, 80);
+}
+
+window._toggleFollowupFields = function() {
+  var chk = document.getElementById('note-followup-chk');
+  var fields = document.getElementById('note-followup-fields');
+  if(!fields) return;
+  fields.style.display = chk && chk.checked ? '' : 'none';
+  if(chk && chk.checked) _updateFollowupDate();
+};
+
+window._updateFollowupDate = function() {
+  var days = parseInt((document.getElementById('note-followup-days')||{}).value)||35;
+  var lbl = document.getElementById('note-followup-date-label');
+  if(!lbl || !_calPickerDate) return;
+  lbl.textContent = _fmtDateFr(_addDays(_calPickerDate, days));
+};
+
+function _saveCalNote(dateStr) {
+  var title = (document.getElementById('calNoteTitle')||{}).value || '';
+  var text  = (document.getElementById('calNoteText')||{}).value  || '';
+  if(!title.trim() && !text.trim()){ _showToast('La note est vide.', true); return; }
+  _loadCalNotes();
+  var note = { id:_genUUID(), date:dateStr,
+    title:title.trim(), text:text.trim(), type:_noteFormType, createdAt:new Date().toISOString() };
+  _calNotes.push(note);
+  _persistCalNotes();
+  if(note.type === 'patient') _pushPatientMsg(note);
+  else if(note.type === 'clinique') _pushClinicalNote(note);
+  // Créer le suivi si toggle actif
+  var followupChk = document.getElementById('note-followup-chk');
+  if(followupChk && followupChk.checked) {
+    var fDays = parseInt((document.getElementById('note-followup-days')||{}).value)||35;
+    var fTitle = ((document.getElementById('note-followup-title')||{}).value||'').trim();
+    if(fTitle) {
+      var fDate = _addDays(dateStr, fDays);
+      _addCalNoteIfNotDupe(fDate, fTitle, '');
+    }
+  }
+  closeCalPicker();
+  renderCalendar();
+  _showToast(note.type === 'patient' ? '💬 Message envoyé au patient' : '📝 Note enregistrée');
+}
+
+function _openCalNoteView(noteId) {
+  _loadCalNotes();
+  var note = _calNotes.find(function(n){ return n.id === noteId; });
+  if(!note) return;
+  _noteFormType = note.type || 'clinique';
+  _calPickerDate = note.date;
+  var parts = note.date.split('-');
+  var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  document.getElementById('calPickerTitle').textContent = 'Note — '+parseInt(parts[2])+' '+months[parseInt(parts[1])-1]+' '+parts[0];
+  var list = document.getElementById('calPickerList');
+  list.innerHTML = '<div class="cal-note-form">'
+    +'<button class="cal-note-back" onclick="openCalPicker(\''+note.date+'\')">← Retour</button>'
+    +_noteTypeRow(_noteFormType)
+    +'<input class="cal-note-inp" id="calNoteTitle" type="text" placeholder="Titre (optionnel)" value="'+escH(note.title||'')+'" />'
+    +'<textarea class="cal-note-textarea" id="calNoteText" placeholder="Note, rappel, observation…">'+escH(note.text||'')+'</textarea>'
+    +'<div style="display:flex;gap:8px;">'
+    +'<button class="cal-note-save" style="flex:1;" onclick="_updateCalNote(\''+noteId+'\')">Mettre à jour</button>'
+    +'<button class="cal-note-save danger" style="flex:0 0 auto;" onclick="_deleteCalNoteAndClose(\''+noteId+'\',\''+note.date+'\')">🗑</button>'
+    +'</div>'
+    +'</div>';
+  document.getElementById('calPickerOverlay').classList.add('open');
+}
+
+function _updateCalNote(noteId) {
+  var title = (document.getElementById('calNoteTitle')||{}).value || '';
+  var text  = (document.getElementById('calNoteText')||{}).value  || '';
+  if(!title.trim() && !text.trim()){ _showToast('La note est vide.', true); return; }
+  _loadCalNotes();
+  var note = _calNotes.find(function(n){ return n.id === noteId; });
+  if(!note) return;
+  var prevType = note.type || 'clinique';
+  note.title = title.trim(); note.text = text.trim(); note.type = _noteFormType;
+  _persistCalNotes();
+  if(note.type === 'patient') {
+    _pushPatientMsg(note); // upsert
+    if(prevType === 'clinique') _deleteClinicalNote(noteId); // était clinique → retirer
+  } else if(note.type === 'clinique') {
+    _pushClinicalNote(note); // upsert
+    if(prevType === 'patient') _deletePatientMsg(noteId); // était patient → retirer
+  } else if(prevType === 'patient') {
+    _deletePatientMsg(noteId);
+  } else if(prevType === 'clinique') {
+    _deleteClinicalNote(noteId);
+  }
+  closeCalPicker();
+  renderCalendar();
+  _showToast(note.type === 'patient' ? '💬 Message mis à jour' : '📝 Note mise à jour');
+}
+
+function _deleteCalNote(noteId) {
+  _loadCalNotes();
+  var note = _calNotes.find(function(n){ return n.id === noteId; });
+  if(note && note.type === 'patient') _deletePatientMsg(noteId);
+  if(note && note.type === 'clinique') _deleteClinicalNote(noteId);
+  _calNotes = _calNotes.filter(function(n){ return n.id !== noteId; });
+  _persistCalNotes();
+  renderCalendar();
+}
+
+function _deleteCalNoteAndClose(noteId, dateStr) {
+  _confirmDeleteNote(function(){
+    _deleteCalNote(noteId);
+    closeCalPicker();
+    _showToast('Note supprimée');
+  });
+}
+
+/* ── Modale de confirmation avant suppression d'une note ── */
+function _confirmDeleteNote(onConfirm) {
+  // Réutiliser la modale si elle existe déjà
+  var existing = document.getElementById('del-note-confirm-modal');
+  if(existing) existing.remove();
+
+  var overlay = document.createElement('div');
+  overlay.id = 'del-note-confirm-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99999;display:flex;align-items:center;justify-content:center;';
+
+  overlay.innerHTML = ''
+    +'<div style="background:#fff;border-radius:14px;padding:28px 24px 20px;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.22);text-align:center;">'
+    +'  <div style="font-size:2rem;margin-bottom:10px;">🗑️</div>'
+    +'  <p style="font-size:1rem;font-weight:600;margin:0 0 6px;">Supprimer cette note ?</p>'
+    +'  <p style="font-size:.875rem;color:#666;margin:0 0 22px;">Cette action est irréversible. La note sera définitivement supprimée.</p>'
+    +'  <div style="display:flex;gap:10px;justify-content:center;">'
+    +'    <button id="del-note-cancel" style="flex:1;padding:10px 0;border-radius:8px;border:1.5px solid #d1d5db;background:#fff;font-size:.9rem;font-weight:500;cursor:pointer;color:var(--text-dk);">Annuler</button>'
+    +'    <button id="del-note-ok" style="flex:1;padding:10px 0;border-radius:8px;border:none;background:#ef4444;color:#fff;font-size:.9rem;font-weight:600;cursor:pointer;">Supprimer</button>'
+    +'  </div>'
+    +'</div>';
+
+  document.body.appendChild(overlay);
+
+  function _close(){ overlay.remove(); }
+
+  document.getElementById('del-note-cancel').addEventListener('click', _close);
+  document.getElementById('del-note-ok').addEventListener('click', function(){
+    _close();
+    onConfirm();
+  });
+  // Clic hors modale = annuler
+  overlay.addEventListener('click', function(e){ if(e.target === overlay) _close(); });
+}
+
+// _isTouchDevice défini plus haut, avant renderLib()
+
+// ── Touch action sheet (iPad/mobile) ──
+var _chipTouchMeta   = {};   // evId → {progId, dateStr, nom}
+var _touchSheetData  = null; // données du chip affiché dans l'action sheet
+var _touchSheetJustOpened = false; // garde-fou contre fermeture immédiate au lâcher du doigt
+var _touchMoveMode   = null; // null | {evId, progId, dateStr, duplicate:bool}
+var _touchLongTimer  = null;
+var _touchStartXY    = null;
+var _touchDidLong    = false;
+
+function _chipTouchStart(e, evId){
+  e.stopPropagation();
+  _touchDidLong = false;
+  _touchStartXY = {x: e.touches[0].clientX, y: e.touches[0].clientY};
+  _touchLongTimer = setTimeout(function(){
+    _touchDidLong = true;
+    var d = _chipTouchMeta[evId] || {};
+    _showTouchActionSheet(evId, d.progId, d.dateStr, d.nom || 'Séance');
+  }, 500);
+}
+
+function _chipTouchMove(e){
+  if(!_touchStartXY) return;
+  var dx = e.touches[0].clientX - _touchStartXY.x;
+  var dy = e.touches[0].clientY - _touchStartXY.y;
+  if(dx*dx + dy*dy > 100){ clearTimeout(_touchLongTimer); _touchLongTimer = null; _touchStartXY = null; }
+}
+
+function _chipTouchEnd(e, evId){
+  clearTimeout(_touchLongTimer); _touchLongTimer = null;
+  if(_touchDidLong){ _touchDidLong = false; e.preventDefault(); return; }
+  e.preventDefault();
+  var d = _chipTouchMeta[evId] || {};
+  if(d.progId && d.dateStr) _openChipInBuilder(d.progId, d.dateStr, d.seanceId);
+}
+
+function _showTouchActionSheet(evId, progId, dateStr, nom){
+  _touchSheetData = {evId: evId, progId: progId, dateStr: dateStr};
+  var title = document.getElementById('touchSheetTitle');
+  if(title) title.textContent = nom || 'Séance';
+  document.getElementById('touchSheet').style.display = 'block';
+  document.getElementById('touchSheetOverlay').style.display = 'block';
+  // Bloquer la fermeture pendant 350ms (lâcher du doigt génère un clic fantôme sur l'overlay)
+  _touchSheetJustOpened = true;
+  setTimeout(function(){ _touchSheetJustOpened = false; }, 350);
+}
+
+function closeTouchSheet(){
+  if(_touchSheetJustOpened) return; // ignorer le clic fantôme au lâcher
+  document.getElementById('touchSheet').style.display = 'none';
+  document.getElementById('touchSheetOverlay').style.display = 'none';
+  _touchSheetData = null;
+}
+
+function touchSheetOpen(){
+  if(!_touchSheetData) return;
+  var d = _touchSheetData; closeTouchSheet();
+  _openChipInBuilder(d.progId, d.dateStr, d.evId);
+}
+
+function touchSheetMove(){
+  if(!_touchSheetData) return;
+  _touchMoveMode = {evId: _touchSheetData.evId, progId: _touchSheetData.progId, dateStr: _touchSheetData.dateStr, duplicate: false};
+  closeTouchSheet();
+  var banner = document.getElementById('touchMoveBanner');
+  var txt = document.getElementById('touchMoveBannerTxt');
+  if(txt) txt.textContent = '↔️ Tapez sur le jour de destination pour déplacer';
+  if(banner) banner.style.display = 'flex';
+}
+
+function touchSheetDuplicate(){
+  if(!_touchSheetData) return;
+  _touchMoveMode = {evId: _touchSheetData.evId, progId: _touchSheetData.progId, dateStr: _touchSheetData.dateStr, duplicate: true};
+  closeTouchSheet();
+  var banner = document.getElementById('touchMoveBanner');
+  var txt = document.getElementById('touchMoveBannerTxt');
+  if(txt) txt.textContent = '📄 Tapez sur le jour de destination pour dupliquer';
+  if(banner) banner.style.display = 'flex';
+}
+
+function touchSheetDelete(){
+  if(!_touchSheetData) return;
+  var evId = _touchSheetData.evId; closeTouchSheet();
+  if(confirm('Retirer cette séance du calendrier ?')){
+    _fetchRetry(SUPA_URL_P+'/rest/v1/seances_planifiees?id=eq.'+evId, {method:'DELETE', headers:_sbHeaders()})
+      .then(function(r){ if(r.ok) renderCalendar(); });
+  }
+}
+
+function _cancelTouchMove(){
+  _touchMoveMode = null;
+  var banner = document.getElementById('touchMoveBanner');
+  if(banner) banner.style.display = 'none';
+}
+
+// ── Drag & drop entre jours du calendrier ──
+var _calDrag = null; // {evId, progId, date}
+
+function _calChipDragStart(e, evId, progId, date){
+  _calDrag = {evId: evId, progId: progId, date: date};
+  e.dataTransfer.effectAllowed = 'copyMove';
+  var chip = e.currentTarget;
+  setTimeout(function(){ if(chip) chip.classList.add('dragging'); }, 0);
+}
+
+var _calDragJustEnded = false;
+function _calChipDragEnd(e){
+  var chip = e.currentTarget;
+  if(chip) chip.classList.remove('dragging');
+  document.querySelectorAll('.drag-over,.drag-over-copy').forEach(function(el){
+    el.classList.remove('drag-over','drag-over-copy');
+  });
+  _calDragJustEnded = true;
+  setTimeout(function(){ _calDragJustEnded = false; }, 250);
+}
+
+function _calDayDragOver(e, dateStr){
+  if(!_calDrag) return;
+  e.preventDefault();
+  var cell = e.currentTarget;
+  if(e.shiftKey){
+    cell.classList.remove('drag-over');
+    cell.classList.add('drag-over-copy');
+    e.dataTransfer.dropEffect = 'copy';
+  } else {
+    cell.classList.remove('drag-over-copy');
+    cell.classList.add('drag-over');
+    e.dataTransfer.dropEffect = 'move';
+  }
+}
+
+function _calDayDragLeave(e){
+  var cell = e.currentTarget;
+  if(!cell.contains(e.relatedTarget)){
+    cell.classList.remove('drag-over','drag-over-copy');
+  }
+}
+
+function _calDayDrop(e, targetDate){
+  e.preventDefault();
+  var cell = e.currentTarget;
+  cell.classList.remove('drag-over','drag-over-copy');
+  if(!_calDrag) return;
+  var drag = _calDrag; _calDrag = null;
+  if(drag.date === targetDate) return;
+  if(e.shiftKey){
+    _calDuplicateEvent(drag.progId, targetDate);
+  } else {
+    _calMoveEvent(drag.evId, drag.progId, targetDate, drag.date);
+  }
+}
+
+function _calMoveEvent(evId, progId, targetDate, sourceDate){
+  if(!_progPatient||!_progUid||!_progToken) return;
+  // Stratégie : DELETE + POST (plus fiable que PATCH face aux RLS Supabase)
+  _fetchRetry(SUPA_URL_P+'/rest/v1/seances_planifiees?id=eq.'+evId, {
+    method:'DELETE', headers:_sbHeaders()
+  })
+  .then(function(r){
+    if(!r.ok){ return r.json().then(function(d){ alert('Erreur suppression : '+JSON.stringify(d)); throw new Error('del'); }); }
+    return _fetchRetry(SUPA_URL_P+'/rest/v1/seances_planifiees', {
+      method:'POST', headers:_sbHeaders(),
+      body: JSON.stringify({patient_id:_progPatient.id, programme_id:progId, praticien_id:_progUid, date:targetDate})
+    });
+  })
+  .then(function(r){
+    if(!r || !r.ok){ if(r) r.json().then(function(d){ alert('Erreur création : '+JSON.stringify(d)); }); return; }
+    return r.json();
+  })
+  .then(function(data){
+    if(!data) return;
+    var created = Array.isArray(data) ? data[0] : data;
+    var newId = created && created.id;
+    renderCalendar();
+    _showToast('📅 Séance déplacée', function(){
+      // Annuler : supprimer le nouveau, recréer à la date d'origine
+      _fetchRetry(SUPA_URL_P+'/rest/v1/seances_planifiees?id=eq.'+newId, {
+        method:'DELETE', headers:_sbHeaders()
+      }).then(function(){
+        return _fetchRetry(SUPA_URL_P+'/rest/v1/seances_planifiees', {
+          method:'POST', headers:_sbHeaders(),
+          body: JSON.stringify({patient_id:_progPatient.id, programme_id:progId, praticien_id:_progUid, date:sourceDate})
+        });
+      }).then(function(){ renderCalendar(); });
+    });
+  })
+  .catch(function(err){ if(err&&err.message!=='del') alert('Erreur réseau : '+(err.message||err)); });
+}
+
+function _calDuplicateEvent(progId, targetDate){
+  if(!_progPatient||!_progUid||!_progToken) return;
+  // Copie profonde : nouveau programme indépendant + nouvelle séance planifiée
+  _fetchRetry(SUPA_URL_P+'/rest/v1/programmes?id=eq.'+progId+'&select=nom,donnees', {method:'GET', headers:_sbHeaders()})
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    var src = Array.isArray(data) ? data[0] : data;
+    if(!src){ alert('Programme source introuvable.'); return; }
+    // Mettre à jour le nom si auto-généré ("Séance du X mois") pour refléter la nouvelle date
+    var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+    var tp = targetDate.split('-');
+    var targetLabel = 'Séance du '+parseInt(tp[2])+' '+months[parseInt(tp[1])-1];
+    var srcNom = src.nom || '';
+    var nomCopie = /^Séance du \d/.test(srcNom) ? targetLabel : srcNom;
+    var today = new Date().toISOString().split('T')[0];
+    _fetchRetry(SUPA_URL_P+'/rest/v1/programmes', {
+      method:'POST', headers:_sbHeaders(),
+      body:JSON.stringify({patient_id:_progPatient.id, praticien_id:_progUid, nom:nomCopie, date:today, donnees:src.donnees})
+    })
+    .then(function(r2){ return r2.json().then(function(d){ return {ok:r2.ok, data:d}; }); })
+    .then(function(res){
+      if(!res.ok){ alert('Erreur création programme copie.'); return; }
+      var d = Array.isArray(res.data) ? res.data[0] : res.data;
+      if(!d||!d.id){ alert('Programme non créé.'); return; }
+      var newProgId = d.id;
+      _fetchRetry(SUPA_URL_P+'/rest/v1/seances_planifiees', {
+        method:'POST', headers:_sbHeaders(),
+        body:JSON.stringify({patient_id:_progPatient.id, programme_id:newProgId, praticien_id:_progUid, date:targetDate})
+      })
+      .then(function(r3){ return r3.json().then(function(d2){ return {ok:r3.ok, data:d2}; }); })
+      .then(function(res3){
+        if(!res3.ok){ alert('Erreur planification copie.'); return; }
+        var created = Array.isArray(res3.data) ? res3.data[0] : res3.data;
+        var newSeanceId = created && created.id;
+        renderCalendar();
+        _showToast('📋 Séance dupliquée (copie indépendante)', function(){
+          if(!newSeanceId) return;
+          _fetchRetry(SUPA_URL_P+'/rest/v1/seances_planifiees?id=eq.'+newSeanceId, {method:'DELETE', headers:_sbHeaders()})
+          .then(function(){
+            _fetchRetry(SUPA_URL_P+'/rest/v1/programmes?id=eq.'+newProgId, {method:'DELETE', headers:_sbHeaders()})
+            .then(function(){ renderCalendar(); });
+          });
+        });
+      })
+      .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
+    })
+    .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
+  })
+  .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
+}
+
+// ── Partage du lien calendrier athlète ──
+function shareCalLink() {
+  if(!_progPatient){ alert('Sélectionne d\'abord un patient depuis la barre de navigation.'); return; }
+  var link = window.location.href.replace(/\/[^/]+$/, '/athlete.html') + '?patient=' + _progPatient.id;
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(link)
+      .then(function(){ _showToast('📅 Lien calendrier copié ! Envoie-le à ton athlète.'); })
+      .catch(function(){ prompt('Copie ce lien :', link); });
+  } else {
+    prompt('Copie ce lien :', link);
+  }
+}
+
+/* ── Planifier depuis le builder ── */
+function openPlanModal(){
+  if(!_progPatient){ alert('Sélectionnez un patient avant de planifier.'); return; }
+  var container = document.getElementById('planDatesContainer');
+  container.innerHTML = '';
+  _addPlanDateRow(_builderDate || '');
+  document.getElementById('planModal').classList.add('open');
+}
+
+function closePlanModal(){
+  document.getElementById('planModal').classList.remove('open');
+}
+
+function addPlanDateRow(){ _addPlanDateRow(''); }
+
+function _addPlanDateRow(val){
+  var container = document.getElementById('planDatesContainer');
+  var row = document.createElement('div');
+  row.className = 'plan-date-row';
+  var inp = document.createElement('input');
+  inp.type = 'date'; inp.className = 'plan-date-input'; inp.value = val || '';
+  var del = document.createElement('button');
+  del.className = 'plan-date-del'; del.title = 'Retirer'; del.innerHTML = '&times;';
+  del.onclick = function(){ if(container.children.length > 1) row.remove(); };
+  row.appendChild(inp); row.appendChild(del);
+  container.appendChild(row);
+  if(!val) setTimeout(function(){ inp.focus(); }, 50);
+}
+
+function confirmPlan(){
+  var dates = Array.from(document.querySelectorAll('.plan-date-input'))
+    .map(function(i){ return i.value; }).filter(Boolean);
+  if(!dates.length){ alert('Sélectionnez au moins une date.'); return; }
+  if(!_progPatient){ alert('Sélectionnez un patient.'); return; }
+
+  if(_currentProgId){ _doPlanDates(dates, _currentProgId); return; }
+
+  // Pas encore sauvegardé : auto-save d'abord
+  if(!_progUid || !_progToken){ alert('Session non disponible. Sélectionnez à nouveau le patient.'); return; }
+  var btn = document.getElementById('planConfirmBtn');
+  if(btn){ btn.disabled=true; btn.textContent='⏳ Sauvegarde…'; }
+  var nomProg = (document.getElementById('patientName')||{}).value || ('Programme du '+new Date().toLocaleDateString('fr-FR'));
+  var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), notes: getNotes() };
+  var today = new Date().toISOString().split('T')[0];
+  _fetchRetry(SUPA_URL_P+'/rest/v1/programmes', {
+    method:'POST', headers:_sbHeaders(),
+    body:JSON.stringify({patient_id:_progPatient.id, praticien_id:_progUid, nom:nomProg, date:today, donnees:donnees})
+  })
+  .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+  .then(function(res){
+    if(btn){ btn.disabled=false; btn.textContent='📅 Planifier'; }
+    if(!res.ok){ alert('Erreur sauvegarde : '+JSON.stringify(res.data)); return; }
+    var d = Array.isArray(res.data) ? res.data[0] : res.data;
+    if(d && d.id){
+      _currentProgId = d.id;
+      var sb = document.getElementById('prog-cloud-save-btn');
+      if(sb){ sb.textContent='✓ Sauvegardé'; setTimeout(function(){ sb.textContent='☁️ Sauvegarder'; },2500); }
+      _doPlanDates(dates, d.id);
+    }
+  })
+  .catch(function(err){
+    if(btn){ btn.disabled=false; btn.textContent='📅 Planifier'; }
+    alert('Erreur réseau : '+(err&&err.message||err));
+  });
+}
+
+function _doPlanDates(dates, progId){
+  var btn = document.getElementById('planConfirmBtn');
+  if(btn){ btn.disabled=true; btn.textContent='⏳…'; }
+  var promises = dates.map(function(dateStr){
+    return _fetchRetry(SUPA_URL_P+'/rest/v1/seances_planifiees', {
+      method:'POST', headers:_sbHeaders(),
+      body:JSON.stringify({patient_id:_progPatient.id, programme_id:progId, praticien_id:_progUid, date:dateStr})
+    }).then(function(r){
+      if(!r.ok) return r.json().then(function(d){ throw new Error(JSON.stringify(d)); });
+    });
+  });
+  Promise.all(promises)
+    .then(function(){
+      if(btn){ btn.disabled=false; btn.textContent='📅 Planifier'; }
+      closePlanModal();
+      _showToast('📅 Séance planifiée sur '+dates.length+' jour'+(dates.length>1?'s':'')+' !');
+      renderCalendar();
+    })
+    .catch(function(err){
+      if(btn){ btn.disabled=false; btn.textContent='📅 Planifier'; }
+      alert('Erreur planification : '+(err&&err.message||err));
+    });
+}
+
+// Fermer overlays sur clic extérieur
+document.getElementById('saveModal').addEventListener('click', function(e){ if(e.target===this) closeSaveSession(); });
+document.getElementById('templateSaveModal').addEventListener('click', function(e){ if(e.target===this) closeSaveTemplate(); });
+document.getElementById('groupCreateModal').addEventListener('click', function(e){ if(e.target===this) closeCreateGroup(); });
+document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeYtModal(); });
+document.getElementById('calPickerOverlay').addEventListener('click', function(e){ if(e.target===this) closeCalPicker(); });
+
+/* ================================================================
+   V2 — FONCTIONS SPÉCIFIQUES AU NOUVEAU LAYOUT
+   ================================================================ */
+
+// ── Topbar patient sync ──
+function _updatePatientUI(){
+  var nom = _progPatient ? ((_progPatient.prenom||'') + ' ' + (_progPatient.nom||'')).trim() : '';
+  // Topbar
+  var empty = document.getElementById('topbarPatientEmpty');
+  var name  = document.getElementById('topbarPatientName');
+  if(empty) empty.style.display = nom ? 'none' : 'inline';
+  if(name){ name.style.display = nom ? 'inline' : 'none'; name.textContent = '👤 ' + nom; }
+  // Elements fantômes (compat)
+  var badge = document.getElementById('patientBadge');
+  var badgeName = document.getElementById('patientBadgeName');
+  if(badge) badge.style.display = nom ? 'flex' : 'none';
+  if(badgeName) badgeName.textContent = nom;
+  var calLbl = document.getElementById('calPatientLabel');
+  if(calLbl) calLbl.textContent = nom ? '👤 ' + nom : '';
+  // Titre builder
+  _updateBuilderTitle();
+  // Sidebar templates (si pas en mode builder)
+  if(!document.querySelector('.app').classList.contains('builder-mode')){
+    renderSidebarTemplates();
+  }
+  // Cycles
+  if(_progPatient) setTimeout(function(){ if(typeof _loadCyclesForPatient==="function") _loadCyclesForPatient(); }, 0);
+  // Rafraîchir le calendrier pour le nouveau patient
+  if(typeof renderCalendar === 'function') renderCalendar();
+}
+
+// ══════════════════════════════════════════════
+//  TEMPLATES GLOBAUX (table `templates` Supabase)
+// ══════════════════════════════════════════════
+
+/* Catégories disponibles */
+var TMPL_CATEGORIES = [
+  { val:'Renforcement',   icon:'💪', color:'#DBEAFE', textColor:'#1D4ED8' },
+  { val:'Mobilité',       icon:'🧘', color:'#EDE9FE', textColor:'#6D28D9' },
+  { val:'Prépa physique', icon:'⚡', color:'#FEF3C7', textColor:'#B45309' },
+  { val:'Course à pied',  icon:'🏃', color:'#DCFCE7', textColor:'#15803D' },
+  { val:'Vélo',           icon:'🚴', color:'#D1FAE5', textColor:'#065F46' },
+  { val:'Natation',       icon:'🏊', color:'#CFFAFE', textColor:'#0E7490' },
+  { val:'Pathologie',     icon:'🩺', color:'#FEE2E2', textColor:'#B91C1C' },
+  { val:'Autre',          icon:'📁', color:'#F3F4F6', textColor:'var(--text-dk)' }
+];
+
+function _tmplCatStyle(cat){
+  var c = TMPL_CATEGORIES.find(function(x){ return x.val === cat; });
+  return c ? { bg: c.color, fg: c.textColor, icon: c.icon } : { bg:'#F3F4F6', fg:'var(--text-dk)', icon:'📁' };
+}
+
+/* Sous-types par catégorie (pour le champ Type dans le modal) */
+var TMPL_SUBTYPES = {
+  'Renforcement':   ['Force','Puissance','Hypertrophie','Endurance','Proprioception','Réathlétisation','Échauffement','Autre'],
+  'Mobilité':       ['CARs','Étirements','Auto-massage','Activation','Autre'],
+  'Prépa physique': ['Puissance','Vitesse','Endurance','Agilité','Pliométrie','Autre'],
+  'Course à pied':  ['Fond','Fractionné','Tempo','Récupération','Trail','Autre'],
+  'Vélo':           ['Endurance','Fractionné','Force','Récupération','Autre'],
+  'Natation':       ['Endurance','Vitesse','Technique','Récupération','Autre'],
+  'Pathologie':     ['Phase 1','Phase 2','Phase 3','Phase 4','Retour au sport','Autre'],
+  'Autre':          ['Autre']
+};
+
+var _templates        = [];
+var _tmplSelectedEmoji = '💪';
+var _builderFromTemplate = null;
+var _builderReadOnly = false; // true = template public d'un autre user chargé par lecteur
+var _tmplEditId = null; // null = création, sinon id du template à modifier
+
+function _applyBuilderReadOnly(readOnly){
+  _builderReadOnly = readOnly;
+  var panel = document.getElementById('builderPanel');
+  if(panel){
+    if(readOnly) panel.classList.add('r4p-readonly');
+    else panel.classList.remove('r4p-readonly');
+  }
+}
+
+function _loadTemplates(){
+  try { _templates = JSON.parse(localStorage.getItem(R4P_KEYS.TEMPLATES)||'[]'); } catch(e){ _templates=[]; }
+}
+function _persistTemplates(){
+  try { localStorage.setItem(R4P_KEYS.TEMPLATES, JSON.stringify(_templates)); } catch(e){}
+}
+
+/* ── Ouvrir modal sauvegarde template ── */
+/* Met à jour les sous-types et l'emoji suggéré selon la catégorie choisie */
+function _onTmplCatChange(){
+  var cat = document.getElementById('tmplCatInput').value;
+  // Suggérer l'emoji de la catégorie
+  var catInfo = TMPL_CATEGORIES.find(function(c){ return c.val === cat; });
+  if(catInfo){
+    _tmplSelectedEmoji = catInfo.icon;
+    document.querySelectorAll('#tmplEmojiRow .emoji-opt').forEach(function(b){
+      b.classList.toggle('selected', b.textContent === catInfo.icon);
+    });
+  }
+}
+
+function _openTmplModal(opts){
+  // opts = { nom, cat, emoji, groupId, phaseOrdre, editId }
+  _tmplEditId = opts.editId || null;
+  document.getElementById('tmplModalTitle').textContent = _tmplEditId ? '✏️ Modifier le template' : '📋 Sauvegarder comme template';
+  document.getElementById('tmplModalConfirmBtn').textContent = _tmplEditId ? '💾 Enregistrer les modifications' : '📋 Enregistrer le template';
+
+  // Emoji row
+  var row = document.getElementById('tmplEmojiRow');
+  _tmplSelectedEmoji = opts.emoji || '💪';
+  row.innerHTML = '';
+  SAVE_EMOJIS.forEach(function(em){
+    var b = document.createElement('button');
+    b.className = 'emoji-opt' + (em === _tmplSelectedEmoji ? ' selected' : '');
+    b.textContent = em;
+    b.onclick = function(){
+      _tmplSelectedEmoji = em;
+      document.querySelectorAll('#tmplEmojiRow .emoji-opt').forEach(function(x){ x.classList.remove('selected'); });
+      b.classList.add('selected');
+    };
+    row.appendChild(b);
+  });
+
+  document.getElementById('tmplNameInput').value = opts.nom || '';
+  document.getElementById('tmplCatInput').value  = opts.cat || '';
+  _onTmplCatChange();
+
+  // Protocoles
+  var grpSel = document.getElementById('tmplGroupInput');
+  var grpOpts = '<option value="">— Aucun —</option>';
+  (_groups||[]).forEach(function(g){
+    grpOpts += '<option value="'+escH(String(g.id))+'">'+escH(g.nom||'Sans nom')+'</option>';
+  });
+  grpSel.innerHTML = grpOpts;
+  grpSel.value = opts.groupId ? String(opts.groupId) : '';
+  var phWrap = document.getElementById('tmplPhaseWrap');
+  phWrap.style.display = opts.groupId ? 'block' : 'none';
+  document.getElementById('tmplPhaseOrdreInput').value = opts.phaseOrdre || '1';
+
+  // Mode simplifié (nouvelle phase dans un protocole actif) : auto-nommer
+  if(!_tmplEditId && opts._simplified && opts.groupId){
+    document.getElementById('tmplModalTitle').textContent = '📋 Nouvelle phase — '+escH(_activeGroupNom);
+    if(!document.getElementById('tmplNameInput').value){
+      document.getElementById('tmplNameInput').value = _activeGroupNom + ' — Phase ' + (opts.phaseOrdre||1);
+    }
+  }
+
+  setTimeout(function(){ document.getElementById('tmplNameInput').focus(); }, 100);
+  document.getElementById('templateSaveModal').classList.add('open');
+}
+
+function openEditTemplate(id){
+  if(!_progToken){
+    // local
+    _loadTemplates();
+    var t = _templates.find(function(x){ return String(x.id)===String(id); });
+    if(!t){ alert('Template introuvable.'); return; }
+    _openTmplModal({ editId:id, nom:t.nom, cat:t.categorie, type:t.type, emoji:t.emoji, groupId:t.group_id, phaseNom:t.phase_nom, phaseOrdre:t.phase_ordre });
+    return;
+  }
+  _fetchRetry(SUPA_URL_P+'/rest/v1/templates?id=eq.'+id+'&select=*', { headers:_sbHeaders() })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    if(!Array.isArray(data)||!data[0]){ alert('Template introuvable.'); return; }
+    var t = data[0];
+    _openTmplModal({ editId:id, nom:t.nom, cat:t.categorie, type:t.type, emoji:t.emoji, groupId:t.group_id, phaseNom:t.phase_nom, phaseOrdre:t.phase_ordre });
+  })
+  .catch(function(){ alert('Erreur réseau.'); });
+}
+
+function openSaveTemplate(){
+  if(!blocs.length){ alert('La séance est vide.'); return; }
+  if(_activeGroupId){
+    _openTmplModal({ emoji:_tmplSelectedEmoji, groupId:_activeGroupId, phaseOrdre:_activePhaseOrdre, _simplified:true });
+  } else {
+    _openTmplModal({ emoji: _tmplSelectedEmoji });
+  }
+}
+function closeSaveTemplate(){
+  document.getElementById('templateSaveModal').classList.remove('open');
+  _tmplEditId = null;
+}
+
+/* ── Enregistrer / Modifier le template ── */
+function doSaveTemplate(){
+  var cat        = document.getElementById('tmplCatInput').value;
+  var groupId    = document.getElementById('tmplGroupInput').value || (_activeGroupId ? String(_activeGroupId) : null);
+  var phaseOrdre = groupId ? (parseInt(document.getElementById('tmplPhaseOrdreInput').value)||1) : 0;
+  var nom = document.getElementById('tmplNameInput').value.trim();
+  if(!nom){ alert('Donnez un nom au template.'); return; }
+
+  if(_tmplEditId){
+    // ── Mode édition : PATCH sans toucher aux blocs ──
+    var id = _tmplEditId;
+    var patch = { nom:nom, categorie:cat, emoji:_tmplSelectedEmoji, group_id:groupId, phase_nom:'', phase_ordre:phaseOrdre };
+    if(_progToken && _progUid && !_isReader()){
+      _fetchRetry(SUPA_URL_P+'/rest/v1/templates?id=eq.'+id, {
+        method:'PATCH', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
+        body: JSON.stringify(patch)
+      }).then(function(r){
+        if(r.ok){ closeSaveTemplate(); renderTemplatesInBuilder(); renderSidebarTemplates(); _showToast('✏️ Template « '+nom+' » mis à jour !'); }
+        else { r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); }); }
+      }).catch(function(){ alert('Erreur réseau.'); });
+    } else {
+      _loadTemplates();
+      var t = _templates.find(function(x){ return String(x.id)===String(id); });
+      if(t){ t.nom=nom; t.categorie=cat; t.emoji=_tmplSelectedEmoji; t.group_id=groupId; t.phase_nom=''; t.phase_ordre=phaseOrdre; _persistTemplates(); }
+      closeSaveTemplate(); renderTemplatesInBuilder(); renderSidebarTemplates(); _showToast('✏️ Template « '+nom+' » mis à jour !');
+    }
+    return;
+  }
+
+  // ── Mode création ──
+  var donnees = JSON.stringify({ blocs: JSON.parse(JSON.stringify(blocs)) });
+  // Hériter is_public du groupe parent si celui-ci est déjà public
+  var parentGroupPublic = !!(groupId && (_groups||[]).find(function(g){ return String(g.id)===String(groupId) && g.is_public; }));
+  if(_progToken && _progUid && !_isReader()){
+    _fetchRetry(SUPA_URL_P + '/rest/v1/templates', {
+      method: 'POST',
+      headers: _sbHeaders(),
+      body: JSON.stringify({ praticien_id:_progUid, nom:nom, categorie:cat, emoji:_tmplSelectedEmoji, donnees:donnees, group_id:groupId, phase_nom:'', phase_ordre:phaseOrdre, is_public:parentGroupPublic })
+    }).then(function(r){
+      if(r.ok){
+        _draftClear();
+        closeSaveTemplate();
+        renderTemplatesInBuilder();
+        renderSidebarTemplates();
+        _showToast('📋 Template « ' + nom + ' » enregistré !');
+      } else {
+        r.json().then(function(d){ alert('Erreur : ' + JSON.stringify(d)); });
+      }
+    }).catch(function(){ alert('Erreur réseau.'); });
+  } else {
+    _loadTemplates();
+    _templates.unshift({
+      id:'_t'+Math.random().toString(36).slice(2,9),
+      nom:nom, categorie:cat, emoji:_tmplSelectedEmoji,
+      group_id:groupId||null, phase_nom:'', phase_ordre:phaseOrdre,
+      created_at:new Date().toISOString(),
+      _blocs:JSON.parse(JSON.stringify(blocs)),
+      _local:true
+    });
+    _persistTemplates();
+    _draftClear();
+    closeSaveTemplate();
+    renderTemplatesInBuilder();
+    renderSidebarTemplates();
+    _showToast('📋 Template « ' + nom + ' » enregistré !');
+  }
+}
+
+/* ── Bibliothèque 2 colonnes dans le bas du builder ── */
+var _selectedLibGroup  = null;
+var _libCatCollapsed   = (function(){
+  try { return JSON.parse(localStorage.getItem(R4P_KEYS.LIB_CAT_COLLAPSED)||'{}'); } catch(e){ return {}; }
+})();
+
+function _toggleLibCat(catKey){
+  _libCatCollapsed[catKey] = !_libCatCollapsed[catKey];
+  try { localStorage.setItem(R4P_KEYS.LIB_CAT_COLLAPSED, JSON.stringify(_libCatCollapsed)); } catch(e){}
+  _renderBuilderLibraryUI();
+}
+
+function renderBuilderLibrary(){
+  var area = document.getElementById('templatesBuilderArea');
+  if(!area || area.style.display === 'none') return;
+
+  if(_progToken && _progUid){
+    // Si aucune donnée en mémoire, charger d'abord
+    if(!_groups.length && !_sidebarProgs.length){
+      area.innerHTML = '<div style="padding:10px 14px;color:var(--muted);font-size:.77rem;">Chargement…</div>';
+      Promise.all([
+        _fetchRetry(SUPA_URL_P+'/rest/v1/template_groups?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&order=created_at.asc',{headers:_sbHeaders()}).then(function(r){ return r.ok?r.json():null; }),
+        _fetchRetry(SUPA_URL_P+'/rest/v1/templates?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&order=phase_ordre.asc,created_at.desc',{headers:_sbHeaders()}).then(function(r){ return r.ok?r.json():null; })
+      ]).then(function(res){
+        if(Array.isArray(res[0])) _groups=res[0];
+        if(Array.isArray(res[1])) _sidebarProgs=res[1];
+        _renderBuilderLibraryUI();
+      }).catch(function(){ _renderBuilderLibraryUI(); });
+      return;
+    }
+  } else {
+    _loadGroups(); _loadTemplates();
+    _sidebarProgs = _templates.map(function(t){
+      return {id:t.id, nom:t.nom, emoji:t.emoji, type:t.type, categorie:t.categorie||'',
+              group_id:t.group_id||null, phase_nom:t.phase_nom||'', phase_ordre:t.phase_ordre||0, donnees:t.donnees};
+    });
+  }
+  _renderBuilderLibraryUI();
+}
+
+function _renderBuilderLibraryUI(){
+  var area = document.getElementById('templatesBuilderArea');
+  if(!area) return;
+
+  var groups = _groups || [];
+  var progs  = _sidebarProgs || [];
+
+  // Templates sans protocole = groupe virtuel en fin de liste
+  var orphans = progs.filter(function(p){ return !p.group_id; });
+  var allGroups = groups.slice();
+  if(orphans.length) allGroups.push({id:'__orphan__', nom:'Sans protocole', categorie:'__orphan_cat__', _virtual:true});
+
+  if(!allGroups.length){
+    area.innerHTML = '<div style="padding:18px 14px;color:var(--muted);font-size:.77rem;font-style:italic;text-align:center;">'
+      +'Aucun protocole.<br><span style="font-size:.7rem;">Créez un protocole dans la barre latérale pour commencer.</span></div>';
+    return;
+  }
+
+  // Sélection automatique du premier groupe si besoin
+  if(!_selectedLibGroup || !allGroups.find(function(g){ return String(g.id)===String(_selectedLibGroup); })){
+    _selectedLibGroup = allGroups[0].id;
+  }
+
+  // ── Colonne gauche : grouper par catégorie ──────────────────────────────
+  var catOrder = TMPL_CATEGORIES.map(function(c){ return c.val; });
+  // Construire map catégorie → groupes
+  var catsMap = {};
+  allGroups.forEach(function(g){
+    var cat = g._virtual ? '__orphan_cat__' : (g.categorie||'');
+    if(!catsMap[cat]) catsMap[cat] = [];
+    catsMap[cat].push(g);
+  });
+  // Trier les catégories selon TMPL_CATEGORIES, inconnues après, orphelin en dernier
+  var allCatKeys = Object.keys(catsMap).sort(function(a,b){
+    if(a==='__orphan_cat__') return 1;
+    if(b==='__orphan_cat__') return -1;
+    var ia = catOrder.indexOf(a), ib = catOrder.indexOf(b);
+    if(ia===-1&&ib===-1) return a.localeCompare(b);
+    if(ia===-1) return 1; if(ib===-1) return -1;
+    return ia-ib;
+  });
+
+  var leftHtml = '';
+  allCatKeys.forEach(function(catKey){
+    var catGroups = catsMap[catKey];
+    var catInfo = TMPL_CATEGORIES.find(function(c){ return c.val===catKey; })
+                || { icon:'📁', color:'#F3F4F6', textColor:'var(--text-dk)' };
+    var catLabel = catKey==='__orphan_cat__' ? 'Sans protocole' : (catKey||'Sans catégorie');
+    var isCollapsed = !!_libCatCollapsed[catKey]; // ouvert par défaut
+
+    leftHtml += '<div class="blib-cat-hdr" onclick="_toggleLibCat(\''+escJS(catKey)+'\')" style="background:'+catInfo.color+'30;">';
+    leftHtml += '<span class="blib-cat-icon">'+catInfo.icon+'</span>';
+    leftHtml += '<span class="blib-cat-label" style="color:'+catInfo.textColor+';">'+escH(catLabel)+'</span>';
+    leftHtml += '<span class="blib-cat-cnt">'+catGroups.length+'</span>';
+    leftHtml += '<span class="blib-cat-arrow">'+(isCollapsed?'▶':'▼')+'</span>';
+    leftHtml += '</div>';
+
+    if(!isCollapsed){
+      catGroups.forEach(function(g){
+        var gid = String(g.id);
+        var isActive = String(_selectedLibGroup)===gid;
+        var count = gid==='__orphan__' ? orphans.length
+                  : progs.filter(function(p){ return String(p.group_id)===gid; }).length;
+        leftHtml += '<div class="builder-lib-group'+(isActive?' active':'')+'" onclick="_selectLibGroup(\''+escJS(gid)+'\')" title="'+escH(g.nom||'')+'">'
+          +'<span class="builder-lib-gname">'+escH(g.nom||'Sans nom')+'</span>'
+          +'<span class="builder-lib-gcnt">'+count+'</span>'
+          +'</div>';
+      });
+    }
+  });
+
+  // ── Colonne droite : séances du protocole sélectionné ──────────────────
+  var phases = (String(_selectedLibGroup)==='__orphan__' ? orphans
+    : progs.filter(function(p){ return String(p.group_id)===String(_selectedLibGroup); }))
+    .slice().sort(function(a,b){ return (a.phase_ordre||0)-(b.phase_ordre||0); });
+
+  var rightHtml;
+  if(!phases.length){
+    rightHtml = '<div style="padding:18px 10px;color:var(--muted);font-size:.74rem;font-style:italic;text-align:center;">Aucune séance dans ce protocole.</div>';
+  } else {
+    rightHtml = phases.map(function(p){
+      var pid = escH(String(p.id));
+      var nbExos = 0;
+      try{ nbExos=(JSON.parse(p.donnees||'{}').blocs||[]).reduce(function(a,b){ return a+(b.exos||[]).length; },0); }catch(e){}
+      var meta = [];
+      if(p.phase_nom) meta.push(escH(p.phase_nom));
+      if(p.type)      meta.push(escH(p.type));
+      if(nbExos)      meta.push(nbExos+' exo'+(nbExos>1?'s':''));
+      return '<div class="builder-lib-session">'
+        +'<span style="font-size:1.05rem;flex-shrink:0;">'+(p.emoji||'💪')+'</span>'
+        +'<div style="flex:1;min-width:0;">'
+        +'<div class="builder-lib-sname">'+escH(p.nom||'Sans nom')+'</div>'
+        +(meta.length?'<div class="builder-lib-smeta">'+meta.join(' · ')+'</div>':'')
+        +'</div>'
+        +'<button class="builder-lib-load" onclick="loadTemplate(\''+pid+'\');_enterBuilderMode();">Charger</button>'
+        +'</div>';
+    }).join('');
+  }
+
+  area.innerHTML = '<div class="builder-lib-left">'+leftHtml+'</div>'
+                 +'<div class="builder-lib-right">'+rightHtml+'</div>';
+}
+
+function _selectLibGroup(gid){
+  _selectedLibGroup = gid;
+  _renderBuilderLibraryUI();
+}
+
+/* ── Aliases rétrocompatibilité ── */
+function renderTemplatesInBuilder(){ renderBuilderLibrary(); }
+function renderLibraryTemplates()  { renderBuilderLibrary(); }
+function switchTmplTab()           { renderBuilderLibrary(); }
+
+/* ══════════════════════════════════════════════════════════
+   SIDEBAR PICKER — onglet Templates dans le builder
+   ══════════════════════════════════════════════════════════ */
+var _sbPickerSearch = '';
+
+function _switchSidebarTab(tab){
+  var lib    = document.getElementById('sb-tab-lib');
+  var picker = document.getElementById('sb-tab-picker');
+  var btnLib = document.getElementById('sb-tab-btn-lib');
+  var btnPick= document.getElementById('sb-tab-btn-picker');
+  if(tab === 'picker'){
+    if(lib)    lib.style.display    = 'none';
+    if(picker) picker.style.display = 'flex';
+    if(btnLib)  btnLib.classList.remove('active');
+    if(btnPick) btnPick.classList.add('active');
+    _renderSidebarPicker();
+  } else {
+    if(lib)    lib.style.display    = 'flex';
+    if(picker) picker.style.display = 'none';
+    if(btnLib)  btnLib.classList.add('active');
+    if(btnPick) btnPick.classList.remove('active');
+    // S'assurer que la bibliothèque est peuplée
+    var si = document.getElementById('searchInput');
+    if(typeof renderLib === 'function') renderLib(si ? si.value.toLowerCase() : '');
+  }
+}
+
+function _pickerFilter(val){
+  _sbPickerSearch = (val||'').trim();
+  _renderSidebarPicker();
+}
+
+function _renderSidebarPicker(){
+  var scroll = document.getElementById('sb-picker-scroll');
+  if(!scroll) return;
+  var search = _sbPickerSearch.toLowerCase();
+  var groups  = _groups || [];
+  var progs   = _sidebarProgs || [];
+
+  /* Données pas encore chargées → déclencher le chargement */
+  if(!groups.length && !progs.length && _progToken && _progUid){
+    scroll.innerHTML = '<div class="picker-empty">Chargement…</div>';
+    Promise.all([
+      _fetchRetry(SUPA_URL_P+'/rest/v1/template_groups?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&order=created_at.asc',{headers:_sbHeaders()}).then(function(r){return r.ok?r.json():[];}),
+      _fetchRetry(SUPA_URL_P+'/rest/v1/templates?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&order=phase_ordre.asc,created_at.desc',{headers:_sbHeaders()}).then(function(r){return r.ok?r.json():[];})
+    ]).then(function(res){
+      if(Array.isArray(res[0])) _groups = res[0];
+      if(Array.isArray(res[1])) _sidebarProgs = res[1];
+      _renderSidebarPicker();
+    }).catch(function(){ scroll.innerHTML = '<div class="picker-empty">Erreur de chargement.</div>'; });
+    return;
+  }
+
+  /* ── Rendu ── */
+  var html = '';
+  var catOrder = (typeof TMPL_CATEGORIES!=='undefined') ? TMPL_CATEGORIES.map(function(c){return c.val;}) : [];
+  /* Calcul des exercices déjà dans le builder */
+  var addedLibIds = {};
+  (blocs||[]).forEach(function(b){ (b.exos||[]).forEach(function(e){ if(e.libId) addedLibIds[e.libId]=true; }); });
+
+  /* ── Section Favoris ── */
+  var pickerFavSet = _getPickerFavs();
+  if(pickerFavSet.size > 0 && !search){
+    var favProgs = progs.filter(function(p){ return pickerFavSet.has(String(p.id)); });
+    if(favProgs.length){
+      html += '<div class="picker-favs-section">';
+      html += '<div class="picker-favs-label">⭐ Favoris</div>';
+      favProgs.forEach(function(p){ html += _pickerRenderTemplate(p, search, addedLibIds); });
+      html += '</div>';
+    }
+  }
+
+  /* Grouper par catégorie */
+  var catsMap = {};
+  groups.forEach(function(g){
+    var cat = g.categorie||'';
+    if(!catsMap[cat]) catsMap[cat]=[];
+    catsMap[cat].push(g);
+  });
+
+  /* Filtrer les entrées techniques */
+  progs = progs.filter(function(p){ return (p.nom||'') !== '__r4p_protocols_meta__'; });
+  /* Templates sans groupe */
+  var orphans = progs.filter(function(p){return !p.group_id;});
+
+  var catKeys = Object.keys(catsMap).sort(function(a,b){
+    var ia=catOrder.indexOf(a), ib=catOrder.indexOf(b);
+    if(ia===-1&&ib===-1) return a.localeCompare(b);
+    if(ia===-1) return 1; if(ib===-1) return -1;
+    return ia-ib;
+  });
+
+  catKeys.forEach(function(catKey){
+    var catGroups = catsMap[catKey];
+    var catInfo = (typeof TMPL_CATEGORIES!=='undefined') ? TMPL_CATEGORIES.find(function(c){return c.val===catKey;}) : null;
+    var catLabel = catInfo ? (catInfo.icon+' '+catKey) : (catKey||'Autre');
+
+    /* Filtrer groupes avec contenu */
+    var visible = catGroups.filter(function(g){
+      var gProgs = progs.filter(function(p){return String(p.group_id)===String(g.id);});
+      return search ? gProgs.some(function(p){return _pickerProgMatches(p,search);}) : gProgs.length>0;
+    });
+    if(!visible.length) return;
+
+    html += '<div class="picker-cat-label">'+escH(catLabel)+'</div>';
+    visible.forEach(function(g){
+      var gProgs = progs.filter(function(p){return String(p.group_id)===String(g.id);});
+      if(search) gProgs = gProgs.filter(function(p){return _pickerProgMatches(p,search);});
+      if(!gProgs.length) return;
+      var gid = 'pg-'+String(g.id).replace(/[^a-z0-9]/gi,'');
+      html += '<div class="picker-group" id="'+gid+'">';
+      html += '<div class="picker-group-hdr" onclick="_pickerToggle(\''+gid+'\')">';
+      html += '<span class="picker-group-name">'+escH(g.nom)+'</span>';
+      html += '<span class="picker-chevron">›</span></div>';
+      html += '<div class="picker-group-body">';
+      if(gProgs.length > 1) html += '<button class="picker-add-all-phases" onclick="_addAllPhasesFromGroup(\''+escJS(String(g.id))+'\')">+ Toutes les phases ('+gProgs.length+')</button>';
+      gProgs.forEach(function(p){ html += _pickerRenderTemplate(p, search, addedLibIds); });
+      html += '</div></div>';
+    });
+  });
+
+  /* Orphelins */
+  if(orphans.length){
+    var visOrph = search ? orphans.filter(function(p){return _pickerProgMatches(p,search);}) : orphans;
+    if(visOrph.length){
+      html += '<div class="picker-cat-label">📁 Sans protocole</div>';
+      visOrph.forEach(function(p){ html += _pickerRenderTemplate(p, search, addedLibIds); });
+    }
+  }
+
+  if(!html) html = '<div class="picker-empty">'+(search?'Aucun résultat pour « '+escH(_sbPickerSearch)+' »':'Aucun template disponible.')+'</div>';
+  scroll.innerHTML = html;
+
+  /* Auto-dépliage si recherche active */
+  if(search){
+    scroll.querySelectorAll('.picker-group,.picker-tmpl,.picker-bloc').forEach(function(el){el.classList.add('open');});
+  }
+}
+
+function _pickerRenderTemplate(p, search, addedLibIds){
+  var pid = 'pt-'+String(p.id).replace(/[^a-z0-9]/gi,'');
+  var donnees = p.donnees;
+  if(typeof donnees==='string'){ try{donnees=JSON.parse(donnees);}catch(e){donnees=null;} }
+  var srcBlocs = (donnees&&donnees.blocs)||[];
+  addedLibIds = addedLibIds || {};
+
+  var isFavPicker = _getPickerFavs().has(String(p.id));
+  var h = '<div class="picker-tmpl" id="'+pid+'">';
+  var totalExos = srcBlocs.reduce(function(a,b){ return a+(b.exos||[]).length; },0);
+  h += '<div class="picker-tmpl-hdr" onclick="_pickerToggle(\''+pid+'\')">';
+  h += '<span>'+escH(p.emoji||'📋')+'</span>';
+  h += '<span class="picker-tmpl-name">'+escH(p.nom)+'</span>';
+  if(totalExos) h += '<span style="font-size:.63rem;color:rgba(255,255,255,.38);flex-shrink:0;margin-left:2px;">'+totalExos+' ex.</span>';
+  h += '<button class="picker-fav-btn'+(isFavPicker?' active':'')+'" onclick="event.stopPropagation();_togglePickerFav(\''+escJS(String(p.id))+'\')" title="Épingler en favoris">★</button>';
+  h += '<button class="picker-load-btn" onclick="event.stopPropagation();loadTemplate(\''+escJS(String(p.id))+'\');_enterBuilderMode();" title="Charger cette séance dans le builder">⤓</button>';
+  h += '<span class="picker-chevron">›</span></div>';
+  h += '<div class="picker-tmpl-body">';
+
+  if(!srcBlocs.length){
+    h += '<div style="padding:5px 10px 5px 28px;font-size:.7rem;color:rgba(255,255,255,.3);font-style:italic;">Aucun exercice</div>';
+  } else {
+    h += '<button class="picker-add-all" onclick="_addAllBlocsFromTemplate(\''+p.id+'\')">+ Ajouter tous les blocs</button>';
+    srcBlocs.forEach(function(bloc, bi){
+      if(bloc.type==='cardio'){
+        h += '<div class="picker-exo-row">';
+        h += '<span class="picker-exo-name" title="'+escH(bloc.title||'Cardio')+'" onclick="_pickerToggleWrap(this)">🏃 '+escH(bloc.title||'Cardio')+'</span>';
+        h += '<button class="picker-plus" onclick="_addBlocFromPicker(\''+p.id+'\','+bi+')" title="Ajouter ce bloc">+</button>';
+        h += '</div>';
+      } else {
+        var bid = 'pb-'+String(p.id).replace(/[^a-z0-9]/gi,'')+'-'+bi;
+        h += '<div class="picker-bloc" id="'+bid+'">';
+        var nbExBloc = (bloc.exos||[]).length;
+        h += '<div class="picker-bloc-hdr" onclick="_pickerToggle(\''+bid+'\')">';
+        h += '<span class="picker-chevron">›</span>';
+        h += '<span class="picker-bloc-title">'+escH(bloc.title||'Bloc')+'</span>';
+        if(nbExBloc) h += '<span style="font-size:.62rem;color:rgba(255,255,255,.35);flex-shrink:0;margin-left:2px;">'+nbExBloc+'</span>';
+        h += '<button class="picker-plus" onclick="event.stopPropagation();_addBlocFromPicker(\''+p.id+'\','+bi+')" title="Ajouter tout le bloc">+</button>';
+        h += '</div>';
+        var exosAdded = (bloc.exos||[]).filter(function(e){ return e.libId && addedLibIds[e.libId]; }).length;
+        var allDone   = (bloc.exos||[]).length > 0 && exosAdded === (bloc.exos||[]).length;
+        h += '<div class="picker-bloc-body">';
+        (bloc.exos||[]).forEach(function(exo,ei){
+          var _pkThumb = exo.url ? _ytThumbHtml(exo.url) : null;
+          var isAdded  = !!(exo.libId && addedLibIds[exo.libId]);
+          var dattr    = exo.libId ? ' data-libid="'+escH(exo.libId)+'"' : '';
+          h += '<div class="picker-exo-row'+(isAdded?' pex-added':'')+'"'+dattr+'>';
+          if(_pkThumb) h += _pkThumb;
+          h += '<span class="picker-exo-name" title="'+escH(exo.name||'Exercice')+'" onclick="_pickerToggleWrap(this)">'+(exo.url?'<span style="color:#F97316;font-size:.6rem;margin-right:3px;flex-shrink:0;">▶</span>':'')+escH(exo.name||'Exercice')+'</span>';
+          h += '<button class="picker-plus" onclick="_addExoFromPicker(\''+p.id+'\','+bi+','+ei+')" title="Ajouter">+</button>';
+          h += '</div>';
+        });
+        if(allDone) h = h.replace('<div class="picker-bloc" id="'+bid+'">', '<div class="picker-bloc pbloc-done" id="'+bid+'">');
+        h += '</div></div>';
+      }
+    });
+  }
+  h += '</div></div>';
+  return h;
+}
+
+function _pickerProgMatches(p, search){
+  if(!search) return true;
+  if((p.nom||'').toLowerCase().indexOf(search)>-1) return true;
+  var donnees = p.donnees;
+  if(typeof donnees==='string'){try{donnees=JSON.parse(donnees);}catch(e){donnees=null;}}
+  if(!donnees||!donnees.blocs) return false;
+  return donnees.blocs.some(function(b){
+    if((b.title||'').toLowerCase().indexOf(search)>-1) return true;
+    return (b.exos||[]).some(function(e){return (e.name||'').toLowerCase().indexOf(search)>-1;});
+  });
+}
+
+function _pickerToggle(id){
+  var el = document.getElementById(id);
+  if(el) el.classList.toggle('open');
+}
+function _pickerToggleWrap(el){
+  el.classList.toggle('expanded');
+}
+
+/* Ajouter un exercice unique dans le bloc actif */
+function _addExoFromPicker(tmplId, blocIdx, exoIdx){
+  var p = (_sidebarProgs||[]).find(function(x){return String(x.id)===String(tmplId);});
+  if(!p) return;
+  var donnees = p.donnees;
+  if(typeof donnees==='string'){try{donnees=JSON.parse(donnees);}catch(e){donnees=null;}}
+  var srcBloc = donnees&&donnees.blocs&&donnees.blocs[blocIdx];
+  if(!srcBloc) return;
+  var srcExo = srcBloc.exos&&srcBloc.exos[exoIdx];
+  if(!srcExo) return;
+
+  if(!blocs.length) addBloc();
+  var sel = document.getElementById('target-bloc-select');
+  var targetId = (sel&&sel.value) || activeBloc || (blocs.length&&blocs[blocs.length-1].id);
+  var bloc = blocs.find(function(b){return b.id===targetId;}) || blocs[blocs.length-1];
+  if(!bloc) return;
+
+  var newExo = JSON.parse(JSON.stringify(srcExo));
+  newExo.id = genId();
+  bloc.exos.push(newExo);
+  activeBloc = bloc.id;
+  renderSession();
+  _pickerRefreshAddedState();
+  _showToast('✚ '+escH(srcExo.name||'Exercice')+' ajouté');
+  var el = document.getElementById('bloc-'+bloc.id);
+  if(el) el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+/* Ajouter un bloc entier (clone) */
+function _addBlocFromPicker(tmplId, blocIdx){
+  var p = (_sidebarProgs||[]).find(function(x){return String(x.id)===String(tmplId);});
+  if(!p) return;
+  var donnees = p.donnees;
+  if(typeof donnees==='string'){try{donnees=JSON.parse(donnees);}catch(e){donnees=null;}}
+  var srcBloc = donnees&&donnees.blocs&&donnees.blocs[blocIdx];
+  if(!srcBloc) return;
+
+  var newBloc = JSON.parse(JSON.stringify(srcBloc));
+  newBloc.id = genId();
+  newBloc.exos = (newBloc.exos||[]).map(function(e){return Object.assign({},e,{id:genId()});});
+  blocs.push(newBloc);
+  activeBloc = newBloc.id;
+  renderSession();
+  _pickerRefreshAddedState();
+  _showToast('✚ Bloc « '+escH(newBloc.title||'Bloc')+' » ajouté');
+  var el = document.getElementById('bloc-'+newBloc.id);
+  if(el) el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+/* ── Favoris picker (templates épinglés) ── */
+function _getPickerFavs(){
+  try{ return new Set(JSON.parse(localStorage.getItem(R4P_KEYS.PICKER_FAVS)||'[]')); }
+  catch(e){ return new Set(); }
+}
+function _togglePickerFav(id){
+  var favs = _getPickerFavs();
+  if(favs.has(String(id))) favs.delete(String(id)); else favs.add(String(id));
+  localStorage.setItem(R4P_KEYS.PICKER_FAVS, JSON.stringify(Array.from(favs)));
+  /* Mettre à jour le bouton immédiatement + re-render la section favoris */
+  var btn = document.querySelector('.picker-fav-btn[onclick*="'+id+'"]');
+  if(btn) btn.classList.toggle('active', favs.has(String(id)));
+  _renderSidebarPicker();
+}
+
+/* ── Helpers état "déjà ajouté" ── */
+function _getAddedLibIds(){
+  var ids = {};
+  (blocs||[]).forEach(function(b){ (b.exos||[]).forEach(function(e){ if(e.libId) ids[e.libId]=true; }); });
+  return ids;
+}
+
+function _pickerRefreshAddedState(){
+  var scroll = document.getElementById('sb-picker-scroll');
+  if(!scroll) return;
+  var ids = _getAddedLibIds();
+  scroll.querySelectorAll('.picker-exo-row[data-libid]').forEach(function(row){
+    row.classList.toggle('pex-added', !!ids[row.dataset.libid]);
+  });
+  scroll.querySelectorAll('.picker-bloc').forEach(function(bloc){
+    var rows = bloc.querySelectorAll('.picker-exo-row[data-libid]');
+    if(!rows.length) return;
+    var allDone = Array.prototype.every.call(rows, function(r){ return r.classList.contains('pex-added'); });
+    bloc.classList.toggle('pbloc-done', allDone);
+  });
+}
+
+/* Ajouter toutes les phases d'un protocole */
+function _addAllPhasesFromGroup(groupId){
+  var phases = (_sidebarProgs||[]).filter(function(p){ return String(p.group_id)===String(groupId) && (p.nom||'')!=='__r4p_protocols_meta__'; });
+  phases.sort(function(a,b){ return (a.phase_ordre||0)-(b.phase_ordre||0); });
+  var total = 0;
+  phases.forEach(function(p){
+    var donnees = p.donnees;
+    if(typeof donnees==='string'){try{donnees=JSON.parse(donnees);}catch(e){donnees=null;}}
+    if(!donnees||!donnees.blocs) return;
+    donnees.blocs.forEach(function(srcBloc){
+      var newBloc = JSON.parse(JSON.stringify(srcBloc));
+      newBloc.id = genId();
+      newBloc.exos = (newBloc.exos||[]).map(function(e){return Object.assign({},e,{id:genId()});});
+      blocs.push(newBloc);
+      activeBloc = newBloc.id;
+      total++;
+    });
+  });
+  if(total){ renderSession(); _showToast('✚ '+total+' blocs ajoutés ('+phases.length+' phases)'); _pickerRefreshAddedState(); }
+}
+
+/* Ajouter tous les blocs d'un template */
+function _addAllBlocsFromTemplate(tmplId){
+  var p = (_sidebarProgs||[]).find(function(x){return String(x.id)===String(tmplId);});
+  if(!p) return;
+  var donnees = p.donnees;
+  if(typeof donnees==='string'){try{donnees=JSON.parse(donnees);}catch(e){donnees=null;}}
+  if(!donnees||!donnees.blocs||!donnees.blocs.length) return;
+  donnees.blocs.forEach(function(srcBloc){
+    var newBloc = JSON.parse(JSON.stringify(srcBloc));
+    newBloc.id = genId();
+    newBloc.exos = (newBloc.exos||[]).map(function(e){return Object.assign({},e,{id:genId()});});
+    blocs.push(newBloc);
+    activeBloc = newBloc.id;
+  });
+  renderSession();
+  _pickerRefreshAddedState();
+  _showToast('✚ '+donnees.blocs.length+' blocs ajoutés');
+}
+
+/* ── Publier un template dans la bibliothèque ── */
+var _pubTmplData = null; // template en cours de publication
+
+function openPublishModal(id){
+  if(!_progToken||!_progUid){ alert('Connexion requise.'); return; }
+  // Chercher le template dans la liste déjà chargée ou via fetch
+  _fetchRetry(SUPA_URL_P+'/rest/v1/templates?id=eq.'+id+'&select=*', { headers:_sbHeaders() })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    if(!Array.isArray(data)||!data[0]){ alert('Template introuvable.'); return; }
+    _pubTmplData = data[0];
+    document.getElementById('pubTmplName').textContent = (_pubTmplData.emoji||'📋')+' '+(_pubTmplData.nom||'Sans nom');
+    document.getElementById('pubDescInput').value = _pubTmplData.description||'';
+    document.getElementById('pubLibModal').classList.add('open');
+    setTimeout(function(){ document.getElementById('pubDescInput').focus(); }, 100);
+  })
+  .catch(function(err){ alert('Erreur : '+(err&&err.message||err)); });
+}
+
+function closePublishModal(){
+  document.getElementById('pubLibModal').classList.remove('open');
+  _pubTmplData = null;
+}
+
+function doPublishTemplate(){
+  if(!_pubTmplData||!_progToken||!_progUid){ closePublishModal(); return; }
+  var desc = document.getElementById('pubDescInput').value.trim();
+  var payload = {
+    nom:          _pubTmplData.nom||'Sans nom',
+    donnees:      _pubTmplData.donnees||'{}',
+    type:         _pubTmplData.type||null,
+    emoji:        _pubTmplData.emoji||'💪',
+    categorie:    _pubTmplData.categorie||null,
+    description:  desc||null,
+    published_by: _progUid
+  };
+  var btn = document.querySelector('#pubLibModal .btn-primary');
+  if(btn){ btn.disabled=true; btn.textContent='⏳ Publication…'; }
+  _fetchRetry(SUPA_URL_P+'/rest/v1/templates_library', {
+    method:'POST',
+    headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
+    body: JSON.stringify(payload)
+  })
+  .then(function(r){
+    if(btn){ btn.disabled=false; btn.textContent='📚 Publier'; }
+    if(r.ok||r.status===201){
+      closePublishModal();
+      _showToast('📚 Template publié dans la bibliothèque !');
+      // Rafraîchir la bibliothèque
+      renderBuilderLibrary();
+    } else {
+      r.text().then(function(t){ alert('Erreur '+r.status+' : '+t); });
+    }
+  })
+  .catch(function(err){
+    if(btn){ btn.disabled=false; btn.textContent='📚 Publier'; }
+    alert('Erreur réseau : '+(err&&err.message||err));
+  });
+}
+
+function unpublishLibTemplate(id){
+  if(!confirm('Retirer ce template de la bibliothèque partagée ?')) return;
+  _fetchRetry(SUPA_URL_P+'/rest/v1/templates_library?id=eq.'+id, {
+    method:'DELETE',
+    headers: _sbHeaders()
+  })
+  .then(function(r){
+    if(r.ok||r.status===204){
+      _showToast('🗑 Template retiré de la bibliothèque.');
+      renderLibraryTemplates();
+    } else {
+      r.text().then(function(t){ alert('Erreur '+r.status+' : '+t); });
+    }
+  })
+  .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
+}
+
+function loadLibraryTemplate(id){
+  if(!_progToken){ alert('Connexion requise.'); return; }
+  _fetchRetry(SUPA_URL_P+'/rest/v1/templates_library?id=eq.'+id+'&select=*', { headers:_sbHeaders() })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    if(!Array.isArray(data)||!data[0]){ alert('Template introuvable.'); return; }
+    var t = data[0];
+    var d = {};
+    try { d = JSON.parse(t.donnees||'{}'); } catch(e){}
+    blocs = d.blocs ? JSON.parse(JSON.stringify(d.blocs)) : [];
+    activeBloc = blocs.length ? blocs[0].id : null;
+    _notes = '';
+    _currentProgId = null;
+    _builderFromTemplate = null; // lecture seule — save créera un nouveau programme
+    _applyBuilderReadOnly(false);
+    renderSession();
+    _updateBuilderTitle();
+    _refreshSaveBtn();
+    var pn = document.getElementById('patientName');
+    if(pn && !pn.value) pn.value = t.nom||'';
+    _showToast('🌐 « '+escH(t.nom||'Template')+' » chargé depuis la bibliothèque');
+  })
+  .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
+}
+
+/* ── Charger un template dans le builder ── */
+// ══════════════════════════════════════════════
+//  AUTO-SAVE BROUILLON BUILDER (localStorage)
+// ══════════════════════════════════════════════
+var _DRAFT_KEY     = 'r4p-builder-draft';
+var _builderSaved  = true; // devient false dès qu'on modifie sans sauvegarder
+var _lastSavedHash = ''; // empreinte du contenu au dernier save
+var _draftSaveTimer = null; // timer debounce
+
+// Version debouncée : appelée depuis les updateField/updateCible/notes
+// pour ne pas spammer localStorage à chaque frappe
+function _draftSaveLazy(){
+  if(_draftSaveTimer) clearTimeout(_draftSaveTimer);
+  // Badge immédiat (feedback visuel instantané)
+  _builderSaved = (_sessionHash() === _lastSavedHash);
+  _refreshDraftBadge();
+  // Écriture différée dans localStorage (600ms après la dernière frappe)
+  _draftSaveTimer = setTimeout(function(){ _draftSave(); }, 600);
+}
+
+// Empreinte légère du contenu pour détecter les vrais changements
+function _sessionHash(){
+  try {
+    return JSON.stringify({
+      notes: _notes||'',
+      blocs: (blocs||[]).map(function(b){
+        return { id:b.id, title:b.title, objectif:b.objectif, methode:b.methode,
+          exos:(b.exos||[]).map(function(e){
+            return {id:e.id, name:e.name, reps:e.reps, series:e.series,
+                    duree:e.duree, recup:e.recup, tempo:e.tempo,
+                    cibles:e.cibles, chained:e.chained, consigne:e.consigne||'', nrs:e.nrs||null};
+          })
+        };
+      })
+    });
+  } catch(e){ return ''; }
+}
+
+function _draftSave(){
+  // Ne sauve que si le builder est ouvert et contient du contenu
+  var panel = document.getElementById('builderPanel');
+  if(!panel || !panel.classList.contains('open')) return;
+  if(!blocs || !blocs.length){ _draftClear(); return; }
+  try {
+    var currentHash = _sessionHash();
+    // Si le contenu n'a pas changé depuis le dernier save → pas de badge
+    _builderSaved = (currentHash === _lastSavedHash);
+    localStorage.setItem(_DRAFT_KEY, JSON.stringify({
+      blocs:        JSON.parse(JSON.stringify(blocs)),
+      notes:        _notes || '',
+      patientName:  (document.getElementById('patientName')||{}).value || '',
+      activeGroupId:    _activeGroupId    || null,
+      activeGroupNom:   _activeGroupNom   || '',
+      activePhaseOrdre: _activePhaseOrdre || 1,
+      savedAt: new Date().toISOString()
+    }));
+    _refreshDraftBadge();
+  } catch(e){}
+}
+
+function _draftClear(){
+  try { localStorage.removeItem(_DRAFT_KEY); } catch(e){}
+  _lastSavedHash = _sessionHash(); // mémorise l'état actuel comme "sauvegardé"
+  _builderSaved = true;
+  _refreshDraftBadge();
+}
+
+function _draftRestore(){
+  // Proposer de restaurer uniquement si le builder est vide à l'ouverture
+  if(blocs && blocs.length) return;
+  try {
+    var raw = localStorage.getItem(_DRAFT_KEY);
+    if(!raw) return;
+    var d = JSON.parse(raw);
+    if(!d || !d.blocs || !d.blocs.length) return;
+    // Vérification de contexte : ne proposer la restauration que si on est dans le même protocole
+    if(d.activeGroupId && d.activeGroupId !== _activeGroupId) return;
+    if(!d.activeGroupId && _activeGroupId) return;
+    var nbExos = (d.blocs||[]).reduce(function(a,b){ return a+(b.exos||[]).length; },0);
+    var ago = '';
+    if(d.savedAt){ var t=new Date(d.savedAt); ago=' — '+t.toLocaleDateString('fr-FR')+' '+t.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); }
+    var msg = '📋 Brouillon non sauvegardé trouvé (' + nbExos + ' exercice'+(nbExos>1?'s':'')+ago+')';
+    if(d.activeGroupNom) msg += '\nProtocole : « ' + d.activeGroupNom + ' »';
+    msg += '\n\nRestaurer ce contenu ?';
+    if(!confirm(msg)) return;
+    blocs = d.blocs;
+    _notes = d.notes || '';
+    if(d.activeGroupId){
+      _activeGroupId    = d.activeGroupId;
+      _activeGroupNom   = d.activeGroupNom   || '';
+      _activePhaseOrdre = d.activePhaseOrdre || 1;
+      _updateActiveGroupBadge();
+    }
+    var pn = document.getElementById('patientName');
+    if(pn && d.patientName) pn.value = d.patientName;
+    renderSession();
+    _refreshSaveBtn();
+    _builderSaved = false;
+    _refreshDraftBadge();
+    _showToast('📋 Brouillon restauré — pensez à sauvegarder !');
+  } catch(e){}
+}
+
+function _refreshDraftBadge(){
+  var el = document.getElementById('builderDraftBadge');
+  if(!el) return;
+  if(!_builderSaved && blocs && blocs.length){
+    el.style.display = 'inline-block';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+// ── Bouton save contextuel ───────────────────────────────────────────────────
+/* ── Destination de sauvegarde ── */
+function openSaveDest(){
+  if(!blocs || !blocs.length){ alert('La séance est vide.'); return; }
+  // Hint contextuel
+  var hint = '';
+  if(_activeGroupId){
+    hint = 'Protocole actif : « ' + (_activeGroupNom||'') + ' »';
+  } else if(_builderFromTemplate){
+    var _tCur = (_sidebarProgs||[]).find(function(x){ return String(x.id)===String(_builderFromTemplate); });
+    if(_tCur) hint = 'Template chargé : « ' + (_tCur.nom||'Template') + ' »';
+  } else if(_progPatient){
+    hint = 'Patient : ' + ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim();
+  }
+  document.getElementById('sdm-hint').textContent = hint;
+  // Pré-sélection de la tuile
+  ['patient','library'].forEach(function(k){
+    var el = document.getElementById('sdm-tile-'+k);
+    if(el) el.classList.remove('active');
+  });
+  // Afficher la tuile "Programme patient" seulement si patient sélectionné
+  var tilePatient = document.getElementById('sdm-tile-patient');
+  if(tilePatient) tilePatient.style.display = _progPatient ? '' : 'none';
+  if(_progPatient){
+    document.getElementById('sdm-tile-patient').classList.add('active');
+  } else {
+    document.getElementById('sdm-tile-library').classList.add('active');
+  }
+  document.getElementById('saveDestOverlay').classList.add('open');
+}
+
+function _closeSaveDest(){
+  document.getElementById('saveDestOverlay').classList.remove('open');
+}
+
+function _saveDest(dest){
+  _closeSaveDest();
+  if(dest === 'library'){
+    if(_activeGroupId){
+      _openTmplModal({ emoji:_tmplSelectedEmoji, groupId:_activeGroupId, phaseOrdre:_activePhaseOrdre, _simplified:true });
+    } else {
+      _openTmplModal({ emoji:_tmplSelectedEmoji });
+    }
+  } else {
+    saveProgToCloud();
+  }
+}
+
+function _builderSaveBtnClick(){
+  if(!blocs || !blocs.length){ alert('La séance est vide.'); return; }
+  if(_currentSeanceId){
+    // Contexte B : modification d'un chip existant → save direct
+    saveProgToCloud();
+  } else if(_builderDate && !_currentProgId){
+    // Contexte A : nouvelle séance depuis le calendrier → save + planifier + fermer
+    _saveAndPlanForDate();
+  } else {
+    // Contexte C : builder libre → modal de destination
+    openSaveDest();
+  }
+}
+
+function _refreshSaveBtn(){
+  var btn = document.getElementById('prog-cloud-save-btn');
+  var updBtn = document.getElementById('prog-update-btn');
+  var planBtn = document.getElementById('builder-plan-btn');
+  if(!btn) return;
+  var isContexteA = _builderDate && !_currentProgId && !_currentSeanceId;
+  var isContexteB = !!_currentSeanceId;
+  if(isContexteB){
+    btn.textContent = '💾 Enregistrer la séance';
+    btn.title = 'Sauvegarder les modifications';
+  } else if(isContexteA){
+    var p = _builderDate.split('-');
+    var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+    btn.textContent = '💾 Enregistrer — ' + parseInt(p[2]) + ' ' + months[parseInt(p[1])-1];
+    btn.title = 'Sauvegarder et planifier sur cette date';
+  } else {
+    btn.textContent = '💾 Sauvegarder';
+    btn.title = '';
+  }
+  btn.style.background = '';
+  // "Planifier" uniquement en Contexte C
+  if(planBtn) planBtn.style.display = (isContexteA || isContexteB) ? 'none' : '';
+  // Bouton "Mettre à jour template"
+  if(updBtn){
+    if(_builderFromTemplate){
+      var _tRef = (_sidebarProgs||[]).find(function(x){ return String(x.id)===String(_builderFromTemplate); });
+      var _tName = _tRef ? (_tRef.nom||'Template') : 'Template';
+      var _tLabel = _tName.length > 20 ? _tName.substring(0,19)+'…' : _tName;
+      updBtn.textContent = '🔄 ' + _tLabel;
+      updBtn.title = 'Mettre à jour « ' + _tName + ' »';
+      updBtn.style.display = '';
+    } else {
+      updBtn.style.display = 'none';
+    }
+  }
+}
+
+function _doUpdateTemplate(){
+  if(!_builderFromTemplate){ openSaveDest(); return; }
+  if(!_progToken || !_progUid){ alert('Session non disponible.'); return; }
+  var btn = document.getElementById('prog-update-btn');
+  if(btn){ btn.disabled = true; btn.textContent = '⏳…'; }
+  var nomProg = (document.getElementById('patientName')||{}).value || '';
+  var donnees = JSON.stringify({ blocs: JSON.parse(JSON.stringify(blocs||[])), notes: getNotes() });
+  _fetchRetry(SUPA_URL_P + '/rest/v1/templates?id=eq.' + _builderFromTemplate, {
+    method: 'PATCH',
+    headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=representation'}),
+    body: JSON.stringify({ donnees: donnees, nom: nomProg })
+  })
+  .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, status:r.status, data:d}; }); })
+  .then(function(res){
+    if(btn) btn.disabled = false;
+    if(!res.ok){ _refreshSaveBtn(); _handleApiError(res.status, res.data, 'mise à jour template'); return; }
+    _showToast('✓ Template mis à jour !');
+    _draftClear();
+    _refreshSaveBtn();
+    renderSidebarTemplates();
+  })
+  .catch(function(err){
+    if(btn) btn.disabled = false;
+    _refreshSaveBtn();
+    alert('Erreur réseau : '+(err&&err.message||err));
+  });
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
+function duplicateTemplate(){
+  if(!_builderFromTemplate){ _showToast('⚠️ Aucun template chargé.'); return; }
+  if(!_progToken || !_progUid){ alert('Session non disponible.'); return; }
+  var src = (_sidebarProgs||[]).find(function(t){ return String(t.id)===String(_builderFromTemplate); });
+  var newNom = 'Copie de ' + (src ? (src.nom||src.phase_nom||'Template') : 'Template');
+  var donnees = JSON.stringify({ blocs: JSON.parse(JSON.stringify(blocs||[])), notes: getNotes() });
+  var payload = {
+    praticien_id: _progUid,
+    nom: newNom,
+    type: src ? (src.type||null) : null,
+    emoji: src ? (src.emoji||null) : null,
+    categorie: src ? (src.categorie||null) : null,
+    group_id: src ? (src.group_id||null) : null,
+    phase_nom: src ? (src.phase_nom||null) : null,
+    phase_ordre: src ? (src.phase_ordre||0) : 0,
+    donnees: donnees
+  };
+  _fetchRetry(SUPA_URL_P+'/rest/v1/templates', {
+    method:'POST',
+    headers: _sbHeaders(),
+    body: JSON.stringify(payload)
+  })
+  .then(function(r){ return r.ok ? r.json() : null; })
+  .then(function(data){
+    if(!data || !data[0]){ alert('Erreur lors de la duplication.'); return; }
+    renderSidebarTemplates();
+    _showToast('📋 Template « '+newNom+' » dupliqué !');
+  })
+  .catch(function(e){ alert('Erreur réseau : '+(e&&e.message||e)); });
+}
+
+function loadTemplate(id){
+  function _applyTemplate(t){
+    var d = {};
+    try { d = JSON.parse(t.donnees||'{}'); } catch(e){}
+    blocs = d.blocs ? JSON.parse(JSON.stringify(d.blocs)) : (t._blocs ? JSON.parse(JSON.stringify(t._blocs)) : []);
+    activeBloc = blocs.length ? blocs[0].id : null;
+    _notes = d.notes || '';
+    _currentProgId = null;
+    _builderFromTemplate = String(t.id);
+    // Tous les utilisateurs peuvent composer des séances depuis n'importe quel template
+    _applyBuilderReadOnly(false);
+    // Charger un template existant → pas de mode "nouvelle phase"
+    _activeGroupId=null; _activeGroupNom=''; _activePhaseOrdre=1;
+    _updateActiveGroupBadge();
+    renderSession();
+    _updateBuilderTitle();
+    _refreshSaveBtn();
+    var pn = document.getElementById('patientName');
+    if(pn && !pn.value) pn.value = t.nom || '';
+    if(_builderReadOnly && pn) pn.readOnly = true;
+    else if(pn) pn.readOnly = false;
+    // Marquer l'état chargé comme "sauvegardé" pour éviter la pastille parasite
+    _lastSavedHash = _sessionHash();
+    _builderSaved = true;
+    _refreshDraftBadge();
+  }
+
+  if(_progToken && _progUid){
+    _fetchRetry(SUPA_URL_P + '/rest/v1/templates?id=eq.' + id + '&select=*', { headers: _sbHeaders() })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      var t = Array.isArray(data) ? data[0] : null;
+      if(!t){ alert('Template introuvable.'); return; }
+      _applyTemplate(t);
+    })
+    .catch(function(){ alert('Erreur chargement template.'); });
+  } else {
+    _loadTemplates();
+    var t = _templates.find(function(x){ return x.id === id; });
+    if(!t){ alert('Template introuvable.'); return; }
+    _applyTemplate(t);
+  }
+}
+
+/* ── Supprimer un template ── */
+function deleteTemplate(id){
+  if(!confirm('Supprimer ce template ?')) return;
+  if(_progToken && _progUid){
+    _fetchRetry(SUPA_URL_P + '/rest/v1/templates?id=eq.' + id, {
+      method: 'DELETE', headers: _sbHeaders()
+    }).then(function(r){
+      if(r.ok){ renderTemplatesInBuilder(); renderSidebarTemplates(); }
+      else { alert('Erreur suppression.'); }
+    }).catch(function(){ alert('Erreur réseau.'); });
+  } else {
+    _loadTemplates();
+    _templates = _templates.filter(function(t){ return t.id !== id; });
+    _persistTemplates();
+    renderTemplatesInBuilder();
+    renderSidebarTemplates();
+  }
+}
+
+// ══════════════════════════════════════════════
+//  GROUPES DE TEMPLATES (protocoles / pathologies)
+// ══════════════════════════════════════════════
+var _groups = [];
+var _expandedGroups = (function(){ try{ return JSON.parse(localStorage.getItem(R4P_KEYS.EXPANDED_GROUPS)||'{}'); }catch(e){ return {}; } })();
+var _activeGroupId   = null;
+var _activeGroupNom  = '';
+var _activePhaseOrdre = 1;
+
+function _loadGroups(){
+  try { _groups = JSON.parse(localStorage.getItem(R4P_KEYS.TEMPLATE_GROUPS)||'[]'); } catch(e){ _groups=[]; }
+}
+function _persistGroups(){
+  try { localStorage.setItem(R4P_KEYS.TEMPLATE_GROUPS, JSON.stringify(_groups)); } catch(e){}
+}
+
+var _grpEditId = null; // null = création, sinon id du groupe à modifier
+var _grpLibId          = null;  // id de l'entrée templates_library si déjà publié
+var _grpLibCheckDone   = false; // true quand la vérification async est terminée
+
+function openCreateGroup(){
+  _grpEditId = null; _grpLibId = null; _grpLibCheckDone = false;
+  document.getElementById('grpModalTitle').textContent = '📁 Nouveau protocole';
+  document.getElementById('grpModalConfirmBtn').textContent = '📁 Créer le protocole';
+  document.getElementById('grpNameInput').value = '';
+  document.getElementById('grpCatInput').value = '';
+  document.getElementById('grpDescInput').value = '';
+  document.getElementById('grpLibSection').style.display = 'none';
+  document.getElementById('grpDuplicateBtn').style.display = 'none';
+  document.getElementById('groupCreateModal').classList.add('open');
+  setTimeout(function(){ document.getElementById('grpNameInput').focus(); }, 100);
+}
+function openEditGroup(id){
+  var g = (_groups||[]).find(function(x){ return String(x.id)===String(id); });
+  if(!g){ alert('Protocole introuvable.'); return; }
+  _grpEditId = id; _grpLibId = null; _grpLibCheckDone = false;
+  document.getElementById('grpModalTitle').textContent = '✏️ Modifier le protocole';
+  document.getElementById('grpModalConfirmBtn').textContent = '💾 Enregistrer';
+  document.getElementById('grpNameInput').value = g.nom||'';
+  document.getElementById('grpCatInput').value = g.categorie||'';
+  document.getElementById('grpDescInput').value = g.description||'';
+  document.getElementById('grpDuplicateBtn').style.display = '';
+  // Section publication
+  var libSec = document.getElementById('grpLibSection');
+  var libTog = document.getElementById('grpLibToggle');
+  var libSt  = document.getElementById('grpLibStatus');
+  libSec.style.display = 'block';
+  libTog.checked = false;
+  libSt.className = 'grp-lib-status';
+  libSt.textContent = 'Vérification…';
+  if(_progToken && _progUid){
+    // Filtre côté client : récupère toutes les entrées de ce praticien puis filtre sur source_group_id
+    _fetchRetry(SUPA_URL_P+'/rest/v1/templates_library?published_by=eq.'+encodeURIComponent(_progUid)+'&select=id,donnees', { headers:_sbHeaders() })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      _grpLibCheckDone = true;
+      if(!Array.isArray(data)){ libSt.textContent = 'Non publié — visible uniquement par vous.'; return; }
+      var match = data.find(function(row){
+        try{
+          var d = typeof row.donnees==='string' ? JSON.parse(row.donnees) : row.donnees;
+          return d && String(d.source_group_id) === String(id);
+        }catch(e){ return false; }
+      });
+      if(match){
+        _grpLibId = match.id;
+        libTog.checked = true;
+        libSt.className = 'grp-lib-status published';
+        libSt.textContent = '✓ Publié — visible par tous les praticiens Rehab4Perf.';
+      } else {
+        libSt.textContent = 'Non publié — visible uniquement par vous.';
+      }
+    })
+    .catch(function(){ _grpLibCheckDone = true; libSt.textContent = 'Impossible de vérifier le statut.'; });
+  } else {
+    libSec.style.display = 'none';
+    _grpLibCheckDone = true;
+  }
+  document.getElementById('groupCreateModal').classList.add('open');
+  setTimeout(function(){ document.getElementById('grpNameInput').focus(); }, 100);
+}
+function closeCreateGroup(){
+  document.getElementById('groupCreateModal').classList.remove('open');
+  _grpEditId = null; _grpLibId = null; _grpLibCheckDone = false;
+}
+function doCreateGroup(){
+  var nom = document.getElementById('grpNameInput').value.trim();
+  if(!nom){ alert('Donnez un nom au protocole.'); return; }
+  var cat  = document.getElementById('grpCatInput').value;
+  var desc = document.getElementById('grpDescInput').value.trim();
+
+  if(_grpEditId){
+    // ── Mode édition ──
+    var id = _grpEditId;
+    var libSec = document.getElementById('grpLibSection');
+    var wantPublish = libSec && libSec.style.display !== 'none'
+      ? document.getElementById('grpLibToggle').checked
+      : false;
+    // Si la vérification async n'est pas encore terminée, attendre
+    if(!_grpLibCheckDone && libSec && libSec.style.display !== 'none'){
+      _showToast('⏳ Vérification en cours, réessayez dans un instant…');
+      return;
+    }
+    var libIdSnap = _grpLibId; // snapshot après vérification complète
+    if(_progToken && _progUid && !_isReader()){
+      _fetchRetry(SUPA_URL_P + '/rest/v1/template_groups?id=eq.' + id, {
+        method:'PATCH', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
+        body: JSON.stringify({ nom: nom, categorie: cat, description: desc })
+      }).then(function(r){
+        if(!r.ok){ r.text().then(function(t){ alert('Erreur PATCH : ' + t); }); return; }
+        closeCreateGroup(); renderSidebarTemplates(); _showToast('✏️ Protocole mis à jour !');
+        // Gérer publication après fermeture du modal
+        if(wantPublish && !libIdSnap)        _doPublishGroup(id, nom, cat, desc);
+        else if(wantPublish && libIdSnap)    _doUpdateGroupInLib(libIdSnap, id, nom, cat, desc);
+        else if(!wantPublish && libIdSnap)   _doUnpublishGroup(libIdSnap);
+      }).catch(function(e){ alert('Erreur réseau : '+(e&&e.message||e)); });
+    } else {
+      _loadGroups();
+      var g = _groups.find(function(x){ return String(x.id)===String(id); });
+      if(g){ g.nom=nom; g.categorie=cat; g.description=desc; _persistGroups(); }
+      closeCreateGroup(); renderSidebarTemplates(); _showToast('✏️ Protocole mis à jour !');
+    }
+    return;
+  }
+
+  // ── Mode création ──
+  if(_progToken && _progUid && !_isReader()){
+    _fetchRetry(SUPA_URL_P + '/rest/v1/template_groups', {
+      method: 'POST', headers: _sbHeaders(),
+      body: JSON.stringify({ praticien_id: _progUid, nom: nom, categorie: cat, description: desc })
+    }).then(function(r){
+      if(r.ok){ closeCreateGroup(); renderSidebarTemplates(); _showToast('📁 Protocole « ' + nom + ' » créé !'); }
+      else { r.json().then(function(d){ alert('Erreur : ' + JSON.stringify(d)); }); }
+    }).catch(function(){ alert('Erreur réseau.'); });
+  } else {
+    _loadGroups();
+    _groups.unshift({ id:'_g'+Math.random().toString(36).slice(2,9), nom:nom, categorie:cat, description:desc, created_at:new Date().toISOString(), _local:true });
+    _persistGroups();
+    closeCreateGroup(); renderSidebarTemplates(); _showToast('📁 Protocole « ' + nom + ' » créé !');
+  }
+}
+
+/* ── Publication d'un protocole dans la bibliothèque ── */
+function _grpLibPayload(groupId, nom, cat, desc){
+  var catInfo = TMPL_CATEGORIES.find(function(c){ return c.val===cat; }) || { icon:'📁' };
+  var phases = (_sidebarProgs||[])
+    .filter(function(p){ return String(p.group_id)===String(groupId); })
+    .sort(function(a,b){ return (a.phase_ordre||0)-(b.phase_ordre||0); })
+    .map(function(p){ return { id:p.id, nom:p.phase_nom||p.nom, ordre:p.phase_ordre||0, donnees:p.donnees }; });
+  return {
+    nom:          nom,
+    type:         'protocole',
+    emoji:        catInfo.icon,
+    categorie:    cat||null,
+    description:  desc||null,
+    published_by: _progUid,
+    donnees:      { source_group_id: String(groupId), phases: phases }
+  };
+}
+function _doPublishGroup(groupId, nom, cat, desc){
+  var payload = _grpLibPayload(groupId, nom, cat, desc);
+  console.log('[_doPublishGroup] payload', payload);
+  _fetchRetry(SUPA_URL_P+'/rest/v1/templates_library', {
+    method:'POST',
+    headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=representation'}),
+    body: JSON.stringify(payload)
+  })
+  .then(function(r){
+    if(r.ok||r.status===201){
+      _showToast('🌐 Protocole publié dans la bibliothèque !');
+    } else {
+      r.text().then(function(t){
+        console.error('[_doPublishGroup] erreur', r.status, t);
+        alert('Erreur publication ('+r.status+') : '+t);
+      });
+    }
+  })
+  .catch(function(e){ alert('Erreur réseau publication : '+(e&&e.message||e)); });
+}
+function _doUpdateGroupInLib(libId, groupId, nom, cat, desc){
+  var payload = _grpLibPayload(groupId, nom, cat, desc);
+  _fetchRetry(SUPA_URL_P+'/rest/v1/templates_library?id=eq.'+libId, {
+    method:'PATCH',
+    headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
+    body: JSON.stringify(payload)
+  })
+  .then(function(r){
+    if(r.ok) _showToast('🌐 Bibliothèque mise à jour !');
+    else r.text().then(function(t){
+      console.error('[_doUpdateGroupInLib] erreur', r.status, t);
+      alert('Erreur mise à jour bibliothèque ('+r.status+') : '+t);
+    });
+  })
+  .catch(function(e){ alert('Erreur réseau mise à jour : '+(e&&e.message||e)); });
+}
+function _doUnpublishGroup(libId){
+  _fetchRetry(SUPA_URL_P+'/rest/v1/templates_library?id=eq.'+libId, {
+    method:'DELETE', headers:_sbHeaders()
+  })
+  .then(function(r){
+    if(r.ok||r.status===204) _showToast('🔒 Protocole retiré de la bibliothèque.');
+    else r.text().then(function(t){
+      console.error('[_doUnpublishGroup] erreur', r.status, t);
+      alert('Erreur retrait ('+r.status+') : '+t);
+    });
+  })
+  .catch(function(e){ alert('Erreur réseau retrait : '+(e&&e.message||e)); });
+}
+
+function duplicateGroup(){
+  var id = _grpEditId;
+  if(!id){ alert('Protocole introuvable.'); return; }
+  var g = (_groups||[]).find(function(x){ return String(x.id)===String(id); });
+  if(!g){ alert('Protocole introuvable.'); return; }
+  if(!_progToken || !_progUid){ alert('Session non disponible.'); return; }
+  var newNom = 'Copie de ' + (g.nom||'Protocole');
+  // 1. Créer le nouveau groupe
+  _fetchRetry(SUPA_URL_P+'/rest/v1/template_groups', {
+    method:'POST',
+    headers: _sbHeaders(),
+    body: JSON.stringify({ praticien_id:_progUid, nom:newNom, categorie:g.categorie||null, description:g.description||null })
+  })
+  .then(function(r){ return r.ok ? r.json() : null; })
+  .then(function(data){
+    if(!data || !data[0]){ alert('Erreur lors de la duplication du protocole.'); return; }
+    var newGroupId = data[0].id;
+    // 2. Dupliquer les templates du groupe
+    var tmplsToCopy = (_sidebarProgs||[]).filter(function(p){ return String(p.group_id)===String(id); });
+    var copies = tmplsToCopy.map(function(t){
+      return {
+        praticien_id: _progUid,
+        nom: t.nom||t.phase_nom||'',
+        type: t.type||null,
+        emoji: t.emoji||null,
+        categorie: t.categorie||null,
+        group_id: newGroupId,
+        phase_nom: t.phase_nom||null,
+        phase_ordre: t.phase_ordre||0,
+        donnees: t.donnees||null
+      };
+    });
+    var done = 0;
+    if(!copies.length){ closeCreateGroup(); renderSidebarTemplates(); _showToast('📋 Protocole « '+newNom+' » dupliqué !'); return; }
+    copies.forEach(function(c){
+      _fetchRetry(SUPA_URL_P+'/rest/v1/templates', {
+        method:'POST', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
+        body: JSON.stringify(c)
+      }).then(function(){ done++; if(done===copies.length){ closeCreateGroup(); renderSidebarTemplates(); _showToast('📋 Protocole « '+newNom+' » dupliqué !'); } });
+    });
+  })
+  .catch(function(e){ alert('Erreur réseau : '+(e&&e.message||e)); });
+}
+
+function deleteGroup(id){
+  /* Compter les phases associées pour l'avertissement */
+  var phases = (_sidebarProgs||[]).filter(function(p){ return String(p.group_id)===String(id); });
+  var group   = (_groups||[]).find(function(g){ return String(g.id)===String(id); });
+  var groupName = group ? (group.nom||'ce protocole') : 'ce protocole';
+
+  var msg = 'Supprimer le protocole « ' + groupName + ' » ?';
+  if(phases.length > 0){
+    var phaseList = phases.map(function(p){ return '• ' + (p.nom||'Sans nom'); }).join('\n');
+    msg += '\n\n⚠️ ' + phases.length + ' séance' + (phases.length>1?'s':'') + ' associée' + (phases.length>1?'s':'') + ' seront également supprimée' + (phases.length>1?'s':'') + ' :\n' + phaseList;
+  }
+  msg += '\n\nCette action est irréversible.';
+
+  if(!confirm(msg)) return;
+
+  if(_progToken && _progUid){
+    /* 1. Supprimer les phases du groupe, puis 2. supprimer le groupe */
+    var deleteTemplates = phases.length > 0
+      ? _fetchRetry(SUPA_URL_P + '/rest/v1/templates?group_id=eq.' + id, { method:'DELETE', headers:_sbHeaders() })
+      : Promise.resolve({ ok:true });
+
+    deleteTemplates.then(function(r){
+      if(!r.ok){ alert('Erreur lors de la suppression des séances.'); return; }
+      return _fetchRetry(SUPA_URL_P + '/rest/v1/template_groups?id=eq.' + id, { method:'DELETE', headers:_sbHeaders() });
+    }).then(function(r){
+      if(!r || !r.ok){ alert('Erreur lors de la suppression du protocole.'); return; }
+      /* Mettre à jour le cache local */
+      _sidebarProgs = (_sidebarProgs||[]).filter(function(p){ return String(p.group_id)!==String(id); });
+      renderSidebarTemplates();
+    }).catch(function(){ alert('Erreur réseau.'); });
+
+  } else {
+    _loadGroups();
+    _groups = _groups.filter(function(g){ return g.id !== id; });
+    _persistGroups();
+    _loadTemplates();
+    _templates = _templates.filter(function(t){ return t.group_id !== id; });
+    _persistTemplates();
+    _sidebarProgs = (_sidebarProgs||[]).filter(function(p){ return String(p.group_id)!==String(id); });
+    renderSidebarTemplates();
+  }
+}
+
+function _toggleGroup(id){
+  _expandedGroups[id] = !_expandedGroups[id];
+  try{ localStorage.setItem(R4P_KEYS.EXPANDED_GROUPS, JSON.stringify(_expandedGroups)); }catch(e){}
+  _renderSidebarWithGroups();
+}
+
+/* ── Protocole actif ── */
+function setActiveGroup(id){
+  var g = (_groups||[]).find(function(x){ return String(x.id)===String(id); });
+  if(!g){ _activeGroupId=null; _activeGroupNom=''; _activePhaseOrdre=1; }
+  else {
+    _activeGroupId = id;
+    _activeGroupNom = g.nom||'';
+    var phases = (_sidebarProgs||[]).filter(function(p){ return String(p.group_id)===String(id); });
+    _activePhaseOrdre = phases.length + 1;
+  }
+  _updateActiveGroupBadge();
+  _refreshSaveBtn();
+  _renderSidebarWithGroups();
+}
+
+function clearActiveGroup(){
+  _activeGroupId=null; _activeGroupNom=''; _activePhaseOrdre=1;
+  _updateActiveGroupBadge();
+  _refreshSaveBtn();
+  _renderSidebarWithGroups();
+}
+
+function _updateActiveGroupBadge(){
+  var el = document.getElementById('builderActiveGroupBadge');
+  if(!el) return;
+  if(_activeGroupId && _activeGroupNom){
+    el.style.display = 'inline-flex';
+    el.innerHTML = '<span>📁 '+escH(_activeGroupNom)+'</span>'
+      +'<span class="badge-clear" onclick="event.stopPropagation();clearActiveGroup()" title="Retirer">✕</span>';
+    el.className = 'builder-active-badge';
+  } else {
+    el.style.display = 'none';
+    el.innerHTML = '';
+  }
+}
+
+function addPhaseToGroup(id){
+  setActiveGroup(id);
+  _expandedGroups[id] = true;
+  try{ localStorage.setItem(R4P_KEYS.EXPANDED_GROUPS, JSON.stringify(_expandedGroups)); }catch(e){}
+  blocs = [];
+  _notes = '';
+  renderSession();
+  _refreshSaveBtn();
+  _enterBuilderMode();
+  _showToast('📁 Protocole « '+_activeGroupNom+' » actif — ajoutez des exercices puis cliquez « Enregistrer la phase »');
+}
+
+/* Callback onchange du select groupe dans le modal save */
+function _onTmplGroupChange(){
+  var gid = document.getElementById('tmplGroupInput').value;
+  document.getElementById('tmplPhaseWrap').style.display = gid ? 'block' : 'none';
+  if(gid){
+    // Suggérer l'ordre = nb de phases existantes + 1
+    var existing = _sidebarProgs.filter(function(p){ return p.group_id == gid; });
+    document.getElementById('tmplPhaseOrdreInput').value = existing.length + 1;
+  }
+}
+
+// ── Sidebar Templates ──
+var _sidebarProgs = [];
+var _qaProgId = null;
+var _qaProgNom = '';
+var _qaSelectedDate = '';
+
+function renderSidebarTemplates(){
+  var scroll = document.getElementById('stmplScroll');
+  if(!scroll) return;
+  if(_progToken && _progUid){
+    // Afficher "Chargement" seulement si pas de données déjà en mémoire
+    if(!_sidebarProgs.length && !_groups.length){
+      scroll.innerHTML = '<div class="stmpl-empty">Chargement…</div>';
+    }
+    Promise.all([
+      _fetchRetry(SUPA_URL_P+'/rest/v1/template_groups?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&order=created_at.asc',{headers:_sbHeaders()}).then(function(r){ return r.ok ? r.json() : null; }),
+      _fetchRetry(SUPA_URL_P+'/rest/v1/templates?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&order=phase_ordre.asc,created_at.desc',{headers:_sbHeaders()}).then(function(r){ return r.ok ? r.json() : null; })
+    ]).then(function(res){
+      // Ne remplacer les données qu'en cas de réponse valide (évite d'écraser avec une erreur 401)
+      if(Array.isArray(res[0])) _groups       = res[0];
+      if(Array.isArray(res[1])) _sidebarProgs = res[1];
+      _renderSidebarWithGroups();
+    }).catch(function(){
+      // En cas d'erreur réseau, garder les données existantes et re-rendre
+      _renderSidebarWithGroups();
+    });
+  } else {
+    _loadGroups(); _loadTemplates();
+    _sidebarProgs = _templates.map(function(t){
+      return {id:t.id,nom:t.nom,emoji:t.emoji,type:t.type,categorie:t.categorie||'',
+              group_id:t.group_id||null,phase_nom:t.phase_nom||'',phase_ordre:t.phase_ordre||0,
+              _blocs:t._blocs,created_at:t.created_at,_local:true};
+    });
+    _renderSidebarWithGroups();
+  }
+}
+
+// Catégories : fermées par défaut, état persisté en localStorage
+// { 'MOBILITÉ': false } = explicitement ouvert par l'utilisateur
+var _collapsedCats = (function(){
+  try { return JSON.parse(localStorage.getItem(R4P_KEYS.COLLAPSED_CATS)||'{}'); } catch(e){ return {}; }
+})();
+
+function _toggleCatSection(catKey){
+  // Par défaut fermé → false = ouvert, undefined/true = fermé
+  _collapsedCats[catKey] = (_collapsedCats[catKey] === false) ? true : false;
+  try { localStorage.setItem(R4P_KEYS.COLLAPSED_CATS, JSON.stringify(_collapsedCats)); } catch(e){}
+  _renderSidebarWithGroups();
+}
+
+// ── Kebab menu sidebar ──────────────────────────────────────────────────────
+function _openKebab(e, type, id, nom, ownerId){
+  e.stopPropagation();
+  _closeKebab();
+  var btn  = e.currentTarget;
+  var rect = btn.getBoundingClientRect();
+  var drop = document.createElement('div');
+  drop.className = 'stmpl-kdrop';
+  drop.id = '_sidebarKebab';
+
+  // Modifier/Supprimer uniquement si le contenu appartient à l'utilisateur connecté (ou admin)
+  var isOwner = !ownerId || String(ownerId) === String(_progUid) || _isAdmin();
+
+  var items = [];
+  if(isOwner){
+    items.push(type === 'group'
+      ? { label: '✏️  Modifier', action: function(){ openEditGroup(id); } }
+      : { label: '✏️  Modifier', action: function(){ openEditTemplate(id); } });
+  }
+  items.push(type === 'group'
+    ? { label: '📋  Dupliquer', action: function(){ duplicateGroupById(id); } }
+    : { label: '📋  Dupliquer', action: function(){ duplicateTemplateById(id); } });
+  if(isOwner){
+    items.push(type === 'group'
+      ? { label: '🗑  Supprimer', action: function(){ deleteGroup(id); }, danger: true }
+      : { label: '🗑  Supprimer', action: function(){ deleteTemplate(id); }, danger: true });
+  }
+
+  if(_isAdmin()){
+    var _arr = type === 'group' ? (_groups||[]) : (_sidebarProgs||[]);
+    var _item = _arr.find(function(x){ return String(x.id)===String(id); });
+    var _pub = _item && _item.is_public;
+    items.splice(items.length - 1, 0, {
+      label: _pub ? '🔒  Rendre privé' : '🌐  Rendre public',
+      action: (function(t,i,p){ return function(){ _togglePublic(t,i,p); }; })(type, id, !_pub)
+    });
+  }
+
+  items.forEach(function(item){
+    var b = document.createElement('button');
+    b.className = 'stmpl-kdrop-item' + (item.danger ? ' danger' : '');
+    b.textContent = item.label;
+    b.onclick = function(){ _closeKebab(); item.action(); };
+    drop.appendChild(b);
+  });
+
+  document.body.appendChild(drop);
+
+  // Positionnement : aligner le bord droit du dropdown sur le bouton
+  var left = rect.right - drop.offsetWidth;
+  if(left < 4) left = 4;
+  var top  = rect.bottom + 4;
+  if(top + 160 > window.innerHeight) top = rect.top - 164;
+  drop.style.left = left + 'px';
+  drop.style.top  = top  + 'px';
+
+  setTimeout(function(){
+    document.addEventListener('click', _closeKebab, { once: true, capture: true });
+  }, 0);
+}
+
+function _closeKebab(){
+  var el = document.getElementById('_sidebarKebab');
+  if(el) el.remove();
+}
+
+// Duplication template depuis la sidebar (sans besoin que le template soit chargé)
+function duplicateTemplateById(id){
+  var src = (_sidebarProgs||[]).find(function(t){ return String(t.id)===String(id); });
+  if(!src){ _loadTemplates(); src = _templates.find(function(t){ return String(t.id)===String(id); }); }
+  if(!src){ alert('Template introuvable.'); return; }
+  var newNom = 'Copie de ' + (src.phase_nom||src.nom||'Template');
+  // Lecteur : duplication en localStorage uniquement
+  if(_isReader()){
+    _loadTemplates();
+    _templates.unshift({
+      id:'_t'+Math.random().toString(36).slice(2,9),
+      nom:newNom, categorie:src.categorie||'', emoji:src.emoji||'💪',
+      group_id:null, phase_nom:'', phase_ordre:0,
+      created_at:new Date().toISOString(),
+      donnees:src.donnees||JSON.stringify({blocs:src._blocs||[]}),
+      _local:true
+    });
+    _persistTemplates();
+    renderSidebarTemplates();
+    _showToast('📋 « '+newNom+' » dupliqué (local) !');
+    return;
+  }
+  if(!_progToken || !_progUid){ alert('Session non disponible.'); return; }
+  var payload = {
+    praticien_id: _progUid,
+    nom:        newNom,
+    type:       src.type       || null,
+    emoji:      src.emoji      || null,
+    categorie:  src.categorie  || null,
+    group_id:   src.group_id   || null,
+    phase_nom:  src.phase_nom  || null,
+    phase_ordre:(src.phase_ordre||0) + 1, // après l'original
+    donnees:    src.donnees    || null
+  };
+  _fetchRetry(SUPA_URL_P+'/rest/v1/templates', {
+    method:'POST', headers: _sbHeaders(), body: JSON.stringify(payload)
+  })
+  .then(function(r){ return r.ok ? r.json() : null; })
+  .then(function(data){
+    if(!data||!data[0]){ alert('Erreur lors de la duplication.'); return; }
+    renderSidebarTemplates();
+    _showToast('📋 « '+newNom+' » dupliqué !');
+  })
+  .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
+}
+
+// Duplication protocole depuis la sidebar (wrapper qui évite d'ouvrir le modal)
+function duplicateGroupById(id){
+  var g = (_groups||[]).find(function(x){ return String(x.id)===String(id); });
+  if(!g){ alert('Protocole introuvable.'); return; }
+  var newNom = 'Copie de ' + (g.nom||'Protocole');
+  // Lecteur : duplication locale uniquement
+  if(_isReader()){
+    _loadGroups();
+    var newGid = '_g'+Math.random().toString(36).slice(2,9);
+    _groups.unshift({ id:newGid, nom:newNom, categorie:g.categorie||null, description:g.description||null, created_at:new Date().toISOString(), _local:true });
+    _persistGroups();
+    var phases = (_sidebarProgs||[]).filter(function(p){ return String(p.group_id)===String(id); });
+    if(phases.length){
+      _loadTemplates();
+      phases.forEach(function(t){
+        _templates.unshift({ id:'_t'+Math.random().toString(36).slice(2,9), nom:t.nom||t.phase_nom||'', categorie:t.categorie||'', emoji:t.emoji||'💪', group_id:newGid, phase_nom:t.phase_nom||'', phase_ordre:t.phase_ordre||0, donnees:t.donnees||null, created_at:new Date().toISOString(), _local:true });
+      });
+      _persistTemplates();
+    }
+    renderSidebarTemplates();
+    _showToast('📋 « '+newNom+' » dupliqué (local) !');
+    return;
+  }
+  if(!_progToken || !_progUid){ alert('Session non disponible.'); return; }
+  _fetchRetry(SUPA_URL_P+'/rest/v1/template_groups', {
+    method:'POST', headers: _sbHeaders(),
+    body: JSON.stringify({ praticien_id:_progUid, nom:newNom, categorie:g.categorie||null, description:g.description||null })
+  })
+  .then(function(r){ return r.ok ? r.json() : null; })
+  .then(function(data){
+    if(!data||!data[0]){ alert('Erreur lors de la duplication.'); return; }
+    var newGroupId = data[0].id;
+    var copies = (_sidebarProgs||[]).filter(function(p){ return String(p.group_id)===String(id); })
+      .map(function(t){
+        return { praticien_id:_progUid, nom:t.nom||t.phase_nom||'', type:t.type||null,
+          emoji:t.emoji||null, categorie:t.categorie||null, group_id:newGroupId,
+          phase_nom:t.phase_nom||null, phase_ordre:t.phase_ordre||0, donnees:t.donnees||null };
+      });
+    if(!copies.length){ renderSidebarTemplates(); _showToast('📋 « '+newNom+' » dupliqué !'); return; }
+    var done = 0;
+    copies.forEach(function(c){
+      _fetchRetry(SUPA_URL_P+'/rest/v1/templates', {
+        method:'POST', headers: Object.assign({},_sbHeaders(),{'Prefer':'return=minimal'}),
+        body: JSON.stringify(c)
+      }).then(function(){ done++; if(done===copies.length){ renderSidebarTemplates(); _showToast('📋 « '+newNom+' » dupliqué !'); } });
+    });
+  })
+  .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
+}
+// ────────────────────────────────────────────────────────────────────────────
+
+function _renderSidebarWithGroups(){
+  var scroll = document.getElementById('stmplScroll');
+  if(!scroll) return;
+  var q   = ((document.getElementById('stmplSearch')||{}).value||'').toLowerCase();
+  var catFilter = ((document.getElementById('stmplCatFilter')||{}).value||'');
+
+  var html = '<div class="stmpl-group-add-row"><button class="stmpl-new-group-btn" onclick="openCreateGroup()">📁 Nouveau protocole</button></div>';
+
+  // Filtrer groupes et templates
+  var filteredGroups = _groups.filter(function(g){
+    return !catFilter || (g.categorie||'') === catFilter;
+  });
+  var filteredTmpl = _sidebarProgs.filter(function(p){
+    if((p.nom||'')==='__r4p_protocols_meta__') return false;
+    var mQ = !q || (p.nom||'').toLowerCase().indexOf(q)>-1 || (p.phase_nom||'').toLowerCase().indexOf(q)>-1;
+    var mC = !catFilter || (p.categorie||'') === catFilter;
+    return mQ && mC;
+  });
+  var groupedTmpl = filteredTmpl.filter(function(p){ return p.group_id; });
+  var freeTmpl    = filteredTmpl.filter(function(p){ return !p.group_id; });
+
+  // Construire la liste ordonnée de catégories (ordre défini + "Autre" + sans catégorie)
+  var catOrder = TMPL_CATEGORIES.map(function(c){ return c.val; });
+  // Collecter toutes les cats présentes
+  var catsPresentes = {};
+  filteredGroups.forEach(function(g){ catsPresentes[g.categorie||'']  = true; });
+  freeTmpl.forEach(function(p){       catsPresentes[p.categorie||'']  = true; });
+
+  // Trier : ordre TMPL_CATEGORIES d'abord, puis inconnues
+  var allCats = Object.keys(catsPresentes).sort(function(a,b){
+    var ia = catOrder.indexOf(a); var ib = catOrder.indexOf(b);
+    if(ia===-1&&ib===-1) return a.localeCompare(b);
+    if(ia===-1) return 1;
+    if(ib===-1) return -1;
+    return ia-ib;
+  });
+
+  var hasContent = false;
+
+  allCats.forEach(function(catKey){
+    var catInfo = TMPL_CATEGORIES.find(function(c){ return c.val===catKey; }) || { icon:'📁', color:'#F3F4F6', textColor:'var(--text-dk)' };
+    var catGroups = filteredGroups.filter(function(g){ return (g.categorie||'')===catKey; });
+    var catFree   = freeTmpl.filter(function(p){ return (p.categorie||'')===catKey; });
+    if(!catGroups.length && !catFree.length) return;
+    hasContent = true;
+
+    var count = catGroups.length + catFree.length;
+    // Fermé par défaut : ouvert seulement si l'utilisateur a explicitement cliqué (valeur === false)
+    var isCollapsed = (_collapsedCats[catKey] !== false);
+    var safeKey = escH(catKey||'__sans__');
+
+    html += '<div class="stmpl-cat-section">';
+    html += '<div class="stmpl-cat-hdr" onclick="_toggleCatSection(\''+escJS(catKey)+'\')" style="background:'+catInfo.color+'20;">';
+    html += '<span class="stmpl-cat-hdr-icon">'+catInfo.icon+'</span>';
+    html += '<span class="stmpl-cat-hdr-name" style="color:'+catInfo.textColor+';">'+(catKey||'Sans catégorie')+'</span>';
+    html += '<span class="stmpl-cat-hdr-count">'+count+'</span>';
+    html += '<span class="stmpl-cat-hdr-toggle">'+(isCollapsed?'▶':'▼')+'</span>';
+    html += '</div>';
+
+    if(!isCollapsed){
+      html += '<div class="stmpl-cat-body">';
+
+      // Protocoles de cette catégorie
+      catGroups.forEach(function(g){
+        var isOpen = !!_expandedGroups[g.id];
+        var phases = groupedTmpl.filter(function(p){ return String(p.group_id)===String(g.id); });
+        phases.sort(function(a,b){ return (a.phase_ordre||0)-(b.phase_ordre||0); });
+        var gid = escH(String(g.id));
+        html += '<div class="stmpl-group">';
+        var isActiveGrp = _activeGroupId && String(_activeGroupId)===String(g.id);
+        html += '<div class="stmpl-group-header'+(isActiveGrp?' is-active-grp':'')+'" onclick="_toggleGroup(\''+gid+'\')">';
+        html += '<span class="stmpl-group-toggle">'+(isOpen?'▼':'▶')+'</span>';
+        html += '<div class="stmpl-group-info"><div class="stmpl-group-name">'+escH(g.nom||'Sans nom')+'</div>';
+        html += '<div style="margin-top:2px;"><span style="font-size:.68rem;color:var(--muted);">'+phases.length+' phase'+(phases.length!==1?'s':'')+'</span></div></div>';
+        html += '<button class="stmpl-kebab" onclick="event.stopPropagation();_openKebab(event,\'group\',\''+gid+'\',\''+escJS(g.nom||'')+'\',\''+escJS(String(g.praticien_id||''))+'\')" title="Actions">···</button></div>';
+        if(isOpen){
+          html += '<div class="stmpl-group-body">';
+          if(!phases.length) html += '<div class="stmpl-phase-empty">Aucune phase — cliquez + ci-dessous pour en créer une.</div>';
+          phases.forEach(function(p,i){ html += _renderTmplCard(p,true,i+1); });
+          html += '<button class="stmpl-add-phase-btn" onclick="event.stopPropagation();addPhaseToGroup(\''+gid+'\')">＋ Nouvelle phase</button>';
+          html += '</div>';
+        }
+        html += '</div>';
+      });
+
+      // Templates libres de cette catégorie (sans badge cat, déjà dans la section)
+      catFree.forEach(function(p){ html += _renderTmplCard(p,false,null,true); });
+
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+
+  if(!hasContent){
+    html += '<div class="stmpl-empty">Aucun template'+(catFilter?' dans cette catégorie':'')+'.<br>Créez-en un depuis le builder (📋 Enregistrer).</div>';
+  }
+  scroll.innerHTML = html;
+}
+
+function _renderTmplCard(p, isPhase, phaseNum, hideCat){
+  var emoji = p.emoji||'💪';
+  var bl = p._blocs||[];
+  if(!bl.length && p.donnees){ try{ bl=(JSON.parse(p.donnees).blocs)||[]; }catch(e){} }
+  var nbExos   = bl.reduce(function(a,b){ return a+(b.exos||[]).length; },0);
+  var nbCardio = bl.filter(function(b){ return b.type==='cardio'; }).length;
+  var nbVideo  = bl.reduce(function(a,b){ return a+(b.exos||[]).filter(function(e){return !!e.url;}).length; },0);
+  var dispNom  = isPhase ? (p.phase_nom||p.nom||'Sans nom') : (p.nom||'Sans nom');
+  var sub = (!isPhase&&p.type) ? p.type : '';
+  if(nbExos)   sub += (sub?' · ':'')+nbExos+' exo'+(nbExos>1?'s':'');
+  if(nbCardio) sub += (sub?' · ':'')+nbCardio+' cardio';
+  if(nbVideo)  sub += (sub?' · ':'')+'▶ '+nbVideo;
+  var catSt  = _tmplCatStyle(p.categorie||'');
+  // Badge catégorie seulement si pas dans une section catégorie (hideCat=false/undefined) et pas une phase
+  var catBdg = (!isPhase && !hideCat && p.categorie) ? '<span class="stmpl-cat-badge" style="background:'+catSt.bg+';color:'+catSt.fg+';">'+escH(p.categorie)+'</span>' : '';
+  var pid  = escH(String(p.id));
+  var pnom = escH(dispNom);
+  var cls  = 'stmpl-card'+(isPhase?' stmpl-phase-card':'');
+  var phN  = (isPhase&&phaseNum) ? '<span class="stmpl-phase-num">'+phaseNum+'</span>' : '';
+  var pubBdg = p.is_public ? '<span class="stmpl-public-badge" title="Template public">🌐</span>' : '';
+  return '<div class="'+cls+'" onclick="_sidebarLoadProg(\''+pid+'\')">'
+    +phN+'<div class="stmpl-card-emoji">'+emoji+'</div>'
+    +'<div class="stmpl-card-body"><div class="stmpl-card-name">'+pnom+' '+pubBdg+'</div>'
+    +'<div class="stmpl-card-meta">'+catBdg+(sub?escH(sub):'')+'</div></div>'
+    +'<button class="stmpl-kebab" title="Actions" onclick="event.stopPropagation();_openKebab(event,\'tmpl\',\''+pid+'\',\''+escJS(dispNom)+'\',\''+escJS(String(p.praticien_id||''))+'\')" >···</button>'
+    +'<button class="stmpl-add-btn" title="Planifier" onclick="event.stopPropagation();_openQuickAdd(\''+pid+'\',\''+pnom+'\')">+</button>'
+    +'</div>';
+}
+
+function filterSidebarTemplates(){
+  var sel = document.getElementById('stmplCatFilter');
+  if(sel) sel.classList.toggle('has-filter', !!sel.value);
+  _renderSidebarWithGroups();
+}
+
+/* ── Collapse / Expand all — sidebar templates ── */
+function _stmplCollapseAll(){
+  (_groups||[]).forEach(function(g){ _expandedGroups[String(g.id)] = false; });
+  var seen = {};
+  (_groups||[]).forEach(function(g){ seen[g.categorie||''] = true; });
+  Object.keys(seen).forEach(function(k){ _collapsedCats[k] = true; });
+  try{ localStorage.setItem(R4P_KEYS.EXPANDED_GROUPS, JSON.stringify(_expandedGroups)); }catch(e){}
+  try{ localStorage.setItem(R4P_KEYS.COLLAPSED_CATS,  JSON.stringify(_collapsedCats));  }catch(e){}
+  _renderSidebarWithGroups();
+}
+
+function _stmplExpandAll(){
+  (_groups||[]).forEach(function(g){ _expandedGroups[String(g.id)] = true; });
+  var seen = {};
+  (_groups||[]).forEach(function(g){ seen[g.categorie||''] = true; });
+  Object.keys(seen).forEach(function(k){ _collapsedCats[k] = false; });
+  try{ localStorage.setItem(R4P_KEYS.EXPANDED_GROUPS, JSON.stringify(_expandedGroups)); }catch(e){}
+  try{ localStorage.setItem(R4P_KEYS.COLLAPSED_CATS,  JSON.stringify(_collapsedCats));  }catch(e){}
+  _renderSidebarWithGroups();
+}
+
+/* ── Collapse / Expand all — picker ── */
+function _pickerCollapseAll(){
+  var scroll = document.getElementById('sb-picker-scroll');
+  if(scroll) scroll.querySelectorAll('.picker-group,.picker-tmpl,.picker-bloc').forEach(function(el){ el.classList.remove('open'); });
+}
+
+function _pickerExpandAll(){
+  var scroll = document.getElementById('sb-picker-scroll');
+  if(scroll) scroll.querySelectorAll('.picker-group,.picker-tmpl,.picker-bloc').forEach(function(el){ el.classList.add('open'); });
+}
+
+function _sidebarLoadProg(id){
+  loadTemplate(id);
+  _enterBuilderMode();
+}
+
+function _openQuickAdd(progId, nom){
+  _qaProgId = progId;
+  _qaProgNom = nom;
+  _qaSelectedDate = '';
+  document.getElementById('qaProgName').textContent = nom;
+  var today = new Date(); today.setHours(0,0,0,0);
+  var fr = ['dim','lun','mar','mer','jeu','ven','sam'];
+  var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  var html = '';
+  for(var i = 0; i < 7; i++){
+    var d = new Date(today.getTime() + i * 86400000);
+    var ds = _dateStr(d);
+    var lbl = i === 0 ? "Aujourd'hui" : i === 1 ? 'Demain'
+      : fr[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()];
+    html += '<button class="qa-day-btn" data-date="' + ds + '" onclick="_qaSelectDate(\'' + ds + '\')">' + lbl + '</button>';
+  }
+  document.getElementById('qaDays').innerHTML = html;
+  var todayStr = _dateStr(today);
+  document.getElementById('qaDateInput').value = todayStr;
+  _qaSelectedDate = todayStr;
+  _qaHighlight(todayStr);
+  document.getElementById('qaOverlay').classList.add('open');
+}
+
+function _qaSelectDate(dateStr){
+  if(!dateStr) return;
+  _qaSelectedDate = dateStr;
+  var inp = document.getElementById('qaDateInput');
+  if(inp) inp.value = dateStr;
+  _qaHighlight(dateStr);
+}
+
+function _qaHighlight(dateStr){
+  document.querySelectorAll('.qa-day-btn').forEach(function(b){
+    b.classList.toggle('active', b.dataset.date === dateStr);
+  });
+}
+
+function closeQuickAdd(){
+  document.getElementById('qaOverlay').classList.remove('open');
+}
+
+function confirmQuickAdd(){
+  if(!_qaSelectedDate || !_qaProgId){ closeQuickAdd(); return; }
+  if(_progToken && _progPatient && _progUid){
+    if(!_progPatient){ closeQuickAdd(); alert('Sélectionnez un patient avant de planifier.'); return; }
+    closeQuickAdd();
+    // 1. Récupérer le template
+    _fetchRetry(SUPA_URL_P + '/rest/v1/templates?id=eq.' + _qaProgId + '&select=nom,donnees,type,emoji', {
+      headers: _sbHeaders()
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      var t = Array.isArray(data) ? data[0] : null;
+      if(!t){ alert('Template introuvable.'); return; }
+      // 2. Créer une copie du programme pour ce patient
+      var hCopy = _sbHeaders(); // Prefer: return=representation par défaut
+      return _fetchRetry(SUPA_URL_P + '/rest/v1/programmes', {
+        method: 'POST', headers: hCopy,
+        body: JSON.stringify({
+          patient_id:   _progPatient.id,
+          praticien_id: _progUid,
+          nom:          t.nom,
+          date:         _qaSelectedDate,
+          donnees:      t.donnees
+        })
+      })
+      .then(function(r){ return r.json(); })
+      .then(function(prog){
+        var newProgId = Array.isArray(prog) ? (prog[0]&&prog[0].id) : prog.id;
+        if(!newProgId){ alert('Erreur création programme.'); return; }
+        // 3. Planifier la copie
+        var hPlan = _sbHeaders(); hPlan['Prefer'] = 'return=minimal';
+        return _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees', {
+          method: 'POST', headers: hPlan,
+          body: JSON.stringify({ patient_id: _progPatient.id, programme_id: newProgId, praticien_id: _progUid, date: _qaSelectedDate })
+        });
+      })
+      .then(function(r){
+        if(!r) return;
+        if(r.ok){ renderCalendar(); _showToast('📅 Séance planifiée !'); }
+        else { r.json().then(function(d){ alert('Erreur planification : '+JSON.stringify(d)); }); }
+      });
+    })
+    .catch(function(){ alert('Erreur réseau.'); });
+  } else {
+    closeQuickAdd();
+    // Mode local : copier le template dans _savedSeances puis ajouter au calendrier
+    _loadTemplates();
+    var t = _templates.find(function(x){ return x.id === _qaProgId; });
+    if(!t){ alert('Template introuvable.'); return; }
+    _loadSeances();
+    var copy = {
+      id: '_' + Math.random().toString(36).slice(2,9),
+      name: t.nom, emoji: t.emoji||'💪', type: t.type||'',
+      date: new Date().toLocaleDateString('fr-FR'),
+      blocs: JSON.parse(JSON.stringify(t._blocs||[]))
+    };
+    _savedSeances.unshift(copy);
+    _persistSeances();
+    _loadCalEvents();
+    _calEvents.push({ id: '_' + Math.random().toString(36).slice(2,9), date: _qaSelectedDate, seanceId: copy.id });
+    _persistCalEvents();
+    renderCalendar();
+  }
+}
+
+// ── Builder panel ──
+var _builderDate = '';
+var _builderLinkedPhase = null; // { protoId, phaseId, ppId, phaseName, protoName } quand lié à une phase
+
+function _enterBuilderMode(){
+  document.getElementById('builderPanel').classList.add('open');
+  document.querySelector('.app').classList.add('builder-mode');
+  var lib  = document.getElementById('sidebarLibrary');
+  var tmpl = document.getElementById('sidebarTemplates');
+  if(lib)  lib.style.display  = 'flex';
+  if(tmpl) tmpl.style.display = 'none';
+  // Toujours démarrer sur l'onglet exercices
+  _switchSidebarTab('lib');
+  renderTemplatesInBuilder();
+  // Proposer de restaurer le brouillon si le builder est vide
+  setTimeout(_draftRestore, 120);
+  // Bandeau protocole contextuel
+  _builderLoadProtoContext();
+}
+
+// ── Bandeau protocole dans le builder ──
+function _builderLoadProtoContext(){
+  var banner = document.getElementById('builder-proto-banner');
+  if(!banner) return;
+  banner.style.display = 'none';
+  banner.className = '';
+  if(!_progPatient || !_progUid) return;
+
+  // Si une phase est déjà liée (ex: ouverture depuis _protoOpenInBuilder),
+  // afficher directement le bon protocole sans aller chercher le "premier actif" sur Supabase
+  if(_builderLinkedPhase && _builderLinkedPhase.protoId){
+    var lpProto = _getAllProtocols().find(function(p){ return p.id === _builderLinkedPhase.protoId; });
+    var lpPh    = lpProto && lpProto.phases.find(function(p){ return p.id === _builderLinkedPhase.phaseId; });
+    if(lpProto && lpPh){
+      var patName = ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim();
+      var fakePp  = { id: _builderLinkedPhase.ppId };
+      _builderRenderProtoBanner(banner, fakePp, lpProto, lpPh, patName);
+      return;
+    }
+  }
+
+  _fetchRetry(SUPA_URL_P + '/rest/v1/patient_protocols?patient_id=eq.' + _progPatient.id
+    + '&praticien_id=eq.' + _progUid + '&status=eq.active&select=*&order=created_at.desc&limit=1', { headers: _sbHeaders() })
+  .then(function(r){ return r.ok ? r.json() : []; })
+  .then(function(pps){
+    if(!pps || !pps.length) return;
+    var pp = pps[0];
+    var proto = _getAllProtocols().find(function(p){ return p.id === pp.protocol_id; })
+      || (typeof PROTOCOLS_REF !== 'undefined' ? PROTOCOLS_REF : []).find(function(p){ return p.id === pp.protocol_id; });
+    if(!proto) return;
+    var currentPhaseIdx = proto.phases.findIndex(function(ph){ return ph.id === pp.current_phase_id; });
+    if(currentPhaseIdx < 0) return;
+
+    var patName = ((_progPatient.prenom || '') + ' ' + (_progPatient.nom || '')).trim();
+
+    // Fetch criteria checks pour calculer allDone sur chaque phase
+    return _fetchRetry(SUPA_URL_P + '/rest/v1/protocol_criteria_checks?patient_protocol_id=eq.' + pp.id + '&select=*',
+      { headers: _sbHeaders() })
+    .then(function(r){ return r.ok ? r.json() : []; })
+    .then(function(rows){
+      rows = rows || [];
+      // checksMap[phaseId][criteriaIndex] = bool
+      var checksMap = {};
+      rows.forEach(function(c){
+        if(!checksMap[c.phase_id]) checksMap[c.phase_id] = {};
+        checksMap[c.phase_id][c.criteria_index] = !!c.checked;
+      });
+
+      // Remonter depuis la phase courante jusqu'à la première phase non-terminée
+      var targetPhase = null;
+      for(var i = currentPhaseIdx; i < proto.phases.length; i++){
+        var ph = proto.phases[i];
+        var phChecks = checksMap[ph.id] || {};
+        var total = ph.exitCriteria ? ph.exitCriteria.length : 0;
+        var done = total > 0
+          ? ph.exitCriteria.filter(function(_, ci){ return phChecks[ci]; }).length
+          : 0;
+        var phAllDone = total > 0 && done === total;
+        if(!phAllDone){ targetPhase = ph; break; }
+      }
+
+      if(!targetPhase){
+        // Toutes les phases depuis la courante sont terminées
+        _builderRenderProtoBannerDone(banner, proto, patName);
+      } else {
+        _builderRenderProtoBanner(banner, pp, proto, targetPhase, patName);
+      }
+    });
+  }).catch(function(){});
+}
+
+function _builderRenderProtoBannerDone(banner, proto, patName){
+  banner.innerHTML =
+    '<span>' + (patName ? '<strong>' + patName + '</strong> · ' : '') +
+    proto.name + ' — <span class="bpb-phase">🏁 Protocole terminé</span></span>' +
+    '<span class="bpb-done-badge">Toutes les phases validées ✓</span>';
+  banner.className = 'bpb-done';
+  banner.style.display = 'flex';
+}
+
+function _builderRenderProtoBanner(banner, pp, proto, phase, patName){
+  var isLinked = _builderLinkedPhase && _builderLinkedPhase.ppId === pp.id && _builderLinkedPhase.phaseId === phase.id;
+  var btnLabel = isLinked ? '✓ Lié à cette phase' : 'Lier à cette phase';
+  var btnClick = isLinked
+    ? 'onclick="_builderUnlinkPhase()"'
+    : 'onclick="_builderLinkToPhase(\'' + proto.id + '\',\'' + phase.id + '\',\'' + pp.id + '\',\'' + phase.name.replace(/'/g,'') + '\',\'' + proto.name + '\')"';
+
+  banner.innerHTML =
+    '<span>' + (patName ? '<strong>' + patName + '</strong> · ' : '') +
+    proto.name + ' — <span class="bpb-phase">' + phase.name + '</span></span>' +
+    '<button class="bpb-link-btn" ' + btnClick + '>' + btnLabel + '</button>';
+
+  banner.className = isLinked ? 'bpb-linked' : '';
+  banner.style.display = 'flex';
+}
+
+function _builderLinkToPhase(protoId, phaseId, ppId, phaseName, protoName){
+  _builderLinkedPhase = { protoId: protoId, phaseId: phaseId, ppId: ppId, phaseName: phaseName, protoName: protoName };
+  // Refresh banner appearance
+  var banner = document.getElementById('builder-proto-banner');
+  if(banner){
+    banner.className = 'bpb-linked';
+    var btn = banner.querySelector('.bpb-link-btn');
+    if(btn){ btn.textContent = '✓ Lié à cette phase'; btn.setAttribute('onclick','_builderUnlinkPhase()'); }
+  }
+  _showToast('📎 Séance liée à ' + protoName + ' — ' + phaseName);
+}
+
+function _builderUnlinkPhase(){
+  _builderLinkedPhase = null;
+  var banner = document.getElementById('builder-proto-banner');
+  if(banner){
+    banner.className = '';
+    var btn = banner.querySelector('.bpb-link-btn');
+    if(btn){
+      // Reconstruct link from banner text (simpler: just reload context)
+      _builderLoadProtoContext();
+    }
+  }
+  _showToast('🔗 Liaison retirée');
+}
+
+function _exitBuilderMode(){
+  document.getElementById('builderPanel').classList.remove('open');
+  document.querySelector('.app').classList.remove('builder-mode');
+  var lib  = document.getElementById('sidebarLibrary');
+  var tmpl = document.getElementById('sidebarTemplates');
+  if(lib)  lib.style.display  = 'none';
+  if(tmpl){ tmpl.style.display = 'flex'; renderSidebarTemplates(); }
+  // Réinitialiser la liaison de phase
+  _builderLinkedPhase = null;
+  var banner = document.getElementById('builder-proto-banner');
+  if(banner){ banner.style.display = 'none'; banner.innerHTML = ''; banner.className = ''; }
+}
+
+function openBuilderForDate(dateStr){
+  _builderDate = dateStr;
+  _builderFromTemplate = null;
+  _applyBuilderReadOnly(false);
+  // Pas de protocole actif quand on ouvre depuis le calendrier
+  _activeGroupId=null; _activeGroupNom=''; _activePhaseOrdre=1;
+  _updateActiveGroupBadge();
+  _updateBuilderTitle();
+  _refreshSaveBtn();
+  _enterBuilderMode();
+}
+
+function _resetBuilderState(){
+  blocs = [];
+  _notes = '';
+  activeBloc = null;
+  _currentProgId = null;
+  _currentSeanceId = null;
+  _builderDate = '';
+  _builderFromTemplate = null;
+  _builderLinkedPhase = null;
+  var pn = document.getElementById('patientName');
+  if(pn) pn.value = '';
+  renderSession();
+  _updateBuilderTitle();
+  _refreshSaveBtn();
+}
+
+function _openBuilderNewForDate(dateStr){
+  closeCalPicker();
+  _resetBuilderState();
+  _builderDate = dateStr;
+  _applyBuilderReadOnly(false);
+  _activeGroupId=null; _activeGroupNom=''; _activePhaseOrdre=1;
+  _updateActiveGroupBadge();
+  _updateBuilderTitle();
+  _refreshSaveBtn();
+  _enterBuilderMode();
+}
+
+function _saveAndPlanForDate(){
+  if(!_progPatient){ alert('Sélectionnez un patient depuis la barre de navigation.'); return; }
+  if(!_progUid || !_progToken){ alert('Session non disponible.'); return; }
+  if(!blocs || !blocs.length){ alert('La séance est vide.'); return; }
+  if(!_builderDate){ return; }
+  var btn = document.getElementById('prog-cloud-save-btn');
+  btn.disabled = true; btn.textContent = '⏳ Sauvegarde…';
+  var p = _builderDate.split('-');
+  var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  var nomProg = (document.getElementById('patientName')||{}).value || ('Séance du '+parseInt(p[2])+' '+months[parseInt(p[1])-1]);
+  var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), notes: getNotes() };
+  var today = new Date().toISOString().split('T')[0];
+  var dateToSchedule = _builderDate;
+  _fetchRetry(SUPA_URL_P + '/rest/v1/programmes', {
+    method:'POST', headers:_sbHeaders(),
+    body:JSON.stringify({patient_id:_progPatient.id, praticien_id:_progUid, nom:nomProg, date:today, donnees:donnees})
+  })
+  .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, status:r.status, data:d}; }); })
+  .then(function(res){
+    if(!res.ok){ btn.disabled=false; _refreshSaveBtn(); _handleApiError(res.status, res.data, 'création programme'); return; }
+    var d = Array.isArray(res.data) ? res.data[0] : res.data;
+    if(!d||!d.id){ btn.disabled=false; _refreshSaveBtn(); alert('Programme non créé.'); return; }
+    _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees', {
+      method:'POST', headers:_sbHeaders(),
+      body:JSON.stringify({patient_id:_progPatient.id, programme_id:d.id, praticien_id:_progUid, date:dateToSchedule})
+    })
+    .then(function(r2){
+      btn.disabled = false;
+      if(!r2.ok){ r2.json().then(function(e){ alert('Erreur planification : '+JSON.stringify(e)); }); _refreshSaveBtn(); return; }
+      _draftClear();
+      _showToast('✓ Séance planifiée le '+parseInt(p[2])+' '+months[parseInt(p[1])-1]+' !');
+      _resetBuilderState();
+      closeBuilder();
+      renderCalendar();
+    })
+    .catch(function(err){ btn.disabled=false; _refreshSaveBtn(); alert('Erreur réseau : '+(err&&err.message||err)); });
+  })
+  .catch(function(err){ btn.disabled=false; _refreshSaveBtn(); alert('Erreur réseau : '+(err&&err.message||err)); });
+}
+
+function openBuilderNew(){
+  _builderDate = '';
+  _currentProgId = null;
+  _builderFromTemplate = null;
+  _applyBuilderReadOnly(false);
+  // Pas de protocole actif quand on ouvre une nouvelle séance depuis + Séance
+  _activeGroupId=null; _activeGroupNom=''; _activePhaseOrdre=1;
+  _updateActiveGroupBadge();
+  blocs = [];
+  _notes = '';
+  renderSession();
+  _updateBuilderTitle();
+  _refreshSaveBtn();
+  _enterBuilderMode();
+}
+
+function closeBuilder(){
+  if(blocs && blocs.length && !_builderSaved){
+    if(!confirm('⚠️ La séance contient du contenu non sauvegardé.\n\nFermer quand même ?')){
+      return;
+    }
+    _draftClear();
+  }
+  // Blocs vides : annuler le timer lazy en attente et vider le brouillon
+  // (évite de restaurer un ancien brouillon si l'utilisateur a tout supprimé)
+  if(!blocs || !blocs.length){
+    if(_draftSaveTimer){ clearTimeout(_draftSaveTimer); _draftSaveTimer = null; }
+    _draftClear();
+  }
+  _exitBuilderMode();
+}
+
+function toggleSidebar(){
+  document.querySelector('.sidebar').classList.toggle('collapsed');
+}
+
+function _updateBuilderTitle(){
+  var titleEl = document.getElementById('builderTitle');
+  var dateBar = document.getElementById('builderDateBar');
+  var patNom = _progPatient ? ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim() : '';
+  if(titleEl) titleEl.textContent = patNom || 'Nouvelle séance';
+  if(dateBar){
+    if(_builderDate){
+      var p = _builderDate.split('-');
+      var months = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+      dateBar.textContent = '📅 Séance du ' + parseInt(p[2]) + ' ' + months[parseInt(p[1])-1] + ' ' + p[0];
+      dateBar.style.display = 'block';
+    } else {
+      dateBar.style.display = 'none';
+    }
+  }
+}
+
+// ── Override openCalPicker pour v2 : ouvrir le builder sur le jour cliqué ──
+// On surcharge _renderCalendarUI pour que le clic sur un jour ouvre le builder
+var _v2CalendarReady = false;
+function _v2InitCalendar(){
+  if(_v2CalendarReady) return;
+  _v2CalendarReady = true;
+  // Rendre le calendrier cliquable vers le builder
+  renderCalendar();
+}
+
+// openCalPicker inclut déjà openBuilderForDate (voir définition originale)
+
+// ── Upcoming sessions dans le centre ──
+function _renderUpcoming(){
+  if(!_progPatient) { document.getElementById('upcomingList').innerHTML = ''; return; }
+  var today = new Date().toISOString().split('T')[0];
+  var upcoming = _cloudCalEvents
+    .filter(function(e){ return e.date >= today; })
+    .sort(function(a,b){ return a.date.localeCompare(b.date); })
+    .slice(0,5);
+  if(!upcoming.length){ document.getElementById('upcomingList').innerHTML = ''; return; }
+  var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  var html = '<div style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Prochaines séances</div>';
+  upcoming.forEach(function(ev){
+    var nom = (ev.programmes&&ev.programmes.nom)||'Programme';
+    var p = ev.date.split('-');
+    var lbl = parseInt(p[2])+' '+months[parseInt(p[1])-1];
+    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:9px 12px;margin-bottom:7px;display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="_openChipInBuilder(\''+ev.programme_id+'\',\''+ev.date+'\',\''+ev.id+'\')">'
+          + '<div style="background:var(--accent);color:#fff;border-radius:7px;padding:5px 9px;font-size:.68rem;font-weight:700;white-space:nowrap;">'+lbl+'</div>'
+          + '<div style="font-size:.82rem;font-weight:600;flex:1;">📋 '+escH(nom)+'</div>'
+          + '<div style="color:var(--muted);font-size:.8rem;">›</div>'
+          + '</div>';
+  });
+  document.getElementById('upcomingList').innerHTML = html;
+}
+
+/* ================================================================
+   PROTOCOLES DE RÉFÉRENCE
+   ================================================================ */
+
+/* ─── Données ─────────────────────────────────────────────────── */
+var _PROTO_RAPPELS_DEFAULTS = {
+  'lca':             [{ jPlus:0, title:'🔪 Opération — LCA' }, { jPlus:45, title:'CR médecin à réaliser' }, { jPlus:150, title:'CR médecin à réaliser' }, { jPlus:270, title:'CR médecin à réaliser' }],
+  'latarjet':        [{ jPlus:0, title:'🔪 Opération — Latarjet' }, { jPlus:45, title:'CR médecin à réaliser' }, { jPlus:180, title:'CR médecin à réaliser' }],
+  'menisque':        [{ jPlus:0, title:'🔪 Opération — Ménisque' }, { jPlus:45, title:'CR médecin à réaliser' }, { jPlus:90, title:'CR médecin à réaliser' }, { jPlus:180, title:'CR médecin à réaliser' }],
+  'lcm-chirurgical': [{ jPlus:0, title:'🔪 Opération — LCM' }, { jPlus:45, title:'CR médecin à réaliser' }, { jPlus:150, title:'CR médecin à réaliser' }]
+};
+
+var PROTOCOLS_REF = [
+  {
+    id: 'lca',
+    type: 'rehab',
+    name: 'LCA',
+    icon: '🦵',
+    category: 'Pathologie',
+    joint: 'Genou',
+    source: 'Antoine Peronnaud',
+    duration: '4–6 mois',
+    isBuiltin: true,
+    phases: [
+      {
+        id: 'p1',
+        name: 'Phase 1 — Post-opératoire immédiat',
+        weeks: '',
+        color: 'var(--accent-ll)',
+        borderColor: '#3B82F6',
+        objectives: [
+          'Contrôle de la douleur et réduction de l\'épanchement (genou sec)',
+          'Récupération de l\'extension passive complète (0°)',
+          'Activation sélective du vaste médial (VM)',
+          'Reprise de la marche sans boiterie'
+        ],
+        precautions: [
+          'Différencier les exercices selon l\'état du genou (irritable vs tolérant)',
+          'Surveiller l\'épanchement après chaque séance',
+          'Progression uniquement si genou sec en début de séance'
+        ],
+        weekly: [
+          { week: 'Genou irritable', content: 'Isométrie IJ (couché ventral, RPE 3–5), contractions quadriceps + compex assis genou tendu puis fléchi — consigne "Remonter la rotule"' },
+          { week: 'Genou tolérant', content: 'IJ excentrique, chaise isométrique bi/unipodal, extension genou isométrique 90° swissball, TKE, extension genou allongé' }
+        ],
+        exitCriteria: [
+          'Genou sec',
+          'Extension passive = 0°',
+          'Marche sans boiterie',
+          'Contraction sélective du VM validée',
+          'Test du mur : contact mollet identique côté sain/opéré',
+          'Test SLS : 3 squats unipodaux sans tremblement, extension comparable côté sain',
+          '3 séances de renforcement consécutives sans douleur'
+        ]
+      },
+      {
+        id: 'p2',
+        name: 'Phase 2 — Renforcement & contrôle neuromusculaire',
+        weeks: '',
+        color: '#F0FDF4',
+        borderColor: '#22C55E',
+        objectives: [
+          'Renforcement musculaire progressif (chaîne postérieure + quadriceps)',
+          'Récupération de l\'amplitude articulaire complète',
+          'Contrôle excentrique du quadriceps',
+          'Activation et intégration du transverse'
+        ],
+        precautions: [
+          'Surveiller l\'épanchement après augmentation de charge',
+          'Progression des charges contrôlée (départ ≤ 50% 1RM)',
+          'Contrôle du valgus dynamique sur tous les exercices unipodaux',
+          'Pas de passage en phase 3 avant genou sec sous charge'
+        ],
+        weekly: [
+          { week: 'Bloc A', content: '15–25 reps × 4 séries, ≤ 50% 1RM, récup 1\'30 : Back squat, Front squat, Pistol squat box, Cossack squat, Front lunge, Deadlift, Romanian DL, Hip thrust, Glute bridge (swissball + walk), Single leg RDL anti-valgus, Pall of press (debout + fentes), Deadbug élastique' }
+        ],
+        exitCriteria: [
+          'Amplitude articulaire complète en flexion/extension',
+          'Contrôle excentrique du quadriceps validé',
+          'Activation et intégration du transverse',
+          'Genou sec après augmentation de la charge d\'entraînement'
+        ]
+      },
+      {
+        id: 'p3',
+        name: 'Phase 3 — Course / Sauts / Agilité / Travail Métabolique',
+        weeks: '',
+        color: '#FFF7ED',
+        borderColor: '#F97316',
+        objectives: [
+          'Renforcement haute intensité (70–80% 1RM)',
+          'Reprise progressive de la course (Zone 2)',
+          'Validation des tests fonctionnels de symétrie',
+          'Travail d\'agilité et réathlétisation sport-spécifique'
+        ],
+        precautions: [
+          'Tests fonctionnels validés avant reprise de la course',
+          'Pas de sauts/réceptions avant symétrie confirmée',
+          'Surveiller le stiff landing à chaque exercice pliométrique',
+          'Accord médical avant reprise compétition'
+        ],
+        weekly: [
+          { week: 'Bloc renfo', content: '8–12 reps × 4 séries, RPE 8 / 70–80% 1RM : mêmes exercices que phase 2 en charges lourdes' },
+          { week: 'Tests fonctionnels', content: 'Évaluation symétrie (protocole adapté à l\'athlète)' },
+          { week: 'Bloc cardio', content: 'Course continue Zone 2, progression 5 → 20 min à 65% VMA' }
+        ],
+        exitCriteria: [
+          'Symétrie aux tests fonctionnels',
+          'Course sans douleur 20 min à 65% VMA (Zone 2)',
+          'Absence de stiff landing à la réception',
+          'Réussite des tests fonctionnels sport-spécifiques'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'latarjet',
+    type: 'rehab',
+    name: 'Latarjet',
+    icon: '🦴',
+    category: 'Pathologie',
+    joint: 'Épaule',
+    source: 'Dr B. Khatir + Kinesport',
+    duration: '6 mois (S0 → S24)',
+    isBuiltin: true,
+    phases: [
+      {
+        id: 'p1',
+        name: 'Phase 1 — Immobilisation',
+        weeks: 'S0 → S3',
+        color: 'var(--accent-ll)',
+        borderColor: '#3B82F6',
+        objectives: [
+          'Contrôle de la douleur et de l\'œdème',
+          'Préservation de la mobilité distale (coude, poignet, main)',
+          'Contraction musculaire isométrique péri-scapulaire précoce',
+          'Éducation posturale'
+        ],
+        precautions: [
+          'Écharpe stricte 3 semaines',
+          'Aucune rotation externe passive',
+          'Pas de mise en charge du membre supérieur',
+          'Éviter les positions en appui sur le coude opéré'
+        ],
+        weekly: [
+          { week: 'S0–S1', content: 'Glaçage, travail distal (doigts/poignet), isométrie légère deltoïde en position neutre, éducation portage écharpe' },
+          { week: 'S1–S3', content: 'Mobilisation douce flexion/abduction passive ≤ 60°, isométrie sous-scapulaire à 0°, massage cicatriciel dès J15' }
+        ],
+        exitCriteria: [
+          'Écharpe retirée selon prescription chirurgicale (J21)',
+          'Mobilité passive : flex ≥ 90°, abd ≥ 60°, RE ≤ 0°',
+          'Absence de douleur au repos (EVA < 2)'
+        ]
+      },
+      {
+        id: 'p2',
+        name: 'Phase 2 — Récupération des amplitudes',
+        weeks: 'S3 → S6',
+        color: '#F0FDF4',
+        borderColor: '#22C55E',
+        objectives: [
+          'Récupérer les amplitudes passives complètes',
+          'Début de travail musculaire actif en chaîne ouverte',
+          'Stabilisation scapulaire active',
+          'Proprioception précoce en décharge'
+        ],
+        precautions: [
+          'RE limitée à 0° jusqu\'à S6 (accord chirurgien)',
+          'Pas de port de charge > 1 kg',
+          'Éviter les mouvements combinés (ABD + RE)',
+          'Contrôle douleur post-séance < 3/10'
+        ],
+        weekly: [
+          { week: 'S3–S4', content: 'Mobilisation active-aidée en flex/abd, renforcement isométrique deltoïde et coiffe en positions non provocantes, stretching capsule postérieure' },
+          { week: 'S4–S6', content: 'Renforcement concentrique coiffe (RE/RI) à 0°–30° abd, travail rythme scapulo-huméral, proprioception membre en l\'air, hydrokinesithérapie si disponible' }
+        ],
+        exitCriteria: [
+          'Flexion active ≥ 150°, abduction ≥ 120°',
+          'RE active ≥ 30° (si autorisation chirurgien)',
+          'Force isométrique coiffe ≥ 60% côté sain (Daniels ≥ 3+)',
+          'Absence d\'arc douloureux'
+        ]
+      },
+      {
+        id: 'p3',
+        name: 'Phase 3 — Renforcement musculaire',
+        weeks: 'S6 → S12',
+        color: '#FFFBEB',
+        borderColor: '#F59E0B',
+        objectives: [
+          'Renforcement progressif coiffe des rotateurs et deltoïde',
+          'Récupération des amplitudes complètes en RE',
+          'Travail en chaîne cinétique fermée',
+          'Stabilisation dynamique gléno-humérale'
+        ],
+        precautions: [
+          'Pas d\'appui axial bras tendu avant S10',
+          'Renforcement RE progressif : éviter la tension en fin d\'amplitude avant S10',
+          'Pas de traction axiale sur le membre (port de charges lourdes)',
+          'Contrôle du rythme scapulo-huméral à chaque exercice'
+        ],
+        weekly: [
+          { week: 'S6–S8', content: 'Renforcement excentrique coiffe, travail proprioceptif sur plan instable, poulie + élastiques, mobilisation complète en RE progressive' },
+          { week: 'S8–S10', content: 'Renforcement deltoïde en secteur fonctionnel, gainages avec membres supérieurs, appuis sur mains prudemment chargés' },
+          { week: 'S10–S12', content: 'Circuit musculaire fonctionnel, départs en positions variées, normalisation du schéma moteur lancé bras' }
+        ],
+        exitCriteria: [
+          'Amplitudes complètes symétriques',
+          'Force coiffe ≥ 80% côté sain (dynamomètre)',
+          'Test d\'appui statique sur mains > 30 s sans douleur',
+          'Contrôle du rythme scapulo-huméral normalisé'
+        ]
+      },
+      {
+        id: 'p4',
+        name: 'Phase 4 — Réathlétisation',
+        weeks: 'S12 → S20',
+        color: '#FFF7ED',
+        borderColor: '#F97316',
+        objectives: [
+          'Reprise progressive des gestes sportifs',
+          'Travail pliométrique membre supérieur',
+          'Renforcement haute vélocité',
+          'Proprioception avancée et contrôle neuro-musculaire'
+        ],
+        precautions: [
+          'Progression individualisée selon bilan fonctionnel',
+          'Pas de contact avant S16',
+          'Surveillance signe d\'irritation (douleur nocturne, œdème)',
+          'Accord médical pour reprise des entraînements'
+        ],
+        weekly: [
+          { week: 'S12–S16', content: 'Lancer progressif (distance et intensité), exercices pliométriques sur mur, travail en suspension, circuit proprioceptif avancé' },
+          { week: 'S16–S20', content: 'Simulation gestes sportifs spécifiques, entraînements partiels sans contact, test isocinétique de contrôle, travail haute vélocité' }
+        ],
+        exitCriteria: [
+          'Test isocinétique : ratio RE/RI ≥ 66%, déficit < 15% côté sain',
+          'Test pliométrique : asymétrie < 15%',
+          'Test fonctionnel sport-spécifique validé',
+          'Absence de douleur ou d\'appréhension aux tests'
+        ]
+      },
+      {
+        id: 'p5',
+        name: 'Phase 5 — Retour à la compétition',
+        weeks: 'S20 → S24',
+        color: '#FDF4FF',
+        borderColor: '#A855F7',
+        objectives: [
+          'Validation du retour compétition par critères objectifs',
+          'Consolidation acquis proprioceptifs et musculaires',
+          'Préparation psychologique au retour',
+          'Mise en place programme de prévention récidive'
+        ],
+        precautions: [
+          'Retour contact uniquement si TOUS les critères de phase 4 sont atteints',
+          'Suivi médical obligatoire avant validation',
+          'Orthèse de protection sportive recommandée 1ère saison',
+          'Programme d\'entretien à domicile obligatoire'
+        ],
+        weekly: [
+          { week: 'S20–S22', content: 'Entraînements collectifs complets sans restriction, travail préventif ciblé (renforcement excentrique, proprioception), simulation compétition' },
+          { week: 'S22–S24', content: 'Retour compétition progressive, bilan final kinésithérapique, remise programme entretien, suivi 3–6 mois planifié' }
+        ],
+        exitCriteria: [
+          'Tous critères phase 4 validés',
+          'Score WOSI > 80% ou DASH < 20',
+          'Accord chirurgien + kinésithérapeute + médecin',
+          'Patient confiant (appréhension EVA < 2/10)'
+        ]
+      }
+    ]
+  },
+
+  /* ── Flexion dorsale cheville ── */
+  {
+    id: 'flexion-dorsale-cheville',
+    type: 'library',
+    name: 'Flexion dorsale cheville',
+    icon: '🦶',
+    category: 'Mobilité',
+    source: 'Antoine Peronnaud',
+    duration: 'Séance unique',
+    description: 'Arbre décisionnel pour le bilan et le traitement des limitations en flexion dorsale de cheville. Identifier la localisation du blocage au WBLT, puis discriminer la structure responsable.',
+    entryTest: {
+      name: 'WBLT (Weight Bearing Lunge Test)',
+      description: 'Identifier la localisation de la sensation de blocage'
+    },
+    branches: [
+      {
+        id: 'anterieur',
+        label: 'Antérieur',
+        color: 'var(--accent-ll)',
+        borderColor: '#3B82F6',
+        blocs: [
+          { id: '_tj9zmz4', title: 'Test', exos: [
+            { id: '_r7z372w', libId: 'c1777818298038',
+              name: 'Posterior talar glide test',
+              url: 'https://youtu.be/ypwvbBcF6Y4?is=dkwhUnVcaT7Ib4Kn',
+              consigne: 'Asymétrie > 4° => talocrural\nAsymétrie < 4° => chopart',
+              reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' }
+          ]},
+          { id: '_gvlp333', title: 'Rehab Asymétrie > 4° — TALO-CRURAL', exos: [
+            { id: '_bqvm0st', libId: 'c1777818482390', name: 'Mobilisation antéro-postérieur du talus',           url: 'https://youtu.be/J0gO8BfHsEs?is=ikhKlmON8di5zc13', reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' },
+            { id: '_q6bpztc', libId: 'c1777818554296', name: 'Mobilisation antéro-postérieur du talus (Mulligan)', url: 'https://youtu.be/GHcsdaiS0WE?is=vTKAVVU7vqVuux75',  reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' }
+          ]},
+          { id: '_ydtofis', title: 'Rehab Asymétrie < 4° — CHOPART', exos: [
+            { id: '_c00jdbj', libId: 'c1777818801958', name: 'Mobilisation transverse du tarse',          url: 'https://youtu.be/myFVAxjCzqk?is=DkWceAmMl2sXgKwC', reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' },
+            { id: '_82qg1tp', libId: 'c1777818837489', name: 'Mobilisation transverse du tarse (Mulligan)', url: 'https://youtu.be/uSPRHeoCgf8?is=ci4X1gPsi5IVZBhK',  reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' }
+          ]}
+        ]
+      },
+      {
+        id: 'antero-lateral',
+        label: 'Antéro-latéral',
+        color: '#FFFBEB',
+        borderColor: '#F59E0B',
+        blocs: [
+          { id: '_esz4w0g', title: 'TEST', exos: [
+            { id: '_k128375', libId: 'c1777819009753',
+              name: 'Kleiger test (syndesmose)',
+              url: 'https://youtu.be/nJbnquuD5Sg?is=_s7Bh-N2aWJkvWqR',
+              consigne: 'Si test + : Syndesmose\nSi test - : Conflit antéro-latéral',
+              reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' }
+          ]},
+          { id: '_0djpi7e', title: 'Rehab (syndesmose + conflit antéro-latéral)', exos: [
+            { id: '_ejtflv9', libId: 'c1777819303073', name: 'Mobilisation antéro-postérieur tibiofibulaire',           url: 'https://youtu.be/KjYh_650wwM?is=bp1u_QzDdwLqp8Yw', reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' },
+            { id: '_xa58rxg', libId: 'c1777819362407', name: 'Mobilisation antéro-postérieur tibiofibulaire (Mulligan)', url: 'https://youtu.be/P1VWOTCQz-Y?is=7shVEAXN016H47cA', reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' }
+          ]}
+        ]
+      },
+      {
+        id: 'medial-retromall',
+        label: 'Médial rétromalléolaire',
+        color: '#F0FDF4',
+        borderColor: '#22C55E',
+        blocs: [
+          { id: '_o533xwd', title: 'Test', exos: [
+            { id: '_6rub6r3', libId: 'c1777838105421',
+              name: 'WBLT + Hallux dorsiflexion',
+              url: '',
+              consigne: 'Comparer au WBLT classique :\n— Si douleur augmente ou ROM diminue > 1,5 cm → LTFH\n— Sinon → Sous-talienne',
+              reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' }
+          ]},
+          { id: '_o2su0lp', title: 'LTFH', exos: [
+            { id: '_mjypvne', libId: 'c1777838290074', name: 'Étirement du LTFH', url: 'https://youtu.be/7gp0SbtW0wE?is=Lq4w483qi_bRbHzu', reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' }
+          ]},
+          { id: '_03u2nnk', title: 'Sous-talienne', exos: [
+            { id: '_az1qjh8', libId: 'c1777838353809', name: 'Mobilisation médio-latéral de la sous-talienne',  url: 'https://youtu.be/TzFkSfU99ec?is=iA2n8p4ZPkdQ04is', reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' },
+            { id: '_jod455s', libId: 'c1777838411460', name: 'Mobilisation latéro-médial de la sous-talienne', url: 'https://youtu.be/s4k0jqDIkc8?is=U175aAz_h6aW0hYD',  reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' }
+          ]}
+        ]
+      },
+      {
+        id: 'lateral-retromall',
+        label: 'Latéral rétromalléolaire',
+        color: '#FFF7ED',
+        borderColor: '#F97316',
+        blocs: [
+          { id: '_xbenezg', title: 'Test', exos: [
+            { id: '_xa9h85l', libId: 'c1777838591737',
+              name: 'WBLT + inversion',
+              url: '',
+              consigne: 'Comparer au WBLT classique :\n— Si douleur augmente ou ROM diminue > 1,5 cm → Tendinopathie des fibulaires\n— Sinon → Tibiofibulaire inférieur',
+              reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' }
+          ]},
+          { id: '_1fes75o', title: 'Fibulaires', exos: [
+            { id: '_rku1i5i', libId: 'c1777838776758', name: 'Étirement des fibulaires',         url: 'https://youtu.be/1djX7cIsBMg?is=A4mg7Cd0cYAgsN8Q', reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' },
+            { id: '_dim6mf7', libId: 'c1777839390292', name: 'Éversion de cheville isométrique', url: 'https://youtu.be/QmquJBw2JT0?is=TlsYYb6YFToouoIx', reps:'', duree:'45s', series:'3', recup:'120', tempo:'', chained:false, cibles:[{type:'RPE',min:'4',max:'7'}], obj:'' }
+          ]},
+          { id: '_z5j97hq', title: 'Tibiofibulaire inférieur', exos: [
+            { id: '_rjvl5cy', libId: 'c1777839473325', name: 'Mobilisation postéro-antérieur tibiofibulaire inférieur',           url: 'https://youtu.be/_qC0jRbA5l0?is=ZLC1816sRPN9xCso', reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' },
+            { id: '_que0pa0', libId: 'c1777839527912', name: 'Mobilisation postéro-antérieur tibiofibulaire inférieur (Mulligan)', url: 'https://youtu.be/GVu-sH0zF5I?is=lXdCXQM5GnFaCQbL', reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' }
+          ]}
+        ]
+      },
+      {
+        id: 'posterieur',
+        label: 'Postérieur',
+        color: '#FDF4FF',
+        borderColor: '#A855F7',
+        blocs: [
+          { id: '_i2uo0ll', title: 'Test', exos: [
+            { id: '_7ko0pd7', libId: 'c1777839734378',
+              name: 'SLUMP test',
+              url: 'https://youtu.be/HFGfP84uwEo?is=jeEWYFV8cO65D_zK',
+              consigne: 'Si douleur augmente ou ROM diminue → Mécanosensibilité neurale (nerf tibial)\nSinon → Raideur du triceps sural',
+              reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' }
+          ]},
+          { id: '_yqxlgf4', title: 'Nerf tibial', exos: [
+            { id: '_2cqnaaz', libId: 'c1777839934435', name: 'Neurodynamie nerf tibial', url: 'https://youtu.be/qZZIy5zAnBQ?is=Wx7Wp5PXdRv-cfcn', reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' }
+          ]},
+          { id: '_g6ir442', title: 'Triceps sural', exos: [
+            { id: '_ep0tez7', libId: 'c1777840032716', name: 'Étirement du triceps sural', url: 'https://youtu.be/J-nbiHzMKHc?is=VTQfzs2-KkvEuPEF', reps:'', duree:'', series:'', recup:'', tempo:'', chained:false, cibles:[], obj:'' }
+          ]}
+        ]
+      }
+    ]
+  },
+  {
+    id: 'menisque',
+    type: 'rehab',
+    name: 'Réparation Méniscale',
+    icon: '🦵',
+    category: 'Pathologie',
+    joint: 'Genou',
+    source: 'Kinesport',
+    duration: 'Variable selon critères',
+    isBuiltin: true,
+    phases: [
+      {
+        id: 'p1',
+        name: 'Phase 1 — Post-lésionnelle / Mouvement protégé',
+        weeks: '',
+        color: 'var(--accent-ll)',
+        borderColor: '#3B82F6',
+        objectives: [
+          'Protéger la cicatrisation des tissus réparés',
+          'Réduire la douleur et l\'œdème au niveau du genou, du pied et de la cheville',
+          'Rétablir l\'extension complète du genou',
+          'Restaurer les quadriceps et l\'activation des muscles environnants'
+        ],
+        precautions: [
+          'Protection maximale — pas de course, saut ou activité pliométrique',
+          'Mise en charge modifiée et/ou assistée',
+          'Déchirures stables : MEC autorisée sous couvert attelle verrouillée en extension 4 semaines → déverrouillage semaines 5/6 → sevrage > 6 semaines',
+          'Déchirures instables : MEC proscrite 4 semaines → MEC progressive > 4 semaines → déverrouillage à 90° > 6 semaines → sevrage quand marche qualitative'
+        ],
+        weekly: [
+          { week: 'Exercices', content: 'Mobilité patellaire · Extension complète de genou · Flexion progressive selon recommandations postopératoires · Stabilisation du tronc · Renforcement autour de la hanche · Recrutement quadricipital progressif sans douleur fémoro-patellaire · Marche selon consignes postopératoires · Équilibre bipodal selon consignes postopératoires' }
+        ],
+        exitCriteria: [
+          'Absence d\'épanchement actif',
+          'Mobilité patellaire normale',
+          '20 levées de jambe sans faiblesse des extenseurs',
+          'Extension active complète du genou',
+          'Démarche normale sans compensation bassin/tronc',
+          'Activation du quadriceps validée',
+          'Qualité trophique du genou',
+          'Autorisation médicale pour mise en charge complète'
+        ]
+      },
+      {
+        id: 'p2',
+        name: 'Phase 2 — À faible impact',
+        weeks: '',
+        color: '#F0FDF4',
+        borderColor: '#22C55E',
+        objectives: [
+          'Rétablir l\'amplitude articulaire passive complète',
+          'Rétablir la cinématique de mise en charge symétrique',
+          'Rétablir l\'équilibre jambe opérée / jambe controlatérale',
+          'Normaliser le schéma de marche sans assistance',
+          'Retour au travail léger (bureau, conduite)',
+          'Retour sport faible impact (natation, cyclisme, marche linéaire 2×/semaine)'
+        ],
+        precautions: [],
+        weekly: [
+          { week: 'Exercices', content: 'Maintenir extension genou · Progression de la flexion selon restrictions · Pratique aquatique · Stabilisation du tronc · Renforcement chaîne postérieure · Exercices chaîne fermée bipodal → unipodal · Exercices chaîne ouverte sans douleur · Exercices cardiovasculaires' }
+        ],
+        exitCriteria: [
+          'Montée/descente escaliers sans compensations',
+          'Pas de douleur post-activité > 24h',
+          'Squat 75° qualitatif sans douleur',
+          'Station unipodale 30s sans perte d\'équilibre ni douleur',
+          'Démarche normale (escaliers)',
+          'Qualités biomécaniques et proprioceptives validées'
+        ]
+      },
+      {
+        id: 'p3',
+        name: 'Phase 3 — Linéaire / Force & Course',
+        weeks: '',
+        color: '#FFF7ED',
+        borderColor: '#F97316',
+        objectives: [
+          'Maintenir l\'amplitude articulaire passive complète',
+          'Rétablir la stabilité durant les activités unipodales',
+          'Rétablir le schéma de course',
+          'Retour à l\'activité professionnelle',
+          'Retour sport amateur (Tegner 4–5)'
+        ],
+        precautions: [
+          'Autorisation requise pour reprise course/saut (généralement pas avant 3 mois post-réparation méniscale)',
+          'Pas de changement de direction'
+        ],
+        weekly: [],
+        exitCriteria: [
+          'Douleur < 2/10 durant les exercices',
+          'Pas de valgus dynamique en unipodal',
+          'Single Leg Step Down sans ou léger valgus',
+          'Force LSI > 80%',
+          'Récupération force symétrique',
+          'Schéma de course normal',
+          'Pas de douleur pendant ni après les activités'
+        ]
+      },
+      {
+        id: 'p4',
+        name: 'Phase 4 — Retour à l\'activité (Impact élevé)',
+        weeks: '',
+        color: '#FDF4FF',
+        borderColor: '#A855F7',
+        objectives: [
+          'Progression course/agilité en interval training',
+          'Contrôle réception bipodale/unipodale sans compensation inter-membres',
+          'Retour sport de contact amateur',
+          'Retour compétition / haut niveau (Tegner 6–10)'
+        ],
+        precautions: [
+          'Réservé aux patients ayant un objectif d\'activité Tegner 6 à 10'
+        ],
+        weekly: [
+          { week: 'Exercices', content: 'Force et endurance sur les exercices de la phase 3 · Progression pliométrie / agilité / sauts · Puissance · Rééducation neuromusculaire · Gainage et stabilisation · Entraînements spécifiques au sport · Exercices cardiovasculaires' }
+        ],
+        exitCriteria: [
+          'Pas d\'œdème',
+          'Circonférence cuisse Δ < 1,5 cm',
+          'Amplitude articulaire égale',
+          'Single Leg Step Down sans valgus dynamique',
+          'Single hop / Triple hop / Triple crossover hop / 6m hop / 505 Test validés',
+          'ACL-RSI > 65%',
+          'Tests de sauts LSI > 90%',
+          'Force isocinétisme quadriceps > 90% côté opposé',
+          '505 test > 90% côté opposé'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'lcm-chirurgical',
+    type: 'rehab',
+    name: 'LCM post-chirurgical',
+    icon: '🦵',
+    category: 'Pathologie',
+    source: 'Kinesport',
+    duration: '20 semaines (RTP 6–9 mois)',
+    joint: 'Genou',
+    isBuiltin: true,
+    phases: [
+      {
+        id: 'p1',
+        name: 'Phase 1 — Post-opératoire',
+        weeks: 'S0 → S6',
+        color: 'var(--accent-ll)',
+        borderColor: '#3B82F6',
+        objectives: [
+          'Amplitude de mouvement',
+          'Marche',
+          'Soins de la plaie',
+          'Contrôle douleur et œdème',
+          'Renforcement précoce'
+        ],
+        precautions: [
+          'Attelle articulée : 0–90° de flexion les 4 premières semaines, puis 130° à 6 semaines',
+          'ROM passive les 2 premières semaines → active assistée → active',
+          'ROM complète attendue à 6–8 semaines (peut prendre jusqu\'à 6–10 semaines)',
+          'Marche en décharge ou pas-simulé durant les 6 premières semaines',
+          'Ablation des sutures 10–14 jours post-op'
+        ],
+        weekly: [
+          { week: 'Exercices', content: 'Mobilisation rotulienne, tissus mous et cicatriciels · Vélo stationnaire selon amplitudes tolérées · Réduction œdème : drainage, cryothérapie, pressothérapie · Récupération activation quadriceps · Renforcement muscles de hanche (adducteurs, abducteurs, extenseurs) · Activation pompe tricipitale avec maintien de l\'attelle' }
+        ],
+        exitCriteria: [
+          'Pas de douleur durant la mobilisation 0–90°',
+          'Sweep test (0–1+)',
+          'Lever jambe tendue sans perte d\'activation du quadriceps',
+          'Marche sans béquille, sans boiterie et sans douleur avec attelle déverrouillée',
+          'Douleur, œdème, ROM et activation quadriceps contrôlés'
+        ]
+      },
+      {
+        id: 'p2',
+        name: 'Phase 2 — Contrôle Moteur',
+        weeks: 'S6 → S12',
+        color: '#F0FDF4',
+        borderColor: '#22C55E',
+        objectives: [
+          'Récupération de la force',
+          'Correction des facteurs causaux',
+          'Course en ligne à faible intensité'
+        ],
+        precautions: [
+          'Renforcement chaîne fermée possible à partir de 6 semaines post-op si contrôle quadricipital',
+          'Leg Press limité à 70° sur les premières séances en chaîne fermée',
+          'Vigilance sur les facteurs de causalité : valgus genou, faiblesse abducteurs/rotateurs externes hanche, pronation pied, faiblesse du tronc',
+          'Reprise course : balnéothérapie → tapis → terrain'
+        ],
+        weekly: [
+          { week: 'Exercices', content: 'Renforcement progressif chaîne ouverte → chaîne fermée · Stabilisateurs dynamiques du genou (quadriceps, ischio-jambiers) · Stabilisateurs sus- et sous-jacents (bassin, glutéaux, triceps sural) · Course en ligne à faible intensité progressive (distances spécifiques au sport)' }
+        ],
+        exitCriteria: [
+          'LSI > 80%',
+          'Pas de valgus de genou dans les exercices de réhabilitation',
+          'Pas de valgus ni de douleur lors du jogging en ligne',
+          'Récupération d\'une force symétrique',
+          'Correction biomécanique validée',
+          'Course en ligne qualitative'
+        ]
+      },
+      {
+        id: 'p3',
+        name: 'Phase 3 — Retour au sport',
+        weeks: 'S12 → RTP',
+        color: '#FFF7ED',
+        borderColor: '#F97316',
+        objectives: [
+          'Progresser de la course à faible intensité au sprint',
+          'Travail du changement de direction',
+          'Incorporer renforcement fonctionnel',
+          'Récupération des performances physiques'
+        ],
+        precautions: [
+          'Vigilance absolue sur le valgus de genou lors des changements de direction',
+          'Progression COD : excentrique décélération → poussée → COD complet',
+          'Adaptation au sport, à la position et aux capacités du sportif'
+        ],
+        weekly: [
+          { week: 'Exercices', content: 'Progression course : distance spécifique au sport → volume → intensité → sprint · Changements de direction progressifs · Renforcement fonctionnel : proprioception, pliométrie, agilité, exercices spécifiques au sport · Prévention secondaire' }
+        ],
+        exitCriteria: [
+          'ROM similaire au côté opposé',
+          'Pas de douleur à la palpation du LCM',
+          'Signe du glaçon négatif',
+          'Valgus stress test négatif (pas d\'instabilité)',
+          'LSI > 90% quadriceps et ischio-jambiers',
+          'Pas de douleur au sprint',
+          'Pas de douleur ni valgus lors des COD, pliométrie et agilité',
+          'LSI > 90% au 505 test',
+          'Amplitude, stabilité articulaire, force musculaire et performances physiques adéquates'
+        ]
+      }
+    ]
+  }
+];
+
+/* ─── Ouvrir / Fermer overlay ────────────────────────────────── */
+/* ─── Cache données patient-protocole (Supabase) ────────────── */
+var _protoPatientData = {};
+// Structure : { protocolId: { pp: patient_protocol|null, checks: { phaseId: { idx: bool } } } }
+
+function openProtoPanel() {
+  var ov = document.getElementById('proto-overlay');
+  if(!ov) return;
+  ov.classList.add('open');
+  _loadCustomProtocols();
+  if(_progToken && _progUid){
+    _fetchCustomProtocolsFromSupabase(function(){ renderProtocols(); });
+  } else {
+    renderProtocols();
+  }
+}
+function closeProtoPanel() {
+  var ov = document.getElementById('proto-overlay');
+  if(ov) ov.classList.remove('open');
+}
+
+/* ══════════════════════════════════════════════════════
+   PROTOCOLES CUSTOM — Admin CRUD
+   ══════════════════════════════════════════════════════ */
+var _customProtocols  = [];
+var _customProtoSupaId = null; // ID du record Supabase meta
+
+function _loadCustomProtocols(){
+  try {
+    var raw = localStorage.getItem(R4P_KEYS.CUSTOM_PROTOCOLS);
+    _customProtocols = raw ? JSON.parse(raw) : [];
+    var sid = localStorage.getItem(R4P_KEYS.CUSTOM_PROTOCOLS_SID);
+    if(sid) _customProtoSupaId = sid;
+  } catch(e){ _customProtocols = []; }
+}
+
+function _getAllProtocols(){
+  /* Si _customProtocols est peuplé, on l'utilise seul.
+     Sinon fallback sur PROTOCOLS_REF (avant migration). */
+  var protos = _customProtocols.length ? _customProtocols : PROTOCOLS_REF;
+  /* Merge le champ joint depuis PROTOCOLS_REF pour les protocoles qui ne l'ont pas encore */
+  return protos.map(function(p){
+    if(!p.joint){
+      var ref = PROTOCOLS_REF.find(function(r){ return r.id === p.id; });
+      if(ref && ref.joint) return Object.assign({}, p, { joint: ref.joint });
+    }
+    return p;
+  });
+}
+
+function _saveCustomProtocols(callback){
+  /* 1. LocalStorage (immédiat) */
+  try { localStorage.setItem(R4P_KEYS.CUSTOM_PROTOCOLS, JSON.stringify(_customProtocols)); } catch(e){}
+  /* 2. Supabase sync (si connecté) */
+  if(!_progToken || !_progUid){ if(callback) callback(); return; }
+  var donnees = JSON.stringify({ protocols: _customProtocols });
+  var body = JSON.stringify({ praticien_id: _progUid, nom: '__r4p_protocols_meta__', type: '__meta__', is_public: true, donnees: donnees });
+  if(_customProtoSupaId){
+    _fetchRetry(SUPA_URL_P+'/rest/v1/templates?id=eq.'+_customProtoSupaId, {
+      method:'PATCH', headers: Object.assign({}, _sbHeaders(), {'Content-Type':'application/json'}), body: body
+    }).then(function(r){ if(callback) callback(); });
+  } else {
+    _fetchRetry(SUPA_URL_P+'/rest/v1/templates', {
+      method:'POST', headers: Object.assign({}, _sbHeaders(), {'Content-Type':'application/json','Prefer':'return=representation'}), body: body
+    }).then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(rows){
+      if(rows && rows.length){ _customProtoSupaId = rows[0].id; try{ localStorage.setItem(R4P_KEYS.CUSTOM_PROTOCOLS_SID, String(rows[0].id)); }catch(e){} }
+      if(callback) callback();
+    });
+  }
+}
+
+function _fetchCustomProtocolsFromSupabase(callback){
+  if(!_progToken || !_progUid){ callback && callback(); return; }
+  _fetchRetry(SUPA_URL_P+'/rest/v1/templates?nom=eq.__r4p_protocols_meta__&praticien_id=eq.'+_progUid+'&select=id,donnees&limit=1', {headers:_sbHeaders()})
+  .then(function(r){ return r.ok ? r.json() : []; })
+  .then(function(rows){
+    if(rows && rows.length){
+      _customProtoSupaId = rows[0].id;
+      try{ localStorage.setItem(R4P_KEYS.CUSTOM_PROTOCOLS_SID, String(rows[0].id)); }catch(e){}
+      var d = rows[0].donnees;
+      if(typeof d === 'string') try{ d = JSON.parse(d); }catch(e){ d = null; }
+      if(d && Array.isArray(d.protocols)){
+        _customProtocols = d.protocols;
+        try{ localStorage.setItem(R4P_KEYS.CUSTOM_PROTOCOLS, JSON.stringify(_customProtocols)); }catch(e){}
+      }
+    }
+    /* Migration : si toujours vide, seeder depuis PROTOCOLS_REF */
+    if(!_customProtocols.length){
+      _customProtocols = PROTOCOLS_REF.map(function(p){
+        var c = JSON.parse(JSON.stringify(p));
+        delete c.isBuiltin;
+        c.isCustom = true;
+        return c;
+      });
+      _saveCustomProtocols(function(){ callback && callback(); });
+      return;
+    }
+    /* Merge : ajouter les entrees PROTOCOLS_REF manquantes (rattrapage migration partielle) */
+    var existingIds = _customProtocols.map(function(p){ return p.id; });
+    var missing = PROTOCOLS_REF.filter(function(p){ return existingIds.indexOf(p.id) === -1; });
+    if(missing.length){
+      missing.forEach(function(p){
+        var c = JSON.parse(JSON.stringify(p));
+        delete c.isBuiltin;
+        c.isCustom = true;
+        _customProtocols.push(c);
+      });
+      _saveCustomProtocols(function(){ callback && callback(); });
+      return;
+    }
+    callback && callback();
+  })
+  .catch(function(){ callback && callback(); });
+}
+
+/* ── Éditeur visuel de phases ── */
+var _pePhasesData = [];
+var _peOpenPhases = {};
+var _PE_COLORS = [
+  {color:'var(--accent-ll)',borderColor:'#3B82F6'},
+  {color:'#F0FDF4',borderColor:'#22C55E'},
+  {color:'#FFF7ED',borderColor:'#F97316'},
+  {color:'#FDF4FF',borderColor:'#A855F7'},
+  {color:'#FFF1F2',borderColor:'#F43F5E'},
+  {color:'#FFFBEB',borderColor:'#EAB308'},
+];
+
+function _peInitPhases(phases){
+  _pePhasesData = (phases||[]).map(function(p,i){
+    var uid = p.id ? String(p.id) : ('ph'+i+Date.now());
+    return Object.assign({},p,{_uid:uid});
+  });
+  _peOpenPhases = {};
+  if(_pePhasesData.length) _peOpenPhases[_pePhasesData[0]._uid] = true;
+  _peRenderPhasesEditor();
+}
+
+function _peSyncPhasesFromDom(){
+  _pePhasesData.forEach(function(phase){
+    var el = document.getElementById('pe-ph-'+phase._uid);
+    if(!el) return;
+    phase.name = el.querySelector('.pe-ph-name-inp').value;
+    phase.weeks = el.querySelector('.pe-ph-weeks-inp').value;
+    phase.borderColor = el.querySelector('.pe-ph-bordercol').value;
+    phase.color = el.querySelector('.pe-ph-bgcol').value;
+    phase.objectives  = _peReadList(el,'objectives');
+    phase.precautions = _peReadList(el,'precautions');
+    phase.exitCriteria = _peReadList(el,'exitcriteria');
+    phase.weekly = _peReadWeekly(el);
+  });
+}
+
+function _peReadList(phaseEl,key){
+  var nodes = phaseEl.querySelectorAll('.pe-list-'+key+' .pe-list-inp');
+  return Array.prototype.map.call(nodes,function(i){return i.value;}).filter(function(v){return v.trim();});
+}
+
+function _peReadWeekly(phaseEl){
+  var rows = phaseEl.querySelectorAll('.pe-weekly-rows .pe-weekly-row');
+  var result = [];
+  rows.forEach(function(row){
+    var w = row.querySelector('.pe-weekly-lbl-inp').value;
+    var c = row.querySelector('.pe-weekly-cnt-inp').value;
+    if(w.trim()||c.trim()) result.push({week:w,content:c});
+  });
+  return result;
+}
+
+function _peRenderPhasesEditor(){
+  var container = document.getElementById('pe-phases-editor');
+  if(!container) return;
+  var h = '';
+  _pePhasesData.forEach(function(phase,i){
+    var uid = phase._uid;
+    var isOpen = !!_peOpenPhases[uid];
+    var bc = phase.borderColor||'#3B82F6';
+    var bg = phase.color||'var(--accent-ll)';
+    h += '<div class="pe-phase-card'+(isOpen?' open':'')+'" id="pe-ph-'+uid+'">';
+    h += '<div class="pe-phase-card-head" onclick="_peTogglePhase(\''+uid+'\')" style="border-left:3px solid '+bc+'">';
+    h += '<input type="color" class="pe-ph-bordercol" value="'+bc+'" onclick="event.stopPropagation()" title="Couleur bordure" style="width:22px;height:20px;border:none;background:none;padding:0;cursor:pointer;flex-shrink:0;">';
+    h += '<input type="color" class="pe-ph-bgcol"     value="'+bg+'" onclick="event.stopPropagation()" title="Couleur fond"    style="width:22px;height:20px;border:none;background:none;padding:0;cursor:pointer;flex-shrink:0;">';
+    h += '<input type="text" class="pe-ph-name-inp" value="'+_escHtml(phase.name||'')+'" placeholder="Nom de la phase" onclick="event.stopPropagation()">';
+    h += '<input type="text" class="pe-ph-weeks-inp" value="'+_escHtml(phase.weeks||'')+'" placeholder="Durée…" onclick="event.stopPropagation()">';
+    if(i>0)                          h += '<button class="pe-ph-move" onclick="event.stopPropagation();_peMovePhase(\''+uid+'\',-1)" title="Monter">↑</button>';
+    if(i<_pePhasesData.length-1)     h += '<button class="pe-ph-move" onclick="event.stopPropagation();_peMovePhase(\''+uid+'\',1)"  title="Descendre">↓</button>';
+    h += '<button class="pe-ph-del" onclick="event.stopPropagation();_peRemovePhase(\''+uid+'\')" title="Supprimer cette phase">×</button>';
+    h += '<span class="pe-ph-toggle">›</span>';
+    h += '</div>';
+    h += '<div class="pe-phase-card-body">';
+    h += _peRenderList(uid,'objectives', 'Objectifs',         phase.objectives||[],  'Objectif…',        '+ Ajouter un objectif');
+    h += _peRenderList(uid,'precautions','Précautions',        phase.precautions||[], 'Précaution…',      '+ Ajouter une précaution');
+    h += _peRenderList(uid,'exitcriteria','Critères de sortie',phase.exitCriteria||[],'Critère…',         '+ Ajouter un critère');
+    h += _peRenderWeeklySection(uid, phase.weekly||[]);
+    h += '</div>';
+    h += '</div>';
+  });
+  container.innerHTML = h;
+}
+
+function _peRenderList(uid,key,label,items,placeholder,addLabel){
+  var h = '<div class="pe-list-section"><div class="pe-list-lbl">'+label+'</div>';
+  h += '<div class="pe-list-'+key+'">';
+  items.forEach(function(item,j){
+    h += '<div class="pe-list-item">';
+    h += '<input type="text" class="pe-list-inp" value="'+_escHtml(item)+'" placeholder="'+_escHtml(placeholder)+'">';
+    h += '<button class="pe-list-del" onclick="_peRemoveListItem(\''+uid+'\',\''+key+'\','+j+')">×</button>';
+    h += '</div>';
+  });
+  h += '</div>';
+  h += '<button class="pe-list-add-btn" onclick="_peAddListItem(\''+uid+'\',\''+key+'\')">'+addLabel+'</button>';
+  h += '</div>';
+  return h;
+}
+
+function _peRenderWeeklySection(uid,weekly){
+  var h = '<div class="pe-list-section"><div class="pe-list-lbl">Contenu hebdomadaire / par sous-phase</div>';
+  h += '<div class="pe-weekly-rows">';
+  weekly.forEach(function(w,j){
+    h += '<div class="pe-weekly-row">';
+    h += '<input type="text" class="pe-weekly-lbl-inp" value="'+_escHtml(w.week||'')+'" placeholder="Semaine / stade…">';
+    h += '<input type="text" class="pe-weekly-cnt-inp" value="'+_escHtml(w.content||'')+'" placeholder="Contenu, exercices…">';
+    h += '<button class="pe-list-del" onclick="_peRemoveWeekly(\''+uid+'\','+j+')">×</button>';
+    h += '</div>';
+  });
+  h += '</div>';
+  h += '<button class="pe-list-add-btn" onclick="_peAddWeekly(\''+uid+'\')">+ Ajouter un contenu</button>';
+  h += '</div>';
+  return h;
+}
+
+function _peTogglePhase(uid){
+  _peSyncPhasesFromDom();
+  _peOpenPhases[uid] = !_peOpenPhases[uid];
+  _peRenderPhasesEditor();
+}
+
+function _peAddPhase(){
+  _peSyncPhasesFromDom();
+  var i = _pePhasesData.length;
+  var col = _PE_COLORS[i % _PE_COLORS.length];
+  var uid = 'ph'+Date.now();
+  _pePhasesData.push({_uid:uid,id:uid,name:'Phase '+(i+1),weeks:'',color:col.color,borderColor:col.borderColor,objectives:[],precautions:[],exitCriteria:[],weekly:[]});
+  _peOpenPhases[uid] = true;
+  _peRenderPhasesEditor();
+}
+
+function _peRemovePhase(uid){
+  if(!confirm('Supprimer cette phase ?')) return;
+  _peSyncPhasesFromDom();
+  _pePhasesData = _pePhasesData.filter(function(p){return p._uid!==uid;});
+  delete _peOpenPhases[uid];
+  _peRenderPhasesEditor();
+}
+
+function _peMovePhase(uid,dir){
+  _peSyncPhasesFromDom();
+  var idx = _pePhasesData.findIndex(function(p){return p._uid===uid;});
+  if(idx<0) return;
+  var ni = idx+dir;
+  if(ni<0||ni>=_pePhasesData.length) return;
+  var tmp = _pePhasesData[idx]; _pePhasesData[idx] = _pePhasesData[ni]; _pePhasesData[ni] = tmp;
+  _peRenderPhasesEditor();
+}
+
+function _peAddListItem(uid,key){
+  _peSyncPhasesFromDom();
+  var phase = _pePhasesData.find(function(p){return p._uid===uid;});
+  if(!phase) return;
+  var km = {objectives:'objectives',precautions:'precautions',exitcriteria:'exitCriteria'};
+  var rk = km[key]||key;
+  if(!phase[rk]) phase[rk]=[];
+  phase[rk].push('');
+  _peOpenPhases[uid]=true;
+  _peRenderPhasesEditor();
+  setTimeout(function(){
+    var el=document.getElementById('pe-ph-'+uid);
+    if(!el) return;
+    var inps=el.querySelectorAll('.pe-list-'+key+' .pe-list-inp');
+    if(inps.length) inps[inps.length-1].focus();
+  },40);
+}
+
+function _peRemoveListItem(uid,key,idx){
+  _peSyncPhasesFromDom();
+  var phase = _pePhasesData.find(function(p){return p._uid===uid;});
+  if(!phase) return;
+  var km = {objectives:'objectives',precautions:'precautions',exitcriteria:'exitCriteria'};
+  var rk = km[key]||key;
+  if(phase[rk]) phase[rk].splice(idx,1);
+  _peRenderPhasesEditor();
+}
+
+function _peAddWeekly(uid){
+  _peSyncPhasesFromDom();
+  var phase = _pePhasesData.find(function(p){return p._uid===uid;});
+  if(!phase) return;
+  if(!phase.weekly) phase.weekly=[];
+  phase.weekly.push({week:'',content:''});
+  _peOpenPhases[uid]=true;
+  _peRenderPhasesEditor();
+  setTimeout(function(){
+    var el=document.getElementById('pe-ph-'+uid);
+    if(!el) return;
+    var rows=el.querySelectorAll('.pe-weekly-rows .pe-weekly-row');
+    if(rows.length) rows[rows.length-1].querySelector('.pe-weekly-lbl-inp').focus();
+  },40);
+}
+
+function _peRemoveWeekly(uid,idx){
+  _peSyncPhasesFromDom();
+  var phase = _pePhasesData.find(function(p){return p._uid===uid;});
+  if(!phase||!phase.weekly) return;
+  phase.weekly.splice(idx,1);
+  _peRenderPhasesEditor();
+}
+
+function _peGetPhasesData(){
+  _peSyncPhasesFromDom();
+  return _pePhasesData.map(function(p){
+    return {
+      id: p.id||p._uid,
+      name: p.name||'',
+      weeks: p.weeks||'',
+      color: p.color||'var(--accent-ll)',
+      borderColor: p.borderColor||'#3B82F6',
+      objectives:  p.objectives||[],
+      precautions: p.precautions||[],
+      exitCriteria: p.exitCriteria||[],
+      weekly: p.weekly||[]
+    };
+  });
+}
+
+/* ── Éditeur visuel bibliothèque ── */
+var _peLibData  = {mode:'tree',entryTest:'',branches:[],blocs:[]};
+var _peOpenBranches = {};
+var _peOpenBlocs    = {};
+
+function _peInitLibrary(proto){
+  var hasBranches = proto && proto.branches && proto.branches.length;
+  var hasBlocs    = proto && proto.blocs    && proto.blocs.length && !hasBranches;
+  var etRaw = proto && proto.entryTest;
+  var etText = etRaw ? (typeof etRaw === 'string' ? etRaw : (etRaw.description||etRaw.name||'')) : '';
+  _peLibData = {
+    mode: hasBlocs ? 'blocs' : 'tree',
+    entryTest: etText,
+    branches: hasBranches ? proto.branches.map(function(b,i){
+      var uid = String(b.id||('br'+i+'_'+Date.now()));
+      return {_uid:uid,id:b.id||uid,label:b.label||b.name||'',color:b.color||'var(--accent-ll)',borderColor:b.borderColor||'#3B82F6',
+        blocs: _peMapBlocsIn(b.blocs||[])};
+    }) : [],
+    blocs: hasBlocs ? _peMapBlocsIn(proto.blocs) : []
+  };
+  _peOpenBranches = {};
+  _peOpenBlocs    = {};
+  if(_peLibData.branches.length) _peOpenBranches[_peLibData.branches[0]._uid] = true;
+  if(_peLibData.blocs.length)    _peOpenBlocs[_peLibData.blocs[0]._uid]       = true;
+  _peRenderLibEditor();
+  _peLibUpdateUI();
+}
+
+function _peMapBlocsIn(blocs){
+  return (blocs||[]).map(function(bl,j){
+    var uid = String(bl.id||('bl'+j+'_'+Date.now()));
+    return {_uid:uid,id:bl.id||uid,title:bl.title||'',
+      exos:(bl.exos||[]).map(function(e,k){
+        var euid = String(e.id||('ex'+k+'_'+Date.now()));
+        return {_uid:euid,id:e.id||euid,name:e.name||'',url:e.url||''};
+      })};
+  });
+}
+
+function _peLibSetMode(mode){
+  _peSyncLibFromDom();
+  _peLibData.mode = mode;
+  _peRenderLibEditor();
+  _peLibUpdateUI();
+}
+
+function _peLibUpdateUI(){
+  var isTree = _peLibData.mode === 'tree';
+  var btnT = document.getElementById('pe-lib-btn-tree');
+  var btnB = document.getElementById('pe-lib-btn-blocs');
+  var etW  = document.getElementById('pe-entry-test-wrap');
+  var addB = document.getElementById('pe-lib-add-btn');
+  if(btnT) btnT.className = 'pe-lib-mode-btn'+(isTree?' active':'');
+  if(btnB) btnB.className = 'pe-lib-mode-btn'+(!isTree?' active':'');
+  if(etW)  etW.style.display  = isTree ? '' : 'none';
+  if(addB) addB.textContent   = isTree ? '+ Ajouter une branche' : '+ Ajouter un bloc';
+}
+
+function _peSyncLibFromDom(){
+  var etInp = document.getElementById('pe-entry-test-inp');
+  if(etInp) _peLibData.entryTest = etInp.value;
+  if(_peLibData.mode === 'tree'){
+    _peLibData.branches.forEach(function(branch){
+      var el = document.getElementById('pe-br-'+branch._uid);
+      if(!el) return;
+      branch.label       = el.querySelector('.pe-branch-label-inp').value;
+      branch.borderColor = el.querySelector('.pe-br-bordercol').value;
+      branch.color       = el.querySelector('.pe-br-bgcol').value;
+      branch.blocs.forEach(function(bloc){ _peSyncBlocFromDom(bloc); });
+    });
+  } else {
+    _peLibData.blocs.forEach(function(bloc){ _peSyncBlocFromDom(bloc); });
+  }
+}
+
+function _peSyncBlocFromDom(bloc){
+  var el = document.getElementById('pe-bl-'+bloc._uid);
+  if(!el) return;
+  var t = el.querySelector('.pe-bloc-title-inp');
+  if(t) bloc.title = t.value;
+  var names = el.querySelectorAll('.pe-exo-name');
+  var urls  = el.querySelectorAll('.pe-exo-url');
+  bloc.exos.forEach(function(exo,i){
+    if(names[i]) exo.name = names[i].value;
+    if(urls[i])  exo.url  = urls[i].value;
+  });
+}
+
+function _peRenderLibEditor(){
+  var container = document.getElementById('pe-lib-editor');
+  if(!container) return;
+  var h = '';
+  var isTree = _peLibData.mode === 'tree';
+  if(isTree){
+    _peLibData.branches.forEach(function(branch,i){
+      var uid = branch._uid;
+      var isOpen = !!_peOpenBranches[uid];
+      var bc = branch.borderColor||'#3B82F6';
+      var bg = branch.color||'var(--accent-ll)';
+      h += '<div class="pe-branch-card'+(isOpen?' open':'')+'" id="pe-br-'+uid+'" style="border-left:3px solid '+bc+'">';
+      h += '<div class="pe-branch-head" onclick="_peToggleBranch(\''+uid+'\')">';
+      h += '<input type="color" class="pe-br-bordercol" value="'+bc+'" onclick="event.stopPropagation()" title="Couleur bordure" style="width:22px;height:20px;border:none;background:none;padding:0;cursor:pointer;flex-shrink:0;">';
+      h += '<input type="color" class="pe-br-bgcol"     value="'+bg+'" onclick="event.stopPropagation()" title="Couleur fond"    style="width:22px;height:20px;border:none;background:none;padding:0;cursor:pointer;flex-shrink:0;">';
+      h += '<input type="text" class="pe-branch-label-inp" value="'+_escHtml(branch.label||'')+'" placeholder="Nom de la branche" onclick="event.stopPropagation()">';
+      if(i>0)                              h += '<button class="pe-ph-move" onclick="event.stopPropagation();_peMoveBranch(\''+uid+'\',-1)" title="Monter">↑</button>';
+      if(i<_peLibData.branches.length-1)   h += '<button class="pe-ph-move" onclick="event.stopPropagation();_peMoveBranch(\''+uid+'\',1)"  title="Descendre">↓</button>';
+      h += '<button class="pe-ph-del" onclick="event.stopPropagation();_peRemoveBranch(\''+uid+'\')" title="Supprimer">×</button>';
+      h += '<span class="pe-branch-toggle">›</span>';
+      h += '</div>';
+      h += '<div class="pe-branch-body">';
+      branch.blocs.forEach(function(bloc,j){ h += _peRenderBlocCard(bloc,j,branch.blocs.length,uid); });
+      h += '<button class="pe-list-add-btn" onclick="_peAddBloc(\''+uid+'\')">+ Ajouter un bloc</button>';
+      h += '</div></div>';
+    });
+  } else {
+    _peLibData.blocs.forEach(function(bloc,j){ h += _peRenderBlocCard(bloc,j,_peLibData.blocs.length,'__root__'); });
+  }
+  container.innerHTML = h;
+}
+
+function _peRenderBlocCard(bloc,j,total,branchUid){
+  var uid  = bloc._uid;
+  var buid = branchUid || '__root__';
+  var isOpen = !!_peOpenBlocs[uid];
+  var h = '<div class="pe-bloc-card'+(isOpen?' open':'')+'" id="pe-bl-'+uid+'">';
+  h += '<div class="pe-bloc-head" onclick="_peToggleBloc(\''+uid+'\')">';
+  h += '<span style="font-size:.8rem;flex-shrink:0;">📋</span>';
+  h += '<input type="text" class="pe-bloc-title-inp" value="'+_escHtml(bloc.title||'')+'" placeholder="Titre du bloc" onclick="event.stopPropagation()">';
+  if(j>0)        h += '<button class="pe-ph-move" onclick="event.stopPropagation();_peMoveBloc(\''+buid+'\',\''+uid+'\',-1)" title="Monter">↑</button>';
+  if(j<total-1)  h += '<button class="pe-ph-move" onclick="event.stopPropagation();_peMoveBloc(\''+buid+'\',\''+uid+'\',1)"  title="Descendre">↓</button>';
+  h += '<button class="pe-ph-del" onclick="event.stopPropagation();_peRemoveBloc(\''+buid+'\',\''+uid+'\')" title="Supprimer">×</button>';
+  h += '<span class="pe-bloc-toggle">›</span>';
+  h += '</div>';
+  h += '<div class="pe-bloc-body">';
+  if((bloc.exos||[]).length){
+    h += '<div style="display:flex;gap:4px;margin-bottom:3px;font-size:.62rem;font-weight:700;color:var(--muted);text-transform:uppercase;">';
+    h += '<span style="flex:1">Exercice</span><span style="flex:0 0 140px">URL vidéo</span><span style="width:22px"></span></div>';
+  }
+  (bloc.exos||[]).forEach(function(exo,k){
+    h += '<div class="pe-exo-row">';
+    h += '<input type="text" class="pe-exo-name" value="'+_escHtml(exo.name||'')+'" placeholder="Nom de l\'exercice">';
+    h += '<input type="text" class="pe-exo-url"  value="'+_escHtml(exo.url||'')+'"  placeholder="URL YouTube…">';
+    h += '<button class="pe-list-del" onclick="_peRemoveExo(\''+buid+'\',\''+uid+'\','+k+')">×</button>';
+    h += '</div>';
+  });
+  h += '<button class="pe-list-add-btn" onclick="_peAddExo(\''+buid+'\',\''+uid+'\')">+ Ajouter un exercice</button>';
+  h += '</div></div>';
+  return h;
+}
+
+function _peToggleBranch(uid){ _peSyncLibFromDom(); _peOpenBranches[uid]=!_peOpenBranches[uid]; _peRenderLibEditor(); }
+function _peToggleBloc(uid){   _peSyncLibFromDom(); _peOpenBlocs[uid]=!_peOpenBlocs[uid];       _peRenderLibEditor(); }
+
+function _peAddBranch(){
+  _peSyncLibFromDom();
+  var isTree = _peLibData.mode==='tree';
+  var col = _PE_COLORS[(_peLibData.branches.length+_peLibData.blocs.length)%_PE_COLORS.length];
+  if(isTree){
+    var uid='br'+Date.now();
+    _peLibData.branches.push({_uid:uid,id:uid,label:'Branche '+(_peLibData.branches.length+1),color:col.color,borderColor:col.borderColor,blocs:[]});
+    _peOpenBranches[uid]=true;
+  } else {
+    var buid='bl'+Date.now();
+    _peLibData.blocs.push({_uid:buid,id:buid,title:'Bloc '+(_peLibData.blocs.length+1),exos:[]});
+    _peOpenBlocs[buid]=true;
+  }
+  _peRenderLibEditor();
+}
+
+function _peRemoveBranch(uid){
+  if(!confirm('Supprimer cette branche et tous ses blocs ?')) return;
+  _peSyncLibFromDom();
+  _peLibData.branches = _peLibData.branches.filter(function(b){return b._uid!==uid;});
+  delete _peOpenBranches[uid];
+  _peRenderLibEditor();
+}
+
+function _peMoveBranch(uid,dir){
+  _peSyncLibFromDom();
+  var arr=_peLibData.branches, idx=arr.findIndex(function(b){return b._uid===uid;}), ni=idx+dir;
+  if(idx<0||ni<0||ni>=arr.length) return;
+  var tmp=arr[idx]; arr[idx]=arr[ni]; arr[ni]=tmp;
+  _peRenderLibEditor();
+}
+
+function _peFindBloc(branchUid,blocUid){
+  if(branchUid==='__root__'||!branchUid) return _peLibData.blocs.find(function(b){return b._uid===blocUid;});
+  var branch=_peLibData.branches.find(function(b){return b._uid===branchUid;});
+  return branch ? branch.blocs.find(function(b){return b._uid===blocUid;}) : null;
+}
+
+function _peGetBlocArr(branchUid){
+  if(branchUid==='__root__'||!branchUid) return _peLibData.blocs;
+  var branch=_peLibData.branches.find(function(b){return b._uid===branchUid;});
+  return branch ? branch.blocs : [];
+}
+
+function _peAddBloc(branchUid){
+  _peSyncLibFromDom();
+  var uid='bl'+Date.now();
+  _peGetBlocArr(branchUid).push({_uid:uid,id:uid,title:'Bloc',exos:[]});
+  _peOpenBlocs[uid]=true;
+  _peRenderLibEditor();
+}
+
+function _peRemoveBloc(branchUid,blocUid){
+  _peSyncLibFromDom();
+  var arr=_peGetBlocArr(branchUid);
+  var idx=arr.findIndex(function(b){return b._uid===blocUid;});
+  if(idx>=0) arr.splice(idx,1);
+  delete _peOpenBlocs[blocUid];
+  _peRenderLibEditor();
+}
+
+function _peMoveBloc(branchUid,blocUid,dir){
+  _peSyncLibFromDom();
+  var arr=_peGetBlocArr(branchUid), idx=arr.findIndex(function(b){return b._uid===blocUid;}), ni=idx+dir;
+  if(idx<0||ni<0||ni>=arr.length) return;
+  var tmp=arr[idx]; arr[idx]=arr[ni]; arr[ni]=tmp;
+  _peRenderLibEditor();
+}
+
+function _peAddExo(branchUid,blocUid){
+  _peSyncLibFromDom();
+  var bloc=_peFindBloc(branchUid,blocUid); if(!bloc) return;
+  var uid='ex'+Date.now();
+  if(!bloc.exos) bloc.exos=[];
+  bloc.exos.push({_uid:uid,id:uid,name:'',url:''});
+  _peOpenBlocs[blocUid]=true;
+  _peRenderLibEditor();
+  setTimeout(function(){
+    var el=document.getElementById('pe-bl-'+blocUid); if(!el) return;
+    var inps=el.querySelectorAll('.pe-exo-name');
+    if(inps.length) inps[inps.length-1].focus();
+  },40);
+}
+
+function _peRemoveExo(branchUid,blocUid,idx){
+  _peSyncLibFromDom();
+  var bloc=_peFindBloc(branchUid,blocUid); if(!bloc||!bloc.exos) return;
+  bloc.exos.splice(idx,1);
+  _peRenderLibEditor();
+}
+
+function _peGetLibData(){
+  _peSyncLibFromDom();
+  var etInp=document.getElementById('pe-entry-test-inp');
+  var etText=etInp ? etInp.value.trim() : _peLibData.entryTest;
+  var result={};
+  if(_peLibData.mode==='tree'){
+    if(etText) result.entryTest={description:etText};
+    result.branches=_peLibData.branches.map(function(b){
+      return {id:b.id||b._uid,label:b.label||'',color:b.color||'var(--accent-ll)',borderColor:b.borderColor||'#3B82F6',blocs:_peMapBlocsOut(b.blocs||[])};
+    });
+  } else {
+    result.blocs=_peMapBlocsOut(_peLibData.blocs||[]);
+  }
+  return result;
+}
+
+function _peMapBlocsOut(blocs){
+  return blocs.map(function(bl){
+    return {id:bl.id||bl._uid,title:bl.title||'',exos:(bl.exos||[]).map(function(e){return {id:e.id||e._uid,name:e.name||'',url:e.url||''}; })};
+  });
+}
+
+/* ── Éditeur ── */
+var _peEditId = null;
+
+function openProtoEditor(protoId){
+  _peEditId = protoId;
+  var isNew = !protoId;
+  var proto = null;
+
+  if(!isNew){
+    proto = _getAllProtocols().find(function(p){ return p.id === protoId; });
+  }
+
+  document.getElementById('protoEditTitle').textContent = isNew ? 'Nouveau protocole' : 'Modifier le protocole';
+  document.getElementById('pe-icon').value        = proto ? (proto.icon||'') : '';
+  document.getElementById('pe-name').value        = proto ? (proto.name||'') : '';
+  document.getElementById('pe-type').value        = proto ? (proto.type||'library') : 'library';
+  document.getElementById('pe-category').value    = proto ? (proto.category||'') : '';
+  document.getElementById('pe-source').value      = proto ? (proto.source||'') : '';
+  document.getElementById('pe-duration').value    = proto ? (proto.duration||'') : '';
+  document.getElementById('pe-joint').value       = proto ? (proto.joint||'') : '';
+  document.getElementById('pe-description').value = proto ? (proto.description||'') : '';
+
+  /* Contenu selon type */
+  var type = proto ? (proto.type||'library') : 'library';
+  if(type === 'rehab'){
+    _peInitPhases(proto ? proto.phases : []);
+  } else {
+    _peInitLibrary(proto||null);
+  }
+  _peTypeChange();
+  // Rappels
+  var rappels = proto ? (proto.rappels || _PROTO_RAPPELS_DEFAULTS[proto.id] || []) : [];
+  _peRenderRappels(rappels);
+  document.getElementById('protoEditOverlay').style.display = 'flex';
+}
+
+function closeProtoEditor(){
+  document.getElementById('protoEditOverlay').style.display = 'none';
+  _peEditId = null;
+}
+
+function _peRenderRappels(rappels) {
+  var list = document.getElementById('pe-rappels-list');
+  if(!list) return;
+  list.innerHTML = rappels.map(function(r, i) {
+    return '<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px" data-ridx="'+i+'">'
+      +'<span style="font-size:.72rem;color:#6B6860;white-space:nowrap">J+</span>'
+      +'<input type="number" class="pe-rapp-jplus" value="'+r.jPlus+'" min="0" style="width:56px;border:1px solid #D3D1CB;border-radius:5px;padding:4px 6px;font-size:.78rem;font-family:inherit">'
+      +'<input type="text" class="pe-rapp-title" value="'+escH(r.title||'')+'" placeholder="Titre du rappel" style="flex:1;border:1px solid #D3D1CB;border-radius:5px;padding:4px 8px;font-size:.78rem;font-family:inherit">'
+      +'<button onclick="_peDelRappel('+i+')" style="border:none;background:none;cursor:pointer;color:#C0392B;font-size:1rem;padding:0 4px">✕</button>'
+      +'</div>';
+  }).join('') || '<span style="font-size:.75rem;color:#9D9B96;font-style:italic">Aucun rappel défini</span>';
+}
+
+window._peAddRappel = function() {
+  var rappels = _peGetRappels();
+  rappels.push({ jPlus: 45, title: 'CR médecin à réaliser' });
+  _peRenderRappels(rappels);
+};
+
+window._peDelRappel = function(idx) {
+  var rappels = _peGetRappels();
+  rappels.splice(idx, 1);
+  _peRenderRappels(rappels);
+};
+
+function _peGetRappels() {
+  var list = document.getElementById('pe-rappels-list');
+  if(!list) return [];
+  var rows = list.querySelectorAll('[data-ridx]');
+  var result = [];
+  rows.forEach(function(row) {
+    var jp = row.querySelector('.pe-rapp-jplus');
+    var tl = row.querySelector('.pe-rapp-title');
+    if(jp && tl) result.push({ jPlus: parseInt(jp.value)||0, title: tl.value.trim() });
+  });
+  return result;
+}
+
+function _peTypeChange(fromSelect){
+  var type       = document.getElementById('pe-type').value;
+  var phasesWrap = document.getElementById('pe-phases-wrap');
+  var libWrap    = document.getElementById('pe-lib-wrap');
+  if(type === 'rehab'){
+    if(phasesWrap) phasesWrap.style.display = '';
+    if(libWrap)    libWrap.style.display    = 'none';
+    if(fromSelect) _peInitPhases([]);
+  } else {
+    if(phasesWrap) phasesWrap.style.display = 'none';
+    if(libWrap)    libWrap.style.display    = '';
+    if(fromSelect) _peInitLibrary(null);
+  }
+}
+
+function _saveProtoEditor(){
+  var name = document.getElementById('pe-name').value.trim();
+  if(!name){ alert('Le nom est obligatoire.'); return; }
+
+  var type = document.getElementById('pe-type').value;
+  var content = {};
+  if(type === 'rehab') content.phases = _peGetPhasesData();
+
+  var newId = _peEditId || ('custom-' + Date.now());
+  var rappels = _peGetRappels();
+
+  var proto = {
+    id: newId,
+    type: type,
+    name: name,
+    icon: document.getElementById('pe-icon').value.trim() || '📋',
+    category: document.getElementById('pe-category').value.trim(),
+    source: document.getElementById('pe-source').value.trim(),
+    duration: document.getElementById('pe-duration').value.trim(),
+    joint: document.getElementById('pe-joint').value.trim(),
+    description: document.getElementById('pe-description').value.trim(),
+    rappels: rappels,
+    isCustom: true,
+  };
+  if(type === 'library'){
+    var libData = _peGetLibData();
+    if(libData.branches)  proto.branches  = libData.branches;
+    if(libData.blocs)     proto.blocs     = libData.blocs;
+    if(libData.entryTest) proto.entryTest = libData.entryTest;
+  } else {
+    proto.phases = content.phases || [];
+  }
+
+  /* Remplacer si l'ID existe déjà dans _customProtocols, sinon ajouter */
+  var idx = _customProtocols.findIndex(function(p){ return p.id === newId; });
+  if(idx >= 0) _customProtocols[idx] = proto;
+  else _customProtocols.push(proto);
+
+  _saveCustomProtocols(function(){
+    closeProtoEditor();
+    renderProtocols();
+  });
+}
+
+function _deleteCustomProto(id){
+  var proto = _customProtocols.find(function(p){ return p.id === id; });
+  if(!proto || !confirm('Supprimer le protocole « '+(proto.name||id)+' » ?')) return;
+  _customProtocols = _customProtocols.filter(function(p){ return p.id !== id; });
+  _saveCustomProtocols(function(){ renderProtocols(); });
+}
+
+function _peExportJson(){
+  var type = document.getElementById('pe-type').value;
+  var data = type === 'rehab' ? {phases: _peGetPhasesData()} : _peGetLibData();
+  var raw  = JSON.stringify(data, null, 2);
+  if(!raw || raw === '{}'){ alert('Aucun contenu à exporter.'); return; }
+  var blob = new Blob([raw], {type:'application/json'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (document.getElementById('pe-name').value.trim()||'protocole') + '.json';
+  a.click();
+}
+
+/* ─── Rendu principal (async Supabase → render sync) ─────────── */
+function renderProtocols() {
+  var body = document.getElementById('proto-body');
+  if(!body) return;
+  if(!_getAllProtocols().length){
+    body.innerHTML = '<div class="proto-empty">Aucun protocole disponible.</div>';
+    return;
+  }
+  body.innerHTML = '<div class="proto-empty" style="padding:30px 0;">⏳ Chargement…</div>';
+
+  if(!_progPatient || !_progUid) {
+    _protoPatientData = {};
+    _renderProtocolsSync();
+    return;
+  }
+
+  var patientId = _progPatient.id;
+
+  /* Fetch 1 : patient_protocols  |  Fetch 2 : seances pour stats */
+  var fetchPPs = _fetchRetry(SUPA_URL_P + '/rest/v1/patient_protocols?patient_id=eq.' + patientId
+    + '&praticien_id=eq.' + _progUid + '&select=*&order=created_at.desc',
+    { headers: _sbHeaders() }).then(function(r){ return r.ok ? r.json() : []; });
+
+  var fetchSeances = _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees?patient_id=eq.' + patientId
+    + '&select=id,programmes(donnees),athlete_feedback(rpe)',
+    { headers: _sbHeaders() }).then(function(r){ return r.ok ? r.json() : []; });
+
+  Promise.all([fetchPPs, fetchSeances])
+  .then(function(results){
+    var pps      = results[0] || [];
+    var seances  = results[1] || [];
+
+    /* ── Construire seancesStats : { protoId → { phaseId → {planned,done} } } ── */
+    var seancesStats = {};
+    seances.forEach(function(ev){
+      var donnees = ev.programmes && ev.programmes.donnees;
+      if(typeof donnees === 'string'){ try{ donnees = JSON.parse(donnees); }catch(e){ donnees = null; } }
+      var lp = donnees && donnees.linkedPhase;
+      if(!lp || !lp.protoId || !lp.phaseId) return;
+      if(!seancesStats[lp.protoId]) seancesStats[lp.protoId] = {};
+      if(!seancesStats[lp.protoId][lp.phaseId]) seancesStats[lp.protoId][lp.phaseId] = { planned: 0, done: 0 };
+      seancesStats[lp.protoId][lp.phaseId].planned++;
+      if(ev.athlete_feedback && ev.athlete_feedback.rpe) seancesStats[lp.protoId][lp.phaseId].done++;
+    });
+
+    /* ── ppMap ── */
+    var ppMap = {};
+    pps.forEach(function(pp){ if(!ppMap[pp.protocol_id]) ppMap[pp.protocol_id] = pp; });
+
+    /* Fetch 3 : critères cochés pour tous les protocoles assignés */
+    var allPpIds = pps.map(function(pp){ return pp.id; });
+    if(!allPpIds.length){
+      _protoPatientData = {};
+      _getAllProtocols().forEach(function(proto){
+        _protoPatientData[proto.id] = { pp: ppMap[proto.id]||null, checks: {}, checkedAt: {}, seancesStats: seancesStats[proto.id]||{} };
+      });
+      _renderProtocolsSync();
+      return;
+    }
+    var orFilter = allPpIds.map(function(id){ return 'patient_protocol_id.eq.'+id; }).join(',');
+    _fetchRetry(SUPA_URL_P + '/rest/v1/protocol_criteria_checks?or=('+orFilter+')&select=*',
+      { headers: _sbHeaders() })
+    .then(function(r){ return r.ok ? r.json() : []; })
+    .then(function(checks){
+      checks = checks || [];
+      var checksByPp = {};
+      var checkedAtByPp = {};
+      checks.forEach(function(c){
+        if(!checksByPp[c.patient_protocol_id]) checksByPp[c.patient_protocol_id] = {};
+        if(!checksByPp[c.patient_protocol_id][c.phase_id]) checksByPp[c.patient_protocol_id][c.phase_id] = {};
+        checksByPp[c.patient_protocol_id][c.phase_id][c.criteria_index] = c.checked;
+        if(c.checked && c.checked_at){
+          if(!checkedAtByPp[c.patient_protocol_id]) checkedAtByPp[c.patient_protocol_id] = {};
+          if(!checkedAtByPp[c.patient_protocol_id][c.phase_id]) checkedAtByPp[c.patient_protocol_id][c.phase_id] = {};
+          checkedAtByPp[c.patient_protocol_id][c.phase_id][c.criteria_index] = c.checked_at;
+        }
+      });
+      _protoPatientData = {};
+      _getAllProtocols().forEach(function(proto){
+        var pp = ppMap[proto.id] || null;
+        var ch   = pp ? (checksByPp[pp.id]   || {}) : {};
+        var chAt = pp ? (checkedAtByPp[pp.id] || {}) : {};
+        _protoPatientData[proto.id] = { pp: pp, checks: ch, checkedAt: chAt, seancesStats: seancesStats[proto.id]||{} };
+      });
+      _renderProtocolsSync();
+    });
+  })
+  .catch(function(){
+    _protoPatientData = {};
+    _renderProtocolsSync();
+  });
+}
+
+function _renderProtocolsSync() {
+  var body = document.getElementById('proto-body');
+  if(!body) return;
+  var allProtos = _getAllProtocols();
+
+  /* rebuild joint filter options */
+  var filterSel = document.getElementById('proto-joint-filter');
+  if(filterSel) {
+    var joints = [];
+    allProtos.forEach(function(p){ if(p.joint && joints.indexOf(p.joint) === -1) joints.push(p.joint); });
+    joints.sort();
+    var currentVal = filterSel.value;
+    filterSel.innerHTML = '<option value="">Toutes les articulations</option>'
+      + joints.map(function(j){ return '<option value="' + j + '"' + (j === currentVal ? ' selected' : '') + '>' + j + '</option>'; }).join('');
+  }
+
+  /* filter by selected joint */
+  var selectedJoint = filterSel ? filterSel.value : '';
+  var filtered = selectedJoint
+    ? allProtos.filter(function(p){ return p.joint === selectedJoint; })
+    : allProtos;
+
+  var html = '';
+  if(filtered.length === 0) {
+    html = '<div class="proto-empty">Aucun protocole pour cette articulation.</div>';
+  } else {
+    filtered.forEach(function(proto){ html += _renderProtocolCard(proto); });
+  }
+  body.innerHTML = html;
+  if(typeof _applyRoleUI === 'function') _applyRoleUI();
+}
+
+/* ─── Rendu d'une carte protocole ────────────────────────────── */
+function _renderProtocolCard(proto) {
+  if(proto.type === 'library') return _renderProtocolCardLibrary(proto);
+
+  var data = _protoPatientData[proto.id] || { pp: null, checks: {} };
+  var pp = data.pp;
+  var currentPhaseId = pp ? (pp.current_phase_id||null) : _protoGetCurrentPhaseLocal(proto.id);
+  var phaseIndex = proto.phases.findIndex(function(p){ return p.id === currentPhaseId; });
+
+  /* Timeline */
+  var phaseDots = proto.phases.map(function(ph, i){
+    var isCurrent = ph.id === currentPhaseId;
+    var isDone = phaseIndex > -1 && i < phaseIndex;
+    var circleStyle = isCurrent
+      ? 'border-color:'+ph.borderColor+';background:'+ph.borderColor+';color:#fff;box-shadow:0 0 0 3px '+ph.borderColor+'44;'
+      : isDone
+        ? 'border-color:'+ph.borderColor+';background:'+ph.borderColor+'22;color:'+ph.borderColor+';'
+        : 'border-color:'+ph.borderColor+';color:'+ph.borderColor+';';
+    return '<div class="proto-phase-dot">'
+      + '<div class="proto-phase-circle" style="'+circleStyle+'">'+(isDone?'✓':(i+1))+'</div>'
+      + '<div class="proto-phase-label" style="'+(isCurrent?'font-weight:700;color:var(--navy);':'')+'">'+_escHtml((ph.name.split('—')[1]||ph.name).trim())+'</div>'
+      + (ph.weeks ? '<div class="proto-phase-weeks">'+_escHtml(ph.weeks)+'</div>' : '')
+      + '</div>';
+  }).join('');
+
+  var phasesAccordion = proto.phases.map(function(ph, i){
+    return _renderPhaseItem(proto.id, ph, i, data, currentPhaseId);
+  }).join('');
+
+  /* Bannière statut patient */
+  var activeBanner = '';
+  if(_progPatient && pp) {
+    var patName = _escHtml((_progPatient.prenom||'')+' '+(_progPatient.nom||''));
+    if(pp.status === 'active') {
+      var startStr = pp.started_at ? new Date(pp.started_at).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) : '';
+      activeBanner = '<div class="proto-active-banner proto-active-banner--active">✅ Actif pour <strong>'+patName.trim()+'</strong>'+(startStr?' · depuis le '+startStr:'')+'</div>';
+    } else {
+      var stLbl = {paused:'⏸ En pause',completed:'✔️ Terminé',abandoned:'Abandonné'}[pp.status]||pp.status;
+      activeBanner = '<div class="proto-active-banner proto-active-banner--inactive">'+stLbl+' pour <strong>'+patName.trim()+'</strong></div>';
+    }
+  }
+
+  return '<div class="proto-card" id="proto-card-'+proto.id+'">'
+    + '<div class="proto-card-header" onclick="_toggleProtoCard(\''+proto.id+'\')">'
+    + '<span class="proto-card-header-icon">'+proto.icon+'</span>'
+    + '<div class="proto-card-header-info">'
+    + '<h3>'+_escHtml(proto.name)+'</h3>'
+    + '<div class="proto-card-header-meta">'+_escHtml(proto.source)+' · '+_escHtml(proto.duration)
+      + '<span class="proto-type-badge proto-type-badge--rehab">Rééducation</span></div>'
+    + '</div>'
+    + ((_isAdmin()) ? '<div class="proto-admin-btns r4p-admin-only" onclick="event.stopPropagation()">'
+      + '<button class="proto-admin-btn proto-admin-btn--edit" onclick="openProtoEditor(\''+proto.id+'\')">✏️</button>'
+      + '<button class="proto-admin-btn proto-admin-btn--del" onclick="_deleteCustomProto(\''+proto.id+'\')">🗑</button>'
+      + '</div>' : '')
+    + '<span class="proto-card-chevron">›</span>'
+    + '</div>'
+    + '<div class="proto-card-body">'
+    + activeBanner
+    + _renderProtoTimeline(pp, proto.id)
+    + '<div class="proto-timeline">'+phaseDots+'</div>'
+    + '<div class="proto-phases-list">'+phasesAccordion+'</div>'
+    + '<div class="proto-card-footer">'+_renderProtoFooter(proto, pp)+'</div>'
+    + '</div>'
+    + '</div>';
+}
+
+/* ─── Carte protocole type "library" ─────────────────────────── */
+function _renderProtocolCardLibrary(proto) {
+  var data = _protoPatientData[proto.id] || { pp: null };
+  var pp = data.pp;
+
+  /* Bannière patient */
+  var activeBanner = '';
+  if(_progPatient && pp) {
+    var patName = _escHtml((_progPatient.prenom||'')+' '+(_progPatient.nom||''));
+    if(pp.status === 'active') {
+      var startStr = pp.started_at ? new Date(pp.started_at).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) : '';
+      activeBanner = '<div class="proto-active-banner proto-active-banner--active">✅ Actif pour <strong>'+patName.trim()+'</strong>'+(startStr?' · depuis le '+startStr:'')+'</div>';
+    } else {
+      var stLbl = {paused:'⏸ En pause',completed:'✔️ Terminé',abandoned:'Abandonné'}[pp.status]||pp.status;
+      activeBanner = '<div class="proto-active-banner proto-active-banner--inactive">'+stLbl+' pour <strong>'+patName.trim()+'</strong></div>';
+    }
+  }
+
+  /* Description */
+  var descHtml = proto.description
+    ? '<div class="proto-lib-desc">'+_escHtml(proto.description)+'</div>'
+    : '';
+
+  /* Arbre décisionnel (branches) */
+  var blocsHtml = '';
+  if(proto.branches && proto.branches.length) {
+    /* Test d'entrée */
+    if(proto.entryTest) {
+      blocsHtml += '<div class="proto-dt-entry">'
+        + '<div class="proto-dt-entry-label">🔬 Test d\'entrée</div>'
+        + '<div class="proto-dt-entry-name">'+_escHtml(proto.entryTest.name)+'</div>'
+        + (proto.entryTest.description ? '<div class="proto-dt-entry-desc">'+_escHtml(proto.entryTest.description)+'</div>' : '')
+        + '</div>';
+    }
+    blocsHtml += '<div class="proto-dt-branches">';
+    proto.branches.forEach(function(branch){
+      var bId = 'proto-dt-br-'+proto.id+'-'+branch.id;
+      blocsHtml += '<div class="proto-dt-branch" id="'+bId+'" style="border-color:'+branch.borderColor+';">';
+      blocsHtml += '<div class="proto-dt-branch-hdr" onclick="_toggleDtBranch(\''+bId+'\')" style="background:'+branch.color+';">'
+        + '<span class="proto-dt-branch-arrow" style="color:'+branch.borderColor+';">▸</span>'
+        + '<span class="proto-dt-branch-label" style="color:'+branch.borderColor+';">'+_escHtml(branch.label)+'</span>'
+        + '</div>';
+      blocsHtml += '<div class="proto-dt-branch-body">';
+      branch.blocs.forEach(function(bloc, bi){
+        var isTest = bi === 0;
+        blocsHtml += '<div class="proto-dt-bloc '+(isTest?'proto-dt-bloc--test':'proto-dt-bloc--rehab')+'">';
+        blocsHtml += '<div class="proto-dt-bloc-title">'
+          + '<span class="proto-dt-tag '+(isTest?'proto-dt-tag--test':'proto-dt-tag--rehab')+'">'+(isTest?'TEST':'REHAB')+'</span>'
+          + ' '+_escHtml(bloc.title)+'</div>';
+        (bloc.exos||[]).forEach(function(exo){
+          blocsHtml += '<div class="proto-dt-exo">';
+          var _dtThumb = exo.url ? _ytThumbHtml(exo.url) : null;
+          blocsHtml += '<div class="proto-dt-exo-main">';
+          if(_dtThumb) blocsHtml += _dtThumb;
+          if(exo.url) blocsHtml += '<a class="proto-dt-exo-link" href="'+exo.url+'" target="_blank" rel="noopener">'+_escHtml(exo.name)+'</a>';
+          else        blocsHtml += '<span class="proto-dt-exo-name">'+_escHtml(exo.name)+'</span>';
+          blocsHtml += '</div>';
+          if(exo.consigne){
+            blocsHtml += '<div class="proto-dt-consigne">';
+            exo.consigne.split('\n').filter(Boolean).forEach(function(l){
+              blocsHtml += '<div class="proto-dt-consigne-line">'+_escHtml(l)+'</div>';
+            });
+            blocsHtml += '</div>';
+          }
+          blocsHtml += '</div>';
+        });
+        blocsHtml += '</div>';
+      });
+      blocsHtml += '<div class="proto-dt-branch-actions">'
+        + '<button class="proto-lib-builder-btn" style="font-size:.73rem;padding:5px 12px;" onclick="_protoOpenBranchInBuilder(\''+proto.id+'\',\''+branch.id+'\')">▶ Créer une séance</button>'
+        + '</div>';
+      blocsHtml += '</div></div>'; /* branch-body + branch */
+    });
+    blocsHtml += '</div>'; /* proto-dt-branches */
+
+  } else if(proto.blocs && proto.blocs.length) {
+    /* Blocs simples (pas d'arbre) */
+    blocsHtml = '<div class="proto-lib-blocs">';
+    proto.blocs.forEach(function(b){
+      blocsHtml += '<div class="proto-lib-bloc-title">'+_escHtml(b.title||'Bloc')+'</div>';
+      blocsHtml += '<div class="proto-lib-bloc-exos">';
+      (b.exos||[]).forEach(function(e){
+        var detail = [];
+        if(e.series && e.reps)  detail.push(e.series+'×'+e.reps);
+        else if(e.series && e.duree) detail.push(e.series+'×'+e.duree+'s');
+        else if(e.reps)  detail.push(e.reps);
+        else if(e.duree) detail.push(e.duree+'s');
+        if(e.recup) detail.push('↺ '+e.recup+'s');
+        var _libThumb = e.url ? _ytThumbHtml(e.url) : null;
+        blocsHtml += '<div class="proto-lib-exo-row">'
+          + (_libThumb || '')
+          + '<div style="flex:1;min-width:0;">'
+          + '<span style="display:block;">'+_escHtml(e.name||'Exercice')+'</span>'
+          + (detail.length ? '<span style="font-size:.7rem;color:var(--text-sm);">'+detail.join(' · ')+'</span>' : '')
+          + '</div>'
+          + '</div>';
+      });
+      blocsHtml += '</div>';
+    });
+    blocsHtml += '</div>';
+  }
+
+  /* Bouton builder (seulement si pas de branches — chaque branche a le sien) */
+  var builderBtn = (!proto.branches || !proto.branches.length)
+    ? '<button class="proto-lib-builder-btn" onclick="_protoOpenLibraryInBuilder(\''+proto.id+'\')">▶ Créer une séance</button>'
+    : '';
+
+  return '<div class="proto-card" id="proto-card-'+proto.id+'">'
+    + '<div class="proto-card-header" onclick="_toggleProtoCard(\''+proto.id+'\')">'
+    + '<span class="proto-card-header-icon">'+proto.icon+'</span>'
+    + '<div class="proto-card-header-info">'
+    + '<h3>'+_escHtml(proto.name)+'</h3>'
+    + '<div class="proto-card-header-meta">'+_escHtml(proto.source)+' · '+_escHtml(proto.duration||'')
+      + '<span class="proto-type-badge proto-type-badge--library">Bibliothèque</span></div>'
+    + '</div>'
+    + ((_isAdmin()) ? '<div class="proto-admin-btns r4p-admin-only" onclick="event.stopPropagation()">'
+      + '<button class="proto-admin-btn proto-admin-btn--edit" onclick="openProtoEditor(\''+proto.id+'\')">✏️</button>'
+      + '<button class="proto-admin-btn proto-admin-btn--del" onclick="_deleteCustomProto(\''+proto.id+'\')">🗑</button>'
+      + '</div>' : '')
+    + '<span class="proto-card-chevron">›</span>'
+    + '</div>'
+    + '<div class="proto-card-body">'
+    + '<div class="proto-lib-body">'
+    + activeBanner
+    + _renderProtoTimeline(pp, proto.id)
+    + descHtml
+    + blocsHtml
+    + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'+builderBtn+'</div>'
+    + '</div>'
+    + '<div class="proto-card-footer">'+_renderProtoFooter(proto, pp)+'</div>'
+    + '</div>'
+    + '</div>';
+}
+
+/* ─── Toggle branche de l'arbre décisionnel ──────────────────── */
+function _toggleDtBranch(bId) {
+  var el = document.getElementById(bId);
+  if(el) el.classList.toggle('open');
+}
+
+/* ─── Ouvre une branche dans le builder ──────────────────────── */
+function _protoOpenBranchInBuilder(protoId, branchId) {
+  var proto = (PROTOCOLS_REF||[]).find(function(p){ return p.id === protoId; });
+  if(!proto || !proto.branches) return;
+  var branch = proto.branches.find(function(b){ return b.id === branchId; });
+  if(!branch) return;
+  closeProtoPanel();
+  if(typeof _enterBuilderMode === 'function') _enterBuilderMode();
+  if(branch.blocs && branch.blocs.length) {
+    blocs = [];
+    branch.blocs.forEach(function(srcBloc){
+      var nb = { id: genId(), title: srcBloc.title||'Bloc', exos: [], objectif:'', methode:'' };
+      (srcBloc.exos||[]).forEach(function(e){
+        var ne = JSON.parse(JSON.stringify(e));
+        ne.id = genId();
+        nb.exos.push(ne);
+      });
+      blocs.push(nb);
+    });
+    if(typeof renderSession === 'function') renderSession();
+  }
+}
+
+/* ─── Ouvre un protocole library dans le builder ─────────────── */
+function _protoOpenLibraryInBuilder(protoId) {
+  var proto = (PROTOCOLS_REF||[]).find(function(p){ return p.id === protoId; });
+  if(!proto) return;
+  closeProtoPanel();
+  if(typeof _enterBuilderMode === 'function') {
+    _enterBuilderMode();
+    // Si des blocs sont définis, les charger
+    if(proto.blocs && proto.blocs.length && typeof addBloc === 'function') {
+      blocs = [];
+      proto.blocs.forEach(function(srcBloc){
+        var newBloc = { id: genId(), title: srcBloc.title||'Bloc', exos: [], objectif:'', methode:'' };
+        (srcBloc.exos||[]).forEach(function(e){
+          var ne = JSON.parse(JSON.stringify(e));
+          ne.id = genId();
+          newBloc.exos.push(ne);
+        });
+        blocs.push(newBloc);
+      });
+      if(typeof renderSession === 'function') renderSession();
+    }
+  }
+}
+
+function _renderProtoFooter(proto, pp) {
+  if(!_progPatient) return '<span class="proto-footer-info">Sélectionne un patient pour assigner ce protocole.</span>';
+  var unassignBtn = '<button class="proto-use-btn danger" style="font-size:.7rem;padding:4px 9px;opacity:.6;" onclick="_protoUnassign(\''+proto.id+'\')" title="Supprimer l\'assignation">✕ Désassigner</button>';
+  if(pp && pp.status === 'active') {
+    var actionBtns = unassignBtn
+      + '<button class="proto-use-btn secondary" style="font-size:.73rem;padding:5px 11px;" onclick="_protoStatusModal(\''+proto.id+'\',\'paused\')">⏸ Pause</button>'
+      + '<button class="proto-use-btn danger" style="font-size:.73rem;padding:5px 11px;" onclick="_protoStatusModal(\''+proto.id+'\',\'completed\')">✔️ Terminer</button>';
+    return '<span class="proto-footer-info" style="color:#16A34A;font-weight:600;">Protocole en cours</span><div style="flex:1"></div>'+actionBtns;
+  }
+  if(pp) {
+    var stLbl2 = {paused:'En pause',completed:'Terminé',abandoned:'Abandonné'}[pp.status]||pp.status;
+    var noteStr = pp.status_note ? ' · <em>'+_escHtml(pp.status_note)+'</em>' : '';
+    return '<span class="proto-footer-info">Statut : '+stLbl2+noteStr+'</span>'
+      + unassignBtn + '<button class="proto-use-btn secondary" style="font-size:.73rem;padding:5px 11px;" onclick="_protoStatusModal(\''+proto.id+'\',\'active\')">↩ Réactiver</button>';
+  }
+  return '<button class="proto-use-btn" onclick="assignProtocol(\''+proto.id+'\')" id="proto-assign-btn-'+proto.id+'">📋 Assigner à ce patient</button>';
+  return '<span class="proto-footer-info">Lecture seule.</span>';
+}
+
+/* ─── Rendu d'une phase ──────────────────────────────────────── */
+function _renderPhaseItem(protoId, ph, idx, data, currentPhaseId) {
+  var checks = (data && data.checks && data.checks[ph.id]) || {};
+  var total = ph.exitCriteria.length;
+  var done = ph.exitCriteria.filter(function(_, i){ return checks[i]; }).length;
+  var pct = total ? Math.round(done/total*100) : 0;
+  var isCurrent = ph.id === currentPhaseId;
+  var allDone = total > 0 && done === total;
+
+  /* ── Stats séances ── */
+  var phStats = (data && data.seancesStats && data.seancesStats[ph.id]) || null;
+  var statsPill = '';
+  if(phStats && phStats.planned > 0){
+    var doneStr = phStats.done > 0 ? ' · <span style="color:#16A34A;font-weight:700;">✓ '+phStats.done+' réalisée'+(phStats.done>1?'s':'')+'</span>' : '';
+    statsPill = '<span style="font-size:.62rem;background:rgba(255,255,255,.65);border:1px solid '+ph.borderColor+'55;color:var(--text-dk);border-radius:6px;padding:1px 7px;white-space:nowrap;margin-right:4px;">📋 '+phStats.planned+' séance'+(phStats.planned>1?'s':'')+doneStr+'</span>';
+  }
+
+  var objList  = ph.objectives.map(function(o){ return '<li>'+_escHtml(o)+'</li>'; }).join('');
+  var precList = ph.precautions.map(function(p){ return '<li>'+_escHtml(p)+'</li>'; }).join('');
+  var criteriaItems = ph.exitCriteria.map(function(c, i){
+    var isChecked = !!checks[i];
+    var chAt = data && data.checkedAt && data.checkedAt[ph.id] && data.checkedAt[ph.id][i];
+    var calId   = 'proto-ci-cal-'+protoId+'-'+escH(ph.id)+'-'+i;
+    var dateStr = '';
+    if(isChecked){
+      var dateLbl = chAt
+        ? 'validé le '+new Date(chAt).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})
+        : 'validé';
+      dateStr = '<span class="proto-ci-date-wrap">'
+        + '<span class="proto-ci-date" id="proto-ci-datelbl-'+protoId+'-'+escH(ph.id)+'-'+i+'">'+dateLbl+'</span>'
+        + '<button class="proto-ci-cal-btn" onclick="event.stopPropagation();_protoEditCheckedAt(\''+escJS(String(protoId))+'\',\''+escJS(ph.id)+'\','+i+')" title="Modifier la date">📅</button>'
+        + '</span>';
+    }
+    return '<div class="proto-criteria-item'+(isChecked?' checked':'')+'" id="proto-ci-'+protoId+'-'+ph.id+'-'+i+'">'
+      + '<input type="checkbox" class="proto-criteria-cb" '+(isChecked?'checked':'')+' onchange="_protoSetCheck(\''+protoId+'\',\''+ph.id+'\','+i+',this.checked)">'
+      + '<span class="proto-criteria-text">'+_escHtml(c)+' '+dateStr+'</span>'
+      + '</div>';
+  }).join('');
+
+  var currentBadge = isCurrent ? '<span style="font-size:.62rem;font-weight:700;background:'+ph.borderColor+';color:#fff;padding:1px 7px;border-radius:8px;margin-left:6px;white-space:nowrap;">EN COURS</span>' : '';
+  var doneBadge = (!isCurrent && allDone) ? '<span style="font-size:.62rem;font-weight:700;background:#16A34A;color:#fff;padding:1px 7px;border-radius:8px;margin-left:6px;white-space:nowrap;">✓ VALIDÉ</span>' : '';
+
+  var markBtn = !!_progPatient
+    ? (isCurrent
+        ? '<button class="proto-use-btn secondary" onclick="_protoMarkCurrentPhase(\''+protoId+'\',null)" style="font-size:.73rem;padding:5px 11px;border-color:'+ph.borderColor+';color:'+ph.borderColor+';">📍 Active ✓ (retirer)</button>'
+        : '<button class="proto-use-btn secondary" onclick="_protoMarkCurrentPhase(\''+protoId+'\',\''+ph.id+'\')" style="font-size:.73rem;padding:5px 11px;">📍 Définir active</button>')
+    : '';
+  var builderBtn = '<button class="proto-use-btn secondary" onclick="_protoOpenInBuilder(\''+protoId+'\',\''+ph.id+'\')" style="font-size:.73rem;padding:5px 11px;">▶ Ouvrir dans le builder</button>';
+
+  return '<div class="proto-phase-item" id="proto-phase-'+protoId+'-'+ph.id+'" style="border-color:'+ph.borderColor+(isCurrent?';box-shadow:0 0 0 2px '+ph.borderColor+'55;':'')+'">'
+    + '<div class="proto-phase-item-header" style="background:'+ph.color+'" onclick="_toggleProtoPhase(\''+protoId+'\',\''+ph.id+'\')">'
+    + '<span style="font-size:.9rem;font-weight:700;color:'+ph.borderColor+'">Phase '+(idx+1)+'</span>'
+    + currentBadge + doneBadge
+    + '<span style="flex:1;margin-left:8px;">'+_escHtml(ph.name.replace(/Phase \d+ — /,''))+'</span>'
+    + statsPill
+    + (ph.weeks ? '<span style="font-size:.7rem;color:var(--text-sm);margin-right:4px;">'+_escHtml(ph.weeks)+'</span>' : '')
+    + '<span class="proto-phase-item-chevron">›</span>'
+    + '</div>'
+    + '<div class="proto-phase-content">'
+    + '<div class="proto-section-label">🎯 Objectifs</div>'
+    + '<ul class="proto-list">'+objList+'</ul>'
+    + '<div class="proto-section-label">⚠️ Précautions</div>'
+    + '<ul class="proto-list">'+precList+'</ul>'
+    + '<div class="proto-section-label">✅ Critères de sortie de phase</div>'
+    + '<div class="proto-progress-bar-wrap"><div class="proto-progress-bar" style="width:'+pct+'%"></div></div>'
+    + '<div class="proto-progress-label">'+done+' / '+total+' critères validés'+(allDone?' 🎉':'')+'</div>'
+    + criteriaItems
+    + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">'+markBtn+builderBtn+'</div>'
+    + '</div>'
+    + '</div>';
+}
+
+/* ─── Phase en cours ─────────────────────────────────────────── */
+function _protoCurrentPhaseKey(protoId) {
+  var patId = _progPatient ? String(_progPatient.id) : 'nopt';
+  return 'r4p-proto-phase-' + patId + '-' + protoId;
+}
+function _protoGetCurrentPhaseLocal(protoId) {
+  return localStorage.getItem(_protoCurrentPhaseKey(protoId)) || null;
+}
+function _protoGetCurrentPhase(protoId) {
+  var data = _protoPatientData[protoId];
+  if(data && data.pp) return data.pp.current_phase_id || null;
+  return _protoGetCurrentPhaseLocal(protoId);
+}
+function _protoMarkCurrentPhase(protoId, phaseId) {
+  var data = _protoPatientData[protoId];
+  if(data && data.pp && data.pp.status === 'active') {
+    _protoUpdatePhase(protoId, phaseId);
+  } else {
+    if(phaseId) localStorage.setItem(_protoCurrentPhaseKey(protoId), phaseId);
+    else localStorage.removeItem(_protoCurrentPhaseKey(protoId));
+    renderProtocols();
+  }
+}
+
+/* ─── Accordéon ─────────────────────────────────────────────── */
+function _toggleProtoCard(protoId) {
+  var card = document.getElementById('proto-card-'+protoId);
+  if(card) card.classList.toggle('open');
+}
+
+/* ← dans l'overlay protocole : referme la carte ouverte d'abord, ferme l'overlay ensuite */
+function _protoGoBack() {
+  var openCard = document.querySelector('#proto-body .proto-card.open');
+  if(openCard) {
+    openCard.classList.remove('open');
+  } else {
+    closeProtoPanel();
+  }
+}
+function _toggleProtoPhase(protoId, phaseId) {
+  var item = document.getElementById('proto-phase-'+protoId+'-'+phaseId);
+  if(item) item.classList.toggle('open');
+}
+
+/* ─── Critères : Supabase si protocole actif, localStorage sinon ─ */
+function _protoChecksKey(protoId, phaseId) {
+  var patId = _progPatient ? String(_progPatient.id) : 'nopt';
+  return 'r4p-proto-checks-'+patId+'-'+protoId+'-'+phaseId;
+}
+function _protoGetChecks(protoId, phaseId) {
+  var data = _protoPatientData[protoId];
+  /* Si protocole assigné (quel que soit le statut) → lire le cache Supabase */
+  if(data && data.pp) return data.checks[phaseId] || {};
+  /* Fallback localStorage si pas de patient sélectionné */
+  try { var raw = localStorage.getItem(_protoChecksKey(protoId, phaseId)); return raw ? JSON.parse(raw) : {}; } catch(e){ return {}; }
+}
+/* ─── Auto-assignation au premier cochage ────────────────────── */
+function _protoAutoAssign(protoId, callback) {
+  if(!_progPatient || !_progToken || !_progUid) return;
+  var proto = _getAllProtocols().find(function(p){ return String(p.id)===String(protoId); });
+  if(!proto) return;
+  var data = _protoPatientData[protoId];
+  if(data && data.pp){ callback && callback(data.pp); return; }
+  var now = new Date().toISOString();
+  var firstPhaseId = (proto.phases && proto.phases[0]) ? proto.phases[0].id : null;
+  _fetchRetry(SUPA_URL_P + '/rest/v1/patient_protocols', {
+    method: 'POST',
+    headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=representation'}),
+    body: JSON.stringify({
+      praticien_id: _progUid, patient_id: _progPatient.id,
+      protocol_id: protoId, protocol_name: proto.name,
+      current_phase_id: firstPhaseId, status: 'active',
+      history: [{ type: 'assigned', at: now, note: null }]
+    })
+  })
+  .then(function(r){ return r.ok ? r.json() : null; })
+  .then(function(rows){
+    var newPp = Array.isArray(rows) ? rows[0] : rows;
+    if(!newPp){ _showToast('Erreur assignation automatique.', true); return; }
+    if(!_protoPatientData[protoId]) _protoPatientData[protoId] = { checks:{}, checkedAt:{}, seancesStats:{} };
+    _protoPatientData[protoId].pp = newPp;
+    var patName = ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim();
+    _showToast('📋 Protocole assigné automatiquement à '+escH(patName));
+    callback && callback(newPp);
+  })
+  .catch(function(){ _showToast('Erreur assignation automatique.', true); });
+}
+
+function _protoSetCheck(protoId, phaseId, idx, checked) {
+  var data = _protoPatientData[protoId];
+  if(!data) return; /* sécurité : pas de patient sélectionné */
+  var now = new Date().toISOString();
+
+  /* Mise à jour cache local immédiate (pour affichage DOM) */
+  if(!data.checks[phaseId]) data.checks[phaseId] = {};
+  data.checks[phaseId][idx] = checked;
+  if(!data.checkedAt) data.checkedAt = {};
+  if(!data.checkedAt[phaseId]) data.checkedAt[phaseId] = {};
+  data.checkedAt[phaseId][idx] = checked ? now : null;
+
+  function _saveCheck(ppId) {
+    _fetchRetry(SUPA_URL_P + '/rest/v1/protocol_criteria_checks', {
+      method: 'POST',
+      headers: Object.assign({}, _sbHeaders(), {'Prefer':'resolution=merge-duplicates,return=minimal'}),
+      body: JSON.stringify({ patient_protocol_id: ppId, phase_id: phaseId, criteria_index: idx, checked: checked, checked_at: checked ? now : null })
+    }).catch(function(e){ console.error('Criteria sync:', e); });
+  }
+
+  if(data.pp) {
+    /* Protocole déjà assigné → upsert direct */
+    _saveCheck(data.pp.id);
+  } else if(_progPatient) {
+    /* Pas encore assigné → auto-assigner puis sauvegarder */
+    _protoAutoAssign(protoId, function(newPp){
+      _saveCheck(newPp.id);
+      /* Mise à jour ciblée du footer uniquement — sans re-render global */
+      var card = document.getElementById('proto-card-'+protoId);
+      if(card){
+        var footer = card.querySelector('.proto-card-footer');
+        var proto  = _getAllProtocols().find(function(p){ return String(p.id)===String(protoId); });
+        if(footer && proto) footer.innerHTML = _renderProtoFooter(proto, newPp);
+      }
+    });
+  }
+  /* Mise à jour DOM — classe + date inline */
+  var ciEl = document.getElementById('proto-ci-'+protoId+'-'+phaseId+'-'+idx);
+  if(ciEl){
+    if(checked) ciEl.classList.add('checked'); else ciEl.classList.remove('checked');
+    var txtEl = ciEl.querySelector('.proto-criteria-text');
+    if(txtEl){
+      var existingWrap = txtEl.querySelector('.proto-ci-date-wrap');
+      if(existingWrap) existingWrap.remove();
+      if(checked){
+        var dateLbl = now ? 'validé le '+new Date(now).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}) : 'validé';
+        var wrap = document.createElement('span');
+        wrap.className = 'proto-ci-date-wrap';
+        wrap.innerHTML = '<span class="proto-ci-date" id="proto-ci-datelbl-'+protoId+'-'+phaseId+'-'+idx+'">'+dateLbl+'</span>'
+          + '<button class="proto-ci-cal-btn" onclick="event.stopPropagation();_protoEditCheckedAt(\''+escJS(String(protoId))+'\',\''+escJS(phaseId)+'\','+idx+')" title="Modifier la date">📅</button>';
+        txtEl.appendChild(wrap);
+      }
+    }
+  }
+  var proto = PROTOCOLS_REF.find(function(p){ return p.id===protoId; });
+  if(!proto) return;
+  var ph = proto.phases.find(function(p){ return p.id===phaseId; });
+  if(!ph) return;
+  var allChecks = _protoGetChecks(protoId, phaseId);
+  var total = ph.exitCriteria.length;
+  var done = ph.exitCriteria.filter(function(_, i){ return allChecks[i]; }).length;
+  var pct = total ? Math.round(done/total*100) : 0;
+  var phItem = document.getElementById('proto-phase-'+protoId+'-'+phaseId);
+  if(phItem){
+    var bar = phItem.querySelector('.proto-progress-bar');
+    var lbl = phItem.querySelector('.proto-progress-label');
+    if(bar) bar.style.width = pct+'%';
+    if(lbl) lbl.textContent = done+' / '+total+' critères validés'+(done===total&&total>0?' 🎉':'');
+  }
+  if(done === total && total > 0) _showToast('🎉 Tous les critères de la phase '+ph.name.split('—')[0].trim()+' validés !');
+}
+
+/* ─── Modifier la date de validation d'un critère ───────────── */
+function _protoEditCheckedAt(protoId, phaseId, idx) {
+  var data = _protoPatientData[protoId];
+  if(!data || !data.pp) return;
+  var calId  = 'proto-ci-cal-'+protoId+'-'+phaseId+'-'+idx;
+  var lblId  = 'proto-ci-datelbl-'+protoId+'-'+phaseId+'-'+idx;
+  var lblEl  = document.getElementById(lblId);
+  if(!lblEl) return;
+  /* Éviter double ouverture */
+  if(document.getElementById(calId)) return;
+  var chAt = data.checkedAt && data.checkedAt[phaseId] && data.checkedAt[phaseId][idx];
+  var todayStr = (chAt ? new Date(chAt) : new Date()).toISOString().slice(0,10);
+  /* Injecter le champ date après le label */
+  var inp = document.createElement('input');
+  inp.type = 'date'; inp.id = calId; inp.className = 'proto-ci-date-inp';
+  inp.value = todayStr; inp.max = new Date().toISOString().slice(0,10);
+  lblEl.parentNode.insertBefore(inp, lblEl.nextSibling);
+  inp.focus();
+  function _commit(){
+    var val = inp.value;
+    if(!val){ inp.remove(); return; }
+    var iso = new Date(val+'T12:00:00').toISOString();
+    /* Mise à jour cache */
+    if(!data.checkedAt) data.checkedAt = {};
+    if(!data.checkedAt[phaseId]) data.checkedAt[phaseId] = {};
+    data.checkedAt[phaseId][idx] = iso;
+    /* Mise à jour Supabase */
+    _fetchRetry(SUPA_URL_P + '/rest/v1/protocol_criteria_checks', {
+      method: 'POST',
+      headers: Object.assign({}, _sbHeaders(), {'Prefer':'resolution=merge-duplicates,return=minimal'}),
+      body: JSON.stringify({ patient_protocol_id: data.pp.id, phase_id: phaseId, criteria_index: idx, checked: true, checked_at: iso })
+    }).catch(function(e){ console.error('checked_at update:', e); });
+    /* Mise à jour label sans re-render complet */
+    lblEl.textContent = 'validé le '+new Date(iso).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'});
+    inp.remove();
+    _showToast('📅 Date mise à jour');
+  }
+  inp.addEventListener('change', _commit);
+  inp.addEventListener('blur',   function(){ setTimeout(function(){ if(document.getElementById(calId)) inp.remove(); }, 150); });
+  inp.addEventListener('keydown',function(e){ if(e.key==='Enter') _commit(); if(e.key==='Escape') inp.remove(); });
+}
+
+/* ─── Timeline protocole ─────────────────────────────────────── */
+function _renderProtoTimeline(pp, protoId) {
+  if(!pp) return '';
+  var history = Array.isArray(pp.history) ? pp.history : [];
+  if(!history.length && pp.started_at) {
+    history = [{ type: 'assigned', at: pp.started_at, note: null }];
+  }
+  if(!history.length) return '';
+  var isAdmin = _isAdmin();
+  var TYPE_META = {
+    assigned:      { dot: 'assigned',  label: 'Assigné' },
+    phase_changed: { dot: 'phase',     label: 'Changement de phase' },
+    paused:        { dot: 'paused',    label: '⏸ Mis en pause' },
+    active:        { dot: 'active',    label: '↩ Réactivé' },
+    completed:     { dot: 'completed', label: '✔️ Terminé' },
+    abandoned:     { dot: 'abandoned', label: 'Abandonné' }
+  };
+  var pid = protoId ? escJS(String(protoId)) : '';
+  var items = history.map(function(ev, idx){
+    var meta = TYPE_META[ev.type] || { dot: '', label: ev.type };
+    var dateStr = ev.at ? new Date(ev.at).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}) : '';
+    var noteHtml = ev.note ? '<div class="proto-tl-note" id="proto-tl-note-'+pid+'-'+idx+'">'+_escHtml(ev.note)+'</div>' : '<div class="proto-tl-note" id="proto-tl-note-'+pid+'-'+idx+'"></div>';
+    var phaseHtml = ev.phaseName ? '<div class="proto-tl-note">'+_escHtml(ev.phaseName)+'</div>' : '';
+    var adminHtml = isAdmin
+      ? '<div class="proto-tl-admin">'
+        + '<button class="proto-tl-admin-btn" onclick="event.stopPropagation();_protoTlEditNote(\''+pid+'\','+idx+')" title="Modifier la note">✏️</button>'
+        + (idx > 0 ? '<button class="proto-tl-admin-btn del" onclick="event.stopPropagation();_protoTlDeleteEvent(\''+pid+'\','+idx+')" title="Supprimer cet événement">🗑</button>' : '')
+        + '</div>'
+      : '';
+    return '<div class="proto-tl-event" id="proto-tl-ev-'+pid+'-'+idx+'">'
+      + '<div class="proto-tl-dot proto-tl-dot--'+meta.dot+'"></div>'
+      + '<div class="proto-tl-content">'
+      + '<span class="proto-tl-label">'+meta.label+'</span>'
+      + '<span class="proto-tl-date">'+dateStr+'</span>'
+      + adminHtml
+      + noteHtml + phaseHtml
+      + '</div></div>';
+  }).join('');
+  return '<div class="proto-timeline-wrap">'
+    + '<div class="proto-timeline-title">📋 Historique</div>'
+    + '<div class="proto-tl-list">'+items+'</div>'
+    + '</div>';
+}
+
+/* ─── Édition inline de la note d'un événement timeline ─────── */
+function _protoTlEditNote(protoId, idx) {
+  var data = _protoPatientData[protoId];
+  if(!data || !data.pp) return;
+  var history = Array.isArray(data.pp.history) ? data.pp.history : [];
+  var ev = history[idx];
+  if(!ev) return;
+  var noteEl = document.getElementById('proto-tl-note-'+escH(String(protoId))+'-'+idx);
+  if(!noteEl) return;
+  if(noteEl.querySelector('.proto-tl-edit-wrap')) return; /* déjà ouvert */
+  var currentNote = ev.note || '';
+  noteEl.innerHTML = '<div class="proto-tl-edit-wrap">'
+    + '<input class="proto-tl-edit-inp" id="proto-tl-inp-'+idx+'" type="text" value="'+escH(currentNote)+'" placeholder="Note clinique…">'
+    + '<button class="proto-tl-edit-save" onclick="_protoTlSaveNote(\''+escJS(String(protoId))+'\','+idx+')">OK</button>'
+    + '<button class="proto-tl-edit-cancel" onclick="renderProtocols()">✕</button>'
+    + '</div>';
+  var inp = document.getElementById('proto-tl-inp-'+idx);
+  if(inp){ inp.focus(); inp.addEventListener('keydown', function(e){ if(e.key==='Enter') _protoTlSaveNote(protoId,idx); if(e.key==='Escape') renderProtocols(); }); }
+}
+function _protoTlSaveNote(protoId, idx) {
+  var inp = document.getElementById('proto-tl-inp-'+idx);
+  if(!inp) return;
+  var note = inp.value.trim();
+  var data = _protoPatientData[protoId];
+  if(!data || !data.pp) return;
+  var history = Array.isArray(data.pp.history) ? data.pp.history.slice() : [];
+  if(!history[idx]) return;
+  history[idx] = Object.assign({}, history[idx], { note: note || null });
+  _protoTlSaveHistory(protoId, history);
+}
+
+/* ─── Supprimer un événement de la timeline ──────────────────── */
+function _protoTlDeleteEvent(protoId, idx) {
+  var data = _protoPatientData[protoId];
+  if(!data || !data.pp) return;
+  var history = Array.isArray(data.pp.history) ? data.pp.history.slice() : [];
+  if(!history[idx] || idx === 0) return; /* on ne supprime pas l'assignation */
+  if(!confirm('Supprimer cet événement de l\'historique ?')) return;
+  history.splice(idx, 1);
+  _protoTlSaveHistory(protoId, history);
+}
+
+/* ─── Sauvegarder history mis à jour ─────────────────────────── */
+function _protoTlSaveHistory(protoId, history) {
+  var data = _protoPatientData[protoId];
+  if(!data || !data.pp) return;
+  data.pp.history = history;
+  _fetchRetry(SUPA_URL_P + '/rest/v1/patient_protocols?id=eq.'+data.pp.id, {
+    method: 'PATCH', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
+    body: JSON.stringify({ history: history, updated_at: new Date().toISOString() })
+  }).then(function(r){
+    if(r.ok){ _showToast('Historique mis à jour.'); renderProtocols(); }
+    else { _showToast('Erreur sauvegarde historique.', true); }
+  }).catch(function(){ _showToast('Erreur sauvegarde historique.', true); });
+}
+
+/* ─── Désassigner le protocole (supprimer patient_protocol) ─── */
+function _protoUnassign(protoId) {
+  var data = _protoPatientData[protoId];
+  if(!data || !data.pp) return;
+  var patName = _progPatient ? ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim() : 'ce patient';
+  if(!confirm('Supprimer l\'assignation de ce protocole pour '+patName+' ?\nL\'historique et les critères cochés seront effacés.')) return;
+  _fetchRetry(SUPA_URL_P + '/rest/v1/patient_protocols?id=eq.'+data.pp.id, {
+    method: 'DELETE', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'})
+  }).then(function(r){
+    if(r.ok){ _showToast('Assignation supprimée.'); renderProtocols(); }
+    else { _showToast('Erreur suppression.', true); }
+  }).catch(function(){ _showToast('Erreur suppression.', true); });
+}
+
+/* ─── Assigner protocole au patient ─────────────────────────── */
+function assignProtocol(protoId) {
+  if(!_progPatient){ _showToast('Sélectionne d\'abord un patient.'); return; }
+  var proto = _getAllProtocols().find(function(p){ return p.id===protoId; });
+  if(!proto) proto = PROTOCOLS_REF.find(function(p){ return p.id===protoId; });
+  if(!proto) return;
+  var data = _protoPatientData[protoId];
+  if(data && data.pp && data.pp.status === 'active'){ _showToast('Protocole déjà actif pour ce patient.'); return; }
+  var btn = document.getElementById('proto-assign-btn-'+protoId);
+  if(btn){ btn.disabled = true; btn.textContent = '⏳…'; }
+  _fetchRetry(SUPA_URL_P + '/rest/v1/patient_protocols', {
+    method: 'POST', headers: _sbHeaders(),
+    body: JSON.stringify({ praticien_id: _progUid, patient_id: _progPatient.id, protocol_id: protoId, protocol_name: proto.name, current_phase_id: proto.phases && proto.phases[0] ? proto.phases[0].id : null, status: 'active', history: [{ type: 'assigned', at: new Date().toISOString(), note: null }] })
+  })
+  .then(function(r){ return r.ok ? r.json() : r.json().then(function(d){ throw new Error(JSON.stringify(d)); }); })
+  .then(function(){
+    _showToast('✅ Protocole '+_escHtml(proto.name)+' assigné à '+_escHtml((_progPatient.prenom||'')+' '+(_progPatient.nom||''))+' !');
+    renderProtocols();
+    // Ouvrir modal rappels
+    var protoFull = _getAllProtocols().find(function(p){ return p.id===protoId; }) || PROTOCOLS_REF.find(function(p){ return p.id===protoId; });
+    if(protoFull) setTimeout(function(){ _openRappelsModal(protoFull); }, 400);
+  })
+  .catch(function(err){ console.error(err); _showToast('Erreur assignation.', true); if(btn){ btn.disabled=false; btn.textContent='📋 Assigner à ce patient'; } });
+}
+
+/* ─── Modal rappels automatiques ────────────────────────────── */
+function _openRappelsModal(proto, onClose) {
+  var defaultRappels = (proto.rappels && proto.rappels.length)
+    ? JSON.parse(JSON.stringify(proto.rappels))
+    : (_PROTO_RAPPELS_DEFAULTS[proto.id] || [{ jPlus:45, title:'CR médecin à réaliser' }, { jPlus:180, title:'CR médecin à réaliser' }]);
+
+  var patId = _progPatient ? _progPatient.id : null;
+  var savedJ0 = patId ? _getJ0(patId) : '';
+
+  function _renderModal(j0val) {
+    var existing = document.getElementById('rappels-modal-overlay');
+    if(existing) existing.remove();
+
+    var today = new Date();
+    var rows = defaultRappels.map(function(r, i) {
+      var targetDate = j0val ? _addDays(j0val, r.jPlus) : '';
+      var isPast = targetDate && new Date(targetDate) < today;
+      var dateLabel = targetDate ? (' — <span style="color:'+(isPast?'#C0392B':'#2D6A4F')+'">'+_fmtDateFr(targetDate)+(isPast?' ⚠️ passée':'')+'</span>') : '';
+      var jLabel = r.jPlus === 0 ? 'J0' : 'J+'+r.jPlus;
+      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'
+        +'<input type="checkbox" id="rapp-chk-'+i+'" checked style="width:16px;height:16px;accent-color:var(--accent);flex-shrink:0">'
+        +'<span style="font-size:.72rem;font-weight:700;color:var(--accent);min-width:36px">'+jLabel+'</span>'
+        +'<input type="text" id="rapp-title-'+i+'" value="'+escH(r.title)+'" style="flex:1;border:1px solid #D3D1CB;border-radius:5px;padding:4px 8px;font-size:.78rem;font-family:inherit">'
+        +'<span style="font-size:.72rem;color:#6B6860;white-space:nowrap">'+dateLabel+'</span>'
+        +'</div>';
+    }).join('');
+
+    var ov = document.createElement('div');
+    ov.id = 'rappels-modal-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.innerHTML = '<div style="background:#fff;border-radius:12px;width:100%;max-width:480px;box-shadow:0 12px 48px rgba(0,0,0,.22);overflow:hidden">'
+      +'<div style="background:var(--navy);color:#fff;padding:13px 18px;display:flex;align-items:center;gap:10px">'
+      +'<span style="font-size:.92rem;font-weight:700;flex:1">📅 Rappels — '+escH(proto.name||'Protocole')+'</span>'
+      +'<button onclick="document.getElementById(\'rappels-modal-overlay\').remove()" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:1.3rem;cursor:pointer;padding:0 4px">×</button>'
+      +'</div>'
+      +'<div style="padding:16px 18px 20px">'
+      +'<div style="margin-bottom:14px">'
+      +'<label style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--navy);display:block;margin-bottom:6px">Date de référence (J0)</label>'
+      +'<div style="display:flex;gap:8px;align-items:center">'
+      +'<input type="date" id="rapp-j0-input" value="'+j0val+'" style="flex:1;border:1px solid #D3D1CB;border-radius:6px;padding:6px 10px;font-size:.85rem;font-family:inherit" onchange="_rappelsUpdateDates()">'
+      +'</div>'
+      +'</div>'
+      +'<div style="margin-bottom:14px">'
+      +'<label style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--navy);display:block;margin-bottom:8px">Rappels à créer</label>'
+      +'<div id="rapp-rows">'+rows+'</div>'
+      +'</div>'
+      +'<div style="display:flex;gap:8px;justify-content:flex-end">'
+      +'<button onclick="document.getElementById(\'rappels-modal-overlay\').remove()" style="padding:7px 16px;border:1px solid #D3D1CB;border-radius:7px;background:#fff;cursor:pointer;font-family:inherit;font-size:.82rem">Ignorer</button>'
+      +'<button onclick="_confirmRappels('+JSON.stringify(defaultRappels).replace(/"/g,"'")+',\''+proto.id+'\')" style="padding:7px 16px;border:none;border-radius:7px;background:var(--accent);color:#fff;cursor:pointer;font-weight:600;font-family:inherit;font-size:.82rem">✓ Créer les rappels</button>'
+      +'</div>'
+      +'</div>'
+      +'</div>';
+    document.body.appendChild(ov);
+    // Stocker defaultRappels dans la modal pour _rappelsUpdateDates
+    ov._defaultRappels = defaultRappels;
+  }
+
+  if(patId && _progToken) {
+    _fetchRetry(SUPA_URL_P+'/rest/v1/bilans?patient_id=eq.'+patId+'&select=donnees&order=date.desc&limit=1', { headers: _sbHeaders() })
+    .then(function(r){ return r.ok ? r.json() : []; })
+    .then(function(rows) {
+      var d = rows && rows.length ? (rows[0].donnees||{}) : {};
+      var j0 = d['f-date-op'] || d['f-date-accident'] || savedJ0 || '';
+      _renderModal(j0);
+    })
+    .catch(function() {
+      try { var lb = JSON.parse(localStorage.getItem(R4P_KEYS.BILAN_DRAFT)||'{}'); var j0 = lb['f-date-op']||lb['f-date-accident']||savedJ0||''; _renderModal(j0); } catch(e){ _renderModal(savedJ0); }
+    });
+  } else {
+    try { var lb = JSON.parse(localStorage.getItem(R4P_KEYS.BILAN_DRAFT)||'{}'); var j0 = lb['f-date-op']||lb['f-date-accident']||savedJ0||''; _renderModal(j0); } catch(e){ _renderModal(savedJ0); }
+  }
+}
+
+window._rappelsUpdateDates = function() {
+  var j0 = (document.getElementById('rapp-j0-input')||{}).value||'';
+  if(!j0) return;
+  var ov = document.getElementById('rappels-modal-overlay');
+  if(!ov) return;
+  var defaultRappels = ov._defaultRappels || [];
+  // Récupérer l'état actuel des checkboxes et titres
+  var states = defaultRappels.map(function(r, i) {
+    var chk = document.getElementById('rapp-chk-'+i);
+    var titleEl = document.getElementById('rapp-title-'+i);
+    return { checked: chk ? chk.checked : true, title: titleEl ? titleEl.value : r.title };
+  });
+  // Mettre à jour les rappels avec les titres édités
+  var updatedRappels = defaultRappels.map(function(r, i) {
+    return { jPlus: r.jPlus, title: states[i].title };
+  });
+  ov._defaultRappels = updatedRappels;
+  // Re-rendre les lignes avec les nouvelles dates
+  var today = new Date();
+  var rows = updatedRappels.map(function(r, i) {
+    var targetDate = _addDays(j0, r.jPlus);
+    var isPast = new Date(targetDate) < today;
+    var dateLabel = ' — <span style="color:'+(isPast?'#C0392B':'#2D6A4F')+'">'+_fmtDateFr(targetDate)+(isPast?' ⚠️ passée':'')+'</span>';
+    var jLabel = r.jPlus === 0 ? 'J0' : 'J+'+r.jPlus;
+    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'
+      +'<input type="checkbox" id="rapp-chk-'+i+'"'+(states[i].checked?' checked':'')+' style="width:16px;height:16px;accent-color:var(--accent);flex-shrink:0">'
+      +'<span style="font-size:.72rem;font-weight:700;color:var(--accent);min-width:36px">'+jLabel+'</span>'
+      +'<input type="text" id="rapp-title-'+i+'" value="'+escH(r.title)+'" style="flex:1;border:1px solid #D3D1CB;border-radius:5px;padding:4px 8px;font-size:.78rem;font-family:inherit">'
+      +'<span style="font-size:.72rem;color:#6B6860;white-space:nowrap">'+dateLabel+'</span>'
+      +'</div>';
+  }).join('');
+  var rowsEl = document.getElementById('rapp-rows');
+  if(rowsEl) rowsEl.innerHTML = rows;
+};
+
+window._confirmRappels = function(defaultRappels, protoId) {
+  var j0 = (document.getElementById('rapp-j0-input')||{}).value||'';
+  if(!j0) { _showToast('Saisissez la date de référence.', true); return; }
+
+  var patId = _progPatient ? _progPatient.id : null;
+  if(patId) _saveJ0(patId, j0);
+
+  var created = 0;
+  defaultRappels.forEach(function(r, i) {
+    var chk = document.getElementById('rapp-chk-'+i);
+    var titleEl = document.getElementById('rapp-title-'+i);
+    if(!chk || !chk.checked) return;
+    var title = titleEl ? titleEl.value.trim() : r.title;
+    if(!title) return;
+    var targetDate = _addDays(j0, r.jPlus);
+    if(_addCalNoteIfNotDupe(targetDate, title, '')) created++;
+  });
+
+  document.getElementById('rappels-modal-overlay').remove();
+  renderCalendar();
+  _showToast(created > 0 ? '📅 '+created+' rappel(s) créé(s) dans l\'agenda' : 'Aucun rappel ajouté (déjà existants)');
+};
+
+/* ─── Modal note de statut ───────────────────────────────────── */
+var _STATUS_LABELS = { paused:'⏸ Mettre en pause', active:'↩ Réactiver', completed:'✔️ Terminer', abandoned:'Abandonner' };
+var _STATUS_TOAST  = { active:'↩ Protocole réactivé !', paused:'⏸ Mis en pause.', completed:'✔️ Terminé !', abandoned:'Abandonné.' };
+function _protoStatusModal(protoId, newStatus) {
+  var existing = document.getElementById('proto-status-overlay');
+  if(existing) existing.remove();
+  var label = _STATUS_LABELS[newStatus] || 'Changer le statut';
+  var isDanger = newStatus === 'completed' || newStatus === 'abandoned';
+  var overlay = document.createElement('div');
+  overlay.id = 'proto-status-overlay';
+  overlay.className = 'proto-status-overlay';
+  overlay.innerHTML = '<div class="proto-status-modal">'
+    + '<h4>'+label+'</h4>'
+    + '<p>Note clinique (optionnelle)</p>'
+    + '<textarea id="psm-note" placeholder="Ex : Objectifs fonctionnels atteints, retour terrain validé…"></textarea>'
+    + '<div class="proto-status-modal-btns">'
+    + '<button class="psm-cancel" onclick="document.getElementById(\'proto-status-overlay\').remove()">Annuler</button>'
+    + '<button class="psm-confirm'+(isDanger?' danger':'')+'" onclick="_protoUpdateStatus(\''+protoId+'\',\''+newStatus+'\',document.getElementById(\'psm-note\').value.trim())">Confirmer</button>'
+    + '</div></div>';
+  document.body.appendChild(overlay);
+  setTimeout(function(){ var ta = document.getElementById('psm-note'); if(ta) ta.focus(); }, 50);
+}
+
+/* ─── Mettre à jour statut patient_protocol ─────────────────── */
+function _protoUpdateStatus(protoId, newStatus, note) {
+  var data = _protoPatientData[protoId];
+  if(!data || !data.pp) return;
+  var overlay = document.getElementById('proto-status-overlay');
+  if(overlay) overlay.remove();
+  var now = new Date().toISOString();
+  var history = Array.isArray(data.pp.history) ? data.pp.history.slice() : [];
+  history.push({ type: newStatus, at: now, note: note || null });
+  var patch = { status: newStatus, updated_at: now, history: history };
+  if(note) patch.status_note = note;
+  if(data.pp) { data.pp.status = newStatus; data.pp.history = history; if(note) data.pp.status_note = note; }
+  _fetchRetry(SUPA_URL_P + '/rest/v1/patient_protocols?id=eq.'+data.pp.id, {
+    method: 'PATCH', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
+    body: JSON.stringify(patch)
+  }).then(function(r){
+    if(r.ok){ _showToast(_STATUS_TOAST[newStatus]||'Statut mis à jour.'); renderProtocols(); }
+    else { _showToast('Erreur mise à jour statut.', true); }
+  }).catch(function(){ _showToast('Erreur mise à jour statut.', true); });
+}
+
+/* ─── Mettre à jour la phase active (Supabase) ──────────────── */
+function _protoUpdatePhase(protoId, phaseId) {
+  var data = _protoPatientData[protoId];
+  if(!data || !data.pp) return;
+  var now = new Date().toISOString();
+  var history = Array.isArray(data.pp.history) ? data.pp.history.slice() : [];
+  if(phaseId) {
+    var proto = _getAllProtocols().find(function(p){ return p.id===protoId; });
+    var ph = proto && proto.phases ? proto.phases.find(function(p){ return p.id===phaseId; }) : null;
+    history.push({ type:'phase_changed', at:now, phaseId:phaseId, phaseName: ph ? ph.name : null, note:null });
+  }
+  _fetchRetry(SUPA_URL_P + '/rest/v1/patient_protocols?id=eq.'+data.pp.id, {
+    method: 'PATCH', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
+    body: JSON.stringify({ current_phase_id: phaseId||null, phase_started_at: phaseId ? now : null, updated_at: now, history: history })
+  }).then(function(r){
+    if(r.ok && data.pp){ data.pp.current_phase_id = phaseId||null; data.pp.history = history; renderProtocols(); }
+  }).catch(function(){ _showToast('Erreur mise à jour phase.', true); });
+}
+
+/* ─── Ouvrir une phase dans le builder ──────────────────────── */
+function _protoOpenInBuilder(protoId, phaseId) {
+  var proto = _getAllProtocols().find(function(p){ return p.id===protoId; });
+  if(!proto) return;
+  var ph = proto.phases.find(function(p){ return p.id===phaseId; });
+  if(!ph) return;
+  closeProtoPanel();
+  blocs = []; activeBloc = null;
+  _notes = _buildPhaseNotes(ph);
+  _currentProgId = null; _builderFromTemplate = null; _builderDate = '';
+  _lastSavedHash = ''; _builderSaved = false;
+  // Pré-lier à la phase si un patient_protocol actif existe en cache
+  var ppId = null;
+  if(_protoPatientData && _protoPatientData[protoId] && _protoPatientData[protoId].pp){
+    ppId = _protoPatientData[protoId].pp.id;
+  }
+  if(ppId){
+    _builderLinkedPhase = { protoId: protoId, phaseId: phaseId, ppId: ppId,
+      phaseName: ph.name, protoName: proto.name };
+  } else {
+    _builderLinkedPhase = null;
+  }
+  renderSession(); _updateBuilderTitle();
+  if(typeof _refreshSaveBtn === 'function') _refreshSaveBtn();
+  if(typeof _refreshDraftBadge === 'function') _refreshDraftBadge();
+  _enterBuilderMode();
+  _showToast('📋 Builder ouvert — '+_escHtml(ph.name));
+}
+
+/* ─── Notes pré-remplies pour le builder ────────────────────── */
+function _buildPhaseNotes(ph) {
+  var lines = [];
+  lines.push('OBJECTIFS :');
+  ph.objectives.forEach(function(o){ lines.push('- '+o); });
+  lines.push('');
+  lines.push('PRÉCAUTIONS :');
+  ph.precautions.forEach(function(p){ lines.push('- '+p); });
+  lines.push('');
+  lines.push('CONTENU HEBDOMADAIRE :');
+  ph.weekly.forEach(function(w){ lines.push('['+w.week+'] '+w.content); });
+  lines.push('');
+  lines.push('CRITÈRES DE SORTIE :');
+  ph.exitCriteria.forEach(function(c){ lines.push('- '+c); });
+  return lines.join('\n');
+}
+
+/* ─── Utilitaire escaping ────────────────────────────────────── */
+function _escHtml(str) {
+  return String(str||'')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ── Sync périodique des notes cliniques (60 s) ──
+setInterval(_syncCalNotesIfNeeded, 30000);
+
+// ── Init v2 ──
+(function(){
+  // Charger le calendrier et les templates au démarrage
+  renderCalendar();
+  renderSidebarTemplates();
+  // (renderTemplatesInBuilder est appelé dans _enterBuilderMode)
+  // Adapter shareCalLink pour v2 (remplace programme.html par programme_v2.html)
+  var _origShareCal = shareCalLink;
+  shareCalLink = function(){
+    if(!_progPatient){ alert('Sélectionne d\'abord un patient depuis la barre de navigation.'); return; }
+    var base = window.location.origin + window.location.pathname.replace('programme_v2.html','').replace('programme.html','') + 'athlete.html';
+    var link = base + '?patient=' + _progPatient.id;
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(link).then(function(){ alert('✅ Lien calendrier copié !\n\n'+link); }).catch(function(){ prompt('Copie ce lien :',link); });
+    } else { prompt('Copie ce lien :',link); }
+  };
+})();
