@@ -355,12 +355,47 @@ var R4P_KEYS = {
   PROFILE        : 'r4p-profile',
   CACHED_PROFILE : 'r4p-cached-profile',
   SESSION        : 'r4p-session',
-  SUPABASE_AUTH  : 'sb-sxdobjodxkwexaspepdm-auth-token'
+  SUPABASE_AUTH  : 'sb-sxdobjodxkwexaspepdm-auth-token',
+  LAST_ACTIVITY  : 'r4p-last-activity'
 };
 
 var SUPA_URL = 'https://sxdobjodxkwexaspepdm.supabase.co';
 var SUPA_KEY = 'sb_publishable_zEJrmQOnKyRm-Y_NyojaTA_ERrDx4pl';
 var sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+/* ═══ TIMEOUT D'INACTIVITÉ — 8 heures ═══════════════════════════════
+   Déconnecte automatiquement l'utilisateur après 8h sans interaction.
+   Remplace le "Time-box user sessions" de Supabase Pro. ══════════ */
+var R4P_TIMEOUT_MS = 8 * 60 * 60 * 1000; // 8h en millisecondes
+
+function _touchActivity() {
+  try { localStorage.setItem(R4P_KEYS.LAST_ACTIVITY, Date.now().toString()); } catch(e) {}
+}
+
+function _checkInactivity() {
+  try {
+    var last = parseInt(localStorage.getItem(R4P_KEYS.LAST_ACTIVITY) || '0');
+    if (last > 0 && (Date.now() - last) > R4P_TIMEOUT_MS) {
+      sb.auth.signOut().then(function() {
+        try {
+          [R4P_KEYS.CACHED_PROFILE, R4P_KEYS.PROFILE, R4P_KEYS.PATIENT,
+           R4P_KEYS.BILAN_DRAFT, R4P_KEYS.LAST_ACTIVITY].forEach(function(k) {
+            localStorage.removeItem(k);
+          });
+        } catch(ex) {}
+        window.location.replace('auth.html');
+      });
+    }
+  } catch(e) {}
+}
+
+// Enregistrer l'activité sur tout événement utilisateur
+['click', 'keydown', 'touchstart', 'mousemove'].forEach(function(evt) {
+  document.addEventListener(evt, _touchActivity, { passive: true });
+});
+
+// Vérifier l'inactivité toutes les 60 secondes
+setInterval(_checkInactivity, 60 * 1000);
 
 /* ═══ REDIRECT TOKENS SUPABASE (invite / recovery)
    Supabase redirige vers la racine avec un hash :
@@ -426,6 +461,7 @@ sb.auth.getSession().then(function(result) {
     window.location.replace('auth.html');
     return;
   }
+  _touchActivity(); // Initialise le timer d'inactivité à la connexion
   var user = session.user;
   updateNav(user);
   var profile = syncProfileToStorage(user);
@@ -484,7 +520,12 @@ window.addEventListener('message', function(e) {
 
   // account.html demande une déconnexion
   if (e.data.type === 'r4p-logout-done') {
-    try { localStorage.removeItem(R4P_KEYS.CACHED_PROFILE); localStorage.removeItem(R4P_KEYS.PROFILE); } catch(ex) {}
+    try {
+      // Purge complète des données locales sensibles
+      [R4P_KEYS.CACHED_PROFILE, R4P_KEYS.PROFILE, R4P_KEYS.PATIENT, R4P_KEYS.BILAN_DRAFT].forEach(function(k){
+        localStorage.removeItem(k);
+      });
+    } catch(ex) {}
     window.location.replace('auth.html');
   }
 
@@ -842,12 +883,26 @@ function deletePatient(id, e) {
   e.stopPropagation();
   var p = _allPatients.find(function(x){ return x.id === id; });
   if (!p) return;
-  if (!confirm('Supprimer ' + p.nom + ' ' + p.prenom + ' et toutes ses données ?')) return;
-  sb.from('patients').delete().eq('id', id).then(function(res) {
+  if (!confirm('Supprimer ' + p.nom + ' ' + p.prenom + ' et toutes ses données ?\n\nCette action est irréversible — bilans et notes inclus.')) return;
+
+  // 1. Supprimer les bilans du patient (RGPD — droit à l'effacement)
+  Promise.all([
+    sb.from('bilans').delete().eq('patient_id', id),
+    sb.from('clinical_notes').delete().eq('patient_id', id)
+  ]).then(function() {
+    // 2. Supprimer le patient
+    return sb.from('patients').delete().eq('id', id);
+  }).then(function(res) {
     if (res.error) { alert('Erreur : ' + res.error.message); return; }
     _allPatients = _allPatients.filter(function(x){ return x.id !== id; });
-    if (_currentPatient && _currentPatient.id === id) deselectPatient();
+    if (_currentPatient && _currentPatient.id === id) {
+      deselectPatient();
+      // Purger aussi le brouillon de bilan en cours
+      try { localStorage.removeItem(R4P_KEYS.BILAN_DRAFT); } catch(ex) {}
+    }
     renderPatients(_allPatients);
+  }).catch(function(err) {
+    alert('Erreur lors de la suppression : ' + (err && err.message ? err.message : err));
   });
 }
 </script>

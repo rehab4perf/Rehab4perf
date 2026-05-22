@@ -66,6 +66,31 @@ const TESTS = {
     'Posterior impingement test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Geste de l\'armé passif → Douleur (conflit postéro-supérieur)</span>',
     'Hawkins-Kennedy <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">RI passive max à 90° d\'élévation → Douleur (conflit sous-coracoïdien)</span>',
   ]},
+  // Épaule bilatérale — tables simplifiées (flat, sans sous-en-têtes)
+  'tb-ep-irrit-g':{type:'ortho',items:['Arm Squeeze Test','ULNT 1 (Nerf médian)','ULNT 2 (Nerf médian)','ULNT 3 (Nerf radial)','ULNT 4 (Nerf ulnaire)']},
+  'tb-ep-irrit-d':{type:'ortho',items:['Arm Squeeze Test','ULNT 1 (Nerf médian)','ULNT 2 (Nerf médian)','ULNT 3 (Nerf radial)','ULNT 4 (Nerf ulnaire)']},
+  'tb-ep-trau-g':{type:'ortho',items:[
+    'Appréhension (ant.)','Relocation test','Appréhension post.','Sulcus Test',
+    'Cross body adduction test','Palpation interligne AC',
+    'Compression Rotation (SLAP)','Jerk Test',
+    'External rotation lag sign','Internal rotation lag sign'
+  ]},
+  'tb-ep-trau-d':{type:'ortho',items:[
+    'Appréhension (ant.)','Relocation test','Appréhension post.','Sulcus Test',
+    'Cross body adduction test','Palpation interligne AC',
+    'Compression Rotation (SLAP)','Jerk Test',
+    'External rotation lag sign','Internal rotation lag sign'
+  ]},
+  'tb-ep-fonc-g':{type:'fonc',items:['Extension thoracique','Activation coiffe - préhension','Activation coiffe - pré-activation RE','Activation coiffe - contre résistance','Activation coiffe - chaîne croisée','Activation coiffe - bord ulnaire','Inhibition coiffe','Postériorisation GH','SRT','SAT']},
+  'tb-ep-fonc-d':{type:'fonc',items:['Extension thoracique','Activation coiffe - préhension','Activation coiffe - pré-activation RE','Activation coiffe - contre résistance','Activation coiffe - chaîne croisée','Activation coiffe - bord ulnaire','Inhibition coiffe','Postériorisation GH','SRT','SAT']},
+  'tb-ep-ortho-g':{type:'ortho',items:[
+    'Mobilité scapulaire en DCL','Extension thoracique au mur','Cross body adduction test',
+    'Test de Neer','Posterior impingement test','Hawkins-Kennedy'
+  ]},
+  'tb-ep-ortho-d':{type:'ortho',items:[
+    'Mobilité scapulaire en DCL','Extension thoracique au mur','Cross body adduction test',
+    'Test de Neer','Posterior impingement test','Hawkins-Kennedy'
+  ]},
   'tb-ra-cerv': {type:'ortho',items:[
     'Spurling A',
     'Distraction cervicale'
@@ -127,12 +152,26 @@ const TESTS = {
   'tb-ha-force-d':{type:'ortho',items:['Break test Adducteurs','Break test Abdominaux (CE+CI + obliques)','Break test Fléchisseurs hanche','Break test Abduction hanche','Break test Rotation interne hanche','Break test Rotation externe hanche']},
   'tb-ha-force-g':{type:'ortho',items:['Break test Adducteurs','Break test Abdominaux (CE+CI + obliques)','Break test Fléchisseurs hanche','Break test Abduction hanche','Break test Rotation interne hanche','Break test Rotation externe hanche']},
   'tb-pi-global':{type:'ortho',items:['Liberté articulaire globale','Flexion plantaire','Flexion dorsale']},
+  'tb-pi-global-g':{type:'ortho',items:['Liberté articulaire globale','Flexion plantaire','Flexion dorsale']},
+  'tb-pi-global-d':{type:'ortho',items:['Liberté articulaire globale','Flexion plantaire','Flexion dorsale']},
   'tb-pi-tt':   {type:'ortho',items:['Reverse antéro-latéral drawer test','Talar tilt test','Cisaillement']},
+  'tb-pi-tt-g': {type:'ortho',items:['Reverse antéro-latéral drawer test','Talar tilt test','Cisaillement']},
+  'tb-pi-tt-d': {type:'ortho',items:['Reverse antéro-latéral drawer test','Talar tilt test','Cisaillement']},
   'tb-pi-synd': {type:'ortho',items:['Kleiger','Fibular translation test','Tiroir talien transversal','Squeeze test']},
+  'tb-pi-synd-g':{type:'ortho',items:['Kleiger','Fibular translation test','Tiroir talien transversal','Squeeze test']},
+  'tb-pi-synd-d':{type:'ortho',items:['Kleiger','Fibular translation test','Tiroir talien transversal','Squeeze test']},
   'tb-pi-conf': {type:'ortho',items:['Grinding','Impaction','Excentrique LFH','Molloy test']},
+  'tb-pi-conf-g':{type:'ortho',items:['Grinding','Impaction','Excentrique LFH','Molloy test']},
+  'tb-pi-conf-d':{type:'ortho',items:['Grinding','Impaction','Excentrique LFH','Molloy test']},
   'tb-pi-st':   {type:'ortho',items:['Varus / Valgus en flexion dorsale','Cisaillement en flexion dorsale']},
+  'tb-pi-st-g': {type:'ortho',items:['Varus / Valgus en flexion dorsale','Cisaillement en flexion dorsale']},
+  'tb-pi-st-d': {type:'ortho',items:['Varus / Valgus en flexion dorsale','Cisaillement en flexion dorsale']},
   'tb-pi-chopart':{type:'ortho',items:['Mobilisation Chopart','Neutral Heel Lateral Push Test']},
+  'tb-pi-chopart-g':{type:'ortho',items:['Mobilisation Chopart','Neutral Heel Lateral Push Test']},
+  'tb-pi-chopart-d':{type:'ortho',items:['Mobilisation Chopart','Neutral Heel Lateral Push Test']},
   'tb-pi-fonc': {type:'ortho',items:['Course interne mollet','Navicular Drop Test (mm)','Avant-pied - équilibre pointes de pied (step)','Médio-pied - équilibre foot bridge','1ère ligne - montée pointes + cale 30° sous hallux','Équilibre classique global (yeux ouverts / yeux fermés)']},
+  'tb-pi-fonc-g':{type:'ortho',items:['Course interne mollet','Navicular Drop Test (mm)','Avant-pied - équilibre pointes de pied (step)','Médio-pied - équilibre foot bridge','1ère ligne - montée pointes + cale 30° sous hallux','Équilibre classique global (yeux ouverts / yeux fermés)']},
+  'tb-pi-fonc-d':{type:'ortho',items:['Course interne mollet','Navicular Drop Test (mm)','Avant-pied - équilibre pointes de pied (step)','Médio-pied - équilibre foot bridge','1ère ligne - montée pointes + cale 30° sous hallux','Équilibre classique global (yeux ouverts / yeux fermés)']},
   'tb-pi-force-ca':{type:'ortho',items:['Flexion plantaire','Flexion dorsale','Inversion','Éversion','Break test Long Fléchisseur de l\'Hallux (LFH)']},
   'tb-pi-force-cs':{type:'ortho',items:['Flexion plantaire','Flexion dorsale','Inversion','Éversion','Break test Long Fléchisseur de l\'Hallux (LFH)']},
 
@@ -603,6 +642,7 @@ function _resetBilanFields(){
   document.querySelectorAll('input[type=checkbox],input[type=radio]').forEach(function(c){ c.checked=false; });
   try{ var fd=document.getElementById('f-date'); if(fd) fd.value=new Date().toISOString().split('T')[0]; }catch(ex){}
   _painZones=[]; renderPainZones();
+  document.querySelectorAll('.evo-delta').forEach(function(el){ el.remove(); });
   // Recalculer TOUTES les fonctions d'affichage dérivées (LSI, RSI, déficits, badges…)
   try{ updateAll(); calcRec(); calcPlioq(); }catch(ex){}
   try{ ['sls','hop','pset','set'].forEach(function(k){ calcLSI(k); }); calcDJ(); calcLunge(); calcHR(); calcMusc(); }catch(ex){}
@@ -923,9 +963,14 @@ function _buildChartB(valsA, dates, opts){
       html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4.5" fill="var(--accent)"/>';
       html+='<text x="'+p.x.toFixed(1)+'" y="'+(p.y-12).toFixed(1)+'" text-anchor="middle" font-size="10" font-weight="700" fill="var(--accent2)">'+p.v.toFixed(dec)+opts.unit+'</text>';
     } else {
+      var ptlId='ptlB'+id+'-'+i;
       html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isFirst?3.5:3)+'" fill="#fff" stroke="var(--accent)" stroke-width="'+(isFirst?2:1.5)+'" opacity="'+(isFirst?1:0.65)+'"/>';
-      if(isFirst) html+='<text x="'+p.x.toFixed(1)+'" y="'+(p.y-9).toFixed(1)+'" text-anchor="middle" font-size="9" fill="var(--text3)">'+p.v.toFixed(dec)+opts.unit+'</text>';
-      html+='<circle class="evo-hit" cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="18" fill="transparent" data-tt="ttB'+id+'" data-x="'+p.x.toFixed(1)+'" data-y="'+p.y.toFixed(1)+'" data-l1="'+p.v.toFixed(dec)+opts.unit+'" data-l2="'+p.date+'" style="cursor:pointer"/>';
+      if(isFirst){
+        html+='<text x="'+p.x.toFixed(1)+'" y="'+(p.y-9).toFixed(1)+'" text-anchor="middle" font-size="9" fill="var(--text3)">'+p.v.toFixed(dec)+opts.unit+'</text>';
+      } else {
+        html+='<text id="'+ptlId+'" visibility="hidden" x="'+p.x.toFixed(1)+'" y="'+(p.y-9).toFixed(1)+'" text-anchor="middle" font-size="9" font-weight="600" fill="var(--accent2)">'+p.v.toFixed(dec)+opts.unit+'</text>';
+      }
+      html+='<circle class="evo-hit" cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="18" fill="transparent" data-tt="ttB'+id+'" data-x="'+p.x.toFixed(1)+'" data-y="'+p.y.toFixed(1)+'" data-l1="'+p.v.toFixed(dec)+opts.unit+'" data-l2="'+p.date+'"'+(isFirst?'':' data-ptl-id="'+ptlId+'"')+' style="cursor:pointer"/>';
     }
   });
   // Tooltip
@@ -1082,7 +1127,7 @@ function _buildChartD(valsA, valsB, dates, opts){
   var lx=VW-PAD.right+8;
   html+='<rect data-line="A" x="'+lx+'" y="'+PAD.top+'" width="8" height="8" rx="2" fill="'+colorA+'"/><text data-line="A" x="'+(lx+11)+'" y="'+(PAD.top+7)+'" font-size="8.5" fill="'+colorA+'" font-weight="600">'+opts.labelA+'</text>';
   html+='<rect data-line="B" x="'+lx+'" y="'+(PAD.top+14)+'" width="8" height="8" rx="2" fill="'+colorB+'"/><text data-line="B" x="'+(lx+11)+'" y="'+(PAD.top+21)+'" font-size="8.5" fill="'+colorB+'" font-weight="600">'+opts.labelB+'</text>';
-  // Hit areas
+  // Hit areas + labels click-to-show
   ptsA.forEach(function(pA,i){
     if(!pA||!pA.valid)return;
     var isLastA=!ptsA.slice(i+1).some(function(q){return q.valid;});
@@ -1093,7 +1138,13 @@ function _buildChartD(valsA, valsB, dates, opts){
     var decB2=pB&&pB.valid&&opts.unit==='cm'&&pB.v%1!==0?1:0;
     var vA=pA.v.toFixed(decA2)+opts.unit;
     var vB=pB&&pB.valid?pB.v.toFixed(decB2)+opts.unit:'—';
-    html+='<circle class="evo-hit-d" cx="'+pA.x.toFixed(1)+'" cy="'+midY.toFixed(1)+'" r="20" fill="transparent" data-tt="ttD'+id+'" data-x="'+pA.x.toFixed(1)+'" data-ya="'+pA.y.toFixed(1)+'" data-yb="'+(pB&&pB.valid?pB.y.toFixed(1):pA.y.toFixed(1))+'" data-la="'+opts.labelA+': '+vA+'" data-lb="'+opts.labelB+': '+vB+'" data-date="'+pA.date+'" style="cursor:pointer"/>';
+    var ptlId='ptlD'+id+'-'+i;
+    var topY=Math.min(pA.y, pB&&pB.valid?pB.y:pA.y)-9;
+    html+='<g id="'+ptlId+'" visibility="hidden">'
+      +'<text x="'+pA.x.toFixed(1)+'" y="'+topY.toFixed(1)+'" text-anchor="middle" font-size="9" font-weight="600" fill="'+colorA+'">'+vA+'</text>'
+      +(pB&&pB.valid?'<text x="'+pA.x.toFixed(1)+'" y="'+(topY+11).toFixed(1)+'" text-anchor="middle" font-size="9" font-weight="600" fill="'+colorB+'">'+vB+'</text>':'')
+      +'</g>';
+    html+='<circle class="evo-hit-d" cx="'+pA.x.toFixed(1)+'" cy="'+midY.toFixed(1)+'" r="20" fill="transparent" data-tt="ttD'+id+'" data-x="'+pA.x.toFixed(1)+'" data-ya="'+pA.y.toFixed(1)+'" data-yb="'+(pB&&pB.valid?pB.y.toFixed(1):pA.y.toFixed(1))+'" data-la="'+opts.labelA+': '+vA+'" data-lb="'+opts.labelB+': '+vB+'" data-date="'+pA.date+'" data-ptl-id="'+ptlId+'" style="cursor:pointer"/>';
   });
   // Tooltip
   html+='<g id="ttD'+id+'" visibility="hidden" style="pointer-events:none"><rect id="ttD'+id+'-bg" rx="8" fill="var(--accent2)" opacity="0.94" width="120" height="52"/><text id="ttD'+id+'-date" font-size="8.5" fill="rgba(255,255,255,0.6)" text-anchor="middle"/><circle id="ttD'+id+'-dotA" r="4" fill="'+colorA+'"/><text id="ttD'+id+'-la" font-size="10" font-weight="700" fill="#7AB8FF"/><circle id="ttD'+id+'-dotB" r="4" fill="'+colorB+'"/><text id="ttD'+id+'-lb" font-size="10" font-weight="700" fill="#6ED9A0"/></g>';
@@ -1155,6 +1206,17 @@ function _attachChartEvents(){
     document.addEventListener('pointerdown',function(){_closeTt();});
   }
 
+  function _togglePtLabel(el){
+    var ptlId = el.dataset.ptlId;
+    if(!ptlId) return;
+    var svgEl = el.closest('svg');
+    if(!svgEl) return;
+    var lbl = svgEl.getElementById(ptlId);
+    if(!lbl) return;
+    var vis = lbl.getAttribute('visibility');
+    lbl.setAttribute('visibility', vis==='visible' ? 'hidden' : 'visible');
+  }
+
   function _attachHit(el, showFn){
     var svgEl=el.closest('svg'), ttId=el.dataset.tt;
     // Hover souris
@@ -1163,6 +1225,7 @@ function _attachChartEvents(){
     // Tap / clic
     el.addEventListener('pointerdown',function(e){
       e.stopPropagation(); // empêche le listener document de fermer immédiatement
+      _togglePtLabel(el); // affiche/masque le label de la valeur
       if(_evoTtOpen && _evoTtOpen.ttId===ttId){
         _closeTt(); // même point : bascule fermeture
       } else {
@@ -1196,6 +1259,7 @@ var QUAL_GROUPS = [
     prefixA:'rec-cs', prefixB:'rec-ca',
     labelA:'Côté sain', labelB:'Côté atteint',
     count:5,
+    crToggleId:'rec-cr-toggle',
     criteria:['Talon au repère 80%','Descente fluide à 90°','Maintien 3s à 90°','Contrôle neuromusculaire genou','Contrôle du tronc (TSB)']
   },
   {
@@ -1204,6 +1268,7 @@ var QUAL_GROUPS = [
     prefixA:'plioq-cs', prefixB:'plioq-ca',
     labelA:'Côté sain', labelB:'Côté atteint',
     count:2,
+    crToggleId:'plioq-cr-toggle',
     criteria:['Absence de raideur du membre','Absence de déficit de hauteur']
   }
 ];
@@ -1582,6 +1647,9 @@ function _buildEvolutionHTML(){
     exportClone.querySelectorAll('.evo-chart-card.evo-unselected').forEach(function(el){el.remove();});
   }
   exportClone.querySelectorAll('.evo-chart-check').forEach(function(el){el.remove();});
+  // Tableau qualitatif : toujours visible + suppression du bouton toggle
+  exportClone.querySelectorAll('.qual-toggle-btn').forEach(function(el){el.remove();});
+  exportClone.querySelectorAll('.qual-grid-collapsible').forEach(function(el){el.classList.remove('qual-grid-collapsible');});
   // Nettoyer les blocs catégorie vides
   exportClone.querySelectorAll('.evo-block').forEach(function(bl){
     if(!bl.querySelector('.evo-chart-card'))bl.remove();
@@ -1643,6 +1711,28 @@ function _buildEvolutionHTML(){
     + '.evo-cond-chip.changed{background:#FEF3C7;color:#92400E;border-color:#FDE68A;}'
     + '.evo-cond-warn{font-size:.68rem;font-weight:600;padding:2px 7px;border-radius:10px;background:#FEF3C7;color:#92400E;}'
     + '@media print{.doc-header{background:var(--accent2)!important}.evo-block{break-inside:avoid}.doc-body{padding:12px 24px 0}}'
+    // Styles qualitatifs
+    + '.qual-grid-wrap{overflow-x:auto;margin-top:10px;}'
+    + '.qual-grid{width:100%;border-collapse:collapse;font-size:.72rem;}'
+    + '.qual-grid th{background:#F1F0ED;color:#6B6860;font-weight:700;padding:5px 8px;text-align:center;border:1px solid #E8E6E1;white-space:nowrap;}'
+    + '.qual-grid th.qual-crit-hdr{text-align:left;min-width:120px;}'
+    + '.qual-grid td{padding:4px 6px;border:1px solid #E8E6E1;text-align:center;vertical-align:middle;white-space:nowrap;}'
+    + '.qual-grid td.qual-crit-lbl{text-align:left;color:#6B6860;font-weight:500;padding:4px 10px;background:#FFFFFF;}'
+    + '.qual-chip{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;font-size:.75rem;font-weight:700;}'
+    + '.qual-chip.ok{background:#DCFCE7;color:#16A34A;}'
+    + '.qual-chip.bad{background:#FEE2E2;color:#DC2626;}'
+    + '.qual-chip.na{background:#F1F0ED;color:#9D9B96;}'
+    + '.qual-score-badge{font-size:.82rem;font-weight:700;padding:2px 8px;border-radius:6px;}'
+    + '.qual-score-badge.ok{background:#DCFCE7;color:#16A34A;}'
+    + '.qual-score-badge.warn{background:#FEF3C7;color:#D97706;}'
+    + '.qual-score-badge.bad{background:#FEE2E2;color:#DC2626;}'
+    + '.qual-grid-collapsible{display:block;}'
+    + '.qual-toggle-btn{display:none;}'
+    // Pills de légende (toggle séries)
+    + '.evo-line-toggles{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px;}'
+    + '.evo-line-pill{display:inline-flex;align-items:center;gap:4px;font-size:.60rem;font-weight:600;padding:2px 8px;border-radius:4px;border:1.5px solid;cursor:pointer;font-family:inherit;line-height:1.5;background:#fff;letter-spacing:.01em;opacity:1;}'
+    + '.evo-check-wrap{display:flex;align-items:center;gap:6px;}'
+    + '.evo-chart-check{display:none;}'
     ;
 
   var metaParts = [];
@@ -1671,7 +1761,13 @@ function _buildEvolutionHTML(){
     + '<div class="doc-date-bar">Praticien : <span>'+praticien+(cabinet?' — '+cabinet:'')+'</span></div>'
     // Contenu
     + '<div class="doc-body"><br>'+contentHTML+'</div>'
-    + '</div></body></html>';
+    + '<div style="margin:32px 24px 0;padding:12px 16px;border-top:1px solid #DDE3EC;font-size:.68rem;color:#9D9B96;text-align:center;line-height:1.6">'
+    + '🔒 Document confidentiel — Données de santé à caractère personnel · Usage professionnel exclusif'
+    + '<br>Ne pas diffuser sans le consentement du patient · Généré par Rehab<strong>4</strong>Perf'
+    + '</div>'
+    + '</div>'
+    + '<script>document.querySelectorAll(".evo-hit,.evo-hit-d").forEach(function(el){el.addEventListener("click",function(e){e.stopPropagation();var id=el.getAttribute("data-ptl-id");if(id){var t=el.closest("svg").getElementById(id);if(t)t.setAttribute("visibility",t.getAttribute("visibility")==="visible"?"hidden":"visible");}});});<\/script>'
+    + '</body></html>';
 
   return { html: html, patient: patient, date: date };
 }
@@ -2306,6 +2402,8 @@ function _renderSuiviRapide(){
   var activeQuals = QUAL_GROUPS.filter(function(grp){
     return _allBilans.some(function(b){
       var d=b.donnees||{};
+      // Inclure si au moins une case cochée OU si "inclure dans le CR" est activé
+      if(grp.crToggleId && d[grp.crToggleId]===true) return true;
       for(var i=0;i<grp.count;i++){
         if(d[grp.prefixA+'-'+i]===true||d[grp.prefixB+'-'+i]===true) return true;
       }
@@ -3074,7 +3172,7 @@ function _buildAllTestsHtml() {
   }
   // 2. Bilan ortho
   var orthoSections = [
-    { label:'EPAULE', fields:[['ep-type','Type'],['ep-marqueur','Marqueur']], tables:['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho-mob','tb-ep-ortho-conf'], concl:'ep-conclusion', opt:'ep-opt' },
+    { label:'EPAULE', fields:[['ep-type','Type'],['ep-marqueur','Marqueur']], tables:['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho-mob','tb-ep-ortho-conf','tb-ep-irrit-g','tb-ep-irrit-d','tb-ep-trau-g','tb-ep-trau-d','tb-ep-fonc-g','tb-ep-fonc-d','tb-ep-ortho-g','tb-ep-ortho-d'], concl:'ep-conclusion', opt:'ep-opt' },
     { label:'RACHIS', fields:[['ra-marqueur','Marqueur'],['ra-mckenzie','McKenzie']], tables:['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-force-d','tb-ra-force-g','tb-ra-transverse'], concl:'ra-conclusion', opt:'ra-opt' },
     { label:'HANCHE', fields:[['ha-marqueur','Marqueur']], tables:['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-force-d','tb-ha-force-g'], concl:'ha-conclusion', opt:'ha-opt' },
     { label:'GENOU', fields:[['ge-marqueur','Marqueur']], tables:[
@@ -3083,7 +3181,7 @@ function _buildAllTestsHtml() {
         'tb-ge-men-g','tb-ge-men-d','tb-ge-rot-g','tb-ge-rot-d','tb-ge-sbit-g','tb-ge-sbit-d',
         'tb-ge-plicae-g','tb-ge-plicae-d','tb-ge-ext-g','tb-ge-ext-d',
         'tb-ge-knee-d','tb-ge-knee-g','tb-ge-hip-d','tb-ge-hip-g'], concl:'ge-conclusion', opt:'ge-opt' },
-    { label:'PIED / CHEVILLE', fields:[['pi-marqueur','Marqueur']], tables:['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-fonc','tb-pi-force-ca','tb-pi-force-cs'], concl:'pi-conclusion', opt:'pi-opt' },
+    { label:'PIED / CHEVILLE', fields:[['pi-marqueur','Marqueur']], tables:['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-fonc','tb-pi-force-ca','tb-pi-force-cs','tb-pi-global-g','tb-pi-global-d','tb-pi-tt-g','tb-pi-tt-d','tb-pi-synd-g','tb-pi-synd-d','tb-pi-conf-g','tb-pi-conf-d','tb-pi-st-g','tb-pi-st-d','tb-pi-chopart-g','tb-pi-chopart-d','tb-pi-fonc-g','tb-pi-fonc-d'], concl:'pi-conclusion', opt:'pi-opt' },
   ];
   var orthoHtml = '';
   for (var oi=0; oi<orthoSections.length; oi++) {
@@ -4675,6 +4773,10 @@ function _buildBilanHTML(type) {
       + (patient ? '<div class="patient-card"><div class="patient-avatar">'+initials+'</div><div><div class="patient-name">'+patient+'</div>'+(badges?'<div class="patient-badges">'+badges+'</div>':'')+'</div></div>' : '')
       + '<div class="doc-date-bar">Compte-rendu généré le <span>'+date+'</span></div>'
       + '<div class="doc-body"><br>'+contentHTML+'</div>'
+      + '<div style="margin:32px 24px 0;padding:12px 16px;border-top:1px solid #DDE3EC;font-size:.68rem;color:#9D9B96;text-align:center;line-height:1.6">'
+      + '🔒 Document confidentiel — Données de santé à caractère personnel · Usage professionnel exclusif'
+      + '<br>Ne pas diffuser sans le consentement du patient · Généré par Rehab<strong>4</strong>Perf'
+      + '</div>'
       + '</div></body></html>',
     title: title,
     patient: patient,
@@ -4967,6 +5069,30 @@ function _updateGenouBilateral(){
   });
 }
 
+function _updateChevBilateral(){
+  var cote = _getCoteForScope(['cheville','pied']);
+  var bilateral = (cote === 'BILATÉRAL');
+  var blocks = ['global','tt','synd','conf','st','chopart','fonc'];
+  blocks.forEach(function(b){
+    var single = document.getElementById('pi-single-' + b);
+    var bil    = document.getElementById('pi-bilateral-' + b);
+    if(single) single.style.display = bilateral ? 'none' : '';
+    if(bil)    bil.style.display    = bilateral ? ''     : 'none';
+  });
+}
+
+function _updateEpauleBilateral(){
+  var cote = _getCoteForScope(['epaule','coude','poignet']);
+  var bilateral = (cote === 'BILATÉRAL');
+  var blocks = ['irrit','trau','fonc','ortho'];
+  blocks.forEach(function(b){
+    var single = document.getElementById('ep-single-' + b);
+    var bil    = document.getElementById('ep-bilateral-' + b);
+    if(single) single.style.display = bilateral ? 'none' : '';
+    if(bil)    bil.style.display    = bilateral ? ''     : 'none';
+  });
+}
+
 function _updateSideLabels(){
   var SCOPES = [
     { zones:['epaule','coude','poignet'],         pages:['page-epaule','page-fonctionnelsMS'] },
@@ -4984,6 +5110,8 @@ function _updateSideLabels(){
     });
   });
   _updateGenouBilateral();
+  _updateChevBilateral();
+  _updateEpauleBilateral();
 }
 
 function _parsePainZones(){
