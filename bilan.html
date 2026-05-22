@@ -3474,6 +3474,25 @@ var R4P_KEYS = {
   SUPABASE_AUTH  : 'sb-sxdobjodxkwexaspepdm-auth-token'
 };
 
+/* ================================================================
+   NETWORK HELPER — Supabase SDK call with exponential-backoff retry
+   Retries on: HTTP 5xx, 429 (rate limit) or status 0 (network error).
+   Usage: _sbRetry(function(){ return sbB.from('bilans').update(...); })
+   ================================================================ */
+function _sbRetry(fn, _n) {
+  _n = _n || 0;
+  return fn().then(function(res) {
+    if (!res.error) return res;
+    var s = res.error.status || 0;
+    var isTransient = (s === 429 || s >= 500 || s === 0);
+    if (isTransient && _n < 2) {
+      return new Promise(function(r){ setTimeout(r, 800 * Math.pow(2, _n)); })
+        .then(function(){ return _sbRetry(fn, _n + 1); });
+    }
+    return res;
+  });
+}
+
 // -- DATA -----------------------------------------------------
 const TESTS = {
   'tb-ep-irrit':{type:'ortho',items:[
@@ -5208,7 +5227,7 @@ function saveBilan(){
 
   /* ── Mode consultation : on patche le bilan historique à sa date originale ── */
   if(_bilanHistoMode && _currentBilanId){
-    sbB.from('bilans').update({donnees:donnees}).eq('id', _currentBilanId).select().single()
+    _sbRetry(function(){ return sbB.from('bilans').update({donnees:donnees}).eq('id', _currentBilanId).select().single(); })
       .then(function(res){
         btn.disabled = false;
         if(res.error){ btn.textContent='💾 Mettre à jour ce bilan'; alert('Erreur : '+res.error.message); return; }
@@ -5250,11 +5269,11 @@ function saveBilan(){
       if (existingId) {
         // Bilan du jour trouvé → on l'écrase (quel que soit celui chargé en mémoire)
         isNew = false;
-        p = sbB.from('bilans').update({donnees:donnees, date:today}).eq('id', existingId).select().single();
+        p = _sbRetry(function(){ return sbB.from('bilans').update({donnees:donnees, date:today}).eq('id', existingId).select().single(); });
       } else {
         // Aucun bilan aujourd'hui → nouveau snapshot
         isNew = true;
-        p = sbB.from('bilans').insert({patient_id:_bilanPatient.id, praticien_id:_bilanUid, date:today, donnees:donnees}).select().single();
+        p = _sbRetry(function(){ return sbB.from('bilans').insert({patient_id:_bilanPatient.id, praticien_id:_bilanUid, date:today, donnees:donnees}).select().single(); });
       }
       return p.then(function(res){
         btn.disabled = false;
@@ -5527,7 +5546,7 @@ function _assertBilanOwnership(id){
 function loadBilan(id){
   if(!_assertBilanOwnership(id)) return;
   document.getElementById('histoList').innerHTML='<div class="histo-empty">Chargement…</div>';
-  sbB.from('bilans').select('*').eq('id',id).single().then(function(res){
+  _sbRetry(function(){ return sbB.from('bilans').select('*').eq('id',id).single(); }).then(function(res){
     if(res.error){ alert('Erreur : '+res.error.message); closeHistoModal(); return; }
     _currentBilanId   = res.data.id;
     _currentBilanDate = res.data.date ? res.data.date.split('T')[0] : null;
@@ -5944,11 +5963,11 @@ function _saveSuiviRapide(){
       Object.keys(delta).forEach(function(k){ merged[k]=delta[k]; });
 
       var p = existingId
-        ? sbB.from('bilans').update({donnees:merged}).eq('id',existingId).select().single()
-        : sbB.from('bilans').insert({
+        ? _sbRetry(function(){ return sbB.from('bilans').update({donnees:merged}).eq('id',existingId).select().single(); })
+        : _sbRetry(function(){ return sbB.from('bilans').insert({
             patient_id:_bilanPatient.id, praticien_id:_bilanUid,
             date:today, donnees:merged
-          }).select().single();
+          }).select().single(); });
 
       return p.then(function(res){
         if(saveBtn){ saveBtn.disabled=false; saveBtn.textContent='⚡ Enregistrer la mise à jour'; }
@@ -6007,7 +6026,7 @@ function deleteBilan(id, dateStr, isInitial, e) {
     + '\n\nCette action est irréversible — les données seront définitivement perdues.';
   if (!confirm(msg)) return;
 
-  sbB.from('bilans').delete().eq('id', id).then(function(res) {
+  _sbRetry(function(){ return sbB.from('bilans').delete().eq('id', id); }).then(function(res) {
     if (res.error) { alert('Erreur lors de la suppression : ' + res.error.message); return; }
 
     // Mise à jour locale

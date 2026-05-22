@@ -2183,6 +2183,28 @@ var R4P_KEYS = {
 };
 
 /* ================================================================
+   NETWORK HELPER — fetch with exponential-backoff retry
+   Retries on: network error (TypeError) or HTTP 5xx / 429.
+   POST on 5xx is NOT retried (non-idempotent, risk of duplicates).
+   ================================================================ */
+function _fetchRetry(url, opts, _n) {
+  _n = _n || 0;
+  var method = ((opts && opts.method) || 'GET').toUpperCase();
+  return window.fetch(url, opts).then(function(r) {
+    // 4xx (except 429) → pass through immediately, don't retry
+    if (r.ok || (r.status >= 400 && r.status < 500 && r.status !== 429)) return r;
+    // 5xx / 429 but already at max attempts or POST → give up
+    if (_n >= 2 || method === 'POST') return r;
+    return new Promise(function(res){ setTimeout(res, 800 * Math.pow(2, _n)); })
+      .then(function(){ return _fetchRetry(url, opts, _n + 1); });
+  }).catch(function(err) {
+    if (_n >= 2) throw err;
+    return new Promise(function(res){ setTimeout(res, 800 * Math.pow(2, _n)); })
+      .then(function(){ return _fetchRetry(url, opts, _n + 1); });
+  });
+}
+
+/* ================================================================
    EXERCISE DATABASE
    ================================================================ */
 var LIBRARY = [
@@ -3495,7 +3517,7 @@ function shareBuilderProg(){
   var nomProg = (document.getElementById('patientName')||{}).value || ('Programme du '+new Date().toLocaleDateString('fr-FR'));
   var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), notes: getNotes() };
   var today = new Date().toISOString().split('T')[0];
-  fetch(SUPA_URL_P+'/rest/v1/programmes', {
+  _fetchRetry(SUPA_URL_P+'/rest/v1/programmes', {
     method:'POST', headers:_sbHeaders(),
     body:JSON.stringify({patient_id:_progPatient.id, praticien_id:_progUid, nom:nomProg, date:today, donnees:donnees})
   })
@@ -4065,7 +4087,7 @@ var ALL_TYPES = ['warmup','renfo','automassage'];
 // Charge les exercices partagés depuis Supabase et les fusionne avec LIBRARY_DEFAULT
 function _loadSupaLibrary(){
   if(!_progToken || !_progUid) return;
-  fetch(SUPA_URL_P + '/rest/v1/exercices_library?order=created_at.asc', { headers: _sbHeaders() })
+  _fetchRetry(SUPA_URL_P + '/rest/v1/exercices_library?order=created_at.asc', { headers: _sbHeaders() })
   .then(function(r){ return r.ok ? r.json() : null; })
   .then(function(data){
     if(!Array.isArray(data)) return;
@@ -4126,7 +4148,7 @@ function openEditor(){
   document.getElementById('editorSearch').value = '';
   // Recharger depuis Supabase en arrière-plan, puis ouvrir avec données fraîches
   if(_progToken && _progUid){
-    fetch(SUPA_URL_P + '/rest/v1/exercices_library?order=created_at.asc', { headers: _sbHeaders() })
+    _fetchRetry(SUPA_URL_P + '/rest/v1/exercices_library?order=created_at.asc', { headers: _sbHeaders() })
     .then(function(r){ return r.ok ? r.json() : null; })
     .then(function(data){
       if(Array.isArray(data)){
@@ -4176,14 +4198,14 @@ function saveEditor(){
       };
       if(_supaExoIds[ex.id]){
         // Modifier un exercice Supabase existant
-        fetch(SUPA_URL_P+'/rest/v1/exercices_library?id=eq.'+ex.id, {
+        _fetchRetry(SUPA_URL_P+'/rest/v1/exercices_library?id=eq.'+ex.id, {
           method:'PATCH',
           headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
           body: JSON.stringify(payload)
         });
       } else {
         // Créer un nouvel exercice dans Supabase
-        fetch(SUPA_URL_P+'/rest/v1/exercices_library', {
+        _fetchRetry(SUPA_URL_P+'/rest/v1/exercices_library', {
           method:'POST',
           headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
           body: JSON.stringify(payload)
@@ -4195,7 +4217,7 @@ function saveEditor(){
     _editorOriginalIds.forEach(function(id){
       if(defaultIds.has(id)) return;
       if(!currentIds.has(id) && _supaExoIds[id]){
-        fetch(SUPA_URL_P+'/rest/v1/exercices_library?id=eq.'+id, {
+        _fetchRetry(SUPA_URL_P+'/rest/v1/exercices_library?id=eq.'+id, {
           method:'DELETE', headers: _sbHeaders()
         }).then(function(r){ if(r.ok) delete _supaExoIds[id]; });
       }
@@ -4258,7 +4280,7 @@ function deleteEditorRow(idx){
   filterLib();
   // Supprimer en Supabase si c'est un exercice partagé
   if(exId && _supaExoIds[exId] && _progToken && _progUid){
-    fetch(SUPA_URL_P+'/rest/v1/exercices_library?id=eq.'+exId, {
+    _fetchRetry(SUPA_URL_P+'/rest/v1/exercices_library?id=eq.'+exId, {
       method:'DELETE', headers: _sbHeaders()
     }).then(function(r){
       if(r.ok){ delete _supaExoIds[exId]; }
@@ -4576,7 +4598,7 @@ function _isReader(){ return _userRole === 'lecteur'; }
 
 function _loadUserRole(){
   if(!_progToken || !_progUid) return;
-  fetch(SUPA_URL_P + '/rest/v1/praticien_roles?user_id=eq.'+_progUid+'&select=role', { headers: _sbHeaders() })
+  _fetchRetry(SUPA_URL_P + '/rest/v1/praticien_roles?user_id=eq.'+_progUid+'&select=role', { headers: _sbHeaders() })
   .then(function(r){ return r.ok ? r.json() : null; })
   .then(function(data){
     _userRole = (Array.isArray(data) && data[0]) ? data[0].role : 'lecteur';
@@ -4597,7 +4619,7 @@ function _applyRoleUI(){
 /* ── Toggle public/privé d'un template ou protocole (admin only) ── */
 function _togglePublic(type, id, makePublic){
   var table = type === 'group' ? 'template_groups' : 'templates';
-  fetch(SUPA_URL_P+'/rest/v1/'+table+'?id=eq.'+id, {
+  _fetchRetry(SUPA_URL_P+'/rest/v1/'+table+'?id=eq.'+id, {
     method: 'PATCH',
     headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
     body: JSON.stringify({ is_public: makePublic })
@@ -4608,7 +4630,7 @@ function _togglePublic(type, id, makePublic){
       if(item) item.is_public = makePublic;
       // Cascade is_public sur toutes les phases du groupe
       if(type === 'group'){
-        fetch(SUPA_URL_P+'/rest/v1/templates?group_id=eq.'+id, {
+        _fetchRetry(SUPA_URL_P+'/rest/v1/templates?group_id=eq.'+id, {
           method: 'PATCH',
           headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
           body: JSON.stringify({ is_public: makePublic })
@@ -4683,7 +4705,7 @@ function _doSaveProgCloud(nomProg, donnees, today, btn){
   var payload = isNew
     ? {patient_id:_progPatient.id, praticien_id:_progUid, nom:nomProg, date:today, donnees:donnees}
     : {donnees:donnees, nom:nomProg, date:today};
-  fetch(url, {method:method, headers:_sbHeaders(), body:JSON.stringify(payload)})
+  _fetchRetry(url, {method:method, headers:_sbHeaders(), body:JSON.stringify(payload)})
   .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, status:r.status, data:d}; }); })
   .then(function(res){
     btn.disabled = false;
@@ -4694,7 +4716,7 @@ function _doSaveProgCloud(nomProg, donnees, today, btn){
       // Relier uniquement la séance actuelle au nouveau programme indépendant,
       // puis rafraîchir le calendrier pour que le chip pointe vers le nouveau programme_id.
       if(seanceId){
-        fetch(SUPA_URL_P + '/rest/v1/seances_planifiees?id=eq.' + seanceId, {
+        _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees?id=eq.' + seanceId, {
           method:'PATCH',
           headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
           body: JSON.stringify({programme_id: d.id})
@@ -4737,7 +4759,7 @@ function openProgHistory(){
   overlay.style.display = 'flex';
   document.getElementById('progHistoList').innerHTML = '<div style="padding:28px 20px;text-align:center;color:#9D9B96;font-style:italic;">Chargement…</div>';
   var histoUrl = SUPA_URL_P + '/rest/v1/programmes?patient_id=eq.' + _progPatient.id + '&select=id,nom,date&order=date.desc';
-  fetch(histoUrl, {method:'GET', headers:_sbHeaders()})
+  _fetchRetry(histoUrl, {method:'GET', headers:_sbHeaders()})
     .then(function(r){ return r.json(); })
     .then(function(data){
     var list = document.getElementById('progHistoList');
@@ -5708,7 +5730,7 @@ function openChargesEvo() {
   // Charger toutes les séances du patient avec les données du programme lié
   var url = SUPA_URL_P + '/rest/v1/seances_planifiees?patient_id=eq.' + _progPatient.id
     + '&select=id,date,programme_id,programmes(nom,donnees)&order=date.asc';
-  fetch(url, {method:'GET', headers:_sbHeaders()})
+  _fetchRetry(url, {method:'GET', headers:_sbHeaders()})
     .then(function(r){ return r.json(); })
     .then(function(data){
       if(!Array.isArray(data) || !data.length){
@@ -5732,7 +5754,7 @@ function closeChargesEvo() {
 function _loadProg(id, seanceId){
   _currentSeanceId = seanceId || null; // null si chargé depuis l'historique ou la bibliothèque
   var url = SUPA_URL_P + '/rest/v1/programmes?id=eq.' + id + '&select=*';
-  fetch(url, {method:'GET', headers:_sbHeaders()})
+  _fetchRetry(url, {method:'GET', headers:_sbHeaders()})
     .then(function(r){ return r.json(); })
     .then(function(data){
       var d = Array.isArray(data) ? data[0] : data;
@@ -5765,7 +5787,7 @@ function _openChipInBuilder(progId, dateStr, seanceId){
 
 function _deleteProg(id, nom){
   if(!confirm('Supprimer le programme "' + nom + '" ?\nCette action est irréversible.')) return;
-  fetch(SUPA_URL_P + '/rest/v1/programmes?id=eq.' + id, {method:'DELETE', headers:_sbHeaders()})
+  _fetchRetry(SUPA_URL_P + '/rest/v1/programmes?id=eq.' + id, {method:'DELETE', headers:_sbHeaders()})
     .then(function(r){
       if(!r.ok){ return r.json().then(function(d){ alert('Erreur : ' + JSON.stringify(d)); }); }
       // Si le programme supprimé était l'actif, réinitialiser
@@ -6444,7 +6466,7 @@ try { _cycles = JSON.parse(localStorage.getItem(R4P_KEYS.CYCLES)||'[]'); } catch
 function _saveCyclesToCloud(){
   try { localStorage.setItem(R4P_KEYS.CYCLES, JSON.stringify(_cycles)); } catch(e){}
   if(!_progPatient || !_progToken) return;
-  fetch(SUPA_URL_P + '/rest/v1/patient_settings', {
+  _fetchRetry(SUPA_URL_P + '/rest/v1/patient_settings', {
     method: 'POST',
     headers: Object.assign({}, _sbHeaders(), { 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
     body: JSON.stringify({ patient_id: _progPatient.id, cycles: _cycles, updated_at: new Date().toISOString() })
@@ -6454,7 +6476,7 @@ function _saveCyclesToCloud(){
 // Charge les cycles depuis Supabase pour le patient actif
 function _loadCyclesForPatient(){
   if(!_progPatient){ return; }
-  fetch(SUPA_URL_P + '/rest/v1/patient_settings?patient_id=eq.' + _progPatient.id + '&select=cycles', {
+  _fetchRetry(SUPA_URL_P + '/rest/v1/patient_settings?patient_id=eq.' + _progPatient.id + '&select=cycles', {
     headers: { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json' }
   })
   .then(function(r){ return r.json(); })
@@ -6891,7 +6913,7 @@ function renderCalendar() {
     var calHeaders = _progToken
       ? { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _progToken }
       : { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json' };
-    fetch(url, { headers: calHeaders })
+    _fetchRetry(url, { headers: calHeaders })
       .then(function(r){ return r.json(); })
       .then(function(data){
         // Ignorer si le patient a changé entre-temps (fetch obsolète)
@@ -7343,7 +7365,7 @@ function _openCalExistingPicker(dateStr) {
   if(_progPatient && _progToken) {
     // Mode cloud : afficher les programmes du patient
     list.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);font-size:.82rem;">Chargement…</div>';
-    fetch(SUPA_URL_P + '/rest/v1/programmes?patient_id=eq.' + _progPatient.id + '&select=id,nom,date&order=date.desc', {
+    _fetchRetry(SUPA_URL_P + '/rest/v1/programmes?patient_id=eq.' + _progPatient.id + '&select=id,nom,date&order=date.desc', {
       headers: { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _progToken }
     })
     .then(function(r){ return r.json(); })
@@ -7411,7 +7433,7 @@ function removeCalEvent(evId) {
 // ── Ajout cloud (programmes Supabase, patient sélectionné) ──
 function addCalEventCloud(progId) {
   if(!_progPatient || !_progUid || !_progToken){ alert('Patient ou session non disponible.'); return; }
-  fetch(SUPA_URL_P + '/rest/v1/seances_planifiees', {
+  _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees', {
     method: 'POST',
     headers: _sbHeaders(),
     body: JSON.stringify({ patient_id:_progPatient.id, programme_id:progId, praticien_id:_progUid, date:_calPickerDate })
@@ -7426,7 +7448,7 @@ function addCalEventCloud(progId) {
 
 function removeCalEventCloud(id) {
   if(!confirm('Retirer cette séance du calendrier ?')) return;
-  fetch(SUPA_URL_P + '/rest/v1/seances_planifiees?id=eq.' + id, {
+  _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees?id=eq.' + id, {
     method: 'DELETE', headers: _sbHeaders()
   })
   .then(function(r){
@@ -7468,7 +7490,7 @@ function _persistCalNotes(){
 /* ── Sync Supabase → localStorage (async, une fois par patient) ── */
 function _syncCalNotesFromSupabase(){
   if(!_progPatient || !_progToken || !_progUid) return;
-  fetch(SUPA_URL_P+'/rest/v1/clinical_notes?patient_id=eq.'+_progPatient.id+'&praticien_id=eq.'+_progUid+'&order=created_at.asc',
+  _fetchRetry(SUPA_URL_P+'/rest/v1/clinical_notes?patient_id=eq.'+_progPatient.id+'&praticien_id=eq.'+_progUid+'&order=created_at.asc',
     { headers: _sbHeaders() })
   .then(function(r){
     if(!r.ok){ r.text().then(function(t){ console.warn('_syncCalNotesFromSupabase GET failed', r.status, t); }); return null; }
@@ -7511,7 +7533,7 @@ function _syncCalNotesIfNeeded(){
 /* ── Push / delete notes cliniques sur Supabase ── */
 function _pushClinicalNote(note){
   if(!_progToken || !_progUid || !_progPatient) return;
-  fetch(SUPA_URL_P+'/rest/v1/clinical_notes', {
+  _fetchRetry(SUPA_URL_P+'/rest/v1/clinical_notes', {
     method: 'POST',
     headers: Object.assign({}, _sbHeaders(), {'Prefer':'resolution=merge-duplicates,return=minimal'}),
     body: JSON.stringify({ id:note.id, patient_id:_progPatient.id, praticien_id:_progUid,
@@ -7529,7 +7551,7 @@ function _pushClinicalNote(note){
 
 function _deleteClinicalNote(noteId){
   if(!_progToken || !_progUid) return;
-  fetch(SUPA_URL_P+'/rest/v1/clinical_notes?id=eq.'+noteId, {
+  _fetchRetry(SUPA_URL_P+'/rest/v1/clinical_notes?id=eq.'+noteId, {
     method: 'DELETE', headers: _sbHeaders()
   }).catch(function(e){ console.warn('_deleteClinicalNote error', e); });
 }
@@ -7582,7 +7604,7 @@ function _noteTypeRow(active) {
 /* ── Supabase : push / delete messages patient ── */
 function _pushPatientMsg(note) {
   if(!_progToken || !_progUid || !_progPatient) return;
-  fetch(SUPA_URL_P+'/rest/v1/patient_messages', {
+  _fetchRetry(SUPA_URL_P+'/rest/v1/patient_messages', {
     method: 'POST',
     headers: Object.assign({}, _sbHeaders(), {'Prefer':'resolution=merge-duplicates,return=minimal'}),
     body: JSON.stringify({ id:note.id, patient_id:_progPatient.id, praticien_id:_progUid,
@@ -7592,7 +7614,7 @@ function _pushPatientMsg(note) {
 
 function _deletePatientMsg(noteId) {
   if(!_progToken || !_progUid) return;
-  fetch(SUPA_URL_P+'/rest/v1/patient_messages?id=eq.'+noteId, {
+  _fetchRetry(SUPA_URL_P+'/rest/v1/patient_messages?id=eq.'+noteId, {
     method: 'DELETE', headers: _sbHeaders()
   }).catch(function(e){ console.warn('_deletePatientMsg error', e); });
 }
@@ -7873,7 +7895,7 @@ function touchSheetDelete(){
   if(!_touchSheetData) return;
   var evId = _touchSheetData.evId; closeTouchSheet();
   if(confirm('Retirer cette séance du calendrier ?')){
-    fetch(SUPA_URL_P+'/rest/v1/seances_planifiees?id=eq.'+evId, {method:'DELETE', headers:_sbHeaders()})
+    _fetchRetry(SUPA_URL_P+'/rest/v1/seances_planifiees?id=eq.'+evId, {method:'DELETE', headers:_sbHeaders()})
       .then(function(r){ if(r.ok) renderCalendar(); });
   }
 }
@@ -7944,12 +7966,12 @@ function _calDayDrop(e, targetDate){
 function _calMoveEvent(evId, progId, targetDate, sourceDate){
   if(!_progPatient||!_progUid||!_progToken) return;
   // Stratégie : DELETE + POST (plus fiable que PATCH face aux RLS Supabase)
-  fetch(SUPA_URL_P+'/rest/v1/seances_planifiees?id=eq.'+evId, {
+  _fetchRetry(SUPA_URL_P+'/rest/v1/seances_planifiees?id=eq.'+evId, {
     method:'DELETE', headers:_sbHeaders()
   })
   .then(function(r){
     if(!r.ok){ return r.json().then(function(d){ alert('Erreur suppression : '+JSON.stringify(d)); throw new Error('del'); }); }
-    return fetch(SUPA_URL_P+'/rest/v1/seances_planifiees', {
+    return _fetchRetry(SUPA_URL_P+'/rest/v1/seances_planifiees', {
       method:'POST', headers:_sbHeaders(),
       body: JSON.stringify({patient_id:_progPatient.id, programme_id:progId, praticien_id:_progUid, date:targetDate})
     });
@@ -7965,10 +7987,10 @@ function _calMoveEvent(evId, progId, targetDate, sourceDate){
     renderCalendar();
     _showToast('📅 Séance déplacée', function(){
       // Annuler : supprimer le nouveau, recréer à la date d'origine
-      fetch(SUPA_URL_P+'/rest/v1/seances_planifiees?id=eq.'+newId, {
+      _fetchRetry(SUPA_URL_P+'/rest/v1/seances_planifiees?id=eq.'+newId, {
         method:'DELETE', headers:_sbHeaders()
       }).then(function(){
-        return fetch(SUPA_URL_P+'/rest/v1/seances_planifiees', {
+        return _fetchRetry(SUPA_URL_P+'/rest/v1/seances_planifiees', {
           method:'POST', headers:_sbHeaders(),
           body: JSON.stringify({patient_id:_progPatient.id, programme_id:progId, praticien_id:_progUid, date:sourceDate})
         });
@@ -7981,7 +8003,7 @@ function _calMoveEvent(evId, progId, targetDate, sourceDate){
 function _calDuplicateEvent(progId, targetDate){
   if(!_progPatient||!_progUid||!_progToken) return;
   // Copie profonde : nouveau programme indépendant + nouvelle séance planifiée
-  fetch(SUPA_URL_P+'/rest/v1/programmes?id=eq.'+progId+'&select=nom,donnees', {method:'GET', headers:_sbHeaders()})
+  _fetchRetry(SUPA_URL_P+'/rest/v1/programmes?id=eq.'+progId+'&select=nom,donnees', {method:'GET', headers:_sbHeaders()})
   .then(function(r){ return r.json(); })
   .then(function(data){
     var src = Array.isArray(data) ? data[0] : data;
@@ -7993,7 +8015,7 @@ function _calDuplicateEvent(progId, targetDate){
     var srcNom = src.nom || '';
     var nomCopie = /^Séance du \d/.test(srcNom) ? targetLabel : srcNom;
     var today = new Date().toISOString().split('T')[0];
-    fetch(SUPA_URL_P+'/rest/v1/programmes', {
+    _fetchRetry(SUPA_URL_P+'/rest/v1/programmes', {
       method:'POST', headers:_sbHeaders(),
       body:JSON.stringify({patient_id:_progPatient.id, praticien_id:_progUid, nom:nomCopie, date:today, donnees:src.donnees})
     })
@@ -8003,7 +8025,7 @@ function _calDuplicateEvent(progId, targetDate){
       var d = Array.isArray(res.data) ? res.data[0] : res.data;
       if(!d||!d.id){ alert('Programme non créé.'); return; }
       var newProgId = d.id;
-      fetch(SUPA_URL_P+'/rest/v1/seances_planifiees', {
+      _fetchRetry(SUPA_URL_P+'/rest/v1/seances_planifiees', {
         method:'POST', headers:_sbHeaders(),
         body:JSON.stringify({patient_id:_progPatient.id, programme_id:newProgId, praticien_id:_progUid, date:targetDate})
       })
@@ -8015,9 +8037,9 @@ function _calDuplicateEvent(progId, targetDate){
         renderCalendar();
         _showToast('📋 Séance dupliquée (copie indépendante)', function(){
           if(!newSeanceId) return;
-          fetch(SUPA_URL_P+'/rest/v1/seances_planifiees?id=eq.'+newSeanceId, {method:'DELETE', headers:_sbHeaders()})
+          _fetchRetry(SUPA_URL_P+'/rest/v1/seances_planifiees?id=eq.'+newSeanceId, {method:'DELETE', headers:_sbHeaders()})
           .then(function(){
-            fetch(SUPA_URL_P+'/rest/v1/programmes?id=eq.'+newProgId, {method:'DELETE', headers:_sbHeaders()})
+            _fetchRetry(SUPA_URL_P+'/rest/v1/programmes?id=eq.'+newProgId, {method:'DELETE', headers:_sbHeaders()})
             .then(function(){ renderCalendar(); });
           });
         });
@@ -8086,7 +8108,7 @@ function confirmPlan(){
   var nomProg = (document.getElementById('patientName')||{}).value || ('Programme du '+new Date().toLocaleDateString('fr-FR'));
   var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), notes: getNotes() };
   var today = new Date().toISOString().split('T')[0];
-  fetch(SUPA_URL_P+'/rest/v1/programmes', {
+  _fetchRetry(SUPA_URL_P+'/rest/v1/programmes', {
     method:'POST', headers:_sbHeaders(),
     body:JSON.stringify({patient_id:_progPatient.id, praticien_id:_progUid, nom:nomProg, date:today, donnees:donnees})
   })
@@ -8112,7 +8134,7 @@ function _doPlanDates(dates, progId){
   var btn = document.getElementById('planConfirmBtn');
   if(btn){ btn.disabled=true; btn.textContent='⏳…'; }
   var promises = dates.map(function(dateStr){
-    return fetch(SUPA_URL_P+'/rest/v1/seances_planifiees', {
+    return _fetchRetry(SUPA_URL_P+'/rest/v1/seances_planifiees', {
       method:'POST', headers:_sbHeaders(),
       body:JSON.stringify({patient_id:_progPatient.id, programme_id:progId, praticien_id:_progUid, date:dateStr})
     }).then(function(r){
@@ -8298,7 +8320,7 @@ function openEditTemplate(id){
     _openTmplModal({ editId:id, nom:t.nom, cat:t.categorie, type:t.type, emoji:t.emoji, groupId:t.group_id, phaseNom:t.phase_nom, phaseOrdre:t.phase_ordre });
     return;
   }
-  fetch(SUPA_URL_P+'/rest/v1/templates?id=eq.'+id+'&select=*', { headers:_sbHeaders() })
+  _fetchRetry(SUPA_URL_P+'/rest/v1/templates?id=eq.'+id+'&select=*', { headers:_sbHeaders() })
   .then(function(r){ return r.json(); })
   .then(function(data){
     if(!Array.isArray(data)||!data[0]){ alert('Template introuvable.'); return; }
@@ -8334,7 +8356,7 @@ function doSaveTemplate(){
     var id = _tmplEditId;
     var patch = { nom:nom, categorie:cat, emoji:_tmplSelectedEmoji, group_id:groupId, phase_nom:'', phase_ordre:phaseOrdre };
     if(_progToken && _progUid && !_isReader()){
-      fetch(SUPA_URL_P+'/rest/v1/templates?id=eq.'+id, {
+      _fetchRetry(SUPA_URL_P+'/rest/v1/templates?id=eq.'+id, {
         method:'PATCH', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
         body: JSON.stringify(patch)
       }).then(function(r){
@@ -8355,7 +8377,7 @@ function doSaveTemplate(){
   // Hériter is_public du groupe parent si celui-ci est déjà public
   var parentGroupPublic = !!(groupId && (_groups||[]).find(function(g){ return String(g.id)===String(groupId) && g.is_public; }));
   if(_progToken && _progUid && !_isReader()){
-    fetch(SUPA_URL_P + '/rest/v1/templates', {
+    _fetchRetry(SUPA_URL_P + '/rest/v1/templates', {
       method: 'POST',
       headers: _sbHeaders(),
       body: JSON.stringify({ praticien_id:_progUid, nom:nom, categorie:cat, emoji:_tmplSelectedEmoji, donnees:donnees, group_id:groupId, phase_nom:'', phase_ordre:phaseOrdre, is_public:parentGroupPublic })
@@ -8410,8 +8432,8 @@ function renderBuilderLibrary(){
     if(!_groups.length && !_sidebarProgs.length){
       area.innerHTML = '<div style="padding:10px 14px;color:var(--muted);font-size:.77rem;">Chargement…</div>';
       Promise.all([
-        fetch(SUPA_URL_P+'/rest/v1/template_groups?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&order=created_at.asc',{headers:_sbHeaders()}).then(function(r){ return r.ok?r.json():null; }),
-        fetch(SUPA_URL_P+'/rest/v1/templates?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&order=phase_ordre.asc,created_at.desc',{headers:_sbHeaders()}).then(function(r){ return r.ok?r.json():null; })
+        _fetchRetry(SUPA_URL_P+'/rest/v1/template_groups?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&order=created_at.asc',{headers:_sbHeaders()}).then(function(r){ return r.ok?r.json():null; }),
+        _fetchRetry(SUPA_URL_P+'/rest/v1/templates?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&order=phase_ordre.asc,created_at.desc',{headers:_sbHeaders()}).then(function(r){ return r.ok?r.json():null; })
       ]).then(function(res){
         if(Array.isArray(res[0])) _groups=res[0];
         if(Array.isArray(res[1])) _sidebarProgs=res[1];
@@ -8585,8 +8607,8 @@ function _renderSidebarPicker(){
   if(!groups.length && !progs.length && _progToken && _progUid){
     scroll.innerHTML = '<div class="picker-empty">Chargement…</div>';
     Promise.all([
-      fetch(SUPA_URL_P+'/rest/v1/template_groups?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&order=created_at.asc',{headers:_sbHeaders()}).then(function(r){return r.ok?r.json():[];}),
-      fetch(SUPA_URL_P+'/rest/v1/templates?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&order=phase_ordre.asc,created_at.desc',{headers:_sbHeaders()}).then(function(r){return r.ok?r.json():[];})
+      _fetchRetry(SUPA_URL_P+'/rest/v1/template_groups?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&order=created_at.asc',{headers:_sbHeaders()}).then(function(r){return r.ok?r.json():[];}),
+      _fetchRetry(SUPA_URL_P+'/rest/v1/templates?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&order=phase_ordre.asc,created_at.desc',{headers:_sbHeaders()}).then(function(r){return r.ok?r.json():[];})
     ]).then(function(res){
       if(Array.isArray(res[0])) _groups = res[0];
       if(Array.isArray(res[1])) _sidebarProgs = res[1];
@@ -8894,7 +8916,7 @@ var _pubTmplData = null; // template en cours de publication
 function openPublishModal(id){
   if(!_progToken||!_progUid){ alert('Connexion requise.'); return; }
   // Chercher le template dans la liste déjà chargée ou via fetch
-  fetch(SUPA_URL_P+'/rest/v1/templates?id=eq.'+id+'&select=*', { headers:_sbHeaders() })
+  _fetchRetry(SUPA_URL_P+'/rest/v1/templates?id=eq.'+id+'&select=*', { headers:_sbHeaders() })
   .then(function(r){ return r.json(); })
   .then(function(data){
     if(!Array.isArray(data)||!data[0]){ alert('Template introuvable.'); return; }
@@ -8926,7 +8948,7 @@ function doPublishTemplate(){
   };
   var btn = document.querySelector('#pubLibModal .btn-primary');
   if(btn){ btn.disabled=true; btn.textContent='⏳ Publication…'; }
-  fetch(SUPA_URL_P+'/rest/v1/templates_library', {
+  _fetchRetry(SUPA_URL_P+'/rest/v1/templates_library', {
     method:'POST',
     headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
     body: JSON.stringify(payload)
@@ -8950,7 +8972,7 @@ function doPublishTemplate(){
 
 function unpublishLibTemplate(id){
   if(!confirm('Retirer ce template de la bibliothèque partagée ?')) return;
-  fetch(SUPA_URL_P+'/rest/v1/templates_library?id=eq.'+id, {
+  _fetchRetry(SUPA_URL_P+'/rest/v1/templates_library?id=eq.'+id, {
     method:'DELETE',
     headers: _sbHeaders()
   })
@@ -8967,7 +8989,7 @@ function unpublishLibTemplate(id){
 
 function loadLibraryTemplate(id){
   if(!_progToken){ alert('Connexion requise.'); return; }
-  fetch(SUPA_URL_P+'/rest/v1/templates_library?id=eq.'+id+'&select=*', { headers:_sbHeaders() })
+  _fetchRetry(SUPA_URL_P+'/rest/v1/templates_library?id=eq.'+id+'&select=*', { headers:_sbHeaders() })
   .then(function(r){ return r.json(); })
   .then(function(data){
     if(!Array.isArray(data)||!data[0]){ alert('Template introuvable.'); return; }
@@ -9209,7 +9231,7 @@ function _doUpdateTemplate(){
   if(btn){ btn.disabled = true; btn.textContent = '⏳…'; }
   var nomProg = (document.getElementById('patientName')||{}).value || '';
   var donnees = JSON.stringify({ blocs: JSON.parse(JSON.stringify(blocs||[])), notes: getNotes() });
-  fetch(SUPA_URL_P + '/rest/v1/templates?id=eq.' + _builderFromTemplate, {
+  _fetchRetry(SUPA_URL_P + '/rest/v1/templates?id=eq.' + _builderFromTemplate, {
     method: 'PATCH',
     headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=representation'}),
     body: JSON.stringify({ donnees: donnees, nom: nomProg })
@@ -9248,7 +9270,7 @@ function duplicateTemplate(){
     phase_ordre: src ? (src.phase_ordre||0) : 0,
     donnees: donnees
   };
-  fetch(SUPA_URL_P+'/rest/v1/templates', {
+  _fetchRetry(SUPA_URL_P+'/rest/v1/templates', {
     method:'POST',
     headers: _sbHeaders(),
     body: JSON.stringify(payload)
@@ -9290,7 +9312,7 @@ function loadTemplate(id){
   }
 
   if(_progToken && _progUid){
-    fetch(SUPA_URL_P + '/rest/v1/templates?id=eq.' + id + '&select=*', { headers: _sbHeaders() })
+    _fetchRetry(SUPA_URL_P + '/rest/v1/templates?id=eq.' + id + '&select=*', { headers: _sbHeaders() })
     .then(function(r){ return r.json(); })
     .then(function(data){
       var t = Array.isArray(data) ? data[0] : null;
@@ -9310,7 +9332,7 @@ function loadTemplate(id){
 function deleteTemplate(id){
   if(!confirm('Supprimer ce template ?')) return;
   if(_progToken && _progUid){
-    fetch(SUPA_URL_P + '/rest/v1/templates?id=eq.' + id, {
+    _fetchRetry(SUPA_URL_P + '/rest/v1/templates?id=eq.' + id, {
       method: 'DELETE', headers: _sbHeaders()
     }).then(function(r){
       if(r.ok){ renderTemplatesInBuilder(); renderSidebarTemplates(); }
@@ -9377,7 +9399,7 @@ function openEditGroup(id){
   libSt.textContent = 'Vérification…';
   if(_progToken && _progUid){
     // Filtre côté client : récupère toutes les entrées de ce praticien puis filtre sur source_group_id
-    fetch(SUPA_URL_P+'/rest/v1/templates_library?published_by=eq.'+encodeURIComponent(_progUid)+'&select=id,donnees', { headers:_sbHeaders() })
+    _fetchRetry(SUPA_URL_P+'/rest/v1/templates_library?published_by=eq.'+encodeURIComponent(_progUid)+'&select=id,donnees', { headers:_sbHeaders() })
     .then(function(r){ return r.json(); })
     .then(function(data){
       _grpLibCheckDone = true;
@@ -9429,7 +9451,7 @@ function doCreateGroup(){
     }
     var libIdSnap = _grpLibId; // snapshot après vérification complète
     if(_progToken && _progUid && !_isReader()){
-      fetch(SUPA_URL_P + '/rest/v1/template_groups?id=eq.' + id, {
+      _fetchRetry(SUPA_URL_P + '/rest/v1/template_groups?id=eq.' + id, {
         method:'PATCH', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
         body: JSON.stringify({ nom: nom, categorie: cat, description: desc })
       }).then(function(r){
@@ -9451,7 +9473,7 @@ function doCreateGroup(){
 
   // ── Mode création ──
   if(_progToken && _progUid && !_isReader()){
-    fetch(SUPA_URL_P + '/rest/v1/template_groups', {
+    _fetchRetry(SUPA_URL_P + '/rest/v1/template_groups', {
       method: 'POST', headers: _sbHeaders(),
       body: JSON.stringify({ praticien_id: _progUid, nom: nom, categorie: cat, description: desc })
     }).then(function(r){
@@ -9486,7 +9508,7 @@ function _grpLibPayload(groupId, nom, cat, desc){
 function _doPublishGroup(groupId, nom, cat, desc){
   var payload = _grpLibPayload(groupId, nom, cat, desc);
   console.log('[_doPublishGroup] payload', payload);
-  fetch(SUPA_URL_P+'/rest/v1/templates_library', {
+  _fetchRetry(SUPA_URL_P+'/rest/v1/templates_library', {
     method:'POST',
     headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=representation'}),
     body: JSON.stringify(payload)
@@ -9505,7 +9527,7 @@ function _doPublishGroup(groupId, nom, cat, desc){
 }
 function _doUpdateGroupInLib(libId, groupId, nom, cat, desc){
   var payload = _grpLibPayload(groupId, nom, cat, desc);
-  fetch(SUPA_URL_P+'/rest/v1/templates_library?id=eq.'+libId, {
+  _fetchRetry(SUPA_URL_P+'/rest/v1/templates_library?id=eq.'+libId, {
     method:'PATCH',
     headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
     body: JSON.stringify(payload)
@@ -9520,7 +9542,7 @@ function _doUpdateGroupInLib(libId, groupId, nom, cat, desc){
   .catch(function(e){ alert('Erreur réseau mise à jour : '+(e&&e.message||e)); });
 }
 function _doUnpublishGroup(libId){
-  fetch(SUPA_URL_P+'/rest/v1/templates_library?id=eq.'+libId, {
+  _fetchRetry(SUPA_URL_P+'/rest/v1/templates_library?id=eq.'+libId, {
     method:'DELETE', headers:_sbHeaders()
   })
   .then(function(r){
@@ -9541,7 +9563,7 @@ function duplicateGroup(){
   if(!_progToken || !_progUid){ alert('Session non disponible.'); return; }
   var newNom = 'Copie de ' + (g.nom||'Protocole');
   // 1. Créer le nouveau groupe
-  fetch(SUPA_URL_P+'/rest/v1/template_groups', {
+  _fetchRetry(SUPA_URL_P+'/rest/v1/template_groups', {
     method:'POST',
     headers: _sbHeaders(),
     body: JSON.stringify({ praticien_id:_progUid, nom:newNom, categorie:g.categorie||null, description:g.description||null })
@@ -9568,7 +9590,7 @@ function duplicateGroup(){
     var done = 0;
     if(!copies.length){ closeCreateGroup(); renderSidebarTemplates(); _showToast('📋 Protocole « '+newNom+' » dupliqué !'); return; }
     copies.forEach(function(c){
-      fetch(SUPA_URL_P+'/rest/v1/templates', {
+      _fetchRetry(SUPA_URL_P+'/rest/v1/templates', {
         method:'POST', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
         body: JSON.stringify(c)
       }).then(function(){ done++; if(done===copies.length){ closeCreateGroup(); renderSidebarTemplates(); _showToast('📋 Protocole « '+newNom+' » dupliqué !'); } });
@@ -9595,12 +9617,12 @@ function deleteGroup(id){
   if(_progToken && _progUid){
     /* 1. Supprimer les phases du groupe, puis 2. supprimer le groupe */
     var deleteTemplates = phases.length > 0
-      ? fetch(SUPA_URL_P + '/rest/v1/templates?group_id=eq.' + id, { method:'DELETE', headers:_sbHeaders() })
+      ? _fetchRetry(SUPA_URL_P + '/rest/v1/templates?group_id=eq.' + id, { method:'DELETE', headers:_sbHeaders() })
       : Promise.resolve({ ok:true });
 
     deleteTemplates.then(function(r){
       if(!r.ok){ alert('Erreur lors de la suppression des séances.'); return; }
-      return fetch(SUPA_URL_P + '/rest/v1/template_groups?id=eq.' + id, { method:'DELETE', headers:_sbHeaders() });
+      return _fetchRetry(SUPA_URL_P + '/rest/v1/template_groups?id=eq.' + id, { method:'DELETE', headers:_sbHeaders() });
     }).then(function(r){
       if(!r || !r.ok){ alert('Erreur lors de la suppression du protocole.'); return; }
       /* Mettre à jour le cache local */
@@ -9700,8 +9722,8 @@ function renderSidebarTemplates(){
       scroll.innerHTML = '<div class="stmpl-empty">Chargement…</div>';
     }
     Promise.all([
-      fetch(SUPA_URL_P+'/rest/v1/template_groups?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&order=created_at.asc',{headers:_sbHeaders()}).then(function(r){ return r.ok ? r.json() : null; }),
-      fetch(SUPA_URL_P+'/rest/v1/templates?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&order=phase_ordre.asc,created_at.desc',{headers:_sbHeaders()}).then(function(r){ return r.ok ? r.json() : null; })
+      _fetchRetry(SUPA_URL_P+'/rest/v1/template_groups?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&order=created_at.asc',{headers:_sbHeaders()}).then(function(r){ return r.ok ? r.json() : null; }),
+      _fetchRetry(SUPA_URL_P+'/rest/v1/templates?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&order=phase_ordre.asc,created_at.desc',{headers:_sbHeaders()}).then(function(r){ return r.ok ? r.json() : null; })
     ]).then(function(res){
       // Ne remplacer les données qu'en cas de réponse valide (évite d'écraser avec une erreur 401)
       if(Array.isArray(res[0])) _groups       = res[0];
@@ -9835,7 +9857,7 @@ function duplicateTemplateById(id){
     phase_ordre:(src.phase_ordre||0) + 1, // après l'original
     donnees:    src.donnees    || null
   };
-  fetch(SUPA_URL_P+'/rest/v1/templates', {
+  _fetchRetry(SUPA_URL_P+'/rest/v1/templates', {
     method:'POST', headers: _sbHeaders(), body: JSON.stringify(payload)
   })
   .then(function(r){ return r.ok ? r.json() : null; })
@@ -9871,7 +9893,7 @@ function duplicateGroupById(id){
     return;
   }
   if(!_progToken || !_progUid){ alert('Session non disponible.'); return; }
-  fetch(SUPA_URL_P+'/rest/v1/template_groups', {
+  _fetchRetry(SUPA_URL_P+'/rest/v1/template_groups', {
     method:'POST', headers: _sbHeaders(),
     body: JSON.stringify({ praticien_id:_progUid, nom:newNom, categorie:g.categorie||null, description:g.description||null })
   })
@@ -9888,7 +9910,7 @@ function duplicateGroupById(id){
     if(!copies.length){ renderSidebarTemplates(); _showToast('📋 « '+newNom+' » dupliqué !'); return; }
     var done = 0;
     copies.forEach(function(c){
-      fetch(SUPA_URL_P+'/rest/v1/templates', {
+      _fetchRetry(SUPA_URL_P+'/rest/v1/templates', {
         method:'POST', headers: Object.assign({},_sbHeaders(),{'Prefer':'return=minimal'}),
         body: JSON.stringify(c)
       }).then(function(){ done++; if(done===copies.length){ renderSidebarTemplates(); _showToast('📋 « '+newNom+' » dupliqué !'); } });
@@ -10117,7 +10139,7 @@ function confirmQuickAdd(){
     if(!_progPatient){ closeQuickAdd(); alert('Sélectionnez un patient avant de planifier.'); return; }
     closeQuickAdd();
     // 1. Récupérer le template
-    fetch(SUPA_URL_P + '/rest/v1/templates?id=eq.' + _qaProgId + '&select=nom,donnees,type,emoji', {
+    _fetchRetry(SUPA_URL_P + '/rest/v1/templates?id=eq.' + _qaProgId + '&select=nom,donnees,type,emoji', {
       headers: _sbHeaders()
     })
     .then(function(r){ return r.json(); })
@@ -10126,7 +10148,7 @@ function confirmQuickAdd(){
       if(!t){ alert('Template introuvable.'); return; }
       // 2. Créer une copie du programme pour ce patient
       var hCopy = _sbHeaders(); // Prefer: return=representation par défaut
-      return fetch(SUPA_URL_P + '/rest/v1/programmes', {
+      return _fetchRetry(SUPA_URL_P + '/rest/v1/programmes', {
         method: 'POST', headers: hCopy,
         body: JSON.stringify({
           patient_id:   _progPatient.id,
@@ -10142,7 +10164,7 @@ function confirmQuickAdd(){
         if(!newProgId){ alert('Erreur création programme.'); return; }
         // 3. Planifier la copie
         var hPlan = _sbHeaders(); hPlan['Prefer'] = 'return=minimal';
-        return fetch(SUPA_URL_P + '/rest/v1/seances_planifiees', {
+        return _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees', {
           method: 'POST', headers: hPlan,
           body: JSON.stringify({ patient_id: _progPatient.id, programme_id: newProgId, praticien_id: _progUid, date: _qaSelectedDate })
         });
@@ -10217,7 +10239,7 @@ function _builderLoadProtoContext(){
     }
   }
 
-  fetch(SUPA_URL_P + '/rest/v1/patient_protocols?patient_id=eq.' + _progPatient.id
+  _fetchRetry(SUPA_URL_P + '/rest/v1/patient_protocols?patient_id=eq.' + _progPatient.id
     + '&praticien_id=eq.' + _progUid + '&status=eq.active&select=*&order=created_at.desc&limit=1', { headers: _sbHeaders() })
   .then(function(r){ return r.ok ? r.json() : []; })
   .then(function(pps){
@@ -10232,7 +10254,7 @@ function _builderLoadProtoContext(){
     var patName = ((_progPatient.prenom || '') + ' ' + (_progPatient.nom || '')).trim();
 
     // Fetch criteria checks pour calculer allDone sur chaque phase
-    return fetch(SUPA_URL_P + '/rest/v1/protocol_criteria_checks?patient_protocol_id=eq.' + pp.id + '&select=*',
+    return _fetchRetry(SUPA_URL_P + '/rest/v1/protocol_criteria_checks?patient_protocol_id=eq.' + pp.id + '&select=*',
       { headers: _sbHeaders() })
     .then(function(r){ return r.ok ? r.json() : []; })
     .then(function(rows){
@@ -10384,7 +10406,7 @@ function _saveAndPlanForDate(){
   var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), notes: getNotes() };
   var today = new Date().toISOString().split('T')[0];
   var dateToSchedule = _builderDate;
-  fetch(SUPA_URL_P + '/rest/v1/programmes', {
+  _fetchRetry(SUPA_URL_P + '/rest/v1/programmes', {
     method:'POST', headers:_sbHeaders(),
     body:JSON.stringify({patient_id:_progPatient.id, praticien_id:_progUid, nom:nomProg, date:today, donnees:donnees})
   })
@@ -10393,7 +10415,7 @@ function _saveAndPlanForDate(){
     if(!res.ok){ btn.disabled=false; _refreshSaveBtn(); _handleApiError(res.status, res.data, 'création programme'); return; }
     var d = Array.isArray(res.data) ? res.data[0] : res.data;
     if(!d||!d.id){ btn.disabled=false; _refreshSaveBtn(); alert('Programme non créé.'); return; }
-    fetch(SUPA_URL_P + '/rest/v1/seances_planifiees', {
+    _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees', {
       method:'POST', headers:_sbHeaders(),
       body:JSON.stringify({patient_id:_progPatient.id, programme_id:d.id, praticien_id:_progUid, date:dateToSchedule})
     })
@@ -11194,11 +11216,11 @@ function _saveCustomProtocols(callback){
   var donnees = JSON.stringify({ protocols: _customProtocols });
   var body = JSON.stringify({ praticien_id: _progUid, nom: '__r4p_protocols_meta__', type: '__meta__', is_public: true, donnees: donnees });
   if(_customProtoSupaId){
-    fetch(SUPA_URL_P+'/rest/v1/templates?id=eq.'+_customProtoSupaId, {
+    _fetchRetry(SUPA_URL_P+'/rest/v1/templates?id=eq.'+_customProtoSupaId, {
       method:'PATCH', headers: Object.assign({}, _sbHeaders(), {'Content-Type':'application/json'}), body: body
     }).then(function(r){ if(callback) callback(); });
   } else {
-    fetch(SUPA_URL_P+'/rest/v1/templates', {
+    _fetchRetry(SUPA_URL_P+'/rest/v1/templates', {
       method:'POST', headers: Object.assign({}, _sbHeaders(), {'Content-Type':'application/json','Prefer':'return=representation'}), body: body
     }).then(function(r){ return r.ok ? r.json() : null; })
     .then(function(rows){
@@ -11210,7 +11232,7 @@ function _saveCustomProtocols(callback){
 
 function _fetchCustomProtocolsFromSupabase(callback){
   if(!_progToken || !_progUid){ callback && callback(); return; }
-  fetch(SUPA_URL_P+'/rest/v1/templates?nom=eq.__r4p_protocols_meta__&praticien_id=eq.'+_progUid+'&select=id,donnees&limit=1', {headers:_sbHeaders()})
+  _fetchRetry(SUPA_URL_P+'/rest/v1/templates?nom=eq.__r4p_protocols_meta__&praticien_id=eq.'+_progUid+'&select=id,donnees&limit=1', {headers:_sbHeaders()})
   .then(function(r){ return r.ok ? r.json() : []; })
   .then(function(rows){
     if(rows && rows.length){
@@ -11912,11 +11934,11 @@ function renderProtocols() {
   var patientId = _progPatient.id;
 
   /* Fetch 1 : patient_protocols  |  Fetch 2 : seances pour stats */
-  var fetchPPs = fetch(SUPA_URL_P + '/rest/v1/patient_protocols?patient_id=eq.' + patientId
+  var fetchPPs = _fetchRetry(SUPA_URL_P + '/rest/v1/patient_protocols?patient_id=eq.' + patientId
     + '&praticien_id=eq.' + _progUid + '&select=*&order=created_at.desc',
     { headers: _sbHeaders() }).then(function(r){ return r.ok ? r.json() : []; });
 
-  var fetchSeances = fetch(SUPA_URL_P + '/rest/v1/seances_planifiees?patient_id=eq.' + patientId
+  var fetchSeances = _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees?patient_id=eq.' + patientId
     + '&select=id,programmes(donnees),athlete_feedback(rpe)',
     { headers: _sbHeaders() }).then(function(r){ return r.ok ? r.json() : []; });
 
@@ -11953,7 +11975,7 @@ function renderProtocols() {
       return;
     }
     var orFilter = allPpIds.map(function(id){ return 'patient_protocol_id.eq.'+id; }).join(',');
-    fetch(SUPA_URL_P + '/rest/v1/protocol_criteria_checks?or=('+orFilter+')&select=*',
+    _fetchRetry(SUPA_URL_P + '/rest/v1/protocol_criteria_checks?or=('+orFilter+')&select=*',
       { headers: _sbHeaders() })
     .then(function(r){ return r.ok ? r.json() : []; })
     .then(function(checks){
@@ -12427,7 +12449,7 @@ function _protoAutoAssign(protoId, callback) {
   if(data && data.pp){ callback && callback(data.pp); return; }
   var now = new Date().toISOString();
   var firstPhaseId = (proto.phases && proto.phases[0]) ? proto.phases[0].id : null;
-  fetch(SUPA_URL_P + '/rest/v1/patient_protocols', {
+  _fetchRetry(SUPA_URL_P + '/rest/v1/patient_protocols', {
     method: 'POST',
     headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=representation'}),
     body: JSON.stringify({
@@ -12463,7 +12485,7 @@ function _protoSetCheck(protoId, phaseId, idx, checked) {
   data.checkedAt[phaseId][idx] = checked ? now : null;
 
   function _saveCheck(ppId) {
-    fetch(SUPA_URL_P + '/rest/v1/protocol_criteria_checks', {
+    _fetchRetry(SUPA_URL_P + '/rest/v1/protocol_criteria_checks', {
       method: 'POST',
       headers: Object.assign({}, _sbHeaders(), {'Prefer':'resolution=merge-duplicates,return=minimal'}),
       body: JSON.stringify({ patient_protocol_id: ppId, phase_id: phaseId, criteria_index: idx, checked: checked, checked_at: checked ? now : null })
@@ -12549,7 +12571,7 @@ function _protoEditCheckedAt(protoId, phaseId, idx) {
     if(!data.checkedAt[phaseId]) data.checkedAt[phaseId] = {};
     data.checkedAt[phaseId][idx] = iso;
     /* Mise à jour Supabase */
-    fetch(SUPA_URL_P + '/rest/v1/protocol_criteria_checks', {
+    _fetchRetry(SUPA_URL_P + '/rest/v1/protocol_criteria_checks', {
       method: 'POST',
       headers: Object.assign({}, _sbHeaders(), {'Prefer':'resolution=merge-duplicates,return=minimal'}),
       body: JSON.stringify({ patient_protocol_id: data.pp.id, phase_id: phaseId, criteria_index: idx, checked: true, checked_at: iso })
@@ -12655,7 +12677,7 @@ function _protoTlSaveHistory(protoId, history) {
   var data = _protoPatientData[protoId];
   if(!data || !data.pp) return;
   data.pp.history = history;
-  fetch(SUPA_URL_P + '/rest/v1/patient_protocols?id=eq.'+data.pp.id, {
+  _fetchRetry(SUPA_URL_P + '/rest/v1/patient_protocols?id=eq.'+data.pp.id, {
     method: 'PATCH', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
     body: JSON.stringify({ history: history, updated_at: new Date().toISOString() })
   }).then(function(r){
@@ -12670,7 +12692,7 @@ function _protoUnassign(protoId) {
   if(!data || !data.pp) return;
   var patName = _progPatient ? ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim() : 'ce patient';
   if(!confirm('Supprimer l\'assignation de ce protocole pour '+patName+' ?\nL\'historique et les critères cochés seront effacés.')) return;
-  fetch(SUPA_URL_P + '/rest/v1/patient_protocols?id=eq.'+data.pp.id, {
+  _fetchRetry(SUPA_URL_P + '/rest/v1/patient_protocols?id=eq.'+data.pp.id, {
     method: 'DELETE', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'})
   }).then(function(r){
     if(r.ok){ _showToast('Assignation supprimée.'); renderProtocols(); }
@@ -12688,7 +12710,7 @@ function assignProtocol(protoId) {
   if(data && data.pp && data.pp.status === 'active'){ _showToast('Protocole déjà actif pour ce patient.'); return; }
   var btn = document.getElementById('proto-assign-btn-'+protoId);
   if(btn){ btn.disabled = true; btn.textContent = '⏳…'; }
-  fetch(SUPA_URL_P + '/rest/v1/patient_protocols', {
+  _fetchRetry(SUPA_URL_P + '/rest/v1/patient_protocols', {
     method: 'POST', headers: _sbHeaders(),
     body: JSON.stringify({ praticien_id: _progUid, patient_id: _progPatient.id, protocol_id: protoId, protocol_name: proto.name, current_phase_id: proto.phases && proto.phases[0] ? proto.phases[0].id : null, status: 'active', history: [{ type: 'assigned', at: new Date().toISOString(), note: null }] })
   })
@@ -12761,7 +12783,7 @@ function _openRappelsModal(proto, onClose) {
   }
 
   if(patId && _progToken) {
-    fetch(SUPA_URL_P+'/rest/v1/bilans?patient_id=eq.'+patId+'&select=donnees&order=date.desc&limit=1', { headers: _sbHeaders() })
+    _fetchRetry(SUPA_URL_P+'/rest/v1/bilans?patient_id=eq.'+patId+'&select=donnees&order=date.desc&limit=1', { headers: _sbHeaders() })
     .then(function(r){ return r.ok ? r.json() : []; })
     .then(function(rows) {
       var d = rows && rows.length ? (rows[0].donnees||{}) : {};
@@ -12869,7 +12891,7 @@ function _protoUpdateStatus(protoId, newStatus, note) {
   var patch = { status: newStatus, updated_at: now, history: history };
   if(note) patch.status_note = note;
   if(data.pp) { data.pp.status = newStatus; data.pp.history = history; if(note) data.pp.status_note = note; }
-  fetch(SUPA_URL_P + '/rest/v1/patient_protocols?id=eq.'+data.pp.id, {
+  _fetchRetry(SUPA_URL_P + '/rest/v1/patient_protocols?id=eq.'+data.pp.id, {
     method: 'PATCH', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
     body: JSON.stringify(patch)
   }).then(function(r){
@@ -12889,7 +12911,7 @@ function _protoUpdatePhase(protoId, phaseId) {
     var ph = proto && proto.phases ? proto.phases.find(function(p){ return p.id===phaseId; }) : null;
     history.push({ type:'phase_changed', at:now, phaseId:phaseId, phaseName: ph ? ph.name : null, note:null });
   }
-  fetch(SUPA_URL_P + '/rest/v1/patient_protocols?id=eq.'+data.pp.id, {
+  _fetchRetry(SUPA_URL_P + '/rest/v1/patient_protocols?id=eq.'+data.pp.id, {
     method: 'PATCH', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
     body: JSON.stringify({ current_phase_id: phaseId||null, phase_started_at: phaseId ? now : null, updated_at: now, history: history })
   }).then(function(r){
