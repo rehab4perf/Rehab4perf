@@ -2856,18 +2856,26 @@ function highlightNormRow(age) {
 }
 
 // -- LSI CALC -------------------------------------------------
+function _isBilateral() {
+  var cote = (document.getElementById('f-cote') || {}).value || '';
+  return cote !== '' && cote !== 'DROIT' && cote !== 'GAUCHE';
+}
+
 function lsiClass(v, higher=true) {
   if (isNaN(v)) return '';
   if (higher) return v >= 90 ? 'good' : v >= 80 ? 'warn' : 'bad';
   return v <= 110 ? 'good' : 'bad';
 }
 
-function setLSI(lsiEl, statEl, lsi, seuil='>= 90%', higher=true) {
+function setLSI(lsiEl, statEl, lsi, seuil, higher, bilateral) {
+  seuil = seuil || '>= 90%'; higher = (higher !== false);
   if (isNaN(lsi)) { lsiEl.textContent='-'; lsiEl.className='measure-stat'; statEl.textContent='-'; statEl.className='measure-stat'; return; }
   const cls = lsiClass(lsi, higher);
   lsiEl.textContent = lsi.toFixed(1) + '%';
   lsiEl.className = 'measure-stat ' + cls;
-  const icons = {good:' Objectif atteint', warn:' Acceptable', bad:' Insuffisant'};
+  const icons = bilateral
+    ? {good:' Symétrique', warn:' Asymétrie modérée', bad:' Asymétrie significative'}
+    : {good:' Objectif atteint', warn:' Acceptable', bad:' Insuffisant'};
   statEl.textContent = icons[cls] || '-';
   statEl.className = 'measure-stat ' + cls;
 }
@@ -2875,8 +2883,11 @@ function setLSI(lsiEl, statEl, lsi, seuil='>= 90%', higher=true) {
 function calcLSI(key) {
   const ca = parseFloat(document.getElementById(key + '-ca') ? document.getElementById(key + '-ca').value : '');
   const cs = parseFloat(document.getElementById(key + '-cs') ? document.getElementById(key + '-cs').value : '');
-  const lsi = cs > 0 ? ca/cs*100 : NaN;
-  setLSI(document.getElementById(key + '-lsi'), document.getElementById(key + '-stat'), lsi);
+  var bilateral = _isBilateral();
+  var lsi = bilateral
+    ? (ca > 0 && cs > 0 ? Math.min(ca, cs) / Math.max(ca, cs) * 100 : NaN)
+    : (cs > 0 ? ca / cs * 100 : NaN);
+  setLSI(document.getElementById(key + '-lsi'), document.getElementById(key + '-stat'), lsi, '>= 90%', true, bilateral);
   if (key === 'hop') {
     const repere = document.getElementById('hop-repere80');
     var taille = parseFloat(document.getElementById('f-taille')?document.getElementById('f-taille').value:'');
@@ -2938,8 +2949,11 @@ function calcHR() {
   var hrCsEl = document.getElementById('hr-cs');
   var ca = hrCaEl ? parseFloat(hrCaEl.value) : NaN;
   var cs = hrCsEl ? parseFloat(hrCsEl.value) : NaN;
-  var lsi = cs > 0 ? ca/cs*100 : NaN;
-  setLSI(document.getElementById('hr-lsi'), document.getElementById('hr-stat'), lsi);
+  var bilateral = _isBilateral();
+  var lsi = bilateral
+    ? (ca > 0 && cs > 0 ? Math.min(ca, cs) / Math.max(ca, cs) * 100 : NaN)
+    : (cs > 0 ? ca / cs * 100 : NaN);
+  setLSI(document.getElementById('hr-lsi'), document.getElementById('hr-stat'), lsi, '>= 90%', true, bilateral);
 
   var dob = document.getElementById('f-dob') ? document.getElementById('f-dob').value : '';
   var normEl = document.getElementById('hr-norm');
@@ -2998,7 +3012,10 @@ function calcLunge() {
     stat = 'Deficit complet — ne touche pas';
     interp = 'CA = ' + ca + ' cm (déficit de ' + ecart.toFixed(1) + ' cm du contact) — écart total vs côté sain = ' + ecartTotal.toFixed(1) + ' cm';
   } else {
-    var lsi = (cs !== 0) ? ca/cs*100 : NaN;
+    var luBilateral = _isBilateral();
+    var lsi = luBilateral
+      ? (ca > 0 && cs > 0 ? Math.min(ca, cs) / Math.max(ca, cs) * 100 : NaN)
+      : (cs !== 0 ? ca / cs * 100 : NaN);
     lsiEl.textContent = !isNaN(lsi) ? lsi.toFixed(1) + '%' : '-';
     var diff = Math.abs(ca - cs);
     if (ca < 10) {
@@ -3008,8 +3025,8 @@ function calcLunge() {
       cls='warn'; stat='Asymetrie > 1,5 cm';
       interp = 'Difference = ' + diff.toFixed(1) + ' cm entre les deux cotes (seuil : <= 1,5 cm)';
     } else if (!isNaN(lsi) && lsi < 90) {
-      cls='warn'; stat='LSI < 90%';
-      interp = 'LSI = ' + lsi.toFixed(1) + '% - asymetrie relative (Hoch 2011)';
+      cls='warn'; stat= luBilateral ? 'Asymetrie > 10%' : 'LSI < 90%';
+      interp = (luBilateral ? 'Symétrie = ' : 'LSI = ') + lsi.toFixed(1) + '% - asymetrie relative (Hoch 2011)';
     } else {
       cls='good'; stat='OK Symetrique et suffisant';
       interp = 'CA = ' + ca + ' cm (>=10 cm), diff = ' + diff.toFixed(1) + ' cm (<=1,5 cm)' + (!isNaN(lsi) ? ', LSI = ' + lsi.toFixed(1) + '%' : '');
@@ -3025,10 +3042,15 @@ function calcDJ() {
   const hcs = parseFloat(document.getElementById('dj-h-cs').value);
   const tca = parseFloat(document.getElementById('dj-t-ca').value);
   const tcs = parseFloat(document.getElementById('dj-t-cs').value);
-  const hlsi = hcs > 0 ? hca/hcs*100 : NaN;
-  const tlsi = tcs > 0 ? tca/tcs*100 : NaN;
-  setLSI(document.getElementById('dj-h-lsi'), document.getElementById('dj-h-stat'), hlsi);
-  setLSI(document.getElementById('dj-t-lsi'), document.getElementById('dj-t-stat'), tlsi, '<= 110%', false);
+  var bilateral = _isBilateral();
+  const hlsi = bilateral
+    ? (hca > 0 && hcs > 0 ? Math.min(hca, hcs) / Math.max(hca, hcs) * 100 : NaN)
+    : (hcs > 0 ? hca / hcs * 100 : NaN);
+  const tlsi = bilateral
+    ? (tca > 0 && tcs > 0 ? Math.min(tca, tcs) / Math.max(tca, tcs) * 100 : NaN)
+    : (tcs > 0 ? tca / tcs * 100 : NaN);
+  setLSI(document.getElementById('dj-h-lsi'), document.getElementById('dj-h-stat'), hlsi, '>= 90%', true, bilateral);
+  setLSI(document.getElementById('dj-t-lsi'), document.getElementById('dj-t-stat'), tlsi, bilateral ? '>= 90%' : '<= 110%', bilateral ? true : false, bilateral);
   const rcaEl = document.getElementById('dj-rsi-ca');
   const rcsEl = document.getElementById('dj-rsi-cs');
   const rlsiEl = document.getElementById('dj-rsi-lsi');
@@ -3037,8 +3059,10 @@ function calcDJ() {
   const rcs = (tcs > 0 && !isNaN(hcs)) ? hcs/tcs : NaN;
   rcaEl.textContent = isNaN(rca) ? '-' : rca.toFixed(3);
   rcsEl.textContent = isNaN(rcs) ? '-' : rcs.toFixed(3);
-  const rlsi = (!isNaN(rca) && !isNaN(rcs) && rcs > 0) ? rca/rcs*100 : NaN;
-  setLSI(rlsiEl, rstatEl, rlsi);
+  const rlsi = bilateral
+    ? (!isNaN(rca) && !isNaN(rcs) && rca > 0 && rcs > 0 ? Math.min(rca, rcs) / Math.max(rca, rcs) * 100 : NaN)
+    : (!isNaN(rca) && !isNaN(rcs) && rcs > 0 ? rca / rcs * 100 : NaN);
+  setLSI(rlsiEl, rstatEl, rlsi, '>= 90%', true, bilateral);
 }
 
 function calcMusc() {
@@ -3109,7 +3133,7 @@ function _buildAllTestsHtml() {
 
   // ── Résolution du côté atteint ────────────────────────────────
   var _cotePrimaire = ((document.getElementById('f-cote')||{}).value||'').toUpperCase();
-  var _isBilateral  = (_cotePrimaire !== 'DROIT' && _cotePrimaire !== 'GAUCHE');
+  var _isBilat  = (_cotePrimaire !== 'DROIT' && _cotePrimaire !== 'GAUCHE');
   // Pour unilatéral : CA = côté douloureux, CS = côté sain
   // Pour bilatéral  : Gauche en premier (sens de lecture), Droit en second
   var _labelCA = _cotePrimaire === 'DROIT' ? 'Droit' : _cotePrimaire === 'GAUCHE' ? 'Gauche' : 'Gauche';
