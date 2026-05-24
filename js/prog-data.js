@@ -225,6 +225,14 @@ var LIBRARY = [
 var LIBRARY_DEFAULT = LIBRARY.slice();
 // IDs des exercices qui viennent de Supabase { id: true }
 var _supaExoIds = {};
+// IDs des exercices hardcodés supprimés par l'utilisateur (persistés en localStorage)
+var _deletedDefaultIds = new Set(
+  JSON.parse(localStorage.getItem('r4p-deleted-defaults') || '[]')
+);
+// Appliquer la blacklist dès l'initialisation
+if(_deletedDefaultIds.size > 0){
+  LIBRARY = LIBRARY_DEFAULT.filter(function(e){ return !_deletedDefaultIds.has(e.id); });
+}
 
 /* ================================================================
    STATE
@@ -1938,16 +1946,18 @@ function _loadSupaLibrary(){
     if(!Array.isArray(data)) return;
     _supaExoIds = {};
     data.forEach(function(e){ _supaExoIds[e.id] = true; });
-    var defaultIds = new Set(LIBRARY_DEFAULT.map(function(e){ return e.id; }));
-    var supaExos = data
-      .filter(function(e){ return !defaultIds.has(e.id); })
-      .map(function(e){
-        return { id: e.id, name: e.name, zone: e.zone||'', type: e.type||'',
-                 url: e.url||'', obj: e.obj||'',
-                 patterns: Array.isArray(e.patterns) ? e.patterns : [],
-                 _fromSupa: true };
-      });
-    LIBRARY = LIBRARY_DEFAULT.concat(supaExos);
+    var supaIds = new Set(data.map(function(e){ return e.id; }));
+    // Defaults : exclure ceux remplacés par Supabase (modifiés) ET ceux supprimés
+    var filteredDefaults = LIBRARY_DEFAULT.filter(function(e){
+      return !supaIds.has(e.id) && !_deletedDefaultIds.has(e.id);
+    });
+    var supaExos = data.map(function(e){
+      return { id: e.id, name: e.name, zone: e.zone||'', type: e.type||'',
+               url: e.url||'', obj: e.obj||'',
+               patterns: Array.isArray(e.patterns) ? e.patterns : [],
+               _fromSupa: true };
+    });
+    LIBRARY = filteredDefaults.concat(supaExos);
     filterLib();
   })
   .catch(function(){});
@@ -1999,10 +2009,14 @@ function openEditor(){
       if(Array.isArray(data)){
         _supaExoIds = {};
         data.forEach(function(e){ _supaExoIds[e.id] = true; });
-        var defaultIds = new Set(LIBRARY_DEFAULT.map(function(e){ return e.id; }));
-        var supaExos = data.filter(function(e){ return !defaultIds.has(e.id); })
-          .map(function(e){ return { id:e.id, name:e.name, zone:e.zone||'', type:e.type||'', url:e.url||'', obj:e.obj||'', patterns:Array.isArray(e.patterns)?e.patterns:[], _fromSupa:true }; });
-        LIBRARY = LIBRARY_DEFAULT.concat(supaExos);
+        var supaIds2 = new Set(data.map(function(e){ return e.id; }));
+        var filteredDefs = LIBRARY_DEFAULT.filter(function(e){
+          return !supaIds2.has(e.id) && !_deletedDefaultIds.has(e.id);
+        });
+        var supaExos2 = data.map(function(e){
+          return { id:e.id, name:e.name, zone:e.zone||'', type:e.type||'', url:e.url||'', obj:e.obj||'', patterns:Array.isArray(e.patterns)?e.patterns:[], _fromSupa:true };
+        });
+        LIBRARY = filteredDefs.concat(supaExos2);
       }
       _editorOriginalIds = LIBRARY.map(function(e){ return e.id; });
       _editorData = LIBRARY.map(function(e){ return Object.assign({},e); });
@@ -2014,6 +2028,8 @@ function openEditor(){
       renderEditor();
     });
   } else {
+    // Sans auth : appliquer quand même la blacklist
+    LIBRARY = LIBRARY_DEFAULT.filter(function(e){ return !_deletedDefaultIds.has(e.id); });
     _editorOriginalIds = LIBRARY.map(function(e){ return e.id; });
     _editorData = LIBRARY.map(function(e){ return Object.assign({},e); });
     renderEditor();
@@ -2033,8 +2049,9 @@ function saveEditor(){
     var currentIds = new Set(LIBRARY.map(function(e){ return e.id; }));
 
     // POST (nouveau) ou PATCH (modifié) pour tous les exercices non-hardcodés
+    // et pour les exercices hardcodés modifiés par l'utilisateur
     LIBRARY.forEach(function(ex){
-      if(defaultIds.has(ex.id)) return; // exercice hardcodé, on ne touche pas
+      if(defaultIds.has(ex.id) && !ex._modified) return; // hardcodé non modifié, on ignore
       var payload = {
         id: ex.id, name: ex.name, zone: ex.zone||null, type: ex.type||null,
         url: ex.url||null, obj: ex.obj||null,
@@ -2058,13 +2075,20 @@ function saveEditor(){
       }
     });
 
-    // Supprimer les exercices Supabase retirés de la liste
+    // Supprimer les exercices retirés de la liste
     _editorOriginalIds.forEach(function(id){
-      if(defaultIds.has(id)) return;
-      if(!currentIds.has(id) && _supaExoIds[id]){
-        _fetchRetry(SUPA_URL_P+'/rest/v1/exercices_library?id=eq.'+id, {
-          method:'DELETE', headers: _sbHeaders()
-        }).then(function(r){ if(r.ok) delete _supaExoIds[id]; });
+      if(!currentIds.has(id)){
+        // Exercice Supabase (custom ou default modifié) → DELETE Supabase
+        if(_supaExoIds[id]){
+          _fetchRetry(SUPA_URL_P+'/rest/v1/exercices_library?id=eq.'+id, {
+            method:'DELETE', headers: _sbHeaders()
+          }).then(function(r){ if(r.ok) delete _supaExoIds[id]; });
+        }
+        // Exercice hardcodé non encore dans Supabase → blacklist localStorage
+        if(defaultIds.has(id) && !_supaExoIds[id]){
+          _deletedDefaultIds.add(id);
+          localStorage.setItem('r4p-deleted-defaults', JSON.stringify([..._deletedDefaultIds]));
+        }
       }
     });
   }
@@ -2118,24 +2142,32 @@ function deleteEditorRow(idx){
   var nom = (ex && ex.name) ? ex.name : 'cet exercice';
   if(!confirm('Supprimer « ' + nom + ' » de la bibliothèque ?')) return;
   var exId = ex ? ex.id : null;
+  var defaultIds = new Set(LIBRARY_DEFAULT.map(function(e){ return e.id; }));
   _editorData.splice(idx, 1);
   // Mettre à jour LIBRARY et la sidebar immédiatement
   LIBRARY = LIBRARY.filter(function(e){ return e.id !== exId; });
   renderEditor();
   filterLib();
-  // Supprimer en Supabase si c'est un exercice partagé
-  if(exId && _supaExoIds[exId] && _progToken && _progUid){
+  if(!exId) return;
+  // Exercice Supabase (custom ou default déjà modifié/uploadé) → DELETE Supabase
+  if(_supaExoIds[exId] && _progToken && _progUid){
     _fetchRetry(SUPA_URL_P+'/rest/v1/exercices_library?id=eq.'+exId, {
       method:'DELETE', headers: _sbHeaders()
     }).then(function(r){
       if(r.ok){ delete _supaExoIds[exId]; }
-      else { r.text().then(function(t){ alert('Erreur suppression Supabase : '+t); }); }
+      else { r.text().then(function(t){ alert('Erreur suppression : '+t); }); }
     }).catch(function(e){ alert('Erreur réseau : '+(e&&e.message||e)); });
+  }
+  // Exercice hardcodé non encore dans Supabase → blacklist localStorage
+  if(defaultIds.has(exId) && !_supaExoIds[exId]){
+    _deletedDefaultIds.add(exId);
+    localStorage.setItem('r4p-deleted-defaults', JSON.stringify([..._deletedDefaultIds]));
   }
 }
 
 function updateEditorUrl(idx, val){
   if(!_editorData[idx]) return;
+  _editorData[idx]._modified = true;
   _editorData[idx].url = val;
   var sp = document.getElementById('exo-thumb-'+idx);
   if(!sp) return;
@@ -2177,6 +2209,7 @@ function _zonePopClose(){
 function _zoneToggle(idx, zone, event){
   event && event.stopPropagation();
   if(!_editorData[idx]) return;
+  _editorData[idx]._modified = true;
   var cur = (_editorData[idx].zone||'').split(',').map(function(z){ return z.trim(); }).filter(Boolean);
   var pos = cur.indexOf(zone);
   if(pos === -1) cur.push(zone);
@@ -2205,6 +2238,7 @@ document.addEventListener('click', function(){
 
 function updateEditorField(idx, field, val){
   if(!_editorData[idx]) return;
+  _editorData[idx]._modified = true;
   if(field === 'patterns_str'){
     _editorData[idx].patterns = val.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
   } else if(field === 'patterns_sel'){
