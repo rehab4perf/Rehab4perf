@@ -283,15 +283,17 @@ var AUTOMASSAGE_ZONES = [
   {val:'Lower', label:'Lower'},
 ];
 var RENFO_ZONES = [
-  {val:'ÉPAULE',          label:'Épaule'},
-  {val:'COUDE',           label:'Coude'},
-  {val:'POIGNET',         label:'Poignet'},
-  {val:'HANCHE',          label:'Hanche'},
-  {val:'GENOU',           label:'Genou'},
-  {val:'CHEVILLE',        label:'Cheville'},
-  {val:'PIED',            label:'Pied'},
-  {val:'TRONC',           label:'Tronc / Gainage'},
-  {val:'RACHIS',          label:'Rachis'},
+  {val:'ÉPAULE',               label:'Épaule'},
+  {val:'COUDE',                label:'Coude'},
+  {val:'POIGNET',              label:'Poignet'},
+  {val:'HANCHE',               label:'Hanche'},
+  {val:'GENOU',                label:'Genou'},
+  {val:'CHEVILLE',             label:'Cheville'},
+  {val:'PIED',                 label:'Pied'},
+  {val:'TRONC',                label:'Tronc / Gainage'},
+  {val:'RACHIS – CERVICAL',    label:'Rachis cervical'},
+  {val:'RACHIS – THORACIQUE',  label:'Rachis thoracique'},
+  {val:'RACHIS – LOMBAIRE',    label:'Rachis lombaire'},
 ];
 
 function onTypeChange(){
@@ -1921,7 +1923,7 @@ function copyExportLink(){
    ================================================================ */
 var ALL_ZONES = [
   'ÉPAULE','COUDE','POIGNET',
-  'RACHIS – CERVICAL','RACHIS – THORACIQUE','RACHIS – LOMBAIRE',
+  'RACHIS – CERVICAL','RACHIS – THORACIQUE','RACHIS – THORACO-LOMBAIRE','RACHIS – LOMBAIRE',
   'HANCHE','GENOU','CHEVILLE','PIED',
   'TRONC / GAINAGE'
 ];
