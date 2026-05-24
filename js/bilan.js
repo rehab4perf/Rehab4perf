@@ -3127,13 +3127,30 @@ function _buildAllTestsHtml() {
     return '<div class="cr-item"><span class="cr-key">' + key + '</span><span class="cr-val">' + val + '</span>' + tagHtml + '</div>';
   }
 
-  var lsiStr  = function(ca,cs) { if (!cs||cs<=0||isNaN(ca)||isNaN(cs)) return ''; var v=ca/cs*100; return v<0 ? 'LSI < 0%' : 'LSI = '+v.toFixed(1)+'%'; };
-  var lsiCls2 = function(ca,cs) { if (!cs||cs<=0||isNaN(ca)||isNaN(cs)) return ''; var v=ca/cs*100; return v>=90?'good':v>=80?'warn':'bad'; };
-  var statOf2 = function(cls)   { return ({good:'OK',warn:'Acceptable',bad:'Insuffisant'}[cls])||''; };
-
   // ── Résolution du côté atteint ────────────────────────────────
   var _cotePrimaire = ((document.getElementById('f-cote')||{}).value||'').toUpperCase();
-  var _isBilat  = (_cotePrimaire !== 'DROIT' && _cotePrimaire !== 'GAUCHE');
+  var _isBilat  = (_cotePrimaire !== 'DROIT' && _cotePrimaire !== 'GAUCHE' && _cotePrimaire !== '');
+
+  var lsiStr  = function(ca,cs) {
+    if (isNaN(ca)||isNaN(cs)) return '';
+    var v = _isBilat
+      ? (ca > 0 && cs > 0 ? Math.min(ca,cs)/Math.max(ca,cs)*100 : NaN)
+      : (cs > 0 ? ca/cs*100 : NaN);
+    if (isNaN(v)) return '';
+    return (_isBilat ? 'Sym. = ' : 'LSI = ') + v.toFixed(1) + '%';
+  };
+  var lsiCls2 = function(ca,cs) {
+    if (isNaN(ca)||isNaN(cs)) return '';
+    var v = _isBilat
+      ? (ca > 0 && cs > 0 ? Math.min(ca,cs)/Math.max(ca,cs)*100 : NaN)
+      : (cs > 0 ? ca/cs*100 : NaN);
+    if (isNaN(v)) return '';
+    return v >= 90 ? 'good' : v >= 80 ? 'warn' : 'bad';
+  };
+  var statOf2 = function(cls) {
+    if (_isBilat) return ({good:'Symétrique', warn:'Asymétrie modérée', bad:'Asymétrie significative'}[cls])||'';
+    return ({good:'OK', warn:'Acceptable', bad:'Insuffisant'}[cls])||'';
+  };
   // Pour unilatéral : CA = côté douloureux, CS = côté sain
   // Pour bilatéral  : Gauche en premier (sens de lecture), Droit en second
   var _labelCA = _cotePrimaire === 'DROIT' ? 'Droit' : _cotePrimaire === 'GAUCHE' ? 'Gauche' : 'Gauche';
