@@ -442,10 +442,18 @@ function renderLib(q, typeFilter, subFilter, subFilter2){
       if(groups[k].items.indexOf(ex) === -1) groups[k].items.push(ex);
     });
   });
-  // Sort pattern groups in defined order
+  // Sort groups in defined order
   if(groupBy === 'pattern'){
     order.sort(function(a,b){
       var ia = ALL_PATTERNS_ORDER.indexOf(a); var ib = ALL_PATTERNS_ORDER.indexOf(b);
+      return (ia===-1?99:ia) - (ib===-1?99:ib);
+    });
+  }
+  if(groupBy === 'zone'){
+    var _zRef = typeFilter === 'renfo' ? RENFO_ZONES : typeFilter === 'automassage' ? AUTOMASSAGE_ZONES : WARMUP_ZONES;
+    var _zVals = _zRef.map(function(z){ return z.val; });
+    order.sort(function(a,b){
+      var ia = _zVals.indexOf(a); var ib = _zVals.indexOf(b);
       return (ia===-1?99:ia) - (ib===-1?99:ib);
     });
   }
