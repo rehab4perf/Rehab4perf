@@ -416,6 +416,19 @@ setInterval(_checkInactivity, 60 * 1000);
 
 /* ═══ NAVIGATION ═══ */
 function show(id) {
+  // En quittant le builder, vider la barre de recherche
+  if (id !== 'prescription') {
+    try {
+      var pf = document.getElementById('frame-prescription');
+      if (pf && pf.contentWindow) {
+        var searchEl = pf.contentWindow.document.getElementById('searchInput');
+        if (searchEl && searchEl.value) {
+          searchEl.value = '';
+          pf.contentWindow.filterLib();
+        }
+      }
+    } catch(ex) {}
+  }
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
   document.querySelectorAll('iframe').forEach(function(f){ f.classList.remove('active'); });
   var tab = document.getElementById('tab-' + id);

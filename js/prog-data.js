@@ -254,14 +254,14 @@ function toggleFav(id){
   var favs = getFavs();
   if(favs.has(id)) favs.delete(id); else favs.add(id);
   localStorage.setItem(R4P_KEYS.FAV_EXOS, JSON.stringify(Array.from(favs)));
-  renderLib();
+  renderLib(document.getElementById('searchInput').value.toLowerCase());
 }
 
 var _favFilter = false;
 function toggleFavFilter(){
   _favFilter = !_favFilter;
   document.getElementById('filterFav').classList.toggle('active', _favFilter);
-  renderLib();
+  renderLib(document.getElementById('searchInput').value.toLowerCase());
 }
 
 /* ── DECISION-TREE FILTER DATA ── */
