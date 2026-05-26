@@ -5028,13 +5028,12 @@ _updateOutilsPatientBtns();
   var titleEl = document.getElementById('cr-lp-title');
   var dateEl  = document.getElementById('cr-letter-date');
   if (nameEl) nameEl.textContent = crProfile.name;
-  // Ligne sous le nom : titre — cabinet, puis AM + tél sur même ligne
-  var subtitleParts = [crProfile.title];
-  if (crProfile.cabinet) subtitleParts[0] += ' — ' + crProfile.cabinet;
-  var metaParts = [];
-  if (crProfile.am)  metaParts.push('N° AM ' + crProfile.am);
-  if (crProfile.tel) metaParts.push(crProfile.tel);
-  if (titleEl) titleEl.innerHTML = subtitleParts[0] + (metaParts.length ? '<br><span style="font-size:.76rem;color:var(--text3)">' + metaParts.join(' · ') + '</span>' : '');
+  // Ligne 1 : titre — cabinet · N° AM (tout sur la même ligne)
+  // Ligne 2 : téléphone seul
+  var line1 = crProfile.title;
+  if (crProfile.cabinet) line1 += ' — ' + crProfile.cabinet;
+  if (crProfile.am) line1 += ' · N° AM ' + crProfile.am;
+  if (titleEl) titleEl.innerHTML = line1 + (crProfile.tel ? '<br><span style="font-size:.76rem;color:var(--text3)">' + crProfile.tel + '</span>' : '');
   if (dateEl) {
     var now = new Date();
     dateEl.textContent = now.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -6263,11 +6262,10 @@ _updateOutilsPatientBtns();
     var nameEl  = document.getElementById('cr-lp-name');
     var titleEl = document.getElementById('cr-lp-title');
     var dateEl  = document.getElementById('cr-letter-date');
-    var practName  = nameEl  ? nameEl.textContent  : crProfile.name;
-    var practTitle = titleEl ? titleEl.innerText    : crProfile.title;
-    var letterDate = dateEl  ? dateEl.textContent   : '';
-    var textEsc    = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    var titleEsc   = practTitle.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    var practName      = nameEl  ? nameEl.textContent  : crProfile.name;
+    var practTitleHtml = titleEl ? titleEl.innerHTML   : crProfile.title;
+    var letterDate     = dateEl  ? dateEl.textContent  : '';
+    var textEsc        = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
     var patNomPDF = crV('cr-pat-nom') || '';
     var html = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">'
@@ -6306,7 +6304,7 @@ _updateOutilsPatientBtns();
       + '<button class="btn-print" onclick="window.print()">🖨 Imprimer / PDF</button>'
       + '</div>'
       + '<div id="cr-page">'
-      + '<div class="hdr"><div class="pract"><strong>' + practName + '</strong>' + titleEsc + '</div>'
+      + '<div class="hdr"><div class="pract"><strong>' + practName + '</strong>' + practTitleHtml + '</div>'
       + '<div class="date">' + letterDate + '</div></div>'
       + '<hr>'
       + '<div id="cr-body">' + textEsc + '</div>'
