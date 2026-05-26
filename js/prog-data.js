@@ -412,8 +412,10 @@ function renderLib(q, typeFilter, subFilter, subFilter2){
 
   var hasFilter = !!(typeFilter || subFilter || subFilter2 || _favFilter || q);
 
-  var groupBy; // 'pattern', 'zone', or 'none'
-  if(typeFilter === 'renfo' && !subFilter){
+  var groupBy; // 'pattern', 'zone', 'type-zone', or 'none'
+  if(_favFilter && !typeFilter){
+    groupBy = 'type-zone'; // favoris sans filtre type → tri par objectif puis articulation
+  } else if(typeFilter === 'renfo' && !subFilter){
     groupBy = 'pattern'; // regroupé par mouvement, même si filtre articulation actif
   } else if((typeFilter === 'warmup' || typeFilter === 'automassage') && !subFilter){
     groupBy = 'zone';
@@ -456,34 +458,85 @@ function renderLib(q, typeFilter, subFilter, subFilter2){
     // show all exercises flat, no headers
   }
 
+  // Helper : rendu d'un item bibliothèque (partagé entre les deux modes de rendu)
+  function _libItemHtml(ex, isAdded, isFav){
+    var hoverAttrs = _isTouchDevice ? '' :
+      ' onmouseenter="_showLibPreviewDelayed(\''+ex.id+'\',this)" onmouseleave="_hideLibPreview()"';
+    var h = '<div class="lib-item'+(isAdded?' added':'')+'" id="li-'+ex.id+'"'+hoverAttrs+'>';
+    if(ex.url){ h += _ytThumbHtml(ex.url); }
+    h += '<div class="lib-item-info">';
+    h += '<div class="lib-item-name">'+escH(ex.name)+'</div>';
+    h += '<div class="lib-sub">';
+    h += '<span class="lib-tag '+getTypeClass(ex.type)+'">'+getTypeLabel(ex.type)+'</span>';
+    h += '</div></div>';
+    if(_isTouchDevice){
+      h += '<button class="lib-info-btn" id="libinfo-'+ex.id+'" onclick="_toggleLibPreview(event,\''+ex.id+'\')" title="Aperçu">ℹ</button>';
+    }
+    h += '<button class="fav-btn'+(isFav?' active':'')+'" onclick="event.stopPropagation();toggleFav(\''+ex.id+'\')" title="Favori">★</button>';
+    h += '<button class="lib-add-btn" onclick="addExoFromLib(\''+ex.id+'\')" title="Ajouter"></button>';
+    h += '</div>';
+    return h;
+  }
+
   var html = '';
-  order.forEach(function(k){
-    var g = groups[k];
-    html += '<div class="lib-section">';
-    if(g.label && groupBy !== 'none') html += '<div class="lib-section-title">'+escH(g.label)+'</div>';
-    g.items.forEach(function(ex){
-      var isAdded = !!addedIds[ex.id];
-      var isFav = favs.has(ex.id);
-      // Événements hover (desktop) ou tap ℹ (touch) pour l'aperçu rapide
-      var hoverAttrs = _isTouchDevice ? '' :
-        ' onmouseenter="_showLibPreviewDelayed(\''+ex.id+'\',this)" onmouseleave="_hideLibPreview()"';
-      html += '<div class="lib-item'+(isAdded?' added':'')+'" id="li-'+ex.id+'"'+hoverAttrs+'>';
-      if(ex.url){ html += _ytThumbHtml(ex.url); }
-      html += '<div class="lib-item-info">';
-      html += '<div class="lib-item-name">'+escH(ex.name)+'</div>';
-      html += '<div class="lib-sub">';
-      html += '<span class="lib-tag '+getTypeClass(ex.type)+'">'+getTypeLabel(ex.type)+'</span>';
-      html += '</div></div>';
-      // Bouton ℹ visible uniquement sur touch (sur desktop le hover suffit)
-      if(_isTouchDevice){
-        html += '<button class="lib-info-btn" id="libinfo-'+ex.id+'" onclick="_toggleLibPreview(event,\''+ex.id+'\')" title="Aperçu">ℹ</button>';
-      }
-      html += '<button class="fav-btn'+(isFav?' active':'')+'" onclick="event.stopPropagation();toggleFav(\''+ex.id+'\')" title="Favori">★</button>';
-      html += '<button class="lib-add-btn" onclick="addExoFromLib(\''+ex.id+'\')" title="Ajouter"></button>';
+
+  if(groupBy === 'type-zone'){
+    // ── Favoris : tri niveau 1 = objectif, niveau 2 = articulation ──────────
+    var _TYPE_ORDER  = ['warmup','renfo','automassage','therapie_manuelle'];
+    var _TYPE_LABELS = {warmup:'Warm-up / Mobilité', renfo:'Renforcement', automassage:'Auto-massage', therapie_manuelle:'Thérapie manuelle'};
+    var _ZONE_ORDERS = {
+      warmup:            WARMUP_ZONES.map(function(z){ return z.val; }),
+      renfo:             RENFO_ZONES.map(function(z){ return z.val; }),
+      automassage:       AUTOMASSAGE_ZONES.map(function(z){ return z.val; }),
+      therapie_manuelle: []
+    };
+    // Lookup val → label lisible (ex. "ÉPAULE" → "Épaule")
+    var _ZONE_LABEL = {};
+    [WARMUP_ZONES, RENFO_ZONES, AUTOMASSAGE_ZONES].forEach(function(arr){
+      arr.forEach(function(z){ _ZONE_LABEL[z.val] = z.label; });
+    });
+    // Construire typeMap[type][zone] = [exercices]
+    var _typeMap = {};
+    visible.forEach(function(ex){
+      var t = ex.type || 'autre';
+      if(!_typeMap[t]) _typeMap[t] = {};
+      var zones = ex.zone ? ex.zone.split(',').map(function(z){ return z.trim(); }).filter(Boolean) : [''];
+      zones.forEach(function(z){
+        if(!_typeMap[t][z]) _typeMap[t][z] = [];
+        if(_typeMap[t][z].indexOf(ex) === -1) _typeMap[t][z].push(ex);
+      });
+    });
+    var _typeFirst = true;
+    _TYPE_ORDER.forEach(function(t){
+      if(!_typeMap[t]) return;
+      var zOrder = _ZONE_ORDERS[t] || [];
+      var zonesPresent = Object.keys(_typeMap[t]);
+      zonesPresent.sort(function(a,b){
+        var ia = zOrder.indexOf(a); var ib = zOrder.indexOf(b);
+        return (ia===-1?99:ia) - (ib===-1?99:ib);
+      });
+      html += '<div class="lib-fav-type'+(_typeFirst?'':' not-first')+'">'+escH(_TYPE_LABELS[t]||t)+'</div>';
+      _typeFirst = false;
+      zonesPresent.forEach(function(z){
+        if(z) html += '<div class="lib-section-title">'+escH(_ZONE_LABEL[z]||z)+'</div>';
+        _typeMap[t][z].forEach(function(ex){
+          html += _libItemHtml(ex, !!addedIds[ex.id], favs.has(ex.id));
+        });
+      });
+    });
+  } else {
+    // ── Rendu standard (pattern / zone / none) ──────────────────────────────
+    order.forEach(function(k){
+      var g = groups[k];
+      html += '<div class="lib-section">';
+      if(g.label && groupBy !== 'none') html += '<div class="lib-section-title">'+escH(g.label)+'</div>';
+      g.items.forEach(function(ex){
+        html += _libItemHtml(ex, !!addedIds[ex.id], favs.has(ex.id));
+      });
       html += '</div>';
     });
-    html += '</div>';
-  });
+  }
+
   if(!html) html = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:.8rem;">Aucun exercice trouvé</div>';
   scroll.innerHTML = html;
 }

@@ -328,6 +328,15 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   color:var(--muted); letter-spacing:.08em; text-transform:uppercase;
   position:sticky; top:0; background:var(--surface); z-index:1;
 }
+/* Favoris : en-tête de type (niveau 1) */
+.lib-fav-type {
+  padding:8px 14px 3px; font-size:.65rem; font-weight:800;
+  text-transform:uppercase; letter-spacing:.1em; color:var(--accent);
+  position:sticky; top:0; background:var(--surface); z-index:2;
+}
+.lib-fav-type.not-first {
+  margin-top:4px; border-top:1px solid var(--border-l); padding-top:10px;
+}
 .lib-item {
   display:flex; align-items:center; justify-content:space-between;
   padding:7px 14px; cursor:pointer; gap:8px;
