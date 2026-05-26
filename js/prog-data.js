@@ -97,10 +97,9 @@ var LIBRARY = [
   {id:'w039',name:"Open book",zone:"RACHIS – THORACIQUE",type:"warmup",url:"https://youtu.be/Ow9vbE7FaK0",obj:"ROT G, ROT D"},
   {id:'w040',name:"Rotations thoracique au mur (rouleau)",zone:"RACHIS – THORACIQUE",type:"warmup",url:"https://youtu.be/9OknW1rJAWA",obj:"ROT D, ROT G"},
   {id:'w041',name:"Lift off inclinaison",zone:"RACHIS – THORACIQUE",type:"warmup",url:"https://youtu.be/EVzYMMiypWs",obj:"INCLI G, INCLI D"},
-  /* RACHIS THORACO-LOMBAIRE */
-  {id:'w042',name:"Jefferson curl (bande élastique)",zone:"RACHIS – THORACO-LOMBAIRE",type:"warmup",url:"https://youtu.be/Snt9axgAfYw",obj:"FLEXION, EXTENSION"},
-  {id:'w043',name:"Jefferson curl (haltère)",zone:"RACHIS – THORACO-LOMBAIRE",type:"warmup",url:"https://youtu.be/AKBp2wdnf9c",obj:"FLEXION, EXTENSION"},
-  {id:'w044',name:"Jefferson curl + rotations",zone:"RACHIS – THORACO-LOMBAIRE",type:"warmup",url:"https://youtu.be/2E4Orr3UWlA",obj:"FLEXION, EXTENSION, ROT"},
+  {id:'w042',name:"Jefferson curl (bande élastique)",zone:"RACHIS – THORACIQUE, RACHIS – LOMBAIRE",type:"warmup",url:"https://youtu.be/Snt9axgAfYw",obj:"FLEXION, EXTENSION"},
+  {id:'w043',name:"Jefferson curl (haltère)",zone:"RACHIS – THORACIQUE, RACHIS – LOMBAIRE",type:"warmup",url:"https://youtu.be/AKBp2wdnf9c",obj:"FLEXION, EXTENSION"},
+  {id:'w044',name:"Jefferson curl + rotations",zone:"RACHIS – THORACIQUE, RACHIS – LOMBAIRE",type:"warmup",url:"https://youtu.be/2E4Orr3UWlA",obj:"FLEXION, EXTENSION, ROT"},
   /* RACHIS LOMBAIRE */
   {id:'w045',name:"Extension lombaire cobra",zone:"RACHIS – LOMBAIRE",type:"warmup",url:"https://youtu.be/hbV9obVSk3Q",obj:"EXTENSION"},
   {id:'w046',name:"Scorpion",zone:"RACHIS – LOMBAIRE",type:"warmup",url:"https://youtu.be/APtyhAkaj5Q",obj:"EXTENSION, ROT"},
