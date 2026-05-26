@@ -512,7 +512,12 @@ window.addEventListener('message', function(e) {
 
   // bilan.html a annulé le changement de patient (données non sauvegardées)
   if (e.data.type === 'r4p-cancel-patient-switch') {
-    _currentPatient = _previousPatient || null;
+    // bilan.html envoie patientId = l'id du patient qu'il affiche encore (source de vérité)
+    // On l'utilise plutôt que _previousPatient qui peut être périmé si l'utilisateur
+    // a re-cliqué dans le modal pendant que la boîte de confirmation était ouverte.
+    var _rollbackId = e.data.patientId;
+    _currentPatient = (_rollbackId && _allPatients.find(function(p){ return p.id === _rollbackId; }))
+      || _previousPatient || null;
     try { localStorage.setItem(R4P_KEYS.PATIENT, _currentPatient ? JSON.stringify(_currentPatient) : ''); } catch(ex) {}
     _updatePatientBtn();
     renderPatients(_allPatients);
