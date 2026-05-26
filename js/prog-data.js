@@ -268,7 +268,6 @@ function toggleFavFilter(){
 var WARMUP_ZONES = [
   {val:'RACHIS – CERVICAL', label:'Rachis cervical'},
   {val:'RACHIS – THORACIQUE', label:'Rachis thoracique'},
-  {val:'RACHIS – THORACO-LOMBAIRE', label:'Rachis thoraco-lombaire'},
   {val:'RACHIS – LOMBAIRE', label:'Rachis lombaire'},
   {val:'TRONC / GAINAGE', label:'Tronc / Gainage'},
   {val:'ÉPAULE', label:'Épaule'},
@@ -1940,7 +1939,7 @@ function copyExportLink(){
    ================================================================ */
 var ALL_ZONES = [
   'ÉPAULE','COUDE','POIGNET',
-  'RACHIS – CERVICAL','RACHIS – THORACIQUE','RACHIS – THORACO-LOMBAIRE','RACHIS – LOMBAIRE',
+  'RACHIS – CERVICAL','RACHIS – THORACIQUE','RACHIS – LOMBAIRE',
   'HANCHE','GENOU','CHEVILLE','PIED',
   'TRONC / GAINAGE'
 ];
