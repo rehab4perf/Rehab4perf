@@ -416,15 +416,16 @@ setInterval(_checkInactivity, 60 * 1000);
 
 /* ═══ NAVIGATION ═══ */
 function show(id) {
-  // En quittant le builder, vider la barre de recherche
-  if (id !== 'prescription') {
+  // En affichant le builder, vider la barre de recherche
+  // Direction "on entry" : plus fiable que "on leave" (iframe encore stable, dispatchEvent garanti)
+  if (id === 'prescription') {
     try {
       var pf = document.getElementById('frame-prescription');
       if (pf && pf.contentWindow) {
         var searchEl = pf.contentWindow.document.getElementById('searchInput');
         if (searchEl && searchEl.value) {
           searchEl.value = '';
-          pf.contentWindow.filterLib();
+          searchEl.dispatchEvent(new Event('input'));
         }
       }
     } catch(ex) {}
