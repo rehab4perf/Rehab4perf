@@ -1625,13 +1625,21 @@ function renderSession(){
       html += '<span></span>';
       html += '</div>';
       var objColor = OBJ_COLORS[obj] || 'var(--muted)';
+      var _cGrpBgs = { libre:'#F5F7FA', endurance:'#F0FAF0', puissance:'#F5F0FF', hypertrophie:'#EEF3FB', forcemax:'#FEF0EE', isometrie:'#FFFBEB' };
+      var _cGrpBg  = _cGrpBgs[obj] || '#F5F7FA';
+      var _inChainGrp = false;
       b.exos.forEach(function(e, idx){
         var exoChained = !!e.chained;
         var prevChained = idx > 0 && !!b.exos[idx-1].chained;
-        var showBorder = exoChained || prevChained;
-        var chainStyle = showBorder ? 'border-left:3px solid '+objColor+';' : '';
-        html += '<div class="exo-row'+(showBorder?' exo-chained':'')+'" draggable="true"'
-             +  ' style="'+chainStyle+'cursor:default"'
+        var isInGroup  = exoChained || prevChained;
+        // Ouvrir le wrapper du groupe enchaîné
+        if(isInGroup && !_inChainGrp){
+          _inChainGrp = true;
+          html += '<div class="chain-group" style="--chain-c:'+objColor+';border-color:'+objColor+';background:'+_cGrpBg+'">';
+          html += '<div class="chain-group-header" style="color:'+objColor+'">⛓ Enchaîné</div>';
+        }
+        html += '<div class="exo-row" draggable="true"'
+             +  ' style="cursor:default"'
              +  ' ondragstart="exoDragStart(event,\''+b.id+'\','+idx+')"'
              +  ' ondragover="exoDragOver(event,this,\''+b.id+'\')"'
              +  ' ondrop="exoDrop(event,this,\''+b.id+'\','+idx+')"'
@@ -1707,13 +1715,14 @@ function renderSession(){
              +  '</div>'
              +  '</div>';
         html += '</div>';
-        // Connecteur entre exercices enchaînés
-        if(exoChained && idx < b.exos.length - 1){
-          html += '<div class="chain-link" style="color:'+objColor+'">'
-               +  '<div class="chain-link-bar" style="background:'+objColor+'"></div>'
-               +  '<span>↓ enchaîner</span></div>';
+        // Fermer le wrapper après le dernier exercice du groupe
+        if(isInGroup && !exoChained){
+          _inChainGrp = false;
+          html += '</div>'; // .chain-group
         }
       });
+      // Fermer un groupe encore ouvert (cas limite : dernier exo du bloc encore chainé)
+      if(_inChainGrp){ html += '</div>'; _inChainGrp = false; }
       var blocMin=b.exos.reduce(function(sum,e){var t=estimateExoMin(e);return sum+(t||0);},0);
       if(blocMin>0) html+='<div class="bloc-time-total">⏱ Durée estimée du bloc : '+fmtMin(blocMin)+'</div>';
     } else {

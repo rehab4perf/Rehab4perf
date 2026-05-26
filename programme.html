@@ -1127,14 +1127,25 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   body { color:#000; background:#fff; }
 }
 
-/* Chaînage d'exercices */
-.exo-row.exo-chained { border-left: 3px solid var(--accent2); }
-.chain-link {
-  display:flex; align-items:center; gap:6px;
-  padding:2px 14px 2px 10px; font-size:.68rem; font-weight:700;
-  letter-spacing:.04em; text-transform:uppercase; user-select:none;
+/* Groupe d'exercices enchaînés */
+.chain-group {
+  border: 1.5px solid;          /* border-color défini inline (objColor) */
+  border-radius: 8px;
+  margin-bottom: 4px;
+  overflow: hidden;
 }
-.chain-link-bar { width:2px; height:14px; border-radius:1px; flex-shrink:0; }
+.chain-group-header {
+  display: flex; align-items: center; gap: 5px;
+  padding: 4px 10px;
+  font-size: .62rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .07em;
+  border-bottom: 1px solid rgba(0,0,0,.07);
+  opacity: .88;
+}
+/* Supprimer le border-bottom du dernier exo-row à l'intérieur du groupe */
+.chain-group .exo-row:last-child { border-bottom: none; }
+/* Ancien connecteur textuel — plus utilisé */
+.chain-link { display: none; }
 .protocol-steps {
   margin-top:5px; padding:5px 10px; background:rgba(255,255,255,.55);
   border-radius:4px; font-size:.72rem; font-weight:600; line-height:1.8; color:inherit;
