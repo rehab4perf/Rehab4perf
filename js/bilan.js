@@ -353,18 +353,22 @@ function init() {
     'thor-Incl__G':    'Ex\u00a0: sym\u00e9trique D=G\u2026',
     'thor-Rot__D':     'Ex\u00a0: \u00e9paule\u2011mur 3\u00a0cm\u2026',
     'thor-Rot__G':     'Ex\u00a0: \u00e9paule\u2011mur 3\u00a0cm\u2026',
-    'lomb-Flexion':    'Ex\u00a0: DDS 5\u00a0cm, Schober 14\u00a0cm\u2026',
-    'lomb-Extension':  'Ex\u00a0: Schober extension 8\u00a0cm\u2026',
-    'lomb-Incl__D':    'Ex\u00a0: majeur\u2011sol 23\u00a0cm\u2026',
-    'lomb-Incl__G':    'Ex\u00a0: majeur\u2011sol 23\u00a0cm\u2026',
-    'lomb-Rot__D':     'Ex\u00a0: \u00e9paule\u2011genou 18\u00a0cm\u2026',
-    'lomb-Rot__G':     'Ex\u00a0: \u00e9paule\u2011genou 18\u00a0cm\u2026',
+    'lomb-Flexion':       'Ex\u00a0: DDS 5\u00a0cm, Schober 14\u00a0cm\u2026',
+    'lomb-Extension':     'Ex\u00a0: Schober extension 8\u00a0cm\u2026',
+    'lomb-Incl__D':       'Ex\u00a0: majeur\u2011sol 23\u00a0cm\u2026',
+    'lomb-Incl__G':       'Ex\u00a0: majeur\u2011sol 23\u00a0cm\u2026',
+    'lomb-Rot__D':        'Ex\u00a0: \u00e9paule\u2011genou 18\u00a0cm\u2026',
+    'lomb-Rot__G':        'Ex\u00a0: \u00e9paule\u2011genou 18\u00a0cm\u2026',
+    'lomb-Glissement_D':  'Ex\u00a0: shift lat\u00e9ral droit spontan\u00e9, correction active\u2026',
+    'lomb-Glissement_G':  'Ex\u00a0: shift lat\u00e9ral gauche spontan\u00e9, correction active\u2026',
   };
+  var LOMB_EXTRA_MOB = ['Glissement D', 'Glissement G'];
   ['cerv','thor','lomb'].forEach(function(seg) {
     var grid = document.getElementById('mob-' + seg);
     if (!grid) return;
     grid.className = ''; // retire mobility-grid (grille 6 colonnes)
-    grid.innerHTML = MOB.map(function(m) {
+    var items = seg === 'lomb' ? MOB.concat(LOMB_EXTRA_MOB) : MOB;
+    grid.innerHTML = items.map(function(m) {
       var mKey = 'mob-' + seg + '-' + m.replace(/[\s.\/]+/g, '_');
       var phKey = seg + '-' + m.replace(/[\s.\/]+/g, '_');
       var ph = MOB_PLACEHOLDERS[phKey] || 'Marqueur, mesure\u2026';
@@ -3357,7 +3361,8 @@ function _buildAllTestsHtml() {
       var stClsMap = { ok:'ok', acceptable:'warn', insuffisant:'bad' };
       mobSegments.forEach(function(ms) {
         var anyMob = false, mobRows = '';
-        MOB.forEach(function(m) {
+        var mobItems = ms.seg === 'lomb' ? MOB.concat(['Glissement D', 'Glissement G']) : MOB;
+        mobItems.forEach(function(m) {
           var mKey = 'mob-' + ms.seg + '-' + m.replace(/[\s.\/]+/g, '_');
           var stEl = document.getElementById(mKey + '-st');
           var ntEl = document.getElementById(mKey + '-nt');
@@ -3828,6 +3833,15 @@ function _buildAllTestsHtml() {
       });
     });
     if (lombPos.length) toWork.push('Mobilisation neurale lombaire — ' + lombPos.join(', ') + ' positif(s)');
+  })();
+  // ── Glissements lombaires ─────────────────────────────────────────────────
+  (function(){
+    var glissInsuff = [];
+    [['Glissement D','droit'],['Glissement G','gauche']].forEach(function(g){
+      var stEl = document.getElementById('mob-lomb-' + g[0].replace(/\s/g,'_') + '-st');
+      if (stEl && stEl.value === 'insuffisant') glissInsuff.push('glissement ' + g[1]);
+    });
+    if (glissInsuff.length) toWork.push('Correction du shift lombaire — ' + glissInsuff.join(', ') + ' insuffisant(s)');
   })();
 
   // ── Tests fonctionnels rachis ─────────────────────────────────────────────
