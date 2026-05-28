@@ -457,6 +457,7 @@ function fmtCible(c){
   var t=c.type||'RPE', mn=c.min||'', mx=c.max||'';
   if(mn&&mx) return t+' '+mn+'–'+mx;
   if(mn) return t+' '+mn;
+  if(!mn&&!mx) return ''; // type seul sans valeur → ne rien afficher
   return t;
 }
 
