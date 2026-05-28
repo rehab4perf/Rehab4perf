@@ -312,7 +312,7 @@ function updateRomBar(el) {
 function _initAllRomBars() {
   Object.keys(ROM_CONFIG).forEach(function(id) {
     var el = document.getElementById(id);
-    if (el && el.value !== '') updateRomBar(el);
+    if (el) updateRomBar(el);
   });
 }
 
