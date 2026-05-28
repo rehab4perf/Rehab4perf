@@ -2078,14 +2078,20 @@ function _loadSupaLibrary(){
   .then(function(r){ return r.ok ? r.json() : null; })
   .then(function(data){
     if(!Array.isArray(data)) return;
+    /* Séparer les marqueurs de suppression globale des exercices réels */
+    var deletedMarkers = new Set(data.filter(function(e){ return e.type === '__deleted__'; }).map(function(e){ return e.id; }));
+    var realData = data.filter(function(e){ return e.type !== '__deleted__'; });
     _supaExoIds = {};
-    data.forEach(function(e){ _supaExoIds[e.id] = true; });
+    realData.forEach(function(e){ _supaExoIds[e.id] = true; });
+    /* supaIds inclut defaults modifiés + marqueurs supprimés → exclus des defaults */
     var supaIds = new Set(data.map(function(e){ return e.id; }));
-    // Defaults : exclure ceux remplacés par Supabase (modifiés) ET ceux supprimés
+    /* Sync cache local des supprimés de defaults */
+    deletedMarkers.forEach(function(id){ _deletedDefaultIds.add(id); });
+    // Defaults : exclure ceux remplacés par Supabase (modifiés) ET ceux supprimés globalement
     var filteredDefaults = LIBRARY_DEFAULT.filter(function(e){
       return !supaIds.has(e.id) && !_deletedDefaultIds.has(e.id);
     });
-    var supaExos = data.map(function(e){
+    var supaExos = realData.map(function(e){
       return { id: e.id, name: e.name, zone: e.zone||'', type: e.type||'',
                url: e.url||'', obj: e.obj||'',
                patterns: Array.isArray(e.patterns) ? e.patterns : [],
@@ -2141,13 +2147,16 @@ function openEditor(){
     .then(function(r){ return r.ok ? r.json() : null; })
     .then(function(data){
       if(Array.isArray(data)){
+        var deletedMarkers2 = new Set(data.filter(function(e){ return e.type === '__deleted__'; }).map(function(e){ return e.id; }));
+        var realData2 = data.filter(function(e){ return e.type !== '__deleted__'; });
         _supaExoIds = {};
-        data.forEach(function(e){ _supaExoIds[e.id] = true; });
+        realData2.forEach(function(e){ _supaExoIds[e.id] = true; });
         var supaIds2 = new Set(data.map(function(e){ return e.id; }));
+        deletedMarkers2.forEach(function(id){ _deletedDefaultIds.add(id); });
         var filteredDefs = LIBRARY_DEFAULT.filter(function(e){
           return !supaIds2.has(e.id) && !_deletedDefaultIds.has(e.id);
         });
-        var supaExos2 = data.map(function(e){
+        var supaExos2 = realData2.map(function(e){
           return { id:e.id, name:e.name, zone:e.zone||'', type:e.type||'', url:e.url||'', obj:e.obj||'', patterns:Array.isArray(e.patterns)?e.patterns:[], _fromSupa:true };
         });
         LIBRARY = filteredDefs.concat(supaExos2);
@@ -2218,10 +2227,15 @@ function saveEditor(){
             method:'DELETE', headers: _sbHeaders()
           }).then(function(r){ if(r.ok) delete _supaExoIds[id]; });
         }
-        // Exercice hardcodé non encore dans Supabase → blacklist localStorage
+        // Exercice hardcodé non encore dans Supabase → marqueur global __deleted__ + cache local
         if(defaultIds.has(id) && !_supaExoIds[id]){
           _deletedDefaultIds.add(id);
           localStorage.setItem('r4p-deleted-defaults', JSON.stringify([..._deletedDefaultIds]));
+          _fetchRetry(SUPA_URL_P+'/rest/v1/exercices_library', {
+            method:'POST',
+            headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
+            body: JSON.stringify({ id: id, name: '', type: '__deleted__', created_by: _progUid })
+          }).then(function(r){ if(r.ok) _supaExoIds[id] = true; });
         }
       }
     });
@@ -2292,10 +2306,15 @@ function deleteEditorRow(idx){
       else { r.text().then(function(t){ alert('Erreur suppression : '+t); }); }
     }).catch(function(e){ alert('Erreur réseau : '+(e&&e.message||e)); });
   }
-  // Exercice hardcodé non encore dans Supabase → blacklist localStorage
+  // Exercice hardcodé non encore dans Supabase → marqueur global __deleted__ + cache local
   if(defaultIds.has(exId) && !_supaExoIds[exId]){
     _deletedDefaultIds.add(exId);
     localStorage.setItem('r4p-deleted-defaults', JSON.stringify([..._deletedDefaultIds]));
+    _fetchRetry(SUPA_URL_P+'/rest/v1/exercices_library', {
+      method:'POST',
+      headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
+      body: JSON.stringify({ id: exId, name: '', type: '__deleted__', created_by: _progUid })
+    }).then(function(r){ if(r.ok) _supaExoIds[exId] = true; });
   }
 }
 
