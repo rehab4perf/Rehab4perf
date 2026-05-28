@@ -14,6 +14,7 @@ var R4P_KEYS = {
   CUSTOM_PROTOCOLS     : 'r4p-custom-protocols',
   CUSTOM_PROTOCOLS_SID : 'r4p-custom-protocols-sid',
   FAV_EXOS             : 'r4p-fav-exos',
+  FAV_EXOS_SID         : 'r4p-fav-exos-sid',
   PICKER_FAVS          : 'r4p_picker_favs',
   LIBRARY              : 'r4p-library',
   EXPANDED_GROUPS      : 'r4p-expanded-groups',
@@ -253,7 +254,66 @@ function toggleFav(id){
   var favs = getFavs();
   if(favs.has(id)) favs.delete(id); else favs.add(id);
   localStorage.setItem(R4P_KEYS.FAV_EXOS, JSON.stringify(Array.from(favs)));
+  _saveFavsToSupabase();
   renderLib(document.getElementById('searchInput').value.toLowerCase());
+}
+
+/* ── Sync favoris Supabase (union multi-device) ── */
+var _favExoSupaId = null;
+
+function _saveFavsToSupabase(){
+  if(!_progToken || !_progUid) return;
+  var favs = getFavs();
+  var donnees = JSON.stringify({ favs: Array.from(favs) });
+  var body = JSON.stringify({ praticien_id: _progUid, nom: '__r4p_favs_meta__', type: '__meta__', is_public: false, donnees: donnees });
+  if(_favExoSupaId){
+    _fetchRetry(SUPA_URL_P+'/rest/v1/templates?id=eq.'+_favExoSupaId, {
+      method:'PATCH', headers: Object.assign({}, _sbHeaders(), {'Content-Type':'application/json'}), body: body
+    });
+  } else {
+    _fetchRetry(SUPA_URL_P+'/rest/v1/templates', {
+      method:'POST', headers: Object.assign({}, _sbHeaders(), {'Content-Type':'application/json','Prefer':'return=representation'}), body: body
+    }).then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(rows){
+      if(rows && rows.length){
+        _favExoSupaId = rows[0].id;
+        try{ localStorage.setItem(R4P_KEYS.FAV_EXOS_SID, String(rows[0].id)); }catch(e){}
+      }
+    });
+  }
+}
+
+function _fetchFavsFromSupabase(callback){
+  if(!_progToken || !_progUid){ callback && callback(); return; }
+  if(!_favExoSupaId){
+    var sid = localStorage.getItem(R4P_KEYS.FAV_EXOS_SID);
+    if(sid) _favExoSupaId = sid;
+  }
+  _fetchRetry(SUPA_URL_P+'/rest/v1/templates?nom=eq.__r4p_favs_meta__&praticien_id=eq.'+_progUid+'&select=id,donnees&limit=1', { headers: _sbHeaders() })
+  .then(function(r){ return r.ok ? r.json() : []; })
+  .then(function(rows){
+    if(rows && rows.length){
+      _favExoSupaId = rows[0].id;
+      try{ localStorage.setItem(R4P_KEYS.FAV_EXOS_SID, String(rows[0].id)); }catch(e){}
+      var d = rows[0].donnees;
+      if(typeof d === 'string') try{ d = JSON.parse(d); }catch(e){ d = null; }
+      if(d && Array.isArray(d.favs)){
+        /* UNION : fusionner Supabase + local (jamais perdre un favori d'un autre device) */
+        var merged = getFavs();
+        var changed = false;
+        d.favs.forEach(function(id){ if(!merged.has(String(id))){ merged.add(String(id)); changed = true; } });
+        try{ localStorage.setItem(R4P_KEYS.FAV_EXOS, JSON.stringify(Array.from(merged))); }catch(e){}
+        /* Si l'union a ajouté des entrées locales absentes de Supabase, sauvegarder */
+        if(changed) _saveFavsToSupabase();
+      }
+    } else {
+      /* Premier chargement : seeder Supabase depuis le local */
+      _saveFavsToSupabase();
+    }
+    renderLib(document.getElementById('searchInput').value.toLowerCase());
+    callback && callback();
+  })
+  .catch(function(){ callback && callback(); });
 }
 
 var _favFilter = false;
@@ -2409,6 +2469,7 @@ window.addEventListener('message', function(e){
       _progUid = pl.sub || null;
     } catch(ex){}
     _loadUserRole();
+    _fetchFavsFromSupabase();
   }
   if(e.data && e.data.type==='r4p-patient-selected'){
     _progPatient = _normalizePatient(e.data.patient);
@@ -2423,6 +2484,7 @@ window.addEventListener('message', function(e){
       } catch(ex){}
       _loadSupaLibrary();
       _loadUserRole();
+      _fetchFavsFromSupabase();
     }
     // Auto-remplir le champ nom du patient + mettre à jour toute l'UI
     if(_progPatient){
@@ -2472,6 +2534,7 @@ function _normalizePatient(p){
         _progUid = pl.sub || null;
         _loadSupaLibrary();
         _loadUserRole();
+        _fetchFavsFromSupabase();
       }
     }
   } catch(ex){}
