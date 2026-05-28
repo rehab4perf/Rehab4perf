@@ -4806,6 +4806,19 @@ function _fetchCustomProtocolsFromSupabase(callback){
       _saveCustomProtocols(function(){ callback && callback(); });
       return;
     }
+    /* Sync builtin : toujours remplacer par la version PROTOCOLS_REF (code = source de vérité) */
+    var _builtinUpdated = false;
+    _customProtocols = _customProtocols.map(function(p){
+      var ref = PROTOCOLS_REF.find(function(r){ return r.id === p.id; });
+      if(ref){
+        var c = JSON.parse(JSON.stringify(ref));
+        delete c.isBuiltin;
+        c.isCustom = true;
+        _builtinUpdated = true;
+        return c;
+      }
+      return p;
+    });
     /* Merge : ajouter les entrees PROTOCOLS_REF manquantes (rattrapage migration partielle) */
     var existingIds = _customProtocols.map(function(p){ return p.id; });
     var missing = PROTOCOLS_REF.filter(function(p){ return existingIds.indexOf(p.id) === -1; });
@@ -4816,6 +4829,10 @@ function _fetchCustomProtocolsFromSupabase(callback){
         c.isCustom = true;
         _customProtocols.push(c);
       });
+      _saveCustomProtocols(function(){ callback && callback(); });
+      return;
+    }
+    if(_builtinUpdated){
       _saveCustomProtocols(function(){ callback && callback(); });
       return;
     }
