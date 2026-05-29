@@ -1617,6 +1617,7 @@ function _calNoteChipDragStart(e, noteId, date){
   e.dataTransfer.effectAllowed = 'copyMove';
   var chip = e.currentTarget;
   setTimeout(function(){ if(chip) chip.classList.add('dragging'); }, 0);
+  _showToast('⇧ Maj + déposer pour dupliquer');
 }
 
 function _calChipDragStart(e, evId, progId, date){
