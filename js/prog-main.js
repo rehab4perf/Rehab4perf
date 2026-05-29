@@ -354,24 +354,27 @@ function loadSeance(id) {
   _loadSeances();
   var s = _savedSeances.find(function(x){ return x.id===id; });
   if(!s) return;
-  if(!confirm('Charger "'+s.name+'" ? La séance en cours sera remplacée.')) return;
-  blocs = JSON.parse(JSON.stringify(s.blocs||[]));
-  activeBloc = blocs.length ? blocs[0].id : null;
-  _builderDate = '';
-  renderSession();
-  _updateBuilderTitle();
-  renderLib(document.getElementById('searchInput').value.toLowerCase());
-  _enterBuilderMode();
+  _confirmDialog({id:'cd-load-seance', emoji:'📂', title:'Charger "'+s.name+'" ?', body:'La séance en cours sera remplacée.', confirmLabel:'Charger', confirmColor:'#2563eb'}, function(){
+    blocs = JSON.parse(JSON.stringify(s.blocs||[]));
+    activeBloc = blocs.length ? blocs[0].id : null;
+    _builderDate = '';
+    renderSession();
+    _updateBuilderTitle();
+    renderLib(document.getElementById('searchInput').value.toLowerCase());
+    _enterBuilderMode();
+  });
 }
 
 function deleteSeance(id) {
   _loadSeances();
   var s = _savedSeances.find(function(x){ return x.id===id; });
-  if(!s || !confirm('Supprimer "'+s.name+'" ?')) return;
-  _savedSeances = _savedSeances.filter(function(x){ return x.id!==id; });
-  _persistSeances();
-  renderSeances();
-  if(typeof renderSidebarTemplates === 'function') renderSidebarTemplates();
+  if(!s) return;
+  _confirmDialog({id:'cd-del-seance-saved', emoji:'🗑️', title:'Supprimer "'+s.name+'" ?', body:'Cette action est irréversible.', confirmLabel:'Supprimer'}, function(){
+    _savedSeances = _savedSeances.filter(function(x){ return x.id!==id; });
+    _persistSeances();
+    renderSeances();
+    if(typeof renderSidebarTemplates === 'function') renderSidebarTemplates();
+  });
 }
 
 function _seanceTypeColor(type) {
@@ -1628,6 +1631,42 @@ function _confirmDeleteSeance(onConfirm){
   overlay.addEventListener('click', function(e){ if(e.target === overlay) _close(); });
 }
 
+/* ── Modale de confirmation générique ── */
+function _confirmDialog(opts, onConfirm) {
+  var id           = opts.id           || 'cd-generic-modal';
+  var emoji        = opts.emoji        || '❓';
+  var title        = opts.title        || 'Confirmation';
+  var body         = opts.body         || '';
+  var confirmLabel = opts.confirmLabel || 'Confirmer';
+  var confirmColor = opts.confirmColor || '#ef4444';
+  var cancelLabel  = opts.cancelLabel  || 'Annuler';
+
+  var existing = document.getElementById(id);
+  if(existing) existing.remove();
+
+  // \n → <br> pour l'affichage HTML
+  var bodyHtml = body.replace(/\n/g, '<br>');
+
+  var overlay = document.createElement('div');
+  overlay.id = id;
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = ''
+    +'<div style="background:#fff;border-radius:14px;padding:28px 24px 20px;max-width:360px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.22);text-align:center;max-height:90vh;overflow-y:auto;">'
+    +'  <div style="font-size:2rem;margin-bottom:10px;">'+emoji+'</div>'
+    +'  <p style="font-size:1rem;font-weight:600;margin:0 0 6px;">'+_escHtml(title)+'</p>'
+    +(bodyHtml ? '<p style="font-size:.875rem;color:#666;margin:0 0 22px;text-align:left;">'+bodyHtml+'</p>' : '<div style="margin-bottom:22px;"></div>')
+    +'  <div style="display:flex;gap:10px;justify-content:center;">'
+    +'    <button id="'+id+'-cancel" style="flex:1;padding:10px 0;border-radius:8px;border:1.5px solid #d1d5db;background:#fff;font-size:.9rem;font-weight:500;cursor:pointer;color:var(--text-dk);">'+cancelLabel+'</button>'
+    +'    <button id="'+id+'-ok" style="flex:1;padding:10px 0;border-radius:8px;border:none;background:'+confirmColor+';color:#fff;font-size:.9rem;font-weight:600;cursor:pointer;">'+confirmLabel+'</button>'
+    +'  </div>'
+    +'</div>';
+  document.body.appendChild(overlay);
+  function _close(){ overlay.remove(); }
+  document.getElementById(id+'-cancel').addEventListener('click', _close);
+  document.getElementById(id+'-ok').addEventListener('click', function(){ _close(); onConfirm(); });
+  overlay.addEventListener('click', function(e){ if(e.target === overlay) _close(); });
+}
+
 function _cancelTouchMove(){
   _touchMoveMode = null;
   var banner = document.getElementById('touchMoveBanner');
@@ -2718,20 +2757,21 @@ function doPublishTemplate(){
 }
 
 function unpublishLibTemplate(id){
-  if(!confirm('Retirer ce template de la bibliothèque partagée ?')) return;
-  _fetchRetry(SUPA_URL_P+'/rest/v1/templates_library?id=eq.'+id, {
-    method:'DELETE',
-    headers: _sbHeaders()
-  })
-  .then(function(r){
-    if(r.ok||r.status===204){
-      _showToast('🗑 Template retiré de la bibliothèque.');
-      renderLibraryTemplates();
-    } else {
-      r.text().then(function(t){ alert('Erreur '+r.status+' : '+t); });
-    }
-  })
-  .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
+  _confirmDialog({id:'cd-unpublish-lib', emoji:'📚', title:'Retirer ce template ?', body:'Ce template sera retiré de la bibliothèque partagée.', confirmLabel:'Retirer', confirmColor:'#d97706'}, function(){
+    _fetchRetry(SUPA_URL_P+'/rest/v1/templates_library?id=eq.'+id, {
+      method:'DELETE',
+      headers: _sbHeaders()
+    })
+    .then(function(r){
+      if(r.ok||r.status===204){
+        _showToast('🗑 Template retiré de la bibliothèque.');
+        renderLibraryTemplates();
+      } else {
+        r.text().then(function(t){ alert('Erreur '+r.status+' : '+t); });
+      }
+    })
+    .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
+  });
 }
 
 function loadLibraryTemplate(id){
@@ -2840,25 +2880,27 @@ function _draftRestore(){
     var nbExos = (d.blocs||[]).reduce(function(a,b){ return a+(b.exos||[]).length; },0);
     var ago = '';
     if(d.savedAt){ var t=new Date(d.savedAt); ago=' — '+t.toLocaleDateString('fr-FR')+' '+t.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); }
-    var msg = '📋 Brouillon non sauvegardé trouvé (' + nbExos + ' exercice'+(nbExos>1?'s':'')+ago+')';
-    if(d.activeGroupNom) msg += '\nProtocole : « ' + d.activeGroupNom + ' »';
-    msg += '\n\nRestaurer ce contenu ?';
-    if(!confirm(msg)) return;
-    blocs = d.blocs;
-    _notes = d.notes || '';
-    if(d.activeGroupId){
-      _activeGroupId    = d.activeGroupId;
-      _activeGroupNom   = d.activeGroupNom   || '';
-      _activePhaseOrdre = d.activePhaseOrdre || 1;
-      _updateActiveGroupBadge();
-    }
-    var pn = document.getElementById('patientName');
-    if(pn && d.patientName) pn.value = d.patientName;
-    renderSession();
-    _refreshSaveBtn();
-    _builderSaved = false;
-    _refreshDraftBadge();
-    _showToast('📋 Brouillon restauré — pensez à sauvegarder !');
+    var draftTitle = 'Brouillon non sauvegardé trouvé';
+    var draftBody = nbExos + ' exercice'+(nbExos>1?'s':'')+ago;
+    if(d.activeGroupNom) draftBody += '\nProtocole : « ' + d.activeGroupNom + ' »';
+    draftBody += '\n\nRestaurer ce contenu ?';
+    _confirmDialog({id:'cd-draft-restore', emoji:'📋', title:draftTitle, body:draftBody, confirmLabel:'Restaurer', confirmColor:'#2563eb'}, function(){
+      blocs = d.blocs;
+      _notes = d.notes || '';
+      if(d.activeGroupId){
+        _activeGroupId    = d.activeGroupId;
+        _activeGroupNom   = d.activeGroupNom   || '';
+        _activePhaseOrdre = d.activePhaseOrdre || 1;
+        _updateActiveGroupBadge();
+      }
+      var pn = document.getElementById('patientName');
+      if(pn && d.patientName) pn.value = d.patientName;
+      renderSession();
+      _refreshSaveBtn();
+      _builderSaved = false;
+      _refreshDraftBadge();
+      _showToast('📋 Brouillon restauré — pensez à sauvegarder !');
+    });
   } catch(e){}
 }
 
@@ -3077,21 +3119,22 @@ function loadTemplate(id){
 
 /* ── Supprimer un template ── */
 function deleteTemplate(id){
-  if(!confirm('Supprimer ce template ?')) return;
-  if(_progToken && _progUid){
-    _fetchRetry(SUPA_URL_P + '/rest/v1/templates?id=eq.' + id, {
-      method: 'DELETE', headers: _sbHeaders()
-    }).then(function(r){
-      if(r.ok){ renderTemplatesInBuilder(); renderSidebarTemplates(); }
-      else { alert('Erreur suppression.'); }
-    }).catch(function(){ alert('Erreur réseau.'); });
-  } else {
-    _loadTemplates();
-    _templates = _templates.filter(function(t){ return t.id !== id; });
-    _persistTemplates();
-    renderTemplatesInBuilder();
-    renderSidebarTemplates();
-  }
+  _confirmDialog({id:'cd-del-template', emoji:'🗑️', title:'Supprimer ce template ?', body:'Cette action est irréversible.', confirmLabel:'Supprimer'}, function(){
+    if(_progToken && _progUid){
+      _fetchRetry(SUPA_URL_P + '/rest/v1/templates?id=eq.' + id, {
+        method: 'DELETE', headers: _sbHeaders()
+      }).then(function(r){
+        if(r.ok){ renderTemplatesInBuilder(); renderSidebarTemplates(); }
+        else { alert('Erreur suppression.'); }
+      }).catch(function(){ alert('Erreur réseau.'); });
+    } else {
+      _loadTemplates();
+      _templates = _templates.filter(function(t){ return t.id !== id; });
+      _persistTemplates();
+      renderTemplatesInBuilder();
+      renderSidebarTemplates();
+    }
+  });
 }
 
 // ══════════════════════════════════════════════
@@ -3352,14 +3395,14 @@ function deleteGroup(id){
   var group   = (_groups||[]).find(function(g){ return String(g.id)===String(id); });
   var groupName = group ? (group.nom||'ce protocole') : 'ce protocole';
 
-  var msg = 'Supprimer le protocole « ' + groupName + ' » ?';
+  var confirmBody = '';
   if(phases.length > 0){
     var phaseList = phases.map(function(p){ return '• ' + (p.nom||'Sans nom'); }).join('\n');
-    msg += '\n\n⚠️ ' + phases.length + ' séance' + (phases.length>1?'s':'') + ' associée' + (phases.length>1?'s':'') + ' seront également supprimée' + (phases.length>1?'s':'') + ' :\n' + phaseList;
+    confirmBody += '⚠️ ' + phases.length + ' séance' + (phases.length>1?'s':'') + ' associée' + (phases.length>1?'s':'') + ' seront également supprimée' + (phases.length>1?'s':'') + ' :\n' + phaseList + '\n\n';
   }
-  msg += '\n\nCette action est irréversible.';
+  confirmBody += 'Cette action est irréversible.';
 
-  if(!confirm(msg)) return;
+  _confirmDialog({id:'cd-del-group', emoji:'🗑️', title:'Supprimer le protocole « ' + groupName + ' » ?', body:confirmBody, confirmLabel:'Supprimer'}, function(){
 
   if(_progToken && _progUid){
     /* 1. Supprimer les phases du groupe, puis 2. supprimer le groupe */
@@ -3387,6 +3430,7 @@ function deleteGroup(id){
     _sidebarProgs = (_sidebarProgs||[]).filter(function(p){ return String(p.group_id)!==String(id); });
     renderSidebarTemplates();
   }
+  }); // fin _confirmDialog deleteGroup
 }
 
 function _toggleGroup(id){
@@ -4198,10 +4242,11 @@ function openBuilderNew(){
 
 function closeBuilder(){
   if(blocs && blocs.length && !_builderSaved){
-    if(!confirm('⚠️ La séance contient du contenu non sauvegardé.\n\nFermer quand même ?')){
-      return;
-    }
-    _draftClear();
+    _confirmDialog({id:'cd-close-builder', emoji:'⚠️', title:'Contenu non sauvegardé', body:'La séance contient du contenu non sauvegardé.\n\nFermer quand même ?', confirmLabel:'Fermer quand même', confirmColor:'#d97706'}, function(){
+      _draftClear();
+      _exitBuilderMode();
+    });
+    return;
   }
   // Blocs vides : annuler le timer lazy en attente et vider le brouillon
   // (évite de restaurer un ancien brouillon si l'utilisateur a tout supprimé)
@@ -5180,11 +5225,12 @@ function _peAddPhase(){
 }
 
 function _peRemovePhase(uid){
-  if(!confirm('Supprimer cette phase ?')) return;
-  _peSyncPhasesFromDom();
-  _pePhasesData = _pePhasesData.filter(function(p){return p._uid!==uid;});
-  delete _peOpenPhases[uid];
-  _peRenderPhasesEditor();
+  _confirmDialog({id:'cd-del-phase', emoji:'🗑️', title:'Supprimer cette phase ?', body:'Cette action est irréversible.', confirmLabel:'Supprimer'}, function(){
+    _peSyncPhasesFromDom();
+    _pePhasesData = _pePhasesData.filter(function(p){return p._uid!==uid;});
+    delete _peOpenPhases[uid];
+    _peRenderPhasesEditor();
+  });
 }
 
 function _peMovePhase(uid,dir){
@@ -5436,11 +5482,12 @@ function _peAddBranch(){
 }
 
 function _peRemoveBranch(uid){
-  if(!confirm('Supprimer cette branche et tous ses blocs ?')) return;
-  _peSyncLibFromDom();
-  _peLibData.branches = _peLibData.branches.filter(function(b){return b._uid!==uid;});
-  delete _peOpenBranches[uid];
-  _peRenderLibEditor();
+  _confirmDialog({id:'cd-del-branch', emoji:'🗑️', title:'Supprimer cette branche ?', body:'La branche et tous ses blocs seront supprimés.\nCette action est irréversible.', confirmLabel:'Supprimer'}, function(){
+    _peSyncLibFromDom();
+    _peLibData.branches = _peLibData.branches.filter(function(b){return b._uid!==uid;});
+    delete _peOpenBranches[uid];
+    _peRenderLibEditor();
+  });
 }
 
 function _peMoveBranch(uid,dir){
@@ -5672,9 +5719,11 @@ function _saveProtoEditor(){
 
 function _deleteCustomProto(id){
   var proto = _customProtocols.find(function(p){ return p.id === id; });
-  if(!proto || !confirm('Supprimer le protocole « '+(proto.name||id)+' » ?')) return;
-  _customProtocols = _customProtocols.filter(function(p){ return p.id !== id; });
-  _saveCustomProtocols(function(){ renderProtocols(); });
+  if(!proto) return;
+  _confirmDialog({id:'cd-del-custom-proto', emoji:'🗑️', title:'Supprimer le protocole « '+(proto.name||id)+' » ?', body:'Cette action est irréversible.', confirmLabel:'Supprimer'}, function(){
+    _customProtocols = _customProtocols.filter(function(p){ return p.id !== id; });
+    _saveCustomProtocols(function(){ renderProtocols(); });
+  });
 }
 
 function _peExportJson(){
@@ -6441,9 +6490,10 @@ function _protoTlDeleteEvent(protoId, idx) {
   if(!data || !data.pp) return;
   var history = Array.isArray(data.pp.history) ? data.pp.history.slice() : [];
   if(!history[idx] || idx === 0) return; /* on ne supprime pas l'assignation */
-  if(!confirm('Supprimer cet événement de l\'historique ?')) return;
-  history.splice(idx, 1);
-  _protoTlSaveHistory(protoId, history);
+  _confirmDialog({id:'cd-del-tl-event', emoji:'🗑️', title:'Supprimer cet événement ?', body:'L\'événement sera retiré de l\'historique.', confirmLabel:'Supprimer'}, function(){
+    history.splice(idx, 1);
+    _protoTlSaveHistory(protoId, history);
+  });
 }
 
 /* ─── Sauvegarder history mis à jour ─────────────────────────── */
@@ -6465,13 +6515,14 @@ function _protoUnassign(protoId) {
   var data = _protoPatientData[protoId];
   if(!data || !data.pp) return;
   var patName = _progPatient ? ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim() : 'ce patient';
-  if(!confirm('Supprimer l\'assignation de ce protocole pour '+patName+' ?\nL\'historique et les critères cochés seront effacés.')) return;
-  _fetchRetry(SUPA_URL_P + '/rest/v1/patient_protocols?id=eq.'+data.pp.id, {
-    method: 'DELETE', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'})
-  }).then(function(r){
-    if(r.ok){ _showToast('Assignation supprimée.'); renderProtocols(); }
-    else { _showToast('Erreur suppression.', true); }
-  }).catch(function(){ _showToast('Erreur suppression.', true); });
+  _confirmDialog({id:'cd-unassign-proto', emoji:'⚠️', title:'Supprimer l\'assignation ?', body:'Supprimer l\'assignation de ce protocole pour '+patName+' ?\nL\'historique et les critères cochés seront effacés.', confirmLabel:'Supprimer', confirmColor:'#ef4444'}, function(){
+    _fetchRetry(SUPA_URL_P + '/rest/v1/patient_protocols?id=eq.'+data.pp.id, {
+      method: 'DELETE', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'})
+    }).then(function(r){
+      if(r.ok){ _showToast('Assignation supprimée.'); renderProtocols(); }
+      else { _showToast('Erreur suppression.', true); }
+    }).catch(function(){ _showToast('Erreur suppression.', true); });
+  });
 }
 
 /* ─── Assigner protocole au patient ─────────────────────────── */
