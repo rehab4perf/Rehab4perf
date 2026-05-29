@@ -763,10 +763,10 @@ function _buildDayChips(dateStr, cellDate){
   _calNotes.filter(function(n){ return n.date === dateStr; }).forEach(function(note){
     var lbl = note.title || (note.text ? note.text.slice(0,22)+(note.text.length>22?'…':'') : 'Note');
     var isPatient = note.type === 'patient';
-    _noteTouchMeta[note.id] = { title: lbl };
+    _noteTouchMeta[note.id] = { title: lbl, dateStr: note.date };
     var noteEvtAttrs = _isTouchDevice
       ? ' ontouchstart="_noteChipTouchStart(event,\''+note.id+'\')" ontouchmove="_noteChipTouchMove(event)" ontouchend="_noteChipTouchEnd(event,\''+note.id+'\')"'
-      : ' onclick="event.stopPropagation();_openCalNoteView(\''+note.id+'\')"';
+      : ' onclick="event.stopPropagation();_openCalNoteView(\''+note.id+'\')" draggable="true" ondragstart="_calNoteChipDragStart(event,\''+note.id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"';
     var noteMoreBtn = '<button class="cal-note-chip-more" ontouchend="event.stopPropagation();event.preventDefault();_showNoteActionSheet(\''+note.id+'\',\''+escJS(lbl)+'\')">⋮</button>';
     chips += '<div class="cal-note-chip '+(isPatient?'chip-patient':'chip-clinique')+'"'+noteEvtAttrs+' title="'+escH((note.title?note.title+'\n':'')+note.text)+'">'
       +noteMoreBtn
@@ -867,7 +867,16 @@ function _renderCalendarUI() {
 }
 
 function openCalPicker(dateStr) {
-  // Mode déplacement/duplication touch : tap sur une case = destination
+  // Mode déplacement/duplication touch notes
+  if(_noteTouchMoveMode){
+    var dn = _noteTouchMoveMode; _cancelNoteTouchMove();
+    if(dn.dateStr !== dateStr){
+      if(dn.duplicate) _calNoteDuplicateToDate(dn.noteId, dateStr);
+      else _calNoteMoveToDate(dn.noteId, dateStr);
+    }
+    return;
+  }
+  // Mode déplacement/duplication touch séances
   if(_touchMoveMode){
     var d = _touchMoveMode; _cancelTouchMove();
     if(d.dateStr !== dateStr){
@@ -1424,10 +1433,24 @@ function noteSheetEdit(){
   _openCalNoteView(noteId);
 }
 
+function noteSheetMove(){
+  if(!_noteSheetData) return;
+  var d = _noteSheetData; closeNoteSheet();
+  _noteTouchMoveMode = { noteId: d.noteId, dateStr: (_noteTouchMeta[d.noteId]||{}).dateStr || '', duplicate: false };
+  var txt = document.getElementById('touchMoveBannerTxt');
+  if(txt) txt.textContent = '↔️ Tapez sur le jour de destination pour déplacer';
+  var banner = document.getElementById('touchMoveBanner');
+  if(banner) banner.style.display = 'flex';
+}
+
 function noteSheetDuplicate(){
   if(!_noteSheetData) return;
-  var noteId = _noteSheetData.noteId; closeNoteSheet();
-  _duplicateCalNote(noteId);
+  var d = _noteSheetData; closeNoteSheet();
+  _noteTouchMoveMode = { noteId: d.noteId, dateStr: (_noteTouchMeta[d.noteId]||{}).dateStr || '', duplicate: true };
+  var txt = document.getElementById('touchMoveBannerTxt');
+  if(txt) txt.textContent = '📄 Tapez sur le jour de destination pour dupliquer';
+  var banner = document.getElementById('touchMoveBanner');
+  if(banner) banner.style.display = 'flex';
 }
 
 function noteSheetDelete(){
@@ -1439,11 +1462,59 @@ function noteSheetDelete(){
   });
 }
 
+var _noteTouchMoveMode = null; // {noteId, dateStr, duplicate:bool}
+
+function _cancelNoteTouchMove(){
+  _noteTouchMoveMode = null;
+  var banner = document.getElementById('touchMoveBanner');
+  if(banner) banner.style.display = 'none';
+}
+
 function _duplicateCalNote(noteId){
   _loadCalNotes();
   var note = _calNotes.find(function(n){ return n.id === noteId; });
   if(!note) return;
   var copy = { id:_genUUID(), date:note.date, title:note.title, text:note.text, type:note.type, createdAt:new Date().toISOString() };
+  _calNotes.push(copy);
+  _persistCalNotes();
+  if(copy.type === 'patient') _pushPatientMsg(copy);
+  else if(copy.type === 'clinique') _pushClinicalNote(copy);
+  renderCalendar();
+  _showToast('📄 Note dupliquée');
+}
+
+function _calNoteMoveToDate(noteId, targetDate){
+  _loadCalNotes();
+  var note = _calNotes.find(function(n){ return n.id === noteId; });
+  if(!note) return;
+  var oldDate = note.date;
+  note.date = targetDate;
+  _persistCalNotes();
+  if(note.type === 'clinique'){
+    _fetchRetry(SUPA_URL_P+'/rest/v1/clinical_notes?id=eq.'+noteId, {
+      method:'PATCH', headers: Object.assign({}, _sbHeaders(), {'Content-Type':'application/json'}),
+      body: JSON.stringify({ date: targetDate })
+    }).catch(function(){});
+  } else if(note.type === 'patient'){
+    _fetchRetry(SUPA_URL_P+'/rest/v1/patient_messages?id=eq.'+noteId, {
+      method:'PATCH', headers: Object.assign({}, _sbHeaders(), {'Content-Type':'application/json'}),
+      body: JSON.stringify({ date: targetDate })
+    }).catch(function(){});
+  }
+  renderCalendar();
+  _showToast('📝 Note déplacée', function(){
+    note.date = oldDate; _persistCalNotes();
+    if(note.type === 'clinique') _fetchRetry(SUPA_URL_P+'/rest/v1/clinical_notes?id=eq.'+noteId, { method:'PATCH', headers:Object.assign({},_sbHeaders(),{'Content-Type':'application/json'}), body:JSON.stringify({date:oldDate}) }).catch(function(){});
+    else if(note.type === 'patient') _fetchRetry(SUPA_URL_P+'/rest/v1/patient_messages?id=eq.'+noteId, { method:'PATCH', headers:Object.assign({},_sbHeaders(),{'Content-Type':'application/json'}), body:JSON.stringify({date:oldDate}) }).catch(function(){});
+    renderCalendar();
+  });
+}
+
+function _calNoteDuplicateToDate(noteId, targetDate){
+  _loadCalNotes();
+  var note = _calNotes.find(function(n){ return n.id === noteId; });
+  if(!note) return;
+  var copy = { id:_genUUID(), date:targetDate, title:note.title, text:note.text, type:note.type, createdAt:new Date().toISOString() };
   _calNotes.push(copy);
   _persistCalNotes();
   if(copy.type === 'patient') _pushPatientMsg(copy);
@@ -1538,7 +1609,15 @@ function _cancelTouchMove(){
 }
 
 // ── Drag & drop entre jours du calendrier ──
-var _calDrag = null; // {evId, progId, date}
+var _calDrag     = null; // {evId, progId, date}
+var _calNoteDrag = null; // {noteId, date}
+
+function _calNoteChipDragStart(e, noteId, date){
+  _calNoteDrag = { noteId: noteId, date: date };
+  e.dataTransfer.effectAllowed = 'copyMove';
+  var chip = e.currentTarget;
+  setTimeout(function(){ if(chip) chip.classList.add('dragging'); }, 0);
+}
 
 function _calChipDragStart(e, evId, progId, date){
   _calDrag = {evId: evId, progId: progId, date: date};
@@ -1559,7 +1638,7 @@ function _calChipDragEnd(e){
 }
 
 function _calDayDragOver(e, dateStr){
-  if(!_calDrag) return;
+  if(!_calDrag && !_calNoteDrag) return;
   e.preventDefault();
   var cell = e.currentTarget;
   if(e.shiftKey){
@@ -1584,6 +1663,15 @@ function _calDayDrop(e, targetDate){
   e.preventDefault();
   var cell = e.currentTarget;
   cell.classList.remove('drag-over','drag-over-copy');
+  /* Drop d'une note */
+  if(_calNoteDrag){
+    var nd = _calNoteDrag; _calNoteDrag = null;
+    if(nd.date !== targetDate){
+      if(e.shiftKey) _calNoteDuplicateToDate(nd.noteId, targetDate);
+      else _calNoteMoveToDate(nd.noteId, targetDate);
+    }
+    return;
+  }
   if(!_calDrag) return;
   var drag = _calDrag; _calDrag = null;
   if(drag.date === targetDate) return;
