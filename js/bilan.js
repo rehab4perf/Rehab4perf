@@ -2573,6 +2573,25 @@ function _saveSuiviRapide(){
   if(!_bilanUid){ showToast('⚠️ Session expirée — rechargez la page'); return; }
 
   var delta = _computeSuiviRapideDelta();
+
+  // Pour les tests dual (Atteint vs Sain / D vs G) : si un côté est dans le delta,
+  // forcer l'inclusion du côté partenaire (avec sa valeur DOM courante, si non-vide).
+  // Garantit que les deux courbes du graphique restent alignées sur le même axe temporel.
+  CHART_GROUPS.forEach(function(grp){
+    if(grp.type !== 'dual' || grp.computeA || grp.computeB) return; // skip computed/non-standard
+    var hasA = grp.idA in delta;
+    var hasB = grp.idB in delta;
+    if(!hasA && !hasB) return; // aucun côté modifié → ne rien forcer
+    if(!hasA){
+      var elA = document.querySelector('[data-metric-id="'+grp.idA+'"]');
+      if(elA && elA.value !== '') delta[grp.idA] = elA.value;
+    }
+    if(!hasB){
+      var elB = document.querySelector('[data-metric-id="'+grp.idB+'"]');
+      if(elB && elB.value !== '') delta[grp.idB] = elB.value;
+    }
+  });
+
   if(!Object.keys(delta).length){
     showToast('Aucune modification à enregistrer');
     return;
