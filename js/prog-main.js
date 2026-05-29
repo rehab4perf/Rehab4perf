@@ -763,7 +763,13 @@ function _buildDayChips(dateStr, cellDate){
   _calNotes.filter(function(n){ return n.date === dateStr; }).forEach(function(note){
     var lbl = note.title || (note.text ? note.text.slice(0,22)+(note.text.length>22?'…':'') : 'Note');
     var isPatient = note.type === 'patient';
-    chips += '<div class="cal-note-chip '+(isPatient?'chip-patient':'chip-clinique')+'" onclick="event.stopPropagation();_openCalNoteView(\''+note.id+'\')" title="'+escH((note.title?note.title+'\n':'')+note.text)+'">'
+    _noteTouchMeta[note.id] = { title: lbl };
+    var noteEvtAttrs = _isTouchDevice
+      ? ' ontouchstart="_noteChipTouchStart(event,\''+note.id+'\')" ontouchmove="_noteChipTouchMove(event)" ontouchend="_noteChipTouchEnd(event,\''+note.id+'\')"'
+      : ' onclick="event.stopPropagation();_openCalNoteView(\''+note.id+'\')"';
+    var noteMoreBtn = '<button class="cal-note-chip-more" ontouchend="event.stopPropagation();event.preventDefault();_showNoteActionSheet(\''+note.id+'\',\''+escJS(lbl)+'\')">⋮</button>';
+    chips += '<div class="cal-note-chip '+(isPatient?'chip-patient':'chip-clinique')+'"'+noteEvtAttrs+' title="'+escH((note.title?note.title+'\n':'')+note.text)+'">'
+      +noteMoreBtn
       +'<span>'+(isPatient?'💬':'🔒')+'</span><span class="cal-note-chip-text">'+escH(lbl)+'</span>'
       +'<button class="cal-note-chip-del" onclick="event.stopPropagation();_confirmDeleteNote(function(){_deleteCalNote(\''+note.id+'\');})">×</button>'
       +'</div>';
@@ -1266,6 +1272,7 @@ function _openCalNoteView(noteId) {
     +'<textarea class="cal-note-textarea" id="calNoteText" placeholder="Note, rappel, observation…">'+escH(note.text||'')+'</textarea>'
     +'<div style="display:flex;gap:8px;">'
     +'<button class="cal-note-save" style="flex:1;" onclick="_updateCalNote(\''+noteId+'\')">Mettre à jour</button>'
+    +'<button class="cal-note-save" style="flex:0 0 auto;background:var(--accent-ll,#EBF3FF);color:var(--accent);border:1px solid var(--accent-l,#C7DCFF);" onclick="_duplicateCalNote(\''+noteId+'\');closeCalPicker()" title="Dupliquer">📄</button>'
     +'<button class="cal-note-save danger" style="flex:0 0 auto;" onclick="_deleteCalNoteAndClose(\''+noteId+'\',\''+note.date+'\')">🗑</button>'
     +'</div>'
     +'</div>';
@@ -1360,6 +1367,90 @@ var _touchMoveMode   = null; // null | {evId, progId, dateStr, duplicate:bool}
 var _touchLongTimer  = null;
 var _touchStartXY    = null;
 var _touchDidLong    = false;
+
+// ── Touch action sheet notes (iPad/mobile) ──
+var _noteTouchMeta        = {};    // noteId → {title}
+var _noteSheetData        = null;
+var _noteSheetJustOpened  = false;
+var _noteTouchTimer       = null;
+var _noteTouchStartXY     = null;
+var _noteTouchDidLong     = false;
+
+function _noteChipTouchStart(e, noteId){
+  e.stopPropagation();
+  _noteTouchDidLong = false;
+  _noteTouchStartXY = {x: e.touches[0].clientX, y: e.touches[0].clientY};
+  _noteTouchTimer = setTimeout(function(){
+    _noteTouchDidLong = true;
+    var d = _noteTouchMeta[noteId] || {};
+    _showNoteActionSheet(noteId, d.title || 'Note');
+  }, 500);
+}
+
+function _noteChipTouchMove(e){
+  if(!_noteTouchStartXY) return;
+  var dx = e.touches[0].clientX - _noteTouchStartXY.x;
+  var dy = e.touches[0].clientY - _noteTouchStartXY.y;
+  if(dx*dx + dy*dy > 100){ clearTimeout(_noteTouchTimer); _noteTouchTimer = null; _noteTouchStartXY = null; }
+}
+
+function _noteChipTouchEnd(e, noteId){
+  clearTimeout(_noteTouchTimer); _noteTouchTimer = null;
+  if(_noteTouchDidLong){ _noteTouchDidLong = false; e.preventDefault(); return; }
+  e.preventDefault();
+  _openCalNoteView(noteId);
+}
+
+function _showNoteActionSheet(noteId, title){
+  _noteSheetData = { noteId: noteId };
+  var titleEl = document.getElementById('noteSheetTitle');
+  if(titleEl) titleEl.textContent = title || 'Note';
+  document.getElementById('noteSheet').style.display = 'block';
+  document.getElementById('noteSheetOverlay').style.display = 'block';
+  _noteSheetJustOpened = true;
+  setTimeout(function(){ _noteSheetJustOpened = false; }, 350);
+}
+
+function closeNoteSheet(){
+  if(_noteSheetJustOpened) return;
+  document.getElementById('noteSheet').style.display = 'none';
+  document.getElementById('noteSheetOverlay').style.display = 'none';
+  _noteSheetData = null;
+}
+
+function noteSheetEdit(){
+  if(!_noteSheetData) return;
+  var noteId = _noteSheetData.noteId; closeNoteSheet();
+  _openCalNoteView(noteId);
+}
+
+function noteSheetDuplicate(){
+  if(!_noteSheetData) return;
+  var noteId = _noteSheetData.noteId; closeNoteSheet();
+  _duplicateCalNote(noteId);
+}
+
+function noteSheetDelete(){
+  if(!_noteSheetData) return;
+  var noteId = _noteSheetData.noteId; closeNoteSheet();
+  _confirmDeleteNote(function(){
+    _deleteCalNote(noteId);
+    _showToast('Note supprimée');
+  });
+}
+
+function _duplicateCalNote(noteId){
+  _loadCalNotes();
+  var note = _calNotes.find(function(n){ return n.id === noteId; });
+  if(!note) return;
+  var copy = { id:_genUUID(), date:note.date, title:note.title, text:note.text, type:note.type, createdAt:new Date().toISOString() };
+  _calNotes.push(copy);
+  _persistCalNotes();
+  if(copy.type === 'patient') _pushPatientMsg(copy);
+  else if(copy.type === 'clinique') _pushClinicalNote(copy);
+  renderCalendar();
+  _showToast('📄 Note dupliquée');
+}
 
 function _chipTouchStart(e, evId){
   e.stopPropagation();

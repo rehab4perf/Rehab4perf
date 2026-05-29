@@ -2142,6 +2142,16 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   <button class="touch-sheet-btn touch-sheet-cancel" onclick="closeTouchSheet()">Annuler</button>
 </div>
 
+<!-- ═══ ACTION SHEET NOTES (iPad/mobile) ═══ -->
+<div class="touch-sheet-overlay" id="noteSheetOverlay" onclick="closeNoteSheet()" style="display:none"></div>
+<div class="touch-sheet" id="noteSheet" style="display:none">
+  <div class="touch-sheet-title" id="noteSheetTitle">Note</div>
+  <button class="touch-sheet-btn" onclick="noteSheetEdit()">✏️ Modifier</button>
+  <button class="touch-sheet-btn" onclick="noteSheetDuplicate()">📄 Dupliquer</button>
+  <button class="touch-sheet-btn danger" onclick="noteSheetDelete()">🗑 Supprimer</button>
+  <button class="touch-sheet-btn touch-sheet-cancel" onclick="closeNoteSheet()">Annuler</button>
+</div>
+
 <!-- ═══════ POPOVER APERÇU RAPIDE BIBLIOTHÈQUE ═══════ -->
 <div class="lib-preview-pop" id="libPreviewPop" style="display:none"
   onmouseenter="_libPreviewKeep()" onmouseleave="_libPreviewLeave()"></div>
