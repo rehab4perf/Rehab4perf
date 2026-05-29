@@ -1002,15 +1002,17 @@ function addCalEventCloud(progId) {
 }
 
 function removeCalEventCloud(id) {
-  if(!confirm('Retirer cette séance du calendrier ?')) return;
-  _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees?id=eq.' + id, {
-    method: 'DELETE', headers: _sbHeaders()
-  })
-  .then(function(r){
-    if(!r.ok){ return r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); }); }
-    renderCalendar();
-  })
-  .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
+  _confirmDeleteSeance(function(){
+    _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees?id=eq.' + id, {
+      method: 'DELETE', headers: _sbHeaders()
+    })
+    .then(function(r){
+      if(!r.ok){ return r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); }); }
+      renderCalendar();
+      _showToast('Séance supprimée');
+    })
+    .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
+  });
 }
 
 // ── Notes calendrier ──────────────────────────────────────────────────────────
@@ -1596,10 +1598,34 @@ function touchSheetDuplicate(){
 function touchSheetDelete(){
   if(!_touchSheetData) return;
   var evId = _touchSheetData.evId; closeTouchSheet();
-  if(confirm('Retirer cette séance du calendrier ?')){
+  _confirmDeleteSeance(function(){
     _fetchRetry(SUPA_URL_P+'/rest/v1/seances_planifiees?id=eq.'+evId, {method:'DELETE', headers:_sbHeaders()})
-      .then(function(r){ if(r.ok) renderCalendar(); });
-  }
+      .then(function(r){ if(r.ok){ renderCalendar(); _showToast('Séance supprimée'); } });
+  });
+}
+
+/* ── Modale de confirmation avant suppression d'une séance ── */
+function _confirmDeleteSeance(onConfirm){
+  var existing = document.getElementById('del-seance-confirm-modal');
+  if(existing) existing.remove();
+  var overlay = document.createElement('div');
+  overlay.id = 'del-seance-confirm-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = ''
+    +'<div style="background:#fff;border-radius:14px;padding:28px 24px 20px;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.22);text-align:center;">'
+    +'  <div style="font-size:2rem;margin-bottom:10px;">🗑️</div>'
+    +'  <p style="font-size:1rem;font-weight:600;margin:0 0 6px;">Retirer cette séance ?</p>'
+    +'  <p style="font-size:.875rem;color:#666;margin:0 0 22px;">La séance sera retirée du calendrier.</p>'
+    +'  <div style="display:flex;gap:10px;justify-content:center;">'
+    +'    <button id="del-seance-cancel" style="flex:1;padding:10px 0;border-radius:8px;border:1.5px solid #d1d5db;background:#fff;font-size:.9rem;font-weight:500;cursor:pointer;color:var(--text-dk);">Annuler</button>'
+    +'    <button id="del-seance-ok" style="flex:1;padding:10px 0;border-radius:8px;border:none;background:#ef4444;color:#fff;font-size:.9rem;font-weight:600;cursor:pointer;">Supprimer</button>'
+    +'  </div>'
+    +'</div>';
+  document.body.appendChild(overlay);
+  function _close(){ overlay.remove(); }
+  document.getElementById('del-seance-cancel').addEventListener('click', _close);
+  document.getElementById('del-seance-ok').addEventListener('click', function(){ _close(); onConfirm(); });
+  overlay.addEventListener('click', function(e){ if(e.target === overlay) _close(); });
 }
 
 function _cancelTouchMove(){
@@ -1625,6 +1651,7 @@ function _calChipDragStart(e, evId, progId, date){
   e.dataTransfer.effectAllowed = 'copyMove';
   var chip = e.currentTarget;
   setTimeout(function(){ if(chip) chip.classList.add('dragging'); }, 0);
+  _showToast('⇧ Maj + déposer pour dupliquer');
 }
 
 var _calDragJustEnded = false;
