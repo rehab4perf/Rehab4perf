@@ -3272,6 +3272,9 @@ function _buildAllTestsHtml() {
         var isNeg = val === 'Négatif' || val === 'Pas validé';
         if (selEl && (isPos || isNeg)) {
           var tname = (cfg.items[ri] || '').replace(/<[^>]*>/g, '').trim();
+          // Ajouter la latéralité pour les tables bilatérales (clé se terminant par -d ou -g)
+          if (/-d$/.test(tKey)) tname += ' — Droit';
+          else if (/-g$/.test(tKey)) tname += ' — Gauche';
           var noteVal = noteEl ? noteEl.value : '';
           var isFonc = cfg.type === 'fonc';
           var tag, tagCls;
