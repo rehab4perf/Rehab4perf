@@ -2796,7 +2796,9 @@ var PAIN_ZONES_CONFIG = [
   { key:'rachis-c', label:'Rachis Cerv.',     hdr:['rachis','fonc-rachis'] },
   { key:'rachis-l', label:'Rachis Lomb.',     hdr:['rachis','fonc-rachis'] },
   { key:'hanche',   label:'Hanche',           hdr:['hanche','fonc-mi','musc'] },
+  { key:'cuisse',   label:'Cuisse',           hdr:['fonc-mi'] },
   { key:'genou',    label:'Genou',            hdr:['genou','fonc-mi','musc'] },
+  { key:'jambe',    label:'Jambe',            hdr:['fonc-mi'] },
   { key:'cheville', label:'Cheville',         hdr:['pied','fonc-mi'] },
   { key:'pied',     label:'Pied',             hdr:['pied','fonc-mi'] },
 ];
@@ -5174,7 +5176,7 @@ function _updateSideLabels(){
     { zones:['hanche'],                           pages:['page-hanche'] },
     { zones:['cheville','pied'],                  pages:['page-pied'] },
     { zones:['rachis-c','rachis-l'],              pages:['page-rachis','page-fonctionnelsRachis'] },
-    { zones:['genou','hanche','cheville','pied'], pages:['page-fonctionnels'] }
+    { zones:['genou','hanche','cheville','pied','cuisse','jambe'], pages:['page-fonctionnels'] }
   ];
   SCOPES.forEach(function(sc){
     var cote = _getCoteForScope(sc.zones);
