@@ -462,7 +462,8 @@ function renderCalendar() {
         // Ignorer si le patient a changé entre-temps (fetch obsolète)
         if(!_progPatient || _progPatient.id !== _fetchPatientId) return;
         _cloudCalEvents = Array.isArray(data) ? data : [];
-        _renderCalendarUI();
+        // Garantir que J0 est disponible pour le rendu des chips J+
+        _ensureJ0ForPatient(_fetchPatientId, function(){ _renderCalendarUI(); });
       })
       .catch(function(){ _cloudCalEvents = []; _renderCalendarUI(); });
   } else {
@@ -1166,6 +1167,23 @@ function _getJ0ForPatient(patId) {
   return earliest;
 }
 
+/* S'assure que J0 est en localStorage pour le patient (fetch patient_protocols si besoin) */
+function _ensureJ0ForPatient(patId, callback) {
+  if(_getJ0(patId)){ callback(); return; } // déjà stocké
+  if(!_progToken){ callback(); return; }   // pas de session → skip
+  var url = SUPA_URL_P + '/rest/v1/patient_protocols?patient_id=eq.' + patId
+    + '&select=started_at&order=started_at.asc&limit=1';
+  _fetchRetry(url, { headers: _sbHeaders() })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(Array.isArray(d) && d.length && d[0].started_at){
+        _saveJ0(patId, d[0].started_at.slice(0, 10));
+      }
+      callback();
+    })
+    .catch(function(){ callback(); });
+}
+
 /* Calcule J+ (peut être négatif) entre une date de séance et J0 */
 function _computeJPlus(dateStr, j0Str) {
   if(!j0Str || !dateStr) return null;
@@ -1823,12 +1841,9 @@ function _calDuplicateEvent(progId, targetDate){
   .then(function(data){
     var src = Array.isArray(data) ? data[0] : data;
     if(!src){ alert('Programme source introuvable.'); return; }
-    // Mettre à jour le nom si auto-généré ("Séance du X mois") pour refléter la nouvelle date
-    var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
-    var tp = targetDate.split('-');
-    var targetLabel = 'Séance du '+parseInt(tp[2])+' '+months[parseInt(tp[1])-1];
-    var srcNom = src.nom || '';
-    var nomCopie = /^Séance du \d/.test(srcNom) ? targetLabel : srcNom;
+    // Conserver le nom source tel quel (la date est visible via J+ dans le chip)
+    var srcNom = src.nom || 'Programme';
+    var nomCopie = srcNom;
     var today = new Date().toISOString().split('T')[0];
     _fetchRetry(SUPA_URL_P+'/rest/v1/programmes', {
       method:'POST', headers:_sbHeaders(),
@@ -4220,9 +4235,8 @@ function _saveAndPlanForDate(){
   if(!_builderDate){ return; }
   var btn = document.getElementById('prog-cloud-save-btn');
   btn.disabled = true; btn.textContent = '⏳ Sauvegarde…';
-  var p = _builderDate.split('-');
-  var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
-  var nomProg = (document.getElementById('patientName')||{}).value || ('Séance du '+parseInt(p[2])+' '+months[parseInt(p[1])-1]);
+  var _patName = _progPatient ? ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim() : '';
+  var nomProg = (document.getElementById('patientName')||{}).value || _patName || 'Programme';
   var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), notes: getNotes() };
   var today = new Date().toISOString().split('T')[0];
   var dateToSchedule = _builderDate;
