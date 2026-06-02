@@ -406,14 +406,12 @@ body {
 }
 .cr-patho-btn:hover { border-color: var(--border2); color: var(--text); }
 .cr-patho-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
-.cr-articu-chip {
-  border: 1.5px solid var(--border); border-radius: 20px;
-  background: var(--surface); font-size: .74rem; font-weight: 500;
-  color: var(--text2); padding: 4px 10px; cursor: pointer;
-  transition: background .13s, border-color .13s, color .13s; font-family: inherit;
-}
-.cr-articu-chip:hover { border-color: #0891B2; color: #0891B2; }
-.cr-articu-chip.active { background: #0891B2; border-color: #0891B2; color: #fff; font-weight: 700; }
+.cr-articu-list { display:flex; flex-wrap:wrap; gap:6px; min-height:20px; margin-bottom:6px; }
+.cr-articu-add-row { display:flex; gap:6px; align-items:center; margin-bottom:8px; }
+.cr-articu-add-sel { flex:1; padding:4px 8px; border:1px solid var(--border); border-radius:6px; font-size:.8rem; background:#fff; font-family:inherit; }
+.cr-articu-add-sel:focus { border-color:#0891B2; outline:none; }
+.cr-articu-add-btn { padding:4px 12px; border-radius:6px; border:1.5px solid #0891B2; background:#0891B2; color:#fff; font-size:.78rem; font-weight:700; cursor:pointer; font-family:inherit; white-space:nowrap; }
+.cr-articu-add-btn:hover { background:#0369a1; border-color:#0369a1; }
 .cr-amp-articu-section { margin-bottom:10px; }
 .cr-amp-articu-title { font-size:.68rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:#0891B2; margin-bottom:6px; padding-bottom:4px; border-bottom:1.5px solid #CFFAFE; }
 .cr-toggle-row {
@@ -1384,7 +1382,13 @@ body {
           <span>Pathologie</span>
           <button class="cr-amp-cfg-btn" onclick="crOpenPathoConfig()" title="Configurer les pathologies (admin)">⚙</button>
         </div>
-        <div id="cr-articu-chips" class="cr-articu-chips-wrap" style="margin-bottom:8px;display:flex;flex-wrap:wrap;gap:6px;"></div>
+        <div id="cr-articu-list" class="cr-articu-list"></div>
+        <div class="cr-articu-add-row">
+          <select id="cr-articu-sel" class="cr-articu-add-sel">
+            <option value="">— Sélectionner une articulation —</option>
+          </select>
+          <button type="button" class="cr-articu-add-btn" onclick="crAddArticu()">+ Ajouter</button>
+        </div>
         <div class="cr-patho-grid" id="cr-patho-grid-dynamic"></div>
         <div class="cr-fg">
           <label for="cr-patho-detail">Détail pathologie</label>
@@ -5097,34 +5101,66 @@ _updateOutilsPatientBtns();
   };
 
   /* ── Rend les chips d'articulation ── */
-  function crInitAmpChips() {
-    var wrap = document.getElementById('cr-articu-chips');
-    if (!wrap) return;
-    wrap.innerHTML = '';
+  /* Peuple le select dropdown avec les articulations disponibles */
+  function crInitAmpSelect() {
+    var sel = document.getElementById('cr-articu-sel');
+    if (!sel) return;
+    var cur = sel.value;
+    sel.innerHTML = '<option value="">— Sélectionner une articulation —</option>';
     Object.keys(crAmpConfig).forEach(function(k) {
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'cr-articu-chip' + (crArticuList.indexOf(k) !== -1 ? ' active' : '');
-      btn.dataset.key = k;
-      btn.textContent = crAmpConfig[k].label;
-      btn.onclick = function() { crToggleArticu(this.dataset.key); };
-      wrap.appendChild(btn);
+      var opt = document.createElement('option');
+      opt.value = k; opt.textContent = crAmpConfig[k].label;
+      sel.appendChild(opt);
     });
+    if (cur && crAmpConfig[cur]) sel.value = cur;
+    crRenderArticuList();
     crRenderPathoButtons();
   }
 
-  /* Alias backward-compat (appelé par crSaveAmpConfig) */
-  function crInitAmpSelect() { crInitAmpChips(); }
-  window.crOnArticuChange = function() {}; // no-op, remplacé par crToggleArticu
+  /* Rend les chips d'articulations sélectionnées */
+  function crRenderArticuList() {
+    var list = document.getElementById('cr-articu-list');
+    if (!list) return;
+    if (!crArticuList.length) {
+      list.innerHTML = '<span style="font-size:.78rem;color:var(--text3);font-style:italic;">Aucune articulation sélectionnée</span>';
+      return;
+    }
+    list.innerHTML = crArticuList.map(function(k) {
+      var lbl = crAmpConfig[k] ? crAmpConfig[k].label : k;
+      return '<span class="pz-chip" style="background:#E0F2FE;color:#0369a1;border:1.5px solid #BAE6FD;">'
+        + lbl
+        + '<button class="pz-chip-del" onclick="crRemoveArticu(\''+k+'\')" title="Retirer">×</button>'
+        + '</span>';
+    }).join('');
+  }
 
-  /* Toggle une articulation dans crArticuList */
-  window.crToggleArticu = function(key) {
-    var idx = crArticuList.indexOf(key);
-    if (idx !== -1) crArticuList.splice(idx, 1);
-    else             crArticuList.push(key);
-    crAmpArticu = crArticuList[0] || ''; // alias compat
-    crInitAmpChips();
+  /* Alias → crInitAmpChips appelé par crSaveAmpConfig */
+  function crInitAmpChips() { crInitAmpSelect(); }
+  window.crOnArticuChange = function() {};
+
+  /* Ajouter une articulation depuis le select */
+  window.crAddArticu = function() {
+    var sel = document.getElementById('cr-articu-sel');
+    var key = sel ? sel.value : '';
+    if (!key || !crAmpConfig[key]) return;
+    if (crArticuList.indexOf(key) !== -1) return; // déjà présente
+    crArticuList.push(key);
+    crAmpArticu = crArticuList[0] || '';
+    if (sel) sel.value = ''; // reset dropdown
+    crRenderArticuList();
     crRenderAmpFields();
+    crRenderPathoButtons();
+    crRenderSignRows();
+    crRenderTestRows();
+  };
+
+  /* Retirer une articulation */
+  window.crRemoveArticu = function(key) {
+    crArticuList = crArticuList.filter(function(k){ return k !== key; });
+    crAmpArticu = crArticuList[0] || '';
+    crRenderArticuList();
+    crRenderAmpFields();
+    crRenderPathoButtons();
     crRenderSignRows();
     crRenderTestRows();
   };
@@ -5200,7 +5236,7 @@ _updateOutilsPatientBtns();
     });
     if (added) {
       crAmpArticu = crArticuList[0] || '';
-      crInitAmpChips();
+      crRenderArticuList();
       crRenderAmpFields();
       crRenderSignRows();
       crRenderTestRows();
@@ -6509,7 +6545,9 @@ _updateOutilsPatientBtns();
     crPatientSexe = '';
     crAmpArticu = '';
     crArticuList = [];
-    crInitAmpChips();
+    var artSel = document.getElementById('cr-articu-sel');
+    if (artSel) artSel.value = '';
+    crRenderArticuList();
     crRenderAmpFields();
     document.querySelectorAll('.cr-patho-btn').forEach(function(b){ b.classList.remove('active'); });
     crSignConfig.forEach(function(s){
