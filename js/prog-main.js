@@ -1841,9 +1841,10 @@ function _calDuplicateEvent(progId, targetDate){
   .then(function(data){
     var src = Array.isArray(data) ? data[0] : data;
     if(!src){ alert('Programme source introuvable.'); return; }
-    // Conserver le nom source tel quel (la date est visible via J+ dans le chip)
-    var srcNom = src.nom || 'Programme';
-    var nomCopie = srcNom;
+    // Nom = patient (pas le nom source) — la date est visible via J+ dans le chip
+    var nomCopie = _progPatient
+      ? ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim() || 'Programme'
+      : 'Programme';
     var today = new Date().toISOString().split('T')[0];
     _fetchRetry(SUPA_URL_P+'/rest/v1/programmes', {
       method:'POST', headers:_sbHeaders(),
@@ -4257,7 +4258,9 @@ function _saveAndPlanForDate(){
       btn.disabled = false;
       if(!r2.ok){ r2.json().then(function(e){ alert('Erreur planification : '+JSON.stringify(e)); }); _refreshSaveBtn(); return; }
       _draftClear();
-      _showToast('✓ Séance planifiée le '+parseInt(p[2])+' '+months[parseInt(p[1])-1]+' !');
+      var _tp = (_builderDate||'').split('-');
+      var _months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+      _showToast('✓ Séance planifiée le '+parseInt(_tp[2]||0)+' '+(_months[parseInt(_tp[1]||1)-1]||'')+' !');
       _resetBuilderState();
       closeBuilder();
       renderCalendar();
