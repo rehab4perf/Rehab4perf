@@ -1089,10 +1089,13 @@ function _renderCardioBloc(b, idx){
     return '<option value="'+e.val+'"'+(b.effort_type===e.val?' selected':'')+'>'+e.label+'</option>';
   }).join('');
 
-  var h = '<div class="bloc cardio-bloc" id="bloc-'+bid+'" draggable="true" ondragstart="blocDragStart(event,'+idx+')" ondragover="blocDragOver(event,this,'+idx+')" ondrop="blocDrop(event,this,'+idx+')" ondragend="blocDragEnd()">';
+  var h = '<div class="bloc cardio-bloc" id="bloc-'+bid+'">';
   // Header
   h += '<div class="bloc-header" data-blocid="'+bid+'" style="opacity:'+(isActive?'1':'.75')+'" onclick="setActiveBloc(\''+bid+'\')">';
-  h += '<span class="bloc-drag-handle" onmousedown="event.stopPropagation()" title="Glisser pour réordonner">⋮⋮</span>';
+  h += '<span class="bloc-move-btns">'
+    +  '<button class="bloc-move-btn"'+(idx===0?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',-1)" title="Monter">↑</button>'
+    +  '<button class="bloc-move-btn"'+(idx===blocs.length-1?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',1)" title="Descendre">↓</button>'
+    +  '</span>';
   h += '<input class="bloc-title-input" value="'+escH(b.title)+'" placeholder="Nom du bloc" oninput="updateBlocTitle(\''+bid+'\',this.value)" onclick="event.stopPropagation()">';
   h += '<span class="cardio-tag">🏃 Cardio</span>';
   h += '<button class="bloc-del-btn" onclick="event.stopPropagation();deleteBloc(\''+bid+'\')" title="Supprimer le bloc"></button>';
@@ -1576,95 +1579,25 @@ function _shareProgById(id){
 /* ================================================================
    DRAG & DROP EXERCICES
    ================================================================ */
-var _exoDrag = {blocId:null, fromIdx:null};
-
-function exoDragStart(e, blocId, fromIdx){
-  _exoDrag = {blocId:blocId, fromIdx:fromIdx};
-  e.dataTransfer.effectAllowed = 'move';
-  e.dataTransfer.setData('text/plain', String(fromIdx));
-  var row = e.currentTarget;
-  setTimeout(function(){ row.classList.add('exo-dragging'); }, 0);
-}
-
-function exoDragOver(e, el, blocId){
-  if(!_exoDrag.blocId || _exoDrag.blocId !== blocId){ return; }
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-  var rect = el.getBoundingClientRect();
-  var before = e.clientY < rect.top + rect.height / 2;
-  document.querySelectorAll('.exo-row').forEach(function(r){ r.classList.remove('drag-top','drag-bot'); });
-  el.classList.add(before ? 'drag-top' : 'drag-bot');
-}
-
-function exoDrop(e, el, blocId, toIdx){
-  e.preventDefault();
-  if(!_exoDrag.blocId || _exoDrag.blocId !== blocId){ exoDragEnd(); return; }
-  var fromIdx = _exoDrag.fromIdx;
-  var rect = el.getBoundingClientRect();
-  var before = e.clientY < rect.top + rect.height / 2;
-  var insertAt = before ? toIdx : toIdx + 1;
-  if(insertAt > fromIdx) insertAt--;
-  exoDragEnd();
-  if(insertAt === fromIdx) return;
+/* ── Réordonnancement des exercices ─────────────────────────────────────── */
+function moveExo(blocId, idx, dir){
   var bloc = blocs.find(function(b){ return b.id === blocId; });
   if(!bloc) return;
-  var exo = bloc.exos.splice(fromIdx, 1)[0];
-  bloc.exos.splice(insertAt, 0, exo);
+  var newIdx = idx + dir;
+  if(newIdx < 0 || newIdx >= bloc.exos.length) return;
+  var moved = bloc.exos.splice(idx, 1)[0];
+  bloc.exos.splice(newIdx, 0, moved);
   renderSession();
 }
 
-function exoDragEnd(){
-  _exoDrag = {blocId:null, fromIdx:null};
-  document.querySelectorAll('.exo-row').forEach(function(r){
-    r.classList.remove('exo-dragging','drag-top','drag-bot');
-    r.style.opacity = '';
-  });
-}
-
-/* ── Drag-and-drop des blocs ────────────────────────────────────────────── */
-var _blocDrag = { fromIdx: null };
-
-function blocDragStart(e, idx){
-  // Ignorer si le drag vient d'un élément interactif (input, select, button)
-  if(['INPUT','SELECT','TEXTAREA','BUTTON'].indexOf(e.target.tagName) > -1){ e.preventDefault(); return; }
-  _blocDrag.fromIdx = idx;
-  e.dataTransfer.effectAllowed = 'move';
-  e.dataTransfer.setData('text/plain', String(idx));
-  var el = e.currentTarget;
-  setTimeout(function(){ el.classList.add('bloc-dragging'); }, 0);
-}
-
-function blocDragOver(e, el, idx){
-  if(_blocDrag.fromIdx === null) return;
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-  var rect = el.getBoundingClientRect();
-  var before = e.clientY < rect.top + rect.height / 2;
-  document.querySelectorAll('#sessionArea .bloc').forEach(function(b){ b.classList.remove('bloc-drag-top','bloc-drag-bot'); });
-  el.classList.add(before ? 'bloc-drag-top' : 'bloc-drag-bot');
-}
-
-function blocDrop(e, el, toIdx){
-  e.preventDefault();
-  if(_blocDrag.fromIdx === null){ blocDragEnd(); return; }
-  var fromIdx = _blocDrag.fromIdx;
-  var rect = el.getBoundingClientRect();
-  var before = e.clientY < rect.top + rect.height / 2;
-  var insertAt = before ? toIdx : toIdx + 1;
-  if(insertAt > fromIdx) insertAt--;
-  blocDragEnd();
-  if(insertAt === fromIdx) return;
-  var moved = blocs.splice(fromIdx, 1)[0];
-  blocs.splice(insertAt, 0, moved);
+/* ── Réordonnancement des blocs ─────────────────────────────────────────── */
+function moveBloc(idx, dir){
+  var newIdx = idx + dir;
+  if(newIdx < 0 || newIdx >= blocs.length) return;
+  var moved = blocs.splice(idx, 1)[0];
+  blocs.splice(newIdx, 0, moved);
   renderSession();
-  _draftSaveLazy();
-}
-
-function blocDragEnd(){
-  _blocDrag.fromIdx = null;
-  document.querySelectorAll('#sessionArea .bloc').forEach(function(b){
-    b.classList.remove('bloc-dragging','bloc-drag-top','bloc-drag-bot');
-  });
+  if(typeof _draftSaveLazy === 'function') _draftSaveLazy();
 }
 
 /* ================================================================
@@ -1740,9 +1673,12 @@ function renderSession(){
     if(b.type === 'cardio'){ html += _renderCardioBloc(b, idx); return; }
     // ── Bloc Renforcement ──
     var isActive = b.id===activeBloc;
-    html += '<div class="bloc" id="bloc-'+b.id+'" draggable="true" ondragstart="blocDragStart(event,'+idx+')" ondragover="blocDragOver(event,this,'+idx+')" ondrop="blocDrop(event,this,'+idx+')" ondragend="blocDragEnd()">';
+    html += '<div class="bloc" id="bloc-'+b.id+'">';
     html += '<div class="bloc-header" data-blocid="'+b.id+'" style="opacity:'+(isActive?'1':'.8')+'" onclick="setActiveBloc(\''+b.id+'\')">';
-    html += '<span class="bloc-drag-handle" title="Glisser pour réordonner">⋮⋮</span>';
+    html += '<span class="bloc-move-btns">'
+          + '<button class="bloc-move-btn"'+(idx===0?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',-1)" title="Monter">↑</button>'
+          + '<button class="bloc-move-btn"'+(idx===blocs.length-1?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',1)" title="Descendre">↓</button>'
+          + '</span>';
     html += '<input class="bloc-title-input" value="'+escH(b.title)+'" placeholder="Nom du bloc" oninput="updateBlocTitle(\''+b.id+'\',this.value)">';
     html += '<button class="bloc-del-btn" onclick="event.stopPropagation();deleteBloc(\''+b.id+'\')" title="Supprimer le bloc"></button>';
     html += '</div>';
@@ -1813,15 +1749,10 @@ function renderSession(){
           html += '<div class="chain-group" style="--chain-c:'+objColor+';border-color:'+objColor+';background:'+_cGrpBg+'">';
           html += '<div class="chain-group-header" style="color:'+objColor+'">⛓ Enchaîné</div>';
         }
-        html += '<div class="exo-row" draggable="true"'
-             +  ' style="cursor:default"'
-             +  ' ondragstart="exoDragStart(event,\''+b.id+'\','+idx+')"'
-             +  ' ondragover="exoDragOver(event,this,\''+b.id+'\')"'
-             +  ' ondrop="exoDrop(event,this,\''+b.id+'\','+idx+')"'
-             +  ' ondragend="exoDragEnd()">';
+        html += '<div class="exo-row">';
         if(methObj){
-          var isChecked = (e._methChecked === true); // coché seulement si explicitement sélectionné
-          html += '<div class="drag-handle" style="cursor:default;">'
+          var isChecked = (e._methChecked === true);
+          html += '<div class="exo-move-btns" style="justify-content:center;">'
                 + '<input type="checkbox" class="exo-meth-check" id="exo-check-'+b.id+'-'+e.id+'"'
                 + (isChecked ? ' checked' : '')
                 + ' style="accent-color:'+objColor+';"'
@@ -1829,7 +1760,10 @@ function renderSession(){
                 + ' onclick="event.stopPropagation()">'
                 + '</div>';
         } else {
-          html += '<div class="drag-handle" title="Glisser pour réordonner">⋮⋮</div>';
+          html += '<div class="exo-move-btns">'
+                + '<button class="exo-move-btn"'+(idx===0?' disabled':'')+' onclick="moveExo(\''+b.id+'\','+idx+',-1)" title="Monter">↑</button>'
+                + '<button class="exo-move-btn"'+(idx===b.exos.length-1?' disabled':'')+' onclick="moveExo(\''+b.id+'\','+idx+',1)" title="Descendre">↓</button>'
+                + '</div>';
         }
         html += '<div class="exo-name-cell">';
         if(e.free){
