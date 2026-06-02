@@ -880,6 +880,15 @@ var CARDIO_EFFORT_TYPES = [
 ];
 var CARDIO_CIBLE_TYPES = ['bpm', 'allure', 'watts', 'zone FC', '%FC', 'RPE', 'cal', 'distance (m)'];
 
+/* ── Définition des 5 zones FC ── */
+var FC_ZONES = [
+  { key:'Z1', label:'Z1', desc:'Récupération',      range:'50–60% FCmax' },
+  { key:'Z2', label:'Z2', desc:'Endurance aérobie', range:'60–70% FCmax' },
+  { key:'Z3', label:'Z3', desc:'Tempo',             range:'70–80% FCmax' },
+  { key:'Z4', label:'Z4', desc:'Seuil lactique',    range:'80–90% FCmax' },
+  { key:'Z5', label:'Z5', desc:'VO2max / PMA',      range:'90–100% FCmax' },
+];
+
 function addCardioBloc(){
   var id = genId();
   var letter = String.fromCharCode(65 + blocs.length);
@@ -997,9 +1006,25 @@ function _renderCardioCibles(bid, scope, arr, label){
     }).join('');
     h += '<div class="cardio-cible-tag">';
     h += '<select class="cardio-cible-type-sel" onchange="updateCardioCible(\''+bid+'\',\''+scope+'\','+ci+',\'type\',this.value)">'+tOpts+'</select>';
-    h += '<input class="cardio-cible-val" type="text" value="'+escH(c.min||'')+'" placeholder="—" oninput="updateCardioCible(\''+bid+'\',\''+scope+'\','+ci+',\'min\',this.value)">';
-    h += '<span class="cardio-cible-dash">–</span>';
-    h += '<input class="cardio-cible-val" type="text" value="'+escH(c.max||'')+'" placeholder="max" oninput="updateCardioCible(\''+bid+'\',\''+scope+'\','+ci+',\'max\',this.value)">';
+    if(c.type === 'zone FC'){
+      // Sélection multi-zones — stockées dans c.min comme CSV "Z1,Z3"
+      var selZones = (c.min||'').split(',').filter(Boolean);
+      h += '<div class="fc-zones-wrap">';
+      FC_ZONES.forEach(function(z){
+        var active = selZones.indexOf(z.key) !== -1;
+        h += '<button type="button" class="fc-zone-btn'+(active?' active':'')+'"'
+          +' title="'+escH(z.desc+' — '+z.range)+'"'
+          +' onclick="toggleFcZone(\''+bid+'\',\''+scope+'\','+ci+',\''+z.key+'\')">'
+          +escH(z.label)+'</button>';
+      });
+      h += '</div>';
+      h += '<span style="font-size:.7rem;color:var(--text3);align-self:center;white-space:nowrap;">'
+        +(selZones.length ? selZones.join(', ')+' ('+_fcZoneRangeStr(selZones)+')' : '— choisir zone(s) —')+'</span>';
+    } else {
+      h += '<input class="cardio-cible-val" type="text" value="'+escH(c.min||'')+'" placeholder="—" oninput="updateCardioCible(\''+bid+'\',\''+scope+'\','+ci+',\'min\',this.value)">';
+      h += '<span class="cardio-cible-dash">–</span>';
+      h += '<input class="cardio-cible-val" type="text" value="'+escH(c.max||'')+'" placeholder="max" oninput="updateCardioCible(\''+bid+'\',\''+scope+'\','+ci+',\'max\',this.value)">';
+    }
     if(arr.length > 1){
       h += '<button class="cardio-cible-del" onclick="removeCardioCible(\''+bid+'\',\''+scope+'\','+ci+')" title="Retirer">×</button>';
     }
@@ -1008,6 +1033,31 @@ function _renderCardioCibles(bid, scope, arr, label){
   h += '<button class="cardio-cible-add" onclick="addCardioCible(\''+bid+'\',\''+scope+'\')">＋ cible</button>';
   h += '</div>';
   return h;
+}
+
+/* Retourne une plage % condensée pour un ensemble de zones ("Z2,Z3" → "60–80%") */
+function _fcZoneRangeStr(zoneKeys) {
+  if(!zoneKeys.length) return '';
+  var sorted = zoneKeys.slice().sort();
+  var pcts = { Z1:[50,60], Z2:[60,70], Z3:[70,80], Z4:[80,90], Z5:[90,100] };
+  var mins = sorted.map(function(k){ return (pcts[k]||[0,0])[0]; });
+  var maxs = sorted.map(function(k){ return (pcts[k]||[0,0])[1]; });
+  return Math.min.apply(null,mins)+'–'+Math.max.apply(null,maxs)+'% FCmax';
+}
+
+/* Toggle une zone FC dans la cible */
+function toggleFcZone(blocId, scope, idx, zoneKey){
+  var b = blocs.find(function(x){ return x.id===blocId; });
+  if(!b || !b[scope] || !b[scope][idx]) return;
+  var c = b[scope][idx];
+  var zones = (c.min||'').split(',').filter(Boolean);
+  var zi = zones.indexOf(zoneKey);
+  if(zi !== -1) zones.splice(zi, 1);
+  else zones.push(zoneKey);
+  zones.sort();
+  c.min = zones.join(',');
+  _draftSaveLazy();
+  renderSession();
 }
 
 function _renderCardioBloc(b, idx){
@@ -3376,6 +3426,9 @@ var _pevoCardioData = null; // { groupKey → {label, points:[{date,km}]} }
 
 /* Attache les events tooltip sur les hit areas (même logique que bilan.html) */
 var _pevoTtOpen = null;
+var _pevoFilterDays = null; // null = tout, sinon jours
+var _pevoFilterFrom = '';
+var _pevoFilterTo   = '';
 function _attachPevoEvents() {
   if(!document._pevoDocListener){
     document._pevoDocListener = true;
@@ -3408,6 +3461,52 @@ function _closePevoTt(){
   if(_pevoTtOpen){ var g=_pevoTtOpen.svgEl.getElementById(_pevoTtOpen.ttId); if(g) g.setAttribute('visibility','hidden'); _pevoTtOpen=null; }
 }
 
+/* ── Barre de filtre de date pevo ── */
+function _renderPevoFilterBar(){
+  var presets = [{label:'1 mois',days:30},{label:'3 mois',days:90},{label:'6 mois',days:180},{label:'1 an',days:365}];
+  var h = '<div class="pevo-filter-bar">';
+  h += '<button class="pevo-filter-btn'+(_pevoFilterDays===null&&!_pevoFilterFrom?' active':'')+'" onclick="setPevoFilter(null)">Tout</button>';
+  presets.forEach(function(p){
+    h += '<button class="pevo-filter-btn'+(_pevoFilterDays===p.days?' active':'')+'" onclick="setPevoFilter('+p.days+')">'+p.label+'</button>';
+  });
+  var customActive = _pevoFilterFrom||_pevoFilterTo;
+  h += '<button class="pevo-filter-btn'+(customActive?' active':'')+'" onclick="togglePevoCustomFilter()">🗓 Personnalisé</button>';
+  h += '<div id="pevo-custom-dates" style="display:'+(customActive?'flex':'none')+';gap:6px;align-items:center;flex-wrap:wrap;width:100%;margin-top:4px;">';
+  h += '<label style="font-size:.72rem;color:#6B6860">Du</label>';
+  h += '<input type="date" id="pevo-date-from" value="'+(_pevoFilterFrom||'')+'" onchange="setPevoCustomFilter()" style="font-size:.78rem;padding:3px 6px;border:1px solid #D3D1CB;border-radius:6px;">';
+  h += '<label style="font-size:.72rem;color:#6B6860">au</label>';
+  h += '<input type="date" id="pevo-date-to" value="'+(_pevoFilterTo||'')+'" onchange="setPevoCustomFilter()" style="font-size:.78rem;padding:3px 6px;border:1px solid #D3D1CB;border-radius:6px;">';
+  h += '</div></div>';
+  return h;
+}
+function setPevoFilter(days){
+  _pevoFilterDays = days; _pevoFilterFrom = ''; _pevoFilterTo = '';
+  _renderPevoCharts(_pevoData||{}, _pevoGetSel(_progPatient?_progPatient.id:'local'));
+}
+function togglePevoCustomFilter(){
+  var d = document.getElementById('pevo-custom-dates');
+  if(d) d.style.display = d.style.display==='none'?'flex':'none';
+}
+function setPevoCustomFilter(){
+  _pevoFilterFrom = (document.getElementById('pevo-date-from')||{}).value||'';
+  _pevoFilterTo   = (document.getElementById('pevo-date-to')  ||{}).value||'';
+  _pevoFilterDays = null;
+  _renderPevoCharts(_pevoData||{}, _pevoGetSel(_progPatient?_progPatient.id:'local'));
+}
+function _pevoFilterPts(pts){
+  if(!pts) return pts;
+  return pts.filter(function(p){
+    if(!p.date) return true;
+    if(_pevoFilterDays !== null){
+      var cutoff = new Date(new Date()-_pevoFilterDays*86400000).toISOString().slice(0,10);
+      return p.date >= cutoff;
+    }
+    if(_pevoFilterFrom && p.date < _pevoFilterFrom) return false;
+    if(_pevoFilterTo   && p.date > _pevoFilterTo)   return false;
+    return true;
+  });
+}
+
 function _renderPevoCharts(exoData, selectedKeys) {
   var body = document.getElementById('pevoBody');
   if(!body) return;
@@ -3415,7 +3514,7 @@ function _renderPevoCharts(exoData, selectedKeys) {
   var dureeKeys = _pevoDureeData ? Object.keys(_pevoDureeData) : [];
   var cardioKeys = _pevoCardioData ? Object.keys(_pevoCardioData) : [];
   if(!allKeys.length && !dureeKeys.length && !cardioKeys.length){
-    body.innerHTML = '<div class="pevo-empty">Aucun exercice avec répétitions, durée ou cardio prescrit sur plusieurs séances.</div>';
+    body.innerHTML = _renderPevoFilterBar()+'<div class="pevo-empty">Aucun exercice avec répétitions, durée ou cardio prescrit sur plusieurs séances.</div>';
     return;
   }
   var patId = _progPatient ? _progPatient.id : 'local';
@@ -3433,7 +3532,8 @@ function _renderPevoCharts(exoData, selectedKeys) {
     if(!selectedKeys.has(key)) return;
     _pevoChartCtr++;
     var grp = exoData[key];
-    var pts = grp.points;
+    var pts = _pevoFilterPts(grp.points);
+    if(!pts || pts.length < 2) return; // pas assez de points après filtrage
     var vals  = pts.map(function(p){ return p.rm1; });
     var dates = pts.map(function(p){ var d=p.date?p.date.split('-'):['','','']; return (d[2]||'?')+'/'+(d[1]||'?'); });
     var meta  = pts.map(function(p){ return {bw:p.bw, reps:p.reps, kg:p.kg}; });
@@ -3603,7 +3703,7 @@ function _renderPevoCharts(exoData, selectedKeys) {
 
   var sep = '<div style="height:32px"></div>';
   var parts = [rmSection, dureeSectionHtml, cardioSectionHtml].filter(function(s){ return !!s; });
-  body.innerHTML = parts.join(sep);
+  body.innerHTML = _renderPevoFilterBar() + parts.join(sep);
   _attachPevoEvents();
 }
 

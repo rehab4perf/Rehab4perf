@@ -504,6 +504,9 @@ var _bilanHistoMode = false;   // true quand on consulte/édite un bilan histori
 var _suppressDirty  = false;   // true pendant _deserializeBilan pour ne pas polluer le flag
 var _suiviRapideInitial = {};  // snapshot des valeurs DOM à l'ouverture du suivi rapide
 var _chartCounter = 0;
+var _evoFilterDays = null; // null = tout, sinon nombre de jours (30,90,180,365)
+var _evoFilterFrom = '';   // 'YYYY-MM-DD' — date de début filtre custom
+var _evoFilterTo   = '';   // 'YYYY-MM-DD' — date de fin filtre custom
 var _prevDonnees    = null;    // donnees du bilan précédent (pour deltas inline)
 var _allBilans      = [];      // tous les bilans du patient (pour la page évolution)
 
@@ -1409,12 +1412,67 @@ function _fmtCond(rawVal, grp){
 }
 
 /* ── Page Évolution ─────────────────────────────────────── */
+/* ── Barre de filtre intervalle d'évolution ── */
+function _renderEvoFilterBar(){
+  var presets = [
+    {label:'1 mois', days:30},
+    {label:'3 mois', days:90},
+    {label:'6 mois', days:180},
+    {label:'1 an',   days:365},
+  ];
+  var h = '<div class="evo-filter-bar no-print">';
+  h += '<button class="evo-filter-btn'+(_evoFilterDays===null&&!_evoFilterFrom?' active':'')+'" onclick="setEvoFilter(null)">Tout</button>';
+  presets.forEach(function(p){
+    h += '<button class="evo-filter-btn'+(_evoFilterDays===p.days?' active':'')+'" onclick="setEvoFilter('+p.days+')">'+p.label+'</button>';
+  });
+  var customActive = _evoFilterFrom||_evoFilterTo;
+  h += '<button class="evo-filter-btn evo-filter-custom'+(customActive?' active':'')+'" onclick="toggleEvoCustomFilter()">🗓 Personnalisé</button>';
+  h += '<div class="evo-custom-dates" id="evo-custom-dates" style="display:'+(customActive?'flex':'none')+';gap:6px;align-items:center;flex-wrap:wrap;">';
+  h += '<label style="font-size:.75rem;color:var(--text2)">Du</label>';
+  h += '<input type="date" id="evo-date-from" value="'+(_evoFilterFrom||'')+'" onchange="setEvoCustomFilter()" style="font-size:.8rem;padding:3px 6px;border:1px solid var(--border);border-radius:6px;">';
+  h += '<label style="font-size:.75rem;color:var(--text2)">au</label>';
+  h += '<input type="date" id="evo-date-to" value="'+(_evoFilterTo||'')+'" onchange="setEvoCustomFilter()" style="font-size:.8rem;padding:3px 6px;border:1px solid var(--border);border-radius:6px;">';
+  h += '</div></div>';
+  return h;
+}
+function setEvoFilter(days){
+  _evoFilterDays = days; _evoFilterFrom = ''; _evoFilterTo = '';
+  _renderEvolutionPage();
+}
+function toggleEvoCustomFilter(){
+  var d = document.getElementById('evo-custom-dates');
+  if(d) d.style.display = d.style.display === 'none' ? 'flex' : 'none';
+}
+function setEvoCustomFilter(){
+  _evoFilterFrom = (document.getElementById('evo-date-from')||{}).value||'';
+  _evoFilterTo   = (document.getElementById('evo-date-to')  ||{}).value||'';
+  _evoFilterDays = null;
+  _renderEvolutionPage();
+}
+
 function _renderEvolutionPage(){
   var container=document.getElementById('evolution-content');
   if(!container)return;
-  var bilansAsc=_allBilans.slice().reverse();
+  var bilansAll=_allBilans.slice().reverse(); // chronologique ascendant
+  // Appliquer le filtre temporel
+  var now = new Date().toISOString().slice(0,10);
+  var filteredBilans = bilansAll.filter(function(b){
+    if(!b.date) return true;
+    if(_evoFilterDays !== null){
+      var cutoff = new Date(new Date() - _evoFilterDays*86400000).toISOString().slice(0,10);
+      return b.date >= cutoff;
+    }
+    if(_evoFilterFrom && b.date < _evoFilterFrom) return false;
+    if(_evoFilterTo   && b.date > _evoFilterTo)   return false;
+    return true;
+  });
+  var bilansAsc = filteredBilans;
+  if(bilansAll.length<2){
+    container.innerHTML=_renderEvoFilterBar()+'<div class="evo-empty">Ce patient n\'a que '+(bilansAll.length===0?'aucun':'1')+' bilan sauvegardé. Il en faut au moins 2 pour afficher l\'évolution.</div>';
+    return;
+  }
   if(bilansAsc.length<2){
-    container.innerHTML='<div class="evo-empty">Ce patient n\'a que '+(bilansAsc.length===0?'aucun':'1')+' bilan sauvegardé. Il en faut au moins 2 pour afficher l\'évolution.</div>';
+    container.innerHTML=_renderEvoFilterBar()+'<div class="evo-empty">Aucun graphique sur cette période — essayez un intervalle plus large.</div>';
     return;
   }
   var dates=bilansAsc.map(function(b){
@@ -1424,7 +1482,7 @@ function _renderEvolutionPage(){
   _chartCounter=0;
   var cats={};
   CHART_GROUPS.forEach(function(grp){if(!cats[grp.cat])cats[grp.cat]=[];cats[grp.cat].push(grp);});
-  var html='<div class="evo-intro">📅 '+bilansAsc.length+' bilans — du '+dates[0]+' au '+dates[dates.length-1]+'</div>';
+  var html=_renderEvoFilterBar()+'<div class="evo-intro">📅 '+bilansAsc.length+' bilans — du '+dates[0]+' au '+dates[dates.length-1]+'</div>';
 
   Object.keys(cats).forEach(function(cat){
     var groups=cats[cat], catHtml='';
@@ -2883,7 +2941,9 @@ function highlightNormRow(age) {
 // -- LSI CALC -------------------------------------------------
 function _isBilateral() {
   var cote = (document.getElementById('f-cote') || {}).value || '';
-  return cote !== '' && cote !== 'DROIT' && cote !== 'GAUCHE';
+  // '' (vide) et 'BILATÉRAL' → bilatéral (min/max, toujours ≤ 100%)
+  // 'DROIT' ou 'GAUCHE' → unilatéral (atteint/sain, peut dépasser 100%)
+  return cote !== 'DROIT' && cote !== 'GAUCHE';
 }
 
 function lsiClass(v, higher=true) {
@@ -3154,7 +3214,7 @@ function _buildAllTestsHtml() {
 
   // ── Résolution du côté atteint ────────────────────────────────
   var _cotePrimaire = ((document.getElementById('f-cote')||{}).value||'').toUpperCase();
-  var _isBilat  = (_cotePrimaire !== 'DROIT' && _cotePrimaire !== 'GAUCHE' && _cotePrimaire !== '');
+  var _isBilat  = (_cotePrimaire !== 'DROIT' && _cotePrimaire !== 'GAUCHE'); // '' et 'BILATÉRAL' → bilatéral
 
   var lsiStr  = function(ca,cs) {
     if (isNaN(ca)||isNaN(cs)) return '';

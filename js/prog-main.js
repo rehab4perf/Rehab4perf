@@ -710,8 +710,12 @@ function _buildDayChips(dateStr, cellDate){
   var chips = '';
   if(_progPatient){
     var dayEvs = _cloudCalEvents.filter(function(e){ return e.date===dateStr; });
+    var _j0Ref = _progPatient ? _getJ0ForPatient(_progPatient.id) : '';
     chips = dayEvs.map(function(ev){
       var nom = (ev.programmes&&ev.programmes.nom)||'Programme';
+      // Préfixe J+ si une date de référence est disponible
+      var jPlus = _j0Ref ? _computeJPlus(dateStr, _j0Ref) : null;
+      var jLabel = jPlus !== null ? ('J'+(jPlus >= 0 ? '+' : '')+jPlus+' · ') : '';
       var fb = ev.athlete_feedback;
       var ua = (fb&&fb.rpe&&fb.duree_min) ? fb.rpe*fb.duree_min : null;
       var uaSpan = ua ? ' <span style="font-size:.58rem;font-weight:800;padding:1px 4px;border-radius:3px;background:rgba(255,255,255,.22);color:'+_chipUaColor(ua)+';">⚡'+ua+'</span>' : '';
@@ -734,7 +738,7 @@ function _buildDayChips(dateStr, cellDate){
       return '<div class="cal-session-chip" style="background:'+chipBg+';color:'+chipColor+';cursor:'+chipCursor+chipExtra+';" title="'+escH(nom)+'"'
         + chipEvtAttrs + '>'
         +moreBtn
-        +'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">📋 '+escH(nom.length>14?nom.slice(0,14)+'…':nom)+uaSpan+'</span>'
+        +'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">'+(jLabel?'<span style="opacity:.75;font-size:.85em;">'+escH(jLabel)+'</span>':'📋 ')+escH(nom.length>16?nom.slice(0,16)+'…':nom)+uaSpan+'</span>'
         +phaseTag
         +'<button class="cal-chip-del" style="color:'+(phStyle?'rgba(30,58,95,.5)':'rgba(255,255,255,.7)')+'" onclick="event.stopPropagation();removeCalEventCloud(\''+ev.id+'\')">×</button>'
         +'</div>';
@@ -1144,6 +1148,31 @@ function _saveJ0(patientId, dateStr) {
 }
 function _getJ0(patientId) {
   try { return localStorage.getItem(R4P_KEYS.J0_PREFIX+patientId)||''; } catch(e){ return ''; }
+}
+
+/* Trouve la date de référence J0 pour un patient (op > accident > protocole > prise en charge) */
+function _getJ0ForPatient(patId) {
+  var stored = _getJ0(patId);
+  if(stored) return stored;
+  // Fallback : date du premier protocole assigné
+  var earliest = '';
+  Object.keys(_protoPatientData||{}).forEach(function(k){
+    var pp = _protoPatientData[k] && _protoPatientData[k].pp;
+    if(pp && pp.started_at){
+      var d = pp.started_at.slice(0,10);
+      if(!earliest || d < earliest) earliest = d;
+    }
+  });
+  return earliest;
+}
+
+/* Calcule J+ (peut être négatif) entre une date de séance et J0 */
+function _computeJPlus(dateStr, j0Str) {
+  if(!j0Str || !dateStr) return null;
+  var d  = new Date(dateStr+'T00:00:00');
+  var j0 = new Date(j0Str+'T00:00:00');
+  if(isNaN(d.getTime())||isNaN(j0.getTime())) return null;
+  return Math.round((d - j0) / 86400000);
 }
 
 /* ── Sélection du type dans le formulaire ── */
@@ -1891,7 +1920,7 @@ function confirmPlan(){
   if(!_progUid || !_progToken){ alert('Session non disponible. Sélectionnez à nouveau le patient.'); return; }
   var btn = document.getElementById('planConfirmBtn');
   if(btn){ btn.disabled=true; btn.textContent='⏳ Sauvegarde…'; }
-  var nomProg = (document.getElementById('patientName')||{}).value || ('Programme du '+new Date().toLocaleDateString('fr-FR'));
+  var nomProg = (document.getElementById('patientName')||{}).value || 'Programme';
   var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), notes: getNotes() };
   var today = new Date().toISOString().split('T')[0];
   _fetchRetry(SUPA_URL_P+'/rest/v1/programmes', {

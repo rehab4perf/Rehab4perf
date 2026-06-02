@@ -1316,18 +1316,28 @@ body {
           <input type="text" id="cr-objet-txt" placeholder="ex. Suivi de prise en charge — LCA Droit" style="font-weight:600;">
         </div>
 
-        <div class="cr-section-hdr">Patient</div>
+        <div class="cr-section-hdr" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>Patient</span>
+          <button class="cr-amp-cfg-btn" onclick="crImportFromBilan()" title="Importer les infos du patient depuis le bilan clinique" style="font-size:.7rem;padding:3px 9px;">⤓ Bilan</button>
+        </div>
         <div class="cr-form-row">
           <div class="cr-fg">
-            <label>Civilité &amp; Nom</label>
-            <div style="display:flex;gap:6px;">
-              <select id="cr-pat-civ" style="flex:0 0 68px;" onchange="crUpdateGender()">
-                <option value="">—</option>
-                <option value="M.">M.</option>
-                <option value="Mme">Mme</option>
-              </select>
-              <input type="text" id="cr-pat-nom" placeholder="Dupont Paul" style="flex:1">
-            </div>
+            <label>Civilité</label>
+            <select id="cr-pat-civ" style="width:100%;" onchange="crUpdateGender()">
+              <option value="">—</option>
+              <option value="M.">M.</option>
+              <option value="Mme">Mme</option>
+            </select>
+          </div>
+          <div class="cr-fg">
+            <label for="cr-pat-prenom">Prénom</label>
+            <input type="text" id="cr-pat-prenom" placeholder="Paul">
+          </div>
+        </div>
+        <div class="cr-form-row">
+          <div class="cr-fg">
+            <label for="cr-pat-nom">Nom</label>
+            <input type="text" id="cr-pat-nom" placeholder="Dupont">
           </div>
           <div class="cr-fg">
             <label for="cr-pat-dob">Date de naissance</label>
@@ -5118,7 +5128,7 @@ _updateOutilsPatientBtns();
     }
     list.forEach(function(p) {
       var btn = document.createElement('button');
-      btn.className = 'cr-patho-btn' + (crPatho === p.key ? ' active' : '');
+      btn.className = 'cr-patho-btn' + (crPathos.indexOf(p.key) !== -1 ? ' active' : '');
       btn.dataset.key = p.key;
       btn.onclick = function() { crSelectPatho(this); };
       btn.textContent = p.label;
@@ -5151,7 +5161,9 @@ _updateOutilsPatientBtns();
   };
 
   // Auto-sélection articulation quand pathologie cliquée
+  // Ne s'active que si aucune articulation n'est déjà sélectionnée manuellement
   function crAutoSelectArticu(pathoKey) {
+    if (crArticuSelected !== '') return; // ne pas écraser le choix manuel
     var p = crPathoConfig.find(function(x){ return x.key === pathoKey; });
     if (!p || !p.articulations || !p.articulations.length) return;
     var articu = p.articulations[0];
@@ -5793,7 +5805,7 @@ _updateOutilsPatientBtns();
   }
 
   // State
-  var crPatho = null;
+  var crPathos = []; // multi-sélection de pathologies
   var crLsiOn = false;
   // ── Sign config ───────────────────────────────────────────────
   var CR_SIGN_DEFAULTS = [
@@ -5822,18 +5834,20 @@ _updateOutilsPatientBtns();
   var CR_PATHO_EPAULE = ['latarjet'];
 
   window.crSelectPatho = function(btn) {
-    if (btn.classList.contains('active')) { btn.classList.remove('active'); crPatho = null; }
-    else {
-      document.querySelectorAll('.cr-patho-btn').forEach(function(b){ b.classList.remove('active'); });
-      btn.classList.add('active'); crPatho = btn.dataset.key;
-    }
+    var key = btn.dataset.key;
+    var idx = crPathos.indexOf(key);
+    if (idx !== -1) { crPathos.splice(idx, 1); btn.classList.remove('active'); }
+    else            { crPathos.push(key);       btn.classList.add('active'); }
     crUpdateBlocks(); crUpdateAmpLabels();
     crAutoFillObjet();
-    crAutoSelectArticu(crPatho);
+    // Auto-sélection articulation uniquement si une seule pathologie est sélectionnée
+    if (crPathos.length === 1) crAutoSelectArticu(crPathos[0]);
   };
   function crUpdateBlocks() {
-    crToggleBlock('cr-block-force',     crPatho && CR_PATHO_FORCE.indexOf(crPatho) !== -1);
-    crToggleBlock('cr-block-fonctionnel', crPatho && CR_PATHO_FONCT.indexOf(crPatho) !== -1);
+    var hasForce = crPathos.some(function(k){ return CR_PATHO_FORCE.indexOf(k) !== -1; });
+    var hasFonct = crPathos.some(function(k){ return CR_PATHO_FONCT.indexOf(k) !== -1; });
+    crToggleBlock('cr-block-force',      hasForce);
+    crToggleBlock('cr-block-fonctionnel', hasFonct);
   }
   function crToggleBlock(id, show) {
     var el = document.getElementById(id);
@@ -5841,7 +5855,7 @@ _updateOutilsPatientBtns();
     if (show) el.classList.remove('cr-block-hidden'); else el.classList.add('cr-block-hidden');
   }
   function crUpdateAmpLabels() {
-    var isEp = crPatho && CR_PATHO_EPAULE.indexOf(crPatho) !== -1;
+    var isEp = crPathos.some(function(k){ return CR_PATHO_EPAULE.indexOf(k) !== -1; });
     var labels = isEp
       ? ['Antépulsion', 'Abduction', 'Rot. ext.', 'Rot. int.']
       : ['Ext. passive', 'Ext. active', 'Flex. passive', 'Flex. active'];
@@ -5908,6 +5922,11 @@ _updateOutilsPatientBtns();
     };
     return m[key] || key;
   }
+  // Renvoie les labels de toutes les pathologies sélectionnées joints par " + "
+  function crPathosLabel() {
+    if (!crPathos.length) return '';
+    return crPathos.map(function(k){ return crPathoLabel(k); }).join(' + ');
+  }
   function crPhaseLabel(v) {
     var m = { phase1:'phase 1 (inflammation / protection)', phase2:'phase 2 (récupération fonctionnelle)',
       phase3:'phase 3 (renforcement progressif)', phase4:'phase 4 (réathlétisation)',
@@ -5950,7 +5969,9 @@ _updateOutilsPatientBtns();
     var destNom = crV('cr-dest-nom'), destSpec = crV('cr-dest-spec');
     var patCiv  = crV('cr-pat-civ');
     if (patCiv) crPatientSexe = patCiv === 'Mme' ? 'F' : 'M';
-    var patNom  = crV('cr-pat-nom'),  patDob   = crFmtDate(crV('cr-pat-dob'));
+    var patPrenom = crV('cr-pat-prenom'), patNomRaw = crV('cr-pat-nom');
+    var patNom  = [patPrenom, patNomRaw].filter(Boolean).join(' ');
+    var patDob  = crFmtDate(crV('cr-pat-dob'));
     var patAccident = crFmtDate(crV('cr-pat-date-accident'));
     var patOp       = crFmtDate(crV('cr-pat-date-op'));
     var patPEC  = crFmtDate(crV('cr-pat-date-pec'));
@@ -5981,11 +6002,11 @@ _updateOutilsPatientBtns();
     lines.push('Je vous adresse ce compte-rendu de rééducation' + (patNom ? ' concernant ' + patNom : '') + '.'); lines.push('');
 
     // 3. Identité patient
-    if (patNom || patDob || patAccident || patOp || patPEC || crPatho) {
+    if (patNom || patDob || patAccident || patOp || patPEC || crPathos.length) {
       var patLine = (patCiv ? patCiv + ' ' : '') + (patNom || crF('votre patient', 'votre patient', 'votre patiente'));
       if (patDob)  patLine += ', ' + crF('né', 'né', 'née') + ' le ' + patDob;
       lines.push('Patient : ' + patLine + '.');
-      var diagLine = crPatho ? crPathoLabel(crPatho) : '';
+      var diagLine = crPathosLabel();
       if (pathoDetail) diagLine = diagLine ? diagLine + ' — ' + pathoDetail : pathoDetail;
       var articuLabel = crAmpArticu && crAmpConfig[crAmpArticu] ? crAmpConfig[crAmpArticu].label : '';
       if (articuLabel) diagLine += (diagLine ? ' — ' : '') + articuLabel;
@@ -6120,7 +6141,9 @@ _updateOutilsPatientBtns();
     var destNom = crV('cr-dest-nom'), destSpec = crV('cr-dest-spec');
     var patCiv  = crV('cr-pat-civ');
     if (patCiv) crPatientSexe = patCiv === 'Mme' ? 'F' : 'M';
-    var patNom  = crV('cr-pat-nom'),  patDob  = crFmtDate(crV('cr-pat-dob'));
+    var patPrenom = crV('cr-pat-prenom'), patNomRaw = crV('cr-pat-nom');
+    var patNom  = [patPrenom, patNomRaw].filter(Boolean).join(' ');
+    var patDob  = crFmtDate(crV('cr-pat-dob'));
     var patAccident = crFmtDate(crV('cr-pat-date-accident'));
     var patOp       = crFmtDate(crV('cr-pat-date-op'));
     var patPEC  = crFmtDate(crV('cr-pat-date-pec'));
@@ -6154,14 +6177,14 @@ _updateOutilsPatientBtns();
     var contextParts = [];
     if (patPEC) contextParts.push(crF('reçu', 'reçu', 'reçue') + ' en consultation initiale le ' + patPEC);
     if (joursStr) contextParts.push(joursStr + ' ' + (_isOp ? 'post-opératoire' : 'post-traumatique'));
-    if (patAccident || patOp) { var diagCtx = crPatho ? crPathoLabel(crPatho) : ''; if (pathoDetail) diagCtx = diagCtx ? diagCtx + ' — ' + pathoDetail : pathoDetail; if (diagCtx) contextParts.push('de sa ' + diagCtx.toLowerCase()); }
+    if (patAccident || patOp) { var diagCtx = crPathosLabel(); if (pathoDetail) diagCtx = diagCtx ? diagCtx + ' — ' + pathoDetail : pathoDetail; if (diagCtx) contextParts.push('de sa ' + diagCtx.toLowerCase()); }
     if (contextParts.length) intro += ', ' + contextParts.join(', ');
     intro += '.';
     lines.push(intro); lines.push('');
 
     // Diagnostic / côté
-    if (crPatho || pathoDetail || patAccident || patOp || patCote) {
-      var diagLine = crPatho ? crPathoLabel(crPatho) : '';
+    if (crPathos.length || pathoDetail || patAccident || patOp || patCote) {
+      var diagLine = crPathosLabel();
       if (pathoDetail) diagLine = diagLine ? diagLine + ' — ' + pathoDetail : pathoDetail;
       var articuLabel2 = crAmpArticu && crAmpConfig[crAmpArticu] ? crAmpConfig[crAmpArticu].label : '';
       if (articuLabel2) diagLine += (diagLine ? ' — ' : '') + articuLabel2;
@@ -6340,7 +6363,7 @@ _updateOutilsPatientBtns();
     var bodyEl = document.getElementById('cr-letter-body');
     var text = bodyEl ? bodyEl.textContent : '';
     if (!text || (bodyEl && bodyEl.querySelector('.letter-empty'))) { _crToast('Générez d\'abord le courrier'); return; }
-    var patNom    = crV('cr-pat-nom');
+    var patNom    = [crV('cr-pat-prenom'), crV('cr-pat-nom')].filter(Boolean).join(' ');
     var destEmail = crV('cr-dest-email') || '';
     var subject   = encodeURIComponent('Compte-rendu de rééducation' + (patNom ? ' — ' + patNom : ''));
     var bodyEnc   = encodeURIComponent(text);
@@ -6396,7 +6419,7 @@ _updateOutilsPatientBtns();
     var el = document.getElementById('cr-objet-txt');
     if (!el) return;
     if (_objetEdited && !force) return; // respecter la saisie manuelle
-    var pathoLbl = crPatho ? crPathoLabel(crPatho) : '';
+    var pathoLbl = crPathosLabel();
     var suffix   = pathoLbl ? ' — ' + pathoLbl : '';
     var map = { debut:'Début de prise en charge', suivi:'Suivi de rééducation', rts:'Bilan de fin de prise en charge / RTS', avis:'Demande d\'avis médical' };
     el.value = (map[crTemplate] || '') + suffix;
@@ -6407,6 +6430,29 @@ _updateOutilsPatientBtns();
     var el = document.getElementById('cr-objet-txt');
     if (el) el.addEventListener('input', function() { _objetEdited = true; });
   })();
+
+  // Import des infos patient depuis le bilan clinique (localStorage r4p-current-patient)
+  window.crImportFromBilan = function() {
+    try {
+      var raw = localStorage.getItem('r4p-current-patient');
+      if (!raw) { _crToast('Aucun patient sélectionné dans le bilan clinique'); return; }
+      var pat = JSON.parse(raw);
+      if (!pat) { _crToast('Données patient introuvables'); return; }
+      var prenomEl = document.getElementById('cr-pat-prenom');
+      var nomEl    = document.getElementById('cr-pat-nom');
+      var dobEl    = document.getElementById('cr-pat-dob');
+      var civEl    = document.getElementById('cr-pat-civ');
+      if (prenomEl && pat.prenom) prenomEl.value = pat.prenom;
+      if (nomEl    && pat.nom)    nomEl.value    = (pat.nom||'').toUpperCase();
+      if (dobEl    && pat.ddn)    dobEl.value    = pat.ddn; // ddn = date de naissance
+      if (civEl    && pat.sexe) {
+        civEl.value = pat.sexe === 'F' ? 'Mme' : (pat.sexe === 'H' || pat.sexe === 'M') ? 'M.' : '';
+        crUpdateGender();
+      }
+      crAutoFillObjet();
+      _crToast('✅ Infos patient importées depuis le bilan');
+    } catch(e) { _crToast('Erreur lors de l\'import'); }
+  };
 
   function crUpdateTemplateSections() {
     var showProto = crTemplate === 'debut' || crTemplate === 'rts';
@@ -6426,7 +6472,7 @@ _updateOutilsPatientBtns();
     document.querySelectorAll('#panel-cr input[type="text"], #panel-cr input[type="date"], #panel-cr input[type="number"]').forEach(function(el){ el.value = ''; });
     document.querySelectorAll('#panel-cr select').forEach(function(el){ el.value = ''; });
     document.querySelectorAll('#panel-cr textarea').forEach(function(el){ el.value = ''; crAutoExpand(el); });
-    crPatho = null;
+    crPathos = [];
     crPatientSexe = '';
     crAmpArticu = '';
     crArticuSelected = '';
