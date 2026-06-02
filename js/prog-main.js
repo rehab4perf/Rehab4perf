@@ -1011,6 +1011,9 @@ function addCalEventCloud(progId) {
 
 function removeCalEventCloud(id) {
   _confirmDeleteSeance(function(){
+    // Mémoriser le programme_id avant suppression
+    var ev = _cloudCalEvents.find(function(e){ return String(e.id) === String(id); });
+    var progId = ev ? ev.programme_id : null;
     _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees?id=eq.' + id, {
       method: 'DELETE', headers: _sbHeaders()
     })
@@ -1018,9 +1021,29 @@ function removeCalEventCloud(id) {
       if(!r.ok){ return r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); }); }
       renderCalendar();
       _showToast('Séance supprimée');
+      // Supprime le programme s'il n'est plus référencé par aucune séance
+      if(progId) _deleteProgIfOrphan(progId);
     })
     .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
   });
+}
+
+/* Supprime un programme Supabase s'il n'est plus référencé par aucune seances_planifiees */
+function _deleteProgIfOrphan(progId) {
+  if(!progId || !_progToken) return;
+  _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees?programme_id=eq.'+progId+'&select=id&limit=1', {
+    headers: _sbHeaders()
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if(Array.isArray(d) && d.length === 0){
+      // Orphelin : plus aucune séance ne pointe sur ce programme
+      _fetchRetry(SUPA_URL_P + '/rest/v1/programmes?id=eq.'+progId, {
+        method: 'DELETE', headers: _sbHeaders()
+      }).catch(function(){});
+    }
+  })
+  .catch(function(){});
 }
 
 // ── Notes calendrier ──────────────────────────────────────────────────────────
@@ -1647,10 +1670,18 @@ function touchSheetDuplicate(){
 
 function touchSheetDelete(){
   if(!_touchSheetData) return;
-  var evId = _touchSheetData.evId; closeTouchSheet();
+  var evId   = _touchSheetData.evId;
+  var progId = _touchSheetData.progId;
+  closeTouchSheet();
   _confirmDeleteSeance(function(){
     _fetchRetry(SUPA_URL_P+'/rest/v1/seances_planifiees?id=eq.'+evId, {method:'DELETE', headers:_sbHeaders()})
-      .then(function(r){ if(r.ok){ renderCalendar(); _showToast('Séance supprimée'); } });
+      .then(function(r){
+        if(r.ok){
+          renderCalendar();
+          _showToast('Séance supprimée');
+          if(progId) _deleteProgIfOrphan(progId);
+        }
+      });
   });
 }
 
