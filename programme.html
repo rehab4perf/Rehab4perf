@@ -830,8 +830,10 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   grid-template-columns: 28px 1fr 60px 60px 48px 60px 76px 180px 32px;
 }
 .col-lbl { font-size:.65rem; font-weight:700; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; }
-.exo-move-btns { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; flex-shrink:0; }
-.exo-move-btn { background:none; border:none; cursor:pointer; color:var(--border2); font-size:.68rem; line-height:1; padding:2px 5px; border-radius:3px; transition:color .1s, background .1s; font-family:inherit; }
+.exo-move-btns { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; flex-shrink:0; opacity:0; transition:opacity .15s; }
+.exo-row:hover .exo-move-btns { opacity:1; }
+@media (hover:none) { .exo-move-btns { opacity:1; } }
+.exo-move-btn { background:none; border:none; cursor:pointer; color:var(--text3); font-size:.72rem; line-height:1; padding:2px 4px; border-radius:4px; transition:color .1s, background .1s; font-family:inherit; }
 .exo-move-btn:hover:not(:disabled) { background:var(--surface2); color:var(--accent2); }
 .exo-move-btn:disabled { opacity:0; pointer-events:none; }
 /* Checkbox sélection méthode */
@@ -846,9 +848,11 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 }
 @keyframes methBadgeFadeIn { from{opacity:0;transform:scale(.85)} to{opacity:1;transform:scale(1)} }
 /* Boutons ↑↓ des blocs */
-.bloc-move-btns { display:flex; gap:2px; align-items:center; flex-shrink:0; }
+.bloc-move-btns { display:flex; gap:2px; align-items:center; flex-shrink:0; opacity:0; transition:opacity .15s; }
+.bloc-header:hover .bloc-move-btns { opacity:1; }
+@media (hover:none) { .bloc-move-btns { opacity:1; } }
 .bloc-move-btn { background:rgba(255,255,255,.12); border:none; cursor:pointer; color:rgba(255,255,255,.75); font-size:.7rem; border-radius:3px; padding:2px 6px; line-height:1; transition:background .12s, color .12s; font-family:inherit; }
-.bloc-move-btn:hover:not(:disabled) { background:rgba(255,255,255,.28); color:#fff; }
+.bloc-move-btn:hover:not(:disabled) { background:rgba(255,255,255,.3); color:#fff; }
 .bloc-move-btn:disabled { opacity:0; pointer-events:none; }
 .exo-consigne-row { grid-column:1/-1; padding:0 4px 4px 34px; }
 .exo-consigne-ta {
