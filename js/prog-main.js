@@ -1190,21 +1190,62 @@ function _getJ0ForPatient(patId) {
   return earliest;
 }
 
-/* S'assure que J0 est en localStorage pour le patient (fetch patient_protocols si besoin) */
+/* Retourne la plus ancienne des deux dates YYYY-MM-DD non-vides */
+function _earliestDate(a, b) {
+  if(!a) return b; if(!b) return a;
+  return a < b ? a : b;
+}
+
+/* Calcule et stocke J0 pour un patient selon la priorité :
+   1. Date d'opération  (patient_protocols.started_at  OU  f-date-op dans bilans)
+   2. Date d'accident   (f-date-accident dans bilans)
+   3. Date du bilan     (date du premier bilan Supabase)
+*/
 function _ensureJ0ForPatient(patId, callback) {
-  if(_getJ0(patId)){ callback(); return; } // déjà stocké
-  if(!_progToken){ callback(); return; }   // pas de session → skip
-  var url = SUPA_URL_P + '/rest/v1/patient_protocols?patient_id=eq.' + patId
-    + '&select=started_at&order=started_at.asc&limit=1';
-  _fetchRetry(url, { headers: _sbHeaders() })
-    .then(function(r){ return r.json(); })
-    .then(function(d){
-      if(Array.isArray(d) && d.length && d[0].started_at){
-        _saveJ0(patId, d[0].started_at.slice(0, 10));
-      }
-      callback();
-    })
-    .catch(function(){ callback(); });
+  if(!_progToken){ callback(); return; }
+  Promise.all([
+    // Source A : protocole assigné (started_at = date début / opération)
+    _fetchRetry(SUPA_URL_P+'/rest/v1/patient_protocols?patient_id=eq.'+patId
+      +'&select=started_at&order=started_at.asc&limit=1', {headers:_sbHeaders()})
+      .then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; }),
+    // Source B : bilans (donnees pour f-date-op / f-date-accident + date du premier bilan)
+    _fetchRetry(SUPA_URL_P+'/rest/v1/bilans?patient_id=eq.'+patId
+      +'&select=date,donnees&order=date.asc', {headers:_sbHeaders()})
+      .then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; })
+  ]).then(function(res) {
+    var protoDate = '', opDate = '', accidentDate = '', bilanDate = '';
+
+    // Protocol started_at
+    if(Array.isArray(res[0]) && res[0].length && res[0][0].started_at)
+      protoDate = res[0][0].started_at.slice(0,10);
+
+    // Bilans : parcourir tous pour trouver f-date-op, f-date-accident, et la date du premier bilan
+    if(Array.isArray(res[1])) {
+      res[1].forEach(function(b){
+        var d = b.donnees || {};
+        var rawOp  = d['f-date-op']       || '';
+        var rawAcc = d['f-date-accident']  || '';
+        // Convertir dd/mm/yyyy → yyyy-mm-dd si nécessaire
+        function _toISO(s){ if(!s) return ''; var p=s.split('/'); return p.length===3?p[2]+'-'+p[1]+'-'+p[0]:s; }
+        var isoOp  = _toISO(rawOp);
+        var isoAcc = _toISO(rawAcc);
+        if(isoOp  && (!opDate       || isoOp  < opDate))       opDate       = isoOp;
+        if(isoAcc && (!accidentDate || isoAcc < accidentDate))  accidentDate = isoAcc;
+        if(b.date && !bilanDate) bilanDate = b.date; // premier bilan (déjà trié asc)
+      });
+    }
+
+    // Priorité 1 : opération (proto OU f-date-op, le plus ancien)
+    var p1 = _earliestDate(protoDate, opDate);
+    // Priorité 2 : accident
+    var p2 = accidentDate;
+    // Priorité 3 : date premier bilan
+    var p3 = bilanDate;
+
+    var j0 = p1 || p2 || p3 || '';
+    if(j0) _saveJ0(patId, j0);
+    callback();
+  }).catch(function(){ callback(); });
 }
 
 /* Calcule J+ (peut être négatif) entre une date de séance et J0 */
