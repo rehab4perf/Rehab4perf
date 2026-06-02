@@ -406,6 +406,16 @@ body {
 }
 .cr-patho-btn:hover { border-color: var(--border2); color: var(--text); }
 .cr-patho-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.cr-articu-chip {
+  border: 1.5px solid var(--border); border-radius: 20px;
+  background: var(--surface); font-size: .74rem; font-weight: 500;
+  color: var(--text2); padding: 4px 10px; cursor: pointer;
+  transition: background .13s, border-color .13s, color .13s; font-family: inherit;
+}
+.cr-articu-chip:hover { border-color: #0891B2; color: #0891B2; }
+.cr-articu-chip.active { background: #0891B2; border-color: #0891B2; color: #fff; font-weight: 700; }
+.cr-amp-articu-section { margin-bottom:10px; }
+.cr-amp-articu-title { font-size:.68rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:#0891B2; margin-bottom:6px; padding-bottom:4px; border-bottom:1.5px solid #CFFAFE; }
 .cr-toggle-row {
   display: flex; align-items: center; gap: 8px; margin-bottom: 5px;
   cursor: pointer; user-select: none;
@@ -1374,11 +1384,7 @@ body {
           <span>Pathologie</span>
           <button class="cr-amp-cfg-btn" onclick="crOpenPathoConfig()" title="Configurer les pathologies (admin)">⚙</button>
         </div>
-        <div class="cr-amp-articulation-row" style="margin-bottom:8px;">
-          <select id="cr-articu-main" onchange="crOnArticuChange()">
-            <option value="">— Toutes les articulations —</option>
-          </select>
-        </div>
+        <div id="cr-articu-chips" class="cr-articu-chips-wrap" style="margin-bottom:8px;display:flex;flex-wrap:wrap;gap:6px;"></div>
         <div class="cr-patho-grid" id="cr-patho-grid-dynamic"></div>
         <div class="cr-fg">
           <label for="cr-patho-detail">Détail pathologie</label>
@@ -5073,7 +5079,8 @@ _updateOutilsPatientBtns();
     ]}
   };
   var crAmpConfig = JSON.parse(JSON.stringify(CR_AMP_DEFAULTS));
-  var crAmpArticu = ''; // articulation sélectionnée
+  var crAmpArticu  = ''; // alias backward-compat (= crArticuList[0] || '')
+  var crArticuList = []; // multi-sélection des articulations
 
   var CR_STATUTS_DEFAULTS = [
     { key: 'valide', icon: '✓', label: 'Validé',   cr: 'validé' },
@@ -5089,26 +5096,34 @@ _updateOutilsPatientBtns();
     ligamento_cheville:'cheville', entorse:'cheville'
   };
 
-  function crInitAmpSelect() {
-    // Peuple le select principal (dans la section Pathologie)
-    var sel = document.getElementById('cr-articu-main');
-    if (!sel) return;
-    var cur = sel.value;
-    sel.innerHTML = '<option value="">— Toutes les articulations —</option>';
+  /* ── Rend les chips d'articulation ── */
+  function crInitAmpChips() {
+    var wrap = document.getElementById('cr-articu-chips');
+    if (!wrap) return;
+    wrap.innerHTML = '';
     Object.keys(crAmpConfig).forEach(function(k) {
-      var opt = document.createElement('option');
-      opt.value = k; opt.textContent = crAmpConfig[k].label;
-      sel.appendChild(opt);
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'cr-articu-chip' + (crArticuList.indexOf(k) !== -1 ? ' active' : '');
+      btn.dataset.key = k;
+      btn.textContent = crAmpConfig[k].label;
+      btn.onclick = function() { crToggleArticu(this.dataset.key); };
+      wrap.appendChild(btn);
     });
-    if (cur && crAmpConfig[cur]) sel.value = cur;
-    crRenderPathoButtons(); // render les pathologies au démarrage
+    crRenderPathoButtons();
   }
 
-  window.crOnArticuChange = function() {
-    var sel = document.getElementById('cr-articu-main');
-    crArticuSelected = sel ? sel.value : '';
-    crAmpArticu = crArticuSelected;
-    crRenderPathoButtons();
+  /* Alias backward-compat (appelé par crSaveAmpConfig) */
+  function crInitAmpSelect() { crInitAmpChips(); }
+  window.crOnArticuChange = function() {}; // no-op, remplacé par crToggleArticu
+
+  /* Toggle une articulation dans crArticuList */
+  window.crToggleArticu = function(key) {
+    var idx = crArticuList.indexOf(key);
+    if (idx !== -1) crArticuList.splice(idx, 1);
+    else             crArticuList.push(key);
+    crAmpArticu = crArticuList[0] || ''; // alias compat
+    crInitAmpChips();
     crRenderAmpFields();
     crRenderSignRows();
     crRenderTestRows();
@@ -5119,8 +5134,8 @@ _updateOutilsPatientBtns();
     if (!grid) return;
     grid.innerHTML = '';
     var list = crPathoConfig.filter(function(p) {
-      if (!crArticuSelected) return true;
-      return p.articulations.indexOf(crArticuSelected) !== -1;
+      if (!crArticuList.length) return true;
+      return p.articulations.some(function(a){ return crArticuList.indexOf(a) !== -1; });
     });
     if (list.length === 0) {
       grid.innerHTML = '<span style="font-size:.78rem;color:var(--text3);font-style:italic;">Aucune pathologie pour cette articulation</span>';
@@ -5136,43 +5151,59 @@ _updateOutilsPatientBtns();
     });
   }
 
+  /* Rend les champs ROM — une section par articulation sélectionnée */
   window.crRenderAmpFields = function() {
     var container = document.getElementById('cr-amp-fields');
     if (!container) return;
     container.innerHTML = '';
-    if (!crAmpArticu || !crAmpConfig[crAmpArticu]) {
-      container.innerHTML = '<span style="font-size:.78rem;color:var(--text3);font-style:italic;">Sélectionnez une articulation ci-dessus</span>';
+    if (!crArticuList.length) {
+      container.innerHTML = '<span style="font-size:.78rem;color:var(--text3);font-style:italic;">Sélectionnez une ou plusieurs articulations ci-dessus</span>';
       return;
     }
-    crAmpConfig[crAmpArticu].mesures.forEach(function(m) {
-      var fid  = 'cr-dyn-' + m.id;
-      var sid  = fid + '-stat';
-      var div  = document.createElement('div');
-      div.className = 'cr-fg';
-      div.innerHTML = '<label for="' + fid + '">' + m.label + '</label>'
-        + '<div class="cr-amp-row">'
-        + '<input type="text" id="' + fid + '" placeholder="' + m.unit + '">'
-        + '<select id="' + sid + '">'
-        + '<option value="">—</option>'
-        + crStatutsConfig.map(function(s){ return '<option value="'+s.key+'">'+s.icon+' '+s.label+'</option>'; }).join('')
-        + '</select></div>';
-      container.appendChild(div);
+    crArticuList.forEach(function(articu) {
+      if (!crAmpConfig[articu] || !crAmpConfig[articu].mesures.length) return;
+      var section = document.createElement('div');
+      section.className = 'cr-amp-articu-section';
+      var title = document.createElement('div');
+      title.className = 'cr-amp-articu-title';
+      title.textContent = crAmpConfig[articu].label;
+      section.appendChild(title);
+      crAmpConfig[articu].mesures.forEach(function(m) {
+        var fid = 'cr-dyn-' + articu + '-' + m.id; // ID articu-spécifique
+        var sid = fid + '-stat';
+        var div = document.createElement('div');
+        div.className = 'cr-fg';
+        div.innerHTML = '<label for="' + fid + '">' + m.label + '</label>'
+          + '<div class="cr-amp-row">'
+          + '<input type="text" id="' + fid + '" placeholder="' + m.unit + '">'
+          + '<select id="' + sid + '">'
+          + '<option value="">—</option>'
+          + crStatutsConfig.map(function(s){ return '<option value="'+s.key+'">'+s.icon+' '+s.label+'</option>'; }).join('')
+          + '</select></div>';
+        section.appendChild(div);
+      });
+      container.appendChild(section);
     });
   };
 
-  // Auto-sélection articulation quand pathologie cliquée
-  // Ne s'active que si aucune articulation n'est déjà sélectionnée manuellement
+  /* Auto-ajout des articulations quand une pathologie est sélectionnée */
   function crAutoSelectArticu(pathoKey) {
-    if (crArticuSelected !== '') return; // ne pas écraser le choix manuel
+    if (!pathoKey) return;
     var p = crPathoConfig.find(function(x){ return x.key === pathoKey; });
     if (!p || !p.articulations || !p.articulations.length) return;
-    var articu = p.articulations[0];
-    var sel = document.getElementById('cr-articu-main');
-    if (sel && crAmpConfig[articu]) {
-      sel.value = articu;
-      crArticuSelected = articu;
-      crAmpArticu = articu;
+    var added = false;
+    p.articulations.forEach(function(articu) {
+      if (crAmpConfig[articu] && crArticuList.indexOf(articu) === -1) {
+        crArticuList.push(articu);
+        added = true;
+      }
+    });
+    if (added) {
+      crAmpArticu = crArticuList[0] || '';
+      crInitAmpChips();
       crRenderAmpFields();
+      crRenderSignRows();
+      crRenderTestRows();
     }
   }
 
@@ -5655,8 +5686,8 @@ _updateOutilsPatientBtns();
     if (!container) return;
     container.innerHTML = '';
     var filtered = crTestsConfig.filter(function(t){
-      if (crArticuSelected && t.articulations && t.articulations.length > 0) {
-        return t.articulations.indexOf(crArticuSelected) !== -1;
+      if (crArticuList.length && t.articulations && t.articulations.length > 0) {
+        return t.articulations.some(function(a){ return crArticuList.indexOf(a) !== -1; });
       }
       return true;
     });
@@ -5840,8 +5871,8 @@ _updateOutilsPatientBtns();
     else            { crPathos.push(key);       btn.classList.add('active'); }
     crUpdateBlocks(); crUpdateAmpLabels();
     crAutoFillObjet();
-    // Auto-sélection articulation uniquement si une seule pathologie est sélectionnée
-    if (crPathos.length === 1) crAutoSelectArticu(crPathos[0]);
+    // Auto-ajout de l'articulation liée à la pathologie (si pas déjà sélectionnée)
+    crAutoSelectArticu(btn.dataset.key);
   };
   function crUpdateBlocks() {
     var hasForce = crPathos.some(function(k){ return CR_PATHO_FORCE.indexOf(k) !== -1; });
@@ -5868,9 +5899,9 @@ _updateOutilsPatientBtns();
     if (!container) return;
     container.innerHTML = '';
     crSignConfig.forEach(function(s) {
-      // Filter: if sign has articulations set AND an articulation is selected, only show if match
-      if (crArticuSelected && s.articulations && s.articulations.length > 0) {
-        if (s.articulations.indexOf(crArticuSelected) === -1) return;
+      // Filter: si des articulations sont sélectionnées, ne montrer que les signes correspondants
+      if (crArticuList.length && s.articulations && s.articulations.length > 0) {
+        if (!s.articulations.some(function(a){ return crArticuList.indexOf(a) !== -1; })) return;
       }
       if (!crSigns.hasOwnProperty(s.key)) crSigns[s.key] = 0;
       var row = document.createElement('div');
@@ -6008,7 +6039,7 @@ _updateOutilsPatientBtns();
       lines.push('Patient : ' + patLine + '.');
       var diagLine = crPathosLabel();
       if (pathoDetail) diagLine = diagLine ? diagLine + ' — ' + pathoDetail : pathoDetail;
-      var articuLabel = crAmpArticu && crAmpConfig[crAmpArticu] ? crAmpConfig[crAmpArticu].label : '';
+      var articuLabel = crArticuList.map(function(a){ return crAmpConfig[a]?crAmpConfig[a].label:''; }).filter(Boolean).join(' + ');
       if (articuLabel) diagLine += (diagLine ? ' — ' : '') + articuLabel;
       if (patCote) diagLine += (diagLine ? ' — ' : '') + patCote;
       if (patAccident) diagLine += (diagLine ? ', ' : '') + crF('accidenté', 'accidenté', 'accidentée') + ' le ' + patAccident;
@@ -6022,12 +6053,14 @@ _updateOutilsPatientBtns();
     // 4. Phase
     if (phase) { lines.push('Stade de rééducation : ' + crPhaseLabel(phase) + '.'); lines.push(''); }
 
-    // 5. Amplitudes (dynamiques)
-    var ampByStatus = {}, ampNeutral = [];
-    crStatutsConfig.forEach(function(s){ ampByStatus[s.key] = []; });
-    if (crAmpArticu && crAmpConfig[crAmpArticu]) {
-      crAmpConfig[crAmpArticu].mesures.forEach(function(m) {
-        var fid  = 'cr-dyn-' + m.id;
+    // 5. Amplitudes (dynamiques) — une section par articulation sélectionnée
+    var hasAnyAmp = false;
+    crArticuList.forEach(function(articu) {
+      if (!crAmpConfig[articu]) return;
+      var ampByStatus = {}, ampNeutral = [];
+      crStatutsConfig.forEach(function(s){ ampByStatus[s.key] = []; });
+      crAmpConfig[articu].mesures.forEach(function(m) {
+        var fid  = 'cr-dyn-' + articu + '-' + m.id;
         var sid  = fid + '-stat';
         var v    = crStripDeg(crV(fid));
         var stat = crV(sid);
@@ -6036,18 +6069,17 @@ _updateOutilsPatientBtns();
         if (ampByStatus[stat] !== undefined) ampByStatus[stat].push(txt);
         else ampNeutral.push(txt);
       });
-    }
-    var hasAmp = ampNeutral.length || crStatutsConfig.some(function(s){ return (ampByStatus[s.key]||[]).length; });
-    if (hasAmp) {
-      lines.push('Amplitudes articulaires :');
-      crStatutsConfig.forEach(function(s) {
-        (ampByStatus[s.key] || []).forEach(function(txt) {
-          lines.push('  ' + s.icon + ' ' + txt + ' (' + s.cr + ')');
+      var hasAmp = ampNeutral.length || crStatutsConfig.some(function(s){ return (ampByStatus[s.key]||[]).length; });
+      if (hasAmp) {
+        hasAnyAmp = true;
+        lines.push('Amplitudes articulaires — ' + crAmpConfig[articu].label + ' :');
+        crStatutsConfig.forEach(function(s) {
+          (ampByStatus[s.key] || []).forEach(function(txt) { lines.push('  ' + s.icon + ' ' + txt + ' (' + s.cr + ')'); });
         });
-      });
-      ampNeutral.forEach(function(s){ lines.push('  - ' + s); });
-      lines.push('');
-    }
+        ampNeutral.forEach(function(s){ lines.push('  - ' + s); });
+        lines.push('');
+      }
+    });
 
     // 6. Force + LSI
     if (!document.getElementById('cr-block-force').classList.contains('cr-block-hidden')) {
@@ -6186,7 +6218,7 @@ _updateOutilsPatientBtns();
     if (crPathos.length || pathoDetail || patAccident || patOp || patCote) {
       var diagLine = crPathosLabel();
       if (pathoDetail) diagLine = diagLine ? diagLine + ' — ' + pathoDetail : pathoDetail;
-      var articuLabel2 = crAmpArticu && crAmpConfig[crAmpArticu] ? crAmpConfig[crAmpArticu].label : '';
+      var articuLabel2 = crArticuList.map(function(a){ return crAmpConfig[a]?crAmpConfig[a].label:''; }).filter(Boolean).join(' + ');
       if (articuLabel2) diagLine += (diagLine ? ' — ' : '') + articuLabel2;
       if (patAccident) diagLine += (diagLine ? ', ' : '') + crF('accidenté', 'accidenté', 'accidentée') + ' le ' + patAccident;
       if (patOp)       diagLine += (diagLine ? ', ' : '') + crF('opéré', 'opéré', 'opérée') + ' le ' + patOp;
@@ -6198,12 +6230,14 @@ _updateOutilsPatientBtns();
     lines.push('── BILAN INITIAL' + (joursStr ? ' (' + joursStr + (_isOp ? ' post-op.' : ' post-trauma.') + ')' : '') + ' ──────────────────────────────────');
     lines.push('');
 
-    // Amplitudes (dynamiques)
-    var ampByStatus = {}, ampNeutral = [];
-    crStatutsConfig.forEach(function(s){ ampByStatus[s.key] = []; });
-    if (crAmpArticu && crAmpConfig[crAmpArticu]) {
-      crAmpConfig[crAmpArticu].mesures.forEach(function(m) {
-        var fid  = 'cr-dyn-' + m.id;
+    // Amplitudes (dynamiques) — une section par articulation sélectionnée
+    var hasAmp = false;
+    crArticuList.forEach(function(articu) {
+      if (!crAmpConfig[articu]) return;
+      var ampByStatus = {}, ampNeutral = [];
+      crStatutsConfig.forEach(function(s){ ampByStatus[s.key] = []; });
+      crAmpConfig[articu].mesures.forEach(function(m) {
+        var fid  = 'cr-dyn-' + articu + '-' + m.id;
         var sid  = fid + '-stat';
         var v    = crStripDeg(crV(fid));
         var stat = crV(sid);
@@ -6212,18 +6246,17 @@ _updateOutilsPatientBtns();
         if (ampByStatus[stat] !== undefined) ampByStatus[stat].push(txt);
         else ampNeutral.push(txt);
       });
-    }
-    var hasAmp = ampNeutral.length || crStatutsConfig.some(function(s){ return (ampByStatus[s.key]||[]).length; });
-    if (hasAmp) {
-      lines.push('Amplitudes articulaires :');
-      crStatutsConfig.forEach(function(s) {
-        (ampByStatus[s.key] || []).forEach(function(txt) {
-          lines.push('  ' + s.icon + ' ' + txt + ' (' + s.cr + ')');
+      var sectionHasAmp = ampNeutral.length || crStatutsConfig.some(function(s){ return (ampByStatus[s.key]||[]).length; });
+      if (sectionHasAmp) {
+        hasAmp = true;
+        lines.push('Amplitudes articulaires — ' + crAmpConfig[articu].label + ' :');
+        crStatutsConfig.forEach(function(s) {
+          (ampByStatus[s.key] || []).forEach(function(txt) { lines.push('  ' + s.icon + ' ' + txt + ' (' + s.cr + ')'); });
         });
-      });
-      ampNeutral.forEach(function(s){ lines.push('  - ' + s); });
-    }
-
+        ampNeutral.forEach(function(s){ lines.push('  - ' + s); });
+        lines.push('');
+      }
+    });
     // Signes cliniques — 3 états groupés
     var signDefs = crSignConfig; // utilise la config dynamique
     var valideSigns = [], coursSigns = [];
@@ -6475,11 +6508,9 @@ _updateOutilsPatientBtns();
     crPathos = [];
     crPatientSexe = '';
     crAmpArticu = '';
-    crArticuSelected = '';
-    var articuSelMain = document.getElementById('cr-articu-main');
-    if (articuSelMain) articuSelMain.value = '';
-    var ampFields = document.getElementById('cr-amp-fields');
-    if (ampFields) ampFields.innerHTML = '';
+    crArticuList = [];
+    crInitAmpChips();
+    crRenderAmpFields();
     document.querySelectorAll('.cr-patho-btn').forEach(function(b){ b.classList.remove('active'); });
     crSignConfig.forEach(function(s){
       crSigns[s.key] = 0;
