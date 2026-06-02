@@ -1330,14 +1330,14 @@ body {
             </select>
           </div>
           <div class="cr-fg">
-            <label for="cr-pat-prenom">Prénom</label>
-            <input type="text" id="cr-pat-prenom" placeholder="Paul">
+            <label for="cr-pat-nom">Nom</label>
+            <input type="text" id="cr-pat-nom" placeholder="DUPONT">
           </div>
         </div>
         <div class="cr-form-row">
           <div class="cr-fg">
-            <label for="cr-pat-nom">Nom</label>
-            <input type="text" id="cr-pat-nom" placeholder="Dupont">
+            <label for="cr-pat-prenom">Prénom</label>
+            <input type="text" id="cr-pat-prenom" placeholder="Paul">
           </div>
           <div class="cr-fg">
             <label for="cr-pat-dob">Date de naissance</label>
@@ -6548,14 +6548,15 @@ _updateOutilsPatientBtns();
       if (sexe === 'M' || sexe.toLowerCase() === 'masculin' || sexe === 'H') crPatientSexe = 'M';
       else if (sexe === 'F' || sexe.toLowerCase() === 'féminin' || sexe.toLowerCase() === 'feminin') crPatientSexe = 'F';
       else crPatientSexe = '';
-      var civEl  = document.getElementById('cr-pat-civ');
-      var nomEl  = document.getElementById('cr-pat-nom');
-      if (nomEl && (nom || prenom)) {
+      var civEl    = document.getElementById('cr-pat-civ');
+      var nomEl    = document.getElementById('cr-pat-nom');
+      var prenomEl = document.getElementById('cr-pat-prenom');
+      if ((nom || prenom)) {
         var civVal = sexe === 'F' ? 'Mme' : 'M.';
         if (civEl) civEl.value = civVal;
         crPatientSexe = sexe === 'F' ? 'F' : 'M';
-        nomEl.value = [nom.toUpperCase(), prenom].filter(Boolean).join(' ');
-        filled++;
+        if (nomEl    && nom)    { nomEl.value    = nom.toUpperCase(); filled++; }
+        if (prenomEl && prenom) { prenomEl.value = prenom;            filled++; }
       }
 
       // ── Date de naissance ─────────────────────────────────────
