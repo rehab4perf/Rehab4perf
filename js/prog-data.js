@@ -365,6 +365,20 @@ var RENFO_ZONES = [
   {val:'RACHIS – THORACIQUE',  label:'Rachis thoracique'},
   {val:'RACHIS – LOMBAIRE',    label:'Rachis lombaire'},
 ];
+/* Union de toutes les articulations — utilisée quand typeFilter = '' (Tous) */
+var GLOBAL_ZONES = [
+  {val:'RACHIS – CERVICAL',   label:'Rachis cervical'},
+  {val:'RACHIS – THORACIQUE', label:'Rachis thoracique'},
+  {val:'RACHIS – LOMBAIRE',   label:'Rachis lombaire'},
+  {val:'TRONC / GAINAGE',     label:'Tronc / Gainage'},
+  {val:'ÉPAULE',              label:'Épaule'},
+  {val:'COUDE',               label:'Coude'},
+  {val:'POIGNET',             label:'Poignet'},
+  {val:'HANCHE',              label:'Hanche'},
+  {val:'GENOU',               label:'Genou'},
+  {val:'CHEVILLE',            label:'Cheville'},
+  {val:'PIED / HALLUX',       label:'Pied / Hallux'},
+];
 
 function onTypeChange(){
   var typeVal = document.getElementById('filterType').value;
@@ -374,7 +388,10 @@ function onTypeChange(){
   var subSel2 = document.getElementById('filterSub2');
   var subLabel = document.getElementById('filter-sub-label');
   var opts = [], opts2 = [];
-  if(typeVal === 'warmup'){
+  if(typeVal === ''){
+    subLabel.textContent = 'Articulation';
+    opts = GLOBAL_ZONES;
+  } else if(typeVal === 'warmup'){
     subLabel.textContent = 'Articulation';
     opts = WARMUP_ZONES;
   } else if(typeVal === 'renfo'){
@@ -418,7 +435,14 @@ function setFilterAll(){
   if(subSel2) subSel2.value = '';
   var subWrap  = document.getElementById('filter-sub-wrap');
   var subWrap2 = document.getElementById('filter-sub2-wrap');
-  if(subWrap)  subWrap.style.display  = 'none';
+  if(subWrap){
+    subWrap.style.display = '';
+    var subLabel = document.getElementById('filter-sub-label');
+    if(subLabel) subLabel.textContent = 'Articulation';
+    if(subSel) subSel.innerHTML = '<option value="">— Toutes —</option>' + GLOBAL_ZONES.map(function(o){
+      return '<option value="'+o.val+'">'+o.label+'</option>';
+    }).join('');
+  }
   if(subWrap2) subWrap2.style.display = 'none';
   _favFilter = false;
   document.getElementById('filterFav').classList.remove('active');
