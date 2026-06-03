@@ -3908,4 +3908,5 @@ function _newProgVierge(){
 
 // Doit être défini avant renderLib() (utilisé dans renderLib pour hover/touch)
 var _isTouchDevice = (('ontouchstart' in window) || (navigator.maxTouchPoints > 0));
-renderLib('');
+// Initialise les filtres (affiche le dropdown articulation dès le chargement)
+onTypeChange();
