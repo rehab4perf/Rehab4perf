@@ -6287,7 +6287,7 @@ function _renderPhaseItem(protoId, ph, idx, data, currentPhaseId) {
         + '</span>';
     }
     return '<div class="proto-criteria-item'+(isChecked?' checked':'')+'" id="proto-ci-'+protoId+'-'+ph.id+'-'+i+'">'
-      + '<input type="checkbox" class="proto-criteria-cb" '+(isChecked?'checked':'')+' onchange="_protoSetCheck(\''+protoId+'\',\''+ph.id+'\','+i+',this.checked)">'
+      + '<input type="checkbox" class="proto-criteria-cb" '+(isChecked?'checked':'')+' onchange="_protoCheckboxChange(this,\''+protoId+'\',\''+ph.id+'\','+i+')">'
       + '<span class="proto-criteria-text">'+_escHtml(c)+' '+dateStr+'</span>'
       + '</div>';
   }).join('');
@@ -6413,6 +6413,33 @@ function _protoAutoAssign(protoId, callback) {
   .catch(function(){ _showToast('Erreur assignation automatique.', true); });
 }
 
+function _protoCheckboxChange(el, protoId, phaseId, idx) {
+  var checked = el.checked;
+  if(!checked) {
+    /* Décochage d'un critère validé → confirmation requise */
+    el.checked = true; /* restaure visuellement en attendant */
+    var data  = _protoPatientData[protoId];
+    var chAt  = data && data.checkedAt && data.checkedAt[phaseId] && data.checkedAt[phaseId][idx];
+    var dateLbl = chAt
+      ? 'validé le ' + new Date(chAt).toLocaleDateString('fr-FR', {day:'numeric', month:'short', year:'numeric'})
+      : 'validé';
+    _confirmDialog({
+      id:           'cd-uncheck-criteria',
+      emoji:        '⚠️',
+      title:        'Décocher ce critère ?',
+      body:         'Ce critère a été ' + dateLbl + '.\nVoulez-vous vraiment le décocher ?',
+      confirmLabel: 'Décocher',
+      confirmColor: '#d97706',
+      cancelLabel:  'Annuler'
+    }, function() {
+      el.checked = false;
+      _protoSetCheck(protoId, phaseId, idx, false);
+    });
+    return;
+  }
+  _protoSetCheck(protoId, phaseId, idx, true);
+}
+
 function _protoSetCheck(protoId, phaseId, idx, checked) {
   var data = _protoPatientData[protoId];
   if(!data) return; /* sécurité : pas de patient sélectionné */
@@ -6430,7 +6457,9 @@ function _protoSetCheck(protoId, phaseId, idx, checked) {
       method: 'POST',
       headers: Object.assign({}, _sbHeaders(), {'Prefer':'resolution=merge-duplicates,return=minimal'}),
       body: JSON.stringify({ patient_protocol_id: ppId, phase_id: phaseId, criteria_index: idx, checked: checked, checked_at: checked ? now : null })
-    }).catch(function(e){ console.error('Criteria sync:', e); });
+    }).then(function(r){
+      if(!r.ok) { console.error('Criteria sync HTTP', r.status); _showToast('Erreur de sauvegarde du critère.', true); }
+    }).catch(function(e){ console.error('Criteria sync:', e); _showToast('Erreur réseau — critère non sauvegardé.', true); });
   }
 
   if(data.pp) {
