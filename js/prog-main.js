@@ -6397,6 +6397,7 @@ function _protoAutoAssign(protoId, callback) {
       praticien_id: _progUid, patient_id: _progPatient.id,
       protocol_id: protoId, protocol_name: proto.name,
       current_phase_id: firstPhaseId, status: 'active',
+      started_at: now,
       history: [{ type: 'assigned', at: now, note: null }]
     })
   })
@@ -6684,7 +6685,7 @@ function assignProtocol(protoId) {
   if(btn){ btn.disabled = true; btn.textContent = '⏳…'; }
   _fetchRetry(SUPA_URL_P + '/rest/v1/patient_protocols', {
     method: 'POST', headers: _sbHeaders(),
-    body: JSON.stringify({ praticien_id: _progUid, patient_id: _progPatient.id, protocol_id: protoId, protocol_name: proto.name, current_phase_id: proto.phases && proto.phases[0] ? proto.phases[0].id : null, status: 'active', history: [{ type: 'assigned', at: new Date().toISOString(), note: null }] })
+    body: JSON.stringify({ praticien_id: _progUid, patient_id: _progPatient.id, protocol_id: protoId, protocol_name: proto.name, current_phase_id: proto.phases && proto.phases[0] ? proto.phases[0].id : null, status: 'active', started_at: new Date().toISOString(), history: [{ type: 'assigned', at: new Date().toISOString(), note: null }] })
   })
   .then(function(r){ return r.ok ? r.json() : r.json().then(function(d){ throw new Error(JSON.stringify(d)); }); })
   .then(function(){
