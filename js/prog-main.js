@@ -1178,13 +1178,13 @@ function _getJ0(patientId) {
 function _getJ0ForPatient(patId) {
   var stored = _getJ0(patId);
   if(stored) return stored;
-  // Fallback : date du premier protocole assigné
+  // Fallback : date du premier protocole assigné (started_at si dispo, sinon created_at)
   var earliest = '';
   Object.keys(_protoPatientData||{}).forEach(function(k){
     var pp = _protoPatientData[k] && _protoPatientData[k].pp;
-    if(pp && pp.started_at){
-      var d = pp.started_at.slice(0,10);
-      if(!earliest || d < earliest) earliest = d;
+    if(pp){
+      var d = ((pp.started_at || pp.created_at) || '').slice(0,10);
+      if(d && (!earliest || d < earliest)) earliest = d;
     }
   });
   return earliest;
@@ -1204,9 +1204,9 @@ function _earliestDate(a, b) {
 function _ensureJ0ForPatient(patId, callback) {
   if(!_progToken){ callback(); return; }
   Promise.all([
-    // Source A : protocole assigné (started_at = date début / opération)
+    // Source A : protocole assigné (started_at si dispo, sinon created_at)
     _fetchRetry(SUPA_URL_P+'/rest/v1/patient_protocols?patient_id=eq.'+patId
-      +'&select=started_at&order=started_at.asc&limit=1', {headers:_sbHeaders()})
+      +'&select=started_at,created_at&order=created_at.asc', {headers:_sbHeaders()})
       .then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; }),
     // Source B : bilans (donnees pour f-date-op / f-date-accident + date du premier bilan)
     _fetchRetry(SUPA_URL_P+'/rest/v1/bilans?patient_id=eq.'+patId
@@ -1215,9 +1215,13 @@ function _ensureJ0ForPatient(patId, callback) {
   ]).then(function(res) {
     var protoDate = '', opDate = '', accidentDate = '', bilanDate = '';
 
-    // Protocol started_at
-    if(Array.isArray(res[0]) && res[0].length && res[0][0].started_at)
-      protoDate = res[0][0].started_at.slice(0,10);
+    // Protocol started_at (ou created_at si started_at null — protocoles existants)
+    if(Array.isArray(res[0])){
+      res[0].forEach(function(row){
+        var d = ((row.started_at || row.created_at) || '').slice(0,10);
+        if(d && (!protoDate || d < protoDate)) protoDate = d;
+      });
+    }
 
     // Bilans : parcourir tous pour trouver f-date-op, f-date-accident, et la date du premier bilan
     if(Array.isArray(res[1])) {
