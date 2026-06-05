@@ -703,7 +703,7 @@ function _protoPhaseChipStyle(donnees){
   // Extraire numéro de phase : "Phase 2 — ..." → "Ph.2"
   var mPh = phase.name.match(/Phase\s*(\d+)/i);
   var phShort = mPh ? 'Ph.'+mPh[1] : phase.name.slice(0,4);
-  return { bg: phase.color, border: phase.borderColor, label: proto.name+' · '+phShort };
+  return { bg: phase.color, border: phase.borderColor, label: phShort };
 }
 
 /* ── Helper chips partagé mois + semaine ── */
