@@ -2767,6 +2767,14 @@ function _doSaveProgCloud(nomProg, donnees, today, btn){
         .then(function(){ renderCalendar(); })
         .catch(function(e){ console.warn('Mise à jour programme_id séance échouée :', e); });
       }
+    } else if(!isNew){
+      // Mettre à jour le nom dans le cache local des chips pour que le calendrier
+      // reflète immédiatement le nouveau nom sans re-fetch réseau.
+      (_cloudCalEvents||[]).forEach(function(ev){
+        if(ev.programme_id === _currentProgId && ev.programmes){
+          ev.programmes.nom = nomProg;
+        }
+      });
     }
     _draftClear();
     _showToast('✓ Programme sauvegardé !');
