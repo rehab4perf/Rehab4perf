@@ -966,7 +966,7 @@ function updateCardioCible(blocId, scope, idx, field, val){
   var b = blocs.find(function(x){ return x.id===blocId; });
   if(!b || !b[scope] || !b[scope][idx]) return;
   b[scope][idx][field] = val;
-  _draftSaveLazy();
+  if(field === 'type') renderSession(); else _draftSaveLazy();
 }
 
 /* ── EMOM exercises ── */
@@ -1016,7 +1016,7 @@ function updateEmomCible(blocId, exoId, idx, field, val){
   var e = b.emom_exos.find(function(x){ return x.id===exoId; });
   if(!e || !e.cibles || !e.cibles[idx]) return;
   e.cibles[idx][field] = val;
-  _draftSaveLazy();
+  if(field === 'type') renderSession(); else _draftSaveLazy();
 }
 
 /* Rend une section de cibles cardio (réutilisé pour main / frac effort / frac récup) */
