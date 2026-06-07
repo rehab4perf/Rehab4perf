@@ -2493,14 +2493,14 @@ window.addEventListener('message', function(e){
     try { localStorage.setItem(R4P_KEYS.PROFILE, JSON.stringify(e.data.profile)); } catch(ex){}
   }
   // Nouveau token reçu depuis index.html après refresh automatique
+  // On met à jour uniquement le token — le rôle et les favoris ne changent pas entre deux refreshs,
+  // donc on évite les toggles DOM de _applyRoleUI() qui causaient un flash visuel.
   if(e.data && e.data.type==='r4p-token-refreshed' && e.data.access_token){
     _progToken = e.data.access_token;
     try {
       var pl = JSON.parse(atob(_progToken.split('.')[1]));
       _progUid = pl.sub || null;
     } catch(ex){}
-    _loadUserRole();
-    _fetchFavsFromSupabase();
   }
   if(e.data && e.data.type==='r4p-patient-selected'){
     _progPatient = _normalizePatient(e.data.patient);
