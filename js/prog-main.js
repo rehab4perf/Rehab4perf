@@ -1100,7 +1100,10 @@ function _syncCalNotesFromSupabase(){
     var merged = remoteNotes.concat(patientNotes);
     _calNotes = merged;
     localStorage.setItem(_calNotesKey(), JSON.stringify(_calNotes));
-    renderCalendar();
+    // Utiliser _renderCalendarUI() plutôt que renderCalendar() :
+    // les séances (_cloudCalEvents) sont déjà en cache — pas besoin de re-fetch.
+    // renderCalendar() vidait _cloudCalEvents à chaque appel → flash visible toutes les 30 s.
+    if(typeof _renderCalendarUI === 'function') _renderCalendarUI();
   }).catch(function(){});
 }
 
