@@ -535,6 +535,22 @@ window.addEventListener('message', function(e) {
     try { localStorage.setItem(R4P_KEYS.PATIENT, _currentPatient ? JSON.stringify(_currentPatient) : ''); } catch(ex) {}
     _updatePatientBtn();
     renderPatients(_allPatients);
+    // Re-broadcaster le patient rollbacké aux autres iframes (pas bilan qui n'a jamais changé)
+    // pour éviter que programme/outils restent sur le nouveau patient.
+    (function(rolledBack){
+      sb.auth.getSession().then(function(r) {
+        var sess = r.data && r.data.session;
+        var msg = {
+          type: 'r4p-patient-selected',
+          patient: rolledBack,
+          auth: sess ? { access_token: sess.access_token, refresh_token: sess.refresh_token } : null
+        };
+        ['frame-outils','frame-prescription'].forEach(function(id) {
+          var f = document.getElementById(id);
+          if (f && f.contentWindow) f.contentWindow.postMessage(msg, window.location.origin);
+        });
+      });
+    })(_currentPatient);
   }
 
   // account.html demande une déconnexion

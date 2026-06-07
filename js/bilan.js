@@ -460,31 +460,38 @@ window.addEventListener('message', function(e){
   if(e.data && e.data.type==='r4p-patient-selected'){
     var _newPat = e.data.patient;
     var _isDiff = !_bilanPatient || !_newPat || _bilanPatient.id !== _newPat.id;
-    // Protection contre la perte de données
-    if(_isDiff && _bilanModified){
-      if(!confirm('Le bilan actuel contient des modifications non sauvegardées.\nChanger de patient quand même ?')){
-        // Demander au parent de revenir à l'ancien patient
-        try { window.parent.postMessage({ type:'r4p-cancel-patient-switch', patientId: _bilanPatient ? _bilanPatient.id : null }, window.location.origin); } catch(ex){}
-        return;
+    var _msgData = e.data; // capturer pour le callback async
+    function _applyPatientSwitch(){
+      _bilanPatient = _newPat;
+      _currentBilanId = null;
+      _bilanModified = false;
+      try { localStorage.setItem(R4P_KEYS.PATIENT, _newPat ? JSON.stringify(_newPat) : ''); } catch(ex){}
+      if(_msgData.auth && _msgData.auth.access_token){
+        try {
+          var payload = JSON.parse(atob(_msgData.auth.access_token.split('.')[1]));
+          _bilanUid = payload.sub || null;
+        } catch(ex){}
+        try { sbB.auth.setSession(_msgData.auth); } catch(ex){}
+      }
+      _updateSaveBar();
+      if(_bilanPatient && _isDiff){
+        _resetAndLoadPatient(_bilanPatient);
+      } else if(_bilanPatient){
+        _autofillPatientFields(_bilanPatient);
       }
     }
-    _bilanPatient = _newPat;
-    _currentBilanId = null;
-    _bilanModified = false;
-    try { localStorage.setItem(R4P_KEYS.PATIENT, _newPat ? JSON.stringify(_newPat) : ''); } catch(ex){}
-    if(e.data.auth && e.data.auth.access_token){
-      try {
-        var payload = JSON.parse(atob(e.data.auth.access_token.split('.')[1]));
-        _bilanUid = payload.sub || null;
-      } catch(ex){}
-      try { sbB.auth.setSession(e.data.auth); } catch(ex){}
+    // Protection contre la perte de données
+    if(_isDiff && _bilanModified){
+      _bilanConfirm(
+        function(){ _applyPatientSwitch(); },
+        function(){
+          // Demander au parent de revenir à l'ancien patient
+          try { window.parent.postMessage({ type:'r4p-cancel-patient-switch', patientId: _bilanPatient ? _bilanPatient.id : null }, window.location.origin); } catch(ex){}
+        }
+      );
+      return;
     }
-    _updateSaveBar();
-    if(_bilanPatient && _isDiff){
-      _resetAndLoadPatient(_bilanPatient);
-    } else if(_bilanPatient){
-      _autofillPatientFields(_bilanPatient);
-    }
+    _applyPatientSwitch();
   }
 });
 
@@ -4304,6 +4311,30 @@ function _lmaUpdateMuscle() {
   updateBadges();
 }
 // ---------------------------------------------------------------
+
+// -- CONFIRM DIALOG --------------------------------------------
+var _bilanConfirmOkCb  = null;
+var _bilanConfirmCancelCb = null;
+function _bilanConfirm(onOk, onCancel) {
+  _bilanConfirmOkCb     = onOk     || null;
+  _bilanConfirmCancelCb = onCancel || null;
+  var ov = document.getElementById('modal-confirm-switch');
+  if(ov) ov.classList.add('open');
+}
+function _bilanConfirmOk() {
+  var ov = document.getElementById('modal-confirm-switch');
+  if(ov) ov.classList.remove('open');
+  var cb = _bilanConfirmOkCb;
+  _bilanConfirmOkCb = _bilanConfirmCancelCb = null;
+  if(cb) cb();
+}
+function _bilanConfirmCancel() {
+  var ov = document.getElementById('modal-confirm-switch');
+  if(ov) ov.classList.remove('open');
+  var cb = _bilanConfirmCancelCb;
+  _bilanConfirmOkCb = _bilanConfirmCancelCb = null;
+  if(cb) cb();
+}
 
 // -- TOAST ------------------------------------------------------
 function showToast(msg) {

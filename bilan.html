@@ -3484,6 +3484,16 @@ textarea { resize:none !important; overflow:hidden !important; }
 </main>
 
 <!-- ── MODAL ─────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-confirm-switch">
+  <div class="modal">
+    <h2>⚠️ Modifications non sauvegardées</h2>
+    <p>Le bilan actuel contient des modifications non sauvegardées.<br>Changer de patient quand même ?</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="_bilanConfirmCancel()">Annuler</button>
+      <button class="btn btn-danger" onclick="_bilanConfirmOk()">Changer de patient</button>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="modal-reset">
   <div class="modal">
     <h2>↺ Nouveau patient</h2>
