@@ -1399,6 +1399,21 @@ function _openCalNoteView(noteId) {
     +_noteTypeRow(_noteFormType)
     +'<input class="cal-note-inp" id="calNoteTitle" type="text" placeholder="Titre (optionnel)" value="'+escH(note.title||'')+'" />'
     +'<textarea class="cal-note-textarea" id="calNoteText" placeholder="Note, rappel, observation…">'+escH(note.text||'')+'</textarea>'
+    +'<div id="note-followup-toggle-row" style="display:flex;align-items:center;gap:8px;margin:10px 0 6px">'
+    +'<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.78rem;color:#6B6860">'
+    +'<input type="checkbox" id="note-followup-chk" onchange="_toggleFollowupFields()" style="accent-color:var(--accent)">'
+    +'🔁 Planifier un suivi'
+    +'</label>'
+    +'</div>'
+    +'<div id="note-followup-fields" style="display:none;background:#F7F6F3;border-radius:7px;padding:10px;margin-bottom:8px">'
+    +'<div style="display:flex;gap:8px;align-items:center;margin-bottom:7px">'
+    +'<span style="font-size:.75rem;color:#6B6860;white-space:nowrap">Dans</span>'
+    +'<input type="number" id="note-followup-days" value="35" min="1" style="width:56px;border:1px solid #D3D1CB;border-radius:5px;padding:4px 6px;font-size:.82rem;font-family:inherit" oninput="_updateFollowupDate()">'
+    +'<span style="font-size:.75rem;color:#6B6860;white-space:nowrap">jours →</span>'
+    +'<span id="note-followup-date-label" style="font-size:.75rem;color:#2D6A4F;font-weight:600"></span>'
+    +'</div>'
+    +'<input type="text" id="note-followup-title" placeholder="Titre du suivi" style="width:100%;border:1px solid #D3D1CB;border-radius:5px;padding:5px 8px;font-size:.82rem;font-family:inherit;box-sizing:border-box">'
+    +'</div>'
     +'<div style="display:flex;gap:8px;">'
     +'<button class="cal-note-save" style="flex:1;" onclick="_updateCalNote(\''+noteId+'\')">Mettre à jour</button>'
     +'<button class="cal-note-save" style="flex:0 0 auto;background:var(--accent-ll,#EBF3FF);color:var(--accent);border:1px solid var(--accent-l,#C7DCFF);" onclick="_duplicateCalNote(\''+noteId+'\');closeCalPicker()" title="Dupliquer">📄</button>'
@@ -1406,6 +1421,21 @@ function _openCalNoteView(noteId) {
     +'</div>'
     +'</div>';
   document.getElementById('calPickerOverlay').classList.add('open');
+  // Auto-suggest follow-up title depuis le titre existant
+  setTimeout(function(){
+    var titleEl = document.getElementById('calNoteTitle');
+    titleEl && titleEl.addEventListener('input', function(){
+      var ftEl = document.getElementById('note-followup-title');
+      if(ftEl && !ftEl._touched) ftEl.value = _nextVersionTitle(titleEl.value);
+    });
+    var ftEl = document.getElementById('note-followup-title');
+    if(ftEl){
+      ftEl.addEventListener('input', function(){ ftEl._touched = true; });
+      // Pré-remplir avec la version suivante du titre courant
+      var currentTitle = (document.getElementById('calNoteTitle')||{}).value || '';
+      if(currentTitle) ftEl.value = _nextVersionTitle(currentTitle);
+    }
+  }, 80);
 }
 
 function _updateCalNote(noteId) {
@@ -1428,6 +1458,16 @@ function _updateCalNote(noteId) {
     _deletePatientMsg(noteId);
   } else if(prevType === 'clinique') {
     _deleteClinicalNote(noteId);
+  }
+  // Créer le suivi si toggle actif
+  var followupChk = document.getElementById('note-followup-chk');
+  if(followupChk && followupChk.checked) {
+    var fDays = parseInt((document.getElementById('note-followup-days')||{}).value)||35;
+    var fTitle = ((document.getElementById('note-followup-title')||{}).value||'').trim();
+    if(fTitle) {
+      var fDate = _addDays(note.date, fDays);
+      _addCalNoteIfNotDupe(fDate, fTitle, '');
+    }
   }
   closeCalPicker();
   renderCalendar();
