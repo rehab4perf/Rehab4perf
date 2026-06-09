@@ -767,11 +767,11 @@ function _ytThumbHtml(url){
        + '</span>';
 }
 function openYtModal(videoId){
-  document.getElementById('ytModalIframe').src = 'https://www.youtube.com/embed/'+videoId+'?rel=0';
+  document.getElementById('ytModalIframe').src = 'https://www.youtube.com/embed/'+videoId+'?autoplay=1&rel=0';
   document.getElementById('ytModalOverlay').classList.add('open');
 }
 function closeYtModal(e){
-  if(e && e.target.closest && e.target.closest('#ytModalBox')) return;
+  if(e && e.target !== document.getElementById('ytModalOverlay')) return;
   document.getElementById('ytModalIframe').src = '';
   document.getElementById('ytModalOverlay').classList.remove('open');
 }
