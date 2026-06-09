@@ -915,7 +915,10 @@ function openCalPicker(dateStr) {
       +'<span class="cal-ctx-btn-body"><span>Ajouter une note</span>'
       +'<span class="cal-ctx-btn-desc">Rappel, événement, observation…</span></span>'
     +'</button>';
-  document.getElementById('calPickerOverlay').classList.add('open');
+  var _cpOverlay = document.getElementById('calPickerOverlay');
+  var _calBody = document.querySelector('.cal-central-body');
+  if(_calBody) _cpOverlay.style.top = _calBody.getBoundingClientRect().top + 'px';
+  _cpOverlay.classList.add('open');
 }
 
 function _openCalExistingPicker(dateStr) {
