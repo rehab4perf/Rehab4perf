@@ -205,7 +205,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .stmpl-section-sep  { padding:6px 14px 4px; font-size:.67rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; background:#F0F4F8; border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
 
 /* Group create modal */
-.grp-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:600; display:none; align-items:center; justify-content:center; }
+.grp-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:9000; transform:translateZ(0); display:none; align-items:center; justify-content:center; }
 .grp-modal-overlay.open { display:flex; }
 .grp-modal { background:#fff; border-radius:12px; padding:22px 24px 18px; width:360px; box-shadow:0 14px 44px rgba(0,0,0,.22); }
 .grp-modal h2 { font-size:.92rem; font-weight:700; color:var(--navy); margin-bottom:16px; }
@@ -213,12 +213,12 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .grp-modal textarea:focus { border-color:var(--accent2); }
 
 /* ── Template save modal ── */
-.tmpl-save-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:600; display:none; align-items:center; justify-content:center; }
+.tmpl-save-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:9000; transform:translateZ(0); display:none; align-items:center; justify-content:center; }
 .tmpl-save-overlay.open { display:flex; }
 .tmpl-save-modal { background:#fff; border-radius:12px; padding:22px 24px 18px; width:350px; box-shadow:0 14px 44px rgba(0,0,0,.22); }
 .tmpl-save-modal h2 { font-size:.92rem; font-weight:700; color:var(--navy); margin-bottom:16px; }
 /* ── Publish to library modal ── */
-.pub-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:700; display:none; align-items:center; justify-content:center; }
+.pub-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:9000; transform:translateZ(0); display:none; align-items:center; justify-content:center; }
 .pub-overlay.open { display:flex; }
 .pub-modal { background:#fff; border-radius:12px; padding:22px 24px 18px; width:340px; box-shadow:0 14px 44px rgba(0,0,0,.22); }
 .pub-modal h2 { font-size:.92rem; font-weight:700; color:var(--navy); margin-bottom:6px; }
@@ -237,7 +237,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .lib-del-btn:hover { color:var(--red); }
 
 /* Quick-add modal */
-.qa-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:500; display:none; align-items:center; justify-content:center; }
+.qa-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9000; transform:translateZ(0); display:none; align-items:center; justify-content:center; }
 .qa-overlay.open { display:flex; }
 .qa-modal    { background:#fff; border-radius:12px; padding:20px 22px 18px; width:330px; box-shadow:0 12px 40px rgba(0,0,0,.22); }
 .qa-modal h3 { font-size:.9rem; font-weight:700; color:var(--navy); margin-bottom:4px; }
@@ -255,7 +255,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .qa-confirm:hover { background:#3a80c9; }
 
 /* Editor modal */
-.editor-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:200; display:none; align-items:flex-start; justify-content:center; overflow-y:auto; padding:16px; }
+.editor-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9200; transform:translateZ(0); display:none; align-items:flex-start; justify-content:center; overflow-y:auto; padding:16px; }
 .editor-overlay.open { display:flex; }
 .editor-box { background:#fff; border-radius:12px; width:100%; max-width:980px; box-shadow:0 20px 60px rgba(0,0,0,.25); margin:auto; }
 .editor-head { background:var(--navy); color:#fff; padding:14px 18px; border-radius:12px 12px 0 0; display:flex; align-items:center; gap:10px; }
@@ -553,7 +553,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 /* ── Modal Planifier ── */
 .plan-modal-overlay {
   display:none; position:fixed; inset:0; background:rgba(0,0,0,.45);
-  backdrop-filter:blur(2px); z-index:8000;
+  z-index:8000; transform:translateZ(0);
   align-items:center; justify-content:center; padding:16px;
 }
 .plan-modal-overlay.open { display:flex; }
@@ -695,8 +695,8 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 
 /* ── Save Destination Modal ── */
 #saveDestOverlay {
-  display:none; position:fixed; inset:0; z-index:9500;
-  background:rgba(0,0,0,.5); backdrop-filter:blur(3px);
+  display:none; position:fixed; inset:0; z-index:9500; transform:translateZ(0);
+  background:rgba(0,0,0,.5);
   align-items:center; justify-content:center;
 }
 #saveDestOverlay.open { display:flex; }
@@ -937,7 +937,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 }
 /* Modale player YouTube */
 .yt-modal-overlay {
-  position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:9500;
+  position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:9500; transform:translateZ(0);
   display:none; align-items:center; justify-content:center; padding:20px;
 }
 .yt-modal-overlay.open { display:flex; }
@@ -948,10 +948,12 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 }
 .yt-modal-box iframe { width:100%; height:100%; border:none; display:block; }
 .yt-modal-close {
-  position:absolute; top:-38px; right:0; background:none; border:none;
-  color:#fff; font-size:1.6rem; cursor:pointer; line-height:1; opacity:.8;
+  position:absolute; top:8px; right:8px; background:rgba(0,0,0,.55); border:none;
+  color:#fff; font-size:1.4rem; cursor:pointer; line-height:1; opacity:.9;
+  border-radius:50%; width:32px; height:32px; display:flex; align-items:center; justify-content:center;
+  z-index:1;
 }
-.yt-modal-close:hover { opacity:1; }
+.yt-modal-close:hover { opacity:1; background:rgba(0,0,0,.8); }
 
 .vid-link {
   display:inline-flex; align-items:center; gap:3px;
@@ -1226,7 +1228,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 
 /* Export modal */
 .modal-overlay {
-  position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:100;
+  position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9000; transform:translateZ(0);
   display:flex; align-items:center; justify-content:center;
 }
 .modal-overlay.hidden { display:none; }
@@ -1319,7 +1321,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 
 /* ── MODAL SAUVEGARDE ── */
 .save-modal-overlay {
-  position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:300;
+  position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9000; transform:translateZ(0);
   display:none; align-items:center; justify-content:center;
 }
 .save-modal-overlay.open { display:flex; }
@@ -1484,7 +1486,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .share-toast .undo-btn:hover { background:rgba(255,255,255,.35); }
 
 /* ── TOUCH ACTION SHEET ── */
-.touch-sheet-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9000; display:none; }
+.touch-sheet-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9000; transform:translateZ(0); display:none; }
 .touch-sheet {
   position:fixed; bottom:0; left:0; right:0; background:#fff;
   border-radius:18px 18px 0 0; z-index:9001; display:none;
@@ -1520,7 +1522,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 
 /* ── PICKER CALENDRIER ── */
 .cal-picker-overlay {
-  position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:300;
+  position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9000; transform:translateZ(0);
   display:none; align-items:center; justify-content:center;
 }
 .cal-picker-overlay.open { display:flex; }
@@ -1637,7 +1639,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 
 /* ── Évolution des charges ─────────────────────────────── */
 /* ── Journal de bord ────────────────────────────────────── */
-.journal-overlay { display:none; position:fixed; inset:0; z-index:9100; background:rgba(0,0,0,.48); backdrop-filter:blur(2px); align-items:flex-start; justify-content:center; padding:50px 12px 12px; overflow-y:auto; }
+.journal-overlay { display:none; position:fixed; inset:0; z-index:9100; background:rgba(0,0,0,.48); transform:translateZ(0); align-items:flex-start; justify-content:center; padding:50px 12px 12px; overflow-y:auto; }
 .journal-overlay.open { display:flex; }
 .journal-panel { background:#fff; border-radius:12px; width:100%; max-width:640px; min-height:200px; max-height:calc(100vh - 80px); display:flex; flex-direction:column; overflow:hidden; box-shadow:0 12px 48px rgba(0,0,0,.22); }
 .journal-header { background:var(--navy); color:#fff; padding:13px 18px; display:flex; align-items:center; gap:10px; flex-shrink:0; }
@@ -1662,7 +1664,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .journal-item-rpe { font-size:.68rem; font-weight:700; color:#fff; background:var(--accent2); border-radius:4px; padding:1px 5px; white-space:nowrap; }
 .journal-empty { text-align:center; color:#9D9B96; font-style:italic; padding:40px 20px; font-size:.85rem; }
 
-.pevo-overlay { display:none; position:fixed; inset:0; z-index:9100; background:rgba(0,0,0,.48); backdrop-filter:blur(2px); align-items:flex-start; justify-content:center; padding:50px 12px 12px; overflow-y:auto; }
+.pevo-overlay { display:none; position:fixed; inset:0; z-index:9100; background:rgba(0,0,0,.48); transform:translateZ(0); align-items:flex-start; justify-content:center; padding:50px 12px 12px; overflow-y:auto; }
 .pevo-overlay.open { display:flex; }
 .pevo-panel { background:#fff; border-radius:12px; width:100%; max-width:860px; min-height:200px; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 12px 48px rgba(0,0,0,.22); }
 .pevo-header { background:var(--navy); color:#fff; padding:13px 18px; display:flex; align-items:center; gap:10px; flex-shrink:0; }
@@ -2249,7 +2251,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 <!-- ══ CYCLES MODAL ════════════════════════════════════════════ -->
 <style>
 .cycle-modal-overlay {
-  position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;
+  position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9000;transform:translateZ(0);
   display:none;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px;
 }
 .cycle-modal-overlay.open { display:flex; }
@@ -2341,7 +2343,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 <style>
 /* --- Overlay fullscreen --- */
 .proto-overlay {
-  position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:400;
+  position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9000;transform:translateZ(0);
   display:none;align-items:flex-start;justify-content:center;overflow-y:auto;padding:16px;
 }
 .proto-overlay.open { display:flex; }
@@ -2369,7 +2371,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .proto-admin-btn--del { background:#FEF2F2; color:#DC2626; }
 .proto-admin-btn--del:hover { background:#FEE2E2; }
 /* Modal éditeur protocole */
-.proto-edit-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9000; display:flex; align-items:center; justify-content:center; padding:16px; }
+.proto-edit-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9000; transform:translateZ(0); display:flex; align-items:center; justify-content:center; padding:16px; }
 .proto-edit-modal { background:#fff; border-radius:14px; width:100%; max-width:640px; max-height:92vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,.28); }
 .proto-edit-head { display:flex; align-items:center; gap:10px; padding:14px 18px; background:var(--navy); border-radius:14px 14px 0 0; flex-shrink:0; }
 .proto-edit-head h3 { flex:1; color:#fff; font-size:.9rem; font-weight:700; margin:0; }
@@ -2629,7 +2631,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .proto-tl-edit-cancel { padding:3px 8px; background:#F1F5F9; color:#475569; border:none; border-radius:6px; cursor:pointer; font-size:.72rem; font-family:inherit; }
 
 /* --- Modal note de statut --- */
-.proto-status-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:3000; display:flex; align-items:center; justify-content:center; }
+.proto-status-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9000; transform:translateZ(0); display:flex; align-items:center; justify-content:center; }
 .proto-status-modal  { background:#fff; border-radius:12px; padding:22px 24px; width:min(92vw,380px); box-shadow:0 8px 32px rgba(0,0,0,.2); }
 .proto-status-modal h4 { margin:0 0 6px; font-size:.95rem; color:#1E293B; }
 .proto-status-modal p  { margin:0 0 12px; font-size:.78rem; color:var(--text-sm); }
