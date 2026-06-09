@@ -6992,6 +6992,143 @@ function _escHtml(str) {
     .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
+/* ═══════════════════════════════════════════════════════════
+   JOURNAL DE BORD
+═══════════════════════════════════════════════════════════ */
+var _journalFilter = 'all';
+
+function openJournal() {
+  if(!_progPatient){ _showToast('Sélectionnez un patient pour voir le journal.', true); return; }
+  _journalFilter = 'all';
+  document.querySelectorAll('.journal-filter-btn').forEach(function(b){ b.classList.remove('active'); });
+  var all = document.getElementById('jf-all');
+  if(all) all.classList.add('active');
+  _renderJournal();
+  document.getElementById('journalOverlay').classList.add('open');
+}
+
+function closeJournal() {
+  document.getElementById('journalOverlay').classList.remove('open');
+}
+
+function _setJournalFilter(f) {
+  _journalFilter = f;
+  document.querySelectorAll('.journal-filter-btn').forEach(function(b){ b.classList.remove('active'); });
+  var btn = document.getElementById('jf-'+f);
+  if(btn) btn.classList.add('active');
+  _renderJournal();
+}
+
+function _renderJournal() {
+  var body = document.getElementById('journalBody');
+  if(!body) return;
+
+  // J0 pour les labels J+
+  var j0 = _progPatient ? _getJ0ForPatient(_progPatient.id) : '';
+
+  // ── Construire la liste unifiée ──
+  var items = [];
+
+  // Séances planifiées (depuis le cache calendrier)
+  if(_journalFilter === 'all' || _journalFilter === 'seance') {
+    (_cloudCalEvents||[]).forEach(function(ev) {
+      var rpe   = ev.athlete_feedback && ev.athlete_feedback[0] && ev.athlete_feedback[0].rpe;
+      var duree = ev.athlete_feedback && ev.athlete_feedback[0] && ev.athlete_feedback[0].duree_min;
+      items.push({
+        date:   ev.date,
+        type:   'seance',
+        id:     ev.id,
+        progId: ev.programme_id,
+        nom:    (ev.programmes && ev.programmes.nom) || 'Programme',
+        rpe:    rpe   || null,
+        duree:  duree || null
+      });
+    });
+  }
+
+  // Notes (cliniques + patient)
+  if(_journalFilter === 'all' || _journalFilter === 'note') {
+    _loadCalNotes();
+    (_calNotes||[]).forEach(function(n) {
+      items.push({
+        date:  n.date,
+        type:  n.type === 'patient' ? 'patient' : 'clinique',
+        id:    n.id,
+        nom:   n.title || '(sans titre)',
+        text:  n.text  || ''
+      });
+    });
+  }
+
+  // Pas de données
+  if(!items.length) {
+    var msg = !_cloudCalEvents.length && (_journalFilter === 'all' || _journalFilter === 'seance')
+      ? 'Ouvrez l\'agenda pour charger les séances, puis revenez ici.'
+      : 'Aucun élément à afficher.';
+    body.innerHTML = '<div class="journal-empty">'+escH(msg)+'</div>';
+    return;
+  }
+
+  // Trier par date décroissante
+  items.sort(function(a, b) { return b.date.localeCompare(a.date); });
+
+  // Grouper par mois
+  var MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  var html = '';
+  var lastMonthKey = '';
+
+  items.forEach(function(item) {
+    var parts = (item.date||'').split('-');
+    var monthKey = (parts[0]||'')+(parts[1]||'');
+    if(monthKey !== lastMonthKey) {
+      lastMonthKey = monthKey;
+      var mLabel = parts[1] ? (MONTHS[parseInt(parts[1],10)-1]||'') + ' ' + (parts[0]||'') : '';
+      html += '<div class="journal-month">'+escH(mLabel)+'</div>';
+    }
+
+    // Icône + meta selon type
+    var icon, metaHtml;
+    if(item.type === 'seance') {
+      icon = '🏋️';
+      var metaParts = [];
+      if(item.rpe)   metaParts.push('RPE '+item.rpe);
+      if(item.duree) metaParts.push(item.duree+' min');
+      metaHtml = metaParts.length ? '<span>'+escH(metaParts.join(' · '))+'</span>' : '';
+    } else if(item.type === 'patient') {
+      icon = '💬';
+      metaHtml = item.text ? '<span>'+escH(item.text.slice(0,60)+(item.text.length>60?'…':''))+'</span>' : '';
+    } else {
+      icon = '📝';
+      metaHtml = item.text ? '<span>'+escH(item.text.slice(0,60)+(item.text.length>60?'…':''))+'</span>' : '';
+    }
+
+    // Date formatée + J+
+    var dayStr = parts[2] ? parseInt(parts[2],10)+'/'+(parts[1]||'?') : escH(item.date);
+    var jPlus  = j0 ? _computeJPlus(item.date, j0) : null;
+    var jBadge = jPlus !== null ? '<span class="journal-item-jplus">J'+(jPlus>=0?'+':'')+jPlus+'</span>' : '';
+    var rpeBadge = (item.type === 'seance' && item.rpe) ? '<span class="journal-item-rpe">RPE '+escH(String(item.rpe))+'</span>' : '';
+
+    // Action au clic
+    var onclick;
+    if(item.type === 'seance') {
+      onclick = '_openChipInBuilder(\''+escH(String(item.progId))+'\',\''+escH(item.date)+'\',\''+escH(String(item.id))+'\');closeJournal()';
+    } else {
+      onclick = 'closeJournal();setTimeout(function(){_openCalNoteView(\''+escH(String(item.id))+'\');},120)';
+    }
+
+    html += '<div class="journal-item" onclick="'+onclick+'">'
+      +'<span class="journal-item-icon">'+icon+'</span>'
+      +'<div class="journal-item-body">'
+        +'<div class="journal-item-title">'+escH(item.nom)+'</div>'
+        +(metaHtml ? '<div class="journal-item-meta">'+metaHtml+rpeBadge+'</div>' : '')
+      +'</div>'
+      +'<div class="journal-item-date">'+escH(dayStr)+jBadge+'</div>'
+      +'</div>';
+  });
+
+  body.innerHTML = html;
+}
+
 // ── Sync périodique des notes cliniques (60 s) ──
 setInterval(_syncCalNotesIfNeeded, 30000);
 
