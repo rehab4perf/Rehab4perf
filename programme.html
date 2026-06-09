@@ -47,7 +47,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .topbar-btn.primary:hover { background:#3a80c9; }
 
 /* ── LAYOUT ── */
-.app { display:flex; height:calc(100% - 48px); overflow:hidden; isolation:isolate; }
+.app { display:flex; height:calc(100% - 48px); overflow:hidden; }
 
 /* Sidebar library */
 .sidebar {
@@ -413,7 +413,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   overflow:hidden;
   transition: width .28s cubic-bezier(.4,0,.2,1), border-left-width .28s;
   position:relative;
-  isolation:isolate;
 }
 .builder-panel.open {
   width:480px; min-width:360px;
