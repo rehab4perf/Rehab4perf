@@ -360,7 +360,7 @@ body {
 /* ── Historique modal ────────────────────────────────────── */
 .histo-overlay {
   display: none; position: fixed; inset: 0; z-index: 9000;
-  background: rgba(0,0,0,.45);
+  background: rgba(0,0,0,.45); backdrop-filter: blur(2px);
   align-items: flex-start; justify-content: center; padding-top: 60px;
 }
 .histo-overlay.open { display: flex; }
