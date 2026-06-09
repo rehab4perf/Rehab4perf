@@ -2787,6 +2787,26 @@ function _doSaveProgCloud(nomProg, donnees, today, btn){
   });
 }
 
+/* ── Auto-sauvegarde silencieuse de la liaison de phase ──────────────── */
+function _autoSavePhaseLinkage(){
+  if(!_currentProgId || !_progPatient || !_progUid || !_progToken) return;
+  var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), notes: getNotes() };
+  if(_builderLinkedPhase) donnees.linkedPhase = _builderLinkedPhase;
+  _fetchRetry(SUPA_URL_P + '/rest/v1/programmes?id=eq.' + _currentProgId, {
+    method: 'PATCH',
+    headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
+    body: JSON.stringify({ donnees: donnees })
+  }).then(function(r){
+    if(!r.ok) return;
+    (_cloudCalEvents||[]).forEach(function(ev){
+      if(ev.programme_id === _currentProgId && ev.programmes){
+        ev.programmes.donnees = donnees;
+      }
+    });
+    if(typeof _renderCalendarUI === 'function') _renderCalendarUI();
+  }).catch(function(e){ console.warn('Auto-save phase linkage failed:', e); });
+}
+
 function openProgHistory(){
   if(!_progPatient){ alert('Sélectionnez un patient depuis la barre de navigation.'); return; }
   // Créer le modal dynamiquement s'il n'existe pas

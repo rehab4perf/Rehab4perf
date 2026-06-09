@@ -4278,6 +4278,7 @@ function _builderLinkToPhase(protoId, phaseId, ppId, phaseName, protoName){
     var btn = banner.querySelector('.bpb-link-btn');
     if(btn){ btn.textContent = '✓ Lié à cette phase'; btn.setAttribute('onclick','_builderUnlinkPhase()'); }
   }
+  _autoSavePhaseLinkage();
   _showToast('📎 Séance liée à ' + protoName + ' — ' + phaseName);
 }
 
@@ -4292,6 +4293,7 @@ function _builderUnlinkPhase(){
       _builderLoadProtoContext();
     }
   }
+  _autoSavePhaseLinkage();
   _showToast('🔗 Liaison retirée');
 }
 
