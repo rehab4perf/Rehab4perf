@@ -5267,7 +5267,6 @@ function _updateSideLabels(){
   var SCOPES = [
     { zones:['epaule','coude','poignet'],         pages:['page-epaule','page-fonctionnelsMS'] },
     { zones:['genou'],                            pages:['page-genou'] },
-    { zones:['hanche'],                           pages:['page-hanche'] },
     { zones:['cheville','pied'],                  pages:['page-pied'] },
     { zones:['rachis-c','rachis-l'],              pages:['page-rachis','page-fonctionnelsRachis'] },
     { zones:['genou','hanche','cheville','pied','cuisse','jambe'], pages:['page-fonctionnels'] }
@@ -5279,6 +5278,11 @@ function _updateSideLabels(){
       if(c) _applyLabels(c, cote);
     });
   });
+  // Hanche : rien sélectionné → SAIN/ATTEINT (pas bilatéral) ; BILATÉRAL → GAUCHE/DROIT
+  var haCote = _getCoteForScope(['hanche']);
+  var haEffective = (haCote === '') ? 'DROIT' : haCote;
+  var haEl = document.getElementById('page-hanche');
+  if(haEl) _applyLabels(haEl, haEffective);
   _updateGenouBilateral();
   _updateChevBilateral();
   _updateEpauleBilateral();
