@@ -593,8 +593,12 @@ function _renderBilanCharge(){
         var col = stats.days[i]===0?'var(--border)':stats.days[i]<150?'#27AE60':stats.days[i]<300?'#E67E22':'var(--red)';
         html += '<div class="bilan-day-col">'
               + '<div class="bilan-day-bar" style="height:'+h+'px;background:'+col+';"></div>'
-              + '<div class="bilan-day-lbl">'+dayNames[i]+'</div>'
               + '</div>';
+      }
+      html += '</div>';
+      html += '<div class="bilan-day-labels">';
+      for(var i=0;i<7;i++){
+        html += '<div class="bilan-day-lbl-col"><span class="bilan-day-lbl">'+dayNames[i]+'</span></div>';
       }
       html += '</div>';
       html += '<div class="bilan-wc-total"><span class="bilan-wc-charge">⚡ '+stats.charge+' UA</span></div>';
