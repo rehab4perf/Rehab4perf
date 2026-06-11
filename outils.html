@@ -1705,7 +1705,8 @@ function printPrescription() {
   try { doc.addImage(SIG_B64, 'PNG', mL, y, 33, 22); } catch(e){}
   try { doc.addImage(TAMPON_B64, 'PNG', W-mR-28, y, 28, 28); } catch(e){}
 
-  doc.save('prescription.pdf');
+  var fileName = 'Prescription' + (nom ? ' ' + nom : '') + (pren ? ' ' + pren : '') + '.pdf';
+  doc.save(fileName);
 }
 </script>
 
