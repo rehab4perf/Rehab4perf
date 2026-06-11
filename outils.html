@@ -1167,36 +1167,7 @@ body {
   .presc-doc-header { flex-direction: column; gap: 8px; }
 }
 
-/* ── Print CSS ────────────────────────────────────────────── */
-@page { size: A4 portrait; margin: 28mm 24mm; }
-@media print {
-  body > * { display: none !important; }
-  body > #presc-print-area { display: block !important; }
-  #presc-print-area {
-    position: static;
-    width: 100%;
-    background: #fff;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    color: #111; line-height: 1.55;
-  }
-  .pp-header { display: flex; justify-content: space-between; margin-bottom: 22pt; }
-  .pp-header-left { font-size: 9pt; }
-  .pp-header-right { font-size: 9pt; text-align: right; }
-  .pp-header strong { font-size: 10pt; }
-  .pp-date { font-size: 9.5pt; margin-bottom: 22pt; }
-  .pp-title { text-align: center; font-size: 11pt; font-weight: 700; text-decoration: underline; margin-bottom: 20pt; letter-spacing: .03em; }
-  .pp-patient-label { font-size: 9.5pt; font-weight: 700; text-decoration: underline; margin-bottom: 6pt; }
-  .pp-patient-name { font-size: 10pt; font-weight: 700; margin-bottom: 26pt; }
-  .pp-objet { text-align: center; font-size: 12pt; font-weight: 700; margin-bottom: 26pt; line-height: 1.4; }
-  .pp-logos { display: flex; justify-content: center; margin-bottom: 22pt; }
-  .pp-logos img { max-height: 90pt; object-fit: contain; }
-  .pp-sig-row { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 6pt; }
-  .pp-sig-label { font-size: 9pt; text-decoration: underline; }
-  .pp-sig-img { max-height: 60pt; margin-top: 3pt; }
-  .pp-tampon { max-height: 68pt; }
-}
+/* ── Print CSS supprimé — impression via fenêtre dédiée (printPrescription) ── */
 </style>
 
 <div class="panel" id="panel-prescriptions">
@@ -1659,34 +1630,52 @@ function printPrescription() {
   var SIG_B64     = document.querySelector('#presc-doc .presc-doc-sig-img').src;
   var TAMPON_B64  = document.querySelector('#presc-doc .presc-doc-tampon').src;
 
-  document.getElementById('presc-print-area').innerHTML = `
-    <div class="pp-header">
-      <div class="pp-header-left">
-        <strong>PERONNAUD Antoine</strong><br>
-        Masseur Kinésithérapeute du Sport.<br>
-        N°AM : 757 099 486
-      </div>
-      <div class="pp-header-right">
-        <strong>AthletiK Lamarck</strong><br>
-        Spécialiste de la performance sportive<br>
-        7, rue des Cottages – Paris 18<sup>e</sup><br>
-        Tel .06 89 63 75 28.<br>
-        athletiklamarck@gmail.com
-      </div>
-    </div>
-    <div class="pp-date">Paris, le ${dateStr}</div>
-    <div class="pp-title">PRESCRIPTION</div>
-    <div class="pp-patient-label">PATIENT :</div>
-    <div class="pp-patient-name">${patStr}</div>
-    <div class="pp-objet">${obj||'—'}</div>
-    <div class="pp-logos"><img src="${LOGO_B64}" alt="AthletiK Lamarck"></div>
-    <div class="pp-sig-label">Signature du praticien</div>
-    <div class="pp-sig-row">
-      <div><img class="pp-sig-img" src="${SIG_B64}" alt="Signature"></div>
-      <div><img class="pp-tampon" src="${TAMPON_B64}" alt="Tampon"></div>
-    </div>
-  `;
-  window.print();
+  // Ouvre une fenêtre dédiée (hors iframe) pour garantir la pleine largeur A4
+  var win = window.open('', '_blank', 'width=850,height=1100');
+  win.document.open();
+  win.document.write(`<!DOCTYPE html>
+<html lang="fr"><head>
+<meta charset="UTF-8">
+<title>Prescription</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+@page{size:A4 portrait;margin:28mm 24mm;}
+body{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#111;line-height:1.55;}
+.pp-header{display:flex;justify-content:space-between;margin-bottom:22pt;}
+.pp-header-left{font-size:9pt;}
+.pp-header-right{font-size:9pt;text-align:right;}
+.pp-header strong{font-size:10pt;}
+.pp-date{font-size:9.5pt;margin-bottom:22pt;}
+.pp-title{text-align:center;font-size:11pt;font-weight:700;text-decoration:underline;margin-bottom:20pt;letter-spacing:.03em;}
+.pp-patient-label{font-size:9.5pt;font-weight:700;text-decoration:underline;margin-bottom:6pt;}
+.pp-patient-name{font-size:10pt;font-weight:700;margin-bottom:26pt;}
+.pp-objet{text-align:center;font-size:12pt;font-weight:700;margin-bottom:26pt;line-height:1.4;}
+.pp-logos{display:flex;justify-content:center;margin-bottom:22pt;}
+.pp-logos img{max-height:90pt;object-fit:contain;}
+.pp-sig-row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:6pt;}
+.pp-sig-label{font-size:9pt;text-decoration:underline;margin-bottom:4pt;}
+.pp-sig-img{max-height:60pt;margin-top:3pt;}
+.pp-tampon{max-height:68pt;}
+</style>
+</head><body>
+<div class="pp-header">
+  <div class="pp-header-left"><strong>PERONNAUD Antoine</strong><br>Masseur Kinésithérapeute du Sport.<br>N°AM : 757 099 486</div>
+  <div class="pp-header-right"><strong>AthletiK Lamarck</strong><br>Spécialiste de la performance sportive<br>7, rue des Cottages – Paris 18<sup>e</sup><br>Tel .06 89 63 75 28.<br>athletiklamarck@gmail.com</div>
+</div>
+<div class="pp-date">Paris, le ${dateStr}</div>
+<div class="pp-title">PRESCRIPTION</div>
+<div class="pp-patient-label">PATIENT :</div>
+<div class="pp-patient-name">${patStr}</div>
+<div class="pp-objet">${obj||'—'}</div>
+<div class="pp-logos"><img src="${LOGO_B64}" alt="AthletiK Lamarck"></div>
+<div class="pp-sig-label">Signature du praticien</div>
+<div class="pp-sig-row">
+  <div><img class="pp-sig-img" src="${SIG_B64}" alt="Signature"></div>
+  <div><img class="pp-tampon" src="${TAMPON_B64}" alt="Tampon"></div>
+</div>
+<script>window.addEventListener('load',function(){window.print();});<\/script>
+</body></html>`);
+  win.document.close();
 }
 </script>
 
