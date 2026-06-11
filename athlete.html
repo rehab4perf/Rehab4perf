@@ -230,10 +230,16 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
 }
 .cal-day {
   background:var(--surface); border:1px solid var(--border); border-radius:8px;
-  padding:8px 7px; min-height:80px; cursor:pointer; transition:background .12s;
+  padding:8px 7px; height:92px; overflow:hidden; cursor:pointer; transition:background .12s;
 }
 .cal-day:hover { background:#F5F8FF; border-color:var(--accent2); }
-.cal-day.other-month { background:transparent; border-color:transparent; cursor:default; min-height:64px; }
+.cal-day.other-month { background:transparent; border-color:transparent; cursor:default; }
+/* Dots (mobile) */
+.cal-dots { display:flex; gap:5px; flex-wrap:wrap; margin-top:6px; padding:0 2px; }
+.cal-dot  { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+/* Overflow badge (desktop) */
+.cal-more { font-size:.6rem; color:var(--muted); font-weight:600; margin-top:2px; cursor:pointer; }
+.cal-more:hover { color:var(--accent); }
 .cal-day.today { border-color:var(--accent); }
 .cal-day-num {
   font-size:.78rem; font-weight:700; color:var(--muted); margin-bottom:5px; text-align:right;
@@ -298,12 +304,12 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
   .cal-today-btn { padding:6px 12px; font-size:.74rem; }
   .view-btn { padding:5px 8px; font-size:.72rem; }
 
-  /* ── Vue Mois : cellules compactes ── */
-  .cal-day { min-height:52px; padding:5px 4px; }
+  /* ── Vue Mois : cellules compactes avec dots ── */
+  .cal-day { height:58px; padding:5px 4px; }
   .cal-day-header { font-size:.58rem; letter-spacing:0; }
-  .cal-day-num { font-size:.7rem; margin-bottom:3px; }
-  .cal-chip { font-size:.62rem; padding:3px 4px; }
-  .cal-msg-chip { font-size:.6rem; padding:2px 4px; }
+  .cal-day-num { font-size:.7rem; margin-bottom:2px; }
+  .cal-dots { margin-top:4px; gap:4px; }
+  .cal-dot  { width:7px; height:7px; }
 
   /* ── Vue Semaine 3 jours : colonnes lisibles ── */
   .week-col { min-height:90px; border-radius:12px; }
@@ -714,18 +720,33 @@ function _buildMonthHtml(){
     var cellDate = new Date(_calYear,_calMonth,d);
     var isToday = cellDate.getTime()===today.getTime();
     var dayEvs = _calEvents.filter(function(e){ return e.date===dateStr; });
-    var chips = dayEvs.map(function(ev){
-      var nom = (ev.programmes&&ev.programmes.nom)||'Programme';
-      var fb = ev.athlete_feedback;
-      var ua = (fb&&fb.rpe&&fb.duree_min) ? fb.rpe*fb.duree_min : null;
-      var uaBadge = ua ? '<span class="chip-ua" style="color:'+_uaColor(ua)+';">⚡'+ua+'</span>' : '';
-      return '<div class="cal-chip" onclick="event.stopPropagation();openProgModal(\''+escH(ev.programme_id)+'\',\''+escH(nom)+'\',\''+escH(ev.id)+'\')" title="'+escH(nom)+'">'
-           + '📋 '+escH(nom.length>10?nom.slice(0,10)+'…':nom)+uaBadge+'</div>';
-    }).join('');
-    var msgChips = _calMessages.filter(function(m){ return m.date===dateStr; }).map(function(m){
-      var lbl = m.title || (m.body ? m.body.slice(0,18)+(m.body.length>18?'…':'') : 'Message');
-      return '<div class="cal-msg-chip" onclick="event.stopPropagation();_openMsgModal(\''+escH(m.id)+'\')" title="'+escH((m.title?m.title+'\n':'')+m.body)+'">💬 '+escH(lbl)+'</div>';
-    }).join('');
+    var dayMsgsCell = _calMessages.filter(function(m){ return m.date===dateStr; });
+    var chips, msgChips;
+    if(_isMobile){
+      // Mobile : un dot coloré par séance/message — tap ouvre vue Jour
+      var dots = dayEvs.map(function(ev){
+        var fb=ev.athlete_feedback, ua=(fb&&fb.rpe&&fb.duree_min)?fb.rpe*fb.duree_min:null;
+        return '<span class="cal-dot" style="background:'+(ua?_uaColor(ua):'var(--accent)')+'"></span>';
+      }).join('') + (dayMsgsCell.length ? '<span class="cal-dot" style="background:#4338CA"></span>' : '');
+      chips    = dots ? '<div class="cal-dots">'+dots+'</div>' : '';
+      msgChips = '';
+    } else {
+      // Desktop : max 1 chip séance + max 1 chip message + badge "+N autres"
+      chips = dayEvs.slice(0,1).map(function(ev){
+        var nom=(ev.programmes&&ev.programmes.nom)||'Programme';
+        var fb=ev.athlete_feedback, ua=(fb&&fb.rpe&&fb.duree_min)?fb.rpe*fb.duree_min:null;
+        var uaBadge=ua?'<span class="chip-ua" style="color:'+_uaColor(ua)+';">⚡'+ua+'</span>':'';
+        return '<div class="cal-chip" onclick="event.stopPropagation();openProgModal(\''+escH(ev.programme_id)+'\',\''+escH(nom)+'\',\''+escH(ev.id)+'\')" title="'+escH(nom)+'">'
+             +'📋 '+escH(nom.length>10?nom.slice(0,10)+'…':nom)+uaBadge+'</div>';
+      }).join('');
+      msgChips = dayMsgsCell.slice(0,1).map(function(m){
+        var lbl=m.title||(m.body?m.body.slice(0,18)+(m.body.length>18?'…':''):'Message');
+        return '<div class="cal-msg-chip" onclick="event.stopPropagation();_openMsgModal(\''+escH(m.id)+'\')" title="'+escH((m.title?m.title+'\n':'')+m.body)+'">💬 '+escH(lbl)+'</div>';
+      }).join('');
+      var shownCount=(dayEvs.length>0?1:0)+(dayMsgsCell.length>0?1:0);
+      var extraCount=dayEvs.length+dayMsgsCell.length-shownCount;
+      if(extraCount>0) chips+='<div class="cal-more" onclick="event.stopPropagation();jumpToDay(\''+dateStr+'\')">+'+extraCount+' autre'+(extraCount>1?'s':'')+'</div>';
+    }
     var cycleChips = '';
     _calCycles.forEach(function(cy){
       if(!cy.startDate) return;
