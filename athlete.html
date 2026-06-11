@@ -507,12 +507,7 @@ function init(){
     _mode = 'cal';
     document.getElementById('headerSub').textContent = 'Calendrier athlète';
     document.getElementById('refreshBtn').onclick = function(){ renderCalendar(); };
-    // Sur mobile : vue 3 jours par défaut, à partir d'aujourd'hui
-    if(_isMobile){
-      _calView = 'week';
-      var _tn = new Date(); _tn.setHours(0,0,0,0);
-      _calWeekStart = _tn;
-    }
+    // Sur mobile : vue mois par défaut (cellules compactes avec dots)
     renderCalendar();
   } else if(_progId){
     _mode = 'prog';
