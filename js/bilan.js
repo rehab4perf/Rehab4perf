@@ -5278,11 +5278,28 @@ function _updateSideLabels(){
       if(c) _applyLabels(c, cote);
     });
   });
-  // Hanche : rien sélectionné → SAIN/ATTEINT (pas bilatéral) ; BILATÉRAL → GAUCHE/DROIT
+  // Hanche : logique explicite pour contourner la dépendance à slOrig
+  // BILATÉRAL  → CÔTÉ GAUCHE / CÔTÉ DROIT (force le texte + réinitialise slOrig)
+  // DROIT/GAUCHE → CÔTÉ SAIN / CÔTÉ ATTEINT via _applyLabels
+  // '' (rien)  → traité comme DROIT (SAIN/ATTEINT)
   var haCote = _getCoteForScope(['hanche']);
-  var haEffective = (haCote === '') ? 'DROIT' : haCote;
   var haEl = document.getElementById('page-hanche');
-  if(haEl) _applyLabels(haEl, haEffective);
+  if(haEl) {
+    if(haCote === 'BILATÉRAL') {
+      haEl.querySelectorAll('.sl-g').forEach(function(el){
+        el.dataset.slOrig = 'CÔTÉ GAUCHE';
+        el.textContent    = 'CÔTÉ GAUCHE';
+      });
+      haEl.querySelectorAll('.sl-d').forEach(function(el){
+        el.dataset.slOrig = 'CÔTÉ DROIT';
+        el.textContent    = 'CÔTÉ DROIT';
+      });
+      _applyColOrder(haEl, 'BILATÉRAL');
+    } else {
+      var haEffective = haCote || 'DROIT'; // '' → 'DROIT' (SAIN/ATTEINT)
+      _applyLabels(haEl, haEffective);
+    }
+  }
   _updateGenouBilateral();
   _updateChevBilateral();
   _updateEpauleBilateral();
