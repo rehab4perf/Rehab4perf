@@ -117,6 +117,19 @@ const TESTS = {
   'tb-ha-flech':{type:'ortho',items:['Contraction résistée Thomas','Étirement fléchisseurs']},
   'tb-ha-inguinal':{type:'ortho',items:['Break test abdos - droit (CE+CI) + obliques','Transverse Valsalva + toux']},
   'tb-ha-hanche':{type:'ortho',items:['BKFO','FADIR <span style="font-size:.68rem;background:#EBF3FF;color:var(--accent);padding:1px 5px;border-radius:4px;font-weight:600;margin-left:4px">FAI</span>','FADIR + extension lombaire (modulation ?)','FADIR + Compression','FADIR + Distraction','Third test <span style="font-size:.68rem;background:#EBF3FF;color:var(--accent);padding:1px 5px;border-radius:4px;font-weight:600;margin-left:4px">Labrum</span>','FABER <span style="font-size:.68rem;background:#EBF3FF;color:var(--accent);padding:1px 5px;border-radius:4px;font-weight:600;margin-left:4px">SIA / Coxarthrose</span>','AB HEER <span style="font-size:.68rem;background:#EBF3FF;color:var(--accent);padding:1px 5px;border-radius:4px;font-weight:600;margin-left:4px">Instabilité post.</span>','Test appréhension antérieur <span style="font-size:.68rem;background:#EBF3FF;color:var(--accent);padding:1px 5px;border-radius:4px;font-weight:600;margin-left:4px">Micro-instabilité</span>','Test de OBER <span style="font-size:.68rem;background:#EBF3FF;color:var(--accent);padding:1px 5px;border-radius:4px;font-weight:600;margin-left:4px">TFL / BIT</span>','Test de FADER-R <span style="font-size:.68rem;background:#EBF3FF;color:var(--accent);padding:1px 5px;border-radius:4px;font-weight:600;margin-left:4px">GTPS</span>']},
+  // Hanche — variantes bilatérales
+  'tb-ha-global-g':{type:'ortho',items:['HAGOS (questionnaire - noter score %)','Fulcrum test','Squeeze test 0° (EVA > 6 ?)']},
+  'tb-ha-global-d':{type:'ortho',items:['HAGOS (questionnaire - noter score %)','Fulcrum test','Squeeze test 0° (EVA > 6 ?)']},
+  'tb-ha-add-g':   {type:'ortho',items:['Squeeze test 45°','Étirement ADD']},
+  'tb-ha-add-d':   {type:'ortho',items:['Squeeze test 45°','Étirement ADD']},
+  'tb-ha-pubis-g': {type:'ortho',items:['Patellar pubic percussion test','Pubis stress test']},
+  'tb-ha-pubis-d': {type:'ortho',items:['Patellar pubic percussion test','Pubis stress test']},
+  'tb-ha-flech-g': {type:'ortho',items:['Contraction résistée Thomas','Étirement fléchisseurs']},
+  'tb-ha-flech-d': {type:'ortho',items:['Contraction résistée Thomas','Étirement fléchisseurs']},
+  'tb-ha-inguinal-g':{type:'ortho',items:['Break test abdos - droit (CE+CI) + obliques','Transverse Valsalva + toux']},
+  'tb-ha-inguinal-d':{type:'ortho',items:['Break test abdos - droit (CE+CI) + obliques','Transverse Valsalva + toux']},
+  'tb-ha-hanche-g':{type:'ortho',items:['BKFO','FADIR <span style="font-size:.68rem;background:#EBF3FF;color:var(--accent);padding:1px 5px;border-radius:4px;font-weight:600;margin-left:4px">FAI</span>','FADIR + extension lombaire (modulation ?)','FADIR + Compression','FADIR + Distraction','Third test <span style="font-size:.68rem;background:#EBF3FF;color:var(--accent);padding:1px 5px;border-radius:4px;font-weight:600;margin-left:4px">Labrum</span>','FABER <span style="font-size:.68rem;background:#EBF3FF;color:var(--accent);padding:1px 5px;border-radius:4px;font-weight:600;margin-left:4px">SIA / Coxarthrose</span>','AB HEER <span style="font-size:.68rem;background:#EBF3FF;color:var(--accent);padding:1px 5px;border-radius:4px;font-weight:600;margin-left:4px">Instabilité post.</span>','Test appréhension antérieur <span style="font-size:.68rem;background:#EBF3FF;color:var(--accent);padding:1px 5px;border-radius:4px;font-weight:600;margin-left:4px">Micro-instabilité</span>','Test de OBER <span style="font-size:.68rem;background:#EBF3FF;color:var(--accent);padding:1px 5px;border-radius:4px;font-weight:600;margin-left:4px">TFL / BIT</span>','Test de FADER-R <span style="font-size:.68rem;background:#EBF3FF;color:var(--accent);padding:1px 5px;border-radius:4px;font-weight:600;margin-left:4px">GTPS</span>']},
+  'tb-ha-hanche-d':{type:'ortho',items:['BKFO','FADIR <span style="font-size:.68rem;background:#EBF3FF;color:var(--accent);padding:1px 5px;border-radius:4px;font-weight:600;margin-left:4px">FAI</span>','FADIR + extension lombaire (modulation ?)','FADIR + Compression','FADIR + Distraction','Third test <span style="font-size:.68rem;background:#EBF3FF;color:var(--accent);padding:1px 5px;border-radius:4px;font-weight:600;margin-left:4px">Labrum</span>','FABER <span style="font-size:.68rem;background:#EBF3FF;color:var(--accent);padding:1px 5px;border-radius:4px;font-weight:600;margin-left:4px">SIA / Coxarthrose</span>','AB HEER <span style="font-size:.68rem;background:#EBF3FF;color:var(--accent);padding:1px 5px;border-radius:4px;font-weight:600;margin-left:4px">Instabilité post.</span>','Test appréhension antérieur <span style="font-size:.68rem;background:#EBF3FF;color:var(--accent);padding:1px 5px;border-radius:4px;font-weight:600;margin-left:4px">Micro-instabilité</span>','Test de OBER <span style="font-size:.68rem;background:#EBF3FF;color:var(--accent);padding:1px 5px;border-radius:4px;font-weight:600;margin-left:4px">TFL / BIT</span>','Test de FADER-R <span style="font-size:.68rem;background:#EBF3FF;color:var(--accent);padding:1px 5px;border-radius:4px;font-weight:600;margin-left:4px">GTPS</span>']},
 
   'tb-ge-global': {type:'ortho',items:['Signe du glaçon (épanchement)','Mobilisation flexion + extension']},
   'tb-ge-global-g':{type:'ortho',items:['Signe du glaçon (épanchement)','Mobilisation flexion + extension']},
@@ -2831,7 +2844,7 @@ function updateBadges() {
   const sections = {
     'epaule': ['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho-mob','tb-ep-ortho-conf'],
     'rachis': ['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-force-d','tb-ra-force-g','tb-ra-transverse'],
-    'hanche': ['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-force-d','tb-ha-force-g'],
+    'hanche': ['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-force-d','tb-ha-force-g','tb-ha-global-g','tb-ha-global-d','tb-ha-add-g','tb-ha-add-d','tb-ha-pubis-g','tb-ha-pubis-d','tb-ha-flech-g','tb-ha-flech-d','tb-ha-inguinal-g','tb-ha-inguinal-d','tb-ha-hanche-g','tb-ha-hanche-d'],
     'genou':  ['tb-ge-global','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-ext',
                'tb-ge-global-g','tb-ge-global-d','tb-ge-lig-g','tb-ge-lig-d','tb-ge-lca-g','tb-ge-lca-d',
                'tb-ge-men-g','tb-ge-men-d','tb-ge-rot-g','tb-ge-rot-d','tb-ge-sbit-g','tb-ge-sbit-d',
@@ -3307,7 +3320,7 @@ function _buildAllTestsHtml() {
   var orthoSections = [
     { label:'EPAULE', fields:[['ep-type','Type'],['ep-marqueur','Marqueur']], tables:['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho-mob','tb-ep-ortho-conf','tb-ep-irrit-g','tb-ep-irrit-d','tb-ep-trau-g','tb-ep-trau-d','tb-ep-fonc-g','tb-ep-fonc-d','tb-ep-ortho-g','tb-ep-ortho-d'], concl:'ep-conclusion', opt:'ep-opt' },
     { label:'RACHIS', fields:[['ra-marqueur','Marqueur'],['ra-mckenzie','McKenzie']], tables:['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-force-d','tb-ra-force-g','tb-ra-transverse'], concl:'ra-conclusion', opt:'ra-opt' },
-    { label:'HANCHE', fields:[['ha-marqueur','Marqueur']], tables:['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-force-d','tb-ha-force-g'], concl:'ha-conclusion', opt:'ha-opt' },
+    { label:'HANCHE', fields:[['ha-marqueur','Marqueur']], tables:['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-force-d','tb-ha-force-g','tb-ha-global-g','tb-ha-global-d','tb-ha-add-g','tb-ha-add-d','tb-ha-pubis-g','tb-ha-pubis-d','tb-ha-flech-g','tb-ha-flech-d','tb-ha-inguinal-g','tb-ha-inguinal-d','tb-ha-hanche-g','tb-ha-hanche-d'], concl:'ha-conclusion', opt:'ha-opt' },
     { label:'GENOU', fields:[['ge-marqueur','Marqueur']], tables:[
         'tb-ge-global','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-ext',
         'tb-ge-global-g','tb-ge-global-d','tb-ge-lig-g','tb-ge-lig-d','tb-ge-lca-g','tb-ge-lca-d',
@@ -5263,6 +5276,18 @@ function _updateEpauleBilateral(){
   });
 }
 
+function _updateHancheBilateral(){
+  var cote = _getCoteForScope(['hanche']);
+  var bilateral = (cote === 'BILATÉRAL');
+  var blocks = ['global','add','pubis','flech','inguinal','hanche'];
+  blocks.forEach(function(b){
+    var single = document.getElementById('ha-single-' + b);
+    var bil    = document.getElementById('ha-bilateral-' + b);
+    if(single) single.style.display = bilateral ? 'none' : '';
+    if(bil)    bil.style.display    = bilateral ? ''     : 'none';
+  });
+}
+
 function _updateSideLabels(){
   var SCOPES = [
     { zones:['epaule','coude','poignet'],         pages:['page-epaule','page-fonctionnelsMS'] },
@@ -5300,6 +5325,7 @@ function _updateSideLabels(){
       _applyLabels(haEl, haEffective);
     }
   }
+  _updateHancheBilateral();
   _updateGenouBilateral();
   _updateChevBilateral();
   _updateEpauleBilateral();
