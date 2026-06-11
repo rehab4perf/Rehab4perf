@@ -1630,52 +1630,82 @@ function printPrescription() {
   var SIG_B64     = document.querySelector('#presc-doc .presc-doc-sig-img').src;
   var TAMPON_B64  = document.querySelector('#presc-doc .presc-doc-tampon').src;
 
-  // Ouvre une fenêtre dédiée (hors iframe) pour garantir la pleine largeur A4
-  var win = window.open('', '_blank', 'width=850,height=1100');
-  win.document.open();
-  win.document.write(`<!DOCTYPE html>
-<html lang="fr"><head>
-<meta charset="UTF-8">
-<title>Prescription</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box;}
-@page{size:A4 portrait;margin:28mm 24mm;}
-body{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#111;line-height:1.55;}
-.pp-header{display:flex;justify-content:space-between;margin-bottom:22pt;}
-.pp-header-left{font-size:9pt;}
-.pp-header-right{font-size:9pt;text-align:right;}
-.pp-header strong{font-size:10pt;}
-.pp-date{font-size:9.5pt;margin-bottom:22pt;}
-.pp-title{text-align:center;font-size:11pt;font-weight:700;text-decoration:underline;margin-bottom:20pt;letter-spacing:.03em;}
-.pp-patient-label{font-size:9.5pt;font-weight:700;text-decoration:underline;margin-bottom:6pt;}
-.pp-patient-name{font-size:10pt;font-weight:700;margin-bottom:26pt;}
-.pp-objet{text-align:center;font-size:12pt;font-weight:700;margin-bottom:26pt;line-height:1.4;}
-.pp-logos{display:flex;justify-content:center;margin-bottom:22pt;}
-.pp-logos img{max-height:90pt;object-fit:contain;}
-.pp-sig-row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:6pt;}
-.pp-sig-label{font-size:9pt;text-decoration:underline;margin-bottom:4pt;}
-.pp-sig-img{max-height:60pt;margin-top:3pt;}
-.pp-tampon{max-height:68pt;}
-</style>
-</head><body>
-<div class="pp-header">
-  <div class="pp-header-left"><strong>PERONNAUD Antoine</strong><br>Masseur Kinésithérapeute du Sport.<br>N°AM : 757 099 486</div>
-  <div class="pp-header-right"><strong>AthletiK Lamarck</strong><br>Spécialiste de la performance sportive<br>7, rue des Cottages – Paris 18<sup>e</sup><br>Tel .06 89 63 75 28.<br>athletiklamarck@gmail.com</div>
-</div>
-<div class="pp-date">Paris, le ${dateStr}</div>
-<div class="pp-title">PRESCRIPTION</div>
-<div class="pp-patient-label">PATIENT :</div>
-<div class="pp-patient-name">${patStr}</div>
-<div class="pp-objet">${obj||'—'}</div>
-<div class="pp-logos"><img src="${LOGO_B64}" alt="AthletiK Lamarck"></div>
-<div class="pp-sig-label">Signature du praticien</div>
-<div class="pp-sig-row">
-  <div><img class="pp-sig-img" src="${SIG_B64}" alt="Signature"></div>
-  <div><img class="pp-tampon" src="${TAMPON_B64}" alt="Tampon"></div>
-</div>
-<script>window.addEventListener('load',function(){window.print();});<\/script>
-</body></html>`);
-  win.document.close();
+  // Génération PDF directe via jsPDF (pas de fenêtre, pas de dialog d'impression)
+  var jsPDF = window.jspdf && window.jspdf.jsPDF;
+  if(!jsPDF){ alert('Bibliothèque PDF non chargée. Rechargez la page.'); return; }
+
+  var doc = new jsPDF({ unit:'mm', format:'a4', orientation:'portrait' });
+  var W = 210, mL = 24, mR = 24, cW = W - mL - mR;
+  var y = 28;
+
+  // ── En-tête : praticien (gauche) + cabinet (droite) ──────
+  doc.setFontSize(10); doc.setFont('helvetica','bold');
+  doc.text('PERONNAUD Antoine', mL, y);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9);
+  doc.text('Masseur Kin\xe9sith\xe9rapeute du Sport.', mL, y+5);
+  doc.text('N\xb0AM : 757 099 486', mL, y+10);
+
+  doc.setFontSize(10); doc.setFont('helvetica','bold');
+  doc.text('AthletiK Lamarck', W-mR, y, {align:'right'});
+  doc.setFont('helvetica','normal'); doc.setFontSize(9);
+  doc.text('Sp\xe9cialiste de la performance sportive', W-mR, y+5, {align:'right'});
+  doc.text('7, rue des Cottages - Paris 18e', W-mR, y+10, {align:'right'});
+  doc.text('Tel .06 89 63 75 28.', W-mR, y+15, {align:'right'});
+  doc.text('athletiklamarck@gmail.com', W-mR, y+20, {align:'right'});
+  y += 32;
+
+  // ── Date ──────────────────────────────────────────────────
+  doc.setFontSize(9.5); doc.setFont('helvetica','normal');
+  doc.text('Paris, le ' + dateStr, mL, y);
+  y += 22;
+
+  // ── Titre centré souligné ─────────────────────────────────
+  doc.setFontSize(11); doc.setFont('helvetica','bold');
+  var title = 'PRESCRIPTION';
+  var tw = doc.getTextWidth(title);
+  doc.text(title, W/2, y, {align:'center'});
+  doc.line(W/2 - tw/2, y+0.8, W/2 + tw/2, y+0.8);
+  y += 20;
+
+  // ── Patient ───────────────────────────────────────────────
+  doc.setFontSize(9.5); doc.setFont('helvetica','bold');
+  var pLabel = 'PATIENT :';
+  var plw = doc.getTextWidth(pLabel);
+  doc.text(pLabel, mL, y);
+  doc.line(mL, y+0.8, mL+plw, y+0.8);
+  y += 7;
+  doc.setFontSize(10);
+  doc.text(patStr, mL, y);
+  y += 26;
+
+  // ── Objet centré ──────────────────────────────────────────
+  doc.setFontSize(12); doc.setFont('helvetica','bold');
+  var objText = (document.getElementById('presc-objet').value||'—').trim();
+  var objLines = [];
+  objText.split('\n').forEach(function(line){
+    doc.splitTextToSize(line||' ', cW).forEach(function(l){ objLines.push(l); });
+  });
+  doc.text(objLines, W/2, y, {align:'center', lineHeightFactor:1.4});
+  y += objLines.length * 7 + 26;
+
+  // ── Logo centré ───────────────────────────────────────────
+  try {
+    var logoW = 54, logoH = 27;
+    doc.addImage(LOGO_B64, 'PNG', W/2-logoW/2, y, logoW, logoH);
+    y += logoH + 22;
+  } catch(e){ y += 50; }
+
+  // ── Signature ─────────────────────────────────────────────
+  doc.setFontSize(9); doc.setFont('helvetica','normal');
+  var sLabel = 'Signature du praticien';
+  var slw = doc.getTextWidth(sLabel);
+  doc.text(sLabel, mL, y);
+  doc.line(mL, y+0.8, mL+slw, y+0.8);
+  y += 5;
+  try { doc.addImage(SIG_B64, 'PNG', mL, y, 33, 22); } catch(e){}
+  try { doc.addImage(TAMPON_B64, 'PNG', W-mR-28, y, 28, 28); } catch(e){}
+
+  doc.save('prescription.pdf');
 }
 </script>
 
@@ -7112,5 +7142,6 @@ _updateOutilsPatientBtns();
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </body>
 </html>
