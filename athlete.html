@@ -739,7 +739,7 @@ function _buildMonthHtml(){
         return '<span class="cal-dot" style="background:'+(ua?_uaColor(ua):'var(--accent)')+'"></span>';
       }).join('')
         + (dayMsgsCell.length ? '<span class="cal-dot" style="background:#4338CA"></span>' : '')
-        + (dayCliNotes.length ? '<span class="cal-dot" style="background:#0f766e"></span>' : '');
+        + (dayCliNotes.length ? '<span class="cal-dot" style="background:#64748b"></span>' : '');
       chips    = dots ? '<div class="cal-dots">'+dots+'</div>' : '';
       msgChips = ''; cliChips = '';
     } else {
@@ -757,7 +757,7 @@ function _buildMonthHtml(){
       }).join('');
       cliChips = dayCliNotes.slice(0,1).map(function(n){
         var lbl=(n.title||(n.body?n.body.slice(0,18)+(n.body.length>18?'…':''):'Note clinique'));
-        return '<div class="cal-chip" style="background:#ccfbf1;color:#0f766e;border-color:#99f6e4;" title="'+escH((n.title?n.title+'\n':'')+n.body)+'">🔒 '+escH(lbl.length>12?lbl.slice(0,12)+'…':lbl)+'</div>';
+        return '<div class="cal-chip" style="background:#f1f5f9;color:#64748b;border-color:#cbd5e1;" title="'+escH((n.title?n.title+'\n':'')+n.body)+'">🔒 '+escH(lbl.length>12?lbl.slice(0,12)+'…':lbl)+'</div>';
       }).join('');
       var shownCount=(dayEvs.length>0?1:0)+(dayMsgsCell.length>0?1:0)+(dayCliNotes.length>0?1:0);
       var extraCount=dayEvs.length+dayMsgsCell.length+dayCliNotes.length-shownCount;
@@ -835,7 +835,7 @@ function _buildWeekHtml(){
 
     _calClinicalNotes.filter(function(n){ return n.date===dateStr; }).forEach(function(n){
       var lbl = n.title || (n.body ? n.body.slice(0,20)+(n.body.length>20?'…':'') : 'Note clinique');
-      html += '<div class="cal-chip" style="margin:2px 0;background:#ccfbf1;color:#0f766e;border-color:#99f6e4;" title="'+escH((n.title?n.title+'\n':'')+n.body)+'">🔒 '+escH(lbl)+'</div>';
+      html += '<div class="cal-chip" style="margin:2px 0;background:#f1f5f9;color:#64748b;border-color:#cbd5e1;" title="'+escH((n.title?n.title+'\n':'')+n.body)+'">🔒 '+escH(lbl)+'</div>';
     });
 
     _calCycles.forEach(function(cy){
@@ -926,10 +926,10 @@ function _buildDayHtml(){
     });
     // Notes cliniques (mode kiné uniquement)
     dayCliNotes.forEach(function(n){
-      html += '<div style="background:#f0fdf9;border:2px solid #99f6e4;border-radius:12px;padding:14px 16px;margin-bottom:10px;">'
-            + '<div style="font-size:.72rem;font-weight:700;color:#0f766e;margin-bottom:4px;letter-spacing:.04em;">🔒 NOTE CLINIQUE</div>'
-            + (n.title ? '<div style="font-size:.92rem;font-weight:700;color:#134e4a;margin-bottom:4px;">'+escH(n.title)+'</div>' : '')
-            + '<div style="font-size:.82rem;color:#0f766e;white-space:pre-wrap;">'+escH(n.body||'')+'</div>'
+      html += '<div style="background:#f8fafc;border:2px solid #cbd5e1;border-radius:12px;padding:14px 16px;margin-bottom:10px;">'
+            + '<div style="font-size:.72rem;font-weight:700;color:#64748b;margin-bottom:4px;letter-spacing:.04em;">🔒 NOTE CLINIQUE</div>'
+            + (n.title ? '<div style="font-size:.92rem;font-weight:700;color:#1e293b;margin-bottom:4px;">'+escH(n.title)+'</div>' : '')
+            + '<div style="font-size:.82rem;color:#64748b;white-space:pre-wrap;">'+escH(n.body||'')+'</div>'
             + '</div>';
     });
   }
