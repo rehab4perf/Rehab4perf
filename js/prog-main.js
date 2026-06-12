@@ -7182,14 +7182,33 @@ setInterval(_syncCalNotesIfNeeded, 30000);
   renderCalendar();
   renderSidebarTemplates();
   // (renderTemplatesInBuilder est appelé dans _enterBuilderMode)
-  // Adapter shareCalLink pour v2 (remplace programme.html par programme_v2.html)
-  var _origShareCal = shareCalLink;
+  // Adapter shareCalLink pour v2 (remplace programme.html par programme_v2.html dans la base URL)
   shareCalLink = function(){
     if(!_progPatient){ alert('Sélectionne d\'abord un patient depuis la barre de navigation.'); return; }
     var base = window.location.origin + window.location.pathname.replace('programme_v2.html','').replace('programme.html','') + 'athlete.html';
-    var link = base + '?patient=' + _progPatient.id;
-    if(navigator.clipboard&&navigator.clipboard.writeText){
-      navigator.clipboard.writeText(link).then(function(){ alert('✅ Lien calendrier copié !\n\n'+link); }).catch(function(){ prompt('Copie ce lien :',link); });
-    } else { prompt('Copie ce lien :',link); }
+    var baseLink = base + '?patient=' + _progPatient.id;
+    var menu = document.getElementById('share-cal-menu');
+    if(!menu){
+      menu = document.createElement('div');
+      menu.id = 'share-cal-menu';
+      menu.style.cssText = 'position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.15);padding:6px;min-width:220px;';
+      menu.innerHTML =
+        '<div style="font-size:.7rem;font-weight:700;color:var(--muted);padding:4px 10px 6px;text-transform:uppercase;letter-spacing:.05em;">Partager le calendrier</div>'
+        +'<button onclick="_doShare(\'patient\')" style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border:none;background:none;cursor:pointer;border-radius:7px;font-family:inherit;font-size:.88rem;color:var(--text);" onmouseover="this.style.background=\'var(--hover)\'" onmouseout="this.style.background=\'none\'"><span style="font-size:1.1rem;">👤</span><div style="text-align:left"><div style="font-weight:600;">Partager au patient</div><div style="font-size:.73rem;color:var(--muted);">Séances et feedback uniquement</div></div></button>'
+        +'<button onclick="_doShare(\'kine\')" style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border:none;background:none;cursor:pointer;border-radius:7px;font-family:inherit;font-size:.88rem;color:var(--text);" onmouseover="this.style.background=\'var(--hover)\'" onmouseout="this.style.background=\'none\'"><span style="font-size:1.1rem;">🩺</span><div style="text-align:left"><div style="font-weight:600;">Partager à un kiné</div><div style="font-size:.73rem;color:var(--muted);">Séances + notes cliniques</div></div></button>';
+      document.body.appendChild(menu);
+      document.addEventListener('click', function _closeMenu(e){
+        if(!menu.contains(e.target) && e.target.id !== 'share-cal-btn'){
+          menu.style.display = 'none';
+          document.removeEventListener('click', _closeMenu);
+        }
+      }, true);
+    }
+    var btn = document.getElementById('share-cal-btn');
+    var rect = btn ? btn.getBoundingClientRect() : {left:20, bottom:100};
+    menu.style.left  = Math.min(rect.left, window.innerWidth - 240) + 'px';
+    menu.style.top   = (rect.bottom + 6) + 'px';
+    menu.style.display = menu.style.display === 'none' ? 'block' : (menu.style.display ? 'none' : 'block');
+    menu._base = baseLink;
   };
 })();
