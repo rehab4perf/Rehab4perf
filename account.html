@@ -17,8 +17,8 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
 
 .login-screen { min-height:100%; display:none; flex-direction:column; align-items:center; justify-content:center; padding:24px; }
 .login-card { background:var(--surface); border-radius:14px; border:1px solid var(--border); padding:36px 32px; max-width:400px; width:100%; text-align:center; box-shadow:0 8px 32px rgba(0,0,0,.08); }
-.login-logo { font-family:Georgia,serif; font-style:italic; font-size:1.4rem; margin-bottom:6px; }
-.login-logo .r { color:#4A90D9; } .login-logo .n { color:var(--navy); font-weight:900; font-style:normal; } .login-logo .p { color:#E74C3C; }
+.login-logo { display:flex; flex-direction:column; align-items:center; gap:7px; font-size:.95rem; font-weight:700; letter-spacing:.28em; padding-left:.28em; margin-bottom:8px; }
+.login-logo .r, .login-logo .p { color:var(--text, #1A1917); } .login-logo .n { color:#2B5FA6; font-weight:800; }
 .login-subtitle { font-size:.82rem; color:var(--muted); margin-bottom:24px; }
 .login-btn { width:100%; padding:12px; background:var(--accent); color:#fff; border:none; border-radius:8px; font-size:.9rem; font-weight:600; cursor:pointer; }
 .login-btn:hover { background:var(--navy); }
@@ -75,7 +75,10 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
 
 <div class="login-screen" id="loginScreen">
   <div class="login-card">
-    <div class="login-logo"><span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span></div>
+    <div class="login-logo">
+      <svg viewBox="8 34 164 104" width="64" height="40" aria-hidden="true"><g stroke="#2B5FA6" stroke-width="16" stroke-linecap="round" fill="none"><line x1="20" y1="118" x2="56" y2="104"/><line x1="70" y1="122" x2="100" y2="84"/><line x1="112" y1="125" x2="134" y2="66"/><line x1="158" y1="128" x2="158" y2="46"/></g></svg>
+      <div><span class="r">rehab</span><span class="n">4</span><span class="p">perf</span></div>
+    </div>
     <p class="login-subtitle">Vous n'êtes pas connecté</p>
     <button class="login-btn" onclick="goToAuth()">Se connecter</button>
   </div>
