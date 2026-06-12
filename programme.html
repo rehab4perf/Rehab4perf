@@ -24,7 +24,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   padding:0 14px; gap:10px; flex-shrink:0; z-index:20;
   border-bottom:1px solid rgba(255,255,255,.1);
 }
-.topbar-logo { color:#fff; font-size:.88rem; font-weight:800; letter-spacing:.04em; white-space:nowrap; }
+.topbar-logo { color:#fff; font-size:.78rem; font-weight:700; letter-spacing:.14em; white-space:nowrap; display:flex; align-items:center; }
 .topbar-patient {
   display:flex; align-items:center; gap:7px; flex:1;
   font-size:.76rem; color:rgba(255,255,255,.85);
@@ -1716,7 +1716,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 
 <!-- ═══════════════════ TOPBAR ═══════════════════ -->
 <div class="topbar">
-  <div class="topbar-logo">Rehab4Perf</div>
+  <div class="topbar-logo"><svg viewBox="8 34 164 104" width="28" height="18" aria-hidden="true" style="vertical-align:-3px;margin-right:7px"><g stroke="#4A90D9" stroke-width="17" stroke-linecap="round" fill="none"><line x1="20" y1="118" x2="56" y2="104"/><line x1="70" y1="122" x2="100" y2="84"/><line x1="112" y1="125" x2="134" y2="66"/><line x1="158" y1="128" x2="158" y2="46"/></g></svg>rehab<span style="color:#7FA8D9">4</span>perf</div>
   <div class="topbar-patient">
     <span id="topbarPatientEmpty" class="topbar-patient-empty">Aucun patient sélectionné</span>
     <span id="topbarPatientName" class="topbar-patient-name" style="display:none;"></span>

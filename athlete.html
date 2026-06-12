@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light only">
 <title>Mon Programme</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <style>
 :root {
   --navy:#1A3A5C; --accent:#2B5FA6; --accent2:#4A90D9;
@@ -20,7 +21,7 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
   position:sticky; top:0; z-index:10;
   display:flex; align-items:center; gap:10px;
 }
-.header-logo { font-size:1rem; font-weight:800; letter-spacing:.03em; }
+.header-logo { font-size:.82rem; font-weight:700; letter-spacing:.14em; display:flex; align-items:center; }
 .header-sub { font-size:.68rem; color:rgba(255,255,255,.6); margin-top:1px; }
 .header-left { flex:1; }
 .header-btn {
@@ -403,7 +404,7 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
 
 <div class="app-header">
   <div class="header-left">
-    <div class="header-logo">Rehab4Perf</div>
+    <div class="header-logo"><svg viewBox="8 34 164 104" width="26" height="16" aria-hidden="true" style="vertical-align:-2px;margin-right:7px"><g stroke="#4A90D9" stroke-width="17" stroke-linecap="round" fill="none"><line x1="20" y1="118" x2="56" y2="104"/><line x1="70" y1="122" x2="100" y2="84"/><line x1="112" y1="125" x2="134" y2="66"/><line x1="158" y1="128" x2="158" y2="46"/></g></svg>rehab<span style="color:#7FA8D9">4</span>perf</div>
     <div class="header-sub" id="headerSub">Programme athlète</div>
   </div>
   <button class="header-btn" id="refreshBtn" onclick="refresh()">↻ Actualiser</button>

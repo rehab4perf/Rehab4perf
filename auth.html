@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light only">
 <title>Connexion – Rehab4Perf</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
@@ -26,10 +27,9 @@ html, body { height:100%; font-family:-apple-system,'Helvetica Neue',Arial,sans-
   padding:36px 32px 30px; max-width:400px; width:100%;
 }
 
-.logo { font-family:Georgia,serif; font-style:italic; font-size:1.9rem; text-align:center; margin-bottom:4px; }
-.logo .r { color:var(--accent2); }
-.logo .n { color:var(--navy); font-weight:900; font-style:normal; }
-.logo .p { color:var(--red); }
+.logo { display:flex; flex-direction:column; align-items:center; gap:8px; font-size:1.05rem; font-weight:700; letter-spacing:.3em; padding-left:.3em; margin-bottom:6px; }
+.logo .r, .logo .p { color:var(--text, #1A1917); }
+.logo .n { color:var(--accent, #2B5FA6); font-weight:800; }
 .tagline { font-size:.75rem; color:var(--muted); text-align:center; margin-bottom:26px; }
 
 .sec { display:none; }
@@ -94,7 +94,10 @@ html, body { height:100%; font-family:-apple-system,'Helvetica Neue',Arial,sans-
 <div class="page">
 <div class="card">
 
-  <div class="logo"><span class="r">Rehab</span><span class="n">4</span><span class="p">Perf</span></div>
+  <div class="logo">
+    <svg viewBox="8 34 164 104" width="76" height="48" aria-hidden="true"><g stroke="var(--accent)" stroke-width="16" stroke-linecap="round" fill="none"><line x1="20" y1="118" x2="56" y2="104"/><line x1="70" y1="122" x2="100" y2="84"/><line x1="112" y1="125" x2="134" y2="66"/><line x1="158" y1="128" x2="158" y2="46"/></g></svg>
+    <div><span class="r">rehab</span><span class="n">4</span><span class="p">perf</span></div>
+  </div>
   <p class="tagline">Bilan clinique · Outils · Prescription</p>
 
   <!-- ══ A — CONNEXION ══ -->
