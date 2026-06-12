@@ -465,6 +465,8 @@ function applyFilters(){
   renderLib(q, typeVal, subVal, subVal2);
 }
 
+function _norm(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
+
 function renderLib(q, typeFilter, subFilter, subFilter2){
   q = (q||'').toLowerCase();
   typeFilter  = typeFilter  !== undefined ? typeFilter  : document.getElementById('filterType').value;
@@ -490,7 +492,11 @@ function renderLib(q, typeFilter, subFilter, subFilter2){
     if(subFilter2 && typeFilter === 'renfo'){
       if(!ex.zone || ex.zone.toUpperCase().indexOf(subFilter2) === -1) return false;
     }
-    if(q && ex.name.toLowerCase().indexOf(q)===-1 && ex.zone.toLowerCase().indexOf(q)===-1 && (ex.obj||'').toLowerCase().indexOf(q)===-1) return false;
+    if(q){
+      var _words = _norm(q).split(/\s+/).filter(Boolean);
+      var _hay = _norm(ex.name)+' '+_norm(ex.zone)+' '+_norm(ex.obj||'')+' '+_norm((ex.patterns||[]).join(' '));
+      if(!_words.every(function(w){ return _hay.indexOf(w)>-1; })) return false;
+    }
     return true;
   });
   // Regroupement :

@@ -2005,13 +2005,49 @@ function _calDuplicateEvent(progId, targetDate){
   .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
 }
 
-// ── Partage du lien calendrier athlète ──
+// ── Partage du lien calendrier ──
 function shareCalLink() {
   if(!_progPatient){ alert('Sélectionne d\'abord un patient depuis la barre de navigation.'); return; }
-  var link = window.location.href.replace(/\/[^/]+$/, '/athlete.html') + '?patient=' + _progPatient.id;
-  if(navigator.clipboard && navigator.clipboard.writeText){
+  var base = window.location.href.replace(/\/[^/]+$/, '/athlete.html') + '?patient=' + _progPatient.id;
+  var menu = document.getElementById('share-cal-menu');
+  if(!menu){
+    menu = document.createElement('div');
+    menu.id = 'share-cal-menu';
+    menu.style.cssText = 'position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.15);padding:6px;min-width:220px;';
+    menu.innerHTML =
+      '<div style="font-size:.7rem;font-weight:700;color:var(--muted);padding:4px 10px 6px;text-transform:uppercase;letter-spacing:.05em;">Partager le calendrier</div>'
+      +'<button onclick="_doShare(\'patient\')" style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border:none;background:none;cursor:pointer;border-radius:7px;font-family:inherit;font-size:.88rem;color:var(--text);" onmouseover="this.style.background=\'var(--hover)\'" onmouseout="this.style.background=\'none\'"><span style="font-size:1.1rem;">👤</span><div style="text-align:left"><div style="font-weight:600;">Partager au patient</div><div style="font-size:.73rem;color:var(--muted);">Séances et feedback uniquement</div></div></button>'
+      +'<button onclick="_doShare(\'kine\')" style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border:none;background:none;cursor:pointer;border-radius:7px;font-family:inherit;font-size:.88rem;color:var(--text);" onmouseover="this.style.background=\'var(--hover)\'" onmouseout="this.style.background=\'none\'"><span style="font-size:1.1rem;">🩺</span><div style="text-align:left"><div style="font-weight:600;">Partager à un kiné</div><div style="font-size:.73rem;color:var(--muted);">Séances + notes cliniques</div></div></button>';
+    document.body.appendChild(menu);
+    document.addEventListener('click', function _closeMenu(e){
+      if(!menu.contains(e.target) && e.target.id !== 'share-cal-btn'){
+        menu.style.display = 'none';
+        document.removeEventListener('click', _closeMenu);
+      }
+    }, true);
+  }
+  var btn = document.getElementById('share-cal-btn');
+  var rect = btn ? btn.getBoundingClientRect() : {left:20, bottom:100};
+  menu.style.left  = Math.min(rect.left, window.innerWidth - 240) + 'px';
+  menu.style.top   = (rect.bottom + 6) + 'px';
+  menu.style.display = menu.style.display === 'none' ? 'block' : (menu.style.display ? 'none' : 'block');
+  menu._base = base;
+}
+
+function _doShare(mode) {
+  var menu = document.getElementById('share-cal-menu');
+  var base = menu && menu._base;
+  if(!base) return;
+  menu.style.display = 'none';
+  var link = mode === 'kine'
+    ? base + '&mode=kine' + (_progUid ? '&prat=' + _progUid : '')
+    : base;
+  var label = mode === 'kine' ? '🩺 Lien kiné copié !' : '📅 Lien patient copié !';
+  if(navigator.share){
+    navigator.share({ url: link }).catch(function(){});
+  } else if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(link)
-      .then(function(){ _showToast('📅 Lien calendrier copié ! Envoie-le à ton athlète.'); })
+      .then(function(){ _showToast(label); })
       .catch(function(){ prompt('Copie ce lien :', link); });
   } else {
     prompt('Copie ce lien :', link);
@@ -2720,13 +2756,15 @@ function _pickerRenderTemplate(p, search, addedLibIds){
 
 function _pickerProgMatches(p, search){
   if(!search) return true;
-  if((p.nom||'').toLowerCase().indexOf(search)>-1) return true;
+  var words = _norm(search).split(/\s+/).filter(Boolean);
+  function _hit(s){ return words.every(function(w){ return _norm(s).indexOf(w)>-1; }); }
+  if(_hit(p.nom||'')) return true;
   var donnees = p.donnees;
   if(typeof donnees==='string'){try{donnees=JSON.parse(donnees);}catch(e){donnees=null;}}
   if(!donnees||!donnees.blocs) return false;
   return donnees.blocs.some(function(b){
-    if((b.title||'').toLowerCase().indexOf(search)>-1) return true;
-    return (b.exos||[]).some(function(e){return (e.name||'').toLowerCase().indexOf(search)>-1;});
+    if(_hit(b.title||'')) return true;
+    return (b.exos||[]).some(function(e){ return _hit(e.name||''); });
   });
 }
 

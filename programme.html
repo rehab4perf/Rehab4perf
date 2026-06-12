@@ -2036,7 +2036,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
         <button class="cal-view-btn" data-view="week" onclick="setCalView('week')">Semaine</button>
       </div>
       <button class="btn btn-outline" onclick="calToday()" style="font-size:.74rem;padding:4px 10px;">Aujourd'hui</button>
-      <button class="btn btn-outline" onclick="shareCalLink()" style="font-size:.74rem;padding:4px 10px;background:#EEF3FB;color:var(--navy);border-color:var(--accent);">📅 Partager</button>
+      <button id="share-cal-btn" class="btn btn-outline" onclick="shareCalLink()" style="font-size:.74rem;padding:4px 10px;background:#EEF3FB;color:var(--navy);border-color:var(--accent);">📅 Partager</button>
     </div>
     <div class="cal-central-body">
       <div class="cal-grid" id="calGrid"></div>

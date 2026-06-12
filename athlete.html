@@ -463,14 +463,17 @@ window.addEventListener('resize', function(){
 var _mode = ''; // 'prog' ou 'cal'
 var _patientId = '';
 var _progId = '';
+var _kineMode = false; // true si ?mode=kine dans l'URL
+var _pratId   = '';    // praticien_id transmis via ?prat=
 var _calYear = new Date().getFullYear();
 var _calMonth = new Date().getMonth();
 var _calView = 'month'; // 'month' | 'week' | 'day'
 var _calWeekStart = _getMonday(new Date()); // Lundi de la semaine courante
 var _calDayDate   = (function(){ var d=new Date(); d.setHours(0,0,0,0); return d; }()); // Jour affiché
-var _calEvents   = []; // [{id, date, programme_id, programmes:{nom}}]
-var _calCycles   = []; // cycles du patient depuis patient_settings
-var _calMessages = []; // [{id, date, title, body}] messages patient visibles
+var _calEvents         = []; // [{id, date, programme_id, programmes:{nom}}]
+var _calCycles         = []; // cycles du patient depuis patient_settings
+var _calMessages       = []; // [{id, date, title, body}] messages patient visibles
+var _calClinicalNotes  = []; // [{id, date, title, body}] notes cliniques (mode kiné uniquement)
 
 function _getMonday(d){
   var dt = new Date(d); dt.setHours(0,0,0,0);
@@ -500,12 +503,14 @@ function fmtCible(c){
 // ── Init ────────────────────────────────────────────
 function init(){
   var params = new URLSearchParams(window.location.search);
-  _progId = params.get('prog') || '';
+  _progId    = params.get('prog')    || '';
   _patientId = params.get('patient') || '';
+  _kineMode  = params.get('mode') === 'kine';
+  _pratId    = params.get('prat')    || '';
 
   if(_patientId){
     _mode = 'cal';
-    document.getElementById('headerSub').textContent = 'Calendrier athlète';
+    document.getElementById('headerSub').textContent = _kineMode ? '🩺 Vue kiné — Calendrier + notes' : 'Calendrier athlète';
     document.getElementById('refreshBtn').onclick = function(){ renderCalendar(); };
     // Sur mobile : vue mois par défaut (cellules compactes avec dots)
     renderCalendar();
@@ -554,8 +559,8 @@ function renderProgInMain(prog){
 function renderCalendar(){
   var btn = document.getElementById('refreshBtn');
   btn.disabled = true; btn.textContent = '⏳';
-  // Charge séances planifiées, cycles ET messages patient en parallèle
-  Promise.all([
+  // Charge séances planifiées, cycles ET messages patient en parallèle (+ notes cliniques si mode kiné)
+  var fetches = [
     fetch(SUPA_URL + '/rest/v1/seances_planifiees?patient_id=eq.' + _patientId
         + '&select=id,date,programme_id,programmes(nom),athlete_feedback(rpe,duree_min)&order=date.asc', {
       headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
@@ -566,13 +571,22 @@ function renderCalendar(){
     fetch(SUPA_URL + '/rest/v1/patient_messages?patient_id=eq.' + _patientId + '&order=date.asc', {
       headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
     }).then(function(r){ return r.json(); })
-  ])
+  ];
+  if(_kineMode && _pratId){
+    fetches.push(
+      fetch(SUPA_URL + '/rest/v1/clinical_notes?patient_id=eq.' + _patientId + '&praticien_id=eq.' + _pratId + '&order=date.asc', {
+        headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
+      }).then(function(r){ return r.json(); }).catch(function(){ return []; })
+    );
+  }
+  Promise.all(fetches)
   .then(function(results){
     btn.disabled = false; btn.textContent = '↻ Actualiser';
     _calEvents   = Array.isArray(results[0]) ? results[0] : [];
     var settingsArr = Array.isArray(results[1]) ? results[1] : [];
     _calCycles   = (settingsArr.length && Array.isArray(settingsArr[0].cycles)) ? settingsArr[0].cycles : [];
     _calMessages = Array.isArray(results[2]) ? results[2] : [];
+    _calClinicalNotes = (results[3] && Array.isArray(results[3])) ? results[3] : [];
     _renderCalGrid();
     document.getElementById('lastUpdated').textContent = 'Actualisé à ' + new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
   })
@@ -716,17 +730,20 @@ function _buildMonthHtml(){
     var isToday = cellDate.getTime()===today.getTime();
     var dayEvs = _calEvents.filter(function(e){ return e.date===dateStr; });
     var dayMsgsCell = _calMessages.filter(function(m){ return m.date===dateStr; });
-    var chips, msgChips;
+    var dayCliNotes = _calClinicalNotes.filter(function(n){ return n.date===dateStr; });
+    var chips, msgChips, cliChips;
     if(_isMobile){
       // Mobile : un dot coloré par séance/message — tap ouvre vue Jour
       var dots = dayEvs.map(function(ev){
         var fb=ev.athlete_feedback, ua=(fb&&fb.rpe&&fb.duree_min)?fb.rpe*fb.duree_min:null;
         return '<span class="cal-dot" style="background:'+(ua?_uaColor(ua):'var(--accent)')+'"></span>';
-      }).join('') + (dayMsgsCell.length ? '<span class="cal-dot" style="background:#4338CA"></span>' : '');
+      }).join('')
+        + (dayMsgsCell.length ? '<span class="cal-dot" style="background:#4338CA"></span>' : '')
+        + (dayCliNotes.length ? '<span class="cal-dot" style="background:#0f766e"></span>' : '');
       chips    = dots ? '<div class="cal-dots">'+dots+'</div>' : '';
-      msgChips = '';
+      msgChips = ''; cliChips = '';
     } else {
-      // Desktop : max 1 chip séance + max 1 chip message + badge "+N autres"
+      // Desktop : max 1 chip séance + max 1 chip message (+ note clinique si kine) + badge "+N autres"
       chips = dayEvs.slice(0,1).map(function(ev){
         var nom=(ev.programmes&&ev.programmes.nom)||'Programme';
         var fb=ev.athlete_feedback, ua=(fb&&fb.rpe&&fb.duree_min)?fb.rpe*fb.duree_min:null;
@@ -738,8 +755,12 @@ function _buildMonthHtml(){
         var lbl=m.title||(m.body?m.body.slice(0,18)+(m.body.length>18?'…':''):'Message');
         return '<div class="cal-msg-chip" onclick="event.stopPropagation();_openMsgModal(\''+escH(m.id)+'\')" title="'+escH((m.title?m.title+'\n':'')+m.body)+'">💬 '+escH(lbl)+'</div>';
       }).join('');
-      var shownCount=(dayEvs.length>0?1:0)+(dayMsgsCell.length>0?1:0);
-      var extraCount=dayEvs.length+dayMsgsCell.length-shownCount;
+      cliChips = dayCliNotes.slice(0,1).map(function(n){
+        var lbl=(n.title||(n.body?n.body.slice(0,18)+(n.body.length>18?'…':''):'Note clinique'));
+        return '<div class="cal-chip" style="background:#ccfbf1;color:#0f766e;border-color:#99f6e4;" title="'+escH((n.title?n.title+'\n':'')+n.body)+'">🔒 '+escH(lbl.length>12?lbl.slice(0,12)+'…':lbl)+'</div>';
+      }).join('');
+      var shownCount=(dayEvs.length>0?1:0)+(dayMsgsCell.length>0?1:0)+(dayCliNotes.length>0?1:0);
+      var extraCount=dayEvs.length+dayMsgsCell.length+dayCliNotes.length-shownCount;
       if(extraCount>0) chips+='<div class="cal-more" onclick="event.stopPropagation();jumpToDay(\''+dateStr+'\')">+'+extraCount+' autre'+(extraCount>1?'s':'')+'</div>';
     }
     var cycleChips = '';
@@ -755,7 +776,7 @@ function _buildMonthHtml(){
     });
     cells += '<div class="cal-day'+(isToday?' today':'')+'" onclick="jumpToDay(\''+dateStr+'\')">'
            + '<div class="cal-day-num">'+d+'</div>'
-           + chips+msgChips+cycleChips+'</div>';
+           + chips+msgChips+(cliChips||'')+cycleChips+'</div>';
   }
 
   return _buildCalNav(MONTHS[_calMonth]+' '+_calYear)
@@ -812,6 +833,11 @@ function _buildWeekHtml(){
       html += '<div class="cal-msg-chip" style="margin:2px 0;" onclick="event.stopPropagation();_openMsgModal(\''+escH(m.id)+'\')">💬 '+escH(lbl)+'</div>';
     });
 
+    _calClinicalNotes.filter(function(n){ return n.date===dateStr; }).forEach(function(n){
+      var lbl = n.title || (n.body ? n.body.slice(0,20)+(n.body.length>20?'…':'') : 'Note clinique');
+      html += '<div class="cal-chip" style="margin:2px 0;background:#ccfbf1;color:#0f766e;border-color:#99f6e4;" title="'+escH((n.title?n.title+'\n':'')+n.body)+'">🔒 '+escH(lbl)+'</div>';
+    });
+
     _calCycles.forEach(function(cy){
       if(!cy.startDate) return;
       var cyStart = new Date(cy.startDate); cyStart.setHours(0,0,0,0);
@@ -823,7 +849,8 @@ function _buildWeekHtml(){
     });
 
     var dayMsgs = _calMessages.filter(function(m){ return m.date===dateStr; });
-    if(!dayEvs.length && !dayMsgs.length) html += '<div class="week-empty">—</div>';
+    var dayCli  = _calClinicalNotes.filter(function(n){ return n.date===dateStr; });
+    if(!dayEvs.length && !dayMsgs.length && !dayCli.length) html += '<div class="week-empty">—</div>';
     html += '</div></div>';
   });
   html += '</div>';
@@ -866,9 +893,10 @@ function _buildDayHtml(){
   if(cyclesHtml) html += cyclesHtml;
 
   var dayMsgs = _calMessages.filter(function(m){ return m.date===dateStr; });
+  var dayCliNotes = _calClinicalNotes.filter(function(n){ return n.date===dateStr; });
 
   // Séances du jour
-  if(!dayEvs.length && !dayMsgs.length){
+  if(!dayEvs.length && !dayMsgs.length && !dayCliNotes.length){
     html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:36px 16px;text-align:center;color:var(--muted);">'
           + '<div style="font-size:2rem;margin-bottom:10px;">😴</div>'
           + '<div style="font-size:.88rem;font-weight:600;">Pas de séance prévue ce jour</div>'
@@ -894,6 +922,14 @@ function _buildDayHtml(){
             + (m.title ? '<div style="font-size:.92rem;font-weight:700;color:#3730A3;margin-bottom:4px;">'+escH(m.title)+'</div>' : '')
             + '<div style="font-size:.82rem;color:#4338CA;white-space:pre-wrap;">'+escH(m.body ? (m.body.length>120 ? m.body.slice(0,120)+'…' : m.body) : '')+'</div>'
             + (m.body && m.body.length>120 ? '<div style="font-size:.72rem;color:#6366F1;margin-top:6px;font-weight:600;">Lire la suite ›</div>' : '')
+            + '</div>';
+    });
+    // Notes cliniques (mode kiné uniquement)
+    dayCliNotes.forEach(function(n){
+      html += '<div style="background:#f0fdf9;border:2px solid #99f6e4;border-radius:12px;padding:14px 16px;margin-bottom:10px;">'
+            + '<div style="font-size:.72rem;font-weight:700;color:#0f766e;margin-bottom:4px;letter-spacing:.04em;">🔒 NOTE CLINIQUE</div>'
+            + (n.title ? '<div style="font-size:.92rem;font-weight:700;color:#134e4a;margin-bottom:4px;">'+escH(n.title)+'</div>' : '')
+            + '<div style="font-size:.82rem;color:#0f766e;white-space:pre-wrap;">'+escH(n.body||'')+'</div>'
             + '</div>';
     });
   }
