@@ -520,9 +520,7 @@ body {
 <body>
 
 <div class="sub-tabs">
-  <button class="sub-tab active" onclick="showTab('rm')" id="stab-rm">💪 <span class="tab-full">Tableau </span>RM</button>
-  <button class="sub-tab" onclick="showTab('hsr')" id="stab-hsr">📈 <span class="tab-full">Protocole </span>HSR</button>
-  <button class="sub-tab" onclick="showTab('cardio')" id="stab-cardio">❤️ <span class="tab-full">Calculateur </span>Cardio</button>
+  <button class="sub-tab active" onclick="showTab('hsr')" id="stab-hsr">📈 <span class="tab-full">Protocole </span>HSR</button>
   <button class="sub-tab" onclick="showTab('cap')" id="stab-cap">🏃 <span class="tab-full">Reprise </span>CAP</button>
   <button class="sub-tab" onclick="showTab('proms')" id="stab-proms">📋 PROMs</button>
   <button class="sub-tab" onclick="showTab('ressources')" id="stab-ressources">📂 <span class="tab-full">Ressources</span><span class="tab-short">Res.</span></button>
@@ -545,49 +543,9 @@ body {
 </div>
 
 <!-- ══ TABLEAU RM ══════════════════════════════════════════ -->
-<div class="panel active" id="panel-rm">
-
-  <div class="block">
-    <div class="block-header">💪 Calculateur de Répétition Maximale (1RM)</div>
-    <div class="rm-inputs">
-      <div class="rm-field">
-        <label>Poids soulevé (kg)</label>
-        <input type="number" id="rm-poids" value="70" min="1" max="500" step="0.5" oninput="calcRM()">
-      </div>
-      <div class="rm-field">
-        <label>Répétitions effectuées</label>
-        <input type="number" id="rm-reps" value="5" min="1" max="30" oninput="calcRM()">
-      </div>
-      <div class="rm-field">
-        <label>Exercice (optionnel)</label>
-        <input type="text" id="rm-exo" value="Squat" placeholder="Squat, Bench…">
-      </div>
-    </div>
-    <div class="avg-bar">
-      <div>
-        <div class="avg-val" id="rm-avg">—</div>
-        <div class="avg-sub">1RM Moyen — 6 formules — <span id="rm-exo-lbl"></span></div>
-      </div>
-      <div class="avg-right">Brzycki · Epley · Lander<br>Lombardi · O'Conner · Mayhew</div>
-    </div>
-    <div class="pills" id="rm-pills"></div>
-    <div class="foot-note">⚠ Estimations indicatives. Adaptez les charges à l'état du patient, à la technique et au contexte clinique.</div>
-  </div>
-
-  <div class="block">
-    <div class="block-header org">📊 Tableau des Charges par % du 1RM</div>
-    <table class="tbl">
-      <thead>
-        <tr><th>% 1RM</th><th>Charge</th><th>Reps cibles</th><th>Objectif</th><th>Zone</th></tr>
-      </thead>
-      <tbody id="rm-tbody"></tbody>
-    </table>
-  </div>
-
-</div><!-- /panel-rm -->
 
 <!-- ══ PROTOCOLE HSR ═══════════════════════════════════════ -->
-<div class="panel" id="panel-hsr">
+<div class="panel active" id="panel-hsr">
 
   <div class="hsr-sticky">
     <label>1RM de référence</label>
@@ -682,165 +640,6 @@ body {
 
 
 
-<!-- ══ CALCULATEUR CARDIO ══════════════════════════════════ -->
-<div class="panel" id="panel-cardio">
-
-  <div id="cardio-banner" style="background:#E8F5EE;border:1px solid #B7DEC9;border-radius:8px;padding:9px 16px;margin-bottom:14px;font-size:.78rem;color:#2D6A4F;display:none">
-    ✅ Données importées depuis le Bilan : <span id="cardio-sync-fields"></span> · Complétez FC au repos pour lancer les calculs.
-  </div>
-
-  <div class="block">
-    <div class="block-header">👤 Données Patient</div>
-    <div class="rm-inputs" style="grid-template-columns:repeat(3,1fr)">
-      <div class="rm-field">
-        <label>Âge (ans)</label>
-        <input type="number" id="c-age" placeholder="25" min="10" max="100" oninput="calcCardio()">
-      </div>
-      <div class="rm-field">
-        <label>Sexe</label>
-        <select id="c-sex" onchange="calcCardio()" style="font-size:.95rem;color:#1A1917;font-weight:600;border:none;outline:none;background:transparent;width:100%;font-family:-apple-system,sans-serif">
-          <option value="1">Homme</option>
-          <option value="0">Femme</option>
-        </select>
-      </div>
-      <div class="rm-field">
-        <label>Poids (kg)</label>
-        <input type="number" id="c-poids" placeholder="70" min="30" max="200" step="0.5" oninput="calcCardio()">
-      </div>
-      <div class="rm-field">
-        <label>Taille (cm)</label>
-        <input type="number" id="c-taille" placeholder="175" min="100" max="230" oninput="calcCardio()">
-      </div>
-      <div class="rm-field">
-        <label>FC au repos (bpm) <span style="font-size:.6rem;color:#9D9B96;font-weight:400">±2 pris en compte</span></label>
-        <input type="number" id="c-fcrep" placeholder="60" min="30" max="120" oninput="calcCardio()">
-      </div>
-      <div class="rm-field">
-        <label>FC max mesurée (optionnel)</label>
-        <input type="number" id="c-fcmax-m" placeholder="Vide = estimée" min="100" max="230" oninput="calcCardio()">
-        <span style="font-size:.62rem;color:#9D9B96">Priorité sur les formules si renseigné</span>
-      </div>
-    </div>
-  </div>
-
-  <div class="block">
-    <div class="block-header grey">📊 IMC</div>
-    <div class="rm-inputs" style="grid-template-columns:1fr 1fr">
-      <div class="rm-field">
-        <label>IMC calculé</label>
-        <div id="c-imc" style="font-size:1.1rem;font-weight:700;color:#1A3A5C">—</div>
-      </div>
-      <div class="rm-field">
-        <label>Catégorie</label>
-        <div id="c-imc-cat" style="font-size:.9rem;font-weight:600">—</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="block">
-    <div class="block-header">💓 Fréquence Cardiaque Maximale</div>
-    <div style="padding:6px 16px 8px;font-size:.73rem;color:#6B6860;border-bottom:1px solid #E8E6E1">
-      Formule retenue : <strong id="c-fcmax-src">—</strong>
-    </div>
-    <div class="rm-inputs" style="grid-template-columns:1fr 1fr 1fr">
-      <div class="rm-field">
-        <label>FC max retenue (bpm)</label>
-        <div id="c-fcmax-val" style="font-size:1.6rem;font-weight:700;color:#1A3A5C">—</div>
-      </div>
-      <div class="rm-field">
-        <label>FC réserve = FCmax − FC repos</label>
-        <div id="c-fcres" style="font-size:1.3rem;font-weight:700;color:#1A3A5C">—</div>
-        <div id="c-fcres-range" style="font-size:.7rem;color:#6B6860;margin-top:3px">—</div>
-      </div>
-      <div class="rm-field">
-        <label>Plage FC repos ±2 bpm</label>
-        <div id="c-fcrep-range" style="font-size:.95rem;font-weight:600;color:#6B6860">—</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="block">
-    <div class="block-header grn">🏃 Tests VMA — optionnels (laisser vide si non réalisés)</div>
-    <div style="padding:7px 16px 8px;font-size:.76rem;color:#6B6860;border-bottom:1px solid #E8E6E1">
-      Priorité : Cooper 12min → Demi-Cooper 6min → Léger-Boucher → Estimation FC (Uth 2004)
-    </div>
-    <div class="rm-inputs" style="grid-template-columns:1fr 1fr 1fr">
-      <div class="rm-field">
-        <label>Distance Cooper (m sur 12 min)</label>
-        <input type="number" id="c-cooper" placeholder="Laisser vide" min="500" max="5000" oninput="calcCardio()">
-        <span style="font-size:.63rem;color:#9D9B96">Protocole : piste 400m · courir 12 min non-stop · mesurer la distance</span>
-      </div>
-      <div class="rm-field">
-        <label>Demi-Cooper (m sur 6 min)</label>
-        <input type="number" id="c-demi-cooper" placeholder="Laisser vide" min="300" max="3000" oninput="calcCardio()">
-        <span style="font-size:.63rem;color:#9D9B96">Profils débutant/intermédiaire · VO₂max = (distance/1000 × 14.49) − 1.38</span>
-      </div>
-      <div class="rm-field">
-        <label>Palier Léger-Boucher atteint (1–16)</label>
-        <input type="number" id="c-leger" placeholder="Laisser vide" min="1" max="16" step="0.5" oninput="calcCardio()">
-        <span style="font-size:.63rem;color:#9D9B96">Protocole : navettes 20m · paliers progressifs toutes les minutes</span>
-      </div>
-    </div>
-  </div>
-
-  <div class="block">
-    <div class="block-header org">🫁 VO₂max &amp; VMA Estimées</div>
-    <div style="padding:6px 16px 4px;font-size:.72rem;color:#6B6860;border-bottom:1px solid #E8E6E1">
-      Valeur retenue affichée — Cooper prioritaire → Léger-Boucher → Uth 2004 (FC)
-    </div>
-    <div class="rm-inputs" style="grid-template-columns:1fr 1fr 1fr">
-      <div class="rm-field">
-        <label>VO₂max retenue (ml/kg/min)</label>
-        <div id="c-vo2" style="font-size:1.4rem;font-weight:700;color:#1A3A5C">—</div>
-        <div id="c-vo2-src" style="font-size:.68rem;color:#9D9B96;margin-top:2px">—</div>
-      </div>
-      <div class="rm-field">
-        <label>VMA retenue (km/h)</label>
-        <div id="c-vma" style="font-size:1.4rem;font-weight:700;color:#2D6A4F">—</div>
-        <div id="c-vma-src" style="font-size:.68rem;color:#9D9B96;margin-top:2px">—</div>
-      </div>
-      <div class="rm-field">
-        <label>Allure à VMA (min/km)</label>
-        <div id="c-vma-allure" style="font-size:1.1rem;font-weight:700;color:#2D6A4F">—</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="block">
-    <div class="block-header grn">🏃 Allures Cibles par % de VMA</div>
-    <div style="overflow-x:auto">
-      <table class="tbl" style="min-width:560px">
-        <thead>
-          <tr>
-            <th>Zone</th><th>% VMA</th><th>Vitesse (km/h)</th><th>Allure (min/km)</th>
-            <th>FC Karvonen (fourchette ±2 FC repos)</th>
-          </tr>
-        </thead>
-        <tbody id="c-allures-tbody">
-          <tr><td colspan="5" style="text-align:center;color:#9D9B96;padding:16px">Renseignez l'âge et la FC au repos pour calculer</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="block">
-    <div class="block-header">❤️ 5 Zones d'Entraînement FC (Karvonen)</div>
-    <div style="overflow-x:auto">
-      <table class="tbl" style="min-width:540px">
-        <thead>
-          <tr><th>Zone</th><th>Nom</th><th>% FC réserve</th><th>FC cible (fourchette ±2 FC repos)</th><th>Bénéfice</th></tr>
-        </thead>
-        <tbody id="c-zones-tbody">
-          <tr><td colspan="5" style="text-align:center;color:#9D9B96;padding:16px">Renseignez l'âge et la FC au repos pour calculer</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="foot-note">
-      Karvonen : FC cible = FC repos + (FC réserve × %) · Fourchette calculée avec ±2 bpm sur la FC au repos mesurée
-    </div>
-  </div>
-
-</div><!-- /panel-cardio -->
 
 
 <!-- ══ REPRISE CAP ══════════════════════════════════════════ -->
@@ -4699,20 +4498,17 @@ function capLoadBilan() {
 var _origShowTab = showTab;
 showTab = function(id) {
   _origShowTab(id);
-  if (id === 'rm')     { calcRM(); calcHSR(); }
   if (id === 'hsr')    { calcHSR(); }
-  if (id === 'cardio') { cardioLoadBilan(); calcCardio(); }
   if (id === 'cap')    { buildCAP(); capLoadBilan(); }
 };
 
 // Init after DOM is ready
 buildCAP();
 capLoadBilan();
-calcRM();
 calcHSR();
 
 // == EXPORT PATIENT ========================================
-var _currentTab = 'rm';
+var _currentTab = 'hsr';
 var _origShowTab2 = showTab;
 showTab = function(id){ _currentTab = id; _origShowTab2 ? _origShowTab2(id) : null; };
 
@@ -4733,7 +4529,7 @@ function downloadOutils(){
   var panel = document.querySelector('.panel.active');
   if(!panel){ closeExportOutils(); return; }
   var tabId = panel.id ? panel.id.replace('panel-','') : '';
-  var titles = {'rm':'Tableau 1RM','hsr':'Protocole HSR','cardio':'Calculateur Cardio','cap':'Reprise CAP'};
+  var titles = {'hsr':'Protocole HSR','cap':'Reprise CAP','proms':'PROMs'};
   var title = titles[tabId]||'Outil';
 
   // Clone and clean up interactive elements
