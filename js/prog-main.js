@@ -732,6 +732,15 @@ function _buildDayChips(dateStr, cellDate){
           : painScore !== null && painScore >= 1 ? '#d97706'
           : '#0d9488';
         _chipTouchMeta[ev.id] = {progId: ev.programme_id, dateStr: dateStr, nom: nom, seanceId: ev.id, painScore: painScore};
+        // ── Mode sélection ──
+        if (_calSelMode) {
+          var capSel = _calSelSeances.has(String(ev.id));
+          var capSelRing = capSel ? ';box-shadow:0 0 0 2px #fff,0 0 0 4px rgba(255,255,255,.8);filter:brightness(1.12);' : ';opacity:.82;';
+          return '<div id="cal-chip-'+ev.id+'" class="cal-session-chip" style="background:'+capBg+';color:#fff;cursor:pointer'+capSelRing+'" title="'+escH(nom)+'" onclick="event.stopPropagation();_calSelToggle(\''+ev.id+'\',\'seance\')">'
+            + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">🏃 '+escH(capLabel.length>15?capLabel.slice(0,15)+'…':capLabel)+painBadge+'</span>'
+            + '<span class="cal-sel-check" style="font-size:.75rem;font-weight:800;flex-shrink:0;margin-left:2px;">'+(capSel?'✓':'')+'</span>'
+            + '</div>';
+        }
         var capEvtAttrs = _isTouchDevice
           ? ' ontouchstart="_chipTouchStart(event,\''+ev.id+'\')" ontouchmove="_chipTouchMove(event)" ontouchend="_chipTouchEnd(event,\''+ev.id+'\')"'
           : ' draggable="true" onclick="event.stopPropagation();_openChipInBuilder(\''+ev.programme_id+'\',\''+dateStr+'\',\''+ev.id+'\')" ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"';
@@ -763,13 +772,23 @@ function _buildDayChips(dateStr, cellDate){
         : '';
       // Enregistrement métadonnées pour touch
       _chipTouchMeta[ev.id] = {progId: ev.programme_id, dateStr: dateStr, nom: nom, seanceId: ev.id};
+      // ── Mode sélection ──
+      if (_calSelMode) {
+        var chipSel = _calSelSeances.has(String(ev.id));
+        var chipSelRing = chipSel ? ';box-shadow:0 0 0 2px rgba(0,0,0,.08),0 0 0 4px var(--accent);filter:brightness(1.08);' : ';opacity:.82;';
+        var chipSelCheck = chipSel ? '<span class="cal-sel-check" style="font-size:.75rem;font-weight:800;flex-shrink:0;margin-left:2px;color:'+(phStyle?'#1E3A5F':'#fff')+';">✓</span>' : '<span class="cal-sel-check"></span>';
+        return '<div id="cal-chip-'+ev.id+'" class="cal-session-chip" style="background:'+chipBg+';color:'+chipColor+';cursor:pointer'+chipExtra+chipSelRing+'" title="'+escH(nom)+'" onclick="event.stopPropagation();_calSelToggle(\''+ev.id+'\',\'seance\')">'
+          +'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">'+(jLabel?'<span style="opacity:.75;font-size:.85em;">'+escH(jLabel)+'</span>':'📋 ')+escH(nom.length>16?nom.slice(0,16)+'…':nom)+'</span>'
+          +phaseTag+chipSelCheck
+          +'</div>';
+      }
       var chipEvtAttrs = _isTouchDevice
         ? ' ontouchstart="_chipTouchStart(event,\''+ev.id+'\')" ontouchmove="_chipTouchMove(event)" ontouchend="_chipTouchEnd(event,\''+ev.id+'\')"'
         : ' draggable="true" onclick="event.stopPropagation();_openChipInBuilder(\''+ev.programme_id+'\',\''+dateStr+'\',\''+ev.id+'\')" ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"';
       var chipCursor = _isTouchDevice ? 'pointer' : 'grab';
       var moreBtnColor = phStyle ? 'color:rgba(30,58,95,.7);' : '';
       var moreBtn = '<button class="cal-chip-more" style="'+moreBtnColor+'" ontouchend="event.stopPropagation();event.preventDefault();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')">⋮</button>';
-      return '<div class="cal-session-chip" style="background:'+chipBg+';color:'+chipColor+';cursor:'+chipCursor+chipExtra+';" title="'+escH(nom)+'"'
+      return '<div id="cal-chip-'+ev.id+'" class="cal-session-chip" style="background:'+chipBg+';color:'+chipColor+';cursor:'+chipCursor+chipExtra+';" title="'+escH(nom)+'"'
         + chipEvtAttrs + '>'
         +moreBtn
         +'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">'+(jLabel?'<span style="opacity:.75;font-size:.85em;">'+escH(jLabel)+'</span>':'📋 ')+escH(nom.length>16?nom.slice(0,16)+'…':nom)+uaSpan+'</span>'
@@ -805,11 +824,22 @@ function _buildDayChips(dateStr, cellDate){
     var lbl = note.title || (note.text ? note.text.slice(0,22)+(note.text.length>22?'…':'') : 'Note');
     var isPatient = note.type === 'patient';
     _noteTouchMeta[note.id] = { title: lbl, dateStr: note.date };
+    // ── Mode sélection notes ──
+    if (_calSelMode) {
+      var noteSel = _calSelNotes.has(String(note.id));
+      var noteSelRing = noteSel ? ';box-shadow:0 0 0 2px rgba(0,0,0,.06),0 0 0 3px var(--accent);' : ';opacity:.82;';
+      chips += '<div id="cal-note-'+note.id+'" class="cal-note-chip '+(isPatient?'chip-patient':'chip-clinique')+'" style="cursor:pointer'+noteSelRing+'" onclick="event.stopPropagation();_calSelToggle(\''+note.id+'\',\'note\')" title="'+escH((note.title?note.title+'\n':'')+note.text)+'">'
+        +'<span>'+(isPatient?'💬':'🔒')+'</span>'
+        +'<span class="cal-note-chip-text">'+escH(lbl)+'</span>'
+        +'<span class="cal-sel-check" style="font-size:.75rem;font-weight:800;margin-left:auto;flex-shrink:0;">'+(noteSel?'✓':'')+'</span>'
+        +'</div>';
+      return; // continue forEach
+    }
     var noteEvtAttrs = _isTouchDevice
       ? ' ontouchstart="_noteChipTouchStart(event,\''+note.id+'\')" ontouchmove="_noteChipTouchMove(event)" ontouchend="_noteChipTouchEnd(event,\''+note.id+'\')"'
       : ' onclick="event.stopPropagation();_openCalNoteView(\''+note.id+'\')" draggable="true" ondragstart="_calNoteChipDragStart(event,\''+note.id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"';
     var noteMoreBtn = '<button class="cal-note-chip-more" ontouchend="event.stopPropagation();event.preventDefault();_showNoteActionSheet(\''+note.id+'\',\''+escJS(lbl)+'\')">⋮</button>';
-    chips += '<div class="cal-note-chip '+(isPatient?'chip-patient':'chip-clinique')+'"'+noteEvtAttrs+' title="'+escH((note.title?note.title+'\n':'')+note.text)+'">'
+    chips += '<div id="cal-note-'+note.id+'" class="cal-note-chip '+(isPatient?'chip-patient':'chip-clinique')+'"'+noteEvtAttrs+' title="'+escH((note.title?note.title+'\n':'')+note.text)+'">'
       +noteMoreBtn
       +'<span>'+(isPatient?'💬':'🔒')+'</span><span class="cal-note-chip-text">'+escH(lbl)+'</span>'
       +'<button class="cal-note-chip-del" onclick="event.stopPropagation();_confirmDeleteNote(function(){_deleteCalNote(\''+note.id+'\');})">×</button>'
@@ -1721,6 +1751,7 @@ function _calNoteDuplicateToDate(noteId, targetDate){
 
 function _chipTouchStart(e, evId){
   e.stopPropagation();
+  if (_calSelMode) { _calSelToggle(evId, 'seance'); return; }
   _touchDidLong = false;
   _touchStartXY = {x: e.touches[0].clientX, y: e.touches[0].clientY};
   _touchLongTimer = setTimeout(function(){
@@ -1900,6 +1931,7 @@ function _calNoteChipDragStart(e, noteId, date){
 }
 
 function _calChipDragStart(e, evId, progId, date){
+  if (_calSelMode) { e.preventDefault(); return; }
   _calDrag = {evId: evId, progId: progId, date: date};
   e.dataTransfer.effectAllowed = 'copyMove';
   var chip = e.currentTarget;
@@ -8128,4 +8160,136 @@ function _capCreerPaliers(seanceId) {
     .catch(function(err) {
       _showToast('✗ Erreur : ' + (err && err.message ? err.message : 'réessayez'));
     });
+}
+
+/* ══ Multi-sélection du journal ═══════════════════════════════════════════════ */
+var _calSelMode    = false;
+var _calSelSeances = new Set();
+var _calSelNotes   = new Set();
+
+function _toggleCalSelMode() {
+  _calSelMode = !_calSelMode;
+  _calSelSeances = new Set();
+  _calSelNotes   = new Set();
+  var btn = document.getElementById('calSelToggleBtn');
+  if (btn) {
+    if (_calSelMode) {
+      btn.textContent = '✕ Quitter';
+      btn.style.color = '#ef4444';
+      btn.style.borderColor = '#ef4444';
+    } else {
+      btn.textContent = '☑ Sélectionner';
+      btn.style.color = '';
+      btn.style.borderColor = '';
+    }
+  }
+  _renderCalSelBar();
+  renderCalendar();
+}
+
+function _calSelToggle(id, type) {
+  id = String(id);
+  var set = (type === 'seance') ? _calSelSeances : _calSelNotes;
+  if (set.has(id)) set.delete(id); else set.add(id);
+
+  // Mise à jour visuelle directe (sans re-render complet)
+  var prefix = (type === 'seance') ? 'cal-chip-' : 'cal-note-';
+  var chip = document.getElementById(prefix + id);
+  if (chip) {
+    var sel = set.has(id);
+    if (type === 'seance') {
+      chip.style.boxShadow = sel ? '0 0 0 2px rgba(0,0,0,.08),0 0 0 4px var(--accent)' : '';
+      chip.style.filter    = sel ? 'brightness(1.08)' : '';
+      chip.style.opacity   = sel ? '' : '.82';
+    } else {
+      chip.style.boxShadow = sel ? '0 0 0 2px rgba(0,0,0,.06),0 0 0 3px var(--accent)' : '';
+      chip.style.opacity   = sel ? '' : '.82';
+    }
+    var chk = chip.querySelector('.cal-sel-check');
+    if (chk) chk.textContent = sel ? '✓' : '';
+  }
+  _renderCalSelBar();
+}
+
+function _renderCalSelBar() {
+  var bar = document.getElementById('calSelBar');
+  if (!bar) return;
+  var n = _calSelSeances.size + _calSelNotes.size;
+  if (!_calSelMode) { bar.classList.remove('visible'); return; }
+  bar.classList.add('visible');
+
+  var parts = [];
+  if (_calSelSeances.size) parts.push(_calSelSeances.size + ' séance' + (_calSelSeances.size > 1 ? 's' : ''));
+  if (_calSelNotes.size)   parts.push(_calSelNotes.size   + ' note'   + (_calSelNotes.size   > 1 ? 's' : ''));
+  var label = n === 0 ? 'Aucun élément sélectionné' : parts.join(' + ') + ' sélectionné' + (n > 1 ? 's' : '');
+
+  bar.innerHTML = '<span style="font-size:.85rem;font-weight:600;color:#fff;flex:1;">' + label + '</span>'
+    + (n > 0
+      ? '<button onclick="_calSelDeleteAll()" style="background:#ef4444;color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:.85rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">🗑 Supprimer</button>'
+      : '')
+    + '<button onclick="_toggleCalSelMode()" style="background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:8px 14px;font-size:.82rem;font-weight:600;cursor:pointer;font-family:inherit;margin-left:8px;white-space:nowrap;">Annuler</button>';
+}
+
+function _calSelDeleteAll() {
+  var seanceIds = Array.from(_calSelSeances);
+  var noteIds   = Array.from(_calSelNotes);
+  var n = seanceIds.length + noteIds.length;
+  if (!n) return;
+
+  var parts = [];
+  if (seanceIds.length) parts.push(seanceIds.length + ' séance' + (seanceIds.length > 1 ? 's' : ''));
+  if (noteIds.length)   parts.push(noteIds.length   + ' note'   + (noteIds.length   > 1 ? 's' : ''));
+
+  _confirmDialog({
+    id:           'cal-sel-del-modal',
+    emoji:        '🗑️',
+    title:        'Supprimer ' + parts.join(' et ') + ' ?',
+    body:         'Cette action est irréversible.\nLes éléments sélectionnés seront retirés définitivement du journal.',
+    confirmLabel: 'Supprimer',
+    confirmColor: '#ef4444'
+  }, function() {
+    var promises = [];
+
+    // Batch DELETE séances en une seule requête
+    if (seanceIds.length) {
+      var progIds = seanceIds.map(function(id) {
+        var ev = _cloudCalEvents.find(function(e) { return String(e.id) === id; });
+        return ev ? ev.programme_id : null;
+      }).filter(Boolean);
+
+      promises.push(
+        _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees?id=in.(' + seanceIds.join(',') + ')', {
+          method: 'DELETE', headers: _sbHeaders()
+        }).then(function() {
+          progIds.forEach(function(pid) { _deleteProgIfOrphan(pid); });
+        })
+      );
+    }
+
+    // DELETE notes (type-aware, via la fonction existante)
+    if (noteIds.length) {
+      noteIds.forEach(function(noteId) {
+        var note = _calNotes.find(function(nn) { return nn.id === noteId; });
+        if (!note) return;
+        if (note.type === 'patient')  _deletePatientMsg(noteId);
+        if (note.type === 'clinique') _deleteClinicalNote(noteId);
+        _calNotes = _calNotes.filter(function(nn) { return nn.id !== noteId; });
+      });
+      _persistCalNotes();
+    }
+
+    Promise.all(promises).then(function() {
+      var msg = '✓ ' + n + ' élément' + (n > 1 ? 's supprimés' : ' supprimé');
+      _calSelMode    = false;
+      _calSelSeances = new Set();
+      _calSelNotes   = new Set();
+      var btn = document.getElementById('calSelToggleBtn');
+      if (btn) { btn.textContent = '☑ Sélectionner'; btn.style.color = ''; btn.style.borderColor = ''; }
+      _renderCalSelBar();
+      renderCalendar();
+      _showToast(msg);
+    }).catch(function(err) {
+      _showToast('✗ Erreur : ' + (err && err.message ? err.message : 'réessayez'));
+    });
+  });
 }

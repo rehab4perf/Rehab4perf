@@ -1346,6 +1346,15 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 /* ── CALENDRIER ── */
 .cal-area { flex:1; overflow-y:auto; padding:16px 18px; }
 .cal-nav { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+
+/* ── Barre de sélection multiple ── */
+.cal-sel-bar {
+  position:fixed; bottom:0; left:0; right:0; z-index:8500;
+  background:var(--navy); display:flex; align-items:center; gap:10px;
+  padding:14px 20px; box-shadow:0 -4px 24px rgba(0,0,0,.22);
+  transform:translateY(100%); transition:transform .22s cubic-bezier(.4,0,.2,1);
+}
+.cal-sel-bar.visible { transform:translateY(0); }
 .cal-nav h2 { font-size:.95rem; font-weight:700; color:var(--navy); flex:1; }
 .cal-nav-btn { background:none; border:1px solid var(--border); border-radius:6px; padding:4px 10px; cursor:pointer; font-size:.82rem; color:var(--muted); }
 .cal-nav-btn:hover { background:var(--bg); color:var(--navy); }
@@ -2050,6 +2059,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
         <button class="cal-view-btn" data-view="week" onclick="setCalView('week')">Semaine</button>
       </div>
       <button class="btn btn-outline" onclick="calToday()" style="font-size:.74rem;padding:4px 10px;">Aujourd'hui</button>
+      <button id="calSelToggleBtn" class="cal-nav-btn" onclick="_toggleCalSelMode()" style="font-size:.74rem;padding:4px 10px;">☑ Sélectionner</button>
       <button id="share-cal-btn" style="display:none" aria-hidden="true"></button>
     </div>
     <div class="cal-central-body">
@@ -2240,6 +2250,9 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
     <iframe id="ytModalIframe" src="" allowfullscreen allow="autoplay; encrypted-media"></iframe>
   </div>
 </div>
+
+<!-- Barre de sélection multiple -->
+<div id="calSelBar" class="cal-sel-bar"></div>
 
 <!-- Bannière mode déplacement touch -->
 <div id="touchMoveBanner">
