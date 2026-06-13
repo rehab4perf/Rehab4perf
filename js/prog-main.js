@@ -7176,6 +7176,57 @@ function _renderJournal() {
 // ── Sync périodique des notes cliniques (60 s) ──
 setInterval(_syncCalNotesIfNeeded, 30000);
 
+// ── ··· More Menu ──────────────────────────────────────────────
+function _toggleMoreMenu(e){
+  var menu=document.getElementById('more-menu');
+  if(!menu) return;
+  var isOpen=menu.style.display==='block';
+  if(isOpen){ menu.style.display='none'; return; }
+  var btn=document.getElementById('topbarMoreBtn');
+  var rect=btn?btn.getBoundingClientRect():{right:200,bottom:48};
+  menu.style.right=(window.innerWidth-rect.right)+'px';
+  menu.style.top=(rect.bottom+6)+'px';
+  menu.style.left='auto';
+  menu.style.display='block';
+  setTimeout(function(){
+    document.addEventListener('click',function _closeM(ev){
+      if(!menu.contains(ev.target)&&ev.target.id!=='topbarMoreBtn'){
+        menu.style.display='none';
+        document.removeEventListener('click',_closeM,true);
+      }
+    },true);
+  },0);
+  if(e) e.stopPropagation();
+}
+
+function _closeMoreMenu(){
+  var menu=document.getElementById('more-menu');
+  if(menu) menu.style.display='none';
+}
+
+// ── Tool Panels (RM / Cardio) ───────────────────────────────────
+function openToolPanel(name){
+  _closeMoreMenu();
+  var ov=document.getElementById('tool-panel-overlay');
+  var rm=document.getElementById('tp-rm');
+  var cd=document.getElementById('tp-cardio');
+  if(!ov||!rm||!cd) return;
+  rm.classList.toggle('active', name==='rm');
+  cd.classList.toggle('active', name==='cardio');
+  ov.classList.add('open');
+  if(name==='cardio'){ _pSyncCardioFromBilan(); _pCalcCardio(); }
+  if(name==='rm'){ _pCalcRM(); }
+}
+
+function closeToolPanel(){
+  var ov=document.getElementById('tool-panel-overlay');
+  if(ov) ov.classList.remove('open');
+}
+
+function _toolOverlayClick(e){
+  if(e.target===document.getElementById('tool-panel-overlay')) closeToolPanel();
+}
+
 // ── Init v2 ──
 (function(){
   // Charger le calendrier et les templates au démarrage
@@ -7205,7 +7256,11 @@ setInterval(_syncCalNotesIfNeeded, 30000);
       }, true);
     }
     var btn = document.getElementById('share-cal-btn');
-    var rect = btn ? btn.getBoundingClientRect() : {left:20, bottom:100};
+    var rect = btn ? btn.getBoundingClientRect() : null;
+    if(!rect || rect.width === 0){
+      var mb = document.getElementById('topbarMoreBtn');
+      rect = mb ? mb.getBoundingClientRect() : {left:window.innerWidth-260, bottom:48};
+    }
     menu.style.left  = Math.min(rect.left, window.innerWidth - 240) + 'px';
     menu.style.top   = (rect.bottom + 6) + 'px';
     menu.style.display = menu.style.display === 'none' ? 'block' : (menu.style.display ? 'none' : 'block');
