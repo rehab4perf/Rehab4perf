@@ -18,9 +18,11 @@ html, body { height:100%; overflow:hidden; background:#1A3A5C; }
   display:flex; align-items:center; padding:0 18px; gap:4px;
   box-shadow:0 2px 8px rgba(0,0,0,.3); flex-shrink:0;
 }
-.logo { display:inline-flex; align-items:baseline; line-height:1; white-space:nowrap; margin-right:20px; flex-shrink:0; user-select:none; }
+.logo { display:inline-flex; align-items:center; gap:8px; margin-right:20px; flex-shrink:0; user-select:none; }
+.logo svg { display:block; flex-shrink:0; }
+.logo-w { display:inline-flex; align-items:baseline; line-height:1; white-space:nowrap; }
 .logo-r { font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:600; font-size:22px; color:#fff; letter-spacing:-.01em; }
-.logo-e { font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:600; font-size:.44em; vertical-align:super; color:#fff; margin:0 .05em 0 .01em; line-height:0; }
+.logo-e { font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:600; font-size:.44em; vertical-align:super; color:#7FA8D9; margin:0 .05em 0 .01em; line-height:0; }
 .logo-p { font-family:'Poppins',sans-serif; font-weight:800; font-size:18px; color:#fff; letter-spacing:-.025em; margin-left:.02em; }
 .tab {
   display:flex; align-items:center; gap:6px; padding:0 16px; height:100%;
@@ -236,7 +238,10 @@ iframe.active { display:block; }
 </head>
 <body>
 <div class="topnav">
-  <div class="logo"><span class="logo-r">rehab<sup class="logo-e">4</sup></span><span class="logo-p">perf</span></div>
+  <div class="logo">
+    <svg viewBox="8 34 164 104" width="30" height="19" aria-hidden="true"><g stroke="#4A90D9" stroke-width="17" stroke-linecap="round" fill="none"><line x1="20" y1="118" x2="56" y2="104"/><line x1="70" y1="122" x2="100" y2="84"/><line x1="112" y1="125" x2="134" y2="66"/><line x1="158" y1="128" x2="158" y2="46"/></g></svg>
+    <span class="logo-w"><span class="logo-r">rehab<sup class="logo-e">4</sup></span><span class="logo-p">perf</span></span>
+  </div>
   <button class="tab active" id="tab-bilan"        onclick="show('bilan')">Bilan clinique</button>
   <button class="tab"        id="tab-outils"       onclick="show('outils')">Outils</button>
   <button class="tab"        id="tab-prescription" onclick="show('prescription')">Programme</button>

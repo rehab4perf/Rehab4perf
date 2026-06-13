@@ -24,9 +24,11 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
   position:sticky; top:0; z-index:10;
   display:flex; align-items:center; gap:10px;
 }
-.header-logo { display:inline-flex; align-items:baseline; line-height:1; white-space:nowrap; }
+.header-logo { display:inline-flex; align-items:center; gap:8px; }
+.header-logo svg { display:block; flex-shrink:0; }
+.logo-w { display:inline-flex; align-items:baseline; line-height:1; white-space:nowrap; }
 .logo-r { font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:600; font-size:20px; color:#fff; letter-spacing:-.01em; }
-.logo-e { font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:600; font-size:.44em; vertical-align:super; color:rgba(255,255,255,.8); margin:0 .05em 0 .01em; line-height:0; }
+.logo-e { font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:600; font-size:.44em; vertical-align:super; color:#7FA8D9; margin:0 .05em 0 .01em; line-height:0; }
 .logo-p { font-family:'Poppins',sans-serif; font-weight:800; font-size:16px; color:#fff; letter-spacing:-.025em; margin-left:.02em; }
 .header-sub { font-size:.68rem; color:rgba(255,255,255,.6); margin-top:1px; }
 .header-left { flex:1; }
@@ -410,7 +412,7 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
 
 <div class="app-header">
   <div class="header-left">
-    <div class="header-logo"><span class="logo-r">rehab<sup class="logo-e">4</sup></span><span class="logo-p">perf</span></div>
+    <div class="header-logo"><svg viewBox="8 34 164 104" width="26" height="16" aria-hidden="true"><g stroke="#4A90D9" stroke-width="17" stroke-linecap="round" fill="none"><line x1="20" y1="118" x2="56" y2="104"/><line x1="70" y1="122" x2="100" y2="84"/><line x1="112" y1="125" x2="134" y2="66"/><line x1="158" y1="128" x2="158" y2="46"/></g></svg><span class="logo-w"><span class="logo-r">rehab<sup class="logo-e">4</sup></span><span class="logo-p">perf</span></span></div>
     <div class="header-sub" id="headerSub">Programme athlète</div>
   </div>
   <button class="header-btn" id="refreshBtn" onclick="refresh()">↻ Actualiser</button>

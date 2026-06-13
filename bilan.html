@@ -71,10 +71,9 @@ body {
   padding: 16px 16px 13px;
   border-bottom: 1px solid var(--border);
 }
-.logo { display:inline-flex; align-items:baseline; line-height:1; white-space:nowrap; }
-.logo-r { font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:600; font-size:20px; color:var(--text); letter-spacing:-.01em; }
-.logo-e { font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:600; font-size:.44em; vertical-align:super; color:var(--accent); margin:0 .05em 0 .01em; line-height:0; }
-.logo-p { font-family:'Poppins',sans-serif; font-weight:800; font-size:16px; color:var(--text); letter-spacing:-.025em; margin-left:.02em; }
+.logo { display:inline-flex; align-items:center; gap:7px; }
+.logo svg { display:block; flex-shrink:0; }
+.logo-label { font-size:.78rem; font-weight:600; color:var(--text2); letter-spacing:.01em; }
 .sidebar-patient {
   padding: 10px 16px 14px;
   border-bottom: 1px solid var(--border);
@@ -1277,9 +1276,10 @@ textarea { resize:none !important; overflow:hidden !important; }
 
 <div id="print-header" style="display:none;margin-bottom:0;">
   <div style="background:var(--accent2);color:#fff;padding:12px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;">
-    <div style="display:inline-flex;align-items:baseline;line-height:1;white-space:nowrap;gap:10px;">
-      <span style="display:inline-flex;align-items:baseline;"><span style="font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:20px;color:#fff;letter-spacing:-.01em;">rehab<sup style="font-size:.44em;vertical-align:super;line-height:0;margin:0 .05em 0 .01em;color:#fff;">4</sup></span><span style="font-family:'Poppins',sans-serif;font-weight:800;font-size:16px;color:#fff;letter-spacing:-.025em;margin-left:.02em;">perf</span></span>
-      <span style="font-size:.72rem;opacity:.55;font-weight:400;letter-spacing:.02em;font-family:var(--font-sans);align-self:center;">Bilan Clinique</span>
+    <div style="display:inline-flex;align-items:center;gap:9px;white-space:nowrap;">
+      <svg viewBox="8 34 164 104" width="24" height="15" aria-hidden="true" style="display:block;flex-shrink:0"><g stroke="#4A90D9" stroke-width="17" stroke-linecap="round" fill="none"><line x1="20" y1="118" x2="56" y2="104"/><line x1="70" y1="122" x2="100" y2="84"/><line x1="112" y1="125" x2="134" y2="66"/><line x1="158" y1="128" x2="158" y2="46"/></g></svg>
+      <span style="display:inline-flex;align-items:baseline;line-height:1;"><span style="font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:18px;color:#fff;letter-spacing:-.01em;">rehab<sup style="font-size:.44em;vertical-align:super;line-height:0;margin:0 .05em 0 .01em;color:#7FA8D9;">4</sup></span><span style="font-family:'Poppins',sans-serif;font-weight:800;font-size:14px;color:#fff;letter-spacing:-.025em;margin-left:.02em;">perf</span></span>
+      <span style="font-size:.72rem;opacity:.55;margin-left:4px;font-weight:400;letter-spacing:.02em;font-family:var(--font-sans);align-self:center;">Bilan Clinique</span>
     </div>
     <div id="ph-meta" style="text-align:right;font-size:.75rem;color:rgba(255,255,255,.85);line-height:1.7;font-family:-apple-system,Helvetica Neue,sans-serif;"></div>
   </div>
@@ -1290,7 +1290,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 
 <aside class="sidebar">
   <div class="sidebar-header">
-    <div class="logo"><span class="logo-r">rehab<sup class="logo-e">4</sup></span><span class="logo-p">perf</span></div>
+    <div class="logo"><svg viewBox="8 34 164 104" width="20" height="12" aria-hidden="true"><g stroke="var(--accent)" stroke-width="17" stroke-linecap="round" fill="none"><line x1="20" y1="118" x2="56" y2="104"/><line x1="70" y1="122" x2="100" y2="84"/><line x1="112" y1="125" x2="134" y2="66"/><line x1="158" y1="128" x2="158" y2="46"/></g></svg><span class="logo-label">Bilan clinique</span></div>
   </div>
 
   <div class="sidebar-patient">
