@@ -7331,6 +7331,86 @@ var CAP_PATHO_DB = {
       'Douleur résiduelle le lendemain → répéter la même séance sans progresser',
       'Gonflement ou douleur au repos → suspendre et réévaluer'
     ]
+  },
+  achille: {
+    label: 'Tendinopathie achilléenne',
+    seuil: 3,
+    consignes: [
+      'Éviter les côtes et surfaces dures les 4 premières semaines — privilégier chemins souples',
+      'Raideur matinale acceptable si elle disparaît en < 20 min ; la surveiller séance après séance',
+      'Compléter par renforcement excentrique quotidien du mollet (protocole Alfredson ou Silbernagel)',
+      'Ne pas étirer le tendon avant la course — réchauffement actif uniquement'
+    ],
+    drapeaux: [
+      'Douleur ≥ 4/10 pendant la course → arrêt immédiat',
+      'Gonflement visible ou palpable du tendon → suspendre et consulter',
+      'Douleur nocturne ou au repos → bilan d\'imagerie avant reprise',
+      'Craquement ou sensation de déchirure → arrêt urgent'
+    ]
+  },
+  rotule: {
+    label: 'Tendinopathie rotulienne / Syndrome fémoro-patellaire',
+    seuil: 3,
+    consignes: [
+      'Éviter les descentes et les surfaces en dévers jusqu\'à la semaine 5',
+      'Cadence ≥ 170 pas/min pour réduire les forces de compression patellaires',
+      'Compléter par renforcement quadriceps en chaîne fermée (squat au tiers de flexion)',
+      'Réduire la vitesse si douleur en montée ou en descente de marches'
+    ],
+    drapeaux: [
+      'Douleur ≥ 4/10 → arrêt de la séance',
+      'Gonflement du genou → arrêt et consultation',
+      'Dérobement ou blocage du genou → arrêt urgent',
+      'Douleur résiduelle le lendemain → répéter sans progresser'
+    ]
+  },
+  pubalgie: {
+    label: 'Pubalgie / douleur inguinale',
+    seuil: 2,
+    consignes: [
+      'Augmenter le volume avant l\'intensité — pas de sprint ni de changement de direction avant la semaine 5',
+      'Éviter les côtes montantes les 4 premières semaines',
+      'Compléter par gainage abdominal profond et renforcement adducteurs (en progression)',
+      'Minimum 1 jour de repos entre chaque séance CAP'
+    ],
+    drapeaux: [
+      'Douleur à la palpation pubienne en augmentation → pause 48h minimum',
+      'Douleur irradiante vers le testicule ou l\'aine → consultation urgente',
+      'Douleur nocturne ou au repos → bilan avant reprise',
+      'Douleur ≥ 3/10 → arrêt et régression d\'une phase'
+    ]
+  },
+  fasciite: {
+    label: 'Fasciopathie plantaire',
+    seuil: 2,
+    consignes: [
+      'Les premières minutes de course peuvent être légèrement douloureuses (< 2/10) — normal si ça s\'atténue à l\'échauffement',
+      'Privilégier surfaces souples, éviter pieds nus et chaussures minimalistes',
+      'Étirements du fascia plantaire matin au lever et avant chaque séance',
+      'Compléter par renforcement des muscles intrinsèques du pied'
+    ],
+    drapeaux: [
+      'Douleur après la course supérieure à la douleur de départ → régression d\'une étape',
+      'Douleur au talon invalidante le matin au lever → pause et réévaluation',
+      'Gonflement du talon → consultation et imagerie',
+      'Douleur ≥ 3/10 en dehors de l\'échauffement → arrêt'
+    ]
+  },
+  periostite: {
+    label: 'Périostite tibiale (Shin splints)',
+    seuil: 2,
+    consignes: [
+      'Surfaces souples exclusivement les 3 premières semaines (herbe, piste, chemin)',
+      'Chaussures absorbantes avec bon maintien — remplacer si > 700 km',
+      'Ne jamais augmenter volume et vitesse simultanément',
+      'Compléter par renforcement mollet, tibial antérieur et travail de foulée'
+    ],
+    drapeaux: [
+      'Douleur au repos ou nocturne → éliminer fracture de fatigue par IRM avant reprise',
+      'Douleur localisée sur un point fixe précis → consultation urgente',
+      'Douleur ≥ 4/10 → arrêt et imagerie',
+      'Gonflement localisé sur le tibia → arrêt immédiat'
+    ]
   }
 };
 
@@ -7360,47 +7440,78 @@ function _capI(phase, reps, run, walk) {
 }
 
 function _capC(phase, dur) {
+  var d = Math.max(1, Math.round(dur));
+  var lbl = d >= 60
+    ? Math.floor(d/60) + 'h' + (d%60 ? (d%60 < 10 ? '0' : '') + d%60 : '')
+    : d + ' min';
   return {
     id: _capMkId(), phase: phase, type: 'continuous',
-    reps: null, runMin: null, walkMin: null, durationMin: dur,
-    label: dur + ' min continu',
+    reps: null, runMin: null, walkMin: null, durationMin: d,
+    label: lbl + ' continu',
     status: 'pending', painScore: null, isIntermediate: false
   };
 }
 
+/* ── Stepper objectif ── */
+function capObjStep(delta) {
+  var inp = document.getElementById('capObjG');
+  var cur = parseInt(inp.value) || 30;
+  // Pas de 5 min, bornes 1–240
+  var next = Math.max(1, Math.min(240, cur + delta));
+  inp.value = next;
+  var disp = document.getElementById('capObjDisplay');
+  if (disp) {
+    disp.textContent = next >= 60
+      ? Math.floor(next/60) + 'h' + (next%60 ? (next%60 < 10 ? '0' : '') + next%60 : '')
+      : next + ' min';
+  }
+}
+
 /* ── Listes canoniques 18 sessions (3/sem × 6 semaines) ── */
 function _capCanonical18(level, obj) {
-  var o1 = Math.max(Math.round(obj * 0.55), 10);
+  // Pour petits objectifs, forcer un niveau plus progressif
+  var effectiveLevel = level;
+  if (obj < 20) effectiveLevel = 'debutant';
+
+  // Durée maximale d'intervalle en phase 3 : proportionnelle à l'objectif, plafonnée
+  var p3run = Math.min(12, Math.max(2, Math.round(obj * 0.3)));
+  var p3r1  = p3run >= 6 ? 2 : 3;
+  var p3r2  = p3run >= 6 ? 3 : 5;
+
+  // Cibles continues (% de l'objectif)
+  var o1 = Math.max(Math.round(obj * 0.55), 5);
   var o2 = Math.round(obj * 0.70);
   var o3 = Math.round(obj * 0.85);
   var o4 = Math.round((o3 + obj) / 2);
 
-  if (level === 'debutant') {
+  if (effectiveLevel === 'debutant') {
+    var p1r = obj < 12 ? 0.5 : 1; // 30s pour très petits objectifs
     return [
-      _capI(1,5,0.5,1), _capI(1,8,0.5,1), _capI(1,12,0.5,1),
-      _capI(1,5,1,1),   _capI(1,8,1,1),   _capI(1,12,1,1),
-      _capI(2,5,1.5,1), _capI(2,8,1.5,1), _capI(2,4,2,1),
-      _capI(2,6,2,1),   _capI(2,4,3,1),   _capI(2,3,4,1),
-      _capI(3,2,5,1),   _capI(3,2,7,1),   _capC(3,o1),
-      _capC(3,o2),      _capC(3,o3),      _capC(3,obj)
+      _capI(1,5,p1r,1),  _capI(1,8,p1r,1),  _capI(1,12,p1r,1),
+      _capI(1,5,1,1),    _capI(1,8,1,1),    _capI(1,12,1,1),
+      _capI(2,5,1.5,1),  _capI(2,8,1.5,1),  _capI(2,4,2,1),
+      _capI(2,6,2,1),    _capI(2,4,3,1),    _capI(2,3,4,1),
+      _capI(3,p3r1,Math.min(5,p3run),1), _capI(3,p3r2,Math.min(7,p3run),1), _capC(3,o1),
+      _capC(3,o2),       _capC(3,o3),       _capC(3,obj)
     ];
-  } else if (level === 'intermediaire') {
+  } else if (effectiveLevel === 'intermediaire') {
     return [
-      _capI(1,5,1,1),  _capI(1,7,1,1),  _capI(1,10,1,1),
-      _capI(1,12,1,1), _capI(1,5,2,1),  _capI(1,7,2,1),
-      _capI(2,10,2,1), _capI(2,4,3,1),  _capI(2,6,3,1),
-      _capI(2,8,3,1),  _capI(2,4,4,1),  _capI(2,6,4,1),
-      _capI(3,2,9,1),  _capI(3,3,9,1),  _capC(3,o2),
-      _capC(3,o3),     _capC(3,o4),     _capC(3,obj)
+      _capI(1,5,1,1),         _capI(1,7,1,1),         _capI(1,10,1,1),
+      _capI(1,12,1,1),        _capI(1,5,2,1),         _capI(1,7,2,1),
+      _capI(2,10,2,1),        _capI(2,4,3,1),         _capI(2,6,3,1),
+      _capI(2,8,3,1),         _capI(2,4,4,1),         _capI(2,6,4,1),
+      _capI(3,p3r1,p3run,1),  _capI(3,p3r2,p3run,1),  _capC(3,o2),
+      _capC(3,o3),            _capC(3,o4),             _capC(3,obj)
     ];
   } else { // avance
+    var p2max = Math.min(12, Math.max(6, Math.round(obj * 0.25)));
     return [
-      _capI(1,5,2,1),  _capI(1,8,2,1),  _capI(1,10,2,1),
-      _capI(1,5,3,1),  _capI(1,4,4,1),  _capI(1,6,4,1),
-      _capI(2,4,5,1),  _capI(2,3,6,1),  _capI(2,3,7,1),
-      _capI(2,2,8,1),  _capI(2,2,9,1),  _capI(2,3,9,1),
-      _capC(3,o1),     _capC(3,o2),     _capC(3,o3),
-      _capC(3,obj),    _capC(3,o4),     _capC(3,obj)
+      _capI(1,5,2,1),          _capI(1,8,2,1),          _capI(1,10,2,1),
+      _capI(1,5,3,1),          _capI(1,4,4,1),          _capI(1,6,4,1),
+      _capI(2,4,5,1),          _capI(2,3,6,1),          _capI(2,3,Math.min(8,p2max),1),
+      _capI(2,2,p2max,1),      _capI(2,2,p3run,1),      _capI(2,3,p3run,1),
+      _capC(3,o1),             _capC(3,o2),             _capC(3,o3),
+      _capC(3,obj),            _capC(3,o4),             _capC(3,obj)
     ];
   }
 }

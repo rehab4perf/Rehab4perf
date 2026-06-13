@@ -1724,7 +1724,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   <div class="topbar-right">
     <button class="topbar-btn" onclick="toggleSidebar()" title="Bibliothèque">☰ Biblio</button>
     <button class="topbar-btn" onclick="openJournal()" id="topbarJournalBtn">📋 Journal</button>
-    <button class="topbar-btn" onclick="openCAPWizard()" id="topbarCAPBtn" title="Générateur de retour à la course à pied">CAP</button>
     <button class="topbar-btn" id="topbarMoreBtn" onclick="_toggleMoreMenu(event)" title="Plus d'outils" style="letter-spacing:.1em;font-weight:700">···</button>
     <button class="topbar-btn primary" onclick="openBuilderNew()" id="topbarNewBtn">+ Séance</button>
   </div>
@@ -1741,6 +1740,9 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   <div style="font-size:.67rem;font-weight:700;color:#9D9B96;padding:4px 10px 6px;text-transform:uppercase;letter-spacing:.06em;">Outils</div>
   <button onclick="openToolPanel('rm')" style="display:flex;align-items:center;gap:9px;width:100%;padding:8px 12px;border:none;background:none;cursor:pointer;border-radius:7px;font-family:inherit;font-size:.86rem;color:#1A1917;text-align:left;" onmouseover="this.style.background='#F1F0ED'" onmouseout="this.style.background='none'"><span>💪</span> Calculateur RM</button>
   <button onclick="openToolPanel('cardio')" style="display:flex;align-items:center;gap:9px;width:100%;padding:8px 12px;border:none;background:none;cursor:pointer;border-radius:7px;font-family:inherit;font-size:.86rem;color:#1A1917;text-align:left;" onmouseover="this.style.background='#F1F0ED'" onmouseout="this.style.background='none'"><span>❤️</span> Calculateur Cardio</button>
+  <div style="border-top:1px solid #E8E6E1;margin:4px 0;"></div>
+  <div style="font-size:.67rem;font-weight:700;color:#9D9B96;padding:4px 10px 6px;text-transform:uppercase;letter-spacing:.06em;">Retour à la course</div>
+  <button onclick="openCAPWizard();_closeMoreMenu()" style="display:flex;align-items:center;gap:9px;width:100%;padding:8px 12px;border:none;background:none;cursor:pointer;border-radius:7px;font-family:inherit;font-size:.86rem;color:#1A1917;text-align:left;" onmouseover="this.style.background='#F1F0ED'" onmouseout="this.style.background='none'"><span>🏃</span> Calculateur CAP</button>
 </div>
 
 <div class="app">
@@ -3003,6 +3005,12 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 /* Bouton nouveau programme */
 .cap-new-btn { background:none; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:7px 16px; font-size:.77rem; cursor:pointer; font-family:inherit; }
 .cap-new-btn:hover { border-color:var(--accent2); color:var(--accent2); }
+
+/* Stepper objectif */
+.cap-stepper { display:flex; align-items:center; gap:10px; }
+.cap-step-btn { width:34px; height:34px; border-radius:8px; border:1px solid var(--border); background:#f5f7fa; color:var(--text); font-size:1.15rem; cursor:pointer; display:flex; align-items:center; justify-content:center; font-family:inherit; flex-shrink:0; transition:background .1s,border-color .1s,color .1s; }
+.cap-step-btn:hover { background:var(--navy); color:#fff; border-color:var(--navy); }
+.cap-step-val { font-size:.95rem; font-weight:700; color:var(--navy); min-width:64px; text-align:center; }
 </style>
 
 <div class="proto-overlay" id="proto-overlay" onclick="if(event.target===this)closeProtoPanel()">
@@ -3202,18 +3210,23 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
         <div class="cap-field-label">Pathologie</div>
         <select class="cap-select" id="capPathoG">
           <option value="aucune">Aucune pathologie spécifique</option>
-          <option value="bit">Syndrome de la bandelette ilio-tibiale (BIT)</option>
+          <option value="bit">Bandelette ilio-tibiale (BIT)</option>
+          <option value="achille">Tendinopathie achilléenne</option>
+          <option value="rotule">Tendinopathie rotulienne / Fémoro-patellaire</option>
+          <option value="pubalgie">Pubalgie / douleur inguinale</option>
+          <option value="fasciite">Fasciopathie plantaire</option>
+          <option value="periostite">Périostite tibiale (Shin splints)</option>
         </select>
       </div>
 
       <div>
         <div class="cap-field-label">Objectif de durée</div>
-        <select class="cap-select" id="capObjG">
-          <option value="20">20 min</option>
-          <option value="30" selected>30 min</option>
-          <option value="45">45 min</option>
-          <option value="60">60 min</option>
-        </select>
+        <div class="cap-stepper">
+          <button class="cap-step-btn" onclick="capObjStep(-5)" title="Diminuer">−</button>
+          <span class="cap-step-val" id="capObjDisplay">30 min</span>
+          <button class="cap-step-btn" onclick="capObjStep(+5)" title="Augmenter">+</button>
+          <input type="hidden" id="capObjG" value="30">
+        </div>
       </div>
 
       <div>
