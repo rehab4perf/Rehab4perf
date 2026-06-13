@@ -500,6 +500,14 @@ sb.auth.getSession().then(function(result) {
   var user = session.user;
   updateNav(user);
   applyPlan((user.user_metadata || {}).plan);
+  // Isolation de session : efface le cache si l'utilisateur a changé
+  try {
+    var _prev = JSON.parse(localStorage.getItem(R4P_KEYS.CACHED_PROFILE) || 'null');
+    if (_prev && _prev.email !== user.email) {
+      Object.values(R4P_KEYS).forEach(function(k){ try { localStorage.removeItem(k); } catch(e){} });
+      try { localStorage.removeItem('athletik-bilan'); } catch(e) {}
+    }
+  } catch(e) {}
   var profile = syncProfileToStorage(user);
   // Propager à bilan.html après chargement de l'iframe
   setTimeout(function() { propagateToBilan(profile); }, 600);

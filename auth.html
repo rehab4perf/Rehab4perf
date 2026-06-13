@@ -213,14 +213,22 @@ if (!_urlType) {
   });
 }
 
+// Flow PKCE sans type explicite : code= présent → invitation Supabase
+var _hasPkceCode = /[?&]code=/.test(window.location.search) && !_urlType;
+
 /* ═══════════════════════════════════════════════════════
    INITIALISATION — quelle section afficher
 ═══════════════════════════════════════════════════════ */
 
-// Écouter les événements Supabase (recovery détecté ici)
+// Écouter les événements Supabase
 sb.auth.onAuthStateChange(function(event, session) {
   if (event === 'PASSWORD_RECOVERY') {
     showSec('secRecovery');
+  } else if (event === 'SIGNED_IN' && _hasPkceCode) {
+    // PKCE invite : Supabase a échangé le code → montrer l'écran création mdp
+    _hasPkceCode = false;
+    clearSessionCache();
+    showSec('secInvite');
   }
 });
 
@@ -232,6 +240,8 @@ sb.auth.getSession().then(function(result) {
     showSec('secInvite');
   } else if (_urlType === 'recovery') {
     showSec('secRecovery');
+  } else if (_hasPkceCode) {
+    // Attendre onAuthStateChange (échange du code PKCE en cours)
   } else if (session) {
     window.location.replace('./');
   } else {
@@ -267,6 +277,14 @@ function checkStrength(inputId, barId) {
 }
 
 /* ═══════════════════════════════════════════════════════
+   ISOLATION DE SESSION — efface toute donnée de la session précédente
+═══════════════════════════════════════════════════════ */
+function clearSessionCache() {
+  var keys = ['r4p-cached-profile','r4p-profile','r4p-current-patient','r4p-session','r4p-last-activity','athletik-bilan'];
+  keys.forEach(function(k){ try { localStorage.removeItem(k); } catch(e){} });
+}
+
+/* ═══════════════════════════════════════════════════════
    CACHE PROFIL — pour bilan.html
 ═══════════════════════════════════════════════════════ */
 function syncProfileCache(user) {
@@ -288,6 +306,7 @@ function submitLogin() {
   sb.auth.signInWithPassword({ email: email, password: pwd })
     .then(function(res) {
       if (res.error) throw res.error;
+      clearSessionCache();
       syncProfileCache(res.data.user);
       window.location.replace('./');
     })
@@ -314,6 +333,7 @@ function submitInvite() {
   sb.auth.updateUser({ password: pwd1 })
     .then(function(res) {
       if (res.error) throw res.error;
+      clearSessionCache();
       syncProfileCache(res.data.user);
       showMsg('inviteOk', '✓ Mot de passe créé ! Redirection…', 'ok');
       // Déjà connecté → aller directement à l'app
