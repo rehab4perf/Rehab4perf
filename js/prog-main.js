@@ -4426,6 +4426,8 @@ function _exitBuilderMode(){
   _builderLinkedPhase = null;
   var banner = document.getElementById('builder-proto-banner');
   if(banner){ banner.style.display = 'none'; banner.innerHTML = ''; banner.className = ''; }
+  var capBanner = document.getElementById('cap-builder-banner');
+  if(capBanner){ capBanner.style.display = 'none'; capBanner.innerHTML = ''; }
 }
 
 function openBuilderForDate(dateStr){
@@ -8160,6 +8162,70 @@ function _capCreerPaliers(seanceId) {
     .catch(function(err) {
       _showToast('✗ Erreur : ' + (err && err.message ? err.message : 'réessayez'));
     });
+}
+
+/* ══ Bandeau CAP dans le builder ═════════════════════════════════════════════ */
+function _renderCapBuilderBanner(donnees, seanceId) {
+  var banner = document.getElementById('cap-builder-banner');
+  if (!banner) return;
+
+  if (!donnees || donnees.type !== 'cap') {
+    banner.style.display = 'none';
+    return;
+  }
+
+  var profile  = donnees.profile  || {};
+  var session  = donnees.session  || {};
+  var patho    = profile.patho || 'aucune';
+  var pathoInfo = CAP_PATHO_DB[patho] || CAP_PATHO_DB.aucune;
+
+  // Douleur : cherche d'abord dans CAP_STATE, puis dans l'événement cloud
+  var painScore = null;
+  if (CAP_STATE && CAP_STATE.sessions && seanceId) {
+    var capSess = CAP_STATE.sessions.find(function(s) { return s.seance_id === seanceId; });
+    if (capSess) painScore = capSess.painScore !== undefined ? capSess.painScore : null;
+  }
+  if (painScore === null && seanceId && _cloudCalEvents) {
+    var ev = _cloudCalEvents.find(function(e) { return String(e.id) === String(seanceId); });
+    if (ev && ev.athlete_feedback && ev.athlete_feedback.rpe !== null && ev.athlete_feedback.rpe !== undefined) {
+      painScore = parseFloat(ev.athlete_feedback.rpe);
+    }
+  }
+
+  var seuil = pathoInfo.seuil || 3;
+  var isRed = painScore !== null && painScore >= seuil;
+  var isOrange = painScore !== null && painScore > 0 && !isRed;
+
+  // Labels phase
+  var phaseNames = ['', 'Préparation', 'Construction', 'Performance'];
+  var phaseLabel = session.phase ? (phaseNames[session.phase] || 'Phase ' + session.phase) : '';
+
+  var html = '<div class="cap-bb-head">'
+    + '<span>🏃</span>'
+    + '<span class="cap-bb-label">CAP — ' + escH(pathoInfo.label || patho) + '</span>'
+    + (phaseLabel ? '<span class="cap-bb-phase">' + escH(phaseLabel) + '</span>' : '')
+    + (isRed    ? '<span class="cap-bb-pain rouge">⚠ ' + painScore + '/10</span>' : '')
+    + (isOrange ? '<span class="cap-bb-pain orange">⚠ ' + painScore + '/10</span>' : '')
+    + '</div>';
+
+  // Consignes (accordéon simple)
+  var consignes = Array.isArray(pathoInfo.consignes) ? pathoInfo.consignes : [];
+  if (consignes.length) {
+    html += '<ul class="cap-bb-consignes" id="cap-bb-consignes-list">';
+    consignes.forEach(function(c) {
+      html += '<li>' + escH(c) + '</li>';
+    });
+    html += '</ul>';
+  }
+
+  // Bouton créer paliers (si douleur ≥ seuil + séance identifiée)
+  if (isRed && seanceId) {
+    html += '<button class="cap-bb-paliers-btn" onclick="_capCreerPaliers(\'' + seanceId + '\')">'
+      + '🔧 Créer paliers intermédiaires</button>';
+  }
+
+  banner.innerHTML = html;
+  banner.style.display = 'block';
 }
 
 /* ══ Multi-sélection du journal ═══════════════════════════════════════════════ */

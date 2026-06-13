@@ -649,6 +649,28 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 }
 #builderPanel.r4p-readonly .builder-ro-banner { display:flex; }
 
+/* ── Bandeau CAP dans le builder ── */
+#cap-builder-banner {
+  margin:6px 10px 0; border-radius:8px; font-size:.78rem; line-height:1.45;
+  background:#f0fdfa; border:1px solid #99f6e4; color:#134e4a; padding:10px 12px;
+}
+.cap-bb-head { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.cap-bb-label { font-size:.7rem; font-weight:700; color:#0d9488; text-transform:uppercase; letter-spacing:.06em; }
+.cap-bb-phase { font-size:.7rem; background:#ccfbf1; color:#0d9488; border-radius:4px; padding:1px 6px; font-weight:600; }
+.cap-bb-pain { font-size:.72rem; font-weight:700; padding:2px 8px; border-radius:5px; margin-left:auto; }
+.cap-bb-pain.rouge  { background:#fee2e2; color:#dc2626; border:1px solid #fca5a5; }
+.cap-bb-pain.orange { background:#fef3c7; color:#d97706; border:1px solid #fcd34d; }
+.cap-bb-consignes { list-style:none; margin:0 0 6px; padding:0; display:flex; flex-direction:column; gap:3px; }
+.cap-bb-consignes li { display:flex; gap:6px; font-size:.73rem; color:#134e4a; }
+.cap-bb-consignes li::before { content:'›'; color:#0d9488; flex-shrink:0; }
+.cap-bb-paliers-btn {
+  width:100%; margin-top:8px; padding:7px 12px; background:#0d9488; color:#fff;
+  border:none; border-radius:7px; font-size:.8rem; font-weight:600; cursor:pointer;
+  font-family:inherit; transition:background .15s; text-align:left;
+}
+.cap-bb-paliers-btn:hover { background:#0f766e; }
+.cap-bb-toggle { background:none; border:none; cursor:pointer; font-size:.7rem; color:#0d9488; padding:0; font-family:inherit; text-decoration:underline; text-underline-offset:2px; }
+
 #builder-proto-banner {
   margin:6px 10px 0; border-radius:8px; font-size:.78rem; line-height:1.45;
   border:1px solid #93C5FD; background:var(--accent-ll); color:#1D4ED8;
@@ -2089,6 +2111,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   </div>
   <div class="builder-date-bar" id="builderDateBar"></div>
   <div id="builder-proto-banner" style="display:none;"></div>
+  <div id="cap-builder-banner" style="display:none;"></div>
   <div class="builder-body">
     <!-- Champ nom programme -->
     <div style="padding:8px 14px 0;display:flex;align-items:center;gap:8px;">
