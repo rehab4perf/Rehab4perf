@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<meta name="color-scheme" content="light only">
+<meta name="color-scheme" content="light dark">
 <title>Outils — Rehab4Perf</title>
+<script>(function(){if(localStorage.getItem('r4p-theme')==='dark')document.documentElement.classList.add('dark');}());</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,600&family=Poppins:wght@800&display=swap" rel="stylesheet">
@@ -515,6 +516,48 @@ body {
 .cr-amp-row { display:flex; align-items:flex-end; gap:4px; }
 .cr-amp-row input { flex:1; min-width:0; }
 .cr-amp-row select { width:88px; font-size:.7rem; flex-shrink:0; padding:7px 4px; }
+
+/* ═══ DARK MODE ══════════════════════════════════════════════ */
+html.dark {
+  color-scheme: dark;
+  --bg:#0F1724; --surface:#1A2130; --surface2:#232E42;
+  --border:#2D3B52; --border2:#3D5070;
+  --text:#E2E8F4; --text2:#94A3B8; --text3:#64748B;
+  --accent:#4A90D9; --accent-l:#0F2040; --accent2:#7EB8F7;
+}
+html.dark body { background:var(--bg); color:#E2E8F4; }
+html.dark .sub-tabs { background:var(--navy,#0F2040); border-color:var(--border); }
+html.dark .sub-tab { color:rgba(255,255,255,.6); }
+html.dark .sub-tab.active,html.dark .sub-tab:hover { background:rgba(255,255,255,.12); color:#fff; }
+html.dark .panel { background:var(--bg); }
+html.dark .block { background:var(--surface); border-color:var(--border); }
+html.dark .block-header { border-color:var(--border); color:#E2E8F4; }
+html.dark input:not([type=range]),html.dark textarea,html.dark select { background:var(--surface); border-color:var(--border2); color:#E2E8F4; }
+html.dark .avg-bar { background:var(--navy,#0F2040); }
+html.dark .pills .pill { background:var(--surface2); color:#E2E8F4; }
+html.dark .pills .pill.best { background:var(--accent); color:#fff; }
+html.dark .tbl th { background:var(--navy,#0F2040); color:#fff; }
+html.dark .tbl td { border-color:var(--border); color:#E2E8F4; }
+html.dark .tbl tr:nth-child(even) td { background:var(--surface2); }
+html.dark .rm-field { color:#E2E8F4; }
+html.dark .rm-field label { color:#94A3B8; }
+html.dark .foot-note { color:#64748B; border-color:var(--border); }
+html.dark .hsr-sticky { background:var(--surface); border-color:var(--border); }
+html.dark .meta-grid { background:var(--surface); border-color:var(--border); }
+html.dark .meta-cell { border-color:var(--border); color:#E2E8F4; }
+html.dark .meta-cell label { color:#94A3B8; }
+html.dark .step { border-color:var(--border); }
+html.dark .step-desc { color:#94A3B8; }
+html.dark .proms-card { background:var(--surface); border-color:var(--border); }
+html.dark .proms-question,html.dark .proms-radio-label { color:#E2E8F4; }
+html.dark .proto-hdr { background:var(--navy,#0F2040); }
+html.dark .cr-config-section { background:var(--surface); border-color:var(--border); }
+html.dark .modal,html.dark .modal-content { background:var(--surface); border-color:var(--border); color:#E2E8F4; }
+html.dark [style*="background:#F1F0ED"],html.dark [style*="background:#F7F8FA"],html.dark [style*="background:#F7F6F3"],html.dark [style*="background:#F5F5F5"] { background:var(--surface2) !important; }
+html.dark [style*="background:#fff;"],html.dark [style*="background: #fff;"],html.dark [style*="background:#ffffff"] { background:var(--surface) !important; }
+html.dark .dossier-save-btn { background:var(--surface2); border-color:var(--border); color:#E2E8F4; }
+html.dark [style*="color:#1A1917"],html.dark [style*="color: #1A1917"] { color:#E2E8F4 !important; }
+html.dark [style*="color:#6B6860"],html.dark [style*="color: #6B6860"] { color:#94A3B8 !important; }
 </style>
 </head>
 <body>
@@ -6880,6 +6923,16 @@ _updateOutilsPatientBtns();
   </div>
 </div>
 
+<script>
+/* ── Dark mode listener ── */
+window.addEventListener('message', function(e){
+  if(e.origin!==window.location.origin)return;
+  if(e.data&&e.data.type==='r4p-dark-mode'){
+    document.documentElement.classList[e.data.dark?'add':'remove']('dark');
+    try{localStorage.setItem('r4p-theme',e.data.dark?'dark':'light');}catch(_){}
+  }
+});
+</script>
 
 </body>
 </html>
