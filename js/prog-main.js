@@ -718,6 +718,31 @@ function _buildDayChips(dateStr, cellDate){
     var _j0Ref = _progPatient ? _getJ0ForPatient(_progPatient.id) : '';
     chips = dayEvs.map(function(ev){
       var nom = (ev.programmes&&ev.programmes.nom)||'Programme';
+
+      // ── Chip CAP — séance de retour à la course ──
+      if (nom.indexOf('CAP —') === 0) {
+        var capLabel = nom.slice(6); // retire "CAP — "
+        var fbCap = ev.athlete_feedback;
+        var painScore = (fbCap && fbCap.rpe !== null && fbCap.rpe !== undefined) ? fbCap.rpe : null;
+        var painBadge = painScore !== null
+          ? ' <span style="font-size:.57rem;font-weight:800;padding:1px 4px;border-radius:3px;background:rgba(0,0,0,.18);">⚠ ' + painScore + '/10</span>'
+          : '';
+        // Rouge si douleur ≥ 3, orange si 1-2, teal si pas de retour
+        var capBg = painScore !== null && painScore >= 3 ? '#dc2626'
+          : painScore !== null && painScore >= 1 ? '#d97706'
+          : '#0d9488';
+        _chipTouchMeta[ev.id] = {progId: ev.programme_id, dateStr: dateStr, nom: nom, seanceId: ev.id};
+        var capEvtAttrs = _isTouchDevice
+          ? ' ontouchstart="_chipTouchStart(event,\''+ev.id+'\')" ontouchmove="_chipTouchMove(event)" ontouchend="_chipTouchEnd(event,\''+ev.id+'\')"'
+          : ' draggable="true" onclick="event.stopPropagation();_openChipInBuilder(\''+ev.programme_id+'\',\''+dateStr+'\',\''+ev.id+'\')" ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"';
+        return '<div class="cal-session-chip" style="background:'+capBg+';color:#fff;cursor:grab;" title="'+escH(nom)+'"'
+          + capEvtAttrs + '>'
+          + '<button class="cal-chip-more" ontouchend="event.stopPropagation();event.preventDefault();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')">⋮</button>'
+          + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">🏃 '+escH(capLabel.length>14?capLabel.slice(0,14)+'…':capLabel)+painBadge+'</span>'
+          + '<button class="cal-chip-del" style="color:rgba(255,255,255,.7)" onclick="event.stopPropagation();removeCalEventCloud(\''+ev.id+'\')">×</button>'
+          + '</div>';
+      }
+
       // Préfixe J+ si une date de référence est disponible
       var jPlus = _j0Ref ? _computeJPlus(dateStr, _j0Ref) : null;
       var jLabel = jPlus !== null ? ('J'+(jPlus >= 0 ? '+' : '')+jPlus+' · ') : '';
@@ -7833,4 +7858,108 @@ function _capInterpolate(prev, next) {
   }
 
   return out;
+}
+
+/* ── CAP → Agenda : calcul des dates ── */
+function _capCalcDates(count, spw, startDateStr) {
+  // Patterns d'espacement (jours depuis le jour 1 de chaque semaine)
+  var patterns = { 2: [0,3], 3: [0,2,4], 4: [0,1,3,4] };
+  var pattern = patterns[spw] || patterns[3];
+  var dates = [];
+  var start = new Date(startDateStr + 'T12:00:00');
+  for (var i = 0; i < count; i++) {
+    var weekNum    = Math.floor(i / spw);
+    var dayInWeek  = i % spw;
+    var d = new Date(start);
+    d.setDate(d.getDate() + weekNum * 7 + pattern[dayInWeek]);
+    dates.push(d.toISOString().split('T')[0]);
+  }
+  return dates;
+}
+
+/* ── CAP → Agenda : export Supabase ── */
+function _capExportToCalendar() {
+  if (!_progPatient) { alert('Sélectionne un patient d\'abord dans la barre de navigation.'); return; }
+  var startDate = document.getElementById('capStartDate').value;
+  if (!startDate) { alert('Indique la date du premier jour de reprise.'); return; }
+
+  var sessions = CAP_STATE.sessions;
+  var spw      = CAP_STATE.profile.seancesPerWeek;
+  var dates    = _capCalcDates(sessions.length, spw, startDate);
+
+  var btn = document.getElementById('capExportBtn');
+  var statusEl = document.getElementById('capExportStatus');
+  if (btn) { btn.disabled = true; btn.textContent = 'Ajout en cours…'; }
+  if (statusEl) { statusEl.textContent = ''; }
+
+  // 1 — Créer les programmes en batch
+  var progBodies = sessions.map(function(s, i) {
+    return {
+      patient_id:    _progPatient.id,
+      praticien_id:  _progUid,
+      nom:           'CAP — ' + s.label,
+      date:          dates[i],
+      donnees: {
+        type:          'cap',
+        session:       s,
+        profile:       CAP_STATE.profile,
+        session_index: i,
+        total:         sessions.length
+      }
+    };
+  });
+
+  _fetchRetry(SUPA_URL_P + '/rest/v1/programmes', {
+    method:  'POST',
+    headers: Object.assign({}, _sbHeaders(), { 'Prefer': 'return=representation' }),
+    body:    JSON.stringify(progBodies)
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(progs) {
+    if (!Array.isArray(progs) || !progs.length) throw new Error('Réponse inattendue lors de la création des programmes.');
+
+    // 2 — Créer les séances_planifiées en batch
+    var seanceBodies = progs.map(function(p, i) {
+      return {
+        patient_id:   _progPatient.id,
+        praticien_id: _progUid,
+        programme_id: p.id,
+        date:         dates[i]
+      };
+    });
+
+    return _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees', {
+      method:  'POST',
+      headers: Object.assign({}, _sbHeaders(), { 'Prefer': 'return=representation' }),
+      body:    JSON.stringify(seanceBodies)
+    })
+    .then(function(r) {
+      return r.json().then(function(seances) { return { progs: progs, seances: seances }; });
+    });
+  })
+  .then(function(result) {
+    // Stocker les IDs de séances dans CAP_STATE pour référence future
+    if (Array.isArray(result.seances)) {
+      result.seances.forEach(function(seance, i) {
+        if (CAP_STATE.sessions[i]) {
+          CAP_STATE.sessions[i].seance_id = seance.id;
+          CAP_STATE.sessions[i].date      = dates[i];
+        }
+      });
+      _capSave();
+    }
+    if (statusEl) {
+      statusEl.textContent = '✓ ' + sessions.length + ' séances ajoutées du ' + dates[0] + ' au ' + dates[dates.length - 1];
+      statusEl.style.color = '#15803d';
+    }
+    if (btn) { btn.disabled = false; btn.textContent = 'Ajouter à l\'agenda →'; }
+    renderCalendar();
+  })
+  .catch(function(err) {
+    if (statusEl) {
+      statusEl.textContent = '✗ Erreur : ' + (err && err.message ? err.message : 'problème réseau');
+      statusEl.style.color = '#dc2626';
+    }
+    if (btn) { btn.disabled = false; btn.textContent = 'Ajouter à l\'agenda →'; }
+  });
 }

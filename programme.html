@@ -3281,7 +3281,16 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
         <div class="cap-flags-title">Drapeaux rouges — stopper et consulter</div>
         <div id="capFlagsBody"></div>
       </div>
-      <div style="text-align:center;padding:8px 0 2px;">
+      <!-- Export vers l'agenda -->
+      <div style="background:#F8FAFC;border:1px solid var(--border);border-radius:9px;padding:12px 14px;">
+        <div class="cap-field-label" style="margin-bottom:8px;">Ajouter à l'agenda du patient</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <input type="date" id="capStartDate" class="cap-select" style="flex:1;min-width:130px;" title="Premier jour de reprise">
+          <button id="capExportBtn" onclick="_capExportToCalendar()" style="padding:8px 14px;background:var(--navy);color:#fff;border:none;border-radius:7px;font-size:.79rem;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0;white-space:nowrap;">Ajouter à l'agenda →</button>
+        </div>
+        <div id="capExportStatus" style="font-size:.74rem;margin-top:6px;min-height:1.1em;color:var(--muted);"></div>
+      </div>
+      <div style="text-align:center;padding:4px 0 2px;">
         <button class="cap-new-btn" onclick="_capNewProg()">Nouveau programme</button>
       </div>
     </div>

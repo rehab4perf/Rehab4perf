@@ -977,8 +977,10 @@ function openProgModal(progId, nom, seanceId){
     }
     _loadPainRatings();
     _loadSessionNote();
-    var html = buildProgHTML(prog);
-    if(seanceId) html += buildSessionNoteCard() + buildRpeCard(seanceId, blocs, existing);
+    var donnees = prog.donnees || {};
+    var isCap = donnees.type === 'cap';
+    var html = isCap ? _buildCapProgHTML(prog) : buildProgHTML(prog);
+    if(seanceId) html += buildSessionNoteCard() + (isCap ? _buildCapPainCard(seanceId, existing) : buildRpeCard(seanceId, blocs, existing));
     document.getElementById('progModalBody').innerHTML = html;
   })
   .catch(function(){
@@ -1341,6 +1343,139 @@ function closeYtModal(e){
   document.getElementById('ytModalOverlay').classList.remove('open');
 }
 document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeYtModal(); });
+// ─────────────────────────────────────────────────────────────────────────────
+
+/* ══════════════════════════════════════════════════════
+   CAP — Retour à la course à pied
+══════════════════════════════════════════════════════ */
+var _capCurrentSeanceId = null;
+var _capCurrentPain = null;
+
+var _capPathoNames = {
+  aucune:'',bit:'BIT',achille:'Achille',
+  rotule:'Rotule / SFP',pubalgie:'Pubalgie',
+  fasciite:'Fasciopathie plantaire',periostite:'Périostite tibiale'
+};
+var _capPhaseNames = {1:'Phase 1 — Réintroduction',2:'Phase 2 — Consolidation',3:'Phase 3 — Retour continu'};
+var _capPhaseColors = {1:'#2563EB',2:'#059669',3:'#7C3AED'};
+var _capPainDescs = ['Aucune douleur','Très légère','Légère','Légère à modérée','Modérée','Modérée à forte','Forte','Très forte','Intense','Extrêmement intense','Insupportable'];
+var _capPainColors = ['#27AE60','#5ABD6A','#82CC44','#A8C940','#F4D03F','#F39C12','#E67E22','#D35400','#E74C3C','#C0392B','#922B21'];
+
+function _buildCapProgHTML(prog) {
+  var d = prog.donnees || {};
+  var sess = d.session || {};
+  var profile = d.profile || {};
+  var patho = profile.patho || 'aucune';
+  var pathoLbl = _capPathoNames[patho] || '';
+  var phaseColor = _capPhaseColors[sess.phase] || '#2563EB';
+  var phaseLbl = _capPhaseNames[sess.phase] || '';
+  var idx = (d.session_index !== undefined ? d.session_index + 1 : '?');
+  var total = d.total || '?';
+
+  var html = '<div style="padding:6px 0 14px;">';
+  html += '<div style="font-size:1.15rem;font-weight:800;color:#1A3A5C;margin-bottom:4px;">🏃 ' + escH(sess.label || prog.nom) + '</div>';
+
+  var meta = [];
+  if (pathoLbl) meta.push(pathoLbl);
+  meta.push('Séance ' + idx + '/' + total);
+  html += '<div style="font-size:.78rem;color:#6b7a8d;margin-bottom:10px;">' + escH(meta.join(' · ')) + '</div>';
+
+  if (phaseLbl) {
+    html += '<div style="font-size:.72rem;font-weight:700;color:'+phaseColor+';text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;">' + escH(phaseLbl) + '</div>';
+  }
+
+  // Consignes spécifiques pathologie
+  var consignesByPatho = {
+    bit:['Cadence ≥ 175 pas/min','Éviter les descentes et le dévers','Renforcement fessier après la séance'],
+    achille:['Éviter côtes et surfaces dures','Réchauffement actif uniquement (pas d\'étirements avant)','Renforcement excentrique du mollet le soir'],
+    rotule:['Cadence ≥ 170 pas/min','Éviter les descentes','Renforcement quadriceps en chaîne fermée'],
+    pubalgie:['Pas de sprint ni de changement de direction','Gainage abdominal après la séance'],
+    fasciite:['Surfaces souples privilégiées','Étirements du fascia plantaire avant la séance'],
+    periostite:['Surfaces souples exclusivement','Ne pas augmenter vitesse et durée en même temps']
+  };
+  var consignes = consignesByPatho[patho];
+  if (consignes) {
+    html += '<div style="background:#EBF3FF;border-radius:8px;padding:10px 12px;font-size:.77rem;color:#1a3558;">';
+    html += '<div style="font-size:.66rem;font-weight:700;color:#2B5FA6;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">Consignes</div>';
+    consignes.forEach(function(c){ html += '<div style="padding:2px 0;">• ' + escH(c) + '</div>'; });
+    html += '</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function _buildCapPainCard(seanceId, existing) {
+  _capCurrentSeanceId = seanceId;
+  _capCurrentPain = existing ? existing.rpe : null;
+
+  var alreadyDone = _capCurrentPain !== null && _capCurrentPain !== undefined;
+  var html = '<div class="rpe-card" id="rpeCard">';
+  html += '<div class="rpe-card-title">Score de douleur (EVA)</div>';
+  html += '<div class="rpe-duree" style="color:#6b7a8d;font-size:.8rem;">Ressenti douloureux pendant et après la séance</div>';
+  html += '<div class="rpe-scale-label">Niveau de douleur — 0 (aucune) à 10 (insupportable)</div>';
+
+  if (alreadyDone) {
+    html += '<div class="rpe-already">Déjà renseigné : ' + _capCurrentPain + '/10 — ' + (_capPainDescs[_capCurrentPain] || '') + '</div>';
+  }
+
+  html += '<div class="rpe-buttons">';
+  for (var i = 0; i <= 10; i++) {
+    var active = alreadyDone && _capCurrentPain === i ? ' active' : '';
+    html += '<button class="rpe-btn' + active + '" data-val="' + i + '" style="'+(active?' background:#2B5FA6;border-color:#2B5FA6;color:#fff;':'')+'" onclick="_capSetPain(' + i + ')">' + i + '</button>';
+  }
+  html += '</div>';
+
+  html += '<div class="rpe-desc" id="capPainDesc" style="color:' + (_capCurrentPain !== null ? _capPainColors[_capCurrentPain] : 'var(--muted)') + '">'
+    + (_capCurrentPain !== null ? _capPainDescs[_capCurrentPain] : '') + '</div>';
+
+  html += '<button class="rpe-submit-btn" id="capPainSubmit" onclick="_submitCapFeedback()"'
+    + (alreadyDone ? ' disabled' : '') + '>'
+    + (alreadyDone ? 'Score déjà envoyé' : 'Envoyer mon score')
+    + '</button>';
+  html += '</div>';
+  return html;
+}
+
+function _capSetPain(val) {
+  _capCurrentPain = val;
+  document.querySelectorAll('#rpeCard .rpe-btn').forEach(function(b){
+    var active = parseInt(b.dataset.val) === val;
+    b.classList.toggle('active', active);
+    b.style.background = active ? '#2B5FA6' : '';
+    b.style.borderColor = active ? '#2B5FA6' : '';
+    b.style.color = active ? '#fff' : '';
+  });
+  var desc = document.getElementById('capPainDesc');
+  if (desc) { desc.textContent = _capPainDescs[val] || ''; desc.style.color = _capPainColors[val] || '#6b7a8d'; }
+  var btn = document.getElementById('capPainSubmit');
+  if (btn && !btn.disabled) { btn.textContent = 'Envoyer mon score'; }
+}
+
+function _submitCapFeedback() {
+  if (_capCurrentPain === null || _capCurrentPain === undefined) { alert('Sélectionne ton score de douleur (0–10).'); return; }
+  if (!_capCurrentSeanceId) return;
+  var btn = document.getElementById('capPainSubmit');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Envoi…'; }
+
+  fetch(SUPA_URL + '/rest/v1/athlete_feedback', {
+    method: 'POST',
+    headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify({ seance_id: _capCurrentSeanceId, rpe: _capCurrentPain, duree_min: 1, submitted_at: new Date().toISOString() })
+  })
+  .then(function(r) {
+    if (!r.ok) { return r.json().then(function(d){ alert('Erreur : ' + JSON.stringify(d)); if(btn){btn.disabled=false;btn.textContent='Réessayer';} }); }
+    var color = _capPainColors[_capCurrentPain] || '#2B5FA6';
+    var card = document.getElementById('rpeCard');
+    if (card) card.innerHTML =
+      '<div class="rpe-success-msg">'
+      + '<div style="font-size:1.4rem;">' + (_capCurrentPain <= 2 ? '✅' : _capCurrentPain <= 4 ? '⚠️' : '🔴') + '</div>'
+      + '<div style="font-weight:700;color:var(--navy);margin:6px 0;">Score enregistré !</div>'
+      + '<div class="rpe-success-ua" style="color:' + color + ';">' + _capCurrentPain + '/10</div>'
+      + '<div class="rpe-success-detail">' + escH(_capPainDescs[_capCurrentPain] || '') + '</div>'
+      + '</div>';
+  })
+  .catch(function(){ alert('Erreur réseau. Réessaie.'); if(btn){btn.disabled=false;btn.textContent='Réessayer';} });
+}
 // ─────────────────────────────────────────────────────────────────────────────
 </script>
 
