@@ -731,14 +731,18 @@ function _buildDayChips(dateStr, cellDate){
         var capBg = painScore !== null && painScore >= 3 ? '#dc2626'
           : painScore !== null && painScore >= 1 ? '#d97706'
           : '#0d9488';
-        _chipTouchMeta[ev.id] = {progId: ev.programme_id, dateStr: dateStr, nom: nom, seanceId: ev.id};
+        _chipTouchMeta[ev.id] = {progId: ev.programme_id, dateStr: dateStr, nom: nom, seanceId: ev.id, painScore: painScore};
         var capEvtAttrs = _isTouchDevice
           ? ' ontouchstart="_chipTouchStart(event,\''+ev.id+'\')" ontouchmove="_chipTouchMove(event)" ontouchend="_chipTouchEnd(event,\''+ev.id+'\')"'
           : ' draggable="true" onclick="event.stopPropagation();_openChipInBuilder(\''+ev.programme_id+'\',\''+dateStr+'\',\''+ev.id+'\')" ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"';
+        var paliersBtn = (!_isTouchDevice && painScore !== null && painScore >= 3)
+          ? '<button class="cal-chip-del" style="color:rgba(255,255,255,.85);font-size:.62rem;padding:0 3px;" onclick="event.stopPropagation();_capCreerPaliers(\''+ev.id+'\')" title="Créer paliers intermédiaires">🔧</button>'
+          : '';
         return '<div class="cal-session-chip" style="background:'+capBg+';color:#fff;cursor:grab;" title="'+escH(nom)+'"'
           + capEvtAttrs + '>'
           + '<button class="cal-chip-more" ontouchend="event.stopPropagation();event.preventDefault();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')">⋮</button>'
           + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">🏃 '+escH(capLabel.length>14?capLabel.slice(0,14)+'…':capLabel)+painBadge+'</span>'
+          + paliersBtn
           + '<button class="cal-chip-del" style="color:rgba(255,255,255,.7)" onclick="event.stopPropagation();removeCalEventCloud(\''+ev.id+'\')">×</button>'
           + '</div>';
       }
@@ -1745,6 +1749,14 @@ function _showTouchActionSheet(evId, progId, dateStr, nom){
   _touchSheetData = {evId: evId, progId: progId, dateStr: dateStr};
   var title = document.getElementById('touchSheetTitle');
   if(title) title.textContent = nom || 'Séance';
+  // Afficher/masquer le bouton Créer paliers selon la nature du chip CAP
+  var capPaliersBtn = document.getElementById('touchSheetCapPaliersBtn');
+  if(capPaliersBtn) {
+    var meta = _chipTouchMeta[evId];
+    var isCap = meta && meta.nom && meta.nom.indexOf('CAP —') === 0;
+    var isRed = meta && meta.painScore !== null && meta.painScore >= 3;
+    capPaliersBtn.style.display = (isCap && isRed) ? 'block' : 'none';
+  }
   document.getElementById('touchSheet').style.display = 'block';
   document.getElementById('touchSheetOverlay').style.display = 'block';
   // Bloquer la fermeture pendant 350ms (lâcher du doigt génère un clic fantôme sur l'overlay)
@@ -1800,6 +1812,13 @@ function touchSheetDelete(){
         }
       });
   });
+}
+
+function touchSheetCapPaliers(){
+  if(!_touchSheetData) return;
+  var evId = _touchSheetData.evId;
+  closeTouchSheet();
+  _capCreerPaliers(evId);
 }
 
 /* ── Modale de confirmation avant suppression d'une séance ── */
@@ -7877,6 +7896,18 @@ function _capCalcDates(count, spw, startDateStr) {
   return dates;
 }
 
+/* ── CAP → Agenda : convertit une session CAP en bloc cardio (pour Évolution) ── */
+function _capSessionToCardioBloc(s) {
+  if (s.type === 'interval') {
+    var totalMin = Math.round(s.reps * (s.runMin + (s.walkMin || 0)));
+    return { type: 'cardio', sport: 'course', effort_type: 'fractionne',
+             repetitions: String(s.reps), duree_effort: s.runMin + 'm',
+             duree_recup:  (s.walkMin || 0) + 'm', duree_totale: totalMin };
+  }
+  return { type: 'cardio', sport: 'course', effort_type: 'continu',
+           duree_totale: s.durationMin || 0 };
+}
+
 /* ── CAP → Agenda : export Supabase ── */
 function _capExportToCalendar() {
   if (!_progPatient) { alert('Sélectionne un patient d\'abord dans la barre de navigation.'); return; }
@@ -7904,7 +7935,8 @@ function _capExportToCalendar() {
         session:       s,
         profile:       CAP_STATE.profile,
         session_index: i,
-        total:         sessions.length
+        total:         sessions.length,
+        blocs:         [_capSessionToCardioBloc(s)]
       }
     };
   });
@@ -7938,11 +7970,12 @@ function _capExportToCalendar() {
     });
   })
   .then(function(result) {
-    // Stocker les IDs de séances dans CAP_STATE pour référence future
+    // Stocker les IDs de séances et programmes dans CAP_STATE pour référence future
     if (Array.isArray(result.seances)) {
       result.seances.forEach(function(seance, i) {
         if (CAP_STATE.sessions[i]) {
           CAP_STATE.sessions[i].seance_id = seance.id;
+          CAP_STATE.sessions[i].prog_id   = seance.programme_id;
           CAP_STATE.sessions[i].date      = dates[i];
         }
       });
@@ -7962,4 +7995,137 @@ function _capExportToCalendar() {
     }
     if (btn) { btn.disabled = false; btn.textContent = 'Ajouter à l\'agenda →'; }
   });
+}
+
+/* ── Créer des paliers intermédiaires depuis l'agenda (après douleur patient) ── */
+function _capCreerPaliers(seanceId) {
+  if (!_progPatient) { _showToast('Sélectionnez un patient.'); return; }
+  if (!CAP_STATE || !CAP_STATE.sessions || !CAP_STATE.sessions.length) {
+    alert('Programme CAP introuvable pour ce patient.\nOuvrez le Calculateur CAP pour le recharger.');
+    return;
+  }
+
+  // Trouver la séance douloureuse par seance_id
+  var idx = -1;
+  CAP_STATE.sessions.forEach(function(s, i) { if (s.seance_id === seanceId) idx = i; });
+  if (idx < 1) {
+    alert('Séance introuvable dans le programme CAP (ou c\'est la première séance).');
+    return;
+  }
+
+  var prev    = CAP_STATE.sessions[idx - 1];
+  var painful = CAP_STATE.sessions[idx];
+  var previewInserts = _capInterpolate(prev, painful);
+  if (!previewInserts.length) {
+    alert('Aucun palier intermédiaire possible entre ces deux séances.');
+    return;
+  }
+
+  var n = previewInserts.length;
+  var remaining = CAP_STATE.sessions.length - idx;
+  if (!confirm(
+    'Insérer ' + n + ' séance' + (n > 1 ? 's' : '') + ' intermédiaire' + (n > 1 ? 's' : '') +
+    ' avant la séance douloureuse ?\n\n' +
+    'Les ' + remaining + ' séances suivantes seront décalées d\'autant.'
+  )) return;
+
+  // Date de début du programme (première séance avec date connue)
+  var firstDate = null;
+  for (var fi = 0; fi < CAP_STATE.sessions.length; fi++) {
+    if (CAP_STATE.sessions[fi].date) { firstDate = CAP_STATE.sessions[fi].date; break; }
+  }
+  if (!firstDate) {
+    alert('Date de début du programme introuvable.\nExportez d\'abord le programme vers l\'agenda.');
+    return;
+  }
+  var spw = CAP_STATE.profile.seancesPerWeek;
+
+  // Snapshot des anciennes dates (avant mutation)
+  var oldDateMap = {};
+  CAP_STATE.sessions.forEach(function(s) { if (s.seance_id) oldDateMap[s.seance_id] = s.date || null; });
+
+  // Muter CAP_STATE en mémoire
+  _capAdaptOnPain(idx);
+  var newSessions = CAP_STATE.sessions;
+  var newDates    = _capCalcDates(newSessions.length, spw, firstDate);
+
+  // Catégoriser chaque séance
+  var toInsert = [];
+  var toPatch  = [];
+  newSessions.forEach(function(s, i) {
+    s.date = newDates[i];
+    if (!s.seance_id) {
+      toInsert.push({ session: s, date: newDates[i], newIdx: i });
+    } else {
+      var oldDate = oldDateMap[s.seance_id] || null;
+      if (oldDate !== newDates[i]) {
+        toPatch.push({ seance_id: s.seance_id, prog_id: s.prog_id || null, newDate: newDates[i] });
+      }
+    }
+  });
+
+  _showToast('Création des paliers en cours…');
+
+  // INSERT nouvelles séances
+  var insertPromise;
+  if (toInsert.length) {
+    var progBodies = toInsert.map(function(item) {
+      return {
+        patient_id: _progPatient.id, praticien_id: _progUid,
+        nom: 'CAP — ' + item.session.label, date: item.date,
+        donnees: {
+          type: 'cap', session: item.session, profile: CAP_STATE.profile,
+          session_index: item.newIdx, total: newSessions.length,
+          blocs: [_capSessionToCardioBloc(item.session)]
+        }
+      };
+    });
+    insertPromise = _fetchRetry(SUPA_URL_P + '/rest/v1/programmes', {
+      method: 'POST',
+      headers: Object.assign({}, _sbHeaders(), { 'Prefer': 'return=representation' }),
+      body: JSON.stringify(progBodies)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(progs) {
+      var seanceBodies = progs.map(function(p, pi) {
+        return { patient_id: _progPatient.id, praticien_id: _progUid,
+                 programme_id: p.id, date: toInsert[pi].date };
+      });
+      return _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees', {
+        method: 'POST',
+        headers: Object.assign({}, _sbHeaders(), { 'Prefer': 'return=representation' }),
+        body: JSON.stringify(seanceBodies)
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(seances) {
+        seances.forEach(function(seance, si) {
+          var s = newSessions[toInsert[si].newIdx];
+          if (s) { s.seance_id = seance.id; s.prog_id = seance.programme_id; }
+        });
+      });
+    });
+  } else {
+    insertPromise = Promise.resolve();
+  }
+
+  // PATCH dates des séances décalées
+  var patchPromises = toPatch.map(function(item) {
+    var reqs = [ _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees?id=eq.' + item.seance_id,
+      { method: 'PATCH', headers: _sbHeaders(), body: JSON.stringify({ date: item.newDate }) }) ];
+    if (item.prog_id) {
+      reqs.push(_fetchRetry(SUPA_URL_P + '/rest/v1/programmes?id=eq.' + item.prog_id,
+        { method: 'PATCH', headers: _sbHeaders(), body: JSON.stringify({ date: item.newDate }) }));
+    }
+    return Promise.all(reqs);
+  });
+
+  Promise.all([insertPromise].concat(patchPromises))
+    .then(function() {
+      _capSave();
+      renderCalendar();
+      _showToast('✓ ' + n + ' palier' + (n > 1 ? 's' : '') + ' intermédiaire' + (n > 1 ? 's' : '') + ' ajouté' + (n > 1 ? 's' : '') + ' !');
+    })
+    .catch(function(err) {
+      _showToast('✗ Erreur : ' + (err && err.message ? err.message : 'réessayez'));
+    });
 }

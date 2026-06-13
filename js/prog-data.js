@@ -3660,6 +3660,7 @@ var _pevoNrsData = null;   // { exoKey → {nom, pts:[{date,nrs}]} } — donnée
 var _pevoChartCtr = 0;     // compteur unique pour IDs SVG
 var _pevoDureeData = null;  // { exoKey → {label, points:[{date,secs}]} }
 var _pevoCardioData = null; // { groupKey → {label, points:[{date,km}]} }
+var _pevoCapPainData = null; // [{date, pain}] pour CAP — douleur EVA
 
 /* Attache les events tooltip sur les hit areas (même logique que bilan.html) */
 var _pevoTtOpen = null;
@@ -3744,13 +3745,27 @@ function _pevoFilterPts(pts){
   });
 }
 
+function _extractCapPainData(seances) {
+  var points = [];
+  seances.forEach(function(s) {
+    var donnees = (s.programmes && s.programmes.donnees) || {};
+    if (donnees.type !== 'cap') return;
+    var fb = s.athlete_feedback;
+    var pain = (fb && fb.rpe !== null && fb.rpe !== undefined) ? parseFloat(fb.rpe) : null;
+    if (pain === null || isNaN(pain)) return;
+    points.push({ date: s.date, pain: pain });
+  });
+  points.sort(function(a, b) { return a.date.localeCompare(b.date); });
+  return points.length >= 2 ? points : null;
+}
+
 function _renderPevoCharts(exoData, selectedKeys) {
   var body = document.getElementById('pevoBody');
   if(!body) return;
   var allKeys = Object.keys(exoData);
   var dureeKeys = _pevoDureeData ? Object.keys(_pevoDureeData) : [];
   var cardioKeys = _pevoCardioData ? Object.keys(_pevoCardioData) : [];
-  if(!allKeys.length && !dureeKeys.length && !cardioKeys.length){
+  if(!allKeys.length && !dureeKeys.length && !cardioKeys.length && !_pevoCapPainData){
     body.innerHTML = _renderPevoFilterBar()+'<div class="pevo-empty">Aucun exercice avec répétitions, durée ou cardio prescrit sur plusieurs séances.</div>';
     return;
   }
@@ -3987,8 +4002,37 @@ function _renderPevoCharts(exoData, selectedKeys) {
                    : '<div class="pevo-empty">Cochez un exercice ci-dessus pour afficher sa courbe.</div>');
   }
 
+  // ── Section CAP — Douleur EVA ────────────────────────────────────────────
+  var capPainSectionHtml = '';
+  if (_pevoCapPainData) {
+    var filteredCapPts = _pevoFilterPts(_pevoCapPainData);
+    if (filteredCapPts && filteredCapPts.length >= 2) {
+      _pevoChartCtr++;
+      var nrsPts = filteredCapPts.map(function(p) { return { date: p.date, nrs: p.pain }; });
+      var svg = _buildPevoNrsChart(nrsPts, _pevoChartCtr);
+      var capFirst = filteredCapPts[0].pain;
+      var capLast  = filteredCapPts[filteredCapPts.length - 1].pain;
+      var capDelta = capLast - capFirst;
+      var capCls   = capDelta === 0 ? 'neutral' : (capDelta < 0 ? 'pos' : 'neg'); // moins de douleur = positif
+      capPainSectionHtml = '<div class="pevo-select-section">'
+        + '<div class="pevo-select-title" style="color:#0d9488">🏃 CAP — Douleur à l\'effort</div>'
+        + '</div>'
+        + '<div class="pevo-charts"><div class="pevo-card">'
+        + '<div class="pevo-card-header">'
+        + '<span class="pevo-card-title">Douleur EVA (0–10)</span>'
+        + '<div class="pevo-card-kpis">'
+        + '<span class="pevo-kpi-neutral">S1 : ' + capFirst + '/10</span>'
+        + '<span class="pevo-kpi-neutral">→</span>'
+        + '<span class="pevo-kpi-strong">Actuel : ' + capLast + '/10</span>'
+        + '<span class="pevo-kpi ' + capCls + '">' + (capDelta >= 0 ? '+' : '') + capDelta.toFixed(1) + '</span>'
+        + '</div></div>'
+        + svg
+        + '</div></div>';
+    }
+  }
+
   var sep = '<div style="height:32px"></div>';
-  var parts = [rmSection, dureeSectionHtml, cardioSectionHtml].filter(function(s){ return !!s; });
+  var parts = [rmSection, dureeSectionHtml, cardioSectionHtml, capPainSectionHtml].filter(function(s){ return !!s; });
   body.innerHTML = _renderPevoFilterBar() + parts.join(sep);
   _attachPevoEvents();
 }
@@ -4150,10 +4194,10 @@ function openChargesEvo() {
   overlay.classList.add('open');
   var body = document.getElementById('pevoBody');
   body.innerHTML = '<div class="pevo-loading">Chargement des séances…</div>';
-  _pevoData = null; _pevoDureeData = null; _pevoCardioData = null;
+  _pevoData = null; _pevoDureeData = null; _pevoCardioData = null; _pevoCapPainData = null;
   // Charger toutes les séances du patient avec les données du programme lié
   var url = SUPA_URL_P + '/rest/v1/seances_planifiees?patient_id=eq.' + _progPatient.id
-    + '&select=id,date,programme_id,programmes(nom,donnees)&order=date.asc';
+    + '&select=id,date,programme_id,programmes(nom,donnees),athlete_feedback(rpe,submitted_at)&order=date.asc';
   _fetchRetry(url, {method:'GET', headers:_sbHeaders()})
     .then(function(r){ return r.json(); })
     .then(function(data){
@@ -4165,6 +4209,7 @@ function openChargesEvo() {
       _pevoNrsData = _extractExoNRS(data);
       _pevoDureeData = _extractExoDurations(data);
       _pevoCardioData = _extractCardioLoads(data);
+      _pevoCapPainData = _extractCapPainData(data);
       var sel = _pevoGetSel(_progPatient.id);
       _renderPevoCharts(_pevoData, sel);
     })
