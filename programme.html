@@ -3,10 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="color-scheme" content="light dark">
 <title>Prescription d'exercices</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>(function(){if(localStorage.getItem('r4p-theme')==='dark')document.documentElement.classList.add('dark');}());</script>
 <style>
 :root {
   --navy:#1A3A5C; --accent:#2B5FA6; --accent2:#4A90D9;
@@ -1712,69 +1710,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .pevo-line-pill.active { opacity:1; }
 .pevo-line-pill:not(.active) { opacity:.3; }
 
-/* ═══ DARK MODE ═══════════════════════════════════════════════ */
-html.dark {
-  color-scheme: dark;
-  --navy:#152F50; --accent:#4A90D9; --accent2:#93C5FD;
-  --bg:#111111; --surface:#1C1C1E; --surface2:#2C2C2E;
-  --text:#F2F2F7; --text-dk:#D1D1D6; --muted:#636366;
-  --border:#38383A; --border-l:#38383A;
-  --tag-bg:#0D2240; --tag-color:#93C5FD;
-  --accent-ll:#0D2240; --text-sm:#98989D; --red:#FF6B6B;
-  --hover:rgba(255,255,255,.07);
-}
-html.dark body { background:var(--bg); }
-html.dark .topbar { background:var(--navy); }
-html.dark .sidebar { background:var(--surface); border-color:var(--border); }
-html.dark .sidebar-header { background:var(--navy); }
-html.dark .stmpl-header,.stmpl-filter-bar,.stmpl-collapse-row { background:var(--navy); }
-html.dark .stmpl-card { border-color:var(--border); }
-html.dark .stmpl-card:hover { background:var(--surface2); }
-html.dark .stmpl-group { border-color:var(--border); }
-html.dark .stmpl-search,html.dark .stmpl-cat-select { background:rgba(255,255,255,.1); color:#fff; border-color:rgba(255,255,255,.2); }
-html.dark .main { background:var(--bg); }
-html.dark .cal-day { background:var(--surface); border-color:var(--border); }
-html.dark .cal-day.today { background:#0D2240; border-color:var(--accent); }
-html.dark .cal-day:hover { background:var(--surface2); }
-html.dark .cal-central-header { background:var(--surface); border-color:var(--border); }
-html.dark .cal-central-body { background:var(--bg); }
-html.dark .builder-bloc { background:var(--surface); border-color:var(--border); }
-html.dark .builder-bloc-header { background:var(--navy); }
-html.dark .builder-exo-row { border-color:var(--border); }
-html.dark .builder-exo-row:hover { background:var(--surface2); }
-html.dark .builder-header { background:var(--surface); border-color:var(--border); }
-html.dark .modal-overlay,html.dark .cycle-modal-overlay,html.dark .proto-edit-overlay { background:rgba(0,0,0,.7); }
-html.dark .modal-box,html.dark .cycle-modal-box,html.dark .proto-edit-panel { background:var(--surface); color:var(--text); border-color:var(--border); }
-html.dark input:not([type=range]),html.dark textarea,html.dark select { background:var(--surface2); border-color:var(--border); color:var(--text); }
-html.dark .filter-btn { background:var(--surface); border-color:var(--border); color:var(--text); }
-html.dark .filter-btn.active,html.dark .filter-btn:hover { background:var(--accent); border-color:var(--accent); color:#fff; }
-html.dark .search-box,html.dark .stmpl-search { background:rgba(255,255,255,.1); color:#fff; }
-html.dark .exo-card { background:var(--surface2); border-color:var(--border); }
-html.dark .exo-card:hover { background:var(--surface); }
-html.dark .zone-badge { background:var(--surface2); }
-html.dark .btn { background:var(--surface2); border-color:var(--border); color:var(--text); }
-html.dark .btn.btn-primary { background:var(--accent); border-color:var(--accent); color:#fff; }
-html.dark .btn.btn-outline { background:transparent; border-color:var(--border); color:var(--text); }
-html.dark .week-cell-header { background:var(--navy); color:#fff; }
-html.dark .week-session-card { background:var(--surface); border-color:var(--border); }
-html.dark .week-session-card:hover { background:var(--surface2); }
-html.dark .evo-overlay,html.dark .journal-overlay,html.dark .stmpl-kebab-menu { background:var(--surface); border-color:var(--border); color:var(--text); }
-html.dark .journal-item { border-color:var(--border); }
-html.dark .journal-item:hover { background:var(--surface2); }
-html.dark .evo-session-card { background:var(--surface); border-color:var(--border); }
-html.dark .pevo-section { background:var(--surface); border-color:var(--border); }
-html.dark .proto-edit-panel { background:var(--surface); }
-html.dark .stmpl-phase-card { background:var(--accent-ll) !important; }
-html.dark .tp-block { background:var(--surface2); }
-html.dark .tp-avg-bar { background:#0D2240; }
-html.dark .tp-pill { background:var(--surface2); color:var(--text); }
-html.dark .tp-tbl th { background:#0D2240; }
-html.dark .tp-tbl td { border-color:var(--border); }
-html.dark .tool-panel-drawer { background:var(--surface); }
-html.dark .tp-field input,html.dark .tp-field select { background:var(--surface2); border-color:var(--border); color:var(--text); }
-html.dark #more-menu { background:var(--surface); border-color:var(--border); color:var(--text); }
-html.dark .share-cal-menu { background:var(--surface); border-color:var(--border); }
-html.dark [style*="background:#F7F8FA"],html.dark [style*="background:#F1F0ED"],html.dark [style*="background:#F5F5F5"] { background:var(--surface2) !important; }
 </style>
 </head>
 <body>
@@ -3147,14 +3082,5 @@ html.dark [style*="background:#F7F8FA"],html.dark [style*="background:#F1F0ED"],
 </div>
 
 <script src="js/prog-main.js"></script>
-<script>
-window.addEventListener('message', function(e){
-  if(e.origin!==window.location.origin)return;
-  if(e.data&&e.data.type==='r4p-dark-mode'){
-    document.documentElement.classList[e.data.dark?'add':'remove']('dark');
-    try{localStorage.setItem('r4p-theme',e.data.dark?'dark':'light');}catch(_){}
-  }
-});
-</script>
 </body>
 </html>

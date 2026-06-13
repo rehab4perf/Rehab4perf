@@ -3,9 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<meta name="color-scheme" content="light dark">
 <title>Rehab4Perf</title>
-<script>(function(){if(localStorage.getItem('r4p-theme')==='dark')document.documentElement.classList.add('dark');}());</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -236,23 +234,6 @@ iframe.active { display:block; }
   .pm-card { max-width:100%; border-radius:10px 10px 0 0; }
 }
 
-/* ── Dark mode ──────────────────────────────────────────── */
-html.dark .pm-card { background:#1C1C1E; color:#F2F2F7; }
-html.dark .pm-header { background:#152F50; }
-html.dark .pm-search-row { border-color:#38383A; background:#1C1C1E; }
-html.dark .pm-search { background:#111111; border-color:#48484A; color:#F2F2F7; }
-html.dark .pm-patient-item { border-color:#38383A; }
-html.dark .pm-patient-item:hover { background:#2C2C2E; }
-html.dark .pm-empty { color:#636366; }
-html.dark .pm-new-btn { background:#152F50; }
-html.dark .pm-new-btn:hover { background:#2B5FA6; }
-html.dark .ctx-menu { background:#1C1C1E; border-color:#38383A; color:#F2F2F7; }
-html.dark .ctx-item:hover { background:#2C2C2E; }
-html.dark .ctx-sep { background:#38383A; }
-html.dark .pm-form-row input, html.dark .pm-form-row select { background:#2C2C2E; border-color:#48484A; color:#F2F2F7; }
-html.dark .pm-form-section { border-color:#38383A; }
-html.dark iframe { background:#111111; }
-html.dark .pm-date-toggle { color:#98989D; }
 </style>
 </head>
 <body>
@@ -577,17 +558,6 @@ window.addEventListener('message', function(e) {
         });
       });
     })(_currentPatient);
-  }
-
-  // Relay dark mode depuis account.html vers toutes les iframes
-  if (e.data.type === 'r4p-dark-mode-changed') {
-    var _dark = !!e.data.dark;
-    try { localStorage.setItem('r4p-theme', _dark ? 'dark' : 'light'); } catch(_e) {}
-    document.documentElement.classList[_dark ? 'add' : 'remove']('dark');
-    ['frame-bilan','frame-outils','frame-prescription','frame-account'].forEach(function(fid) {
-      var f = document.getElementById(fid);
-      if (f && f.contentWindow) f.contentWindow.postMessage({ type:'r4p-dark-mode', dark:_dark }, window.location.origin);
-    });
   }
 
   // account.html demande une déconnexion

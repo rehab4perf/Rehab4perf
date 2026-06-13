@@ -9,7 +9,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,600&family=Poppins:wght@800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>(function(){if(localStorage.getItem('r4p-theme')==='dark')document.documentElement.classList.add('dark');}());</script>
 
 <style>
 /* ── Variables ────────────────────────────────────────────── */
@@ -1271,38 +1270,6 @@ textarea { resize:none !important; overflow:hidden !important; }
 @media print { .qual-grid-collapsible { display:block !important; } .qual-toggle-btn { display:none !important; } }
 /* Courbe douleur */
 
-/* ═══ DARK MODE ══════════════════════════════════════════════ */
-html.dark {
-  color-scheme: dark;
-  --bg:#111111; --surface:#1C1C1E; --surface2:#2C2C2E;
-  --border:#38383A; --border2:#48484A;
-  --text:#F2F2F7; --text2:#98989D; --text3:#636366;
-  --accent:#4A90D9; --accent-l:#0D2240; --accent2:#7EB8F7;
-}
-html.dark body { background:var(--bg); }
-html.dark .nav-sidebar { background:var(--surface); border-color:var(--border); }
-html.dark .page-nav,.nav-item,.logo-bar { background:inherit; }
-html.dark .nav-item.active { background:var(--accent-l); color:var(--accent2); }
-html.dark .nav-item:hover { background:var(--surface2); }
-html.dark .page { background:var(--bg); }
-html.dark .page-content { background:var(--bg); }
-html.dark .section-card { background:var(--surface); border-color:var(--border); }
-html.dark .card,.block-section { background:var(--surface); border-color:var(--border); }
-html.dark table.test-tbl tbody tr:hover { background:var(--surface2); }
-html.dark .test-tbl th { background:var(--navy,#152F50); color:#fff; }
-html.dark input:not([type=range]),html.dark textarea,html.dark select { background:var(--surface2); border-color:var(--border2); color:var(--text); }
-html.dark .btn-primary { background:var(--accent); }
-html.dark .btn-outline { border-color:var(--border2); color:var(--text); }
-html.dark .btn-outline:hover { background:var(--surface2); }
-html.dark .modal-overlay { background:rgba(0,0,0,.7); }
-html.dark .modal-box,.modal-content { background:var(--surface); border-color:var(--border); color:var(--text); }
-html.dark .toast { background:var(--surface); border-color:var(--border); color:var(--text); }
-html.dark .sidebar-save-patient { background:var(--surface); border-color:var(--border); }
-html.dark .score-range { background:var(--surface2); }
-html.dark [style*="background:#F1F0ED"],[style*="background:#F7F6F3"],[style*="background:#F7F8FA"],[style*="background:#FAFAFA"],[style*="background:#F5F5F5"] { background:var(--surface2) !important; }
-html.dark [style*="background:#fff;"],[style*="background: #fff;"],[style*="background:#ffffff"] { background:var(--surface) !important; }
-html.dark .cr-panel,.cr-section,.cr-block { background:var(--surface); border-color:var(--border); }
-html.dark .cr-header { background:var(--navy,#152F50); }
 </style>
 
 </head>
@@ -3546,15 +3513,6 @@ html.dark .cr-header { background:var(--navy,#152F50); }
 
 
 <script src="js/bilan.js"></script>
-<script>
-window.addEventListener('message', function(e){
-  if(e.origin!==window.location.origin)return;
-  if(e.data&&e.data.type==='r4p-dark-mode'){
-    document.documentElement.classList[e.data.dark?'add':'remove']('dark');
-    try{localStorage.setItem('r4p-theme',e.data.dark?'dark':'light');}catch(_){}
-  }
-});
-</script>
 
 </body>
 </html>

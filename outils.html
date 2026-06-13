@@ -3,9 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<meta name="color-scheme" content="light dark">
 <title>Outils — Rehab4Perf</title>
-<script>(function(){if(localStorage.getItem('r4p-theme')==='dark')document.documentElement.classList.add('dark');}());</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,600&family=Poppins:wght@800&display=swap" rel="stylesheet">
@@ -517,48 +515,6 @@ body {
 .cr-amp-row input { flex:1; min-width:0; }
 .cr-amp-row select { width:88px; font-size:.7rem; flex-shrink:0; padding:7px 4px; }
 
-/* ═══ DARK MODE ══════════════════════════════════════════════ */
-html.dark {
-  color-scheme: dark;
-  --bg:#111111; --surface:#1C1C1E; --surface2:#2C2C2E;
-  --border:#38383A; --border2:#48484A;
-  --text:#F2F2F7; --text2:#98989D; --text3:#636366;
-  --accent:#4A90D9; --accent-l:#0D2240; --accent2:#7EB8F7;
-}
-html.dark body { background:var(--bg); color:var(--text); }
-html.dark .sub-tabs { background:var(--navy,#152F50); border-color:var(--border); }
-html.dark .sub-tab { color:rgba(255,255,255,.55); }
-html.dark .sub-tab.active,html.dark .sub-tab:hover { background:rgba(255,255,255,.1); color:#fff; }
-html.dark .panel { background:var(--bg); }
-html.dark .block { background:var(--surface); border-color:var(--border); }
-html.dark .block-header { border-color:var(--border); color:var(--text); }
-html.dark input:not([type=range]),html.dark textarea,html.dark select { background:var(--surface2); border-color:var(--border2); color:var(--text); }
-html.dark .avg-bar { background:#0D2240; }
-html.dark .pills .pill { background:var(--surface2); color:var(--text); }
-html.dark .pills .pill.best { background:var(--accent); color:#fff; }
-html.dark .tbl th { background:#0D2240; color:#fff; }
-html.dark .tbl td { border-color:var(--border); color:var(--text); }
-html.dark .tbl tr:nth-child(even) td { background:var(--surface2); }
-html.dark .rm-field { color:var(--text); }
-html.dark .rm-field label { color:var(--text2); }
-html.dark .foot-note { color:var(--text3); border-color:var(--border); }
-html.dark .hsr-sticky { background:var(--surface); border-color:var(--border); }
-html.dark .meta-grid { background:var(--surface); border-color:var(--border); }
-html.dark .meta-cell { border-color:var(--border); color:var(--text); }
-html.dark .meta-cell label { color:var(--text2); }
-html.dark .step { border-color:var(--border); }
-html.dark .step-desc { color:var(--text2); }
-html.dark .proms-card { background:var(--surface); border-color:var(--border); }
-html.dark .proms-question,html.dark .proms-radio-label { color:var(--text); }
-html.dark .proto-hdr { background:#0D2240; }
-html.dark .cr-config-section { background:var(--surface); border-color:var(--border); }
-html.dark .modal,html.dark .modal-content { background:var(--surface); border-color:var(--border); color:var(--text); }
-html.dark [style*="background:#F1F0ED"],html.dark [style*="background:#F7F8FA"],html.dark [style*="background:#F7F6F3"],html.dark [style*="background:#F5F5F5"] { background:var(--surface2) !important; }
-html.dark [style*="background:#fff;"],html.dark [style*="background: #fff;"],html.dark [style*="background:#ffffff"] { background:var(--surface) !important; }
-html.dark #presc-doc,html.dark #presc-doc * { background:#fff !important; color:#000 !important; }
-html.dark .dossier-save-btn { background:var(--surface2); border-color:var(--border); color:var(--text); }
-html.dark [style*="color:#1A1917"],html.dark [style*="color: #1A1917"] { color:var(--text) !important; }
-html.dark [style*="color:#6B6860"],html.dark [style*="color: #6B6860"] { color:var(--text2) !important; }
 </style>
 </head>
 <body>
@@ -6924,16 +6880,6 @@ _updateOutilsPatientBtns();
   </div>
 </div>
 
-<script>
-/* ── Dark mode listener ── */
-window.addEventListener('message', function(e){
-  if(e.origin!==window.location.origin)return;
-  if(e.data&&e.data.type==='r4p-dark-mode'){
-    document.documentElement.classList[e.data.dark?'add':'remove']('dark');
-    try{localStorage.setItem('r4p-theme',e.data.dark?'dark':'light');}catch(_){}
-  }
-});
-</script>
 
 </body>
 </html>

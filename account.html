@@ -3,9 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="color-scheme" content="light dark">
 <title>Compte – Rehab4Perf</title>
-<script>(function(){if(localStorage.getItem('r4p-theme')==='dark')document.documentElement.classList.add('dark');}());</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -79,34 +77,6 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
 }
 
 /* ── Toggle iOS ─────────────────────────────────────────── */
-.toggle-switch { position:relative;display:inline-block;width:44px;height:26px;flex-shrink:0; }
-.toggle-switch input { opacity:0;width:0;height:0;position:absolute; }
-.toggle-track { position:absolute;inset:0;background:#D3D1CB;border-radius:26px;cursor:pointer;transition:background .2s; }
-.toggle-track::before { content:'';position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3); }
-.toggle-switch input:checked + .toggle-track { background:#2B5FA6; }
-.toggle-switch input:checked + .toggle-track::before { transform:translateX(18px); }
-html.dark .toggle-track { background:#48484A; }
-html.dark .toggle-switch input:checked + .toggle-track { background:#4A90D9; }
-
-/* ── Dark mode ──────────────────────────────────────────── */
-html.dark {
-  color-scheme: dark;
-  --navy:#152F50; --accent:#4A90D9; --accent2:#93C5FD;
-  --bg:#111111; --surface:#1C1C1E; --text:#F2F2F7; --muted:#636366; --border:#38383A;
-}
-html.dark body { background:var(--bg); color:var(--text); }
-html.dark .card { background:var(--surface); border-color:var(--border); }
-html.dark .form-input { background:#2C2C2E; border-color:var(--border); color:var(--text); }
-html.dark .form-input:focus { background:#2C2C2E; }
-html.dark .form-input[readonly] { background:#1C1C1E; color:var(--muted); }
-html.dark .btn-neutral { border-color:var(--border); color:var(--text); }
-html.dark .btn-neutral:hover { background:rgba(255,255,255,.08); }
-html.dark .btn-danger:hover { background:rgba(231,76,60,.15); }
-html.dark .security-item { border-color:var(--border); }
-html.dark .badge-green { background:#0A2E19; color:#4ADE80; }
-html.dark .badge-blue  { background:#0D2240; color:#7EB8F7; }
-html.dark .login-card { background:var(--surface); border-color:var(--border); }
-html.dark .logo-r,.logo-p { color:var(--text); }
 </style>
 </head>
 <body>
@@ -183,20 +153,6 @@ html.dark .logo-r,.logo-p { color:var(--text); }
     <div class="security-item">
       <div><div class="security-label">Mot de passe</div><div class="security-sub">Un email de réinitialisation sera envoyé</div></div>
       <button class="btn btn-neutral" style="font-size:.76rem;padding:5px 12px;" onclick="sendPasswordReset()">Modifier</button>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">Apparence</div>
-    <div class="security-item">
-      <div>
-        <div class="security-label">Mode sombre</div>
-        <div class="security-sub">Thème de l'interface</div>
-      </div>
-      <label class="toggle-switch">
-        <input type="checkbox" id="darkToggle" onchange="toggleDarkMode(this.checked)">
-        <span class="toggle-track"></span>
-      </label>
     </div>
   </div>
 
@@ -313,28 +269,6 @@ function sendPasswordReset() {
     });
   });
 }
-
-/* ═══ DARK MODE ═══ */
-function toggleDarkMode(dark) {
-  document.documentElement.classList[dark ? 'add' : 'remove']('dark');
-  try { localStorage.setItem('r4p-theme', dark ? 'dark' : 'light'); } catch(_) {}
-  window.parent.postMessage({ type: 'r4p-dark-mode-changed', dark: dark }, '*');
-}
-(function(){
-  var isDark = localStorage.getItem('r4p-theme') === 'dark';
-  var t = document.getElementById('darkToggle');
-  if(t) t.checked = isDark;
-}());
-
-window.addEventListener('message', function(e) {
-  if(e.origin !== window.location.origin) return;
-  if(e.data && e.data.type === 'r4p-dark-mode') {
-    document.documentElement.classList[e.data.dark ? 'add' : 'remove']('dark');
-    try { localStorage.setItem('r4p-theme', e.data.dark ? 'dark' : 'light'); } catch(_) {}
-    var t = document.getElementById('darkToggle');
-    if(t) t.checked = !!e.data.dark;
-  }
-});
 
 /* Déconnexion */
 function doLogout() {
