@@ -85,25 +85,26 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
 .toggle-track::before { content:'';position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3); }
 .toggle-switch input:checked + .toggle-track { background:#2B5FA6; }
 .toggle-switch input:checked + .toggle-track::before { transform:translateX(18px); }
-html.dark .toggle-track { background:#3D5070; }
+html.dark .toggle-track { background:#48484A; }
 html.dark .toggle-switch input:checked + .toggle-track { background:#4A90D9; }
 
 /* ── Dark mode ──────────────────────────────────────────── */
 html.dark {
   color-scheme: dark;
-  --navy:#0F2040; --accent:#4A90D9; --accent2:#93C5FD;
-  --bg:#0F1724; --surface:#1A2130; --text:#E2E8F4; --muted:#64748B; --border:#2D3B52;
+  --navy:#152F50; --accent:#4A90D9; --accent2:#93C5FD;
+  --bg:#111111; --surface:#1C1C1E; --text:#F2F2F7; --muted:#636366; --border:#38383A;
 }
+html.dark body { background:var(--bg); color:var(--text); }
 html.dark .card { background:var(--surface); border-color:var(--border); }
-html.dark .form-input { background:var(--surface); border-color:var(--border); color:var(--text); }
-html.dark .form-input:focus { background:var(--surface); }
-html.dark .form-input[readonly] { background:#1a2130; color:var(--muted); }
+html.dark .form-input { background:#2C2C2E; border-color:var(--border); color:var(--text); }
+html.dark .form-input:focus { background:#2C2C2E; }
+html.dark .form-input[readonly] { background:#1C1C1E; color:var(--muted); }
 html.dark .btn-neutral { border-color:var(--border); color:var(--text); }
-html.dark .btn-neutral:hover { background:rgba(255,255,255,.06); }
-html.dark .btn-danger:hover { background:rgba(231,76,60,.12); }
+html.dark .btn-neutral:hover { background:rgba(255,255,255,.08); }
+html.dark .btn-danger:hover { background:rgba(231,76,60,.15); }
 html.dark .security-item { border-color:var(--border); }
-html.dark .badge-green { background:#0D2E1A; color:#4ADE80; }
-html.dark .badge-blue  { background:var(--accent-l,#0F2040); color:#7EB8F7; }
+html.dark .badge-green { background:#0A2E19; color:#4ADE80; }
+html.dark .badge-blue  { background:#0D2240; color:#7EB8F7; }
 html.dark .login-card { background:var(--surface); border-color:var(--border); }
 html.dark .logo-r,.logo-p { color:var(--text); }
 </style>
