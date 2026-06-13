@@ -8,7 +8,7 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,600&family=Poppins:wght@800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
@@ -30,9 +30,10 @@ html, body { height:100%; font-family:-apple-system,'Helvetica Neue',Arial,sans-
   padding:36px 32px 30px; max-width:400px; width:100%;
 }
 
-.logo { display:flex; flex-direction:column; align-items:center; gap:8px; font-family:'Comfortaa',sans-serif; font-size:1.05rem; font-weight:700; letter-spacing:.22em; padding-left:.22em; margin-bottom:6px; }
-.logo .r, .logo .p { color:var(--text, #1A1917); }
-.logo .n { color:var(--accent, #2B5FA6); font-weight:800; }
+.logo { display:inline-flex; align-items:baseline; line-height:1; white-space:nowrap; margin-bottom:6px; }
+.logo-r { font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:600; font-size:54px; color:#1A1917; letter-spacing:-.01em; }
+.logo-e { font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:600; font-size:.44em; vertical-align:super; color:#2B5FA6; margin:0 .05em 0 .01em; line-height:0; }
+.logo-p { font-family:'Poppins',sans-serif; font-weight:800; font-size:44px; color:#1A1917; letter-spacing:-.025em; margin-left:.02em; }
 .tagline { font-size:.75rem; color:var(--muted); text-align:center; margin-bottom:26px; }
 
 .sec { display:none; }
@@ -97,10 +98,7 @@ html, body { height:100%; font-family:-apple-system,'Helvetica Neue',Arial,sans-
 <div class="page">
 <div class="card">
 
-  <div class="logo">
-    <svg viewBox="8 34 164 104" width="76" height="48" aria-hidden="true"><g stroke="var(--accent)" stroke-width="16" stroke-linecap="round" fill="none"><line x1="20" y1="118" x2="56" y2="104"/><line x1="70" y1="122" x2="100" y2="84"/><line x1="112" y1="125" x2="134" y2="66"/><line x1="158" y1="128" x2="158" y2="46"/></g></svg>
-    <div><span class="r">rehab</span><span class="n">4</span><span class="p">perf</span></div>
-  </div>
+  <div class="logo"><span class="logo-r">rehab<sup class="logo-e">4</sup></span><span class="logo-p">perf</span></div>
   <p class="tagline">Bilan clinique · Outils · Prescription</p>
 
   <!-- ══ A — CONNEXION ══ -->

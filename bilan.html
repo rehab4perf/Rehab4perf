@@ -7,7 +7,7 @@
 <title>Rehab4Perf — Bilan Clinique</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,600&family=Poppins:wght@800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
@@ -71,19 +71,10 @@ body {
   padding: 16px 16px 13px;
   border-bottom: 1px solid var(--border);
 }
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  font-family: 'Comfortaa', sans-serif;
-  font-size: .86rem;
-  font-weight: 700;
-  letter-spacing: .08em;
-  color: var(--text);
-  line-height: 1.2;
-}
-.logo svg { flex-shrink: 0; display: block; }
-.logo .n4 { color: var(--accent); font-weight: 800; }
+.logo { display:inline-flex; align-items:baseline; line-height:1; white-space:nowrap; }
+.logo-r { font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:600; font-size:20px; color:var(--text); letter-spacing:-.01em; }
+.logo-e { font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:600; font-size:.44em; vertical-align:super; color:var(--accent); margin:0 .05em 0 .01em; line-height:0; }
+.logo-p { font-family:'Poppins',sans-serif; font-weight:800; font-size:16px; color:var(--text); letter-spacing:-.025em; margin-left:.02em; }
 .sidebar-patient {
   padding: 10px 16px 14px;
   border-bottom: 1px solid var(--border);
@@ -1286,10 +1277,9 @@ textarea { resize:none !important; overflow:hidden !important; }
 
 <div id="print-header" style="display:none;margin-bottom:0;">
   <div style="background:var(--accent2);color:#fff;padding:12px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;">
-    <div style="display:flex;align-items:center;gap:9px;font-family:var(--font-sans);font-size:.84rem;font-weight:700;letter-spacing:.14em;white-space:nowrap;">
-      <svg viewBox="8 34 164 104" width="28" height="18" aria-hidden="true" style="display:block;flex-shrink:0"><g stroke="#4A90D9" stroke-width="17" stroke-linecap="round" fill="none"><line x1="20" y1="118" x2="56" y2="104"/><line x1="70" y1="122" x2="100" y2="84"/><line x1="112" y1="125" x2="134" y2="66"/><line x1="158" y1="128" x2="158" y2="46"/></g></svg>
-      <span style="color:#fff">rehab<span style="color:#7FA8D9;font-weight:800">4</span>perf</span>
-      <span style="font-size:.72rem;opacity:.55;margin-left:6px;font-weight:400;letter-spacing:.02em;">Bilan Clinique</span>
+    <div style="display:inline-flex;align-items:baseline;line-height:1;white-space:nowrap;gap:10px;">
+      <span style="display:inline-flex;align-items:baseline;"><span style="font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:20px;color:#fff;letter-spacing:-.01em;">rehab<sup style="font-size:.44em;vertical-align:super;line-height:0;margin:0 .05em 0 .01em;color:#fff;">4</sup></span><span style="font-family:'Poppins',sans-serif;font-weight:800;font-size:16px;color:#fff;letter-spacing:-.025em;margin-left:.02em;">perf</span></span>
+      <span style="font-size:.72rem;opacity:.55;font-weight:400;letter-spacing:.02em;font-family:var(--font-sans);align-self:center;">Bilan Clinique</span>
     </div>
     <div id="ph-meta" style="text-align:right;font-size:.75rem;color:rgba(255,255,255,.85);line-height:1.7;font-family:-apple-system,Helvetica Neue,sans-serif;"></div>
   </div>
@@ -1300,7 +1290,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 
 <aside class="sidebar">
   <div class="sidebar-header">
-    <div class="logo"><svg viewBox="8 34 164 104" width="26" height="16" aria-hidden="true"><g stroke="var(--accent)" stroke-width="17" stroke-linecap="round" fill="none"><line x1="20" y1="118" x2="56" y2="104"/><line x1="70" y1="122" x2="100" y2="84"/><line x1="112" y1="125" x2="134" y2="66"/><line x1="158" y1="128" x2="158" y2="46"/></g></svg><span>Bilan clinique</span></div>
+    <div class="logo"><span class="logo-r">rehab<sup class="logo-e">4</sup></span><span class="logo-p">perf</span></div>
   </div>
 
   <div class="sidebar-patient">
