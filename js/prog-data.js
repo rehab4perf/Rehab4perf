@@ -2926,7 +2926,7 @@ function _extractExoLoads(seances) {
         var bw  = !kgCible || kg <= 0;                // poids de corps / sans charge
         var rm1 = _1rm(kg, reps);
         if(!rm1) return;
-        var key = name.toLowerCase().replace(/\s+/g,' ');
+        var key = _norm(name).replace(/\s+/g,' ');
         if(!map[key]) map[key] = { label: name, points: [] };
         map[key].points.push({ date: prog.date, kg: bw?0:kg, reps: reps, rm1: rm1, bw: bw, progNom: prog.nom });
       });
@@ -2966,7 +2966,7 @@ function _extractExoNRS(seances) {
         var name = (exo.name || '').trim();
         if(!name) return;
         if(exo.nrs === null || exo.nrs === undefined) return;
-        var key = name.toLowerCase().replace(/\s+/g,' ');
+        var key = _norm(name).replace(/\s+/g,' ');
         if(!map[key]) map[key] = { nom: name, pts: [] };
         map[key].pts.push({ date: prog.date, nrs: exo.nrs });
       });
@@ -3034,7 +3034,7 @@ function _extractExoDurations(seances) {
         if(!isNaN(reps) && reps > 0) return; // skip si reps définies
         var secs = _parseDuree(exo.duree || '');
         if(!secs || secs <= 0) return;
-        var key = name.toLowerCase().replace(/\s+/g,' ') + '__duree';
+        var key = _norm(name).replace(/\s+/g,' ') + '__duree';
         if(!map[key]) map[key] = { label: name + ' (durée)', points: [] };
         map[key].points.push({ date: prog.date, secs: secs, progNom: prog.nom });
       });

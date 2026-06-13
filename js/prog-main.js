@@ -7267,3 +7267,33 @@ function _toolOverlayClick(e){
     menu._base = baseLink;
   };
 })();
+
+/* ── Sync champ exercice libre → recherche sidebar ───────────── */
+(function(){
+  var _clearTimer = null;
+
+  function _syncSearch(q) {
+    var inp = document.getElementById('searchInput');
+    if (!inp) return;
+    inp.value = q.length >= 2 ? q : '';
+    if (typeof filterExos === 'function') filterExos();
+  }
+
+  document.addEventListener('input', function(e) {
+    if (!e.target.classList.contains('pe-exo-name')) return;
+    clearTimeout(_clearTimer);
+    _syncSearch(e.target.value.trim());
+  });
+
+  document.addEventListener('focusin', function(e) {
+    if (!e.target.classList.contains('pe-exo-name')) return;
+    clearTimeout(_clearTimer);
+    _syncSearch(e.target.value.trim());
+  });
+
+  document.addEventListener('focusout', function(e) {
+    if (!e.target.classList.contains('pe-exo-name')) return;
+    // Délai : laisse le temps de cliquer sur un résultat sidebar
+    _clearTimer = setTimeout(function() { _syncSearch(''); }, 400);
+  });
+}());
