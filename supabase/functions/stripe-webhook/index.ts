@@ -7,7 +7,7 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  Deno.env.get('SB_SERVICE_ROLE_KEY')!
 )
 
 Deno.serve(async (req: Request) => {
@@ -31,12 +31,20 @@ Deno.serve(async (req: Request) => {
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session
     const email = session.customer_details?.email ?? session.customer_email
-    const plan  = session.metadata?.plan // 'performance' | 'clinique'
 
-    if (!email || !plan) {
-      console.error('Missing email or plan', { email, plan })
-      return new Response('Missing data', { status: 400 })
+    if (!email) {
+      console.error('Missing email', { email })
+      return new Response('Missing email', { status: 400 })
     }
+
+    // Déterminer le plan depuis le nom du produit
+    const expanded = await stripe.checkout.sessions.retrieve(session.id, {
+      expand: ['line_items.data.price.product'],
+    })
+    const product = expanded.line_items?.data[0]?.price?.product as Stripe.Product | undefined
+    const productName = (product?.name ?? '').toLowerCase()
+    const plan = productName.includes('performance') ? 'performance' : 'clinique'
+    console.log(`Plan détecté: ${plan} (produit: ${product?.name})`)
 
     // Tenter d'inviter l'utilisateur (envoie le magic link)
     const { error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(email, {
