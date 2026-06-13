@@ -37,14 +37,18 @@ Deno.serve(async (req: Request) => {
       return new Response('Missing email', { status: 400 })
     }
 
-    // Déterminer le plan depuis le nom du produit
+    // Lire le plan depuis les métadonnées du prix Stripe
     const expanded = await stripe.checkout.sessions.retrieve(session.id, {
-      expand: ['line_items.data.price.product'],
+      expand: ['line_items.data.price'],
     })
-    const product = expanded.line_items?.data[0]?.price?.product as Stripe.Product | undefined
-    const productName = (product?.name ?? '').toLowerCase()
-    const plan = productName.includes('performance') ? 'performance' : 'clinique'
-    console.log(`Plan détecté: ${plan} (produit: ${product?.name})`)
+    const price = expanded.line_items?.data[0]?.price
+    const plan = price?.metadata?.plan // 'performance' | 'clinique'
+
+    if (!plan) {
+      console.error('plan manquant dans price.metadata', { priceId: price?.id })
+      return new Response('Missing plan metadata', { status: 400 })
+    }
+    console.log(`Plan détecté: ${plan} (price: ${price?.id})`)
 
     // Tenter d'inviter l'utilisateur (envoie le magic link)
     const { error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(email, {
