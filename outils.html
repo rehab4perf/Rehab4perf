@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light only">
 <title>Outils — Rehab4Perf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg:        #F7F6F3;
@@ -2151,7 +2154,7 @@ function exportPromForPatient(){
     +'body{font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;background:#F0F4F8;color:#1A1917;padding:0 0 60px}'
     +'.wrap{max-width:800px;margin:0 auto}'
     +'.doc-hdr{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:14px 24px;background:#1A3A5C}'
-    +'.logo{display:flex;align-items:center;gap:8px;font-size:.82rem;font-weight:700;letter-spacing:.14em;color:#fff}'
+    +'.logo{display:flex;align-items:center;gap:8px;font-family:\'Comfortaa\',sans-serif;font-size:.82rem;font-weight:700;letter-spacing:.1em;color:#fff}'
     +'.logo svg{display:block;flex-shrink:0}'
     +'.logo .r{color:#fff}.logo .n{color:#7FA8D9;font-weight:800}.logo .p{color:#fff}'
     +'.doc-meta{text-align:right;font-size:.72rem;color:rgba(255,255,255,.8);line-height:1.8}'
@@ -2196,6 +2199,7 @@ function exportPromForPatient(){
     +'<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
     +'<title>'+_eh(p.acronym)+' — '+_eh(p.name)+'</title>'
     +'<style>'+css+'</style>'
+    +'<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&display=swap" rel="stylesheet">'
     +'</head><body><div class="wrap">'
     +'<div class="doc-hdr"><div class="logo"><svg viewBox="8 34 164 104" width="28" height="18" aria-hidden="true"><g stroke="#4A90D9" stroke-width="17" stroke-linecap="round" fill="none"><line x1="20" y1="118" x2="56" y2="104"/><line x1="70" y1="122" x2="100" y2="84"/><line x1="112" y1="125" x2="134" y2="66"/><line x1="158" y1="128" x2="158" y2="46"/></g></svg><span><span class="r">rehab</span><span class="n">4</span><span class="p">perf</span></span></div>'+metaHtml+'</div>'
     +ptCardHtml
@@ -4780,12 +4784,13 @@ function downloadOutils(){
     +'.sub-tabs,.export-patient-bar{display:none!important}'
     +'.panel{display:block!important;overflow:visible!important;height:auto!important;padding:20px 24px 40px}'
     +'.doc-header{background:#1A3A5C;color:#fff;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}'
-    +'.doc-logo{display:flex;align-items:center;gap:8px;font-size:.78rem;font-weight:700;letter-spacing:.14em;color:#fff}'
+    +'.doc-logo{display:flex;align-items:center;gap:8px;font-family:\'Comfortaa\',sans-serif;font-size:.78rem;font-weight:700;letter-spacing:.1em;color:#fff}'
     +'.doc-logo svg{display:block;flex-shrink:0}'
     +'.doc-logo .r{color:#fff}.doc-logo .n{color:#7FA8D9;font-weight:800}.doc-logo .p{color:#fff}'
     +'.doc-meta{text-align:right;font-size:.72rem;color:rgba(255,255,255,.85);line-height:1.7}'
     +'.doc-meta strong{font-size:.78rem;color:#fff}'
     +'</style>'
+    +'<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&display=swap" rel="stylesheet">'
     +'</head><body>'
     +'<div class="doc-header">'
     +'<div class="doc-logo"><svg viewBox="8 34 164 104" width="26" height="16" aria-hidden="true"><g stroke="#4A90D9" stroke-width="17" stroke-linecap="round" fill="none"><line x1="20" y1="118" x2="56" y2="104"/><line x1="70" y1="122" x2="100" y2="84"/><line x1="112" y1="125" x2="134" y2="66"/><line x1="158" y1="128" x2="158" y2="46"/></g></svg><span><span class="r">rehab</span><span class="n">4</span><span class="p">perf</span></span></div>'
