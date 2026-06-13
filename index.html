@@ -476,12 +476,12 @@ function propagateToBilan(profile) {
 /* ═══ GATING PAR PLAN ═══ */
 function applyPlan(plan) {
   if (plan === 'performance') {
-    document.getElementById('tab-bilan').style.display  = 'none';
-    document.getElementById('tab-outils').style.display = 'none';
+    document.getElementById('tab-bilan').style.display       = 'none';
+    document.getElementById('tab-outils').style.display      = 'none';
+    document.getElementById('tab-prescription').style.display = 'none';
     // Activer Programme par défaut
     document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
     document.querySelectorAll('iframe').forEach(function(f){ f.classList.remove('active'); });
-    document.getElementById('tab-prescription').classList.add('active');
     document.getElementById('frame-prescription').classList.add('active');
     document.getElementById('frame-bilan').classList.remove('active');
   }
