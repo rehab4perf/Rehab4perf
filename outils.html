@@ -686,12 +686,9 @@ body {
 <div class="panel" id="panel-proms">
 
   <!-- Header -->
-  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px;">
-    <div>
-      <div style="font-size:1.4rem;font-weight:700;color:var(--navy);margin-bottom:4px;">PROMs — Kinésithérapie</div>
-      <div style="font-size:.82rem;color:#666;max-width:520px;line-height:1.5;">Questionnaires de résultats rapportés par le patient, classés par articulation et pathologie. Usage quotidien en bilan, suivi et retour au sport.</div>
-    </div>
-    <button onclick="exportProms()" style="padding:8px 16px;background:var(--navy);color:#fff;border:none;border-radius:7px;font-size:.8rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap;">⬇ Exporter pour patient</button>
+  <div style="margin-bottom:18px;">
+    <div style="font-size:1.4rem;font-weight:700;color:var(--navy);margin-bottom:4px;">PROMs — Kinésithérapie</div>
+    <div style="font-size:.82rem;color:#666;max-width:520px;line-height:1.5;">Questionnaires de résultats rapportés par le patient, classés par articulation et pathologie. Usage quotidien en bilan, suivi et retour au sport.</div>
   </div>
 
   <!-- Stats -->
@@ -1449,7 +1446,8 @@ function printPrescription() {
   cursor:pointer; transition:all .15s; font-family:inherit;
 }
 .proms-chip:hover { border-color:#1A3A5C; color:#1A3A5C; background:#F0F4FA; }
-.proms-chip-active { background:#1A3A5C; border-color:#1A3A5C; color:#fff !important; font-weight:600; }
+.proms-chip-active,
+.proms-chip-active:hover { background:#1A3A5C; border-color:#1A3A5C; color:#fff !important; font-weight:600; }
 /* ── PROMs card ── */
 .prom-card {
   background:#fff; border:1px solid #dde3ec; border-radius:9px;
