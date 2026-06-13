@@ -257,7 +257,7 @@ function sendPasswordReset() {
     var email = result.data && result.data.user && result.data.user.email;
     if (!email) { alert('Email introuvable.'); return; }
     sb.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://rehab4perf.netlify.app/auth.html'
+      redirectTo: 'https://app.rehab4perf.com/auth.html'
     })
     .then(function(res) {
       if (res.error) throw res.error;

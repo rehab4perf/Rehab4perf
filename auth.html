@@ -361,7 +361,7 @@ function submitForgot() {
   if (!email) { showMsg('forgotErr', 'Entrez votre adresse email.', 'err'); return; }
   setLoading('forgotBtn', true, 'Envoi…');
   sb.auth.resetPasswordForEmail(email, {
-    redirectTo: 'https://rehab4perf.netlify.app/auth.html'
+    redirectTo: 'https://app.rehab4perf.com/auth.html'
   })
   .then(function(res) {
     if (res.error) throw res.error;
