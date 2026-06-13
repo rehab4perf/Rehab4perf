@@ -7276,24 +7276,23 @@ function _toolOverlayClick(e){
     var inp = document.getElementById('searchInput');
     if (!inp) return;
     inp.value = q.length >= 2 ? q : '';
-    if (typeof filterExos === 'function') filterExos();
+    if (typeof filterLib === 'function') filterLib();
   }
 
   document.addEventListener('input', function(e) {
-    if (!e.target.classList.contains('pe-exo-name')) return;
+    if (!e.target.classList.contains('exo-name-input')) return;
     clearTimeout(_clearTimer);
     _syncSearch(e.target.value.trim());
   });
 
   document.addEventListener('focusin', function(e) {
-    if (!e.target.classList.contains('pe-exo-name')) return;
+    if (!e.target.classList.contains('exo-name-input')) return;
     clearTimeout(_clearTimer);
     _syncSearch(e.target.value.trim());
   });
 
   document.addEventListener('focusout', function(e) {
-    if (!e.target.classList.contains('pe-exo-name')) return;
-    // Délai : laisse le temps de cliquer sur un résultat sidebar
+    if (!e.target.classList.contains('exo-name-input')) return;
     _clearTimer = setTimeout(function() { _syncSearch(''); }, 400);
   });
 }());
