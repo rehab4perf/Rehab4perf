@@ -1724,6 +1724,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   <div class="topbar-right">
     <button class="topbar-btn" onclick="toggleSidebar()" title="Bibliothèque">☰ Biblio</button>
     <button class="topbar-btn" onclick="openJournal()" id="topbarJournalBtn">📋 Journal</button>
+    <button class="topbar-btn" onclick="openCAPWizard()" id="topbarCAPBtn" title="Générateur de retour à la course à pied">CAP</button>
     <button class="topbar-btn" id="topbarMoreBtn" onclick="_toggleMoreMenu(event)" title="Plus d'outils" style="letter-spacing:.1em;font-weight:700">···</button>
     <button class="topbar-btn primary" onclick="openBuilderNew()" id="topbarNewBtn">+ Séance</button>
   </div>
@@ -2918,6 +2919,92 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 }
 </style>
 
+<style>
+/* ══════════════════════════════════════════
+   GÉNÉRATEUR CAP — styles
+══════════════════════════════════════════ */
+.cap-ov { position:fixed; inset:0; background:rgba(0,0,0,.52); z-index:900; display:none; align-items:flex-start; justify-content:center; padding:20px 14px; overflow-y:auto; }
+.cap-ov.open { display:flex; }
+.cap-panel { background:#fff; border-radius:14px; width:100%; max-width:520px; box-shadow:0 16px 52px rgba(0,0,0,.24); margin:auto; display:flex; flex-direction:column; max-height:calc(100vh - 40px); overflow:hidden; }
+
+/* ── Header ── */
+.cap-ph { display:flex; align-items:center; padding:13px 16px; border-bottom:1px solid var(--border); flex-shrink:0; gap:8px; }
+.cap-ph-title { font-size:.88rem; font-weight:700; color:var(--navy); flex:1; text-align:center; }
+.cap-ph-close { background:none; border:none; font-size:1.1rem; color:var(--muted); cursor:pointer; padding:2px 6px; line-height:1; }
+.cap-ph-close:hover { color:var(--text); }
+.cap-ph-back { background:none; border:none; font-size:.76rem; color:var(--accent); cursor:pointer; padding:2px 4px; font-family:inherit; white-space:nowrap; }
+.cap-ph-back:hover { text-decoration:underline; }
+
+/* ── Formulaire ── */
+.cap-fbody { padding:16px 18px 20px; overflow-y:auto; display:flex; flex-direction:column; gap:13px; }
+.cap-field-label { font-size:.67rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; margin-bottom:5px; }
+.cap-chips { display:flex; flex-wrap:wrap; gap:6px; }
+.cap-chip { background:#f5f7fa; border:1px solid var(--border); border-radius:20px; padding:5px 13px; font-size:.77rem; color:var(--text); cursor:pointer; transition:background .12s,border-color .12s,color .12s; font-family:inherit; }
+.cap-chip.active { background:var(--navy); border-color:var(--navy); color:#fff; }
+.cap-chip:hover:not(.active) { border-color:var(--accent2); color:var(--accent2); }
+.cap-select { border:1px solid var(--border); border-radius:7px; padding:7px 10px; font-size:.82rem; color:var(--text); font-family:inherit; outline:none; background:#fff; width:100%; }
+.cap-select:focus { border-color:var(--accent2); }
+.cap-gen-btn { margin-top:4px; padding:11px; background:var(--navy); color:#fff; border:none; border-radius:8px; font-size:.88rem; font-weight:600; cursor:pointer; font-family:inherit; }
+.cap-gen-btn:hover { background:var(--accent); }
+
+/* ── Barre de progression ── */
+.cap-prog-wrap { display:flex; align-items:center; gap:10px; padding:9px 16px; border-bottom:1px solid var(--border); flex-shrink:0; }
+.cap-prog-bar { flex:1; height:5px; background:#E2E8F0; border-radius:3px; overflow:hidden; }
+.cap-prog-fill { height:100%; background:var(--accent2); border-radius:3px; transition:width .4s; width:0%; }
+.cap-prog-lbl { font-size:.7rem; color:var(--muted); white-space:nowrap; }
+
+/* ── Corps résultat ── */
+.cap-rbody { overflow-y:auto; padding:13px 16px 18px; display:flex; flex-direction:column; gap:11px; }
+
+/* Consignes */
+.cap-rules-card { background:#EBF3FF; border-radius:8px; padding:11px 13px; }
+.cap-rules-title { font-size:.66rem; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:.07em; margin-bottom:5px; }
+.cap-rule-item { font-size:.77rem; color:#1a3558; padding:2px 0; line-height:1.45; }
+.cap-rule-item::before { content:'• '; }
+
+/* Phase / semaine */
+.cap-phase-hdr { font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; padding:6px 0 2px; margin-top:4px; }
+.cap-week-hdr { font-size:.68rem; color:var(--muted); font-weight:600; padding:5px 0 2px; }
+
+/* Séances */
+.cap-sess { display:flex; align-items:center; gap:9px; padding:8px 10px; border-radius:8px; margin-bottom:4px; background:#fafbfd; border:1px solid var(--border); }
+.cap-sess-inter { background:#FFFBEB; border-color:#FCD34D; }
+.cap-sess-done  { background:#F0FDF4; border-color:#86EFAC; }
+.cap-sess-pain  { background:#FFF7F7; border-color:#FCA5A5; }
+.cap-sess-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.cap-dot-pending { background:#CBD5E1; }
+.cap-dot-done    { background:#22C55E; }
+.cap-dot-painful { background:#EF4444; }
+.cap-sess-info { flex:1; min-width:0; }
+.cap-inter-badge { display:inline-block; background:#F59E0B; color:#fff; font-size:.62rem; font-weight:700; border-radius:3px; padding:1px 5px; margin-bottom:3px; }
+.cap-sess-label { font-size:.81rem; color:var(--text); font-weight:500; }
+.cap-sess-right { flex-shrink:0; }
+.cap-sess-btns { display:flex; gap:5px; }
+.cap-btn-v { background:#f0fdf4; border:1px solid #86efac; color:#15803d; border-radius:6px; padding:4px 8px; font-size:.71rem; font-weight:600; cursor:pointer; font-family:inherit; }
+.cap-btn-v:hover { background:#dcfce7; }
+.cap-btn-p { background:#fff7f7; border:1px solid #fca5a5; color:#dc2626; border-radius:6px; padding:4px 8px; font-size:.71rem; font-weight:600; cursor:pointer; font-family:inherit; }
+.cap-btn-p:hover { background:#fee2e2; }
+.cap-done-tag { font-size:.71rem; color:#15803d; font-weight:600; }
+.cap-pain-tag { font-size:.71rem; color:#dc2626; font-weight:600; }
+
+/* Sélecteur EVA */
+.cap-pain-picker { display:flex; align-items:center; gap:3px; flex-wrap:wrap; }
+.cap-pain-lbl { font-size:.67rem; color:var(--muted); font-weight:600; margin-right:1px; }
+.cap-pain-num { background:#fff7f7; border:1px solid #fca5a5; color:#dc2626; border-radius:5px; padding:3px 5px; font-size:.7rem; font-weight:700; cursor:pointer; font-family:inherit; min-width:26px; text-align:center; }
+.cap-pain-num:hover { background:#fee2e2; }
+.cap-pain-cancel { background:none; border:none; color:var(--muted); cursor:pointer; padding:3px 5px; font-size:.9rem; line-height:1; }
+
+/* Drapeaux */
+.cap-flags-card { background:#FFF7F7; border-radius:8px; padding:11px 13px; border:1px solid #FCA5A5; }
+.cap-flags-title { font-size:.66rem; font-weight:700; color:#dc2626; text-transform:uppercase; letter-spacing:.07em; margin-bottom:5px; }
+.cap-flag-item { font-size:.77rem; color:#7f1d1d; padding:2px 0; line-height:1.45; }
+.cap-flag-item::before { content:'• '; }
+
+/* Bouton nouveau programme */
+.cap-new-btn { background:none; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:7px 16px; font-size:.77rem; cursor:pointer; font-family:inherit; }
+.cap-new-btn:hover { border-color:var(--accent2); color:var(--accent2); }
+</style>
+
 <div class="proto-overlay" id="proto-overlay" onclick="if(event.target===this)closeProtoPanel()">
   <div class="proto-box">
     <div class="proto-head">
@@ -3079,6 +3166,114 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
       </div>
     </div>
   </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     GÉNÉRATEUR CAP — overlay
+══════════════════════════════════════════ -->
+<div id="capOverlay" class="cap-ov" onclick="if(event.target===this)closeCAPWizard()">
+
+  <!-- ── Écran formulaire ── -->
+  <div class="cap-panel" id="capFormScreen">
+    <div class="cap-ph">
+      <span class="cap-ph-title">Générateur CAP — Retour à la course</span>
+      <button class="cap-ph-close" onclick="closeCAPWizard()" title="Fermer">✕</button>
+    </div>
+    <div class="cap-fbody">
+
+      <div>
+        <div class="cap-field-label">Type de programme</div>
+        <div class="cap-chips" id="capTrackG">
+          <button class="cap-chip active" data-val="post-blessure" onclick="capChipSel(this,'capTrackG')">Post-blessure</button>
+          <button class="cap-chip" data-val="performance" onclick="capChipSel(this,'capTrackG')">Performance</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="cap-field-label">Niveau de course</div>
+        <div class="cap-chips" id="capLevelG">
+          <button class="cap-chip" data-val="debutant" onclick="capChipSel(this,'capLevelG')">Débutant</button>
+          <button class="cap-chip active" data-val="intermediaire" onclick="capChipSel(this,'capLevelG')">Intermédiaire</button>
+          <button class="cap-chip" data-val="avance" onclick="capChipSel(this,'capLevelG')">Avancé</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="cap-field-label">Pathologie</div>
+        <select class="cap-select" id="capPathoG">
+          <option value="aucune">Aucune pathologie spécifique</option>
+          <option value="bit">Syndrome de la bandelette ilio-tibiale (BIT)</option>
+        </select>
+      </div>
+
+      <div>
+        <div class="cap-field-label">Objectif de durée</div>
+        <select class="cap-select" id="capObjG">
+          <option value="20">20 min</option>
+          <option value="30" selected>30 min</option>
+          <option value="45">45 min</option>
+          <option value="60">60 min</option>
+        </select>
+      </div>
+
+      <div>
+        <div class="cap-field-label">Âge</div>
+        <div class="cap-chips" id="capAgeG">
+          <button class="cap-chip active" data-val="moins35" onclick="capChipSel(this,'capAgeG')">&lt;35 ans</button>
+          <button class="cap-chip" data-val="35-50" onclick="capChipSel(this,'capAgeG')">35–50 ans</button>
+          <button class="cap-chip" data-val="plus50" onclick="capChipSel(this,'capAgeG')">&gt;50 ans</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="cap-field-label">Séances par semaine</div>
+        <select class="cap-select" id="capSpwG">
+          <option value="2">2 séances / semaine</option>
+          <option value="3" selected>3 séances / semaine</option>
+          <option value="4">4 séances / semaine</option>
+        </select>
+      </div>
+
+      <div>
+        <div class="cap-field-label">Durée d'arrêt sportif</div>
+        <div class="cap-chips" id="capArretG">
+          <button class="cap-chip" data-val="<2sem" onclick="capChipSel(this,'capArretG')">&lt;2 semaines</button>
+          <button class="cap-chip active" data-val="2-6sem" onclick="capChipSel(this,'capArretG')">2–6 semaines</button>
+          <button class="cap-chip" data-val=">6sem" onclick="capChipSel(this,'capArretG')">&gt;6 semaines</button>
+        </div>
+      </div>
+
+      <button class="cap-gen-btn" onclick="_capGenerate()">Générer le programme →</button>
+    </div>
+  </div>
+
+  <!-- ── Écran résultat ── -->
+  <div class="cap-panel" id="capResultScreen" style="display:none">
+    <div class="cap-ph">
+      <button class="cap-ph-back" onclick="_capBackForm()">← Paramètres</button>
+      <span class="cap-ph-title">Programme CAP</span>
+      <button class="cap-ph-close" onclick="closeCAPWizard()" title="Fermer">✕</button>
+    </div>
+    <div class="cap-prog-wrap">
+      <div class="cap-prog-bar"><div id="capProgFill" class="cap-prog-fill"></div></div>
+      <span id="capProgLabel" class="cap-prog-lbl">0/0 séances</span>
+    </div>
+    <div class="cap-rbody">
+      <div id="capRulesCard" class="cap-rules-card" style="display:none">
+        <div class="cap-rules-title">Consignes spécifiques</div>
+        <div id="capRulesBody"></div>
+      </div>
+      <div id="capSessionList"></div>
+      <div class="cap-flags-card">
+        <div class="cap-flags-title">Drapeaux rouges — stopper et consulter</div>
+        <div id="capFlagsBody"></div>
+      </div>
+      <div style="text-align:center;padding:8px 0 2px;">
+        <button class="cap-new-btn" onclick="_capNewProg()">Nouveau programme</button>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script src="js/prog-main.js"></script>

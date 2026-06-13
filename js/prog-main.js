@@ -7296,3 +7296,430 @@ function _toolOverlayClick(e){
     _clearTimer = setTimeout(function() { _syncSearch(''); }, 400);
   });
 }());
+
+/* ══════════════════════════════════════════════════════════════
+   GÉNÉRATEUR CAP — Retour à la course à pied
+   Progressive Adaptive Running Programme
+══════════════════════════════════════════════════════════════ */
+
+/* ── Base de données pathologies ── */
+var CAP_PATHO_DB = {
+  aucune: {
+    label: 'Sans pathologie spécifique',
+    seuil: 3,
+    consignes: [
+      'Minimum 1 jour de repos entre chaque séance CAP',
+      'Ne pas augmenter vitesse et durée simultanément'
+    ],
+    drapeaux: [
+      'Douleur ≥ 4/10 → arrêt immédiat de la séance',
+      'Douleur résiduelle > 24h → répéter la séance sans progresser',
+      'Boiterie ou compensation → arrêt et réévaluation'
+    ]
+  },
+  bit: {
+    label: 'Bandelette ilio-tibiale (BIT)',
+    seuil: 2,
+    consignes: [
+      'Cadence cible ≥ 175 pas/min — réduit l\'adduction de hanche et la contrainte latérale',
+      'Éviter les descentes et le dévers jusqu\'à la semaine 5',
+      'Minimum 1 jour de repos entre chaque séance CAP',
+      'Compléter chaque séance par 10 min renforcement fessier (abducteurs, glute med)'
+    ],
+    drapeaux: [
+      'Douleur ≥ 3/10 pendant la course → arrêt immédiat, régression d\'une phase',
+      'Douleur résiduelle le lendemain → répéter la même séance sans progresser',
+      'Gonflement ou douleur au repos → suspendre et réévaluer'
+    ]
+  }
+};
+
+/* ── État global ── */
+var CAP_STATE  = null;
+var _capPainIdx = -1;
+var _capIdSeq   = 0;
+
+/* ── Helpers ── */
+function _capMkId() { return 'cap-' + (++_capIdSeq) + '-' + (Date.now() % 1e6); }
+
+function _capFmtMin(m) {
+  if (m === 0.5) return '30s';
+  if (m % 1 === 0) return m + '\'';
+  var mins = Math.floor(m);
+  var secs = Math.round((m % 1) * 60);
+  return mins + '\'' + (secs < 10 ? '0' : '') + secs;
+}
+
+function _capI(phase, reps, run, walk) {
+  return {
+    id: _capMkId(), phase: phase, type: 'interval',
+    reps: reps, runMin: run, walkMin: walk, durationMin: null,
+    label: reps + '×(' + _capFmtMin(run) + 'C / ' + _capFmtMin(walk) + 'M)',
+    status: 'pending', painScore: null, isIntermediate: false
+  };
+}
+
+function _capC(phase, dur) {
+  return {
+    id: _capMkId(), phase: phase, type: 'continuous',
+    reps: null, runMin: null, walkMin: null, durationMin: dur,
+    label: dur + ' min continu',
+    status: 'pending', painScore: null, isIntermediate: false
+  };
+}
+
+/* ── Listes canoniques 18 sessions (3/sem × 6 semaines) ── */
+function _capCanonical18(level, obj) {
+  var o1 = Math.max(Math.round(obj * 0.55), 10);
+  var o2 = Math.round(obj * 0.70);
+  var o3 = Math.round(obj * 0.85);
+  var o4 = Math.round((o3 + obj) / 2);
+
+  if (level === 'debutant') {
+    return [
+      _capI(1,5,0.5,1), _capI(1,8,0.5,1), _capI(1,12,0.5,1),
+      _capI(1,5,1,1),   _capI(1,8,1,1),   _capI(1,12,1,1),
+      _capI(2,5,1.5,1), _capI(2,8,1.5,1), _capI(2,4,2,1),
+      _capI(2,6,2,1),   _capI(2,4,3,1),   _capI(2,3,4,1),
+      _capI(3,2,5,1),   _capI(3,2,7,1),   _capC(3,o1),
+      _capC(3,o2),      _capC(3,o3),      _capC(3,obj)
+    ];
+  } else if (level === 'intermediaire') {
+    return [
+      _capI(1,5,1,1),  _capI(1,7,1,1),  _capI(1,10,1,1),
+      _capI(1,12,1,1), _capI(1,5,2,1),  _capI(1,7,2,1),
+      _capI(2,10,2,1), _capI(2,4,3,1),  _capI(2,6,3,1),
+      _capI(2,8,3,1),  _capI(2,4,4,1),  _capI(2,6,4,1),
+      _capI(3,2,9,1),  _capI(3,3,9,1),  _capC(3,o2),
+      _capC(3,o3),     _capC(3,o4),     _capC(3,obj)
+    ];
+  } else { // avance
+    return [
+      _capI(1,5,2,1),  _capI(1,8,2,1),  _capI(1,10,2,1),
+      _capI(1,5,3,1),  _capI(1,4,4,1),  _capI(1,6,4,1),
+      _capI(2,4,5,1),  _capI(2,3,6,1),  _capI(2,3,7,1),
+      _capI(2,2,8,1),  _capI(2,2,9,1),  _capI(2,3,9,1),
+      _capC(3,o1),     _capC(3,o2),     _capC(3,o3),
+      _capC(3,obj),    _capC(3,o4),     _capC(3,obj)
+    ];
+  }
+}
+
+/* ── Construction du programme ── */
+function _capBuildSessions(profile) {
+  _capIdSeq = 0;
+
+  // Ajustement niveau selon durée d'arrêt
+  var level = profile.level;
+  if (profile.dureeArret === '>6sem') {
+    level = level === 'avance' ? 'intermediaire' : 'debutant';
+  }
+
+  var canonical = _capCanonical18(level, profile.objectiveMin);
+  var total = profile.seancesPerWeek * 6;
+  var selected = [];
+
+  if (total === canonical.length) {
+    selected = canonical;
+  } else if (total < canonical.length) {
+    // Réduire : sélection homogène
+    for (var i = 0; i < total; i++) {
+      var ci = Math.round(i * (canonical.length - 1) / Math.max(total - 1, 1));
+      var copy = JSON.parse(JSON.stringify(canonical[ci]));
+      copy.id = _capMkId();
+      selected.push(copy);
+    }
+  } else {
+    // Augmenter : intercaler des répétitions régulièrement
+    selected = canonical.slice().map(function(s) { return JSON.parse(JSON.stringify(s)); });
+    var extras = total - canonical.length;
+    var step = Math.floor(canonical.length / extras);
+    for (var e = extras; e > 0; e--) {
+      var pos = e * step;
+      var rep = JSON.parse(JSON.stringify(selected[Math.min(pos - 1, selected.length - 1)]));
+      rep.id = _capMkId();
+      selected.splice(pos, 0, rep);
+    }
+  }
+
+  // Assigner les semaines
+  var spw = profile.seancesPerWeek;
+  selected.forEach(function(s, i) { s.week = Math.floor(i / spw) + 1; });
+
+  return selected;
+}
+
+/* ── Ouvrir / Fermer ── */
+function openCAPWizard() {
+  var patKey = (_progPatient ? _progPatient.id : 'anon');
+  try {
+    var saved = localStorage.getItem('r4p-cap-' + patKey);
+    if (saved) CAP_STATE = JSON.parse(saved);
+  } catch(e) {}
+
+  document.getElementById('capOverlay').classList.add('open');
+
+  if (CAP_STATE && CAP_STATE.sessions && CAP_STATE.sessions.length) {
+    document.getElementById('capFormScreen').style.display  = 'none';
+    document.getElementById('capResultScreen').style.display = 'flex';
+    _capRender();
+  } else {
+    document.getElementById('capFormScreen').style.display  = 'flex';
+    document.getElementById('capResultScreen').style.display = 'none';
+  }
+}
+
+function closeCAPWizard() {
+  document.getElementById('capOverlay').classList.remove('open');
+  _capPainIdx = -1;
+}
+
+/* ── Sélection chips ── */
+function capChipSel(el, groupId) {
+  document.querySelectorAll('#' + groupId + ' .cap-chip').forEach(function(c) { c.classList.remove('active'); });
+  el.classList.add('active');
+}
+
+function _capChipVal(groupId) {
+  var el = document.querySelector('#' + groupId + ' .cap-chip.active');
+  return el ? el.dataset.val : null;
+}
+
+/* ── Générer ── */
+function _capGenerate() {
+  var profile = {
+    track:          _capChipVal('capTrackG'),
+    level:          _capChipVal('capLevelG'),
+    patho:          document.getElementById('capPathoG').value,
+    objectiveMin:   parseInt(document.getElementById('capObjG').value),
+    age:            _capChipVal('capAgeG'),
+    seancesPerWeek: parseInt(document.getElementById('capSpwG').value),
+    dureeArret:     _capChipVal('capArretG')
+  };
+
+  CAP_STATE = { profile: profile, sessions: _capBuildSessions(profile) };
+  _capSave();
+
+  document.getElementById('capFormScreen').style.display  = 'none';
+  document.getElementById('capResultScreen').style.display = 'flex';
+  _capRender();
+}
+
+function _capBackForm() {
+  document.getElementById('capResultScreen').style.display = 'none';
+  document.getElementById('capFormScreen').style.display  = 'flex';
+}
+
+function _capNewProg() {
+  var patKey = (_progPatient ? _progPatient.id : 'anon');
+  try { localStorage.removeItem('r4p-cap-' + patKey); } catch(e) {}
+  CAP_STATE = null;
+  _capBackForm();
+}
+
+/* ── Persistance ── */
+function _capSave() {
+  var patKey = (_progPatient ? _progPatient.id : 'anon');
+  try { localStorage.setItem('r4p-cap-' + patKey, JSON.stringify(CAP_STATE)); } catch(e) {}
+}
+
+/* ── Rendu ── */
+function _capRender() {
+  if (!CAP_STATE) return;
+  var state = CAP_STATE;
+  var patho = CAP_PATHO_DB[state.profile.patho] || CAP_PATHO_DB.aucune;
+
+  // Assigner idx courant (se recalcule après chaque insertion)
+  state.sessions.forEach(function(s, i) { s._idx = i; });
+
+  // Progression
+  var done  = state.sessions.filter(function(s) { return s.status === 'done'; }).length;
+  var total = state.sessions.length;
+  document.getElementById('capProgFill').style.width = Math.round(done / total * 100) + '%';
+  document.getElementById('capProgLabel').textContent = done + '/' + total + ' séances';
+
+  // Consignes pathologie
+  if (patho.consignes.length) {
+    document.getElementById('capRulesCard').style.display = 'block';
+    document.getElementById('capRulesBody').innerHTML =
+      patho.consignes.map(function(c) { return '<div class="cap-rule-item">' + c + '</div>'; }).join('');
+  } else {
+    document.getElementById('capRulesCard').style.display = 'none';
+  }
+
+  // Sessions groupées par semaine
+  var byWeek = {};
+  state.sessions.forEach(function(s) {
+    if (!byWeek[s.week]) byWeek[s.week] = [];
+    byWeek[s.week].push(s);
+  });
+
+  var phaseName  = { 1: 'Phase 1 — Réintroduction', 2: 'Phase 2 — Consolidation', 3: 'Phase 3 — Retour continu' };
+  var phaseColor = { 1: '#2563EB', 2: '#059669', 3: '#7C3AED' };
+  var lastPhase  = 0;
+  var html = '';
+
+  Object.keys(byWeek).sort(function(a, b) { return +a - +b; }).forEach(function(w) {
+    var weekSessions = byWeek[w];
+    var firstPhase   = weekSessions[0].phase;
+    if (firstPhase !== lastPhase) {
+      html += '<div class="cap-phase-hdr" style="color:' + phaseColor[firstPhase] + '">' + phaseName[firstPhase] + '</div>';
+      lastPhase = firstPhase;
+    }
+    html += '<div class="cap-week-hdr">Semaine ' + w + '</div>';
+    weekSessions.forEach(function(s) { html += _capSessHtml(s); });
+  });
+
+  document.getElementById('capSessionList').innerHTML = html;
+
+  // Drapeaux
+  document.getElementById('capFlagsBody').innerHTML =
+    patho.drapeaux.map(function(d) { return '<div class="cap-flag-item">' + d + '</div>'; }).join('');
+}
+
+function _capSessHtml(s) {
+  var cls = 'cap-sess';
+  if (s.isIntermediate) cls += ' cap-sess-inter';
+  if (s.status === 'done')    cls += ' cap-sess-done';
+  if (s.status === 'painful') cls += ' cap-sess-pain';
+
+  var dot    = '<div class="cap-sess-dot cap-dot-' + s.status + '"></div>';
+  var badge  = s.isIntermediate ? '<div class="cap-inter-badge">Palier intermédiaire</div>' : '';
+  var label  = '<div class="cap-sess-label">' + s.label + '</div>';
+
+  var actions = '';
+  if (s._idx === _capPainIdx) {
+    // Sélecteur EVA
+    var nums = '';
+    for (var n = 1; n <= 10; n++) {
+      nums += '<button class="cap-pain-num" onclick="_capConfirmPain(' + n + ')">' + n + '</button>';
+    }
+    actions = '<div class="cap-pain-picker"><span class="cap-pain-lbl">EVA&nbsp;:</span>' + nums
+      + '<button class="cap-pain-cancel" onclick="_capCancelPain()" title="Annuler">✕</button></div>';
+  } else if (s.status === 'pending') {
+    actions = '<div class="cap-sess-btns">'
+      + '<button class="cap-btn-v" onclick="_capValidate(' + s._idx + ')">✓ Validée</button>'
+      + '<button class="cap-btn-p" onclick="_capShowPain(' + s._idx + ')">⚠ Douleur</button>'
+      + '</div>';
+  } else if (s.status === 'done') {
+    actions = '<span class="cap-done-tag">✓ Faite</span>';
+  } else {
+    actions = '<span class="cap-pain-tag">⚠ ' + (s.painScore ? s.painScore + '/10' : 'douloureuse') + '</span>';
+  }
+
+  return '<div class="' + cls + '">'
+    + dot
+    + '<div class="cap-sess-info">' + badge + label + '</div>'
+    + '<div class="cap-sess-right">' + actions + '</div>'
+    + '</div>';
+}
+
+/* ── Actions ── */
+function _capValidate(idx) {
+  var s = CAP_STATE.sessions[idx];
+  s.status    = 'done';
+  s.painScore = null;
+  _capSave();
+  _capRender();
+}
+
+function _capShowPain(idx) {
+  _capPainIdx = idx;
+  _capRender();
+}
+
+function _capCancelPain() {
+  _capPainIdx = -1;
+  _capRender();
+}
+
+function _capConfirmPain(score) {
+  var idx     = _capPainIdx;
+  _capPainIdx = -1;
+
+  var s = CAP_STATE.sessions[idx];
+  s.status    = 'painful';
+  s.painScore = score;
+
+  // Régression adaptative si seuil dépassé et pas en première séance
+  var seuil = (CAP_PATHO_DB[CAP_STATE.profile.patho] || CAP_PATHO_DB.aucune).seuil;
+  if (score >= seuil && idx > 0) {
+    _capAdaptOnPain(idx);
+  }
+
+  _capSave();
+  _capRender();
+}
+
+/* ── Régression adaptative ── */
+function _capAdaptOnPain(idx) {
+  var sessions = CAP_STATE.sessions;
+  var prev     = sessions[idx - 1];
+  var painful  = sessions[idx];
+
+  var inserts = _capInterpolate(prev, painful);
+  if (!inserts.length) return;
+
+  // Insérer avant la séance douloureuse
+  Array.prototype.splice.apply(sessions, [idx, 0].concat(inserts));
+
+  // Remettre la séance douloureuse en "à faire" pour qu'elle soit retentée
+  var newIdx = idx + inserts.length;
+  sessions[newIdx].status    = 'pending';
+  sessions[newIdx].painScore = null;
+
+  // Recalculer les semaines après insertion
+  var spw = CAP_STATE.profile.seancesPerWeek;
+  sessions.forEach(function(s, i) { s.week = Math.floor(i / spw) + 1; });
+}
+
+/* ── Interpolation entre deux séances ── */
+function _capInterpolate(prev, next) {
+  var out = [];
+
+  if (prev.type === 'interval' && next.type === 'interval') {
+
+    if (prev.runMin === next.runMin) {
+      // Même durée intervalle, différence de reps → point médian
+      var midReps = Math.round((prev.reps + next.reps) / 2);
+      if (midReps !== prev.reps && midReps !== next.reps) {
+        var s = _capI(prev.phase, midReps, prev.runMin, prev.walkMin);
+        s.isIntermediate = true;
+        out.push(s);
+      }
+
+    } else if (prev.runMin < next.runMin) {
+      // Transition vers intervalle plus long :
+      // 1. Plus de reps au runMin précédent
+      var moreReps = prev.reps + Math.max(1, Math.round((next.reps - prev.reps) / 2));
+      var s1 = _capI(prev.phase, moreReps, prev.runMin, prev.walkMin);
+      s1.isIntermediate = true;
+      out.push(s1);
+      // 2. Peu de reps au nouveau runMin
+      var fewReps = Math.max(2, Math.round(next.reps * 0.6));
+      if (fewReps < next.reps) {
+        var s2 = _capI(next.phase, fewReps, next.runMin, next.walkMin);
+        s2.isIntermediate = true;
+        out.push(s2);
+      }
+    }
+
+  } else if (prev.type === 'interval' && next.type === 'continuous') {
+    // Transition interval → continu : séance intermédiaire à ~70% de la durée cible
+    var dur = Math.max(10, Math.round(next.durationMin * 0.7));
+    var sc = _capC(next.phase, dur);
+    sc.isIntermediate = true;
+    out.push(sc);
+
+  } else if (prev.type === 'continuous' && next.type === 'continuous') {
+    // Ramp-up trop rapide : point médian
+    var midDur = Math.round((prev.durationMin + next.durationMin) / 2);
+    if (midDur !== prev.durationMin && midDur !== next.durationMin) {
+      var sc2 = _capC(prev.phase, midDur);
+      sc2.isIntermediate = true;
+      out.push(sc2);
+    }
+  }
+
+  return out;
+}
