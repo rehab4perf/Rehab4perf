@@ -8691,7 +8691,7 @@ var HSR_PHASES = [
 ];
 
 var HSR_CONSIGNES = [
-  'Cadence lente et contrôlée : 3 s descente — 1 s pause — 2 s montée (3-1-2)',
+  'Tempo 3/0/3/0 : 3 s excentrique — 0 s pause — 3 s concentrique — 0 s pause',
   'Repos entre les séries : 2 à 3 minutes',
   'Douleur tolérable ≤ 3/10 pendant l\'exercice — arrêter si ≥ 5/10',
   'Progresser uniquement si douleur ≤ 3/10 lors de la dernière série',
