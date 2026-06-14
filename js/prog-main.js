@@ -8933,13 +8933,13 @@ function openHSRWizard() {
   document.getElementById('hsrOverlay').classList.add('open');
   _renderAgendaProgList('hsr');
 
-  if (HSR_STATE && HSR_STATE.sessions && HSR_STATE.sessions.length) {
-    document.getElementById('hsrFormScreen').style.display  = 'none';
-    document.getElementById('hsrResultScreen').style.display = 'flex';
-    _hsrRenderResult();
-  } else {
-    document.getElementById('hsrFormScreen').style.display  = 'flex';
-    document.getElementById('hsrResultScreen').style.display = 'none';
+  // Toujours ouvrir sur l'écran paramètres
+  document.getElementById('hsrFormScreen').style.display  = 'flex';
+  document.getElementById('hsrResultScreen').style.display = 'none';
+  // Pré-remplir le 1RM si une session précédente existe
+  if (HSR_STATE && HSR_STATE.ref1RM) {
+    var inp = document.getElementById('hsrRef1RM');
+    if (inp && !inp.value) inp.value = HSR_STATE.ref1RM;
   }
 }
 
