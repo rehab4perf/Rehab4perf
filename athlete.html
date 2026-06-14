@@ -1085,6 +1085,42 @@ function buildProgHTML(prog){
   }
 
   blocs.forEach(function(b, bIdx){
+    // ── Bloc cardio ──────────────────────────────────────────────
+    if(b.type === 'cardio'){
+      var sport = b.sport === 'course' ? 'Course à pied' : (b.sport || 'Cardio');
+      var effortLbl = b.effort_type === 'fractionne' ? 'Fractionné' : (b.effort_type === 'continu' ? 'Continu' : '');
+      html += '<div class="bloc"><div class="bloc-header">'
+           +  '<div class="bloc-title">🏃 '+escH(sport)+'</div>'
+           +  (effortLbl ? '<span class="bloc-badge endurance">'+escH(effortLbl)+'</span>' : '')
+           +  '</div><div class="exo-list"><div class="exo-item">';
+      // Détails workout
+      var cParams = [];
+      if(b.effort_type === 'fractionne'){
+        if(b.repetitions) cParams.push({l:'Répétitions', v: b.repetitions+'×'});
+        if(b.duree_effort) cParams.push({l:'Course', v: b.duree_effort});
+        if(b.duree_recup)  cParams.push({l:'Marche', v: b.duree_recup});
+      }
+      if(b.duree_totale) cParams.push({l:'Durée totale', v: b.duree_totale+' min'});
+      if(b.zone) cParams.push({l:'Zone cardio', v: 'Zone '+b.zone});
+      if(cParams.length){
+        html += '<div class="exo-params">';
+        cParams.forEach(function(p){ html += '<div class="param-box"><div class="param-label">'+escH(p.l)+'</div><div class="param-val">'+escH(p.v)+'</div></div>'; });
+        html += '</div>';
+      }
+      if(b.notes) html += '<div class="exo-consigne">💬 '+escH(b.notes)+'</div>';
+      // Douleur session
+      var _cKey = 'cardio-'+bIdx;
+      var _curCPain = _painRatings[_cKey];
+      html += '<div class="exo-pain"><div class="exo-pain-label">🩹 Douleur</div><div class="exo-pain-btns">';
+      for(var _cpv=0; _cpv<=10; _cpv++){
+        var _csel = (_curCPain===_cpv) ? ' selected' : '';
+        html += '<button class="pain-btn'+_csel+'" data-v="'+_cpv+'" data-key="'+_cKey+'" onclick="_setPain(\''+_cKey+'\','+_cpv+')">'+_cpv+'</button>';
+      }
+      html += '</div></div>';
+      html += '</div></div></div>';
+      return;
+    }
+    // ── Bloc musculation / autre ──────────────────────────────────
     var obj = b.objectif||'libre';
     html += '<div class="bloc">'
          +  '<div class="bloc-header">'
@@ -1186,10 +1222,14 @@ function _estimateExoMin(e){
 function _calcSessionDuree(blocs){
   var total=0;
   blocs.forEach(function(b){
-    (b.exos||[]).forEach(function(e){
-      var m=_estimateExoMin(e);
-      if(m&&m>0) total+=m;
-    });
+    if(b.type === 'cardio'){
+      total += (b.duree_totale || 0);
+    } else {
+      (b.exos||[]).forEach(function(e){
+        var m=_estimateExoMin(e);
+        if(m&&m>0) total+=m;
+      });
+    }
   });
   return Math.max(5, Math.round(total));
 }
@@ -1398,79 +1438,120 @@ function _buildCapProgHTML(prog) {
     consignes.forEach(function(c){ html += '<div style="padding:2px 0;">• ' + escH(c) + '</div>'; });
     html += '</div>';
   }
+  // Détail du bloc cardio
+  var bloc = d.blocs && d.blocs[0];
+  if(bloc && bloc.type === 'cardio'){
+    html += '<div style="background:#EBF8FF;border-radius:10px;padding:12px 14px;margin-top:4px;">';
+    html += '<div style="font-size:.66rem;font-weight:700;color:#0369A1;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Séance du jour</div>';
+    if(bloc.effort_type === 'fractionne' && bloc.repetitions){
+      html += '<div style="font-size:1.05rem;font-weight:800;color:#1A3A5C;margin-bottom:4px;">'
+           +  escH(bloc.repetitions)+'×('+escH(bloc.duree_effort||'')+' C / '+escH(bloc.duree_recup||'')+' M)</div>';
+    } else if(bloc.effort_type === 'continu' && bloc.duree_totale){
+      html += '<div style="font-size:1.05rem;font-weight:800;color:#1A3A5C;margin-bottom:4px;">'
+           +  escH(String(bloc.duree_totale))+' min continu</div>';
+    }
+    var cMeta = [];
+    if(bloc.duree_totale) cMeta.push('~'+bloc.duree_totale+' min');
+    if(bloc.zone) cMeta.push('Zone '+bloc.zone);
+    if(cMeta.length) html += '<div style="font-size:.75rem;color:#0369A1;font-weight:600;">'+escH(cMeta.join(' · '))+'</div>';
+    if(bloc.notes) html += '<div style="font-size:.75rem;color:#475569;margin-top:5px;font-style:italic;">💬 '+escH(bloc.notes)+'</div>';
+    html += '</div>';
+  }
+
   html += '</div>';
   return html;
 }
 
+var _capCurrentRpe = 0;
+
 function _buildCapPainCard(seanceId, existing) {
   _capCurrentSeanceId = seanceId;
-  _capCurrentPain = existing ? existing.rpe : null;
+  _capCurrentPain = (existing && existing.rpe !== null && existing.rpe !== undefined) ? existing.rpe : null;
+  _capCurrentRpe  = (existing && existing.duree_min > 10) ? 0 : (existing && existing.duree_min ? existing.duree_min : 0);
 
-  var alreadyDone = _capCurrentPain !== null && _capCurrentPain !== undefined;
+  var alreadyDone = _capCurrentPain !== null;
   var html = '<div class="rpe-card" id="rpeCard">';
-  html += '<div class="rpe-card-title">Score de douleur (EVA)</div>';
-  html += '<div class="rpe-duree" style="color:#6b7a8d;font-size:.8rem;">Ressenti douloureux pendant et après la séance</div>';
-  html += '<div class="rpe-scale-label">Niveau de douleur — 0 (aucune) à 10 (insupportable)</div>';
 
-  if (alreadyDone) {
-    html += '<div class="rpe-already">Déjà renseigné : ' + _capCurrentPain + '/10 — ' + (_capPainDescs[_capCurrentPain] || '') + '</div>';
-  }
-
-  html += '<div class="rpe-buttons">';
-  for (var i = 0; i <= 10; i++) {
-    var active = alreadyDone && _capCurrentPain === i ? ' active' : '';
-    html += '<button class="rpe-btn' + active + '" data-val="' + i + '" style="'+(active?' background:#2B5FA6;border-color:#2B5FA6;color:#fff;':'')+'" onclick="_capSetPain(' + i + ')">' + i + '</button>';
+  // ── Douleur EVA ──
+  html += '<div class="rpe-card-title">🩹 Douleur (EVA)</div>';
+  html += '<div class="rpe-scale-label" style="margin-bottom:8px;">0 = aucune · 10 = insupportable</div>';
+  if(alreadyDone) html += '<div class="rpe-already">Déjà renseigné : '+_capCurrentPain+'/10 — '+((_capPainDescs[_capCurrentPain])||'')+'</div>';
+  html += '<div class="rpe-buttons" id="capPainBtns">';
+  for(var i=0; i<=10; i++){
+    var act = (alreadyDone && _capCurrentPain===i) ? ' active' : '';
+    html += '<button class="rpe-btn'+act+'" data-val="'+i+'" style="'+(act?'background:#E74C3C;border-color:#E74C3C;color:#fff;':'')+'" onclick="_capSetPain('+i+')">'+i+'</button>';
   }
   html += '</div>';
+  html += '<div class="rpe-desc" id="capPainDesc" style="color:'+(_capCurrentPain!==null?(_capPainColors[_capCurrentPain]||''):'var(--muted)')+'">'+(_capCurrentPain!==null?escH(_capPainDescs[_capCurrentPain]||''):'')+'</div>';
 
-  html += '<div class="rpe-desc" id="capPainDesc" style="color:' + (_capCurrentPain !== null ? _capPainColors[_capCurrentPain] : 'var(--muted)') + '">'
-    + (_capCurrentPain !== null ? _capPainDescs[_capCurrentPain] : '') + '</div>';
+  // ── Effort Borg ──
+  html += '<div style="border-top:1px solid #e5e7eb;margin:14px 0 10px;"></div>';
+  html += '<div class="rpe-card-title">💪 Effort ressenti (Borg)</div>';
+  html += '<div class="rpe-scale-label" style="margin-bottom:8px;">1 = très facile · 10 = maximum</div>';
+  html += '<div class="rpe-buttons" id="capRpeBtns">';
+  for(var j=1; j<=10; j++){
+    var actR = (_capCurrentRpe===j) ? ' active' : '';
+    html += '<button class="rpe-btn'+actR+'" data-val="'+j+'" onclick="_capSetRpe('+j+')">'+j+'</button>';
+  }
+  html += '</div>';
+  var initBorg = _capCurrentRpe>0 ? BORG_CR10[_capCurrentRpe] : null;
+  html += '<div class="rpe-desc" id="capRpeDesc" style="color:'+(initBorg?initBorg.color:'var(--muted)')+'">'+escH(initBorg?initBorg.label:'')+'</div>';
 
-  html += '<button class="rpe-submit-btn" id="capPainSubmit" onclick="_submitCapFeedback()"'
-    + (alreadyDone ? ' disabled' : '') + '>'
-    + (alreadyDone ? 'Score déjà envoyé' : 'Envoyer mon score')
-    + '</button>';
+  html += '<button class="rpe-submit-btn" id="capPainSubmit" onclick="_submitCapFeedback()"'+(alreadyDone?' disabled':'')+'>'+( alreadyDone?'Déjà envoyé':'Envoyer mon bilan')+'</button>';
   html += '</div>';
   return html;
 }
 
 function _capSetPain(val) {
   _capCurrentPain = val;
-  document.querySelectorAll('#rpeCard .rpe-btn').forEach(function(b){
-    var active = parseInt(b.dataset.val) === val;
-    b.classList.toggle('active', active);
-    b.style.background = active ? '#2B5FA6' : '';
-    b.style.borderColor = active ? '#2B5FA6' : '';
-    b.style.color = active ? '#fff' : '';
+  document.querySelectorAll('#capPainBtns .rpe-btn').forEach(function(b){
+    var on = parseInt(b.dataset.val)===val;
+    b.classList.toggle('active', on);
+    b.style.background = on ? '#E74C3C' : '';
+    b.style.borderColor = on ? '#E74C3C' : '';
+    b.style.color = on ? '#fff' : '';
   });
   var desc = document.getElementById('capPainDesc');
-  if (desc) { desc.textContent = _capPainDescs[val] || ''; desc.style.color = _capPainColors[val] || '#6b7a8d'; }
-  var btn = document.getElementById('capPainSubmit');
-  if (btn && !btn.disabled) { btn.textContent = 'Envoyer mon score'; }
+  if(desc){ desc.textContent = _capPainDescs[val]||''; desc.style.color = _capPainColors[val]||'#6b7a8d'; }
+}
+
+function _capSetRpe(val) {
+  _capCurrentRpe = val;
+  document.querySelectorAll('#capRpeBtns .rpe-btn').forEach(function(b){
+    var on = parseInt(b.dataset.val)===val;
+    b.classList.toggle('active', on);
+    b.style.background = on ? '#2B5FA6' : '';
+    b.style.borderColor = on ? '#2B5FA6' : '';
+    b.style.color = on ? '#fff' : '';
+  });
+  var borg = BORG_CR10[val];
+  var desc = document.getElementById('capRpeDesc');
+  if(desc){ desc.textContent = borg?borg.label:''; desc.style.color = borg?borg.color:''; }
 }
 
 function _submitCapFeedback() {
-  if (_capCurrentPain === null || _capCurrentPain === undefined) { alert('Sélectionne ton score de douleur (0–10).'); return; }
-  if (!_capCurrentSeanceId) return;
+  if(_capCurrentPain===null||_capCurrentPain===undefined){ alert('Sélectionne ton score de douleur (0–10).'); return; }
+  if(!_capCurrentRpe){ alert('Sélectionne ton niveau d\'effort (1–10).'); return; }
+  if(!_capCurrentSeanceId) return;
   var btn = document.getElementById('capPainSubmit');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Envoi…'; }
+  if(btn){ btn.disabled=true; btn.textContent='⏳ Envoi…'; }
 
-  fetch(SUPA_URL + '/rest/v1/athlete_feedback', {
+  fetch(SUPA_URL+'/rest/v1/athlete_feedback', {
     method: 'POST',
     headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal' },
-    body: JSON.stringify({ seance_id: _capCurrentSeanceId, rpe: _capCurrentPain, duree_min: 1, submitted_at: new Date().toISOString() })
+    body: JSON.stringify({ seance_id: _capCurrentSeanceId, rpe: _capCurrentPain, duree_min: _capCurrentRpe, submitted_at: new Date().toISOString() })
   })
-  .then(function(r) {
-    if (!r.ok) { return r.json().then(function(d){ alert('Erreur : ' + JSON.stringify(d)); if(btn){btn.disabled=false;btn.textContent='Réessayer';} }); }
-    var color = _capPainColors[_capCurrentPain] || '#2B5FA6';
+  .then(function(r){
+    if(!r.ok){ return r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); if(btn){btn.disabled=false;btn.textContent='Réessayer';} }); }
+    var painColor = _capPainColors[_capCurrentPain]||'#2B5FA6';
     var card = document.getElementById('rpeCard');
-    if (card) card.innerHTML =
+    if(card) card.innerHTML =
       '<div class="rpe-success-msg">'
-      + '<div style="font-size:1.4rem;">' + (_capCurrentPain <= 2 ? '✅' : _capCurrentPain <= 4 ? '⚠️' : '🔴') + '</div>'
-      + '<div style="font-weight:700;color:var(--navy);margin:6px 0;">Score enregistré !</div>'
-      + '<div class="rpe-success-ua" style="color:' + color + ';">' + _capCurrentPain + '/10</div>'
-      + '<div class="rpe-success-detail">' + escH(_capPainDescs[_capCurrentPain] || '') + '</div>'
-      + '</div>';
+      +'<div style="font-size:1.4rem;">'+(_capCurrentPain<=2?'✅':_capCurrentPain<=4?'⚠️':'🔴')+'</div>'
+      +'<div style="font-weight:700;color:var(--navy);margin:6px 0;">Bilan enregistré !</div>'
+      +'<div style="font-size:.85rem;margin-bottom:4px;">🩹 Douleur : <strong style="color:'+painColor+'">'+_capCurrentPain+'/10</strong> — '+escH(_capPainDescs[_capCurrentPain]||'')+'</div>'
+      +'<div style="font-size:.85rem;">💪 Effort : <strong>'+_capCurrentRpe+'/10</strong> — '+escH((BORG_CR10[_capCurrentRpe]&&BORG_CR10[_capCurrentRpe].label)||'')+'</div>'
+      +'</div>';
   })
   .catch(function(){ alert('Erreur réseau. Réessaie.'); if(btn){btn.disabled=false;btn.textContent='Réessayer';} });
 }
