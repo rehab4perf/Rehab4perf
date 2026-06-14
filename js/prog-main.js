@@ -8024,7 +8024,8 @@ function _capAdaptNext(idx, score) {
         nom: 'CAP — ' + updated.label,
         donnees: {
           type: 'cap', session: updated, profile: CAP_STATE.profile,
-          blocs: [bloc]
+          blocs: [bloc],
+          consignes: (CAP_PATHO_DB[CAP_STATE.profile.patho] || CAP_PATHO_DB.aucune).consignes
         }
       })
     }).catch(function(e) { console.warn('CAP adapt patch error:', e); });
@@ -8150,7 +8151,8 @@ function _capExportToCalendar() {
         profile:       CAP_STATE.profile,
         session_index: i,
         total:         sessions.length,
-        blocs:         [_capSessionToCardioBloc(s, CAP_STATE.profile)]
+        blocs:         [_capSessionToCardioBloc(s, CAP_STATE.profile)],
+        consignes:     (CAP_PATHO_DB[CAP_STATE.profile.patho] || CAP_PATHO_DB.aucune).consignes
       }
     };
   });
