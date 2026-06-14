@@ -1827,7 +1827,7 @@ function _buildEvolutionHTML(){
 
   var html = '<!DOCTYPE html><html lang="fr"><head>'
     + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">'
-    + '<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,600&family=Poppins:wght@800&display=swap" rel="stylesheet">'
+    + '<link rel="stylesheet" href="/fonts/fonts.css">'
     + '<title>Suivi Évolution — '+(patient||'Patient')+'</title>'
     + '<style>'+css+'</style></head><body><div class="page-wrap">'
     // Header
@@ -4956,7 +4956,7 @@ function _buildBilanHTML(type) {
   if(bilanDate) badges += '<span class="pat-badge orange">Bilan du '+bilanDate.split('-').reverse().join('/')+'</span>';
 
   return {
-    html: '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,600&family=Poppins:wght@800&display=swap" rel="stylesheet"><title>'+title+(patient?' — '+patient:'')+'</title><style>'+css+'</style></head><body><div class="page-wrap">'
+    html: '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link rel="stylesheet" href="/fonts/fonts.css"><title>'+title+(patient?' — '+patient:'')+'</title><style>'+css+'</style></head><body><div class="page-wrap">'
       + '<div class="doc-header"><div class="doc-logo"><svg viewBox="8 34 164 104" width="26" height="16" aria-hidden="true"><g stroke="#4A90D9" stroke-width="17" stroke-linecap="round" fill="none"><line x1="20" y1="118" x2="56" y2="104"/><line x1="70" y1="122" x2="100" y2="84"/><line x1="112" y1="125" x2="134" y2="66"/><line x1="158" y1="128" x2="158" y2="46"/></g></svg><span class="w"><span class="r">rehab<sup class="e">4</sup></span><span class="p">perf</span></span></div><div class="doc-meta">'+metaParts.join('<br>')+'</div></div>'
       + (patient ? '<div class="patient-card"><div class="patient-avatar">'+initials+'</div><div><div class="patient-name">'+patient+'</div>'+(badges?'<div class="patient-badges">'+badges+'</div>':'')+'</div></div>' : '')
       + '<div class="doc-date-bar">Compte-rendu généré le <span>'+date+'</span></div>'
