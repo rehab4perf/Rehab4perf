@@ -4205,6 +4205,7 @@ function buildCR() {
   for (var ii=0; ii<infosMap.length; ii++) {
     var el2 = document.getElementById(infosMap[ii][0]);
     var v2 = el2 ? el2.value : '';
+    if (v2 && el2 && el2.type === 'date') v2 = _isoToReadable(v2);
     if (v2) infosHtml += crItem(infosMap[ii][1], nl2br(v2) + infosMap[ii][2]);
   }
   // Imageries disponibles
