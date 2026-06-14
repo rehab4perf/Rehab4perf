@@ -4248,6 +4248,8 @@ function _loadProg(id, seanceId){
       var raw = d.donnees || [];
       if(Array.isArray(raw)){ blocs = raw; _notes = ''; _builderLinkedPhase = null; }
       else { blocs = raw.blocs || []; _notes = raw.notes || ''; _builderLinkedPhase = raw.linkedPhase || null; }
+      // HSR : prescription affichée dans le banner — le builder reste vide pour éviter l'erreur sur exos
+      if (raw && raw.type === 'hsr') { blocs = []; }
       var pnEl = document.getElementById('patientName');
       if(pnEl) pnEl.value = d.nom || '';
       renderSession();
@@ -4267,7 +4269,7 @@ function _loadProg(id, seanceId){
       var btn = document.getElementById('prog-cloud-save-btn');
       if(btn){ btn.textContent='✓ Programme chargé'; setTimeout(function(){ _refreshSaveBtn(); },2500); }
     })
-    .catch(function(err){ alert('Erreur lors du chargement : ' + (err && err.message ? err.message : String(err))); });
+    .catch(function(){ alert('Erreur lors du chargement.'); });
 }
 
 // Ouvrir un programme du calendrier dans le builder (clic sur chip)

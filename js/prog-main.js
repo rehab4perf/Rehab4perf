@@ -8868,15 +8868,7 @@ function _hsrExportToCalendar() {
         session_index: s.session_index,
         total:         sessions.length,
         consignes:     HSR_CONSIGNES,
-        blocs: [{
-          titre:    s.exercice,
-          type:     'renfo',
-          series:   s.sets,
-          reps:     s.reps,
-          charge:   Math.round(s.ref1RM * s.pct / 100 * 2) / 2,
-          unite:    'kg',
-          note:     'HSR ' + s.phase_label + ' — cadence 3-1-2'
-        }]
+        blocs:         []
       }
     };
   });
