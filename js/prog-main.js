@@ -8843,6 +8843,19 @@ function _hsrRenderResult() {
     + ' · <strong>' + freq + ' séances/sem.</strong>'
     + ' · ' + tot + ' séances (12 semaines)';
 
+  // Peupler le select "Démarrer depuis"
+  var phSel = document.getElementById('hsrStartPhase');
+  if (phSel) {
+    var prevVal = phSel.value;
+    phSel.innerHTML = HSR_PHASES.map(function(ph) {
+      var count = ph.weeks * freq;
+      return '<option value="' + escH(ph.key) + '">' + escH(ph.w) + ' — ' + escH(ph.rm)
+        + ' (' + count + ' séance' + (count > 1 ? 's' : '') + ')</option>';
+    }).join('');
+    if (prevVal) phSel.value = prevVal;
+    _hsrUpdateExportLabel();
+  }
+
   var html = '';
   HSR_PHASES.forEach(function(ph) {
     var charge = Math.round(ref * ph.pct / 100 * 2) / 2;
@@ -8873,13 +8886,29 @@ function _hsrReset() {
   if (rs) rs.style.display = 'none';
 }
 
+function _hsrUpdateExportLabel() {
+  if (!HSR_STATE || !HSR_STATE.sessions) return;
+  var phSel  = document.getElementById('hsrStartPhase');
+  var cntEl  = document.getElementById('hsrExportCount');
+  if (!phSel || !cntEl) return;
+  var startKey = phSel.value;
+  var startIdx = HSR_STATE.sessions.findIndex(function(s) { return s.phase_key === startKey; });
+  var count = startIdx >= 0 ? HSR_STATE.sessions.length - startIdx : HSR_STATE.sessions.length;
+  cntEl.textContent = count + ' séance' + (count > 1 ? 's' : '') + ' à planifier';
+}
+
 function _hsrExportToCalendar() {
   if (!_progPatient) { alert('Sélectionne un patient d\'abord.'); return; }
   var startDate = document.getElementById('hsrStartDate').value;
   if (!startDate) { alert('Indique la date de début du programme.'); return; }
   if (!HSR_STATE || !HSR_STATE.sessions || !HSR_STATE.sessions.length) return;
 
-  var sessions = HSR_STATE.sessions;
+  // Filtrer à partir de la phase choisie
+  var phSel    = document.getElementById('hsrStartPhase');
+  var startKey = phSel ? phSel.value : null;
+  var allSessions = HSR_STATE.sessions;
+  var startIdx = startKey ? allSessions.findIndex(function(s) { return s.phase_key === startKey; }) : 0;
+  var sessions = startIdx > 0 ? allSessions.slice(startIdx) : allSessions;
   var dates    = _capCalcDates(sessions.length, HSR_STATE.freq, startDate);
 
   var btn      = document.getElementById('hsrExportBtn');

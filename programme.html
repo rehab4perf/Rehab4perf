@@ -3498,9 +3498,14 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
       <div class="hsr-export-zone">
         <div class="hsr-export-title">Exporter dans l'agenda</div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+          <label style="font-size:.72rem;color:var(--muted);white-space:nowrap;">Démarrer depuis</label>
+          <select class="hsr-select" id="hsrStartPhase" style="flex:1;" onchange="_hsrUpdateExportLabel()"></select>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
           <label style="font-size:.72rem;color:var(--muted);white-space:nowrap;">Date de début</label>
           <input type="date" class="hsr-select" id="hsrStartDate" style="flex:1;">
         </div>
+        <div id="hsrExportCount" style="font-size:.72rem;color:#15803d;margin-bottom:4px;min-height:1em;"></div>
         <button class="hsr-export-btn" id="hsrExportBtn" onclick="_hsrExportToCalendar()">Ajouter à l'agenda →</button>
         <div id="hsrExportStatus" style="font-size:.74rem;margin-top:6px;min-height:1.1em;color:var(--muted);"></div>
       </div>
