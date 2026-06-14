@@ -554,7 +554,7 @@ function renderLib(q, typeFilter, subFilter, subFilter2){
 
   // Get added ids
   var addedIds = {};
-  blocs.forEach(function(b){ b.exos.forEach(function(e){ addedIds[e.libId]=true; }); });
+  blocs.forEach(function(b){ (b.exos||[]).forEach(function(e){ addedIds[e.libId]=true; }); });
 
   // If Tous and no search → show all flat, no section titles
   // If truly nothing selected (no filter, no fav, no search) → show hint
@@ -4247,7 +4247,7 @@ function _loadProg(id, seanceId){
       var btn = document.getElementById('prog-cloud-save-btn');
       if(btn){ btn.textContent='✓ Programme chargé'; setTimeout(function(){ _refreshSaveBtn(); },2500); }
     })
-    .catch(function(err){ console.error('[_loadProg] catch:', err); alert('Erreur réseau lors du chargement. (' + (err && (err.message || String(err))) + ')'); });
+    .catch(function(){ alert('Erreur réseau lors du chargement.'); });
 }
 
 // Ouvrir un programme du calendrier dans le builder (clic sur chip)
