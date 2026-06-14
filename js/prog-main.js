@@ -33,11 +33,27 @@ function _loadCyclesForPatient(){
   .catch(function(){ /* garde les cycles localStorage */ });
 }
 var _cycleColors = {
-  'Force':'var(--navy)','Puissance':'#C0392B','Hypertrophie':'#2D7D46',
-  'Endurance de force':'var(--accent)','Récupération':'#D4600A','Réathlétisation':'#9B2C6B'
+  'Force':'#1A3A5C','Puissance':'#C0392B','Hypertrophie':'#2D7D46',
+  'Endurance de force':'#2563EB','Récupération':'#D4600A','Réathlétisation':'#9B2C6B'
 };
 function _cycleColor(nom){
   return _cycleColors[nom] || '#52514E';
+}
+function _dayCycleStyle(cellDate){
+  for(var i=0;i<_cycles.length;i++){
+    var cy=_cycles[i];
+    if(!cy.startDate) continue;
+    var cyStart=new Date(cy.startDate); cyStart.setHours(0,0,0,0);
+    var cyEnd=new Date(cyStart); cyEnd.setDate(cyEnd.getDate()+cy.duree*7);
+    if(cellDate>=cyStart && cellDate<cyEnd){
+      var hex=cy.color||_cycleColors[cy.nom]||'#52514E';
+      var r=parseInt(hex.slice(1,3),16)||82;
+      var g=parseInt(hex.slice(3,5),16)||81;
+      var b=parseInt(hex.slice(5,7),16)||78;
+      return 'background-color:rgba('+r+','+g+','+b+',.10);';
+    }
+  }
+  return '';
 }
 function openCycles(){
   document.getElementById('cycle-modal').classList.add('open');
@@ -71,12 +87,43 @@ function selectCycleName(btn, name){
   var col = _cycleColor(name);
   btn.style.background = col; btn.style.color='#fff'; btn.style.borderColor=col;
   document.getElementById('cycle-nom').value = name;
+  _cycleSwatchSelect(_cycleColors[name] || '#1A3A5C');
 }
 function clearCycleNameBtns(){
   document.querySelectorAll('.cycle-name-btn').forEach(function(b){
     b.classList.remove('sel');
     b.style.background='';b.style.color='';b.style.borderColor='';
   });
+}
+function selectCycleColor(btn, color){
+  document.querySelectorAll('.cycle-swatch').forEach(function(s){
+    s.style.boxShadow=''; s.style.borderColor='transparent';
+  });
+  btn.style.borderColor='#fff'; btn.style.boxShadow='0 0 0 2px '+color;
+  var inp = document.getElementById('cycle-color-val');
+  if(inp) inp.value = color;
+}
+function selectCycleColorCustom(color){
+  document.querySelectorAll('.cycle-swatch').forEach(function(s){
+    s.style.boxShadow=''; s.style.borderColor='transparent';
+  });
+  var custom = document.querySelector('.cycle-swatch-custom');
+  if(custom){ custom.style.borderColor='#fff'; custom.style.boxShadow='0 0 0 2px '+color; }
+  var inp = document.getElementById('cycle-color-val');
+  if(inp) inp.value = color;
+}
+function _cycleSwatchSelect(color){
+  document.querySelectorAll('.cycle-swatch').forEach(function(s){
+    s.style.boxShadow=''; s.style.borderColor='transparent';
+    var dc = s.dataset && s.dataset.color;
+    if(dc && dc.toLowerCase()===color.toLowerCase()){
+      s.style.borderColor='#fff'; s.style.boxShadow='0 0 0 2px '+color;
+    }
+  });
+  var inp = document.getElementById('cycle-color-val');
+  if(inp) inp.value = color;
+  var picker = document.getElementById('cycle-color');
+  if(picker) picker.value = color;
 }
 function cycleDureeChange(delta){
   var inp = document.getElementById('cycle-duree');
@@ -91,7 +138,8 @@ function addCycle(){
   var duree = parseInt(document.getElementById('cycle-duree').value)||3;
   var startDate = document.getElementById('cycle-start').value || '';
   var note = (document.getElementById('cycle-note').value||'').trim();
-  _cycles.push({id:'c'+Date.now(), nom:nom, duree:duree, startDate:startDate, note:note});
+  var cycleColor = (document.getElementById('cycle-color-val')||{}).value || _cycleColors[nom] || '#1A3A5C';
+  _cycles.push({id:'c'+Date.now(), nom:nom, duree:duree, startDate:startDate, note:note, color:cycleColor});
   _saveCyclesToCloud();
   renderCycleTimeline();
   if(typeof renderCalendar === 'function') renderCalendar();
@@ -121,6 +169,7 @@ function editCycle(id){
   var cnEl2 = document.getElementById('cycle-note');
   cnEl2.value = c.note || '';
   requestAnimationFrame(function(){ autoResizeTa(cnEl2); });
+  _cycleSwatchSelect(c.color || _cycleColors[c.nom] || '#1A3A5C');
   // Sélectionner le bon bouton de nom
   clearCycleNameBtns();
   document.querySelectorAll('.cycle-name-btn').forEach(function(btn){
@@ -833,16 +882,7 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
         +'</div>';
     }).filter(Boolean);
   }
-  _cycles.forEach(function(cy){
-    if(!cy.startDate) return;
-    var cyStart = new Date(cy.startDate); cyStart.setHours(0,0,0,0);
-    var cyEnd = new Date(cyStart); cyEnd.setDate(cyEnd.getDate()+cy.duree*7);
-    if(cellDate>=cyStart && cellDate<cyEnd){
-      var col = _cycleColor(cy.nom);
-      var wn = Math.floor((cellDate-cyStart)/(7*24*3600*1000))+1;
-      allChips.push('<div style="font-size:.6rem;font-weight:700;color:#fff;background:'+col+';border-radius:3px;padding:1px 5px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+cy.nom+' S'+wn+'</div>');
-    }
-  });
+  // Cycles : fond coloré sur la cellule (voir _dayCycleStyle), pas de chip
   // Notes calendrier
   _loadCalNotes();
   _calNotes.filter(function(n){ return n.date === dateStr; }).forEach(function(note){
@@ -945,7 +985,9 @@ function _renderWeekUI(){
     var mo = String(cellDate.getMonth()+1).padStart(2,'0');
     var dd = String(cellDate.getDate()).padStart(2,'0');
     var dateStr = y+'-'+mo+'-'+dd;
+    var cycleBgW = _dayCycleStyle(cellDate);
     html += '<div class="cal-week-cell'+(isTod?' today-cell':'')+'"'
+          +(cycleBgW?' style="'+cycleBgW+'"':'')
           +' onclick="openCalPicker(\''+dateStr+'\')"'
           +' ondragover="_calDayDragOver(event,\''+dateStr+'\')"'
           +' ondragleave="_calDayDragLeave(event)"'
@@ -989,7 +1031,9 @@ function _renderCalendarUI() {
     var dateStr = _calYear+'-'+String(_calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     var cellDate = new Date(_calYear,_calMonth,d);
     var isToday = cellDate.getTime()===today.getTime();
+    var cycleBg = _dayCycleStyle(cellDate);
     cells += '<div class="cal-day'+(isToday?' today':'')+'"'
+      +(cycleBg?' style="'+cycleBg+'"':'')
       +' onclick="openCalPicker(\''+dateStr+'\')"'
       +' ondragover="_calDayDragOver(event,\''+dateStr+'\')"'
       +' ondragleave="_calDayDragLeave(event)"'
