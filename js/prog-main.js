@@ -8286,7 +8286,7 @@ var _capBbEva       = null;
 var _capBbRpe       = null;
 var _capBbSeanceId  = null;
 var _capBbDonnees   = null;
-var _capBbCollapsed = false;
+var _capBbCollapsed = true;
 
 function _capEvaColor(v) {
   return ['#27AE60','#5ABD6A','#82CC44','#A8C940','#F4D03F','#F39C12','#E67E22','#D35400','#E74C3C','#C0392B','#922B21'][Math.min(Math.max(Math.round(v),0),10)];
@@ -8700,7 +8700,7 @@ var HSR_CONSIGNES = [
 ];
 
 var HSR_STATE        = null;
-var _hsrBbCollapsed  = false;
+var _hsrBbCollapsed  = true;
 var _hsrBbDonnees    = null;
 var _hsrBbSeanceId   = null;
 var _hsrBbEva        = null;
