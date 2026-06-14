@@ -3345,6 +3345,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   <!-- ── Écran formulaire ── -->
   <div class="cap-panel" id="capFormScreen">
     <div class="cap-ph">
+      <button class="cap-ph-back" onclick="closeCAPWizard();_toggleMoreMenu(null);" title="Retour au menu">← Menu</button>
       <span class="cap-ph-title">Générateur CAP — Retour à la course</span>
       <button class="cap-ph-close" onclick="closeCAPWizard()" title="Fermer">✕</button>
     </div>
@@ -3422,7 +3423,8 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   <!-- ── Écran résultat ── -->
   <div class="cap-panel" id="capResultScreen" style="display:none">
     <div class="cap-ph">
-      <button class="cap-ph-back" onclick="_capBackForm()">← Paramètres</button>
+      <button class="cap-ph-back" onclick="closeCAPWizard();_toggleMoreMenu(null);" title="Retour au menu">← Menu</button>
+      <button class="cap-ph-back" onclick="_capBackForm()" style="opacity:.7;">← Paramètres</button>
       <span class="cap-ph-title">Programme CAP</span>
       <button class="cap-ph-close" onclick="closeCAPWizard()" title="Fermer">✕</button>
     </div>
@@ -3466,6 +3468,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   <!-- ── Écran formulaire ── -->
   <div class="hsr-panel" id="hsrFormScreen">
     <div class="hsr-ph">
+      <button class="hsr-ph-back" onclick="closeHSRWizard();_toggleMoreMenu(null);" title="Retour au menu">← Menu</button>
       <span class="hsr-ph-title">🏋 Générateur HSR</span>
       <button class="hsr-ph-close" onclick="closeHSRWizard()" title="Fermer">✕</button>
     </div>
@@ -3512,7 +3515,8 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   <!-- ── Écran résultat ── -->
   <div class="hsr-panel" id="hsrResultScreen" style="display:none;">
     <div class="hsr-ph">
-      <button class="hsr-ph-back" onclick="_hsrBackForm()">← Paramètres</button>
+      <button class="hsr-ph-back" onclick="closeHSRWizard();_toggleMoreMenu(null);" title="Retour au menu">← Menu</button>
+      <button class="hsr-ph-back" onclick="_hsrBackForm()" style="opacity:.7;">← Paramètres</button>
       <span class="hsr-ph-title">Programme HSR</span>
       <button class="hsr-ph-close" onclick="closeHSRWizard()" title="Fermer">✕</button>
     </div>
