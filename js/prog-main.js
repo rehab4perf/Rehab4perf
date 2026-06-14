@@ -8946,7 +8946,7 @@ function _hsrUpdateRef1RM(newRef) {
     _showToast('✓ 1RM mis à jour pour ' + future.length + ' séance(s) HSR future(s).');
     _hsrBbDonnees = Object.assign({}, _hsrBbDonnees, { ref1RM: newRef });
     _renderHsrBuilderBanner(_hsrBbDonnees, _hsrBbSeanceId);
-    _loadCloudCalEvents();
+    renderCalendar();
   }).catch(function() {
     _showToast('✗ Erreur lors de la mise à jour du 1RM.');
   });
@@ -9045,8 +9045,16 @@ function _hsrSaveRef1RM() {
   if (!input) return;
   var newRef = parseFloat(input.value);
   if (!newRef || newRef <= 0) { _showToast('Indique un 1RM valide.'); return; }
-  if (!confirm('Mettre à jour le 1RM à ' + newRef + ' kg pour toutes les séances HSR futures ?')) return;
-  _hsrUpdateRef1RM(newRef);
+  _confirmDialog({
+    id: 'cd-hsr-1rm',
+    emoji: '🏋',
+    title: 'Mettre à jour le 1RM à ' + newRef + ' kg ?',
+    body: 'Le poids sera recalculé pour toutes les séances HSR futures de ce patient.',
+    confirmLabel: 'Mettre à jour',
+    confirmColor: '#16a34a'
+  }, function() {
+    _hsrUpdateRef1RM(newRef);
+  });
 }
 
 function _hsrRenderFeedback(existing) {
