@@ -4290,6 +4290,19 @@ function _loadProg(id, seanceId){
               if (!raw.rm_label)    raw.rm_label    = _hrPh.rm;
             }
           }
+          // Reconstruire session_index et total depuis la position dans _cloudCalEvents
+          var _hsrAll = (_cloudCalEvents || []).filter(function(ev){
+            var n = (ev.programmes && ev.programmes.nom) || ev.nom || '';
+            return n.indexOf('HSR —') === 0;
+          }).sort(function(a, b){ return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+          var _hsrIdx = -1;
+          for (var _hi = 0; _hi < _hsrAll.length; _hi++) {
+            if (String(_hsrAll[_hi].id) === String(seanceId)) { _hsrIdx = _hi; break; }
+          }
+          if (_hsrIdx !== -1) {
+            if (raw.session_index === undefined) raw.session_index = _hsrIdx;
+            if (raw.total === undefined)         raw.total         = _hsrAll.length;
+          }
         }
       }
       _currentProgRawDonnees = Array.isArray(raw) ? null : raw; // Préserver les métadonnées (type hsr/cap, ref1RM, …)
