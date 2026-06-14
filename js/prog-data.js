@@ -4273,7 +4273,7 @@ function _loadProg(id, seanceId){
       // Rétrocompat HSR : si le programme a perdu son type:'hsr' (ancien save écrasant),
       // le détecter via le nom de la séance calendrier et reconstruire les métadonnées de phase.
       if (!Array.isArray(raw) && !raw.type && seanceId) {
-        var _retroEv = (_cloudCalEvents || []).filter(function(ev){ return ev.id === seanceId; })[0];
+        var _retroEv = (_cloudCalEvents || []).filter(function(ev){ return String(ev.id) === String(seanceId); })[0];
         if (_retroEv && _retroEv.nom && _retroEv.nom.indexOf('HSR —') === 0) {
           raw = Object.assign({}, raw, { type: 'hsr' });
           var _hrM = _retroEv.nom.match(/HSR — ([\w-]+) · /);
