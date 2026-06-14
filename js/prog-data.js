@@ -4274,9 +4274,11 @@ function _loadProg(id, seanceId){
       // le détecter via le nom de la séance calendrier et reconstruire les métadonnées de phase.
       if (!Array.isArray(raw) && !raw.type && seanceId) {
         var _retroEv = (_cloudCalEvents || []).filter(function(ev){ return String(ev.id) === String(seanceId); })[0];
-        if (_retroEv && _retroEv.nom && _retroEv.nom.indexOf('HSR —') === 0) {
+        // Le nom est dans ev.programmes.nom (join Supabase), pas dans ev.nom directement
+        var _retroNom = _retroEv ? ((_retroEv.programmes && _retroEv.programmes.nom) || _retroEv.nom || '') : '';
+        if (_retroNom.indexOf('HSR —') === 0) {
           raw = Object.assign({}, raw, { type: 'hsr' });
-          var _hrM = _retroEv.nom.match(/HSR — ([\w-]+) · /);
+          var _hrM = _retroNom.match(/HSR — ([\w-]+) · /);
           if (_hrM && typeof HSR_PHASES !== 'undefined') {
             var _hrPh = HSR_PHASES.filter(function(p){ return p.key === _hrM[1]; })[0];
             if (_hrPh) {
