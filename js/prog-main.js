@@ -1234,14 +1234,13 @@ function removeAllCalEventsByType(type) {
 }
 
 function _renderAgendaProgList(type) {
-  var containerId = type === 'hsr' ? 'hsrAgendaProgList' : 'capAgendaProgList';
   var label = type === 'hsr' ? 'HSR' : 'CAP';
-  var el = document.getElementById(containerId);
-  if(!el) return;
+  var containers = document.querySelectorAll('.'+type+'-agenda-prog-list');
+  if(!containers.length) return;
   var evs = _cloudCalEvents.filter(function(e){
     return e.programmes && e.programmes.donnees && e.programmes.donnees.type === type;
   });
-  if(!evs.length){ el.innerHTML = ''; return; }
+  if(!evs.length){ containers.forEach(function(el){ el.innerHTML=''; }); return; }
 
   // Grouper par batch_id (nouveaux exports) ou fallback heuristique (anciens)
   var groups = {};
@@ -1289,9 +1288,10 @@ function _renderAgendaProgList(type) {
       + '</div>';
   });
 
-  el.innerHTML = '<div style="margin-top:8px;font-size:.68rem;font-weight:600;color:var(--muted);'
+  var html = '<div style="margin-top:8px;font-size:.68rem;font-weight:600;color:var(--muted);'
     + 'text-transform:uppercase;letter-spacing:.05em;">Programmes dans l\'agenda</div>'
     + rows.join('');
+  containers.forEach(function(el){ el.innerHTML = html; });
 }
 
 function _deleteAgendaBatch(batchKey, label) {
