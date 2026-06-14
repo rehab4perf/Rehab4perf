@@ -2613,7 +2613,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .cycle-timeline-wrap {
   overflow-x:auto;margin-bottom:16px;
   border:1px solid var(--border);border-radius:8px;background:#F7F8FA;
-  min-height:72px;padding:12px;
+  min-height:72px;padding:20px 12px 12px;
 }
 .cycle-timeline {
   display:flex;gap:4px;align-items:stretch;min-height:48px;
@@ -3447,7 +3447,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
           <button id="capExportBtn" onclick="_capExportToCalendar()" style="padding:8px 14px;background:var(--navy);color:#fff;border:none;border-radius:7px;font-size:.79rem;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0;white-space:nowrap;">Ajouter à l'agenda →</button>
         </div>
         <div id="capExportStatus" style="font-size:.74rem;margin-top:6px;min-height:1.1em;color:var(--muted);"></div>
-        <button onclick="removeAllCalEventsByType('cap')" style="margin-top:8px;width:100%;padding:7px;background:none;border:1px solid #fca5a5;border-radius:7px;color:#dc2626;font-size:.76rem;font-weight:600;cursor:pointer;font-family:inherit;">🗑 Supprimer toutes les séances CAP de l'agenda</button>
+        <div id="capAgendaProgList"></div>
       </div>
       <div style="text-align:center;padding:4px 0 2px;">
         <button class="cap-new-btn" onclick="_capNewProg()">Nouveau programme</button>
@@ -3530,7 +3530,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
         <div id="hsrExportCount" style="font-size:.72rem;color:#15803d;margin-bottom:4px;min-height:1em;"></div>
         <button class="hsr-export-btn" id="hsrExportBtn" onclick="_hsrExportToCalendar()">Ajouter à l'agenda →</button>
         <div id="hsrExportStatus" style="font-size:.74rem;margin-top:6px;min-height:1.1em;color:var(--muted);"></div>
-        <button onclick="removeAllCalEventsByType('hsr')" style="margin-top:8px;width:100%;padding:7px;background:none;border:1px solid #fca5a5;border-radius:7px;color:#dc2626;font-size:.76rem;font-weight:600;cursor:pointer;font-family:inherit;">🗑 Supprimer toutes les séances HSR de l'agenda</button>
+        <div id="hsrAgendaProgList"></div>
       </div>
       <button class="hsr-new-btn" onclick="_hsrReset()">Nouveau programme</button>
     </div>

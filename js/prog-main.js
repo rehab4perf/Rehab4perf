@@ -239,12 +239,10 @@ function renderCycleTimeline(){
 
   // Marqueur "Aujourd'hui" superposé
   if(todayMarkerPct !== null){
-    var lblPos = todayMarkerPct > 75
-      ? 'right:4px;left:auto;transform:none;'
-      : 'left:4px;transform:none;';
+    var lblPos = todayMarkerPct > 75 ? 'right:4px;left:auto;' : 'left:4px;';
     html += '<div style="position:absolute;top:0;bottom:0;left:'+todayMarkerPct+'%;'
           + 'width:2px;background:var(--red);pointer-events:none;z-index:10;">'
-          + '<div style="position:absolute;top:-18px;'+lblPos
+          + '<div style="position:absolute;top:4px;'+lblPos
           + 'background:var(--red);color:#fff;font-size:.58rem;font-weight:700;'
           + 'padding:1px 5px;border-radius:4px;white-space:nowrap;">Aujourd\'hui</div>'
           + '</div>';
@@ -1231,6 +1229,68 @@ function removeAllCalEventsByType(type) {
       progIds.forEach(function(pid){ _deleteProgIfOrphan(pid); });
       renderCalendar();
       _showToast('Séances ' + label + ' supprimées');
+    })
+    .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
+  });
+}
+
+function _renderAgendaProgList(type) {
+  var containerId = type === 'hsr' ? 'hsrAgendaProgList' : 'capAgendaProgList';
+  var label = type === 'hsr' ? 'HSR' : 'CAP';
+  var el = document.getElementById(containerId);
+  if(!el) return;
+  var evs = _cloudCalEvents.filter(function(e){
+    return e.programmes && e.programmes.donnees && e.programmes.donnees.type === type;
+  });
+  if(!evs.length){ el.innerHTML = ''; return; }
+  // Grouper par programme_id
+  var groups = {};
+  evs.forEach(function(e){
+    var pid = e.programme_id || '_';
+    if(!groups[pid]) groups[pid] = { progId: pid, dates: [], nom: (e.programmes && e.programmes.nom) || '' };
+    groups[pid].dates.push(e.date);
+  });
+  var rows = Object.values(groups).map(function(g){
+    g.dates.sort();
+    var first = g.dates[0];
+    var parts = first ? first.split('-') : [];
+    var dateLabel = parts.length === 3 ? parts[2]+'/'+parts[1]+'/'+parts[0].slice(2) : first;
+    var count = g.dates.length;
+    var escapedId = escH(g.progId);
+    return '<div style="display:flex;align-items:center;gap:8px;margin-top:6px;padding:6px 8px;'
+      + 'background:#fff;border:1px solid var(--border);border-radius:6px;font-size:.73rem;">'
+      + '<span style="flex:1;color:#444;">'+label+' débuté le <strong>'+dateLabel+'</strong> · '+count+' séance'+(count>1?'s':'')+'</span>'
+      + '<button onclick="removeCalEventsByProgId(\''+escapedId+'\',\''+label+'\')" '
+      + 'style="background:none;border:1px solid #fca5a5;border-radius:5px;color:#dc2626;'
+      + 'font-size:.7rem;padding:2px 8px;cursor:pointer;font-family:inherit;white-space:nowrap;">🗑 Supprimer</button>'
+      + '</div>';
+  });
+  el.innerHTML = '<div style="margin-top:6px;font-size:.68rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Programmes dans l\'agenda</div>'
+    + rows.join('');
+}
+
+function removeCalEventsByProgId(progId, label) {
+  var evs = _cloudCalEvents.filter(function(e){ return String(e.programme_id) === String(progId); });
+  if(!evs.length){ _showToast('Programme introuvable'); return; }
+  _confirmDialog({
+    id: 'cd-del-prog-' + progId,
+    emoji: '🗑️',
+    title: 'Supprimer ce programme ' + label + ' ?',
+    body: evs.length + ' séance' + (evs.length > 1 ? 's' : '') + ' seront supprimées de l\'agenda. Cette action est irréversible.',
+    confirmLabel: 'Supprimer',
+    confirmColor: '#dc2626'
+  }, function(){
+    var ids = evs.map(function(e){ return e.id; });
+    _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees?id=in.(' + ids.join(',') + ')', {
+      method: 'DELETE', headers: _sbHeaders()
+    })
+    .then(function(r){
+      if(!r.ok){ return r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); }); }
+      _deleteProgIfOrphan(progId);
+      renderCalendar();
+      _showToast('Programme ' + label + ' supprimé');
+      var type = label.toLowerCase();
+      _renderAgendaProgList(type);
     })
     .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
   });
@@ -7961,6 +8021,7 @@ function openCAPWizard() {
   } catch(e) {}
 
   document.getElementById('capOverlay').classList.add('open');
+  _renderAgendaProgList('cap');
 
   if (CAP_STATE && CAP_STATE.sessions && CAP_STATE.sessions.length) {
     document.getElementById('capFormScreen').style.display  = 'none';
@@ -8381,6 +8442,7 @@ function _capExportToCalendar() {
     }
     if (btn) { btn.disabled = false; btn.textContent = 'Ajouter à l\'agenda →'; }
     renderCalendar();
+    _renderAgendaProgList('cap');
   })
   .catch(function(err) {
     if (statusEl) {
@@ -8833,6 +8895,7 @@ function openHSRWizard() {
   try { var saved = localStorage.getItem(patKey); if (saved) HSR_STATE = JSON.parse(saved); } catch(e) {}
 
   document.getElementById('hsrOverlay').classList.add('open');
+  _renderAgendaProgList('hsr');
 
   if (HSR_STATE && HSR_STATE.sessions && HSR_STATE.sessions.length) {
     document.getElementById('hsrFormScreen').style.display  = 'none';
@@ -9058,6 +9121,7 @@ function _hsrExportToCalendar() {
     }
     if (btn) { btn.disabled = false; btn.textContent = 'Ajouter à l\'agenda →'; }
     renderCalendar();
+    _renderAgendaProgList('hsr');
   })
   .catch(function(err) {
     if (statusEl) {
