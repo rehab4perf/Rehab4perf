@@ -4290,12 +4290,15 @@ function _loadProg(id, seanceId){
               if (!raw.rm_label)    raw.rm_label    = _hrPh.rm;
             }
           }
-          blocs = [];
         }
       }
       _currentProgRawDonnees = Array.isArray(raw) ? null : raw; // Préserver les métadonnées (type hsr/cap, ref1RM, …)
-      // HSR : prescription affichée dans le banner — le builder reste vide pour éviter l'erreur sur exos
-      if (raw && raw.type === 'hsr') { blocs = []; }
+      // HSR : vider les blocs uniquement s'ils sont invalides (renfo sans tableau exos)
+      // pour éviter le crash dans renderSession. Les blocs valides (avec exos) sont conservés.
+      if (raw && raw.type === 'hsr') {
+        var _hsrBlocInvalid = blocs.some(function(b){ return b.type !== 'cardio' && !Array.isArray(b.exos); });
+        if (_hsrBlocInvalid) blocs = [];
+      }
       var pnEl = document.getElementById('patientName');
       if(pnEl) pnEl.value = d.nom || '';
       renderSession();
