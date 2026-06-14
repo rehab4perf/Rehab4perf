@@ -499,6 +499,12 @@ function renderLib(q, typeFilter, subFilter, subFilter2){
     }
     return true;
   });
+  // Favoris toujours en tête de liste (stable sort)
+  visible.sort(function(a, b) {
+    var af = favs.has(a.id) ? 0 : 1;
+    var bf = favs.has(b.id) ? 0 : 1;
+    return af - bf;
+  });
   // Regroupement :
   // - Renfo sans subFilter → par mouvement (même si subFilter2 actif)
   // - Warmup / Automassage sans subFilter → par zone
