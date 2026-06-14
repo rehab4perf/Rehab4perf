@@ -7733,11 +7733,7 @@ function _capKmLabel(s, allure) {
 function _capBuildSessions(profile) {
   _capIdSeq = 0;
 
-  // Ajustement niveau selon durée d'arrêt
   var level = profile.level;
-  if (profile.dureeArret === '>6sem') {
-    level = level === 'avance' ? 'intermediaire' : 'debutant';
-  }
 
   // BIT : génération spécifique avec paliers +10% volume
   if (profile.patho === 'bit') return _capBITSessions(profile, level);
@@ -7822,7 +7818,6 @@ function _capGenerate() {
     objectiveMin:   parseInt(document.getElementById('capObjG').value),
     age:            _capChipVal('capAgeG'),
     seancesPerWeek: parseInt(document.getElementById('capSpwG').value),
-    dureeArret:     _capChipVal('capArretG'),
     allure:         isNaN(allureRaw) || allureRaw <= 0 ? null : allureRaw
   };
 
