@@ -8215,9 +8215,13 @@ function _capExportToCalendar() {
 }
 
 function _capReset() {
+  var patKey = (_progPatient ? _progPatient.id : 'anon');
   CAP_STATE = { profile: {}, sessions: [] };
-  try { localStorage.removeItem(R4P_KEYS.capState); } catch(e){}
-  renderCapBuilder();
+  try { localStorage.removeItem('r4p-cap-' + patKey); } catch(e){}
+  var fs = document.getElementById('capFormScreen');
+  var rs = document.getElementById('capResultScreen');
+  if (fs) fs.style.display = 'flex';
+  if (rs) rs.style.display = 'none';
 }
 
 /* ══ Panneau CAP dans le builder ════════════════════════════════════════════ */
