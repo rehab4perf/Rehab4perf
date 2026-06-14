@@ -518,6 +518,9 @@ var sbB = supabase.createClient(SUPA_URL_B, SUPA_KEY_B);
 var _bilanPatient   = null;
 var _currentBilanId = null;
 var _currentBilanDate = null; // date ISO (YYYY-MM-DD) du bilan actuellement chargé
+var _bilanReadOnly  = false;  // true quand le formulaire est en lecture seule
+var _suiviSnapshot  = null;   // snapshot des valeurs au début d'un bilan de suivi
+var _bilanIsSuivi   = false;  // true pendant la saisie d'un nouveau bilan de suivi
 var _bilanUid       = null;
 var _bilanModified  = false;   // true dès qu'une saisie est faite depuis le dernier save/load
 var _bilanHistoMode = false;   // true quand on consulte/édite un bilan historique (non-latest)
@@ -602,10 +605,56 @@ function _exitHistoMode(){
   if(btn && _bilanPatient) btn.textContent = '💾 Sauvegarder le bilan';
 }
 
+/* ── Mode lecture ────────────────────────────────────────── */
+function _enterReadOnlyMode(){
+  _bilanReadOnly = true;
+  var main = document.querySelector('main');
+  if(main) main.classList.add('bilan-readonly');
+  var saveBtn = document.getElementById('bilan-save-btn');
+  var editBtn = document.getElementById('bilan-edit-btn');
+  if(saveBtn) saveBtn.style.display = 'none';
+  if(editBtn) editBtn.style.display = 'flex';
+}
+
+function _exitReadOnlyMode(){
+  _bilanReadOnly = false;
+  var main = document.querySelector('main');
+  if(main) main.classList.remove('bilan-readonly');
+  var saveBtn = document.getElementById('bilan-save-btn');
+  var editBtn = document.getElementById('bilan-edit-btn');
+  if(saveBtn) saveBtn.style.display = '';
+  if(editBtn) editBtn.style.display = 'none';
+}
+
+/* ── Dialog "Modifier ce bilan" ─────────────────────────── */
+function editBilan(){
+  var dateLabel = _currentBilanDate ? _isoToReadable(_currentBilanDate) : '—';
+  var lbl = document.getElementById('modal-edit-date-label');
+  var ov  = document.getElementById('modal-confirm-edit');
+  if(lbl) lbl.textContent = 'le bilan du ' + dateLabel;
+  if(ov)  ov.classList.add('open');
+}
+
+function _editBilanConfirm(){
+  var ov = document.getElementById('modal-confirm-edit');
+  if(ov) ov.classList.remove('open');
+  _exitReadOnlyMode();
+  _bilanHistoMode = true;
+  var btn = document.getElementById('bilan-save-btn');
+  if(btn) btn.textContent = '💾 Enregistrer les modifications';
+  showToast('Mode édition — les modifications seront enregistrées à la date d\'origine');
+}
+
+function _editBilanCancel(){
+  var ov = document.getElementById('modal-confirm-edit');
+  if(ov) ov.classList.remove('open');
+}
+
 /* Bouton "↩ Revenir au bilan actuel" — recharge le bilan le plus récent */
 function exitHistoMode(){
   if(_bilanModified && !confirm('Quitter le mode consultation ? Les modifications non sauvegardées de ce bilan seront perdues.')) return;
   _exitHistoMode();
+  _exitReadOnlyMode();
   if(_allBilans && _allBilans.length){
     var latest = _allBilans[0];
     _currentBilanId   = latest.id;
@@ -616,6 +665,8 @@ function exitHistoMode(){
     _deserializeBilan(_buildMergedDonnees(_allBilans));
     _suppressDirty = false;
     _bilanModified = false;
+    _bilanIsSuivi  = false;
+    _suiviSnapshot = null;
     document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
     if(_allBilans.length >= 2){
       _prevDonnees = _allBilans[1].donnees || {};
@@ -624,6 +675,9 @@ function exitHistoMode(){
       _prevDonnees = null;
     }
     showToast('↩ Retour au bilan du ' + _isoToReadable(latest.date ? latest.date.split('T')[0] : ''));
+    // Revenir en mode lecture sur le bilan le plus récent
+    _bilanHistoMode = true;
+    _enterReadOnlyMode();
   } else {
     _resetBilanFields();
     if(_bilanPatient) _autofillPatientFields(_bilanPatient);
@@ -685,6 +739,9 @@ function _resetBilanFields(){
 
 function _resetAndLoadPatient(p){
   _exitHistoMode();
+  _exitReadOnlyMode();
+  _bilanIsSuivi  = false;
+  _suiviSnapshot = null;
   _resetBilanFields();
   _autofillPatientFields(p);
   _prevDonnees = null;
@@ -718,6 +775,9 @@ function _resetAndLoadPatient(p){
       var d = b.date ? b.date.split('-').reverse().join('/') : '—';
       _showPatientToast('Bilan du '+d+' chargé');
       _renderEvolutionPage();
+      // Passer en mode lecture : bilan existant
+      _bilanHistoMode = true;
+      _enterReadOnlyMode();
       // Rafraîchir le suivi rapide si l'onglet est déjà ouvert
       var srPg = document.getElementById('page-suivi-rapide');
       if(srPg && srPg.classList.contains('active')) _renderSuiviRapide();
@@ -1509,11 +1569,22 @@ function _renderEvolutionPage(){
     groups.forEach(function(grp){
       _chartCounter++;
       var id=_chartCounter;
-      var valsA=bilansAsc.map(function(b){var d=b.donnees||{};return grp.computeA?grp.computeA(d):parseFloat(d[grp.idA]||'');});
+      var valsA=bilansAsc.map(function(b){
+        var d=b.donnees||{};
+        // Bilan de suivi : respecter changed_fields pour éviter les faux points
+        var cf=d.changed_fields;
+        if(cf && grp.idA && cf.indexOf(grp.idA)===-1) return NaN;
+        return grp.computeA?grp.computeA(d):parseFloat(d[grp.idA]||'');
+      });
       var validA=valsA.filter(function(v){return !isNaN(v);});
       // Pour les graphiques dual (Atteint vs Sain), les deux côtés doivent avoir ≥2 valeurs
       if(grp.type==='dual'){
-        var valsB_check=bilansAsc.map(function(b){var d=b.donnees||{};return grp.computeB?grp.computeB(d):parseFloat(d[grp.idB]||'');});
+        var valsB_check=bilansAsc.map(function(b){
+          var d=b.donnees||{};
+          var cf=d.changed_fields;
+          if(cf && grp.idB && cf.indexOf(grp.idB)===-1) return NaN;
+          return grp.computeB?grp.computeB(d):parseFloat(d[grp.idB]||'');
+        });
         var validB_check=valsB_check.filter(function(v){return !isNaN(v);});
         if(validA.length<2||validB_check.length<2)return;
       } else {
@@ -1539,7 +1610,7 @@ function _renderEvolutionPage(){
       // Chart SVG + dual stats
       var chartSvg='', lastB_val=NaN, firstB_val=NaN, lsiHtml='';
       if(grp.type==='dual'){
-        var valsB=bilansAsc.map(function(b){var d=b.donnees||{};return grp.computeB?grp.computeB(d):parseFloat(d[grp.idB]||'');});
+        var valsB=bilansAsc.map(function(b){var d=b.donnees||{};var cf=d.changed_fields;if(cf&&grp.idB&&cf.indexOf(grp.idB)===-1)return NaN;return grp.computeB?grp.computeB(d):parseFloat(d[grp.idB]||'');});
         valsB.forEach(function(v){if(!isNaN(v)&&isNaN(firstB_val))firstB_val=v;});
         valsB.slice().reverse().forEach(function(v){if(!isNaN(v)&&isNaN(lastB_val))lastB_val=v;});
         if(!isNaN(lastA) && !isNaN(lastB_val) && Math.max(lastA,lastB_val)>0){
@@ -1943,16 +2014,32 @@ function saveBilan(){
   btn.disabled = true; btn.textContent = '⏳ Sauvegarde…';
   var donnees = _serializeBilan();
 
+  // Bilan de suivi : calculer les champs réellement modifiés (Option A — snapshot)
+  if(_bilanIsSuivi && _suiviSnapshot){
+    var _changedFields = [];
+    Object.keys(donnees).forEach(function(k){
+      var prev = _suiviSnapshot[k];
+      var curr = donnees[k];
+      var prevStr = (prev === undefined || prev === null) ? '' : String(prev);
+      var currStr = (curr === undefined || curr === null) ? '' : String(curr);
+      if(prevStr !== currStr) _changedFields.push(k);
+    });
+    if(_changedFields.length) donnees.changed_fields = _changedFields;
+  }
+
   /* ── Mode consultation : on patche le bilan historique à sa date originale ── */
   if(_bilanHistoMode && _currentBilanId){
     _sbRetry(function(){ return sbB.from('bilans').update({donnees:donnees}).eq('id', _currentBilanId).select().single(); })
       .then(function(res){
         btn.disabled = false;
-        if(res.error){ btn.textContent='💾 Mettre à jour ce bilan'; alert('Erreur : '+res.error.message); return; }
+        if(res.error){ btn.textContent='💾 Enregistrer les modifications'; alert('Erreur : '+res.error.message); return; }
         _bilanModified = false;
         _syncBilanDatesNotes();
         btn.textContent = '✓ Bilan mis à jour !';
-        setTimeout(function(){ btn.textContent='💾 Mettre à jour ce bilan'; }, 2500);
+        setTimeout(function(){
+          btn.textContent='💾 Sauvegarder le bilan';
+          _enterReadOnlyMode();
+        }, 2500);
         // Rafraîchir _allBilans
         sbB.from('bilans').select('*').eq('patient_id',_bilanPatient.id)
           .order('date',{ascending:false}).limit(50)
@@ -1998,10 +2085,15 @@ function saveBilan(){
         if(res.error){ btn.textContent='💾 Sauvegarder le bilan'; alert('Erreur : '+res.error.message); return; }
         _currentBilanId   = res.data.id;
         _currentBilanDate = res.data.date ? res.data.date.split('T')[0] : today;
-        _bilanModified = false;
+        _bilanModified  = false;
+        _bilanIsSuivi   = false;
+        _suiviSnapshot  = null;
         _syncBilanDatesNotes();
         btn.textContent = isNew ? '✓ Nouveau bilan enregistré !' : '✓ Sauvegardé !';
         setTimeout(function(){ btn.textContent='💾 Sauvegarder le bilan'; }, 2500);
+        // Passer en mode lecture après sauvegarde
+        _bilanHistoMode = true;
+        setTimeout(function(){ _enterReadOnlyMode(); }, 2600);
         // Rafraîchir les données d'évolution après sauvegarde
         sbB.from('bilans').select('*').eq('patient_id',_bilanPatient.id)
           .order('date',{ascending:false}).limit(50)
@@ -2268,9 +2360,13 @@ function loadBilan(id){
     if(res.error){ alert('Erreur : '+res.error.message); closeHistoModal(); return; }
     _currentBilanId   = res.data.id;
     _currentBilanDate = res.data.date ? res.data.date.split('T')[0] : null;
-    _deserializeBilan(res.data.donnees||{});
+    _deserializeBilan(_buildMergedDonnees(_allBilans.slice(_allBilans.findIndex(function(b){ return b.id === res.data.id; }))));
     closeHistoModal();
-    // Entrer en mode consultation (sauvegarde = patch à la date originale)
+    // Entrer en mode lecture (sauvegarde patche à la date originale via _bilanHistoMode)
+    _bilanHistoMode = true;
+    _bilanIsSuivi   = false;
+    _suiviSnapshot  = null;
+    _enterReadOnlyMode();
     _enterHistoMode(_currentBilanDate);
     // Mettre à jour deltas inline : trouver le bilan précédent dans _allBilans
     document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
@@ -2314,52 +2410,56 @@ function newBilanSuivi(){
     showToast('⚠️ Aucun bilan précédent — sauvegardez d\'abord le bilan initial.');
     return;
   }
-  var lastDate = _allBilans[0].date ? _allBilans[0].date.split('T')[0] : '';
+  var lastDate  = _allBilans[0].date ? _allBilans[0].date.split('T')[0] : '';
   var lastLabel = lastDate ? _isoToReadable(lastDate) : 'précédent';
-  if(!confirm(
-    'Créer un bilan de suivi ?\n\n'
-    +'✔ Conservé : anamnèse, dates clés, imagerie, objectifs, poids/taille, traitements\n'
-    +'✖ Effacé : EVA, douleur, ROM, tous les tests\n\n'
-    +'Contexte reporté depuis le bilan du '+lastLabel+'.\n'
-    +'Les données non sauvegardées seront perdues.'
-  )) return;
+  var body = document.getElementById('modal-suivi-body');
+  if(body) body.innerHTML = 'Tous les champs seront pré-remplis depuis le <strong>bilan du '+lastLabel+'</strong>.<br>'
+    +'Seules les valeurs que vous <strong>modifiez</strong> créeront un nouveau point dans l\'évolution.';
+  var ov = document.getElementById('modal-confirm-suivi');
+  if(ov) ov.classList.add('open');
+}
 
-  // Récupérer le contexte du dernier bilan sauvegardé
-  var lastDonnees = _allBilans[0].donnees || {};
+function _newBilanSuiviCancel(){
+  var ov = document.getElementById('modal-confirm-suivi');
+  if(ov) ov.classList.remove('open');
+}
 
-  // Tout effacer (quitter le mode consultation si actif)
+function _newBilanSuiviConfirm(){
+  var ov = document.getElementById('modal-confirm-suivi');
+  if(ov) ov.classList.remove('open');
+  if(!_allBilans || !_allBilans.length) return;
+
+  var lastDate  = _allBilans[0].date ? _allBilans[0].date.split('T')[0] : '';
+  var lastLabel = lastDate ? _isoToReadable(lastDate) : 'précédent';
+
+  // Pré-remplir TOUS les champs depuis le snapshot fusionné
   _exitHistoMode();
+  _exitReadOnlyMode();
   _currentBilanId = null;
-  _prevDonnees    = null;
+  _bilanHistoMode = false;
+  _bilanIsSuivi   = true;
+  _prevDonnees    = _allBilans[0].donnees || {};
   _resetBilanFields();
   document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
 
-  // Remettre identité patient (nom, prénom, dob, sexe)
-  _autofillPatientFields(_bilanPatient);
-
-  // Reporter les champs contextuels depuis le dernier bilan
-  _SUIVI_CARRY_FIELDS.forEach(function(id){
-    var val = lastDonnees[id];
-    if(val === undefined || val === null || val === '') return;
-    var el = document.getElementById(id);
-    if(!el) return;
-    if(el.type === 'checkbox' || el.type === 'radio') el.checked = !!val;
-    else el.value = val;
-  });
-
-  // Reconstruire les zones douloureuses depuis f-pain-zones restauré
+  // Charger toutes les valeurs du dernier bilan (snapshot fusionné)
+  var mergedDonnees = _buildMergedDonnees(_allBilans);
+  _deserializeBilan(mergedDonnees);
   try{ _parsePainZones(); }catch(ex){}
 
   // Date du bilan = aujourd'hui
+  var _dn = new Date();
+  var today = _dn.getFullYear()+'-'+String(_dn.getMonth()+1).padStart(2,'0')+'-'+String(_dn.getDate()).padStart(2,'0');
   var fd = document.getElementById('f-date');
-  if(fd){
-    var t = new Date();
-    fd.value = t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
-  }
+  if(fd){ fd.value = today; }
+
+  // Snapshot des valeurs héritées (pour détecter les changements au moment de la sauvegarde)
+  _suiviSnapshot = _serializeBilan();
 
   try{ updateAll(); }catch(ex){}
+  _bilanModified = false;
   showPage('infos');
-  showToast('📋 Bilan de suivi prêt — contexte reporté du '+lastLabel);
+  showToast('📋 Bilan de suivi — tous les champs pré-remplis du '+lastLabel);
 }
 
 function newBilan(){

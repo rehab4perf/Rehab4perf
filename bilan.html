@@ -200,6 +200,42 @@ body {
   color: #92400E; background: #FFFBEB; transition: all .12s;
 }
 .btn-exit-histo:hover { background: #FEF3C7; border-color: #D97706; }
+/* ── Mode lecture ──────────────────────────────────────────── */
+.bilan-readonly .page-content input:not([type=button]):not([type=submit]):not([type=checkbox]):not([type=radio]),
+.bilan-readonly .page-content select,
+.bilan-readonly .page-content textarea {
+  pointer-events: none;
+  background: var(--surface2);
+  color: var(--text2);
+}
+.bilan-readonly .page-content input[type=checkbox],
+.bilan-readonly .page-content input[type=radio] { pointer-events: none; }
+.bilan-readonly .page-content button:not(.page-nav button),
+.bilan-readonly .page-content [role=button] { pointer-events: none; opacity: .5; }
+.bilan-readonly .rom-bar-wrap { pointer-events: none; }
+.bilan-readonly .pain-svg { pointer-events: none; }
+.bilan-readonly-notice {
+  display: none;
+  margin: 0 0 10px;
+  padding: 7px 10px;
+  background: #EEF2FF;
+  border: 1px solid #C7D2FE;
+  border-radius: 6px;
+  font-size: .75rem;
+  color: #3730A3;
+  line-height: 1.4;
+}
+.bilan-readonly .bilan-readonly-notice { display: block; }
+.btn-edit-bilan {
+  display: none; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; padding: 8px 10px; border-radius: 6px;
+  border: 1.5px solid var(--accent); cursor: pointer;
+  font-family: inherit; font-size: .8rem; font-weight: 600; color: var(--accent2);
+  background: var(--accent-l); transition: all .12s;
+}
+.btn-edit-bilan:hover { background: var(--accent); color: #fff; }
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary:hover { background: var(--accent2); border-color: var(--accent2); }
 
 /* ─────────────────────────────────────────────────────────────
    ⚡ SUIVI RAPIDE
@@ -1364,8 +1400,10 @@ textarea { resize:none !important; overflow:hidden !important; }
 
   <div class="sidebar-save" id="sidebar-save-section">
     <div class="sidebar-save-patient" id="sb-save-patient">Aucun patient sélectionné</div>
+    <div class="bilan-readonly-notice">📖 Mode lecture — cliquez sur « Modifier ce bilan » pour corriger, ou créez un bilan de suivi.</div>
     <button class="btn-save-bilan" id="bilan-save-btn" onclick="saveBilan()">💾 Sauvegarder le bilan</button>
-    <button class="btn-suivi-bilan" id="bilan-suivi-btn" onclick="newBilanSuivi()" title="Efface les mesures, conserve le contexte du dossier">📋 Bilan de suivi</button>
+    <button class="btn-edit-bilan" id="bilan-edit-btn" onclick="editBilan()">✏️ Modifier ce bilan</button>
+    <button class="btn-suivi-bilan" id="bilan-suivi-btn" onclick="newBilanSuivi()" title="Pré-remplit tous les champs — seules vos modifications créent un nouveau point d'évolution">📋 Bilan de suivi</button>
     <button class="btn-history-bilan" onclick="openBilanHistory()">📂 Bilans précédents</button>
     <div class="histo-mode-banner" id="histo-mode-banner">
       <strong>📅 Mode consultation</strong>
@@ -3504,6 +3542,30 @@ textarea { resize:none !important; overflow:hidden !important; }
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeReset()">Annuler</button>
       <button class="btn btn-danger" onclick="doReset()">↺ Réinitialiser</button>
+    </div>
+  </div>
+</div>
+<!-- ── Modal : Modifier ce bilan (cas 2) ─────────────────── -->
+<div class="modal-overlay" id="modal-confirm-edit">
+  <div class="modal">
+    <h2>✏️ Modifier ce bilan</h2>
+    <p>Vous allez modifier <strong id="modal-edit-date-label">ce bilan</strong>.<br>
+    Les corrections seront enregistrées à la <strong>date d'origine</strong> du bilan, sans créer de nouveau point dans l'évolution.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="_editBilanCancel()">Annuler</button>
+      <button class="btn btn-primary" onclick="_editBilanConfirm()">✏️ Modifier</button>
+    </div>
+  </div>
+</div>
+<!-- ── Modal : Bilan de suivi ──────────────────────────────── -->
+<div class="modal-overlay" id="modal-confirm-suivi">
+  <div class="modal">
+    <h2>📋 Bilan de suivi</h2>
+    <p id="modal-suivi-body">Tous les champs seront pré-remplis depuis le dernier bilan.<br>
+    Seules les valeurs que vous <strong>modifiez</strong> créeront un nouveau point dans l'évolution.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="_newBilanSuiviCancel()">Annuler</button>
+      <button class="btn btn-primary" onclick="_newBilanSuiviConfirm()">📋 Créer le bilan de suivi</button>
     </div>
   </div>
 </div>
