@@ -7098,11 +7098,15 @@ function _escHtml(str) {
 /* ═══════════════════════════════════════════════════════════
    JOURNAL DE BORD
 ═══════════════════════════════════════════════════════════ */
-var _journalFilter = 'all';
+var _journalFilter  = 'all';
+var _journalSelMode = false;
+var _journalSelItems = new Set(); // "type:id"
 
 function openJournal() {
   if(!_progPatient){ _showToast('Sélectionnez un patient pour voir le journal.', true); return; }
   _journalFilter = 'all';
+  _journalSelMode = false;
+  _journalSelItems = new Set();
   document.querySelectorAll('.journal-filter-btn').forEach(function(b){ b.classList.remove('active'); });
   var all = document.getElementById('jf-all');
   if(all) all.classList.add('active');
@@ -7111,7 +7115,95 @@ function openJournal() {
 }
 
 function closeJournal() {
+  _journalSelMode = false;
+  _journalSelItems = new Set();
   document.getElementById('journalOverlay').classList.remove('open');
+}
+
+function _toggleJournalSel() {
+  _journalSelMode = !_journalSelMode;
+  _journalSelItems = new Set();
+  var btn = document.getElementById('journalSelBtn');
+  if(btn) {
+    btn.textContent = _journalSelMode ? '✕ Annuler' : '☑ Sélectionner';
+    btn.classList.toggle('active', _journalSelMode);
+  }
+  _renderJournal();
+}
+
+function _journalSelToggle(key) {
+  if(_journalSelItems.has(key)) _journalSelItems.delete(key);
+  else _journalSelItems.add(key);
+  _renderJournal();
+}
+
+function _renderJournalSelBar() {
+  var bar = document.getElementById('journalSelBar');
+  var txt = document.getElementById('journalSelBarTxt');
+  if(!bar) return;
+  var n = _journalSelItems.size;
+  if(!_journalSelMode || n === 0) { bar.classList.remove('visible'); return; }
+  bar.classList.add('visible');
+  if(txt) txt.textContent = n + ' élément' + (n > 1 ? 's' : '') + ' sélectionné' + (n > 1 ? 's' : '');
+}
+
+function _journalSelDeleteAll() {
+  var n = _journalSelItems.size;
+  if(!n) return;
+  _confirmDialog({
+    id: 'cd-journal-sel-del',
+    emoji: '🗑️',
+    title: 'Supprimer ' + n + ' élément' + (n > 1 ? 's' : '') + ' ?',
+    body: 'Cette action est irréversible.',
+    confirmLabel: 'Supprimer',
+    confirmColor: '#ef4444'
+  }, function() {
+    var seanceIds = [], noteIds = [];
+    _journalSelItems.forEach(function(key) {
+      var parts = key.split(':');
+      if(parts[0] === 'seance') seanceIds.push(parts[1]);
+      else noteIds.push(parts[1]);
+    });
+
+    var promises = [];
+
+    if(seanceIds.length) {
+      var progIds = seanceIds.map(function(id) {
+        var ev = _cloudCalEvents.find(function(e){ return String(e.id) === id; });
+        return ev ? ev.programme_id : null;
+      }).filter(Boolean);
+      promises.push(
+        _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees?id=in.(' + seanceIds.join(',') + ')', {
+          method: 'DELETE', headers: _sbHeaders()
+        }).then(function() {
+          progIds.forEach(function(pid){ _deleteProgIfOrphan(pid); });
+        })
+      );
+    }
+
+    if(noteIds.length) {
+      noteIds.forEach(function(noteId) {
+        var note = _calNotes.find(function(nn){ return nn.id === noteId; });
+        if(!note) return;
+        if(note.type === 'patient')  _deletePatientMsg(noteId);
+        if(note.type === 'clinique') _deleteClinicalNote(noteId);
+        _calNotes = _calNotes.filter(function(nn){ return nn.id !== noteId; });
+      });
+      _persistCalNotes();
+    }
+
+    Promise.all(promises).then(function() {
+      _journalSelMode = false;
+      _journalSelItems = new Set();
+      var btn = document.getElementById('journalSelBtn');
+      if(btn){ btn.textContent = '☑ Sélectionner'; btn.classList.remove('active'); }
+      renderCalendar();
+      _renderJournal();
+      _showToast('✓ ' + n + ' élément' + (n > 1 ? 's supprimés' : ' supprimé'));
+    }).catch(function(err) {
+      _showToast('✗ Erreur : ' + (err && err.message ? err.message : 'réessayez'));
+    });
+  });
 }
 
 function _setJournalFilter(f) {
@@ -7211,30 +7303,47 @@ function _renderJournal() {
     var jBadge = jPlus !== null ? '<span class="journal-item-jplus">J'+(jPlus>=0?'+':'')+jPlus+'</span>' : '';
     var rpeBadge = (item.type === 'seance' && item.rpe) ? '<span class="journal-item-rpe">RPE '+escH(String(item.rpe))+'</span>' : '';
 
-    // Action au clic
-    var onclick;
-    if(item.type === 'seance') {
-      onclick = '_openChipInBuilder(\''+escH(String(item.progId))+'\',\''+escH(item.date)+'\',\''+escH(String(item.id))+'\');closeJournal()';
-    } else {
-      onclick = 'closeJournal();setTimeout(function(){_openCalNoteView(\''+escH(String(item.id))+'\');},120)';
-    }
+    var selKey  = (item.type === 'seance' ? 'seance' : 'note') + ':' + String(item.id);
+    var isSel   = _journalSelItems.has(selKey);
 
-    var delArgs = item.type === 'seance'
-      ? '\'seance\',\''+escH(String(item.id))+'\',\''+escH(String(item.progId||''))+'\''
-      : '\'note\',\''+escH(String(item.id))+'\',\'\'';
-    var delBtn = '<button class="journal-item-del" onclick="event.stopPropagation();_journalDeleteItem('+delArgs+')" title="Supprimer">×</button>';
-    html += '<div class="journal-item" onclick="'+onclick+'">'
-      +'<span class="journal-item-icon">'+icon+'</span>'
-      +'<div class="journal-item-body">'
-        +'<div class="journal-item-title">'+escH(item.nom)+'</div>'
-        +(metaHtml ? '<div class="journal-item-meta">'+metaHtml+rpeBadge+'</div>' : '')
-      +'</div>'
-      +'<div class="journal-item-date">'+escH(dayStr)+jBadge+'</div>'
-      +delBtn
-      +'</div>';
+    if(_journalSelMode) {
+      // Mode sélection : clic = toggle, pas de bouton ×
+      var checkMark = isSel ? '✓' : '';
+      html += '<div class="journal-item'+(isSel?' sel':'')+'" onclick="_journalSelToggle(\''+escH(selKey)+'\')">'
+        +'<span class="journal-item-check">'+checkMark+'</span>'
+        +'<span class="journal-item-icon">'+icon+'</span>'
+        +'<div class="journal-item-body">'
+          +'<div class="journal-item-title">'+escH(item.nom)+'</div>'
+          +(metaHtml ? '<div class="journal-item-meta">'+metaHtml+rpeBadge+'</div>' : '')
+        +'</div>'
+        +'<div class="journal-item-date">'+escH(dayStr)+jBadge+'</div>'
+        +'</div>';
+    } else {
+      // Mode normal : clic = ouvrir, bouton × pour supprimer
+      var onclick;
+      if(item.type === 'seance') {
+        onclick = '_openChipInBuilder(\''+escH(String(item.progId))+'\',\''+escH(item.date)+'\',\''+escH(String(item.id))+'\');closeJournal()';
+      } else {
+        onclick = 'closeJournal();setTimeout(function(){_openCalNoteView(\''+escH(String(item.id))+'\');},120)';
+      }
+      var delArgs = item.type === 'seance'
+        ? '\'seance\',\''+escH(String(item.id))+'\',\''+escH(String(item.progId||''))+'\''
+        : '\'note\',\''+escH(String(item.id))+'\',\'\'';
+      var delBtn = '<button class="journal-item-del" onclick="event.stopPropagation();_journalDeleteItem('+delArgs+')" title="Supprimer">×</button>';
+      html += '<div class="journal-item" onclick="'+onclick+'">'
+        +'<span class="journal-item-icon">'+icon+'</span>'
+        +'<div class="journal-item-body">'
+          +'<div class="journal-item-title">'+escH(item.nom)+'</div>'
+          +(metaHtml ? '<div class="journal-item-meta">'+metaHtml+rpeBadge+'</div>' : '')
+        +'</div>'
+        +'<div class="journal-item-date">'+escH(dayStr)+jBadge+'</div>'
+        +delBtn
+        +'</div>';
+    }
   });
 
   body.innerHTML = html;
+  _renderJournalSelBar();
 }
 
 function _journalDeleteItem(type, id, progId) {
