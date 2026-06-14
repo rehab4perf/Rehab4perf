@@ -4268,9 +4268,30 @@ function _loadProg(id, seanceId){
       _currentProgId = d.id;
       // Rétrocompat : donnees peut être un tableau (ancien) ou {blocs,notes} (nouveau)
       var raw = d.donnees || [];
-      _currentProgRawDonnees = Array.isArray(raw) ? null : raw; // Préserver les métadonnées (type hsr/cap, ref1RM, …)
       if(Array.isArray(raw)){ blocs = raw; _notes = ''; _builderLinkedPhase = null; }
       else { blocs = raw.blocs || []; _notes = raw.notes || ''; _builderLinkedPhase = raw.linkedPhase || null; }
+      // Rétrocompat HSR : si le programme a perdu son type:'hsr' (ancien save écrasant),
+      // le détecter via le nom de la séance calendrier et reconstruire les métadonnées de phase.
+      if (!Array.isArray(raw) && !raw.type && seanceId) {
+        var _retroEv = (_cloudCalEvents || []).filter(function(ev){ return ev.id === seanceId; })[0];
+        if (_retroEv && _retroEv.nom && _retroEv.nom.indexOf('HSR —') === 0) {
+          raw = Object.assign({}, raw, { type: 'hsr' });
+          var _hrM = _retroEv.nom.match(/HSR — ([\w-]+) · /);
+          if (_hrM && typeof HSR_PHASES !== 'undefined') {
+            var _hrPh = HSR_PHASES.filter(function(p){ return p.key === _hrM[1]; })[0];
+            if (_hrPh) {
+              if (!raw.pct)         raw.pct         = _hrPh.pct;
+              if (!raw.sets)        raw.sets        = _hrPh.sets;
+              if (!raw.reps)        raw.reps        = _hrPh.reps;
+              if (!raw.phase_key)   raw.phase_key   = _hrPh.key;
+              if (!raw.phase_label) raw.phase_label = _hrPh.w + ' · ' + _hrPh.rm;
+              if (!raw.rm_label)    raw.rm_label    = _hrPh.rm;
+            }
+          }
+          blocs = [];
+        }
+      }
+      _currentProgRawDonnees = Array.isArray(raw) ? null : raw; // Préserver les métadonnées (type hsr/cap, ref1RM, …)
       // HSR : prescription affichée dans le banner — le builder reste vide pour éviter l'erreur sur exos
       if (raw && raw.type === 'hsr') { blocs = []; }
       var pnEl = document.getElementById('patientName');

@@ -977,8 +977,8 @@ function openProgModal(progId, seanceId){
     _loadPainRatings();
     _loadSessionNote();
     var donnees = prog.donnees || {};
-    var isCap = donnees.type === 'cap';
-    var isHsr = donnees.type === 'hsr';
+    var isCap = donnees.type === 'cap' || (prog.nom && prog.nom.indexOf('CAP —') === 0);
+    var isHsr = donnees.type === 'hsr' || (prog.nom && prog.nom.indexOf('HSR —') === 0);
     var html = isCap ? _buildCapProgHTML(prog) : (isHsr ? _buildHsrProgHTML(prog) : buildProgHTML(prog));
     if(seanceId) html += buildSessionNoteCard() + ((isCap || isHsr) ? _buildCapPainCard(seanceId, existing) : buildRpeCard(seanceId, blocs, existing));
     document.getElementById('progModalBody').innerHTML = html;
