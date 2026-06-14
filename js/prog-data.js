@@ -2521,6 +2521,7 @@ window.addEventListener('message', function(e){
   if(e.data && e.data.type==='r4p-patient-selected'){
     _progPatient = _normalizePatient(e.data.patient);
     _currentProgId = null;
+    _currentProgRawDonnees = null;
     try { localStorage.setItem(R4P_KEYS.PATIENT, e.data.patient ? JSON.stringify(_progPatient) : ''); } catch(ex){}
     // Récupérer uid et token depuis le payload JWT envoyé par le parent
     if(e.data.auth && e.data.auth.access_token){
@@ -2552,6 +2553,7 @@ var sbP = supabase.createClient(SUPA_URL_P, SUPA_KEY_P);
 var _progPatient    = null;
 var _currentProgId  = null;
 var _currentSeanceId = null; // ID de la séance calendrier ouverte dans le builder (null si chargée depuis l'historique)
+var _currentProgRawDonnees = null; // Métadonnées du programme chargé (type, ref1RM, pct, etc.) — préservées au save
 var _progUid        = null;
 var _progToken     = null;
 var _userRole      = null; // 'admin' | 'lecteur' | null
@@ -2738,6 +2740,13 @@ function saveProgToCloud(){
   var nomProg = (document.getElementById('patientName')||{}).value || ('Programme du '+new Date().toLocaleDateString('fr-FR'));
   var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), notes: getNotes() };
   if(_builderLinkedPhase) donnees.linkedPhase = _builderLinkedPhase;
+  // Préserver les métadonnées HSR / CAP (type, ref1RM, pct, sets, reps, phase_key, exercice, …)
+  if(_currentProgRawDonnees && _currentProgRawDonnees.type){
+    var _skipKeys = {blocs:1, notes:1, linkedPhase:1};
+    Object.keys(_currentProgRawDonnees).forEach(function(k){
+      if(!_skipKeys[k]) donnees[k] = _currentProgRawDonnees[k];
+    });
+  }
   var today = new Date().toISOString().split('T')[0];
 
   // Si ce programme vient d'une séance calendrier, vérifier localement (dans _cloudCalEvents déjà chargé)
@@ -2808,6 +2817,13 @@ function _autoSavePhaseLinkage(){
   if(!_currentProgId || !_progPatient || !_progUid || !_progToken) return;
   var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), notes: getNotes() };
   if(_builderLinkedPhase) donnees.linkedPhase = _builderLinkedPhase;
+  // Préserver les métadonnées HSR / CAP
+  if(_currentProgRawDonnees && _currentProgRawDonnees.type){
+    var _skipPhase = {blocs:1, notes:1, linkedPhase:1};
+    Object.keys(_currentProgRawDonnees).forEach(function(k){
+      if(!_skipPhase[k]) donnees[k] = _currentProgRawDonnees[k];
+    });
+  }
   _fetchRetry(SUPA_URL_P + '/rest/v1/programmes?id=eq.' + _currentProgId, {
     method: 'PATCH',
     headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
@@ -4252,6 +4268,7 @@ function _loadProg(id, seanceId){
       _currentProgId = d.id;
       // Rétrocompat : donnees peut être un tableau (ancien) ou {blocs,notes} (nouveau)
       var raw = d.donnees || [];
+      _currentProgRawDonnees = Array.isArray(raw) ? null : raw; // Préserver les métadonnées (type hsr/cap, ref1RM, …)
       if(Array.isArray(raw)){ blocs = raw; _notes = ''; _builderLinkedPhase = null; }
       else { blocs = raw.blocs || []; _notes = raw.notes || ''; _builderLinkedPhase = raw.linkedPhase || null; }
       // HSR : prescription affichée dans le banner — le builder reste vide pour éviter l'erreur sur exos
@@ -4295,6 +4312,7 @@ function _deleteProg(id, nom){
       // Si le programme supprimé était l'actif, réinitialiser
       if(_currentProgId === id){
         _currentProgId = null;
+        _currentProgRawDonnees = null;
         blocs = [];
         renderSession();
         var btn = document.getElementById('prog-cloud-save-btn');
@@ -4309,6 +4327,7 @@ function _deleteProg(id, nom){
 function _newProgVierge(){
   if(!confirm('Créer un nouveau programme vierge ? (le programme actuel non sauvegardé sera perdu)')) return;
   _currentProgId = null;
+  _currentProgRawDonnees = null;
   blocs = [];
   renderSession();
   var overlay = document.getElementById('progHistoOverlay');
