@@ -2100,14 +2100,17 @@ function _doShare(mode) {
     ? base + '&mode=kine' + (_progUid ? '&prat=' + _progUid : '')
     : base;
   var label = mode === 'kine' ? '🩺 Lien kiné copié !' : '📅 Lien patient copié !';
-  if(navigator.share){
-    navigator.share({ url: link }).catch(function(){});
-  } else if(navigator.clipboard && navigator.clipboard.writeText){
+  // Toujours copier dans le presse-papier, quelle que soit la plateforme
+  if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(link)
       .then(function(){ _showToast(label); })
       .catch(function(){ prompt('Copie ce lien :', link); });
   } else {
     prompt('Copie ce lien :', link);
+  }
+  // Sur mobile : ouvrir aussi le partage natif (en plus du clipboard)
+  if(navigator.share && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)){
+    navigator.share({ url: link }).catch(function(){});
   }
 }
 
