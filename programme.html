@@ -663,12 +663,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .cap-bb-consignes { list-style:none; margin:0 0 6px; padding:0; display:flex; flex-direction:column; gap:3px; }
 .cap-bb-consignes li { display:flex; gap:6px; font-size:.73rem; color:#134e4a; }
 .cap-bb-consignes li::before { content:'›'; color:#0d9488; flex-shrink:0; }
-.cap-bb-paliers-btn {
-  width:100%; margin-top:8px; padding:7px 12px; background:#0d9488; color:#fff;
-  border:none; border-radius:7px; font-size:.8rem; font-weight:600; cursor:pointer;
-  font-family:inherit; transition:background .15s; text-align:left;
-}
-.cap-bb-paliers-btn:hover { background:#0f766e; }
 .cap-bb-toggle { background:none; border:none; cursor:pointer; font-size:.7rem; color:#0d9488; padding:0; font-family:inherit; text-decoration:underline; text-underline-offset:2px; }
 
 #builder-proto-banner {
@@ -1690,6 +1684,8 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .journal-item-title { font-size:.82rem; font-weight:600; color:var(--text-dk); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .journal-item-meta { font-size:.72rem; color:#9D9B96; margin-top:1px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
 .journal-item-date { font-size:.72rem; color:#6B6860; font-weight:500; white-space:nowrap; flex-shrink:0; text-align:right; }
+.journal-item-del { flex-shrink:0; background:none; border:none; color:#C0BCB4; font-size:1rem; line-height:1; cursor:pointer; padding:2px 4px; border-radius:4px; transition:color .12s; }
+.journal-item-del:hover { color:#ef4444; }
 .journal-item-jplus { font-size:.68rem; font-weight:700; color:var(--accent); background:#EEF3FB; border-radius:4px; padding:1px 5px; white-space:nowrap; }
 .journal-item-rpe { font-size:.68rem; font-weight:700; color:#fff; background:var(--accent2); border-radius:4px; padding:1px 5px; white-space:nowrap; }
 .journal-empty { text-align:center; color:#9D9B96; font-style:italic; padding:40px 20px; font-size:.85rem; }
@@ -2244,7 +2240,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 <div class="touch-sheet" id="touchSheet">
   <div class="touch-sheet-title" id="touchSheetTitle">Séance</div>
   <button class="touch-sheet-btn" onclick="touchSheetOpen()">📋 Ouvrir / modifier</button>
-  <button class="touch-sheet-btn" id="touchSheetCapPaliersBtn" style="display:none;color:#0d9488;" onclick="touchSheetCapPaliers()">🔧 Créer paliers intermédiaires</button>
   <button class="touch-sheet-btn" onclick="touchSheetMove()">↔️ Déplacer vers…</button>
   <button class="touch-sheet-btn" onclick="touchSheetDuplicate()">📄 Dupliquer vers…</button>
   <button class="touch-sheet-btn danger" onclick="touchSheetDelete()">🗑 Supprimer</button>
@@ -3015,7 +3010,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .cap-dot-done    { background:#22C55E; }
 .cap-dot-painful { background:#EF4444; }
 .cap-sess-info { flex:1; min-width:0; }
-.cap-inter-badge { display:inline-block; background:#F59E0B; color:#fff; font-size:.62rem; font-weight:700; border-radius:3px; padding:1px 5px; margin-bottom:3px; }
 .cap-sess-label { font-size:.81rem; color:var(--text); font-weight:500; }
 .cap-sess-right { flex-shrink:0; }
 .cap-sess-btns { display:flex; gap:5px; }

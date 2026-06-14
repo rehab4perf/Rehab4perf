@@ -744,14 +744,10 @@ function _buildDayChips(dateStr, cellDate){
         var capEvtAttrs = _isTouchDevice
           ? ' ontouchstart="_chipTouchStart(event,\''+ev.id+'\')" ontouchmove="_chipTouchMove(event)" ontouchend="_chipTouchEnd(event,\''+ev.id+'\')"'
           : ' draggable="true" onclick="event.stopPropagation();_openChipInBuilder(\''+ev.programme_id+'\',\''+dateStr+'\',\''+ev.id+'\')" ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"';
-        var paliersBtn = (!_isTouchDevice && painScore !== null && painScore >= 3)
-          ? '<button class="cal-chip-del" style="color:rgba(255,255,255,.85);font-size:.62rem;padding:0 3px;" onclick="event.stopPropagation();_capCreerPaliers(\''+ev.id+'\')" title="Créer paliers intermédiaires">🔧</button>'
-          : '';
         return '<div class="cal-session-chip" style="background:'+capBg+';color:#fff;cursor:grab;" title="'+escH(nom)+'"'
           + capEvtAttrs + '>'
           + '<button class="cal-chip-more" ontouchend="event.stopPropagation();event.preventDefault();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')">⋮</button>'
           + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">🏃 '+escH(capLabel.length>14?capLabel.slice(0,14)+'…':capLabel)+painBadge+'</span>'
-          + paliersBtn
           + '<button class="cal-chip-del" style="color:rgba(255,255,255,.7)" onclick="event.stopPropagation();removeCalEventCloud(\''+ev.id+'\')">×</button>'
           + '</div>';
       }
@@ -1780,14 +1776,6 @@ function _showTouchActionSheet(evId, progId, dateStr, nom){
   _touchSheetData = {evId: evId, progId: progId, dateStr: dateStr};
   var title = document.getElementById('touchSheetTitle');
   if(title) title.textContent = nom || 'Séance';
-  // Afficher/masquer le bouton Créer paliers selon la nature du chip CAP
-  var capPaliersBtn = document.getElementById('touchSheetCapPaliersBtn');
-  if(capPaliersBtn) {
-    var meta = _chipTouchMeta[evId];
-    var isCap = meta && meta.nom && meta.nom.indexOf('CAP —') === 0;
-    var isRed = meta && meta.painScore !== null && meta.painScore >= 3;
-    capPaliersBtn.style.display = (isCap && isRed) ? 'block' : 'none';
-  }
   document.getElementById('touchSheet').style.display = 'block';
   document.getElementById('touchSheetOverlay').style.display = 'block';
   // Bloquer la fermeture pendant 350ms (lâcher du doigt génère un clic fantôme sur l'overlay)
@@ -1843,13 +1831,6 @@ function touchSheetDelete(){
         }
       });
   });
-}
-
-function touchSheetCapPaliers(){
-  if(!_touchSheetData) return;
-  var evId = _touchSheetData.evId;
-  closeTouchSheet();
-  _capCreerPaliers(evId);
 }
 
 /* ── Modale de confirmation avant suppression d'une séance ── */
@@ -7238,6 +7219,10 @@ function _renderJournal() {
       onclick = 'closeJournal();setTimeout(function(){_openCalNoteView(\''+escH(String(item.id))+'\');},120)';
     }
 
+    var delArgs = item.type === 'seance'
+      ? '\'seance\',\''+escH(String(item.id))+'\',\''+escH(String(item.progId||''))+'\''
+      : '\'note\',\''+escH(String(item.id))+'\',\'\'';
+    var delBtn = '<button class="journal-item-del" onclick="event.stopPropagation();_journalDeleteItem('+delArgs+')" title="Supprimer">×</button>';
     html += '<div class="journal-item" onclick="'+onclick+'">'
       +'<span class="journal-item-icon">'+icon+'</span>'
       +'<div class="journal-item-body">'
@@ -7245,10 +7230,38 @@ function _renderJournal() {
         +(metaHtml ? '<div class="journal-item-meta">'+metaHtml+rpeBadge+'</div>' : '')
       +'</div>'
       +'<div class="journal-item-date">'+escH(dayStr)+jBadge+'</div>'
+      +delBtn
       +'</div>';
   });
 
   body.innerHTML = html;
+}
+
+function _journalDeleteItem(type, id, progId) {
+  _confirmDialog({
+    id: 'cd-journal-del',
+    emoji: '🗑️',
+    title: type === 'seance' ? 'Supprimer cette séance ?' : 'Supprimer cette note ?',
+    body: 'Cette action est irréversible.',
+    confirmLabel: 'Supprimer'
+  }, function() {
+    if (type === 'seance') {
+      _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees?id=eq.' + id, {
+        method: 'DELETE', headers: _sbHeaders()
+      }).then(function(r) {
+        if (r.ok) {
+          if (progId) _deleteProgIfOrphan(progId);
+          renderCalendar();
+          _renderJournal();
+          _showToast('Séance supprimée');
+        }
+      });
+    } else {
+      _deleteCalNote(id);
+      _renderJournal();
+      _showToast('Note supprimée');
+    }
+  });
 }
 
 // ── Sync périodique des notes cliniques (60 s) ──
@@ -7514,7 +7527,7 @@ function _capI(phase, reps, run, walk) {
     id: _capMkId(), phase: phase, type: 'interval',
     reps: reps, runMin: run, walkMin: walk, durationMin: null,
     label: reps + '×(' + _capFmtMin(run) + 'C / ' + _capFmtMin(walk) + 'M)',
-    status: 'pending', painScore: null, isIntermediate: false
+    status: 'pending', painScore: null
   };
 }
 
@@ -7527,7 +7540,7 @@ function _capC(phase, dur) {
     id: _capMkId(), phase: phase, type: 'continuous',
     reps: null, runMin: null, walkMin: null, durationMin: d,
     label: lbl + ' continu',
-    status: 'pending', painScore: null, isIntermediate: false
+    status: 'pending', painScore: null
   };
 }
 
@@ -7791,13 +7804,11 @@ function _capRender() {
 
 function _capSessHtml(s) {
   var cls = 'cap-sess';
-  if (s.isIntermediate) cls += ' cap-sess-inter';
   if (s.status === 'done')    cls += ' cap-sess-done';
   if (s.status === 'painful') cls += ' cap-sess-pain';
 
   var allure = CAP_STATE && CAP_STATE.profile && CAP_STATE.profile.allure;
   var dot    = '<div class="cap-sess-dot cap-dot-' + s.status + '"></div>';
-  var badge  = s.isIntermediate ? '<div class="cap-inter-badge">Palier intermédiaire</div>' : '';
   var label  = '<div class="cap-sess-label">' + s.label + _capKmLabel(s, allure) + '</div>';
 
   var actions = '';
@@ -7822,7 +7833,7 @@ function _capSessHtml(s) {
 
   return '<div class="' + cls + '">'
     + dot
-    + '<div class="cap-sess-info">' + badge + label + '</div>'
+    + '<div class="cap-sess-info">' + label + '</div>'
     + '<div class="cap-sess-right">' + actions + '</div>'
     + '</div>';
 }
@@ -7854,87 +7865,63 @@ function _capConfirmPain(score) {
   s.status    = 'painful';
   s.painScore = score;
 
-  // Régression adaptative si seuil dépassé et pas en première séance
-  var seuil = (CAP_PATHO_DB[CAP_STATE.profile.patho] || CAP_PATHO_DB.aucune).seuil;
-  if (score >= seuil && idx > 0) {
-    _capAdaptOnPain(idx);
-  }
+  _capAdaptNext(idx, score);
 
   _capSave();
   _capRender();
 }
 
-/* ── Régression adaptative ── */
-function _capAdaptOnPain(idx) {
+/* ── Adaptation automatique de la prochaine séance selon la douleur ── */
+function _capAdaptNext(idx, score) {
   var sessions = CAP_STATE.sessions;
-  var prev     = sessions[idx - 1];
-  var painful  = sessions[idx];
+  var seuil    = (CAP_PATHO_DB[CAP_STATE.profile.patho] || CAP_PATHO_DB.aucune).seuil;
 
-  var inserts = _capInterpolate(prev, painful);
-  if (!inserts.length) return;
+  // Trouver la prochaine séance pending
+  var nextIdx = -1;
+  for (var i = idx + 1; i < sessions.length; i++) {
+    if (sessions[i].status === 'pending') { nextIdx = i; break; }
+  }
+  if (nextIdx === -1) return;
 
-  // Insérer avant la séance douloureuse
-  Array.prototype.splice.apply(sessions, [idx, 0].concat(inserts));
-
-  // Remettre la séance douloureuse en "à faire" pour qu'elle soit retentée
-  var newIdx = idx + inserts.length;
-  sessions[newIdx].status    = 'pending';
-  sessions[newIdx].painScore = null;
-
-  // Recalculer les semaines après insertion
-  var spw = CAP_STATE.profile.seancesPerWeek;
-  sessions.forEach(function(s, i) { s.week = Math.floor(i / spw) + 1; });
-}
-
-/* ── Interpolation entre deux séances ── */
-function _capInterpolate(prev, next) {
-  var out = [];
-
-  if (prev.type === 'interval' && next.type === 'interval') {
-
-    if (prev.runMin === next.runMin) {
-      // Même durée intervalle, différence de reps → point médian
-      var midReps = Math.round((prev.reps + next.reps) / 2);
-      if (midReps !== prev.reps && midReps !== next.reps) {
-        var s = _capI(prev.phase, midReps, prev.runMin, prev.walkMin);
-        s.isIntermediate = true;
-        out.push(s);
-      }
-
-    } else if (prev.runMin < next.runMin) {
-      // Transition vers intervalle plus long :
-      // 1. Plus de reps au runMin précédent
-      var moreReps = prev.reps + Math.max(1, Math.round((next.reps - prev.reps) / 2));
-      var s1 = _capI(prev.phase, moreReps, prev.runMin, prev.walkMin);
-      s1.isIntermediate = true;
-      out.push(s1);
-      // 2. Peu de reps au nouveau runMin
-      var fewReps = Math.max(2, Math.round(next.reps * 0.6));
-      if (fewReps < next.reps) {
-        var s2 = _capI(next.phase, fewReps, next.runMin, next.walkMin);
-        s2.isIntermediate = true;
-        out.push(s2);
-      }
-    }
-
-  } else if (prev.type === 'interval' && next.type === 'continuous') {
-    // Transition interval → continu : séance intermédiaire à ~70% de la durée cible
-    var dur = Math.max(10, Math.round(next.durationMin * 0.7));
-    var sc = _capC(next.phase, dur);
-    sc.isIntermediate = true;
-    out.push(sc);
-
-  } else if (prev.type === 'continuous' && next.type === 'continuous') {
-    // Ramp-up trop rapide : point médian
-    var midDur = Math.round((prev.durationMin + next.durationMin) / 2);
-    if (midDur !== prev.durationMin && midDur !== next.durationMin) {
-      var sc2 = _capC(prev.phase, midDur);
-      sc2.isIntermediate = true;
-      out.push(sc2);
-    }
+  var template;
+  if (score > seuil) {
+    // Régression : reprendre la séance précédente
+    template = idx > 0 ? sessions[idx - 1] : sessions[idx];
+  } else if (score === seuil) {
+    // Répétition : refaire la même séance
+    template = sessions[idx];
+  } else {
+    // En dessous du seuil : programme inchangé
+    return;
   }
 
-  return out;
+  // Copier le contenu du template dans la prochaine séance (on garde id/date/seance_id)
+  var next = sessions[nextIdx];
+  var updated = JSON.parse(JSON.stringify(template));
+  updated.id        = next.id;
+  updated.seance_id = next.seance_id;
+  updated.prog_id   = next.prog_id;
+  updated.date      = next.date;
+  updated.week      = next.week;
+  updated.status    = 'pending';
+  updated.painScore = null;
+  sessions[nextIdx] = updated;
+
+  // Mettre à jour le programme dans Supabase si la séance est déjà dans l'agenda
+  if (updated.seance_id && updated.prog_id) {
+    var bloc = _capSessionToCardioBloc(updated, CAP_STATE.profile);
+    _fetchRetry(SUPA_URL_P + '/rest/v1/programmes?id=eq.' + updated.prog_id, {
+      method: 'PATCH',
+      headers: _sbHeaders(),
+      body: JSON.stringify({
+        nom: 'CAP — ' + updated.label,
+        donnees: {
+          type: 'cap', session: updated, profile: CAP_STATE.profile,
+          blocs: [bloc]
+        }
+      })
+    }).catch(function(e) { console.warn('CAP adapt patch error:', e); });
+  }
 }
 
 /* ── CAP → Agenda : calcul des dates ── */
@@ -8117,139 +8104,6 @@ function _capExportToCalendar() {
   });
 }
 
-/* ── Créer des paliers intermédiaires depuis l'agenda (après douleur patient) ── */
-function _capCreerPaliers(seanceId) {
-  if (!_progPatient) { _showToast('Sélectionnez un patient.'); return; }
-  if (!CAP_STATE || !CAP_STATE.sessions || !CAP_STATE.sessions.length) {
-    alert('Programme CAP introuvable pour ce patient.\nOuvrez le Calculateur CAP pour le recharger.');
-    return;
-  }
-
-  // Trouver la séance douloureuse par seance_id
-  var idx = -1;
-  CAP_STATE.sessions.forEach(function(s, i) { if (s.seance_id === seanceId) idx = i; });
-  if (idx < 1) {
-    alert('Séance introuvable dans le programme CAP (ou c\'est la première séance).');
-    return;
-  }
-
-  var prev    = CAP_STATE.sessions[idx - 1];
-  var painful = CAP_STATE.sessions[idx];
-  var previewInserts = _capInterpolate(prev, painful);
-  if (!previewInserts.length) {
-    alert('Aucun palier intermédiaire possible entre ces deux séances.');
-    return;
-  }
-
-  var n = previewInserts.length;
-  var remaining = CAP_STATE.sessions.length - idx;
-  if (!confirm(
-    'Insérer ' + n + ' séance' + (n > 1 ? 's' : '') + ' intermédiaire' + (n > 1 ? 's' : '') +
-    ' avant la séance douloureuse ?\n\n' +
-    'Les ' + remaining + ' séances suivantes seront décalées d\'autant.'
-  )) return;
-
-  // Date de début du programme (première séance avec date connue)
-  var firstDate = null;
-  for (var fi = 0; fi < CAP_STATE.sessions.length; fi++) {
-    if (CAP_STATE.sessions[fi].date) { firstDate = CAP_STATE.sessions[fi].date; break; }
-  }
-  if (!firstDate) {
-    alert('Date de début du programme introuvable.\nExportez d\'abord le programme vers l\'agenda.');
-    return;
-  }
-  var spw = CAP_STATE.profile.seancesPerWeek;
-
-  // Snapshot des anciennes dates (avant mutation)
-  var oldDateMap = {};
-  CAP_STATE.sessions.forEach(function(s) { if (s.seance_id) oldDateMap[s.seance_id] = s.date || null; });
-
-  // Muter CAP_STATE en mémoire
-  _capAdaptOnPain(idx);
-  var newSessions = CAP_STATE.sessions;
-  var newDates    = _capCalcDates(newSessions.length, spw, firstDate);
-
-  // Catégoriser chaque séance
-  var toInsert = [];
-  var toPatch  = [];
-  newSessions.forEach(function(s, i) {
-    s.date = newDates[i];
-    if (!s.seance_id) {
-      toInsert.push({ session: s, date: newDates[i], newIdx: i });
-    } else {
-      var oldDate = oldDateMap[s.seance_id] || null;
-      if (oldDate !== newDates[i]) {
-        toPatch.push({ seance_id: s.seance_id, prog_id: s.prog_id || null, newDate: newDates[i] });
-      }
-    }
-  });
-
-  _showToast('Création des paliers en cours…');
-
-  // INSERT nouvelles séances
-  var insertPromise;
-  if (toInsert.length) {
-    var progBodies = toInsert.map(function(item) {
-      return {
-        patient_id: _progPatient.id, praticien_id: _progUid,
-        nom: 'CAP — ' + item.session.label, date: item.date,
-        donnees: {
-          type: 'cap', session: item.session, profile: CAP_STATE.profile,
-          session_index: item.newIdx, total: newSessions.length,
-          blocs: [_capSessionToCardioBloc(item.session)]
-        }
-      };
-    });
-    insertPromise = _fetchRetry(SUPA_URL_P + '/rest/v1/programmes', {
-      method: 'POST',
-      headers: Object.assign({}, _sbHeaders(), { 'Prefer': 'return=representation' }),
-      body: JSON.stringify(progBodies)
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(progs) {
-      var seanceBodies = progs.map(function(p, pi) {
-        return { patient_id: _progPatient.id, praticien_id: _progUid,
-                 programme_id: p.id, date: toInsert[pi].date };
-      });
-      return _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees', {
-        method: 'POST',
-        headers: Object.assign({}, _sbHeaders(), { 'Prefer': 'return=representation' }),
-        body: JSON.stringify(seanceBodies)
-      })
-      .then(function(r) { return r.json(); })
-      .then(function(seances) {
-        seances.forEach(function(seance, si) {
-          var s = newSessions[toInsert[si].newIdx];
-          if (s) { s.seance_id = seance.id; s.prog_id = seance.programme_id; }
-        });
-      });
-    });
-  } else {
-    insertPromise = Promise.resolve();
-  }
-
-  // PATCH dates des séances décalées
-  var patchPromises = toPatch.map(function(item) {
-    var reqs = [ _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees?id=eq.' + item.seance_id,
-      { method: 'PATCH', headers: _sbHeaders(), body: JSON.stringify({ date: item.newDate }) }) ];
-    if (item.prog_id) {
-      reqs.push(_fetchRetry(SUPA_URL_P + '/rest/v1/programmes?id=eq.' + item.prog_id,
-        { method: 'PATCH', headers: _sbHeaders(), body: JSON.stringify({ date: item.newDate }) }));
-    }
-    return Promise.all(reqs);
-  });
-
-  Promise.all([insertPromise].concat(patchPromises))
-    .then(function() {
-      _capSave();
-      renderCalendar();
-      _showToast('✓ ' + n + ' palier' + (n > 1 ? 's' : '') + ' intermédiaire' + (n > 1 ? 's' : '') + ' ajouté' + (n > 1 ? 's' : '') + ' !');
-    })
-    .catch(function(err) {
-      _showToast('✗ Erreur : ' + (err && err.message ? err.message : 'réessayez'));
-    });
-}
-
 /* ══ Bandeau CAP dans le builder ═════════════════════════════════════════════ */
 function _renderCapBuilderBanner(donnees, seanceId) {
   var banner = document.getElementById('cap-builder-banner');
@@ -8302,12 +8156,6 @@ function _renderCapBuilderBanner(donnees, seanceId) {
       html += '<li>' + escH(c) + '</li>';
     });
     html += '</ul>';
-  }
-
-  // Bouton créer paliers (si douleur ≥ seuil + séance identifiée)
-  if (isRed && seanceId) {
-    html += '<button class="cap-bb-paliers-btn" onclick="_capCreerPaliers(\'' + seanceId + '\')">'
-      + '🔧 Créer paliers intermédiaires</button>';
   }
 
   banner.innerHTML = html;
