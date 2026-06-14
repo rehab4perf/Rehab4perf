@@ -4247,7 +4247,7 @@ function _loadProg(id, seanceId){
       var btn = document.getElementById('prog-cloud-save-btn');
       if(btn){ btn.textContent='✓ Programme chargé'; setTimeout(function(){ _refreshSaveBtn(); },2500); }
     })
-    .catch(function(){ alert('Erreur réseau lors du chargement.'); });
+    .catch(function(err){ console.error('[_loadProg] catch:', err); alert('Erreur réseau lors du chargement. (' + (err && (err.message || String(err))) + ')'); });
 }
 
 // Ouvrir un programme du calendrier dans le builder (clic sur chip)
