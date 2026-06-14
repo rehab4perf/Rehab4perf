@@ -239,9 +239,12 @@ function renderCycleTimeline(){
 
   // Marqueur "Aujourd'hui" superposé
   if(todayMarkerPct !== null){
+    var lblPos = todayMarkerPct > 75
+      ? 'right:4px;left:auto;transform:none;'
+      : 'left:4px;transform:none;';
     html += '<div style="position:absolute;top:0;bottom:0;left:'+todayMarkerPct+'%;'
           + 'width:2px;background:var(--red);pointer-events:none;z-index:10;">'
-          + '<div style="position:absolute;top:-18px;left:50%;transform:translateX(-50%);'
+          + '<div style="position:absolute;top:-18px;'+lblPos
           + 'background:var(--red);color:#fff;font-size:.58rem;font-weight:700;'
           + 'padding:1px 5px;border-radius:4px;white-space:nowrap;">Aujourd\'hui</div>'
           + '</div>';
@@ -1195,6 +1198,39 @@ function removeCalEventCloud(id) {
       _showToast('Séance supprimée');
       // Supprime le programme s'il n'est plus référencé par aucune séance
       if(progId) _deleteProgIfOrphan(progId);
+    })
+    .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
+  });
+}
+
+function removeAllCalEventsByType(type) {
+  var label = type === 'hsr' ? 'HSR' : 'CAP';
+  var evs = _cloudCalEvents.filter(function(e){
+    return e.programmes && e.programmes.donnees && e.programmes.donnees.type === type;
+  });
+  if(!evs.length){
+    _showToast('Aucune séance ' + label + ' dans l\'agenda');
+    return;
+  }
+  _confirmDialog({
+    id: 'cd-del-all-' + type,
+    emoji: '🗑️',
+    title: 'Supprimer toutes les séances ' + label + ' ?',
+    body: evs.length + ' séance' + (evs.length > 1 ? 's' : '') + ' seront supprimées de l\'agenda. Cette action est irréversible.',
+    confirmLabel: 'Supprimer',
+    confirmColor: '#dc2626'
+  }, function(){
+    var ids = evs.map(function(e){ return e.id; });
+    var progIds = evs.map(function(e){ return e.programme_id; }).filter(Boolean)
+      .filter(function(v,i,a){ return a.indexOf(v)===i; });
+    _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees?id=in.(' + ids.join(',') + ')', {
+      method: 'DELETE', headers: _sbHeaders()
+    })
+    .then(function(r){
+      if(!r.ok){ return r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); }); }
+      progIds.forEach(function(pid){ _deleteProgIfOrphan(pid); });
+      renderCalendar();
+      _showToast('Séances ' + label + ' supprimées');
     })
     .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
   });
