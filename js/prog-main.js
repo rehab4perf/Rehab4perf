@@ -1242,58 +1242,93 @@ function _renderAgendaProgList(type) {
     return e.programmes && e.programmes.donnees && e.programmes.donnees.type === type;
   });
   if(!evs.length){ el.innerHTML = ''; return; }
-  // Grouper par programme_id
+
+  // Grouper par batch_id (nouveaux exports) ou fallback heuristique (anciens)
   var groups = {};
   evs.forEach(function(e){
-    var pid = e.programme_id || '_';
-    if(!groups[pid]) groups[pid] = { progId: pid, dates: [], nom: (e.programmes && e.programmes.nom) || '' };
-    groups[pid].dates.push(e.date);
+    var d = e.programmes.donnees;
+    var key = d.batch_id || (type+'_'+( d.ref1RM||'')+'_'+(d.exercice||'')+'_'+(d.total||''));
+    if(!groups[key]){
+      groups[key] = { key: key, ids: [], progIds: [], dates: [], donnees: d };
+    }
+    groups[key].ids.push(e.id);
+    groups[key].progIds.push(e.programme_id);
+    groups[key].dates.push(e.date);
   });
+
   var rows = Object.values(groups).map(function(g){
     g.dates.sort();
-    var first = g.dates[0];
-    var parts = first ? first.split('-') : [];
-    var dateLabel = parts.length === 3 ? parts[2]+'/'+parts[1]+'/'+parts[0].slice(2) : first;
-    var count = g.dates.length;
-    var escapedId = escH(g.progId);
-    return '<div style="display:flex;align-items:center;gap:8px;margin-top:6px;padding:6px 8px;'
-      + 'background:#fff;border:1px solid var(--border);border-radius:6px;font-size:.73rem;">'
-      + '<span style="flex:1;color:#444;">'+label+' débuté le <strong>'+dateLabel+'</strong> · '+count+' séance'+(count>1?'s':'')+'</span>'
-      + '<button onclick="removeCalEventsByProgId(\''+escapedId+'\',\''+label+'\')" '
-      + 'style="background:none;border:1px solid #fca5a5;border-radius:5px;color:#dc2626;'
-      + 'font-size:.7rem;padding:2px 8px;cursor:pointer;font-family:inherit;white-space:nowrap;">🗑 Supprimer</button>'
+    var first = g.dates[0], last = g.dates[g.dates.length-1];
+    var fmt = function(iso){ var p=iso.split('-'); return p[2]+'/'+p[1]+'/'+p[0].slice(2); };
+    var count = g.ids.length;
+    var d = g.donnees;
+
+    var detail = '';
+    if(type === 'hsr'){
+      detail += d.ref1RM ? '1RM = <strong>'+d.ref1RM+' kg</strong>' : '';
+      if(d.exercice) detail += (detail?' · ':'')+d.exercice;
+      detail += (detail?' · ':'')+count+' séance'+(count>1?'s':'');
+      detail += ' <span style="color:#aaa;">('+fmt(first)+(last!==first?' → '+fmt(last):'')+' )</span>';
+    } else {
+      var prof = d.profile || {};
+      detail += prof.type === 'performance' ? 'Performance' : 'Post-blessure';
+      if(prof.objectiveMin) detail += ' · '+prof.objectiveMin+' min';
+      detail += ' · '+count+' séance'+(count>1?'s':'');
+      detail += ' <span style="color:#aaa;">('+fmt(first)+(last!==first?' → '+fmt(last):'')+' )</span>';
+    }
+
+    var keyEsc = escH(g.key);
+    var idsJson = escH(JSON.stringify(g.ids));
+    var progIdsJson = escH(JSON.stringify(g.progIds.filter(function(v,i,a){return a.indexOf(v)===i;})));
+    return '<div style="display:flex;align-items:center;gap:8px;margin-top:6px;padding:8px 10px;'
+      + 'background:#fff;border:1px solid var(--border);border-radius:7px;font-size:.74rem;">'
+      + '<span style="flex:1;color:#333;line-height:1.5;">'+label+' · '+detail+'</span>'
+      + '<button onclick="_deleteAgendaBatch(\''+keyEsc+'\',\''+label+'\')" '
+      + 'style="flex-shrink:0;background:none;border:1px solid #fca5a5;border-radius:5px;color:#dc2626;'
+      + 'font-size:.7rem;padding:3px 9px;cursor:pointer;font-family:inherit;white-space:nowrap;">🗑 Supprimer</button>'
       + '</div>';
   });
-  el.innerHTML = '<div style="margin-top:6px;font-size:.68rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Programmes dans l\'agenda</div>'
+
+  el.innerHTML = '<div style="margin-top:8px;font-size:.68rem;font-weight:600;color:var(--muted);'
+    + 'text-transform:uppercase;letter-spacing:.05em;">Programmes dans l\'agenda</div>'
     + rows.join('');
 }
 
-function removeCalEventsByProgId(progId, label) {
-  var evs = _cloudCalEvents.filter(function(e){ return String(e.programme_id) === String(progId); });
+function _deleteAgendaBatch(batchKey, label) {
+  var type = label.toLowerCase();
+  var evs = _cloudCalEvents.filter(function(e){
+    var d = e.programmes && e.programmes.donnees;
+    if(!d || d.type !== type) return false;
+    var key = d.batch_id || (type+'_'+(d.ref1RM||'')+'_'+(d.exercice||'')+'_'+(d.total||''));
+    return key === batchKey;
+  });
   if(!evs.length){ _showToast('Programme introuvable'); return; }
+  var count = evs.length;
   _confirmDialog({
-    id: 'cd-del-prog-' + progId,
+    id: 'cd-del-batch-'+batchKey,
     emoji: '🗑️',
     title: 'Supprimer ce programme ' + label + ' ?',
-    body: evs.length + ' séance' + (evs.length > 1 ? 's' : '') + ' seront supprimées de l\'agenda. Cette action est irréversible.',
+    body: count + ' séance'+(count>1?'s':'')+' seront supprimées de l\'agenda. Cette action est irréversible.',
     confirmLabel: 'Supprimer',
     confirmColor: '#dc2626'
   }, function(){
     var ids = evs.map(function(e){ return e.id; });
-    _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees?id=in.(' + ids.join(',') + ')', {
+    var progIds = evs.map(function(e){ return e.programme_id; })
+      .filter(function(v,i,a){ return v && a.indexOf(v)===i; });
+    _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees?id=in.('+ids.join(',')+')', {
       method: 'DELETE', headers: _sbHeaders()
     })
     .then(function(r){
       if(!r.ok){ return r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); }); }
-      _deleteProgIfOrphan(progId);
+      progIds.forEach(function(pid){ _deleteProgIfOrphan(pid); });
       renderCalendar();
-      _showToast('Programme ' + label + ' supprimé');
-      var type = label.toLowerCase();
+      _showToast('Programme '+label+' supprimé ('+count+' séances)');
       _renderAgendaProgList(type);
     })
     .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
   });
 }
+
 
 /* Supprime un programme Supabase s'il n'est plus référencé par aucune seances_planifiees */
 function _deleteProgIfOrphan(progId) {
@@ -8375,6 +8410,7 @@ function _capExportToCalendar() {
   if (btn) { btn.disabled = true; btn.textContent = 'Ajout en cours…'; }
   if (statusEl) { statusEl.textContent = ''; }
 
+  var capBatchId = 'cap_' + Date.now();
   // 1 — Créer les programmes en batch
   var progBodies = sessions.map(function(s, i) {
     return {
@@ -8384,6 +8420,7 @@ function _capExportToCalendar() {
       date:          dates[i],
       donnees: {
         type:          'cap',
+        batch_id:      capBatchId,
         session:       s,
         profile:       CAP_STATE.profile,
         session_index: i,
@@ -9058,6 +9095,7 @@ function _hsrExportToCalendar() {
   if (btn)      { btn.disabled = true; btn.textContent = 'Ajout en cours…'; }
   if (statusEl) { statusEl.textContent = ''; }
 
+  var hsrBatchId = 'hsr_' + Date.now();
   var progBodies = sessions.map(function(s, i) {
     return {
       patient_id:   _progPatient.id,
@@ -9066,6 +9104,7 @@ function _hsrExportToCalendar() {
       date:         dates[i],
       donnees: {
         type:          'hsr',
+        batch_id:      hsrBatchId,
         ref1RM:        s.ref1RM,
         pct:           s.pct,
         sets:          s.sets,
