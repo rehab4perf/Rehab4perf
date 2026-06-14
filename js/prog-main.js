@@ -8198,7 +8198,8 @@ function _capExportToCalendar() {
       _capSave();
     }
     if (statusEl) {
-      statusEl.textContent = '✓ ' + sessions.length + ' séances ajoutées du ' + dates[0] + ' au ' + dates[dates.length - 1];
+      statusEl.innerHTML = '✓ ' + sessions.length + ' séances ajoutées du ' + dates[0] + ' au ' + dates[dates.length - 1]
+        + ' — <button onclick="_capReset()" style="background:none;border:none;color:#15803d;text-decoration:underline;cursor:pointer;font-size:inherit;padding:0;">Nouveau programme ↺</button>';
       statusEl.style.color = '#15803d';
     }
     if (btn) { btn.disabled = false; btn.textContent = 'Ajouter à l\'agenda →'; }
@@ -8213,62 +8214,238 @@ function _capExportToCalendar() {
   });
 }
 
-/* ══ Bandeau CAP dans le builder ═════════════════════════════════════════════ */
+function _capReset() {
+  CAP_STATE = { profile: {}, sessions: [] };
+  try { localStorage.removeItem(R4P_KEYS.capState); } catch(e){}
+  renderCapBuilder();
+}
+
+/* ══ Panneau CAP dans le builder ════════════════════════════════════════════ */
+var _capBbEva     = null;
+var _capBbRpe     = null;
+var _capBbSeanceId = null;
+var _capBbDonnees  = null;
+
+function _capEvaColor(v) {
+  return ['#27AE60','#5ABD6A','#82CC44','#A8C940','#F4D03F','#F39C12','#E67E22','#D35400','#E74C3C','#C0392B','#922B21'][Math.min(Math.max(Math.round(v),0),10)];
+}
+
+function _capGetTrend(seanceId) {
+  if (!_cloudCalEvents) return [];
+  var curEv = _cloudCalEvents.find(function(e){ return String(e.id)===String(seanceId); });
+  var curDate = curEv ? curEv.date : '9999-99-99';
+  var hits = _cloudCalEvents.filter(function(e){
+    var nom = e.nom || '';
+    return String(e.id) !== String(seanceId)
+      && e.date <= curDate
+      && nom.indexOf('CAP') === 0
+      && e.athlete_feedback && e.athlete_feedback.rpe !== null && e.athlete_feedback.rpe !== undefined;
+  });
+  hits.sort(function(a,b){ return a.date < b.date ? 1 : -1; });
+  return hits.slice(0,3).reverse().map(function(e){ return e.athlete_feedback.rpe; });
+}
+
 function _renderCapBuilderBanner(donnees, seanceId) {
   var banner = document.getElementById('cap-builder-banner');
   if (!banner) return;
+  if (!donnees || donnees.type !== 'cap') { banner.style.display = 'none'; return; }
 
-  if (!donnees || donnees.type !== 'cap') {
-    banner.style.display = 'none';
-    return;
-  }
+  _capBbDonnees   = donnees;
+  _capBbSeanceId  = seanceId || null;
+  _capBbEva       = null;
+  _capBbRpe       = null;
 
-  var profile  = donnees.profile  || {};
-  var session  = donnees.session  || {};
-  var patho    = profile.patho || 'aucune';
+  var profile   = donnees.profile || {};
+  var session   = donnees.session || {};
+  var patho     = profile.patho || 'aucune';
   var pathoInfo = CAP_PATHO_DB[patho] || CAP_PATHO_DB.aucune;
-
-  // Douleur : cherche d'abord dans CAP_STATE, puis dans l'événement cloud
-  var painScore = null;
-  if (CAP_STATE && CAP_STATE.sessions && seanceId) {
-    var capSess = CAP_STATE.sessions.find(function(s) { return s.seance_id === seanceId; });
-    if (capSess) painScore = capSess.painScore !== undefined ? capSess.painScore : null;
-  }
-  if (painScore === null && seanceId && _cloudCalEvents) {
-    var ev = _cloudCalEvents.find(function(e) { return String(e.id) === String(seanceId); });
-    if (ev && ev.athlete_feedback && ev.athlete_feedback.rpe !== null && ev.athlete_feedback.rpe !== undefined) {
-      painScore = parseFloat(ev.athlete_feedback.rpe);
-    }
-  }
-
-  var seuil = pathoInfo.seuil || 3;
-  var isRed = painScore !== null && painScore >= seuil;
-  var isOrange = painScore !== null && painScore > 0 && !isRed;
-
-  // Labels phase
-  var phaseNames = ['', 'Préparation', 'Construction', 'Performance'];
-  var phaseLabel = session.phase ? (phaseNames[session.phase] || 'Phase ' + session.phase) : '';
+  var phaseNames = {1:'Phase 1 — Réintroduction', 2:'Phase 2 — Construction', 3:'Phase 3 — Performance'};
+  var phaseLbl  = phaseNames[session.phase] || '';
+  var idx       = donnees.session_index !== undefined ? donnees.session_index + 1 : '?';
+  var total     = donnees.total || '?';
+  var consignes = (donnees.consignes && donnees.consignes.length) ? donnees.consignes : (pathoInfo.consignes || []);
 
   var html = '<div class="cap-bb-head">'
-    + '<span>🏃</span>'
-    + '<span class="cap-bb-label">CAP — ' + escH(pathoInfo.label || patho) + '</span>'
-    + (phaseLabel ? '<span class="cap-bb-phase">' + escH(phaseLabel) + '</span>' : '')
-    + (isRed    ? '<span class="cap-bb-pain rouge">⚠ ' + painScore + '/10</span>' : '')
-    + (isOrange ? '<span class="cap-bb-pain orange">⚠ ' + painScore + '/10</span>' : '')
+    + '<span class="cap-bb-label">🏃 CAP — ' + escH(pathoInfo.label || patho) + '</span>'
+    + (phaseLbl ? '<span class="cap-bb-phase">' + escH(phaseLbl) + '</span>' : '')
+    + '<span style="margin-left:auto;font-size:.7rem;color:#6b7a8d;font-weight:600;">Séance ' + idx + '/' + total + '</span>'
     + '</div>';
 
-  // Consignes (accordéon simple)
-  var consignes = Array.isArray(pathoInfo.consignes) ? pathoInfo.consignes : [];
   if (consignes.length) {
-    html += '<ul class="cap-bb-consignes" id="cap-bb-consignes-list">';
-    consignes.forEach(function(c) {
-      html += '<li>' + escH(c) + '</li>';
-    });
+    html += '<ul class="cap-bb-consignes">';
+    consignes.forEach(function(c){ html += '<li>' + escH(c) + '</li>'; });
     html += '</ul>';
   }
 
+  html += '<div id="cap-bb-feedback" style="border-top:1px solid #99f6e4;margin-top:8px;padding-top:8px;">'
+    + '<div style="font-size:.7rem;color:#6b7a8d;font-style:italic;">Chargement…</div></div>';
+
   banner.innerHTML = html;
   banner.style.display = 'block';
+
+  if (seanceId) {
+    _fetchRetry(SUPA_URL_P + '/rest/v1/athlete_feedback?seance_id=eq.' + seanceId, { headers: _sbHeaders() })
+      .then(function(r){ return r.json(); })
+      .then(function(arr){ _capRenderFeedback((Array.isArray(arr) && arr.length) ? arr[0] : null, pathoInfo.seuil || 3); })
+      .catch(function(){ _capRenderFeedback(null, pathoInfo.seuil || 3); });
+  } else {
+    _capRenderFeedback(null, pathoInfo.seuil || 3);
+  }
+}
+
+function _capRenderFeedback(existing, seuil) {
+  var fb = document.getElementById('cap-bb-feedback');
+  if (!fb) return;
+
+  _capBbEva = existing ? existing.rpe        : null;
+  _capBbRpe = existing ? existing.duree_min  : null;
+
+  var fromPatient = !!existing;
+  var html = '';
+
+  // Source badge
+  html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">'
+    + '<span class="cap-bb-section-title">Feedback séance</span>'
+    + (fromPatient
+        ? '<span style="font-size:.62rem;background:#e0f2fe;color:#0369a1;border-radius:4px;padding:1px 5px;font-weight:600;">patient</span>'
+        : '<span style="font-size:.62rem;color:#9ca3af;">Non renseigné</span>')
+    + '</div>';
+
+  // EVA
+  html += '<div style="font-size:.67rem;color:#6b7a8d;margin-bottom:3px;">🩹 Douleur — 0 (aucune) → 10 (insupportable)</div>';
+  html += '<div class="cap-bb-btns" id="cap-bb-eva-btns">';
+  for (var i = 0; i <= 10; i++) {
+    var onE = (_capBbEva === i);
+    var cE  = onE ? _capEvaColor(i) : '';
+    html += '<button class="cap-bb-btn" data-v="'+i+'" style="'+(onE?'background:'+cE+';color:#fff;border-color:'+cE+';':'')+'" onclick="_capBbSetEva('+i+')">'+i+'</button>';
+  }
+  html += '</div>';
+
+  // RPE
+  html += '<div style="font-size:.67rem;color:#6b7a8d;margin:6px 0 3px;">💪 Effort Borg — 1 (facile) → 10 (max)</div>';
+  html += '<div class="cap-bb-btns" id="cap-bb-rpe-btns">';
+  for (var j = 1; j <= 10; j++) {
+    var onR = (_capBbRpe === j);
+    html += '<button class="cap-bb-btn" data-v="'+j+'" style="'+(onR?'background:#2B5FA6;color:#fff;border-color:#2B5FA6;':'')+'" onclick="_capBbSetRpe('+j+')">'+j+'</button>';
+  }
+  html += '</div>';
+
+  // Tendance
+  var trend = _capGetTrend(_capBbSeanceId);
+  if (trend.length) {
+    html += '<div style="font-size:.67rem;color:#6b7a8d;margin-top:6px;">Tendance : ';
+    trend.forEach(function(t, ti){
+      if(ti>0) html += ' → ';
+      html += '<strong style="color:'+_capEvaColor(t)+';">'+t+'</strong>';
+    });
+    html += '</div>';
+  }
+
+  // Save button
+  if (_capBbSeanceId) {
+    html += '<button class="cap-bb-save-btn" id="cap-bb-save-btn" onclick="_capBbSaveFeedback()">💾 Enregistrer le feedback</button>';
+  }
+
+  // Séparateur + Adapter
+  html += '<hr class="cap-bb-sep">';
+  html += '<div class="cap-bb-section-title" style="margin-bottom:6px;">Adapter la suite du programme</div>';
+  html += '<div class="cap-bb-adapt-row">';
+  html += '<button class="cap-bb-adapt-btn" onclick="_capAdaptFromBuilder(\'regression\')" title="Prochaine séance = séance précédente">↩ Régresser</button>';
+  html += '<button class="cap-bb-adapt-btn" onclick="_capAdaptFromBuilder(\'maintain\')" title="Prochaine séance = répétition de celle-ci">↔ Maintenir</button>';
+  html += '</div>';
+
+  fb.innerHTML = html;
+}
+
+function _capBbSetEva(val) {
+  _capBbEva = val;
+  document.querySelectorAll('#cap-bb-eva-btns .cap-bb-btn').forEach(function(b){
+    var on = parseInt(b.dataset.v) === val;
+    var c  = _capEvaColor(val);
+    b.style.background  = on ? c : '';
+    b.style.color       = on ? '#fff' : '';
+    b.style.borderColor = on ? c : '';
+  });
+}
+
+function _capBbSetRpe(val) {
+  _capBbRpe = val;
+  document.querySelectorAll('#cap-bb-rpe-btns .cap-bb-btn').forEach(function(b){
+    var on = parseInt(b.dataset.v) === val;
+    b.style.background  = on ? '#2B5FA6' : '';
+    b.style.color       = on ? '#fff' : '';
+    b.style.borderColor = on ? '#2B5FA6' : '';
+  });
+}
+
+function _capBbSaveFeedback() {
+  if (_capBbEva === null) { _showToast('Sélectionne un score de douleur (0–10).'); return; }
+  if (!_capBbRpe)         { _showToast('Sélectionne un effort Borg (1–10).'); return; }
+  if (!_capBbSeanceId)    return;
+  var btn = document.getElementById('cap-bb-save-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Envoi…'; }
+  _fetchRetry(SUPA_URL_P + '/rest/v1/athlete_feedback', {
+    method: 'POST',
+    headers: Object.assign({}, _sbHeaders(), { 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
+    body: JSON.stringify({ seance_id: _capBbSeanceId, rpe: _capBbEva, duree_min: _capBbRpe, submitted_at: new Date().toISOString() })
+  }).then(function(r){
+    if (!r.ok) { _showToast('Erreur enregistrement.'); if(btn){btn.disabled=false;btn.textContent='💾 Enregistrer le feedback';} return; }
+    if (btn) { btn.textContent = '✓ Enregistré'; btn.style.background = '#15803d'; }
+    renderCalendar();
+  }).catch(function(){
+    _showToast('Erreur réseau.');
+    if (btn) { btn.disabled = false; btn.textContent = '💾 Enregistrer le feedback'; }
+  });
+}
+
+function _capAdaptFromBuilder(mode) {
+  if (!_capBbSeanceId || !_capBbDonnees || !_progPatient) {
+    _showToast('Contexte manquant — rouvrez la séance.');
+    return;
+  }
+  _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees?patient_id=eq.' + _progPatient.id
+    + '&select=id,date,programme_id,programmes(id,nom,donnees)&order=date', { headers: _sbHeaders() })
+  .then(function(r){ return r.json(); })
+  .then(function(all){
+    var capSeances = all.filter(function(s){
+      return s.programmes && s.programmes.donnees && s.programmes.donnees.type === 'cap';
+    });
+    if (!capSeances.length) { _showToast('Aucune séance CAP trouvée.'); return; }
+
+    var curIdx = capSeances.findIndex(function(s){ return String(s.id) === String(_capBbSeanceId); });
+    if (curIdx === -1) { _showToast('Séance introuvable.'); return; }
+
+    var nextSeance = capSeances[curIdx + 1];
+    if (!nextSeance) { _showToast('Pas de séance suivante à adapter.'); return; }
+
+    var templateDonnees = mode === 'regression'
+      ? (curIdx > 0 ? capSeances[curIdx - 1].programmes.donnees : _capBbDonnees)
+      : _capBbDonnees;
+
+    if (!templateDonnees || !templateDonnees.session) { _showToast('Template introuvable.'); return; }
+
+    var profile   = _capBbDonnees.profile || {};
+    var pathoInfo = CAP_PATHO_DB[profile.patho] || CAP_PATHO_DB.aucune;
+    var updSess   = JSON.parse(JSON.stringify(templateDonnees.session));
+    var nextD     = nextSeance.programmes.donnees || {};
+
+    var updDonnees = {
+      type: 'cap', session: updSess, profile: profile,
+      session_index: nextD.session_index, total: nextD.total || _capBbDonnees.total,
+      blocs: [_capSessionToCardioBloc(updSess, profile)],
+      consignes: pathoInfo.consignes
+    };
+
+    _fetchRetry(SUPA_URL_P + '/rest/v1/programmes?id=eq.' + nextSeance.programmes.id, {
+      method: 'PATCH', headers: _sbHeaders(),
+      body: JSON.stringify({ nom: 'CAP — ' + (updSess.label || ''), donnees: updDonnees })
+    }).then(function(r){
+      if (!r.ok) { _showToast('Erreur lors de l\'adaptation.'); return; }
+      _showToast(mode === 'regression' ? '↩ Séance suivante regressée ✓' : '↔ Séance suivante maintenue ✓');
+      renderCalendar();
+    }).catch(function(){ _showToast('Erreur réseau.'); });
+  })
+  .catch(function(){ _showToast('Erreur lors du chargement.'); });
 }
 
 /* ══ Multi-sélection du journal ═══════════════════════════════════════════════ */
