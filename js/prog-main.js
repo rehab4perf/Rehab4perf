@@ -7230,16 +7230,19 @@ function _renderJournal() {
   // Séances planifiées (depuis le cache calendrier)
   if(_journalFilter === 'all' || _journalFilter === 'seance') {
     (_cloudCalEvents||[]).forEach(function(ev) {
-      var rpe   = ev.athlete_feedback && ev.athlete_feedback[0] && ev.athlete_feedback[0].rpe;
-      var duree = ev.athlete_feedback && ev.athlete_feedback[0] && ev.athlete_feedback[0].duree_min;
+      var fb    = ev.athlete_feedback && (Array.isArray(ev.athlete_feedback) ? ev.athlete_feedback[0] : ev.athlete_feedback);
+      var rpe   = fb ? fb.rpe   : null;
+      var duree = fb ? fb.duree_min : null;
+      var nom   = (ev.programmes && ev.programmes.nom) || ev.nom || 'Programme';
       items.push({
         date:   ev.date,
         type:   'seance',
         id:     ev.id,
         progId: ev.programme_id,
-        nom:    (ev.programmes && ev.programmes.nom) || 'Programme',
-        rpe:    rpe   || null,
-        duree:  duree || null
+        nom:    nom,
+        isCap:  nom.indexOf('CAP') === 0,
+        rpe:    rpe   !== undefined ? rpe   : null,
+        duree:  duree !== undefined ? duree : null
       });
     });
   }
@@ -7285,18 +7288,31 @@ function _renderJournal() {
     }
 
     // Icône + meta selon type
-    var icon, metaHtml;
+    var icon, metaHtml, rpeBadge;
     if(item.type === 'seance') {
-      icon = '🏋️';
-      var metaParts = [];
-      if(item.rpe)   metaParts.push('RPE '+item.rpe);
-      if(item.duree) metaParts.push(item.duree+' min');
-      metaHtml = metaParts.length ? '<span>'+escH(metaParts.join(' · '))+'</span>' : '';
+      if(item.isCap) {
+        icon = '🏃';
+        var capBadges = [];
+        if(item.rpe !== null && item.rpe !== undefined) {
+          var pc = _capEvaColor(item.rpe);
+          capBadges.push('<span class="journal-item-rpe" style="background:'+pc+'22;color:'+pc+';border-color:'+pc+'55;">🩹 '+item.rpe+'/10</span>');
+        }
+        if(item.duree !== null && item.duree !== undefined) {
+          capBadges.push('<span class="journal-item-rpe">💪 '+item.duree+'/10</span>');
+        }
+        metaHtml = capBadges.join('');
+        rpeBadge = '';
+      } else {
+        icon = '🏋️';
+        metaHtml = '';
+        rpeBadge = (item.rpe !== null && item.rpe !== undefined)
+          ? '<span class="journal-item-rpe">RPE '+escH(String(item.rpe))+'</span>' : '';
+      }
     } else if(item.type === 'patient') {
-      icon = '💬';
+      icon = '💬'; rpeBadge = '';
       metaHtml = item.text ? '<span>'+escH(item.text.slice(0,60)+(item.text.length>60?'…':''))+'</span>' : '';
     } else {
-      icon = '📝';
+      icon = '📝'; rpeBadge = '';
       metaHtml = item.text ? '<span>'+escH(item.text.slice(0,60)+(item.text.length>60?'…':''))+'</span>' : '';
     }
 
@@ -7304,7 +7320,6 @@ function _renderJournal() {
     var dayStr = parts[2] ? parseInt(parts[2],10)+'/'+(parts[1]||'?') : escH(item.date);
     var jPlus  = j0 ? _computeJPlus(item.date, j0) : null;
     var jBadge = jPlus !== null ? '<span class="journal-item-jplus">J'+(jPlus>=0?'+':'')+jPlus+'</span>' : '';
-    var rpeBadge = (item.type === 'seance' && item.rpe) ? '<span class="journal-item-rpe">RPE '+escH(String(item.rpe))+'</span>' : '';
 
     var selKey  = (item.type === 'seance' ? 'seance' : 'note') + ':' + String(item.id);
     var isSel   = _journalSelItems.has(selKey);
@@ -7317,7 +7332,7 @@ function _renderJournal() {
         +'<span class="journal-item-icon">'+icon+'</span>'
         +'<div class="journal-item-body">'
           +'<div class="journal-item-title">'+escH(item.nom)+'</div>'
-          +(metaHtml ? '<div class="journal-item-meta">'+metaHtml+rpeBadge+'</div>' : '')
+          +((metaHtml||rpeBadge) ? '<div class="journal-item-meta">'+metaHtml+rpeBadge+'</div>' : '')
         +'</div>'
         +'<div class="journal-item-date">'+escH(dayStr)+jBadge+'</div>'
         +'</div>';
@@ -7337,7 +7352,7 @@ function _renderJournal() {
         +'<span class="journal-item-icon">'+icon+'</span>'
         +'<div class="journal-item-body">'
           +'<div class="journal-item-title">'+escH(item.nom)+'</div>'
-          +(metaHtml ? '<div class="journal-item-meta">'+metaHtml+rpeBadge+'</div>' : '')
+          +((metaHtml||rpeBadge) ? '<div class="journal-item-meta">'+metaHtml+rpeBadge+'</div>' : '')
         +'</div>'
         +'<div class="journal-item-date">'+escH(dayStr)+jBadge+'</div>'
         +delBtn
