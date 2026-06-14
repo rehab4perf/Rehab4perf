@@ -4237,9 +4237,11 @@ function _loadProg(id, seanceId){
       if(pnEl) pnEl.value = d.nom || '';
       renderSession();
       _enterBuilderMode();
-      if (typeof _renderCapBuilderBanner === 'function') {
-        _renderCapBuilderBanner(Array.isArray(raw) ? {} : raw, _currentSeanceId);
-      }
+      try {
+        if (typeof _renderCapBuilderBanner === 'function') {
+          _renderCapBuilderBanner(Array.isArray(raw) ? {} : raw, _currentSeanceId);
+        }
+      } catch(e) { console.warn('CAP banner error:', e); }
       var overlay = document.getElementById('progHistoOverlay');
       if(overlay) overlay.style.display='none';
       var btn = document.getElementById('prog-cloud-save-btn');
