@@ -519,8 +519,7 @@ body {
 
 <div class="sub-tabs">
   <button class="sub-tab active" onclick="showTab('hsr')" id="stab-hsr">📈 <span class="tab-full">Protocole </span>HSR</button>
-  <button class="sub-tab" onclick="showTab('cap')" id="stab-cap">🏃 <span class="tab-full">Reprise </span>CAP</button>
-  <button class="sub-tab" onclick="showTab('proms')" id="stab-proms">📋 PROMs</button>
+<button class="sub-tab" onclick="showTab('proms')" id="stab-proms">📋 PROMs</button>
   <button class="sub-tab" onclick="showTab('ressources')" id="stab-ressources">📂 <span class="tab-full">Ressources</span><span class="tab-short">Res.</span></button>
   <button class="sub-tab" onclick="showTab('prescriptions')" id="stab-prescriptions">📋 <span class="tab-full">Prescriptions</span><span class="tab-short">Ordonnance</span></button>
   <button class="sub-tab" onclick="showTab('cr')" id="stab-cr">✉️ <span class="tab-full">CR </span>Médecin</button>
@@ -640,45 +639,6 @@ body {
 
 
 
-<!-- ══ REPRISE CAP ══════════════════════════════════════════ -->
-<div class="panel" id="panel-cap">
-
-  <div id="cap-header-bar" style="background:#1A3A5C;color:#fff;padding:11px 18px;border-radius:8px;margin-bottom:14px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-    <div>
-      <div style="font-size:.67rem;opacity:.6;text-transform:uppercase;letter-spacing:.06em;font-family:-apple-system,sans-serif">Programme — Reprise à la Course à Pied</div>
-      <div id="cap-patient-name" style="font-size:1rem;font-weight:700;margin-top:2px;font-family:-apple-system,sans-serif">—</div>
-    </div>
-    <div style="margin-left:auto;text-align:right;font-size:.76rem;opacity:.75;font-family:-apple-system,sans-serif;line-height:1.6">
-      La Clinique du Coureur · 14 semaines<br>
-      <span id="cap-allure-info" style="color:#A8D5B7">—</span>
-    </div>
-  </div>
-
-  <div class="block">
-    <div class="block-header grey">📖 Légende &amp; Règles de Sécurité</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#E8E6E1">
-      <div style="background:#fff;padding:8px 14px;font-size:.82rem"><strong style="color:#1A3A5C">C</strong> = Course — jogging conversationnel</div>
-      <div style="background:#F1F0ED;padding:8px 14px;font-size:.82rem"><strong style="color:#1A3A5C">M</strong> = Marche — récupération active</div>
-      <div style="background:#fff;padding:8px 14px;font-size:.82rem"><strong style="color:#C0392B">⚠ Douleur ≥ 3/10</strong> → arrêter la séance</div>
-      <div style="background:#F1F0ED;padding:8px 14px;font-size:.82rem"><strong style="color:#D4600A">RPE &gt; 7/10</strong> → réduire la séance suivante</div>
-      <div style="background:#fff;padding:8px 14px;font-size:.82rem">Débuter et terminer par <strong>5 min de marche</strong></div>
-      <div style="background:#F1F0ED;padding:8px 14px;font-size:.82rem">4 à 6 séances / semaine · Règle des <strong>10%</strong></div>
-    </div>
-  </div>
-
-  <!-- Barre d'export — apparaît dès qu'une semaine est sélectionnée -->
-  <div id="cap-export-bar" style="display:none;position:sticky;top:0;z-index:10;background:#1A3A5C;color:#fff;padding:10px 16px;border-radius:8px;margin-bottom:12px;display:none;align-items:center;gap:12px;flex-wrap:wrap">
-    <span style="font-size:.82rem;font-weight:600;" id="cap-sel-label">0 semaine sélectionnée</span>
-    <button onclick="capSelectAll()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:4px 12px;font-size:.76rem;cursor:pointer;font-family:inherit">Tout sélectionner</button>
-    <button onclick="capDeselectAll()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:4px 12px;font-size:.76rem;cursor:pointer;font-family:inherit">Tout désélectionner</button>
-    <button onclick="capExportSelection()" style="margin-left:auto;background:#2D6A4F;border:none;color:#fff;border-radius:6px;padding:7px 18px;font-size:.82rem;font-weight:700;cursor:pointer;font-family:inherit">📤 Exporter la sélection</button>
-  </div>
-
-  <div id="cap-weeks-container">
-    <div style="text-align:center;padding:40px;color:#9D9B96;font-size:.9rem">Chargement des semaines…</div>
-  </div>
-
-</div><!-- /panel-cap -->
 
 <!-- ══ PANEL PROMS ══════════════════════════════════════════ -->
 <div class="panel" id="panel-proms">
@@ -4247,7 +4207,6 @@ function calcCardio() {
   // Sync CAP
   var z2L = Math.round(fcrep + fcres * 0.60);
   var z2H = Math.round(fcrep + fcres * 0.70);
-  s('cap-allure-info', 'Z2 : ' + z2L + ' - ' + z2H + ' bpm - VMA : ' + vma + ' km/h');
 }
 
 function cardioLoadBilan() {
@@ -4260,7 +4219,6 @@ function cardioLoadBilan() {
     var wEl    = document.getElementById('c-poids');
     var hEl    = document.getElementById('c-taille');
     var sexEl  = document.getElementById('c-sex');
-    var nmEl   = document.getElementById('cap-patient-name');
     if (data['f-dob'] && ageEl && !ageEl.value) {
       var ag = new Date().getFullYear() - new Date(data['f-dob']).getFullYear();
       if (ag > 0 && ag < 120) { ageEl.value = ag; synced.push('âge'); }
@@ -4268,8 +4226,6 @@ function cardioLoadBilan() {
     if (data['f-poids'] && wEl && !wEl.value) { wEl.value = data['f-poids']; synced.push('poids'); }
     if (data['f-taille'] && hEl && !hEl.value) { hEl.value = data['f-taille']; synced.push('taille'); }
     if (data['f-sexe'] && sexEl) { sexEl.value = data['f-sexe'] === 'F' ? '0' : '1'; }
-    var nm = ((data['f-prenom']||'') + ' ' + (data['f-nom']||'')).trim();
-    if (nm && nmEl && nmEl.textContent === '--') nmEl.textContent = nm;
     if (synced.length > 0) {
       var banner = document.getElementById('cardio-banner');
       if (banner) { banner.style.display = 'block'; }
@@ -4280,227 +4236,14 @@ function cardioLoadBilan() {
   } catch(e) {}
 }
 
-// == REPRISE CAP ===========================================
-
-var CAP_DATA = [
-  {n:1,  ph:'Phase 1',col:'#1A3A5C',titre:'Initiation marche/course',
-   s:["5'M + 3\u00d7(1'C/1'M)","4\u00d7(1'C/1'M)","5\u00d7(1'C/1'M)","6\u00d7(1'C/1'M)","7\u00d7(1'C/1'M)"],
-   d:['D\u00e9part progressif \u00b7 5 min marche \u00e9chauffement obligatoire','Augmenter 1 r\u00e9p\u00e9tition','','','Fin S1 \u2014 noter le ressenti global']},
-  {n:2,  ph:'Phase 1',col:'#1A3A5C',titre:'Progression alternance',
-   s:["8\u00d7(1'C/1'M)","9\u00d7(1'C/1'M)","10\u00d7(1'C/1'M)","11\u00d7(1'C/1'M)","12\u00d7(1'C/1'M)"],
-   d:['','','Cap des 10 minutes de course cumul\u00e9e','','12 min de course = 12 min de marche']},
-  {n:3,  ph:'Phase 1',col:'#1A3A5C',titre:"Transition vers intervalles 2'/1'",
-   s:["13\u00d7(1'C/1'M)","14\u00d7(1'C/1'M)","15\u00d7(1'C/1'M)","3\u00d7(2'C/1'M)","4\u00d7(2'C/1'M)"],
-   d:['','','15 r\u00e9p\u00e9titions \u00b7 point pivot de la semaine','\ud83d\udd11 Passage aux blocs de 2\u2019 \u2014 attention \u00e0 l\u2019allure','']},
-  {n:4,  ph:'Phase 1',col:'#1A3A5C',titre:"Blocs 2' / 1'",
-   s:["5\u00d7(2'C/1'M)","6\u00d7(2'C/1'M)","7\u00d7(2'C/1'M)","8\u00d7(2'C/1'M)","9\u00d7(2'C/1'M)"],
-   d:['','','14 min de course cumul\u00e9e','','18 min de course cumul\u00e9e']},
-  {n:5,  ph:'Phase 1',col:'#1A3A5C',titre:"Blocs 3' / 1'",
-   s:["10\u00d7(2'C/1'M)","3\u00d7(3'C/1'M)","4\u00d7(3'C/1'M)","5\u00d7(3'C/1'M)","6\u00d7(3'C/1'M)"],
-   d:["Dernier entra\u00eenement en 2'/1'",'\ud83d\udd11 Introduction des blocs de 3 min','','15 min de course cumul\u00e9e','18 min de course cumul\u00e9e']},
-  {n:6,  ph:'Phase 1',col:'#1A3A5C',titre:"Blocs 4' / 1'",
-   s:["7\u00d7(3'C/1'M)","8\u00d7(3'C/1'M)","2\u00d7(4'C/1'M)","3\u00d7(4'C/1'M)","4\u00d7(4'C/1'M)"],
-   d:['21 min de course cumul\u00e9e','24 min de course cumul\u00e9e','\ud83d\udd11 Introduction des blocs de 4 min','12 min de course cumul\u00e9e','16 min de course cumul\u00e9e']},
-  {n:7,  ph:'Phase 1',col:'#1A3A5C',titre:"Grands blocs & transition 9' / 1'",
-   s:["5\u00d7(4'C/1'M)","6\u00d7(4'C/1'M)","1\u00d7(9'C/1'M)","2\u00d7(9'C/1'M)","3\u00d7(9'C/1'M)"],
-   d:['20 min de course cumul\u00e9e','24 min de course cumul\u00e9e','\ud83d\udd11 Premier bloc de 9 minutes','18 min de course \u00b7 2 min de marche','27 min de course cumul\u00e9e']},
-  {n:8,  ph:'Phase 1',col:'#1A3A5C',titre:'Course continue \u2014 objectif 30 min',
-   s:["1\u00d7(14'C/1'M)","2\u00d7(14'C/1'M)","1\u00d720'C","1\u00d725'C","1\u00d730'C"],
-   d:['','28 min de course \u00b7 presque continu','\ud83d\udd11 Premi\u00e8re course continue de 20 min','','\ud83c\udfc6 Objectif atteint \u2014 30 minutes de course continue']},
-  {n:9,  ph:'Phase 2',col:'#2D6A4F',titre:'Consolidation 30 min',
-   s:["1\u00d730' C","1\u00d730' C","1\u00d732' C","1\u00d732' C","1\u00d735' C"],
-   d:['Allure tr\u00e8s facile \u00b7 confirmer la tol\u00e9rance','Focus sur l\u2019allure r\u00e9guli\u00e8re','L\u00e9g\u00e8re progression +2 min','Maintien 32 min','Sortie longue de la semaine']},
-  {n:10, ph:'Phase 2',col:'#2D6A4F',titre:'Introduction du volume',
-   s:["1\u00d730' C","2\u00d715' C / 2'M","1\u00d735' C","2\u00d715' C / 2'M","1\u00d740' C"],
-   d:['R\u00e9cup\u00e9ration \u00b7 allure tr\u00e8s facile','Fractionn\u00e9 moyen avec r\u00e9cup\u00e9ration marche','Course continue progressive','R\u00e9p\u00e9tition du fractionn\u00e9','Sortie longue \u2014 cap sur 40 min']},
-  {n:11, ph:'Phase 2',col:'#2D6A4F',titre:'Progression tempo',
-   s:["1\u00d735' C","3\u00d710' C / 2'M","1\u00d740' C","3\u00d710' C / 2'M","1\u00d745' C"],
-   d:['Allure conversationnelle','3 r\u00e9p\u00e9titions \u2014 noter RPE et douleur','Course continue','R\u00e9p\u00e9tition du fractionn\u00e9','\ud83d\udd11 Sortie longue \u2014 cap sur 45 min']},
-  {n:12, ph:'Phase 2',col:'#D4600A',titre:'D\u00e9charge \u2014 R\u00e9cup\u00e9ration active',
-   s:["1\u00d725' C","2\u00d712' C / 2'M","1\u00d730' C","1\u00d725' C","1\u00d735' C"],
-   d:['Volume r\u00e9duit \u00b7 \u00e9coute du corps','Fractionn\u00e9 court','Allure facile','S\u00e9ance courte','Sortie longue r\u00e9duite']},
-  {n:13, ph:'Phase 2',col:'#2D6A4F',titre:'D\u00e9veloppement endurance',
-   s:["1\u00d740' C","4\u00d78' C / 90''M","1\u00d745' C","4\u00d78' C / 90''M","1\u00d755' C"],
-   d:['Allure conversationnelle','Fractionn\u00e9 long \u2014 allure mod\u00e9r\u00e9e possible','Course continue','R\u00e9p\u00e9tition du fractionn\u00e9','\ud83d\udd11 Sortie longue \u2014 proche de l\u2019heure']},
-  {n:14, ph:'Phase 2',col:'#2D6A4F',titre:'Consolidation finale \ud83c\udfc6',
-   s:["1\u00d740' C","3\u00d712' C / 90''M","1\u00d750' C","3\u00d712' C / 90''M","1\u00d760' C"],
-   d:['Allure facile','Fractionn\u00e9 mod\u00e9r\u00e9','Course continue','Derni\u00e8re s\u00e9ance fractionn\u00e9e','\ud83c\udfc6 Sortie longue finale \u2014 OBJECTIF 1 HEURE !']},
-];
-
-function capGetAllure() {
-  var fcrep = parseFloat(g('c-fcrep'));
-  var age   = parseFloat(g('c-age'));
-  if (isNaN(fcrep)||fcrep<=0||isNaN(age)||age<=0) return null;
-  var fcmaxM = parseFloat(g('c-fcmax-m'));
-  var fcmax = (!isNaN(fcmaxM)&&fcmaxM>0) ? Math.round(fcmaxM) : Math.round(208-0.7*age);
-  var fcres = fcmax - fcrep;
-  var z2L = Math.round(fcrep + fcres*0.60);
-  var z2H = Math.round(fcrep + fcres*0.70);
-  var vmaEl = document.getElementById('c-vma');
-  var vmaV  = vmaEl ? parseFloat(vmaEl.textContent) : NaN;
-  var allureZ2 = !isNaN(vmaV)&&vmaV>0 ? cMinKm(vmaV*0.70) : null;
-  return { z2L:z2L, z2H:z2H, allure:allureZ2 };
-}
-
-function buildCAP() {
-  var container = document.getElementById('cap-weeks-container');
-  if (!container) { setTimeout(buildCAP, 200); return; }
-  var info = capGetAllure();
-  var infoStr = info ? (' \u00b7 Z2 : ' + info.z2L + '\u2013' + info.z2H + ' bpm' + (info.allure ? ' (' + info.allure + ')' : '')) : '';
-  var html = '';
-  for (var wi=0; wi<CAP_DATA.length; wi++) {
-    var w = CAP_DATA[wi];
-    var seancesHtml = '';
-    for (var si=0; si<w.s.length; si++) {
-      var isKey = w.s[si].indexOf('\ud83d\udd11')!==-1 || w.s[si].indexOf('\ud83c\udfc6')!==-1;
-      var bg = si%2===0?'#FFFFFF':'#F7F6F3';
-      seancesHtml +=
-        '<div style="display:grid;grid-template-columns:28px 150px 1fr;align-items:center;gap:8px;background:'+bg+';padding:9px 14px;border-bottom:1px solid #E8E6E1">' +
-          '<div style="font-size:.7rem;font-weight:700;color:#9D9B96;text-align:center">S'+(si+1)+'</div>' +
-          '<div style="font-size:.92rem;font-weight:'+(isKey?'700':'600')+';color:'+(isKey?w.col:'#1A1917')+';font-family:-apple-system,sans-serif">'+w.s[si]+'</div>' +
-          '<div style="font-size:.78rem;color:#6B6860;font-family:-apple-system,sans-serif">'+(w.d[si]||'')+'</div>' +
-        '</div>';
-    }
-    html +=
-      '<div style="background:#fff;border:1px solid #E8E6E1;border-radius:8px;margin-bottom:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05)" id="cap-week-'+w.n+'">' +
-        '<div style="background:'+w.col+';color:#fff;padding:9px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
-          '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;flex-shrink:0">' +
-            '<input type="checkbox" id="cap-chk-'+w.n+'" onchange="capUpdateSelection()" style="width:16px;height:16px;cursor:pointer;accent-color:#fff;flex-shrink:0">' +
-          '</label>' +
-          '<div style="background:rgba(255,255,255,.18);border-radius:20px;padding:2px 10px;font-size:.68rem;font-weight:700;font-family:-apple-system,sans-serif">'+w.ph+'</div>' +
-          '<div style="font-size:.9rem;font-weight:700;font-family:-apple-system,sans-serif">Semaine '+w.n+' \u2014 '+w.titre+'</div>' +
-          (infoStr && w.n <= 8 ? '<div style="margin-left:auto;font-size:.72rem;opacity:.8;font-family:-apple-system,sans-serif">Allure Z2'+infoStr+'</div>' : '') +
-        '</div>' +
-        seancesHtml +
-        '<div style="padding:6px 14px;background:#FEF3EB;font-size:.7rem;color:#C0392B;font-weight:500;font-family:-apple-system,sans-serif">' +
-          '\u26a0 Douleur \u2265 3/10 \u2192 arr\u00eater \u00b7 RPE > 7 \u2192 r\u00e9duire \u00b7 Selon ressenti : r\u00e9p\u00e9ter ou sauter 1\u20132 s\u00e9ances' +
-        '</div>' +
-      '</div>';
-  }
-  container.innerHTML = html;
-  capUpdateSelection();
-}
-
-function capUpdateSelection() {
-  var sel = CAP_DATA.filter(function(w) {
-    var chk = document.getElementById('cap-chk-'+w.n);
-    return chk && chk.checked;
-  });
-  var bar = document.getElementById('cap-export-bar');
-  var lbl = document.getElementById('cap-sel-label');
-  if (!bar) return;
-  bar.style.display = sel.length > 0 ? 'flex' : 'none';
-  if (lbl) lbl.textContent = sel.length + ' semaine' + (sel.length > 1 ? 's' : '') + ' s\u00e9lectionn\u00e9e' + (sel.length > 1 ? 's' : '');
-}
-
-function capSelectAll() {
-  CAP_DATA.forEach(function(w) {
-    var chk = document.getElementById('cap-chk-'+w.n);
-    if (chk) chk.checked = true;
-  });
-  capUpdateSelection();
-}
-
-function capDeselectAll() {
-  CAP_DATA.forEach(function(w) {
-    var chk = document.getElementById('cap-chk-'+w.n);
-    if (chk) chk.checked = false;
-  });
-  capUpdateSelection();
-}
-
-function capExportSelection() {
-  var sel = CAP_DATA.filter(function(w) {
-    var chk = document.getElementById('cap-chk-'+w.n);
-    return chk && chk.checked;
-  });
-  if (!sel.length) return;
-
-  var patNom  = (document.getElementById('cap-patient-name') || {}).textContent || '';
-  var allureEl = document.getElementById('cap-allure-info');
-  var allureTxt = allureEl ? allureEl.textContent : '';
-
-  // G\u00e9n\u00e9rer le HTML des semaines s\u00e9lectionn\u00e9es
-  var weeksHtml = '';
-  sel.forEach(function(w) {
-    var seancesHtml = '';
-    for (var si = 0; si < w.s.length; si++) {
-      var isKey = w.s[si].indexOf('\ud83d\udd11') !== -1 || w.s[si].indexOf('\ud83c\udfc6') !== -1;
-      var bg = si % 2 === 0 ? '#FFFFFF' : '#F7F6F3';
-      seancesHtml +=
-        '<div style="display:grid;grid-template-columns:28px 160px 1fr;align-items:center;gap:8px;background:'+bg+';padding:10px 14px;border-bottom:1px solid #E8E6E1">' +
-          '<div style="font-size:.7rem;font-weight:700;color:#9D9B96;text-align:center">S'+(si+1)+'</div>' +
-          '<div style="font-size:.92rem;font-weight:'+(isKey?'700':'600')+';color:'+(isKey?w.col:'#1A1917')+'">'+w.s[si]+'</div>' +
-          '<div style="font-size:.78rem;color:#6B6860">'+(w.d[si]||'')+'</div>' +
-        '</div>';
-    }
-    weeksHtml +=
-      '<div style="background:#fff;border:1px solid #E8E6E1;border-radius:10px;margin-bottom:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)">' +
-        '<div style="background:'+w.col+';color:#fff;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
-          '<div style="background:rgba(255,255,255,.18);border-radius:20px;padding:2px 10px;font-size:.68rem;font-weight:700">'+w.ph+'</div>' +
-          '<div style="font-size:.92rem;font-weight:700">Semaine '+w.n+' \u2014 '+w.titre+'</div>' +
-        '</div>' +
-        seancesHtml +
-        '<div style="padding:7px 14px;background:#FEF3EB;font-size:.72rem;color:#C0392B;font-weight:500">' +
-          '\u26a0 Douleur \u2265 3/10 \u2192 arr\u00eater \u00b7 RPE > 7 \u2192 r\u00e9duire \u00b7 Selon ressenti : r\u00e9p\u00e9ter ou sauter 1\u20132 s\u00e9ances' +
-        '</div>' +
-      '</div>';
-  });
-
-  var html = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">'
-    + '<meta name="viewport" content="width=device-width,initial-scale=1">'
-    + '<title>Programme CAP'+(patNom && patNom !== '\u2014' ? ' \u2014 '+patNom : '')+'</title>'
-    + '<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;background:#F7F6F3;color:#1A1917;padding:20px 16px 48px}'
-    + '.wrap{max-width:720px;margin:0 auto}'
-    + '.doc-header{background:#1A3A5C;color:#fff;border-radius:10px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}'
-    + '.legend{background:#fff;border:1px solid #E8E6E1;border-radius:10px;padding:14px 16px;margin-bottom:18px;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#E8E6E1}'
-    + '.legend-cell{background:#fff;padding:8px 12px;font-size:.82rem}'
-    + '@media print{body{background:#fff!important}.doc-header{background:#1A3A5C!important}}'
-    + '</style></head><body><div class="wrap">'
-    + '<div class="doc-header">'
-    +   '<div><div style="font-size:.67rem;opacity:.6;text-transform:uppercase;letter-spacing:.06em">Programme \u2014 Reprise \u00e0 la Course \u00e0 Pied</div>'
-    +   '<div style="font-size:1.05rem;font-weight:700;margin-top:3px">'+(patNom && patNom !== '\u2014' ? patNom : 'Programme CAP')+'</div></div>'
-    +   '<div style="text-align:right;font-size:.76rem;opacity:.75;line-height:1.6">'
-    +     'La Clinique du Coureur \u00b7 '+sel.length+' semaine'+(sel.length>1?'s':'')+' s\u00e9lectionn\u00e9e'+(sel.length>1?'s':'')+'<br>'
-    +     (allureTxt && allureTxt !== '\u2014' ? '<span style="color:#A8D5B7">'+allureTxt+'</span>' : '')
-    +   '</div>'
-    + '</div>'
-    + '<div class="legend">'
-    +   '<div class="legend-cell"><strong style="color:#1A3A5C">C</strong> = Course \u2014 jogging conversationnel</div>'
-    +   '<div class="legend-cell" style="background:#F7F6F3"><strong style="color:#1A3A5C">M</strong> = Marche \u2014 r\u00e9cup\u00e9ration active</div>'
-    +   '<div class="legend-cell"><strong style="color:#C0392B">\u26a0 Douleur \u2265 3/10</strong> \u2192 arr\u00eater la s\u00e9ance</div>'
-    +   '<div class="legend-cell" style="background:#F7F6F3">D\u00e9buter et terminer par <strong>5 min de marche</strong></div>'
-    + '</div>'
-    + weeksHtml
-    + '</div></body></html>';
-
-  var win = window.open('', '_blank');
-  if (win) { win.document.write(html); win.document.close(); }
-  else { alert('Autorisez les pop-ups pour exporter.'); }
-}
-
-function capLoadBilan() {
-  try {
-    var raw = localStorage.getItem('athletik-bilan');
-    if (!raw) return;
-    var data = JSON.parse(raw);
-    var nm = ((data['f-prenom']||'')+' '+(data['f-nom']||'')).trim();
-    var el = document.getElementById('cap-patient-name');
-    if (nm && el && el.textContent === '--') el.textContent = nm;
-  } catch(e) {}
-}
-
 // Override showTab to load data on tab open
 var _origShowTab = showTab;
 showTab = function(id) {
   _origShowTab(id);
   if (id === 'hsr')    { calcHSR(); }
-  if (id === 'cap')    { buildCAP(); capLoadBilan(); }
 };
 
 // Init after DOM is ready
-buildCAP();
-capLoadBilan();
 calcHSR();
 
 // == EXPORT PATIENT ========================================
