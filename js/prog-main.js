@@ -219,32 +219,31 @@ function renderCycleTimeline(){
 
   var html = '';
   // Conteneur relatif pour le marqueur
-  html += '<div style="position:relative;display:flex;gap:4px;align-items:stretch;min-height:48px;width:100%;">';
+  html += '<div style="position:relative;display:flex;gap:6px;align-items:stretch;min-height:72px;width:100%;">';
 
-  var weekCursor = 1; // compteur de semaines pour la numérotation
+  var weekCursor = 1;
   _cycles.forEach(function(c){
-    var col = _cycleColor(c.nom);
+    var col = c.color || _cycleColor(c.nom);
     var w = (c.duree * unitW) + 'px';
-    var noteTitle = c.note ? (' — '+c.note) : '';
     var weekEnd = weekCursor + c.duree - 1;
     var weekLabel = 'S'+weekCursor + (c.duree > 1 ? '→S'+weekEnd : '');
     html += '<div class="cycle-block" style="background:'+col+';width:'+w+';flex-shrink:0;cursor:pointer;" title="Cliquer pour modifier" onclick="editCycle(\''+c.id+'\')">';
     html += '<button class="cycle-block-del" onclick="event.stopPropagation();deleteCycle(\''+c.id+'\')">×</button>';
-    html += '<div style="font-size:.75rem;font-weight:700;margin-bottom:2px;padding-right:14px;">'+c.nom+'</div>';
-    html += '<div style="font-size:.63rem;opacity:.8;">'+weekLabel+' · '+c.duree+' sem.</div>';
-    if(c.note) html += '<div style="font-size:.6rem;opacity:.7;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+c.note+'</div>';
+    html += '<div style="font-size:.82rem;font-weight:700;margin-bottom:3px;padding-right:16px;">'+c.nom+'</div>';
+    html += '<div style="font-size:.7rem;opacity:.85;">'+weekLabel+' · '+c.duree+' sem.</div>';
+    if(c.note) html += '<div style="font-size:.65rem;opacity:.75;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+c.note+'</div>';
     html += '</div>';
     weekCursor += c.duree;
   });
 
-  // Marqueur "Aujourd'hui" superposé
+  // Marqueur "Aujourd'hui" — label en bas de la ligne, dans la zone de padding-bottom
   if(todayMarkerPct !== null){
     var lblPos = todayMarkerPct > 75 ? 'right:4px;left:auto;' : 'left:4px;';
-    html += '<div style="position:absolute;top:0;bottom:0;left:'+todayMarkerPct+'%;'
+    html += '<div style="position:absolute;top:0;bottom:-30px;left:'+todayMarkerPct+'%;'
           + 'width:2px;background:var(--red);pointer-events:none;z-index:10;">'
-          + '<div style="position:absolute;top:4px;'+lblPos
-          + 'background:var(--red);color:#fff;font-size:.58rem;font-weight:700;'
-          + 'padding:1px 5px;border-radius:4px;white-space:nowrap;">Aujourd\'hui</div>'
+          + '<div style="position:absolute;bottom:4px;'+lblPos
+          + 'background:var(--red);color:#fff;font-size:.6rem;font-weight:700;'
+          + 'padding:2px 6px;border-radius:4px;white-space:nowrap;">Aujourd\'hui</div>'
           + '</div>';
   }
   html += '</div>';
