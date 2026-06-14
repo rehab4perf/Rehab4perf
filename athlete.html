@@ -701,7 +701,7 @@ function _buildUpcomingHtml(){
     var fb2 = ev.athlete_feedback;
     var ua2 = (fb2&&fb2.rpe&&fb2.duree_min) ? fb2.rpe*fb2.duree_min : null;
     var uaTag = ua2 ? '<span style="font-size:.7rem;font-weight:800;color:'+_uaColor(ua2)+';background:#F5F7FA;border-radius:5px;padding:2px 7px;margin-left:4px;">⚡ '+ua2+' UA</span>' : '';
-    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="openProgModal(\''+escH(ev.programme_id)+'\',\''+escH(nom)+'\',\''+escH(ev.id)+'\')">'
+    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="openProgModal(\''+escH(ev.programme_id)+'\',\''+escH(ev.id)+'\')">'
           + '<div style="background:var(--accent);color:#fff;border-radius:8px;padding:6px 10px;font-size:.7rem;font-weight:700;white-space:nowrap;">'+escH(dateLabel)+'</div>'
           + '<div style="font-size:.85rem;font-weight:600;flex:1;">📋 '+escH(nom)+uaTag+'</div>'
           + '<div style="color:var(--muted);font-size:.8rem;">›</div>'
@@ -755,7 +755,7 @@ function _buildMonthHtml(){
         var nom=(ev.programmes&&ev.programmes.nom)||'Programme';
         var fb=ev.athlete_feedback, ua=(fb&&fb.rpe&&fb.duree_min)?fb.rpe*fb.duree_min:null;
         var uaBadge=ua?'<span class="chip-ua" style="color:'+_uaColor(ua)+';">⚡'+ua+'</span>':'';
-        return '<div class="cal-chip" onclick="event.stopPropagation();openProgModal(\''+escH(ev.programme_id)+'\',\''+escH(nom)+'\',\''+escH(ev.id)+'\')" title="'+escH(nom)+'">'
+        return '<div class="cal-chip" onclick="event.stopPropagation();openProgModal(\''+escH(ev.programme_id)+'\',\''+escH(ev.id)+'\')" title="'+escH(nom)+'">'
              +'📋 '+escH(nom.length>10?nom.slice(0,10)+'…':nom)+uaBadge+'</div>';
       }).join('');
       msgChips = dayMsgsCell.slice(0,1).map(function(m){
@@ -830,7 +830,7 @@ function _buildWeekHtml(){
       var fb = ev.athlete_feedback;
       var ua = (fb&&fb.rpe&&fb.duree_min) ? fb.rpe*fb.duree_min : null;
       var uaHtml = ua ? '<div class="week-event-ua" style="color:'+_uaColor(ua)+';">⚡'+ua+' UA</div>' : '';
-      html += '<div class="week-event" onclick="openProgModal(\''+escH(ev.programme_id)+'\',\''+escH(nom)+'\',\''+escH(ev.id)+'\')">'
+      html += '<div class="week-event" onclick="openProgModal(\''+escH(ev.programme_id)+'\',\''+escH(ev.id)+'\')">'
             + '<div class="week-event-name">📋 '+escH(nom)+'</div>'
             + uaHtml+'</div>';
     });
@@ -914,7 +914,7 @@ function _buildDayHtml(){
       var fb = ev.athlete_feedback;
       var ua = (fb&&fb.rpe&&fb.duree_min) ? fb.rpe*fb.duree_min : null;
       var uaTag = ua ? '<span style="font-size:.75rem;font-weight:800;color:'+_uaColor(ua)+';background:#F5F7FA;border-radius:6px;padding:3px 9px;">⚡ '+ua+' UA</span>' : '';
-      html += '<div style="background:var(--surface);border:2px solid var(--accent);border-radius:12px;padding:16px;margin-bottom:10px;cursor:pointer;transition:box-shadow .15s;" onclick="openProgModal(\''+escH(ev.programme_id)+'\',\''+escH(nom)+'\',\''+escH(ev.id)+'\')" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(43,95,166,.18)\'" onmouseout="this.style.boxShadow=\'none\'">'
+      html += '<div style="background:var(--surface);border:2px solid var(--accent);border-radius:12px;padding:16px;margin-bottom:10px;cursor:pointer;transition:box-shadow .15s;" onclick="openProgModal(\''+escH(ev.programme_id)+'\',\''+escH(ev.id)+'\')" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(43,95,166,.18)\'" onmouseout="this.style.boxShadow=\'none\'">'
             + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">'
             + '<div style="font-size:1rem;font-weight:700;color:var(--navy);flex:1;">📋 '+escH(nom)+'</div>'
             + uaTag
@@ -945,8 +945,8 @@ function _buildDayHtml(){
 }
 
 // ── Modal programme ──────────────────────────────────
-function openProgModal(progId, nom, seanceId){
-  document.getElementById('progModalTitle').textContent = nom || 'Programme';
+function openProgModal(progId, seanceId){
+  document.getElementById('progModalTitle').textContent = 'Programme';
   document.getElementById('progModalBody').innerHTML = '<div class="loading-state"><div class="spinner"></div></div>';
   document.getElementById('progModal').classList.add('open');
   var fetches = [
@@ -966,6 +966,7 @@ function openProgModal(progId, nom, seanceId){
     var arr = Array.isArray(results[0]) ? results[0] : [];
     if(!arr.length){ document.getElementById('progModalBody').innerHTML = '<div class="error-state"><div class="error-icon">⚠️</div><div>Programme introuvable.</div></div>'; return; }
     var prog = arr[0];
+    document.getElementById('progModalTitle').textContent = prog.nom || 'Programme';
     var raw = prog.donnees || [];
     var blocs = Array.isArray(raw) ? raw : (raw.blocs || []);
     var existing = null;
