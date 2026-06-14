@@ -3474,8 +3474,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
     </div>
     <div class="hsr-fbody">
 
-      <div class="agenda-prog-list hsr-agenda-prog-list"></div>
-
       <div>
         <div class="hsr-field-label">1RM de référence</div>
         <div style="display:flex;align-items:center;gap:8px;">
@@ -3510,6 +3508,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
       </div>
 
       <button class="hsr-gen-btn" onclick="_hsrGenerate()">Générer le programme →</button>
+      <div class="agenda-prog-list hsr-agenda-prog-list"></div>
     </div>
   </div>
 
@@ -3537,6 +3536,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
         <div id="hsrExportCount" style="font-size:.72rem;color:#15803d;margin-bottom:4px;min-height:1em;"></div>
         <button class="hsr-export-btn" id="hsrExportBtn" onclick="_hsrExportToCalendar()">Ajouter à l'agenda →</button>
         <div id="hsrExportStatus" style="font-size:.74rem;margin-top:6px;min-height:1.1em;color:var(--muted);"></div>
+        <div class="agenda-prog-list hsr-agenda-prog-list"></div>
       </div>
       <button class="hsr-new-btn" onclick="_hsrReset()">Nouveau programme</button>
     </div>
