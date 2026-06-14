@@ -8977,7 +8977,7 @@ function _renderHsrBuilderBanner(donnees, seanceId) {
   var exo     = donnees.exercice || '';
   var idx     = donnees.session_index !== undefined ? donnees.session_index + 1 : '?';
   var total   = donnees.total || '?';
-  var consignes = donnees.consignes && donnees.consignes.length ? donnees.consignes : HSR_CONSIGNES;
+  var consignes = HSR_CONSIGNES;
 
   var html = '<div class="hsr-bb-head" onclick="_hsrBbToggle()" style="cursor:pointer;user-select:none;">'
     + '<span class="hsr-bb-label">🏋 HSR</span>'
