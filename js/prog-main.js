@@ -8127,8 +8127,8 @@ function _capSessionToCardioBloc(s, profile) {
   if (s.type === 'interval') {
     var totalMin = Math.round(s.reps * (s.runMin + (s.walkMin || 0)));
     return { type: 'cardio', sport: 'course', effort_type: 'fractionne',
-             repetitions: String(s.reps), duree_effort: s.runMin + 'm',
-             duree_recup: (s.walkMin || 0) + 'm', duree_totale: totalMin,
+             repetitions: String(s.reps), duree_effort: _capFmtMin(s.runMin),
+             duree_recup: _capFmtMin(s.walkMin || 0), duree_totale: totalMin,
              zone: patho === 'periostite' ? '2' : null,
              notes: notes || null };
   }
@@ -8240,10 +8240,11 @@ function _capReset() {
 }
 
 /* ══ Panneau CAP dans le builder ════════════════════════════════════════════ */
-var _capBbEva     = null;
-var _capBbRpe     = null;
-var _capBbSeanceId = null;
-var _capBbDonnees  = null;
+var _capBbEva       = null;
+var _capBbRpe       = null;
+var _capBbSeanceId  = null;
+var _capBbDonnees   = null;
+var _capBbCollapsed = false;
 
 function _capEvaColor(v) {
   return ['#27AE60','#5ABD6A','#82CC44','#A8C940','#F4D03F','#F39C12','#E67E22','#D35400','#E74C3C','#C0392B','#922B21'][Math.min(Math.max(Math.round(v),0),10)];
@@ -8284,11 +8285,18 @@ function _renderCapBuilderBanner(donnees, seanceId) {
   var total     = donnees.total || '?';
   var consignes = (donnees.consignes && donnees.consignes.length) ? donnees.consignes : (pathoInfo.consignes || []);
 
-  var html = '<div class="cap-bb-head">'
+  // Header toujours visible — toggle collapse
+  var html = '<div class="cap-bb-head" onclick="_capBbToggle()" style="cursor:pointer;user-select:none;">'
     + '<span class="cap-bb-label">🏃 CAP — ' + escH(pathoInfo.label || patho) + '</span>'
     + (phaseLbl ? '<span class="cap-bb-phase">' + escH(phaseLbl) + '</span>' : '')
     + '<span style="margin-left:auto;font-size:.7rem;color:#6b7a8d;font-weight:600;">Séance ' + idx + '/' + total + '</span>'
-    + '</div>';
+    + '<span id="cap-bb-chevron" style="margin-left:8px;font-size:.75rem;color:#0d9488;transition:transform .2s;">'
+    + (_capBbCollapsed ? '▶' : '▼') + '</span>'
+    + '</div>'
+    + '<div id="cap-bb-summary" style="font-size:.68rem;color:#6b7a8d;margin-top:2px;display:' + (_capBbCollapsed ? 'block' : 'none') + ';">Chargement…</div>';
+
+  // Corps rétractable
+  html += '<div id="cap-bb-body" style="display:' + (_capBbCollapsed ? 'none' : 'block') + ';">';
 
   if (consignes.length) {
     html += '<ul class="cap-bb-consignes">';
@@ -8296,8 +8304,10 @@ function _renderCapBuilderBanner(donnees, seanceId) {
     html += '</ul>';
   }
 
-  html += '<div id="cap-bb-feedback" style="border-top:1px solid #99f6e4;margin-top:8px;padding-top:8px;">'
+  html += '<div id="cap-bb-feedback" style="border-top:1px solid #99f6e4;margin-top:6px;padding-top:8px;">'
     + '<div style="font-size:.7rem;color:#6b7a8d;font-style:italic;">Chargement…</div></div>';
+
+  html += '</div>'; // cap-bb-body
 
   banner.innerHTML = html;
   banner.style.display = 'block';
@@ -8312,12 +8322,34 @@ function _renderCapBuilderBanner(donnees, seanceId) {
   }
 }
 
+function _capBbToggle() {
+  _capBbCollapsed = !_capBbCollapsed;
+  var body    = document.getElementById('cap-bb-body');
+  var summary = document.getElementById('cap-bb-summary');
+  var chevron = document.getElementById('cap-bb-chevron');
+  if (body)    body.style.display    = _capBbCollapsed ? 'none' : 'block';
+  if (chevron) chevron.textContent   = _capBbCollapsed ? '▶' : '▼';
+  if (summary) summary.style.display = _capBbCollapsed ? 'block' : 'none';
+}
+
 function _capRenderFeedback(existing, seuil) {
   var fb = document.getElementById('cap-bb-feedback');
   if (!fb) return;
 
   _capBbEva = existing ? existing.rpe        : null;
   _capBbRpe = existing ? existing.duree_min  : null;
+
+  // Mettre à jour la ligne résumé (visible quand replié)
+  var summary = document.getElementById('cap-bb-summary');
+  if (summary) {
+    if (existing) {
+      var sc = _capBbEva !== null ? (' 🩹 <strong style="color:'+_capEvaColor(_capBbEva)+'">'+_capBbEva+'/10</strong>') : '';
+      var se = _capBbRpe ? (' 💪 <strong>'+_capBbRpe+'/10</strong>') : '';
+      summary.innerHTML = sc + se || 'Non renseigné';
+    } else {
+      summary.textContent = 'Non renseigné';
+    }
+  }
 
   var fromPatient = !!existing;
   var html = '';
