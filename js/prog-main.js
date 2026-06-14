@@ -7595,6 +7595,18 @@ function _capCanonical18(level, obj) {
   }
 }
 
+/* ── Helpers volume ── */
+function _capSessKm(s, allure) {
+  if (!allure || allure <= 0) return null;
+  var runMin = s.type === 'interval' ? s.reps * s.runMin : s.durationMin;
+  return Math.round(runMin / allure * 10) / 10;
+}
+
+function _capKmLabel(s, allure) {
+  var km = _capSessKm(s, allure);
+  return km !== null ? '<span style="font-size:.68rem;color:var(--muted);margin-left:6px;">' + km.toFixed(1) + ' km</span>' : '';
+}
+
 /* ── Construction du programme ── */
 function _capBuildSessions(profile) {
   _capIdSeq = 0;
@@ -7604,6 +7616,9 @@ function _capBuildSessions(profile) {
   if (profile.dureeArret === '>6sem') {
     level = level === 'avance' ? 'intermediaire' : 'debutant';
   }
+
+  // BIT : génération spécifique avec paliers +10% volume
+  if (profile.patho === 'bit') return _capBITSessions(profile, level);
 
   var canonical = _capCanonical18(level, profile.objectiveMin);
   var total = profile.seancesPerWeek * 6;
@@ -7677,6 +7692,7 @@ function _capChipVal(groupId) {
 
 /* ── Générer ── */
 function _capGenerate() {
+  var allureRaw = parseFloat(document.getElementById('capAllureG').value);
   var profile = {
     track:          _capChipVal('capTrackG'),
     level:          _capChipVal('capLevelG'),
@@ -7684,7 +7700,8 @@ function _capGenerate() {
     objectiveMin:   parseInt(document.getElementById('capObjG').value),
     age:            _capChipVal('capAgeG'),
     seancesPerWeek: parseInt(document.getElementById('capSpwG').value),
-    dureeArret:     _capChipVal('capArretG')
+    dureeArret:     _capChipVal('capArretG'),
+    allure:         isNaN(allureRaw) || allureRaw <= 0 ? null : allureRaw
   };
 
   CAP_STATE = { profile: profile, sessions: _capBuildSessions(profile) };
@@ -7698,6 +7715,11 @@ function _capGenerate() {
 function _capBackForm() {
   document.getElementById('capResultScreen').style.display = 'none';
   document.getElementById('capFormScreen').style.display  = 'flex';
+  // Restaurer l'allure si le profil existe
+  if (CAP_STATE && CAP_STATE.profile && CAP_STATE.profile.allure) {
+    var el = document.getElementById('capAllureG');
+    if (el) el.value = CAP_STATE.profile.allure;
+  }
 }
 
 function _capNewProg() {
@@ -7773,9 +7795,10 @@ function _capSessHtml(s) {
   if (s.status === 'done')    cls += ' cap-sess-done';
   if (s.status === 'painful') cls += ' cap-sess-pain';
 
+  var allure = CAP_STATE && CAP_STATE.profile && CAP_STATE.profile.allure;
   var dot    = '<div class="cap-sess-dot cap-dot-' + s.status + '"></div>';
   var badge  = s.isIntermediate ? '<div class="cap-inter-badge">Palier intermédiaire</div>' : '';
-  var label  = '<div class="cap-sess-label">' + s.label + '</div>';
+  var label  = '<div class="cap-sess-label">' + s.label + _capKmLabel(s, allure) + '</div>';
 
   var actions = '';
   if (s._idx === _capPainIdx) {
@@ -7931,16 +7954,78 @@ function _capCalcDates(count, spw, startDateStr) {
   return dates;
 }
 
+/* ── BIT : génération avec paliers +10% volume par séance ── */
+function _capBITSessions(profile, level) {
+  var canonical = _capCanonical18(level, profile.objectiveMin);
+  var total = profile.seancesPerWeek * 6;
+  var allure = profile.allure;
+
+  // Calcul du volume unitaire d'une session (reps×runMin pour interval, durationMin pour continu)
+  function volUnit(s) {
+    return s.type === 'interval' ? s.reps * s.runMin : (s.durationMin || 0);
+  }
+
+  // Régénère le label après modification des reps/durée
+  function refreshLabel(s) {
+    if (s.type === 'interval') {
+      s.label = s.reps + '\xd7(' + _capFmtMin(s.runMin) + 'C / ' + _capFmtMin(s.walkMin) + 'M)';
+    } else {
+      var d = s.durationMin || 0;
+      s.label = d >= 60 ? Math.floor(d/60) + 'h' + (d%60 ? (d%60) + '\'' : '') : d + '\'';
+    }
+    return s;
+  }
+
+  // Base : volume de la session canonique 1
+  var base = volUnit(canonical[0]);
+  var sessions = [];
+
+  // Sélectionne le template canonique le plus proche pour chaque step
+  for (var i = 0; i < total; i++) {
+    var ci = Math.round(i * (canonical.length - 1) / Math.max(total - 1, 1));
+    var s = JSON.parse(JSON.stringify(canonical[ci]));
+    s.id = _capMkId();
+
+    // Cible : base × 1.10^i, plafonnée au volume final du canonical
+    var targetVol = base * Math.pow(1.10, i);
+    var maxVol = volUnit(canonical[canonical.length - 1]);
+    targetVol = Math.min(targetVol, maxVol);
+
+    // Adapter reps ou durée pour atteindre la cible
+    if (s.type === 'interval' && s.runMin > 0) {
+      s.reps = Math.max(1, Math.round(targetVol / s.runMin));
+    } else if (s.type === 'continu') {
+      s.durationMin = Math.max(1, Math.round(targetVol));
+    }
+    refreshLabel(s);
+    s.week = Math.floor(i / profile.seancesPerWeek) + 1;
+    sessions.push(s);
+  }
+  return sessions;
+}
+
 /* ── CAP → Agenda : convertit une session CAP en bloc cardio (pour Évolution) ── */
-function _capSessionToCardioBloc(s) {
+function _capSessionToCardioBloc(s, profile) {
+  var patho = (profile && profile.patho) || '';
+  var allure = (profile && profile.allure) ? profile.allure : null;
+  var consigne = patho === 'periostite'
+    ? 'Allure conversation — discuter aisément pendant l\'effort (Zone 2)'
+    : '';
+  var alComment = allure ? 'Allure cible : ' + allure + ' min/km' : '';
+  var notes = [consigne, alComment].filter(Boolean).join(' · ');
+
   if (s.type === 'interval') {
     var totalMin = Math.round(s.reps * (s.runMin + (s.walkMin || 0)));
     return { type: 'cardio', sport: 'course', effort_type: 'fractionne',
              repetitions: String(s.reps), duree_effort: s.runMin + 'm',
-             duree_recup:  (s.walkMin || 0) + 'm', duree_totale: totalMin };
+             duree_recup: (s.walkMin || 0) + 'm', duree_totale: totalMin,
+             zone: patho === 'periostite' ? '2' : null,
+             notes: notes || null };
   }
   return { type: 'cardio', sport: 'course', effort_type: 'continu',
-           duree_totale: s.durationMin || 0 };
+           duree_totale: s.durationMin || 0,
+           zone: patho === 'periostite' ? '2' : null,
+           notes: notes || null };
 }
 
 /* ── CAP → Agenda : export Supabase ── */
@@ -7971,7 +8056,7 @@ function _capExportToCalendar() {
         profile:       CAP_STATE.profile,
         session_index: i,
         total:         sessions.length,
-        blocs:         [_capSessionToCardioBloc(s)]
+        blocs:         [_capSessionToCardioBloc(s, CAP_STATE.profile)]
       }
     };
   });
