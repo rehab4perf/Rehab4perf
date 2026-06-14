@@ -7386,7 +7386,6 @@ var CAP_PATHO_DB = {
     label: 'Sans pathologie spécifique',
     seuil: 3,
     consignes: [
-      'Minimum 1 jour de repos entre chaque séance CAP',
       'Ne pas augmenter vitesse et durée simultanément'
     ],
     drapeaux: [
@@ -7400,9 +7399,7 @@ var CAP_PATHO_DB = {
     seuil: 2,
     consignes: [
       'Cadence cible ≥ 175 pas/min — réduit l\'adduction de hanche et la contrainte latérale',
-      'Éviter les descentes et le dévers jusqu\'à la semaine 5',
-      'Minimum 1 jour de repos entre chaque séance CAP',
-      'Compléter chaque séance par 10 min renforcement fessier (abducteurs, glute med)'
+      'Éviter les descentes et le dévers jusqu\'à la semaine 5'
     ],
     drapeaux: [
       'Douleur ≥ 3/10 pendant la course → arrêt immédiat, régression d\'une phase',
@@ -7415,9 +7412,7 @@ var CAP_PATHO_DB = {
     seuil: 3,
     consignes: [
       'Éviter les côtes et surfaces dures les 4 premières semaines — privilégier chemins souples',
-      'Raideur matinale acceptable si elle disparaît en < 20 min ; la surveiller séance après séance',
-      'Compléter par renforcement excentrique quotidien du mollet (protocole Alfredson ou Silbernagel)',
-      'Ne pas étirer le tendon avant la course — réchauffement actif uniquement'
+      'Raideur matinale acceptable si elle disparaît en < 20 min ; la surveiller séance après séance'
     ],
     drapeaux: [
       'Douleur ≥ 4/10 pendant la course → arrêt immédiat',
@@ -7432,13 +7427,11 @@ var CAP_PATHO_DB = {
     consignes: [
       'Éviter les descentes et les surfaces en dévers jusqu\'à la semaine 5',
       'Cadence ≥ 170 pas/min pour réduire les forces de compression patellaires',
-      'Compléter par renforcement quadriceps en chaîne fermée (squat au tiers de flexion)',
       'Réduire la vitesse si douleur en montée ou en descente de marches'
     ],
     drapeaux: [
       'Douleur ≥ 4/10 → arrêt de la séance',
       'Gonflement du genou → arrêt et consultation',
-      'Dérobement ou blocage du genou → arrêt urgent',
       'Douleur résiduelle le lendemain → répéter sans progresser'
     ]
   },
@@ -7447,9 +7440,7 @@ var CAP_PATHO_DB = {
     seuil: 2,
     consignes: [
       'Augmenter le volume avant l\'intensité — pas de sprint ni de changement de direction avant la semaine 5',
-      'Éviter les côtes montantes les 4 premières semaines',
-      'Compléter par gainage abdominal profond et renforcement adducteurs (en progression)',
-      'Minimum 1 jour de repos entre chaque séance CAP'
+      'Éviter les côtes montantes les 4 premières semaines'
     ],
     drapeaux: [
       'Douleur à la palpation pubienne en augmentation → pause 48h minimum',
@@ -7463,15 +7454,13 @@ var CAP_PATHO_DB = {
     seuil: 2,
     consignes: [
       'Les premières minutes de course peuvent être légèrement douloureuses (< 2/10) — normal si ça s\'atténue à l\'échauffement',
-      'Privilégier surfaces souples, éviter pieds nus et chaussures minimalistes',
-      'Étirements du fascia plantaire matin au lever et avant chaque séance',
-      'Compléter par renforcement des muscles intrinsèques du pied'
+      'Privilégier surfaces souples, éviter pieds nus et chaussures minimalistes'
     ],
     drapeaux: [
       'Douleur après la course supérieure à la douleur de départ → régression d\'une étape',
       'Douleur au talon invalidante le matin au lever → pause et réévaluation',
       'Gonflement du talon → consultation et imagerie',
-      'Douleur ≥ 3/10 en dehors de l\'échauffement → arrêt'
+      'Douleur ≥ 3/10 → arrêt'
     ]
   },
   periostite: {
@@ -7480,14 +7469,26 @@ var CAP_PATHO_DB = {
     consignes: [
       'Surfaces souples exclusivement les 3 premières semaines (herbe, piste, chemin)',
       'Chaussures absorbantes avec bon maintien — remplacer si > 700 km',
-      'Ne jamais augmenter volume et vitesse simultanément',
-      'Compléter par renforcement mollet, tibial antérieur et travail de foulée'
+      'Ne jamais augmenter volume et vitesse simultanément'
     ],
     drapeaux: [
       'Douleur au repos ou nocturne → éliminer fracture de fatigue par IRM avant reprise',
       'Douleur localisée sur un point fixe précis → consultation urgente',
       'Douleur ≥ 4/10 → arrêt et imagerie',
       'Gonflement localisé sur le tibia → arrêt immédiat'
+    ]
+  },
+  postop_genou: {
+    label: 'Post-opératoire genou (LCA / LCP / ménisque)',
+    seuil: 2,
+    consignes: [
+      'Observer la symétrie de foulée à chaque séance — arrêt si boiterie ou compensation visible',
+      'Surveiller le gonflement post-séance — toute augmentation par rapport à J-1 → repos 48h avant la séance suivante',
+      'Respecter strictement la progression planifiée — ne jamais sauter d\'étape'
+    ],
+    drapeaux: [
+      'Gonflement du genou pendant ou après la séance → arrêt et consultation',
+      'Douleur ≥ 3/10 → arrêt'
     ]
   }
 };
