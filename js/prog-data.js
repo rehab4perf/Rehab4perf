@@ -1153,8 +1153,8 @@ function _renderCardioBloc(b, idx){
     h += '<div class="cardio-frac-title">⚡ Détail du fractionné</div>';
     h += '<div class="cardio-row">';
     h += '<div class="cardio-field"><label class="cardio-lbl">Répétitions</label><input type="number" class="cardio-inp" min="1" value="'+escH(b.repetitions||'')+'" placeholder="6" oninput="updateCardioField(\''+bid+'\',\'repetitions\',this.value)"></div>';
-    h += '<div class="cardio-field"><label class="cardio-lbl">Durée effort</label><input type="text" class="cardio-inp" value="'+escH(b.duree_effort||'')+'" placeholder="3 min" oninput="updateCardioField(\''+bid+'\',\'duree_effort\',this.value)"></div>';
-    h += '<div class="cardio-field"><label class="cardio-lbl">Récupération</label><input type="text" class="cardio-inp" value="'+escH(b.duree_recup||'')+'" placeholder="2 min" oninput="updateCardioField(\''+bid+'\',\'duree_recup\',this.value)"></div>';
+    h += '<div class="cardio-field"><label class="cardio-lbl">Durée effort</label><input type="text" class="cardio-inp" value="'+escH(_normDureeStr(b.duree_effort)||'')+'" placeholder="3 min" oninput="updateCardioField(\''+bid+'\',\'duree_effort\',this.value)"></div>';
+    h += '<div class="cardio-field"><label class="cardio-lbl">Récupération</label><input type="text" class="cardio-inp" value="'+escH(_normDureeStr(b.duree_recup)||'')+'" placeholder="2 min" oninput="updateCardioField(\''+bid+'\',\'duree_recup\',this.value)"></div>';
     h += '</div>';
     h += _renderCardioCibles(bid, 'frac_cibles', b.frac_cibles, 'Cibles effort');
     h += _renderCardioCibles(bid, 'frac_recup_cibles', b.frac_recup_cibles, 'Cibles récupération');
@@ -3050,6 +3050,21 @@ function _extractExoDurations(seances) {
 }
 
 /* ── Helpers cardio évolution ──────────────────────────────────────── */
+
+/* Normalise une durée stockée au format numérique "Xm" → notation min/sec lisible.
+   Ex : "1.5m" → "1'30" · "2m" → "2'" · "0.5m" → "30s" · "1'30" → "1'30" (inchangé) */
+function _normDureeStr(s) {
+  if (s === null || s === undefined || s === '') return s;
+  var str = String(s).trim();
+  var m = str.match(/^(\d+(?:\.\d+)?)m$/i);
+  if (!m) return str; // déjà formaté correctement
+  var mins = parseFloat(m[1]);
+  if (mins === 0.5) return '30s';
+  var whole = Math.floor(mins);
+  var secs  = Math.round((mins - whole) * 60);
+  if (secs === 0) return whole + '\'';
+  return whole + '\'' + (secs < 10 ? '0' : '') + secs;
+}
 
 /* Convertit une chaîne durée (duree_effort) en minutes. */
 function _parseCardioMinutes(str) {
