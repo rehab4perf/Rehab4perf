@@ -1584,6 +1584,16 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .cal-chip-more { background:none; border:none; color:rgba(255,255,255,.9); cursor:pointer; font-size:.85rem; line-height:1; padding:0 3px 0 0; flex-shrink:0; -webkit-tap-highlight-color:transparent; }
 @media (hover:hover) and (pointer:fine) { .cal-chip-more { display:none; } }
 
+/* ── Badge overflow "+N de plus" ── */
+.cal-overflow-badge {
+  font-size:.6rem; font-weight:700; color:var(--muted);
+  background:var(--bg); border:1px solid var(--border);
+  border-radius:4px; padding:1px 6px; margin-top:1px;
+  cursor:pointer; text-align:center; white-space:nowrap;
+  transition:background .12s, color .12s, border-color .12s;
+}
+.cal-overflow-badge:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+
 /* ── Drag & drop calendrier ── */
 .cal-day.drag-over { background:#EBF5FF !important; outline:2px dashed var(--accent2); outline-offset:-2px; }
 .cal-day.drag-over-copy { background:#EDFFF4 !important; outline:2px dashed #27AE60; outline-offset:-2px; }

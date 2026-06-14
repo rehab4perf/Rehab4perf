@@ -711,12 +711,12 @@ function _protoPhaseChipStyle(donnees){
 }
 
 /* ── Helper chips partagé mois + semaine ── */
-function _buildDayChips(dateStr, cellDate){
-  var chips = '';
+function _buildDayChips(dateStr, cellDate, _skipCap){
+  var allChips = [];
   if(_progPatient){
     var dayEvs = _cloudCalEvents.filter(function(e){ return e.date===dateStr; });
     var _j0Ref = _progPatient ? _getJ0ForPatient(_progPatient.id) : '';
-    chips = dayEvs.map(function(ev){
+    allChips = dayEvs.map(function(ev){
       var nom = (ev.programmes&&ev.programmes.nom)||'Programme';
 
       // ── Chip CAP — séance de retour à la course ──
@@ -820,10 +820,10 @@ function _buildDayChips(dateStr, cellDate){
         +phaseTag
         +'<button class="cal-chip-del" style="color:'+(phStyle?'rgba(30,58,95,.5)':'rgba(255,255,255,.7)')+'" onclick="event.stopPropagation();removeCalEventCloud(\''+ev.id+'\')">×</button>'
         +'</div>';
-    }).join('');
+    }).filter(Boolean);
   } else {
     var eventsForDay = _calEvents.filter(function(e){ return e.date===dateStr; });
-    chips = eventsForDay.map(function(ev){
+    allChips = eventsForDay.map(function(ev){
       var s = _savedSeances.find(function(x){ return x.id===ev.seanceId; });
       if(!s) return '';
       var col = _seanceTypeColor(s.type);
@@ -831,7 +831,7 @@ function _buildDayChips(dateStr, cellDate){
         +'<span>'+s.emoji+' '+escH(s.name.length>14?s.name.slice(0,14)+'…':s.name)+'</span>'
         +'<button class="cal-chip-del" onclick="event.stopPropagation();removeCalEvent(\''+ev.id+'\')">×</button>'
         +'</div>';
-    }).join('');
+    }).filter(Boolean);
   }
   _cycles.forEach(function(cy){
     if(!cy.startDate) return;
@@ -840,7 +840,7 @@ function _buildDayChips(dateStr, cellDate){
     if(cellDate>=cyStart && cellDate<cyEnd){
       var col = _cycleColor(cy.nom);
       var wn = Math.floor((cellDate-cyStart)/(7*24*3600*1000))+1;
-      chips += '<div style="font-size:.6rem;font-weight:700;color:#fff;background:'+col+';border-radius:3px;padding:1px 5px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+cy.nom+' S'+wn+'</div>';
+      allChips.push('<div style="font-size:.6rem;font-weight:700;color:#fff;background:'+col+';border-radius:3px;padding:1px 5px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+cy.nom+' S'+wn+'</div>');
     }
   });
   // Notes calendrier
@@ -849,28 +849,68 @@ function _buildDayChips(dateStr, cellDate){
     var lbl = note.title || (note.text ? note.text.slice(0,22)+(note.text.length>22?'…':'') : 'Note');
     var isPatient = note.type === 'patient';
     _noteTouchMeta[note.id] = { title: lbl, dateStr: note.date };
-    // ── Mode sélection notes ──
     if (_calSelMode) {
       var noteSel = _calSelNotes.has(String(note.id));
       var noteSelRing = noteSel ? ';box-shadow:0 0 0 2px rgba(0,0,0,.06),0 0 0 3px var(--accent);' : ';opacity:.82;';
-      chips += '<div id="cal-note-'+note.id+'" class="cal-note-chip '+(isPatient?'chip-patient':'chip-clinique')+'" style="cursor:pointer'+noteSelRing+'" onclick="event.stopPropagation();_calSelToggle(\''+note.id+'\',\'note\')" title="'+escH((note.title?note.title+'\n':'')+note.text)+'">'
+      allChips.push('<div id="cal-note-'+note.id+'" class="cal-note-chip '+(isPatient?'chip-patient':'chip-clinique')+'" style="cursor:pointer'+noteSelRing+'" onclick="event.stopPropagation();_calSelToggle(\''+note.id+'\',\'note\')" title="'+escH((note.title?note.title+'\n':'')+note.text)+'">'
         +'<span>'+(isPatient?'💬':'🔒')+'</span>'
         +'<span class="cal-note-chip-text">'+escH(lbl)+'</span>'
         +'<span class="cal-sel-check" style="font-size:.75rem;font-weight:800;margin-left:auto;flex-shrink:0;">'+(noteSel?'✓':'')+'</span>'
-        +'</div>';
-      return; // continue forEach
+        +'</div>');
+      return;
     }
     var noteEvtAttrs = _isTouchDevice
       ? ' ontouchstart="_noteChipTouchStart(event,\''+note.id+'\')" ontouchmove="_noteChipTouchMove(event)" ontouchend="_noteChipTouchEnd(event,\''+note.id+'\')"'
       : ' onclick="event.stopPropagation();_openCalNoteView(\''+note.id+'\')" draggable="true" ondragstart="_calNoteChipDragStart(event,\''+note.id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"';
     var noteMoreBtn = '<button class="cal-note-chip-more" ontouchend="event.stopPropagation();event.preventDefault();_showNoteActionSheet(\''+note.id+'\',\''+escJS(lbl)+'\')">⋮</button>';
-    chips += '<div id="cal-note-'+note.id+'" class="cal-note-chip '+(isPatient?'chip-patient':'chip-clinique')+'"'+noteEvtAttrs+' title="'+escH((note.title?note.title+'\n':'')+note.text)+'">'
+    allChips.push('<div id="cal-note-'+note.id+'" class="cal-note-chip '+(isPatient?'chip-patient':'chip-clinique')+'"'+noteEvtAttrs+' title="'+escH((note.title?note.title+'\n':'')+note.text)+'">'
       +noteMoreBtn
       +'<span>'+(isPatient?'💬':'🔒')+'</span><span class="cal-note-chip-text">'+escH(lbl)+'</span>'
       +'<button class="cal-note-chip-del" onclick="event.stopPropagation();_confirmDeleteNote(function(){_deleteCalNote(\''+note.id+'\');})">×</button>'
-      +'</div>';
+      +'</div>');
   });
-  return chips;
+  // Pas de cap en mode sélection ou si explicitement demandé
+  if (_calSelMode || _skipCap || allChips.length <= 2) return allChips.join('');
+  // Cap à 2 chips + badge overflow
+  var _ovfId = 'cal-ovf-' + dateStr.replace(/-/g,'');
+  var _ovfN  = allChips.length - 2;
+  return allChips.slice(0, 2).join('')
+    + '<div id="'+_ovfId+'" class="cal-overflow-badge" onclick="event.stopPropagation();_openDayPopover(\''+escJS(dateStr)+'\',\''+_ovfId+'\')">+'+_ovfN+' de plus</div>';
+}
+
+/* ── Popover jour complet (overflow chips) ── */
+function _openDayPopover(dateStr, anchorId){
+  var existing = document.getElementById('cal-day-popover');
+  if(existing){ existing.remove(); return; }
+  var anchor = document.getElementById(anchorId);
+  if(!anchor) return;
+  var rect = anchor.getBoundingClientRect();
+  var cellDate = new Date(dateStr + 'T00:00:00');
+  var allHtml = _buildDayChips(dateStr, cellDate, true);
+  var mshort = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  var dshort = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+  var dt = new Date(dateStr + 'T00:00:00');
+  var dlabel = dshort[dt.getDay()] + ' ' + dt.getDate() + ' ' + mshort[dt.getMonth()];
+  var pop = document.createElement('div');
+  pop.id = 'cal-day-popover';
+  var left = Math.max(4, Math.min(rect.left, window.innerWidth - 254));
+  var top  = rect.bottom + 4;
+  if(top + 300 > window.innerHeight) top = Math.max(4, rect.top - 308); // flip si trop bas
+  pop.style.cssText = 'position:fixed;z-index:9999;top:'+top+'px;left:'+left+'px;'
+    + 'background:#fff;border:1px solid var(--border);border-radius:10px;'
+    + 'box-shadow:0 8px 28px rgba(0,0,0,.16);padding:10px;min-width:200px;max-width:250px;';
+  pop.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;">'
+    + '<span style="font-size:.78rem;font-weight:700;color:var(--navy);">'+escH(dlabel)+'</span>'
+    + '<button onclick="document.getElementById(\'cal-day-popover\').remove()" '
+    + 'style="border:none;background:none;cursor:pointer;font-size:1rem;line-height:1;color:var(--muted);padding:0;">✕</button>'
+    + '</div>'
+    + '<div style="display:flex;flex-direction:column;gap:3px;">'+allHtml+'</div>';
+  document.body.appendChild(pop);
+  // Fermer au clic extérieur
+  setTimeout(function(){
+    function _closePop(e){ if(!pop.contains(e.target)){ pop.remove(); document.removeEventListener('click',_closePop); } }
+    document.addEventListener('click', _closePop);
+  }, 50);
 }
 
 /* ── Vue semaine ── */
