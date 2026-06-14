@@ -9058,13 +9058,14 @@ function _hsrRenderFeedback(existing) {
 
   var summary = document.getElementById('hsr-bb-summary');
   if (summary) {
-    if (existing) {
-      var sc = _hsrBbEva !== null ? (' 🩹 <strong style="color:'+_hsrEvaColor(_hsrBbEva)+'">'+_hsrBbEva+'/10</strong>') : '';
-      var se = _hsrBbRpe ? (' 💪 <strong>'+_hsrBbRpe+'/10</strong>') : '';
-      summary.innerHTML = (sc || se) ? (sc + se) : 'Non renseigné';
-    } else {
-      summary.textContent = 'Non renseigné';
-    }
+    var _sd = _hsrBbDonnees || {};
+    var _sCharge = _sd.ref1RM ? Math.round(_sd.ref1RM * (_sd.pct || 65) / 100 * 2) / 2 : null;
+    var _sPresc = _sCharge !== null
+      ? '<strong>' + (_sd.sets||'?') + '×' + (_sd.reps||'?') + '</strong> · <strong>' + _sCharge + ' kg</strong>'
+      : '';
+    var sc = _hsrBbEva !== null ? (' · 🩹 <strong style="color:'+_hsrEvaColor(_hsrBbEva)+'">'+_hsrBbEva+'/10</strong>') : '';
+    var se = _hsrBbRpe  ? (' · 💪 <strong>'+_hsrBbRpe+'/10</strong>') : '';
+    summary.innerHTML = _sPresc + sc + se || 'Non renseigné';
   }
 
   var fromPatient = !!existing;
