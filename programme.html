@@ -688,6 +688,67 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .cap-bb-adapt-btn:hover { background:#0d9488; color:#fff; }
 .cap-bb-sep { border:none; border-top:1px solid #99f6e4; margin:10px 0 8px; }
 
+/* ── Panneau HSR dans le builder ── */
+#hsr-builder-banner {
+  margin:6px 10px 0; border-radius:8px; font-size:.78rem; line-height:1.45;
+  background:#f0fdf4; border:1px solid #86efac; color:#14532d; padding:10px 12px;
+}
+.hsr-bb-head { display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap; }
+.hsr-bb-label { font-size:.7rem; font-weight:700; color:#16a34a; text-transform:uppercase; letter-spacing:.06em; }
+.hsr-bb-phase { font-size:.7rem; background:#bbf7d0; color:#15803d; border-radius:4px; padding:1px 6px; font-weight:600; }
+.hsr-bb-consignes { list-style:none; margin:0 0 4px; padding:0; display:flex; flex-direction:column; gap:3px; }
+.hsr-bb-consignes li { display:flex; gap:6px; font-size:.73rem; color:#14532d; }
+.hsr-bb-consignes li::before { content:'›'; color:#16a34a; flex-shrink:0; }
+.hsr-bb-section-title { font-size:.66rem; font-weight:700; color:#14532d; text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px; }
+.hsr-bb-btns { display:flex; flex-wrap:wrap; gap:3px; margin-bottom:2px; }
+.hsr-bb-btn { width:26px; height:24px; border:1px solid #86efac; border-radius:5px; background:#fff; color:#14532d; font-size:.7rem; font-weight:600; cursor:pointer; transition:all .12s; padding:0; }
+.hsr-bb-btn:hover { border-color:#16a34a; background:#dcfce7; }
+.hsr-bb-save-btn { width:100%; margin-top:6px; padding:7px 10px; background:#16a34a; color:#fff; border:none; border-radius:6px; font-size:.73rem; font-weight:600; cursor:pointer; transition:background .15s; }
+.hsr-bb-save-btn:hover { background:#15803d; }
+.hsr-bb-save-btn:disabled { opacity:.6; cursor:default; }
+.hsr-bb-adapt-row { display:flex; gap:6px; margin-top:4px; }
+.hsr-bb-adapt-btn { flex:1; padding:7px 6px; background:#fff; color:#16a34a; border:1.5px solid #16a34a; border-radius:6px; font-size:.72rem; font-weight:600; cursor:pointer; transition:all .15s; text-align:center; }
+.hsr-bb-adapt-btn:hover { background:#16a34a; color:#fff; }
+.hsr-bb-sep { border:none; border-top:1px solid #86efac; margin:10px 0 8px; }
+.hsr-bb-presc { background:#dcfce7; border-radius:6px; padding:8px 10px; margin:6px 0 8px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.hsr-bb-presc-charge { font-size:1rem; font-weight:800; color:#14532d; }
+.hsr-bb-presc-meta { font-size:.72rem; color:#166534; }
+/* ── HSR Wizard ── */
+.hsr-ov { position:fixed; inset:0; background:rgba(0,0,0,.52); z-index:900; display:none; align-items:flex-start; justify-content:center; padding:20px 14px; overflow-y:auto; }
+.hsr-panel { background:#fff; border-radius:14px; width:100%; max-width:480px; box-shadow:0 16px 52px rgba(0,0,0,.24); margin:auto; display:flex; flex-direction:column; max-height:calc(100vh - 40px); overflow:hidden; }
+.hsr-ph { display:flex; align-items:center; padding:13px 16px; border-bottom:1px solid var(--border); flex-shrink:0; gap:8px; }
+.hsr-ph-title { font-size:.88rem; font-weight:700; color:var(--navy); flex:1; text-align:center; }
+.hsr-ph-close { background:none; border:none; font-size:1.1rem; color:var(--muted); cursor:pointer; padding:2px 6px; line-height:1; }
+.hsr-ph-close:hover { color:var(--text); }
+.hsr-ph-back { background:none; border:none; font-size:.76rem; color:#16a34a; cursor:pointer; padding:2px 4px; font-family:inherit; white-space:nowrap; }
+.hsr-ph-back:hover { text-decoration:underline; }
+.hsr-fbody { padding:16px 18px 20px; overflow-y:auto; display:flex; flex-direction:column; gap:13px; }
+.hsr-field-label { font-size:.67rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; margin-bottom:5px; }
+.hsr-select { border:1px solid var(--border); border-radius:7px; padding:7px 10px; font-size:.82rem; color:var(--text); font-family:inherit; outline:none; background:#fff; width:100%; }
+.hsr-select:focus { border-color:#16a34a; }
+.hsr-chips { display:flex; flex-wrap:wrap; gap:6px; }
+.hsr-chip { background:#f5f7fa; border:1px solid var(--border); border-radius:20px; padding:5px 13px; font-size:.77rem; color:var(--text); cursor:pointer; transition:all .12s; font-family:inherit; }
+.hsr-chip.active { background:#16a34a; border-color:#16a34a; color:#fff; }
+.hsr-chip:hover:not(.active) { border-color:#16a34a; color:#16a34a; }
+.hsr-gen-btn { margin-top:4px; padding:11px; background:#16a34a; color:#fff; border:none; border-radius:8px; font-size:.88rem; font-weight:600; cursor:pointer; font-family:inherit; }
+.hsr-gen-btn:hover { background:#15803d; }
+.hsr-rbody { overflow-y:auto; padding:13px 16px 18px; display:flex; flex-direction:column; gap:8px; }
+.hsr-result-summary { background:#ecfdf5; border:1px solid #a7f3d0; border-radius:7px; padding:9px 12px; font-size:.78rem; color:#065f46; font-weight:600; text-align:center; }
+.hsr-phase-card { background:#fff; border:1px solid #E8E6E1; border-radius:8px; overflow:hidden; }
+.hsr-phase-card-head { background:#2D6A4F; color:#fff; padding:8px 12px; display:flex; align-items:center; gap:8px; font-size:.78rem; font-weight:700; }
+.hsr-phase-tag { background:rgba(255,255,255,.2); border-radius:4px; padding:1px 7px; font-size:.68rem; font-weight:700; flex-shrink:0; }
+.hsr-phase-card-body { padding:8px 12px; }
+.hsr-phase-presc { font-size:.86rem; font-weight:700; color:#1A1917; margin-bottom:2px; }
+.hsr-phase-charge { font-size:.82rem; font-weight:600; color:#2D6A4F; }
+.hsr-phase-clinique { font-size:.72rem; color:#6B6860; margin-top:2px; }
+.hsr-export-zone { background:#f0fdf4; border:1px solid #86efac; border-radius:8px; padding:12px 14px; }
+.hsr-export-title { font-size:.66rem; font-weight:700; color:#15803d; text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px; }
+.hsr-export-btn { width:100%; padding:11px; background:#16a34a; color:#fff; border:none; border-radius:8px; font-size:.88rem; font-weight:600; cursor:pointer; font-family:inherit; margin-top:8px; }
+.hsr-export-btn:hover { background:#15803d; }
+.hsr-export-btn:disabled { opacity:.6; cursor:default; }
+.hsr-new-btn { background:none; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:7px 16px; font-size:.77rem; cursor:pointer; font-family:inherit; display:block; margin:4px auto 0; }
+.hsr-new-btn:hover { border-color:#16a34a; color:#16a34a; }
+
 #builder-proto-banner {
   margin:6px 10px 0; border-radius:8px; font-size:.78rem; line-height:1.45;
   border:1px solid #93C5FD; background:var(--accent-ll); color:#1D4ED8;
@@ -1800,6 +1861,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   <button onclick="openToolPanel('rm')" style="display:flex;align-items:center;gap:9px;width:100%;padding:8px 12px;border:none;background:none;cursor:pointer;border-radius:7px;font-family:inherit;font-size:.86rem;color:#1A1917;text-align:left;" onmouseover="this.style.background='#F1F0ED'" onmouseout="this.style.background='none'"><span>💪</span> Calculateur RM</button>
   <button onclick="openToolPanel('cardio')" style="display:flex;align-items:center;gap:9px;width:100%;padding:8px 12px;border:none;background:none;cursor:pointer;border-radius:7px;font-family:inherit;font-size:.86rem;color:#1A1917;text-align:left;" onmouseover="this.style.background='#F1F0ED'" onmouseout="this.style.background='none'"><span>❤️</span> Calculateur Cardio</button>
   <button onclick="openCAPWizard();_closeMoreMenu()" style="display:flex;align-items:center;gap:9px;width:100%;padding:8px 12px;border:none;background:none;cursor:pointer;border-radius:7px;font-family:inherit;font-size:.86rem;color:#1A1917;text-align:left;" onmouseover="this.style.background='#F1F0ED'" onmouseout="this.style.background='none'"><span>🏃</span> Calculateur CAP</button>
+  <button onclick="openHSRWizard();_closeMoreMenu()" style="display:flex;align-items:center;gap:9px;width:100%;padding:8px 12px;border:none;background:none;cursor:pointer;border-radius:7px;font-family:inherit;font-size:.86rem;color:#1A1917;text-align:left;" onmouseover="this.style.background='#F1F0ED'" onmouseout="this.style.background='none'"><span>🏋</span> Calculateur HSR</button>
 </div>
 
 <div class="app">
@@ -2138,6 +2200,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   <div class="builder-date-bar" id="builderDateBar"></div>
   <div id="builder-proto-banner" style="display:none;"></div>
   <div id="cap-builder-banner" style="display:none;"></div>
+  <div id="hsr-builder-banner" style="display:none;"></div>
   <div class="builder-body">
     <!-- Champ nom programme -->
     <div style="padding:8px 14px 0;display:flex;align-items:center;gap:8px;">
@@ -3356,6 +3419,81 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
       <div style="text-align:center;padding:4px 0 2px;">
         <button class="cap-new-btn" onclick="_capNewProg()">Nouveau programme</button>
       </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     GÉNÉRATEUR HSR — overlay
+══════════════════════════════════════════════════════════ -->
+<div id="hsrOverlay" class="hsr-ov" onclick="if(event.target===this)closeHSRWizard()">
+
+  <!-- ── Écran formulaire ── -->
+  <div class="hsr-panel" id="hsrFormScreen">
+    <div class="hsr-ph">
+      <span class="hsr-ph-title">🏋 Générateur HSR</span>
+      <button class="hsr-ph-close" onclick="closeHSRWizard()" title="Fermer">✕</button>
+    </div>
+    <div class="hsr-fbody">
+
+      <div>
+        <div class="hsr-field-label">1RM de référence</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <input type="number" class="hsr-select" id="hsrRef1RM" min="1" max="400" step="0.5" placeholder="ex : 80" style="flex:1;">
+          <span style="font-size:.88rem;font-weight:700;color:var(--accent2);">kg</span>
+        </div>
+        <div style="font-size:.68rem;color:var(--muted);margin-top:4px;font-style:italic;">Issu du calculateur RM si disponible</div>
+      </div>
+
+      <div>
+        <div class="hsr-field-label">Exercice principal</div>
+        <input type="text" class="hsr-select" id="hsrExercice" placeholder="ex : Leg Press, Squat, Mollet…" list="hsrExoList">
+        <datalist id="hsrExoList">
+          <option value="Leg Press"></option>
+          <option value="Squat bilatéral"></option>
+          <option value="Squat unilatéral"></option>
+          <option value="Mollet debout"></option>
+          <option value="Mollet assis"></option>
+          <option value="Romanian Deadlift"></option>
+          <option value="Ischio sur table"></option>
+          <option value="Extension genou"></option>
+          <option value="Adducteurs"></option>
+        </datalist>
+      </div>
+
+      <div>
+        <div class="hsr-field-label">Séances par semaine</div>
+        <div class="hsr-chips" id="hsrFreqG">
+          <button class="hsr-chip" data-val="2" onclick="hsrChipSel(this,'hsrFreqG')">2 séances</button>
+          <button class="hsr-chip active" data-val="3" onclick="hsrChipSel(this,'hsrFreqG')">3 séances</button>
+        </div>
+      </div>
+
+      <button class="hsr-gen-btn" onclick="_hsrGenerate()">Générer le programme →</button>
+    </div>
+  </div>
+
+  <!-- ── Écran résultat ── -->
+  <div class="hsr-panel" id="hsrResultScreen" style="display:none;">
+    <div class="hsr-ph">
+      <button class="hsr-ph-back" onclick="_hsrBackForm()">← Paramètres</button>
+      <span class="hsr-ph-title">Programme HSR</span>
+      <button class="hsr-ph-close" onclick="closeHSRWizard()" title="Fermer">✕</button>
+    </div>
+    <div class="hsr-rbody">
+      <div id="hsrSummary" class="hsr-result-summary"></div>
+      <div id="hsrPhaseList"></div>
+      <div class="hsr-export-zone">
+        <div class="hsr-export-title">Exporter dans l'agenda</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+          <label style="font-size:.72rem;color:var(--muted);white-space:nowrap;">Date de début</label>
+          <input type="date" class="hsr-select" id="hsrStartDate" style="flex:1;">
+        </div>
+        <button class="hsr-export-btn" id="hsrExportBtn" onclick="_hsrExportToCalendar()">Ajouter à l'agenda →</button>
+        <div id="hsrExportStatus" style="font-size:.74rem;margin-top:6px;min-height:1.1em;color:var(--muted);"></div>
+      </div>
+      <button class="hsr-new-btn" onclick="_hsrReset()">Nouveau programme</button>
     </div>
   </div>
 

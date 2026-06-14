@@ -752,6 +752,35 @@ function _buildDayChips(dateStr, cellDate){
           + '</div>';
       }
 
+      // ── Chip HSR ──
+      if (nom.indexOf('HSR —') === 0) {
+        var hsrLabel = nom.slice(6);
+        var fbHsr    = Array.isArray(ev.athlete_feedback) ? ev.athlete_feedback[0] : ev.athlete_feedback;
+        var hsrEva   = (fbHsr && fbHsr.rpe !== null && fbHsr.rpe !== undefined) ? fbHsr.rpe : null;
+        var hsrBadge = hsrEva !== null
+          ? ' <span style="font-size:.57rem;font-weight:800;padding:1px 4px;border-radius:3px;background:rgba(0,0,0,.18);">⚠ '+hsrEva+'/10</span>' : '';
+        var hsrBg = hsrEva !== null && hsrEva >= 3 ? '#dc2626'
+          : hsrEva !== null && hsrEva >= 1 ? '#d97706' : '#16a34a';
+        _chipTouchMeta[ev.id] = {progId: ev.programme_id, dateStr: dateStr, nom: nom, seanceId: ev.id};
+        if (_calSelMode) {
+          var hsrSel     = _calSelSeances.has(String(ev.id));
+          var hsrSelRing = hsrSel ? ';box-shadow:0 0 0 2px #fff,0 0 0 4px rgba(255,255,255,.8);filter:brightness(1.12);' : ';opacity:.82;';
+          return '<div id="cal-chip-'+ev.id+'" class="cal-session-chip" style="background:'+hsrBg+';color:#fff;cursor:pointer'+hsrSelRing+'" title="'+escH(nom)+'" onclick="event.stopPropagation();_calSelToggle(\''+ev.id+'\',\'seance\')">'
+            + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">🏋 '+escH(hsrLabel.length>15?hsrLabel.slice(0,15)+'…':hsrLabel)+hsrBadge+'</span>'
+            + '<span class="cal-sel-check" style="font-size:.75rem;font-weight:800;flex-shrink:0;margin-left:2px;">'+(hsrSel?'✓':'')+'</span>'
+            + '</div>';
+        }
+        var hsrEvtAttrs = _isTouchDevice
+          ? ' ontouchstart="_chipTouchStart(event,\''+ev.id+'\')" ontouchmove="_chipTouchMove(event)" ontouchend="_chipTouchEnd(event,\''+ev.id+'\')"'
+          : ' draggable="true" onclick="event.stopPropagation();_openChipInBuilder(\''+ev.programme_id+'\',\''+dateStr+'\',\''+ev.id+'\')" ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"';
+        return '<div class="cal-session-chip" style="background:'+hsrBg+';color:#fff;cursor:grab;" title="'+escH(nom)+'"'
+          + hsrEvtAttrs + '>'
+          + '<button class="cal-chip-more" ontouchend="event.stopPropagation();event.preventDefault();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')">⋮</button>'
+          + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">🏋 '+escH(hsrLabel.length>14?hsrLabel.slice(0,14)+'…':hsrLabel)+hsrBadge+'</span>'
+          + '<button class="cal-chip-del" style="color:rgba(255,255,255,.7)" onclick="event.stopPropagation();removeCalEventCloud(\''+ev.id+'\')">×</button>'
+          + '</div>';
+      }
+
       // Préfixe J+ si une date de référence est disponible
       var jPlus = _j0Ref ? _computeJPlus(dateStr, _j0Ref) : null;
       var jLabel = jPlus !== null ? ('J'+(jPlus >= 0 ? '+' : '')+jPlus+' · ') : '';
@@ -7241,6 +7270,7 @@ function _renderJournal() {
         progId: ev.programme_id,
         nom:    nom,
         isCap:  nom.indexOf('CAP') === 0,
+        isHsr:  nom.indexOf('HSR') === 0,
         rpe:    rpe   !== undefined ? rpe   : null,
         duree:  duree !== undefined ? duree : null
       });
@@ -7301,6 +7331,18 @@ function _renderJournal() {
           capBadges.push('<span class="journal-item-rpe">💪 '+item.duree+'/10</span>');
         }
         metaHtml = capBadges.join('');
+        rpeBadge = '';
+      } else if(item.isHsr) {
+        icon = '🏋';
+        var hsrJBadges = [];
+        if(item.rpe !== null && item.rpe !== undefined) {
+          var hc = _hsrEvaColor(item.rpe);
+          hsrJBadges.push('<span class="journal-item-rpe" style="background:'+hc+'22;color:'+hc+';border-color:'+hc+'55;">🩹 '+item.rpe+'/10</span>');
+        }
+        if(item.duree !== null && item.duree !== undefined) {
+          hsrJBadges.push('<span class="journal-item-rpe">💪 '+item.duree+'/10</span>');
+        }
+        metaHtml = hsrJBadges.join('');
         rpeBadge = '';
       } else {
         icon = '🏋️';
@@ -8628,5 +8670,480 @@ function _calSelDeleteAll() {
     }).catch(function(err) {
       _showToast('✗ Erreur : ' + (err && err.message ? err.message : 'réessayez'));
     });
+  });
+}
+
+/* ══════════════════════════════════════════════
+   MODULE HSR — Heavy Slow Resistance
+   ══════════════════════════════════════════════ */
+
+var HSR_PHASES = [
+  { key:'S1',    w:'S1',    rm:'15 RM', pct:65, sets:3, reps:15, weeks:1,
+    physio:'Reconstruction tissue collagène', clinique:'Appréhension à la charge' },
+  { key:'S2-S3', w:'S2-S3', rm:'12 RM', pct:68, sets:3, reps:12, weeks:2,
+    physio:'Stimulation synthèse collagène', clinique:'Douleur résiduelle effort modéré' },
+  { key:'S4-S5', w:'S4-S5', rm:'10 RM', pct:75, sets:4, reps:10, weeks:2,
+    physio:'Hypertrophie + renforcement tendino-musculaire', clinique:'Douleur contrôlée < 3/10' },
+  { key:'S6-S8', w:'S6-S8', rm:'8 RM',  pct:80, sets:4, reps:8,  weeks:3,
+    physio:'Force maximale + remodelage structurel', clinique:'Tolérance charge élevée' },
+  { key:'S9-S12',w:'S9-S12',rm:'6 RM',  pct:85, sets:5, reps:6,  weeks:4,
+    physio:'Force maximale + retour activité sportive', clinique:'Asymétrie < 15%' }
+];
+
+var HSR_CONSIGNES = [
+  'Cadence lente et contrôlée : 3 s descente — 1 s pause — 2 s montée (3-1-2)',
+  'Repos entre les séries : 2 à 3 minutes',
+  'Douleur tolérable ≤ 3/10 pendant l\'exercice — arrêter si ≥ 5/10',
+  'Progresser uniquement si douleur ≤ 3/10 lors de la dernière série',
+  'Échauffement : 5 min vélo léger + 1 série légère à 15 répétitions',
+  'Minimum 48 h de récupération entre deux séances'
+];
+
+var HSR_STATE        = null;
+var _hsrBbCollapsed  = false;
+var _hsrBbDonnees    = null;
+var _hsrBbSeanceId   = null;
+var _hsrBbEva        = null;
+var _hsrBbRpe        = null;
+
+/* ── Wizard ── */
+function openHSRWizard() {
+  if (!_progPatient) { _showToast('Sélectionne un patient d\'abord.'); return; }
+  var patKey = 'r4p-hsr-' + _progPatient.id;
+  try { var saved = localStorage.getItem(patKey); if (saved) HSR_STATE = JSON.parse(saved); } catch(e) {}
+
+  document.getElementById('hsrOverlay').classList.add('open');
+
+  if (HSR_STATE && HSR_STATE.sessions && HSR_STATE.sessions.length) {
+    document.getElementById('hsrFormScreen').style.display  = 'none';
+    document.getElementById('hsrResultScreen').style.display = 'flex';
+    _hsrRenderResult();
+  } else {
+    document.getElementById('hsrFormScreen').style.display  = 'flex';
+    document.getElementById('hsrResultScreen').style.display = 'none';
+  }
+}
+
+function closeHSRWizard() {
+  document.getElementById('hsrOverlay').classList.remove('open');
+}
+
+function hsrChipSel(btn, groupId) {
+  document.querySelectorAll('#' + groupId + ' .hsr-chip').forEach(function(c){ c.classList.remove('active'); });
+  btn.classList.add('active');
+}
+
+function _hsrChipVal(groupId) {
+  var el = document.querySelector('#' + groupId + ' .hsr-chip.active');
+  return el ? el.dataset.val : null;
+}
+
+function _hsrBackForm() {
+  document.getElementById('hsrResultScreen').style.display = 'none';
+  document.getElementById('hsrFormScreen').style.display  = 'flex';
+  if (HSR_STATE && HSR_STATE.ref1RM) {
+    var el = document.getElementById('hsrRef1RM');
+    if (el) el.value = HSR_STATE.ref1RM;
+  }
+}
+
+function _hsrGenerate() {
+  var ref1RM = parseFloat(document.getElementById('hsrRef1RM').value);
+  if (!ref1RM || ref1RM <= 0) { _showToast('Indique un 1RM valide.'); return; }
+  var exercice = (document.getElementById('hsrExercice').value || '').trim();
+  if (!exercice) { _showToast('Indique l\'exercice principal.'); return; }
+  var freq = parseInt(_hsrChipVal('hsrFreqG') || '3', 10);
+
+  HSR_STATE = { ref1RM: ref1RM, exercice: exercice, freq: freq, sessions: _hsrBuildSessions(ref1RM, exercice, freq) };
+  var patKey = 'r4p-hsr-' + (_progPatient ? _progPatient.id : 'anon');
+  try { localStorage.setItem(patKey, JSON.stringify(HSR_STATE)); } catch(e) {}
+
+  document.getElementById('hsrFormScreen').style.display  = 'none';
+  document.getElementById('hsrResultScreen').style.display = 'flex';
+  _hsrRenderResult();
+}
+
+function _hsrBuildSessions(ref1RM, exercice, freq) {
+  var sessions = [];
+  var idx = 0;
+  HSR_PHASES.forEach(function(ph) {
+    var count = ph.weeks * freq;
+    for (var i = 0; i < count; i++) {
+      sessions.push({
+        phase_key:     ph.key,
+        phase_label:   ph.w,
+        rm_label:      ph.rm,
+        pct:           ph.pct,
+        sets:          ph.sets,
+        reps:          ph.reps,
+        weeks:         ph.weeks,
+        physio:        ph.physio,
+        clinique:      ph.clinique,
+        exercice:      exercice,
+        ref1RM:        ref1RM,
+        session_index: idx++
+      });
+    }
+  });
+  return sessions;
+}
+
+function _hsrRenderResult() {
+  var sumEl  = document.getElementById('hsrSummary');
+  var listEl = document.getElementById('hsrPhaseList');
+  if (!sumEl || !listEl || !HSR_STATE) return;
+
+  var ref  = HSR_STATE.ref1RM;
+  var freq = HSR_STATE.freq;
+  var exo  = HSR_STATE.exercice;
+  var tot  = HSR_STATE.sessions.length;
+
+  sumEl.innerHTML = '<strong>' + escH(exo) + '</strong>'
+    + ' · 1RM&nbsp;=&nbsp;<strong>' + ref + ' kg</strong>'
+    + ' · <strong>' + freq + ' séances/sem.</strong>'
+    + ' · ' + tot + ' séances (12 semaines)';
+
+  var html = '';
+  HSR_PHASES.forEach(function(ph) {
+    var charge = Math.round(ref * ph.pct / 100 * 2) / 2;
+    var count  = ph.weeks * freq;
+    html += '<div class="hsr-phase-card">'
+      + '<div class="hsr-phase-card-head">'
+      + '<span class="hsr-phase-card-key">' + escH(ph.w) + '</span>'
+      + '<span class="hsr-phase-card-rm">' + escH(ph.rm) + '</span>'
+      + '<span class="hsr-phase-card-weeks">' + ph.weeks + ' sem. · ' + count + ' séances</span>'
+      + '</div>'
+      + '<div class="hsr-phase-card-body">'
+      + '<span><strong>' + ph.sets + '×' + ph.reps + '</strong></span>'
+      + '<span>· <strong>' + charge + ' kg</strong> (' + ph.pct + '% 1RM)</span>'
+      + '</div>'
+      + '<div class="hsr-phase-card-physio">' + escH(ph.physio) + '</div>'
+      + '</div>';
+  });
+  listEl.innerHTML = html;
+}
+
+function _hsrReset() {
+  var patKey = 'r4p-hsr-' + (_progPatient ? _progPatient.id : 'anon');
+  HSR_STATE = null;
+  try { localStorage.removeItem(patKey); } catch(e) {}
+  var fs = document.getElementById('hsrFormScreen');
+  var rs = document.getElementById('hsrResultScreen');
+  if (fs) fs.style.display = 'flex';
+  if (rs) rs.style.display = 'none';
+}
+
+function _hsrExportToCalendar() {
+  if (!_progPatient) { alert('Sélectionne un patient d\'abord.'); return; }
+  var startDate = document.getElementById('hsrStartDate').value;
+  if (!startDate) { alert('Indique la date de début du programme.'); return; }
+  if (!HSR_STATE || !HSR_STATE.sessions || !HSR_STATE.sessions.length) return;
+
+  var sessions = HSR_STATE.sessions;
+  var dates    = _capCalcDates(sessions.length, HSR_STATE.freq, startDate);
+
+  var btn      = document.getElementById('hsrExportBtn');
+  var statusEl = document.getElementById('hsrExportStatus');
+  if (btn)      { btn.disabled = true; btn.textContent = 'Ajout en cours…'; }
+  if (statusEl) { statusEl.textContent = ''; }
+
+  var progBodies = sessions.map(function(s, i) {
+    return {
+      patient_id:   _progPatient.id,
+      praticien_id: _progUid,
+      nom:          'HSR — ' + s.phase_label + ' · ' + s.rm_label,
+      date:         dates[i],
+      donnees: {
+        type:          'hsr',
+        ref1RM:        s.ref1RM,
+        pct:           s.pct,
+        sets:          s.sets,
+        reps:          s.reps,
+        phase_key:     s.phase_key,
+        phase_label:   s.phase_label,
+        rm_label:      s.rm_label,
+        exercice:      s.exercice,
+        physio:        s.physio,
+        clinique:      s.clinique,
+        session_index: s.session_index,
+        total:         sessions.length,
+        consignes:     HSR_CONSIGNES,
+        blocs: [{
+          titre:    s.exercice,
+          type:     'renfo',
+          series:   s.sets,
+          reps:     s.reps,
+          charge:   Math.round(s.ref1RM * s.pct / 100 * 2) / 2,
+          unite:    'kg',
+          note:     'HSR ' + s.phase_label + ' — cadence 3-1-2'
+        }]
+      }
+    };
+  });
+
+  _fetchRetry(SUPA_URL_P + '/rest/v1/programmes', {
+    method:  'POST',
+    headers: Object.assign({}, _sbHeaders(), { 'Prefer': 'return=representation' }),
+    body:    JSON.stringify(progBodies)
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(progs) {
+    if (!Array.isArray(progs) || !progs.length) throw new Error('Réponse inattendue.');
+    var seanceBodies = progs.map(function(p, i) {
+      return { patient_id: _progPatient.id, praticien_id: _progUid, programme_id: p.id, date: dates[i] };
+    });
+    return _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees', {
+      method:  'POST',
+      headers: Object.assign({}, _sbHeaders(), { 'Prefer': 'return=representation' }),
+      body:    JSON.stringify(seanceBodies)
+    }).then(function(r) { return r.json().then(function(seances) { return { progs: progs, seances: seances }; }); });
+  })
+  .then(function(result) {
+    if (Array.isArray(result.seances)) {
+      result.seances.forEach(function(seance, i) {
+        if (HSR_STATE.sessions[i]) {
+          HSR_STATE.sessions[i].seance_id = seance.id;
+          HSR_STATE.sessions[i].prog_id   = seance.programme_id;
+          HSR_STATE.sessions[i].date      = dates[i];
+        }
+      });
+      var patKey = 'r4p-hsr-' + _progPatient.id;
+      try { localStorage.setItem(patKey, JSON.stringify(HSR_STATE)); } catch(e) {}
+    }
+    if (statusEl) {
+      statusEl.innerHTML = '✓ ' + sessions.length + ' séances ajoutées du ' + dates[0] + ' au ' + dates[dates.length - 1]
+        + ' — <button onclick="_hsrReset()" style="background:none;border:none;color:#15803d;text-decoration:underline;cursor:pointer;font-size:inherit;padding:0;">Nouveau programme ↺</button>';
+      statusEl.style.color = '#15803d';
+    }
+    if (btn) { btn.disabled = false; btn.textContent = 'Ajouter à l\'agenda →'; }
+    renderCalendar();
+  })
+  .catch(function(err) {
+    if (statusEl) {
+      statusEl.textContent = '✗ Erreur : ' + (err && err.message ? err.message : 'problème réseau');
+      statusEl.style.color = '#dc2626';
+    }
+    if (btn) { btn.disabled = false; btn.textContent = 'Ajouter à l\'agenda →'; }
+  });
+}
+
+/* ── Mise à jour 1RM propagée aux séances futures ── */
+function _hsrUpdateRef1RM(newRef) {
+  if (!_progPatient || !_cloudCalEvents) return;
+  var today = new Date().toISOString().slice(0, 10);
+  var future = _cloudCalEvents.filter(function(ev) {
+    var nom = ev.nom || (ev.programmes && ev.programmes.nom) || '';
+    return nom.indexOf('HSR —') === 0 && ev.date >= today && ev.programme_id;
+  });
+  if (!future.length) { _showToast('Aucune séance HSR future à mettre à jour.'); return; }
+
+  var promises = future.map(function(ev) {
+    var progId  = ev.programme_id;
+    var donnees = (ev.programmes && ev.programmes.donnees) ? Object.assign({}, ev.programmes.donnees) : {};
+    donnees.ref1RM = newRef;
+    var charge = Math.round(newRef * (donnees.pct || 65) / 100 * 2) / 2;
+    if (donnees.blocs && donnees.blocs[0]) donnees.blocs[0].charge = charge;
+    return _fetchRetry(SUPA_URL_P + '/rest/v1/programmes?id=eq.' + progId, {
+      method:  'PATCH',
+      headers: Object.assign({}, _sbHeaders(), { 'Prefer': 'return=minimal' }),
+      body:    JSON.stringify({ donnees: donnees })
+    });
+  });
+
+  Promise.all(promises).then(function() {
+    _showToast('✓ 1RM mis à jour pour ' + future.length + ' séance(s) HSR future(s).');
+    _hsrBbDonnees = Object.assign({}, _hsrBbDonnees, { ref1RM: newRef });
+    _renderHsrBuilderBanner(_hsrBbDonnees, _hsrBbSeanceId);
+    _loadCloudCalEvents();
+  }).catch(function() {
+    _showToast('✗ Erreur lors de la mise à jour du 1RM.');
+  });
+}
+
+/* ── Builder banner ── */
+var _hsrRef1RMInput = '';
+
+function _hsrEvaColor(v) {
+  return ['#27AE60','#5ABD6A','#82CC44','#A8C940','#F4D03F','#F39C12','#E67E22','#D35400','#E74C3C','#C0392B','#922B21'][Math.min(Math.max(Math.round(v),0),10)];
+}
+
+function _renderHsrBuilderBanner(donnees, seanceId) {
+  var banner = document.getElementById('hsr-builder-banner');
+  if (!banner) return;
+  if (!donnees || donnees.type !== 'hsr') { banner.style.display = 'none'; return; }
+
+  _hsrBbDonnees  = donnees;
+  _hsrBbSeanceId = seanceId || null;
+  _hsrBbEva      = null;
+  _hsrBbRpe      = null;
+
+  var ref1RM  = donnees.ref1RM || 0;
+  var charge  = Math.round(ref1RM * (donnees.pct || 65) / 100 * 2) / 2;
+  var sets    = donnees.sets || '?';
+  var reps    = donnees.reps || '?';
+  var phase   = donnees.phase_label || donnees.phase_key || '';
+  var exo     = donnees.exercice || '';
+  var idx     = donnees.session_index !== undefined ? donnees.session_index + 1 : '?';
+  var total   = donnees.total || '?';
+  var consignes = donnees.consignes && donnees.consignes.length ? donnees.consignes : HSR_CONSIGNES;
+
+  var html = '<div class="hsr-bb-head" onclick="_hsrBbToggle()" style="cursor:pointer;user-select:none;">'
+    + '<span class="hsr-bb-label">🏋 HSR</span>'
+    + (phase ? '<span class="hsr-bb-phase">' + escH(phase) + '</span>' : '')
+    + (exo   ? '<span style="font-size:.7rem;color:#15803d;font-weight:600;">' + escH(exo) + '</span>' : '')
+    + '<span style="margin-left:auto;font-size:.7rem;color:#6b7a8d;font-weight:600;">Séance ' + idx + '/' + total + '</span>'
+    + '<span id="hsr-bb-chevron" style="margin-left:8px;font-size:.75rem;color:#16a34a;transition:transform .2s;">'
+    + (_hsrBbCollapsed ? '▶' : '▼') + '</span>'
+    + '</div>'
+    + '<div id="hsr-bb-summary" style="font-size:.68rem;color:#6b7a8d;margin-top:2px;display:' + (_hsrBbCollapsed ? 'block' : 'none') + ';">Chargement…</div>';
+
+  html += '<div id="hsr-bb-body" style="display:' + (_hsrBbCollapsed ? 'none' : 'block') + ';">';
+
+  // Prescription
+  html += '<div class="hsr-bb-presc">'
+    + '<span><strong>' + sets + '×' + reps + '</strong> répétitions</span>'
+    + '<span>· <strong>' + charge + ' kg</strong> (' + (donnees.pct || '?') + '% 1RM)</span>'
+    + '</div>';
+
+  // Consignes
+  if (consignes.length) {
+    html += '<ul class="hsr-bb-consignes">';
+    consignes.forEach(function(c){ html += '<li>' + escH(c) + '</li>'; });
+    html += '</ul>';
+  }
+
+  // Mise à jour 1RM
+  html += '<div style="display:flex;align-items:center;gap:6px;margin:6px 0 2px;flex-wrap:wrap;">'
+    + '<span style="font-size:.67rem;color:#6b7a8d;">1RM actuel : <strong>' + ref1RM + ' kg</strong></span>'
+    + '<input id="hsr-bb-new-1rm" type="number" min="1" max="400" step="0.5" placeholder="Nouveau 1RM (kg)"'
+    + ' style="width:100px;font-size:.7rem;padding:2px 5px;border:1px solid #86efac;border-radius:4px;background:#f0fdf4;">'
+    + '<button class="hsr-bb-save-btn" style="padding:3px 8px;font-size:.67rem;" onclick="_hsrSaveRef1RM()">Mettre à jour →</button>'
+    + '</div>';
+
+  html += '<div id="hsr-bb-feedback" style="border-top:1px solid #86efac;margin-top:6px;padding-top:8px;">'
+    + '<div style="font-size:.7rem;color:#6b7a8d;font-style:italic;">Chargement…</div></div>';
+
+  html += '</div>'; // hsr-bb-body
+
+  banner.innerHTML = html;
+  banner.style.display = 'block';
+
+  if (seanceId) {
+    _fetchRetry(SUPA_URL_P + '/rest/v1/athlete_feedback?seance_id=eq.' + seanceId, { headers: _sbHeaders() })
+      .then(function(r){ return r.json(); })
+      .then(function(arr){ _hsrRenderFeedback((Array.isArray(arr) && arr.length) ? arr[0] : null); })
+      .catch(function(){ _hsrRenderFeedback(null); });
+  } else {
+    _hsrRenderFeedback(null);
+  }
+}
+
+function _hsrBbToggle() {
+  _hsrBbCollapsed = !_hsrBbCollapsed;
+  var body    = document.getElementById('hsr-bb-body');
+  var summary = document.getElementById('hsr-bb-summary');
+  var chevron = document.getElementById('hsr-bb-chevron');
+  if (body)    body.style.display    = _hsrBbCollapsed ? 'none' : 'block';
+  if (chevron) chevron.textContent   = _hsrBbCollapsed ? '▶' : '▼';
+  if (summary) summary.style.display = _hsrBbCollapsed ? 'block' : 'none';
+}
+
+function _hsrSaveRef1RM() {
+  var input = document.getElementById('hsr-bb-new-1rm');
+  if (!input) return;
+  var newRef = parseFloat(input.value);
+  if (!newRef || newRef <= 0) { _showToast('Indique un 1RM valide.'); return; }
+  if (!confirm('Mettre à jour le 1RM à ' + newRef + ' kg pour toutes les séances HSR futures ?')) return;
+  _hsrUpdateRef1RM(newRef);
+}
+
+function _hsrRenderFeedback(existing) {
+  var fb = document.getElementById('hsr-bb-feedback');
+  if (!fb) return;
+
+  _hsrBbEva = existing ? existing.rpe       : null;
+  _hsrBbRpe = existing ? existing.duree_min : null;
+
+  var summary = document.getElementById('hsr-bb-summary');
+  if (summary) {
+    if (existing) {
+      var sc = _hsrBbEva !== null ? (' 🩹 <strong style="color:'+_hsrEvaColor(_hsrBbEva)+'">'+_hsrBbEva+'/10</strong>') : '';
+      var se = _hsrBbRpe ? (' 💪 <strong>'+_hsrBbRpe+'/10</strong>') : '';
+      summary.innerHTML = (sc || se) ? (sc + se) : 'Non renseigné';
+    } else {
+      summary.textContent = 'Non renseigné';
+    }
+  }
+
+  var fromPatient = !!existing;
+  var html = '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">'
+    + '<span style="font-size:.67rem;font-weight:700;color:#15803d;text-transform:uppercase;letter-spacing:.05em;">Feedback séance</span>'
+    + (fromPatient
+        ? '<span style="font-size:.62rem;background:#dcfce7;color:#15803d;border-radius:4px;padding:1px 5px;font-weight:600;">patient</span>'
+        : '<span style="font-size:.62rem;color:#9ca3af;">Non renseigné</span>')
+    + '</div>';
+
+  html += '<div style="font-size:.67rem;color:#6b7a8d;margin-bottom:3px;">🩹 Douleur — 0 (aucune) → 10 (insupportable)</div>';
+  html += '<div class="hsr-bb-btns" id="hsr-bb-eva-btns">';
+  for (var i = 0; i <= 10; i++) {
+    var onE = (_hsrBbEva === i);
+    var cE  = onE ? _hsrEvaColor(i) : '';
+    html += '<button class="hsr-bb-btn" data-v="'+i+'" style="'+(onE?'background:'+cE+';color:#fff;border-color:'+cE+';':'')+'" onclick="_hsrBbSetEva('+i+')">'+i+'</button>';
+  }
+  html += '</div>';
+
+  html += '<div style="font-size:.67rem;color:#6b7a8d;margin:6px 0 3px;">💪 Effort Borg — 1 (facile) → 10 (max)</div>';
+  html += '<div class="hsr-bb-btns" id="hsr-bb-rpe-btns">';
+  for (var j = 1; j <= 10; j++) {
+    var onR = (_hsrBbRpe === j);
+    html += '<button class="hsr-bb-btn" data-v="'+j+'" style="'+(onR?'background:#2B5FA6;color:#fff;border-color:#2B5FA6;':'')+'" onclick="_hsrBbSetRpe('+j+')">'+j+'</button>';
+  }
+  html += '</div>';
+
+  if (_hsrBbSeanceId) {
+    html += '<button class="hsr-bb-save-btn" id="hsr-bb-save-btn" onclick="_hsrBbSaveFeedback()">💾 Enregistrer le feedback</button>';
+  }
+
+  fb.innerHTML = html;
+}
+
+function _hsrBbSetEva(val) {
+  _hsrBbEva = val;
+  document.querySelectorAll('#hsr-bb-eva-btns .hsr-bb-btn').forEach(function(b){
+    var on = parseInt(b.dataset.v) === val;
+    var c  = _hsrEvaColor(val);
+    b.style.background  = on ? c : '';
+    b.style.color       = on ? '#fff' : '';
+    b.style.borderColor = on ? c : '';
+  });
+}
+
+function _hsrBbSetRpe(val) {
+  _hsrBbRpe = val;
+  document.querySelectorAll('#hsr-bb-rpe-btns .hsr-bb-btn').forEach(function(b){
+    var on = parseInt(b.dataset.v) === val;
+    b.style.background  = on ? '#2B5FA6' : '';
+    b.style.color       = on ? '#fff' : '';
+    b.style.borderColor = on ? '#2B5FA6' : '';
+  });
+}
+
+function _hsrBbSaveFeedback() {
+  if (_hsrBbEva === null) { _showToast('Sélectionne un score de douleur (0–10).'); return; }
+  if (!_hsrBbRpe)         { _showToast('Sélectionne un effort Borg (1–10).'); return; }
+  if (!_hsrBbSeanceId)    return;
+  var btn = document.getElementById('hsr-bb-save-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Envoi…'; }
+  _fetchRetry(SUPA_URL_P + '/rest/v1/athlete_feedback', {
+    method:  'POST',
+    headers: Object.assign({}, _sbHeaders(), { 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
+    body:    JSON.stringify({ seance_id: _hsrBbSeanceId, rpe: _hsrBbEva, duree_min: _hsrBbRpe, submitted_at: new Date().toISOString() })
+  }).then(function(r){
+    if (!r.ok) { _showToast('Erreur enregistrement.'); if(btn){btn.disabled=false;btn.textContent='💾 Enregistrer le feedback';} return; }
+    if (btn) { btn.textContent = '✓ Enregistré'; btn.style.background = '#15803d'; }
+    renderCalendar();
+  }).catch(function(){
+    _showToast('Erreur réseau.');
+    if (btn) { btn.disabled = false; btn.textContent = '💾 Enregistrer le feedback'; }
   });
 }

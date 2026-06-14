@@ -978,8 +978,9 @@ function openProgModal(progId, seanceId){
     _loadSessionNote();
     var donnees = prog.donnees || {};
     var isCap = donnees.type === 'cap';
-    var html = isCap ? _buildCapProgHTML(prog) : buildProgHTML(prog);
-    if(seanceId) html += buildSessionNoteCard() + (isCap ? _buildCapPainCard(seanceId, existing) : buildRpeCard(seanceId, blocs, existing));
+    var isHsr = donnees.type === 'hsr';
+    var html = isCap ? _buildCapProgHTML(prog) : (isHsr ? _buildHsrProgHTML(prog) : buildProgHTML(prog));
+    if(seanceId) html += buildSessionNoteCard() + ((isCap || isHsr) ? _buildCapPainCard(seanceId, existing) : buildRpeCard(seanceId, blocs, existing));
     document.getElementById('progModalBody').innerHTML = html;
   })
   .catch(function(){
@@ -1458,6 +1459,48 @@ function _buildCapProgHTML(prog) {
     if(bloc.zone) cMeta.push('Zone '+bloc.zone);
     if(cMeta.length) html += '<div style="font-size:.75rem;color:#0369A1;font-weight:600;">'+escH(cMeta.join(' · '))+'</div>';
     if(bloc.notes) html += '<div style="font-size:.75rem;color:#475569;margin-top:5px;font-style:italic;">💬 '+escH(bloc.notes)+'</div>';
+    html += '</div>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function _buildHsrProgHTML(prog) {
+  var d    = prog.donnees || {};
+  var ref  = d.ref1RM || 0;
+  var charge = ref ? Math.round(ref * (d.pct || 65) / 100 * 2) / 2 : null;
+  var sets   = d.sets  || '?';
+  var reps   = d.reps  || '?';
+  var phase  = d.phase_label || d.phase_key || '';
+  var exo    = d.exercice || '';
+  var idx    = d.session_index !== undefined ? d.session_index + 1 : '?';
+  var total  = d.total || '?';
+  var consignes = d.consignes && d.consignes.length ? d.consignes : [
+    'Cadence lente et contrôlée : 3 s descente — 1 s pause — 2 s montée (3-1-2)',
+    'Repos entre les séries : 2 à 3 minutes',
+    'Douleur tolérable ≤ 3/10 pendant l\'exercice — arrêter si ≥ 5/10',
+    'Progresser uniquement si douleur ≤ 3/10 lors de la dernière série',
+    'Échauffement : 5 min vélo léger + 1 série légère à 15 répétitions',
+    'Minimum 48 h de récupération entre deux séances'
+  ];
+
+  var html = '<div style="padding:6px 0 14px;">';
+  html += '<div style="font-size:1.1rem;font-weight:800;color:#14532d;margin-bottom:4px;">🏋 HSR — ' + escH(exo || prog.nom) + '</div>';
+  html += '<div style="font-size:.78rem;color:#6b7a8d;margin-bottom:10px;">' + escH(phase) + ' · Séance ' + idx + '/' + total + '</div>';
+
+  if (charge !== null) {
+    html += '<div style="background:#f0fdf4;border-radius:8px;padding:10px 12px;margin-bottom:10px;">'
+      + '<div style="font-size:.66rem;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Prescription</div>'
+      + '<div style="font-size:1.1rem;font-weight:800;color:#14532d;">' + sets + '×' + reps + ' répétitions</div>'
+      + '<div style="font-size:.82rem;color:#15803d;font-weight:600;margin-top:2px;">' + charge + ' kg (' + (d.pct || '?') + '% 1RM)</div>'
+      + '</div>';
+  }
+
+  if (consignes.length) {
+    html += '<div style="background:#f0fdf4;border-radius:8px;padding:10px 12px;font-size:.77rem;color:#14532d;">';
+    html += '<div style="font-size:.66rem;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">Consignes</div>';
+    consignes.forEach(function(c){ html += '<div style="padding:2px 0;">• ' + escH(c) + '</div>'; });
     html += '</div>';
   }
 
