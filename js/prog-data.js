@@ -3622,7 +3622,7 @@ function _buildPevoChart(vals, dates, chartId, meta, nrsPts) {
   // Determine si NRS a assez de points valides
   var nrsValidArr = nrsPts ? nrsPts.filter(function(v){ return v!==null && !isNaN(v); }) : [];
   var hasNrs = nrsValidArr.length >= 2;
-  var PAD={top:18, right: hasNrs ? 38 : 22, bottom:34, left:42};
+  var PAD={top:18, right: hasNrs ? 38 : 22, bottom:34, left:10};
   var valid = vals.filter(function(v){ return !isNaN(v); });
   if(valid.length < 2) return '';
   var minV=Math.min.apply(null,valid), maxV=Math.max.apply(null,valid);
@@ -3645,14 +3645,7 @@ function _buildPevoChart(vals, dates, chartId, meta, nrsPts) {
     +'<stop offset="0%" stop-color="'+C+'" stop-opacity="0.25"/>'
     +'<stop offset="100%" stop-color="'+C+'" stop-opacity="0.02"/>'
     +'</linearGradient></defs>';
-  // Grille (partagée)
-  var step=Math.max(1,Math.ceil((maxV-minV)/4));
-  for(var gv=Math.round(minV);gv<=maxV+step;gv+=step){
-    var gy=(VH-PAD.bottom)-((gv-minV)/rangeV)*(VH-PAD.top-PAD.bottom);
-    if(gy<PAD.top||gy>VH-PAD.bottom+2) continue;
-    html+='<line x1="'+PAD.left+'" y1="'+gy.toFixed(1)+'" x2="'+(VW-PAD.right)+'" y2="'+gy.toFixed(1)+'" stroke="#EBEBEB" stroke-width="1" stroke-dasharray="3,3"/>';
-    html+='<text x="'+(PAD.left-5)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="end" font-size="9" fill="#C0BDB8">'+Math.round(gv)+'</text>';
-  }
+  // (grille Y et labels axe supprimés)
   // Dates X (partagées)
   var shownD={};
   pts.forEach(function(p){ if(shownD[p.date])return; shownD[p.date]=true; html+='<text x="'+p.x.toFixed(1)+'" y="'+(VH-PAD.bottom+13)+'" text-anchor="middle" font-size="9" fill="#C0BDB8">'+p.date+'</text>'; });
@@ -3904,6 +3897,7 @@ function _renderPevoCharts(exoData, selectedKeys) {
         +'<button class="pevo-line-pill active" style="color:#7C3AED;border-color:#7C3AED" onclick="togglePevoPill(this,\'pevo'+_ctr+'\',\'nrs\')">● Douleur</button>'
         +'</div>';
     }
+    var rmTag = allBwMeta ? '' : '<span class="pevo-kpi-neutral" style="font-size:.65rem;opacity:.7;">· 1RM</span>';
     chartsHtml += '<div class="pevo-card">'
       +'<div class="pevo-card-header">'
       +'<span class="pevo-card-title">'+escH(grp.label)+'</span>'
@@ -3912,6 +3906,7 @@ function _renderPevoCharts(exoData, selectedKeys) {
       +'<span class="pevo-kpi-neutral">→</span>'
       +'<span class="pevo-kpi-strong">Actuel : '+lLabel+'</span>'
       +'<span class="pevo-kpi '+cls+'">'+dLabel+'</span>'
+      +rmTag
       +'</div></div>'
       +pillToggleHtml
       +svg+'</div>';
