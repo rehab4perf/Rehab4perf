@@ -6719,6 +6719,25 @@ _updateOutilsPatientBtns();
     return html;
   }
 
+  function _patchPevoCardForPdf(html) {
+    // 1. Resolve CSS variables to hardcoded hex (undefined in the PDF window)
+    html = html.replace(/var\(--accent\)/g, '#2B5FA6');
+    html = html.replace(/var\(--navy\)/g,   '#1A3A5C');
+    html = html.replace(/var\(--green\)/g,  '#2D6A4F');
+    // 2. Build gradient-id → first-stop-color map
+    var gradColors = {};
+    html.replace(/<linearGradient\s+id="([^"]+)"[\s\S]*?<stop[^>]+stop-color="([^"]+)"/g, function(m, id, color) {
+      gradColors[id] = color;
+    });
+    // 3. Replace fill="url(#id)" with flat fill + fill-opacity
+    //    (Safari/WebKit PDF engine ignores stop-opacity in SVG gradients)
+    html = html.replace(/fill="url\(#([^"]+)\)"/g, function(m, id) {
+      var c = gradColors[id] || '#2B5FA6';
+      return 'fill="' + c + '" fill-opacity="0.14"';
+    });
+    return html;
+  }
+
   function _crGetPevoSectionHtml() {
     var toggle = document.getElementById('cr-pevo-toggle');
     if (!toggle || !toggle.checked) return '';
@@ -6741,7 +6760,8 @@ _updateOutilsPatientBtns();
     var cardsHtml = '<div class="pevo-charts">';
     checks.forEach(function(cb) {
       var idx = parseInt(cb.dataset.pevoIdx, 10);
-      if (_crPevoCards[idx]) cardsHtml += _crPevoCards[idx].html;
+      if (!_crPevoCards[idx]) return;
+      cardsHtml += _patchPevoCardForPdf(_crPevoCards[idx].html);
     });
     cardsHtml += '</div>';
     return pevoCss
