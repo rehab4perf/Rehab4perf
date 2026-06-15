@@ -1326,6 +1326,7 @@ body {
           <div class="letter-body" id="cr-letter-body">
             <span class="letter-empty">Remplissez le formulaire et cliquez sur « ✦ Générer le courrier ».</span>
           </div>
+          <div id="cr-letter-graphs" style="display:none;margin-top:20px;padding-top:16px;border-top:1px dashed #C8C6C0;"></div>
         </div>
       </div>
     </main>
@@ -6287,6 +6288,8 @@ _updateOutilsPatientBtns();
     var objEl = document.getElementById('cr-objet-txt'); if (objEl) objEl.value = '';
     var body = document.getElementById('cr-letter-body');
     if (body) body.innerHTML = '<span class="letter-empty">Remplissez le formulaire et cliquez sur « ✦ Générer le courrier ».</span>';
+    var graphsDiv = document.getElementById('cr-letter-graphs');
+    if (graphsDiv) { graphsDiv.innerHTML = ''; graphsDiv.style.display = 'none'; }
     _crToast('Formulaire réinitialisé');
   };
 
@@ -6294,6 +6297,18 @@ _updateOutilsPatientBtns();
     var text = crBuildLetter();
     var body = document.getElementById('cr-letter-body');
     if (body) { body.innerHTML = ''; body.textContent = text; }
+    var graphsDiv = document.getElementById('cr-letter-graphs');
+    if (graphsDiv) {
+      var evoHtml  = _crGetEvoSectionHtml();
+      var pevoHtml = _crGetPevoSectionHtml();
+      if (evoHtml || pevoHtml) {
+        graphsDiv.innerHTML = evoHtml + pevoHtml;
+        graphsDiv.style.display = '';
+      } else {
+        graphsDiv.innerHTML = '';
+        graphsDiv.style.display = 'none';
+      }
+    }
   };
 
   window.crCopyLetter = function() {
