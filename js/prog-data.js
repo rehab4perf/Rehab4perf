@@ -2508,6 +2508,54 @@ window.addEventListener('message', function(e){
   if(e.data && e.data.type==='r4p-profile'){
     try { localStorage.setItem(R4P_KEYS.PROFILE, JSON.stringify(e.data.profile)); } catch(ex){}
   }
+  // Génère les graphiques pevo pour le CR médecin (outils.html)
+  if(e.data && e.data.type==='r4p-pevo-request'){
+    var _reqPatId = e.data.patientId;
+    var _pevoOrigin = window.location.origin;
+    if(!_reqPatId){ window.parent.postMessage({type:'r4p-pevo-response',error:'no_patient'},_pevoOrigin); return; }
+    if(!_progToken){ window.parent.postMessage({type:'r4p-pevo-response',error:'no_auth'},_pevoOrigin); return; }
+
+    function _sendPevoGrid(){
+      if(!_pevoData || !Object.keys(_pevoData).length){
+        window.parent.postMessage({type:'r4p-pevo-response',error:'no_data'},_pevoOrigin); return;
+      }
+      var body = document.getElementById('pevoBody');
+      var savedHTML = body ? body.innerHTML : '';
+      var allSel = new Set(Object.keys(_pevoData));
+      _renderPevoCharts(_pevoData, allSel);
+      var grid = document.getElementById('pevoChartsGrid');
+      var contentHTML = '';
+      if(grid){
+        var clone = grid.cloneNode(true);
+        clone.querySelectorAll('.pevo-hit,.pevo-pill-toggles').forEach(function(el){ el.remove(); });
+        contentHTML = clone.outerHTML;
+      }
+      if(body) body.innerHTML = savedHTML;
+      if(!contentHTML){ window.parent.postMessage({type:'r4p-pevo-response',error:'no_data'},_pevoOrigin); return; }
+      window.parent.postMessage({type:'r4p-pevo-response',contentHTML:contentHTML},_pevoOrigin);
+    }
+
+    if(_progPatient && String(_progPatient.id)===String(_reqPatId) && _pevoData){
+      _sendPevoGrid(); return;
+    }
+    var _pevoUrl = SUPA_URL_P+'/rest/v1/seances_planifiees?patient_id=eq.'+_reqPatId
+      +'&select=id,date,programme_id,programmes(nom,donnees),athlete_feedback(rpe,submitted_at)&order=date.asc';
+    _fetchRetry(_pevoUrl,{method:'GET',headers:_sbHeaders()})
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if(!Array.isArray(data)||!data.length){
+          window.parent.postMessage({type:'r4p-pevo-response',error:'no_data'},_pevoOrigin); return;
+        }
+        _pevoData        = _extractExoLoads(data);
+        _pevoNrsData     = _extractExoNRS(data);
+        _pevoDureeData   = _extractExoDurations(data);
+        _pevoCardioData  = _extractCardioLoads(data);
+        _pevoCapPainData = _extractCapPainData(data);
+        _sendPevoGrid();
+      })
+      .catch(function(){ window.parent.postMessage({type:'r4p-pevo-response',error:'fetch_error'},_pevoOrigin); });
+    return;
+  }
   // Nouveau token reçu depuis index.html après refresh automatique
   // On met à jour uniquement le token — le rôle et les favoris ne changent pas entre deux refreshs,
   // donc on évite les toggles DOM de _applyRoleUI() qui causaient un flash visuel.

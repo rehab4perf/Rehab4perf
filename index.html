@@ -600,6 +600,22 @@ window.addEventListener('message', function(e) {
     }
   }
 
+  // outils demande les graphiques pevo → relayer à l'iframe programme
+  if (e.data.type === 'r4p-pevo-request') {
+    var prescFrame = document.getElementById('frame-prescription');
+    if (prescFrame && prescFrame.contentWindow) {
+      prescFrame.contentWindow.postMessage(e.data, window.location.origin);
+    }
+  }
+
+  // programme répond avec les graphiques → relayer à outils
+  if (e.data.type === 'r4p-pevo-response') {
+    var outilsFrame = document.getElementById('frame-outils');
+    if (outilsFrame && outilsFrame.contentWindow) {
+      outilsFrame.contentWindow.postMessage(e.data, window.location.origin);
+    }
+  }
+
   // bilan.html a réinitialisé le dossier → déselectionner le patient dans la topnav
   if (e.data.type === 'r4p-patient-reset') {
     deselectPatient();

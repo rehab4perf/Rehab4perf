@@ -459,6 +459,19 @@ body {
 }
 .letter-empty { font-size: .87rem; font-style: italic; color: var(--text3); text-align: center; padding: 36px 0; }
 .cr-block-hidden { display: none !important; }
+/* pevo-cards preview in CR left panel */
+#cr-pevo-grid .pevo-charts { display:grid; grid-template-columns:1fr; gap:8px; }
+#cr-pevo-grid .pevo-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:10px 12px 8px; }
+#cr-pevo-grid .pevo-card-header { display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:4px; margin-bottom:6px; }
+#cr-pevo-grid .pevo-card-title { font-size:.78rem; font-weight:700; color:var(--text); }
+#cr-pevo-grid .pevo-card-kpis { display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+#cr-pevo-grid .pevo-kpi-neutral { font-size:.68rem; color:var(--text3); }
+#cr-pevo-grid .pevo-kpi-strong { font-size:.68rem; font-weight:700; color:var(--navy); }
+#cr-pevo-grid .pevo-kpi { font-size:.68rem; font-weight:700; padding:2px 6px; border-radius:8px; }
+#cr-pevo-grid .pos { background:#E8F5EE; color:#2D6A4F; }
+#cr-pevo-grid .neg { background:#FDECEA; color:#C0392B; }
+#cr-pevo-grid .neutral { background:#F1F0ED; color:#6B6860; }
+#cr-pevo-grid .pevo-pill-toggles { display:none; }
 @media (max-width: 860px) {
   #panel-cr.active { flex-direction: column; overflow-y: auto; }
   .cr-layout { flex-direction: column; height: auto; }
@@ -1164,6 +1177,20 @@ body {
           </div>
         </div>
         <div class="cr-field-group">
+          <div class="cr-field-group-title">Single Leg Squat (SLS)</div>
+          <div class="cr-grid2">
+            <div class="cr-fg"><label>Côté sain (rép.)</label><input type="number" id="cr-sls-cs" placeholder="ex. 15" min="0"></div>
+            <div class="cr-fg"><label>Côté atteint (rép.)</label><input type="number" id="cr-sls-ca" placeholder="ex. 12" min="0"></div>
+          </div>
+          <div class="cr-toggle-row" onclick="crToggleSLSLSI()" style="margin-top:9px">
+            <div class="cr-toggle-track" id="cr-toggle-sls-lsi"><div class="cr-toggle-thumb"></div></div>
+            <span style="font-size:.79rem;font-weight:600;color:var(--text2)">LSI SLS</span>
+          </div>
+          <div class="cr-lsi-row" id="cr-sls-lsi-row">
+            <div class="cr-fg"><label>LSI SLS (%)</label><input type="number" id="cr-sls-lsi" placeholder="ex. 87" min="0" max="120"></div>
+          </div>
+        </div>
+        <div class="cr-field-group">
           <div class="cr-field-group-title" style="display:flex;align-items:center;justify-content:space-between;">
             <span>Signes cliniques</span>
             <button class="cr-amp-cfg-btn" onclick="crOpenSignConfig()" title="Configurer les signes (admin)" style="font-size:.7rem;padding:3px 7px;">⚙</button>
@@ -1262,6 +1289,15 @@ body {
               <button onclick="_crEvoCheckAll(false)" style="font-size:.72rem;padding:4px 10px;background:#fff;border:1px solid var(--border,#E8E6E1);border-radius:6px;cursor:pointer;font-family:inherit">Tout décocher</button>
             </div>
           </div>
+        </div>
+        <!-- Graphiques de progression programme dans le PDF -->
+        <div id="cr-pevo-panel" style="margin-top:10px;padding:12px 14px;background:var(--surface2,#F7F6F3);border-radius:8px;border:1px solid var(--border,#E8E6E1)">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.82rem;font-weight:600;color:var(--text,#1A1917)">
+            <input type="checkbox" id="cr-pevo-toggle" onchange="crOnPevoToggle()">
+            📊 Inclure les graphiques de progression
+          </label>
+          <div id="cr-pevo-status" style="display:none;margin-top:8px;font-size:.78rem;color:#9D9B96;font-style:italic"></div>
+          <div id="cr-pevo-grid" style="display:none;margin-top:12px"></div>
         </div>
 
       </div><!-- /cr-left-scroll -->
@@ -4351,10 +4387,43 @@ function downloadOutils(){
   closeExportOutils();
 }
 
+var _crPatientId = null;
+var _crPevoContentHTML = null;
+
 window.addEventListener('message', function(e){
   if(e.data && e.data.type==='r4p-profile'){
     try { localStorage.setItem('r4p-profile', JSON.stringify(e.data.profile)); } catch(ex){}
     _updatePrescHeader(e.data.profile || {});
+  }
+  if(e.data && e.data.type==='r4p-patient-selected'){
+    _crPatientId = e.data.patient ? e.data.patient.id : null;
+    _crPevoContentHTML = null;
+    var tog = document.getElementById('cr-pevo-toggle');
+    var grd = document.getElementById('cr-pevo-grid');
+    var sta = document.getElementById('cr-pevo-status');
+    if(tog) tog.checked = false;
+    if(grd) { grd.innerHTML = ''; grd.style.display = 'none'; }
+    if(sta) sta.style.display = 'none';
+  }
+  if(e.data && e.data.type==='r4p-pevo-response'){
+    var tog2 = document.getElementById('cr-pevo-toggle');
+    var grd2 = document.getElementById('cr-pevo-grid');
+    var sta2 = document.getElementById('cr-pevo-status');
+    var errMsgs = {
+      no_patient: 'Sélectionnez un patient depuis l\'accueil.',
+      no_data: 'Aucune séance avec données de charge pour ce patient.',
+      no_auth: 'Session expirée — rechargez la page.',
+      fetch_error: 'Erreur réseau lors du chargement des graphiques.'
+    };
+    if(e.data.error){
+      if(sta2){ sta2.textContent = errMsgs[e.data.error] || 'Erreur inconnue.'; sta2.style.display = ''; }
+      if(grd2) grd2.style.display = 'none';
+      if(tog2) tog2.checked = false;
+      return;
+    }
+    _crPevoContentHTML = e.data.contentHTML;
+    if(sta2) sta2.style.display = 'none';
+    if(grd2){ grd2.innerHTML = _crPevoContentHTML; grd2.style.display = ''; }
   }
 });
 
@@ -5522,6 +5591,37 @@ _updateOutilsPatientBtns();
     if (row)   { if (crLsiOn) row.classList.add('visible'); else row.classList.remove('visible'); }
   };
 
+  var crSlsLsiOn = false;
+  window.crToggleSLSLSI = function() {
+    crSlsLsiOn = !crSlsLsiOn;
+    var track = document.getElementById('cr-toggle-sls-lsi');
+    var row   = document.getElementById('cr-sls-lsi-row');
+    if (track) { if (crSlsLsiOn) track.classList.add('on'); else track.classList.remove('on'); }
+    if (row)   { if (crSlsLsiOn) row.classList.add('visible'); else row.classList.remove('visible'); }
+  };
+
+  window.crOnPevoToggle = function() {
+    var toggle = document.getElementById('cr-pevo-toggle');
+    var grid   = document.getElementById('cr-pevo-grid');
+    var status = document.getElementById('cr-pevo-status');
+    var on = toggle && toggle.checked;
+    if (!on) {
+      if (grid)   { grid.innerHTML = ''; grid.style.display = 'none'; }
+      if (status) status.style.display = 'none';
+      return;
+    }
+    if (!_crPatientId) {
+      if (status) { status.textContent = 'Sélectionnez un patient depuis l\'accueil pour charger les graphiques.'; status.style.display = ''; }
+      return;
+    }
+    if (_crPevoContentHTML) {
+      if (grid) { grid.innerHTML = _crPevoContentHTML; grid.style.display = ''; }
+      return;
+    }
+    if (status) { status.textContent = 'Chargement des graphiques…'; status.style.display = ''; }
+    window.parent.postMessage({ type: 'r4p-pevo-request', patientId: _crPatientId }, window.location.origin);
+  };
+
   function crV(id) { var el = document.getElementById(id); return el ? (el.value||'').trim() : ''; }
   function crFmtDate(str) {
     if (!str) return null;
@@ -5567,6 +5667,19 @@ _updateOutilsPatientBtns();
     el.style.height = 'auto';
     el.style.height = el.scrollHeight + 'px';
   };
+
+  function _crAppendSls(lines) {
+    var slsCS = crV('cr-sls-cs'), slsCA = crV('cr-sls-ca');
+    if (!slsCS && !slsCA) return;
+    var parts = [];
+    if (slsCS) parts.push(slsCS + ' rép. côté sain');
+    if (slsCA) parts.push(slsCA + ' rép. côté atteint');
+    var txt = 'SLS : ' + parts.join(' / ');
+    var slsLsi = crSlsLsiOn ? crV('cr-sls-lsi') : '';
+    if (slsLsi) txt += ' — LSI : ' + slsLsi + '%';
+    lines.push(txt + '.');
+    lines.push('');
+  }
 
   function crBuildLetter() {
     if (crTemplate === 'debut') return crBuildDebutLetter();
@@ -5700,6 +5813,9 @@ _updateOutilsPatientBtns();
       if (aclRsi) fonct.push('Score ACL-RSI : ' + aclRsi + '/100');
       if (fonct.length) { lines.push('Tests fonctionnels : ' + fonct.join(' — ') + '.'); lines.push(''); }
     }
+
+    // 7b. SLS (toutes pathologies)
+    _crAppendSls(lines);
 
     // 8. Signes cliniques — 3 états groupés
     var signDefs = crSignConfig; // utilise la config dynamique
@@ -5871,6 +5987,9 @@ _updateOutilsPatientBtns();
       negatifTestsD.forEach(function(t){ lines.push('  ✓ ' + t + ' — Négatif'); });
     }
 
+    // SLS (toutes pathologies)
+    _crAppendSls(lines);
+
     var commentaire = crV('cr-commentaire');
     if (commentaire) { lines.push(''); lines.push(commentaire); }
     lines.push('');
@@ -5955,6 +6074,7 @@ _updateOutilsPatientBtns();
       + '<hr>'
       + '<div id="cr-body">' + textEsc + '</div>'
       + _crGetEvoSectionHtml()
+      + _crGetPevoSectionHtml()
       + '</div>'
       + '<script>'
       + 'window.onload=function(){'
@@ -6507,6 +6627,30 @@ _updateOutilsPatientBtns();
     });
     html += '</div>';
     return html;
+  }
+
+  function _crGetPevoSectionHtml() {
+    var toggle = document.getElementById('cr-pevo-toggle');
+    if (!toggle || !toggle.checked) return '';
+    if (!_crPevoContentHTML) return '';
+    var pevoCss = '<style>'
+      + '.pevo-charts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:4px}'
+      + '@media(max-width:580px){.pevo-charts{grid-template-columns:1fr}}'
+      + '.pevo-card{background:#fff;border:1px solid #E8E6E1;border-radius:10px;padding:14px 16px 10px;break-inside:avoid}'
+      + '.pevo-card-header{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:8px}'
+      + '.pevo-card-title{font-size:.82rem;font-weight:700;color:#1A1917}'
+      + '.pevo-card-kpis{display:flex;align-items:center;gap:6px;flex-wrap:wrap}'
+      + '.pevo-kpi-neutral{font-size:.72rem;color:#6B6860}'
+      + '.pevo-kpi-strong{font-size:.72rem;font-weight:700;color:#1A3A5C}'
+      + '.pevo-kpi{font-size:.72rem;font-weight:700;padding:2px 7px;border-radius:10px}'
+      + '.pos{background:#E8F5EE;color:#2D6A4F}.neg{background:#FDECEA;color:#C0392B}.neutral{background:#F1F0ED;color:#6B6860}'
+      + '.pevo-pill-toggles{display:none}'
+      + '</style>';
+    return pevoCss
+      + '<div class="cr-evo-section">'
+      + '<div class="cr-evo-section-title">Graphiques de progression — programme</div>'
+      + _crPevoContentHTML
+      + '</div>';
   }
 
 })();
