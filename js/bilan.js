@@ -610,10 +610,12 @@ function _enterReadOnlyMode(){
   _bilanReadOnly = true;
   var main = document.querySelector('main');
   if(main) main.classList.add('bilan-readonly');
-  var saveBtn = document.getElementById('bilan-save-btn');
-  var editBtn = document.getElementById('bilan-edit-btn');
-  if(saveBtn) saveBtn.style.display = 'none';
-  if(editBtn) editBtn.style.display = 'flex';
+  var saveBtn  = document.getElementById('bilan-save-btn');
+  var editBtn  = document.getElementById('bilan-edit-btn');
+  var suiviBtn = document.getElementById('bilan-suivi-btn');
+  if(saveBtn)  { saveBtn.style.display = 'none'; saveBtn.textContent = '💾 Sauvegarder le bilan'; }
+  if(editBtn)  editBtn.style.display = 'flex';
+  if(suiviBtn) suiviBtn.style.display = '';
 }
 
 function _exitReadOnlyMode(){
@@ -2413,8 +2415,8 @@ function newBilanSuivi(){
   var lastDate  = _allBilans[0].date ? _allBilans[0].date.split('T')[0] : '';
   var lastLabel = lastDate ? _isoToReadable(lastDate) : 'précédent';
   var body = document.getElementById('modal-suivi-body');
-  if(body) body.innerHTML = 'Tous les champs seront pré-remplis depuis le <strong>bilan du '+lastLabel+'</strong>.<br>'
-    +'Seules les valeurs que vous <strong>modifiez</strong> créeront un nouveau point dans l\'évolution.';
+  if(body) body.innerHTML = 'Les informations patient seront pré-remplies depuis le <strong>bilan du '+lastLabel+'</strong>.<br>'
+    +'Les pages cliniques démarreront vierges — seules les valeurs que vous <strong>saisissez</strong> seront enregistrées dans ce suivi.';
   var ov = document.getElementById('modal-confirm-suivi');
   if(ov) ov.classList.add('open');
 }
@@ -2432,7 +2434,6 @@ function _newBilanSuiviConfirm(){
   var lastDate  = _allBilans[0].date ? _allBilans[0].date.split('T')[0] : '';
   var lastLabel = lastDate ? _isoToReadable(lastDate) : 'précédent';
 
-  // Pré-remplir TOUS les champs depuis le snapshot fusionné
   _exitHistoMode();
   _exitReadOnlyMode();
   _currentBilanId = null;
@@ -2442,9 +2443,13 @@ function _newBilanSuiviConfirm(){
   _resetBilanFields();
   document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
 
-  // Charger toutes les valeurs du dernier bilan (snapshot fusionné)
+  // Pré-remplir uniquement les champs de page-infos (infos patient)
   var mergedDonnees = _buildMergedDonnees(_allBilans);
-  _deserializeBilan(mergedDonnees);
+  var infoKeys = {};
+  document.querySelectorAll('#page-infos input[id], #page-infos select[id], #page-infos textarea[id]').forEach(function(el){
+    if(mergedDonnees.hasOwnProperty(el.id)) infoKeys[el.id] = mergedDonnees[el.id];
+  });
+  _deserializeBilan(infoKeys);
   try{ _parsePainZones(); }catch(ex){}
 
   // Date du bilan = aujourd'hui
@@ -2456,10 +2461,17 @@ function _newBilanSuiviConfirm(){
   // Snapshot des valeurs héritées (pour détecter les changements au moment de la sauvegarde)
   _suiviSnapshot = _serializeBilan();
 
+  // Texte du bouton spécifique au bilan de suivi
+  var saveBtn = document.getElementById('bilan-save-btn');
+  if(saveBtn) saveBtn.textContent = '💾 Sauvegarder le bilan de suivi';
+  // Masquer le bouton "Bilan de suivi" (évite de créer un suivi d'un suivi)
+  var suiviBtn = document.getElementById('bilan-suivi-btn');
+  if(suiviBtn) suiviBtn.style.display = 'none';
+
   try{ updateAll(); }catch(ex){}
   _bilanModified = false;
   showPage('infos');
-  showToast('📋 Bilan de suivi — tous les champs pré-remplis du '+lastLabel);
+  showToast('📋 Bilan de suivi — infos patient pré-remplies depuis le '+lastLabel);
 }
 
 function newBilan(){
