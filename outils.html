@@ -4389,6 +4389,7 @@ function downloadOutils(){
 
 var _crPatientId = null;
 var _crPevoContentHTML = null;
+var _crPevoCards = [];
 
 window.addEventListener('message', function(e){
   if(e.data && e.data.type==='r4p-profile'){
@@ -4398,6 +4399,7 @@ window.addEventListener('message', function(e){
   if(e.data && e.data.type==='r4p-patient-selected'){
     _crPatientId = e.data.patient ? e.data.patient.id : null;
     _crPevoContentHTML = null;
+    _crPevoCards = [];
     var tog = document.getElementById('cr-pevo-toggle');
     var grd = document.getElementById('cr-pevo-grid');
     var sta = document.getElementById('cr-pevo-status');
@@ -4422,8 +4424,8 @@ window.addEventListener('message', function(e){
       return;
     }
     _crPevoContentHTML = e.data.contentHTML;
+    _crBuildPevoSelector();
     if(sta2) sta2.style.display = 'none';
-    if(grd2){ grd2.innerHTML = _crPevoContentHTML; grd2.style.display = ''; }
   }
 });
 
@@ -5600,6 +5602,47 @@ _updateOutilsPatientBtns();
     if (row)   { if (crSlsLsiOn) row.classList.add('visible'); else row.classList.remove('visible'); }
   };
 
+  var _crBuildPevoSelector = window._crBuildPevoSelector = function() {
+    var grid = document.getElementById('cr-pevo-grid');
+    var status = document.getElementById('cr-pevo-status');
+    if (!_crPevoContentHTML || !grid) return;
+    // Parse cards from HTML string
+    var doc = new DOMParser().parseFromString(_crPevoContentHTML, 'text/html');
+    _crPevoCards = Array.from(doc.querySelectorAll('.pevo-card')).map(function(card) {
+      var titleEl = card.querySelector('.pevo-card-title');
+      return { title: titleEl ? titleEl.textContent.trim() : '—', html: card.outerHTML };
+    });
+    if (!_crPevoCards.length) {
+      if (status) { status.textContent = 'Aucun graphique disponible.'; status.style.display = ''; }
+      grid.style.display = 'none';
+      return;
+    }
+    // Build selector UI
+    var html = '<div style="margin-bottom:10px;font-size:.75rem;font-weight:700;color:#1A3A5C;">Sélectionner les graphiques à inclure :</div>';
+    html += '<div style="display:flex;gap:6px;margin-bottom:8px;">'
+      + '<button onclick="window._crPevoCheckAll(true)" style="padding:3px 10px;font-size:.72rem;border:1px solid #C8C6C0;border-radius:5px;background:#F6F5F2;cursor:pointer;color:#1A1917;">Tout cocher</button>'
+      + '<button onclick="window._crPevoCheckAll(false)" style="padding:3px 10px;font-size:.72rem;border:1px solid #C8C6C0;border-radius:5px;background:#F6F5F2;cursor:pointer;color:#1A1917;">Tout décocher</button>'
+      + '</div>';
+    html += '<div id="cr-pevo-checks" style="display:flex;flex-direction:column;gap:5px;margin-bottom:10px;">';
+    _crPevoCards.forEach(function(card, idx) {
+      html += '<label style="display:flex;align-items:center;gap:7px;font-size:.78rem;color:#1A1917;cursor:pointer;">'
+        + '<input type="checkbox" data-pevo-idx="' + idx + '" checked style="width:14px;height:14px;accent-color:#1A3A5C;cursor:pointer;"> '
+        + card.title + '</label>';
+    });
+    html += '</div>';
+    // Preview grid (just card titles as pills)
+    html += '<div style="font-size:.7rem;color:#9D9B96;font-style:italic;">' + _crPevoCards.length + ' graphique' + (_crPevoCards.length > 1 ? 's' : '') + ' disponible' + (_crPevoCards.length > 1 ? 's' : '') + '</div>';
+    grid.innerHTML = html;
+    grid.style.display = '';
+    if (status) status.style.display = 'none';
+  };
+
+  window._crPevoCheckAll = function(state) {
+    document.querySelectorAll('#cr-pevo-checks input[type="checkbox"]').forEach(function(cb) {
+      cb.checked = state;
+    });
+  };
+
   window.crOnPevoToggle = function() {
     var toggle = document.getElementById('cr-pevo-toggle');
     var grid   = document.getElementById('cr-pevo-grid');
@@ -5615,7 +5658,7 @@ _updateOutilsPatientBtns();
       return;
     }
     if (_crPevoContentHTML) {
-      if (grid) { grid.innerHTML = _crPevoContentHTML; grid.style.display = ''; }
+      _crBuildPevoSelector();
       return;
     }
     if (status) { status.textContent = 'Chargement des graphiques…'; status.style.display = ''; }
@@ -5674,8 +5717,8 @@ _updateOutilsPatientBtns();
     var parts = [];
     if (slsCS) parts.push(slsCS + ' rép. côté sain');
     if (slsCA) parts.push(slsCA + ' rép. côté atteint');
-    var txt = 'SLS : ' + parts.join(' / ');
-    var slsLsi = crSlsLsiOn ? crV('cr-sls-lsi') : '';
+    var txt = 'Single Leg Squat (SLS) : ' + parts.join(' / ');
+    var slsLsi = crV('cr-sls-lsi');
     if (slsLsi) txt += ' — LSI : ' + slsLsi + '%';
     lines.push(txt + '.');
     lines.push('');
@@ -6405,6 +6448,34 @@ _updateOutilsPatientBtns();
         filled++;
       }
 
+      // ── SLS — bilan le plus récent avec données SLS ───────────
+      try {
+        var bilanFrame = window.parent && window.parent.document.getElementById('frame-bilan');
+        if (bilanFrame && bilanFrame.contentWindow && bilanFrame.contentWindow._allBilans) {
+          var allB = bilanFrame.contentWindow._allBilans; // newest first
+          for (var bi = 0; bi < allB.length; bi++) {
+            var bd = allB[bi].donnees || {};
+            var slsCsRaw = (bd['sls-cs'] || '').toString().trim();
+            var slsCaRaw = (bd['sls-ca'] || '').toString().trim();
+            if (slsCsRaw || slsCaRaw) {
+              var slsCsEl = document.getElementById('cr-sls-cs');
+              var slsCaEl = document.getElementById('cr-sls-ca');
+              var slsCsVal = parseFloat(slsCsRaw);
+              var slsCaVal = parseFloat(slsCaRaw);
+              if (slsCsEl && !isNaN(slsCsVal)) { slsCsEl.value = slsCsVal; filled++; }
+              if (slsCaEl && !isNaN(slsCaVal)) { slsCaEl.value = slsCaVal; filled++; }
+              if (!isNaN(slsCsVal) && slsCsVal > 0 && !isNaN(slsCaVal) && slsCaVal > 0) {
+                var lsiVal = Math.round(slsCaVal / slsCsVal * 100);
+                var lsiEl = document.getElementById('cr-sls-lsi');
+                if (lsiEl) { lsiEl.value = lsiVal; filled++; }
+                if (!crSlsLsiOn) crToggleSLSLSI();
+              }
+              break;
+            }
+          }
+        }
+      } catch(eSls) {}
+
       if (filled > 0) _crToast(filled + ' champ' + (filled > 1 ? 's' : '') + ' associé' + (filled > 1 ? 's' : '') + ' ✓');
       else _crToast('Aucune donnée patient disponible — ouvrez un bilan d\'abord');
     } catch(e) { console.error(e); _crToast('Impossible d\'associer le patient'); }
@@ -6632,7 +6703,9 @@ _updateOutilsPatientBtns();
   function _crGetPevoSectionHtml() {
     var toggle = document.getElementById('cr-pevo-toggle');
     if (!toggle || !toggle.checked) return '';
-    if (!_crPevoContentHTML) return '';
+    if (!_crPevoCards.length) return '';
+    var checks = Array.from(document.querySelectorAll('#cr-pevo-checks input[type="checkbox"]:checked'));
+    if (!checks.length) return '';
     var pevoCss = '<style>'
       + '.pevo-charts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:4px}'
       + '@media(max-width:580px){.pevo-charts{grid-template-columns:1fr}}'
@@ -6646,10 +6719,16 @@ _updateOutilsPatientBtns();
       + '.pos{background:#E8F5EE;color:#2D6A4F}.neg{background:#FDECEA;color:#C0392B}.neutral{background:#F1F0ED;color:#6B6860}'
       + '.pevo-pill-toggles{display:none}'
       + '</style>';
+    var cardsHtml = '<div class="pevo-charts">';
+    checks.forEach(function(cb) {
+      var idx = parseInt(cb.dataset.pevoIdx, 10);
+      if (_crPevoCards[idx]) cardsHtml += _crPevoCards[idx].html;
+    });
+    cardsHtml += '</div>';
     return pevoCss
       + '<div class="cr-evo-section">'
       + '<div class="cr-evo-section-title">Graphiques de progression — programme</div>'
-      + _crPevoContentHTML
+      + cardsHtml
       + '</div>';
   }
 
