@@ -80,7 +80,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 }
 .filter-select option { background:var(--navy); color:#fff; }
 .filter-select.active-filter { background-color:rgba(74,144,217,.4); background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,.6)'/%3E%3C/svg%3E"); }
-.filter-label { font-size:.65rem; font-weight:700; color:rgba(255,255,255,.45); letter-spacing:.06em; text-transform:uppercase; margin-top:6px; margin-bottom:1px; }
+.filter-label { font-size:.65rem; font-weight:700; color:rgba(255,255,255,.45); letter-spacing:.13em; text-transform:uppercase; margin-top:6px; margin-bottom:1px; }
 
 .lib-scroll { flex:1; overflow-y:auto; padding:8px 0; }
 
@@ -88,7 +88,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 #sidebarTemplates { display:flex; flex-direction:column; height:100%; }
 #sidebarLibrary   { display:none; flex-direction:column; height:100%; }
 .stmpl-header { padding:12px 14px 10px; background:var(--navy); flex-shrink:0; }
-.stmpl-title  { color:#fff; font-size:.78rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; margin-bottom:6px; }
+.stmpl-title  { color:#fff; font-size:.65rem; font-weight:700; letter-spacing:.13em; text-transform:uppercase; margin-bottom:6px; }
 .stmpl-search { width:100%; padding:6px 10px; border:none; border-radius:6px; background:rgba(255,255,255,.15); color:#fff; font-size:.8rem; outline:none; }
 .stmpl-search::placeholder { color:rgba(255,255,255,.5); }
 .stmpl-scroll { flex:1; overflow-y:auto; padding:8px 0; }
@@ -182,7 +182,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .stmpl-cat-hdr      { display:flex; align-items:center; gap:6px; padding:6px 12px; cursor:pointer; user-select:none; -webkit-user-select:none; transition:background .1s; }
 .stmpl-cat-hdr:hover { background:#EEF2F7; }
 .stmpl-cat-hdr-icon { font-size:.9rem; flex-shrink:0; }
-.stmpl-cat-hdr-name { font-size:.72rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; flex:1; }
+.stmpl-cat-hdr-name { font-size:.68rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; flex:1; }
 .stmpl-cat-hdr-count{ font-size:.67rem; color:var(--muted); flex-shrink:0; }
 .stmpl-cat-hdr-toggle{ font-size:.6rem; color:var(--muted); flex-shrink:0; width:10px; }
 .stmpl-cat-body     { }
@@ -202,7 +202,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .toggle-sw input:checked + .sl:before { transform:translateX(16px); }
 .stmpl-phase-num    { flex-shrink:0; width:18px; height:18px; border-radius:50%; background:var(--accent2); color:#fff; font-size:.64rem; font-weight:700; display:flex; align-items:center; justify-content:center; }
 .stmpl-phase-empty  { padding:8px 16px; font-size:.75rem; color:var(--muted); font-style:italic; }
-.stmpl-section-sep  { padding:6px 14px 4px; font-size:.67rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; background:#F0F4F8; border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+.stmpl-section-sep  { padding:6px 14px 4px; font-size:.65rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; background:#F0F4F8; border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
 
 /* Group create modal */
 .grp-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:600; display:none; align-items:center; justify-content:center; }
@@ -885,7 +885,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   padding:10px 14px; display:flex; align-items:center; gap:8px; flex-shrink:0;
   flex-wrap:wrap;
 }
-.main-header h1 { font-size:.88rem; font-weight:700; color:var(--navy); flex:1; min-width:120px; }
+.main-header h1 { font-size:.88rem; font-weight:800; color:var(--navy); flex:1; min-width:120px; letter-spacing:-.02em; }
 .patient-input {
   padding:6px 10px; border:1px solid var(--border); border-radius:6px;
   font-size:.8rem; color:var(--text); outline:none; width:180px;
@@ -912,7 +912,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 }
 .bloc-title-input {
   flex:1; background:transparent; border:none; color:#fff;
-  font-size:.88rem; font-weight:700; outline:none; letter-spacing:.03em;
+  font-size:.88rem; font-weight:800; outline:none; letter-spacing:-.01em;
 }
 .bloc-title-input::placeholder { color:rgba(255,255,255,.5); }
 .bloc-del-btn { background:none; border:none; color:rgba(255,255,255,.55); cursor:pointer; font-size:.9rem; padding:2px 6px; border-radius:4px; }
@@ -931,7 +931,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   display:grid; gap:6px; padding:4px 6px 2px;
   grid-template-columns: 28px 1fr 60px 60px 48px 60px 76px 180px 32px;
 }
-.col-lbl { font-size:.65rem; font-weight:700; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; }
+.col-lbl { font-size:.65rem; font-weight:700; color:var(--muted); letter-spacing:.1em; text-transform:uppercase; }
 .exo-move-btns { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; flex-shrink:0; opacity:0; transition:opacity .15s; }
 .exo-row:hover .exo-move-btns { opacity:1; }
 @media (hover:none) { .exo-move-btns { opacity:1; } }
@@ -1400,7 +1400,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   padding:10px 14px; background:var(--surface); border-bottom:1px solid var(--border);
   display:flex; align-items:center; gap:8px; flex-shrink:0;
 }
-.cal-central-header h2 { font-size:.9rem; font-weight:700; color:var(--navy); text-align:center; }
+.cal-central-header h2 { font-size:.9rem; font-weight:800; color:var(--navy); text-align:center; letter-spacing:-.02em; }
 .cal-central-body { flex:1; overflow-y:auto; padding:12px 14px; }
 
 /* ── BIBLIOTHÈQUE DE SÉANCES ── */
@@ -1458,7 +1458,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   transform:translateY(100%); transition:transform .22s cubic-bezier(.4,0,.2,1);
 }
 .cal-sel-bar.visible { transform:translateY(0); }
-.cal-nav h2 { font-size:.95rem; font-weight:700; color:var(--navy); flex:1; }
+.cal-nav h2 { font-size:.95rem; font-weight:800; color:var(--navy); flex:1; letter-spacing:-.02em; }
 .cal-nav-btn { background:none; border:1px solid var(--border); border-radius:6px; padding:4px 10px; cursor:pointer; font-size:.82rem; color:var(--muted); }
 .cal-nav-btn:hover { background:var(--bg); color:var(--navy); }
 .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); grid-auto-rows:88px; gap:2px; user-select:none; -webkit-user-select:none; }
@@ -1864,13 +1864,13 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 
 <!-- ··· More Menu ─────────────────────────────────────────────── -->
 <div id="more-menu" style="position:fixed;z-index:999;background:#fff;border:1px solid #E8E6E1;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.15);padding:6px;min-width:215px;display:none;">
-  <div style="font-size:.67rem;font-weight:700;color:#9D9B96;padding:4px 10px 6px;text-transform:uppercase;letter-spacing:.06em;">Planification</div>
+  <div style="font-size:.63rem;font-weight:700;color:#9D9B96;padding:4px 10px 6px;text-transform:uppercase;letter-spacing:.13em;">Planification</div>
   <button onclick="openCycles();_closeMoreMenu()" style="display:flex;align-items:center;gap:9px;width:100%;padding:8px 12px;border:none;background:none;cursor:pointer;border-radius:7px;font-family:inherit;font-size:.86rem;color:#1A1917;text-align:left;" onmouseover="this.style.background='#F1F0ED'" onmouseout="this.style.background='none'"><span>🔄</span> Cycles</button>
   <button onclick="openProtoPanel();_closeMoreMenu()" style="display:flex;align-items:center;gap:9px;width:100%;padding:8px 12px;border:none;background:none;cursor:pointer;border-radius:7px;font-family:inherit;font-size:.86rem;color:#1A1917;text-align:left;" onmouseover="this.style.background='#F1F0ED'" onmouseout="this.style.background='none'"><span>📚</span> Protocoles</button>
   <button onclick="openChargesEvo();_closeMoreMenu()" style="display:flex;align-items:center;gap:9px;width:100%;padding:8px 12px;border:none;background:none;cursor:pointer;border-radius:7px;font-family:inherit;font-size:.86rem;color:#1A1917;text-align:left;" onmouseover="this.style.background='#F1F0ED'" onmouseout="this.style.background='none'"><span>📈</span> Évolution</button>
   <button onclick="_closeMoreMenu();shareCalLink()" style="display:flex;align-items:center;gap:9px;width:100%;padding:8px 12px;border:none;background:none;cursor:pointer;border-radius:7px;font-family:inherit;font-size:.86rem;color:#1A1917;text-align:left;" onmouseover="this.style.background='#F1F0ED'" onmouseout="this.style.background='none'"><span>🔗</span> Partager le calendrier</button>
   <div style="border-top:1px solid #E8E6E1;margin:4px 0;"></div>
-  <div style="font-size:.67rem;font-weight:700;color:#9D9B96;padding:4px 10px 6px;text-transform:uppercase;letter-spacing:.06em;">Outils</div>
+  <div style="font-size:.63rem;font-weight:700;color:#9D9B96;padding:4px 10px 6px;text-transform:uppercase;letter-spacing:.13em;">Outils</div>
   <button onclick="openToolPanel('rm')" style="display:flex;align-items:center;gap:9px;width:100%;padding:8px 12px;border:none;background:none;cursor:pointer;border-radius:7px;font-family:inherit;font-size:.86rem;color:#1A1917;text-align:left;" onmouseover="this.style.background='#F1F0ED'" onmouseout="this.style.background='none'"><span>💪</span> Calculateur RM</button>
   <button onclick="openToolPanel('cardio')" style="display:flex;align-items:center;gap:9px;width:100%;padding:8px 12px;border:none;background:none;cursor:pointer;border-radius:7px;font-family:inherit;font-size:.86rem;color:#1A1917;text-align:left;" onmouseover="this.style.background='#F1F0ED'" onmouseout="this.style.background='none'"><span>❤️</span> Calculateur Cardio</button>
   <button onclick="openCAPWizard();_closeMoreMenu()" style="display:flex;align-items:center;gap:9px;width:100%;padding:8px 12px;border:none;background:none;cursor:pointer;border-radius:7px;font-family:inherit;font-size:.86rem;color:#1A1917;text-align:left;" onmouseover="this.style.background='#F1F0ED'" onmouseout="this.style.background='none'"><span>🏃</span> Calculateur CAP</button>
@@ -2855,7 +2855,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .proto-phase-item.open .proto-phase-content { display:block; }
 /* --- Section labels in phase content --- */
 .proto-section-label {
-  font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
   color:var(--text-sm);margin:10px 0 5px;
 }
 .proto-section-label:first-child { margin-top:0; }
