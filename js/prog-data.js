@@ -3615,7 +3615,7 @@ function _buildPevoNrsChart(pts, chartId) {
    vals  = tableau de nombres (1RM estimé)
    dates = labels JJ/MM
    meta  = [{bw:bool, reps:number, kg:number}] — pour colorer PdC vs chargé */
-function _buildPevoChart(vals, dates, chartId, meta, nrsPts) {
+function _buildPevoChart(vals, dates, chartId, meta, nrsPts, todayLastIdx) {
   meta = meta || [];
   nrsPts = nrsPts || null;
   var VW=500, VH=115;
@@ -3650,6 +3650,13 @@ function _buildPevoChart(vals, dates, chartId, meta, nrsPts) {
   var shownD={};
   pts.forEach(function(p){ if(shownD[p.date])return; shownD[p.date]=true; html+='<text x="'+p.x.toFixed(1)+'" y="'+(VH-PAD.bottom+13)+'" text-anchor="middle" font-size="9" fill="#C0BDB8">'+p.date+'</text>'; });
   html+='<line x1="'+PAD.left+'" y1="'+(VH-PAD.bottom)+'" x2="'+(VW-PAD.right)+'" y2="'+(VH-PAD.bottom)+'" stroke="#E8E6E1" stroke-width="1"/>';
+  // Ligne verticale "Aujourd'hui" (mode Programmé uniquement)
+  if(todayLastIdx !== null && todayLastIdx !== undefined && todayLastIdx >= 0 && todayLastIdx < n-1){
+    var tlx1 = pt(todayLastIdx, minV).x, tlx2 = pt(todayLastIdx+1, minV).x;
+    var tlx = (tlx1+tlx2)/2;
+    html+='<line x1="'+tlx.toFixed(1)+'" y1="'+PAD.top+'" x2="'+tlx.toFixed(1)+'" y2="'+(VH-PAD.bottom)+'" stroke="#D4600A" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.7"/>';
+    html+='<text x="'+(tlx+4).toFixed(1)+'" y="'+(PAD.top+9).toFixed(1)+'" font-size="8" fill="#D4600A" font-weight="700" opacity="0.85">Auj.</text>';
+  }
   // Axe NRS droit (si présent)
   if(hasNrs){
     html+='<line x1="'+(VW-PAD.right)+'" y1="'+PAD.top+'" x2="'+(VW-PAD.right)+'" y2="'+(VH-PAD.bottom)+'" stroke="#EDE8F9" stroke-width="1"/>';
@@ -3739,6 +3746,8 @@ var _pevoChartCtr = 0;     // compteur unique pour IDs SVG
 var _pevoDureeData = null;  // { exoKey → {label, points:[{date,secs}]} }
 var _pevoCardioData = null; // { groupKey → {label, points:[{date,km}]} }
 var _pevoCapPainData = null; // [{date, pain}] pour CAP — douleur EVA
+var _pevoRawSeances  = null; // cache brut Supabase — évite un re-fetch au toggle
+var _pevoShowFuture  = false; // false = séances ≤ aujourd'hui seulement
 
 /* Attache les events tooltip sur les hit areas (même logique que bilan.html) */
 var _pevoTtOpen = null;
@@ -3792,7 +3801,10 @@ function _renderPevoFilterBar(){
   h += '<input type="date" id="pevo-date-from" value="'+(_pevoFilterFrom||'')+'" onchange="setPevoCustomFilter()" style="font-size:.78rem;padding:3px 6px;border:1px solid #D3D1CB;border-radius:6px;">';
   h += '<label style="font-size:.72rem;color:#6B6860">au</label>';
   h += '<input type="date" id="pevo-date-to" value="'+(_pevoFilterTo||'')+'" onchange="setPevoCustomFilter()" style="font-size:.78rem;padding:3px 6px;border:1px solid #D3D1CB;border-radius:6px;">';
-  h += '</div></div>';
+  h += '</div>';
+  h += '<button class="pevo-future-toggle'+(_pevoShowFuture?' active':'')+'" onclick="togglePevoFuture()" title="Inclure les séances futures programmées">'
+    + (_pevoShowFuture ? '🔮 Programmé' : '📅 Réalisé') + '</button>';
+  h += '</div>';
   return h;
 }
 function setPevoFilter(days){
@@ -3818,7 +3830,7 @@ function _pevoFilterPts(pts){
       return p.date >= cutoff;
     }
     if(_pevoFilterFrom && p.date < _pevoFilterFrom) return false;
-    if(_pevoFilterTo   && p.date > _pevoFilterTo)   return false;
+    if(!_pevoShowFuture && _pevoFilterTo && p.date > _pevoFilterTo) return false;
     return true;
   });
 }
@@ -3876,6 +3888,19 @@ function _renderPevoCharts(exoData, selectedKeys) {
     var fLabel = pts[0].bw   ? pts[0].reps+'reps PdC'                  : first.toFixed(1)+'kg';
     var lLabel = pts[pts.length-1].bw ? pts[pts.length-1].reps+'reps PdC' : last.toFixed(1)+'kg';
     var dLabel = sign+delta.toFixed(1)+'kg'+pctStr;
+    // Label KPI "Actuel" vs "Prévu" selon si le dernier point est futur
+    var todayStr = new Date().toISOString().slice(0,10);
+    var lastIsFuture = _pevoShowFuture && pts[pts.length-1].date && pts[pts.length-1].date > todayStr;
+    var lKpiLabel = lastIsFuture ? 'Prévu : ' : 'Actuel : ';
+    // Indice du dernier point passé (pour ligne today sur SVG)
+    var todayLastIdx = null;
+    if(_pevoShowFuture){
+      var _tli = -1;
+      for(var _ti=0; _ti<pts.length; _ti++){ if(pts[_ti].date && pts[_ti].date <= todayStr) _tli = _ti; }
+      var _hasFut = false;
+      for(var _fi=0; _fi<pts.length; _fi++){ if(pts[_fi].date && pts[_fi].date > todayStr){ _hasFut=true; break; } }
+      if(_tli >= 0 && _hasFut) todayLastIdx = _tli;
+    }
     // Aligner les pts NRS sur les pts de charge (même timeline)
     var nrsPts = null, hasNrsData = false;
     if(_pevoNrsData && _pevoNrsData[key]) {
@@ -3884,7 +3909,7 @@ function _renderPevoCharts(exoData, selectedKeys) {
       nrsPts = pts.map(function(p){ return (nrsMap[p.date] !== undefined && nrsMap[p.date] !== null) ? nrsMap[p.date] : null; });
       hasNrsData = nrsPts.filter(function(v){ return v !== null; }).length >= 2;
     }
-    var svg = _buildPevoChart(vals, dates, _pevoChartCtr, meta, nrsPts);
+    var svg = _buildPevoChart(vals, dates, _pevoChartCtr, meta, nrsPts, todayLastIdx);
     if(!svg) return;
     // Pills toggle charge / douleur (si NRS disponible)
     var allBwMeta = meta.length && meta.every(function(m){ return m.bw; });
@@ -3904,7 +3929,7 @@ function _renderPevoCharts(exoData, selectedKeys) {
       +'<div class="pevo-card-kpis">'
       +'<span class="pevo-kpi-neutral">Début : '+fLabel+'</span>'
       +'<span class="pevo-kpi-neutral">→</span>'
-      +'<span class="pevo-kpi-strong">Actuel : '+lLabel+'</span>'
+      +'<span class="pevo-kpi-strong">'+lKpiLabel+lLabel+'</span>'
       +'<span class="pevo-kpi '+cls+'">'+dLabel+'</span>'
       +rmTag
       +'</div></div>'
@@ -4285,19 +4310,33 @@ function openChargesEvo() {
         body.innerHTML = '<div class="pevo-empty">Aucune séance planifiée pour ce patient.</div>';
         return;
       }
-      _pevoData = _extractExoLoads(data);
-      _pevoNrsData = _extractExoNRS(data);
-      _pevoDureeData = _extractExoDurations(data);
-      _pevoCardioData = _extractCardioLoads(data);
-      _pevoCapPainData = _extractCapPainData(data);
-      var sel = _pevoGetSel(_progPatient.id);
-      _renderPevoCharts(_pevoData, sel);
+      _pevoRawSeances = data;
+      _rebuildPevoData();
     })
     .catch(function(err){ body.innerHTML = '<div class="pevo-empty">Erreur réseau : '+(err&&err.message||err)+'</div>'; });
 }
 
 function closeChargesEvo() {
   document.getElementById('pevoOverlay').classList.remove('open');
+}
+
+function _rebuildPevoData() {
+  var today = new Date().toISOString().slice(0,10);
+  var seances = _pevoShowFuture
+    ? _pevoRawSeances
+    : _pevoRawSeances.filter(function(s){ return !s.date || s.date <= today; });
+  _pevoData        = _extractExoLoads(seances);
+  _pevoNrsData     = _extractExoNRS(seances);
+  _pevoDureeData   = _extractExoDurations(seances);
+  _pevoCardioData  = _extractCardioLoads(seances);
+  _pevoCapPainData = _extractCapPainData(seances);
+  var sel = _pevoGetSel(_progPatient ? _progPatient.id : 'local');
+  _renderPevoCharts(_pevoData, sel);
+}
+
+function togglePevoFuture() {
+  _pevoShowFuture = !_pevoShowFuture;
+  if(_pevoRawSeances) _rebuildPevoData();
 }
 
 function _loadProg(id, seanceId){
