@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Prescription d'exercices</title>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
@@ -15,7 +16,7 @@
   --sidebar-w:300px;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
-html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-apple-system,'Helvetica Neue',Arial,sans-serif; color:var(--text); }
+html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Figtree',-apple-system,'Helvetica Neue',Arial,sans-serif; color:var(--text); }
 
 /* ── TOPBAR ── */
 .topbar {
@@ -23,7 +24,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
   padding:0 14px; gap:10px; flex-shrink:0; z-index:20;
   border-bottom:1px solid rgba(255,255,255,.1);
 }
-.topbar-logo { color:#fff; font-size:.78rem; font-weight:700; letter-spacing:.14em; white-space:nowrap; display:flex; align-items:center; }
+.topbar-logo { color:#fff; font-size:.78rem; font-weight:800; letter-spacing:.14em; white-space:nowrap; display:flex; align-items:center; }
 .topbar-patient {
   display:flex; align-items:center; gap:7px; flex:1;
   font-size:.76rem; color:rgba(255,255,255,.85);
@@ -39,7 +40,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 .topbar-btn {
   background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3);
   color:#fff; border-radius:8px; padding:5px 12px; font-size:.74rem;
-  cursor:pointer; white-space:nowrap; transition:background .15s; font-family:inherit;
+  cursor:pointer; white-space:nowrap; transition:background .15s; font-family:inherit; font-weight:600;
 }
 .topbar-btn:hover { background:rgba(255,255,255,.25); }
 .topbar-btn.primary { background:var(--accent2); border-color:var(--accent2); }
@@ -57,7 +58,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:-app
 }
 .sidebar.collapsed { transform:translateX(-100%); position:absolute; z-index:15; height:calc(100% - 48px); }
 .sidebar-header { padding:12px 14px 10px; background:var(--navy); flex-shrink:0; }
-.sidebar-title { color:#fff; font-size:.78rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; margin-bottom:6px; }
+.sidebar-title { color:#fff; font-size:.65rem; font-weight:700; letter-spacing:.13em; text-transform:uppercase; margin-bottom:6px; }
 .search-box {
   width:100%; padding:6px 10px; border:none; border-radius:6px;
   background:rgba(255,255,255,.15); color:#fff; font-size:.8rem; outline:none;
