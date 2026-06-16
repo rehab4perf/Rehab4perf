@@ -1584,7 +1584,8 @@ function _renderEvolutionPage(){
         var valsB_check=bilansAsc.map(function(b){
           var d=b.donnees||{};
           var cf=d.changed_fields;
-          if(cf && grp.idB && cf.indexOf(grp.idB)===-1) return NaN;
+          // Pour un test bilatéral : si idA est mesuré dans ce suivi, idB l'est aussi
+          if(cf && grp.idB && cf.indexOf(grp.idB)===-1 && (!grp.idA||cf.indexOf(grp.idA)===-1)) return NaN;
           return grp.computeB?grp.computeB(d):parseFloat(d[grp.idB]||'');
         });
         var validB_check=valsB_check.filter(function(v){return !isNaN(v);});
@@ -1612,7 +1613,7 @@ function _renderEvolutionPage(){
       // Chart SVG + dual stats
       var chartSvg='', lastB_val=NaN, firstB_val=NaN, lsiHtml='';
       if(grp.type==='dual'){
-        var valsB=bilansAsc.map(function(b){var d=b.donnees||{};var cf=d.changed_fields;if(cf&&grp.idB&&cf.indexOf(grp.idB)===-1)return NaN;return grp.computeB?grp.computeB(d):parseFloat(d[grp.idB]||'');});
+        var valsB=bilansAsc.map(function(b){var d=b.donnees||{};var cf=d.changed_fields;if(cf&&grp.idB&&cf.indexOf(grp.idB)===-1&&(!grp.idA||cf.indexOf(grp.idA)===-1))return NaN;return grp.computeB?grp.computeB(d):parseFloat(d[grp.idB]||'');});
         valsB.forEach(function(v){if(!isNaN(v)&&isNaN(firstB_val))firstB_val=v;});
         valsB.slice().reverse().forEach(function(v){if(!isNaN(v)&&isNaN(lastB_val))lastB_val=v;});
         if(!isNaN(lastA) && !isNaN(lastB_val) && Math.max(lastA,lastB_val)>0){
