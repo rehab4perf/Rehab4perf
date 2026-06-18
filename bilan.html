@@ -111,7 +111,7 @@ body {
 }
 .nav-item:hover { background: var(--surface2); color: var(--text); }
 .nav-item.active { background: var(--accent-l); color: var(--accent2); font-weight: 700; }
-.nav-item .icon { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; }
+.nav-item .icon { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; }
 .nav-item .badge {
   margin-left: auto;
   background: var(--red);
@@ -1341,7 +1341,7 @@ textarea { resize:none !important; overflow:hidden !important; }
   <nav class="nav">
     <div class="nav-section">Dossier</div>
     <button class="nav-item active" onclick="showPage('infos')" data-page="infos">
-      <span class="icon">📋</span> Infos Patient
+      <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M24 24C28.4204 24 32 20.4204 32 16C32 11.5796 28.4204 8 24 8C19.5796 8 16 11.5796 16 16C16 20.4204 19.5796 24 24 24ZM34 16C34 21.525 29.525 26 24 26C18.475 26 14 21.525 14 16C14 10.475 18.475 6 24 6C29.525 6 34 10.475 34 16Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M9.22348 34.2119C8.22038 35.0211 8 35.6291 8 36V40H40V36C40 35.6291 39.7796 35.0211 38.7765 34.2119C37.7958 33.4207 36.3341 32.6669 34.5622 32.015C31.0199 30.7117 26.7532 30 24 30C21.2468 30 16.9801 30.7117 13.4378 32.015C11.6659 32.6669 10.2042 33.4207 9.22348 34.2119ZM24 28C17.9925 28 6 31.0347 6 36V42H42V36C42 31.0347 30.0075 28 24 28Z"/></svg></span> Infos Patient
     </button>
 
 <div class="nav-section">Bilan orthopédique</div>
@@ -1350,7 +1350,7 @@ textarea { resize:none !important; overflow:hidden !important; }
   <span class="badge" id="badge-epaule" style="display:none">!</span>
 </button>
 <button class="nav-item" onclick="showPage('rachis')" data-page="rachis">
-  <span class="icon">🦴</span> Rachis
+  <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M14.75 7.22898C14.75 5.95534 15.916 5.02392 17.1433 5.25877C22.3412 6.25336 25.6585 6.26502 30.8524 5.26223C32.0804 5.02515 33.25 5.95614 33.25 7.23214V7.64608L34 7.64608C35.1046 7.64608 36 8.54151 36 9.64608V11.174C36 12.2786 35.1046 13.174 34 13.174H33.25V14.0524C33.25 14.9569 32.6396 15.7578 31.7522 15.9835C28.8981 16.7096 26.5277 17.0843 24.1021 17.0834C21.6784 17.0826 19.2457 16.7068 16.2679 15.9802C15.3716 15.7615 14.75 14.9566 14.75 14.0435V13.174H14C12.8954 13.174 12 12.2786 12 11.174V9.64608C12 8.54151 12.8954 7.64608 14 7.64608H14.75V7.22898ZM16.75 7.22898V7.64608C16.75 8.75065 15.8546 9.64608 14.75 9.64608H14V11.174H14.75C15.8546 11.174 16.75 12.0695 16.75 13.174V14.0392C19.6356 14.7428 21.897 15.0827 24.1028 15.0834C26.3061 15.0842 28.5001 14.7467 31.25 14.0476V13.174C31.25 12.0695 32.1454 11.174 33.25 11.174H34V9.64608H33.25C32.1454 9.64608 31.25 8.75065 31.25 7.64608V7.23214C25.7838 8.27778 22.2102 8.26457 16.7675 7.22313Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M19 9.00011C19.5523 9.00011 20 9.44783 20 10.0001V12.0001C20 12.5524 19.5523 13.0001 19 13.0001C18.4477 13.0001 18 12.5524 18 12.0001V10.0001C18 9.44783 18.4477 9.00011 19 9.00011Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M14.75 20.229C14.75 18.9553 15.916 18.0239 17.1433 18.2588C22.3412 19.2534 25.6585 19.265 30.8524 18.2622C32.0804 18.0251 33.25 18.9561 33.25 20.2321V20.6461L34 20.6461C35.1046 20.6461 36 21.5415 36 22.6461V24.174C36 25.2786 35.1046 26.174 34 26.174H33.25V27.0524C33.25 27.9569 32.6396 28.7578 31.7522 28.9835C28.8981 29.7096 26.5277 30.0843 24.1021 30.0834C21.6784 30.0826 19.2457 29.7068 16.2679 28.9802C15.3716 28.7615 14.75 27.9566 14.75 27.0435V26.174H14C12.8954 26.174 12 25.2786 12 24.174V22.6461C12 21.5415 12.8954 20.6461 14 20.6461H14.75V20.229ZM16.75 20.229V20.6461C16.75 21.7507 15.8546 22.6461 14.75 22.6461H14V24.174H14.75C15.8546 24.174 16.75 25.0695 16.75 26.174V27.0392C19.6356 27.7428 21.897 28.0827 24.1028 28.0834C26.3061 28.0842 28.5001 27.7467 31.25 27.0476V26.174C31.25 25.0695 32.1454 24.174 33.25 24.174H34V22.6461H33.25C32.1454 22.6461 31.25 21.7507 31.25 20.6461V20.2321C25.7838 21.2778 22.2102 21.2646 16.7675 20.2231Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M19 22.0001C19.5523 22.0001 20 22.4478 20 23.0001V25.0001C20 25.5524 19.5523 26.0001 19 26.0001C18.4477 26.0001 18 25.5524 18 25.0001V23.0001C18 22.4478 18.4477 22.0001 19 22.0001Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M14.75 33.229C14.75 31.9553 15.916 31.0239 17.1433 31.2588C22.3412 32.2534 25.6585 32.265 30.8524 31.2622C32.0804 31.0251 33.25 31.9561 33.25 33.2321V33.6461H34C35.1046 33.6461 36 34.5415 36 35.6461V37.174C36 38.2786 35.1046 39.174 34 39.174H33.25V40.0524C33.25 40.9569 32.6396 41.7578 31.7522 41.9835C28.8981 42.7096 26.5277 43.0843 24.1021 43.0834C21.6784 43.0826 19.2457 42.7068 16.2679 41.9802C15.3716 41.7615 14.75 40.9566 14.75 40.0435V39.174H14C12.8954 39.174 12 38.2786 12 37.174V35.6461C12 34.5415 12.8954 33.6461 14 33.6461H14.75V33.229ZM16.75 33.229V33.6461C16.75 34.7507 15.8546 35.6461 14.75 35.6461H14V37.174H14.75C15.8546 37.174 16.75 38.0695 16.75 39.174V40.0392C19.6356 40.7428 21.897 41.0827 24.1028 41.0834C26.3061 41.0842 28.5001 40.7467 31.25 40.0476V39.174C31.25 38.0695 32.1454 37.174 33.25 37.174H34V35.6461H33.25C32.1454 35.6461 31.25 34.7507 31.25 33.6461V33.2321C25.7838 34.2778 22.2102 34.2646 16.7675 33.2231Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M19 35.0001C19.5523 35.0001 20 35.4478 20 36.0001V38.0001C20 38.5524 19.5523 39.0001 19 39.0001C18.4477 39.0001 18 38.5524 18 38.0001V36.0001C18 35.4478 18.4477 35.0001 19 35.0001Z"/></svg></span> Rachis
   <span class="badge" id="badge-rachis" style="display:none">!</span>
 </button>
 <button class="nav-item" onclick="showPage('hanche')" data-page="hanche">
@@ -1381,21 +1381,21 @@ textarea { resize:none !important; overflow:hidden !important; }
   <span class="icon">🦵</span> Tests Fonctionnels MI
 </button>
 <button class="nav-item" onclick="showPage('musculaires')" data-page="musculaires">
-  <span class="icon">⚡</span> Tests Musculaires
+  <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M7 42C6.44772 42 6 41.5523 6 41V7H8V40H11V25C11 24.4477 11.4477 24 12 24H18C18.5523 24 19 24.4477 19 25V40H21V21C21 20.4477 21.4477 20 22 20H28C28.5523 20 29 20.4477 29 21V40H31V13C31 12.4477 31.4477 12 32 12H38C38.5523 12 39 12.4477 39 13V40H41V42H7ZM37 40V14H33V40H37ZM27 40H23V22H27V40ZM17 40V26H13V40H17Z"/></svg></span> Tests Musculaires
 </button>
 
 <div class="nav-section">Synthèse</div>
 <button class="nav-item" onclick="showPage('cr-tf')" data-page="cr-tf">
-  <span class="icon">📊</span> CR Tests
+  <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="14" width="4" height="8" rx="1"/><rect x="10" y="9" width="4" height="13" rx="1"/><rect x="17" y="4" width="4" height="18" rx="1"/><line x1="1.5" y1="22" x2="22.5" y2="22"/></svg></span> CR Tests
 </button>
 <button class="nav-item" onclick="showPage('cr')" data-page="cr">
   <span class="icon">📄</span> CR Complet
 </button>
 <button class="nav-item" onclick="showPage('evolution')" data-page="evolution">
-  <span class="icon">📈</span> Évolution
+  <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M6 41C6 41.5523 6.44772 42 7 42H41V40H8V35.3588L14.3519 27.6458C14.8545 27.8733 15.4124 28 16 28C17.3878 28 18.6106 27.2932 19.3279 26.22L24.0035 28.1681C24.0916 30.2993 25.8472 32 28 32C30.2091 32 32 30.2091 32 28C32 27.2166 31.7748 26.4858 31.3856 25.8688L36.3608 19.6498C36.861 19.8748 37.4159 20 38 20C40.2091 20 42 18.2091 42 16C42 13.7909 40.2091 12 38 12C35.7909 12 34 13.7909 34 16C34 16.9004 34.2975 17.7313 34.7995 18.3998L29.9251 24.4929C29.354 24.1787 28.6979 24 28 24C26.4456 24 25.0983 24.8866 24.4362 26.1817L19.9868 24.3278C19.9955 24.2197 20 24.1104 20 24C20 21.7909 18.2091 20 16 20C13.7909 20 12 21.7909 12 24C12 24.8968 12.2951 25.7247 12.7936 26.3919L8 32.2127V7H6V41ZM18 24C18 25.1046 17.1046 26 16 26C14.8954 26 14 25.1046 14 24C14 22.8954 14.8954 22 16 22C17.1046 22 18 22.8954 18 24ZM28 30C29.1046 30 30 29.1046 30 28C30 26.8954 29.1046 26 28 26C26.8954 26 26 26.8954 26 28C26 29.1046 26.8954 30 28 30ZM40 16C40 17.1046 39.1046 18 38 18C36.8954 18 36 17.1046 36 16C36 14.8954 36.8954 14 38 14C39.1046 14 40 14.8954 40 16Z"/></svg></span> Évolution
 </button>
 <button class="nav-item" onclick="showPage('suivi-rapide')" data-page="suivi-rapide">
-  <span class="icon">⚡</span> Suivi rapide
+  <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,14 5,14 7,8 9,18 11,5 13,15 15,14 22,14"/></svg></span> Suivi rapide
 </button>
 
   </nav>
@@ -1443,7 +1443,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 
 <div class="page active" id="page-infos">
   <div class="page-header">
-    <div class="page-icon">📋</div>
+    <div class="page-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="40" height="40" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M24 24C28.4204 24 32 20.4204 32 16C32 11.5796 28.4204 8 24 8C19.5796 8 16 11.5796 16 16C16 20.4204 19.5796 24 24 24ZM34 16C34 21.525 29.525 26 24 26C18.475 26 14 21.525 14 16C14 10.475 18.475 6 24 6C29.525 6 34 10.475 34 16Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M9.22348 34.2119C8.22038 35.0211 8 35.6291 8 36V40H40V36C40 35.6291 39.7796 35.0211 38.7765 34.2119C37.7958 33.4207 36.3341 32.6669 34.5622 32.015C31.0199 30.7117 26.7532 30 24 30C21.2468 30 16.9801 30.7117 13.4378 32.015C11.6659 32.6669 10.2042 33.4207 9.22348 34.2119ZM24 28C17.9925 28 6 31.0347 6 36V42H42V36C42 31.0347 30.0075 28 24 28Z"/></svg></div>
     <div class="page-title">Informations Patient</div>
     <div class="page-subtitle">Remplissez en premier — données reprises dans tous les onglets</div>
   </div>
@@ -1864,7 +1864,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 
 <div class="page" id="page-rachis">
   <div class="page-header">
-    <div class="page-icon">🦴</div>
+    <div class="page-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="40" height="40" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M14.75 7.22898C14.75 5.95534 15.916 5.02392 17.1433 5.25877C22.3412 6.25336 25.6585 6.26502 30.8524 5.26223C32.0804 5.02515 33.25 5.95614 33.25 7.23214V7.64608L34 7.64608C35.1046 7.64608 36 8.54151 36 9.64608V11.174C36 12.2786 35.1046 13.174 34 13.174H33.25V14.0524C33.25 14.9569 32.6396 15.7578 31.7522 15.9835C28.8981 16.7096 26.5277 17.0843 24.1021 17.0834C21.6784 17.0826 19.2457 16.7068 16.2679 15.9802C15.3716 15.7615 14.75 14.9566 14.75 14.0435V13.174H14C12.8954 13.174 12 12.2786 12 11.174V9.64608C12 8.54151 12.8954 7.64608 14 7.64608H14.75V7.22898ZM16.75 7.22898V7.64608C16.75 8.75065 15.8546 9.64608 14.75 9.64608H14V11.174H14.75C15.8546 11.174 16.75 12.0695 16.75 13.174V14.0392C19.6356 14.7428 21.897 15.0827 24.1028 15.0834C26.3061 15.0842 28.5001 14.7467 31.25 14.0476V13.174C31.25 12.0695 32.1454 11.174 33.25 11.174H34V9.64608H33.25C32.1454 9.64608 31.25 8.75065 31.25 7.64608V7.23214C25.7838 8.27778 22.2102 8.26457 16.7675 7.22313Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M19 9.00011C19.5523 9.00011 20 9.44783 20 10.0001V12.0001C20 12.5524 19.5523 13.0001 19 13.0001C18.4477 13.0001 18 12.5524 18 12.0001V10.0001C18 9.44783 18.4477 9.00011 19 9.00011Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M14.75 20.229C14.75 18.9553 15.916 18.0239 17.1433 18.2588C22.3412 19.2534 25.6585 19.265 30.8524 18.2622C32.0804 18.0251 33.25 18.9561 33.25 20.2321V20.6461L34 20.6461C35.1046 20.6461 36 21.5415 36 22.6461V24.174C36 25.2786 35.1046 26.174 34 26.174H33.25V27.0524C33.25 27.9569 32.6396 28.7578 31.7522 28.9835C28.8981 29.7096 26.5277 30.0843 24.1021 30.0834C21.6784 30.0826 19.2457 29.7068 16.2679 28.9802C15.3716 28.7615 14.75 27.9566 14.75 27.0435V26.174H14C12.8954 26.174 12 25.2786 12 24.174V22.6461C12 21.5415 12.8954 20.6461 14 20.6461H14.75V20.229ZM16.75 20.229V20.6461C16.75 21.7507 15.8546 22.6461 14.75 22.6461H14V24.174H14.75C15.8546 24.174 16.75 25.0695 16.75 26.174V27.0392C19.6356 27.7428 21.897 28.0827 24.1028 28.0834C26.3061 28.0842 28.5001 27.7467 31.25 27.0476V26.174C31.25 25.0695 32.1454 24.174 33.25 24.174H34V22.6461H33.25C32.1454 22.6461 31.25 21.7507 31.25 20.6461V20.2321C25.7838 21.2778 22.2102 21.2646 16.7675 20.2231Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M19 22.0001C19.5523 22.0001 20 22.4478 20 23.0001V25.0001C20 25.5524 19.5523 26.0001 19 26.0001C18.4477 26.0001 18 25.5524 18 25.0001V23.0001C18 22.4478 18.4477 22.0001 19 22.0001Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M14.75 33.229C14.75 31.9553 15.916 31.0239 17.1433 31.2588C22.3412 32.2534 25.6585 32.265 30.8524 31.2622C32.0804 31.0251 33.25 31.9561 33.25 33.2321V33.6461H34C35.1046 33.6461 36 34.5415 36 35.6461V37.174C36 38.2786 35.1046 39.174 34 39.174H33.25V40.0524C33.25 40.9569 32.6396 41.7578 31.7522 41.9835C28.8981 42.7096 26.5277 43.0843 24.1021 43.0834C21.6784 43.0826 19.2457 42.7068 16.2679 41.9802C15.3716 41.7615 14.75 40.9566 14.75 40.0435V39.174H14C12.8954 39.174 12 38.2786 12 37.174V35.6461C12 34.5415 12.8954 33.6461 14 33.6461H14.75V33.229ZM16.75 33.229V33.6461C16.75 34.7507 15.8546 35.6461 14.75 35.6461H14V37.174H14.75C15.8546 37.174 16.75 38.0695 16.75 39.174V40.0392C19.6356 40.7428 21.897 41.0827 24.1028 41.0834C26.3061 41.0842 28.5001 40.7467 31.25 40.0476V39.174C31.25 38.0695 32.1454 37.174 33.25 37.174H34V35.6461H33.25C32.1454 35.6461 31.25 34.7507 31.25 33.6461V33.2321C25.7838 34.2778 22.2102 34.2646 16.7675 33.2231Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M19 35.0001C19.5523 35.0001 20 35.4478 20 36.0001V38.0001C20 38.5524 19.5523 39.0001 19 39.0001C18.4477 39.0001 18 38.5524 18 38.0001V36.0001C18 35.4478 18.4477 35.0001 19 35.0001Z"/></svg></div>
     <div class="page-title">Rachis</div>
     <div class="page-subtitle" id="hdr-rachis">—</div>
   </div>
@@ -2872,7 +2872,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 
 <div class="page" id="page-musculaires">
   <div class="page-header">
-    <div class="page-icon">⚡</div>
+    <div class="page-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="40" height="40" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M7 42C6.44772 42 6 41.5523 6 41V7H8V40H11V25C11 24.4477 11.4477 24 12 24H18C18.5523 24 19 24.4477 19 25V40H21V21C21 20.4477 21.4477 20 22 20H28C28.5523 20 29 20.4477 29 21V40H31V13C31 12.4477 31.4477 12 32 12H38C38.5523 12 39 12.4477 39 13V40H41V42H7ZM37 40V14H33V40H37ZM27 40H23V22H27V40ZM17 40V26H13V40H17Z"/></svg></div>
     <div class="page-title">Tests Musculaires Isocinétiques</div>
     <div class="page-subtitle" id="hdr-musc">—</div>
   </div>
@@ -3442,7 +3442,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 
 <div class="page" id="page-cr-tf">
   <div class="page-header">
-    <div class="page-icon">📊</div>
+    <div class="page-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="14" width="4" height="8" rx="1"/><rect x="10" y="9" width="4" height="13" rx="1"/><rect x="17" y="4" width="4" height="18" rx="1"/><line x1="1.5" y1="22" x2="22.5" y2="22"/></svg></div>
     <div class="page-title">Compte-Rendu — Tests</div>
     <div class="page-subtitle">Synthèse de tous les tests réalisés — cliniques et fonctionnels</div>
   </div>
@@ -3494,7 +3494,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 
 <div class="page" id="page-evolution">
   <div class="page-header">
-    <div class="page-icon">📈</div>
+    <div class="page-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="40" height="40" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M6 41C6 41.5523 6.44772 42 7 42H41V40H8V35.3588L14.3519 27.6458C14.8545 27.8733 15.4124 28 16 28C17.3878 28 18.6106 27.2932 19.3279 26.22L24.0035 28.1681C24.0916 30.2993 25.8472 32 28 32C30.2091 32 32 30.2091 32 28C32 27.2166 31.7748 26.4858 31.3856 25.8688L36.3608 19.6498C36.861 19.8748 37.4159 20 38 20C40.2091 20 42 18.2091 42 16C42 13.7909 40.2091 12 38 12C35.7909 12 34 13.7909 34 16C34 16.9004 34.2975 17.7313 34.7995 18.3998L29.9251 24.4929C29.354 24.1787 28.6979 24 28 24C26.4456 24 25.0983 24.8866 24.4362 26.1817L19.9868 24.3278C19.9955 24.2197 20 24.1104 20 24C20 21.7909 18.2091 20 16 20C13.7909 20 12 21.7909 12 24C12 24.8968 12.2951 25.7247 12.7936 26.3919L8 32.2127V7H6V41ZM18 24C18 25.1046 17.1046 26 16 26C14.8954 26 14 25.1046 14 24C14 22.8954 14.8954 22 16 22C17.1046 22 18 22.8954 18 24ZM28 30C29.1046 30 30 29.1046 30 28C30 26.8954 29.1046 26 28 26C26.8954 26 26 26.8954 26 28C26 29.1046 26.8954 30 28 30ZM40 16C40 17.1046 39.1046 18 38 18C36.8954 18 36 17.1046 36 16C36 14.8954 36.8954 14 38 14C39.1046 14 40 14.8954 40 16Z"/></svg></div>
     <div class="page-title">Évolution</div>
     <div class="page-subtitle">Suivi longitudinal des marqueurs cliniques — bilans sauvegardés</div>
   </div>
@@ -3515,7 +3515,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 <!-- ── PAGE SUIVI RAPIDE ─────────────────────────────────── -->
 <div class="page" id="page-suivi-rapide">
   <div class="page-header">
-    <div class="page-icon">⚡</div>
+    <div class="page-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,14 5,14 7,8 9,18 11,5 13,15 15,14 22,14"/></svg></div>
     <div class="page-title">Suivi rapide</div>
     <div class="page-subtitle">Mise à jour ciblée — seuls les champs modifiés créent un nouveau point d'évolution</div>
   </div>
