@@ -2008,7 +2008,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
     <!-- Section publication — visible seulement en mode édition -->
     <div class="grp-lib-section" id="grpLibSection" style="display:none;">
       <div class="grp-lib-row">
-        <span class="grp-lib-label">🌐 Bibliothèque Rehab4Perf</span>
+        <span class="grp-lib-label"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>Bibliothèque Rehab4Perf</span>
         <label class="toggle-sw">
           <input type="checkbox" id="grpLibToggle">
           <span class="sl"></span>
@@ -2028,7 +2028,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 <div id="saveDestOverlay" onclick="if(event.target===this)_closeSaveDest()">
   <div id="saveDestModal">
     <div class="sdm-header">
-      <h2>💾 Sauvegarder la séance</h2>
+      <h2><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>Sauvegarder la séance</h2>
       <button onclick="_closeSaveDest()">✕</button>
     </div>
     <div class="sdm-tiles">
@@ -2198,17 +2198,17 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 
 <!-- ═══════════ BUILDER PANEL (droite) ═══════════ -->
 <div class="builder-panel" id="builderPanel">
-  <div class="builder-ro-banner">🔒 Template public — lecture seule. Dupliquez-le pour le modifier.</div>
+  <div class="builder-ro-banner"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/><circle cx="12" cy="16" r="1.5" fill="currentColor"/></svg>Template public — lecture seule. Dupliquez-le pour le modifier.</div>
   <div class="builder-header">
     <button class="btn-back" onclick="closeBuilder()" title="Retour">←</button>
     <h2 id="builderTitle">Nouvelle séance</h2>
     <div id="builderActiveGroupBadge" style="display:none"></div>
     <span id="builderDraftBadge" style="display:none;font-size:.65rem;background:#F59E0B;color:#fff;border-radius:10px;padding:2px 7px;font-weight:700;letter-spacing:.03em;flex-shrink:0;">● non sauvegardé</span>
     <div style="display:flex;align-items:center;gap:6px;">
-      <button class="builder-save-btn" id="prog-cloud-save-btn" onclick="_builderSaveBtnClick()">💾 Sauvegarder</button>
+      <button class="builder-save-btn" id="prog-cloud-save-btn" onclick="_builderSaveBtnClick()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>Sauvegarder</button>
       <button class="builder-update-btn" id="prog-update-btn" onclick="_doUpdateTemplate()" style="display:none" title="">🔄 Mettre à jour</button>
       <button class="builder-plan-btn" id="builder-plan-btn" onclick="openPlanModal()">📅 Planifier</button>
-      <button class="builder-share-btn" id="prog-share-btn" onclick="shareBuilderProg()">📤 Partager</button>
+      <button class="builder-share-btn" id="prog-share-btn" onclick="shareBuilderProg()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>Partager</button>
       <button class="btn btn-outline" onclick="openProgHistory()" style="font-size:.72rem;padding:4px 9px;white-space:nowrap;">📂 Programmes</button>
       <button class="builder-close" onclick="closeBuilder()" title="Fermer">✕</button>
     </div>
@@ -2277,8 +2277,8 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
     <div class="pevo-header">
       <h2>📈 Évolution des charges</h2>
       <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
-        <button class="pevo-export-btn" id="pevoExportHtmlBtn" onclick="exportPevoHTML()" title="Exporter en HTML (à envoyer au patient)">📥 HTML</button>
-        <button class="pevo-export-btn" id="pevoPrintBtn" onclick="printPevoHTML()" title="Imprimer / Exporter PDF">🖨 PDF</button>
+        <button class="pevo-export-btn" id="pevoExportHtmlBtn" onclick="exportPevoHTML()" title="Exporter en HTML (à envoyer au patient)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>HTML</button>
+        <button class="pevo-export-btn" id="pevoPrintBtn" onclick="printPevoHTML()" title="Imprimer / Exporter PDF"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px"><polyline points="6,9 6,2 18,2 18,9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/><circle cx="18" cy="11.5" r="1" fill="currentColor"/></svg>PDF</button>
         <button class="pevo-close" onclick="closeChargesEvo()">✕</button>
       </div>
     </div>
@@ -2334,7 +2334,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
       </select>
     </div>
     <div class="save-modal-btns">
-      <button class="btn btn-primary" onclick="doSaveSession()">💾 Enregistrer</button>
+      <button class="btn btn-primary" onclick="doSaveSession()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>Enregistrer</button>
       <button class="btn btn-outline" onclick="closeSaveSession()">Annuler</button>
     </div>
   </div>
@@ -3260,7 +3260,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
     <div class="proto-edit-footer">
       <button class="pe-export-btn" onclick="_peExportJson()" title="Exporter le contenu JSON actuel">⬇ Exporter JSON</button>
       <button class="btn btn-outline" onclick="closeProtoEditor()" style="font-size:.8rem">Annuler</button>
-      <button class="btn btn-primary" onclick="_saveProtoEditor()" style="font-size:.8rem">💾 Enregistrer</button>
+      <button class="btn btn-primary" onclick="_saveProtoEditor()" style="font-size:.8rem"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>Enregistrer</button>
     </div>
   </div>
 </div>
@@ -3334,7 +3334,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button onclick="addCycle()" style="padding:8px 18px;background:var(--navy);color:#fff;border:none;border-radius:6px;font-size:.82rem;font-weight:600;cursor:pointer;">+ Ajouter le cycle</button>
-          <button onclick="exportCycles()" style="padding:8px 18px;background:none;border:1px solid var(--accent);color:var(--accent);border-radius:6px;font-size:.82rem;font-weight:600;cursor:pointer;">📥 Exporter</button>
+          <button onclick="exportCycles()" style="padding:8px 18px;background:none;border:1px solid var(--accent);color:var(--accent);border-radius:6px;font-size:.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exporter</button>
         </div>
       </div>
     </div>

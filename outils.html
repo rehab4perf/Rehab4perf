@@ -655,7 +655,7 @@ body {
   <!-- Save HSR to patient dossier -->
   <div style="display:flex;align-items:center;gap:10px;justify-content:flex-end;padding:6px 0 2px;">
     <span id="hsr-patient-label" style="font-size:.75rem;color:#6B6860;font-style:italic;"></span>
-    <button class="dossier-save-btn" id="hsr-save-dossier-btn" onclick="saveHsrToDossier()">💾 Sauvegarder dans le dossier patient</button>
+    <button class="dossier-save-btn" id="hsr-save-dossier-btn" onclick="saveHsrToDossier()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>Sauvegarder dans le dossier patient</button>
   </div>
 
 </div><!-- /panel-hsr -->
@@ -994,7 +994,7 @@ body {
           </div>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
-          <button class="presc-print-btn" onclick="printPrescription()">🖨 Imprimer / Exporter PDF</button>
+          <button class="presc-print-btn" onclick="printPrescription()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><polyline points="6,9 6,2 18,2 18,9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/><circle cx="18" cy="11.5" r="1" fill="currentColor"/></svg>Imprimer / Exporter PDF</button>
           <button class="presc-print-btn" onclick="resetPrescription()" style="background:#6B6860;">↺ Réinitialiser</button>
         </div>
       </div>
@@ -1323,7 +1323,7 @@ body {
         <button class="cr-btn-import" onclick="crImportPatient()" title="Associer les infos du bilan et du dossier patient">⬇ Associer les infos patient</button>
         <button class="cr-btn-copy" onclick="crCopyLetter()" title="Copier le texte">⎘ Copier</button>
         <button class="cr-btn-copy" onclick="crReset()" title="Réinitialiser le formulaire" style="border-color:#C0392B;color:#C0392B;">↺ Réinit.</button>
-        <button class="cr-btn-copy" onclick="crExportPDF()" title="Exporter en PDF / Imprimer" style="border-color:var(--accent2);color:var(--accent2);">🖨 PDF</button>
+        <button class="cr-btn-copy" onclick="crExportPDF()" title="Exporter en PDF / Imprimer" style="border-color:var(--accent2);color:var(--accent2);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px"><polyline points="6,9 6,2 18,2 18,9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/><circle cx="18" cy="11.5" r="1" fill="currentColor"/></svg>PDF</button>
         <button class="cr-btn-copy" onclick="crExportEmail()" title="Ouvrir dans le client mail" style="border-color:var(--green);color:var(--green);">✉ Mail</button>
       </div>
       <div class="cr-preview-scroll">
@@ -1845,7 +1845,7 @@ function renderRessources(){
       html += '<div style="display:flex;gap:5px;flex-shrink:0;">';
       html += '<button onclick="consulterRessource(\''+r.id+'\')" style="padding:4px 9px;font-size:.72rem;background:#1A3A5C;color:#fff;border:none;border-radius:5px;cursor:pointer;">Consulter</button>';
       if(r.type==='Lien web') html += '<button onclick="copyRessLink(\''+r.id+'\')" style="padding:4px 9px;font-size:.72rem;background:none;border:1px solid #dde3ec;border-radius:5px;cursor:pointer;color:#555;">Copier</button>';
-      if(r.type==='PDF') html += '<button onclick="exportRessourcePDF(\''+r.id+'\')" style="padding:4px 9px;font-size:.72rem;background:none;border:1px solid #27AE60;border-radius:5px;cursor:pointer;color:#27AE60;">📤 Exporter</button>';
+      if(r.type==='PDF') html += '<button onclick="exportRessourcePDF(\''+r.id+'\')" style="padding:4px 9px;font-size:.72rem;background:none;border:1px solid #27AE60;border-radius:5px;cursor:pointer;color:#27AE60;display:inline-flex;align-items:center;gap:4px;"><svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' width=\'13\' height=\'13\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.6\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><path d=\'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4\'/><polyline points=\'7,10 12,15 17,10\'/><line x1=\'12\' y1=\'15\' x2=\'12\' y2=\'3\'/></svg>Exporter</button>';
       html += '<button onclick="deleteRessource(\''+r.id+'\')" style="padding:4px 9px;font-size:.72rem;background:none;border:1px solid #fca5a5;border-radius:5px;cursor:pointer;color:#C0392B;">✕</button>';
       html += '</div>';
       html += '</div>';
@@ -4479,11 +4479,11 @@ function _updateOutilsPatientBtns() {
   var hsrLbl = document.getElementById('hsr-patient-label');
   if (hsrBtn) {
     if (name) {
-      hsrBtn.textContent = '💾 Sauvegarder dans le dossier';
+      hsrBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>Sauvegarder dans le dossier';
       hsrBtn.disabled = false;
       if (hsrLbl) { hsrLbl.textContent = 'Patient : ' + name; }
     } else {
-      hsrBtn.textContent = '💾 Sauvegarder dans le dossier';
+      hsrBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>Sauvegarder dans le dossier';
       hsrBtn.disabled = true;
       if (hsrLbl) { hsrLbl.textContent = 'Aucun patient actif'; }
     }
@@ -4587,7 +4587,8 @@ calcPromScore = function(){
     btn.style.display = '';  // always show after score computed
     btn.disabled = !patient;
     var patName = _getOutilsPatientName();
-    btn.textContent = patName ? '💾 Sauvegarder — ' + patName.split(' ')[0] : '💾 Sauvegarder (aucun patient)';
+    var _saveSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>';
+    btn.innerHTML = _saveSvg + (patName ? 'Sauvegarder — ' + patName.split(' ')[0] : 'Sauvegarder (aucun patient)');
   }
 };
 
@@ -6146,7 +6147,7 @@ _updateOutilsPatientBtns();
       + '<div id="cr-topbar">'
       + '<button class="btn-back" onclick="window.close()">← Retour</button>'
       + '<span id="cr-scale-info"></span>'
-      + '<button class="btn-print" onclick="window.print()">🖨 Imprimer / PDF</button>'
+      + '<button class="btn-print" onclick="window.print()" style="display:inline-flex;align-items:center;gap:5px;"><svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' width=\'14\' height=\'14\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.6\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><polyline points=\'6,9 6,2 18,2 18,9\'/><path d=\'M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2\'/><rect x=\'6\' y=\'14\' width=\'12\' height=\'8\'/><circle cx=\'18\' cy=\'11.5\' r=\'1\' fill=\'currentColor\'/></svg>Imprimer / PDF</button>'
       + '</div>'
       + '<div id="cr-page">'
       + '<div class="cr-letter-hdr">'
@@ -6820,7 +6821,7 @@ _updateOutilsPatientBtns();
         <div id="prom-modal-name" style="font-size:.75rem;opacity:.75;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
       </div>
       <button onclick="openPromFullPage()" title="Ouvrir en pleine page pour impression" style="padding:6px 12px;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:6px;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap;">↗ Pleine page</button>
-      <button onclick="printProm()" style="padding:6px 12px;background:#4A90D9;color:#fff;border:none;border-radius:6px;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap;">🖨 Imprimer</button>
+      <button onclick="printProm()" style="padding:6px 12px;background:#4A90D9;color:#fff;border:none;border-radius:6px;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="6,9 6,2 18,2 18,9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/><circle cx="18" cy="11.5" r="1" fill="currentColor"/></svg>Imprimer</button>
       <button onclick="closePromModal()" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:1.4rem;cursor:pointer;line-height:1;padding:2px 6px;flex-shrink:0;">×</button>
     </div>
     <!-- Patient info bar -->
@@ -6844,9 +6845,9 @@ _updateOutilsPatientBtns();
     <div id="prom-modal-score" style="display:none;background:#F0F4F8;border-top:1px solid #dde3ec;padding:14px 24px;"></div>
     <!-- Footer actions -->
     <div style="padding:10px 22px;border-top:1px solid #dde3ec;display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap;align-items:center;">
-      <button onclick="exportPromForPatient()" id="prom-export-btn" style="padding:8px 16px;background:#27AE60;color:#fff;border:none;border-radius:6px;font-size:.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">📤 Exporter pour le patient</button>
+      <button onclick="exportPromForPatient()" id="prom-export-btn" style="padding:8px 16px;background:#27AE60;color:#fff;border:none;border-radius:6px;font-size:.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exporter pour le patient</button>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-        <button class="dossier-save-btn" id="prom-save-dossier-btn" onclick="savePromToDossier()" style="display:none;">💾 Sauvegarder dans le dossier</button>
+        <button class="dossier-save-btn" id="prom-save-dossier-btn" onclick="savePromToDossier()" style="display:none;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>Sauvegarder dans le dossier</button>
         <button onclick="calcPromScore()" style="padding:8px 18px;background:#1A3A5C;color:#fff;border:none;border-radius:6px;font-size:.82rem;font-weight:600;cursor:pointer;">Calculer le score</button>
         <button onclick="closePromModal()" style="padding:8px 16px;background:none;color:#666;border:1px solid #dde3ec;border-radius:6px;font-size:.82rem;cursor:pointer;">Fermer</button>
       </div>
@@ -6867,7 +6868,7 @@ _updateOutilsPatientBtns();
     <div class="cr-cfg-modal-body" id="cr-sign-cfg-body"></div>
     <div class="cr-cfg-modal-footer">
       <button class="cr-cfg-cancel-btn" onclick="crCloseSignConfig()">Annuler</button>
-      <button class="cr-cfg-save-btn" onclick="crSaveSignConfig()">💾 Enregistrer</button>
+      <button class="cr-cfg-save-btn" onclick="crSaveSignConfig()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>Enregistrer</button>
     </div>
   </div>
 </div>
@@ -6882,7 +6883,7 @@ _updateOutilsPatientBtns();
     <div class="cr-cfg-modal-body" id="cr-patho-cfg-body"></div>
     <div class="cr-cfg-modal-footer">
       <button class="cr-cfg-cancel-btn" onclick="crClosePathoConfig()">Annuler</button>
-      <button class="cr-cfg-save-btn" onclick="crSavePathoConfig()">💾 Enregistrer</button>
+      <button class="cr-cfg-save-btn" onclick="crSavePathoConfig()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>Enregistrer</button>
     </div>
   </div>
 </div>
@@ -6897,7 +6898,7 @@ _updateOutilsPatientBtns();
     <div class="cr-cfg-modal-body" id="cr-tests-cfg-body"></div>
     <div class="cr-cfg-modal-footer">
       <button class="cr-cfg-cancel-btn" onclick="crCloseTestConfig()">Annuler</button>
-      <button class="cr-cfg-save-btn" onclick="crSaveTestConfig()">💾 Enregistrer</button>
+      <button class="cr-cfg-save-btn" onclick="crSaveTestConfig()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>Enregistrer</button>
     </div>
   </div>
 </div>
@@ -6911,7 +6912,7 @@ _updateOutilsPatientBtns();
     <div class="cr-cfg-modal-body" id="cr-cfg-modal-body"></div>
     <div class="cr-cfg-modal-footer">
       <button class="cr-cfg-cancel-btn" onclick="crCloseAmpConfig()">Annuler</button>
-      <button class="cr-cfg-save-btn" onclick="crSaveAmpConfig()">💾 Enregistrer</button>
+      <button class="cr-cfg-save-btn" onclick="crSaveAmpConfig()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>Enregistrer</button>
     </div>
   </div>
 </div>

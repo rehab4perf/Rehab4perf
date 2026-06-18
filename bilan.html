@@ -1403,7 +1403,7 @@ textarea { resize:none !important; overflow:hidden !important; }
   <div class="sidebar-save" id="sidebar-save-section">
     <div class="sidebar-save-patient" id="sb-save-patient">Aucun patient sélectionné</div>
     <div class="bilan-readonly-notice">📖 Mode lecture — cliquez sur « Modifier ce bilan » pour corriger, ou créez un bilan de suivi.</div>
-    <button class="btn-save-bilan" id="bilan-save-btn" onclick="saveBilan()">💾 Sauvegarder le bilan</button>
+    <button class="btn-save-bilan" id="bilan-save-btn" onclick="saveBilan()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>Sauvegarder le bilan</button>
     <button class="btn-edit-bilan" id="bilan-edit-btn" onclick="editBilan()">✏️ Modifier ce bilan</button>
     <button class="btn-suivi-bilan" id="bilan-suivi-btn" onclick="newBilanSuivi()" title="Pré-remplit tous les champs — seules vos modifications créent un nouveau point d'évolution">📋 Bilan de suivi</button>
     <button class="btn-history-bilan" onclick="openBilanHistory()">📂 Bilans précédents</button>
@@ -3440,8 +3440,8 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
   <div class="page-content">
     <div style="display:flex;gap:10px;margin-bottom:20px" class="no-print">
-      <button class="print-btn" onclick="printBilan('cr-tf')" style="display:flex;align-items:center;gap:8px;padding:10px 20px;background:var(--accent2);color:#fff;border:none;border-radius:var(--radius);font-family:var(--font-sans);font-size:.88rem;font-weight:500;cursor:pointer">🖨 Imprimer / PDF</button>
-      <button class="print-btn" onclick="exportBilanHTML('cr-tf')" style="display:flex;align-items:center;gap:8px;padding:10px 20px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);font-family:var(--font-sans);font-size:.88rem;font-weight:500;cursor:pointer">📥 Exporter HTML</button>
+      <button class="print-btn" onclick="printBilan('cr-tf')" style="display:flex;align-items:center;gap:8px;padding:10px 20px;background:var(--accent2);color:#fff;border:none;border-radius:var(--radius);font-family:var(--font-sans);font-size:.88rem;font-weight:500;cursor:pointer"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="6,9 6,2 18,2 18,9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/><circle cx="18" cy="11.5" r="1" fill="currentColor"/></svg>Imprimer / PDF</button>
+      <button class="print-btn" onclick="exportBilanHTML('cr-tf')" style="display:flex;align-items:center;gap:8px;padding:10px 20px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);font-family:var(--font-sans);font-size:.88rem;font-weight:500;cursor:pointer"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exporter HTML</button>
     </div>
     <div id="cr-tf-content"></div>
     <div style="margin-top:24px;padding-top:16px;border-top:2px solid var(--border);font-family:var(--font-serif);font-size:1rem;font-weight:700;color:var(--accent2)">
@@ -3459,8 +3459,8 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
   <div class="page-content">
     <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap" class="no-print">
-      <button class="print-btn" onclick="printBilan('cr')">🖨 Imprimer / Exporter PDF</button>
-      <button class="print-btn" onclick="exportBilanHTML('cr')" style="background:var(--accent)">📥 Exporter HTML</button>
+      <button class="print-btn" onclick="printBilan('cr')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><polyline points="6,9 6,2 18,2 18,9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/><circle cx="18" cy="11.5" r="1" fill="currentColor"/></svg>Imprimer / Exporter PDF</button>
+      <button class="print-btn" onclick="exportBilanHTML('cr')" style="background:var(--accent)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exporter HTML</button>
     </div>
     <div id="cr-evo-panel" class="no-print" style="margin-bottom:16px;display:none">
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);font-size:.85rem;font-weight:500">
@@ -3490,8 +3490,8 @@ textarea { resize:none !important; overflow:hidden !important; }
     <div class="page-subtitle">Suivi longitudinal des marqueurs cliniques — bilans sauvegardés</div>
   </div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;padding:12px 16px 0;border-bottom:1px solid var(--border)" id="evo-toolbar" class="no-print">
-    <button class="print-btn" onclick="printEvolution()" style="font-size:.78rem;padding:6px 14px">🖨 Imprimer / PDF patient</button>
-    <button class="print-btn" onclick="exportEvolutionHTML()" style="font-size:.78rem;padding:6px 14px;background:var(--accent);color:#fff;border-color:var(--accent)">📥 Exporter HTML (à envoyer)</button>
+    <button class="print-btn" onclick="printEvolution()" style="font-size:.78rem;padding:6px 14px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><polyline points="6,9 6,2 18,2 18,9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/><circle cx="18" cy="11.5" r="1" fill="currentColor"/></svg>Imprimer / PDF patient</button>
+    <button class="print-btn" onclick="exportEvolutionHTML()" style="font-size:.78rem;padding:6px 14px;background:var(--accent);color:#fff;border-color:var(--accent)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exporter HTML (à envoyer)</button>
     <button class="evo-sel-btn no-print" onclick="_selectAllCharts(true)">✓ Tout sélectionner</button>
     <button class="evo-sel-btn no-print" onclick="_selectAllCharts(false)">✗ Tout désélectionner</button>
   </div>
