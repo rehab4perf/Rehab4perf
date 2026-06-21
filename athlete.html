@@ -404,6 +404,40 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
 .rpe-success-ua { font-size:1.5rem; font-weight:800; margin:8px 0 4px; }
 .rpe-success-detail { font-size:.76rem; color:var(--muted); }
 .chip-ua { font-size:.58rem; font-weight:800; padding:1px 4px; border-radius:4px; background:rgba(255,255,255,.28); margin-left:3px; vertical-align:middle; }
+
+/* ── TIMELINE DESIGN C1+ ── */
+.tl-bloc { padding:12px 14px 4px; }
+.tl-item { display:flex; gap:12px; }
+.tl-left { display:flex; flex-direction:column; align-items:center; width:30px; flex-shrink:0; }
+.tl-dot { width:30px; height:30px; border-radius:50%; background:var(--navy); color:#fff; font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; z-index:1; }
+.tl-dot.chain { background:var(--accent); box-shadow:0 0 0 3px rgba(43,95,166,.18); }
+.tl-line { width:2px; flex:1; min-height:12px; margin:4px auto; border-radius:1px; background:var(--border); }
+.tl-line.chain { background:var(--accent); }
+.tl-body { flex:1; margin-bottom:12px; }
+.exo-card-v2 { border-radius:10px; border:1px solid var(--border); overflow:hidden; background:#F5F8FF; }
+.exo-card-v2.chained { border-left:3px solid var(--accent); }
+.exo-thumb-row { display:flex; align-items:stretch; }
+.exo-thumb-panel { width:84px; flex-shrink:0; background:var(--navy); display:flex; align-items:center; justify-content:center; min-height:64px; cursor:pointer; position:relative; overflow:hidden; }
+.exo-thumb-panel .play-circle { width:32px; height:32px; border-radius:50%; background:rgba(255,255,255,.18); border:1.5px solid rgba(255,255,255,.45); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.exo-thumb-panel .play-triangle { width:0; height:0; border-top:7px solid transparent; border-bottom:7px solid transparent; border-left:12px solid #fff; margin-left:2px; }
+.exo-thumb-panel.no-video { cursor:default; opacity:.65; }
+.exo-thumb-img { width:84px; height:100%; object-fit:cover; display:block; position:absolute; inset:0; }
+.exo-thumb-overlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.28); transition:background .15s; }
+.exo-thumb-panel:not(.no-video):hover .exo-thumb-overlay { background:rgba(0,0,0,.45); }
+.exo-info-panel { flex:1; padding:10px 12px 8px; display:flex; flex-direction:column; justify-content:center; min-width:0; }
+.exo-name-v2 { font-size:.87rem; font-weight:700; color:var(--text); line-height:1.3; margin-bottom:6px; }
+.exo-consigne-v2 { font-size:.72rem; color:#92400E; background:#FFFBEB; border-left:2px solid #F59E0B; padding:5px 8px; border-radius:0 5px 5px 0; line-height:1.5; }
+.exo-stats-bar { display:flex; border-top:1px solid var(--border); }
+.exo-stat { flex:1; text-align:center; padding:8px 4px; }
+.exo-stat-lbl { font-size:.57rem; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:3px; }
+.exo-stat-big { font-size:22px; font-weight:800; color:var(--navy); line-height:1; }
+.exo-stat-sm { font-size:14px; font-weight:700; color:var(--navy); margin-top:4px; line-height:1; }
+.exo-stat-div { width:1px; background:var(--border); flex-shrink:0; }
+.exo-pain-v2 { display:flex; align-items:center; gap:5px; padding:7px 12px; border-top:1px solid var(--border); flex-wrap:wrap; }
+.exo-pain-lbl { font-size:.67rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; white-space:nowrap; }
+.exo-done-row { padding:5px 12px 9px; display:flex; justify-content:flex-end; }
+.exo-done-btn { display:inline-flex; align-items:center; gap:5px; padding:5px 12px; border-radius:7px; border:1px solid var(--border); background:#fff; font-size:.74rem; font-weight:600; color:var(--muted); cursor:pointer; font-family:inherit; transition:all .15s; }
+.exo-done-btn:hover, .exo-done-btn.done { background:#F0FDF4; border-color:#22C55E; color:#166534; }
 </style>
 </head>
 <body>
@@ -1045,8 +1079,9 @@ var METHODES = {
   ]},
 };
 
-// ── Pain ratings per exercise ─────────────────────────────────
+// ── Pain ratings + done state per exercise ────────────────────
 var _painRatings = {}; // { 'exoKey': 0-10 }
+var _doneExos    = {}; // { 'exoKey': true }
 
 function _exoKey(blocIdx, exoIdx){ return 'b'+blocIdx+'e'+exoIdx; }
 
@@ -1055,7 +1090,9 @@ function _loadPainRatings(){
   try {
     var raw = localStorage.getItem('r4p-pain-'+_currentSeanceId);
     _painRatings = raw ? JSON.parse(raw) : {};
-  } catch(e){ _painRatings = {}; }
+    var rawDone = localStorage.getItem('r4p-done-'+_currentSeanceId);
+    _doneExos = rawDone ? JSON.parse(rawDone) : {};
+  } catch(e){ _painRatings = {}; _doneExos = {}; }
 }
 
 function _savePainRatings(){
@@ -1069,6 +1106,17 @@ window._setPain = function(key, val){
   document.querySelectorAll('.pain-btn[data-key="'+key+'"]').forEach(function(btn){
     btn.classList.toggle('selected', parseInt(btn.dataset.v) === val);
   });
+};
+
+window._toggleDone = function(key){
+  _doneExos[key] = !_doneExos[key];
+  if(!_currentSeanceId){ try{ localStorage.setItem('r4p-done-'+key, _doneExos[key]?'1':''); }catch(e){} }
+  else { try{ localStorage.setItem('r4p-done-'+_currentSeanceId, JSON.stringify(_doneExos)); }catch(e){} }
+  var btn = document.getElementById('done-'+key);
+  if(btn){
+    btn.classList.toggle('done', !!_doneExos[key]);
+    btn.textContent = _doneExos[key] ? '✓ Terminé' : '✓ Exercice terminé';
+  }
 };
 
 // ── Construction HTML d'un programme ────────────────
@@ -1144,40 +1192,71 @@ function buildProgHTML(prog){
         html += '</div>';
       }
     }
-    html += '<div class="exo-list">';
+    html += '<div class="tl-bloc">';
     (b.exos||[]).forEach(function(e, idx){
       var _eKey = _exoKey(bIdx, idx);
       var _curPain = _painRatings[_eKey];
+      var exos = b.exos||[];
       var chained = !!e.chained;
-      html += '<div class="exo-item'+(chained?' chained':'')+'">';
-      html += '<div class="exo-name">'+escH(e.name)+'</div>';
-      var tags = '';
-      if(e.url){ var _vt=_ytThumbHtml(e.url); tags += _vt ? _vt : '<a class="exo-tag video" href="'+escH(e.url)+'" target="_blank">▶ Vidéo</a>'; }
-      if(chained) tags += '<span class="exo-tag chain">⛓ Enchaîné</span>';
-      if(tags) html += '<div class="exo-tags">'+tags+'</div>';
-      var params = [];
-      if(e.series) params.push({l:'Séries',v:e.series});
-      if(e.reps)   params.push({l:'Répétitions',v:e.reps});
-      if(e.duree)  params.push({l:'Durée',v:e.duree});
-      if(e.recup)  params.push({l:'Récupération',v:e.recup});
-      if(e.tempo)  params.push({l:'Tempo',v:e.tempo});
+      var prevChained = idx > 0 && !!(exos[idx-1] && exos[idx-1].chained);
+      var partOfChain = chained || prevChained;
+      var isDone = !!_doneExos[_eKey];
+      html += '<div class="tl-item">';
+      // Left spine
+      html += '<div class="tl-left">';
+      html += '<div class="tl-dot'+(partOfChain?' chain':'')+'">'+( idx+1)+'</div>';
+      if(idx < exos.length-1){
+        html += '<div class="tl-line'+(chained?' chain':'')+'"></div>';
+      }
+      html += '</div>';
+      // Card
+      html += '<div class="tl-body"><div class="exo-card-v2'+(partOfChain?' chained':'')+'">';
+      // Thumbnail + name + consigne
+      var ytId = _ytId(e.url||'');
+      html += '<div class="exo-thumb-row">';
+      if(ytId){
+        html += '<div class="exo-thumb-panel" onclick="openYtModal(\''+ytId+'\')" title="Voir la vidéo">'
+             +  '<img class="exo-thumb-img" src="https://img.youtube.com/vi/'+ytId+'/hqdefault.jpg" alt="vidéo" loading="lazy">'
+             +  '<div class="exo-thumb-overlay"><div class="play-circle"><div class="play-triangle"></div></div></div>'
+             +  '</div>';
+      } else {
+        html += '<div class="exo-thumb-panel no-video"><div class="play-circle"><div class="play-triangle"></div></div></div>';
+      }
+      html += '<div class="exo-info-panel">';
+      html += '<div class="exo-name-v2">'+escH(e.name)+'</div>';
+      if(e.consigne&&e.consigne.trim()) html += '<div class="exo-consigne-v2">'+escH(e.consigne)+'</div>';
+      html += '</div></div>';
+      // Stats bar
+      var stats = [];
+      if(e.series) stats.push({l:'Séries', v:e.series, big:true});
+      if(e.reps)   stats.push({l:'Reps', v:e.reps, big:true});
+      else if(e.duree) stats.push({l:'Durée', v:e.duree, big:false});
+      if(!e.reps && !e.duree && e.series) { /* already handled */ }
+      if(e.reps && e.duree) stats.push({l:'Durée', v:e.duree, big:false});
+      if(e.recup)  stats.push({l:'Récup', v:e.recup, big:false});
+      if(e.tempo)  stats.push({l:'Tempo', v:e.tempo, big:false});
       var cibles = e.cibles&&e.cibles.length ? e.cibles : (e.cibleType?[{type:e.cibleType,min:e.cibleVal||'',max:''}]:[]);
-      cibles.forEach(function(c,ci){ var cf=fmtCible(c); if(cf) params.push({l:'Cible'+(cibles.length>1?' '+(ci+1):''),v:cf}); });
-      if(params.length){
-        html += '<div class="exo-params">';
-        params.forEach(function(p){ html += '<div class="param-box"><div class="param-label">'+escH(p.l)+'</div><div class="param-val">'+escH(p.v)+'</div></div>'; });
+      cibles.forEach(function(c,ci){ var cf=fmtCible(c); if(cf) stats.push({l:'Cible'+(cibles.length>1?' '+(ci+1):''), v:cf, big:false}); });
+      if(stats.length){
+        html += '<div class="exo-stats-bar">';
+        stats.forEach(function(s, si){
+          if(si>0) html += '<div class="exo-stat-div"></div>';
+          html += '<div class="exo-stat"><div class="exo-stat-lbl">'+escH(s.l)+'</div>'
+               +  '<div class="'+(s.big?'exo-stat-big':'exo-stat-sm')+'">'+escH(s.v)+'</div></div>';
+        });
         html += '</div>';
       }
-      if(e.consigne&&e.consigne.trim()) html += '<div class="exo-consigne">💬 '+escH(e.consigne)+'</div>';
       // Pain rating
-      html += '<div class="exo-pain"><div class="exo-pain-label">🩹 Douleur</div><div class="exo-pain-btns">';
+      html += '<div class="exo-pain-v2"><span class="exo-pain-lbl">Douleur</span><div class="exo-pain-btns">';
       for(var _pv=0; _pv<=10; _pv++){
         var _sel = (_curPain===_pv) ? ' selected' : '';
         html += '<button class="pain-btn'+_sel+'" data-v="'+_pv+'" data-key="'+_eKey+'" onclick="_setPain(\''+_eKey+'\','+_pv+')">'+_pv+'</button>';
       }
       html += '</div></div>';
-      html += '</div>';
-      if(chained && idx < (b.exos||[]).length-1) html += '<div class="chain-link">↓ enchaîner</div>';
+      // Done button
+      html += '<div class="exo-done-row"><button class="exo-done-btn'+(isDone?' done':'')+'" id="done-'+_eKey+'" onclick="_toggleDone(\''+_eKey+'\')">'
+           +  (isDone?'✓ Terminé':'✓ Exercice terminé')+'</button></div>';
+      html += '</div></div></div>';
     });
     html += '</div></div>';
   });
