@@ -3570,7 +3570,7 @@ function _buildPevoNrsChart(pts, chartId) {
   var minV=0, maxV=10, rangeV=10;
   function pxy(i, v){ return { x: PAD.left+(i/Math.max(n-1,1))*(VW-PAD.left-PAD.right), y: (VH-PAD.bottom)-((v-minV)/rangeV)*(VH-PAD.top-PAD.bottom) }; }
   var C = '#7C3AED';
-  var gId = 'gnrs'+chartId.replace(/[^a-z0-9]/gi,'');
+  var gId = 'gnrs'+String(chartId).replace(/[^a-z0-9]/gi,'');
   var html = '<defs><linearGradient id="'+gId+'" x1="0" y1="0" x2="0" y2="1">'
     +'<stop offset="0%" stop-color="'+C+'" stop-opacity="0.2"/>'
     +'<stop offset="100%" stop-color="'+C+'" stop-opacity="0.02"/>'
