@@ -1082,7 +1082,7 @@ function openCalPicker(dateStr) {
       +'<span class="cal-ctx-btn-desc">Créer et planifier une séance pour cette date</span></span>'
     +'</button>'
     +'<button class="cal-ctx-btn" onclick="_openCalExistingPicker(\''+dateStr+'\')">'
-      +'<span class="cal-ctx-btn-icon">📋</span>'
+      +'<span class="cal-ctx-btn-icon"><svg width="14" height="14" fill="currentColor" viewBox="0 0 480 480" xmlns="http://www.w3.org/2000/svg"><path d="m440 0h-336c-22.082031.0273438-39.972656 17.917969-40 40v24h-24c-22.082031.027344-39.9726562 17.917969-40 40v336c.0273438 22.082031 17.917969 39.972656 40 40h336c22.082031-.027344 39.972656-17.917969 40-40v-24h24c22.082031-.027344 39.972656-17.917969 40-40v-336c-.027344-22.082031-17.917969-39.9726562-40-40zm-40 440c0 13.253906-10.746094 24-24 24h-336c-13.253906 0-24-10.746094-24-24v-336c0-13.253906 10.746094-24 24-24h336c13.253906 0 24 10.746094 24 24zm64-64c0 13.253906-10.746094 24-24 24h-24v-296c-.027344-22.082031-17.917969-39.972656-40-40h-296v-24c0-13.253906 10.746094-24 24-24h336c13.253906 0 24 10.746094 24 24zm0 0"/><path d="m296 264h-80v-80c0-4.417969-3.582031-8-8-8s-8 3.582031-8 8v80h-80c-4.417969 0-8 3.582031-8 8s3.582031 8 8 8h80v80c0 4.417969 3.582031 8 8 8s8-3.582031 8-8v-80h80c4.417969 0 8-3.582031 8-8s-3.582031-8-8-8zm0 0"/></svg></span>'
       +'<span class="cal-ctx-btn-body"><span>Ajouter une séance existante</span>'
       +'<span class="cal-ctx-btn-desc">Planifier un programme déjà enregistré</span></span>'
     +'</button>'
@@ -4081,8 +4081,8 @@ function _openKebab(e, type, id, nom, ownerId){
       : { label: '✏️  Modifier', action: function(){ openEditTemplate(id); } });
   }
   items.push(type === 'group'
-    ? { label: '📋  Dupliquer', action: function(){ duplicateGroupById(id); } }
-    : { label: '📋  Dupliquer', action: function(){ duplicateTemplateById(id); } });
+    ? { label: '<svg viewBox="0 0 480 480" width="14" height="14" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:5px"><path d="m440 0h-336c-22.082031.0273438-39.972656 17.917969-40 40v24h-24c-22.082031.027344-39.9726562 17.917969-40 40v336c.0273438 22.082031 17.917969 39.972656 40 40h336c22.082031-.027344 39.972656-17.917969 40-40v-24h24c22.082031-.027344 39.972656-17.917969 40-40v-336c-.027344-22.082031-17.917969-39.9726562-40-40zm-40 440c0 13.253906-10.746094 24-24 24h-336c-13.253906 0-24-10.746094-24-24v-336c0-13.253906 10.746094-24 24-24h336c13.253906 0 24 10.746094 24 24zm64-64c0 13.253906-10.746094 24-24 24h-24v-296c-.027344-22.082031-17.917969-39.972656-40-40h-296v-24c0-13.253906 10.746094-24 24-24h336c13.253906 0 24 10.746094 24 24zm0 0"/><path d="m296 264h-80v-80c0-4.417969-3.582031-8-8-8s-8 3.582031-8 8v80h-80c-4.417969 0-8 3.582031-8 8s3.582031 8 8 8h80v80c0 4.417969 3.582031 8 8 8s8-3.582031 8-8v-80h80c4.417969 0 8-3.582031 8-8s-3.582031-8-8-8zm0 0"/></svg>  Dupliquer', action: function(){ duplicateGroupById(id); } }
+    : { label: '<svg viewBox="0 0 480 480" width="14" height="14" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:5px"><path d="m440 0h-336c-22.082031.0273438-39.972656 17.917969-40 40v24h-24c-22.082031.027344-39.9726562 17.917969-40 40v336c.0273438 22.082031 17.917969 39.972656 40 40h336c22.082031-.027344 39.972656-17.917969 40-40v-24h24c22.082031-.027344 39.972656-17.917969 40-40v-336c-.027344-22.082031-17.917969-39.9726562-40-40zm-40 440c0 13.253906-10.746094 24-24 24h-336c-13.253906 0-24-10.746094-24-24v-336c0-13.253906 10.746094-24 24-24h336c13.253906 0 24 10.746094 24 24zm64-64c0 13.253906-10.746094 24-24 24h-24v-296c-.027344-22.082031-17.917969-39.972656-40-40h-296v-24c0-13.253906 10.746094-24 24-24h336c13.253906 0 24 10.746094 24 24zm0 0"/><path d="m296 264h-80v-80c0-4.417969-3.582031-8-8-8s-8 3.582031-8 8v80h-80c-4.417969 0-8 3.582031-8 8s3.582031 8 8 8h80v80c0 4.417969 3.582031 8 8 8s8-3.582031 8-8v-80h80c4.417969 0 8-3.582031 8-8s-3.582031-8-8-8zm0 0"/></svg>  Dupliquer', action: function(){ duplicateTemplateById(id); } });
   if(isOwner){
     items.push(type === 'group'
       ? { label: '🗑  Supprimer', action: function(){ deleteGroup(id); }, danger: true }
@@ -4102,7 +4102,7 @@ function _openKebab(e, type, id, nom, ownerId){
   items.forEach(function(item){
     var b = document.createElement('button');
     b.className = 'stmpl-kdrop-item' + (item.danger ? ' danger' : '');
-    b.textContent = item.label;
+    b.innerHTML = item.label;
     b.onclick = function(){ _closeKebab(); item.action(); };
     drop.appendChild(b);
   });
