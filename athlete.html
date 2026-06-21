@@ -1101,10 +1101,11 @@ function _savePainRatings(){
 }
 
 window._setPain = function(key, val){
-  _painRatings[key] = val;
+  var newVal = _painRatings[key] === val ? undefined : val;
+  if(newVal === undefined) delete _painRatings[key]; else _painRatings[key] = newVal;
   _savePainRatings();
   document.querySelectorAll('.pain-btn[data-key="'+key+'"]').forEach(function(btn){
-    btn.classList.toggle('selected', parseInt(btn.dataset.v) === val);
+    btn.classList.toggle('selected', newVal !== undefined && parseInt(btn.dataset.v) === newVal);
   });
 };
 
