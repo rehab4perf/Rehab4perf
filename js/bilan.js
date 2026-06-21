@@ -2989,8 +2989,8 @@ function updateBadges() {
 var _painZones = [];
 var PAIN_ZONES_CONFIG = [
   { key:'epaule',   label:'Épaule',           hdr:['epaule','fonc-ms'] },
-  { key:'coude',    label:'Coude',            hdr:['epaule','fonc-ms'] },
-  { key:'poignet',  label:'Poignet',          hdr:['epaule','fonc-ms'] },
+  { key:'coude',    label:'Coude',            hdr:['coude','epaule','fonc-ms'] },
+  { key:'poignet',  label:'Poignet',          hdr:['main','epaule','fonc-ms'] },
   { key:'rachis-c', label:'Rachis Cerv.',     hdr:['rachis','fonc-rachis'] },
   { key:'rachis-l', label:'Rachis Lomb.',     hdr:['rachis','fonc-rachis'] },
   { key:'hanche',   label:'Hanche',           hdr:['hanche','fonc-mi','musc'] },
@@ -3027,7 +3027,7 @@ function updateAll() {
 
   // Headers for each page
   const hdrTxt = [fullName, date ? formatDate(date) : null].filter(Boolean).join(' - ');
-  ['epaule','rachis','hanche','genou','pied','fonc-mi','fonc-ms','fonc-rachis','musc'].forEach(function(p){
+  ['epaule','coude','main','rachis','hanche','genou','pied','fonc-mi','fonc-ms','fonc-rachis','musc'].forEach(function(p){
     var el = document.getElementById('hdr-' + p);
     if(!el) return;
     var coteStr = getCoteForHdr(p);
