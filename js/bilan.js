@@ -4181,9 +4181,9 @@ function _buildCRPatientHeaderHtml() {
     chipsHtml = '<span class="pz-chip cote-d" style="font-size:.75rem;padding:3px 10px">' + cote + '</span>';
   }
   return '<div style="background:var(--surface);border-radius:var(--radius);margin-bottom:18px;padding:16px 18px;display:flex;align-items:flex-start;gap:14px;border:1px solid var(--border);box-shadow:0 1px 4px rgba(0,0,0,.06)">' +
-    '<div style="width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:700;flex-shrink:0;font-family:var(--font-serif)">' + initials + '</div>' +
+    '<div style="width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:700;flex-shrink:0;font-family:var(--font-sans)">' + initials + '</div>' +
     '<div style="flex:1;min-width:0">' +
-      '<div style="font-size:1.05rem;font-weight:700;color:var(--accent2);font-family:var(--font-serif);margin-bottom:2px">' + fullName + '</div>' +
+      '<div style="font-size:1.05rem;font-weight:700;color:var(--accent2);font-family:var(--font-sans);margin-bottom:2px">' + fullName + '</div>' +
       (metaParts.length ? '<div style="font-size:.78rem;color:var(--text2);margin-bottom:' + (chipsHtml ? '8px' : '0') + '">' + metaParts.join(' · ') + '</div>' : '') +
       (chipsHtml ? '<div style="display:flex;flex-wrap:wrap;gap:6px">' + chipsHtml + '</div>' : '') +
     '</div>' +
