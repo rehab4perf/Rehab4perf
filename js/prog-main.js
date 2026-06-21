@@ -5576,7 +5576,7 @@ function _fetchCustomProtocolsFromSupabase(callback){
       _saveCustomProtocols(function(){ callback && callback(); });
       return;
     }
-    /* Sync builtin : toujours remplacer par la version PROTOCOLS_REF (code = source de vérité) */
+    /* Sync builtin : remplacer par PROTOCOLS_REF (source de vérité) mais préserver icon si clé connue */
     var _builtinUpdated = false;
     _customProtocols = _customProtocols.map(function(p){
       var ref = PROTOCOLS_REF.find(function(r){ return r.id === p.id; });
@@ -5584,6 +5584,9 @@ function _fetchCustomProtocolsFromSupabase(callback){
         var c = JSON.parse(JSON.stringify(ref));
         delete c.isBuiltin;
         c.isCustom = true;
+        if(p.icon && PROTO_ICONS.find(function(x){ return x.key === p.icon; })){
+          c.icon = p.icon;
+        }
         _builtinUpdated = true;
         return c;
       }
