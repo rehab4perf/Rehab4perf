@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Outils — Rehab4Perf</title>
 <link rel="stylesheet" href="fonts/fonts.css">
-<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800;900&family=Cormorant+Garamond:ital,wght@1,600&family=Poppins:wght@800&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg:        #F7F6F3;
@@ -6104,7 +6103,7 @@ _updateOutilsPatientBtns();
 
     var patNomPDF = crV('cr-pat-nom') || '';
     var html = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">'
-      + '<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Cormorant+Garamond:ital,wght@1,600&family=Poppins:wght@800&display=swap" rel="stylesheet">'
+      + '<link rel="stylesheet" href="' + window.location.origin + '/fonts/fonts.css">'
       + '<title>CR — ' + (patNomPDF || practName) + '</title>'
       + '<style>'
       + ':root{--accent:#2B5FA6;--accent-l:#EEF3FB;--navy:#1A3A5C;--text:#1A1917;--muted:#6B6860;--border:#E8E6E1;--surface:#fff;--bg:#F0F4F8}'
