@@ -7688,12 +7688,103 @@ function openToolPanel(name){
   var ov=document.getElementById('tool-panel-overlay');
   var rm=document.getElementById('tp-rm');
   var cd=document.getElementById('tp-cardio');
+  var acwr=document.getElementById('tp-acwr');
   if(!ov||!rm||!cd) return;
   rm.classList.toggle('active', name==='rm');
   cd.classList.toggle('active', name==='cardio');
+  if(acwr) acwr.classList.toggle('active', name==='acwr');
   ov.classList.add('open');
   if(name==='cardio'){ _pSyncCardioFromBilan(); _pCalcCardio(); }
   if(name==='rm'){ _pCalcRM(); }
+  if(name==='acwr'){ _pCalcACWR(); }
+}
+
+function _pCalcACWR(){
+  var aigue = parseFloat(document.getElementById('p-acwr-aigue').value);
+  var s1    = parseFloat(document.getElementById('p-acwr-s1').value);
+  var s2    = parseFloat(document.getElementById('p-acwr-s2').value);
+  var s3    = parseFloat(document.getElementById('p-acwr-s3').value);
+  var s4    = parseFloat(document.getElementById('p-acwr-s4').value);
+
+  var weeks = [s1,s2,s3,s4].filter(function(v){ return !isNaN(v) && v >= 0; });
+  var total = weeks.reduce(function(a,b){ return a+b; }, 0);
+  var avg   = total / 4; // toujours diviser par 4 selon la formule ACWR standard
+
+  var elTotal = document.getElementById('p-acwr-chron-total');
+  var elAvg   = document.getElementById('p-acwr-chron-avg');
+  if(weeks.length > 0){
+    elTotal.textContent = Math.round(total) + ' UA';
+    elAvg.textContent   = avg % 1 === 0 ? avg + ' UA' : avg.toFixed(1) + ' UA';
+  } else {
+    elTotal.textContent = '—';
+    elAvg.textContent   = '—';
+  }
+
+  var valEl  = document.getElementById('p-acwr-val');
+  var badge  = document.getElementById('p-acwr-badge');
+  var note   = document.getElementById('p-acwr-note');
+  var needle = document.getElementById('p-acwr-needle');
+
+  if(isNaN(aigue) || aigue < 0 || weeks.length === 0){
+    valEl.textContent = '—';
+    valEl.style.color = 'var(--navy)';
+    badge.textContent = '—';
+    badge.className   = 'acwr-zone-badge acwr-z-empty';
+    needle.style.left = '-10px';
+    note.textContent  = 'Renseignez la charge aiguë et au moins une semaine de charge chronique.';
+    return;
+  }
+  if(avg === 0){
+    valEl.textContent = '—';
+    valEl.style.color = 'var(--navy)';
+    badge.textContent = 'Charge chronique nulle';
+    badge.className   = 'acwr-zone-badge acwr-z-empty';
+    needle.style.left = '-10px';
+    note.textContent  = 'La charge chronique est nulle — calcul impossible.';
+    return;
+  }
+
+  var acwrVal = aigue / avg;
+  valEl.textContent = acwrVal.toFixed(2);
+
+  var color, badgeClass, noteText;
+  if(acwrVal < 0.8){
+    color='#1D4ED8'; badgeClass='acwr-z-blue';
+    badge.textContent='Sous-charge';
+    noteText='Charge aiguë faible par rapport à la base chronique — risque de déconditionnement.';
+  } else if(acwrVal <= 1.3){
+    color='#15803D'; badgeClass='acwr-z-green';
+    badge.textContent='Optimal';
+    noteText='Zone optimale (sweet spot) — bon équilibre entre stimulus et récupération.';
+  } else if(acwrVal <= 1.5){
+    color='#B45309'; badgeClass='acwr-z-orange';
+    badge.textContent='Vigilance';
+    noteText='Charge élevée — surveiller les signes de fatigue et adapter si nécessaire.';
+  } else {
+    color='#B91C1C'; badgeClass='acwr-z-red';
+    badge.textContent='Risque élevé';
+    noteText='Sur-sollicitation — risque accru de blessure. Réduction de charge recommandée.';
+  }
+  valEl.style.color = color;
+  badge.className   = 'acwr-zone-badge ' + badgeClass;
+  note.textContent  = noteText;
+
+  // Positionner l'aiguille sur la jauge (0–2+ représentés linéairement)
+  // Segments flex : 0.8 + 0.5 + 0.2 + 0.5 = 2.0 → max visuel = 2.0
+  // Positions clés : 0→0%, 0.8→40%, 1.3→65%, 1.5→75%, 2.0→100%
+  var pct;
+  if(acwrVal <= 0){
+    pct = 0;
+  } else if(acwrVal <= 0.8){
+    pct = (acwrVal / 0.8) * 40;
+  } else if(acwrVal <= 1.3){
+    pct = 40 + ((acwrVal - 0.8) / 0.5) * 25;
+  } else if(acwrVal <= 1.5){
+    pct = 65 + ((acwrVal - 1.3) / 0.2) * 10;
+  } else {
+    pct = 75 + ((acwrVal - 1.5) / 0.5) * 25;
+  }
+  needle.style.left = Math.min(Math.max(pct, 2), 98) + '%';
 }
 
 function closeToolPanel(){
