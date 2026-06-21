@@ -8,6 +8,8 @@ var R4P_KEYS = {
   BILAN_DRAFT    : 'athletik-bilan',
   SUPABASE_AUTH  : 'sb-sxdobjodxkwexaspepdm-auth-token'
 };
+var _SAVE_ICON = '<svg style="vertical-align:middle;margin-right:4px" width="16" height="16" fill="currentColor" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><g><path d="m28.702 8.564-4.273-5c-.795-.93-1.954-1.464-3.18-1.464h-14.771c-2.306 0-4.182 1.877-4.182 4.183v19.436c0 2.306 1.876 4.183 4.182 4.183h19.045c2.306 0 4.183-1.877 4.183-4.183v-14.437c-.001-.995-.357-1.96-1.004-2.718zm-6.962 19.536h-11.481v-8.173c0-.631.514-1.144 1.145-1.144h9.191c.631 0 1.145.513 1.145 1.144zm6.164-2.382c0 1.313-1.068 2.382-2.382 2.382h-1.981v-8.173c0-1.623-1.321-2.944-2.945-2.944h-9.191c-1.624 0-2.945 1.321-2.945 2.944v8.173h-1.982c-1.313 0-2.382-1.068-2.382-2.382v-19.436c0-1.313 1.069-2.382 2.382-2.382h14.771c.698 0 1.358.304 1.811.834l4.273 4.999c.369.432.571.982.571 1.549z"/><path d="m9.359 9.31h5.963c.497 0 .9-.403.9-.9s-.403-.9-.9-.9h-5.963c-.497 0-.9.403-.9.9s.403.9.9.9z"/><path d="m22.641 11.572h-13.282c-.497 0-.9.403-.9.9s.403.9.9.9h13.281c.497 0 .9-.403.9-.9s-.402-.9-.899-.9z"/></g></svg>';
+
 
 /* ================================================================
    NETWORK HELPER — Supabase SDK call with exponential-backoff retry
@@ -578,7 +580,7 @@ function _updateSaveBar(){
   } else {
     el.innerHTML = '⚠️ Aucun patient sélectionné';
     el.classList.add('no-patient');
-    if(btn){ btn.classList.add('no-patient'); btn.textContent = '💾 Sauvegarder le bilan'; }
+    if(btn){ btn.classList.add('no-patient'); btn.innerHTML = _SAVE_ICON + 'Sauvegarder le bilan'; }
     if(nameEl){ nameEl.textContent = 'Nouveau patient à créer'; nameEl.classList.add('no-patient'); }
     if(suiviBtn) suiviBtn.disabled = true;
   }
@@ -594,7 +596,7 @@ function _enterHistoMode(bilanDate){
   var readable = bilanDate ? _isoToReadable(bilanDate) : '—';
   if(label)  label.textContent = 'Bilan du ' + readable;
   if(banner) banner.classList.add('active');
-  if(btn)    btn.textContent = '💾 Mettre à jour ce bilan';
+  if(btn)    btn.innerHTML = _SAVE_ICON + 'Mettre à jour ce bilan';
 }
 
 function _exitHistoMode(){
@@ -602,7 +604,7 @@ function _exitHistoMode(){
   var banner = document.getElementById('histo-mode-banner');
   var btn    = document.getElementById('bilan-save-btn');
   if(banner) banner.classList.remove('active');
-  if(btn && _bilanPatient) btn.textContent = '💾 Sauvegarder le bilan';
+  if(btn && _bilanPatient) btn.innerHTML = _SAVE_ICON + 'Sauvegarder le bilan';
 }
 
 /* ── Mode lecture ────────────────────────────────────────── */
@@ -613,7 +615,7 @@ function _enterReadOnlyMode(){
   var saveBtn  = document.getElementById('bilan-save-btn');
   var editBtn  = document.getElementById('bilan-edit-btn');
   var suiviBtn = document.getElementById('bilan-suivi-btn');
-  if(saveBtn)  { saveBtn.style.display = 'none'; saveBtn.textContent = '💾 Sauvegarder le bilan'; }
+  if(saveBtn)  { saveBtn.style.display = 'none'; saveBtn.innerHTML = _SAVE_ICON + 'Sauvegarder le bilan'; }
   if(editBtn)  editBtn.style.display = 'flex';
   if(suiviBtn) suiviBtn.style.display = '';
 }
@@ -643,7 +645,7 @@ function _editBilanConfirm(){
   _exitReadOnlyMode();
   _bilanHistoMode = true;
   var btn = document.getElementById('bilan-save-btn');
-  if(btn) btn.textContent = '💾 Enregistrer les modifications';
+  if(btn) btn.innerHTML = _SAVE_ICON + 'Enregistrer les modifications';
   showToast('Mode édition — les modifications seront enregistrées à la date d\'origine');
 }
 
@@ -754,7 +756,7 @@ function _resetAndLoadPatient(p){
     .select('*').eq('patient_id', p.id)
     .order('date',{ascending:false}).limit(50)
     .then(function(res){
-      if(btn){ btn.disabled=false; btn.textContent='💾 Sauvegarder le bilan'; }
+      if(btn){ btn.disabled=false; btn.innerHTML = _SAVE_ICON + 'Sauvegarder le bilan'; }
       if(res.error || !res.data || !res.data.length){
         _showPatientToast('Nouveau bilan vierge');
         _renderEvolutionPage();
@@ -2035,12 +2037,12 @@ function saveBilan(){
     _sbRetry(function(){ return sbB.from('bilans').update({donnees:donnees}).eq('id', _currentBilanId).select().single(); })
       .then(function(res){
         btn.disabled = false;
-        if(res.error){ btn.textContent='💾 Enregistrer les modifications'; alert('Erreur : '+res.error.message); return; }
+        if(res.error){ btn.innerHTML = _SAVE_ICON + 'Enregistrer les modifications'; alert('Erreur : '+res.error.message); return; }
         _bilanModified = false;
         _syncBilanDatesNotes();
         btn.textContent = '✓ Bilan mis à jour !';
         setTimeout(function(){
-          btn.textContent='💾 Sauvegarder le bilan';
+          btn.innerHTML = _SAVE_ICON + 'Sauvegarder le bilan';
           _enterReadOnlyMode();
         }, 2500);
         // Rafraîchir _allBilans
@@ -2054,7 +2056,7 @@ function saveBilan(){
           });
       }).catch(function(err){
         btn.disabled = false;
-        btn.textContent = '💾 Mettre à jour ce bilan';
+        btn.innerHTML = _SAVE_ICON + 'Mettre à jour ce bilan';
         alert('Erreur réseau : '+(err&&err.message||err));
       });
     return;
@@ -2085,7 +2087,7 @@ function saveBilan(){
       }
       return p.then(function(res){
         btn.disabled = false;
-        if(res.error){ btn.textContent='💾 Sauvegarder le bilan'; alert('Erreur : '+res.error.message); return; }
+        if(res.error){ btn.innerHTML = _SAVE_ICON + 'Sauvegarder le bilan'; alert('Erreur : '+res.error.message); return; }
         _currentBilanId   = res.data.id;
         _currentBilanDate = res.data.date ? res.data.date.split('T')[0] : today;
         _bilanModified  = false;
@@ -2093,7 +2095,7 @@ function saveBilan(){
         _suiviSnapshot  = null;
         _syncBilanDatesNotes();
         btn.textContent = isNew ? '✓ Nouveau bilan enregistré !' : '✓ Sauvegardé !';
-        setTimeout(function(){ btn.textContent='💾 Sauvegarder le bilan'; }, 2500);
+        setTimeout(function(){ btn.innerHTML = _SAVE_ICON + 'Sauvegarder le bilan'; }, 2500);
         // Passer en mode lecture après sauvegarde
         _bilanHistoMode = true;
         setTimeout(function(){ _enterReadOnlyMode(); }, 2600);
@@ -2112,7 +2114,7 @@ function saveBilan(){
       });
     }).catch(function(err){
       btn.disabled = false;
-      btn.textContent = '💾 Sauvegarder le bilan';
+      btn.innerHTML = _SAVE_ICON + 'Sauvegarder le bilan';
       alert('Erreur réseau : '+(err&&err.message||err));
     });
 }
@@ -2464,7 +2466,7 @@ function _newBilanSuiviConfirm(){
 
   // Texte du bouton spécifique au bilan de suivi
   var saveBtn = document.getElementById('bilan-save-btn');
-  if(saveBtn) saveBtn.textContent = '💾 Sauvegarder le bilan de suivi';
+  if(saveBtn) saveBtn.innerHTML = _SAVE_ICON + 'Sauvegarder le bilan de suivi';
   // Masquer le bouton "Bilan de suivi" (évite de créer un suivi d'un suivi)
   var suiviBtn = document.getElementById('bilan-suivi-btn');
   if(suiviBtn) suiviBtn.style.display = 'none';
