@@ -5576,9 +5576,10 @@ function _fetchCustomProtocolsFromSupabase(callback){
       _saveCustomProtocols(function(){ callback && callback(); });
       return;
     }
-    /* Sync builtin : remplacer par PROTOCOLS_REF (source de vérité) mais préserver icon si clé connue */
+    /* Sync builtin : remplacer par PROTOCOLS_REF sauf si l'utilisateur a modifié le protocole */
     var _builtinUpdated = false;
     _customProtocols = _customProtocols.map(function(p){
+      if(p.userModified) return p;
       var ref = PROTOCOLS_REF.find(function(r){ return r.id === p.id; });
       if(ref){
         var c = JSON.parse(JSON.stringify(ref));
@@ -6212,6 +6213,7 @@ function _saveProtoEditor(){
     type: type,
     name: name,
     icon: document.getElementById('pe-icon').value.trim() || 'autre',
+    userModified: true,
     category: document.getElementById('pe-category').value.trim(),
     source: document.getElementById('pe-source').value.trim(),
     duration: document.getElementById('pe-duration').value.trim(),
