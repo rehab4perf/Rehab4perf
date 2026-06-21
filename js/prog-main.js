@@ -1,3 +1,4 @@
+var _HSR_ICON = '<svg style="vertical-align:middle;margin-right:4px" width="16" height="16" fill="currentColor" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg"><path d="m248.2 87.8c1.7-3.9 6.3-5.6 10.1-3.8 3.9 1.7 5.6 6.3 3.8 10.1l-10.6 23.3c-1.7 3.9-6.3 5.6-10.1 3.8-3.9-1.7-5.6-6.3-3.9-10.1zm-63.2-5.3c-.4-4.2 2.7-7.9 6.9-8.3s7.9 2.7 8.3 6.9l2.5 25.5c.4 4.2-2.7 7.9-6.9 8.3s-7.9-2.7-8.3-6.9zm-57.4 27.1c-2.4-3.4-1.7-8.2 1.8-10.6 3.4-2.4 8.2-1.7 10.6 1.8l14.9 20.8c2.4 3.4 1.6 8.2-1.8 10.6s-8.2 1.7-10.6-1.8zm213.3 154.9v200.7c0 4.2-3.4 7.7-7.6 7.7h-43.1c-4.2 0-7.6-3.4-7.6-7.7v-200.7c0-4.2 3.4-7.6 7.6-7.6h43.1c4.2-.1 7.6 3.4 7.6 7.6zm-15.3 193v-185.4h-27.8v185.4zm57.6-201.2v201.3h27.8v-253.3zm-15.3 208.9v-210.8c0-1.2.3-2.4.9-3.6l42.7-79.9c3.8-8 14.7-4.9 14.7 3v291.3c0 4.2-3.4 7.7-7.7 7.7h-43.1c-4.1 0-7.5-3.5-7.5-7.7zm-197.7-136.4v136.4c0 4.2-3.4 7.7-7.7 7.7h-43.1c-4.2 0-7.6-3.4-7.6-7.7v-59.8c0-1.5.4-2.9 1.2-4.1l42.9-76.2c3.8-6.9 14.3-4.1 14.3 3.7zm-15.3 128.7v-99.5l-27.7 49.4v50.2h27.7zm100.7-193v200.7c0 4.2-3.4 7.7-7.6 7.7h-43.1c-4.2 0-7.7-3.4-7.7-7.7v-200.7c0-4.2 3.4-7.6 7.7-7.6h43.1c4.1-.1 7.6 3.4 7.6 7.6zm-15.3 193v-185.4h-27.8v185.4zm199-422.7v109.1c0 5.6-6.2 10-12.1 6.2l-18.3-10.5-53.3 99.7c-1.4 2.6-4 4-6.7 4h-167.2l-63.7 114.6c-2.1 3.8-6.9 5.1-10.8 2.7l-42.6-24.6c-3.6-2.1-4.9-6.7-2.8-10.3l79.8-143.2c1.4-2.5 4-3.9 6.7-3.9h166.8l38-71.4-19.6-11.3c-5.1-3-5.1-10.3.1-13.3l94.4-54.5c4.9-2.9 11.2.9 11.3 6.7zm-15.4 95.8v-82.6l-71.6 41.3 14.4 8.3c3.7 2 5 6.6 3.1 10.3l-43.3 81.3c-1.2 2.8-3.9 4.7-7 4.7h-166.9l-73.9 132.7 29.7 17.2 61.8-111.3c1.2-2.7 3.9-4.5 7-4.5h167.1l54.8-102.5c2.1-3.9 6.8-5.2 10.5-3z"/></svg>';
 var _PLAN_ICON = '<svg style="vertical-align:middle;margin-right:4px" width="16" height="16" fill="currentColor" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="M452,311.145V75c0-24.813-20.187-45-45-45h-15V15c0-8.284-6.716-15-15-15s-15,6.716-15,15v15h-60V15c0-8.284-6.716-15-15-15s-15,6.716-15,15v15h-92V15c0-8.284-6.716-15-15-15s-15,6.716-15,15v15H90V15c0-8.284-6.716-15-15-15S60,6.716,60,15v15H45C20.187,30,0,50.187,0,75v331c0,24.813,20.187,45,45,45h266.946c16.795,36.01,53.085,61,95.054,61c57.897,0,105-47.551,105-106C512,364.198,487.443,328.027,452,311.145z M30,75c0-8.271,6.729-15,15-15h15v15c0,8.284,6.716,15,15,15s15-6.716,15-15V60h60v15c0,8.284,6.716,15,15,15s15-6.716,15-15V60h92v15c0,8.284,6.716,15,15,15s15-6.716,15-15V60h60v15c0,8.284,6.716,15,15,15s15-6.716,15-15V60h15c8.271,0,15,6.729,15,15v46H30V75z M303.056,421H45c-8.271,0-15-6.729-15-15V151h392v151.076c-4.901-0.704-9.907-1.076-15-1.076c-57.897,0-105,47.103-105,105C302,411.092,302.365,416.098,303.056,421z M407,482c-41.355,0-75-34.093-75-76c0-41.355,33.645-75,75-75c41.355,0,75,33.645,75,75C482,447.907,448.355,482,407,482z"/><path d="M437,391h-15v-15c0-8.284-6.716-15-15-15s-15,6.716-15,15v30c0,8.284,6.716,15,15,15h30c8.284,0,15-6.716,15-15S445.284,391,437,391z"/><path d="M105,181H75c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S113.284,181,105,181z"/><path d="M196,181h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S204.284,181,196,181z"/><path d="M287,181h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S295.284,181,287,181z"/><path d="M377,181h-30c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S385.284,181,377,181z"/><path d="M105,241H75c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S113.284,241,105,241z"/><path d="M196,241h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S204.284,241,196,241z"/><path d="M287,241h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S295.284,241,287,241z"/><path d="M377,241h-30c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S385.284,241,377,241z"/><path d="M105,301H75c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S113.284,301,105,301z"/><path d="M196,301h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S204.284,301,196,301z"/><path d="M287,301h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S295.284,301,287,301z"/><path d="M105,361H75c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S113.284,361,105,361z"/><path d="M196,361h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S204.284,361,196,361z"/><path d="M287,361h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S295.284,361,287,361z"/></svg>';
 var _PROG_SAVE_ICON = '<svg style="vertical-align:middle;margin-right:4px" width="15" height="15" fill="currentColor" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><g><path d="m28.702 8.564-4.273-5c-.795-.93-1.954-1.464-3.18-1.464h-14.771c-2.306 0-4.182 1.877-4.182 4.183v19.436c0 2.306 1.876 4.183 4.182 4.183h19.045c2.306 0 4.183-1.877 4.183-4.183v-14.437c-.001-.995-.357-1.96-1.004-2.718zm-6.962 19.536h-11.481v-8.173c0-.631.514-1.144 1.145-1.144h9.191c.631 0 1.145.513 1.145 1.144zm6.164-2.382c0 1.313-1.068 2.382-2.382 2.382h-1.981v-8.173c0-1.623-1.321-2.944-2.945-2.944h-9.191c-1.624 0-2.945 1.321-2.945 2.944v8.173h-1.982c-1.313 0-2.382-1.068-2.382-2.382v-19.436c0-1.313 1.069-2.382 2.382-2.382h14.771c.698 0 1.358.304 1.811.834l4.273 4.999c.369.432.571.982.571 1.549z"/><path d="m9.359 9.31h5.963c.497 0 .9-.403.9-.9s-.403-.9-.9-.9h-5.963c-.497 0-.9.403-.9.9s.403.9.9.9z"/><path d="m22.641 11.572h-13.282c-.497 0-.9.403-.9.9s.403.9.9.9h13.281c.497 0 .9-.403.9-.9s-.402-.9-.899-.9z"/></g></svg>';
 
@@ -818,7 +819,7 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
           var hsrSel     = _calSelSeances.has(String(ev.id));
           var hsrSelRing = hsrSel ? ';box-shadow:0 0 0 2px #fff,0 0 0 4px rgba(255,255,255,.8);filter:brightness(1.12);' : ';opacity:.82;';
           return '<div id="cal-chip-'+ev.id+'" class="cal-session-chip" style="background:'+hsrBg+';color:#fff;cursor:pointer'+hsrSelRing+'" title="'+escH(nom)+'" onclick="event.stopPropagation();_calSelToggle(\''+ev.id+'\',\'seance\')">'
-            + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">🏋 '+escH(hsrLabel.length>15?hsrLabel.slice(0,15)+'…':hsrLabel)+hsrBadge+'</span>'
+            + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">'+_HSR_ICON+escH(hsrLabel.length>15?hsrLabel.slice(0,15)+'…':hsrLabel)+hsrBadge+'</span>'
             + '<span class="cal-sel-check" style="font-size:.75rem;font-weight:800;flex-shrink:0;margin-left:2px;">'+(hsrSel?'✓':'')+'</span>'
             + '</div>';
         }
@@ -828,7 +829,7 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
         return '<div class="cal-session-chip" style="background:'+hsrBg+';color:#fff;cursor:grab;" title="'+escH(nom)+'"'
           + hsrEvtAttrs + '>'
           + '<button class="cal-chip-more" ontouchend="event.stopPropagation();event.preventDefault();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')">⋮</button>'
-          + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">🏋 '+escH(hsrLabel.length>14?hsrLabel.slice(0,14)+'…':hsrLabel)+hsrBadge+'</span>'
+          + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">'+_HSR_ICON+escH(hsrLabel.length>14?hsrLabel.slice(0,14)+'…':hsrLabel)+hsrBadge+'</span>'
           + '<button class="cal-chip-del" style="color:rgba(255,255,255,.7)" onclick="event.stopPropagation();removeCalEventCloud(\''+ev.id+'\')">×</button>'
           + '</div>';
       }
@@ -7550,7 +7551,7 @@ function _renderJournal() {
         metaHtml = capBadges.join('');
         rpeBadge = '';
       } else if(item.isHsr) {
-        icon = '🏋';
+        icon = _HSR_ICON;
         var hsrJBadges = [];
         if(item.rpe !== null && item.rpe !== undefined) {
           var hc = _hsrEvaColor(item.rpe);
@@ -7562,7 +7563,7 @@ function _renderJournal() {
         metaHtml = hsrJBadges.join('');
         rpeBadge = '';
       } else {
-        icon = '🏋️';
+        icon = _HSR_ICON;
         metaHtml = '';
         rpeBadge = (item.rpe !== null && item.rpe !== undefined)
           ? '<span class="journal-item-rpe">RPE '+escH(String(item.rpe))+'</span>' : '';
@@ -9234,7 +9235,7 @@ function _renderHsrBuilderBanner(donnees, seanceId) {
   var consignes = HSR_CONSIGNES;
 
   var html = '<div class="hsr-bb-head" onclick="_hsrBbToggle()" style="cursor:pointer;user-select:none;">'
-    + '<span class="hsr-bb-label">🏋 HSR</span>'
+    + '<span class="hsr-bb-label">'+_HSR_ICON+'HSR</span>'
     + (phase ? '<span class="hsr-bb-phase">' + escH(phase) + '</span>' : '')
     + (exo   ? '<span style="font-size:.7rem;color:#15803d;font-weight:600;">' + escH(exo) + '</span>' : '')
     + '<span style="margin-left:auto;font-size:.7rem;color:#6b7a8d;font-weight:600;">Séance ' + idx + '/' + total + '</span>'
@@ -9301,7 +9302,7 @@ function _hsrSaveRef1RM() {
   if (!newRef || newRef <= 0) { _showToast('Indique un 1RM valide.'); return; }
   _confirmDialog({
     id: 'cd-hsr-1rm',
-    emoji: '🏋',
+    emoji: '<svg width="48" height="48" fill="currentColor" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg"><path d="m248.2 87.8c1.7-3.9 6.3-5.6 10.1-3.8 3.9 1.7 5.6 6.3 3.8 10.1l-10.6 23.3c-1.7 3.9-6.3 5.6-10.1 3.8-3.9-1.7-5.6-6.3-3.9-10.1zm-63.2-5.3c-.4-4.2 2.7-7.9 6.9-8.3s7.9 2.7 8.3 6.9l2.5 25.5c.4 4.2-2.7 7.9-6.9 8.3s-7.9-2.7-8.3-6.9zm-57.4 27.1c-2.4-3.4-1.7-8.2 1.8-10.6 3.4-2.4 8.2-1.7 10.6 1.8l14.9 20.8c2.4 3.4 1.6 8.2-1.8 10.6s-8.2 1.7-10.6-1.8zm213.3 154.9v200.7c0 4.2-3.4 7.7-7.6 7.7h-43.1c-4.2 0-7.6-3.4-7.6-7.7v-200.7c0-4.2 3.4-7.6 7.6-7.6h43.1c4.2-.1 7.6 3.4 7.6 7.6zm-15.3 193v-185.4h-27.8v185.4zm57.6-201.2v201.3h27.8v-253.3zm-15.3 208.9v-210.8c0-1.2.3-2.4.9-3.6l42.7-79.9c3.8-8 14.7-4.9 14.7 3v291.3c0 4.2-3.4 7.7-7.7 7.7h-43.1c-4.1 0-7.5-3.5-7.5-7.7zm-197.7-136.4v136.4c0 4.2-3.4 7.7-7.7 7.7h-43.1c-4.2 0-7.6-3.4-7.6-7.7v-59.8c0-1.5.4-2.9 1.2-4.1l42.9-76.2c3.8-6.9 14.3-4.1 14.3 3.7zm-15.3 128.7v-99.5l-27.7 49.4v50.2h27.7zm100.7-193v200.7c0 4.2-3.4 7.7-7.6 7.7h-43.1c-4.2 0-7.7-3.4-7.7-7.7v-200.7c0-4.2 3.4-7.6 7.7-7.6h43.1c4.1-.1 7.6 3.4 7.6 7.6zm-15.3 193v-185.4h-27.8v185.4zm199-422.7v109.1c0 5.6-6.2 10-12.1 6.2l-18.3-10.5-53.3 99.7c-1.4 2.6-4 4-6.7 4h-167.2l-63.7 114.6c-2.1 3.8-6.9 5.1-10.8 2.7l-42.6-24.6c-3.6-2.1-4.9-6.7-2.8-10.3l79.8-143.2c1.4-2.5 4-3.9 6.7-3.9h166.8l38-71.4-19.6-11.3c-5.1-3-5.1-10.3.1-13.3l94.4-54.5c4.9-2.9 11.2.9 11.3 6.7zm-15.4 95.8v-82.6l-71.6 41.3 14.4 8.3c3.7 2 5 6.6 3.1 10.3l-43.3 81.3c-1.2 2.8-3.9 4.7-7 4.7h-166.9l-73.9 132.7 29.7 17.2 61.8-111.3c1.2-2.7 3.9-4.5 7-4.5h167.1l54.8-102.5c2.1-3.9 6.8-5.2 10.5-3z"/></svg>',
     title: 'Mettre à jour le 1RM à ' + newRef + ' kg ?',
     body: 'Le poids sera recalculé pour toutes les séances HSR futures de ce patient.',
     confirmLabel: 'Mettre à jour',
