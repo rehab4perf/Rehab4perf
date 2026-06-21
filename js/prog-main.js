@@ -1,3 +1,5 @@
+var _PROG_SAVE_ICON = '<svg style="vertical-align:middle;margin-right:4px" width="15" height="15" fill="currentColor" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><g><path d="m28.702 8.564-4.273-5c-.795-.93-1.954-1.464-3.18-1.464h-14.771c-2.306 0-4.182 1.877-4.182 4.183v19.436c0 2.306 1.876 4.183 4.182 4.183h19.045c2.306 0 4.183-1.877 4.183-4.183v-14.437c-.001-.995-.357-1.96-1.004-2.718zm-6.962 19.536h-11.481v-8.173c0-.631.514-1.144 1.145-1.144h9.191c.631 0 1.145.513 1.145 1.144zm6.164-2.382c0 1.313-1.068 2.382-2.382 2.382h-1.981v-8.173c0-1.623-1.321-2.944-2.945-2.944h-9.191c-1.624 0-2.945 1.321-2.945 2.944v8.173h-1.982c-1.313 0-2.382-1.068-2.382-2.382v-19.436c0-1.313 1.069-2.382 2.382-2.382h14.771c.698 0 1.358.304 1.811.834l4.273 4.999c.369.432.571.982.571 1.549z"/><path d="m9.359 9.31h5.963c.497 0 .9-.403.9-.9s-.403-.9-.9-.9h-5.963c-.497 0-.9.403-.9.9s.403.9.9.9z"/><path d="m22.641 11.572h-13.282c-.497 0-.9.403-.9.9s.403.9.9.9h13.281c.497 0 .9-.403.9-.9s-.402-.9-.899-.9z"/></g></svg>';
+
 // ── CYCLES ────────────────────────────────────────────────────
 var _cycles = [];
 try { _cycles = JSON.parse(localStorage.getItem(R4P_KEYS.CYCLES)||'[]'); } catch(e){ _cycles=[]; }
@@ -2413,7 +2415,7 @@ function confirmPlan(){
     if(d && d.id){
       _currentProgId = d.id;
       var sb = document.getElementById('prog-cloud-save-btn');
-      if(sb){ sb.textContent='✓ Sauvegardé'; setTimeout(function(){ sb.textContent='☁️ Sauvegarder'; },2500); }
+      if(sb){ sb.innerHTML=_PROG_SAVE_ICON+'✓ Sauvegardé'; setTimeout(function(){ sb.innerHTML=_PROG_SAVE_ICON+'Sauvegarder'; },2500); }
       _doPlanDates(dates, d.id);
     }
   })
@@ -2558,7 +2560,7 @@ function _openTmplModal(opts){
   // opts = { nom, cat, emoji, groupId, phaseOrdre, editId }
   _tmplEditId = opts.editId || null;
   document.getElementById('tmplModalTitle').textContent = _tmplEditId ? '✏️ Modifier le template' : '📋 Sauvegarder comme template';
-  document.getElementById('tmplModalConfirmBtn').textContent = _tmplEditId ? '💾 Enregistrer les modifications' : '📋 Enregistrer le template';
+  document.getElementById('tmplModalConfirmBtn').innerHTML = _tmplEditId ? _PROG_SAVE_ICON+'Enregistrer les modifications' : _PROG_SAVE_ICON+'Enregistrer le template';
 
   // Emoji row
   var row = document.getElementById('tmplEmojiRow');
@@ -3493,15 +3495,15 @@ function _refreshSaveBtn(){
   var isContexteA = _builderDate && !_currentProgId && !_currentSeanceId;
   var isContexteB = !!_currentSeanceId;
   if(isContexteB){
-    btn.textContent = '💾 Enregistrer la séance';
+    btn.innerHTML = _PROG_SAVE_ICON + 'Enregistrer la séance';
     btn.title = 'Sauvegarder les modifications';
   } else if(isContexteA){
     var p = _builderDate.split('-');
     var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
-    btn.textContent = '💾 Enregistrer — ' + parseInt(p[2]) + ' ' + months[parseInt(p[1])-1];
+    btn.innerHTML = _PROG_SAVE_ICON + 'Enregistrer — ' + parseInt(p[2]) + ' ' + months[parseInt(p[1])-1];
     btn.title = 'Sauvegarder et planifier sur cette date';
   } else {
-    btn.textContent = '💾 Sauvegarder';
+    btn.innerHTML = _PROG_SAVE_ICON + 'Sauvegarder';
     btn.title = '';
   }
   btn.style.background = '';
@@ -3683,7 +3685,7 @@ function openEditGroup(id){
   if(!g){ alert('Protocole introuvable.'); return; }
   _grpEditId = id; _grpLibId = null; _grpLibCheckDone = false;
   document.getElementById('grpModalTitle').textContent = '✏️ Modifier le protocole';
-  document.getElementById('grpModalConfirmBtn').textContent = '💾 Enregistrer';
+  document.getElementById('grpModalConfirmBtn').innerHTML = _PROG_SAVE_ICON + 'Enregistrer';
   document.getElementById('grpNameInput').value = g.nom||'';
   document.getElementById('grpCatInput').value = g.categorie||'';
   document.getElementById('grpDescInput').value = g.description||'';
@@ -8654,7 +8656,7 @@ function _capRenderFeedback(existing, seuil) {
 
   // Save button
   if (_capBbSeanceId) {
-    html += '<button class="cap-bb-save-btn" id="cap-bb-save-btn" onclick="_capBbSaveFeedback()">💾 Enregistrer le feedback</button>';
+    html += '<button class="cap-bb-save-btn" id="cap-bb-save-btn" onclick="_capBbSaveFeedback()"><svg style="vertical-align:middle;margin-right:4px" width="15" height="15" fill="currentColor" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><g><path d="m28.702 8.564-4.273-5c-.795-.93-1.954-1.464-3.18-1.464h-14.771c-2.306 0-4.182 1.877-4.182 4.183v19.436c0 2.306 1.876 4.183 4.182 4.183h19.045c2.306 0 4.183-1.877 4.183-4.183v-14.437c-.001-.995-.357-1.96-1.004-2.718zm-6.962 19.536h-11.481v-8.173c0-.631.514-1.144 1.145-1.144h9.191c.631 0 1.145.513 1.145 1.144zm6.164-2.382c0 1.313-1.068 2.382-2.382 2.382h-1.981v-8.173c0-1.623-1.321-2.944-2.945-2.944h-9.191c-1.624 0-2.945 1.321-2.945 2.944v8.173h-1.982c-1.313 0-2.382-1.068-2.382-2.382v-19.436c0-1.313 1.069-2.382 2.382-2.382h14.771c.698 0 1.358.304 1.811.834l4.273 4.999c.369.432.571.982.571 1.549z"/><path d="m9.359 9.31h5.963c.497 0 .9-.403.9-.9s-.403-.9-.9-.9h-5.963c-.497 0-.9.403-.9.9s.403.9.9.9z"/><path d="m22.641 11.572h-13.282c-.497 0-.9.403-.9.9s.403.9.9.9h13.281c.497 0 .9-.403.9-.9s-.402-.9-.899-.9z"/></g></svg>Enregistrer le feedback</button>';
   }
 
   // Séparateur + Adapter
@@ -8700,12 +8702,12 @@ function _capBbSaveFeedback() {
     headers: Object.assign({}, _sbHeaders(), { 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
     body: JSON.stringify({ seance_id: _capBbSeanceId, rpe: _capBbEva, duree_min: _capBbRpe, submitted_at: new Date().toISOString() })
   }).then(function(r){
-    if (!r.ok) { _showToast('Erreur enregistrement.'); if(btn){btn.disabled=false;btn.textContent='💾 Enregistrer le feedback';} return; }
+    if (!r.ok) { _showToast('Erreur enregistrement.'); if(btn){btn.disabled=false;btn.innerHTML = _PROG_SAVE_ICON + 'Enregistrer le feedback';} return; }
     if (btn) { btn.textContent = '✓ Enregistré'; btn.style.background = '#15803d'; }
     renderCalendar();
   }).catch(function(){
     _showToast('Erreur réseau.');
-    if (btn) { btn.disabled = false; btn.textContent = '💾 Enregistrer le feedback'; }
+    if (btn) { btn.disabled = false; btn.innerHTML = _PROG_SAVE_ICON + 'Enregistrer le feedback'; }
   });
 }
 
@@ -9353,7 +9355,7 @@ function _hsrRenderFeedback(existing) {
   html += '</div>';
 
   if (_hsrBbSeanceId) {
-    html += '<button class="hsr-bb-save-btn" id="hsr-bb-save-btn" onclick="_hsrBbSaveFeedback()">💾 Enregistrer le feedback</button>';
+    html += '<button class="hsr-bb-save-btn" id="hsr-bb-save-btn" onclick="_hsrBbSaveFeedback()"><svg style="vertical-align:middle;margin-right:4px" width="15" height="15" fill="currentColor" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><g><path d="m28.702 8.564-4.273-5c-.795-.93-1.954-1.464-3.18-1.464h-14.771c-2.306 0-4.182 1.877-4.182 4.183v19.436c0 2.306 1.876 4.183 4.182 4.183h19.045c2.306 0 4.183-1.877 4.183-4.183v-14.437c-.001-.995-.357-1.96-1.004-2.718zm-6.962 19.536h-11.481v-8.173c0-.631.514-1.144 1.145-1.144h9.191c.631 0 1.145.513 1.145 1.144zm6.164-2.382c0 1.313-1.068 2.382-2.382 2.382h-1.981v-8.173c0-1.623-1.321-2.944-2.945-2.944h-9.191c-1.624 0-2.945 1.321-2.945 2.944v8.173h-1.982c-1.313 0-2.382-1.068-2.382-2.382v-19.436c0-1.313 1.069-2.382 2.382-2.382h14.771c.698 0 1.358.304 1.811.834l4.273 4.999c.369.432.571.982.571 1.549z"/><path d="m9.359 9.31h5.963c.497 0 .9-.403.9-.9s-.403-.9-.9-.9h-5.963c-.497 0-.9.403-.9.9s.403.9.9.9z"/><path d="m22.641 11.572h-13.282c-.497 0-.9.403-.9.9s.403.9.9.9h13.281c.497 0 .9-.403.9-.9s-.402-.9-.899-.9z"/></g></svg>Enregistrer le feedback</button>';
   }
 
   fb.innerHTML = html;
@@ -9391,11 +9393,11 @@ function _hsrBbSaveFeedback() {
     headers: Object.assign({}, _sbHeaders(), { 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
     body:    JSON.stringify({ seance_id: _hsrBbSeanceId, rpe: _hsrBbEva, duree_min: _hsrBbRpe, submitted_at: new Date().toISOString() })
   }).then(function(r){
-    if (!r.ok) { _showToast('Erreur enregistrement.'); if(btn){btn.disabled=false;btn.textContent='💾 Enregistrer le feedback';} return; }
+    if (!r.ok) { _showToast('Erreur enregistrement.'); if(btn){btn.disabled=false;btn.innerHTML = _PROG_SAVE_ICON + 'Enregistrer le feedback';} return; }
     if (btn) { btn.textContent = '✓ Enregistré'; btn.style.background = '#15803d'; }
     renderCalendar();
   }).catch(function(){
     _showToast('Erreur réseau.');
-    if (btn) { btn.disabled = false; btn.textContent = '💾 Enregistrer le feedback'; }
+    if (btn) { btn.disabled = false; btn.innerHTML = _PROG_SAVE_ICON + 'Enregistrer le feedback'; }
   });
 }
