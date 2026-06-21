@@ -1783,7 +1783,7 @@ function renderSession(){
         if(isInGroup && !_inChainGrp){
           _inChainGrp = true;
           html += '<div class="chain-group" style="--chain-c:'+objColor+';border-color:'+objColor+';background:'+_cGrpBg+'">';
-          html += '<div class="chain-group-header" style="color:'+objColor+'">⛓ Enchaîné</div>';
+
         }
         html += '<div class="exo-row">';
         if(methObj){
@@ -1810,14 +1810,7 @@ function renderSession(){
         html += '<div class="exo-sub">';
         if(e.url){ var _vt=_ytThumbHtml(e.url); html += _vt ? _vt : '<a class="vid-link" href="'+escH(e.url)+'" target="_blank">▶ Vidéo</a>'; }
         var exoMin=estimateExoMin(e); if(exoMin!==null) html+='<span class="time-tag">⏱ '+fmtMin(exoMin)+'</span>';
-        if(idx < b.exos.length - 1){
-          html += '<button class="chain-toggle-btn'+(exoChained?' active':'')+'"'
-               +  ' style="--chain-c:'+objColor+'"'
-               +  ' onclick="toggleExoChain(\''+b.id+'\',\''+e.id+'\')"'
-               +  ' title="'+(exoChained?'Désactiver l\'enchaînement':'Enchaîner avec le suivant')+'">'
-               +  '⛓ '+(exoChained?'Enchaîné':'Enchaîner')
-               +  '</button>';
-        }
+
         html += '</div></div>';
         html += '<div class="reps-wrap">'
              +  '<input class="cell-input" type="text" value="'+escH(e.reps)+'" placeholder="—" title="Répétitions" oninput="updateField(\''+b.id+'\',\''+e.id+'\',\'reps\',this.value)">'
@@ -1825,7 +1818,16 @@ function renderSession(){
              +  '</div>';
         html += '<input class="cell-input" type="text" value="'+escH(e.duree)+'" placeholder="—" title="Durée" oninput="updateField(\''+b.id+'\',\''+e.id+'\',\'duree\',this.value)">';
         html += '<input class="cell-input" type="text" value="'+escH(e.series)+'" placeholder="—" title="Séries" oninput="updateField(\''+b.id+'\',\''+e.id+'\',\'series\',this.value)">';
-        html += '<input class="cell-input" type="text" value="'+escH(e.recup)+'" placeholder="—" title="Récupération" oninput="updateField(\''+b.id+'\',\''+e.id+'\',\'recup\',this.value)">';
+        html += '<div class="chain-recup-wrap">'
+             +  '<input class="cell-input'+(exoChained?' chain-dim':'')+'" type="text" value="'+escH(e.recup)+'" placeholder="—" title="Récupération" oninput="updateField(\''+b.id+'\',\''+e.id+'\',\'recup\',this.value)">';
+        if(idx < b.exos.length - 1){
+          html += '<button class="chain-icon-toggle'+(exoChained?' active':'')+'"'
+               +  ' onclick="toggleExoChain(\''+b.id+'\',\''+e.id+'\')"'
+               +  ' title="'+(exoChained?'Désactiver l\'enchaînement':'Enchaîner avec le suivant')+'">';
+          html += '<svg width="11" height="11" viewBox="0 0 512 512" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="m511.36 99.922-18.544 71.516a19.973 19.973 0 0 1 -24.379 14.34l-73.637-19.093a20 20 0 1 1 10.039-38.719l25.722 6.669c-53.134-76.492-151.853-110.186-241.641-80.325a211.136 211.136 0 0 0 -134 132.783 20 20 0 1 1 -37.83-13 254.846 254.846 0 0 1 59.71-96.121 249.919 249.919 0 0 1 99.5-61.617 252.632 252.632 0 0 1 289.673 99.245l6.667-25.712a20 20 0 0 1 38.72 10.039zm-28.86 212.568a20 20 0 0 0 -25.413 12.417 211.136 211.136 0 0 1 -134 132.783c-89.787 29.861-188.507-3.833-241.638-80.325l25.722 6.669a20 20 0 1 0 10.029-38.719l-73.64-19.093a20 20 0 0 0 -24.379 14.34l-18.541 71.516a20 20 0 1 0 38.72 10.039l6.667-25.712a252.738 252.738 0 0 0 289.673 99.241 249.932 249.932 0 0 0 99.5-61.618 254.838 254.838 0 0 0 59.71-96.125 20 20 0 0 0 -12.41-25.413z"/></svg>';
+          html += '</button>';
+        }
+        html += '</div>';
         html += '<input class="cell-input" type="text" value="'+escH(e.tempo)+'" placeholder="—" title="Tempo" oninput="updateField(\''+b.id+'\',\''+e.id+'\',\'tempo\',this.value)">';
         html += '<div class="cible-cell">';
         var cibles = (e.cibles && e.cibles.length) ? e.cibles : [{type:e.cibleType||'RPE', min:e.cibleVal||'', max:''}];

@@ -626,7 +626,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 /* Boutons d'action hors-grille → complètement masqués */
 #builderPanel.r4p-readonly .add-bloc-btn,
 #builderPanel.r4p-readonly .cardio-add-btn,
-#builderPanel.r4p-readonly .chain-toggle-btn,
+#builderPanel.r4p-readonly .chain-icon-toggle,
 #builderPanel.r4p-readonly .builder-save-btn,
 #builderPanel.r4p-readonly .builder-update-btn,
 #builderPanel.r4p-readonly .cible-add-btn,
@@ -1257,14 +1257,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   margin-bottom: 4px;
   overflow: hidden;
 }
-.chain-group-header {
-  display: flex; align-items: center; gap: 5px;
-  padding: 4px 10px;
-  font-size: .62rem; font-weight: 700;
-  text-transform: uppercase; letter-spacing: .07em;
-  border-bottom: 1px solid rgba(0,0,0,.07);
-  opacity: .88;
-}
+.chain-group-header { display: none; }
 /* Supprimer le border-bottom du dernier exo-row à l'intérieur du groupe */
 .chain-group .exo-row:last-child { border-bottom: none; }
 /* Ancien connecteur textuel — plus utilisé */
@@ -1274,16 +1267,17 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   border-radius:4px; font-size:.72rem; font-weight:600; line-height:1.8; color:inherit;
 }
 
-/* Bouton toggle enchaînement */
-.chain-toggle-btn {
-  display:inline-flex; align-items:center; gap:3px;
-  padding:1px 7px; border-radius:8px; border:1px solid var(--border);
-  background:none; color:var(--muted); font-size:.65rem; font-weight:600;
-  cursor:pointer; font-family:inherit; transition:all .12s; white-space:nowrap;
-  line-height:1.6;
+/* Bouton toggle enchaînement (sous colonne Récup, style /côté) */
+.chain-recup-wrap { display:flex; flex-direction:column; gap:2px; align-items:stretch; }
+.chain-icon-toggle {
+  font-size:.57rem; padding:2px 3px; border:1px solid #CBD2DB; border-radius:4px;
+  background:#F5F7FA; color:#9AA0A8; cursor:pointer; font-family:inherit;
+  line-height:1; text-align:center; transition:all .15s;
+  display:flex; align-items:center; justify-content:center;
 }
-.chain-toggle-btn:hover { border-color:var(--chain-c,var(--accent2)); color:var(--chain-c,var(--accent2)); }
-.chain-toggle-btn.active { background:var(--chain-c,var(--accent2)); border-color:var(--chain-c,var(--accent2)); color:#fff; }
+.chain-icon-toggle:hover { border-color:var(--accent2); color:var(--accent2); }
+.chain-icon-toggle.active { background:#EEF4FF; border-color:#2563EB; color:#2563EB; }
+.cell-input.chain-dim { opacity:.28; border-style:dashed; }
 
 /* Temps estimé */
 .time-tag { font-size:.65rem; color:#7a5c1e; background:#FEF9EC; border:1px solid #f5e0a0; padding:1px 7px; border-radius:8px; white-space:nowrap; }
