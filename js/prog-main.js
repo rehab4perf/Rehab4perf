@@ -6110,7 +6110,9 @@ function openProtoEditor(protoId){
   }
 
   document.getElementById('protoEditTitle').textContent = isNew ? 'Nouveau protocole' : 'Modifier le protocole';
-  document.getElementById('pe-icon').value        = proto ? (proto.icon||'') : '';
+  var _iconKey = proto ? (proto.icon||'autre') : 'autre';
+  document.getElementById('pe-icon').value = _iconKey;
+  _buildProtoIconPicker(_iconKey);
   document.getElementById('pe-name').value        = proto ? (proto.name||'') : '';
   document.getElementById('pe-type').value        = proto ? (proto.type||'library') : 'library';
   document.getElementById('pe-category').value    = proto ? (proto.category||'') : '';
@@ -6206,7 +6208,7 @@ function _saveProtoEditor(){
     id: newId,
     type: type,
     name: name,
-    icon: document.getElementById('pe-icon').value.trim() || '📋',
+    icon: document.getElementById('pe-icon').value.trim() || 'autre',
     category: document.getElementById('pe-category').value.trim(),
     source: document.getElementById('pe-source').value.trim(),
     duration: document.getElementById('pe-duration').value.trim(),
@@ -6381,6 +6383,48 @@ function _renderProtocolsSync() {
   if(typeof _applyRoleUI === 'function') _applyRoleUI();
 }
 
+/* ─── Icônes protocoles ───────────────────────────────────────── */
+var PROTO_ICONS = [
+  { key: 'epaule', label: 'Épaule', src: 'icon-epaule.svg' },
+  { key: 'rachis', label: 'Rachis', src: 'icon-rachis.svg' },
+  { key: 'hanche', label: 'Hanche', src: 'icon-hanche.svg' },
+  { key: 'genou',  label: 'Genou',  src: 'icon-genou.svg'  },
+  { key: 'pied',   label: 'Pied',   src: 'icon-pied.svg'   },
+  { key: 'lma',    label: 'LMA',    src: 'icon-lma.svg'    },
+  { key: 'main',   label: 'Main',   src: 'main.svg'        },
+  { key: 'muscu',  label: 'Muscu',  src: 'icon-muscu.svg'  },
+  { key: 'autre',  label: 'Autre',  src: 'icon-dossier.svg'},
+];
+
+function _resolveProtoIcon(val, size) {
+  size = size || 28;
+  var entry = PROTO_ICONS.find(function(x){ return x.key === val; });
+  if(entry) return '<img src="'+entry.src+'" width="'+size+'" height="'+size+'" alt="'+entry.label+'" style="display:block">';
+  return val || '';
+}
+
+function _buildProtoIconPicker(selectedKey) {
+  var container = document.getElementById('pe-icon-picker');
+  if(!container) return;
+  var html = '';
+  PROTO_ICONS.forEach(function(icon) {
+    var isSel = icon.key === (selectedKey||'autre');
+    html += '<button type="button" class="pe-icon-btn'+(isSel?' selected':'')+'" data-key="'+icon.key
+      +'" onclick="_selectProtoIcon(\''+icon.key+'\')" title="'+icon.label+'">'
+      +'<img src="'+icon.src+'" width="22" height="22" alt="'+icon.label+'">'
+      +'<span>'+icon.label+'</span>'
+      +'</button>';
+  });
+  container.innerHTML = html;
+}
+
+function _selectProtoIcon(key) {
+  document.getElementById('pe-icon').value = key;
+  document.querySelectorAll('#pe-icon-picker .pe-icon-btn').forEach(function(b){
+    b.classList.toggle('selected', b.dataset.key === key);
+  });
+}
+
 /* ─── Rendu d'une carte protocole ────────────────────────────── */
 function _renderProtocolCard(proto) {
   if(proto.type === 'library') return _renderProtocolCardLibrary(proto);
@@ -6425,7 +6469,7 @@ function _renderProtocolCard(proto) {
 
   return '<div class="proto-card" id="proto-card-'+proto.id+'">'
     + '<div class="proto-card-header" onclick="_toggleProtoCard(\''+proto.id+'\')">'
-    + '<span class="proto-card-header-icon">'+proto.icon+'</span>'
+    + '<span class="proto-card-header-icon">'+_resolveProtoIcon(proto.icon, 28)+'</span>'
     + '<div class="proto-card-header-info">'
     + '<h3>'+_escHtml(proto.name)+'</h3>'
     + '<div class="proto-card-header-meta">'+_escHtml(proto.source)+' · '+_escHtml(proto.duration)
@@ -6556,7 +6600,7 @@ function _renderProtocolCardLibrary(proto) {
 
   return '<div class="proto-card" id="proto-card-'+proto.id+'">'
     + '<div class="proto-card-header" onclick="_toggleProtoCard(\''+proto.id+'\')">'
-    + '<span class="proto-card-header-icon">'+proto.icon+'</span>'
+    + '<span class="proto-card-header-icon">'+_resolveProtoIcon(proto.icon, 28)+'</span>'
     + '<div class="proto-card-header-info">'
     + '<h3>'+_escHtml(proto.name)+'</h3>'
     + '<div class="proto-card-header-meta">'+_escHtml(proto.source)+' · '+_escHtml(proto.duration||'')

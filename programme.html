@@ -2888,7 +2888,14 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   background:#F8FAFC;cursor:pointer;user-select:none;transition:background .15s;
 }
 .proto-card-header:hover { background:#EEF3FB; }
-.proto-card-header-icon { font-size:1.3rem; }
+.proto-card-header-icon { font-size:1.3rem;display:flex;align-items:center;justify-content:center;width:32px;height:32px;flex-shrink:0; }
+.proto-card-header-icon img { width:28px;height:28px;display:block; }
+.pe-icon-picker { display:flex;flex-wrap:wrap;gap:6px;margin-top:2px; }
+.pe-icon-btn { width:44px;height:44px;border:2px solid #d8e0eb;border-radius:8px;background:#F8FAFC;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:4px;transition:border-color .15s,background .15s; }
+.pe-icon-btn:hover { background:#EEF3FB;border-color:var(--accent2); }
+.pe-icon-btn.selected { border-color:var(--accent);background:#EEF3FB; }
+.pe-icon-btn img { width:22px;height:22px;display:block; }
+.pe-icon-btn span { font-size:.52rem;color:var(--muted);text-align:center;line-height:1;white-space:nowrap; }
 .proto-card-header-info { flex:1; }
 .proto-card-header-info h3 { font-size:.9rem;font-weight:700;color:var(--navy);margin:0 0 2px; }
 .proto-card-header-meta { font-size:.72rem;color:var(--text-sm); }
@@ -3269,10 +3276,13 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
     </div>
     <div class="proto-edit-body">
       <div class="proto-edit-row">
-        <div class="pe-field" style="flex:0 0 80px">
+        <div class="pe-field">
           <label>Icône</label>
-          <input type="text" id="pe-icon" placeholder="🦵" maxlength="4" style="text-align:center;font-size:1.2rem">
+          <input type="hidden" id="pe-icon" value="autre">
+          <div class="pe-icon-picker" id="pe-icon-picker"></div>
         </div>
+      </div>
+      <div class="proto-edit-row">
         <div class="pe-field">
           <label>Nom du protocole *</label>
           <input type="text" id="pe-name" placeholder="Ex : Entorse cheville">
