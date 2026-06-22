@@ -1232,7 +1232,7 @@ function buildProgHTML(prog){
       if(e.consigne&&e.consigne.trim()) r += '<div class="exo-consigne-v3">'+escH(e.consigne)+'</div>';
       // Pills
       var pills = [];
-      if(e.series) pills.push({l:'Séries', v:e.series+(e.perCote?' / côté':''), cls:''});
+      if(e.series) pills.push({l:'Séries', v:e.series, cls:''});
       if(e.reps)   pills.push({l:'Reps', v:e.reps+(e.perCote?' / côté':''), cls:''});
       else if(e.duree) pills.push({l:'Durée', v:e.duree+(e.perCote?' / côté':''), cls:''});
       if(e.reps && e.duree) pills.push({l:'Durée', v:e.duree+(e.perCote?' / côté':''), cls:''});
