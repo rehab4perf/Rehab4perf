@@ -2108,6 +2108,8 @@ function saveBilan(){
             if(!r2.error && r2.data && r2.data.length){
               _allBilans = r2.data;
               _prevDonnees = r2.data.length >= 2 ? (r2.data[1].donnees||{}) : null;
+              // Re-fusionner tout l'historique dans le DOM pour que buildCR() voie les données portées
+              _deserializeBilan(_buildMergedDonnees(r2.data));
               document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
               if(_prevDonnees) _renderDeltas(_prevDonnees);
               _renderEvolutionPage();
