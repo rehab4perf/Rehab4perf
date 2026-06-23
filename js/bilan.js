@@ -3340,16 +3340,44 @@ function calcMusc() {
 }
 
 // -- HELPER TESTS SECTIONS (partagé CR Complet + CR Tests) ----
+// Retourne true si le champ vient d'un bilan précédent (non remesuré dans le suivi actuel)
+function _crIsCarried(fieldIds) {
+  if (!fieldIds || !fieldIds.length) return false;
+  // Suivi en cours (avant enregistrement) — comparer au snapshot
+  if (_bilanIsSuivi && _suiviSnapshot) {
+    var hasVal = false;
+    for (var _ci = 0; _ci < fieldIds.length; _ci++) {
+      var _el = document.getElementById(fieldIds[_ci]);
+      if (!_el) continue;
+      var _curr = (_el.type === 'checkbox' || _el.type === 'radio') ? String(_el.checked) : (_el.value || '');
+      if (!_curr) continue;
+      hasVal = true;
+      var _prevStr = _suiviSnapshot[fieldIds[_ci]] !== undefined ? String(_suiviSnapshot[fieldIds[_ci]]) : '';
+      if (_curr !== _prevStr) return false; // au moins un champ modifié aujourd'hui
+    }
+    return hasVal;
+  }
+  // Bilan sauvegardé — vérifier changed_fields du bilan le plus récent
+  if (!_allBilans || _allBilans.length < 2) return false;
+  var _cf = (_allBilans[0].donnees || {}).changed_fields;
+  if (!_cf || !_cf.length) return false;
+  for (var _cj = 0; _cj < fieldIds.length; _cj++) {
+    if (_cf.indexOf(fieldIds[_cj]) !== -1) return false; // au moins un champ mesuré dans ce bilan
+  }
+  return true;
+}
+
 function _buildAllTestsHtml() {
   var sections = [];
   function addSec(title, html) { if (html && html.trim()) sections.push({title: title, html: html}); }
 
   function nl2br(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
-  function crItem(key, val, tag, tagClass) {
+  function crItem(key, val, tag, tagClass, fieldIds) {
     if (!val) return '';
     tag = tag || ''; tagClass = tagClass || '';
     var tagHtml = tag ? '<span class="cr-tag ' + tagClass + '">' + tag + '</span>' : '';
-    return '<div class="cr-item"><span class="cr-key">' + key + '</span><span class="cr-val">' + val + '</span>' + tagHtml + '</div>';
+    var cls = (fieldIds && _crIsCarried(fieldIds)) ? ' cr-item--carried' : '';
+    return '<div class="cr-item' + cls + '"><span class="cr-key">' + key + '</span><span class="cr-val">' + val + '</span>' + tagHtml + '</div>';
   }
 
   // ── Résolution du côté atteint ────────────────────────────────
@@ -3455,7 +3483,7 @@ function _buildAllTestsHtml() {
     var secRows = '';
     for (var fi=0; fi<sec.fields.length; fi++) {
       var fEl = document.getElementById(sec.fields[fi][0]);
-      if (fEl && fEl.value) secRows += crItem(sec.fields[fi][1], nl2br(fEl.value));
+      if (fEl && fEl.value) secRows += crItem(sec.fields[fi][1], nl2br(fEl.value), '', '', [sec.fields[fi][0]]);
     }
     for (var ti=0; ti<sec.tables.length; ti++) {
       var tKey = sec.tables[ti];
@@ -3482,7 +3510,7 @@ function _buildAllTestsHtml() {
           else if (val === 'Pas validé') { tag = 'Pas validé'; tagCls = 'bad'; }
           else if (isFonc)               { tag = val; tagCls = isPos ? 'ok'  : 'bad'; }
           else                           { tag = val; tagCls = isPos ? 'bad' : 'ok';  }
-          secRows += crItem(tname, noteVal || '-', tag, tagCls);
+          secRows += crItem(tname, noteVal || '-', tag, tagCls, [selEl.id].filter(Boolean));
         }
       }
     }
@@ -3528,7 +3556,7 @@ function _buildAllTestsHtml() {
         var girdDiff = girdCS - girdCA;
         var girdTag = girdDiff > 15 ? 'Positif' : 'Négatif';
         var girdCls = girdDiff > 15 ? 'bad' : 'ok';
-        secRows += crItem('GIRD — RI', 'CS=' + girdCS + '° CA=' + girdCA + '° (diff ' + (girdDiff>=0?'+':'') + girdDiff.toFixed(0) + '°)', girdTag, girdCls);
+        secRows += crItem('GIRD — RI', 'CS=' + girdCS + '° CA=' + girdCA + '° (diff ' + (girdDiff>=0?'+':'') + girdDiff.toFixed(0) + '°)', girdTag, girdCls, ['gird-cs','gird-ca']);
       }
       // Force break tests
       var epForceTests = [
@@ -3552,14 +3580,14 @@ function _buildAllTestsHtml() {
           var valStr = (isDent ? 'CS=' + csN + ' rép' : 'CS=' + csN + ' N') +
                        (!isNaN(caN) ? (isDent ? ' CA=' + caN + ' rép' : ' CA=' + caN + ' N') : '') +
                        (!isNaN(lsiV) ? ' LSI=' + lsiV.toFixed(0) + '%' : '');
-          secRows += crItem(ft.label, valStr, isPos ? 'Positif' : 'Négatif', isPos ? 'bad' : 'ok');
+          secRows += crItem(ft.label, valStr, isPos ? 'Positif' : 'Négatif', isPos ? 'bad' : 'ok', [ft.key+'-cs', ft.key+'-ca']);
         } else if (csA || caA) {
           var parts = [];
           if (csA) parts.push(_labelCS + '=' + csA);
           if (caA) parts.push(_labelCA + '=' + caA);
           var anyPos = csA === 'Positif' || caA === 'Positif';
           if (anyPos || csA === 'Négatif' || caA === 'Négatif') {
-            secRows += crItem(ft.label, parts.join(' · '), anyPos ? 'Positif' : 'Négatif', anyPos ? 'bad' : 'ok');
+            secRows += crItem(ft.label, parts.join(' · '), anyPos ? 'Positif' : 'Négatif', anyPos ? 'bad' : 'ok', [ft.key+'-apr-cs', ft.key+'-apr-ca']);
           }
         }
       });
@@ -3629,14 +3657,14 @@ function _buildAllTestsHtml() {
       if (sec.label === 'GENOU' && !isNaN(cfCA2)) {
         secRows += crItem('Contraction Flash Isométrique 20s',
           _labelCA+'='+cfCA2+'N   '+_labelCS+'='+(isNaN(cfCS2)?'-':cfCS2)+'N   '+lsiStr(cfCA2,cfCS2),
-          statOf2(lsiCls2(cfCA2,cfCS2)), lsiCls2(cfCA2,cfCS2));
+          statOf2(lsiCls2(cfCA2,cfCS2)), lsiCls2(cfCA2,cfCS2), ['cf-q-ca','cf-q-cs']);
       }
       if (sec.label === 'GENOU' && cfObs2) secRows += '<div style="margin:2px 0 8px;padding:6px 10px;background:var(--surface2);border-radius:5px;font-size:.82rem;color:var(--text2);font-style:italic">' + cfObs2 + '</div>';
     }
     var conclEl = document.getElementById(sec.concl);
-    if (conclEl && conclEl.value) secRows += crItem('Conclusion', nl2br(conclEl.value));
+    if (conclEl && conclEl.value) secRows += crItem('Conclusion', nl2br(conclEl.value), '', '', [sec.concl]);
     var optEl = sec.opt ? document.getElementById(sec.opt) : null;
-    if (optEl && optEl.value) secRows += crItem('Tests Optionnels', nl2br(optEl.value));
+    if (optEl && optEl.value) secRows += crItem('Tests Optionnels', nl2br(optEl.value), '', '', [sec.opt]);
     if (secRows) orthoHtml += '<div style="margin-bottom:14px"><div style="margin-top:16px;margin-bottom:8px;border-left:3px solid var(--green);background:#F6FBF8;padding:6px 12px;font-size:.72rem;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.08em">' + sec.label + '</div>' + secRows + '</div>';
   }
   addSec('2. Bilan Orthopedique', orthoHtml);
@@ -3665,14 +3693,14 @@ function _buildAllTestsHtml() {
           var lmaNoteVal = lmaNoteEl ? lmaNoteEl.value : '';
           var lmaTag    = lmaVal;
           var lmaTagCls = lmaIsPos ? 'bad' : 'ok';
-          lmaHtml += crItem(lmaTname, lmaNoteVal || '-', lmaTag, lmaTagCls);
+          lmaHtml += crItem(lmaTname, lmaNoteVal || '-', lmaTag, lmaTagCls, lmaSelEl ? [lmaSelEl.id] : []);
         }
       }
     }
     var lmaMarqEl = document.getElementById('lma-marqueur');
-    if (lmaMarqEl && lmaMarqEl.value) lmaHtml += crItem('Marqueur', nl2br(lmaMarqEl.value));
+    if (lmaMarqEl && lmaMarqEl.value) lmaHtml += crItem('Marqueur', nl2br(lmaMarqEl.value), '', '', ['lma-marqueur']);
     var lmaConclEl = document.getElementById('lma-conclusion');
-    if (lmaConclEl && lmaConclEl.value) lmaHtml += crItem('Conclusion', nl2br(lmaConclEl.value));
+    if (lmaConclEl && lmaConclEl.value) lmaHtml += crItem('Conclusion', nl2br(lmaConclEl.value), '', '', ['lma-conclusion']);
     if (lmaHtml) {
       lmaHtml = '<div style="margin-bottom:6px"><div style="font-size:.78rem;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">'
               + lmaMembreLabel + ' — ' + lmaMusclLabel + '</div>' + lmaHtml + '</div>';
@@ -3697,7 +3725,7 @@ function _buildAllTestsHtml() {
   var djHcs = parseFloat((document.getElementById('dj-h-cs')||{}).value||'');
   if (!isNaN(slsCA)) {
     var slsVal2 = _labelCA+'='+slsCA+' rep.   '+_labelCS+'='+slsCS+' rep.   '+lsiStr(slsCA,slsCS)+(slsH2?'   |   Repère EIAS-sol : '+slsH2+(slsH2.indexOf('cm')===-1?' cm':''):'');
-    tfHtml += crItem('SLS', slsVal2, statOf2(lsiCls2(slsCA,slsCS)), lsiCls2(slsCA,slsCS));
+    tfHtml += crItem('SLS', slsVal2, statOf2(lsiCls2(slsCA,slsCS)), lsiCls2(slsCA,slsCS), ['sls-ca','sls-cs']);
   }
   tfHtml += obsBlock('sls-obs-ca','sls-obs-cs');
   if (!isNaN(hopCA)) {
@@ -3708,7 +3736,7 @@ function _buildAllTestsHtml() {
       else if (hopSexe === 'H') { var hopSeuil = (hopTaille * 0.90).toFixed(1); hopDesc += '   |   Seuil RTS 90% taille (H) = ' + hopSeuil + 'cm → ' + (hopCA >= parseFloat(hopSeuil) ? '✓ Atteint' : '✗ Non atteint'); }
       else { hopDesc += '   |   Seuil RTS : ≥' + (hopTaille * 0.80).toFixed(1) + 'cm (F) / ≥' + (hopTaille * 0.90).toFixed(1) + 'cm (H)'; }
     }
-    tfHtml += crItem('Hop Test', hopDesc, statOf2(lsiCls2(hopCA, hopCS)), lsiCls2(hopCA, hopCS));
+    tfHtml += crItem('Hop Test', hopDesc, statOf2(lsiCls2(hopCA, hopCS)), lsiCls2(hopCA, hopCS), ['hop-ca','hop-cs']);
   }
   tfHtml += obsBlock('hop-obs-ca','hop-obs-cs');
   var scoreCA2 = 0; var scoreCS2 = 0; var recN = CRITERIA_REC.length;
@@ -3721,42 +3749,42 @@ function _buildAllTestsHtml() {
     var rclsCA = scoreCA2===recN?'good':scoreCA2>0?'warn':'bad';
     tfHtml += crItem('Réception — 80% Hop Test',
       _labelCA+'='+scoreCA2+'/'+recN+'   '+_labelCS+'='+scoreCS2+'/'+recN,
-      statOf2(rclsCA), rclsCA);
+      statOf2(rclsCA), rclsCA, ['rec-ca-0','rec-ca-1','rec-ca-2','rec-ca-3','rec-ca-4']);
   }
   tfHtml += obsBlock('rec-obs-ca','rec-obs-cs');
-  if (!isNaN(hrCA)) tfHtml += crItem('Heel Rise', _labelCA+'='+hrCA+'   '+_labelCS+'='+hrCS+'   '+lsiStr(hrCA,hrCS), statOf2(lsiCls2(hrCA,hrCS)), lsiCls2(hrCA,hrCS));
+  if (!isNaN(hrCA)) tfHtml += crItem('Heel Rise', _labelCA+'='+hrCA+'   '+_labelCS+'='+hrCS+'   '+lsiStr(hrCA,hrCS), statOf2(lsiCls2(hrCA,hrCS)), lsiCls2(hrCA,hrCS), ['hr-ca','hr-cs']);
   tfHtml += obsBlock('hr-obs-ca','hr-obs-cs');
   if (!isNaN(luCA)) {
     var luDiff2 = Math.abs(luCA-luCS); var luBad2 = luCA<10 || luDiff2>1.5;
-    tfHtml += crItem('Lunge WBLT', _labelCA+'='+luCA+'cm   '+_labelCS+'='+luCS+'cm   Diff='+luDiff2.toFixed(1)+'cm   '+lsiStr(luCA,luCS), luBad2?'Deficit':'OK', luBad2?'bad':'good');
+    tfHtml += crItem('Lunge WBLT', _labelCA+'='+luCA+'cm   '+_labelCS+'='+luCS+'cm   Diff='+luDiff2.toFixed(1)+'cm   '+lsiStr(luCA,luCS), luBad2?'Deficit':'OK', luBad2?'bad':'good', ['lu-ca','lu-cs']);
   }
   tfHtml += obsBlock('lu-obs-ca','lu-obs-cs');
-  if (!isNaN(djHca)) tfHtml += crItem('Drop Jump H', _labelCA+'='+djHca+'cm   '+_labelCS+'='+djHcs+'cm   '+lsiStr(djHca,djHcs), statOf2(lsiCls2(djHca,djHcs)), lsiCls2(djHca,djHcs));
+  if (!isNaN(djHca)) tfHtml += crItem('Drop Jump H', _labelCA+'='+djHca+'cm   '+_labelCS+'='+djHcs+'cm   '+lsiStr(djHca,djHcs), statOf2(lsiCls2(djHca,djHcs)), lsiCls2(djHca,djHcs), ['dj-h-ca','dj-h-cs']);
   tfHtml += obsBlock('dj-obs-ca','dj-obs-cs');
   var shExpCA2 = parseFloat((document.getElementById('sh-exp-ca')||{}).value||'');
   var shExpCS2 = parseFloat((document.getElementById('sh-exp-cs')||{}).value||'');
   var shEndCA2 = parseFloat((document.getElementById('sh-end-ca')||{}).value||'');
   var shEndCS2 = parseFloat((document.getElementById('sh-end-cs')||{}).value||'');
-  if (!isNaN(shExpCA2)) tfHtml += crItem('Side Hop — Explosivité (15s)', _labelCA+'='+shExpCA2+' sauts   '+_labelCS+'='+(isNaN(shExpCS2)?'-':shExpCS2)+' sauts   '+lsiStr(shExpCA2,shExpCS2), statOf2(lsiCls2(shExpCA2,shExpCS2)), lsiCls2(shExpCA2,shExpCS2));
-  if (!isNaN(shEndCA2)) tfHtml += crItem('Side Hop — Endurance (30s)', _labelCA+'='+shEndCA2+' sauts   '+_labelCS+'='+(isNaN(shEndCS2)?'-':shEndCS2)+' sauts   '+lsiStr(shEndCA2,shEndCS2), statOf2(lsiCls2(shEndCA2,shEndCS2)), lsiCls2(shEndCA2,shEndCS2));
+  if (!isNaN(shExpCA2)) tfHtml += crItem('Side Hop — Explosivité (15s)', _labelCA+'='+shExpCA2+' sauts   '+_labelCS+'='+(isNaN(shExpCS2)?'-':shExpCS2)+' sauts   '+lsiStr(shExpCA2,shExpCS2), statOf2(lsiCls2(shExpCA2,shExpCS2)), lsiCls2(shExpCA2,shExpCS2), ['sh-exp-ca','sh-exp-cs']);
+  if (!isNaN(shEndCA2)) tfHtml += crItem('Side Hop — Endurance (30s)', _labelCA+'='+shEndCA2+' sauts   '+_labelCS+'='+(isNaN(shEndCS2)?'-':shEndCS2)+' sauts   '+lsiStr(shEndCA2,shEndCS2), statOf2(lsiCls2(shEndCA2,shEndCS2)), lsiCls2(shEndCA2,shEndCS2), ['sh-end-ca','sh-end-cs']);
   tfHtml += obsBlock('sh-obs-ca','sh-obs-cs');
   var qfCA = parseFloat((document.getElementById('q-f-ca')||{}).value||'');
   var qfCS = parseFloat((document.getElementById('q-f-cs')||{}).value||'');
   var ijfCA = parseFloat((document.getElementById('ij-f-ca')||{}).value||'');
   var ijfCS = parseFloat((document.getElementById('ij-f-cs')||{}).value||'');
-  if (!isNaN(qfCA) && !isNaN(qfCS)) { var qd = (1-qfCA/qfCS)*100; tfHtml += crItem('Quadriceps deficit', qd.toFixed(1) + '%', qd<=10?'Normal':'Deficit', qd<=10?'ok':'warn'); }
-  if (!isNaN(ijfCA) && !isNaN(ijfCS)) { var ijd = (1-ijfCA/ijfCS)*100; tfHtml += crItem('IJ deficit', ijd.toFixed(1) + '%', ijd<=10?'Normal':'Deficit', ijd<=10?'ok':'warn'); }
+  if (!isNaN(qfCA) && !isNaN(qfCS)) { var qd = (1-qfCA/qfCS)*100; tfHtml += crItem('Quadriceps deficit', qd.toFixed(1) + '%', qd<=10?'Normal':'Deficit', qd<=10?'ok':'warn', ['q-f-ca','q-f-cs']); }
+  if (!isNaN(ijfCA) && !isNaN(ijfCS)) { var ijd = (1-ijfCA/ijfCS)*100; tfHtml += crItem('IJ deficit', ijd.toFixed(1) + '%', ijd<=10?'Normal':'Deficit', ijd<=10?'ok':'warn', ['ij-f-ca','ij-f-cs']); }
   // Drop Jump — Temps contact
   var djTca = parseFloat((document.getElementById('dj-t-ca')||{}).value||'');
   var djTcs = parseFloat((document.getElementById('dj-t-cs')||{}).value||'');
-  if (!isNaN(djTca)) tfHtml += crItem('Drop Jump — Temps contact', _labelCA+'='+djTca+'ms   '+_labelCS+'='+djTcs+'ms   '+lsiStr(djTca,djTcs), statOf2(lsiCls2(djTca,djTcs)), lsiCls2(djTca,djTcs));
+  if (!isNaN(djTca)) tfHtml += crItem('Drop Jump — Temps contact', _labelCA+'='+djTca+'ms   '+_labelCS+'='+djTcs+'ms   '+lsiStr(djTca,djTcs), statOf2(lsiCls2(djTca,djTcs)), lsiCls2(djTca,djTcs), ['dj-t-ca','dj-t-cs']);
   // Drop Jump — RSI (calculé, affiché en textContent)
   var djRsiCAv = ((document.getElementById('dj-rsi-ca')||{}).textContent||'').trim();
   var djRsiCSv = ((document.getElementById('dj-rsi-cs')||{}).textContent||'').trim();
   var djRsiLsiv = ((document.getElementById('dj-rsi-lsi')||{}).textContent||'').trim();
   if (djRsiCAv && djRsiCAv !== '-' && parseFloat(djRsiCAv) > 0) {
     var rsiCls = lsiCls2(parseFloat(djRsiCAv), parseFloat(djRsiCSv));
-    tfHtml += crItem('Drop Jump — RSI', _labelCA+'='+djRsiCAv+'   '+_labelCS+'='+djRsiCSv+'   LSI='+djRsiLsiv, statOf2(rsiCls), rsiCls);
+    tfHtml += crItem('Drop Jump — RSI', _labelCA+'='+djRsiCAv+'   '+_labelCS+'='+djRsiCSv+'   LSI='+djRsiLsiv, statOf2(rsiCls), rsiCls, ['dj-t-ca','dj-t-cs']);
   }
   // Pliométrie verticale qualitative
   var plioqCA2 = 0; var plioqCS2 = 0; var plioqTouched = false;
@@ -3768,7 +3796,7 @@ function _buildAllTestsHtml() {
   }
   var plioqCrToggle = document.getElementById('plioq-cr-toggle');
   if ((plioqCrToggle && plioqCrToggle.checked) || plioqTouched) {
-    tfHtml += crItem('Pliométrie verticale (qualitative)', _labelCA+'='+plioqCA2+'/2   '+_labelCS+'='+plioqCS2+'/2', plioqCA2===2?'Réussi':'À améliorer', plioqCA2===2?'good':'warn');
+    tfHtml += crItem('Pliométrie verticale (qualitative)', _labelCA+'='+plioqCA2+'/2   '+_labelCS+'='+plioqCS2+'/2', plioqCA2===2?'Réussi':'À améliorer', plioqCA2===2?'good':'warn', ['plioq-ca-0','plioq-ca-1']);
   }
   tfHtml += obsBlock('plioq-obs-ca','plioq-obs-cs');
   // SEBT
@@ -3780,11 +3808,11 @@ function _buildAllTestsHtml() {
   var sebtPlCS2  = parseFloat((document.getElementById('sebt-pl-cs')||{}).value||'');
   var sebtCompCA2 = ((document.getElementById('sebt-comp-ca')||{}).textContent||'').trim();
   var sebtCompCS2 = ((document.getElementById('sebt-comp-cs')||{}).textContent||'').trim();
-  if (!isNaN(sebtAntCA2)) tfHtml += crItem('SEBT — Antérieur',       _labelCA+'='+sebtAntCA2+'cm   '+_labelCS+'='+sebtAntCS2+'cm   '+lsiStr(sebtAntCA2,sebtAntCS2), statOf2(lsiCls2(sebtAntCA2,sebtAntCS2)), lsiCls2(sebtAntCA2,sebtAntCS2));
-  if (!isNaN(sebtPmCA2))  tfHtml += crItem('SEBT — Postéro-médial',  _labelCA+'='+sebtPmCA2+'cm   '+_labelCS+'='+sebtPmCS2+'cm   '+lsiStr(sebtPmCA2,sebtPmCS2),   statOf2(lsiCls2(sebtPmCA2,sebtPmCS2)),   lsiCls2(sebtPmCA2,sebtPmCS2));
-  if (!isNaN(sebtPlCA2))  tfHtml += crItem('SEBT — Postéro-latéral', _labelCA+'='+sebtPlCA2+'cm   '+_labelCS+'='+sebtPlCS2+'cm   '+lsiStr(sebtPlCA2,sebtPlCS2),   statOf2(lsiCls2(sebtPlCA2,sebtPlCS2)),   lsiCls2(sebtPlCA2,sebtPlCS2));
+  if (!isNaN(sebtAntCA2)) tfHtml += crItem('SEBT — Antérieur',       _labelCA+'='+sebtAntCA2+'cm   '+_labelCS+'='+sebtAntCS2+'cm   '+lsiStr(sebtAntCA2,sebtAntCS2), statOf2(lsiCls2(sebtAntCA2,sebtAntCS2)), lsiCls2(sebtAntCA2,sebtAntCS2), ['sebt-ant-ca','sebt-ant-cs']);
+  if (!isNaN(sebtPmCA2))  tfHtml += crItem('SEBT — Postéro-médial',  _labelCA+'='+sebtPmCA2+'cm   '+_labelCS+'='+sebtPmCS2+'cm   '+lsiStr(sebtPmCA2,sebtPmCS2),   statOf2(lsiCls2(sebtPmCA2,sebtPmCS2)),   lsiCls2(sebtPmCA2,sebtPmCS2), ['sebt-pm-ca','sebt-pm-cs']);
+  if (!isNaN(sebtPlCA2))  tfHtml += crItem('SEBT — Postéro-latéral', _labelCA+'='+sebtPlCA2+'cm   '+_labelCS+'='+sebtPlCS2+'cm   '+lsiStr(sebtPlCA2,sebtPlCS2),   statOf2(lsiCls2(sebtPlCA2,sebtPlCS2)),   lsiCls2(sebtPlCA2,sebtPlCS2), ['sebt-pl-ca','sebt-pl-cs']);
   if (sebtCompCA2 && sebtCompCA2.indexOf('CA :') === 0) {
-    tfHtml += crItem('SEBT — Score composite', sebtCompCA2.replace('CA : ','')+' ('+_labelCA+')   '+sebtCompCS2.replace('CS : ','')+' ('+_labelCS+')', '', '');
+    tfHtml += crItem('SEBT — Score composite', sebtCompCA2.replace('CA : ','')+' ('+_labelCA+')   '+sebtCompCS2.replace('CS : ','')+' ('+_labelCS+')', '', '', ['sebt-ant-ca','sebt-pm-ca','sebt-pl-ca']);
   }
   tfHtml += obsBlock('sebt-obs-ca','sebt-obs-cs');
   // UQYBT
@@ -3795,7 +3823,7 @@ function _buildAllTestsHtml() {
     var uqDiffTxt = ((document.getElementById('uqybt-'+uqDirs[ui].id+'-diff')||{}).textContent||'').trim();
     if (!isNaN(uqD) && !isNaN(uqG)) {
       var uqBad = parseFloat(uqDiffTxt) > 5;
-      tfHtml += crItem('UQYBT — '+uqDirs[ui].label, 'D='+uqD+'cm   G='+uqG+'cm   Diff='+uqDiffTxt, uqBad?'>5% Asymétrie':'OK', uqBad?'warn':'good');
+      tfHtml += crItem('UQYBT — '+uqDirs[ui].label, 'D='+uqD+'cm   G='+uqG+'cm   Diff='+uqDiffTxt, uqBad?'>5% Asymétrie':'OK', uqBad?'warn':'good', ['uqybt-'+uqDirs[ui].id+'-d','uqybt-'+uqDirs[ui].id+'-g']);
     }
   }
   addSec('3. Tests Fonctionnels & Musculaires - Membres Inferieurs', tfHtml);
@@ -3813,10 +3841,10 @@ function _buildAllTestsHtml() {
     var pl = psetCSv>0?(psetCAv/psetCSv*100):NaN;
     var psetVal = _labelCA+'='+psetCAv+'   '+_labelCS+'='+(isNaN(psetCSv)?'-':psetCSv)+(!isNaN(pl)?'   LSI='+pl.toFixed(1)+'%':'');
     if (psetPoidsReelV) psetVal += '   — Poids utilisé : ' + psetPoidsReelV + ' kg';
-    tfMsHtml += crItem('PSET', psetVal, statOf2(lsiCls2(psetCAv,psetCSv)), lsiCls2(psetCAv,psetCSv));
+    tfMsHtml += crItem('PSET', psetVal, statOf2(lsiCls2(psetCAv,psetCSv)), lsiCls2(psetCAv,psetCSv), ['pset-ca','pset-cs']);
   }
   tfMsHtml += obsBlock('pset-obs-ca','pset-obs-cs');
-  if (!isNaN(setCAv))  { var sl = setCSv>0?(setCAv/setCSv*100):NaN; tfMsHtml += crItem('Shoulder Endurance', _labelCA+'='+setCAv+'   '+_labelCS+'='+setCSv+(!isNaN(sl)?'   LSI='+sl.toFixed(1)+'%':''), statOf2(lsiCls2(setCAv,setCSv)), lsiCls2(setCAv,setCSv)); }
+  if (!isNaN(setCAv))  { var sl = setCSv>0?(setCAv/setCSv*100):NaN; tfMsHtml += crItem('Shoulder Endurance', _labelCA+'='+setCAv+'   '+_labelCS+'='+setCSv+(!isNaN(sl)?'   LSI='+sl.toFixed(1)+'%':''), statOf2(lsiCls2(setCAv,setCSv)), lsiCls2(setCAv,setCSv), ['set-ca','set-cs']); }
   tfMsHtml += obsBlock('set-obs-ca','set-obs-cs');
   (function(){
     var s2 = parseFloat((document.getElementById('ckc-s2')||{}).value||'');
@@ -3832,7 +3860,7 @@ function _buildAllTestsHtml() {
     var desc  = '';
     if (!isNaN(score)) desc += 'Score=' + score.toFixed(1) + ' touches' + (sCls?' ('+tagFn(sCls)+')':'');
     if (!isNaN(mei))   desc += (desc?'   ':'') + 'MEI=' + mei.toFixed(2) + (mCls?' ('+tagFn(mCls)+')':'');
-    tfMsHtml += crItem('mCKCUEST', desc, ovCls?tagFn(ovCls):'', ovCls||'ok');
+    tfMsHtml += crItem('mCKCUEST', desc, ovCls?tagFn(ovCls):'', ovCls||'ok', ['ckc-s2','ckc-s3','ckc-s4']);
     var ckcObs = (document.getElementById('ckc-obs')||{}).value||'';
     if (ckcObs) tfMsHtml += '<div style="margin:2px 0 8px;padding:6px 10px;background:var(--surface2);border-radius:5px;font-size:.82rem;color:var(--text2);font-style:italic">Obs. : ' + nl2br(ckcObs) + '</div>';
   })();
@@ -3840,12 +3868,12 @@ function _buildAllTestsHtml() {
   var lsiTagFn2 = function(v){ return v>=90?'LSI ≥ 90 % — OK':v>=80?'LSI 80–90 % — Acceptable':'LSI < 80 % — Insuffisant'; };
   if (shrtEl2 && shrtEl2.textContent && shrtEl2.textContent !== '-' && shrtEl2.textContent !== '—' && shrtEl2.textContent !== '--') {
     var shrtV2 = parseFloat(shrtEl2.textContent);
-    tfMsHtml += crItem('Side Hold Rotation', shrtEl2.textContent, !isNaN(shrtV2)?lsiTagFn2(shrtV2):'', !isNaN(shrtV2)?lsiClsFn2(shrtV2):'ok');
+    tfMsHtml += crItem('Side Hold Rotation', shrtEl2.textContent, !isNaN(shrtV2)?lsiTagFn2(shrtV2):'', !isNaN(shrtV2)?lsiClsFn2(shrtV2):'ok', ['shrt-g','shrt-d']);
   }
   tfMsHtml += obsBlock('shrt-obs-ca','shrt-obs-cs');
   if (ulrtEl2 && ulrtEl2.textContent && ulrtEl2.textContent !== '-' && ulrtEl2.textContent !== '—' && ulrtEl2.textContent !== '--') {
     var ulrtV2 = parseFloat(ulrtEl2.textContent);
-    tfMsHtml += crItem('ULRT', ulrtEl2.textContent, !isNaN(ulrtV2)?lsiTagFn2(ulrtV2):'', !isNaN(ulrtV2)?lsiClsFn2(ulrtV2):'ok');
+    tfMsHtml += crItem('ULRT', ulrtEl2.textContent, !isNaN(ulrtV2)?lsiTagFn2(ulrtV2):'', !isNaN(ulrtV2)?lsiClsFn2(ulrtV2):'ok', ['ulrt-d1','ulrt-g1']);
   }
   tfMsHtml += obsBlock('ulrt-obs-ca','ulrt-obs-cs');
   addSec('4. Tests Fonctionnels - Membres Superieurs', tfMsHtml);
@@ -3863,12 +3891,12 @@ function _buildAllTestsHtml() {
   var sorV2  = parseFloat((document.getElementById('rf-sorensen')||{}).value||'');
   var pdslV2 = parseFloat((document.getElementById('rf-pdslrt')||{}).value||'');
   var rfNotes = (document.getElementById('rf-notes')||{}).value||'';
-  if (!isNaN(flxV2)) { tfRachisHtml += crItem('Endurance Fléchisseurs Cervicaux', flxV2+'s', flxV2>=39?'Normal':flxV2>=24?'Limite':'Deficit', flxV2>=39?'ok':flxV2>=24?'warn':'bad'); tfRachisHtml += obsSingle('rf-flx-obs'); }
-  if (!isNaN(extV2)) { tfRachisHtml += crItem('Endurance Extenseurs Cervicaux', extV2+'s', extV2>=20?'OK':'Insuffisant', extV2>=20?'ok':'bad'); tfRachisHtml += obsSingle('rf-ext-obs'); }
-  if (!isNaN(latD2) && !isNaN(latG2)) { var latRatio2 = Math.min(latD2,latG2)/Math.max(latD2,latG2)*100; tfRachisHtml += crItem('Endurance Latérale Cervicale', 'D='+latD2+'s   G='+latG2+'s   Ratio='+latRatio2.toFixed(1)+'%', latRatio2>=70?'Symétrie OK':'Asymétrie', latRatio2>=70?'ok':'warn'); tfRachisHtml += obsSingle('rf-lat-obs'); }
-  if (!isNaN(sorV2)) { tfRachisHtml += crItem('Test de Sørensen', sorV2+'s', sorV2>=198?'Facteur protecteur':sorV2>=176?'Zone intermédiaire':'Facteur de risque', sorV2>=198?'ok':sorV2>=176?'warn':'bad'); tfRachisHtml += obsSingle('rf-sor-obs'); }
-  if (!isNaN(pdslV2)) { tfRachisHtml += crItem('PDSLRT', pdslV2+'s', pdslV2>=30?'OK':'Deficit', pdslV2>=30?'ok':'bad'); tfRachisHtml += obsSingle('rf-pdslrt-obs'); }
-  if (rfNotes) tfRachisHtml += crItem('Notes', rfNotes);
+  if (!isNaN(flxV2)) { tfRachisHtml += crItem('Endurance Fléchisseurs Cervicaux', flxV2+'s', flxV2>=39?'Normal':flxV2>=24?'Limite':'Deficit', flxV2>=39?'ok':flxV2>=24?'warn':'bad', ['rf-flx-cerv']); tfRachisHtml += obsSingle('rf-flx-obs'); }
+  if (!isNaN(extV2)) { tfRachisHtml += crItem('Endurance Extenseurs Cervicaux', extV2+'s', extV2>=20?'OK':'Insuffisant', extV2>=20?'ok':'bad', ['rf-ext-cerv']); tfRachisHtml += obsSingle('rf-ext-obs'); }
+  if (!isNaN(latD2) && !isNaN(latG2)) { var latRatio2 = Math.min(latD2,latG2)/Math.max(latD2,latG2)*100; tfRachisHtml += crItem('Endurance Latérale Cervicale', 'D='+latD2+'s   G='+latG2+'s   Ratio='+latRatio2.toFixed(1)+'%', latRatio2>=70?'Symétrie OK':'Asymétrie', latRatio2>=70?'ok':'warn', ['rf-lat-d','rf-lat-g']); tfRachisHtml += obsSingle('rf-lat-obs'); }
+  if (!isNaN(sorV2)) { tfRachisHtml += crItem('Test de Sørensen', sorV2+'s', sorV2>=198?'Facteur protecteur':sorV2>=176?'Zone intermédiaire':'Facteur de risque', sorV2>=198?'ok':sorV2>=176?'warn':'bad', ['rf-sorensen']); tfRachisHtml += obsSingle('rf-sor-obs'); }
+  if (!isNaN(pdslV2)) { tfRachisHtml += crItem('PDSLRT', pdslV2+'s', pdslV2>=30?'OK':'Deficit', pdslV2>=30?'ok':'bad', ['rf-pdslrt']); tfRachisHtml += obsSingle('rf-pdslrt-obs'); }
+  if (rfNotes) tfRachisHtml += crItem('Notes', rfNotes, '', '', ['rf-notes']);
   addSec('5. Tests Fonctionnels - Rachis', tfRachisHtml);
 
   // 6. Points à travailler
@@ -4298,11 +4326,12 @@ function buildCR() {
   // Convertit \n en <br> pour l'affichage HTML des champs texte
   function nl2br(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
 
-  function crItem(key, val, tag, tagClass) {
+  function crItem(key, val, tag, tagClass, fieldIds) {
     if (!val) return '';
     tag = tag || ''; tagClass = tagClass || '';
     var tagHtml = tag ? '<span class="cr-tag ' + tagClass + '">' + tag + '</span>' : '';
-    return '<div class="cr-item"><span class="cr-key">' + key + '</span><span class="cr-val">' + val + '</span>' + tagHtml + '</div>';
+    var cls = (fieldIds && _crIsCarried(fieldIds)) ? ' cr-item--carried' : '';
+    return '<div class="cr-item' + cls + '"><span class="cr-key">' + key + '</span><span class="cr-val">' + val + '</span>' + tagHtml + '</div>';
   }
 
   // 1. Infos patient
@@ -4321,7 +4350,7 @@ function buildCR() {
     var el2 = document.getElementById(infosMap[ii][0]);
     var v2 = el2 ? el2.value : '';
     if (v2 && el2 && el2.type === 'date') { var _dp = v2.split('-'); v2 = _dp[2]+'/'+_dp[1]+'/'+_dp[0]; }
-    if (v2) infosHtml += crItem(infosMap[ii][1], nl2br(v2) + infosMap[ii][2]);
+    if (v2) infosHtml += crItem(infosMap[ii][1], nl2br(v2) + infosMap[ii][2], '', '', [infosMap[ii][0]]);
   }
   // Imageries disponibles
   var imLines = [
