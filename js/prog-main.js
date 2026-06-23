@@ -799,7 +799,7 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
           : ' draggable="true" onclick="event.stopPropagation();_openChipInBuilder(\''+ev.programme_id+'\',\''+dateStr+'\',\''+ev.id+'\')" ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"';
         return '<div class="cal-session-chip" style="background:'+capBg+';color:#fff;cursor:grab;" title="'+escH(nom)+'"'
           + capEvtAttrs + '>'
-          + '<button class="cal-chip-more" ontouchend="event.stopPropagation();event.preventDefault();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')">⋮</button>'
+          + '<button class="cal-chip-more" onclick="event.stopPropagation();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')" ontouchend="event.stopPropagation();event.preventDefault();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')">⋮</button>'
           + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">🏃 '+escH(capLabel.length>14?capLabel.slice(0,14)+'…':capLabel)+painBadge+'</span>'
           + '<button class="cal-chip-del" style="color:rgba(255,255,255,.7)" onclick="event.stopPropagation();removeCalEventCloud(\''+ev.id+'\')">×</button>'
           + '</div>';
@@ -828,7 +828,7 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
           : ' draggable="true" onclick="event.stopPropagation();_openChipInBuilder(\''+ev.programme_id+'\',\''+dateStr+'\',\''+ev.id+'\')" ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"';
         return '<div class="cal-session-chip" style="background:'+hsrBg+';color:#fff;cursor:grab;" title="'+escH(nom)+'"'
           + hsrEvtAttrs + '>'
-          + '<button class="cal-chip-more" ontouchend="event.stopPropagation();event.preventDefault();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')">⋮</button>'
+          + '<button class="cal-chip-more" onclick="event.stopPropagation();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')" ontouchend="event.stopPropagation();event.preventDefault();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')">⋮</button>'
           + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">'+_HSR_ICON+escH(hsrLabel.length>14?hsrLabel.slice(0,14)+'…':hsrLabel)+hsrBadge+'</span>'
           + '<button class="cal-chip-del" style="color:rgba(255,255,255,.7)" onclick="event.stopPropagation();removeCalEventCloud(\''+ev.id+'\')">×</button>'
           + '</div>';
@@ -865,7 +865,7 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
         : ' draggable="true" onclick="event.stopPropagation();_openChipInBuilder(\''+ev.programme_id+'\',\''+dateStr+'\',\''+ev.id+'\')" ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"';
       var chipCursor = _isTouchDevice ? 'pointer' : 'grab';
       var moreBtnColor = phStyle ? 'color:rgba(30,58,95,.7);' : '';
-      var moreBtn = '<button class="cal-chip-more" style="'+moreBtnColor+'" ontouchend="event.stopPropagation();event.preventDefault();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')">⋮</button>';
+      var moreBtn = '<button class="cal-chip-more" style="'+moreBtnColor+'" onclick="event.stopPropagation();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')" ontouchend="event.stopPropagation();event.preventDefault();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')">⋮</button>';
       return '<div id="cal-chip-'+ev.id+'" class="cal-session-chip" style="background:'+chipBg+';color:'+chipColor+';cursor:'+chipCursor+chipExtra+';" title="'+escH(nom)+'"'
         + chipEvtAttrs + '>'
         +moreBtn
@@ -1836,11 +1836,12 @@ function _confirmDeleteNote(onConfirm) {
 
 // _isTouchDevice défini plus haut, avant renderLib()
 
-// ── Touch action sheet (iPad/mobile) ──
+// ── Touch action sheet (iPad/mobile + desktop ⋮) ──
 var _chipTouchMeta   = {};   // evId → {progId, dateStr, nom}
 var _touchSheetData  = null; // données du chip affiché dans l'action sheet
 var _touchSheetJustOpened = false; // garde-fou contre fermeture immédiate au lâcher du doigt
 var _touchMoveMode   = null; // null | {evId, progId, dateStr, duplicate:bool}
+var _planOverrideProgId = null; // progId passé depuis le chip sheet (hors contexte builder)
 var _touchLongTimer  = null;
 var _touchStartXY    = null;
 var _touchDidLong    = false;
@@ -2077,6 +2078,18 @@ function touchSheetDelete(){
         }
       });
   });
+}
+
+function touchSheetSchedule(){
+  if(!_touchSheetData) return;
+  if(!_progPatient){ closeTouchSheet(); alert('Sélectionnez un patient avant de planifier.'); return; }
+  var d = _touchSheetData;
+  closeTouchSheet();
+  _planOverrideProgId = d.progId;
+  var container = document.getElementById('planDatesContainer');
+  container.innerHTML = '';
+  _addPlanDateRow('');
+  document.getElementById('planModal').classList.add('open');
 }
 
 /* ── Modale de confirmation avant suppression d'une séance ── */
@@ -2370,6 +2383,7 @@ function openPlanModal(){
 }
 
 function closePlanModal(){
+  _planOverrideProgId = null;
   document.getElementById('planModal').classList.remove('open');
 }
 
@@ -2395,7 +2409,8 @@ function confirmPlan(){
   if(!dates.length){ alert('Sélectionnez au moins une date.'); return; }
   if(!_progPatient){ alert('Sélectionnez un patient.'); return; }
 
-  if(_currentProgId){ _doPlanDates(dates, _currentProgId); return; }
+  var targetProgId = _planOverrideProgId || _currentProgId;
+  if(targetProgId){ _planOverrideProgId = null; _doPlanDates(dates, targetProgId); return; }
 
   // Pas encore sauvegardé : auto-save d'abord
   if(!_progUid || !_progToken){ alert('Session non disponible. Sélectionnez à nouveau le patient.'); return; }
@@ -3508,8 +3523,8 @@ function _refreshSaveBtn(){
     btn.title = '';
   }
   btn.style.background = '';
-  // "Planifier" uniquement en Contexte C
-  if(planBtn) planBtn.style.display = (isContexteA || isContexteB) ? 'none' : '';
+  // "Planifier" masqué en Contexte A (le bouton save le fait déjà) — visible en B et C
+  if(planBtn) planBtn.style.display = isContexteA ? 'none' : '';
   // Bouton "Mettre à jour template"
   if(updBtn){
     if(_builderFromTemplate){
