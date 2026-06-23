@@ -3346,6 +3346,31 @@ function calcMusc() {
 }
 
 // -- HELPER TESTS SECTIONS (partagé CR Complet + CR Tests) ----
+// Retourne true si on est dans un contexte suivi (plusieurs bilans avec changed_fields)
+function _crInSuiviMode() {
+  if (_bilanIsSuivi && _suiviSnapshot) return true;
+  if (!_allBilans || _allBilans.length < 2) return false;
+  var cf = (_allBilans[0].donnees || {}).changed_fields;
+  return !!(cf && cf.length);
+}
+
+// Retourne la date (dd/mm) du bilan d'origine d'un champ porté
+function _crOriginDate(fieldIds) {
+  if (!fieldIds || !fieldIds.length || !_allBilans || !_allBilans.length) return '';
+  var startIdx = (_bilanIsSuivi && _suiviSnapshot) ? 0 : 1;
+  for (var _oi = startIdx; _oi < _allBilans.length; _oi++) {
+    var _od = _allBilans[_oi].donnees || {};
+    for (var _oj = 0; _oj < fieldIds.length; _oj++) {
+      var _ov = _od[fieldIds[_oj]];
+      if (_ov !== undefined && _ov !== null && String(_ov) !== '') {
+        var _odate = (_allBilans[_oi].date || '').slice(0, 10);
+        return _odate.length >= 10 ? _odate.slice(8, 10) + '/' + _odate.slice(5, 7) : '';
+      }
+    }
+  }
+  return '';
+}
+
 // Retourne true si le champ vient d'un bilan précédent (non remesuré dans le suivi actuel)
 function _crIsCarried(fieldIds) {
   if (!fieldIds || !fieldIds.length) return false;
@@ -3382,8 +3407,15 @@ function _buildAllTestsHtml() {
     if (!val) return '';
     tag = tag || ''; tagClass = tagClass || '';
     var tagHtml = tag ? '<span class="cr-tag ' + tagClass + '">' + tag + '</span>' : '';
-    var cls = (fieldIds && _crIsCarried(fieldIds)) ? ' cr-item--carried' : '';
-    return '<div class="cr-item' + cls + '"><span class="cr-key">' + key + '</span><span class="cr-val">' + val + '</span>' + tagHtml + '</div>';
+    var cls = ''; var dateBadge = '';
+    if (fieldIds && _crInSuiviMode()) {
+      if (_crIsCarried(fieldIds)) {
+        cls = ' cr-item--carried';
+        var _od = _crOriginDate(fieldIds);
+        if (_od) dateBadge = '<span class="cr-date-badge">' + _od + '</span>';
+      } else { cls = ' cr-item--fresh'; }
+    }
+    return '<div class="cr-item' + cls + '"><span class="cr-key">' + key + '</span><span class="cr-val">' + val + '</span>' + tagHtml + dateBadge + '</div>';
   }
 
   // ── Résolution du côté atteint ────────────────────────────────
@@ -4336,8 +4368,15 @@ function buildCR() {
     if (!val) return '';
     tag = tag || ''; tagClass = tagClass || '';
     var tagHtml = tag ? '<span class="cr-tag ' + tagClass + '">' + tag + '</span>' : '';
-    var cls = (fieldIds && _crIsCarried(fieldIds)) ? ' cr-item--carried' : '';
-    return '<div class="cr-item' + cls + '"><span class="cr-key">' + key + '</span><span class="cr-val">' + val + '</span>' + tagHtml + '</div>';
+    var cls = ''; var dateBadge = '';
+    if (fieldIds && _crInSuiviMode()) {
+      if (_crIsCarried(fieldIds)) {
+        cls = ' cr-item--carried';
+        var _od = _crOriginDate(fieldIds);
+        if (_od) dateBadge = '<span class="cr-date-badge">' + _od + '</span>';
+      } else { cls = ' cr-item--fresh'; }
+    }
+    return '<div class="cr-item' + cls + '"><span class="cr-key">' + key + '</span><span class="cr-val">' + val + '</span>' + tagHtml + dateBadge + '</div>';
   }
 
   // 1. Infos patient
