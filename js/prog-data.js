@@ -3261,6 +3261,10 @@ function _extractCardioLoads(seances) {
         if(!isNaN(dt) && dt > 0) duree = dt;
       }
 
+      var km = null;
+      var distVal = parseFloat(bloc.distance);
+      if(!isNaN(distVal) && distVal > 0) km = distVal;
+
       // Première cible numérique valide
       var ciblesArr = isFrac ? (bloc.frac_cibles || []) : (bloc.cibles || []);
       var intensite = null, iType = null;
@@ -3272,10 +3276,11 @@ function _extractCardioLoads(seances) {
       // Agréger par session
       if(!sessionData[groupKey]) sessionData[groupKey] = {};
       if(!sessionData[groupKey][date]) {
-        sessionData[groupKey][date] = { totalDuree: 0, hasDuree: false, intensiteSum: 0, intensiteCount: 0, metricFreq: {} };
+        sessionData[groupKey][date] = { totalDuree: 0, hasDuree: false, totalKm: 0, hasKm: false, intensiteSum: 0, intensiteCount: 0, metricFreq: {} };
       }
       var sd = sessionData[groupKey][date];
       if(duree !== null) { sd.totalDuree += duree; sd.hasDuree = true; }
+      if(km !== null) { sd.totalKm += km; sd.hasKm = true; }
       if(intensite !== null && iType) {
         sd.intensiteSum += intensite;
         sd.intensiteCount++;
@@ -3319,13 +3324,15 @@ function _extractCardioLoads(seances) {
       points.push({
         date:      date,
         duree:     sd.hasDuree ? sd.totalDuree : null,
+        km:        sd.hasKm ? sd.totalKm : null,
         intensite: sd.intensiteCount > 0 ? sd.intensiteSum / sd.intensiteCount : null
       });
     });
 
-    // Nécessite ≥2 points avec durée
+    // Nécessite ≥2 points avec durée OU ≥2 points avec km
     var withDuree = points.filter(function(p){ return p.duree !== null; });
-    if(withDuree.length < 2) return;
+    var withKm    = points.filter(function(p){ return p.km !== null; });
+    if(withDuree.length < 2 && withKm.length < 2) return;
 
     var parts = groupKey.split('|');
     var sport = parts[0], effortType = parts[1];
@@ -3437,10 +3444,15 @@ function _buildPevoDureeChart(pts, chartId, nrsPts) {
 }
 
 /* SVG courbe cardio — axe gauche : durée (vert), axe droit : intensité dominante (orange). */
-function _buildPevoCardioChart(pts, chartId, intensiteType) {
+function _buildPevoCardioChart(pts, chartId, intensiteType, useKm) {
   var dureePts    = (pts || []).filter(function(p){ return p.duree !== null; });
+  var kmPts       = (pts || []).filter(function(p){ return p.km !== null; });
   var intensitePts = intensiteType ? (pts || []).filter(function(p){ return p.intensite !== null; }) : [];
-  if(dureePts.length < 2) return '';
+  if(!useKm) useKm = dureePts.length < 2 && kmPts.length >= 2;
+  var primaryPts  = useKm ? kmPts : dureePts;
+  if(primaryPts.length < 2) return '';
+  function fmtPrimary(v) { return useKm ? v.toFixed(1) + ' km' : _formatDureeMin(v); }
+  function getPrimaryVal(p) { return useKm ? p.km : p.duree; }
 
   var hasInt = intensitePts.length >= 2;
   var VW = 500, VH = 115;
@@ -3450,10 +3462,10 @@ function _buildPevoCardioChart(pts, chartId, intensiteType) {
 
   var uid = 'cc' + String(chartId).replace(/[^a-z0-9]/gi, '');
 
-  // Échelles durée (axe gauche)
-  var dureeVals = dureePts.map(function(p){ return p.duree; });
-  var minD = Math.min.apply(null, dureeVals), maxD = Math.max.apply(null, dureeVals);
-  var padD = Math.max(0.5, (maxD - minD) * 0.18);
+  // Échelles axe gauche (durée ou km)
+  var primaryVals = primaryPts.map(function(p){ return getPrimaryVal(p); });
+  var minD = Math.min.apply(null, primaryVals), maxD = Math.max.apply(null, primaryVals);
+  var padD = Math.max(useKm ? 0.1 : 0.5, (maxD - minD) * 0.18);
   minD = Math.max(0, minD - padD); maxD = maxD + padD;
   var rangeD = maxD - minD || 1;
 
@@ -3486,13 +3498,13 @@ function _buildPevoCardioChart(pts, chartId, intensiteType) {
       : '')
     + '</defs>';
 
-  // Grille + axe gauche (durée)
-  var stepD = Math.max(1, Math.ceil((maxD - minD) / 4));
-  for(var gv = Math.floor(minD); gv <= maxD + stepD; gv += stepD) {
+  // Grille + axe gauche (durée ou km)
+  var stepD = Math.max(useKm ? 0.1 : 1, (maxD - minD) / 4);
+  for(var gv = Math.floor(minD * (useKm ? 10 : 1)) / (useKm ? 10 : 1); gv <= maxD + stepD; gv += stepD) {
     var gy = yD(gv);
     if(gy < PAD.top || gy > VH - PAD.bottom + 2) continue;
     html += '<line x1="'+PAD.left+'" y1="'+gy.toFixed(1)+'" x2="'+(VW-PAD.right)+'" y2="'+gy.toFixed(1)+'" stroke="#EBEBEB" stroke-width="1" stroke-dasharray="3,3"/>';
-    html += '<text x="'+(PAD.left-5)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="end" font-size="9" fill="'+CG+'">'+_formatDureeMin(Math.max(0, gv))+'</text>';
+    html += '<text x="'+(PAD.left-5)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="end" font-size="9" fill="'+CG+'">'+fmtPrimary(Math.max(0, gv))+'</text>';
   }
 
   // Axe droit (intensité)
@@ -3521,8 +3533,8 @@ function _buildPevoCardioChart(pts, chartId, intensiteType) {
   });
   html += '<line x1="'+PAD.left+'" y1="'+(VH-PAD.bottom)+'" x2="'+(VW-PAD.right)+'" y2="'+(VH-PAD.bottom)+'" stroke="#E8E6E1" stroke-width="1"/>';
 
-  // ── Courbe durée (vert, trait plein) ──
-  var vpD = dureePts.map(function(p){ return {x: xOf(p.date), y: yD(p.duree), val: p.duree}; });
+  // ── Courbe durée ou km (vert, trait plein) ──
+  var vpD = primaryPts.map(function(p){ return {x: xOf(p.date), y: yD(getPrimaryVal(p)), val: getPrimaryVal(p)}; });
   var lpD = 'M '+vpD[0].x.toFixed(1)+','+vpD[0].y.toFixed(1);
   for(var i = 1; i < vpD.length; i++) { var cxD = (vpD[i-1].x + vpD[i].x) / 2; lpD += ' C '+cxD.toFixed(1)+','+vpD[i-1].y.toFixed(1)+' '+cxD.toFixed(1)+','+vpD[i].y.toFixed(1)+' '+vpD[i].x.toFixed(1)+','+vpD[i].y.toFixed(1); }
   var byD = VH - PAD.bottom;
@@ -3530,7 +3542,7 @@ function _buildPevoCardioChart(pts, chartId, intensiteType) {
   html += '<path data-line="duree" d="'+lpD+'" fill="none" stroke="'+CG+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
   vpD.forEach(function(p, i) {
     var isFirst = i === 0, isLast = i === vpD.length - 1;
-    var lbl = _formatDureeMin(p.val);
+    var lbl = fmtPrimary(p.val);
     if(isLast) {
       html += '<circle data-line="duree" cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="6" fill="'+CG+'" opacity="0.18"/>';
       html += '<circle data-line="duree" cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4" fill="'+CG+'"/>';
@@ -4022,13 +4034,17 @@ function _renderPevoCharts(exoData, selectedKeys) {
       var pts = _pevoFilterPts(grp.points);
       if(!pts || pts.length < 2) return;
 
-      // KPI durée
+      // KPI durée ou km
       var dPts = pts.filter(function(p){ return p.duree !== null; });
-      var dFirst = dPts.length ? dPts[0].duree : null;
-      var dLast  = dPts.length ? dPts[dPts.length - 1].duree : null;
+      var kPts = pts.filter(function(p){ return p.km !== null; });
+      var useKmKpi = dPts.length < 2 && kPts.length >= 2;
+      var primaryKpiPts = useKmKpi ? kPts : dPts;
+      var dFirst = primaryKpiPts.length ? (useKmKpi ? primaryKpiPts[0].km : primaryKpiPts[0].duree) : null;
+      var dLast  = primaryKpiPts.length ? (useKmKpi ? primaryKpiPts[primaryKpiPts.length - 1].km : primaryKpiPts[primaryKpiPts.length - 1].duree) : null;
       var dDelta = (dFirst !== null && dLast !== null) ? dLast - dFirst : null;
       var dCls   = dDelta === null || dDelta === 0 ? 'neutral' : (dDelta > 0 ? 'pos' : 'neg');
       var dSign  = dDelta !== null ? (dDelta >= 0 ? '+' : '-') : '';
+      function fmtKpi(v) { return useKmKpi ? v.toFixed(1) + ' km' : _formatDureeMin(v); }
 
       // KPI intensité
       var iPts = iType ? pts.filter(function(p){ return p.intensite !== null; }) : [];
@@ -4038,21 +4054,22 @@ function _renderPevoCharts(exoData, selectedKeys) {
       var iCls   = iDelta === null || iDelta === 0 ? 'neutral' : (iDelta > 0 ? 'pos' : 'neg');
       var hasIntKpi = iFirst !== null && iLast !== null;
 
-      var svg = _buildPevoCardioChart(pts, _pevoChartCtr, iType);
+      var svg = _buildPevoCardioChart(pts, _pevoChartCtr, iType, useKmKpi);
       if(!svg) return;
 
       // Libellé du type d'intensité
       var iLabel = iType === 'zone FC' ? 'Zone FC' : iType === 'RPE' ? 'RPE' : iType === 'watts' ? 'Watts' : iType === 'bpm' ? 'FC' : iType === '%FC' ? '% FC' : iType === 'allure' ? 'Allure' : (iType || '');
 
-      // Ligne KPI durée
+      // Ligne KPI durée ou km
       var kpisHtml = '';
       if(dFirst !== null) {
+        var kpiIcon = useKmKpi ? '📏 Distance :' : '⏱ Durée :';
         kpisHtml += '<div class="pevo-card-kpis">'
-          +'<span style="font-size:.67rem;color:#059669;font-weight:700;white-space:nowrap;margin-right:2px">⏱ Durée :</span>'
-          +'<span class="pevo-kpi-neutral">'+_formatDureeMin(dFirst)+'</span>'
+          +'<span style="font-size:.67rem;color:#059669;font-weight:700;white-space:nowrap;margin-right:2px">'+kpiIcon+'</span>'
+          +'<span class="pevo-kpi-neutral">'+fmtKpi(dFirst)+'</span>'
           +'<span class="pevo-kpi-neutral">→</span>'
-          +'<span class="pevo-kpi-strong">'+_formatDureeMin(dLast)+'</span>'
-          +(dDelta !== null ? '<span class="pevo-kpi '+dCls+'">'+dSign+_formatDureeMin(Math.abs(dDelta))+'</span>' : '')
+          +'<span class="pevo-kpi-strong">'+fmtKpi(dLast)+'</span>'
+          +(dDelta !== null ? '<span class="pevo-kpi '+dCls+'">'+dSign+fmtKpi(Math.abs(dDelta))+'</span>' : '')
           +'</div>';
       }
       // Ligne KPI intensité
@@ -4070,8 +4087,9 @@ function _renderPevoCharts(exoData, selectedKeys) {
       var toggleHtml = '';
       if(hasIntKpi) {
         var _cctr = _pevoChartCtr;
+        var primaryLabel = useKmKpi ? 'Distance' : 'Durée';
         toggleHtml = '<div class="pevo-pill-toggles">'
-          +'<button class="pevo-line-pill active" style="color:#059669;border-color:#059669" onclick="togglePevoPill(this,\'pevo'+_cctr+'\',\'duree\')">● Durée</button>'
+          +'<button class="pevo-line-pill active" style="color:#059669;border-color:#059669" onclick="togglePevoPill(this,\'pevo'+_cctr+'\',\'duree\')">● '+primaryLabel+'</button>'
           +'<button class="pevo-line-pill active" style="color:#D97706;border-color:#D97706" onclick="togglePevoPill(this,\'pevo'+_cctr+'\',\'intensite\')">● '+escH(iLabel)+'</button>'
           +'</div>';
       }
