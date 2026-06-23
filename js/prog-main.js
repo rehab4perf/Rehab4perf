@@ -2290,10 +2290,7 @@ function _calDuplicateEvent(progId, targetDate){
   .then(function(data){
     var src = Array.isArray(data) ? data[0] : data;
     if(!src){ alert('Programme source introuvable.'); return; }
-    // Nom = patient (pas le nom source) — la date est visible via J+ dans le chip
-    var nomCopie = _progPatient
-      ? ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim() || 'Programme'
-      : 'Programme';
+    var nomCopie = src.nom || 'Programme';
     var today = new Date().toISOString().split('T')[0];
     _fetchRetry(SUPA_URL_P+'/rest/v1/programmes', {
       method:'POST', headers:_sbHeaders(),
