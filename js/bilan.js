@@ -2052,6 +2052,8 @@ function saveBilan(){
             if(!r2.error && r2.data && r2.data.length){
               _allBilans = r2.data;
               _renderEvolutionPage();
+              var _activePage = document.querySelector('.page.active');
+              if(_activePage && _activePage.id === 'page-cr') buildCR();
             }
           });
       }).catch(function(err){
@@ -2109,6 +2111,8 @@ function saveBilan(){
               document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
               if(_prevDonnees) _renderDeltas(_prevDonnees);
               _renderEvolutionPage();
+              var _activePage = document.querySelector('.page.active');
+              if(_activePage && _activePage.id === 'page-cr') buildCR();
             }
           });
       });
