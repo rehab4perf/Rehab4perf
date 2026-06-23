@@ -4093,7 +4093,9 @@ function _openKebab(e, type, id, nom, ownerId){
     var _item = _arr.find(function(x){ return String(x.id)===String(id); });
     var _pub = _item && _item.is_public;
     items.splice(items.length - 1, 0, {
-      label: _pub ? '🔒  Rendre privé' : '🌐  Rendre public',
+      label: _pub
+        ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:5px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>  Rendre privé'
+        : '<svg width="14" height="14" viewBox="0 0 512 512" fill="none" stroke="currentColor" stroke-width="30" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:5px"><circle cx="256" cy="256" r="241"/><line x1="15" y1="256" x2="497" y2="256"/><line x1="256" y1="15" x2="256" y2="497"/><path d="M256,497 C186.631,497 130.396,389.101 130.396,256 C130.396,122.899 186.631,15 256,15"/><path d="M256,15 C325.369,15 381.604,122.899 381.604,256 C381.604,389.101 325.369,497 256,497"/><path d="M437.178,97.076 C393.008,123.299 328.213,139.852 256,139.852 C183.787,139.852 118.993,123.299 74.824,97.076"/><path d="M74.823,414.924 C118.993,388.701 183.788,372.148 256,372.148 C328.214,372.148 393.008,388.701 437.177,414.924"/></svg>  Rendre public',
       action: (function(t,i,p){ return function(){ _togglePublic(t,i,p); }; })(type, id, !_pub)
     });
   }
