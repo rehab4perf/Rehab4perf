@@ -799,7 +799,7 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
           : ' draggable="true" onclick="event.stopPropagation();_openChipInBuilder(\''+ev.programme_id+'\',\''+dateStr+'\',\''+ev.id+'\')" ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"';
         return '<div class="cal-session-chip" style="background:'+capBg+';color:#fff;cursor:grab;" title="'+escH(nom)+'"'
           + capEvtAttrs + '>'
-          + '<button class="cal-chip-more" onclick="event.stopPropagation();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')" ontouchend="event.stopPropagation();event.preventDefault();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')">⋮</button>'
+          + '<button class="cal-chip-more" onclick="event.stopPropagation();_showChipDropdown(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')" ontouchend="event.stopPropagation();event.preventDefault();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')">⋮</button>'
           + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">🏃 '+escH(capLabel.length>14?capLabel.slice(0,14)+'…':capLabel)+painBadge+'</span>'
           + '<button class="cal-chip-del" style="color:rgba(255,255,255,.7)" onclick="event.stopPropagation();removeCalEventCloud(\''+ev.id+'\')">×</button>'
           + '</div>';
@@ -828,7 +828,7 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
           : ' draggable="true" onclick="event.stopPropagation();_openChipInBuilder(\''+ev.programme_id+'\',\''+dateStr+'\',\''+ev.id+'\')" ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"';
         return '<div class="cal-session-chip" style="background:'+hsrBg+';color:#fff;cursor:grab;" title="'+escH(nom)+'"'
           + hsrEvtAttrs + '>'
-          + '<button class="cal-chip-more" onclick="event.stopPropagation();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')" ontouchend="event.stopPropagation();event.preventDefault();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')">⋮</button>'
+          + '<button class="cal-chip-more" onclick="event.stopPropagation();_showChipDropdown(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')" ontouchend="event.stopPropagation();event.preventDefault();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')">⋮</button>'
           + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">'+_HSR_ICON+escH(hsrLabel.length>14?hsrLabel.slice(0,14)+'…':hsrLabel)+hsrBadge+'</span>'
           + '<button class="cal-chip-del" style="color:rgba(255,255,255,.7)" onclick="event.stopPropagation();removeCalEventCloud(\''+ev.id+'\')">×</button>'
           + '</div>';
@@ -865,7 +865,7 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
         : ' draggable="true" onclick="event.stopPropagation();_openChipInBuilder(\''+ev.programme_id+'\',\''+dateStr+'\',\''+ev.id+'\')" ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"';
       var chipCursor = _isTouchDevice ? 'pointer' : 'grab';
       var moreBtnColor = phStyle ? 'color:rgba(30,58,95,.7);' : '';
-      var moreBtn = '<button class="cal-chip-more" style="'+moreBtnColor+'" onclick="event.stopPropagation();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')" ontouchend="event.stopPropagation();event.preventDefault();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')">⋮</button>';
+      var moreBtn = '<button class="cal-chip-more" style="'+moreBtnColor+'" onclick="event.stopPropagation();_showChipDropdown(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')" ontouchend="event.stopPropagation();event.preventDefault();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')">⋮</button>';
       return '<div id="cal-chip-'+ev.id+'" class="cal-session-chip" style="background:'+chipBg+';color:'+chipColor+';cursor:'+chipCursor+chipExtra+';" title="'+escH(nom)+'"'
         + chipEvtAttrs + '>'
         +moreBtn
@@ -913,8 +913,13 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
       +'<button class="cal-note-chip-del" onclick="event.stopPropagation();_confirmDeleteNote(function(){_deleteCalNote(\''+note.id+'\');})">×</button>'
       +'</div>');
   });
-  // Pas de cap en mode sélection ou si explicitement demandé
-  if (_calSelMode || _skipCap || allChips.length <= 2) return allChips.join('');
+  // Mode planification agenda — chip pending pour les jours sélectionnés
+  if(_planScheduleMode && _planScheduleMode.selectedDates[dateStr]){
+    var _pNom = _planScheduleMode.progNom || 'Séance';
+    allChips.unshift('<div class="cal-plan-pending-chip" onclick="event.stopPropagation();_planScheduleDayToggle(\''+dateStr+'\')">+ '+escH(_pNom.length>14?_pNom.slice(0,14)+'…':_pNom)+'</div>');
+  }
+  // Pas de cap en mode sélection agenda/séance ou si explicitement demandé
+  if (_calSelMode || _planScheduleMode || _skipCap || allChips.length <= 2) return allChips.join('');
   // Cap à 2 chips + badge overflow
   var _ovfId = 'cal-ovf-' + dateStr.replace(/-/g,'');
   var _ovfN  = allChips.length - 2;
@@ -1051,6 +1056,8 @@ function _renderCalendarUI() {
 }
 
 function openCalPicker(dateStr) {
+  // Mode planification agenda — toggle le jour sélectionné
+  if(_planScheduleMode){ _planScheduleDayToggle(dateStr); return; }
   // Mode déplacement/duplication touch notes
   if(_noteTouchMoveMode){
     var dn = _noteTouchMoveMode; _cancelNoteTouchMove();
@@ -1841,7 +1848,9 @@ var _chipTouchMeta   = {};   // evId → {progId, dateStr, nom}
 var _touchSheetData  = null; // données du chip affiché dans l'action sheet
 var _touchSheetJustOpened = false; // garde-fou contre fermeture immédiate au lâcher du doigt
 var _touchMoveMode   = null; // null | {evId, progId, dateStr, duplicate:bool}
-var _planOverrideProgId = null; // progId passé depuis le chip sheet (hors contexte builder)
+var _planOverrideProgId  = null; // progId passé depuis le chip sheet (hors contexte builder)
+var _planOverrideProgNom = '';   // nom de séance associé (pour le mode agenda)
+var _planScheduleMode    = null; // null | {progId, progNom, selectedDates:{}}  — mode sélection agenda
 var _touchLongTimer  = null;
 var _touchStartXY    = null;
 var _touchDidLong    = false;
@@ -2085,7 +2094,8 @@ function touchSheetSchedule(){
   if(!_progPatient){ closeTouchSheet(); alert('Sélectionnez un patient avant de planifier.'); return; }
   var d = _touchSheetData;
   closeTouchSheet();
-  _planOverrideProgId = d.progId;
+  _planOverrideProgId  = d.progId;
+  _planOverrideProgNom = d.nom || '';
   var container = document.getElementById('planDatesContainer');
   container.innerHTML = '';
   _addPlanDateRow('');
@@ -2383,7 +2393,8 @@ function openPlanModal(){
 }
 
 function closePlanModal(){
-  _planOverrideProgId = null;
+  _planOverrideProgId  = null;
+  _planOverrideProgNom = '';
   document.getElementById('planModal').classList.remove('open');
 }
 
@@ -4141,6 +4152,117 @@ function _openKebab(e, type, id, nom, ownerId){
 function _closeKebab(){
   var el = document.getElementById('_sidebarKebab');
   if(el) el.remove();
+}
+
+// ── Dropdown chip (desktop ⋮) ────────────────────────────────────────────────
+function _showChipDropdown(e, evId, progId, dateStr, nom){
+  e.stopPropagation();
+  _closeChipDrop();
+  _touchSheetData = { evId: evId, progId: progId, dateStr: dateStr, nom: nom };
+
+  var btn  = e.currentTarget;
+  var rect = btn.getBoundingClientRect();
+  var drop = document.createElement('div');
+  drop.className = 'stmpl-kdrop';
+  drop.id = '_chipKebabDrop';
+
+  var items = [
+    { label: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Ouvrir / modifier', action: function(){ touchSheetOpen(); } },
+    { label: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><polyline points="5 9 2 12 5 15"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/></svg>Déplacer vers…', action: function(){ touchSheetMove(); } },
+    { label: '<svg width="13" height="13" viewBox="0 0 480 480" fill="currentColor" style="vertical-align:middle;margin-right:6px"><path d="m440 0h-336c-22.082031.0273438-39.972656 17.917969-40 40v24h-24c-22.082031.027344-39.9726562 17.917969-40 40v336c.0273438 22.082031 17.917969 39.972656 40 40h336c22.082031-.027344 39.972656-17.917969 40-40v-24h24c22.082031-.027344 39.972656-17.917969 40-40v-336c-.027344-22.082031-17.917969-39.9726562-40-40zm-40 440c0 13.253906-10.746094 24-24 24h-336c-13.253906 0-24-10.746094-24-24v-336c0-13.253906 10.746094-24 24-24h336c13.253906 0 24 10.746094 24 24zm64-64c0 13.253906-10.746094 24-24 24h-24v-296c-.027344-22.082031-17.917969-39.972656-40-40h-296v-24c0-13.253906 10.746094-24 24-24h336c13.253906 0 24 10.746094 24 24zm0 0"/><path d="m296 264h-80v-80c0-4.417969-3.582031-8-8-8s-8 3.582031-8 8v80h-80c-4.417969 0-8 3.582031-8 8s3.582031 8 8 8h80v80c0 4.417969 3.582031 8 8 8s8-3.582031 8-8v-80h80c4.417969 0 8-3.582031 8-8s-3.582031-8-8-8zm0 0"/></svg>Dupliquer vers…', action: function(){ touchSheetDuplicate(); } },
+    { label: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Planifier sur d\'autres dates', action: function(){ touchSheetSchedule(); } },
+    { label: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="14" x2="8" y2="14"/><line x1="12" y1="14" x2="12" y2="14"/><line x1="16" y1="14" x2="16" y2="14"/></svg>Sélectionner sur l\'agenda', action: function(){ _switchToCalendarPlanMode(); } },
+    { label: '<svg width="13" height="13" viewBox="-40 0 427 427.00131" fill="currentColor" style="vertical-align:middle;margin-right:6px"><path d="m232.398438 154.703125c-5.523438 0-10 4.476563-10 10v189c0 5.519531 4.476562 10 10 10 5.523437 0 10-4.480469 10-10v-189c0-5.523437-4.476563-10-10-10zm0 0"/><path d="m114.398438 154.703125c-5.523438 0-10 4.476563-10 10v189c0 5.519531 4.476562 10 10 10 5.523437 0 10-4.480469 10-10v-189c0-5.523437-4.476563-10-10-10zm0 0"/><path d="m28.398438 127.121094v246.378906c0 14.5625 5.339843 28.238281 14.667968 38.050781 9.285156 9.839844 22.207032 15.425781 35.730469 15.449219h189.203125c13.527344-.023438 26.449219-5.609375 35.730469-15.449219 9.328125-9.8125 14.667969-23.488281 14.667969-38.050781v-246.378906c18.542968-4.921875 30.558593-22.835938 28.078124-41.863282-2.484374-19.023437-18.691406-33.253906-37.878906-33.257812h-51.199218v-12.5c.058593-10.511719-4.097657-20.605469-11.539063-28.03125-7.441406-7.421875-17.550781-11.5546875-28.0625-11.46875h-88.796875c-10.511719-.0859375-20.621094 4.046875-28.0625 11.46875-7.441406 7.425781-11.597656 17.519531-11.539062 28.03125v12.5h-51.199219c-19.1875.003906-35.394531 14.234375-37.878907 33.257812-2.480468 19.027344 9.535157 36.941407 28.078126 41.863282zm239.601562 279.878906h-189.203125c-17.097656 0-30.398437-14.6875-30.398437-33.5v-245.5h250v245.5c0 18.8125-13.300782 33.5-30.398438 33.5zm-158.601562-367.5c-.066407-5.207031 1.980468-10.21875 5.675781-13.894531 3.691406-3.675781 8.714843-5.695313 13.925781-5.605469h88.796875c5.210937-.089844 10.234375 1.929688 13.925781 5.605469 3.695313 3.671875 5.742188 8.6875 5.675782 13.894531v12.5h-128zm-71.199219 32.5h270.398437c9.941406 0 18 8.058594 18 18s-8.058594 18-18 18h-270.398437c-9.941407 0-18-8.058594-18-18s8.058593-18 18-18zm0 0"/><path d="m173.398438 154.703125c-5.523438 0-10 4.476563-10 10v189c0 5.519531 4.476562 10 10 10 5.523437 0 10-4.480469 10-10v-189c0-5.523437-4.476563-10-10-10zm0 0"/></svg>Supprimer', action: function(){ touchSheetDelete(); }, danger: true }
+  ];
+
+  items.forEach(function(item){
+    var b = document.createElement('button');
+    b.className = 'stmpl-kdrop-item' + (item.danger ? ' danger' : '');
+    b.innerHTML = item.label;
+    b.onclick = function(){ _closeChipDrop(); item.action(); };
+    drop.appendChild(b);
+  });
+
+  document.body.appendChild(drop);
+
+  var left = rect.right - drop.offsetWidth;
+  if(left < 4) left = 4;
+  var top = rect.bottom + 4;
+  if(top + 220 > window.innerHeight) top = rect.top - 224;
+  drop.style.left = left + 'px';
+  drop.style.top  = top  + 'px';
+
+  setTimeout(function(){
+    document.addEventListener('click', _closeChipDrop, { once: true, capture: true });
+  }, 0);
+}
+
+function _closeChipDrop(){
+  var el = document.getElementById('_chipKebabDrop');
+  if(el) el.remove();
+}
+
+// ── Mode planification agenda ─────────────────────────────────────────────────
+function _openPlanScheduleMode(progId, nom){
+  _planScheduleMode = { progId: progId, progNom: nom, selectedDates: {} };
+  _updatePlanScheduleBanner();
+  renderCalendar();
+}
+
+function _planScheduleDayToggle(dateStr){
+  if(!_planScheduleMode) return;
+  if(_planScheduleMode.selectedDates[dateStr]){
+    delete _planScheduleMode.selectedDates[dateStr];
+  } else {
+    _planScheduleMode.selectedDates[dateStr] = true;
+  }
+  _updatePlanScheduleBanner();
+  renderCalendar();
+}
+
+function _updatePlanScheduleBanner(){
+  var banner = document.getElementById('planScheduleBanner');
+  if(!banner) return;
+  var nomEl    = document.getElementById('planScheduleBannerNom');
+  var countEl  = document.getElementById('planScheduleBannerCount');
+  var confirmBtn = document.getElementById('planScheduleConfirmBtn');
+  var n = _planScheduleMode ? Object.keys(_planScheduleMode.selectedDates).length : 0;
+  if(nomEl)    nomEl.textContent  = _planScheduleMode ? (_planScheduleMode.progNom || 'Séance') : '';
+  if(countEl)  countEl.textContent = n === 0 ? 'Aucune date' : n + ' jour' + (n > 1 ? 's' : '') + ' sélectionné' + (n > 1 ? 's' : '');
+  if(confirmBtn) confirmBtn.disabled = n === 0;
+  banner.style.display = _planScheduleMode ? 'flex' : 'none';
+}
+
+function _confirmPlanSchedule(){
+  if(!_planScheduleMode) return;
+  var dates  = Object.keys(_planScheduleMode.selectedDates);
+  if(!dates.length){ alert('Sélectionnez au moins un jour sur l\'agenda.'); return; }
+  var progId = _planScheduleMode.progId;
+  _cancelPlanSchedule();
+  _doPlanDates(dates, progId);
+}
+
+function _cancelPlanSchedule(){
+  _planScheduleMode = null;
+  _updatePlanScheduleBanner();
+  renderCalendar();
+}
+
+function _switchToCalendarPlanMode(){
+  var progId, nom;
+  if(_touchSheetData){
+    progId = _touchSheetData.progId;
+    nom    = _touchSheetData.nom;
+    closeTouchSheet();
+  } else {
+    progId = _planOverrideProgId || _currentProgId;
+    nom    = _planOverrideProgNom || (document.getElementById('patientName')||{}).value || 'Séance';
+    _planOverrideProgId  = null;
+    _planOverrideProgNom = '';
+    closePlanModal();
+  }
+  if(!progId){ alert('Sauvegardez d\'abord la séance avant de planifier sur l\'agenda.'); return; }
+  _openPlanScheduleMode(progId, nom);
 }
 
 // Duplication template depuis la sidebar (sans besoin que le template soit chargé)

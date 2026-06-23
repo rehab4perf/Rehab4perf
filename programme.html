@@ -1635,6 +1635,40 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   cursor:pointer; font-family:inherit; white-space:nowrap; flex-shrink:0;
 }
 
+/* ── PLAN SCHEDULE BANNER ── */
+#planScheduleBanner {
+  position:fixed; bottom:68px; left:50%; transform:translateX(-50%);
+  background:var(--navy); color:#fff; border-radius:14px; padding:11px 18px;
+  display:none; align-items:center; gap:10px; z-index:8500;
+  font-size:.84rem; font-weight:600; box-shadow:0 4px 24px rgba(0,0,0,.3);
+  white-space:nowrap; max-width:94vw;
+}
+#planScheduleBanner button {
+  background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.4);
+  color:#fff; border-radius:8px; padding:5px 14px; font-size:.8rem;
+  cursor:pointer; font-family:inherit; white-space:nowrap; flex-shrink:0;
+}
+#planScheduleBanner #planScheduleConfirmBtn {
+  background:#059669; border-color:#059669;
+}
+#planScheduleBanner #planScheduleConfirmBtn:disabled {
+  opacity:.45; cursor:default;
+}
+#planScheduleBannerNom {
+  max-width:140px; overflow:hidden; text-overflow:ellipsis; flex-shrink:1;
+}
+#planScheduleBannerCount { opacity:.72; font-size:.78rem; flex-shrink:0; }
+
+/* ── PENDING CHIP AGENDA ── */
+.cal-plan-pending-chip {
+  display:flex; align-items:center; gap:3px;
+  background:rgba(5,150,105,.13); border:2px dashed #059669; color:#059669;
+  border-radius:6px; padding:2px 7px; font-size:.68rem; font-weight:700;
+  cursor:pointer; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;
+  line-height:1.4;
+}
+.cal-plan-pending-chip:hover { background:rgba(5,150,105,.22); }
+
 /* ── PICKER CALENDRIER ── */
 .cal-picker-overlay {
   position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:300;
@@ -2298,6 +2332,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
     </div>
     <div class="plan-modal-footer">
       <button class="btn" onclick="closePlanModal()">Annuler</button>
+      <button class="btn" onclick="_switchToCalendarPlanMode()" title="Choisir les dates directement sur l'agenda" style="white-space:nowrap;">📅 Sur l'agenda</button>
       <button class="btn btn-primary" id="planConfirmBtn" onclick="confirmPlan()"><svg style="vertical-align:middle;margin-right:4px" width="16" height="16" fill="currentColor" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="M452,311.145V75c0-24.813-20.187-45-45-45h-15V15c0-8.284-6.716-15-15-15s-15,6.716-15,15v15h-60V15c0-8.284-6.716-15-15-15s-15,6.716-15,15v15h-92V15c0-8.284-6.716-15-15-15s-15,6.716-15,15v15H90V15c0-8.284-6.716-15-15-15S60,6.716,60,15v15H45C20.187,30,0,50.187,0,75v331c0,24.813,20.187,45,45,45h266.946c16.795,36.01,53.085,61,95.054,61c57.897,0,105-47.551,105-106C512,364.198,487.443,328.027,452,311.145z M30,75c0-8.271,6.729-15,15-15h15v15c0,8.284,6.716,15,15,15s15-6.716,15-15V60h60v15c0,8.284,6.716,15,15,15s15-6.716,15-15V60h92v15c0,8.284,6.716,15,15,15s15-6.716,15-15V60h60v15c0,8.284,6.716,15,15,15s15-6.716,15-15V60h15c8.271,0,15,6.729,15,15v46H30V75z M303.056,421H45c-8.271,0-15-6.729-15-15V151h392v151.076c-4.901-0.704-9.907-1.076-15-1.076c-57.897,0-105,47.103-105,105C302,411.092,302.365,416.098,303.056,421z M407,482c-41.355,0-75-34.093-75-76c0-41.355,33.645-75,75-75c41.355,0,75,33.645,75,75C482,447.907,448.355,482,407,482z"/><path d="M437,391h-15v-15c0-8.284-6.716-15-15-15s-15,6.716-15,15v30c0,8.284,6.716,15,15,15h30c8.284,0,15-6.716,15-15S445.284,391,437,391z"/><path d="M105,181H75c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S113.284,181,105,181z"/><path d="M196,181h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S204.284,181,196,181z"/><path d="M287,181h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S295.284,181,287,181z"/><path d="M377,181h-30c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S385.284,181,377,181z"/><path d="M105,241H75c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S113.284,241,105,241z"/><path d="M196,241h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S204.284,241,196,241z"/><path d="M287,241h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S295.284,241,287,241z"/><path d="M377,241h-30c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S385.284,241,377,241z"/><path d="M105,301H75c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S113.284,301,105,301z"/><path d="M196,301h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S204.284,301,196,301z"/><path d="M287,301h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S295.284,301,287,301z"/><path d="M105,361H75c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S113.284,361,105,361z"/><path d="M196,361h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S204.284,361,196,361z"/><path d="M287,361h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S295.284,361,287,361z"/></svg>Planifier</button>
     </div>
   </div>
@@ -2386,6 +2421,15 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 <div id="touchMoveBanner">
   <span id="touchMoveBannerTxt">↔️ Tapez sur le jour de destination</span>
   <button onclick="_cancelTouchMove()">Annuler</button>
+</div>
+
+<!-- Bannière mode planification agenda -->
+<div id="planScheduleBanner">
+  <span>📅</span>
+  <span id="planScheduleBannerNom">Séance</span>
+  <span id="planScheduleBannerCount">Aucune date</span>
+  <button id="planScheduleConfirmBtn" onclick="_confirmPlanSchedule()" disabled>Confirmer</button>
+  <button onclick="_cancelPlanSchedule()">Annuler</button>
 </div>
 
 <!-- Export modal -->
