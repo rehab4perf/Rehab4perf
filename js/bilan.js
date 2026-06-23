@@ -3033,7 +3033,7 @@ function updateAll() {
 
   // Headers for each page
   const hdrTxt = [fullName, date ? formatDate(date) : null].filter(Boolean).join(' - ');
-  ['epaule','coude','main','rachis','hanche','genou','pied','fonc-mi','fonc-ms','fonc-rachis','musc'].forEach(function(p){
+  ['epaule','coude','main','rachis','rachis-cerv','rachis-thor','rachis-lomb','hanche','genou','pied','fonc-mi','fonc-ms','fonc-rachis','musc'].forEach(function(p){
     var el = document.getElementById('hdr-' + p);
     if(!el) return;
     var coteStr = getCoteForHdr(p);
