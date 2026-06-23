@@ -4859,7 +4859,7 @@ var PROTOCOLS_REF = [
         id: 'p1',
         name: 'Phase 1 — Post-opératoire immédiat',
         weeks: '',
-        color: 'var(--accent-ll)',
+        color: '#EFF6FF',
         borderColor: '#3B82F6',
         objectives: [
           'Contrôle de la douleur et réduction de l\'épanchement (genou sec)',
@@ -4961,7 +4961,7 @@ var PROTOCOLS_REF = [
         id: 'p1',
         name: 'Phase 1 — Immobilisation & Protection',
         weeks: 'S0 → S6',
-        color: 'var(--accent-ll)',
+        color: '#EFF6FF',
         borderColor: '#3B82F6',
         objectives: [
           'Protéger l\'épaule post-chirurgicale (transfert coracoïdien)',
@@ -5133,7 +5133,7 @@ var PROTOCOLS_REF = [
       {
         id: 'anterieur',
         label: 'Antérieur',
-        color: 'var(--accent-ll)',
+        color: '#EFF6FF',
         borderColor: '#3B82F6',
         blocs: [
           { id: '_tj9zmz4', title: 'Test', exos: [
@@ -5255,7 +5255,7 @@ var PROTOCOLS_REF = [
         id: 'p1',
         name: 'Phase 1 — Post-lésionnelle / Mouvement protégé',
         weeks: '',
-        color: 'var(--accent-ll)',
+        color: '#EFF6FF',
         borderColor: '#3B82F6',
         objectives: [
           'Protéger la cicatrisation des tissus réparés',
@@ -5385,7 +5385,7 @@ var PROTOCOLS_REF = [
         id: 'p1',
         name: 'Phase 1 — Post-opératoire',
         weeks: 'S0 → S6',
-        color: 'var(--accent-ll)',
+        color: '#EFF6FF',
         borderColor: '#3B82F6',
         objectives: [
           'Amplitude de mouvement',
@@ -5618,7 +5618,7 @@ function _fetchCustomProtocolsFromSupabase(callback){
 var _pePhasesData = [];
 var _peOpenPhases = {};
 var _PE_COLORS = [
-  {color:'var(--accent-ll)',borderColor:'#3B82F6'},
+  {color:'#EFF6FF',borderColor:'#3B82F6'},
   {color:'#F0FDF4',borderColor:'#22C55E'},
   {color:'#FFF7ED',borderColor:'#F97316'},
   {color:'#FDF4FF',borderColor:'#A855F7'},
@@ -5630,7 +5630,10 @@ function _peInitPhases(phases){
   _pePhasesData = (phases||[]).map(function(p,i){
     var uid = p.id ? String(p.id) : ('ph'+i+Date.now());
     var col = _PE_COLORS[i % _PE_COLORS.length];
-    return Object.assign({color:col.color,borderColor:col.borderColor},p,{_uid:uid});
+    var badColor = function(c){ return !c || c.indexOf('var(')===0 || c==='#000000'; };
+    var safeColor = badColor(p.color) ? col.color : p.color;
+    var safeBorderColor = badColor(p.borderColor) ? col.borderColor : p.borderColor;
+    return Object.assign({},p,{_uid:uid,color:safeColor,borderColor:safeBorderColor});
   });
   _peOpenPhases = {};
   if(_pePhasesData.length) _peOpenPhases[_pePhasesData[0]._uid] = true;
@@ -5676,7 +5679,7 @@ function _peRenderPhasesEditor(){
     var uid = phase._uid;
     var isOpen = !!_peOpenPhases[uid];
     var bc = phase.borderColor||'#3B82F6';
-    var bg = phase.color||'var(--accent-ll)';
+    var bg = phase.color||'#EFF6FF';
     h += '<div class="pe-phase-card'+(isOpen?' open':'')+'" id="pe-ph-'+uid+'">';
     h += '<div class="pe-phase-card-head" onclick="_peTogglePhase(\''+uid+'\')" style="border-left:3px solid '+bc+'">';
     h += '<input type="color" class="pe-ph-bordercol" value="'+bc+'" onclick="event.stopPropagation()" title="Couleur bordure" style="width:22px;height:20px;border:none;background:none;padding:0;cursor:pointer;flex-shrink:0;">';
@@ -5824,7 +5827,7 @@ function _peGetPhasesData(){
       id: p.id||p._uid,
       name: p.name||'',
       weeks: p.weeks||'',
-      color: p.color||'var(--accent-ll)',
+      color: p.color||'#EFF6FF',
       borderColor: p.borderColor||'#3B82F6',
       objectives:  p.objectives||[],
       precautions: p.precautions||[],
@@ -5849,7 +5852,7 @@ function _peInitLibrary(proto){
     entryTest: etText,
     branches: hasBranches ? proto.branches.map(function(b,i){
       var uid = String(b.id||('br'+i+'_'+Date.now()));
-      return {_uid:uid,id:b.id||uid,label:b.label||b.name||'',color:b.color||'var(--accent-ll)',borderColor:b.borderColor||'#3B82F6',
+      return {_uid:uid,id:b.id||uid,label:b.label||b.name||'',color:b.color||'#EFF6FF',borderColor:b.borderColor||'#3B82F6',
         blocs: _peMapBlocsIn(b.blocs||[])};
     }) : [],
     blocs: hasBlocs ? _peMapBlocsIn(proto.blocs) : []
@@ -5932,7 +5935,7 @@ function _peRenderLibEditor(){
       var uid = branch._uid;
       var isOpen = !!_peOpenBranches[uid];
       var bc = branch.borderColor||'#3B82F6';
-      var bg = branch.color||'var(--accent-ll)';
+      var bg = branch.color||'#EFF6FF';
       h += '<div class="pe-branch-card'+(isOpen?' open':'')+'" id="pe-br-'+uid+'" style="border-left:3px solid '+bc+'">';
       h += '<div class="pe-branch-head" onclick="_peToggleBranch(\''+uid+'\')">';
       h += '<input type="color" class="pe-br-bordercol" value="'+bc+'" onclick="event.stopPropagation()" title="Couleur bordure" style="width:22px;height:20px;border:none;background:none;padding:0;cursor:pointer;flex-shrink:0;">';
@@ -6087,7 +6090,7 @@ function _peGetLibData(){
   if(_peLibData.mode==='tree'){
     if(etText) result.entryTest={description:etText};
     result.branches=_peLibData.branches.map(function(b){
-      return {id:b.id||b._uid,label:b.label||'',color:b.color||'var(--accent-ll)',borderColor:b.borderColor||'#3B82F6',blocs:_peMapBlocsOut(b.blocs||[])};
+      return {id:b.id||b._uid,label:b.label||'',color:b.color||'#EFF6FF',borderColor:b.borderColor||'#3B82F6',blocs:_peMapBlocsOut(b.blocs||[])};
     });
   } else {
     result.blocs=_peMapBlocsOut(_peLibData.blocs||[]);
