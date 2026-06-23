@@ -6707,8 +6707,9 @@ function _renderProtoFooter(proto, pp) {
 
 /* ─── Rendu d'une phase ──────────────────────────────────────── */
 function _renderPhaseItem(protoId, ph, idx, data, currentPhaseId) {
-  var _phColor       = ph.color       || _PE_COLORS[idx % _PE_COLORS.length].color;
-  var _phBorderColor = ph.borderColor || _PE_COLORS[idx % _PE_COLORS.length].borderColor;
+  var _badCol = function(c){ return !c || c === '#000000' || c.indexOf('var(') === 0; };
+  var _phColor       = _badCol(ph.color)       ? _PE_COLORS[idx % _PE_COLORS.length].color       : ph.color;
+  var _phBorderColor = _badCol(ph.borderColor) ? _PE_COLORS[idx % _PE_COLORS.length].borderColor : ph.borderColor;
   var checks = (data && data.checks && data.checks[ph.id]) || {};
   var total = ph.exitCriteria.length;
   var done = ph.exitCriteria.filter(function(_, i){ return checks[i]; }).length;
