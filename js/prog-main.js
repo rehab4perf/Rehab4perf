@@ -2029,7 +2029,7 @@ function _chipTouchEnd(e, evId){
 }
 
 function _showTouchActionSheet(evId, progId, dateStr, nom){
-  _touchSheetData = {evId: evId, progId: progId, dateStr: dateStr};
+  _touchSheetData = {evId: evId, progId: progId, dateStr: dateStr, nom: nom};
   var title = document.getElementById('touchSheetTitle');
   if(title) title.textContent = nom || 'Séance';
   document.getElementById('touchSheet').style.display = 'block';
