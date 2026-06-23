@@ -5629,7 +5629,8 @@ var _PE_COLORS = [
 function _peInitPhases(phases){
   _pePhasesData = (phases||[]).map(function(p,i){
     var uid = p.id ? String(p.id) : ('ph'+i+Date.now());
-    return Object.assign({},p,{_uid:uid});
+    var col = _PE_COLORS[i % _PE_COLORS.length];
+    return Object.assign({color:col.color,borderColor:col.borderColor},p,{_uid:uid});
   });
   _peOpenPhases = {};
   if(_pePhasesData.length) _peOpenPhases[_pePhasesData[0]._uid] = true;
@@ -6703,6 +6704,8 @@ function _renderProtoFooter(proto, pp) {
 
 /* ─── Rendu d'une phase ──────────────────────────────────────── */
 function _renderPhaseItem(protoId, ph, idx, data, currentPhaseId) {
+  var _phColor       = ph.color       || _PE_COLORS[idx % _PE_COLORS.length].color;
+  var _phBorderColor = ph.borderColor || _PE_COLORS[idx % _PE_COLORS.length].borderColor;
   var checks = (data && data.checks && data.checks[ph.id]) || {};
   var total = ph.exitCriteria.length;
   var done = ph.exitCriteria.filter(function(_, i){ return checks[i]; }).length;
@@ -6715,7 +6718,7 @@ function _renderPhaseItem(protoId, ph, idx, data, currentPhaseId) {
   var statsPill = '';
   if(phStats && phStats.planned > 0){
     var doneStr = phStats.done > 0 ? ' · <span style="color:#16A34A;font-weight:700;">✓ '+phStats.done+' réalisée'+(phStats.done>1?'s':'')+'</span>' : '';
-    statsPill = '<span style="font-size:.62rem;background:rgba(255,255,255,.65);border:1px solid '+ph.borderColor+'55;color:var(--text-dk);border-radius:6px;padding:1px 7px;white-space:nowrap;margin-right:4px;">📋 '+phStats.planned+' séance'+(phStats.planned>1?'s':'')+doneStr+'</span>';
+    statsPill = '<span style="font-size:.62rem;background:rgba(255,255,255,.65);border:1px solid '+_phBorderColor+'55;color:var(--text-dk);border-radius:6px;padding:1px 7px;white-space:nowrap;margin-right:4px;">📋 '+phStats.planned+' séance'+(phStats.planned>1?'s':'')+doneStr+'</span>';
   }
 
   var objList  = ph.objectives.map(function(o){ return '<li>'+_escHtml(o)+'</li>'; }).join('');
@@ -6740,19 +6743,19 @@ function _renderPhaseItem(protoId, ph, idx, data, currentPhaseId) {
       + '</div>';
   }).join('');
 
-  var currentBadge = isCurrent ? '<span style="font-size:.62rem;font-weight:700;background:'+ph.borderColor+';color:#fff;padding:1px 7px;border-radius:8px;margin-left:6px;white-space:nowrap;">EN COURS</span>' : '';
+  var currentBadge = isCurrent ? '<span style="font-size:.62rem;font-weight:700;background:'+_phBorderColor+';color:#fff;padding:1px 7px;border-radius:8px;margin-left:6px;white-space:nowrap;">EN COURS</span>' : '';
   var doneBadge = (!isCurrent && allDone) ? '<span style="font-size:.62rem;font-weight:700;background:#16A34A;color:#fff;padding:1px 7px;border-radius:8px;margin-left:6px;white-space:nowrap;">✓ VALIDÉ</span>' : '';
 
   var markBtn = !!_progPatient
     ? (isCurrent
-        ? '<button class="proto-use-btn secondary" onclick="_protoMarkCurrentPhase(\''+protoId+'\',null)" style="font-size:.73rem;padding:5px 11px;border-color:'+ph.borderColor+';color:'+ph.borderColor+';">📍 Active ✓ (retirer)</button>'
+        ? '<button class="proto-use-btn secondary" onclick="_protoMarkCurrentPhase(\''+protoId+'\',null)" style="font-size:.73rem;padding:5px 11px;border-color:'+_phBorderColor+';color:'+_phBorderColor+';">📍 Active ✓ (retirer)</button>'
         : '<button class="proto-use-btn secondary" onclick="_protoMarkCurrentPhase(\''+protoId+'\',\''+ph.id+'\')" style="font-size:.73rem;padding:5px 11px;">📍 Définir active</button>')
     : '';
   var builderBtn = '<button class="proto-use-btn secondary" onclick="_protoOpenInBuilder(\''+protoId+'\',\''+ph.id+'\')" style="font-size:.73rem;padding:5px 11px;">▶ Ouvrir dans le builder</button>';
 
-  return '<div class="proto-phase-item" id="proto-phase-'+protoId+'-'+ph.id+'" style="border-color:'+ph.borderColor+(isCurrent?';box-shadow:0 0 0 2px '+ph.borderColor+'55;':'')+'">'
-    + '<div class="proto-phase-item-header" style="background:'+ph.color+'" onclick="_toggleProtoPhase(\''+protoId+'\',\''+ph.id+'\')">'
-    + '<span style="font-size:.9rem;font-weight:700;color:'+ph.borderColor+'">Phase '+(idx+1)+'</span>'
+  return '<div class="proto-phase-item" id="proto-phase-'+protoId+'-'+ph.id+'" style="border-color:'+_phBorderColor+(isCurrent?';box-shadow:0 0 0 2px '+_phBorderColor+'55;':'')+'">'
+    + '<div class="proto-phase-item-header" style="background:'+_phColor+'" onclick="_toggleProtoPhase(\''+protoId+'\',\''+ph.id+'\')">'
+    + '<span style="font-size:.9rem;font-weight:700;color:'+_phBorderColor+'">Phase '+(idx+1)+'</span>'
     + currentBadge + doneBadge
     + '<span style="flex:1;margin-left:8px;">'+_escHtml(ph.name.replace(/Phase \d+ — /,''))+'</span>'
     + statsPill
