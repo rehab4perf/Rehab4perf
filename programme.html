@@ -1578,7 +1578,10 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .cal-chip-del { background:none; border:none; color:rgba(255,255,255,.7); cursor:pointer; font-size:.75rem; line-height:1; padding:0 1px; }
 .cal-chip-del:hover { color:#fff; }
 .cal-chip-more { background:none; border:none; color:rgba(255,255,255,.9); cursor:pointer; font-size:.85rem; line-height:1; padding:0 3px 0 0; flex-shrink:0; -webkit-tap-highlight-color:transparent; }
-@media (hover:hover) and (pointer:fine) { .cal-chip-more { display:none; } }
+@media (hover:hover) and (pointer:fine) {
+  .cal-chip-more { display:none; }
+  .cal-session-chip:hover .cal-chip-more { display:block; }
+}
 
 /* ── Badge overflow "+N de plus" ── */
 .cal-overflow-badge {
