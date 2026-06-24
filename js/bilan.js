@@ -1096,7 +1096,7 @@ function _buildChartD(valsA, valsB, dates, opts){
   }
   var ptsA=valsA.map(function(v,i){return Object.assign(pt(valsA,i),{date:dates[i]});});
   var ptsB=valsB.map(function(v,i){return Object.assign(pt(valsB,i),{date:dates[i]});});
-  var html='<defs><linearGradient id="gd'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--red)" stop-opacity="0.18"/><stop offset="100%" stop-color="var(--red)" stop-opacity="0.02"/></linearGradient></defs>';
+  var html='<defs><linearGradient id="gd'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#C0392B" stop-opacity="0.18"/><stop offset="100%" stop-color="#C0392B" stop-opacity="0.02"/></linearGradient></defs>';
   // ── Zones de condition ──
   (function(){
     var conds = opts.conditions;
@@ -1805,6 +1805,7 @@ function _buildEvolutionHTML(){
     exportClone.querySelectorAll('.evo-chart-card.evo-unselected').forEach(function(el){el.remove();});
   }
   exportClone.querySelectorAll('.evo-chart-check').forEach(function(el){el.remove();});
+  exportClone.querySelectorAll('.evo-filter-bar').forEach(function(el){el.remove();});
   // Tableau qualitatif : toujours visible + suppression du bouton toggle
   exportClone.querySelectorAll('.qual-toggle-btn').forEach(function(el){el.remove();});
   exportClone.querySelectorAll('.qual-grid-collapsible').forEach(function(el){el.classList.remove('qual-grid-collapsible');});
