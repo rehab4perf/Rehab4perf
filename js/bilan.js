@@ -3121,22 +3121,35 @@ function calcLSI(key) {
     : (cs > 0 ? ca / cs * 100 : NaN);
   setLSI(document.getElementById(key + '-lsi'), document.getElementById(key + '-stat'), lsi, '>= 90%', true, bilateral);
   if (key === 'hop') {
-    const repere = document.getElementById('hop-repere80');
+    var repere = document.getElementById('hop-repere80');
     var taille = parseFloat(document.getElementById('f-taille')?document.getElementById('f-taille').value:'');
     var sexeH = document.getElementById('f-sexe')?document.getElementById('f-sexe').value:'';
-    var parts = [];
-    if (!isNaN(cs) && cs > 0) {
-      parts.push('📏 Repère 80% CS : ' + (cs*0.8).toFixed(1) + ' cm');
-      if (!isNaN(ca) && ca > 0) parts.push('80% CA : ' + (ca*0.8).toFixed(1) + ' cm');
+    var svgDest = '<svg viewBox="0 0 100 100" width="14" height="14" fill="currentColor" style="vertical-align:-2px;flex-shrink:0" xmlns="http://www.w3.org/2000/svg"><path d="m50.83 44.66c-5.81 0-10.54-4.73-10.54-10.54s4.73-10.54 10.54-10.54 10.54 4.73 10.54 10.54-4.73 10.54-10.54 10.54zm0-18.08c-4.16 0-7.54 3.38-7.54 7.54s3.38 7.54 7.54 7.54 7.54-3.38 7.54-7.54-3.38-7.54-7.54-7.54z"/><path d="m62.07 54.4c3.9-6.55 7.44-13.95 7.44-19.28 0-11.6-7.87-20.02-18.72-20.02-10.84 0-18.71 8.42-18.71 20.02 0 5.33 3.53 12.73 7.44 19.28-12.06 2.24-20.02 7.91-20.02 14.44 0 8.66 13.75 15.45 31.31 15.45 17.55 0 31.3-6.79 31.3-15.45 0-6.51-7.97-12.21-20.04-14.44zm-26.99-19.28c0-9.86 6.61-17.02 15.71-17.02 9.11 0 15.72 7.16 15.72 17.02 0 8.93-11.88 25.51-15.72 30.64-3.83-5.13-15.71-21.71-15.71-30.64zm14.54 34.04c.28.36.71.57 1.17.57s.9-.21 1.18-.57c.23-.3 2.15-2.75 4.64-6.32 6.3 1.1 9.68 3.69 9.68 5.68 0 2.91-6.7 6.18-15.67 6.18-8.98 0-15.68-3.27-15.68-6.18 0-2.03 3.5-4.68 10.01-5.73 2.5 3.6 4.44 6.07 4.67 6.37zm1.19 12.13c-15.35 0-28.31-5.7-28.31-12.45 0-5.14 7.65-9.89 18.7-11.69.64 1.01 1.28 2 1.9 2.92-6.85 1.41-11.16 4.62-11.16 8.45 0 5.23 8.03 9.18 18.68 9.18 10.64 0 18.67-3.95 18.67-9.18 0-3.77-4.17-6.94-10.84-8.38.64-.95 1.29-1.96 1.95-3 11.05 1.81 18.71 6.58 18.71 11.7 0 6.75-12.96 12.45-28.3 12.45z"/></svg>';
+    var svgObj = '<svg viewBox="0 0 682.67 682.67" width="12" height="12" fill="none" stroke="currentColor" stroke-width="30" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0" xmlns="http://www.w3.org/2000/svg"><defs><clipPath id="hop-obj-clip" clipPathUnits="userSpaceOnUse"><path d="M0,512H512V0H0Z"/></clipPath></defs><g transform="matrix(1.3333333,0,0,-1.3333333,0,682.66667)"><g clip-path="url(#hop-obj-clip)"><path transform="translate(256,100)" d="m0,0c-86.019,0-156,69.981-156,156 0,86.019 69.981,156 156,156 86.019,0 156,-69.981 156,-156C156,69.981 86.019,0 0,0Z"/><path transform="translate(256,190)" d="m0,0c-36.393,0-66,29.607-66,66 0,36.393 29.607,66 66,66 36.393,0 66,-29.607 66,-66C66,29.607 36.393,0 0,0Z"/><path transform="translate(256,256)" d="M0,0 110.309,110.309"/><path transform="translate(488.638,424.998)" d="m0,0-63.64,-63.639-58.69,4.95L-127.279,0-63.64,63.64-58.69,4.95Z"/><path transform="translate(455.245,391.606)" d="m0,0-30.247,-30.246-58.69,4.949-4.949,58.69 30.246,30.247c-38.633,26.344-85.317,41.755-135.605,41.755-133.101,0-241,-107.9-241,-241 0,-133.101 107.899,-241 241,-241 133.1,0 241,107.899 241,241C41.755,-85.317 26.344,-38.633 0,0Z"/></g></g></svg>';
+    var html = '';
+    var hasRepere = !isNaN(cs) && cs > 0;
+    var hasSeuil = !isNaN(taille) && taille > 0;
+    if (hasRepere || hasSeuil) {
+      if (hasRepere) {
+        html += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' + svgDest + '<span>80% CS : <strong>' + (cs*0.8).toFixed(1) + ' cm</strong></span>';
+        if (!isNaN(ca) && ca > 0) html += '<span style="opacity:.3;margin:0 1px">·</span><span>80% CA : <strong>' + (ca*0.8).toFixed(1) + ' cm</strong></span>';
+        html += '</div>';
+      }
+      if (hasSeuil) {
+        var pctRTS = sexeH==='F' ? 0.80 : 0.90;
+        var labelRTS = sexeH==='F' ? '80% taille (F)' : sexeH==='H' ? '90% taille (H)' : '90% taille (H) / 80% taille (F)';
+        var seuilRTS = (taille * pctRTS).toFixed(1);
+        html += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap' + (hasRepere ? ';margin-top:4px' : '') + '">' + svgObj + '<span>Seuil RTS : ≥ <strong>' + seuilRTS + ' cm</strong> <span style="opacity:.6">(' + labelRTS + ')</span></span>';
+        if (!isNaN(ca) && ca > 0) {
+          var atteint = ca >= parseFloat(seuilRTS);
+          html += '<span style="opacity:.3;margin:0 1px">·</span><span>CA : <strong>' + ca + ' cm</strong></span><span style="display:inline-flex;align-items:center;gap:2px;background:' + (atteint ? '#e6f4ec' : '#fde8e8') + ';color:' + (atteint ? '#1e6b42' : '#9B1C1C') + ';font-size:.78rem;font-weight:500;padding:1px 6px;border-radius:3px">' + (atteint ? '✓ Atteint' : '✗ Non atteint') + '</span>';
+        }
+        html += '</div>';
+      }
+    } else {
+      html = '<span style="opacity:.4">—</span>';
     }
-    if (!isNaN(taille) && taille > 0) {
-      var pctRTS = sexeH==='F' ? 0.80 : 0.90;
-      var labelRTS = sexeH==='F' ? '80% taille (F)' : sexeH==='H' ? '90% taille (H)' : '90% taille (H) / 80% taille (F)';
-      var seuilRTS = (taille * pctRTS).toFixed(1);
-      parts.push('🎯 Seuil RTS : ≥ ' + seuilRTS + ' cm (' + labelRTS + ')');
-      if (!isNaN(ca) && ca > 0) parts.push('CA : ' + ca + ' cm ' + (ca >= parseFloat(seuilRTS) ? '✓' : '✗'));
-    }
-    if (repere) repere.textContent = parts.length ? parts.join('   |   ') : '—';
+    if (repere) repere.innerHTML = html;
   }
 }
 
