@@ -738,6 +738,15 @@ function _editBilanConfirm(){
   if(ov) ov.classList.remove('open');
   _exitReadOnlyMode();
   _bilanHistoMode = true;
+  // Recharger UNIQUEMENT les données brutes de ce bilan (sans fusion des bilans antérieurs).
+  // Sans ce reset, le formulaire contient le snapshot fusionné (_buildMergedDonnees) qui
+  // inclut des valeurs héritées des bilans plus anciens. Sauvegarder ce snapshot polluerait
+  // ce bilan avec des données qu'il ne contient pas en propre.
+  var bilanPropre = _allBilans.find(function(b){ return b.id === _currentBilanId; });
+  if(bilanPropre && bilanPropre.donnees){
+    _resetBilanFields();
+    _deserializeBilan(bilanPropre.donnees);
+  }
   var btn = document.getElementById('bilan-save-btn');
   if(btn) btn.innerHTML = _SAVE_ICON + 'Enregistrer les modifications';
   showToast('Mode édition — les modifications seront enregistrées à la date d\'origine');
@@ -2098,6 +2107,8 @@ function _deserializeBilan(data){
   _parsePainZones();
   _suppressDirty = false;
   _bilanModified = false;
+  try{ _calcWainnerCerv(); _calcDN4(); }catch(ex){}
+  saveToStorage(); // état complet — une seule écriture après désérialisation
   _refreshCRIfVisible();
 }
 
@@ -3107,11 +3118,13 @@ function onTestChange(sel, tableId, idx) {
   sel.className = '';
   if (v === 'Positif' || v === 'Valid' + 'é') sel.classList.add(type === 'fonc' ? 'positif-fonc' : 'positif-ortho');
   else if (v === 'N' + 'égatif' || v === 'Pas valid' + 'é') sel.classList.add(type === 'fonc' ? 'negatif-fonc' : 'negatif-ortho');
-  var wainnerTables = {'tb-cv-ulnt-g':1,'tb-cv-ulnt-d':1,'tb-cv-mecanique':1};
-  if (wainnerTables[tableId]) _calcWainnerCerv();
-  var dn4Tables = {'tb-cv-dn4-itw':1,'tb-cv-dn4-exam':1};
-  if (dn4Tables[tableId]) _calcDN4();
-  updateBadges();
+  if (!_suppressDirty) {
+    var wainnerTables = {'tb-cv-ulnt-g':1,'tb-cv-ulnt-d':1,'tb-cv-mecanique':1};
+    if (wainnerTables[tableId]) _calcWainnerCerv();
+    var dn4Tables = {'tb-cv-dn4-itw':1,'tb-cv-dn4-exam':1};
+    if (dn4Tables[tableId]) _calcDN4();
+    updateBadges();
+  }
 }
 
 function updateBadges() {
@@ -5387,9 +5400,9 @@ function printBilan(type) {
   win.document.close();
 }
 
-// Auto-save on any change
-document.addEventListener('input', () => saveToStorage());
-document.addEventListener('change', () => saveToStorage());
+// Auto-save on any change — skipped during _deserializeBilan to avoid partial writes
+document.addEventListener('input', () => { if (!_suppressDirty) saveToStorage(); });
+document.addEventListener('change', () => { if (!_suppressDirty) saveToStorage(); });
 
 // Masquer TOUTES les pages immédiatement (inline style, priorité max)
 document.querySelectorAll('.page').forEach(function(p) { p.style.display = 'none'; });
