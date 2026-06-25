@@ -621,6 +621,7 @@ var _bilanUid       = null;
 var _bilanModified  = false;   // true dès qu'une saisie est faite depuis le dernier save/load
 var _bilanHistoMode = false;   // true quand on consulte/édite un bilan historique (non-latest)
 var _suppressDirty  = false;   // true pendant _deserializeBilan pour ne pas polluer le flag
+var _bilanNeedsRefresh = false; // true après un save → charge la vue fusionnée lors du passage en lecture
 var _suiviRapideInitial = {};  // snapshot des valeurs DOM à l'ouverture du suivi rapide
 var _chartCounter = 0;
 var _evoFilterDays = null; // null = tout, sinon nombre de jours (30,90,180,365)
@@ -712,6 +713,15 @@ function _enterReadOnlyMode(){
   if(saveBtn)  { saveBtn.style.display = 'none'; saveBtn.innerHTML = _SAVE_ICON + 'Sauvegarder le bilan'; }
   if(editBtn)  editBtn.style.display = 'flex';
   if(suiviBtn) suiviBtn.style.display = '';
+  // Charger la vue fusionnée ici — APRÈS que le bouton "Modifier" est visible, jamais avant.
+  // Cela garantit qu'aucun callback async ne peut écraser le formulaire après que
+  // l'utilisateur a cliqué "Modifier" (la fenêtre de vulnérabilité est fermée).
+  if(_bilanNeedsRefresh && _allBilans && _allBilans.length){
+    _bilanNeedsRefresh = false;
+    _deserializeBilan(_buildMergedDonnees(_allBilans));
+    document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
+    if(_prevDonnees) _renderDeltas(_prevDonnees);
+  }
 }
 
 function _exitReadOnlyMode(){
@@ -2147,6 +2157,7 @@ function saveBilan(){
         _bilanModified = false;
         _syncBilanDatesNotes();
         btn.textContent = '✓ Bilan mis à jour !';
+        _bilanNeedsRefresh = true;
         setTimeout(function(){
           btn.innerHTML = _SAVE_ICON + 'Sauvegarder le bilan';
           _enterReadOnlyMode();
@@ -2206,18 +2217,15 @@ function saveBilan(){
         setTimeout(function(){ btn.innerHTML = _SAVE_ICON + 'Sauvegarder le bilan'; }, 2500);
         // Passer en mode lecture après sauvegarde
         _bilanHistoMode = true;
+        _bilanNeedsRefresh = true; // _enterReadOnlyMode chargera la vue fusionnée au bon moment
         setTimeout(function(){ _enterReadOnlyMode(); }, 2600);
-        // Rafraîchir les données d'évolution après sauvegarde
+        // Rafraîchir _allBilans (sans toucher au formulaire — c'est _enterReadOnlyMode qui le fait)
         sbB.from('bilans').select('*').eq('patient_id',_bilanPatient.id)
           .order('date',{ascending:false}).limit(50)
           .then(function(r2){
             if(!r2.error && r2.data && r2.data.length){
               _allBilans = r2.data;
               _prevDonnees = r2.data.length >= 2 ? (r2.data[1].donnees||{}) : null;
-              // Re-fusionner tout l'historique dans le DOM pour que buildCR() voie les données portées
-              _deserializeBilan(_buildMergedDonnees(r2.data));
-              document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
-              if(_prevDonnees) _renderDeltas(_prevDonnees);
               _renderEvolutionPage();
               var _activePage = document.querySelector('.page.active');
               if(_activePage && _activePage.id === 'page-cr') buildCR();
