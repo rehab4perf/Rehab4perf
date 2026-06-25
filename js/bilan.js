@@ -2150,10 +2150,23 @@ function saveBilan(){
 
   /* ── Mode consultation : on patche le bilan historique à sa date originale ── */
   if(_bilanHistoMode && _currentBilanId){
-    // Préserver changed_fields du bilan original (marqueurs suivi/porté dans le CR)
+    // Recalculer changed_fields en comparant au bilan précédent (pas copier l'ancien tableau —
+    // sinon les nouveaux champs ajoutés lors du re-save apparaissent à tort en grisé dans le CR).
     var _origBilan = _allBilans.find(function(b){ return b.id === _currentBilanId; });
-    if(_origBilan && _origBilan.donnees && _origBilan.donnees.changed_fields){
-      donnees.changed_fields = _origBilan.donnees.changed_fields;
+    var _origHasCF = _origBilan && _origBilan.donnees && _origBilan.donnees.changed_fields;
+    if(_origHasCF){
+      var _prevD = (_allBilans.length >= 2)
+        ? (_allBilans.find(function(b){ return b.id !== _currentBilanId; }) || {}).donnees || {}
+        : {};
+      var _newCF = [];
+      Object.keys(donnees).forEach(function(k){
+        if(k === 'changed_fields') return;
+        var curr = donnees[k]; var prev = _prevD[k];
+        var cs = (curr===undefined||curr===null)?'':String(curr);
+        var ps = (prev===undefined||prev===null)?'':String(prev);
+        if(cs !== '' && cs !== ps) _newCF.push(k);
+      });
+      if(_newCF.length) donnees.changed_fields = _newCF;
     }
     _sbRetry(function(){ return sbB.from('bilans').update({donnees:donnees}).eq('id', _currentBilanId).select().single(); })
       .then(function(res){
