@@ -2150,6 +2150,11 @@ function saveBilan(){
 
   /* ── Mode consultation : on patche le bilan historique à sa date originale ── */
   if(_bilanHistoMode && _currentBilanId){
+    // Préserver changed_fields du bilan original (marqueurs suivi/porté dans le CR)
+    var _origBilan = _allBilans.find(function(b){ return b.id === _currentBilanId; });
+    if(_origBilan && _origBilan.donnees && _origBilan.donnees.changed_fields){
+      donnees.changed_fields = _origBilan.donnees.changed_fields;
+    }
     _sbRetry(function(){ return sbB.from('bilans').update({donnees:donnees}).eq('id', _currentBilanId).select().single(); })
       .then(function(res){
         btn.disabled = false;
@@ -2169,8 +2174,12 @@ function saveBilan(){
             if(!r2.error && r2.data && r2.data.length){
               _allBilans = r2.data;
               _renderEvolutionPage();
-              var _activePage = document.querySelector('.page.active');
-              if(_activePage && _activePage.id === 'page-cr') buildCR();
+              // Ne pas buildCR() ici : _enterReadOnlyMode va charger la vue fusionnée
+              // et appeler _refreshCRIfVisible() — évite un CR incomplet transitoire
+              if(!_bilanNeedsRefresh){
+                var _activePage = document.querySelector('.page.active');
+                if(_activePage && _activePage.id === 'page-cr') buildCR();
+              }
             }
           });
       }).catch(function(err){
