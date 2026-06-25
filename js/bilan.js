@@ -113,6 +113,85 @@ const TESTS = {
   ]},
   'tb-ra-lomb-g': {type:'ortho',items:['SLUMP test','Lasègue (SLR)','Léri']},
   'tb-ra-lomb-d': {type:'ortho',items:['SLUMP test','Lasègue (SLR)','Léri']},
+
+  // ── Rachis Cervical (page-rachis-cerv) ──────────────────────────────────
+  'tb-cv-vascul': {type:'ortho', items:[
+    'Test de Tillaux <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Extension C0-C1 + flexion buste. ✚ Symptômes neuro-végétatifs → insuffisance vertébro-basilaire</span>',
+    'Test de Rancurel <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Compression triangle de Tillaux + extension-inclinaison-rotation controlatérale. ✚ Symptômes neuro-végétatifs → insuffisance vertébro-basilaire</span>',
+    'Test de Klein — artère vertébrale <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Extension-inclinaison-rotation controlatérale (assis puis DD). ✚ Symptômes neuro-végétatifs → insuffisance vertébro-basilaire</span>'
+  ]},
+  'tb-cv-sensib-g': {type:'ortho', items:[
+    'C4 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Région trapèze, sus-claviculaire et sommet épaule</span>',
+    'C5 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Triangle C4-acromion-T1, deltoïde inférieur, ½ sup face externe bras</span>',
+    'C6 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Triangle C5-acromion-T1, face externe coude-avant-bras-bras, pouce</span>',
+    'C7 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Bande face postérieure bras → 2ème et 3ème doigts</span>',
+    'C8 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">4ème et 5ème doigts, face médiale avant-bras et coude</span>'
+  ]},
+  'tb-cv-sensib-d': {type:'ortho', items:[
+    'C4 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Région trapèze, sus-claviculaire et sommet épaule</span>',
+    'C5 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Triangle C4-acromion-T1, deltoïde inférieur, ½ sup face externe bras</span>',
+    'C6 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Triangle C5-acromion-T1, face externe coude-avant-bras-bras, pouce</span>',
+    'C7 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Bande face postérieure bras → 2ème et 3ème doigts</span>',
+    'C8 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">4ème et 5ème doigts, face médiale avant-bras et coude</span>'
+  ]},
+  'tb-cv-motric-g': {type:'ortho', items:[
+    'C2 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Flexion de tête</span>',
+    'C3 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Inclinaison de tête</span>',
+    'C4 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Élévation des épaules</span>',
+    'C5 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Abduction épaule</span>',
+    'C6 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Flexion coude, supination avant-bras</span>',
+    'C7 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Extension coude-poignet-doigts</span>',
+    'C8 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Flexion, écartements des doigts et opposition pouce</span>'
+  ]},
+  'tb-cv-motric-d': {type:'ortho', items:[
+    'C2 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Flexion de tête</span>',
+    'C3 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Inclinaison de tête</span>',
+    'C4 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Élévation des épaules</span>',
+    'C5 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Abduction épaule</span>',
+    'C6 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Flexion coude, supination avant-bras</span>',
+    'C7 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Extension coude-poignet-doigts</span>',
+    'C8 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Flexion, écartements des doigts et opposition pouce</span>'
+  ]},
+  'tb-cv-rot-g': {type:'ortho', items:[
+    'C5 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Réflexe bicipital</span>',
+    'C6 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Réflexe stylo-radial</span>',
+    'C7 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Réflexe tricipital</span>',
+    'C8 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Réflexe cubito-pronateur</span>'
+  ]},
+  'tb-cv-rot-d': {type:'ortho', items:[
+    'C5 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Réflexe bicipital</span>',
+    'C6 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Réflexe stylo-radial</span>',
+    'C7 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Réflexe tricipital</span>',
+    'C8 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Réflexe cubito-pronateur</span>'
+  ]},
+  'tb-cv-ulnt-g': {type:'ortho', items:[
+    'ULNT 1 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf médian</span>',
+    'ULNT 2 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf médian</span>',
+    'ULNT 3 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf radial</span>',
+    'ULNT 4 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf ulnaire</span>'
+  ]},
+  'tb-cv-ulnt-d': {type:'ortho', items:[
+    'ULNT 1 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf médian</span>',
+    'ULNT 2 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf médian</span>',
+    'ULNT 3 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf radial</span>',
+    'ULNT 4 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf ulnaire</span>'
+  ]},
+  'tb-cv-defilé-g': {type:'ortho', items:[
+    'Scalènes / costo-claviculaire <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Bras chandelier + rotation homo/controlatérale + inspiration profonde. ✚ Abolition / diminution du pouls</span>',
+    'Petit pectoral <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">MS levé + avant-bras au-dessus tête + rotation controlatérale. ✚ Abolition / diminution du pouls</span>'
+  ]},
+  'tb-cv-defilé-d': {type:'ortho', items:[
+    'Scalènes / costo-claviculaire <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Bras chandelier + rotation homo/controlatérale + inspiration profonde. ✚ Abolition / diminution du pouls</span>',
+    'Petit pectoral <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">MS levé + avant-bras au-dessus tête + rotation controlatérale. ✚ Abolition / diminution du pouls</span>'
+  ]},
+  'tb-cv-mecanique': {type:'ortho', items:[
+    'Translation de C1 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Débattement latéral des apophyses transverses C1 (DD). ✚ Débattement ↑ → fracture odontoïde ?</span>',
+    'Compression axiale — Flexion <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Pression axiale crâne en flexion cervicale. ✚ Douleur / paresthésies → hernie molle</span>',
+    'Compression axiale — Latéro-flexion <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Pression axiale crâne en latéro-flexion. ✚ Douleur / paresthésies → hernie dure</span>',
+    'Compression axiale — Extension <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Pression axiale crâne en extension. ✚ Douleur / paresthésies → hernie dure</span>',
+    'Sharp Purser Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Translation post. crâne + translation ant. C2. ✚ Arrêt moins ferme + symptômes diminuent → entorse ligament transverse</span>',
+    'Test ligament alaire <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Rotation cervicale haute fixant C2. ✚ Rotation &gt; 20° ou inclinaison non limitée → entorse ligament alaire</span>'
+  ]},
   'tb-ha-global':{type:'ortho',items:['HAGOS (questionnaire - noter score %)','Fulcrum test','Squeeze test 0° (EVA > 6 ?)']},
   'tb-ha-add':  {type:'ortho',items:['Squeeze test 45°','Étirement ADD']},
   'tb-ha-pubis':{type:'ortho',items:['Patellar pubic percussion test','Pubis stress test']},
@@ -378,7 +457,7 @@ function init() {
     'lomb-Glissement_G':  'Ex\u00a0: shift lat\u00e9ral gauche spontan\u00e9, correction active\u2026',
   };
   var LOMB_EXTRA_MOB = ['Glissement D', 'Glissement G'];
-  ['cerv','thor','lomb'].forEach(function(seg) {
+  ['cerv','cv','thor','lomb'].forEach(function(seg) {
     var grid = document.getElementById('mob-' + seg);
     if (!grid) return;
     grid.className = ''; // retire mobility-grid (grille 6 colonnes)
@@ -3519,6 +3598,7 @@ function _buildAllTestsHtml() {
   // 2. Bilan ortho
   var orthoSections = [
     { label:'EPAULE', fields:[['ep-type','Type'],['ep-marqueur','Marqueur']], tables:['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho-mob','tb-ep-ortho-conf','tb-ep-irrit-g','tb-ep-irrit-d','tb-ep-trau-g','tb-ep-trau-d','tb-ep-fonc-g','tb-ep-fonc-d','tb-ep-ortho-g','tb-ep-ortho-d'], concl:'ep-conclusion', opt:'ep-opt' },
+    { label:'RACHIS CERVICAL', fields:[['cv-marqueur','Marqueur']], tables:['tb-cv-vascul','tb-cv-sensib-g','tb-cv-sensib-d','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique'], concl:'cv-conclusion' },
     { label:'RACHIS', fields:[['ra-marqueur','Marqueur'],['ra-mckenzie','McKenzie']], tables:['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-force-d','tb-ra-force-g','tb-ra-transverse'], concl:'ra-conclusion', opt:'ra-opt' },
     { label:'HANCHE', fields:[['ha-marqueur','Marqueur']], tables:['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-force-d','tb-ha-force-g','tb-ha-global-g','tb-ha-global-d','tb-ha-add-g','tb-ha-add-d','tb-ha-pubis-g','tb-ha-pubis-d','tb-ha-flech-g','tb-ha-flech-d','tb-ha-inguinal-g','tb-ha-inguinal-d','tb-ha-hanche-g','tb-ha-hanche-d'], concl:'ha-conclusion', opt:'ha-opt' },
     { label:'GENOU', fields:[['ge-marqueur','Marqueur']], tables:[
@@ -3983,16 +4063,16 @@ function _buildAllTestsHtml() {
 
   // ── Mobilité rachis insuffisante ────────────────────────────────────────
   (function(){
-    var segLbl = { cerv:'cervicale', thor:'thoracique', lomb:'lombaire' };
+    var segLbl = { cerv:'cervicale', cv:'cervicale (bilan cerv.)', thor:'thoracique', lomb:'lombaire' };
     var dirLbl = {
       'Flexion':   'la flexion',
-      'Extension': "l’extension",
-      'Incl. D':   "l’inclinaison droite",
-      'Incl. G':   "l’inclinaison gauche",
+      'Extension': "l'extension",
+      'Incl. D':   "l'inclinaison droite",
+      'Incl. G':   "l'inclinaison gauche",
       'Rot. D':    'la rotation droite',
       'Rot. G':    'la rotation gauche',
     };
-    ['cerv','thor','lomb'].forEach(function(seg) {
+    ['cerv','cv','thor','lomb'].forEach(function(seg) {
       MOB.forEach(function(m) {
         var mKey = 'mob-' + seg + '-' + m.replace(/[\s.\/]+/g, '_') + '-st';
         var stEl = document.getElementById(mKey);
