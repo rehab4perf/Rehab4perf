@@ -43,15 +43,26 @@ var _cycleColors = {
 function _cycleColor(nom){
   return _cycleColors[nom] || '#52514E';
 }
+// endDate = dernier jour INCLUS du cycle
 function _cycleComputeEndDate(startStr, weeks){
   if(!startStr || isNaN(weeks) || weeks<1) return '';
-  var d=new Date(startStr+'T00:00:00'); d.setDate(d.getDate()+weeks*7);
+  var d=new Date(startStr+'T00:00:00'); d.setDate(d.getDate()+weeks*7-1);
   return d.toISOString().slice(0,10);
 }
 function _cycleComputeWeeks(startStr, endStr){
   if(!startStr || !endStr) return NaN;
   var days=Math.round((new Date(endStr+'T00:00:00')-new Date(startStr+'T00:00:00'))/86400000);
-  return Math.max(1, Math.round(days/7));
+  return Math.max(1, Math.round((days+1)/7));
+}
+function _fmtDate(str){
+  if(!str) return '?';
+  var d=new Date(str+'T00:00:00');
+  return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
+}
+function _fmtDateShort(str){
+  if(!str) return '';
+  var d=new Date(str+'T00:00:00');
+  return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');
 }
 function _dayCycleStyle(cellDate){
   for(var i=0;i<_cycles.length;i++){
@@ -61,7 +72,7 @@ function _dayCycleStyle(cellDate){
     var cyEnd;
     if(cy.endDate){ cyEnd=new Date(cy.endDate+'T00:00:00'); cyEnd.setHours(0,0,0,0); }
     else { cyEnd=new Date(cyStart); cyEnd.setDate(cyEnd.getDate()+cy.duree*7); }
-    if(cellDate>=cyStart && cellDate<cyEnd){
+    if(cellDate>=cyStart && cellDate<=cyEnd){
       var hex=cy.color||_cycleColors[cy.nom]||'#52514E';
       var r=parseInt(hex.slice(1,3),16)||82;
       var g=parseInt(hex.slice(3,5),16)||81;
@@ -71,20 +82,24 @@ function _dayCycleStyle(cellDate){
   }
   return '';
 }
+var _cycleEditingId = null;
+var _cycleAddOpen   = false;
+var _cycleDragId    = null;
+
 function openCycles(){
   document.getElementById('cycle-modal').classList.add('open');
   renderCycleTimeline();
-  _cycleAutoDate();
+  renderCycleList();
 }
-// Pré-remplit la date de début = fin du dernier cycle (ou aujourd'hui)
+// Pré-remplit la date de début = lendemain du dernier cycle (ou aujourd'hui)
 function _cycleAutoDate(){
   var inp = document.getElementById('cycle-start');
   if(!inp) return;
   if(_cycles.length){
     var last = _cycles[_cycles.length-1];
     if(last.startDate){
-      var d = new Date(last.endDate || _cycleComputeEndDate(last.startDate, last.duree) || last.startDate+'T00:00:00');
-      if(!last.endDate) d = new Date(last.startDate+'T00:00:00'), d.setDate(d.getDate()+last.duree*7);
+      var endStr = last.endDate || _cycleComputeEndDate(last.startDate, last.duree);
+      var d = new Date(endStr+'T00:00:00'); d.setDate(d.getDate()+1);
       inp.value = d.toISOString().split('T')[0];
     } else {
       inp.value = new Date().toISOString().split('T')[0];
@@ -92,11 +107,13 @@ function _cycleAutoDate(){
   } else {
     inp.value = new Date().toISOString().split('T')[0];
   }
-  var dur = parseInt(document.getElementById('cycle-duree').value)||3;
+  var dur = parseInt((document.getElementById('cycle-duree')||{}).value)||3;
   var endInp = document.getElementById('cycle-end');
   if(endInp) endInp.value = _cycleComputeEndDate(inp.value, dur);
 }
 function closeCycles(){
+  _cycleEditingId = null;
+  _cycleAddOpen   = false;
   document.getElementById('cycle-modal').classList.remove('open');
 }
 function selectCycleName(btn, name){
@@ -175,78 +192,53 @@ function cycleEndDateChange(){
     if(!isNaN(w)){ document.getElementById('cycle-duree').value=w; document.getElementById('cycle-duree-display').textContent=w+(w===1?' semaine':' semaines'); }
   }
 }
-function addCycle(){
+function openCycleForm(id){
+  _cycleEditingId = id || null;
+  _cycleAddOpen   = true;
+  renderCycleList();
+}
+function closeCycleForm(){
+  _cycleEditingId = null;
+  _cycleAddOpen   = false;
+  renderCycleList();
+}
+function submitCycleForm(){
   var nom = (document.getElementById('cycle-nom').value||'').trim();
   if(!nom){ alert('Veuillez saisir un nom de cycle.'); return; }
-  var startDate = document.getElementById('cycle-start').value || '';
-  var endDate   = (document.getElementById('cycle-end')||{}).value || '';
+  var startDate = (document.getElementById('cycle-start')||{}).value||'';
+  var endDate   = (document.getElementById('cycle-end')||{}).value||'';
   var duree;
-  if(startDate && endDate){ duree = _cycleComputeWeeks(startDate, endDate); }
-  else { duree = parseInt(document.getElementById('cycle-duree').value)||3; }
-  if(startDate && !endDate) endDate = _cycleComputeEndDate(startDate, duree);
+  if(startDate && endDate){ duree=_cycleComputeWeeks(startDate,endDate); }
+  else { duree=parseInt((document.getElementById('cycle-duree')||{}).value)||3; }
+  if(startDate && !endDate) endDate=_cycleComputeEndDate(startDate,duree);
   var note = (document.getElementById('cycle-note').value||'').trim();
-  var cycleColor = (document.getElementById('cycle-color-val')||{}).value || _cycleColors[nom] || '#1A3A5C';
-  _cycles.push({id:'c'+Date.now(), nom:nom, duree:duree, startDate:startDate, endDate:endDate, note:note, color:cycleColor});
+  var cycleColor = (document.getElementById('cycle-color-val')||{}).value||_cycleColors[nom]||'#1A3A5C';
+  if(_cycleEditingId){
+    var idx=_cycles.findIndex(function(c){ return c.id===_cycleEditingId; });
+    if(idx!==-1) _cycles[idx]=Object.assign({},_cycles[idx],{nom:nom,duree:duree,startDate:startDate,endDate:endDate,note:note,color:cycleColor});
+  } else {
+    _cycles.push({id:'c'+Date.now(),nom:nom,duree:duree,startDate:startDate,endDate:endDate,note:note,color:cycleColor});
+  }
   _saveCyclesToCloud();
   renderCycleTimeline();
-  if(typeof renderCalendar === 'function') renderCalendar();
-  // Réinitialiser le formulaire et pré-calculer la prochaine date
-  document.getElementById('cycle-nom').value = '';
-  var cnEl = document.getElementById('cycle-note');
-  cnEl.value = ''; cnEl.style.height = '';
-  clearCycleNameBtns();
-  _cycleAutoDate();
-  var h3 = document.querySelector('.cycle-add-section h3');
-  if(h3) h3.textContent = 'Ajouter un cycle';
+  if(typeof renderCalendar==='function') renderCalendar();
+  closeCycleForm();
 }
 function deleteCycle(id){
-  _cycles = _cycles.filter(function(c){ return c.id !== id; });
+  if(!confirm('Supprimer ce cycle ?')) return;
+  if(_cycleEditingId===id){ _cycleEditingId=null; _cycleAddOpen=false; }
+  _cycles=_cycles.filter(function(c){ return c.id!==id; });
   _saveCyclesToCloud();
   renderCycleTimeline();
-  if(typeof renderCalendar === 'function') renderCalendar();
+  renderCycleList();
+  if(typeof renderCalendar==='function') renderCalendar();
 }
-function editCycle(id){
-  var c = _cycles.find(function(x){ return x.id===id; });
-  if(!c) return;
-  // Pré-remplir le formulaire avec les valeurs du cycle
-  document.getElementById('cycle-nom').value = c.nom;
-  document.getElementById('cycle-duree').value = c.duree;
-  document.getElementById('cycle-duree-display').textContent = c.duree + (c.duree===1?' semaine':' semaines');
-  document.getElementById('cycle-start').value = c.startDate || '';
-  var ceInp = document.getElementById('cycle-end');
-  if(ceInp) ceInp.value = c.endDate || _cycleComputeEndDate(c.startDate, c.duree) || '';
-  var cnEl2 = document.getElementById('cycle-note');
-  cnEl2.value = c.note || '';
-  requestAnimationFrame(function(){ autoResizeTa(cnEl2); });
-  _cycleSwatchSelect(c.color || _cycleColors[c.nom] || '#1A3A5C');
-  // Sélectionner le bon bouton de nom
-  clearCycleNameBtns();
-  document.querySelectorAll('.cycle-name-btn').forEach(function(btn){
-    if(btn.textContent.trim()===c.nom){
-      var col = _cycleColor(c.nom);
-      btn.classList.add('sel');
-      btn.style.background=col; btn.style.color='#fff'; btn.style.borderColor=col;
-    }
-  });
-  // Supprimer l'ancien et marquer le formulaire en mode "édition"
-  _cycles = _cycles.filter(function(x){ return x.id!==id; });
-  _saveCyclesToCloud();
-  renderCycleTimeline();
-  // Scroller vers le formulaire et mettre le focus
-  var section = document.querySelector('.cycle-add-section');
-  if(section){ section.scrollIntoView({behavior:'smooth',block:'nearest'}); }
-  var h3 = section && section.querySelector('h3');
-  if(h3) h3.textContent = '✏️ Modifier le cycle';
-  setTimeout(function(){
-    var nomInput = document.getElementById('cycle-nom');
-    if(nomInput) nomInput.focus();
-  }, 200);
-}
+function addCycle(){ openCycleForm(null); } // compat
 function renderCycleTimeline(){
   var tl = document.getElementById('cycle-timeline');
   var tot = document.getElementById('cycle-total');
   if(!_cycles.length){
-    tl.innerHTML = '<div style="color:#aaa;font-size:.8rem;align-self:center;">Aucun cycle ajouté — utilisez le formulaire ci-dessous.</div>';
+    tl.innerHTML = '<div style="color:#aaa;font-size:.8rem;align-self:center;">Aucun cycle ajouté.</div>';
     tot.textContent = '';
     return;
   }
@@ -254,50 +246,181 @@ function renderCycleTimeline(){
   var minW = 60, unitW = Math.max(minW, Math.min(90, 600/totalWeeks));
   var today = new Date(); today.setHours(0,0,0,0);
 
-  // Calcul du marqueur "aujourd'hui" : position en semaines depuis le début du premier cycle
   var todayMarkerPct = null;
-  var firstStart = _cycles[0] && _cycles[0].startDate ? new Date(_cycles[0].startDate) : null;
+  var firstStart = _cycles[0] && _cycles[0].startDate ? new Date(_cycles[0].startDate+'T00:00:00') : null;
   if(firstStart){
     firstStart.setHours(0,0,0,0);
     var diffDays = Math.round((today - firstStart) / 86400000);
     var diffWeeks = diffDays / 7;
-    if(diffWeeks >= 0 && diffWeeks <= totalWeeks){
-      todayMarkerPct = (diffWeeks / totalWeeks) * 100;
-    }
+    if(diffWeeks >= 0 && diffWeeks <= totalWeeks) todayMarkerPct = (diffWeeks / totalWeeks) * 100;
   }
 
-  var html = '';
-  // Conteneur relatif pour le marqueur
-  html += '<div style="position:relative;display:flex;gap:6px;align-items:stretch;min-height:72px;width:100%;">';
-
+  var html = '<div style="position:relative;display:flex;gap:6px;align-items:stretch;min-height:72px;width:100%;">';
   var weekCursor = 1;
   _cycles.forEach(function(c){
     var col = c.color || _cycleColor(c.nom);
     var w = (c.duree * unitW) + 'px';
     var weekEnd = weekCursor + c.duree - 1;
-    var weekLabel = 'S'+weekCursor + (c.duree > 1 ? '→S'+weekEnd : '');
-    html += '<div class="cycle-block" style="background:'+col+';width:'+w+';flex-shrink:0;cursor:pointer;" title="Cliquer pour modifier" onclick="editCycle(\''+c.id+'\')">';
+    var endStr = c.endDate || _cycleComputeEndDate(c.startDate, c.duree);
+    var datesLine = (c.startDate && endStr) ? _fmtDateShort(c.startDate)+' → '+_fmtDateShort(endStr) : 'S'+weekCursor+(c.duree>1?'→S'+weekEnd:'');
+    html += '<div class="cycle-block" style="background:'+col+';width:'+w+';flex-shrink:0;cursor:pointer;" title="Modifier" onclick="openCycleForm(\''+c.id+'\')">';
     html += '<button class="cycle-block-del" onclick="event.stopPropagation();deleteCycle(\''+c.id+'\')">×</button>';
-    html += '<div style="font-size:.82rem;font-weight:700;margin-bottom:3px;padding-right:16px;">'+c.nom+'</div>';
-    html += '<div style="font-size:.7rem;opacity:.85;">'+weekLabel+' · '+c.duree+' sem.</div>';
-    if(c.note) html += '<div style="font-size:.65rem;opacity:.75;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+c.note+'</div>';
+    html += '<div style="font-size:.8rem;font-weight:700;margin-bottom:2px;padding-right:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+c.nom+'</div>';
+    html += '<div style="font-size:.63rem;opacity:.85;white-space:nowrap;">'+datesLine+'</div>';
+    html += '<div style="font-size:.63rem;opacity:.7;">'+c.duree+' sem.</div>';
     html += '</div>';
     weekCursor += c.duree;
   });
 
-  // Marqueur "Aujourd'hui" — label en bas de la ligne, dans la zone de padding-bottom
   if(todayMarkerPct !== null){
     var lblPos = todayMarkerPct > 75 ? 'right:4px;left:auto;' : 'left:4px;';
-    html += '<div style="position:absolute;top:0;bottom:-30px;left:'+todayMarkerPct+'%;'
-          + 'width:2px;background:var(--red);pointer-events:none;z-index:10;">'
-          + '<div style="position:absolute;bottom:4px;'+lblPos
-          + 'background:var(--red);color:#fff;font-size:.6rem;font-weight:700;'
-          + 'padding:2px 6px;border-radius:4px;white-space:nowrap;">Aujourd\'hui</div>'
+    html += '<div style="position:absolute;top:0;bottom:-30px;left:'+todayMarkerPct+'%;width:2px;background:var(--red);pointer-events:none;z-index:10;">'
+          + '<div style="position:absolute;bottom:4px;'+lblPos+'background:var(--red);color:#fff;font-size:.6rem;font-weight:700;padding:2px 6px;border-radius:4px;white-space:nowrap;">Aujourd\'hui</div>'
           + '</div>';
   }
   html += '</div>';
   tl.innerHTML = html;
   tot.textContent = 'Total : '+totalWeeks+' semaine'+(totalWeeks>1?'s':'');
+}
+
+/* ── Liste des cycles + formulaire inline ── */
+function _cycleListRowHtml(c){
+  var col = c.color || _cycleColor(c.nom);
+  var endStr = c.endDate || _cycleComputeEndDate(c.startDate, c.duree) || '';
+  var datesPart = c.startDate ? _fmtDate(c.startDate)+' → '+_fmtDate(endStr)+' · '+c.duree+' sem.' : c.duree+' sem.';
+  var sub = datesPart + (c.note ? '  ·  '+c.note : '');
+  return '<div class="cycle-list-row" data-id="'+c.id+'" draggable="true"'
+    +' ondragstart="_cycleDragStart(event,\''+c.id+'\')"'
+    +' ondragover="_cycleDragOver(event,\''+c.id+'\')"'
+    +' ondrop="_cycleDrop(event,\''+c.id+'\')"'
+    +' ondragend="_cycleDragEnd(event)">'
+    +'<div class="cycle-list-handle" title="Glisser pour réordonner">⠿</div>'
+    +'<div class="cycle-list-dot" style="background:'+col+'"></div>'
+    +'<div class="cycle-list-info">'
+    +'<div class="cycle-list-name">'+c.nom+'</div>'
+    +'<div class="cycle-list-sub">'+sub+'</div>'
+    +'</div>'
+    +'<div class="cycle-list-actions">'
+    +'<button class="cycle-list-btn" onclick="openCycleForm(\''+c.id+'\')" title="Modifier">✏️</button>'
+    +'<button class="cycle-list-btn del" onclick="deleteCycle(\''+c.id+'\')" title="Supprimer">×</button>'
+    +'</div>'
+    +'</div>';
+}
+function _cycleInlineFormHtml(c){
+  var title = c ? 'Modifier — '+c.nom : 'Nouveau cycle';
+  var swatchDefs = [
+    ['#1A3A5C','Force'],['#C0392B','Puissance'],['#2D7D46','Hypertrophie'],
+    ['#2563EB','Endurance de force'],['#D4600A','Récupération'],['#9B2C6B','Réathlétisation'],
+    ['#0891B2','Cardio'],['#CA8A04','Mobilité']
+  ];
+  var h = '<h4>'+title+'</h4>';
+  h += '<div style="margin-bottom:8px"><div style="font-size:.72rem;font-weight:600;color:#444;margin-bottom:5px;">Nom du cycle</div>';
+  h += '<div class="cycle-name-btns" id="cycle-name-btns">';
+  ['Force','Puissance','Hypertrophie','Endurance de force','Récupération','Réathlétisation'].forEach(function(n){
+    h += '<button class="cycle-name-btn" onclick="selectCycleName(this,\''+n+'\')">'+n+'</button>';
+  });
+  h += '</div>';
+  h += '<input type="text" id="cycle-nom" placeholder="Ou saisir un nom personnalisé…" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;box-sizing:border-box;" oninput="clearCycleNameBtns()"></div>';
+  h += '<div style="margin-bottom:10px"><label style="font-size:.72rem;font-weight:600;color:#444;display:block;margin-bottom:5px;">Couleur</label>';
+  h += '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">';
+  swatchDefs.forEach(function(s){
+    h += '<button class="cycle-swatch" data-color="'+s[0]+'" onclick="selectCycleColor(this,\''+s[0]+'\')" title="'+s[1]+'" style="width:22px;height:22px;border-radius:50%;background:'+s[0]+';border:2px solid transparent;cursor:pointer;flex-shrink:0;outline:none;"></button>';
+  });
+  h += '<label class="cycle-swatch cycle-swatch-custom" title="Couleur personnalisée" style="width:22px;height:22px;border-radius:50%;border:2px solid var(--border);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.75rem;overflow:hidden;position:relative;">🎨<input type="color" id="cycle-color" value="#1A3A5C" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;" oninput="selectCycleColorCustom(this.value)"></label>';
+  h += '</div><input type="hidden" id="cycle-color-val" value="#1A3A5C"></div>';
+  h += '<div class="cycle-form-grid" style="margin-bottom:8px;">';
+  h += '<div class="cycle-field"><label>Date de début</label><input type="date" id="cycle-start" onchange="cycleStartDateChange()"></div>';
+  h += '<div class="cycle-field"><label>Date de fin</label><input type="date" id="cycle-end" onchange="cycleEndDateChange()"></div>';
+  h += '<div class="cycle-field"><label>Durée</label><div class="cycle-stepper"><button class="cycle-stepper-btn" onclick="cycleDureeChange(-1)">−</button><span class="cycle-stepper-val" id="cycle-duree-display">3 semaines</span><button class="cycle-stepper-btn" onclick="cycleDureeChange(+1)">+</button></div><input type="hidden" id="cycle-duree" value="3"></div>';
+  h += '</div>';
+  h += '<div class="cycle-field" style="margin-bottom:0"><label>Note <span style="font-weight:400;color:#999;">(optionnel)</span></label>';
+  h += '<textarea id="cycle-note" placeholder="Ex : Focus contrôle moteur, Préparation compétition…" rows="1" oninput="autoResizeTa(this)" style="width:100%;border:1px solid #d1d5db;border-radius:6px;padding:6px 8px;font-size:.82rem;font-family:inherit;color:var(--text);resize:none;overflow:hidden;outline:none;box-sizing:border-box;"></textarea></div>';
+  h += '<div class="cycle-form-btns">';
+  h += '<button class="cycle-form-btn-cancel" onclick="closeCycleForm()">Annuler</button>';
+  h += '<button class="cycle-form-btn-save" onclick="submitCycleForm()">'+(c?'Enregistrer':'+ Ajouter le cycle')+'</button>';
+  h += '</div>';
+  return h;
+}
+function _populateCycleForm(c){
+  var nomEl=document.getElementById('cycle-nom'); if(!nomEl) return;
+  if(c){
+    nomEl.value=c.nom;
+    var startEl=document.getElementById('cycle-start'); if(startEl) startEl.value=c.startDate||'';
+    var endEl=document.getElementById('cycle-end'); if(endEl) endEl.value=c.endDate||_cycleComputeEndDate(c.startDate,c.duree)||'';
+    var d=parseInt(c.duree)||3;
+    var durEl=document.getElementById('cycle-duree'); if(durEl) durEl.value=d;
+    var dispEl=document.getElementById('cycle-duree-display'); if(dispEl) dispEl.textContent=d+(d===1?' semaine':' semaines');
+    var noteEl=document.getElementById('cycle-note');
+    if(noteEl){ noteEl.value=c.note||''; requestAnimationFrame(function(){ autoResizeTa(noteEl); }); }
+    _cycleSwatchSelect(c.color||_cycleColors[c.nom]||'#1A3A5C');
+    clearCycleNameBtns();
+    document.querySelectorAll('.cycle-name-btn').forEach(function(btn){
+      if(btn.textContent.trim()===c.nom){
+        var col=_cycleColor(c.nom); btn.classList.add('sel'); btn.style.background=col; btn.style.color='#fff'; btn.style.borderColor=col;
+      }
+    });
+  } else {
+    _cycleAutoDate();
+    nomEl.value='';
+    var noteEl2=document.getElementById('cycle-note'); if(noteEl2) noteEl2.value='';
+    clearCycleNameBtns();
+    _cycleSwatchSelect('#1A3A5C');
+    nomEl.focus();
+  }
+}
+function renderCycleList(){
+  var wrap=document.getElementById('cycle-list-wrap'); if(!wrap) return;
+  var h='';
+  if(_cycles.length){
+    h+='<div class="cycle-list">';
+    _cycles.forEach(function(c){ h+=_cycleListRowHtml(c); });
+    h+='</div>';
+  } else if(!_cycleAddOpen){
+    h+='<div class="cycle-list-empty">Aucun cycle — cliquez « + » pour commencer.</div>';
+  }
+  if(!(_cycleAddOpen && !_cycleEditingId))
+    h+='<button class="cycle-add-trigger" onclick="openCycleForm(null)">+ Ajouter un cycle</button>';
+  if(_cycleAddOpen){
+    var fc=_cycleEditingId?_cycles.find(function(c){return c.id===_cycleEditingId;}):null;
+    h+='<div class="cycle-inline-form" id="cycle-inline-form-wrap">'+_cycleInlineFormHtml(fc)+'</div>';
+  }
+  wrap.innerHTML=h;
+  if(_cycleAddOpen){
+    var fc2=_cycleEditingId?_cycles.find(function(c){return c.id===_cycleEditingId;}):null;
+    _populateCycleForm(fc2);
+    setTimeout(function(){
+      var f=document.getElementById('cycle-inline-form-wrap');
+      if(f) f.scrollIntoView({behavior:'smooth',block:'nearest'});
+    },50);
+  }
+}
+
+/* ── Drag-to-reorder ── */
+function _cycleDragStart(e,id){
+  _cycleDragId=id; e.dataTransfer.effectAllowed='move';
+  setTimeout(function(){ var r=document.querySelector('.cycle-list-row[data-id="'+id+'"]'); if(r) r.style.opacity='.45'; },0);
+}
+function _cycleDragOver(e,id){
+  e.preventDefault(); e.dataTransfer.dropEffect='move';
+  document.querySelectorAll('.cycle-list-row').forEach(function(r){ r.classList.remove('cycle-drag-over'); });
+  if(id!==_cycleDragId){ var r=document.querySelector('.cycle-list-row[data-id="'+id+'"]'); if(r) r.classList.add('cycle-drag-over'); }
+}
+function _cycleDrop(e,id){
+  e.preventDefault();
+  document.querySelectorAll('.cycle-list-row').forEach(function(r){ r.classList.remove('cycle-drag-over'); r.style.opacity=''; });
+  if(!_cycleDragId||_cycleDragId===id){ _cycleDragId=null; return; }
+  var fi=_cycles.findIndex(function(c){ return c.id===_cycleDragId; });
+  var ti=_cycles.findIndex(function(c){ return c.id===id; });
+  if(fi===-1||ti===-1){ _cycleDragId=null; return; }
+  var moved=_cycles.splice(fi,1)[0]; _cycles.splice(ti,0,moved);
+  _cycleDragId=null;
+  _saveCyclesToCloud();
+  renderCycleTimeline(); renderCycleList();
+  if(typeof renderCalendar==='function') renderCalendar();
+}
+function _cycleDragEnd(e){
+  _cycleDragId=null;
+  document.querySelectorAll('.cycle-list-row').forEach(function(r){ r.classList.remove('cycle-drag-over'); r.style.opacity=''; });
 }
 function exportCycles(){
   if(!_cycles.length){ alert('Aucun cycle à exporter.'); return; }
