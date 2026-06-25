@@ -43,12 +43,24 @@ var _cycleColors = {
 function _cycleColor(nom){
   return _cycleColors[nom] || '#52514E';
 }
+function _cycleComputeEndDate(startStr, weeks){
+  if(!startStr || isNaN(weeks) || weeks<1) return '';
+  var d=new Date(startStr+'T00:00:00'); d.setDate(d.getDate()+weeks*7);
+  return d.toISOString().slice(0,10);
+}
+function _cycleComputeWeeks(startStr, endStr){
+  if(!startStr || !endStr) return NaN;
+  var days=Math.round((new Date(endStr+'T00:00:00')-new Date(startStr+'T00:00:00'))/86400000);
+  return Math.max(1, Math.round(days/7));
+}
 function _dayCycleStyle(cellDate){
   for(var i=0;i<_cycles.length;i++){
     var cy=_cycles[i];
     if(!cy.startDate) continue;
-    var cyStart=new Date(cy.startDate); cyStart.setHours(0,0,0,0);
-    var cyEnd=new Date(cyStart); cyEnd.setDate(cyEnd.getDate()+cy.duree*7);
+    var cyStart=new Date(cy.startDate+'T00:00:00'); cyStart.setHours(0,0,0,0);
+    var cyEnd;
+    if(cy.endDate){ cyEnd=new Date(cy.endDate+'T00:00:00'); cyEnd.setHours(0,0,0,0); }
+    else { cyEnd=new Date(cyStart); cyEnd.setDate(cyEnd.getDate()+cy.duree*7); }
     if(cellDate>=cyStart && cellDate<cyEnd){
       var hex=cy.color||_cycleColors[cy.nom]||'#52514E';
       var r=parseInt(hex.slice(1,3),16)||82;
@@ -71,13 +83,18 @@ function _cycleAutoDate(){
   if(_cycles.length){
     var last = _cycles[_cycles.length-1];
     if(last.startDate){
-      var d = new Date(last.startDate);
-      d.setDate(d.getDate() + last.duree * 7);
+      var d = new Date(last.endDate || _cycleComputeEndDate(last.startDate, last.duree) || last.startDate+'T00:00:00');
+      if(!last.endDate) d = new Date(last.startDate+'T00:00:00'), d.setDate(d.getDate()+last.duree*7);
       inp.value = d.toISOString().split('T')[0];
-      return;
+    } else {
+      inp.value = new Date().toISOString().split('T')[0];
     }
+  } else {
+    inp.value = new Date().toISOString().split('T')[0];
   }
-  inp.value = new Date().toISOString().split('T')[0];
+  var dur = parseInt(document.getElementById('cycle-duree').value)||3;
+  var endInp = document.getElementById('cycle-end');
+  if(endInp) endInp.value = _cycleComputeEndDate(inp.value, dur);
 }
 function closeCycles(){
   document.getElementById('cycle-modal').classList.remove('open');
@@ -132,18 +149,44 @@ function _cycleSwatchSelect(color){
 function cycleDureeChange(delta){
   var inp = document.getElementById('cycle-duree');
   var disp = document.getElementById('cycle-duree-display');
-  var val = Math.min(16, Math.max(1, (parseInt(inp.value)||3) + delta));
+  var val = Math.min(52, Math.max(1, (parseInt(inp.value)||3) + delta));
   inp.value = val;
   disp.textContent = val + (val === 1 ? ' semaine' : ' semaines');
+  var start = document.getElementById('cycle-start').value;
+  if(start){ var endInp=document.getElementById('cycle-end'); if(endInp) endInp.value=_cycleComputeEndDate(start,val); }
+}
+function cycleStartDateChange(){
+  var start = document.getElementById('cycle-start').value;
+  var end   = (document.getElementById('cycle-end')||{}).value||'';
+  if(start && end){
+    var w = _cycleComputeWeeks(start, end);
+    if(!isNaN(w)){ document.getElementById('cycle-duree').value=w; document.getElementById('cycle-duree-display').textContent=w+(w===1?' semaine':' semaines'); }
+  } else if(start){
+    var dur = parseInt(document.getElementById('cycle-duree').value)||3;
+    var endInp=document.getElementById('cycle-end'); if(endInp) endInp.value=_cycleComputeEndDate(start,dur);
+  }
+}
+function cycleEndDateChange(){
+  var start = document.getElementById('cycle-start').value;
+  var end   = (document.getElementById('cycle-end')||{}).value||'';
+  if(!end) return;
+  if(start){
+    var w = _cycleComputeWeeks(start, end);
+    if(!isNaN(w)){ document.getElementById('cycle-duree').value=w; document.getElementById('cycle-duree-display').textContent=w+(w===1?' semaine':' semaines'); }
+  }
 }
 function addCycle(){
   var nom = (document.getElementById('cycle-nom').value||'').trim();
   if(!nom){ alert('Veuillez saisir un nom de cycle.'); return; }
-  var duree = parseInt(document.getElementById('cycle-duree').value)||3;
   var startDate = document.getElementById('cycle-start').value || '';
+  var endDate   = (document.getElementById('cycle-end')||{}).value || '';
+  var duree;
+  if(startDate && endDate){ duree = _cycleComputeWeeks(startDate, endDate); }
+  else { duree = parseInt(document.getElementById('cycle-duree').value)||3; }
+  if(startDate && !endDate) endDate = _cycleComputeEndDate(startDate, duree);
   var note = (document.getElementById('cycle-note').value||'').trim();
   var cycleColor = (document.getElementById('cycle-color-val')||{}).value || _cycleColors[nom] || '#1A3A5C';
-  _cycles.push({id:'c'+Date.now(), nom:nom, duree:duree, startDate:startDate, note:note, color:cycleColor});
+  _cycles.push({id:'c'+Date.now(), nom:nom, duree:duree, startDate:startDate, endDate:endDate, note:note, color:cycleColor});
   _saveCyclesToCloud();
   renderCycleTimeline();
   if(typeof renderCalendar === 'function') renderCalendar();
@@ -170,6 +213,8 @@ function editCycle(id){
   document.getElementById('cycle-duree').value = c.duree;
   document.getElementById('cycle-duree-display').textContent = c.duree + (c.duree===1?' semaine':' semaines');
   document.getElementById('cycle-start').value = c.startDate || '';
+  var ceInp = document.getElementById('cycle-end');
+  if(ceInp) ceInp.value = c.endDate || _cycleComputeEndDate(c.startDate, c.duree) || '';
   var cnEl2 = document.getElementById('cycle-note');
   cnEl2.value = c.note || '';
   requestAnimationFrame(function(){ autoResizeTa(cnEl2); });

@@ -3447,6 +3447,14 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
         </div>
         <div class="cycle-form-grid">
           <div class="cycle-field">
+            <label>Date de début</label>
+            <input type="date" id="cycle-start" onchange="cycleStartDateChange()">
+          </div>
+          <div class="cycle-field">
+            <label>Date de fin</label>
+            <input type="date" id="cycle-end" onchange="cycleEndDateChange()">
+          </div>
+          <div class="cycle-field">
             <label>Durée</label>
             <div class="cycle-stepper">
               <button class="cycle-stepper-btn" onclick="cycleDureeChange(-1)" title="Moins une semaine">−</button>
@@ -3454,10 +3462,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
               <button class="cycle-stepper-btn" onclick="cycleDureeChange(+1)" title="Plus une semaine">+</button>
             </div>
             <input type="hidden" id="cycle-duree" value="3">
-          </div>
-          <div class="cycle-field">
-            <label>Date de début</label>
-            <input type="date" id="cycle-start">
           </div>
           <div class="cycle-field" style="grid-column:1/-1;">
             <label>Objectif / Note <span style="font-weight:400;color:#999;">(optionnel)</span></label>
