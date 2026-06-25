@@ -185,12 +185,35 @@ const TESTS = {
     'Petit pectoral <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">MS levé + avant-bras au-dessus tête + rotation controlatérale. ✚ Abolition / diminution du pouls</span>'
   ]},
   'tb-cv-mecanique': {type:'ortho', items:[
-    'Translation de C1 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Débattement latéral des apophyses transverses C1 (DD). ✚ Débattement ↑ → fracture odontoïde ?</span>',
+    'Translation de C1 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Débattement latéral des apophyses transverses C1 (DD). ✚ Débattement ↑ → fracture odontoïde ? — ❌ Contre-indication à la TM</span>',
     'Compression axiale — Flexion <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Pression axiale crâne en flexion cervicale. ✚ Douleur / paresthésies → hernie molle</span>',
     'Compression axiale — Latéro-flexion <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Pression axiale crâne en latéro-flexion. ✚ Douleur / paresthésies → hernie dure</span>',
     'Compression axiale — Extension <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Pression axiale crâne en extension. ✚ Douleur / paresthésies → hernie dure</span>',
+    'Distraction cervicale <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Traction axiale manuelle (DD). ✚ Diminution des symptômes → radiculopathie (Cluster de Wainner)</span>',
     'Sharp Purser Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Translation post. crâne + translation ant. C2. ✚ Arrêt moins ferme + symptômes diminuent → entorse ligament transverse</span>',
     'Test ligament alaire <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Rotation cervicale haute fixant C2. ✚ Rotation &gt; 20° ou inclinaison non limitée → entorse ligament alaire</span>'
+  ]},
+  'tb-cv-quick-g': {type:'ortho', items:[
+    'Spurling A — Gauche <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Inclinaison + rotation ipsilatérale + compression axiale. ✚ Reproduction douleur ± irradiation (Cluster de Wainner)</span>',
+    'Rotation cervicale — Gauche <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Amplitude &lt; 60° = positif (Cluster de Wainner)</span>'
+  ]},
+  'tb-cv-quick-d': {type:'ortho', items:[
+    'Spurling A — Droit <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Inclinaison + rotation ipsilatérale + compression axiale. ✚ Reproduction douleur ± irradiation (Cluster de Wainner)</span>',
+    'Rotation cervicale — Droit <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Amplitude &lt; 60° = positif (Cluster de Wainner)</span>'
+  ]},
+  'tb-cv-dn4-itw': {type:'ortho', opts:['Oui','Non'], items:[
+    'Brûlure',
+    'Sensation de froid douloureux',
+    'Décharges électriques',
+    'Fourmillements',
+    'Picotements',
+    'Engourdissement',
+    'Démangeaisons'
+  ]},
+  'tb-cv-dn4-exam': {type:'ortho', opts:['Oui','Non'], items:[
+    'Hypoesthésie au tact',
+    'Hypoesthésie à la piqûre',
+    'Allodynie au frottage léger'
   ]},
   'tb-ha-global':{type:'ortho',items:['HAGOS (questionnaire - noter score %)','Fulcrum test','Squeeze test 0° (EVA > 6 ?)']},
   'tb-ha-add':  {type:'ortho',items:['Squeeze test 45°','Étirement ADD']},
@@ -3037,12 +3060,66 @@ function showPage(id) {
 }
 
 // -- TEST CHANGE -----------------------------------------------
+function _calcWainnerCerv() {
+  var score = 0;
+  // Rotation cervicale <60° (row index 1 in quick-g or quick-d) — counts as 1 criterion max
+  var rotPos = 0;
+  ['tb-cv-quick-g','tb-cv-quick-d'].forEach(function(tid) {
+    var tb = document.getElementById(tid); if (!tb) return;
+    var rows = tb.querySelectorAll('tr');
+    if (rows[1] && rows[1].querySelector('select') && rows[1].querySelector('select').value === 'Positif') rotPos = 1;
+  });
+  score += rotPos;
+  // ULNT 1 (row 0 in ulnt-g or ulnt-d) — counts as 1 criterion max
+  var ulntPos = 0;
+  ['tb-cv-ulnt-g','tb-cv-ulnt-d'].forEach(function(tid) {
+    var tb = document.getElementById(tid); if (!tb) return;
+    var rows = tb.querySelectorAll('tr');
+    if (rows[0] && rows[0].querySelector('select') && rows[0].querySelector('select').value === 'Positif') ulntPos = 1;
+  });
+  score += ulntPos;
+  // Compression axiale any (rows 1,2,3 in mecanique) — counts as 1 criterion max
+  var compPos = 0;
+  var mec = document.getElementById('tb-cv-mecanique');
+  if (mec) {
+    var mecRows = mec.querySelectorAll('tr');
+    [1,2,3].forEach(function(i) {
+      if (mecRows[i] && mecRows[i].querySelector('select') && mecRows[i].querySelector('select').value === 'Positif') compPos = 1;
+    });
+    score += compPos;
+    // Distraction cervicale (row 4 in mecanique)
+    if (mecRows[4] && mecRows[4].querySelector('select') && mecRows[4].querySelector('select').value === 'Positif') score++;
+  }
+  var alertEl = document.getElementById('cv-wainner-alert');
+  if (alertEl) alertEl.style.display = score >= 3 ? 'flex' : 'none';
+}
+
+function _calcDN4() {
+  var total = 0;
+  ['tb-cv-dn4-itw','tb-cv-dn4-exam'].forEach(function(tid) {
+    var tb = document.getElementById(tid); if (!tb) return;
+    tb.querySelectorAll('select').forEach(function(s) {
+      if (s.value === 'Oui') total++;
+    });
+  });
+  var scoreEl = document.getElementById('cv-dn4-score');
+  if (scoreEl) {
+    scoreEl.textContent = 'Score DN4 : ' + total + '/10' + (total >= 4 ? ' — Douleur neuropathique probable' : '');
+    scoreEl.style.color = total >= 4 ? 'var(--warning,#e67e22)' : '';
+    scoreEl.style.fontWeight = total >= 4 ? '600' : '';
+  }
+}
+
 function onTestChange(sel, tableId, idx) {
   var v = sel.value;
   var type = sel.dataset.type;
   sel.className = '';
   if (v === 'Positif' || v === 'Valid' + 'é') sel.classList.add(type === 'fonc' ? 'positif-fonc' : 'positif-ortho');
   else if (v === 'N' + 'égatif' || v === 'Pas valid' + 'é') sel.classList.add(type === 'fonc' ? 'negatif-fonc' : 'negatif-ortho');
+  var wainnerTables = {'tb-cv-quick-g':1,'tb-cv-quick-d':1,'tb-cv-ulnt-g':1,'tb-cv-ulnt-d':1,'tb-cv-mecanique':1};
+  if (wainnerTables[tableId]) _calcWainnerCerv();
+  var dn4Tables = {'tb-cv-dn4-itw':1,'tb-cv-dn4-exam':1};
+  if (dn4Tables[tableId]) _calcDN4();
   updateBadges();
 }
 
@@ -3050,6 +3127,7 @@ function updateBadges() {
   const sections = {
     'epaule': ['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho-mob','tb-ep-ortho-conf'],
     'rachis': ['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-force-d','tb-ra-force-g','tb-ra-transverse'],
+    'rachis-cerv': ['tb-cv-quick-g','tb-cv-quick-d','tb-cv-vascul','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-dn4-itw','tb-cv-dn4-exam','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-sensib-g','tb-cv-sensib-d'],
     'hanche': ['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-force-d','tb-ha-force-g','tb-ha-global-g','tb-ha-global-d','tb-ha-add-g','tb-ha-add-d','tb-ha-pubis-g','tb-ha-pubis-d','tb-ha-flech-g','tb-ha-flech-d','tb-ha-inguinal-g','tb-ha-inguinal-d','tb-ha-hanche-g','tb-ha-hanche-d'],
     'genou':  ['tb-ge-global','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-ext',
                'tb-ge-global-g','tb-ge-global-d','tb-ge-lig-g','tb-ge-lig-d','tb-ge-lca-g','tb-ge-lca-d',
@@ -3598,7 +3676,7 @@ function _buildAllTestsHtml() {
   // 2. Bilan ortho
   var orthoSections = [
     { label:'EPAULE', fields:[['ep-type','Type'],['ep-marqueur','Marqueur']], tables:['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho-mob','tb-ep-ortho-conf','tb-ep-irrit-g','tb-ep-irrit-d','tb-ep-trau-g','tb-ep-trau-d','tb-ep-fonc-g','tb-ep-fonc-d','tb-ep-ortho-g','tb-ep-ortho-d'], concl:'ep-conclusion', opt:'ep-opt' },
-    { label:'RACHIS CERVICAL', fields:[['cv-marqueur','Marqueur']], tables:['tb-cv-vascul','tb-cv-sensib-g','tb-cv-sensib-d','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique'], concl:'cv-conclusion' },
+    { label:'RACHIS CERVICAL', fields:[['cv-marqueur','Marqueur']], tables:['tb-cv-quick-g','tb-cv-quick-d','tb-cv-vascul','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-dn4-itw','tb-cv-dn4-exam','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-sensib-g','tb-cv-sensib-d'], concl:'cv-conclusion' },
     { label:'RACHIS', fields:[['ra-marqueur','Marqueur'],['ra-mckenzie','McKenzie']], tables:['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-force-d','tb-ra-force-g','tb-ra-transverse'], concl:'ra-conclusion', opt:'ra-opt' },
     { label:'HANCHE', fields:[['ha-marqueur','Marqueur']], tables:['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-force-d','tb-ha-force-g','tb-ha-global-g','tb-ha-global-d','tb-ha-add-g','tb-ha-add-d','tb-ha-pubis-g','tb-ha-pubis-d','tb-ha-flech-g','tb-ha-flech-d','tb-ha-inguinal-g','tb-ha-inguinal-d','tb-ha-hanche-g','tb-ha-hanche-d'], concl:'ha-conclusion', opt:'ha-opt' },
     { label:'GENOU', fields:[['ge-marqueur','Marqueur']], tables:[
