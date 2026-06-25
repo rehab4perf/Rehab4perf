@@ -163,6 +163,17 @@ function _cycleSwatchSelect(color){
   var picker = document.getElementById('cycle-color');
   if(picker) picker.value = color;
 }
+function _updateDureeIndicator(){
+  var s = (document.getElementById('cycle-start')||{}).value||'';
+  var e = (document.getElementById('cycle-end')||{}).value||'';
+  var hint = document.getElementById('cycle-duree-hint'); if(!hint) return;
+  if(s && e){
+    hint.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> calculé depuis les dates';
+    hint.style.display = 'flex';
+  } else {
+    hint.style.display = 'none';
+  }
+}
 function cycleDureeChange(delta){
   var inp = document.getElementById('cycle-duree');
   var disp = document.getElementById('cycle-duree-display');
@@ -171,6 +182,7 @@ function cycleDureeChange(delta){
   disp.textContent = val + (val === 1 ? ' semaine' : ' semaines');
   var start = document.getElementById('cycle-start').value;
   if(start){ var endInp=document.getElementById('cycle-end'); if(endInp) endInp.value=_cycleComputeEndDate(start,val); }
+  _updateDureeIndicator();
 }
 function cycleStartDateChange(){
   var start = document.getElementById('cycle-start').value;
@@ -182,15 +194,17 @@ function cycleStartDateChange(){
     var dur = parseInt(document.getElementById('cycle-duree').value)||3;
     var endInp=document.getElementById('cycle-end'); if(endInp) endInp.value=_cycleComputeEndDate(start,dur);
   }
+  _updateDureeIndicator();
 }
 function cycleEndDateChange(){
   var start = document.getElementById('cycle-start').value;
   var end   = (document.getElementById('cycle-end')||{}).value||'';
-  if(!end) return;
+  if(!end){ _updateDureeIndicator(); return; }
   if(start){
     var w = _cycleComputeWeeks(start, end);
     if(!isNaN(w)){ document.getElementById('cycle-duree').value=w; document.getElementById('cycle-duree-display').textContent=w+(w===1?' semaine':' semaines'); }
   }
+  _updateDureeIndicator();
 }
 function openCycleForm(id){
   _cycleEditingId = id || null;
@@ -301,7 +315,7 @@ function _cycleListRowHtml(c){
     +'<div class="cycle-list-sub">'+sub+'</div>'
     +'</div>'
     +'<div class="cycle-list-actions">'
-    +'<button class="cycle-list-btn" onclick="openCycleForm(\''+c.id+'\')" title="Modifier">✏️</button>'
+    +'<button class="cycle-list-btn" onclick="openCycleForm(\''+c.id+'\')" title="Modifier"><svg width="13" height="13" viewBox="0 0 348.882 348.882" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M333.988,11.758l-0.42-0.383C325.538,4.04,315.129,0,304.258,0c-12.187,0-23.888,5.159-32.104,14.153L116.803,184.231c-1.416,1.55-2.49,3.379-3.154,5.37l-18.267,54.762c-2.112,6.331-1.052,13.333,2.835,18.729c3.918,5.438,10.23,8.685,16.886,8.685c2.879,0,5.693-0.592,8.362-1.76l52.89-23.138c1.923-0.841,3.648-2.076,5.063-3.626L336.771,73.176C352.937,55.479,351.69,27.929,333.988,11.758zM130.381,234.247l10.719-32.134l0.904-0.99l20.316,18.556l-0.904,0.99L130.381,234.247zM314.621,52.943L182.553,197.53l-20.316-18.556L294.305,34.386c2.583-2.828,6.118-4.386,9.954-4.386c3.365,0,6.588,1.252,9.082,3.53l0.419,0.383C319.244,38.922,319.63,47.459,314.621,52.943z"/><path d="M303.85,138.388c-8.284,0-15,6.716-15,15v127.347c0,21.034-17.113,38.147-38.147,38.147H68.904c-21.035,0-38.147-17.113-38.147-38.147V100.413c0-21.034,17.113-38.147,38.147-38.147h131.587c8.284,0,15-6.716,15-15s-6.716-15-15-15H68.904c-37.577,0-68.147,30.571-68.147,68.147v180.321c0,37.576,30.571,68.147,68.147,68.147h181.798c37.576,0,68.147-30.571,68.147-68.147V153.388C318.85,145.104,312.134,138.388,303.85,138.388z"/></svg></button>'
     +'<button class="cycle-list-btn del" onclick="deleteCycle(\''+c.id+'\')" title="Supprimer">×</button>'
     +'</div>'
     +'</div>';
@@ -331,7 +345,7 @@ function _cycleInlineFormHtml(c){
   h += '<div class="cycle-form-grid" style="margin-bottom:8px;">';
   h += '<div class="cycle-field"><label>Date de début</label><input type="date" id="cycle-start" onchange="cycleStartDateChange()"></div>';
   h += '<div class="cycle-field"><label>Date de fin</label><input type="date" id="cycle-end" onchange="cycleEndDateChange()"></div>';
-  h += '<div class="cycle-field"><label>Durée</label><div class="cycle-stepper"><button class="cycle-stepper-btn" onclick="cycleDureeChange(-1)">−</button><span class="cycle-stepper-val" id="cycle-duree-display">3 semaines</span><button class="cycle-stepper-btn" onclick="cycleDureeChange(+1)">+</button></div><input type="hidden" id="cycle-duree" value="3"></div>';
+  h += '<div class="cycle-field"><label>Durée</label><div class="cycle-stepper"><button class="cycle-stepper-btn" onclick="cycleDureeChange(-1)">−</button><span class="cycle-stepper-val" id="cycle-duree-display">3 semaines</span><button class="cycle-stepper-btn" onclick="cycleDureeChange(+1)">+</button></div><input type="hidden" id="cycle-duree" value="3"><div id="cycle-duree-hint" style="display:none;align-items:center;gap:4px;font-size:.68rem;color:var(--accent);margin-top:4px;"></div></div>';
   h += '</div>';
   h += '<div class="cycle-field" style="margin-bottom:0"><label>Note <span style="font-weight:400;color:#999;">(optionnel)</span></label>';
   h += '<textarea id="cycle-note" placeholder="Ex : Focus contrôle moteur, Préparation compétition…" rows="1" oninput="autoResizeTa(this)" style="width:100%;border:1px solid #d1d5db;border-radius:6px;padding:6px 8px;font-size:.82rem;font-family:inherit;color:var(--text);resize:none;overflow:hidden;outline:none;box-sizing:border-box;"></textarea></div>';
@@ -367,6 +381,7 @@ function _populateCycleForm(c){
     _cycleSwatchSelect('#1A3A5C');
     nomEl.focus();
   }
+  _updateDureeIndicator();
 }
 function renderCycleList(){
   var wrap=document.getElementById('cycle-list-wrap'); if(!wrap) return;
