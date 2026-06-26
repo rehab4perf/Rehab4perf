@@ -2541,7 +2541,7 @@ window.addEventListener('message', function(e){
       _sendPevoGrid(); return;
     }
     var _pevoUrl = SUPA_URL_P+'/rest/v1/seances_planifiees?patient_id=eq.'+_reqPatId
-      +'&select=id,date,programme_id,programmes(nom,donnees),athlete_feedback(rpe,submitted_at)&order=date.asc';
+      +'&select=id,date,programme_id,programmes(nom,donnees),athlete_feedback(rpe,duree_min,exo_data,submitted_at)&order=date.asc';
     _fetchRetry(_pevoUrl,{method:'GET',headers:_sbHeaders()})
       .then(function(r){ return r.json(); })
       .then(function(data){
@@ -4322,7 +4322,7 @@ function openChargesEvo() {
   _pevoData = null; _pevoDureeData = null; _pevoCardioData = null; _pevoCapPainData = null;
   // Charger toutes les séances du patient avec les données du programme lié
   var url = SUPA_URL_P + '/rest/v1/seances_planifiees?patient_id=eq.' + _progPatient.id
-    + '&select=id,date,programme_id,programmes(nom,donnees),athlete_feedback(rpe,submitted_at)&order=date.asc';
+    + '&select=id,date,programme_id,programmes(nom,donnees),athlete_feedback(rpe,duree_min,exo_data,submitted_at)&order=date.asc';
   _fetchRetry(url, {method:'GET', headers:_sbHeaders()})
     .then(function(r){ return r.json(); })
     .then(function(data){
@@ -4432,6 +4432,7 @@ function _loadProg(id, seanceId){
       if(overlay) overlay.style.display='none';
       var btn = document.getElementById('prog-cloud-save-btn');
       if(btn){ btn.textContent='✓ Programme chargé'; setTimeout(function(){ _refreshSaveBtn(); },2500); }
+      if(typeof _renderAthleteRetour==='function') _renderAthleteRetour(seanceId);
     })
     .catch(function(){ alert('Erreur lors du chargement.'); });
 }

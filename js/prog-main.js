@@ -688,7 +688,7 @@ function renderCalendar() {
     // Mode cloud : charger les séances Supabase pour ce patient
     var _fetchPatientId = _progPatient.id; // capturer l'id au moment du lancement
     var url = SUPA_URL_P + '/rest/v1/seances_planifiees?patient_id=eq.' + _fetchPatientId
-            + '&select=id,date,programme_id,programmes(nom,donnees),athlete_feedback(rpe,duree_min)&order=date.asc';
+            + '&select=id,date,programme_id,programmes(nom,donnees),athlete_feedback(rpe,duree_min,exo_data)&order=date.asc';
     var calHeaders = _progToken
       ? { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _progToken }
       : { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json' };
@@ -1112,6 +1112,53 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
   var _ovfN  = allChips.length - 2;
   return allChips.slice(0, 2).join('')
     + '<div id="'+_ovfId+'" class="cal-overflow-badge" onclick="event.stopPropagation();_openDayPopover(\''+escJS(dateStr)+'\',\''+_ovfId+'\')">+'+_ovfN+' de plus</div>';
+}
+
+/* ── Retour athlète dans le builder (affiché après chargement d'une séance) ── */
+function _renderAthleteRetour(seanceId){
+  var panel = document.getElementById('athlete-retour-panel');
+  if(!panel) return;
+  if(!seanceId){ panel.innerHTML=''; return; }
+  var ev = (_cloudCalEvents||[]).find(function(e){ return String(e.id)===String(seanceId); });
+  var fb = ev && ev.athlete_feedback;
+  if(!fb || (!fb.rpe && !(fb.exo_data && (fb.exo_data.note||(fb.exo_data.exos&&fb.exo_data.exos.length))))){ panel.innerHTML=''; return; }
+
+  var html = '<div style="margin:10px 14px 4px;padding:12px 14px;background:#F0FDF4;border:1px solid #86EFAC;border-radius:10px;">';
+  html += '<div style="font-weight:700;font-size:.83rem;color:#166534;margin-bottom:8px;">💬 Retour athlète</div>';
+
+  if(fb.rpe){
+    var ua = fb.rpe * (fb.duree_min||0);
+    html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">';
+    html += '<span style="background:#dcfce7;color:#166534;border-radius:6px;padding:3px 8px;font-size:.75rem;font-weight:700;">RPE '+fb.rpe+'/10</span>';
+    if(fb.duree_min) html += '<span style="background:#dcfce7;color:#166534;border-radius:6px;padding:3px 8px;font-size:.75rem;font-weight:700;">⏱ '+fb.duree_min+' min</span>';
+    if(ua) html += '<span style="background:#dcfce7;color:#166534;border-radius:6px;padding:3px 8px;font-size:.75rem;font-weight:700;">⚡ '+ua+' UA</span>';
+    html += '</div>';
+  }
+
+  var exoData = fb.exo_data;
+  if(exoData && exoData.exos && exoData.exos.length){
+    var rated = exoData.exos.filter(function(ex){ return ex.effort; });
+    if(rated.length){
+      html += '<div style="display:flex;flex-direction:column;gap:3px;margin-bottom:8px;">';
+      rated.forEach(function(exo){
+        var emoji = exo.effort===1 ? '😌' : exo.effort===2 ? '😐' : '😓';
+        var bg  = exo.effort===1 ? '#dcfce7' : exo.effort===2 ? '#fef9c3' : '#fee2e2';
+        var col = exo.effort===1 ? '#166534' : exo.effort===2 ? '#713f12' : '#991b1b';
+        html += '<div style="display:flex;align-items:center;gap:6px;font-size:.77rem;">';
+        html += '<span style="background:'+bg+';color:'+col+';border-radius:5px;padding:2px 6px;">'+emoji+'</span>';
+        html += '<span style="color:#374151;">'+escH(exo.name||'Exercice')+'</span>';
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+  }
+
+  if(exoData && exoData.note && exoData.note.trim()){
+    html += '<div style="background:#fff;border-left:3px solid #4ade80;padding:6px 10px;border-radius:4px;font-size:.78rem;color:#374151;white-space:pre-wrap;">'+escH(exoData.note)+'</div>';
+  }
+
+  html += '</div>';
+  panel.innerHTML = html;
 }
 
 /* ── Popover jour complet (overflow chips) ── */

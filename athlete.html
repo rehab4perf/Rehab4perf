@@ -416,6 +416,33 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
 .rpe-success-ua { font-size:1.5rem; font-weight:800; margin:8px 0 4px; }
 .rpe-success-detail { font-size:.76rem; color:var(--muted); }
 .chip-ua { font-size:.58rem; font-weight:800; padding:1px 4px; border-radius:4px; background:rgba(255,255,255,.28); margin-left:3px; vertical-align:middle; }
+.exo-accordion-toggle {
+  margin-top:12px; width:100%; padding:9px 12px; border:1.5px solid var(--border);
+  border-radius:9px; background:#fff; font-size:.8rem; font-weight:600;
+  cursor:pointer; color:var(--navy); font-family:inherit; transition:background .15s;
+  text-align:left; display:flex; align-items:center; gap:6px;
+}
+.exo-accordion-toggle:hover { background:#f0f4fb; }
+.exo-accordion-body { display:none; margin-top:8px; }
+.exo-accordion-body.open { display:block; }
+.exo-feedback-row {
+  display:flex; align-items:center; gap:8px; padding:7px 0;
+  border-bottom:1px solid #eef2f8;
+}
+.exo-feedback-row:last-of-type { border-bottom:none; }
+.exo-feedback-name { flex:1; color:var(--navy); font-size:.8rem; font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.exo-effort-btn {
+  padding:4px 8px; border-radius:7px; border:1.5px solid var(--border);
+  background:#fff; font-size:1.05rem; cursor:pointer; transition:all .12s; flex-shrink:0;
+}
+.exo-effort-btn.active { border-color:var(--accent); background:#EEF3FB; transform:scale(1.15); }
+.exo-global-note-ta {
+  margin-top:4px; width:100%; border:1px solid var(--border); border-radius:8px;
+  padding:9px 12px; font-size:.83rem; font-family:inherit; color:var(--text);
+  resize:none; min-height:70px; outline:none; line-height:1.5; background:#fafbff;
+  box-sizing:border-box;
+}
+.exo-global-note-ta:focus { border-color:var(--accent2); }
 
 /* ── DESIGN EXERCICES V3 (pills + cadre enchaîné) ── */
 .exo-chain-group { border:1.5px solid var(--accent); border-radius:10px; margin:10px 10px 4px; overflow:hidden; }
@@ -1130,7 +1157,7 @@ function openProgModal(progId, seanceId){
     var isCap = donnees.type === 'cap' || (prog.nom && prog.nom.indexOf('CAP —') === 0);
     var isHsr = donnees.type === 'hsr' || (prog.nom && prog.nom.indexOf('HSR —') === 0);
     var html = isCap ? _buildCapProgHTML(prog) : (isHsr ? _buildHsrProgHTML(prog) : buildProgHTML(prog));
-    if(seanceId) html += buildSessionNoteCard() + ((isCap || isHsr) ? _buildCapPainCard(seanceId, existing) : buildRpeCard(seanceId, blocs, existing));
+    if(seanceId) html += (isCap || isHsr) ? _buildCapPainCard(seanceId, existing) : buildRpeCard(seanceId, blocs, existing);
     document.getElementById('progModalBody').innerHTML = html;
   })
   .catch(function(){
@@ -1469,6 +1496,7 @@ function _uaColor(ua){ if(ua<150) return '#27AE60'; if(ua<300) return '#E67E22';
 var _currentSeanceId = '';
 var _currentDureeMin = 0;
 var _currentRpe = 0;
+var _exoEfforts = {};
 
 function _rpeGetDuree(){
   var inp = document.getElementById('rpeDureeInp');
@@ -1485,6 +1513,59 @@ function _rpeUpdateUa(){
     uaEl.innerHTML = '⚡ Charge : '+_currentRpe+' × '+dur+' min = <strong>'+ua+' UA</strong>';
     uaEl.style.color = _uaColor(ua);
   }
+}
+
+function _setExoEffort(key, val){
+  _exoEfforts[key] = (_exoEfforts[key]===val) ? 0 : val;
+  document.querySelectorAll('.exo-effort-btn[data-ekey="'+key+'"]').forEach(function(btn){
+    btn.classList.toggle('active', parseInt(btn.dataset.val)===_exoEfforts[key]);
+  });
+}
+
+function _toggleExoAccordion(){
+  var body = document.getElementById('exoAccordionBody');
+  var lbl  = document.getElementById('exoAccordionLbl');
+  if(!body) return;
+  body.classList.toggle('open');
+  if(lbl) lbl.textContent = body.classList.contains('open') ? '▾ Réduire' : '▸ Détailler mes exercices';
+}
+
+function buildExoFeedbackSection(blocs, existingExoData){
+  _exoEfforts = {};
+  var existingExos = (existingExoData && existingExoData.exos) ? existingExoData.exos : [];
+  existingExos.forEach(function(ex){ if(ex.key && ex.effort) _exoEfforts[ex.key] = ex.effort; });
+
+  var rows = [];
+  (blocs||[]).forEach(function(b, bi){
+    (b.exos||[]).forEach(function(e, ei){
+      if(!e.name) return;
+      rows.push({ key: 'b'+bi+'e'+ei, name: e.name });
+    });
+  });
+  if(!rows.length) return '';
+
+  var initNote = (existingExoData && existingExoData.note) ? existingExoData.note : '';
+
+  var html = '<div style="margin-top:12px;">';
+  html += '<button class="exo-accordion-toggle" onclick="_toggleExoAccordion()">▸ <span id="exoAccordionLbl">Détailler mes exercices</span></button>';
+  html += '<div class="exo-accordion-body" id="exoAccordionBody">';
+  html += '<div style="font-size:.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Comment as-tu vécu chaque exercice ?</div>';
+  rows.forEach(function(row){
+    var eff = _exoEfforts[row.key] || 0;
+    html += '<div class="exo-feedback-row">';
+    html += '<span class="exo-feedback-name">'+escH(row.name)+'</span>';
+    [1,2,3].forEach(function(v){
+      var emoji = v===1 ? '😌' : v===2 ? '😐' : '😓';
+      html += '<button class="exo-effort-btn'+(eff===v?' active':'')+'" data-ekey="'+row.key+'" data-val="'+v+'" onclick="_setExoEffort(\''+row.key+'\','+v+')">'+emoji+'</button>';
+    });
+    html += '</div>';
+  });
+  html += '<div style="margin-top:10px;">';
+  html += '<div style="font-size:.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;">Remarques générales</div>';
+  html += '<textarea class="exo-global-note-ta" id="exoGlobalNoteTA" placeholder="Douleurs, difficultés, sensations…">'+escH(initNote)+'</textarea>';
+  html += '</div>';
+  html += '</div></div>';
+  return html;
 }
 
 function _setRpe(val){
@@ -1510,10 +1591,27 @@ function _submitRpe(){
   var dur = _rpeGetDuree();
   var btn = document.getElementById('rpeSubmitBtn');
   if(btn){ btn.disabled=true; btn.textContent='⏳ Envoi…'; }
+
+  // Collecter le feedback par exercice
+  var exoRows = [];
+  document.querySelectorAll('.exo-feedback-row').forEach(function(row){
+    var nameEl = row.querySelector('.exo-feedback-name');
+    var firstBtn = row.querySelector('.exo-effort-btn[data-ekey]');
+    if(!nameEl || !firstBtn) return;
+    var key = firstBtn.getAttribute('data-ekey');
+    var effort = _exoEfforts[key] || 0;
+    if(effort > 0) exoRows.push({ key: key, name: nameEl.textContent, effort: effort });
+  });
+  var globalNote = ((document.getElementById('exoGlobalNoteTA')||{}).value||'').trim();
+  var exoData = (exoRows.length || globalNote) ? { exos: exoRows, note: globalNote } : null;
+
+  var body = { seance_id:_currentSeanceId, rpe:_currentRpe, duree_min:dur, submitted_at:new Date().toISOString() };
+  if(exoData) body.exo_data = exoData;
+
   fetch(SUPA_URL+'/rest/v1/athlete_feedback', {
     method:'POST',
     headers:{'apikey':SUPA_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
-    body:JSON.stringify({seance_id:_currentSeanceId, rpe:_currentRpe, duree_min:dur, submitted_at:new Date().toISOString()})
+    body:JSON.stringify(body)
   }).then(function(r){
     if(!r.ok){ return r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); if(btn){btn.disabled=false;btn.textContent='Envoyer mon ressenti';} }); }
     var ua = _currentRpe*dur;
@@ -1586,6 +1684,7 @@ function buildRpeCard(seanceId, blocs, existing){
   }
   if(existing&&existing.rpe) html += '<div class="rpe-already">✓ Déjà envoyé — tu peux modifier ton ressenti</div>';
   html += '<button class="rpe-submit-btn" id="rpeSubmitBtn" onclick="_submitRpe()">Envoyer mon ressenti</button>';
+  html += buildExoFeedbackSection(blocs, existing && existing.exo_data);
   html += '</div>';
   return html;
 }
