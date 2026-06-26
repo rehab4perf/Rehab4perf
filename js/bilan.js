@@ -6024,7 +6024,10 @@ window.addEventListener('load', function(){
           '<span></span><span>'+lbl.a+'</span><span>'+lbl.b+'</span><span>LSI</span><span></span>'+
         '</div>'+
         '<div id="ct-rows-'+pk+'"></div>';
-      pc.appendChild(sec);
+      var conclArea = pc.querySelector('.concl-area');
+      var conclBlock = conclArea && (conclArea.closest('.block') || conclArea);
+      if(conclBlock) pc.insertBefore(sec, conclBlock);
+      else pc.appendChild(sec);
     });
 
     // Refresh labels on côté change
