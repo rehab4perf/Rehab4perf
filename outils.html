@@ -4775,9 +4775,7 @@ _updateOutilsPatientBtns();
     var key = sel ? sel.value : '';
     if (!key) { btn.textContent = '+ Ajouter'; return; }
     var aLbl = crAmpConfig[key] ? crAmpConfig[key].label : key;
-    btn.textContent = _crPreviewPathoSel
-      ? 'Ajouter ' + aLbl + ' · ' + crPathoLabel(_crPreviewPathoSel)
-      : 'Ajouter ' + aLbl;
+    btn.textContent = 'Ajouter ' + aLbl;
   }
 
   /* Dropdown change → refresh preview + reset patho selection */
