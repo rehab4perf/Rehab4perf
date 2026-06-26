@@ -6013,17 +6013,21 @@ window.addEventListener('load', function(){
       pc.appendChild(hf);
 
       var lbl = _ctLabels();
+      var _FUNC_PAGES = ['fonctionnels','fonctionnelsMS','fonctionnelsRachis'];
+      var hdrClass = _FUNC_PAGES.indexOf(pk) !== -1 ? 'block-header' : 'block-header grey';
       var sec = document.createElement('div');
-      sec.className = 'ct-section';
+      sec.className = 'block';
       sec.innerHTML =
-        '<div class="ct-header">'+
-          '<span class="ct-title">Tests personnalisés</span>'+
+        '<div class="'+hdrClass+'">'+
+          'Tests personnalisés'+
           '<button class="ct-add-btn" onclick="_ctAdd(\''+pk+'\')">+ Ajouter un test</button>'+
         '</div>'+
-        '<div class="ct-col-headers" id="ct-hdrs-'+pk+'" style="display:none">'+
-          '<span></span><span>'+lbl.a+'</span><span>'+lbl.b+'</span><span>LSI</span><span></span>'+
-        '</div>'+
-        '<div id="ct-rows-'+pk+'"></div>';
+        '<div style="padding:14px 16px">'+
+          '<div class="ct-col-headers" id="ct-hdrs-'+pk+'" style="display:none">'+
+            '<span></span><span>'+lbl.a+'</span><span>'+lbl.b+'</span><span>LSI</span><span></span>'+
+          '</div>'+
+          '<div id="ct-rows-'+pk+'"></div>'+
+        '</div>';
       var conclArea = pc.querySelector('.concl-area');
       var conclBlock = conclArea && (conclArea.closest('.block') || conclArea);
       if(conclBlock) pc.insertBefore(sec, conclBlock);
