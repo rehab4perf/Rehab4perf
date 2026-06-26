@@ -389,7 +389,10 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
   padding:18px 16px; margin:14px 0 0;
 }
 .rpe-card-title { font-size:.95rem; font-weight:800; color:var(--navy); margin-bottom:5px; }
-.rpe-duree { font-size:.78rem; color:var(--muted); margin-bottom:14px; }
+.rpe-duree { display:flex; align-items:center; gap:8px; font-size:.78rem; color:var(--muted); margin-bottom:14px; }
+.rpe-duree label { white-space:nowrap; }
+.rpe-duree input { width:62px; padding:4px 7px; border:1.5px solid var(--border); border-radius:7px; font-size:.85rem; font-weight:700; color:var(--navy); font-family:inherit; text-align:center; background:#fff; }
+.rpe-duree input:focus { border-color:var(--accent); outline:none; }
 .rpe-scale-label { font-size:.72rem; font-weight:700; color:var(--text); margin-bottom:9px; text-transform:uppercase; letter-spacing:.05em; }
 .rpe-buttons { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:10px; }
 .rpe-btn {
@@ -1467,6 +1470,23 @@ var _currentSeanceId = '';
 var _currentDureeMin = 0;
 var _currentRpe = 0;
 
+function _rpeGetDuree(){
+  var inp = document.getElementById('rpeDureeInp');
+  var v = inp ? parseInt(inp.value) : _currentDureeMin;
+  return (v && v > 0) ? v : _currentDureeMin;
+}
+
+function _rpeUpdateUa(){
+  if(!_currentRpe) return;
+  var dur = _rpeGetDuree();
+  var ua = _currentRpe * dur;
+  var uaEl = document.getElementById('rpeUaDisplay');
+  if(uaEl){
+    uaEl.innerHTML = '⚡ Charge : '+_currentRpe+' × '+dur+' min = <strong>'+ua+' UA</strong>';
+    uaEl.style.color = _uaColor(ua);
+  }
+}
+
 function _setRpe(val){
   _currentRpe = val;
   document.querySelectorAll('.rpe-btn').forEach(function(btn){
@@ -1477,8 +1497,9 @@ function _setRpe(val){
   var uaEl   = document.getElementById('rpeUaDisplay');
   if(descEl){ descEl.textContent=borg?borg.label:''; descEl.style.color=borg?borg.color:''; }
   if(uaEl){
-    var ua = val*_currentDureeMin;
-    uaEl.innerHTML='⚡ Charge estimée : '+val+' × '+_currentDureeMin+' min = <strong>'+ua+' UA</strong>';
+    var dur = _rpeGetDuree();
+    var ua = val * dur;
+    uaEl.innerHTML='⚡ Charge : '+val+' × '+dur+' min = <strong>'+ua+' UA</strong>';
     uaEl.style.color=_uaColor(ua);
   }
 }
@@ -1486,22 +1507,23 @@ function _setRpe(val){
 function _submitRpe(){
   if(!_currentRpe){ alert('Sélectionne ton niveau d\'effort (1–10).'); return; }
   if(!_currentSeanceId) return;
+  var dur = _rpeGetDuree();
   var btn = document.getElementById('rpeSubmitBtn');
   if(btn){ btn.disabled=true; btn.textContent='⏳ Envoi…'; }
   fetch(SUPA_URL+'/rest/v1/athlete_feedback', {
     method:'POST',
     headers:{'apikey':SUPA_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
-    body:JSON.stringify({seance_id:_currentSeanceId, rpe:_currentRpe, duree_min:_currentDureeMin, submitted_at:new Date().toISOString()})
+    body:JSON.stringify({seance_id:_currentSeanceId, rpe:_currentRpe, duree_min:dur, submitted_at:new Date().toISOString()})
   }).then(function(r){
     if(!r.ok){ return r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); if(btn){btn.disabled=false;btn.textContent='Envoyer mon ressenti';} }); }
-    var ua = _currentRpe*_currentDureeMin;
+    var ua = _currentRpe*dur;
     var card = document.getElementById('rpeCard');
     if(card) card.innerHTML=
       '<div class="rpe-success-msg">'
       +'<div style="font-size:1.4rem;">✅</div>'
       +'<div style="font-weight:700;color:var(--navy);margin:6px 0;">Ressenti enregistré !</div>'
       +'<div class="rpe-success-ua" style="color:'+_uaColor(ua)+';">⚡ '+ua+' UA</div>'
-      +'<div class="rpe-success-detail">RPE '+_currentRpe+' × '+_currentDureeMin+' min</div>'
+      +'<div class="rpe-success-detail">RPE '+_currentRpe+' × '+dur+' min</div>'
       +'</div>';
   }).catch(function(){ alert('Erreur réseau. Réessaie.'); if(btn){btn.disabled=false;btn.textContent='Envoyer mon ressenti';} });
 }
@@ -1545,7 +1567,7 @@ function buildRpeCard(seanceId, blocs, existing){
 
   var html = '<div class="rpe-card" id="rpeCard">';
   html += '<div class="rpe-card-title">🏃 Mon ressenti de séance</div>';
-  html += '<div class="rpe-duree">Durée estimée : <strong>~'+_currentDureeMin+' min</strong></div>';
+  html += '<div class="rpe-duree"><label for="rpeDureeInp">Durée réelle :</label><input type="number" id="rpeDureeInp" min="1" max="360" value="'+_currentDureeMin+'" oninput="_rpeUpdateUa()"><span>min</span></div>';
   html += '<div class="rpe-scale-label">Niveau d\'effort perçu — Borg 1–10</div>';
   html += '<div class="rpe-buttons">';
   for(var i=1;i<=10;i++){
@@ -1558,7 +1580,7 @@ function buildRpeCard(seanceId, blocs, existing){
        +  (initBorg?escH(initBorg.label):'Sélectionne ton niveau d\'effort')+'</div>';
   if(_currentRpe>0){
     var initUa = _currentRpe*_currentDureeMin;
-    html += '<div class="rpe-ua-display" id="rpeUaDisplay" style="color:'+_uaColor(initUa)+'">⚡ Charge estimée : '+_currentRpe+' × '+_currentDureeMin+' min = <strong>'+initUa+' UA</strong></div>';
+    html += '<div class="rpe-ua-display" id="rpeUaDisplay" style="color:'+_uaColor(initUa)+'">⚡ Charge : '+_currentRpe+' × '+_currentDureeMin+' min = <strong>'+initUa+' UA</strong></div>';
   } else {
     html += '<div class="rpe-ua-display" id="rpeUaDisplay"></div>';
   }
