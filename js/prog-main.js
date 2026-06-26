@@ -1114,54 +1114,70 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
     + '<div id="'+_ovfId+'" class="cal-overflow-badge" onclick="event.stopPropagation();_openDayPopover(\''+escJS(dateStr)+'\',\''+_ovfId+'\')">+'+_ovfN+' de plus</div>';
 }
 
-/* ── Retour athlète dans le builder (affiché après chargement d'une séance) ── */
+/* ── Retour athlète dans le builder — accordéon style CAP ── */
+var _retourCollapsed = true;
+
+function _retourToggle(){
+  _retourCollapsed = !_retourCollapsed;
+  var body    = document.getElementById('retour-bb-body');
+  var chevron = document.getElementById('retour-bb-chevron');
+  if(body)    body.style.display  = _retourCollapsed ? 'none' : 'block';
+  if(chevron) chevron.textContent = _retourCollapsed ? '▶' : '▼';
+}
+
 function _renderAthleteRetour(seanceId){
   var panel = document.getElementById('athlete-retour-panel');
   if(!panel) return;
-  if(!seanceId){ panel.innerHTML=''; return; }
+  if(!seanceId){ panel.innerHTML=''; panel.style.display='none'; return; }
   var ev = (_cloudCalEvents||[]).find(function(e){ return String(e.id)===String(seanceId); });
   var fb = ev && ev.athlete_feedback;
-  if(!fb || (!fb.rpe && !(fb.exo_data && (fb.exo_data.note||(fb.exo_data.exos&&fb.exo_data.exos.length))))){ panel.innerHTML=''; return; }
+  if(!fb || !fb.rpe){ panel.innerHTML=''; panel.style.display='none'; return; }
 
-  var html = '<div style="margin:10px 14px 4px;padding:12px 14px;background:#F0FDF4;border:1px solid #86EFAC;border-radius:10px;">';
-  html += '<div style="font-weight:700;font-size:.83rem;color:#166534;margin-bottom:8px;">💬 Retour athlète</div>';
+  _retourCollapsed = true;
+  var ua = fb.rpe * (fb.duree_min||0);
+  var summaryText = 'RPE '+fb.rpe+'/10'+(fb.duree_min?' · '+fb.duree_min+' min':'')+(ua?' · ⚡'+ua+' UA':'');
 
-  if(fb.rpe){
-    var ua = fb.rpe * (fb.duree_min||0);
-    html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">';
-    html += '<span style="background:#dcfce7;color:#166534;border-radius:6px;padding:3px 8px;font-size:.75rem;font-weight:700;">RPE '+fb.rpe+'/10</span>';
-    if(fb.duree_min) html += '<span style="background:#dcfce7;color:#166534;border-radius:6px;padding:3px 8px;font-size:.75rem;font-weight:700;">⏱ '+fb.duree_min+' min</span>';
-    if(ua) html += '<span style="background:#dcfce7;color:#166534;border-radius:6px;padding:3px 8px;font-size:.75rem;font-weight:700;">⚡ '+ua+' UA</span>';
-    html += '</div>';
-  }
+  var html = '<div class="retour-bb-head" onclick="_retourToggle()">';
+  html += '<span class="retour-bb-label">💬 Retour athlète</span>';
+  html += '<span style="margin-left:auto;font-size:.72rem;color:#166534;font-weight:600;">'+escH(summaryText)+'</span>';
+  html += '<span id="retour-bb-chevron" style="margin-left:8px;font-size:.75rem;color:#166534;">▶</span>';
+  html += '</div>';
+
+  html += '<div id="retour-bb-body" style="display:none;margin-top:8px;">';
+  html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">';
+  html += '<span style="background:#dcfce7;color:#166534;border-radius:6px;padding:3px 8px;font-size:.75rem;font-weight:700;">RPE '+fb.rpe+'/10</span>';
+  if(fb.duree_min) html += '<span style="background:#dcfce7;color:#166534;border-radius:6px;padding:3px 8px;font-size:.75rem;font-weight:700;">⏱ '+fb.duree_min+' min</span>';
+  if(ua) html += '<span style="background:#dcfce7;color:#166534;border-radius:6px;padding:3px 8px;font-size:.75rem;font-weight:700;">⚡ '+ua+' UA</span>';
+  html += '</div>';
 
   var exoData = fb.exo_data;
   if(exoData && exoData.exos && exoData.exos.length){
-    var rated = exoData.exos.filter(function(ex){ return ex.effort; });
-    if(rated.length){
-      html += '<div style="display:flex;flex-direction:column;gap:3px;margin-bottom:8px;">';
-      rated.forEach(function(exo){
-        var emoji = exo.effort===1 ? '😌' : exo.effort===2 ? '😐' : '😓';
-        var bg  = exo.effort===1 ? '#dcfce7' : exo.effort===2 ? '#fef9c3' : '#fee2e2';
-        var col = exo.effort===1 ? '#166534' : exo.effort===2 ? '#713f12' : '#991b1b';
+    var hasContent = exoData.exos.some(function(ex){ return ex.effort || ex.note; });
+    if(hasContent){
+      html += '<div style="display:flex;flex-direction:column;gap:5px;margin-bottom:8px;">';
+      exoData.exos.forEach(function(exo){
+        if(!exo.effort && !exo.note) return;
+        var emoji = exo.effort===1?'😌':exo.effort===2?'😐':exo.effort===3?'😓':'';
+        var bg  = exo.effort===1?'#dcfce7':exo.effort===2?'#fef9c3':exo.effort===3?'#fee2e2':'#f1f5f9';
+        var col = exo.effort===1?'#166534':exo.effort===2?'#713f12':exo.effort===3?'#991b1b':'#475569';
         html += '<div style="font-size:.77rem;">';
         html += '<div style="display:flex;align-items:center;gap:6px;">';
-        html += '<span style="background:'+bg+';color:'+col+';border-radius:5px;padding:2px 6px;">'+emoji+'</span>';
-        html += '<span style="color:#374151;font-weight:600;">'+escH(exo.name||'Exercice')+'</span>';
+        if(emoji) html += '<span style="background:'+bg+';color:'+col+';border-radius:5px;padding:2px 6px;">'+emoji+'</span>';
+        html += '<span style="color:#1e293b;font-weight:600;">'+escH(exo.name||'Exercice')+'</span>';
         html += '</div>';
-        if(exo.note) html += '<div style="color:#6B7280;font-style:italic;padding-left:2px;margin-top:2px;">'+escH(exo.note)+'</div>';
+        if(exo.note) html += '<div style="color:#6b7280;font-style:italic;padding-left:2px;margin-top:2px;">'+escH(exo.note)+'</div>';
         html += '</div>';
       });
       html += '</div>';
     }
   }
-
   if(exoData && exoData.note && exoData.note.trim()){
-    html += '<div style="background:#fff;border-left:3px solid #4ade80;padding:6px 10px;border-radius:4px;font-size:.78rem;color:#374151;white-space:pre-wrap;">'+escH(exoData.note)+'</div>';
+    html += '<div style="background:#fff;border-left:3px solid #4ade80;padding:6px 10px;border-radius:4px;font-size:.77rem;color:#374151;white-space:pre-wrap;">'+escH(exoData.note)+'</div>';
   }
-
   html += '</div>';
+
   panel.innerHTML = html;
+  panel.style.display = 'block';
 }
 
 /* ── Popover jour complet (overflow chips) ── */
@@ -7901,8 +7917,21 @@ function _journalSelDeleteAll() {
   });
 }
 
+var _journalRetourOpen = new Set();
+
+function _journalToggleRetour(id){
+  var key = String(id);
+  if(_journalRetourOpen.has(key)) _journalRetourOpen.delete(key);
+  else _journalRetourOpen.add(key);
+  var detail = document.getElementById('jrd-'+key);
+  if(detail) detail.style.display = _journalRetourOpen.has(key) ? 'block' : 'none';
+  var chevron = document.getElementById('jrc-'+key);
+  if(chevron) chevron.textContent = _journalRetourOpen.has(key) ? '▼' : '▶';
+}
+
 function _setJournalFilter(f) {
   _journalFilter = f;
+  _journalRetourOpen = new Set();
   document.querySelectorAll('.journal-filter-btn').forEach(function(b){ b.classList.remove('active'); });
   var btn = document.getElementById('jf-'+f);
   if(btn) btn.classList.add('active');
@@ -7920,22 +7949,24 @@ function _renderJournal() {
   var items = [];
 
   // Séances planifiées (depuis le cache calendrier)
-  if(_journalFilter === 'all' || _journalFilter === 'seance') {
+  if(_journalFilter === 'all' || _journalFilter === 'seance' || _journalFilter === 'retours') {
     (_cloudCalEvents||[]).forEach(function(ev) {
       var fb    = ev.athlete_feedback && (Array.isArray(ev.athlete_feedback) ? ev.athlete_feedback[0] : ev.athlete_feedback);
       var rpe   = fb ? fb.rpe   : null;
       var duree = fb ? fb.duree_min : null;
       var nom   = (ev.programmes && ev.programmes.nom) || ev.nom || 'Programme';
+      if(_journalFilter === 'retours' && !rpe) return; // ne garder que les séances avec feedback
       items.push({
-        date:   ev.date,
-        type:   'seance',
-        id:     ev.id,
-        progId: ev.programme_id,
-        nom:    nom,
-        isCap:  nom.indexOf('CAP') === 0,
-        isHsr:  nom.indexOf('HSR') === 0,
-        rpe:    rpe   !== undefined ? rpe   : null,
-        duree:  duree !== undefined ? duree : null
+        date:    ev.date,
+        type:    'seance',
+        id:      ev.id,
+        progId:  ev.programme_id,
+        nom:     nom,
+        isCap:   nom.indexOf('CAP') === 0,
+        isHsr:   nom.indexOf('HSR') === 0,
+        rpe:     rpe   !== undefined ? rpe   : null,
+        duree:   duree !== undefined ? duree : null,
+        exo_data: fb ? fb.exo_data : null
       });
     });
   }
@@ -8040,6 +8071,47 @@ function _renderJournal() {
           +((metaHtml||rpeBadge) ? '<div class="journal-item-meta">'+metaHtml+rpeBadge+'</div>' : '')
         +'</div>'
         +'<div class="journal-item-date">'+escH(dayStr)+jBadge+'</div>'
+        +'</div>';
+    } else if(_journalFilter === 'retours' && item.type === 'seance') {
+      // Mode retours : clic = déplier le détail inline
+      var isOpen = _journalRetourOpen.has(String(item.id));
+      var exd = item.exo_data;
+      var retourDetail = '<div class="journal-retour-detail" id="jrd-'+item.id+'" style="display:'+(isOpen?'block':'none')+';">';
+      retourDetail += '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px;">';
+      if(item.rpe) retourDetail += '<span style="background:#dcfce7;color:#166534;border-radius:5px;padding:2px 7px;font-size:.73rem;font-weight:700;">RPE '+item.rpe+'/10</span>';
+      if(item.duree) retourDetail += '<span style="background:#dcfce7;color:#166534;border-radius:5px;padding:2px 7px;font-size:.73rem;font-weight:700;">⏱ '+item.duree+' min</span>';
+      if(item.rpe && item.duree) retourDetail += '<span style="background:#dcfce7;color:#166534;border-radius:5px;padding:2px 7px;font-size:.73rem;font-weight:700;">⚡ '+(item.rpe*item.duree)+' UA</span>';
+      retourDetail += '</div>';
+      if(exd && exd.exos && exd.exos.length){
+        retourDetail += '<div class="journal-retour-exo">';
+        exd.exos.forEach(function(exo){
+          if(!exo.effort && !exo.note) return;
+          var e1 = exo.effort===1?'😌':exo.effort===2?'😐':exo.effort===3?'😓':'';
+          var bg2  = exo.effort===1?'#dcfce7':exo.effort===2?'#fef9c3':exo.effort===3?'#fee2e2':'';
+          var col2 = exo.effort===1?'#166534':exo.effort===2?'#713f12':exo.effort===3?'#991b1b':'';
+          retourDetail += '<div class="journal-retour-exo-row">';
+          if(e1) retourDetail += '<span style="background:'+bg2+';color:'+col2+';border-radius:4px;padding:1px 5px;font-size:.82rem;flex-shrink:0;">'+e1+'</span>';
+          retourDetail += '<div><span style="font-weight:600;color:#1e293b;">'+escH(exo.name||'Exercice')+'</span>';
+          if(exo.note) retourDetail += '<span style="color:#6b7280;font-style:italic;"> — '+escH(exo.note)+'</span>';
+          retourDetail += '</div></div>';
+        });
+        retourDetail += '</div>';
+      }
+      if(exd && exd.note && exd.note.trim()){
+        retourDetail += '<div class="journal-retour-note">'+escH(exd.note)+'</div>';
+      }
+      retourDetail += '<button class="journal-retour-open-btn" onclick="event.stopPropagation();_openChipInBuilder(\''+escH(String(item.progId))+'\',\''+escH(item.date)+'\',\''+escH(String(item.id))+'\');closeJournal()">📂 Ouvrir dans le builder</button>';
+      retourDetail += '</div>';
+
+      html += '<div class="journal-item" style="flex-wrap:wrap;" onclick="_journalToggleRetour(\''+item.id+'\')">'
+        +'<span class="journal-item-icon">📋</span>'
+        +'<div class="journal-item-body">'
+        +'<div class="journal-item-title">'+escH(item.nom)+'</div>'
+        +((metaHtml||rpeBadge) ? '<div class="journal-item-meta">'+metaHtml+rpeBadge+'</div>' : '')
+        +retourDetail
+        +'</div>'
+        +'<div class="journal-item-date" style="align-self:flex-start;">'+escH(dayStr)+jBadge+'</div>'
+        +'<span id="jrc-'+item.id+'" style="font-size:.7rem;color:var(--muted);margin-left:4px;align-self:flex-start;">'+(isOpen?'▼':'▶')+'</span>'
         +'</div>';
     } else {
       // Mode normal : clic = ouvrir, bouton × pour supprimer

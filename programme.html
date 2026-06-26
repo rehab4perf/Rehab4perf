@@ -655,6 +655,18 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   margin:6px 10px 0; border-radius:8px; font-size:.78rem; line-height:1.45;
   background:#f0fdfa; border:1px solid #99f6e4; color:#134e4a; padding:10px 12px;
 }
+#athlete-retour-panel {
+  margin:6px 10px 0; border-radius:8px; font-size:.78rem; line-height:1.45;
+  background:#f0fdf4; border:1px solid #86efac; color:#166534; padding:10px 12px;
+  display:none;
+}
+.retour-bb-head { display:flex; align-items:center; gap:8px; flex-wrap:wrap; cursor:pointer; user-select:none; }
+.retour-bb-label { font-size:.7rem; font-weight:700; color:#16a34a; text-transform:uppercase; letter-spacing:.06em; }
+.journal-retour-detail { margin-top:8px; padding-top:8px; border-top:1px solid #d1fae5; display:none; }
+.journal-retour-exo { font-size:.76rem; display:flex; flex-direction:column; gap:3px; margin-bottom:6px; }
+.journal-retour-exo-row { display:flex; align-items:flex-start; gap:6px; }
+.journal-retour-note { font-size:.74rem; color:#374151; background:#fff; border-left:3px solid #4ade80; padding:4px 8px; border-radius:4px; white-space:pre-wrap; margin-top:4px; }
+.journal-retour-open-btn { margin-top:8px; font-size:.72rem; color:var(--accent); background:none; border:none; cursor:pointer; font-family:inherit; padding:0; text-decoration:underline; text-underline-offset:2px; }
 .cap-bb-head { display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap; }
 .cap-bb-label { font-size:.7rem; font-weight:700; color:#0d9488; text-transform:uppercase; letter-spacing:.06em; }
 .cap-bb-phase { font-size:.7rem; background:#ccfbf1; color:#0d9488; border-radius:4px; padding:1px 6px; font-weight:600; }
@@ -2295,6 +2307,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
       <button class="journal-filter-btn active" id="jf-all"      onclick="_setJournalFilter('all')">Tout</button>
       <button class="journal-filter-btn"         id="jf-seance"  onclick="_setJournalFilter('seance')">🏋️ Séances</button>
       <button class="journal-filter-btn"         id="jf-note"    onclick="_setJournalFilter('note')">📝 Notes</button>
+      <button class="journal-filter-btn"         id="jf-retours" onclick="_setJournalFilter('retours')">💬 Retours</button>
     </div>
     <div class="journal-body" id="journalBody"></div>
     <div class="journal-sel-bar" id="journalSelBar">
