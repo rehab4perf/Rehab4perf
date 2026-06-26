@@ -5835,13 +5835,31 @@ function _getAllProtocols(){
   /* Si _customProtocols est peuplé, on l'utilise seul.
      Sinon fallback sur PROTOCOLS_REF (avant migration). */
   var protos = _customProtocols.length ? _customProtocols : PROTOCOLS_REF;
-  /* Merge le champ joint depuis PROTOCOLS_REF pour les protocoles qui ne l'ont pas encore */
+  var _badCol = function(c){ return !c || c === '#000000' || c.indexOf('var(') === 0; };
   return protos.map(function(p){
-    if(!p.joint){
-      var ref = PROTOCOLS_REF.find(function(r){ return r.id === p.id; });
-      if(ref && ref.joint) return Object.assign({}, p, { joint: ref.joint });
+    var result = p;
+    /* Merge le champ joint depuis PROTOCOLS_REF pour les protocoles qui ne l'ont pas encore */
+    if(!result.joint){
+      var ref = PROTOCOLS_REF.find(function(r){ return r.id === result.id; });
+      if(ref && ref.joint) result = Object.assign({}, result, { joint: ref.joint });
     }
-    return p;
+    /* Normalise les couleurs de branches corrompues (#000000 / vide) */
+    if(result.branches && result.branches.length){
+      var hasBadColor = result.branches.some(function(b){ return _badCol(b.color) || _badCol(b.borderColor); });
+      if(hasBadColor){
+        var refP = PROTOCOLS_REF.find(function(r){ return r.id === result.id; });
+        var fixedBranches = result.branches.map(function(b, bi){
+          var refB = refP && refP.branches && (refP.branches.find(function(rb){ return rb.id === b.id; }) || refP.branches[bi]);
+          var fallCol = _PE_COLORS[bi % _PE_COLORS.length];
+          return Object.assign({}, b, {
+            color:       _badCol(b.color)       ? ((refB && refB.color)       || fallCol.color)       : b.color,
+            borderColor: _badCol(b.borderColor) ? ((refB && refB.borderColor) || fallCol.borderColor) : b.borderColor
+          });
+        });
+        result = Object.assign({}, result, { branches: fixedBranches });
+      }
+    }
+    return result;
   });
 }
 
