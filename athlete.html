@@ -439,7 +439,7 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
 .exo-global-note-ta {
   margin-top:4px; width:100%; border:1px solid var(--border); border-radius:8px;
   padding:9px 12px; font-size:.83rem; font-family:inherit; color:var(--text);
-  resize:none; min-height:70px; outline:none; line-height:1.5; background:#fafbff;
+  resize:none; overflow:hidden; min-height:70px; outline:none; line-height:1.5; background:#fafbff;
   box-sizing:border-box;
 }
 .exo-global-note-ta:focus { border-color:var(--accent2); }
@@ -447,6 +447,7 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
   margin-top:5px; width:100%; border:1px solid var(--border); border-radius:7px;
   padding:6px 10px; font-size:.78rem; font-family:inherit; color:var(--text);
   outline:none; background:#fafbff; box-sizing:border-box;
+  resize:none; overflow:hidden; min-height:32px; line-height:1.45; display:block;
 }
 .exo-exo-note-inp:focus { border-color:var(--accent2); }
 
@@ -1534,6 +1535,11 @@ function _toggleExoAccordion(){
   if(!body) return;
   body.classList.toggle('open');
   if(lbl) lbl.textContent = body.classList.contains('open') ? '▾ Réduire' : '▸ Détailler mes exercices';
+  if(body.classList.contains('open')){
+    body.querySelectorAll('textarea').forEach(function(ta){
+      ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px';
+    });
+  }
 }
 
 function buildExoFeedbackSection(blocs, existingExoData){
@@ -1569,13 +1575,13 @@ function buildExoFeedbackSection(blocs, existingExoData){
       html += '<button class="exo-effort-btn'+(eff===v?' active':'')+'" data-ekey="'+row.key+'" data-val="'+v+'" onclick="_setExoEffort(\''+row.key+'\','+v+')">'+emoji+'</button>';
     });
     html += '</div>';
-    html += '<input type="text" id="exoNote-'+row.key+'" class="exo-exo-note-inp" placeholder="Remarque…" value="'+escH(initExoNote)+'">';
+    html += '<textarea id="exoNote-'+row.key+'" class="exo-exo-note-inp" placeholder="Remarque…" rows="1" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'">'+escH(initExoNote)+'</textarea>';
     html += '</div>';
     html += '</div>';
   });
   html += '<div style="margin-top:10px;">';
   html += '<div style="font-size:.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;">Remarques générales</div>';
-  html += '<textarea class="exo-global-note-ta" id="exoGlobalNoteTA" placeholder="Douleurs, difficultés, sensations…">'+escH(initNote)+'</textarea>';
+  html += '<textarea class="exo-global-note-ta" id="exoGlobalNoteTA" placeholder="Douleurs, difficultés, sensations…" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'">'+escH(initNote)+'</textarea>';
   html += '</div>';
   html += '</div></div>';
   return html;
