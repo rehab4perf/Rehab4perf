@@ -71,7 +71,7 @@ function _dayCycleStyle(cellDate){
     var cyStart=new Date(cy.startDate+'T00:00:00'); cyStart.setHours(0,0,0,0);
     var cyEnd;
     if(cy.endDate){ cyEnd=new Date(cy.endDate+'T00:00:00'); cyEnd.setHours(0,0,0,0); }
-    else { cyEnd=new Date(cyStart); cyEnd.setDate(cyEnd.getDate()+cy.duree*7); }
+    else { cyEnd=new Date(cyStart); cyEnd.setDate(cyEnd.getDate()+cy.duree*7-1); }
     if(cellDate>=cyStart && cellDate<=cyEnd){
       var hex=cy.color||_cycleColors[cy.nom]||'#52514E';
       var r=parseInt(hex.slice(1,3),16)||82;
