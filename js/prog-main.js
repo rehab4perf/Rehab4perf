@@ -1144,9 +1144,12 @@ function _renderAthleteRetour(seanceId){
         var emoji = exo.effort===1 ? '😌' : exo.effort===2 ? '😐' : '😓';
         var bg  = exo.effort===1 ? '#dcfce7' : exo.effort===2 ? '#fef9c3' : '#fee2e2';
         var col = exo.effort===1 ? '#166534' : exo.effort===2 ? '#713f12' : '#991b1b';
-        html += '<div style="display:flex;align-items:center;gap:6px;font-size:.77rem;">';
+        html += '<div style="font-size:.77rem;">';
+        html += '<div style="display:flex;align-items:center;gap:6px;">';
         html += '<span style="background:'+bg+';color:'+col+';border-radius:5px;padding:2px 6px;">'+emoji+'</span>';
-        html += '<span style="color:#374151;">'+escH(exo.name||'Exercice')+'</span>';
+        html += '<span style="color:#374151;font-weight:600;">'+escH(exo.name||'Exercice')+'</span>';
+        html += '</div>';
+        if(exo.note) html += '<div style="color:#6B7280;font-style:italic;padding-left:2px;margin-top:2px;">'+escH(exo.note)+'</div>';
         html += '</div>';
       });
       html += '</div>';

@@ -443,6 +443,12 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
   box-sizing:border-box;
 }
 .exo-global-note-ta:focus { border-color:var(--accent2); }
+.exo-exo-note-inp {
+  margin-top:5px; width:100%; border:1px solid var(--border); border-radius:7px;
+  padding:6px 10px; font-size:.78rem; font-family:inherit; color:var(--text);
+  outline:none; background:#fafbff; box-sizing:border-box;
+}
+.exo-exo-note-inp:focus { border-color:var(--accent2); }
 
 /* ── DESIGN EXERCICES V3 (pills + cadre enchaîné) ── */
 .exo-chain-group { border:1.5px solid var(--accent); border-radius:10px; margin:10px 10px 4px; overflow:hidden; }
@@ -1552,12 +1558,19 @@ function buildExoFeedbackSection(blocs, existingExoData){
   html += '<div style="font-size:.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Comment as-tu vécu chaque exercice ?</div>';
   rows.forEach(function(row){
     var eff = _exoEfforts[row.key] || 0;
+    var existingExo = existingExos.find(function(ex){ return ex.key===row.key; });
+    var initExoNote = (existingExo && existingExo.note) ? existingExo.note : '';
     html += '<div class="exo-feedback-row">';
+    html += '<div style="flex:1;min-width:0;">';
+    html += '<div style="display:flex;align-items:center;gap:8px;">';
     html += '<span class="exo-feedback-name">'+escH(row.name)+'</span>';
     [1,2,3].forEach(function(v){
       var emoji = v===1 ? '😌' : v===2 ? '😐' : '😓';
       html += '<button class="exo-effort-btn'+(eff===v?' active':'')+'" data-ekey="'+row.key+'" data-val="'+v+'" onclick="_setExoEffort(\''+row.key+'\','+v+')">'+emoji+'</button>';
     });
+    html += '</div>';
+    html += '<input type="text" id="exoNote-'+row.key+'" class="exo-exo-note-inp" placeholder="Remarque…" value="'+escH(initExoNote)+'">';
+    html += '</div>';
     html += '</div>';
   });
   html += '<div style="margin-top:10px;">';
@@ -1600,7 +1613,9 @@ function _submitRpe(){
     if(!nameEl || !firstBtn) return;
     var key = firstBtn.getAttribute('data-ekey');
     var effort = _exoEfforts[key] || 0;
-    if(effort > 0) exoRows.push({ key: key, name: nameEl.textContent, effort: effort });
+    var noteInp = document.getElementById('exoNote-'+key);
+    var exoNote = noteInp ? noteInp.value.trim() : '';
+    if(effort > 0 || exoNote) exoRows.push({ key: key, name: nameEl.textContent, effort: effort, note: exoNote });
   });
   var globalNote = ((document.getElementById('exoGlobalNoteTA')||{}).value||'').trim();
   var exoData = (exoRows.length || globalNote) ? { exos: exoRows, note: globalNote } : null;
