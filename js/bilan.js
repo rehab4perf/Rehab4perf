@@ -2127,6 +2127,7 @@ function _deserializeBilan(data){
   try{ _calcWainnerCerv(); _calcDN4(); }catch(ex){}
   saveToStorage(); // état complet — une seule écriture après désérialisation
   _refreshCRIfVisible();
+  try{ _ctRestoreAll(); }catch(ex){}
 }
 
 /* ── Sauvegarder ───────────────────────────────────────── */
@@ -4630,6 +4631,7 @@ function buildCR() {
 
   // Sections 2→6 : délégué à _buildAllTestsHtml()
   _buildAllTestsHtml().forEach(function(sec){ addSection(sec.title, sec.html); });
+  if(typeof _ctBuildCRHtml==='function') _ctBuildCRHtml().forEach(function(sec){ addSection(sec.title, sec.html); });
 
   // Section évolution (optionnelle)
   var evoSectionHtml = _buildCREvoSection();
@@ -5217,6 +5219,7 @@ function buildCRTF() {
 
   // Toutes les sections tests via helper partagé
   _buildAllTestsHtml().forEach(function(sec){ addTFSection(sec.title, sec.html); });
+  if(typeof _ctBuildCRHtml==='function') _ctBuildCRHtml().forEach(function(sec){ addTFSection(sec.title, sec.html); });
 
   if (!content.innerHTML.trim() || content.innerHTML === '<div style="margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid var(--border)"></div>') {
     content.innerHTML = '<div style="color:var(--text3);font-style:italic;padding:40px 0;text-align:center;font-size:.9rem">Aucun test renseigné.<br>Remplissez les onglets pour générer le compte-rendu.</div>';
@@ -5879,4 +5882,199 @@ window.addEventListener('load', function(){
   } else {
     _injectStars();
   }
+})();
+
+/* ══════════════════════════════════════════════════════
+   TESTS PERSONNALISÉS — section en bas de chaque page clinique
+══════════════════════════════════════════════════════ */
+(function(){
+  var _CT_PAGES = ['epaule','rachis','hanche','genou','pied','lma',
+                   'fonctionnels','fonctionnelsMS','fonctionnelsRachis'];
+  var _ctData = {};
+
+  function _ctIsBilat(){
+    var c = ((document.getElementById('f-cote')||{}).value||'').toUpperCase();
+    return c !== 'DROIT' && c !== 'GAUCHE';
+  }
+
+  function _ctLabels(){
+    return _ctIsBilat() ? {a:'Gauche', b:'Droit'} : {a:'Atteint', b:'Sain'};
+  }
+
+  function _ctLsiCalc(va, vb){
+    var a = parseFloat(va), b = parseFloat(vb);
+    if(isNaN(a)||isNaN(b)||b===0) return NaN;
+    return _ctIsBilat() ? Math.min(a,b)/Math.max(a,b)*100 : a/b*100;
+  }
+
+  function _ctLsiClass(lsi){
+    return isNaN(lsi) ? '' : lsi>=90 ? 'lsi-good' : lsi>=75 ? 'lsi-warn' : 'lsi-bad';
+  }
+
+  function _ctLsiText(lsi){
+    return isNaN(lsi) ? '—' : Math.round(lsi)+'%';
+  }
+
+  function _ctSave(pk){
+    var hf = document.getElementById('ct-data-'+pk);
+    if(hf) hf.value = JSON.stringify(_ctData[pk]||[]);
+  }
+
+  function _esc(v){ return String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+
+  function _ctRender(pk){
+    var container = document.getElementById('ct-rows-'+pk);
+    var hdrs = document.getElementById('ct-hdrs-'+pk);
+    if(!container) return;
+    var data = _ctData[pk]||[];
+    var lbl = _ctLabels();
+
+    if(hdrs){
+      hdrs.style.display = data.length ? '' : 'none';
+      var spans = hdrs.querySelectorAll('span');
+      if(spans[1]) spans[1].textContent = lbl.a;
+      if(spans[2]) spans[2].textContent = lbl.b;
+    }
+
+    container.innerHTML = '';
+    data.forEach(function(t, idx){
+      var lsi = _ctLsiCalc(t.valA, t.valB);
+      var row = document.createElement('div');
+      row.className = 'ct-row';
+      row.innerHTML =
+        '<input class="ct-name-inp" type="text" placeholder="Nom du test" value="'+_esc(t.name)+'" '+
+          'oninput="_ctUpdate(\''+pk+'\','+idx+',\'name\',this.value)">'+
+        '<input class="ct-val-inp" type="number" step="any" placeholder="—" value="'+_esc(t.valA)+'" '+
+          'oninput="_ctUpdate(\''+pk+'\','+idx+',\'valA\',this.value)">'+
+        '<input class="ct-val-inp" type="number" step="any" placeholder="—" value="'+_esc(t.valB)+'" '+
+          'oninput="_ctUpdate(\''+pk+'\','+idx+',\'valB\',this.value)">'+
+        '<div class="ct-lsi-cell '+_ctLsiClass(lsi)+'">'+_ctLsiText(lsi)+'</div>'+
+        '<button class="ct-del-btn" onclick="_ctRemove(\''+pk+'\','+idx+')" title="Supprimer">×</button>';
+      container.appendChild(row);
+    });
+  }
+
+  function _ctUpdateLsiCell(pk, idx){
+    var t = (_ctData[pk]||[])[idx];
+    if(!t) return;
+    var lsi = _ctLsiCalc(t.valA, t.valB);
+    var rows = document.querySelectorAll('#ct-rows-'+pk+' .ct-row');
+    var row = rows[idx];
+    if(!row) return;
+    var cell = row.querySelector('.ct-lsi-cell');
+    if(!cell) return;
+    cell.className = 'ct-lsi-cell '+_ctLsiClass(lsi);
+    cell.textContent = _ctLsiText(lsi);
+  }
+
+  window._ctUpdate = function(pk, idx, field, val){
+    if(!_ctData[pk]) return;
+    _ctData[pk][idx][field] = val;
+    _ctSave(pk);
+    if(field === 'valA' || field === 'valB') _ctUpdateLsiCell(pk, idx);
+    _bilanModified = true;
+  };
+
+  window._ctAdd = function(pk){
+    if(!_ctData[pk]) _ctData[pk] = [];
+    _ctData[pk].push({name:'', valA:'', valB:''});
+    _ctSave(pk);
+    _ctRender(pk);
+    _bilanModified = true;
+    // Focus le nouveau champ nom
+    var rows = document.querySelectorAll('#ct-rows-'+pk+' .ct-row');
+    var last = rows[rows.length-1];
+    if(last){ var inp = last.querySelector('.ct-name-inp'); if(inp) inp.focus(); }
+  };
+
+  window._ctRemove = function(pk, idx){
+    if(!_ctData[pk]) return;
+    _ctData[pk].splice(idx,1);
+    _ctSave(pk);
+    _ctRender(pk);
+    _bilanModified = true;
+  };
+
+  // Rebuild labels when side changes
+  window._ctRefreshLabels = function(){
+    _CT_PAGES.forEach(function(pk){ _ctRender(pk); });
+  };
+
+  function _ctInit(){
+    _CT_PAGES.forEach(function(pk){
+      _ctData[pk] = [];
+      var page = document.getElementById('page-'+pk);
+      if(!page) return;
+      var pc = page.querySelector('.page-content');
+      if(!pc) return;
+
+      var hf = document.createElement('input');
+      hf.type = 'hidden'; hf.id = 'ct-data-'+pk; hf.value = '[]';
+      pc.appendChild(hf);
+
+      var lbl = _ctLabels();
+      var sec = document.createElement('div');
+      sec.className = 'ct-section';
+      sec.innerHTML =
+        '<div class="ct-header">'+
+          '<span class="ct-title">Tests personnalisés</span>'+
+          '<button class="ct-add-btn" onclick="_ctAdd(\''+pk+'\')">+ Ajouter un test</button>'+
+        '</div>'+
+        '<div class="ct-col-headers" id="ct-hdrs-'+pk+'" style="display:none">'+
+          '<span></span><span>'+lbl.a+'</span><span>'+lbl.b+'</span><span>LSI</span><span></span>'+
+        '</div>'+
+        '<div id="ct-rows-'+pk+'"></div>';
+      pc.appendChild(sec);
+    });
+
+    // Refresh labels on côté change
+    var coteEl = document.getElementById('f-cote');
+    if(coteEl) coteEl.addEventListener('change', window._ctRefreshLabels);
+  }
+
+  window._ctRestoreAll = function(){
+    _CT_PAGES.forEach(function(pk){
+      var hf = document.getElementById('ct-data-'+pk);
+      if(!hf) return;
+      try{ _ctData[pk] = JSON.parse(hf.value)||[]; }catch(e){ _ctData[pk]=[]; }
+      _ctRender(pk);
+    });
+  };
+
+  window._ctBuildCRHtml = function(){
+    var sections = [];
+    var PAGE_LABELS = {
+      epaule:'Épaule', rachis:'Rachis', hanche:'Hanche', genou:'Genou',
+      pied:'Pied', lma:'LMA', fonctionnels:'Tests Fonctionnels MI',
+      fonctionnelsMS:'Tests Fonctionnels MS', fonctionnelsRachis:'Tests Fonctionnels Rachis'
+    };
+    var bilat = _ctIsBilat();
+    var lbl = _ctLabels();
+    _CT_PAGES.forEach(function(pk){
+      var data = (_ctData[pk]||[]).filter(function(t){ return t.name||t.valA||t.valB; });
+      if(!data.length) return;
+      var html = '<table style="width:100%;border-collapse:collapse;font-size:.82rem">'+
+        '<thead><tr style="border-bottom:1px solid var(--border)">'+
+        '<th style="text-align:left;padding:3px 8px;font-weight:600">Test</th>'+
+        '<th style="text-align:center;padding:3px 8px;font-weight:600">'+lbl.a+'</th>'+
+        '<th style="text-align:center;padding:3px 8px;font-weight:600">'+lbl.b+'</th>'+
+        '<th style="text-align:center;padding:3px 8px;font-weight:600">'+(bilat?'Sym.':'LSI')+'</th>'+
+        '</tr></thead><tbody>';
+      data.forEach(function(t){
+        var lsi = _ctLsiCalc(t.valA, t.valB);
+        var clr = isNaN(lsi)?'':lsi>=90?'color:#16a34a':lsi>=75?'color:#d97706':'color:#dc2626';
+        html += '<tr style="border-bottom:1px solid var(--border)">'+
+          '<td style="padding:3px 8px">'+(t.name||'—')+'</td>'+
+          '<td style="text-align:center;padding:3px 8px">'+(t.valA!==''?t.valA:'—')+'</td>'+
+          '<td style="text-align:center;padding:3px 8px">'+(t.valB!==''?t.valB:'—')+'</td>'+
+          '<td style="text-align:center;padding:3px 8px;font-weight:700;'+clr+'">'+(isNaN(lsi)?'—':Math.round(lsi)+'%')+'</td>'+
+          '</tr>';
+      });
+      html += '</tbody></table>';
+      sections.push({title:'Tests personnalisés — '+(PAGE_LABELS[pk]||pk), html:html});
+    });
+    return sections;
+  };
+
+  window.addEventListener('load', _ctInit);
 })();

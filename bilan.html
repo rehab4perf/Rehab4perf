@@ -1325,6 +1325,24 @@ textarea { resize:none !important; overflow:hidden !important; }
 @media print { .qual-grid-collapsible { display:block !important; } .qual-toggle-btn { display:none !important; } }
 /* Courbe douleur */
 
+/* Tests personnalisés */
+.ct-section { margin-top:28px; border-top:1px solid var(--border); padding-top:18px; }
+.ct-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.ct-title { font-size:.78rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--text3); }
+.ct-add-btn { font-size:.74rem; padding:4px 11px; border:1px solid var(--accent2); border-radius:14px; background:transparent; color:var(--accent2); cursor:pointer; font-family:inherit; transition:background .15s,color .15s; }
+.ct-add-btn:hover { background:var(--accent2); color:#fff; }
+.ct-col-headers { display:grid; grid-template-columns:1fr 80px 80px 72px 28px; gap:6px; margin-bottom:4px; font-size:.67rem; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:.04em; padding:0 2px; }
+.ct-row { display:grid; grid-template-columns:1fr 80px 80px 72px 28px; gap:6px; align-items:center; margin-bottom:6px; }
+.ct-name-inp { font-size:.82rem; padding:5px 8px; border:1px solid var(--border); border-radius:6px; background:var(--surface2); color:var(--text1); font-family:inherit; width:100%; box-sizing:border-box; }
+.ct-val-inp { font-size:.82rem; padding:5px 6px; border:1px solid var(--border); border-radius:6px; background:var(--surface2); color:var(--text1); font-family:inherit; width:100%; box-sizing:border-box; text-align:center; }
+.ct-lsi-cell { display:flex; align-items:center; justify-content:center; font-size:.8rem; font-weight:700; min-width:0; }
+.ct-lsi-cell.lsi-good { color:#16a34a; }
+.ct-lsi-cell.lsi-warn { color:#d97706; }
+.ct-lsi-cell.lsi-bad { color:#dc2626; }
+.ct-del-btn { background:none; border:none; color:var(--text3); cursor:pointer; font-size:1rem; line-height:1; padding:0 4px; justify-self:center; }
+.ct-del-btn:hover { color:#dc2626; }
+@media print { .ct-add-btn,.ct-del-btn { display:none !important; } .ct-col-headers,.ct-row { grid-template-columns:1fr 80px 80px 72px; } }
+
 </style>
 
 </head>
