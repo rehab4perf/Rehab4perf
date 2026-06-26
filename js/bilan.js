@@ -1732,9 +1732,16 @@ function _renderEvolutionPage(){
         valsB.forEach(function(v){if(!isNaN(v)&&isNaN(firstB_val))firstB_val=v;});
         valsB.slice().reverse().forEach(function(v){if(!isNaN(v)&&isNaN(lastB_val))lastB_val=v;});
         if(!isNaN(lastA) && !isNaN(lastB_val) && Math.max(lastA,lastB_val)>0){
-          var lsiVal=Math.round(Math.min(lastA,lastB_val)/Math.max(lastA,lastB_val)*100);
-          var lsiCls=lsiVal>=90?'evo-pos':lsiVal>=75?'evo-neutral':'evo-neg';
-          lsiHtml='<span class="evo-kpi '+lsiCls+'">LSI '+lsiVal+'%</span>';
+          // Groupes "Atteint vs Sain" en mode non-bilatéral : LSI = A/B (peut dépasser 100)
+          // Groupes "D vs G" ou mode bilatéral : min/max (toujours ≤ 100)
+          var _evoBilat = _isBilateral() || (grp.labelA !== 'Atteint' && grp.labelA !== 'Sain');
+          var lsiVal = _evoBilat
+            ? Math.round(Math.min(lastA,lastB_val)/Math.max(lastA,lastB_val)*100)
+            : (lastB_val > 0 ? Math.round(lastA/lastB_val*100) : NaN);
+          if(!isNaN(lsiVal)){
+            var lsiCls=lsiVal>=90?'evo-pos':lsiVal>=75?'evo-neutral':'evo-neg';
+            lsiHtml='<span class="evo-kpi '+lsiCls+'">LSI '+lsiVal+'%</span>';
+          }
         }
         var _dOpts={unit:grp.unit,dir:grp.dir,labelA:grp.labelA,labelB:grp.labelB,chartId:id,colorA:'var(--accent)',colorB:'var(--green)'};
         if(grp.condId) _dOpts.conditions=bilansAsc.map(function(b){return _fmtCond((b.donnees||{})[grp.condId],grp);});
