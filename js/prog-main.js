@@ -1089,7 +1089,11 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
     var noteEvtAttrs = _isTouchDevice
       ? ' ontouchstart="_noteChipTouchStart(event,\''+note.id+'\')" ontouchmove="_noteChipTouchMove(event)" ontouchend="_noteChipTouchEnd(event,\''+note.id+'\')"'
       : ' onclick="event.stopPropagation();_openCalNoteView(\''+note.id+'\')" draggable="true" ondragstart="_calNoteChipDragStart(event,\''+note.id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"';
-    var noteMoreBtn = '<button class="cal-note-chip-more" ontouchend="event.stopPropagation();event.preventDefault();_showNoteActionSheet(\''+note.id+'\',\''+escJS(lbl)+'\')">⋮</button>';
+    var noteMoreBtn = '<button class="cal-note-chip-more"'
+      +' ontouchstart="event.stopPropagation()"'
+      +' ontouchend="event.stopPropagation();event.preventDefault();_showNoteActionSheet(\''+note.id+'\',\''+escJS(lbl)+'\')"'
+      +' onclick="event.stopPropagation();_showNoteActionSheet(\''+note.id+'\',\''+escJS(lbl)+'\')"'
+      +'>⋮</button>';
     allChips.push('<div id="cal-note-'+note.id+'" class="cal-note-chip '+(isPatient?'chip-patient':'chip-clinique')+'"'+noteEvtAttrs+' title="'+escH((note.title?note.title+'\n':'')+note.text)+'">'
       +noteMoreBtn
       +'<span>'+(isPatient?'💬':'🔒')+'</span><span class="cal-note-chip-text">'+escH(lbl)+'</span>'
