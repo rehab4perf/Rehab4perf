@@ -529,6 +529,7 @@ var _calWeekStart = _getMonday(new Date()); // Lundi de la semaine courante
 var _calDayDate   = (function(){ var d=new Date(); d.setHours(0,0,0,0); return d; }()); // Jour affiché
 var _calEvents         = []; // [{id, date, programme_id, programmes:{nom}}]
 var _calCycles         = []; // cycles du patient depuis patient_settings
+var _cycleLegendOpen   = false; // état accordéon légende cycles
 var _calMessages       = []; // [{id, date, title, body}] messages patient visibles
 var _calClinicalNotes  = []; // [{id, date, title, body}] notes cliniques (mode kiné uniquement)
 
@@ -734,6 +735,90 @@ function _buildCalNav(label){
     + '</div>';
 }
 
+/* ── Bandeau cycle actuel + légende accordéon ── */
+function _toggleCycleLegend(){
+  _cycleLegendOpen = !_cycleLegendOpen;
+  var panel = document.getElementById('cycle-legend-panel');
+  var caret = document.getElementById('cycle-legend-caret');
+  if(panel) panel.style.display = _cycleLegendOpen ? 'block' : 'none';
+  if(caret) caret.textContent = _cycleLegendOpen ? '▲' : '▼';
+}
+
+function _buildCycleBanner(){
+  if(!_calCycles || !_calCycles.length) return '';
+  var today = new Date(); today.setHours(0,0,0,0);
+  var MC = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+
+  var cur = null;
+  _calCycles.forEach(function(cy){
+    if(!cy.startDate) return;
+    var s = new Date(cy.startDate); s.setHours(0,0,0,0);
+    var e = new Date(s); e.setDate(e.getDate()+cy.duree*7);
+    if(today>=s && today<e) cur = cy;
+  });
+
+  var html = '';
+
+  if(cur){
+    var cyS = new Date(cur.startDate); cyS.setHours(0,0,0,0);
+    var cyE = new Date(cyS); cyE.setDate(cyE.getDate()+cur.duree*7);
+    var wk  = Math.floor((today-cyS)/(7*24*3600*1000))+1;
+    var pct = Math.min(100, Math.round(wk/cur.duree*100));
+    var col = cur.color || _cycleColor(cur.nom);
+    var endLbl = cyE.getDate()+' '+MC[cyE.getMonth()];
+    html += '<div style="background:'+col+';border-radius:12px;padding:12px 16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;">'
+      +'<div style="width:38px;height:38px;border-radius:8px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.25rem;">⚡</div>'
+      +'<div style="flex:1;min-width:0;">'
+      +'<div style="font-size:.65rem;color:rgba(255,255,255,.75);margin-bottom:1px;">Cycle en cours</div>'
+      +'<div style="font-size:.88rem;font-weight:700;color:#fff;">'+escH(cur.nom)+'</div>'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-top:5px;">'
+      +'<div style="flex:1;height:4px;background:rgba(255,255,255,.2);border-radius:2px;overflow:hidden;">'
+      +'<div style="width:'+pct+'%;height:100%;background:rgba(255,255,255,.9);border-radius:2px;"></div>'
+      +'</div>'
+      +'<span style="font-size:.68rem;color:rgba(255,255,255,.85);white-space:nowrap;">Sem. '+wk+' / '+cur.duree+'</span>'
+      +'</div>'
+      +'</div>'
+      +'<div style="text-align:right;flex-shrink:0;">'
+      +'<div style="font-size:.62rem;color:rgba(255,255,255,.7);">Se termine le</div>'
+      +'<div style="font-size:.78rem;font-weight:600;color:#fff;">'+endLbl+'</div>'
+      +'</div>'
+      +'</div>';
+  }
+
+  // Accordéon légende complète
+  html += '<div style="margin-bottom:12px;">'
+    +'<button onclick="_toggleCycleLegend()" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 14px;cursor:pointer;font-size:.74rem;font-weight:700;color:var(--navy);font-family:inherit;">'
+    +'<span>📅 Plan de cycles complet</span>'
+    +'<span id="cycle-legend-caret" style="font-size:.62rem;color:var(--muted);transition:transform .2s;">'+(_cycleLegendOpen?'▲':'▼')+'</span>'
+    +'</button>'
+    +'<div id="cycle-legend-panel" style="display:'+(_cycleLegendOpen?'block':'none')+';background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;padding:4px 14px 10px;">';
+
+  _calCycles.forEach(function(cy, i){
+    if(!cy.startDate) return;
+    var s = new Date(cy.startDate); s.setHours(0,0,0,0);
+    var e = new Date(s); e.setDate(e.getDate()+cy.duree*7);
+    var col = cy.color || _cycleColor(cy.nom);
+    var sLbl = s.getDate()+' '+MC[s.getMonth()]+' '+s.getFullYear();
+    var eLbl = e.getDate()+' '+MC[e.getMonth()]+' '+e.getFullYear();
+    var status, sBg, sTxt;
+    if(today < s){ status='À venir'; sBg='rgba(107,122,141,.1)'; sTxt='var(--muted)'; }
+    else if(today >= e){ status='Terminé'; sBg='rgba(107,122,141,.1)'; sTxt='var(--muted)'; }
+    else { status='En cours'; sBg=col+'28'; sTxt=col; }
+    var isLast = (i === _calCycles.length-1);
+    html += '<div style="display:flex;align-items:center;gap:10px;padding:9px 0;'+(isLast?'':'border-bottom:1px solid var(--border);')+';opacity:'+(today>=e?.55:1)+';">'
+      +'<div style="width:10px;height:10px;border-radius:50%;background:'+col+';flex-shrink:0;"></div>'
+      +'<div style="flex:1;min-width:0;">'
+      +'<div style="font-size:.8rem;font-weight:600;color:var(--text);">'+escH(cy.nom)+'</div>'
+      +'<div style="font-size:.67rem;color:var(--muted);">'+sLbl+' – '+eLbl+' · '+cy.duree+' sem.</div>'
+      +'</div>'
+      +'<span style="font-size:.67rem;font-weight:600;background:'+sBg+';color:'+sTxt+';border-radius:5px;padding:3px 8px;white-space:nowrap;">'+status+'</span>'
+      +'</div>';
+  });
+
+  html += '</div></div>';
+  return html;
+}
+
 /* ── Bloc "Prochaines séances" commun ── */
 function _buildUpcomingHtml(){
   var MOIS_COURTS = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
@@ -762,10 +847,10 @@ function _buildUpcomingHtml(){
 
 /* ── Rendu principal — dispatch mois / semaine / jour ── */
 function _renderCalGrid(){
-  var html;
-  if(_calView === 'week')     html = _buildWeekHtml();
-  else if(_calView === 'day') html = _buildDayHtml();
-  else                        html = _buildMonthHtml();
+  var html = _buildCycleBanner();
+  if(_calView === 'week')     html += _buildWeekHtml();
+  else if(_calView === 'day') html += _buildDayHtml();
+  else                        html += _buildMonthHtml();
   html += _buildUpcomingHtml();
   document.getElementById('mainContent').innerHTML = html;
 }
@@ -821,10 +906,21 @@ function _buildMonthHtml(){
       if(extraCount>0) chips+='<div class="cal-more" onclick="event.stopPropagation();jumpToDay(\''+dateStr+'\')">+'+extraCount+' autre'+(extraCount>1?'s':'')+'</div>';
     }
     var cycleBg = _dayCycleBg(cellDate);
+    var cycleStartPill = '';
+    _calCycles.forEach(function(cy){
+      if(!cy.startDate) return;
+      var cs = new Date(cy.startDate); cs.setHours(0,0,0,0);
+      if(cs.getTime()===cellDate.getTime()){
+        var ccol = cy.color||_cycleColor(cy.nom);
+        var cshort = cy.nom.length>9 ? cy.nom.slice(0,9)+'…' : cy.nom;
+        cycleStartPill = '<div style="font-size:.52rem;font-weight:700;color:'+ccol+';background:'+ccol+'22;border-radius:3px;padding:1px 5px;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">↪ '+escH(cshort)+'</div>';
+      }
+    });
     cells += '<div class="cal-day'+(isToday?' today':'')+'"'
            + (cycleBg?' style="background-color:'+cycleBg+';"':'')
            + ' onclick="jumpToDay(\''+dateStr+'\')">'
            + '<div class="cal-day-num">'+d+'</div>'
+           + cycleStartPill
            + chips+msgChips+(cliChips||'')+'</div>';
   }
 
@@ -863,10 +959,21 @@ function _buildWeekHtml(){
     var dayEvs = _calEvents.filter(function(e){ return e.date===dateStr; });
 
     var weekCycleBg = _dayCycleBg(day);
+    var weekCycleTag = '';
+    _calCycles.forEach(function(cy){
+      if(!cy.startDate) return;
+      var wcs = new Date(cy.startDate); wcs.setHours(0,0,0,0);
+      if(wcs.getTime()===day.getTime()){
+        var wcol = cy.color||_cycleColor(cy.nom);
+        var wshort = cy.nom.length>7 ? cy.nom.slice(0,7)+'…' : cy.nom;
+        weekCycleTag = '<div style="font-size:.52rem;font-weight:700;color:'+wcol+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px;">↪ '+escH(wshort)+'</div>';
+      }
+    });
     html += '<div class="week-col'+(isToday?' today':'')+'"'+(weekCycleBg?' style="background-color:'+weekCycleBg+';"':'')+'>'+
             '<div class="week-col-header" onclick="jumpToDay(\''+dateStr+'\')" style="cursor:pointer;" title="Voir le détail du jour">'
           + '<div class="week-day-name">'+DAYS[dow]+'</div>'
           + '<div class="week-day-num'+(isToday?' today':'')+'">'+day.getDate()+'</div>'
+          + weekCycleTag
           + '</div><div class="week-col-body">';
 
     dayEvs.forEach(function(ev){
