@@ -730,10 +730,17 @@ function _dateStr(d){
 /* ── Construit le map date → UA totale (0 si pas de feedback) ── */
 function _buildUaMap(){
   var map = {};
+  // Séances planifiées avec feedback RPE (Foster)
   _cloudCalEvents.forEach(function(ev){
     var fb = ev.athlete_feedback;
     if(fb && fb.rpe && fb.duree_min){
       map[ev.date] = (map[ev.date]||0) + fb.rpe * fb.duree_min;
+    }
+  });
+  // Activités Strava (charge estimée : suffer_score×5 ou durée×intensité)
+  _stravaActivities.forEach(function(act){
+    if(act.charge && act.date){
+      map[act.date] = (map[act.date]||0) + act.charge;
     }
   });
   return map;

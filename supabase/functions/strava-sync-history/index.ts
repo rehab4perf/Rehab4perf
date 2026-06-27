@@ -8,6 +8,20 @@ const supabase = createClient(
 const CLIENT_ID     = Deno.env.get('STRAVA_CLIENT_ID')!
 const CLIENT_SECRET = Deno.env.get('STRAVA_CLIENT_SECRET')!
 
+const TYPE_INTENSITY: Record<string, number> = {
+  Run: 6, TrailRun: 7, Ride: 5, VirtualRide: 5, Swim: 6,
+  Walk: 3, Hike: 4, WeightTraining: 4, Rowing: 6,
+}
+
+function _calcCharge(act: Record<string, unknown>): number | null {
+  const durationMin = ((act.moving_time as number) || 0) / 60
+  if (durationMin < 1) return null
+  const sufferScore = act.suffer_score as number | null
+  if (sufferScore && sufferScore > 0) return Math.round(sufferScore * 5)
+  const type = (act.sport_type as string) || (act.type as string) || ''
+  return Math.round(durationMin * (TYPE_INTENSITY[type] ?? 5))
+}
+
 async function refreshIfNeeded(token: Record<string, string>): Promise<string> {
   if (new Date(token.expires_at) > new Date(Date.now() + 5 * 60 * 1000)) {
     return token.access_token
@@ -71,9 +85,7 @@ Deno.serve(async (req: Request) => {
       nom:        act.name,
       distance_m: Math.round((act.distance as number) || 0),
       duree_s:    (act.moving_time as number) || 0,
-      charge:     act.distance && act.moving_time
-                    ? Math.round(((act.distance as number) / 1000) * ((act.moving_time as number) / 60))
-                    : null,
+      charge:     _calcCharge(act),
       donnees: {
         elevation: act.total_elevation_gain,
         avg_hr:    act.average_heartrate,

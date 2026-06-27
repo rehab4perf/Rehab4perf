@@ -570,6 +570,7 @@ var _calWeekStart = _getMonday(new Date()); // Lundi de la semaine courante
 var _calDayDate   = (function(){ var d=new Date(); d.setHours(0,0,0,0); return d; }()); // Jour affiché
 var _calEvents         = []; // [{id, date, programme_id, programmes:{nom}}]
 var _calCycles         = []; // cycles du patient depuis patient_settings
+var _stravaActs        = []; // activités Strava du patient
 var _cycleLegendOpen   = false; // état accordéon légende cycles
 var _calMessages       = []; // [{id, date, title, body}] messages patient visibles
 var _calClinicalNotes  = []; // [{id, date, title, body}] notes cliniques (mode kiné uniquement)
@@ -669,7 +670,11 @@ function renderCalendar(){
     }).then(function(r){ return r.json(); }),
     fetch(SUPA_URL + '/rest/v1/patient_messages?patient_id=eq.' + _patientId + '&order=date.asc', {
       headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
-    }).then(function(r){ return r.json(); })
+    }).then(function(r){ return r.json(); }),
+    fetch(SUPA_URL + '/rest/v1/strava_activities?patient_id=eq.' + _patientId
+        + '&select=strava_id,date,type,nom,distance_m,duree_s,charge&order=date.asc', {
+      headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
+    }).then(function(r){ return r.json(); }).catch(function(){ return []; })
   ];
   if(_kineMode && _pratId){
     fetches.push(
@@ -685,7 +690,8 @@ function renderCalendar(){
     var settingsArr = Array.isArray(results[1]) ? results[1] : [];
     _calCycles   = (settingsArr.length && Array.isArray(settingsArr[0].cycles)) ? settingsArr[0].cycles : [];
     _calMessages = Array.isArray(results[2]) ? results[2] : [];
-    _calClinicalNotes = (results[3] && Array.isArray(results[3])) ? results[3] : [];
+    _stravaActs  = Array.isArray(results[3]) ? results[3] : [];
+    _calClinicalNotes = (results[4] && Array.isArray(results[4])) ? results[4] : [];
     _renderCalGrid();
     document.getElementById('lastUpdated').textContent = 'Actualisé à ' + new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
   })
@@ -914,6 +920,7 @@ function _buildMonthHtml(){
     var dayEvs = _calEvents.filter(function(e){ return e.date===dateStr; });
     var dayMsgsCell = _calMessages.filter(function(m){ return m.date===dateStr; });
     var dayCliNotes = _calClinicalNotes.filter(function(n){ return n.date===dateStr; });
+    var dayStrava = _stravaActs.filter(function(a){ return a.date===dateStr; });
     var chips, msgChips, cliChips;
     if(_isMobile){
       // Mobile : un dot coloré par séance/message — tap ouvre vue Jour
@@ -921,6 +928,7 @@ function _buildMonthHtml(){
         var fb=ev.athlete_feedback, ua=(fb&&fb.rpe&&fb.duree_min)?fb.rpe*fb.duree_min:null;
         return '<span class="cal-dot" style="background:'+(ua?_uaColor(ua):'var(--accent)')+'"></span>';
       }).join('')
+        + dayStrava.map(function(){ return '<span class="cal-dot" style="background:#FC4C02"></span>'; }).join('')
         + (dayMsgsCell.length ? '<span class="cal-dot" style="background:#4338CA"></span>' : '')
         + (dayCliNotes.length ? '<span class="cal-dot" style="background:#64748b"></span>' : '');
       chips    = dots ? '<div class="cal-dots">'+dots+'</div>' : '';
@@ -942,8 +950,17 @@ function _buildMonthHtml(){
         var lbl=(n.title||(n.body?n.body.slice(0,18)+(n.body.length>18?'…':''):'Note clinique'));
         return '<div class="cal-chip" style="background:#f1f5f9;color:#64748b;border-color:#cbd5e1;" title="'+escH((n.title?n.title+'\n':'')+n.body)+'">🔒 '+escH(lbl.length>12?lbl.slice(0,12)+'…':lbl)+'</div>';
       }).join('');
-      var shownCount=(dayEvs.length>0?1:0)+(dayMsgsCell.length>0?1:0)+(dayCliNotes.length>0?1:0);
-      var extraCount=dayEvs.length+dayMsgsCell.length+dayCliNotes.length-shownCount;
+      // Chips Strava (max 1 affiché, le reste dans +N)
+      var stravaChips = dayStrava.slice(0,1).map(function(act){
+        var tmap={Run:'🏃',Ride:'🚴',Swim:'🏊',Walk:'🚶',WeightTraining:'💪',Hike:'🥾',TrailRun:'🏔️'};
+        var emoji=tmap[act.type]||'⚡';
+        var dist=act.distance_m>0?(act.distance_m>=1000?(act.distance_m/1000).toFixed(1)+'km':act.distance_m+'m'):'';
+        var label=(act.nom||act.type||'Strava').slice(0,10);
+        return '<div class="cal-chip" style="background:#FC4C02;color:#fff;border-color:#FC4C02;cursor:default;" title="'+escH((act.nom||act.type||'')+(dist?' — '+dist:''))+'">'+emoji+' '+escH(label)+(dist?' <span style="font-size:.58rem;font-weight:800;opacity:.85;">'+dist+'</span>':'')+'</div>';
+      }).join('');
+      chips += stravaChips;
+      var shownCount=(dayEvs.length>0?1:0)+(dayMsgsCell.length>0?1:0)+(dayCliNotes.length>0?1:0)+(dayStrava.length>0?1:0);
+      var extraCount=dayEvs.length+dayMsgsCell.length+dayCliNotes.length+dayStrava.length-shownCount;
       if(extraCount>0) chips+='<div class="cal-more" onclick="event.stopPropagation();jumpToDay(\''+dateStr+'\')">+'+extraCount+' autre'+(extraCount>1?'s':'')+'</div>';
     }
     var cycleBg = _dayCycleBg(cellDate);
@@ -1035,6 +1052,18 @@ function _buildWeekHtml(){
     _calClinicalNotes.filter(function(n){ return n.date===dateStr; }).forEach(function(n){
       var lbl = n.title || (n.body ? n.body.slice(0,20)+(n.body.length>20?'…':'') : 'Note clinique');
       html += '<div class="cal-chip" style="margin:2px 0;background:#f1f5f9;color:#64748b;border-color:#cbd5e1;" title="'+escH((n.title?n.title+'\n':'')+n.body)+'">🔒 '+escH(lbl)+'</div>';
+    });
+
+    _stravaActs.filter(function(a){ return a.date===dateStr; }).forEach(function(act){
+      var tmap={Run:'🏃',Ride:'🚴',Swim:'🏊',Walk:'🚶',WeightTraining:'💪',Hike:'🥾',TrailRun:'🏔️'};
+      var emoji=tmap[act.type]||'⚡';
+      var dist=act.distance_m>0?(act.distance_m>=1000?(act.distance_m/1000).toFixed(1)+' km':act.distance_m+' m'):'';
+      var dur=act.duree_s>0?Math.round(act.duree_s/60)+' min':'';
+      var meta=[dist,dur].filter(Boolean).join(' · ');
+      html += '<div class="week-event" style="background:#FFF3EE;border-color:#FC4C02;cursor:default;" title="'+escH((act.nom||act.type||'')+(meta?' — '+meta:''))+'">'
+            + '<div class="week-event-name" style="color:#FC4C02;">'+emoji+' '+escH((act.nom||act.type||'Activité').slice(0,22))+'</div>'
+            + (meta ? '<div class="week-event-ua" style="color:#FC4C02;">'+escH(meta)+'</div>' : '')
+            + '</div>';
     });
 
     // Cycles : fond coloré sur la colonne, pas de chip
