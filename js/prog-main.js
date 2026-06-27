@@ -773,7 +773,13 @@ function _calcACWR(uaMap){
     sum28+=ua;
   }
   var chronic = sum28/4; // charge hebdomadaire chronique moyenne
-  var ratio = chronic>0 ? Math.round(sum7/chronic*100)/100 : null;
+  // Ratio invalide si pas de données au-delà des 7 derniers jours (historique insuffisant)
+  var hasOlderData = false;
+  for(var j=7;j<28;j++){
+    var dj = new Date(today.getTime()-j*24*60*60*1000);
+    if(uaMap[_dateStr(dj)]){ hasOlderData = true; break; }
+  }
+  var ratio = (chronic>0 && hasOlderData) ? Math.round(sum7/chronic*100)/100 : null;
   return {aigue:sum7, chronic:Math.round(chronic), ratio:ratio};
 }
 
@@ -805,22 +811,24 @@ function _progBadge(pct){
 function _renderBilanCharge(){
   var el = document.getElementById('bilanCharge');
   if(!el) return;
-  if(!_progPatient || !_cloudCalEvents.length){ el.innerHTML=''; return; }
+  if(!_progPatient || (!_cloudCalEvents.length && !_stravaActivities.length)){ el.innerHTML=''; return; }
 
   var uaMap = _buildUaMap();
-  // Vérifier qu'il y a au moins un feedback dans le mois
+  // Vérifier qu'il y a au moins 1 séance planifiée OU 1 activité Strava dans le mois
   var firstDay = new Date(_calYear,_calMonth,1);
   var lastDay  = new Date(_calYear,_calMonth+1,0);
+  var firstStr = _dateStr(firstDay), lastStr = _dateStr(lastDay);
   var ws = _getMondayOf(firstDay);
   var weeks = [];
   while(ws<=lastDay){
     weeks.push(new Date(ws));
     ws = new Date(ws.getTime()+7*24*60*60*1000);
   }
-  // Semaines avec au moins 1 séance planifiée
   var activeWeeks = weeks.filter(function(mon){
     var end = new Date(mon.getTime()+6*24*60*60*1000);
-    return _cloudCalEvents.some(function(e){ return e.date>=_dateStr(mon)&&e.date<=_dateStr(end); });
+    var monStr = _dateStr(mon), endStr = _dateStr(end);
+    return _cloudCalEvents.some(function(e){ return e.date>=monStr&&e.date<=endStr; })
+        || _stravaActivities.some(function(a){ return a.date>=monStr&&a.date<=endStr; });
   });
   if(!activeWeeks.length){ el.innerHTML=''; return; }
 

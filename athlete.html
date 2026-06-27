@@ -1114,9 +1114,10 @@ function _buildDayHtml(){
 
   var dayMsgs = _calMessages.filter(function(m){ return m.date===dateStr; });
   var dayCliNotes = _calClinicalNotes.filter(function(n){ return n.date===dateStr; });
+  var dayStrava = _stravaActs.filter(function(a){ return a.date===dateStr; });
 
   // Séances du jour
-  if(!dayEvs.length && !dayMsgs.length && !dayCliNotes.length){
+  if(!dayEvs.length && !dayMsgs.length && !dayCliNotes.length && !dayStrava.length){
     html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:36px 16px;text-align:center;color:var(--muted);">'
           + '<div style="font-size:2rem;margin-bottom:10px;">😴</div>'
           + '<div style="font-size:.88rem;font-weight:600;">Pas de séance prévue ce jour</div>'
@@ -1150,6 +1151,26 @@ function _buildDayHtml(){
             + '<div style="font-size:.72rem;font-weight:700;color:#64748b;margin-bottom:4px;letter-spacing:.04em;">🔒 NOTE CLINIQUE</div>'
             + (n.title ? '<div style="font-size:.92rem;font-weight:700;color:#1e293b;margin-bottom:4px;">'+escH(n.title)+'</div>' : '')
             + '<div style="font-size:.82rem;color:#64748b;white-space:pre-wrap;">'+escH(n.body||'')+'</div>'
+            + '</div>';
+    });
+    // Activités Strava du jour
+    var tmap={Run:'🏃',Ride:'🚴',Swim:'🏊',Walk:'🚶',WeightTraining:'💪',Hike:'🥾',TrailRun:'🏔️',VirtualRide:'🚴',Rowing:'🚣'};
+    dayStrava.forEach(function(act){
+      var emoji = tmap[act.type]||'⚡';
+      var dist  = act.distance_m>0 ? (act.distance_m>=1000?(act.distance_m/1000).toFixed(2)+' km':act.distance_m+' m') : null;
+      var dur   = act.duree_s>0 ? (Math.floor(act.duree_s/3600)>0?Math.floor(act.duree_s/3600)+'h ':'')+Math.round((act.duree_s%3600)/60)+'min' : null;
+      var typeLabel = {Run:'Course',Ride:'Vélo',Swim:'Natation',Walk:'Marche',WeightTraining:'Musculation',Hike:'Randonnée',TrailRun:'Trail',VirtualRide:'Vélo virtuel',Rowing:'Aviron'}[act.type]||act.type||'Activité';
+      html += '<div style="background:#FFF3EE;border:2px solid #FC4C02;border-radius:12px;padding:16px;margin-bottom:10px;">'
+            + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">'
+            + '<svg width="16" height="16" viewBox="0 0 24 24" fill="#FC4C02"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>'
+            + '<div style="font-size:1rem;font-weight:700;color:#FC4C02;flex:1;">'+emoji+' '+escH(act.nom||typeLabel)+'</div>'
+            + '</div>'
+            + '<div style="display:flex;gap:16px;flex-wrap:wrap;">'
+            + (dist?'<div style="font-size:.82rem;"><span style="color:#9D6050;font-size:.7rem;font-weight:700;letter-spacing:.04em;display:block;">DISTANCE</span><span style="font-weight:700;color:#1A1917;">'+dist+'</span></div>':'')
+            + (dur?'<div style="font-size:.82rem;"><span style="color:#9D6050;font-size:.7rem;font-weight:700;letter-spacing:.04em;display:block;">DURÉE</span><span style="font-weight:700;color:#1A1917;">'+dur+'</span></div>':'')
+            + '<div style="font-size:.82rem;"><span style="color:#9D6050;font-size:.7rem;font-weight:700;letter-spacing:.04em;display:block;">TYPE</span><span style="font-weight:700;color:#1A1917;">'+escH(typeLabel)+'</span></div>'
+            + (act.charge?'<div style="font-size:.82rem;"><span style="color:#9D6050;font-size:.7rem;font-weight:700;letter-spacing:.04em;display:block;">CHARGE</span><span style="font-weight:700;color:#FC4C02;">⚡ '+act.charge+' UA</span></div>':'')
+            + '</div>'
             + '</div>';
     });
   }
