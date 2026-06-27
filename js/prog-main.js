@@ -728,20 +728,48 @@ function _dateStr(d){
 }
 
 /* ── Construit le map date → UA totale (0 si pas de feedback) ── */
+/* ── Estimation charge Strava via FC moyenne (220 - âge → zones RPE) ── */
+function _stravaRpeFromHr(avgHr, ddn){
+  if(!avgHr || !ddn) return null;
+  try {
+    var age = Math.floor((Date.now()-new Date(ddn).getTime())/(365.25*24*3600*1000));
+    if(age<10||age>100) return null;
+    var pct = avgHr/(220-age);
+    if(pct<0.60) return 2;
+    if(pct<0.70) return 3;
+    if(pct<0.80) return 5;
+    if(pct<0.90) return 7;
+    return 9;
+  } catch(e){ return null; }
+}
+function _stravaChargeEstimate(act, ddn){
+  var durMin = (act.duree_s||0)/60;
+  if(durMin<1) return null;
+  var donnees = act.donnees||{};
+  // 1) FC → RPE estimé × durée
+  var rpe = _stravaRpeFromHr(donnees.avg_hr, ddn);
+  if(rpe) return Math.round(rpe*durMin);
+  // 2) Charge pré-calculée en DB (suffer_score×5 ou durée×intensité type)
+  return act.charge||null;
+}
+
 function _buildUaMap(){
   var map = {};
-  // Séances planifiées avec feedback RPE (Foster)
+  var feedbackDates = {};
+  // Séances planifiées avec feedback RPE (Foster) — priorité maximale
   _cloudCalEvents.forEach(function(ev){
     var fb = ev.athlete_feedback;
     if(fb && fb.rpe && fb.duree_min){
       map[ev.date] = (map[ev.date]||0) + fb.rpe * fb.duree_min;
+      feedbackDates[ev.date] = true;
     }
   });
-  // Activités Strava (charge estimée : suffer_score×5 ou durée×intensité)
+  // Activités Strava — si pas de feedback RPE ce jour (éviter double-comptage)
+  var ddn = _progPatient && _progPatient.ddn;
   _stravaActivities.forEach(function(act){
-    if(act.charge && act.date){
-      map[act.date] = (map[act.date]||0) + act.charge;
-    }
+    if(!act.date || feedbackDates[act.date]) return;
+    var charge = _stravaChargeEstimate(act, ddn);
+    if(charge) map[act.date] = (map[act.date]||0) + charge;
   });
   return map;
 }
@@ -977,6 +1005,25 @@ function _protoPhaseChipStyle(donnees){
 /* ── Helper chips partagé mois + semaine ── */
 function _buildDayChips(dateStr, cellDate, _skipCap){
   var allChips = [];
+  // Pool Strava pour déduplication : une activité matchée est absorbée dans la chip planifiée
+  var _stravaDay = _stravaActivities.filter(function(a){ return a.date===dateStr; });
+  var _usedSid = {};
+  var _claimSid = function(types){
+    for(var _si=0;_si<_stravaDay.length;_si++){
+      var _sa=_stravaDay[_si];
+      if(!_usedSid[_sa.strava_id] && types.indexOf(_sa.type)!==-1){
+        _usedSid[_sa.strava_id]=true; return _sa;
+      }
+    }
+    return null;
+  };
+  var _stravaBadge = function(act){
+    if(!act) return '';
+    var d=act.distance_m>=1000?(act.distance_m/1000).toFixed(1)+'km':act.distance_m>0?act.distance_m+'m':'';
+    var t=act.duree_s>0?Math.round(act.duree_s/60)+'min':'';
+    var info=[d,t].filter(Boolean).join(' ');
+    return info?' <span style="font-size:.55rem;background:#FC4C02;color:#fff;border-radius:3px;padding:0 3px;font-weight:700;flex-shrink:0;">S '+escH(info)+'</span>':'';
+  };
   if(_progPatient){
     var dayEvs = _cloudCalEvents.filter(function(e){ return e.date===dateStr; });
     var _j0Ref = _progPatient ? _getJ0ForPatient(_progPatient.id) : '';
@@ -991,6 +1038,7 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
         var painBadge = painScore !== null
           ? ' <span style="font-size:.57rem;font-weight:800;padding:1px 4px;border-radius:3px;background:rgba(0,0,0,.18);">⚠ ' + painScore + '/10</span>'
           : '';
+        var capStravaBadge = _stravaBadge(_claimSid(['Run','TrailRun','Walk']));
         // Rouge si douleur ≥ 3, orange si 1-2, teal si pas de retour
         var capBg = painScore !== null && painScore >= 3 ? '#dc2626'
           : painScore !== null && painScore >= 1 ? '#d97706'
@@ -1001,7 +1049,7 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
           var capSel = _calSelSeances.has(String(ev.id));
           var capSelRing = capSel ? ';box-shadow:0 0 0 2px #fff,0 0 0 4px rgba(255,255,255,.8);filter:brightness(1.12);' : ';opacity:.82;';
           return '<div id="cal-chip-'+ev.id+'" class="cal-session-chip" style="background:'+capBg+';color:#fff;cursor:pointer'+capSelRing+'" title="'+escH(nom)+'" onclick="event.stopPropagation();_calSelToggle(\''+ev.id+'\',\'seance\')">'
-            + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">🏃 '+escH(capLabel.length>15?capLabel.slice(0,15)+'…':capLabel)+painBadge+'</span>'
+            + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">🏃 '+escH(capLabel.length>15?capLabel.slice(0,15)+'…':capLabel)+painBadge+capStravaBadge+'</span>'
             + '<span class="cal-sel-check" style="font-size:.75rem;font-weight:800;flex-shrink:0;margin-left:2px;">'+(capSel?'✓':'')+'</span>'
             + '</div>';
         }
@@ -1011,7 +1059,7 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
         return '<div class="cal-session-chip" style="background:'+capBg+';color:#fff;cursor:grab;" title="'+escH(nom)+'"'
           + capEvtAttrs + '>'
           + '<button class="cal-chip-more" onclick="event.stopPropagation();_showChipDropdown(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')" ontouchend="event.stopPropagation();event.preventDefault();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')">⋮</button>'
-          + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">🏃 '+escH(capLabel.length>14?capLabel.slice(0,14)+'…':capLabel)+painBadge+'</span>'
+          + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">🏃 '+escH(capLabel.length>14?capLabel.slice(0,14)+'…':capLabel)+painBadge+capStravaBadge+'</span>'
           + '<button class="cal-chip-del" style="color:rgba(255,255,255,.7)" onclick="event.stopPropagation();removeCalEventCloud(\''+ev.id+'\')">×</button>'
           + '</div>';
       }
@@ -1051,6 +1099,7 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
       var fb = ev.athlete_feedback;
       var ua = (fb&&fb.rpe&&fb.duree_min) ? fb.rpe*fb.duree_min : null;
       var uaSpan = ua ? ' <span style="font-size:.58rem;font-weight:800;padding:1px 4px;border-radius:3px;background:rgba(255,255,255,.22);color:'+_chipUaColor(ua)+';">⚡'+ua+'</span>' : '';
+      var veloStravaBadge = nom.indexOf('Vélo —')===0 ? _stravaBadge(_claimSid(['Ride','VirtualRide'])) : '';
       // Couleur de phase protocole (si séance liée)
       var phStyle = _protoPhaseChipStyle(ev.programmes && ev.programmes.donnees);
       var chipBg    = phStyle ? phStyle.bg    : 'var(--accent)';
@@ -1067,7 +1116,7 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
         var chipSelRing = chipSel ? ';box-shadow:0 0 0 2px rgba(0,0,0,.08),0 0 0 4px var(--accent);filter:brightness(1.08);' : ';opacity:.82;';
         var chipSelCheck = chipSel ? '<span class="cal-sel-check" style="font-size:.75rem;font-weight:800;flex-shrink:0;margin-left:2px;color:'+(phStyle?'#1E3A5F':'#fff')+';">✓</span>' : '<span class="cal-sel-check"></span>';
         return '<div id="cal-chip-'+ev.id+'" class="cal-session-chip" style="background:'+chipBg+';color:'+chipColor+';cursor:pointer'+chipExtra+chipSelRing+'" title="'+escH(nom)+'" onclick="event.stopPropagation();_calSelToggle(\''+ev.id+'\',\'seance\')">'
-          +'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">'+(jLabel?'<span style="opacity:.75;font-size:.85em;">'+escH(jLabel)+'</span>':'📋 ')+escH(nom.length>16?nom.slice(0,16)+'…':nom)+'</span>'
+          +'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">'+(jLabel?'<span style="opacity:.75;font-size:.85em;">'+escH(jLabel)+'</span>':'📋 ')+escH(nom.length>16?nom.slice(0,16)+'…':nom)+veloStravaBadge+'</span>'
           +phaseTag+chipSelCheck
           +'</div>';
       }
@@ -1080,7 +1129,7 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
       return '<div id="cal-chip-'+ev.id+'" class="cal-session-chip" style="background:'+chipBg+';color:'+chipColor+';cursor:'+chipCursor+chipExtra+';" title="'+escH(nom)+'"'
         + chipEvtAttrs + '>'
         +moreBtn
-        +'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">'+(jLabel?'<span style="opacity:.75;font-size:.85em;">'+escH(jLabel)+'</span>':'📋 ')+escH(nom.length>16?nom.slice(0,16)+'…':nom)+uaSpan+'</span>'
+        +'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">'+(jLabel?'<span style="opacity:.75;font-size:.85em;">'+escH(jLabel)+'</span>':'📋 ')+escH(nom.length>16?nom.slice(0,16)+'…':nom)+veloStravaBadge+uaSpan+'</span>'
         +phaseTag
         +'<button class="cal-chip-del" style="color:'+(phStyle?'rgba(30,58,95,.5)':'rgba(255,255,255,.7)')+'" onclick="event.stopPropagation();removeCalEventCloud(\''+ev.id+'\')">×</button>'
         +'</div>';
@@ -1099,7 +1148,7 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
   }
   // Chips Strava
   if(_progPatient && _stravaActivities.length) {
-    _stravaActivities.filter(function(a){ return a.date === dateStr; }).forEach(function(act){
+    _stravaActivities.filter(function(a){ return a.date === dateStr && !_usedSid[a.strava_id]; }).forEach(function(act){
       var typeMap = { Run:'🏃', Ride:'🚴', Swim:'🏊', Walk:'🚶', WeightTraining:'💪', Hike:'🥾', Rowing:'🚣', VirtualRide:'🚴', TrailRun:'🏔️' };
       var emoji = typeMap[act.type] || '⚡';
       var dist = act.distance_m ? (act.distance_m >= 1000 ? (act.distance_m/1000).toFixed(1)+'km' : act.distance_m+'m') : '';

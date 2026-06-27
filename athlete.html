@@ -935,12 +935,22 @@ function _buildMonthHtml(){
       msgChips = ''; cliChips = '';
     } else {
       // Desktop : max 1 chip séance + max 1 chip message (+ note clinique si kine) + badge "+N autres"
+      var usedStravas = {};
       chips = dayEvs.slice(0,1).map(function(ev){
         var nom=(ev.programmes&&ev.programmes.nom)||'Programme';
         var fb=ev.athlete_feedback, ua=(fb&&fb.rpe&&fb.duree_min)?fb.rpe*fb.duree_min:null;
         var uaBadge=ua?'<span class="chip-ua" style="color:'+_uaColor(ua)+';">⚡'+ua+'</span>':'';
+        // Strava match pour CAP / Vélo
+        var isCAP=nom.indexOf('CAP —')===0, isVelo=nom.indexOf('Vélo —')===0;
+        var matchTypes=isCAP?['Run','TrailRun','Walk']:isVelo?['Ride','VirtualRide']:[];
+        var matched=matchTypes.length?dayStrava.find(function(a){ return matchTypes.indexOf(a.type)!==-1&&!usedStravas[a.strava_id]; }):null;
+        if(matched) usedStravas[matched.strava_id]=true;
+        var sd=matched&&matched.distance_m>=1000?(matched.distance_m/1000).toFixed(1)+'km':matched&&matched.distance_m>0?matched.distance_m+'m':'';
+        var st=matched&&matched.duree_s>0?Math.round(matched.duree_s/60)+'min':'';
+        var sinfo=[sd,st].filter(Boolean).join(' ');
+        var sBadge=matched&&sinfo?'<span style="font-size:.55rem;background:#FC4C02;color:#fff;border-radius:3px;padding:0 3px;font-weight:700;">S '+sinfo+'</span>':'';
         return '<div class="cal-chip" onclick="event.stopPropagation();openProgModal(\''+escH(ev.programme_id)+'\',\''+escH(ev.id)+'\')" title="'+escH(nom)+'">'
-             +'📋 '+escH(nom.length>10?nom.slice(0,10)+'…':nom)+uaBadge+'</div>';
+             +'📋 '+escH(nom.length>10?nom.slice(0,10)+'…':nom)+uaBadge+sBadge+'</div>';
       }).join('');
       msgChips = dayMsgsCell.slice(0,1).map(function(m){
         var lbl=m.title||(m.body?m.body.slice(0,18)+(m.body.length>18?'…':''):'Message');
@@ -950,8 +960,9 @@ function _buildMonthHtml(){
         var lbl=(n.title||(n.body?n.body.slice(0,18)+(n.body.length>18?'…':''):'Note clinique'));
         return '<div class="cal-chip" style="background:#f1f5f9;color:#64748b;border-color:#cbd5e1;" title="'+escH((n.title?n.title+'\n':'')+n.body)+'">🔒 '+escH(lbl.length>12?lbl.slice(0,12)+'…':lbl)+'</div>';
       }).join('');
-      // Chips Strava (max 1 affiché, le reste dans +N)
-      var stravaChips = dayStrava.slice(0,1).map(function(act){
+      // Strava : seulement les activités non absorbées dans une séance planifiée
+      var unmatchedStrava=dayStrava.filter(function(a){ return !usedStravas[a.strava_id]; });
+      var stravaChips = unmatchedStrava.slice(0,1).map(function(act){
         var tmap={Run:'🏃',Ride:'🚴',Swim:'🏊',Walk:'🚶',WeightTraining:'💪',Hike:'🥾',TrailRun:'🏔️'};
         var emoji=tmap[act.type]||'⚡';
         var dist=act.distance_m>0?(act.distance_m>=1000?(act.distance_m/1000).toFixed(1)+'km':act.distance_m+'m'):'';
@@ -959,8 +970,8 @@ function _buildMonthHtml(){
         return '<div class="cal-chip" style="background:#FC4C02;color:#fff;border-color:#FC4C02;cursor:default;" title="'+escH((act.nom||act.type||'')+(dist?' — '+dist:''))+'">'+emoji+' '+escH(label)+(dist?' <span style="font-size:.58rem;font-weight:800;opacity:.85;">'+dist+'</span>':'')+'</div>';
       }).join('');
       chips += stravaChips;
-      var shownCount=(dayEvs.length>0?1:0)+(dayMsgsCell.length>0?1:0)+(dayCliNotes.length>0?1:0)+(dayStrava.length>0?1:0);
-      var extraCount=dayEvs.length+dayMsgsCell.length+dayCliNotes.length+dayStrava.length-shownCount;
+      var shownCount=(dayEvs.length>0?1:0)+(dayMsgsCell.length>0?1:0)+(dayCliNotes.length>0?1:0)+(unmatchedStrava.length>0?1:0);
+      var extraCount=dayEvs.length+dayMsgsCell.length+dayCliNotes.length+unmatchedStrava.length-shownCount;
       if(extraCount>0) chips+='<div class="cal-more" onclick="event.stopPropagation();jumpToDay(\''+dateStr+'\')">+'+extraCount+' autre'+(extraCount>1?'s':'')+'</div>';
     }
     var cycleBg = _dayCycleBg(cellDate);
@@ -1034,14 +1045,24 @@ function _buildWeekHtml(){
           + weekCycleTag
           + '</div><div class="week-col-body">';
 
+    var weekUsedStravas = {};
+    var dayStravaWeek = _stravaActs.filter(function(a){ return a.date===dateStr; });
     dayEvs.forEach(function(ev){
       var nom = (ev.programmes&&ev.programmes.nom)||'Programme';
       var fb = ev.athlete_feedback;
       var ua = (fb&&fb.rpe&&fb.duree_min) ? fb.rpe*fb.duree_min : null;
       var uaHtml = ua ? '<div class="week-event-ua" style="color:'+_uaColor(ua)+';">⚡'+ua+' UA</div>' : '';
+      var isCAP=nom.indexOf('CAP —')===0, isVelo=nom.indexOf('Vélo —')===0;
+      var wTypes=isCAP?['Run','TrailRun','Walk']:isVelo?['Ride','VirtualRide']:[];
+      var wMatch=wTypes.length?dayStravaWeek.find(function(a){ return wTypes.indexOf(a.type)!==-1&&!weekUsedStravas[a.strava_id]; }):null;
+      if(wMatch) weekUsedStravas[wMatch.strava_id]=true;
+      var wsd=wMatch&&wMatch.distance_m>=1000?(wMatch.distance_m/1000).toFixed(1)+'km':wMatch&&wMatch.distance_m>0?wMatch.distance_m+'m':'';
+      var wst=wMatch&&wMatch.duree_s>0?Math.round(wMatch.duree_s/60)+'min':'';
+      var wsInfo=[wsd,wst].filter(Boolean).join(' ');
+      var wBadge=wMatch&&wsInfo?'<div class="week-event-ua" style="color:#FC4C02;">S '+wsInfo+'</div>':'';
       html += '<div class="week-event" onclick="openProgModal(\''+escH(ev.programme_id)+'\',\''+escH(ev.id)+'\')">'
             + '<div class="week-event-name">📋 '+escH(nom)+'</div>'
-            + uaHtml+'</div>';
+            + uaHtml+wBadge+'</div>';
     });
 
     _calMessages.filter(function(m){ return m.date===dateStr; }).forEach(function(m){
@@ -1054,7 +1075,7 @@ function _buildWeekHtml(){
       html += '<div class="cal-chip" style="margin:2px 0;background:#f1f5f9;color:#64748b;border-color:#cbd5e1;" title="'+escH((n.title?n.title+'\n':'')+n.body)+'">🔒 '+escH(lbl)+'</div>';
     });
 
-    _stravaActs.filter(function(a){ return a.date===dateStr; }).forEach(function(act){
+    _stravaActs.filter(function(a){ return a.date===dateStr&&!weekUsedStravas[a.strava_id]; }).forEach(function(act){
       var tmap={Run:'🏃',Ride:'🚴',Swim:'🏊',Walk:'🚶',WeightTraining:'💪',Hike:'🥾',TrailRun:'🏔️'};
       var emoji=tmap[act.type]||'⚡';
       var dist=act.distance_m>0?(act.distance_m>=1000?(act.distance_m/1000).toFixed(1)+' km':act.distance_m+' m'):'';
@@ -1123,17 +1144,33 @@ function _buildDayHtml(){
           + '<div style="font-size:.88rem;font-weight:600;">Pas de séance prévue ce jour</div>'
           + '</div>';
   } else {
+    var dayUsedStravas = {};
     dayEvs.forEach(function(ev){
       var nom = (ev.programmes&&ev.programmes.nom)||'Programme';
       var fb = ev.athlete_feedback;
       var ua = (fb&&fb.rpe&&fb.duree_min) ? fb.rpe*fb.duree_min : null;
       var uaTag = ua ? '<span style="font-size:.75rem;font-weight:800;color:'+_uaColor(ua)+';background:#F5F7FA;border-radius:6px;padding:3px 9px;">⚡ '+ua+' UA</span>' : '';
+      var isCAP=nom.indexOf('CAP —')===0, isVelo=nom.indexOf('Vélo —')===0;
+      var matchTypes=isCAP?['Run','TrailRun','Walk']:isVelo?['Ride','VirtualRide']:[];
+      var matched=matchTypes.length?dayStrava.find(function(a){ return matchTypes.indexOf(a.type)!==-1&&!dayUsedStravas[a.strava_id]; }):null;
+      if(matched) dayUsedStravas[matched.strava_id]=true;
+      var stravaSection='';
+      if(matched){
+        var dsd=matched.distance_m>=1000?(matched.distance_m/1000).toFixed(1)+' km':matched.distance_m>0?matched.distance_m+' m':'';
+        var dst=matched.duree_s>0?Math.round(matched.duree_s/60)+' min':'';
+        var dsInfo=[dsd,dst].filter(Boolean).join(' · ');
+        stravaSection='<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;">'
+          +'<svg width="13" height="13" viewBox="0 0 24 24" fill="#FC4C02"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>'
+          +'<span style="font-size:.75rem;font-weight:700;color:#FC4C02;">Strava'+(dsInfo?' · '+escH(dsInfo):'')+'</span>'
+          +'</div>';
+      }
       html += '<div style="background:var(--surface);border:2px solid var(--accent);border-radius:12px;padding:16px;margin-bottom:10px;cursor:pointer;transition:box-shadow .15s;" onclick="openProgModal(\''+escH(ev.programme_id)+'\',\''+escH(ev.id)+'\')" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(43,95,166,.18)\'" onmouseout="this.style.boxShadow=\'none\'">'
             + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">'
             + '<div style="font-size:1rem;font-weight:700;color:var(--navy);flex:1;">📋 '+escH(nom)+'</div>'
             + uaTag
             + '</div>'
             + '<div style="font-size:.75rem;color:var(--accent);font-weight:600;">Voir le programme  ›</div>'
+            + stravaSection
             + '</div>';
     });
     // Messages patient du jour
@@ -1155,7 +1192,7 @@ function _buildDayHtml(){
     });
     // Activités Strava du jour
     var tmap={Run:'🏃',Ride:'🚴',Swim:'🏊',Walk:'🚶',WeightTraining:'💪',Hike:'🥾',TrailRun:'🏔️',VirtualRide:'🚴',Rowing:'🚣'};
-    dayStrava.forEach(function(act){
+    dayStrava.filter(function(a){ return !dayUsedStravas[a.strava_id]; }).forEach(function(act){
       var emoji = tmap[act.type]||'⚡';
       var dist  = act.distance_m>0 ? (act.distance_m>=1000?(act.distance_m/1000).toFixed(2)+' km':act.distance_m+' m') : null;
       var dur   = act.duree_s>0 ? (Math.floor(act.duree_s/3600)>0?Math.floor(act.duree_s/3600)+'h ':'')+Math.round((act.duree_s%3600)/60)+'min' : null;
