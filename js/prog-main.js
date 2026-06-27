@@ -634,6 +634,7 @@ var _calYear = new Date().getFullYear();
 var _calMonth = new Date().getMonth();
 var _calPickerDate = '';
 var _cloudCalEvents = [];
+var _stravaActivities = []; // activités Strava du patient courant
 var _calView = 'month';      // 'month' | 'week'
 var _calWeekStart = null;    // Date (lundi de la semaine affichée)
 
@@ -698,8 +699,20 @@ function renderCalendar() {
         // Ignorer si le patient a changé entre-temps (fetch obsolète)
         if(!_progPatient || _progPatient.id !== _fetchPatientId) return;
         _cloudCalEvents = Array.isArray(data) ? data : [];
-        // Garantir que J0 est disponible pour le rendu des chips J+
-        _ensureJ0ForPatient(_fetchPatientId, function(){ _renderCalendarUI(); });
+        // Charger activités Strava puis rendre le calendrier
+        var stravaUrl = SUPA_URL_P + '/rest/v1/strava_activities?patient_id=eq.' + _fetchPatientId
+          + '&select=strava_id,date,type,nom,distance_m,duree_s&order=date.asc';
+        _fetchRetry(stravaUrl, { headers: calHeaders })
+          .then(function(sr){ return sr.json(); })
+          .then(function(sdata){
+            if(_progPatient && _progPatient.id === _fetchPatientId)
+              _stravaActivities = Array.isArray(sdata) ? sdata : [];
+            _ensureJ0ForPatient(_fetchPatientId, function(){ _renderCalendarUI(); });
+          })
+          .catch(function(){
+            _stravaActivities = [];
+            _ensureJ0ForPatient(_fetchPatientId, function(){ _renderCalendarUI(); });
+          });
       })
       .catch(function(){ _cloudCalEvents = []; _renderCalendarUI(); });
   } else {
@@ -1068,6 +1081,25 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
         +'<button class="cal-chip-del" onclick="event.stopPropagation();removeCalEvent(\''+ev.id+'\')">×</button>'
         +'</div>';
     }).filter(Boolean);
+  }
+  // Chips Strava
+  if(_progPatient && _stravaActivities.length) {
+    _stravaActivities.filter(function(a){ return a.date === dateStr; }).forEach(function(act){
+      var typeMap = { Run:'🏃', Ride:'🚴', Swim:'🏊', Walk:'🚶', WeightTraining:'💪', Hike:'🥾', Rowing:'🚣', VirtualRide:'🚴', TrailRun:'🏔️' };
+      var emoji = typeMap[act.type] || '⚡';
+      var dist = act.distance_m ? (act.distance_m >= 1000 ? (act.distance_m/1000).toFixed(1)+'km' : act.distance_m+'m') : '';
+      var dur  = act.duree_s   ? Math.round(act.duree_s/60)+'min' : '';
+      var meta = [dist, dur].filter(Boolean).join(' · ');
+      var label = act.nom ? act.nom.slice(0,16)+(act.nom.length>16?'…':'') : (act.type||'Activité');
+      allChips.push(
+        '<div class="cal-session-chip" style="background:#FC4C02;color:#fff;cursor:default;opacity:.9;" title="'
+        +escH((act.nom||act.type||'')+(meta?' — '+meta:''))+'">'
+        +'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">'+emoji+' '+escH(label)
+        +(meta ? ' <span style="font-size:.58rem;font-weight:800;padding:1px 4px;border-radius:3px;background:rgba(0,0,0,.2);">'+escH(meta)+'</span>' : '')
+        +'</span>'
+        +'</div>'
+      );
+    });
   }
   // Cycles : fond coloré sur la cellule (voir _dayCycleStyle), pas de chip
   // Notes calendrier
