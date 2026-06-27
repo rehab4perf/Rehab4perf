@@ -689,7 +689,7 @@ function renderCalendar() {
     // Mode cloud : charger les séances Supabase pour ce patient
     var _fetchPatientId = _progPatient.id; // capturer l'id au moment du lancement
     var url = SUPA_URL_P + '/rest/v1/seances_planifiees?patient_id=eq.' + _fetchPatientId
-            + '&select=id,date,programme_id,programmes(nom,donnees,type),athlete_feedback(rpe,duree_min,exo_data)&order=date.asc';
+            + '&select=id,date,programme_id,programmes(nom,donnees),athlete_feedback(rpe,duree_min,exo_data)&order=date.asc';
     var calHeaders = _progToken
       ? { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _progToken }
       : { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json' };
@@ -1099,10 +1099,9 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
       var fb = ev.athlete_feedback;
       var ua = (fb&&fb.rpe&&fb.duree_min) ? fb.rpe*fb.duree_min : null;
       var uaSpan = ua ? ' <span style="font-size:.58rem;font-weight:800;padding:1px 4px;border-radius:3px;background:rgba(255,255,255,.22);color:'+_chipUaColor(ua)+';">⚡'+ua+'</span>' : '';
-      var progType = ev.programmes && ev.programmes.type;
       var progDType = ev.programmes && ev.programmes.donnees && ev.programmes.donnees.type;
-      var isRunProg = progDType === 'cap' || progType === 'Course à pied';
-      var isVeloProg = nom.indexOf('Vélo —')===0 || progType === 'Vélo';
+      var isRunProg = progDType === 'cap';
+      var isVeloProg = nom.indexOf('Vélo —')===0;
       var genericStravaBadge = isRunProg ? _stravaBadge(_claimSid(['Run','TrailRun','Walk']))
         : isVeloProg ? _stravaBadge(_claimSid(['Ride','VirtualRide']))
         : '';
