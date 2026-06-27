@@ -689,7 +689,7 @@ function renderCalendar() {
     // Mode cloud : charger les séances Supabase pour ce patient
     var _fetchPatientId = _progPatient.id; // capturer l'id au moment du lancement
     var url = SUPA_URL_P + '/rest/v1/seances_planifiees?patient_id=eq.' + _fetchPatientId
-            + '&select=id,date,programme_id,programmes(nom,donnees),athlete_feedback(rpe,duree_min,exo_data)&order=date.asc';
+            + '&select=id,date,programme_id,programmes(nom,donnees,type),athlete_feedback(rpe,duree_min,exo_data)&order=date.asc';
     var calHeaders = _progToken
       ? { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _progToken }
       : { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json' };
@@ -1099,7 +1099,13 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
       var fb = ev.athlete_feedback;
       var ua = (fb&&fb.rpe&&fb.duree_min) ? fb.rpe*fb.duree_min : null;
       var uaSpan = ua ? ' <span style="font-size:.58rem;font-weight:800;padding:1px 4px;border-radius:3px;background:rgba(255,255,255,.22);color:'+_chipUaColor(ua)+';">⚡'+ua+'</span>' : '';
-      var veloStravaBadge = nom.indexOf('Vélo —')===0 ? _stravaBadge(_claimSid(['Ride','VirtualRide'])) : '';
+      var progType = ev.programmes && ev.programmes.type;
+      var progDType = ev.programmes && ev.programmes.donnees && ev.programmes.donnees.type;
+      var isRunProg = progDType === 'cap' || progType === 'Course à pied';
+      var isVeloProg = nom.indexOf('Vélo —')===0 || progType === 'Vélo';
+      var genericStravaBadge = isRunProg ? _stravaBadge(_claimSid(['Run','TrailRun','Walk']))
+        : isVeloProg ? _stravaBadge(_claimSid(['Ride','VirtualRide']))
+        : '';
       // Couleur de phase protocole (si séance liée)
       var phStyle = _protoPhaseChipStyle(ev.programmes && ev.programmes.donnees);
       var chipBg    = phStyle ? phStyle.bg    : 'var(--accent)';
@@ -1116,7 +1122,7 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
         var chipSelRing = chipSel ? ';box-shadow:0 0 0 2px rgba(0,0,0,.08),0 0 0 4px var(--accent);filter:brightness(1.08);' : ';opacity:.82;';
         var chipSelCheck = chipSel ? '<span class="cal-sel-check" style="font-size:.75rem;font-weight:800;flex-shrink:0;margin-left:2px;color:'+(phStyle?'#1E3A5F':'#fff')+';">✓</span>' : '<span class="cal-sel-check"></span>';
         return '<div id="cal-chip-'+ev.id+'" class="cal-session-chip" style="background:'+chipBg+';color:'+chipColor+';cursor:pointer'+chipExtra+chipSelRing+'" title="'+escH(nom)+'" onclick="event.stopPropagation();_calSelToggle(\''+ev.id+'\',\'seance\')">'
-          +'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">'+(jLabel?'<span style="opacity:.75;font-size:.85em;">'+escH(jLabel)+'</span>':'📋 ')+escH(nom.length>16?nom.slice(0,16)+'…':nom)+veloStravaBadge+'</span>'
+          +'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">'+(jLabel?'<span style="opacity:.75;font-size:.85em;">'+escH(jLabel)+'</span>':'📋 ')+escH(nom.length>16?nom.slice(0,16)+'…':nom)+genericStravaBadge+'</span>'
           +phaseTag+chipSelCheck
           +'</div>';
       }
@@ -1129,7 +1135,7 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
       return '<div id="cal-chip-'+ev.id+'" class="cal-session-chip" style="background:'+chipBg+';color:'+chipColor+';cursor:'+chipCursor+chipExtra+';" title="'+escH(nom)+'"'
         + chipEvtAttrs + '>'
         +moreBtn
-        +'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">'+(jLabel?'<span style="opacity:.75;font-size:.85em;">'+escH(jLabel)+'</span>':'📋 ')+escH(nom.length>16?nom.slice(0,16)+'…':nom)+veloStravaBadge+uaSpan+'</span>'
+        +'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">'+(jLabel?'<span style="opacity:.75;font-size:.85em;">'+escH(jLabel)+'</span>':'📋 ')+escH(nom.length>16?nom.slice(0,16)+'…':nom)+genericStravaBadge+uaSpan+'</span>'
         +phaseTag
         +'<button class="cal-chip-del" style="color:'+(phStyle?'rgba(30,58,95,.5)':'rgba(255,255,255,.7)')+'" onclick="event.stopPropagation();removeCalEventCloud(\''+ev.id+'\')">×</button>'
         +'</div>';

@@ -662,7 +662,7 @@ function renderCalendar(){
   // Charge séances planifiées, cycles ET messages patient en parallèle (+ notes cliniques si mode kiné)
   var fetches = [
     fetch(SUPA_URL + '/rest/v1/seances_planifiees?patient_id=eq.' + _patientId
-        + '&select=id,date,programme_id,programmes(nom),athlete_feedback(rpe,duree_min)&order=date.asc', {
+        + '&select=id,date,programme_id,programmes(nom,donnees,type),athlete_feedback(rpe,duree_min)&order=date.asc', {
       headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
     }).then(function(r){ return r.json(); }),
     fetch(SUPA_URL + '/rest/v1/patient_settings?patient_id=eq.' + _patientId + '&select=cycles', {
@@ -941,8 +941,11 @@ function _buildMonthHtml(){
         var fb=ev.athlete_feedback, ua=(fb&&fb.rpe&&fb.duree_min)?fb.rpe*fb.duree_min:null;
         var uaBadge=ua?'<span class="chip-ua" style="color:'+_uaColor(ua)+';">⚡'+ua+'</span>':'';
         // Strava match pour CAP / Vélo
-        var isCAP=nom.indexOf('CAP —')===0, isVelo=nom.indexOf('Vélo —')===0;
-        var matchTypes=isCAP?['Run','TrailRun','Walk']:isVelo?['Ride','VirtualRide']:[];
+        var mProgType=ev.programmes&&ev.programmes.type;
+        var mProgDType=ev.programmes&&ev.programmes.donnees&&ev.programmes.donnees.type;
+        var isRunProg=nom.indexOf('CAP —')===0||mProgDType==='cap'||mProgType==='Course à pied';
+        var isVeloProg=nom.indexOf('Vélo —')===0||mProgType==='Vélo';
+        var matchTypes=isRunProg?['Run','TrailRun','Walk']:isVeloProg?['Ride','VirtualRide']:[];
         var matched=matchTypes.length?dayStrava.find(function(a){ return matchTypes.indexOf(a.type)!==-1&&!usedStravas[a.strava_id]; }):null;
         if(matched) usedStravas[matched.strava_id]=true;
         var sd=matched&&matched.distance_m>=1000?(matched.distance_m/1000).toFixed(1)+'km':matched&&matched.distance_m>0?matched.distance_m+'m':'';
@@ -1052,8 +1055,11 @@ function _buildWeekHtml(){
       var fb = ev.athlete_feedback;
       var ua = (fb&&fb.rpe&&fb.duree_min) ? fb.rpe*fb.duree_min : null;
       var uaHtml = ua ? '<div class="week-event-ua" style="color:'+_uaColor(ua)+';">⚡'+ua+' UA</div>' : '';
-      var isCAP=nom.indexOf('CAP —')===0, isVelo=nom.indexOf('Vélo —')===0;
-      var wTypes=isCAP?['Run','TrailRun','Walk']:isVelo?['Ride','VirtualRide']:[];
+      var wpType=ev.programmes&&ev.programmes.type;
+      var wpDType=ev.programmes&&ev.programmes.donnees&&ev.programmes.donnees.type;
+      var isRunProg=nom.indexOf('CAP —')===0||wpDType==='cap'||wpType==='Course à pied';
+      var isVeloProg=nom.indexOf('Vélo —')===0||wpType==='Vélo';
+      var wTypes=isRunProg?['Run','TrailRun','Walk']:isVeloProg?['Ride','VirtualRide']:[];
       var wMatch=wTypes.length?dayStravaWeek.find(function(a){ return wTypes.indexOf(a.type)!==-1&&!weekUsedStravas[a.strava_id]; }):null;
       if(wMatch) weekUsedStravas[wMatch.strava_id]=true;
       var wsd=wMatch&&wMatch.distance_m>=1000?(wMatch.distance_m/1000).toFixed(1)+'km':wMatch&&wMatch.distance_m>0?wMatch.distance_m+'m':'';
@@ -1150,8 +1156,11 @@ function _buildDayHtml(){
       var fb = ev.athlete_feedback;
       var ua = (fb&&fb.rpe&&fb.duree_min) ? fb.rpe*fb.duree_min : null;
       var uaTag = ua ? '<span style="font-size:.75rem;font-weight:800;color:'+_uaColor(ua)+';background:#F5F7FA;border-radius:6px;padding:3px 9px;">⚡ '+ua+' UA</span>' : '';
-      var isCAP=nom.indexOf('CAP —')===0, isVelo=nom.indexOf('Vélo —')===0;
-      var matchTypes=isCAP?['Run','TrailRun','Walk']:isVelo?['Ride','VirtualRide']:[];
+      var dpType=ev.programmes&&ev.programmes.type;
+      var dpDType=ev.programmes&&ev.programmes.donnees&&ev.programmes.donnees.type;
+      var isRunProg=nom.indexOf('CAP —')===0||dpDType==='cap'||dpType==='Course à pied';
+      var isVeloProg=nom.indexOf('Vélo —')===0||dpType==='Vélo';
+      var matchTypes=isRunProg?['Run','TrailRun','Walk']:isVeloProg?['Ride','VirtualRide']:[];
       var matched=matchTypes.length?dayStrava.find(function(a){ return matchTypes.indexOf(a.type)!==-1&&!dayUsedStravas[a.strava_id]; }):null;
       if(matched) dayUsedStravas[matched.strava_id]=true;
       var stravaSection='';
