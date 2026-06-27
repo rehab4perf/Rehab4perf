@@ -208,6 +208,22 @@ iframe.active { display:block; }
 .pm-ctx-item.active-item { color:#2D6A4F; font-weight:700; }
 .pm-ctx-item.delete-item { color:#C0392B; }
 .pm-ctx-item.delete-item:hover { background:#FDECEA; }
+.pm-ctx-item.strava-item { color:#FC4C02; }
+.pm-ctx-item.strava-item:hover { background:#FFF3EE; }
+.strava-badge { display:inline-block; font-size:.6rem; font-weight:700; color:#FC4C02; background:#FFF3EE; border:1px solid #FFCFBA; border-radius:10px; padding:1px 6px; margin-left:6px; vertical-align:middle; letter-spacing:.02em; }
+/* Modal Strava */
+#stravaModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:12000; align-items:center; justify-content:center; }
+#stravaModal.open { display:flex; }
+#stravaModalBox { background:#fff; border-radius:16px; padding:28px 28px 24px; max-width:440px; width:90%; box-shadow:0 12px 48px rgba(0,0,0,.18); }
+#stravaModalBox h3 { font-size:1rem; font-weight:700; color:#1A3A5C; margin-bottom:6px; display:flex; align-items:center; gap:8px; }
+#stravaModalBox p { font-size:.83rem; color:#6B6860; margin-bottom:16px; line-height:1.5; }
+#stravaLinkBox { display:flex; gap:8px; align-items:center; }
+#stravaLinkInput { flex:1; font-size:.75rem; padding:8px 10px; border:1px solid #D3D1CB; border-radius:8px; color:#444; background:#F7F6F3; font-family:monospace; }
+#stravaCopyBtn { white-space:nowrap; font-size:.78rem; font-weight:600; padding:8px 16px; background:#FC4C02; color:#fff; border:none; border-radius:8px; cursor:pointer; font-family:inherit; }
+#stravaCopyBtn:hover { background:#e04402; }
+#stravaModalClose { margin-top:18px; display:block; width:100%; text-align:center; font-size:.8rem; color:#9D9B96; cursor:pointer; background:none; border:none; font-family:inherit; }
+#stravaModalClose:hover { color:#1A3A5C; }
+#stravaBanner { display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#16a34a; color:#fff; font-size:.85rem; font-weight:600; padding:10px 22px; border-radius:24px; box-shadow:0 4px 16px rgba(0,0,0,.2); z-index:13000; }
 .pm-ctx-divider { height:1px; background:#E8E6E1; margin:2px 0; }
 
 /* ── Edit form ──────────────────────────────────────────── */
@@ -497,6 +513,7 @@ sb.auth.getSession().then(function(result) {
   }
   _touchActivity(); // Initialise le timer d'inactivité à la connexion
   var user = session.user;
+  _currentUid = user.id;
   updateNav(user);
   applyPlan((user.user_metadata || {}).plan);
   // Isolation de session : efface le cache si l'utilisateur a changé
@@ -629,6 +646,8 @@ window.addEventListener('message', function(e) {
 var _allPatients    = [];
 var _currentPatient  = null;
 var _previousPatient = null; // mémorisé avant chaque switch pour rollback
+var _currentUid      = null; // UID du praticien connecté
+var _stravaConnected = new Set(); // patient_id avec Strava connecté
 
 // Restaurer le patient courant depuis localStorage
 (function() {
@@ -754,7 +773,11 @@ function loadPatients() {
       .then(function(res) {
         if (res.error) { document.getElementById('pmList').innerHTML = '<div class="pm-empty">Erreur de chargement.</div>'; return; }
         _allPatients = res.data || [];
-        renderPatients(_allPatients);
+        // Charger les patients avec Strava connecté
+        sb.from('strava_tokens').select('patient_id').eq('praticien_id', uid).then(function(sr) {
+          _stravaConnected = new Set((sr.data || []).map(function(t){ return t.patient_id; }));
+          renderPatients(_allPatients);
+        });
       });
   });
 }
@@ -788,7 +811,7 @@ function renderPatients(list) {
     return '<div class="pm-patient-item'+(isSelected?' selected':'')+'" id="pitem-'+p.id+'" onclick="selectPatient(\''+p.id+'\')" style="cursor:pointer">'
       + '<div class="pm-patient-avatar'+(isFemale?' female':'')+'">'+initials+'</div>'
       + '<div class="pm-patient-info">'
-      +   '<div class="pm-patient-name">'+_esc(p.nom)+' '+_esc(_capFirst(p.prenom))+'</div>'
+      +   '<div class="pm-patient-name">'+_esc(p.nom)+' '+_esc(_capFirst(p.prenom))+(_stravaConnected.has(p.id) ? '<span class="strava-badge">Strava</span>' : '')+'</div>'
       +   (meta ? '<div class="pm-patient-meta">'+_esc(meta)+'</div>' : '')
       + '</div>'
       + '<div class="pm-patient-actions">'
@@ -830,6 +853,7 @@ function openCtxMenu(id, e) {
   menu.innerHTML = [
     '<button class="pm-ctx-item'+(isSelected?' active-item':'')+'" onclick="selectPatient(\''+id+'\');closeCtxMenu()">'+selLabel+'</button>',
     '<button class="pm-ctx-item" onclick="editPatient(\''+id+'\')"><svg style="vertical-align:middle;margin-right:4px" width="14" height="14" fill="currentColor" viewBox="0 0 348.882 348.882" xmlns="http://www.w3.org/2000/svg"><g><path d="M333.988,11.758l-0.42-0.383C325.538,4.04,315.129,0,304.258,0c-12.187,0-23.888,5.159-32.104,14.153L116.803,184.231c-1.416,1.55-2.49,3.379-3.154,5.37l-18.267,54.762c-2.112,6.331-1.052,13.333,2.835,18.729c3.918,5.438,10.23,8.685,16.886,8.685c0,0,0.001,0,0.001,0c2.879,0,5.693-0.592,8.362-1.76l52.89-23.138c1.923-0.841,3.648-2.076,5.063-3.626L336.771,73.176C352.937,55.479,351.69,27.929,333.988,11.758z M130.381,234.247l10.719-32.134l0.904-0.99l20.316,18.556l-0.904,0.99L130.381,234.247z M314.621,52.943L182.553,197.53l-20.316-18.556L294.305,34.386c2.583-2.828,6.118-4.386,9.954-4.386c3.365,0,6.588,1.252,9.082,3.53l0.419,0.383C319.244,38.922,319.63,47.459,314.621,52.943z"/><path d="M303.85,138.388c-8.284,0-15,6.716-15,15v127.347c0,21.034-17.113,38.147-38.147,38.147H68.904c-21.035,0-38.147-17.113-38.147-38.147V100.413c0-21.034,17.113-38.147,38.147-38.147h131.587c8.284,0,15-6.716,15-15s-6.716-15-15-15H68.904c-37.577,0-68.147,30.571-68.147,68.147v180.321c0,37.576,30.571,68.147,68.147,68.147h181.798c37.576,0,68.147-30.571,68.147-68.147V153.388C318.85,145.104,312.134,138.388,303.85,138.388z"/></g></svg> Modifier</button>',
+    '<button class="pm-ctx-item strava-item" onclick="stravaConnect(\''+id+'\');closeCtxMenu()">'+(_stravaConnected.has(id) ? '✓ Strava connecté — renvoyer le lien' : 'Connecter Strava')+'</button>',
     '<div class="pm-ctx-divider"></div>',
     '<button class="pm-ctx-item delete-item" onclick="deletePatient(\''+id+'\',event)"><svg style="vertical-align:middle;margin-right:4px" width="16" height="16" fill="currentColor" viewBox="-40 0 427 427.00131" xmlns="http://www.w3.org/2000/svg"><path d="m232.398438 154.703125c-5.523438 0-10 4.476563-10 10v189c0 5.519531 4.476562 10 10 10 5.523437 0 10-4.480469 10-10v-189c0-5.523437-4.476563-10-10-10zm0 0"/><path d="m114.398438 154.703125c-5.523438 0-10 4.476563-10 10v189c0 5.519531 4.476562 10 10 10 5.523437 0 10-4.480469 10-10v-189c0-5.523437-4.476563-10-10-10zm0 0"/><path d="m28.398438 127.121094v246.378906c0 14.5625 5.339843 28.238281 14.667968 38.050781 9.285156 9.839844 22.207032 15.425781 35.730469 15.449219h189.203125c13.527344-.023438 26.449219-5.609375 35.730469-15.449219 9.328125-9.8125 14.667969-23.488281 14.667969-38.050781v-246.378906c18.542968-4.921875 30.558593-22.835938 28.078124-41.863282-2.484374-19.023437-18.691406-33.253906-37.878906-33.257812h-51.199218v-12.5c.058593-10.511719-4.097657-20.605469-11.539063-28.03125-7.441406-7.421875-17.550781-11.5546875-28.0625-11.46875h-88.796875c-10.511719-.0859375-20.621094 4.046875-28.0625 11.46875-7.441406 7.425781-11.597656 17.519531-11.539062 28.03125v12.5h-51.199219c-19.1875.003906-35.394531 14.234375-37.878907 33.257812-2.480468 19.027344 9.535157 36.941407 28.078126 41.863282zm239.601562 279.878906h-189.203125c-17.097656 0-30.398437-14.6875-30.398437-33.5v-245.5h250v245.5c0 18.8125-13.300782 33.5-30.398438 33.5zm-158.601562-367.5c-.066407-5.207031 1.980468-10.21875 5.675781-13.894531 3.691406-3.675781 8.714843-5.695313 13.925781-5.605469h88.796875c5.210937-.089844 10.234375 1.929688 13.925781 5.605469 3.695313 3.671875 5.742188 8.6875 5.675782 13.894531v12.5h-128zm-71.199219 32.5h270.398437c9.941406 0 18 8.058594 18 18s-8.058594 18-18 18h-270.398437c-9.941407 0-18-8.058594-18-18s8.058593-18 18-18zm0 0"/><path d="m173.398438 154.703125c-5.523438 0-10 4.476563-10 10v189c0 5.519531 4.476562 10 10 10 5.523437 0 10-4.480469 10-10v-189c0-5.523437-4.476563-10-10-10zm0 0"/></svg>Supprimer</button>'
   ].join('');
@@ -857,6 +881,49 @@ function closeCtxMenu() {
 }
 
 document.addEventListener('click', function() { closeCtxMenu(); });
+
+/* ── Strava — générer lien de connexion ─────────────────── */
+function stravaConnect(patientId) {
+  if (!_currentUid) return;
+  var redirectUri = encodeURIComponent('https://sxdobjodxkwexaspepdm.supabase.co/functions/v1/strava-oauth-callback');
+  var state       = encodeURIComponent(patientId + ':' + _currentUid);
+  var url = 'https://www.strava.com/oauth/authorize'
+    + '?client_id=261292'
+    + '&response_type=code'
+    + '&redirect_uri=' + redirectUri
+    + '&scope=read,activity:read_all'
+    + '&approval_prompt=auto'
+    + '&state=' + state;
+  var p   = _allPatients.find(function(x){ return x.id === patientId; });
+  var nom = p ? (p.prenom ? p.prenom + ' ' + p.nom : p.nom) : 'ce patient';
+  document.getElementById('stravaModalTitle').textContent = 'Connecter Strava — ' + nom;
+  document.getElementById('stravaLinkInput').value = url;
+  document.getElementById('stravaModal').classList.add('open');
+}
+
+function stravaModalClose() {
+  document.getElementById('stravaModal').classList.remove('open');
+}
+
+function stravaCopyLink() {
+  var inp = document.getElementById('stravaLinkInput');
+  navigator.clipboard.writeText(inp.value).then(function() {
+    var btn = document.getElementById('stravaCopyBtn');
+    btn.textContent = 'Copié !';
+    setTimeout(function(){ btn.textContent = 'Copier le lien'; }, 2000);
+  });
+}
+
+// Banner "Strava connecté" si retour OAuth
+(function() {
+  var params = new URLSearchParams(window.location.search);
+  if (params.get('strava') === 'ok') {
+    var b = document.getElementById('stravaBanner');
+    if (b) { b.style.display = 'block'; setTimeout(function(){ b.style.display = 'none'; }, 4000); }
+    history.replaceState(null, '', window.location.pathname);
+    loadPatients();
+  }
+})();
 
 /* ── Modifier un patient ────────────────────────────────── */
 function editPatient(id) {
@@ -986,5 +1053,25 @@ function deletePatient(id, e) {
   });
 }
 </script>
+
+<!-- Modal Strava -->
+<div id="stravaModal" onclick="if(event.target===this)stravaModalClose()">
+  <div id="stravaModalBox">
+    <h3>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="#FC4C02"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>
+      <span id="stravaModalTitle">Connecter Strava</span>
+    </h3>
+    <p>Envoie ce lien à ton athlète. En cliquant dessus, il autorisera Rehab4Perf à lire ses activités Strava. Ses séances apparaîtront automatiquement dans l'agenda.</p>
+    <div id="stravaLinkBox">
+      <input id="stravaLinkInput" type="text" readonly onclick="this.select()">
+      <button id="stravaCopyBtn" onclick="stravaCopyLink()">Copier le lien</button>
+    </div>
+    <button id="stravaModalClose" onclick="stravaModalClose()">Fermer</button>
+  </div>
+</div>
+
+<!-- Banner confirmation retour OAuth -->
+<div id="stravaBanner">Strava connecté avec succès ✓</div>
+
 </body>
 </html>
