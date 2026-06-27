@@ -701,7 +701,7 @@ function renderCalendar() {
         _cloudCalEvents = Array.isArray(data) ? data : [];
         // Charger activités Strava puis rendre le calendrier
         var stravaUrl = SUPA_URL_P + '/rest/v1/strava_activities?patient_id=eq.' + _fetchPatientId
-          + '&select=strava_id,date,type,nom,distance_m,duree_s&order=date.asc';
+          + '&select=strava_id,date,type,nom,distance_m,duree_s,charge,donnees&order=date.asc';
         _fetchRetry(stravaUrl, { headers: calHeaders })
           .then(function(sr){ return sr.json(); })
           .then(function(sdata){
@@ -1092,8 +1092,8 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
       var meta = [dist, dur].filter(Boolean).join(' · ');
       var label = act.nom ? act.nom.slice(0,16)+(act.nom.length>16?'…':'') : (act.type||'Activité');
       allChips.push(
-        '<div class="cal-session-chip" style="background:#FC4C02;color:#fff;cursor:default;opacity:.9;" title="'
-        +escH((act.nom||act.type||'')+(meta?' — '+meta:''))+'">'
+        '<div class="cal-session-chip" style="background:#FC4C02;color:#fff;cursor:pointer;opacity:.9;" title="'
+        +escH((act.nom||act.type||'')+(meta?' — '+meta:''))+'" onclick="event.stopPropagation();_showStravaDetail(event,'+act.strava_id+')">'
         +'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">'+emoji+' '+escH(label)
         +(meta ? ' <span style="font-size:.58rem;font-weight:800;padding:1px 4px;border-radius:3px;background:rgba(0,0,0,.2);">'+escH(meta)+'</span>' : '')
         +'</span>'
@@ -4481,6 +4481,77 @@ function _showChipDropdown(e, evId, progId, dateStr, nom){
 function _closeChipDrop(){
   var el = document.getElementById('_chipKebabDrop');
   if(el) el.remove();
+}
+
+/* ── Popover détail activité Strava ── */
+function _showStravaDetail(e, stravaId){
+  e.stopPropagation();
+  var existing = document.getElementById('_stravaDetailDrop');
+  if(existing){ existing.remove(); if(+existing.dataset.sid === stravaId) return; }
+
+  var act = _stravaActivities.find(function(a){ return a.strava_id === stravaId; });
+  if(!act) return;
+
+  var typeMap = { Run:'🏃 Course', Ride:'🚴 Vélo', Swim:'🏊 Natation', Walk:'🚶 Marche', WeightTraining:'💪 Musculation', Hike:'🥾 Randonnée', Rowing:'🚣 Aviron', VirtualRide:'🚴 Vélo virtuel', TrailRun:'🏔️ Trail' };
+  var typeLabel = typeMap[act.type] || (act.type || 'Activité');
+  var dist  = act.distance_m ? (act.distance_m >= 1000 ? (act.distance_m/1000).toFixed(2)+' km' : act.distance_m+' m') : null;
+  var dur   = act.duree_s   ? (Math.floor(act.duree_s/3600) > 0 ? Math.floor(act.duree_s/3600)+'h ' : '') + Math.round((act.duree_s%3600)/60)+'min' : null;
+  var d     = act.donnees || {};
+  var elev  = d.elevation != null ? Math.round(d.elevation)+' m D+' : null;
+  var avgHr = d.avg_hr    ? Math.round(d.avg_hr)+' bpm moy.' : null;
+  var maxHr = d.max_hr    ? Math.round(d.max_hr)+' bpm max' : null;
+  var speed = d.avg_speed ? (d.avg_speed*3.6).toFixed(1)+' km/h' : null;
+  var charge= act.charge  ? act.charge+' UA' : null;
+
+  var rows = [
+    ['📏 Distance', dist],
+    ['⏱ Durée',    dur],
+    ['⛰ Dénivelé', elev],
+    ['❤️ FC moy.',  avgHr],
+    ['❤️ FC max',   maxHr],
+    ['💨 Allure',   speed],
+    ['⚡ Charge',   charge],
+  ].filter(function(r){ return r[1]; });
+
+  var drop = document.createElement('div');
+  drop.className = 'stmpl-kdrop';
+  drop.id = '_stravaDetailDrop';
+  drop.dataset.sid = stravaId;
+  drop.style.cssText = 'min-width:200px;max-width:260px;padding:10px 12px;';
+
+  var title = document.createElement('div');
+  title.style.cssText = 'font-weight:700;font-size:.82rem;color:#FC4C02;margin-bottom:8px;display:flex;align-items:center;gap:6px;';
+  title.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="#FC4C02"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>'
+    + escH(act.nom || typeLabel);
+  drop.appendChild(title);
+
+  var sub = document.createElement('div');
+  sub.style.cssText = 'font-size:.72rem;color:var(--text3);margin-bottom:8px;';
+  sub.textContent = typeLabel + ' · ' + (act.date || '');
+  drop.appendChild(sub);
+
+  rows.forEach(function(r){
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;justify-content:space-between;gap:12px;font-size:.78rem;padding:3px 0;border-bottom:1px solid var(--border);';
+    row.innerHTML = '<span style="color:var(--text3);">'+r[0]+'</span><span style="font-weight:600;color:var(--text1);">'+escH(r[1])+'</span>';
+    drop.appendChild(row);
+  });
+
+  document.body.appendChild(drop);
+
+  var rect = e.currentTarget.getBoundingClientRect();
+  var dropW = drop.offsetWidth || 220;
+  var dropH = drop.offsetHeight || 200;
+  var left  = rect.left;
+  var top   = rect.bottom + 6;
+  if(left + dropW > window.innerWidth - 8) left = window.innerWidth - dropW - 8;
+  if(top + dropH > window.innerHeight - 8) top = rect.top - dropH - 6;
+  drop.style.left = left + 'px';
+  drop.style.top  = top  + 'px';
+
+  setTimeout(function(){
+    document.addEventListener('click', function rm(){ drop.remove(); document.removeEventListener('click', rm, true); }, { once: true, capture: true });
+  }, 0);
 }
 
 // ── Mode planification agenda ─────────────────────────────────────────────────
