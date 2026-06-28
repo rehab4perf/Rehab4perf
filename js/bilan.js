@@ -1143,12 +1143,11 @@ function _renderDeltas(prevData){
     if(!prevRaw) return;
     var prevByName = {};
     try{ (JSON.parse(prevRaw)||[]).forEach(function(t){ if(t.name) prevByName[t.name]=t; }); }catch(e){ return; }
-    var rows = document.querySelectorAll('#ct-rows-'+pk+' .ct-row');
     curArr.forEach(function(t, idx){
       if(!t.name) return;
       var prev = prevByName[t.name];
       if(!prev) return;
-      var row = rows[idx];
+      var row = document.querySelector('#ct-rows-'+pk+' .ct-row[data-idx="'+idx+'"]');
       if(!row) return;
       var cells = row.querySelectorAll('.ct-cell');
       function _ctDeltaBadge(curV, prevV, cell){
@@ -6157,43 +6156,46 @@ window.addEventListener('load', function(){
 
   function _ctRender(pk){
     var container = document.getElementById('ct-rows-'+pk);
-    var hdrs = document.getElementById('ct-hdrs-'+pk);
     if(!container) return;
     var data = _ctData[pk]||[];
     var lbl = _ctLabels();
-
-    if(hdrs){
-      hdrs.style.display = data.length ? '' : 'none';
-      var spans = hdrs.querySelectorAll('span');
-      var hasComparison = data.some(function(t){ return t.type !== 'perf'; });
-      if(hasComparison){
-        if(spans[1]) spans[1].textContent = lbl.a;
-        if(spans[2]) spans[2].textContent = lbl.b;
-        if(spans[3]) spans[3].textContent = 'LSI';
-      } else {
-        if(spans[1]) spans[1].textContent = 'Valeur';
-        if(spans[2]) spans[2].textContent = '';
-        if(spans[3]) spans[3].textContent = '';
-      }
-    }
-
     container.innerHTML = '';
-    data.forEach(function(t, idx){
-      var isPerf = t.type === 'perf';
-      var row = document.createElement('div');
-      row.className = 'ct-row';
-      if(isPerf){
+
+    var perfItems = [], compItems = [];
+    data.forEach(function(t,i){ (t.type==='perf' ? perfItems : compItems).push({t:t,i:i}); });
+
+    if(perfItems.length){
+      var ph = document.createElement('div');
+      ph.className = 'ct-sub-hdr ct-sub-hdr-perf';
+      ph.innerHTML = '<span class="sh-left">Performance</span><span>Résultat</span>';
+      container.appendChild(ph);
+      perfItems.forEach(function(item){
+        var t = item.t, idx = item.i;
+        var row = document.createElement('div');
+        row.className = 'ct-row ct-row-perf';
+        row.setAttribute('data-idx', idx);
         row.innerHTML =
           '<input class="ct-name-inp" type="text" placeholder="Nom du test" value="'+_esc(t.name)+'" '+
             'oninput="_ctUpdate(\''+pk+'\','+idx+',\'name\',this.value)">'+
           '<div class="ct-cell"><input class="ct-val-inp" type="number" step="any" placeholder="—" value="'+_esc(t.valA)+'" '+
             'oninput="_ctUpdate(\''+pk+'\','+idx+',\'valA\',this.value)"></div>'+
-          '<span class="ct-val-empty">—</span>'+
-          '<span class="ct-lsi-perf">Perf.</span>'+
           '<button class="ct-type-btn" onclick="_ctSetType(\''+pk+'\','+idx+',\'comparison\')" title="Passer en comparaison G/D">⇄</button>'+
           '<button class="ct-del-btn" onclick="_ctRemove(\''+pk+'\','+idx+')" title="Supprimer">×</button>';
-      } else {
+        container.appendChild(row);
+      });
+    }
+
+    if(compItems.length){
+      var ch = document.createElement('div');
+      ch.className = 'ct-sub-hdr ct-sub-hdr-comp';
+      ch.innerHTML = '<span class="sh-left">Comparaison</span><span>'+lbl.a+'</span><span>'+lbl.b+'</span><span>LSI</span>';
+      container.appendChild(ch);
+      compItems.forEach(function(item){
+        var t = item.t, idx = item.i;
         var lsi = _ctLsiCalc(t.valA, t.valB);
+        var row = document.createElement('div');
+        row.className = 'ct-row';
+        row.setAttribute('data-idx', idx);
         row.innerHTML =
           '<input class="ct-name-inp" type="text" placeholder="Nom du test" value="'+_esc(t.name)+'" '+
             'oninput="_ctUpdate(\''+pk+'\','+idx+',\'name\',this.value)">'+
@@ -6204,17 +6206,16 @@ window.addEventListener('load', function(){
           '<div class="ct-lsi-cell '+_ctLsiClass(lsi)+'">'+_ctLsiText(lsi)+'</div>'+
           '<button class="ct-type-btn" onclick="_ctSetType(\''+pk+'\','+idx+',\'perf\')" title="Passer en performance unique">↑</button>'+
           '<button class="ct-del-btn" onclick="_ctRemove(\''+pk+'\','+idx+')" title="Supprimer">×</button>';
-      }
-      container.appendChild(row);
-    });
+        container.appendChild(row);
+      });
+    }
   }
 
   function _ctUpdateLsiCell(pk, idx){
     var t = (_ctData[pk]||[])[idx];
     if(!t || t.type === 'perf') return;
     var lsi = _ctLsiCalc(t.valA, t.valB);
-    var rows = document.querySelectorAll('#ct-rows-'+pk+' .ct-row');
-    var row = rows[idx];
+    var row = document.querySelector('#ct-rows-'+pk+' .ct-row[data-idx="'+idx+'"]');
     if(!row) return;
     var cell = row.querySelector('.ct-lsi-cell');
     if(!cell) return;
@@ -6245,8 +6246,8 @@ window.addEventListener('load', function(){
     _ctSave(pk);
     _ctRender(pk);
     _bilanModified = true;
-    var rows = document.querySelectorAll('#ct-rows-'+pk+' .ct-row');
-    var last = rows[rows.length-1];
+    var lastIdx = (_ctData[pk]||[]).length - 1;
+    var last = lastIdx >= 0 ? document.querySelector('#ct-rows-'+pk+' .ct-row[data-idx="'+lastIdx+'"]') : null;
     if(last){ var inp = last.querySelector('.ct-name-inp'); if(inp) inp.focus(); }
   };
 
@@ -6289,9 +6290,6 @@ window.addEventListener('load', function(){
           '</div>'+
         '</div>'+
         '<div style="padding:14px 16px">'+
-          '<div class="ct-col-headers" id="ct-hdrs-'+pk+'" style="display:none">'+
-            '<span></span><span>'+lbl.a+'</span><span>'+lbl.b+'</span><span>LSI</span><span></span><span></span>'+
-          '</div>'+
           '<div id="ct-rows-'+pk+'"></div>'+
         '</div>';
       var conclArea = pc.querySelector('.concl-area');

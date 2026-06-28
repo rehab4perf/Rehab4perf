@@ -1328,8 +1328,14 @@ textarea { resize:none !important; overflow:hidden !important; }
 /* Tests personnalisés */
 .ct-add-btn { margin-left:auto; font-size:.7rem; font-weight:600; padding:3px 10px; border:1.5px solid rgba(255,255,255,.5); border-radius:14px; background:transparent; color:rgba(255,255,255,.9); cursor:pointer; font-family:inherit; transition:background .15s; letter-spacing:.02em; }
 .ct-add-btn:hover { background:rgba(255,255,255,.15); }
-.ct-col-headers { display:grid; grid-template-columns:1fr 80px 80px 72px 28px 28px; gap:6px; margin-bottom:4px; font-size:.67rem; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:.04em; padding:0 2px; }
+.ct-sub-hdr { display:grid; gap:6px; padding:5px 2px 3px; font-size:.63rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; margin-top:6px; margin-bottom:4px; border-top:1px solid var(--border); }
+.ct-sub-hdr:first-child { border-top:none; margin-top:0; }
+.ct-sub-hdr-perf { grid-template-columns:1fr 80px; color:var(--accent); }
+.ct-sub-hdr-comp { grid-template-columns:1fr 80px 80px 72px; color:var(--text3); }
+.ct-sub-hdr span { display:flex; align-items:center; justify-content:center; }
+.ct-sub-hdr span.sh-left { justify-content:flex-start; }
 .ct-row { display:grid; grid-template-columns:1fr 80px 80px 72px 28px 28px; gap:6px; align-items:center; margin-bottom:6px; }
+.ct-row.ct-row-perf { grid-template-columns:1fr 80px 28px 28px; }
 .ct-name-inp { font-size:.82rem; padding:5px 8px; border:1px solid var(--border); border-radius:6px; background:var(--surface2); color:var(--text1); font-family:inherit; width:100%; box-sizing:border-box; }
 .ct-val-inp { font-size:.82rem; padding:5px 6px; border:1px solid var(--border); border-radius:6px; background:var(--surface2); color:var(--text1); font-family:inherit; width:100%; box-sizing:border-box; text-align:center; }
 .ct-val-empty { display:flex; align-items:center; justify-content:center; font-size:.8rem; color:var(--text3); }
@@ -1344,7 +1350,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 .ct-type-btn:hover { border-color:var(--accent); color:var(--accent); }
 .ct-del-btn { background:none; border:none; color:var(--text3); cursor:pointer; font-size:1rem; line-height:1; padding:0 4px; justify-self:center; }
 .ct-del-btn:hover { color:#dc2626; }
-@media print { .ct-add-btn,.ct-type-btn,.ct-del-btn { display:none !important; } .ct-col-headers,.ct-row { grid-template-columns:1fr 80px 80px 72px; } }
+@media print { .ct-add-btn,.ct-type-btn,.ct-del-btn { display:none !important; } .ct-row { grid-template-columns:1fr 80px 80px 72px; } .ct-row.ct-row-perf { grid-template-columns:1fr 80px; } .ct-sub-hdr-comp { grid-template-columns:1fr 80px 80px 72px; } }
 
 </style>
 
