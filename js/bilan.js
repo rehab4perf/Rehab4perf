@@ -5934,8 +5934,16 @@ window.addEventListener('load', function(){
     if(hdrs){
       hdrs.style.display = data.length ? '' : 'none';
       var spans = hdrs.querySelectorAll('span');
-      if(spans[1]) spans[1].textContent = lbl.a;
-      if(spans[2]) spans[2].textContent = lbl.b;
+      var hasComparison = data.some(function(t){ return t.type !== 'perf'; });
+      if(hasComparison){
+        if(spans[1]) spans[1].textContent = lbl.a;
+        if(spans[2]) spans[2].textContent = lbl.b;
+        if(spans[3]) spans[3].textContent = 'LSI';
+      } else {
+        if(spans[1]) spans[1].textContent = 'Valeur';
+        if(spans[2]) spans[2].textContent = '';
+        if(spans[3]) spans[3].textContent = '';
+      }
     }
 
     container.innerHTML = '';
