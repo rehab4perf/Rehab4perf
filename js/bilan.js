@@ -3775,12 +3775,11 @@ function calcMusc() {
 }
 
 // -- HELPER TESTS SECTIONS (partagé CR Complet + CR Tests) ----
-// Retourne true si on est dans un contexte suivi (plusieurs bilans avec changed_fields)
+// Retourne true si on est dans un contexte suivi (2+ bilans, pas en mode histo)
 function _crInSuiviMode() {
   if (_bilanIsSuivi && _suiviSnapshot) return true;
-  if (!_allBilans || _allBilans.length < 2) return false;
-  var cf = (_allBilans[0].donnees || {}).changed_fields;
-  return cf !== undefined && cf !== null; // tableau vide = suivi sans rien de changé, mais quand même un suivi
+  if (_bilanHistoMode) return false; // bilan historique : pas de grisé suivi
+  return !!(  _allBilans && _allBilans.length >= 2);
 }
 
 // Retourne la date (dd/mm) du bilan d'origine d'un champ porté
@@ -3817,14 +3816,26 @@ function _crIsCarried(fieldIds) {
     }
     return hasVal;
   }
-  // Bilan sauvegardé — vérifier changed_fields du bilan le plus récent
+  // Bilan sauvegardé — vérifier changed_fields si présent, sinon comparer les donnees brutes
   if (!_allBilans || _allBilans.length < 2) return false;
-  var _cf = (_allBilans[0].donnees || {}).changed_fields;
-  if (_cf === undefined || _cf === null) return false; // pas un suivi
-  for (var _cj = 0; _cj < fieldIds.length; _cj++) {
-    if (_cf.indexOf(fieldIds[_cj]) !== -1) return false; // au moins un champ mesuré dans ce bilan
+  var _d0 = _allBilans[0].donnees || {};
+  var _cf = _d0.changed_fields;
+  if (_cf !== undefined && _cf !== null) {
+    // Nouveau format : changed_fields explicite
+    for (var _cj = 0; _cj < fieldIds.length; _cj++) {
+      if (_cf.indexOf(fieldIds[_cj]) !== -1) return false;
+    }
+    return true;
   }
-  return true;
+  // Ancien format (sans changed_fields) : comparaison directe avec le bilan précédent
+  var _d1 = _allBilans[1].donnees || {};
+  for (var _ck = 0; _ck < fieldIds.length; _ck++) {
+    var _v0 = _d0[fieldIds[_ck]]; var _v1 = _d1[fieldIds[_ck]];
+    var _s0 = (_v0 === undefined || _v0 === null) ? '' : String(_v0);
+    var _s1 = (_v1 === undefined || _v1 === null) ? '' : String(_v1);
+    if (_s0 !== '' && _s0 !== _s1) return false; // champ renseigné et différent = mesuré dans ce bilan
+  }
+  return true; // tout vide ou identique = porté du bilan précédent
 }
 
 function _buildAllTestsHtml() {
