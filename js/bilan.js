@@ -756,6 +756,9 @@ function _editBilanConfirm(){
   if(bilanPropre && bilanPropre.donnees){
     _resetBilanFields();
     _deserializeBilan(bilanPropre.donnees);
+    // Injecter les noms de tests personnalisés des autres bilans (valeurs vides)
+    // pour que tous les tests de l'historique soient visibles dans ce bilan
+    try{ window._ctMergeNamesFromAllBilans(_allBilans); }catch(ex){}
   }
   var btn = document.getElementById('bilan-save-btn');
   if(btn) btn.innerHTML = _SAVE_ICON + 'Enregistrer les modifications';
@@ -919,12 +922,42 @@ function _buildMergedDonnees(allBilans){
     var d = b.donnees || {};
     Object.keys(d).forEach(function(k){
       var v = d[k];
-      // '' = non renseigné → ne pas écraser une valeur antérieure
-      // false (checkbox) = valeur explicite → on garde
       if(v !== undefined && v !== null && v !== ''){
+        // Pour les champs ct-data-*, '[]' = bilan sans tests → ne pas écraser un vrai tableau
+        if(k.indexOf('ct-data-') === 0 && v === '[]') return;
         merged[k] = v;
       }
     });
+  });
+  // Union-merge spécial pour ct-data-* : union de tous les noms de tests,
+  // valeurs les plus récentes non-vides par test
+  var ctPgs = window._CT_PAGES || [];
+  ctPgs.forEach(function(pk){
+    var key = 'ct-data-' + pk;
+    var seen = {}, nameOrder = [];
+    allBilans.slice().reverse().forEach(function(b){ // oldest → newest pour l'ordre
+      var raw = (b.donnees||{})[key];
+      if(!raw) return;
+      try{ (JSON.parse(raw)||[]).forEach(function(t){
+        if(t.name && !seen[t.name]){ seen[t.name]={type:t.type||'comparison'}; nameOrder.push(t.name); }
+      }); }catch(e){}
+    });
+    if(!nameOrder.length) return;
+    var arr = nameOrder.map(function(name){
+      var best = {name:name, valA:'', valB:'', type:seen[name].type};
+      allBilans.slice().reverse().forEach(function(b){ // oldest → newest, last non-empty wins
+        var raw = (b.donnees||{})[key];
+        if(!raw) return;
+        try{ (JSON.parse(raw)||[]).forEach(function(t){
+          if(t.name !== name) return;
+          if(t.type) best.type = t.type;
+          if(t.valA !== undefined && t.valA !== '') best.valA = t.valA;
+          if(t.valB !== undefined && t.valB !== '') best.valB = t.valB;
+        }); }catch(e){}
+      });
+      return best;
+    });
+    merged[key] = JSON.stringify(arr);
   });
   return merged;
 }
@@ -6296,6 +6329,39 @@ window.addEventListener('load', function(){
         _ctSave(pk);
         _ctRender(pk);
       }catch(e){}
+    });
+  };
+
+  // Injecte dans _ctData les noms de tests manquants depuis les autres bilans
+  // (valeurs vides). Utilisé lors de l'édition/consultation d'un bilan isolé
+  // pour que tous les tests nommés dans l'historique restent visibles.
+  window._ctMergeNamesFromAllBilans = function(allBilans){
+    if(!allBilans || !allBilans.length) return;
+    _CT_PAGES.forEach(function(pk){
+      var key = 'ct-data-' + pk;
+      var cur = _ctData[pk] || [];
+      var curByName = {};
+      cur.forEach(function(t){ if(t.name) curByName[t.name] = true; });
+      var added = false;
+      // Parcours oldest→newest pour respecter l'ordre d'insertion des tests
+      allBilans.slice().reverse().forEach(function(b){
+        var raw = (b.donnees||{})[key];
+        if(!raw) return;
+        try{
+          (JSON.parse(raw)||[]).forEach(function(t){
+            if(t.name && !curByName[t.name]){
+              curByName[t.name] = true;
+              cur.push({name:t.name, valA:'', valB:'', type:t.type||'comparison'});
+              added = true;
+            }
+          });
+        }catch(e){}
+      });
+      if(added){
+        _ctData[pk] = cur;
+        _ctSave(pk);
+        _ctRender(pk);
+      }
     });
   };
 
