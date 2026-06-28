@@ -2787,8 +2787,8 @@ function _newBilanSuiviConfirm(){
   });
   _deserializeBilan(infoKeys);
   try{ _parsePainZones(); }catch(ex){}
-  // Reporter les tests personnalisés (noms seulement, valeurs effacées)
-  try{ window._ctInitSuivi(_prevDonnees); }catch(ex){}
+  // Reporter les tests personnalisés (noms seulement, valeurs effacées) depuis tous les bilans
+  try{ window._ctMergeNamesFromAllBilans(_allBilans); }catch(ex){}
 
   // Date du bilan = aujourd'hui
   var _dn = new Date();
@@ -6370,7 +6370,7 @@ window.addEventListener('load', function(){
           tagCls = lsi>=90?'good':lsi>=75?'warn':'bad';
         }
       }
-      var cls = '';
+      var cls = '', dateBadge = '';
       if(isSuiviMode && t.name){
         var prev = prevByName[t.name];
         if(prev){
@@ -6380,12 +6380,34 @@ window.addEventListener('load', function(){
         } else {
           cls = ' cr-item--fresh';
         }
+        if(cls === ' cr-item--carried'){
+          // Cherche le bilan d'origine (le plus récent bilan précédent avec une valeur non-vide)
+          var startIdx = (_bilanIsSuivi && _suiviSnapshot) ? 0 : 1;
+          for(var _oi2=startIdx; _oi2<(_allBilans||[]).length; _oi2++){
+            var _rawB = ((_allBilans[_oi2].donnees)||{})['ct-data-'+pk]||'';
+            if(!_rawB) continue;
+            try{
+              var _tb = JSON.parse(_rawB)||[];
+              var _found = false;
+              for(var _tj=0;_tj<_tb.length;_tj++){
+                if(_tb[_tj].name===t.name && (_tb[_tj].valA!==''||_tb[_tj].valB!=='')){
+                  _found=true; break;
+                }
+              }
+              if(_found){
+                var _od = (_allBilans[_oi2].date||'').slice(0,10);
+                if(_od.length>=10) dateBadge='<span class="cr-date-badge">'+_od.slice(8,10)+'/'+_od.slice(5,7)+'</span>';
+                break;
+              }
+            }catch(e){}
+          }
+        }
       }
       var tagHtml = tag ? '<span class="cr-tag '+tagCls+'">'+tag+'</span>' : '';
       html += '<div class="cr-item'+cls+'">'+
         '<span class="cr-key">'+_esc(t.name||'—')+'</span>'+
         '<span class="cr-val">'+valStr+'</span>'+
-        tagHtml+'</div>';
+        tagHtml+dateBadge+'</div>';
     });
     html += '</div>';
     return html;
