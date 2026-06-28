@@ -2604,6 +2604,8 @@ function _newBilanSuiviConfirm(){
   });
   _deserializeBilan(infoKeys);
   try{ _parsePainZones(); }catch(ex){}
+  // Reporter les tests personnalisés (noms seulement, valeurs effacées)
+  try{ window._ctInitSuivi(_prevDonnees); }catch(ex){}
 
   // Date du bilan = aujourd'hui
   var _dn = new Date();
@@ -5938,25 +5940,39 @@ window.addEventListener('load', function(){
 
     container.innerHTML = '';
     data.forEach(function(t, idx){
-      var lsi = _ctLsiCalc(t.valA, t.valB);
+      var isPerf = t.type === 'perf';
       var row = document.createElement('div');
       row.className = 'ct-row';
-      row.innerHTML =
-        '<input class="ct-name-inp" type="text" placeholder="Nom du test" value="'+_esc(t.name)+'" '+
-          'oninput="_ctUpdate(\''+pk+'\','+idx+',\'name\',this.value)">'+
-        '<input class="ct-val-inp" type="number" step="any" placeholder="—" value="'+_esc(t.valA)+'" '+
-          'oninput="_ctUpdate(\''+pk+'\','+idx+',\'valA\',this.value)">'+
-        '<input class="ct-val-inp" type="number" step="any" placeholder="—" value="'+_esc(t.valB)+'" '+
-          'oninput="_ctUpdate(\''+pk+'\','+idx+',\'valB\',this.value)">'+
-        '<div class="ct-lsi-cell '+_ctLsiClass(lsi)+'">'+_ctLsiText(lsi)+'</div>'+
-        '<button class="ct-del-btn" onclick="_ctRemove(\''+pk+'\','+idx+')" title="Supprimer">×</button>';
+      if(isPerf){
+        row.innerHTML =
+          '<input class="ct-name-inp" type="text" placeholder="Nom du test" value="'+_esc(t.name)+'" '+
+            'oninput="_ctUpdate(\''+pk+'\','+idx+',\'name\',this.value)">'+
+          '<input class="ct-val-inp" type="number" step="any" placeholder="—" value="'+_esc(t.valA)+'" '+
+            'oninput="_ctUpdate(\''+pk+'\','+idx+',\'valA\',this.value)">'+
+          '<span class="ct-val-empty">—</span>'+
+          '<span class="ct-lsi-perf">Perf.</span>'+
+          '<button class="ct-type-btn" onclick="_ctSetType(\''+pk+'\','+idx+',\'comparison\')" title="Passer en comparaison G/D">⇄</button>'+
+          '<button class="ct-del-btn" onclick="_ctRemove(\''+pk+'\','+idx+')" title="Supprimer">×</button>';
+      } else {
+        var lsi = _ctLsiCalc(t.valA, t.valB);
+        row.innerHTML =
+          '<input class="ct-name-inp" type="text" placeholder="Nom du test" value="'+_esc(t.name)+'" '+
+            'oninput="_ctUpdate(\''+pk+'\','+idx+',\'name\',this.value)">'+
+          '<input class="ct-val-inp" type="number" step="any" placeholder="—" value="'+_esc(t.valA)+'" '+
+            'oninput="_ctUpdate(\''+pk+'\','+idx+',\'valA\',this.value)">'+
+          '<input class="ct-val-inp" type="number" step="any" placeholder="—" value="'+_esc(t.valB)+'" '+
+            'oninput="_ctUpdate(\''+pk+'\','+idx+',\'valB\',this.value)">'+
+          '<div class="ct-lsi-cell '+_ctLsiClass(lsi)+'">'+_ctLsiText(lsi)+'</div>'+
+          '<button class="ct-type-btn" onclick="_ctSetType(\''+pk+'\','+idx+',\'perf\')" title="Passer en performance unique">↑</button>'+
+          '<button class="ct-del-btn" onclick="_ctRemove(\''+pk+'\','+idx+')" title="Supprimer">×</button>';
+      }
       container.appendChild(row);
     });
   }
 
   function _ctUpdateLsiCell(pk, idx){
     var t = (_ctData[pk]||[])[idx];
-    if(!t) return;
+    if(!t || t.type === 'perf') return;
     var lsi = _ctLsiCalc(t.valA, t.valB);
     var rows = document.querySelectorAll('#ct-rows-'+pk+' .ct-row');
     var row = rows[idx];
@@ -5975,13 +5991,21 @@ window.addEventListener('load', function(){
     _bilanModified = true;
   };
 
-  window._ctAdd = function(pk){
-    if(!_ctData[pk]) _ctData[pk] = [];
-    _ctData[pk].push({name:'', valA:'', valB:''});
+  window._ctSetType = function(pk, idx, type){
+    if(!_ctData[pk] || !_ctData[pk][idx]) return;
+    _ctData[pk][idx].type = type;
+    if(type === 'perf') { _ctData[pk][idx].valB = ''; }
     _ctSave(pk);
     _ctRender(pk);
     _bilanModified = true;
-    // Focus le nouveau champ nom
+  };
+
+  window._ctAdd = function(pk, type){
+    if(!_ctData[pk]) _ctData[pk] = [];
+    _ctData[pk].push({name:'', valA:'', valB:'', type: type||'comparison'});
+    _ctSave(pk);
+    _ctRender(pk);
+    _bilanModified = true;
     var rows = document.querySelectorAll('#ct-rows-'+pk+' .ct-row');
     var last = rows[rows.length-1];
     if(last){ var inp = last.querySelector('.ct-name-inp'); if(inp) inp.focus(); }
@@ -6020,11 +6044,14 @@ window.addEventListener('load', function(){
       sec.innerHTML =
         '<div class="'+hdrClass+'">'+
           'Tests personnalisés'+
-          '<button class="ct-add-btn" onclick="_ctAdd(\''+pk+'\')">+ Ajouter un test</button>'+
+          '<div style="display:flex;gap:5px;margin-left:auto">'+
+            '<button class="ct-add-btn" onclick="_ctAdd(\''+pk+'\',\'comparison\')">+ Comparaison</button>'+
+            '<button class="ct-add-btn" onclick="_ctAdd(\''+pk+'\',\'perf\')">+ Performance</button>'+
+          '</div>'+
         '</div>'+
         '<div style="padding:14px 16px">'+
           '<div class="ct-col-headers" id="ct-hdrs-'+pk+'" style="display:none">'+
-            '<span></span><span>'+lbl.a+'</span><span>'+lbl.b+'</span><span>LSI</span><span></span>'+
+            '<span></span><span>'+lbl.a+'</span><span>'+lbl.b+'</span><span>LSI</span><span></span><span></span>'+
           '</div>'+
           '<div id="ct-rows-'+pk+'"></div>'+
         '</div>';
@@ -6043,7 +6070,11 @@ window.addEventListener('load', function(){
     _CT_PAGES.forEach(function(pk){
       var hf = document.getElementById('ct-data-'+pk);
       if(!hf) return;
-      try{ _ctData[pk] = JSON.parse(hf.value)||[]; }catch(e){ _ctData[pk]=[]; }
+      try{
+        var arr = JSON.parse(hf.value)||[];
+        arr.forEach(function(t){ if(!t.type) t.type='comparison'; });
+        _ctData[pk] = arr;
+      }catch(e){ _ctData[pk]=[]; }
       _ctRender(pk);
     });
   };
@@ -6068,19 +6099,46 @@ window.addEventListener('load', function(){
         '<th style="text-align:center;padding:3px 8px;font-weight:600">'+(bilat?'Sym.':'LSI')+'</th>'+
         '</tr></thead><tbody>';
       data.forEach(function(t){
-        var lsi = _ctLsiCalc(t.valA, t.valB);
-        var clr = isNaN(lsi)?'':lsi>=90?'color:#16a34a':lsi>=75?'color:#d97706':'color:#dc2626';
-        html += '<tr style="border-bottom:1px solid var(--border)">'+
-          '<td style="padding:3px 8px">'+(t.name||'—')+'</td>'+
-          '<td style="text-align:center;padding:3px 8px">'+(t.valA!==''?t.valA:'—')+'</td>'+
-          '<td style="text-align:center;padding:3px 8px">'+(t.valB!==''?t.valB:'—')+'</td>'+
-          '<td style="text-align:center;padding:3px 8px;font-weight:700;'+clr+'">'+(isNaN(lsi)?'—':Math.round(lsi)+'%')+'</td>'+
-          '</tr>';
+        if(t.type === 'perf'){
+          html += '<tr style="border-bottom:1px solid var(--border)">'+
+            '<td style="padding:3px 8px">'+(t.name||'—')+'</td>'+
+            '<td style="text-align:center;padding:3px 8px;font-weight:600">'+(t.valA!==''?t.valA:'—')+'</td>'+
+            '<td style="text-align:center;padding:3px 8px;color:var(--text3);font-size:.75rem" colspan="2">Performance unique</td>'+
+            '</tr>';
+        } else {
+          var lsi = _ctLsiCalc(t.valA, t.valB);
+          var clr = isNaN(lsi)?'':lsi>=90?'color:#16a34a':lsi>=75?'color:#d97706':'color:#dc2626';
+          html += '<tr style="border-bottom:1px solid var(--border)">'+
+            '<td style="padding:3px 8px">'+(t.name||'—')+'</td>'+
+            '<td style="text-align:center;padding:3px 8px">'+(t.valA!==''?t.valA:'—')+'</td>'+
+            '<td style="text-align:center;padding:3px 8px">'+(t.valB!==''?t.valB:'—')+'</td>'+
+            '<td style="text-align:center;padding:3px 8px;font-weight:700;'+clr+'">'+(isNaN(lsi)?'—':Math.round(lsi)+'%')+'</td>'+
+            '</tr>';
+        }
       });
       html += '</tbody></table>';
       sections.push({title:'Tests personnalisés — '+(PAGE_LABELS[pk]||pk), html:html});
     });
     return sections;
+  };
+
+  // Appelé au démarrage d'un bilan de suivi : reporte les noms, efface les valeurs
+  window._ctInitSuivi = function(prevDonnees){
+    if(!prevDonnees) return;
+    _CT_PAGES.forEach(function(pk){
+      var raw = prevDonnees['ct-data-'+pk];
+      if(!raw) return;
+      try{
+        var prev = JSON.parse(raw)||[];
+        var carried = prev.filter(function(t){ return t.name; }).map(function(t){
+          return {name: t.name, valA: '', valB: '', type: t.type||'comparison'};
+        });
+        if(!carried.length) return;
+        _ctData[pk] = carried;
+        _ctSave(pk);
+        _ctRender(pk);
+      }catch(e){}
+    });
   };
 
   window.addEventListener('load', _ctInit);

@@ -1328,17 +1328,21 @@ textarea { resize:none !important; overflow:hidden !important; }
 /* Tests personnalisés */
 .ct-add-btn { margin-left:auto; font-size:.7rem; font-weight:600; padding:3px 10px; border:1.5px solid rgba(255,255,255,.5); border-radius:14px; background:transparent; color:rgba(255,255,255,.9); cursor:pointer; font-family:inherit; transition:background .15s; letter-spacing:.02em; }
 .ct-add-btn:hover { background:rgba(255,255,255,.15); }
-.ct-col-headers { display:grid; grid-template-columns:1fr 80px 80px 72px 28px; gap:6px; margin-bottom:4px; font-size:.67rem; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:.04em; padding:0 2px; }
-.ct-row { display:grid; grid-template-columns:1fr 80px 80px 72px 28px; gap:6px; align-items:center; margin-bottom:6px; }
+.ct-col-headers { display:grid; grid-template-columns:1fr 80px 80px 72px 28px 28px; gap:6px; margin-bottom:4px; font-size:.67rem; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:.04em; padding:0 2px; }
+.ct-row { display:grid; grid-template-columns:1fr 80px 80px 72px 28px 28px; gap:6px; align-items:center; margin-bottom:6px; }
 .ct-name-inp { font-size:.82rem; padding:5px 8px; border:1px solid var(--border); border-radius:6px; background:var(--surface2); color:var(--text1); font-family:inherit; width:100%; box-sizing:border-box; }
 .ct-val-inp { font-size:.82rem; padding:5px 6px; border:1px solid var(--border); border-radius:6px; background:var(--surface2); color:var(--text1); font-family:inherit; width:100%; box-sizing:border-box; text-align:center; }
+.ct-val-empty { display:flex; align-items:center; justify-content:center; font-size:.8rem; color:var(--text3); }
 .ct-lsi-cell { display:flex; align-items:center; justify-content:center; font-size:.8rem; font-weight:700; min-width:0; }
 .ct-lsi-cell.lsi-good { color:#16a34a; }
 .ct-lsi-cell.lsi-warn { color:#d97706; }
 .ct-lsi-cell.lsi-bad { color:#dc2626; }
+.ct-lsi-perf { display:flex; align-items:center; justify-content:center; font-size:.7rem; font-weight:600; color:var(--text3); letter-spacing:.03em; }
+.ct-type-btn { background:none; border:1px solid var(--border); border-radius:4px; color:var(--text3); cursor:pointer; font-size:.72rem; line-height:1; padding:2px 4px; justify-self:center; transition:border-color .15s,color .15s; }
+.ct-type-btn:hover { border-color:var(--accent); color:var(--accent); }
 .ct-del-btn { background:none; border:none; color:var(--text3); cursor:pointer; font-size:1rem; line-height:1; padding:0 4px; justify-self:center; }
 .ct-del-btn:hover { color:#dc2626; }
-@media print { .ct-add-btn,.ct-del-btn { display:none !important; } .ct-col-headers,.ct-row { grid-template-columns:1fr 80px 80px 72px; } }
+@media print { .ct-add-btn,.ct-type-btn,.ct-del-btn { display:none !important; } .ct-col-headers,.ct-row { grid-template-columns:1fr 80px 80px 72px; } }
 
 </style>
 
@@ -2264,7 +2268,6 @@ textarea { resize:none !important; overflow:hidden !important; }
           <div><div style="font-size:.63rem;color:var(--text3);margin-bottom:2px">Observations côté droit</div><textarea id="ha-mob-d-obs" placeholder="Ex: flexion optimale, RE déficitaire de 10°…" style="font-family:inherit;font-size:.8rem;border:1px solid var(--border2);border-radius:4px;padding:4px 6px;width:100%;min-height:44px;resize:vertical;outline:none;background:var(--surface)"></textarea></div>
         </div>
       </div>
-    </div>
     </div>
 
 <div class="block">
