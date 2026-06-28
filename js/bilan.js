@@ -2336,7 +2336,7 @@ function saveBilan(){
       var currStr = (curr === undefined || curr === null) ? '' : String(curr);
       if(prevStr !== currStr) _changedFields.push(k);
     });
-    if(_changedFields.length) donnees.changed_fields = _changedFields;
+    donnees.changed_fields = _changedFields; // toujours écrire (même vide) pour marquer le bilan comme suivi
   }
 
   /* ── Mode consultation : on patche le bilan historique à sa date originale ── */
@@ -3780,7 +3780,7 @@ function _crInSuiviMode() {
   if (_bilanIsSuivi && _suiviSnapshot) return true;
   if (!_allBilans || _allBilans.length < 2) return false;
   var cf = (_allBilans[0].donnees || {}).changed_fields;
-  return !!(cf && cf.length);
+  return cf !== undefined && cf !== null; // tableau vide = suivi sans rien de changé, mais quand même un suivi
 }
 
 // Retourne la date (dd/mm) du bilan d'origine d'un champ porté
@@ -3820,7 +3820,7 @@ function _crIsCarried(fieldIds) {
   // Bilan sauvegardé — vérifier changed_fields du bilan le plus récent
   if (!_allBilans || _allBilans.length < 2) return false;
   var _cf = (_allBilans[0].donnees || {}).changed_fields;
-  if (!_cf || !_cf.length) return false;
+  if (_cf === undefined || _cf === null) return false; // pas un suivi
   for (var _cj = 0; _cj < fieldIds.length; _cj++) {
     if (_cf.indexOf(fieldIds[_cj]) !== -1) return false; // au moins un champ mesuré dans ce bilan
   }
@@ -6381,7 +6381,8 @@ window.addEventListener('load', function(){
       if(_bilanIsSuivi && _suiviSnapshot){
         rawPrev = _suiviSnapshot['ct-data-'+pk] || '';
       } else if(_allBilans && _allBilans.length >= 2){
-        rawPrev = (_allBilans[1].donnees||{})['ct-data-'+pk] || '';
+        // Fusion des bilans antérieurs : couvre le cas où _allBilans[1] est lui-même un suivi vide
+        rawPrev = (_buildMergedDonnees(_allBilans.slice(1)) || {})['ct-data-'+pk] || '';
       }
       if(rawPrev){ try{ (JSON.parse(rawPrev)||[]).forEach(function(t){ if(t.name) prevByName[t.name]=t; }); }catch(e){} }
     }
