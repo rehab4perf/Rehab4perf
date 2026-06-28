@@ -2309,8 +2309,8 @@ function _deserializeBilan(data){
   _bilanModified = false;
   try{ _calcWainnerCerv(); _calcDN4(); }catch(ex){}
   saveToStorage(); // état complet — une seule écriture après désérialisation
+  try{ _ctRestoreAll(); }catch(ex){} // synchroniser _ctData AVANT de rendre le CR
   _refreshCRIfVisible();
-  try{ _ctRestoreAll(); }catch(ex){}
 }
 
 /* ── Sauvegarder ───────────────────────────────────────── */
@@ -3775,11 +3775,14 @@ function calcMusc() {
 }
 
 // -- HELPER TESTS SECTIONS (partagé CR Complet + CR Tests) ----
-// Retourne true si on est dans un contexte suivi (2+ bilans, pas en mode histo)
+// Retourne true si on est dans un contexte suivi (bilan le plus récent avec un antérieur)
 function _crInSuiviMode() {
   if (_bilanIsSuivi && _suiviSnapshot) return true;
-  if (_bilanHistoMode) return false; // bilan historique : pas de grisé suivi
-  return !!(  _allBilans && _allBilans.length >= 2);
+  if (!_allBilans || _allBilans.length < 2) return false;
+  if (!_currentBilanId) return false; // nouveau bilan vierge non sauvegardé
+  // Bilan historique (pas le plus récent) : pas de grisé suivi
+  if (_allBilans[0] && _allBilans[0].id && _currentBilanId !== _allBilans[0].id) return false;
+  return true;
 }
 
 // Retourne la date (dd/mm) du bilan d'origine d'un champ porté
