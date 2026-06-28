@@ -1098,6 +1098,42 @@ function _renderDeltas(prevData){
     badge.title = 'Bilan précédent : ' + prevVal.toFixed(0) + m.unit;
     el.parentNode.insertBefore(badge, el.nextSibling);
   });
+
+  // Deltas sur les tests personnalisés
+  var _ctPagesList = window._CT_PAGES || [];
+  _ctPagesList.forEach(function(pk){
+    var hf = document.getElementById('ct-data-'+pk);
+    if(!hf) return;
+    var curArr = [];
+    try{ curArr = JSON.parse(hf.value)||[]; }catch(e){ return; }
+    var prevRaw = prevData['ct-data-'+pk];
+    if(!prevRaw) return;
+    var prevByName = {};
+    try{ (JSON.parse(prevRaw)||[]).forEach(function(t){ if(t.name) prevByName[t.name]=t; }); }catch(e){ return; }
+    var rows = document.querySelectorAll('#ct-rows-'+pk+' .ct-row');
+    curArr.forEach(function(t, idx){
+      if(!t.name) return;
+      var prev = prevByName[t.name];
+      if(!prev) return;
+      var row = rows[idx];
+      if(!row) return;
+      var cells = row.querySelectorAll('.ct-cell');
+      function _ctDeltaBadge(curV, prevV, cell){
+        var cur = parseFloat(curV), prv = parseFloat(prevV);
+        if(isNaN(cur)||isNaN(prv)||cur===prv) return;
+        var diff = cur - prv;
+        var pct  = prv !== 0 ? Math.round(Math.abs(diff)/Math.abs(prv)*100) : null;
+        var pctStr = pct !== null ? ' ('+(diff>0?'+':'−')+pct+'%)' : '';
+        var badge = document.createElement('span');
+        badge.className = 'evo-delta '+(diff>0?'evo-pos':'evo-neg');
+        badge.textContent = (diff>0?'+':'')+diff.toFixed(0)+pctStr;
+        badge.title = 'Bilan précédent : '+prv.toFixed(0);
+        cell.appendChild(badge);
+      }
+      if(cells[0]) _ctDeltaBadge(t.valA, prev.valA, cells[0]);
+      if(t.type !== 'perf' && cells[1]) _ctDeltaBadge(t.valB, prev.valB, cells[1]);
+    });
+  });
 }
 
 /* ── Builders de graphiques SVG ───────────────────────── */
@@ -1835,6 +1871,120 @@ function _renderEvolutionPage(){
   });
   if(qualHtml){
     html += '<div class="evo-block"><div class="evo-block-title">🧩 Tests Fonctionnels Qualitatifs — MI</div><div class="evo-chart-grid">'+qualHtml+'</div></div>';
+  }
+
+  // ── Section Tests Personnalisés ──────────────────────────
+  var _ctPgs = window._CT_PAGES || [];
+  var _ctPageLabels = {
+    epaule:'Épaule', rachis:'Rachis', hanche:'Hanche', genou:'Genou',
+    pied:'Pied', lma:'LMA', fonctionnels:'Tests Fonctionnels MI',
+    fonctionnelsMS:'Tests Fonctionnels MS', fonctionnelsRachis:'Tests Fonctionnels Rachis'
+  };
+  var ctHtml = '';
+  var bilat = _isBilateral();
+  var ctLblA = bilat ? 'Gauche' : 'Atteint';
+  var ctLblB = bilat ? 'Droit' : 'Sain';
+
+  _ctPgs.forEach(function(pk){
+    // Collecter les noms de tests uniques dans l'ordre d'apparition
+    var seen = {}, orderedNames = [];
+    bilansAsc.forEach(function(b){
+      var raw = (b.donnees||{})['ct-data-'+pk];
+      if(!raw) return;
+      try{
+        (JSON.parse(raw)||[]).forEach(function(t){
+          if(t.name && !seen[t.name]){ seen[t.name]={type:t.type||'comparison'}; orderedNames.push(t.name); }
+        });
+      }catch(e){}
+    });
+
+    orderedNames.forEach(function(name){
+      var isPerf = seen[name].type === 'perf';
+
+      // Extraire valA par bilan
+      var valsA = bilansAsc.map(function(b){
+        var raw = (b.donnees||{})['ct-data-'+pk];
+        if(!raw) return NaN;
+        try{
+          var arr = JSON.parse(raw)||[], t=null;
+          for(var i=0;i<arr.length;i++){ if(arr[i].name===name){t=arr[i];break;} }
+          return t ? parseFloat(t.valA) : NaN;
+        }catch(e){ return NaN; }
+      });
+      var validA = valsA.filter(function(v){ return !isNaN(v); });
+      if(validA.length < 2) return;
+
+      _chartCounter++;
+      var cid = _chartCounter;
+      var chartSvg = '', kpisHtml = '', pillsHtml = '';
+
+      if(isPerf){
+        chartSvg = _buildChartB(valsA, dates, {unit:'', dir:'up', labelA:name, chartId:cid});
+        if(!chartSvg) return;
+        var firstA=NaN, lastA=NaN;
+        valsA.forEach(function(v){ if(!isNaN(v)&&isNaN(firstA)) firstA=v; });
+        valsA.slice().reverse().forEach(function(v){ if(!isNaN(v)&&isNaN(lastA)) lastA=v; });
+        var deltaA=lastA-firstA, signA=deltaA>=0?'+':'';
+        var pctA=firstA!==0?(deltaA/Math.abs(firstA)*100):null;
+        var pctStrA=pctA!==null?' ('+(pctA>=0?'+':'')+pctA.toFixed(0)+'%)':'';
+        var dClsA=deltaA===0?'evo-neutral':deltaA>0?'evo-pos':'evo-neg';
+        kpisHtml='<span class="evo-kpi-neutral">Début : '+firstA.toFixed(0)+'</span>'
+          +'<span class="evo-kpi-neutral">→</span>'
+          +'<span class="evo-kpi-strong">Actuel : '+lastA.toFixed(0)+'</span>'
+          +'<span class="evo-kpi '+dClsA+'">'+signA+deltaA.toFixed(0)+pctStrA+'</span>';
+      } else {
+        var valsB = bilansAsc.map(function(b){
+          var raw = (b.donnees||{})['ct-data-'+pk];
+          if(!raw) return NaN;
+          try{
+            var arr = JSON.parse(raw)||[], t=null;
+            for(var i=0;i<arr.length;i++){ if(arr[i].name===name){t=arr[i];break;} }
+            return t ? parseFloat(t.valB) : NaN;
+          }catch(e){ return NaN; }
+        });
+        var validB = valsB.filter(function(v){ return !isNaN(v); });
+        if(validA.length < 2 && validB.length < 2) return;
+        chartSvg = _buildChartD(valsA, valsB, dates, {unit:'', dir:'up', labelA:ctLblA, labelB:ctLblB, chartId:cid});
+        if(!chartSvg) return;
+        var firstA=NaN, lastA=NaN, firstB=NaN, lastB=NaN;
+        valsA.forEach(function(v){ if(!isNaN(v)&&isNaN(firstA)) firstA=v; });
+        valsA.slice().reverse().forEach(function(v){ if(!isNaN(v)&&isNaN(lastA)) lastA=v; });
+        valsB.forEach(function(v){ if(!isNaN(v)&&isNaN(firstB)) firstB=v; });
+        valsB.slice().reverse().forEach(function(v){ if(!isNaN(v)&&isNaN(lastB)) lastB=v; });
+        var lsiHtml2='';
+        if(!isNaN(lastA)&&!isNaN(lastB)&&Math.max(lastA,lastB)>0){
+          var lsiV=bilat?Math.round(Math.min(lastA,lastB)/Math.max(lastA,lastB)*100):(lastB>0?Math.round(lastA/lastB*100):NaN);
+          if(!isNaN(lsiV)){var lC=lsiV>=90?'evo-pos':lsiV>=75?'evo-neutral':'evo-neg';lsiHtml2='<span class="evo-kpi '+lC+'">LSI '+lsiV+'%</span>';}
+        }
+        function _pctBadgeCT(first,last){
+          if(isNaN(first)||isNaN(last)||first===0)return '';
+          var d=last-first,p=Math.round(d/Math.abs(first)*100);if(p===0)return '';
+          var cls=d>0?'evo-pos':'evo-neg';
+          return '<span class="evo-kpi '+cls+'" style="font-size:.65rem">'+(p>0?'+':'')+p+'%</span>';
+        }
+        kpisHtml='<span class="evo-kpi-neutral" style="color:var(--accent);font-weight:700">'+ctLblA+' : '+(isNaN(lastA)?'—':lastA.toFixed(0))+'</span>'
+          +_pctBadgeCT(firstA,lastA)
+          +'<span class="evo-kpi-neutral" style="color:var(--border);padding:0 2px">|</span>'
+          +'<span class="evo-kpi-neutral" style="color:var(--green);font-weight:700">'+ctLblB+' : '+(isNaN(lastB)?'—':lastB.toFixed(0))+'</span>'
+          +_pctBadgeCT(firstB,lastB)
+          +'<span class="evo-kpi-neutral" style="color:var(--border);padding:0 2px">|</span>'
+          +lsiHtml2;
+        pillsHtml='<div class="evo-line-toggles">'
+          +'<button class="evo-line-pill active" style="color:var(--accent);border-color:var(--accent)" onclick="toggleEvoPill(this,'+cid+',\'A\')" data-line="A">● '+ctLblA+'</button>'
+          +'<button class="evo-line-pill active" style="color:var(--green);border-color:var(--green)" onclick="toggleEvoPill(this,'+cid+',\'B\')" data-line="B">● '+ctLblB+'</button>'
+          +'</div>';
+      }
+
+      var pageLabel = _ctPageLabels[pk] ? ' <span style="font-size:.7rem;color:var(--text3);font-weight:400">('+_ctPageLabels[pk]+')</span>' : '';
+      ctHtml += '<div class="evo-chart-card evo-unselected" data-chart-id="'+cid+'">'
+        +'<div class="evo-chart-header">'
+        +'<div class="evo-check-wrap"><input type="checkbox" class="evo-chart-check no-print" onchange="this.closest(\'.evo-chart-card\').classList.toggle(\'evo-unselected\',!this.checked)"><span class="evo-chart-title">'+name+pageLabel+'</span></div>'
+        +'<div class="evo-chart-kpis">'+kpisHtml+'</div></div>'
+        +pillsHtml+chartSvg+'</div>';
+    });
+  });
+  if(ctHtml){
+    html += '<div class="evo-block"><div class="evo-block-title">📋 Tests Personnalisés</div><div class="evo-chart-grid">'+ctHtml+'</div></div>';
   }
 
   container.innerHTML=html;
@@ -5955,8 +6105,8 @@ window.addEventListener('load', function(){
         row.innerHTML =
           '<input class="ct-name-inp" type="text" placeholder="Nom du test" value="'+_esc(t.name)+'" '+
             'oninput="_ctUpdate(\''+pk+'\','+idx+',\'name\',this.value)">'+
-          '<input class="ct-val-inp" type="number" step="any" placeholder="—" value="'+_esc(t.valA)+'" '+
-            'oninput="_ctUpdate(\''+pk+'\','+idx+',\'valA\',this.value)">'+
+          '<div class="ct-cell"><input class="ct-val-inp" type="number" step="any" placeholder="—" value="'+_esc(t.valA)+'" '+
+            'oninput="_ctUpdate(\''+pk+'\','+idx+',\'valA\',this.value)"></div>'+
           '<span class="ct-val-empty">—</span>'+
           '<span class="ct-lsi-perf">Perf.</span>'+
           '<button class="ct-type-btn" onclick="_ctSetType(\''+pk+'\','+idx+',\'comparison\')" title="Passer en comparaison G/D">⇄</button>'+
@@ -5966,10 +6116,10 @@ window.addEventListener('load', function(){
         row.innerHTML =
           '<input class="ct-name-inp" type="text" placeholder="Nom du test" value="'+_esc(t.name)+'" '+
             'oninput="_ctUpdate(\''+pk+'\','+idx+',\'name\',this.value)">'+
-          '<input class="ct-val-inp" type="number" step="any" placeholder="—" value="'+_esc(t.valA)+'" '+
-            'oninput="_ctUpdate(\''+pk+'\','+idx+',\'valA\',this.value)">'+
-          '<input class="ct-val-inp" type="number" step="any" placeholder="—" value="'+_esc(t.valB)+'" '+
-            'oninput="_ctUpdate(\''+pk+'\','+idx+',\'valB\',this.value)">'+
+          '<div class="ct-cell"><input class="ct-val-inp" type="number" step="any" placeholder="—" value="'+_esc(t.valA)+'" '+
+            'oninput="_ctUpdate(\''+pk+'\','+idx+',\'valA\',this.value)"></div>'+
+          '<div class="ct-cell"><input class="ct-val-inp" type="number" step="any" placeholder="—" value="'+_esc(t.valB)+'" '+
+            'oninput="_ctUpdate(\''+pk+'\','+idx+',\'valB\',this.value)"></div>'+
           '<div class="ct-lsi-cell '+_ctLsiClass(lsi)+'">'+_ctLsiText(lsi)+'</div>'+
           '<button class="ct-type-btn" onclick="_ctSetType(\''+pk+'\','+idx+',\'perf\')" title="Passer en performance unique">↑</button>'+
           '<button class="ct-del-btn" onclick="_ctRemove(\''+pk+'\','+idx+')" title="Supprimer">×</button>';
@@ -6149,5 +6299,6 @@ window.addEventListener('load', function(){
     });
   };
 
+  window._CT_PAGES = _CT_PAGES;
   window.addEventListener('load', _ctInit);
 })();
