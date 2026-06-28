@@ -2770,6 +2770,14 @@ function _newBilanSuiviConfirm(){
   var lastDate  = _allBilans[0].date ? _allBilans[0].date.split('T')[0] : '';
   var lastLabel = lastDate ? _isoToReadable(lastDate) : 'précédent';
 
+  // Capturer les tests perso de la session courante AVANT le reset
+  // (couvre les tests non encore sauvegardés en base)
+  var _preSuiviRaw = {};
+  (window._CT_PAGES || []).forEach(function(pk){
+    var hf = document.getElementById('ct-data-' + pk);
+    if(hf && hf.value && hf.value !== '' && hf.value !== '[]') _preSuiviRaw[pk] = hf.value;
+  });
+
   _exitHistoMode();
   _exitReadOnlyMode();
   _currentBilanId = null;
@@ -2787,8 +2795,31 @@ function _newBilanSuiviConfirm(){
   });
   _deserializeBilan(infoKeys);
   try{ _parsePainZones(); }catch(ex){}
-  // Reporter les tests personnalisés (noms seulement, valeurs effacées) depuis tous les bilans
-  try{ window._ctMergeNamesFromAllBilans(_allBilans); }catch(ex){}
+
+  // Reporter les noms de tests (valeurs vides) : union de la session courante + tous les bilans
+  try{
+    (window._CT_PAGES || []).forEach(function(pk){
+      var seen = {}, names = [];
+      function addRaw(raw){
+        if(!raw || raw === '[]') return;
+        try{
+          (JSON.parse(raw)||[]).forEach(function(t){
+            if(t.name && !seen[t.name]){
+              seen[t.name] = true;
+              names.push({name:t.name, valA:'', valB:'', type:t.type||'comparison'});
+            }
+          });
+        }catch(e){}
+      }
+      // Session courante en priorité, puis tous les bilans oldest→newest
+      addRaw(_preSuiviRaw[pk]);
+      (_allBilans||[]).slice().reverse().forEach(function(b){ addRaw((b.donnees||{})['ct-data-'+pk]); });
+      if(!names.length) return;
+      var hf = document.getElementById('ct-data-' + pk);
+      if(hf) hf.value = JSON.stringify(names);
+    });
+    if(typeof window._ctRestoreAll === 'function') window._ctRestoreAll();
+  }catch(ex){}
 
   // Date du bilan = aujourd'hui
   var _dn = new Date();
