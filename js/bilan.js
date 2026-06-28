@@ -3902,17 +3902,17 @@ function _buildAllTestsHtml() {
   }
   // 2. Bilan ortho
   var orthoSections = [
-    { label:'EPAULE', fields:[['ep-type','Type'],['ep-marqueur','Marqueur']], tables:['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho-mob','tb-ep-ortho-conf','tb-ep-irrit-g','tb-ep-irrit-d','tb-ep-trau-g','tb-ep-trau-d','tb-ep-fonc-g','tb-ep-fonc-d','tb-ep-ortho-g','tb-ep-ortho-d'], concl:'ep-conclusion', opt:'ep-opt' },
-    { label:'RACHIS CERVICAL', fields:[['cv-marqueur','Marqueur']], tables:['tb-cv-vascul','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-dn4-itw','tb-cv-dn4-exam','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-sensib-g','tb-cv-sensib-d'], concl:'cv-conclusion' },
-    { label:'RACHIS', fields:[['ra-marqueur','Marqueur'],['ra-mckenzie','McKenzie']], tables:['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-force-d','tb-ra-force-g','tb-ra-transverse'], concl:'ra-conclusion', opt:'ra-opt' },
-    { label:'HANCHE', fields:[['ha-marqueur','Marqueur']], tables:['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-force-d','tb-ha-force-g','tb-ha-global-g','tb-ha-global-d','tb-ha-add-g','tb-ha-add-d','tb-ha-pubis-g','tb-ha-pubis-d','tb-ha-flech-g','tb-ha-flech-d','tb-ha-inguinal-g','tb-ha-inguinal-d','tb-ha-hanche-g','tb-ha-hanche-d'], concl:'ha-conclusion', opt:'ha-opt' },
-    { label:'GENOU', fields:[['ge-marqueur','Marqueur']], tables:[
+    { label:'EPAULE', pk:'epaule', fields:[['ep-type','Type'],['ep-marqueur','Marqueur']], tables:['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho-mob','tb-ep-ortho-conf','tb-ep-irrit-g','tb-ep-irrit-d','tb-ep-trau-g','tb-ep-trau-d','tb-ep-fonc-g','tb-ep-fonc-d','tb-ep-ortho-g','tb-ep-ortho-d'], concl:'ep-conclusion', opt:'ep-opt' },
+    { label:'RACHIS CERVICAL', pk:'', fields:[['cv-marqueur','Marqueur']], tables:['tb-cv-vascul','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-dn4-itw','tb-cv-dn4-exam','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-sensib-g','tb-cv-sensib-d'], concl:'cv-conclusion' },
+    { label:'RACHIS', pk:'rachis', fields:[['ra-marqueur','Marqueur'],['ra-mckenzie','McKenzie']], tables:['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-force-d','tb-ra-force-g','tb-ra-transverse'], concl:'ra-conclusion', opt:'ra-opt' },
+    { label:'HANCHE', pk:'hanche', fields:[['ha-marqueur','Marqueur']], tables:['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-force-d','tb-ha-force-g','tb-ha-global-g','tb-ha-global-d','tb-ha-add-g','tb-ha-add-d','tb-ha-pubis-g','tb-ha-pubis-d','tb-ha-flech-g','tb-ha-flech-d','tb-ha-inguinal-g','tb-ha-inguinal-d','tb-ha-hanche-g','tb-ha-hanche-d'], concl:'ha-conclusion', opt:'ha-opt' },
+    { label:'GENOU', pk:'genou', fields:[['ge-marqueur','Marqueur']], tables:[
         'tb-ge-global','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-ext',
         'tb-ge-global-g','tb-ge-global-d','tb-ge-lig-g','tb-ge-lig-d','tb-ge-lca-g','tb-ge-lca-d',
         'tb-ge-men-g','tb-ge-men-d','tb-ge-rot-g','tb-ge-rot-d','tb-ge-sbit-g','tb-ge-sbit-d',
         'tb-ge-plicae-g','tb-ge-plicae-d','tb-ge-ext-g','tb-ge-ext-d',
         'tb-ge-knee-d','tb-ge-knee-g','tb-ge-hip-d','tb-ge-hip-g'], concl:'ge-conclusion', opt:'ge-opt' },
-    { label:'PIED / CHEVILLE', fields:[['pi-marqueur','Marqueur']], tables:['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-fonc','tb-pi-force-ca','tb-pi-force-cs','tb-pi-global-g','tb-pi-global-d','tb-pi-tt-g','tb-pi-tt-d','tb-pi-synd-g','tb-pi-synd-d','tb-pi-conf-g','tb-pi-conf-d','tb-pi-st-g','tb-pi-st-d','tb-pi-chopart-g','tb-pi-chopart-d','tb-pi-fonc-g','tb-pi-fonc-d'], concl:'pi-conclusion', opt:'pi-opt' },
+    { label:'PIED / CHEVILLE', pk:'pied', fields:[['pi-marqueur','Marqueur']], tables:['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-fonc','tb-pi-force-ca','tb-pi-force-cs','tb-pi-global-g','tb-pi-global-d','tb-pi-tt-g','tb-pi-tt-d','tb-pi-synd-g','tb-pi-synd-d','tb-pi-conf-g','tb-pi-conf-d','tb-pi-st-g','tb-pi-st-d','tb-pi-chopart-g','tb-pi-chopart-d','tb-pi-fonc-g','tb-pi-fonc-d'], concl:'pi-conclusion', opt:'pi-opt' },
   ];
   var orthoHtml = '';
   for (var oi=0; oi<orthoSections.length; oi++) {
@@ -4102,6 +4102,7 @@ function _buildAllTestsHtml() {
     if (conclEl && conclEl.value) secRows += crItem('Conclusion', nl2br(conclEl.value), '', '', [sec.concl]);
     var optEl = sec.opt ? document.getElementById(sec.opt) : null;
     if (optEl && optEl.value) secRows += crItem('Tests Optionnels', nl2br(optEl.value), '', '', [sec.opt]);
+    if(sec.pk && typeof window._ctBuildSectionHtml === 'function') secRows += window._ctBuildSectionHtml(sec.pk);
     if (secRows) orthoHtml += '<div style="margin-bottom:14px"><div style="margin-top:16px;margin-bottom:8px;border-left:3px solid var(--green);background:#F6FBF8;padding:6px 12px;font-size:.72rem;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.08em">' + sec.label + '</div>' + secRows + '</div>';
   }
   addSec('2. Bilan Orthopedique', orthoHtml);
@@ -4143,7 +4144,8 @@ function _buildAllTestsHtml() {
               + lmaMembreLabel + ' — ' + lmaMusclLabel + '</div>' + lmaHtml + '</div>';
     }
   }
-  if (lmaHtml) addSec('🔪 LMA — Lésion Myo-Aponévrotique', lmaHtml);
+  var lmaCtHtml = typeof window._ctBuildSectionHtml === 'function' ? window._ctBuildSectionHtml('lma') : '';
+  if (lmaHtml || lmaCtHtml) addSec('🔪 LMA — Lésion Myo-Aponévrotique', (lmaHtml||'') + lmaCtHtml);
 
   // 3. Tests fonctionnels MI
   var tfHtml = '';
@@ -4263,6 +4265,7 @@ function _buildAllTestsHtml() {
       tfHtml += crItem('UQYBT — '+uqDirs[ui].label, 'D='+uqD+'cm   G='+uqG+'cm   Diff='+uqDiffTxt, uqBad?'>5% Asymétrie':'OK', uqBad?'warn':'good', ['uqybt-'+uqDirs[ui].id+'-d','uqybt-'+uqDirs[ui].id+'-g']);
     }
   }
+  if(typeof window._ctBuildSectionHtml === 'function') tfHtml += window._ctBuildSectionHtml('fonctionnels');
   addSec('3. Tests Fonctionnels & Musculaires - Membres Inferieurs', tfHtml);
 
   // 4. Tests MS
@@ -4313,6 +4316,7 @@ function _buildAllTestsHtml() {
     tfMsHtml += crItem('ULRT', ulrtEl2.textContent, !isNaN(ulrtV2)?lsiTagFn2(ulrtV2):'', !isNaN(ulrtV2)?lsiClsFn2(ulrtV2):'ok', ['ulrt-d1','ulrt-g1']);
   }
   tfMsHtml += obsBlock('ulrt-obs-ca','ulrt-obs-cs');
+  if(typeof window._ctBuildSectionHtml === 'function') tfMsHtml += window._ctBuildSectionHtml('fonctionnelsMS');
   addSec('4. Tests Fonctionnels - Membres Superieurs', tfMsHtml);
 
   // 5. Tests Fonctionnels Rachis
@@ -4334,6 +4338,7 @@ function _buildAllTestsHtml() {
   if (!isNaN(sorV2)) { tfRachisHtml += crItem('Test de Sørensen', sorV2+'s', sorV2>=198?'Facteur protecteur':sorV2>=176?'Zone intermédiaire':'Facteur de risque', sorV2>=198?'ok':sorV2>=176?'warn':'bad', ['rf-sorensen']); tfRachisHtml += obsSingle('rf-sor-obs'); }
   if (!isNaN(pdslV2)) { tfRachisHtml += crItem('PDSLRT', pdslV2+'s', pdslV2>=30?'OK':'Deficit', pdslV2>=30?'ok':'bad', ['rf-pdslrt']); tfRachisHtml += obsSingle('rf-pdslrt-obs'); }
   if (rfNotes) tfRachisHtml += crItem('Notes', rfNotes, '', '', ['rf-notes']);
+  if(typeof window._ctBuildSectionHtml === 'function') tfRachisHtml += window._ctBuildSectionHtml('fonctionnelsRachis');
   addSec('5. Tests Fonctionnels - Rachis', tfRachisHtml);
 
   // 6. Points à travailler
@@ -4814,9 +4819,8 @@ function buildCR() {
   if(imHtml) infosHtml += crItem('📷 Imageries', imHtml);
   addSection('1. Infos Patient & Anamnese', infosHtml);
 
-  // Sections 2→6 : délégué à _buildAllTestsHtml()
+  // Sections 2→6 : délégué à _buildAllTestsHtml() (tests perso inclus inline)
   _buildAllTestsHtml().forEach(function(sec){ addSection(sec.title, sec.html); });
-  if(typeof _ctBuildCRHtml==='function') _ctBuildCRHtml().forEach(function(sec){ addSection(sec.title, sec.html); });
 
   // Section évolution (optionnelle)
   var evoSectionHtml = _buildCREvoSection();
@@ -5402,9 +5406,8 @@ function buildCRTF() {
       '</div>';
   }
 
-  // Toutes les sections tests via helper partagé
+  // Toutes les sections tests via helper partagé (tests perso inclus inline)
   _buildAllTestsHtml().forEach(function(sec){ addTFSection(sec.title, sec.html); });
-  if(typeof _ctBuildCRHtml==='function') _ctBuildCRHtml().forEach(function(sec){ addTFSection(sec.title, sec.html); });
 
   if (!content.innerHTML.trim() || content.innerHTML === '<div style="margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid var(--border)"></div>') {
     content.innerHTML = '<div style="color:var(--text3);font-style:italic;padding:40px 0;text-align:center;font-size:.9rem">Aucun test renseigné.<br>Remplissez les onglets pour générer le compte-rendu.</div>';
@@ -6330,6 +6333,62 @@ window.addEventListener('load', function(){
         _ctRender(pk);
       }catch(e){}
     });
+  };
+
+  // Construit le html des tests personnalisés d'une page pour le CR,
+  // intégré directement dans la section correspondante (grisé suivi inclus).
+  window._ctBuildSectionHtml = function(pk){
+    var data = (_ctData[pk]||[]).filter(function(t){ return t.name||t.valA||t.valB; });
+    if(!data.length) return '';
+    var bilat = _ctIsBilat();
+    var lbl = _ctLabels();
+    // Suivi grisé : récupère les valeurs du bilan précédent
+    var prevByName = {};
+    var isSuiviMode = typeof _crInSuiviMode === 'function' && _crInSuiviMode();
+    if(isSuiviMode){
+      var rawPrev = '';
+      if(_bilanIsSuivi && _suiviSnapshot){
+        rawPrev = _suiviSnapshot['ct-data-'+pk] || '';
+      } else if(_allBilans && _allBilans.length >= 2){
+        rawPrev = (_allBilans[1].donnees||{})['ct-data-'+pk] || '';
+      }
+      if(rawPrev){ try{ (JSON.parse(rawPrev)||[]).forEach(function(t){ if(t.name) prevByName[t.name]=t; }); }catch(e){} }
+    }
+    var html = '<div style="margin-top:10px;border-top:1px dashed var(--border);padding-top:6px">'+
+      '<div style="font-size:.7rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Tests personnalisés</div>';
+    data.forEach(function(t){
+      var valStr = '';
+      var tag = '', tagCls = '';
+      if(t.type === 'perf'){
+        valStr = t.valA !== '' ? String(t.valA) : '—';
+      } else {
+        var lsi = _ctLsiCalc(t.valA, t.valB);
+        valStr = lbl.a+'='+(t.valA!==''?t.valA:'—')+'   '+lbl.b+'='+(t.valB!==''?t.valB:'—');
+        if(!isNaN(lsi)){
+          valStr += '   '+(bilat?'Sym.':'LSI')+'='+Math.round(lsi)+'%';
+          tag = Math.round(lsi)+'%';
+          tagCls = lsi>=90?'good':lsi>=75?'warn':'bad';
+        }
+      }
+      var cls = '';
+      if(isSuiviMode && t.name){
+        var prev = prevByName[t.name];
+        if(prev){
+          var valAEq = String(t.valA||'') === String(prev.valA||'');
+          var valBEq = t.type === 'perf' || String(t.valB||'') === String(prev.valB||'');
+          cls = (valAEq && valBEq) ? ' cr-item--carried' : ' cr-item--fresh';
+        } else {
+          cls = ' cr-item--fresh';
+        }
+      }
+      var tagHtml = tag ? '<span class="cr-tag '+tagCls+'">'+tag+'</span>' : '';
+      html += '<div class="cr-item'+cls+'">'+
+        '<span class="cr-key">'+_esc(t.name||'—')+'</span>'+
+        '<span class="cr-val">'+valStr+'</span>'+
+        tagHtml+'</div>';
+    });
+    html += '</div>';
+    return html;
   };
 
   // Injecte dans _ctData les noms de tests manquants depuis les autres bilans
