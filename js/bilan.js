@@ -2384,7 +2384,7 @@ function _deserializeBilan(data){
   try{ updateAll(); calcRec(); calcPlioq(); }catch(ex){}
   try{ ['sls','hop','pset','set'].forEach(function(k){ calcLSI(k); }); calcDJ(); calcLunge(); calcHR(); calcMusc(); }catch(ex){}
   try{ calcCKC(); calcSHRT(); calcULRT(); }catch(ex){}
-  try{ calcRachisStat(); calcLNF(); calcSorensen(); calcPDSLRT(); }catch(ex){}
+  try{ calcRachisStat(); calcLNF(); calcSorensen(); calcPDSLRT(); calcShirado(); }catch(ex){}
   try{ calcPlioq2(); calcSEBT(); calcUQYBT(); updateBadges(); }catch(ex){}
   try{ _initAllRomBars(); }catch(ex){}
   try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-abd','ep-bht'].forEach(calcEpForce); }catch(ex){}
@@ -3640,6 +3640,7 @@ function updateAll() {
   try{ calcRachisStat(); }catch(ex){}
   try{ calcLNF(); }catch(ex){}
   try{ calcSorensen(); }catch(ex){}
+  try{ calcShirado(); }catch(ex){}
 
   // Progress
   const fields = document.querySelectorAll('input[type=text],input[type=number],textarea,select');
@@ -5343,7 +5344,7 @@ function loadFromStorage() {
     ['sls','hop','pset','set'].forEach(k => calcLSI(k));
     calcDJ(); calcLunge(); calcHR(); calcMusc();
     calcCKC(); calcSHRT(); calcULRT();
-    calcRachisStat(); calcLNF(); calcSorensen(); calcPDSLRT();
+    calcRachisStat(); calcLNF(); calcSorensen(); calcPDSLRT(); calcShirado();
     calcPlioq2(); calcRec(); calcSEBT(); calcUQYBT();
     updateBadges();
   } catch(e) {}
@@ -5661,6 +5662,37 @@ function calcPDSLRT() {
   }
 }
 
+
+function calcShirado() {
+  var el = document.getElementById('rf-shirado');
+  var statEl = document.getElementById('rf-shirado-stat');
+  var interpEl = document.getElementById('rf-shirado-interp');
+  if (!el || !statEl) return;
+  var v = parseFloat(el.value);
+  if (!isNaN(v)) {
+    var cls, stat, interp;
+    if (v >= 100) {
+      cls = 'good'; stat = 'Dans la norme sujets sains';
+      interp = '>= 100s : endurance fléchisseurs satisfaisante';
+    } else if (v >= 41) {
+      cls = 'warn'; stat = 'Zone intermédiaire (41-99s)';
+      interp = '41-99s : sous la norme sains, au-dessus du seuil lombalgiques';
+    } else {
+      cls = 'bad'; stat = 'Déficit significatif (< 41s)';
+      interp = '< 41s : dans la plage lombalgiques (Fransoo 2009)';
+    }
+    statEl.textContent = stat;
+    statEl.style.background = cls === 'good' ? 'var(--green-l)' : cls === 'warn' ? 'var(--orange-l)' : 'var(--red-l)';
+    statEl.style.color = cls === 'good' ? 'var(--green)' : cls === 'warn' ? 'var(--orange)' : 'var(--red)';
+    if (interpEl) {
+      interpEl.textContent = interp;
+      interpEl.style.color = cls === 'good' ? 'var(--green)' : cls === 'warn' ? 'var(--orange)' : 'var(--red)';
+    }
+  } else {
+    statEl.textContent = '-'; statEl.style.background = ''; statEl.style.color = '';
+    if (interpEl) { interpEl.textContent = '-'; interpEl.style.color = ''; }
+  }
+}
 
 function calcPlioq2() {
   var scores = {ca:0, cs:0};
