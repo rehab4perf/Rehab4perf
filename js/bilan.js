@@ -179,7 +179,7 @@ const TESTS = {
     'Apprehension sign <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Sensation d\'affaissement du bas du dos avec douleur lombaire soudaine lors des AVQ. ✚ Présent dans les 7 derniers jours (Areeudomwong 2020)</span>',
     'Instability catch sign <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Catch douloureux en flexion lombaire. ✚ Diminué par contraction du transverse → instabilité</span>',
     'Painful catch sign <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Douleur au retour de flexion avec compensation. ✚ Diminuée par contraction du transverse → instabilité</span>',
-    'Prone Instability Test (PIT) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Douleur en procubitus MI hors table → diminue quand MI en appui. ✚ Instabilité lombaire segmentaire</span>'
+    'Prone Instability Test (PIT) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Procubitus MI hors table. Glissement PA passif sur segments lombaires. ✚ Douleur disparaît à la contraction des extenseurs → instabilité segmentaire</span>'
   ]},
 
   // ── Rachis Cervical (page-rachis-cerv) ──────────────────────────────────
