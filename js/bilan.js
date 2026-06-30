@@ -168,7 +168,7 @@ const TESTS = {
     'Test du petit bras (short lever) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Levier court direct sur sacrum / iliaque. ✚ Douleur SIJ → affine le diagnostic</span>'
   ]},
   'tb-rl-plet': {type:'ortho', items:[
-    'Passive Lumbar Extension Test (PLET) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Procubitus. Élévation des chevilles ~30 cm, légère traction (genoux tendus). ✚ Douleur lombaire sévère / sensation de détachement → instabilité structurelle (Kasai 2006 : Se 84%, Sp 90%)</span>'
+    'Passive Lumbar Extension Test (PLET) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Procubitus, élévation des MI en légère traction (genoux tendus). ✚ Reproduction d\'une douleur lombaire sévère ou sensation de « détachement » → instabilité structurelle (spondylolisthésis) — Kasai 2006 : Se 84%, Sp 90%</span>'
   ]},
   'tb-rl-instab': {type:'ortho', opts:['Positif','Négatif','N/A'], items:[
     'Apprehension sign <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Sensation d\'affaissement du bas du dos avec douleur lombaire soudaine lors des AVQ. ✚ Présent dans les 7 derniers jours (Areeudomwong 2020)</span>',
