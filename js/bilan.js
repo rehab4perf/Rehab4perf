@@ -3506,6 +3506,14 @@ function _isBilateral() {
   // 'DROIT' ou 'GAUCHE' → unilatéral (atteint/sain, peut dépasser 100%)
   return cote !== 'DROIT' && cote !== 'GAUCHE';
 }
+// Scope-aware bilateral check: uses the same zone scope as _updateSideLabels
+// Prevents LSI > 100% when opposite limbs are affected (e.g. Cheville G + Hanche D)
+var _MI_ZONES = ['genou','hanche','cheville','pied','cuisse','jambe'];
+var _MS_ZONES = ['epaule','coude','poignet'];
+function _isBilateralForZones(zones) {
+  var c = _getCoteForScope(zones);
+  return c !== 'DROIT' && c !== 'GAUCHE';
+}
 
 function lsiClass(v, higher=true) {
   if (isNaN(v)) return '';
@@ -3529,7 +3537,7 @@ function setLSI(lsiEl, statEl, lsi, seuil, higher, bilateral) {
 function calcLSI(key) {
   const ca = parseFloat(document.getElementById(key + '-ca') ? document.getElementById(key + '-ca').value : '');
   const cs = parseFloat(document.getElementById(key + '-cs') ? document.getElementById(key + '-cs').value : '');
-  var bilateral = _isBilateral();
+  var bilateral = _isBilateralForZones((key === 'pset' || key === 'set') ? _MS_ZONES : _MI_ZONES);
   var lsi = bilateral
     ? (ca > 0 && cs > 0 ? Math.min(ca, cs) / Math.max(ca, cs) * 100 : NaN)
     : (cs > 0 ? ca / cs * 100 : NaN);
@@ -3608,7 +3616,7 @@ function calcHR() {
   var hrCsEl = document.getElementById('hr-cs');
   var ca = hrCaEl ? parseFloat(hrCaEl.value) : NaN;
   var cs = hrCsEl ? parseFloat(hrCsEl.value) : NaN;
-  var bilateral = _isBilateral();
+  var bilateral = _isBilateralForZones(_MI_ZONES);
   var lsi = bilateral
     ? (ca > 0 && cs > 0 ? Math.min(ca, cs) / Math.max(ca, cs) * 100 : NaN)
     : (cs > 0 ? ca / cs * 100 : NaN);
@@ -3671,7 +3679,7 @@ function calcLunge() {
     stat = 'Deficit complet — ne touche pas';
     interp = 'CA = ' + ca + ' cm (déficit de ' + ecart.toFixed(1) + ' cm du contact) — écart total vs côté sain = ' + ecartTotal.toFixed(1) + ' cm';
   } else {
-    var luBilateral = _isBilateral();
+    var luBilateral = _isBilateralForZones(_MI_ZONES);
     var lsi = luBilateral
       ? (ca > 0 && cs > 0 ? Math.min(ca, cs) / Math.max(ca, cs) * 100 : NaN)
       : (cs !== 0 ? ca / cs * 100 : NaN);
@@ -3701,7 +3709,7 @@ function calcDJ() {
   const hcs = parseFloat(document.getElementById('dj-h-cs').value);
   const tca = parseFloat(document.getElementById('dj-t-ca').value);
   const tcs = parseFloat(document.getElementById('dj-t-cs').value);
-  var bilateral = _isBilateral();
+  var bilateral = _isBilateralForZones(_MI_ZONES);
   const hlsi = bilateral
     ? (hca > 0 && hcs > 0 ? Math.min(hca, hcs) / Math.max(hca, hcs) * 100 : NaN)
     : (hcs > 0 ? hca / hcs * 100 : NaN);
