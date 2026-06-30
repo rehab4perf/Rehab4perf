@@ -6458,7 +6458,8 @@ window.addEventListener('load', function(){
 ══════════════════════════════════════════════════════ */
 (function(){
   var _CT_PAGES = ['epaule','rachis','hanche','genou','pied','lma',
-                   'fonctionnels','fonctionnelsMS','fonctionnelsRachis'];
+                   'fonctionnels','fonctionnelsMS','fonctionnelsRachis',
+                   'rachis-cerv','rachis-lomb'];
   var _ctData = {};
 
   function _ctIsBilat(){
