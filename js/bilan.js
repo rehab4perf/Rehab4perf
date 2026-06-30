@@ -167,13 +167,8 @@ const TESTS = {
     'Test du grand bras (long lever) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Levier long sur MI étendu en procubitus. ✚ Douleur SIJ → confirmation dysfonction</span>',
     'Test du petit bras (short lever) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Levier court direct sur sacrum / iliaque. ✚ Douleur SIJ → affine le diagnostic</span>'
   ]},
-  'tb-rl-laslett': {type:'ortho', opts:['Positif','Négatif','N/A'], items:[
-    'Distraction <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Pression divergente sur les deux EIAS (DD). ✚ Douleur postérieure pelvienne</span>',
-    'Thigh Thrust <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Flexion hanche 90° + poussée axiale fémur (DD). ✚ Douleur postérieure SIJ ipsilatérale</span>',
-    'Gaenslen <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Extension passive hanche MI hors table (DD). ✚ Douleur SIJ ipsilatérale</span>',
-    'Compression <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Pression convergente crêtes iliaques (DD latéral). ✚ Douleur postérieure pelvienne</span>',
-    'Sacral Thrust <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Pression verticale sur sacrum (procubitus). ✚ Douleur postérieure pelvienne</span>',
-    'FABER (Patrick) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Flexion + ABD + RE hanche. ✚ Douleur postérieure SIJ → SIJ ; douleur aine → hanche</span>'
+  'tb-rl-plet': {type:'ortho', items:[
+    'Passive Lumbar Extension Test (PLET) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Procubitus. Élévation des chevilles ~30 cm, légère traction (genoux tendus). ✚ Douleur lombaire sévère / sensation de détachement → instabilité structurelle (Kasai 2006 : Se 84%, Sp 90%)</span>'
   ]},
   'tb-rl-instab': {type:'ortho', opts:['Positif','Négatif','N/A'], items:[
     'Apprehension sign <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Sensation d\'affaissement du bas du dos avec douleur lombaire soudaine lors des AVQ. ✚ Présent dans les 7 derniers jours (Areeudomwong 2020)</span>',
@@ -2382,7 +2377,7 @@ function _deserializeBilan(data){
   _parsePainZones();
   _suppressDirty = false;
   _bilanModified = false;
-  try{ _calcWainnerCerv(); _calcDN4(); _calcLaslett(); _calcInstabLomb(); _calcFlexionLomb(); _calcMckenzie(); }catch(ex){}
+  try{ _calcWainnerCerv(); _calcDN4(); _calcInstabLomb(); _calcFlexionLomb(); _calcMckenzie(); }catch(ex){}
   saveToStorage(); // état complet — une seule écriture après désérialisation
   try{ _ctRestoreAll(); }catch(ex){} // synchroniser _ctData AVANT de rendre le CR
   _refreshCRIfVisible();
@@ -3477,20 +3472,6 @@ function _calcFlexionLomb() {
   if (!_suppressDirty) updateBadges();
 }
 
-function _calcLaslett() {
-  var score = 0;
-  var tb = document.getElementById('tb-rl-laslett');
-  if (tb) tb.querySelectorAll('select').forEach(function(s) { if (s.value === 'Positif') score++; });
-  var scoreEl = document.getElementById('rl-laslett-score');
-  if (scoreEl) {
-    scoreEl.textContent = 'Score Laslett : ' + score + '/6' + (score >= 3 ? ' — Cluster positif' : '');
-    scoreEl.style.color = score >= 3 ? 'var(--warning,#e67e22)' : '';
-    scoreEl.style.fontWeight = score >= 3 ? '700' : '';
-  }
-  var alertEl = document.getElementById('rl-laslett-alert');
-  if (alertEl) alertEl.style.display = score >= 3 ? 'flex' : 'none';
-}
-
 function _calcInstabLomb() {
   var score = 0;
   var tb = document.getElementById('tb-rl-instab');
@@ -3516,7 +3497,6 @@ function onTestChange(sel, tableId, idx) {
     if (wainnerTables[tableId]) _calcWainnerCerv();
     var dn4Tables = {'tb-cv-dn4-itw':1,'tb-cv-dn4-exam':1};
     if (dn4Tables[tableId]) _calcDN4();
-    if (tableId === 'tb-rl-laslett') _calcLaslett();
     if (tableId === 'tb-rl-instab') _calcInstabLomb();
     updateBadges();
   }
@@ -3527,7 +3507,7 @@ function updateBadges() {
     'epaule': ['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho-mob','tb-ep-ortho-conf'],
     'rachis': ['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-force-d','tb-ra-force-g','tb-ra-transverse'],
     'rachis-cerv': ['tb-cv-vascul','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-dn4-itw','tb-cv-dn4-exam','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-sensib-g','tb-cv-sensib-d'],
-    'rachis-lomb': ['tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-tfd-suite','tb-rl-tfa-suite','tb-rl-laslett','tb-rl-instab'],
+    'rachis-lomb': ['tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-plet','tb-rl-instab','tb-rl-tfd-suite','tb-rl-tfa-suite'],
     'hanche': ['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-force-d','tb-ha-force-g','tb-ha-global-g','tb-ha-global-d','tb-ha-add-g','tb-ha-add-d','tb-ha-pubis-g','tb-ha-pubis-d','tb-ha-flech-g','tb-ha-flech-d','tb-ha-inguinal-g','tb-ha-inguinal-d','tb-ha-hanche-g','tb-ha-hanche-d'],
     'genou':  ['tb-ge-global','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-ext',
                'tb-ge-global-g','tb-ge-global-d','tb-ge-lig-g','tb-ge-lig-d','tb-ge-lca-g','tb-ge-lca-d',
@@ -4099,7 +4079,7 @@ function _buildAllTestsHtml() {
   var orthoSections = [
     { label:'EPAULE', pk:'epaule', fields:[['ep-type','Type'],['ep-marqueur','Marqueur']], tables:['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho-mob','tb-ep-ortho-conf','tb-ep-irrit-g','tb-ep-irrit-d','tb-ep-trau-g','tb-ep-trau-d','tb-ep-fonc-g','tb-ep-fonc-d','tb-ep-ortho-g','tb-ep-ortho-d'], concl:'ep-conclusion', opt:'ep-opt' },
     { label:'RACHIS CERVICAL', pk:'', fields:[['cv-marqueur','Marqueur']], tables:['tb-cv-vascul','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-dn4-itw','tb-cv-dn4-exam','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-sensib-g','tb-cv-sensib-d'], concl:'cv-conclusion' },
-    { label:'RACHIS LOMBAIRE', pk:'', fields:[['rl-marqueur','Marqueur']], tables:['tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-tfd-suite','tb-rl-tfa-suite','tb-rl-laslett','tb-rl-instab'], concl:'rl-conclusion' },
+    { label:'RACHIS LOMBAIRE', pk:'', fields:[['rl-marqueur','Marqueur']], tables:['tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-plet','tb-rl-instab','tb-rl-tfd-suite','tb-rl-tfa-suite'], concl:'rl-conclusion' },
     { label:'RACHIS', pk:'rachis', fields:[['ra-marqueur','Marqueur'],['ra-mckenzie','McKenzie']], tables:['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-force-d','tb-ra-force-g','tb-ra-transverse'], concl:'ra-conclusion', opt:'ra-opt' },
     { label:'HANCHE', pk:'hanche', fields:[['ha-marqueur','Marqueur']], tables:['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-force-d','tb-ha-force-g','tb-ha-global-g','tb-ha-global-d','tb-ha-add-g','tb-ha-add-d','tb-ha-pubis-g','tb-ha-pubis-d','tb-ha-flech-g','tb-ha-flech-d','tb-ha-inguinal-g','tb-ha-inguinal-d','tb-ha-hanche-g','tb-ha-hanche-d'], concl:'ha-conclusion', opt:'ha-opt' },
     { label:'GENOU', pk:'genou', fields:[['ge-marqueur','Marqueur']], tables:[
