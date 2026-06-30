@@ -4207,6 +4207,15 @@ function _buildAllTestsHtml() {
   var _isBilatMI = (_miScope !== 'DROIT' && _miScope !== 'GAUCHE');
   _labelCA = _isBilatMI ? 'Droit' : (_miScope === 'DROIT' ? 'Droit' : 'Gauche');
   _labelCS = _isBilatMI ? 'Gauche' : (_miScope === 'DROIT' ? 'Gauche' : 'Droit');
+  // Affichage Gauche en premier en bilatéral (convention UI) ; unilatéral inchangé (atteint en premier)
+  var _p = function(caVal, csVal, unit) {
+    var u = unit||'';
+    var lA = _isBilatMI ? _labelCS : _labelCA; // Gauche (bilatéral) ou Atteint (unilatéral)
+    var lB = _isBilatMI ? _labelCA : _labelCS; // Droit  (bilatéral) ou Sain   (unilatéral)
+    var vA = _isBilatMI ? csVal : caVal;
+    var vB = _isBilatMI ? caVal : csVal;
+    return lA+'='+vA+u+'   '+lB+'='+vB+u;
+  };
   lsiStr = function(ca,cs) {
     if (isNaN(ca)||isNaN(cs)) return '';
     var v = _isBilatMI ? (ca>0&&cs>0 ? Math.min(ca,cs)/Math.max(ca,cs)*100 : NaN) : (cs>0 ? ca/cs*100 : NaN);
@@ -4238,12 +4247,12 @@ function _buildAllTestsHtml() {
   var djHca = parseFloat((document.getElementById('dj-h-ca')||{}).value||'');
   var djHcs = parseFloat((document.getElementById('dj-h-cs')||{}).value||'');
   if (!isNaN(slsCA)) {
-    var slsVal2 = _labelCA+'='+slsCA+' rep.   '+_labelCS+'='+slsCS+' rep.   '+lsiStr(slsCA,slsCS)+(slsH2?'   |   Repère EIAS-sol : '+slsH2+(slsH2.indexOf('cm')===-1?' cm':''):'');
+    var slsVal2 = _p(slsCA,slsCS,' rep.')+'   '+lsiStr(slsCA,slsCS)+(slsH2?'   |   Repère EIAS-sol : '+slsH2+(slsH2.indexOf('cm')===-1?' cm':''):'');
     tfHtml += crItem('SLS', slsVal2, statOf2(lsiCls2(slsCA,slsCS)), lsiCls2(slsCA,slsCS), ['sls-ca','sls-cs']);
   }
   tfHtml += obsBlock('sls-obs-ca','sls-obs-cs');
   if (!isNaN(hopCA)) {
-    var hopDesc = _labelCA+'='+hopCA+'cm   '+_labelCS+'='+hopCS+'cm   '+lsiStr(hopCA, hopCS);
+    var hopDesc = _p(hopCA,hopCS,'cm')+'   '+lsiStr(hopCA, hopCS);
     if (!isNaN(hopCS) && hopCS > 0) hopDesc += '   Repère 80% CS = ' + (hopCS * 0.8).toFixed(1) + 'cm';
     if (!isNaN(hopTaille) && hopTaille > 0) {
       if (hopSexe === 'F') { var hopSeuil = (hopTaille * 0.80).toFixed(1); hopDesc += '   |   Seuil RTS 80% taille (F) = ' + hopSeuil + 'cm → ' + (hopCA >= parseFloat(hopSeuil) ? '✓ Atteint' : '✗ Non atteint'); }
@@ -4262,25 +4271,25 @@ function _buildAllTestsHtml() {
   if ((recCrToggle && recCrToggle.checked) || scoreCA2 > 0 || scoreCS2 > 0) {
     var rclsCA = scoreCA2===recN?'good':scoreCA2>0?'warn':'bad';
     tfHtml += crItem('Réception — 80% Hop Test',
-      _labelCA+'='+scoreCA2+'/'+recN+'   '+_labelCS+'='+scoreCS2+'/'+recN,
+      _p(scoreCA2+'/'+recN, scoreCS2+'/'+recN),
       statOf2(rclsCA), rclsCA, ['rec-ca-0','rec-ca-1','rec-ca-2','rec-ca-3','rec-ca-4']);
   }
   tfHtml += obsBlock('rec-obs-ca','rec-obs-cs');
-  if (!isNaN(hrCA)) tfHtml += crItem('Heel Rise', _labelCA+'='+hrCA+'   '+_labelCS+'='+hrCS+'   '+lsiStr(hrCA,hrCS), statOf2(lsiCls2(hrCA,hrCS)), lsiCls2(hrCA,hrCS), ['hr-ca','hr-cs']);
+  if (!isNaN(hrCA)) tfHtml += crItem('Heel Rise', _p(hrCA,hrCS)+'   '+lsiStr(hrCA,hrCS), statOf2(lsiCls2(hrCA,hrCS)), lsiCls2(hrCA,hrCS), ['hr-ca','hr-cs']);
   tfHtml += obsBlock('hr-obs-ca','hr-obs-cs');
   if (!isNaN(luCA)) {
     var luDiff2 = Math.abs(luCA-luCS); var luBad2 = luCA<10 || luDiff2>1.5;
-    tfHtml += crItem('Lunge WBLT', _labelCA+'='+luCA+'cm   '+_labelCS+'='+luCS+'cm   Diff='+luDiff2.toFixed(1)+'cm   '+lsiStr(luCA,luCS), luBad2?'Deficit':'OK', luBad2?'bad':'good', ['lu-ca','lu-cs']);
+    tfHtml += crItem('Lunge WBLT', _p(luCA,luCS,'cm')+'   Diff='+luDiff2.toFixed(1)+'cm   '+lsiStr(luCA,luCS), luBad2?'Deficit':'OK', luBad2?'bad':'good', ['lu-ca','lu-cs']);
   }
   tfHtml += obsBlock('lu-obs-ca','lu-obs-cs');
-  if (!isNaN(djHca)) tfHtml += crItem('Drop Jump H', _labelCA+'='+djHca+'cm   '+_labelCS+'='+djHcs+'cm   '+lsiStr(djHca,djHcs), statOf2(lsiCls2(djHca,djHcs)), lsiCls2(djHca,djHcs), ['dj-h-ca','dj-h-cs']);
+  if (!isNaN(djHca)) tfHtml += crItem('Drop Jump H', _p(djHca,djHcs,'cm')+'   '+lsiStr(djHca,djHcs), statOf2(lsiCls2(djHca,djHcs)), lsiCls2(djHca,djHcs), ['dj-h-ca','dj-h-cs']);
   tfHtml += obsBlock('dj-obs-ca','dj-obs-cs');
   var shExpCA2 = parseFloat((document.getElementById('sh-exp-ca')||{}).value||'');
   var shExpCS2 = parseFloat((document.getElementById('sh-exp-cs')||{}).value||'');
   var shEndCA2 = parseFloat((document.getElementById('sh-end-ca')||{}).value||'');
   var shEndCS2 = parseFloat((document.getElementById('sh-end-cs')||{}).value||'');
-  if (!isNaN(shExpCA2)) tfHtml += crItem('Side Hop — Explosivité (15s)', _labelCA+'='+shExpCA2+' sauts   '+_labelCS+'='+(isNaN(shExpCS2)?'-':shExpCS2)+' sauts   '+lsiStr(shExpCA2,shExpCS2), statOf2(lsiCls2(shExpCA2,shExpCS2)), lsiCls2(shExpCA2,shExpCS2), ['sh-exp-ca','sh-exp-cs']);
-  if (!isNaN(shEndCA2)) tfHtml += crItem('Side Hop — Endurance (30s)', _labelCA+'='+shEndCA2+' sauts   '+_labelCS+'='+(isNaN(shEndCS2)?'-':shEndCS2)+' sauts   '+lsiStr(shEndCA2,shEndCS2), statOf2(lsiCls2(shEndCA2,shEndCS2)), lsiCls2(shEndCA2,shEndCS2), ['sh-end-ca','sh-end-cs']);
+  if (!isNaN(shExpCA2)) tfHtml += crItem('Side Hop — Explosivité (15s)', _p(shExpCA2,(isNaN(shExpCS2)?'-':shExpCS2),' sauts')+'   '+lsiStr(shExpCA2,shExpCS2), statOf2(lsiCls2(shExpCA2,shExpCS2)), lsiCls2(shExpCA2,shExpCS2), ['sh-exp-ca','sh-exp-cs']);
+  if (!isNaN(shEndCA2)) tfHtml += crItem('Side Hop — Endurance (30s)', _p(shEndCA2,(isNaN(shEndCS2)?'-':shEndCS2),' sauts')+'   '+lsiStr(shEndCA2,shEndCS2), statOf2(lsiCls2(shEndCA2,shEndCS2)), lsiCls2(shEndCA2,shEndCS2), ['sh-end-ca','sh-end-cs']);
   tfHtml += obsBlock('sh-obs-ca','sh-obs-cs');
   var qfCA = parseFloat((document.getElementById('q-f-ca')||{}).value||'');
   var qfCS = parseFloat((document.getElementById('q-f-cs')||{}).value||'');
@@ -4291,14 +4300,14 @@ function _buildAllTestsHtml() {
   // Drop Jump — Temps contact
   var djTca = parseFloat((document.getElementById('dj-t-ca')||{}).value||'');
   var djTcs = parseFloat((document.getElementById('dj-t-cs')||{}).value||'');
-  if (!isNaN(djTca)) tfHtml += crItem('Drop Jump — Temps contact', _labelCA+'='+djTca+'ms   '+_labelCS+'='+djTcs+'ms   '+lsiStr(djTca,djTcs), statOf2(lsiCls2(djTca,djTcs)), lsiCls2(djTca,djTcs), ['dj-t-ca','dj-t-cs']);
+  if (!isNaN(djTca)) tfHtml += crItem('Drop Jump — Temps contact', _p(djTca,djTcs,'ms')+'   '+lsiStr(djTca,djTcs), statOf2(lsiCls2(djTca,djTcs)), lsiCls2(djTca,djTcs), ['dj-t-ca','dj-t-cs']);
   // Drop Jump — RSI (calculé, affiché en textContent)
   var djRsiCAv = ((document.getElementById('dj-rsi-ca')||{}).textContent||'').trim();
   var djRsiCSv = ((document.getElementById('dj-rsi-cs')||{}).textContent||'').trim();
   var djRsiLsiv = ((document.getElementById('dj-rsi-lsi')||{}).textContent||'').trim();
   if (djRsiCAv && djRsiCAv !== '-' && parseFloat(djRsiCAv) > 0) {
     var rsiCls = lsiCls2(parseFloat(djRsiCAv), parseFloat(djRsiCSv));
-    tfHtml += crItem('Drop Jump — RSI', _labelCA+'='+djRsiCAv+'   '+_labelCS+'='+djRsiCSv+'   LSI='+djRsiLsiv, statOf2(rsiCls), rsiCls, ['dj-t-ca','dj-t-cs']);
+    tfHtml += crItem('Drop Jump — RSI', _p(djRsiCAv,djRsiCSv)+'   LSI='+djRsiLsiv, statOf2(rsiCls), rsiCls, ['dj-t-ca','dj-t-cs']);
   }
   // Pliométrie verticale qualitative
   var plioqCA2 = 0; var plioqCS2 = 0; var plioqTouched = false;
@@ -4310,7 +4319,7 @@ function _buildAllTestsHtml() {
   }
   var plioqCrToggle = document.getElementById('plioq-cr-toggle');
   if ((plioqCrToggle && plioqCrToggle.checked) || plioqTouched) {
-    tfHtml += crItem('Pliométrie verticale (qualitative)', _labelCA+'='+plioqCA2+'/2   '+_labelCS+'='+plioqCS2+'/2', plioqCA2===2?'Réussi':'À améliorer', plioqCA2===2?'good':'warn', ['plioq-ca-0','plioq-ca-1']);
+    tfHtml += crItem('Pliométrie verticale (qualitative)', _p(plioqCA2+'/2', plioqCS2+'/2'), plioqCA2===2?'Réussi':'À améliorer', plioqCA2===2?'good':'warn', ['plioq-ca-0','plioq-ca-1']);
   }
   tfHtml += obsBlock('plioq-obs-ca','plioq-obs-cs');
   // SEBT
@@ -4322,11 +4331,13 @@ function _buildAllTestsHtml() {
   var sebtPlCS2  = parseFloat((document.getElementById('sebt-pl-cs')||{}).value||'');
   var sebtCompCA2 = ((document.getElementById('sebt-comp-ca')||{}).textContent||'').trim();
   var sebtCompCS2 = ((document.getElementById('sebt-comp-cs')||{}).textContent||'').trim();
-  if (!isNaN(sebtAntCA2)) tfHtml += crItem('SEBT — Antérieur',       _labelCA+'='+sebtAntCA2+'cm   '+_labelCS+'='+sebtAntCS2+'cm   '+lsiStr(sebtAntCA2,sebtAntCS2), statOf2(lsiCls2(sebtAntCA2,sebtAntCS2)), lsiCls2(sebtAntCA2,sebtAntCS2), ['sebt-ant-ca','sebt-ant-cs']);
-  if (!isNaN(sebtPmCA2))  tfHtml += crItem('SEBT — Postéro-médial',  _labelCA+'='+sebtPmCA2+'cm   '+_labelCS+'='+sebtPmCS2+'cm   '+lsiStr(sebtPmCA2,sebtPmCS2),   statOf2(lsiCls2(sebtPmCA2,sebtPmCS2)),   lsiCls2(sebtPmCA2,sebtPmCS2), ['sebt-pm-ca','sebt-pm-cs']);
-  if (!isNaN(sebtPlCA2))  tfHtml += crItem('SEBT — Postéro-latéral', _labelCA+'='+sebtPlCA2+'cm   '+_labelCS+'='+sebtPlCS2+'cm   '+lsiStr(sebtPlCA2,sebtPlCS2),   statOf2(lsiCls2(sebtPlCA2,sebtPlCS2)),   lsiCls2(sebtPlCA2,sebtPlCS2), ['sebt-pl-ca','sebt-pl-cs']);
+  if (!isNaN(sebtAntCA2)) tfHtml += crItem('SEBT — Antérieur',       _p(sebtAntCA2,sebtAntCS2,'cm')+'   '+lsiStr(sebtAntCA2,sebtAntCS2), statOf2(lsiCls2(sebtAntCA2,sebtAntCS2)), lsiCls2(sebtAntCA2,sebtAntCS2), ['sebt-ant-ca','sebt-ant-cs']);
+  if (!isNaN(sebtPmCA2))  tfHtml += crItem('SEBT — Postéro-médial',  _p(sebtPmCA2,sebtPmCS2,'cm')+'   '+lsiStr(sebtPmCA2,sebtPmCS2),   statOf2(lsiCls2(sebtPmCA2,sebtPmCS2)),   lsiCls2(sebtPmCA2,sebtPmCS2), ['sebt-pm-ca','sebt-pm-cs']);
+  if (!isNaN(sebtPlCA2))  tfHtml += crItem('SEBT — Postéro-latéral', _p(sebtPlCA2,sebtPlCS2,'cm')+'   '+lsiStr(sebtPlCA2,sebtPlCS2),   statOf2(lsiCls2(sebtPlCA2,sebtPlCS2)),   lsiCls2(sebtPlCA2,sebtPlCS2), ['sebt-pl-ca','sebt-pl-cs']);
   if (sebtCompCA2 && sebtCompCA2.indexOf('CA :') === 0) {
-    tfHtml += crItem('SEBT — Score composite', sebtCompCA2.replace('CA : ','')+' ('+_labelCA+')   '+sebtCompCS2.replace('CS : ','')+' ('+_labelCS+')', '', '', ['sebt-ant-ca','sebt-pm-ca','sebt-pl-ca']);
+    var _sebtA = _isBilatMI ? sebtCompCS2 : sebtCompCA2, _sebtB = _isBilatMI ? sebtCompCA2 : sebtCompCS2;
+    var _lA = _isBilatMI ? _labelCS : _labelCA, _lB = _isBilatMI ? _labelCA : _labelCS;
+    tfHtml += crItem('SEBT — Score composite', _sebtA.replace('CA : ','').replace('CS : ','')+'('+_lA+')   '+_sebtB.replace('CA : ','').replace('CS : ','')+'('+_lB+')', '', '', ['sebt-ant-ca','sebt-pm-ca','sebt-pl-ca']);
   }
   tfHtml += obsBlock('sebt-obs-ca','sebt-obs-cs');
   // UQYBT
