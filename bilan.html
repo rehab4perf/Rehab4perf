@@ -2216,6 +2216,158 @@ textarea { resize:none !important; overflow:hidden !important; }
     <div class="page-subtitle" id="hdr-rachis-lomb">—</div>
   </div>
   <div class="page-content">
+
+    <!-- Marqueur -->
+    <div class="block">
+      <div class="block-header light">Marqueur</div>
+      <div class="form-grid single"><div class="field"><label>Mouvement / activité qui reproduit la douleur</label><textarea id="rl-marqueur" style="min-height:48px" placeholder="Lombalgie à la flexion avec irradiation L5-S1…"></textarea></div></div>
+    </div>
+
+    <!-- Tests nerveux -->
+    <div class="block">
+      <div class="block-header red">Tests Nerveux — Mécanosensitivité</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+        <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">GAUCHE</div>
+        <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">DROIT</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+        <table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-rl-nerveux-g"></tbody></table>
+        <table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-rl-nerveux-d"></tbody></table>
+      </div>
+    </div>
+
+    <!-- Tests d'exclusion neurologique -->
+    <div class="block">
+      <div class="block-header red">Tests d'exclusion neurologique</div>
+      <div style="padding:6px 14px 2px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);background:var(--surface2);border-bottom:1px solid var(--border)">Réflexes Ostéo-Tendineux</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+        <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">GAUCHE</div>
+        <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">DROIT</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+        <table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Niveau</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-rl-rot-g"></tbody></table>
+        <table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Niveau</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-rl-rot-d"></tbody></table>
+      </div>
+      <div style="padding:6px 14px 2px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);background:var(--surface2);border-top:2px solid var(--border);border-bottom:1px solid var(--border)">Motricité</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+        <table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Niveau</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-rl-motric-g"></tbody></table>
+        <table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Niveau</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-rl-motric-d"></tbody></table>
+      </div>
+      <div style="padding:6px 14px 2px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);background:var(--surface2);border-top:2px solid var(--border);border-bottom:1px solid var(--border)">Sensibilité Pic / Touche</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+        <table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Type</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-rl-sensib-g"></tbody></table>
+        <table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Type</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-rl-sensib-d"></tbody></table>
+      </div>
+    </div>
+
+    <!-- Tests mécaniques -->
+    <div class="block">
+      <div class="block-header red">Tests Mécaniques</div>
+
+      <div style="padding:5px 14px 3px;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);background:var(--surface2);border-bottom:1px solid var(--border)">Flexion debout / assis</div>
+      <table class="test-table" style="margin:0;border-radius:0">
+        <thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
+        <tbody id="tb-rl-flexion"></tbody>
+      </table>
+
+      <div style="padding:5px 14px 3px;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);background:var(--surface2);border-top:2px solid var(--border);border-bottom:1px solid var(--border)">Cluster de Laslett <span style="font-size:.7rem;font-weight:400;letter-spacing:0;text-transform:none;opacity:.8">Score ≥ 3/6 = Douleur SIJ probable</span></div>
+      <table class="test-table" style="margin:0;border-radius:0">
+        <thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
+        <tbody id="tb-rl-laslett"></tbody>
+      </table>
+      <div id="rl-laslett-score" style="padding:9px 16px;background:var(--surface2);border-top:2px solid var(--border);font-size:.82rem;font-weight:600;color:var(--text2)">Score Laslett : —</div>
+      <div id="rl-laslett-alert" style="display:none;padding:10px 16px;background:#FFF3CD;border-bottom:1.5px solid #F59E0B;color:#92400E;font-size:.82rem;font-weight:600;align-items:center;gap:8px">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle;margin-right:6px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Cluster de Laslett positif (≥ 3/6) — Douleur sacro-iliaque probable
+      </div>
+
+      <div style="padding:5px 14px 3px;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);background:var(--surface2);border-top:2px solid var(--border);border-bottom:1px solid var(--border)">Cluster d'instabilité lombaire <span style="font-size:.7rem;font-weight:400;letter-spacing:0;text-transform:none;opacity:.8">Score ≥ 3/5 = Instabilité probable</span></div>
+      <table class="test-table" style="margin:0;border-radius:0">
+        <thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
+        <tbody id="tb-rl-instab"></tbody>
+      </table>
+      <div id="rl-instab-score" style="padding:9px 16px;background:var(--surface2);border-top:2px solid var(--border);font-size:.82rem;font-weight:600;color:var(--text2)">Score instabilité : —</div>
+      <div id="rl-instab-alert" style="display:none;padding:10px 16px;background:#FFF3CD;border-bottom:1.5px solid #F59E0B;color:#92400E;font-size:.82rem;font-weight:600;align-items:center;gap:8px">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle;margin-right:6px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Cluster d'instabilité positif (≥ 3/4) — Instabilité lombaire clinique probable (Areeudomwong 2020)
+      </div>
+    </div>
+
+    <!-- Bilan McKenzie -->
+    <div class="block">
+      <div class="block-header red">Bilan McKenzie (MDT)</div>
+      <div style="padding:5px 14px 3px;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);background:var(--surface2);border-bottom:1px solid var(--border)">Mouvements répétés — réponse symptomatique</div>
+      <table class="test-table" style="margin:0;border-radius:0">
+        <thead><tr><th>Mouvement</th><th style="width:62px;text-align:center">Rép.</th><th style="width:172px">Réponse</th><th>Observation</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><div class="test-name">Flexion lombaire <span style="font-size:.68rem;color:var(--text3);font-weight:400">— Debout</span></div></td>
+            <td style="text-align:center"><input type="number" id="mck-flex-dbt-rep" min="1" max="30" placeholder="10" style="font-size:.8rem;padding:3px 4px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:48px;text-align:center"></td>
+            <td><select id="mck-flex-dbt-res" onchange="_calcMckenzie()" style="font-size:.8rem;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:100%"><option value="">—</option><option>Centralisation</option><option>Périphérisation</option><option>Diminution</option><option>Abolition</option><option>Augmentation</option><option>Inchangé</option></select></td>
+            <td><input type="text" id="mck-flex-dbt-nt" class="mob-note-inp" placeholder="Observation…"></td>
+          </tr>
+          <tr>
+            <td><div class="test-name">Extension lombaire <span style="font-size:.68rem;color:var(--text3);font-weight:400">— Debout</span></div></td>
+            <td style="text-align:center"><input type="number" id="mck-ext-dbt-rep" min="1" max="30" placeholder="10" style="font-size:.8rem;padding:3px 4px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:48px;text-align:center"></td>
+            <td><select id="mck-ext-dbt-res" onchange="_calcMckenzie()" style="font-size:.8rem;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:100%"><option value="">—</option><option>Centralisation</option><option>Périphérisation</option><option>Diminution</option><option>Abolition</option><option>Augmentation</option><option>Inchangé</option></select></td>
+            <td><input type="text" id="mck-ext-dbt-nt" class="mob-note-inp" placeholder="Observation…"></td>
+          </tr>
+          <tr>
+            <td><div class="test-name">Extension lombaire <span style="font-size:.68rem;color:var(--text3);font-weight:400">— Procubitus (prone push-up)</span></div></td>
+            <td style="text-align:center"><input type="number" id="mck-ext-proc-rep" min="1" max="30" placeholder="10" style="font-size:.8rem;padding:3px 4px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:48px;text-align:center"></td>
+            <td><select id="mck-ext-proc-res" onchange="_calcMckenzie()" style="font-size:.8rem;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:100%"><option value="">—</option><option>Centralisation</option><option>Périphérisation</option><option>Diminution</option><option>Abolition</option><option>Augmentation</option><option>Inchangé</option></select></td>
+            <td><input type="text" id="mck-ext-proc-nt" class="mob-note-inp" placeholder="Observation…"></td>
+          </tr>
+          <tr>
+            <td><div class="test-name">Inclinaison gauche <span style="font-size:.68rem;color:var(--text3);font-weight:400">— Debout</span></div></td>
+            <td style="text-align:center"><input type="number" id="mck-incl-g-rep" min="1" max="30" placeholder="10" style="font-size:.8rem;padding:3px 4px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:48px;text-align:center"></td>
+            <td><select id="mck-incl-g-res" onchange="_calcMckenzie()" style="font-size:.8rem;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:100%"><option value="">—</option><option>Centralisation</option><option>Périphérisation</option><option>Diminution</option><option>Abolition</option><option>Augmentation</option><option>Inchangé</option></select></td>
+            <td><input type="text" id="mck-incl-g-nt" class="mob-note-inp" placeholder="Observation…"></td>
+          </tr>
+          <tr>
+            <td><div class="test-name">Inclinaison droite <span style="font-size:.68rem;color:var(--text3);font-weight:400">— Debout</span></div></td>
+            <td style="text-align:center"><input type="number" id="mck-incl-d-rep" min="1" max="30" placeholder="10" style="font-size:.8rem;padding:3px 4px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:48px;text-align:center"></td>
+            <td><select id="mck-incl-d-res" onchange="_calcMckenzie()" style="font-size:.8rem;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:100%"><option value="">—</option><option>Centralisation</option><option>Périphérisation</option><option>Diminution</option><option>Abolition</option><option>Augmentation</option><option>Inchangé</option></select></td>
+            <td><input type="text" id="mck-incl-d-nt" class="mob-note-inp" placeholder="Observation…"></td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border-top:2px solid var(--border)">
+        <div style="background:var(--surface);padding:10px 14px">
+          <div style="font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:5px">Direction préférentielle</div>
+          <select id="mck-direction" style="font-size:.8rem;padding:4px 8px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:100%">
+            <option value="">—</option><option>Extension</option><option>Flexion</option><option>Inclinaison gauche</option><option>Inclinaison droite</option><option>Non identifiée</option>
+          </select>
+        </div>
+        <div style="background:var(--surface2);padding:10px 14px">
+          <div style="font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:5px">Syndrome McKenzie</div>
+          <select id="mck-syndrome" style="font-size:.8rem;padding:4px 8px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text1);width:100%">
+            <option value="">—</option><option>Dérangement</option><option>Dysfonction</option><option>Postural</option><option>Autre / inclassable</option>
+          </select>
+        </div>
+      </div>
+      <div id="mck-central-badge" style="display:none;padding:9px 16px;background:#eaf3de;border-top:1.5px solid #c0dd97;color:#27500a;font-size:.82rem;font-weight:600;align-items:center;gap:8px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle;margin-right:4px"><polyline points="20 6 9 17 4 12"/></svg>
+        Centralisation identifiée — direction préférentielle favorable
+      </div>
+      <div id="mck-periph-badge" style="display:none;padding:10px 16px;background:#fcebeb;border-top:1.5px solid #f09595;color:#791f1f;font-size:.82rem;font-weight:600;align-items:center;gap:8px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle;margin-right:4px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Périphérisation présente — réévaluer la direction de traitement
+      </div>
+    </div>
+
+    <!-- Mobilité lombaire -->
+    <div class="block">
+      <div class="block-header grey">Mobilité Lombaire</div>
+      <div class="mobility-grid" id="mob-rl"></div>
+    </div>
+
+    <!-- Conclusion -->
+    <div class="block">
+      <div class="block-header">Conclusion</div>
+      <textarea class="concl-area" id="rl-conclusion" placeholder="Tableau compatible avec une lombalgie discogénique L4-L5, cluster Laslett négatif…"></textarea>
+    </div>
+
   </div>
 </div>
 

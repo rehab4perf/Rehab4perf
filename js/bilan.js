@@ -114,6 +114,69 @@ const TESTS = {
   'tb-ra-lomb-g': {type:'ortho',items:['SLUMP test','Lasègue (SLR)','Léri']},
   'tb-ra-lomb-d': {type:'ortho',items:['SLUMP test','Lasègue (SLR)','Léri']},
 
+  // ── Rachis Lombaire (page-rachis-lomb) ─────────────────────────────────
+  'tb-rl-nerveux-g': {type:'ortho', items:[
+    'SLS / Lasègue <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Flexion passive MI tendu (DD). ✚ Douleur irradiant dans la jambe à &lt; 60° → spécificité 83% sciatique radiculaire. La douleur lombaire seule ne compte pas</span>',
+    'Léri (Lasègue inverse) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Décubitus ventral, genou fléchi à 90° + extension passive hanche. ✚ Douleur antérieure cuisse → tension nerf fémoral (cruralgie)</span>',
+    'Slump <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Flexion rachis + extension genou assis. ✚ Reproduction des symptômes → mécanosensitivité neurale</span>'
+  ]},
+  'tb-rl-nerveux-d': {type:'ortho', items:[
+    'SLS / Lasègue <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Flexion passive MI tendu (DD). ✚ Douleur irradiant dans la jambe à &lt; 60° → spécificité 83% sciatique radiculaire. La douleur lombaire seule ne compte pas</span>',
+    'Léri (Lasègue inverse) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Décubitus ventral, genou fléchi à 90° + extension passive hanche. ✚ Douleur antérieure cuisse → tension nerf fémoral (cruralgie)</span>',
+    'Slump <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Flexion rachis + extension genou assis. ✚ Reproduction des symptômes → mécanosensitivité neurale</span>'
+  ]},
+  'tb-rl-rot-g': {type:'ortho', items:[
+    'L4 / L3 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Réflexe rotulien</span>',
+    'L5 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Pas de réflexe spécifique</span>',
+    'S1 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Réflexe achilléen</span>'
+  ]},
+  'tb-rl-rot-d': {type:'ortho', items:[
+    'L4 / L3 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Réflexe rotulien</span>',
+    'L5 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Pas de réflexe spécifique</span>',
+    'S1 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Réflexe achilléen</span>'
+  ]},
+  'tb-rl-motric-g': {type:'ortho', items:[
+    'L3 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Adduction de cuisse</span>',
+    'L4 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Flexion de cuisse</span>',
+    'L5 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Releveurs du pied — marche sur les talons</span>',
+    'S1 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Fléchisseurs du pied — marche sur les pointes</span>'
+  ]},
+  'tb-rl-motric-d': {type:'ortho', items:[
+    'L3 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Adduction de cuisse</span>',
+    'L4 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Flexion de cuisse</span>',
+    'L5 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Releveurs du pied — marche sur les talons</span>',
+    'S1 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Fléchisseurs du pied — marche sur les pointes</span>'
+  ]},
+  'tb-rl-sensib-g': {type:'ortho', items:[
+    'Superficielle <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Pic-touche</span>',
+    'Profonde kinesthésique <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Position du membre (yeux fermés)</span>',
+    'Thermo-algique <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Sensibilité thermique</span>'
+  ]},
+  'tb-rl-sensib-d': {type:'ortho', items:[
+    'Superficielle <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Pic-touche</span>',
+    'Profonde kinesthésique <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Position du membre (yeux fermés)</span>',
+    'Thermo-algique <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Sensibilité thermique</span>'
+  ]},
+  'tb-rl-flexion': {type:'ortho', items:[
+    'Test de flexion debout (TFD) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">EIPS palpées en flexion du tronc debout. ✚ EIPS monte en crânial → dysfonction SIJ ipsilatérale → densité iliaque + aspect positionnel 3 points</span>',
+    'Test de flexion assis (TFA) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">EIPS palpées en flexion du tronc assis. ✚ EIPS monte → dysfonction SIJ → densité 4 cadrans + test grand et petit bras</span>',
+    'Test de Gillet (Stork Test) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Flexion hanche monopodal, EIPS palpée. ✚ EIPS ne descend pas en caudal → blocage sacro-iliaque</span>'
+  ]},
+  'tb-rl-laslett': {type:'ortho', opts:['Positif','Négatif','N/A'], items:[
+    'Distraction <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Pression divergente sur les deux EIAS (DD). ✚ Douleur postérieure pelvienne</span>',
+    'Thigh Thrust <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Flexion hanche 90° + poussée axiale fémur (DD). ✚ Douleur postérieure SIJ ipsilatérale</span>',
+    'Gaenslen <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Extension passive hanche MI hors table (DD). ✚ Douleur SIJ ipsilatérale</span>',
+    'Compression <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Pression convergente crêtes iliaques (DD latéral). ✚ Douleur postérieure pelvienne</span>',
+    'Sacral Thrust <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Pression verticale sur sacrum (procubitus). ✚ Douleur postérieure pelvienne</span>',
+    'FABER (Patrick) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Flexion + ABD + RE hanche. ✚ Douleur postérieure SIJ → SIJ ; douleur aine → hanche</span>'
+  ]},
+  'tb-rl-instab': {type:'ortho', opts:['Positif','Négatif','N/A'], items:[
+    'Apprehension sign <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Sensation d\'affaissement du bas du dos avec douleur lombaire soudaine lors des AVQ. ✚ Présent dans les 7 derniers jours (Areeudomwong 2020)</span>',
+    'Instability catch sign <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Catch douloureux en flexion lombaire. ✚ Diminué par contraction du transverse → instabilité</span>',
+    'Painful catch sign <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Douleur au retour de flexion avec compensation. ✚ Diminuée par contraction du transverse → instabilité</span>',
+    'Prone Instability Test (PIT) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Douleur en procubitus MI hors table → diminue quand MI en appui. ✚ Instabilité lombaire segmentaire</span>'
+  ]},
+
   // ── Rachis Cervical (page-rachis-cerv) ──────────────────────────────────
   'tb-cv-vascul': {type:'ortho', items:[
     'Test de Tillaux <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Extension C0-C1 + flexion buste. ✚ Symptômes neuro-végétatifs → insuffisance vertébro-basilaire</span>',
@@ -470,13 +533,21 @@ function init() {
     'lomb-Rot__G':        'Ex\u00a0: \u00e9paule\u2011genou 18\u00a0cm\u2026',
     'lomb-Glissement_D':  'Ex\u00a0: shift lat\u00e9ral droit spontan\u00e9, correction active\u2026',
     'lomb-Glissement_G':  'Ex\u00a0: shift lat\u00e9ral gauche spontan\u00e9, correction active\u2026',
+    'rl-Flexion':       'Ex\u00a0: DDS 5\u00a0cm, Schober 14\u00a0cm\u2026',
+    'rl-Extension':     'Ex\u00a0: Schober extension 8\u00a0cm\u2026',
+    'rl-Incl__D':       'Ex\u00a0: majeur\u2011sol 23\u00a0cm\u2026',
+    'rl-Incl__G':       'Ex\u00a0: majeur\u2011sol 23\u00a0cm\u2026',
+    'rl-Rot__D':        'Ex\u00a0: \u00e9paule\u2011genou 18\u00a0cm\u2026',
+    'rl-Rot__G':        'Ex\u00a0: \u00e9paule\u2011genou 18\u00a0cm\u2026',
+    'rl-Glissement_D':  'Ex\u00a0: shift lat\u00e9ral droit spontan\u00e9, correction active\u2026',
+    'rl-Glissement_G':  'Ex\u00a0: shift lat\u00e9ral gauche spontan\u00e9, correction active\u2026',
   };
   var LOMB_EXTRA_MOB = ['Glissement D', 'Glissement G'];
-  ['cerv','cv','thor','lomb'].forEach(function(seg) {
+  ['cerv','cv','thor','lomb','rl'].forEach(function(seg) {
     var grid = document.getElementById('mob-' + seg);
     if (!grid) return;
     grid.className = ''; // retire mobility-grid (grille 6 colonnes)
-    var items = seg === 'lomb' ? MOB.concat(LOMB_EXTRA_MOB) : MOB;
+    var items = (seg === 'lomb' || seg === 'rl') ? MOB.concat(LOMB_EXTRA_MOB) : MOB;
     grid.innerHTML = items.map(function(m) {
       var mKey = 'mob-' + seg + '-' + m.replace(/[\s.\/]+/g, '_');
       var phKey = seg + '-' + m.replace(/[\s.\/]+/g, '_');
@@ -2306,7 +2377,7 @@ function _deserializeBilan(data){
   _parsePainZones();
   _suppressDirty = false;
   _bilanModified = false;
-  try{ _calcWainnerCerv(); _calcDN4(); }catch(ex){}
+  try{ _calcWainnerCerv(); _calcDN4(); _calcLaslett(); _calcInstabLomb(); _calcMckenzie(); }catch(ex){}
   saveToStorage(); // état complet — une seule écriture après désérialisation
   try{ _ctRestoreAll(); }catch(ex){} // synchroniser _ctData AVANT de rendre le CR
   _refreshCRIfVisible();
@@ -3365,6 +3436,60 @@ function _calcDN4() {
   }
 }
 
+var _MCK_MVTS = ['flex-dbt','ext-dbt','ext-proc','incl-g','incl-d'];
+var _MCK_GREEN = {Centralisation:1, Abolition:1};
+var _MCK_RED   = {Périphérisation:1, Augmentation:1};
+
+function _calcMckenzie() {
+  var hasGreen = false, hasRed = false;
+  _MCK_MVTS.forEach(function(m) {
+    var sel = document.getElementById('mck-' + m + '-res');
+    if (!sel) return;
+    var v = sel.value;
+    if (_MCK_GREEN[v]) {
+      sel.style.background = 'var(--green-l,#eaf3de)'; sel.style.color = 'var(--green,#27500a)'; hasGreen = true;
+    } else if (_MCK_RED[v]) {
+      sel.style.background = 'var(--red-l,#fcebeb)'; sel.style.color = 'var(--red,#791f1f)'; hasRed = true;
+    } else if (v === 'Diminution') {
+      sel.style.background = '#e6f1fb'; sel.style.color = '#185fa5';
+    } else {
+      sel.style.background = ''; sel.style.color = '';
+    }
+  });
+  var gEl = document.getElementById('mck-central-badge');
+  var rEl = document.getElementById('mck-periph-badge');
+  if (gEl) gEl.style.display = hasGreen ? 'flex' : 'none';
+  if (rEl) rEl.style.display = hasRed   ? 'flex' : 'none';
+}
+
+function _calcLaslett() {
+  var score = 0;
+  var tb = document.getElementById('tb-rl-laslett');
+  if (tb) tb.querySelectorAll('select').forEach(function(s) { if (s.value === 'Positif') score++; });
+  var scoreEl = document.getElementById('rl-laslett-score');
+  if (scoreEl) {
+    scoreEl.textContent = 'Score Laslett : ' + score + '/6' + (score >= 3 ? ' — Cluster positif' : '');
+    scoreEl.style.color = score >= 3 ? 'var(--warning,#e67e22)' : '';
+    scoreEl.style.fontWeight = score >= 3 ? '700' : '';
+  }
+  var alertEl = document.getElementById('rl-laslett-alert');
+  if (alertEl) alertEl.style.display = score >= 3 ? 'flex' : 'none';
+}
+
+function _calcInstabLomb() {
+  var score = 0;
+  var tb = document.getElementById('tb-rl-instab');
+  if (tb) tb.querySelectorAll('select').forEach(function(s) { if (s.value === 'Positif') score++; });
+  var scoreEl = document.getElementById('rl-instab-score');
+  if (scoreEl) {
+    scoreEl.textContent = 'Score instabilité : ' + score + '/4' + (score >= 3 ? ' — Cluster positif' : '');
+    scoreEl.style.color = score >= 3 ? 'var(--warning,#e67e22)' : '';
+    scoreEl.style.fontWeight = score >= 3 ? '700' : '';
+  }
+  var alertEl = document.getElementById('rl-instab-alert');
+  if (alertEl) alertEl.style.display = score >= 3 ? 'flex' : 'none';
+}
+
 function onTestChange(sel, tableId, idx) {
   var v = sel.value;
   var type = sel.dataset.type;
@@ -3376,6 +3501,8 @@ function onTestChange(sel, tableId, idx) {
     if (wainnerTables[tableId]) _calcWainnerCerv();
     var dn4Tables = {'tb-cv-dn4-itw':1,'tb-cv-dn4-exam':1};
     if (dn4Tables[tableId]) _calcDN4();
+    if (tableId === 'tb-rl-laslett') _calcLaslett();
+    if (tableId === 'tb-rl-instab') _calcInstabLomb();
     updateBadges();
   }
 }
@@ -3385,6 +3512,7 @@ function updateBadges() {
     'epaule': ['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho-mob','tb-ep-ortho-conf'],
     'rachis': ['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-force-d','tb-ra-force-g','tb-ra-transverse'],
     'rachis-cerv': ['tb-cv-vascul','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-dn4-itw','tb-cv-dn4-exam','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-sensib-g','tb-cv-sensib-d'],
+    'rachis-lomb': ['tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-flexion','tb-rl-laslett','tb-rl-instab'],
     'hanche': ['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-force-d','tb-ha-force-g','tb-ha-global-g','tb-ha-global-d','tb-ha-add-g','tb-ha-add-d','tb-ha-pubis-g','tb-ha-pubis-d','tb-ha-flech-g','tb-ha-flech-d','tb-ha-inguinal-g','tb-ha-inguinal-d','tb-ha-hanche-g','tb-ha-hanche-d'],
     'genou':  ['tb-ge-global','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-ext',
                'tb-ge-global-g','tb-ge-global-d','tb-ge-lig-g','tb-ge-lig-d','tb-ge-lca-g','tb-ge-lca-d',
@@ -3956,6 +4084,7 @@ function _buildAllTestsHtml() {
   var orthoSections = [
     { label:'EPAULE', pk:'epaule', fields:[['ep-type','Type'],['ep-marqueur','Marqueur']], tables:['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho-mob','tb-ep-ortho-conf','tb-ep-irrit-g','tb-ep-irrit-d','tb-ep-trau-g','tb-ep-trau-d','tb-ep-fonc-g','tb-ep-fonc-d','tb-ep-ortho-g','tb-ep-ortho-d'], concl:'ep-conclusion', opt:'ep-opt' },
     { label:'RACHIS CERVICAL', pk:'', fields:[['cv-marqueur','Marqueur']], tables:['tb-cv-vascul','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-dn4-itw','tb-cv-dn4-exam','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-sensib-g','tb-cv-sensib-d'], concl:'cv-conclusion' },
+    { label:'RACHIS LOMBAIRE', pk:'', fields:[['rl-marqueur','Marqueur']], tables:['tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-flexion','tb-rl-laslett','tb-rl-instab'], concl:'rl-conclusion' },
     { label:'RACHIS', pk:'rachis', fields:[['ra-marqueur','Marqueur'],['ra-mckenzie','McKenzie']], tables:['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-force-d','tb-ra-force-g','tb-ra-transverse'], concl:'ra-conclusion', opt:'ra-opt' },
     { label:'HANCHE', pk:'hanche', fields:[['ha-marqueur','Marqueur']], tables:['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-force-d','tb-ha-force-g','tb-ha-global-g','tb-ha-global-d','tb-ha-add-g','tb-ha-add-d','tb-ha-pubis-g','tb-ha-pubis-d','tb-ha-flech-g','tb-ha-flech-d','tb-ha-inguinal-g','tb-ha-inguinal-d','tb-ha-hanche-g','tb-ha-hanche-d'], concl:'ha-conclusion', opt:'ha-opt' },
     { label:'GENOU', pk:'genou', fields:[['ge-marqueur','Marqueur']], tables:[
@@ -4129,6 +4258,75 @@ function _buildAllTestsHtml() {
             + '</tr></thead><tbody>'+mobRows+'</tbody></table></div>';
         }
       });
+    }
+    if (sec.label === 'RACHIS LOMBAIRE') {
+      var rlMobItems = MOB.concat(['Glissement D', 'Glissement G']);
+      var rlStLblMap = { ok:'OK', acceptable:'Acceptable', insuffisant:'Insuffisant' };
+      var rlStClsMap = { ok:'ok', acceptable:'warn', insuffisant:'bad' };
+      var rlAnyMob = false, rlMobRows = '';
+      rlMobItems.forEach(function(m) {
+        var mKey = 'mob-rl-' + m.replace(/[\s.\/]+/g, '_');
+        var stEl = document.getElementById(mKey + '-st');
+        var ntEl = document.getElementById(mKey + '-nt');
+        var stVal = stEl ? stEl.value : '';
+        var ntVal = ntEl ? ntEl.value.trim() : '';
+        if (!stVal && !ntVal) return;
+        rlAnyMob = true;
+        var stTag = stVal ? ('<span class="cr-tag '+rlStClsMap[stVal]+'">'+rlStLblMap[stVal]+'</span>') : '';
+        rlMobRows += '<tr style="border-top:1px solid var(--border)">'
+          + '<td style="padding:3px 8px;font-size:.8rem;color:var(--text2)">'+m+'</td>'
+          + '<td style="padding:3px 8px;font-size:.8rem;text-align:center">'+stTag+'</td>'
+          + '<td style="padding:3px 8px;font-size:.78rem;color:var(--text2);font-style:italic">'+nl2br(ntVal)+'</td>'
+          + '</tr>';
+      });
+      if (rlAnyMob) {
+        secRows += '<div style="margin:4px 0 10px">'
+          + '<div style="font-size:.77rem;font-weight:600;color:var(--text2);margin-bottom:3px">Mobilité Lombaire</div>'
+          + '<table style="width:100%;border-collapse:collapse">'
+          + '<thead><tr style="background:var(--surface2)">'
+          + '<th style="padding:3px 8px;text-align:left;font-size:.72rem;color:var(--text3);font-weight:600">Mouvement</th>'
+          + '<th style="padding:3px 8px;text-align:center;font-size:.72rem;color:var(--text3);font-weight:600">Statut</th>'
+          + '<th style="padding:3px 8px;text-align:left;font-size:.72rem;color:var(--text3);font-weight:600">Marqueur</th>'
+          + '</tr></thead><tbody>'+rlMobRows+'</tbody></table></div>';
+      }
+      // McKenzie
+      (function() {
+        var mckLbls = {
+          'flex-dbt':'Flexion lombaire (debout)', 'ext-dbt':'Extension lombaire (debout)',
+          'ext-proc':'Extension lombaire (procubitus)', 'incl-g':'Inclinaison gauche (debout)',
+          'incl-d':'Inclinaison droite (debout)'
+        };
+        var mckRows = '', anyMck = false;
+        _MCK_MVTS.forEach(function(m) {
+          var res = (document.getElementById('mck-'+m+'-res')||{}).value || '';
+          var rep = (document.getElementById('mck-'+m+'-rep')||{}).value || '';
+          var nt  = ((document.getElementById('mck-'+m+'-nt')||{}).value||'').trim();
+          if (!res && !nt) return;
+          anyMck = true;
+          var cls = _MCK_GREEN[res] ? 'good' : _MCK_RED[res] ? 'bad' : res === 'Diminution' ? 'warn' : '';
+          var tag = res ? ('<span class="cr-tag '+cls+'">'+res+'</span>') : '';
+          var repStr = rep ? ' ×'+rep : '';
+          mckRows += '<tr style="border-top:1px solid var(--border)">'
+            + '<td style="padding:3px 8px;font-size:.8rem;color:var(--text2)">'+mckLbls[m]+repStr+'</td>'
+            + '<td style="padding:3px 8px;text-align:center">'+tag+'</td>'
+            + '<td style="padding:3px 8px;font-size:.78rem;color:var(--text2);font-style:italic">'+nl2br(nt)+'</td>'
+            + '</tr>';
+        });
+        var dir  = (document.getElementById('mck-direction')||{}).value || '';
+        var synd = (document.getElementById('mck-syndrome')||{}).value  || '';
+        if (anyMck || dir || synd) {
+          var summary = [dir ? 'Direction préférentielle : '+dir : '', synd ? 'Syndrome : '+synd : ''].filter(Boolean).join('   ');
+          secRows += '<div style="margin:4px 0 10px">'
+            + '<div style="font-size:.77rem;font-weight:600;color:var(--text2);margin-bottom:3px">McKenzie (MDT)</div>'
+            + (anyMck ? '<table style="width:100%;border-collapse:collapse"><thead><tr style="background:var(--surface2)">'
+              + '<th style="padding:3px 8px;text-align:left;font-size:.72rem;color:var(--text3);font-weight:600">Mouvement</th>'
+              + '<th style="padding:3px 8px;text-align:center;font-size:.72rem;color:var(--text3);font-weight:600">Réponse</th>'
+              + '<th style="padding:3px 8px;text-align:left;font-size:.72rem;color:var(--text3);font-weight:600">Observation</th>'
+              + '</tr></thead><tbody>'+mckRows+'</tbody></table>' : '')
+            + (summary ? '<div style="padding:5px 8px;font-size:.78rem;color:var(--text2);font-style:italic">'+summary+'</div>' : '')
+            + '</div>';
+        }
+      })();
     }
     if (sec.label === 'PIED / CHEVILLE') {
       secRows += romCrTable('Amplitudes Articulaires — Cheville/Pied (°)', [
@@ -4462,7 +4660,7 @@ function _buildAllTestsHtml() {
 
   // ── Mobilité rachis insuffisante ────────────────────────────────────────
   (function(){
-    var segLbl = { cerv:'cervicale', cv:'cervicale (bilan cerv.)', thor:'thoracique', lomb:'lombaire' };
+    var segLbl = { cerv:'cervicale', cv:'cervicale (bilan cerv.)', thor:'thoracique', lomb:'lombaire', rl:'lombaire (bilan lomb.)' };
     var dirLbl = {
       'Flexion':   'la flexion',
       'Extension': "l'extension",
@@ -4471,7 +4669,7 @@ function _buildAllTestsHtml() {
       'Rot. D':    'la rotation droite',
       'Rot. G':    'la rotation gauche',
     };
-    ['cerv','cv','thor','lomb'].forEach(function(seg) {
+    ['cerv','cv','thor','lomb','rl'].forEach(function(seg) {
       MOB.forEach(function(m) {
         var mKey = 'mob-' + seg + '-' + m.replace(/[\s.\/]+/g, '_') + '-st';
         var stEl = document.getElementById(mKey);
