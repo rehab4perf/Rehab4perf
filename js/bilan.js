@@ -4200,6 +4200,29 @@ function _buildAllTestsHtml() {
   if (lmaHtml || lmaCtHtml) addSec('🔪 LMA — Lésion Myo-Aponévrotique', (lmaHtml||'') + lmaCtHtml);
 
   // 3. Tests fonctionnels MI
+  // Overrides scope-aware : même logique que _updateSideLabels pour page-fonctionnels
+  var _savedLabelCA = _labelCA, _savedLabelCS = _labelCS;
+  var _savedLsiStr = lsiStr, _savedLsiCls2 = lsiCls2, _savedStatOf2 = statOf2;
+  var _miScope = _getCoteForScope(_MI_ZONES);
+  var _isBilatMI = (_miScope !== 'DROIT' && _miScope !== 'GAUCHE');
+  _labelCA = _isBilatMI ? 'Droit' : (_miScope === 'DROIT' ? 'Droit' : 'Gauche');
+  _labelCS = _isBilatMI ? 'Gauche' : (_miScope === 'DROIT' ? 'Gauche' : 'Droit');
+  lsiStr = function(ca,cs) {
+    if (isNaN(ca)||isNaN(cs)) return '';
+    var v = _isBilatMI ? (ca>0&&cs>0 ? Math.min(ca,cs)/Math.max(ca,cs)*100 : NaN) : (cs>0 ? ca/cs*100 : NaN);
+    if (isNaN(v)) return '';
+    return (_isBilatMI ? 'Sym. = ' : 'LSI = ') + v.toFixed(1) + '%';
+  };
+  lsiCls2 = function(ca,cs) {
+    if (isNaN(ca)||isNaN(cs)) return '';
+    var v = _isBilatMI ? (ca>0&&cs>0 ? Math.min(ca,cs)/Math.max(ca,cs)*100 : NaN) : (cs>0 ? ca/cs*100 : NaN);
+    if (isNaN(v)) return '';
+    return v >= 90 ? 'good' : v >= 80 ? 'warn' : 'bad';
+  };
+  statOf2 = function(cls) {
+    if (_isBilatMI) return ({good:'Symétrique', warn:'Asymétrie modérée', bad:'Asymétrie significative'}[cls])||'';
+    return ({good:'Symétrique', warn:'Asymétrie modérée', bad:'Déficit'}[cls])||'';
+  };
   var tfHtml = '';
   var slsCA = parseFloat((document.getElementById('sls-ca')||{}).value||'');
   var slsCS = parseFloat((document.getElementById('sls-cs')||{}).value||'');
@@ -4319,6 +4342,9 @@ function _buildAllTestsHtml() {
   }
   if(typeof window._ctBuildSectionHtml === 'function') tfHtml += window._ctBuildSectionHtml('fonctionnels');
   addSec('3. Tests Fonctionnels & Musculaires - Membres Inferieurs', tfHtml);
+  // Restaurer les variables globales pour les sections MS et suivantes
+  _labelCA = _savedLabelCA; _labelCS = _savedLabelCS;
+  lsiStr = _savedLsiStr; lsiCls2 = _savedLsiCls2; statOf2 = _savedStatOf2;
 
   // 4. Tests MS
   var tfMsHtml = '';
