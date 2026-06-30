@@ -2314,40 +2314,6 @@ textarea { resize:none !important; overflow:hidden !important; }
         <tbody id="tb-rl-plet"></tbody>
       </table>
 
-
-      <!-- Cluster de Laslett -->
-      <div style="border-top:2px solid var(--border)">
-        <div style="padding:5px 14px 3px;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);background:var(--surface2);border-bottom:1px solid var(--border)">Cluster de Laslett (2005) <span style="font-size:.7rem;font-weight:400;letter-spacing:0;text-transform:none;opacity:.8">Effectuer dans l'ordre — arrêt dès ≥ 2 positifs</span></div>
-
-        <div style="padding:4px 14px 3px;font-size:.69rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#1D4ED8;background:#EFF6FF;border-bottom:1px solid #BFDBFE">Étape 1 — Distraction + Thigh Thrust</div>
-        <table class="test-table" style="margin:0;border-radius:0">
-          <thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
-          <tbody id="tb-rl-laslett-1"></tbody>
-        </table>
-
-        <div style="padding:4px 14px 3px;font-size:.69rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#1D4ED8;background:#EFF6FF;border-top:1.5px solid #BFDBFE;border-bottom:1px solid #BFDBFE">Étape 2 — Compression <span style="font-size:.65rem;font-weight:400;text-transform:none;letter-spacing:0;opacity:.8">si &lt; 2 positifs</span></div>
-        <table class="test-table" style="margin:0;border-radius:0">
-          <thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
-          <tbody id="tb-rl-laslett-2"></tbody>
-        </table>
-
-        <div style="padding:4px 14px 3px;font-size:.69rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#1D4ED8;background:#EFF6FF;border-top:1.5px solid #BFDBFE;border-bottom:1px solid #BFDBFE">Étape 3 — Sacral Thrust <span style="font-size:.65rem;font-weight:400;text-transform:none;letter-spacing:0;opacity:.8">si &lt; 2 positifs</span></div>
-        <table class="test-table" style="margin:0;border-radius:0">
-          <thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
-          <tbody id="tb-rl-laslett-3"></tbody>
-        </table>
-
-        <div id="rl-laslett-score" style="padding:9px 16px;background:var(--surface2);border-top:2px solid var(--border);font-size:.82rem;font-weight:600;color:var(--text2)">Score Laslett : —</div>
-        <div id="rl-laslett-exclu" style="display:none;padding:9px 16px;background:#eaf3de;border-top:1.5px solid #c0dd97;color:#27500a;font-size:.82rem;font-weight:600;align-items:center;gap:8px">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle;margin-right:4px"><polyline points="20 6 9 17 4 12"/></svg>
-          Tous les tests négatifs — Douleur sacro-iliaque exclue
-        </div>
-        <div id="rl-laslett-alert" style="display:none;padding:10px 16px;background:#FFF3CD;border-top:1.5px solid #F59E0B;color:#92400E;font-size:.82rem;font-weight:600;align-items:center;gap:8px">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle;margin-right:6px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          ≥ 2 tests positifs — Symptômes d'origine sacro-iliaque probables (Laslett 2005)
-        </div>
-      </div>
-
       <div style="padding:5px 14px 3px;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);background:var(--surface2);border-top:2px solid var(--border);border-bottom:1px solid var(--border)">Cluster d'instabilité lombaire <span style="font-size:.7rem;font-weight:400;letter-spacing:0;text-transform:none;opacity:.8">Score ≥ 3/4 = Instabilité probable</span></div>
       <table class="test-table" style="margin:0;border-radius:0">
         <thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
@@ -2357,6 +2323,41 @@ textarea { resize:none !important; overflow:hidden !important; }
       <div id="rl-instab-alert" style="display:none;padding:10px 16px;background:#FFF3CD;border-bottom:1.5px solid #F59E0B;color:#92400E;font-size:.82rem;font-weight:600;align-items:center;gap:8px">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle;margin-right:6px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         Cluster d'instabilité positif (≥ 3/4) — Instabilité lombaire clinique probable (Areeudomwong 2020)
+      </div>
+    </div>
+
+
+    <!-- Cluster de Laslett -->
+    <div class="block">
+      <div class="block-header red">Cluster de Laslett — Diag Différentiel Lombaire / Sacro-Iliaque</div>
+      <div style="padding:5px 14px 3px;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);background:var(--surface2);border-bottom:1px solid var(--border)">Effectuer dans l'ordre — arrêt dès ≥ 2 positifs</div>
+
+      <div style="padding:4px 14px 3px;font-size:.69rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#1D4ED8;background:#EFF6FF;border-bottom:1px solid #BFDBFE">Étape 1 — Distraction + Thigh Thrust</div>
+      <table class="test-table" style="margin:0;border-radius:0">
+        <thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
+        <tbody id="tb-rl-laslett-1"></tbody>
+      </table>
+
+      <div style="padding:4px 14px 3px;font-size:.69rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#1D4ED8;background:#EFF6FF;border-top:1.5px solid #BFDBFE;border-bottom:1px solid #BFDBFE">Étape 2 — Compression <span style="font-size:.65rem;font-weight:400;text-transform:none;letter-spacing:0;opacity:.8">si &lt; 2 positifs</span></div>
+      <table class="test-table" style="margin:0;border-radius:0">
+        <thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
+        <tbody id="tb-rl-laslett-2"></tbody>
+      </table>
+
+      <div style="padding:4px 14px 3px;font-size:.69rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#1D4ED8;background:#EFF6FF;border-top:1.5px solid #BFDBFE;border-bottom:1px solid #BFDBFE">Étape 3 — Sacral Thrust <span style="font-size:.65rem;font-weight:400;text-transform:none;letter-spacing:0;opacity:.8">si &lt; 2 positifs</span></div>
+      <table class="test-table" style="margin:0;border-radius:0">
+        <thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
+        <tbody id="tb-rl-laslett-3"></tbody>
+      </table>
+
+      <div id="rl-laslett-score" style="padding:9px 16px;background:var(--surface2);border-top:2px solid var(--border);font-size:.82rem;font-weight:600;color:var(--text2)">Score Laslett : —</div>
+      <div id="rl-laslett-exclu" style="display:none;padding:9px 16px;background:#eaf3de;border-top:1.5px solid #c0dd97;color:#27500a;font-size:.82rem;font-weight:600;align-items:center;gap:8px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle;margin-right:4px"><polyline points="20 6 9 17 4 12"/></svg>
+        Tous les tests négatifs — Douleur sacro-iliaque exclue
+      </div>
+      <div id="rl-laslett-alert" style="display:none;padding:10px 16px;background:#FFF3CD;border-top:1.5px solid #F59E0B;color:#92400E;font-size:.82rem;font-weight:600;align-items:center;gap:8px">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle;margin-right:6px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        ≥ 2 tests positifs — Symptômes d'origine sacro-iliaque probables (Laslett 2005)
       </div>
     </div>
 
