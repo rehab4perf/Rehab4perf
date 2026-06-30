@@ -6628,6 +6628,10 @@ window.addEventListener('load', function(){
         '</div>'+
         '<div style="padding:14px 16px">'+
           '<div id="ct-rows-'+pk+'"></div>'+
+        '</div>'+
+        '<div style="padding:10px 16px 12px;background:var(--surface2);border-top:1px solid var(--border)">'+
+          '<div style="font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:6px">Observations</div>'+
+          '<textarea id="ct-notes-'+pk+'" placeholder="Contexte du test, conditions particulières, commentaires…" style="font-family:inherit;font-size:.82rem;color:var(--text1);border:1px solid var(--border);border-radius:6px;padding:7px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface);box-sizing:border-box"></textarea>'+
         '</div>';
       var conclArea = pc.querySelector('.concl-area');
       var conclBlock = conclArea && (conclArea.closest('.block') || conclArea);
