@@ -2326,6 +2326,12 @@ textarea { resize:none !important; overflow:hidden !important; }
       </div>
     </div>
 
+    <!-- Mobilité lombaire -->
+    <div class="block">
+      <div class="block-header grey">Mobilité Lombaire</div>
+      <div class="mobility-grid" id="mob-rl"></div>
+    </div>
+
     <!-- Bilan McKenzie -->
     <div class="block">
       <div class="block-header red">Bilan McKenzie (MDT)</div>
@@ -2334,34 +2340,52 @@ textarea { resize:none !important; overflow:hidden !important; }
         <thead><tr><th>Mouvement</th><th style="width:62px;text-align:center">Rép.</th><th style="width:172px">Réponse</th><th>Observation</th></tr></thead>
         <tbody>
           <tr>
-            <td><div class="test-name">Flexion lombaire <span style="font-size:.68rem;color:var(--text3);font-weight:400">— Debout</span></div></td>
-            <td style="text-align:center"><input type="number" id="mck-flex-dbt-rep" min="1" max="30" placeholder="10" style="font-size:.8rem;padding:3px 4px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:48px;text-align:center"></td>
-            <td><select id="mck-flex-dbt-res" onchange="_calcMckenzie()" style="font-size:.8rem;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:100%"><option value="">—</option><option>Centralisation</option><option>Périphérisation</option><option>Diminution</option><option>Abolition</option><option>Augmentation</option><option>Inchangé</option></select></td>
-            <td><input type="text" id="mck-flex-dbt-nt" class="mob-note-inp" placeholder="Observation…"></td>
+            <td><div class="test-name">Flexion</div></td>
+            <td style="text-align:center"><input type="number" id="mck-flex-rep" min="1" max="30" placeholder="10" style="font-size:.8rem;padding:3px 4px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:48px;text-align:center"></td>
+            <td><select id="mck-flex-res" onchange="_calcMckenzie()" style="font-size:.8rem;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:100%"><option value="">—</option><option>Centralisation</option><option>Périphérisation</option><option>Diminution</option><option>Abolition</option><option>Augmentation</option><option>Inchangé</option></select></td>
+            <td><input type="text" id="mck-flex-nt" class="mob-note-inp" placeholder="Observation…"></td>
           </tr>
           <tr>
-            <td><div class="test-name">Extension lombaire <span style="font-size:.68rem;color:var(--text3);font-weight:400">— Debout</span></div></td>
-            <td style="text-align:center"><input type="number" id="mck-ext-dbt-rep" min="1" max="30" placeholder="10" style="font-size:.8rem;padding:3px 4px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:48px;text-align:center"></td>
-            <td><select id="mck-ext-dbt-res" onchange="_calcMckenzie()" style="font-size:.8rem;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:100%"><option value="">—</option><option>Centralisation</option><option>Périphérisation</option><option>Diminution</option><option>Abolition</option><option>Augmentation</option><option>Inchangé</option></select></td>
-            <td><input type="text" id="mck-ext-dbt-nt" class="mob-note-inp" placeholder="Observation…"></td>
+            <td><div class="test-name">Extension</div></td>
+            <td style="text-align:center"><input type="number" id="mck-ext-rep" min="1" max="30" placeholder="10" style="font-size:.8rem;padding:3px 4px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:48px;text-align:center"></td>
+            <td><select id="mck-ext-res" onchange="_calcMckenzie()" style="font-size:.8rem;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:100%"><option value="">—</option><option>Centralisation</option><option>Périphérisation</option><option>Diminution</option><option>Abolition</option><option>Augmentation</option><option>Inchangé</option></select></td>
+            <td><input type="text" id="mck-ext-nt" class="mob-note-inp" placeholder="Observation…"></td>
           </tr>
           <tr>
-            <td><div class="test-name">Extension lombaire <span style="font-size:.68rem;color:var(--text3);font-weight:400">— Procubitus (prone push-up)</span></div></td>
-            <td style="text-align:center"><input type="number" id="mck-ext-proc-rep" min="1" max="30" placeholder="10" style="font-size:.8rem;padding:3px 4px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:48px;text-align:center"></td>
-            <td><select id="mck-ext-proc-res" onchange="_calcMckenzie()" style="font-size:.8rem;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:100%"><option value="">—</option><option>Centralisation</option><option>Périphérisation</option><option>Diminution</option><option>Abolition</option><option>Augmentation</option><option>Inchangé</option></select></td>
-            <td><input type="text" id="mck-ext-proc-nt" class="mob-note-inp" placeholder="Observation…"></td>
-          </tr>
-          <tr>
-            <td><div class="test-name">Inclinaison gauche <span style="font-size:.68rem;color:var(--text3);font-weight:400">— Debout</span></div></td>
+            <td><div class="test-name">Inclinaison gauche</div></td>
             <td style="text-align:center"><input type="number" id="mck-incl-g-rep" min="1" max="30" placeholder="10" style="font-size:.8rem;padding:3px 4px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:48px;text-align:center"></td>
             <td><select id="mck-incl-g-res" onchange="_calcMckenzie()" style="font-size:.8rem;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:100%"><option value="">—</option><option>Centralisation</option><option>Périphérisation</option><option>Diminution</option><option>Abolition</option><option>Augmentation</option><option>Inchangé</option></select></td>
             <td><input type="text" id="mck-incl-g-nt" class="mob-note-inp" placeholder="Observation…"></td>
           </tr>
           <tr>
-            <td><div class="test-name">Inclinaison droite <span style="font-size:.68rem;color:var(--text3);font-weight:400">— Debout</span></div></td>
+            <td><div class="test-name">Inclinaison droite</div></td>
             <td style="text-align:center"><input type="number" id="mck-incl-d-rep" min="1" max="30" placeholder="10" style="font-size:.8rem;padding:3px 4px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:48px;text-align:center"></td>
             <td><select id="mck-incl-d-res" onchange="_calcMckenzie()" style="font-size:.8rem;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:100%"><option value="">—</option><option>Centralisation</option><option>Périphérisation</option><option>Diminution</option><option>Abolition</option><option>Augmentation</option><option>Inchangé</option></select></td>
             <td><input type="text" id="mck-incl-d-nt" class="mob-note-inp" placeholder="Observation…"></td>
+          </tr>
+          <tr>
+            <td><div class="test-name">Rotation gauche</div></td>
+            <td style="text-align:center"><input type="number" id="mck-rot-g-rep" min="1" max="30" placeholder="10" style="font-size:.8rem;padding:3px 4px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:48px;text-align:center"></td>
+            <td><select id="mck-rot-g-res" onchange="_calcMckenzie()" style="font-size:.8rem;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:100%"><option value="">—</option><option>Centralisation</option><option>Périphérisation</option><option>Diminution</option><option>Abolition</option><option>Augmentation</option><option>Inchangé</option></select></td>
+            <td><input type="text" id="mck-rot-g-nt" class="mob-note-inp" placeholder="Observation…"></td>
+          </tr>
+          <tr>
+            <td><div class="test-name">Rotation droite</div></td>
+            <td style="text-align:center"><input type="number" id="mck-rot-d-rep" min="1" max="30" placeholder="10" style="font-size:.8rem;padding:3px 4px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:48px;text-align:center"></td>
+            <td><select id="mck-rot-d-res" onchange="_calcMckenzie()" style="font-size:.8rem;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:100%"><option value="">—</option><option>Centralisation</option><option>Périphérisation</option><option>Diminution</option><option>Abolition</option><option>Augmentation</option><option>Inchangé</option></select></td>
+            <td><input type="text" id="mck-rot-d-nt" class="mob-note-inp" placeholder="Observation…"></td>
+          </tr>
+          <tr>
+            <td><div class="test-name">Glissement gauche</div></td>
+            <td style="text-align:center"><input type="number" id="mck-gliss-g-rep" min="1" max="30" placeholder="10" style="font-size:.8rem;padding:3px 4px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:48px;text-align:center"></td>
+            <td><select id="mck-gliss-g-res" onchange="_calcMckenzie()" style="font-size:.8rem;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:100%"><option value="">—</option><option>Centralisation</option><option>Périphérisation</option><option>Diminution</option><option>Abolition</option><option>Augmentation</option><option>Inchangé</option></select></td>
+            <td><input type="text" id="mck-gliss-g-nt" class="mob-note-inp" placeholder="Observation…"></td>
+          </tr>
+          <tr>
+            <td><div class="test-name">Glissement droit</div></td>
+            <td style="text-align:center"><input type="number" id="mck-gliss-d-rep" min="1" max="30" placeholder="10" style="font-size:.8rem;padding:3px 4px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:48px;text-align:center"></td>
+            <td><select id="mck-gliss-d-res" onchange="_calcMckenzie()" style="font-size:.8rem;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:100%"><option value="">—</option><option>Centralisation</option><option>Périphérisation</option><option>Diminution</option><option>Abolition</option><option>Augmentation</option><option>Inchangé</option></select></td>
+            <td><input type="text" id="mck-gliss-d-nt" class="mob-note-inp" placeholder="Observation…"></td>
           </tr>
         </tbody>
       </table>
@@ -2369,7 +2393,7 @@ textarea { resize:none !important; overflow:hidden !important; }
         <div style="background:var(--surface);padding:10px 14px">
           <div style="font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:5px">Direction préférentielle</div>
           <select id="mck-direction" style="font-size:.8rem;padding:4px 8px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:100%">
-            <option value="">—</option><option>Extension</option><option>Flexion</option><option>Inclinaison gauche</option><option>Inclinaison droite</option><option>Non identifiée</option>
+            <option value="">—</option><option>Extension</option><option>Flexion</option><option>Inclinaison gauche</option><option>Inclinaison droite</option><option>Rotation gauche</option><option>Rotation droite</option><option>Glissement gauche</option><option>Glissement droit</option><option>Non identifiée</option>
           </select>
         </div>
         <div style="background:var(--surface2);padding:10px 14px">
@@ -2387,12 +2411,6 @@ textarea { resize:none !important; overflow:hidden !important; }
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle;margin-right:4px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         Périphérisation présente — réévaluer la direction de traitement
       </div>
-    </div>
-
-    <!-- Mobilité lombaire -->
-    <div class="block">
-      <div class="block-header grey">Mobilité Lombaire</div>
-      <div class="mobility-grid" id="mob-rl"></div>
     </div>
 
     <!-- Conclusion -->

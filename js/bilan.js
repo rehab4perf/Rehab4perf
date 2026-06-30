@@ -3441,7 +3441,7 @@ function _calcDN4() {
   }
 }
 
-var _MCK_MVTS = ['flex-dbt','ext-dbt','ext-proc','incl-g','incl-d'];
+var _MCK_MVTS = ['flex','ext','incl-g','incl-d','rot-g','rot-d','gliss-g','gliss-d'];
 var _MCK_GREEN = {Centralisation:1, Abolition:1};
 var _MCK_RED   = {Périphérisation:1, Augmentation:1};
 
@@ -4330,9 +4330,10 @@ function _buildAllTestsHtml() {
       // McKenzie
       (function() {
         var mckLbls = {
-          'flex-dbt':'Flexion lombaire (debout)', 'ext-dbt':'Extension lombaire (debout)',
-          'ext-proc':'Extension lombaire (procubitus)', 'incl-g':'Inclinaison gauche (debout)',
-          'incl-d':'Inclinaison droite (debout)'
+          'flex':'Flexion', 'ext':'Extension',
+          'incl-g':'Inclinaison gauche', 'incl-d':'Inclinaison droite',
+          'rot-g':'Rotation gauche', 'rot-d':'Rotation droite',
+          'gliss-g':'Glissement gauche', 'gliss-d':'Glissement droit'
         };
         var mckRows = '', anyMck = false;
         _MCK_MVTS.forEach(function(m) {
