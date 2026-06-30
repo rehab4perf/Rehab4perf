@@ -6491,6 +6491,40 @@ window.addEventListener('load', function(){
 
   function _esc(v){ return String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
 
+  function _mkObsZone(pk, idx, t, isComp, lbl){
+    var obs = document.createElement('div');
+    obs.style.cssText = 'padding:4px 0 8px;border-bottom:1px solid var(--border)';
+    var taStyle = 'font-family:inherit;font-size:.78rem;color:var(--text1);border:1px solid var(--border);border-radius:5px;padding:5px 8px;width:100%;min-height:40px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2);box-sizing:border-box';
+    var lblStyle = 'font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);margin-bottom:3px';
+    if(isComp){
+      obs.style.display='grid';
+      obs.style.gridTemplateColumns='1fr 1fr';
+      obs.style.gap='8px';
+      [['obsA',lbl.a],['obsB',lbl.b]].forEach(function(pair){
+        var field=pair[0], label=pair[1];
+        var wrap = document.createElement('div');
+        var lb = document.createElement('div');
+        lb.style.cssText = lblStyle;
+        lb.textContent = label;
+        var ta = document.createElement('textarea');
+        ta.placeholder = 'Observation '+label+'…';
+        ta.style.cssText = taStyle;
+        ta.value = t[field]||'';
+        ta.addEventListener('input',function(){ _ctUpdate(pk,idx,field,this.value); });
+        wrap.appendChild(lb); wrap.appendChild(ta);
+        obs.appendChild(wrap);
+      });
+    } else {
+      var ta = document.createElement('textarea');
+      ta.placeholder = 'Observation…';
+      ta.style.cssText = taStyle;
+      ta.value = t.obsA||'';
+      ta.addEventListener('input',function(){ _ctUpdate(pk,idx,'obsA',this.value); });
+      obs.appendChild(ta);
+    }
+    return obs;
+  }
+
   function _ctRender(pk){
     var container = document.getElementById('ct-rows-'+pk);
     if(!container) return;
@@ -6519,6 +6553,7 @@ window.addEventListener('load', function(){
           '<button class="ct-type-btn" onclick="_ctSetType(\''+pk+'\','+idx+',\'comparison\')" title="Passer en comparaison G/D">⇄</button>'+
           '<button class="ct-del-btn" onclick="_ctRemove(\''+pk+'\','+idx+')" title="Supprimer">×</button>';
         container.appendChild(row);
+        container.appendChild(_mkObsZone(pk, idx, t, false, lbl));
       });
     }
 
@@ -6544,6 +6579,7 @@ window.addEventListener('load', function(){
           '<button class="ct-type-btn" onclick="_ctSetType(\''+pk+'\','+idx+',\'perf\')" title="Passer en performance unique">↑</button>'+
           '<button class="ct-del-btn" onclick="_ctRemove(\''+pk+'\','+idx+')" title="Supprimer">×</button>';
         container.appendChild(row);
+        container.appendChild(_mkObsZone(pk, idx, t, true, lbl));
       });
     }
   }
@@ -6628,10 +6664,6 @@ window.addEventListener('load', function(){
         '</div>'+
         '<div style="padding:14px 16px">'+
           '<div id="ct-rows-'+pk+'"></div>'+
-        '</div>'+
-        '<div style="padding:10px 16px 12px;background:var(--surface2);border-top:1px solid var(--border)">'+
-          '<div style="font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:6px">Observations</div>'+
-          '<textarea id="ct-notes-'+pk+'" placeholder="Contexte du test, conditions particulières, commentaires…" style="font-family:inherit;font-size:.82rem;color:var(--text1);border:1px solid var(--border);border-radius:6px;padding:7px 10px;width:100%;min-height:60px;resize:vertical;outline:none;line-height:1.5;background:var(--surface);box-sizing:border-box"></textarea>'+
         '</div>';
       var conclArea = pc.querySelector('.concl-area');
       var conclBlock = conclArea && (conclArea.closest('.block') || conclArea);
