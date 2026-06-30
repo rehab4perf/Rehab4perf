@@ -167,6 +167,16 @@ const TESTS = {
     'Test du grand bras (long lever) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Levier long sur MI étendu en procubitus. ✚ Douleur SIJ → confirmation dysfonction</span>',
     'Test du petit bras (short lever) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Levier court direct sur sacrum / iliaque. ✚ Douleur SIJ → affine le diagnostic</span>'
   ]},
+  'tb-rl-laslett-1': {type:'ortho', opts:['Positif','Négatif','N/A'], items:[
+    'Distraction <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Pression divergente sur les EIAS (DD). ✚ Reproduction douleur postérieure pelvienne</span>',
+    'Thigh Thrust <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Flexion hanche 90° + poussée axiale fémur (DD). ✚ Douleur postérieure SIJ ipsilatérale</span>'
+  ]},
+  'tb-rl-laslett-2': {type:'ortho', opts:['Positif','Négatif','N/A'], items:[
+    'Compression <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Pression convergente sur les crêtes iliaques (DD latéral). ✚ Reproduction douleur postérieure pelvienne</span>'
+  ]},
+  'tb-rl-laslett-3': {type:'ortho', opts:['Positif','Négatif','N/A'], items:[
+    'Sacral Thrust <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Pression postéro-antérieure sur le sacrum (procubitus). ✚ Reproduction douleur postérieure pelvienne</span>'
+  ]},
   'tb-rl-plet': {type:'ortho', items:[
     'Passive Lumbar Extension Test (PLET) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Procubitus, élévation des MI en légère traction (genoux tendus). ✚ Reproduction d\'une douleur lombaire sévère ou sensation de « détachement » → instabilité structurelle (spondylolisthésis) — Kasai 2006 : Se 84%, Sp 90%</span>'
   ]},
@@ -2377,7 +2387,7 @@ function _deserializeBilan(data){
   _parsePainZones();
   _suppressDirty = false;
   _bilanModified = false;
-  try{ _calcWainnerCerv(); _calcDN4(); _calcInstabLomb(); _calcFlexionLomb(); _calcMckenzie(); }catch(ex){}
+  try{ _calcWainnerCerv(); _calcDN4(); _calcLaslett(); _calcInstabLomb(); _calcFlexionLomb(); _calcMckenzie(); }catch(ex){}
   saveToStorage(); // état complet — une seule écriture après désérialisation
   try{ _ctRestoreAll(); }catch(ex){} // synchroniser _ctData AVANT de rendre le CR
   _refreshCRIfVisible();
@@ -3462,6 +3472,33 @@ function _calcMckenzie() {
   if (rEl) rEl.style.display = hasRed   ? 'flex' : 'none';
 }
 
+function _calcLaslett() {
+  var pos = 0, filled = 0;
+  ['tb-rl-laslett-1','tb-rl-laslett-2','tb-rl-laslett-3'].forEach(function(id) {
+    var tb = document.getElementById(id);
+    if (!tb) return;
+    tb.querySelectorAll('select').forEach(function(s) {
+      if (s.value) filled++;
+      if (s.value === 'Positif') pos++;
+    });
+  });
+  var scoreEl = document.getElementById('rl-laslett-score');
+  if (scoreEl) {
+    var lbl = pos === 0 && filled === 0 ? '—'
+      : pos === 0 ? '0/4 — Douleur SIJ exclue'
+      : pos === 1 ? '1/4 — Douleur SIJ peu probable'
+      : pos + '/4 — Symptômes d\'origine sacro-iliaque probables';
+    scoreEl.textContent = 'Score Laslett : ' + lbl;
+    scoreEl.style.color = pos >= 2 ? 'var(--warning,#e67e22)' : (pos === 0 && filled > 0) ? '#27500a' : '';
+    scoreEl.style.fontWeight = pos >= 2 ? '700' : '';
+  }
+  var excluEl = document.getElementById('rl-laslett-exclu');
+  var alertEl = document.getElementById('rl-laslett-alert');
+  if (excluEl) excluEl.style.display = pos === 0 && filled > 0 ? 'flex' : 'none';
+  if (alertEl) alertEl.style.display = pos >= 2 ? 'flex' : 'none';
+  if (!_suppressDirty) updateBadges();
+}
+
 function _calcFlexionLomb() {
   var tfd = (document.getElementById('rl-tfd-res') || {}).value || '';
   var tfa = (document.getElementById('rl-tfa-res') || {}).value || '';
@@ -3498,6 +3535,8 @@ function onTestChange(sel, tableId, idx) {
     var dn4Tables = {'tb-cv-dn4-itw':1,'tb-cv-dn4-exam':1};
     if (dn4Tables[tableId]) _calcDN4();
     if (tableId === 'tb-rl-instab') _calcInstabLomb();
+    var lasslett = {'tb-rl-laslett-1':1,'tb-rl-laslett-2':1,'tb-rl-laslett-3':1};
+    if (lasslett[tableId]) _calcLaslett();
     updateBadges();
   }
 }
@@ -3507,7 +3546,7 @@ function updateBadges() {
     'epaule': ['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho-mob','tb-ep-ortho-conf'],
     'rachis': ['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-force-d','tb-ra-force-g','tb-ra-transverse'],
     'rachis-cerv': ['tb-cv-vascul','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-dn4-itw','tb-cv-dn4-exam','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-sensib-g','tb-cv-sensib-d'],
-    'rachis-lomb': ['tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-plet','tb-rl-instab','tb-rl-tfd-suite','tb-rl-tfa-suite'],
+    'rachis-lomb': ['tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-plet','tb-rl-laslett-1','tb-rl-laslett-2','tb-rl-laslett-3','tb-rl-instab','tb-rl-tfd-suite','tb-rl-tfa-suite'],
     'hanche': ['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-force-d','tb-ha-force-g','tb-ha-global-g','tb-ha-global-d','tb-ha-add-g','tb-ha-add-d','tb-ha-pubis-g','tb-ha-pubis-d','tb-ha-flech-g','tb-ha-flech-d','tb-ha-inguinal-g','tb-ha-inguinal-d','tb-ha-hanche-g','tb-ha-hanche-d'],
     'genou':  ['tb-ge-global','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-ext',
                'tb-ge-global-g','tb-ge-global-d','tb-ge-lig-g','tb-ge-lig-d','tb-ge-lca-g','tb-ge-lca-d',
@@ -4079,7 +4118,7 @@ function _buildAllTestsHtml() {
   var orthoSections = [
     { label:'EPAULE', pk:'epaule', fields:[['ep-type','Type'],['ep-marqueur','Marqueur']], tables:['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho-mob','tb-ep-ortho-conf','tb-ep-irrit-g','tb-ep-irrit-d','tb-ep-trau-g','tb-ep-trau-d','tb-ep-fonc-g','tb-ep-fonc-d','tb-ep-ortho-g','tb-ep-ortho-d'], concl:'ep-conclusion', opt:'ep-opt' },
     { label:'RACHIS CERVICAL', pk:'', fields:[['cv-marqueur','Marqueur']], tables:['tb-cv-vascul','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-dn4-itw','tb-cv-dn4-exam','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-sensib-g','tb-cv-sensib-d'], concl:'cv-conclusion' },
-    { label:'RACHIS LOMBAIRE', pk:'', fields:[['rl-marqueur','Marqueur']], tables:['tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-plet','tb-rl-instab','tb-rl-tfd-suite','tb-rl-tfa-suite'], concl:'rl-conclusion' },
+    { label:'RACHIS LOMBAIRE', pk:'', fields:[['rl-marqueur','Marqueur']], tables:['tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-plet','tb-rl-laslett-1','tb-rl-laslett-2','tb-rl-laslett-3','tb-rl-instab','tb-rl-tfd-suite','tb-rl-tfa-suite'], concl:'rl-conclusion' },
     { label:'RACHIS', pk:'rachis', fields:[['ra-marqueur','Marqueur'],['ra-mckenzie','McKenzie']], tables:['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-force-d','tb-ra-force-g','tb-ra-transverse'], concl:'ra-conclusion', opt:'ra-opt' },
     { label:'HANCHE', pk:'hanche', fields:[['ha-marqueur','Marqueur']], tables:['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-force-d','tb-ha-force-g','tb-ha-global-g','tb-ha-global-d','tb-ha-add-g','tb-ha-add-d','tb-ha-pubis-g','tb-ha-pubis-d','tb-ha-flech-g','tb-ha-flech-d','tb-ha-inguinal-g','tb-ha-inguinal-d','tb-ha-hanche-g','tb-ha-hanche-d'], concl:'ha-conclusion', opt:'ha-opt' },
     { label:'GENOU', pk:'genou', fields:[['ge-marqueur','Marqueur']], tables:[
