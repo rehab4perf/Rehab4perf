@@ -157,10 +157,15 @@ const TESTS = {
     'Profonde kinesthésique <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Position du membre (yeux fermés)</span>',
     'Thermo-algique <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Sensibilité thermique</span>'
   ]},
-  'tb-rl-flexion': {type:'ortho', items:[
-    'Test de flexion debout (TFD) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">EIPS palpées en flexion du tronc debout. ✚ EIPS monte en crânial → dysfonction SIJ ipsilatérale → densité iliaque + aspect positionnel 3 points</span>',
-    'Test de flexion assis (TFA) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">EIPS palpées en flexion du tronc assis. ✚ EIPS monte → dysfonction SIJ → densité 4 cadrans + test grand et petit bras</span>',
+  'tb-rl-tfd-suite': {type:'ortho', items:[
+    'Test de densité spécifique de l\'iliaque <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Palpation densité tissulaire iliaque D/G. ✚ Asymétrie densité → côté dysfonctionnel SIJ</span>',
+    'Aspect positionnel — 3 points (EIAS / EIPS / pubis) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Comparaison bilatérale hauteur des 3 repères. ✚ EIPS postérieure = iliaque postérieur ; EIAS antérieure = iliaque antérieur</span>',
     'Test de Gillet (Stork Test) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Flexion hanche monopodal, EIPS palpée. ✚ EIPS ne descend pas en caudal → blocage sacro-iliaque</span>'
+  ]},
+  'tb-rl-tfa-suite': {type:'ortho', items:[
+    'Test de densité — 4 cadrans (sacrum) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Palpation densité des 4 quadrants sacrés. ✚ Asymétrie → cadran dysfonctionnel SIJ</span>',
+    'Test du grand bras (long lever) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Levier long sur MI étendu en procubitus. ✚ Douleur SIJ → confirmation dysfonction</span>',
+    'Test du petit bras (short lever) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Levier court direct sur sacrum / iliaque. ✚ Douleur SIJ → affine le diagnostic</span>'
   ]},
   'tb-rl-laslett': {type:'ortho', opts:['Positif','Négatif','N/A'], items:[
     'Distraction <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Pression divergente sur les deux EIAS (DD). ✚ Douleur postérieure pelvienne</span>',
@@ -2377,7 +2382,7 @@ function _deserializeBilan(data){
   _parsePainZones();
   _suppressDirty = false;
   _bilanModified = false;
-  try{ _calcWainnerCerv(); _calcDN4(); _calcLaslett(); _calcInstabLomb(); _calcMckenzie(); }catch(ex){}
+  try{ _calcWainnerCerv(); _calcDN4(); _calcLaslett(); _calcInstabLomb(); _calcFlexionLomb(); _calcMckenzie(); }catch(ex){}
   saveToStorage(); // état complet — une seule écriture après désérialisation
   try{ _ctRestoreAll(); }catch(ex){} // synchroniser _ctData AVANT de rendre le CR
   _refreshCRIfVisible();
@@ -3462,6 +3467,16 @@ function _calcMckenzie() {
   if (rEl) rEl.style.display = hasRed   ? 'flex' : 'none';
 }
 
+function _calcFlexionLomb() {
+  var tfd = (document.getElementById('rl-tfd-res') || {}).value || '';
+  var tfa = (document.getElementById('rl-tfa-res') || {}).value || '';
+  var tfdSuite = document.getElementById('rl-tfd-suite');
+  var tfaSuite = document.getElementById('rl-tfa-suite');
+  if (tfdSuite) tfdSuite.style.display = tfd === 'Positif' ? '' : 'none';
+  if (tfaSuite) tfaSuite.style.display = tfa === 'Positif' ? '' : 'none';
+  if (!_suppressDirty) updateBadges();
+}
+
 function _calcLaslett() {
   var score = 0;
   var tb = document.getElementById('tb-rl-laslett');
@@ -3512,7 +3527,7 @@ function updateBadges() {
     'epaule': ['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho-mob','tb-ep-ortho-conf'],
     'rachis': ['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-force-d','tb-ra-force-g','tb-ra-transverse'],
     'rachis-cerv': ['tb-cv-vascul','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-dn4-itw','tb-cv-dn4-exam','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-sensib-g','tb-cv-sensib-d'],
-    'rachis-lomb': ['tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-flexion','tb-rl-laslett','tb-rl-instab'],
+    'rachis-lomb': ['tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-tfd-suite','tb-rl-tfa-suite','tb-rl-laslett','tb-rl-instab'],
     'hanche': ['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-force-d','tb-ha-force-g','tb-ha-global-g','tb-ha-global-d','tb-ha-add-g','tb-ha-add-d','tb-ha-pubis-g','tb-ha-pubis-d','tb-ha-flech-g','tb-ha-flech-d','tb-ha-inguinal-g','tb-ha-inguinal-d','tb-ha-hanche-g','tb-ha-hanche-d'],
     'genou':  ['tb-ge-global','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-ext',
                'tb-ge-global-g','tb-ge-global-d','tb-ge-lig-g','tb-ge-lig-d','tb-ge-lca-g','tb-ge-lca-d',
@@ -4084,7 +4099,7 @@ function _buildAllTestsHtml() {
   var orthoSections = [
     { label:'EPAULE', pk:'epaule', fields:[['ep-type','Type'],['ep-marqueur','Marqueur']], tables:['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho-mob','tb-ep-ortho-conf','tb-ep-irrit-g','tb-ep-irrit-d','tb-ep-trau-g','tb-ep-trau-d','tb-ep-fonc-g','tb-ep-fonc-d','tb-ep-ortho-g','tb-ep-ortho-d'], concl:'ep-conclusion', opt:'ep-opt' },
     { label:'RACHIS CERVICAL', pk:'', fields:[['cv-marqueur','Marqueur']], tables:['tb-cv-vascul','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-dn4-itw','tb-cv-dn4-exam','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-sensib-g','tb-cv-sensib-d'], concl:'cv-conclusion' },
-    { label:'RACHIS LOMBAIRE', pk:'', fields:[['rl-marqueur','Marqueur']], tables:['tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-flexion','tb-rl-laslett','tb-rl-instab'], concl:'rl-conclusion' },
+    { label:'RACHIS LOMBAIRE', pk:'', fields:[['rl-marqueur','Marqueur']], tables:['tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-tfd-suite','tb-rl-tfa-suite','tb-rl-laslett','tb-rl-instab'], concl:'rl-conclusion' },
     { label:'RACHIS', pk:'rachis', fields:[['ra-marqueur','Marqueur'],['ra-mckenzie','McKenzie']], tables:['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-force-d','tb-ra-force-g','tb-ra-transverse'], concl:'ra-conclusion', opt:'ra-opt' },
     { label:'HANCHE', pk:'hanche', fields:[['ha-marqueur','Marqueur']], tables:['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-force-d','tb-ha-force-g','tb-ha-global-g','tb-ha-global-d','tb-ha-add-g','tb-ha-add-d','tb-ha-pubis-g','tb-ha-pubis-d','tb-ha-flech-g','tb-ha-flech-d','tb-ha-inguinal-g','tb-ha-inguinal-d','tb-ha-hanche-g','tb-ha-hanche-d'], concl:'ha-conclusion', opt:'ha-opt' },
     { label:'GENOU', pk:'genou', fields:[['ge-marqueur','Marqueur']], tables:[
@@ -4289,6 +4304,29 @@ function _buildAllTestsHtml() {
           + '<th style="padding:3px 8px;text-align:left;font-size:.72rem;color:var(--text3);font-weight:600">Marqueur</th>'
           + '</tr></thead><tbody>'+rlMobRows+'</tbody></table></div>';
       }
+      // TFD / TFA primaires
+      (function() {
+        var tfdRes = (document.getElementById('rl-tfd-res')||{}).value || '';
+        var tfdNt  = ((document.getElementById('rl-tfd-nt')||{}).value||'').trim();
+        var tfaRes = (document.getElementById('rl-tfa-res')||{}).value || '';
+        var tfaNt  = ((document.getElementById('rl-tfa-nt')||{}).value||'').trim();
+        if (!tfdRes && !tfdNt && !tfaRes && !tfaNt) return;
+        var mkTag = function(v) {
+          if (!v) return '';
+          var cls = v === 'Positif' ? 'bad' : v === 'Négatif' ? 'good' : '';
+          return '<span class="cr-tag '+cls+'">'+v+'</span>';
+        };
+        var rows = '';
+        if (tfdRes || tfdNt) rows += '<tr style="border-top:1px solid var(--border)"><td style="padding:3px 8px;font-size:.8rem;color:var(--text2)">TFD (flexion debout)</td><td style="padding:3px 8px;text-align:center">'+mkTag(tfdRes)+'</td><td style="padding:3px 8px;font-size:.78rem;color:var(--text2);font-style:italic">'+nl2br(tfdNt)+(tfdRes==='Positif'?' <em style="color:#166534">→ MI</em>':'')+'</td></tr>';
+        if (tfaRes || tfaNt) rows += '<tr style="border-top:1px solid var(--border)"><td style="padding:3px 8px;font-size:.8rem;color:var(--text2)">TFA (flexion assis)</td><td style="padding:3px 8px;text-align:center">'+mkTag(tfaRes)+'</td><td style="padding:3px 8px;font-size:.78rem;color:var(--text2);font-style:italic">'+nl2br(tfaNt)+(tfaRes==='Positif'?' <em style="color:#166534">→ Rachis</em>':'')+'</td></tr>';
+        secRows += '<div style="margin:4px 0 10px">'
+          + '<div style="font-size:.77rem;font-weight:600;color:var(--text2);margin-bottom:3px">Tests de flexion SIJ</div>'
+          + '<table style="width:100%;border-collapse:collapse"><thead><tr style="background:var(--surface2)">'
+          + '<th style="padding:3px 8px;text-align:left;font-size:.72rem;color:var(--text3);font-weight:600">Test</th>'
+          + '<th style="padding:3px 8px;text-align:center;font-size:.72rem;color:var(--text3);font-weight:600">Résultat</th>'
+          + '<th style="padding:3px 8px;text-align:left;font-size:.72rem;color:var(--text3);font-weight:600">Observation</th>'
+          + '</tr></thead><tbody>'+rows+'</tbody></table></div>';
+      })();
       // McKenzie
       (function() {
         var mckLbls = {

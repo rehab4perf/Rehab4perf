@@ -2264,11 +2264,44 @@ textarea { resize:none !important; overflow:hidden !important; }
     <div class="block">
       <div class="block-header red">Tests Mécaniques</div>
 
-      <div style="padding:5px 14px 3px;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);background:var(--surface2);border-bottom:1px solid var(--border)">Flexion debout / assis</div>
-      <table class="test-table" style="margin:0;border-radius:0">
-        <thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
-        <tbody id="tb-rl-flexion"></tbody>
-      </table>
+      <!-- TFD / TFA — arbre décisionnel SIJ -->
+      <div style="padding:5px 14px 3px;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);background:var(--surface2);border-bottom:1px solid var(--border)">Flexion debout / assis — Arbre décisionnel SIJ</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+        <div style="background:var(--surface);padding:10px 14px">
+          <div class="test-name" style="margin-bottom:4px">Test de flexion debout (TFD)</div>
+          <div style="font-size:.68rem;color:var(--text3);margin-bottom:8px">EIPS palpées en flexion du tronc debout. ✚ EIPS monte en crânial → dysfonction SIJ ipsilatérale</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <select id="rl-tfd-res" onchange="_calcFlexionLomb()" style="font-size:.8rem;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1)"><option value="">—</option><option>Positif</option><option>Négatif</option></select>
+            <input type="text" id="rl-tfd-nt" class="mob-note-inp" placeholder="Observation…" style="flex:1;min-width:80px">
+          </div>
+        </div>
+        <div style="background:var(--surface2);padding:10px 14px">
+          <div class="test-name" style="margin-bottom:4px">Test de flexion assis (TFA)</div>
+          <div style="font-size:.68rem;color:var(--text3);margin-bottom:8px">EIPS palpées en flexion du tronc assis (MI pendants). ✚ EIPS monte → dysfonction SIJ → densité 4 cadrans</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <select id="rl-tfa-res" onchange="_calcFlexionLomb()" style="font-size:.8rem;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1)"><option value="">—</option><option>Positif</option><option>Négatif</option></select>
+            <input type="text" id="rl-tfa-nt" class="mob-note-inp" placeholder="Observation…" style="flex:1;min-width:80px">
+          </div>
+        </div>
+      </div>
+      <!-- TFD Positif → niveau 2 -->
+      <div id="rl-tfd-suite" style="display:none;border-top:2px solid #2563EB">
+        <div style="padding:5px 14px 4px;background:#EFF6FF;font-size:.69rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#1D4ED8;border-bottom:1px solid #BFDBFE">▶ TFD Positif — Densité spécifique iliaque + Aspect positionnel</div>
+        <table class="test-table" style="margin:0;border-radius:0">
+          <thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
+          <tbody id="tb-rl-tfd-suite"></tbody>
+        </table>
+        <div style="padding:7px 14px;background:#F0FDF4;border-top:1.5px solid #86EFAC;font-size:.8rem;font-weight:600;color:#166534">→ Contrôler l'ensemble du membre inférieur</div>
+      </div>
+      <!-- TFA Positif → niveau 2 -->
+      <div id="rl-tfa-suite" style="display:none;border-top:2px solid #2563EB">
+        <div style="padding:5px 14px 4px;background:#EFF6FF;font-size:.69rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#1D4ED8;border-bottom:1px solid #BFDBFE">▶ TFA Positif — Densité 4 cadrans + Grand et petit bras</div>
+        <table class="test-table" style="margin:0;border-radius:0">
+          <thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
+          <tbody id="tb-rl-tfa-suite"></tbody>
+        </table>
+        <div style="padding:7px 14px;background:#F0FDF4;border-top:1.5px solid #86EFAC;font-size:.8rem;font-weight:600;color:#166534">→ Contrôler l'ensemble du rachis</div>
+      </div>
 
       <div style="padding:5px 14px 3px;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);background:var(--surface2);border-top:2px solid var(--border);border-bottom:1px solid var(--border)">Cluster de Laslett <span style="font-size:.7rem;font-weight:400;letter-spacing:0;text-transform:none;opacity:.8">Score ≥ 3/6 = Douleur SIJ probable</span></div>
       <table class="test-table" style="margin:0;border-radius:0">
