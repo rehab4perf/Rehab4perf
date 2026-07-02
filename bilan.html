@@ -3278,6 +3278,38 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
 </div>
 
+<!-- ⑩ Figure-of-8 Hop Test -->
+<div class="block">
+  <div class="block-header">⑩ Figure-of-8 Hop Test</div>
+  <div style="padding:4px 14px 6px;font-size:.78rem;color:var(--text2)">Saut unipodal en 8 autour de 2 cônes espacés de 5 m · 2 tours consécutifs = 20 m · Mesure du temps (s)</div>
+  <div style="padding:1px 0">
+    <div class="measure-row" style="background:var(--surface2)">
+      <div class="col-header">Test</div><div class="col-header sl-cs">Côté Sain (s)</div><div class="col-header sl-ca">Côté Atteint (s)</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+    </div>
+    <div class="measure-row">
+      <div class="measure-label">Temps de parcours (20 m)</div>
+      <div class="measure-input"><input type="number" id="f8-cs" placeholder="—" step="0.1" oninput="calcF8()"></div>
+      <div class="measure-input"><input type="number" id="f8-ca" placeholder="—" step="0.1" oninput="calcF8()"></div>
+      <div class="measure-stat" id="f8-lsi">—</div>
+      <div class="measure-stat" id="f8-stat">—</div>
+    </div>
+    <div class="measure-row" style="background:var(--surface2)">
+      <div class="measure-label" style="background:var(--surface2);font-size:.8rem;color:var(--text2)">Seuil de référence</div>
+      <div class="measure-stat" id="f8-seuil" style="background:var(--accent-l);color:var(--accent2);font-size:.8rem;grid-column:span 4;align-items:flex-start;justify-content:center;padding:6px 14px">Témoins : 11,0 ± 0,4 s (Caffrey 2005) · Seuil proposé : &lt; 12 s</div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+    <div style="background:var(--surface);padding:8px 14px 10px">
+      <div class="sl-cs" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
+      <textarea id="f8-obs-cs" placeholder="Ex: réception propre, équilibre stable…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:48px;resize:vertical;outline:none;line-height:1.5"></textarea>
+    </div>
+    <div style="background:var(--surface2);padding:8px 14px 10px">
+      <div class="sl-ca" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
+      <textarea id="f8-obs-ca" placeholder="Ex: lenteur, manque de confiance…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:48px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
+    </div>
+  </div>
+</div>
+
   </div>
 </div>
 

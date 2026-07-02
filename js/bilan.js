@@ -3986,6 +3986,32 @@ function calcPiNDT() {
   });
 }
 
+function calcF8() {
+  var caEl = document.getElementById('f8-ca');
+  var csEl = document.getElementById('f8-cs');
+  var lsiEl = document.getElementById('f8-lsi');
+  var statEl = document.getElementById('f8-stat');
+  if (!caEl || !csEl || !lsiEl || !statEl) return;
+  var ca = parseFloat(caEl.value);
+  var cs = parseFloat(csEl.value);
+  var bilateral = _isBilateralForZones(_MI_ZONES);
+  var lsi;
+  if (bilateral) {
+    lsi = (ca > 0 && cs > 0) ? Math.min(ca, cs) / Math.max(ca, cs) * 100 : NaN;
+  } else {
+    lsi = (ca > 0 && cs > 0) ? cs / ca * 100 : NaN;
+  }
+  setLSI(lsiEl, statEl, lsi, '>= 90%', true, bilateral);
+  var seuilEl = document.getElementById('f8-seuil');
+  if (seuilEl && !isNaN(ca)) {
+    var base = 'Témoins : 11,0 ± 0,4 s (Caffrey 2005) · Seuil proposé : &lt; 12 s';
+    var tag = ca <= 12
+      ? '   <span style="color:var(--green);font-weight:600">✓ CA ≤ 12 s</span>'
+      : '   <span style="color:var(--red);font-weight:600">✗ CA > 12 s</span>';
+    seuilEl.innerHTML = base + tag;
+  }
+}
+
 function calcSLST() {
   ['cs','ca'].forEach(function(side) {
     var total = 0, touched = false;
@@ -4861,6 +4887,21 @@ function _buildAllTestsHtml() {
     tfHtml += crItem('Single-Leg Stance Test', _p(slstCATotal+' err.', slstCSTotal+' err.', ''), slstStat, slstCls, ['slst-ca-1','slst-cs-1']);
   }
   tfHtml += obsBlock('slst-obs-ca','slst-obs-cs');
+  // Figure-of-8 Hop Test (temps : lower is better → LSI = sain/atteint)
+  var f8CA = parseFloat((document.getElementById('f8-ca')||{}).value||'');
+  var f8CS = parseFloat((document.getElementById('f8-cs')||{}).value||'');
+  if (!isNaN(f8CA)) {
+    var f8Lsi = (!isNaN(f8CS) && f8CA > 0 && f8CS > 0)
+      ? (_isBilatMI ? Math.min(f8CA,f8CS)/Math.max(f8CA,f8CS)*100 : f8CS/f8CA*100)
+      : NaN;
+    var f8Cls = isNaN(f8Lsi) ? '' : (f8Lsi >= 90 ? 'good' : f8Lsi >= 80 ? 'warn' : 'bad');
+    var f8Lsi_s = isNaN(f8Lsi) ? '' : '   ' + (_isBilatMI ? 'Sym. = ' : 'LSI = ') + f8Lsi.toFixed(1) + '%';
+    var f8Seuil = f8CA <= 12 ? '   Seuil <12s ✓' : '   >12s ✗';
+    tfHtml += crItem('Figure-of-8 Hop Test', _p(f8CA+'s', (!isNaN(f8CS)?f8CS+'s':'-'), '') + f8Lsi_s + f8Seuil,
+      f8Cls==='good' ? 'LSI ≥90%' : f8Cls==='warn' ? 'LSI 80-89%' : f8Cls==='bad' ? 'LSI <80%' : '',
+      f8Cls, ['f8-ca','f8-cs']);
+  }
+  tfHtml += obsBlock('f8-obs-ca','f8-obs-cs');
   // UQYBT
   var uqDirs = [{id:'med',label:'Médial'},{id:'il',label:'Inféro-latéral'},{id:'sl',label:'Supéro-latéral'}];
   for (var ui=0; ui<uqDirs.length; ui++) {
