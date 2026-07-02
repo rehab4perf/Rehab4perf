@@ -921,7 +921,7 @@ function _resetBilanFields(){
   try{ updateAll(); calcRec(); calcPlioq(); }catch(ex){}
   try{ ['sls','hop','pset','set'].forEach(function(k){ calcLSI(k); }); calcDJ(); calcLunge(); calcHR(); calcMusc(); }catch(ex){}
   try{ calcPlioq2(); calcSEBT(); calcUQYBT(); calcSideHop(); }catch(ex){}
-  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht'].forEach(calcEpForce); ['ha-f-add','ha-f-abdo','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); ['pi-f-fp','pi-f-fd','pi-f-inv','pi-f-ev','pi-f-lfh'].forEach(calcEpForce); ['ra-f-abdo','ra-f-obli','ra-f-ext'].forEach(calcEpForce); ['ra-fc-inc'].forEach(calcEpForce); }catch(ex){}
+  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht'].forEach(calcEpForce); ['ha-f-add','ha-f-abdo','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); ['pi-f-fp','pi-f-fd','pi-f-inv','pi-f-ev','pi-f-lfh'].forEach(calcEpForce); ['ra-fc-inc'].forEach(calcEpForce); }catch(ex){}
   try{ updateBadges(); _initAllRomBars(); }catch(ex){}
   // Éléments non couverts par les fonctions ci-dessus
   try{ var hl=document.getElementById('hdr-lma'); if(hl) hl.textContent='—'; }catch(ex){}
@@ -1101,12 +1101,6 @@ var TRACKED_METRICS = [
   {id:'ra-fc-inc-cs',   label:'Incl. cervicale (sain)',       unit:'kg',  dir:'up',   cat:'Rachis — Force'},
   {id:'ra-fl-ext',      label:'Ext. lombaire (force)',        unit:'kg',  dir:'up',   cat:'Rachis — Force'},
   {id:'ra-fl-flex',     label:'Flex. lombaire (force)',       unit:'kg',  dir:'up',   cat:'Rachis — Force'},
-  {id:'ra-f-abdo-ca',   label:'Abdominaux (atteint)',         unit:'kg',  dir:'up',   cat:'Rachis — Force'},
-  {id:'ra-f-abdo-cs',   label:'Abdominaux (sain)',            unit:'kg',  dir:'up',   cat:'Rachis — Force'},
-  {id:'ra-f-obli-ca',   label:'Obliques (atteint)',           unit:'kg',  dir:'up',   cat:'Rachis — Force'},
-  {id:'ra-f-obli-cs',   label:'Obliques (sain)',              unit:'kg',  dir:'up',   cat:'Rachis — Force'},
-  {id:'ra-f-ext-ca',    label:'Extenseurs rachis (atteint)',  unit:'kg',  dir:'up',   cat:'Rachis — Force'},
-  {id:'ra-f-ext-cs',    label:'Extenseurs rachis (sain)',     unit:'kg',  dir:'up',   cat:'Rachis — Force'},
   // ── Hanche — Mobilité ───────────────────────────────────
   {id:'ha-mob-d-flex',  label:'Flex. hanche D',              unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
   {id:'ha-mob-g-flex',  label:'Flex. hanche G',              unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
@@ -2439,7 +2433,7 @@ function _deserializeBilan(data){
   try{ calcRachisStat(); calcLNF(); calcSorensen(); calcPDSLRT(); calcShirado(); }catch(ex){}
   try{ calcPlioq2(); calcSEBT(); calcUQYBT(); updateBadges(); }catch(ex){}
   try{ _initAllRomBars(); }catch(ex){}
-  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht'].forEach(calcEpForce); ['ha-f-add','ha-f-abdo','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); ['pi-f-fp','pi-f-fd','pi-f-inv','pi-f-ev','pi-f-lfh'].forEach(calcEpForce); ['ra-f-abdo','ra-f-obli','ra-f-ext'].forEach(calcEpForce); ['ra-fc-inc'].forEach(calcEpForce); }catch(ex){}
+  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht'].forEach(calcEpForce); ['ha-f-add','ha-f-abdo','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); ['pi-f-fp','pi-f-fd','pi-f-inv','pi-f-ev','pi-f-lfh'].forEach(calcEpForce); ['ra-fc-inc'].forEach(calcEpForce); }catch(ex){}
   _parsePainZones();
   _suppressDirty = false;
   _bilanModified = false;
@@ -4457,32 +4451,6 @@ function _buildAllTestsHtml() {
           }
         }
       })();
-      // Force musculaire rachis (tronc / stabilisation)
-      var raForceTests = [
-        {key:'ra-f-abdo', label:'Abdominaux (droits CE+CI)'},
-        {key:'ra-f-obli', label:'Obliques'},
-        {key:'ra-f-ext',  label:'Extenseurs rachis'},
-      ];
-      raForceTests.forEach(function(ft) {
-        var csN = parseFloat((document.getElementById(ft.key+'-cs')||{}).value);
-        var caN = parseFloat((document.getElementById(ft.key+'-ca')||{}).value);
-        var csA = (document.getElementById(ft.key+'-apr-cs')||{}).value||'';
-        var caA = (document.getElementById(ft.key+'-apr-ca')||{}).value||'';
-        if (!isNaN(csN) && csN > 0) {
-          var lsiV = !isNaN(caN) ? caN/csN*100 : NaN;
-          var isPos = !isNaN(lsiV) && lsiV < 90;
-          var valStr = 'CS='+csN+' kg'+(!isNaN(caN)?' CA='+caN+' kg':'')+(!isNaN(lsiV)?' LSI='+lsiV.toFixed(0)+'%':'');
-          secRows += crItem(ft.label, valStr, isPos?'Positif':'Négatif', isPos?'bad':'ok', [ft.key+'-cs',ft.key+'-ca']);
-        } else if (csA || caA) {
-          var parts = [];
-          if (csA) parts.push(_labelCS+'='+csA);
-          if (caA) parts.push(_labelCA+'='+caA);
-          var anyPos = csA==='Positif' || caA==='Positif';
-          if (anyPos || csA==='Négatif' || caA==='Négatif') {
-            secRows += crItem(ft.label, parts.join(' · '), anyPos?'Positif':'Négatif', anyPos?'bad':'ok', [ft.key+'-apr-cs',ft.key+'-apr-ca']);
-          }
-        }
-      });
     }
     if (sec.label === 'RACHIS LOMBAIRE') {
       var rlMobItems = MOB.concat(['Glissement D', 'Glissement G']);
@@ -4916,9 +4884,6 @@ function _buildAllTestsHtml() {
   (function(){
     var raForceMap = [
       {key:'ra-fc-inc', label:'Inclinaison cervicale'},
-      {key:'ra-f-abdo', label:'Abdominaux (droits CE+CI)'},
-      {key:'ra-f-obli', label:'Obliques'},
-      {key:'ra-f-ext',  label:'Extenseurs rachis'},
     ];
     raForceMap.forEach(function(m) {
       var csN = parseFloat((document.getElementById(m.key+'-cs')||{}).value);
