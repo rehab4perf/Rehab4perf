@@ -6518,7 +6518,7 @@ window.addEventListener('load', function(){
       obs.style.display='grid';
       obs.style.gridTemplateColumns='1fr 1fr';
       obs.style.gap='8px';
-      [['obsA',lbl.a],['obsB',lbl.b]].forEach(function(pair){
+      [['obsB',lbl.b],['obsA',lbl.a]].forEach(function(pair){
         var field=pair[0], label=pair[1];
         var wrap = document.createElement('div');
         var lb = document.createElement('div');
@@ -6578,7 +6578,7 @@ window.addEventListener('load', function(){
     if(compItems.length){
       var ch = document.createElement('div');
       ch.className = 'ct-sub-hdr ct-sub-hdr-comp';
-      ch.innerHTML = '<span class="sh-left">Comparaison</span><span>'+lbl.a+'</span><span>'+lbl.b+'</span><span>LSI</span>';
+      ch.innerHTML = '<span class="sh-left">Comparaison</span><span>'+lbl.b+'</span><span>'+lbl.a+'</span><span>LSI</span>';
       container.appendChild(ch);
       compItems.forEach(function(item){
         var t = item.t, idx = item.i;
@@ -6589,10 +6589,10 @@ window.addEventListener('load', function(){
         row.innerHTML =
           '<input class="ct-name-inp" type="text" placeholder="Nom du test" value="'+_esc(t.name)+'" '+
             'oninput="_ctUpdate(\''+pk+'\','+idx+',\'name\',this.value)">'+
-          '<div class="ct-cell"><input class="ct-val-inp" type="number" step="any" placeholder="—" value="'+_esc(t.valA)+'" '+
-            'oninput="_ctUpdate(\''+pk+'\','+idx+',\'valA\',this.value)"></div>'+
           '<div class="ct-cell"><input class="ct-val-inp" type="number" step="any" placeholder="—" value="'+_esc(t.valB)+'" '+
             'oninput="_ctUpdate(\''+pk+'\','+idx+',\'valB\',this.value)"></div>'+
+          '<div class="ct-cell"><input class="ct-val-inp" type="number" step="any" placeholder="—" value="'+_esc(t.valA)+'" '+
+            'oninput="_ctUpdate(\''+pk+'\','+idx+',\'valA\',this.value)"></div>'+
           '<div class="ct-lsi-cell '+_ctLsiClass(lsi)+'">'+_ctLsiText(lsi)+'</div>'+
           '<button class="ct-type-btn" onclick="_ctSetType(\''+pk+'\','+idx+',\'perf\')" title="Passer en performance unique">↑</button>'+
           '<button class="ct-del-btn" onclick="_ctRemove(\''+pk+'\','+idx+')" title="Supprimer">×</button>';
