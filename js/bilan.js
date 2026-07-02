@@ -326,8 +326,6 @@ const TESTS = {
   'tb-ge-ext':    {type:'fonc',items:['Extension passive','Extension active sur table','Extension active en charge'],opts:['Validé','Pas validé','N/A']},
   'tb-ge-ext-g':  {type:'fonc',items:['Extension passive','Extension active sur table','Extension active en charge'],opts:['Validé','Pas validé','N/A']},
   'tb-ge-ext-d':  {type:'fonc',items:['Extension passive','Extension active sur table','Extension active en charge'],opts:['Validé','Pas validé','N/A']},
-  'tb-ra-force-d':{type:'ortho',items:['Break test Abdominaux (droits CE+CI)','Break test Obliques','Break test Extenseurs rachis']},
-  'tb-ra-force-g':{type:'ortho',items:['Break test Abdominaux (droits CE+CI)','Break test Obliques','Break test Extenseurs rachis']},
   'tb-ra-transverse':{type:'ortho',items:['Test du transverse (toux + valsalva)']},
   'tb-pi-global':{type:'ortho',items:['Liberté articulaire globale','Flexion plantaire','Flexion dorsale']},
   'tb-pi-global-g':{type:'ortho',items:['Liberté articulaire globale','Flexion plantaire','Flexion dorsale']},
@@ -923,7 +921,7 @@ function _resetBilanFields(){
   try{ updateAll(); calcRec(); calcPlioq(); }catch(ex){}
   try{ ['sls','hop','pset','set'].forEach(function(k){ calcLSI(k); }); calcDJ(); calcLunge(); calcHR(); calcMusc(); }catch(ex){}
   try{ calcPlioq2(); calcSEBT(); calcUQYBT(); calcSideHop(); }catch(ex){}
-  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht'].forEach(calcEpForce); ['ha-f-add','ha-f-abdo','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); ['pi-f-fp','pi-f-fd','pi-f-inv','pi-f-ev','pi-f-lfh'].forEach(calcEpForce); }catch(ex){}
+  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht'].forEach(calcEpForce); ['ha-f-add','ha-f-abdo','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); ['pi-f-fp','pi-f-fd','pi-f-inv','pi-f-ev','pi-f-lfh'].forEach(calcEpForce); ['ra-f-abdo','ra-f-obli','ra-f-ext'].forEach(calcEpForce); }catch(ex){}
   try{ updateBadges(); _initAllRomBars(); }catch(ex){}
   // Éléments non couverts par les fonctions ci-dessus
   try{ var hl=document.getElementById('hdr-lma'); if(hl) hl.textContent='—'; }catch(ex){}
@@ -1096,6 +1094,13 @@ var TRACKED_METRICS = [
   {id:'pi-f-ev-cs',     label:'Éversion (sain)',              unit:'kg',  dir:'up',   cat:'Pied/Cheville — Force'},
   {id:'pi-f-lfh-ca',    label:'LFH (atteint)',                unit:'kg',  dir:'up',   cat:'Pied/Cheville — Force'},
   {id:'pi-f-lfh-cs',    label:'LFH (sain)',                   unit:'kg',  dir:'up',   cat:'Pied/Cheville — Force'},
+  // ── Rachis — Force ──────────────────────────────────────
+  {id:'ra-f-abdo-ca',   label:'Abdominaux (atteint)',         unit:'kg',  dir:'up',   cat:'Rachis — Force'},
+  {id:'ra-f-abdo-cs',   label:'Abdominaux (sain)',            unit:'kg',  dir:'up',   cat:'Rachis — Force'},
+  {id:'ra-f-obli-ca',   label:'Obliques (atteint)',           unit:'kg',  dir:'up',   cat:'Rachis — Force'},
+  {id:'ra-f-obli-cs',   label:'Obliques (sain)',              unit:'kg',  dir:'up',   cat:'Rachis — Force'},
+  {id:'ra-f-ext-ca',    label:'Extenseurs rachis (atteint)',  unit:'kg',  dir:'up',   cat:'Rachis — Force'},
+  {id:'ra-f-ext-cs',    label:'Extenseurs rachis (sain)',     unit:'kg',  dir:'up',   cat:'Rachis — Force'},
   // ── Hanche — Mobilité ───────────────────────────────────
   {id:'ha-mob-d-flex',  label:'Flex. hanche D',              unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
   {id:'ha-mob-g-flex',  label:'Flex. hanche G',              unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
@@ -2428,7 +2433,7 @@ function _deserializeBilan(data){
   try{ calcRachisStat(); calcLNF(); calcSorensen(); calcPDSLRT(); calcShirado(); }catch(ex){}
   try{ calcPlioq2(); calcSEBT(); calcUQYBT(); updateBadges(); }catch(ex){}
   try{ _initAllRomBars(); }catch(ex){}
-  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht'].forEach(calcEpForce); ['ha-f-add','ha-f-abdo','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); ['pi-f-fp','pi-f-fd','pi-f-inv','pi-f-ev','pi-f-lfh'].forEach(calcEpForce); }catch(ex){}
+  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht'].forEach(calcEpForce); ['ha-f-add','ha-f-abdo','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); ['pi-f-fp','pi-f-fd','pi-f-inv','pi-f-ev','pi-f-lfh'].forEach(calcEpForce); ['ra-f-abdo','ra-f-obli','ra-f-ext'].forEach(calcEpForce); }catch(ex){}
   _parsePainZones();
   _suppressDirty = false;
   _bilanModified = false;
@@ -3604,7 +3609,7 @@ function onTestChange(sel, tableId, idx) {
 function updateBadges() {
   const sections = {
     'epaule': ['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho-mob','tb-ep-ortho-conf'],
-    'rachis': ['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-force-d','tb-ra-force-g','tb-ra-transverse'],
+    'rachis': ['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-transverse'],
     'rachis-cerv': ['tb-cv-vascul','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-dn4-itw','tb-cv-dn4-exam','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-sensib-g','tb-cv-sensib-d'],
     'rachis-lomb': ['tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-plet','tb-rl-laslett-1','tb-rl-laslett-2','tb-rl-laslett-3','tb-rl-instab','tb-rl-tfd-suite','tb-rl-tfa-suite','tb-rl-transverse'],
     'hanche': ['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-global-g','tb-ha-global-d','tb-ha-add-g','tb-ha-add-d','tb-ha-pubis-g','tb-ha-pubis-d','tb-ha-flech-g','tb-ha-flech-d','tb-ha-inguinal-g','tb-ha-inguinal-d','tb-ha-hanche-g','tb-ha-hanche-d'],
@@ -3670,7 +3675,7 @@ function updateAll() {
 
   // Headers for each page
   const hdrTxt = [fullName, date ? formatDate(date) : null].filter(Boolean).join(' - ');
-  ['epaule','coude','main','rachis','rachis-cerv','rachis-thor','rachis-lomb','hanche','genou','pied','fonc-mi','fonc-ms','fonc-rachis','musc'].forEach(function(p){
+  ['epaule','coude','main','rachis','rachis-cerv','rachis-thor','rachis-lomb','hanche','genou','pied','fonc-mi','fonc-ms','fonc-rachis','musc','force-ms','force-rachis','force-mi'].forEach(function(p){
     var el = document.getElementById('hdr-' + p);
     if(!el) return;
     var coteStr = getCoteForHdr(p);
@@ -4180,7 +4185,7 @@ function _buildAllTestsHtml() {
     { label:'EPAULE', pk:'epaule', fields:[['ep-type','Type'],['ep-marqueur','Marqueur']], tables:['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho-mob','tb-ep-ortho-conf','tb-ep-irrit-g','tb-ep-irrit-d','tb-ep-trau-g','tb-ep-trau-d','tb-ep-fonc-g','tb-ep-fonc-d','tb-ep-ortho-g','tb-ep-ortho-d'], concl:'ep-conclusion', opt:'ep-opt' },
     { label:'RACHIS CERVICAL', pk:'', fields:[['cv-marqueur','Marqueur']], tables:['tb-cv-vascul','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-dn4-itw','tb-cv-dn4-exam','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-sensib-g','tb-cv-sensib-d'], concl:'cv-conclusion' },
     { label:'RACHIS LOMBAIRE', pk:'', fields:[['rl-marqueur','Marqueur']], tables:['tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-plet','tb-rl-laslett-1','tb-rl-laslett-2','tb-rl-laslett-3','tb-rl-instab','tb-rl-tfd-suite','tb-rl-tfa-suite','tb-rl-transverse'], concl:'rl-conclusion' },
-    { label:'RACHIS', pk:'rachis', fields:[['ra-marqueur','Marqueur'],['ra-mckenzie','McKenzie']], tables:['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-force-d','tb-ra-force-g','tb-ra-transverse'], concl:'ra-conclusion', opt:'ra-opt' },
+    { label:'RACHIS', pk:'rachis', fields:[['ra-marqueur','Marqueur'],['ra-mckenzie','McKenzie']], tables:['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-transverse'], concl:'ra-conclusion', opt:'ra-opt' },
     { label:'HANCHE', pk:'hanche', fields:[['ha-marqueur','Marqueur']], tables:['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-global-g','tb-ha-global-d','tb-ha-add-g','tb-ha-add-d','tb-ha-pubis-g','tb-ha-pubis-d','tb-ha-flech-g','tb-ha-flech-d','tb-ha-inguinal-g','tb-ha-inguinal-d','tb-ha-hanche-g','tb-ha-hanche-d'], concl:'ha-conclusion', opt:'ha-opt' },
     { label:'GENOU', pk:'genou', fields:[['ge-marqueur','Marqueur']], tables:[
         'tb-ge-global','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-ext',
@@ -4407,6 +4412,32 @@ function _buildAllTestsHtml() {
             + '<th style="padding:3px 8px;text-align:center;font-size:.72rem;color:var(--text3);font-weight:600">Statut</th>'
             + '<th style="padding:3px 8px;text-align:left;font-size:.72rem;color:var(--text3);font-weight:600">Marqueur</th>'
             + '</tr></thead><tbody>'+mobRows+'</tbody></table></div>';
+        }
+      });
+      // Force musculaire rachis
+      var raForceTests = [
+        {key:'ra-f-abdo', label:'Abdominaux (droits CE+CI)'},
+        {key:'ra-f-obli', label:'Obliques'},
+        {key:'ra-f-ext',  label:'Extenseurs rachis'},
+      ];
+      raForceTests.forEach(function(ft) {
+        var csN = parseFloat((document.getElementById(ft.key+'-cs')||{}).value);
+        var caN = parseFloat((document.getElementById(ft.key+'-ca')||{}).value);
+        var csA = (document.getElementById(ft.key+'-apr-cs')||{}).value||'';
+        var caA = (document.getElementById(ft.key+'-apr-ca')||{}).value||'';
+        if (!isNaN(csN) && csN > 0) {
+          var lsiV = !isNaN(caN) ? caN/csN*100 : NaN;
+          var isPos = !isNaN(lsiV) && lsiV < 90;
+          var valStr = 'CS='+csN+' kg'+(!isNaN(caN)?' CA='+caN+' kg':'')+(!isNaN(lsiV)?' LSI='+lsiV.toFixed(0)+'%':'');
+          secRows += crItem(ft.label, valStr, isPos?'Positif':'Négatif', isPos?'bad':'ok', [ft.key+'-cs',ft.key+'-ca']);
+        } else if (csA || caA) {
+          var parts = [];
+          if (csA) parts.push(_labelCS+'='+csA);
+          if (caA) parts.push(_labelCA+'='+caA);
+          var anyPos = csA==='Positif' || caA==='Positif';
+          if (anyPos || csA==='Négatif' || caA==='Négatif') {
+            secRows += crItem(ft.label, parts.join(' · '), anyPos?'Positif':'Négatif', anyPos?'bad':'ok', [ft.key+'-apr-cs',ft.key+'-apr-ca']);
+          }
         }
       });
     }
@@ -4838,20 +4869,24 @@ function _buildAllTestsHtml() {
   // 6. Points à travailler
   var toWork = [];
 
-  // ── Break tests force (wording : "Renforcer [muscle]") ──────────────────
-  var forceTables = [
-    {id:'tb-ra-force-d', side:'Droit'},  {id:'tb-ra-force-g', side:'Gauche'},
-  ];
-  forceTables.forEach(function(ft) {
-    var tbody = document.getElementById(ft.id); if (!tbody) return;
-    tbody.querySelectorAll('tr').forEach(function(row) {
-      var sel = row.querySelector('select'); if (!sel || sel.value !== 'Positif') return;
-      var tdEl = row.querySelector('td'); if (!tdEl) return;
-      var name = tdEl.textContent.trim().replace(/^Break test\s+/i, '');
-      var item = 'Renforcer ' + name + ' — ' + ft.side;
-      if (toWork.indexOf(item) === -1) toWork.push(item);
+  // ── Force musculaire rachis ──────────────────────────────────────────────
+  (function(){
+    var raForceMap = [
+      {key:'ra-f-abdo', label:'Abdominaux (droits CE+CI)'},
+      {key:'ra-f-obli', label:'Obliques'},
+      {key:'ra-f-ext',  label:'Extenseurs rachis'},
+    ];
+    raForceMap.forEach(function(m) {
+      var csN = parseFloat((document.getElementById(m.key+'-cs')||{}).value);
+      var caN = parseFloat((document.getElementById(m.key+'-ca')||{}).value);
+      var caA = (document.getElementById(m.key+'-apr-ca')||{}).value||'';
+      var lsiLow = !isNaN(csN) && csN > 0 && !isNaN(caN) && caN/csN*100 < 90;
+      if (lsiLow || caA === 'Positif') {
+        var item = 'Renforcer ' + m.label;
+        if (toWork.indexOf(item) === -1) toWork.push(item);
+      }
     });
-  });
+  })();
 
   // ── Test du transverse ──────────────────────────────────────────────────
   (function(){
