@@ -6398,8 +6398,15 @@ function calcEpForce(key) {
   if (!csEl || !caEl || !lsiEl || !statEl) return;
   var cs = parseFloat(csEl.value);
   var ca = parseFloat(caEl.value);
+  // Zone scope → bilateral detection
+  var zones = /^ra-/.test(key) ? ['rachis-c','rachis-l']
+             : /^ep-/.test(key) ? ['epaule','coude','poignet']
+             : ['genou','hanche','cheville','pied','cuisse','jambe'];
+  var bilateral = _isBilateralForZones(zones);
   if (!isNaN(cs) && cs > 0) {
-    var lsi = !isNaN(ca) ? ca / cs * 100 : NaN;
+    var lsi = bilateral
+      ? (!isNaN(ca) && ca > 0 ? Math.min(ca,cs)/Math.max(ca,cs)*100 : NaN)
+      : (!isNaN(ca) ? ca/cs*100 : NaN);
     lsiEl.textContent = isNaN(lsi) ? '—' : lsi.toFixed(0) + '%';
     // Dentelé : positif si CS < 20 OU CA < 20 OU LSI < 90%
     if (key === 'ep-dent') {
@@ -6418,6 +6425,8 @@ function calcEpForce(key) {
         statEl.textContent = '—'; statEl.className = 'measure-stat';
       } else if (lsi >= 90) {
         statEl.textContent = '✅ ≥ 90%'; statEl.className = 'measure-stat good';
+      } else if (lsi >= 80) {
+        statEl.textContent = '⚠️ ' + lsi.toFixed(0) + '%'; statEl.className = 'measure-stat warn';
       } else {
         statEl.textContent = '❌ ' + lsi.toFixed(0) + '%'; statEl.className = 'measure-stat bad';
       }
@@ -6574,7 +6583,7 @@ function _updateSideLabels(){
     { zones:['epaule','coude','poignet'],         pages:['page-epaule','page-fonctionnelsMS'] },
     { zones:['genou'],                            pages:['page-genou'] },
     { zones:['cheville','pied'],                  pages:['page-pied'] },
-    { zones:['rachis-c','rachis-l'],              pages:['page-rachis','page-fonctionnelsRachis'] },
+    { zones:['rachis-c','rachis-l'],              pages:['page-rachis','page-fonctionnelsRachis','page-force-rachis'] },
     { zones:['genou','hanche','cheville','pied','cuisse','jambe'], pages:['page-fonctionnels'] }
   ];
   SCOPES.forEach(function(sc){
