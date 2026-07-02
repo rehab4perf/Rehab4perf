@@ -3376,20 +3376,20 @@ textarea { resize:none !important; overflow:hidden !important; }
 <div class="block">
   <div style="padding:6px 14px 2px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);background:var(--surface2);border-bottom:1px solid var(--border)">Cervical</div>
   <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Extension / Flexion → valeur brute en kg (suivi dans le temps, pas de LSI).</div>
-  <div class="measure-row" style="background:var(--surface2)">
-    <div class="col-header" style="flex:2">Test</div>
-    <div class="col-header" style="flex:1;min-width:90px">Valeur (kg)</div>
-    <div class="col-header" style="flex:2">Obs.</div>
+  <div class="measure-row" style="background:var(--surface2);grid-template-columns: 1fr 120px 1fr">
+    <div class="col-header">Test</div>
+    <div class="col-header">Valeur (kg)</div>
+    <div class="col-header">Obs.</div>
   </div>
-  <div class="measure-row">
-    <div class="measure-label" style="flex:2">Extension</div>
-    <div class="measure-input" style="flex:1;min-width:90px"><input type="number" id="ra-fc-ext" min="0" placeholder="—"></div>
-    <div class="measure-input" style="flex:2"><input type="text" id="ra-fc-ext-obs" placeholder="…"></div>
+  <div class="measure-row" style="grid-template-columns: 1fr 120px 1fr">
+    <div class="measure-label">Extension</div>
+    <div class="measure-input"><input type="number" id="ra-fc-ext" min="0" placeholder="—"></div>
+    <div class="measure-input"><input type="text" id="ra-fc-ext-obs" placeholder="…"></div>
   </div>
-  <div class="measure-row">
-    <div class="measure-label" style="flex:2">Flexion</div>
-    <div class="measure-input" style="flex:1;min-width:90px"><input type="number" id="ra-fc-flex" min="0" placeholder="—"></div>
-    <div class="measure-input" style="flex:2"><input type="text" id="ra-fc-flex-obs" placeholder="…"></div>
+  <div class="measure-row" style="grid-template-columns: 1fr 120px 1fr">
+    <div class="measure-label">Flexion</div>
+    <div class="measure-input"><input type="number" id="ra-fc-flex" min="0" placeholder="—"></div>
+    <div class="measure-input"><input type="text" id="ra-fc-flex-obs" placeholder="…"></div>
   </div>
   <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">Inclinaison → comparer les deux côtés (LSI auto · ❌ si &lt; 90%).</div>
   <div class="measure-row" style="background:var(--surface2)">
@@ -3413,20 +3413,20 @@ textarea { resize:none !important; overflow:hidden !important; }
 <div class="block">
   <div style="padding:6px 14px 2px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);background:var(--surface2);border-bottom:1px solid var(--border)">Lombaire</div>
   <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Valeur brute en kg (suivi dans le temps, pas de comparaison côté).</div>
-  <div class="measure-row" style="background:var(--surface2)">
-    <div class="col-header" style="flex:2">Test</div>
-    <div class="col-header" style="flex:1;min-width:90px">Valeur (kg)</div>
-    <div class="col-header" style="flex:2">Obs.</div>
+  <div class="measure-row" style="background:var(--surface2);grid-template-columns: 1fr 120px 1fr">
+    <div class="col-header">Test</div>
+    <div class="col-header">Valeur (kg)</div>
+    <div class="col-header">Obs.</div>
   </div>
-  <div class="measure-row">
-    <div class="measure-label" style="flex:2">Extension</div>
-    <div class="measure-input" style="flex:1;min-width:90px"><input type="number" id="ra-fl-ext" min="0" placeholder="—"></div>
-    <div class="measure-input" style="flex:2"><input type="text" id="ra-fl-ext-obs" placeholder="…"></div>
+  <div class="measure-row" style="grid-template-columns: 1fr 120px 1fr">
+    <div class="measure-label">Extension</div>
+    <div class="measure-input"><input type="number" id="ra-fl-ext" min="0" placeholder="—"></div>
+    <div class="measure-input"><input type="text" id="ra-fl-ext-obs" placeholder="…"></div>
   </div>
-  <div class="measure-row">
-    <div class="measure-label" style="flex:2">Flexion</div>
-    <div class="measure-input" style="flex:1;min-width:90px"><input type="number" id="ra-fl-flex" min="0" placeholder="—"></div>
-    <div class="measure-input" style="flex:2"><input type="text" id="ra-fl-flex-obs" placeholder="…"></div>
+  <div class="measure-row" style="grid-template-columns: 1fr 120px 1fr">
+    <div class="measure-label">Flexion</div>
+    <div class="measure-input"><input type="number" id="ra-fl-flex" min="0" placeholder="—"></div>
+    <div class="measure-input"><input type="text" id="ra-fl-flex-obs" placeholder="…"></div>
   </div>
 </div>
 
