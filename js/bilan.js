@@ -3988,16 +3988,16 @@ function calcPiNDT() {
 
 function calcSLST() {
   ['cs','ca'].forEach(function(side) {
-    var total = 0;
+    var total = 0, touched = false;
     for (var i = 1; i <= 6; i++) {
-      var cb = document.getElementById('slst-' + side + '-' + i);
-      if (cb && cb.checked) total++;
+      var inp = document.getElementById('slst-' + side + '-' + i);
+      if (inp && inp.value !== '') { total += (parseInt(inp.value) || 0); touched = true; }
     }
     var el = document.getElementById('slst-' + side + '-total');
-    if (el) {
-      el.textContent = total + ' / 6';
-      el.className = 'measure-stat ' + (total <= 1 ? 'good' : total <= 3 ? 'warn' : 'bad');
-    }
+    if (!el) return;
+    if (!touched) { el.textContent = '—'; el.className = 'measure-stat'; return; }
+    el.textContent = total + ' erreur' + (total !== 1 ? 's' : '');
+    el.className = 'measure-stat ' + (total <= 1 ? 'good' : total <= 3 ? 'warn' : 'bad');
   });
 }
 
@@ -4852,13 +4852,13 @@ function _buildAllTestsHtml() {
   for (var si=1; si<=6; si++) {
     var scsEl = document.getElementById('slst-cs-'+si);
     var scaEl = document.getElementById('slst-ca-'+si);
-    if (scsEl && scsEl.checked) { slstCSTotal++; slstTouched = true; }
-    if (scaEl && scaEl.checked) { slstCATotal++; slstTouched = true; }
+    if (scsEl && scsEl.value !== '') { slstCSTotal += (parseInt(scsEl.value)||0); slstTouched = true; }
+    if (scaEl && scaEl.value !== '') { slstCATotal += (parseInt(scaEl.value)||0); slstTouched = true; }
   }
   if (slstTouched) {
     var slstCls = slstCATotal <= 1 ? 'good' : slstCATotal <= 3 ? 'warn' : 'bad';
     var slstStat = slstCATotal <= 1 ? 'Bon équilibre' : slstCATotal <= 3 ? 'Équilibre altéré' : 'Déficit significatif';
-    tfHtml += crItem('Single-Leg Stance Test', _p(slstCATotal+'/6', slstCSTotal+'/6', ' erreurs'), slstStat, slstCls, ['slst-ca-1','slst-cs-1']);
+    tfHtml += crItem('Single-Leg Stance Test', _p(slstCATotal+' err.', slstCSTotal+' err.', ''), slstStat, slstCls, ['slst-ca-1','slst-cs-1']);
   }
   tfHtml += obsBlock('slst-obs-ca','slst-obs-cs');
   // UQYBT
