@@ -6837,6 +6837,239 @@ window.addEventListener('load', function(){
 })();
 
 /* ══════════════════════════════════════════════════════
+   PLAYLISTS — Tests Fonctionnels (chip-bar)
+══════════════════════════════════════════════════════ */
+(function(){
+  var PL_KEY = 'r4p-playlists';
+  var TARGET_PAGES = ['page-fonctionnels','page-fonctionnelsMS','page-fonctionnelsRachis'];
+  var _activePl = {}; // { pageId: 'all'|'favs'|plId }
+
+  // Capture _favToggleFilter avant de l'envelopper
+  var _origFavToggle = window._favToggleFilter;
+
+  function _load() {
+    try { return JSON.parse(localStorage.getItem(PL_KEY) || '{}'); } catch(e) { return {}; }
+  }
+  function _save(data) {
+    try { localStorage.setItem(PL_KEY, JSON.stringify(data)); } catch(e) {}
+  }
+  function _uid() { return 'pl-' + Math.random().toString(36).slice(2,10); }
+  function _getPlaylists(pageId) { return (_load()[pageId] || []); }
+
+  function _renderBar(pageId) {
+    var bar = document.querySelector('#'+pageId+' .fav-filter-bar');
+    if (!bar) return;
+    bar.querySelectorAll('.pl-chip').forEach(function(c){ c.remove(); });
+
+    var pls = _getPlaylists(pageId);
+    var active = _activePl[pageId] || 'all';
+
+    // Chip "Tous" — inséré avant le bouton Favoris
+    var tousBtn = document.createElement('button');
+    tousBtn.className = 'pl-chip' + (active === 'all' ? ' pl-active-all' : '');
+    tousBtn.textContent = 'Tous';
+    tousBtn.onclick = function(){ _plActivate(pageId, 'all'); };
+    bar.insertBefore(tousBtn, bar.firstChild);
+
+    // Synchronise le visuel du bouton Favoris
+    var favBtn = bar.querySelector('.fav-filter-btn');
+    if (favBtn) favBtn.classList.toggle('active', active === 'favs');
+
+    // Chips des playlists
+    pls.forEach(function(pl){
+      var isActive = active === pl.id;
+      var chip = document.createElement('span');
+      chip.className = 'pl-chip' + (isActive ? ' pl-active' : '');
+
+      var nameSpan = document.createElement('span');
+      nameSpan.textContent = pl.name;
+      nameSpan.style.cursor = 'pointer';
+      nameSpan.onclick = function(){ _plActivate(pageId, pl.id); };
+
+      var editBtn = document.createElement('button');
+      editBtn.className = 'pl-chip-edit';
+      editBtn.title = 'Modifier';
+      editBtn.textContent = '✎';
+      editBtn.onclick = function(e){ e.stopPropagation(); _plOpenModal(pageId, pl.id); };
+
+      chip.appendChild(nameSpan);
+      chip.appendChild(editBtn);
+      bar.appendChild(chip);
+    });
+
+    // Chip "+ Créer"
+    var addBtn = document.createElement('button');
+    addBtn.className = 'pl-chip pl-chip-dashed';
+    addBtn.textContent = '+ Créer';
+    addBtn.onclick = function(){ _plOpenModal(pageId, null); };
+    bar.appendChild(addBtn);
+  }
+
+  function _plActivate(pageId, id) {
+    _activePl[pageId] = id;
+    var page = document.getElementById(pageId);
+    if (!page) return;
+    var favBtn = page.querySelector('.fav-filter-btn');
+    var favIsActive = favBtn && favBtn.classList.contains('active');
+    if (id === 'all') {
+      if (favIsActive) _origFavToggle(pageId);
+      page.querySelectorAll('.block').forEach(function(b){ b.style.display = ''; });
+    } else {
+      if (favIsActive) _origFavToggle(pageId);
+      var pls = _getPlaylists(pageId);
+      var pl = null;
+      for (var i = 0; i < pls.length; i++) { if (pls[i].id === id) { pl = pls[i]; break; } }
+      if (!pl) { _activePl[pageId] = 'all'; _renderBar(pageId); return; }
+      page.querySelectorAll('.block').forEach(function(b){
+        b.style.display = (pl.keys.indexOf(b.dataset.favKey || '') !== -1) ? '' : 'none';
+      });
+    }
+    _renderBar(pageId);
+  }
+
+  function _injectModal() {
+    if (document.getElementById('pl-modal-overlay')) return;
+    var el = document.createElement('div');
+    el.className = 'pl-modal-overlay';
+    el.id = 'pl-modal-overlay';
+    el.innerHTML =
+      '<div class="pl-modal">' +
+        '<div class="pl-modal-header">' +
+          '<h3 id="pl-modal-title">Nouvelle playlist</h3>' +
+          '<button class="pl-modal-close" onclick="_plCloseModal()">×</button>' +
+        '</div>' +
+        '<div class="pl-modal-body">' +
+          '<input type="text" id="pl-modal-name" class="pl-name-input" placeholder="Nom de la playlist…">' +
+          '<div class="pl-tests-label">Tests à inclure</div>' +
+          '<div id="pl-tests-list"></div>' +
+        '</div>' +
+        '<div class="pl-modal-footer">' +
+          '<button class="pl-btn pl-btn-delete" id="pl-btn-delete" style="display:none" onclick="_plDeleteCurrent()">Supprimer</button>' +
+          '<button class="pl-btn pl-btn-cancel" onclick="_plCloseModal()">Annuler</button>' +
+          '<button class="pl-btn pl-btn-save" onclick="_plSaveCurrent()">Enregistrer</button>' +
+        '</div>' +
+      '</div>';
+    el.addEventListener('click', function(e){ if (e.target === el) _plCloseModal(); });
+    document.body.appendChild(el);
+  }
+
+  var _editCtx = { pageId: null, plId: null };
+
+  window._plOpenModal = function(pageId, plId) {
+    _editCtx = { pageId: pageId, plId: plId };
+    var overlay = document.getElementById('pl-modal-overlay');
+    if (!overlay) return;
+    var page = document.getElementById(pageId);
+    if (!page) return;
+
+    var pls = _getPlaylists(pageId);
+    var pl = null;
+    for (var i = 0; i < pls.length; i++) { if (pls[i].id === plId) { pl = pls[i]; break; } }
+
+    var titleEl = document.getElementById('pl-modal-title');
+    var nameEl = document.getElementById('pl-modal-name');
+    var deleteBtn = document.getElementById('pl-btn-delete');
+    if (titleEl) titleEl.textContent = pl ? 'Modifier la playlist' : 'Nouvelle playlist';
+    if (nameEl) nameEl.value = pl ? pl.name : '';
+    if (deleteBtn) deleteBtn.style.display = pl ? '' : 'none';
+
+    var listEl = document.getElementById('pl-tests-list');
+    if (listEl) {
+      listEl.innerHTML = '';
+      page.querySelectorAll('.block').forEach(function(b){
+        var key = b.dataset.favKey;
+        if (!key) return;
+        var hdr = b.querySelector('.block-header');
+        var label = hdr ? hdr.textContent.replace(/⭐/g,'').trim() : key;
+        var checked = pl && pl.keys.indexOf(key) !== -1;
+        var item = document.createElement('div');
+        item.className = 'pl-test-item';
+        item.innerHTML = '<input type="checkbox" id="pl-cb-'+key+'" value="'+key+'"'+(checked?' checked':'')+'>'
+          + '<label for="pl-cb-'+key+'">'+label+'</label>';
+        listEl.appendChild(item);
+      });
+    }
+
+    overlay.classList.add('open');
+    if (nameEl) setTimeout(function(){ nameEl.focus(); }, 50);
+  };
+
+  window._plCloseModal = function() {
+    var overlay = document.getElementById('pl-modal-overlay');
+    if (overlay) overlay.classList.remove('open');
+    _editCtx = { pageId: null, plId: null };
+  };
+
+  window._plSaveCurrent = function() {
+    var pageId = _editCtx.pageId;
+    var plId = _editCtx.plId;
+    if (!pageId) return;
+    var nameEl = document.getElementById('pl-modal-name');
+    var name = (nameEl ? nameEl.value.trim() : '') || 'Playlist';
+    var keys = [];
+    var cbs = document.querySelectorAll('#pl-tests-list input[type="checkbox"]:checked');
+    for (var i = 0; i < cbs.length; i++) { keys.push(cbs[i].value); }
+    var data = _load();
+    if (!data[pageId]) data[pageId] = [];
+    if (plId) {
+      for (var j = 0; j < data[pageId].length; j++) {
+        if (data[pageId][j].id === plId) {
+          data[pageId][j].name = name; data[pageId][j].keys = keys; break;
+        }
+      }
+    } else {
+      data[pageId].push({ id: _uid(), name: name, keys: keys });
+    }
+    _save(data);
+    _plCloseModal();
+    _renderBar(pageId);
+    if (_activePl[pageId] === plId && plId) _plActivate(pageId, plId);
+  };
+
+  window._plDeleteCurrent = function() {
+    var pageId = _editCtx.pageId;
+    var plId = _editCtx.plId;
+    if (!pageId || !plId) return;
+    if (!confirm('Supprimer cette playlist ?')) return;
+    var data = _load();
+    if (data[pageId]) {
+      data[pageId] = data[pageId].filter(function(p){ return p.id !== plId; });
+    }
+    _save(data);
+    var wasActive = _activePl[pageId] === plId;
+    _plCloseModal();
+    if (wasActive) _plActivate(pageId, 'all');
+    else _renderBar(pageId);
+  };
+
+  // Wrapper de _favToggleFilter pour synchroniser l'état des playlists
+  window._favToggleFilter = function(pageId) {
+    _origFavToggle(pageId);
+    var favBtn = document.querySelector('#'+pageId+' .fav-filter-btn');
+    var favNowActive = favBtn && favBtn.classList.contains('active');
+    _activePl[pageId] = favNowActive ? 'favs' : 'all';
+    _renderBar(pageId);
+  };
+
+  function _init() {
+    _injectModal();
+    TARGET_PAGES.forEach(function(pageId) {
+      var bar = document.querySelector('#'+pageId+' .fav-filter-bar');
+      if (!bar) return;
+      var favBtn = bar.querySelector('.fav-filter-btn');
+      _activePl[pageId] = (favBtn && favBtn.classList.contains('active')) ? 'favs' : 'all';
+      _renderBar(pageId);
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(_init, 0); });
+  } else {
+    setTimeout(_init, 0);
+  }
+})();
+
+/* ══════════════════════════════════════════════════════
    TESTS PERSONNALISÉS — section en bas de chaque page clinique
 ══════════════════════════════════════════════════════ */
 (function(){
