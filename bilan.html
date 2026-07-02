@@ -3203,6 +3203,84 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
 </div>
 
+<!-- ⑨ Single-Leg Stance Test -->
+<div class="block">
+  <div class="block-header">⑨ Équilibre Statique — Single-Leg Stance Test</div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+    <div style="background:var(--surface);padding:10px 16px">
+      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);margin-bottom:6px">Protocole</div>
+      <div style="font-size:.78rem;color:var(--text);line-height:1.7">
+        <div>Debout pieds nus · jambe testée · genou ~5° flexion</div>
+        <div>Mains sur les crêtes iliaques · yeux fermés · <strong>20 secondes</strong></div>
+        <div style="margin-top:4px;color:var(--text3);font-size:.74rem">Cocher chaque erreur d'équilibre observée (max 6)</div>
+      </div>
+    </div>
+    <div style="background:var(--surface2);padding:10px 16px">
+      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);margin-bottom:6px">Interprétation</div>
+      <div style="font-size:.78rem;color:var(--text);line-height:1.7">
+        <div>0–1 erreur : Bon équilibre</div>
+        <div>2–3 erreurs : Équilibre altéré</div>
+        <div>≥ 4 erreurs : Déficit significatif</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding:1px 0">
+    <div class="measure-row" style="background:var(--surface2);grid-template-columns:1fr 110px 110px">
+      <div class="col-header">Condition d'erreur</div>
+      <div class="col-header sl-cs">Côté Sain</div>
+      <div class="col-header sl-ca">Côté Atteint</div>
+    </div>
+    <div class="measure-row" style="grid-template-columns:1fr 110px 110px">
+      <div class="measure-label" style="font-size:.82rem">① Lève les mains de la crête iliaque</div>
+      <div style="display:flex;justify-content:center;align-items:center"><input type="checkbox" id="slst-cs-1" onchange="calcSLST()" style="width:18px;height:18px;accent-color:var(--accent2)"></div>
+      <div style="display:flex;justify-content:center;align-items:center;background:var(--surface2)"><input type="checkbox" id="slst-ca-1" onchange="calcSLST()" style="width:18px;height:18px;accent-color:var(--accent2)"></div>
+    </div>
+    <div class="measure-row" style="background:var(--surface2);grid-template-columns:1fr 110px 110px">
+      <div class="measure-label" style="font-size:.82rem;background:var(--surface2)">② Ouvre les yeux</div>
+      <div style="display:flex;justify-content:center;align-items:center;background:var(--surface2)"><input type="checkbox" id="slst-cs-2" onchange="calcSLST()" style="width:18px;height:18px;accent-color:var(--accent2)"></div>
+      <div style="display:flex;justify-content:center;align-items:center;background:var(--surface2)"><input type="checkbox" id="slst-ca-2" onchange="calcSLST()" style="width:18px;height:18px;accent-color:var(--accent2)"></div>
+    </div>
+    <div class="measure-row" style="grid-template-columns:1fr 110px 110px">
+      <div class="measure-label" style="font-size:.82rem">③ Marche, trébuche ou tombe</div>
+      <div style="display:flex;justify-content:center;align-items:center"><input type="checkbox" id="slst-cs-3" onchange="calcSLST()" style="width:18px;height:18px;accent-color:var(--accent2)"></div>
+      <div style="display:flex;justify-content:center;align-items:center;background:var(--surface2)"><input type="checkbox" id="slst-ca-3" onchange="calcSLST()" style="width:18px;height:18px;accent-color:var(--accent2)"></div>
+    </div>
+    <div class="measure-row" style="background:var(--surface2);grid-template-columns:1fr 110px 110px">
+      <div class="measure-label" style="font-size:.82rem;background:var(--surface2)">④ Déplacement de la hanche (flexion ou abduction &gt; 30°)</div>
+      <div style="display:flex;justify-content:center;align-items:center;background:var(--surface2)"><input type="checkbox" id="slst-cs-4" onchange="calcSLST()" style="width:18px;height:18px;accent-color:var(--accent2)"></div>
+      <div style="display:flex;justify-content:center;align-items:center;background:var(--surface2)"><input type="checkbox" id="slst-ca-4" onchange="calcSLST()" style="width:18px;height:18px;accent-color:var(--accent2)"></div>
+    </div>
+    <div class="measure-row" style="grid-template-columns:1fr 110px 110px">
+      <div class="measure-label" style="font-size:.82rem">⑤ Soulève l'avant-pied ou le talon</div>
+      <div style="display:flex;justify-content:center;align-items:center"><input type="checkbox" id="slst-cs-5" onchange="calcSLST()" style="width:18px;height:18px;accent-color:var(--accent2)"></div>
+      <div style="display:flex;justify-content:center;align-items:center;background:var(--surface2)"><input type="checkbox" id="slst-ca-5" onchange="calcSLST()" style="width:18px;height:18px;accent-color:var(--accent2)"></div>
+    </div>
+    <div class="measure-row" style="background:var(--surface2);grid-template-columns:1fr 110px 110px">
+      <div class="measure-label" style="font-size:.82rem;background:var(--surface2)">⑥ Reste hors de la position de test &gt; 5 s</div>
+      <div style="display:flex;justify-content:center;align-items:center;background:var(--surface2)"><input type="checkbox" id="slst-cs-6" onchange="calcSLST()" style="width:18px;height:18px;accent-color:var(--accent2)"></div>
+      <div style="display:flex;justify-content:center;align-items:center;background:var(--surface2)"><input type="checkbox" id="slst-ca-6" onchange="calcSLST()" style="width:18px;height:18px;accent-color:var(--accent2)"></div>
+    </div>
+    <div class="measure-row" style="background:var(--accent-l);grid-template-columns:1fr 110px 110px">
+      <div class="measure-label" style="background:var(--accent-l);font-weight:700;color:var(--accent2)">Total erreurs / 6</div>
+      <div class="measure-stat sl-cs" id="slst-cs-total" style="background:var(--accent-l);font-size:1rem;font-weight:700">—</div>
+      <div class="measure-stat sl-ca" id="slst-ca-total" style="background:var(--accent-l);font-size:1rem;font-weight:700">—</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+    <div style="background:var(--surface);padding:8px 14px 10px">
+      <div class="sl-cs" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
+      <textarea id="slst-obs-cs" placeholder="Ex: compensation tronc, tremblement…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:48px;resize:vertical;outline:none;line-height:1.5"></textarea>
+    </div>
+    <div style="background:var(--surface2);padding:8px 14px 10px">
+      <div class="sl-ca" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Atteint</div>
+      <textarea id="slst-obs-ca" placeholder="Ex: 4 erreurs, ouverture des yeux répétée…" style="font-family:inherit;font-size:.82rem;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:100%;min-height:48px;resize:vertical;outline:none;line-height:1.5;background:var(--surface2)"></textarea>
+    </div>
+  </div>
+</div>
+
 <!-- ══ PAGE: TESTS MUSCULAIRES ══════════════════════════════ -->
 
 <div class="page" id="page-musculaires">

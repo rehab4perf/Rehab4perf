@@ -3986,6 +3986,21 @@ function calcPiNDT() {
   });
 }
 
+function calcSLST() {
+  ['cs','ca'].forEach(function(side) {
+    var total = 0;
+    for (var i = 1; i <= 6; i++) {
+      var cb = document.getElementById('slst-' + side + '-' + i);
+      if (cb && cb.checked) total++;
+    }
+    var el = document.getElementById('slst-' + side + '-total');
+    if (el) {
+      el.textContent = total + ' / 6';
+      el.className = 'measure-stat ' + (total <= 1 ? 'good' : total <= 3 ? 'warn' : 'bad');
+    }
+  });
+}
+
 function calcMusc() {
   const calc = (ca, cs) => { const v = cs>0 ? (1-ca/cs)*100 : NaN; return v; };
   const setDef = (id, v) => {
@@ -4832,6 +4847,20 @@ function _buildAllTestsHtml() {
     tfHtml += crItem('SEBT — Score composite', _sebtA.replace('CA : ','').replace('CS : ','')+'('+_lA+')   '+_sebtB.replace('CA : ','').replace('CS : ','')+'('+_lB+')', '', '', ['sebt-ant-ca','sebt-pm-ca','sebt-pl-ca']);
   }
   tfHtml += obsBlock('sebt-obs-ca','sebt-obs-cs');
+  // Single-Leg Stance Test
+  var slstCSTotal = 0, slstCATotal = 0, slstTouched = false;
+  for (var si=1; si<=6; si++) {
+    var scsEl = document.getElementById('slst-cs-'+si);
+    var scaEl = document.getElementById('slst-ca-'+si);
+    if (scsEl && scsEl.checked) { slstCSTotal++; slstTouched = true; }
+    if (scaEl && scaEl.checked) { slstCATotal++; slstTouched = true; }
+  }
+  if (slstTouched) {
+    var slstCls = slstCATotal <= 1 ? 'good' : slstCATotal <= 3 ? 'warn' : 'bad';
+    var slstStat = slstCATotal <= 1 ? 'Bon équilibre' : slstCATotal <= 3 ? 'Équilibre altéré' : 'Déficit significatif';
+    tfHtml += crItem('Single-Leg Stance Test', _p(slstCATotal+'/6', slstCSTotal+'/6', ' erreurs'), slstStat, slstCls, ['slst-ca-1','slst-cs-1']);
+  }
+  tfHtml += obsBlock('slst-obs-ca','slst-obs-cs');
   // UQYBT
   var uqDirs = [{id:'med',label:'Médial'},{id:'il',label:'Inféro-latéral'},{id:'sl',label:'Supéro-latéral'}];
   for (var ui=0; ui<uqDirs.length; ui++) {
