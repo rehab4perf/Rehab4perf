@@ -3487,20 +3487,6 @@ textarea { resize:none !important; overflow:hidden !important; }
   <div class="measure-row" style="background:var(--surface2)">
     <div class="col-header">Test</div><div class="col-header sl-cs">Côté Sain</div><div class="col-header sl-ca">Côté Atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
   </div>
-  <!-- Adducteurs -->
-  <div class="measure-row">
-    <div class="measure-label">Adducteurs</div>
-    <div class="measure-input"><input type="number" id="ha-f-add-cs" min="0" placeholder="— kg" oninput="calcEpForce('ha-f-add')"></div>
-    <div class="measure-input"><input type="number" id="ha-f-add-ca" min="0" placeholder="— kg" oninput="calcEpForce('ha-f-add')"></div>
-    <div class="measure-stat" id="ha-f-add-lsi">—</div>
-    <div class="measure-stat" id="ha-f-add-stat">—</div>
-  </div>
-  <div class="measure-row" style="background:var(--surface2)">
-    <div style="font-size:.68rem;color:var(--text3);padding:0 10px;display:flex;align-items:center">Appréciation</div>
-    <div class="measure-input" style="background:var(--surface2)"><select id="ha-f-add-apr-cs" class="ep-apr-sel" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
-    <div class="measure-input" style="background:var(--surface2)"><select id="ha-f-add-apr-ca" class="ep-apr-sel" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
-    <div></div><div></div>
-  </div>
   <!-- Fléchisseurs -->
   <div class="measure-row">
     <div class="measure-label">Fléchisseurs</div>
@@ -3513,6 +3499,20 @@ textarea { resize:none !important; overflow:hidden !important; }
     <div style="font-size:.68rem;color:var(--text3);padding:0 10px;display:flex;align-items:center">Appréciation</div>
     <div class="measure-input" style="background:var(--surface2)"><select id="ha-f-flech-apr-cs" class="ep-apr-sel" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
     <div class="measure-input" style="background:var(--surface2)"><select id="ha-f-flech-apr-ca" class="ep-apr-sel" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
+    <div></div><div></div>
+  </div>
+  <!-- Adducteurs -->
+  <div class="measure-row">
+    <div class="measure-label">Adducteurs</div>
+    <div class="measure-input"><input type="number" id="ha-f-add-cs" min="0" placeholder="— kg" oninput="calcEpForce('ha-f-add')"></div>
+    <div class="measure-input"><input type="number" id="ha-f-add-ca" min="0" placeholder="— kg" oninput="calcEpForce('ha-f-add')"></div>
+    <div class="measure-stat" id="ha-f-add-lsi">—</div>
+    <div class="measure-stat" id="ha-f-add-stat">—</div>
+  </div>
+  <div class="measure-row" style="background:var(--surface2)">
+    <div style="font-size:.68rem;color:var(--text3);padding:0 10px;display:flex;align-items:center">Appréciation</div>
+    <div class="measure-input" style="background:var(--surface2)"><select id="ha-f-add-apr-cs" class="ep-apr-sel" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
+    <div class="measure-input" style="background:var(--surface2)"><select id="ha-f-add-apr-ca" class="ep-apr-sel" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
     <div></div><div></div>
   </div>
   <!-- Abduction hanche -->
