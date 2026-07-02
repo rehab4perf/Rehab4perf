@@ -931,7 +931,7 @@ function _resetBilanFields(){
   try{ updateAll(); calcRec(); calcPlioq(); }catch(ex){}
   try{ ['sls','hop','pset','set'].forEach(function(k){ calcLSI(k); }); calcDJ(); calcLunge(); calcHR(); calcMusc(); }catch(ex){}
   try{ calcPlioq2(); calcSEBT(); calcUQYBT(); calcSideHop(); }catch(ex){}
-  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-abd','ep-bht'].forEach(calcEpForce); }catch(ex){}
+  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht'].forEach(calcEpForce); }catch(ex){}
   try{ updateBadges(); _initAllRomBars(); }catch(ex){}
   // Éléments non couverts par les fonctions ci-dessus
   try{ var hl=document.getElementById('hdr-lma'); if(hl) hl.textContent='—'; }catch(ex){}
@@ -1063,14 +1063,18 @@ var TRACKED_METRICS = [
   {id:'rom-ep-g-re90',  label:'RE épaule G (90°)',           unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
   {id:'gird-ca',        label:'GIRD (côté atteint)',          unit:'°',   dir:'up',   cat:'Épaule — Mobilité'},
   // ── Épaule — Force ──────────────────────────────────────
-  {id:'ep-rl1-ca',      label:'RL1 (côté atteint)',           unit:'N',   dir:'up',   cat:'Épaule — Force'},
-  {id:'ep-rl1-cs',      label:'RL1 (côté sain)',              unit:'N',   dir:'up',   cat:'Épaule — Force'},
-  {id:'ep-rl2-ca',      label:'RL2 (côté atteint)',           unit:'N',   dir:'up',   cat:'Épaule — Force'},
-  {id:'ep-rl2-cs',      label:'RL2 (côté sain)',              unit:'N',   dir:'up',   cat:'Épaule — Force'},
-  {id:'ep-abd-ca',      label:'Abducteurs (atteint)',         unit:'N',   dir:'up',   cat:'Épaule — Force'},
-  {id:'ep-abd-cs',      label:'Abducteurs (sain)',            unit:'N',   dir:'up',   cat:'Épaule — Force'},
-  {id:'ep-bht-ca',      label:'BHT (côté atteint)',           unit:'N',   dir:'up',   cat:'Épaule — Force'},
-  {id:'ep-bht-cs',      label:'BHT (côté sain)',              unit:'N',   dir:'up',   cat:'Épaule — Force'},
+  {id:'ep-rl1-ca',      label:'RL1 (côté atteint)',           unit:'kg',  dir:'up',   cat:'Épaule — Force'},
+  {id:'ep-rl1-cs',      label:'RL1 (côté sain)',              unit:'kg',  dir:'up',   cat:'Épaule — Force'},
+  {id:'ep-rl2-ca',      label:'RL2 (côté atteint)',           unit:'kg',  dir:'up',   cat:'Épaule — Force'},
+  {id:'ep-rl2-cs',      label:'RL2 (côté sain)',              unit:'kg',  dir:'up',   cat:'Épaule — Force'},
+  {id:'ep-ri1-ca',      label:'RI1 (côté atteint)',           unit:'kg',  dir:'up',   cat:'Épaule — Force'},
+  {id:'ep-ri1-cs',      label:'RI1 (côté sain)',              unit:'kg',  dir:'up',   cat:'Épaule — Force'},
+  {id:'ep-ri2-ca',      label:'RI2 (côté atteint)',           unit:'kg',  dir:'up',   cat:'Épaule — Force'},
+  {id:'ep-ri2-cs',      label:'RI2 (côté sain)',              unit:'kg',  dir:'up',   cat:'Épaule — Force'},
+  {id:'ep-abd-ca',      label:'Abducteurs (atteint)',         unit:'kg',  dir:'up',   cat:'Épaule — Force'},
+  {id:'ep-abd-cs',      label:'Abducteurs (sain)',            unit:'kg',  dir:'up',   cat:'Épaule — Force'},
+  {id:'ep-bht-ca',      label:'BHT (côté atteint)',           unit:'kg',  dir:'up',   cat:'Épaule — Force'},
+  {id:'ep-bht-cs',      label:'BHT (côté sain)',              unit:'kg',  dir:'up',   cat:'Épaule — Force'},
   // ── Hanche — Mobilité ───────────────────────────────────
   {id:'ha-mob-d-flex',  label:'Flex. hanche D',              unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
   {id:'ha-mob-g-flex',  label:'Flex. hanche G',              unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
@@ -1148,10 +1152,12 @@ var CHART_GROUPS = [
   {cat:'Épaule — Mobilité', title:'RE épaule D vs G (90°)', type:'dual', idA:'rom-ep-d-re90', idB:'rom-ep-g-re90', unit:'°', dir:'up', labelA:'Côté D', labelB:'Côté G'},
   {cat:'Épaule — Mobilité', title:'GIRD (côté atteint)', type:'single', idA:'gird-ca', unit:'°', dir:'up', labelA:'GIRD'},
   // ─ Épaule — Force ─
-  {cat:'Épaule — Force', title:'RL1 — Atteint vs Sain', type:'dual', idA:'ep-rl1-ca', idB:'ep-rl1-cs', unit:'N', dir:'up', labelA:'Atteint', labelB:'Sain'},
-  {cat:'Épaule — Force', title:'RL2 — Atteint vs Sain', type:'dual', idA:'ep-rl2-ca', idB:'ep-rl2-cs', unit:'N', dir:'up', labelA:'Atteint', labelB:'Sain'},
-  {cat:'Épaule — Force', title:'Abducteurs — Atteint vs Sain', type:'dual', idA:'ep-abd-ca', idB:'ep-abd-cs', unit:'N', dir:'up', labelA:'Atteint', labelB:'Sain'},
-  {cat:'Épaule — Force', title:'BHT — Atteint vs Sain', type:'dual', idA:'ep-bht-ca', idB:'ep-bht-cs', unit:'N', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Épaule — Force', title:'RL1 — Atteint vs Sain', type:'dual', idA:'ep-rl1-ca', idB:'ep-rl1-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Épaule — Force', title:'RL2 — Atteint vs Sain', type:'dual', idA:'ep-rl2-ca', idB:'ep-rl2-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Épaule — Force', title:'RI1 — Atteint vs Sain', type:'dual', idA:'ep-ri1-ca', idB:'ep-ri1-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Épaule — Force', title:'RI2 — Atteint vs Sain', type:'dual', idA:'ep-ri2-ca', idB:'ep-ri2-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Épaule — Force', title:'Abducteurs — Atteint vs Sain', type:'dual', idA:'ep-abd-ca', idB:'ep-abd-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Épaule — Force', title:'BHT — Atteint vs Sain', type:'dual', idA:'ep-bht-ca', idB:'ep-bht-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
   // ─ Hanche — Mobilité ─
   {cat:'Hanche — Mobilité', title:'Flexion hanche D vs G', type:'dual', idA:'ha-mob-d-flex', idB:'ha-mob-g-flex', unit:'°', dir:'up', labelA:'Côté D', labelB:'Côté G'},
   {cat:'Hanche — Mobilité', title:'RI hanche D vs G', type:'dual', idA:'ha-mob-d-ri', idB:'ha-mob-g-ri', unit:'°', dir:'up', labelA:'Côté D', labelB:'Côté G'},
@@ -2385,7 +2391,7 @@ function _deserializeBilan(data){
   try{ calcRachisStat(); calcLNF(); calcSorensen(); calcPDSLRT(); calcShirado(); }catch(ex){}
   try{ calcPlioq2(); calcSEBT(); calcUQYBT(); updateBadges(); }catch(ex){}
   try{ _initAllRomBars(); }catch(ex){}
-  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-abd','ep-bht'].forEach(calcEpForce); }catch(ex){}
+  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht'].forEach(calcEpForce); }catch(ex){}
   _parsePainZones();
   _suppressDirty = false;
   _bilanModified = false;
@@ -4234,6 +4240,8 @@ function _buildAllTestsHtml() {
         {key:'ep-dent', label:'Dentelé ant. — Push up+'},
         {key:'ep-rl1',  label:'Rotateurs lat. RE1'},
         {key:'ep-rl2',  label:'Rotateurs lat. RE2'},
+        {key:'ep-ri1',  label:'Rotateurs int. RI1'},
+        {key:'ep-ri2',  label:'Rotateurs int. RI2'},
         {key:'ep-abd',  label:'Élévation antérieure'},
         {key:'ep-bht',  label:'Bear Hug Test'},
       ];
@@ -4792,6 +4800,8 @@ function _buildAllTestsHtml() {
       {key:'ep-dent', label:'Renforcer le dentelé antérieur'},
       {key:'ep-rl1',  label:'Renforcer les rotateurs externes RE1'},
       {key:'ep-rl2',  label:'Renforcer les rotateurs externes RE2'},
+      {key:'ep-ri1',  label:'Renforcer les rotateurs internes RI1'},
+      {key:'ep-ri2',  label:'Renforcer les rotateurs internes RI2'},
       {key:'ep-abd',  label:'Renforcer les élévateurs de l\'épaule'},
       {key:'ep-bht',  label:'Renforcer le sub-scapulaire'},
     ];

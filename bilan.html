@@ -1769,18 +1769,27 @@ textarea { resize:none !important; overflow:hidden !important; }
     <div style="padding:5px 14px 7px;font-size:.72rem;color:var(--text3)">❌ Positif si CS − CA &gt; 15° · Vérifier aussi arc rotatoire global (RE+RI) vs controlatéral</div>
   </div>
 
+  <!-- CONFLITS -->
+  <div style="border-top:2px solid var(--border)">
+    <div style="padding:6px 14px 2px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);background:var(--surface2);border-bottom:1px solid var(--border)">Conflits</div>
+    <table class="test-table">
+      <thead><tr><th style="width:50%">Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
+      <tbody id="tb-ep-ortho-conf"></tbody>
+    </table>
+  </div>
+
   <!-- FORCE -->
   <div style="border-top:2px solid var(--border)">
-    <div style="padding:6px 14px 2px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);background:var(--surface2);border-bottom:1px solid var(--border)">Force — Break Tests</div>
-    <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Avec dynamomètre → renseigner en Newtons (LSI auto · ❌ si &lt; 90%). Sans dynamomètre → appréciation directe par côté.</div>
+    <div style="padding:6px 14px 2px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);background:var(--surface2);border-bottom:1px solid var(--border)">Force</div>
+    <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Avec dynamomètre → renseigner en kg (LSI auto · ❌ si &lt; 90%). Sans dynamomètre → appréciation directe par côté.</div>
     <div class="measure-row" style="background:var(--surface2)">
       <div class="col-header">Test</div><div class="col-header sl-cs">Côté Sain</div><div class="col-header sl-ca">Côté Atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
     </div>
     <!-- Trapèze inférieur — Y Test -->
     <div class="measure-row">
       <div class="measure-label">Trapèze inf. — Y Test</div>
-      <div class="measure-input"><input type="number" id="ep-trap-cs" min="0" placeholder="— N" oninput="calcEpForce('ep-trap')"></div>
-      <div class="measure-input"><input type="number" id="ep-trap-ca" min="0" placeholder="— N" oninput="calcEpForce('ep-trap')"></div>
+      <div class="measure-input"><input type="number" id="ep-trap-cs" min="0" placeholder="— kg" oninput="calcEpForce('ep-trap')"></div>
+      <div class="measure-input"><input type="number" id="ep-trap-ca" min="0" placeholder="— kg" oninput="calcEpForce('ep-trap')"></div>
       <div class="measure-stat" id="ep-trap-lsi">—</div>
       <div class="measure-stat" id="ep-trap-stat">—</div>
     </div>
@@ -1804,11 +1813,11 @@ textarea { resize:none !important; overflow:hidden !important; }
       <div class="measure-input" style="background:var(--surface2)"><select id="ep-dent-apr-ca" class="ep-apr-sel" data-epforce="ep-dent" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
       <div></div><div></div>
     </div>
-    <!-- Rotateurs latéraux R1 -->
+    <!-- Rotateurs latéraux RE1 -->
     <div class="measure-row">
       <div class="measure-label">Rotateurs latéraux RE1</div>
-      <div class="measure-input"><input type="number" id="ep-rl1-cs" min="0" placeholder="— N" oninput="calcEpForce('ep-rl1')"></div>
-      <div class="measure-input"><input type="number" id="ep-rl1-ca" min="0" placeholder="— N" oninput="calcEpForce('ep-rl1')"></div>
+      <div class="measure-input"><input type="number" id="ep-rl1-cs" min="0" placeholder="— kg" oninput="calcEpForce('ep-rl1')"></div>
+      <div class="measure-input"><input type="number" id="ep-rl1-ca" min="0" placeholder="— kg" oninput="calcEpForce('ep-rl1')"></div>
       <div class="measure-stat" id="ep-rl1-lsi">—</div>
       <div class="measure-stat" id="ep-rl1-stat">—</div>
     </div>
@@ -1818,11 +1827,11 @@ textarea { resize:none !important; overflow:hidden !important; }
       <div class="measure-input" style="background:var(--surface2)"><select id="ep-rl1-apr-ca" class="ep-apr-sel" data-epforce="ep-rl1" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
       <div></div><div></div>
     </div>
-    <!-- Rotateurs latéraux R2 -->
+    <!-- Rotateurs latéraux RE2 -->
     <div class="measure-row">
       <div class="measure-label">Rotateurs latéraux RE2</div>
-      <div class="measure-input"><input type="number" id="ep-rl2-cs" min="0" placeholder="— N" oninput="calcEpForce('ep-rl2')"></div>
-      <div class="measure-input"><input type="number" id="ep-rl2-ca" min="0" placeholder="— N" oninput="calcEpForce('ep-rl2')"></div>
+      <div class="measure-input"><input type="number" id="ep-rl2-cs" min="0" placeholder="— kg" oninput="calcEpForce('ep-rl2')"></div>
+      <div class="measure-input"><input type="number" id="ep-rl2-ca" min="0" placeholder="— kg" oninput="calcEpForce('ep-rl2')"></div>
       <div class="measure-stat" id="ep-rl2-lsi">—</div>
       <div class="measure-stat" id="ep-rl2-stat">—</div>
     </div>
@@ -1832,11 +1841,39 @@ textarea { resize:none !important; overflow:hidden !important; }
       <div class="measure-input" style="background:var(--surface2)"><select id="ep-rl2-apr-ca" class="ep-apr-sel" data-epforce="ep-rl2" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
       <div></div><div></div>
     </div>
+    <!-- Rotateurs internes RI1 -->
+    <div class="measure-row">
+      <div class="measure-label">Rotateurs internes RI1</div>
+      <div class="measure-input"><input type="number" id="ep-ri1-cs" min="0" placeholder="— kg" oninput="calcEpForce('ep-ri1')"></div>
+      <div class="measure-input"><input type="number" id="ep-ri1-ca" min="0" placeholder="— kg" oninput="calcEpForce('ep-ri1')"></div>
+      <div class="measure-stat" id="ep-ri1-lsi">—</div>
+      <div class="measure-stat" id="ep-ri1-stat">—</div>
+    </div>
+    <div class="measure-row" style="background:var(--surface2)">
+      <div style="font-size:.68rem;color:var(--text3);padding:0 10px;display:flex;align-items:center">Appréciation</div>
+      <div class="measure-input" style="background:var(--surface2)"><select id="ep-ri1-apr-cs" class="ep-apr-sel" data-epforce="ep-ri1" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
+      <div class="measure-input" style="background:var(--surface2)"><select id="ep-ri1-apr-ca" class="ep-apr-sel" data-epforce="ep-ri1" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
+      <div></div><div></div>
+    </div>
+    <!-- Rotateurs internes RI2 -->
+    <div class="measure-row">
+      <div class="measure-label">Rotateurs internes RI2</div>
+      <div class="measure-input"><input type="number" id="ep-ri2-cs" min="0" placeholder="— kg" oninput="calcEpForce('ep-ri2')"></div>
+      <div class="measure-input"><input type="number" id="ep-ri2-ca" min="0" placeholder="— kg" oninput="calcEpForce('ep-ri2')"></div>
+      <div class="measure-stat" id="ep-ri2-lsi">—</div>
+      <div class="measure-stat" id="ep-ri2-stat">—</div>
+    </div>
+    <div class="measure-row" style="background:var(--surface2)">
+      <div style="font-size:.68rem;color:var(--text3);padding:0 10px;display:flex;align-items:center">Appréciation</div>
+      <div class="measure-input" style="background:var(--surface2)"><select id="ep-ri2-apr-cs" class="ep-apr-sel" data-epforce="ep-ri2" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
+      <div class="measure-input" style="background:var(--surface2)"><select id="ep-ri2-apr-ca" class="ep-apr-sel" data-epforce="ep-ri2" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
+      <div></div><div></div>
+    </div>
     <!-- Élévation antérieure -->
     <div class="measure-row">
       <div class="measure-label">Élévation antérieure</div>
-      <div class="measure-input"><input type="number" id="ep-abd-cs" min="0" placeholder="— N" oninput="calcEpForce('ep-abd')"></div>
-      <div class="measure-input"><input type="number" id="ep-abd-ca" min="0" placeholder="— N" oninput="calcEpForce('ep-abd')"></div>
+      <div class="measure-input"><input type="number" id="ep-abd-cs" min="0" placeholder="— kg" oninput="calcEpForce('ep-abd')"></div>
+      <div class="measure-input"><input type="number" id="ep-abd-ca" min="0" placeholder="— kg" oninput="calcEpForce('ep-abd')"></div>
       <div class="measure-stat" id="ep-abd-lsi">—</div>
       <div class="measure-stat" id="ep-abd-stat">—</div>
     </div>
@@ -1849,8 +1886,8 @@ textarea { resize:none !important; overflow:hidden !important; }
     <!-- Bear Hug Test -->
     <div class="measure-row">
       <div class="measure-label">Bear Hug Test — Sub-scapulaire</div>
-      <div class="measure-input"><input type="number" id="ep-bht-cs" min="0" placeholder="— N" oninput="calcEpForce('ep-bht')"></div>
-      <div class="measure-input"><input type="number" id="ep-bht-ca" min="0" placeholder="— N" oninput="calcEpForce('ep-bht')"></div>
+      <div class="measure-input"><input type="number" id="ep-bht-cs" min="0" placeholder="— kg" oninput="calcEpForce('ep-bht')"></div>
+      <div class="measure-input"><input type="number" id="ep-bht-ca" min="0" placeholder="— kg" oninput="calcEpForce('ep-bht')"></div>
       <div class="measure-stat" id="ep-bht-lsi">—</div>
       <div class="measure-stat" id="ep-bht-stat">—</div>
     </div>
@@ -1860,15 +1897,6 @@ textarea { resize:none !important; overflow:hidden !important; }
       <div class="measure-input" style="background:var(--surface2)"><select id="ep-bht-apr-ca" class="ep-apr-sel" data-epforce="ep-bht" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
       <div></div><div></div>
     </div>
-  </div>
-
-  <!-- CONFLITS -->
-  <div style="border-top:2px solid var(--border)">
-    <div style="padding:6px 14px 2px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);background:var(--surface2);border-bottom:1px solid var(--border)">Conflits</div>
-    <table class="test-table">
-      <thead><tr><th style="width:50%">Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
-      <tbody id="tb-ep-ortho-conf"></tbody>
-    </table>
   </div>
 </div>
 <div class="block" id="ep-bilateral-ortho" style="display:none">
