@@ -2584,8 +2584,45 @@ textarea { resize:none !important; overflow:hidden !important; }
     <div class="block" id="pi-bilateral-st" style="display:none"><div class="block-header red">Sous-Talienne</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-st-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-st-d"></tbody></table></div></div>
     <div class="block" id="pi-single-chopart"><div class="block-header red">Chopart</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-pi-chopart"></tbody></table></div>
     <div class="block" id="pi-bilateral-chopart" style="display:none"><div class="block-header red">Chopart</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-chopart-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-chopart-d"></tbody></table></div></div>
-    <div class="block" id="pi-single-fonc"><div class="block-header red">Tests Fonctionnels</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-pi-fonc"></tbody></table></div>
-    <div class="block" id="pi-bilateral-fonc" style="display:none"><div class="block-header red">Tests Fonctionnels</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-fonc-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-fonc-d"></tbody></table></div></div>
+    <div class="block">
+  <div class="block-header red">Tests Cliniques</div>
+  <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">LSI = min(G,D)/max(G,D) × 100 · Navicular Drop : effondrement si &gt; 10 mm</div>
+  <!-- Course interne mollet -->
+  <div class="measure-row" style="background:var(--surface2)">
+    <div class="col-header">Course interne mollet — talon/sol (cm)</div>
+    <div class="col-header">Gauche</div><div class="col-header">Droit</div>
+    <div class="col-header">LSI %</div><div class="col-header">Statut</div>
+  </div>
+  <div class="measure-row">
+    <div class="measure-label" style="font-size:.8rem;color:var(--text2)">Distance talon-sol sur pointes de pied</div>
+    <div class="measure-input"><input type="number" id="pi-cim-g" min="0" placeholder="— cm" oninput="calcPiCIM()"></div>
+    <div class="measure-input"><input type="number" id="pi-cim-d" min="0" placeholder="— cm" oninput="calcPiCIM()"></div>
+    <div class="measure-stat" id="pi-cim-lsi">—</div>
+    <div class="measure-stat" id="pi-cim-stat">—</div>
+  </div>
+  <!-- Navicular Drop Test -->
+  <div class="measure-row" style="background:var(--surface2);grid-template-columns:1fr 110px 180px 110px 180px">
+    <div class="col-header">Navicular Drop Test</div>
+    <div class="col-header">Gauche (mm)</div><div class="col-header">Statut G</div>
+    <div class="col-header">Droit (mm)</div><div class="col-header">Statut D</div>
+  </div>
+  <div class="measure-row" style="grid-template-columns:1fr 110px 180px 110px 180px">
+    <div class="measure-label" style="font-size:.8rem;color:var(--text2)">Différence hauteur naviculaire décharge → charge</div>
+    <div class="measure-input"><input type="number" id="pi-ndt-g" min="0" max="30" placeholder="— mm" oninput="calcPiNDT()"></div>
+    <div class="measure-stat" id="pi-ndt-g-stat">—</div>
+    <div class="measure-input"><input type="number" id="pi-ndt-d" min="0" max="30" placeholder="— mm" oninput="calcPiNDT()"></div>
+    <div class="measure-stat" id="pi-ndt-d-stat">—</div>
+  </div>
+  <!-- Too many toes sign + Windlass -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+    <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">GAUCHE</div>
+    <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">DROIT</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+    <table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-tc-g"></tbody></table>
+    <table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-tc-d"></tbody></table>
+  </div>
+</div>
 
 
 

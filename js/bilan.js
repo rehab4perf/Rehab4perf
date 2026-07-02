@@ -347,9 +347,8 @@ const TESTS = {
   'tb-pi-chopart':{type:'ortho',items:['Mobilisation Chopart','Neutral Heel Lateral Push Test']},
   'tb-pi-chopart-g':{type:'ortho',items:['Mobilisation Chopart','Neutral Heel Lateral Push Test']},
   'tb-pi-chopart-d':{type:'ortho',items:['Mobilisation Chopart','Neutral Heel Lateral Push Test']},
-  'tb-pi-fonc': {type:'ortho',items:['Course interne mollet','Navicular Drop Test (mm)','Avant-pied - équilibre pointes de pied (step)','Médio-pied - équilibre foot bridge','1ère ligne - montée pointes + cale 30° sous hallux','Équilibre classique global (yeux ouverts / yeux fermés)']},
-  'tb-pi-fonc-g':{type:'ortho',items:['Course interne mollet','Navicular Drop Test (mm)','Avant-pied - équilibre pointes de pied (step)','Médio-pied - équilibre foot bridge','1ère ligne - montée pointes + cale 30° sous hallux','Équilibre classique global (yeux ouverts / yeux fermés)']},
-  'tb-pi-fonc-d':{type:'ortho',items:['Course interne mollet','Navicular Drop Test (mm)','Avant-pied - équilibre pointes de pied (step)','Médio-pied - équilibre foot bridge','1ère ligne - montée pointes + cale 30° sous hallux','Équilibre classique global (yeux ouverts / yeux fermés)']},
+  'tb-pi-tc-g': {type:'ortho', items:['Too many toes sign','Windlass test']},
+  'tb-pi-tc-d': {type:'ortho', items:['Too many toes sign','Windlass test']},
 
   // ── LMA — mêmes 6 tests pour chaque muscle ──────────────────
   'tb-lma-pecto':  {type:'ortho',items:['Étirement actif','Étirement passif','Contraction isométrique course interne','Contraction isométrique course externe','Contraction excentrique','Palpation']},
@@ -3610,7 +3609,7 @@ function updateBadges() {
                'tb-ge-men-g','tb-ge-men-d','tb-ge-rot-g','tb-ge-rot-d','tb-ge-sbit-g','tb-ge-sbit-d',
                'tb-ge-plicae-g','tb-ge-plicae-d','tb-ge-ext-g','tb-ge-ext-d',
                ],
-    'pied':   ['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-fonc'],
+    'pied':   ['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-tc-g','tb-pi-tc-d'],
     'lma':    ['tb-lma-pecto','tb-lma-biceps','tb-lma-triceps','tb-lma-dorsal','tb-lma-interco','tb-lma-ischio','tb-lma-quadri','tb-lma-adduct','tb-lma-mollet'],
   };
   Object.entries(sections).forEach(([page, tables]) => {
@@ -3952,6 +3951,41 @@ function calcDJ() {
   setLSI(rlsiEl, rstatEl, rlsi, '>= 90%', true, bilateral);
 }
 
+function calcPiCIM() {
+  var gEl = document.getElementById('pi-cim-g');
+  var dEl = document.getElementById('pi-cim-d');
+  var lsiEl = document.getElementById('pi-cim-lsi');
+  var statEl = document.getElementById('pi-cim-stat');
+  if (!gEl || !dEl || !lsiEl || !statEl) return;
+  var g = parseFloat(gEl.value);
+  var d = parseFloat(dEl.value);
+  if (!isNaN(g) && g > 0 && !isNaN(d) && d > 0) {
+    var lsi = Math.min(g, d) / Math.max(g, d) * 100;
+    lsiEl.textContent = lsi.toFixed(0) + '%';
+    if (lsi >= 90)      { statEl.textContent = '✅ ≥ 90%'; statEl.className = 'measure-stat good'; }
+    else if (lsi >= 80) { statEl.textContent = '⚠️ ' + lsi.toFixed(0) + '%'; statEl.className = 'measure-stat warn'; }
+    else                { statEl.textContent = '❌ ' + lsi.toFixed(0) + '%'; statEl.className = 'measure-stat bad'; }
+  } else {
+    lsiEl.textContent = '—';
+    statEl.textContent = '—'; statEl.className = 'measure-stat';
+  }
+}
+
+function calcPiNDT() {
+  ['g','d'].forEach(function(side) {
+    var el = document.getElementById('pi-ndt-' + side);
+    var statEl = document.getElementById('pi-ndt-' + side + '-stat');
+    if (!el || !statEl) return;
+    var v = parseFloat(el.value);
+    if (!isNaN(v) && el.value !== '') {
+      if (v > 10) { statEl.textContent = 'Effondrement arche'; statEl.className = 'measure-stat bad'; }
+      else        { statEl.textContent = 'Normal (' + v + ' mm)'; statEl.className = 'measure-stat good'; }
+    } else {
+      statEl.textContent = '—'; statEl.className = 'measure-stat';
+    }
+  });
+}
+
 function calcMusc() {
   const calc = (ca, cs) => { const v = cs>0 ? (1-ca/cs)*100 : NaN; return v; };
   const setDef = (id, v) => {
@@ -4185,7 +4219,7 @@ function _buildAllTestsHtml() {
         'tb-ge-men-g','tb-ge-men-d','tb-ge-rot-g','tb-ge-rot-d','tb-ge-sbit-g','tb-ge-sbit-d',
         'tb-ge-plicae-g','tb-ge-plicae-d','tb-ge-ext-g','tb-ge-ext-d',
         ], concl:'ge-conclusion', opt:'ge-opt' },
-    { label:'PIED / CHEVILLE', pk:'pied', fields:[['pi-marqueur','Marqueur']], tables:['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-fonc','tb-pi-global-g','tb-pi-global-d','tb-pi-amp-g','tb-pi-amp-d','tb-pi-tt-g','tb-pi-tt-d','tb-pi-synd-g','tb-pi-synd-d','tb-pi-conf-g','tb-pi-conf-d','tb-pi-st-g','tb-pi-st-d','tb-pi-chopart-g','tb-pi-chopart-d','tb-pi-fonc-g','tb-pi-fonc-d'], concl:'pi-conclusion', opt:'pi-opt' },
+    { label:'PIED / CHEVILLE', pk:'pied', fields:[['pi-marqueur','Marqueur']], tables:['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-global-g','tb-pi-global-d','tb-pi-amp-g','tb-pi-amp-d','tb-pi-tt-g','tb-pi-tt-d','tb-pi-synd-g','tb-pi-synd-d','tb-pi-conf-g','tb-pi-conf-d','tb-pi-st-g','tb-pi-st-d','tb-pi-chopart-g','tb-pi-chopart-d','tb-pi-tc-g','tb-pi-tc-d'], concl:'pi-conclusion', opt:'pi-opt' },
   ];
   var orthoHtml = '';
   for (var oi=0; oi<orthoSections.length; oi++) {
@@ -4545,6 +4579,29 @@ function _buildAllTestsHtml() {
       })();
     }
     if (sec.label === 'PIED / CHEVILLE') {
+      // Course interne mollet
+      var cimG = parseFloat((document.getElementById('pi-cim-g')||{}).value);
+      var cimD = parseFloat((document.getElementById('pi-cim-d')||{}).value);
+      if (!isNaN(cimG) || !isNaN(cimD)) {
+        var cimLsi = document.getElementById('pi-cim-lsi');
+        var cimStat = document.getElementById('pi-cim-stat');
+        var cimLsiTxt = cimLsi ? cimLsi.textContent : '—';
+        var cimStatTxt = cimStat ? cimStat.textContent.replace(/[✅⚠️❌]\s*/,'') : '—';
+        var cimCls = cimStat ? (cimStat.className.includes('good') ? 'ok' : cimStat.className.includes('warn') ? 'warn' : cimStat.className.includes('bad') ? 'bad' : '') : '';
+        var cimDetail = (!isNaN(cimG) ? 'G : '+cimG+' cm' : '') + ((!isNaN(cimG)&&!isNaN(cimD))?' · ':'') + (!isNaN(cimD) ? 'D : '+cimD+' cm' : '') + ' · LSI : ' + cimLsiTxt;
+        secRows += crItem('Course interne mollet', cimDetail, cimStatTxt, cimCls, ['pi-cim-g','pi-cim-d'].filter(function(i){ var e=document.getElementById(i); return e&&e.value; }));
+      }
+      // Navicular Drop Test
+      ['g','d'].forEach(function(side) {
+        var el = document.getElementById('pi-ndt-' + side);
+        if (!el || !el.value) return;
+        var v = parseFloat(el.value);
+        if (isNaN(v)) return;
+        var statEl = document.getElementById('pi-ndt-' + side + '-stat');
+        var statTxt = statEl ? statEl.textContent : (v > 10 ? 'Effondrement arche' : 'Normal');
+        var tagCls = v > 10 ? 'bad' : 'ok';
+        secRows += crItem('Navicular Drop Test — ' + (side==='g'?'Gauche':'Droit'), v+' mm', statTxt, tagCls, ['pi-ndt-'+side]);
+      });
       // Force musculaire pied/cheville
       var piForceTests = [
         {key:'pi-f-fp',  label:'Flexion plantaire'},
@@ -6499,7 +6556,7 @@ function _updateGenouBilateral(){
 function _updateChevBilateral(){
   var cote = _getCoteForScope(['cheville','pied']);
   var bilateral = (cote === 'BILATÉRAL');
-  var blocks = ['global','tt','synd','conf','st','chopart','fonc'];
+  var blocks = ['global','tt','synd','conf','st','chopart'];
   blocks.forEach(function(b){
     var single = document.getElementById('pi-single-' + b);
     var bil    = document.getElementById('pi-bilateral-' + b);
