@@ -561,6 +561,7 @@ window.addEventListener('resize', function(){
 var _mode = ''; // 'prog' ou 'cal'
 var _patientId = '';
 var _progId = '';
+var _seanceId  = '';   // seances_planifiees.id passé via ?seance= (lien séance unique)
 var _kineMode = false; // true si ?mode=kine dans l'URL
 var _pratId   = '';    // praticien_id transmis via ?prat=
 var _calYear = new Date().getFullYear();
@@ -605,6 +606,7 @@ function init(){
   var params = new URLSearchParams(window.location.search);
   _progId    = params.get('prog')    || '';
   _patientId = params.get('patient') || '';
+  _seanceId  = params.get('seance')  || '';
   _kineMode  = params.get('mode') === 'kine';
   _pratId    = params.get('prat')    || '';
 
@@ -652,7 +654,30 @@ function loadProgById(id, callback){
 }
 
 function renderProgInMain(prog){
-  document.getElementById('mainContent').innerHTML = buildProgHTML(prog);
+  var donnees = prog.donnees || {};
+  var isCap = donnees.type === 'cap' || (prog.nom && prog.nom.indexOf('CAP —') === 0);
+  var isHsr = donnees.type === 'hsr' || (prog.nom && prog.nom.indexOf('HSR —') === 0);
+  var html = isCap ? _buildCapProgHTML(prog) : (isHsr ? _buildHsrProgHTML(prog) : buildProgHTML(prog));
+  if(!_seanceId){
+    document.getElementById('mainContent').innerHTML = html;
+    return;
+  }
+  fetch(SUPA_URL + '/rest/v1/athlete_feedback?seance_id=eq.' + _seanceId, {
+    headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(fbArr){
+    var existing = (Array.isArray(fbArr) && fbArr.length) ? fbArr[0] : null;
+    var raw = prog.donnees || [];
+    var blocs = Array.isArray(raw) ? raw : (raw.blocs || []);
+    _loadPainRatings();
+    _loadSessionNote();
+    html += (isCap || isHsr) ? _buildCapPainCard(_seanceId, existing) : buildRpeCard(_seanceId, blocs, existing);
+    document.getElementById('mainContent').innerHTML = html;
+  })
+  .catch(function(){
+    document.getElementById('mainContent').innerHTML = html;
+  });
 }
 
 // ── Mode calendrier ──────────────────────────────────
