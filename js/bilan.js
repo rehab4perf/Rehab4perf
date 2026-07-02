@@ -333,8 +333,6 @@ const TESTS = {
   'tb-ra-force-d':{type:'ortho',items:['Break test Abdominaux (droits CE+CI)','Break test Obliques','Break test Extenseurs rachis']},
   'tb-ra-force-g':{type:'ortho',items:['Break test Abdominaux (droits CE+CI)','Break test Obliques','Break test Extenseurs rachis']},
   'tb-ra-transverse':{type:'ortho',items:['Test du transverse (toux + valsalva)']},
-  'tb-ha-force-d':{type:'ortho',items:['Break test Adducteurs','Break test Abdominaux (CE+CI + obliques)','Break test Fléchisseurs hanche','Break test Abduction hanche','Break test Rotation interne hanche','Break test Rotation externe hanche']},
-  'tb-ha-force-g':{type:'ortho',items:['Break test Adducteurs','Break test Abdominaux (CE+CI + obliques)','Break test Fléchisseurs hanche','Break test Abduction hanche','Break test Rotation interne hanche','Break test Rotation externe hanche']},
   'tb-pi-global':{type:'ortho',items:['Liberté articulaire globale','Flexion plantaire','Flexion dorsale']},
   'tb-pi-global-g':{type:'ortho',items:['Liberté articulaire globale','Flexion plantaire','Flexion dorsale']},
   'tb-pi-global-d':{type:'ortho',items:['Liberté articulaire globale','Flexion plantaire','Flexion dorsale']},
@@ -931,7 +929,7 @@ function _resetBilanFields(){
   try{ updateAll(); calcRec(); calcPlioq(); }catch(ex){}
   try{ ['sls','hop','pset','set'].forEach(function(k){ calcLSI(k); }); calcDJ(); calcLunge(); calcHR(); calcMusc(); }catch(ex){}
   try{ calcPlioq2(); calcSEBT(); calcUQYBT(); calcSideHop(); }catch(ex){}
-  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht'].forEach(calcEpForce); }catch(ex){}
+  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht'].forEach(calcEpForce); ['ha-f-add','ha-f-abdo','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); }catch(ex){}
   try{ updateBadges(); _initAllRomBars(); }catch(ex){}
   // Éléments non couverts par les fonctions ci-dessus
   try{ var hl=document.getElementById('hdr-lma'); if(hl) hl.textContent='—'; }catch(ex){}
@@ -1075,6 +1073,19 @@ var TRACKED_METRICS = [
   {id:'ep-abd-cs',      label:'Abducteurs (sain)',            unit:'kg',  dir:'up',   cat:'Épaule — Force'},
   {id:'ep-bht-ca',      label:'BHT (côté atteint)',           unit:'kg',  dir:'up',   cat:'Épaule — Force'},
   {id:'ep-bht-cs',      label:'BHT (côté sain)',              unit:'kg',  dir:'up',   cat:'Épaule — Force'},
+  // ── Hanche — Force ──────────────────────────────────────────
+  {id:'ha-f-add-ca',    label:'Adducteurs (atteint)',         unit:'kg',  dir:'up',   cat:'Hanche — Force'},
+  {id:'ha-f-add-cs',    label:'Adducteurs (sain)',            unit:'kg',  dir:'up',   cat:'Hanche — Force'},
+  {id:'ha-f-abdo-ca',   label:'Abdominaux (atteint)',         unit:'kg',  dir:'up',   cat:'Hanche — Force'},
+  {id:'ha-f-abdo-cs',   label:'Abdominaux (sain)',            unit:'kg',  dir:'up',   cat:'Hanche — Force'},
+  {id:'ha-f-flech-ca',  label:'Fléchisseurs hanche (atteint)',unit:'kg',  dir:'up',   cat:'Hanche — Force'},
+  {id:'ha-f-flech-cs',  label:'Fléchisseurs hanche (sain)',   unit:'kg',  dir:'up',   cat:'Hanche — Force'},
+  {id:'ha-f-abd-ca',    label:'Abduction hanche (atteint)',   unit:'kg',  dir:'up',   cat:'Hanche — Force'},
+  {id:'ha-f-abd-cs',    label:'Abduction hanche (sain)',      unit:'kg',  dir:'up',   cat:'Hanche — Force'},
+  {id:'ha-f-ri-ca',     label:'RI hanche (atteint)',          unit:'kg',  dir:'up',   cat:'Hanche — Force'},
+  {id:'ha-f-ri-cs',     label:'RI hanche (sain)',             unit:'kg',  dir:'up',   cat:'Hanche — Force'},
+  {id:'ha-f-re-ca',     label:'RE hanche (atteint)',          unit:'kg',  dir:'up',   cat:'Hanche — Force'},
+  {id:'ha-f-re-cs',     label:'RE hanche (sain)',             unit:'kg',  dir:'up',   cat:'Hanche — Force'},
   // ── Hanche — Mobilité ───────────────────────────────────
   {id:'ha-mob-d-flex',  label:'Flex. hanche D',              unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
   {id:'ha-mob-g-flex',  label:'Flex. hanche G',              unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
@@ -1158,6 +1169,13 @@ var CHART_GROUPS = [
   {cat:'Épaule — Force', title:'RI2 — Atteint vs Sain', type:'dual', idA:'ep-ri2-ca', idB:'ep-ri2-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
   {cat:'Épaule — Force', title:'Abducteurs — Atteint vs Sain', type:'dual', idA:'ep-abd-ca', idB:'ep-abd-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
   {cat:'Épaule — Force', title:'BHT — Atteint vs Sain', type:'dual', idA:'ep-bht-ca', idB:'ep-bht-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  // ─ Hanche — Force ─
+  {cat:'Hanche — Force', title:'Adducteurs — Atteint vs Sain', type:'dual', idA:'ha-f-add-ca', idB:'ha-f-add-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Hanche — Force', title:'Abdominaux — Atteint vs Sain', type:'dual', idA:'ha-f-abdo-ca', idB:'ha-f-abdo-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Hanche — Force', title:'Fléchisseurs hanche — Atteint vs Sain', type:'dual', idA:'ha-f-flech-ca', idB:'ha-f-flech-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Hanche — Force', title:'Abduction hanche — Atteint vs Sain', type:'dual', idA:'ha-f-abd-ca', idB:'ha-f-abd-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Hanche — Force', title:'RI hanche — Atteint vs Sain', type:'dual', idA:'ha-f-ri-ca', idB:'ha-f-ri-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Hanche — Force', title:'RE hanche — Atteint vs Sain', type:'dual', idA:'ha-f-re-ca', idB:'ha-f-re-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
   // ─ Hanche — Mobilité ─
   {cat:'Hanche — Mobilité', title:'Flexion hanche D vs G', type:'dual', idA:'ha-mob-d-flex', idB:'ha-mob-g-flex', unit:'°', dir:'up', labelA:'Côté D', labelB:'Côté G'},
   {cat:'Hanche — Mobilité', title:'RI hanche D vs G', type:'dual', idA:'ha-mob-d-ri', idB:'ha-mob-g-ri', unit:'°', dir:'up', labelA:'Côté D', labelB:'Côté G'},
@@ -2391,7 +2409,7 @@ function _deserializeBilan(data){
   try{ calcRachisStat(); calcLNF(); calcSorensen(); calcPDSLRT(); calcShirado(); }catch(ex){}
   try{ calcPlioq2(); calcSEBT(); calcUQYBT(); updateBadges(); }catch(ex){}
   try{ _initAllRomBars(); }catch(ex){}
-  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht'].forEach(calcEpForce); }catch(ex){}
+  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht'].forEach(calcEpForce); ['ha-f-add','ha-f-abdo','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); }catch(ex){}
   _parsePainZones();
   _suppressDirty = false;
   _bilanModified = false;
@@ -3570,7 +3588,7 @@ function updateBadges() {
     'rachis': ['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-force-d','tb-ra-force-g','tb-ra-transverse'],
     'rachis-cerv': ['tb-cv-vascul','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-dn4-itw','tb-cv-dn4-exam','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-sensib-g','tb-cv-sensib-d'],
     'rachis-lomb': ['tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-plet','tb-rl-laslett-1','tb-rl-laslett-2','tb-rl-laslett-3','tb-rl-instab','tb-rl-tfd-suite','tb-rl-tfa-suite','tb-rl-transverse'],
-    'hanche': ['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-force-d','tb-ha-force-g','tb-ha-global-g','tb-ha-global-d','tb-ha-add-g','tb-ha-add-d','tb-ha-pubis-g','tb-ha-pubis-d','tb-ha-flech-g','tb-ha-flech-d','tb-ha-inguinal-g','tb-ha-inguinal-d','tb-ha-hanche-g','tb-ha-hanche-d'],
+    'hanche': ['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-global-g','tb-ha-global-d','tb-ha-add-g','tb-ha-add-d','tb-ha-pubis-g','tb-ha-pubis-d','tb-ha-flech-g','tb-ha-flech-d','tb-ha-inguinal-g','tb-ha-inguinal-d','tb-ha-hanche-g','tb-ha-hanche-d'],
     'genou':  ['tb-ge-global','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-ext',
                'tb-ge-global-g','tb-ge-global-d','tb-ge-lig-g','tb-ge-lig-d','tb-ge-lca-g','tb-ge-lca-d',
                'tb-ge-men-g','tb-ge-men-d','tb-ge-rot-g','tb-ge-rot-d','tb-ge-sbit-g','tb-ge-sbit-d',
@@ -4144,7 +4162,7 @@ function _buildAllTestsHtml() {
     { label:'RACHIS CERVICAL', pk:'', fields:[['cv-marqueur','Marqueur']], tables:['tb-cv-vascul','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-dn4-itw','tb-cv-dn4-exam','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-sensib-g','tb-cv-sensib-d'], concl:'cv-conclusion' },
     { label:'RACHIS LOMBAIRE', pk:'', fields:[['rl-marqueur','Marqueur']], tables:['tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-plet','tb-rl-laslett-1','tb-rl-laslett-2','tb-rl-laslett-3','tb-rl-instab','tb-rl-tfd-suite','tb-rl-tfa-suite','tb-rl-transverse'], concl:'rl-conclusion' },
     { label:'RACHIS', pk:'rachis', fields:[['ra-marqueur','Marqueur'],['ra-mckenzie','McKenzie']], tables:['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-force-d','tb-ra-force-g','tb-ra-transverse'], concl:'ra-conclusion', opt:'ra-opt' },
-    { label:'HANCHE', pk:'hanche', fields:[['ha-marqueur','Marqueur']], tables:['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-force-d','tb-ha-force-g','tb-ha-global-g','tb-ha-global-d','tb-ha-add-g','tb-ha-add-d','tb-ha-pubis-g','tb-ha-pubis-d','tb-ha-flech-g','tb-ha-flech-d','tb-ha-inguinal-g','tb-ha-inguinal-d','tb-ha-hanche-g','tb-ha-hanche-d'], concl:'ha-conclusion', opt:'ha-opt' },
+    { label:'HANCHE', pk:'hanche', fields:[['ha-marqueur','Marqueur']], tables:['tb-ha-global','tb-ha-add','tb-ha-pubis','tb-ha-flech','tb-ha-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-global-g','tb-ha-global-d','tb-ha-add-g','tb-ha-add-d','tb-ha-pubis-g','tb-ha-pubis-d','tb-ha-flech-g','tb-ha-flech-d','tb-ha-inguinal-g','tb-ha-inguinal-d','tb-ha-hanche-g','tb-ha-hanche-d'], concl:'ha-conclusion', opt:'ha-opt' },
     { label:'GENOU', pk:'genou', fields:[['ge-marqueur','Marqueur']], tables:[
         'tb-ge-global','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-ext',
         'tb-ge-global-g','tb-ge-global-d','tb-ge-lig-g','tb-ge-lig-d','tb-ge-lca-g','tb-ge-lca-d',
@@ -4203,6 +4221,35 @@ function _buildAllTestsHtml() {
       var haObsD = (document.getElementById('ha-mob-d-obs')||{}).value||'';
       if (haObsG) secRows += '<div style="margin:2px 0 6px;padding:5px 10px;background:var(--surface2);border-radius:5px;font-size:.82rem;color:var(--text2);font-style:italic">Obs. Hanche G : '+nl2br(haObsG)+'</div>';
       if (haObsD) secRows += '<div style="margin:2px 0 6px;padding:5px 10px;background:var(--surface2);border-radius:5px;font-size:.82rem;color:var(--text2);font-style:italic">Obs. Hanche D : '+nl2br(haObsD)+'</div>';
+      // Force musculaire hanche
+      var haForceTests = [
+        {key:'ha-f-add',   label:'Adducteurs'},
+        {key:'ha-f-abdo',  label:'Abdominaux (CE+CI + obliques)'},
+        {key:'ha-f-flech', label:'Fléchisseurs hanche'},
+        {key:'ha-f-abd',   label:'Abduction hanche'},
+        {key:'ha-f-ri',    label:'Rotation interne hanche'},
+        {key:'ha-f-re',    label:'Rotation externe hanche'},
+      ];
+      haForceTests.forEach(function(ft) {
+        var csN = parseFloat((document.getElementById(ft.key+'-cs')||{}).value);
+        var caN = parseFloat((document.getElementById(ft.key+'-ca')||{}).value);
+        var csA = (document.getElementById(ft.key+'-apr-cs')||{}).value||'';
+        var caA = (document.getElementById(ft.key+'-apr-ca')||{}).value||'';
+        if (!isNaN(csN) && csN > 0) {
+          var lsiV = !isNaN(caN) ? caN/csN*100 : NaN;
+          var isPos = !isNaN(lsiV) && lsiV < 90;
+          var valStr = 'CS='+csN+' kg'+(!isNaN(caN)?' CA='+caN+' kg':'')+(!isNaN(lsiV)?' LSI='+lsiV.toFixed(0)+'%':'');
+          secRows += crItem(ft.label, valStr, isPos?'Positif':'Négatif', isPos?'bad':'ok', [ft.key+'-cs',ft.key+'-ca']);
+        } else if (csA || caA) {
+          var parts = [];
+          if (csA) parts.push(_labelCS+'='+csA);
+          if (caA) parts.push(_labelCA+'='+caA);
+          var anyPos = csA==='Positif' || caA==='Positif';
+          if (anyPos || csA==='Négatif' || caA==='Négatif') {
+            secRows += crItem(ft.label, parts.join(' · '), anyPos?'Positif':'Négatif', anyPos?'bad':'ok', [ft.key+'-apr-cs',ft.key+'-apr-ca']);
+          }
+        }
+      });
     }
     if (sec.label === 'GENOU') {
       var geMobFields = ['flex','ext','ri','re','abd','add'];
@@ -4721,7 +4768,6 @@ function _buildAllTestsHtml() {
 
   // ── Break tests force (wording : "Renforcer [muscle]") ──────────────────
   var forceTables = [
-    {id:'tb-ha-force-d', side:'Droit'},  {id:'tb-ha-force-g', side:'Gauche'},
     {id:'tb-ge-knee-d',  side:'Droit'},  {id:'tb-ge-knee-g',  side:'Gauche'},
     {id:'tb-ge-hip-d',   side:'Droit'},  {id:'tb-ge-hip-g',   side:'Gauche'},
     {id:'tb-ra-force-d', side:'Droit'},  {id:'tb-ra-force-g', side:'Gauche'},
@@ -4845,6 +4891,35 @@ function _buildAllTestsHtml() {
       toWork.push('Travailler le gain en rotation interne gléno-humérale — ' + _labelCA + ' (GIRD ' + (girdCS2-girdCA2).toFixed(0) + '°)');
     }
     // ULNT positifs (tb-ep-irrit)
+    var irritTbody = document.getElementById('tb-ep-irrit');
+  })();
+
+  // ── Force musculaire hanche ──────────────────────────────────────────────
+  (function(){
+    var haForceMap = [
+      {key:'ha-f-add',   label:'Renforcer les adducteurs'},
+      {key:'ha-f-abdo',  label:'Renforcer les abdominaux (CE+CI + obliques)'},
+      {key:'ha-f-flech', label:'Renforcer les fléchisseurs de hanche'},
+      {key:'ha-f-abd',   label:'Renforcer les abducteurs de hanche'},
+      {key:'ha-f-ri',    label:'Renforcer les rotateurs internes de hanche'},
+      {key:'ha-f-re',    label:'Renforcer les rotateurs externes de hanche'},
+    ];
+    haForceMap.forEach(function(ft) {
+      var csN = parseFloat((document.getElementById(ft.key+'-cs')||{}).value);
+      var caN = parseFloat((document.getElementById(ft.key+'-ca')||{}).value);
+      var csA = (document.getElementById(ft.key+'-apr-cs')||{}).value||'';
+      var caA = (document.getElementById(ft.key+'-apr-ca')||{}).value||'';
+      if (!isNaN(csN) && csN > 0) {
+        if (!isNaN(caN) && csN > 0 && caN/csN*100 < 90) { var iH = ft.label+' — '+_labelCA+' (LSI '+(caN/csN*100).toFixed(0)+'%)'; if (toWork.indexOf(iH)<0) toWork.push(iH); }
+      } else {
+        if (csA==='Positif') { var iHa = ft.label+' — '+_labelCS; if (toWork.indexOf(iHa)<0) toWork.push(iHa); }
+        if (caA==='Positif') { var iHb = ft.label+' — '+_labelCA; if (toWork.indexOf(iHb)<0) toWork.push(iHb); }
+      }
+    });
+  })();
+
+  // ── ULNT épaule ─────────────────────────────────────────────────────────
+  (function(){
     var irritTbody = document.getElementById('tb-ep-irrit');
     if (irritTbody) {
       var ulntPos = [];
