@@ -127,12 +127,10 @@ const TESTS = {
   ]},
   'tb-rl-rot-g': {type:'ortho', items:[
     'L4 / L3 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Réflexe rotulien</span>',
-    'L5 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Pas de réflexe spécifique</span>',
     'S1 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Réflexe achilléen</span>'
   ]},
   'tb-rl-rot-d': {type:'ortho', items:[
     'L4 / L3 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Réflexe rotulien</span>',
-    'L5 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Pas de réflexe spécifique</span>',
     'S1 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Réflexe achilléen</span>'
   ]},
   'tb-rl-motric-g': {type:'ortho', items:[
@@ -3454,26 +3452,41 @@ var _MCK_MVTS = ['flex','ext','incl-g','incl-d','rot-g','rot-d','gliss-g','gliss
 var _MCK_GREEN = {Centralisation:1, Abolition:1};
 var _MCK_RED   = {Périphérisation:1, Augmentation:1};
 
+var _MCK_LBLS = {
+  'flex':'Flexion','ext':'Extension',
+  'incl-g':'Inclinaison gauche','incl-d':'Inclinaison droite',
+  'rot-g':'Rotation gauche','rot-d':'Rotation droite',
+  'gliss-g':'Glissement gauche','gliss-d':'Glissement droit'
+};
+
 function _calcMckenzie() {
   var hasGreen = false, hasRed = false;
+  var favDirs = [];
   _MCK_MVTS.forEach(function(m) {
     var sel = document.getElementById('mck-' + m + '-res');
     if (!sel) return;
     var v = sel.value;
     if (_MCK_GREEN[v]) {
-      sel.style.background = 'var(--green-l,#eaf3de)'; sel.style.color = 'var(--green,#27500a)'; hasGreen = true;
+      sel.style.background = 'var(--green-l,#eaf3de)'; sel.style.color = 'var(--green,#27500a)';
+      hasGreen = true; favDirs.push(_MCK_LBLS[m]);
     } else if (_MCK_RED[v]) {
       sel.style.background = 'var(--red-l,#fcebeb)'; sel.style.color = 'var(--red,#791f1f)'; hasRed = true;
     } else if (v === 'Diminution') {
       sel.style.background = '#e6f1fb'; sel.style.color = '#185fa5';
+      favDirs.push(_MCK_LBLS[m]);
     } else {
       sel.style.background = ''; sel.style.color = '';
     }
   });
   var gEl = document.getElementById('mck-central-badge');
   var rEl = document.getElementById('mck-periph-badge');
-  if (gEl) gEl.style.display = hasGreen ? 'flex' : 'none';
-  if (rEl) rEl.style.display = hasRed   ? 'flex' : 'none';
+  var showBadge = hasGreen || favDirs.length > 0;
+  if (gEl) {
+    gEl.style.display = showBadge ? 'flex' : 'none';
+    var dirTxt = document.getElementById('mck-dir-txt');
+    if (dirTxt) dirTxt.textContent = favDirs.join(', ');
+  }
+  if (rEl) rEl.style.display = hasRed ? 'flex' : 'none';
 }
 
 function _calcLaslett() {
@@ -4375,10 +4388,14 @@ function _buildAllTestsHtml() {
             + '<td style="padding:3px 8px;font-size:.78rem;color:var(--text2);font-style:italic">'+nl2br(nt)+'</td>'
             + '</tr>';
         });
-        var dir  = (document.getElementById('mck-direction')||{}).value || '';
-        var synd = (document.getElementById('mck-syndrome')||{}).value  || '';
-        if (anyMck || dir || synd) {
-          var summary = [dir ? 'Direction préférentielle : '+dir : '', synd ? 'Syndrome : '+synd : ''].filter(Boolean).join('   ');
+        var _favDirsCR = [];
+        _MCK_MVTS.forEach(function(m){
+          var res = (document.getElementById('mck-'+m+'-res')||{}).value || '';
+          if (_MCK_GREEN[res] || res === 'Diminution') _favDirsCR.push(_MCK_LBLS[m]);
+        });
+        var dir = _favDirsCR.length ? _favDirsCR.join(', ') : '';
+        if (anyMck || dir) {
+          var summary = dir ? 'Direction(s) préférentielle(s) : ' + dir : '';
           secRows += '<div style="margin:4px 0 10px">'
             + '<div style="font-size:.77rem;font-weight:600;color:var(--text2);margin-bottom:3px">McKenzie (MDT)</div>'
             + (anyMck ? '<table style="width:100%;border-collapse:collapse"><thead><tr style="background:var(--surface2)">'

@@ -676,7 +676,7 @@ body {
 .img-cell-input::placeholder { color:var(--text2); opacity:.55; }
 
 /* ── Test table ──────────────────────────────────────────── */
-.test-table { width: 100%; border-collapse: collapse; }
+.test-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .test-table th {
   background: var(--surface2);
   color: var(--text2);
@@ -2377,23 +2377,9 @@ textarea { resize:none !important; overflow:hidden !important; }
           </tr>
         </tbody>
       </table>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border-top:2px solid var(--border)">
-        <div style="background:var(--surface);padding:10px 14px">
-          <div style="font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:5px">Direction préférentielle</div>
-          <select id="mck-direction" style="font-size:.8rem;padding:4px 8px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);width:100%">
-            <option value="">—</option><option>Extension</option><option>Flexion</option><option>Inclinaison gauche</option><option>Inclinaison droite</option><option>Rotation gauche</option><option>Rotation droite</option><option>Glissement gauche</option><option>Glissement droit</option><option>Non identifiée</option>
-          </select>
-        </div>
-        <div style="background:var(--surface);padding:10px 14px">
-          <div style="font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:5px">Syndrome McKenzie</div>
-          <select id="mck-syndrome" style="font-size:.8rem;padding:4px 8px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text1);width:100%">
-            <option value="">—</option><option>Dérangement</option><option>Dysfonction</option><option>Postural</option><option>Autre / inclassable</option>
-          </select>
-        </div>
-      </div>
-      <div id="mck-central-badge" style="display:none;padding:9px 16px;background:#eaf3de;border-top:1.5px solid #c0dd97;color:#27500a;font-size:.82rem;font-weight:600;align-items:center;gap:8px">
+      <div id="mck-central-badge" style="display:none;padding:9px 16px;background:#eaf3de;border-top:2px solid var(--border);color:#27500a;font-size:.82rem;font-weight:600;align-items:center;gap:8px">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle;margin-right:4px"><polyline points="20 6 9 17 4 12"/></svg>
-        Centralisation identifiée — direction préférentielle favorable
+        Direction(s) favorable(s) : <span id="mck-dir-txt" style="font-weight:400;margin-left:4px"></span>
       </div>
       <div id="mck-periph-badge" style="display:none;padding:10px 16px;background:#fcebeb;border-top:1.5px solid #f09595;color:#791f1f;font-size:.82rem;font-weight:600;align-items:center;gap:8px">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle;margin-right:4px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
