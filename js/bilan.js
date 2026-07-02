@@ -330,6 +330,8 @@ const TESTS = {
   'tb-pi-global':{type:'ortho',items:['Liberté articulaire globale','Flexion plantaire','Flexion dorsale']},
   'tb-pi-global-g':{type:'ortho',items:['Liberté articulaire globale','Flexion plantaire','Flexion dorsale']},
   'tb-pi-global-d':{type:'ortho',items:['Liberté articulaire globale','Flexion plantaire','Flexion dorsale']},
+  'tb-pi-amp-g':{type:'ortho',opts:['Ok','Acceptable','Insuffisant'],items:['Flex. dorsale (g. tendu)','Flex. dorsale (g. fléchi)','Flexion plantaire','Inversion','Éversion']},
+  'tb-pi-amp-d':{type:'ortho',opts:['Ok','Acceptable','Insuffisant'],items:['Flex. dorsale (g. tendu)','Flex. dorsale (g. fléchi)','Flexion plantaire','Inversion','Éversion']},
   'tb-pi-tt':   {type:'ortho',items:['Reverse antéro-latéral drawer test','Talar tilt test','Cisaillement']},
   'tb-pi-tt-g': {type:'ortho',items:['Reverse antéro-latéral drawer test','Talar tilt test','Cisaillement']},
   'tb-pi-tt-d': {type:'ortho',items:['Reverse antéro-latéral drawer test','Talar tilt test','Cisaillement']},
@@ -437,18 +439,6 @@ var ROM_CONFIG = {
   'rom-ge-g-flexa': {norm:145, max:165, label:'Flexion active genou G'},
   'rom-ge-g-flexp': {norm:150, max:165, label:'Flexion passive genou G'},
   'rom-ge-g-ext':   {norm:0,   max:15,  label:'Déficit extension genou G', inverted:true},
-  // Pied/Cheville — Droit
-  'rom-pi-d-fdgt': {norm:20, max:35, label:'Flex. dorsale (g. tendu) D'},
-  'rom-pi-d-fdgf': {norm:30, max:45, label:'Flex. dorsale (g. fléchi) D'},
-  'rom-pi-d-fp':   {norm:50, max:65, label:'Flex. plantaire D'},
-  'rom-pi-d-inv':  {norm:35, max:55, label:'Inversion D'},
-  'rom-pi-d-ev':   {norm:15, max:30, label:'Éversion D'},
-  // Pied/Cheville — Gauche
-  'rom-pi-g-fdgt': {norm:20, max:35, label:'Flex. dorsale (g. tendu) G'},
-  'rom-pi-g-fdgf': {norm:30, max:45, label:'Flex. dorsale (g. fléchi) G'},
-  'rom-pi-g-fp':   {norm:50, max:65, label:'Flex. plantaire G'},
-  'rom-pi-g-inv':  {norm:35, max:55, label:'Inversion G'},
-  'rom-pi-g-ev':   {norm:15, max:30, label:'Éversion G'},
 };
 
 function _mobStatusChange(sel) {
@@ -4195,7 +4185,7 @@ function _buildAllTestsHtml() {
         'tb-ge-men-g','tb-ge-men-d','tb-ge-rot-g','tb-ge-rot-d','tb-ge-sbit-g','tb-ge-sbit-d',
         'tb-ge-plicae-g','tb-ge-plicae-d','tb-ge-ext-g','tb-ge-ext-d',
         ], concl:'ge-conclusion', opt:'ge-opt' },
-    { label:'PIED / CHEVILLE', pk:'pied', fields:[['pi-marqueur','Marqueur']], tables:['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-fonc','tb-pi-global-g','tb-pi-global-d','tb-pi-tt-g','tb-pi-tt-d','tb-pi-synd-g','tb-pi-synd-d','tb-pi-conf-g','tb-pi-conf-d','tb-pi-st-g','tb-pi-st-d','tb-pi-chopart-g','tb-pi-chopart-d','tb-pi-fonc-g','tb-pi-fonc-d'], concl:'pi-conclusion', opt:'pi-opt' },
+    { label:'PIED / CHEVILLE', pk:'pied', fields:[['pi-marqueur','Marqueur']], tables:['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-fonc','tb-pi-global-g','tb-pi-global-d','tb-pi-amp-g','tb-pi-amp-d','tb-pi-tt-g','tb-pi-tt-d','tb-pi-synd-g','tb-pi-synd-d','tb-pi-conf-g','tb-pi-conf-d','tb-pi-st-g','tb-pi-st-d','tb-pi-chopart-g','tb-pi-chopart-d','tb-pi-fonc-g','tb-pi-fonc-d'], concl:'pi-conclusion', opt:'pi-opt' },
   ];
   var orthoHtml = '';
   for (var oi=0; oi<orthoSections.length; oi++) {
@@ -4218,7 +4208,8 @@ function _buildAllTestsHtml() {
         var val = selEl ? selEl.value : '';
         var isPos = val === 'Positif' || val === 'Validé';
         var isNeg = val === 'Négatif' || val === 'Pas validé';
-        if (selEl && (isPos || isNeg)) {
+        var isAmp = val === 'Ok' || val === 'Acceptable' || val === 'Insuffisant';
+        if (selEl && (isPos || isNeg || isAmp)) {
           var tname = (cfg.items[ri] || '').replace(/<[^>]*>/g, '').trim();
           // Ajouter la latéralité pour les tables bilatérales (clé se terminant par -d ou -g)
           if (/-d$/.test(tKey)) tname += ' — Droit';
@@ -4228,6 +4219,7 @@ function _buildAllTestsHtml() {
           var tag, tagCls;
           if      (val === 'Validé')     { tag = 'Validé';     tagCls = 'ok'; }
           else if (val === 'Pas validé') { tag = 'Pas validé'; tagCls = 'bad'; }
+          else if (isAmp)                { tag = val; tagCls = val === 'Ok' ? 'ok' : val === 'Acceptable' ? 'warn' : 'bad'; }
           else if (isFonc)               { tag = val; tagCls = isPos ? 'ok'  : 'bad'; }
           else                           { tag = val; tagCls = isPos ? 'bad' : 'ok';  }
           secRows += crItem(tname, noteVal || '-', tag, tagCls, [selEl.id].filter(Boolean));
@@ -4553,13 +4545,6 @@ function _buildAllTestsHtml() {
       })();
     }
     if (sec.label === 'PIED / CHEVILLE') {
-      secRows += romCrTable('Amplitudes Articulaires — Cheville/Pied (°)', [
-        {label:'Flex. dorsale (g. tendu)',  dId:'rom-pi-d-fdgt', gId:'rom-pi-g-fdgt'},
-        {label:'Flex. dorsale (g. fléchi)', dId:'rom-pi-d-fdgf', gId:'rom-pi-g-fdgf'},
-        {label:'Flexion plantaire',         dId:'rom-pi-d-fp',   gId:'rom-pi-g-fp'},
-        {label:'Inversion',                 dId:'rom-pi-d-inv',  gId:'rom-pi-g-inv'},
-        {label:'Éversion',                  dId:'rom-pi-d-ev',   gId:'rom-pi-g-ev'},
-      ], true);
       // Force musculaire pied/cheville
       var piForceTests = [
         {key:'pi-f-fp',  label:'Flexion plantaire'},
