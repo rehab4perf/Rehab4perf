@@ -3361,6 +3361,42 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
 </div>
 
+<div class="block">
+  <div style="padding:6px 14px 2px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);background:var(--surface2);border-bottom:1px solid var(--border)">Coude</div>
+  <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Avec dynamomètre → renseigner en kg (LSI auto · ❌ si &lt; 90%). Sans dynamomètre → appréciation directe par côté.</div>
+  <div class="measure-row" style="background:var(--surface2)">
+    <div class="col-header">Test</div><div class="col-header sl-cs">Côté Sain</div><div class="col-header sl-ca">Côté Atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+  </div>
+  <!-- Extension coude -->
+  <div class="measure-row">
+    <div class="measure-label">Extension</div>
+    <div class="measure-input"><input type="number" id="co-f-ext-cs" min="0" placeholder="— kg" oninput="calcEpForce('co-f-ext')"></div>
+    <div class="measure-input"><input type="number" id="co-f-ext-ca" min="0" placeholder="— kg" oninput="calcEpForce('co-f-ext')"></div>
+    <div class="measure-stat" id="co-f-ext-lsi">—</div>
+    <div class="measure-stat" id="co-f-ext-stat">—</div>
+  </div>
+  <div class="measure-row" style="background:var(--surface2)">
+    <div style="font-size:.68rem;color:var(--text3);padding:0 10px;display:flex;align-items:center">Appréciation</div>
+    <div class="measure-input" style="background:var(--surface2)"><select id="co-f-ext-apr-cs" class="ep-apr-sel" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
+    <div class="measure-input" style="background:var(--surface2)"><select id="co-f-ext-apr-ca" class="ep-apr-sel" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
+    <div></div><div></div>
+  </div>
+  <!-- Flexion coude -->
+  <div class="measure-row">
+    <div class="measure-label">Flexion</div>
+    <div class="measure-input"><input type="number" id="co-f-flex-cs" min="0" placeholder="— kg" oninput="calcEpForce('co-f-flex')"></div>
+    <div class="measure-input"><input type="number" id="co-f-flex-ca" min="0" placeholder="— kg" oninput="calcEpForce('co-f-flex')"></div>
+    <div class="measure-stat" id="co-f-flex-lsi">—</div>
+    <div class="measure-stat" id="co-f-flex-stat">—</div>
+  </div>
+  <div class="measure-row" style="background:var(--surface2)">
+    <div style="font-size:.68rem;color:var(--text3);padding:0 10px;display:flex;align-items:center">Appréciation</div>
+    <div class="measure-input" style="background:var(--surface2)"><select id="co-f-flex-apr-cs" class="ep-apr-sel" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
+    <div class="measure-input" style="background:var(--surface2)"><select id="co-f-flex-apr-ca" class="ep-apr-sel" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
+    <div></div><div></div>
+  </div>
+</div>
+
   </div>
 </div>
 

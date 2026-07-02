@@ -921,7 +921,7 @@ function _resetBilanFields(){
   try{ updateAll(); calcRec(); calcPlioq(); }catch(ex){}
   try{ ['sls','hop','pset','set'].forEach(function(k){ calcLSI(k); }); calcDJ(); calcLunge(); calcHR(); calcMusc(); }catch(ex){}
   try{ calcPlioq2(); calcSEBT(); calcUQYBT(); calcSideHop(); }catch(ex){}
-  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht'].forEach(calcEpForce); ['ha-f-add','ha-f-abdo','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); ['pi-f-fp','pi-f-fd','pi-f-inv','pi-f-ev','pi-f-lfh'].forEach(calcEpForce); ['ra-fc-inc'].forEach(calcEpForce); }catch(ex){}
+  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht','co-f-ext','co-f-flex'].forEach(calcEpForce); ['ha-f-add','ha-f-abdo','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); ['pi-f-fp','pi-f-fd','pi-f-inv','pi-f-ev','pi-f-lfh'].forEach(calcEpForce); ['ra-fc-inc'].forEach(calcEpForce); }catch(ex){}
   try{ updateBadges(); _initAllRomBars(); }catch(ex){}
   // Éléments non couverts par les fonctions ci-dessus
   try{ var hl=document.getElementById('hdr-lma'); if(hl) hl.textContent='—'; }catch(ex){}
@@ -1065,6 +1065,11 @@ var TRACKED_METRICS = [
   {id:'ep-abd-cs',      label:'Abducteurs (sain)',            unit:'kg',  dir:'up',   cat:'Épaule — Force'},
   {id:'ep-bht-ca',      label:'BHT (côté atteint)',           unit:'kg',  dir:'up',   cat:'Épaule — Force'},
   {id:'ep-bht-cs',      label:'BHT (côté sain)',              unit:'kg',  dir:'up',   cat:'Épaule — Force'},
+  // ── Coude — Force ───────────────────────────────────────────
+  {id:'co-f-ext-ca',    label:'Extension coude (atteint)',    unit:'kg',  dir:'up',   cat:'Coude — Force'},
+  {id:'co-f-ext-cs',    label:'Extension coude (sain)',       unit:'kg',  dir:'up',   cat:'Coude — Force'},
+  {id:'co-f-flex-ca',   label:'Flexion coude (atteint)',      unit:'kg',  dir:'up',   cat:'Coude — Force'},
+  {id:'co-f-flex-cs',   label:'Flexion coude (sain)',         unit:'kg',  dir:'up',   cat:'Coude — Force'},
   // ── Hanche — Force ──────────────────────────────────────────
   {id:'ha-f-add-ca',    label:'Adducteurs (atteint)',         unit:'kg',  dir:'up',   cat:'Hanche — Force'},
   {id:'ha-f-add-cs',    label:'Adducteurs (sain)',            unit:'kg',  dir:'up',   cat:'Hanche — Force'},
@@ -2433,7 +2438,7 @@ function _deserializeBilan(data){
   try{ calcRachisStat(); calcLNF(); calcSorensen(); calcPDSLRT(); calcShirado(); }catch(ex){}
   try{ calcPlioq2(); calcSEBT(); calcUQYBT(); updateBadges(); }catch(ex){}
   try{ _initAllRomBars(); }catch(ex){}
-  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht'].forEach(calcEpForce); ['ha-f-add','ha-f-abdo','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); ['pi-f-fp','pi-f-fd','pi-f-inv','pi-f-ev','pi-f-lfh'].forEach(calcEpForce); ['ra-fc-inc'].forEach(calcEpForce); }catch(ex){}
+  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht','co-f-ext','co-f-flex'].forEach(calcEpForce); ['ha-f-add','ha-f-abdo','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); ['pi-f-fp','pi-f-fd','pi-f-inv','pi-f-ev','pi-f-lfh'].forEach(calcEpForce); ['ra-fc-inc'].forEach(calcEpForce); }catch(ex){}
   _parsePainZones();
   _suppressDirty = false;
   _bilanModified = false;
@@ -4340,6 +4345,8 @@ function _buildAllTestsHtml() {
         {key:'ep-ri2',  label:'Rotateurs int. RI2'},
         {key:'ep-abd',  label:'Élévation antérieure'},
         {key:'ep-bht',  label:'Bear Hug Test'},
+        {key:'co-f-ext', label:'Extension coude'},
+        {key:'co-f-flex', label:'Flexion coude'},
       ];
       epForceTests.forEach(function(ft) {
         var csN = parseFloat((document.getElementById(ft.key+'-cs')||{}).value);
@@ -4962,7 +4969,9 @@ function _buildAllTestsHtml() {
       {key:'ep-ri1',  label:'Renforcer les rotateurs internes RI1'},
       {key:'ep-ri2',  label:'Renforcer les rotateurs internes RI2'},
       {key:'ep-abd',  label:'Renforcer les élévateurs de l\'épaule'},
-      {key:'ep-bht',  label:'Renforcer le sub-scapulaire'},
+      {key:'ep-bht',   label:'Renforcer le sub-scapulaire'},
+      {key:'co-f-ext', label:'Renforcer les extenseurs du coude'},
+      {key:'co-f-flex',label:'Renforcer les fléchisseurs du coude'},
     ];
     epForceMap.forEach(function(ft) {
       var csN = parseFloat((document.getElementById(ft.key+'-cs')||{}).value);
@@ -6545,7 +6554,7 @@ function _updateHancheBilateral(){
 
 function _updateSideLabels(){
   var SCOPES = [
-    { zones:['epaule','coude','poignet'],         pages:['page-epaule','page-fonctionnelsMS'] },
+    { zones:['epaule','coude','poignet'],         pages:['page-epaule','page-fonctionnelsMS','page-force-ms'] },
     { zones:['genou'],                            pages:['page-genou'] },
     { zones:['cheville','pied'],                  pages:['page-pied'] },
     { zones:['rachis-c','rachis-l'],              pages:['page-rachis','page-fonctionnelsRachis','page-force-rachis'] },
