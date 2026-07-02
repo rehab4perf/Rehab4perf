@@ -4706,6 +4706,7 @@ function _switchToCalendarPlanMode(){
     closePlanModal();
   }
   if(!progId){ alert('Sauvegardez d\'abord la séance avant de planifier sur l\'agenda.'); return; }
+  _exitBuilderMode();
   _openPlanScheduleMode(progId, nom);
 }
 
