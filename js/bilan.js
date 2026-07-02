@@ -350,8 +350,6 @@ const TESTS = {
   'tb-pi-fonc': {type:'ortho',items:['Course interne mollet','Navicular Drop Test (mm)','Avant-pied - équilibre pointes de pied (step)','Médio-pied - équilibre foot bridge','1ère ligne - montée pointes + cale 30° sous hallux','Équilibre classique global (yeux ouverts / yeux fermés)']},
   'tb-pi-fonc-g':{type:'ortho',items:['Course interne mollet','Navicular Drop Test (mm)','Avant-pied - équilibre pointes de pied (step)','Médio-pied - équilibre foot bridge','1ère ligne - montée pointes + cale 30° sous hallux','Équilibre classique global (yeux ouverts / yeux fermés)']},
   'tb-pi-fonc-d':{type:'ortho',items:['Course interne mollet','Navicular Drop Test (mm)','Avant-pied - équilibre pointes de pied (step)','Médio-pied - équilibre foot bridge','1ère ligne - montée pointes + cale 30° sous hallux','Équilibre classique global (yeux ouverts / yeux fermés)']},
-  'tb-pi-force-ca':{type:'ortho',items:['Flexion plantaire','Flexion dorsale','Inversion','Éversion','Break test Long Fléchisseur de l\'Hallux (LFH)']},
-  'tb-pi-force-cs':{type:'ortho',items:['Flexion plantaire','Flexion dorsale','Inversion','Éversion','Break test Long Fléchisseur de l\'Hallux (LFH)']},
 
   // ── LMA — mêmes 6 tests pour chaque muscle ──────────────────
   'tb-lma-pecto':  {type:'ortho',items:['Étirement actif','Étirement passif','Contraction isométrique course interne','Contraction isométrique course externe','Contraction excentrique','Palpation']},
@@ -925,7 +923,7 @@ function _resetBilanFields(){
   try{ updateAll(); calcRec(); calcPlioq(); }catch(ex){}
   try{ ['sls','hop','pset','set'].forEach(function(k){ calcLSI(k); }); calcDJ(); calcLunge(); calcHR(); calcMusc(); }catch(ex){}
   try{ calcPlioq2(); calcSEBT(); calcUQYBT(); calcSideHop(); }catch(ex){}
-  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht'].forEach(calcEpForce); ['ha-f-add','ha-f-abdo','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); }catch(ex){}
+  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht'].forEach(calcEpForce); ['ha-f-add','ha-f-abdo','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); ['pi-f-fp','pi-f-fd','pi-f-inv','pi-f-ev','pi-f-lfh'].forEach(calcEpForce); }catch(ex){}
   try{ updateBadges(); _initAllRomBars(); }catch(ex){}
   // Éléments non couverts par les fonctions ci-dessus
   try{ var hl=document.getElementById('hdr-lma'); if(hl) hl.textContent='—'; }catch(ex){}
@@ -1087,6 +1085,17 @@ var TRACKED_METRICS = [
   {id:'ge-f-quad-cs',   label:'Quadriceps (sain)',            unit:'kg',  dir:'up',   cat:'Genou — Force'},
   {id:'ge-f-ij-ca',     label:'Ischio-jambiers (atteint)',    unit:'kg',  dir:'up',   cat:'Genou — Force'},
   {id:'ge-f-ij-cs',     label:'Ischio-jambiers (sain)',       unit:'kg',  dir:'up',   cat:'Genou — Force'},
+  // ── Pied/Cheville — Force ───────────────────────────────────
+  {id:'pi-f-fp-ca',     label:'Flex. plantaire (atteint)',    unit:'kg',  dir:'up',   cat:'Pied/Cheville — Force'},
+  {id:'pi-f-fp-cs',     label:'Flex. plantaire (sain)',       unit:'kg',  dir:'up',   cat:'Pied/Cheville — Force'},
+  {id:'pi-f-fd-ca',     label:'Flex. dorsale (atteint)',      unit:'kg',  dir:'up',   cat:'Pied/Cheville — Force'},
+  {id:'pi-f-fd-cs',     label:'Flex. dorsale (sain)',         unit:'kg',  dir:'up',   cat:'Pied/Cheville — Force'},
+  {id:'pi-f-inv-ca',    label:'Inversion (atteint)',          unit:'kg',  dir:'up',   cat:'Pied/Cheville — Force'},
+  {id:'pi-f-inv-cs',    label:'Inversion (sain)',             unit:'kg',  dir:'up',   cat:'Pied/Cheville — Force'},
+  {id:'pi-f-ev-ca',     label:'Éversion (atteint)',           unit:'kg',  dir:'up',   cat:'Pied/Cheville — Force'},
+  {id:'pi-f-ev-cs',     label:'Éversion (sain)',              unit:'kg',  dir:'up',   cat:'Pied/Cheville — Force'},
+  {id:'pi-f-lfh-ca',    label:'LFH (atteint)',                unit:'kg',  dir:'up',   cat:'Pied/Cheville — Force'},
+  {id:'pi-f-lfh-cs',    label:'LFH (sain)',                   unit:'kg',  dir:'up',   cat:'Pied/Cheville — Force'},
   // ── Hanche — Mobilité ───────────────────────────────────
   {id:'ha-mob-d-flex',  label:'Flex. hanche D',              unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
   {id:'ha-mob-g-flex',  label:'Flex. hanche G',              unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
@@ -1180,6 +1189,12 @@ var CHART_GROUPS = [
   // ─ Genou — Force ─
   {cat:'Genou — Force', title:'Quadriceps — Atteint vs Sain', type:'dual', idA:'ge-f-quad-ca', idB:'ge-f-quad-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
   {cat:'Genou — Force', title:'Ischio-jambiers — Atteint vs Sain', type:'dual', idA:'ge-f-ij-ca', idB:'ge-f-ij-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  // ─ Pied/Cheville — Force ─
+  {cat:'Pied/Cheville — Force', title:'Flex. plantaire — Atteint vs Sain', type:'dual', idA:'pi-f-fp-ca', idB:'pi-f-fp-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Pied/Cheville — Force', title:'Flex. dorsale — Atteint vs Sain',   type:'dual', idA:'pi-f-fd-ca', idB:'pi-f-fd-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Pied/Cheville — Force', title:'Inversion — Atteint vs Sain',       type:'dual', idA:'pi-f-inv-ca', idB:'pi-f-inv-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Pied/Cheville — Force', title:'Éversion — Atteint vs Sain',        type:'dual', idA:'pi-f-ev-ca', idB:'pi-f-ev-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Pied/Cheville — Force', title:'LFH — Atteint vs Sain',             type:'dual', idA:'pi-f-lfh-ca', idB:'pi-f-lfh-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
   // ─ Hanche — Mobilité ─
   {cat:'Hanche — Mobilité', title:'Flexion hanche D vs G', type:'dual', idA:'ha-mob-d-flex', idB:'ha-mob-g-flex', unit:'°', dir:'up', labelA:'Côté D', labelB:'Côté G'},
   {cat:'Hanche — Mobilité', title:'RI hanche D vs G', type:'dual', idA:'ha-mob-d-ri', idB:'ha-mob-g-ri', unit:'°', dir:'up', labelA:'Côté D', labelB:'Côté G'},
@@ -2413,7 +2428,7 @@ function _deserializeBilan(data){
   try{ calcRachisStat(); calcLNF(); calcSorensen(); calcPDSLRT(); calcShirado(); }catch(ex){}
   try{ calcPlioq2(); calcSEBT(); calcUQYBT(); updateBadges(); }catch(ex){}
   try{ _initAllRomBars(); }catch(ex){}
-  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht'].forEach(calcEpForce); ['ha-f-add','ha-f-abdo','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); }catch(ex){}
+  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht'].forEach(calcEpForce); ['ha-f-add','ha-f-abdo','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); ['pi-f-fp','pi-f-fd','pi-f-inv','pi-f-ev','pi-f-lfh'].forEach(calcEpForce); }catch(ex){}
   _parsePainZones();
   _suppressDirty = false;
   _bilanModified = false;
@@ -3598,7 +3613,7 @@ function updateBadges() {
                'tb-ge-men-g','tb-ge-men-d','tb-ge-rot-g','tb-ge-rot-d','tb-ge-sbit-g','tb-ge-sbit-d',
                'tb-ge-plicae-g','tb-ge-plicae-d','tb-ge-ext-g','tb-ge-ext-d',
                ],
-    'pied':   ['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-fonc','tb-pi-force-ca','tb-pi-force-cs'],
+    'pied':   ['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-fonc'],
     'lma':    ['tb-lma-pecto','tb-lma-biceps','tb-lma-triceps','tb-lma-dorsal','tb-lma-interco','tb-lma-ischio','tb-lma-quadri','tb-lma-adduct','tb-lma-mollet'],
   };
   Object.entries(sections).forEach(([page, tables]) => {
@@ -4173,7 +4188,7 @@ function _buildAllTestsHtml() {
         'tb-ge-men-g','tb-ge-men-d','tb-ge-rot-g','tb-ge-rot-d','tb-ge-sbit-g','tb-ge-sbit-d',
         'tb-ge-plicae-g','tb-ge-plicae-d','tb-ge-ext-g','tb-ge-ext-d',
         ], concl:'ge-conclusion', opt:'ge-opt' },
-    { label:'PIED / CHEVILLE', pk:'pied', fields:[['pi-marqueur','Marqueur']], tables:['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-fonc','tb-pi-force-ca','tb-pi-force-cs','tb-pi-global-g','tb-pi-global-d','tb-pi-tt-g','tb-pi-tt-d','tb-pi-synd-g','tb-pi-synd-d','tb-pi-conf-g','tb-pi-conf-d','tb-pi-st-g','tb-pi-st-d','tb-pi-chopart-g','tb-pi-chopart-d','tb-pi-fonc-g','tb-pi-fonc-d'], concl:'pi-conclusion', opt:'pi-opt' },
+    { label:'PIED / CHEVILLE', pk:'pied', fields:[['pi-marqueur','Marqueur']], tables:['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-fonc','tb-pi-global-g','tb-pi-global-d','tb-pi-tt-g','tb-pi-tt-d','tb-pi-synd-g','tb-pi-synd-d','tb-pi-conf-g','tb-pi-conf-d','tb-pi-st-g','tb-pi-st-d','tb-pi-chopart-g','tb-pi-chopart-d','tb-pi-fonc-g','tb-pi-fonc-d'], concl:'pi-conclusion', opt:'pi-opt' },
   ];
   var orthoHtml = '';
   for (var oi=0; oi<orthoSections.length; oi++) {
@@ -4500,6 +4515,34 @@ function _buildAllTestsHtml() {
         {label:'Inversion',                 dId:'rom-pi-d-inv',  gId:'rom-pi-g-inv'},
         {label:'Éversion',                  dId:'rom-pi-d-ev',   gId:'rom-pi-g-ev'},
       ], true);
+      // Force musculaire pied/cheville
+      var piForceTests = [
+        {key:'pi-f-fp',  label:'Flexion plantaire'},
+        {key:'pi-f-fd',  label:'Flexion dorsale'},
+        {key:'pi-f-inv', label:'Inversion'},
+        {key:'pi-f-ev',  label:'Éversion'},
+        {key:'pi-f-lfh', label:'Long Fléchisseur de l\'Hallux (LFH)'},
+      ];
+      piForceTests.forEach(function(ft) {
+        var csN = parseFloat((document.getElementById(ft.key+'-cs')||{}).value);
+        var caN = parseFloat((document.getElementById(ft.key+'-ca')||{}).value);
+        var csA = (document.getElementById(ft.key+'-apr-cs')||{}).value||'';
+        var caA = (document.getElementById(ft.key+'-apr-ca')||{}).value||'';
+        if (!isNaN(csN) && csN > 0) {
+          var lsiV = !isNaN(caN) ? caN/csN*100 : NaN;
+          var isPos = !isNaN(lsiV) && lsiV < 90;
+          var valStr = 'CS='+csN+' kg'+(!isNaN(caN)?' CA='+caN+' kg':'')+(!isNaN(lsiV)?' LSI='+lsiV.toFixed(0)+'%':'');
+          secRows += crItem(ft.label, valStr, isPos?'Positif':'Négatif', isPos?'bad':'ok', [ft.key+'-cs',ft.key+'-ca']);
+        } else if (csA || caA) {
+          var parts = [];
+          if (csA) parts.push(_labelCS+'='+csA);
+          if (caA) parts.push(_labelCA+'='+caA);
+          var anyPos = csA==='Positif' || caA==='Positif';
+          if (anyPos || csA==='Négatif' || caA==='Négatif') {
+            secRows += crItem(ft.label, parts.join(' · '), anyPos?'Positif':'Négatif', anyPos?'bad':'ok', [ft.key+'-apr-cs',ft.key+'-apr-ca']);
+          }
+        }
+      });
     }
     if (sec.label === 'GENOU' || sec.label === 'HANCHE' || sec.label === 'EPAULE' || sec.label === 'RACHIS') {
       var cfCA2 = parseFloat((document.getElementById('cf-q-ca')||{}).value||'');
@@ -4798,7 +4841,6 @@ function _buildAllTestsHtml() {
   // ── Break tests force (wording : "Renforcer [muscle]") ──────────────────
   var forceTables = [
     {id:'tb-ra-force-d', side:'Droit'},  {id:'tb-ra-force-g', side:'Gauche'},
-    {id:'tb-pi-force-ca', side:_labelCA}, {id:'tb-pi-force-cs', side:_labelCS},
   ];
   forceTables.forEach(function(ft) {
     var tbody = document.getElementById(ft.id); if (!tbody) return;
@@ -4941,6 +4983,29 @@ function _buildAllTestsHtml() {
       } else {
         if (csA==='Positif') { var iHa = ft.label+' — '+_labelCS; if (toWork.indexOf(iHa)<0) toWork.push(iHa); }
         if (caA==='Positif') { var iHb = ft.label+' — '+_labelCA; if (toWork.indexOf(iHb)<0) toWork.push(iHb); }
+      }
+    });
+  })();
+
+  // ── Force musculaire pied/cheville ──────────────────────────────────────
+  (function(){
+    var piForceMap = [
+      {key:'pi-f-fp',  label:'Renforcer les fléchisseurs plantaires'},
+      {key:'pi-f-fd',  label:'Renforcer les fléchisseurs dorsaux'},
+      {key:'pi-f-inv', label:'Renforcer les inverseurs'},
+      {key:'pi-f-ev',  label:'Renforcer les éverseurs'},
+      {key:'pi-f-lfh', label:'Renforcer le long fléchisseur de l\'hallux'},
+    ];
+    piForceMap.forEach(function(ft) {
+      var csN = parseFloat((document.getElementById(ft.key+'-cs')||{}).value);
+      var caN = parseFloat((document.getElementById(ft.key+'-ca')||{}).value);
+      var csA = (document.getElementById(ft.key+'-apr-cs')||{}).value||'';
+      var caA = (document.getElementById(ft.key+'-apr-ca')||{}).value||'';
+      if (!isNaN(csN) && csN > 0) {
+        if (!isNaN(caN) && csN > 0 && caN/csN*100 < 90) { var iP = ft.label+' — '+_labelCA+' (LSI '+(caN/csN*100).toFixed(0)+'%)'; if (toWork.indexOf(iP)<0) toWork.push(iP); }
+      } else {
+        if (csA==='Positif') { var iPa = ft.label+' — '+_labelCS; if (toWork.indexOf(iPa)<0) toWork.push(iPa); }
+        if (caA==='Positif') { var iPb = ft.label+' — '+_labelCA; if (toWork.indexOf(iPb)<0) toWork.push(iPb); }
       }
     });
   })();

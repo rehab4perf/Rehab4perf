@@ -2834,20 +2834,80 @@ textarea { resize:none !important; overflow:hidden !important; }
     <div class="block" id="pi-single-fonc"><div class="block-header red">Tests Fonctionnels</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-pi-fonc"></tbody></table></div>
     <div class="block" id="pi-bilateral-fonc" style="display:none"><div class="block-header red">Tests Fonctionnels</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-fonc-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-fonc-d"></tbody></table></div></div>
     <div class="block">
-      <div class="block-header red">Tests de Force — Cheville (Break Tests)</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
-        <div class="sl-g" data-col="g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div>
-        <div class="sl-d" data-col="d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div>
+      <div class="block-header red">Force musculaire</div>
+      <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Avec dynamomètre → renseigner en kg (LSI auto · ❌ si &lt; 90%). Sans dynamomètre → appréciation directe par côté.</div>
+      <div class="measure-row" style="background:var(--surface2)">
+        <div class="col-header">Test</div><div class="col-header sl-cs">Côté Sain</div><div class="col-header sl-ca">Côté Atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
-        <table class="test-table" data-col="g" style="margin:0;border-radius:0">
-          <thead><tr><th>Direction</th><th style="width:110px">Résultat</th><th>Obs.</th></tr></thead>
-          <tbody id="tb-pi-force-ca"></tbody>
-        </table>
-        <table class="test-table" data-col="d" style="margin:0;border-radius:0;background:var(--surface2)">
-          <thead style="background:var(--accent2)"><tr><th>Direction</th><th style="width:110px">Résultat</th><th>Obs.</th></tr></thead>
-          <tbody id="tb-pi-force-cs"></tbody>
-        </table>
+      <!-- Flexion plantaire -->
+      <div class="measure-row">
+        <div class="measure-label">Flexion plantaire</div>
+        <div class="measure-input"><input type="number" id="pi-f-fp-cs" min="0" placeholder="— kg" oninput="calcEpForce('pi-f-fp')"></div>
+        <div class="measure-input"><input type="number" id="pi-f-fp-ca" min="0" placeholder="— kg" oninput="calcEpForce('pi-f-fp')"></div>
+        <div class="measure-stat" id="pi-f-fp-lsi">—</div>
+        <div class="measure-stat" id="pi-f-fp-stat">—</div>
+      </div>
+      <div class="measure-row" style="background:var(--surface2)">
+        <div style="font-size:.68rem;color:var(--text3);padding:0 10px;display:flex;align-items:center">Appréciation</div>
+        <div class="measure-input" style="background:var(--surface2)"><select id="pi-f-fp-apr-cs" class="ep-apr-sel" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
+        <div class="measure-input" style="background:var(--surface2)"><select id="pi-f-fp-apr-ca" class="ep-apr-sel" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
+        <div></div><div></div>
+      </div>
+      <!-- Flexion dorsale -->
+      <div class="measure-row">
+        <div class="measure-label">Flexion dorsale</div>
+        <div class="measure-input"><input type="number" id="pi-f-fd-cs" min="0" placeholder="— kg" oninput="calcEpForce('pi-f-fd')"></div>
+        <div class="measure-input"><input type="number" id="pi-f-fd-ca" min="0" placeholder="— kg" oninput="calcEpForce('pi-f-fd')"></div>
+        <div class="measure-stat" id="pi-f-fd-lsi">—</div>
+        <div class="measure-stat" id="pi-f-fd-stat">—</div>
+      </div>
+      <div class="measure-row" style="background:var(--surface2)">
+        <div style="font-size:.68rem;color:var(--text3);padding:0 10px;display:flex;align-items:center">Appréciation</div>
+        <div class="measure-input" style="background:var(--surface2)"><select id="pi-f-fd-apr-cs" class="ep-apr-sel" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
+        <div class="measure-input" style="background:var(--surface2)"><select id="pi-f-fd-apr-ca" class="ep-apr-sel" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
+        <div></div><div></div>
+      </div>
+      <!-- Inversion -->
+      <div class="measure-row">
+        <div class="measure-label">Inversion</div>
+        <div class="measure-input"><input type="number" id="pi-f-inv-cs" min="0" placeholder="— kg" oninput="calcEpForce('pi-f-inv')"></div>
+        <div class="measure-input"><input type="number" id="pi-f-inv-ca" min="0" placeholder="— kg" oninput="calcEpForce('pi-f-inv')"></div>
+        <div class="measure-stat" id="pi-f-inv-lsi">—</div>
+        <div class="measure-stat" id="pi-f-inv-stat">—</div>
+      </div>
+      <div class="measure-row" style="background:var(--surface2)">
+        <div style="font-size:.68rem;color:var(--text3);padding:0 10px;display:flex;align-items:center">Appréciation</div>
+        <div class="measure-input" style="background:var(--surface2)"><select id="pi-f-inv-apr-cs" class="ep-apr-sel" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
+        <div class="measure-input" style="background:var(--surface2)"><select id="pi-f-inv-apr-ca" class="ep-apr-sel" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
+        <div></div><div></div>
+      </div>
+      <!-- Éversion -->
+      <div class="measure-row">
+        <div class="measure-label">Éversion</div>
+        <div class="measure-input"><input type="number" id="pi-f-ev-cs" min="0" placeholder="— kg" oninput="calcEpForce('pi-f-ev')"></div>
+        <div class="measure-input"><input type="number" id="pi-f-ev-ca" min="0" placeholder="— kg" oninput="calcEpForce('pi-f-ev')"></div>
+        <div class="measure-stat" id="pi-f-ev-lsi">—</div>
+        <div class="measure-stat" id="pi-f-ev-stat">—</div>
+      </div>
+      <div class="measure-row" style="background:var(--surface2)">
+        <div style="font-size:.68rem;color:var(--text3);padding:0 10px;display:flex;align-items:center">Appréciation</div>
+        <div class="measure-input" style="background:var(--surface2)"><select id="pi-f-ev-apr-cs" class="ep-apr-sel" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
+        <div class="measure-input" style="background:var(--surface2)"><select id="pi-f-ev-apr-ca" class="ep-apr-sel" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
+        <div></div><div></div>
+      </div>
+      <!-- Long Fléchisseur de l'Hallux -->
+      <div class="measure-row">
+        <div class="measure-label">Long Fléchisseur de l'Hallux (LFH)</div>
+        <div class="measure-input"><input type="number" id="pi-f-lfh-cs" min="0" placeholder="— kg" oninput="calcEpForce('pi-f-lfh')"></div>
+        <div class="measure-input"><input type="number" id="pi-f-lfh-ca" min="0" placeholder="— kg" oninput="calcEpForce('pi-f-lfh')"></div>
+        <div class="measure-stat" id="pi-f-lfh-lsi">—</div>
+        <div class="measure-stat" id="pi-f-lfh-stat">—</div>
+      </div>
+      <div class="measure-row" style="background:var(--surface2)">
+        <div style="font-size:.68rem;color:var(--text3);padding:0 10px;display:flex;align-items:center">Appréciation</div>
+        <div class="measure-input" style="background:var(--surface2)"><select id="pi-f-lfh-apr-cs" class="ep-apr-sel" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
+        <div class="measure-input" style="background:var(--surface2)"><select id="pi-f-lfh-apr-ca" class="ep-apr-sel" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
+        <div></div><div></div>
       </div>
     </div>
 
