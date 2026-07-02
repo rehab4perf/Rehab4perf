@@ -2746,38 +2746,38 @@ textarea { resize:none !important; overflow:hidden !important; }
 </div>
 
 <div class="block">
-  <div class="block-header red">Break Test Genou — Force musculaire</div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
-    <div class="sl-g" data-col="g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div>
-    <div class="sl-d" data-col="d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div>
+  <div class="block-header red">Force musculaire</div>
+  <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Avec dynamomètre → renseigner en kg (LSI auto · ❌ si &lt; 90%). Sans dynamomètre → appréciation directe par côté.</div>
+  <div class="measure-row" style="background:var(--surface2)">
+    <div class="col-header">Test</div><div class="col-header sl-cs">Côté Sain</div><div class="col-header sl-ca">Côté Atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
-    <table class="test-table" data-col="g" style="margin:0;border-radius:0">
-      <thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
-      <tbody id="tb-ge-knee-g"></tbody>
-    </table>
-    <table class="test-table" data-col="d" style="margin:0;border-radius:0;background:var(--surface2)">
-      <thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
-      <tbody id="tb-ge-knee-d"></tbody>
-    </table>
+  <!-- Quadriceps -->
+  <div class="measure-row">
+    <div class="measure-label">Quadriceps</div>
+    <div class="measure-input"><input type="number" id="ge-f-quad-cs" min="0" placeholder="— kg" oninput="calcEpForce('ge-f-quad')"></div>
+    <div class="measure-input"><input type="number" id="ge-f-quad-ca" min="0" placeholder="— kg" oninput="calcEpForce('ge-f-quad')"></div>
+    <div class="measure-stat" id="ge-f-quad-lsi">—</div>
+    <div class="measure-stat" id="ge-f-quad-stat">—</div>
   </div>
-</div>
-
-<div class="block">
-  <div class="block-header red">Break Test Hanche (genou) — Force musculaire</div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
-    <div class="sl-g" data-col="g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div>
-    <div class="sl-d" data-col="d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div>
+  <div class="measure-row" style="background:var(--surface2)">
+    <div style="font-size:.68rem;color:var(--text3);padding:0 10px;display:flex;align-items:center">Appréciation</div>
+    <div class="measure-input" style="background:var(--surface2)"><select id="ge-f-quad-apr-cs" class="ep-apr-sel" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
+    <div class="measure-input" style="background:var(--surface2)"><select id="ge-f-quad-apr-ca" class="ep-apr-sel" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
+    <div></div><div></div>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
-    <table class="test-table" data-col="g" style="margin:0;border-radius:0">
-      <thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
-      <tbody id="tb-ge-hip-g"></tbody>
-    </table>
-    <table class="test-table" data-col="d" style="margin:0;border-radius:0;background:var(--surface2)">
-      <thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead>
-      <tbody id="tb-ge-hip-d"></tbody>
-    </table>
+  <!-- Ischio-jambiers -->
+  <div class="measure-row">
+    <div class="measure-label">Ischio-jambiers</div>
+    <div class="measure-input"><input type="number" id="ge-f-ij-cs" min="0" placeholder="— kg" oninput="calcEpForce('ge-f-ij')"></div>
+    <div class="measure-input"><input type="number" id="ge-f-ij-ca" min="0" placeholder="— kg" oninput="calcEpForce('ge-f-ij')"></div>
+    <div class="measure-stat" id="ge-f-ij-lsi">—</div>
+    <div class="measure-stat" id="ge-f-ij-stat">—</div>
+  </div>
+  <div class="measure-row" style="background:var(--surface2)">
+    <div style="font-size:.68rem;color:var(--text3);padding:0 10px;display:flex;align-items:center">Appréciation</div>
+    <div class="measure-input" style="background:var(--surface2)"><select id="ge-f-ij-apr-cs" class="ep-apr-sel" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
+    <div class="measure-input" style="background:var(--surface2)"><select id="ge-f-ij-apr-ca" class="ep-apr-sel" onchange="onEpAprChange(this)"><option value="">—</option><option>Positif</option><option>Négatif</option><option>N/A</option></select></div>
+    <div></div><div></div>
   </div>
 </div>
 

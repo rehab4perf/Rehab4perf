@@ -326,10 +326,6 @@ const TESTS = {
   'tb-ge-ext':    {type:'fonc',items:['Extension passive','Extension active sur table','Extension active en charge'],opts:['Validé','Pas validé','N/A']},
   'tb-ge-ext-g':  {type:'fonc',items:['Extension passive','Extension active sur table','Extension active en charge'],opts:['Validé','Pas validé','N/A']},
   'tb-ge-ext-d':  {type:'fonc',items:['Extension passive','Extension active sur table','Extension active en charge'],opts:['Validé','Pas validé','N/A']},
-  'tb-ge-knee-d':{type:'ortho',items:['Break test Quadriceps','Break test Ischio-jambiers']},
-  'tb-ge-knee-g':{type:'ortho',items:['Break test Quadriceps','Break test Ischio-jambiers']},
-  'tb-ge-hip-d': {type:'ortho',items:['Break test ABD hanche','Break test ADD hanche']},
-  'tb-ge-hip-g': {type:'ortho',items:['Break test ABD hanche','Break test ADD hanche']},
   'tb-ra-force-d':{type:'ortho',items:['Break test Abdominaux (droits CE+CI)','Break test Obliques','Break test Extenseurs rachis']},
   'tb-ra-force-g':{type:'ortho',items:['Break test Abdominaux (droits CE+CI)','Break test Obliques','Break test Extenseurs rachis']},
   'tb-ra-transverse':{type:'ortho',items:['Test du transverse (toux + valsalva)']},
@@ -929,7 +925,7 @@ function _resetBilanFields(){
   try{ updateAll(); calcRec(); calcPlioq(); }catch(ex){}
   try{ ['sls','hop','pset','set'].forEach(function(k){ calcLSI(k); }); calcDJ(); calcLunge(); calcHR(); calcMusc(); }catch(ex){}
   try{ calcPlioq2(); calcSEBT(); calcUQYBT(); calcSideHop(); }catch(ex){}
-  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht'].forEach(calcEpForce); ['ha-f-add','ha-f-abdo','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); }catch(ex){}
+  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht'].forEach(calcEpForce); ['ha-f-add','ha-f-abdo','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); }catch(ex){}
   try{ updateBadges(); _initAllRomBars(); }catch(ex){}
   // Éléments non couverts par les fonctions ci-dessus
   try{ var hl=document.getElementById('hdr-lma'); if(hl) hl.textContent='—'; }catch(ex){}
@@ -1086,6 +1082,11 @@ var TRACKED_METRICS = [
   {id:'ha-f-ri-cs',     label:'RI hanche (sain)',             unit:'kg',  dir:'up',   cat:'Hanche — Force'},
   {id:'ha-f-re-ca',     label:'RE hanche (atteint)',          unit:'kg',  dir:'up',   cat:'Hanche — Force'},
   {id:'ha-f-re-cs',     label:'RE hanche (sain)',             unit:'kg',  dir:'up',   cat:'Hanche — Force'},
+  // ── Genou — Force ───────────────────────────────────────────
+  {id:'ge-f-quad-ca',   label:'Quadriceps (atteint)',         unit:'kg',  dir:'up',   cat:'Genou — Force'},
+  {id:'ge-f-quad-cs',   label:'Quadriceps (sain)',            unit:'kg',  dir:'up',   cat:'Genou — Force'},
+  {id:'ge-f-ij-ca',     label:'Ischio-jambiers (atteint)',    unit:'kg',  dir:'up',   cat:'Genou — Force'},
+  {id:'ge-f-ij-cs',     label:'Ischio-jambiers (sain)',       unit:'kg',  dir:'up',   cat:'Genou — Force'},
   // ── Hanche — Mobilité ───────────────────────────────────
   {id:'ha-mob-d-flex',  label:'Flex. hanche D',              unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
   {id:'ha-mob-g-flex',  label:'Flex. hanche G',              unit:'°',   dir:'up',   cat:'Hanche — Mobilité'},
@@ -1176,6 +1177,9 @@ var CHART_GROUPS = [
   {cat:'Hanche — Force', title:'Abduction hanche — Atteint vs Sain', type:'dual', idA:'ha-f-abd-ca', idB:'ha-f-abd-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
   {cat:'Hanche — Force', title:'RI hanche — Atteint vs Sain', type:'dual', idA:'ha-f-ri-ca', idB:'ha-f-ri-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
   {cat:'Hanche — Force', title:'RE hanche — Atteint vs Sain', type:'dual', idA:'ha-f-re-ca', idB:'ha-f-re-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  // ─ Genou — Force ─
+  {cat:'Genou — Force', title:'Quadriceps — Atteint vs Sain', type:'dual', idA:'ge-f-quad-ca', idB:'ge-f-quad-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Genou — Force', title:'Ischio-jambiers — Atteint vs Sain', type:'dual', idA:'ge-f-ij-ca', idB:'ge-f-ij-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
   // ─ Hanche — Mobilité ─
   {cat:'Hanche — Mobilité', title:'Flexion hanche D vs G', type:'dual', idA:'ha-mob-d-flex', idB:'ha-mob-g-flex', unit:'°', dir:'up', labelA:'Côté D', labelB:'Côté G'},
   {cat:'Hanche — Mobilité', title:'RI hanche D vs G', type:'dual', idA:'ha-mob-d-ri', idB:'ha-mob-g-ri', unit:'°', dir:'up', labelA:'Côté D', labelB:'Côté G'},
@@ -2409,7 +2413,7 @@ function _deserializeBilan(data){
   try{ calcRachisStat(); calcLNF(); calcSorensen(); calcPDSLRT(); calcShirado(); }catch(ex){}
   try{ calcPlioq2(); calcSEBT(); calcUQYBT(); updateBadges(); }catch(ex){}
   try{ _initAllRomBars(); }catch(ex){}
-  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht'].forEach(calcEpForce); ['ha-f-add','ha-f-abdo','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); }catch(ex){}
+  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht'].forEach(calcEpForce); ['ha-f-add','ha-f-abdo','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); }catch(ex){}
   _parsePainZones();
   _suppressDirty = false;
   _bilanModified = false;
@@ -3593,7 +3597,7 @@ function updateBadges() {
                'tb-ge-global-g','tb-ge-global-d','tb-ge-lig-g','tb-ge-lig-d','tb-ge-lca-g','tb-ge-lca-d',
                'tb-ge-men-g','tb-ge-men-d','tb-ge-rot-g','tb-ge-rot-d','tb-ge-sbit-g','tb-ge-sbit-d',
                'tb-ge-plicae-g','tb-ge-plicae-d','tb-ge-ext-g','tb-ge-ext-d',
-               'tb-ge-knee-d','tb-ge-knee-g','tb-ge-hip-d','tb-ge-hip-g'],
+               ],
     'pied':   ['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-fonc','tb-pi-force-ca','tb-pi-force-cs'],
     'lma':    ['tb-lma-pecto','tb-lma-biceps','tb-lma-triceps','tb-lma-dorsal','tb-lma-interco','tb-lma-ischio','tb-lma-quadri','tb-lma-adduct','tb-lma-mollet'],
   };
@@ -4168,7 +4172,7 @@ function _buildAllTestsHtml() {
         'tb-ge-global-g','tb-ge-global-d','tb-ge-lig-g','tb-ge-lig-d','tb-ge-lca-g','tb-ge-lca-d',
         'tb-ge-men-g','tb-ge-men-d','tb-ge-rot-g','tb-ge-rot-d','tb-ge-sbit-g','tb-ge-sbit-d',
         'tb-ge-plicae-g','tb-ge-plicae-d','tb-ge-ext-g','tb-ge-ext-d',
-        'tb-ge-knee-d','tb-ge-knee-g','tb-ge-hip-d','tb-ge-hip-g'], concl:'ge-conclusion', opt:'ge-opt' },
+        ], concl:'ge-conclusion', opt:'ge-opt' },
     { label:'PIED / CHEVILLE', pk:'pied', fields:[['pi-marqueur','Marqueur']], tables:['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-fonc','tb-pi-force-ca','tb-pi-force-cs','tb-pi-global-g','tb-pi-global-d','tb-pi-tt-g','tb-pi-tt-d','tb-pi-synd-g','tb-pi-synd-d','tb-pi-conf-g','tb-pi-conf-d','tb-pi-st-g','tb-pi-st-d','tb-pi-chopart-g','tb-pi-chopart-d','tb-pi-fonc-g','tb-pi-fonc-d'], concl:'pi-conclusion', opt:'pi-opt' },
   ];
   var orthoHtml = '';
@@ -4270,6 +4274,31 @@ function _buildAllTestsHtml() {
         {label:'Flexion passive',    dId:'rom-ge-d-flexp', gId:'rom-ge-g-flexp'},
         {label:'Déficit extension',  dId:'rom-ge-d-ext',   gId:'rom-ge-g-ext'},
       ], true);
+      // Force musculaire genou
+      var geForceTests = [
+        {key:'ge-f-quad', label:'Quadriceps'},
+        {key:'ge-f-ij',   label:'Ischio-jambiers'},
+      ];
+      geForceTests.forEach(function(ft) {
+        var csN = parseFloat((document.getElementById(ft.key+'-cs')||{}).value);
+        var caN = parseFloat((document.getElementById(ft.key+'-ca')||{}).value);
+        var csA = (document.getElementById(ft.key+'-apr-cs')||{}).value||'';
+        var caA = (document.getElementById(ft.key+'-apr-ca')||{}).value||'';
+        if (!isNaN(csN) && csN > 0) {
+          var lsiV = !isNaN(caN) ? caN/csN*100 : NaN;
+          var isPos = !isNaN(lsiV) && lsiV < 90;
+          var valStr = 'CS='+csN+' kg'+(!isNaN(caN)?' CA='+caN+' kg':'')+(!isNaN(lsiV)?' LSI='+lsiV.toFixed(0)+'%':'');
+          secRows += crItem(ft.label, valStr, isPos?'Positif':'Négatif', isPos?'bad':'ok', [ft.key+'-cs',ft.key+'-ca']);
+        } else if (csA || caA) {
+          var parts = [];
+          if (csA) parts.push(_labelCS+'='+csA);
+          if (caA) parts.push(_labelCA+'='+caA);
+          var anyPos = csA==='Positif' || caA==='Positif';
+          if (anyPos || csA==='Négatif' || caA==='Négatif') {
+            secRows += crItem(ft.label, parts.join(' · '), anyPos?'Positif':'Négatif', anyPos?'bad':'ok', [ft.key+'-apr-cs',ft.key+'-apr-ca']);
+          }
+        }
+      });
     }
     if (sec.label === 'EPAULE') {
       // GIRD
@@ -4768,8 +4797,6 @@ function _buildAllTestsHtml() {
 
   // ── Break tests force (wording : "Renforcer [muscle]") ──────────────────
   var forceTables = [
-    {id:'tb-ge-knee-d',  side:'Droit'},  {id:'tb-ge-knee-g',  side:'Gauche'},
-    {id:'tb-ge-hip-d',   side:'Droit'},  {id:'tb-ge-hip-g',   side:'Gauche'},
     {id:'tb-ra-force-d', side:'Droit'},  {id:'tb-ra-force-g', side:'Gauche'},
     {id:'tb-pi-force-ca', side:_labelCA}, {id:'tb-pi-force-cs', side:_labelCS},
   ];
@@ -4914,6 +4941,26 @@ function _buildAllTestsHtml() {
       } else {
         if (csA==='Positif') { var iHa = ft.label+' — '+_labelCS; if (toWork.indexOf(iHa)<0) toWork.push(iHa); }
         if (caA==='Positif') { var iHb = ft.label+' — '+_labelCA; if (toWork.indexOf(iHb)<0) toWork.push(iHb); }
+      }
+    });
+  })();
+
+  // ── Force musculaire genou ───────────────────────────────────────────────
+  (function(){
+    var geForceMap = [
+      {key:'ge-f-quad', label:'Renforcer les quadriceps'},
+      {key:'ge-f-ij',   label:'Renforcer les ischio-jambiers'},
+    ];
+    geForceMap.forEach(function(ft) {
+      var csN = parseFloat((document.getElementById(ft.key+'-cs')||{}).value);
+      var caN = parseFloat((document.getElementById(ft.key+'-ca')||{}).value);
+      var csA = (document.getElementById(ft.key+'-apr-cs')||{}).value||'';
+      var caA = (document.getElementById(ft.key+'-apr-ca')||{}).value||'';
+      if (!isNaN(csN) && csN > 0) {
+        if (!isNaN(caN) && csN > 0 && caN/csN*100 < 90) { var iG = ft.label+' — '+_labelCA+' (LSI '+(caN/csN*100).toFixed(0)+'%)'; if (toWork.indexOf(iG)<0) toWork.push(iG); }
+      } else {
+        if (csA==='Positif') { var iGa = ft.label+' — '+_labelCS; if (toWork.indexOf(iGa)<0) toWork.push(iGa); }
+        if (caA==='Positif') { var iGb = ft.label+' — '+_labelCA; if (toWork.indexOf(iGb)<0) toWork.push(iGb); }
       }
     });
   })();
