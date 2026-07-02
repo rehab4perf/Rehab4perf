@@ -921,7 +921,7 @@ function _resetBilanFields(){
   try{ updateAll(); calcRec(); calcPlioq(); }catch(ex){}
   try{ ['sls','hop','pset','set'].forEach(function(k){ calcLSI(k); }); calcDJ(); calcLunge(); calcHR(); calcMusc(); }catch(ex){}
   try{ calcPlioq2(); calcSEBT(); calcUQYBT(); calcSideHop(); }catch(ex){}
-  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht','co-f-ext','co-f-flex'].forEach(calcEpForce); ['ha-f-add','ha-f-abdo','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); ['pi-f-fp','pi-f-fd','pi-f-inv','pi-f-ev','pi-f-lfh'].forEach(calcEpForce); ['ra-fc-inc'].forEach(calcEpForce); }catch(ex){}
+  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht','co-f-ext','co-f-flex'].forEach(calcEpForce); ['ha-f-add','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); ['pi-f-fp','pi-f-fd','pi-f-inv','pi-f-ev','pi-f-lfh'].forEach(calcEpForce); ['ra-fc-inc'].forEach(calcEpForce); }catch(ex){}
   try{ updateBadges(); _initAllRomBars(); }catch(ex){}
   // Éléments non couverts par les fonctions ci-dessus
   try{ var hl=document.getElementById('hdr-lma'); if(hl) hl.textContent='—'; }catch(ex){}
@@ -1073,16 +1073,14 @@ var TRACKED_METRICS = [
   // ── Hanche — Force ──────────────────────────────────────────
   {id:'ha-f-add-ca',    label:'Adducteurs (atteint)',         unit:'kg',  dir:'up',   cat:'Hanche — Force'},
   {id:'ha-f-add-cs',    label:'Adducteurs (sain)',            unit:'kg',  dir:'up',   cat:'Hanche — Force'},
-  {id:'ha-f-abdo-ca',   label:'Abdominaux (atteint)',         unit:'kg',  dir:'up',   cat:'Hanche — Force'},
-  {id:'ha-f-abdo-cs',   label:'Abdominaux (sain)',            unit:'kg',  dir:'up',   cat:'Hanche — Force'},
-  {id:'ha-f-flech-ca',  label:'Fléchisseurs hanche (atteint)',unit:'kg',  dir:'up',   cat:'Hanche — Force'},
-  {id:'ha-f-flech-cs',  label:'Fléchisseurs hanche (sain)',   unit:'kg',  dir:'up',   cat:'Hanche — Force'},
-  {id:'ha-f-abd-ca',    label:'Abduction hanche (atteint)',   unit:'kg',  dir:'up',   cat:'Hanche — Force'},
-  {id:'ha-f-abd-cs',    label:'Abduction hanche (sain)',      unit:'kg',  dir:'up',   cat:'Hanche — Force'},
-  {id:'ha-f-ri-ca',     label:'RI hanche (atteint)',          unit:'kg',  dir:'up',   cat:'Hanche — Force'},
-  {id:'ha-f-ri-cs',     label:'RI hanche (sain)',             unit:'kg',  dir:'up',   cat:'Hanche — Force'},
-  {id:'ha-f-re-ca',     label:'RE hanche (atteint)',          unit:'kg',  dir:'up',   cat:'Hanche — Force'},
-  {id:'ha-f-re-cs',     label:'RE hanche (sain)',             unit:'kg',  dir:'up',   cat:'Hanche — Force'},
+  {id:'ha-f-flech-ca',  label:'Fléchisseurs (atteint)',        unit:'kg',  dir:'up',   cat:'Hanche — Force'},
+  {id:'ha-f-flech-cs',  label:'Fléchisseurs (sain)',           unit:'kg',  dir:'up',   cat:'Hanche — Force'},
+  {id:'ha-f-abd-ca',    label:'Abducteurs (atteint)',          unit:'kg',  dir:'up',   cat:'Hanche — Force'},
+  {id:'ha-f-abd-cs',    label:'Abducteurs (sain)',             unit:'kg',  dir:'up',   cat:'Hanche — Force'},
+  {id:'ha-f-ri-ca',     label:'RI (atteint)',                  unit:'kg',  dir:'up',   cat:'Hanche — Force'},
+  {id:'ha-f-ri-cs',     label:'RI (sain)',                     unit:'kg',  dir:'up',   cat:'Hanche — Force'},
+  {id:'ha-f-re-ca',     label:'RE (atteint)',                  unit:'kg',  dir:'up',   cat:'Hanche — Force'},
+  {id:'ha-f-re-cs',     label:'RE (sain)',                     unit:'kg',  dir:'up',   cat:'Hanche — Force'},
   // ── Genou — Force ───────────────────────────────────────────
   {id:'ge-f-quad-ca',   label:'Quadriceps (atteint)',         unit:'kg',  dir:'up',   cat:'Genou — Force'},
   {id:'ge-f-quad-cs',   label:'Quadriceps (sain)',            unit:'kg',  dir:'up',   cat:'Genou — Force'},
@@ -1191,11 +1189,10 @@ var CHART_GROUPS = [
   {cat:'Épaule — Force', title:'BHT — Atteint vs Sain', type:'dual', idA:'ep-bht-ca', idB:'ep-bht-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
   // ─ Hanche — Force ─
   {cat:'Hanche — Force', title:'Adducteurs — Atteint vs Sain', type:'dual', idA:'ha-f-add-ca', idB:'ha-f-add-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
-  {cat:'Hanche — Force', title:'Abdominaux — Atteint vs Sain', type:'dual', idA:'ha-f-abdo-ca', idB:'ha-f-abdo-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
-  {cat:'Hanche — Force', title:'Fléchisseurs hanche — Atteint vs Sain', type:'dual', idA:'ha-f-flech-ca', idB:'ha-f-flech-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
-  {cat:'Hanche — Force', title:'Abduction hanche — Atteint vs Sain', type:'dual', idA:'ha-f-abd-ca', idB:'ha-f-abd-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
-  {cat:'Hanche — Force', title:'RI hanche — Atteint vs Sain', type:'dual', idA:'ha-f-ri-ca', idB:'ha-f-ri-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
-  {cat:'Hanche — Force', title:'RE hanche — Atteint vs Sain', type:'dual', idA:'ha-f-re-ca', idB:'ha-f-re-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Hanche — Force', title:'Fléchisseurs — Atteint vs Sain', type:'dual', idA:'ha-f-flech-ca', idB:'ha-f-flech-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Hanche — Force', title:'Abducteurs — Atteint vs Sain', type:'dual', idA:'ha-f-abd-ca', idB:'ha-f-abd-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Hanche — Force', title:'RI — Atteint vs Sain', type:'dual', idA:'ha-f-ri-ca', idB:'ha-f-ri-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Hanche — Force', title:'RE — Atteint vs Sain', type:'dual', idA:'ha-f-re-ca', idB:'ha-f-re-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
   // ─ Genou — Force ─
   {cat:'Genou — Force', title:'Quadriceps — Atteint vs Sain', type:'dual', idA:'ge-f-quad-ca', idB:'ge-f-quad-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
   {cat:'Genou — Force', title:'Ischio-jambiers — Atteint vs Sain', type:'dual', idA:'ge-f-ij-ca', idB:'ge-f-ij-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
@@ -2438,7 +2435,7 @@ function _deserializeBilan(data){
   try{ calcRachisStat(); calcLNF(); calcSorensen(); calcPDSLRT(); calcShirado(); }catch(ex){}
   try{ calcPlioq2(); calcSEBT(); calcUQYBT(); updateBadges(); }catch(ex){}
   try{ _initAllRomBars(); }catch(ex){}
-  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht','co-f-ext','co-f-flex'].forEach(calcEpForce); ['ha-f-add','ha-f-abdo','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); ['pi-f-fp','pi-f-fd','pi-f-inv','pi-f-ev','pi-f-lfh'].forEach(calcEpForce); ['ra-fc-inc'].forEach(calcEpForce); }catch(ex){}
+  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht','co-f-ext','co-f-flex'].forEach(calcEpForce); ['ha-f-add','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); ['pi-f-fp','pi-f-fd','pi-f-inv','pi-f-ev','pi-f-lfh'].forEach(calcEpForce); ['ra-fc-inc'].forEach(calcEpForce); }catch(ex){}
   _parsePainZones();
   _suppressDirty = false;
   _bilanModified = false;
@@ -4253,11 +4250,10 @@ function _buildAllTestsHtml() {
       // Force musculaire hanche
       var haForceTests = [
         {key:'ha-f-add',   label:'Adducteurs'},
-        {key:'ha-f-abdo',  label:'Abdominaux (CE+CI + obliques)'},
-        {key:'ha-f-flech', label:'Fléchisseurs hanche'},
-        {key:'ha-f-abd',   label:'Abduction hanche'},
-        {key:'ha-f-ri',    label:'Rotation interne hanche'},
-        {key:'ha-f-re',    label:'Rotation externe hanche'},
+        {key:'ha-f-flech', label:'Fléchisseurs'},
+        {key:'ha-f-abd',   label:'Abducteurs'},
+        {key:'ha-f-ri',    label:'RI'},
+        {key:'ha-f-re',    label:'RE'},
       ];
       haForceTests.forEach(function(ft) {
         var csN = parseFloat((document.getElementById(ft.key+'-cs')||{}).value);
@@ -5020,7 +5016,6 @@ function _buildAllTestsHtml() {
   (function(){
     var haForceMap = [
       {key:'ha-f-add',   label:'Renforcer les adducteurs'},
-      {key:'ha-f-abdo',  label:'Renforcer les abdominaux (CE+CI + obliques)'},
       {key:'ha-f-flech', label:'Renforcer les fléchisseurs de hanche'},
       {key:'ha-f-abd',   label:'Renforcer les abducteurs de hanche'},
       {key:'ha-f-ri',    label:'Renforcer les rotateurs internes de hanche'},
