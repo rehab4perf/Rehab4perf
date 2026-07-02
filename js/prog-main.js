@@ -2812,31 +2812,14 @@ function _doPlanDates(dates, progId){
       body:JSON.stringify({patient_id:_progPatient.id, programme_id:progId, praticien_id:_progUid, date:dateStr})
     }).then(function(r){
       if(!r.ok) return r.json().then(function(d){ throw new Error(JSON.stringify(d)); });
-      return r.json();
     });
   });
   Promise.all(promises)
-    .then(function(results){
+    .then(function(){
       if(btn){ btn.disabled=false; btn.innerHTML=_PLAN_ICON+'Planifier'; }
       closePlanModal();
-      renderCalendar();
-      if(dates.length === 1){
-        var row = Array.isArray(results[0]) ? results[0][0] : results[0];
-        var seanceId = row && row.id;
-        if(seanceId){
-          var link = _athleteLink(progId) + '&seance=' + seanceId;
-          if(navigator.clipboard && navigator.clipboard.writeText){
-            navigator.clipboard.writeText(link)
-              .then(function(){ _showToast('📅 Séance planifiée — lien athlète copié !'); })
-              .catch(function(){ _showToast('📅 Séance planifiée !'); prompt('Copie ce lien :', link); });
-          } else {
-            _showToast('📅 Séance planifiée !');
-            prompt('Copie ce lien :', link);
-          }
-          return;
-        }
-      }
       _showToast('📅 Séance planifiée sur '+dates.length+' jour'+(dates.length>1?'s':'')+' !');
+      renderCalendar();
     })
     .catch(function(err){
       if(btn){ btn.disabled=false; btn.innerHTML=_PLAN_ICON+'Planifier'; }

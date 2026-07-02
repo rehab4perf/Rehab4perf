@@ -1574,12 +1574,56 @@ function _copyLink(id){
   }
 }
 
+function _createSeanceAndCopyLink(progId, btn){
+  var today = new Date().toISOString().split('T')[0];
+  _fetchRetry(SUPA_URL_P+'/rest/v1/seances_planifiees', {
+    method:'POST', headers:_sbHeaders(),
+    body:JSON.stringify({patient_id:_progPatient.id, programme_id:progId, praticien_id:_progUid, date:today})
+  })
+  .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+  .then(function(res){
+    if(btn){ btn.disabled=false; btn.textContent='📤 Partager'; }
+    var row = res.ok && (Array.isArray(res.data) ? res.data[0] : res.data);
+    var seanceId = row && row.id;
+    if(seanceId){ _shareSeanceId = seanceId; }
+    var link = _athleteLink(progId) + (seanceId ? '&seance=' + seanceId : '');
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(link)
+        .then(function(){ _showToast('📤 Lien copié ! Envoie-le à ton athlète.'); })
+        .catch(function(){ prompt('Copie ce lien :', link); });
+    } else {
+      prompt('Copie ce lien :', link);
+    }
+  })
+  .catch(function(err){
+    if(btn){ btn.disabled=false; btn.textContent='📤 Partager'; }
+    alert('Erreur réseau : '+(err&&err.message||err));
+  });
+}
+
 /* Option A : bouton Partager dans le builder (auto-save si besoin) */
 function shareBuilderProg(){
-  if(_currentProgId){ _copyLink(_currentProgId); return; }
   if(!_progPatient){ alert('Sélectionnez un patient avant de partager.'); return; }
   if(!_progUid || !_progToken){ alert('Session non disponible. Sélectionnez à nouveau le patient.'); return; }
   var btn = document.getElementById('prog-share-btn');
+  // Programme déjà sauvegardé : réutiliser ou créer la seance
+  if(_currentProgId){
+    if(_shareSeanceId){
+      var link = _athleteLink(_currentProgId) + '&seance=' + _shareSeanceId;
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(link)
+          .then(function(){ _showToast('📤 Lien copié ! Envoie-le à ton athlète.'); })
+          .catch(function(){ prompt('Copie ce lien :', link); });
+      } else {
+        prompt('Copie ce lien :', link);
+      }
+      return;
+    }
+    if(btn){ btn.disabled=true; btn.textContent='⏳…'; }
+    _createSeanceAndCopyLink(_currentProgId, btn);
+    return;
+  }
+  // Pas encore sauvegardé : auto-save d'abord
   if(btn){ btn.disabled=true; btn.textContent='⏳…'; }
   var nomProg = (document.getElementById('patientName')||{}).value || ('Programme du '+new Date().toLocaleDateString('fr-FR'));
   var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), notes: getNotes() };
@@ -1590,14 +1634,13 @@ function shareBuilderProg(){
   })
   .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
   .then(function(res){
-    if(btn){ btn.disabled=false; btn.textContent='📤 Partager'; }
-    if(!res.ok){ alert('Erreur : '+JSON.stringify(res.data)); return; }
+    if(!res.ok){ if(btn){ btn.disabled=false; btn.textContent='📤 Partager'; } alert('Erreur : '+JSON.stringify(res.data)); return; }
     var d = Array.isArray(res.data) ? res.data[0] : res.data;
     if(d && d.id){
       _currentProgId = d.id;
       var sb = document.getElementById('prog-cloud-save-btn');
       if(sb){ sb.textContent='✓ Sauvegardé'; setTimeout(function(){ sb.textContent='☁️ Sauvegarder'; },2500); }
-      _copyLink(d.id);
+      _createSeanceAndCopyLink(d.id, btn);
     }
   })
   .catch(function(err){
@@ -2603,6 +2646,7 @@ var sbP = supabase.createClient(SUPA_URL_P, SUPA_KEY_P);
 var _progPatient    = null;
 var _currentProgId  = null;
 var _currentSeanceId = null; // ID de la séance calendrier ouverte dans le builder (null si chargée depuis l'historique)
+var _shareSeanceId  = null; // ID seances_planifiees créé lors du dernier Partager (réutilisé si même progId)
 var _currentProgRawDonnees = null; // Métadonnées du programme chargé (type, ref1RM, pct, etc.) — préservées au save
 var _progUid        = null;
 var _progToken     = null;
