@@ -431,14 +431,18 @@ const TESTS = {
   'tb-ge-global': {type:'ortho',items:['Signe du Glaçon — Test du choc rotulien <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD, recherche du choc patellaire. Main crâniale abaisse la patella (cul de sac sous-quadricipital), main caudale contre-appui, index pousse verticalement vers la table. ✚ Patella qui s\'enfonce dans le liquide → hémarthrose (rupture lig, lésion ostéochondrale, luxation patellaire)</span>']},
   'tb-ge-global-g':{type:'ortho',items:['Signe du Glaçon']},
   'tb-ge-global-d':{type:'ortho',items:['Signe du Glaçon']},
-  'tb-ge-mob':    {type:'ortho',opts:['Normal','Réduit','Récurvatum','N/A'],items:[
+  'tb-ge-mob-flex':   {type:'ortho',opts:['Normal','Réduit','N/A'],items:[
     'Flexion passive <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD, flexion passive associée à la RI. Préciser si limitation algique ou mécanique. ✚ Réduit → déficit flexion ; Atteinte corne post. ménisques / LCM</span>',
-    'Flexion active <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD, flexion active comparée à la flexion passive. ✚ Différence passive/active → déficit musculaire quadricipital</span>',
+    'Flexion active <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD, flexion active comparée à la flexion passive. ✚ Différence passive/active → déficit musculaire quadricipital</span>'
+  ]},
+  'tb-ge-mob-ext':    {type:'ortho',opts:['Normal','Réduit','Récurvatum','N/A'],items:[
     'Extension passive <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD, extension passive associée à la RE. ✚ Récurvatum unilatéral → atteinte PAPI, PAPE et LCP ; Bilatéral → hyperlaxité constitutionnelle ; Douleur ant. → corne ant. ménisques</span>',
     "Extension active <span style=\"font-size:.68rem;color:var(--text3);font-weight:400;display:block\">DD, extension active du genou. ✚ Défaut d'extension active → lésion quadriceps / tendon patellaire / fracture patella</span>"
   ]},
-  'tb-ge-mob-g':  {type:'ortho',opts:['Normal','Réduit','Récurvatum','N/A'],items:['Flexion passive','Flexion active','Extension passive','Extension active']},
-  'tb-ge-mob-d':  {type:'ortho',opts:['Normal','Réduit','Récurvatum','N/A'],items:['Flexion passive','Flexion active','Extension passive','Extension active']},
+  'tb-ge-mob-flex-g': {type:'ortho',opts:['Normal','Réduit','N/A'],items:['Flexion passive','Flexion active']},
+  'tb-ge-mob-flex-d': {type:'ortho',opts:['Normal','Réduit','N/A'],items:['Flexion passive','Flexion active']},
+  'tb-ge-mob-ext-g':  {type:'ortho',opts:['Normal','Réduit','Récurvatum','N/A'],items:['Extension passive','Extension active']},
+  'tb-ge-mob-ext-d':  {type:'ortho',opts:['Normal','Réduit','Récurvatum','N/A'],items:['Extension passive','Extension active']},
   'tb-ge-lig':    {type:'ortho',items:[
     'Laxité en varus à 0° — Verrouillage complet <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Varus en extension complète (DD). ✚ Laxité → atteinte du LCL + PAPE (atteinte grave, souvent associée au pivot central)</span>',
     'Laxité en valgus à 0° — Verrouillage complet <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Valgus en extension complète (DD). ✚ Laxité → atteinte du LCM + PAPI (atteinte grave du plan médial)</span>',
@@ -3801,8 +3805,8 @@ function updateBadges() {
     'rachis-cerv': ['tb-cv-vascul','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-dn4-itw','tb-cv-dn4-exam','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-sensib-g','tb-cv-sensib-d'],
     'rachis-lomb': ['tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-plet','tb-rl-laslett-1','tb-rl-laslett-2','tb-rl-laslett-3','tb-rl-instab','tb-rl-tfd-suite','tb-rl-tfa-suite','tb-rl-transverse'],
     'hanche': ['tb-ha-neuro','tb-ha-laslett-1','tb-ha-laslett-2','tb-ha-laslett-3','tb-ha-fracture','tb-ha-agp-clock','tb-ha-agp-demem','tb-ha-agp-add','tb-ha-agp-pubis','tb-ha-agp-flech','tb-ha-agp-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-neuro-g','tb-ha-neuro-d','tb-ha-fracture-g','tb-ha-fracture-d','tb-ha-agp-g','tb-ha-agp-d','tb-ha-hanche-g','tb-ha-hanche-d'],
-    'genou':  ['tb-ge-global','tb-ge-mob','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-ext',
-               'tb-ge-global-g','tb-ge-global-d','tb-ge-mob-g','tb-ge-mob-d','tb-ge-lig-g','tb-ge-lig-d','tb-ge-lca-g','tb-ge-lca-d',
+    'genou':  ['tb-ge-global','tb-ge-mob-flex','tb-ge-mob-ext','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-ext',
+               'tb-ge-global-g','tb-ge-global-d','tb-ge-mob-flex-g','tb-ge-mob-flex-d','tb-ge-mob-ext-g','tb-ge-mob-ext-d','tb-ge-lig-g','tb-ge-lig-d','tb-ge-lca-g','tb-ge-lca-d',
                'tb-ge-men-g','tb-ge-men-d','tb-ge-rot-g','tb-ge-rot-d','tb-ge-sbit-g','tb-ge-sbit-d',
                'tb-ge-plicae-g','tb-ge-plicae-d','tb-ge-ext-g','tb-ge-ext-d',
                ],
@@ -4452,8 +4456,8 @@ function _buildAllTestsHtml() {
     { label:'RACHIS', pk:'rachis', fields:[['ra-marqueur','Marqueur'],['ra-mckenzie','McKenzie']], tables:['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-transverse'], concl:'ra-conclusion', opt:'ra-opt' },
     { label:'HANCHE', pk:'hanche', fields:[['ha-marqueur','Marqueur']], tables:['tb-ha-neuro','tb-ha-laslett-1','tb-ha-laslett-2','tb-ha-laslett-3','tb-ha-fracture','tb-ha-agp-clock','tb-ha-agp-demem','tb-ha-agp-add','tb-ha-agp-pubis','tb-ha-agp-flech','tb-ha-agp-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-neuro-g','tb-ha-neuro-d','tb-ha-fracture-g','tb-ha-fracture-d','tb-ha-agp-g','tb-ha-agp-d','tb-ha-hanche-g','tb-ha-hanche-d'], concl:'ha-conclusion', opt:'ha-opt' },
     { label:'GENOU', pk:'genou', fields:[['ge-marqueur','Marqueur']], tables:[
-        'tb-ge-global','tb-ge-mob','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-ext',
-        'tb-ge-global-g','tb-ge-global-d','tb-ge-mob-g','tb-ge-mob-d','tb-ge-lig-g','tb-ge-lig-d','tb-ge-lca-g','tb-ge-lca-d',
+        'tb-ge-global','tb-ge-mob-flex','tb-ge-mob-ext','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-ext',
+        'tb-ge-global-g','tb-ge-global-d','tb-ge-mob-flex-g','tb-ge-mob-flex-d','tb-ge-mob-ext-g','tb-ge-mob-ext-d','tb-ge-lig-g','tb-ge-lig-d','tb-ge-lca-g','tb-ge-lca-d',
         'tb-ge-men-g','tb-ge-men-d','tb-ge-rot-g','tb-ge-rot-d','tb-ge-sbit-g','tb-ge-sbit-d',
         'tb-ge-plicae-g','tb-ge-plicae-d','tb-ge-ext-g','tb-ge-ext-d',
         ], concl:'ge-conclusion', opt:'ge-opt' },
