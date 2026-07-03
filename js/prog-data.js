@@ -1850,7 +1850,7 @@ function renderSession(){
         // Consignes + NRS par exercice
         var consigneVal = e.consigne || '';
         var nrsVal = (e.nrs !== null && e.nrs !== undefined) ? e.nrs : null;
-        var nrsTxt = nrsVal !== null ? '💢 '+nrsVal+'/10' : '💢 —';
+        var nrsTxt = nrsVal !== null ? 'EVA '+nrsVal+'/10' : 'EVA —';
         var nrsCol = nrsVal === null ? '#9AA0A8' : nrsVal <= 3 ? '#16A34A' : nrsVal <= 6 ? '#F59E0B' : '#DC2626';
         html += '<div class="exo-consigne-row">'
              +  '<div class="exo-consigne-inner">'
