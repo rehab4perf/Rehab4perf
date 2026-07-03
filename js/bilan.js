@@ -33,7 +33,7 @@ function _sbRetry(fn, _n) {
 // -- DATA -----------------------------------------------------
 const TESTS = {
   'tb-ep-irrit':{type:'ortho',items:[
-    'Arm Squeeze Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Compression du tiers moyen du bras → Douleur = origine épaule</span>',
+    'Arm Squeeze Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">3 pressions : tiers sup. bras / ACJ / sous-acromial — EVA bras > 3 = positif (Thoomes 2017)</span>',
     'ULNT 1 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf médian</span>',
     'ULNT 2 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf médian</span>',
     'ULNT 3 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf radial</span>',
@@ -69,8 +69,8 @@ const TESTS = {
     'Hawkins-Kennedy <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">RI passive max à 90° d\'élévation → Douleur (conflit sous-coracoïdien)</span>',
   ]},
   // Épaule bilatérale — tables simplifiées (flat, sans sous-en-têtes)
-  'tb-ep-irrit-g':{type:'ortho',items:['Arm Squeeze Test','ULNT 1 (Nerf médian)','ULNT 2 (Nerf médian)','ULNT 3 (Nerf radial)','ULNT 4 (Nerf ulnaire)']},
-  'tb-ep-irrit-d':{type:'ortho',items:['Arm Squeeze Test','ULNT 1 (Nerf médian)','ULNT 2 (Nerf médian)','ULNT 3 (Nerf radial)','ULNT 4 (Nerf ulnaire)']},
+  'tb-ep-irrit-g':{type:'ortho',items:['Arm Squeeze Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">3 pressions : tiers sup. bras / ACJ / sous-acromial — EVA bras > 3 = positif (Thoomes 2017)</span>','ULNT 1 (Nerf médian)','ULNT 2 (Nerf médian)','ULNT 3 (Nerf radial)','ULNT 4 (Nerf ulnaire)']},
+  'tb-ep-irrit-d':{type:'ortho',items:['Arm Squeeze Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">3 pressions : tiers sup. bras / ACJ / sous-acromial — EVA bras > 3 = positif (Thoomes 2017)</span>','ULNT 1 (Nerf médian)','ULNT 2 (Nerf médian)','ULNT 3 (Nerf radial)','ULNT 4 (Nerf ulnaire)']},
   'tb-ep-trau-g':{type:'ortho',items:[
     'Appréhension (ant.)','Relocation test','Appréhension post.','Sulcus Test',
     'Cross body adduction test','Palpation interligne AC',
