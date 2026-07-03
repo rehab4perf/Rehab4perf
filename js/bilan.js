@@ -133,6 +133,31 @@ const TESTS = {
   'tb-co-post-g':{type:'ortho',items:['Test extension conflit','LMA triceps excentrique','LMA triceps ext. passive','LMA triceps ext. active','Test rupture triceps']},
   'tb-co-post-d':{type:'ortho',items:['Test extension conflit','LMA triceps excentrique','LMA triceps ext. passive','LMA triceps ext. active','Test rupture triceps']},
 
+  'tb-po-neuro':{type:'ortho',items:[
+    'ULNT 1 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf médian — diminution amplitude / modification symptômes par inclinaison de la tête</span>',
+    'ULNT 2 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf radial — diminution amplitude / modification symptômes par inclinaison de la tête</span>',
+    'ULNT 3 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Nerf ulnaire — diminution amplitude / modification symptômes par inclinaison de la tête</span>',
+    'Test de Phalen <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Poignets en flexion maintenue 1 min — Paresthésies territoire nerf médian (face ant. 3 premiers doigts + bord ext. annulaire)</span>',
+    'Test de Phalen inversé <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Poignets en extension complète maintenue 1 min — Paresthésies territoire nerf médian</span>',
+  ]},
+  'tb-po-neuro-g':{type:'ortho',items:['ULNT 1','ULNT 2','ULNT 3','Test de Phalen','Test de Phalen inversé']},
+  'tb-po-neuro-d':{type:'ortho',items:['ULNT 1','ULNT 2','ULNT 3','Test de Phalen','Test de Phalen inversé']},
+
+  'tb-po-lig':{type:'ortho',items:[
+    'Manœuvre de tiroir postérieur <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Saisir radius/ulna + carpe, tiroir postérieur — Laxité / Hypermobilité (Sp: ND, Se: ND)</span>',
+    'Manœuvre de tiroir antérieur <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Saisir radius/ulna + carpe, tiroir antérieur — Laxité / Hypermobilité (Sp: ND, Se: ND)</span>',
+    'Manœuvre de Watson — Scaphoïde Shift Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Pression tubercule scaphoïde + mobilisation poignet en inclinaison ulnaire — Ressaut douloureux = lésion scapho-lunaire (Sp: 66%, Se: 69%)</span>',
+  ]},
+  'tb-po-lig-g':{type:'ortho',items:['Manœuvre de tiroir postérieur','Manœuvre de tiroir antérieur','Manœuvre de Watson']},
+  'tb-po-lig-d':{type:'ortho',items:['Manœuvre de tiroir postérieur','Manœuvre de tiroir antérieur','Manœuvre de Watson']},
+
+  'tb-po-pouce':{type:'ortho',items:[
+    'Test de Finkelstein <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Pouce en poing, inclinaison ulnaire passive — Douleur stiloïde radiale = tendinopathie De Quervain (Sp: 14%, Se: 89%)</span>',
+    'WHAT test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Hyperflexion poignet + pouce abduction, adduction résistée — Positif si douleur reproduite (Se: 0,99 / Sp: 0,29 — Goubau 2014)</span>',
+  ]},
+  'tb-po-pouce-g':{type:'ortho',items:['Test de Finkelstein','WHAT test']},
+  'tb-po-pouce-d':{type:'ortho',items:['Test de Finkelstein','WHAT test']},
+
   'tb-ra-cerv': {type:'ortho',items:[
     'Spurling A',
     'Distraction cervicale'
@@ -6699,6 +6724,18 @@ function _updateCoudeBilateral(){
   });
 }
 
+function _updateMainBilateral(){
+  var cote = _getCoteForScope(['epaule','coude','poignet']);
+  var bilateral = (cote === 'BILATÉRAL');
+  var blocks = ['neuro','lig','pouce'];
+  blocks.forEach(function(b){
+    var single = document.getElementById('po-single-' + b);
+    var bil    = document.getElementById('po-bilateral-' + b);
+    if(single) single.style.display = bilateral ? 'none' : '';
+    if(bil)    bil.style.display    = bilateral ? ''     : 'none';
+  });
+}
+
 function _updateHancheBilateral(){
   var cote = _getCoteForScope(['hanche']);
   var bilateral = (cote === 'BILATÉRAL');
@@ -6713,7 +6750,7 @@ function _updateHancheBilateral(){
 
 function _updateSideLabels(){
   var SCOPES = [
-    { zones:['epaule','coude','poignet'],         pages:['page-epaule','page-coude','page-fonctionnelsMS','page-force-ms'] },
+    { zones:['epaule','coude','poignet'],         pages:['page-epaule','page-coude','page-main','page-fonctionnelsMS','page-force-ms'] },
     { zones:['genou'],                            pages:['page-genou'] },
     { zones:['cheville','pied'],                  pages:['page-pied'] },
     { zones:['rachis-c','rachis-l'],              pages:['page-rachis','page-fonctionnelsRachis','page-force-rachis'] },
@@ -6753,6 +6790,7 @@ function _updateSideLabels(){
   _updateChevBilateral();
   _updateEpauleBilateral();
   _updateCoudeBilateral();
+  _updateMainBilateral();
 }
 
 function _parsePainZones(){
@@ -7169,7 +7207,7 @@ window.addEventListener('load', function(){
    TESTS PERSONNALISÉS — section en bas de chaque page clinique
 ══════════════════════════════════════════════════════ */
 (function(){
-  var _CT_PAGES = ['epaule','coude','rachis','hanche','genou','pied','lma',
+  var _CT_PAGES = ['epaule','coude','main','rachis','hanche','genou','pied','lma',
                    'fonctionnels','fonctionnelsMS','fonctionnelsRachis',
                    'rachis-cerv','rachis-lomb'];
   var _ctData = {};
