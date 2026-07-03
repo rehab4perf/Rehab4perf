@@ -487,26 +487,63 @@ const TESTS = {
   'tb-ge-ext-g':  {type:'fonc',items:['Extension passive','Extension active sur table','Extension active en charge'],opts:['Validé','Pas validé','N/A']},
   'tb-ge-ext-d':  {type:'fonc',items:['Extension passive','Extension active sur table','Extension active en charge'],opts:['Validé','Pas validé','N/A']},
   'tb-ra-transverse':{type:'ortho',items:['Test du transverse (toux + valsalva)']},
-  'tb-pi-global':{type:'ortho',items:['Liberté articulaire globale']},
-  'tb-pi-global-g':{type:'ortho',items:['Liberté articulaire globale']},
-  'tb-pi-global-d':{type:'ortho',items:['Liberté articulaire globale']},
+  'tb-pi-ottawa':  {type:'ortho',opts:['Positif','Négatif','N/A'],items:[
+    'Sensibilité bord post. / pointe malléole latérale (A) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Douleur zone malléolaire + ≥1 critère A ou B → radio cheville indiquée</span>',
+    'Sensibilité bord post. / extrémité malléole médiale (B)',
+    'Incapacité à supporter le poids immédiatement + 4 pas aux urgences',
+    'Sensibilité base 5e métatarsien (C) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">≥1 critère C ou D → radio pied indiquée</span>',
+    'Sensibilité naviculaire (D)'
+  ]},
+  'tb-pi-ottawa-g':{type:'ortho',opts:['Positif','Négatif','N/A'],items:['Sensibilité malléole latérale (A)','Sensibilité malléole médiale (B)','Incapacité à supporter le poids','Sensibilité base 5e métatarsien (C)','Sensibilité naviculaire (D)']},
+  'tb-pi-ottawa-d':{type:'ortho',opts:['Positif','Négatif','N/A'],items:['Sensibilité malléole latérale (A)','Sensibilité malléole médiale (B)','Incapacité à supporter le poids','Sensibilité base 5e métatarsien (C)','Sensibilité naviculaire (D)']},
+  'tb-pi-global':  {type:'ortho',items:[
+    'Test Tissulaire / Liberté Articulaire <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD, genou tendu. Main externe: calcanéum, main interne: talus. Action: décoaptation + retour. ✚ Réponse tissu conjonctif — densité/laxité, comparatif controlatéral. Pas de données de validité publiées.</span>',
+    'Flexion Plantaire / Flexion Dorsale <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD, empaumer calcanéum. Mobilisation FP et FD complète. ✚ ROM + douleur. Orientation: douleur FD → syndesmose ; douleur FP → carrefour postérieur. Pas de données publiées.</span>'
+  ]},
+  'tb-pi-global-g':{type:'ortho',items:['Test Tissulaire / Liberté Articulaire','Flexion Plantaire / Flexion Dorsale']},
+  'tb-pi-global-d':{type:'ortho',items:['Test Tissulaire / Liberté Articulaire','Flexion Plantaire / Flexion Dorsale']},
   'tb-pi-amp-g':{type:'ortho',opts:['Ok','Acceptable','Insuffisant'],items:['Flex. dorsale (g. tendu)','Flex. dorsale (g. fléchi)','Flexion plantaire','Inversion','Éversion']},
   'tb-pi-amp-d':{type:'ortho',opts:['Ok','Acceptable','Insuffisant'],items:['Flex. dorsale (g. tendu)','Flex. dorsale (g. fléchi)','Flexion plantaire','Inversion','Éversion']},
-  'tb-pi-tt':   {type:'ortho',items:['Reverse antéro-latéral drawer test','Talar tilt test','Cisaillement']},
-  'tb-pi-tt-g': {type:'ortho',items:['Reverse antéro-latéral drawer test','Talar tilt test','Cisaillement']},
-  'tb-pi-tt-d': {type:'ortho',items:['Reverse antéro-latéral drawer test','Talar tilt test','Cisaillement']},
-  'tb-pi-synd': {type:'ortho',items:['Kleiger','Fibular translation test','Tiroir talien transversal','Squeeze test']},
-  'tb-pi-synd-g':{type:'ortho',items:['Kleiger','Fibular translation test','Tiroir talien transversal','Squeeze test']},
-  'tb-pi-synd-d':{type:'ortho',items:['Kleiger','Fibular translation test','Tiroir talien transversal','Squeeze test']},
-  'tb-pi-conf': {type:'ortho',items:['Grinding','Impaction','Excentrique LFH','Molloy test']},
-  'tb-pi-conf-g':{type:'ortho',items:['Grinding','Impaction','Excentrique LFH','Molloy test']},
-  'tb-pi-conf-d':{type:'ortho',items:['Grinding','Impaction','Excentrique LFH','Molloy test']},
-  'tb-pi-st':   {type:'ortho',items:['Varus / Valgus en flexion dorsale','Cisaillement en flexion dorsale']},
-  'tb-pi-st-g': {type:'ortho',items:['Varus / Valgus en flexion dorsale','Cisaillement en flexion dorsale']},
-  'tb-pi-st-d': {type:'ortho',items:['Varus / Valgus en flexion dorsale','Cisaillement en flexion dorsale']},
-  'tb-pi-chopart':{type:'ortho',items:['Mobilisation Chopart','Neutral Heel Lateral Push Test']},
-  'tb-pi-chopart-g':{type:'ortho',items:['Mobilisation Chopart','Neutral Heel Lateral Push Test']},
-  'tb-pi-chopart-d':{type:'ortho',items:['Mobilisation Chopart','Neutral Heel Lateral Push Test']},
+  'tb-pi-tt':    {type:'ortho',items:[
+    'Reverse Antero Lateral Drawer Test — RALDT <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD, cheville 20° FP. Kiné stabilise tibia, poussée sèche dans partie distale du tibia. ✚ Qualité arrêt + douleur. Se/Sp supérieures au Tiroir Antérieur et ALDT (Li et al.).</span>',
+    'Talar Tilt Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD, en fente. Main stabilisatrice tibia, main mobilisatrice calcanéum. Varus forcé: teste LCL (calcanéo-fibulaire) ; valgus forcé: teste ligament deltoïde. ✚ Qualité arrêt, laxité > 10°, douleur. Se: 49–54,5%, Sp: 82.</span>',
+    'Test de Cisaillement — Choc talien <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD, coude dans axe des poignets, empaumer calcanéum, contre-prise tibia. Action: cisaillement pour tester tenue du talus dans la pince tibio-fibulaire. ✚ Qualité arrêt + douleur. Pas de données publiées.</span>'
+  ]},
+  'tb-pi-tt-g':  {type:'ortho',items:['RALDT','Talar Tilt Test','Test de Cisaillement']},
+  'tb-pi-tt-d':  {type:'ortho',items:['RALDT','Talar Tilt Test','Test de Cisaillement']},
+  'tb-pi-synd':  {type:'ortho',items:[
+    'Test de Kleiger <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD, genou 90°. Empaumer bord interne pied, maintenir cheville FD + genou RI avec creux axillaire. Action: RE du pied. ✚ Douleur. Se: 20–71%, Sp: 47,5–97%. Teste aussi faisceau superficiel ligament deltoïde.</span>',
+    'Fibular Translation Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD. Main stabilisatrice tibia, mobilise pointe fibula avec loge thénar (prise souple). ✚ Qualité arrêt/controlatéral, claquement audible, douleur. Pas de données publiées.</span>',
+    'Tiroir Talien Transversal <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD. Main externe stabilise tibia sans maintenir fibula ; main interne bord post. calcanéum, coude dans le prolongement. Action: poussée vers le haut et le dehors. ✚ Qualité arrêt, diastasis visible. Pas de données publiées.</span>',
+    'Squeeze Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD. Compression fibula contre tibia à mi-hauteur segment jambier. ✚ Qualité arrêt, douleur dans la syndesmose. Se: 25–44,4%, Sp: 55,9–99%. Utile pour distinguer lésions stables vs instables (Calder 2014).</span>'
+  ]},
+  'tb-pi-synd-g':{type:'ortho',items:['Test de Kleiger','Fibular Translation Test','Tiroir Talien Transversal','Squeeze Test']},
+  'tb-pi-synd-d':{type:'ortho',items:['Test de Kleiger','Fibular Translation Test','Tiroir Talien Transversal','Squeeze Test']},
+  'tb-pi-conf':  {type:'ortho',items:[
+    'Griding Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD. Main stabilisatrice tibia, main mobilisatrice calcanéum. Action: amener pied en FP et gratter calcanéum contre pilon tibial postérieur. ✚ Douleur. Pas de données publiées.</span>',
+    "Test d'Impaction <span style=\"font-size:.68rem;color:var(--text3);font-weight:400;display:block\">DD. Main stabilisatrice cou-de-pied pour contrôler la FD. Action: impaction calcanéum en FP et FD. ✚ Douleur en FP ; absence de douleur en FD. Pas de données publiées.</span>",
+    'Excentrique LFP1 <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD. Amener gros orteil en extension résistée complète. Permet de différencier conflit postérieur tissus mous vs osseux. ✚ Douleur. Pas de données publiées.</span>',
+    'Molloy Test — Conflit antéro-latéral <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Pied hors table, position neutre. Comprimer gouttière antéro-latérale avec pouce, maintenir compression + amener cheville en dorsiflexion. ✚ Douleur gouttière antéro-latérale majorée en FD. Se: 94,8%, Sp: 88%. Référence: Arthroscopie (Molloy et al. 2011).</span>'
+  ]},
+  'tb-pi-conf-g':{type:'ortho',items:['Griding Test',"Test d'Impaction",'Excentrique LFP1','Molloy Test']},
+  'tb-pi-conf-d':{type:'ortho',items:['Griding Test',"Test d'Impaction",'Excentrique LFP1','Molloy Test']},
+  'tb-pi-palp':  {type:'ortho',items:[
+    "Palpation de l'ensemble des structures <span style=\"font-size:.68rem;color:var(--text3);font-weight:400;display:block\">Palpation systématique des malléoles, ligaments, tendons, sinus du tarse, métatarses. ✚ Douleur, rougeur, chaleur, crépitements, œdème.</span>"
+  ]},
+  'tb-pi-palp-g':{type:'ortho',items:['Palpation']},
+  'tb-pi-palp-d':{type:'ortho',items:['Palpation']},
+  'tb-pi-st':    {type:'ortho',items:[
+    'Varus / Valgus en FD — Sous-talienne <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD. Amener cheville en FD pour verrouiller talus dans la mortaise. Varus: teste sous-talienne en externe ; Valgus: teste sous-talienne en interne. ✚ Qualité arrêt + douleur. Pas de données publiées.</span>',
+    'Cisaillement en FD — Sous-talienne <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD. Amener cheville en FD pour verrouiller talus dans la mortaise. Action: cisaillement dans un sens et dans l\'autre. ✚ Qualité arrêt + douleur. Pas de données publiées.</span>'
+  ]},
+  'tb-pi-st-g':  {type:'ortho',items:['Varus/Valgus en FD','Cisaillement en FD']},
+  'tb-pi-st-d':  {type:'ortho',items:['Varus/Valgus en FD','Cisaillement en FD']},
+  'tb-pi-chopart':{type:'ortho',items:[
+    'Médiotarse — Talonaviculaire et Calcanéo-Cuboïdienne <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD. Mobilise articulation talonaviculaire en ABD pronation puis calcanéo-cuboïdienne en ADD supination. ✚ Douleur. Pas de données publiées.</span>',
+    'Neutral Heel Lateral Push Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Patient assis, dorsiflexion neutre. Fixer calcanéum avec main externe, exercer rotation externe sur médiopied. ✚ Douleur. Pas de données publiées.</span>'
+  ]},
+  'tb-pi-chopart-g':{type:'ortho',items:['Médiotarse','Neutral Heel Lateral Push Test']},
+  'tb-pi-chopart-d':{type:'ortho',items:['Médiotarse','Neutral Heel Lateral Push Test']},
   'tb-pi-tc-g': {type:'ortho', items:['Too many toes sign','Windlass test']},
   'tb-pi-tc-d': {type:'ortho', items:['Too many toes sign','Windlass test']},
 
@@ -3810,7 +3847,8 @@ function updateBadges() {
                'tb-ge-men-g','tb-ge-men-d','tb-ge-rot-g','tb-ge-rot-d','tb-ge-sbit-g','tb-ge-sbit-d',
                'tb-ge-plicae-g','tb-ge-plicae-d','tb-ge-ext-g','tb-ge-ext-d',
                ],
-    'pied':   ['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-tc-g','tb-pi-tc-d'],
+    'pied':   ['tb-pi-ottawa','tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-palp','tb-pi-st','tb-pi-chopart','tb-pi-tc-g','tb-pi-tc-d',
+               'tb-pi-ottawa-g','tb-pi-ottawa-d','tb-pi-global-g','tb-pi-global-d','tb-pi-tt-g','tb-pi-tt-d','tb-pi-synd-g','tb-pi-synd-d','tb-pi-conf-g','tb-pi-conf-d','tb-pi-palp-g','tb-pi-palp-d','tb-pi-st-g','tb-pi-st-d','tb-pi-chopart-g','tb-pi-chopart-d'],
     'lma':    ['tb-lma-pecto','tb-lma-biceps','tb-lma-triceps','tb-lma-dorsal','tb-lma-interco','tb-lma-ischio','tb-lma-quadri','tb-lma-adduct','tb-lma-mollet'],
   };
   Object.entries(sections).forEach(([page, tables]) => {
@@ -4461,7 +4499,10 @@ function _buildAllTestsHtml() {
         'tb-ge-men-g','tb-ge-men-d','tb-ge-rot-g','tb-ge-rot-d','tb-ge-sbit-g','tb-ge-sbit-d',
         'tb-ge-plicae-g','tb-ge-plicae-d','tb-ge-ext-g','tb-ge-ext-d',
         ], concl:'ge-conclusion', opt:'ge-opt' },
-    { label:'PIED / CHEVILLE', pk:'pied', fields:[['pi-marqueur','Marqueur']], tables:['tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-global-g','tb-pi-global-d','tb-pi-amp-g','tb-pi-amp-d','tb-pi-tt-g','tb-pi-tt-d','tb-pi-synd-g','tb-pi-synd-d','tb-pi-conf-g','tb-pi-conf-d','tb-pi-st-g','tb-pi-st-d','tb-pi-chopart-g','tb-pi-chopart-d','tb-pi-tc-g','tb-pi-tc-d'], concl:'pi-conclusion', opt:'pi-opt' },
+    { label:'PIED / CHEVILLE', pk:'pied', fields:[['pi-marqueur','Marqueur']], tables:[
+        'tb-pi-ottawa','tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-palp','tb-pi-st','tb-pi-chopart',
+        'tb-pi-ottawa-g','tb-pi-ottawa-d','tb-pi-global-g','tb-pi-global-d','tb-pi-amp-g','tb-pi-amp-d','tb-pi-tt-g','tb-pi-tt-d','tb-pi-synd-g','tb-pi-synd-d','tb-pi-conf-g','tb-pi-conf-d','tb-pi-palp-g','tb-pi-palp-d','tb-pi-st-g','tb-pi-st-d','tb-pi-chopart-g','tb-pi-chopart-d',
+        'tb-pi-tc-g','tb-pi-tc-d'], concl:'pi-conclusion', opt:'pi-opt' },
   ];
   var orthoHtml = '';
   for (var oi=0; oi<orthoSections.length; oi++) {
@@ -6827,7 +6868,7 @@ function _updateGenouBilateral(){
 function _updateChevBilateral(){
   var cote = _getCoteForScope(['cheville','pied']);
   var bilateral = (cote === 'BILATÉRAL');
-  var blocks = ['global','tt','synd','conf','st','chopart'];
+  var blocks = ['ottawa','global','tt','synd','conf','palp','st','chopart'];
   blocks.forEach(function(b){
     var single = document.getElementById('pi-single-' + b);
     var bil    = document.getElementById('pi-bilateral-' + b);
