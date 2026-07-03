@@ -6874,7 +6874,7 @@ function _updateChevBilateral(){
 }
 
 function _updateEpauleBilateral(){
-  var cote = _getCoteForScope(['epaule','coude','poignet']);
+  var cote = _getCoteForScope(['epaule']);
   var bilateral = (cote === 'BILATÉRAL');
   var blocks = ['irrit','trau','fonc','ortho'];
   blocks.forEach(function(b){
@@ -6886,7 +6886,7 @@ function _updateEpauleBilateral(){
 }
 
 function _updateCoudeBilateral(){
-  var cote = _getCoteForScope(['epaule','coude','poignet']);
+  var cote = _getCoteForScope(['coude']);
   var bilateral = (cote === 'BILATÉRAL');
   var blocks = ['lat','med','ant','post'];
   blocks.forEach(function(b){
@@ -6898,7 +6898,7 @@ function _updateCoudeBilateral(){
 }
 
 function _updateMainBilateral(){
-  var cote = _getCoteForScope(['epaule','coude','poignet']);
+  var cote = _getCoteForScope(['poignet']);
   var bilateral = (cote === 'BILATÉRAL');
   var blocks = ['neuro','lig','pouce'];
   blocks.forEach(function(b){
