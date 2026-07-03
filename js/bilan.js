@@ -428,27 +428,54 @@ const TESTS = {
   'tb-ha-hanche-g': {type:'ortho', items:['Log Roll','FADDIR','FADDIR + Extension Lombaire','FADDIR + Compression','FADDIR + Distraction','Third Test','FABER','AB-HEER Test','Test de Thomas','Test d\'Appréhension Antérieure / HEER','Test de Ober','FADER-R']},
   'tb-ha-hanche-d': {type:'ortho', items:['Log Roll','FADDIR','FADDIR + Extension Lombaire','FADDIR + Compression','FADDIR + Distraction','Third Test','FABER','AB-HEER Test','Test de Thomas','Test d\'Appréhension Antérieure / HEER','Test de Ober','FADER-R']},
 
-  'tb-ge-global': {type:'ortho',items:['Signe du glaçon (épanchement)','Mobilisation flexion + extension']},
-  'tb-ge-global-g':{type:'ortho',items:['Signe du glaçon (épanchement)','Mobilisation flexion + extension']},
-  'tb-ge-global-d':{type:'ortho',items:['Signe du glaçon (épanchement)','Mobilisation flexion + extension']},
-  'tb-ge-lig':    {type:'ortho',items:['Varus 20°/30°','Varus 0°','Valgus 20°/30°','Valgus 0°']},
-  'tb-ge-lig-g':  {type:'ortho',items:['Varus 20°/30°','Varus 0°','Valgus 20°/30°','Valgus 0°']},
-  'tb-ge-lig-d':  {type:'ortho',items:['Varus 20°/30°','Varus 0°','Valgus 20°/30°','Valgus 0°']},
-  'tb-ge-lca':    {type:'ortho',items:['Lachman','Test du tiroir antérieur','Test de Lelli']},
-  'tb-ge-lca-g':  {type:'ortho',items:['Lachman','Test du tiroir antérieur','Test de Lelli']},
-  'tb-ge-lca-d':  {type:'ortho',items:['Lachman','Test du tiroir antérieur','Test de Lelli']},
-  'tb-ge-men':    {type:'ortho',items:['Test de Oudart','Appley','Judet Genety','Thessaly']},
-  'tb-ge-men-g':  {type:'ortho',items:['Test de Oudart','Appley','Judet Genety','Thessaly']},
-  'tb-ge-men-d':  {type:'ortho',items:['Test de Oudart','Appley','Judet Genety','Thessaly']},
-  'tb-ge-rot':    {type:'ortho',items:['Engagement rotulien','Test de Smillie','Accroupissement']},
-  'tb-ge-rot-g':  {type:'ortho',items:['Engagement rotulien','Test de Smillie','Accroupissement']},
-  'tb-ge-rot-d':  {type:'ortho',items:['Engagement rotulien','Test de Smillie','Accroupissement']},
-  'tb-ge-sbit':   {type:'ortho',items:['Test de Renne','Test de Noble']},
-  'tb-ge-sbit-g': {type:'ortho',items:['Test de Renne','Test de Noble']},
-  'tb-ge-sbit-d': {type:'ortho',items:['Test de Renne','Test de Noble']},
-  'tb-ge-plicae': {type:'ortho',items:['Hugston Plicae Test']},
-  'tb-ge-plicae-g':{type:'ortho',items:['Hugston Plicae Test']},
-  'tb-ge-plicae-d':{type:'ortho',items:['Hugston Plicae Test']},
+  'tb-ge-global': {type:'ortho',items:['Signe du Glaçon — Test du choc rotulien <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD, recherche du choc patellaire. Main crâniale abaisse la patella (cul de sac sous-quadricipital), main caudale contre-appui, index pousse verticalement vers la table. ✚ Patella qui s\'enfonce dans le liquide → hémarthrose (rupture lig, lésion ostéochondrale, luxation patellaire)</span>']},
+  'tb-ge-global-g':{type:'ortho',items:['Signe du Glaçon']},
+  'tb-ge-global-d':{type:'ortho',items:['Signe du Glaçon']},
+  'tb-ge-mob':    {type:'ortho',opts:['Normal','Réduit','Récurvatum','N/A'],items:[
+    'Flexion passive <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD, flexion passive associée à la RI. Préciser si limitation algique ou mécanique. ✚ Réduit → déficit flexion ; Atteinte corne post. ménisques / LCM</span>',
+    'Flexion active <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD, flexion active comparée à la flexion passive. ✚ Différence passive/active → déficit musculaire quadricipital</span>',
+    'Extension passive <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD, extension passive associée à la RE. ✚ Récurvatum unilatéral → atteinte PAPI, PAPE et LCP ; Bilatéral → hyperlaxité constitutionnelle ; Douleur ant. → corne ant. ménisques</span>',
+    "Extension active <span style=\"font-size:.68rem;color:var(--text3);font-weight:400;display:block\">DD, extension active du genou. ✚ Défaut d'extension active → lésion quadriceps / tendon patellaire / fracture patella</span>"
+  ]},
+  'tb-ge-mob-g':  {type:'ortho',opts:['Normal','Réduit','Récurvatum','N/A'],items:['Flexion passive','Flexion active','Extension passive','Extension active']},
+  'tb-ge-mob-d':  {type:'ortho',opts:['Normal','Réduit','Récurvatum','N/A'],items:['Flexion passive','Flexion active','Extension passive','Extension active']},
+  'tb-ge-lig':    {type:'ortho',items:[
+    'Laxité en varus à 0° — Verrouillage complet <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Varus en extension complète (DD). ✚ Laxité → atteinte du LCL + PAPE (atteinte grave, souvent associée au pivot central)</span>',
+    'Laxité en valgus à 0° — Verrouillage complet <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Valgus en extension complète (DD). ✚ Laxité → atteinte du LCM + PAPI (atteinte grave du plan médial)</span>',
+    'Laxité en varus à 20–30° <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Varus, genou fléchi à 20–30° (DD). ✚ Laxité → atteinte isolée du LCL</span>',
+    'Laxité en valgus à 20–30° <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Valgus, genou fléchi à 20–30° (DD). ✚ Laxité → atteinte du LCM (Se: 96%, Référence IRM)</span>'
+  ]},
+  'tb-ge-lig-g':  {type:'ortho',items:['Laxité varus 0°','Laxité valgus 0°','Laxité varus 20–30°','Laxité valgus 20–30°']},
+  'tb-ge-lig-d':  {type:'ortho',items:['Laxité varus 0°','Laxité valgus 0°','Laxité varus 20–30°','Laxité valgus 20–30°']},
+  'tb-ge-lca':    {type:'ortho',items:[
+    'Test de Lachman <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD, genou relâché. Main proximale empaume fémur distal, main distale au niveau de la TTA. Tiroir antérieur du tibia. ✚ Arrêt mou ou mou retardé → rupture / distension LCA (Se: 81–89%, Sp: 85–94%)</span>',
+    "Tiroir antérieur <span style=\"font-size:.68rem;color:var(--text3);font-weight:400;display:block\">DD, genou 90°, hanche 45°. Traction du tibia vers l'avant. ✚ Arrêt mou → rupture LCA (Se: 55–83%, Sp: 85–96%)</span>",
+    "Tiroir postérieur <span style=\"font-size:.68rem;color:var(--text3);font-weight:400;display:block\">DD, genou 90°, hanche 45°. Poussée du tibia vers l'arrière. ✚ Arrêt mou → rupture LCP (Se: 22–100%, Sp: 98%). Atteinte LCP souvent associée PAPE/PAPI, LCM/LCL</span>",
+    'Test de Lelli — Lever sign <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD, jambe relâchée. Main distale sous 1/3 proximal triceps sural (contre-appui), main crâniale pousse verticalement sur 1/3 distal quadriceps. ✚ Talon reste sur la table → rupture LCA (Se: 77–83%, Sp: 90–91%)</span>'
+  ]},
+  'tb-ge-lca-g':  {type:'ortho',items:['Lachman','Tiroir antérieur','Tiroir postérieur','Test de Lelli']},
+  'tb-ge-lca-d':  {type:'ortho',items:['Lachman','Tiroir antérieur','Tiroir postérieur','Test de Lelli']},
+  'tb-ge-men':    {type:'ortho',items:[
+    'Test de Oudart — Cri méniscal <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD, palpation interligne médial. Extension active lente du genou par le patient. ✚ Douleur aiguë en flexion → corne post. ; en extension → corne ant. (Se: 63–83%, Sp: 77–83%)</span>',
+    "Compression d'Appley — Griding test <span style=\"font-size:.68rem;color:var(--text3);font-weight:400;display:block\">Décubitus ventral, genou 90°. Compression axiale + rotations médiale et latérale. ✚ Douleur : rotation latérale → ménisque interne ; rotation médiale → ménisque externe (Se: 60,7%, Sp: 70,2%)</span>",
+    'Test de Judet-Genety <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Décubitus ventral, patella en bord de table, jambes dans le vide. Poussée verticale vers le sol au talon. ✚ Résistance élastique et/ou douleur → lésion méniscale</span>',
+    'Test de Thessaly <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Debout en appui unipodal, genou fléchi à 20°. 3 rotations corps/genou médiales et latérales. ✚ Douleur et/ou craquement → lésion méniscale (Se: 75%, Sp: 87%) — meilleure précision pour ménisque médial et latéral</span>'
+  ]},
+  "tb-ge-men-g":  {type:'ortho',items:["Test de Oudart","Compression d'Appley","Test de Judet-Genety","Test de Thessaly"]},
+  "tb-ge-men-d":  {type:'ortho',items:["Test de Oudart","Compression d'Appley","Test de Judet-Genety","Test de Thessaly"]},
+  'tb-ge-rot':    {type:'ortho',items:[
+    "Engagement Rotulien <span style=\"font-size:.68rem;color:var(--text3);font-weight:400;display:block\">DD, genou tendu. Légère flexion en s'opposant à la descente de la patella avec les deux pouces. ✚ Accrochage → clapet chondral ; Douleur → lésion portion inf. cartilage ; Claquement → signe de subluxation</span>",
+    "Test de Smillie — Patella apprehension <span style=\"font-size:.68rem;color:var(--text3);font-weight:400;display:block\">DD, genou tendu. Pression de la patella vers l'extérieur avec les deux pouces lors d'une flexion progressive. ✚ Appréhension à 30° → instabilité rotulienne (Se: 7–37%, Sp: 70–92%)</span>",
+    "Test d'Accroupissement <span style=\"font-size:.68rem;color:var(--text3);font-weight:400;display:block\">Patient debout, accroupissement bipodal talons décollés. ✚ Douleur descente et remontée → atteinte patellaire ; Douleur progressive en flexion max → atteinte tendineuse</span>"
+  ]},
+  "tb-ge-rot-g":  {type:'ortho',items:['Engagement Rotulien','Test de Smillie',"Test d'Accroupissement"]},
+  "tb-ge-rot-d":  {type:'ortho',items:['Engagement Rotulien','Test de Smillie',"Test d'Accroupissement"]},
+  "tb-ge-sbit":   {type:'ortho',items:["Test de Renne — STIT/SBIT <span style=\"font-size:.68rem;color:var(--text3);font-weight:400;display:block\">Debout en appui unipodal. Flexion/extension genou aux alentours de 30° de flexion. Pression possible du condyle latéral. ✚ Douleur externe au condyle → STIT (conflit condyle lat. / bandelette ilio-tibiale). Bursite dans 30% des cas</span>"]},
+  'tb-ge-sbit-g': {type:'ortho',items:['Test de Renne']},
+  'tb-ge-sbit-d': {type:'ortho',items:['Test de Renne']},
+  "tb-ge-plicae": {type:'ortho',items:["Hugston's Plicae Test <span style=\"font-size:.68rem;color:var(--text3);font-weight:400;display:block\">DD, genou fléchi à 90°. Translation médiale de la patella (pulpe des doigts sur zone plicae), tibia en RI sous fémur, flexion/extension genou. ✚ Douleur sous les doigts identique à la situation réelle → épaississement plicae médiale. Peut être associé à un ressaut ou claquement</span>"]},
+  "tb-ge-plicae-g":{type:'ortho',items:["Hugston's Plicae Test"]},
+  "tb-ge-plicae-d":{type:'ortho',items:["Hugston's Plicae Test"]},
   'tb-ge-ext':    {type:'fonc',items:['Extension passive','Extension active sur table','Extension active en charge'],opts:['Validé','Pas validé','N/A']},
   'tb-ge-ext-g':  {type:'fonc',items:['Extension passive','Extension active sur table','Extension active en charge'],opts:['Validé','Pas validé','N/A']},
   'tb-ge-ext-d':  {type:'fonc',items:['Extension passive','Extension active sur table','Extension active en charge'],opts:['Validé','Pas validé','N/A']},
@@ -3771,8 +3798,8 @@ function updateBadges() {
     'rachis-cerv': ['tb-cv-vascul','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-dn4-itw','tb-cv-dn4-exam','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-sensib-g','tb-cv-sensib-d'],
     'rachis-lomb': ['tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-plet','tb-rl-laslett-1','tb-rl-laslett-2','tb-rl-laslett-3','tb-rl-instab','tb-rl-tfd-suite','tb-rl-tfa-suite','tb-rl-transverse'],
     'hanche': ['tb-ha-neuro','tb-ha-laslett-1','tb-ha-laslett-2','tb-ha-laslett-3','tb-ha-fracture','tb-ha-agp-clock','tb-ha-agp-demem','tb-ha-agp-add','tb-ha-agp-pubis','tb-ha-agp-flech','tb-ha-agp-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-neuro-g','tb-ha-neuro-d','tb-ha-fracture-g','tb-ha-fracture-d','tb-ha-agp-g','tb-ha-agp-d','tb-ha-hanche-g','tb-ha-hanche-d'],
-    'genou':  ['tb-ge-global','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-ext',
-               'tb-ge-global-g','tb-ge-global-d','tb-ge-lig-g','tb-ge-lig-d','tb-ge-lca-g','tb-ge-lca-d',
+    'genou':  ['tb-ge-global','tb-ge-mob','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-ext',
+               'tb-ge-global-g','tb-ge-global-d','tb-ge-mob-g','tb-ge-mob-d','tb-ge-lig-g','tb-ge-lig-d','tb-ge-lca-g','tb-ge-lca-d',
                'tb-ge-men-g','tb-ge-men-d','tb-ge-rot-g','tb-ge-rot-d','tb-ge-sbit-g','tb-ge-sbit-d',
                'tb-ge-plicae-g','tb-ge-plicae-d','tb-ge-ext-g','tb-ge-ext-d',
                ],
@@ -4422,8 +4449,8 @@ function _buildAllTestsHtml() {
     { label:'RACHIS', pk:'rachis', fields:[['ra-marqueur','Marqueur'],['ra-mckenzie','McKenzie']], tables:['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-transverse'], concl:'ra-conclusion', opt:'ra-opt' },
     { label:'HANCHE', pk:'hanche', fields:[['ha-marqueur','Marqueur']], tables:['tb-ha-neuro','tb-ha-laslett-1','tb-ha-laslett-2','tb-ha-laslett-3','tb-ha-fracture','tb-ha-agp-clock','tb-ha-agp-demem','tb-ha-agp-add','tb-ha-agp-pubis','tb-ha-agp-flech','tb-ha-agp-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-neuro-g','tb-ha-neuro-d','tb-ha-fracture-g','tb-ha-fracture-d','tb-ha-agp-g','tb-ha-agp-d','tb-ha-hanche-g','tb-ha-hanche-d'], concl:'ha-conclusion', opt:'ha-opt' },
     { label:'GENOU', pk:'genou', fields:[['ge-marqueur','Marqueur']], tables:[
-        'tb-ge-global','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-ext',
-        'tb-ge-global-g','tb-ge-global-d','tb-ge-lig-g','tb-ge-lig-d','tb-ge-lca-g','tb-ge-lca-d',
+        'tb-ge-global','tb-ge-mob','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-ext',
+        'tb-ge-global-g','tb-ge-global-d','tb-ge-mob-g','tb-ge-mob-d','tb-ge-lig-g','tb-ge-lig-d','tb-ge-lca-g','tb-ge-lca-d',
         'tb-ge-men-g','tb-ge-men-d','tb-ge-rot-g','tb-ge-rot-d','tb-ge-sbit-g','tb-ge-sbit-d',
         'tb-ge-plicae-g','tb-ge-plicae-d','tb-ge-ext-g','tb-ge-ext-d',
         ], concl:'ge-conclusion', opt:'ge-opt' },
@@ -6781,7 +6808,7 @@ function _applyLabels(container, cote) {
 function _updateGenouBilateral(){
   var cote = _getCoteForScope(['genou']);
   var bilateral = (cote === 'BILATÉRAL');
-  var blocks = ['global','lig','lca','men','rot','sbit','plicae','ext'];
+  var blocks = ['global','mob','lig','lca','men','rot','sbit','plicae','ext'];
   blocks.forEach(function(b){
     var single = document.getElementById('ge-single-' + b);
     var bil    = document.getElementById('ge-bilateral-' + b);
