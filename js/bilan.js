@@ -498,10 +498,11 @@ const TESTS = {
   'tb-pi-ottawa-d':{type:'ortho',opts:['Positif','Négatif','N/A'],items:['Sensibilité malléole latérale (A)','Sensibilité malléole médiale (B)','Incapacité à supporter le poids','Sensibilité base 5e métatarsien (C)','Sensibilité naviculaire (D)']},
   'tb-pi-global':  {type:'ortho',items:[
     'Test Tissulaire / Liberté Articulaire <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD, genou tendu. Main externe: calcanéum, main interne: talus. Action: décoaptation + retour. ✚ Réponse tissu conjonctif — densité/laxité, comparatif controlatéral. Pas de données de validité publiées.</span>',
-    'Flexion Plantaire / Flexion Dorsale <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD, empaumer calcanéum. Mobilisation FP et FD complète. ✚ ROM + douleur. Orientation: douleur FD → syndesmose ; douleur FP → carrefour postérieur. Pas de données publiées.</span>'
+    'Flexion Plantaire <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD, empaumer calcanéum. Mobilisation en FP complète. But: recherche de douleur (la mobilité est évaluée dans le bloc Amplitudes). ✚ Douleur en FP → carrefour postérieur. Pas de données publiées.</span>',
+    'Flexion Dorsale <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD, empaumer calcanéum. Mobilisation en FD complète. But: recherche de douleur (la mobilité est évaluée dans le bloc Amplitudes). ✚ Douleur en FD → syndesmose. Pas de données publiées.</span>'
   ]},
-  'tb-pi-global-g':{type:'ortho',items:['Test Tissulaire / Liberté Articulaire','Flexion Plantaire / Flexion Dorsale']},
-  'tb-pi-global-d':{type:'ortho',items:['Test Tissulaire / Liberté Articulaire','Flexion Plantaire / Flexion Dorsale']},
+  'tb-pi-global-g':{type:'ortho',items:['Test Tissulaire / Liberté Articulaire','Flexion Plantaire','Flexion Dorsale']},
+  'tb-pi-global-d':{type:'ortho',items:['Test Tissulaire / Liberté Articulaire','Flexion Plantaire','Flexion Dorsale']},
   'tb-pi-amp-g':{type:'ortho',opts:['Ok','Acceptable','Insuffisant'],items:['Flex. dorsale (g. tendu)','Flex. dorsale (g. fléchi)','Flexion plantaire','Inversion','Éversion']},
   'tb-pi-amp-d':{type:'ortho',opts:['Ok','Acceptable','Insuffisant'],items:['Flex. dorsale (g. tendu)','Flex. dorsale (g. fléchi)','Flexion plantaire','Inversion','Éversion']},
   'tb-pi-tt':    {type:'ortho',items:[
