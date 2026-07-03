@@ -7096,18 +7096,13 @@ window.addEventListener('load', function(){
     });
   }
 
-  // Charge les playlists depuis Supabase dès que l'auth est disponible
-  window.addEventListener('message', function(e) {
-    if (!e.data) return;
-    if ((e.data.type === 'r4p-patient-selected' || e.data.type === 'r4p-token-refreshed')
-        && e.data.auth && e.data.auth.access_token) {
-      try {
-        var parts = e.data.auth.access_token.split('.');
-        var payload = JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
-        var uid = payload.sub;
-        if (uid && uid !== _plLastUid) { _plLastUid = uid; _plDbLoad(uid); }
-      } catch(ex) {}
+  // Charge les playlists dès que la session Supabase est réellement établie
+  sbB.auth.onAuthStateChange(function(event, session) {
+    if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session && session.user) {
+      var uid = session.user.id;
+      if (uid !== _plLastUid) { _plLastUid = uid; _plDbLoad(uid); }
     }
+    if (event === 'SIGNED_OUT') { _plLastUid = null; _plStore = {}; }
   });
 
   if (document.readyState === 'loading') {
