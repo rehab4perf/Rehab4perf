@@ -527,11 +527,6 @@ const TESTS = {
   ]},
   'tb-pi-conf-g':{type:'ortho',items:['Griding Test',"Test d'Impaction",'Excentrique LFP1','Molloy Test']},
   'tb-pi-conf-d':{type:'ortho',items:['Griding Test',"Test d'Impaction",'Excentrique LFP1','Molloy Test']},
-  'tb-pi-palp':  {type:'ortho',items:[
-    "Palpation de l'ensemble des structures <span style=\"font-size:.68rem;color:var(--text3);font-weight:400;display:block\">Palpation systématique des malléoles, ligaments, tendons, sinus du tarse, métatarses. ✚ Douleur, rougeur, chaleur, crépitements, œdème.</span>"
-  ]},
-  'tb-pi-palp-g':{type:'ortho',items:['Palpation']},
-  'tb-pi-palp-d':{type:'ortho',items:['Palpation']},
   'tb-pi-st':    {type:'ortho',items:[
     'Varus / Valgus en FD — Sous-talienne <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD. Amener cheville en FD pour verrouiller talus dans la mortaise. Varus: teste sous-talienne en externe ; Valgus: teste sous-talienne en interne. ✚ Qualité arrêt + douleur. Pas de données publiées.</span>',
     'Cisaillement en FD — Sous-talienne <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">DD. Amener cheville en FD pour verrouiller talus dans la mortaise. Action: cisaillement dans un sens et dans l\'autre. ✚ Qualité arrêt + douleur. Pas de données publiées.</span>'
@@ -3847,8 +3842,8 @@ function updateBadges() {
                'tb-ge-men-g','tb-ge-men-d','tb-ge-rot-g','tb-ge-rot-d','tb-ge-sbit-g','tb-ge-sbit-d',
                'tb-ge-plicae-g','tb-ge-plicae-d','tb-ge-ext-g','tb-ge-ext-d',
                ],
-    'pied':   ['tb-pi-ottawa','tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-palp','tb-pi-st','tb-pi-chopart','tb-pi-tc-g','tb-pi-tc-d',
-               'tb-pi-ottawa-g','tb-pi-ottawa-d','tb-pi-global-g','tb-pi-global-d','tb-pi-tt-g','tb-pi-tt-d','tb-pi-synd-g','tb-pi-synd-d','tb-pi-conf-g','tb-pi-conf-d','tb-pi-palp-g','tb-pi-palp-d','tb-pi-st-g','tb-pi-st-d','tb-pi-chopart-g','tb-pi-chopart-d'],
+    'pied':   ['tb-pi-ottawa','tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart','tb-pi-tc-g','tb-pi-tc-d',
+               'tb-pi-ottawa-g','tb-pi-ottawa-d','tb-pi-global-g','tb-pi-global-d','tb-pi-tt-g','tb-pi-tt-d','tb-pi-synd-g','tb-pi-synd-d','tb-pi-conf-g','tb-pi-conf-d','tb-pi-st-g','tb-pi-st-d','tb-pi-chopart-g','tb-pi-chopart-d'],
     'lma':    ['tb-lma-pecto','tb-lma-biceps','tb-lma-triceps','tb-lma-dorsal','tb-lma-interco','tb-lma-ischio','tb-lma-quadri','tb-lma-adduct','tb-lma-mollet'],
   };
   Object.entries(sections).forEach(([page, tables]) => {
@@ -4500,8 +4495,8 @@ function _buildAllTestsHtml() {
         'tb-ge-plicae-g','tb-ge-plicae-d','tb-ge-ext-g','tb-ge-ext-d',
         ], concl:'ge-conclusion', opt:'ge-opt' },
     { label:'PIED / CHEVILLE', pk:'pied', fields:[['pi-marqueur','Marqueur']], tables:[
-        'tb-pi-ottawa','tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-palp','tb-pi-st','tb-pi-chopart',
-        'tb-pi-ottawa-g','tb-pi-ottawa-d','tb-pi-global-g','tb-pi-global-d','tb-pi-amp-g','tb-pi-amp-d','tb-pi-tt-g','tb-pi-tt-d','tb-pi-synd-g','tb-pi-synd-d','tb-pi-conf-g','tb-pi-conf-d','tb-pi-palp-g','tb-pi-palp-d','tb-pi-st-g','tb-pi-st-d','tb-pi-chopart-g','tb-pi-chopart-d',
+        'tb-pi-ottawa','tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart',
+        'tb-pi-ottawa-g','tb-pi-ottawa-d','tb-pi-global-g','tb-pi-global-d','tb-pi-amp-g','tb-pi-amp-d','tb-pi-tt-g','tb-pi-tt-d','tb-pi-synd-g','tb-pi-synd-d','tb-pi-conf-g','tb-pi-conf-d','tb-pi-st-g','tb-pi-st-d','tb-pi-chopart-g','tb-pi-chopart-d',
         'tb-pi-tc-g','tb-pi-tc-d'], concl:'pi-conclusion', opt:'pi-opt' },
   ];
   var orthoHtml = '';
@@ -6868,7 +6863,7 @@ function _updateGenouBilateral(){
 function _updateChevBilateral(){
   var cote = _getCoteForScope(['cheville','pied']);
   var bilateral = (cote === 'BILATÉRAL');
-  var blocks = ['ottawa','global','tt','synd','conf','palp','st','chopart'];
+  var blocks = ['ottawa','global','tt','synd','conf','st','chopart'];
   blocks.forEach(function(b){
     var single = document.getElementById('pi-single-' + b);
     var bil    = document.getElementById('pi-bilateral-' + b);
