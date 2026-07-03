@@ -93,6 +93,46 @@ const TESTS = {
     'Mobilité scapulaire en DCL','Extension thoracique au mur','Cross body adduction test',
     'Test de Neer','Posterior impingement test','Hawkins-Kennedy'
   ]},
+  // ── Coude ────────────────────────────────────────────────────
+  'tb-co-lat':{type:'ortho',items:[
+    'Test LCLC — varus statique <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Décubitus, humérus fixé en RE, coude 30° → Laxité / Douleur épicondyle lat.</span>',
+    'Test LCLC — varus dynamique <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Recherche d\'un ressaut en varus (Sp 100%, Se 10%)</span>',
+    'Test de Cozen <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Extension poignet contre résistance → Douleur épicondyle latérale</span>',
+    'Test de Mill <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Avant-bras en pronation, extension + flexion palmaire poignet → Douleur épicondyle lat.</span>',
+    'Test de Maudsley <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Extension contrariée du majeur (P3) → Douleur épicondyle latérale</span>',
+    'ULNT radial (ULNT 2) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Diminution amplitude / modification symptômes par inclinaison de la tête</span>',
+  ]},
+  'tb-co-lat-g':{type:'ortho',items:['Test LCLC varus statique','Test LCLC varus dynamique','Test de Cozen','Test de Mill','Test de Maudsley','ULNT radial (ULNT 2)']},
+  'tb-co-lat-d':{type:'ortho',items:['Test LCLC varus statique','Test LCLC varus dynamique','Test de Cozen','Test de Mill','Test de Maudsley','ULNT radial (ULNT 2)']},
+  'tb-co-med':{type:'ortho',items:[
+    'Test UCL — valgus statique <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Décubitus, humérus fixé en RI, coude 30° → Laxité / Douleur épicondyle méd. (Sp 50%, Se 65%)</span>',
+    'Test UCL — valgus dynamique <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Recherche d\'un ressaut en valgus (Sp 100%, Se 19%)</span>',
+    'Moving Valgus Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Coude fléchi max, RE épaule, extension contre résistance → Douleur postéro-médiale (Sp 75%, Se 100%)</span>',
+    'Test de Cozen inversé <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Coude fléchi, avant-bras supination, flexion poignet + pronation contre résistance → Douleur épicondyle méd.</span>',
+    'Test d\'étirement épicondyliens médiaux <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Coude fléchi, avant-bras supination → Douleur épicondyle méd.</span>',
+    'ULNT ulnaire (ULNT 3) <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Diminution amplitude / modification symptômes par inclinaison de la tête</span>',
+  ]},
+  'tb-co-med-g':{type:'ortho',items:['Test UCL valgus statique','Test UCL valgus dynamique','Moving Valgus Test','Test de Cozen inversé','Étirement épicondyliens méd.','ULNT ulnaire (ULNT 3)']},
+  'tb-co-med-d':{type:'ortho',items:['Test UCL valgus statique','Test UCL valgus dynamique','Moving Valgus Test','Test de Cozen inversé','Étirement épicondyliens méd.','ULNT ulnaire (ULNT 3)']},
+  'tb-co-ant':{type:'ortho',items:[
+    'Test de flexion — recherche de conflit <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Douleur antérieure à la flexion / Diminution du ROM ?</span>',
+    'LMA biceps — excentrique <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Douleur / Déficit de force</span>',
+    'LMA biceps — extensibilité passive <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Douleur / Raideur</span>',
+    'LMA biceps — extensibilité active <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Douleur / Déficit de force</span>',
+    'Test du crochet — rupture long biceps <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Crochetage impossible = rupture (Sp 100%, Se 81%)</span>',
+  ]},
+  'tb-co-ant-g':{type:'ortho',items:['Test flexion conflit','LMA biceps excentrique','LMA biceps ext. passive','LMA biceps ext. active','Test du crochet (rupture LB)']},
+  'tb-co-ant-d':{type:'ortho',items:['Test flexion conflit','LMA biceps excentrique','LMA biceps ext. passive','LMA biceps ext. active','Test du crochet (rupture LB)']},
+  'tb-co-post':{type:'ortho',items:[
+    'Test d\'extension — recherche de conflit <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Douleur postérieure à l\'extension</span>',
+    'LMA triceps — excentrique <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Douleur postérieure à l\'extension</span>',
+    'LMA triceps — extensibilité passive <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Douleur / Raideur</span>',
+    'LMA triceps — extensibilité active <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Douleur / Déficit de force</span>',
+    'Test rupture triceps <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Défaut macroscopique à la palpation / Douleur</span>',
+  ]},
+  'tb-co-post-g':{type:'ortho',items:['Test extension conflit','LMA triceps excentrique','LMA triceps ext. passive','LMA triceps ext. active','Test rupture triceps']},
+  'tb-co-post-d':{type:'ortho',items:['Test extension conflit','LMA triceps excentrique','LMA triceps ext. passive','LMA triceps ext. active','Test rupture triceps']},
+
   'tb-ra-cerv': {type:'ortho',items:[
     'Spurling A',
     'Distraction cervicale'
@@ -6647,6 +6687,18 @@ function _updateEpauleBilateral(){
   });
 }
 
+function _updateCoudeBilateral(){
+  var cote = _getCoteForScope(['epaule','coude','poignet']);
+  var bilateral = (cote === 'BILATÉRAL');
+  var blocks = ['lat','med','ant','post'];
+  blocks.forEach(function(b){
+    var single = document.getElementById('co-single-' + b);
+    var bil    = document.getElementById('co-bilateral-' + b);
+    if(single) single.style.display = bilateral ? 'none' : '';
+    if(bil)    bil.style.display    = bilateral ? ''     : 'none';
+  });
+}
+
 function _updateHancheBilateral(){
   var cote = _getCoteForScope(['hanche']);
   var bilateral = (cote === 'BILATÉRAL');
@@ -6661,7 +6713,7 @@ function _updateHancheBilateral(){
 
 function _updateSideLabels(){
   var SCOPES = [
-    { zones:['epaule','coude','poignet'],         pages:['page-epaule','page-fonctionnelsMS','page-force-ms'] },
+    { zones:['epaule','coude','poignet'],         pages:['page-epaule','page-coude','page-fonctionnelsMS','page-force-ms'] },
     { zones:['genou'],                            pages:['page-genou'] },
     { zones:['cheville','pied'],                  pages:['page-pied'] },
     { zones:['rachis-c','rachis-l'],              pages:['page-rachis','page-fonctionnelsRachis','page-force-rachis'] },
@@ -6700,6 +6752,7 @@ function _updateSideLabels(){
   _updateGenouBilateral();
   _updateChevBilateral();
   _updateEpauleBilateral();
+  _updateCoudeBilateral();
 }
 
 function _parsePainZones(){
@@ -7116,7 +7169,7 @@ window.addEventListener('load', function(){
    TESTS PERSONNALISÉS — section en bas de chaque page clinique
 ══════════════════════════════════════════════════════ */
 (function(){
-  var _CT_PAGES = ['epaule','rachis','hanche','genou','pied','lma',
+  var _CT_PAGES = ['epaule','coude','rachis','hanche','genou','pied','lma',
                    'fonctionnels','fonctionnelsMS','fonctionnelsRachis',
                    'rachis-cerv','rachis-lomb'];
   var _ctData = {};

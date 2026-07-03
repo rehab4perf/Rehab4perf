@@ -1878,6 +1878,74 @@ textarea { resize:none !important; overflow:hidden !important; }
     <div class="page-subtitle" id="hdr-coude">—</div>
   </div>
   <div class="page-content">
+
+    <div class="block">
+      <div class="block-header light">Marqueur de douleur</div>
+      <div class="form-grid single"><div class="field"><label>Mouvement / activité reproducteur de la douleur</label><textarea id="co-marqueur" placeholder="Ex : extension contre résistance douloureuse 7/10, gêne à l'écriture…" style="min-height:48px"></textarea></div></div>
+    </div>
+
+    <div class="block">
+      <div class="block-header grey">Amplitudes Articulaires — Coude</div>
+      <div id="mob-co">
+        <div class="mob-dir-row"><span class="mob-dir-label">Flexion</span><select class="mob-status-sel" id="mob-co-Flexion-st" onchange="_mobStatusChange(this)"><option value="">—</option><option value="ok">✓ OK</option><option value="acceptable">~ Acceptable</option><option value="insuffisant">✗ Insuffisant</option></select><input type="text" class="mob-note-inp" id="mob-co-Flexion-nt" placeholder="Ex : 120°, douleur en fin d'amplitude…"></div>
+        <div class="mob-dir-row"><span class="mob-dir-label">Extension</span><select class="mob-status-sel" id="mob-co-Extension-st" onchange="_mobStatusChange(this)"><option value="">—</option><option value="ok">✓ OK</option><option value="acceptable">~ Acceptable</option><option value="insuffisant">✗ Insuffisant</option></select><input type="text" class="mob-note-inp" id="mob-co-Extension-nt" placeholder="Ex : −5°, déficit d'extension…"></div>
+        <div class="mob-dir-row"><span class="mob-dir-label">Pronation</span><select class="mob-status-sel" id="mob-co-Pronation-st" onchange="_mobStatusChange(this)"><option value="">—</option><option value="ok">✓ OK</option><option value="acceptable">~ Acceptable</option><option value="insuffisant">✗ Insuffisant</option></select><input type="text" class="mob-note-inp" id="mob-co-Pronation-nt" placeholder="Ex : 60°, douleur médiale…"></div>
+        <div class="mob-dir-row"><span class="mob-dir-label">Supination</span><select class="mob-status-sel" id="mob-co-Supination-st" onchange="_mobStatusChange(this)"><option value="">—</option><option value="ok">✓ OK</option><option value="acceptable">~ Acceptable</option><option value="insuffisant">✗ Insuffisant</option></select><input type="text" class="mob-note-inp" id="mob-co-Supination-nt" placeholder="Ex : 70°, douleur latérale…"></div>
+      </div>
+    </div>
+
+<div class="block" id="co-single-lat">
+  <div class="block-header red">Compartiment Latéral — Positif = ❌ (signe clinique)</div>
+  <table class="test-table">
+    <thead><tr><th style="width:50%">Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
+    <tbody id="tb-co-lat"></tbody>
+  </table>
+</div>
+<div class="block" id="co-bilateral-lat" style="display:none">
+  <div class="block-header red">Compartiment Latéral — Positif = ❌ (signe clinique)</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-co-lat-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-co-lat-d"></tbody></table></div>
+</div>
+
+<div class="block" id="co-single-med">
+  <div class="block-header red">Compartiment Médial — Positif = ❌ (signe clinique)</div>
+  <table class="test-table">
+    <thead><tr><th style="width:50%">Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
+    <tbody id="tb-co-med"></tbody>
+  </table>
+</div>
+<div class="block" id="co-bilateral-med" style="display:none">
+  <div class="block-header red">Compartiment Médial — Positif = ❌ (signe clinique)</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-co-med-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-co-med-d"></tbody></table></div>
+</div>
+
+<div class="block" id="co-single-ant">
+  <div class="block-header red">Compartiment Antérieur — Positif = ❌ (signe clinique)</div>
+  <table class="test-table">
+    <thead><tr><th style="width:50%">Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
+    <tbody id="tb-co-ant"></tbody>
+  </table>
+</div>
+<div class="block" id="co-bilateral-ant" style="display:none">
+  <div class="block-header red">Compartiment Antérieur — Positif = ❌ (signe clinique)</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-co-ant-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-co-ant-d"></tbody></table></div>
+</div>
+
+<div class="block" id="co-single-post">
+  <div class="block-header red">Compartiment Postérieur — Positif = ❌ (signe clinique)</div>
+  <table class="test-table">
+    <thead><tr><th style="width:50%">Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
+    <tbody id="tb-co-post"></tbody>
+  </table>
+</div>
+<div class="block" id="co-bilateral-post" style="display:none">
+  <div class="block-header red">Compartiment Postérieur — Positif = ❌ (signe clinique)</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-co-post-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-co-post-d"></tbody></table></div>
+</div>
+
   </div>
 </div>
 
