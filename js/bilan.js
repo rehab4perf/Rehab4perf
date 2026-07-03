@@ -470,9 +470,12 @@ const TESTS = {
   ]},
   "tb-ge-rot-g":  {type:'ortho',items:['Engagement Rotulien','Test de Smillie',"Test d'Accroupissement"]},
   "tb-ge-rot-d":  {type:'ortho',items:['Engagement Rotulien','Test de Smillie',"Test d'Accroupissement"]},
-  "tb-ge-sbit":   {type:'ortho',items:["Test de Renne — STIT/SBIT <span style=\"font-size:.68rem;color:var(--text3);font-weight:400;display:block\">Debout en appui unipodal. Flexion/extension genou aux alentours de 30° de flexion. Pression possible du condyle latéral. ✚ Douleur externe au condyle → STIT (conflit condyle lat. / bandelette ilio-tibiale). Bursite dans 30% des cas</span>"]},
-  'tb-ge-sbit-g': {type:'ortho',items:['Test de Renne']},
-  'tb-ge-sbit-d': {type:'ortho',items:['Test de Renne']},
+  "tb-ge-sbit":   {type:'ortho',items:[
+    "Test de Renne — STIT/SBIT <span style=\"font-size:.68rem;color:var(--text3);font-weight:400;display:block\">Debout en appui unipodal. Flexion/extension genou aux alentours de 30° de flexion. Pression possible du condyle latéral. ✚ Douleur externe au condyle → STIT (conflit condyle lat. / bandelette ilio-tibiale). Bursite dans 30% des cas</span>",
+    "Test de Noble <span style=\"font-size:.68rem;color:var(--text3);font-weight:400;display:block\">DD, genou fléchi à 90°, segment jambier en RM. Pression sur le tractus ilio-tibial distal à proximité de l'épicondyle latéral, extension progressive du genou. ✚ Douleur familière vers 30° de flexion → SDBIT (conflit tractus IT / épicondyle lat.)</span>"
+  ]},
+  'tb-ge-sbit-g': {type:'ortho',items:['Test de Renne','Test de Noble']},
+  'tb-ge-sbit-d': {type:'ortho',items:['Test de Renne','Test de Noble']},
   "tb-ge-plicae": {type:'ortho',items:["Hugston's Plicae Test <span style=\"font-size:.68rem;color:var(--text3);font-weight:400;display:block\">DD, genou fléchi à 90°. Translation médiale de la patella (pulpe des doigts sur zone plicae), tibia en RI sous fémur, flexion/extension genou. ✚ Douleur sous les doigts identique à la situation réelle → épaississement plicae médiale. Peut être associé à un ressaut ou claquement</span>"]},
   "tb-ge-plicae-g":{type:'ortho',items:["Hugston's Plicae Test"]},
   "tb-ge-plicae-d":{type:'ortho',items:["Hugston's Plicae Test"]},
