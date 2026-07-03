@@ -388,9 +388,8 @@ const TESTS = {
     'Ilio-Psoas + Pectiné <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Plan intermédiaire — Entre le Sartorius et le Long Adducteur</span>',
     'Grand + Court Adducteur <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Plan profond — Entre le Long Adducteur et le Gracile</span>'
   ]},
-  // AGP — Adducteurs : tests fonctionnels
+  // AGP — Adducteurs : tests fonctionnels (Squeeze 0° géré en HTML custom avec EVA)
   'tb-ha-agp-add': {type:'ortho', items:[
-    'Squeeze test 0° <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Serrer ballon/poing entre les genoux, hanches à 0° (DD). ✚ EVA ≥ 6 → pubalgie adducteurs</span>',
     'Squeeze test 45° <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Serrer ballon/poing, genoux fléchis à 45°. ✚ EVA ≥ 6 ou force &lt; 210 mmHg (dynamomètre) → positif</span>',
     'Étirement ADD — Frog Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Étirement passif des adducteurs en grenouille (genoux fléchis, pieds joints, chute en abduction). ✚ Douleur inguinale ou pubienne reproduite</span>'
   ]},
@@ -1038,7 +1037,7 @@ function _resetBilanFields(){
   try{ ['sls','hop','pset','set'].forEach(function(k){ calcLSI(k); }); calcDJ(); calcLunge(); calcHR(); calcMusc(); }catch(ex){}
   try{ calcPlioq2(); calcSEBT(); calcUQYBT(); calcSideHop(); }catch(ex){}
   try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht','co-f-ext','co-f-flex'].forEach(calcEpForce); ['ha-f-add','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); ['pi-f-fp','pi-f-fd','pi-f-inv','pi-f-ev','pi-f-lfh'].forEach(calcEpForce); ['ra-fc-inc'].forEach(calcEpForce); }catch(ex){}
-  try{ updateBadges(); _initAllRomBars(); }catch(ex){}
+  try{ updateBadges(); _initAllRomBars(); _updateSq0Status(); }catch(ex){}
   // Éléments non couverts par les fonctions ci-dessus
   try{ var hl=document.getElementById('hdr-lma'); if(hl) hl.textContent='—'; }catch(ex){}
   _suppressDirty = false;
@@ -3680,6 +3679,18 @@ function _calcLaslett() {
   if (excluEl) excluEl.style.display = pos === 0 && filled > 0 ? 'flex' : 'none';
   if (alertEl) alertEl.style.display = pos >= 2 ? 'flex' : 'none';
   if (!_suppressDirty) updateBadges();
+}
+
+function _updateSq0Status() {
+  var inp = document.getElementById('ha-sq0-eva');
+  var badge = document.getElementById('ha-sq0-status');
+  if (!badge || !inp) return;
+  var v = inp.value.trim();
+  var n = parseFloat(v);
+  if (v === '' || isNaN(n)) { badge.textContent = ''; badge.style.cssText = 'font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:10px'; return; }
+  if (n <= 2)      { badge.textContent = 'Sain';         badge.style.cssText = 'font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:10px;background:#D1FAE5;color:#065F46'; }
+  else if (n <= 5) { badge.textContent = 'Acceptable';   badge.style.cssText = 'font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:10px;background:#FEF3C7;color:#92400E'; }
+  else             { badge.textContent = 'Risque élevé'; badge.style.cssText = 'font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:10px;background:#FEE2E2;color:#991B1B'; }
 }
 
 function _calcHaLaslett() {

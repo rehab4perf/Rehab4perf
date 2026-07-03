@@ -2552,11 +2552,21 @@ textarea { resize:none !important; overflow:hidden !important; }
     <!-- Athletic Groin Pain -->
     <div class="block" id="ha-single-agp">
       <div class="block-header red">Athletic Groin Pain (AGP)</div>
-      <div style="padding:4px 14px 3px;font-size:.69rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#991B1B;background:#FEF2F2;border-bottom:1px solid #FCA5A5">Adducteurs</div>
       <div style="padding:3px 22px 3px;font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);background:var(--surface2);border-bottom:1px solid var(--border)">Pubic Clock — Palpation</div>
       <table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ha-agp-clock"></tbody></table>
       <div style="padding:3px 22px 3px;font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);background:var(--surface2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">Démembrement — Loges ADD</div>
       <table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ha-agp-demem"></tbody></table>
+      <div style="padding:4px 14px 3px;font-size:.69rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#991B1B;background:#FEF2F2;border-top:1.5px solid #FCA5A5;border-bottom:1px solid #FCA5A5">Adducteurs</div>
+      <table class="test-table" style="margin:0;border-radius:0">
+        <thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><div class="test-name">Squeeze test 0° — 5 sec <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Serrer fort les jambes 5 sec, hanche en position neutre. Mise en lien constante avec EVA. EVA 0–2 : Sain · EVA 3–5 : Acceptable · EVA 6–10 : Risque élevé</span></div></td>
+            <td><div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap"><span style="font-size:.72rem;color:var(--text3)">EVA</span><input type="number" id="ha-sq0-eva" min="0" max="10" placeholder="—" style="width:46px;font-size:.85rem;padding:3px 4px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text1);text-align:center" oninput="_updateSq0Status()"><span id="ha-sq0-status" style="font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:10px"></span></div></td>
+            <td><textarea id="ha-sq0-obs" placeholder="Observations…" style="width:100%;min-height:36px;font-family:inherit;font-size:.8rem;border:1px solid var(--border);border-radius:4px;padding:4px 6px;resize:vertical;outline:none;background:var(--surface2);color:var(--text1)"></textarea></td>
+          </tr>
+        </tbody>
+      </table>
       <table class="test-table" style="margin:0;border-radius:0;border-top:1px solid var(--border)"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ha-agp-add"></tbody></table>
       <div style="padding:4px 14px 3px;font-size:.69rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#991B1B;background:#FEF2F2;border-top:1.5px solid #FCA5A5;border-bottom:1px solid #FCA5A5">Pubis</div>
       <table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ha-agp-pubis"></tbody></table>
