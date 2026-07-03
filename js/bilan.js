@@ -6840,19 +6840,15 @@ window.addEventListener('load', function(){
    PLAYLISTS — Tests Fonctionnels (chip-bar)
 ══════════════════════════════════════════════════════ */
 (function(){
-  var PL_KEY = 'r4p-playlists';
   var TARGET_PAGES = ['page-fonctionnels','page-fonctionnelsMS','page-fonctionnelsRachis'];
   var _activePl = {}; // { pageId: 'all'|'favs'|plId }
+  var _plStore = {}; // stockage session (mémoire uniquement, réinitialisé au rechargement)
 
   // Capture _favToggleFilter avant de l'envelopper
   var _origFavToggle = window._favToggleFilter;
 
-  function _load() {
-    try { return JSON.parse(localStorage.getItem(PL_KEY) || '{}'); } catch(e) { return {}; }
-  }
-  function _save(data) {
-    try { localStorage.setItem(PL_KEY, JSON.stringify(data)); } catch(e) {}
-  }
+  function _load() { return _plStore; }
+  function _save(data) { _plStore = data; }
   function _uid() { return 'pl-' + Math.random().toString(36).slice(2,10); }
   function _getPlaylists(pageId) { return (_load()[pageId] || []); }
 
