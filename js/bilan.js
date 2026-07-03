@@ -6665,7 +6665,7 @@ function _updateSideLabels(){
     { zones:['genou'],                            pages:['page-genou'] },
     { zones:['cheville','pied'],                  pages:['page-pied'] },
     { zones:['rachis-c','rachis-l'],              pages:['page-rachis','page-fonctionnelsRachis','page-force-rachis'] },
-    { zones:['genou','hanche','cheville','pied','cuisse','jambe'], pages:['page-fonctionnels'] }
+    { zones:['genou','hanche','cheville','pied','cuisse','jambe'], pages:['page-fonctionnels','page-force-mi'] }
   ];
   SCOPES.forEach(function(sc){
     var cote = _getCoteForScope(sc.zones);
