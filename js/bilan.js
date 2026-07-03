@@ -6842,15 +6842,48 @@ window.addEventListener('load', function(){
 (function(){
   var TARGET_PAGES = ['page-fonctionnels','page-fonctionnelsMS','page-fonctionnelsRachis'];
   var _activePl = {}; // { pageId: 'all'|'favs'|plId }
-  var _plStore = {}; // stockage session (mémoire uniquement, réinitialisé au rechargement)
+  var _plStore = {}; // cache mémoire (synchronisé avec Supabase à l'auth)
+  var _plLastUid = null; // uid du dernier utilisateur chargé
 
   // Capture _favToggleFilter avant de l'envelopper
   var _origFavToggle = window._favToggleFilter;
 
   function _load() { return _plStore; }
   function _save(data) { _plStore = data; }
-  function _uid() { return 'pl-' + Math.random().toString(36).slice(2,10); }
+  function _uid() {
+    try { return crypto.randomUUID(); } catch(e) { return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c){ var r=Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16); }); }
+  }
   function _getPlaylists(pageId) { return (_load()[pageId] || []); }
+
+  function _plDbLoad(uid) {
+    _sbRetry(function(){ return sbB.from('playlists').select('*').eq('user_id', uid); })
+      .then(function(res) {
+        if (!res || res.error || !res.data) return;
+        var store = {};
+        res.data.forEach(function(row) {
+          var pid = 'page-' + row.page;
+          if (!store[pid]) store[pid] = [];
+          store[pid].push({ id: row.id, name: row.name, keys: Array.isArray(row.keys) ? row.keys : [] });
+        });
+        _plStore = store;
+        TARGET_PAGES.forEach(function(pageId) {
+          var bar = document.querySelector('#'+pageId+' .fav-filter-bar');
+          if (bar) _renderBar(pageId);
+        });
+      });
+  }
+
+  function _plDbUpsert(pageId, pl) {
+    if (!_plLastUid) return;
+    _sbRetry(function(){
+      return sbB.from('playlists').upsert({ id: pl.id, user_id: _plLastUid, page: pageId.replace('page-', ''), name: pl.name, keys: pl.keys });
+    });
+  }
+
+  function _plDbDelete(plId) {
+    if (!_plLastUid) return;
+    _sbRetry(function(){ return sbB.from('playlists').delete().eq('id', plId); });
+  }
 
   function _renderBar(pageId) {
     var bar = document.querySelector('#'+pageId+' .fav-filter-bar');
@@ -7007,16 +7040,20 @@ window.addEventListener('load', function(){
     for (var i = 0; i < cbs.length; i++) { keys.push(cbs[i].value); }
     var data = _load();
     if (!data[pageId]) data[pageId] = [];
+    var savedPl = null;
     if (plId) {
       for (var j = 0; j < data[pageId].length; j++) {
         if (data[pageId][j].id === plId) {
-          data[pageId][j].name = name; data[pageId][j].keys = keys; break;
+          data[pageId][j].name = name; data[pageId][j].keys = keys;
+          savedPl = data[pageId][j]; break;
         }
       }
     } else {
-      data[pageId].push({ id: _uid(), name: name, keys: keys });
+      savedPl = { id: _uid(), name: name, keys: keys };
+      data[pageId].push(savedPl);
     }
     _save(data);
+    if (savedPl) _plDbUpsert(pageId, savedPl);
     _plCloseModal();
     _renderBar(pageId);
     if (_activePl[pageId] === plId && plId) _plActivate(pageId, plId);
@@ -7032,6 +7069,7 @@ window.addEventListener('load', function(){
       data[pageId] = data[pageId].filter(function(p){ return p.id !== plId; });
     }
     _save(data);
+    _plDbDelete(plId);
     var wasActive = _activePl[pageId] === plId;
     _plCloseModal();
     if (wasActive) _plActivate(pageId, 'all');
@@ -7057,6 +7095,20 @@ window.addEventListener('load', function(){
       _renderBar(pageId);
     });
   }
+
+  // Charge les playlists depuis Supabase dès que l'auth est disponible
+  window.addEventListener('message', function(e) {
+    if (!e.data) return;
+    if ((e.data.type === 'r4p-patient-selected' || e.data.type === 'r4p-token-refreshed')
+        && e.data.auth && e.data.auth.access_token) {
+      try {
+        var parts = e.data.auth.access_token.split('.');
+        var payload = JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
+        var uid = payload.sub;
+        if (uid && uid !== _plLastUid) { _plLastUid = uid; _plDbLoad(uid); }
+      } catch(ex) {}
+    }
+  });
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function(){ setTimeout(_init, 0); });
