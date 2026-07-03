@@ -374,16 +374,22 @@ const TESTS = {
   'tb-ha-fracture-g': {type:'ortho', items:['Patellar Pubic Percussion Test','Fulcrum Test']},
   'tb-ha-fracture-d': {type:'ortho', items:['Patellar Pubic Percussion Test','Fulcrum Test']},
   // Hanche — Athletic Groin Pain
-  // AGP — Adducteurs
+  // AGP — Adducteurs : Pubic Clock
+  'tb-ha-agp-clock': {type:'ortho', items:[
+    'Pubis — 3h <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Palpation bord latéral du pubis. ✚ Douleur → périoste pubien / insertion adducteurs latéraux</span>',
+    'Long adducteur — 6h <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Palpation bord inférieur du pubis. ✚ Douleur → insertion du long adducteur (zone la plus fréquente)</span>',
+    'Ligament inguinal — 9h <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Palpation bord latéral controlatéral. ✚ Douleur → ligament inguinal / origine pubienne adducteurs médiaux</span>',
+    'Anneau inguinal + abdos — 12h <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Palpation bord supérieur du pubis. ✚ Douleur → insertion droits abdominaux / anneau inguinal superficiel</span>'
+  ]},
+  // AGP — Adducteurs : Démembrement
+  'tb-ha-agp-demem': {type:'ortho', items:[
+    'Sartorius + Long Adducteur <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Plan superficiel — Bord du Triangle de Scarpa</span>',
+    'Gracile <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Plan superficiel — En dedans du Triangle de Scarpa</span>',
+    'Ilio-Psoas + Pectiné <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Plan intermédiaire — Entre le Sartorius et le Long Adducteur</span>',
+    'Grand + Court Adducteur <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Plan profond — Entre le Long Adducteur et le Gracile</span>'
+  ]},
+  // AGP — Adducteurs : tests fonctionnels
   'tb-ha-agp-add': {type:'ortho', items:[
-    'Pubic Clock 3h — Pubis <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Palpation bord latéral du pubis (3h). ✚ Douleur → périoste pubien / insertion adducteurs latéraux</span>',
-    'Pubic Clock 6h — Long adducteur <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Palpation bord inférieur du pubis (6h). ✚ Douleur → insertion du long adducteur (zone la plus fréquente)</span>',
-    'Pubic Clock 9h — Ligament inguinal <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Palpation bord latéral controlatéral (9h). ✚ Douleur → ligament inguinal / origine pubienne des adducteurs médiaux</span>',
-    'Pubic Clock 12h — Anneau inguinal + abdos <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Palpation bord supérieur du pubis (12h). ✚ Douleur → insertion droits abdominaux / anneau inguinal superficiel</span>',
-    'Démembrement — Sartorius + Long Adducteur <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Palpation plan superficiel — Bord du Triangle de Scarpa. ✚ Douleur à la palpation = structure impliquée</span>',
-    'Démembrement — Gracile <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Palpation plan superficiel — En dedans du Triangle de Scarpa. ✚ Douleur à la palpation = structure impliquée</span>',
-    'Démembrement — Ilio-Psoas + Pectiné <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Palpation plan intermédiaire — Entre le Sartorius et le Long Adducteur. ✚ Douleur à la palpation = structure impliquée</span>',
-    'Démembrement — Grand + Court Adducteur <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Palpation plan profond — Entre le Long Adducteur et le Gracile. ✚ Douleur à la palpation = structure impliquée</span>',
     'Squeeze test 0° <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Serrer ballon/poing entre les genoux, hanches à 0° (DD). ✚ EVA ≥ 6 → pubalgie adducteurs</span>',
     'Squeeze test 45° <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Serrer ballon/poing, genoux fléchis à 45°. ✚ EVA ≥ 6 ou force &lt; 210 mmHg (dynamomètre) → positif</span>',
     'Étirement ADD — Frog Test <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Étirement passif des adducteurs en grenouille (genoux fléchis, pieds joints, chute en abduction). ✚ Douleur inguinale ou pubienne reproduite</span>'
@@ -3753,7 +3759,7 @@ function updateBadges() {
     'rachis': ['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-transverse'],
     'rachis-cerv': ['tb-cv-vascul','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-dn4-itw','tb-cv-dn4-exam','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-sensib-g','tb-cv-sensib-d'],
     'rachis-lomb': ['tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-plet','tb-rl-laslett-1','tb-rl-laslett-2','tb-rl-laslett-3','tb-rl-instab','tb-rl-tfd-suite','tb-rl-tfa-suite','tb-rl-transverse'],
-    'hanche': ['tb-ha-neuro','tb-ha-laslett-1','tb-ha-laslett-2','tb-ha-laslett-3','tb-ha-fracture','tb-ha-agp-add','tb-ha-agp-pubis','tb-ha-agp-flech','tb-ha-agp-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-neuro-g','tb-ha-neuro-d','tb-ha-fracture-g','tb-ha-fracture-d','tb-ha-agp-g','tb-ha-agp-d','tb-ha-hanche-g','tb-ha-hanche-d'],
+    'hanche': ['tb-ha-neuro','tb-ha-laslett-1','tb-ha-laslett-2','tb-ha-laslett-3','tb-ha-fracture','tb-ha-agp-clock','tb-ha-agp-demem','tb-ha-agp-add','tb-ha-agp-pubis','tb-ha-agp-flech','tb-ha-agp-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-neuro-g','tb-ha-neuro-d','tb-ha-fracture-g','tb-ha-fracture-d','tb-ha-agp-g','tb-ha-agp-d','tb-ha-hanche-g','tb-ha-hanche-d'],
     'genou':  ['tb-ge-global','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-ext',
                'tb-ge-global-g','tb-ge-global-d','tb-ge-lig-g','tb-ge-lig-d','tb-ge-lca-g','tb-ge-lca-d',
                'tb-ge-men-g','tb-ge-men-d','tb-ge-rot-g','tb-ge-rot-d','tb-ge-sbit-g','tb-ge-sbit-d',
@@ -4403,7 +4409,7 @@ function _buildAllTestsHtml() {
     { label:'RACHIS CERVICAL', pk:'', fields:[['cv-marqueur','Marqueur']], tables:['tb-cv-vascul','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-dn4-itw','tb-cv-dn4-exam','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-sensib-g','tb-cv-sensib-d'], concl:'cv-conclusion' },
     { label:'RACHIS LOMBAIRE', pk:'', fields:[['rl-marqueur','Marqueur']], tables:['tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-plet','tb-rl-laslett-1','tb-rl-laslett-2','tb-rl-laslett-3','tb-rl-instab','tb-rl-tfd-suite','tb-rl-tfa-suite','tb-rl-transverse'], concl:'rl-conclusion' },
     { label:'RACHIS', pk:'rachis', fields:[['ra-marqueur','Marqueur'],['ra-mckenzie','McKenzie']], tables:['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-transverse'], concl:'ra-conclusion', opt:'ra-opt' },
-    { label:'HANCHE', pk:'hanche', fields:[['ha-marqueur','Marqueur']], tables:['tb-ha-neuro','tb-ha-laslett-1','tb-ha-laslett-2','tb-ha-laslett-3','tb-ha-fracture','tb-ha-agp-add','tb-ha-agp-pubis','tb-ha-agp-flech','tb-ha-agp-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-neuro-g','tb-ha-neuro-d','tb-ha-fracture-g','tb-ha-fracture-d','tb-ha-agp-g','tb-ha-agp-d','tb-ha-hanche-g','tb-ha-hanche-d'], concl:'ha-conclusion', opt:'ha-opt' },
+    { label:'HANCHE', pk:'hanche', fields:[['ha-marqueur','Marqueur']], tables:['tb-ha-neuro','tb-ha-laslett-1','tb-ha-laslett-2','tb-ha-laslett-3','tb-ha-fracture','tb-ha-agp-clock','tb-ha-agp-demem','tb-ha-agp-add','tb-ha-agp-pubis','tb-ha-agp-flech','tb-ha-agp-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-neuro-g','tb-ha-neuro-d','tb-ha-fracture-g','tb-ha-fracture-d','tb-ha-agp-g','tb-ha-agp-d','tb-ha-hanche-g','tb-ha-hanche-d'], concl:'ha-conclusion', opt:'ha-opt' },
     { label:'GENOU', pk:'genou', fields:[['ge-marqueur','Marqueur']], tables:[
         'tb-ge-global','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-ext',
         'tb-ge-global-g','tb-ge-global-d','tb-ge-lig-g','tb-ge-lig-d','tb-ge-lca-g','tb-ge-lca-d',
