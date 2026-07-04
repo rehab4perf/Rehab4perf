@@ -146,33 +146,33 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
 .chain-link { text-align:center; font-size:.7rem; color:var(--accent2); padding:3px 0; font-weight:600; }
 
 /* Pain slider per exercise */
-.exo-pain-slider-row { display:flex; align-items:center; gap:11px; margin-top:10px; }
+.exo-pain-slider-row { display:flex; align-items:center; gap:9px; margin-top:9px; }
 .exo-pain-num {
-  width:42px; height:42px; border-radius:10px; flex-shrink:0;
+  width:26px; height:26px; border-radius:7px; flex-shrink:0;
   display:flex; align-items:center; justify-content:center;
-  font-size:1.15rem; font-weight:800; background:#f0f4f8; color:#9aa8b8;
+  font-size:.78rem; font-weight:700; background:#f0f4f8; color:#9aa8b8;
   transition:background .15s, color .15s; cursor:pointer; user-select:none;
 }
-.exo-pain-body { flex:1; min-width:0; }
+.exo-pain-body { flex:1; min-width:0; display:flex; align-items:center; gap:8px; }
 .pain-slider {
-  -webkit-appearance:none; appearance:none; width:100%; height:8px; border-radius:4px;
-  outline:none; margin:6px 0 0; display:block;
+  -webkit-appearance:none; appearance:none; flex:1; height:3px; border-radius:2px;
+  outline:none; margin:0; display:block;
   background:linear-gradient(to right,#27AE60 0%,#82D03E 20%,#F4D03F 40%,#F39C12 55%,#E67E22 70%,#E74C3C 85%,#922B21 100%);
+  opacity:.75;
 }
 .pain-slider::-webkit-slider-thumb {
-  -webkit-appearance:none; width:24px; height:24px; border-radius:50%;
-  background:#fff; border:2.5px solid #64748b; cursor:pointer;
-  box-shadow:0 1px 4px rgba(0,0,0,.25);
+  -webkit-appearance:none; width:14px; height:14px; border-radius:50%;
+  background:#fff; border:1.5px solid #94a3b8; cursor:pointer;
+  box-shadow:0 1px 2px rgba(0,0,0,.15);
 }
 .pain-slider::-moz-range-thumb {
-  width:24px; height:24px; border-radius:50%; background:#fff; border:2.5px solid #64748b;
-  cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.25);
+  width:14px; height:14px; border-radius:50%; background:#fff; border:1.5px solid #94a3b8;
+  cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,.15);
 }
-.exo-pain-caps { display:flex; justify-content:space-between; font-size:.6rem; color:var(--muted); margin-top:3px; }
-.exo-pain-state { font-size:.7rem; font-weight:700; margin-top:1px; min-height:13px; }
+.exo-pain-state { font-size:.64rem; font-weight:600; white-space:nowrap; flex-shrink:0; min-width:82px; text-align:right; }
 .exo-note-toggle {
-  width:30px; height:30px; border-radius:8px; border:1.5px solid var(--border);
-  background:#fff; color:#9aa8b8; cursor:pointer; font-size:.85rem; flex-shrink:0;
+  width:26px; height:26px; border-radius:7px; border:1px solid var(--border);
+  background:#fff; color:#9aa8b8; cursor:pointer; font-size:.75rem; flex-shrink:0;
   display:flex; align-items:center; justify-content:center; padding:0;
   transition:border-color .12s, color .12s;
 }
@@ -1375,7 +1375,7 @@ function _updatePainUI(key){
   var sl  = document.getElementById('painSlider-'+key);
   if(v === undefined){
     if(num){ num.textContent='–'; num.style.background='#f0f4f8'; num.style.color='#9aa8b8'; }
-    if(st){ st.textContent='Douleur ? Glisse le curseur'; st.style.color='var(--muted)'; st.style.fontWeight='400'; }
+    if(st){ st.textContent='Douleur ?'; st.style.color='var(--muted)'; st.style.fontWeight='400'; }
     if(sl) sl.value = 0;
   } else {
     if(num){ num.textContent=v; num.style.background=PAIN_COLORS[v]; num.style.color=(v===4?'#1a2433':'#fff'); }
@@ -1417,14 +1417,13 @@ function _buildPainSliderHTML(key, withNote, initNote){
   var has = v !== undefined;
   var numBg  = has ? PAIN_COLORS[v] : '#f0f4f8';
   var numCol = has ? (v===4?'#1a2433':'#fff') : '#9aa8b8';
-  var stTxt  = has ? PAIN_LABELS[v] : 'Douleur ? Glisse le curseur';
+  var stTxt  = has ? PAIN_LABELS[v] : 'Douleur ?';
   var stCss  = has ? 'color:'+PAIN_COLORS[v] : 'color:var(--muted);font-weight:400';
   var h = '<div class="exo-pain-slider-row">'
     + '<div class="exo-pain-num" id="painNum-'+key+'" style="background:'+numBg+';color:'+numCol+'" onclick="_togglePainZero(\''+key+'\')" title="Toucher : aucune douleur / effacer">'+(has?v:'–')+'</div>'
     + '<div class="exo-pain-body">'
     + '<input type="range" class="pain-slider" id="painSlider-'+key+'" min="0" max="10" step="1" value="'+(has?v:0)+'" oninput="_setPainSlider(\''+key+'\',this.value)" onchange="_setPainSlider(\''+key+'\',this.value)">'
-    + '<div class="exo-pain-caps"><span>0 · aucune</span><span>10 · max</span></div>'
-    + '<div class="exo-pain-state" id="painState-'+key+'" style="'+stCss+'">'+stTxt+'</div>'
+    + '<span class="exo-pain-state" id="painState-'+key+'" style="'+stCss+'">'+stTxt+'</span>'
     + '</div>';
   if(withNote){
     h += '<button class="exo-note-toggle'+(initNote?' has-note':'')+'" id="exoNoteToggle-'+key+'" onclick="_toggleExoNote(\''+key+'\')" title="Remarque">💬</button>';
