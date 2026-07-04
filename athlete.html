@@ -1739,7 +1739,8 @@ function _submitRpe(){
     var effort = _exoEfforts[key] || 0;
     var noteInp = document.getElementById('exoNote-'+key);
     var exoNote = noteInp ? noteInp.value.trim() : '';
-    if(effort > 0 || exoNote) exoRows.push({ key: key, name: nameEl.textContent, effort: effort, note: exoNote });
+    var pain = (_painRatings[key] !== undefined && _painRatings[key] !== null) ? _painRatings[key] : null;
+    if(effort > 0 || exoNote || pain !== null) exoRows.push({ key: key, name: nameEl.textContent, effort: effort, note: exoNote, pain: pain });
   });
   var globalNote = ((document.getElementById('exoGlobalNoteTA')||{}).value||'').trim();
   var exoData = (exoRows.length || globalNote) ? { exos: exoRows, note: globalNote } : null;

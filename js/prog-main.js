@@ -1232,6 +1232,7 @@ function _renderAthleteRetour(seanceId) {
 
 /* ── Feedback modal ─────────────────────────────────────────────────── */
 var _feedbackEva = null;
+var _feedbackCurrentFb = null; // enregistrement athlète chargé à l'ouverture du modal
 
 function _updateFeedbackBtn(hasAthleteData) {
   var btn = document.getElementById('builder-feedback-btn');
@@ -1265,40 +1266,62 @@ function _closeFeedbackModal() {
 function _feedbackRenderContent(fb, sid) {
   var content = document.getElementById('feedback-modal-content');
   if (!content) return;
-  _updateFeedbackBtn(!!(fb && (fb.exo_data || fb.rpe !== null)));
+  _feedbackCurrentFb = fb;
   var isCAP = !!_capBbDonnees && _capBbDonnees.type === 'cap' && !!_capBbSeanceId;
   var isHSR = !!_hsrBbDonnees && _hsrBbDonnees.type === 'hsr' && !!_hsrBbSeanceId;
-  var html = '';
 
-  // Retour athlète (soumis depuis l'app patient)
-  var athleteFb = fb && fb.exo_data ? fb : null;
-  if (athleteFb) {
-    html += '<div class="fm-section">Retour athlète</div>';
+  // Badge : l'athlète a soumis si rpe est défini, ou si exo_data.exos existe
+  var hasAthleteData = !!(fb && (
+    (fb.rpe !== null && fb.rpe !== undefined) ||
+    (fb.exo_data && fb.exo_data.exos && fb.exo_data.exos.length > 0)
+  ));
+  _updateFeedbackBtn(hasAthleteData);
+
+  var html = '<div class="fm-section">Retour athlète</div>';
+
+  if (!hasAthleteData) {
+    html += '<div class="fm-empty">Aucun retour reçu.</div>';
+  } else if (isCAP) {
+    // CAP : rpe = douleur (0–10), duree_min = effort Borg (1–10)
+    var pain = (fb.rpe !== null && fb.rpe !== undefined) ? fb.rpe : null;
+    var effort = (fb.duree_min && fb.duree_min <= 10) ? fb.duree_min : null;
+    html += '<div class="fm-chips">';
+    if (pain !== null) {
+      var pc = pain<=2?'#22c55e':pain<=4?'#84cc16':pain<=6?'#f59e0b':pain<=8?'#f97316':'#ef4444';
+      html += '<span class="fm-chip-g" style="color:'+pc+';border-color:'+pc+'">🩹 Douleur '+pain+'/10</span>';
+    }
+    if (effort !== null) html += '<span class="fm-chip-n">💪 Effort '+effort+'/10</span>';
+    html += '</div>';
+  } else {
+    // Séance standard : rpe = effort Borg, duree_min = durée réelle
     var ua = (fb.rpe||0) * (fb.duree_min||0);
     html += '<div class="fm-chips">';
-    if (fb.rpe !== null && fb.rpe !== undefined) html += '<span class="fm-chip-g">RPE '+fb.rpe+'/10</span>';
+    if (fb.rpe !== null && fb.rpe !== undefined) html += '<span class="fm-chip-g">Effort '+fb.rpe+'/10</span>';
     if (fb.duree_min) html += '<span class="fm-chip-n">⏱ '+fb.duree_min+' min</span>';
     if (ua) html += '<span class="fm-chip-n">⚡ '+ua+' UA</span>';
     html += '</div>';
     var exoData = fb.exo_data;
     if (exoData && exoData.exos) {
       exoData.exos.forEach(function(exo) {
-        if (!exo.effort && !exo.note) return;
+        var hasPain = exo.pain !== null && exo.pain !== undefined;
+        if (!exo.effort && !exo.note && !hasPain) return;
         var emoji = exo.effort===1?'😌':exo.effort===2?'😐':exo.effort===3?'😓':'';
         var bg  = exo.effort===1?'#dcfce7':exo.effort===2?'#fef9c3':exo.effort===3?'#fee2e2':'#f1f5f9';
         var col = exo.effort===1?'#166534':exo.effort===2?'#713f12':exo.effort===3?'#991b1b':'#475569';
         html += '<div class="fm-exo-row">';
         if (emoji) html += '<span class="fm-effort" style="background:'+bg+';color:'+col+'">'+emoji+'</span>';
-        html += '<span>'+escH(exo.name||'Exercice')+'</span></div>';
+        html += '<span style="flex:1">'+escH(exo.name||'Exercice')+'</span>';
+        if (hasPain) {
+          var pc2 = exo.pain<=2?'#22c55e':exo.pain<=4?'#84cc16':exo.pain<=6?'#f59e0b':exo.pain<=8?'#f97316':'#ef4444';
+          html += '<span style="font-size:.7rem;font-weight:700;color:'+pc2+'">🩹 '+exo.pain+'</span>';
+        }
+        html += '</div>';
         if (exo.note) html += '<div style="font-size:.7rem;color:#6b7280;font-style:italic;padding-left:28px;margin-bottom:3px;">'+escH(exo.note)+'</div>';
       });
     }
     if (exoData && exoData.note && exoData.note.trim()) {
       html += '<div class="fm-note">'+escH(exoData.note)+'</div>';
     }
-  } else {
-    html += '<div class="fm-section">Retour athlète</div>';
-    html += '<div class="fm-empty">Aucun retour reçu.</div>';
   }
 
   // EVA praticien
@@ -1327,10 +1350,9 @@ function _feedbackRenderContent(fb, sid) {
 
   content.innerHTML = html;
 
-  // Restaurer EVA si déjà renseigné (feedback praticien existant sans exo_data)
-  if (fb && !fb.exo_data && fb.rpe !== null && fb.rpe !== undefined) {
-    _feedbackSetEva(fb.rpe);
-  }
+  // Restaurer l'EVA praticien depuis exo_data.eva_praticien (ne jamais lire fb.rpe = données athlète)
+  var savedEva = (fb && fb.exo_data && fb.exo_data.eva_praticien !== undefined) ? fb.exo_data.eva_praticien : null;
+  if (savedEva !== null) _feedbackSetEva(savedEva);
 }
 
 function _feedbackSetEva(val) {
@@ -1349,13 +1371,19 @@ function _feedbackSave(sid) {
   if (!sid) return;
   var btn = document.querySelector('.fm-save-btn');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Envoi…'; }
+  // Merge eva_praticien dans exo_data existant — ne touche pas à rpe (données athlète)
+  var existingExoData = (_feedbackCurrentFb && _feedbackCurrentFb.exo_data)
+    ? Object.assign({}, _feedbackCurrentFb.exo_data) : {};
+  existingExoData.eva_praticien = _feedbackEva;
   _fetchRetry(SUPA_URL_P + '/rest/v1/athlete_feedback', {
     method: 'POST',
     headers: Object.assign({}, _sbHeaders(), { 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
-    body: JSON.stringify({ seance_id: sid, rpe: _feedbackEva, submitted_at: new Date().toISOString() })
+    body: JSON.stringify({ seance_id: sid, exo_data: existingExoData, submitted_at: new Date().toISOString() })
   }).then(function(r) {
     if (!r.ok) { _showToast('Erreur enregistrement.'); if(btn){btn.disabled=false;btn.textContent='Enregistrer';} return; }
     if (btn) { btn.textContent = '✓ Enregistré'; btn.style.background = '#15803d'; }
+    if (_feedbackCurrentFb) _feedbackCurrentFb = Object.assign({}, _feedbackCurrentFb, { exo_data: existingExoData });
+    else _feedbackCurrentFb = { exo_data: existingExoData };
     renderCalendar();
   }).catch(function() {
     _showToast('Erreur réseau.');
