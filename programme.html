@@ -599,6 +599,47 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   font-weight:600; cursor:pointer; transition:background .15s; white-space:nowrap;
 }
 .builder-plan-btn:hover { background:rgba(255,255,255,.28); }
+.builder-feedback-btn {
+  background:none; border:1px solid rgba(255,255,255,.25);
+  color:#94a3b8; border-radius:6px; padding:5px 10px; font-size:.72rem;
+  font-weight:600; cursor:pointer; transition:background .15s,border-color .15s,color .15s;
+  white-space:nowrap; display:none; align-items:center; gap:5px;
+}
+.builder-feedback-btn:hover { background:rgba(255,255,255,.12); }
+.builder-feedback-btn.has-retour { border-color:#4ade80; color:#4ade80; }
+.builder-feedback-btn.has-retour::before { content:''; display:inline-block; width:6px; height:6px; border-radius:50%; background:#4ade80; margin-right:4px; }
+/* Feedback modal */
+#feedback-modal-overlay {
+  display:none; position:absolute; inset:0; background:rgba(0,0,0,.45);
+  z-index:1200; align-items:flex-start; justify-content:flex-end;
+}
+#feedback-modal-overlay.open { display:flex; }
+#feedback-modal-panel {
+  background:var(--surface,#fff); border-left:0.5px solid #e2e8f0;
+  width:290px; height:100%; overflow-y:auto; padding:18px 16px;
+  display:flex; flex-direction:column; gap:0;
+}
+.fm-head { display:flex; align-items:center; gap:8px; margin-bottom:16px; }
+.fm-title { font-size:.85rem; font-weight:700; color:#1e293b; flex:1; }
+.fm-close { background:none; border:none; font-size:1.1rem; color:#94a3b8; cursor:pointer; }
+.fm-section { font-size:.65rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.07em; margin:12px 0 7px; border-top:.5px solid #e2e8f0; padding-top:10px; }
+.fm-section:first-of-type { margin-top:0; border-top:none; padding-top:0; }
+.fm-chips { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px; }
+.fm-chip-g { font-size:.72rem; background:#dcfce7; color:#166534; border-radius:5px; padding:2px 8px; font-weight:600; }
+.fm-chip-n { font-size:.72rem; background:#f1f5f9; color:#475569; border:.5px solid #e2e8f0; border-radius:5px; padding:2px 8px; }
+.fm-exo-row { display:flex; align-items:center; gap:7px; margin-bottom:4px; font-size:.74rem; color:#1e293b; }
+.fm-effort { border-radius:4px; padding:1px 6px; font-size:.72rem; font-weight:600; }
+.fm-note { background:#f8fafc; border-left:2px solid #4ade80; border-radius:0 4px 4px 0; padding:5px 9px; font-size:.72rem; color:#475569; font-style:italic; margin-bottom:10px; }
+.fm-sublbl { font-size:.68rem; color:#6b7a8d; margin-bottom:4px; }
+.fm-btns { display:flex; gap:3px; flex-wrap:wrap; margin-bottom:10px; }
+.fm-btn { width:24px; height:24px; border-radius:4px; border:.5px solid #cbd5e1; background:#f8fafc; color:#475569; font-size:.7rem; font-weight:500; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .1s; }
+.fm-btn.on-eva { background:#ef4444; color:#fff; border-color:#ef4444; }
+.fm-save-btn { width:100%; padding:8px; border-radius:7px; background:#16a34a; color:#fff; border:none; font-size:.74rem; font-weight:600; cursor:pointer; margin-bottom:12px; }
+.fm-save-btn:disabled { opacity:.6; cursor:default; }
+.fm-adapt-row { display:flex; gap:8px; }
+.fm-adapt-btn { flex:1; padding:7px; border-radius:7px; font-size:.74rem; font-weight:600; border:.5px solid #cbd5e1; background:#f8fafc; color:#475569; cursor:pointer; text-align:center; transition:background .15s; }
+.fm-adapt-btn:hover { background:#e2e8f0; }
+.fm-empty { font-size:.76rem; color:#9ca3af; font-style:italic; padding:8px 0; }
 
 
 /* ── Mode lecture seule : template public chargé par un lecteur ── */
@@ -2243,6 +2284,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
     <div style="display:flex;align-items:center;gap:6px;">
       <button class="builder-save-btn" id="prog-cloud-save-btn" onclick="_builderSaveBtnClick()"><svg style="vertical-align:middle;margin-right:4px" width="15" height="15" fill="currentColor" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><g><path d="m28.702 8.564-4.273-5c-.795-.93-1.954-1.464-3.18-1.464h-14.771c-2.306 0-4.182 1.877-4.182 4.183v19.436c0 2.306 1.876 4.183 4.182 4.183h19.045c2.306 0 4.183-1.877 4.183-4.183v-14.437c-.001-.995-.357-1.96-1.004-2.718zm-6.962 19.536h-11.481v-8.173c0-.631.514-1.144 1.145-1.144h9.191c.631 0 1.145.513 1.145 1.144zm6.164-2.382c0 1.313-1.068 2.382-2.382 2.382h-1.981v-8.173c0-1.623-1.321-2.944-2.945-2.944h-9.191c-1.624 0-2.945 1.321-2.945 2.944v8.173h-1.982c-1.313 0-2.382-1.068-2.382-2.382v-19.436c0-1.313 1.069-2.382 2.382-2.382h14.771c.698 0 1.358.304 1.811.834l4.273 4.999c.369.432.571.982.571 1.549z"/><path d="m9.359 9.31h5.963c.497 0 .9-.403.9-.9s-.403-.9-.9-.9h-5.963c-.497 0-.9.403-.9.9s.403.9.9.9z"/><path d="m22.641 11.572h-13.282c-.497 0-.9.403-.9.9s.403.9.9.9h13.281c.497 0 .9-.403.9-.9s-.402-.9-.899-.9z"/></g></svg>Sauvegarder</button>
       <button class="builder-update-btn" id="prog-update-btn" onclick="_doUpdateTemplate()" style="display:none" title="">🔄 Mettre à jour</button>
+      <button class="builder-feedback-btn" id="builder-feedback-btn" onclick="_openFeedbackModal()">💬 Feedback</button>
       <button class="builder-plan-btn" id="builder-plan-btn" onclick="openPlanModal()"><svg style="vertical-align:middle;margin-right:4px" width="16" height="16" fill="currentColor" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="M452,311.145V75c0-24.813-20.187-45-45-45h-15V15c0-8.284-6.716-15-15-15s-15,6.716-15,15v15h-60V15c0-8.284-6.716-15-15-15s-15,6.716-15,15v15h-92V15c0-8.284-6.716-15-15-15s-15,6.716-15,15v15H90V15c0-8.284-6.716-15-15-15S60,6.716,60,15v15H45C20.187,30,0,50.187,0,75v331c0,24.813,20.187,45,45,45h266.946c16.795,36.01,53.085,61,95.054,61c57.897,0,105-47.551,105-106C512,364.198,487.443,328.027,452,311.145z M30,75c0-8.271,6.729-15,15-15h15v15c0,8.284,6.716,15,15,15s15-6.716,15-15V60h60v15c0,8.284,6.716,15,15,15s15-6.716,15-15V60h92v15c0,8.284,6.716,15,15,15s15-6.716,15-15V60h60v15c0,8.284,6.716,15,15,15s15-6.716,15-15V60h15c8.271,0,15,6.729,15,15v46H30V75z M303.056,421H45c-8.271,0-15-6.729-15-15V151h392v151.076c-4.901-0.704-9.907-1.076-15-1.076c-57.897,0-105,47.103-105,105C302,411.092,302.365,416.098,303.056,421z M407,482c-41.355,0-75-34.093-75-76c0-41.355,33.645-75,75-75c41.355,0,75,33.645,75,75C482,447.907,448.355,482,407,482z"/><path d="M437,391h-15v-15c0-8.284-6.716-15-15-15s-15,6.716-15,15v30c0,8.284,6.716,15,15,15h30c8.284,0,15-6.716,15-15S445.284,391,437,391z"/><path d="M105,181H75c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S113.284,181,105,181z"/><path d="M196,181h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S204.284,181,196,181z"/><path d="M287,181h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S295.284,181,287,181z"/><path d="M377,181h-30c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S385.284,181,377,181z"/><path d="M105,241H75c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S113.284,241,105,241z"/><path d="M196,241h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S204.284,241,196,241z"/><path d="M287,241h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S295.284,241,287,241z"/><path d="M377,241h-30c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S385.284,241,377,241z"/><path d="M105,301H75c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S113.284,301,105,301z"/><path d="M196,301h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S204.284,301,196,301z"/><path d="M287,301h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S295.284,301,287,301z"/><path d="M105,361H75c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S113.284,361,105,361z"/><path d="M196,361h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S204.284,361,196,361z"/><path d="M287,361h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S295.284,361,287,361z"/></svg>Planifier</button>
 
       <button class="btn btn-outline" onclick="openProgHistory()" style="font-size:.72rem;padding:4px 9px;white-space:nowrap;">📂 Programmes</button>
@@ -2267,7 +2309,17 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
         <p>Ajoutez un bloc puis sélectionnez des exercices<br>depuis la bibliothèque à gauche.</p>
       </div>
     </div>
-    <div id="athlete-retour-panel"></div>
+    <div id="athlete-retour-panel" style="display:none;"></div>
+  </div>
+  <!-- Feedback modal -->
+  <div id="feedback-modal-overlay" onclick="if(event.target===this)_closeFeedbackModal()">
+    <div id="feedback-modal-panel">
+      <div class="fm-head">
+        <span class="fm-title">💬 Feedback séance</span>
+        <button class="fm-close" onclick="_closeFeedbackModal()">✕</button>
+      </div>
+      <div id="feedback-modal-content"></div>
+    </div>
   </div>
 
   <!-- #templatesBuilderArea conservé vide pour rétrocompatibilité JS -->

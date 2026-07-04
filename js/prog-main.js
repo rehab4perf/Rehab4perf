@@ -1216,69 +1216,151 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
 }
 
 /* ── Retour athlète dans le builder — accordéon style CAP ── */
-var _retourCollapsed = true;
-
-function _retourToggle(){
-  _retourCollapsed = !_retourCollapsed;
-  var body    = document.getElementById('retour-bb-body');
-  var chevron = document.getElementById('retour-bb-chevron');
-  if(body)    body.style.display  = _retourCollapsed ? 'none' : 'block';
-  if(chevron) chevron.textContent = _retourCollapsed ? '▶' : '▼';
+function _renderAthleteRetour(seanceId) {
+  // CAP/HSR : leur bandeau gère déjà le bouton feedback
+  var rawType = _currentProgRawDonnees && _currentProgRawDonnees.type;
+  if (rawType === 'cap' || rawType === 'hsr') return;
+  if (!seanceId) { _updateFeedbackBtn(false); return; }
+  _fetchRetry(SUPA_URL_P + '/rest/v1/athlete_feedback?seance_id=eq.' + seanceId, { headers: _sbHeaders() })
+    .then(function(r){ return r.json(); })
+    .then(function(arr){
+      var fb = Array.isArray(arr) && arr.length ? arr[0] : null;
+      _updateFeedbackBtn(!!(fb && (fb.exo_data || fb.rpe !== null)));
+    })
+    .catch(function(){ _updateFeedbackBtn(false); });
 }
 
-function _renderAthleteRetour(seanceId){
-  var panel = document.getElementById('athlete-retour-panel');
-  if(!panel) return;
-  if(!seanceId){ panel.innerHTML=''; panel.style.display='none'; return; }
-  var ev = (_cloudCalEvents||[]).find(function(e){ return String(e.id)===String(seanceId); });
-  var fb = ev && ev.athlete_feedback;
-  if(!fb || !fb.rpe){ panel.innerHTML=''; panel.style.display='none'; return; }
+/* ── Feedback modal ─────────────────────────────────────────────────── */
+var _feedbackEva = null;
 
-  _retourCollapsed = true;
-  var ua = fb.rpe * (fb.duree_min||0);
-  var summaryText = 'RPE '+fb.rpe+'/10'+(fb.duree_min?' · '+fb.duree_min+' min':'')+(ua?' · ⚡'+ua+' UA':'');
+function _updateFeedbackBtn(hasAthleteData) {
+  var btn = document.getElementById('builder-feedback-btn');
+  if (!btn) return;
+  var sid = _currentSeanceId || _capBbSeanceId || _hsrBbSeanceId;
+  btn.style.display = sid ? 'inline-flex' : 'none';
+  if (hasAthleteData) btn.classList.add('has-retour');
+  else btn.classList.remove('has-retour');
+}
 
-  var html = '<div class="retour-bb-head" onclick="_retourToggle()">';
-  html += '<span class="retour-bb-label">💬 Retour athlète</span>';
-  html += '<span style="margin-left:auto;font-size:.72rem;color:#166534;font-weight:600;">'+escH(summaryText)+'</span>';
-  html += '<span id="retour-bb-chevron" style="margin-left:8px;font-size:.75rem;color:#166534;">▶</span>';
-  html += '</div>';
+function _openFeedbackModal() {
+  var sid = _currentSeanceId || _capBbSeanceId || _hsrBbSeanceId;
+  if (!sid) return;
+  var overlay = document.getElementById('feedback-modal-overlay');
+  var content = document.getElementById('feedback-modal-content');
+  if (!overlay || !content) return;
+  overlay.classList.add('open');
+  content.innerHTML = '<div class="fm-empty">Chargement…</div>';
+  _feedbackEva = null;
+  _fetchRetry(SUPA_URL_P + '/rest/v1/athlete_feedback?seance_id=eq.' + sid, { headers: _sbHeaders() })
+    .then(function(r){ return r.json(); })
+    .then(function(arr){ _feedbackRenderContent(Array.isArray(arr) && arr.length ? arr[0] : null, sid); })
+    .catch(function(){ _feedbackRenderContent(null, sid); });
+}
 
-  html += '<div id="retour-bb-body" style="display:none;margin-top:8px;">';
-  html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">';
-  html += '<span style="background:#dcfce7;color:#166534;border-radius:6px;padding:3px 8px;font-size:.75rem;font-weight:700;">RPE '+fb.rpe+'/10</span>';
-  if(fb.duree_min) html += '<span style="background:#dcfce7;color:#166534;border-radius:6px;padding:3px 8px;font-size:.75rem;font-weight:700;">⏱ '+fb.duree_min+' min</span>';
-  if(ua) html += '<span style="background:#dcfce7;color:#166534;border-radius:6px;padding:3px 8px;font-size:.75rem;font-weight:700;">⚡ '+ua+' UA</span>';
-  html += '</div>';
+function _closeFeedbackModal() {
+  var overlay = document.getElementById('feedback-modal-overlay');
+  if (overlay) overlay.classList.remove('open');
+}
 
-  var exoData = fb.exo_data;
-  if(exoData && exoData.exos && exoData.exos.length){
-    var hasContent = exoData.exos.some(function(ex){ return ex.effort || ex.note; });
-    if(hasContent){
-      html += '<div style="display:flex;flex-direction:column;gap:5px;margin-bottom:8px;">';
-      exoData.exos.forEach(function(exo){
-        if(!exo.effort && !exo.note) return;
+function _feedbackRenderContent(fb, sid) {
+  var content = document.getElementById('feedback-modal-content');
+  if (!content) return;
+  _updateFeedbackBtn(!!(fb && (fb.exo_data || fb.rpe !== null)));
+  var isCAP = !!_capBbDonnees && _capBbDonnees.type === 'cap' && !!_capBbSeanceId;
+  var isHSR = !!_hsrBbDonnees && _hsrBbDonnees.type === 'hsr' && !!_hsrBbSeanceId;
+  var html = '';
+
+  // Retour athlète (soumis depuis l'app patient)
+  var athleteFb = fb && fb.exo_data ? fb : null;
+  if (athleteFb) {
+    html += '<div class="fm-section">Retour athlète</div>';
+    var ua = (fb.rpe||0) * (fb.duree_min||0);
+    html += '<div class="fm-chips">';
+    if (fb.rpe !== null && fb.rpe !== undefined) html += '<span class="fm-chip-g">RPE '+fb.rpe+'/10</span>';
+    if (fb.duree_min) html += '<span class="fm-chip-n">⏱ '+fb.duree_min+' min</span>';
+    if (ua) html += '<span class="fm-chip-n">⚡ '+ua+' UA</span>';
+    html += '</div>';
+    var exoData = fb.exo_data;
+    if (exoData && exoData.exos) {
+      exoData.exos.forEach(function(exo) {
+        if (!exo.effort && !exo.note) return;
         var emoji = exo.effort===1?'😌':exo.effort===2?'😐':exo.effort===3?'😓':'';
         var bg  = exo.effort===1?'#dcfce7':exo.effort===2?'#fef9c3':exo.effort===3?'#fee2e2':'#f1f5f9';
         var col = exo.effort===1?'#166534':exo.effort===2?'#713f12':exo.effort===3?'#991b1b':'#475569';
-        html += '<div style="font-size:.77rem;">';
-        html += '<div style="display:flex;align-items:center;gap:6px;">';
-        if(emoji) html += '<span style="background:'+bg+';color:'+col+';border-radius:5px;padding:2px 6px;">'+emoji+'</span>';
-        html += '<span style="color:#1e293b;font-weight:600;">'+escH(exo.name||'Exercice')+'</span>';
-        html += '</div>';
-        if(exo.note) html += '<div style="color:#6b7280;font-style:italic;padding-left:2px;margin-top:2px;">'+escH(exo.note)+'</div>';
-        html += '</div>';
+        html += '<div class="fm-exo-row">';
+        if (emoji) html += '<span class="fm-effort" style="background:'+bg+';color:'+col+'">'+emoji+'</span>';
+        html += '<span>'+escH(exo.name||'Exercice')+'</span></div>';
+        if (exo.note) html += '<div style="font-size:.7rem;color:#6b7280;font-style:italic;padding-left:28px;margin-bottom:3px;">'+escH(exo.note)+'</div>';
       });
-      html += '</div>';
     }
+    if (exoData && exoData.note && exoData.note.trim()) {
+      html += '<div class="fm-note">'+escH(exoData.note)+'</div>';
+    }
+  } else {
+    html += '<div class="fm-section">Retour athlète</div>';
+    html += '<div class="fm-empty">Aucun retour reçu.</div>';
   }
-  if(exoData && exoData.note && exoData.note.trim()){
-    html += '<div style="background:#fff;border-left:3px solid #4ade80;padding:6px 10px;border-radius:4px;font-size:.77rem;color:#374151;white-space:pre-wrap;">'+escH(exoData.note)+'</div>';
+
+  // EVA praticien
+  html += '<div class="fm-section">Évaluation praticien</div>';
+  html += '<div class="fm-sublbl">🩹 Douleur — 0 (aucune) → 10 (insupportable)</div>';
+  html += '<div class="fm-btns" id="fm-eva-btns">';
+  for (var i = 0; i <= 10; i++) {
+    html += '<button class="fm-btn" data-v="'+i+'" onclick="_feedbackSetEva('+i+')">'+i+'</button>';
   }
   html += '</div>';
+  html += '<button class="fm-save-btn" onclick="_feedbackSave(\''+sid+'\')">Enregistrer</button>';
 
-  panel.innerHTML = html;
-  panel.style.display = 'block';
+  // Adapter (CAP ou HSR)
+  if (isCAP || isHSR) {
+    html += '<div class="fm-section">Adapter la suite</div>';
+    html += '<div class="fm-adapt-row">';
+    if (isCAP) {
+      html += '<button class="fm-adapt-btn" onclick="_capAdaptFromBuilder(\'regression\')">↩ Régresser</button>';
+      html += '<button class="fm-adapt-btn" onclick="_capAdaptFromBuilder(\'maintain\')">↔ Maintenir</button>';
+    } else {
+      html += '<button class="fm-adapt-btn" onclick="_hsrAdaptFromBuilder(\'regression\')">↩ Régresser</button>';
+      html += '<button class="fm-adapt-btn" onclick="_hsrAdaptFromBuilder(\'maintain\')">↔ Maintenir</button>';
+    }
+    html += '</div>';
+  }
+
+  content.innerHTML = html;
+
+  // Restaurer EVA si déjà renseigné (feedback praticien existant sans exo_data)
+  if (fb && !fb.exo_data && fb.rpe !== null && fb.rpe !== undefined) {
+    _feedbackSetEva(fb.rpe);
+  }
+}
+
+function _feedbackSetEva(val) {
+  _feedbackEva = val;
+  document.querySelectorAll('#fm-eva-btns .fm-btn').forEach(function(b) {
+    var on = parseInt(b.dataset.v) === val;
+    var c = on ? (val<=2?'#22c55e':val<=4?'#84cc16':val<=6?'#f59e0b':val<=8?'#f97316':'#ef4444') : '';
+    b.style.background = on ? c : '';
+    b.style.color = on ? '#fff' : '';
+    b.style.borderColor = on ? c : '';
+  });
+}
+
+function _feedbackSave(sid) {
+  if (_feedbackEva === null) { _showToast('Sélectionne un score de douleur (0–10).'); return; }
+  if (!sid) return;
+  var btn = document.querySelector('.fm-save-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Envoi…'; }
+  _fetchRetry(SUPA_URL_P + '/rest/v1/athlete_feedback', {
+    method: 'POST',
+    headers: Object.assign({}, _sbHeaders(), { 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
+    body: JSON.stringify({ seance_id: sid, rpe: _feedbackEva, submitted_at: new Date().toISOString() })
+  }).then(function(r) {
+    if (!r.ok) { _showToast('Erreur enregistrement.'); if(btn){btn.disabled=false;btn.textContent='Enregistrer';} return; }
+    if (btn) { btn.textContent = '✓ Enregistré'; btn.style.background = '#15803d'; }
+    renderCalendar();
+  }).catch(function() {
+    _showToast('Erreur réseau.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Enregistrer'; }
+  });
 }
 
 /* ── Popover jour complet (overflow chips) ── */
@@ -5242,6 +5324,9 @@ function _exitBuilderMode(){
   if(banner){ banner.style.display = 'none'; banner.innerHTML = ''; banner.className = ''; }
   var capBanner = document.getElementById('cap-builder-banner');
   if(capBanner){ capBanner.style.display = 'none'; capBanner.innerHTML = ''; }
+  _closeFeedbackModal();
+  var fbBtn = document.getElementById('builder-feedback-btn');
+  if (fbBtn) fbBtn.style.display = 'none';
 }
 
 function openBuilderForDate(dateStr){
@@ -9372,9 +9457,6 @@ function _renderCapBuilderBanner(donnees, seanceId) {
     html += '</ul>';
   }
 
-  html += '<div id="cap-bb-feedback" style="border-top:1px solid #99f6e4;margin-top:6px;padding-top:8px;">'
-    + '<div style="font-size:.7rem;color:#6b7a8d;font-style:italic;">Chargement…</div></div>';
-
   html += '</div>'; // cap-bb-body
 
   banner.innerHTML = html;
@@ -9383,10 +9465,13 @@ function _renderCapBuilderBanner(donnees, seanceId) {
   if (seanceId) {
     _fetchRetry(SUPA_URL_P + '/rest/v1/athlete_feedback?seance_id=eq.' + seanceId, { headers: _sbHeaders() })
       .then(function(r){ return r.json(); })
-      .then(function(arr){ _capRenderFeedback((Array.isArray(arr) && arr.length) ? arr[0] : null, pathoInfo.seuil || 3); })
-      .catch(function(){ _capRenderFeedback(null, pathoInfo.seuil || 3); });
+      .then(function(arr){
+        var fb = Array.isArray(arr) && arr.length ? arr[0] : null;
+        _updateFeedbackBtn(!!(fb && (fb.exo_data || fb.rpe !== null)));
+      })
+      .catch(function(){ _updateFeedbackBtn(false); });
   } else {
-    _capRenderFeedback(null, pathoInfo.seuil || 3);
+    _updateFeedbackBtn(false);
   }
 }
 
@@ -9400,122 +9485,7 @@ function _capBbToggle() {
   if (summary) summary.style.display = _capBbCollapsed ? 'block' : 'none';
 }
 
-function _capRenderFeedback(existing, seuil) {
-  var fb = document.getElementById('cap-bb-feedback');
-  if (!fb) return;
-
-  _capBbEva = existing ? existing.rpe        : null;
-  _capBbRpe = existing ? existing.duree_min  : null;
-
-  // Mettre à jour la ligne résumé (visible quand replié)
-  var summary = document.getElementById('cap-bb-summary');
-  if (summary) {
-    if (existing) {
-      var sc = _capBbEva !== null ? (' 🩹 <strong style="color:'+_capEvaColor(_capBbEva)+'">'+_capBbEva+'/10</strong>') : '';
-      var se = _capBbRpe ? (' 💪 <strong>'+_capBbRpe+'/10</strong>') : '';
-      summary.innerHTML = sc + se || 'Non renseigné';
-    } else {
-      summary.textContent = 'Non renseigné';
-    }
-  }
-
-  var fromPatient = !!existing;
-  var html = '';
-
-  // Source badge
-  html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">'
-    + '<span class="cap-bb-section-title">Feedback séance</span>'
-    + (fromPatient
-        ? '<span style="font-size:.62rem;background:#e0f2fe;color:#0369a1;border-radius:4px;padding:1px 5px;font-weight:600;">patient</span>'
-        : '<span style="font-size:.62rem;color:#9ca3af;">Non renseigné</span>')
-    + '</div>';
-
-  // EVA
-  html += '<div style="font-size:.67rem;color:#6b7a8d;margin-bottom:3px;">🩹 Douleur — 0 (aucune) → 10 (insupportable)</div>';
-  html += '<div class="cap-bb-btns" id="cap-bb-eva-btns">';
-  for (var i = 0; i <= 10; i++) {
-    var onE = (_capBbEva === i);
-    var cE  = onE ? _capEvaColor(i) : '';
-    html += '<button class="cap-bb-btn" data-v="'+i+'" style="'+(onE?'background:'+cE+';color:#fff;border-color:'+cE+';':'')+'" onclick="_capBbSetEva('+i+')">'+i+'</button>';
-  }
-  html += '</div>';
-
-  // RPE
-  html += '<div style="font-size:.67rem;color:#6b7a8d;margin:6px 0 3px;">💪 Effort Borg — 1 (facile) → 10 (max)</div>';
-  html += '<div class="cap-bb-btns" id="cap-bb-rpe-btns">';
-  for (var j = 1; j <= 10; j++) {
-    var onR = (_capBbRpe === j);
-    html += '<button class="cap-bb-btn" data-v="'+j+'" style="'+(onR?'background:#2B5FA6;color:#fff;border-color:#2B5FA6;':'')+'" onclick="_capBbSetRpe('+j+')">'+j+'</button>';
-  }
-  html += '</div>';
-
-  // Tendance
-  var trend = _capGetTrend(_capBbSeanceId);
-  if (trend.length) {
-    html += '<div style="font-size:.67rem;color:#6b7a8d;margin-top:6px;">Tendance : ';
-    trend.forEach(function(t, ti){
-      if(ti>0) html += ' → ';
-      html += '<strong style="color:'+_capEvaColor(t)+';">'+t+'</strong>';
-    });
-    html += '</div>';
-  }
-
-  // Save button
-  if (_capBbSeanceId) {
-    html += '<button class="cap-bb-save-btn" id="cap-bb-save-btn" onclick="_capBbSaveFeedback()"><svg style="vertical-align:middle;margin-right:4px" width="15" height="15" fill="currentColor" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><g><path d="m28.702 8.564-4.273-5c-.795-.93-1.954-1.464-3.18-1.464h-14.771c-2.306 0-4.182 1.877-4.182 4.183v19.436c0 2.306 1.876 4.183 4.182 4.183h19.045c2.306 0 4.183-1.877 4.183-4.183v-14.437c-.001-.995-.357-1.96-1.004-2.718zm-6.962 19.536h-11.481v-8.173c0-.631.514-1.144 1.145-1.144h9.191c.631 0 1.145.513 1.145 1.144zm6.164-2.382c0 1.313-1.068 2.382-2.382 2.382h-1.981v-8.173c0-1.623-1.321-2.944-2.945-2.944h-9.191c-1.624 0-2.945 1.321-2.945 2.944v8.173h-1.982c-1.313 0-2.382-1.068-2.382-2.382v-19.436c0-1.313 1.069-2.382 2.382-2.382h14.771c.698 0 1.358.304 1.811.834l4.273 4.999c.369.432.571.982.571 1.549z"/><path d="m9.359 9.31h5.963c.497 0 .9-.403.9-.9s-.403-.9-.9-.9h-5.963c-.497 0-.9.403-.9.9s.403.9.9.9z"/><path d="m22.641 11.572h-13.282c-.497 0-.9.403-.9.9s.403.9.9.9h13.281c.497 0 .9-.403.9-.9s-.402-.9-.899-.9z"/></g></svg>Enregistrer le feedback</button>';
-  }
-
-  // Séparateur + Adapter
-  html += '<hr class="cap-bb-sep">';
-  html += '<div class="cap-bb-section-title" style="margin-bottom:6px;">Adapter la suite du programme</div>';
-  html += '<div class="cap-bb-adapt-row">';
-  html += '<button class="cap-bb-adapt-btn" onclick="_capAdaptFromBuilder(\'regression\')" title="Prochaine séance = séance précédente">↩ Régresser</button>';
-  html += '<button class="cap-bb-adapt-btn" onclick="_capAdaptFromBuilder(\'maintain\')" title="Prochaine séance = répétition de celle-ci">↔ Maintenir</button>';
-  html += '</div>';
-
-  fb.innerHTML = html;
-}
-
-function _capBbSetEva(val) {
-  _capBbEva = val;
-  document.querySelectorAll('#cap-bb-eva-btns .cap-bb-btn').forEach(function(b){
-    var on = parseInt(b.dataset.v) === val;
-    var c  = _capEvaColor(val);
-    b.style.background  = on ? c : '';
-    b.style.color       = on ? '#fff' : '';
-    b.style.borderColor = on ? c : '';
-  });
-}
-
-function _capBbSetRpe(val) {
-  _capBbRpe = val;
-  document.querySelectorAll('#cap-bb-rpe-btns .cap-bb-btn').forEach(function(b){
-    var on = parseInt(b.dataset.v) === val;
-    b.style.background  = on ? '#2B5FA6' : '';
-    b.style.color       = on ? '#fff' : '';
-    b.style.borderColor = on ? '#2B5FA6' : '';
-  });
-}
-
-function _capBbSaveFeedback() {
-  if (_capBbEva === null) { _showToast('Sélectionne un score de douleur (0–10).'); return; }
-  if (!_capBbRpe)         { _showToast('Sélectionne un effort Borg (1–10).'); return; }
-  if (!_capBbSeanceId)    return;
-  var btn = document.getElementById('cap-bb-save-btn');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Envoi…'; }
-  _fetchRetry(SUPA_URL_P + '/rest/v1/athlete_feedback', {
-    method: 'POST',
-    headers: Object.assign({}, _sbHeaders(), { 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
-    body: JSON.stringify({ seance_id: _capBbSeanceId, rpe: _capBbEva, duree_min: _capBbRpe, submitted_at: new Date().toISOString() })
-  }).then(function(r){
-    if (!r.ok) { _showToast('Erreur enregistrement.'); if(btn){btn.disabled=false;btn.innerHTML = _PROG_SAVE_ICON + 'Enregistrer le feedback';} return; }
-    if (btn) { btn.textContent = '✓ Enregistré'; btn.style.background = '#15803d'; }
-    renderCalendar();
-  }).catch(function(){
-    _showToast('Erreur réseau.');
-    if (btn) { btn.disabled = false; btn.innerHTML = _PROG_SAVE_ICON + 'Enregistrer le feedback'; }
-  });
-}
+function _capRenderFeedback() { /* remplacé par _openFeedbackModal */ }
 
 function _capAdaptFromBuilder(mode) {
   if (!_capBbSeanceId || !_capBbDonnees || !_progPatient) {
@@ -10071,9 +10041,6 @@ function _renderHsrBuilderBanner(donnees, seanceId) {
     + '<button class="hsr-bb-save-btn" style="padding:3px 8px;font-size:.67rem;" onclick="_hsrSaveRef1RM()">Mettre à jour →</button>'
     + '</div>';
 
-  html += '<div id="hsr-bb-feedback" style="border-top:1px solid #86efac;margin-top:6px;padding-top:8px;">'
-    + '<div style="font-size:.7rem;color:#6b7a8d;font-style:italic;">Chargement…</div></div>';
-
   html += '</div>'; // hsr-bb-body
 
   banner.innerHTML = html;
@@ -10082,10 +10049,13 @@ function _renderHsrBuilderBanner(donnees, seanceId) {
   if (seanceId) {
     _fetchRetry(SUPA_URL_P + '/rest/v1/athlete_feedback?seance_id=eq.' + seanceId, { headers: _sbHeaders() })
       .then(function(r){ return r.json(); })
-      .then(function(arr){ _hsrRenderFeedback((Array.isArray(arr) && arr.length) ? arr[0] : null); })
-      .catch(function(){ _hsrRenderFeedback(null); });
+      .then(function(arr){
+        var fb = Array.isArray(arr) && arr.length ? arr[0] : null;
+        _updateFeedbackBtn(!!(fb && (fb.exo_data || fb.rpe !== null)));
+      })
+      .catch(function(){ _updateFeedbackBtn(false); });
   } else {
-    _hsrRenderFeedback(null);
+    _updateFeedbackBtn(false);
   }
 }
 
@@ -10116,94 +10086,4 @@ function _hsrSaveRef1RM() {
   });
 }
 
-function _hsrRenderFeedback(existing) {
-  var fb = document.getElementById('hsr-bb-feedback');
-  if (!fb) return;
-
-  _hsrBbEva = existing ? existing.rpe       : null;
-  _hsrBbRpe = existing ? existing.duree_min : null;
-
-  var summary = document.getElementById('hsr-bb-summary');
-  if (summary) {
-    var _sd = _hsrBbDonnees || {};
-    var _sCharge = _sd.ref1RM ? Math.round(_sd.ref1RM * (_sd.pct || 65) / 100 * 2) / 2 : null;
-    var _sPresc = _sCharge !== null
-      ? '<strong>' + (_sd.sets||'?') + '×' + (_sd.reps||'?') + '</strong> · <strong>' + _sCharge + ' kg</strong>'
-      : '';
-    var sc = _hsrBbEva !== null ? (' · 🩹 <strong style="color:'+_hsrEvaColor(_hsrBbEva)+'">'+_hsrBbEva+'/10</strong>') : '';
-    var se = _hsrBbRpe  ? (' · 💪 <strong>'+_hsrBbRpe+'/10</strong>') : '';
-    summary.innerHTML = _sPresc + sc + se || 'Non renseigné';
-  }
-
-  var fromPatient = !!existing;
-  var html = '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">'
-    + '<span style="font-size:.67rem;font-weight:700;color:#15803d;text-transform:uppercase;letter-spacing:.05em;">Feedback séance</span>'
-    + (fromPatient
-        ? '<span style="font-size:.62rem;background:#dcfce7;color:#15803d;border-radius:4px;padding:1px 5px;font-weight:600;">patient</span>'
-        : '<span style="font-size:.62rem;color:#9ca3af;">Non renseigné</span>')
-    + '</div>';
-
-  html += '<div style="font-size:.67rem;color:#6b7a8d;margin-bottom:3px;">🩹 Douleur — 0 (aucune) → 10 (insupportable)</div>';
-  html += '<div class="hsr-bb-btns" id="hsr-bb-eva-btns">';
-  for (var i = 0; i <= 10; i++) {
-    var onE = (_hsrBbEva === i);
-    var cE  = onE ? _hsrEvaColor(i) : '';
-    html += '<button class="hsr-bb-btn" data-v="'+i+'" style="'+(onE?'background:'+cE+';color:#fff;border-color:'+cE+';':'')+'" onclick="_hsrBbSetEva('+i+')">'+i+'</button>';
-  }
-  html += '</div>';
-
-  html += '<div style="font-size:.67rem;color:#6b7a8d;margin:6px 0 3px;">💪 Effort Borg — 1 (facile) → 10 (max)</div>';
-  html += '<div class="hsr-bb-btns" id="hsr-bb-rpe-btns">';
-  for (var j = 1; j <= 10; j++) {
-    var onR = (_hsrBbRpe === j);
-    html += '<button class="hsr-bb-btn" data-v="'+j+'" style="'+(onR?'background:#2B5FA6;color:#fff;border-color:#2B5FA6;':'')+'" onclick="_hsrBbSetRpe('+j+')">'+j+'</button>';
-  }
-  html += '</div>';
-
-  if (_hsrBbSeanceId) {
-    html += '<button class="hsr-bb-save-btn" id="hsr-bb-save-btn" onclick="_hsrBbSaveFeedback()"><svg style="vertical-align:middle;margin-right:4px" width="15" height="15" fill="currentColor" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><g><path d="m28.702 8.564-4.273-5c-.795-.93-1.954-1.464-3.18-1.464h-14.771c-2.306 0-4.182 1.877-4.182 4.183v19.436c0 2.306 1.876 4.183 4.182 4.183h19.045c2.306 0 4.183-1.877 4.183-4.183v-14.437c-.001-.995-.357-1.96-1.004-2.718zm-6.962 19.536h-11.481v-8.173c0-.631.514-1.144 1.145-1.144h9.191c.631 0 1.145.513 1.145 1.144zm6.164-2.382c0 1.313-1.068 2.382-2.382 2.382h-1.981v-8.173c0-1.623-1.321-2.944-2.945-2.944h-9.191c-1.624 0-2.945 1.321-2.945 2.944v8.173h-1.982c-1.313 0-2.382-1.068-2.382-2.382v-19.436c0-1.313 1.069-2.382 2.382-2.382h14.771c.698 0 1.358.304 1.811.834l4.273 4.999c.369.432.571.982.571 1.549z"/><path d="m9.359 9.31h5.963c.497 0 .9-.403.9-.9s-.403-.9-.9-.9h-5.963c-.497 0-.9.403-.9.9s.403.9.9.9z"/><path d="m22.641 11.572h-13.282c-.497 0-.9.403-.9.9s.403.9.9.9h13.281c.497 0 .9-.403.9-.9s-.402-.9-.899-.9z"/></g></svg>Enregistrer le feedback</button>';
-  }
-
-  fb.innerHTML = html;
-}
-
-function _hsrBbSetEva(val) {
-  _hsrBbEva = val;
-  document.querySelectorAll('#hsr-bb-eva-btns .hsr-bb-btn').forEach(function(b){
-    var on = parseInt(b.dataset.v) === val;
-    var c  = _hsrEvaColor(val);
-    b.style.background  = on ? c : '';
-    b.style.color       = on ? '#fff' : '';
-    b.style.borderColor = on ? c : '';
-  });
-}
-
-function _hsrBbSetRpe(val) {
-  _hsrBbRpe = val;
-  document.querySelectorAll('#hsr-bb-rpe-btns .hsr-bb-btn').forEach(function(b){
-    var on = parseInt(b.dataset.v) === val;
-    b.style.background  = on ? '#2B5FA6' : '';
-    b.style.color       = on ? '#fff' : '';
-    b.style.borderColor = on ? '#2B5FA6' : '';
-  });
-}
-
-function _hsrBbSaveFeedback() {
-  if (_hsrBbEva === null) { _showToast('Sélectionne un score de douleur (0–10).'); return; }
-  if (!_hsrBbRpe)         { _showToast('Sélectionne un effort Borg (1–10).'); return; }
-  if (!_hsrBbSeanceId)    return;
-  var btn = document.getElementById('hsr-bb-save-btn');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Envoi…'; }
-  _fetchRetry(SUPA_URL_P + '/rest/v1/athlete_feedback', {
-    method:  'POST',
-    headers: Object.assign({}, _sbHeaders(), { 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
-    body:    JSON.stringify({ seance_id: _hsrBbSeanceId, rpe: _hsrBbEva, duree_min: _hsrBbRpe, submitted_at: new Date().toISOString() })
-  }).then(function(r){
-    if (!r.ok) { _showToast('Erreur enregistrement.'); if(btn){btn.disabled=false;btn.innerHTML = _PROG_SAVE_ICON + 'Enregistrer le feedback';} return; }
-    if (btn) { btn.textContent = '✓ Enregistré'; btn.style.background = '#15803d'; }
-    renderCalendar();
-  }).catch(function(){
-    _showToast('Erreur réseau.');
-    if (btn) { btn.disabled = false; btn.innerHTML = _PROG_SAVE_ICON + 'Enregistrer le feedback'; }
-  });
-}
+function _hsrRenderFeedback() { /* remplacé par _openFeedbackModal */ }
