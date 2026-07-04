@@ -672,6 +672,8 @@ function renderProgInMain(prog){
     var blocs = Array.isArray(raw) ? raw : (raw.blocs || []);
     _loadPainRatings();
     _loadSessionNote();
+    _initExoEffortsFromFeedback(existing && existing.exo_data);
+    html = isCap ? _buildCapProgHTML(prog) : (isHsr ? _buildHsrProgHTML(prog) : buildProgHTML(prog));
     html += (isCap || isHsr) ? _buildCapPainCard(_seanceId, existing) : buildRpeCard(_seanceId, blocs, existing);
     document.getElementById('mainContent').innerHTML = html;
   })
@@ -1281,6 +1283,7 @@ function openProgModal(progId, seanceId){
     var donnees = prog.donnees || {};
     var isCap = donnees.type === 'cap' || (prog.nom && prog.nom.indexOf('CAP —') === 0);
     var isHsr = donnees.type === 'hsr' || (prog.nom && prog.nom.indexOf('HSR —') === 0);
+    _initExoEffortsFromFeedback(existing && existing.exo_data);
     var html = isCap ? _buildCapProgHTML(prog) : (isHsr ? _buildHsrProgHTML(prog) : buildProgHTML(prog));
     if(seanceId) html += (isCap || isHsr) ? _buildCapPainCard(seanceId, existing) : buildRpeCard(seanceId, blocs, existing);
     document.getElementById('progModalBody').innerHTML = html;
@@ -1526,6 +1529,16 @@ function buildProgHTML(prog){
         r += '<button class="pain-btn'+_sel+'" data-v="'+_pv+'" data-key="'+_eKey+'" onclick="_setPain(\''+_eKey+'\','+_pv+')">'+_pv+'</button>';
       }
       r += '</div></div>';
+      // Ressenti effort inline
+      var _effVal = _exoEfforts[_eKey] || 0;
+      r += '<div class="exo-pain-v3" style="margin-top:4px;"><span class="exo-pain-label">Ressenti</span><div style="display:flex;gap:4px;">';
+      [1,2,3].forEach(function(v){
+        var _emoji = v===1?'😌':v===2?'😐':'😓';
+        r += '<button class="exo-effort-btn'+((_effVal===v)?' active':'')+'" data-ekey="'+_eKey+'" data-val="'+v+'" onclick="_setExoEffort(\''+_eKey+'\','+v+')">'+_emoji+'</button>';
+      });
+      r += '</div></div>';
+      var _initNote = _existingExoNotes[_eKey] || '';
+      r += '<textarea id="exoNote-'+_eKey+'" class="exo-exo-note-inp" placeholder="Remarque…" rows="1" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'">'+escH(_initNote)+'</textarea>';
       r += '</div>';
       return r;
     }
@@ -1622,6 +1635,19 @@ var _currentSeanceId = '';
 var _currentDureeMin = 0;
 var _currentRpe = 0;
 var _exoEfforts = {};
+var _existingExoNotes = {}; // notes par exercice chargées depuis exo_data existant
+var _currentBlocs = []; // blocs de la séance courante (pour _submitRpe)
+
+function _initExoEffortsFromFeedback(existingExoData) {
+  _exoEfforts = {};
+  _existingExoNotes = {};
+  var existingExos = (existingExoData && existingExoData.exos) ? existingExoData.exos : [];
+  existingExos.forEach(function(ex) {
+    if(!ex.key) return;
+    if(ex.effort) _exoEfforts[ex.key] = ex.effort;
+    if(ex.note) _existingExoNotes[ex.key] = ex.note;
+  });
+}
 
 function _rpeGetDuree(){
   var inp = document.getElementById('rpeDureeInp');
@@ -1660,50 +1686,7 @@ function _toggleExoAccordion(){
   }
 }
 
-function buildExoFeedbackSection(blocs, existingExoData){
-  _exoEfforts = {};
-  var existingExos = (existingExoData && existingExoData.exos) ? existingExoData.exos : [];
-  existingExos.forEach(function(ex){ if(ex.key && ex.effort) _exoEfforts[ex.key] = ex.effort; });
-
-  var rows = [];
-  (blocs||[]).forEach(function(b, bi){
-    (b.exos||[]).forEach(function(e, ei){
-      if(!e.name) return;
-      rows.push({ key: 'b'+bi+'e'+ei, name: e.name });
-    });
-  });
-  if(!rows.length) return '';
-
-  var initNote = (existingExoData && existingExoData.note) ? existingExoData.note : '';
-
-  var html = '<div style="margin-top:12px;">';
-  html += '<button class="exo-accordion-toggle" onclick="_toggleExoAccordion()">▸ <span id="exoAccordionLbl">Détailler mes exercices</span></button>';
-  html += '<div class="exo-accordion-body" id="exoAccordionBody">';
-  html += '<div style="font-size:.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Comment as-tu vécu chaque exercice ?</div>';
-  rows.forEach(function(row){
-    var eff = _exoEfforts[row.key] || 0;
-    var existingExo = existingExos.find(function(ex){ return ex.key===row.key; });
-    var initExoNote = (existingExo && existingExo.note) ? existingExo.note : '';
-    html += '<div class="exo-feedback-row">';
-    html += '<div style="flex:1;min-width:0;">';
-    html += '<div style="display:flex;align-items:center;gap:8px;">';
-    html += '<span class="exo-feedback-name">'+escH(row.name)+'</span>';
-    [1,2,3].forEach(function(v){
-      var emoji = v===1 ? '😌' : v===2 ? '😐' : '😓';
-      html += '<button class="exo-effort-btn'+(eff===v?' active':'')+'" data-ekey="'+row.key+'" data-val="'+v+'" onclick="_setExoEffort(\''+row.key+'\','+v+')">'+emoji+'</button>';
-    });
-    html += '</div>';
-    html += '<textarea id="exoNote-'+row.key+'" class="exo-exo-note-inp" placeholder="Remarque…" rows="1" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'">'+escH(initExoNote)+'</textarea>';
-    html += '</div>';
-    html += '</div>';
-  });
-  html += '<div style="margin-top:10px;">';
-  html += '<div style="font-size:.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;">Remarques générales</div>';
-  html += '<textarea class="exo-global-note-ta" id="exoGlobalNoteTA" placeholder="Douleurs, difficultés, sensations…" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'">'+escH(initNote)+'</textarea>';
-  html += '</div>';
-  html += '</div></div>';
-  return html;
-}
+function buildExoFeedbackSection(){ return ''; } // fusionné dans les cartes exercice
 
 function _setRpe(val){
   _currentRpe = val;
@@ -1729,18 +1712,31 @@ function _submitRpe(){
   var btn = document.getElementById('rpeSubmitBtn');
   if(btn){ btn.disabled=true; btn.textContent='⏳ Envoi…'; }
 
-  // Collecter le feedback par exercice
+  // Collecter le feedback par exercice depuis _currentBlocs
   var exoRows = [];
-  document.querySelectorAll('.exo-feedback-row').forEach(function(row){
-    var nameEl = row.querySelector('.exo-feedback-name');
-    var firstBtn = row.querySelector('.exo-effort-btn[data-ekey]');
-    if(!nameEl || !firstBtn) return;
-    var key = firstBtn.getAttribute('data-ekey');
-    var effort = _exoEfforts[key] || 0;
-    var noteInp = document.getElementById('exoNote-'+key);
-    var exoNote = noteInp ? noteInp.value.trim() : '';
-    var pain = (_painRatings[key] !== undefined && _painRatings[key] !== null) ? _painRatings[key] : null;
-    if(effort > 0 || exoNote || pain !== null) exoRows.push({ key: key, name: nameEl.textContent, effort: effort, note: exoNote, pain: pain });
+  (_currentBlocs||[]).forEach(function(b, bi){
+    if(b.type === 'cardio'){
+      var cKey = 'cardio-'+bi;
+      var cPain = (_painRatings[cKey] !== undefined) ? _painRatings[cKey] : null;
+      var sport = b.sport || 'Cardio';
+      if(cPain !== null) exoRows.push({ key: cKey, name: sport, pain: cPain });
+      return;
+    }
+    (b.exos||[]).forEach(function(e, ei){
+      if(!e.name) return;
+      var eKey = _exoKey(bi, ei);
+      var pain = (_painRatings[eKey] !== undefined) ? _painRatings[eKey] : null;
+      var effort = _exoEfforts[eKey] || 0;
+      var noteInp = document.getElementById('exoNote-'+eKey);
+      var note = noteInp ? noteInp.value.trim() : '';
+      if(pain !== null || effort > 0 || note) {
+        var row = { key: eKey, name: e.name };
+        if(pain !== null) row.pain = pain;
+        if(effort > 0) row.effort = effort;
+        if(note) row.note = note;
+        exoRows.push(row);
+      }
+    });
   });
   var globalNote = ((document.getElementById('exoGlobalNoteTA')||{}).value||'').trim();
   var exoData = (exoRows.length || globalNote) ? { exos: exoRows, note: globalNote } : null;
@@ -1800,6 +1796,7 @@ function buildSessionNoteCard(){
 
 function buildRpeCard(seanceId, blocs, existing){
   _currentSeanceId = seanceId || '';
+  _currentBlocs = blocs || [];
   _currentDureeMin = _calcSessionDuree(blocs);
   _currentRpe = (existing&&existing.rpe) ? existing.rpe : 0;
 
@@ -1823,8 +1820,9 @@ function buildRpeCard(seanceId, blocs, existing){
     html += '<div class="rpe-ua-display" id="rpeUaDisplay"></div>';
   }
   if(existing&&existing.rpe) html += '<div class="rpe-already">✓ Déjà envoyé — tu peux modifier ton ressenti</div>';
+  var initGlobalNote = (existing&&existing.exo_data&&existing.exo_data.note) ? existing.exo_data.note : '';
+  html += '<textarea class="exo-global-note-ta" id="exoGlobalNoteTA" placeholder="Remarques générales (douleurs, difficultés, sensations…)" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'">'+escH(initGlobalNote)+'</textarea>';
   html += '<button class="rpe-submit-btn" id="rpeSubmitBtn" onclick="_submitRpe()">Envoyer mon ressenti</button>';
-  html += buildExoFeedbackSection(blocs, existing && existing.exo_data);
   html += '</div>';
   return html;
 }
