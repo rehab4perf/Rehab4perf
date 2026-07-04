@@ -1295,30 +1295,55 @@ function _feedbackRenderContent(fb, sid) {
   } else {
     // Séance standard : rpe = effort Borg, duree_min = durée réelle
     var ua = (fb.rpe||0) * (fb.duree_min||0);
-    html += '<div class="fm-chips">';
-    if (fb.rpe !== null && fb.rpe !== undefined) html += '<span class="fm-chip-g">Effort '+fb.rpe+'/10</span>';
-    if (fb.duree_min) html += '<span class="fm-chip-n">⏱ '+fb.duree_min+' min</span>';
-    if (ua) html += '<span class="fm-chip-n">⚡ '+ua+' UA</span>';
-    html += '</div>';
     var exoData = fb.exo_data;
-    if (exoData && exoData.exos) {
-      exoData.exos.forEach(function(exo) {
-        var hasPain = exo.pain !== null && exo.pain !== undefined;
-        if (!exo.effort && !exo.note && !hasPain) return;
-        var emoji = exo.effort===1?'😌':exo.effort===2?'😐':exo.effort===3?'😓':'';
-        var bg  = exo.effort===1?'#dcfce7':exo.effort===2?'#fef9c3':exo.effort===3?'#fee2e2':'#f1f5f9';
-        var col = exo.effort===1?'#166534':exo.effort===2?'#713f12':exo.effort===3?'#991b1b':'#475569';
-        html += '<div class="fm-exo-row">';
-        if (emoji) html += '<span class="fm-effort" style="background:'+bg+';color:'+col+'">'+emoji+'</span>';
-        html += '<span style="flex:1">'+escH(exo.name||'Exercice')+'</span>';
-        if (hasPain) {
-          var pc2 = exo.pain<=2?'#22c55e':exo.pain<=4?'#84cc16':exo.pain<=6?'#f59e0b':exo.pain<=8?'#f97316':'#ef4444';
-          html += '<span style="font-size:.7rem;font-weight:700;color:'+pc2+'">🩹 '+exo.pain+'</span>';
-        }
-        html += '</div>';
-        if (exo.note) html += '<div style="font-size:.7rem;color:#6b7280;font-style:italic;padding-left:28px;margin-bottom:3px;">'+escH(exo.note)+'</div>';
-      });
+    var exos = (exoData && exoData.exos) ? exoData.exos : [];
+    var withPain = exos.filter(function(e){ return e.pain !== null && e.pain !== undefined && e.pain > 0; })
+                       .sort(function(a,b){ return b.pain - a.pain; });
+    var noteOnly = exos.filter(function(e){ return (e.pain === null || e.pain === undefined || e.pain === 0) && e.note; });
+    var rasCount = exos.filter(function(e){ return e.pain === 0 && !e.note; }).length;
+
+    // 1. Bandeau alerte : douleur max signalée
+    if (withPain.length) {
+      var maxExo = withPain[0];
+      var mp = maxExo.pain;
+      var aBg  = mp>=7?'#fef2f2':mp>=4?'#fff7ed':'#fefce8';
+      var aBrd = mp>=7?'#fca5a5':mp>=4?'#fed7aa':'#fde047';
+      var aCol = mp>=7?'#991b1b':mp>=4?'#9a3412':'#92400e';
+      html += '<div class="fm-alert" style="background:'+aBg+';border:.5px solid '+aBrd+'">'
+        + '<span class="fm-alert-num" style="color:'+aCol+'">'+mp+'/10</span>'
+        + '<span class="fm-alert-txt" style="color:'+aCol+'">Douleur max signalée<br><strong>'+escH(maxExo.name||'Exercice')+'</strong></span>'
+        + '</div>';
     }
+
+    // 2. Chiffres clés
+    html += '<div class="fm-stats">';
+    html += '<div class="fm-stat"><div class="fm-stat-v">'+((fb.rpe !== null && fb.rpe !== undefined)?fb.rpe:'—')+'</div><div class="fm-stat-l">RPE</div></div>';
+    html += '<div class="fm-stat"><div class="fm-stat-v">'+(fb.duree_min?fb.duree_min+' min':'—')+'</div><div class="fm-stat-l">Durée</div></div>';
+    html += '<div class="fm-stat"><div class="fm-stat-v">'+(ua||'—')+'</div><div class="fm-stat-l">UA</div></div>';
+    html += '</div>';
+
+    // 3. Exercices douloureux (triés) puis notes seules
+    withPain.forEach(function(exo) {
+      var pc2 = exo.pain<=2?'#dcfce7':exo.pain<=4?'#fef9c3':exo.pain<=6?'#ffedd5':'#fee2e2';
+      var pt2 = exo.pain<=2?'#166534':exo.pain<=4?'#713f12':exo.pain<=6?'#9a3412':'#991b1b';
+      html += '<div class="fm-exo-row">'
+        + '<span class="fm-pain-pill" style="background:'+pc2+';color:'+pt2+'">'+exo.pain+'</span>'
+        + '<span style="flex:1">'+escH(exo.name||'Exercice')+'</span>'
+        + '</div>';
+      if (exo.note) html += '<div style="font-size:.7rem;color:#6b7280;font-style:italic;padding-left:38px;margin-bottom:3px;">'+escH(exo.note)+'</div>';
+    });
+    noteOnly.forEach(function(exo) {
+      html += '<div class="fm-exo-row">'
+        + '<span class="fm-pain-pill" style="background:#f1f5f9;color:#64748b">💬</span>'
+        + '<span style="flex:1">'+escH(exo.name||'Exercice')+'</span>'
+        + '</div>'
+        + '<div style="font-size:.7rem;color:#6b7280;font-style:italic;padding-left:38px;margin-bottom:3px;">'+escH(exo.note)+'</div>';
+    });
+
+    // 4. RAS repliés en une ligne
+    if (rasCount) html += '<div class="fm-ras">✓ '+rasCount+' exercice'+(rasCount>1?'s':'')+' sans douleur</div>';
+
+    // Note globale de séance
     if (exoData && exoData.note && exoData.note.trim()) {
       html += '<div class="fm-note">'+escH(exoData.note)+'</div>';
     }

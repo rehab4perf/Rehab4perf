@@ -145,39 +145,40 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
 }
 .chain-link { text-align:center; font-size:.7rem; color:var(--accent2); padding:3px 0; font-weight:600; }
 
-/* Pain rating per exercise */
-.exo-pain { margin-top:8px; }
-.exo-pain-label { font-size:.68rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom:5px; }
-.exo-pain-btns { display:flex; gap:3px; flex-wrap:wrap; }
-.pain-btn {
-  width:28px; height:28px; border-radius:6px; border:1.5px solid transparent;
-  font-size:.72rem; font-weight:700; cursor:pointer; display:flex;
-  align-items:center; justify-content:center; transition:transform .1s, border-color .1s;
-  background:#f0f4f8; color:#6b7a8d;
+/* Pain slider per exercise */
+.exo-pain-slider-row { display:flex; align-items:center; gap:11px; margin-top:10px; }
+.exo-pain-num {
+  width:42px; height:42px; border-radius:10px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.15rem; font-weight:800; background:#f0f4f8; color:#9aa8b8;
+  transition:background .15s, color .15s; cursor:pointer; user-select:none;
 }
-.pain-btn:active { transform:scale(.92); }
-.pain-btn[data-v="0"]  { color:#27AE60; }
-.pain-btn[data-v="1"]  { color:#2ECC71; }
-.pain-btn[data-v="2"]  { color:#82D03E; }
-.pain-btn[data-v="3"]  { color:#A9CC3E; }
-.pain-btn[data-v="4"]  { color:#F4D03F; }
-.pain-btn[data-v="5"]  { color:#F39C12; }
-.pain-btn[data-v="6"]  { color:#E67E22; }
-.pain-btn[data-v="7"]  { color:#D35400; }
-.pain-btn[data-v="8"]  { color:#E74C3C; }
-.pain-btn[data-v="9"]  { color:#C0392B; }
-.pain-btn[data-v="10"] { color:#922B21; }
-.pain-btn[data-v="0"].selected  { background:#27AE60; color:#fff; border-color:#27AE60; }
-.pain-btn[data-v="1"].selected  { background:#2ECC71; color:#fff; border-color:#2ECC71; }
-.pain-btn[data-v="2"].selected  { background:#82D03E; color:#fff; border-color:#82D03E; }
-.pain-btn[data-v="3"].selected  { background:#A9CC3E; color:#fff; border-color:#A9CC3E; }
-.pain-btn[data-v="4"].selected  { background:#F4D03F; color:#1a2433; border-color:#F4D03F; }
-.pain-btn[data-v="5"].selected  { background:#F39C12; color:#fff; border-color:#F39C12; }
-.pain-btn[data-v="6"].selected  { background:#E67E22; color:#fff; border-color:#E67E22; }
-.pain-btn[data-v="7"].selected  { background:#D35400; color:#fff; border-color:#D35400; }
-.pain-btn[data-v="8"].selected  { background:#E74C3C; color:#fff; border-color:#E74C3C; }
-.pain-btn[data-v="9"].selected  { background:#C0392B; color:#fff; border-color:#C0392B; }
-.pain-btn[data-v="10"].selected { background:#922B21; color:#fff; border-color:#922B21; }
+.exo-pain-body { flex:1; min-width:0; }
+.pain-slider {
+  -webkit-appearance:none; appearance:none; width:100%; height:8px; border-radius:4px;
+  outline:none; margin:6px 0 0; display:block;
+  background:linear-gradient(to right,#27AE60 0%,#82D03E 20%,#F4D03F 40%,#F39C12 55%,#E67E22 70%,#E74C3C 85%,#922B21 100%);
+}
+.pain-slider::-webkit-slider-thumb {
+  -webkit-appearance:none; width:24px; height:24px; border-radius:50%;
+  background:#fff; border:2.5px solid #64748b; cursor:pointer;
+  box-shadow:0 1px 4px rgba(0,0,0,.25);
+}
+.pain-slider::-moz-range-thumb {
+  width:24px; height:24px; border-radius:50%; background:#fff; border:2.5px solid #64748b;
+  cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.25);
+}
+.exo-pain-caps { display:flex; justify-content:space-between; font-size:.6rem; color:var(--muted); margin-top:3px; }
+.exo-pain-state { font-size:.7rem; font-weight:700; margin-top:1px; min-height:13px; }
+.exo-note-toggle {
+  width:30px; height:30px; border-radius:8px; border:1.5px solid var(--border);
+  background:#fff; color:#9aa8b8; cursor:pointer; font-size:.85rem; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center; padding:0;
+  transition:border-color .12s, color .12s;
+}
+.exo-note-toggle.has-note { border-color:var(--accent2); color:var(--accent2); background:#eef3fb; }
+.exo-note-area { display:none; margin-top:6px; }
+.exo-note-area.open { display:block; }
 
 /* Session note */
 .session-note-section { background:var(--surface); border-radius:12px; border:1px solid var(--border); padding:14px 16px; margin-top:14px; }
@@ -431,11 +432,6 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
 }
 .exo-feedback-row:last-of-type { border-bottom:none; }
 .exo-feedback-name { flex:1; color:var(--navy); font-size:.8rem; font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.exo-effort-btn {
-  padding:4px 8px; border-radius:7px; border:1.5px solid var(--border);
-  background:#fff; font-size:1.05rem; cursor:pointer; transition:all .12s; flex-shrink:0;
-}
-.exo-effort-btn.active { border-color:var(--accent); background:#EEF3FB; transform:scale(1.15); }
 .exo-global-note-ta {
   margin-top:4px; width:100%; border:1px solid var(--border); border-radius:8px;
   padding:9px 12px; font-size:.83rem; font-family:inherit; color:var(--text);
@@ -1369,14 +1365,73 @@ function _savePainRatings(){
   try { localStorage.setItem('r4p-pain-'+_currentSeanceId, JSON.stringify(_painRatings)); } catch(e){}
 }
 
-window._setPain = function(key, val){
-  var newVal = _painRatings[key] === val ? undefined : val;
-  if(newVal === undefined) delete _painRatings[key]; else _painRatings[key] = newVal;
+var PAIN_COLORS = ['#27AE60','#2ECC71','#82D03E','#A9CC3E','#F4D03F','#F39C12','#E67E22','#D35400','#E74C3C','#C0392B','#922B21'];
+var PAIN_LABELS = ['Aucune douleur','Très légère','Légère','Légère','Modérée','Modérée','Importante','Importante','Forte','Très forte','Insupportable'];
+
+function _updatePainUI(key){
+  var v = _painRatings[key];
+  var num = document.getElementById('painNum-'+key);
+  var st  = document.getElementById('painState-'+key);
+  var sl  = document.getElementById('painSlider-'+key);
+  if(v === undefined){
+    if(num){ num.textContent='–'; num.style.background='#f0f4f8'; num.style.color='#9aa8b8'; }
+    if(st){ st.textContent='Douleur ? Glisse le curseur'; st.style.color='var(--muted)'; st.style.fontWeight='400'; }
+    if(sl) sl.value = 0;
+  } else {
+    if(num){ num.textContent=v; num.style.background=PAIN_COLORS[v]; num.style.color=(v===4?'#1a2433':'#fff'); }
+    if(st){ st.textContent=PAIN_LABELS[v]; st.style.color=PAIN_COLORS[v]; st.style.fontWeight='700'; }
+    if(sl) sl.value = v;
+  }
+}
+
+window._setPainSlider = function(key, val){
+  _painRatings[key] = parseInt(val);
   _savePainRatings();
-  document.querySelectorAll('.pain-btn[data-key="'+key+'"]').forEach(function(btn){
-    btn.classList.toggle('selected', newVal !== undefined && parseInt(btn.dataset.v) === newVal);
-  });
+  _updatePainUI(key);
 };
+
+/* Tap sur la pastille : note 0 (RAS) si vide, efface si renseigné */
+window._togglePainZero = function(key){
+  if(_painRatings[key] === undefined) _painRatings[key] = 0;
+  else delete _painRatings[key];
+  _savePainRatings();
+  _updatePainUI(key);
+};
+
+window._toggleExoNote = function(key){
+  var area = document.getElementById('exoNoteArea-'+key);
+  var tog  = document.getElementById('exoNoteToggle-'+key);
+  if(!area) return;
+  area.classList.toggle('open');
+  var isOpen = area.classList.contains('open');
+  if(tog) tog.classList.toggle('has-note', isOpen);
+  if(isOpen){
+    var ta = document.getElementById('exoNote-'+key);
+    if(ta){ ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; ta.focus(); }
+  }
+};
+
+/* Ligne curseur douleur (pastille + slider + 💬 optionnel) */
+function _buildPainSliderHTML(key, withNote, initNote){
+  var v = _painRatings[key];
+  var has = v !== undefined;
+  var numBg  = has ? PAIN_COLORS[v] : '#f0f4f8';
+  var numCol = has ? (v===4?'#1a2433':'#fff') : '#9aa8b8';
+  var stTxt  = has ? PAIN_LABELS[v] : 'Douleur ? Glisse le curseur';
+  var stCss  = has ? 'color:'+PAIN_COLORS[v] : 'color:var(--muted);font-weight:400';
+  var h = '<div class="exo-pain-slider-row">'
+    + '<div class="exo-pain-num" id="painNum-'+key+'" style="background:'+numBg+';color:'+numCol+'" onclick="_togglePainZero(\''+key+'\')" title="Toucher : aucune douleur / effacer">'+(has?v:'–')+'</div>'
+    + '<div class="exo-pain-body">'
+    + '<input type="range" class="pain-slider" id="painSlider-'+key+'" min="0" max="10" step="1" value="'+(has?v:0)+'" oninput="_setPainSlider(\''+key+'\',this.value)" onchange="_setPainSlider(\''+key+'\',this.value)">'
+    + '<div class="exo-pain-caps"><span>0 · aucune</span><span>10 · max</span></div>'
+    + '<div class="exo-pain-state" id="painState-'+key+'" style="'+stCss+'">'+stTxt+'</div>'
+    + '</div>';
+  if(withNote){
+    h += '<button class="exo-note-toggle'+(initNote?' has-note':'')+'" id="exoNoteToggle-'+key+'" onclick="_toggleExoNote(\''+key+'\')" title="Remarque">💬</button>';
+  }
+  h += '</div>';
+  return h;
+}
 
 window._toggleDone = function(key){
   _doneExos[key] = !_doneExos[key];
@@ -1432,13 +1487,7 @@ function buildProgHTML(prog){
       if(b.notes) html += '<div class="exo-consigne">💬 '+escH(b.notes)+'</div>';
       // Douleur session
       var _cKey = 'cardio-'+bIdx;
-      var _curCPain = _painRatings[_cKey];
-      html += '<div class="exo-pain"><div class="exo-pain-label">🩹 Douleur</div><div class="exo-pain-btns">';
-      for(var _cpv=0; _cpv<=10; _cpv++){
-        var _csel = (_curCPain===_cpv) ? ' selected' : '';
-        html += '<button class="pain-btn'+_csel+'" data-v="'+_cpv+'" data-key="'+_cKey+'" onclick="_setPain(\''+_cKey+'\','+_cpv+')">'+_cpv+'</button>';
-      }
-      html += '</div></div>';
+      html += _buildPainSliderHTML(_cKey, false, '');
       html += '</div></div></div>';
       return;
     }
@@ -1482,7 +1531,6 @@ function buildProgHTML(prog){
 
     function _buildExoRowV3(e, idx, isLastInChain){
       var _eKey = _exoKey(bIdx, idx);
-      var _curPain = _painRatings[_eKey];
       var ytId = _ytId(e.url||'');
       var r = '<div class="exo-row-v3">';
       // Thumb + nom
@@ -1522,23 +1570,12 @@ function buildProgHTML(prog){
            + '</div>';
       });
       r += '</div>';
-      // Douleur
-      r += '<div class="exo-pain-v3"><span class="exo-pain-label">Douleur</span><div class="exo-pain-btns">';
-      for(var _pv=0;_pv<=10;_pv++){
-        var _sel=(_curPain===_pv)?' selected':'';
-        r += '<button class="pain-btn'+_sel+'" data-v="'+_pv+'" data-key="'+_eKey+'" onclick="_setPain(\''+_eKey+'\','+_pv+')">'+_pv+'</button>';
-      }
-      r += '</div></div>';
-      // Ressenti effort inline
-      var _effVal = _exoEfforts[_eKey] || 0;
-      r += '<div class="exo-pain-v3" style="margin-top:4px;"><span class="exo-pain-label">Ressenti</span><div style="display:flex;gap:4px;">';
-      [1,2,3].forEach(function(v){
-        var _emoji = v===1?'😌':v===2?'😐':'😓';
-        r += '<button class="exo-effort-btn'+((_effVal===v)?' active':'')+'" data-ekey="'+_eKey+'" data-val="'+v+'" onclick="_setExoEffort(\''+_eKey+'\','+v+')">'+_emoji+'</button>';
-      });
-      r += '</div></div>';
+      // Douleur (curseur) + note repliée
       var _initNote = _existingExoNotes[_eKey] || '';
-      r += '<textarea id="exoNote-'+_eKey+'" class="exo-exo-note-inp" placeholder="Remarque…" rows="1" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'">'+escH(_initNote)+'</textarea>';
+      r += _buildPainSliderHTML(_eKey, true, _initNote);
+      r += '<div class="exo-note-area'+(_initNote?' open':'')+'" id="exoNoteArea-'+_eKey+'">'
+         + '<textarea id="exoNote-'+_eKey+'" class="exo-exo-note-inp" placeholder="Remarque sur cet exercice…" rows="1" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'">'+escH(_initNote)+'</textarea>'
+         + '</div>';
       r += '</div>';
       return r;
     }
@@ -1634,18 +1671,14 @@ function _uaColor(ua){ if(ua<150) return '#27AE60'; if(ua<300) return '#E67E22';
 var _currentSeanceId = '';
 var _currentDureeMin = 0;
 var _currentRpe = 0;
-var _exoEfforts = {};
 var _existingExoNotes = {}; // notes par exercice chargées depuis exo_data existant
 var _currentBlocs = []; // blocs de la séance courante (pour _submitRpe)
 
 function _initExoEffortsFromFeedback(existingExoData) {
-  _exoEfforts = {};
   _existingExoNotes = {};
   var existingExos = (existingExoData && existingExoData.exos) ? existingExoData.exos : [];
   existingExos.forEach(function(ex) {
-    if(!ex.key) return;
-    if(ex.effort) _exoEfforts[ex.key] = ex.effort;
-    if(ex.note) _existingExoNotes[ex.key] = ex.note;
+    if(ex.key && ex.note) _existingExoNotes[ex.key] = ex.note;
   });
 }
 
@@ -1664,13 +1697,6 @@ function _rpeUpdateUa(){
     uaEl.innerHTML = '⚡ Charge : '+_currentRpe+' × '+dur+' min = <strong>'+ua+' UA</strong>';
     uaEl.style.color = _uaColor(ua);
   }
-}
-
-function _setExoEffort(key, val){
-  _exoEfforts[key] = (_exoEfforts[key]===val) ? 0 : val;
-  document.querySelectorAll('.exo-effort-btn[data-ekey="'+key+'"]').forEach(function(btn){
-    btn.classList.toggle('active', parseInt(btn.dataset.val)===_exoEfforts[key]);
-  });
 }
 
 function _toggleExoAccordion(){
@@ -1726,13 +1752,11 @@ function _submitRpe(){
       if(!e.name) return;
       var eKey = _exoKey(bi, ei);
       var pain = (_painRatings[eKey] !== undefined) ? _painRatings[eKey] : null;
-      var effort = _exoEfforts[eKey] || 0;
       var noteInp = document.getElementById('exoNote-'+eKey);
       var note = noteInp ? noteInp.value.trim() : '';
-      if(pain !== null || effort > 0 || note) {
+      if(pain !== null || note) {
         var row = { key: eKey, name: e.name };
         if(pain !== null) row.pain = pain;
-        if(effort > 0) row.effort = effort;
         if(note) row.note = note;
         exoRows.push(row);
       }

@@ -3014,7 +3014,10 @@ function _extractExoLoads(seances) {
   return result;
 }
 
-/* Extrait les données NRS (douleur) par exercice à partir des séances chargées. */
+/* Extrait les données NRS (douleur) par exercice à partir des séances chargées.
+   Deux sources fusionnées : NRS praticien (exo.nrs dans donnees) et douleur
+   athlète (athlete_feedback.exo_data.exos[].pain). L'athlète est prioritaire
+   sur une même date/exercice. */
 function _extractExoNRS(seances) {
   var seenKeys = {};
   var progList = [];
@@ -3030,6 +3033,16 @@ function _extractExoNRS(seances) {
   });
 
   var map = {};
+  function _addPt(name, date, nrs, fromAthlete) {
+    var key = _norm(name).replace(/\s+/g,' ');
+    if(!map[key]) map[key] = { nom: name, pts: {} };
+    var existing = map[key].pts[date];
+    // Athlète prioritaire : n'écrase pas un point athlète par un NRS praticien
+    if(existing && existing.fromAthlete && !fromAthlete) return;
+    map[key].pts[date] = { date: date, nrs: nrs, fromAthlete: !!fromAthlete };
+  }
+
+  // 1. NRS praticien (exo.nrs dans les donnees du programme)
   progList.forEach(function(prog) {
     var raw = prog.donnees || {};
     var blocs = Array.isArray(raw) ? raw : (raw.blocs || []);
@@ -3038,16 +3051,27 @@ function _extractExoNRS(seances) {
         var name = (exo.name || '').trim();
         if(!name) return;
         if(exo.nrs === null || exo.nrs === undefined) return;
-        var key = _norm(name).replace(/\s+/g,' ');
-        if(!map[key]) map[key] = { nom: name, pts: [] };
-        map[key].pts.push({ date: prog.date, nrs: exo.nrs });
+        _addPt(name, prog.date, exo.nrs, false);
       });
+    });
+  });
+
+  // 2. Douleur athlète (athlete_feedback.exo_data.exos)
+  seances.forEach(function(s) {
+    var fb = s.athlete_feedback;
+    var exos = (fb && fb.exo_data && fb.exo_data.exos) ? fb.exo_data.exos : [];
+    exos.forEach(function(ex) {
+      var name = (ex.name || '').trim();
+      if(!name) return;
+      if(ex.pain === null || ex.pain === undefined) return;
+      _addPt(name, s.date || '', ex.pain, true);
     });
   });
 
   var result = {};
   Object.keys(map).forEach(function(key) {
-    var pts = map[key].pts.sort(function(a,b){ return a.date < b.date ? -1 : 1; });
+    var pts = Object.keys(map[key].pts).map(function(d){ return map[key].pts[d]; })
+      .sort(function(a,b){ return a.date < b.date ? -1 : 1; });
     if(pts.length >= 2) result[key] = { nom: map[key].nom, pts: pts };
   });
   return result;
@@ -3863,6 +3887,144 @@ function _extractCapPainData(seances) {
   return points.length >= 2 ? points : null;
 }
 
+/* ── Charge globale (UA) — tendance séance / semaine ──────────────────
+   Réutilise _buildUaMap() de prog-main.js (RPE × durée + estimation Strava).
+   Le Bilan de charge sous l'agenda reste la vue de pilotage hebdo ;
+   ici on lit la trajectoire longue durée, calée sur le filtre de période. */
+var _pevoUaMode = 'seance'; // 'seance' | 'semaine'
+
+function setPevoUaMode(mode){
+  _pevoUaMode = mode;
+  _renderPevoCharts(_pevoData||{}, _pevoGetSel(_progPatient?_progPatient.id:'local'));
+}
+
+function _buildUaSeanceChart(pts, chartId){
+  var VW=500, VH=120, PAD={top:20,right:18,bottom:30,left:40};
+  var n = pts.length;
+  var maxV = Math.max.apply(null, pts.map(function(p){ return p.ua; }));
+  if(!(maxV > 0)) return '';
+  function pxy(i,v){ return { x: PAD.left+(i/Math.max(n-1,1))*(VW-PAD.left-PAD.right), y: (VH-PAD.bottom)-(v/maxV)*(VH-PAD.top-PAD.bottom) }; }
+  var C = '#4A90D9';
+  var gId = 'gua'+String(chartId).replace(/[^a-z0-9]/gi,'');
+  var html = '<defs><linearGradient id="'+gId+'" x1="0" y1="0" x2="0" y2="1">'
+    +'<stop offset="0%" stop-color="'+C+'" stop-opacity="0.18"/>'
+    +'<stop offset="100%" stop-color="'+C+'" stop-opacity="0.02"/>'
+    +'</linearGradient></defs>';
+  [0, 0.5, 1].forEach(function(f){
+    var gy = pxy(0, maxV*f).y;
+    html += '<line x1="'+PAD.left+'" y1="'+gy.toFixed(1)+'" x2="'+(VW-PAD.right)+'" y2="'+gy.toFixed(1)+'" stroke="#EBEBEB" stroke-width="1" stroke-dasharray="3,3"/>';
+    html += '<text x="'+(PAD.left-5)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="end" font-size="9" fill="#C0BDB8">'+Math.round(maxV*f)+'</text>';
+  });
+  // Labels dates espacés (max ~6)
+  var step = Math.max(1, Math.ceil(n/6));
+  pts.forEach(function(p, i){
+    if(i%step !== 0 && i !== n-1) return;
+    var d = p.date ? p.date.split('-') : ['','',''];
+    html += '<text x="'+pxy(i,p.ua).x.toFixed(1)+'" y="'+(VH-PAD.bottom+12)+'" text-anchor="middle" font-size="9" fill="#C0BDB8">'+(d[2]||'?')+'/'+(d[1]||'?')+'</text>';
+  });
+  html += '<line x1="'+PAD.left+'" y1="'+(VH-PAD.bottom)+'" x2="'+(VW-PAD.right)+'" y2="'+(VH-PAD.bottom)+'" stroke="#E8E6E1" stroke-width="1"/>';
+  var vp = pts.map(function(p,i){ var q=pxy(i,p.ua); return {x:q.x, y:q.y, ua:Math.round(p.ua)}; });
+  var lp = 'M '+vp[0].x.toFixed(1)+','+vp[0].y.toFixed(1);
+  for(var i=1;i<vp.length;i++){ var cx=(vp[i-1].x+vp[i].x)/2; lp+=' C '+cx.toFixed(1)+','+vp[i-1].y.toFixed(1)+' '+cx.toFixed(1)+','+vp[i].y.toFixed(1)+' '+vp[i].x.toFixed(1)+','+vp[i].y.toFixed(1); }
+  var by = VH-PAD.bottom;
+  html += '<path d="'+lp+' L '+vp[vp.length-1].x.toFixed(1)+','+by+' L '+vp[0].x.toFixed(1)+','+by+' Z" fill="url(#'+gId+')"/>';
+  html += '<path d="'+lp+'" fill="none" stroke="'+C+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+  vp.forEach(function(p, i){
+    var isFirst=i===0, isLast=i===vp.length-1;
+    if(isLast){
+      html += '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="6" fill="'+C+'" opacity="0.15"/>';
+      html += '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4" fill="'+C+'"/>';
+      html += '<text x="'+p.x.toFixed(1)+'" y="'+(p.y-12).toFixed(1)+'" text-anchor="middle" font-size="10" font-weight="700" fill="var(--navy)">'+p.ua+' UA</text>';
+    } else {
+      html += '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isFirst?3.5:3)+'" fill="#fff" stroke="'+C+'" stroke-width="'+(isFirst?2:1.5)+'"/>';
+      if(isFirst) html += '<text x="'+p.x.toFixed(1)+'" y="'+(p.y-9).toFixed(1)+'" text-anchor="middle" font-size="9" fill="#9D9B96">'+p.ua+'</text>';
+    }
+  });
+  return '<svg viewBox="0 0 '+VW+' '+VH+'" style="width:100%;overflow:visible">'+html+'</svg>';
+}
+
+function _buildUaWeekChart(weeks, chartId){
+  var VW=500, VH=140, PAD={top:26,right:12,bottom:38,left:40};
+  var n = weeks.length;
+  var maxV = Math.max.apply(null, weeks.map(function(w){ return w.ua; }));
+  if(!(maxV > 0)) return '';
+  var plotW = VW-PAD.left-PAD.right, plotH = VH-PAD.top-PAD.bottom;
+  var bw = Math.min(42, plotW/n*0.62);
+  var html = '';
+  [0, 0.5, 1].forEach(function(f){
+    var gy = (VH-PAD.bottom)-f*plotH;
+    html += '<line x1="'+PAD.left+'" y1="'+gy.toFixed(1)+'" x2="'+(VW-PAD.right)+'" y2="'+gy.toFixed(1)+'" stroke="#EBEBEB" stroke-width="1" stroke-dasharray="3,3"/>';
+    html += '<text x="'+(PAD.left-5)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="end" font-size="9" fill="#C0BDB8">'+Math.round(maxV*f)+'</text>';
+  });
+  html += '<line x1="'+PAD.left+'" y1="'+(VH-PAD.bottom)+'" x2="'+(VW-PAD.right)+'" y2="'+(VH-PAD.bottom)+'" stroke="#E8E6E1" stroke-width="1"/>';
+  weeks.forEach(function(w, i){
+    var cx = PAD.left + (i+0.5)/n*plotW;
+    var h = Math.max(2, w.ua/maxV*plotH);
+    var pct = (i>0 && weeks[i-1].ua>0) ? Math.round((w.ua-weeks[i-1].ua)/weeks[i-1].ua*100) : null;
+    var spike = pct !== null && pct > 30;
+    var barCol = spike ? '#E67E22' : '#4A90D9';
+    html += '<rect x="'+(cx-bw/2).toFixed(1)+'" y="'+((VH-PAD.bottom)-h).toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+h.toFixed(1)+'" rx="4" fill="'+barCol+'" opacity="0.85"/>';
+    html += '<text x="'+cx.toFixed(1)+'" y="'+((VH-PAD.bottom)-h-5).toFixed(1)+'" text-anchor="middle" font-size="9" font-weight="700" fill="'+(spike?'#B45309':'var(--navy)')+'">'+w.ua+'</text>';
+    var d = w.date ? w.date.split('-') : ['','',''];
+    html += '<text x="'+cx.toFixed(1)+'" y="'+(VH-PAD.bottom+12)+'" text-anchor="middle" font-size="9" fill="#C0BDB8">'+(d[2]||'?')+'/'+(d[1]||'?')+'</text>';
+    if(pct !== null){
+      var pCol = pct > 30 ? '#DC2626' : pct > 10 ? '#E67E22' : '#27AE60';
+      html += '<text x="'+cx.toFixed(1)+'" y="'+(VH-PAD.bottom+24)+'" text-anchor="middle" font-size="8.5" font-weight="600" fill="'+pCol+'">'+(pct>=0?'+':'')+pct+'%</text>';
+    }
+  });
+  return '<svg viewBox="0 0 '+VW+' '+VH+'" style="width:100%;overflow:visible">'+html+'</svg>';
+}
+
+function _buildUaTrendSection(){
+  if(typeof _buildUaMap !== 'function' || typeof _getMondayOf !== 'function') return '';
+  var uaMap;
+  try { uaMap = _buildUaMap(); } catch(e){ return ''; }
+  var today = new Date().toISOString().slice(0,10);
+  var pts = Object.keys(uaMap).sort().map(function(d){ return { date: d, ua: uaMap[d] }; })
+    .filter(function(p){ return p.ua > 0 && (_pevoShowFuture || p.date <= today); });
+  pts = _pevoFilterPts(pts);
+  if(!pts || pts.length < 2) return '';
+
+  _pevoChartCtr++;
+  var svg, kpiHtml, title;
+  if(_pevoUaMode === 'semaine'){
+    var wkMap = {};
+    pts.forEach(function(p){
+      var mon = _dateStr(_getMondayOf(new Date(p.date+'T12:00:00')));
+      wkMap[mon] = (wkMap[mon]||0) + p.ua;
+    });
+    var weeks = Object.keys(wkMap).sort().map(function(m){ return { date: m, ua: Math.round(wkMap[m]) }; });
+    if(weeks.length < 2) return '';
+    svg = _buildUaWeekChart(weeks, _pevoChartCtr);
+    title = 'UA cumulées par semaine';
+    kpiHtml = '<span class="pevo-kpi-neutral">Début : '+weeks[0].ua+' UA</span>'
+      +'<span class="pevo-kpi-neutral">→</span>'
+      +'<span class="pevo-kpi-strong">Actuel : '+weeks[weeks.length-1].ua+' UA</span>';
+  } else {
+    svg = _buildUaSeanceChart(pts, _pevoChartCtr);
+    title = 'UA par séance';
+    kpiHtml = '<span class="pevo-kpi-neutral">Début : '+Math.round(pts[0].ua)+' UA</span>'
+      +'<span class="pevo-kpi-neutral">→</span>'
+      +'<span class="pevo-kpi-strong">Actuel : '+Math.round(pts[pts.length-1].ua)+' UA</span>';
+  }
+  if(!svg) return '';
+
+  var toggle = '<div class="pevo-pill-toggles">'
+    +'<button class="pevo-line-pill'+(_pevoUaMode==='seance'?' active':'')+'" style="color:#4A90D9;border-color:#4A90D9" onclick="setPevoUaMode(\'seance\')">● Séance</button>'
+    +'<button class="pevo-line-pill'+(_pevoUaMode==='semaine'?' active':'')+'" style="color:#4A90D9;border-color:#4A90D9" onclick="setPevoUaMode(\'semaine\')">● Semaine</button>'
+    +'</div>';
+
+  return '<div class="pevo-select-section">'
+    +'<div class="pevo-select-title" style="color:#4A90D9">⚡ Charge globale — UA (RPE × durée)</div>'
+    +'</div>'
+    +'<div class="pevo-charts"><div class="pevo-card">'
+    +'<div class="pevo-card-header"><span class="pevo-card-title">'+title+'</span>'
+    +'<div class="pevo-card-kpis">'+kpiHtml+'</div></div>'
+    +toggle
+    +svg
+    +'</div></div>';
+}
+
 function _renderPevoCharts(exoData, selectedKeys) {
   var body = document.getElementById('pevoBody');
   if(!body) return;
@@ -3870,7 +4032,9 @@ function _renderPevoCharts(exoData, selectedKeys) {
   var dureeKeys = _pevoDureeData ? Object.keys(_pevoDureeData) : [];
   var cardioKeys = _pevoCardioData ? Object.keys(_pevoCardioData) : [];
   if(!allKeys.length && !dureeKeys.length && !cardioKeys.length && !_pevoCapPainData){
-    body.innerHTML = _renderPevoFilterBar()+'<div class="pevo-empty">Aucun exercice avec répétitions, durée ou cardio prescrit sur plusieurs séances.</div>';
+    var uaOnly = _buildUaTrendSection();
+    body.innerHTML = _renderPevoFilterBar()
+      + (uaOnly || '<div class="pevo-empty">Aucun exercice avec répétitions, durée ou cardio prescrit sur plusieurs séances.</div>');
     return;
   }
   var patId = _progPatient ? _progPatient.id : 'local';
@@ -4157,7 +4321,8 @@ function _renderPevoCharts(exoData, selectedKeys) {
   }
 
   var sep = '<div style="height:32px"></div>';
-  var parts = [rmSection, dureeSectionHtml, cardioSectionHtml, capPainSectionHtml].filter(function(s){ return !!s; });
+  var uaSectionHtml = _buildUaTrendSection();
+  var parts = [uaSectionHtml, rmSection, dureeSectionHtml, cardioSectionHtml, capPainSectionHtml].filter(function(s){ return !!s; });
   body.innerHTML = _renderPevoFilterBar() + parts.join(sep);
   _attachPevoEvents();
 }
