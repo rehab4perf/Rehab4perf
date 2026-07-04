@@ -9420,47 +9420,13 @@ function _capGetTrend(seanceId) {
 
 function _renderCapBuilderBanner(donnees, seanceId) {
   var banner = document.getElementById('cap-builder-banner');
-  if (!banner) return;
-  if (!donnees || donnees.type !== 'cap') { banner.style.display = 'none'; return; }
+  if (banner) banner.style.display = 'none';
+  if (!donnees || donnees.type !== 'cap') return;
 
-  _capBbDonnees   = donnees;
-  _capBbSeanceId  = seanceId || null;
-  _capBbEva       = null;
-  _capBbRpe       = null;
-
-  var profile   = donnees.profile || {};
-  var session   = donnees.session || {};
-  var patho     = profile.patho || 'aucune';
-  var pathoInfo = CAP_PATHO_DB[patho] || CAP_PATHO_DB.aucune;
-  var phaseNames = {1:'Phase 1 — Réintroduction', 2:'Phase 2 — Construction', 3:'Phase 3 — Performance'};
-  var phaseLbl  = phaseNames[session.phase] || '';
-  var idx       = donnees.session_index !== undefined ? donnees.session_index + 1 : '?';
-  var total     = donnees.total || '?';
-  var consignes = (donnees.consignes && donnees.consignes.length) ? donnees.consignes : (pathoInfo.consignes || []);
-
-  // Header toujours visible — toggle collapse
-  var html = '<div class="cap-bb-head" onclick="_capBbToggle()" style="cursor:pointer;user-select:none;">'
-    + '<span class="cap-bb-label">🏃 CAP — ' + escH(pathoInfo.label || patho) + '</span>'
-    + (phaseLbl ? '<span class="cap-bb-phase">' + escH(phaseLbl) + '</span>' : '')
-    + '<span style="margin-left:auto;font-size:.7rem;color:#6b7a8d;font-weight:600;">Séance ' + idx + '/' + total + '</span>'
-    + '<span id="cap-bb-chevron" style="margin-left:8px;font-size:.75rem;color:#0d9488;transition:transform .2s;">'
-    + (_capBbCollapsed ? '▶' : '▼') + '</span>'
-    + '</div>'
-    + '<div id="cap-bb-summary" style="font-size:.68rem;color:#6b7a8d;margin-top:2px;display:' + (_capBbCollapsed ? 'block' : 'none') + ';">Chargement…</div>';
-
-  // Corps rétractable
-  html += '<div id="cap-bb-body" style="display:' + (_capBbCollapsed ? 'none' : 'block') + ';">';
-
-  if (consignes.length) {
-    html += '<ul class="cap-bb-consignes">';
-    consignes.forEach(function(c){ html += '<li>' + escH(c) + '</li>'; });
-    html += '</ul>';
-  }
-
-  html += '</div>'; // cap-bb-body
-
-  banner.innerHTML = html;
-  banner.style.display = 'block';
+  _capBbDonnees  = donnees;
+  _capBbSeanceId = seanceId || null;
+  _capBbEva      = null;
+  _capBbRpe      = null;
 
   if (seanceId) {
     _fetchRetry(SUPA_URL_P + '/rest/v1/athlete_feedback?seance_id=eq.' + seanceId, { headers: _sbHeaders() })
