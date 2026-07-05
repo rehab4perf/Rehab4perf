@@ -8,6 +8,16 @@ const supabase = createClient(
 const CLIENT_ID     = Deno.env.get('STRAVA_CLIENT_ID')!
 const CLIENT_SECRET = Deno.env.get('STRAVA_CLIENT_SECRET')!
 
+// Appelee directement depuis le navigateur (pas serveur-a-serveur comme le
+// webhook) : le navigateur envoie une requete preflight OPTIONS avant le POST
+// (headers personnalises apikey/Authorization). Sans ces en-tetes CORS,
+// Chrome bloque la reponse avant meme qu'elle arrive au JS de l'app.
+const CORS_HEADERS: Record<string, string> = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'authorization, apikey, content-type',
+}
+
 async function refreshIfNeeded(token: Record<string, string>): Promise<string> {
   if (new Date(token.expires_at) > new Date(Date.now() + 5 * 60 * 1000)) {
     return token.access_token
@@ -37,12 +47,18 @@ async function refreshIfNeeded(token: Record<string, string>): Promise<string> {
 // (splits par km, cadence, calories). Appelé depuis le panneau builder quand
 // donnees.splits est absent.
 Deno.serve(async (req: Request) => {
-  if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 })
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS })
+
+  if (req.method !== 'POST') {
+    return new Response('Method not allowed', { status: 405, headers: CORS_HEADERS })
+  }
 
   const body = await req.json().catch(() => ({}))
   const stravaId  = body.strava_id
   const patientId = body.patient_id
-  if (!stravaId || !patientId) return new Response('Missing strava_id or patient_id', { status: 400 })
+  if (!stravaId || !patientId) {
+    return new Response('Missing strava_id or patient_id', { status: 400, headers: CORS_HEADERS })
+  }
 
   const { data: activity } = await supabase
     .from('strava_activities')
@@ -50,7 +66,7 @@ Deno.serve(async (req: Request) => {
     .eq('strava_id', stravaId)
     .single()
   if (!activity || String(activity.patient_id) !== String(patientId)) {
-    return new Response('Activity not found', { status: 404 })
+    return new Response('Activity not found', { status: 404, headers: CORS_HEADERS })
   }
 
   const { data: token } = await supabase
@@ -58,7 +74,9 @@ Deno.serve(async (req: Request) => {
     .select('*')
     .eq('patient_id', patientId)
     .single()
-  if (!token) return new Response('No Strava token for this patient', { status: 404 })
+  if (!token) {
+    return new Response('No Strava token for this patient', { status: 404, headers: CORS_HEADERS })
+  }
 
   const accessToken = await refreshIfNeeded(token)
 
@@ -66,7 +84,7 @@ Deno.serve(async (req: Request) => {
     `https://www.strava.com/api/v3/activities/${stravaId}`,
     { headers: { 'Authorization': `Bearer ${accessToken}` } }
   )
-  if (!actRes.ok) return new Response('Strava API error', { status: 502 })
+  if (!actRes.ok) return new Response('Strava API error', { status: 502, headers: CORS_HEADERS })
 
   const act = await actRes.json()
 
@@ -91,6 +109,6 @@ Deno.serve(async (req: Request) => {
     .eq('strava_id', stravaId)
 
   return new Response(JSON.stringify({ ok: true, donnees: mergedDonnees }), {
-    headers: { 'Content-Type': 'application/json' },
+    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
   })
 })
