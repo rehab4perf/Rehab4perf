@@ -113,7 +113,20 @@ Deno.serve(async (req: Request) => {
         avg_hr:      act.average_heartrate,
         max_hr:      act.max_heartrate,
         avg_speed:   act.average_speed,
+        max_speed:   act.max_speed,
         suffer_score: act.suffer_score,
+        cadence:     act.average_cadence,
+        calories:    act.calories,
+        // Tracé abstrait du parcours (encodage Google polyline)
+        polyline:    act.map?.summary_polyline || null,
+        // Allures par km : compact [{d: distance_m, t: moving_time_s, hr: avg_hr}]
+        splits:      Array.isArray(act.splits_metric)
+          ? act.splits_metric.map((s: Record<string, unknown>) => ({
+              d:  Math.round((s.distance as number) || 0),
+              t:  (s.moving_time as number) || 0,
+              hr: s.average_heartrate ? Math.round(s.average_heartrate as number) : null,
+            }))
+          : null,
       },
     }, { onConflict: 'strava_id' })
 

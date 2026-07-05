@@ -1087,24 +1087,14 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
   var _stravaDay = _stravaActivities.filter(function(a){ return a.date===dateStr; });
   var _linkedAct = {};
   _stravaDay.forEach(function(a){ if(a.seance_id) _linkedAct[String(a.seance_id)] = a; });
-  var _todayStr = _dateStr(new Date());
+  // Badge S cliquable : ouvre le popover detail de l'activite liee (stats conservees)
   var _stravaBadge = function(act){
     if(!act) return '';
     var d=act.distance_m>=1000?(act.distance_m/1000).toFixed(1)+'km':act.distance_m>0?act.distance_m+'m':'';
     var t=act.duree_s>0?Math.round(act.duree_s/60)+'min':'';
     var info=[d,t].filter(Boolean).join(' ');
-    return info?' <span style="font-size:.55rem;background:#FC4C02;color:#fff;border-radius:3px;padding:0 3px;font-weight:700;flex-shrink:0;">S '+escH(info)+'</span>':'';
-  };
-  // S2 — statut de realisation : seance passee sans feedback, sans activite liee
-  // ET sans aucune activite Strava ce jour-la = manquee. La presence d'une activite
-  // le meme jour (meme non liee) vaut realisation probable — on ne grise pas.
-  var _missedStyle = function(ev){
-    if(dateStr >= _todayStr) return '';
-    var fb = ev.athlete_feedback;
-    var done = (fb && (fb.rpe !== null && fb.rpe !== undefined || _fbDouleur(fb) !== null || fb.exo_data))
-      || _linkedAct[String(ev.id)]
-      || _stravaDay.length > 0;
-    return done ? '' : ';opacity:.5;filter:grayscale(.5);';
+    return info?' <span style="font-size:.55rem;background:#FC4C02;color:#fff;border-radius:3px;padding:0 3px;font-weight:700;flex-shrink:0;cursor:pointer;" '
+      +'title="Voir le détail Strava" onclick="event.stopPropagation();_showStravaDetail(event,'+act.strava_id+')">S '+escH(info)+'</span>':'';
   };
   if(_progPatient){
     var dayEvs = _cloudCalEvents.filter(function(e){ return e.date===dateStr; });
@@ -1138,7 +1128,7 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
         var capEvtAttrs = _isTouchDevice
           ? ' ontouchstart="_chipTouchStart(event,\''+ev.id+'\')" ontouchmove="_chipTouchMove(event)" ontouchend="_chipTouchEnd(event,\''+ev.id+'\')"'
           : ' draggable="true" onclick="event.stopPropagation();_openChipInBuilder(\''+ev.programme_id+'\',\''+dateStr+'\',\''+ev.id+'\')" ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"';
-        return '<div class="cal-session-chip" style="background:'+capBg+';color:#fff;cursor:grab'+_missedStyle(ev)+'" title="'+escH(nom)+'"'
+        return '<div class="cal-session-chip" style="background:'+capBg+';color:#fff;cursor:grab;" title="'+escH(nom)+'"'
           + capEvtAttrs + '>'
           + '<button class="cal-chip-more" onclick="event.stopPropagation();_showChipDropdown(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')" ontouchend="event.stopPropagation();event.preventDefault();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')">⋮</button>'
           + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">🏃 '+escH(capLabel.length>14?capLabel.slice(0,14)+'…':capLabel)+painBadge+capStravaBadge+'</span>'
@@ -1167,7 +1157,7 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
         var hsrEvtAttrs = _isTouchDevice
           ? ' ontouchstart="_chipTouchStart(event,\''+ev.id+'\')" ontouchmove="_chipTouchMove(event)" ontouchend="_chipTouchEnd(event,\''+ev.id+'\')"'
           : ' draggable="true" onclick="event.stopPropagation();_openChipInBuilder(\''+ev.programme_id+'\',\''+dateStr+'\',\''+ev.id+'\')" ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"';
-        return '<div class="cal-session-chip" style="background:'+hsrBg+';color:#fff;cursor:grab'+_missedStyle(ev)+'" title="'+escH(nom)+'"'
+        return '<div class="cal-session-chip" style="background:'+hsrBg+';color:#fff;cursor:grab;" title="'+escH(nom)+'"'
           + hsrEvtAttrs + '>'
           + '<button class="cal-chip-more" onclick="event.stopPropagation();_showChipDropdown(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')" ontouchend="event.stopPropagation();event.preventDefault();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')">⋮</button>'
           + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">'+_HSR_ICON+escH(hsrLabel.length>14?hsrLabel.slice(0,14)+'…':hsrLabel)+hsrBadge+'</span>'
@@ -1208,7 +1198,7 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
       var chipCursor = _isTouchDevice ? 'pointer' : 'grab';
       var moreBtnColor = phStyle ? 'color:rgba(30,58,95,.7);' : '';
       var moreBtn = '<button class="cal-chip-more" style="'+moreBtnColor+'" onclick="event.stopPropagation();_showChipDropdown(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')" ontouchend="event.stopPropagation();event.preventDefault();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')">⋮</button>';
-      return '<div id="cal-chip-'+ev.id+'" class="cal-session-chip" style="background:'+chipBg+';color:'+chipColor+';cursor:'+chipCursor+chipExtra+_missedStyle(ev)+';" title="'+escH(nom)+'"'
+      return '<div id="cal-chip-'+ev.id+'" class="cal-session-chip" style="background:'+chipBg+';color:'+chipColor+';cursor:'+chipCursor+chipExtra+';" title="'+escH(nom)+'"'
         + chipEvtAttrs + '>'
         +moreBtn
         +'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">'+(jLabel?'<span style="opacity:.75;font-size:.85em;">'+escH(jLabel)+'</span>':'📋 ')+escH(nom.length>16?nom.slice(0,16)+'…':nom)+genericStravaBadge+uaSpan+'</span>'
@@ -4977,6 +4967,133 @@ function _showStravaDetail(e, stravaId){
   }, 0);
 }
 
+/* ── Panneau « Réalisée avec Strava » dans le builder ─────────────── */
+
+/* Decodeur Google polyline → [[lat,lng],...] */
+function _decodePolyline(str){
+  var pts=[], index=0, lat=0, lng=0;
+  while(index < str.length){
+    var b, shift=0, result=0;
+    do { b = str.charCodeAt(index++)-63; result |= (b & 0x1f) << shift; shift += 5; } while(b >= 0x20);
+    lat += (result & 1) ? ~(result >> 1) : (result >> 1);
+    shift=0; result=0;
+    do { b = str.charCodeAt(index++)-63; result |= (b & 0x1f) << shift; shift += 5; } while(b >= 0x20);
+    lng += (result & 1) ? ~(result >> 1) : (result >> 1);
+    pts.push([lat/1e5, lng/1e5]);
+  }
+  return pts;
+}
+
+/* Tracé abstrait : polyline encodee → SVG path normalise dans un viewBox */
+function _polylineToSvg(encoded, w, h){
+  try {
+    var pts = _decodePolyline(encoded);
+    if(pts.length < 2) return '';
+    var minLat=Infinity,maxLat=-Infinity,minLng=Infinity,maxLng=-Infinity;
+    pts.forEach(function(p){
+      if(p[0]<minLat)minLat=p[0]; if(p[0]>maxLat)maxLat=p[0];
+      if(p[1]<minLng)minLng=p[1]; if(p[1]>maxLng)maxLng=p[1];
+    });
+    var latR = Math.max(maxLat-minLat, 1e-6), lngR = Math.max(maxLng-minLng, 1e-6);
+    // Correction de la deformation longitude selon la latitude
+    var lngScale = Math.cos((minLat+maxLat)/2 * Math.PI/180);
+    var effW = lngR * lngScale, effH = latR;
+    var scale = Math.min((w-12)/effW, (h-12)/effH);
+    var offX = (w - effW*scale)/2, offY = (h - effH*scale)/2;
+    // Sous-echantillonnage pour garder un path leger
+    var step = Math.max(1, Math.floor(pts.length/160));
+    var d = '';
+    for(var i=0; i<pts.length; i+=step){
+      var x = offX + (pts[i][1]-minLng)*lngScale*scale;
+      var y = offY + (maxLat-pts[i][0])*scale;
+      d += (d?' L ':'M ') + x.toFixed(1) + ',' + y.toFixed(1);
+    }
+    var first = pts[0], sx = offX+(first[1]-minLng)*lngScale*scale, sy = offY+(maxLat-first[0])*scale;
+    return '<svg viewBox="0 0 '+w+' '+h+'" width="'+w+'" height="'+h+'">'
+      + '<path d="'+d+'" fill="none" stroke="#FC4C02" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>'
+      + '<circle cx="'+sx.toFixed(1)+'" cy="'+sy.toFixed(1)+'" r="4" fill="#22c55e"/>'
+      + '</svg>';
+  } catch(e){ return ''; }
+}
+
+function _fmtPace(secPerKm){
+  if(!secPerKm || !isFinite(secPerKm)) return null;
+  var m = Math.floor(secPerKm/60), s = Math.round(secPerKm%60);
+  if(s === 60){ m++; s = 0; }
+  return m + "'" + String(s).padStart(2,'0');
+}
+
+function _renderStravaRealisedBanner(seanceId){
+  var banner = document.getElementById('strava-realised-banner');
+  if(!banner) return;
+  banner.style.display = 'none'; banner.innerHTML = '';
+  if(!seanceId) return;
+  var act = _stravaActivities.find(function(a){ return String(a.seance_id) === String(seanceId); });
+  if(!act) return;
+  var d = act.donnees || {};
+  var ddn = _progPatient && _progPatient.ddn;
+
+  // Pills stats
+  var pills = [];
+  if(act.distance_m) pills.push([(act.distance_m>=1000?(act.distance_m/1000).toFixed(1).replace('.',',')+' km':act.distance_m+' m'),'Distance']);
+  if(act.duree_s) pills.push([Math.round(act.duree_s/60)+' min','Durée']);
+  var pace = (act.distance_m > 100 && act.duree_s) ? _fmtPace(act.duree_s/(act.distance_m/1000)) : null;
+  if(pace && ['Run','TrailRun','Walk','Hike'].indexOf(act.type) !== -1) pills.push([pace+'/km','Allure moy.']);
+  else if(d.avg_speed) pills.push([(d.avg_speed*3.6).toFixed(1)+' km/h','Vitesse moy.']);
+  if(d.avg_hr) pills.push([Math.round(d.avg_hr),'FC moy.']);
+  if(d.max_hr) pills.push([Math.round(d.max_hr),'FC max']);
+  if(d.elevation) pills.push([Math.round(d.elevation)+' m','D+']);
+  var charge = _stravaChargeEstimate(act, ddn);
+  if(charge) pills.push([charge+' UA','Charge']);
+  if(d.cadence) pills.push([Math.round(d.cadence*2),'Cadence']);
+  var pillsHtml = pills.map(function(p){
+    return '<div class="srb-pill"><div class="srb-pv">'+escH(String(p[0]))+'</div><div class="srb-pl">'+p[1]+'</div></div>';
+  }).join('');
+
+  // Splits (allure par km)
+  var splitsHtml = '';
+  if(Array.isArray(d.splits) && d.splits.length > 1){
+    var paces = d.splits.map(function(s){ return (s.d > 0 && s.t > 0) ? s.t/(s.d/1000) : null; });
+    var fullPaces = paces.filter(function(p,i){ return p && d.splits[i].d >= 500; });
+    if(fullPaces.length >= 2){
+      var minP = Math.min.apply(null, fullPaces), maxP = Math.max.apply(null, fullPaces);
+      var range = Math.max(maxP-minP, 1);
+      var bars = d.splits.map(function(s, i){
+        var p = paces[i];
+        if(!p) return '';
+        var partial = s.d < 500;
+        // Plus rapide = barre plus haute (46% → 100%)
+        var hPct = 46 + Math.round((1 - (p-minP)/range) * 54);
+        var kmLbl = partial ? (s.d/1000).toFixed(1).replace('.',',') : String(i+1);
+        return '<div class="srb-split"><span class="srb-stime">'+_fmtPace(p)+'</span>'
+          + '<div class="srb-sbar" style="height:'+hPct+'%'+(partial?';opacity:.4':'')+'"></div>'
+          + '<span class="srb-skm">'+kmLbl+'</span></div>';
+      }).join('');
+      splitsHtml = '<div class="srb-splits-t">Allure par kilomètre</div><div class="srb-splits">'+bars+'</div>';
+    }
+  }
+
+  // Parcours
+  var routeHtml = '';
+  if(d.polyline){
+    var svg = _polylineToSvg(d.polyline, 130, 96);
+    if(svg) routeHtml = '<div class="srb-route">'+svg+'<span class="srb-route-lbl">Parcours</span></div>';
+  }
+
+  var dateFr = act.date ? act.date.split('-').reverse().join('/') : '';
+  banner.innerHTML =
+    '<div class="srb-head">'
+    + '<svg width="14" height="14" viewBox="0 0 24 24" fill="#FC4C02" style="flex-shrink:0"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>'
+    + '<span class="srb-title">Réalisée avec Strava — '+escH(act.nom || act.type || 'Activité')+'</span>'
+    + '<span class="srb-date">'+escH(dateFr)+'</span>'
+    + '</div>'
+    + '<div class="srb-body">'
+    + routeHtml
+    + '<div class="srb-stats"><div class="srb-pills">'+pillsHtml+'</div>'+splitsHtml+'</div>'
+    + '</div>';
+  banner.style.display = 'block';
+}
+
 /* ── Lier / Délier une activite Strava a une seance (persistant) ── */
 function _stravaSetLink(stravaId, seanceId){
   var drop = document.getElementById('_stravaDetailDrop');
@@ -4990,6 +5107,11 @@ function _stravaSetLink(stravaId, seanceId){
     var act = _stravaActivities.find(function(a){ return a.strava_id === stravaId; });
     if(act) act.seance_id = seanceId;
     _renderCalendarUI(); // recalcule chips + bilan de charge avec le nouveau lien
+    // Si la seance concernee est ouverte dans le builder, rafraichir le panneau Strava
+    if(typeof _currentSeanceId !== 'undefined' && _currentSeanceId
+       && (String(_currentSeanceId) === String(seanceId) || (act && !seanceId))){
+      _renderStravaRealisedBanner(_currentSeanceId);
+    }
   }).catch(function(){ alert('Erreur réseau.'); });
 }
 
@@ -5625,6 +5747,8 @@ function _exitBuilderMode(){
   if(banner){ banner.style.display = 'none'; banner.innerHTML = ''; banner.className = ''; }
   var capBanner = document.getElementById('cap-builder-banner');
   if(capBanner){ capBanner.style.display = 'none'; capBanner.innerHTML = ''; }
+  var srbBanner = document.getElementById('strava-realised-banner');
+  if(srbBanner){ srbBanner.style.display = 'none'; srbBanner.innerHTML = ''; }
   _closeFeedbackModal();
   var fbBtn = document.getElementById('builder-feedback-btn');
   if (fbBtn) fbBtn.style.display = 'none';

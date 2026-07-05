@@ -4605,6 +4605,11 @@ function _loadProg(id, seanceId){
           _renderHsrBuilderBanner(Array.isArray(raw) ? {} : raw, _currentSeanceId);
         }
       } catch(e) { console.warn('HSR banner error:', e); }
+      try {
+        if (typeof _renderStravaRealisedBanner === 'function') {
+          _renderStravaRealisedBanner(_currentSeanceId);
+        }
+      } catch(e) { console.warn('Strava banner error:', e); }
       var overlay = document.getElementById('progHistoOverlay');
       if(overlay) overlay.style.display='none';
       var btn = document.getElementById('prog-cloud-save-btn');

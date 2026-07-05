@@ -698,6 +698,30 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   margin:6px 10px 0; border-radius:8px; font-size:.78rem; line-height:1.45;
   background:#f0fdfa; border:1px solid #99f6e4; color:#134e4a; padding:10px 12px;
 }
+/* ── Panneau « Réalisée avec Strava » ── */
+#strava-realised-banner {
+  margin:6px 10px 0; border-radius:10px; overflow:hidden;
+  background:#fff; border:1px solid #fed7aa; border-left:3px solid #FC4C02;
+  display:none;
+}
+.srb-head { display:flex; align-items:center; gap:7px; padding:8px 12px; background:#fff7ed; }
+.srb-title { font-size:.78rem; font-weight:700; color:#9a3412; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.srb-date { font-size:.68rem; color:#c2410c; flex-shrink:0; }
+.srb-body { display:flex; gap:0; }
+.srb-route { flex:0 0 150px; padding:10px; border-right:1px solid #f1f5f9; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; }
+.srb-route-lbl { font-size:.62rem; color:#94a3b8; text-transform:uppercase; letter-spacing:.05em; }
+.srb-stats { flex:1; padding:8px 12px; min-width:0; }
+.srb-pills { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:8px; }
+.srb-pill { background:#f8fafc; border:1px solid #e2e8f0; border-radius:7px; padding:4px 9px; text-align:center; min-width:58px; }
+.srb-pv { font-size:.8rem; font-weight:700; color:#1e293b; }
+.srb-pl { font-size:.56rem; color:#94a3b8; text-transform:uppercase; letter-spacing:.04em; margin-top:1px; }
+.srb-splits-t { font-size:.62rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px; }
+.srb-splits { display:flex; align-items:flex-end; gap:3px; height:48px; }
+.srb-split { flex:1; max-width:44px; display:flex; flex-direction:column; align-items:center; gap:1px; justify-content:flex-end; height:100%; }
+.srb-sbar { width:100%; border-radius:3px 3px 0 0; background:#FC4C02; opacity:.75; min-height:3px; }
+.srb-stime { font-size:.56rem; color:#475569; white-space:nowrap; }
+.srb-skm { font-size:.54rem; color:#94a3b8; }
+@media (max-width:640px){ .srb-body { flex-direction:column; } .srb-route { border-right:none; border-bottom:1px solid #f1f5f9; flex-basis:auto; } }
 #athlete-retour-panel {
   margin:6px 10px 0; border-radius:8px; font-size:.78rem; line-height:1.45;
   background:#f0fdf4; border:1px solid #86efac; color:#166534; padding:10px 12px;
@@ -2310,6 +2334,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   <div id="builder-proto-banner" style="display:none;"></div>
   <div id="cap-builder-banner" style="display:none;"></div>
   <div id="hsr-builder-banner" style="display:none;"></div>
+  <div id="strava-realised-banner" style="display:none;"></div>
   <div class="builder-body">
     <!-- Champ nom programme -->
     <div style="padding:8px 14px 0;display:flex;align-items:center;gap:8px;">

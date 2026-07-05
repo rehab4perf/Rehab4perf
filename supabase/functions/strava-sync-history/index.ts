@@ -89,6 +89,11 @@ Deno.serve(async (req: Request) => {
       donnees: {
         elevation: act.total_elevation_gain,
         avg_hr:    act.average_heartrate,
+        max_hr:    act.max_heartrate,
+        avg_speed: act.average_speed,
+        max_speed: act.max_speed,
+        // L'endpoint liste fournit le tracé mais pas les splits (endpoint detail uniquement)
+        polyline:  (act.map as Record<string, unknown> | undefined)?.summary_polyline || null,
       },
     }))
 
