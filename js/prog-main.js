@@ -708,10 +708,12 @@ function renderCalendar() {
             if(_progPatient && _progPatient.id === _fetchPatientId)
               _stravaActivities = Array.isArray(sdata) ? sdata : [];
             _ensureJ0ForPatient(_fetchPatientId, function(){ _renderCalendarUI(); });
+            _fetchUnseenFb(_fetchPatientId);
           })
           .catch(function(){
             _stravaActivities = [];
             _ensureJ0ForPatient(_fetchPatientId, function(){ _renderCalendarUI(); });
+            _fetchUnseenFb(_fetchPatientId);
           });
       })
       .catch(function(){ _cloudCalEvents = []; _renderCalendarUI(); });
@@ -1378,6 +1380,9 @@ function _feedbackRenderContent(fb, sid) {
   // Restaurer l'EVA praticien depuis exo_data.eva_praticien (ne jamais lire fb.rpe = données athlète)
   var savedEva = (fb && fb.exo_data && fb.exo_data.eva_praticien !== undefined) ? fb.exo_data.eva_praticien : null;
   if (savedEva !== null) _feedbackSetEva(savedEva);
+
+  // Feedback affiché = lu
+  if (hasAthleteData) _markFbSeen(sid);
 }
 
 function _feedbackSetEva(val) {
@@ -1505,6 +1510,7 @@ function _renderWeekUI(){
   }
   document.getElementById('bilanCharge').innerHTML = '';
   if(typeof _renderUpcoming==='function') setTimeout(_renderUpcoming,0);
+  setTimeout(_applyFbDots, 0);
 }
 
 function _renderCalendarUI() {
@@ -1542,7 +1548,79 @@ function _renderCalendarUI() {
   grid.innerHTML = headers + cells;
   if(typeof _renderUpcoming === 'function') setTimeout(_renderUpcoming, 0);
   setTimeout(_renderBilanCharge, 0);
+  setTimeout(_applyFbDots, 0);
 }
+
+/* ── Feedbacks non lus : pastilles agenda ─────────────────────────
+   Requête séparée du select calendrier : si la colonne seen_at
+   n'existe pas encore, l'échec est silencieux et l'agenda intact. */
+var _fbUnseen = {}; // seance_id → { pain: douleur max ou null }
+
+function _notifPrefs(){
+  var d = { dots:true, bell:true, browser:false, painOnly:false };
+  try { return Object.assign(d, JSON.parse(localStorage.getItem('r4p-notif-prefs')||'{}')); }
+  catch(e){ return d; }
+}
+
+function _fbMaxPain(fb){
+  var mx = null;
+  var exos = (fb.exo_data && fb.exo_data.exos) || [];
+  exos.forEach(function(ex){
+    if(ex.pain !== null && ex.pain !== undefined && (mx === null || ex.pain > mx)) mx = ex.pain;
+  });
+  // CAP : rpe = douleur, duree_min = effort Borg (≤ 10)
+  if(mx === null && fb.duree_min && fb.duree_min <= 10 && fb.rpe !== null && fb.rpe !== undefined) mx = fb.rpe;
+  return mx;
+}
+
+function _fetchUnseenFb(patientId){
+  _fbUnseen = {};
+  if(!patientId){ _applyFbDots(); return; }
+  var url = SUPA_URL_P + '/rest/v1/athlete_feedback'
+    + '?select=seance_id,rpe,duree_min,exo_data,seances_planifiees!inner(patient_id)'
+    + '&seen_at=is.null&seances_planifiees.patient_id=eq.' + patientId;
+  _fetchRetry(url, { headers: _sbHeaders() })
+    .then(function(r){ if(!r.ok) throw new Error('unseen'); return r.json(); })
+    .then(function(arr){
+      (Array.isArray(arr) ? arr : []).forEach(function(fb){
+        _fbUnseen[fb.seance_id] = { pain: _fbMaxPain(fb) };
+      });
+      _applyFbDots();
+    })
+    .catch(function(){ /* colonne seen_at absente ou erreur réseau : pas de pastilles */ });
+}
+
+function _applyFbDots(){
+  document.querySelectorAll('.cal-fb-dot').forEach(function(el){ el.remove(); });
+  if(!_notifPrefs().dots) return;
+  Object.keys(_fbUnseen).forEach(function(sid){
+    var chip = document.getElementById('cal-chip-'+sid);
+    if(!chip) return;
+    var dot = document.createElement('span');
+    var p = _fbUnseen[sid].pain;
+    dot.className = 'cal-fb-dot' + ((p !== null && p >= 4) ? ' pain' : '');
+    chip.appendChild(dot);
+  });
+}
+
+function _markFbSeen(sid){
+  if(!_fbUnseen[sid]) return;
+  _fetchRetry(SUPA_URL_P + '/rest/v1/athlete_feedback?seance_id=eq.' + sid, {
+    method: 'PATCH',
+    headers: Object.assign({}, _sbHeaders(), { 'Prefer': 'return=minimal' }),
+    body: JSON.stringify({ seen_at: new Date().toISOString() })
+  }).then(function(r){
+    if(!r.ok) return;
+    delete _fbUnseen[sid];
+    _applyFbDots();
+    try { window.parent.postMessage({ type:'r4p-fb-seen', seanceId: sid }, window.location.origin); } catch(e){}
+  }).catch(function(){});
+}
+
+// Réglages notifications modifiés depuis account.html → réappliquer les pastilles
+window.addEventListener('storage', function(ev){
+  if(ev.key === 'r4p-notif-prefs') _applyFbDots();
+});
 
 function openCalPicker(dateStr) {
   // Mode planification agenda — toggle le jour sélectionné

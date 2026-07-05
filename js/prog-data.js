@@ -2558,6 +2558,16 @@ window.addEventListener('message', function(e){
       .catch(function(){ window.parent.postMessage({type:'r4p-pevo-response',error:'fetch_error'},_pevoOrigin); });
     return;
   }
+  // La cloche de notifications demande l'ouverture d'une séance dans le builder
+  if(e.data && e.data.type==='r4p-open-seance' && e.data.seanceId && e.data.progId){
+    _openChipInBuilder(e.data.progId, e.data.date || '', e.data.seanceId);
+    return;
+  }
+  // "Tout marquer lu" depuis la cloche → retirer toutes les pastilles agenda
+  if(e.data && e.data.type==='r4p-fb-seen-all'){
+    if(typeof _fbUnseen !== 'undefined'){ _fbUnseen = {}; _applyFbDots(); }
+    return;
+  }
   // Nouveau token reçu depuis index.html après refresh automatique
   // On met à jour uniquement le token — le rôle et les favoris ne changent pas entre deux refreshs,
   // donc on évite les toggles DOM de _applyRoleUI() qui causaient un flash visuel.

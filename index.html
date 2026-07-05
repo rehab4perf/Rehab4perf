@@ -39,6 +39,53 @@ html, body { height:100%; overflow:hidden; background:#1A3A5C; }
   transition:color .15s;
 }
 .topnav-right:hover { color:#fff; }
+
+/* ── Cloche notifications feedback ───────────────────────── */
+.notif-bell {
+  position:relative; width:34px; height:34px; border-radius:8px; flex-shrink:0;
+  background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2);
+  display:none; align-items:center; justify-content:center;
+  font-size:.95rem; cursor:pointer; margin-left:10px;
+  transition:background .15s;
+}
+.notif-bell:hover { background:rgba(255,255,255,.18); }
+.notif-bell.visible { display:flex; }
+.notif-badge {
+  position:absolute; top:-6px; right:-6px; min-width:17px; height:17px;
+  border-radius:9px; background:#ef4444; color:#fff; font-size:.62rem; font-weight:700;
+  display:flex; align-items:center; justify-content:center; padding:0 4px;
+  border:2px solid #1A3A5C; font-family:'Figtree',sans-serif;
+}
+.notif-drop {
+  position:fixed; top:52px; right:12px; width:360px; max-width:calc(100vw - 24px);
+  background:#fff; border-radius:12px; box-shadow:0 12px 40px rgba(0,0,0,.28);
+  z-index:900; display:none; overflow:hidden; font-family:'Figtree',sans-serif;
+}
+.notif-drop.open { display:block; }
+.notif-drop-head {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 14px 7px; border-bottom:1px solid #eef2f7;
+}
+.notif-drop-title { font-size:.68rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.05em; }
+.notif-markall { background:none; border:none; color:#4A90D9; font-size:.7rem; font-weight:600; cursor:pointer; font-family:inherit; }
+.notif-markall:hover { text-decoration:underline; }
+.notif-list { max-height:380px; overflow-y:auto; }
+.notif-item {
+  display:flex; align-items:center; gap:10px; padding:10px 14px;
+  border-bottom:1px solid #f1f5f9; cursor:pointer; transition:background .12s;
+}
+.notif-item:hover { background:#f8fafc; }
+.notif-item:last-child { border-bottom:none; }
+.notif-ava {
+  width:30px; height:30px; border-radius:50%; background:#dbeafe; color:#1d4ed8;
+  font-size:.68rem; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.notif-body { flex:1; min-width:0; }
+.notif-name { font-size:.78rem; font-weight:700; color:#1e293b; }
+.notif-sub { font-size:.7rem; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.notif-pain { font-size:.64rem; font-weight:700; padding:1px 7px; border-radius:9px; flex-shrink:0; }
+.notif-time { font-size:.64rem; color:#94a3b8; flex-shrink:0; }
+.notif-empty { padding:18px 14px; font-size:.75rem; color:#94a3b8; font-style:italic; text-align:center; }
 .frame-wrap { position:fixed; top:48px; left:0; right:0; bottom:0; }
 iframe { position:absolute; top:0; left:0; width:100%; height:100%; border:none; display:none; background:#fff; }
 iframe.active { display:block; }
@@ -263,7 +310,17 @@ iframe.active { display:block; }
   <button class="patient-btn" id="patientBtn" onclick="openPatientModal()" title="Sélectionner un patient">
     <span>👤</span><span class="patient-btn-label" id="patientBtnLabel">Aucun patient</span><span>▾</span>
   </button>
+  <div class="notif-bell" id="notifBell" onclick="toggleNotifDrop(event)" title="Retours athlètes">🔔<span class="notif-badge" id="notifBadge" style="display:none"></span></div>
   <div class="topnav-right" id="userDisplay" onclick="show('account')" title="Mon compte" style="margin-left:12px;">Mon compte</div>
+</div>
+
+<!-- Dropdown notifications feedback -->
+<div class="notif-drop" id="notifDrop">
+  <div class="notif-drop-head">
+    <span class="notif-drop-title" id="notifDropTitle">Retours athlètes</span>
+    <button class="notif-markall" onclick="_notifMarkAll()">Tout marquer lu</button>
+  </div>
+  <div class="notif-list" id="notifList"></div>
 </div>
 
 <!-- ── Modal patients ─────────────────────────────────────── -->
@@ -527,6 +584,8 @@ sb.auth.getSession().then(function(result) {
   var profile = syncProfileToStorage(user);
   // Propager à bilan.html après chargement de l'iframe
   setTimeout(function() { propagateToBilan(profile); }, 600);
+  // Premier chargement des retours athlètes non lus
+  setTimeout(_fbBellPoll, 1200);
 });
 
 // Diffuse le token rafraîchi à toutes les iframes
@@ -638,7 +697,202 @@ window.addEventListener('message', function(e) {
   if (e.data.type === 'r4p-patient-reset') {
     deselectPatient();
   }
+
+  // programme a marqué un feedback comme lu → retirer de la cloche
+  if (e.data.type === 'r4p-fb-seen' && e.data.seanceId) {
+    if (Array.isArray(_notifFeed)) {
+      _notifFeed = _notifFeed.filter(function(f){ return String(f.seance_id) !== String(e.data.seanceId); });
+      _renderBell();
+    }
+  }
 });
+
+/* ═══════════════════════════════════════════════════════════
+   NOTIFICATIONS FEEDBACK ATHLÈTE (cloche + notifications navigateur)
+═══════════════════════════════════════════════════════════ */
+var _notifFeed = [];      // feedbacks non lus (tous patients) — null si colonne seen_at absente
+var _notifPatients = {};  // patient_id → nom affiché
+var _notifKnown = {};     // ids déjà traités par les notifications navigateur
+var _notifFirstPoll = true;
+
+function _notifPrefs(){
+  var d = { dots:true, bell:true, browser:false, painOnly:false };
+  try { return Object.assign(d, JSON.parse(localStorage.getItem('r4p-notif-prefs')||'{}')); }
+  catch(e){ return d; }
+}
+
+function _notifMaxPain(fb){
+  var mx = null;
+  var exos = (fb.exo_data && fb.exo_data.exos) || [];
+  exos.forEach(function(ex){
+    if(ex.pain !== null && ex.pain !== undefined && (mx === null || ex.pain > mx)) mx = ex.pain;
+  });
+  if(mx === null && fb.duree_min && fb.duree_min <= 10 && fb.rpe !== null && fb.rpe !== undefined) mx = fb.rpe;
+  return mx;
+}
+
+function _notifTimeAgo(iso){
+  if(!iso) return '';
+  var s = Math.floor((Date.now() - new Date(iso).getTime())/1000);
+  if(s < 3600) return 'il y a '+Math.max(1,Math.floor(s/60))+' min';
+  if(s < 86400) return 'il y a '+Math.floor(s/3600)+' h';
+  var j = Math.floor(s/86400);
+  return j === 1 ? 'hier' : 'il y a '+j+' j';
+}
+
+function _fbBellPoll(){
+  if(_notifFeed === null) return; // colonne seen_at absente : abandonné pour cette session
+  var prefs = _notifPrefs();
+  if(!prefs.bell && !prefs.browser){ _renderBell(); return; }
+  sb.from('athlete_feedback')
+    .select('id,seance_id,rpe,duree_min,exo_data,submitted_at,seances_planifiees!inner(id,date,patient_id,programme_id,programmes(nom))')
+    .is('seen_at', null)
+    .order('submitted_at', { ascending:false })
+    .limit(30)
+    .then(function(res){
+      if(res.error){ _notifFeed = null; _renderBell(); return; }
+      _notifFeed = res.data || [];
+      var missing = {};
+      _notifFeed.forEach(function(f){
+        var pid = f.seances_planifiees && f.seances_planifiees.patient_id;
+        if(pid && !_notifPatients[pid]) missing[pid] = 1;
+      });
+      var ids = Object.keys(missing);
+      var done = function(){ _renderBell(); _fireBrowserNotifs(); };
+      if(ids.length){
+        sb.from('patients').select('id,nom,prenom').in('id', ids).then(function(pr){
+          (pr.data||[]).forEach(function(p){ _notifPatients[p.id] = p.nom+' '+_capFirst(p.prenom||''); });
+          done();
+        });
+      } else done();
+    });
+}
+
+function _renderBell(){
+  var bell = document.getElementById('notifBell');
+  var badge = document.getElementById('notifBadge');
+  var list = document.getElementById('notifList');
+  var title = document.getElementById('notifDropTitle');
+  if(!bell) return;
+  var prefs = _notifPrefs();
+  if(_notifFeed === null || !prefs.bell){
+    bell.classList.remove('visible');
+    document.getElementById('notifDrop').classList.remove('open');
+    return;
+  }
+  bell.classList.add('visible');
+  var n = _notifFeed.length;
+  badge.style.display = n ? 'flex' : 'none';
+  badge.textContent = n > 20 ? '20+' : n;
+  if(title) title.textContent = n ? ('Retours athlètes — '+n+' non lu'+(n>1?'s':'')) : 'Retours athlètes';
+  if(!list) return;
+  if(!n){ list.innerHTML = '<div class="notif-empty">Aucun retour non lu 🎉</div>'; return; }
+  list.innerHTML = _notifFeed.map(function(f, i){
+    var sp = f.seances_planifiees || {};
+    var pname = _notifPatients[sp.patient_id] || 'Athlète';
+    var initials = pname.split(/\s+/).map(function(w){ return w.charAt(0); }).join('').slice(0,2).toUpperCase();
+    var progNom = (sp.programmes && sp.programmes.nom) || 'Séance';
+    var dateFr = sp.date ? sp.date.split('-').reverse().slice(0,2).join('/') : '';
+    var isCap = f.duree_min && f.duree_min <= 10;
+    var sub = progNom + (dateFr ? ' du '+dateFr : '');
+    if(!isCap && f.rpe !== null && f.rpe !== undefined) sub += ' · RPE '+f.rpe;
+    if(!isCap && f.duree_min) sub += ' · '+f.duree_min+' min';
+    var pain = _notifMaxPain(f);
+    var painHtml;
+    if(pain === null || pain === 0) painHtml = '<span class="notif-pain" style="background:#dcfce7;color:#166534">RAS</span>';
+    else {
+      var pb = pain>=7?'#fee2e2':pain>=4?'#ffedd5':'#fefce8';
+      var pc = pain>=7?'#991b1b':pain>=4?'#9a3412':'#92400e';
+      painHtml = '<span class="notif-pain" style="background:'+pb+';color:'+pc+'">🩹 '+pain+'/10</span>';
+    }
+    return '<div class="notif-item" onclick="_notifOpen('+i+')">'
+      + '<div class="notif-ava">'+initials+'</div>'
+      + '<div class="notif-body"><div class="notif-name">'+pname.replace(/</g,'&lt;')+'</div>'
+      + '<div class="notif-sub">'+sub.replace(/</g,'&lt;')+'</div></div>'
+      + painHtml
+      + '<span class="notif-time">'+_notifTimeAgo(f.submitted_at)+'</span>'
+      + '</div>';
+  }).join('');
+}
+
+function toggleNotifDrop(e){
+  e.stopPropagation();
+  document.getElementById('notifDrop').classList.toggle('open');
+}
+document.addEventListener('click', function(e){
+  var drop = document.getElementById('notifDrop');
+  if(drop && drop.classList.contains('open') && !drop.contains(e.target)) drop.classList.remove('open');
+});
+
+function _notifOpen(i){
+  var f = _notifFeed && _notifFeed[i];
+  if(!f) return;
+  var sp = f.seances_planifiees || {};
+  document.getElementById('notifDrop').classList.remove('open');
+  if(sp.patient_id && (!_currentPatient || _currentPatient.id !== sp.patient_id)){
+    _selectPatientById(sp.patient_id);
+  }
+  show('prescription');
+  // Laisser le temps au broadcast patient d'atteindre l'iframe avant d'ouvrir la séance
+  setTimeout(function(){
+    var pf = document.getElementById('frame-prescription');
+    if(pf && pf.contentWindow) pf.contentWindow.postMessage({
+      type:'r4p-open-seance', seanceId:f.seance_id, progId:sp.programme_id, date:sp.date || ''
+    }, window.location.origin);
+  }, 900);
+}
+
+function _selectPatientById(id){
+  var p = _allPatients.find(function(x){ return x.id === id; });
+  if(p){
+    _previousPatient = _currentPatient; _currentPatient = p;
+    try { localStorage.setItem(R4P_KEYS.PATIENT, JSON.stringify(p)); } catch(e){}
+    _updatePatientBtn(); _broadcastPatient(p);
+    return;
+  }
+  sb.from('patients').select('*').eq('id', id).single().then(function(r){
+    if(!r.data) return;
+    _previousPatient = _currentPatient; _currentPatient = r.data;
+    try { localStorage.setItem(R4P_KEYS.PATIENT, JSON.stringify(r.data)); } catch(e){}
+    _updatePatientBtn(); _broadcastPatient(r.data);
+  });
+}
+
+function _notifMarkAll(){
+  if(!_notifFeed || !_notifFeed.length) return;
+  var ids = _notifFeed.map(function(f){ return f.id; });
+  sb.from('athlete_feedback').update({ seen_at: new Date().toISOString() }).in('id', ids).then(function(){
+    _fbBellPoll();
+    var pf = document.getElementById('frame-prescription');
+    if(pf && pf.contentWindow) pf.contentWindow.postMessage({ type:'r4p-fb-seen-all' }, window.location.origin);
+  });
+}
+
+function _fireBrowserNotifs(){
+  var prefs = _notifPrefs();
+  var syncKnown = function(){ (_notifFeed||[]).forEach(function(f){ _notifKnown[f.id] = 1; }); };
+  if(_notifFirstPoll){ _notifFirstPoll = false; syncKnown(); return; } // pas de spam au chargement
+  if(!prefs.browser || typeof Notification === 'undefined' || Notification.permission !== 'granted'){ syncKnown(); return; }
+  (_notifFeed||[]).forEach(function(f){
+    if(_notifKnown[f.id]) return;
+    _notifKnown[f.id] = 1;
+    var pain = _notifMaxPain(f);
+    if(prefs.painOnly && (pain === null || pain < 4)) return;
+    var sp = f.seances_planifiees || {};
+    var pname = _notifPatients[sp.patient_id] || 'Athlète';
+    var progNom = (sp.programmes && sp.programmes.nom) || 'Séance';
+    var dateFr = sp.date ? sp.date.split('-').reverse().slice(0,2).join('/') : '';
+    var body = progNom + (dateFr ? ' du '+dateFr : '') + (pain !== null && pain > 0 ? ' · douleur '+pain+'/10' : '');
+    try { new Notification('Retour athlète — '+pname, { body: body, tag: 'r4p-fb-'+f.id }); } catch(e){}
+  });
+}
+
+// Réglages modifiés depuis account.html (autre contexte → événement storage)
+window.addEventListener('storage', function(ev){
+  if(ev.key === 'r4p-notif-prefs'){ _renderBell(); _fbBellPoll(); }
+});
+
+setInterval(_fbBellPoll, 120000); // toutes les 2 min
 
 /* ═══════════════════════════════════════════════════════════
    GESTION DES PATIENTS

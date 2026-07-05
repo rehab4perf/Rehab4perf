@@ -1627,9 +1627,14 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .cal-session-chip {
   display:flex; align-items:center; gap:4px; padding:2px 5px; border-radius:4px;
   font-size:.66rem; font-weight:600; margin-bottom:2px; cursor:pointer;
-  color:#fff; justify-content:space-between;
+  color:#fff; justify-content:space-between; position:relative;
   user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;
 }
+.cal-fb-dot {
+  position:absolute; top:-3px; right:-3px; width:9px; height:9px; border-radius:50%;
+  background:#60a5fa; border:1.5px solid #fff; pointer-events:none; z-index:2;
+}
+.cal-fb-dot.pain { background:#f97316; }
 .cal-chip-del { background:none; border:none; color:rgba(255,255,255,.7); cursor:pointer; font-size:.75rem; line-height:1; padding:0 1px; }
 .cal-chip-del:hover { color:#fff; }
 .cal-chip-more { background:none; border:none; color:rgba(255,255,255,.9); cursor:pointer; font-size:.85rem; line-height:1; padding:0 3px 0 0; flex-shrink:0; -webkit-tap-highlight-color:transparent; }

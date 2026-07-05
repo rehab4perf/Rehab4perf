@@ -75,6 +75,17 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
 }
 
 /* ── Toggle iOS ─────────────────────────────────────────── */
+.tog {
+  width:38px; height:22px; border-radius:11px; background:#cbd5e1;
+  position:relative; cursor:pointer; flex-shrink:0; transition:background .15s;
+  border:none; padding:0;
+}
+.tog.on { background:var(--accent2); }
+.tog::after {
+  content:''; position:absolute; top:2.5px; left:3px; width:17px; height:17px;
+  border-radius:50%; background:#fff; transition:left .15s; box-shadow:0 1px 2px rgba(0,0,0,.2);
+}
+.tog.on::after { left:18px; }
 </style>
 </head>
 <body>
@@ -151,6 +162,26 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
     <div class="security-item">
       <div><div class="security-label">Mot de passe</div><div class="security-sub">Un email de réinitialisation sera envoyé</div></div>
       <button class="btn btn-neutral" style="font-size:.76rem;padding:5px 12px;" onclick="sendPasswordReset()">Modifier</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Notifications — Retours athlètes</div>
+    <div class="security-item">
+      <div><div class="security-label">Pastilles sur l'agenda</div><div class="security-sub">Point bleu/orange sur les séances avec retour non lu</div></div>
+      <button class="tog" id="tog-dots" onclick="_togNotif('dots')"></button>
+    </div>
+    <div class="security-item">
+      <div><div class="security-label">Cloche de notifications</div><div class="security-sub">Compteur et liste des retours dans la barre du haut</div></div>
+      <button class="tog" id="tog-bell" onclick="_togNotif('bell')"></button>
+    </div>
+    <div class="security-item">
+      <div><div class="security-label">Notifications navigateur</div><div class="security-sub">Alerte système quand un retour arrive (app ouverte, même en arrière-plan)</div></div>
+      <button class="tog" id="tog-browser" onclick="_togNotif('browser')"></button>
+    </div>
+    <div class="security-item">
+      <div><div class="security-label">Seulement si douleur ≥ 4</div><div class="security-sub">Limiter les notifications navigateur aux retours douloureux</div></div>
+      <button class="tog" id="tog-painOnly" onclick="_togNotif('painOnly')"></button>
     </div>
   </div>
 
@@ -267,6 +298,46 @@ function sendPasswordReset() {
     });
   });
 }
+
+/* ═══ RÉGLAGES NOTIFICATIONS ═══ */
+function _notifPrefs() {
+  var d = { dots:true, bell:true, browser:false, painOnly:false };
+  try { return Object.assign(d, JSON.parse(localStorage.getItem('r4p-notif-prefs')||'{}')); }
+  catch(e) { return d; }
+}
+
+function _renderNotifTogs() {
+  var p = _notifPrefs();
+  ['dots','bell','browser','painOnly'].forEach(function(k) {
+    var el = document.getElementById('tog-'+k);
+    if (el) el.classList.toggle('on', !!p[k]);
+  });
+}
+
+function _togNotif(key) {
+  var p = _notifPrefs();
+  p[key] = !p[key];
+  var apply = function() {
+    try { localStorage.setItem('r4p-notif-prefs', JSON.stringify(p)); } catch(e) {}
+    _renderNotifTogs();
+  };
+  // Activation des notifications navigateur → demander la permission systeme
+  if (key === 'browser' && p.browser && typeof Notification !== 'undefined') {
+    if (Notification.permission === 'granted') { apply(); return; }
+    if (Notification.permission === 'denied') {
+      alert('Les notifications sont bloquées par le navigateur.\nAutorisez-les dans les réglages du site puis réessayez.');
+      p.browser = false; apply(); return;
+    }
+    Notification.requestPermission().then(function(perm) {
+      if (perm !== 'granted') p.browser = false;
+      apply();
+    });
+    return;
+  }
+  apply();
+}
+
+_renderNotifTogs();
 
 /* Déconnexion */
 function doLogout() {
