@@ -9,6 +9,11 @@ const CLIENT_ID     = Deno.env.get('STRAVA_CLIENT_ID')!
 const CLIENT_SECRET = Deno.env.get('STRAVA_CLIENT_SECRET')!
 const APP_URL       = Deno.env.get('APP_URL')!
 
+// L'athlete qui clique le lien de connexion n'a pas de compte Rehab4Perf —
+// on ne le renvoie donc jamais vers l'app praticien (APP_URL), mais vers une
+// page neutre dediee qui ne requiert aucune authentification.
+const ATHLETE_REDIRECT = APP_URL + '/strava-connected.html'
+
 Deno.serve(async (req: Request) => {
   const url       = new URL(req.url)
   const code      = url.searchParams.get('code')
@@ -16,7 +21,7 @@ Deno.serve(async (req: Request) => {
   const error     = url.searchParams.get('error')
 
   if (error || !code || !state) {
-    return Response.redirect(APP_URL + '?strava=denied', 302)
+    return Response.redirect(ATHLETE_REDIRECT + '?status=denied', 302)
   }
 
   const parts = state.split(':')
@@ -39,7 +44,7 @@ Deno.serve(async (req: Request) => {
   })
 
   if (!tokenRes.ok) {
-    return Response.redirect(APP_URL + '?strava=error', 302)
+    return Response.redirect(ATHLETE_REDIRECT + '?status=error', 302)
   }
 
   const data = await tokenRes.json()
@@ -56,7 +61,7 @@ Deno.serve(async (req: Request) => {
   }, { onConflict: 'patient_id' })
 
   if (upsertErr) {
-    return Response.redirect(APP_URL + '?strava=error', 302)
+    return Response.redirect(ATHLETE_REDIRECT + '?status=error', 302)
   }
 
   // Sync last 90 days in background (fire and forget)
@@ -65,5 +70,5 @@ Deno.serve(async (req: Request) => {
     { headers: { 'Authorization': `Bearer ${Deno.env.get('SB_SERVICE_ROLE_KEY')}` } }
   ).catch(() => {})
 
-  return Response.redirect(APP_URL + '?strava=ok', 302)
+  return Response.redirect(ATHLETE_REDIRECT + '?status=ok', 302)
 })

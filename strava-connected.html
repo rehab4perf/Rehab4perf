@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Strava — Rehab4Perf</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+:root {
+  --navy:#1A3A5C; --accent:#2B5FA6; --accent2:#4A90D9;
+  --bg:#F0F4F8; --surface:#fff; --text:#1a2433; --muted:#6b7a8d;
+  --border:#dde3ec; --strava:#FC4C02;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvetica Neue',Arial,sans-serif; color:var(--text); }
+.screen { min-height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; }
+.card { background:var(--surface); border-radius:14px; border:1px solid var(--border); padding:36px 32px; max-width:420px; width:100%; text-align:center; box-shadow:0 8px 32px rgba(0,0,0,.08); }
+.logo { display:inline-flex; align-items:center; gap:14px; margin-bottom:20px; }
+.logo svg { display:block; flex-shrink:0; }
+.logo-w { display:inline-flex; align-items:baseline; line-height:1; white-space:nowrap; }
+.logo-r { font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:600; font-size:40px; color:#1a2433; letter-spacing:-.01em; }
+.logo-e { font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:600; font-size:.44em; vertical-align:super; color:#2B5FA6; margin:0 .05em 0 .01em; line-height:0; }
+.logo-p { font-family:'Poppins',sans-serif; font-weight:800; font-size:32px; color:#1a2433; letter-spacing:-.025em; margin-left:.02em; }
+.icon { width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; font-size:26px; }
+.icon.ok { background:#EFF9EE; }
+.icon.error, .icon.denied { background:#FEF0EE; }
+.title { font-size:1.05rem; font-weight:700; margin-bottom:8px; }
+.desc { font-size:.85rem; color:var(--muted); line-height:1.6; margin-bottom:4px; }
+.strava-tag { display:inline-flex; align-items:center; gap:6px; margin-top:18px; font-size:.72rem; color:var(--muted); }
+.strava-tag svg { display:block; }
+</style>
+</head>
+<body>
+
+<div class="screen">
+  <div class="card">
+    <div class="logo">
+      <svg viewBox="8 34 164 104" width="46" height="29" aria-hidden="true"><g stroke="#2B5FA6" stroke-width="16" stroke-linecap="round" fill="none"><line x1="20" y1="118" x2="56" y2="104"/><line x1="70" y1="122" x2="100" y2="84"/><line x1="112" y1="125" x2="134" y2="66"/><line x1="158" y1="128" x2="158" y2="46"/></g></svg>
+      <span class="logo-w"><span class="logo-r">rehab<sup class="logo-e">4</sup></span><span class="logo-p">perf</span></span>
+    </div>
+
+    <div id="statusOk" style="display:none;">
+      <div class="icon ok">✅</div>
+      <div class="title">Strava connecté !</div>
+      <div class="desc">Vos séances et sorties seront désormais transmises automatiquement à votre kinésithérapeute.</div>
+      <div class="desc">Vous pouvez fermer cette page.</div>
+    </div>
+
+    <div id="statusDenied" style="display:none;">
+      <div class="icon denied">⚠️</div>
+      <div class="title">Connexion annulée</div>
+      <div class="desc">Vous n'avez pas autorisé l'accès à Strava.</div>
+      <div class="desc">Si c'est une erreur, redemandez le lien à votre kinésithérapeute.</div>
+    </div>
+
+    <div id="statusError" style="display:none;">
+      <div class="icon error">✕</div>
+      <div class="title">Une erreur est survenue</div>
+      <div class="desc">La connexion à Strava n'a pas abouti.</div>
+      <div class="desc">Réessayez, ou contactez votre kinésithérapeute si le problème persiste.</div>
+    </div>
+
+    <div class="strava-tag">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="#FC4C02"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>
+      <span>Connexion sécurisée via Strava</span>
+    </div>
+  </div>
+</div>
+
+<script>
+var status = new URLSearchParams(window.location.search).get('status') || 'ok';
+var id = status === 'denied' ? 'statusDenied' : status === 'error' ? 'statusError' : 'statusOk';
+document.getElementById(id).style.display = 'block';
+</script>
+</body>
+</html>
