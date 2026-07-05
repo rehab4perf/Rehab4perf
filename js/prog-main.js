@@ -7,9 +7,12 @@ var _cycles = [];
 try { _cycles = JSON.parse(localStorage.getItem(R4P_KEYS.CYCLES)||'[]'); } catch(e){ _cycles=[]; }
 
 // Sauvegarde cycles : Supabase si patient sélectionné, sinon localStorage
+// (le localStorage global ne sert que pour le mode "sans patient" — jamais
+// utilisé comme cache pour les cycles d'un patient, pour ne pas les faire
+// fuiter vers un autre patient au prochain chargement de page)
 function _saveCyclesToCloud(){
-  try { localStorage.setItem(R4P_KEYS.CYCLES, JSON.stringify(_cycles)); } catch(e){}
-  if(!_progPatient || !_progToken) return;
+  if(!_progPatient){ try { localStorage.setItem(R4P_KEYS.CYCLES, JSON.stringify(_cycles)); } catch(e){} return; }
+  if(!_progToken) return;
   _fetchRetry(SUPA_URL_P + '/rest/v1/patient_settings', {
     method: 'POST',
     headers: Object.assign({}, _sbHeaders(), { 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
@@ -17,24 +20,32 @@ function _saveCyclesToCloud(){
   }).catch(function(err){ console.warn('Cycles cloud save:', err); });
 }
 
-// Charge les cycles depuis Supabase pour le patient actif
+// Charge les cycles depuis Supabase pour le patient actif.
+// Remet TOUJOURS _cycles a jour (y compris vide) — ne jamais laisser trainer
+// les cycles du patient precedent le temps du fetch ou si le patient actif
+// n'a aucun cycle enregistre.
 function _loadCyclesForPatient(){
   if(!_progPatient){ return; }
-  _fetchRetry(SUPA_URL_P + '/rest/v1/patient_settings?patient_id=eq.' + _progPatient.id + '&select=cycles', {
+  _cycles = [];
+  renderCycleTimeline();
+  var _forPatientId = _progPatient.id; // capture : ignorer la reponse si le patient a change entre-temps
+  _fetchRetry(SUPA_URL_P + '/rest/v1/patient_settings?patient_id=eq.' + _forPatientId + '&select=cycles', {
     headers: { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json' }
   })
   .then(function(r){ return r.json(); })
   .then(function(data){
+    if(!_progPatient || _progPatient.id !== _forPatientId) return; // patient change pendant le fetch
     var arr = Array.isArray(data) ? data : [];
-    if(arr.length && Array.isArray(arr[0].cycles)){
-      _cycles = arr[0].cycles;
-      try { localStorage.setItem(R4P_KEYS.CYCLES, JSON.stringify(_cycles)); } catch(e){}
-    }
+    _cycles = (arr.length && Array.isArray(arr[0].cycles)) ? arr[0].cycles : [];
     renderCycleTimeline();
     // Rafraîchir le calendrier pour afficher les cycles du patient
     if(document.getElementById('mpanel-cal').classList.contains('active')) renderCalendar();
   })
-  .catch(function(){ /* garde les cycles localStorage */ });
+  .catch(function(){
+    if(!_progPatient || _progPatient.id !== _forPatientId) return;
+    _cycles = [];
+    renderCycleTimeline();
+  });
 }
 var _cycleColors = {
   'Force':'#1A3A5C','Puissance':'#C0392B','Hypertrophie':'#2D7D46',
