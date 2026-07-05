@@ -75,7 +75,8 @@ function _fmtDateShort(str){
   var d=new Date(str+'T00:00:00');
   return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');
 }
-function _dayCycleStyle(cellDate){
+// Retourne {style, name, color} pour le cycle actif ce jour-la, ou null.
+function _dayCycleInfo(cellDate){
   for(var i=0;i<_cycles.length;i++){
     var cy=_cycles[i];
     if(!cy.startDate) continue;
@@ -88,10 +89,16 @@ function _dayCycleStyle(cellDate){
       var r=parseInt(hex.slice(1,3),16)||82;
       var g=parseInt(hex.slice(3,5),16)||81;
       var b=parseInt(hex.slice(5,7),16)||78;
-      return 'background-color:rgba('+r+','+g+','+b+',.10);';
+      return { style:'background-color:rgba('+r+','+g+','+b+',.10);', name:cy.nom||'', color:hex };
     }
   }
-  return '';
+  return null;
+}
+function _dayCycleStyle(cellDate){ var i=_dayCycleInfo(cellDate); return i?i.style:''; }
+function _dayCycleLabelHtml(cellDate, cls){
+  var i=_dayCycleInfo(cellDate);
+  if(!i || !i.name) return '';
+  return '<div class="'+cls+'" style="color:'+i.color+'" title="'+escH(i.name)+'">'+escH(i.name)+'</div>';
 }
 var _cycleEditingId = null;
 var _cycleAddOpen   = false;
@@ -1585,6 +1592,7 @@ function _renderWeekUI(){
           +' ondragover="_calDayDragOver(event,\''+dateStr+'\')"'
           +' ondragleave="_calDayDragLeave(event)"'
           +' ondrop="_calDayDrop(event,\''+dateStr+'\')">'
+          + _dayCycleLabelHtml(cellDate, 'cal-week-cycle-lbl')
           + _buildDayChips(dateStr, cellDate)
           + '<div class="cal-week-add">+ Séance</div>'
           + '</div>';
@@ -1633,6 +1641,7 @@ function _renderCalendarUI() {
       +' ondragleave="_calDayDragLeave(event)"'
       +' ondrop="_calDayDrop(event,\''+dateStr+'\')">'
       +'<div class="cal-day-num">'+d+'</div>'
+      +_dayCycleLabelHtml(cellDate, 'cal-day-cycle-lbl')
       +_buildDayChips(dateStr, cellDate)+'</div>';
   }
   grid.innerHTML = headers + cells;
