@@ -742,30 +742,30 @@ function _notifTimeAgo(iso){
 
 function _fbBellPoll(){
   if(_notifFeed === null) return; // colonne seen_at absente : abandonné pour cette session
+  if(!_currentUid){ _notifFeed = []; _renderBell(); return; }
   var prefs = _notifPrefs();
   if(!prefs.bell && !prefs.browser){ _renderBell(); return; }
-  sb.from('athlete_feedback')
-    .select('seance_id,rpe,duree_min,exo_data,submitted_at,seances_planifiees!inner(id,date,patient_id,programme_id,programmes(nom))')
-    .is('seen_at', null)
-    .order('submitted_at', { ascending:false })
-    .limit(30)
-    .then(function(res){
-      if(res.error){ _notifFeed = null; _renderBell(); return; }
-      _notifFeed = res.data || [];
-      var missing = {};
-      _notifFeed.forEach(function(f){
-        var pid = f.seances_planifiees && f.seances_planifiees.patient_id;
-        if(pid && !_notifPatients[pid]) missing[pid] = 1;
+  // Scoper explicitement aux patients du praticien connecté — ne jamais se reposer
+  // uniquement sur la RLS de athlete_feedback (lecture large requise pour le flux athlète anonyme).
+  sb.from('patients').select('id,nom,prenom').eq('praticien_id', _currentUid).then(function(pr){
+    if(pr.error){ _notifFeed = null; _renderBell(); return; }
+    var myPatients = pr.data || [];
+    myPatients.forEach(function(p){ _notifPatients[p.id] = p.nom+' '+_capFirst(p.prenom||''); });
+    var ids = myPatients.map(function(p){ return p.id; });
+    if(!ids.length){ _notifFeed = []; _renderBell(); return; }
+    sb.from('athlete_feedback')
+      .select('seance_id,rpe,duree_min,exo_data,submitted_at,seances_planifiees!inner(id,date,patient_id,programme_id,programmes(nom))')
+      .is('seen_at', null)
+      .in('seances_planifiees.patient_id', ids)
+      .order('submitted_at', { ascending:false })
+      .limit(30)
+      .then(function(res){
+        if(res.error){ _notifFeed = null; _renderBell(); return; }
+        _notifFeed = res.data || [];
+        _renderBell();
+        _fireBrowserNotifs();
       });
-      var ids = Object.keys(missing);
-      var done = function(){ _renderBell(); _fireBrowserNotifs(); };
-      if(ids.length){
-        sb.from('patients').select('id,nom,prenom').in('id', ids).then(function(pr){
-          (pr.data||[]).forEach(function(p){ _notifPatients[p.id] = p.nom+' '+_capFirst(p.prenom||''); });
-          done();
-        });
-      } else done();
-    });
+  });
 }
 
 function _renderBell(){
