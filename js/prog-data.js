@@ -1360,7 +1360,7 @@ function setNrs(blocId, exoId, val){
   var badge = document.querySelector('[data-nrs="'+blocId+'-'+exoId+'"]');
   if(badge){
     var col = val === null ? '#9AA0A8' : val<=3 ? '#16A34A' : val<=6 ? '#F59E0B' : '#DC2626';
-    badge.textContent = val !== null ? '💢 '+val+'/10' : '💢 —';
+    badge.textContent = val !== null ? 'EVA '+val+'/10' : 'EVA —';
     badge.style.color = col;
     badge.style.borderColor = val !== null ? col : '#CBD2DB';
   }
