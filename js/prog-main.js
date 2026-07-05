@@ -920,12 +920,17 @@ function _renderBilanCharge(){
   // Adhérence 30 jours : seances passees realisees (feedback ou activite Strava liee) / planifiees
   var _adhToday = _dateStr(new Date());
   var _adhFrom = _dateStr(new Date(Date.now() - 30*24*3600*1000));
-  var _linkedSeanceIds = {};
-  _stravaActivities.forEach(function(a){ if(a.seance_id) _linkedSeanceIds[String(a.seance_id)] = true; });
+  var _linkedSeanceIds = {}, _actDates = {};
+  _stravaActivities.forEach(function(a){
+    if(a.seance_id) _linkedSeanceIds[String(a.seance_id)] = true;
+    if(a.date) _actDates[a.date] = true;
+  });
   var _adhPast = _cloudCalEvents.filter(function(ev){ return ev.date && ev.date < _adhToday && ev.date >= _adhFrom; });
   var _adhDone = _adhPast.filter(function(ev){
     var fb = ev.athlete_feedback;
-    return (fb && ((fb.rpe !== null && fb.rpe !== undefined) || _fbDouleur(fb) !== null || fb.exo_data)) || _linkedSeanceIds[String(ev.id)];
+    return (fb && ((fb.rpe !== null && fb.rpe !== undefined) || _fbDouleur(fb) !== null || fb.exo_data))
+      || _linkedSeanceIds[String(ev.id)]
+      || _actDates[ev.date]; // activite Strava le meme jour = realisation probable
   }).length;
   var _adhHtml = '';
   if(_adhPast.length >= 3){
@@ -1090,11 +1095,15 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
     var info=[d,t].filter(Boolean).join(' ');
     return info?' <span style="font-size:.55rem;background:#FC4C02;color:#fff;border-radius:3px;padding:0 3px;font-weight:700;flex-shrink:0;">S '+escH(info)+'</span>':'';
   };
-  // S2 — statut de realisation : seance passee sans feedback ni activite liee = manquee
+  // S2 — statut de realisation : seance passee sans feedback, sans activite liee
+  // ET sans aucune activite Strava ce jour-la = manquee. La presence d'une activite
+  // le meme jour (meme non liee) vaut realisation probable — on ne grise pas.
   var _missedStyle = function(ev){
     if(dateStr >= _todayStr) return '';
     var fb = ev.athlete_feedback;
-    var done = (fb && (fb.rpe !== null && fb.rpe !== undefined || _fbDouleur(fb) !== null || fb.exo_data)) || _linkedAct[String(ev.id)];
+    var done = (fb && (fb.rpe !== null && fb.rpe !== undefined || _fbDouleur(fb) !== null || fb.exo_data))
+      || _linkedAct[String(ev.id)]
+      || _stravaDay.length > 0;
     return done ? '' : ';opacity:.5;filter:grayscale(.5);';
   };
   if(_progPatient){
@@ -4871,6 +4880,13 @@ function _closeChipDrop(){
 /* ── Popover détail activité Strava ── */
 function _showStravaDetail(e, stravaId){
   e.stopPropagation();
+  // Capturer l'ancrage AVANT de retirer un eventuel popover parent (groupe) :
+  // sinon getBoundingClientRect() sur un element detache renvoie 0x0 → coin haut-gauche.
+  var anchorRect = e.currentTarget && e.currentTarget.getBoundingClientRect ? e.currentTarget.getBoundingClientRect() : null;
+  if(anchorRect && !anchorRect.width && !anchorRect.height) anchorRect = null;
+  if(!anchorRect && typeof e.clientX === 'number' && (e.clientX || e.clientY)){
+    anchorRect = { left: e.clientX, top: e.clientY, bottom: e.clientY };
+  }
   var existing = document.getElementById('_stravaDetailDrop');
   if(existing){ existing.remove(); if(+existing.dataset.sid === stravaId) return; }
 
@@ -4946,15 +4962,15 @@ function _showStravaDetail(e, stravaId){
 
   document.body.appendChild(drop);
 
-  var rect = e.currentTarget.getBoundingClientRect();
+  var rect = anchorRect || { left: 20, top: 60, bottom: 60 };
   var dropW = drop.offsetWidth || 220;
   var dropH = drop.offsetHeight || 200;
   var left  = rect.left;
   var top   = rect.bottom + 6;
   if(left + dropW > window.innerWidth - 8) left = window.innerWidth - dropW - 8;
   if(top + dropH > window.innerHeight - 8) top = rect.top - dropH - 6;
-  drop.style.left = left + 'px';
-  drop.style.top  = top  + 'px';
+  drop.style.left = Math.max(8, left) + 'px';
+  drop.style.top  = Math.max(8, top) + 'px';
 
   setTimeout(function(){
     document.addEventListener('click', function rm(){ drop.remove(); document.removeEventListener('click', rm, true); }, { once: true, capture: true });
