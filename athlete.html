@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light only">
 <title>Mon Programme</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
@@ -446,6 +446,10 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
   resize:none; overflow:hidden; min-height:32px; line-height:1.45; display:block;
 }
 .exo-exo-note-inp:focus { border-color:var(--accent2); }
+/* iOS/Android : police >= 16px sur les champs pour empecher le zoom auto au focus */
+@media (max-width:600px){
+  .exo-exo-note-inp, .exo-global-note-ta, .session-note-ta, .rpe-duree input { font-size:16px; }
+}
 
 /* ── DESIGN EXERCICES V3 (pills + cadre enchaîné) ── */
 .exo-chain-group { border:1.5px solid var(--accent); border-radius:10px; margin:10px 10px 4px; overflow:hidden; }
