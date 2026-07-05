@@ -15,7 +15,7 @@ const CLIENT_SECRET = Deno.env.get('STRAVA_CLIENT_SECRET')!
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, apikey, content-type, prefer',
 }
 
 async function refreshIfNeeded(token: Record<string, string>): Promise<string> {
