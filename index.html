@@ -803,7 +803,7 @@ function _renderBell(){
     else {
       var pb = pain>=7?'#fee2e2':pain>=4?'#ffedd5':'#fefce8';
       var pc = pain>=7?'#991b1b':pain>=4?'#9a3412':'#92400e';
-      painHtml = '<span class="notif-pain" style="background:'+pb+';color:'+pc+'">🩹 '+pain+'/10</span>';
+      painHtml = '<span class="notif-pain" style="background:'+pb+';color:'+pc+'">'+pain+'/10</span>';
     }
     return '<div class="notif-item" onclick="_notifOpen('+i+')">'
       + '<div class="notif-ava">'+initials+'</div>'
