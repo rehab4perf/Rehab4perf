@@ -5073,6 +5073,13 @@ function _renderStravaRealisedBanner(seanceId){
     }
   }
 
+  // Bouton "Charger les allures" si absentes et activite de type course/marche
+  var runLike = ['Run','TrailRun','Walk','Hike'].indexOf(act.type) !== -1;
+  var loadSplitsHtml = '';
+  if(runLike && !splitsHtml && act.distance_m > 500){
+    loadSplitsHtml = '<button class="srb-load-splits-btn" id="srbLoadSplits" onclick="event.stopPropagation();_stravaLoadSplits('+act.strava_id+')">↻ Charger les allures</button>';
+  }
+
   // Parcours
   var routeHtml = '';
   if(d.polyline){
@@ -5081,17 +5088,50 @@ function _renderStravaRealisedBanner(seanceId){
   }
 
   var dateFr = act.date ? act.date.split('-').reverse().join('/') : '';
+  var collapsed = _srbIsCollapsed();
+  banner.classList.toggle('collapsed', collapsed);
   banner.innerHTML =
-    '<div class="srb-head">'
+    '<div class="srb-head" onclick="_srbToggleCollapse()" title="Replier / déplier">'
     + '<svg width="14" height="14" viewBox="0 0 24 24" fill="#FC4C02" style="flex-shrink:0"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>'
     + '<span class="srb-title">Réalisée avec Strava — '+escH(act.nom || act.type || 'Activité')+'</span>'
     + '<span class="srb-date">'+escH(dateFr)+'</span>'
+    + '<span class="srb-chevron">▾</span>'
     + '</div>'
     + '<div class="srb-body">'
     + routeHtml
-    + '<div class="srb-stats"><div class="srb-pills">'+pillsHtml+'</div>'+splitsHtml+'</div>'
+    + '<div class="srb-stats"><div class="srb-pills">'+pillsHtml+'</div>'+splitsHtml+loadSplitsHtml+'</div>'
     + '</div>';
   banner.style.display = 'block';
+}
+
+/* ── Repli / dépli du panneau Strava (persistant, tous les panneaux) ── */
+function _srbIsCollapsed(){
+  try { return localStorage.getItem('r4p-srb-collapsed') === '1'; } catch(e){ return false; }
+}
+function _srbToggleCollapse(){
+  var banner = document.getElementById('strava-realised-banner');
+  if(!banner) return;
+  var next = !banner.classList.contains('collapsed');
+  banner.classList.toggle('collapsed', next);
+  try { localStorage.setItem('r4p-srb-collapsed', next ? '1' : '0'); } catch(e){}
+}
+
+/* ── Charger les allures manquantes (activites importees via l'historique) ── */
+function _stravaLoadSplits(stravaId){
+  var btn = document.getElementById('srbLoadSplits');
+  if(btn){ btn.disabled = true; btn.textContent = '⏳ Chargement…'; }
+  _fetchRetry(SUPA_URL_P + '/functions/v1/strava-enrich-activity', {
+    method: 'POST',
+    headers: _sbHeaders(),
+    body: JSON.stringify({ strava_id: stravaId, patient_id: _progPatient && _progPatient.id })
+  }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+    .then(function(res){
+      if(!res.ok){ if(btn){ btn.disabled=false; btn.textContent='↻ Charger les allures'; } alert('Impossible de récupérer les allures (Strava ou réseau).'); return; }
+      var act = _stravaActivities.find(function(a){ return a.strava_id === stravaId; });
+      if(act) act.donnees = res.data.donnees;
+      if(typeof _currentSeanceId !== 'undefined' && _currentSeanceId) _renderStravaRealisedBanner(_currentSeanceId);
+    })
+    .catch(function(){ if(btn){ btn.disabled=false; btn.textContent='↻ Charger les allures'; } alert('Erreur réseau.'); });
 }
 
 /* ── Lier / Délier une activite Strava a une seance (persistant) ── */
