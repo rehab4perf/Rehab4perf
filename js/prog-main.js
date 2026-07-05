@@ -5073,11 +5073,19 @@ function _renderStravaRealisedBanner(seanceId){
     }
   }
 
-  // Bouton "Charger les allures" si absentes et activite de type course/marche
+  // Allures manquantes (activite importee via l'historique) : chargement automatique,
+  // une seule fois par activite — le resultat est sauvegarde en base, donc plus jamais
+  // rappele ensuite pour cette meme activite.
   var runLike = ['Run','TrailRun','Walk','Hike'].indexOf(act.type) !== -1;
   var loadSplitsHtml = '';
+  var needsAutoLoad = false;
   if(runLike && !splitsHtml && act.distance_m > 500){
-    loadSplitsHtml = '<button class="srb-load-splits-btn" id="srbLoadSplits" onclick="event.stopPropagation();_stravaLoadSplits('+act.strava_id+')">↻ Charger les allures</button>';
+    if(_srbSplitsAttempted[act.strava_id]){
+      loadSplitsHtml = '<div class="srb-splits-note">Allures indisponibles pour cette activité.</div>';
+    } else {
+      loadSplitsHtml = '<div class="srb-splits-note" id="srbSplitsLoading">⏳ Chargement des allures…</div>';
+      needsAutoLoad = true;
+    }
   }
 
   // Parcours
@@ -5102,6 +5110,8 @@ function _renderStravaRealisedBanner(seanceId){
     + '<div class="srb-stats"><div class="srb-pills">'+pillsHtml+'</div>'+splitsHtml+loadSplitsHtml+'</div>'
     + '</div>';
   banner.style.display = 'block';
+
+  if(needsAutoLoad) _stravaLoadSplits(act.strava_id, seanceId);
 }
 
 /* ── Repli / dépli du panneau Strava (persistant, tous les panneaux) ── */
@@ -5116,22 +5126,29 @@ function _srbToggleCollapse(){
   try { localStorage.setItem('r4p-srb-collapsed', next ? '1' : '0'); } catch(e){}
 }
 
-/* ── Charger les allures manquantes (activites importees via l'historique) ── */
-function _stravaLoadSplits(stravaId){
-  var btn = document.getElementById('srbLoadSplits');
-  if(btn){ btn.disabled = true; btn.textContent = '⏳ Chargement…'; }
+/* ── Charger automatiquement les allures manquantes (une seule tentative par
+   activite et par session — le resultat est sauvegarde en base, donc les
+   ouvertures suivantes de cette meme seance n'appellent plus jamais l'API). ── */
+var _srbSplitsAttempted = {};
+function _stravaLoadSplits(stravaId, forSeanceId){
+  _srbSplitsAttempted[stravaId] = true;
   _fetchRetry(SUPA_URL_P + '/functions/v1/strava-enrich-activity', {
     method: 'POST',
     headers: _sbHeaders(),
     body: JSON.stringify({ strava_id: stravaId, patient_id: _progPatient && _progPatient.id })
   }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
     .then(function(res){
-      if(!res.ok){ if(btn){ btn.disabled=false; btn.textContent='↻ Charger les allures'; } alert('Impossible de récupérer les allures (Strava ou réseau).'); return; }
       var act = _stravaActivities.find(function(a){ return a.strava_id === stravaId; });
-      if(act) act.donnees = res.data.donnees;
-      if(typeof _currentSeanceId !== 'undefined' && _currentSeanceId) _renderStravaRealisedBanner(_currentSeanceId);
+      if(res.ok && act) act.donnees = res.data.donnees;
+      // Re-rendre seulement si la seance est toujours affichee dans le builder
+      if(typeof _currentSeanceId !== 'undefined' && String(_currentSeanceId) === String(forSeanceId)){
+        _renderStravaRealisedBanner(forSeanceId);
+      }
     })
-    .catch(function(){ if(btn){ btn.disabled=false; btn.textContent='↻ Charger les allures'; } alert('Erreur réseau.'); });
+    .catch(function(){
+      var note = document.getElementById('srbSplitsLoading');
+      if(note) note.textContent = 'Allures indisponibles pour cette activité.';
+    });
 }
 
 /* ── Lier / Délier une activite Strava a une seance (persistant) ── */
