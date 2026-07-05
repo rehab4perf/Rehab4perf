@@ -745,7 +745,7 @@ function _fbBellPoll(){
   var prefs = _notifPrefs();
   if(!prefs.bell && !prefs.browser){ _renderBell(); return; }
   sb.from('athlete_feedback')
-    .select('id,seance_id,rpe,duree_min,exo_data,submitted_at,seances_planifiees!inner(id,date,patient_id,programme_id,programmes(nom))')
+    .select('seance_id,rpe,duree_min,exo_data,submitted_at,seances_planifiees!inner(id,date,patient_id,programme_id,programmes(nom))')
     .is('seen_at', null)
     .order('submitted_at', { ascending:false })
     .limit(30)
@@ -860,8 +860,8 @@ function _selectPatientById(id){
 
 function _notifMarkAll(){
   if(!_notifFeed || !_notifFeed.length) return;
-  var ids = _notifFeed.map(function(f){ return f.id; });
-  sb.from('athlete_feedback').update({ seen_at: new Date().toISOString() }).in('id', ids).then(function(){
+  var ids = _notifFeed.map(function(f){ return f.seance_id; });
+  sb.from('athlete_feedback').update({ seen_at: new Date().toISOString() }).in('seance_id', ids).then(function(){
     _fbBellPoll();
     var pf = document.getElementById('frame-prescription');
     if(pf && pf.contentWindow) pf.contentWindow.postMessage({ type:'r4p-fb-seen-all' }, window.location.origin);
@@ -870,12 +870,12 @@ function _notifMarkAll(){
 
 function _fireBrowserNotifs(){
   var prefs = _notifPrefs();
-  var syncKnown = function(){ (_notifFeed||[]).forEach(function(f){ _notifKnown[f.id] = 1; }); };
+  var syncKnown = function(){ (_notifFeed||[]).forEach(function(f){ _notifKnown[f.seance_id] = 1; }); };
   if(_notifFirstPoll){ _notifFirstPoll = false; syncKnown(); return; } // pas de spam au chargement
   if(!prefs.browser || typeof Notification === 'undefined' || Notification.permission !== 'granted'){ syncKnown(); return; }
   (_notifFeed||[]).forEach(function(f){
-    if(_notifKnown[f.id]) return;
-    _notifKnown[f.id] = 1;
+    if(_notifKnown[f.seance_id]) return;
+    _notifKnown[f.seance_id] = 1;
     var pain = _notifMaxPain(f);
     if(prefs.painOnly && (pain === null || pain < 4)) return;
     var sp = f.seances_planifiees || {};
@@ -883,7 +883,7 @@ function _fireBrowserNotifs(){
     var progNom = (sp.programmes && sp.programmes.nom) || 'Séance';
     var dateFr = sp.date ? sp.date.split('-').reverse().slice(0,2).join('/') : '';
     var body = progNom + (dateFr ? ' du '+dateFr : '') + (pain !== null && pain > 0 ? ' · douleur '+pain+'/10' : '');
-    try { new Notification('Retour athlète — '+pname, { body: body, tag: 'r4p-fb-'+f.id }); } catch(e){}
+    try { new Notification('Retour athlète — '+pname, { body: body, tag: 'r4p-fb-'+f.seance_id }); } catch(e){}
   });
 }
 
