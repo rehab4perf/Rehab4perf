@@ -2541,7 +2541,7 @@ window.addEventListener('message', function(e){
       _sendPevoGrid(); return;
     }
     var _pevoUrl = SUPA_URL_P+'/rest/v1/seances_planifiees?patient_id=eq.'+_reqPatId
-      +'&select=id,date,programme_id,programmes(nom,donnees),athlete_feedback(rpe,duree_min,exo_data,submitted_at)&order=date.asc';
+      +'&select=id,date,programme_id,programmes(nom,donnees),athlete_feedback(rpe,duree_min,douleur,effort,exo_data,submitted_at)&order=date.asc';
     _fetchRetry(_pevoUrl,{method:'GET',headers:_sbHeaders()})
       .then(function(r){ return r.json(); })
       .then(function(data){
@@ -3889,7 +3889,9 @@ function _extractCapPainData(seances) {
     var donnees = (s.programmes && s.programmes.donnees) || {};
     if (donnees.type !== 'cap') return;
     var fb = s.athlete_feedback;
-    var pain = (fb && fb.rpe !== null && fb.rpe !== undefined) ? parseFloat(fb.rpe) : null;
+    // Colonne dediee douleur (fallback legacy : rpe quand duree_min = effort <= 10)
+    var pain = _fbDouleur(fb);
+    pain = (pain !== null) ? parseFloat(pain) : null;
     if (pain === null || isNaN(pain)) return;
     points.push({ date: s.date, pain: pain });
   });
@@ -4497,7 +4499,7 @@ function openChargesEvo() {
   _pevoData = null; _pevoDureeData = null; _pevoCardioData = null; _pevoCapPainData = null;
   // Charger toutes les séances du patient avec les données du programme lié
   var url = SUPA_URL_P + '/rest/v1/seances_planifiees?patient_id=eq.' + _progPatient.id
-    + '&select=id,date,programme_id,programmes(nom,donnees),athlete_feedback(rpe,duree_min,exo_data,submitted_at)&order=date.asc';
+    + '&select=id,date,programme_id,programmes(nom,donnees),athlete_feedback(rpe,duree_min,douleur,effort,exo_data,submitted_at)&order=date.asc';
   _fetchRetry(url, {method:'GET', headers:_sbHeaders()})
     .then(function(r){ return r.json(); })
     .then(function(data){

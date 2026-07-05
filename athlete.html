@@ -2009,8 +2009,11 @@ var _capCurrentRpe = 0;
 
 function _buildCapPainCard(seanceId, existing) {
   _capCurrentSeanceId = seanceId;
-  _capCurrentPain = (existing && existing.rpe !== null && existing.rpe !== undefined) ? existing.rpe : null;
-  _capCurrentRpe  = (existing && existing.duree_min > 10) ? 0 : (existing && existing.duree_min ? existing.duree_min : 0);
+  // Nouvelles colonnes douleur/effort — fallback legacy (rpe=douleur, duree_min=effort<=10)
+  _capCurrentPain = (existing && existing.douleur !== null && existing.douleur !== undefined) ? existing.douleur
+    : (existing && existing.rpe !== null && existing.rpe !== undefined && existing.duree_min <= 10) ? existing.rpe : null;
+  _capCurrentRpe  = (existing && existing.effort) ? existing.effort
+    : (existing && existing.duree_min && existing.duree_min <= 10) ? existing.duree_min : 0;
 
   var alreadyDone = _capCurrentPain !== null;
   var html = '<div class="rpe-card" id="rpeCard">';
@@ -2082,7 +2085,9 @@ function _submitCapFeedback() {
   fetch(SUPA_URL+'/rest/v1/athlete_feedback', {
     method: 'POST',
     headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal' },
-    body: JSON.stringify({ seance_id: _capCurrentSeanceId, rpe: _capCurrentPain, duree_min: _capCurrentRpe, submitted_at: new Date().toISOString() })
+    // douleur/effort dans leurs colonnes dediees — rpe/duree_min mis a NULL
+    // (reserves aux seances standard : rpe = Borg, duree_min = duree reelle)
+    body: JSON.stringify({ seance_id: _capCurrentSeanceId, douleur: _capCurrentPain, effort: _capCurrentRpe, rpe: null, duree_min: null, submitted_at: new Date().toISOString() })
   })
   .then(function(r){
     if(!r.ok){ return r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); if(btn){btn.disabled=false;btn.textContent='Réessayer';} }); }

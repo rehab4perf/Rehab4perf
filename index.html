@@ -721,13 +721,28 @@ function _notifPrefs(){
   catch(e){ return d; }
 }
 
+/* Douleur seance : colonne dediee douleur, fallback legacy (rpe quand duree_min = effort <= 10) */
+function _notifFbDouleur(fb){
+  if(!fb) return null;
+  if(fb.douleur !== null && fb.douleur !== undefined) return fb.douleur;
+  if(fb.duree_min && fb.duree_min <= 10 && fb.rpe !== null && fb.rpe !== undefined) return fb.rpe;
+  return null;
+}
+
+function _notifFbEffortV(fb){
+  if(!fb) return null;
+  if(fb.effort !== null && fb.effort !== undefined) return fb.effort;
+  if(fb.duree_min && fb.duree_min <= 10) return fb.duree_min; // legacy CAP
+  return null;
+}
+
 function _notifMaxPain(fb){
   var mx = null;
   var exos = (fb.exo_data && fb.exo_data.exos) || [];
   exos.forEach(function(ex){
     if(ex.pain !== null && ex.pain !== undefined && (mx === null || ex.pain > mx)) mx = ex.pain;
   });
-  if(mx === null && fb.duree_min && fb.duree_min <= 10 && fb.rpe !== null && fb.rpe !== undefined) mx = fb.rpe;
+  if(mx === null) mx = _notifFbDouleur(fb);
   return mx;
 }
 
@@ -754,7 +769,7 @@ function _fbBellPoll(){
     var ids = myPatients.map(function(p){ return p.id; });
     if(!ids.length){ _notifFeed = []; _renderBell(); return; }
     sb.from('athlete_feedback')
-      .select('seance_id,rpe,duree_min,exo_data,submitted_at,seances_planifiees!inner(id,date,patient_id,programme_id,programmes(nom))')
+      .select('seance_id,rpe,duree_min,douleur,effort,exo_data,submitted_at,seances_planifiees!inner(id,date,patient_id,programme_id,programmes(nom))')
       .is('seen_at', null)
       .in('seances_planifiees.patient_id', ids)
       .order('submitted_at', { ascending:false })
@@ -793,10 +808,12 @@ function _renderBell(){
     var initials = pname.split(/\s+/).map(function(w){ return w.charAt(0); }).join('').slice(0,2).toUpperCase();
     var progNom = (sp.programmes && sp.programmes.nom) || 'Séance';
     var dateFr = sp.date ? sp.date.split('-').reverse().slice(0,2).join('/') : '';
-    var isCap = f.duree_min && f.duree_min <= 10;
+    // Retour douleur (CAP/HSR) : colonne douleur presente ou legacy duree_min<=10
+    var isPainFb = _notifFbDouleur(f) !== null && !(f.rpe && f.duree_min && f.duree_min > 10);
     var sub = progNom + (dateFr ? ' du '+dateFr : '');
-    if(!isCap && f.rpe !== null && f.rpe !== undefined) sub += ' · RPE '+f.rpe;
-    if(!isCap && f.duree_min) sub += ' · '+f.duree_min+' min';
+    if(!isPainFb && f.rpe !== null && f.rpe !== undefined) sub += ' · RPE '+f.rpe;
+    if(!isPainFb && f.duree_min) sub += ' · '+f.duree_min+' min';
+    if(isPainFb && _notifFbEffortV(f)) sub += ' · Effort '+_notifFbEffortV(f);
     var pain = _notifMaxPain(f);
     var painHtml;
     if(pain === null || pain === 0) painHtml = '<span class="notif-pain" style="background:#dcfce7;color:#166534">RAS</span>';
