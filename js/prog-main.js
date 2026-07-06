@@ -28,6 +28,7 @@ function _loadCyclesForPatient(){
   if(!_progPatient){ return; }
   _cycles = [];
   renderCycleTimeline();
+  if(typeof renderCycleList === 'function') renderCycleList(); // le panneau peut rester ouvert pendant le switch
   var _forPatientId = _progPatient.id; // capture : ignorer la reponse si le patient a change entre-temps
   _fetchRetry(SUPA_URL_P + '/rest/v1/patient_settings?patient_id=eq.' + _forPatientId + '&select=cycles', {
     headers: { 'apikey': SUPA_KEY_P, 'Content-Type': 'application/json' }
@@ -38,6 +39,7 @@ function _loadCyclesForPatient(){
     var arr = Array.isArray(data) ? data : [];
     _cycles = (arr.length && Array.isArray(arr[0].cycles)) ? arr[0].cycles : [];
     renderCycleTimeline();
+    if(typeof renderCycleList === 'function') renderCycleList();
     // Rafraîchir le calendrier pour afficher les cycles du patient
     if(document.getElementById('mpanel-cal').classList.contains('active')) renderCalendar();
   })
@@ -45,6 +47,7 @@ function _loadCyclesForPatient(){
     if(!_progPatient || _progPatient.id !== _forPatientId) return;
     _cycles = [];
     renderCycleTimeline();
+    if(typeof renderCycleList === 'function') renderCycleList();
   });
 }
 var _cycleColors = {
