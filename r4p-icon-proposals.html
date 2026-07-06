@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>R4P — Propositions icône Strava</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,600&family=Poppins:wght@800&family=Figtree:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #F7F6F3; font-family: 'Figtree', sans-serif; padding: 40px 32px; color: #1A1917; }
+  h1 { font-size: 1.1rem; font-weight: 600; color: #6B6860; letter-spacing:.04em; text-transform:uppercase; margin-bottom:6px; }
+  p { font-size:.88rem; color:#9D9B96; margin-bottom:40px; }
+
+  .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:36px; max-width:820px; }
+  .card { display:flex; flex-direction:column; align-items:center; gap:14px; }
+  .card-label { font-size:.78rem; font-weight:600; color:#6B6860; text-align:center; letter-spacing:.03em; }
+  .card-sub   { font-size:.72rem; color:#9D9B96; text-align:center; margin-top:-8px; }
+
+  /* Icon container — 220×220, rounded like app icon */
+  .ic { width:220px; height:220px; border-radius:48px; overflow:hidden; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 28px rgba(26,58,92,.22); flex-shrink:0; }
+  .ic.light { box-shadow:0 4px 20px rgba(0,0,0,.10); border:1px solid #E8E6E1; }
+
+  /* Shared wordmark layout */
+  .wm { display:inline-flex; align-items:center; line-height:1; }
+  .R  { font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:600; line-height:1; }
+  .sup4 { font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:600; line-height:1; }
+  .P  { font-family:'Poppins',sans-serif; font-weight:800; line-height:1; }
+
+  /* ── A — Navy classique ── */
+  .bg-a { width:100%; height:100%; background:#1A3A5C; display:flex; align-items:center; justify-content:center; }
+  .bg-a .R  { font-size:88px; color:#fff; letter-spacing:-.02em; }
+  .bg-a .sup4 { font-size:88px; color:#7FA8D9; margin:0 1px; }
+  .bg-a .P  { font-size:88px; color:#fff; letter-spacing:-.04em; }
+
+  /* ── B — Blanc épuré ── */
+  .bg-b { width:100%; height:100%; background:#fff; display:flex; align-items:center; justify-content:center; }
+  .bg-b .R  { font-size:88px; color:#1A3A5C; letter-spacing:-.02em; }
+  .bg-b .sup4 { font-size:88px; color:#4A90D9; margin:0 1px; }
+  .bg-b .P  { font-size:88px; color:#1A3A5C; letter-spacing:-.04em; }
+
+  /* ── C — Navy + accent ring ── */
+  .bg-c { width:100%; height:100%; background:#1A3A5C; display:flex; align-items:center; justify-content:center; position:relative; }
+  .ring { position:absolute; inset:18px; border-radius:32px; border:2px solid rgba(74,144,217,.35); pointer-events:none; }
+  .bg-c .R  { font-size:88px; color:#fff; letter-spacing:-.02em; }
+  .bg-c .sup4 { font-size:88px; color:#7FA8D9; margin:0 1px; }
+  .bg-c .P  { font-size:88px; color:#fff; letter-spacing:-.04em; }
+
+  /* ── D — Bleu accent ── */
+  .bg-d { width:100%; height:100%; background:#2B5FA6; display:flex; align-items:center; justify-content:center; }
+  .bg-d .R  { font-size:88px; color:#fff; letter-spacing:-.02em; }
+  .bg-d .sup4 { font-size:88px; color:#B8D6F5; margin:0 1px; }
+  .bg-d .P  { font-size:88px; color:#fff; letter-spacing:-.04em; }
+
+  /* ── E — Très sombre ── */
+  .bg-e { width:100%; height:100%; background:#0D1E2E; display:flex; align-items:center; justify-content:center; }
+  .bg-e .R  { font-size:88px; color:#fff; letter-spacing:-.02em; }
+  .bg-e .sup4 { font-size:88px; color:#7FA8D9; margin:0 1px; }
+  .bg-e .P  { font-size:88px; color:#fff; letter-spacing:-.04em; }
+
+  /* ── F — Surface chaude (bg du site) ── */
+  .bg-f { width:100%; height:100%; background:#F7F6F3; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; }
+  .bg-f .R  { font-size:88px; color:#1A3A5C; letter-spacing:-.02em; }
+  .bg-f .sup4 { font-size:88px; color:#2B5FA6; margin:0 1px; }
+  .bg-f .P  { font-size:88px; color:#1A3A5C; letter-spacing:-.04em; }
+  .bg-f .bar { width:72px; height:3px; background:linear-gradient(90deg,#2B5FA6,#4A90D9); border-radius:2px; }
+
+  .dl-btn { font-size:.72rem; font-weight:600; color:#2B5FA6; background:none; border:1px solid #D3D1CB; border-radius:20px; padding:5px 16px; cursor:pointer; font-family:inherit; transition:background .15s; }
+  .dl-btn:hover { background:#EEF3FB; }
+</style>
+</head>
+<body>
+
+<h1>R4P — Icône Strava</h1>
+<p>R en Cormorant Garamond italic · 4 en exposant · P en Poppins 800</p>
+
+<div class="grid">
+
+  <!-- A -->
+  <div class="card">
+    <div class="ic" id="wrap-a">
+      <div class="bg-a">
+        <div class="wm"><span class="R">R</span><span class="sup4">4</span><span class="P">P</span></div>
+      </div>
+    </div>
+    <div class="card-label">A — Navy classique</div>
+    <div class="card-sub">#1A3A5C · 4 en bleu clair</div>
+    <button class="dl-btn" onclick="dl('a')">Télécharger PNG</button>
+  </div>
+
+  <!-- B -->
+  <div class="card">
+    <div class="ic light" id="wrap-b">
+      <div class="bg-b">
+        <div class="wm"><span class="R">R</span><span class="sup4">4</span><span class="P">P</span></div>
+      </div>
+    </div>
+    <div class="card-label">B — Blanc épuré</div>
+    <div class="card-sub">Fond blanc · Navy + bleu</div>
+    <button class="dl-btn" onclick="dl('b')">Télécharger PNG</button>
+  </div>
+
+  <!-- C -->
+  <div class="card">
+    <div class="ic" id="wrap-c">
+      <div class="bg-c">
+        <div class="ring"></div>
+        <div class="wm"><span class="R">R</span><span class="sup4">4</span><span class="P">P</span></div>
+      </div>
+    </div>
+    <div class="card-label">C — Navy + cadre</div>
+    <div class="card-sub">Liseré bleu intérieur</div>
+    <button class="dl-btn" onclick="dl('c')">Télécharger PNG</button>
+  </div>
+
+  <!-- D -->
+  <div class="card">
+    <div class="ic" id="wrap-d">
+      <div class="bg-d">
+        <div class="wm"><span class="R">R</span><span class="sup4">4</span><span class="P">P</span></div>
+      </div>
+    </div>
+    <div class="card-label">D — Bleu moyen</div>
+    <div class="card-sub">#2B5FA6 · plus lumineux</div>
+    <button class="dl-btn" onclick="dl('d')">Télécharger PNG</button>
+  </div>
+
+  <!-- E -->
+  <div class="card">
+    <div class="ic" id="wrap-e">
+      <div class="bg-e">
+        <div class="wm"><span class="R">R</span><span class="sup4">4</span><span class="P">P</span></div>
+      </div>
+    </div>
+    <div class="card-label">E — Très sombre</div>
+    <div class="card-sub">#0D1E2E · contraste max</div>
+    <button class="dl-btn" onclick="dl('e')">Télécharger PNG</button>
+  </div>
+
+  <!-- F -->
+  <div class="card">
+    <div class="ic light" id="wrap-f">
+      <div class="bg-f">
+        <div class="wm"><span class="R">R</span><span class="sup4">4</span><span class="P">P</span></div>
+        <div class="bar"></div>
+      </div>
+    </div>
+    <div class="card-label">F — Fond beige + trait</div>
+    <div class="card-sub">Couleur bg du site · trait accent</div>
+    <button class="dl-btn" onclick="dl('f')">Télécharger PNG</button>
+  </div>
+
+</div>
+
+<script>
+function dl(v){
+  var el = document.getElementById('wrap-'+v).firstElementChild;
+  if(typeof html2canvas==='undefined'){
+    var s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    s.onload=function(){ render(el,v); };
+    document.head.appendChild(s);
+  } else { render(el,v); }
+}
+function render(el,v){
+  html2canvas(el,{ width:el.offsetWidth, height:el.offsetHeight, scale:512/el.offsetWidth, useCORS:true, backgroundColor:null }).then(function(c){
+    var a=document.createElement('a'); a.download='r4p-icon-'+v+'.png'; a.href=c.toDataURL('image/png'); a.click();
+  });
+}
+</script>
+</body>
+</html>

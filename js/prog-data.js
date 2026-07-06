@@ -2677,8 +2677,9 @@ function _updatePatientUI(){
   // Header templates
   var tmplHeader = document.querySelector('#mpanel-seances .main-header h1');
   if(tmplHeader){ tmplHeader.textContent = nom ? 'Templates — ' + nom : 'Templates de séances'; }
-  // Charger les cycles du patient depuis Supabase
-  if(_progPatient) setTimeout(function(){ if(typeof _loadCyclesForPatient==="function") _loadCyclesForPatient(); }, 0);
+  // Charger les cycles du patient depuis Supabase (synchrone, pas de setTimeout —
+  // voir la version prog-main.js pour le detail du bug d'ordonnancement corrige)
+  if(_progPatient && typeof _loadCyclesForPatient==="function") _loadCyclesForPatient();
   // Sync des notes cliniques depuis Supabase (une fois par patient)
   if(typeof _calNotesSyncedFor !== 'undefined') _calNotesSyncedFor = null;
   setTimeout(function(){ if(typeof _syncCalNotesIfNeeded === 'function') _syncCalNotesIfNeeded(); }, 200);

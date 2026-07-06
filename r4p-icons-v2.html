@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>rehab⁴perf — Icônes v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700;800&family=Cormorant+Garamond:ital,wght@1,600&family=Poppins:wght@800&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#1A3A5C;--accent:#2B5FA6;--accent-l:#EEF3FB;--green:#2D6A4F;--orange:#D4600A;--border:#E8E6E1;--text:#1A1917;--muted:#9D9B96;--bg:#F5F7FA;--surface:#fff}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Figtree',sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+.hdr{background:var(--navy);padding:18px 32px;display:flex;align-items:center;gap:14px}
+.hdr-logo{display:inline-flex;align-items:center;gap:8px}
+.hdr-logo .r{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:21px;color:#fff}
+.hdr-logo .e{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:.44em;vertical-align:super;color:#7FA8D9;margin:0 .04em;line-height:0}
+.hdr-logo .p{font-family:'Poppins',sans-serif;font-weight:800;font-size:16px;color:#fff;letter-spacing:-.025em}
+.hdr-badge{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;border-radius:20px;padding:3px 10px}
+.hdr-sub{color:rgba(255,255,255,.5);font-size:.72rem;margin-left:auto;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.controls{background:var(--surface);border-bottom:1px solid var(--border);padding:11px 32px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ctrl-label{font-size:.65rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-right:2px}
+.ctrl-btn{padding:4px 13px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);color:#6B6860;font-size:.76rem;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
+.ctrl-btn:hover{border-color:var(--accent);color:var(--accent)}
+.ctrl-btn.active{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:700}
+.ctrl-sep{width:1px;height:22px;background:var(--border)}
+.main{padding:28px 32px;max-width:1140px}
+.cat-block{margin-bottom:32px}
+.cat-title{font-size:.62rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding-bottom:10px;border-bottom:2px solid var(--border);margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.cat-badge{background:var(--accent-l);color:var(--accent);font-size:.6rem;font-weight:700;border-radius:4px;padding:2px 7px;letter-spacing:.06em}
+.cat-badge.new{background:#E8F5E9;color:#2E7D32}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:10px}
+.card{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:18px 12px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;transition:border-color .15s,box-shadow .15s;position:relative}
+.card:hover{border-color:var(--accent);box-shadow:0 0 0 3px rgba(43,95,166,.1)}
+.card.ok{border-color:#2D6A4F;background:#F3FAF6}
+.card.selected{border-color:var(--accent);background:var(--accent-l)}
+.card.new-icon{border-style:dashed;border-color:var(--accent)}
+.icon-wrap{width:56px;height:56px;border-radius:14px;background:#F0F4F8;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.card.ok .icon-wrap{background:#E3F4EA}
+.card.selected .icon-wrap{background:#DDE9F8}
+.card-name{font-size:.72rem;font-weight:700;color:var(--navy);text-align:center;line-height:1.3}
+.card-ctx{font-size:.62rem;color:var(--muted);text-align:center;margin-top:-2px}
+.sizes{display:flex;align-items:flex-end;gap:12px;padding-top:8px;border-top:1px solid var(--border);width:100%}
+.sz{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1}
+.sz-lbl{font-size:.56rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
+.v1-chip{position:absolute;top:8px;right:8px;font-size:.55rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border-radius:4px;background:#FEF3EB;color:#D4600A;border:1px solid #F5CBA7}
+.ok-chip{position:absolute;top:8px;right:8px;font-size:.55rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border-radius:4px;background:#E8F5E9;color:#2E7D32}
+.note{background:var(--accent-l);border:1px solid rgba(43,95,166,.2);border-radius:10px;padding:12px 16px;margin-bottom:24px;font-size:.8rem;color:var(--navy);line-height:1.6}
+.note strong{font-weight:700}
+.legend{display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--muted)}
+.leg-dot{width:12px;height:12px;border-radius:3px;border:1.5px solid}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-logo">
+    <svg viewBox="8 34 164 104" width="26" height="17" aria-hidden="true"><g stroke="#4A90D9" stroke-width="17" stroke-linecap="round" fill="none"><line x1="20" y1="118" x2="56" y2="104"/><line x1="70" y1="122" x2="100" y2="84"/><line x1="112" y1="125" x2="134" y2="66"/><line x1="158" y1="128" x2="158" y2="46"/></g></svg>
+    <span><span class="r">rehab<sup class="e">4</sup></span><span class="p">perf</span></span>
+  </div>
+  <div class="hdr-badge">v2</div>
+  <div class="hdr-sub">Icônes révisées — Outline pur</div>
+</div>
+
+<div class="controls">
+  <span class="ctrl-label">Couleur</span>
+  <button class="ctrl-btn active" onclick="setColor('navy',this)">Navy</button>
+  <button class="ctrl-btn" onclick="setColor('accent',this)">Accent</button>
+  <button class="ctrl-btn" onclick="setColor('green',this)">Vert</button>
+  <div class="ctrl-sep"></div>
+  <span class="ctrl-label">Trait</span>
+  <button class="ctrl-btn" onclick="setSW(1.3,this)">Fin</button>
+  <button class="ctrl-btn active" onclick="setSW(1.6,this)">Moyen</button>
+  <button class="ctrl-btn" onclick="setSW(2,this)">Épais</button>
+</div>
+
+<div class="main">
+
+<div class="note">
+  <strong>Légende :</strong> cartes vertes = validées en v1 (conservées) · cartes en pointillés = nouvelles propositions v2 · cliquer pour sélectionner.
+</div>
+
+<div class="legend">
+  <div class="leg-item"><div class="leg-dot" style="background:#E3F4EA;border-color:#2D6A4F"></div> Validé v1</div>
+  <div class="leg-item"><div class="leg-dot" style="background:var(--surface);border-color:var(--accent);border-style:dashed"></div> Nouveau v2</div>
+  <div class="leg-item"><div class="leg-dot" style="background:var(--surface);border-color:var(--border)"></div> Retravaillé v2</div>
+</div>
+
+<div id="mount"></div>
+
+</div>
+
+<script>
+var C = '#1A3A5C';
+var SW = 1.6;
+
+/* ── PALETTE COULEURS ── */
+var COLORS = { navy:'#1A3A5C', accent:'#2B5FA6', green:'#2D6A4F', orange:'#D4600A', muted:'#9D9B96' };
+
+/* ── SVG BUILDER ── */
+function svg(paths, size, c, sw) {
+  c = c || C; sw = sw || SW;
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="'+size+'" height="'+size+'"'
+    +' fill="none" stroke="'+c+'" stroke-width="'+sw+'" stroke-linecap="round" stroke-linejoin="round">'
+    +paths+'</svg>';
+}
+
+/* ══════════════════════════════════════════════
+   ICON LIBRARY
+   status: 'ok' = validé v1 | 'new' = v2 nouveau | '' = retravaillé
+   ══════════════════════════════════════════════ */
+var SECTIONS = [
+
+{ title:'Bilan clinique — Navigation anatomique', badge:'Anatomique', items:[
+
+  { name:'Infos Patient', ctx:'Bilan / sidebar', status:'ok',
+    paths:`<circle cx="12" cy="7.5" r="3.5"/>
+<path d="M5.5 21v-1a6.5 6.5 0 0113 0v1"/>
+<line x1="8.5" y1="15.5" x2="15.5" y2="15.5"/>
+<line x1="8.5" y1="18" x2="13" y2="18"/>` },
+
+  /* ÉPAULE v2 — Articulation gléno-humérale en vue frontale : glène (coupe) + tête humérale + diaphyse */
+  { name:'Épaule', ctx:'Bilan / sidebar + page', status:'new',
+    paths:`<path d="M5 10 Q5 4 11 3"/>
+<path d="M11 3 Q14 2.5 15 5 Q15.5 7 14 9 Q12.5 11 11 11 Q9 11.5 8 14 L7 22"/>
+<circle cx="18" cy="10" r="4.5"/>
+<line x1="21" y1="14" x2="22" y2="22"/>` },
+
+  /* RACHIS v2 — Profil sagittal : courbure S caractéristique */
+  { name:'Rachis', ctx:'Bilan / sidebar + page', status:'new',
+    paths:`<path d="M14 2 Q10 5 12 9 Q14 13 11 17 Q9 20 12 22" stroke-width="2.5" stroke-linecap="round"/>
+<line x1="9" y1="5" x2="14" y2="5" stroke-width="1"/>
+<line x1="11" y1="9" x2="15" y2="9" stroke-width="1"/>
+<line x1="9" y1="13" x2="14" y2="13" stroke-width="1"/>
+<line x1="10" y1="17" x2="14" y2="17" stroke-width="1"/>` },
+
+  /* HANCHE v2 — Bassin en vue frontale : contour papillon + têtes fémorales */
+  { name:'AGP + Hanche', ctx:'Bilan / sidebar + page', status:'new',
+    paths:`<path d="M2 13 Q2 6 7 4 Q12 2 12 7"/>
+<path d="M22 13 Q22 6 17 4 Q12 2 12 7"/>
+<path d="M2 13 Q3 19 7 21 L12 22 L17 21 Q21 19 22 13"/>
+<circle cx="4.5" cy="14" r="3"/>
+<circle cx="19.5" cy="14" r="3"/>` },
+
+  { name:'Genou', ctx:'Bilan / sidebar + page', status:'ok',
+    paths:`<path d="M9 2 L9 10 Q9 13 12 13 Q15 13 15 10 L15 2"/>
+<circle cx="12" cy="15" r="3"/>
+<line x1="9" y1="17.5" x2="9" y2="23"/>
+<line x1="15" y1="17.5" x2="15" y2="23"/>
+<line x1="8" y1="17.5" x2="16" y2="17.5"/>` },
+
+  /* PIED v2 — Profil latéral interne : talon arrondi + voûte + avant-pied + orteils */
+  { name:'Pied / Cheville', ctx:'Bilan / sidebar + page', status:'new',
+    paths:`<path d="M5 6 Q5 4 7 3 Q9 2 10 5 L11 14"/>
+<path d="M11 14 Q10 19 8 20 Q5 21 4 19 Q3 16 5 15 Q7 14 11 14"/>
+<path d="M11 14 Q15 14 20 21"/>
+<line x1="3" y1="21" x2="21" y2="21"/>
+<path d="M18 21 Q18 19 19 19 Q20 19 20.5 21"/>
+<path d="M16 21 Q16 19.5 16.8 19.5"/>` },
+
+  /* LMA v2 — Ventre musculaire fusiforme avec déchirure centrale visible */
+  { name:'LMA', ctx:'Bilan / sidebar + page', status:'new', colorOverride:'orange',
+    paths:`<path d="M2 12 Q5 4 11 4"/>
+<path d="M2 12 Q5 20 11 20"/>
+<path d="M13 4 Q19 4 22 12"/>
+<path d="M13 20 Q19 20 22 12"/>
+<path d="M11 5 L13 8 L10.5 11 L13 14 L11 17 L13 20" stroke-linecap="round"/>` },
+
+]},
+
+{ title:'Bilan clinique — Tests & Synthèse', badge:'Tests', items:[
+
+  /* TESTS MS v2 — Abduction d'épaule : arc de mobilité bras levé */
+  { name:'Tests Fonct. MS', ctx:'Bilan / sidebar', status:'new',
+    paths:`<line x1="12" y1="22" x2="12" y2="12"/>
+<line x1="12" y1="12" x2="5" y2="16"/>
+<path d="M12 12 L18 5"/>
+<path d="M6.5 13.5 Q11 7 17 6" stroke-dasharray="2,1.5"/>
+<polyline points="16,8 18,5 15.5,5"/>` },
+
+  /* TESTS RACHIS v2 — Flexion du tronc (test de Schöber / distance doigts-sol) */
+  { name:'Tests Fonct. Rachis', ctx:'Bilan / sidebar', status:'new',
+    paths:`<path d="M16 3 Q14 7 11 10 Q8 13 8 17"/>
+<circle cx="16" cy="3" r="2.5"/>
+<line x1="16" y1="5.5" x2="16" y2="12"/>
+<path d="M16 12 L14 20"/>
+<line x1="5" y1="20" x2="11" y2="20"/>
+<line x1="8" y1="17" x2="8" y2="20"/>
+<line x1="6.5" y1="17" x2="6.5" y2="20"/>` },
+
+  /* TESTS MI v2 — Single leg hop test : jambe + arc de saut + distance */
+  { name:'Tests Fonct. MI', ctx:'Bilan / sidebar', status:'new',
+    paths:`<circle cx="14" cy="3.5" r="2.5"/>
+<path d="M14 6 L13 12 L10 18"/>
+<path d="M13 12 L16 16"/>
+<line x1="7" y1="22" x2="19" y2="22"/>
+<path d="M10 18 Q6 14 9 9" stroke-dasharray="2,1.5"/>
+<line x1="9" y1="9" x2="14" y2="9" stroke-width="1" stroke-dasharray="1.5,1.5"/>
+<polyline points="7,22 7,18" stroke-width="1"/>
+<polyline points="19,22 19,18" stroke-width="1"/>` },
+
+  { name:'Tests Musculaires', ctx:'Bilan / sidebar', status:'ok',
+    paths:`<line x1="4" y1="21" x2="4" y2="15" stroke-width="2.5"/>
+<line x1="9" y1="21" x2="9" y2="11" stroke-width="2.5"/>
+<line x1="14" y1="21" x2="14" y2="7" stroke-width="2.5"/>
+<line x1="19" y1="21" x2="19" y2="3" stroke-width="2.5"/>
+<line x1="2" y1="21" x2="21" y2="21"/>` },
+
+  { name:'CR Tests', ctx:'Bilan / sidebar + page', status:'ok',
+    paths:`<rect x="3" y="14" width="4" height="8" rx="1"/>
+<rect x="10" y="9" width="4" height="13" rx="1"/>
+<rect x="17" y="4" width="4" height="18" rx="1"/>
+<line x1="1.5" y1="22" x2="22.5" y2="22"/>` },
+
+  { name:'CR Complet', ctx:'Bilan / sidebar + page', status:'ok',
+    paths:`<rect x="4" y="2" width="16" height="20" rx="2"/>
+<line x1="8" y1="8" x2="16" y2="8"/>
+<line x1="8" y1="12" x2="16" y2="12"/>
+<line x1="8" y1="16" x2="13" y2="16"/>
+<polyline points="14,15 16,18 19,13"/>` },
+
+  /* ÉVOLUTION v2 — Axe temps + points de données reliés + flèche tendance */
+  { name:'Évolution', ctx:'Bilan + Programme', status:'new',
+    paths:`<line x1="3" y1="21" x2="21" y2="21"/>
+<line x1="3" y1="3" x2="3" y2="21"/>
+<circle cx="5" cy="18" r="2" fill="currentColor"/>
+<circle cx="9" cy="14" r="2" fill="currentColor"/>
+<circle cx="13" cy="10" r="2" fill="currentColor"/>
+<circle cx="17" cy="5" r="2.5" fill="currentColor"/>
+<path d="M5 18 Q7 16 9 14 Q11 12 13 10 Q15 7 17 5"/>
+<polyline points="15,3 17,5 19,3"/>` },
+
+  /* SUIVI RAPIDE v2 — ECG épuré + fréquence cardiaque : signal clinique lisible */
+  { name:'Suivi rapide', ctx:'Bilan / sidebar + page', status:'new',
+    paths:`<polyline points="2,14 5,14 7,8 9,18 11,5 13,15 15,14 22,14"/>` },
+
+]},
+
+{ title:'Programme — Catégories', badge:'Programme', items:[
+
+  /* RENFORCEMENT v2 — Haltère épuré, contour seul */
+  { name:'Renforcement', ctx:'Programme / catégorie', status:'new',
+    paths:`<circle cx="5.5" cy="12" r="4.5"/>
+<circle cx="18.5" cy="12" r="4.5"/>
+<line x1="10" y1="12" x2="14" y2="12" stroke-width="3"/>
+<circle cx="5.5" cy="12" r="2" stroke-width="1"/>
+<circle cx="18.5" cy="12" r="2" stroke-width="1"/>` },
+
+  /* MOBILITÉ v2 — Goniomètre : deux bras + arc d'amplitude (ROM) */
+  { name:'Mobilité', ctx:'Programme / catégorie', status:'new',
+    paths:`<circle cx="10" cy="16" r="2"/>
+<line x1="10" y1="16" x2="10" y2="5"/>
+<line x1="10" y1="16" x2="20" y2="12"/>
+<path d="M10 9 Q14 8 17 13"/>
+<polyline points="16,11 17,13 15,14"/>
+<line x1="8" y1="16" x2="2" y2="20"/>
+<line x1="8.5" y1="17.5" x2="3" y2="22"/>` },
+
+  { name:'Course à pied', ctx:'Programme / catégorie', status:'ok',
+    paths:`<circle cx="14" cy="4" r="2.5"/>
+<path d="M14 7 L13 12 L8 15"/>
+<path d="M13 12 L16 17 L14 22"/>
+<path d="M8 15 L5 13"/>
+<path d="M16 9 L20 8"/>
+<line x1="4" y1="22" x2="18" y2="22"/>` },
+
+  /* VÉLO v2 — Roue + cadre simplifié, sans silhouette de cycliste */
+  { name:'Vélo', ctx:'Programme / catégorie', status:'new',
+    paths:`<circle cx="6" cy="17" r="5"/>
+<circle cx="18" cy="17" r="5"/>
+<circle cx="6" cy="17" r="1.5" fill="currentColor"/>
+<circle cx="18" cy="17" r="1.5" fill="currentColor"/>
+<line x1="6" y1="17" x2="12" y2="8"/>
+<line x1="12" y1="8" x2="18" y2="17"/>
+<line x1="12" y1="8" x2="15" y2="8"/>
+<line x1="10" y1="11" x2="14" y2="11"/>` },
+
+  /* NATATION v2 — Vague + bras en traction (crawl) sans silhouette */
+  { name:'Natation', ctx:'Programme / catégorie', status:'new',
+    paths:`<path d="M2 11 Q5 8 8 11 Q11 14 14 11 Q17 8 20 11 Q21 12 22 11"/>
+<path d="M2 15 Q5 12 8 15 Q11 18 14 15 Q17 12 20 15 Q21 16 22 15"/>
+<path d="M8 11 Q7 7 9 5 L14 7"/>
+<path d="M14 7 Q16 4 19 6"/>
+<polyline points="18,6 19,6 19,8"/>` },
+
+  /* PATHOLOGIE v2 — Stéthoscope épuré, reconnaissable */
+  { name:'Pathologie', ctx:'Programme / catégorie', status:'new',
+    paths:`<path d="M7 3 L7 9 Q7 14 12 16"/>
+<path d="M17 3 L17 9 Q17 14 12 16"/>
+<line x1="7" y1="3" x2="17" y2="3"/>
+<circle cx="12" cy="19.5" r="3.5"/>
+<circle cx="12" cy="19.5" r="1.5"/>` },
+
+]},
+
+{ title:'Programme — Outils & Navigation', badge:'Outils', items:[
+
+  /* CYCLES v2 — Vague de périodisation (alternance charge/récup) */
+  { name:'Cycles', ctx:'Programme / menu', status:'new',
+    paths:`<path d="M2 14 Q5 6 8 14 Q11 22 14 14 Q17 6 20 14"/>
+<polyline points="19,10 20,14 22,14"/>
+<line x1="2" y1="22" x2="22" y2="22"/>
+<circle cx="8" cy="14" r="1.5" fill="currentColor"/>
+<circle cx="14" cy="14" r="1.5" fill="currentColor"/>` },
+
+  { name:'Protocoles', ctx:'Programme / menu', status:'ok',
+    paths:`<rect x="4" y="14" width="13" height="8" rx="1.5"/>
+<rect x="6" y="10" width="13" height="8" rx="1.5"/>
+<rect x="8" y="6" width="13" height="8" rx="1.5"/>
+<line x1="11" y1="6" x2="11" y2="2"/>
+<line x1="11" y1="2" x2="15" y2="4"/>` },
+
+  { name:'Séances / Templates', ctx:'Programme / sidebar', status:'ok',
+    paths:`<rect x="4" y="3" width="16" height="18" rx="2"/>
+<path d="M9 9 L15 9"/>
+<path d="M9 13 L15 13"/>
+<path d="M9 17 L12 17"/>
+<path d="M13 2 L13 5 L11 5 L11 2"/>` },
+
+  /* JOURNAL v2 — Cahier avec lignes datées + puce timeline */
+  { name:'Journal', ctx:'Programme / topbar', status:'new',
+    paths:`<rect x="4" y="2" width="16" height="20" rx="2"/>
+<line x1="8" y1="2" x2="8" y2="22"/>
+<circle cx="9.5" cy="8.5" r="1.5" fill="currentColor"/>
+<circle cx="9.5" cy="13.5" r="1.5" fill="currentColor"/>
+<circle cx="9.5" cy="18.5" r="1" stroke-width="1.2"/>
+<line x1="12" y1="8.5" x2="18" y2="8.5"/>
+<line x1="12" y1="13.5" x2="18" y2="13.5"/>
+<line x1="12" y1="18.5" x2="16" y2="18.5"/>` },
+
+]},
+
+{ title:'Actions UI transversales', badge:'UI', items:[
+
+  /* Standard Lucide-style colorisé R4P */
+  { name:'Sauvegarder', ctx:'Actions / boutons', status:'new',
+    paths:`<path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+<polyline points="17,21 17,13 7,13 7,21"/>
+<polyline points="7,3 7,8 15,8"/>` },
+
+  { name:'Exporter HTML', ctx:'Actions / boutons', status:'new',
+    paths:`<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+<polyline points="7,10 12,15 17,10"/>
+<line x1="12" y1="15" x2="12" y2="3"/>` },
+
+  { name:'Imprimer / PDF', ctx:'Actions / boutons', status:'new',
+    paths:`<polyline points="6,9 6,2 18,2 18,9"/>
+<path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/>
+<rect x="6" y="14" width="12" height="8"/>
+<circle cx="18" cy="11.5" r="1" fill="currentColor"/>` },
+
+  { name:'Patient', ctx:'Topbar / nav', status:'new',
+    paths:`<path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+<circle cx="12" cy="7" r="4"/>` },
+
+  { name:'Partager', ctx:'Actions', status:'new',
+    paths:`<circle cx="18" cy="5" r="3"/>
+<circle cx="6" cy="12" r="3"/>
+<circle cx="18" cy="19" r="3"/>
+<line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+<line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>` },
+
+  { name:'Paramètres', ctx:'Config / modal', status:'new',
+    paths:`<line x1="4" y1="6" x2="20" y2="6"/>
+<line x1="4" y1="12" x2="20" y2="12"/>
+<line x1="4" y1="18" x2="20" y2="18"/>
+<circle cx="8" cy="6" r="2" fill="var(--bg)"/>
+<circle cx="16" cy="12" r="2" fill="var(--bg)"/>
+<circle cx="10" cy="18" r="2" fill="var(--bg)"/>` },
+
+  { name:'Durée / Timer', ctx:'Programme', status:'new',
+    paths:`<circle cx="12" cy="13" r="8"/>
+<polyline points="12,9 12,13 15,15"/>
+<line x1="9" y1="1" x2="15" y2="1"/>
+<line x1="12" y1="1" x2="12" y2="5"/>` },
+
+  { name:'Confidentiel', ctx:'Footer CR', status:'new',
+    paths:`<rect x="5" y="11" width="14" height="10" rx="2"/>
+<path d="M8 11V7a4 4 0 018 0v4"/>
+<circle cx="12" cy="16" r="1.5" fill="currentColor"/>` },
+
+  { name:'Alerte', ctx:'UI / état', status:'new', colorOverride:'orange',
+    paths:`<path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+<line x1="12" y1="9" x2="12" y2="13"/>
+<line x1="12" y1="17" x2="12.01" y2="17"/>` },
+
+  { name:'Bibliothèque publique', ctx:'Programme / templates', status:'new',
+    paths:`<circle cx="12" cy="12" r="10"/>
+<line x1="2" y1="12" x2="22" y2="12"/>
+<path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>` },
+
+]},
+
+];
+
+/* ── RENDER ── */
+function renderIcon(icon, size) {
+  var c = COLORS[icon.colorOverride] || C;
+  return svg(icon.paths, size, c, SW);
+}
+
+function renderAll() {
+  var html = '';
+  SECTIONS.forEach(function(sec) {
+    html += '<div class="cat-block">'
+      +'<div class="cat-title">'+sec.title
+      +(sec.badge?'<span class="cat-badge'+(sec.badge==='Programme'?' new':'')+'">'+ sec.badge +'</span>':'')
+      +'</div>'
+      +'<div class="grid">';
+    sec.items.forEach(function(icon) {
+      var cls = icon.status==='ok' ? 'card ok' : icon.status==='new' ? 'card new-icon' : 'card';
+      var chip = icon.status==='ok'
+        ? '<div class="ok-chip">✓ v1</div>'
+        : icon.status==='new' ? '<div class="v1-chip">v2</div>' : '';
+      html += '<div class="'+cls+'" onclick="this.classList.toggle(\'selected\')">'
+        + chip
+        + '<div class="icon-wrap">'+renderIcon(icon, 48)+'</div>'
+        + '<div class="card-name">'+icon.name+'</div>'
+        + '<div class="card-ctx">'+icon.ctx+'</div>'
+        + '<div class="sizes">'
+        +   '<div class="sz"><div style="height:20px;display:flex;align-items:center;justify-content:center">'+renderIcon(icon,20)+'</div><div class="sz-lbl">Sidebar</div></div>'
+        +   '<div class="sz"><div style="height:32px;display:flex;align-items:center;justify-content:center">'+renderIcon(icon,32)+'</div><div class="sz-lbl">Header</div></div>'
+        + '</div>'
+        + '</div>';
+    });
+    html += '</div></div>';
+  });
+  document.getElementById('mount').innerHTML = html;
+}
+
+function setColor(k, btn) {
+  document.querySelectorAll('.ctrl-btn').forEach(function(b){ if(['Navy','Accent','Vert'].indexOf(b.textContent)>-1) b.classList.remove('active'); });
+  btn.classList.add('active');
+  C = COLORS[k];
+  renderAll();
+}
+function setSW(v, btn) {
+  document.querySelectorAll('.ctrl-btn').forEach(function(b){ if(['Fin','Moyen','Épais'].indexOf(b.textContent)>-1) b.classList.remove('active'); });
+  btn.classList.add('active');
+  SW = v;
+  renderAll();
+}
+
+renderAll();
+</script>
+</body>
+</html>

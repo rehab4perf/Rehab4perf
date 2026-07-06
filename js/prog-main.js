@@ -40,14 +40,16 @@ function _loadCyclesForPatient(){
     _cycles = (arr.length && Array.isArray(arr[0].cycles)) ? arr[0].cycles : [];
     renderCycleTimeline();
     if(typeof renderCycleList === 'function') renderCycleList();
-    // Rafraîchir le calendrier pour afficher les cycles du patient
-    if(document.getElementById('mpanel-cal').classList.contains('active')) renderCalendar();
+    // Rafraîchir le calendrier pour afficher les cycles du patient (toujours,
+    // le calendrier peut etre visible dans plusieurs dispositions/layouts)
+    if(typeof renderCalendar === 'function') renderCalendar();
   })
   .catch(function(){
     if(!_progPatient || _progPatient.id !== _forPatientId) return;
     _cycles = [];
     renderCycleTimeline();
     if(typeof renderCycleList === 'function') renderCycleList();
+    if(typeof renderCalendar === 'function') renderCalendar();
   });
 }
 var _cycleColors = {
@@ -3196,8 +3198,10 @@ function _updatePatientUI(){
   if(!document.querySelector('.app').classList.contains('builder-mode')){
     renderSidebarTemplates();
   }
-  // Cycles
-  if(_progPatient) setTimeout(function(){ if(typeof _loadCyclesForPatient==="function") _loadCyclesForPatient(); }, 0);
+  // Cycles — appel synchrone (pas de setTimeout) : _loadCyclesForPatient vide
+  // _cycles immediatement, avant que renderCalendar() ci-dessous ne dessine
+  // avec les donnees de l'ancien patient encore en memoire.
+  if(_progPatient && typeof _loadCyclesForPatient==="function") _loadCyclesForPatient();
   // Rafraîchir le calendrier pour le nouveau patient
   if(typeof renderCalendar === 'function') renderCalendar();
 }
