@@ -1,2 +1,14 @@
 .DS_Store
 .claude/
+supabase/.temp/
+
+# Brouillons / mockups hors production (icones, essais CR)
+cr-mockup-*.html
+icon-*.html
+icon-*.svg
+icon-*.png
+muscle.svg
+mycollection/
+r4p-icon*.html
+r4p-icons*.html
+shoulder*.png
