@@ -3,8 +3,16 @@ var _PLAN_ICON = '<svg style="vertical-align:middle;margin-right:4px" width="16"
 var _PROG_SAVE_ICON = '<svg style="vertical-align:middle;margin-right:4px" width="15" height="15" fill="currentColor" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><g><path d="m28.702 8.564-4.273-5c-.795-.93-1.954-1.464-3.18-1.464h-14.771c-2.306 0-4.182 1.877-4.182 4.183v19.436c0 2.306 1.876 4.183 4.182 4.183h19.045c2.306 0 4.183-1.877 4.183-4.183v-14.437c-.001-.995-.357-1.96-1.004-2.718zm-6.962 19.536h-11.481v-8.173c0-.631.514-1.144 1.145-1.144h9.191c.631 0 1.145.513 1.145 1.144zm6.164-2.382c0 1.313-1.068 2.382-2.382 2.382h-1.981v-8.173c0-1.623-1.321-2.944-2.945-2.944h-9.191c-1.624 0-2.945 1.321-2.945 2.944v8.173h-1.982c-1.313 0-2.382-1.068-2.382-2.382v-19.436c0-1.313 1.069-2.382 2.382-2.382h14.771c.698 0 1.358.304 1.811.834l4.273 4.999c.369.432.571.982.571 1.549z"/><path d="m9.359 9.31h5.963c.497 0 .9-.403.9-.9s-.403-.9-.9-.9h-5.963c-.497 0-.9.403-.9.9s.403.9.9.9z"/><path d="m22.641 11.572h-13.282c-.497 0-.9.403-.9.9s.403.9.9.9h13.281c.497 0 .9-.403.9-.9s-.402-.9-.899-.9z"/></g></svg>';
 
 // ── CYCLES ────────────────────────────────────────────────────
+// prog-data.js s'execute avant ce fichier et restaure _progPatient depuis
+// localStorage s'il y en a un. Le fallback localStorage global (CYCLES) ne
+// doit alimenter _cycles QUE si aucun patient n'est actif — sinon on
+// affiche une vieille valeur perimee tant que le fetch reseau n'a pas eu
+// lieu (et sur cette meme page, ce fetch peut ne jamais se declencher :
+// voir l'appel force juste apres la definition de _loadCyclesForPatient).
 var _cycles = [];
-try { _cycles = JSON.parse(localStorage.getItem(R4P_KEYS.CYCLES)||'[]'); } catch(e){ _cycles=[]; }
+if(typeof _progPatient === 'undefined' || !_progPatient){
+  try { _cycles = JSON.parse(localStorage.getItem(R4P_KEYS.CYCLES)||'[]'); } catch(e){ _cycles=[]; }
+}
 
 // Sauvegarde cycles : Supabase si patient sélectionné, sinon localStorage
 // (le localStorage global ne sert que pour le mode "sans patient" — jamais
@@ -52,6 +60,11 @@ function _loadCyclesForPatient(){
     if(typeof renderCalendar === 'function') renderCalendar();
   });
 }
+// prog-data.js s'execute avant ce fichier et a deja restaure _progPatient
+// depuis localStorage au chargement de la page — son propre appel a
+// _loadCyclesForPatient() a cet instant etait un no-op (fonction pas encore
+// definie). On rattrape ici, maintenant que la fonction existe.
+if(_progPatient) _loadCyclesForPatient();
 var _cycleColors = {
   'Force':'#1A3A5C','Puissance':'#C0392B','Hypertrophie':'#2D7D46',
   'Endurance de force':'#2563EB','Récupération':'#D4600A','Réathlétisation':'#9B2C6B'
