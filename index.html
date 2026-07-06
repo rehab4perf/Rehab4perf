@@ -711,12 +711,14 @@ window.addEventListener('message', function(e) {
    NOTIFICATIONS FEEDBACK ATHLÈTE (cloche + notifications navigateur)
 ═══════════════════════════════════════════════════════════ */
 var _notifFeed = [];      // feedbacks non lus (tous patients) — null si colonne seen_at absente
+var _remindersFeed = [];  // rappels de notes dus (remind_at <= aujourd'hui, non vus)
 var _notifPatients = {};  // patient_id → nom affiché
-var _notifKnown = {};     // ids déjà traités par les notifications navigateur
+var _notifKnown = {};     // ids déjà traités par les notifications navigateur (feedback)
+var _remKnown = {};       // ids déjà traités par les notifications navigateur (rappels)
 var _notifFirstPoll = true;
 
 function _notifPrefs(){
-  var d = { dots:true, bell:true, browser:false, painOnly:false };
+  var d = { dots:true, bell:true, browser:false, painOnly:false, reminders:true };
   try { return Object.assign(d, JSON.parse(localStorage.getItem('r4p-notif-prefs')||'{}')); }
   catch(e){ return d; }
 }
@@ -757,9 +759,9 @@ function _notifTimeAgo(iso){
 
 function _fbBellPoll(){
   if(_notifFeed === null) return; // colonne seen_at absente : abandonné pour cette session
-  if(!_currentUid){ _notifFeed = []; _renderBell(); return; }
+  if(!_currentUid){ _notifFeed = []; _remindersFeed = []; _renderBell(); return; }
   var prefs = _notifPrefs();
-  if(!prefs.bell && !prefs.browser){ _renderBell(); return; }
+  if(!prefs.bell && !prefs.browser && !prefs.reminders){ _renderBell(); return; }
   // Scoper explicitement aux patients du praticien connecté — ne jamais se reposer
   // uniquement sur la RLS de athlete_feedback (lecture large requise pour le flux athlète anonyme).
   sb.from('patients').select('id,nom,prenom').eq('praticien_id', _currentUid).then(function(pr){
@@ -767,20 +769,40 @@ function _fbBellPoll(){
     var myPatients = pr.data || [];
     myPatients.forEach(function(p){ _notifPatients[p.id] = p.nom+' '+_capFirst(p.prenom||''); });
     var ids = myPatients.map(function(p){ return p.id; });
-    if(!ids.length){ _notifFeed = []; _renderBell(); return; }
-    sb.from('athlete_feedback')
-      .select('seance_id,rpe,duree_min,douleur,effort,exo_data,submitted_at,seances_planifiees!inner(id,date,patient_id,programme_id,programmes(nom))')
-      .is('seen_at', null)
-      .in('seances_planifiees.patient_id', ids)
-      .order('submitted_at', { ascending:false })
-      .limit(30)
-      .then(function(res){
-        if(res.error){ _notifFeed = null; _renderBell(); return; }
-        _notifFeed = res.data || [];
-        _renderBell();
-        _fireBrowserNotifs();
-      });
+    if(!ids.length){ _notifFeed = []; _remindersFeed = []; _renderBell(); return; }
+    var todayStr = new Date().toISOString().slice(0,10);
+    Promise.all([
+      sb.from('athlete_feedback')
+        .select('seance_id,rpe,duree_min,douleur,effort,exo_data,submitted_at,seances_planifiees!inner(id,date,patient_id,programme_id,programmes(nom))')
+        .is('seen_at', null)
+        .in('seances_planifiees.patient_id', ids)
+        .order('submitted_at', { ascending:false })
+        .limit(30),
+      sb.from('clinical_notes')
+        .select('id,patient_id,date,title,body,remind_at')
+        .eq('praticien_id', _currentUid)
+        .not('remind_at', 'is', null)
+        .is('remind_seen_at', null)
+        .lte('remind_at', todayStr)
+        .order('remind_at', { ascending:true })
+        .limit(30)
+    ]).then(function(results){
+      var fbRes = results[0], remRes = results[1];
+      _notifFeed = fbRes.error ? null : (fbRes.data || []);
+      _remindersFeed = remRes.error ? [] : (remRes.data || []);
+      _renderBell();
+      _fireBrowserNotifs();
+    });
   });
+}
+
+function _remWhenLabel(dateStr){
+  var todayStr = new Date().toISOString().slice(0,10);
+  var d0 = new Date(todayStr+'T00:00:00'), d1 = new Date((dateStr||todayStr)+'T00:00:00');
+  var diffDays = Math.round((d1-d0)/86400000);
+  if(diffDays === 0) return { txt:'aujourd\'hui', bg:'#ffedd5', col:'#9a3412' };
+  if(diffDays < 0)   return { txt:'en retard de '+Math.abs(diffDays)+' j', bg:'#fee2e2', col:'#991b1b' };
+  return { txt:'dans '+diffDays+' j', bg:'#dcfce7', col:'#166534' };
 }
 
 function _renderBell(){
@@ -790,46 +812,104 @@ function _renderBell(){
   var title = document.getElementById('notifDropTitle');
   if(!bell) return;
   var prefs = _notifPrefs();
-  if(_notifFeed === null || !prefs.bell){
+  if(_notifFeed === null || (!prefs.bell && !prefs.reminders)){
     bell.classList.remove('visible');
     document.getElementById('notifDrop').classList.remove('open');
     return;
   }
   bell.classList.add('visible');
-  var n = _notifFeed.length;
-  badge.style.display = n ? 'flex' : 'none';
-  badge.textContent = n > 20 ? '20+' : n;
-  if(title) title.textContent = n ? ('Retours athlètes — '+n+' non lu'+(n>1?'s':'')) : 'Retours athlètes';
+  var nFb  = prefs.bell ? _notifFeed.length : 0;
+  var nRem = prefs.reminders ? _remindersFeed.length : 0;
+  var total = nFb + nRem;
+  badge.style.display = total ? 'flex' : 'none';
+  badge.textContent = total > 20 ? '20+' : total;
+  if(title) title.textContent = 'Notifications';
   if(!list) return;
-  if(!n){ list.innerHTML = '<div class="notif-empty">Aucun retour non lu 🎉</div>'; return; }
-  list.innerHTML = _notifFeed.map(function(f, i){
-    var sp = f.seances_planifiees || {};
-    var pname = _notifPatients[sp.patient_id] || 'Athlète';
-    var initials = pname.split(/\s+/).map(function(w){ return w.charAt(0); }).join('').slice(0,2).toUpperCase();
-    var progNom = (sp.programmes && sp.programmes.nom) || 'Séance';
-    var dateFr = sp.date ? sp.date.split('-').reverse().slice(0,2).join('/') : '';
-    // Retour douleur (CAP/HSR) : colonne douleur presente ou legacy duree_min<=10
-    var isPainFb = _notifFbDouleur(f) !== null && !(f.rpe && f.duree_min && f.duree_min > 10);
-    var sub = progNom + (dateFr ? ' du '+dateFr : '');
-    if(!isPainFb && f.rpe !== null && f.rpe !== undefined) sub += ' · RPE '+f.rpe;
-    if(!isPainFb && f.duree_min) sub += ' · '+f.duree_min+' min';
-    if(isPainFb && _notifFbEffortV(f)) sub += ' · Effort '+_notifFbEffortV(f);
-    var pain = _notifMaxPain(f);
-    var painHtml;
-    if(pain === null || pain === 0) painHtml = '<span class="notif-pain" style="background:#dcfce7;color:#166534">RAS</span>';
-    else {
-      var pb = pain>=7?'#fee2e2':pain>=4?'#ffedd5':'#fefce8';
-      var pc = pain>=7?'#991b1b':pain>=4?'#9a3412':'#92400e';
-      painHtml = '<span class="notif-pain" style="background:'+pb+';color:'+pc+'">'+pain+'/10</span>';
-    }
-    return '<div class="notif-item" onclick="_notifOpen('+i+')">'
-      + '<div class="notif-ava">'+initials+'</div>'
-      + '<div class="notif-body"><div class="notif-name">'+pname.replace(/</g,'&lt;')+'</div>'
-      + '<div class="notif-sub">'+sub.replace(/</g,'&lt;')+'</div></div>'
-      + painHtml
-      + '<span class="notif-time">'+_notifTimeAgo(f.submitted_at)+'</span>'
-      + '</div>';
-  }).join('');
+  if(!total){ list.innerHTML = '<div class="notif-empty">Rien de nouveau 🎉</div>'; return; }
+
+  var html = '';
+  if(prefs.bell && nFb){
+    html += '<div class="notif-drop-head"><span class="notif-drop-title">Retours athlètes — '+nFb+' non lu'+(nFb>1?'s':'')+'</span>'
+      + '<button class="notif-markall" onclick="_notifMarkAll()">Tout marquer lu</button></div>';
+    html += _notifFeed.map(function(f, i){
+      var sp = f.seances_planifiees || {};
+      var pname = _notifPatients[sp.patient_id] || 'Athlète';
+      var initials = pname.split(/\s+/).map(function(w){ return w.charAt(0); }).join('').slice(0,2).toUpperCase();
+      var progNom = (sp.programmes && sp.programmes.nom) || 'Séance';
+      var dateFr = sp.date ? sp.date.split('-').reverse().slice(0,2).join('/') : '';
+      // Retour douleur (CAP/HSR) : colonne douleur presente ou legacy duree_min<=10
+      var isPainFb = _notifFbDouleur(f) !== null && !(f.rpe && f.duree_min && f.duree_min > 10);
+      var sub = progNom + (dateFr ? ' du '+dateFr : '');
+      if(!isPainFb && f.rpe !== null && f.rpe !== undefined) sub += ' · RPE '+f.rpe;
+      if(!isPainFb && f.duree_min) sub += ' · '+f.duree_min+' min';
+      if(isPainFb && _notifFbEffortV(f)) sub += ' · Effort '+_notifFbEffortV(f);
+      var pain = _notifMaxPain(f);
+      var painHtml;
+      if(pain === null || pain === 0) painHtml = '<span class="notif-pain" style="background:#dcfce7;color:#166534">RAS</span>';
+      else {
+        var pb = pain>=7?'#fee2e2':pain>=4?'#ffedd5':'#fefce8';
+        var pc = pain>=7?'#991b1b':pain>=4?'#9a3412':'#92400e';
+        painHtml = '<span class="notif-pain" style="background:'+pb+';color:'+pc+'">'+pain+'/10</span>';
+      }
+      return '<div class="notif-item" onclick="_notifOpen('+i+')">'
+        + '<div class="notif-ava">'+initials+'</div>'
+        + '<div class="notif-body"><div class="notif-name">'+pname.replace(/</g,'&lt;')+'</div>'
+        + '<div class="notif-sub">'+sub.replace(/</g,'&lt;')+'</div></div>'
+        + painHtml
+        + '<span class="notif-time">'+_notifTimeAgo(f.submitted_at)+'</span>'
+        + '</div>';
+    }).join('');
+  }
+  if(prefs.reminders && nRem){
+    html += '<div class="notif-drop-head" style="border-top:1px solid #eef2f7"><span class="notif-drop-title">🔔 Rappels — '+nRem+'</span>'
+      + '<button class="notif-markall" onclick="_reminderMarkAll()">Tout marquer vu</button></div>';
+    html += _remindersFeed.map(function(r, i){
+      var pname = _notifPatients[r.patient_id] || 'Patient';
+      var initials = pname.split(/\s+/).map(function(w){ return w.charAt(0); }).join('').slice(0,2).toUpperCase();
+      var dateFr = r.date ? r.date.split('-').reverse().slice(0,2).join('/') : '';
+      var when = _remWhenLabel(r.date);
+      return '<div class="notif-item" onclick="_reminderOpen('+i+')">'
+        + '<div class="notif-ava">'+initials+'</div>'
+        + '<div class="notif-body"><div class="notif-name">'+pname.replace(/</g,'&lt;')+'</div>'
+        + '<div class="notif-sub">'+(r.title||'Rappel').replace(/</g,'&lt;')+(dateFr?' · '+dateFr:'')+'</div></div>'
+        + '<span class="notif-pain" style="background:'+when.bg+';color:'+when.col+'">'+when.txt+'</span>'
+        + '</div>';
+    }).join('');
+  }
+  list.innerHTML = html;
+}
+
+function _reminderOpen(i){
+  var r = _remindersFeed && _remindersFeed[i];
+  if(!r) return;
+  document.getElementById('notifDrop').classList.remove('open');
+  _markReminderSeen(r.id);
+  if(r.patient_id && (!_currentPatient || _currentPatient.id !== r.patient_id)){
+    _selectPatientById(r.patient_id);
+  }
+  show('prescription');
+  setTimeout(function(){
+    var pf = document.getElementById('frame-prescription');
+    if(pf && pf.contentWindow) pf.contentWindow.postMessage({
+      type:'r4p-open-note', noteId:r.id
+    }, window.location.origin);
+  }, 900);
+}
+
+function _markReminderSeen(noteId){
+  sb.from('clinical_notes').update({ remind_seen_at: new Date().toISOString() }).eq('id', noteId).then(function(){
+    _remindersFeed = _remindersFeed.filter(function(r){ return r.id !== noteId; });
+    _renderBell();
+  });
+}
+
+function _reminderMarkAll(){
+  if(!_remindersFeed || !_remindersFeed.length) return;
+  var ids = _remindersFeed.map(function(r){ return r.id; });
+  sb.from('clinical_notes').update({ remind_seen_at: new Date().toISOString() }).in('id', ids).then(function(){
+    _remindersFeed = [];
+    _renderBell();
+  });
 }
 
 function toggleNotifDrop(e){
@@ -887,21 +967,40 @@ function _notifMarkAll(){
 
 function _fireBrowserNotifs(){
   var prefs = _notifPrefs();
-  var syncKnown = function(){ (_notifFeed||[]).forEach(function(f){ _notifKnown[f.seance_id] = 1; }); };
+  var syncKnown = function(){
+    (_notifFeed||[]).forEach(function(f){ _notifKnown[f.seance_id] = 1; });
+    (_remindersFeed||[]).forEach(function(r){ _remKnown[r.id] = 1; });
+  };
   if(_notifFirstPoll){ _notifFirstPoll = false; syncKnown(); return; } // pas de spam au chargement
-  if(!prefs.browser || typeof Notification === 'undefined' || Notification.permission !== 'granted'){ syncKnown(); return; }
-  (_notifFeed||[]).forEach(function(f){
-    if(_notifKnown[f.seance_id]) return;
-    _notifKnown[f.seance_id] = 1;
-    var pain = _notifMaxPain(f);
-    if(prefs.painOnly && (pain === null || pain < 4)) return;
-    var sp = f.seances_planifiees || {};
-    var pname = _notifPatients[sp.patient_id] || 'Athlète';
-    var progNom = (sp.programmes && sp.programmes.nom) || 'Séance';
-    var dateFr = sp.date ? sp.date.split('-').reverse().slice(0,2).join('/') : '';
-    var body = progNom + (dateFr ? ' du '+dateFr : '') + (pain !== null && pain > 0 ? ' · douleur '+pain+'/10' : '');
-    try { new Notification('Retour athlète — '+pname, { body: body, tag: 'r4p-fb-'+f.seance_id }); } catch(e){}
-  });
+  if(typeof Notification === 'undefined' || Notification.permission !== 'granted'){ syncKnown(); return; }
+  if(prefs.browser){
+    (_notifFeed||[]).forEach(function(f){
+      if(_notifKnown[f.seance_id]) return;
+      _notifKnown[f.seance_id] = 1;
+      var pain = _notifMaxPain(f);
+      if(prefs.painOnly && (pain === null || pain < 4)) return;
+      var sp = f.seances_planifiees || {};
+      var pname = _notifPatients[sp.patient_id] || 'Athlète';
+      var progNom = (sp.programmes && sp.programmes.nom) || 'Séance';
+      var dateFr = sp.date ? sp.date.split('-').reverse().slice(0,2).join('/') : '';
+      var body = progNom + (dateFr ? ' du '+dateFr : '') + (pain !== null && pain > 0 ? ' · douleur '+pain+'/10' : '');
+      try { new Notification('Retour athlète — '+pname, { body: body, tag: 'r4p-fb-'+f.seance_id }); } catch(e){}
+    });
+  } else {
+    (_notifFeed||[]).forEach(function(f){ _notifKnown[f.seance_id] = 1; });
+  }
+  if(prefs.reminders){
+    (_remindersFeed||[]).forEach(function(r){
+      if(_remKnown[r.id]) return;
+      _remKnown[r.id] = 1;
+      var pname = _notifPatients[r.patient_id] || 'Patient';
+      var dateFr = r.date ? r.date.split('-').reverse().slice(0,2).join('/') : '';
+      var body = (r.title||'Rappel') + (dateFr ? ' · '+dateFr : '');
+      try { new Notification('🔔 Rappel — '+pname, { body: body, tag: 'r4p-rem-'+r.id }); } catch(e){}
+    });
+  } else {
+    (_remindersFeed||[]).forEach(function(r){ _remKnown[r.id] = 1; });
+  }
 }
 
 // Réglages modifiés depuis account.html (autre contexte → événement storage)

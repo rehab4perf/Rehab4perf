@@ -2085,7 +2085,8 @@ function _syncCalNotesFromSupabase(){
     if(!rows) return;
     // Construire la liste distante
     var remoteNotes = rows.map(function(r){
-      return { id:r.id, date:r.date, title:r.title||'', text:r.body||'', type:'clinique', createdAt:r.created_at||'' };
+      return { id:r.id, date:r.date, title:r.title||'', text:r.body||'', type:'clinique', createdAt:r.created_at||'',
+        remindAt:r.remind_at||null, remindSeenAt:r.remind_seen_at||null };
     });
     // Charger les notes locales (localStorage)
     var localNotes = [];
@@ -2125,7 +2126,8 @@ function _pushClinicalNote(note){
     method: 'POST',
     headers: Object.assign({}, _sbHeaders(), {'Prefer':'resolution=merge-duplicates,return=minimal'}),
     body: JSON.stringify({ id:note.id, patient_id:_progPatient.id, praticien_id:_progUid,
-      date:note.date, title:note.title||'', body:note.text||'', created_at:note.createdAt||new Date().toISOString() })
+      date:note.date, title:note.title||'', body:note.text||'', created_at:note.createdAt||new Date().toISOString(),
+      remind_at:note.remindAt||null, remind_seen_at:note.remindSeenAt||null })
   }).then(function(r){
     if(!r.ok){
       r.text().then(function(t){ console.warn('_pushClinicalNote failed', r.status, t); });
@@ -2144,11 +2146,12 @@ function _deleteClinicalNote(noteId){
   }).catch(function(e){ console.warn('_deleteClinicalNote error', e); });
 }
 
-function _addCalNoteIfNotDupe(dateStr, title, text) {
+function _addCalNoteIfNotDupe(dateStr, title, text, remindAt) {
   _loadCalNotes();
   var exists = _calNotes.some(function(n){ return n.date===dateStr && n.title===title; });
   if(exists) return false;
-  var note = { id:_genUUID(), date:dateStr, title:title.trim(), text:(text||'').trim(), type:'clinique', createdAt:new Date().toISOString() };
+  var note = { id:_genUUID(), date:dateStr, title:title.trim(), text:(text||'').trim(), type:'clinique', createdAt:new Date().toISOString(),
+    remindAt:remindAt||null };
   _calNotes.push(note);
   _persistCalNotes();
   // Synchroniser immédiatement sur Supabase pour survivre au prochain sync
@@ -2301,6 +2304,38 @@ function _nextVersionTitle(title) {
   return title + ' V2';
 }
 
+/* ── Toggle "Me le rappeler" — active un rappel dans la cloche a une date choisie ──
+   Independant du statut fait/pas-fait : c'est une alerte ponctuelle qui disparait
+   une fois consultee (remind_seen_at), pas une tache a cocher. */
+function _reminderToggleHtml(noteDateStr, remindAt){
+  var checked = !!remindAt;
+  var defaultDate = remindAt || _addDays(noteDateStr, -3);
+  return '<div id="note-reminder-toggle-row" style="display:flex;align-items:center;gap:8px;margin:10px 0 6px">'
+    +'<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.78rem;color:#6B6860">'
+    +'<input type="checkbox" id="note-reminder-chk" '+(checked?'checked':'')+' onchange="_toggleReminderFields()" style="accent-color:var(--accent)">'
+    +'🔔 Me le rappeler'
+    +'</label>'
+    +'</div>'
+    +'<div id="note-reminder-fields" style="display:'+(checked?'':'none')+';background:#F7F6F3;border-radius:7px;padding:10px;margin-bottom:8px">'
+    +'<div style="display:flex;gap:8px;align-items:center">'
+    +'<span style="font-size:.75rem;color:#6B6860;white-space:nowrap">Me notifier le</span>'
+    +'<input type="date" id="note-reminder-date" value="'+escH(defaultDate)+'" style="border:1px solid #D3D1CB;border-radius:5px;padding:4px 6px;font-size:.82rem;font-family:inherit">'
+    +'</div>'
+    +'</div>';
+}
+window._toggleReminderFields = function(){
+  var chk = document.getElementById('note-reminder-chk');
+  var fields = document.getElementById('note-reminder-fields');
+  if(!fields) return;
+  fields.style.display = chk && chk.checked ? '' : 'none';
+};
+function _readReminderDate(){
+  var chk = document.getElementById('note-reminder-chk');
+  if(!chk || !chk.checked) return null;
+  var val = (document.getElementById('note-reminder-date')||{}).value || '';
+  return val || null;
+}
+
 function _openCalNoteForm(dateStr) {
   _noteFormType = 'clinique';
   _calPickerDate = dateStr;
@@ -2313,6 +2348,7 @@ function _openCalNoteForm(dateStr) {
     +_noteTypeRow('clinique')
     +'<input class="cal-note-inp" id="calNoteTitle" type="text" placeholder="Titre (optionnel)" />'
     +'<textarea class="cal-note-textarea" id="calNoteText" placeholder="Note, rappel, observation…"></textarea>'
+    +_reminderToggleHtml(dateStr, null)
     +'<div id="note-followup-toggle-row" style="display:flex;align-items:center;gap:8px;margin:10px 0 6px">'
     +'<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.78rem;color:#6B6860">'
     +'<input type="checkbox" id="note-followup-chk" onchange="_toggleFollowupFields()" style="accent-color:var(--accent)">'
@@ -2364,7 +2400,8 @@ function _saveCalNote(dateStr) {
   if(!title.trim() && !text.trim()){ _showToast('La note est vide.', true); return; }
   _loadCalNotes();
   var note = { id:_genUUID(), date:dateStr,
-    title:title.trim(), text:text.trim(), type:_noteFormType, createdAt:new Date().toISOString() };
+    title:title.trim(), text:text.trim(), type:_noteFormType, createdAt:new Date().toISOString(),
+    remindAt:_readReminderDate() };
   _calNotes.push(note);
   _persistCalNotes();
   if(note.type === 'patient') _pushPatientMsg(note);
@@ -2399,6 +2436,7 @@ function _openCalNoteView(noteId) {
     +_noteTypeRow(_noteFormType)
     +'<input class="cal-note-inp" id="calNoteTitle" type="text" placeholder="Titre (optionnel)" value="'+escH(note.title||'')+'" />'
     +'<textarea class="cal-note-textarea" id="calNoteText" placeholder="Note, rappel, observation…">'+escH(note.text||'')+'</textarea>'
+    +_reminderToggleHtml(note.date, note.remindAt||null)
     +'<div id="note-followup-toggle-row" style="display:flex;align-items:center;gap:8px;margin:10px 0 6px">'
     +'<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.78rem;color:#6B6860">'
     +'<input type="checkbox" id="note-followup-chk" onchange="_toggleFollowupFields()" style="accent-color:var(--accent)">'
@@ -2446,6 +2484,9 @@ function _updateCalNote(noteId) {
   if(!note) return;
   var prevType = note.type || 'clinique';
   note.title = title.trim(); note.text = text.trim(); note.type = _noteFormType;
+  note.remindAt = _readReminderDate();
+  // Reactiver un rappel deja vu : on veut re-notifier, donc on efface l'ancien "vu"
+  note.remindSeenAt = null;
   _persistCalNotes();
   if(note.type === 'patient') {
     _pushPatientMsg(note); // upsert
@@ -8485,7 +8526,10 @@ window._confirmRappels = function(defaultRappels, protoId) {
     var title = titleEl ? titleEl.value.trim() : r.title;
     if(!title) return;
     var targetDate = _addDays(j0, r.jPlus);
-    if(_addCalNoteIfNotDupe(targetDate, title, '')) created++;
+    // Auto-rappel J-3 sur les echeances "CR medecin" — ce sont des titres
+    // generes par l'app (pas du texte libre), le filtre sur "CR" est donc fiable ici.
+    var autoRemindAt = /\bCR\b/i.test(title) ? _addDays(targetDate, -3) : null;
+    if(_addCalNoteIfNotDupe(targetDate, title, '', autoRemindAt)) created++;
   });
 
   document.getElementById('rappels-modal-overlay').remove();

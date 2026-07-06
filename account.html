@@ -183,6 +183,10 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
       <div><div class="security-label">Seulement si douleur ≥ 4</div><div class="security-sub">Limiter les notifications navigateur aux retours douloureux</div></div>
       <button class="tog" id="tog-painOnly" onclick="_togNotif('painOnly')"></button>
     </div>
+    <div class="security-item">
+      <div><div class="security-label">Rappels de notes</div><div class="security-sub">Alerte dans la cloche (et navigateur) quand un rappel activé sur une note arrive à échéance</div></div>
+      <button class="tog" id="tog-reminders" onclick="_togNotif('reminders')"></button>
+    </div>
   </div>
 
   <div class="card">
@@ -301,14 +305,14 @@ function sendPasswordReset() {
 
 /* ═══ RÉGLAGES NOTIFICATIONS ═══ */
 function _notifPrefs() {
-  var d = { dots:true, bell:true, browser:false, painOnly:false };
+  var d = { dots:true, bell:true, browser:false, painOnly:false, reminders:true };
   try { return Object.assign(d, JSON.parse(localStorage.getItem('r4p-notif-prefs')||'{}')); }
   catch(e) { return d; }
 }
 
 function _renderNotifTogs() {
   var p = _notifPrefs();
-  ['dots','bell','browser','painOnly'].forEach(function(k) {
+  ['dots','bell','browser','painOnly','reminders'].forEach(function(k) {
     var el = document.getElementById('tog-'+k);
     if (el) el.classList.toggle('on', !!p[k]);
   });

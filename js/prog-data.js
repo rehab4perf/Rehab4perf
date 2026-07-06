@@ -2568,6 +2568,12 @@ window.addEventListener('message', function(e){
     if(typeof _fbUnseen !== 'undefined'){ _fbUnseen = {}; _applyFbDots(); }
     return;
   }
+  // La cloche demande l'ouverture d'un rappel de note (patient deja selectionne par le parent)
+  if(e.data && e.data.type==='r4p-open-note' && e.data.noteId){
+    if(typeof _loadCalNotes === 'function') _loadCalNotes();
+    if(typeof _openCalNoteView === 'function') _openCalNoteView(e.data.noteId);
+    return;
+  }
   // Nouveau token reçu depuis index.html après refresh automatique
   // On met à jour uniquement le token — le rôle et les favoris ne changent pas entre deux refreshs,
   // donc on évite les toggles DOM de _applyRoleUI() qui causaient un flash visuel.
