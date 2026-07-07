@@ -1054,6 +1054,13 @@ document.addEventListener('click', function(e){
   var drop = document.getElementById('notifDrop');
   if(drop && drop.classList.contains('open') && !drop.contains(e.target)) drop.classList.remove('open');
 });
+// Le contenu principal est constitué d'iframes (documents séparés) : un clic dedans
+// ne remonte jamais au listener ci-dessus. Cliquer dans une iframe fait perdre le
+// focus à la fenêtre parente — on s'en sert comme signal de "clic ailleurs".
+window.addEventListener('blur', function(){
+  var drop = document.getElementById('notifDrop');
+  if(drop && drop.classList.contains('open')) drop.classList.remove('open');
+});
 
 function _notifOpen(i){
   var f = _notifFeed && _notifFeed[i];
