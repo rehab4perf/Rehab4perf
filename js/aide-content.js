@@ -158,13 +158,87 @@ sections: [
     ]}
 ]},
 
+/* ── 🧮 CALCULATEURS ─────────────────────────────────────────── */
+{ id:'calculateurs', emoji:'🧮', titre:'Calculateurs', articles:[
+  { id:'rm', titre:'Calculateur RM (1RM estimé)',
+    intro:'Estimez la charge maximale d\'un exercice à partir d\'une série sous-maximale — sans faire de test à 1 répétition.',
+    etapes:[
+      { t:'Menu ⋯ → « Calculateur RM »', x:'Saisissez le poids soulevé et le nombre de répétitions (l\'exercice est optionnel).', img:true },
+      { t:'Lisez le 1RM estimé', x:'Moyenne de six formules validées (Brzycki, Epley, Lander, Lombardi, O\'Conner, Mayhew) pour lisser les écarts de chacune.' },
+      { t:'Utilisez le tableau des pourcentages', x:'Pratique pour prescrire une cible en %1RM dans le builder (ex. 4×6 à 80 %).' }
+    ]},
+  { id:'cardio', titre:'Calculateur Cardio (zones FC et VMA)',
+    intro:'Toutes les zones d\'entraînement du patient, calculées à partir de ses données physiologiques.',
+    etapes:[
+      { t:'Menu ⋯ → « Calculateur Cardio »', x:'Âge, sexe, poids, taille, FC de repos — et FC max mesurée si vous l\'avez (sinon elle est estimée).' },
+      { t:'5 zones FC selon Karvonen', x:'FC cible = FC repos + (FC de réserve × %). Plus fiable qu\'un simple pourcentage de FC max, car ancré sur la FC de repos réelle.', img:true },
+      { t:'Zones VMA', x:'%VMA, vitesse en km/h et allure en min/km pour construire les séances de course.' }
+    ]},
+  { id:'cap', titre:'Calculateur CAP (retour à la course)',
+    intro:'Un assistant complet de reprise de course à pied : il génère le programme progressif directement dans l\'agenda.',
+    etapes:[
+      { t:'Menu ⋯ → « Calculateur CAP »', x:'Choisissez la pathologie et le point de départ du patient.', img:true },
+      { t:'Le wizard planifie les paliers marche/course', x:'Les séances CAP apparaissent dans l\'agenda (ex. 5×(1\'C/1\'M)) et dans le calendrier de l\'athlète.' },
+      { t:'L\'athlète renseigne douleur et effort après chaque sortie', x:'Selon la douleur EVA, le bandeau CAP du builder vous propose de régresser ou maintenir le palier — l\'adaptation se fait en un clic.' }
+    ]},
+  { id:'hsr', titre:'Calculateur HSR (tendinopathies)',
+    intro:'Le protocole Heavy Slow Resistance pour les tendinopathies, piloté par le 1RM du patient.',
+    etapes:[
+      { t:'Menu ⋯ → « Calculateur HSR »', x:'Renseignez le 1RM de référence de l\'exercice cible.', img:true },
+      { t:'Les séances des phases se planifient automatiquement', x:'Charges calculées en %1RM, progression par phases dans l\'agenda.' },
+      { t:'Suivi par la douleur', x:'L\'athlète note sa douleur EVA après chaque séance ; le bandeau HSR du builder permet d\'adapter, et de mettre à jour le 1RM de référence au fil des progrès.' }
+    ]},
+  { id:'acwr-calc', titre:'Calculateur ACWR',
+    intro:'Pour vérifier manuellement un ratio charge aiguë / chronique — par exemple avec des données externes à l\'app.',
+    etapes:[
+      { t:'Menu ⋯ → « Calculateur ACWR »', x:'Saisissez la charge aiguë (7 derniers jours, en UA) et les charges des semaines précédentes.' },
+      { t:'Lisez le ratio et sa zone', x:'Le même code couleur que le Bilan de charge (voir la section « Charge d\'entraînement »). Note : pour vos patients suivis dans l\'app, ce ratio se calcule déjà tout seul sous l\'agenda.' }
+    ]}
+]},
+
+/* ── ⚡ CHARGE D'ENTRAÎNEMENT ────────────────────────────────── */
+{ id:'charges', emoji:'⚡', titre:'Charge d\'entraînement', articles:[
+  { id:'ua-foster', titre:'Les UA : comment la charge est calculée',
+    intro:'Toute la gestion de charge repose sur une unité commune : l\'UA (méthode de Foster).',
+    etapes:[
+      { t:'UA = RPE × durée', x:'Le ressenti d\'effort de l\'athlète (Borg 1–10) multiplié par la durée réelle en minutes. Une séance de 45 min à RPE 7 = 315 UA.' },
+      { t:'Sources, par ordre de priorité', x:'1) Le retour athlète d\'une séance planifiée. 2) L\'activité Strava liée à une séance CAP (FC réelle × durée). 3) Les activités Strava libres, estimées par la fréquence cardiaque. Chaque effort n\'est compté qu\'une seule fois — jamais de doublon entre retour et Strava.' },
+      { t:'Où la voir', x:'Badge ⚡ sur les chips de l\'agenda, Bilan de charge sous le calendrier, carte « Charge globale » de l\'Évolution.' }
+    ]},
+  { id:'bilan-charge', titre:'Lire le Bilan de charge (sous l\'agenda)',
+    intro:'Le tableau de bord hebdomadaire : c\'est ici que se pilote la semaine en cours.',
+    etapes:[
+      { t:'Les barres quotidiennes', x:'La charge de chaque jour de la semaine. Vert < 150 UA, orange < 300, rouge au-delà — un profil en dents de scie est normal et même souhaitable.', img:true },
+      { t:'Monotonie : la variabilité de la semaine', x:'Charge moyenne ÷ écart-type. En dessous de 1,5 : bonne variabilité ✓. Entre 1,5 et 2 : vigilance ⚠. Au-dessus de 2 : monotonie élevée 🔴 — des charges trop uniformes augmentent le risque de blessure et de surmenage, même à volume modéré.' },
+      { t:'Strain : la contrainte globale', x:'Charge hebdomadaire × monotonie. Deux semaines à volume égal ne se valent pas : celle qui est monotone contraint plus l\'organisme.' },
+      { t:'Progression : l\'évolution vs semaine précédente', x:'Jusqu\'à +10 % : progression sûre ✓. De +10 à +15 % : à surveiller ⚠. Au-delà de +15 % : hausse trop brutale 🔴.' },
+      { t:'Adhérence 30 jours', x:'La part des séances planifiées réellement réalisées (retour athlète ou activité Strava à l\'appui).' }
+    ]},
+  { id:'acwr', titre:'L\'ACWR : le ratio charge aiguë / chronique',
+    intro:'L\'indicateur clé du risque lié aux variations de charge — affiché en bas du Bilan de charge.',
+    etapes:[
+      { t:'Le calcul', x:'Charge aiguë = les 7 derniers jours. Charge chronique = la moyenne hebdomadaire des 28 derniers jours. ACWR = aiguë ÷ chronique. Il faut au moins quelques semaines d\'historique pour qu\'il soit interprétable.' },
+      { t:'Les zones', x:'Moins de 0,8 : sous-charge (désentraînement possible). De 0,8 à 1,3 : sweet spot ✓ — la zone où viser. De 1,3 à 1,5 : prudence ⚠. Au-delà de 1,5 : zone à risque 🔴 — la charge récente dépasse nettement ce que l\'organisme a l\'habitude d\'encaisser.', img:true },
+      { t:'La lecture clinique', x:'Un ACWR élevé n\'interdit pas de s\'entraîner : il invite à lisser la montée en charge. Croisez-le toujours avec la douleur (courbes de l\'Évolution) et le contexte du patient.' }
+    ]},
+  { id:'regles-lecture', titre:'Règles de lecture au quotidien',
+    intro:'Quel écran pour quelle question — la méthode en trois regards.',
+    etapes:[
+      { t:'« Comment se passe la semaine ? » → Bilan de charge', x:'Sous l\'agenda : barres du jour, monotonie, strain, ACWR. C\'est le pilotage opérationnel.' },
+      { t:'« La trajectoire est-elle saine ? » → Évolution, carte Charge globale', x:'La tendance sur plusieurs semaines ou mois, par séance ou par semaine. Les hausses hebdomadaires de plus de 30 % sont marquées en orange.' },
+      { t:'« Et la douleur dans tout ça ? » → Évolution, courbes par exercice', x:'La douleur EVA superposée à la charge de chaque exercice : une charge qui monte pendant que la douleur descend, c\'est une adaptation réussie ; l\'inverse est un signal d\'alerte.' },
+      { t:'Aucune charge ne s\'affiche ?', x:'Les UA n\'existent que si l\'athlète envoie ses retours (ou si Strava est connecté). Sans données d\'entrée, pas de pilotage — c\'est la première chose à mettre en place.' }
+    ]}
+]},
+
 /* ── 📱 ESPACE ATHLÈTE ───────────────────────────────────────── */
 { id:'athlete', emoji:'📱', titre:'Espace athlète', articles:[
-  { id:'lien-athlete', titre:'Envoyer son lien à l\'athlète',
+  { id:'lien-athlete', titre:'Partager le calendrier à l\'athlète (ou à un confrère)',
     intro:'L\'athlète n\'a pas de compte : il accède à son programme par un lien personnel, sur n\'importe quel téléphone.',
     etapes:[
-      { t:'Générez le lien depuis la séance ou le patient', x:'Copiez-le et envoyez-le par SMS, WhatsApp ou email.', img:true },
-      { t:'Conseillez à l\'athlète de l\'ajouter à son écran d\'accueil', x:'Le lien reste valable : pas besoin de le renvoyer à chaque séance.' }
+      { t:'Menu ⋯ → « Partager le calendrier »', x:'Deux modes : « Partager au patient » (séances et feedback uniquement) ou « Partager à un kiné » (séances + notes cliniques, pour une prise en charge partagée).', img:true },
+      { t:'Copiez le lien et envoyez-le', x:'SMS, WhatsApp ou email. Le lien reste valable en permanence : pas besoin de le renvoyer à chaque séance.' },
+      { t:'Conseillez à l\'athlète de l\'ajouter à son écran d\'accueil', x:'Il retrouvera son calendrier comme une application.' }
     ]},
   { id:'vue-athlete', titre:'Ce que voit l\'athlète',
     intro:'Un calendrier épuré de ses séances, et le détail de chaque exercice avec vidéo.',
