@@ -7817,12 +7817,14 @@ window.addEventListener('load', function(){
     try{ el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); }catch(ex){}
   }
 
+  var IMG_CLIP_SVG = '<svg viewBox="0 0 24 24" width="12" height="12" xmlns="http://www.w3.org/2000/svg"><path d="m8.322 23.133c-1.841 0-3.573-.718-4.877-2.021s-2.021-3.035-2.021-4.877c0-1.816.737-3.594 2.021-4.878l9.095-9.096c1.856-1.857 5.095-1.859 6.954 0 .929.929 1.441 2.165 1.441 3.477s-.512 2.549-1.441 3.478l-9.105 9.096c-1.101 1.101-3.053 1.101-4.154 0-.555-.555-.86-1.292-.86-2.076 0-.774.314-1.531.86-2.077l8.403-8.395c.375-.374.98-.372 1.352.001.374.374.374.979 0 1.352l-8.403 8.393c-.19.19-.3.454-.3.725s.11.533.3.724c.382.382 1.065.385 1.449 0l9.105-9.096c.568-.567.88-1.322.88-2.125s-.313-1.557-.88-2.125c-1.137-1.136-3.115-1.134-4.249 0l-9.095 9.096c-.928.928-1.46 2.214-1.46 3.526 0 1.331.519 2.583 1.46 3.525.943.942 2.194 1.46 3.525 1.46 1.312 0 2.597-.532 3.526-1.46l9.095-9.096c.374-.374.979-.374 1.352 0s.374.979 0 1.352l-9.095 9.096c-1.284 1.284-3.062 2.021-4.878 2.021z" fill="currentColor"/></svg>';
+
   function _renderImgFileBox(type){
     var box = document.getElementById('f-img-'+type+'-filebox');
     if(!box) return;
     var meta = _imgMeta(type);
     if(!meta || !meta.path){
-      box.innerHTML = '<button type="button" class="img-file-btn" onclick="document.getElementById(\'f-img-'+type+'-picker\').click()">📎 Joindre</button>';
+      box.innerHTML = '<button type="button" class="img-file-btn" onclick="document.getElementById(\'f-img-'+type+'-picker\').click()">'+IMG_CLIP_SVG+' Joindre</button>';
       return;
     }
     box.innerHTML = '<div class="img-file-chip">'
