@@ -1481,6 +1481,7 @@ function buildProgHTML(prog){
         if(b.duree_recup)  cParams.push({l:'Marche', v: b.duree_recup});
       }
       if(b.duree_totale) cParams.push({l:'Durée totale', v: b.duree_totale+' min'});
+      if(b.distance) cParams.push({l:'Distance', v: b.distance+' km'});
       if(b.zone) cParams.push({l:'Zone cardio', v: 'Zone '+b.zone});
       if(cParams.length){
         html += '<div class="exo-params">';
@@ -1950,9 +1951,13 @@ function _buildCapProgHTML(prog) {
     } else if(bloc.effort_type === 'continu' && bloc.duree_totale){
       html += '<div style="font-size:1.05rem;font-weight:800;color:#1A3A5C;margin-bottom:4px;">'
            +  escH(String(bloc.duree_totale))+' min continu</div>';
+    } else if(bloc.effort_type === 'continu' && bloc.distance){
+      html += '<div style="font-size:1.05rem;font-weight:800;color:#1A3A5C;margin-bottom:4px;">'
+           +  escH(String(bloc.distance))+' km continu</div>';
     }
     var cMeta = [];
     if(bloc.duree_totale) cMeta.push('~'+bloc.duree_totale+' min');
+    if(bloc.distance && bloc.duree_totale) cMeta.push(bloc.distance+' km');
     if(bloc.zone) cMeta.push('Zone '+bloc.zone);
     if(cMeta.length) html += '<div style="font-size:.75rem;color:#0369A1;font-weight:600;">'+escH(cMeta.join(' · '))+'</div>';
     if(bloc.notes) html += '<div style="font-size:.75rem;color:#475569;margin-top:5px;font-style:italic;">💬 '+escH(bloc.notes)+'</div>';
