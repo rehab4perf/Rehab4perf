@@ -2619,6 +2619,7 @@ function _deserializeBilan(data){
   try{ _initAllRomBars(); }catch(ex){}
   try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht','co-f-ext','co-f-flex'].forEach(calcEpForce); ['ha-f-add','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); ['pi-f-fp','pi-f-fd','pi-f-inv','pi-f-ev','pi-f-lfh'].forEach(calcEpForce); ['ra-fc-inc'].forEach(calcEpForce); }catch(ex){}
   _parsePainZones();
+  try{ _imgFileRenderAll(); }catch(ex){}
   _suppressDirty = false;
   _bilanModified = false;
   try{ _calcWainnerCerv(); _calcDN4(); _calcLaslett(); _calcHaLaslett(); _calcInstabLomb(); _calcFlexionLomb(); _calcMckenzie(); }catch(ex){}
@@ -7789,4 +7790,112 @@ window.addEventListener('load', function(){
 
   window._CT_PAGES = _CT_PAGES;
   window.addEventListener('load', _ctInit);
+})();
+
+/* ══════════════════════════════════════════════════════
+   IMAGERIES — pièces jointes (upload/téléchargement Supabase Storage)
+══════════════════════════════════════════════════════ */
+(function(){
+  var IMG_BUCKET = 'imagerie';
+  var IMG_TYPES = ['radio','irm','echo','scan','arthro','autre'];
+  var IMG_MAX_MB = 20;
+
+  function _imgEsc(s){
+    return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function _imgMeta(type){
+    var el = document.getElementById('f-img-'+type+'-file');
+    if(!el || !el.value) return null;
+    try{ return JSON.parse(el.value); }catch(ex){ return null; }
+  }
+
+  function _imgSetMeta(type, meta){
+    var el = document.getElementById('f-img-'+type+'-file');
+    if(!el) return;
+    el.value = meta ? JSON.stringify(meta) : '';
+    try{ el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); }catch(ex){}
+  }
+
+  function _renderImgFileBox(type){
+    var box = document.getElementById('f-img-'+type+'-filebox');
+    if(!box) return;
+    var meta = _imgMeta(type);
+    if(!meta || !meta.path){
+      box.innerHTML = '<button type="button" class="img-file-btn" onclick="document.getElementById(\'f-img-'+type+'-picker\').click()">📎 Joindre</button>';
+      return;
+    }
+    box.innerHTML = '<div class="img-file-chip">'
+      + '<span class="img-file-chip-name" title="'+_imgEsc(meta.name||'')+'" onclick="_imgFileDownload(\''+type+'\')">'+_imgEsc(meta.name||'Fichier')+'</span>'
+      + '<button type="button" class="img-file-chip-dl" title="Télécharger" onclick="_imgFileDownload(\''+type+'\')">⬇</button>'
+      + '<button type="button" class="img-file-chip-del" title="Retirer" onclick="_imgFileRemove(\''+type+'\')">×</button>'
+      + '</div>';
+  }
+
+  window._imgFileRenderAll = function(){
+    IMG_TYPES.forEach(_renderImgFileBox);
+  };
+
+  window._imgFileSelected = function(type, inputEl){
+    var file = inputEl.files && inputEl.files[0];
+    if(!file) return;
+    if(file.size > IMG_MAX_MB * 1024 * 1024){
+      alert('Fichier trop volumineux (max '+IMG_MAX_MB+' Mo).');
+      inputEl.value = '';
+      return;
+    }
+    var patientId = _bilanPatient && _bilanPatient.id;
+    if(!patientId){
+      alert('Sélectionnez un patient avant de joindre un fichier.');
+      inputEl.value = '';
+      return;
+    }
+    var box = document.getElementById('f-img-'+type+'-filebox');
+    if(box) box.innerHTML = '<span class="img-file-uploading">Envoi…</span>';
+    var ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g,'');
+    var path = patientId + '/' + type + '-' + Date.now() + '.' + ext;
+    var prevMeta = _imgMeta(type);
+    sbB.storage.from(IMG_BUCKET).upload(path, file, { upsert: true, contentType: file.type || undefined })
+      .then(function(res){
+        if(res.error) throw res.error;
+        var meta = { path: path, name: file.name, size: file.size, uploadedAt: new Date().toISOString() };
+        _imgSetMeta(type, meta);
+        _renderImgFileBox(type);
+        // Nettoyage best-effort de l'ancien fichier (si remplacement)
+        if(prevMeta && prevMeta.path && prevMeta.path !== path){
+          sbB.storage.from(IMG_BUCKET).remove([prevMeta.path]).catch(function(){});
+        }
+      })
+      .catch(function(err){
+        console.error('Erreur upload imagerie:', err);
+        alert('Échec de l\'envoi du fichier. Réessayez.');
+        _renderImgFileBox(type);
+      })
+      .finally(function(){ inputEl.value = ''; });
+  };
+
+  window._imgFileDownload = function(type){
+    var meta = _imgMeta(type);
+    if(!meta || !meta.path) return;
+    sbB.storage.from(IMG_BUCKET).createSignedUrl(meta.path, 120).then(function(res){
+      if(res.error || !res.data){ alert('Impossible de récupérer le fichier.'); return; }
+      window.open(res.data.signedUrl, '_blank');
+    });
+  };
+
+  window._imgFileRemove = function(type){
+    var meta = _imgMeta(type);
+    if(!meta || !meta.path) return;
+    if(!confirm('Retirer ce fichier ?')) return;
+    sbB.storage.from(IMG_BUCKET).remove([meta.path]).finally(function(){
+      _imgSetMeta(type, null);
+      _renderImgFileBox(type);
+    });
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', window._imgFileRenderAll);
+  } else {
+    window._imgFileRenderAll();
+  }
 })();

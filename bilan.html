@@ -702,6 +702,28 @@ body {
 }
 .img-cell-input:focus { background:var(--accent-l); }
 .img-cell-input::placeholder { color:var(--text2); opacity:.55; }
+.img-col-file { width:190px; min-width:172px; }
+.img-file-cell { padding:6px 8px !important; }
+.img-file-btn {
+  display:inline-flex; align-items:center; gap:5px; border:1.5px solid var(--border2);
+  background:var(--surface); color:var(--text2); font-family:var(--font-sans);
+  font-size:.76rem; font-weight:600; padding:5px 10px; border-radius:var(--radius-sm);
+  cursor:pointer; transition:all .12s; white-space:nowrap;
+}
+.img-file-btn:hover { border-color:var(--accent); color:var(--accent2); background:var(--accent-l); }
+.img-file-chip {
+  display:flex; align-items:center; gap:4px; background:var(--accent-l);
+  border:1px solid var(--accent); border-radius:var(--radius-sm); padding:4px 4px 4px 8px;
+  max-width:100%; box-sizing:border-box;
+}
+.img-file-chip-name {
+  font-size:.76rem; font-weight:600; color:var(--accent2); overflow:hidden;
+  text-overflow:ellipsis; white-space:nowrap; min-width:0; flex:1; cursor:pointer;
+}
+.img-file-chip-dl { background:none; border:none; cursor:pointer; font-size:.85rem; padding:1px 3px; line-height:1; color:var(--accent2); flex-shrink:0; }
+.img-file-chip-del { background:none; border:none; cursor:pointer; font-size:.85rem; padding:1px 3px; line-height:1; color:var(--text2); flex-shrink:0; }
+.img-file-chip-del:hover { color:var(--red); }
+.img-file-uploading { font-size:.76rem; color:var(--text2); font-style:italic; }
 
 /* ── Test table ──────────────────────────────────────────── */
 .test-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
@@ -1631,55 +1653,6 @@ textarea { resize:none !important; overflow:hidden !important; }
   <div class="form-grid">
     <div class="field" style="grid-column:1/-1"><label>Observations douleur</label><textarea id="f-eva-obs" placeholder="Localisation, type, contexte déclenchant…"></textarea></div>
   </div>
-  <!-- Imageries disponibles -->
-  <div style="border-top:1px solid var(--border);">
-    <div style="padding:7px 14px 6px;background:var(--surface2);font-size:.68rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text2);">
-      📷 Imageries disponibles
-    </div>
-    <div class="img-table-wrap">
-      <table class="img-table">
-        <thead>
-          <tr>
-            <th class="img-col-type">Type</th>
-            <th class="img-col-date">Date</th>
-            <th>Résultat / observations</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td class="img-label">Radiographie</td>
-            <td><input class="img-cell-input" type="text" id="f-img-radio-date" placeholder="03/2025"></td>
-            <td><input class="img-cell-input" type="text" id="f-img-radio-obs" placeholder="Pas de lésion osseuse"></td>
-          </tr>
-          <tr>
-            <td class="img-label">IRM</td>
-            <td><input class="img-cell-input" type="text" id="f-img-irm-date" placeholder="15/03/2025"></td>
-            <td><input class="img-cell-input" type="text" id="f-img-irm-obs" placeholder="Rupture LCA totale non rétractée"></td>
-          </tr>
-          <tr>
-            <td class="img-label">Échographie</td>
-            <td><input class="img-cell-input" type="text" id="f-img-echo-date" placeholder=""></td>
-            <td><input class="img-cell-input" type="text" id="f-img-echo-obs" placeholder=""></td>
-          </tr>
-          <tr>
-            <td class="img-label">Scanner (TDM)</td>
-            <td><input class="img-cell-input" type="text" id="f-img-scan-date" placeholder=""></td>
-            <td><input class="img-cell-input" type="text" id="f-img-scan-obs" placeholder=""></td>
-          </tr>
-          <tr>
-            <td class="img-label">Arthroscopie</td>
-            <td><input class="img-cell-input" type="text" id="f-img-arthro-date" placeholder=""></td>
-            <td><input class="img-cell-input" type="text" id="f-img-arthro-obs" placeholder=""></td>
-          </tr>
-          <tr>
-            <td class="img-label">Autre</td>
-            <td><input class="img-cell-input" type="text" id="f-img-autre-date" placeholder=""></td>
-            <td><input class="img-cell-input" type="text" id="f-img-autre-obs" placeholder="Scintigraphie, DEXA…"></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
   <div class="form-grid">
     <div class="field"><label>Facteurs aggravants</label><textarea id="f-aggravants" placeholder="Course à pied, descente d'escaliers…" style="min-height:50px"></textarea></div>
     <div class="field"><label>Facteurs soulagants</label><textarea id="f-soulagants" placeholder="Repos, glace…" style="min-height:50px"></textarea></div>
@@ -1697,7 +1670,84 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
 </div>
 
-
+<!-- Imageries disponibles -->
+<div class="block">
+  <div class="block-header grey">📷 Imageries disponibles</div>
+  <div class="img-table-wrap">
+    <table class="img-table">
+      <thead>
+        <tr>
+          <th class="img-col-type">Type</th>
+          <th class="img-col-date">Date</th>
+          <th>Résultat / observations</th>
+          <th class="img-col-file">Fichier</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="img-label">Radiographie</td>
+          <td><input class="img-cell-input" type="text" id="f-img-radio-date" placeholder="03/2025"></td>
+          <td><input class="img-cell-input" type="text" id="f-img-radio-obs" placeholder="Pas de lésion osseuse"></td>
+          <td class="img-file-cell">
+            <input type="hidden" id="f-img-radio-file" value="">
+            <input type="file" id="f-img-radio-picker" accept="image/*,.pdf,.dcm" style="display:none" onchange="_imgFileSelected('radio',this)">
+            <div id="f-img-radio-filebox"></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="img-label">IRM</td>
+          <td><input class="img-cell-input" type="text" id="f-img-irm-date" placeholder="15/03/2025"></td>
+          <td><input class="img-cell-input" type="text" id="f-img-irm-obs" placeholder="Rupture LCA totale non rétractée"></td>
+          <td class="img-file-cell">
+            <input type="hidden" id="f-img-irm-file" value="">
+            <input type="file" id="f-img-irm-picker" accept="image/*,.pdf,.dcm" style="display:none" onchange="_imgFileSelected('irm',this)">
+            <div id="f-img-irm-filebox"></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="img-label">Échographie</td>
+          <td><input class="img-cell-input" type="text" id="f-img-echo-date" placeholder=""></td>
+          <td><input class="img-cell-input" type="text" id="f-img-echo-obs" placeholder=""></td>
+          <td class="img-file-cell">
+            <input type="hidden" id="f-img-echo-file" value="">
+            <input type="file" id="f-img-echo-picker" accept="image/*,.pdf,.dcm" style="display:none" onchange="_imgFileSelected('echo',this)">
+            <div id="f-img-echo-filebox"></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="img-label">Scanner (TDM)</td>
+          <td><input class="img-cell-input" type="text" id="f-img-scan-date" placeholder=""></td>
+          <td><input class="img-cell-input" type="text" id="f-img-scan-obs" placeholder=""></td>
+          <td class="img-file-cell">
+            <input type="hidden" id="f-img-scan-file" value="">
+            <input type="file" id="f-img-scan-picker" accept="image/*,.pdf,.dcm" style="display:none" onchange="_imgFileSelected('scan',this)">
+            <div id="f-img-scan-filebox"></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="img-label">Arthroscopie</td>
+          <td><input class="img-cell-input" type="text" id="f-img-arthro-date" placeholder=""></td>
+          <td><input class="img-cell-input" type="text" id="f-img-arthro-obs" placeholder=""></td>
+          <td class="img-file-cell">
+            <input type="hidden" id="f-img-arthro-file" value="">
+            <input type="file" id="f-img-arthro-picker" accept="image/*,.pdf,.dcm" style="display:none" onchange="_imgFileSelected('arthro',this)">
+            <div id="f-img-arthro-filebox"></div>
+          </td>
+        </tr>
+        <tr>
+          <td class="img-label">Autre</td>
+          <td><input class="img-cell-input" type="text" id="f-img-autre-date" placeholder=""></td>
+          <td><input class="img-cell-input" type="text" id="f-img-autre-obs" placeholder="Scintigraphie, DEXA…"></td>
+          <td class="img-file-cell">
+            <input type="hidden" id="f-img-autre-file" value="">
+            <input type="file" id="f-img-autre-picker" accept="image/*,.pdf,.dcm" style="display:none" onchange="_imgFileSelected('autre',this)">
+            <div id="f-img-autre-filebox"></div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 
   </div>
 </div>
