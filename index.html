@@ -50,6 +50,67 @@ html, body { height:100%; overflow:hidden; background:#1A3A5C; }
 }
 .notif-bell:hover { background:rgba(255,255,255,.18); }
 .notif-bell.visible { display:flex; }
+
+/* ── Bouton aide « ? » + drawer contextuel ────────────────── */
+.help-btn {
+  position:relative; width:34px; height:34px; border-radius:8px; flex-shrink:0;
+  background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2);
+  display:flex; align-items:center; justify-content:center;
+  font-size:.9rem; font-weight:700; cursor:pointer; margin-left:10px; color:#fff;
+  transition:background .15s; font-family:'Figtree',sans-serif;
+}
+.help-btn:hover { background:rgba(255,255,255,.18); }
+.help-drawer {
+  position:fixed; top:0; right:-400px; width:380px; max-width:92vw; height:100%;
+  background:#fff; box-shadow:-8px 0 32px rgba(0,0,0,.22); z-index:950;
+  display:flex; flex-direction:column; transition:right .22s ease;
+  font-family:'Figtree',sans-serif;
+}
+.help-drawer.open { right:0; }
+.help-drawer-hd {
+  display:flex; align-items:center; gap:8px; padding:14px 16px;
+  background:#1A3A5C; color:#fff; flex-shrink:0;
+}
+.help-drawer-title { font-size:.88rem; font-weight:700; flex:1; }
+.help-drawer-close { background:none; border:none; color:rgba(255,255,255,.7); font-size:1.1rem; cursor:pointer; padding:2px 6px; }
+.help-drawer-close:hover { color:#fff; }
+.help-drawer-body { flex:1; overflow-y:auto; padding:14px 16px; }
+.help-acc { border:1px solid #dde3ec; border-radius:10px; margin-bottom:8px; overflow:hidden; background:#fff; }
+.help-acc-q {
+  width:100%; text-align:left; background:none; border:none; padding:11px 13px;
+  font-size:.82rem; font-weight:600; color:#1a2433; cursor:pointer; font-family:inherit;
+  display:flex; justify-content:space-between; align-items:center; gap:8px;
+}
+.help-acc-q .chev { color:#94a3b8; font-size:.7rem; transition:transform .15s; flex-shrink:0; }
+.help-acc.open .chev { transform:rotate(180deg); }
+.help-acc-body { display:none; padding:0 13px 12px; }
+.help-acc.open .help-acc-body { display:block; }
+.help-acc-intro { font-size:.74rem; color:#6b7a8d; line-height:1.5; margin-bottom:10px; }
+.help-step { display:flex; gap:9px; margin-bottom:9px; }
+.help-step-n {
+  width:18px; height:18px; border-radius:50%; background:#4A90D9; color:#fff;
+  font-size:.62rem; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px;
+}
+.help-step-t { font-size:.76rem; font-weight:600; color:#1a2433; }
+.help-step-x { font-size:.72rem; color:#6b7a8d; line-height:1.5; margin-top:1px; }
+.help-img {
+  display:block; max-width:100%; border:1px solid #dde3ec; border-radius:7px; margin-top:6px;
+}
+.help-img-ph {
+  margin-top:6px; background:#f1f5f9; border:1px dashed #cbd5e1; border-radius:7px;
+  padding:9px; text-align:center; font-size:.66rem; color:#94a3b8;
+}
+.help-drawer-ft {
+  flex-shrink:0; padding:12px 16px; border-top:1px solid #eef2f7; background:#f8fafc;
+}
+.help-drawer-ft a {
+  font-size:.8rem; font-weight:600; color:#2B5FA6; text-decoration:none;
+}
+.help-drawer-ft a:hover { text-decoration:underline; }
+.help-overlay {
+  position:fixed; inset:0; background:rgba(10,20,35,.3); z-index:940; display:none;
+}
+.help-overlay.open { display:block; }
 .notif-badge {
   position:absolute; top:-6px; right:-6px; min-width:17px; height:17px;
   border-radius:9px; background:#ef4444; color:#fff; font-size:.62rem; font-weight:700;
@@ -311,7 +372,22 @@ iframe.active { display:block; }
     <span>👤</span><span class="patient-btn-label" id="patientBtnLabel">Aucun patient</span><span>▾</span>
   </button>
   <div class="notif-bell" id="notifBell" onclick="toggleNotifDrop(event)" title="Retours athlètes"><svg width="17" height="17" viewBox="0 0 512 512" fill="currentColor" style="flex-shrink:0" xmlns="http://www.w3.org/2000/svg"><g><path d="m437.022 339.09c-16.416-16.531-25.456-38.467-25.456-61.766v-77.957c0-79.128-59.431-144.51-135.974-154.193v-24.28c0-10.82-8.772-19.592-19.592-19.592s-19.592 8.772-19.592 19.592v24.28c-76.543 9.683-135.974 75.065-135.974 154.193v77.957c0 23.299-9.04 45.235-25.456 61.761-36.468 36.716-10.522 99.233 41.303 99.233h49.87c9.015 41.325 45.845 72.38 89.829 72.38 43.989 0 80.819-31.055 89.834-72.38h49.904c51.833 0 77.77-62.524 41.304-99.228zm-181.042 132.424c-22.173 0-41.12-13.779-48.93-33.196h97.865c-7.81 19.417-26.757 33.196-48.935 33.196zm139.738-72.38c-64.967 0-228.98 0-279.438 0-16.915 0-25.43-20.426-13.503-32.435 23.758-23.921 36.841-55.663 36.841-89.375v-77.957c0-64.172 52.209-116.381 116.381-116.381s116.381 52.209 116.381 116.381v77.957c0 33.712 13.082 65.454 36.841 89.38 11.92 11.995 3.421 32.43-13.503 32.43z"/><path d="m255.999 102.577c-10.82 0-19.592 8.772-19.592 19.592s8.772 19.592 19.592 19.592c31.766 0 57.605 25.839 57.605 57.6 0 10.82 8.772 19.592 19.592 19.592s19.592-8.772 19.592-19.592c0-53.366-43.417-96.784-96.789-96.784z"/></g></svg><span class="notif-badge" id="notifBadge" style="display:none"></span></div>
+  <div class="help-btn" id="helpBtn" onclick="toggleHelpDrawer(event)" title="Aide">?</div>
   <div class="topnav-right" id="userDisplay" onclick="show('account')" title="Mon compte" style="margin-left:12px;">Mon compte</div>
+</div>
+
+<!-- Drawer d'aide contextuel -->
+<div class="help-overlay" id="helpOverlay" onclick="closeHelpDrawer()"></div>
+<div class="help-drawer" id="helpDrawer">
+  <div class="help-drawer-hd">
+    <span style="font-size:1rem;">?</span>
+    <span class="help-drawer-title" id="helpDrawerTitle">Aide</span>
+    <button class="help-drawer-close" onclick="closeHelpDrawer()">✕</button>
+  </div>
+  <div class="help-drawer-body" id="helpDrawerBody"></div>
+  <div class="help-drawer-ft">
+    <a id="helpDrawerLink" href="aide.html" target="_blank" rel="noopener">Ouvrir le centre d'aide complet →</a>
+  </div>
 </div>
 
 <!-- Dropdown notifications feedback -->
@@ -425,6 +501,7 @@ iframe.active { display:block; }
   <iframe id="frame-account"      src="account.html"      ></iframe>
 </div>
 
+<script src="js/aide-content.js?v=20260707"></script>
 <script>
 /* ── Constantes localStorage ─────────────────────────────────────────
    Source unique de vérité pour toutes les clés de stockage local.
@@ -706,6 +783,63 @@ window.addEventListener('message', function(e) {
     }
   }
 });
+
+/* ═══════════════════════════════════════════════════════════
+   AIDE CONTEXTUELLE (drawer « ? » — contenu partagé js/aide-content.js)
+═══════════════════════════════════════════════════════════ */
+var _HELP_TAB_MAP = { 'tab-bilan':'bilan', 'tab-outils':'outils', 'tab-prescription':'programme' };
+
+function _helpSectionForTab(){
+  var active = document.querySelector('.tab.active');
+  return (active && _HELP_TAB_MAP[active.id]) || 'premiers-pas';
+}
+
+function _helpEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function _helpImgHtml(secId, artId, n){
+  var src = 'aide/img/'+secId+'-'+artId+'-'+n+'.png';
+  return '<img class="help-img" src="'+src+'" alt=""'
+    + ' onerror="var d=document.createElement(\'div\');d.className=\'help-img-ph\';d.textContent=\'📷 Capture à venir\';this.replaceWith(d)">';
+}
+
+function _renderHelpDrawer(){
+  if(typeof R4P_AIDE === 'undefined') return;
+  var secId = _helpSectionForTab();
+  var sec = R4P_AIDE.sections.find(function(s){ return s.id === secId; }) || R4P_AIDE.sections[0];
+  document.getElementById('helpDrawerTitle').textContent = 'Aide — ' + sec.titre;
+  document.getElementById('helpDrawerLink').href = 'aide.html#' + sec.id;
+  var html = sec.articles.map(function(art, ai){
+    var steps = art.etapes.map(function(e, i){
+      return '<div class="help-step"><div class="help-step-n">'+(i+1)+'</div><div style="flex:1;min-width:0">'
+        + '<div class="help-step-t">'+_helpEsc(e.t)+'</div>'
+        + '<div class="help-step-x">'+_helpEsc(e.x)+'</div>'
+        + (e.img ? _helpImgHtml(sec.id, art.id, i+1) : '')
+        + '</div></div>';
+    }).join('');
+    return '<div class="help-acc'+(ai===0?' open':'')+'">'
+      + '<button class="help-acc-q" onclick="this.parentNode.classList.toggle(\'open\')">'+_helpEsc(art.titre)+'<span class="chev">▼</span></button>'
+      + '<div class="help-acc-body"><div class="help-acc-intro">'+_helpEsc(art.intro)+'</div>'+steps+'</div>'
+      + '</div>';
+  }).join('');
+  document.getElementById('helpDrawerBody').innerHTML = html;
+}
+
+function toggleHelpDrawer(e){
+  if(e) e.stopPropagation();
+  var drawer = document.getElementById('helpDrawer');
+  var isOpen = drawer.classList.contains('open');
+  if(isOpen){ closeHelpDrawer(); return; }
+  _renderHelpDrawer();
+  drawer.classList.add('open');
+  document.getElementById('helpOverlay').classList.add('open');
+}
+
+function closeHelpDrawer(){
+  document.getElementById('helpDrawer').classList.remove('open');
+  document.getElementById('helpOverlay').classList.remove('open');
+}
+
+document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeHelpDrawer(); });
 
 /* ═══════════════════════════════════════════════════════════
    NOTIFICATIONS FEEDBACK ATHLÈTE (cloche + notifications navigateur)

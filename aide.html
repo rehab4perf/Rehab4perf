@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Centre d'aide – Rehab4Perf</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+:root {
+  --navy:#1A3A5C; --accent:#2B5FA6; --accent2:#4A90D9;
+  --bg:#F0F4F8; --surface:#fff; --text:#1a2433; --muted:#6b7a8d;
+  --border:#dde3ec;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { background:var(--bg); font-family:'Figtree',-apple-system,sans-serif; color:var(--text); }
+
+/* ── Header ── */
+.hd {
+  background:var(--navy); color:#fff; padding:0 22px; height:52px;
+  display:flex; align-items:center; gap:14px; position:sticky; top:0; z-index:50;
+}
+.hd-logo { display:inline-flex; align-items:center; gap:8px; text-decoration:none; }
+.hd-logo .lw { display:inline-flex; align-items:baseline; line-height:1; white-space:nowrap; }
+.hd-logo .lr { font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:600; font-size:20px; color:#fff; }
+.hd-logo .le { font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:600; font-size:.44em; vertical-align:super; color:#7FA8D9; line-height:0; }
+.hd-logo .lp { font-family:'Poppins',sans-serif; font-weight:800; font-size:16px; color:#fff; }
+.hd-title { font-size:.85rem; font-weight:600; opacity:.85; }
+.hd-back { margin-left:auto; font-size:.75rem; color:rgba(255,255,255,.75); text-decoration:none; border:1px solid rgba(255,255,255,.25); border-radius:7px; padding:5px 12px; }
+.hd-back:hover { color:#fff; background:rgba(255,255,255,.1); }
+
+/* ── Layout ── */
+.wrap { display:flex; max-width:1080px; margin:0 auto; gap:24px; padding:22px; align-items:flex-start; }
+.side {
+  width:220px; flex-shrink:0; background:var(--surface); border:1px solid var(--border);
+  border-radius:12px; padding:8px 0; position:sticky; top:74px;
+}
+.side a {
+  display:flex; align-items:center; gap:8px; padding:9px 16px; font-size:.82rem;
+  color:var(--muted); text-decoration:none; border-left:3px solid transparent;
+}
+.side a:hover { color:var(--text); background:#f6f9fd; }
+.side a.on { color:var(--accent); font-weight:600; border-left-color:var(--accent2); background:#EFF5FC; }
+.main { flex:1; min-width:0; }
+
+/* ── Recherche ── */
+.search {
+  width:100%; border:1px solid var(--border); border-radius:10px; padding:11px 15px;
+  font-size:.88rem; font-family:inherit; outline:none; background:var(--surface); margin-bottom:20px;
+}
+.search:focus { border-color:var(--accent2); }
+.no-result { display:none; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:30px; text-align:center; color:var(--muted); font-size:.85rem; }
+
+/* ── Sections / articles ── */
+.sec { margin-bottom:30px; }
+.sec-title { font-size:1.05rem; font-weight:700; color:var(--navy); margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+.art { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px 20px; margin-bottom:12px; }
+.art-title { font-size:.92rem; font-weight:700; margin-bottom:4px; }
+.art-intro { font-size:.8rem; color:var(--muted); line-height:1.5; margin-bottom:14px; }
+.step { display:flex; gap:12px; margin-bottom:13px; }
+.step:last-child { margin-bottom:0; }
+.step-n {
+  width:22px; height:22px; border-radius:50%; background:var(--accent2); color:#fff;
+  font-size:.72rem; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px;
+}
+.step-body { flex:1; min-width:0; }
+.step-t { font-size:.83rem; font-weight:600; }
+.step-x { font-size:.78rem; color:var(--muted); line-height:1.55; margin-top:2px; }
+.aide-img {
+  display:block; max-width:100%; border:1px solid var(--border); border-radius:8px;
+  margin-top:8px; cursor:zoom-in;
+}
+.aide-img-ph {
+  margin-top:8px; background:#f1f5f9; border:1px dashed #cbd5e1; border-radius:8px;
+  padding:14px; text-align:center; font-size:.72rem; color:#94a3b8;
+}
+
+/* ── FAQ ── */
+.faq-item { background:var(--surface); border:1px solid var(--border); border-radius:10px; margin-bottom:8px; overflow:hidden; }
+.faq-q {
+  width:100%; text-align:left; background:none; border:none; padding:13px 16px;
+  font-size:.85rem; font-weight:600; color:var(--text); cursor:pointer; font-family:inherit;
+  display:flex; justify-content:space-between; align-items:center; gap:10px;
+}
+.faq-q .chev { color:var(--muted); font-size:.75rem; transition:transform .15s; flex-shrink:0; }
+.faq-item.open .chev { transform:rotate(180deg); }
+.faq-a { display:none; padding:0 16px 14px; font-size:.8rem; color:var(--muted); line-height:1.6; }
+.faq-item.open .faq-a { display:block; }
+
+/* ── Lightbox ── */
+.lb { display:none; position:fixed; inset:0; background:rgba(10,20,35,.85); z-index:200; align-items:center; justify-content:center; cursor:zoom-out; padding:30px; }
+.lb.open { display:flex; }
+.lb img { max-width:100%; max-height:100%; border-radius:10px; box-shadow:0 12px 48px rgba(0,0,0,.5); }
+
+/* ── Responsive ── */
+.side-mobile { display:none; }
+@media (max-width:760px) {
+  .wrap { flex-direction:column; padding:14px; gap:12px; }
+  .side { display:none; }
+  .side-mobile {
+    display:block; width:100%; border:1px solid var(--border); border-radius:10px;
+    padding:10px 12px; font-size:.85rem; font-family:inherit; background:var(--surface); color:var(--text);
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="hd">
+  <a class="hd-logo" href="index.html">
+    <svg viewBox="8 34 164 104" width="26" height="16" aria-hidden="true"><g stroke="#4A90D9" stroke-width="17" stroke-linecap="round" fill="none"><line x1="20" y1="118" x2="56" y2="104"/><line x1="70" y1="122" x2="100" y2="84"/><line x1="112" y1="125" x2="134" y2="66"/><line x1="158" y1="128" x2="158" y2="46"/></g></svg>
+    <span class="lw"><span class="lr">rehab<sup class="le">4</sup></span><span class="lp">perf</span></span>
+  </a>
+  <span class="hd-title">Centre d'aide</span>
+  <a class="hd-back" href="index.html">← Retour à l'application</a>
+</div>
+
+<div class="wrap">
+  <nav class="side" id="sideNav"></nav>
+  <div class="main">
+    <select class="side-mobile" id="sideMobile" onchange="if(this.value)location.hash=this.value"></select>
+    <input class="search" id="searchInp" type="search" placeholder="🔍 Rechercher dans l'aide… (ex : strava, douleur, cycle)" oninput="aideSearch(this.value)">
+    <div class="no-result" id="noResult">Aucun résultat. Essayez un autre terme, ou parcourez les sections dans le sommaire.</div>
+    <div id="content"></div>
+  </div>
+</div>
+
+<div class="lb" id="lightbox" onclick="this.classList.remove('open')"><img id="lightboxImg" src="" alt=""></div>
+
+<script src="js/aide-content.js?v=20260707"></script>
+<script>
+function escA(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function aideZoom(src){
+  document.getElementById('lightboxImg').src = src;
+  document.getElementById('lightbox').classList.add('open');
+}
+
+function _imgHtml(secId, artId, n){
+  var src = 'aide/img/'+secId+'-'+artId+'-'+n+'.png';
+  return '<img class="aide-img" src="'+src+'" alt="" onclick="aideZoom(this.src)"'
+    + ' onerror="var d=document.createElement(\'div\');d.className=\'aide-img-ph\';d.textContent=\'📷 Capture à venir\';this.replaceWith(d)">';
+}
+
+function renderAide(){
+  var nav = '', mob = '<option value="">Aller à une section…</option>', html = '';
+  R4P_AIDE.sections.forEach(function(sec){
+    nav += '<a href="#'+sec.id+'" data-sec="'+sec.id+'">'+sec.emoji+' '+escA(sec.titre)+'</a>';
+    mob += '<option value="'+sec.id+'">'+sec.emoji+' '+escA(sec.titre)+'</option>';
+    html += '<div class="sec" id="'+sec.id+'"><div class="sec-title">'+sec.emoji+' '+escA(sec.titre)+'</div>';
+    sec.articles.forEach(function(art){
+      html += '<div class="art" id="'+sec.id+'-'+art.id+'" data-search="'+escA((sec.titre+' '+art.titre+' '+art.intro+' '+art.etapes.map(function(e){return e.t+' '+e.x;}).join(' ')).toLowerCase())+'">'
+        + '<div class="art-title">'+escA(art.titre)+'</div>'
+        + '<div class="art-intro">'+escA(art.intro)+'</div>';
+      art.etapes.forEach(function(e, i){
+        html += '<div class="step"><div class="step-n">'+(i+1)+'</div><div class="step-body">'
+          + '<div class="step-t">'+escA(e.t)+'</div>'
+          + '<div class="step-x">'+escA(e.x)+'</div>'
+          + (e.img ? _imgHtml(sec.id, art.id, i+1) : '')
+          + '</div></div>';
+      });
+      html += '</div>';
+    });
+    html += '</div>';
+  });
+  // FAQ
+  nav += '<a href="#faq" data-sec="faq">❓ FAQ</a>';
+  mob += '<option value="faq">❓ FAQ</option>';
+  html += '<div class="sec" id="faq"><div class="sec-title">❓ Questions fréquentes</div>';
+  R4P_AIDE.faq.forEach(function(f){
+    html += '<div class="faq-item" data-search="'+escA((f.q+' '+f.a).toLowerCase())+'">'
+      + '<button class="faq-q" onclick="this.parentNode.classList.toggle(\'open\')">'+escA(f.q)+'<span class="chev">▼</span></button>'
+      + '<div class="faq-a">'+escA(f.a)+'</div>'
+      + '</div>';
+  });
+  html += '</div>';
+  document.getElementById('sideNav').innerHTML = nav;
+  document.getElementById('sideMobile').innerHTML = mob;
+  document.getElementById('content').innerHTML = html;
+}
+
+function aideSearch(q){
+  q = (q||'').toLowerCase().trim();
+  var any = false;
+  document.querySelectorAll('[data-search]').forEach(function(el){
+    var hit = !q || el.getAttribute('data-search').indexOf(q) > -1;
+    el.style.display = hit ? '' : 'none';
+    if(hit) any = true;
+    // Déplier les FAQ correspondantes pendant une recherche
+    if(q && hit && el.classList.contains('faq-item')) el.classList.add('open');
+    if(!q && el.classList.contains('faq-item')) el.classList.remove('open');
+  });
+  // Masquer les titres de sections vides
+  document.querySelectorAll('.sec').forEach(function(sec){
+    var visible = sec.querySelectorAll('[data-search]:not([style*="display: none"])').length;
+    sec.style.display = visible ? '' : 'none';
+  });
+  document.getElementById('noResult').style.display = any ? 'none' : 'block';
+}
+
+// Surligner la section active dans le sommaire au scroll
+function _updateActiveNav(){
+  var links = document.querySelectorAll('#sideNav a');
+  var current = '';
+  document.querySelectorAll('.sec').forEach(function(sec){
+    if(sec.getBoundingClientRect().top < 120) current = sec.id;
+  });
+  links.forEach(function(a){ a.classList.toggle('on', a.getAttribute('data-sec') === current); });
+}
+
+renderAide();
+window.addEventListener('scroll', _updateActiveNav, { passive:true });
+_updateActiveNav();
+// Ancrage direct (#programme, #strava-lier-manuel…)
+if(location.hash){
+  setTimeout(function(){
+    var el = document.querySelector(location.hash);
+    if(el) el.scrollIntoView({ behavior:'auto', block:'start' });
+  }, 50);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,293 @@
+/* ═══════════════════════════════════════════════════════════════════
+   CENTRE D'AIDE — CONTENU
+   Source unique consommée par aide.html (page complète) et par le
+   drawer contextuel « ? » de index.html. Ne jamais dupliquer ce
+   contenu ailleurs.
+
+   Structure :
+   R4P_AIDE.sections = [{ id, emoji, titre, articles:[{ id, titre,
+     intro, etapes:[{ t: action, x: détail, img: true|false }] }] }]
+   R4P_AIDE.faq = [{ q, a }]
+
+   Images : si etape.img est vrai, le rendu cherche
+   aide/img/<section>-<article>-<n>.png (n = position de l'étape,
+   base 1). Fichier absent → placeholder « Capture à venir ».
+═══════════════════════════════════════════════════════════════════ */
+
+var R4P_AIDE = {
+
+sections: [
+
+/* ── 🚀 PREMIERS PAS ─────────────────────────────────────────── */
+{ id:'premiers-pas', emoji:'🚀', titre:'Premiers pas', articles:[
+  { id:'connexion', titre:'Se connecter à Rehab4Perf',
+    intro:'L\'accès praticien se fait sur invitation, avec un email et un mot de passe individuels.',
+    etapes:[
+      { t:'Ouvrez app.rehab4perf.com', x:'Si vous n\'êtes pas connecté, la page de connexion s\'affiche automatiquement.' },
+      { t:'Saisissez votre email et votre mot de passe', x:'Mot de passe oublié ? Utilisez le lien de réinitialisation : un email vous sera envoyé.' },
+      { t:'Votre session reste ouverte 8 heures', x:'Après 8 h sans activité, vous êtes déconnecté automatiquement par sécurité.' }
+    ]},
+  { id:'creer-patient', titre:'Créer et sélectionner un patient',
+    intro:'Le patient actif est partagé par tous les onglets : bilan, outils et programme travaillent toujours sur le même dossier.',
+    etapes:[
+      { t:'Cliquez sur le bouton 👤 en haut de l\'écran', x:'Il affiche « Aucun patient » tant que personne n\'est sélectionné.', img:true },
+      { t:'Cliquez sur « + Nouveau »', x:'Renseignez civilité, nom, prénom, date de naissance et sport. La date de naissance sert notamment aux estimations de fréquence cardiaque (Strava).' },
+      { t:'Cliquez sur la fiche du patient pour l\'activer', x:'Son nom apparaît dans le bouton 👤. Tous les onglets basculent sur son dossier.' }
+    ]},
+  { id:'navigation', titre:'Naviguer entre les onglets',
+    intro:'Trois espaces de travail, toujours chargés en arrière-plan : vous ne perdez jamais votre saisie en changeant d\'onglet.',
+    etapes:[
+      { t:'Bilan clinique', x:'L\'examen complet par région (épaule, rachis, hanche, genou, pied…) et la génération des comptes-rendus.' },
+      { t:'Outils', x:'Les questionnaires PRO, les scores fonctionnels et le configurateur de CR médecin.' },
+      { t:'Programme', x:'La bibliothèque d\'exercices, le builder de séances, l\'agenda, les cycles, le journal et l\'évolution.' },
+      { t:'Mon compte', x:'Vos informations professionnelles, la sécurité et les réglages de notifications.' }
+    ]}
+]},
+
+/* ── 🩺 BILAN CLINIQUE ───────────────────────────────────────── */
+{ id:'bilan', emoji:'🩺', titre:'Bilan clinique', articles:[
+  { id:'infos-patient', titre:'Renseigner les informations patient',
+    intro:'La première page du bilan conditionne beaucoup de choses — notamment les dates, utilisées partout ailleurs.',
+    etapes:[
+      { t:'Ouvrez la page « Infos » du bilan', x:'Activité, sport, antécédents, contexte de la blessure.' },
+      { t:'Renseignez la date d\'opération (ou d\'accident)', x:'Cette date devient le « J0 » du patient : elle sert de référence aux étiquettes J+ de l\'agenda et aux rappels automatiques des protocoles (ex. CR médecin à J+45).', img:true }
+    ]},
+  { id:'remplir-tests', titre:'Remplir les tests par région',
+    intro:'Chaque région (épaule, rachis, hanche, genou, pied, membre supérieur…) a ses tableaux de tests orthopédiques et fonctionnels.',
+    etapes:[
+      { t:'Naviguez vers la région concernée', x:'Le menu du bilan liste toutes les pages disponibles.' },
+      { t:'Saisissez les valeurs côté gauche / côté droit', x:'Amplitudes, forces, scores… Les asymétries se calculent automatiquement quand c\'est pertinent.' },
+      { t:'Ajoutez des commentaires libres si besoin', x:'Ils seront repris dans le compte-rendu.' }
+    ]},
+  { id:'generer-cr', titre:'Générer un compte-rendu',
+    intro:'Deux formats générés automatiquement à partir de vos saisies — rien à rédiger à la main.',
+    etapes:[
+      { t:'« CR Tests » : le condensé des tests réalisés', x:'Idéal pour un suivi interne ou un point rapide.' },
+      { t:'« CR Complet » : le bilan intégral structuré', x:'Toutes les régions évaluées, les scores et vos commentaires.' },
+      { t:'Copiez ou exportez le résultat', x:'Le texte se met à jour en direct si vous modifiez le bilan. Pour un courrier destiné au médecin, utilisez plutôt le CR médecin de l\'onglet Outils.' }
+    ]}
+]},
+
+/* ── 🛠 OUTILS ───────────────────────────────────────────────── */
+{ id:'outils', emoji:'🛠', titre:'Outils & CR médecin', articles:[
+  { id:'questionnaires', titre:'Questionnaires PRO et scores fonctionnels',
+    intro:'Les questionnaires validés (PRO) et les calculateurs de scores, avec sauvegarde automatique dans le dossier du patient.',
+    etapes:[
+      { t:'Choisissez un questionnaire ou un score', x:'Le patient actif est automatiquement associé au résultat.' },
+      { t:'Saisissez les réponses', x:'Le score se calcule en direct.' },
+      { t:'Enregistrez', x:'Le résultat est synchronisé et réapparaît en direct dans le bilan clinique correspondant.' }
+    ]},
+  { id:'cr-medecin', titre:'Rédiger un CR médecin',
+    intro:'Un courrier structuré destiné au médecin, avec aperçu en temps réel pendant la saisie.',
+    etapes:[
+      { t:'Renseignez le destinataire', x:'Dr, spécialité, email.' },
+      { t:'Cliquez sur « ⤓ Bilan » pour préremplir', x:'Les informations du dernier bilan du patient (dates, côté atteint, pathologie…) sont importées automatiquement.', img:true },
+      { t:'Complétez pathologie, bilan clinique et plan', x:'Amplitudes, force, tests fonctionnels, signes cliniques, phase, évolution, plan de traitement — l\'aperçu à droite se met à jour à chaque champ.' },
+      { t:'Exportez', x:'Copier la lettre, exporter en PDF ou envoyer par email directement.' }
+    ]},
+  { id:'config-cr', titre:'Personnaliser le configurateur CR',
+    intro:'Pathologies, amplitudes de référence, signes cliniques et statuts sont modifiables — vos réglages sont synchronisés sur votre compte.',
+    etapes:[
+      { t:'Ouvrez la configuration du CR médecin', x:'Ajoutez vos propres pathologies ou ajustez les amplitudes normatives par articulation.' },
+      { t:'Enregistrez', x:'La configuration est stockée en ligne : vous la retrouvez sur tous vos appareils, et le bilan clinique l\'utilise aussi pour ses menus déroulants.' }
+    ]}
+]},
+
+/* ── 📋 PROGRAMME ────────────────────────────────────────────── */
+{ id:'programme', emoji:'📋', titre:'Programme & agenda', articles:[
+  { id:'bibliotheque', titre:'Utiliser la bibliothèque d\'exercices',
+    intro:'Tous vos exercices, avec vidéos, filtrables et organisables en favoris.',
+    etapes:[
+      { t:'Recherchez ou filtrez', x:'Par nom, par objectif (mobilité, renfo…) ou par articulation.' },
+      { t:'Cliquez sur ★ pour marquer un favori', x:'Le filtre « Favoris » ne montre alors que votre sélection.' },
+      { t:'Cliquez sur + pour ajouter au bloc', x:'L\'exercice rejoint le bloc choisi dans « Ajouter au bloc » (par défaut, le dernier).', img:true },
+      { t:'« Éditer la bibliothèque » pour vos propres exercices', x:'Ajoutez un exercice avec son lien vidéo YouTube : la vignette apparaîtra côté athlète.' }
+    ]},
+  { id:'builder', titre:'Construire une séance',
+    intro:'Le builder assemble des blocs d\'exercices avec tous les paramètres d\'entraînement.',
+    etapes:[
+      { t:'Créez un bloc (+ Bloc) ou un bloc Cardio', x:'Chaque bloc a un objectif (libre, force, hypertrophie…) et éventuellement une méthode structurée.' },
+      { t:'Paramétrez chaque exercice', x:'Répétitions ou durée, séries, récupération, tempo, option « /côté », enchaînement avec l\'exercice suivant.' },
+      { t:'Ajoutez des cibles', x:'kg, RPE, RIR, %1RM ou vitesse — avec fourchette min–max possible. C\'est ce qui alimente les courbes d\'évolution de charge.' },
+      { t:'Consignes et douleur EVA', x:'Une consigne spécifique par exercice, et un badge « EVA » pour noter la douleur observée (0–10) — elle rejoint les courbes de douleur.', img:true },
+      { t:'Enregistrez la séance', x:'Elle est sauvegardée pour le patient et apparaît dans son historique de programmes.' }
+    ]},
+  { id:'agenda', titre:'Planifier dans l\'agenda',
+    intro:'Vue mois ou semaine, glisser-déposer, et un menu complet sur chaque jour.',
+    etapes:[
+      { t:'Cliquez sur un jour', x:'Trois choix : « Nouvelle séance » (ouvre le builder), « Ajouter une séance existante » (un programme déjà créé) ou « Ajouter une note ».', img:true },
+      { t:'Déplacez une séance par glisser-déposer', x:'Sur mobile, un appui long ouvre les mêmes actions (déplacer, dupliquer).' },
+      { t:'Cliquez sur une chip pour l\'ouvrir dans le builder', x:'Le bouton ⋮ propose les actions rapides ; le ✕ supprime la séance planifiée.' },
+      { t:'Mode « Sélectionner » pour les actions groupées', x:'Cochez plusieurs séances pour les supprimer ou les déplacer en une fois.' }
+    ]},
+  { id:'cycles', titre:'Créer des cycles d\'entraînement',
+    intro:'Force, hypertrophie, récupération… Les cycles colorent l\'agenda et donnent la vision macro de la programmation.',
+    etapes:[
+      { t:'Ouvrez le panneau Cycles', x:'Nom, durée en semaines (ou dates précises), couleur, note.' },
+      { t:'Le cycle s\'affiche dans l\'agenda', x:'Fond coloré sur chaque jour couvert + nom du cycle en petit dans la cellule. Les cycles sont propres à chaque patient.', img:true }
+    ]},
+  { id:'notes-rappels', titre:'Notes, messages patient et rappels 🔔',
+    intro:'Deux types de notes, et un système de rappel pour ne rien oublier.',
+    etapes:[
+      { t:'« Note clinique » : privée', x:'Visible uniquement par vous, dans l\'agenda du patient.' },
+      { t:'« Message patient » : partagé', x:'L\'athlète le voit dans son calendrier via son lien.' },
+      { t:'Activez « 🔔 Me le rappeler »', x:'Choisissez la date de notification (par défaut 3 jours avant la note). Le rappel apparaîtra dans la cloche en haut de l\'écran, puis disparaîtra une fois consulté.', img:true },
+      { t:'« 🔁 Planifier un suivi »', x:'Crée automatiquement une note future (ex. re-test à 35 jours).' }
+    ]},
+  { id:'protocoles', titre:'Protocoles et rappels automatiques',
+    intro:'Assignez un protocole de rééducation (LCA, Latarjet…) : les échéances importantes se créent toutes seules.',
+    etapes:[
+      { t:'Assignez un protocole au patient', x:'Choisissez la phase de départ.' },
+      { t:'Validez les rappels proposés', x:'À partir de la date d\'opération (J0), l\'app propose les jalons du protocole — ex. « CR médecin à réaliser » à J+45, J+150, J+270. Les échéances CR reçoivent automatiquement un rappel 3 jours avant dans la cloche.', img:true },
+      { t:'Suivez la progression par phase', x:'Les séances liées à une phase sont colorées dans l\'agenda ; le protocole affiche le taux de réalisation.' }
+    ]},
+  { id:'journal-evolution', titre:'Journal et Évolution',
+    intro:'Deux lectures complémentaires du parcours du patient : le fil des événements, et les courbes.',
+    etapes:[
+      { t:'Journal : le fil chronologique', x:'Séances, retours athlète (RPE, douleur), notes — filtrables par type. Cliquez sur un retour pour le déplier.' },
+      { t:'Évolution : les courbes par exercice', x:'Charge (1RM estimé) et douleur EVA superposées, durées, cardio. Cochez les exercices à afficher, filtrez la période.', img:true },
+      { t:'Charge globale (UA)', x:'La charge d\'entraînement totale, par séance ou par semaine — les hausses hebdomadaires de plus de 30 % sont signalées en orange.' },
+      { t:'Bilan de charge sous l\'agenda', x:'Monotonie, strain, ACWR (ratio charge aiguë/chronique) et adhérence sur 30 jours, semaine par semaine.' }
+    ]},
+  { id:'feedback', titre:'Lire le retour d\'un athlète',
+    intro:'Quand l\'athlète a rempli son ressenti, tout remonte dans le builder.',
+    etapes:[
+      { t:'Ouvrez la séance concernée', x:'Le bouton « Feedback » porte un badge bleu si un retour existe.', img:true },
+      { t:'Lisez le retour hiérarchisé', x:'La douleur maximale signalée d\'abord, puis RPE / durée / UA, puis les exercices douloureux triés, avec les notes de l\'athlète.' },
+      { t:'Ajoutez votre EVA praticien', x:'Votre propre évaluation, indépendante de celle de l\'athlète. Pour les séances CAP/HSR : boutons d\'adaptation (régresser / maintenir).' }
+    ]}
+]},
+
+/* ── 📱 ESPACE ATHLÈTE ───────────────────────────────────────── */
+{ id:'athlete', emoji:'📱', titre:'Espace athlète', articles:[
+  { id:'lien-athlete', titre:'Envoyer son lien à l\'athlète',
+    intro:'L\'athlète n\'a pas de compte : il accède à son programme par un lien personnel, sur n\'importe quel téléphone.',
+    etapes:[
+      { t:'Générez le lien depuis la séance ou le patient', x:'Copiez-le et envoyez-le par SMS, WhatsApp ou email.', img:true },
+      { t:'Conseillez à l\'athlète de l\'ajouter à son écran d\'accueil', x:'Le lien reste valable : pas besoin de le renvoyer à chaque séance.' }
+    ]},
+  { id:'vue-athlete', titre:'Ce que voit l\'athlète',
+    intro:'Un calendrier épuré de ses séances, et le détail de chaque exercice avec vidéo.',
+    etapes:[
+      { t:'Son calendrier', x:'Ses séances planifiées, vos messages patient, et les cycles en couleur.' },
+      { t:'Le détail d\'une séance', x:'Exercices avec vignette vidéo (clic = lecture), séries, répétitions, tempo, récupération, consignes.', img:true }
+    ]},
+  { id:'douleur-athlete', titre:'La saisie de douleur par exercice',
+    intro:'Sous chaque exercice, un petit curseur discret : précis (0–10) mais sans friction.',
+    etapes:[
+      { t:'L\'athlète glisse le curseur', x:'La pastille affiche le chiffre avec un code couleur et un libellé (« Légère », « Importante »…).', img:true },
+      { t:'Un toucher sur la pastille = « aucune douleur »', x:'Un second toucher efface la saisie.' },
+      { t:'Le bouton 💬 ouvre une note par exercice', x:'« pique en fin d\'amplitude », etc. Tout vous remonte dans le feedback.' }
+    ]},
+  { id:'ressenti-seance', titre:'Le ressenti de fin de séance',
+    intro:'C\'est la donnée qui alimente vos calculs de charge.',
+    etapes:[
+      { t:'Séance classique : durée réelle + effort Borg (1–10)', x:'L\'app calcule la charge : RPE × durée = UA.' },
+      { t:'Séance CAP / HSR : douleur EVA + effort', x:'Deux échelles distinctes — la douleur pilote l\'adaptation du protocole, jamais convertie en charge.' },
+      { t:'Envoi en un clic', x:'Vous recevez une notification dans la cloche dès que le retour arrive.' }
+    ]}
+]},
+
+/* ── 🔶 STRAVA ───────────────────────────────────────────────── */
+{ id:'strava', emoji:'🔶', titre:'Strava', articles:[
+  { id:'connecter-strava', titre:'Connecter le Strava d\'un patient',
+    intro:'Une fois connecté, chaque sortie de l\'athlète remonte automatiquement dans son agenda.',
+    etapes:[
+      { t:'Fiche patient → menu ⋮ → « Connecter Strava »', x:'Une fenêtre affiche un lien de connexion personnel.', img:true },
+      { t:'Envoyez ce lien à l\'athlète', x:'Il l\'ouvre, se connecte à SON compte Strava et clique « Autoriser ». Une page de confirmation lui indique que c\'est fait — il n\'a rien d\'autre à faire.' },
+      { t:'Les 90 derniers jours se synchronisent automatiquement', x:'Puis chaque nouvelle activité arrive en temps réel. Un badge « Strava » apparaît sur la fiche du patient.' }
+    ]},
+  { id:'liaison-auto', titre:'Liaison automatique séance ↔ activité',
+    intro:'Une activité Strava réalisée le jour d\'une séance planifiée compatible est automatiquement rattachée à celle-ci.',
+    etapes:[
+      { t:'Course → séance CAP, vélo → séance Vélo', x:'La chip de la séance gagne un badge orange « S 4.7km 30min » : l\'activité est absorbée, l\'agenda reste lisible.', img:true },
+      { t:'Cliquez sur le badge S', x:'Le détail complet s\'ouvre : distance, FC, D+, allure, charge.' },
+      { t:'Les activités libres restent visibles en orange', x:'Plusieurs le même jour ? Elles se regroupent en une seule chip « 2 activités ».' }
+    ]},
+  { id:'lier-manuel', titre:'Lier ou délier manuellement',
+    intro:'Quand la liaison automatique n\'a pas osé (une muscu Strava un jour de séance renfo, par exemple).',
+    etapes:[
+      { t:'Cliquez sur l\'activité orange', x:'Le détail propose « 🔗 Lier à une séance du jour » avec la liste des séances planifiées ce jour-là.', img:true },
+      { t:'Ou « ✕ Délier » sur une activité déjà liée', x:'Le lien est enregistré en base : même résultat sur tous vos appareils.' }
+    ]},
+  { id:'panneau-strava', titre:'Le panneau « Réalisée avec Strava »',
+    intro:'La séance liée, ouverte dans le builder, affiche tout ce que Strava sait de la sortie.',
+    etapes:[
+      { t:'Ouvrez la séance depuis l\'agenda', x:'Le panneau orange apparaît en tête : distance, durée, allure moyenne, FC moy/max, D+, charge, cadence.', img:true },
+      { t:'Le parcours en tracé abstrait', x:'Point vert = départ.' },
+      { t:'Les allures kilomètre par kilomètre', x:'Chargées automatiquement à la première ouverture (barre plus haute = plus rapide).' },
+      { t:'Cliquez sur l\'entête pour replier le panneau', x:'Votre choix est mémorisé.' }
+    ]},
+  { id:'charge-strava', titre:'Strava et le calcul de charge',
+    intro:'Chaque effort est compté une seule fois — jamais de doublon.',
+    etapes:[
+      { t:'Séance avec retour athlète : la charge vient du retour', x:'L\'activité Strava liée est absorbée, jamais comptée en plus.' },
+      { t:'Séance CAP : la charge vient de Strava', x:'FC réelle × durée réelle. Le retour CAP (douleur/effort) n\'est jamais converti en charge.' },
+      { t:'Activité libre : estimation par la fréquence cardiaque', x:'D\'où l\'importance de la date de naissance du patient (FC max théorique).' }
+    ]}
+]},
+
+/* ── 🔔 NOTIFICATIONS ────────────────────────────────────────── */
+{ id:'notifications', emoji:'🔔', titre:'Notifications', articles:[
+  { id:'cloche', titre:'La cloche de notifications',
+    intro:'Le point d\'entrée unique pour tout ce qui demande votre attention, tous patients confondus.',
+    etapes:[
+      { t:'Retours athlètes non lus', x:'Patient, séance, RPE, douleur maximale signalée. Un clic ouvre le patient et la séance concernée, et marque le retour comme lu.', img:true },
+      { t:'Rappels de notes dus', x:'Les rappels 🔔 arrivés à échéance (« aujourd\'hui », « en retard de 2 j »). Un clic ouvre la note et fait disparaître le rappel.' },
+      { t:'« Tout marquer lu / vu »', x:'Pour faire le ménage en un clic, section par section.' },
+      { t:'Actualisation automatique', x:'La cloche se rafraîchit toutes les 2 minutes.' }
+    ]},
+  { id:'pastilles', titre:'Les pastilles sur l\'agenda',
+    intro:'Un repère visuel directement sur les séances.',
+    etapes:[
+      { t:'Point bleu : retour athlète non lu', x:'Point orange : le retour signale une douleur ≥ 4/10.', img:true },
+      { t:'La pastille disparaît à l\'ouverture du feedback', x:'Et la cloche se met à jour en même temps.' }
+    ]},
+  { id:'navigateur', titre:'Notifications navigateur',
+    intro:'Des alertes système même quand l\'onglet est en arrière-plan (app ouverte quelque part).',
+    etapes:[
+      { t:'Activez le toggle dans Mon compte', x:'Le navigateur demandera votre autorisation une fois.' },
+      { t:'Option « seulement si douleur ≥ 4 »', x:'Pour ne recevoir d\'alerte système que sur les retours douloureux.' }
+    ]},
+  { id:'reglages', titre:'Les réglages',
+    intro:'Chaque canal s\'active indépendamment, dans Mon compte → Notifications.',
+    etapes:[
+      { t:'Pastilles agenda / Cloche / Navigateur / Filtre douleur / Rappels de notes', x:'Cinq toggles. Les réglages sont propres à chaque appareil (logique pour les notifications navigateur).', img:true }
+    ]}
+]}
+
+],
+
+/* ── ❓ FAQ ──────────────────────────────────────────────────── */
+faq: [
+  { q:'Mon athlète ne voit pas son programme, que vérifier ?',
+    a:'Vérifiez que la séance est bien planifiée dans l\'agenda du bon patient, puis renvoyez-lui son lien personnel (il ne change pas d\'une séance à l\'autre). Sur son téléphone, un simple rechargement de la page suffit souvent — le bouton « ↻ Actualiser » est prévu pour ça.' },
+  { q:'Les activités Strava ne remontent pas.',
+    a:'Vérifiez le badge « Strava » sur la fiche du patient : s\'il est absent, la connexion n\'a pas abouti — régénérez le lien (menu ⋮ → Connecter Strava) et refaites-le suivre à l\'athlète. S\'il est présent, les nouvelles sorties arrivent en temps réel mais l\'historique ne couvre que les 90 jours précédant la connexion.' },
+  { q:'Une activité Strava s\'est liée à la mauvaise séance.',
+    a:'Cliquez sur le badge S de la chip (ou sur l\'activité), puis « ✕ Délier de la séance ». Vous pouvez ensuite la lier manuellement à la bonne séance du jour. Le lien corrigé est mémorisé définitivement.' },
+  { q:'Le retour de mon athlète n\'apparaît pas.',
+    a:'Regardez la cloche en haut de l\'écran et les pastilles bleues/oranges sur l\'agenda : le retour y apparaît dès son envoi (actualisation toutes les 2 minutes). Vérifiez aussi que le bon patient est sélectionné.' },
+  { q:'Puis-je modifier un compte-rendu déjà généré ?',
+    a:'Les CR du bilan se régénèrent en direct : modifiez les données du bilan et le texte se met à jour. Pour le CR médecin (Outils), tous les champs restent éditables avant l\'export — et vous pouvez retoucher la lettre après l\'avoir copiée.' },
+  { q:'Comment supprimer plusieurs séances d\'un coup ?',
+    a:'Dans l\'agenda, cliquez sur « Sélectionner », cochez les séances concernées, puis utilisez l\'action groupée. Pratique pour nettoyer un protocole replanifié.' },
+  { q:'Quelle différence entre note clinique et message patient ?',
+    a:'La note clinique (🔒) n\'est visible que par vous. Le message patient (💬) apparaît dans le calendrier de l\'athlète via son lien. Le type se choisit en haut du formulaire de note et peut être changé après coup.' },
+  { q:'C\'est quoi, les UA ?',
+    a:'Les Unités Arbitraires mesurent la charge d\'entraînement selon la méthode de Foster : RPE (effort perçu 1–10) × durée en minutes. Une séance de 45 min à RPE 7 = 315 UA. Pour les activités Strava sans retour athlète, la charge est estimée à partir de la fréquence cardiaque.' },
+  { q:'C\'est quoi, le J0 ?',
+    a:'La date de référence du patient : en priorité la date d\'opération, sinon la date d\'accident, sinon celle du premier bilan. Elle alimente les étiquettes J+ de l\'agenda et le calcul des échéances de protocole (CR médecin à J+45, etc.). Renseignez-la dans la page Infos du bilan.' },
+  { q:'Un cycle d\'un patient apparaît chez un autre.',
+    a:'Ce bug a été corrigé. Si vous l\'observez encore, faites un rechargement complet de la page (Cmd/Ctrl + Shift + R) : votre navigateur utilise probablement une ancienne version de l\'application.' },
+  { q:'L\'application fonctionne-t-elle sur téléphone ?',
+    a:'Côté athlète, oui — l\'espace athlète est conçu pour mobile. Côté praticien, l\'interface fonctionne dans un navigateur mobile mais elle est optimisée pour un écran d\'ordinateur ou de tablette.' },
+  { q:'Qui peut voir mes données patients ?',
+    a:'Uniquement vous. Chaque praticien n\'accède qu\'à ses propres patients — l\'isolation est appliquée au niveau de la base de données (Supabase RLS). L\'athlète, via son lien, ne voit que son propre programme et ses messages.' },
+  { q:'À quoi sert le badge « EVA » sous chaque exercice du builder ?',
+    a:'À noter une douleur (0–10) sur cet exercice précis. Cette valeur — comme celle saisie par l\'athlète sur son téléphone — alimente les courbes de douleur de l\'onglet Évolution, superposées aux courbes de charge.' },
+  { q:'Comment relancer la synchronisation Strava d\'un patient ?',
+    a:'Refaites simplement la procédure « Connecter Strava » : la reconnexion relance automatiquement la synchronisation des 90 derniers jours, sans créer de doublons.' }
+]
+
+};
