@@ -4684,6 +4684,8 @@ function _buildAllTestsHtml() {
         {label:'RI bras à 90°',    dId:'rom-ep-d-ri90',  gId:'rom-ep-g-ri90'},
         {label:'RE bras à 90°',    dId:'rom-ep-d-re90',  gId:'rom-ep-g-re90'},
       ], true);
+      var epRomObs = (document.getElementById('rom-ep-obs')||{}).value||'';
+      if (epRomObs) secRows += '<div style="margin:2px 0 6px;padding:5px 10px;background:var(--surface2);border-radius:5px;font-size:.82rem;color:var(--text2);font-style:italic">Obs. Amplitudes Épaule : '+nl2br(epRomObs)+'</div>';
     }
     if (sec.label === 'RACHIS') {
       // Mobilité rachis — statut qualitatif
