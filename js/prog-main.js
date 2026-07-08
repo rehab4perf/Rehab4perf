@@ -5112,10 +5112,26 @@ function _renderStravaRealisedBanner(seanceId){
   if(!banner) return;
   banner.style.display = 'none'; banner.innerHTML = '';
   if(!seanceId) return;
-  var act = _stravaActivities.find(function(a){ return String(a.seance_id) === String(seanceId); });
-  if(!act) return;
-  var d = act.donnees || {};
+  var acts = _stravaActivities.filter(function(a){ return String(a.seance_id) === String(seanceId); });
+  if(!acts.length) return;
   var ddn = _progPatient && _progPatient.ddn;
+  var collapsed = _srbIsCollapsed();
+  banner.classList.toggle('collapsed', collapsed);
+  banner.innerHTML = acts.map(function(act){ return _stravaBuildCardHtml(act, ddn); }).join('');
+  banner.style.display = 'block';
+  acts.forEach(function(act){
+    var d = act.donnees || {};
+    var runLike = ['Run','TrailRun','Walk','Hike'].indexOf(act.type) !== -1;
+    var hasSplits = Array.isArray(d.splits) && d.splits.length > 1;
+    if(runLike && !hasSplits && act.distance_m > 500 && !_srbSplitsAttempted[act.strava_id]){
+      _stravaLoadSplits(act.strava_id, seanceId);
+    }
+  });
+}
+
+/* ── Construit la carte HTML d'une activite Strava realisee (une par activite liee) ── */
+function _stravaBuildCardHtml(act, ddn){
+  var d = act.donnees || {};
 
   // Pills stats
   var pills = [];
@@ -5157,19 +5173,15 @@ function _renderStravaRealisedBanner(seanceId){
     }
   }
 
-  // Allures manquantes (activite importee via l'historique) : chargement automatique,
-  // une seule fois par activite — le resultat est sauvegarde en base, donc plus jamais
-  // rappele ensuite pour cette meme activite.
+  // Allures manquantes (activite importee via l'historique) : chargement automatique
+  // declenche par l'appelant (_renderStravaRealisedBanner), une seule fois par activite —
+  // le resultat est sauvegarde en base, donc plus jamais rappele ensuite pour cette activite.
   var runLike = ['Run','TrailRun','Walk','Hike'].indexOf(act.type) !== -1;
   var loadSplitsHtml = '';
-  var needsAutoLoad = false;
   if(runLike && !splitsHtml && act.distance_m > 500){
-    if(_srbSplitsAttempted[act.strava_id]){
-      loadSplitsHtml = '<div class="srb-splits-note">Allures indisponibles pour cette activité.</div>';
-    } else {
-      loadSplitsHtml = '<div class="srb-splits-note" id="srbSplitsLoading">⏳ Chargement des allures…</div>';
-      needsAutoLoad = true;
-    }
+    loadSplitsHtml = _srbSplitsAttempted[act.strava_id]
+      ? '<div class="srb-splits-note">Allures indisponibles pour cette activité.</div>'
+      : '<div class="srb-splits-note" id="srbSplitsLoading-'+act.strava_id+'">⏳ Chargement des allures…</div>';
   }
 
   // Parcours
@@ -5180,10 +5192,8 @@ function _renderStravaRealisedBanner(seanceId){
   }
 
   var dateFr = act.date ? act.date.split('-').reverse().join('/') : '';
-  var collapsed = _srbIsCollapsed();
-  banner.classList.toggle('collapsed', collapsed);
-  banner.innerHTML =
-    '<div class="srb-head" onclick="_srbToggleCollapse()" title="Replier / déplier">'
+  return '<div class="srb-card">'
+    + '<div class="srb-head" onclick="_srbToggleCollapse()" title="Replier / déplier">'
     + '<svg width="14" height="14" viewBox="0 0 24 24" fill="#FC4C02" style="flex-shrink:0"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>'
     + '<span class="srb-title">Réalisée avec Strava — '+escH(act.nom || act.type || 'Activité')+'</span>'
     + '<span class="srb-date">'+escH(dateFr)+'</span>'
@@ -5192,10 +5202,8 @@ function _renderStravaRealisedBanner(seanceId){
     + '<div class="srb-body">'
     + routeHtml
     + '<div class="srb-stats"><div class="srb-pills">'+pillsHtml+'</div>'+splitsHtml+loadSplitsHtml+'</div>'
+    + '</div>'
     + '</div>';
-  banner.style.display = 'block';
-
-  if(needsAutoLoad) _stravaLoadSplits(act.strava_id, seanceId);
 }
 
 /* ── Repli / dépli du panneau Strava (persistant, tous les panneaux) ── */
@@ -5230,7 +5238,7 @@ function _stravaLoadSplits(stravaId, forSeanceId){
       }
     })
     .catch(function(){
-      var note = document.getElementById('srbSplitsLoading');
+      var note = document.getElementById('srbSplitsLoading-'+stravaId);
       if(note) note.textContent = 'Allures indisponibles pour cette activité.';
     });
 }
