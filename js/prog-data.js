@@ -2867,6 +2867,8 @@ function _doSaveProgCloud(nomProg, donnees, today, btn){
           ev.programmes.nom = nomProg;
         }
       });
+      // Re-rendre l'agenda depuis le cache mis à jour (sinon le chip garde l'ancien nom).
+      if(typeof _renderCalendarUI === 'function') _renderCalendarUI();
     }
     _draftClear();
     _showToast('✓ Programme sauvegardé !');
