@@ -406,6 +406,7 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
 .rpe-desc { font-size:.84rem; font-weight:700; min-height:1.4em; margin-bottom:8px; transition:color .2s; }
 .rpe-ua-display { font-size:1.05rem; font-weight:800; min-height:1.5em; margin-bottom:14px; transition:color .2s; }
 .rpe-already { font-size:.72rem; color:var(--muted); margin-bottom:10px; font-style:italic; }
+.rpe-seen { font-size:.72rem; color:#0F766E; margin-bottom:10px; font-weight:600; display:flex; align-items:center; gap:5px; }
 .rpe-submit-btn {
   width:100%; padding:12px; background:var(--accent); color:#fff;
   border:none; border-radius:10px; font-size:.9rem; font-weight:700;
@@ -1822,6 +1823,14 @@ function buildSessionNoteCard(){
 }
 
 
+function _fmtSeenDate(iso){
+  var d = new Date(iso);
+  if(isNaN(d.getTime())) return '';
+  var dd = String(d.getDate()).padStart(2,'0');
+  var mm = String(d.getMonth()+1).padStart(2,'0');
+  return dd+'/'+mm;
+}
+
 function buildRpeCard(seanceId, blocs, existing){
   _currentSeanceId = seanceId || '';
   _currentBlocs = blocs || [];
@@ -1848,6 +1857,7 @@ function buildRpeCard(seanceId, blocs, existing){
     html += '<div class="rpe-ua-display" id="rpeUaDisplay"></div>';
   }
   if(existing&&existing.rpe) html += '<div class="rpe-already">✓ Déjà envoyé — tu peux modifier ton ressenti</div>';
+  if(existing&&existing.seen_at) html += '<div class="rpe-seen">👁️ Lu par ton kiné le '+_fmtSeenDate(existing.seen_at)+'</div>';
   var initGlobalNote = (existing&&existing.exo_data&&existing.exo_data.note) ? existing.exo_data.note : '';
   html += '<textarea class="exo-global-note-ta" id="exoGlobalNoteTA" placeholder="Remarques générales (douleurs, difficultés, sensations…)" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'">'+escH(initGlobalNote)+'</textarea>';
   html += '<button class="rpe-submit-btn" id="rpeSubmitBtn" onclick="_submitRpe()">Envoyer mon ressenti</button>';
@@ -2027,6 +2037,7 @@ function _buildCapPainCard(seanceId, existing) {
   html += '<div class="rpe-card-title">🩹 Douleur (EVA)</div>';
   html += '<div class="rpe-scale-label" style="margin-bottom:8px;">0 = aucune · 10 = insupportable</div>';
   if(alreadyDone) html += '<div class="rpe-already">Déjà renseigné : '+_capCurrentPain+'/10 — '+((_capPainDescs[_capCurrentPain])||'')+'</div>';
+  if(alreadyDone && existing && existing.seen_at) html += '<div class="rpe-seen">👁️ Lu par ton kiné le '+_fmtSeenDate(existing.seen_at)+'</div>';
   html += '<div class="rpe-buttons" id="capPainBtns">';
   for(var i=0; i<=10; i++){
     var act = (alreadyDone && _capCurrentPain===i) ? ' active' : '';
