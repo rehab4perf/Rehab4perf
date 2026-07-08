@@ -2560,7 +2560,7 @@ window.addEventListener('message', function(e){
   }
   // La cloche de notifications demande l'ouverture d'une séance dans le builder
   if(e.data && e.data.type==='r4p-open-seance' && e.data.seanceId && e.data.progId){
-    _openChipInBuilder(e.data.progId, e.data.date || '', e.data.seanceId);
+    _openChipInBuilder(e.data.progId, e.data.date || '', e.data.seanceId, !!e.data.openFeedback);
     return;
   }
   // "Tout marquer lu" depuis la cloche → retirer toutes les pastilles agenda
@@ -4543,6 +4543,7 @@ function togglePevoFuture() {
   if(_pevoRawSeances) _rebuildPevoData();
 }
 
+var _pendingOpenFeedback = false; // true si la cloche de notifications demande l'ouverture directe du feedback
 function _loadProg(id, seanceId){
   _currentSeanceId = seanceId || null; // null si chargé depuis l'historique ou la bibliothèque
   var url = SUPA_URL_P + '/rest/v1/programmes?id=eq.' + id + '&select=*';
@@ -4622,16 +4623,21 @@ function _loadProg(id, seanceId){
       var btn = document.getElementById('prog-cloud-save-btn');
       if(btn){ btn.textContent='✓ Programme chargé'; setTimeout(function(){ _refreshSaveBtn(); },2500); }
       if(typeof _renderAthleteRetour==='function') _renderAthleteRetour(seanceId);
+      if(_pendingOpenFeedback){
+        _pendingOpenFeedback = false;
+        if(typeof _openFeedbackModal==='function') _openFeedbackModal();
+      }
     })
     .catch(function(){ alert('Erreur lors du chargement.'); });
 }
 
 // Ouvrir un programme du calendrier dans le builder (clic sur chip)
-function _openChipInBuilder(progId, dateStr, seanceId){
+function _openChipInBuilder(progId, dateStr, seanceId, openFeedback){
   if(_calDragJustEnded || _calDrag) return; // pas d'ouverture en fin de drag
   _hideLibPreview();
   _builderDate = dateStr;
   _updateBuilderTitle();
+  _pendingOpenFeedback = !!openFeedback;
   _loadProg(progId, seanceId); // transmet l'ID de séance pour la détection de partage
 }
 

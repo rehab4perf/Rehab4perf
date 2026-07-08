@@ -1075,7 +1075,7 @@ function _notifOpen(i){
   setTimeout(function(){
     var pf = document.getElementById('frame-prescription');
     if(pf && pf.contentWindow) pf.contentWindow.postMessage({
-      type:'r4p-open-seance', seanceId:f.seance_id, progId:sp.programme_id, date:sp.date || ''
+      type:'r4p-open-seance', seanceId:f.seance_id, progId:sp.programme_id, date:sp.date || '', openFeedback:true
     }, window.location.origin);
   }, 900);
 }
