@@ -822,10 +822,11 @@ function _evIsCap(ev){
 
 /* ── Carte des charges quotidiennes (UA) — regle unifiee ──────────
    1. Seance standard avec feedback  → UA Foster (rpe x duree reelle) ;
-      son activite Strava LIEE est absorbee (jamais comptee en plus).
-   2. Seance standard sans feedback mais activite liee → estimation FC Strava.
-   3. Seance CAP → charge depuis l'activite Strava liee uniquement
-      (le feedback CAP = douleur/effort, inexploitables en UA).
+      ses activites Strava LIEES sont absorbees (jamais comptees en plus).
+   2. Seance standard sans feedback mais activite(s) liee(s) → somme des
+      estimations FC Strava (si plusieurs activites liees a la meme seance).
+   3. Seance CAP → charge depuis la ou les activite(s) Strava liee(s)
+      uniquement (le feedback CAP = douleur/effort, inexploitables en UA).
    4. Activite Strava non liee → estimation FC (activite libre).
    Fini l'exclusion par jour entier : chaque seance/activite est traitee
    individuellement via le lien seance_id. */
@@ -834,26 +835,28 @@ function _buildUaMap(){
   var ddn = _progPatient && _progPatient.ddn;
   var linkedBySeance = {};
   _stravaActivities.forEach(function(a){
-    if(a.seance_id) linkedBySeance[String(a.seance_id)] = a;
+    if(!a.seance_id) return;
+    var key = String(a.seance_id);
+    (linkedBySeance[key] = linkedBySeance[key] || []).push(a);
   });
   _cloudCalEvents.forEach(function(ev){
     var fb = ev.athlete_feedback;
-    var linked = linkedBySeance[String(ev.id)];
+    var linkedList = linkedBySeance[String(ev.id)] || [];
     if(_evIsCap(ev)){
-      if(linked){
-        var cCap = _stravaChargeEstimate(linked, ddn);
+      linkedList.forEach(function(act){
+        var cCap = _stravaChargeEstimate(act, ddn);
         if(cCap) map[ev.date] = (map[ev.date]||0) + cCap;
-      }
+      });
       return;
     }
     if(_fbIsCharge(fb)){
       map[ev.date] = (map[ev.date]||0) + fb.rpe * fb.duree_min;
-      return; // l'activite liee est absorbee par le feedback
+      return; // les activites liees sont absorbees par le feedback
     }
-    if(linked){
-      var cStd = _stravaChargeEstimate(linked, ddn);
+    linkedList.forEach(function(act){
+      var cStd = _stravaChargeEstimate(act, ddn);
       if(cStd) map[ev.date] = (map[ev.date]||0) + cStd;
-    }
+    });
   });
   // Activites libres (non liees a une seance planifiee)
   _stravaActivities.forEach(function(act){
