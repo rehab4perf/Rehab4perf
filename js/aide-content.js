@@ -40,7 +40,20 @@ sections: [
       { t:'Bilan clinique', x:'L\'examen complet par région (épaule, rachis, hanche, genou, pied…) et la génération des comptes-rendus.' },
       { t:'Outils', x:'Les questionnaires PRO, les scores fonctionnels et le configurateur de CR médecin.' },
       { t:'Programme', x:'La bibliothèque d\'exercices, le builder de séances, l\'agenda, les cycles, le journal et l\'évolution.' },
-      { t:'Mon compte', x:'Vos informations professionnelles, la sécurité et les réglages de notifications.' }
+      { t:'Mon compte', x:'Vos informations professionnelles, la sécurité et les réglages de notifications. On y accède via « Mon compte » en haut à droite.' }
+    ]},
+  { id:'mon-compte', titre:'Remplir « Mon compte »',
+    intro:'Vos informations professionnelles alimentent la signature de vos comptes-rendus (CR médecin, bilans). Prenez une minute pour les renseigner : elles sont saisies une seule fois et réutilisées partout.',
+    etapes:[
+      { t:'Ouvrez « Mon compte » (en haut à droite)', x:'La carte « Informations professionnelles » regroupe tous les champs de votre profil.', img:true },
+      { t:'Renseignez Prénom et Nom', x:'Ils composent votre nom affiché et la signature reprise en bas des comptes-rendus.' },
+      { t:'Renseignez le N° ADELI / AM', x:'Votre numéro d\'identification praticien : il figure sur les courriers destinés au médecin.' },
+      { t:'Ajoutez Téléphone et Cabinet / Structure', x:'Coordonnées reprises dans l\'en-tête / le pied des CR. Le Cabinet est le nom de votre structure (ex. « Athletik Lamarck »).' },
+      { t:'L\'email du compte n\'est pas modifiable ici', x:'Il identifie votre connexion. Il s\'affiche en lecture seule.' },
+      { t:'Cliquez sur « Enregistrer »', x:'Un « ✓ Sauvegardé » confirme. Le profil est synchronisé et diffusé aux onglets Bilan et Outils immédiatement — pas besoin de recharger.' },
+      { t:'Modifier le mot de passe', x:'Dans la carte « Sécurité & Session », cliquez sur « Modifier » : un email de réinitialisation vous est envoyé. Le mot de passe ne se change jamais directement dans l\'app.' },
+      { t:'Réglages de notifications', x:'Plus bas, la carte « Notifications » regroupe les interrupteurs (pastilles agenda, cloche, notifications navigateur, rappels de notes). Voir la section Notifications pour le détail.' },
+      { t:'Se déconnecter', x:'Le bouton « Se déconnecter » en bas ferme votre session sur cet appareil.' }
     ]}
 ]},
 
@@ -65,6 +78,16 @@ sections: [
       { t:'« CR Tests » : le condensé des tests réalisés', x:'Idéal pour un suivi interne ou un point rapide.' },
       { t:'« CR Complet » : le bilan intégral structuré', x:'Toutes les régions évaluées, les scores et vos commentaires.' },
       { t:'Copiez ou exportez le résultat', x:'Le texte se met à jour en direct si vous modifiez le bilan. Pour un courrier destiné au médecin, utilisez plutôt le CR médecin de l\'onglet Outils.' }
+    ]},
+  { id:'sauvegarder-bilan', titre:'Sauvegarder, modifier et suivre un bilan',
+    intro:'Un bilan est enregistré à une date donnée. Comprendre la différence entre corriger un bilan existant et créer un bilan de suivi est essentiel : c\'est ce qui construit — ou non — les courbes d\'évolution du patient.',
+    etapes:[
+      { t:'Sauvegarder le bilan', x:'Le bouton « Sauvegarder le bilan » enregistre l\'ensemble de vos saisies pour le patient actif, daté du jour. Une fois sauvegardé, le bilan passe en mode lecture (📖) pour éviter les modifications accidentelles.', img:true },
+      { t:'Mode lecture', x:'Après sauvegarde, les champs sont verrouillés. Deux options s\'offrent alors : « Modifier ce bilan » (corriger) ou « Bilan de suivi » (nouvelle évaluation).' },
+      { t:'Modifier ce bilan', x:'Corrige le bilan en cas d\'erreur de saisie. Les corrections sont enregistrées à la DATE D\'ORIGINE du bilan et ne créent AUCUN nouveau point dans l\'évolution. À utiliser pour rectifier, pas pour un nouveau contrôle.' },
+      { t:'Bilan de suivi', x:'À utiliser lors d\'une nouvelle consultation de contrôle. Tous les champs sont pré-remplis depuis le dernier bilan : vous ne re-saisissez que ce qui a changé. Seules les valeurs que vous MODIFIEZ créent un nouveau point daté du jour dans les courbes d\'évolution.' },
+      { t:'Bilans précédents', x:'Le bouton « Bilans précédents » ouvre l\'historique daté du patient. Vous pouvez consulter n\'importe quel bilan antérieur en lecture seule, puis « ↩ Revenir au bilan actuel ».' },
+      { t:'Voir l\'évolution', x:'La page « Évolution » du bilan compare automatiquement les points successifs (amplitudes, forces, scores) dès qu\'au moins deux bilans existent — d\'où l\'importance de passer par le bilan de suivi plutôt que par une simple modification.' }
     ]}
 ]},
 
