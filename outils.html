@@ -3180,22 +3180,23 @@ PROMS_QUESTIONNAIRES['FAAM'] = {
 /* ═══════════════════════════════════════════════════════════════
    ALR-RSI — Ankle Ligament Reconstruction RSI
 ═══════════════════════════════════════════════════════════════ */
+var _ALRRSI_Q = [
+  ['Pensez-vous pouvoir pratiquer votre sport au même niveau qu\'auparavant ?','Pas du tout sûr','Totalement sûr'],
+  ['Pensez-vous que vous pourriez vous blesser de nouveau la cheville si vous repreniez le sport ?','Extrêmement probable','Pas du tout probable'],
+  ['Êtes-vous inquiet(e) à l\'idée de reprendre votre sport ?','Extrêmement inquiet','Pas du tout inquiet'],
+  ['Pensez-vous que votre cheville sera stable lors de votre pratique sportive ?','Pas du tout sûr','Totalement sûr'],
+  ['Pensez-vous pouvoir pratiquer votre sport sans vous soucier de votre cheville ?','Pas du tout sûr','Totalement sûr'],
+  ['Craignez-vous de vous blesser de nouveau la cheville lors de votre pratique sportive ?','Crainte extrême','Aucune crainte'],
+  ['Êtes-vous frustré(e) de devoir tenir compte de votre cheville lors de votre pratique sportive ?','Extrêmement frustré','Pas du tout frustré'],
+  ['Pensez-vous que votre cheville peut résister aux contraintes ?','Pas du tout sûr','Totalement sûr'],
+  ['Avez-vous peur de vous reblesser accidentellement la cheville lors de votre pratique sportive ?','Très peur','Pas du tout peur'],
+  ['L\'idée d\'une possible réopération ou rééducation vous empêche-t-elle de pratiquer votre sport ?','Tout le temps','À aucun moment'],
+  ['Êtes-vous confiant(e) en votre capacité à pratiquer votre sport ?','Pas du tout confiant','Totalement confiant'],
+  ['Êtes-vous détendu(e) à l\'idée de pratiquer votre sport ?','Pas du tout détendu','Totalement détendu'],
+];
 PROMS_QUESTIONNAIRES['ALR-RSI'] = {
   html: (function(){
-    var qs = [
-      ['Pensez-vous pouvoir pratiquer votre sport au même niveau qu\'auparavant ?','Pas du tout sûr','Totalement sûr'],
-      ['Pensez-vous que vous pourriez vous blesser de nouveau la cheville si vous repreniez le sport ?','Extrêmement probable','Pas du tout probable'],
-      ['Êtes-vous inquiet(e) à l\'idée de reprendre votre sport ?','Extrêmement inquiet','Pas du tout inquiet'],
-      ['Pensez-vous que votre cheville sera stable lors de votre pratique sportive ?','Pas du tout sûr','Totalement sûr'],
-      ['Pensez-vous pouvoir pratiquer votre sport sans vous soucier de votre cheville ?','Pas du tout sûr','Totalement sûr'],
-      ['Craignez-vous de vous blesser de nouveau la cheville lors de votre pratique sportive ?','Crainte extrême','Aucune crainte'],
-      ['Êtes-vous frustré(e) de devoir tenir compte de votre cheville lors de votre pratique sportive ?','Extrêmement frustré','Pas du tout frustré'],
-      ['Pensez-vous que votre cheville peut résister aux contraintes ?','Pas du tout sûr','Totalement sûr'],
-      ['Avez-vous peur de vous reblesser accidentellement la cheville lors de votre pratique sportive ?','Très peur','Pas du tout peur'],
-      ['L\'idée d\'une possible réopération ou rééducation vous empêche-t-elle de pratiquer votre sport ?','Tout le temps','À aucun moment'],
-      ['Êtes-vous confiant(e) en votre capacité à pratiquer votre sport ?','Pas du tout confiant','Totalement confiant'],
-      ['Êtes-vous détendu(e) à l\'idée de pratiquer votre sport ?','Pas du tout détendu','Totalement détendu'],
-    ];
+    var qs = _ALRRSI_Q;
     var h='<div class="prom-intro">Répondez aux questions concernant le sport principal pratiqué avant la blessure. Cochez la case correspondant à votre situation actuelle.</div>';
     qs.forEach(function(q,i){
       h+='<div class="prom-q"><div class="prom-q-num">Q'+(i+1)+'</div><div class="prom-q-text">'+q[0]+'</div>'
@@ -6919,6 +6920,13 @@ var BATTERIES = {
       v.sht_time = _batNum('bat-sht-time'); v.sht_stable = _batChk('bat-sht-stable');
       v.f8_time = _batNum('bat-f8-time'); v.f8_stable = _batChk('bat-f8-stable');
       v.faam_adl = _batNum('bat-faamadl'); v.faam_sport = _batNum('bat-faamsport'); v.alrrsi = _batNum('bat-alrrsi');
+      /* côté sain (comparaison / LSI) */
+      v.h = {
+        sls_err: _batNum('bat-sls-err-h'),
+        sebt_leg: _batNum('bat-sebt-leg-h'), sebt_ant: _batNum('bat-sebt-ant-h'), sebt_pm: _batNum('bat-sebt-pm-h'), sebt_pl: _batNum('bat-sebt-pl-h'),
+        sht_time: _batNum('bat-sht-time-h'), f8_time: _batNum('bat-f8-time-h'),
+        faam_adl: _batNum('bat-faamadl-h'), faam_sport: _batNum('bat-faamsport-h'), alrrsi: _batNum('bat-alrrsi-h')
+      };
       return v;
     },
     score: function(v){
@@ -7002,6 +7010,7 @@ function renderBatteries(){
 function openBattery(key){
   var b = BATTERIES[key]; if(!b) return;
   _batCurrentKey = key;
+  _batPromAnswers = {};
   document.getElementById('bat-list').style.display = 'none';
   var today = new Date(); var dstr = ('0'+today.getDate()).slice(-2)+'/'+('0'+(today.getMonth()+1)).slice(-2)+'/'+today.getFullYear();
   var inp = 'width:100%;padding:7px 9px;border:1px solid #dde3ec;border-radius:6px;font-size:.85rem;font-family:inherit;color:#1a2433;outline:none;box-sizing:border-box;';
@@ -7022,6 +7031,18 @@ function openBattery(key){
       + '<div style="font-size:.72rem;color:#2B5FA6;background:#F5F8FF;border-radius:6px;padding:6px 9px;line-height:1.6;margin-bottom:10px;"><b>Cotation :</b> '+cotation+'</div>'
       + inner + '</div>';
   }
+  var nbare='width:100%;padding:6px 8px;border:1px solid #dde3ec;border-radius:6px;font-size:.84rem;font-family:inherit;color:#1a2433;outline:none;box-sizing:border-box;';
+  /* en-tête lésé | sain pour une grille de paires */
+  function pairHdr(){ return '<div style="display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:8px;margin-bottom:4px;"><div></div>'
+    + '<div style="font-size:.64rem;font-weight:700;color:#C0392B;text-transform:uppercase;text-align:center;">Lésé</div>'
+    + '<div style="font-size:.64rem;font-weight:700;color:#16794F;text-transform:uppercase;text-align:center;">Sain</div></div>'; }
+  /* ligne : libellé + input lésé + input sain */
+  function pair(idL, idS, label){ return '<div style="display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:8px;align-items:center;margin-bottom:6px;">'
+    + '<div style="font-size:.76rem;color:#444;">'+label+'</div>'
+    + '<input type="number" id="'+idL+'" oninput="_batRecalc()" style="'+nbare+'">'
+    + '<input type="number" id="'+idS+'" oninput="_batRecalc()" style="'+nbare+'"></div>'; }
+  /* petit bouton bleu clair */
+  function sbtn(onclick, txt){ return '<button onclick="'+onclick+'" style="background:#EBF3FF;border:1px solid #b7d3f2;color:#2B5FA6;border-radius:6px;padding:6px 10px;font-size:.75rem;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;">'+txt+'</button>'; }
 
   var html =
     '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">'
@@ -7042,36 +7063,36 @@ function openBattery(key){
     + '</div>'
 
     + '<div style="'+sec+'">Auto-questionnaires (patient)</div>'
-    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
-    + (numf('bat-faamadl', 'FAAM-ADL (%)', '0–100')+note('Fonction vie quotidienne (21 items). &lt;90 → 0 · 90-95 → 1 · &gt;95 → 2'))
-    + (numf('bat-faamsport', 'FAAM-Sport (%)', '0–100')+note('Fonction sportive (8 items). &lt;80 → 0 · 80-95 → 1 · &gt;95 → 2'))
+    + '<div style="font-size:.72rem;color:#888;margin-bottom:8px;line-height:1.5;">Le <b style="color:#C0392B;">côté lésé</b> alimente le score /25. Le <b style="color:#16794F;">côté sain</b> (optionnel) sert de comparaison. Les questionnaires n\'ont pas d\'usage validé sur le côté sain — comparaison indicative uniquement.</div>'
+    + pairHdr()
+    + pair('bat-faamadl','bat-faamadl-h','FAAM-ADL (%)')
+    + pair('bat-faamsport','bat-faamsport-h','FAAM-Sport (%)')
+    + pair('bat-alrrsi','bat-alrrsi-h','ALR-RSI (%)')
+    + '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">'
+      + sbtn("_batFillFaam('injured')", 'Remplir FAAM — lésé') + sbtn("_batFillFaam('healthy')", 'FAAM — sain')
+      + sbtn("_batFillAlrRsi('injured')", 'Remplir ALR-RSI — lésé') + sbtn("_batFillAlrRsi('healthy')", 'ALR-RSI — sain')
     + '</div>'
-    + '<button onclick="_batFillFaam()" style="margin-top:8px;background:#EBF3FF;border:1px solid #b7d3f2;color:#2B5FA6;border-radius:6px;padding:7px 11px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:inherit;">Remplir le FAAM (AVQ + Sport)</button>'
-    + '<div style="display:flex;gap:10px;align-items:flex-start;margin-top:10px;">'
-    + '<div style="flex:1;">'+numf('bat-alrrsi', 'ALR-RSI (%)', '0–100')+note('Disponibilité psychologique RTS (12 items). &lt;55 → 0 · 55-63 → 1 · 63-76 → 2 · &gt;76 → 3')+'</div>'
-    + '<button onclick="_batFillAlrRsi()" style="background:#EBF3FF;border:1px solid #b7d3f2;color:#2B5FA6;border-radius:6px;padding:7px 11px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;margin-top:19px;">Remplir l\'ALR-RSI</button>'
-    + '</div>'
+    + note('FAAM-ADL : &lt;90→0 · 90-95→1 · &gt;95→2 · FAAM-Sport : &lt;80→0 · 80-95→1 · &gt;95→2 · ALR-RSI : &lt;55→0 · 55-63→1 · 63-76→2 · &gt;76→3')
 
-    + '<div style="'+sec+'">Tests fonctionnels (praticien) — côté lésé</div>'
+    + '<div style="'+sec+'">Tests fonctionnels (praticien)</div>'
     + tcard('Single Leg Stance (SLS)', 3,
-        'Équilibre unipodal sur surface stable. Pieds nus, jambe lésée, genou fléchi ~10°, mains sur les hanches, <b>20 s yeux fermés</b>. Compter les erreurs : mains qui décollent, cuisse &gt;30° de flexion/abduction, avant-pied ou talon qui se lève, sortie de position &gt;5 s, ou ouverture des yeux.',
+        'Équilibre unipodal sur surface stable. Pieds nus, genou fléchi ~10°, mains sur les hanches, <b>20 s yeux fermés</b>. Compter les erreurs : mains qui décollent, cuisse &gt;30° de flexion/abduction, avant-pied ou talon qui se lève, sortie de position &gt;5 s, ou ouverture des yeux. Le <b>côté lésé</b> est coté ; le côté sain sert de repère.',
         '0 err → 2 · 1-3 err → 1 · &gt;3 err → 0 · pas d\'instabilité +1',
-        numf('bat-sls-err', 'Nombre d\'erreurs (jambe lésée)', 'ex : 2') + chkf('bat-sls-stable', 'Pas de sensation d\'instabilité'))
+        pairHdr() + pair('bat-sls-err','bat-sls-err-h','Nombre d\'erreurs') + chkf('bat-sls-stable', 'Pas de sensation d\'instabilité (côté lésé)'))
     + tcard('mSEBT — Y-balance', 7,
-        'Contrôle postural dynamique. Pieds nus sur la jambe lésée au centre du « Y ». Atteindre le plus loin possible dans les 3 directions (antérieure, postéro-médiale, postéro-latérale), mains sur les hanches, sans décoller le talon ni perdre l\'équilibre. Moyenne de 3 essais par direction, <b>normalisée à la longueur de jambe</b> (EIAS → malléole médiale). COMP = moyenne des 3 directions.',
+        'Contrôle postural dynamique. Pieds nus sur le pied testé au centre du « Y ». Atteindre le plus loin possible dans les 3 directions (antérieure, postéro-médiale, postéro-latérale), mains sur les hanches, sans décoller le talon ni perdre l\'équilibre. Moyenne de 3 essais par direction, <b>normalisée à la longueur de jambe</b> (EIAS → malléole médiale). COMP = moyenne des 3 directions.',
         'COMP &gt;95% → 4 · 90-95% → 2 · &lt;90% → 0 · ANT&gt;60% +1 · PM&gt;90% +1 · pas d\'instabilité +1',
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
-          + numf('bat-sebt-leg', 'Longueur jambe (cm)', 'EIAS→malléole') + numf('bat-sebt-ant', 'ANT (cm)', '')
-          + numf('bat-sebt-pm', 'PM (cm)', '') + numf('bat-sebt-pl', 'PL (cm)', '')
-          + '</div>' + chkf('bat-sebt-stable', 'Pas de sensation d\'instabilité'))
+        pairHdr() + pair('bat-sebt-leg','bat-sebt-leg-h','Longueur jambe (cm)')
+          + pair('bat-sebt-ant','bat-sebt-ant-h','ANT (cm)') + pair('bat-sebt-pm','bat-sebt-pm-h','PM (cm)')
+          + pair('bat-sebt-pl','bat-sebt-pl-h','PL (cm)') + chkf('bat-sebt-stable', 'Pas de sensation d\'instabilité (côté lésé)'))
     + tcard('Side Hop Test (SHT)', 5,
         'Sauts latéraux-médiaux le plus vite possible : <b>10 allers-retours</b> entre 2 lignes espacées de 30 cm. Le 1<sup>er</sup> saut se fait vers l\'extérieur. Un aller-retour où le patient touche la ligne n\'est pas compté. Chronométrer le temps total.',
         '&lt;10 s → 4 · 10-13 s → 2 · &gt;13 s → 0 · pas d\'instabilité +1',
-        numf('bat-sht-time', 'Temps (s)', 'ex : 11') + chkf('bat-sht-stable', 'Pas de sensation d\'instabilité'))
+        pairHdr() + pair('bat-sht-time','bat-sht-time-h','Temps (s)') + chkf('bat-sht-stable', 'Pas de sensation d\'instabilité (côté lésé)'))
     + tcard('Figure-of-8 (F8T)', 3,
         'Course en forme de 8 autour de 2 plots espacés de <b>5 m</b>, <b>2 tours complets</b> (20 m au total), le plus vite possible. Chronométrer le temps total.',
         '&lt;13 s → 2 · 13-18 s → 1 · &gt;18 s → 0 · pas d\'instabilité +1',
-        numf('bat-f8-time', 'Temps (s)', 'ex : 9') + chkf('bat-f8-stable', 'Pas de sensation d\'instabilité'))
+        pairHdr() + pair('bat-f8-time','bat-f8-time-h','Temps (s)') + chkf('bat-f8-stable', 'Pas de sensation d\'instabilité (côté lésé)'))
     + '</div>'
 
     /* ── colonne résultat ── */
@@ -7117,12 +7138,96 @@ function _batColor(p, m, entered){
   return { fg:'#B26B00', bg:'#FCF0DB' };
 }
 
+/* Réponses brutes capturées lors du remplissage des PROMs (pour le profil détaillé) */
+var _batPromAnswers = {};
+
+function _batComp(leg, ant, pm, pl){
+  if(!(leg>0) || ant==null || pm==null || pl==null) return null;
+  return (ant/leg*100 + pm/leg*100 + pl/leg*100) / 3;
+}
+/* LSI et comparaisons lésé / sain. Tests : mSEBT (lésé/sain), SHT & F8T (sain/lésé car temps).
+   SLS : pas de LSI (plancher 0). PROMs : ratio indicatif (usage non validé côté sain). */
+function _batLsi(v){
+  var h = v.h || {}; var r = { tests:[], proms:[] };
+  var ic = _batComp(v.sebt_leg, v.sebt_ant, v.sebt_pm, v.sebt_pl);
+  var hc = _batComp(h.sebt_leg, h.sebt_ant, h.sebt_pm, h.sebt_pl);
+  if(ic!=null && hc>0) r.tests.push({ label:'mSEBT (COMP)', inj:Math.round(ic)+'%', sain:Math.round(hc)+'%', lsi:Math.round(ic/hc*100) });
+  if(v.sht_time!=null && h.sht_time!=null && v.sht_time>0) r.tests.push({ label:'Side Hop', inj:v.sht_time+' s', sain:h.sht_time+' s', lsi:Math.round(h.sht_time/v.sht_time*100) });
+  if(v.f8_time!=null && h.f8_time!=null && v.f8_time>0) r.tests.push({ label:'Figure-of-8', inj:v.f8_time+' s', sain:h.f8_time+' s', lsi:Math.round(h.f8_time/v.f8_time*100) });
+  if(v.sls_err!=null && h.sls_err!=null) r.tests.push({ label:'SLS (erreurs)', inj:v.sls_err, sain:h.sls_err, lsi:null });
+  [['FAAM-ADL','faam_adl'],['FAAM-Sport','faam_sport'],['ALR-RSI','alrrsi']].forEach(function(p){
+    if(v[p[1]]!=null && h[p[1]]!=null && h[p[1]]>0) r.proms.push({ label:p[0], inj:Math.round(v[p[1]])+'%', sain:Math.round(h[p[1]])+'%', lsi:Math.round(v[p[1]]/h[p[1]]*100) });
+  });
+  return r;
+}
+function _batLsiColor(lsi){
+  if(lsi==null) return {fg:'#666',bg:'#F1EFE8'};
+  if(lsi>=90) return {fg:'#16794F',bg:'#E0F9F3'};
+  if(lsi>=80) return {fg:'#B26B00',bg:'#FCF0DB'};
+  return {fg:'#C0392B',bg:'#FDECEA'};
+}
+
 function _batRecalc(){
   var b = BATTERIES[_batCurrentKey]; if(!b) return;
   var v = b.read(); var s = b.score(v);
   var totEl = document.getElementById('bat-total'); if(totEl) totEl.textContent = s.total;
   var res = document.getElementById('bat-result'); if(!res) return;
-  res.innerHTML = (_batView==='radar') ? _batRenderRadar(b, s) : _batRenderBars(b, s);
+  res.innerHTML = ((_batView==='radar') ? _batRenderRadar(b, s) : _batRenderBars(b, s))
+    + _batRenderLsi(v) + _batRenderProfile();
+}
+
+/* Section symétrie (LSI) — à l'écran et réutilisée dans le PDF */
+function _batRenderLsi(v){
+  var r = _batLsi(v);
+  if(!r.tests.length && !r.proms.length) return '';
+  function rows(list, isProm){
+    return list.map(function(x){
+      var c=_batLsiColor(x.lsi);
+      var badge = x.lsi==null ? '<span style="font-size:.72rem;color:#888;">—</span>'
+        : '<span style="font-size:.72rem;font-weight:700;background:'+c.bg+';color:'+c.fg+';padding:2px 8px;border-radius:5px;">'+x.lsi+'%</span>';
+      return '<div style="display:grid;grid-template-columns:1.3fr 1fr 1fr auto;gap:8px;align-items:center;padding:4px 0;border-top:1px solid #f0f4f8;font-size:.78rem;">'
+        + '<div>'+x.label+'</div><div style="color:#C0392B;">'+x.inj+'</div><div style="color:#16794F;">'+x.sain+'</div><div style="text-align:right;">'+badge+'</div></div>';
+    }).join('');
+  }
+  var html = '<div style="margin-top:16px;border-top:1px solid #dde3ec;padding-top:12px;">'
+    + '<div style="font-size:.78rem;font-weight:700;color:#1A3A5C;margin-bottom:2px;">Symétrie (LSI)</div>'
+    + '<div style="font-size:.68rem;color:#888;margin-bottom:8px;">Complémentaire — n\'entre pas dans le score /25. Seuil usuel ≥ 90 %.</div>'
+    + '<div style="display:grid;grid-template-columns:1.3fr 1fr 1fr auto;gap:8px;font-size:.62rem;font-weight:700;text-transform:uppercase;color:#888;"><div></div><div style="color:#C0392B;">Lésé</div><div style="color:#16794F;">Sain</div><div style="text-align:right;">LSI</div></div>';
+  if(r.tests.length) html += rows(r.tests, false);
+  if(r.proms.length) html += '<div style="font-size:.66rem;color:#999;margin-top:8px;font-style:italic;">PROMs — comparaison indicative (usage non validé côté sain)</div>' + rows(r.proms, true);
+  return html + '</div>';
+}
+
+/* Profil détaillé des PROMs, trié pire → meilleure réponse */
+function _batRenderProfile(){
+  var out = '';
+  ['ALR-RSI','FAAM'].forEach(function(acr){
+    var data = _batPromAnswers[acr]; if(!data) return;
+    ['injured','healthy'].forEach(function(side){
+      var items = data[side]; if(!items || !items.length) return;
+      var sideLbl = side==='injured' ? 'côté lésé' : 'côté sain';
+      var sorted = items.slice().filter(function(x){ return x.val!=='na'; }).sort(function(a,bb){ return a.val - bb.val; });
+      var na = items.filter(function(x){ return x.val==='na'; });
+      out += '<div style="margin-top:16px;border-top:1px solid #dde3ec;padding-top:12px;">'
+        + '<div style="font-size:.78rem;font-weight:700;color:#1A3A5C;margin-bottom:2px;">Profil détaillé — '+acr+' ('+sideLbl+')</div>'
+        + '<div style="font-size:.68rem;color:#888;margin-bottom:8px;">Trié de la réponse la plus défavorable à la plus favorable.</div>';
+      sorted.forEach(function(x){
+        var c = _batProfColor(x.val, x.maxVal);
+        out += '<div style="display:flex;gap:8px;align-items:baseline;padding:3px 0;border-top:1px solid #f7f9fb;font-size:.76rem;">'
+          + '<span style="flex-shrink:0;font-weight:700;background:'+c.bg+';color:'+c.fg+';padding:1px 7px;border-radius:5px;min-width:34px;text-align:center;">'+x.disp+'</span>'
+          + '<span style="color:#444;line-height:1.4;">'+x.label+'</span></div>';
+      });
+      if(na.length) out += '<div style="font-size:.7rem;color:#999;margin-top:5px;">N/A : '+na.map(function(x){return x.label;}).join(' · ')+'</div>';
+      out += '</div>';
+    });
+  });
+  return out;
+}
+function _batProfColor(val, maxVal){
+  var ratio = maxVal ? val/maxVal : 0;
+  if(ratio >= 0.75) return {fg:'#16794F',bg:'#E0F9F3'};
+  if(ratio >= 0.4) return {fg:'#B26B00',bg:'#FCF0DB'};
+  return {fg:'#C0392B',bg:'#FDECEA'};
 }
 
 function _batRenderBars(b, s){
@@ -7161,34 +7266,59 @@ function _batRenderRadar(b, s){
     + '<div style="text-align:center;font-size:.7rem;color:#999;margin-top:2px;">% du maximum par composant</div>';
 }
 
-/* ── Réutilisation du questionnaire ALR-RSI existant ── */
-function _batFillAlrRsi(){
-  _batAwaitingProm = 'ALR-RSI';
+/* ── Réutilisation des questionnaires existants (côté lésé ou sain) ── */
+var _batAwaitingSide = 'injured';
+function _batFillAlrRsi(side){
+  _batAwaitingProm = 'ALR-RSI'; _batAwaitingSide = side || 'injured';
   if(typeof openPromCard === 'function') openPromCard('ALR-RSI');
 }
-function _batFillFaam(){
-  _batAwaitingProm = 'FAAM';
+function _batFillFaam(side){
+  _batAwaitingProm = 'FAAM'; _batAwaitingSide = side || 'injured';
   if(typeof openPromCard === 'function') openPromCard('FAAM');
+}
+function _batCaptureAlrAnswers(){
+  var arr=[];
+  for(var i=1;i<=12;i++){
+    var el=document.querySelector('input[name="alrrsi'+i+'"]:checked');
+    var v=el?parseFloat(el.value):null;
+    arr.push({ label:_ALRRSI_Q[i-1][0], val:(v==null?'na':v), disp:(v==null?'—':v+'/10'), maxVal:10 });
+  }
+  return arr;
+}
+function _batCaptureFaamAnswers(){
+  var map={4:'Aucune',3:'Légère',2:'Modérée',1:'Sévère',0:'Incapable'};
+  var arr=[];
+  _FAAM_ADL.forEach(function(lbl,idx){ var el=document.querySelector('input[name="faamadl'+(idx+1)+'"]:checked');
+    var raw=el?el.value:null; var isNa=(raw==='na'); var v=(raw==null||isNa)?'na':parseFloat(raw);
+    arr.push({ label:'[AVQ] '+lbl, val:v, disp:(v==='na'?'N/A':map[v]), maxVal:4 }); });
+  _FAAM_SPORT.forEach(function(lbl,idx){ var el=document.querySelector('input[name="faamsport'+(idx+1)+'"]:checked');
+    var raw=el?el.value:null; var isNa=(raw==='na'); var v=(raw==null||isNa)?'na':parseFloat(raw);
+    arr.push({ label:'[Sport] '+lbl, val:v, disp:(v==='na'?'N/A':map[v]), maxVal:4 }); });
+  return arr;
 }
 function _batCapturePromScore(acronym){
   if(_batAwaitingProm !== acronym) return;
+  var side = _batAwaitingSide || 'injured';
+  var isInj = (side === 'injured');
   if(acronym === 'ALR-RSI'){
     if(_missing('alrrsi',12).length) return; // pas encore complet
     var sc = Math.round(_sum('alrrsi',12)*100/120);
-    var f = document.getElementById('bat-alrrsi'); if(f) f.value = sc;
+    var f = document.getElementById(isInj?'bat-alrrsi':'bat-alrrsi-h'); if(f) f.value = sc;
+    (_batPromAnswers['ALR-RSI'] = _batPromAnswers['ALR-RSI'] || {})[side] = _batCaptureAlrAnswers();
     _batAwaitingProm = null;
     if(typeof closePromModal === 'function') closePromModal();
     _batRecalc();
-    _batToast('ALR-RSI récupéré : '+sc+' %');
+    _batToast('ALR-RSI ('+(isInj?'lésé':'sain')+') : '+sc+' %');
   } else if(acronym === 'FAAM'){
     var adl = _faamSub('faamadl',21,2), sport = _faamSub('faamsport',8,1);
-    if(adl.pct==null || sport.pct==null) return; // sous-échelle incomplète : on laisse le praticien terminer
-    var fa=document.getElementById('bat-faamadl'), fs=document.getElementById('bat-faamsport');
+    if(adl.pct==null || sport.pct==null) return; // sous-échelle incomplète
+    var fa=document.getElementById(isInj?'bat-faamadl':'bat-faamadl-h'), fs=document.getElementById(isInj?'bat-faamsport':'bat-faamsport-h');
     if(fa) fa.value = adl.pct; if(fs) fs.value = sport.pct;
+    (_batPromAnswers['FAAM'] = _batPromAnswers['FAAM'] || {})[side] = _batCaptureFaamAnswers();
     _batAwaitingProm = null;
     if(typeof closePromModal === 'function') closePromModal();
     _batRecalc();
-    _batToast('FAAM récupéré : AVQ '+adl.pct+' % · Sport '+sport.pct+' %');
+    _batToast('FAAM ('+(isInj?'lésé':'sain')+') : AVQ '+adl.pct+' % · Sport '+sport.pct+' %');
   }
 }
 
@@ -7234,6 +7364,8 @@ function _batExportPdf(){
         ? '<div style="margin:6px 0 18px;">'+_batRenderRadar(b,s)+'</div>'
           +'<table><thead><tr><th style="text-align:left;font-size:.7rem;color:#888;text-transform:uppercase;">Composant</th><th style="text-align:left;font-size:.7rem;color:#888;">Valeur</th><th style="text-align:right;font-size:.7rem;color:#888;">Points</th></tr></thead><tbody>'+rows+'</tbody></table>'
         : '<div style="margin:6px 0 4px;">'+_batRenderBars(b,s)+'</div>')
+    +_batRenderLsi(v)
+    +_batRenderProfile()
     +'</div><div class="ft">Rapport généré par Rehab4Perf · '+_batEsc(date||'')+' · Cotation : '+_batEsc(b.source)+'</div></div></body></html>';
   var patSlug = (nom.split(/\s+/)[0]||'patient'); var dateSlug=(date||'').replace(/\//g,'-');
   var blob = new Blob([doc], {type:'text/html;charset=utf-8'});
