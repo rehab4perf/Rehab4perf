@@ -6894,6 +6894,14 @@ _updateOutilsPatientBtns();
 function _batEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function _batNum(id){ var el=document.getElementById(id); if(!el) return null; var v=el.value.trim(); if(v==='') return null; var n=parseFloat(v.replace(',','.')); return isNaN(n)?null:n; }
 function _batChk(id){ var el=document.getElementById(id); return !!(el&&el.checked); }
+function _batAvg(ids){ var sum=0,n=0; ids.forEach(function(id){ var v=_batNum(id); if(v!=null){ sum+=v; n++; } }); return n? sum/n : null; }
+function _batRefreshSebtAvg(){
+  [['ant',''],['pm',''],['pl',''],['ant','-h'],['pm','-h'],['pl','-h']].forEach(function(d){
+    var avg=_batAvg(['bat-sebt-'+d[0]+'1'+d[1],'bat-sebt-'+d[0]+'2'+d[1],'bat-sebt-'+d[0]+'3'+d[1]]);
+    var el=document.getElementById('bat-sebt-'+d[0]+'-avg'+d[1]);
+    if(el) el.textContent = (avg==null)?'—':(Math.round(avg*10)/10);
+  });
+}
 
 var BATTERIES = {
   'ankle-go': {
@@ -6915,15 +6923,21 @@ var BATTERIES = {
       var v = {};
       v.side = (document.getElementById('bat-side')||{}).value || '';
       v.sls_err = _batNum('bat-sls-err'); v.sls_stable = _batChk('bat-sls-stable');
-      v.sebt_leg = _batNum('bat-sebt-leg'); v.sebt_ant = _batNum('bat-sebt-ant');
-      v.sebt_pm = _batNum('bat-sebt-pm'); v.sebt_pl = _batNum('bat-sebt-pl'); v.sebt_stable = _batChk('bat-sebt-stable');
+      v.sebt_leg = _batNum('bat-sebt-leg');
+      v.sebt_ant = _batAvg(['bat-sebt-ant1','bat-sebt-ant2','bat-sebt-ant3']);
+      v.sebt_pm  = _batAvg(['bat-sebt-pm1','bat-sebt-pm2','bat-sebt-pm3']);
+      v.sebt_pl  = _batAvg(['bat-sebt-pl1','bat-sebt-pl2','bat-sebt-pl3']);
+      v.sebt_stable = _batChk('bat-sebt-stable');
       v.sht_time = _batNum('bat-sht-time'); v.sht_stable = _batChk('bat-sht-stable');
       v.f8_time = _batNum('bat-f8-time'); v.f8_stable = _batChk('bat-f8-stable');
       v.faam_adl = _batNum('bat-faamadl'); v.faam_sport = _batNum('bat-faamsport'); v.alrrsi = _batNum('bat-alrrsi');
       /* côté sain (comparaison / LSI) */
       v.h = {
         sls_err: _batNum('bat-sls-err-h'),
-        sebt_leg: _batNum('bat-sebt-leg-h'), sebt_ant: _batNum('bat-sebt-ant-h'), sebt_pm: _batNum('bat-sebt-pm-h'), sebt_pl: _batNum('bat-sebt-pl-h'),
+        sebt_leg: _batNum('bat-sebt-leg-h'),
+        sebt_ant: _batAvg(['bat-sebt-ant1-h','bat-sebt-ant2-h','bat-sebt-ant3-h']),
+        sebt_pm: _batAvg(['bat-sebt-pm1-h','bat-sebt-pm2-h','bat-sebt-pm3-h']),
+        sebt_pl: _batAvg(['bat-sebt-pl1-h','bat-sebt-pl2-h','bat-sebt-pl3-h']),
         sht_time: _batNum('bat-sht-time-h'), f8_time: _batNum('bat-f8-time-h'),
         faam_adl: _batNum('bat-faamadl-h'), faam_sport: _batNum('bat-faamsport-h'), alrrsi: _batNum('bat-alrrsi-h')
       };
@@ -7043,6 +7057,15 @@ function openBattery(key){
     + '<input type="number" id="'+idS+'" oninput="_batRecalc()" style="'+nbare+'"></div>'; }
   /* petit bouton bleu clair */
   function sbtn(onclick, txt){ return '<button onclick="'+onclick+'" style="background:#EBF3FF;border:1px solid #b7d3f2;color:#2B5FA6;border-radius:6px;padding:6px 10px;font-size:.75rem;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;">'+txt+'</button>'; }
+  /* mSEBT : 3 essais par direction + moyenne live. suf='' (lésé) ou '-h' (sain) */
+  function trialCell(id){ return '<input type="number" id="'+id+'" oninput="_batRecalc()" style="'+nbare+';text-align:center;padding:6px 4px;">'; }
+  function trialRow(dir, label, suf){ return '<div style="display:grid;grid-template-columns:1.1fr 1fr 1fr 1fr auto;gap:5px;align-items:center;margin-bottom:5px;">'
+    + '<div style="font-size:.74rem;color:#444;">'+label+'</div>'
+    + trialCell('bat-sebt-'+dir+'1'+suf) + trialCell('bat-sebt-'+dir+'2'+suf) + trialCell('bat-sebt-'+dir+'3'+suf)
+    + '<div style="font-size:.72rem;color:#2B5FA6;font-weight:700;min-width:52px;text-align:right;white-space:nowrap;">moy <span id="bat-sebt-'+dir+'-avg'+suf+'">—</span></div></div>'; }
+  function sideBlock(suf, title, color){ return '<div style="margin-top:8px;font-size:.68rem;font-weight:700;color:'+color+';text-transform:uppercase;letter-spacing:.03em;">'+title+'</div>'
+    + '<div style="display:grid;grid-template-columns:1.1fr 1fr 1fr 1fr auto;gap:5px;font-size:.58rem;color:#aaa;text-transform:uppercase;margin-bottom:2px;"><div></div><div style="text-align:center;">Essai 1</div><div style="text-align:center;">Essai 2</div><div style="text-align:center;">Essai 3</div><div></div></div>'
+    + trialRow('ant','ANT (cm)',suf) + trialRow('pm','PM (cm)',suf) + trialRow('pl','PL (cm)',suf); }
 
   var html =
     '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">'
@@ -7083,8 +7106,9 @@ function openBattery(key){
         'Contrôle postural dynamique. Pieds nus sur le pied testé au centre du « Y ». Atteindre le plus loin possible dans les 3 directions (antérieure, postéro-médiale, postéro-latérale), mains sur les hanches, sans décoller le talon ni perdre l\'équilibre. Moyenne de 3 essais par direction, <b>normalisée à la longueur de jambe</b> (EIAS → malléole médiale). COMP = moyenne des 3 directions.',
         'COMP &gt;95% → 4 · 90-95% → 2 · &lt;90% → 0 · ANT&gt;60% +1 · PM&gt;90% +1 · pas d\'instabilité +1',
         pairHdr() + pair('bat-sebt-leg','bat-sebt-leg-h','Longueur jambe (cm)')
-          + pair('bat-sebt-ant','bat-sebt-ant-h','ANT (cm)') + pair('bat-sebt-pm','bat-sebt-pm-h','PM (cm)')
-          + pair('bat-sebt-pl','bat-sebt-pl-h','PL (cm)') + chkf('bat-sebt-stable', 'Pas de sensation d\'instabilité (côté lésé)'))
+          + sideBlock('', 'Côté lésé — 3 essais par direction', '#C0392B')
+          + sideBlock('-h', 'Côté sain — 3 essais par direction', '#16794F')
+          + chkf('bat-sebt-stable', 'Pas de sensation d\'instabilité (côté lésé)'))
     + tcard('Side Hop Test (SHT)', 5,
         'Sauts latéraux-médiaux le plus vite possible : <b>10 allers-retours</b> entre 2 lignes espacées de 30 cm. Le 1<sup>er</sup> saut se fait vers l\'extérieur. Un aller-retour où le patient touche la ligne n\'est pas compté. Chronométrer le temps total.',
         '&lt;10 s → 4 · 10-13 s → 2 · &gt;13 s → 0 · pas d\'instabilité +1',
@@ -7171,6 +7195,7 @@ function _batRecalc(){
   var b = BATTERIES[_batCurrentKey]; if(!b) return;
   var v = b.read(); var s = b.score(v);
   var totEl = document.getElementById('bat-total'); if(totEl) totEl.textContent = s.total;
+  _batRefreshSebtAvg();
   var res = document.getElementById('bat-result'); if(!res) return;
   res.innerHTML = ((_batView==='radar') ? _batRenderRadar(b, s) : _batRenderBars(b, s))
     + _batRenderLsi(v) + _batRenderProfile();
