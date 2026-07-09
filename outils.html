@@ -6964,6 +6964,27 @@ var _batView = 'bars';   // 'bars' | 'radar'
 var _batCurrentKey = null;
 var _batAwaitingProm = null;
 
+function _batFmtDate(s){
+  s = String(s||'').trim(); if(!s) return '';
+  var m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? (m[3]+'/'+m[2]+'/'+m[1]) : s;
+}
+/* Associe les infos patient (comme le CR médecin) : brouillon bilan + patient actif */
+function _batImportPatient(){
+  var bilan={}; try{ bilan=JSON.parse(localStorage.getItem('athletik-bilan')||'{}'); }catch(e){}
+  var pat={};  try{ pat=JSON.parse(localStorage.getItem('r4p-current-patient')||'null')||{}; }catch(e){}
+  var nom=((bilan['f-prenom']||pat.prenom||'')+' '+(bilan['f-nom']||pat.nom||'')).trim();
+  var ddn=_batFmtDate(bilan['f-dob']||pat.ddn||'');
+  var n=0, el;
+  if(nom){ el=document.getElementById('bat-pt-nom'); if(el){ el.value=nom; n++; } }
+  if(ddn){ el=document.getElementById('bat-pt-ddn'); if(el){ el.value=ddn; n++; } }
+  var cote=(bilan['f-cote']||'').trim().toLowerCase();
+  var sideMap={droit:'D', gauche:'G'};
+  if(sideMap[cote]){ el=document.getElementById('bat-side'); if(el){ el.value=sideMap[cote]; n++; } }
+  _batRecalc();
+  _batToast(n ? ('Infos patient associées ('+n+' champ'+(n>1?'s':'')+')') : 'Aucune info patient trouvée — sélectionnez un patient ou remplissez le bilan.');
+}
+
 function renderBatteries(){
   var list = document.getElementById('bat-list');
   if(!list) return;
@@ -7011,7 +7032,8 @@ function openBattery(key){
     + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">'
     /* ── colonne saisie ── */
     + '<div>'
-    + '<div style="'+sec+'">Patient</div>'
+    + '<div style="'+sec+'display:flex;align-items:center;justify-content:space-between;gap:8px;"><span>Patient</span>'
+    + '<button onclick="_batImportPatient()" style="background:#EBF3FF;border:1px solid #b7d3f2;color:#2B5FA6;border-radius:6px;padding:4px 10px;font-size:.7rem;font-weight:600;cursor:pointer;font-family:inherit;text-transform:none;letter-spacing:0;">⤓ Associer les infos patient</button></div>'
     + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
     + field('Nom', '<input type="text" id="bat-pt-nom" placeholder="Dupont Jean" style="'+inp+'">')
     + field('Date', '<input type="text" id="bat-pt-date" value="'+dstr+'" style="'+inp+'">')
@@ -7208,8 +7230,10 @@ function _batExportPdf(){
       +(ddn?'Né(e) le '+_batEsc(ddn)+' · ':'')+(date?_batEsc(date)+' · ':'')+'Cheville '+_batEsc(side)+'</div></div></div>':'')
     +'<div class="bd"><div class="big">'+s.total+' <span style="font-size:1rem;color:#888;font-weight:400">/ 25 points</span></div>'
     +'<div class="thr">'+thrTxt+'</div>'
-    +'<div style="margin:6px 0 18px;">'+(_batView==='radar'?_batRenderRadar(b,s):_batRenderBars(b,s))+'</div>'
-    +'<table><thead><tr><th style="text-align:left;font-size:.7rem;color:#888;text-transform:uppercase;">Composant</th><th style="text-align:left;font-size:.7rem;color:#888;">Valeur</th><th style="text-align:right;font-size:.7rem;color:#888;">Points</th></tr></thead><tbody>'+rows+'</tbody></table>'
+    +(_batView==='radar'
+        ? '<div style="margin:6px 0 18px;">'+_batRenderRadar(b,s)+'</div>'
+          +'<table><thead><tr><th style="text-align:left;font-size:.7rem;color:#888;text-transform:uppercase;">Composant</th><th style="text-align:left;font-size:.7rem;color:#888;">Valeur</th><th style="text-align:right;font-size:.7rem;color:#888;">Points</th></tr></thead><tbody>'+rows+'</tbody></table>'
+        : '<div style="margin:6px 0 4px;">'+_batRenderBars(b,s)+'</div>')
     +'</div><div class="ft">Rapport généré par Rehab4Perf · '+_batEsc(date||'')+' · Cotation : '+_batEsc(b.source)+'</div></div></body></html>';
   var patSlug = (nom.split(/\s+/)[0]||'patient'); var dateSlug=(date||'').replace(/\//g,'-');
   var blob = new Blob([doc], {type:'text/html;charset=utf-8'});
