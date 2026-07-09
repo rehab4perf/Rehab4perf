@@ -100,6 +100,20 @@ sections: [
       { t:'Saisissez les réponses', x:'Le score se calcule en direct.' },
       { t:'Enregistrez', x:'Le résultat est synchronisé et réapparaît en direct dans le bilan clinique correspondant.' }
     ]},
+  { id:'batteries', titre:'Batteries validées (ex. Ankle-GO)',
+    intro:'Des scores composites issus de la littérature, combinant tests fonctionnels mesurés par vous et auto-questionnaires remplis par le patient, avec cotation automatique et rapport PDF.',
+    etapes:[
+      { t:'Ouvrez « Batteries » (sous-onglet d\'Outils)', x:'Cliquez sur la batterie souhaitée, par ex. « Ankle-GO » (Picot et al., Sports Health 2023) — retour au sport après entorse latérale de cheville, noté sur 25 points.', img:true },
+      { t:'Associez le patient', x:'Le bouton « ⤓ Associer les infos patient » reprend nom, date de naissance et côté lésé depuis le bilan ou le patient actif — comme sur le CR médecin.' },
+      { t:'Choisissez la latéralité', x:'« Droite »/« Gauche » pour une cheville lésée (les colonnes s\'affichent Lésé/Sain), ou « Bilatéral » pour un dépistage sans blessure (les colonnes deviennent Droit/Gauche). Le score /25 est toujours calculé sur la première colonne.' },
+      { t:'Remplissez les auto-questionnaires', x:'Les boutons « Remplir FAAM » et « Remplir ALR-RSI » ouvrent le questionnaire correspondant (déjà disponible dans les PROMs) et récupèrent le score automatiquement, côté lésé et/ou côté sain.' },
+      { t:'Saisissez les tests fonctionnels', x:'Chaque test (Single Leg Stance, mSEBT, Side Hop, Figure-of-8) affiche ses consignes et ses critères de cotation. Le mSEBT se saisit en 3 essais par direction (ANT/PM/PL) — la moyenne se calcule automatiquement.' },
+      { t:'Lisez le score et sa couleur', x:'Le score /25 est vert (≥8 pts, prédit un retour au niveau pré-blessure), orange (7 pts, zone intermédiaire) ou rouge (<7 pts, prédit une absence de retour au sport) — seuils validés par l\'étude.' },
+      { t:'Consultez la symétrie (LSI)', x:'Si le côté sain est renseigné, un LSI (Limb Symmetry Index) est calculé par test — complémentaire, il n\'entre pas dans le score /25. Seuil usuel : ≥90 %.' },
+      { t:'Consultez le profil détaillé', x:'Les réponses aux questionnaires sont listées triées de la plus défavorable à la plus favorable — utile pour repérer rapidement l\'appréhension ou les activités les plus limitantes du patient.' },
+      { t:'Basculez barres / radar', x:'Vue barres (par défaut) pour lire les points par composant, ou radar pour une vue d\'ensemble. Le PDF exporté reprend la vue sélectionnée.' },
+      { t:'Générez le rapport PDF', x:'Score, symétrie et profil détaillé sont inclus dans un rapport prêt à imprimer ou archiver.' }
+    ]},
   { id:'cr-medecin', titre:'Rédiger un CR médecin',
     intro:'Un courrier structuré destiné au médecin, avec aperçu en temps réel pendant la saisie.',
     etapes:[

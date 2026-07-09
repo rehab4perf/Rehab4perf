@@ -6909,7 +6909,7 @@ var BATTERIES = {
     name:'Ankle-GO',
     full:'Retour au sport après entorse latérale de cheville',
     source:'Picot et al., Sports Health 2023 · niveau 2',
-    max:25, rtsThreshold:8,
+    max:25, rtsThreshold:8, noRtsThreshold:7,
     components:[
       {key:'faam_adl',   label:'FAAM-ADL',          max:2, group:'prom'},
       {key:'faam_sport', label:'FAAM-Sport',        max:2, group:'prom'},
@@ -7001,7 +7001,7 @@ function _batImportPatient(){
   if(nom){ el=document.getElementById('bat-pt-nom'); if(el){ el.value=nom; n++; } }
   if(ddn){ el=document.getElementById('bat-pt-ddn'); if(el){ el.value=ddn; n++; } }
   var cote=(bilan['f-cote']||'').trim().toLowerCase();
-  var sideMap={droit:'D', gauche:'G'};
+  var sideMap={droit:'D', gauche:'G', 'bilatéral':'B', bilateral:'B'};
   if(sideMap[cote]){ el=document.getElementById('bat-side'); if(el){ el.value=sideMap[cote]; n++; } }
   _batRecalc();
   _batToast(n ? ('Infos patient associées ('+n+' champ'+(n>1?'s':'')+')') : 'Aucune info patient trouvée — sélectionnez un patient ou remplissez le bilan.');
@@ -7034,6 +7034,8 @@ function openBattery(key){
   function field(l, inner){ return '<div><label style="'+lbl+'">'+l+'</label>'+inner+'</div>'; }
   function numf(id, l, ph){ return field(l, '<input type="number" id="'+id+'" placeholder="'+(ph||'')+'" oninput="_batRecalc()" style="'+inp+'">'); }
   function chkf(id, l){ return '<label style="'+chk+'"><input type="checkbox" id="'+id+'" onchange="_batRecalc()" style="width:15px;height:15px;accent-color:#1A3A5C;"> '+l+'</label>'; }
+  /* checkbox avec parenthétique de côté dynamique : "Pas de sensation d'instabilité (côté <lésé|droit>)" */
+  function chkfSide(id){ return chkf(id, 'Pas de sensation d\'instabilité (côté <span class="bat-lbl-a-lc"></span>)'); }
   function note(txt){ return '<div style="font-size:.72rem;color:#888;line-height:1.5;margin-top:3px;">'+txt+'</div>'; }
   /* carte de test détaillée : consignes + cotation + saisie */
   function tcard(title, max, consignes, cotation, inner){
@@ -7048,8 +7050,8 @@ function openBattery(key){
   var nbare='width:100%;padding:6px 8px;border:1px solid #dde3ec;border-radius:6px;font-size:.84rem;font-family:inherit;color:#1a2433;outline:none;box-sizing:border-box;';
   /* en-tête lésé | sain pour une grille de paires */
   function pairHdr(){ return '<div style="display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:8px;margin-bottom:4px;"><div></div>'
-    + '<div style="font-size:.64rem;font-weight:700;color:#C0392B;text-transform:uppercase;text-align:center;">Lésé</div>'
-    + '<div style="font-size:.64rem;font-weight:700;color:#16794F;text-transform:uppercase;text-align:center;">Sain</div></div>'; }
+    + '<div class="bat-lbl-a" style="font-size:.64rem;font-weight:700;color:#C0392B;text-transform:uppercase;text-align:center;">Lésé</div>'
+    + '<div class="bat-lbl-b" style="font-size:.64rem;font-weight:700;color:#16794F;text-transform:uppercase;text-align:center;">Sain</div></div>'; }
   /* ligne : libellé + input lésé + input sain */
   function pair(idL, idS, label){ return '<div style="display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:8px;align-items:center;margin-bottom:6px;">'
     + '<div style="font-size:.76rem;color:#444;">'+label+'</div>'
@@ -7063,7 +7065,7 @@ function openBattery(key){
     + '<div style="font-size:.74rem;color:#444;">'+label+'</div>'
     + trialCell('bat-sebt-'+dir+'1'+suf) + trialCell('bat-sebt-'+dir+'2'+suf) + trialCell('bat-sebt-'+dir+'3'+suf)
     + '<div style="font-size:.72rem;color:#2B5FA6;font-weight:700;min-width:52px;text-align:right;white-space:nowrap;">moy <span id="bat-sebt-'+dir+'-avg'+suf+'">—</span></div></div>'; }
-  function sideBlock(suf, title, color){ return '<div style="margin-top:8px;font-size:.68rem;font-weight:700;color:'+color+';text-transform:uppercase;letter-spacing:.03em;">'+title+'</div>'
+  function sideBlock(suf, isA){ return '<div style="margin-top:8px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;"><span class="'+(isA?'bat-lbl-a':'bat-lbl-b')+'" style="color:'+(isA?'#C0392B':'#16794F')+';">'+(isA?'Lésé':'Sain')+'</span> — 3 essais par direction</div>'
     + '<div style="display:grid;grid-template-columns:1.1fr 1fr 1fr 1fr auto;gap:5px;font-size:.58rem;color:#aaa;text-transform:uppercase;margin-bottom:2px;"><div></div><div style="text-align:center;">Essai 1</div><div style="text-align:center;">Essai 2</div><div style="text-align:center;">Essai 3</div><div></div></div>'
     + trialRow('ant','ANT (cm)',suf) + trialRow('pm','PM (cm)',suf) + trialRow('pl','PL (cm)',suf); }
 
@@ -7082,11 +7084,11 @@ function openBattery(key){
     + field('Nom', '<input type="text" id="bat-pt-nom" placeholder="Dupont Jean" style="'+inp+'">')
     + field('Date', '<input type="text" id="bat-pt-date" value="'+dstr+'" style="'+inp+'">')
     + field('Né(e) le', '<input type="text" id="bat-pt-ddn" placeholder="jj/mm/aaaa" style="'+inp+'">')
-    + field('Cheville lésée', '<select id="bat-side" onchange="_batRecalc()" style="'+inp+'"><option value="">—</option><option value="D">Droite</option><option value="G">Gauche</option></select>')
+    + field('Cheville lésée', '<select id="bat-side" onchange="_batRecalc()" style="'+inp+'"><option value="">—</option><option value="D">Droite</option><option value="G">Gauche</option><option value="B">Bilatéral (dépistage)</option></select>')
     + '</div>'
 
     + '<div style="'+sec+'">Auto-questionnaires (patient)</div>'
-    + '<div style="font-size:.72rem;color:#888;margin-bottom:8px;line-height:1.5;">Le <b style="color:#C0392B;">côté lésé</b> alimente le score /25. Le <b style="color:#16794F;">côté sain</b> (optionnel) sert de comparaison. Les questionnaires n\'ont pas d\'usage validé sur le côté sain — comparaison indicative uniquement.</div>'
+    + '<div id="bat-side-note" style="font-size:.72rem;color:#888;margin-bottom:8px;line-height:1.5;"></div>'
     + pairHdr()
     + pair('bat-faamadl','bat-faamadl-h','FAAM-ADL (%)')
     + pair('bat-faamsport','bat-faamsport-h','FAAM-Sport (%)')
@@ -7099,24 +7101,24 @@ function openBattery(key){
 
     + '<div style="'+sec+'">Tests fonctionnels (praticien)</div>'
     + tcard('Single Leg Stance (SLS)', 3,
-        'Équilibre unipodal sur surface stable. Pieds nus, genou fléchi ~10°, mains sur les hanches, <b>20 s yeux fermés</b>. Compter les erreurs : mains qui décollent, cuisse &gt;30° de flexion/abduction, avant-pied ou talon qui se lève, sortie de position &gt;5 s, ou ouverture des yeux. Le <b>côté lésé</b> est coté ; le côté sain sert de repère.',
+        'Équilibre unipodal sur surface stable. Pieds nus, genou fléchi ~10°, mains sur les hanches, <b>20 s yeux fermés</b>. Compter les erreurs : mains qui décollent, cuisse &gt;30° de flexion/abduction, avant-pied ou talon qui se lève, sortie de position &gt;5 s, ou ouverture des yeux.',
         '0 err → 2 · 1-3 err → 1 · &gt;3 err → 0 · pas d\'instabilité +1',
-        pairHdr() + pair('bat-sls-err','bat-sls-err-h','Nombre d\'erreurs') + chkf('bat-sls-stable', 'Pas de sensation d\'instabilité (côté lésé)'))
+        pairHdr() + pair('bat-sls-err','bat-sls-err-h','Nombre d\'erreurs') + chkfSide('bat-sls-stable'))
     + tcard('mSEBT — Y-balance', 7,
         'Contrôle postural dynamique. Pieds nus sur le pied testé au centre du « Y ». Atteindre le plus loin possible dans les 3 directions (antérieure, postéro-médiale, postéro-latérale), mains sur les hanches, sans décoller le talon ni perdre l\'équilibre. Moyenne de 3 essais par direction, <b>normalisée à la longueur de jambe</b> (EIAS → malléole médiale). COMP = moyenne des 3 directions.',
         'COMP &gt;95% → 4 · 90-95% → 2 · &lt;90% → 0 · ANT&gt;60% +1 · PM&gt;90% +1 · pas d\'instabilité +1',
         pairHdr() + pair('bat-sebt-leg','bat-sebt-leg-h','Longueur jambe (cm)')
-          + sideBlock('', 'Côté lésé — 3 essais par direction', '#C0392B')
-          + sideBlock('-h', 'Côté sain — 3 essais par direction', '#16794F')
-          + chkf('bat-sebt-stable', 'Pas de sensation d\'instabilité (côté lésé)'))
+          + sideBlock('', true)
+          + sideBlock('-h', false)
+          + chkfSide('bat-sebt-stable'))
     + tcard('Side Hop Test (SHT)', 5,
         'Sauts latéraux-médiaux le plus vite possible : <b>10 allers-retours</b> entre 2 lignes espacées de 30 cm. Le 1<sup>er</sup> saut se fait vers l\'extérieur. Un aller-retour où le patient touche la ligne n\'est pas compté. Chronométrer le temps total.',
         '&lt;10 s → 4 · 10-13 s → 2 · &gt;13 s → 0 · pas d\'instabilité +1',
-        pairHdr() + pair('bat-sht-time','bat-sht-time-h','Temps (s)') + chkf('bat-sht-stable', 'Pas de sensation d\'instabilité (côté lésé)'))
+        pairHdr() + pair('bat-sht-time','bat-sht-time-h','Temps (s)') + chkfSide('bat-sht-stable'))
     + tcard('Figure-of-8 (F8T)', 3,
         'Course en forme de 8 autour de 2 plots espacés de <b>5 m</b>, <b>2 tours complets</b> (20 m au total), le plus vite possible. Chronométrer le temps total.',
         '&lt;13 s → 2 · 13-18 s → 1 · &gt;18 s → 0 · pas d\'instabilité +1',
-        pairHdr() + pair('bat-f8-time','bat-f8-time-h','Temps (s)') + chkf('bat-f8-stable', 'Pas de sensation d\'instabilité (côté lésé)'))
+        pairHdr() + pair('bat-f8-time','bat-f8-time-h','Temps (s)') + chkfSide('bat-f8-stable'))
     + '</div>'
 
     /* ── colonne résultat ── */
@@ -7162,6 +7164,37 @@ function _batColor(p, m, entered){
   return { fg:'#B26B00', bg:'#FCF0DB' };
 }
 
+/* Libellés de latéralité — dynamiques selon la sélection « Cheville » :
+   D/G (une cheville lésée) → colonnes Lésé/Sain ; B (bilatéral, dépistage) → colonnes Droit/Gauche. */
+function _batSideLabels(){
+  var side = (document.getElementById('bat-side')||{}).value || '';
+  if(side === 'B') return { a:'Droit', b:'Gauche', colA:'#2B5FA6', colB:'#7E57C2', bilateral:true };
+  return { a:'Lésé', b:'Sain', colA:'#C0392B', colB:'#16794F', bilateral:false };
+}
+/* Rafraîchit les libellés/couleurs Lésé↔Droit et Sain↔Gauche affichés dans le formulaire
+   (appelé au changement de latéralité et à chaque recalcul, sans reconstruire tout le formulaire). */
+function _batUpdateSideLabels(){
+  var l = _batSideLabels();
+  document.querySelectorAll('.bat-lbl-a').forEach(function(el){ el.textContent = l.a; el.style.color = l.colA; });
+  document.querySelectorAll('.bat-lbl-b').forEach(function(el){ el.textContent = l.b; el.style.color = l.colB; });
+  document.querySelectorAll('.bat-lbl-a-lc').forEach(function(el){ el.textContent = l.a.toLowerCase(); });
+  document.querySelectorAll('.bat-lbl-b-lc').forEach(function(el){ el.textContent = l.b.toLowerCase(); });
+  var note = document.getElementById('bat-side-note');
+  if(note) note.innerHTML = l.bilateral
+    ? 'Dépistage bilatéral — les colonnes <b style="color:'+l.colA+';">'+l.a+'</b> et <b style="color:'+l.colB+';">'+l.b+'</b> comparent les deux chevilles. Le score /25 est calculé sur la colonne <b style="color:'+l.colA+';">'+l.a+'</b>.'
+    : 'Le côté <b style="color:'+l.colA+';">lésé</b> alimente le score /25. Le côté <b style="color:'+l.colB+';">sain</b> (optionnel) sert de comparaison. Les questionnaires n\'ont pas d\'usage validé sur le côté sain — comparaison indicative uniquement.';
+}
+
+/* Zone de score Ankle-GO — 2 seuils prédictifs issus de Picot et al. 2023 (courbe ROC, index de Youden) :
+   ≥8 pts → prédit un retour au sport au niveau pré-blessure (Se 72% / Sp 66%).
+   <7 pts → prédit une absence de retour au sport, tous niveaux (Se 67% / Sp 92%).
+   Entre les deux (7 à <8) : zone intermédiaire, aucun des deux seuils n'est franchi. */
+function _batZone(total, b){
+  if(total >= b.rtsThreshold) return { fg:'#16794F', bg:'#E0F9F3', label:'Zone favorable — prédit un retour au niveau pré-blessure (≥ '+b.rtsThreshold+' pts)' };
+  if(total >= b.noRtsThreshold) return { fg:'#B26B00', bg:'#FCF0DB', label:'Zone intermédiaire — entre les 2 seuils prédictifs ('+b.noRtsThreshold+'-'+b.rtsThreshold+' pts)' };
+  return { fg:'#C0392B', bg:'#FDECEA', label:'Zone à risque — prédit une absence de retour au sport (< '+b.noRtsThreshold+' pts)' };
+}
+
 /* Réponses brutes capturées lors du remplissage des PROMs (pour le profil détaillé) */
 var _batPromAnswers = {};
 
@@ -7194,7 +7227,9 @@ function _batLsiColor(lsi){
 function _batRecalc(){
   var b = BATTERIES[_batCurrentKey]; if(!b) return;
   var v = b.read(); var s = b.score(v);
-  var totEl = document.getElementById('bat-total'); if(totEl) totEl.textContent = s.total;
+  var totEl = document.getElementById('bat-total');
+  if(totEl){ totEl.textContent = s.total; totEl.style.color = _batZone(s.total, b).fg; }
+  _batUpdateSideLabels();
   _batRefreshSebtAvg();
   var res = document.getElementById('bat-result'); if(!res) return;
   res.innerHTML = ((_batView==='radar') ? _batRenderRadar(b, s) : _batRenderBars(b, s))
@@ -7202,22 +7237,24 @@ function _batRecalc(){
 }
 
 /* Section symétrie (LSI) — à l'écran et réutilisée dans le PDF */
+var _BAT_LSI_COLS = '1.3fr .8fr .8fr .7fr';
 function _batRenderLsi(v){
   var r = _batLsi(v);
   if(!r.tests.length && !r.proms.length) return '';
+  var l = _batSideLabels();
   function rows(list, isProm){
     return list.map(function(x){
       var c=_batLsiColor(x.lsi);
       var badge = x.lsi==null ? '<span style="font-size:.72rem;color:#888;">—</span>'
         : '<span style="font-size:.72rem;font-weight:700;background:'+c.bg+';color:'+c.fg+';padding:2px 8px;border-radius:5px;">'+x.lsi+'%</span>';
-      return '<div style="display:grid;grid-template-columns:1.3fr 1fr 1fr auto;gap:8px;align-items:center;padding:4px 0;border-top:1px solid #f0f4f8;font-size:.78rem;">'
-        + '<div>'+x.label+'</div><div style="color:#C0392B;">'+x.inj+'</div><div style="color:#16794F;">'+x.sain+'</div><div style="text-align:right;">'+badge+'</div></div>';
+      return '<div style="display:grid;grid-template-columns:'+_BAT_LSI_COLS+';gap:8px;align-items:center;padding:4px 0;border-top:1px solid #f0f4f8;font-size:.78rem;">'
+        + '<div>'+x.label+'</div><div style="color:'+l.colA+';">'+x.inj+'</div><div style="color:'+l.colB+';">'+x.sain+'</div><div style="text-align:right;">'+badge+'</div></div>';
     }).join('');
   }
   var html = '<div style="margin-top:16px;border-top:1px solid #dde3ec;padding-top:12px;">'
     + '<div style="font-size:.78rem;font-weight:700;color:#1A3A5C;margin-bottom:2px;">Symétrie (LSI)</div>'
     + '<div style="font-size:.68rem;color:#888;margin-bottom:8px;">Complémentaire — n\'entre pas dans le score /25. Seuil usuel ≥ 90 %.</div>'
-    + '<div style="display:grid;grid-template-columns:1.3fr 1fr 1fr auto;gap:8px;font-size:.62rem;font-weight:700;text-transform:uppercase;color:#888;"><div></div><div style="color:#C0392B;">Lésé</div><div style="color:#16794F;">Sain</div><div style="text-align:right;">LSI</div></div>';
+    + '<div style="display:grid;grid-template-columns:'+_BAT_LSI_COLS+';gap:8px;font-size:.62rem;font-weight:700;text-transform:uppercase;color:#888;"><div></div><div style="color:'+l.colA+';">'+l.a+'</div><div style="color:'+l.colB+';">'+l.b+'</div><div style="text-align:right;">LSI</div></div>';
   if(r.tests.length) html += rows(r.tests, false);
   if(r.proms.length) html += '<div style="font-size:.66rem;color:#999;margin-top:8px;font-style:italic;">PROMs — comparaison indicative (usage non validé côté sain)</div>' + rows(r.proms, true);
   return html + '</div>';
@@ -7230,7 +7267,8 @@ function _batRenderProfile(){
     var data = _batPromAnswers[acr]; if(!data) return;
     ['injured','healthy'].forEach(function(side){
       var items = data[side]; if(!items || !items.length) return;
-      var sideLbl = side==='injured' ? 'côté lésé' : 'côté sain';
+      var _sl = _batSideLabels();
+      var sideLbl = 'côté ' + (side==='injured' ? _sl.a.toLowerCase() : _sl.b.toLowerCase());
       var sorted = items.slice().filter(function(x){ return x.val!=='na'; }).sort(function(a,bb){ return a.val - bb.val; });
       var na = items.filter(function(x){ return x.val==='na'; });
       out += '<div style="margin-top:16px;border-top:1px solid #dde3ec;padding-top:12px;">'
@@ -7256,10 +7294,8 @@ function _batProfColor(val, maxVal){
 }
 
 function _batRenderBars(b, s){
-  var rts = b.rtsThreshold;
-  var thr = s.total>=rts
-    ? '<span style="font-size:.7rem;background:#E0F9F3;color:#16794F;padding:2px 8px;border-radius:5px;">au-dessus du seuil RTS ('+rts+')</span>'
-    : '<span style="font-size:.7rem;background:#FCF0DB;color:#B26B00;padding:2px 8px;border-radius:5px;">sous le seuil RTS ('+rts+')</span>';
+  var z = _batZone(s.total, b);
+  var thr = '<span style="font-size:.7rem;background:'+z.bg+';color:'+z.fg+';padding:2px 8px;border-radius:5px;">'+z.label+'</span>';
   var rows = b.components.map(function(c){
     var p = s.pts[c.key], m = c.max, ent = s.entered[c.key], raw = s.raw[c.key];
     var col = _batColor(p, m, ent); var pct = Math.round(p/m*100);
@@ -7333,7 +7369,7 @@ function _batCapturePromScore(acronym){
     _batAwaitingProm = null;
     if(typeof closePromModal === 'function') closePromModal();
     _batRecalc();
-    _batToast('ALR-RSI ('+(isInj?'lésé':'sain')+') : '+sc+' %');
+    _batToast('ALR-RSI ('+(isInj?_batSideLabels().a.toLowerCase():_batSideLabels().b.toLowerCase())+') : '+sc+' %');
   } else if(acronym === 'FAAM'){
     var adl = _faamSub('faamadl',21,2), sport = _faamSub('faamsport',8,1);
     if(adl.pct==null || sport.pct==null) return; // sous-échelle incomplète
@@ -7343,7 +7379,7 @@ function _batCapturePromScore(acronym){
     _batAwaitingProm = null;
     if(typeof closePromModal === 'function') closePromModal();
     _batRecalc();
-    _batToast('FAAM ('+(isInj?'lésé':'sain')+') : AVQ '+adl.pct+' % · Sport '+sport.pct+' %');
+    _batToast('FAAM ('+(isInj?_batSideLabels().a.toLowerCase():_batSideLabels().b.toLowerCase())+') : AVQ '+adl.pct+' % · Sport '+sport.pct+' %');
   }
 }
 
@@ -7362,14 +7398,15 @@ function _batExportPdf(){
   var nom = (document.getElementById('bat-pt-nom')||{}).value||'';
   var ddn = (document.getElementById('bat-pt-ddn')||{}).value||'';
   var date = (document.getElementById('bat-pt-date')||{}).value||'';
-  var side = v.side==='D'?'Droite':(v.side==='G'?'Gauche':'—');
+  var side = v.side==='D'?'Droite':(v.side==='G'?'Gauche':(v.side==='B'?'Bilatéral':'—'));
   var initials = nom ? nom.split(/\s+/).map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase() : '?';
   var rows = b.components.map(function(c){
     var p=s.pts[c.key], col=_batColor(p,c.max,s.entered[c.key]);
     return '<tr><td>'+_batEsc(c.label)+'</td><td style="color:#888">'+_batEsc(s.raw[c.key])+'</td>'
       + '<td style="text-align:right"><b style="background:'+col.bg+';color:'+col.fg+';padding:2px 9px;border-radius:5px;">'+p+' / '+c.max+'</b></td></tr>';
   }).join('');
-  var thrTxt = s.total>=b.rtsThreshold ? 'Au-dessus du seuil prédictif de retour au sport ('+b.rtsThreshold+' pts).' : 'Sous le seuil prédictif de retour au sport ('+b.rtsThreshold+' pts).';
+  var z = _batZone(s.total, b);
+  var thrTxt = '<span style="color:'+z.fg+';font-weight:700;">'+z.label+'</span>';
   var css='*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,Helvetica Neue,Arial,sans-serif;color:#1A1917;background:#F0F4F8;padding:0 0 50px}'
     +'.wrap{max-width:800px;margin:0 auto}.hd{background:#1A3A5C;color:#fff;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}'
     +'.hd h1{font-size:1.3rem}.hd .s{font-size:.72rem;opacity:.8}.pt{background:#fff;padding:16px 24px;border-bottom:1px solid #dde3ec;display:flex;align-items:center;gap:14px}'
@@ -7383,7 +7420,7 @@ function _batExportPdf(){
     +'<div class="hd"><div><h1>'+_batEsc(b.name)+'</h1><div class="s">'+_batEsc(b.full)+'</div></div><div class="s">'+_batEsc(b.source)+'</div></div>'
     +(nom?'<div class="pt"><div class="av">'+_batEsc(initials)+'</div><div><div class="pn">'+_batEsc(nom)+'</div><div style="font-size:.75rem;color:#888;margin-top:2px;">'
       +(ddn?'Né(e) le '+_batEsc(ddn)+' · ':'')+(date?_batEsc(date)+' · ':'')+'Cheville '+_batEsc(side)+'</div></div></div>':'')
-    +'<div class="bd"><div class="big">'+s.total+' <span style="font-size:1rem;color:#888;font-weight:400">/ 25 points</span></div>'
+    +'<div class="bd"><div class="big" style="color:'+z.fg+';">'+s.total+' <span style="font-size:1rem;color:#888;font-weight:400">/ 25 points</span></div>'
     +'<div class="thr">'+thrTxt+'</div>'
     +(_batView==='radar'
         ? '<div style="margin:6px 0 18px;">'+_batRenderRadar(b,s)+'</div>'
