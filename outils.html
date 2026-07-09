@@ -6909,7 +6909,7 @@ var BATTERIES = {
     name:'Ankle-GO',
     full:'Retour au sport après entorse latérale de cheville',
     source:'Picot et al., Sports Health 2023 · niveau 2',
-    max:25, rtsThreshold:8, noRtsThreshold:7,
+    max:25, rtsThreshold:8, noRtsThreshold:7, controlThreshold:19.6,
     components:[
       {key:'faam_adl',   label:'FAAM-ADL',          max:2, group:'prom'},
       {key:'faam_sport', label:'FAAM-Sport',        max:2, group:'prom'},
@@ -7003,6 +7003,8 @@ function _batImportPatient(){
   var cote=(bilan['f-cote']||'').trim().toLowerCase();
   var sideMap={droit:'D', gauche:'G', 'bilatéral':'B', bilateral:'B'};
   if(sideMap[cote]){ el=document.getElementById('bat-side'); if(el){ el.value=sideMap[cote]; n++; } }
+  var injury=_batFmtDate(bilan['f-date-accident']||bilan['f-date-op']||'');
+  if(injury){ el=document.getElementById('bat-injury-date'); if(el){ el.value=injury; n++; } }
   _batRecalc();
   _batToast(n ? ('Infos patient associées ('+n+' champ'+(n>1?'s':'')+')') : 'Aucune info patient trouvée — sélectionnez un patient ou remplissez le bilan.');
 }
@@ -7082,10 +7084,12 @@ function openBattery(key){
     + '<button onclick="_batImportPatient()" style="background:#EBF3FF;border:1px solid #b7d3f2;color:#2B5FA6;border-radius:6px;padding:4px 10px;font-size:.7rem;font-weight:600;cursor:pointer;font-family:inherit;text-transform:none;letter-spacing:0;">⤓ Associer les infos patient</button></div>'
     + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
     + field('Nom', '<input type="text" id="bat-pt-nom" placeholder="Dupont Jean" style="'+inp+'">')
-    + field('Date', '<input type="text" id="bat-pt-date" value="'+dstr+'" style="'+inp+'">')
+    + field('Date', '<input type="text" id="bat-pt-date" oninput="_batRecalc()" value="'+dstr+'" style="'+inp+'">')
     + field('Né(e) le', '<input type="text" id="bat-pt-ddn" placeholder="jj/mm/aaaa" style="'+inp+'">')
     + field('Cheville lésée', '<select id="bat-side" onchange="_batRecalc()" style="'+inp+'"><option value="">—</option><option value="D">Droite</option><option value="G">Gauche</option><option value="B">Bilatéral (dépistage)</option></select>')
+    + field('Date de la blessure', '<input type="text" id="bat-injury-date" oninput="_batRecalc()" placeholder="jj/mm/aaaa" style="'+inp+'">')
     + '</div>'
+    + '<div id="bat-injury-info" style="font-size:.7rem;color:#888;margin-top:4px;"></div>'
 
     + '<div style="'+sec+'">Auto-questionnaires (patient)</div>'
     + '<div id="bat-side-note" style="font-size:.72rem;color:#888;margin-bottom:8px;line-height:1.5;"></div>'
@@ -7185,14 +7189,44 @@ function _batUpdateSideLabels(){
     : 'Le côté <b style="color:'+l.colA+';">lésé</b> alimente le score /25. Le côté <b style="color:'+l.colB+';">sain</b> (optionnel) sert de comparaison. Les questionnaires n\'ont pas d\'usage validé sur le côté sain — comparaison indicative uniquement.';
 }
 
-/* Zone de score Ankle-GO — 2 seuils prédictifs issus de Picot et al. 2023 (courbe ROC, index de Youden) :
-   ≥8 pts → prédit un retour au sport au niveau pré-blessure (Se 72% / Sp 66%).
-   <7 pts → prédit une absence de retour au sport, tous niveaux (Se 67% / Sp 92%).
-   Entre les deux (7 à <8) : zone intermédiaire, aucun des deux seuils n'est franchi. */
-function _batZone(total, b){
-  if(total >= b.rtsThreshold) return { fg:'#16794F', bg:'#E0F9F3', label:'Zone favorable — prédit un retour au niveau pré-blessure (≥ '+b.rtsThreshold+' pts)' };
-  if(total >= b.noRtsThreshold) return { fg:'#B26B00', bg:'#FCF0DB', label:'Zone intermédiaire — entre les 2 seuils prédictifs ('+b.noRtsThreshold+'-'+b.rtsThreshold+' pts)' };
-  return { fg:'#C0392B', bg:'#FDECEA', label:'Zone à risque — prédit une absence de retour au sport (< '+b.noRtsThreshold+' pts)' };
+/* Parse une date jj/mm/aaaa (ou aaaa-mm-jj) en objet Date, sinon null. */
+function _batParseDate(s){
+  s = String(s||'').trim(); if(!s) return null;
+  var m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m){ var d=new Date(parseInt(m[3],10), parseInt(m[2],10)-1, parseInt(m[1],10)); return isNaN(d.getTime())?null:d; }
+  m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m){ var d2=new Date(parseInt(m[1],10), parseInt(m[2],10)-1, parseInt(m[3],10)); return isNaN(d2.getTime())?null:d2; }
+  return null;
+}
+/* Délai (en mois) entre la date de blessure et la date du test. null si l'une des deux dates manque. */
+function _batMonthsSinceInjury(){
+  var inj = _batParseDate((document.getElementById('bat-injury-date')||{}).value);
+  if(!inj) return null;
+  var test = _batParseDate((document.getElementById('bat-pt-date')||{}).value) || new Date();
+  return (test - inj) / 86400000 / 30.44;
+}
+function _batUpdateInjuryInfo(months){
+  var el = document.getElementById('bat-injury-info'); if(!el) return;
+  el.textContent = (months==null)
+    ? 'Délai depuis la blessure non renseigné — les seuils précoces (≤ 2 mois) ne peuvent pas être appliqués.'
+    : 'Délai depuis la blessure : '+(Math.round(months*10)/10)+' mois.';
+}
+
+/* Zone de score Ankle-GO — depend du delai depuis la blessure (Picot et al. 2023) :
+   - Score >= 19.6 (moyenne du groupe controle, sujets sains) → toujours valide, quelle que soit la date.
+   - A 2 mois ou moins post-blessure : seuils predictifs ROC/Youden valides a cette echeance —
+     >=8 pts predit un retour au niveau pre-blessure (Se 72%/Sp 66%), <7 pts predit une absence
+     de retour au sport (Se 67%/Sp 92%), entre les deux = zone intermediaire.
+   - Au-dela de 2 mois (ou delai inconnu) et score <19.6 : aucun seuil publie a ce stade —
+     orange tant que le niveau des sujets sains n'est pas atteint. */
+function _batZone(total, b, months){
+  if(total >= b.controlThreshold) return { fg:'#16794F', bg:'#E0F9F3', label:'Ankle-GO validé — au niveau des sujets sains (≥ '+b.controlThreshold+' pts)' };
+  if(months != null && months <= 2){
+    if(total >= b.rtsThreshold) return { fg:'#16794F', bg:'#E0F9F3', label:'Zone favorable à 2 mois — prédit un retour au niveau pré-blessure (≥ '+b.rtsThreshold+' pts)' };
+    if(total >= b.noRtsThreshold) return { fg:'#B26B00', bg:'#FCF0DB', label:'Zone intermédiaire à 2 mois — entre les 2 seuils prédictifs ('+b.noRtsThreshold+'-'+b.rtsThreshold+' pts)' };
+    return { fg:'#C0392B', bg:'#FDECEA', label:'Zone à risque à 2 mois — prédit une absence de retour au sport (< '+b.noRtsThreshold+' pts)' };
+  }
+  return { fg:'#B26B00', bg:'#FCF0DB', label:'En progression — score cible (sujets sains) : ≥ '+b.controlThreshold+' pts'+(months==null?' · délai depuis la blessure inconnu':'') };
 }
 
 /* Réponses brutes capturées lors du remplissage des PROMs (pour le profil détaillé) */
@@ -7227,12 +7261,14 @@ function _batLsiColor(lsi){
 function _batRecalc(){
   var b = BATTERIES[_batCurrentKey]; if(!b) return;
   var v = b.read(); var s = b.score(v);
+  var months = _batMonthsSinceInjury();
   var totEl = document.getElementById('bat-total');
-  if(totEl){ totEl.textContent = s.total; totEl.style.color = _batZone(s.total, b).fg; }
+  if(totEl){ totEl.textContent = s.total; totEl.style.color = _batZone(s.total, b, months).fg; }
+  _batUpdateInjuryInfo(months);
   _batUpdateSideLabels();
   _batRefreshSebtAvg();
   var res = document.getElementById('bat-result'); if(!res) return;
-  res.innerHTML = ((_batView==='radar') ? _batRenderRadar(b, s) : _batRenderBars(b, s))
+  res.innerHTML = ((_batView==='radar') ? _batRenderRadar(b, s) : _batRenderBars(b, s, months))
     + _batRenderLsi(v) + _batRenderProfile();
 }
 
@@ -7293,8 +7329,8 @@ function _batProfColor(val, maxVal){
   return {fg:'#C0392B',bg:'#FDECEA'};
 }
 
-function _batRenderBars(b, s){
-  var z = _batZone(s.total, b);
+function _batRenderBars(b, s, months){
+  var z = _batZone(s.total, b, months);
   var thr = '<span style="font-size:.7rem;background:'+z.bg+';color:'+z.fg+';padding:2px 8px;border-radius:5px;">'+z.label+'</span>';
   var rows = b.components.map(function(c){
     var p = s.pts[c.key], m = c.max, ent = s.entered[c.key], raw = s.raw[c.key];
@@ -7405,8 +7441,10 @@ function _batExportPdf(){
     return '<tr><td>'+_batEsc(c.label)+'</td><td style="color:#888">'+_batEsc(s.raw[c.key])+'</td>'
       + '<td style="text-align:right"><b style="background:'+col.bg+';color:'+col.fg+';padding:2px 9px;border-radius:5px;">'+p+' / '+c.max+'</b></td></tr>';
   }).join('');
-  var z = _batZone(s.total, b);
-  var thrTxt = '<span style="color:'+z.fg+';font-weight:700;">'+z.label+'</span>';
+  var months = _batMonthsSinceInjury();
+  var z = _batZone(s.total, b, months);
+  var thrTxt = '<span style="color:'+z.fg+';font-weight:700;">'+z.label+'</span>'
+    + (months!=null ? '<div style="font-size:.72rem;color:#888;margin-top:2px;">Délai depuis la blessure : '+(Math.round(months*10)/10)+' mois</div>' : '');
   var css='*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,Helvetica Neue,Arial,sans-serif;color:#1A1917;background:#F0F4F8;padding:0 0 50px}'
     +'.wrap{max-width:800px;margin:0 auto}.hd{background:#1A3A5C;color:#fff;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}'
     +'.hd h1{font-size:1.3rem}.hd .s{font-size:.72rem;opacity:.8}.pt{background:#fff;padding:16px 24px;border-bottom:1px solid #dde3ec;display:flex;align-items:center;gap:14px}'
@@ -7425,7 +7463,7 @@ function _batExportPdf(){
     +(_batView==='radar'
         ? '<div style="margin:6px 0 18px;">'+_batRenderRadar(b,s)+'</div>'
           +'<table><thead><tr><th style="text-align:left;font-size:.7rem;color:#888;text-transform:uppercase;">Composant</th><th style="text-align:left;font-size:.7rem;color:#888;">Valeur</th><th style="text-align:right;font-size:.7rem;color:#888;">Points</th></tr></thead><tbody>'+rows+'</tbody></table>'
-        : '<div style="margin:6px 0 4px;">'+_batRenderBars(b,s)+'</div>')
+        : '<div style="margin:6px 0 4px;">'+_batRenderBars(b,s,months)+'</div>')
     +_batRenderLsi(v)
     +_batRenderProfile()
     +'</div><div class="ft">Rapport généré par Rehab4Perf · '+_batEsc(date||'')+' · Cotation : '+_batEsc(b.source)+'</div></div></body></html>';
