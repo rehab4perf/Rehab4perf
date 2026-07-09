@@ -6925,6 +6925,17 @@ function openBattery(key){
   function field(l, inner){ return '<div><label style="'+lbl+'">'+l+'</label>'+inner+'</div>'; }
   function numf(id, l, ph){ return field(l, '<input type="number" id="'+id+'" placeholder="'+(ph||'')+'" oninput="_batRecalc()" style="'+inp+'">'); }
   function chkf(id, l){ return '<label style="'+chk+'"><input type="checkbox" id="'+id+'" onchange="_batRecalc()" style="width:15px;height:15px;accent-color:#1A3A5C;"> '+l+'</label>'; }
+  function note(txt){ return '<div style="font-size:.72rem;color:#888;line-height:1.5;margin-top:3px;">'+txt+'</div>'; }
+  /* carte de test détaillée : consignes + cotation + saisie */
+  function tcard(title, max, consignes, cotation, inner){
+    return '<div style="border:1px solid #dde3ec;border-radius:9px;padding:12px 14px;margin-bottom:10px;background:#fff;">'
+      + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'
+      + '<span style="font-size:.88rem;font-weight:700;color:#1A3A5C;">'+title+'</span>'
+      + '<span style="font-size:.66rem;font-weight:700;color:#5F5E5A;background:#F1EFE8;padding:2px 7px;border-radius:4px;">max '+max+' pt'+(max>1?'s':'')+'</span></div>'
+      + '<div style="font-size:.75rem;color:#555;line-height:1.55;margin-bottom:6px;">'+consignes+'</div>'
+      + '<div style="font-size:.72rem;color:#2B5FA6;background:#F5F8FF;border-radius:6px;padding:6px 9px;line-height:1.6;margin-bottom:10px;"><b>Cotation :</b> '+cotation+'</div>'
+      + inner + '</div>';
+  }
 
   var html =
     '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">'
@@ -6945,25 +6956,34 @@ function openBattery(key){
 
     + '<div style="'+sec+'">Auto-questionnaires (patient)</div>'
     + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
-    + numf('bat-faamadl', 'FAAM-ADL (%)', '0–100')
-    + numf('bat-faamsport', 'FAAM-Sport (%)', '0–100')
+    + (numf('bat-faamadl', 'FAAM-ADL (%)', '0–100')+note('Fonction vie quotidienne (21 items). &lt;90 → 0 · 90-95 → 1 · &gt;95 → 2'))
+    + (numf('bat-faamsport', 'FAAM-Sport (%)', '0–100')+note('Fonction sportive (8 items). &lt;80 → 0 · 80-95 → 1 · &gt;95 → 2'))
     + '</div>'
-    + '<div style="display:flex;gap:10px;align-items:flex-end;margin-top:10px;">'
-    + '<div style="flex:1;">'+numf('bat-alrrsi', 'ALR-RSI (%)', '0–100')+'</div>'
-    + '<button onclick="_batFillAlrRsi()" style="background:#EBF3FF;border:1px solid #b7d3f2;color:#2B5FA6;border-radius:6px;padding:7px 11px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;">Remplir l\'ALR-RSI</button>'
+    + '<div style="display:flex;gap:10px;align-items:flex-start;margin-top:10px;">'
+    + '<div style="flex:1;">'+numf('bat-alrrsi', 'ALR-RSI (%)', '0–100')+note('Disponibilité psychologique RTS (12 items). &lt;55 → 0 · 55-63 → 1 · 63-76 → 2 · &gt;76 → 3')+'</div>'
+    + '<button onclick="_batFillAlrRsi()" style="background:#EBF3FF;border:1px solid #b7d3f2;color:#2B5FA6;border-radius:6px;padding:7px 11px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;margin-top:19px;">Remplir l\'ALR-RSI</button>'
     + '</div>'
 
     + '<div style="'+sec+'">Tests fonctionnels (praticien) — côté lésé</div>'
-    + numf('bat-sls-err', 'Single Leg Stance — nombre d\'erreurs', 'ex : 2') + chkf('bat-sls-stable', 'Pas de sensation d\'instabilité')
-    + '<div style="margin-top:14px;font-size:.74rem;font-weight:700;color:#555;">mSEBT — normalisé à la longueur de jambe</div>'
-    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px;">'
-    + numf('bat-sebt-leg', 'Longueur jambe (cm)', 'EIAS→malléole') + numf('bat-sebt-ant', 'ANT (cm)', '')
-    + numf('bat-sebt-pm', 'PM (cm)', '') + numf('bat-sebt-pl', 'PL (cm)', '')
-    + '</div>' + chkf('bat-sebt-stable', 'Pas de sensation d\'instabilité')
-    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;">'
-    + numf('bat-sht-time', 'Side Hop (s)', 'ex : 11') + numf('bat-f8-time', 'Figure-of-8 (s)', 'ex : 9')
-    + '</div>'
-    + '<div style="display:flex;gap:18px;">' + chkf('bat-sht-stable', 'SHT — pas d\'instabilité') + chkf('bat-f8-stable', 'F8T — pas d\'instabilité') + '</div>'
+    + tcard('Single Leg Stance (SLS)', 3,
+        'Équilibre unipodal sur surface stable. Pieds nus, jambe lésée, genou fléchi ~10°, mains sur les hanches, <b>20 s yeux fermés</b>. Compter les erreurs : mains qui décollent, cuisse &gt;30° de flexion/abduction, avant-pied ou talon qui se lève, sortie de position &gt;5 s, ou ouverture des yeux.',
+        '0 err → 2 · 1-3 err → 1 · &gt;3 err → 0 · pas d\'instabilité +1',
+        numf('bat-sls-err', 'Nombre d\'erreurs (jambe lésée)', 'ex : 2') + chkf('bat-sls-stable', 'Pas de sensation d\'instabilité'))
+    + tcard('mSEBT — Y-balance', 7,
+        'Contrôle postural dynamique. Pieds nus sur la jambe lésée au centre du « Y ». Atteindre le plus loin possible dans les 3 directions (antérieure, postéro-médiale, postéro-latérale), mains sur les hanches, sans décoller le talon ni perdre l\'équilibre. Moyenne de 3 essais par direction, <b>normalisée à la longueur de jambe</b> (EIAS → malléole médiale). COMP = moyenne des 3 directions.',
+        'COMP &gt;95% → 4 · 90-95% → 2 · &lt;90% → 0 · ANT&gt;60% +1 · PM&gt;90% +1 · pas d\'instabilité +1',
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
+          + numf('bat-sebt-leg', 'Longueur jambe (cm)', 'EIAS→malléole') + numf('bat-sebt-ant', 'ANT (cm)', '')
+          + numf('bat-sebt-pm', 'PM (cm)', '') + numf('bat-sebt-pl', 'PL (cm)', '')
+          + '</div>' + chkf('bat-sebt-stable', 'Pas de sensation d\'instabilité'))
+    + tcard('Side Hop Test (SHT)', 5,
+        'Sauts latéraux-médiaux le plus vite possible : <b>10 allers-retours</b> entre 2 lignes espacées de 30 cm. Le 1<sup>er</sup> saut se fait vers l\'extérieur. Un aller-retour où le patient touche la ligne n\'est pas compté. Chronométrer le temps total.',
+        '&lt;10 s → 4 · 10-13 s → 2 · &gt;13 s → 0 · pas d\'instabilité +1',
+        numf('bat-sht-time', 'Temps (s)', 'ex : 11') + chkf('bat-sht-stable', 'Pas de sensation d\'instabilité'))
+    + tcard('Figure-of-8 (F8T)', 3,
+        'Course en forme de 8 autour de 2 plots espacés de <b>5 m</b>, <b>2 tours complets</b> (20 m au total), le plus vite possible. Chronométrer le temps total.',
+        '&lt;13 s → 2 · 13-18 s → 1 · &gt;18 s → 0 · pas d\'instabilité +1',
+        numf('bat-f8-time', 'Temps (s)', 'ex : 9') + chkf('bat-f8-stable', 'Pas de sensation d\'instabilité'))
     + '</div>'
 
     /* ── colonne résultat ── */
@@ -7109,6 +7129,7 @@ function _batExportPdf(){
       +(ddn?'Né(e) le '+_batEsc(ddn)+' · ':'')+(date?_batEsc(date)+' · ':'')+'Cheville '+_batEsc(side)+'</div></div></div>':'')
     +'<div class="bd"><div class="big">'+s.total+' <span style="font-size:1rem;color:#888;font-weight:400">/ 25 points</span></div>'
     +'<div class="thr">'+thrTxt+'</div>'
+    +'<div style="margin:6px 0 18px;">'+(_batView==='radar'?_batRenderRadar(b,s):_batRenderBars(b,s))+'</div>'
     +'<table><thead><tr><th style="text-align:left;font-size:.7rem;color:#888;text-transform:uppercase;">Composant</th><th style="text-align:left;font-size:.7rem;color:#888;">Valeur</th><th style="text-align:right;font-size:.7rem;color:#888;">Points</th></tr></thead><tbody>'+rows+'</tbody></table>'
     +'</div><div class="ft">Rapport généré par Rehab4Perf · '+_batEsc(date||'')+' · Cotation : '+_batEsc(b.source)+'</div></div></body></html>';
   var patSlug = (nom.split(/\s+/)[0]||'patient'); var dateSlug=(date||'').replace(/\//g,'-');
