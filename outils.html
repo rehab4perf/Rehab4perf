@@ -1541,7 +1541,7 @@ var PROMS_DATA = [
   {acronym:"iHOT-12",name:"iHOT Short Form",cat:"Hanche",path:["FAI","Sportif"],items:12,scale:"0–100",free:true,fr:false,note:"Version courte iHOT, usage pratique.",rts:true,available:false},
   {acronym:"HHS",name:"Harris Hip Score",cat:"Hanche",path:["PTH","Chirurgie"],items:10,scale:"0–100",free:true,fr:false,note:"Historique, très utilisé post-PTH.",rts:false,available:false},
   {acronym:"NAHS",name:"Non-Arthritic Hip Score",cat:"Hanche",path:["FAI","Labrum","Jeune actif"],items:20,scale:"0–100",free:true,fr:false,note:"Patients jeunes et actifs sans arthrose.",rts:false,available:false},
-  {acronym:"FAAM",name:"Foot and Ankle Ability Measure",cat:"Cheville/Pied",path:["Entorse","Instabilité","Chirurgie"],items:29,scale:"0–100 (↑=mieux)",free:true,fr:false,note:"Référence cheville. Sous-score AVQ + sport.",rts:true,available:false},
+  {acronym:"FAAM",name:"Foot and Ankle Ability Measure",cat:"Cheville/Pied",path:["Entorse","Instabilité","Chirurgie"],items:29,scale:"0–100 / 2 sous-scores (↑=mieux)",free:true,fr:true,note:"Référence cheville. Sous-échelle AVQ (21) + Sport (8). Composant de l'Ankle-GO.",rts:true,available:true},
   {acronym:"FAOS",name:"Foot and Ankle Outcome Score",cat:"Cheville/Pied",path:["Entorse","OA","Tendinopathie"],items:42,scale:"0–100 / 5 sous-scores",free:true,fr:true,note:"Analogue KOOS/HOOS pour la cheville.",rts:false,available:false},
   {acronym:"CAIT",name:"Cumberland Ankle Instability Tool",cat:"Cheville/Pied",path:["Instabilité chronique"],items:9,scale:"0–30 (↑=mieux)",free:true,fr:true,note:"Dépistage instabilité chronique cheville. Seuil ≤27.",rts:false,available:true},
   {acronym:"VISA-A",name:"Victorian Institute of Sport Assessment — Achilles",cat:"Cheville/Pied",path:["Tendinopathie Achille"],items:8,scale:"0–100 (↑=mieux)",free:true,fr:true,note:"Gold standard tendinopathie achilléenne.",rts:true,available:true},
@@ -3109,6 +3109,71 @@ PROMS_QUESTIONNAIRES['ATRS'] = {
     var col=t>=70?'#2D6A4F':t>=40?'#D4600A':'#C0392B';
     return '<div>Score ATRS : <strong style="font-size:1.2rem;color:'+col+'">'+t+' / 100</strong> — <span style="color:'+col+';font-weight:700;">'+(t>=70?'Bonne récupération':t>=40?'Récupération partielle':'Récupération limitée')+'</span></div>'
       +'<div style="font-size:.78rem;color:#666;margin-top:4px;">↑=mieux. Seuil RTS recommandé ≥ 70/100.</div>';
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   FAAM — Foot and Ankle Ability Measure (version FR, Borloz 2011)
+   2 sous-échelles : AVQ (21 items) + Sport (8 items).
+   Likert 4→0 (4=aucune difficulté … 0=incapable) ; N/A exclu du calcul.
+   Score % = somme / (nb répondus × 4) × 100.
+   Validité : AVQ ≥19/21 répondus, Sport ≥7/8.
+═══════════════════════════════════════════════════════════════ */
+var _FAAM_ADL = [
+  'Se tenir debout','Marcher sur un terrain régulier','Marcher pied nu sur un terrain régulier',
+  'Monter une pente','Descendre une pente','Monter les escaliers','Descendre les escaliers',
+  'Marcher sur un terrain irrégulier','Monter et descendre d\'un trottoir','S\'accroupir',
+  'Se mettre sur la pointe des pieds','Faire les premiers pas (le matin au réveil / après une position assise prolongée)',
+  'Marcher 5 minutes ou moins','Marcher environ 10 minutes','Marcher 15 minutes ou plus',
+  'Les tâches ménagères','Les activités de la vie quotidienne','Les soins personnels',
+  'Un travail lourd (pousser / tirer, grimper, porter)','Un travail léger à modéré (se tenir debout, marcher)','Les activités de loisirs'
+];
+var _FAAM_SPORT = [
+  'Courir','Sauter','Se réceptionner d\'un saut','Démarrer et s\'arrêter rapidement',
+  'Faire des pas chassés / des déplacements latéraux','Activités sportives à faible impact (peu de chocs)',
+  'Capacité à exécuter votre activité sportive avec votre technique habituelle',
+  'Capacité à pratiquer votre sport aussi longtemps que vous le souhaitez'
+];
+/* Calcule un sous-score FAAM. Retourne {pct} si valide, sinon {incomplete:[...]} ou {tooManyNA:true}. */
+function _faamSub(prefix, n, maxNA){
+  var sum=0, vals=0, na=0, blank=[];
+  for(var i=1;i<=n;i++){
+    var el=document.querySelector('input[name="'+prefix+i+'"]:checked');
+    if(!el){ blank.push('Q'+i); }
+    else if(el.value==='na'){ na++; }
+    else { sum+=parseFloat(el.value); vals++; }
+  }
+  if(blank.length) return {incomplete:blank};
+  if(na>maxNA || vals===0) return {tooManyNA:true, na:na};
+  return {pct:Math.round(sum/(vals*4)*100), sum:sum, vals:vals, na:na};
+}
+function _faamRowsHtml(prefix, items){
+  var opts=[[4,'Aucune'],[3,'Légère'],[2,'Modérée'],[1,'Sévère'],[0,'Incapable'],['na','N/A']];
+  var h='';
+  items.forEach(function(lbl,idx){
+    h+='<div class="prom-q"><div class="prom-q-text">'+lbl+'</div><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;">';
+    opts.forEach(function(o){
+      h+='<label style="display:inline-flex;align-items:center;gap:4px;font-size:.72rem;border:1px solid #dde3ec;border-radius:5px;padding:3px 8px;cursor:pointer;color:#444;"><input type="radio" name="'+prefix+(idx+1)+'" value="'+o[0]+'" style="accent-color:#1A3A5C;">'+o[1]+'</label>';
+    });
+    h+='</div></div>';
+  });
+  return h;
+}
+PROMS_QUESTIONNAIRES['FAAM'] = {
+  html: '<div class="prom-intro">Répondez à chaque item selon la difficulté ressentie au cours de la <b>semaine passée</b>, en raison de votre pied ou de votre cheville. Si l\'activité est limitée par autre chose, cochez <b>N/A</b>.</div>'
+    + '<div class="prom-section-label">Sous-échelle Vie quotidienne (AVQ) — 21 items</div>'
+    + _faamRowsHtml('faamadl', _FAAM_ADL)
+    + '<div class="prom-section-label">Sous-échelle Sport — 8 items</div>'
+    + _faamRowsHtml('faamsport', _FAAM_SPORT),
+  score: function(){
+    function line(label, r, maxNA){
+      if(r.incomplete) return '<div style="color:#C0392B;">'+label+' : incomplet ('+r.incomplete.length+' item'+(r.incomplete.length>1?'s':'')+' sans réponse)</div>';
+      if(r.tooManyNA) return '<div style="color:#C0392B;">'+label+' : trop de N/A ('+r.na+') — sous-score non calculable (max '+maxNA+').</div>';
+      return '<div>'+label+' : <strong style="font-size:1.1rem;color:#1A3A5C;">'+r.pct+' %</strong> <span style="color:#888;font-size:.8rem;">('+r.sum+'/'+(r.vals*4)+(r.na?' · '+r.na+' N/A':'')+')</span></div>';
+    }
+    var adl=_faamSub('faamadl',21,2), sport=_faamSub('faamsport',8,1);
+    return line('FAAM-AVQ', adl, 2) + '<div style="height:6px;"></div>' + line('FAAM-Sport', sport, 1)
+      + '<div style="font-size:.78rem;color:#666;margin-top:8px;">Score = somme / (items répondus × 4) × 100. AVQ valide si ≥19/21, Sport si ≥7/8.</div>';
   }
 };
 
@@ -6959,6 +7024,7 @@ function openBattery(key){
     + (numf('bat-faamadl', 'FAAM-ADL (%)', '0–100')+note('Fonction vie quotidienne (21 items). &lt;90 → 0 · 90-95 → 1 · &gt;95 → 2'))
     + (numf('bat-faamsport', 'FAAM-Sport (%)', '0–100')+note('Fonction sportive (8 items). &lt;80 → 0 · 80-95 → 1 · &gt;95 → 2'))
     + '</div>'
+    + '<button onclick="_batFillFaam()" style="margin-top:8px;background:#EBF3FF;border:1px solid #b7d3f2;color:#2B5FA6;border-radius:6px;padding:7px 11px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:inherit;">Remplir le FAAM (AVQ + Sport)</button>'
     + '<div style="display:flex;gap:10px;align-items:flex-start;margin-top:10px;">'
     + '<div style="flex:1;">'+numf('bat-alrrsi', 'ALR-RSI (%)', '0–100')+note('Disponibilité psychologique RTS (12 items). &lt;55 → 0 · 55-63 → 1 · 63-76 → 2 · &gt;76 → 3')+'</div>'
     + '<button onclick="_batFillAlrRsi()" style="background:#EBF3FF;border:1px solid #b7d3f2;color:#2B5FA6;border-radius:6px;padding:7px 11px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;margin-top:19px;">Remplir l\'ALR-RSI</button>'
@@ -7078,6 +7144,10 @@ function _batFillAlrRsi(){
   _batAwaitingProm = 'ALR-RSI';
   if(typeof openPromCard === 'function') openPromCard('ALR-RSI');
 }
+function _batFillFaam(){
+  _batAwaitingProm = 'FAAM';
+  if(typeof openPromCard === 'function') openPromCard('FAAM');
+}
 function _batCapturePromScore(acronym){
   if(_batAwaitingProm !== acronym) return;
   if(acronym === 'ALR-RSI'){
@@ -7088,6 +7158,15 @@ function _batCapturePromScore(acronym){
     if(typeof closePromModal === 'function') closePromModal();
     _batRecalc();
     _batToast('ALR-RSI récupéré : '+sc+' %');
+  } else if(acronym === 'FAAM'){
+    var adl = _faamSub('faamadl',21,2), sport = _faamSub('faamsport',8,1);
+    if(adl.pct==null || sport.pct==null) return; // sous-échelle incomplète : on laisse le praticien terminer
+    var fa=document.getElementById('bat-faamadl'), fs=document.getElementById('bat-faamsport');
+    if(fa) fa.value = adl.pct; if(fs) fs.value = sport.pct;
+    _batAwaitingProm = null;
+    if(typeof closePromModal === 'function') closePromModal();
+    _batRecalc();
+    _batToast('FAAM récupéré : AVQ '+adl.pct+' % · Sport '+sport.pct+' %');
   }
 }
 
