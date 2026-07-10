@@ -7016,6 +7016,7 @@ function openBattery(key){
       + sbtn("_batFillAlrRsi('injured')", 'Remplir ALR-RSI — lésé') + sbtn("_batFillAlrRsi('healthy')", 'ALR-RSI — sain')
     + '</div>'
     + '<button onclick="_batShareAllProms()" style="width:100%;margin-top:10px;background:#0F766E;color:#fff;border:none;border-radius:7px;padding:10px;font-size:.82rem;font-weight:700;cursor:pointer;font-family:inherit;">🔗 Copier le lien patient (FAAM + ALR-RSI, les 2 côtés)</button>'
+    + '<button onclick="_batFetchPromResponses()" style="width:100%;margin-top:6px;background:#EBF3FF;border:1px solid #b7d3f2;color:#2B5FA6;border-radius:7px;padding:8px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:inherit;">🔄 Récupérer les réponses du patient</button>'
     + note('FAAM-ADL : &lt;90→0 · 90-95→1 · &gt;95→2 · FAAM-Sport : &lt;80→0 · 80-95→1 · &gt;95→2 · ALR-RSI : &lt;55→0 · 55-63→1 · 63-76→2 · &gt;76→3')
 
     + '<div style="'+sec+'">Tests fonctionnels (praticien)</div>'
@@ -7346,6 +7347,7 @@ function _batFillFaam(side){
    Les libellés s'adaptent à la latéralité choisie dans la batterie :
    D/G (unilatéral) → Côté lésé / Côté sain. Bilatéral → Côté droit / Côté gauche. */
 function _batShareAllProms(){
+  if(!_crPatientId){ _batToast('Sélectionnez d\'abord un patient (barre du haut) — nécessaire pour récupérer ses réponses.'); return; }
   var sideVal = (document.getElementById('bat-side')||{}).value || '';
   var comboSide = sideVal === 'B' ? 'bilateral' : 'unilateral';
   var nom  = (document.getElementById('bat-pt-nom')||{}).value||'';
@@ -7355,6 +7357,7 @@ function _batShareAllProms(){
   var qs = new URLSearchParams();
   qs.set('combo', '1');
   qs.set('side', comboSide);
+  qs.set('patient', _crPatientId);
   if(nom) qs.set('nom', nom);
   if(ddn) qs.set('ddn', ddn);
   if(date) qs.set('date', date);
@@ -7363,6 +7366,51 @@ function _batShareAllProms(){
     navigator.clipboard.writeText(url).then(function(){ _batToast('🔗 Lien patient copié !'); }).catch(function(){ prompt('Copie ce lien :', url); });
   } else { prompt('Copie ce lien :', url); }
   if(navigator.share && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)){ navigator.share({url:url, title:'Questionnaires Rehab4Perf'}).catch(function(){}); }
+}
+
+/* ── Récupération automatique des réponses envoyées par le patient depuis prom-link.html
+   (table prom_responses, RLS scopée par patient/praticien). Bouton explicite, pas de
+   remplissage silencieux, pour ne jamais écraser une saisie manuelle par erreur. */
+function _batFetchPromResponses(){
+  if(!_crPatientId){ _batToast('Sélectionnez d\'abord un patient.'); return; }
+  _crRefreshToken();
+  if(!_crToken){ _batToast('Session expirée — rechargez la page.'); return; }
+  fetch(CR_SUPA_URL + '/rest/v1/prom_responses?patient_id=eq.'+_crPatientId+'&order=created_at.desc&limit=1', {
+    headers: _crSbHeaders()
+  }).then(function(r){ return r.json(); }).then(function(rows){
+    if(!rows || !rows.length){ _batToast('Aucune réponse patient reçue pour ce patient.'); return; }
+    _batApplyPromResponse(rows[0]);
+  }).catch(function(){ _batToast('Erreur réseau lors de la récupération.'); });
+}
+function _batApplyPromResponse(row){
+  var p = row.payload || {};
+  var faamMap = {4:'Aucune',3:'Légère',2:'Modérée',1:'Sévère',0:'Incapable'};
+  function apply(sideKey, suf){
+    var d = p[sideKey]; if(!d) return 0;
+    var n=0, el;
+    if(d.faam){
+      if(d.faam.adl_pct!=null){ el=document.getElementById('bat-faamadl'+suf); if(el){ el.value=d.faam.adl_pct; n++; } }
+      if(d.faam.sport_pct!=null){ el=document.getElementById('bat-faamsport'+suf); if(el){ el.value=d.faam.sport_pct; n++; } }
+      if(d.faam.adl_answers && d.faam.sport_answers){
+        var arr=[];
+        _FAAM_ADL.forEach(function(lbl,idx){ var v=d.faam.adl_answers[idx]; arr.push({label:'[AVQ] '+lbl, val:v, disp:(v==='na'?'N/A':faamMap[v]), maxVal:4}); });
+        _FAAM_SPORT.forEach(function(lbl,idx){ var v=d.faam.sport_answers[idx]; arr.push({label:'[Sport] '+lbl, val:v, disp:(v==='na'?'N/A':faamMap[v]), maxVal:4}); });
+        (_batPromAnswers['FAAM']=_batPromAnswers['FAAM']||{})[suf==='-h'?'healthy':'injured'] = arr;
+      }
+    }
+    if(d.alrrsi){
+      if(d.alrrsi.score!=null){ el=document.getElementById('bat-alrrsi'+suf); if(el){ el.value=d.alrrsi.score; n++; } }
+      if(d.alrrsi.answers){
+        var arr2=[];
+        _ALRRSI_Q.forEach(function(q,idx){ var v=d.alrrsi.answers[idx]; arr2.push({label:q[0], val:(v==null?'na':v), disp:(v==null?'—':v+'/10'), maxVal:10}); });
+        (_batPromAnswers['ALR-RSI']=_batPromAnswers['ALR-RSI']||{})[suf==='-h'?'healthy':'injured'] = arr2;
+      }
+    }
+    return n;
+  }
+  var n = apply('a','') + apply('b','-h');
+  _batRecalc();
+  _batToast(n ? ('Réponses patient importées ('+n+' champ'+(n>1?'s':'')+') — '+new Date(row.created_at).toLocaleDateString('fr-FR')) : 'Réponse trouvée mais vide.');
 }
 function _batCaptureAlrAnswers(){
   var arr=[];

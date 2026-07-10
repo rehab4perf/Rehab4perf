@@ -66,6 +66,46 @@ function _plErr(msg){
   document.getElementById('content').innerHTML = '<div class="err"><h2 style="color:#1A3A5C;margin-bottom:10px;">Lien invalide</h2><p>'+msg+'</p></div>';
 }
 
+/* ── Retour automatique du score au praticien : POST anonyme (RLS scopée par patient_id) vers
+   prom_responses. Le patient continue de voir son score localement quoi qu'il arrive — l'envoi
+   est silencieux et best-effort, jamais bloquant. */
+var SUPA_URL = 'https://sxdobjodxkwexaspepdm.supabase.co';
+var SUPA_KEY = 'sb_publishable_zEJrmQOnKyRm-Y_NyojaTA_ERrDx4pl';
+function _plCaptureFaam(suf){
+  var adl=[], sport=[];
+  _FAAM_ADL.forEach(function(lbl,idx){
+    var el=document.querySelector('input[name="faamadl'+suf+(idx+1)+'"]:checked');
+    var raw=el?el.value:null; adl.push(raw==null?null:(raw==='na'?'na':parseFloat(raw)));
+  });
+  _FAAM_SPORT.forEach(function(lbl,idx){
+    var el=document.querySelector('input[name="faamsport'+suf+(idx+1)+'"]:checked');
+    var raw=el?el.value:null; sport.push(raw==null?null:(raw==='na'?'na':parseFloat(raw)));
+  });
+  var adlR=_faamSub('faamadl'+suf,21,2), sportR=_faamSub('faamsport'+suf,8,1);
+  return { adl_answers: adl, sport_answers: sport, adl_pct: (adlR.pct!=null?adlR.pct:null), sport_pct: (sportR.pct!=null?sportR.pct:null) };
+}
+function _plCaptureAlrRsi(suf){
+  var arr=[];
+  for(var i=1;i<=12;i++){
+    var el=document.querySelector('input[name="alrrsi'+suf+i+'"]:checked');
+    arr.push(el?parseFloat(el.value):null);
+  }
+  var m=_missing('alrrsi'+suf,12);
+  return { answers: arr, score: (m.length ? null : Math.round(_sum('alrrsi'+suf,12)*100/120)) };
+}
+function _plSendResponses(sideMode, payload){
+  var patientId = _plParam('patient');
+  if(!patientId) return;
+  fetch(SUPA_URL + '/rest/v1/prom_responses', {
+    method:'POST',
+    headers:{ 'apikey':SUPA_KEY, 'Content-Type':'application/json', 'Prefer':'return=minimal' },
+    body: JSON.stringify({ patient_id: patientId, side_mode: sideMode, payload: payload })
+  }).then(function(r){
+    var n=document.getElementById('score-sent-note');
+    if(n) n.textContent = r.ok ? '✓ Résultats transmis à votre kinésithérapeute.' : '';
+  }).catch(function(){});
+}
+
 /* Mode simple : ?prom=FAAM|ALR-RSI (un seul questionnaire, un seul côté) */
 function renderSingle(acronym){
   var def = PROM_CONTENT[acronym];
@@ -73,13 +113,15 @@ function renderSingle(acronym){
   var nom = _plParam('nom'), ddn = _plParam('ddn'), date = _plParam('date') || new Date().toLocaleDateString('fr-FR'), label = _plParam('label');
   document.getElementById('content').innerHTML = _ptCardHtml(nom, ddn, date, label)
     + _promBlockHtml(def, '')
-    + '<div class="score-zone"><button class="score-btn" onclick="calcSingleScore()">📊 Calculer mon score</button><div id="score-box"></div></div>'
+    + '<div class="score-zone"><button class="score-btn" onclick="calcSingleScore()">📊 Calculer mon score</button><div id="score-box"></div><div id="score-sent-note" style="font-size:.78rem;color:#2D6A4F;margin-top:10px;font-weight:600;"></div></div>'
     + _footerHtml();
   window.calcSingleScore = function(){
     var b = document.getElementById('score-box');
     b.innerHTML = '<div class="res-block"><div id="score-block-title">Résultat</div>'+def.score('')+'</div>';
     b.style.display = 'block';
     b.scrollIntoView({behavior:'smooth', block:'nearest'});
+    var data = acronym==='FAAM' ? {faam:_plCaptureFaam('')} : {alrrsi:_plCaptureAlrRsi('')};
+    _plSendResponses('single', { prom: acronym, a: data });
   };
 }
 
@@ -93,7 +135,7 @@ function renderCombo(){
   var html = _ptCardHtml(nom, ddn, date, '');
   html += '<div class="side-hdr a">Côté '+labelA.toLowerCase()+'</div>' + _promBlockHtml(PROM_CONTENT.FAAM, '_a') + _promBlockHtml(PROM_CONTENT['ALR-RSI'], '_a');
   html += '<div class="side-hdr b">Côté '+labelB.toLowerCase()+'</div>' + _promBlockHtml(PROM_CONTENT.FAAM, '_b') + _promBlockHtml(PROM_CONTENT['ALR-RSI'], '_b');
-  html += '<div class="score-zone"><button class="score-btn" onclick="calcComboScore()">📊 Calculer mes scores</button><div id="score-box"></div></div>';
+  html += '<div class="score-zone"><button class="score-btn" onclick="calcComboScore()">📊 Calculer mes scores</button><div id="score-box"></div><div id="score-sent-note" style="font-size:.78rem;color:#2D6A4F;margin-top:10px;font-weight:600;"></div></div>';
   html += _footerHtml();
   document.getElementById('content').innerHTML = html;
   window.calcComboScore = function(){
@@ -105,6 +147,11 @@ function renderCombo(){
       +'<div class="res-block"><div id="score-block-title">ALR-RSI — Côté '+_plEsc(labelB.toLowerCase())+'</div>'+PROM_CONTENT['ALR-RSI'].score('_b')+'</div>';
     b.style.display = 'block';
     b.scrollIntoView({behavior:'smooth', block:'nearest'});
+    _plSendResponses(side, {
+      side_labels: {a:labelA, b:labelB},
+      a: { faam:_plCaptureFaam('_a'), alrrsi:_plCaptureAlrRsi('_a') },
+      b: { faam:_plCaptureFaam('_b'), alrrsi:_plCaptureAlrRsi('_b') }
+    });
   };
 }
 
