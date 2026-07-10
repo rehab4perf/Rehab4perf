@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Golden Master — Rehab4Perf</title>
+<style>
+:root { --bg:#F7F6F3; --surface:#fff; --border:#E8E6E1; --text:#1A1917; --text2:#6B6860; --text3:#9D9B96;
+  --accent:#2B5FA6; --accent2:#1A3A5C; --green:#2D6A4F; --green-l:#E8F5EE; --red:#C0392B; --red-l:#FDECEA; --orange:#D4600A; }
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:-apple-system,'Helvetica Neue',sans-serif; background:var(--bg); color:var(--text); font-size:14px; padding:24px; }
+.wrap { max-width:980px; margin:0 auto; }
+h1 { font-family:Georgia,serif; color:var(--accent2); font-size:1.5rem; margin-bottom:4px; }
+.sub { color:var(--text3); font-size:.82rem; margin-bottom:18px; }
+.bar { display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
+button { font-family:inherit; font-size:.84rem; font-weight:600; border-radius:7px; padding:9px 18px; cursor:pointer; border:1px solid var(--border); background:var(--surface); color:var(--text2); }
+button.primary { background:var(--accent2); border-color:var(--accent2); color:#fff; }
+button.primary:hover { background:var(--accent); }
+button:disabled { opacity:.5; cursor:default; }
+#status { font-size:.82rem; color:var(--text2); }
+table { width:100%; border-collapse:collapse; background:var(--surface); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+th { text-align:left; font-size:.68rem; text-transform:uppercase; letter-spacing:.04em; color:var(--text3); padding:8px 12px; background:#F1F0ED; border-bottom:1px solid var(--border); }
+td { padding:8px 12px; border-bottom:1px solid var(--border); font-size:.82rem; vertical-align:top; }
+tr:last-child td { border-bottom:none; }
+.hash { font-family:ui-monospace,Menlo,monospace; font-size:.72rem; color:var(--text2); }
+.ok { color:var(--green); font-weight:700; }
+.ko { color:var(--red); font-weight:700; }
+.warn { color:var(--orange); font-weight:700; }
+.detail { font-size:.74rem; color:var(--text2); margin-top:3px; white-space:pre-wrap; word-break:break-all; max-height:140px; overflow:auto; }
+#sandbox { position:fixed; left:-3000px; top:0; width:1400px; height:900px; border:0; visibility:hidden; }
+.note { background:#EEF3FB; border:1px solid #C9DCF4; color:var(--accent2); border-radius:8px; padding:10px 14px; font-size:.8rem; margin-bottom:16px; line-height:1.5; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Golden Master — bilan.html</h1>
+  <div class="sub">Charge chaque bilan de référence de <code>tests-golden/</code> dans bilan.html, capture CR Complet + CR Tests, et vérifie l'aller-retour des données (chaque valeur sauvegardée retombe sur le même champ).</div>
+  <div class="note">Outil interne de non-régression — aucune donnée patient dans ce fichier ; le jeu de données (<code>tests-golden/</code>) reste local et hors git. À lancer en local uniquement (le jeu n'existe pas sur Netlify). Le brouillon localStorage est sauvegardé puis restauré à la fin de chaque exécution.</div>
+  <div class="bar">
+    <button class="primary" id="btn-run" onclick="runAll()">▶ Lancer la capture</button>
+    <button id="btn-dl" onclick="downloadRef()" disabled>⬇ Télécharger comme référence</button>
+    <span id="status">Prêt.</span>
+  </div>
+  <div id="ref-info" class="sub"></div>
+  <table id="results" style="display:none">
+    <thead><tr><th style="width:270px">Bilan</th><th>CR Complet</th><th>CR Tests</th><th style="width:170px">Aller-retour données</th><th style="width:120px">vs Référence</th></tr></thead>
+    <tbody id="results-body"></tbody>
+  </table>
+</div>
+<iframe id="sandbox"></iframe>
+
+<script>
+/* ═══ Golden master harness ═══
+   - Référence attendue : tests-golden/golden-reference.json (générée par ⬇ puis déposée dans le dossier).
+   - Normalisation : les dates du jour sont remplacées par {TODAY} pour que les captures
+     restent comparables d'un jour à l'autre. */
+var MANIFEST = null, REFERENCE = null, RESULTS = [];
+
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function setStatus(s){ document.getElementById('status').textContent = s; }
+
+function todayPatterns(){
+  var d = new Date();
+  var dd = String(d.getDate()).padStart(2,'0'), mm = String(d.getMonth()+1).padStart(2,'0'), yyyy = d.getFullYear();
+  var mois = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  return [
+    new RegExp(dd+'/'+mm+'/'+yyyy,'g'),
+    new RegExp(yyyy+'-'+mm+'-'+dd,'g'),
+    new RegExp(d.getDate()+'\\s+'+mois[d.getMonth()]+'\\s+'+yyyy,'g')
+  ];
+}
+function normalize(html){
+  var out = html;
+  todayPatterns().forEach(function(re){ out = out.replace(re,'{TODAY}'); });
+  return out;
+}
+async function sha256(str){
+  var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+}
+
+/* Chaque bilan tourne dans une iframe neuve pour éviter toute contamination croisée. */
+function freshFrame(){
+  return new Promise(function(resolve, reject){
+    var f = document.getElementById('sandbox');
+    var timeout = setTimeout(function(){ reject(new Error('bilan.html : chargement > 30s')); }, 30000);
+    f.onload = function(){
+      /* attendre que init() ait construit les tableaux et que les fonctions clés existent */
+      var tries = 0;
+      (function poll(){
+        var w = f.contentWindow;
+        var ready = w && typeof w._deserializeBilan==='function' && typeof w.buildCR==='function'
+          && typeof w.buildCRTF==='function' && typeof w._serializeBilan==='function'
+          && w.document.getElementById('cr-content');
+        if(ready){ clearTimeout(timeout); resolve(w); }
+        else if(++tries > 100){ clearTimeout(timeout); reject(new Error('bilan.html : fonctions introuvables après init')); }
+        else setTimeout(poll, 100);
+      })();
+    };
+    f.src = 'bilan.html?golden=1&t=' + Date.now();
+  });
+}
+
+function serializeValue(el){
+  if(el.type==='checkbox'||el.type==='radio') return el.checked;
+  return el.value;
+}
+/* Aller-retour : chaque clé sauvegardée dont l'élément existe encore doit retrouver sa valeur. */
+function roundtripCheck(w, donnees){
+  var mismatches = [], checked = 0, missing = 0;
+  Object.keys(donnees).forEach(function(k){
+    var el = w.document.getElementById(k);
+    if(!el){ missing++; return; }
+    checked++;
+    var expected = donnees[k], got = serializeValue(el);
+    var same = (el.type==='checkbox'||el.type==='radio') ? (!!expected === got) : String(expected||'') === String(got||'');
+    if(!same) mismatches.push(k+' : attendu «'+expected+'» obtenu «'+got+'»');
+  });
+  return { checked:checked, missingInDom:missing, mismatches:mismatches };
+}
+
+async function runOne(entry){
+  var res = { file: entry.file, patient: entry.patient, date: entry.date };
+  var data = await fetch('tests-golden/'+entry.file).then(function(r){
+    if(!r.ok) throw new Error('fichier introuvable : '+entry.file);
+    return r.json();
+  });
+  var w = await freshFrame();
+  w._deserializeBilan(data.donnees);
+  /* laisser les recalculs asynchrones éventuels se poser */
+  await new Promise(function(r){ setTimeout(r, 400); });
+  res.roundtrip = roundtripCheck(w, data.donnees);
+  w.buildCR();
+  w.buildCRTF();
+  var cr = normalize(w.document.getElementById('cr-content').innerHTML);
+  var crtf = normalize(w.document.getElementById('cr-tf-content').innerHTML);
+  res.crHash = await sha256(cr); res.crLen = cr.length;
+  res.crtfHash = await sha256(crtf); res.crtfLen = crtf.length;
+  return res;
+}
+
+function compareToRef(res){
+  if(!REFERENCE) return { label:'—', cls:'', detail:'' };
+  var ref = (REFERENCE.bilans||[]).find(function(b){ return b.file===res.file; });
+  if(!ref) return { label:'absent réf.', cls:'warn', detail:'' };
+  var okCr = ref.crHash===res.crHash, okTf = ref.crtfHash===res.crtfHash;
+  if(okCr && okTf) return { label:'IDENTIQUE ✓', cls:'ok', detail:'' };
+  var d = [];
+  if(!okCr) d.push('CR Complet diffère ('+ref.crLen+' → '+res.crLen+' car.)');
+  if(!okTf) d.push('CR Tests diffère ('+ref.crtfLen+' → '+res.crtfLen+' car.)');
+  return { label:'DIFFÉRENT ✗', cls:'ko', detail:d.join('\n') };
+}
+
+function renderRow(res, cmp){
+  var rt = res.roundtrip;
+  var rtHtml = rt.mismatches.length
+    ? '<span class="ko">'+rt.mismatches.length+' écart'+(rt.mismatches.length>1?'s':'')+'</span><div class="detail">'+esc(rt.mismatches.slice(0,8).join('\n'))+(rt.mismatches.length>8?'\n…':'')+'</div>'
+    : '<span class="ok">'+rt.checked+' champs ✓</span>'+(rt.missingInDom?'<div class="detail">'+rt.missingInDom+' clés sans élément (structure plus ancienne — attendu)</div>':'');
+  return '<tr><td><b>'+esc(res.patient)+'</b><br><span class="hash">'+esc(res.date)+' · '+esc(res.file)+'</span></td>'
+    + '<td><span class="hash">'+res.crHash.slice(0,16)+'…</span><div class="detail">'+res.crLen+' car.</div></td>'
+    + '<td><span class="hash">'+res.crtfHash.slice(0,16)+'…</span><div class="detail">'+res.crtfLen+' car.</div></td>'
+    + '<td>'+rtHtml+'</td>'
+    + '<td><span class="'+cmp.cls+'">'+cmp.label+'</span>'+(cmp.detail?'<div class="detail">'+esc(cmp.detail)+'</div>':'')+'</td></tr>';
+}
+
+async function runAll(){
+  var btn = document.getElementById('btn-run');
+  btn.disabled = true;
+  RESULTS = [];
+  document.getElementById('results').style.display = '';
+  document.getElementById('results-body').innerHTML = '';
+  /* snapshot localStorage : bilan.html lit/écrit le brouillon au chargement */
+  var snapshot = {};
+  for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i); snapshot[k]=localStorage.getItem(k); }
+  try {
+    localStorage.clear();
+    try {
+      MANIFEST = await fetch('tests-golden/MANIFEST.json').then(function(r){
+        if(!r.ok) throw new Error();
+        return r.json();
+      });
+    } catch(e){ setStatus('tests-golden/MANIFEST.json introuvable — outil local uniquement.'); return; }
+    try { REFERENCE = await fetch('tests-golden/golden-reference.json').then(function(r){ return r.ok ? r.json() : null; }); } catch(e){ REFERENCE = null; }
+    document.getElementById('ref-info').textContent = REFERENCE
+      ? 'Référence chargée : capture du '+REFERENCE.generated+' ('+(REFERENCE.bilans||[]).length+' bilans).'
+      : 'Aucune référence (tests-golden/golden-reference.json absent) — cette exécution peut servir de première référence.';
+    for(var i=0;i<MANIFEST.bilans.length;i++){
+      var entry = MANIFEST.bilans[i];
+      setStatus('Capture '+(i+1)+'/'+MANIFEST.bilans.length+' — '+entry.patient+'…');
+      try {
+        var res = await runOne(entry);
+        RESULTS.push(res);
+        document.getElementById('results-body').innerHTML += renderRow(res, compareToRef(res));
+      } catch(e){
+        document.getElementById('results-body').innerHTML += '<tr><td><b>'+esc(entry.patient)+'</b><br><span class="hash">'+esc(entry.file)+'</span></td><td colspan="4"><span class="ko">ERREUR : '+esc(e.message)+'</span></td></tr>';
+      }
+    }
+    var totalMismatch = RESULTS.reduce(function(s,r){ return s+r.roundtrip.mismatches.length; }, 0);
+    var diffRef = REFERENCE ? RESULTS.filter(function(r){ return compareToRef(r).cls==='ko'; }).length : null;
+    setStatus('Terminé — '+RESULTS.length+' bilans · '+totalMismatch+' écart(s) aller-retour'+(diffRef!=null?' · '+diffRef+' différence(s) vs référence':''));
+    document.getElementById('btn-dl').disabled = RESULTS.length===0;
+  } finally {
+    localStorage.clear();
+    Object.keys(snapshot).forEach(function(k){ localStorage.setItem(k, snapshot[k]); });
+    document.getElementById('sandbox').src = 'about:blank';
+    btn.disabled = false;
+  }
+}
+
+function downloadRef(){
+  var ref = { generated: new Date().toISOString().slice(0,10), bilans: RESULTS };
+  var blob = new Blob([JSON.stringify(ref, null, 1)], {type:'application/json'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'golden-reference.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+</script>
+</body>
+</html>

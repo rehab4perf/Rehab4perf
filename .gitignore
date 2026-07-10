@@ -12,3 +12,6 @@ mycollection/
 r4p-icon*.html
 r4p-icons*.html
 shoulder*.png
+
+# Jeu de test golden-master (donnees patients reelles - ne jamais commiter)
+tests-golden/
