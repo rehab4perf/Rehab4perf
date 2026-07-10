@@ -7016,6 +7016,10 @@ function openBattery(key){
       + sbtn("_batFillAlrRsi('injured')", 'Remplir ALR-RSI — lésé') + sbtn("_batFillAlrRsi('healthy')", 'ALR-RSI — sain')
     + '</div>'
     + '<button onclick="_batShareAllProms()" style="width:100%;margin-top:10px;background:#0F766E;color:#fff;border:none;border-radius:7px;padding:10px;font-size:.82rem;font-weight:700;cursor:pointer;font-family:inherit;">🔗 Copier le lien patient (FAAM + ALR-RSI, les 2 côtés)</button>'
+    + '<div style="display:flex;gap:8px;margin-top:6px;">'
+      + '<button onclick="_batShareOneProm(\'a\')" style="flex:1;background:#fff;border:1px solid #C0392B;color:#C0392B;border-radius:7px;padding:7px;font-size:.74rem;font-weight:600;cursor:pointer;font-family:inherit;">🔗 Lien <span class="bat-lbl-a-lc">côté lésé</span></button>'
+      + '<button onclick="_batShareOneProm(\'b\')" style="flex:1;background:#fff;border:1px solid #16794F;color:#16794F;border-radius:7px;padding:7px;font-size:.74rem;font-weight:600;cursor:pointer;font-family:inherit;">🔗 Lien <span class="bat-lbl-b-lc">côté sain</span></button>'
+    + '</div>'
     + '<button onclick="_batFetchPromResponses()" style="width:100%;margin-top:6px;background:#EBF3FF;border:1px solid #b7d3f2;color:#2B5FA6;border-radius:7px;padding:8px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:inherit;">🔄 Récupérer les réponses du patient</button>'
     + note('FAAM-ADL : &lt;90→0 · 90-95→1 · &gt;95→2 · FAAM-Sport : &lt;80→0 · 80-95→1 · &gt;95→2 · ALR-RSI : &lt;55→0 · 55-63→1 · 63-76→2 · &gt;76→3')
 
@@ -7346,8 +7350,8 @@ function _batFillFaam(side){
    dans l'URL et rend les questionnaires à la volée. Pas d'upload, pas de bucket, pas de connexion.
    Les libellés s'adaptent à la latéralité choisie dans la batterie :
    D/G (unilatéral) → Côté lésé / Côté sain. Bilatéral → Côté droit / Côté gauche. */
-function _batShareAllProms(){
-  if(!_crPatientId){ _batToast('Sélectionnez d\'abord un patient (barre du haut) — nécessaire pour récupérer ses réponses.'); return; }
+function _batPromLinkBase(){
+  if(!_crPatientId){ _batToast('Sélectionnez d\'abord un patient (barre du haut) — nécessaire pour récupérer ses réponses.'); return null; }
   var sideVal = (document.getElementById('bat-side')||{}).value || '';
   var comboSide = sideVal === 'B' ? 'bilateral' : 'unilateral';
   var nom  = (document.getElementById('bat-pt-nom')||{}).value||'';
@@ -7361,11 +7365,27 @@ function _batShareAllProms(){
   if(nom) qs.set('nom', nom);
   if(ddn) qs.set('ddn', ddn);
   if(date) qs.set('date', date);
-  var url = base + '?' + qs.toString();
+  return { base: base, qs: qs };
+}
+function _batCopyOrShareLink(url, toastMsg){
   if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(url).then(function(){ _batToast('🔗 Lien patient copié !'); }).catch(function(){ prompt('Copie ce lien :', url); });
+    navigator.clipboard.writeText(url).then(function(){ _batToast(toastMsg); }).catch(function(){ prompt('Copie ce lien :', url); });
   } else { prompt('Copie ce lien :', url); }
   if(navigator.share && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)){ navigator.share({url:url, title:'Questionnaires Rehab4Perf'}).catch(function(){}); }
+}
+function _batShareAllProms(){
+  var lb = _batPromLinkBase(); if(!lb) return;
+  var url = lb.base + '?' + lb.qs.toString();
+  _batCopyOrShareLink(url, '🔗 Lien patient copié !');
+}
+/* Lien mono-côté : utile pour envoyer les deux côtés séparément (deux messages distincts,
+   ou un seul côté à évaluer). sideKey 'a' = lésé/droit, 'b' = sain/gauche. */
+function _batShareOneProm(sideKey){
+  var lb = _batPromLinkBase(); if(!lb) return;
+  lb.qs.set('only', sideKey);
+  var url = lb.base + '?' + lb.qs.toString();
+  var l = _batSideLabels();
+  _batCopyOrShareLink(url, '🔗 Lien '+(sideKey==='a'?l.a:l.b).toLowerCase()+' copié !');
 }
 
 /* ── Récupération automatique des réponses envoyées par le patient depuis prom-link.html
@@ -7385,18 +7405,27 @@ function _batFetchPromResponses(){
   if(!_crPatientId){ _batToast('Sélectionnez d\'abord un patient.'); return; }
   var tok = _batAuthToken();
   if(!tok){ _batToast('Session expirée — rechargez la page.'); return; }
-  fetch(BAT_SUPA_URL + '/rest/v1/prom_responses?patient_id=eq.'+_crPatientId+'&order=created_at.desc&limit=1', {
+  /* limit=5 : avec les liens mono-côté, chaque envoi crée sa propre ligne (un seul côté rempli
+     à la fois) — on fusionne les dernières réponses pour reconstituer les 2 côtés si besoin. */
+  fetch(BAT_SUPA_URL + '/rest/v1/prom_responses?patient_id=eq.'+_crPatientId+'&order=created_at.desc&limit=5', {
     headers: { 'Authorization':'Bearer '+tok, 'apikey':BAT_SUPA_KEY, 'Content-Type':'application/json' }
   }).then(function(r){ return r.json(); }).then(function(rows){
     if(!rows || !rows.length){ _batToast('Aucune réponse patient reçue pour ce patient.'); return; }
-    _batApplyPromResponse(rows[0]);
+    _batApplyPromResponses(rows);
   }).catch(function(){ _batToast('Erreur réseau lors de la récupération.'); });
 }
-function _batApplyPromResponse(row){
-  var p = row.payload || {};
+function _batApplyPromResponses(rows){
+  var merged = {}, latestDate = null;
+  rows.forEach(function(row){
+    var p = row.payload || {};
+    ['a','b'].forEach(function(k){
+      if(p[k] && !merged[k]) merged[k] = p[k];
+    });
+    if(!latestDate) latestDate = row.created_at;
+  });
   var faamMap = {4:'Aucune',3:'Légère',2:'Modérée',1:'Sévère',0:'Incapable'};
   function apply(sideKey, suf){
-    var d = p[sideKey]; if(!d) return 0;
+    var d = merged[sideKey]; if(!d) return 0;
     var n=0, el;
     if(d.faam){
       if(d.faam.adl_pct!=null){ el=document.getElementById('bat-faamadl'+suf); if(el){ el.value=d.faam.adl_pct; n++; } }
@@ -7420,7 +7449,7 @@ function _batApplyPromResponse(row){
   }
   var n = apply('a','') + apply('b','-h');
   _batRecalc();
-  _batToast(n ? ('Réponses patient importées ('+n+' champ'+(n>1?'s':'')+') — '+new Date(row.created_at).toLocaleDateString('fr-FR')) : 'Réponse trouvée mais vide.');
+  _batToast(n ? ('Réponses patient importées ('+n+' champ'+(n>1?'s':'')+') — '+new Date(latestDate).toLocaleDateString('fr-FR')) : 'Réponse trouvée mais vide.');
 }
 function _batCaptureAlrAnswers(){
   var arr=[];

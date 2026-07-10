@@ -126,12 +126,15 @@ function renderSingle(acronym){
 }
 
 /* Mode combiné : ?combo=1&side=unilateral|bilateral — FAAM + ALR-RSI, sur les 2 côtés,
-   avec libellés adaptés (Lésé/Sain en unilatéral, Droit/Gauche en bilatéral). */
+   avec libellés adaptés (Lésé/Sain en unilatéral, Droit/Gauche en bilatéral).
+   ?only=a|b restreint le rendu à un seul côté (lien envoyé séparément par côté). */
 function renderCombo(){
   var side = _plParam('side') === 'bilateral' ? 'bilateral' : 'unilateral';
   var labelA = side === 'bilateral' ? 'Droit' : 'Lésé';
   var labelB = side === 'bilateral' ? 'Gauche' : 'Sain';
   var nom = _plParam('nom'), ddn = _plParam('ddn'), date = _plParam('date') || new Date().toLocaleDateString('fr-FR');
+  var only = _plParam('only');
+  if(only === 'a' || only === 'b'){ renderComboOneSide(only, side, labelA, labelB, nom, ddn, date); return; }
   var html = _ptCardHtml(nom, ddn, date, '');
   html += '<div class="side-hdr a">Côté '+labelA.toLowerCase()+'</div>' + _promBlockHtml(PROM_CONTENT.FAAM, '_a') + _promBlockHtml(PROM_CONTENT['ALR-RSI'], '_a');
   html += '<div class="side-hdr b">Côté '+labelB.toLowerCase()+'</div>' + _promBlockHtml(PROM_CONTENT.FAAM, '_b') + _promBlockHtml(PROM_CONTENT['ALR-RSI'], '_b');
@@ -152,6 +155,27 @@ function renderCombo(){
       a: { faam:_plCaptureFaam('_a'), alrrsi:_plCaptureAlrRsi('_a') },
       b: { faam:_plCaptureFaam('_b'), alrrsi:_plCaptureAlrRsi('_b') }
     });
+  };
+}
+
+/* Lien mono-côté : ?combo=1&only=a|b — FAAM + ALR-RSI pour un seul côté, envoyé séparément. */
+function renderComboOneSide(sideKey, side, labelA, labelB, nom, ddn, date){
+  var label = sideKey === 'a' ? labelA : labelB;
+  var html = _ptCardHtml(nom, ddn, date, '');
+  html += '<div class="side-hdr '+sideKey+'">Côté '+label.toLowerCase()+'</div>' + _promBlockHtml(PROM_CONTENT.FAAM, '') + _promBlockHtml(PROM_CONTENT['ALR-RSI'], '');
+  html += '<div class="score-zone"><button class="score-btn" onclick="calcComboOneSideScore()">📊 Calculer mon score</button><div id="score-box"></div><div id="score-sent-note" style="font-size:.78rem;color:#2D6A4F;margin-top:10px;font-weight:600;"></div></div>';
+  html += _footerHtml();
+  document.getElementById('content').innerHTML = html;
+  window.calcComboOneSideScore = function(){
+    var b = document.getElementById('score-box');
+    b.innerHTML =
+      '<div class="res-block"><div id="score-block-title">FAAM — Côté '+_plEsc(label.toLowerCase())+'</div>'+PROM_CONTENT.FAAM.score('')+'</div>'
+      +'<div class="res-block"><div id="score-block-title">ALR-RSI — Côté '+_plEsc(label.toLowerCase())+'</div>'+PROM_CONTENT['ALR-RSI'].score('')+'</div>';
+    b.style.display = 'block';
+    b.scrollIntoView({behavior:'smooth', block:'nearest'});
+    var payload = { side_labels: {a:labelA, b:labelB} };
+    payload[sideKey] = { faam:_plCaptureFaam(''), alrrsi:_plCaptureAlrRsi('') };
+    _plSendResponses(side, payload);
   };
 }
 
