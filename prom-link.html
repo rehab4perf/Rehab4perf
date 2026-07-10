@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Questionnaires — Rehab4Perf</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{font-size:15px}
+body{font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;background:#F0F4F8;color:#1A1917;padding:0 0 60px}
+.wrap{max-width:800px;margin:0 auto}
+.doc-hdr{display:flex;align-items:center;padding:14px 24px;background:#1A3A5C}
+.logo{display:inline-flex;align-items:center;gap:8px}
+.logo svg{display:block;flex-shrink:0}
+.logo .w{display:inline-flex;align-items:baseline;line-height:1;white-space:nowrap}
+.logo .r{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:20px;color:#fff;letter-spacing:-.01em}
+.logo .e{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:.44em;vertical-align:super;color:#7FA8D9;margin:0 .05em 0 .01em;line-height:0}
+.logo .p{font-family:'Poppins',sans-serif;font-weight:800;font-size:16px;color:#fff;letter-spacing:-.025em;margin-left:.02em}
+.pt-card{background:#fff;padding:18px 24px;border-bottom:1px solid #DDE3EC;display:flex;align-items:center;gap:16px}
+.pt-avatar{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#2B5FA6,#1A3A5C);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:700;flex-shrink:0;font-family:Georgia,serif}
+.pt-name{font-size:1.05rem;font-weight:700;color:#1A3A5C;margin-bottom:3px}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.badge{background:#EEF3FB;color:#2B5FA6;border-radius:20px;padding:2px 10px;font-size:.7rem;font-weight:700}
+.side-hdr{padding:14px 24px 4px;font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#fff}
+.side-hdr.a{background:#C0392B}
+.side-hdr.b{background:#16794F}
+.prom-hdr{background:#fff;padding:16px 24px;border-bottom:3px solid #2B5FA6;display:flex;align-items:center;gap:14px}
+.prom-hdr h1{font-size:1.4rem;font-weight:700;color:#1A3A5C;margin:0 0 3px}
+.prom-hdr .sub{font-size:.82rem;color:#6B6860;font-style:italic}
+.scale-badge{background:#EEF3FB;color:#2B5FA6;border-radius:6px;padding:3px 9px;font-size:.72rem;font-weight:700;white-space:nowrap}
+.body{background:#fff;margin:16px 0;padding:22px 26px;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.prom-intro{font-size:.85rem;color:#555;line-height:1.65;background:#F8FAFC;border-radius:7px;padding:12px 16px;margin-bottom:20px;border:1px solid #dde3ec}
+.prom-q{padding:13px 0;border-bottom:1px solid #f0f4f8}
+.prom-q:last-child{border-bottom:none}
+.prom-q-num{font-size:.68rem;font-weight:700;color:#2B5FA6;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.prom-q-text{font-size:.92rem;font-weight:500;color:#1a2433;margin-bottom:10px;line-height:1.45}
+.prom-section-label{font-size:.72rem;font-weight:700;color:#2B5FA6;text-transform:uppercase;letter-spacing:.06em;background:#EEF3FB;padding:8px 14px;margin:16px -26px;border-left:3px solid #2B5FA6}
+.score-zone{background:#fff;border-radius:10px;padding:22px 26px;box-shadow:0 1px 4px rgba(0,0,0,.08);position:sticky;bottom:14px;margin-top:20px}
+.score-btn{display:block;width:100%;padding:15px;background:#1A3A5C;color:#fff;border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;letter-spacing:.03em;transition:background .15s}
+.score-btn:hover{background:#2B5FA6}
+#score-box{display:none;margin-top:18px;font-size:.92rem;line-height:1.75}
+#score-box .res-block{padding:12px 0;border-top:1px solid #f0f4f8}
+#score-box .res-block:first-child{border-top:none}
+#score-block-title{font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#888;margin-bottom:2px}
+.footer{text-align:center;font-size:.72rem;color:#bbb;margin-top:40px;padding-top:16px;border-top:1px solid #dde3ec}
+.err{max-width:480px;margin:60px auto;text-align:center;padding:0 20px;color:#555}
+@media(max-width:600px){.body,.score-zone{padding:14px}.prom-section-label{margin:12px -14px}}
+</style>
+</head>
+<body>
+
+<div class="wrap" id="wrap">
+  <div class="doc-hdr"><div class="logo"><svg viewBox="8 34 164 104" width="26" height="16" aria-hidden="true"><g stroke="#4A90D9" stroke-width="17" stroke-linecap="round" fill="none"><line x1="20" y1="118" x2="56" y2="104"/><line x1="70" y1="122" x2="100" y2="84"/><line x1="112" y1="125" x2="134" y2="66"/><line x1="158" y1="128" x2="158" y2="46"/></g></svg><span class="w"><span class="r">rehab<sup class="e">4</sup></span><span class="p">perf</span></span></div></div>
+  <div id="content"></div>
+</div>
+
+<script src="js/prom-content.js"></script>
+<script>
+function _plEsc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function _plParam(name){
+  var m = new URLSearchParams(window.location.search).get(name);
+  return m ? m.trim() : '';
+}
+function _plErr(msg){
+  document.getElementById('content').innerHTML = '<div class="err"><h2 style="color:#1A3A5C;margin-bottom:10px;">Lien invalide</h2><p>'+msg+'</p></div>';
+}
+
+/* Mode simple : ?prom=FAAM|ALR-RSI (un seul questionnaire, un seul côté) */
+function renderSingle(acronym){
+  var def = PROM_CONTENT[acronym];
+  if(!def){ _plErr('Ce lien de questionnaire est introuvable ou incomplet. Demandez à votre kinésithérapeute de vous en renvoyer un.'); return; }
+  var nom = _plParam('nom'), ddn = _plParam('ddn'), date = _plParam('date') || new Date().toLocaleDateString('fr-FR'), label = _plParam('label');
+  document.getElementById('content').innerHTML = _ptCardHtml(nom, ddn, date, label)
+    + _promBlockHtml(def, '')
+    + '<div class="score-zone"><button class="score-btn" onclick="calcSingleScore()">📊 Calculer mon score</button><div id="score-box"></div></div>'
+    + _footerHtml();
+  window.calcSingleScore = function(){
+    var b = document.getElementById('score-box');
+    b.innerHTML = '<div class="res-block"><div id="score-block-title">Résultat</div>'+def.score('')+'</div>';
+    b.style.display = 'block';
+    b.scrollIntoView({behavior:'smooth', block:'nearest'});
+  };
+}
+
+/* Mode combiné : ?combo=1&side=unilateral|bilateral — FAAM + ALR-RSI, sur les 2 côtés,
+   avec libellés adaptés (Lésé/Sain en unilatéral, Droit/Gauche en bilatéral). */
+function renderCombo(){
+  var side = _plParam('side') === 'bilateral' ? 'bilateral' : 'unilateral';
+  var labelA = side === 'bilateral' ? 'Droit' : 'Lésé';
+  var labelB = side === 'bilateral' ? 'Gauche' : 'Sain';
+  var nom = _plParam('nom'), ddn = _plParam('ddn'), date = _plParam('date') || new Date().toLocaleDateString('fr-FR');
+  var html = _ptCardHtml(nom, ddn, date, '');
+  html += '<div class="side-hdr a">Côté '+labelA.toLowerCase()+'</div>' + _promBlockHtml(PROM_CONTENT.FAAM, '_a') + _promBlockHtml(PROM_CONTENT['ALR-RSI'], '_a');
+  html += '<div class="side-hdr b">Côté '+labelB.toLowerCase()+'</div>' + _promBlockHtml(PROM_CONTENT.FAAM, '_b') + _promBlockHtml(PROM_CONTENT['ALR-RSI'], '_b');
+  html += '<div class="score-zone"><button class="score-btn" onclick="calcComboScore()">📊 Calculer mes scores</button><div id="score-box"></div></div>';
+  html += _footerHtml();
+  document.getElementById('content').innerHTML = html;
+  window.calcComboScore = function(){
+    var b = document.getElementById('score-box');
+    b.innerHTML =
+      '<div class="res-block"><div id="score-block-title">FAAM — Côté '+_plEsc(labelA.toLowerCase())+'</div>'+PROM_CONTENT.FAAM.score('_a')+'</div>'
+      +'<div class="res-block"><div id="score-block-title">FAAM — Côté '+_plEsc(labelB.toLowerCase())+'</div>'+PROM_CONTENT.FAAM.score('_b')+'</div>'
+      +'<div class="res-block"><div id="score-block-title">ALR-RSI — Côté '+_plEsc(labelA.toLowerCase())+'</div>'+PROM_CONTENT['ALR-RSI'].score('_a')+'</div>'
+      +'<div class="res-block"><div id="score-block-title">ALR-RSI — Côté '+_plEsc(labelB.toLowerCase())+'</div>'+PROM_CONTENT['ALR-RSI'].score('_b')+'</div>';
+    b.style.display = 'block';
+    b.scrollIntoView({behavior:'smooth', block:'nearest'});
+  };
+}
+
+function _ptCardHtml(nom, ddn, date, label){
+  if(!nom) return '';
+  var initials = nom.split(/\s+/).map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase();
+  return '<div class="pt-card"><div class="pt-avatar">'+_plEsc(initials)+'</div>'
+    +'<div><div class="pt-name">'+_plEsc(nom)+'</div><div class="badges">'
+    +(ddn?'<span class="badge">Né(e) le '+_plEsc(ddn)+'</span>':'')
+    +(date?'<span class="badge">'+_plEsc(date)+'</span>':'')
+    +(label?'<span class="badge">'+_plEsc(label)+'</span>':'')
+    +'</div></div></div>';
+}
+function _promBlockHtml(def, suf){
+  return '<div class="prom-hdr"><div style="flex:1;min-width:0;"><h1>'+_plEsc(def.acronym)+'</h1><div class="sub">'+_plEsc(def.name)+'</div></div>'
+    + '<span class="scale-badge">'+_plEsc(def.scale)+'</span></div>'
+    + '<div class="body">'+def.html(suf)+'</div>';
+}
+function _footerHtml(){
+  return '<div class="footer">Document généré par <strong>Rehab4Perf</strong> · '+_plEsc(new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'}))+'</div>';
+}
+
+function render(){
+  if(_plParam('combo') === '1') renderCombo();
+  else renderSingle(_plParam('prom'));
+}
+render();
+</script>
+</body>
+</html>

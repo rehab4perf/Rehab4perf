@@ -1363,6 +1363,7 @@ body {
   </div><!-- /cr-layout -->
 </div><!-- /panel-cr -->
 
+<script src="js/prom-content.js?v=20260710"></script>
 <script>
 (function() {
   // Init date à aujourd'hui
@@ -1955,15 +1956,14 @@ function openPromFullPage(){
   w.document.close();
 }
 
-function exportPromForPatient(){
-  var acronym = _currentPromAcronym;
+/* Construit le document HTML autonome (questionnaire + auto-scoring) d'un PROM.
+   Reutilise par le telechargement local (exportPromForPatient) et par le lien
+   partageable des batteries (_batBuildPromHtml). sideBadge : badge cote optionnel. */
+function _buildPromDocumentHtml(acronym, nom, ddn, date, sideBadge){
   var p = PROMS_DATA.find(function(x){ return x.acronym === acronym; });
   var q = PROMS_QUESTIONNAIRES[acronym];
-  if(!p || !q){ return; }
+  if(!p || !q) return null;
   var _eh = function(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
-  var nom  = (document.getElementById('prom-pt-nom').value||'').trim();
-  var ddn  = (document.getElementById('prom-pt-ddn').value||'').trim();
-  var date = (document.getElementById('prom-pt-date').value||'').trim() || new Date().toLocaleDateString('fr-FR');
   var profile = {}; try{ profile = JSON.parse(localStorage.getItem('r4p-profile')||'{}'); }catch(e){}
   var praticien = ((profile.prenom||'')+' '+(profile.nom||'')).trim();
   var cabinet   = profile.cabinet||''; var tel = profile.tel||''; var email = profile.email||'';
@@ -2015,6 +2015,7 @@ function exportPromForPatient(){
     +'<div><div class="pt-name">'+_eh(nom)+'</div><div class="badges">'
     +(ddn?'<span class="badge">Né(e) le '+_eh(ddn)+'</span>':'')
     +(date?'<span class="badge">'+_eh(date)+'</span>':'')
+    +(sideBadge?'<span class="badge">'+_eh(sideBadge)+'</span>':'')
     +'</div></div></div>' : '';
   var footerDate = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
   var jsHelpers = 'function _sum(prefix,n,from){from=from||1;var t=0;for(var i=from;i<=n;i++){var s=document.querySelector(\'input[name="\'+prefix+i+\'"]:checked\');if(s)t+=parseFloat(s.value);}return t;}'
@@ -2047,6 +2048,18 @@ function exportPromForPatient(){
     +'}'
     +'<\/script>'
     +'</body></html>';
+  return htmlOut;
+}
+
+function exportPromForPatient(){
+  var acronym = _currentPromAcronym;
+  var p = PROMS_DATA.find(function(x){ return x.acronym === acronym; });
+  if(!p){ return; }
+  var nom  = (document.getElementById('prom-pt-nom').value||'').trim();
+  var ddn  = (document.getElementById('prom-pt-ddn').value||'').trim();
+  var date = (document.getElementById('prom-pt-date').value||'').trim() || new Date().toLocaleDateString('fr-FR');
+  var htmlOut = _buildPromDocumentHtml(acronym, nom, ddn, date, '');
+  if(!htmlOut) return;
   var dateSlug = date.replace(/\//g,'-');
   var patSlug = nom.split(/\s+/)[0] || 'patient';
   var filename = 'PROM_'+p.acronym.replace(/[^a-zA-Z0-9]/g,'_')+'_'+patSlug+'_'+dateSlug+'.html';
@@ -3112,112 +3125,10 @@ PROMS_QUESTIONNAIRES['ATRS'] = {
   }
 };
 
-/* ═══════════════════════════════════════════════════════════════
-   FAAM — Foot and Ankle Ability Measure (version FR, Borloz 2011)
-   2 sous-échelles : AVQ (21 items) + Sport (8 items).
-   Likert 4→0 (4=aucune difficulté … 0=incapable) ; N/A exclu du calcul.
-   Score % = somme / (nb répondus × 4) × 100.
-   Validité : AVQ ≥19/21 répondus, Sport ≥7/8.
-═══════════════════════════════════════════════════════════════ */
-var _FAAM_ADL = [
-  'Se tenir debout','Marcher sur un terrain régulier','Marcher pied nu sur un terrain régulier',
-  'Monter une pente','Descendre une pente','Monter les escaliers','Descendre les escaliers',
-  'Marcher sur un terrain irrégulier','Monter et descendre d\'un trottoir','S\'accroupir',
-  'Se mettre sur la pointe des pieds','Faire les premiers pas (le matin au réveil / après une position assise prolongée)',
-  'Marcher 5 minutes ou moins','Marcher environ 10 minutes','Marcher 15 minutes ou plus',
-  'Les tâches ménagères','Les activités de la vie quotidienne','Les soins personnels',
-  'Un travail lourd (pousser / tirer, grimper, porter)','Un travail léger à modéré (se tenir debout, marcher)','Les activités de loisirs'
-];
-var _FAAM_SPORT = [
-  'Courir','Sauter','Se réceptionner d\'un saut','Démarrer et s\'arrêter rapidement',
-  'Faire des pas chassés / des déplacements latéraux','Activités sportives à faible impact (peu de chocs)',
-  'Capacité à exécuter votre activité sportive avec votre technique habituelle',
-  'Capacité à pratiquer votre sport aussi longtemps que vous le souhaitez'
-];
-/* Calcule un sous-score FAAM. Retourne {pct} si valide, sinon {incomplete:[...]} ou {tooManyNA:true}. */
-function _faamSub(prefix, n, maxNA){
-  var sum=0, vals=0, na=0, blank=[];
-  for(var i=1;i<=n;i++){
-    var el=document.querySelector('input[name="'+prefix+i+'"]:checked');
-    if(!el){ blank.push('Q'+i); }
-    else if(el.value==='na'){ na++; }
-    else { sum+=parseFloat(el.value); vals++; }
-  }
-  if(blank.length) return {incomplete:blank};
-  if(na>maxNA || vals===0) return {tooManyNA:true, na:na};
-  return {pct:Math.round(sum/(vals*4)*100), sum:sum, vals:vals, na:na};
-}
-function _faamRowsHtml(prefix, items){
-  var opts=[[4,'Aucune'],[3,'Légère'],[2,'Modérée'],[1,'Sévère'],[0,'Incapable'],['na','N/A']];
-  var h='';
-  items.forEach(function(lbl,idx){
-    h+='<div class="prom-q"><div class="prom-q-text">'+lbl+'</div><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;">';
-    opts.forEach(function(o){
-      h+='<label style="display:inline-flex;align-items:center;gap:4px;font-size:.72rem;border:1px solid #dde3ec;border-radius:5px;padding:3px 8px;cursor:pointer;color:#444;"><input type="radio" name="'+prefix+(idx+1)+'" value="'+o[0]+'" style="accent-color:#1A3A5C;">'+o[1]+'</label>';
-    });
-    h+='</div></div>';
-  });
-  return h;
-}
-PROMS_QUESTIONNAIRES['FAAM'] = {
-  html: '<div class="prom-intro">Répondez à chaque item selon la difficulté ressentie au cours de la <b>semaine passée</b>, en raison de votre pied ou de votre cheville. Si l\'activité est limitée par autre chose, cochez <b>N/A</b>.</div>'
-    + '<div class="prom-section-label">Sous-échelle Vie quotidienne (AVQ) — 21 items</div>'
-    + _faamRowsHtml('faamadl', _FAAM_ADL)
-    + '<div class="prom-section-label">Sous-échelle Sport — 8 items</div>'
-    + _faamRowsHtml('faamsport', _FAAM_SPORT),
-  score: function(){
-    function line(label, r, maxNA){
-      if(r.incomplete) return '<div style="color:#C0392B;">'+label+' : incomplet ('+r.incomplete.length+' item'+(r.incomplete.length>1?'s':'')+' sans réponse)</div>';
-      if(r.tooManyNA) return '<div style="color:#C0392B;">'+label+' : trop de N/A ('+r.na+') — sous-score non calculable (max '+maxNA+').</div>';
-      return '<div>'+label+' : <strong style="font-size:1.1rem;color:#1A3A5C;">'+r.pct+' %</strong> <span style="color:#888;font-size:.8rem;">('+r.sum+'/'+(r.vals*4)+(r.na?' · '+r.na+' N/A':'')+')</span></div>';
-    }
-    var adl=_faamSub('faamadl',21,2), sport=_faamSub('faamsport',8,1);
-    return line('FAAM-AVQ', adl, 2) + '<div style="height:6px;"></div>' + line('FAAM-Sport', sport, 1)
-      + '<div style="font-size:.78rem;color:#666;margin-top:8px;">Score = somme / (items répondus × 4) × 100. AVQ valide si ≥19/21, Sport si ≥7/8.</div>';
-  }
-};
-
-/* ═══════════════════════════════════════════════════════════════
-   ALR-RSI — Ankle Ligament Reconstruction RSI
-═══════════════════════════════════════════════════════════════ */
-var _ALRRSI_Q = [
-  ['Pensez-vous pouvoir pratiquer votre sport au même niveau qu\'auparavant ?','Pas du tout sûr','Totalement sûr'],
-  ['Pensez-vous que vous pourriez vous blesser de nouveau la cheville si vous repreniez le sport ?','Extrêmement probable','Pas du tout probable'],
-  ['Êtes-vous inquiet(e) à l\'idée de reprendre votre sport ?','Extrêmement inquiet','Pas du tout inquiet'],
-  ['Pensez-vous que votre cheville sera stable lors de votre pratique sportive ?','Pas du tout sûr','Totalement sûr'],
-  ['Pensez-vous pouvoir pratiquer votre sport sans vous soucier de votre cheville ?','Pas du tout sûr','Totalement sûr'],
-  ['Craignez-vous de vous blesser de nouveau la cheville lors de votre pratique sportive ?','Crainte extrême','Aucune crainte'],
-  ['Êtes-vous frustré(e) de devoir tenir compte de votre cheville lors de votre pratique sportive ?','Extrêmement frustré','Pas du tout frustré'],
-  ['Pensez-vous que votre cheville peut résister aux contraintes ?','Pas du tout sûr','Totalement sûr'],
-  ['Avez-vous peur de vous reblesser accidentellement la cheville lors de votre pratique sportive ?','Très peur','Pas du tout peur'],
-  ['L\'idée d\'une possible réopération ou rééducation vous empêche-t-elle de pratiquer votre sport ?','Tout le temps','À aucun moment'],
-  ['Êtes-vous confiant(e) en votre capacité à pratiquer votre sport ?','Pas du tout confiant','Totalement confiant'],
-  ['Êtes-vous détendu(e) à l\'idée de pratiquer votre sport ?','Pas du tout détendu','Totalement détendu'],
-];
-PROMS_QUESTIONNAIRES['ALR-RSI'] = {
-  html: (function(){
-    var qs = _ALRRSI_Q;
-    var h='<div class="prom-intro">Répondez aux questions concernant le sport principal pratiqué avant la blessure. Cochez la case correspondant à votre situation actuelle.</div>';
-    qs.forEach(function(q,i){
-      h+='<div class="prom-q"><div class="prom-q-num">Q'+(i+1)+'</div><div class="prom-q-text">'+q[0]+'</div>'
-        +'<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;align-items:center;">'
-        +'<span style="font-size:.72rem;color:#888;white-space:nowrap;">'+q[1]+'</span>';
-      for(var v=0;v<=10;v++) h+='<label style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.75rem;min-width:26px;"><input type="radio" name="alrrsi'+(i+1)+'" value="'+v+'"><span>'+v+'</span></label>';
-      h+='<span style="font-size:.72rem;color:#888;white-space:nowrap;">'+q[2]+'</span></div></div>';
-    });
-    return h;
-  })(),
-  score: function(){
-    var t=0,m=_missing('alrrsi',12);
-    if(m.length) return '<div style="color:#C0392B;">Questions non répondues : '+m.join(', ')+'</div>';
-    t=_sum('alrrsi',12);
-    var sc=Math.round(t*100/120);
-    var col=sc>=60?'#2D6A4F':'#C0392B';
-    return '<div>Score ALR-RSI : <strong style="font-size:1.2rem;color:'+col+'">'+sc+' / 100</strong></div>'
-      +'<div style="font-size:.82rem;color:'+col+';font-weight:600;margin-top:4px;">'+(sc>=60?'Bonne disponibilité psychologique':'Disponibilité psychologique insuffisante (seuil 60%)')+'</div>'
-      +'<div style="font-size:.78rem;color:#666;margin-top:4px;">Score = (Somme × 100) / 120. Seuil recommandé ≥ 60.</div>';
-  }
-};
+/* FAAM et ALR-RSI : définitions partagées avec le lien patient (js/prom-content.js),
+   pour ne jamais faire diverger le questionnaire rempli en cabinet et celui envoyé par lien. */
+PROMS_QUESTIONNAIRES['FAAM'] = { html: PROM_CONTENT.FAAM.html(), score: PROM_CONTENT.FAAM.score };
+PROMS_QUESTIONNAIRES['ALR-RSI'] = { html: PROM_CONTENT['ALR-RSI'].html(), score: PROM_CONTENT['ALR-RSI'].score };
 
 /* ═══════════════════════════════════════════════════════════════
    SI-RSI — Shoulder Instability Return to Sport after Injury
@@ -7097,10 +7008,14 @@ function openBattery(key){
     + pair('bat-faamadl','bat-faamadl-h','FAAM-ADL (%)')
     + pair('bat-faamsport','bat-faamsport-h','FAAM-Sport (%)')
     + pair('bat-alrrsi','bat-alrrsi-h','ALR-RSI (%)')
-    + '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">'
+    + '<div style="font-size:.62rem;color:#aaa;text-transform:uppercase;margin-top:8px;">Remplir en cabinet</div>'
+    + '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;align-items:center;">'
       + sbtn("_batFillFaam('injured')", 'Remplir FAAM — lésé') + sbtn("_batFillFaam('healthy')", 'FAAM — sain')
+    + '</div>'
+    + '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;align-items:center;">'
       + sbtn("_batFillAlrRsi('injured')", 'Remplir ALR-RSI — lésé') + sbtn("_batFillAlrRsi('healthy')", 'ALR-RSI — sain')
     + '</div>'
+    + '<button onclick="_batShareAllProms()" style="width:100%;margin-top:10px;background:#0F766E;color:#fff;border:none;border-radius:7px;padding:10px;font-size:.82rem;font-weight:700;cursor:pointer;font-family:inherit;">🔗 Copier le lien patient (FAAM + ALR-RSI, les 2 côtés)</button>'
     + note('FAAM-ADL : &lt;90→0 · 90-95→1 · &gt;95→2 · FAAM-Sport : &lt;80→0 · 80-95→1 · &gt;95→2 · ALR-RSI : &lt;55→0 · 55-63→1 · 63-76→2 · &gt;76→3')
 
     + '<div style="'+sec+'">Tests fonctionnels (praticien)</div>'
@@ -7372,6 +7287,31 @@ function _batFillAlrRsi(side){
 function _batFillFaam(side){
   _batAwaitingProm = 'FAAM'; _batAwaitingSide = side || 'injured';
   if(typeof openPromCard === 'function') openPromCard('FAAM');
+}
+
+/* ── Lien partageable, combinant FAAM + ALR-RSI sur les 2 côtés — sur le modèle du lien
+   athlète (athlete.html) : une page publique statique (prom-link.html) qui lit ses paramètres
+   dans l'URL et rend les questionnaires à la volée. Pas d'upload, pas de bucket, pas de connexion.
+   Les libellés s'adaptent à la latéralité choisie dans la batterie :
+   D/G (unilatéral) → Côté lésé / Côté sain. Bilatéral → Côté droit / Côté gauche. */
+function _batShareAllProms(){
+  var sideVal = (document.getElementById('bat-side')||{}).value || '';
+  var comboSide = sideVal === 'B' ? 'bilateral' : 'unilateral';
+  var nom  = (document.getElementById('bat-pt-nom')||{}).value||'';
+  var ddn  = (document.getElementById('bat-pt-ddn')||{}).value||'';
+  var date = (document.getElementById('bat-pt-date')||{}).value || new Date().toLocaleDateString('fr-FR');
+  var base = window.location.href.replace(/\/[^/]+$/, '/prom-link.html');
+  var qs = new URLSearchParams();
+  qs.set('combo', '1');
+  qs.set('side', comboSide);
+  if(nom) qs.set('nom', nom);
+  if(ddn) qs.set('ddn', ddn);
+  if(date) qs.set('date', date);
+  var url = base + '?' + qs.toString();
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(function(){ _batToast('🔗 Lien patient copié !'); }).catch(function(){ prompt('Copie ce lien :', url); });
+  } else { prompt('Copie ce lien :', url); }
+  if(navigator.share && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)){ navigator.share({url:url, title:'Questionnaires Rehab4Perf'}).catch(function(){}); }
 }
 function _batCaptureAlrAnswers(){
   var arr=[];
