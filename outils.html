@@ -7371,12 +7371,22 @@ function _batShareAllProms(){
 /* ── Récupération automatique des réponses envoyées par le patient depuis prom-link.html
    (table prom_responses, RLS scopée par patient/praticien). Bouton explicite, pas de
    remplissage silencieux, pour ne jamais écraser une saisie manuelle par erreur. */
+var BAT_SUPA_URL = 'https://sxdobjodxkwexaspepdm.supabase.co';
+var BAT_SUPA_KEY = 'sb_publishable_zEJrmQOnKyRm-Y_NyojaTA_ERrDx4pl';
+function _batAuthToken(){
+  try {
+    var raw = localStorage.getItem('sb-sxdobjodxkwexaspepdm-auth-token');
+    if(!raw) return null;
+    var parsed = JSON.parse(raw);
+    return parsed.access_token || (parsed.currentSession && parsed.currentSession.access_token) || null;
+  } catch(e){ return null; }
+}
 function _batFetchPromResponses(){
   if(!_crPatientId){ _batToast('Sélectionnez d\'abord un patient.'); return; }
-  _crRefreshToken();
-  if(!_crToken){ _batToast('Session expirée — rechargez la page.'); return; }
-  fetch(CR_SUPA_URL + '/rest/v1/prom_responses?patient_id=eq.'+_crPatientId+'&order=created_at.desc&limit=1', {
-    headers: _crSbHeaders()
+  var tok = _batAuthToken();
+  if(!tok){ _batToast('Session expirée — rechargez la page.'); return; }
+  fetch(BAT_SUPA_URL + '/rest/v1/prom_responses?patient_id=eq.'+_crPatientId+'&order=created_at.desc&limit=1', {
+    headers: { 'Authorization':'Bearer '+tok, 'apikey':BAT_SUPA_KEY, 'Content-Type':'application/json' }
   }).then(function(r){ return r.json(); }).then(function(rows){
     if(!rows || !rows.length){ _batToast('Aucune réponse patient reçue pour ce patient.'); return; }
     _batApplyPromResponse(rows[0]);
