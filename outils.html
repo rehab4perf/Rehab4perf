@@ -7184,11 +7184,62 @@ function _batRecalc(){
   _batRefreshSebtAvg();
   var res = document.getElementById('bat-result'); if(!res) return;
   res.innerHTML = ((_batView==='radar') ? _batRenderRadar(b, s) : _batRenderBars(b, s, months))
-    + _batRenderLsi(v) + _batRenderProfile();
+    + _batRenderDeficits(v, s) + _batRenderLsi(v) + _batRenderProfile();
 }
 
 /* Section symétrie (LSI) — à l'écran et réutilisée dans le PDF */
 var _BAT_LSI_COLS = '1.3fr .8fr .8fr .7fr';
+/* Points à travailler — une phrase par composant sous 75% de ses points (uniquement si
+   le composant a été renseigné). Fondé sur ce que chaque test évalue (Picot et al. 2023 +
+   littérature citée : Gribble & Hertel pour le SEBT, Caffrey et al. pour le F8T). */
+function _batDeficitPhrases(v, s){
+  var out = [];
+  if(s.entered.sls && s.pts.sls <= 2) out.push('Déficit de contrôle postural statique (Single Leg Stance) — travailler l\'équilibre unipodal en appui simple et la proprioception de cheville en charge.');
+  if(s.entered.sebt && s.pts.sebt <= 5){
+    var ant = s.extra.antPct, pm = s.extra.pmPct;
+    var antLow = ant!=null && ant<=60, pmLow = pm!=null && pm<=90;
+    if(antLow) out.push('Amplitude de flexion dorsale et/ou contrôle du quadriceps insuffisants (reach antérieur du Y-balance limité) — travailler la mobilité de cheville et le contrôle du genou en charge.');
+    if(pmLow) out.push('Déficit de contrôle proximal (hanche, ischio-jambiers) — travailler la stabilité de hanche en chaîne fermée.');
+    if(!antLow && !pmLow) out.push('Déficit de contrôle postural dynamique — travailler l\'équilibre dynamique multidirectionnel (Y-balance).');
+  }
+  if(s.entered.sht && s.pts.sht <= 3) out.push('Déficit de stabilité réactive à vitesse (Side Hop) — travailler la stabilité latérale explosive et le contrôle neuromusculaire réactif de la cheville (sauts latéraux progressifs).');
+  if(s.entered.f8 && s.pts.f8 <= 2) out.push('Déficit d\'agilité et de contrôle directionnel (Figure-of-8) — travailler les changements de direction et le contrôle dynamique en course.');
+  if(s.entered.faam_adl && s.pts.faam_adl <= 1) out.push('Limitations fonctionnelles rapportées dans les activités quotidiennes — restaurer la confiance fonctionnelle de la cheville au quotidien.');
+  if(s.entered.faam_sport && s.pts.faam_sport <= 1) out.push('Limitations fonctionnelles rapportées à l\'effort sportif — prévoir un travail de réathlétisation spécifique au sport avant la reprise.');
+  if(s.entered.alrrsi && s.pts.alrrsi <= 2) out.push('Disponibilité psychologique insuffisante au retour au sport — travailler la confiance et la peur de la re-blessure (éducation, exposition progressive à l\'effort).');
+  return out;
+}
+/* Signes d'instabilité — séparés des déficits de points : signale une sensation d'instabilité
+   ressentie pendant un test (bonus « pas d'instabilité » non obtenu), évocatrice de CAI. */
+function _batInstabilityPhrases(v){
+  var out = [];
+  if(v.sls_err!=null && !v.sls_stable) out.push('Sensation d\'instabilité ressentie lors du Single Leg Stance — signe évocateur d\'instabilité chronique de cheville (CAI).');
+  if((v.sebt_ant!=null || v.sebt_pm!=null || v.sebt_pl!=null) && !v.sebt_stable) out.push('Sensation d\'instabilité ressentie lors du Y-balance (mSEBT) — signe évocateur d\'instabilité chronique de cheville (CAI).');
+  if(v.sht_time!=null && !v.sht_stable) out.push('Sensation d\'instabilité ressentie lors du Side Hop — signe évocateur d\'instabilité chronique de cheville (CAI).');
+  if(v.f8_time!=null && !v.f8_stable) out.push('Sensation d\'instabilité ressentie lors du Figure-of-8 — signe évocateur d\'instabilité chronique de cheville (CAI).');
+  return out;
+}
+function _batRenderDeficits(v, s){
+  var deficits = _batDeficitPhrases(v, s);
+  var instab = _batInstabilityPhrases(v);
+  if(!deficits.length && !instab.length) return '';
+  var html = '';
+  if(deficits.length){
+    html += '<div style="margin-top:16px;border-top:1px solid #dde3ec;padding-top:12px;">'
+      + '<div style="font-size:.78rem;font-weight:700;color:#1A3A5C;margin-bottom:2px;">Points à travailler</div>'
+      + '<div style="font-size:.68rem;color:#888;margin-bottom:8px;">Composants sous 75 % de leurs points.</div>'
+      + '<ul style="margin:0;padding-left:18px;">' + deficits.map(function(p){ return '<li style="font-size:.8rem;color:#444;line-height:1.6;margin-bottom:6px;">'+p+'</li>'; }).join('') + '</ul>'
+      + '</div>';
+  }
+  if(instab.length){
+    html += '<div style="margin-top:16px;border-top:1px solid #dde3ec;padding-top:12px;">'
+      + '<div style="font-size:.78rem;font-weight:700;color:#C0392B;margin-bottom:2px;">Signes d\'instabilité ressentis</div>'
+      + '<ul style="margin:0;padding-left:18px;">' + instab.map(function(p){ return '<li style="font-size:.8rem;color:#444;line-height:1.6;margin-bottom:6px;">'+p+'</li>'; }).join('') + '</ul>'
+      + '</div>';
+  }
+  return html;
+}
+
 function _batRenderLsi(v){
   var r = _batLsi(v);
   if(!r.tests.length && !r.proms.length) return '';
@@ -7404,6 +7455,7 @@ function _batExportPdf(){
         ? '<div style="margin:6px 0 18px;">'+_batRenderRadar(b,s)+'</div>'
           +'<table><thead><tr><th style="text-align:left;font-size:.7rem;color:#888;text-transform:uppercase;">Composant</th><th style="text-align:left;font-size:.7rem;color:#888;">Valeur</th><th style="text-align:right;font-size:.7rem;color:#888;">Points</th></tr></thead><tbody>'+rows+'</tbody></table>'
         : '<div style="margin:6px 0 4px;">'+_batRenderBars(b,s,months)+'</div>')
+    +_batRenderDeficits(v, s)
     +_batRenderLsi(v)
     +_batRenderProfile()
     +'</div><div class="ft">Rapport généré par Rehab4Perf · '+_batEsc(date||'')+' · Cotation : '+_batEsc(b.source)+'</div></div></body></html>';
