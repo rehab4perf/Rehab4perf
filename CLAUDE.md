@@ -30,7 +30,7 @@ import re
 from collections import Counter
 with open('bilan.html', encoding='utf-8') as f:
     content = f.read()
-all_ids = re.findall(r'id=["\']([^"\']+)["\']', content)
+all_ids = re.findall(r'(?<![-\w])id=["\']([^"\']+)["\']', content)  # exclut data-block-id (partagé par les paires single/bilateral)
 dups = {k:v for k,v in Counter(all_ids).items() if v > 1}
 print('Dups:', dups or 'Aucun ✓')
 tests = re.findall(r"'(tb-[\w-]+)'\s*:\s*\{type:", content)

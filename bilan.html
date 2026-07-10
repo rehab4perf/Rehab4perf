@@ -1572,7 +1572,7 @@ textarea { resize:none !important; overflow:hidden !important; }
     <div class="page-subtitle">Remplissez en premier — données reprises dans tous les onglets</div>
   </div>
   <div class="page-content">
-    <div class="block">
+    <div class="block" data-block-id="infos--identite">
       <div class="block-header">Identité</div>
       <div class="form-grid triple">
         <div class="field"><label>Nom</label><input type="text" id="f-nom" placeholder="Dupont" autocapitalize="words" oninput="_capInput(this);updateAll()"></div>
@@ -1636,7 +1636,7 @@ textarea { resize:none !important; overflow:hidden !important; }
       </div>
     </div>
 
-<div class="block">
+<div class="block" data-block-id="infos--anamnese">
   <div class="block-header grey">Anamnèse</div>
   <div class="form-grid single">
     <div class="field"><label>Motif de consultation (en propres mots du patient)</label><textarea id="f-motif-patient" placeholder="Douleur au genou droit depuis ma blessure au foot…" style="min-height:90px"></textarea></div>
@@ -1671,7 +1671,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 </div>
 
 <!-- Imageries disponibles -->
-<div class="block">
+<div class="block" data-block-id="infos--imageries">
   <div class="block-header grey">📷 Imageries disponibles</div>
   <div class="img-table-wrap">
     <table class="img-table">
@@ -1761,7 +1761,7 @@ textarea { resize:none !important; overflow:hidden !important; }
     <div class="page-subtitle" id="hdr-epaule">—</div>
   </div>
   <div class="page-content">
-    <div class="block">
+    <div class="block" data-block-id="epaule--marqueur">
       <div class="block-header light">Type d'épaule & Marqueur</div>
       <div class="form-grid">
         <div class="field"><label>Type d'épaule</label>
@@ -1776,7 +1776,7 @@ textarea { resize:none !important; overflow:hidden !important; }
       </div>
     </div>
 
-<div class="block" id="ep-single-trau">
+<div class="block" data-block-id="epaule--trau" id="ep-single-trau">
   <div class="block-header red">Quick Scan Traumatique — Positif = ❌ (signe clinique)</div>
   <div style="padding:6px 14px 2px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);background:var(--surface2);border-bottom:1px solid var(--border)">Instabilité Gléno-Humérale</div>
   <table class="test-table">
@@ -1799,40 +1799,40 @@ textarea { resize:none !important; overflow:hidden !important; }
     <tbody id="tb-ep-trau-coiffe"></tbody>
   </table>
 </div>
-<div class="block" id="ep-bilateral-trau" style="display:none">
+<div class="block" data-block-id="epaule--trau" id="ep-bilateral-trau" style="display:none">
   <div class="block-header red">Quick Scan Traumatique — Positif = ❌ (signe clinique)</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ep-trau-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ep-trau-d"></tbody></table></div>
 </div>
 
 
-<div class="block" id="ep-single-irrit">
+<div class="block" data-block-id="epaule--irrit" id="ep-single-irrit">
   <div class="block-header red">Quick Scan Épaule Irritable — Positif = ❌ (signe clinique)</div>
   <table class="test-table">
     <thead><tr><th style="width:50%">Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
     <tbody id="tb-ep-irrit"></tbody>
   </table>
 </div>
-<div class="block" id="ep-bilateral-irrit" style="display:none">
+<div class="block" data-block-id="epaule--irrit" id="ep-bilateral-irrit" style="display:none">
   <div class="block-header red">Quick Scan Épaule Irritable — Positif = ❌ (signe clinique)</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ep-irrit-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ep-irrit-d"></tbody></table></div>
 </div>
 
-<div class="block" id="ep-single-fonc">
+<div class="block" data-block-id="epaule--fonc" id="ep-single-fonc">
   <div class="block-header green">Quick Scan Fonctionnel — Positif = ✅ (signe favorable)</div>
   <table class="test-table">
     <thead><tr><th style="width:50%">Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
     <tbody id="tb-ep-fonc"></tbody>
   </table>
 </div>
-<div class="block" id="ep-bilateral-fonc" style="display:none">
+<div class="block" data-block-id="epaule--fonc" id="ep-bilateral-fonc" style="display:none">
   <div class="block-header green">Quick Scan Fonctionnel — Positif = ✅ (signe favorable)</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ep-fonc-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ep-fonc-d"></tbody></table></div>
 </div>
 
-<div class="block" id="ep-single-ortho">
+<div class="block" data-block-id="epaule--ortho" id="ep-single-ortho">
   <div class="block-header red">Quick Scan Orthopédique — Positif = ❌ (signe clinique)</div>
 
   <!-- MOBILITÉ -->
@@ -1867,13 +1867,13 @@ textarea { resize:none !important; overflow:hidden !important; }
     </table>
   </div>
 </div>
-<div class="block" id="ep-bilateral-ortho" style="display:none">
+<div class="block" data-block-id="epaule--ortho" id="ep-bilateral-ortho" style="display:none">
   <div class="block-header red">Quick Scan Orthopédique — Positif = ❌ (signe clinique)</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ep-ortho-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ep-ortho-d"></tbody></table></div>
 </div>
 
-<div class="block">
+<div class="block" data-block-id="epaule--amplitudes-articulaires">
   <div class="block-header grey">Amplitudes Articulaires — Épaule (°)</div>
   <table class="rom-block">
     <thead><tr><th style="text-align:left;width:38%">Mouvement</th><th class="sl-g">Côté Gauche</th><th class="sl-d">Côté Droit</th></tr></thead>
@@ -1907,12 +1907,12 @@ textarea { resize:none !important; overflow:hidden !important; }
   <div style="padding:10px 12px 2px"><div style="font-size:.63rem;color:var(--text3);margin-bottom:3px">Observations</div><textarea id="rom-ep-obs" placeholder="Ex : RI D limitée à 45°, douleur en fin d'abduction, sensation d'accrochage…" style="font-family:inherit;font-size:.8rem;color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px 8px;width:100%;min-height:48px;resize:vertical;outline:none;background:var(--surface)"></textarea></div>
 </div>
 
-<div class="block">
+<div class="block" data-block-id="epaule--optionnels">
   <div class="block-header grey">Tests Optionnels</div>
   <div class="form-grid single"><div class="field"><label>Tests complémentaires réalisés en fonction de la situation</label><textarea id="ep-opt" style="min-height:70px" placeholder="Ex: Hawkins-Kennedy modifié — positif, Test de Jobe — douleur 3/10…"></textarea></div></div>
 </div>
 
-<div class="block">
+<div class="block" data-block-id="epaule--conclusion">
   <div class="block-header">Conclusion — Diagnostic & Éducation patient</div>
   <textarea class="concl-area" id="ep-conclusion" placeholder="Tableau clinique compatible avec une tendinopathie de la coiffe réactive. Éducation réalisée sur le modèle continuum. Programme de réathlétisation progressif…"></textarea>
 </div>
@@ -1930,12 +1930,12 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
   <div class="page-content">
 
-    <div class="block">
+    <div class="block" data-block-id="coude--marqueur">
       <div class="block-header light">Marqueur de douleur</div>
       <div class="form-grid single"><div class="field"><label>Mouvement / activité reproducteur de la douleur</label><textarea id="co-marqueur" placeholder="Ex : extension contre résistance douloureuse 7/10, gêne à l'écriture…" style="min-height:48px"></textarea></div></div>
     </div>
 
-    <div class="block">
+    <div class="block" data-block-id="coude--amplitudes-articulaires">
       <div class="block-header grey">Amplitudes Articulaires — Coude</div>
       <div id="mob-co">
         <div class="mob-dir-row"><span class="mob-dir-label">Flexion</span><select class="mob-status-sel" id="mob-co-Flexion-st" onchange="_mobStatusChange(this)"><option value="">—</option><option value="ok">✓ OK</option><option value="acceptable">~ Acceptable</option><option value="insuffisant">✗ Insuffisant</option></select><input type="text" class="mob-note-inp" id="mob-co-Flexion-nt" placeholder="Ex : 120°, douleur en fin d'amplitude…"></div>
@@ -1945,53 +1945,53 @@ textarea { resize:none !important; overflow:hidden !important; }
       </div>
     </div>
 
-<div class="block" id="co-single-lat">
+<div class="block" data-block-id="coude--lat" id="co-single-lat">
   <div class="block-header red">Compartiment Latéral — Positif = ❌ (signe clinique)</div>
   <table class="test-table">
     <thead><tr><th style="width:50%">Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
     <tbody id="tb-co-lat"></tbody>
   </table>
 </div>
-<div class="block" id="co-bilateral-lat" style="display:none">
+<div class="block" data-block-id="coude--lat" id="co-bilateral-lat" style="display:none">
   <div class="block-header red">Compartiment Latéral — Positif = ❌ (signe clinique)</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-co-lat-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-co-lat-d"></tbody></table></div>
 </div>
 
-<div class="block" id="co-single-med">
+<div class="block" data-block-id="coude--med" id="co-single-med">
   <div class="block-header red">Compartiment Médial — Positif = ❌ (signe clinique)</div>
   <table class="test-table">
     <thead><tr><th style="width:50%">Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
     <tbody id="tb-co-med"></tbody>
   </table>
 </div>
-<div class="block" id="co-bilateral-med" style="display:none">
+<div class="block" data-block-id="coude--med" id="co-bilateral-med" style="display:none">
   <div class="block-header red">Compartiment Médial — Positif = ❌ (signe clinique)</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-co-med-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-co-med-d"></tbody></table></div>
 </div>
 
-<div class="block" id="co-single-ant">
+<div class="block" data-block-id="coude--ant" id="co-single-ant">
   <div class="block-header red">Compartiment Antérieur — Positif = ❌ (signe clinique)</div>
   <table class="test-table">
     <thead><tr><th style="width:50%">Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
     <tbody id="tb-co-ant"></tbody>
   </table>
 </div>
-<div class="block" id="co-bilateral-ant" style="display:none">
+<div class="block" data-block-id="coude--ant" id="co-bilateral-ant" style="display:none">
   <div class="block-header red">Compartiment Antérieur — Positif = ❌ (signe clinique)</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-co-ant-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-co-ant-d"></tbody></table></div>
 </div>
 
-<div class="block" id="co-single-post">
+<div class="block" data-block-id="coude--post" id="co-single-post">
   <div class="block-header red">Compartiment Postérieur — Positif = ❌ (signe clinique)</div>
   <table class="test-table">
     <thead><tr><th style="width:50%">Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
     <tbody id="tb-co-post"></tbody>
   </table>
 </div>
-<div class="block" id="co-bilateral-post" style="display:none">
+<div class="block" data-block-id="coude--post" id="co-bilateral-post" style="display:none">
   <div class="block-header red">Compartiment Postérieur — Positif = ❌ (signe clinique)</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-co-post-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-co-post-d"></tbody></table></div>
@@ -2010,12 +2010,12 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
   <div class="page-content">
 
-    <div class="block">
+    <div class="block" data-block-id="main--marqueur">
       <div class="block-header light">Marqueur de douleur</div>
       <div class="form-grid single"><div class="field"><label>Mouvement / activité reproducteur de la douleur</label><textarea id="po-marqueur" placeholder="Ex : préhension douloureuse 6/10, douleur à la déviation ulnaire…" style="min-height:48px"></textarea></div></div>
     </div>
 
-    <div class="block">
+    <div class="block" data-block-id="main--amplitudes-articulaires">
       <div class="block-header grey">Amplitudes Articulaires — Poignet</div>
       <div id="mob-po">
         <div class="mob-dir-row"><span class="mob-dir-label">Flexion</span><select class="mob-status-sel" id="mob-po-Flexion-st" onchange="_mobStatusChange(this)"><option value="">—</option><option value="ok">✓ OK</option><option value="acceptable">~ Acceptable</option><option value="insuffisant">✗ Insuffisant</option></select><input type="text" class="mob-note-inp" id="mob-po-Flexion-nt" placeholder="Ex : 60°, douleur en fin d'amplitude…"></div>
@@ -2027,40 +2027,40 @@ textarea { resize:none !important; overflow:hidden !important; }
       </div>
     </div>
 
-<div class="block" id="po-single-neuro">
+<div class="block" data-block-id="main--neuro" id="po-single-neuro">
   <div class="block-header red">Tests Neurologiques — Positif = ❌ (signe clinique)</div>
   <table class="test-table">
     <thead><tr><th style="width:50%">Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
     <tbody id="tb-po-neuro"></tbody>
   </table>
 </div>
-<div class="block" id="po-bilateral-neuro" style="display:none">
+<div class="block" data-block-id="main--neuro" id="po-bilateral-neuro" style="display:none">
   <div class="block-header red">Tests Neurologiques — Positif = ❌ (signe clinique)</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-po-neuro-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-po-neuro-d"></tbody></table></div>
 </div>
 
-<div class="block" id="po-single-lig">
+<div class="block" data-block-id="main--lig" id="po-single-lig">
   <div class="block-header red">Tests Ligamentaires — Positif = ❌ (signe clinique)</div>
   <table class="test-table">
     <thead><tr><th style="width:50%">Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
     <tbody id="tb-po-lig"></tbody>
   </table>
 </div>
-<div class="block" id="po-bilateral-lig" style="display:none">
+<div class="block" data-block-id="main--lig" id="po-bilateral-lig" style="display:none">
   <div class="block-header red">Tests Ligamentaires — Positif = ❌ (signe clinique)</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-po-lig-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-po-lig-d"></tbody></table></div>
 </div>
 
-<div class="block" id="po-single-pouce">
+<div class="block" data-block-id="main--pouce" id="po-single-pouce">
   <div class="block-header red">Pouce — De Quervain — Positif = ❌ (signe clinique)</div>
   <table class="test-table">
     <thead><tr><th style="width:50%">Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
     <tbody id="tb-po-pouce"></tbody>
   </table>
 </div>
-<div class="block" id="po-bilateral-pouce" style="display:none">
+<div class="block" data-block-id="main--pouce" id="po-bilateral-pouce" style="display:none">
   <div class="block-header red">Pouce — De Quervain — Positif = ❌ (signe clinique)</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-po-pouce-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-po-pouce-d"></tbody></table></div>
@@ -2078,12 +2078,12 @@ textarea { resize:none !important; overflow:hidden !important; }
     <div class="page-subtitle" id="hdr-rachis">—</div>
   </div>
   <div class="page-content">
-    <div class="block">
+    <div class="block" data-block-id="rachis--marqueur">
       <div class="block-header light">Marqueur</div>
       <div class="form-grid single"><div class="field"><label>Mouvement / activité qui reproduit la douleur</label><textarea id="ra-marqueur" placeholder="Flexion lombaire avec irradiation L5…" style="min-height:48px"></textarea></div></div>
     </div>
 
-<div class="block">
+<div class="block" data-block-id="rachis--cervical">
   <div class="block-header red">Quick Scan Cervical <span style="font-size:.68rem;font-weight:400;opacity:.75;margin-left:6px;letter-spacing:.01em;text-transform:none">— Cluster de Wainner</span></div>
   <table class="test-table">
     <thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
@@ -2105,7 +2105,7 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
 </div>
 
-<div class="block">
+<div class="block" data-block-id="rachis--lombaire">
   <div class="block-header red">Quick Scan Lombaire</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">GAUCHE</div>
@@ -2123,7 +2123,7 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
 </div>
 
-<div class="block">
+<div class="block" data-block-id="rachis--mobilite-rachis">
   <div class="block-header grey">Mobilité du Rachis</div>
   <div style="padding:12px 16px 4px;font-size:.78rem;font-weight:600;color:var(--text2)">CERVICALES</div>
   <div class="mobility-grid" id="mob-cerv"></div>
@@ -2133,12 +2133,12 @@ textarea { resize:none !important; overflow:hidden !important; }
   <div class="mobility-grid" id="mob-lomb"></div>
 </div>
 
-<div class="block">
+<div class="block" data-block-id="rachis--mckenzie">
   <div class="block-header grey">Préférences directionnelles McKenzie</div>
   <div class="form-grid single"><div class="field"><label>Préférences directionnelles (centralisation, périphérisation…)</label><textarea id="ra-mckenzie" style="min-height:120px" placeholder="Ex: centralisation en extension, périphérisation en flexion…&#10;Direction préférentielle : extension lombaire&#10;Centralisation complète en 3 directions&#10;Réponse aux mobilisations : rapide / lente / partielle&#10;Posture aggravante : assis prolongé / flexion répétée"></textarea></div></div>
 </div>
 
-<div class="block">
+<div class="block" data-block-id="rachis--transverse">
   <div class="block-header red">Test du transverse</div>
   <table class="test-table">
     <thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Obs.</th></tr></thead>
@@ -2146,12 +2146,12 @@ textarea { resize:none !important; overflow:hidden !important; }
   </table>
 </div>
 
-<div class="block">
+<div class="block" data-block-id="rachis--optionnels">
   <div class="block-header grey">Tests Optionnels</div>
   <div class="form-grid single"><div class="field"><label>Tests complémentaires réalisés en fonction de la situation</label><textarea id="ra-opt" style="min-height:70px" placeholder="Ex: Test de Gaenslen — positif D, FABERE — douleur inguinale G…"></textarea></div></div>
 </div>
 
-<div class="block">
+<div class="block" data-block-id="rachis--conclusion">
   <div class="block-header">Conclusion</div>
   <textarea class="concl-area" id="ra-conclusion" placeholder="Tableau compatible avec une lombalgie discogénique…"></textarea>
 </div>
@@ -2170,13 +2170,13 @@ textarea { resize:none !important; overflow:hidden !important; }
   <div class="page-content">
 
     <!-- Marqueur -->
-    <div class="block">
+    <div class="block" data-block-id="rachis-cerv--marqueur">
       <div class="block-header light">Marqueur</div>
       <div class="form-grid single"><div class="field"><label>Mouvement / activité qui reproduit la douleur</label><textarea id="cv-marqueur" style="min-height:48px" placeholder="Cervicalgie à la rotation droite avec irradiation C6…"></textarea></div></div>
     </div>
 
     <!-- Tests d'exclusion vasculaire -->
-    <div class="block">
+    <div class="block" data-block-id="rachis-cerv--exclusion-vasculaire">
       <div class="block-header red">Tests d'exclusion vasculaire</div>
       <table class="test-table">
         <thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
@@ -2185,7 +2185,7 @@ textarea { resize:none !important; overflow:hidden !important; }
     </div>
 
     <!-- Syndrome du défilé thoraco-brachial -->
-    <div class="block">
+    <div class="block" data-block-id="rachis-cerv--defile-thoracique">
       <div class="block-header red">Syndrome du Défilé Thoraco-Brachial</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
         <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">GAUCHE</div>
@@ -2198,7 +2198,7 @@ textarea { resize:none !important; overflow:hidden !important; }
     </div>
 
     <!-- Tests d'exclusion mécanique -->
-    <div class="block">
+    <div class="block" data-block-id="rachis-cerv--exclusion-mecanique">
       <div class="block-header red">Tests d'exclusion mécanique</div>
       <table class="test-table">
         <thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
@@ -2207,7 +2207,7 @@ textarea { resize:none !important; overflow:hidden !important; }
     </div>
 
     <!-- ULNT -->
-    <div class="block">
+    <div class="block" data-block-id="rachis-cerv--ulnt">
       <div class="block-header red">ULNT — Tests de Mécanosensitivité</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
         <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">GAUCHE</div>
@@ -2220,7 +2220,7 @@ textarea { resize:none !important; overflow:hidden !important; }
     </div>
 
     <!-- DN4 -->
-    <div class="block">
+    <div class="block" data-block-id="rachis-cerv--dn4">
       <div class="block-header grey">DN4 — Douleur Neuropathique <span style="font-size:.7rem;font-weight:400;letter-spacing:0;text-transform:none;opacity:.8">Score ≥ 4/10 = douleur neuropathique probable</span></div>
       <div style="padding:5px 14px 3px;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);background:var(--surface2);border-bottom:1px solid var(--border)">Entretien — Le patient décrit sa douleur comme...</div>
       <table class="test-table" style="margin:0;border-radius:0">
@@ -2236,7 +2236,7 @@ textarea { resize:none !important; overflow:hidden !important; }
     </div>
 
     <!-- Tests d'exclusion neurologique (motricité 1er, ROT 2ème, sensibilité 3ème) -->
-    <div class="block">
+    <div class="block" data-block-id="rachis-cerv--exclusion-neurologique">
       <div class="block-header red">Tests d'exclusion neurologique</div>
       <div style="padding:6px 14px 2px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);background:var(--surface2);border-bottom:1px solid var(--border)">Motricité</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
@@ -2260,7 +2260,7 @@ textarea { resize:none !important; overflow:hidden !important; }
     </div>
 
     <!-- Mobilité cervicale -->
-    <div class="block">
+    <div class="block" data-block-id="rachis-cerv--mobilite-cervicale">
       <div class="block-header grey">Mobilité Cervicale</div>
       <div class="mobility-grid" id="mob-cv"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border-top:2px solid var(--border)">
@@ -2289,7 +2289,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 
 
     <!-- Conclusion -->
-    <div class="block">
+    <div class="block" data-block-id="rachis-cerv--conclusion">
       <div class="block-header">Conclusion</div>
       <div id="cv-wainner-alert" style="display:none;margin:0 0 0;padding:10px 16px;background:#FFF3CD;border-bottom:1.5px solid #F59E0B;color:#92400E;font-size:.82rem;font-weight:600;align-items:center;gap:8px">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle;margin-right:6px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -2324,13 +2324,13 @@ textarea { resize:none !important; overflow:hidden !important; }
   <div class="page-content">
 
     <!-- Marqueur -->
-    <div class="block">
+    <div class="block" data-block-id="rachis-lomb--marqueur">
       <div class="block-header light">Marqueur</div>
       <div class="form-grid single"><div class="field"><label>Mouvement / activité qui reproduit la douleur</label><textarea id="rl-marqueur" style="min-height:48px" placeholder="Lombalgie à la flexion avec irradiation L5-S1…"></textarea></div></div>
     </div>
 
     <!-- Tests nerveux -->
-    <div class="block">
+    <div class="block" data-block-id="rachis-lomb--nerveux">
       <div class="block-header red">Tests Nerveux — Mécanosensitivité</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
         <div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">GAUCHE</div>
@@ -2343,7 +2343,7 @@ textarea { resize:none !important; overflow:hidden !important; }
     </div>
 
     <!-- Tests d'exclusion neurologique -->
-    <div class="block">
+    <div class="block" data-block-id="rachis-lomb--exclusion-neurologique">
       <div class="block-header red">Tests d'exclusion neurologique</div>
       <div style="padding:6px 14px 2px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);background:var(--surface2);border-bottom:1px solid var(--border)">Réflexes Ostéo-Tendineux</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
@@ -2367,7 +2367,7 @@ textarea { resize:none !important; overflow:hidden !important; }
     </div>
 
     <!-- Tests mécaniques -->
-    <div class="block">
+    <div class="block" data-block-id="rachis-lomb--mecaniques">
       <div class="block-header red">Tests Mécaniques</div>
 
       <table class="test-table" style="margin:0;border-radius:0">
@@ -2389,7 +2389,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 
 
     <!-- Cluster de Laslett -->
-    <div class="block">
+    <div class="block" data-block-id="rachis-lomb--cluster-laslett">
       <div class="block-header red">Cluster de Laslett — Diag Différentiel Lombaire / Sacro-Iliaque</div>
       <div style="padding:5px 14px 3px;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);background:var(--surface2);border-bottom:1px solid var(--border)">Effectuer dans l'ordre — arrêt dès ≥ 2 positifs</div>
 
@@ -2423,13 +2423,13 @@ textarea { resize:none !important; overflow:hidden !important; }
     </div>
 
     <!-- Mobilité lombaire -->
-    <div class="block">
+    <div class="block" data-block-id="rachis-lomb--mobilite-lombaire">
       <div class="block-header grey">Mobilité Lombaire</div>
       <div class="mobility-grid" id="mob-rl"></div>
     </div>
 
     <!-- Bilan McKenzie -->
-    <div class="block">
+    <div class="block" data-block-id="rachis-lomb--bilan-mckenzie">
       <div class="block-header red">Bilan McKenzie (MDT)</div>
       <div style="padding:5px 14px 3px;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);background:var(--surface2);border-bottom:1px solid var(--border)">Mouvements répétés — réponse symptomatique</div>
       <table class="test-table" style="margin:0;border-radius:0">
@@ -2496,14 +2496,14 @@ textarea { resize:none !important; overflow:hidden !important; }
     </div>
 
     <!-- Transverse -->
-    <div class="block">
+    <div class="block" data-block-id="rachis-lomb--transverse">
       <div class="block-header red">Transverse</div>
       <div style="padding:6px 14px 5px;font-size:.72rem;color:var(--text2);background:var(--surface2);border-bottom:1px solid var(--border)">2 doigts positionnés sur l'aine / transverse — <strong style="color:var(--text1)">✚ Positif si les doigts sont repoussés lors de l'action</strong></div>
       <table class="test-table" style="margin:0;border-radius:0"><tbody id="tb-rl-transverse"></tbody></table>
     </div>
 
     <!-- Tests TM -->
-    <div class="block">
+    <div class="block" data-block-id="rachis-lomb--tm">
       <div class="block-header red">Tests TM</div>
 
       <!-- TFD / TFA — arbre décisionnel SIJ -->
@@ -2547,7 +2547,7 @@ textarea { resize:none !important; overflow:hidden !important; }
     </div>
 
     <!-- Conclusion -->
-    <div class="block">
+    <div class="block" data-block-id="rachis-lomb--conclusion">
       <div class="block-header">Conclusion</div>
       <textarea class="concl-area" id="rl-conclusion" placeholder="Tableau compatible avec une lombalgie discogénique L4-L5…"></textarea>
     </div>
@@ -2564,7 +2564,7 @@ textarea { resize:none !important; overflow:hidden !important; }
     <div class="page-subtitle" id="hdr-hanche">—</div>
   </div>
   <div class="page-content">
-    <div class="block">
+    <div class="block" data-block-id="hanche--marqueur">
       <div class="block-header light">Marqueur de Douleur</div>
       <div class="form-grid single">
         <div class="field"><label>Marqueur / Mouvement reproducteur</label><textarea id="ha-marqueur" style="min-height:48px" placeholder="Douleur aine à la course, EVA 7/10 en sprint…"></textarea></div>
@@ -2572,11 +2572,11 @@ textarea { resize:none !important; overflow:hidden !important; }
     </div>
 
     <!-- Tests Neurologiques -->
-    <div class="block" id="ha-single-neuro"><div class="block-header red">Tests Neurologiques — Positif = ❌ (signe clinique)</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ha-neuro"></tbody></table></div>
-    <div class="block" id="ha-bilateral-neuro" style="display:none"><div class="block-header red">Tests Neurologiques — Positif = ❌ (signe clinique)</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ha-neuro-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ha-neuro-d"></tbody></table></div></div>
+    <div class="block" data-block-id="hanche--neuro" id="ha-single-neuro"><div class="block-header red">Tests Neurologiques — Positif = ❌ (signe clinique)</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ha-neuro"></tbody></table></div>
+    <div class="block" data-block-id="hanche--neuro" id="ha-bilateral-neuro" style="display:none"><div class="block-header red">Tests Neurologiques — Positif = ❌ (signe clinique)</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ha-neuro-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ha-neuro-d"></tbody></table></div></div>
 
     <!-- Cluster de Laslett -->
-    <div class="block">
+    <div class="block" data-block-id="hanche--cluster-laslett">
       <div class="block-header red">Cluster de Laslett — Diag Différentiel Lombaire / Sacro-Iliaque</div>
       <div style="padding:5px 14px 3px;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);background:var(--surface2);border-bottom:1px solid var(--border)">Effectuer dans l'ordre — arrêt dès ≥ 2 positifs</div>
       <div style="padding:4px 14px 3px;font-size:.69rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#1D4ED8;background:#EFF6FF;border-bottom:1px solid #BFDBFE">Étape 1 — Distraction + Thigh Thrust</div>
@@ -2597,11 +2597,11 @@ textarea { resize:none !important; overflow:hidden !important; }
     </div>
 
     <!-- Exclusion Fracture de Contrainte -->
-    <div class="block" id="ha-single-fracture"><div class="block-header red">Exclusion Fracture de Contrainte</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ha-fracture"></tbody></table></div>
-    <div class="block" id="ha-bilateral-fracture" style="display:none"><div class="block-header red">Exclusion Fracture de Contrainte</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ha-fracture-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ha-fracture-d"></tbody></table></div></div>
+    <div class="block" data-block-id="hanche--fracture" id="ha-single-fracture"><div class="block-header red">Exclusion Fracture de Contrainte</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ha-fracture"></tbody></table></div>
+    <div class="block" data-block-id="hanche--fracture" id="ha-bilateral-fracture" style="display:none"><div class="block-header red">Exclusion Fracture de Contrainte</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ha-fracture-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ha-fracture-d"></tbody></table></div></div>
 
     <!-- Athletic Groin Pain -->
-    <div class="block" id="ha-single-agp">
+    <div class="block" data-block-id="hanche--agp" id="ha-single-agp">
       <div class="block-header red">Athletic Groin Pain (AGP)</div>
       <div style="padding:3px 22px 3px;font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);background:var(--surface2);border-bottom:1px solid var(--border)">Pubic Clock — Palpation</div>
       <table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ha-agp-clock"></tbody></table>
@@ -2626,12 +2626,12 @@ textarea { resize:none !important; overflow:hidden !important; }
       <div style="padding:4px 14px 3px;font-size:.69rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#991B1B;background:#FEF2F2;border-top:1.5px solid #FCA5A5;border-bottom:1px solid #FCA5A5">Canal Inguinal</div>
       <table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ha-agp-inguinal"></tbody></table>
     </div>
-    <div class="block" id="ha-bilateral-agp" style="display:none"><div class="block-header red">Athletic Groin Pain (AGP)</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ha-agp-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ha-agp-d"></tbody></table></div></div>
+    <div class="block" data-block-id="hanche--agp" id="ha-bilateral-agp" style="display:none"><div class="block-header red">Athletic Groin Pain (AGP)</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ha-agp-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ha-agp-d"></tbody></table></div></div>
 
     <!-- Tests de la Hanche -->
-    <div class="block" id="ha-single-hanche"><div class="block-header red">Tests de la Hanche (Coxo-Fémorale)</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ha-hanche"></tbody></table></div>
-    <div class="block" id="ha-bilateral-hanche" style="display:none"><div class="block-header red">Tests de la Hanche (Coxo-Fémorale)</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ha-hanche-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ha-hanche-d"></tbody></table></div></div>
-    <div class="block">
+    <div class="block" data-block-id="hanche--hanche" id="ha-single-hanche"><div class="block-header red">Tests de la Hanche (Coxo-Fémorale)</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ha-hanche"></tbody></table></div>
+    <div class="block" data-block-id="hanche--hanche" id="ha-bilateral-hanche" style="display:none"><div class="block-header red">Tests de la Hanche (Coxo-Fémorale)</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ha-hanche-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ha-hanche-d"></tbody></table></div></div>
+    <div class="block" data-block-id="hanche--mobilite-hanche">
       <div class="block-header grey">Mobilité de Hanche</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
         <div class="sl-g" data-col="g" style="background:var(--accent2);color:#fff;padding:7px 14px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div>
@@ -2663,12 +2663,12 @@ textarea { resize:none !important; overflow:hidden !important; }
 
 
 
-    <div class="block">
+    <div class="block" data-block-id="hanche--optionnels">
       <div class="block-header grey">Tests Optionnels</div>
       <div class="form-grid single"><div class="field"><label>Tests complémentaires réalisés en fonction de la situation</label><textarea id="ha-opt" style="min-height:70px" placeholder="Ex: Test de log-roll — douleur antérieure D, DIRI — positif…"></textarea></div></div>
     </div>
 
-<div class="block"><div class="block-header">Conclusion</div><textarea class="concl-area" id="ha-conclusion" placeholder="Tableau compatible avec une pubalgie de type adducteurs…"></textarea></div>
+<div class="block" data-block-id="hanche--conclusion"><div class="block-header">Conclusion</div><textarea class="concl-area" id="ha-conclusion" placeholder="Tableau compatible avec une pubalgie de type adducteurs…"></textarea></div>
 
   </div>
 </div>
@@ -2682,25 +2682,25 @@ textarea { resize:none !important; overflow:hidden !important; }
     <div class="page-subtitle" id="hdr-genou">—</div>
   </div>
   <div class="page-content">
-    <div class="block"><div class="block-header light">Marqueur de Douleur</div><div class="form-grid single"><div class="field"><label>Marqueur / Mouvement reproducteur</label><textarea id="ge-marqueur" style="min-height:48px" placeholder="Douleur antérieure à la flexion > 90°…"></textarea></div></div></div>
-    <div class="block" id="ge-single-global"><div class="block-header red">Approche Globale</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ge-global"></tbody></table></div>
-    <div class="block" id="ge-bilateral-global" style="display:none"><div class="block-header red">Approche Globale</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-global-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-global-d"></tbody></table></div></div>
-    <div class="block" id="ge-single-mob"><div class="block-header red">Mobilités Flexion / Extension</div><div style="padding:4px 14px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);background:var(--surface2);border-bottom:1px solid var(--border)">Flexion</div><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ge-mob-flex"></tbody></table><div style="padding:4px 14px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);background:var(--surface2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">Extension</div><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ge-mob-ext"></tbody></table></div>
-    <div class="block" id="ge-bilateral-mob" style="display:none"><div class="block-header red">Mobilités Flexion / Extension</div><div style="padding:4px 14px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);background:var(--surface2);border-bottom:1px solid var(--border)">Flexion</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-mob-flex-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-mob-flex-d"></tbody></table></div><div style="padding:4px 14px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);background:var(--surface2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">Extension</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-mob-ext-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-mob-ext-d"></tbody></table></div></div>
-    <div class="block" id="ge-single-lig"><div class="block-header red">Ligaments Latéraux</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ge-lig"></tbody></table></div>
-    <div class="block" id="ge-bilateral-lig" style="display:none"><div class="block-header red">Ligaments Latéraux</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-lig-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-lig-d"></tbody></table></div></div>
-    <div class="block" id="ge-single-lca"><div class="block-header red">LCA / LCP</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ge-lca"></tbody></table></div>
-    <div class="block" id="ge-bilateral-lca" style="display:none"><div class="block-header red">LCA / LCP</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-lca-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-lca-d"></tbody></table></div></div>
-    <div class="block" id="ge-single-men"><div class="block-header red">Ménisques</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ge-men"></tbody></table></div>
-    <div class="block" id="ge-bilateral-men" style="display:none"><div class="block-header red">Ménisques</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-men-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-men-d"></tbody></table></div></div>
-    <div class="block" id="ge-single-rot"><div class="block-header red">SD Patella</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ge-rot"></tbody></table></div>
-    <div class="block" id="ge-bilateral-rot" style="display:none"><div class="block-header red">SD Patella</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-rot-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-rot-d"></tbody></table></div></div>
-    <div class="block" id="ge-single-sbit"><div class="block-header red">SBIT (Bandelette IT)</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ge-sbit"></tbody></table></div>
-    <div class="block" id="ge-bilateral-sbit" style="display:none"><div class="block-header red">SBIT (Bandelette IT)</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-sbit-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-sbit-d"></tbody></table></div></div>
-    <div class="block" id="ge-single-plicae"><div class="block-header red">Plicae</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ge-plicae"></tbody></table></div>
-    <div class="block" id="ge-bilateral-plicae" style="display:none"><div class="block-header red">Plicae</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-plicae-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-plicae-d"></tbody></table></div></div>
+    <div class="block" data-block-id="genou--marqueur"><div class="block-header light">Marqueur de Douleur</div><div class="form-grid single"><div class="field"><label>Marqueur / Mouvement reproducteur</label><textarea id="ge-marqueur" style="min-height:48px" placeholder="Douleur antérieure à la flexion > 90°…"></textarea></div></div></div>
+    <div class="block" data-block-id="genou--global" id="ge-single-global"><div class="block-header red">Approche Globale</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ge-global"></tbody></table></div>
+    <div class="block" data-block-id="genou--global" id="ge-bilateral-global" style="display:none"><div class="block-header red">Approche Globale</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-global-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-global-d"></tbody></table></div></div>
+    <div class="block" data-block-id="genou--mob" id="ge-single-mob"><div class="block-header red">Mobilités Flexion / Extension</div><div style="padding:4px 14px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);background:var(--surface2);border-bottom:1px solid var(--border)">Flexion</div><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ge-mob-flex"></tbody></table><div style="padding:4px 14px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);background:var(--surface2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">Extension</div><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ge-mob-ext"></tbody></table></div>
+    <div class="block" data-block-id="genou--mob" id="ge-bilateral-mob" style="display:none"><div class="block-header red">Mobilités Flexion / Extension</div><div style="padding:4px 14px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);background:var(--surface2);border-bottom:1px solid var(--border)">Flexion</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-mob-flex-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-mob-flex-d"></tbody></table></div><div style="padding:4px 14px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);background:var(--surface2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">Extension</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-mob-ext-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-mob-ext-d"></tbody></table></div></div>
+    <div class="block" data-block-id="genou--lig" id="ge-single-lig"><div class="block-header red">Ligaments Latéraux</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ge-lig"></tbody></table></div>
+    <div class="block" data-block-id="genou--lig" id="ge-bilateral-lig" style="display:none"><div class="block-header red">Ligaments Latéraux</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-lig-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-lig-d"></tbody></table></div></div>
+    <div class="block" data-block-id="genou--lca" id="ge-single-lca"><div class="block-header red">LCA / LCP</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ge-lca"></tbody></table></div>
+    <div class="block" data-block-id="genou--lca" id="ge-bilateral-lca" style="display:none"><div class="block-header red">LCA / LCP</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-lca-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-lca-d"></tbody></table></div></div>
+    <div class="block" data-block-id="genou--men" id="ge-single-men"><div class="block-header red">Ménisques</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ge-men"></tbody></table></div>
+    <div class="block" data-block-id="genou--men" id="ge-bilateral-men" style="display:none"><div class="block-header red">Ménisques</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-men-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-men-d"></tbody></table></div></div>
+    <div class="block" data-block-id="genou--rot" id="ge-single-rot"><div class="block-header red">SD Patella</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ge-rot"></tbody></table></div>
+    <div class="block" data-block-id="genou--rot" id="ge-bilateral-rot" style="display:none"><div class="block-header red">SD Patella</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-rot-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-rot-d"></tbody></table></div></div>
+    <div class="block" data-block-id="genou--sbit" id="ge-single-sbit"><div class="block-header red">SBIT (Bandelette IT)</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ge-sbit"></tbody></table></div>
+    <div class="block" data-block-id="genou--sbit" id="ge-bilateral-sbit" style="display:none"><div class="block-header red">SBIT (Bandelette IT)</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-sbit-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-sbit-d"></tbody></table></div></div>
+    <div class="block" data-block-id="genou--plicae" id="ge-single-plicae"><div class="block-header red">Plicae</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-ge-plicae"></tbody></table></div>
+    <div class="block" data-block-id="genou--plicae" id="ge-bilateral-plicae" style="display:none"><div class="block-header red">Plicae</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-plicae-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-ge-plicae-d"></tbody></table></div></div>
 
-<div class="block">
+<div class="block" data-block-id="genou--ami">
   <div class="block-header red">Tests Cliniques AMI</div>
   <div style="padding:3px 22px 3px;font-size:.71rem;font-weight:600;color:var(--text2);background:var(--surface2);border-bottom:1px solid var(--border)">Contraction Flash Isométrique — 20 secondes</div>
   <div style="padding:1px 0">
@@ -2757,12 +2757,12 @@ textarea { resize:none !important; overflow:hidden !important; }
 
 
 
-<div class="block">
+<div class="block" data-block-id="genou--optionnels">
   <div class="block-header grey">Tests Optionnels</div>
   <div class="form-grid single"><div class="field"><label>Tests complémentaires réalisés en fonction de la situation</label><textarea id="ge-opt" style="min-height:70px" placeholder="Ex: Test de Dial — positif à 30° D, Test de compression tibiale — douleur médiale…"></textarea></div></div>
 </div>
 
-<div class="block"><div class="block-header">Conclusion</div><textarea class="concl-area" id="ge-conclusion" placeholder="Post-reconstruction LCA à 6 mois. Déficit quadricipital modéré…"></textarea></div>
+<div class="block" data-block-id="genou--conclusion"><div class="block-header">Conclusion</div><textarea class="concl-area" id="ge-conclusion" placeholder="Post-reconstruction LCA à 6 mois. Déficit quadricipital modéré…"></textarea></div>
 
   </div>
 </div>
@@ -2776,23 +2776,23 @@ textarea { resize:none !important; overflow:hidden !important; }
     <div class="page-subtitle" id="hdr-pied">—</div>
   </div>
   <div class="page-content">
-    <div class="block"><div class="block-header light">Marqueur</div><div class="form-grid single"><div class="field"><label>Mouvement / activité qui reproduit la douleur</label><textarea id="pi-marqueur" style="min-height:48px" placeholder="Douleur sinus du tarse à l'attaque du pas…"></textarea></div></div></div>
-    <div class="block" id="pi-single-ottawa"><div class="block-header grey">Règles d'Ottawa</div><div style="padding:4px 14px 3px;font-size:.7rem;color:var(--text3);border-bottom:1px solid var(--border)">Radio cheville si douleur malléolaire + ≥1 critère A–B · Radio pied si ≥1 critère C–D · Dans les deux cas si incapacité à porter le poids</div><table class="test-table"><thead><tr><th>Critère</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-pi-ottawa"></tbody></table></div>
-    <div class="block" id="pi-bilateral-ottawa" style="display:none"><div class="block-header grey">Règles d'Ottawa</div><div style="padding:4px 14px 3px;font-size:.7rem;color:var(--text3);border-bottom:1px solid var(--border)">Radio cheville si douleur malléolaire + ≥1 critère A–B · Radio pied si ≥1 critère C–D · Dans les deux cas si incapacité à porter le poids</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Critère</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-ottawa-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Critère</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-ottawa-d"></tbody></table></div></div>
-    <div class="block" id="pi-single-global"><div class="block-header red">Approche Globale</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-pi-global"></tbody></table></div>
-    <div class="block" id="pi-bilateral-global" style="display:none"><div class="block-header red">Approche Globale</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-global-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-global-d"></tbody></table></div></div>
-    <div class="block"><div class="block-header grey">Amplitudes Articulaires — Cheville / Pied</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">GAUCHE</div><div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Mouvement</th><th style="width:90px">Amplitude</th><th>Obs.</th></tr></thead><tbody id="tb-pi-amp-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Mouvement</th><th style="width:90px">Amplitude</th><th>Obs.</th></tr></thead><tbody id="tb-pi-amp-d"></tbody></table></div></div>
-    <div class="block" id="pi-single-tt"><div class="block-header red">Tibio-Tarsienne</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-pi-tt"></tbody></table></div>
-    <div class="block" id="pi-bilateral-tt" style="display:none"><div class="block-header red">Tibio-Tarsienne</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-tt-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-tt-d"></tbody></table></div></div>
-    <div class="block" id="pi-single-synd"><div class="block-header red">Syndesmose</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-pi-synd"></tbody></table></div>
-    <div class="block" id="pi-bilateral-synd" style="display:none"><div class="block-header red">Syndesmose</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-synd-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-synd-d"></tbody></table></div></div>
-    <div class="block" id="pi-single-conf"><div class="block-header red">Conflits</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-pi-conf"></tbody></table></div>
-    <div class="block" id="pi-bilateral-conf" style="display:none"><div class="block-header red">Conflits</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-conf-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-conf-d"></tbody></table></div></div>
-    <div class="block" id="pi-single-st"><div class="block-header red">Sous-Talienne</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-pi-st"></tbody></table></div>
-    <div class="block" id="pi-bilateral-st" style="display:none"><div class="block-header red">Sous-Talienne</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-st-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-st-d"></tbody></table></div></div>
-    <div class="block" id="pi-single-chopart"><div class="block-header red">Chopart</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-pi-chopart"></tbody></table></div>
-    <div class="block" id="pi-bilateral-chopart" style="display:none"><div class="block-header red">Chopart</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-chopart-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-chopart-d"></tbody></table></div></div>
-    <div class="block">
+    <div class="block" data-block-id="pied--marqueur"><div class="block-header light">Marqueur</div><div class="form-grid single"><div class="field"><label>Mouvement / activité qui reproduit la douleur</label><textarea id="pi-marqueur" style="min-height:48px" placeholder="Douleur sinus du tarse à l'attaque du pas…"></textarea></div></div></div>
+    <div class="block" data-block-id="pied--ottawa" id="pi-single-ottawa"><div class="block-header grey">Règles d'Ottawa</div><div style="padding:4px 14px 3px;font-size:.7rem;color:var(--text3);border-bottom:1px solid var(--border)">Radio cheville si douleur malléolaire + ≥1 critère A–B · Radio pied si ≥1 critère C–D · Dans les deux cas si incapacité à porter le poids</div><table class="test-table"><thead><tr><th>Critère</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-pi-ottawa"></tbody></table></div>
+    <div class="block" data-block-id="pied--ottawa" id="pi-bilateral-ottawa" style="display:none"><div class="block-header grey">Règles d'Ottawa</div><div style="padding:4px 14px 3px;font-size:.7rem;color:var(--text3);border-bottom:1px solid var(--border)">Radio cheville si douleur malléolaire + ≥1 critère A–B · Radio pied si ≥1 critère C–D · Dans les deux cas si incapacité à porter le poids</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Critère</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-ottawa-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Critère</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-ottawa-d"></tbody></table></div></div>
+    <div class="block" data-block-id="pied--global" id="pi-single-global"><div class="block-header red">Approche Globale</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-pi-global"></tbody></table></div>
+    <div class="block" data-block-id="pied--global" id="pi-bilateral-global" style="display:none"><div class="block-header red">Approche Globale</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-global-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-global-d"></tbody></table></div></div>
+    <div class="block" data-block-id="pied--amplitudes-articulaires"><div class="block-header grey">Amplitudes Articulaires — Cheville / Pied</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">GAUCHE</div><div style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Mouvement</th><th style="width:90px">Amplitude</th><th>Obs.</th></tr></thead><tbody id="tb-pi-amp-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Mouvement</th><th style="width:90px">Amplitude</th><th>Obs.</th></tr></thead><tbody id="tb-pi-amp-d"></tbody></table></div></div>
+    <div class="block" data-block-id="pied--tt" id="pi-single-tt"><div class="block-header red">Tibio-Tarsienne</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-pi-tt"></tbody></table></div>
+    <div class="block" data-block-id="pied--tt" id="pi-bilateral-tt" style="display:none"><div class="block-header red">Tibio-Tarsienne</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-tt-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-tt-d"></tbody></table></div></div>
+    <div class="block" data-block-id="pied--synd" id="pi-single-synd"><div class="block-header red">Syndesmose</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-pi-synd"></tbody></table></div>
+    <div class="block" data-block-id="pied--synd" id="pi-bilateral-synd" style="display:none"><div class="block-header red">Syndesmose</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-synd-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-synd-d"></tbody></table></div></div>
+    <div class="block" data-block-id="pied--conf" id="pi-single-conf"><div class="block-header red">Conflits</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-pi-conf"></tbody></table></div>
+    <div class="block" data-block-id="pied--conf" id="pi-bilateral-conf" style="display:none"><div class="block-header red">Conflits</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-conf-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-conf-d"></tbody></table></div></div>
+    <div class="block" data-block-id="pied--st" id="pi-single-st"><div class="block-header red">Sous-Talienne</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-pi-st"></tbody></table></div>
+    <div class="block" data-block-id="pied--st" id="pi-bilateral-st" style="display:none"><div class="block-header red">Sous-Talienne</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-st-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-st-d"></tbody></table></div></div>
+    <div class="block" data-block-id="pied--chopart" id="pi-single-chopart"><div class="block-header red">Chopart</div><table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead><tbody id="tb-pi-chopart"></tbody></table></div>
+    <div class="block" data-block-id="pied--chopart" id="pi-bilateral-chopart" style="display:none"><div class="block-header red">Chopart</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-chopart-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-chopart-d"></tbody></table></div></div>
+    <div class="block" data-block-id="pied--cliniques">
   <div class="block-header red">Tests Cliniques</div>
   <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">LSI = min(G,D)/max(G,D) × 100 · Navicular Drop : effondrement si &gt; 10 mm</div>
   <!-- Course interne mollet -->
@@ -2834,12 +2834,12 @@ textarea { resize:none !important; overflow:hidden !important; }
 
 
 
-<div class="block">
+<div class="block" data-block-id="pied--optionnels">
   <div class="block-header grey">Tests Optionnels</div>
   <div class="form-grid single"><div class="field"><label>Tests complémentaires réalisés en fonction de la situation</label><textarea id="pi-opt" style="min-height:70px" placeholder="Ex: Test de compression talofibulaire antérieure — positif D, Test de Kleiger modifié — négatif…"></textarea></div></div>
 </div>
 
-<div class="block"><div class="block-header">Conclusion</div><textarea class="concl-area" id="pi-conclusion" placeholder="Entorse latérale stade II ancienne avec instabilité résiduelle…"></textarea></div>
+<div class="block" data-block-id="pied--conclusion"><div class="block-header">Conclusion</div><textarea class="concl-area" id="pi-conclusion" placeholder="Entorse latérale stade II ancienne avec instabilité résiduelle…"></textarea></div>
 
   </div>
 </div>
@@ -2855,7 +2855,7 @@ textarea { resize:none !important; overflow:hidden !important; }
   <div class="page-content">
 
     <!-- Sélecteurs cascadants -->
-    <div class="block">
+    <div class="block" data-block-id="lma--localisation">
       <div class="block-header light">Localisation de la lésion</div>
       <div class="form-grid double" style="padding:14px 16px 16px;">
         <div class="field">
@@ -2877,62 +2877,62 @@ textarea { resize:none !important; overflow:hidden !important; }
 
     <!-- ── MEMBRES SUPÉRIEURS ── -->
     <div class="lma-bloc" id="lma-bloc-pecto" style="display:none">
-      <div class="block"><div class="block-header red">Pectoraux</div>
+      <div class="block" data-block-id="lma--pectoraux"><div class="block-header red">Pectoraux</div>
         <table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
         <tbody id="tb-lma-pecto"></tbody></table></div>
     </div>
 
     <div class="lma-bloc" id="lma-bloc-biceps" style="display:none">
-      <div class="block"><div class="block-header red">Biceps</div>
+      <div class="block" data-block-id="lma--biceps"><div class="block-header red">Biceps</div>
         <table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
         <tbody id="tb-lma-biceps"></tbody></table></div>
     </div>
 
     <div class="lma-bloc" id="lma-bloc-triceps" style="display:none">
-      <div class="block"><div class="block-header red">Triceps</div>
+      <div class="block" data-block-id="lma--triceps"><div class="block-header red">Triceps</div>
         <table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
         <tbody id="tb-lma-triceps"></tbody></table></div>
     </div>
 
     <div class="lma-bloc" id="lma-bloc-dorsal" style="display:none">
-      <div class="block"><div class="block-header red">Grand dorsal</div>
+      <div class="block" data-block-id="lma--grand-dorsal"><div class="block-header red">Grand dorsal</div>
         <table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
         <tbody id="tb-lma-dorsal"></tbody></table></div>
     </div>
 
     <div class="lma-bloc" id="lma-bloc-interco" style="display:none">
-      <div class="block"><div class="block-header red">Intercostaux</div>
+      <div class="block" data-block-id="lma--intercostaux"><div class="block-header red">Intercostaux</div>
         <table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
         <tbody id="tb-lma-interco"></tbody></table></div>
     </div>
 
     <!-- ── MEMBRES INFÉRIEURS ── -->
     <div class="lma-bloc" id="lma-bloc-ischio" style="display:none">
-      <div class="block"><div class="block-header red">Ischio-jambiers</div>
+      <div class="block" data-block-id="lma--ischio-jambiers"><div class="block-header red">Ischio-jambiers</div>
         <table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
         <tbody id="tb-lma-ischio"></tbody></table></div>
     </div>
 
     <div class="lma-bloc" id="lma-bloc-quadri" style="display:none">
-      <div class="block"><div class="block-header red">Quadriceps</div>
+      <div class="block" data-block-id="lma--quadriceps"><div class="block-header red">Quadriceps</div>
         <table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
         <tbody id="tb-lma-quadri"></tbody></table></div>
     </div>
 
     <div class="lma-bloc" id="lma-bloc-adduct" style="display:none">
-      <div class="block"><div class="block-header red">Adducteurs</div>
+      <div class="block" data-block-id="lma--adducteurs"><div class="block-header red">Adducteurs</div>
         <table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
         <tbody id="tb-lma-adduct"></tbody></table></div>
     </div>
 
     <div class="lma-bloc" id="lma-bloc-mollet" style="display:none">
-      <div class="block"><div class="block-header red">Mollet</div>
+      <div class="block" data-block-id="lma--mollet"><div class="block-header red">Mollet</div>
         <table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
         <tbody id="tb-lma-mollet"></tbody></table></div>
     </div>
 
     <!-- Marqueur de douleur -->
-    <div class="block" id="lma-bloc-marqueur" style="display:none">
+    <div class="block" data-block-id="lma--marqueur" id="lma-bloc-marqueur" style="display:none">
       <div class="block-header light">Marqueur</div>
       <div class="form-grid single"><div class="field"><label>Mouvement / activité qui reproduit la douleur</label>
         <textarea id="lma-marqueur" style="min-height:48px" placeholder="Ex: douleur en palpation du ventre musculaire, reproduction à la résistance isométrique…"></textarea>
@@ -2940,7 +2940,7 @@ textarea { resize:none !important; overflow:hidden !important; }
     </div>
 
     <!-- Conclusion -->
-    <div class="block" id="lma-bloc-conclusion" style="display:none">
+    <div class="block" data-block-id="lma--conclusion" id="lma-bloc-conclusion" style="display:none">
       <div class="block-header">Conclusion</div>
       <textarea class="concl-area" id="lma-conclusion" placeholder="Élongation ischio-jambiers proximal droit, stade I…"></textarea>
     </div>
@@ -2959,7 +2959,7 @@ textarea { resize:none !important; overflow:hidden !important; }
   <div class="page-content">
 
 <!-- SLS -->
-<div class="block">
+<div class="block" data-block-id="fonctionnels--sls">
   <div class="block-header">① Force Fonctionnelle — Single Leg Squat (SLS)</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
@@ -2990,7 +2990,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 </div>
 
 <!-- HOP TEST -->
-<div class="block">
+<div class="block" data-block-id="fonctionnels--single-hop">
   <div class="block-header">② Propulsion — Single Hop Test</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
@@ -3021,7 +3021,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 </div>
 
 <!-- RÉCEPTION -->
-<div class="block">
+<div class="block" data-block-id="fonctionnels--hop80">
   <div class="block-header">③ Test de Réception — 80% Hop Test — Score /5
     <label class="cr-toggle-label"><input type="checkbox" id="rec-cr-toggle"> ✓ Inclure dans le CR</label>
   </div>
@@ -3058,7 +3058,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 </div>
 
 <!-- PLIOMÉTRIE QUALITATIVE -->
-<div class="block">
+<div class="block" data-block-id="fonctionnels--plio-qualitative">
   <div class="block-header">④ Pliométrie Verticale Qualitative
     <label class="cr-toggle-label"><input type="checkbox" id="plioq-cr-toggle"> ✓ Inclure dans le CR</label>
   </div>
@@ -3106,7 +3106,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 </div>
 
 <!-- HEEL RISE -->
-<div class="block">
+<div class="block" data-block-id="fonctionnels--heel-rise">
   <div class="block-header">⑥ Force du Mollet — Heel Rise Test</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
@@ -3151,7 +3151,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 </div>
 
 <!-- LUNGE WBLT -->
-<div class="block">
+<div class="block" data-block-id="fonctionnels--lunge">
   <div class="block-header">⑦ Flexion Dorsale de Cheville — Lunge Test WBLT</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
@@ -3182,7 +3182,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 </div>
 
 <!-- DROP JUMP -->
-<div class="block">
+<div class="block" data-block-id="fonctionnels--drop-jump">
   <div class="block-header">⑤ Pliométrie Quantitative — Single Leg Drop Jump</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
@@ -3227,7 +3227,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 </div>
 
 <!-- SIDE HOP TEST -->
-<div class="block">
+<div class="block" data-block-id="fonctionnels--side-hop">
   <div class="block-header">Side Hop Test — Explosivité & Endurance</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:10px 14px">
@@ -3295,7 +3295,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 </div>
 
 <!-- ⑧ mSEBT — Star Excursion Balance Test -->
-<div class="block">
+<div class="block" data-block-id="fonctionnels--msebt">
   <div class="block-header">⑧ mSEBT — modified Star Excursion Balance Test</div>
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
@@ -3409,7 +3409,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 </div>
 
 <!-- ⑨ Single-Leg Stance Test -->
-<div class="block">
+<div class="block" data-block-id="fonctionnels--sl-stance">
   <div class="block-header">⑨ Équilibre Statique — Single-Leg Stance Test</div>
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
@@ -3487,7 +3487,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 </div>
 
 <!-- ⑩ Figure-of-8 Hop Test -->
-<div class="block">
+<div class="block" data-block-id="fonctionnels--f8t">
   <div class="block-header">⑩ Figure-of-8 Hop Test</div>
   <div style="padding:4px 14px 6px;font-size:.78rem;color:var(--text2)">Saut unipodal en 8 autour de 2 cônes espacés de 5 m · 2 tours consécutifs = 20 m · Mesure du temps (s)</div>
   <div style="padding:1px 0">
@@ -3530,7 +3530,7 @@ textarea { resize:none !important; overflow:hidden !important; }
     <div class="page-subtitle" id="hdr-musc">—</div>
   </div>
   <div class="page-content">
-    <div class="block">
+    <div class="block" data-block-id="musculaires--quadriceps">
       <div class="block-header">Quadriceps</div>
       <div style="padding:1px 0">
         <div class="measure-row" style="background:var(--surface2)">
@@ -3541,7 +3541,7 @@ textarea { resize:none !important; overflow:hidden !important; }
         <div class="measure-row"><div class="measure-label">Résistance — Excentrique 30°/s</div><div class="measure-input"><input type="number" id="q-r-cs" placeholder="—" oninput="calcMusc()"></div><div class="measure-input"><input type="number" id="q-r-ca" placeholder="—" oninput="calcMusc()"></div><div class="measure-stat" id="q-r-def">—</div><div class="measure-stat" style="font-size:.75rem;color:var(--text3)">Déficit &lt; 10%</div></div>
       </div>
     </div>
-    <div class="block">
+    <div class="block" data-block-id="musculaires--ischio-jambiers">
       <div class="block-header">Ischio-Jambiers</div>
       <div style="padding:1px 0">
         <div class="measure-row" style="background:var(--surface2)"><div class="col-header">Mesure / Mode</div><div class="col-header">CS (Nm)</div><div class="col-header">CA (Nm)</div><div class="col-header">Déficit %</div><div class="col-header">Norme</div></div>
@@ -3550,7 +3550,7 @@ textarea { resize:none !important; overflow:hidden !important; }
         <div class="measure-row"><div class="measure-label">Résistance — Excentrique 30°/s</div><div class="measure-input"><input type="number" id="ij-r-cs" placeholder="—" oninput="calcMusc()"></div><div class="measure-input"><input type="number" id="ij-r-ca" placeholder="—" oninput="calcMusc()"></div><div class="measure-stat" id="ij-r-def">—</div><div class="measure-stat" style="font-size:.75rem;color:var(--text3)">Déficit &lt; 10%</div></div>
       </div>
     </div>
-    <div class="block">
+    <div class="block" data-block-id="musculaires--ratios">
       <div class="block-header grey">Ratios & Pic / Poids de Corps</div>
       <div style="padding:12px 16px">
         <div class="score-card" style="padding:0">
@@ -3574,7 +3574,7 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
   <div class="page-content">
 
-<div class="block">
+<div class="block" data-block-id="force-ms--epaule">
   <div class="block-header">Épaule</div>
   <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Avec dynamomètre → renseigner en kg (LSI auto · ❌ si &lt; 90%). Sans dynamomètre → appréciation directe par côté.</div>
   <div class="measure-row" style="background:var(--surface2)">
@@ -3694,7 +3694,7 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
 </div>
 
-<div class="block">
+<div class="block" data-block-id="force-ms--coude">
   <div class="block-header">Coude</div>
   <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Avec dynamomètre → renseigner en kg (LSI auto · ❌ si &lt; 90%). Sans dynamomètre → appréciation directe par côté.</div>
   <div class="measure-row" style="background:var(--surface2)">
@@ -3743,7 +3743,7 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
   <div class="page-content">
 
-<div class="block">
+<div class="block" data-block-id="force-rachis--cervical">
   <div class="block-header grey">Cervical</div>
   <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Extension / Flexion → valeur brute en kg (suivi dans le temps, pas de LSI).</div>
   <div class="measure-row" style="background:var(--surface2);grid-template-columns: 1fr 120px 1fr">
@@ -3780,7 +3780,7 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
 </div>
 
-<div class="block">
+<div class="block" data-block-id="force-rachis--lombaire">
   <div class="block-header grey">Lombaire</div>
   <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Valeur brute en kg (suivi dans le temps, pas de comparaison côté).</div>
   <div class="measure-row" style="background:var(--surface2);grid-template-columns: 1fr 120px 1fr">
@@ -3814,7 +3814,7 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
   <div class="page-content">
 
-<div class="block">
+<div class="block" data-block-id="force-mi--hanche">
   <div class="block-header green">Hanche</div>
   <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Avec dynamomètre → renseigner en kg (LSI auto · ❌ si &lt; 90%). Sans dynamomètre → appréciation directe par côté.</div>
   <div class="measure-row" style="background:var(--surface2)">
@@ -3892,7 +3892,7 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
 </div>
 
-<div class="block">
+<div class="block" data-block-id="force-mi--genou">
   <div class="block-header green">Genou</div>
   <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Avec dynamomètre → renseigner en kg (LSI auto · ❌ si &lt; 90%). Sans dynamomètre → appréciation directe par côté.</div>
   <div class="measure-row" style="background:var(--surface2)">
@@ -3928,7 +3928,7 @@ textarea { resize:none !important; overflow:hidden !important; }
   </div>
 </div>
 
-<div class="block">
+<div class="block" data-block-id="force-mi--pied-cheville">
   <div class="block-header green">Pied / Cheville</div>
   <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Avec dynamomètre → renseigner en kg (LSI auto · ❌ si &lt; 90%). Sans dynamomètre → appréciation directe par côté.</div>
   <div class="measure-row" style="background:var(--surface2)">
@@ -4020,7 +4020,7 @@ textarea { resize:none !important; overflow:hidden !important; }
   <div class="page-content">
 
 <!-- PSET -->
-<div class="block">
+<div class="block" data-block-id="fonctionnelsMS--pset">
   <div class="block-header">① PSET — Prone Shoulder Endurance Test</div>
   <div style="padding:8px 14px;background:var(--accent-l);font-size:12px;color:var(--accent2);font-weight:500">
     📐 Poids de test = 2% du poids corporel
@@ -4062,7 +4062,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 </div>
 
 <!-- CKCUEST -->
-<div class="block">
+<div class="block" data-block-id="fonctionnelsMS--mckcuest">
   <div class="block-header">② mCKCUEST — Closed Kinetic Chain Upper Extremity Stability Test</div>
   <div style="padding:10px 14px 12px;background:var(--surface);border-bottom:1px solid var(--border)">
     <div style="font-size:.74rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Envergure — C7 → Majeur (cm)</div>
@@ -4149,7 +4149,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 </div>
 
 <!-- Side Hold Rotation Test -->
-<div class="block">
+<div class="block" data-block-id="fonctionnelsMS--side-hold-rotation">
   <div class="block-header">③ Side Hold Rotation Test</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
@@ -4180,7 +4180,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 </div>
 
 <!-- Shoulder Endurance Test -->
-<div class="block">
+<div class="block" data-block-id="fonctionnelsMS--shoulder-endurance">
   <div class="block-header">④ Shoulder Endurance Test</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
@@ -4216,7 +4216,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 </div>
 
 <!-- ULRT -->
-<div class="block">
+<div class="block" data-block-id="fonctionnelsMS--ulrt">
   <div class="block-header">⑤ ULRT — Upper Limb Rotation Test</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
@@ -4259,7 +4259,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 </div>
 
 <!-- UQYBT -->
-<div class="block">
+<div class="block" data-block-id="fonctionnelsMS--uqybt">
   <div class="block-header">⑥ UQYBT — Upper-Quarter Y-Balance Test</div>
   <div style="padding:8px 14px 4px;font-size:.82rem;color:var(--text2)">
     Main d'appui au centre du Y en position planche ventrale. Main libre pousse un plot le long de chaque branche. Mesurer D et G. Comparer les 2 côtés.
@@ -4319,7 +4319,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 <div style="padding:4px 0 2px;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px">CERVICAUX</div>
 
 <!-- Endurance Fléchisseurs cervicaux -->
-<div class="block">
+<div class="block" data-block-id="fonctionnelsRachis--dnf">
   <div class="block-header">① Endurance des Fléchisseurs Cervicaux (Deep Neck Flexor)</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
@@ -4349,7 +4349,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 </div>
 
 <!-- Endurance Extenseurs cervicaux -->
-<div class="block">
+<div class="block" data-block-id="fonctionnelsRachis--dne">
   <div class="block-header">② Endurance des Extenseurs Cervicaux (Deep Neck Extensor)</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
@@ -4379,7 +4379,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 </div>
 
 <!-- Endurance Latérale Cervicale -->
-<div class="block">
+<div class="block" data-block-id="fonctionnelsRachis--lnf">
   <div class="block-header">③ Endurance Latérale Cervicale (Lateral Neck Flexor Test)</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
@@ -4416,7 +4416,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 <div style="padding:14px 0 2px;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px">LOMBAIRES</div>
 
 <!-- Sorensen -->
-<div class="block">
+<div class="block" data-block-id="fonctionnelsRachis--sorensen">
   <div class="block-header">④ Test de Sørensen — Endurance Extenseurs Lombaires</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
@@ -4449,7 +4449,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 </div>
 
 <!-- PDSLRT -->
-<div class="block">
+<div class="block" data-block-id="fonctionnelsRachis--pdslrt">
   <div class="block-header">⑤ Prone Double Straight Leg Raise Test (PDSLRT) — Endurance Extenseurs Lombaires</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
@@ -4523,7 +4523,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 </div>
 
 <!-- Shirado -->
-<div class="block">
+<div class="block" data-block-id="fonctionnelsRachis--shirado">
   <div class="block-header">⑥ Test de Shirado — Endurance Fléchisseurs Lombaires</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
@@ -4696,6 +4696,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 <div class="toast" id="toast"></div>
 
 
+<script src="js/bilan-blocks.js?v=20260710"></script>
 <script src="js/bilan.js?v=20260705"></script>
 
 </body>
