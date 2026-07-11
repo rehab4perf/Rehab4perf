@@ -6,7 +6,8 @@ var R4P_KEYS = {
   PROFILE        : 'r4p-profile',
   CACHED_PROFILE : 'r4p-cached-profile',
   BILAN_DRAFT    : 'athletik-bilan',
-  SUPABASE_AUTH  : 'sb-sxdobjodxkwexaspepdm-auth-token'
+  SUPABASE_AUTH  : 'sb-sxdobjodxkwexaspepdm-auth-token',
+  USER_SETTINGS  : 'r4p-user-settings'
 };
 var _SAVE_ICON = '<svg style="vertical-align:middle;margin-right:4px" width="16" height="16" fill="currentColor" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><g><path d="m28.702 8.564-4.273-5c-.795-.93-1.954-1.464-3.18-1.464h-14.771c-2.306 0-4.182 1.877-4.182 4.183v19.436c0 2.306 1.876 4.183 4.182 4.183h19.045c2.306 0 4.183-1.877 4.183-4.183v-14.437c-.001-.995-.357-1.96-1.004-2.718zm-6.962 19.536h-11.481v-8.173c0-.631.514-1.144 1.145-1.144h9.191c.631 0 1.145.513 1.145 1.144zm6.164-2.382c0 1.313-1.068 2.382-2.382 2.382h-1.981v-8.173c0-1.623-1.321-2.944-2.945-2.944h-9.191c-1.624 0-2.945 1.321-2.945 2.944v8.173h-1.982c-1.313 0-2.382-1.068-2.382-2.382v-19.436c0-1.313 1.069-2.382 2.382-2.382h14.771c.698 0 1.358.304 1.811.834l4.273 4.999c.369.432.571.982.571 1.549z"/><path d="m9.359 9.31h5.963c.497 0 .9-.403.9-.9s-.403-.9-.9-.9h-5.963c-.497 0-.9.403-.9.9s.403.9.9.9z"/><path d="m22.641 11.572h-13.282c-.497 0-.9.403-.9.9s.403.9.9.9h13.281c.497 0 .9-.403.9-.9s-.402-.9-.899-.9z"/></g></svg>';
 
@@ -900,6 +901,99 @@ document.addEventListener('change', function(){ if(!_suppressDirty) _bilanModifi
     }
   } catch(ex){}
 })();
+
+/* ═══════════════════════════════════════════════════════════
+   CONFIG BILAN MODULABLE — étape 2 : moteur de configuration.
+   Charge/sauvegarde la disposition personnalisée (user_settings)
+   et le flag d'activation. RIEN n'est encore appliqué au rendu :
+   ce module est inerte tant que les étapes 3/4 ne le consomment pas.
+   - _bilanLayout : null = disposition de base (BILAN_BLOCKS).
+   - Source de vérité : Supabase (multi-appareils) ; cache localStorage
+     pour le chargement instantané et le mode hors connexion.
+   - previous_bilan_layout : une version de recul ("Annuler mes
+     derniers changements"), en plus du reset usine.
+═══════════════════════════════════════════════════════════ */
+var BILAN_CATALOGUE_VERSION = 1; // à incrémenter à chaque évolution du catalogue de base (nouveaux tests/blocs)
+var _bilanLayout          = null;  // disposition personnalisée courante (null = base)
+var _bilanFeatures        = {};    // flags d'activation (ex. bilan_custom)
+var _bilanLayoutUpdatedAt = null;  // updated_at serveur au moment du chargement (détection de conflit multi-appareils)
+
+function _blCacheRead(){
+  try { return JSON.parse(localStorage.getItem(R4P_KEYS.USER_SETTINGS) || 'null'); } catch(e){ return null; }
+}
+function _blCacheWrite(row){
+  try { localStorage.setItem(R4P_KEYS.USER_SETTINGS, JSON.stringify(row)); } catch(e){}
+}
+function _blApplySettingsRow(row){
+  if(!row) return;
+  _bilanLayout          = _blMigrateLayout(row.bilan_layout || null);
+  _bilanFeatures        = row.features || {};
+  _bilanLayoutUpdatedAt = row.updated_at || null;
+}
+/* Migration de version : quand le catalogue de base évolue (nouveau test/bloc),
+   les dispositions personnalisées plus anciennes sont enrichies ici plutôt que
+   de cacher les nouveautés à vie. v1 : aucun historique de migration encore. */
+function _blMigrateLayout(layout){
+  if(!layout) return null;
+  if(!layout.version || layout.version >= BILAN_CATALOGUE_VERSION) return layout;
+  /* futures migrations version par version ici (insertion des nouveaux
+     éléments avec marqueur isNew pour le badge « Nouveau ») */
+  layout.version = BILAN_CATALOGUE_VERSION;
+  return layout;
+}
+function _blFeatureEnabled(name){
+  return !!(_bilanFeatures && _bilanFeatures[name]);
+}
+/* Chargement : cache d'abord (instantané), puis Supabase (source de vérité). */
+function _blInit(){
+  _blApplySettingsRow(_blCacheRead());
+  // la session Supabase est auto-restaurée par le client depuis localStorage —
+  // léger différé pour la laisser se poser (même patron que _resetAndLoadPatient)
+  setTimeout(function(){
+    if(!_bilanUid) return; // hors connexion / page autonome (golden) : cache seul
+    _sbRetry(function(){
+      return sbB.from('user_settings')
+        .select('bilan_layout,previous_bilan_layout,features,updated_at')
+        .eq('praticien_id', _bilanUid).limit(1);
+    }).then(function(res){
+      if(res.error || !res.data || !res.data.length) return; // silencieux : pas de ligne = base
+      _blApplySettingsRow(res.data[0]);
+      _blCacheWrite(res.data[0]);
+    }).catch(function(){});
+  }, 400);
+}
+/* Sauvegarde : la disposition courante devient previous_bilan_layout (un cran de recul). */
+function _blSaveLayout(newLayout){
+  if(newLayout) newLayout.version = BILAN_CATALOGUE_VERSION;
+  var prev = _bilanLayout;
+  var row = {
+    praticien_id: _bilanUid,
+    bilan_layout: newLayout,
+    previous_bilan_layout: prev,
+    features: _bilanFeatures,
+    updated_at: new Date().toISOString()
+  };
+  _bilanLayout = newLayout;
+  _blCacheWrite(row);
+  if(!_bilanUid) return Promise.resolve({ ok:false, offline:true });
+  return _sbRetry(function(){
+    return sbB.from('user_settings').upsert(row, { onConflict:'praticien_id' }).select().single();
+  }).then(function(res){
+    if(!res.error && res.data){ _bilanLayoutUpdatedAt = res.data.updated_at || null; }
+    return { ok: !res.error, error: res.error };
+  }).catch(function(err){ return { ok:false, error:err }; });
+}
+/* Un cran de recul : restaure previous_bilan_layout comme disposition courante. */
+function _blRestorePrevious(){
+  if(!_bilanUid) return Promise.resolve({ ok:false, offline:true });
+  return _sbRetry(function(){
+    return sbB.from('user_settings').select('previous_bilan_layout').eq('praticien_id', _bilanUid).limit(1);
+  }).then(function(res){
+    if(res.error || !res.data || !res.data.length) return { ok:false, error:res.error };
+    return _blSaveLayout(res.data[0].previous_bilan_layout || null);
+  });
+}
+_blInit();
 
 // Restaurer patient depuis localStorage au chargement
 (function(){
@@ -2640,11 +2734,15 @@ function saveBilan(){
   var btn = document.getElementById('bilan-save-btn');
   btn.disabled = true; btn.textContent = '⏳ Sauvegarde…';
   var donnees = _serializeBilan();
+  // Tampon de version : permet aux migrations futures (clés stables, etc.)
+  // de savoir avec quelle structure ce bilan a été enregistré.
+  donnees._meta = JSON.stringify({ catalogueVersion: BILAN_CATALOGUE_VERSION, savedAt: new Date().toISOString() });
 
   // Bilan de suivi : calculer les champs réellement modifiés (Option A — snapshot)
   if(_bilanIsSuivi && _suiviSnapshot){
     var _changedFields = [];
     Object.keys(donnees).forEach(function(k){
+      if(k === '_meta') return; // métadonnée, jamais un champ clinique
       var prev = _suiviSnapshot[k];
       var curr = donnees[k];
       var prevStr = (prev === undefined || prev === null) ? '' : String(prev);
@@ -2666,7 +2764,7 @@ function saveBilan(){
         : {};
       var _newCF = [];
       Object.keys(donnees).forEach(function(k){
-        if(k === 'changed_fields') return;
+        if(k === 'changed_fields' || k === '_meta') return;
         var curr = donnees[k]; var prev = _prevD[k];
         var cs = (curr===undefined||curr===null)?'':String(curr);
         var ps = (prev===undefined||prev===null)?'':String(prev);
@@ -3496,6 +3594,7 @@ function _saveSuiviRapide(){
       var merged = {};
       Object.keys(baseDonnees).forEach(function(k){ merged[k]=baseDonnees[k]; });
       Object.keys(delta).forEach(function(k){ merged[k]=delta[k]; });
+      merged._meta = JSON.stringify({ catalogueVersion: BILAN_CATALOGUE_VERSION, savedAt: new Date().toISOString() });
 
       var p = existingId
         ? _sbRetry(function(){ return sbB.from('bilans').update({donnees:merged}).eq('id',existingId).select().single(); })
