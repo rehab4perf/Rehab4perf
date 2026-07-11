@@ -15,6 +15,15 @@ node --check js/prog-data.js
 node --check js/prog-main.js
 ```
 
+## Catalogue TESTS{} — append-only (OBLIGATOIRE si TESTS modifié)
+
+L'identité d'un test = son index dans `TESTS[tbody].items` (les ids `sel-`/`note-` des bilans sauvegardés en dérivent). Ne JAMAIS insérer au milieu, réordonner ou supprimer — toujours ajouter en fin de liste. Vérification :
+```bash
+node qualite/check-catalogue.js            # contrôle (exit 1 si violation)
+node qualite/check-catalogue.js --write    # après ajout légitime en fin de liste
+```
+L'ordre d'AFFICHAGE est découplé de l'identité (`_blTestDisplayOrder` dans bilan.js) — pour placer visuellement un test ailleurs, passer par la disposition, pas par le catalogue.
+
 For changes to `bilan.html` (inline script), extract the script block first:
 ```bash
 # Lines vary — identify the <script src="js/bilan.js"> predecessor block

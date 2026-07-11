@@ -1,0 +1,946 @@
+{
+ "tb-ep-irrit": [
+  "c60b04be72b4",
+  "c98164297652",
+  "6b395825b4ce",
+  "c652bdf0e113",
+  "a35134df6184"
+ ],
+ "tb-ep-trau-gh": [
+  "fb8fd021a381",
+  "caafe82dcea5",
+  "6a1ca7354665",
+  "d47b49885cac"
+ ],
+ "tb-ep-trau-ac": [
+  "bbe825335522",
+  "379de68ade67"
+ ],
+ "tb-ep-trau-lab": [
+  "a3c852574bd6",
+  "ead1eab43467"
+ ],
+ "tb-ep-trau-coiffe": [
+  "26c89ddd7e3c",
+  "635efaf25e3a"
+ ],
+ "tb-ep-fonc": [
+  "9ff186cbb586",
+  "9d0657929917",
+  "bae6d358d15e",
+  "74ba2df1cd9a",
+  "0eee400ca1ed",
+  "61282c55645f",
+  "7ccc5fcf01dc",
+  "df036928a206",
+  "76ee74001574",
+  "aacecb7aeb97"
+ ],
+ "tb-ep-ortho-mob": [
+  "8629e7fe28e1",
+  "8d4f3a622042",
+  "019b5bfab94e"
+ ],
+ "tb-ep-ortho-conf": [
+  "a8af39c6d3e0",
+  "acf6c7fce8a4",
+  "44bc1a78cd9e"
+ ],
+ "tb-ep-irrit-g": [
+  "c60b04be72b4",
+  "2f5965ef72fd",
+  "2f993ede271e",
+  "226a00f4d66c",
+  "de95055dd2ef"
+ ],
+ "tb-ep-irrit-d": [
+  "c60b04be72b4",
+  "2f5965ef72fd",
+  "2f993ede271e",
+  "226a00f4d66c",
+  "de95055dd2ef"
+ ],
+ "tb-ep-trau-g": [
+  "c8fc9d369755",
+  "c6fa85c60acc",
+  "be829f19c0db",
+  "22275cfe7fd3",
+  "0cf734926854",
+  "3f30ba8b3efe",
+  "0c9522408823",
+  "c084bd884485",
+  "83a5f03c32ae",
+  "b4a95acf2e1e"
+ ],
+ "tb-ep-trau-d": [
+  "c8fc9d369755",
+  "c6fa85c60acc",
+  "be829f19c0db",
+  "22275cfe7fd3",
+  "0cf734926854",
+  "3f30ba8b3efe",
+  "0c9522408823",
+  "c084bd884485",
+  "83a5f03c32ae",
+  "b4a95acf2e1e"
+ ],
+ "tb-ep-fonc-g": [
+  "aa07822ef6a0",
+  "9d0657929917",
+  "bae6d358d15e",
+  "74ba2df1cd9a",
+  "0eee400ca1ed",
+  "61282c55645f",
+  "7ccc5fcf01dc",
+  "df036928a206",
+  "a81b934c3a81",
+  "d20602f5256b"
+ ],
+ "tb-ep-fonc-d": [
+  "aa07822ef6a0",
+  "9d0657929917",
+  "bae6d358d15e",
+  "74ba2df1cd9a",
+  "0eee400ca1ed",
+  "61282c55645f",
+  "7ccc5fcf01dc",
+  "df036928a206",
+  "a81b934c3a81",
+  "d20602f5256b"
+ ],
+ "tb-ep-ortho-g": [
+  "26608b229743",
+  "c2915026226c",
+  "0cf734926854",
+  "6b20c1e7c45e",
+  "a96113a0172d",
+  "925e6c957aa2"
+ ],
+ "tb-ep-ortho-d": [
+  "26608b229743",
+  "c2915026226c",
+  "0cf734926854",
+  "6b20c1e7c45e",
+  "a96113a0172d",
+  "925e6c957aa2"
+ ],
+ "tb-co-lat": [
+  "a816b403c746",
+  "52cf2ca93343",
+  "6a966de7c681",
+  "811a2c1016f3",
+  "abc8b6e0eb44",
+  "263975c59586"
+ ],
+ "tb-co-lat-g": [
+  "6eaace0825a2",
+  "c956fe673b88",
+  "d400b92f41ad",
+  "866ca54f155f",
+  "6b1d21737110",
+  "ada7e71bebb0"
+ ],
+ "tb-co-lat-d": [
+  "6eaace0825a2",
+  "c956fe673b88",
+  "d400b92f41ad",
+  "866ca54f155f",
+  "6b1d21737110",
+  "ada7e71bebb0"
+ ],
+ "tb-co-med": [
+  "bfc834a0dfdb",
+  "fda851f87861",
+  "47a17c3088f9",
+  "6ed601cdd565",
+  "4e5a14fa5049",
+  "cdcff233d99e"
+ ],
+ "tb-co-med-g": [
+  "0bd037c5cd39",
+  "98fb80d08fa3",
+  "b5041e35a5e4",
+  "0aa5135b4f3f",
+  "0b43092d0742",
+  "61422362295d"
+ ],
+ "tb-co-med-d": [
+  "0bd037c5cd39",
+  "98fb80d08fa3",
+  "b5041e35a5e4",
+  "0aa5135b4f3f",
+  "0b43092d0742",
+  "61422362295d"
+ ],
+ "tb-co-ant": [
+  "832c0fb65a65",
+  "2961ac3a5c5c",
+  "799cc173b75b",
+  "c6f5c5cc5108",
+  "d7b0cf195885"
+ ],
+ "tb-co-ant-g": [
+  "96901c552a5b",
+  "eb064a5b9391",
+  "df6de3b75e04",
+  "5473a3d7eee6",
+  "daa68ffcf126"
+ ],
+ "tb-co-ant-d": [
+  "96901c552a5b",
+  "eb064a5b9391",
+  "df6de3b75e04",
+  "5473a3d7eee6",
+  "daa68ffcf126"
+ ],
+ "tb-co-post": [
+  "bbae654246f4",
+  "12fcd1a806f8",
+  "ffe520abf96a",
+  "57817fc911d6",
+  "53fa320bf5af"
+ ],
+ "tb-co-post-g": [
+  "61986d5ca13f",
+  "27a250a98620",
+  "28078d753831",
+  "1ca8ac920184",
+  "58bf6e826ff9"
+ ],
+ "tb-co-post-d": [
+  "61986d5ca13f",
+  "27a250a98620",
+  "28078d753831",
+  "1ca8ac920184",
+  "58bf6e826ff9"
+ ],
+ "tb-po-neuro": [
+  "7ca49bd17c77",
+  "b4d65468f6af",
+  "05c50afd9fb2",
+  "2b71e53f7702",
+  "7bf566ed3832"
+ ],
+ "tb-po-neuro-g": [
+  "1b1e944e4b96",
+  "300196c7d869",
+  "fd017296889b",
+  "ccda91eb65a5",
+  "9de7f1313925"
+ ],
+ "tb-po-neuro-d": [
+  "1b1e944e4b96",
+  "300196c7d869",
+  "fd017296889b",
+  "ccda91eb65a5",
+  "9de7f1313925"
+ ],
+ "tb-po-lig": [
+  "1e211556c0bc",
+  "12d7ed2f813a",
+  "6c66a5ee8024"
+ ],
+ "tb-po-lig-g": [
+  "b0a5412b767a",
+  "af743a9c24d3",
+  "6f1ef3d335c8"
+ ],
+ "tb-po-lig-d": [
+  "b0a5412b767a",
+  "af743a9c24d3",
+  "6f1ef3d335c8"
+ ],
+ "tb-po-pouce": [
+  "d55cb0ef8889",
+  "77695df70de6"
+ ],
+ "tb-po-pouce-g": [
+  "e32839d03f95",
+  "69cbec4d3692"
+ ],
+ "tb-po-pouce-d": [
+  "e32839d03f95",
+  "69cbec4d3692"
+ ],
+ "tb-ra-cerv": [
+  "20efcb60f2c1",
+  "6939f4362504"
+ ],
+ "tb-ra-cerv-neuro-g": [
+  "e1d1423cf74d",
+  "c98164297652",
+  "6b395825b4ce",
+  "c652bdf0e113",
+  "a35134df6184"
+ ],
+ "tb-ra-cerv-neuro-d": [
+  "e1d1423cf74d",
+  "c98164297652",
+  "6b395825b4ce",
+  "c652bdf0e113",
+  "a35134df6184"
+ ],
+ "tb-ra-lomb-g": [
+  "a3573c06ef09",
+  "c52145ea404b",
+  "ab60fbd55c7b"
+ ],
+ "tb-ra-lomb-d": [
+  "a3573c06ef09",
+  "c52145ea404b",
+  "ab60fbd55c7b"
+ ],
+ "tb-rl-nerveux-g": [
+  "ab01cdbc273b",
+  "878636653ab9",
+  "e5420b8514ff"
+ ],
+ "tb-rl-nerveux-d": [
+  "ab01cdbc273b",
+  "878636653ab9",
+  "e5420b8514ff"
+ ],
+ "tb-rl-rot-g": [
+  "3331ebead964",
+  "b8d75d480145"
+ ],
+ "tb-rl-rot-d": [
+  "3331ebead964",
+  "b8d75d480145"
+ ],
+ "tb-rl-motric-g": [
+  "a17550c66d20",
+  "7d8367c8e51f",
+  "770e341c8c97",
+  "649ee1c724a3"
+ ],
+ "tb-rl-motric-d": [
+  "a17550c66d20",
+  "7d8367c8e51f",
+  "770e341c8c97",
+  "649ee1c724a3"
+ ],
+ "tb-rl-sensib-g": [
+  "f139c6790a21",
+  "6244df4a9e63",
+  "750c07f72856"
+ ],
+ "tb-rl-sensib-d": [
+  "f139c6790a21",
+  "6244df4a9e63",
+  "750c07f72856"
+ ],
+ "tb-rl-tfd-suite": [
+  "c436eb77c0c8",
+  "37142b5fae67",
+  "13322c835fd6"
+ ],
+ "tb-rl-tfa-suite": [
+  "c81cf29bb3d3",
+  "8b334dd5f227",
+  "9a9c6de9fa2a"
+ ],
+ "tb-rl-laslett-1": [
+  "8a71d09caf69",
+  "989241d21c4c"
+ ],
+ "tb-rl-laslett-2": [
+  "87431f44e3b8"
+ ],
+ "tb-rl-laslett-3": [
+  "629c73a89073"
+ ],
+ "tb-rl-plet": [
+  "7cbdd39ff075"
+ ],
+ "tb-rl-transverse": [
+  "e3243138ae68",
+  "a42b008af969"
+ ],
+ "tb-rl-instab": [
+  "cdd849a36a9f",
+  "6ce48b2d25ce",
+  "5de6f73674c0",
+  "b59a637638f9"
+ ],
+ "tb-cv-vascul": [
+  "92cce906bf72",
+  "b585be29d88c",
+  "c85032fd2ae6"
+ ],
+ "tb-cv-sensib-g": [
+  "67a62a1397df",
+  "231acb5b6ee6",
+  "9604b0676cec",
+  "7dba03804d2b",
+  "d1da8345a000"
+ ],
+ "tb-cv-sensib-d": [
+  "67a62a1397df",
+  "231acb5b6ee6",
+  "9604b0676cec",
+  "7dba03804d2b",
+  "d1da8345a000"
+ ],
+ "tb-cv-motric-g": [
+  "34552735ec91",
+  "4fa27578a554",
+  "a3e3c19d543c",
+  "c494e64ca6af",
+  "d668e0694c32",
+  "302e17ae056d",
+  "e7e99dcc8206"
+ ],
+ "tb-cv-motric-d": [
+  "34552735ec91",
+  "4fa27578a554",
+  "a3e3c19d543c",
+  "c494e64ca6af",
+  "d668e0694c32",
+  "302e17ae056d",
+  "e7e99dcc8206"
+ ],
+ "tb-cv-rot-g": [
+  "9b285f7539a5",
+  "d898d3cb22b0",
+  "960fff378831",
+  "c153f5e70ab1"
+ ],
+ "tb-cv-rot-d": [
+  "9b285f7539a5",
+  "d898d3cb22b0",
+  "960fff378831",
+  "c153f5e70ab1"
+ ],
+ "tb-cv-ulnt-g": [
+  "c98164297652",
+  "6b395825b4ce",
+  "c652bdf0e113",
+  "a35134df6184"
+ ],
+ "tb-cv-ulnt-d": [
+  "c98164297652",
+  "6b395825b4ce",
+  "c652bdf0e113",
+  "a35134df6184"
+ ],
+ "tb-cv-defilé-g": [
+  "323b3297b0fa",
+  "742f1aca5878"
+ ],
+ "tb-cv-defilé-d": [
+  "323b3297b0fa",
+  "742f1aca5878"
+ ],
+ "tb-cv-mecanique": [
+  "e394587518b3",
+  "8aa0f225cb79",
+  "cd00502be2a3",
+  "534dfb4d82cc",
+  "060846e91d31",
+  "b165a34fedb6",
+  "e254ac20e392"
+ ],
+ "tb-cv-dn4-itw": [
+  "a8ccffe81373",
+  "6c0f422fd6e1",
+  "7a8b6125dde3",
+  "fcd825add403",
+  "8b068d292534",
+  "674fb7c8540a",
+  "edebf35eaa89"
+ ],
+ "tb-cv-dn4-exam": [
+  "d1331a409b62",
+  "6b3c276447f4",
+  "6b9fdde6425f"
+ ],
+ "tb-ha-neuro": [
+  "ab01cdbc273b",
+  "878636653ab9",
+  "e5420b8514ff"
+ ],
+ "tb-ha-neuro-g": [
+  "bbf640545bf0",
+  "bb7e5907848d",
+  "aea29bcb9710"
+ ],
+ "tb-ha-neuro-d": [
+  "bbf640545bf0",
+  "bb7e5907848d",
+  "aea29bcb9710"
+ ],
+ "tb-ha-laslett-1": [
+  "8a71d09caf69",
+  "989241d21c4c"
+ ],
+ "tb-ha-laslett-2": [
+  "87431f44e3b8"
+ ],
+ "tb-ha-laslett-3": [
+  "629c73a89073"
+ ],
+ "tb-ha-fracture": [
+  "cee943697b63",
+  "2a2e9393325b"
+ ],
+ "tb-ha-fracture-g": [
+  "3abdd008aa35",
+  "8125259bd460"
+ ],
+ "tb-ha-fracture-d": [
+  "3abdd008aa35",
+  "8125259bd460"
+ ],
+ "tb-ha-agp-clock": [
+  "8875b1886c08",
+  "b64d0709772f",
+  "90c118d63647",
+  "5393162e40ce"
+ ],
+ "tb-ha-agp-demem": [
+  "19861873b627",
+  "5f2ac067379f",
+  "59c72e6e5e75",
+  "2659bb911960"
+ ],
+ "tb-ha-agp-add": [
+  "d6edcbc11c8a",
+  "78f7b03cfabd"
+ ],
+ "tb-ha-agp-pubis": [
+  "8d7a80e4d597"
+ ],
+ "tb-ha-agp-flech": [
+  "2390a63c0b47",
+  "04d39ee690d2"
+ ],
+ "tb-ha-agp-inguinal": [
+  "c18985ddf244",
+  "98886a634378"
+ ],
+ "tb-ha-agp-g": [
+  "680103503dad",
+  "9cad71afb9f7",
+  "4e57da3eb856",
+  "8315ba671978",
+  "92186a6e05c4",
+  "c5278202efe1",
+  "00b5b74e0141",
+  "8952ef575929",
+  "0b2fb59e88b4",
+  "15e9eb419014",
+  "0610052a634a",
+  "e0459c8837f6",
+  "e867e542dbcc",
+  "7b9653bcea47",
+  "8a7945dc0077",
+  "32c4e65caa97"
+ ],
+ "tb-ha-agp-d": [
+  "680103503dad",
+  "9cad71afb9f7",
+  "4e57da3eb856",
+  "8315ba671978",
+  "92186a6e05c4",
+  "c5278202efe1",
+  "00b5b74e0141",
+  "8952ef575929",
+  "0b2fb59e88b4",
+  "15e9eb419014",
+  "0610052a634a",
+  "e0459c8837f6",
+  "e867e542dbcc",
+  "7b9653bcea47",
+  "8a7945dc0077",
+  "32c4e65caa97"
+ ],
+ "tb-ha-hanche": [
+  "a0bb2a0364e9",
+  "b756f8422e8e",
+  "6c5ce5d2e427",
+  "8217094551f6",
+  "900d84691171",
+  "b2cc406a935b",
+  "b8a9128f5d0f",
+  "8ca23d64c74d",
+  "0dc6afbfe2cb",
+  "69924c5f5eaf",
+  "a19b43f3a334",
+  "82464404fadc"
+ ],
+ "tb-ha-hanche-g": [
+  "adce75d25d91",
+  "c20089dda4c4",
+  "a73c7a3ce636",
+  "f76373837cbb",
+  "2107c3647d79",
+  "16e11a93bece",
+  "a3a73f8f6963",
+  "e86b81cdf57d",
+  "aec100b7da5e",
+  "7b74a42bcfc7",
+  "deb979f72e4a",
+  "b32c8bffea54"
+ ],
+ "tb-ha-hanche-d": [
+  "adce75d25d91",
+  "c20089dda4c4",
+  "a73c7a3ce636",
+  "f76373837cbb",
+  "2107c3647d79",
+  "16e11a93bece",
+  "a3a73f8f6963",
+  "e86b81cdf57d",
+  "aec100b7da5e",
+  "7b74a42bcfc7",
+  "deb979f72e4a",
+  "b32c8bffea54"
+ ],
+ "tb-ge-global": [
+  "86561ce586a6"
+ ],
+ "tb-ge-global-g": [
+  "1499ac2bb0f6"
+ ],
+ "tb-ge-global-d": [
+  "1499ac2bb0f6"
+ ],
+ "tb-ge-mob-flex": [
+  "2fb9f493b210",
+  "4c0186ce6f38"
+ ],
+ "tb-ge-mob-ext": [
+  "6b6db40f8098",
+  "adf761a6fb8d"
+ ],
+ "tb-ge-mob-flex-g": [
+  "ff428a6a3f83",
+  "1e730786dd8a"
+ ],
+ "tb-ge-mob-flex-d": [
+  "ff428a6a3f83",
+  "1e730786dd8a"
+ ],
+ "tb-ge-mob-ext-g": [
+  "b1eaed04de68",
+  "bbfcf85f78e0"
+ ],
+ "tb-ge-mob-ext-d": [
+  "b1eaed04de68",
+  "bbfcf85f78e0"
+ ],
+ "tb-ge-lig": [
+  "b11e3129a4da",
+  "166017170b64",
+  "752bbabb03f0",
+  "28a5a30045a3"
+ ],
+ "tb-ge-lig-g": [
+  "555ad91aee45",
+  "c402ea54d5e6",
+  "8b02b302181c",
+  "d004bf1550ed"
+ ],
+ "tb-ge-lig-d": [
+  "555ad91aee45",
+  "c402ea54d5e6",
+  "8b02b302181c",
+  "d004bf1550ed"
+ ],
+ "tb-ge-lca": [
+  "1b2b0e289419",
+  "dc74eaa63c0c",
+  "4f7235a23b44",
+  "09e4a03ea2a1"
+ ],
+ "tb-ge-lca-g": [
+  "cd541e1fdd74",
+  "6451afaba547",
+  "8f0c8dd8292c",
+  "a118f54529fa"
+ ],
+ "tb-ge-lca-d": [
+  "cd541e1fdd74",
+  "6451afaba547",
+  "8f0c8dd8292c",
+  "a118f54529fa"
+ ],
+ "tb-ge-men": [
+  "33c04f08686f",
+  "b71f056b746f",
+  "cd13482743a5",
+  "01cfde3be2e7"
+ ],
+ "tb-ge-men-g": [
+  "8c79e31ab927",
+  "237a26bbf6eb",
+  "96e8f69d744b",
+  "780cee9aeca3"
+ ],
+ "tb-ge-men-d": [
+  "8c79e31ab927",
+  "237a26bbf6eb",
+  "96e8f69d744b",
+  "780cee9aeca3"
+ ],
+ "tb-ge-rot": [
+  "94aa572dabe2",
+  "8434956d1bf1",
+  "1440d29f94b9"
+ ],
+ "tb-ge-rot-g": [
+  "696450f05f5f",
+  "bf11ccce65b4",
+  "eb459f071eac"
+ ],
+ "tb-ge-rot-d": [
+  "696450f05f5f",
+  "bf11ccce65b4",
+  "eb459f071eac"
+ ],
+ "tb-ge-sbit": [
+  "9ec59cab4ec7",
+  "81cca173f330"
+ ],
+ "tb-ge-sbit-g": [
+  "c814377fa638",
+  "272b3d26dafb"
+ ],
+ "tb-ge-sbit-d": [
+  "c814377fa638",
+  "272b3d26dafb"
+ ],
+ "tb-ge-plicae": [
+  "3ab7a28f9352"
+ ],
+ "tb-ge-plicae-g": [
+  "9244a1877afa"
+ ],
+ "tb-ge-plicae-d": [
+  "9244a1877afa"
+ ],
+ "tb-ge-ext": [
+  "b1eaed04de68",
+  "0b484cfa33f1",
+  "418b1634919a"
+ ],
+ "tb-ge-ext-g": [
+  "b1eaed04de68",
+  "0b484cfa33f1",
+  "418b1634919a"
+ ],
+ "tb-ge-ext-d": [
+  "b1eaed04de68",
+  "0b484cfa33f1",
+  "418b1634919a"
+ ],
+ "tb-ra-transverse": [
+  "d25e1abe56cc"
+ ],
+ "tb-pi-ottawa": [
+  "759614465bae",
+  "7a35bb70559d",
+  "3307ead9c05b",
+  "6fd1ce5db9a6",
+  "745d240c79d7"
+ ],
+ "tb-pi-ottawa-g": [
+  "2c14f9b269f3",
+  "53bbe6d8acd2",
+  "4fc434db121a",
+  "a206f99a9f4b",
+  "745d240c79d7"
+ ],
+ "tb-pi-ottawa-d": [
+  "2c14f9b269f3",
+  "53bbe6d8acd2",
+  "4fc434db121a",
+  "a206f99a9f4b",
+  "745d240c79d7"
+ ],
+ "tb-pi-global": [
+  "fe514b4145f2",
+  "1a48d292d964",
+  "c898bc897e78"
+ ],
+ "tb-pi-global-g": [
+  "5472c983bc75",
+  "4040cb1bd25d",
+  "b3979703bfec"
+ ],
+ "tb-pi-global-d": [
+  "5472c983bc75",
+  "4040cb1bd25d",
+  "b3979703bfec"
+ ],
+ "tb-pi-amp-g": [
+  "119b622efccd",
+  "396f67a124f0",
+  "8338474cea31",
+  "9cd2bd97c21b",
+  "e3c7e50e1c4c"
+ ],
+ "tb-pi-amp-d": [
+  "119b622efccd",
+  "396f67a124f0",
+  "8338474cea31",
+  "9cd2bd97c21b",
+  "e3c7e50e1c4c"
+ ],
+ "tb-pi-tt": [
+  "6c29d328e3cb",
+  "b2338e107ed8",
+  "53110264b326"
+ ],
+ "tb-pi-tt-g": [
+  "d27f7c60a4d0",
+  "c09316f702a6",
+  "8827297fc093"
+ ],
+ "tb-pi-tt-d": [
+  "d27f7c60a4d0",
+  "c09316f702a6",
+  "8827297fc093"
+ ],
+ "tb-pi-synd": [
+  "e9433ae587b7",
+  "53f918886ad8",
+  "e8d933dd8f03",
+  "843377cc910a"
+ ],
+ "tb-pi-synd-g": [
+  "dc0cc77d599b",
+  "41f3970499b7",
+  "408cb220399b",
+  "1301355db23c"
+ ],
+ "tb-pi-synd-d": [
+  "dc0cc77d599b",
+  "41f3970499b7",
+  "408cb220399b",
+  "1301355db23c"
+ ],
+ "tb-pi-conf": [
+  "0d15e01c28a1",
+  "cbea601b6cd9",
+  "1aa60e05431b",
+  "12065bedaa4b"
+ ],
+ "tb-pi-conf-g": [
+  "b106791a07cd",
+  "6aa734276e11",
+  "9c0a499e66e3",
+  "3b7c527b469d"
+ ],
+ "tb-pi-conf-d": [
+  "b106791a07cd",
+  "6aa734276e11",
+  "9c0a499e66e3",
+  "3b7c527b469d"
+ ],
+ "tb-pi-st": [
+  "475ff2442ca4",
+  "fb6b8ee05268"
+ ],
+ "tb-pi-st-g": [
+  "e0804ede2d4e",
+  "5424891c4fd0"
+ ],
+ "tb-pi-st-d": [
+  "e0804ede2d4e",
+  "5424891c4fd0"
+ ],
+ "tb-pi-chopart": [
+  "ac2b1c464a1f",
+  "c94b74da3b6a"
+ ],
+ "tb-pi-chopart-g": [
+  "4a27f7c8c814",
+  "89d868956a57"
+ ],
+ "tb-pi-chopart-d": [
+  "4a27f7c8c814",
+  "89d868956a57"
+ ],
+ "tb-pi-tc-g": [
+  "2c98db1f83a4",
+  "a0f0779801a2"
+ ],
+ "tb-pi-tc-d": [
+  "2c98db1f83a4",
+  "a0f0779801a2"
+ ],
+ "tb-lma-pecto": [
+  "23b7e84ce43f",
+  "3e5883a86d9a",
+  "fbc72fdbe76e",
+  "42daee2c6241",
+  "ced276265e1b",
+  "049b6a70e100"
+ ],
+ "tb-lma-biceps": [
+  "23b7e84ce43f",
+  "3e5883a86d9a",
+  "fbc72fdbe76e",
+  "42daee2c6241",
+  "ced276265e1b",
+  "049b6a70e100"
+ ],
+ "tb-lma-triceps": [
+  "23b7e84ce43f",
+  "3e5883a86d9a",
+  "fbc72fdbe76e",
+  "42daee2c6241",
+  "ced276265e1b",
+  "049b6a70e100"
+ ],
+ "tb-lma-dorsal": [
+  "23b7e84ce43f",
+  "3e5883a86d9a",
+  "fbc72fdbe76e",
+  "42daee2c6241",
+  "ced276265e1b",
+  "049b6a70e100"
+ ],
+ "tb-lma-interco": [
+  "23b7e84ce43f",
+  "3e5883a86d9a",
+  "fbc72fdbe76e",
+  "42daee2c6241",
+  "ced276265e1b",
+  "049b6a70e100"
+ ],
+ "tb-lma-ischio": [
+  "23b7e84ce43f",
+  "3e5883a86d9a",
+  "fbc72fdbe76e",
+  "42daee2c6241",
+  "ced276265e1b",
+  "049b6a70e100"
+ ],
+ "tb-lma-quadri": [
+  "23b7e84ce43f",
+  "3e5883a86d9a",
+  "fbc72fdbe76e",
+  "42daee2c6241",
+  "ced276265e1b",
+  "049b6a70e100"
+ ],
+ "tb-lma-adduct": [
+  "23b7e84ce43f",
+  "3e5883a86d9a",
+  "fbc72fdbe76e",
+  "42daee2c6241",
+  "ced276265e1b",
+  "049b6a70e100"
+ ],
+ "tb-lma-mollet": [
+  "23b7e84ce43f",
+  "3e5883a86d9a",
+  "fbc72fdbe76e",
+  "42daee2c6241",
+  "ced276265e1b",
+  "049b6a70e100"
+ ]
+}

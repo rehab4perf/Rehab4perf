@@ -673,13 +673,26 @@ function _initAllRomBars() {
   });
 }
 
+/* Ordre d'affichage des tests d'un tbody — découplé de l'identité.
+   L'identité d'un test est son index dans le catalogue TESTS{} (les ids
+   sel-/note- en dérivent et ne changent JAMAIS — règle append-only
+   vérifiée par qualite/check-catalogue.js). Cette fonction ne décide que
+   de l'ordre de RENDU : par défaut l'ordre du catalogue ; l'étape 3b y
+   branchera la disposition personnalisée du praticien (_bilanLayout). */
+function _blTestDisplayOrder(tbodyId, cfg) {
+  var order = [];
+  for (var i = 0; i < cfg.items.length; i++) order.push(i);
+  return order;
+}
+
 // -- INIT ------------------------------------------------------
 function init() {
-  // Build test tables
+  // Build test tables (dans l'ordre d'affichage, avec les ids d'identité catalogue)
   Object.entries(TESTS).forEach(([id, cfg]) => {
     const tbody = document.getElementById(id);
     if (!tbody) return;
-    cfg.items.forEach((name, i) => {
+    _blTestDisplayOrder(id, cfg).forEach((i) => {
+      const name = cfg.items[i];
       const tr = document.createElement('tr');
       var opts = cfg.opts ? cfg.opts : ['Positif', 'Négatif', 'N/A'];
       var optHtml = '<option value="">-</option>';
