@@ -791,6 +791,7 @@ function init() {
   var lmaSmInit = document.getElementById('lma-sel-membre');
   if (lmaSmInit) { lmaSmInit.value = ''; _lmaUpdateMembre(); }
   _blApplyLayout(); // disposition personnalisée (après restauration du brouillon : non-amputation correcte)
+  _blMaybeInjectCustomizeBtn();
   showPage('infos');
 }
 
@@ -984,6 +985,7 @@ function _blInit(){
       _blCacheWrite(res.data[0]);
       // disposition modifiée depuis un autre appareil → ré-appliquer (idempotent)
       if(JSON.stringify(_bilanLayout || null) !== before) _blApplyLayout();
+      _blMaybeInjectCustomizeBtn(); // le flag peut n'arriver qu'avec la réponse serveur
     }).catch(function(){});
   }, 400);
 }
@@ -1063,7 +1065,7 @@ function _blApplyRowVisibility(tbId){
     var i = parseInt(tr.dataset ? tr.dataset.testIdx : '', 10);
     if(isNaN(i)) return;
     var hide = _blTestHidden(tbId, i);
-    if(hide){
+    if(hide && !_blEditing){ // en mode édition : aperçu strict (le masquage s'applique même avec valeur)
       var sel  = tr.querySelector('select');
       var note = tr.querySelector('input[type="text"]');
       if((sel && sel.value) || (note && note.value)) hide = false; // non-amputation
@@ -1136,6 +1138,313 @@ function _blApplyLayout(){
       if(tl) _blApplyRowVisibility(tbId);
     });
   } catch(e){ /* la disposition ne doit jamais casser le bilan */ }
+}
+
+/* ── Mode personnalisation (étape 4) — v1 : onglet genou, derrière le flag bilan_custom.
+   Actions en direct sur la disposition (aperçu immédiat via _blApplyLayout), sauvegarde
+   sur « Terminé », annulation par restauration du snapshot d'entrée. Le déplacement de
+   tests entre blocs, la création de blocs/tests personnalisés et l'édition des notes
+   arrivent à l'étape 5. ─────────────────────────────────────────── */
+var _BL_EDITABLE_PAGES = ['genou'];
+var _blEditing = false;
+var _blEditPage = null;
+var _blEditSnapshot = null; // JSON de _bilanLayout à l'entrée (pour Annuler)
+
+function _blCleanTestName(tbId, idx){
+  var cfg = TESTS[tbId]; if(!cfg || !cfg.items[idx]) return 'Test '+idx;
+  return String(cfg.items[idx]).replace(/<span[\s\S]*?<\/span>/gi,'').replace(/<[^>]*>/g,'').trim();
+}
+function _blBlockDef(page, id){
+  var reg = (typeof BILAN_BLOCKS !== 'undefined' && BILAN_BLOCKS[page]) || [];
+  for(var i=0;i<reg.length;i++){ if(reg[i].id === id) return reg[i]; }
+  return null;
+}
+/* Garantit la structure du layout en mémoire pour la page et la retourne. */
+function _blPageDraft(page){
+  if(!_bilanLayout) _bilanLayout = { version: BILAN_CATALOGUE_VERSION, pages: {} };
+  if(!_bilanLayout.pages) _bilanLayout.pages = {};
+  if(!_bilanLayout.pages[page]) _bilanLayout.pages[page] = { order: [], hidden: [], tests: {} };
+  var pl = _bilanLayout.pages[page];
+  if(!pl.order)  pl.order = [];
+  if(!pl.hidden) pl.hidden = [];
+  if(!pl.tests)  pl.tests = {};
+  return pl;
+}
+function _blTestsDraft(page, tbId){
+  var pl = _blPageDraft(page);
+  if(!pl.tests[tbId]) pl.tests[tbId] = { order: [], hidden: [] };
+  if(!pl.tests[tbId].order)  pl.tests[tbId].order = [];
+  if(!pl.tests[tbId].hidden) pl.tests[tbId].hidden = [];
+  return pl.tests[tbId];
+}
+/* Séquence logique actuelle des blocs de la page (ordre DOM, dédupliqué). */
+function _blBlockSeq(page){
+  var seen = {}, out = [];
+  document.querySelectorAll('#page-'+page+' [data-block-id]').forEach(function(el){
+    var id = el.getAttribute('data-block-id');
+    if(!seen[id]){ seen[id] = 1; out.push(id); }
+  });
+  return out;
+}
+
+/* ── Actions ── */
+function _blMoveBlock(page, id, dir){
+  var pl = _blPageDraft(page);
+  var seq = _blBlockSeq(page).filter(function(b){ return pl.hidden.indexOf(b) === -1; });
+  var i = seq.indexOf(id), j = i + dir;
+  if(i === -1 || j < 0 || j >= seq.length) return;
+  var neighbor = _blBlockDef(page, seq[j]);
+  if(neighbor && neighbor.locked) return; // les blocs verrouillés sont des points fixes
+  seq.splice(i,1); seq.splice(j,0,id);
+  pl.order = seq;
+  _blApplyLayout(); _blRefreshEdit();
+  var el = document.querySelector('#page-'+page+' [data-block-id="'+id+'"]:not(.bl-hidden)') ||
+           document.querySelector('#page-'+page+' [data-block-id="'+id+'"]');
+  if(el) el.scrollIntoView({behavior:'smooth', block:'center'});
+}
+function _blHideBlock(page, id){
+  var def = _blBlockDef(page, id);
+  if(def && def.locked) return;
+  var pl = _blPageDraft(page);
+  if(pl.hidden.indexOf(id) === -1) pl.hidden.push(id);
+  _blApplyLayout(); _blRefreshEdit();
+}
+function _blShowBlock(page, id){
+  var pl = _blPageDraft(page);
+  pl.hidden = pl.hidden.filter(function(x){ return x !== id; });
+  _blApplyLayout(); _blRefreshEdit();
+  var el = document.querySelector('#page-'+page+' [data-block-id="'+id+'"]');
+  if(el) el.scrollIntoView({behavior:'smooth', block:'center'});
+}
+function _blRowSeq(tbId){
+  var tbody = document.getElementById(tbId); if(!tbody) return [];
+  return Array.prototype.map.call(tbody.children, function(tr){ return parseInt(tr.dataset.testIdx,10); })
+    .filter(function(i){ return !isNaN(i); });
+}
+function _blMoveRow(page, tbId, idx, dir){
+  var td = _blTestsDraft(page, tbId);
+  var seq = _blRowSeq(tbId).filter(function(i){ return td.hidden.indexOf(i) === -1; });
+  var i = seq.indexOf(idx), j = i + dir;
+  if(i === -1 || j < 0 || j >= seq.length) return;
+  seq.splice(i,1); seq.splice(j,0,idx);
+  td.order = seq;
+  _blApplyLayout(); _blRefreshEdit();
+}
+function _blHideRow(page, tbId, idx){
+  var td = _blTestsDraft(page, tbId);
+  if(td.hidden.indexOf(idx) === -1) td.hidden.push(idx);
+  _blApplyLayout(); _blRefreshEdit();
+}
+function _blShowRow(page, tbId, idx){
+  var td = _blTestsDraft(page, tbId);
+  td.hidden = td.hidden.filter(function(x){ return x !== idx; });
+  _blApplyLayout(); _blRefreshEdit();
+}
+
+/* ── Décoration (rails + bibliothèque + barre) ── */
+function _blDecorate(page){
+  var reg = (typeof BILAN_BLOCKS !== 'undefined' && BILAN_BLOCKS[page]) || [];
+  var pl = _blPageDraft(page);
+  var seqVisible = _blBlockSeq(page).filter(function(b){ return pl.hidden.indexOf(b) === -1; });
+  // rails de blocs
+  document.querySelectorAll('#page-'+page+' [data-block-id]').forEach(function(el){
+    var id = el.getAttribute('data-block-id');
+    var def = _blBlockDef(page, id);
+    if(def && def.locked){
+      el.classList.add('bl-locked');
+      var hdr = el.querySelector('.block-header');
+      if(hdr && !hdr.querySelector('.bl-lock-tag')){
+        var tag = document.createElement('span');
+        tag.className = 'bl-lock-tag'; tag.textContent = '🔒 Élément de base';
+        hdr.appendChild(tag);
+      }
+      return;
+    }
+    var pos = seqVisible.indexOf(id);
+    var upDis = (pos <= 0 || !!(_blBlockDef(page, seqVisible[pos-1])||{}).locked) ? ' disabled' : '';
+    var dnDis = (pos === -1 || pos >= seqVisible.length-1 || !!(_blBlockDef(page, seqVisible[pos+1])||{}).locked) ? ' disabled' : '';
+    var rail = document.createElement('div');
+    rail.className = 'bl-rail';
+    rail.innerHTML =
+      '<button class="bl-mv" title="Monter le bloc"'+upDis+' onclick="_blMoveBlock(\''+page+'\',\''+id+'\',-1)">▲</button>'
+      + '<button class="bl-mv" title="Descendre le bloc"'+dnDis+' onclick="_blMoveBlock(\''+page+'\',\''+id+'\',1)">▼</button>'
+      + '<button class="bl-rm" title="Retirer (reste dans la bibliothèque en bas de page)" onclick="_blHideBlock(\''+page+'\',\''+id+'\')">✕</button>';
+    el.appendChild(rail);
+  });
+  // rails de lignes (tbodies des blocs non verrouillés de la page)
+  reg.forEach(function(b){
+    if(b.locked) return;
+    (b.tests||[]).forEach(function(tbId){
+      var tbody = document.getElementById(tbId); if(!tbody) return;
+      var table = tbody.closest('table');
+      var headRow = table ? table.querySelector('thead tr') : null;
+      if(headRow && !headRow.querySelector('.bl-row-rail')){
+        var th = document.createElement('th'); th.className = 'bl-row-rail'; headRow.appendChild(th);
+      }
+      var td0 = _blTestsDraft(page, tbId);
+      var seq = _blRowSeq(tbId).filter(function(i){ return td0.hidden.indexOf(i) === -1; });
+      Array.prototype.forEach.call(tbody.children, function(tr){
+        if(tr.querySelector('.bl-row-rail')) return;
+        var idx = parseInt(tr.dataset.testIdx,10); if(isNaN(idx)) return;
+        var pos = seq.indexOf(idx);
+        var upDis = pos <= 0 ? ' disabled' : '';
+        var dnDis = (pos === -1 || pos >= seq.length-1) ? ' disabled' : '';
+        var td = document.createElement('td');
+        td.className = 'bl-row-rail';
+        td.innerHTML =
+          '<button title="Monter ce test"'+upDis+' onclick="_blMoveRow(\''+page+'\',\''+tbId+'\','+idx+',-1)">▲</button>'
+          + '<button title="Descendre ce test"'+dnDis+' onclick="_blMoveRow(\''+page+'\',\''+tbId+'\','+idx+',1)">▼</button>'
+          + '<button class="bl-rm" title="Retirer ce test (bibliothèque en bas de page)" onclick="_blHideRow(\''+page+'\',\''+tbId+'\','+idx+')">✕</button>';
+        tr.appendChild(td);
+      });
+    });
+  });
+  _blRenderLibrary(page);
+  _blRenderEditbar(page);
+}
+function _blUndecorate(page){
+  document.querySelectorAll('#page-'+page+' .bl-rail, #page-'+page+' .bl-lock-tag, #page-'+page+' .bl-row-rail').forEach(function(el){ el.remove(); });
+  document.querySelectorAll('#page-'+page+' .bl-locked').forEach(function(el){ el.classList.remove('bl-locked'); });
+  var lib = document.getElementById('bl-library'); if(lib) lib.remove();
+  var bar = document.getElementById('bl-editbar'); if(bar) bar.remove();
+}
+function _blRefreshEdit(){
+  if(!_blEditing) return;
+  _blUndecorate(_blEditPage);
+  _blDecorate(_blEditPage);
+}
+function _blRenderLibrary(page){
+  var content = document.querySelector('#page-'+page+' .page-content'); if(!content) return;
+  var pl = _blPageDraft(page);
+  var lib = document.createElement('div');
+  lib.id = 'bl-library';
+  var testsHtml = '';
+  Object.keys(pl.tests).forEach(function(tbId){
+    (pl.tests[tbId].hidden||[]).forEach(function(idx){
+      var blockName = '';
+      (BILAN_BLOCKS[page]||[]).forEach(function(b){ if((b.tests||[]).indexOf(tbId) !== -1) blockName = b.name; });
+      testsHtml += '<div class="bl-lib-card"><div><div class="name">'+_blCleanTestName(tbId, idx)+'</div>'
+        + '<div class="desc">Retiré de : '+blockName+'</div></div>'
+        + '<button class="bl-lib-add" title="Ré-afficher ce test dans son bloc" onclick="_blShowRow(\''+page+'\',\''+tbId+'\','+idx+')">＋</button></div>';
+    });
+  });
+  var blocksHtml = '';
+  (pl.hidden||[]).forEach(function(id){
+    var def = _blBlockDef(page, id) || { name:id, tests:[] };
+    blocksHtml += '<div class="bl-lib-card"><div><div class="name">'+def.name+'</div>'
+      + '<div class="desc">'+(def.tests||[]).length+' tbody(s)</div></div>'
+      + '<button class="bl-lib-add" title="Ré-afficher ce bloc" onclick="_blShowBlock(\''+page+'\',\''+id+'\')">＋</button></div>';
+  });
+  lib.innerHTML =
+    '<div class="bl-lib-title">Bibliothèque — Tests masqués</div>'
+    + '<div class="bl-lib-grid">'+(testsHtml || '<div class="bl-lib-empty">Aucun test masqué.</div>')+'</div>'
+    + '<div class="bl-lib-title">Bibliothèque — Blocs masqués</div>'
+    + '<div class="bl-lib-grid">'+(blocksHtml || '<div class="bl-lib-empty">Tous les blocs sont affichés.</div>')+'</div>';
+  content.appendChild(lib);
+}
+function _blRenderEditbar(page){
+  var pl = _blPageDraft(page);
+  var nBlocks = _blBlockSeq(page).length - pl.hidden.length;
+  var nHiddenTests = 0;
+  Object.keys(pl.tests).forEach(function(t){ nHiddenTests += (pl.tests[t].hidden||[]).length; });
+  var bar = document.createElement('div');
+  bar.id = 'bl-editbar';
+  bar.innerHTML = '<div class="inner">'
+    + '<span class="bl-count">'+nBlocks+' blocs affichés · '+nHiddenTests+' test'+(nHiddenTests>1?'s':'')+' masqué'+(nHiddenTests>1?'s':'')+'</span>'
+    + '<button class="bl-cancel" onclick="_blCancelEdit()">Annuler</button>'
+    + '<button class="bl-reset" onclick="_blAskReset()">Réinitialiser cet onglet</button>'
+    + '<button class="bl-done" onclick="_blFinishEdit()">Terminé</button>'
+    + '</div>';
+  document.body.appendChild(bar);
+}
+function _blAskReset(){
+  var bar = document.querySelector('#bl-editbar .inner'); if(!bar) return;
+  bar.innerHTML =
+    '<span style="font-size:.82rem;color:var(--red);font-weight:600;">Restaurer la disposition de base de cet onglet ? Tes masquages et ton ordre personnalisés seront perdus.</span>'
+    + '<button class="bl-reset" style="margin-left:auto;border-color:var(--red);color:var(--red);" onclick="_blDoReset()">Oui, réinitialiser</button>'
+    + '<button class="bl-done" onclick="_blRefreshEdit()">Non</button>';
+}
+function _blDoReset(){
+  if(_bilanLayout && _bilanLayout.pages) delete _bilanLayout.pages[_blEditPage];
+  _blApplyLayout(); _blRefreshEdit();
+}
+/* Retire du layout les pages sans personnalisation effective (base = null). */
+function _blPruneLayout(){
+  if(!_bilanLayout || !_bilanLayout.pages) return;
+  Object.keys(_bilanLayout.pages).forEach(function(page){
+    var pl = _bilanLayout.pages[page];
+    var tests = pl.tests || {};
+    Object.keys(tests).forEach(function(t){
+      var e = tests[t];
+      if((!e.hidden || !e.hidden.length) && (!e.order || !e.order.length)) delete tests[t];
+    });
+    var noTests = !Object.keys(tests).length;
+    var noHidden = !pl.hidden || !pl.hidden.length;
+    var noOrder = !pl.order || !pl.order.length;
+    if(noTests && noHidden && noOrder) delete _bilanLayout.pages[page];
+  });
+  if(!Object.keys(_bilanLayout.pages).length) _bilanLayout = null;
+}
+function _blEnterEdit(page){
+  if(_blEditing) return;
+  _blEditing = true; _blEditPage = page;
+  _blEditSnapshot = JSON.stringify(_bilanLayout || null);
+  var pg = document.getElementById('page-'+page);
+  if(pg) pg.classList.add('bl-editing');
+  document.body.classList.add('bl-editing-on');
+  _blApplyLayout(); // ré-appliquer en mode strict (les masqués porteurs de valeurs disparaissent en aperçu)
+  _blDecorate(page);
+  var btn = document.getElementById('bl-customize-btn');
+  if(btn) btn.innerHTML = '✓ Terminé';
+}
+function _blExitEdit(){
+  if(!_blEditing) return;
+  var page = _blEditPage;
+  _blEditing = false; _blEditPage = null;
+  _blUndecorate(page);
+  var pg = document.getElementById('page-'+page);
+  if(pg) pg.classList.remove('bl-editing');
+  document.body.classList.remove('bl-editing-on');
+  var btn = document.getElementById('bl-customize-btn');
+  if(btn) btn.innerHTML = '⚙ Personnaliser';
+  _blApplyLayout(); // mode normal : la non-amputation reprend ses droits
+}
+function _blCancelEdit(){
+  var snap = _blEditSnapshot;
+  _blExitEdit();
+  _bilanLayout = snap ? JSON.parse(snap) : null;
+  _blApplyLayout();
+  showToast('Personnalisation annulée');
+}
+function _blFinishEdit(){
+  _blPruneLayout();
+  _blExitEdit();
+  _blSaveLayout(_bilanLayout).then(function(res){
+    if(res.ok) showToast('✓ Disposition enregistrée — elle s\'applique à tous tes bilans, sur tous tes appareils');
+    else showToast('⚠️ Disposition appliquée sur cet appareil, mais non synchronisée (reconnecte-toi puis ré-enregistre)');
+  });
+}
+function _blToggleEdit(page){
+  if(_blEditing) _blFinishEdit();
+  else _blEnterEdit(page);
+}
+/* Changement de page pendant l'édition : annulation propre (rien d'enregistré). */
+function _blOnPageSwitch(){
+  if(_blEditing) _blCancelEdit();
+}
+/* Bouton « Personnaliser » — injecté si le flag bilan_custom est actif. */
+function _blMaybeInjectCustomizeBtn(){
+  if(!_blFeatureEnabled('bilan_custom')) return;
+  _BL_EDITABLE_PAGES.forEach(function(page){
+    if(document.getElementById('bl-customize-btn')) return;
+    var hdr = document.querySelector('#page-'+page+' .page-header');
+    if(!hdr) return;
+    var btn = document.createElement('button');
+    btn.id = 'bl-customize-btn';
+    btn.innerHTML = '⚙ Personnaliser';
+    btn.onclick = function(){ _blToggleEdit(page); };
+    hdr.appendChild(btn);
+  });
 }
 _blInit();
 
@@ -3858,6 +4167,7 @@ function closeHistoOnBackdrop(e){ if(e.target===document.getElementById('histoOv
 
 // -- NAV -------------------------------------------------------
 function showPage(id) {
+  try { _blOnPageSwitch(); } catch(e){} // quitter proprement le mode personnalisation (annule si non enregistré)
   // Inline styles — priorité absolue sur toute règle CSS
   document.querySelectorAll('.page').forEach(function(p) {
     p.style.display = 'none';
