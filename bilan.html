@@ -564,6 +564,9 @@ body {
   margin-bottom: 16px;
   overflow: hidden;
 }
+/* Disposition personnalisée : masquage par classe (résiste aux bascules de
+   latéralité qui manipulent style.display sur les variantes single/bilateral) */
+.bl-hidden { display: none !important; }
 .block-header {
   display: flex;
   align-items: center;

@@ -677,12 +677,19 @@ function _initAllRomBars() {
    L'identité d'un test est son index dans le catalogue TESTS{} (les ids
    sel-/note- en dérivent et ne changent JAMAIS — règle append-only
    vérifiée par qualite/check-catalogue.js). Cette fonction ne décide que
-   de l'ordre de RENDU : par défaut l'ordre du catalogue ; l'étape 3b y
-   branchera la disposition personnalisée du praticien (_bilanLayout). */
+   de l'ordre de RENDU : ordre personnalisé du praticien s'il existe,
+   sinon ordre du catalogue. Les tests masqués restent inclus (en fin) :
+   le masquage est un display:none, jamais une absence — les ids doivent
+   toujours exister pour les brouillons et bilans sauvegardés. */
 function _blTestDisplayOrder(tbodyId, cfg) {
-  var order = [];
-  for (var i = 0; i < cfg.items.length; i++) order.push(i);
-  return order;
+  var all = [];
+  for (var i = 0; i < cfg.items.length; i++) all.push(i);
+  var tl = _blTestsLayout(tbodyId);
+  if (!tl || !tl.order || !tl.order.length) return all;
+  var seen = {}, out = [];
+  tl.order.forEach(function(i){ if (i >= 0 && i < cfg.items.length && !seen[i]) { seen[i] = 1; out.push(i); } });
+  all.forEach(function(i){ if (!seen[i]) { seen[i] = 1; out.push(i); } }); // nouveaux tests du catalogue → en fin
+  return out;
 }
 
 // -- INIT ------------------------------------------------------
@@ -694,6 +701,7 @@ function init() {
     _blTestDisplayOrder(id, cfg).forEach((i) => {
       const name = cfg.items[i];
       const tr = document.createElement('tr');
+      tr.dataset.testIdx = i; // identité catalogue de la ligne — les lecteurs (CR) ne dépendent plus de la position DOM
       var opts = cfg.opts ? cfg.opts : ['Positif', 'Négatif', 'N/A'];
       var optHtml = '<option value="">-</option>';
       for (var oi=0; oi<opts.length; oi++) {
@@ -782,6 +790,7 @@ function init() {
   // Forcer le select LMA sur "Choisir" au chargement (le navigateur mémorise la dernière valeur)
   var lmaSmInit = document.getElementById('lma-sel-membre');
   if (lmaSmInit) { lmaSmInit.value = ''; _lmaUpdateMembre(); }
+  _blApplyLayout(); // disposition personnalisée (après restauration du brouillon : non-amputation correcte)
   showPage('infos');
 }
 
@@ -970,8 +979,11 @@ function _blInit(){
         .eq('praticien_id', _bilanUid).limit(1);
     }).then(function(res){
       if(res.error || !res.data || !res.data.length) return; // silencieux : pas de ligne = base
+      var before = JSON.stringify(_bilanLayout || null);
       _blApplySettingsRow(res.data[0]);
       _blCacheWrite(res.data[0]);
+      // disposition modifiée depuis un autre appareil → ré-appliquer (idempotent)
+      if(JSON.stringify(_bilanLayout || null) !== before) _blApplyLayout();
     }).catch(function(){});
   }, 400);
 }
@@ -1005,6 +1017,125 @@ function _blRestorePrevious(){
     if(res.error || !res.data || !res.data.length) return { ok:false, error:res.error };
     return _blSaveLayout(res.data[0].previous_bilan_layout || null);
   });
+}
+
+/* ── Application de la disposition au rendu (étape 3b) ─────────────
+   Schéma : _bilanLayout.pages[page] = {
+     order:  [blockId,…]                     — ordre des blocs
+     hidden: [blockId,…]                     — blocs masqués
+     tests:  { tbodyId: { order:[idx…], hidden:[idx…] } }
+   }
+   Principes : masquer = classe .bl-hidden (display:none !important),
+   jamais une suppression — tous les ids restent dans le DOM (brouillons,
+   bilans sauvegardés, sérialisation intacts). Sans layout : no-op strict.
+   Non-amputation : une ligne masquée porteuse d'une valeur redevient
+   visible (un bilan n'est jamais silencieusement tronqué). */
+var _blTbodyPageMap = null; // tbodyId -> page (depuis BILAN_BLOCKS)
+function _blTbodyPage(tbId){
+  if(!_blTbodyPageMap){
+    _blTbodyPageMap = {};
+    if(typeof BILAN_BLOCKS !== 'undefined'){
+      Object.keys(BILAN_BLOCKS).forEach(function(page){
+        BILAN_BLOCKS[page].forEach(function(b){
+          (b.tests||[]).forEach(function(t){ _blTbodyPageMap[t] = page; });
+        });
+      });
+    }
+  }
+  return _blTbodyPageMap[tbId] || null;
+}
+function _blPageLayout(page){
+  return (_bilanLayout && _bilanLayout.pages && _bilanLayout.pages[page]) || null;
+}
+function _blTestsLayout(tbId){
+  var page = _blTbodyPage(tbId); if(!page) return null;
+  var pl = _blPageLayout(page); if(!pl || !pl.tests) return null;
+  return pl.tests[tbId] || null;
+}
+function _blTestHidden(tbId, idx){
+  var tl = _blTestsLayout(tbId);
+  return !!(tl && tl.hidden && tl.hidden.indexOf(idx) !== -1);
+}
+/* Visibilité des lignes d'un tbody : masqués → .bl-hidden, sauf non-amputation. */
+function _blApplyRowVisibility(tbId){
+  var tbody = document.getElementById(tbId); if(!tbody) return;
+  Array.prototype.forEach.call(tbody.children, function(tr){
+    var i = parseInt(tr.dataset ? tr.dataset.testIdx : '', 10);
+    if(isNaN(i)) return;
+    var hide = _blTestHidden(tbId, i);
+    if(hide){
+      var sel  = tr.querySelector('select');
+      var note = tr.querySelector('input[type="text"]');
+      if((sel && sel.value) || (note && note.value)) hide = false; // non-amputation
+    }
+    tr.classList.toggle('bl-hidden', !!hide);
+  });
+}
+/* Réordonne les blocs d'une page selon orderIds — au sein de chaque parent
+   uniquement (les blocs imbriqués dans des wrappers ne traversent pas). */
+function _blReorderBlocks(pageKey, orderIds){
+  var groups = {}, seq = [];
+  document.querySelectorAll('#page-'+pageKey+' [data-block-id]').forEach(function(el){
+    var id = el.getAttribute('data-block-id');
+    if(!groups[id]){ groups[id] = []; seq.push(id); }
+    groups[id].push(el);
+  });
+  var seen = {}, finalOrder = [];
+  orderIds.forEach(function(id){ if(groups[id] && !seen[id]){ seen[id] = 1; finalOrder.push(id); } });
+  seq.forEach(function(id){ if(!seen[id]){ seen[id] = 1; finalOrder.push(id); } });
+  var parents = [];
+  finalOrder.forEach(function(id){
+    groups[id].forEach(function(el){
+      var p = el.parentNode;
+      var entry = null;
+      for(var pi=0; pi<parents.length; pi++){ if(parents[pi].parent === p){ entry = parents[pi]; break; } }
+      if(!entry){ entry = { parent:p, els:[] }; parents.push(entry); }
+      entry.els.push(el);
+    });
+  });
+  parents.forEach(function(entry){
+    if(entry.els.length < 2) return;
+    var current = Array.prototype.filter.call(entry.parent.children, function(c){ return c.getAttribute && c.getAttribute('data-block-id'); });
+    var anchor = current[0].previousElementSibling; // repère stable avant le premier bloc
+    entry.els.forEach(function(el){ entry.parent.removeChild(el); });
+    var ref = anchor ? anchor.nextSibling : entry.parent.firstChild;
+    entry.els.forEach(function(el){ entry.parent.insertBefore(el, ref); ref = el.nextSibling; });
+  });
+}
+/* Applique la disposition complète. Idempotent, no-op strict sans layout. */
+function _blApplyLayout(){
+  try {
+    // reset des masquages de blocs (ré-application propre)
+    document.querySelectorAll('[data-block-id].bl-hidden').forEach(function(el){ el.classList.remove('bl-hidden'); });
+    var pages = (_bilanLayout && _bilanLayout.pages) || {};
+    Object.keys(pages).forEach(function(pageKey){
+      if(pageKey === 'lma') return; // blocs imbriqués dans les wrappers du sélecteur de muscle — non personnalisables v1
+      var pl = pages[pageKey]; if(!pl) return;
+      var lockedIds = {};
+      if(typeof BILAN_BLOCKS !== 'undefined' && BILAN_BLOCKS[pageKey]){
+        BILAN_BLOCKS[pageKey].forEach(function(b){ if(b.locked) lockedIds[b.id] = 1; });
+      }
+      (pl.hidden||[]).forEach(function(id){
+        if(lockedIds[id]) return;
+        document.querySelectorAll('#page-'+pageKey+' [data-block-id="'+id+'"]').forEach(function(el){ el.classList.add('bl-hidden'); });
+      });
+      if(pl.order && pl.order.length) _blReorderBlocks(pageKey, pl.order);
+    });
+    // lignes de tests : ordre (déplacement des <tr>, les valeurs voyagent avec) + visibilité
+    Object.keys(TESTS).forEach(function(tbId){
+      var tbody = document.getElementById(tbId); if(!tbody) return;
+      var tl = _blTestsLayout(tbId);
+      if(tl && tl.order && tl.order.length){
+        var byIdx = {};
+        Array.prototype.forEach.call(tbody.children, function(tr){ if(tr.dataset) byIdx[tr.dataset.testIdx] = tr; });
+        _blTestDisplayOrder(tbId, TESTS[tbId]).forEach(function(i){
+          var tr = byIdx[String(i)];
+          if(tr) tbody.appendChild(tr);
+        });
+      }
+      if(tl) _blApplyRowVisibility(tbId);
+    });
+  } catch(e){ /* la disposition ne doit jamais casser le bilan */ }
 }
 _blInit();
 
@@ -2732,6 +2863,7 @@ function _deserializeBilan(data){
   try{ _calcWainnerCerv(); _calcDN4(); _calcLaslett(); _calcHaLaslett(); _calcInstabLomb(); _calcFlexionLomb(); _calcMckenzie(); }catch(ex){}
   saveToStorage(); // état complet — une seule écriture après désérialisation
   try{ _ctRestoreAll(); }catch(ex){} // synchroniser _ctData AVANT de rendre le CR
+  _blApplyLayout(); // ré-évaluer la non-amputation avec les valeurs du bilan chargé
   _refreshCRIfVisible();
 }
 
@@ -4636,7 +4768,8 @@ function _buildAllTestsHtml() {
         var isNeg = val === 'Négatif' || val === 'Pas validé';
         var isAmp = val === 'Ok' || val === 'Acceptable' || val === 'Insuffisant';
         if (selEl && (isPos || isNeg || isAmp)) {
-          var tname = (cfg.items[ri] || '').replace(/<span[\s\S]*?<\/span>/gi, '').replace(/<[^>]*>/g, '').trim();
+          var _ci = parseInt(rows[ri].dataset ? rows[ri].dataset.testIdx : '', 10); // identité catalogue (indépendante de l'ordre d'affichage)
+          var tname = (cfg.items[isNaN(_ci) ? ri : _ci] || '').replace(/<span[\s\S]*?<\/span>/gi, '').replace(/<[^>]*>/g, '').trim();
           // Ajouter la latéralité pour les tables bilatérales (clé se terminant par -d ou -g)
           if (/-d$/.test(tKey)) tname += ' — Droit';
           else if (/-g$/.test(tKey)) tname += ' — Gauche';
