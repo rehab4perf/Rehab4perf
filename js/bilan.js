@@ -3149,6 +3149,9 @@ function _deserializeBilan(data){
       el.className = '';
       if(v==='Positif'||v==='Validé') el.classList.add(t==='fonc'?'positif-fonc':'positif-ortho');
       else if(v==='Négatif'||v==='Pas validé') el.classList.add(t==='fonc'?'negatif-fonc':'negatif-ortho');
+      // Options personnalisées : mobilités (Normal/Réduit/Récurvatum) et DN4 (Oui/Non)
+      else if(v==='Réduit'||v==='Récurvatum'||v==='Oui') el.classList.add('positif-ortho');
+      else if(v==='Normal'||v==='Non') el.classList.add('negatif-ortho');
     }
     // Restaurer les selects appréciation épaule (ep-apr-sel)
     if(el.tagName==='SELECT' && el.classList.contains('ep-apr-sel')){
@@ -4372,6 +4375,9 @@ function onTestChange(sel, tableId, idx) {
   sel.className = '';
   if (v === 'Positif' || v === 'Valid' + 'é') sel.classList.add(type === 'fonc' ? 'positif-fonc' : 'positif-ortho');
   else if (v === 'N' + 'égatif' || v === 'Pas valid' + 'é') sel.classList.add(type === 'fonc' ? 'negatif-fonc' : 'negatif-ortho');
+  // Options personnalisées : mobilités (Normal/Réduit/Récurvatum) et DN4 (Oui/Non)
+  else if (v === 'Réduit' || v === 'Récurvatum' || v === 'Oui') sel.classList.add('positif-ortho');
+  else if (v === 'Normal' || v === 'Non') sel.classList.add('negatif-ortho');
   if (!_suppressDirty) {
     var wainnerTables = {'tb-cv-ulnt-g':1,'tb-cv-ulnt-d':1,'tb-cv-mecanique':1};
     if (wainnerTables[tableId]) _calcWainnerCerv();
@@ -5077,7 +5083,9 @@ function _buildAllTestsHtml() {
         var isPos = val === 'Positif' || val === 'Validé';
         var isNeg = val === 'Négatif' || val === 'Pas validé';
         var isAmp = val === 'Ok' || val === 'Acceptable' || val === 'Insuffisant';
-        if (selEl && (isPos || isNeg || isAmp)) {
+        var isMobOk  = val === 'Normal' || val === 'Non';   // mobilités genou / DN4 — favorable
+        var isMobBad = val === 'Réduit' || val === 'Récurvatum' || val === 'Oui'; // défavorable
+        if (selEl && (isPos || isNeg || isAmp || isMobOk || isMobBad)) {
           var _ci = parseInt(rows[ri].dataset ? rows[ri].dataset.testIdx : '', 10); // identité catalogue (indépendante de l'ordre d'affichage)
           var tname = (cfg.items[isNaN(_ci) ? ri : _ci] || '').replace(/<span[\s\S]*?<\/span>/gi, '').replace(/<[^>]*>/g, '').trim();
           // Ajouter la latéralité pour les tables bilatérales (clé se terminant par -d ou -g)
@@ -5089,6 +5097,8 @@ function _buildAllTestsHtml() {
           if      (val === 'Validé')     { tag = 'Validé';     tagCls = 'ok'; }
           else if (val === 'Pas validé') { tag = 'Pas validé'; tagCls = 'bad'; }
           else if (isAmp)                { tag = val; tagCls = val === 'Ok' ? 'ok' : val === 'Acceptable' ? 'warn' : 'bad'; }
+          else if (isMobOk)              { tag = val; tagCls = 'ok'; }
+          else if (isMobBad)             { tag = val; tagCls = 'bad'; }
           else if (isFonc)               { tag = val; tagCls = isPos ? 'ok'  : 'bad'; }
           else                           { tag = val; tagCls = isPos ? 'bad' : 'ok';  }
           secRows += crItem(tname, noteVal || '-', tag, tagCls, [selEl.id].filter(Boolean));
