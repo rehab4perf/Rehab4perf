@@ -1089,7 +1089,11 @@ function _blApplyDescs(tbId, tl){
     var nameDiv = tr.querySelector('.test-name'); if(!nameDiv) return;
     var override = descs[String(i)];
     var hasCustom = nameDiv.getAttribute('data-bl-desc') === '1';
-    if(override === undefined && !hasCustom) return; // rien à faire (cas courant)
+    var hasOpenForm = !!nameDiv.querySelector('.bl-desc-form');
+    // Rien à faire SAUF si un éditeur est ouvert sur cette ligne : il doit toujours
+    // se refermer quand _blApplyLayout tourne (après OK, Annuler, ou « Terminé »),
+    // même quand le texte revient à l'original (aucun override à appliquer).
+    if(override === undefined && !hasCustom && !hasOpenForm) return;
     nameDiv.innerHTML = cfg.items[i] || ''; // repartir de l'original du catalogue
     nameDiv.removeAttribute('data-bl-desc');
     if(override !== undefined){
@@ -1198,6 +1202,23 @@ var _blEditing = false;
 var _blEditPage = null;
 var _blEditSnapshot = null; // JSON de _bilanLayout à l'entrée (pour Annuler)
 
+/* Icônes SVG (même famille que le reste de l'app : feather-like, viewBox 24x24,
+   stroke=currentColor) pour le mode personnalisation — remplace les glyphes texte. */
+var _BL_ICON_PATHS = {
+  up:     '<polyline points="18 15 12 9 6 15"/>',
+  down:   '<polyline points="6 9 12 15 18 9"/>',
+  x:      '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+  pencil: '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>',
+  plus:   '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+  check:  '<polyline points="20 6 9 17 4 12"/>',
+  lock:   '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  gear:   '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>'
+};
+function _blIcon(name, size){
+  size = size || 14;
+  return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;pointer-events:none">'+(_BL_ICON_PATHS[name]||'')+'</svg>';
+}
+
 function _blCleanTestName(tbId, idx){
   var cfg = TESTS[tbId]; if(!cfg || !cfg.items[idx]) return 'Test '+idx;
   return String(cfg.items[idx]).replace(/<span[\s\S]*?<\/span>/gi,'').replace(/<[^>]*>/g,'').trim();
@@ -1298,13 +1319,17 @@ function _blEditDesc(page, tbId, idx){
   if(nameDiv.querySelector('.bl-desc-form')) return; // déjà en édition
   var current = _blDescText(page, tbId, idx);
   var original = _blOriginalDescText(tbId, idx);
+  // Masquer le texte affiché (original ou override) pendant l'édition — évite le
+  // doublon visuel avec le textarea qui contient déjà ce même texte.
+  var existingSpan = nameDiv.querySelector('span');
+  if(existingSpan) existingSpan.style.display = 'none';
   var form = document.createElement('div');
   form.className = 'bl-desc-form';
   form.innerHTML =
     '<textarea style="width:100%;min-height:54px;font-family:inherit;font-size:.75rem;border:1px solid var(--accent);border-radius:5px;padding:5px 8px;outline:none;resize:vertical;opacity:1 !important;pointer-events:auto !important;color:var(--text)"></textarea>'
     + '<div style="display:flex;gap:6px;margin-top:4px;">'
-    + '<button class="bl-desc-ok" style="border:none;border-radius:5px;padding:4px 12px;font-size:.72rem;font-weight:600;cursor:pointer;background:var(--accent2);color:#fff;font-family:inherit;opacity:1 !important;pointer-events:auto !important;">OK</button>'
-    + '<button class="bl-desc-cancel" style="border:1px solid var(--border2);border-radius:5px;padding:4px 12px;font-size:.72rem;font-weight:600;cursor:pointer;background:var(--surface2);color:var(--text2);font-family:inherit;opacity:1 !important;pointer-events:auto !important;">Annuler</button>'
+    + '<button class="bl-desc-ok" style="border:none;border-radius:5px;padding:4px 12px;font-size:.72rem;font-weight:600;cursor:pointer;background:var(--accent2);color:#fff;font-family:inherit;opacity:1 !important;pointer-events:auto !important;">'+_blIcon('check',12)+' OK</button>'
+    + '<button class="bl-desc-cancel" style="border:1px solid var(--border2);border-radius:5px;padding:4px 12px;font-size:.72rem;font-weight:600;cursor:pointer;background:var(--surface2);color:var(--text2);font-family:inherit;opacity:1 !important;pointer-events:auto !important;">'+_blIcon('x',12)+' Annuler</button>'
     + (original !== current ? '<button class="bl-desc-orig" style="border:1px solid var(--border2);border-radius:5px;padding:4px 12px;font-size:.72rem;cursor:pointer;background:none;color:var(--text3);font-family:inherit;opacity:1 !important;pointer-events:auto !important;">Texte d\'origine</button>' : '')
     + '</div>';
   var ta = form.querySelector('textarea');
@@ -1342,7 +1367,7 @@ function _blDecorate(page){
       var hdr = el.querySelector('.block-header');
       if(hdr && !hdr.querySelector('.bl-lock-tag')){
         var tag = document.createElement('span');
-        tag.className = 'bl-lock-tag'; tag.textContent = '🔒 Élément de base';
+        tag.className = 'bl-lock-tag'; tag.innerHTML = _blIcon('lock', 11) + ' Élément de base';
         hdr.appendChild(tag);
       }
       return;
@@ -1353,9 +1378,9 @@ function _blDecorate(page){
     var rail = document.createElement('div');
     rail.className = 'bl-rail';
     rail.innerHTML =
-      '<button class="bl-mv" title="Monter le bloc"'+upDis+' onclick="_blMoveBlock(\''+page+'\',\''+id+'\',-1)">▲</button>'
-      + '<button class="bl-mv" title="Descendre le bloc"'+dnDis+' onclick="_blMoveBlock(\''+page+'\',\''+id+'\',1)">▼</button>'
-      + '<button class="bl-rm" title="Retirer (reste dans la bibliothèque en bas de page)" onclick="_blHideBlock(\''+page+'\',\''+id+'\')">✕</button>';
+      '<button class="bl-mv" title="Monter le bloc"'+upDis+' onclick="_blMoveBlock(\''+page+'\',\''+id+'\',-1)">'+_blIcon('up',15)+'</button>'
+      + '<button class="bl-mv" title="Descendre le bloc"'+dnDis+' onclick="_blMoveBlock(\''+page+'\',\''+id+'\',1)">'+_blIcon('down',15)+'</button>'
+      + '<button class="bl-rm" title="Retirer (reste dans la bibliothèque en bas de page)" onclick="_blHideBlock(\''+page+'\',\''+id+'\')">'+_blIcon('x',15)+'</button>';
     el.appendChild(rail);
   });
   // rails de lignes (tbodies des blocs non verrouillés de la page)
@@ -1379,10 +1404,10 @@ function _blDecorate(page){
         var td = document.createElement('td');
         td.className = 'bl-row-rail';
         td.innerHTML =
-          '<button title="Modifier la description sous le nom du test" onclick="_blEditDesc(\''+page+'\',\''+tbId+'\','+idx+')">✎</button>'
-          + '<button title="Monter ce test"'+upDis+' onclick="_blMoveRow(\''+page+'\',\''+tbId+'\','+idx+',-1)">▲</button>'
-          + '<button title="Descendre ce test"'+dnDis+' onclick="_blMoveRow(\''+page+'\',\''+tbId+'\','+idx+',1)">▼</button>'
-          + '<button class="bl-rm" title="Retirer ce test (bibliothèque en bas de page)" onclick="_blHideRow(\''+page+'\',\''+tbId+'\','+idx+')">✕</button>';
+          '<button title="Modifier la description sous le nom du test" onclick="_blEditDesc(\''+page+'\',\''+tbId+'\','+idx+')">'+_blIcon('pencil',13)+'</button>'
+          + '<button title="Monter ce test"'+upDis+' onclick="_blMoveRow(\''+page+'\',\''+tbId+'\','+idx+',-1)">'+_blIcon('up',13)+'</button>'
+          + '<button title="Descendre ce test"'+dnDis+' onclick="_blMoveRow(\''+page+'\',\''+tbId+'\','+idx+',1)">'+_blIcon('down',13)+'</button>'
+          + '<button class="bl-rm" title="Retirer ce test (bibliothèque en bas de page)" onclick="_blHideRow(\''+page+'\',\''+tbId+'\','+idx+')">'+_blIcon('x',13)+'</button>';
         tr.appendChild(td);
       });
     });
@@ -1413,7 +1438,7 @@ function _blRenderLibrary(page){
       (BILAN_BLOCKS[page]||[]).forEach(function(b){ if((b.tests||[]).indexOf(tbId) !== -1) blockName = b.name; });
       testsHtml += '<div class="bl-lib-card"><div><div class="name">'+_blCleanTestName(tbId, idx)+'</div>'
         + '<div class="desc">Retiré de : '+blockName+'</div></div>'
-        + '<button class="bl-lib-add" title="Ré-afficher ce test dans son bloc" onclick="_blShowRow(\''+page+'\',\''+tbId+'\','+idx+')">＋</button></div>';
+        + '<button class="bl-lib-add" title="Ré-afficher ce test dans son bloc" onclick="_blShowRow(\''+page+'\',\''+tbId+'\','+idx+')">'+_blIcon('plus',16)+'</button></div>';
     });
   });
   var blocksHtml = '';
@@ -1421,7 +1446,7 @@ function _blRenderLibrary(page){
     var def = _blBlockDef(page, id) || { name:id, tests:[] };
     blocksHtml += '<div class="bl-lib-card"><div><div class="name">'+def.name+'</div>'
       + '<div class="desc">'+(def.tests||[]).length+' tbody(s)</div></div>'
-      + '<button class="bl-lib-add" title="Ré-afficher ce bloc" onclick="_blShowBlock(\''+page+'\',\''+id+'\')">＋</button></div>';
+      + '<button class="bl-lib-add" title="Ré-afficher ce bloc" onclick="_blShowBlock(\''+page+'\',\''+id+'\')">'+_blIcon('plus',16)+'</button></div>';
   });
   lib.innerHTML =
     '<div class="bl-lib-title">Bibliothèque — Tests masqués</div>'
@@ -1484,7 +1509,7 @@ function _blEnterEdit(page){
   _blApplyLayout(); // ré-appliquer en mode strict (les masqués porteurs de valeurs disparaissent en aperçu)
   _blDecorate(page);
   var btn = document.getElementById('bl-customize-btn');
-  if(btn) btn.innerHTML = '✓ Terminé';
+  if(btn) btn.innerHTML = _blIcon('check',15) + ' Terminé';
 }
 function _blExitEdit(){
   if(!_blEditing) return;
@@ -1495,7 +1520,7 @@ function _blExitEdit(){
   if(pg) pg.classList.remove('bl-editing');
   document.body.classList.remove('bl-editing-on');
   var btn = document.getElementById('bl-customize-btn');
-  if(btn) btn.innerHTML = '⚙ Personnaliser';
+  if(btn) btn.innerHTML = _blIcon('gear',15) + ' Personnaliser';
   _blApplyLayout(); // mode normal : la non-amputation reprend ses droits
 }
 function _blCancelEdit(){
@@ -1530,7 +1555,7 @@ function _blMaybeInjectCustomizeBtn(){
     if(!hdr) return;
     var btn = document.createElement('button');
     btn.id = 'bl-customize-btn';
-    btn.innerHTML = '⚙ Personnaliser';
+    btn.innerHTML = _blIcon('gear',15) + ' Personnaliser';
     btn.onclick = function(){ _blToggleEdit(page); };
     hdr.appendChild(btn);
   });

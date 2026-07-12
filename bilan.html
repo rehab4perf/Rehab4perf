@@ -584,14 +584,16 @@ body {
 .bl-rail .bl-rm:hover { background: var(--red-l); }
 .bl-lock-tag { font-size: .64rem; font-weight: 600; background: rgba(255,255,255,.25); color: #fff;
   border-radius: 20px; padding: 1px 9px; margin-left: auto; text-transform: none; letter-spacing: 0; }
-th.bl-row-rail, td.bl-row-rail { white-space: nowrap; text-align: right; width: 100px; }
-td.bl-row-rail { opacity: 1 !important; }
-td.bl-row-rail button { width: 24px; height: 24px; border-radius: 5px; border: 1px solid var(--border2);
-  background: var(--surface); cursor: pointer; font-size: .68rem; color: var(--text2); font-family: inherit;
-  margin-left: 3px; vertical-align: middle; opacity: 1 !important; pointer-events: auto !important; }
+th.bl-row-rail, td.bl-row-rail { white-space: nowrap; text-align: right; width: 132px; }
+td.bl-row-rail { opacity: 1 !important; display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
+td.bl-row-rail button { width: 22px; height: 22px; padding: 0; border-radius: 5px; border: 1px solid var(--border2);
+  background: var(--surface); cursor: pointer; color: var(--text2); font-family: inherit;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  opacity: 1 !important; pointer-events: auto !important; }
 td.bl-row-rail button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
 td.bl-row-rail button.bl-rm:hover { border-color: var(--red); color: var(--red); background: var(--red-l); }
 td.bl-row-rail button:disabled { opacity: .3 !important; cursor: default; }
+.bl-desc-form button { display: inline-flex; align-items: center; gap: 4px; }
 #bl-library { margin-top: 26px; }
 #bl-library .bl-lib-title { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
   color: var(--text2); display: flex; align-items: center; gap: 10px; margin: 18px 0 10px; }
@@ -4755,7 +4757,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 
 
 <script src="js/bilan-blocks.js?v=20260710"></script>
-<script src="js/bilan.js?v=20260711"></script>
+<script src="js/bilan.js?v=20260712"></script>
 
 </body>
 </html>
