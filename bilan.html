@@ -584,6 +584,11 @@ body {
 .bl-rail .bl-rm:hover { background: var(--red-l); }
 .bl-lock-tag { font-size: .64rem; font-weight: 600; background: rgba(255,255,255,.25); color: #fff;
   border-radius: 20px; padding: 1px 9px; margin-left: auto; text-transform: none; letter-spacing: 0; }
+/* Badge permanent des blocs personnalisés (visible même hors édition) — masqué pendant
+   l'édition pour ne pas chevaucher le rail, positionné au même coin. */
+.bl-custom-badge { font-size: .64rem; font-weight: 600; background: rgba(255,255,255,.25); color: #fff;
+  border-radius: 20px; padding: 1px 9px; margin-left: auto; text-transform: none; letter-spacing: 0; }
+.bl-editing .block[data-bl-custom-block="1"] .bl-custom-badge { display: none; }
 th.bl-row-rail, td.bl-row-rail { white-space: nowrap; text-align: right; width: 132px; }
 td.bl-row-rail { opacity: 1 !important; display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
 td.bl-row-rail button { width: 22px; height: 22px; padding: 0; border-radius: 5px; border: 1px solid var(--border2);
@@ -4768,7 +4773,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 
 
 <script src="js/bilan-blocks.js?v=20260710"></script>
-<script src="js/bilan.js?v=20260713"></script>
+<script src="js/bilan.js?v=20260714"></script>
 
 </body>
 </html>

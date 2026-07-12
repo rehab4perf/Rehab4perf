@@ -1233,13 +1233,16 @@ function _blFullDisplayOrder(tbId, cfg, tl){
   Object.keys(eff.tests).forEach(function(cid){ if(eff.tests[cid].tb === tbId && !seen[cid]){ seen[cid]=1; out.push(cid); } });
   return out;
 }
+function _blCustomTestNameHtml(def){
+  return _blEsc(def.name||'Test') + (def.desc ? '<span style="'+_BL_DESC_STYLE+'">'+_blEsc(def.desc)+'</span>' : '');
+}
 function _blCustomTestRowEl(cid, def){
   var tr = document.createElement('tr');
   tr.dataset.testIdx = cid; tr.dataset.custom = '1'; tr.dataset.cid = cid;
   var opts = (def.opts && def.opts.length) ? def.opts : ['Positif','Négatif','N/A'];
   var optHtml = '<option value="">-</option>';
   opts.forEach(function(o){ optHtml += '<option value="'+_blEsc(o)+'">'+_blEsc(o)+'</option>'; });
-  tr.innerHTML = '<td><div class="test-name">'+_blEsc(def.name||'Test')+'</div></td>'
+  tr.innerHTML = '<td><div class="test-name">'+_blCustomTestNameHtml(def)+'</div></td>'
     + '<td class="result-cell"><select id="sel-'+cid+'" data-type="'+(def.type||'ortho')+'" data-custom="1" onchange="onTestChange(this,\''+cid+'\',0)">'+optHtml+'</select></td>'
     + '<td class="note-cell"><input type="text" id="note-'+cid+'" placeholder="Observation…"></td>';
   return tr;
@@ -1249,16 +1252,19 @@ function _blEnsureCustomBlock(page, block){
   var el = document.querySelector('#page-'+page+' [data-block-id="'+block.id+'"]');
   if(el){
     var h = el.querySelector('.block-header');
-    if(h){ // conserver un éventuel rail d'édition, ne remplacer que le libellé
-      var rail = h.querySelector('.bl-rail'), tag = h.querySelector('.bl-lock-tag');
+    if(h){ // conserver le rail d'édition éventuel, ne remplacer que le libellé + badge permanent
+      var rail = h.querySelector('.bl-rail');
       h.textContent = block.name;
-      if(tag) h.appendChild(tag); if(rail) h.appendChild(rail);
+      var badge = document.createElement('span');
+      badge.className = 'bl-custom-badge'; badge.textContent = 'Personnalisé';
+      h.appendChild(badge);
+      if(rail) h.appendChild(rail);
     }
     return el;
   }
   var div = document.createElement('div');
   div.className = 'block'; div.setAttribute('data-block-id', block.id); div.setAttribute('data-bl-custom-block','1');
-  div.innerHTML = '<div class="block-header red">'+_blEsc(block.name)+'</div>'
+  div.innerHTML = '<div class="block-header red">'+_blEsc(block.name)+'<span class="bl-custom-badge">Personnalisé</span></div>'
     + '<table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>'
     + '<tbody id="tb-'+block.id+'"></tbody></table>';
   var pc = document.querySelector('#page-'+page+' .page-content'); if(!pc) return null;
@@ -1281,10 +1287,13 @@ function _blApplyCustomPage(page){
     if(!document.getElementById('sel-'+cid)){
       tbody.appendChild(_blCustomTestRowEl(cid, def));
     } else {
-      // actualiser le libellé si modifié dans le modèle
+      // actualiser nom + description si modifiés dans le modèle — toujours (y compris
+      // juste après une sauvegarde, où le formulaire d'édition est encore présent dans
+      // le DOM le temps que _blRefreshEdit le retire).
       var existing = document.getElementById('sel-'+cid).closest('tr');
       var nd = existing && existing.querySelector('.test-name');
-      if(nd && nd.textContent !== (def.name||'')) nd.textContent = def.name||'';
+      var wanted = _blCustomTestNameHtml(def);
+      if(nd && nd.innerHTML !== wanted) nd.innerHTML = wanted;
     }
   });
   // retirer lignes custom orphelines de la page
@@ -1357,8 +1366,14 @@ var _BL_ICON_PATHS = {
   lock:   '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
   gear:   '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>'
 };
+/* Icône engrenage fournie par l'utilisateur (illustration pleine, pas feather-stroke) —
+   utilisée pour le bouton Personnaliser/Terminé. viewBox et rendu dédiés (fill, pas stroke). */
+var _BL_GEAR_SVG = '<g fill="currentColor"><g><g><g fill="currentColor"><path d="m86.934 30.228c-16.027 19.623-32.05 39.221-48.056 58.871-.825 1.01-1.501 2.213-1.917 3.326-3.345 8.825-6.617 17.659-9.88 26.419-.259.661-.589 1.686-.688 2.839-.155 2.164 1.094 3.838 3.071 4.093.61.079 1.239.011 1.912-.2 1.012-.341 1.975-.887 2.703-1.339l4.397-2.734c5.257-3.243 10.492-6.514 15.73-9.81l.676-.434c2.295-1.441 4.669-2.922 6.702-5.414 10.878-13.363 21.777-26.698 32.651-40.037l16.588-20.319c.23-.243.435-.49.668-.758l-21.715-17.883zm-43.375 79.747c-.728.452-1.198.441-1.731-.049-.776-.72-1.64-1.328-2.392-2.045-.222-.202-.382-.694-.268-1.002 1.536-4.219 3.115-8.383 4.7-12.596.043-.143.157-.253.187-.298 3.567 2.941 7.109 5.879 10.791 8.884-.431.267-.918.577-1.405.886-3.291 2.057-6.583 4.114-9.882 6.22zm50.558-66.935-39.169 48.254c-.945 1.169-2.7 1.315-3.912.315-1.236-1.003-1.458-2.744-.513-3.912l39.169-48.254c.941-1.144 2.697-1.29 3.908-.291 1.236 1.003 1.459 2.743.517 3.888z"/></g></g><g><g><path d="m121.138 21.285c-3.451-2.876-6.932-5.707-10.441-8.516-3.281-2.656-7.868-1.907-10.923 1.769-1.496 1.792-2.944 3.591-4.416 5.386l-1.205 1.458c-.092.137-.212.295-.304.432l-.113-.089 1.595 1.297.471.384 17.967 14.622 1.911 1.537 1.763-2.13c1.383-1.683 2.766-3.366 4.128-5.076 3.041-3.753 2.86-8.317-.433-11.074z"/></g></g></g><g><g><g><path d="m119.598 88.569c-3.765-3.212-14.607-12.595-18.224-15.678-.339-.289-.668-.569-1.005-.856l-16.124 20.205c6.886 5.906 14.329 12.298 18.926 16.208 2.77 2.356 5.736 3.376 9.062 3.114l.018-.001c.905-.072 1.842-.246 2.785-.514 4.961-1.415 8.015-4.658 9.077-9.644 1.081-5.042-.44-9.362-4.515-12.834zm-7.059 16.74c-1.645.131-3.255-.397-4.527-1.489-1.274-1.089-2.043-2.601-2.163-4.249-.25-3.349 2.348-6.408 5.672-6.671l.102-.008c3.399-.215 6.373 2.36 6.627 5.738.251 3.338-2.353 6.399-5.711 6.679z"/></g></g><g><path d="m65.942 42.744c-2.784-2.365-5.543-4.708-8.264-7.018-.477-.405.417-5.22.417-5.22-.005-.062-.01-.129-.014-.203-.023-.377-.042-.755-.059-1.135-.116-2.297-.236-4.667-.865-6.952-1.589-5.746-4.734-10.627-9.093-14.117-4.345-3.478-9.809-5.504-15.803-5.862-1.143-.068-2.288-.059-3.4.032-3.549.283-6.094.375-9.463 2.261l-1.733.971 1.333 1.473c.374.41.792.621 1.098.774.077.041.182.093.201.105 5.804 4.891 10.513 8.887 14.818 12.572 2.071 1.773 2.254 4.176.481 6.276l-.818.969c-1.547 1.831-4.787 5.652-6.388 7.478-.783.895-1.76 1.412-2.826 1.498-1.056.084-2.107-.262-3.037-1.005-.539-.43-1.057-.88-1.609-1.354-.241-.21-.485-.421-.728-.628l-15.082-12.848-.789 2.111c-1.422 3.799-.678 9.128.648 13.672 3.674 12.612 15.321 20.695 28.325 19.656.691-.055 1.391-.136 2.085-.243.073-.013.144-.018.213-.026.267-.021.455-.003.686.131 0 0 4.315-1.144 5.103-.472 2.711 2.315 5.367 4.581 7.983 6.814z"/></g></g></g></g>';
 function _blIcon(name, size){
   size = size || 14;
+  if(name === 'gear2'){
+    return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 128 128" style="vertical-align:middle;pointer-events:none">'+_BL_GEAR_SVG+'</svg>';
+  }
   return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;pointer-events:none">'+(_BL_ICON_PATHS[name]||'')+'</svg>';
 }
 
@@ -1433,12 +1448,23 @@ function _blRowSeq(tbId){
   return Array.prototype.map.call(tbody.children, function(tr){ return parseInt(tr.dataset.testIdx,10); })
     .filter(function(i){ return !isNaN(i); });
 }
-function _blMoveRow(page, tbId, idx, dir){
+/* Séquence DOM complète d'un tbody, natifs (index) ET personnalisés (cid) mêlés —
+   même espace de clés que tl.order (_blFullDisplayOrder). Nécessaire pour que les
+   tests ajoutés à un bloc soient repositionnables comme les tests natifs. */
+function _blFullRowSeq(tbId){
+  var tbody = document.getElementById(tbId); if(!tbody) return [];
+  return Array.prototype.map.call(tbody.children, function(tr){
+    if(tr.dataset && tr.dataset.custom === '1') return tr.dataset.cid;
+    var i = parseInt(tr.dataset ? tr.dataset.testIdx : '', 10);
+    return isNaN(i) ? null : i;
+  }).filter(function(k){ return k !== null; });
+}
+function _blMoveRow(page, tbId, key, dir){
   var td = _blTestsDraft(page, tbId);
-  var seq = _blRowSeq(tbId).filter(function(i){ return td.hidden.indexOf(i) === -1; });
-  var i = seq.indexOf(idx), j = i + dir;
+  var seq = _blFullRowSeq(tbId).filter(function(k){ return typeof k === 'string' || td.hidden.indexOf(k) === -1; });
+  var i = seq.indexOf(key), j = i + dir;
   if(i === -1 || j < 0 || j >= seq.length) return;
-  seq.splice(i,1); seq.splice(j,0,idx);
+  seq.splice(i,1); seq.splice(j,0,key);
   td.order = seq;
   _blApplyLayout(); _blRefreshEdit();
 }
@@ -1533,6 +1559,14 @@ function _blRenameCustomTest(page, cid, name){
   if(pl.customTests && pl.customTests[cid]){ pl.customTests[cid].name = name; }
   _blApplyLayout(); _blRefreshEdit();
 }
+function _blSetCustomTestDesc(page, cid, name, desc){
+  var pl = _blPageDraft(page);
+  if(pl.customTests && pl.customTests[cid]){
+    pl.customTests[cid].name = name;
+    if(desc) pl.customTests[cid].desc = desc; else delete pl.customTests[cid].desc;
+  }
+  _blApplyLayout(); _blRefreshEdit();
+}
 function _blDeleteCustomTest(page, cid){
   var pl = _blPageDraft(page);
   if(pl.customTests) delete pl.customTests[cid];
@@ -1601,12 +1635,8 @@ function _blDecorate(page){
     rail.className = 'bl-rail';
     if(isCustomBlock){
       // Bloc personnalisé : renommer + supprimer (pas de bibliothèque — il est créé par le praticien)
-      var hdrC = el.querySelector('.block-header');
-      if(hdrC && !hdrC.querySelector('.bl-lock-tag')){
-        var tagC = document.createElement('span');
-        tagC.className = 'bl-lock-tag'; tagC.textContent = 'Personnalisé';
-        hdrC.appendChild(tagC);
-      }
+      // Le badge « Personnalisé » est permanent (_blEnsureCustomBlock) et se masque en
+      // édition via CSS pour ne pas chevaucher ce rail, positionné au même coin.
       rail.innerHTML =
         '<button class="bl-mv" title="Monter le bloc"'+upDis+' onclick="_blMoveBlock(\''+page+'\',\''+id+'\',-1)">'+_blIcon('up',15)+'</button>'
         + '<button class="bl-mv" title="Descendre le bloc"'+dnDis+' onclick="_blMoveBlock(\''+page+'\',\''+id+'\',1)">'+_blIcon('down',15)+'</button>'
@@ -1632,14 +1662,21 @@ function _blDecorate(page){
       var th = document.createElement('th'); th.className = 'bl-row-rail'; headRow.appendChild(th);
     }
     var td0 = _blTestsDraft(page, tbId);
-    var seq = _blRowSeq(tbId).filter(function(i){ return td0.hidden.indexOf(i) === -1; });
+    // Séquence mêlée (natifs + personnalisés) : les tests ajoutés à un bloc doivent être
+    // repositionnables au même titre que les tests natifs.
+    var seq = _blFullRowSeq(tbId).filter(function(k){ return typeof k === 'string' || td0.hidden.indexOf(k) === -1; });
     Array.prototype.forEach.call(tbody.children, function(tr){
       if(tr.querySelector('.bl-row-rail')) return;
       var td = document.createElement('td'); td.className = 'bl-row-rail';
       if(tr.dataset && tr.dataset.custom === '1'){
         var cid = tr.dataset.cid;
+        var posC = seq.indexOf(cid);
+        var upDisC = posC <= 0 ? ' disabled' : '';
+        var dnDisC = (posC === -1 || posC >= seq.length-1) ? ' disabled' : '';
         td.innerHTML =
-          '<button title="Renommer ce test personnalisé" onclick="_blStartRenameTest(\''+page+'\',\''+cid+'\')">'+_blIcon('pencil',13)+'</button>'
+          '<button title="Modifier le nom / la description" onclick="_blStartEditCustomTest(\''+page+'\',\''+cid+'\')">'+_blIcon('pencil',13)+'</button>'
+          + '<button title="Monter ce test"'+upDisC+' onclick="_blMoveRow(\''+page+'\',\''+tbId+'\',\''+cid+'\',-1)">'+_blIcon('up',13)+'</button>'
+          + '<button title="Descendre ce test"'+dnDisC+' onclick="_blMoveRow(\''+page+'\',\''+tbId+'\',\''+cid+'\',1)">'+_blIcon('down',13)+'</button>'
           + '<button class="bl-rm" title="Supprimer ce test personnalisé" onclick="_blDeleteCustomTest(\''+page+'\',\''+cid+'\')">'+_blIcon('x',13)+'</button>';
         tr.appendChild(td);
         return;
@@ -1676,12 +1713,32 @@ function _blStartRenameBlock(page, bid){
   hdr.textContent = ''; hdr.appendChild(host);
   _blInlineName(host, cur, 'Nom du bloc', function(name){ _blRenameCustomBlock(page, bid, name); });
 }
-function _blStartRenameTest(page, cid){
+/* Éditeur combiné nom + description d'un test personnalisé (le nom reste modifiable,
+   contrairement aux tests natifs dont le nom est l'identité catalogue). */
+function _blStartEditCustomTest(page, cid){
   var el = document.getElementById('sel-'+cid); if(!el) return;
   var tr = el.closest('tr'); var nd = tr && tr.querySelector('.test-name'); if(!nd) return;
-  var cur = ''; var ct = _blPageDraft(page).customTests; if(ct && ct[cid]) cur = ct[cid].name;
-  var host = document.createElement('div'); nd.textContent = ''; nd.appendChild(host);
-  _blInlineName(host, cur, 'Nom du test', function(name){ _blRenameCustomTest(page, cid, name); });
+  if(nd.querySelector('.bl-desc-form')) return; // déjà en édition
+  var ct = _blPageDraft(page).customTests || {};
+  var cur = (ct[cid] && ct[cid].name) || '';
+  var curDesc = (ct[cid] && ct[cid].desc) || '';
+  nd.innerHTML = '';
+  var form = document.createElement('div');
+  form.className = 'bl-desc-form';
+  form.innerHTML =
+    '<input type="text" class="bl-inl-inp" placeholder="Nom du test" maxlength="90" style="width:100%;font-family:inherit;font-size:.82rem;border:1px solid var(--accent);border-radius:5px;padding:6px 9px;outline:none;opacity:1 !important;pointer-events:auto !important;margin-bottom:5px;">'
+    + '<textarea placeholder="Description (optionnelle) — affichée sous le nom du test" style="width:100%;min-height:44px;font-family:inherit;font-size:.75rem;border:1px solid var(--accent);border-radius:5px;padding:5px 8px;outline:none;resize:vertical;opacity:1 !important;pointer-events:auto !important;color:var(--text)"></textarea>'
+    + '<div style="display:flex;gap:6px;margin-top:4px;">'
+    + '<button class="bl-desc-ok" style="border:none;border-radius:5px;padding:4px 12px;font-size:.72rem;font-weight:600;cursor:pointer;background:var(--accent2);color:#fff;font-family:inherit;opacity:1 !important;pointer-events:auto !important;">'+_blIcon('check',12)+' OK</button>'
+    + '<button class="bl-desc-cancel" style="border:1px solid var(--border2);border-radius:5px;padding:4px 12px;font-size:.72rem;font-weight:600;cursor:pointer;background:var(--surface2);color:var(--text2);font-family:inherit;opacity:1 !important;pointer-events:auto !important;">'+_blIcon('x',12)+' Annuler</button>'
+    + '</div>';
+  var inp = form.querySelector('.bl-inl-inp'), ta = form.querySelector('textarea');
+  inp.value = cur; ta.value = curDesc;
+  function ok(){ var n = inp.value.trim(); if(n) _blSetCustomTestDesc(page, cid, n, ta.value.trim()); else _blApplyLayout(); if(!n) _blRefreshEdit(); }
+  form.querySelector('.bl-desc-ok').onclick = ok;
+  form.querySelector('.bl-desc-cancel').onclick = function(){ _blApplyLayout(); _blRefreshEdit(); };
+  nd.appendChild(form);
+  inp.focus();
 }
 /* Zone « créer un bloc personnalisé » en bas de page (avant la bibliothèque). */
 function _blRenderCreateBlock(page){
@@ -1700,8 +1757,13 @@ function _blUndecorate(page){
 }
 function _blRefreshEdit(){
   if(!_blEditing) return;
+  // La reconstruction retire/réinsère de nombreux éléments (dont celui qui a le focus,
+  // ex. le champ de saisie qu'on vient de valider) — le navigateur reporte alors le
+  // focus sur <body> et remonte la page en haut. On restaure le scroll pour éviter le saut.
+  var scrollY = window.scrollY || window.pageYOffset;
   _blUndecorate(_blEditPage);
   _blDecorate(_blEditPage);
+  window.scrollTo(0, scrollY);
 }
 function _blRenderLibrary(page){
   var content = document.querySelector('#page-'+page+' .page-content'); if(!content) return;
@@ -1798,7 +1860,7 @@ function _blExitEdit(){
   if(pg) pg.classList.remove('bl-editing');
   document.body.classList.remove('bl-editing-on');
   var btn = document.getElementById('bl-customize-btn');
-  if(btn) btn.innerHTML = _blIcon('gear',15) + ' Personnaliser';
+  if(btn) btn.innerHTML = _blIcon('gear2',15) + ' Personnaliser';
   _blApplyLayout(); // mode normal : la non-amputation reprend ses droits
 }
 function _blCancelEdit(){
@@ -1833,7 +1895,7 @@ function _blMaybeInjectCustomizeBtn(){
     if(!hdr) return;
     var btn = document.createElement('button');
     btn.id = 'bl-customize-btn';
-    btn.innerHTML = _blIcon('gear',15) + ' Personnaliser';
+    btn.innerHTML = _blIcon('gear2',15) + ' Personnaliser';
     btn.onclick = function(){ _blToggleEdit(page); };
     hdr.appendChild(btn);
   });
@@ -5533,7 +5595,11 @@ function _buildAllTestsHtml() {
           var tname;
           if (isCustomRow) {
             var _nd = rows[ri].querySelector('.test-name');
-            tname = _nd ? _nd.textContent.trim() : 'Test personnalisé';
+            if(_nd){
+              var _ndClone = _nd.cloneNode(true); var _sp = _ndClone.querySelector('span');
+              if(_sp) _sp.parentNode.removeChild(_sp); // exclure la description, jamais dans le CR
+              tname = _ndClone.textContent.trim();
+            } else { tname = 'Test personnalisé'; }
           } else {
             var _ci = parseInt(rows[ri].dataset ? rows[ri].dataset.testIdx : '', 10); // identité catalogue (indépendante de l'ordre d'affichage)
             tname = (cfg.items[isNaN(_ci) ? ri : _ci] || '').replace(/<span[\s\S]*?<\/span>/gi, '').replace(/<[^>]*>/g, '').trim();
