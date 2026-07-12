@@ -3204,12 +3204,17 @@ function saveBilan(){
   // de savoir avec quelle structure ce bilan a été enregistré.
   donnees._meta = JSON.stringify({ catalogueVersion: BILAN_CATALOGUE_VERSION, savedAt: new Date().toISOString() });
 
-  // Bilan de suivi : calculer les champs réellement modifiés (Option A — snapshot)
+  // Bilan de suivi : calculer les champs réellement modifiés.
+  // Référence = état FUSIONNÉ des bilans antérieurs (pas le snapshot de début de suivi :
+  // les réécritures programmatiques — re-broadcast patient, autofill — modifiaient des
+  // champs d'identité APRÈS le snapshot et polluaient changed_fields, d'où des infos
+  // patient marquées « testées récemment » à tort dans le CR).
   if(_bilanIsSuivi && _suiviSnapshot){
+    var _suiviPrev = _prevMergedFrom(_allBilans, 0) || _suiviSnapshot || {};
     var _changedFields = [];
     Object.keys(donnees).forEach(function(k){
       if(k === '_meta') return; // métadonnée, jamais un champ clinique
-      var prev = _suiviSnapshot[k];
+      var prev = _suiviPrev[k];
       var curr = donnees[k];
       var prevStr = (prev === undefined || prev === null) ? '' : String(prev);
       var currStr = (curr === undefined || curr === null) ? '' : String(curr);
