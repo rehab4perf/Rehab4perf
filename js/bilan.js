@@ -1158,6 +1158,8 @@ function _blReorderBlocks(pageKey, orderIds){
 /* Applique la disposition complète. Idempotent, no-op strict sans layout. */
 function _blApplyLayout(){
   try {
+    // Blocs & tests personnalisés (matérialisation avant le placement des blocs)
+    _blApplyCustomAll();
     // reset des masquages de blocs (ré-application propre)
     document.querySelectorAll('[data-block-id].bl-hidden').forEach(function(el){ el.classList.remove('bl-hidden'); });
     var pages = (_bilanLayout && _bilanLayout.pages) || {};
@@ -1180,16 +1182,157 @@ function _blApplyLayout(){
       var tl = _blTestsLayout(tbId);
       if(tl && tl.order && tl.order.length){
         var byIdx = {};
-        Array.prototype.forEach.call(tbody.children, function(tr){ if(tr.dataset) byIdx[tr.dataset.testIdx] = tr; });
-        _blTestDisplayOrder(tbId, TESTS[tbId]).forEach(function(i){
-          var tr = byIdx[String(i)];
-          if(tr) tbody.appendChild(tr);
+        Array.prototype.forEach.call(tbody.children, function(tr){ if(tr.dataset && tr.dataset.testIdx !== undefined) byIdx[tr.dataset.testIdx] = tr; });
+        _blFullDisplayOrder(tbId, TESTS[tbId], tl).forEach(function(key){
+          var tr = byIdx[String(key)];
+          if(tr) tbody.appendChild(tr); // natif ET custom repositionnés selon l'ordre mêlé
         });
       }
       if(tl) _blApplyRowVisibility(tbId);
       _blApplyDescs(tbId, tl);
     });
   } catch(e){ /* la disposition ne doit jamais casser le bilan */ }
+}
+
+/* ═══ Tests & blocs personnalisés (étape 5b-1) ═══
+   Ajouts permanents à la disposition (le modèle du praticien), distincts des
+   « Tests personnalisés » PAR BILAN (_ctData). Deux garanties :
+   1) valeurs indexées sur l'id unique du test (sel-<cid>/note-<cid>), jamais sur
+      le bloc conteneur → déplacer/ré-agencer ne perd pas les valeurs ;
+   2) chaque bilan embarque un instantané (donnees._blCustom) → un vieux bilan
+      affiche toujours ses tests perso, même supprimés du modèle depuis. */
+var _blLoadedCustom = null; // instantané custom du bilan chargé (fallback rendu)
+function _blEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function _blNewId(prefix){ return prefix + '-' + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+function _blPageCustom(page){
+  var pl = _blPageLayout(page);
+  return { blocks: (pl && pl.customBlocks) || [], tests: (pl && pl.customTests) || {} };
+}
+/* Ensemble effectif (template ∪ instantané du bilan chargé) pour rendre les customs. */
+function _blCustomEffective(page){
+  var blocks = [], seenB = {}, tests = {};
+  function addBlocks(arr){ (arr||[]).forEach(function(b){ if(b && b.id && !seenB[b.id]){ seenB[b.id]=1; blocks.push({id:b.id, name:b.name||'Bloc'}); } }); }
+  function addTests(d){ if(d) Object.keys(d).forEach(function(cid){ if(!tests[cid]) tests[cid] = d[cid]; }); }
+  var tpl = _blPageCustom(page); addBlocks(tpl.blocks); addTests(tpl.tests);
+  var snap = _blLoadedCustom && _blLoadedCustom[page];
+  if(snap){ addBlocks(snap.blocks); addTests(snap.tests); }
+  return { blocks: blocks, tests: tests };
+}
+/* Ordre d'affichage complet d'un tbody = indices natifs + cids custom mêlés (tl.order). */
+function _blFullDisplayOrder(tbId, cfg, tl){
+  var natives = _blTestDisplayOrder(tbId, cfg); // indices natifs, masqués inclus (en fin)
+  if(!tl || !tl.order || !tl.order.length) return natives;
+  var seen = {}, out = [];
+  tl.order.forEach(function(key){
+    if(typeof key === 'string'){ if(!seen[key]){ seen[key]=1; out.push(key); } }         // custom cid
+    else if(natives.indexOf(key) !== -1 && !seen[key]){ seen[key]=1; out.push(key); }     // index natif
+  });
+  natives.forEach(function(i){ if(!seen[i]){ seen[i]=1; out.push(i); } });                 // natifs non listés → fin
+  // cids custom de ce tbody non listés dans l'ordre → fin
+  var eff = _blCustomEffective(_blTbodyPage(tbId) || '');
+  Object.keys(eff.tests).forEach(function(cid){ if(eff.tests[cid].tb === tbId && !seen[cid]){ seen[cid]=1; out.push(cid); } });
+  return out;
+}
+function _blCustomTestRowEl(cid, def){
+  var tr = document.createElement('tr');
+  tr.dataset.testIdx = cid; tr.dataset.custom = '1'; tr.dataset.cid = cid;
+  var opts = (def.opts && def.opts.length) ? def.opts : ['Positif','Négatif','N/A'];
+  var optHtml = '<option value="">-</option>';
+  opts.forEach(function(o){ optHtml += '<option value="'+_blEsc(o)+'">'+_blEsc(o)+'</option>'; });
+  tr.innerHTML = '<td><div class="test-name">'+_blEsc(def.name||'Test')+'</div></td>'
+    + '<td class="result-cell"><select id="sel-'+cid+'" data-type="'+(def.type||'ortho')+'" data-custom="1" onchange="onTestChange(this,\''+cid+'\',0)">'+optHtml+'</select></td>'
+    + '<td class="note-cell"><input type="text" id="note-'+cid+'" placeholder="Observation…"></td>';
+  return tr;
+}
+/* Crée/actualise le bloc DOM d'un bloc personnalisé (avant la conclusion). */
+function _blEnsureCustomBlock(page, block){
+  var el = document.querySelector('#page-'+page+' [data-block-id="'+block.id+'"]');
+  if(el){
+    var h = el.querySelector('.block-header');
+    if(h){ // conserver un éventuel rail d'édition, ne remplacer que le libellé
+      var rail = h.querySelector('.bl-rail'), tag = h.querySelector('.bl-lock-tag');
+      h.textContent = block.name;
+      if(tag) h.appendChild(tag); if(rail) h.appendChild(rail);
+    }
+    return el;
+  }
+  var div = document.createElement('div');
+  div.className = 'block'; div.setAttribute('data-block-id', block.id); div.setAttribute('data-bl-custom-block','1');
+  div.innerHTML = '<div class="block-header red">'+_blEsc(block.name)+'</div>'
+    + '<table class="test-table"><thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>'
+    + '<tbody id="tb-'+block.id+'"></tbody></table>';
+  var pc = document.querySelector('#page-'+page+' .page-content'); if(!pc) return null;
+  var concl = pc.querySelector('[data-block-id="'+page+'--conclusion"]') || pc.querySelector('.concl-area');
+  var conclBlock = concl ? (concl.closest('.block') || concl) : null;
+  if(conclBlock && conclBlock.parentNode === pc) pc.insertBefore(div, conclBlock); else pc.appendChild(div);
+  return div;
+}
+/* Matérialise blocs + lignes custom d'une page ; retire les orphelins. */
+function _blApplyCustomPage(page){
+  var eff = _blCustomEffective(page);
+  var wantBlock = {}; eff.blocks.forEach(function(b){ wantBlock[b.id] = 1; _blEnsureCustomBlock(page, b); });
+  var wantRow = {};
+  Object.keys(eff.tests).forEach(function(cid){
+    var def = eff.tests[cid];
+    var tbId = def.tb || null;
+    var tbody = tbId ? document.getElementById(tbId) : null;
+    if(!tbody) return; // conteneur absent (bloc supprimé sans instantané) → non rendu
+    wantRow[cid] = 1;
+    if(!document.getElementById('sel-'+cid)){
+      tbody.appendChild(_blCustomTestRowEl(cid, def));
+    } else {
+      // actualiser le libellé si modifié dans le modèle
+      var existing = document.getElementById('sel-'+cid).closest('tr');
+      var nd = existing && existing.querySelector('.test-name');
+      if(nd && nd.textContent !== (def.name||'')) nd.textContent = def.name||'';
+    }
+  });
+  // retirer lignes custom orphelines de la page
+  document.querySelectorAll('#page-'+page+' tr[data-custom="1"]').forEach(function(tr){
+    if(!wantRow[tr.dataset.cid]) tr.parentNode && tr.parentNode.removeChild(tr);
+  });
+  // ordonner les lignes des blocs personnalisés selon tests[tb].order (cids)
+  var plo = _blPageLayout(page);
+  document.querySelectorAll('#page-'+page+' [data-bl-custom-block="1"] tbody[id]').forEach(function(tb){
+    var ord = (plo && plo.tests && plo.tests[tb.id] && plo.tests[tb.id].order) || [];
+    var byId = {}; Array.prototype.forEach.call(tb.children, function(tr){ if(tr.dataset && tr.dataset.cid) byId[tr.dataset.cid] = tr; });
+    ord.forEach(function(cid){ if(byId[cid]) tb.appendChild(byId[cid]); });
+  });
+  // retirer blocs custom orphelins de la page
+  document.querySelectorAll('#page-'+page+' [data-bl-custom-block="1"]').forEach(function(bl){
+    if(!wantBlock[bl.getAttribute('data-block-id')]) bl.parentNode && bl.parentNode.removeChild(bl);
+  });
+}
+function _blApplyCustomAll(){
+  var pages = {};
+  var lay = (_bilanLayout && _bilanLayout.pages) || {};
+  Object.keys(lay).forEach(function(p){ if((lay[p].customBlocks && lay[p].customBlocks.length) || (lay[p].customTests && Object.keys(lay[p].customTests).length)) pages[p] = 1; });
+  if(_blLoadedCustom) Object.keys(_blLoadedCustom).forEach(function(p){ pages[p] = 1; });
+  // pages ayant du DOM custom résiduel à nettoyer (ex. custom entièrement supprimé)
+  document.querySelectorAll('[data-bl-custom-block="1"], tr[data-custom="1"]').forEach(function(el){
+    var pg = el.closest('.page'); if(pg && pg.id.indexOf('page-') === 0) pages[pg.id.slice(5)] = 1;
+  });
+  Object.keys(pages).forEach(function(p){ if(p !== 'lma') _blApplyCustomPage(p); });
+}
+/* Instantané des customs du formulaire courant, à écrire dans donnees._blCustom. */
+function _blCustomSnapshot(){
+  var out = {}, any = false;
+  var lay = (_bilanLayout && _bilanLayout.pages) || {};
+  var pages = {};
+  Object.keys(lay).forEach(function(p){ pages[p]=1; });
+  if(_blLoadedCustom) Object.keys(_blLoadedCustom).forEach(function(p){ pages[p]=1; });
+  Object.keys(pages).forEach(function(page){
+    var eff = _blCustomEffective(page);
+    if(!eff.blocks.length && !Object.keys(eff.tests).length) return;
+    // ne garder que les customs réellement présents dans le DOM de la page
+    var tests = {};
+    Object.keys(eff.tests).forEach(function(cid){ if(document.getElementById('sel-'+cid)) tests[cid] = eff.tests[cid]; });
+    var blocks = eff.blocks.filter(function(b){ return document.querySelector('#page-'+page+' [data-block-id="'+b.id+'"]'); });
+    if(!blocks.length && !Object.keys(tests).length) return;
+    out[page] = { blocks: blocks, tests: tests };
+    any = true;
+  });
+  return any ? out : null;
 }
 
 /* ── Mode personnalisation (étape 4) — v1 : onglet genou, derrière le flag bilan_custom.
@@ -1353,6 +1496,84 @@ function _blSaveDesc(page, tbId, idx, text){
   _blApplyLayout(); _blRefreshEdit();
 }
 
+/* ── Blocs & tests personnalisés : actions (étape 5b-1) ── */
+/* Petit formulaire de saisie en place (nom) — inséré dans un conteneur. */
+function _blInlineName(container, value, placeholder, onOk){
+  container.innerHTML =
+    '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">'
+    + '<input type="text" class="bl-inl-inp" placeholder="'+_blEsc(placeholder)+'" maxlength="90" style="flex:1;min-width:160px;font-family:inherit;font-size:.82rem;border:1px solid var(--accent);border-radius:5px;padding:6px 9px;outline:none;opacity:1 !important;pointer-events:auto !important;">'
+    + '<button class="bl-inl-ok" style="border:none;border-radius:5px;padding:6px 14px;font-size:.78rem;font-weight:600;cursor:pointer;background:var(--accent2);color:#fff;font-family:inherit;opacity:1 !important;pointer-events:auto !important;">'+_blIcon('check',12)+' OK</button>'
+    + '<button class="bl-inl-no" style="border:1px solid var(--border2);border-radius:5px;padding:6px 14px;font-size:.78rem;font-weight:600;cursor:pointer;background:var(--surface2);color:var(--text2);font-family:inherit;opacity:1 !important;pointer-events:auto !important;">'+_blIcon('x',12)+' Annuler</button>'
+    + '</div>';
+  var inp = container.querySelector('.bl-inl-inp');
+  inp.value = value || '';
+  function ok(){ var v = inp.value.trim(); if(v) onOk(v); else _blRefreshEdit(); }
+  container.querySelector('.bl-inl-ok').onclick = ok;
+  container.querySelector('.bl-inl-no').onclick = function(){ _blRefreshEdit(); };
+  inp.onkeydown = function(e){ if(e.key === 'Enter'){ e.preventDefault(); ok(); } else if(e.key === 'Escape'){ _blRefreshEdit(); } };
+  inp.focus();
+}
+/* Ajout d'un test personnalisé dans un tbody (natif ou de bloc perso). */
+function _blPromptAddTest(page, tbId, anchorBtn){
+  var host = document.createElement('div'); host.style.margin = '6px 14px';
+  anchorBtn.parentNode.insertBefore(host, anchorBtn.nextSibling);
+  _blInlineName(host, '', 'Nom du test — ex : Step down 30 s', function(name){ _blAddCustomTest(page, tbId, name); });
+}
+function _blAddCustomTest(page, tbId, name){
+  var pl = _blPageDraft(page);
+  if(!pl.customTests) pl.customTests = {};
+  var cid = _blNewId('cx');
+  pl.customTests[cid] = { name: name, opts: ['Positif','Négatif','N/A'], type: 'ortho', tb: tbId };
+  var td = _blTestsDraft(page, tbId);
+  td.order.push(cid);
+  _blApplyLayout(); _blRefreshEdit();
+}
+function _blRenameCustomTest(page, cid, name){
+  var pl = _blPageDraft(page);
+  if(pl.customTests && pl.customTests[cid]){ pl.customTests[cid].name = name; }
+  _blApplyLayout(); _blRefreshEdit();
+}
+function _blDeleteCustomTest(page, cid){
+  var pl = _blPageDraft(page);
+  if(pl.customTests) delete pl.customTests[cid];
+  Object.keys(pl.tests||{}).forEach(function(tb){
+    if(pl.tests[tb].order) pl.tests[tb].order = pl.tests[tb].order.filter(function(x){ return x !== cid; });
+  });
+  var el = document.getElementById('sel-'+cid); if(el){ var tr = el.closest('tr'); if(tr) tr.parentNode.removeChild(tr); }
+  _blApplyLayout(); _blRefreshEdit();
+}
+/* Création d'un bloc personnalisé (placé avant la conclusion). */
+function _blPromptCreateBlock(page, host){
+  _blInlineName(host, '', 'Nom du bloc — ex : Force isocinétique', function(name){ _blCreateCustomBlock(page, name); });
+}
+function _blCreateCustomBlock(page, name){
+  var pl = _blPageDraft(page);
+  if(!pl.customBlocks) pl.customBlocks = [];
+  var bid = _blNewId('cb');
+  pl.customBlocks.push({ id: bid, name: name });
+  _blApplyLayout();                 // matérialise le bloc (avant la conclusion)
+  pl.order = _blBlockSeq(page);     // fige l'ordre courant (bloc inclus)
+  _blApplyLayout(); _blRefreshEdit();
+  var el = document.querySelector('#page-'+page+' [data-block-id="'+bid+'"]');
+  if(el) el.scrollIntoView({behavior:'smooth', block:'center'});
+}
+function _blRenameCustomBlock(page, bid, name){
+  var pl = _blPageDraft(page);
+  (pl.customBlocks||[]).forEach(function(b){ if(b.id === bid) b.name = name; });
+  _blApplyLayout(); _blRefreshEdit();
+}
+function _blDeleteCustomBlock(page, bid){
+  var pl = _blPageDraft(page);
+  pl.customBlocks = (pl.customBlocks||[]).filter(function(b){ return b.id !== bid; });
+  // supprimer les tests custom logés dans ce bloc
+  var tbId = 'tb-'+bid;
+  if(pl.customTests) Object.keys(pl.customTests).forEach(function(cid){ if(pl.customTests[cid].tb === tbId) delete pl.customTests[cid]; });
+  if(pl.tests) delete pl.tests[tbId];
+  pl.order = (pl.order||[]).filter(function(x){ return x !== bid; });
+  var el = document.querySelector('#page-'+page+' [data-block-id="'+bid+'"]'); if(el) el.parentNode.removeChild(el);
+  _blApplyLayout(); _blRefreshEdit();
+}
+
 /* ── Décoration (rails + bibliothèque + barre) ── */
 function _blDecorate(page){
   var reg = (typeof BILAN_BLOCKS !== 'undefined' && BILAN_BLOCKS[page]) || [];
@@ -1361,6 +1582,7 @@ function _blDecorate(page){
   // rails de blocs
   document.querySelectorAll('#page-'+page+' [data-block-id]').forEach(function(el){
     var id = el.getAttribute('data-block-id');
+    var isCustomBlock = el.getAttribute('data-bl-custom-block') === '1';
     var def = _blBlockDef(page, id);
     if(def && def.locked){
       el.classList.add('bl-locked');
@@ -1377,47 +1599,102 @@ function _blDecorate(page){
     var dnDis = (pos === -1 || pos >= seqVisible.length-1 || !!(_blBlockDef(page, seqVisible[pos+1])||{}).locked) ? ' disabled' : '';
     var rail = document.createElement('div');
     rail.className = 'bl-rail';
-    rail.innerHTML =
-      '<button class="bl-mv" title="Monter le bloc"'+upDis+' onclick="_blMoveBlock(\''+page+'\',\''+id+'\',-1)">'+_blIcon('up',15)+'</button>'
-      + '<button class="bl-mv" title="Descendre le bloc"'+dnDis+' onclick="_blMoveBlock(\''+page+'\',\''+id+'\',1)">'+_blIcon('down',15)+'</button>'
-      + '<button class="bl-rm" title="Retirer (reste dans la bibliothèque en bas de page)" onclick="_blHideBlock(\''+page+'\',\''+id+'\')">'+_blIcon('x',15)+'</button>';
+    if(isCustomBlock){
+      // Bloc personnalisé : renommer + supprimer (pas de bibliothèque — il est créé par le praticien)
+      var hdrC = el.querySelector('.block-header');
+      if(hdrC && !hdrC.querySelector('.bl-lock-tag')){
+        var tagC = document.createElement('span');
+        tagC.className = 'bl-lock-tag'; tagC.textContent = 'Personnalisé';
+        hdrC.appendChild(tagC);
+      }
+      rail.innerHTML =
+        '<button class="bl-mv" title="Monter le bloc"'+upDis+' onclick="_blMoveBlock(\''+page+'\',\''+id+'\',-1)">'+_blIcon('up',15)+'</button>'
+        + '<button class="bl-mv" title="Descendre le bloc"'+dnDis+' onclick="_blMoveBlock(\''+page+'\',\''+id+'\',1)">'+_blIcon('down',15)+'</button>'
+        + '<button class="bl-mv" title="Renommer ce bloc" onclick="_blStartRenameBlock(\''+page+'\',\''+id+'\')">'+_blIcon('pencil',15)+'</button>'
+        + '<button class="bl-rm" title="Supprimer ce bloc personnalisé" onclick="_blDeleteCustomBlock(\''+page+'\',\''+id+'\')">'+_blIcon('x',15)+'</button>';
+    } else {
+      rail.innerHTML =
+        '<button class="bl-mv" title="Monter le bloc"'+upDis+' onclick="_blMoveBlock(\''+page+'\',\''+id+'\',-1)">'+_blIcon('up',15)+'</button>'
+        + '<button class="bl-mv" title="Descendre le bloc"'+dnDis+' onclick="_blMoveBlock(\''+page+'\',\''+id+'\',1)">'+_blIcon('down',15)+'</button>'
+        + '<button class="bl-rm" title="Retirer (reste dans la bibliothèque en bas de page)" onclick="_blHideBlock(\''+page+'\',\''+id+'\')">'+_blIcon('x',15)+'</button>';
+    }
     el.appendChild(rail);
   });
-  // rails de lignes (tbodies des blocs non verrouillés de la page)
-  reg.forEach(function(b){
-    if(b.locked) return;
-    (b.tests||[]).forEach(function(tbId){
-      var tbody = document.getElementById(tbId); if(!tbody) return;
-      var table = tbody.closest('table');
-      var headRow = table ? table.querySelector('thead tr') : null;
-      if(headRow && !headRow.querySelector('.bl-row-rail')){
-        var th = document.createElement('th'); th.className = 'bl-row-rail'; headRow.appendChild(th);
-      }
-      var td0 = _blTestsDraft(page, tbId);
-      var seq = _blRowSeq(tbId).filter(function(i){ return td0.hidden.indexOf(i) === -1; });
-      Array.prototype.forEach.call(tbody.children, function(tr){
-        if(tr.querySelector('.bl-row-rail')) return;
-        var idx = parseInt(tr.dataset.testIdx,10); if(isNaN(idx)) return;
-        var pos = seq.indexOf(idx);
-        var upDis = pos <= 0 ? ' disabled' : '';
-        var dnDis = (pos === -1 || pos >= seq.length-1) ? ' disabled' : '';
-        var td = document.createElement('td');
-        td.className = 'bl-row-rail';
+  // rails de lignes + bouton « ajouter un test » : tous les blocs non verrouillés (natifs + perso)
+  var decoratedTbodies = {};
+  reg.forEach(function(b){ if(!b.locked) (b.tests||[]).forEach(function(t){ decoratedTbodies[t] = 1; }); });
+  document.querySelectorAll('#page-'+page+' [data-bl-custom-block="1"] tbody[id]').forEach(function(tb){ decoratedTbodies[tb.id] = 1; });
+  Object.keys(decoratedTbodies).forEach(function(tbId){
+    var tbody = document.getElementById(tbId); if(!tbody) return;
+    var table = tbody.closest('table');
+    var headRow = table ? table.querySelector('thead tr') : null;
+    if(headRow && !headRow.querySelector('.bl-row-rail')){
+      var th = document.createElement('th'); th.className = 'bl-row-rail'; headRow.appendChild(th);
+    }
+    var td0 = _blTestsDraft(page, tbId);
+    var seq = _blRowSeq(tbId).filter(function(i){ return td0.hidden.indexOf(i) === -1; });
+    Array.prototype.forEach.call(tbody.children, function(tr){
+      if(tr.querySelector('.bl-row-rail')) return;
+      var td = document.createElement('td'); td.className = 'bl-row-rail';
+      if(tr.dataset && tr.dataset.custom === '1'){
+        var cid = tr.dataset.cid;
         td.innerHTML =
-          '<button title="Modifier la description sous le nom du test" onclick="_blEditDesc(\''+page+'\',\''+tbId+'\','+idx+')">'+_blIcon('pencil',13)+'</button>'
-          + '<button title="Monter ce test"'+upDis+' onclick="_blMoveRow(\''+page+'\',\''+tbId+'\','+idx+',-1)">'+_blIcon('up',13)+'</button>'
-          + '<button title="Descendre ce test"'+dnDis+' onclick="_blMoveRow(\''+page+'\',\''+tbId+'\','+idx+',1)">'+_blIcon('down',13)+'</button>'
-          + '<button class="bl-rm" title="Retirer ce test (bibliothèque en bas de page)" onclick="_blHideRow(\''+page+'\',\''+tbId+'\','+idx+')">'+_blIcon('x',13)+'</button>';
+          '<button title="Renommer ce test personnalisé" onclick="_blStartRenameTest(\''+page+'\',\''+cid+'\')">'+_blIcon('pencil',13)+'</button>'
+          + '<button class="bl-rm" title="Supprimer ce test personnalisé" onclick="_blDeleteCustomTest(\''+page+'\',\''+cid+'\')">'+_blIcon('x',13)+'</button>';
         tr.appendChild(td);
-      });
+        return;
+      }
+      var idx = parseInt(tr.dataset.testIdx,10); if(isNaN(idx)){ return; }
+      var pos = seq.indexOf(idx);
+      var upDis = pos <= 0 ? ' disabled' : '';
+      var dnDis = (pos === -1 || pos >= seq.length-1) ? ' disabled' : '';
+      td.innerHTML =
+        '<button title="Modifier la description sous le nom du test" onclick="_blEditDesc(\''+page+'\',\''+tbId+'\','+idx+')">'+_blIcon('pencil',13)+'</button>'
+        + '<button title="Monter ce test"'+upDis+' onclick="_blMoveRow(\''+page+'\',\''+tbId+'\','+idx+',-1)">'+_blIcon('up',13)+'</button>'
+        + '<button title="Descendre ce test"'+dnDis+' onclick="_blMoveRow(\''+page+'\',\''+tbId+'\','+idx+',1)">'+_blIcon('down',13)+'</button>'
+        + '<button class="bl-rm" title="Retirer ce test (bibliothèque en bas de page)" onclick="_blHideRow(\''+page+'\',\''+tbId+'\','+idx+')">'+_blIcon('x',13)+'</button>';
+      tr.appendChild(td);
     });
+    // footer « + ajouter un test » sous la table
+    if(!table.parentNode.querySelector('.bl-addtest[data-tb="'+tbId+'"]')){
+      var foot = document.createElement('div');
+      foot.className = 'bl-addtest'; foot.setAttribute('data-tb', tbId);
+      foot.innerHTML = '<button class="bl-addtest-btn" onclick="_blPromptAddTest(\''+page+'\',\''+tbId+'\',this)">'+_blIcon('plus',13)+' Ajouter un test</button>';
+      table.parentNode.insertBefore(foot, table.nextSibling);
+    }
   });
+  _blRenderCreateBlock(page);
   _blRenderLibrary(page);
   _blRenderEditbar(page);
 }
+/* Renommage en place — bloc / test personnalisé (via le rail). */
+function _blStartRenameBlock(page, bid){
+  var el = document.querySelector('#page-'+page+' [data-block-id="'+bid+'"]'); if(!el) return;
+  var hdr = el.querySelector('.block-header'); if(!hdr) return;
+  var cur = ''; (_blPageDraft(page).customBlocks||[]).forEach(function(b){ if(b.id===bid) cur = b.name; });
+  var host = document.createElement('div'); host.style.cssText = 'flex:1;';
+  hdr.textContent = ''; hdr.appendChild(host);
+  _blInlineName(host, cur, 'Nom du bloc', function(name){ _blRenameCustomBlock(page, bid, name); });
+}
+function _blStartRenameTest(page, cid){
+  var el = document.getElementById('sel-'+cid); if(!el) return;
+  var tr = el.closest('tr'); var nd = tr && tr.querySelector('.test-name'); if(!nd) return;
+  var cur = ''; var ct = _blPageDraft(page).customTests; if(ct && ct[cid]) cur = ct[cid].name;
+  var host = document.createElement('div'); nd.textContent = ''; nd.appendChild(host);
+  _blInlineName(host, cur, 'Nom du test', function(name){ _blRenameCustomTest(page, cid, name); });
+}
+/* Zone « créer un bloc personnalisé » en bas de page (avant la bibliothèque). */
+function _blRenderCreateBlock(page){
+  var content = document.querySelector('#page-'+page+' .page-content'); if(!content) return;
+  var old = document.getElementById('bl-createblock'); if(old) old.remove();
+  var wrap = document.createElement('div'); wrap.id = 'bl-createblock';
+  wrap.innerHTML = '<button class="bl-createblock-btn" onclick="_blPromptCreateBlock(\''+page+'\', this.parentNode)">'+_blIcon('plus',15)+' Créer un bloc personnalisé</button>';
+  content.appendChild(wrap);
+}
 function _blUndecorate(page){
-  document.querySelectorAll('#page-'+page+' .bl-rail, #page-'+page+' .bl-lock-tag, #page-'+page+' .bl-row-rail').forEach(function(el){ el.remove(); });
+  document.querySelectorAll('#page-'+page+' .bl-rail, #page-'+page+' .bl-lock-tag, #page-'+page+' .bl-row-rail, #page-'+page+' .bl-addtest').forEach(function(el){ el.remove(); });
   document.querySelectorAll('#page-'+page+' .bl-locked').forEach(function(el){ el.classList.remove('bl-locked'); });
+  var cb = document.getElementById('bl-createblock'); if(cb) cb.remove();
   var lib = document.getElementById('bl-library'); if(lib) lib.remove();
   var bar = document.getElementById('bl-editbar'); if(bar) bar.remove();
 }
@@ -1495,7 +1772,8 @@ function _blPruneLayout(){
     var noTests = !Object.keys(tests).length;
     var noHidden = !pl.hidden || !pl.hidden.length;
     var noOrder = !pl.order || !pl.order.length;
-    if(noTests && noHidden && noOrder) delete _bilanLayout.pages[page];
+    var noCustom = (!pl.customBlocks || !pl.customBlocks.length) && (!pl.customTests || !Object.keys(pl.customTests).length);
+    if(noTests && noHidden && noOrder && noCustom) delete _bilanLayout.pages[page];
   });
   if(!Object.keys(_bilanLayout.pages).length) _bilanLayout = null;
 }
@@ -3264,6 +3542,9 @@ function _serializeBilan(){
 
 function _deserializeBilan(data){
   _suppressDirty = true;
+  // Capturer l'instantané custom du bilan AVANT le rendu (matérialise ses tests perso,
+  // même supprimés du modèle depuis) ; les valeurs sont réappliquées après _blApplyLayout.
+  try{ _blLoadedCustom = data._blCustom ? JSON.parse(data._blCustom) : null; }catch(ex){ _blLoadedCustom = null; }
   Object.keys(data).forEach(function(id){
     var el = document.getElementById(id);
     if(!el) return;
@@ -3301,7 +3582,16 @@ function _deserializeBilan(data){
   try{ _calcWainnerCerv(); _calcDN4(); _calcLaslett(); _calcHaLaslett(); _calcInstabLomb(); _calcFlexionLomb(); _calcMckenzie(); }catch(ex){}
   saveToStorage(); // état complet — une seule écriture après désérialisation
   try{ _ctRestoreAll(); }catch(ex){} // synchroniser _ctData AVANT de rendre le CR
-  _blApplyLayout(); // ré-évaluer la non-amputation avec les valeurs du bilan chargé
+  _blApplyLayout(); // matérialise blocs/tests perso + non-amputation avec les valeurs chargées
+  // Réappliquer les valeurs des champs custom (leurs éléments n'existaient pas au 1er passage)
+  _suppressDirty = true;
+  Object.keys(data).forEach(function(id){
+    if(id.indexOf('sel-cx-') !== 0 && id.indexOf('note-cx-') !== 0) return;
+    var el = document.getElementById(id); if(!el) return;
+    el.value = data[id] || '';
+    if(el.tagName === 'SELECT') try{ onTestChange(el, '', 0); }catch(ex){}
+  });
+  _suppressDirty = false;
   _refreshCRIfVisible();
 }
 
@@ -3320,6 +3610,9 @@ function saveBilan(){
   // Tampon de version : permet aux migrations futures (clés stables, etc.)
   // de savoir avec quelle structure ce bilan a été enregistré.
   donnees._meta = JSON.stringify({ catalogueVersion: BILAN_CATALOGUE_VERSION, savedAt: new Date().toISOString() });
+  // Instantané des tests/blocs personnalisés présents dans ce bilan (fallback d'affichage
+  // si le modèle les supprime plus tard) — les valeurs, elles, sont déjà dans sel-/note-<cid>.
+  try{ var _blc = _blCustomSnapshot(); if(_blc) donnees._blCustom = JSON.stringify(_blc); }catch(ex){}
 
   // Bilan de suivi : calculer les champs réellement modifiés.
   // Référence = état FUSIONNÉ des bilans antérieurs (pas le snapshot de début de suivi :
@@ -3330,7 +3623,7 @@ function saveBilan(){
     var _suiviPrev = _prevMergedFrom(_allBilans, 0) || _suiviSnapshot || {};
     var _changedFields = [];
     Object.keys(donnees).forEach(function(k){
-      if(k === '_meta') return; // métadonnée, jamais un champ clinique
+      if(k === '_meta' || k === '_blCustom') return; // métadonnées, jamais un champ clinique
       var prev = _suiviPrev[k];
       var curr = donnees[k];
       var prevStr = (prev === undefined || prev === null) ? '' : String(prev);
@@ -3354,7 +3647,7 @@ function saveBilan(){
       var _prevD = (_curIdx !== -1 ? _prevMergedFrom(_allBilans, _curIdx + 1) : null) || {};
       var _newCF = [];
       Object.keys(donnees).forEach(function(k){
-        if(k === 'changed_fields' || k === '_meta') return;
+        if(k === 'changed_fields' || k === '_meta' || k === '_blCustom') return;
         var curr = donnees[k]; var prev = _prevD[k];
         var cs = (curr===undefined||curr===null)?'':String(curr);
         var ps = (prev===undefined||prev===null)?'':String(prev);
@@ -4185,6 +4478,7 @@ function _saveSuiviRapide(){
       Object.keys(baseDonnees).forEach(function(k){ merged[k]=baseDonnees[k]; });
       Object.keys(delta).forEach(function(k){ merged[k]=delta[k]; });
       merged._meta = JSON.stringify({ catalogueVersion: BILAN_CATALOGUE_VERSION, savedAt: new Date().toISOString() });
+      try{ var _blc2 = _blCustomSnapshot(); if(_blc2) merged._blCustom = JSON.stringify(_blc2); }catch(ex){}
 
       var p = existingId
         ? _sbRetry(function(){ return sbB.from('bilans').update({donnees:merged}).eq('id',existingId).select().single(); })
@@ -5214,10 +5508,14 @@ function _buildAllTestsHtml() {
       var fEl = document.getElementById(sec.fields[fi][0]);
       if (fEl && fEl.value) secRows += crItem(sec.fields[fi][1], nl2br(fEl.value), '', '', [sec.fields[fi][0]]);
     }
-    for (var ti=0; ti<sec.tables.length; ti++) {
-      var tKey = sec.tables[ti];
+    // Inclure les tbodies des blocs personnalisés de la page (après les tbodies natifs)
+    var secTables = sec.tables.slice();
+    if (sec.pk) document.querySelectorAll('#page-'+sec.pk+' [data-bl-custom-block] tbody[id]').forEach(function(tb){ secTables.push(tb.id); });
+    for (var ti=0; ti<secTables.length; ti++) {
+      var tKey = secTables[ti];
+      var isCustomTb = /^tb-cb-/.test(tKey);
       var cfg = TESTS[tKey];
-      if (!cfg) continue;
+      if (!cfg && !isCustomTb) continue; // ni tbody natif connu ni bloc personnalisé
       var tbody = document.getElementById(tKey);
       if (!tbody) continue;
       var rows = tbody.querySelectorAll('tr');
@@ -5231,13 +5529,20 @@ function _buildAllTestsHtml() {
         var isMobOk  = val === 'Normal' || val === 'Non';   // mobilités genou / DN4 — favorable
         var isMobBad = val === 'Réduit' || val === 'Récurvatum' || val === 'Oui'; // défavorable
         if (selEl && (isPos || isNeg || isAmp || isMobOk || isMobBad)) {
-          var _ci = parseInt(rows[ri].dataset ? rows[ri].dataset.testIdx : '', 10); // identité catalogue (indépendante de l'ordre d'affichage)
-          var tname = (cfg.items[isNaN(_ci) ? ri : _ci] || '').replace(/<span[\s\S]*?<\/span>/gi, '').replace(/<[^>]*>/g, '').trim();
-          // Ajouter la latéralité pour les tables bilatérales (clé se terminant par -d ou -g)
-          if (/-d$/.test(tKey)) tname += ' — Droit';
-          else if (/-g$/.test(tKey)) tname += ' — Gauche';
+          var isCustomRow = rows[ri].dataset && rows[ri].dataset.custom === '1';
+          var tname;
+          if (isCustomRow) {
+            var _nd = rows[ri].querySelector('.test-name');
+            tname = _nd ? _nd.textContent.trim() : 'Test personnalisé';
+          } else {
+            var _ci = parseInt(rows[ri].dataset ? rows[ri].dataset.testIdx : '', 10); // identité catalogue (indépendante de l'ordre d'affichage)
+            tname = (cfg.items[isNaN(_ci) ? ri : _ci] || '').replace(/<span[\s\S]*?<\/span>/gi, '').replace(/<[^>]*>/g, '').trim();
+            // Ajouter la latéralité pour les tables bilatérales (clé se terminant par -d ou -g)
+            if (/-d$/.test(tKey)) tname += ' — Droit';
+            else if (/-g$/.test(tKey)) tname += ' — Gauche';
+          }
           var noteVal = noteEl ? noteEl.value : '';
-          var isFonc = cfg.type === 'fonc';
+          var isFonc = cfg && cfg.type === 'fonc';
           var tag, tagCls;
           if      (val === 'Validé')     { tag = 'Validé';     tagCls = 'ok'; }
           else if (val === 'Pas validé') { tag = 'Pas validé'; tagCls = 'bad'; }

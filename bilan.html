@@ -594,6 +594,17 @@ td.bl-row-rail button:hover:not(:disabled) { border-color: var(--accent); color:
 td.bl-row-rail button.bl-rm:hover { border-color: var(--red); color: var(--red); background: var(--red-l); }
 td.bl-row-rail button:disabled { opacity: .3 !important; cursor: default; }
 .bl-desc-form button { display: inline-flex; align-items: center; gap: 4px; }
+.bl-addtest { padding: 6px 14px 10px; }
+.bl-addtest-btn { display: inline-flex; align-items: center; gap: 5px; background: none; border: none;
+  color: var(--accent); font-size: .78rem; font-weight: 600; cursor: pointer; font-family: inherit; padding: 2px 0; }
+.bl-addtest-btn:hover { text-decoration: underline; }
+#bl-createblock { margin-top: 18px; }
+.bl-createblock-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%;
+  background: none; border: 1.5px dashed var(--border2); color: var(--text2); border-radius: var(--radius);
+  padding: 12px; font-size: .84rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+.bl-createblock-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-l); }
+.bl-editing .block[data-bl-custom-block="1"] { border: 1.5px dashed var(--accent); }
+.bl-inl-inp:focus { border-color: var(--accent); }
 #bl-library { margin-top: 26px; }
 #bl-library .bl-lib-title { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
   color: var(--text2); display: flex; align-items: center; gap: 10px; margin: 18px 0 10px; }
@@ -4757,7 +4768,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 
 
 <script src="js/bilan-blocks.js?v=20260710"></script>
-<script src="js/bilan.js?v=20260712"></script>
+<script src="js/bilan.js?v=20260713"></script>
 
 </body>
 </html>
