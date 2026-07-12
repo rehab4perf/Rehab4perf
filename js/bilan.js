@@ -1162,6 +1162,7 @@ function _blApplyLayout(){
   // restauré ici, à la source, quel que soit l'appelant (édition ou non).
   var _blScroller = (_blEditing && _blEditPage) ? document.querySelector('#page-'+_blEditPage+' .page-content') : null;
   var _blScrollTop = _blScroller ? _blScroller.scrollTop : 0;
+  var _blWinX = window.scrollX, _blWinY = window.scrollY;
   try {
     // Blocs & tests personnalisés (matérialisation avant le placement des blocs)
     _blApplyCustomAll();
@@ -1775,6 +1776,14 @@ function _blRefreshEdit(){
   // .page-content (overflow-y:auto), PAS la fenêtre — on restaure sa position.
   var scroller = document.querySelector('#page-'+_blEditPage+' .page-content');
   var scrollTop = scroller ? scroller.scrollTop : 0;
+  var winX = window.scrollX, winY = window.scrollY;
+  // Si l'élément actif (ex. le bouton OK qu'on vient de cliquer) est sur le point
+  // d'être retiré par l'undecorate, on le désactive nous-mêmes AVANT le retrait :
+  // un blur() explicite ne déclenche pas de scroll, alors qu'un retrait DOM d'un
+  // élément encore focus le fait reporter sur <body> par le navigateur — ce qui,
+  // lui, provoque un scroll vers le haut (0,0) sur certains moteurs/contextes.
+  var active = document.activeElement;
+  if(active && active !== document.body && scroller && scroller.contains(active)) active.blur();
   _blUndecorate(_blEditPage);
   _blDecorate(_blEditPage);
   if(scroller){
@@ -1783,6 +1792,10 @@ function _blRefreshEdit(){
     // focus (élément retiré pendant l'undecorate) — un simple restore synchrone ne
     // suffit pas toujours. On réapplique sur la frame suivante pour gagner la course.
     requestAnimationFrame(function(){ scroller.scrollTop = scrollTop; });
+  }
+  if(window.scrollX !== winX || window.scrollY !== winY){
+    window.scrollTo(winX, winY);
+    requestAnimationFrame(function(){ window.scrollTo(winX, winY); });
   }
 }
 function _blRenderLibrary(page){

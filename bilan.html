@@ -553,6 +553,9 @@ body {
 .page-content {
   flex: 1;
   overflow-y: auto;
+  overflow-anchor: none; /* la personnalisation reconstruit de nombreux noeuds en amont du scroll
+    (undecorate/decorate) — l'ancrage de scroll automatique du navigateur se raccroche alors à un
+    mauvais noeud et fait sauter la page ; on gère nous-mêmes la restauration de position. */
   padding: 28px 48px 60px;
 }
 
@@ -4773,7 +4776,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 
 
 <script src="js/bilan-blocks.js?v=20260710"></script>
-<script src="js/bilan.js?v=20260714"></script>
+<script src="js/bilan.js?v=20260716"></script>
 
 </body>
 </html>
