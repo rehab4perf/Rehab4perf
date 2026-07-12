@@ -1591,7 +1591,7 @@ function exitHistoMode(){
     _suiviSnapshot = null;
     document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
     if(_allBilans.length >= 2){
-      _prevDonnees = _allBilans[1].donnees || {};
+      _prevDonnees = _prevMergedFrom(_allBilans, 1);
       _renderDeltas(_prevDonnees);
     } else {
       _prevDonnees = null;
@@ -1691,7 +1691,7 @@ function _resetAndLoadPatient(p){
       //   viennent de bilans de suivi partiels.
       _deserializeBilan(_buildMergedDonnees(res.data));
       if(res.data.length >= 2){
-        _prevDonnees = res.data[1].donnees || {};
+        _prevDonnees = _prevMergedFrom(res.data, 1);
         _renderDeltas(_prevDonnees);
       }
       var d = b.date ? b.date.split('-').reverse().join('/') : '—';
@@ -1718,6 +1718,15 @@ function _showPatientToast(msg){
    récentes écrasent les anciennes. Retourne un objet donnees
    représentant l'état "le plus à jour" de chaque champ.
    Utilisé pour pré-remplir le formulaire au chargement patient. */
+/* État « précédent » pour toutes les comparaisons (deltas inline, grisé/frais du CR,
+   recalcul de changed_fields) : fusion de TOUS les bilans à partir de fromIdx, jamais
+   un seul bilan — un bilan intermédiaire léger (ex. simple note de suivi rapide)
+   rendrait sinon tous les champs « fraîchement testés » à tort. */
+function _prevMergedFrom(arr, fromIdx){
+  var older = (arr || []).slice(fromIdx);
+  return older.length ? _buildMergedDonnees(older) : null;
+}
+
 function _buildMergedDonnees(allBilans){
   var merged = {};
   allBilans.slice().reverse().forEach(function(b){ // oldest → newest
@@ -3216,9 +3225,11 @@ function saveBilan(){
     var _origBilan = _allBilans.find(function(b){ return b.id === _currentBilanId; });
     var _origHasCF = _origBilan && _origBilan.donnees && _origBilan.donnees.changed_fields;
     if(_origHasCF){
-      var _prevD = (_allBilans.length >= 2)
-        ? (_allBilans.find(function(b){ return b.id !== _currentBilanId; }) || {}).donnees || {}
-        : {};
+      // État précédent = fusion des bilans STRICTEMENT ANTÉRIEURS au bilan édité
+      // (l'ancien code prenait le premier bilan ≠ courant — potentiellement un bilan
+      // POSTÉRIEUR, ou un bilan intermédiaire léger qui marquait tout « modifié »).
+      var _curIdx = _allBilans.findIndex(function(b){ return b.id === _currentBilanId; });
+      var _prevD = (_curIdx !== -1 ? _prevMergedFrom(_allBilans, _curIdx + 1) : null) || {};
       var _newCF = [];
       Object.keys(donnees).forEach(function(k){
         if(k === 'changed_fields' || k === '_meta') return;
@@ -3227,7 +3238,7 @@ function saveBilan(){
         var ps = (prev===undefined||prev===null)?'':String(prev);
         if(cs !== '' && cs !== ps) _newCF.push(k);
       });
-      if(_newCF.length) donnees.changed_fields = _newCF;
+      donnees.changed_fields = _newCF; // toujours écrire (même vide) : un suivi édité reste un suivi
     }
     _sbRetry(function(){ return sbB.from('bilans').update({donnees:donnees}).eq('id', _currentBilanId).select().single(); })
       .then(function(res){
@@ -3308,7 +3319,7 @@ function saveBilan(){
           .then(function(r2){
             if(!r2.error && r2.data && r2.data.length){
               _allBilans = r2.data;
-              _prevDonnees = r2.data.length >= 2 ? (r2.data[1].donnees||{}) : null;
+              _prevDonnees = _prevMergedFrom(r2.data, 1);
               _renderEvolutionPage();
               var _activePage = document.querySelector('.page.active');
               if(_activePage && _activePage.id === 'page-cr') buildCR();
@@ -3518,7 +3529,7 @@ function _confirmEditBilanDate(bilanId) {
     // Recalculer _prevDonnees selon le nouvel ordre
     _allBilans.sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
     var idx = _allBilans.findIndex(function(b){ return String(b.id) === String(_currentBilanId); });
-    _prevDonnees = (idx !== -1 && idx + 1 < _allBilans.length) ? (_allBilans[idx+1].donnees || {}) : null;
+    _prevDonnees = (idx !== -1) ? _prevMergedFrom(_allBilans, idx + 1) : null;
     document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
     if (_prevDonnees) _renderDeltas(_prevDonnees);
     _renderEvolutionPage();
@@ -3580,7 +3591,7 @@ function loadBilan(id){
     document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
     var idx = _allBilans.findIndex(function(b){ return b.id === id; });
     if(idx !== -1 && idx + 1 < _allBilans.length){
-      _prevDonnees = _allBilans[idx + 1].donnees || {};
+      _prevDonnees = _prevMergedFrom(_allBilans, idx + 1);
       _renderDeltas(_prevDonnees);
     } else {
       _prevDonnees = null;
@@ -3653,7 +3664,7 @@ function _newBilanSuiviConfirm(){
   _currentBilanId = null;
   _bilanHistoMode = false;
   _bilanIsSuivi   = true;
-  _prevDonnees    = _allBilans[0].donnees || {};
+  _prevDonnees    = _prevMergedFrom(_allBilans, 0) || {};
   _resetBilanFields();
   document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
 
@@ -4093,7 +4104,7 @@ function _saveSuiviRapide(){
               _deserializeBilan(_buildMergedDonnees(r2.data));
               _suppressDirty = false;
               _bilanModified = false;
-              _prevDonnees = r2.data.length>=2 ? (r2.data[1].donnees||{}) : null;
+              _prevDonnees = _prevMergedFrom(r2.data, 1);
               document.querySelectorAll('.evo-delta').forEach(function(e){e.remove();});
               if(_prevDonnees) _renderDeltas(_prevDonnees);
               _renderEvolutionPage();
@@ -4138,7 +4149,7 @@ function deleteBilan(id, dateStr, isInitial, e) {
             _currentBilanDate = r.data.date ? r.data.date.split('T')[0] : null;
             _deserializeBilan(r.data.donnees || {});
             if (_allBilans.length >= 2) {
-              _prevDonnees = _allBilans[1].donnees || {};
+              _prevDonnees = _prevMergedFrom(_allBilans, 1);
               _renderDeltas(_prevDonnees);
             }
             showToast('🗑 Bilan supprimé — bilan précédent rechargé');
@@ -4153,7 +4164,7 @@ function deleteBilan(id, dateStr, isInitial, e) {
     } else {
       // Bilan non actif : recalc _prevDonnees si nécessaire
       var idx = _allBilans.findIndex(function(b){ return String(b.id) === String(_currentBilanId); });
-      _prevDonnees = (idx !== -1 && idx + 1 < _allBilans.length) ? (_allBilans[idx + 1].donnees || {}) : null;
+      _prevDonnees = (idx !== -1) ? _prevMergedFrom(_allBilans, idx + 1) : null;
       document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
       if (_prevDonnees) _renderDeltas(_prevDonnees);
       _renderEvolutionPage();
@@ -4928,8 +4939,10 @@ function _crIsCarried(fieldIds) {
     }
     return true;
   }
-  // Ancien format (sans changed_fields) : comparaison directe avec le bilan précédent
-  var _d1 = _allBilans[1].donnees || {};
+  // Ancien format (sans changed_fields) : comparaison avec l'état FUSIONNÉ des bilans
+  // antérieurs — jamais le seul bilan [1], qu'une simple note de suivi rapide rendrait
+  // trompeur (tous les champs paraîtraient « fraîchement testés »).
+  var _d1 = _crPrevMerged();
   for (var _ck = 0; _ck < fieldIds.length; _ck++) {
     var _v0 = _d0[fieldIds[_ck]]; var _v1 = _d1[fieldIds[_ck]];
     var _s0 = (_v0 === undefined || _v0 === null) ? '' : String(_v0);
@@ -4937,6 +4950,16 @@ function _crIsCarried(fieldIds) {
     if (_s0 !== '' && _s0 !== _s1) return false; // champ renseigné et différent = mesuré dans ce bilan
   }
   return true; // tout vide ou identique = porté du bilan précédent
+}
+/* Fusion des bilans antérieurs au plus récent, mise en cache par rendu
+   (crItem est appelé pour chaque ligne du CR — on ne refusionne pas à chaque appel). */
+var _crPrevMergedCache = null, _crPrevMergedKey = '';
+function _crPrevMerged(){
+  var key = ((_allBilans[0] && _allBilans[0].id) || '') + ':' + _allBilans.length;
+  if (_crPrevMergedKey === key && _crPrevMergedCache) return _crPrevMergedCache;
+  _crPrevMergedCache = _prevMergedFrom(_allBilans, 1) || {};
+  _crPrevMergedKey = key;
+  return _crPrevMergedCache;
 }
 
 function _buildAllTestsHtml() {
