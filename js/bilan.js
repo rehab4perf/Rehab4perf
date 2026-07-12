@@ -1359,7 +1359,7 @@ function _blCustomSnapshot(){
    sur « Terminé », annulation par restauration du snapshot d'entrée. Le déplacement de
    tests entre blocs, la création de blocs/tests personnalisés et l'édition des notes
    arrivent à l'étape 5. ─────────────────────────────────────────── */
-var _BL_EDITABLE_PAGES = ['genou'];
+var _BL_EDITABLE_PAGES = ['epaule','coude','main','rachis-cerv','rachis-lomb','hanche','genou','pied'];
 var _blEditing = false;
 var _blEditPage = null;
 var _blEditSnapshot = null; // JSON de _bilanLayout à l'entrée (pour Annuler)
@@ -1881,7 +1881,7 @@ function _blEnterEdit(page){
   document.body.classList.add('bl-editing-on');
   _blApplyLayout(); // ré-appliquer en mode strict (les masqués porteurs de valeurs disparaissent en aperçu)
   _blDecorate(page);
-  var btn = document.getElementById('bl-customize-btn');
+  var btn = document.querySelector('#page-'+page+' .bl-customize-btn');
   if(btn) btn.innerHTML = _blIcon('check',15) + ' Terminé';
 }
 function _blExitEdit(){
@@ -1892,7 +1892,7 @@ function _blExitEdit(){
   var pg = document.getElementById('page-'+page);
   if(pg) pg.classList.remove('bl-editing');
   document.body.classList.remove('bl-editing-on');
-  var btn = document.getElementById('bl-customize-btn');
+  var btn = document.querySelector('#page-'+page+' .bl-customize-btn');
   if(btn) btn.innerHTML = _blIcon('gear2',15) + ' Personnaliser';
   _blApplyLayout(); // mode normal : la non-amputation reprend ses droits
 }
@@ -1923,11 +1923,14 @@ function _blOnPageSwitch(){
 function _blMaybeInjectCustomizeBtn(){
   if(!_blFeatureEnabled('bilan_custom')) return;
   _BL_EDITABLE_PAGES.forEach(function(page){
-    if(document.getElementById('bl-customize-btn')) return;
+    // Un bouton PAR page (id unique) — un id global unique sauterait toutes les pages
+    // après la première. La classe partagée sert au CSS et aux recherches page-scoped.
+    if(document.getElementById('bl-customize-btn-'+page)) return;
     var hdr = document.querySelector('#page-'+page+' .page-header');
     if(!hdr) return;
     var btn = document.createElement('button');
-    btn.id = 'bl-customize-btn';
+    btn.id = 'bl-customize-btn-'+page;
+    btn.className = 'bl-customize-btn';
     btn.innerHTML = _blIcon('gear2',15) + ' Personnaliser';
     btn.onclick = function(){ _blToggleEdit(page); };
     hdr.appendChild(btn);
