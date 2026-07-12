@@ -1073,6 +1073,53 @@ function _blApplyRowVisibility(tbId){
     tr.classList.toggle('bl-hidden', !!hide);
   });
 }
+/* Descriptions personnalisées (étape 5a) : la petite phrase grise sous le nom d'un
+   test est remplaçable par le praticien. Stockée dans le layout (tests[tbId].descs =
+   { "<idx>": "texte" }), jamais dans le bilan — le NOM du test, lui, est l'identité
+   et n'est pas modifiable. Idempotent : le nom complet est reconstruit depuis le
+   catalogue puis la description remplacée/ajoutée. */
+var _BL_DESC_STYLE = 'font-size:.68rem;color:var(--text3);font-weight:400;display:block';
+function _blApplyDescs(tbId, tl){
+  var tbody = document.getElementById(tbId); if(!tbody) return;
+  var cfg = TESTS[tbId]; if(!cfg) return;
+  var descs = (tl && tl.descs) || {};
+  Array.prototype.forEach.call(tbody.children, function(tr){
+    var i = parseInt(tr.dataset ? tr.dataset.testIdx : '', 10);
+    if(isNaN(i)) return;
+    var nameDiv = tr.querySelector('.test-name'); if(!nameDiv) return;
+    var override = descs[String(i)];
+    var hasCustom = nameDiv.getAttribute('data-bl-desc') === '1';
+    if(override === undefined && !hasCustom) return; // rien à faire (cas courant)
+    nameDiv.innerHTML = cfg.items[i] || ''; // repartir de l'original du catalogue
+    nameDiv.removeAttribute('data-bl-desc');
+    if(override !== undefined){
+      var span = nameDiv.querySelector('span');
+      if(!span){
+        span = document.createElement('span');
+        span.setAttribute('style', _BL_DESC_STYLE);
+        nameDiv.appendChild(span);
+      }
+      span.textContent = override;
+      nameDiv.setAttribute('data-bl-desc', '1');
+    }
+  });
+}
+/* Texte effectif de la description d'un test (override sinon original du catalogue). */
+function _blDescText(page, tbId, idx){
+  var tl = _blTestsLayout(tbId);
+  if(tl && tl.descs && tl.descs[String(idx)] !== undefined) return tl.descs[String(idx)];
+  var tmp = document.createElement('div');
+  tmp.innerHTML = (TESTS[tbId] && TESTS[tbId].items[idx]) || '';
+  var span = tmp.querySelector('span');
+  return span ? span.textContent.trim() : '';
+}
+function _blOriginalDescText(tbId, idx){
+  var tmp = document.createElement('div');
+  tmp.innerHTML = (TESTS[tbId] && TESTS[tbId].items[idx]) || '';
+  var span = tmp.querySelector('span');
+  return span ? span.textContent.trim() : '';
+}
+
 /* Réordonne les blocs d'une page selon orderIds — au sein de chaque parent
    uniquement (les blocs imbriqués dans des wrappers ne traversent pas). */
 function _blReorderBlocks(pageKey, orderIds){
@@ -1123,7 +1170,7 @@ function _blApplyLayout(){
       });
       if(pl.order && pl.order.length) _blReorderBlocks(pageKey, pl.order);
     });
-    // lignes de tests : ordre (déplacement des <tr>, les valeurs voyagent avec) + visibilité
+    // lignes de tests : ordre (déplacement des <tr>, les valeurs voyagent avec) + visibilité + descriptions
     Object.keys(TESTS).forEach(function(tbId){
       var tbody = document.getElementById(tbId); if(!tbody) return;
       var tl = _blTestsLayout(tbId);
@@ -1136,6 +1183,7 @@ function _blApplyLayout(){
         });
       }
       if(tl) _blApplyRowVisibility(tbId);
+      _blApplyDescs(tbId, tl);
     });
   } catch(e){ /* la disposition ne doit jamais casser le bilan */ }
 }
@@ -1240,6 +1288,45 @@ function _blShowRow(page, tbId, idx){
   td.hidden = td.hidden.filter(function(x){ return x !== idx; });
   _blApplyLayout(); _blRefreshEdit();
 }
+/* Éditeur en place de la description d'un test (mode édition uniquement). */
+function _blEditDesc(page, tbId, idx){
+  var tbody = document.getElementById(tbId); if(!tbody) return;
+  var tr = null;
+  Array.prototype.forEach.call(tbody.children, function(r){ if(parseInt(r.dataset.testIdx,10) === idx) tr = r; });
+  if(!tr) return;
+  var nameDiv = tr.querySelector('.test-name'); if(!nameDiv) return;
+  if(nameDiv.querySelector('.bl-desc-form')) return; // déjà en édition
+  var current = _blDescText(page, tbId, idx);
+  var original = _blOriginalDescText(tbId, idx);
+  var form = document.createElement('div');
+  form.className = 'bl-desc-form';
+  form.innerHTML =
+    '<textarea style="width:100%;min-height:54px;font-family:inherit;font-size:.75rem;border:1px solid var(--accent);border-radius:5px;padding:5px 8px;outline:none;resize:vertical;opacity:1 !important;pointer-events:auto !important;color:var(--text)"></textarea>'
+    + '<div style="display:flex;gap:6px;margin-top:4px;">'
+    + '<button class="bl-desc-ok" style="border:none;border-radius:5px;padding:4px 12px;font-size:.72rem;font-weight:600;cursor:pointer;background:var(--accent2);color:#fff;font-family:inherit;opacity:1 !important;pointer-events:auto !important;">OK</button>'
+    + '<button class="bl-desc-cancel" style="border:1px solid var(--border2);border-radius:5px;padding:4px 12px;font-size:.72rem;font-weight:600;cursor:pointer;background:var(--surface2);color:var(--text2);font-family:inherit;opacity:1 !important;pointer-events:auto !important;">Annuler</button>'
+    + (original !== current ? '<button class="bl-desc-orig" style="border:1px solid var(--border2);border-radius:5px;padding:4px 12px;font-size:.72rem;cursor:pointer;background:none;color:var(--text3);font-family:inherit;opacity:1 !important;pointer-events:auto !important;">Texte d\'origine</button>' : '')
+    + '</div>';
+  var ta = form.querySelector('textarea');
+  ta.value = current;
+  form.querySelector('.bl-desc-ok').onclick = function(){ _blSaveDesc(page, tbId, idx, ta.value); };
+  form.querySelector('.bl-desc-cancel').onclick = function(){ _blApplyLayout(); _blRefreshEdit(); };
+  var origBtn = form.querySelector('.bl-desc-orig');
+  if(origBtn) origBtn.onclick = function(){ _blSaveDesc(page, tbId, idx, null); };
+  nameDiv.appendChild(form);
+  ta.focus();
+}
+function _blSaveDesc(page, tbId, idx, text){
+  var td = _blTestsDraft(page, tbId);
+  if(!td.descs) td.descs = {};
+  var original = _blOriginalDescText(tbId, idx);
+  if(text === null || text.trim() === original){
+    delete td.descs[String(idx)]; // retour à l'original → pas d'override stocké
+  } else {
+    td.descs[String(idx)] = text.trim();
+  }
+  _blApplyLayout(); _blRefreshEdit();
+}
 
 /* ── Décoration (rails + bibliothèque + barre) ── */
 function _blDecorate(page){
@@ -1292,7 +1379,8 @@ function _blDecorate(page){
         var td = document.createElement('td');
         td.className = 'bl-row-rail';
         td.innerHTML =
-          '<button title="Monter ce test"'+upDis+' onclick="_blMoveRow(\''+page+'\',\''+tbId+'\','+idx+',-1)">▲</button>'
+          '<button title="Modifier la description sous le nom du test" onclick="_blEditDesc(\''+page+'\',\''+tbId+'\','+idx+')">✎</button>'
+          + '<button title="Monter ce test"'+upDis+' onclick="_blMoveRow(\''+page+'\',\''+tbId+'\','+idx+',-1)">▲</button>'
           + '<button title="Descendre ce test"'+dnDis+' onclick="_blMoveRow(\''+page+'\',\''+tbId+'\','+idx+',1)">▼</button>'
           + '<button class="bl-rm" title="Retirer ce test (bibliothèque en bas de page)" onclick="_blHideRow(\''+page+'\',\''+tbId+'\','+idx+')">✕</button>';
         tr.appendChild(td);
@@ -1376,7 +1464,8 @@ function _blPruneLayout(){
     var tests = pl.tests || {};
     Object.keys(tests).forEach(function(t){
       var e = tests[t];
-      if((!e.hidden || !e.hidden.length) && (!e.order || !e.order.length)) delete tests[t];
+      if((!e.hidden || !e.hidden.length) && (!e.order || !e.order.length)
+        && (!e.descs || !Object.keys(e.descs).length)) delete tests[t];
     });
     var noTests = !Object.keys(tests).length;
     var noHidden = !pl.hidden || !pl.hidden.length;
