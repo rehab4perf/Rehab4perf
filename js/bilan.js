@@ -1157,6 +1157,11 @@ function _blReorderBlocks(pageKey, orderIds){
 }
 /* Applique la disposition complète. Idempotent, no-op strict sans layout. */
 function _blApplyLayout(){
+  // Les repositionnements DOM ci-dessous (appendChild sur des lignes/blocs déjà en place)
+  // font sauter le scroll de .page-content (conteneur réel, PAS la fenêtre) — capturé et
+  // restauré ici, à la source, quel que soit l'appelant (édition ou non).
+  var _blScroller = (_blEditing && _blEditPage) ? document.querySelector('#page-'+_blEditPage+' .page-content') : null;
+  var _blScrollTop = _blScroller ? _blScroller.scrollTop : 0;
   try {
     // Blocs & tests personnalisés (matérialisation avant le placement des blocs)
     _blApplyCustomAll();
@@ -1192,6 +1197,10 @@ function _blApplyLayout(){
       _blApplyDescs(tbId, tl);
     });
   } catch(e){ /* la disposition ne doit jamais casser le bilan */ }
+  if(_blScroller){
+    _blScroller.scrollTop = _blScrollTop;
+    requestAnimationFrame(function(){ _blScroller.scrollTop = _blScrollTop; });
+  }
 }
 
 /* ═══ Tests & blocs personnalisés (étape 5b-1) ═══
@@ -1708,6 +1717,9 @@ function _blDecorate(page){
 function _blStartRenameBlock(page, bid){
   var el = document.querySelector('#page-'+page+' [data-block-id="'+bid+'"]'); if(!el) return;
   var hdr = el.querySelector('.block-header'); if(!hdr) return;
+  // Le rail de bloc est positionné en absolu au même coin que le formulaire — le masquer
+  // le temps de l'édition (il est de toute façon reconstruit par _blRefreshEdit ensuite).
+  var rail = el.querySelector('.bl-rail'); if(rail) rail.style.display = 'none';
   var cur = ''; (_blPageDraft(page).customBlocks||[]).forEach(function(b){ if(b.id===bid) cur = b.name; });
   var host = document.createElement('div'); host.style.cssText = 'flex:1;';
   hdr.textContent = ''; hdr.appendChild(host);
@@ -1759,11 +1771,19 @@ function _blRefreshEdit(){
   if(!_blEditing) return;
   // La reconstruction retire/réinsère de nombreux éléments (dont celui qui a le focus,
   // ex. le champ de saisie qu'on vient de valider) — le navigateur reporte alors le
-  // focus sur <body> et remonte la page en haut. On restaure le scroll pour éviter le saut.
-  var scrollY = window.scrollY || window.pageYOffset;
+  // focus sur <body> et remonte la page en haut. Le vrai conteneur de scroll est
+  // .page-content (overflow-y:auto), PAS la fenêtre — on restaure sa position.
+  var scroller = document.querySelector('#page-'+_blEditPage+' .page-content');
+  var scrollTop = scroller ? scroller.scrollTop : 0;
   _blUndecorate(_blEditPage);
   _blDecorate(_blEditPage);
-  window.scrollTo(0, scrollY);
+  if(scroller){
+    scroller.scrollTop = scrollTop;
+    // Le navigateur réajuste parfois le scroll de façon asynchrone après la perte de
+    // focus (élément retiré pendant l'undecorate) — un simple restore synchrone ne
+    // suffit pas toujours. On réapplique sur la frame suivante pour gagner la course.
+    requestAnimationFrame(function(){ scroller.scrollTop = scrollTop; });
+  }
 }
 function _blRenderLibrary(page){
   var content = document.querySelector('#page-'+page+' .page-content'); if(!content) return;
