@@ -1654,6 +1654,9 @@ function _resetBilanFields(){
   try{ updateBadges(); _initAllRomBars(); _updateSq0Status(); }catch(ex){}
   // Éléments non couverts par les fonctions ci-dessus
   try{ var hl=document.getElementById('hdr-lma'); if(hl) hl.textContent='—'; }catch(ex){}
+  // Tests personnalisés : purge mémoire + champ caché + rendu (les flux qui doivent
+  // les conserver — suivi, chargement d'un bilan — les réinjectent après ce reset)
+  try{ if(window._ctResetAll) window._ctResetAll(); }catch(ex){}
   _suppressDirty = false;
   _bilanModified = false;
   _refreshCRIfVisible();
@@ -8205,6 +8208,19 @@ window.addEventListener('load', function(){
         arr.forEach(function(t){ if(!t.type) t.type='comparison'; });
         _ctData[pk] = arr;
       }catch(e){ _ctData[pk]=[]; }
+      _ctRender(pk);
+    });
+  };
+
+  /* Purge complète : mémoire + champ caché + rendu. Sans elle, un changement de
+     patient vidait les inputs mais _ctData gardait les tests de l'ancien patient,
+     et le premier re-rendu (ex. changement de côté) les ressuscitait — valeurs
+     comprises — dans le formulaire ET le CR du nouveau patient. */
+  window._ctResetAll = function(){
+    _CT_PAGES.forEach(function(pk){
+      _ctData[pk] = [];
+      var hf = document.getElementById('ct-data-'+pk);
+      if(hf) hf.value = '[]';
       _ctRender(pk);
     });
   };
