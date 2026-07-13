@@ -1331,7 +1331,10 @@ function _blApplyCustomAll(){
   document.querySelectorAll('[data-bl-custom-block="1"], tr[data-custom="1"]').forEach(function(el){
     var pg = el.closest('.page'); if(pg && pg.id.indexOf('page-') === 0) pages[pg.id.slice(5)] = 1;
   });
-  Object.keys(pages).forEach(function(p){ if(p !== 'lma') _blApplyCustomPage(p); });
+  // LMA incluse : ses tests perso s'accrochent aux tbodies muscle (tb-lma-*) ; aucun bloc
+  // perso n'est créable sur LMA (pas de bouton créer-bloc) donc _blApplyCustomPage n'y
+  // matérialise que des lignes, jamais de bloc.
+  Object.keys(pages).forEach(function(p){ _blApplyCustomPage(p); });
 }
 /* Instantané des customs du formulaire courant, à écrire dans donnees._blCustom. */
 function _blCustomSnapshot(){
@@ -1362,7 +1365,10 @@ function _blCustomSnapshot(){
 var _BL_EDITABLE_PAGES = ['epaule','coude','main','rachis-cerv','rachis-lomb','hanche','genou','pied',
   // Pages fonctionnelles/force : chaque test est un bloc-widget autonome (pas de tbody) —
   // profil réduit assumé (masquage/réordre de blocs + blocs perso, pas d'édition par ligne).
-  'fonctionnels','fonctionnelsMS','fonctionnelsRachis','force-ms','force-rachis','force-mi','musculaires'];
+  'fonctionnels','fonctionnelsMS','fonctionnelsRachis','force-ms','force-rachis','force-mi','musculaires',
+  // LMA : profil « tests seulement » — les blocs muscle sont pilotés par le sélecteur
+  // (mutuellement exclusifs), donc pas d'op au niveau bloc. Voir garde 'lma' dans _blDecorate.
+  'lma'];
 var _blEditing = false;
 var _blEditPage = null;
 var _blEditSnapshot = null; // JSON de _bilanLayout à l'entrée (pour Annuler)
@@ -1641,6 +1647,9 @@ function _blDecorate(page){
       }
       return;
     }
+    // LMA : profil « tests seulement » — pas de rail de bloc sur les muscles (pilotés par
+    // le sélecteur, mutuellement exclusifs). Les verrous ci-dessus s'affichent quand même.
+    if(page === 'lma') return;
     var pos = seqVisible.indexOf(id);
     var upDis = (pos <= 0 || !!(_blBlockDef(page, seqVisible[pos-1])||{}).locked) ? ' disabled' : '';
     var dnDis = (pos === -1 || pos >= seqVisible.length-1 || !!(_blBlockDef(page, seqVisible[pos+1])||{}).locked) ? ' disabled' : '';
@@ -1713,7 +1722,7 @@ function _blDecorate(page){
       table.parentNode.insertBefore(foot, table.nextSibling);
     }
   });
-  _blRenderCreateBlock(page);
+  if(page !== 'lma') _blRenderCreateBlock(page); // LMA : pas de bloc perso (page pilotée par le sélecteur)
   _blRenderLibrary(page);
   _blRenderEditbar(page);
 }
@@ -6073,7 +6082,20 @@ function _buildAllTestsHtml() {
         var lmaIsPos  = lmaVal === 'Positif';
         var lmaIsNeg  = lmaVal === 'Négatif';
         if (lmaSelEl && (lmaIsPos || lmaIsNeg)) {
-          var lmaTname   = lmaCfg.items[li] || '';
+          // Identité par dataset.testIdx (découplée de la position DOM) : la perso peut
+          // réordonner/masquer/ajouter des tests LMA. Ligne custom → nom lu depuis .test-name.
+          var lmaTname;
+          if (lmaRows[li].dataset && lmaRows[li].dataset.custom === '1') {
+            var _lmaNd = lmaRows[li].querySelector('.test-name');
+            if (_lmaNd) {
+              var _lmaClone = _lmaNd.cloneNode(true), _lmaSp = _lmaClone.querySelector('span');
+              if (_lmaSp) _lmaSp.parentNode.removeChild(_lmaSp);
+              lmaTname = _lmaClone.textContent.trim();
+            } else { lmaTname = 'Test personnalisé'; }
+          } else {
+            var _lmaCi = parseInt(lmaRows[li].dataset ? lmaRows[li].dataset.testIdx : '', 10);
+            lmaTname = lmaCfg.items[isNaN(_lmaCi) ? li : _lmaCi] || '';
+          }
           var lmaNoteVal = lmaNoteEl ? lmaNoteEl.value : '';
           var lmaTag    = lmaVal;
           var lmaTagCls = lmaIsPos ? 'bad' : 'ok';
