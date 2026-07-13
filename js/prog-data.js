@@ -2605,6 +2605,21 @@ window.addEventListener('message', function(e){
       var pnEl = document.getElementById('patientName');
       if(pnEl) pnEl.value = _progPatient.prenom + ' ' + _progPatient.nom;
     }
+    // Changement de patient pendant que le builder est ouvert : revenir à l'agenda plutôt
+    // que de rester sur le builder de l'ancien patient. Le brouillon auto-sauvegardé est
+    // propre à cette session de builder (pas au patient) — on le vide pour éviter qu'il soit
+    // proposé plus tard sur un AUTRE patient (_draftRestore ne vérifie que le protocole actif,
+    // pas l'identité du patient).
+    var _builderPanelEl = document.getElementById('builderPanel');
+    if(_builderPanelEl && _builderPanelEl.classList.contains('open')){
+      try { _draftClear(); } catch(ex){}
+      try { _exitBuilderMode(); } catch(ex){}
+    }
+    // Recherche + filtres de la bibliothèque d'exercices : propres à la session de builder en
+    // cours, jamais au patient — on repart d'un état neutre à chaque changement de patient.
+    var _searchEl = document.getElementById('searchInput');
+    if(_searchEl) _searchEl.value = '';
+    try { setFilterAll(); } catch(ex){}
     _updatePatientUI();
   }
 });
