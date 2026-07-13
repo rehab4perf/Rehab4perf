@@ -1180,13 +1180,22 @@ function _blApplyLayout(){
         if(lockedIds[id]) return;
         document.querySelectorAll('#page-'+pageKey+' [data-block-id="'+id+'"]').forEach(function(el){ el.classList.add('bl-hidden'); });
       });
-      if(pl.order && pl.order.length) _blReorderBlocks(pageKey, pl.order);
+      // Même logique que pour les tests (ci-dessous) : toujours réordonner, avec repli sur
+      // l'ordre natif (BILAN_BLOCKS, généré depuis l'ordre du HTML source) quand pl.order est
+      // vide — _blBlockSeq/_blReorderBlocks lisent le DOM COURANT, qui reste figé dans son
+      // dernier ordre déplacé si on ne leur fournit pas explicitement la référence natale.
+      var _blNativeOrder = (typeof BILAN_BLOCKS !== 'undefined' && BILAN_BLOCKS[pageKey]) ? BILAN_BLOCKS[pageKey].map(function(b){ return b.id; }) : [];
+      _blReorderBlocks(pageKey, (pl.order && pl.order.length) ? pl.order : _blNativeOrder);
     });
     // lignes de tests : ordre (déplacement des <tr>, les valeurs voyagent avec) + visibilité + descriptions
     Object.keys(TESTS).forEach(function(tbId){
       var tbody = document.getElementById(tbId); if(!tbody) return;
       var tl = _blTestsLayout(tbId);
-      if(tl && tl.order && tl.order.length){
+      // Toujours réappliquer l'ordre (même « vide ») : _blFullDisplayOrder retombe sur
+      // l'ordre natif dans ce cas — sans ce réordonnancement systématique, un DOM déjà
+      // déplacé manuellement restait figé après une réinitialisation (order vidé mais
+      // jamais réappliqué), car le <tbody> physique ne revient jamais de lui-même.
+      if(tl){
         var byIdx = {};
         Array.prototype.forEach.call(tbody.children, function(tr){ if(tr.dataset && tr.dataset.testIdx !== undefined) byIdx[tr.dataset.testIdx] = tr; });
         _blFullDisplayOrder(tbId, TESTS[tbId], tl).forEach(function(key){
@@ -1862,6 +1871,12 @@ function _blAskReset(){
 function _blDoReset(){
   if(_bilanLayout && _bilanLayout.pages) delete _bilanLayout.pages[_blEditPage];
   _blApplyLayout(); _blRefreshEdit();
+  // _blRefreshEdit → _blDecorate matérialise un brouillon vide pour la page (_blPageDraft/
+  // _blTestsDraft, nécessaire aux rails d'édition) — au 1er _blApplyLayout ci-dessus, la page
+  // n'existait pas encore dans _bilanLayout.pages et _blTestsLayout()/_blPageLayout() ren-
+  // voyaient null (pas juste un order vide) : le réordonnancement vers l'ordre natif n'avait
+  // alors rien à quoi s'accrocher. On réapplique maintenant que le brouillon existe.
+  _blApplyLayout();
 }
 /* Retire du layout les pages sans personnalisation effective (base = null). */
 function _blPruneLayout(){
