@@ -1359,7 +1359,10 @@ function _blCustomSnapshot(){
    sur « Terminé », annulation par restauration du snapshot d'entrée. Le déplacement de
    tests entre blocs, la création de blocs/tests personnalisés et l'édition des notes
    arrivent à l'étape 5. ─────────────────────────────────────────── */
-var _BL_EDITABLE_PAGES = ['epaule','coude','main','rachis-cerv','rachis-lomb','hanche','genou','pied'];
+var _BL_EDITABLE_PAGES = ['epaule','coude','main','rachis-cerv','rachis-lomb','hanche','genou','pied',
+  // Pages fonctionnelles/force : chaque test est un bloc-widget autonome (pas de tbody) —
+  // profil réduit assumé (masquage/réordre de blocs + blocs perso, pas d'édition par ligne).
+  'fonctionnels','fonctionnelsMS','fonctionnelsRachis','force-ms','force-rachis','force-mi','musculaires'];
 var _blEditing = false;
 var _blEditPage = null;
 var _blEditSnapshot = null; // JSON de _bilanLayout à l'entrée (pour Annuler)
