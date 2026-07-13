@@ -72,6 +72,18 @@ sections: [
       { t:'Saisissez les valeurs côté gauche / côté droit', x:'Amplitudes, forces, scores… Les asymétries se calculent automatiquement quand c\'est pertinent.' },
       { t:'Ajoutez des commentaires libres si besoin', x:'Ils seront repris dans le compte-rendu.' }
     ]},
+  { id:'personnaliser-bilan', titre:'Personnaliser vos pages de bilan',
+    intro:'Chaque praticien évalue différemment. Vous pouvez masquer ou réordonner des blocs et des tests, ajouter vos propres descriptions, et même créer des blocs et des tests entièrement personnalisés — sans jamais perdre ni corrompre les bilans déjà sauvegardés.',
+    etapes:[
+      { t:'Cliquez sur « ⚙ Personnaliser » en haut de la page', x:'Disponible sur toutes les pages du bilan (régions orthopédiques, tests fonctionnels et de force, LMA). Le bouton devient « ✓ Terminé » : vous êtes en mode édition.', img:true },
+      { t:'Réordonnez ou masquez un bloc', x:'Les flèches ▲▼ déplacent le bloc, la croix le retire (il reste disponible dans la bibliothèque en bas de page, jamais supprimé). Les blocs marqués « 🔒 Élément de base » (marqueur de douleur, conclusion…) restent toujours visibles.' },
+      { t:'Réordonnez, masquez ou décrivez un test', x:'Chaque ligne de test a son propre rail (crayon ✏️ / ▲▼ / croix). Le crayon ouvre l\'édition du texte affiché sous le nom du test — utile pour préciser votre propre façon de réaliser un test.' },
+      { t:'Ajoutez un test à un bloc existant', x:'Le bouton « + Ajouter un test » en bas de chaque bloc crée un test entièrement personnalisé (nom, description) — vous le notez ensuite comme n\'importe quel test natif.' },
+      { t:'Créez un bloc personnalisé', x:'Le bouton « + Créer un bloc personnalisé » en bas de page ajoute un bloc vide, que vous nommez puis remplissez avec vos propres tests. Sur les pages Tests fonctionnels / Force et LMA, seuls les tests se personnalisent (les blocs y sont fixes — voir plus bas).' },
+      { t:'Cliquez sur « ✓ Terminé »', x:'Votre disposition est enregistrée sur votre compte : elle s\'applique à tous vos patients, sur tous vos appareils. « Annuler » abandonne les changements de la session en cours. « Réinitialiser cet onglet » restaure la disposition de base de cette page.' },
+      { t:'Un bilan déjà sauvegardé reste toujours fidèle à lui-même', x:'Masquer ou réordonner un test après coup n\'efface jamais une valeur déjà saisie sur un ancien bilan : si un test masqué contient une donnée, il redevient visible automatiquement pour ce bilan-là. Vos tests personnalisés sont aussi conservés dans chaque bilan, même si vous les supprimez plus tard de votre modèle.' },
+      { t:'Cas particulier : Tests fonctionnels, Force et LMA', x:'Sur ces pages, chaque « test » est un bloc de score autonome (ex. Single Leg Squat) plutôt qu\'une ligne de tableau — vous pouvez donc réordonner/masquer ces blocs et en créer de nouveaux, mais pas éditer leur contenu interne. Sur LMA, la personnalisation porte sur les tests du muscle actuellement sélectionné (les blocs musculaires eux-mêmes sont pilotés par le sélecteur Membre / Muscle).' }
+    ]},
   { id:'generer-cr', titre:'Générer un compte-rendu',
     intro:'Deux formats générés automatiquement à partir de vos saisies — rien à rédiger à la main.',
     etapes:[

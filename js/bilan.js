@@ -1357,11 +1357,9 @@ function _blCustomSnapshot(){
   return any ? out : null;
 }
 
-/* ── Mode personnalisation (étape 4) — v1 : onglet genou, derrière le flag bilan_custom.
+/* ── Mode personnalisation — actives sur les 16 pages du bilan (_BL_EDITABLE_PAGES).
    Actions en direct sur la disposition (aperçu immédiat via _blApplyLayout), sauvegarde
-   sur « Terminé », annulation par restauration du snapshot d'entrée. Le déplacement de
-   tests entre blocs, la création de blocs/tests personnalisés et l'édition des notes
-   arrivent à l'étape 5. ─────────────────────────────────────────── */
+   sur « Terminé », annulation par restauration du snapshot d'entrée. ──────────────── */
 var _BL_EDITABLE_PAGES = ['epaule','coude','main','rachis-cerv','rachis-lomb','hanche','genou','pied',
   // Pages fonctionnelles/force : chaque test est un bloc-widget autonome (pas de tbody) —
   // profil réduit assumé (masquage/réordre de blocs + blocs perso, pas d'édition par ligne).
@@ -1931,9 +1929,11 @@ function _blToggleEdit(page){
 function _blOnPageSwitch(){
   if(_blEditing) _blCancelEdit();
 }
-/* Bouton « Personnaliser » — injecté si le flag bilan_custom est actif. */
+/* Bouton « Personnaliser » — disponible pour tous les praticiens depuis l'ouverture
+   générale (le gate bilan_custom, utilisé en bêta privée le temps de valider la
+   fonctionnalité sur toutes les pages, est levé). _blFeatureEnabled reste en place
+   pour de futurs flags — non lié à une ligne user_settings : rien à migrer côté DB. */
 function _blMaybeInjectCustomizeBtn(){
-  if(!_blFeatureEnabled('bilan_custom')) return;
   _BL_EDITABLE_PAGES.forEach(function(page){
     // Un bouton PAR page (id unique) — un id global unique sauterait toutes les pages
     // après la première. La classe partagée sert au CSS et aux recherches page-scoped.
