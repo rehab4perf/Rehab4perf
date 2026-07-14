@@ -233,6 +233,94 @@ var _deletedDefaultIds = new Set(
 if(_deletedDefaultIds.size > 0){
   LIBRARY = LIBRARY_DEFAULT.filter(function(e){ return !_deletedDefaultIds.has(e.id); });
 }
+// Exercices personnels (table user_exercises, RLS : chacun ne voit/écrit que les siens).
+// Jamais mélangés à _editorData/_editorOriginalIds (l'éditeur bibliothèque, admin only,
+// ne doit jamais pouvoir toucher — même par accident via la sync PATCH/DELETE — les
+// exercices privés d'un praticien) ; toujours ajoutés à LIBRARY en tout dernier, pour
+// l'affichage de la sidebar uniquement.
+var _userExercises = [];
+function _loadUserExercises(){
+  if(!_progToken || !_progUid) return Promise.resolve([]);
+  return _fetchRetry(SUPA_URL_P+'/rest/v1/user_exercises?praticien_id=eq.'+_progUid+'&order=created_at.asc', { headers: _sbHeaders() })
+    .then(function(r){ return r.ok ? r.json() : []; })
+    .then(function(data){
+      _userExercises = Array.isArray(data) ? data.map(function(e){
+        return { id:'u_'+e.id, _dbId:e.id, name:e.name, zone:e.zone||'', type:e.type||'',
+                 url:e.url||'', obj:e.obj||'', patterns:Array.isArray(e.patterns)?e.patterns:[],
+                 _isPrivate:true };
+      }) : [];
+      return _userExercises;
+    })
+    .catch(function(){ _userExercises = []; return []; });
+}
+
+/* Modale légère « Ajouter mon exercice » — ouverte à tous les praticiens (pas seulement
+   admin), contrairement à « Éditer la bibliothèque ». N'écrit que dans user_exercises,
+   jamais dans exercices_library : impossible d'affecter la bibliothèque commune. */
+function openMyExoModal(){
+  var modal = document.getElementById('myExoModal'); if(!modal) return;
+  document.getElementById('myExoName').value = '';
+  document.getElementById('myExoUrl').value = '';
+  document.getElementById('myExoType').value = '';
+  _populateMyExoZone();
+  modal.classList.add('open');
+  document.getElementById('myExoName').focus();
+}
+function closeMyExoModal(){
+  var modal = document.getElementById('myExoModal'); if(modal) modal.classList.remove('open');
+}
+function _populateMyExoZone(){
+  var sel = document.getElementById('myExoZone'); if(!sel) return;
+  var cur = sel.value;
+  sel.innerHTML = '<option value="">— Zone / Articulation —</option>' + ALL_ZONES.map(function(z){
+    return '<option value="'+escH(z)+'"'+(z===cur?' selected':'')+'>'+escH(z)+'</option>';
+  }).join('');
+}
+function saveMyExo(){
+  var name = document.getElementById('myExoName').value.trim();
+  if(!name){ document.getElementById('myExoName').focus(); return; }
+  if(!_progToken || !_progUid){ _showToast('⚠️ Session expirée — reconnectez-vous'); return; }
+  var payload = {
+    praticien_id: _progUid,
+    name: name,
+    zone: document.getElementById('myExoZone').value || null,
+    type: document.getElementById('myExoType').value || null,
+    url:  document.getElementById('myExoUrl').value.trim() || null
+  };
+  var btn = document.getElementById('myExoSaveBtn');
+  if(btn) btn.disabled = true;
+  _fetchRetry(SUPA_URL_P+'/rest/v1/user_exercises', {
+    method:'POST',
+    headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=representation'}),
+    body: JSON.stringify(payload)
+  })
+  .then(function(r){ return r.ok ? r.json() : null; })
+  .then(function(rows){
+    if(btn) btn.disabled = false;
+    var row = Array.isArray(rows) ? rows[0] : null;
+    if(!row){ _showToast('⚠️ Échec de l\'ajout — réessayez'); return; }
+    _userExercises.push({ id:'u_'+row.id, _dbId:row.id, name:row.name, zone:row.zone||'',
+      type:row.type||'', url:row.url||'', obj:row.obj||'', patterns:[], _isPrivate:true });
+    LIBRARY = LIBRARY.concat([_userExercises[_userExercises.length-1]]);
+    closeMyExoModal();
+    filterLib();
+    _showToast('✓ Exercice ajouté — visible uniquement par vous');
+  })
+  .catch(function(){ if(btn) btn.disabled = false; _showToast('⚠️ Échec de l\'ajout — réessayez'); });
+}
+function deleteUserExercise(id){
+  var ex = _userExercises.find(function(e){ return e.id === id; });
+  if(!ex) return;
+  if(!confirm('Supprimer « '+ex.name+' » ? Il ne sera plus disponible pour aucune de vos séances.')) return;
+  _fetchRetry(SUPA_URL_P+'/rest/v1/user_exercises?id=eq.'+ex._dbId, { method:'DELETE', headers: _sbHeaders() })
+  .then(function(r){
+    if(!r.ok) { _showToast('⚠️ Échec de la suppression'); return; }
+    _userExercises = _userExercises.filter(function(e){ return e.id !== id; });
+    LIBRARY = LIBRARY.filter(function(e){ return e.id !== id; });
+    filterLib();
+  })
+  .catch(function(){ _showToast('⚠️ Échec de la suppression'); });
+}
 
 /* ================================================================
    STATE
@@ -578,9 +666,13 @@ function renderLib(q, typeFilter, subFilter, subFilter2){
     h += '<div class="lib-item-name">'+escH(ex.name)+'</div>';
     h += '<div class="lib-sub">';
     h += '<span class="lib-tag '+getTypeClass(ex.type)+'">'+getTypeLabel(ex.type)+'</span>';
+    if(ex._isPrivate) h += '<span class="lib-tag" style="background:#EDE7F6;color:#5E35B1;" title="Visible uniquement par vous">🔒 Privé</span>';
     h += '</div></div>';
     if(_isTouchDevice){
       h += '<button class="lib-info-btn" id="libinfo-'+ex.id+'" onclick="_toggleLibPreview(event,\''+ex.id+'\')" title="Aperçu">ℹ</button>';
+    }
+    if(ex._isPrivate){
+      h += '<button class="lib-info-btn" onclick="event.stopPropagation();deleteUserExercise(\''+ex.id+'\')" title="Supprimer mon exercice">×</button>';
     }
     h += '<button class="fav-btn'+(isFav?' active':'')+'" onclick="event.stopPropagation();toggleFav(\''+ex.id+'\')" title="Favori">★</button>';
     h += '<button class="lib-add-btn" onclick="addExoFromLib(\''+ex.id+'\')" title="Ajouter"></button>';
@@ -2100,9 +2192,13 @@ var ALL_TYPES = ['warmup','renfo','automassage'];
 // Charge les exercices partagés depuis Supabase et les fusionne avec LIBRARY_DEFAULT
 function _loadSupaLibrary(){
   if(!_progToken || !_progUid) return;
-  _fetchRetry(SUPA_URL_P + '/rest/v1/exercices_library?order=created_at.asc', { headers: _sbHeaders() })
-  .then(function(r){ return r.ok ? r.json() : null; })
-  .then(function(data){
+  Promise.all([
+    _fetchRetry(SUPA_URL_P + '/rest/v1/exercices_library?order=created_at.asc', { headers: _sbHeaders() })
+      .then(function(r){ return r.ok ? r.json() : null; }),
+    _loadUserExercises()
+  ])
+  .then(function(results){
+    var data = results[0];
     if(!Array.isArray(data)) return;
     /* Séparer les marqueurs de suppression globale des exercices réels */
     var deletedMarkers = new Set(data.filter(function(e){ return e.type === '__deleted__'; }).map(function(e){ return e.id; }));
@@ -2123,7 +2219,7 @@ function _loadSupaLibrary(){
                patterns: Array.isArray(e.patterns) ? e.patterns : [],
                _fromSupa: true };
     });
-    LIBRARY = filteredDefaults.concat(supaExos);
+    LIBRARY = filteredDefaults.concat(supaExos).concat(_userExercises);
     filterLib();
   })
   .catch(function(){});
@@ -2187,13 +2283,19 @@ function openEditor(){
         });
         LIBRARY = filteredDefs.concat(supaExos2);
       }
-      _editorOriginalIds = LIBRARY.map(function(e){ return e.id; });
-      _editorData = LIBRARY.map(function(e){ return Object.assign({},e); });
+      LIBRARY = LIBRARY.concat(_userExercises);
+      // Filtre explicite (pas seulement un ordre d'opérations) : l'éditeur (admin) ne
+      // doit JAMAIS lister/pouvoir toucher les exercices personnels d'un praticien — la
+      // sync PATCH/DELETE de saveEditor() se base sur ces deux variables.
+      var _cleanForEditor = LIBRARY.filter(function(e){ return !e._isPrivate; });
+      _editorOriginalIds = _cleanForEditor.map(function(e){ return e.id; });
+      _editorData = _cleanForEditor.map(function(e){ return Object.assign({},e); });
       renderEditor();
     })
     .catch(function(){
-      _editorOriginalIds = LIBRARY.map(function(e){ return e.id; });
-      _editorData = LIBRARY.map(function(e){ return Object.assign({},e); });
+      var _cleanForEditor = LIBRARY.filter(function(e){ return !e._isPrivate; });
+      _editorOriginalIds = _cleanForEditor.map(function(e){ return e.id; });
+      _editorData = _cleanForEditor.map(function(e){ return Object.assign({},e); });
       renderEditor();
     });
   } else {
@@ -2210,7 +2312,9 @@ function closeEditor(){
 }
 
 function saveEditor(){
-  LIBRARY = _editorData.filter(function(e){ return e.name.trim(); });
+  // _editorData ne contient jamais d'exercices personnels (voir openEditor) — on les
+  // rajoute ici pour que la sidebar les retrouve après la sauvegarde de la bibliothèque.
+  LIBRARY = _editorData.filter(function(e){ return e.name.trim(); }).concat(_userExercises);
 
   // ── Sync Supabase ──
   if(_progToken && _progUid){
