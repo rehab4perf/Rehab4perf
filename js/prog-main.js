@@ -8807,7 +8807,8 @@ function _renderJournal() {
   var items = [];
 
   // Séances planifiées (depuis le cache calendrier)
-  if(_journalFilter === 'all' || _journalFilter === 'seance' || _journalFilter === 'retours') {
+  if(_journalFilter === 'all' || _journalFilter === 'seance' || _journalFilter === 'retours' || _journalFilter === 'past') {
+    var _journalToday = _dateStr(new Date());
     (_cloudCalEvents||[]).forEach(function(ev) {
       var fb    = ev.athlete_feedback && (Array.isArray(ev.athlete_feedback) ? ev.athlete_feedback[0] : ev.athlete_feedback);
       var nom   = (ev.programmes && ev.programmes.nom) || ev.nom || 'Programme';
@@ -8816,6 +8817,8 @@ function _renderJournal() {
       var rpe   = fb ? ((isCapN || isHsrN) ? _fbDouleur(fb) : fb.rpe) : null;
       var duree = fb ? ((isCapN || isHsrN) ? _fbEffort(fb) : fb.duree_min) : null;
       if(_journalFilter === 'retours' && (rpe === null || rpe === undefined)) return; // ne garder que les séances avec feedback
+      // « Réalisé » = date déjà passée, qu'un retour ait été saisi ou non (masque les prévisions futures)
+      if(_journalFilter === 'past' && ev.date >= _journalToday) return;
       items.push({
         date:    ev.date,
         type:    'seance',
