@@ -137,9 +137,17 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
         <label class="form-label">Email (compte)</label>
         <input class="form-input" id="fieldEmail" type="email" readonly>
       </div>
-      <div class="form-group full">
+      <div class="form-group">
+        <label class="form-label">Spécialité</label>
+        <input class="form-input" id="fieldSpecialite" type="text" placeholder="Masseur Kinésithérapeute du Sport">
+      </div>
+      <div class="form-group">
         <label class="form-label">Cabinet / Structure</label>
         <input class="form-input" id="fieldCabinet" type="text" placeholder="Athletik Lamarck">
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Adresse du cabinet</label>
+        <input class="form-input" id="fieldAdresse" type="text" placeholder="7, rue des Cottages — Paris 18e">
       </div>
     </div>
     <div class="btn-row" style="margin-top:16px">
@@ -232,12 +240,14 @@ function showAccount(user) {
   document.getElementById('avatarCircle').textContent  = initials;
   document.getElementById('displayName').textContent   = name;
   document.getElementById('displayEmail').textContent  = email;
-  document.getElementById('fieldPrenom').value  = prenom;
-  document.getElementById('fieldNom').value     = nom;
-  document.getElementById('fieldAM').value      = meta.am      || '';
-  document.getElementById('fieldTel').value     = meta.tel     || '';
-  document.getElementById('fieldEmail').value   = email;
-  document.getElementById('fieldCabinet').value = meta.cabinet || '';
+  document.getElementById('fieldPrenom').value     = prenom;
+  document.getElementById('fieldNom').value        = nom;
+  document.getElementById('fieldAM').value         = meta.am         || '';
+  document.getElementById('fieldTel').value        = meta.tel        || '';
+  document.getElementById('fieldEmail').value      = email;
+  document.getElementById('fieldCabinet').value    = meta.cabinet    || '';
+  document.getElementById('fieldAdresse').value    = meta.adresse    || '';
+  document.getElementById('fieldSpecialite').value = meta.specialite || '';
 }
 
 /* ═══ ACTIONS ═══ */
@@ -255,11 +265,13 @@ function saveProfile() {
   document.getElementById('saveError').style.display  = 'none';
 
   var data = {
-    prenom:  document.getElementById('fieldPrenom').value.trim(),
-    nom:     document.getElementById('fieldNom').value.trim(),
-    am:      document.getElementById('fieldAM').value.trim(),
-    tel:     document.getElementById('fieldTel').value.trim(),
-    cabinet: document.getElementById('fieldCabinet').value.trim()
+    prenom:     document.getElementById('fieldPrenom').value.trim(),
+    nom:        document.getElementById('fieldNom').value.trim(),
+    am:         document.getElementById('fieldAM').value.trim(),
+    tel:        document.getElementById('fieldTel').value.trim(),
+    cabinet:    document.getElementById('fieldCabinet').value.trim(),
+    adresse:    document.getElementById('fieldAdresse').value.trim(),
+    specialite: document.getElementById('fieldSpecialite').value.trim()
   };
 
   sb.auth.updateUser({ data: data })
@@ -267,7 +279,7 @@ function saveProfile() {
       if (res.error) throw res.error;
       var user    = res.data.user;
       var meta    = user.user_metadata || {};
-      var profile = { prenom:meta.prenom||'', nom:meta.nom||'', am:meta.am||'', tel:meta.tel||'', cabinet:meta.cabinet||'', email:user.email||'' };
+      var profile = { prenom:meta.prenom||'', nom:meta.nom||'', am:meta.am||'', tel:meta.tel||'', cabinet:meta.cabinet||'', adresse:meta.adresse||'', specialite:meta.specialite||'', email:user.email||'' };
       try { localStorage.setItem('r4p-cached-profile', JSON.stringify(profile)); localStorage.setItem('r4p-profile', JSON.stringify(profile)); } catch(e) {}
       showAccount(user);
       notifyParent(profile);

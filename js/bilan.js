@@ -809,8 +809,11 @@ function getProfile(){
 }
 
 function applyProfile(p){
-  if(!p || (!p.prenom && !p.nom && !p.am && !p.tel)) return;
-  var name = ((p.prenom||'')+' '+(p.nom||'')).trim() || '—';
+  // Toujours exécuté (même profil vide) : chaque champ non renseigné doit rester vide,
+  // jamais retomber sur un texte par défaut codé en dur (confidentialité — un praticien
+  // qui n'a pas encore rempli son profil ne doit jamais voir les infos d'un autre compte).
+  p = p || {};
+  var name = ((p.prenom||'')+' '+(p.nom||'')).trim();
   var cabinet = p.cabinet ? ' — '+p.cabinet : '';
   var sub = [];
   if(p.am) sub.push('N° AM : '+p.am);
