@@ -2440,7 +2440,8 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
       <button class="journal-filter-btn"         id="jf-seance"  onclick="_setJournalFilter('seance')">🏋️ Séances</button>
       <button class="journal-filter-btn"         id="jf-note"    onclick="_setJournalFilter('note')">📝 Notes</button>
       <button class="journal-filter-btn"         id="jf-retours" onclick="_setJournalFilter('retours')">💬 Retours</button>
-      <button class="journal-filter-btn"         id="jf-past"    onclick="_setJournalFilter('past')">✅ Réalisé</button>
+      <span style="width:1px;background:var(--border2,#ddd);margin:2px 2px;flex:none;"></span>
+      <button class="journal-filter-btn"         id="jf-future"  onclick="_toggleJournalTime()" title="Par défaut : uniquement le passé (Réalisé). Activez pour voir les prévisions à venir.">📅 Prévisionnel</button>
     </div>
     <div class="journal-body" id="journalBody"></div>
     <div class="journal-sel-bar" id="journalSelBar">
@@ -3820,6 +3821,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 
 </div>
 
-<script src="js/prog-main.js?v=20260724"></script>
+<script src="js/prog-main.js?v=20260725"></script>
 </body>
 </html>

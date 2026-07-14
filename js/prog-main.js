@@ -8670,17 +8670,30 @@ function _escHtml(str) {
 var _journalFilter  = 'all';
 var _journalSelMode = false;
 var _journalSelItems = new Set(); // "type:id"
+// Filtre temps, indépendant du filtre type ci-dessus. Par défaut : Réalisé (passé) —
+// c'est ce que l'utilisateur veut voir en priorité à l'ouverture du journal.
+var _journalShowFuture = false;
 
 function openJournal() {
   if(!_progPatient){ _showToast('Sélectionnez un patient pour voir le journal.', true); return; }
   _journalFilter = 'all';
+  _journalShowFuture = false;
   _journalSelMode = false;
   _journalSelItems = new Set();
   document.querySelectorAll('.journal-filter-btn').forEach(function(b){ b.classList.remove('active'); });
   var all = document.getElementById('jf-all');
   if(all) all.classList.add('active');
+  var prev = document.getElementById('jf-future');
+  if(prev) prev.classList.remove('active');
   _renderJournal();
   document.getElementById('journalOverlay').classList.add('open');
+}
+
+function _toggleJournalTime() {
+  _journalShowFuture = !_journalShowFuture;
+  var btn = document.getElementById('jf-future');
+  if(btn) btn.classList.toggle('active', _journalShowFuture);
+  _renderJournal();
 }
 
 function closeJournal() {
@@ -8790,7 +8803,8 @@ function _journalToggleRetour(id){
 function _setJournalFilter(f) {
   _journalFilter = f;
   _journalRetourOpen = new Set();
-  document.querySelectorAll('.journal-filter-btn').forEach(function(b){ b.classList.remove('active'); });
+  // jf-future est une dimension indépendante (temps, pas type) : ne pas la désélectionner ici.
+  document.querySelectorAll('.journal-filter-btn').forEach(function(b){ if(b.id !== 'jf-future') b.classList.remove('active'); });
   var btn = document.getElementById('jf-'+f);
   if(btn) btn.classList.add('active');
   _renderJournal();
@@ -8807,8 +8821,7 @@ function _renderJournal() {
   var items = [];
 
   // Séances planifiées (depuis le cache calendrier)
-  if(_journalFilter === 'all' || _journalFilter === 'seance' || _journalFilter === 'retours' || _journalFilter === 'past') {
-    var _journalToday = _dateStr(new Date());
+  if(_journalFilter === 'all' || _journalFilter === 'seance' || _journalFilter === 'retours') {
     (_cloudCalEvents||[]).forEach(function(ev) {
       var fb    = ev.athlete_feedback && (Array.isArray(ev.athlete_feedback) ? ev.athlete_feedback[0] : ev.athlete_feedback);
       var nom   = (ev.programmes && ev.programmes.nom) || ev.nom || 'Programme';
@@ -8817,8 +8830,6 @@ function _renderJournal() {
       var rpe   = fb ? ((isCapN || isHsrN) ? _fbDouleur(fb) : fb.rpe) : null;
       var duree = fb ? ((isCapN || isHsrN) ? _fbEffort(fb) : fb.duree_min) : null;
       if(_journalFilter === 'retours' && (rpe === null || rpe === undefined)) return; // ne garder que les séances avec feedback
-      // « Réalisé » = date déjà passée, qu'un retour ait été saisi ou non (masque les prévisions futures)
-      if(_journalFilter === 'past' && ev.date >= _journalToday) return;
       items.push({
         date:    ev.date,
         type:    'seance',
@@ -8847,6 +8858,14 @@ function _renderJournal() {
       });
     });
   }
+
+  // Filtre temps (indépendant du filtre type ci-dessus) : par défaut on ne montre que le
+  // « Réalisé » (déjà passé, séances et notes confondues) ; le bouton « Prévisionnel »
+  // bascule sur l'inverse (à venir). Appliqué en dernier, sur la liste unifiée.
+  var _journalToday = _dateStr(new Date());
+  items = items.filter(function(it){
+    return _journalShowFuture ? (it.date >= _journalToday) : (it.date < _journalToday);
+  });
 
   // Pas de données
   if(!items.length) {
