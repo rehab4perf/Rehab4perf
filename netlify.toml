@@ -13,7 +13,7 @@
     # - script-src  : app inline + SDK Supabase via jsdelivr
     # - style-src   : styles inline (app ne charge aucun CSS externe)
     # - connect-src : REST + WebSocket Supabase (wss: pour realtime SDK)
-    # - img-src     : data:/blob: graphiques + thumbnails YouTube
+    # - img-src     : data:/blob: graphiques + thumbnails YouTube + logo/signature/tampon (Storage Supabase)
     # - frame-src   : embeds YouTube (player vidéo exercices)
     # - font-src    : polices locales uniquement
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self' https://sxdobjodxkwexaspepdm.supabase.co wss://sxdobjodxkwexaspepdm.supabase.co https://cdn.jsdelivr.net; img-src 'self' data: blob: https://img.youtube.com; frame-src 'self' https://www.youtube.com; font-src 'self'; object-src 'none'; base-uri 'self';"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self' https://sxdobjodxkwexaspepdm.supabase.co wss://sxdobjodxkwexaspepdm.supabase.co https://cdn.jsdelivr.net; img-src 'self' data: blob: https://img.youtube.com https://sxdobjodxkwexaspepdm.supabase.co; frame-src 'self' https://www.youtube.com; font-src 'self'; object-src 'none'; base-uri 'self';"
