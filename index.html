@@ -416,13 +416,17 @@ iframe.active { display:block; }
 }
 .ob-btn-primary:hover { background:#1A3A5C; }
 .ob-btn-primary:disabled { opacity:.6; cursor:not-allowed; }
-.ob-logo-choice { display:flex; flex-direction:column; gap:10px; margin-top:auto; margin-bottom:auto; }
-.ob-logo-choice button {
-  padding:12px 16px; border-radius:8px; font-size:.85rem; font-weight:600; cursor:pointer; font-family:inherit;
-  border:1px solid #dde3ec; background:#fff; color:#1A3A5C; text-align:left;
-}
-.ob-logo-choice button:hover { border-color:#4A90D9; background:#F5F9FF; }
-.ob-logo-choice button small { display:block; font-weight:400; color:#6b7a8d; font-size:.74rem; margin-top:2px; }
+.ob-assets { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:4px 0 auto; }
+.ob-asset { display:flex; flex-direction:column; gap:8px; }
+.ob-asset-label { font-size:.76rem; font-weight:600; color:#1A3A5C; }
+.ob-asset-preview { height:88px; border:1px dashed #dde3ec; border-radius:8px; display:flex; align-items:center; justify-content:center; overflow:hidden; background:#FAFBFD; }
+.ob-asset-preview img { max-width:100%; max-height:100%; object-fit:contain; }
+.ob-asset-empty { font-size:.72rem; color:#9aa7b5; }
+.ob-asset-btns { display:flex; gap:6px; flex-wrap:wrap; }
+.ob-asset-btn { font-size:.74rem; padding:6px 10px; border-radius:6px; border:1px solid #dde3ec; background:#fff; color:#1A3A5C; cursor:pointer; font-family:inherit; }
+.ob-asset-btn:hover { border-color:#4A90D9; background:#F5F9FF; }
+.ob-asset-remove { font-size:.74rem; padding:6px 10px; border-radius:6px; border:1px solid #E74C3C; background:none; color:#E74C3C; cursor:pointer; font-family:inherit; display:none; }
+.ob-asset-remove:hover { background:#FEF0EE; }
 .ob-finish-illus {
   display:flex; align-items:center; gap:10px; background:#1A3A5C; border-radius:8px;
   padding:9px 14px; margin:10px 0 18px; align-self:flex-start;
@@ -459,6 +463,7 @@ iframe.active { display:block; }
   .ob-card { max-width:100%; }
   .ob-body { padding:24px 18px 18px; }
   .ob-form-grid { grid-template-columns:1fr; }
+  .ob-assets { grid-template-columns:1fr; }
   .ob-spot-callout { width:210px; }
 }
 
@@ -528,10 +533,39 @@ iframe.active { display:block; }
 
       <div class="ob-panel" data-panel="3">
         <div class="ob-title">Logo &amp; signature</div>
-        <div class="ob-subtitle">Ajoutez le logo de votre cabinet, votre signature et votre tampon : ils s'affichent automatiquement sur vos prescriptions. Privés — visibles par vous seul.</div>
-        <div class="ob-logo-choice">
-          <button onclick="_obGoToAccount()">Ajouter maintenant<small>Ouvre « Mon compte », dans la carte « Logo &amp; signature ».</small></button>
-          <button onclick="_obNext()">Plus tard<small>Vous pourrez les ajouter à tout moment depuis « Mon compte ».</small></button>
+        <div class="ob-subtitle">Ajoutez le logo de votre cabinet, votre signature et votre tampon : ils s'affichent automatiquement sur vos prescriptions. Privés — visibles par vous seul. PNG, JPEG ou WEBP, 3 Mo max.</div>
+        <div class="ob-assets">
+          <div class="ob-asset">
+            <div class="ob-asset-label">Logo du cabinet</div>
+            <div class="ob-asset-preview" id="obAssetPreview-logo"><span class="ob-asset-empty">Aucun logo</span></div>
+            <input type="file" id="obAssetFile-logo" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="_obAssetSelected('logo', this)">
+            <div class="ob-asset-btns">
+              <button type="button" class="ob-asset-btn" onclick="document.getElementById('obAssetFile-logo').click()">Choisir…</button>
+              <button type="button" class="ob-asset-remove" id="obAssetRemove-logo" onclick="_obAssetRemove('logo')">Retirer</button>
+            </div>
+          </div>
+          <div class="ob-asset">
+            <div class="ob-asset-label">Signature</div>
+            <div class="ob-asset-preview" id="obAssetPreview-signature"><span class="ob-asset-empty">Aucune signature</span></div>
+            <input type="file" id="obAssetFile-signature" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="_obAssetSelected('signature', this)">
+            <div class="ob-asset-btns">
+              <button type="button" class="ob-asset-btn" onclick="document.getElementById('obAssetFile-signature').click()">Choisir…</button>
+              <button type="button" class="ob-asset-remove" id="obAssetRemove-signature" onclick="_obAssetRemove('signature')">Retirer</button>
+            </div>
+          </div>
+          <div class="ob-asset">
+            <div class="ob-asset-label">Tampon</div>
+            <div class="ob-asset-preview" id="obAssetPreview-tampon"><span class="ob-asset-empty">Aucun tampon</span></div>
+            <input type="file" id="obAssetFile-tampon" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="_obAssetSelected('tampon', this)">
+            <div class="ob-asset-btns">
+              <button type="button" class="ob-asset-btn" onclick="document.getElementById('obAssetFile-tampon').click()">Choisir…</button>
+              <button type="button" class="ob-asset-remove" id="obAssetRemove-tampon" onclick="_obAssetRemove('tampon')">Retirer</button>
+            </div>
+          </div>
+        </div>
+        <div class="ob-actions">
+          <button class="ob-skip" onclick="_obNext()">Passer cette étape</button>
+          <button class="ob-btn-primary" onclick="_obNext()">Continuer</button>
         </div>
       </div>
 
@@ -852,7 +886,9 @@ sb.auth.getSession().then(function(result) {
 
 /* ═══ ONBOARDING PREMIÈRE CONNEXION ═══ */
 var _obStep = 1;
+var _obUser = null;
 function _obOpen(user) {
+  _obUser = user;
   var meta = user.user_metadata || {};
   document.getElementById('obPrenom').value     = meta.prenom     || '';
   document.getElementById('obNom').value        = meta.nom        || '';
@@ -861,9 +897,103 @@ function _obOpen(user) {
   document.getElementById('obCabinet').value    = meta.cabinet    || '';
   document.getElementById('obTel').value        = meta.tel        || '';
   document.getElementById('obAdresse').value    = meta.adresse    || '';
+  _OB_ASSET_TYPES.forEach(function(type){ _obRenderAssetPreview(type, meta[_OB_ASSET_EXT_FIELD[type]] || ''); });
   _obStep = 1;
   _obRender();
   document.getElementById('obOverlay').classList.add('open');
+}
+
+/* Upload logo / signature / tampon directement dans l'assistant (même backend Storage
+   que « Mon compte » : bucket privé praticien-profil + URL signée pour l'aperçu). */
+var _OB_ASSET_TYPES     = ['logo', 'signature', 'tampon'];
+var _OB_ASSET_EXT_FIELD = { logo: 'logoExt', signature: 'sigExt', tampon: 'tamponExt' };
+var _OB_ASSET_BUCKET    = 'praticien-profil';
+var _OB_ASSET_MAXSIZE   = 3 * 1024 * 1024;
+var _OB_EXT_BY_MIME     = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
+function _obAssetSignedUrl(uid, type, ext, token) {
+  var path = uid + '/' + type + '.' + ext;
+  return fetch(SUPA_URL + '/storage/v1/object/sign/' + _OB_ASSET_BUCKET + '/' + path, {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token, 'apikey': SUPA_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ expiresIn: 120 })
+  }).then(function(r){ if(!r.ok) throw new Error('sign ' + r.status); return r.json(); })
+    .then(function(j){ var rel = j.signedURL || ''; return SUPA_URL + '/storage/v1' + (rel.indexOf('/storage/v1') === 0 ? rel.slice('/storage/v1'.length) : rel); });
+}
+function _obRenderAssetPreview(type, ext) {
+  var box = document.getElementById('obAssetPreview-' + type);
+  var rm  = document.getElementById('obAssetRemove-' + type);
+  if (!box) return;
+  var emptyLabel = type === 'logo' ? 'Aucun logo' : (type === 'signature' ? 'Aucune signature' : 'Aucun tampon');
+  if (!ext || !_currentUid) { box.innerHTML = '<span class="ob-asset-empty">' + emptyLabel + '</span>'; if (rm) rm.style.display = 'none'; return; }
+  box.innerHTML = '<span class="ob-asset-empty">Chargement…</span>';
+  sb.auth.getSession().then(function(res){
+    var token = res.data && res.data.session && res.data.session.access_token;
+    if (!token) throw new Error('no session');
+    return _obAssetSignedUrl(_currentUid, type, ext, token);
+  }).then(function(url){
+    box.innerHTML = '<img src="' + url + '" alt="' + type + '">'; if (rm) rm.style.display = 'inline-block';
+  }).catch(function(e){ console.error('_obRenderAssetPreview', e); box.innerHTML = '<span class="ob-asset-empty">Erreur d’aperçu</span>'; if (rm) rm.style.display = 'inline-block'; });
+}
+function _obAssetSelected(type, inputEl) {
+  var file = inputEl.files && inputEl.files[0];
+  inputEl.value = '';
+  if (!file || !_currentUid) return;
+  if (file.size > _OB_ASSET_MAXSIZE) { alert('Fichier trop volumineux (3 Mo max).'); return; }
+  var ext = _OB_EXT_BY_MIME[file.type] || null;
+  if (!ext) { alert('Formats acceptés : PNG, JPEG ou WEBP.'); return; }
+  var extField = _OB_ASSET_EXT_FIELD[type];
+  var box = document.getElementById('obAssetPreview-' + type);
+  if (box) box.innerHTML = '<span class="ob-asset-empty">Envoi…</span>';
+  sb.auth.getSession().then(function(res){
+    var token = res.data && res.data.session && res.data.session.access_token;
+    if (!token) throw new Error('no session');
+    var path = _currentUid + '/' + type + '.' + ext;
+    return fetch(SUPA_URL + '/storage/v1/object/' + _OB_ASSET_BUCKET + '/' + path, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token, 'apikey': SUPA_KEY, 'Content-Type': file.type, 'x-upsert': 'true' },
+      body: file
+    });
+  }).then(function(r){
+    if (!r.ok) return r.text().then(function(t){ throw new Error('upload ' + r.status + ' ' + t); });
+    // updateUser remplace tout user_metadata — on repart de l'existant (cf. Mon compte).
+    var data = Object.assign({}, (_obUser && _obUser.user_metadata) || {});
+    data[extField] = ext;
+    return sb.auth.updateUser({ data: data });
+  }).then(function(res){
+    if (res.error) throw res.error;
+    _obUser = res.data.user;
+    var profile = syncProfileToStorage(_obUser);
+    propagateToBilan(profile);
+    _obRenderAssetPreview(type, ext);
+  }).catch(function(err){
+    console.error('_obAssetSelected', err);
+    alert('Échec de l’envoi du fichier.');
+    _obRenderAssetPreview(type, ((_obUser && _obUser.user_metadata) || {})[extField] || '');
+  });
+}
+function _obAssetRemove(type) {
+  if (!_currentUid || !_obUser) return;
+  var extField = _OB_ASSET_EXT_FIELD[type];
+  var ext = (_obUser.user_metadata || {})[extField];
+  if (!ext) return;
+  var path = _currentUid + '/' + type + '.' + ext;
+  sb.auth.getSession().then(function(res){
+    var token = res.data && res.data.session && res.data.session.access_token;
+    if (!token) throw new Error('no session');
+    return fetch(SUPA_URL + '/storage/v1/object/' + _OB_ASSET_BUCKET + '/' + path, {
+      method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token, 'apikey': SUPA_KEY }
+    });
+  }).then(function(){
+    var data = Object.assign({}, _obUser.user_metadata || {});
+    data[extField] = '';
+    return sb.auth.updateUser({ data: data });
+  }).then(function(res){
+    if (res.error) throw res.error;
+    _obUser = res.data.user;
+    var profile = syncProfileToStorage(_obUser);
+    propagateToBilan(profile);
+    _obRenderAssetPreview(type, '');
+  }).catch(function(err){ console.error('_obAssetRemove', err); alert('Échec de la suppression.'); });
 }
 var _obResizeHandler = null;
 function _obPositionSpot() {
@@ -904,19 +1034,20 @@ function _obNext() {
 function _obSaveInfos() {
   var btn = document.getElementById('obSaveInfosBtn');
   btn.disabled = true; btn.textContent = 'Enregistrement…';
-  var data = {
-    prenom:     document.getElementById('obPrenom').value.trim(),
-    nom:        document.getElementById('obNom').value.trim(),
-    am:         document.getElementById('obAm').value.trim(),
-    specialite: document.getElementById('obSpecialite').value.trim(),
-    cabinet:    document.getElementById('obCabinet').value.trim(),
-    tel:        document.getElementById('obTel').value.trim(),
-    adresse:    document.getElementById('obAdresse').value.trim()
-  };
+  // Repart de user_metadata existant pour ne pas effacer logo/signature/plan/onboarded.
+  var data = Object.assign({}, (_obUser && _obUser.user_metadata) || {});
+  data.prenom     = document.getElementById('obPrenom').value.trim();
+  data.nom        = document.getElementById('obNom').value.trim();
+  data.am         = document.getElementById('obAm').value.trim();
+  data.specialite = document.getElementById('obSpecialite').value.trim();
+  data.cabinet    = document.getElementById('obCabinet').value.trim();
+  data.tel        = document.getElementById('obTel').value.trim();
+  data.adresse    = document.getElementById('obAdresse').value.trim();
   sb.auth.updateUser({ data: data }).then(function(res) {
     btn.disabled = false; btn.textContent = 'Continuer';
     if (res.error) { alert('Erreur : ' + res.error.message); return; }
     var user = res.data.user;
+    _obUser = user;
     updateNav(user);
     var profile = syncProfileToStorage(user);
     propagateToBilan(profile);
@@ -931,11 +1062,6 @@ function _obClose() {
   overlay.classList.remove('open', 'spotlight');
   if (_obResizeHandler) { window.removeEventListener('resize', _obResizeHandler); _obResizeHandler = null; }
 }
-function _obGoToAccount() {
-  _obMarkOnboarded();
-  _obClose();
-  show('account');
-}
 function _obFinish() {
   _obMarkOnboarded();
   _obClose();
@@ -944,7 +1070,10 @@ function _obFinish() {
   if (btn) { btn.classList.add('ob-glow'); setTimeout(function(){ btn.classList.remove('ob-glow'); }, 4200); }
 }
 function _obMarkOnboarded() {
-  sb.auth.updateUser({ data: { onboarded: true } }).catch(function(){});
+  // Fusionne : updateUser remplace tout user_metadata, ne jamais perdre profil/plan/logos.
+  var data = Object.assign({}, (_obUser && _obUser.user_metadata) || {});
+  data.onboarded = true;
+  sb.auth.updateUser({ data: data }).then(function(res){ if (res && res.data && res.data.user) _obUser = res.data.user; }).catch(function(){});
 }
 document.getElementById('obCloseBtn').onclick = _obFinish;
 
