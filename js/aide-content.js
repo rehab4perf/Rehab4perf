@@ -148,12 +148,13 @@ sections: [
 /* ── 📋 PROGRAMME ────────────────────────────────────────────── */
 { id:'programme', emoji:'📋', titre:'Programme & agenda', articles:[
   { id:'bibliotheque', titre:'Utiliser la bibliothèque d\'exercices',
-    intro:'Tous vos exercices, avec vidéos, filtrables et organisables en favoris.',
+    intro:'Tous vos exercices, avec vidéos, filtrables et organisables en favoris. La bibliothèque n\'apparaît qu\'à l\'intérieur du builder — pas depuis le calendrier.',
     etapes:[
+      { t:'Ouvrez d\'abord le builder', x:'« + Séance » ou une séance existante depuis l\'agenda. La bibliothèque s\'affiche alors dans le panneau latéral.' },
       { t:'Recherchez ou filtrez', x:'Par nom, par objectif (mobilité, renfo…) ou par articulation.' },
       { t:'Cliquez sur ★ pour marquer un favori', x:'Le filtre « Favoris » ne montre alors que votre sélection.' },
       { t:'Cliquez sur + pour ajouter au bloc', x:'L\'exercice rejoint le bloc choisi dans « Ajouter au bloc » (par défaut, le dernier).', img:true },
-      { t:'« 🔒 Ajouter mon exercice » pour un exercice personnel', x:'Nom, objectif (warm-up/mobilité, renforcement, auto-massage), zone/articulation et lien vidéo YouTube (optionnel). Il rejoint immédiatement la bibliothèque, mais reste visible par vous seul, sur toutes vos séances — jamais par les autres praticiens.', img:true }
+      { t:'« Ajouter mon exercice » pour un exercice personnel', x:'Nom, objectif (warm-up/mobilité, renforcement, auto-massage), zone/articulation et lien vidéo YouTube (optionnel). Il rejoint immédiatement la bibliothèque, mais reste visible par vous seul, sur toutes vos séances — jamais par les autres praticiens.', img:true }
     ]},
   { id:'builder', titre:'Construire une séance',
     intro:'Le builder assemble des blocs d\'exercices avec tous les paramètres d\'entraînement.',
