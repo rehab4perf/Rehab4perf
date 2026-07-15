@@ -1367,6 +1367,7 @@ body {
   try {
     var p = JSON.parse(localStorage.getItem('r4p-profile') || '{}');
     _updatePrescHeader(p);
+    _updatePrescAssets(p);
   } catch(e) { _updatePrescHeader({}); }
 })();
 
@@ -1407,6 +1408,58 @@ function _updatePrescHeader(profile) {
     if(email)   rightParts.push(_batEsc(email));
     elRight.innerHTML = rightParts.join('<br>');
   }
+}
+
+var PP_SUPA_URL = 'https://sxdobjodxkwexaspepdm.supabase.co';
+var PP_SUPA_KEY = 'sb_publishable_zEJrmQOnKyRm-Y_NyojaTA_ERrDx4pl';
+var PP_BUCKET   = 'praticien-profil';
+var _ppToken = null;
+var _ppUid   = null;
+function _ppRefreshToken() {
+  try {
+    var raw = localStorage.getItem('sb-sxdobjodxkwexaspepdm-auth-token');
+    if (!raw) return false;
+    var parsed = JSON.parse(raw);
+    var tok = parsed.access_token || (parsed.currentSession && parsed.currentSession.access_token);
+    if (!tok) return false;
+    _ppToken = tok;
+    var pl = JSON.parse(atob(tok.split('.')[1]));
+    _ppUid = pl.sub || null;
+    return true;
+  } catch(e) { return false; }
+}
+
+var _PP_ASSET_MAP = { logo: 'presc-doc-logo-img', signature: 'presc-doc-sig-img', tampon: 'presc-doc-tampon-img' };
+var _PP_EXT_MAP   = { logo: 'logoExt', signature: 'sigExt', tampon: 'tamponExt' };
+
+function _updatePrescAssets(profile) {
+  // Chaque image du praticien est privée (bucket non public, risque de contrefaçon pour
+  // une signature/tampon exposés) — on récupère systématiquement une URL signée à la volée.
+  profile = profile || {};
+  Object.keys(_PP_ASSET_MAP).forEach(function(type) {
+    var img = document.getElementById(_PP_ASSET_MAP[type]);
+    if (!img) return;
+    var ext = (profile[_PP_EXT_MAP[type]] || '').trim();
+    if (!ext) { img.removeAttribute('src'); img.style.display = 'none'; return; }
+    if (!_ppToken && !_ppRefreshToken()) { img.removeAttribute('src'); img.style.display = 'none'; return; }
+    var path = _ppUid + '/' + type + '.' + ext;
+    fetch(PP_SUPA_URL + '/storage/v1/object/sign/' + PP_BUCKET + '/' + path, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + _ppToken, 'apikey': PP_SUPA_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ expiresIn: 120 })
+    }).then(function(r) {
+      if (!r.ok) throw new Error('signed url http ' + r.status);
+      return r.json();
+    }).then(function(j) {
+      var rel = j.signedURL || '';
+      var url = PP_SUPA_URL + '/storage/v1' + (rel.indexOf('/storage/v1') === 0 ? rel.slice('/storage/v1'.length) : rel);
+      img.src = url;
+      img.style.display = '';
+    }).catch(function(err) {
+      console.error('_updatePrescAssets:', type, err);
+      img.removeAttribute('src'); img.style.display = 'none';
+    });
+  });
 }
 
 function updatePrescDoc() {
@@ -4427,6 +4480,7 @@ window.addEventListener('message', function(e){
   if(e.data && e.data.type==='r4p-profile'){
     try { localStorage.setItem('r4p-profile', JSON.stringify(e.data.profile)); } catch(ex){}
     _updatePrescHeader(e.data.profile || {});
+    _updatePrescAssets(e.data.profile || {});
   }
   if(e.data && e.data.type==='r4p-patient-selected'){
     _crPatientId = e.data.patient ? e.data.patient.id : null;

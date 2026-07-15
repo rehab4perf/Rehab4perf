@@ -61,6 +61,14 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
 .user-meta h2 { font-size:.95rem; font-weight:700; }
 .user-meta p  { font-size:.78rem; color:var(--muted); }
 
+.asset-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:16px; }
+.asset-box { display:flex; flex-direction:column; gap:8px; }
+.asset-label { font-size:.76rem; font-weight:600; }
+.asset-preview { height:80px; border:1px dashed var(--border); border-radius:8px; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.asset-preview img { max-width:100%; max-height:100%; object-fit:contain; }
+.asset-empty { font-size:.72rem; color:var(--muted); }
+.asset-actions { display:flex; gap:6px; flex-wrap:wrap; }
+
 .security-item { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border); }
 .security-item:last-child { border-bottom:none; }
 .security-label { font-size:.82rem; font-weight:600; }
@@ -158,6 +166,40 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
   </div>
 
   <div class="card">
+    <div class="card-title">Logo & signature</div>
+    <p style="font-size:.78rem;color:var(--muted);margin:-6px 0 14px;">Utilisés sur vos prescriptions. Visibles uniquement par vous — jamais partagés avec les autres praticiens.</p>
+    <div class="asset-grid">
+      <div class="asset-box">
+        <div class="asset-label">Logo du cabinet</div>
+        <div class="asset-preview" id="assetPreview-logo"><span class="asset-empty">Aucun logo</span></div>
+        <div class="asset-actions">
+          <input type="file" id="assetFile-logo" accept="image/png,image/jpeg" style="display:none" onchange="_assetFileSelected('logo', this)">
+          <button type="button" class="btn btn-neutral" style="font-size:.76rem;padding:6px 12px;" onclick="document.getElementById('assetFile-logo').click()">Choisir un fichier</button>
+          <button type="button" class="btn btn-danger" style="font-size:.76rem;padding:6px 12px;display:none" id="assetRemoveBtn-logo" onclick="_assetRemove('logo')">Retirer</button>
+        </div>
+      </div>
+      <div class="asset-box">
+        <div class="asset-label">Signature</div>
+        <div class="asset-preview" id="assetPreview-signature"><span class="asset-empty">Aucune signature</span></div>
+        <div class="asset-actions">
+          <input type="file" id="assetFile-signature" accept="image/png,image/jpeg" style="display:none" onchange="_assetFileSelected('signature', this)">
+          <button type="button" class="btn btn-neutral" style="font-size:.76rem;padding:6px 12px;" onclick="document.getElementById('assetFile-signature').click()">Choisir un fichier</button>
+          <button type="button" class="btn btn-danger" style="font-size:.76rem;padding:6px 12px;display:none" id="assetRemoveBtn-signature" onclick="_assetRemove('signature')">Retirer</button>
+        </div>
+      </div>
+      <div class="asset-box">
+        <div class="asset-label">Tampon</div>
+        <div class="asset-preview" id="assetPreview-tampon"><span class="asset-empty">Aucun tampon</span></div>
+        <div class="asset-actions">
+          <input type="file" id="assetFile-tampon" accept="image/png,image/jpeg" style="display:none" onchange="_assetFileSelected('tampon', this)">
+          <button type="button" class="btn btn-neutral" style="font-size:.76rem;padding:6px 12px;" onclick="document.getElementById('assetFile-tampon').click()">Choisir un fichier</button>
+          <button type="button" class="btn btn-danger" style="font-size:.76rem;padding:6px 12px;display:none" id="assetRemoveBtn-tampon" onclick="_assetRemove('tampon')">Retirer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
     <div class="card-title">Sécurité & Session</div>
     <div class="security-item">
       <div><div class="security-label">Authentification</div><div class="security-sub">Email + mot de passe individuel</div></div>
@@ -226,7 +268,10 @@ function showLogin() {
   document.getElementById('accountScreen').style.display = 'none';
 }
 
+var _currentUser = null;
+
 function showAccount(user) {
+  _currentUser = user;
   document.getElementById('loginScreen').style.display  = 'none';
   document.getElementById('accountScreen').style.display = 'block';
 
@@ -248,6 +293,133 @@ function showAccount(user) {
   document.getElementById('fieldCabinet').value    = meta.cabinet    || '';
   document.getElementById('fieldAdresse').value    = meta.adresse    || '';
   document.getElementById('fieldSpecialite').value = meta.specialite || '';
+
+  _ASSET_TYPES.forEach(function(type) { _renderAssetPreview(type, meta[type + 'Ext'] || ''); });
+}
+
+/* ═══ LOGO / SIGNATURE / TAMPON ═══ */
+var _ASSET_TYPES   = ['logo', 'signature', 'tampon'];
+var _ASSET_BUCKET  = 'praticien-profil';
+var _ASSET_MAXSIZE = 3 * 1024 * 1024; // 3 Mo
+
+function _assetPath(uid, type, ext) { return uid + '/' + type + '.' + ext; }
+
+function _assetSignedUrl(uid, type, ext, token) {
+  var path = _assetPath(uid, type, ext);
+  return fetch(SUPA_URL + '/storage/v1/object/sign/' + _ASSET_BUCKET + '/' + path, {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token, 'apikey': SUPA_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ expiresIn: 120 })
+  }).then(function(r) {
+    if (!r.ok) throw new Error('signed url http ' + r.status);
+    return r.json();
+  }).then(function(j) {
+    var rel = j.signedURL || '';
+    return SUPA_URL + '/storage/v1' + (rel.indexOf('/storage/v1') === 0 ? rel.slice('/storage/v1'.length) : rel);
+  });
+}
+
+function _renderAssetPreview(type, ext) {
+  var box = document.getElementById('assetPreview-' + type);
+  var removeBtn = document.getElementById('assetRemoveBtn-' + type);
+  if (!box) return;
+  if (!ext || !_currentUser) {
+    box.innerHTML = '<span class="asset-empty">Aucun' + (type === 'logo' ? ' logo' : (type === 'signature' ? 'e signature' : ' tampon')) + '</span>';
+    if (removeBtn) removeBtn.style.display = 'none';
+    return;
+  }
+  box.innerHTML = '<span class="asset-empty">Chargement…</span>';
+  sb.auth.getSession().then(function(res) {
+    var token = res.data && res.data.session && res.data.session.access_token;
+    if (!token) throw new Error('no session');
+    return _assetSignedUrl(_currentUser.id, type, ext, token);
+  }).then(function(url) {
+    box.innerHTML = '<img src="' + url + '" alt="' + type + '">';
+    if (removeBtn) removeBtn.style.display = 'inline-block';
+  }).catch(function(err) {
+    console.error('_renderAssetPreview:', err);
+    box.innerHTML = '<span class="asset-empty">Erreur d’aperçu</span>';
+    if (removeBtn) removeBtn.style.display = 'inline-block';
+  });
+}
+
+function _buildProfileFromMeta(meta, email) {
+  return {
+    prenom: meta.prenom || '', nom: meta.nom || '', am: meta.am || '', tel: meta.tel || '',
+    cabinet: meta.cabinet || '', adresse: meta.adresse || '', specialite: meta.specialite || '', email: email || '',
+    logoExt: meta.logoExt || '', sigExt: meta.sigExt || '', tamponExt: meta.tamponExt || ''
+  };
+}
+
+function _assetFileSelected(type, inputEl) {
+  var file = inputEl.files && inputEl.files[0];
+  inputEl.value = '';
+  if (!file || !_currentUser) return;
+  if (file.size > _ASSET_MAXSIZE) { alert('Fichier trop volumineux (3 Mo max).'); return; }
+  var ext = (file.type === 'image/png') ? 'png' : ((file.type === 'image/jpeg') ? 'jpg' : null);
+  if (!ext) { alert('Formats acceptés : PNG ou JPEG.'); return; }
+
+  var extField = type === 'logo' ? 'logoExt' : (type === 'signature' ? 'sigExt' : 'tamponExt');
+  var uid = _currentUser.id;
+
+  sb.auth.getSession().then(function(res) {
+    var token = res.data && res.data.session && res.data.session.access_token;
+    if (!token) throw new Error('no session');
+    var path = _assetPath(uid, type, ext);
+    return fetch(SUPA_URL + '/storage/v1/object/' + _ASSET_BUCKET + '/' + path, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token, 'apikey': SUPA_KEY, 'Content-Type': file.type, 'x-upsert': 'true' },
+      body: file
+    });
+  }).then(function(r) {
+    if (!r.ok) return r.text().then(function(t) { throw new Error('upload http ' + r.status + ' ' + t); });
+    var data = {}; data[extField] = ext;
+    return sb.auth.updateUser({ data: data });
+  }).then(function(res) {
+    if (res.error) throw res.error;
+    var user = res.data.user;
+    _currentUser = user;
+    var profile = _buildProfileFromMeta(user.user_metadata || {}, user.email);
+    try { localStorage.setItem('r4p-cached-profile', JSON.stringify(profile)); localStorage.setItem('r4p-profile', JSON.stringify(profile)); } catch(e) {}
+    notifyParent(profile);
+    _renderAssetPreview(type, ext);
+  }).catch(function(err) {
+    console.error('_assetFileSelected:', err);
+    alert('Échec de l’envoi du fichier.');
+  });
+}
+
+function _assetRemove(type) {
+  if (!_currentUser) return;
+  var meta = _currentUser.user_metadata || {};
+  var ext = meta[type === 'logo' ? 'logoExt' : (type === 'signature' ? 'sigExt' : 'tamponExt')];
+  if (!ext) return;
+  var extField = type === 'logo' ? 'logoExt' : (type === 'signature' ? 'sigExt' : 'tamponExt');
+  var uid = _currentUser.id;
+  var path = _assetPath(uid, type, ext);
+
+  sb.auth.getSession().then(function(res) {
+    var token = res.data && res.data.session && res.data.session.access_token;
+    if (!token) throw new Error('no session');
+    return fetch(SUPA_URL + '/storage/v1/object/' + _ASSET_BUCKET + '/' + path, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + token, 'apikey': SUPA_KEY }
+    });
+  }).then(function() {
+    var data = {}; data[extField] = '';
+    return sb.auth.updateUser({ data: data });
+  }).then(function(res) {
+    if (res.error) throw res.error;
+    var user = res.data.user;
+    _currentUser = user;
+    var profile = _buildProfileFromMeta(user.user_metadata || {}, user.email);
+    try { localStorage.setItem('r4p-cached-profile', JSON.stringify(profile)); localStorage.setItem('r4p-profile', JSON.stringify(profile)); } catch(e) {}
+    notifyParent(profile);
+    _renderAssetPreview(type, '');
+  }).catch(function(err) {
+    console.error('_assetRemove:', err);
+    alert('Échec de la suppression.');
+  });
 }
 
 /* ═══ ACTIONS ═══ */
@@ -278,8 +450,7 @@ function saveProfile() {
     .then(function(res) {
       if (res.error) throw res.error;
       var user    = res.data.user;
-      var meta    = user.user_metadata || {};
-      var profile = { prenom:meta.prenom||'', nom:meta.nom||'', am:meta.am||'', tel:meta.tel||'', cabinet:meta.cabinet||'', adresse:meta.adresse||'', specialite:meta.specialite||'', email:user.email||'' };
+      var profile = _buildProfileFromMeta(user.user_metadata || {}, user.email);
       try { localStorage.setItem('r4p-cached-profile', JSON.stringify(profile)); localStorage.setItem('r4p-profile', JSON.stringify(profile)); } catch(e) {}
       showAccount(user);
       notifyParent(profile);
