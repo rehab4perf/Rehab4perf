@@ -589,6 +589,55 @@ function _getMonday(d){
 
 function escH(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
+/* ── Strava : mêmes helpers que le builder praticien (prog-main.js) ── */
+function _fmtPace(secPerKm){
+  if(!secPerKm || !isFinite(secPerKm)) return null;
+  var m = Math.floor(secPerKm/60), s = Math.round(secPerKm%60);
+  if(s === 60){ m++; s = 0; }
+  return m + "'" + String(s).padStart(2,'0');
+}
+function _decodePolyline(str){
+  var pts=[], index=0, lat=0, lng=0;
+  while(index < str.length){
+    var b, shift=0, result=0;
+    do { b = str.charCodeAt(index++)-63; result |= (b & 0x1f) << shift; shift += 5; } while(b >= 0x20);
+    lat += (result & 1) ? ~(result >> 1) : (result >> 1);
+    shift=0; result=0;
+    do { b = str.charCodeAt(index++)-63; result |= (b & 0x1f) << shift; shift += 5; } while(b >= 0x20);
+    lng += (result & 1) ? ~(result >> 1) : (result >> 1);
+    pts.push([lat/1e5, lng/1e5]);
+  }
+  return pts;
+}
+function _polylineToSvg(encoded, w, h){
+  try {
+    var pts = _decodePolyline(encoded);
+    if(pts.length < 2) return '';
+    var minLat=Infinity,maxLat=-Infinity,minLng=Infinity,maxLng=-Infinity;
+    pts.forEach(function(p){
+      if(p[0]<minLat)minLat=p[0]; if(p[0]>maxLat)maxLat=p[0];
+      if(p[1]<minLng)minLng=p[1]; if(p[1]>maxLng)maxLng=p[1];
+    });
+    var latR = Math.max(maxLat-minLat, 1e-6), lngR = Math.max(maxLng-minLng, 1e-6);
+    var lngScale = Math.cos((minLat+maxLat)/2 * Math.PI/180);
+    var effW = lngR * lngScale, effH = latR;
+    var scale = Math.min((w-12)/effW, (h-12)/effH);
+    var offX = (w - effW*scale)/2, offY = (h - effH*scale)/2;
+    var step = Math.max(1, Math.floor(pts.length/160));
+    var d = '';
+    for(var i=0; i<pts.length; i+=step){
+      var x = offX + (pts[i][1]-minLng)*lngScale*scale;
+      var y = offY + (maxLat-pts[i][0])*scale;
+      d += (d?' L ':'M ') + x.toFixed(1) + ',' + y.toFixed(1);
+    }
+    var first = pts[0], sx = offX+(first[1]-minLng)*lngScale*scale, sy = offY+(maxLat-first[0])*scale;
+    return '<svg viewBox="0 0 '+w+' '+h+'" width="'+w+'" height="'+h+'">'
+      + '<path d="'+d+'" fill="none" stroke="#FC4C02" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>'
+      + '<circle cx="'+sx.toFixed(1)+'" cy="'+sy.toFixed(1)+'" r="4" fill="#22c55e"/>'
+      + '</svg>';
+  } catch(e){ return ''; }
+}
+
 function fmtDate(d){
   if(!d) return '';
   var p = d.split('-');
@@ -708,7 +757,7 @@ function renderCalendar(){
       headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
     }).then(function(r){ return r.json(); }),
     fetch(SUPA_URL + '/rest/v1/strava_activities?patient_id=eq.' + _patientId
-        + '&select=strava_id,date,type,nom,distance_m,duree_s,charge&order=date.asc', {
+        + '&select=strava_id,date,type,nom,distance_m,duree_s,charge,donnees&order=date.asc', {
       headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
     }).then(function(r){ return r.json(); }).catch(function(){ return []; })
   ];
@@ -1236,19 +1285,70 @@ function _buildDayHtml(){
     var tmap={Run:'🏃',Ride:'🚴',Swim:'🏊',Walk:'🚶',WeightTraining:'💪',Hike:'🥾',TrailRun:'🏔️',VirtualRide:'🚴',Rowing:'🚣'};
     dayStrava.filter(function(a){ return !dayUsedStravas[a.strava_id]; }).forEach(function(act){
       var emoji = tmap[act.type]||'⚡';
+      var d     = act.donnees || {};
       var dist  = act.distance_m>0 ? (act.distance_m>=1000?(act.distance_m/1000).toFixed(2)+' km':act.distance_m+' m') : null;
       var dur   = act.duree_s>0 ? (Math.floor(act.duree_s/3600)>0?Math.floor(act.duree_s/3600)+'h ':'')+Math.round((act.duree_s%3600)/60)+'min' : null;
       var typeLabel = {Run:'Course',Ride:'Vélo',Swim:'Natation',Walk:'Marche',WeightTraining:'Musculation',Hike:'Randonnée',TrailRun:'Trail',VirtualRide:'Vélo virtuel',Rowing:'Aviron'}[act.type]||act.type||'Activité';
+      var pace = (act.distance_m > 100 && act.duree_s) ? _fmtPace(act.duree_s/(act.distance_m/1000)) : null;
+      var runLike = ['Run','TrailRun','Walk','Hike'].indexOf(act.type) !== -1;
+      var pills = [
+        ['DISTANCE', dist],
+        ['DURÉE', dur],
+        ['TYPE', escH(typeLabel)],
+        (runLike && pace) ? ['ALLURE MOY.', pace+'/km'] : (d.avg_speed ? ['VITESSE MOY.', (d.avg_speed*3.6).toFixed(1)+' km/h'] : null),
+        d.avg_hr ? ['FC MOY.', Math.round(d.avg_hr)+' bpm'] : null,
+        d.max_hr ? ['FC MAX', Math.round(d.max_hr)+' bpm'] : null,
+        d.elevation ? ['D+', Math.round(d.elevation)+' m'] : null,
+        d.cadence ? ['CADENCE', Math.round(d.cadence*2)] : null,
+        act.charge ? ['CHARGE', '⚡ '+act.charge+' UA'] : null
+      ].filter(Boolean);
+      var pillsHtml = pills.map(function(p){
+        var color = (p[0]==='CHARGE') ? '#FC4C02' : '#1A1917';
+        return '<div style="font-size:.82rem;"><span style="color:#9D6050;font-size:.7rem;font-weight:700;letter-spacing:.04em;display:block;">'+p[0]+'</span><span style="font-weight:700;color:'+color+';">'+p[1]+'</span></div>';
+      }).join('');
+      // Allures par kilomètre
+      var splitsHtml = '';
+      if(Array.isArray(d.splits) && d.splits.length > 1){
+        var paces = d.splits.map(function(s){ return (s.d > 0 && s.t > 0) ? s.t/(s.d/1000) : null; });
+        var fullPaces = paces.filter(function(p,i){ return p && d.splits[i].d >= 500; });
+        if(fullPaces.length >= 2){
+          var minP = Math.min.apply(null, fullPaces), maxP = Math.max.apply(null, fullPaces);
+          var range = Math.max(maxP-minP, 1);
+          var bars = d.splits.map(function(s, i){
+            var p = paces[i];
+            if(!p) return '';
+            var partial = s.d < 500;
+            // Hauteur en pixels absolus, pas en % : le conteneur immédiat de la barre
+            // (colonne flex à hauteur auto) ne fournit aucune hauteur de référence pour
+            // un height:XX%, qui serait alors ignoré par le navigateur (barre invisible).
+            var barPx = 12 + Math.round((1 - (p-minP)/range) * 34);
+            var kmLbl = partial ? (s.d/1000).toFixed(1).replace('.',',') : String(i+1);
+            return '<div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;flex:1;height:60px;">'
+              + '<span style="font-size:.62rem;color:#9D6050;">'+_fmtPace(p)+'</span>'
+              + '<div style="width:70%;background:#FC4C02;border-radius:3px 3px 0 0;height:'+barPx+'px'+(partial?';opacity:.4':'')+'"></div>'
+              + '<span style="font-size:.62rem;color:#9D6050;">'+kmLbl+'</span></div>';
+          }).join('');
+          splitsHtml = '<div style="margin-top:10px;"><div style="font-size:.7rem;font-weight:700;color:#9D6050;letter-spacing:.04em;margin-bottom:6px;">ALLURE PAR KILOMÈTRE</div>'
+            + '<div style="display:flex;align-items:flex-end;gap:3px;">'+bars+'</div></div>';
+        }
+      }
+      // Parcours
+      var routeHtml = '';
+      if(d.polyline){
+        var svg = _polylineToSvg(d.polyline, 120, 90);
+        if(svg) routeHtml = '<div style="flex-shrink:0;">'+svg+'<div style="font-size:.62rem;color:#9D6050;text-align:center;margin-top:2px;">Parcours</div></div>';
+      }
       html += '<div style="background:#FFF3EE;border:2px solid #FC4C02;border-radius:12px;padding:16px;margin-bottom:10px;">'
             + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">'
             + '<svg width="16" height="16" viewBox="0 0 24 24" fill="#FC4C02"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>'
             + '<div style="font-size:1rem;font-weight:700;color:#FC4C02;flex:1;">'+emoji+' '+escH(act.nom||typeLabel)+'</div>'
             + '</div>'
-            + '<div style="display:flex;gap:16px;flex-wrap:wrap;">'
-            + (dist?'<div style="font-size:.82rem;"><span style="color:#9D6050;font-size:.7rem;font-weight:700;letter-spacing:.04em;display:block;">DISTANCE</span><span style="font-weight:700;color:#1A1917;">'+dist+'</span></div>':'')
-            + (dur?'<div style="font-size:.82rem;"><span style="color:#9D6050;font-size:.7rem;font-weight:700;letter-spacing:.04em;display:block;">DURÉE</span><span style="font-weight:700;color:#1A1917;">'+dur+'</span></div>':'')
-            + '<div style="font-size:.82rem;"><span style="color:#9D6050;font-size:.7rem;font-weight:700;letter-spacing:.04em;display:block;">TYPE</span><span style="font-weight:700;color:#1A1917;">'+escH(typeLabel)+'</span></div>'
-            + (act.charge?'<div style="font-size:.82rem;"><span style="color:#9D6050;font-size:.7rem;font-weight:700;letter-spacing:.04em;display:block;">CHARGE</span><span style="font-weight:700;color:#FC4C02;">⚡ '+act.charge+' UA</span></div>':'')
+            + '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">'
+            + (routeHtml ? routeHtml : '')
+            + '<div style="flex:1;min-width:180px;">'
+            + '<div style="display:flex;gap:16px;flex-wrap:wrap;">'+pillsHtml+'</div>'
+            + splitsHtml
+            + '</div>'
             + '</div>'
             + '</div>';
     });
