@@ -364,9 +364,11 @@ iframe.active { display:block; }
 }
 .ob-overlay.open { display:flex; }
 .ob-card {
-  width:100%; max-width:620px; min-height:420px; background:#fff; border-radius:14px;
+  width:100%; max-width:760px; min-height:500px; background:#fff; border-radius:16px;
   display:flex; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.35); position:relative;
 }
+.ob-overlay.spotlight { background:rgba(10,20,35,.62); }
+.ob-overlay.spotlight .ob-card { display:none; }
 .ob-close {
   position:absolute; top:12px; right:14px; z-index:2; width:28px; height:28px;
   border-radius:50%; border:none; background:rgba(0,0,0,.06); color:#6b7a8d;
@@ -374,7 +376,7 @@ iframe.active { display:block; }
 }
 .ob-close:hover { background:rgba(0,0,0,.12); color:#1a2433; }
 .ob-side {
-  width:190px; flex-shrink:0; background:#1A3A5C; color:#fff; padding:24px 18px;
+  width:216px; flex-shrink:0; background:#1A3A5C; color:#fff; padding:30px 22px;
 }
 .ob-side-logo { font-family:'Cormorant Garamond',serif; font-style:italic; font-size:17px; margin-bottom:26px; }
 .ob-side-logo sup { color:#7FA8D9; font-size:.5em; }
@@ -389,21 +391,21 @@ iframe.active { display:block; }
 }
 .ob-step.current .ob-step-dot { background:#4A90D9; }
 .ob-step.done .ob-step-dot { background:#2D7D46; }
-.ob-body { flex:1; padding:28px 30px 22px; display:flex; flex-direction:column; }
-.ob-progress { height:4px; background:#eef1f5; border-radius:2px; margin-bottom:20px; }
-.ob-progress-bar { height:100%; background:#2B5FA6; border-radius:2px; transition:width .25s; }
+.ob-body { flex:1; padding:34px 40px 28px; display:flex; flex-direction:column; }
+.ob-progress { height:5px; background:#eef1f5; border-radius:3px; margin-bottom:24px; }
+.ob-progress-bar { height:100%; background:#2B5FA6; border-radius:3px; transition:width .25s; }
 .ob-panel { display:none; flex:1; flex-direction:column; }
 .ob-panel.active { display:flex; }
-.ob-title { font-size:1.05rem; font-weight:700; color:#1A3A5C; margin-bottom:6px; }
-.ob-subtitle { font-size:.8rem; color:#6b7a8d; line-height:1.55; margin-bottom:18px; }
+.ob-title { font-size:1.25rem; font-weight:700; color:#1A3A5C; margin-bottom:7px; }
+.ob-subtitle { font-size:.86rem; color:#6b7a8d; line-height:1.6; margin-bottom:22px; }
 .ob-welcome { text-align:center; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; }
 .ob-welcome-logo { margin-bottom:16px; }
-.ob-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:11px; }
+.ob-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
 .ob-form-grid.full { grid-column:1/-1; }
-.ob-field { display:flex; flex-direction:column; gap:4px; }
+.ob-field { display:flex; flex-direction:column; gap:5px; }
 .ob-field.full { grid-column:1/-1; }
-.ob-field label { font-size:.7rem; font-weight:600; color:#6b7a8d; letter-spacing:.03em; text-transform:uppercase; }
-.ob-field input { padding:8px 10px; border:1px solid #dde3ec; border-radius:6px; font-size:.85rem; font-family:inherit; background:#FAFBFD; }
+.ob-field label { font-size:.72rem; font-weight:600; color:#6b7a8d; letter-spacing:.03em; text-transform:uppercase; }
+.ob-field input { padding:9px 11px; border:1px solid #dde3ec; border-radius:7px; font-size:.88rem; font-family:inherit; background:#FAFBFD; }
 .ob-field input:focus { outline:none; border-color:#4A90D9; background:#fff; }
 .ob-actions { margin-top:auto; padding-top:18px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
 .ob-skip { font-size:.8rem; color:#9aa7b5; background:none; border:none; cursor:pointer; font-family:inherit; }
@@ -431,11 +433,33 @@ iframe.active { display:block; }
   box-shadow:0 0 0 3px rgba(74,144,217,.4);
 }
 .ob-finish-illus span.txt { font-size:.76rem; color:rgba(255,255,255,.85); }
+
+/* Mode projecteur (dernière étape) : surligne le vrai bouton d'aide */
+@keyframes obHalo { 0%{transform:scale(.85);opacity:.85} 70%{opacity:0} 100%{transform:scale(2.4);opacity:0} }
+@keyframes obGlowReal { 0%,100%{box-shadow:0 0 0 0 rgba(74,144,217,.55)} 50%{box-shadow:0 0 0 9px rgba(74,144,217,0)} }
+.ob-spot { display:none; position:fixed; z-index:20001; }
+.ob-overlay.spotlight .ob-spot { display:block; }
+.ob-spot-ring { position:absolute; inset:-5px; border:2.5px solid #4A90D9; border-radius:11px; animation:obHalo 1.6s ease-out infinite; pointer-events:none; }
+.ob-spot-q {
+  position:absolute; inset:0; border-radius:8px; background:#4A90D9; color:#fff;
+  display:flex; align-items:center; justify-content:center; font-weight:700; font-size:1.05rem;
+  box-shadow:0 0 0 4px rgba(74,144,217,.4);
+}
+.ob-spot-callout {
+  position:absolute; top:calc(100% + 16px); right:0; width:250px; background:#fff;
+  border-radius:11px; padding:15px 17px; box-shadow:0 14px 40px rgba(0,0,0,.35);
+}
+.ob-spot-callout::before { content:''; position:absolute; top:-7px; right:15px; width:14px; height:14px; background:#fff; transform:rotate(45deg); }
+.ob-spot-txt { font-size:.84rem; color:#1a2433; line-height:1.55; margin-bottom:13px; }
+.ob-spot-callout .ob-btn-primary { width:100%; }
+.help-btn.ob-glow { animation:obGlowReal 1.3s ease-in-out 3; }
+
 @media (max-width:600px) {
   .ob-side { display:none; }
   .ob-card { max-width:100%; }
   .ob-body { padding:24px 18px 18px; }
   .ob-form-grid { grid-template-columns:1fr; }
+  .ob-spot-callout { width:210px; }
 }
 
 </style>
@@ -523,6 +547,14 @@ iframe.active { display:block; }
           <button class="ob-btn-primary" onclick="_obFinish()">Terminer</button>
         </div>
       </div>
+    </div>
+  </div>
+  <div class="ob-spot" id="obSpot">
+    <div class="ob-spot-ring"></div>
+    <div class="ob-spot-q">?</div>
+    <div class="ob-spot-callout">
+      <div class="ob-spot-txt">Votre aide est ici. En cas de besoin, un tutoriel complet est disponible à tout moment.</div>
+      <button class="ob-btn-primary" onclick="_obFinish()">Terminer</button>
     </div>
   </div>
 </div>
@@ -833,6 +865,17 @@ function _obOpen(user) {
   _obRender();
   document.getElementById('obOverlay').classList.add('open');
 }
+var _obResizeHandler = null;
+function _obPositionSpot() {
+  var btn = document.getElementById('helpBtn');
+  var spot = document.getElementById('obSpot');
+  if (!btn || !spot) return;
+  var r = btn.getBoundingClientRect();
+  spot.style.left   = r.left   + 'px';
+  spot.style.top    = r.top    + 'px';
+  spot.style.width  = r.width  + 'px';
+  spot.style.height = r.height + 'px';
+}
 function _obRender() {
   document.querySelectorAll('.ob-panel').forEach(function(p){ p.classList.toggle('active', +p.dataset.panel === _obStep); });
   document.querySelectorAll('.ob-step').forEach(function(s){
@@ -842,6 +885,16 @@ function _obRender() {
     s.querySelector('.ob-step-dot').textContent = n < _obStep ? '✓' : n;
   });
   document.getElementById('obProgressBar').style.width = (_obStep / 4 * 100) + '%';
+  // Dernière étape : mode projecteur sur le vrai bouton d'aide
+  var overlay = document.getElementById('obOverlay');
+  if (_obStep === 4) {
+    overlay.classList.add('spotlight');
+    _obPositionSpot();
+    if (!_obResizeHandler) { _obResizeHandler = _obPositionSpot; window.addEventListener('resize', _obResizeHandler); }
+  } else {
+    overlay.classList.remove('spotlight');
+    if (_obResizeHandler) { window.removeEventListener('resize', _obResizeHandler); _obResizeHandler = null; }
+  }
 }
 function _obNext() {
   if (_obStep >= 4) { _obFinish(); return; }
@@ -873,14 +926,22 @@ function _obSaveInfos() {
     alert('Erreur réseau : ' + (err && err.message || err));
   });
 }
+function _obClose() {
+  var overlay = document.getElementById('obOverlay');
+  overlay.classList.remove('open', 'spotlight');
+  if (_obResizeHandler) { window.removeEventListener('resize', _obResizeHandler); _obResizeHandler = null; }
+}
 function _obGoToAccount() {
   _obMarkOnboarded();
-  document.getElementById('obOverlay').classList.remove('open');
+  _obClose();
   show('account');
 }
 function _obFinish() {
   _obMarkOnboarded();
-  document.getElementById('obOverlay').classList.remove('open');
+  _obClose();
+  // Lueur douce ~4 s sur le vrai bouton d'aide : fait le pont avec l'interface
+  var btn = document.getElementById('helpBtn');
+  if (btn) { btn.classList.add('ob-glow'); setTimeout(function(){ btn.classList.remove('ob-glow'); }, 4200); }
 }
 function _obMarkOnboarded() {
   sb.auth.updateUser({ data: { onboarded: true } }).catch(function(){});
