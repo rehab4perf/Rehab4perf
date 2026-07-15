@@ -1650,9 +1650,18 @@ function _showToast(msg, undoFn){
   t._timer = setTimeout(function(){ t.classList.remove('show','has-undo'); }, 4500);
 }
 
+/* ── Nom du patient en clair dans l'URL, pour reconnaître le lien au premier coup d'œil
+   (dans l'historique de partage, un SMS envoyé, etc.) — affichage uniquement, l'identification
+   réelle reste l'id ; athlete.html ignore ce paramètre. ── */
+function _shareNomParam(){
+  if(!_progPatient) return '';
+  var nom = ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim();
+  return nom ? '&nom=' + encodeURIComponent(nom) : '';
+}
+
 /* ── Génère le lien athlete.html?prog=ID ── */
 function _athleteLink(id){
-  return window.location.href.replace(/\/[^/]+$/, '/athlete.html') + '?prog=' + id;
+  return window.location.href.replace(/\/[^/]+$/, '/athlete.html') + '?prog=' + id + _shareNomParam();
 }
 
 function _copyLink(id){

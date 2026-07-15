@@ -3081,7 +3081,7 @@ function _calDuplicateEvent(progId, targetDate){
 // ── Partage du lien calendrier ──
 function shareCalLink() {
   if(!_progPatient){ alert('Sélectionne d\'abord un patient depuis la barre de navigation.'); return; }
-  var base = window.location.href.replace(/\/[^/]+$/, '/athlete.html') + '?patient=' + _progPatient.id;
+  var base = window.location.href.replace(/\/[^/]+$/, '/athlete.html') + '?patient=' + _progPatient.id + _shareNomParam();
   var menu = document.getElementById('share-cal-menu');
   if(!menu){
     menu = document.createElement('div');
@@ -9211,7 +9211,7 @@ function _toolOverlayClick(e){
   shareCalLink = function(){
     if(!_progPatient){ alert('Sélectionne d\'abord un patient depuis la barre de navigation.'); return; }
     var base = window.location.origin + window.location.pathname.replace('programme_v2.html','').replace('programme.html','') + 'athlete.html';
-    var baseLink = base + '?patient=' + _progPatient.id;
+    var baseLink = base + '?patient=' + _progPatient.id + _shareNomParam();
     var menu = document.getElementById('share-cal-menu');
     if(!menu){
       menu = document.createElement('div');
