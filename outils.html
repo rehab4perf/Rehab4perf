@@ -1432,6 +1432,27 @@ function _ppRefreshToken() {
 var _PP_ASSET_MAP = { logo: 'presc-doc-logo-img', signature: 'presc-doc-sig-img', tampon: 'presc-doc-tampon-img' };
 var _PP_EXT_MAP   = { logo: 'logoExt', signature: 'sigExt', tampon: 'tamponExt' };
 
+// expiresIn court pour l'aperçu (renouvelé à chaque arrivée de profil), plus long pour
+// l'impression/export (l'utilisateur peut s'attarder sur le dialog natif d'impression).
+function _ppFetchSignedUrl(type, ext, expiresIn) {
+  if (!_ppToken && !_ppRefreshToken()) return Promise.resolve(null);
+  var path = _ppUid + '/' + type + '.' + ext;
+  return fetch(PP_SUPA_URL + '/storage/v1/object/sign/' + PP_BUCKET + '/' + path, {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + _ppToken, 'apikey': PP_SUPA_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ expiresIn: expiresIn })
+  }).then(function(r) {
+    if (!r.ok) throw new Error('signed url http ' + r.status);
+    return r.json();
+  }).then(function(j) {
+    var rel = j.signedURL || '';
+    return PP_SUPA_URL + '/storage/v1' + (rel.indexOf('/storage/v1') === 0 ? rel.slice('/storage/v1'.length) : rel);
+  }).catch(function(err) {
+    console.error('_ppFetchSignedUrl:', type, err);
+    return null;
+  });
+}
+
 function _updatePrescAssets(profile) {
   // Chaque image du praticien est privée (bucket non public, risque de contrefaçon pour
   // une signature/tampon exposés) — on récupère systématiquement une URL signée à la volée.
@@ -1441,23 +1462,10 @@ function _updatePrescAssets(profile) {
     if (!img) return;
     var ext = (profile[_PP_EXT_MAP[type]] || '').trim();
     if (!ext) { img.removeAttribute('src'); img.style.display = 'none'; return; }
-    if (!_ppToken && !_ppRefreshToken()) { img.removeAttribute('src'); img.style.display = 'none'; return; }
-    var path = _ppUid + '/' + type + '.' + ext;
-    fetch(PP_SUPA_URL + '/storage/v1/object/sign/' + PP_BUCKET + '/' + path, {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + _ppToken, 'apikey': PP_SUPA_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ expiresIn: 120 })
-    }).then(function(r) {
-      if (!r.ok) throw new Error('signed url http ' + r.status);
-      return r.json();
-    }).then(function(j) {
-      var rel = j.signedURL || '';
-      var url = PP_SUPA_URL + '/storage/v1' + (rel.indexOf('/storage/v1') === 0 ? rel.slice('/storage/v1'.length) : rel);
+    _ppFetchSignedUrl(type, ext, 120).then(function(url) {
+      if (!url) { img.removeAttribute('src'); img.style.display = 'none'; return; }
       img.src = url;
       img.style.display = '';
-    }).catch(function(err) {
-      console.error('_updatePrescAssets:', type, err);
-      img.removeAttribute('src'); img.style.display = 'none';
     });
   });
 }
@@ -1519,23 +1527,34 @@ function printPrescription() {
   var headerLeftHtml  = (document.getElementById('presc-doc-praticien')||{}).innerHTML || '';
   var headerRightHtml = (document.getElementById('presc-doc-cabinet')  ||{}).innerHTML || '';
 
-  // getAttribute('src'), pas .src : un <img src=""> résout .src vers l'URL de la page
-  // elle-même, ce qui casserait le test "image présente ou non".
-  var logoSrc   = (document.getElementById('presc-doc-logo-img')  || {}).getAttribute && document.getElementById('presc-doc-logo-img').getAttribute('src');
-  var sigSrc    = (document.getElementById('presc-doc-sig-img')   || {}).getAttribute && document.getElementById('presc-doc-sig-img').getAttribute('src');
-  var tamponSrc = (document.getElementById('presc-doc-tampon-img')|| {}).getAttribute && document.getElementById('presc-doc-tampon-img').getAttribute('src');
-  var logosHtml = logoSrc ? '<div class="pp-logos"><img src="' + logoSrc + '" alt="Logo cabinet"></div>' : '';
-  var sigImgHtml    = sigSrc    ? '<img class="pp-sig-img" src="' + sigSrc + '" alt="Signature">' : '';
-  var tamponImgHtml = tamponSrc ? '<img class="pp-tampon" src="' + tamponSrc + '" alt="Tampon">' : '';
-  var sigRowHtml = (sigSrc || tamponSrc)
-    ? '<div class="pp-sig-label">Signature du praticien</div>\n<div class="pp-sig-row">\n  <div>' + sigImgHtml + '</div>\n  <div>' + tamponImgHtml + '</div>\n</div>'
-    : '';
-
-  // Ouvre une fenêtre dédiée pleine largeur → dialog natif impression/partage (AirDrop, WhatsApp, Mail…)
+  // Ouvre la fenêtre tout de suite, de façon synchrone (sinon le bloqueur de popups
+  // l'empêche une fois qu'on est passé par un .then()).
   var win = window.open('', '_blank', 'width=850,height=1100');
-  win.document.open();
-  win.document.write('<!DOCTYPE html>\n<html lang="fr"><head>\n<meta charset="UTF-8">\n<title>Prescription ' + nom + ' ' + pren + '</title>\n<style>\n*{margin:0;padding:0;box-sizing:border-box;}\n@page{size:A4 portrait;margin:28mm 24mm;}\nbody{font-family:\'Helvetica Neue\',Helvetica,Arial,sans-serif;color:#111;line-height:1.55;}\n.pp-header{display:flex;justify-content:space-between;margin-bottom:22pt;}\n.pp-header-left{font-size:9pt;}\n.pp-header-right{font-size:9pt;text-align:right;}\n.pp-header strong{font-size:10pt;}\n.pp-date{font-size:9.5pt;margin-bottom:22pt;}\n.pp-title{text-align:center;font-size:11pt;font-weight:700;text-decoration:underline;margin-bottom:20pt;letter-spacing:.03em;}\n.pp-patient-label{font-size:9.5pt;font-weight:700;text-decoration:underline;margin-bottom:6pt;}\n.pp-patient-name{font-size:10pt;font-weight:700;margin-bottom:26pt;}\n.pp-objet{text-align:center;font-size:12pt;font-weight:700;margin-bottom:26pt;line-height:1.4;}\n.pp-logos{display:flex;justify-content:center;margin-bottom:22pt;}\n.pp-logos img{max-height:90pt;object-fit:contain;}\n.pp-sig-label{font-size:9pt;text-decoration:underline;margin-bottom:4pt;}\n.pp-sig-row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:6pt;}\n.pp-sig-img{max-height:60pt;margin-top:3pt;}\n.pp-tampon{max-height:68pt;}\n</style>\n</head><body>\n<div class="pp-header">\n  <div class="pp-header-left">' + headerLeftHtml + '</div>\n  <div class="pp-header-right">' + headerRightHtml + '</div>\n</div>\n<div class="pp-date">Paris, le ' + dateStr + '</div>\n<div class="pp-title">PRESCRIPTION</div>\n<div class="pp-patient-label">PATIENT :</div>\n<div class="pp-patient-name">' + patStr + '</div>\n<div class="pp-objet">' + obj + '</div>\n' + logosHtml + '\n' + sigRowHtml + '\n<script>window.addEventListener(\'load\',function(){window.print();});<\/script>\n</body></html>');
-  win.document.close();
+  win.document.write('Préparation du document…');
+
+  // L'URL signée affichée dans l'aperçu (120s) a de bonnes chances d'avoir expiré au
+  // moment où le praticien clique sur Imprimer — on en régénère des fraîches, valables
+  // le temps de gérer le dialog natif d'impression/export.
+  var profile = {};
+  try { profile = JSON.parse(localStorage.getItem('r4p-profile') || '{}'); } catch(e) {}
+  var assetPromises = Object.keys(_PP_ASSET_MAP).map(function(type) {
+    var ext = (profile[_PP_EXT_MAP[type]] || '').trim();
+    return ext ? _ppFetchSignedUrl(type, ext, 600) : Promise.resolve(null);
+  });
+
+  Promise.all(assetPromises).then(function(urls) {
+    var logoSrc = urls[0], sigSrc = urls[1], tamponSrc = urls[2];
+    var logosHtml = logoSrc ? '<div class="pp-logos"><img src="' + logoSrc + '" alt="Logo cabinet"></div>' : '';
+    var sigImgHtml    = sigSrc    ? '<img class="pp-sig-img" src="' + sigSrc + '" alt="Signature">' : '';
+    var tamponImgHtml = tamponSrc ? '<img class="pp-tampon" src="' + tamponSrc + '" alt="Tampon">' : '';
+    var sigRowHtml = (sigSrc || tamponSrc)
+      ? '<div class="pp-sig-label">Signature du praticien</div>\n<div class="pp-sig-row">\n  <div>' + sigImgHtml + '</div>\n  <div>' + tamponImgHtml + '</div>\n</div>'
+      : '';
+
+    win.document.open();
+    win.document.write('<!DOCTYPE html>\n<html lang="fr"><head>\n<meta charset="UTF-8">\n<title>Prescription ' + nom + ' ' + pren + '</title>\n<style>\n*{margin:0;padding:0;box-sizing:border-box;}\n@page{size:A4 portrait;margin:28mm 24mm;}\nbody{font-family:\'Helvetica Neue\',Helvetica,Arial,sans-serif;color:#111;line-height:1.55;}\n.pp-header{display:flex;justify-content:space-between;margin-bottom:22pt;}\n.pp-header-left{font-size:9pt;}\n.pp-header-right{font-size:9pt;text-align:right;}\n.pp-header strong{font-size:10pt;}\n.pp-date{font-size:9.5pt;margin-bottom:22pt;}\n.pp-title{text-align:center;font-size:11pt;font-weight:700;text-decoration:underline;margin-bottom:20pt;letter-spacing:.03em;}\n.pp-patient-label{font-size:9.5pt;font-weight:700;text-decoration:underline;margin-bottom:6pt;}\n.pp-patient-name{font-size:10pt;font-weight:700;margin-bottom:26pt;}\n.pp-objet{text-align:center;font-size:12pt;font-weight:700;margin-bottom:26pt;line-height:1.4;}\n.pp-logos{display:flex;justify-content:center;margin-bottom:22pt;}\n.pp-logos img{max-height:90pt;object-fit:contain;}\n.pp-sig-label{font-size:9pt;text-decoration:underline;margin-bottom:4pt;}\n.pp-sig-row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:6pt;}\n.pp-sig-img{max-height:60pt;margin-top:3pt;}\n.pp-tampon{max-height:68pt;}\n</style>\n</head><body>\n<div class="pp-header">\n  <div class="pp-header-left">' + headerLeftHtml + '</div>\n  <div class="pp-header-right">' + headerRightHtml + '</div>\n</div>\n<div class="pp-date">Paris, le ' + dateStr + '</div>\n<div class="pp-title">PRESCRIPTION</div>\n<div class="pp-patient-label">PATIENT :</div>\n<div class="pp-patient-name">' + patStr + '</div>\n<div class="pp-objet">' + obj + '</div>\n' + logosHtml + '\n' + sigRowHtml + '\n<script>window.addEventListener(\'load\',function(){window.print();});<\/script>\n</body></html>');
+    win.document.close();
+  });
 }
 </script>
 
