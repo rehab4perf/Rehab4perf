@@ -48,9 +48,11 @@ sections: [
       { t:'Ouvrez « Mon compte » (en haut à droite)', x:'La carte « Informations professionnelles » regroupe tous les champs de votre profil.', img:true },
       { t:'Renseignez Prénom et Nom', x:'Ils composent votre nom affiché et la signature reprise en bas des comptes-rendus.' },
       { t:'Renseignez le N° ADELI / AM', x:'Votre numéro d\'identification praticien : il figure sur les courriers destinés au médecin.' },
-      { t:'Ajoutez Téléphone et Cabinet / Structure', x:'Coordonnées reprises dans l\'en-tête / le pied des CR. Le Cabinet est le nom de votre structure (ex. « Athletik Lamarck »).' },
+      { t:'Ajoutez Spécialité, Cabinet / Structure et Adresse', x:'Coordonnées reprises dans l\'en-tête / le pied des CR et sur vos prescriptions. Le Cabinet est le nom de votre structure (ex. « Athletik Lamarck »).' },
+      { t:'Ajoutez Téléphone', x:'Repris lui aussi dans l\'en-tête des documents générés.' },
       { t:'L\'email du compte n\'est pas modifiable ici', x:'Il identifie votre connexion. Il s\'affiche en lecture seule.' },
-      { t:'Cliquez sur « Enregistrer »', x:'Un « ✓ Sauvegardé » confirme. Le profil est synchronisé et diffusé aux onglets Bilan et Outils immédiatement — pas besoin de recharger.' },
+      { t:'Cliquez sur « Enregistrer »', x:'Un « ✓ Sauvegardé » confirme. Le profil est synchronisé et diffusé aux onglets Bilan et Outils immédiatement — pas besoin de recharger. Tant qu\'un champ n\'est pas renseigné, il reste vide sur vos documents (jamais de valeur par défaut empruntée à un autre compte).' },
+      { t:'Logo, signature et tampon', x:'Plus bas, la carte « Logo & signature » propose trois zones d\'upload (PNG, JPEG ou WEBP, 3 Mo max). Une fois ajoutées, ces images apparaissent automatiquement sur vos prescriptions. Elles sont privées : personne d\'autre que vous n\'y a accès, et chaque affichage passe par un lien à durée de vie limitée.', img:true },
       { t:'Modifier le mot de passe', x:'Dans la carte « Sécurité & Session », cliquez sur « Modifier » : un email de réinitialisation vous est envoyé. Le mot de passe ne se change jamais directement dans l\'app.' },
       { t:'Réglages de notifications', x:'Plus bas, la carte « Notifications » regroupe les interrupteurs (pastilles agenda, cloche, notifications navigateur, rappels de notes). Voir la section Notifications pour le détail.' },
       { t:'Se déconnecter', x:'Le bouton « Se déconnecter » en bas ferme votre session sur cet appareil.' }
@@ -287,7 +289,8 @@ sections: [
     intro:'L\'athlète n\'a pas de compte : il accède à son programme par un lien personnel, sur n\'importe quel téléphone.',
     etapes:[
       { t:'Menu ⋯ → « Partager le calendrier »', x:'Deux modes : « Partager au patient » (séances et feedback uniquement) ou « Partager à un kiné » (séances + notes cliniques, pour une prise en charge partagée).', img:true },
-      { t:'Copiez le lien et envoyez-le', x:'SMS, WhatsApp ou email. Le lien reste valable en permanence : pas besoin de le renvoyer à chaque séance.' },
+      { t:'Copiez le lien et envoyez-le', x:'SMS, WhatsApp ou email. Le lien reste valable en permanence : pas besoin de le renvoyer à chaque séance. Le nom du patient est inclus en clair dans le lien copié — pratique pour reconnaître à qui il correspond dans votre historique de conversation, et il s\'affiche aussi en titre dans l\'en-tête de la page que l\'athlète ou le confrère ouvre.' },
+      { t:'Le lien de partage d\'un programme (bouton 📤)', x:'Depuis le builder ou l\'historique des programmes, le bouton 📤 copie de la même façon un lien à sens unique vers ce programme précis, avec le nom du patient inclus.' },
       { t:'Conseillez à l\'athlète de l\'ajouter à son écran d\'accueil', x:'Il retrouvera son calendrier comme une application.' }
     ]},
   { id:'vue-athlete', titre:'Ce que voit l\'athlète',
