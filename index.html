@@ -1118,6 +1118,13 @@ window.addEventListener('message', function(e) {
     propagateToBilan(profile);
   }
 
+  // account.html demande à revenir à la vue principale (bouton « ← Retour ») :
+  // premier onglet visible, ou Programme par défaut si tous masqués (plan performance).
+  if (e.data.type === 'r4p-account-back') {
+    var _visibleTab = Array.prototype.find.call(document.querySelectorAll('.tab'), function(t){ return t.style.display !== 'none'; });
+    show(_visibleTab ? _visibleTab.id.replace('tab-', '') : 'prescription');
+  }
+
   // bilan.html a annulé le changement de patient (données non sauvegardées)
   if (e.data.type === 'r4p-cancel-patient-switch') {
     // bilan.html envoie patientId = l'id du patient qu'il affiche encore (source de vérité)

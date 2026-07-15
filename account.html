@@ -31,6 +31,8 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
 .page-header { margin-bottom:20px; }
 .page-header h1 { font-size:1.1rem; font-weight:700; color:var(--navy); margin-bottom:2px; }
 .page-header p  { font-size:.8rem; color:var(--muted); }
+.back-btn { display:inline-flex; align-items:center; gap:6px; background:none; border:1px solid var(--border); color:var(--text); font-size:.8rem; font-weight:600; padding:7px 14px; border-radius:7px; cursor:pointer; font-family:inherit; margin-bottom:16px; }
+.back-btn:hover { background:#f5f7fa; border-color:var(--accent2); color:var(--accent); }
 
 .card { background:var(--surface); border-radius:10px; border:1px solid var(--border); padding:20px; margin-bottom:16px; }
 .card-title { font-size:.72rem; font-weight:700; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; margin-bottom:14px; }
@@ -110,6 +112,7 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
 </div>
 
 <div class="account-screen" id="accountScreen">
+  <button class="back-btn" id="accountBackBtn" onclick="goBack()">← Retour</button>
   <div class="page-header">
     <h1>Mon compte</h1>
     <p>Vos informations professionnelles</p>
@@ -429,6 +432,10 @@ function _assetRemove(type) {
 
 /* ═══ ACTIONS ═══ */
 function goToAuth() { window.parent.location.replace('auth.html'); }
+
+/* Retour vers la vue principale (utile quand les onglets du haut sont masqués
+   par le plan) — le parent choisit l'onglet par défaut. */
+function goBack() { window.parent.postMessage({ type:'r4p-account-back' }, '*'); }
 
 function notifyParent(profile) {
   window.parent.postMessage({ type:'r4p-profile-updated', profile:profile }, '*');
