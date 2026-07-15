@@ -153,7 +153,8 @@ sections: [
       { t:'Recherchez ou filtrez', x:'Par nom, par objectif (mobilité, renfo…) ou par articulation.' },
       { t:'Cliquez sur ★ pour marquer un favori', x:'Le filtre « Favoris » ne montre alors que votre sélection.' },
       { t:'Cliquez sur + pour ajouter au bloc', x:'L\'exercice rejoint le bloc choisi dans « Ajouter au bloc » (par défaut, le dernier).', img:true },
-      { t:'« Éditer la bibliothèque » pour vos propres exercices', x:'Ajoutez un exercice avec son lien vidéo YouTube : la vignette apparaîtra côté athlète.' }
+      { t:'« 🔒 Ajouter mon exercice » pour un exercice personnel', x:'Nom, objectif (warm-up/mobilité, renforcement, auto-massage), zone/articulation et lien vidéo YouTube (optionnel). Il rejoint immédiatement la bibliothèque, mais reste visible par vous seul, sur toutes vos séances — jamais par les autres praticiens.', img:true },
+      { t:'« Éditer la bibliothèque » : réservé à l\'administrateur', x:'Ce bouton (visible seulement sur le compte admin) gère la bibliothèque commune, partagée par tous les praticiens.' }
     ]},
   { id:'builder', titre:'Construire une séance',
     intro:'Le builder assemble des blocs d\'exercices avec tous les paramètres d\'entraînement.',
