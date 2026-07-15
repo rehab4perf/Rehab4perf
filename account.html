@@ -173,7 +173,7 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
         <div class="asset-label">Logo du cabinet</div>
         <div class="asset-preview" id="assetPreview-logo"><span class="asset-empty">Aucun logo</span></div>
         <div class="asset-actions">
-          <input type="file" id="assetFile-logo" accept="image/png,image/jpeg" style="display:none" onchange="_assetFileSelected('logo', this)">
+          <input type="file" id="assetFile-logo" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="_assetFileSelected('logo', this)">
           <button type="button" class="btn btn-neutral" style="font-size:.76rem;padding:6px 12px;" onclick="document.getElementById('assetFile-logo').click()">Choisir un fichier</button>
           <button type="button" class="btn btn-danger" style="font-size:.76rem;padding:6px 12px;display:none" id="assetRemoveBtn-logo" onclick="_assetRemove('logo')">Retirer</button>
         </div>
@@ -182,7 +182,7 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
         <div class="asset-label">Signature</div>
         <div class="asset-preview" id="assetPreview-signature"><span class="asset-empty">Aucune signature</span></div>
         <div class="asset-actions">
-          <input type="file" id="assetFile-signature" accept="image/png,image/jpeg" style="display:none" onchange="_assetFileSelected('signature', this)">
+          <input type="file" id="assetFile-signature" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="_assetFileSelected('signature', this)">
           <button type="button" class="btn btn-neutral" style="font-size:.76rem;padding:6px 12px;" onclick="document.getElementById('assetFile-signature').click()">Choisir un fichier</button>
           <button type="button" class="btn btn-danger" style="font-size:.76rem;padding:6px 12px;display:none" id="assetRemoveBtn-signature" onclick="_assetRemove('signature')">Retirer</button>
         </div>
@@ -191,7 +191,7 @@ html,body { height:100%; background:var(--bg); font-family:-apple-system,'Helvet
         <div class="asset-label">Tampon</div>
         <div class="asset-preview" id="assetPreview-tampon"><span class="asset-empty">Aucun tampon</span></div>
         <div class="asset-actions">
-          <input type="file" id="assetFile-tampon" accept="image/png,image/jpeg" style="display:none" onchange="_assetFileSelected('tampon', this)">
+          <input type="file" id="assetFile-tampon" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="_assetFileSelected('tampon', this)">
           <button type="button" class="btn btn-neutral" style="font-size:.76rem;padding:6px 12px;" onclick="document.getElementById('assetFile-tampon').click()">Choisir un fichier</button>
           <button type="button" class="btn btn-danger" style="font-size:.76rem;padding:6px 12px;display:none" id="assetRemoveBtn-tampon" onclick="_assetRemove('tampon')">Retirer</button>
         </div>
@@ -356,8 +356,9 @@ function _assetFileSelected(type, inputEl) {
   inputEl.value = '';
   if (!file || !_currentUser) return;
   if (file.size > _ASSET_MAXSIZE) { alert('Fichier trop volumineux (3 Mo max).'); return; }
-  var ext = (file.type === 'image/png') ? 'png' : ((file.type === 'image/jpeg') ? 'jpg' : null);
-  if (!ext) { alert('Formats acceptés : PNG ou JPEG.'); return; }
+  var _EXT_BY_MIME = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
+  var ext = _EXT_BY_MIME[file.type] || null;
+  if (!ext) { alert('Formats acceptés : PNG, JPEG ou WEBP.'); return; }
 
   var extField = type === 'logo' ? 'logoExt' : (type === 'signature' ? 'sigExt' : 'tamponExt');
   var uid = _currentUser.id;
