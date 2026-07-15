@@ -1378,6 +1378,10 @@ function _prescFormatDate(val) {
   return p[2]+'/'+p[1]+'/'+p[0];
 }
 
+// Helper local (pas _batEsc, définie beaucoup plus loin dans un autre bloc <script> —
+// le profil peut arriver par postMessage avant que ce bloc-là ait fini de s'exécuter).
+function _pEsc(s) { return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
 function _updatePrescHeader(profile) {
   // Toujours exécuté (même profil vide) : chaque champ non renseigné reste vide, jamais
   // de repli sur un texte codé en dur (confidentialité entre praticiens).
@@ -1391,9 +1395,9 @@ function _updatePrescHeader(profile) {
   var fullName = [prenom, nom].filter(Boolean).join(' ');
   if(elLeft){
     var leftParts = [];
-    if(fullName)     leftParts.push('<strong>'+_batEsc(fullName)+'</strong>');
-    if(specialite)    leftParts.push(_batEsc(specialite));
-    if(am)             leftParts.push('N°AM : '+_batEsc(am));
+    if(fullName)     leftParts.push('<strong>'+_pEsc(fullName)+'</strong>');
+    if(specialite)    leftParts.push(_pEsc(specialite));
+    if(am)             leftParts.push('N°AM : '+_pEsc(am));
     elLeft.innerHTML = leftParts.join('<br>');
   }
   if(elRight){
@@ -1402,10 +1406,10 @@ function _updatePrescHeader(profile) {
     var tel     = (profile.tel     || '').trim();
     var email   = (profile.email   || '').trim();
     var rightParts = [];
-    if(cabinet) rightParts.push('<strong>'+_batEsc(cabinet)+'</strong>');
-    if(adresse) rightParts.push(_batEsc(adresse));
-    if(tel)     rightParts.push('Tel. '+_batEsc(tel));
-    if(email)   rightParts.push(_batEsc(email));
+    if(cabinet) rightParts.push('<strong>'+_pEsc(cabinet)+'</strong>');
+    if(adresse) rightParts.push(_pEsc(adresse));
+    if(tel)     rightParts.push('Tel. '+_pEsc(tel));
+    if(email)   rightParts.push(_pEsc(email));
     elRight.innerHTML = rightParts.join('<br>');
   }
 }
