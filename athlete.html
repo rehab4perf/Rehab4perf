@@ -29,7 +29,8 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
 .logo-e { font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:600; font-size:.44em; vertical-align:super; color:#7FA8D9; margin:0 .05em 0 .01em; line-height:0; }
 .logo-p { font-family:'Poppins',sans-serif; font-weight:800; font-size:16px; color:#fff; letter-spacing:-.025em; margin-left:.02em; }
 .header-sub { font-size:.68rem; color:rgba(255,255,255,.6); margin-top:1px; }
-.header-left { flex:1; }
+.header-patient { font-size:.95rem; font-weight:700; color:#fff; margin-top:2px; line-height:1.2; }
+.header-left { flex:1; min-width:0; }
 .header-btn {
   background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3);
   color:#fff; border-radius:8px; padding:6px 12px; font-size:.76rem; cursor:pointer;
@@ -484,6 +485,7 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
   <div class="header-left">
     <div class="header-logo"><svg viewBox="8 34 164 104" width="26" height="16" aria-hidden="true"><g stroke="#4A90D9" stroke-width="17" stroke-linecap="round" fill="none"><line x1="20" y1="118" x2="56" y2="104"/><line x1="70" y1="122" x2="100" y2="84"/><line x1="112" y1="125" x2="134" y2="66"/><line x1="158" y1="128" x2="158" y2="46"/></g></svg><span class="logo-w"><span class="logo-r">rehab<sup class="logo-e">4</sup></span><span class="logo-p">perf</span></span></div>
     <div class="header-sub" id="headerSub">Programme athlète</div>
+    <div class="header-patient" id="headerPatient"></div>
   </div>
   <button class="header-btn" id="refreshBtn" onclick="refresh()">↻ Actualiser</button>
 </div>
@@ -610,6 +612,12 @@ function init(){
   _seanceId  = params.get('seance')  || '';
   _kineMode  = params.get('mode') === 'kine';
   _pratId    = params.get('prat')    || '';
+
+  // Nom du patient passé en clair dans le lien (paramètre d'affichage) : l'afficher
+  // dans l'en-tête pour que le kiné/l'athlète voie immédiatement à qui correspond le lien.
+  var nomParam = (params.get('nom') || '').trim();
+  var elPat = document.getElementById('headerPatient');
+  if(elPat && nomParam) elPat.textContent = nomParam;
 
   if(_patientId){
     _mode = 'cal';
