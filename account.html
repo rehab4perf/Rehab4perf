@@ -374,7 +374,9 @@ function _assetFileSelected(type, inputEl) {
     });
   }).then(function(r) {
     if (!r.ok) return r.text().then(function(t) { throw new Error('upload http ' + r.status + ' ' + t); });
-    var data = {}; data[extField] = ext;
+    // updateUser({data}) remplace tout user_metadata — on repart de l'existant.
+    var data = Object.assign({}, _currentUser.user_metadata || {});
+    data[extField] = ext;
     return sb.auth.updateUser({ data: data });
   }).then(function(res) {
     if (res.error) throw res.error;
@@ -407,7 +409,8 @@ function _assetRemove(type) {
       headers: { 'Authorization': 'Bearer ' + token, 'apikey': SUPA_KEY }
     });
   }).then(function() {
-    var data = {}; data[extField] = '';
+    var data = Object.assign({}, _currentUser.user_metadata || {});
+    data[extField] = '';
     return sb.auth.updateUser({ data: data });
   }).then(function(res) {
     if (res.error) throw res.error;
@@ -437,6 +440,9 @@ function saveProfile() {
   document.getElementById('saveStatus').style.display = 'none';
   document.getElementById('saveError').style.display  = 'none';
 
+  // sb.auth.updateUser({data}) remplace tout user_metadata, il ne fusionne pas — sans
+  // reprendre les champs logo/signature/tampon existants, les enregistrer ici les efface.
+  var existingMeta = (_currentUser && _currentUser.user_metadata) || {};
   var data = {
     prenom:     document.getElementById('fieldPrenom').value.trim(),
     nom:        document.getElementById('fieldNom').value.trim(),
@@ -444,7 +450,10 @@ function saveProfile() {
     tel:        document.getElementById('fieldTel').value.trim(),
     cabinet:    document.getElementById('fieldCabinet').value.trim(),
     adresse:    document.getElementById('fieldAdresse').value.trim(),
-    specialite: document.getElementById('fieldSpecialite').value.trim()
+    specialite: document.getElementById('fieldSpecialite').value.trim(),
+    logoExt:    existingMeta.logoExt    || '',
+    sigExt:     existingMeta.sigExt     || '',
+    tamponExt:  existingMeta.tamponExt  || ''
   };
 
   sb.auth.updateUser({ data: data })
