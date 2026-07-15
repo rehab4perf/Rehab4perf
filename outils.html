@@ -7620,6 +7620,14 @@ function _batExportPdf(){
   var z = _batZone(s.total, b, months);
   var thrTxt = '<span style="color:'+z.fg+';font-weight:700;">'+z.label+'</span>'
     + (months!=null ? '<div style="font-size:.72rem;color:#888;margin-top:2px;">Délai depuis la blessure : '+(Math.round(months*10)/10)+' mois</div>' : '');
+  // En-tête praticien (comme le CR complet) — profil du praticien connecté, jamais de valeur par défaut.
+  var _prof = getProfile();
+  var _pfFull = [(_prof.prenom||'').trim(), (_prof.nom||'').trim().toUpperCase()].filter(Boolean).join(' ');
+  var _pratParts = [];
+  if(_pfFull)               _pratParts.push('<strong>'+_batEsc(_pfFull)+'</strong>');
+  if((_prof.specialite||'').trim()) _pratParts.push(_batEsc(_prof.specialite.trim()));
+  if((_prof.am||'').trim())         _pratParts.push('N° AM : '+_batEsc(_prof.am.trim()));
+  var praticienHtml = _pratParts.length ? '<div class="s" style="text-align:right;line-height:1.5;">'+_pratParts.join('<br>')+'</div>' : '';
   var css='*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,Helvetica Neue,Arial,sans-serif;color:#1A1917;background:#F0F4F8;padding:0 0 50px}'
     +'.wrap{max-width:800px;margin:0 auto}.hd{background:#1A3A5C;color:#fff;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}'
     +'.hd h1{font-size:1.3rem}.hd .s{font-size:.72rem;opacity:.8}.pt{background:#fff;padding:16px 24px;border-bottom:1px solid #dde3ec;display:flex;align-items:center;gap:14px}'
@@ -7630,7 +7638,7 @@ function _batExportPdf(){
     +'.ft{text-align:center;font-size:.7rem;color:#aaa;margin-top:26px}@media print{body{background:#fff;padding:0}}';
   var doc='<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
     +'<title>'+_batEsc(b.name)+' — '+_batEsc(nom||'rapport')+'</title><style>'+css+'</style></head><body><div class="wrap">'
-    +'<div class="hd"><div><h1>'+_batEsc(b.name)+'</h1><div class="s">'+_batEsc(b.full)+'</div></div><div class="s">'+_batEsc(b.source)+'</div></div>'
+    +'<div class="hd"><div><h1>'+_batEsc(b.name)+'</h1><div class="s">'+_batEsc(b.full)+'</div></div>'+praticienHtml+'</div>'
     +(nom?'<div class="pt"><div class="av">'+_batEsc(initials)+'</div><div><div class="pn">'+_batEsc(nom)+'</div><div style="font-size:.75rem;color:#888;margin-top:2px;">'
       +(ddn?'Né(e) le '+_batEsc(ddn)+' · ':'')+(date?_batEsc(date)+' · ':'')+'Cheville '+_batEsc(side)+'</div></div></div>':'')
     +'<div class="bd"><div class="big" style="color:'+z.fg+';">'+s.total+' <span style="font-size:1rem;color:#888;font-weight:400">/ 25 points</span></div>'
@@ -7642,7 +7650,7 @@ function _batExportPdf(){
     +_batRenderDeficits(v, s)
     +_batRenderLsi(v)
     +_batRenderProfile()
-    +'</div><div class="ft">Rapport généré par Rehab4Perf · '+_batEsc(date||'')+' · Cotation : '+_batEsc(b.source)+'</div></div></body></html>';
+    +'</div><div class="ft">Rapport généré par Rehab4Perf'+(date?' · '+_batEsc(date):'')+'</div></div></body></html>';
   var patSlug = (nom.split(/\s+/)[0]||'patient'); var dateSlug=(date||'').replace(/\//g,'-');
   var blob = new Blob([doc], {type:'text/html;charset=utf-8'});
   var a=(window.top||window).document.createElement('a'); a.href=URL.createObjectURL(blob);
