@@ -357,6 +357,87 @@ iframe.active { display:block; }
   .pm-card { max-width:100%; border-radius:10px 10px 0 0; }
 }
 
+/* ── Onboarding première connexion ─────────────────────────── */
+.ob-overlay {
+  display:none; position:fixed; inset:0; z-index:20000;
+  background:rgba(15,30,48,.55); align-items:center; justify-content:center; padding:20px;
+}
+.ob-overlay.open { display:flex; }
+.ob-card {
+  width:100%; max-width:620px; min-height:420px; background:#fff; border-radius:14px;
+  display:flex; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.35); position:relative;
+}
+.ob-close {
+  position:absolute; top:12px; right:14px; z-index:2; width:28px; height:28px;
+  border-radius:50%; border:none; background:rgba(0,0,0,.06); color:#6b7a8d;
+  font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center;
+}
+.ob-close:hover { background:rgba(0,0,0,.12); color:#1a2433; }
+.ob-side {
+  width:190px; flex-shrink:0; background:#1A3A5C; color:#fff; padding:24px 18px;
+}
+.ob-side-logo { font-family:'Cormorant Garamond',serif; font-style:italic; font-size:17px; margin-bottom:26px; }
+.ob-side-logo sup { color:#7FA8D9; font-size:.5em; }
+.ob-side-logo b { font-family:'Poppins',sans-serif; font-weight:800; font-style:normal; }
+.ob-steps { display:flex; flex-direction:column; gap:16px; }
+.ob-step { display:flex; align-items:center; gap:10px; font-size:.78rem; opacity:.5; transition:opacity .15s; }
+.ob-step.current { opacity:1; font-weight:600; }
+.ob-step.done { opacity:.85; }
+.ob-step-dot {
+  width:20px; height:20px; border-radius:50%; background:rgba(255,255,255,.2);
+  display:flex; align-items:center; justify-content:center; font-size:.7rem; flex-shrink:0;
+}
+.ob-step.current .ob-step-dot { background:#4A90D9; }
+.ob-step.done .ob-step-dot { background:#2D7D46; }
+.ob-body { flex:1; padding:28px 30px 22px; display:flex; flex-direction:column; }
+.ob-progress { height:4px; background:#eef1f5; border-radius:2px; margin-bottom:20px; }
+.ob-progress-bar { height:100%; background:#2B5FA6; border-radius:2px; transition:width .25s; }
+.ob-panel { display:none; flex:1; flex-direction:column; }
+.ob-panel.active { display:flex; }
+.ob-title { font-size:1.05rem; font-weight:700; color:#1A3A5C; margin-bottom:6px; }
+.ob-subtitle { font-size:.8rem; color:#6b7a8d; line-height:1.55; margin-bottom:18px; }
+.ob-welcome { text-align:center; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.ob-welcome-logo { margin-bottom:16px; }
+.ob-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:11px; }
+.ob-form-grid.full { grid-column:1/-1; }
+.ob-field { display:flex; flex-direction:column; gap:4px; }
+.ob-field.full { grid-column:1/-1; }
+.ob-field label { font-size:.7rem; font-weight:600; color:#6b7a8d; letter-spacing:.03em; text-transform:uppercase; }
+.ob-field input { padding:8px 10px; border:1px solid #dde3ec; border-radius:6px; font-size:.85rem; font-family:inherit; background:#FAFBFD; }
+.ob-field input:focus { outline:none; border-color:#4A90D9; background:#fff; }
+.ob-actions { margin-top:auto; padding-top:18px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.ob-skip { font-size:.8rem; color:#9aa7b5; background:none; border:none; cursor:pointer; font-family:inherit; }
+.ob-skip:hover { color:#6b7a8d; text-decoration:underline; }
+.ob-btn-primary {
+  font-size:.82rem; font-weight:600; color:#fff; background:#2B5FA6; border:none;
+  padding:9px 20px; border-radius:6px; cursor:pointer; font-family:inherit;
+}
+.ob-btn-primary:hover { background:#1A3A5C; }
+.ob-btn-primary:disabled { opacity:.6; cursor:not-allowed; }
+.ob-logo-choice { display:flex; flex-direction:column; gap:10px; margin-top:auto; margin-bottom:auto; }
+.ob-logo-choice button {
+  padding:12px 16px; border-radius:8px; font-size:.85rem; font-weight:600; cursor:pointer; font-family:inherit;
+  border:1px solid #dde3ec; background:#fff; color:#1A3A5C; text-align:left;
+}
+.ob-logo-choice button:hover { border-color:#4A90D9; background:#F5F9FF; }
+.ob-logo-choice button small { display:block; font-weight:400; color:#6b7a8d; font-size:.74rem; margin-top:2px; }
+.ob-finish-illus {
+  display:flex; align-items:center; gap:10px; background:#1A3A5C; border-radius:8px;
+  padding:9px 14px; margin:10px 0 18px; align-self:flex-start;
+}
+.ob-finish-illus .ob-help-dot {
+  width:24px; height:24px; border-radius:6px; background:#4A90D9; color:#fff;
+  display:flex; align-items:center; justify-content:center; font-size:.8rem; font-weight:700;
+  box-shadow:0 0 0 3px rgba(74,144,217,.4);
+}
+.ob-finish-illus span.txt { font-size:.76rem; color:rgba(255,255,255,.85); }
+@media (max-width:600px) {
+  .ob-side { display:none; }
+  .ob-card { max-width:100%; }
+  .ob-body { padding:24px 18px 18px; }
+  .ob-form-grid { grid-template-columns:1fr; }
+}
+
 </style>
 </head>
 <body>
@@ -374,6 +455,76 @@ iframe.active { display:block; }
   <div class="notif-bell" id="notifBell" onclick="toggleNotifDrop(event)" title="Retours athlètes"><svg width="17" height="17" viewBox="0 0 512 512" fill="currentColor" style="flex-shrink:0" xmlns="http://www.w3.org/2000/svg"><g><path d="m437.022 339.09c-16.416-16.531-25.456-38.467-25.456-61.766v-77.957c0-79.128-59.431-144.51-135.974-154.193v-24.28c0-10.82-8.772-19.592-19.592-19.592s-19.592 8.772-19.592 19.592v24.28c-76.543 9.683-135.974 75.065-135.974 154.193v77.957c0 23.299-9.04 45.235-25.456 61.761-36.468 36.716-10.522 99.233 41.303 99.233h49.87c9.015 41.325 45.845 72.38 89.829 72.38 43.989 0 80.819-31.055 89.834-72.38h49.904c51.833 0 77.77-62.524 41.304-99.228zm-181.042 132.424c-22.173 0-41.12-13.779-48.93-33.196h97.865c-7.81 19.417-26.757 33.196-48.935 33.196zm139.738-72.38c-64.967 0-228.98 0-279.438 0-16.915 0-25.43-20.426-13.503-32.435 23.758-23.921 36.841-55.663 36.841-89.375v-77.957c0-64.172 52.209-116.381 116.381-116.381s116.381 52.209 116.381 116.381v77.957c0 33.712 13.082 65.454 36.841 89.38 11.92 11.995 3.421 32.43-13.503 32.43z"/><path d="m255.999 102.577c-10.82 0-19.592 8.772-19.592 19.592s8.772 19.592 19.592 19.592c31.766 0 57.605 25.839 57.605 57.6 0 10.82 8.772 19.592 19.592 19.592s19.592-8.772 19.592-19.592c0-53.366-43.417-96.784-96.789-96.784z"/></g></svg><span class="notif-badge" id="notifBadge" style="display:none"></span></div>
   <div class="help-btn" id="helpBtn" onclick="toggleHelpDrawer(event)" title="Aide">?</div>
   <div class="topnav-right" id="userDisplay" onclick="show('account')" title="Mon compte" style="margin-left:12px;">Mon compte</div>
+</div>
+
+<!-- Onboarding première connexion -->
+<div class="ob-overlay" id="obOverlay">
+  <div class="ob-card">
+    <button class="ob-close" id="obCloseBtn" title="Passer l'introduction">✕</button>
+    <div class="ob-side">
+      <div class="ob-side-logo">rehab<sup>4</sup><b>perf</b></div>
+      <div class="ob-steps" id="obSteps">
+        <div class="ob-step" data-step="1"><span class="ob-step-dot">1</span>Bienvenue</div>
+        <div class="ob-step" data-step="2"><span class="ob-step-dot">2</span>Vos informations</div>
+        <div class="ob-step" data-step="3"><span class="ob-step-dot">3</span>Logo &amp; signature</div>
+        <div class="ob-step" data-step="4"><span class="ob-step-dot">4</span>C'est parti</div>
+      </div>
+    </div>
+    <div class="ob-body">
+      <div class="ob-progress"><div class="ob-progress-bar" id="obProgressBar" style="width:25%"></div></div>
+
+      <div class="ob-panel" data-panel="1">
+        <div class="ob-welcome">
+          <div class="ob-welcome-logo">
+            <svg viewBox="8 34 164 104" width="48" height="30" aria-hidden="true"><g stroke="#4A90D9" stroke-width="17" stroke-linecap="round" fill="none"><line x1="20" y1="118" x2="56" y2="104"/><line x1="70" y1="122" x2="100" y2="84"/><line x1="112" y1="125" x2="134" y2="66"/><line x1="158" y1="128" x2="158" y2="46"/></g></svg>
+          </div>
+          <div class="ob-title">Bienvenue sur Rehab4Perf</div>
+          <div class="ob-subtitle">Quelques étapes rapides pour préparer votre espace praticien : vos informations professionnelles, votre logo et votre signature. Tout est modifiable plus tard depuis « Mon compte ».</div>
+          <button class="ob-btn-primary" onclick="_obNext()">Commencer</button>
+        </div>
+      </div>
+
+      <div class="ob-panel" data-panel="2">
+        <div class="ob-title">Vos informations professionnelles</div>
+        <div class="ob-subtitle">Reprises sur vos comptes-rendus, bilans et prescriptions.</div>
+        <div class="ob-form-grid">
+          <div class="ob-field"><label>Prénom</label><input type="text" id="obPrenom" placeholder="Jean"></div>
+          <div class="ob-field"><label>Nom</label><input type="text" id="obNom" placeholder="Dupont"></div>
+          <div class="ob-field"><label>N° ADELI / AM</label><input type="text" id="obAm" placeholder="123456789"></div>
+          <div class="ob-field"><label>Spécialité</label><input type="text" id="obSpecialite" placeholder="Masseur Kinésithérapeute du Sport"></div>
+          <div class="ob-field"><label>Cabinet / Structure</label><input type="text" id="obCabinet" placeholder="Athletik Lamarck"></div>
+          <div class="ob-field"><label>Téléphone</label><input type="text" id="obTel" placeholder="06 12 34 56 78"></div>
+          <div class="ob-field full"><label>Adresse du cabinet</label><input type="text" id="obAdresse" placeholder="7, rue des Cottages — Paris 18e"></div>
+        </div>
+        <div class="ob-actions">
+          <button class="ob-skip" onclick="_obNext()">Passer cette étape</button>
+          <button class="ob-btn-primary" id="obSaveInfosBtn" onclick="_obSaveInfos()">Continuer</button>
+        </div>
+      </div>
+
+      <div class="ob-panel" data-panel="3">
+        <div class="ob-title">Logo &amp; signature</div>
+        <div class="ob-subtitle">Ajoutez le logo de votre cabinet, votre signature et votre tampon : ils s'affichent automatiquement sur vos prescriptions. Privés — visibles par vous seul.</div>
+        <div class="ob-logo-choice">
+          <button onclick="_obGoToAccount()">Ajouter maintenant<small>Ouvre « Mon compte », dans la carte « Logo &amp; signature ».</small></button>
+          <button onclick="_obNext()">Plus tard<small>Vous pourrez les ajouter à tout moment depuis « Mon compte ».</small></button>
+        </div>
+      </div>
+
+      <div class="ob-panel" data-panel="4">
+        <div class="ob-title">C'est parti</div>
+        <div class="ob-subtitle">Votre espace est prêt. Vous pouvez sélectionner un patient et commencer.</div>
+        <div class="ob-finish-illus">
+          <span class="ob-help-dot">?</span>
+          <span class="txt">En cas de besoin, un tutoriel complet est disponible ici à tout moment.</span>
+        </div>
+        <div class="ob-actions" style="margin-top:0;">
+          <span></span>
+          <button class="ob-btn-primary" onclick="_obFinish()">Terminer</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Drawer d'aide contextuel -->
@@ -663,7 +814,78 @@ sb.auth.getSession().then(function(result) {
   setTimeout(function() { propagateToBilan(profile); }, 600);
   // Premier chargement des retours athlètes non lus
   setTimeout(_fbBellPoll, 1200);
+  // Onboarding première connexion (jamais réaffiché une fois passé/terminé)
+  if (!(user.user_metadata || {}).onboarded) _obOpen(user);
 });
+
+/* ═══ ONBOARDING PREMIÈRE CONNEXION ═══ */
+var _obStep = 1;
+function _obOpen(user) {
+  var meta = user.user_metadata || {};
+  document.getElementById('obPrenom').value     = meta.prenom     || '';
+  document.getElementById('obNom').value        = meta.nom        || '';
+  document.getElementById('obAm').value         = meta.am         || '';
+  document.getElementById('obSpecialite').value = meta.specialite || '';
+  document.getElementById('obCabinet').value    = meta.cabinet    || '';
+  document.getElementById('obTel').value        = meta.tel        || '';
+  document.getElementById('obAdresse').value    = meta.adresse    || '';
+  _obStep = 1;
+  _obRender();
+  document.getElementById('obOverlay').classList.add('open');
+}
+function _obRender() {
+  document.querySelectorAll('.ob-panel').forEach(function(p){ p.classList.toggle('active', +p.dataset.panel === _obStep); });
+  document.querySelectorAll('.ob-step').forEach(function(s){
+    var n = +s.dataset.step;
+    s.classList.toggle('current', n === _obStep);
+    s.classList.toggle('done', n < _obStep);
+    s.querySelector('.ob-step-dot').textContent = n < _obStep ? '✓' : n;
+  });
+  document.getElementById('obProgressBar').style.width = (_obStep / 4 * 100) + '%';
+}
+function _obNext() {
+  if (_obStep >= 4) { _obFinish(); return; }
+  _obStep++;
+  _obRender();
+}
+function _obSaveInfos() {
+  var btn = document.getElementById('obSaveInfosBtn');
+  btn.disabled = true; btn.textContent = 'Enregistrement…';
+  var data = {
+    prenom:     document.getElementById('obPrenom').value.trim(),
+    nom:        document.getElementById('obNom').value.trim(),
+    am:         document.getElementById('obAm').value.trim(),
+    specialite: document.getElementById('obSpecialite').value.trim(),
+    cabinet:    document.getElementById('obCabinet').value.trim(),
+    tel:        document.getElementById('obTel').value.trim(),
+    adresse:    document.getElementById('obAdresse').value.trim()
+  };
+  sb.auth.updateUser({ data: data }).then(function(res) {
+    btn.disabled = false; btn.textContent = 'Continuer';
+    if (res.error) { alert('Erreur : ' + res.error.message); return; }
+    var user = res.data.user;
+    updateNav(user);
+    var profile = syncProfileToStorage(user);
+    propagateToBilan(profile);
+    _obNext();
+  }).catch(function(err) {
+    btn.disabled = false; btn.textContent = 'Continuer';
+    alert('Erreur réseau : ' + (err && err.message || err));
+  });
+}
+function _obGoToAccount() {
+  _obMarkOnboarded();
+  document.getElementById('obOverlay').classList.remove('open');
+  show('account');
+}
+function _obFinish() {
+  _obMarkOnboarded();
+  document.getElementById('obOverlay').classList.remove('open');
+}
+function _obMarkOnboarded() {
+  sb.auth.updateUser({ data: { onboarded: true } }).catch(function(){});
+}
+document.getElementById('obCloseBtn').onclick = _obFinish;
 
 // Diffuse le token rafraîchi à toutes les iframes
 function _broadcastFreshToken(session) {
