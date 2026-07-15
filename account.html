@@ -294,11 +294,12 @@ function showAccount(user) {
   document.getElementById('fieldAdresse').value    = meta.adresse    || '';
   document.getElementById('fieldSpecialite').value = meta.specialite || '';
 
-  _ASSET_TYPES.forEach(function(type) { _renderAssetPreview(type, meta[type + 'Ext'] || ''); });
+  _ASSET_TYPES.forEach(function(type) { _renderAssetPreview(type, meta[_ASSET_EXT_FIELD[type]] || ''); });
 }
 
 /* ═══ LOGO / SIGNATURE / TAMPON ═══ */
 var _ASSET_TYPES   = ['logo', 'signature', 'tampon'];
+var _ASSET_EXT_FIELD = { logo: 'logoExt', signature: 'sigExt', tampon: 'tamponExt' };
 var _ASSET_BUCKET  = 'praticien-profil';
 var _ASSET_MAXSIZE = 3 * 1024 * 1024; // 3 Mo
 
@@ -360,7 +361,7 @@ function _assetFileSelected(type, inputEl) {
   var ext = _EXT_BY_MIME[file.type] || null;
   if (!ext) { alert('Formats acceptés : PNG, JPEG ou WEBP.'); return; }
 
-  var extField = type === 'logo' ? 'logoExt' : (type === 'signature' ? 'sigExt' : 'tamponExt');
+  var extField = _ASSET_EXT_FIELD[type];
   var uid = _currentUser.id;
 
   sb.auth.getSession().then(function(res) {
@@ -395,9 +396,9 @@ function _assetFileSelected(type, inputEl) {
 function _assetRemove(type) {
   if (!_currentUser) return;
   var meta = _currentUser.user_metadata || {};
-  var ext = meta[type === 'logo' ? 'logoExt' : (type === 'signature' ? 'sigExt' : 'tamponExt')];
+  var extField = _ASSET_EXT_FIELD[type];
+  var ext = meta[extField];
   if (!ext) return;
-  var extField = type === 'logo' ? 'logoExt' : (type === 'signature' ? 'sigExt' : 'tamponExt');
   var uid = _currentUser.id;
   var path = _assetPath(uid, type, ext);
 
