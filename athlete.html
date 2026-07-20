@@ -6,6 +6,13 @@
 <meta name="color-scheme" content="light only">
 <title>Mon Programme</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="manifest" href="manifest-athlete.webmanifest">
+<meta name="theme-color" content="#1A3A5C">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Rehab4Perf">
+<link rel="apple-touch-icon" href="icons/apple-touch-180.png">
 <link rel="stylesheet" href="fonts/fonts.css">
 <style>
 :root {
@@ -661,10 +668,26 @@ function init(){
   _seanceId  = params.get('seance')  || '';
   _kineMode  = params.get('mode') === 'kine';
   _pratId    = params.get('prat')    || '';
-
-  // Nom du patient passé en clair dans le lien (paramètre d'affichage) : l'afficher
-  // dans l'en-tête pour que le kiné/l'athlète voie immédiatement à qui correspond le lien.
   var nomParam = (params.get('nom') || '').trim();
+
+  // Persistance d'identité pour l'app installée (PWA) : lancée depuis l'écran d'accueil,
+  // athlete.html s'ouvre SANS les paramètres du lien → on les mémorise à la 1re ouverture
+  // (via le lien) puis on les restaure quand l'URL n'en contient plus.
+  var CTX_KEY = 'r4p-athlete-ctx';
+  if(_patientId || _progId){
+    try { localStorage.setItem(CTX_KEY, JSON.stringify({ prog:_progId, patient:_patientId, seance:_seanceId, mode:(params.get('mode')||''), prat:_pratId, nom:nomParam })); } catch(e){}
+  } else {
+    try {
+      var ctx = JSON.parse(localStorage.getItem(CTX_KEY) || 'null');
+      if(ctx){
+        _progId = ctx.prog||''; _patientId = ctx.patient||''; _seanceId = ctx.seance||'';
+        _kineMode = ctx.mode === 'kine'; _pratId = ctx.prat||''; nomParam = ctx.nom||'';
+      }
+    } catch(e){}
+  }
+
+  // Nom du patient (paramètre d'affichage) : l'afficher dans l'en-tête pour que
+  // le kiné/l'athlète voie immédiatement à qui correspond le lien.
   var elPat = document.getElementById('headerPatient');
   if(elPat && nomParam) elPat.textContent = nomParam;
 
@@ -2237,5 +2260,19 @@ function _submitCapFeedback() {
     <iframe id="ytModalIframe" src="" allowfullscreen allow="autoplay; encrypted-media"></iframe>
   </div>
 </div>
+
+<script>
+/* Enregistrement du service worker (PWA installable). Recharge une fois quand un
+   nouveau SW prend le contrôle, pour que les déploiements se propagent proprement. */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js', { scope: '/athlete.html' }).catch(function (e) { console.warn('SW:', e); });
+    var reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (reloaded) return; reloaded = true; window.location.reload();
+    });
+  });
+}
+</script>
 </body>
 </html>

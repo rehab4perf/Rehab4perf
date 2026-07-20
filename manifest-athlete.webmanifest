@@ -1,0 +1,17 @@
+{
+  "name": "Rehab4Perf — Mon programme",
+  "short_name": "Rehab4Perf",
+  "description": "Votre calendrier de séances et vos exercices, suivis par votre praticien.",
+  "start_url": "/athlete.html",
+  "scope": "/athlete.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "lang": "fr",
+  "background_color": "#1A3A5C",
+  "theme_color": "#1A3A5C",
+  "icons": [
+    { "src": "/icons/athlete-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/athlete-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/athlete-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

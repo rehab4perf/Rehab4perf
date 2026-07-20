@@ -17,3 +17,10 @@
     # - frame-src   : embeds YouTube (player vidéo exercices)
     # - font-src    : polices locales uniquement
     Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self' https://sxdobjodxkwexaspepdm.supabase.co wss://sxdobjodxkwexaspepdm.supabase.co https://cdn.jsdelivr.net; img-src 'self' data: blob: https://img.youtube.com https://sxdobjodxkwexaspepdm.supabase.co; frame-src 'self' https://www.youtube.com; font-src 'self'; object-src 'none'; base-uri 'self';"
+
+# Le service worker ne doit jamais être mis en cache longtemps, sinon les mises à
+# jour de l'app ne se propagent pas aux appareils installés.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
