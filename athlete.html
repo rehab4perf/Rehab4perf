@@ -6,31 +6,39 @@
 <meta name="color-scheme" content="light only">
 <title>Mon Programme</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="manifest" href="manifest-athlete.webmanifest" id="manifestLink">
 <script>
-/* Manifest dynamique : quand l'athlète ouvre SON lien (avec token), on réécrit le
-   start_url du manifest avec l'URL complète en cours. Ainsi « Ajouter à l'écran
-   d'accueil » mémorise son lien personnel — l'app installée rouvre le bon calendrier
-   sans dépendre du localStorage (isolé de Safari sur iOS). */
+/* Manifest créé en JS (pas de <link> statique dans le HTML) : un <link rel="manifest">
+   présent dès le parsing serait préfetché par le navigateur avant que ce script ait pu
+   le corriger, et certaines versions de Safari/iOS liraient alors la version sans
+   token. En créant l'élément nous-mêmes, il n'existe qu'une seule version possible.
+   Avec token → start_url = l'URL complète en cours, pour que « Ajouter à l'écran
+   d'accueil » mémorise le lien personnel de l'athlète (l'app installée rouvre son
+   calendrier sans dépendre du localStorage, isolé de Safari en mode standalone iOS). */
 (function(){
   try {
     var p = new URLSearchParams(window.location.search);
-    if(!(p.get('patient') || p.get('prog'))) return;  // pas de token → garder le manifest statique
-    var m = {
-      name:"Rehab4Perf — Mon programme", short_name:"Rehab4Perf",
-      description:"Votre calendrier de séances et vos exercices, suivis par votre praticien.",
-      start_url: window.location.href, scope:"/athlete.html",
-      display:"standalone", orientation:"portrait", lang:"fr",
-      background_color:"#1A3A5C", theme_color:"#1A3A5C",
-      icons:[
-        {src:"/icons/athlete-192.png",sizes:"192x192",type:"image/png",purpose:"any"},
-        {src:"/icons/athlete-512.png",sizes:"512x512",type:"image/png",purpose:"any"},
-        {src:"/icons/athlete-512-maskable.png",sizes:"512x512",type:"image/png",purpose:"maskable"}
-      ]
-    };
-    var blob = new Blob([JSON.stringify(m)], {type:"application/manifest+json"});
-    var link = document.getElementById('manifestLink');
-    if(link) link.href = URL.createObjectURL(blob);
+    var hasToken = !!(p.get('patient') || p.get('prog'));
+    var link = document.createElement('link');
+    link.rel = 'manifest';
+    if(hasToken){
+      var m = {
+        name:"Rehab4Perf — Mon programme", short_name:"Rehab4Perf",
+        description:"Votre calendrier de séances et vos exercices, suivis par votre praticien.",
+        start_url: window.location.href, scope:"/athlete.html",
+        display:"standalone", orientation:"portrait", lang:"fr",
+        background_color:"#1A3A5C", theme_color:"#1A3A5C",
+        icons:[
+          {src:"/icons/athlete-192.png",sizes:"192x192",type:"image/png",purpose:"any"},
+          {src:"/icons/athlete-512.png",sizes:"512x512",type:"image/png",purpose:"any"},
+          {src:"/icons/athlete-512-maskable.png",sizes:"512x512",type:"image/png",purpose:"maskable"}
+        ]
+      };
+      var blob = new Blob([JSON.stringify(m)], {type:"application/manifest+json"});
+      link.href = URL.createObjectURL(blob);
+    } else {
+      link.href = 'manifest-athlete.webmanifest';
+    }
+    document.head.appendChild(link);
   } catch(e){}
 })();
 </script>
