@@ -2290,7 +2290,8 @@ function _pushPatientMsg(note) {
     headers: Object.assign({}, _sbHeaders(), {'Prefer':'resolution=merge-duplicates,return=minimal'}),
     body: JSON.stringify({ id:note.id, patient_id:_progPatient.id, praticien_id:_progUid,
       date:note.date, title:note.title||'', body:note.text||'' })
-  }).catch(function(e){ console.warn('_pushPatientMsg error', e); });
+  }).then(function(){ _notifyAthleteAgenda('Nouveau message de votre praticien'); })
+    .catch(function(e){ console.warn('_pushPatientMsg error', e); });
 }
 
 function _deletePatientMsg(noteId) {
@@ -2995,6 +2996,34 @@ function _calDayDrop(e, targetDate){
   }
 }
 
+/* ── Notification push athlète sur changement d'agenda ──────────────────
+   Appel debouncé à l'edge function notify-athlete (regroupe les changements
+   rapprochés en une seule notif — ex. planifier plusieurs séances d'un coup). */
+var _r4pNotifTimer = null, _r4pNotifMsgs = [], _r4pNotifPid = null;
+function _fmtNotifDate(dateStr){
+  try {
+    var p = String(dateStr).split('-');
+    var m = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+    return parseInt(p[2],10) + ' ' + m[parseInt(p[1],10)-1];
+  } catch(e){ return ''; }
+}
+function _notifyAthleteAgenda(msg){
+  if(!_progPatient || !_progUid || !_progPatient.id) return;
+  _r4pNotifPid = _progPatient.id;
+  if(msg) _r4pNotifMsgs.push(msg);
+  clearTimeout(_r4pNotifTimer);
+  _r4pNotifTimer = setTimeout(function(){
+    var msgs = _r4pNotifMsgs.slice(); _r4pNotifMsgs = [];
+    var pid = _r4pNotifPid;
+    if(!pid || !msgs.length) return;
+    var body = msgs.length === 1 ? msgs[0] : 'Votre planning a été mis à jour.';
+    _fetchRetry(SUPA_URL_P+'/functions/v1/notify-athlete', {
+      method:'POST', headers:_sbHeaders(),
+      body: JSON.stringify({ patient_id:pid, title:'Rehab4Perf', body:body })
+    }).catch(function(){});
+  }, 1500);
+}
+
 function _calMoveEvent(evId, progId, targetDate, sourceDate){
   if(!_progPatient||!_progUid||!_progToken) return;
   // Stratégie : DELETE + POST (plus fiable que PATCH face aux RLS Supabase)
@@ -3017,6 +3046,7 @@ function _calMoveEvent(evId, progId, targetDate, sourceDate){
     var created = Array.isArray(data) ? data[0] : data;
     var newId = created && created.id;
     renderCalendar();
+    _notifyAthleteAgenda('Une séance a été déplacée au '+_fmtNotifDate(targetDate));
     _showToast('📅 Séance déplacée', function(){
       // Annuler : supprimer le nouveau, recréer à la date d'origine
       _fetchRetry(SUPA_URL_P+'/rest/v1/seances_planifiees?id=eq.'+newId, {
@@ -3062,6 +3092,7 @@ function _calDuplicateEvent(progId, targetDate){
         var created = Array.isArray(res3.data) ? res3.data[0] : res3.data;
         var newSeanceId = created && created.id;
         renderCalendar();
+        _notifyAthleteAgenda('Nouvelle séance planifiée le '+_fmtNotifDate(targetDate));
         _showToast('📋 Séance dupliquée (copie indépendante)', function(){
           if(!newSeanceId) return;
           _fetchRetry(SUPA_URL_P+'/rest/v1/seances_planifiees?id=eq.'+newSeanceId, {method:'DELETE', headers:_sbHeaders()})
@@ -3215,6 +3246,7 @@ function _doPlanDates(dates, progId){
       if(btn){ btn.disabled=false; btn.innerHTML=_PLAN_ICON+'Planifier'; }
       closePlanModal();
       _showToast('📅 Séance planifiée sur '+dates.length+' jour'+(dates.length>1?'s':'')+' !');
+      _notifyAthleteAgenda(dates.length===1 ? ('Nouvelle séance planifiée le '+_fmtNotifDate(dates[0])) : (dates.length+' nouvelles séances planifiées'));
       renderCalendar();
     })
     .catch(function(err){

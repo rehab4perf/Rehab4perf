@@ -2296,15 +2296,85 @@ function _submitCapFeedback() {
   </div>
 </div>
 
+<!-- Bannière douce d'activation des notifications (app installée uniquement) -->
+<div id="pushBanner" style="display:none;position:fixed;left:12px;right:12px;bottom:12px;z-index:9998;max-width:420px;margin:0 auto;background:#1A3A5C;color:#fff;border-radius:14px;padding:14px 16px;box-shadow:0 8px 30px rgba(0,0,0,.32);font-family:'Figtree',sans-serif;">
+  <div style="display:flex;align-items:flex-start;gap:12px;">
+    <div style="font-size:1.4rem;line-height:1;">🔔</div>
+    <div style="flex:1;">
+      <div style="font-weight:700;font-size:.9rem;">Activer les rappels de séances</div>
+      <div style="font-size:.78rem;opacity:.85;margin-top:2px;line-height:1.4;">Soyez prévenu dès que votre praticien modifie votre planning.</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end;">
+    <button onclick="_dismissPushBanner()" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:.82rem;cursor:pointer;font-family:inherit;">Plus tard</button>
+    <button onclick="_enablePush()" style="background:#4A90D9;border:none;color:#fff;font-weight:700;font-size:.82rem;padding:8px 18px;border-radius:8px;cursor:pointer;font-family:inherit;">Activer</button>
+  </div>
+</div>
+
 <script>
 /* Enregistrement du service worker (PWA installable). Recharge une fois quand un
    nouveau SW prend le contrôle, pour que les déploiements se propagent proprement. */
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('sw.js', { scope: '/athlete.html' }).catch(function (e) { console.warn('SW:', e); });
+    navigator.serviceWorker.register('sw.js', { scope: '/athlete.html' })
+      .then(function () { _maybeOfferPush(); })
+      .catch(function (e) { console.warn('SW:', e); });
     var reloaded = false;
     navigator.serviceWorker.addEventListener('controllerchange', function () {
       if (reloaded) return; reloaded = true; window.location.reload();
+    });
+  });
+}
+
+/* ── Web Push : abonnement de l'athlète (app installée) ─────────────── */
+var VAPID_PUBLIC = 'BDmfkeEvhdOG1CGaVFBUn7vsFYqYia4_YUtsFK9n0fPtIIc52WADnUHhVaVIZPnvV3OicUod6aORVvJbXU4ZmMo';
+function _urlB64ToUint8(base64) {
+  var pad = '='.repeat((4 - base64.length % 4) % 4);
+  var b64 = (base64 + pad).replace(/-/g, '+').replace(/_/g, '/');
+  var raw = atob(b64), arr = new Uint8Array(raw.length);
+  for (var i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return arr;
+}
+function _pushSupported() {
+  return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
+}
+function _showPushBanner() { var b = document.getElementById('pushBanner'); if (b) b.style.display = 'block'; }
+function _hidePushBanner() { var b = document.getElementById('pushBanner'); if (b) b.style.display = 'none'; }
+function _dismissPushBanner() { _hidePushBanner(); try { localStorage.setItem('r4p-push-dismissed', String(Date.now())); } catch (e) {} }
+function _enablePush() {
+  if (!('Notification' in window)) { _hidePushBanner(); return; }
+  Notification.requestPermission().then(function (perm) {
+    if (perm === 'granted') _subscribePush();
+    _hidePushBanner();
+  });
+}
+function _subscribePush() {
+  navigator.serviceWorker.ready.then(function (reg) {
+    return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: _urlB64ToUint8(VAPID_PUBLIC) });
+  }).then(function (sub) {
+    var j = sub.toJSON();
+    return fetch(SUPA_URL + '/rest/v1/athlete_push_subscriptions', {
+      method: 'POST',
+      headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=ignore-duplicates' },
+      body: JSON.stringify({ patient_id: _patientId, endpoint: sub.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth })
+    });
+  }).then(function () { _hidePushBanner(); })
+    .catch(function (e) { console.warn('push subscribe:', e); });
+}
+function _maybeOfferPush() {
+  // Seulement l'athlète (pas la vue kiné), en mode calendrier, avec push supporté.
+  // Sur iOS non installé, PushManager est absent → la bannière ne s'affiche pas.
+  if (typeof _patientId === 'undefined' || !_patientId || _kineMode) return;
+  if (!_pushSupported() || Notification.permission === 'denied') return;
+  try {
+    var d = +localStorage.getItem('r4p-push-dismissed');
+    if (d && (Date.now() - d) < 7 * 864e5 && Notification.permission !== 'granted') return; // « Plus tard » récent
+  } catch (e) {}
+  navigator.serviceWorker.ready.then(function (reg) {
+    reg.pushManager.getSubscription().then(function (sub) {
+      if (sub) return;                                   // déjà abonné
+      if (Notification.permission === 'granted') _subscribePush();  // silencieux
+      else _showPushBanner();                            // demander via bannière
     });
   });
 }

@@ -68,3 +68,32 @@ self.addEventListener('fetch', function (e) {
     })
   );
 });
+
+/* ── Web Push (notifications de changement d'agenda) ─────────────────── */
+self.addEventListener('push', function (e) {
+  var data = {};
+  try { data = e.data ? e.data.json() : {}; } catch (err) { data = { body: e.data ? e.data.text() : '' }; }
+  var title = data.title || 'Rehab4Perf';
+  var options = {
+    body: data.body || 'Votre planning a été mis à jour.',
+    icon: '/icons/athlete-192.png',
+    badge: '/icons/athlete-192.png',
+    tag: data.tag || 'r4p-agenda',
+    renotify: true,
+    data: { url: data.url || '/athlete.html' }
+  };
+  e.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', function (e) {
+  e.notification.close();
+  var target = (e.notification.data && e.notification.data.url) || '/athlete.html';
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (list) {
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].url.indexOf('/athlete.html') !== -1 && 'focus' in list[i]) return list[i].focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(target);
+    })
+  );
+});
