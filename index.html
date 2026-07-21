@@ -151,6 +151,22 @@ html, body { height:100%; overflow:hidden; background:#1A3A5C; }
 iframe { position:absolute; top:0; left:0; width:100%; height:100%; border:none; display:none; background:#fff; }
 iframe.active { display:block; }
 
+/* ── Barre d'onglets mobile (bottom nav) ─────────────────────
+   Cachée par défaut ; activée sous 700px (voir @media plus bas).
+   Reprend show('bilan'|'prescription'|'outils'|'account') — mêmes
+   cibles que les onglets desktop, plus l'accès Compte (corrige le
+   dead-end « Mon compte » masqué sur petit écran). */
+.mobnav { display:none; }
+.mobnav-tab {
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+  background:none; border:none; cursor:pointer; color:rgba(255,255,255,.55);
+  font-family:'Figtree',sans-serif; font-size:.62rem; font-weight:600; padding:6px 0 0;
+  -webkit-tap-highlight-color:transparent;
+}
+.mobnav-tab.active { color:#fff; box-shadow:inset 0 3px 0 #4A90D9; }
+.mobnav-ic { font-size:1.2rem; line-height:1; }
+.mobnav-lbl { line-height:1; }
+
 /* ── Patient selector button ─────────────────────────────── */
 .patient-btn {
   margin-left:auto;
@@ -356,6 +372,20 @@ iframe.active { display:block; }
   .pm-overlay { padding-top:52px; }
   .pm-card { max-width:100%; border-radius:10px 10px 0 0; }
 }
+/* ── Bascule mobile : onglets en bas, topnav réduite ─────────── */
+@media (max-width:700px) {
+  .topnav .tab { display:none; }          /* les onglets passent en bas */
+  .topnav-right { display:none; }          /* « Mon compte » → onglet Compte de la barre du bas */
+  .patient-btn { margin-left:auto; }       /* garde le bouton patient poussé à droite */
+  .mobnav {
+    display:flex; position:fixed; left:0; right:0; bottom:0; z-index:900;
+    height:calc(56px + env(safe-area-inset-bottom));
+    padding-bottom:env(safe-area-inset-bottom);
+    background:#1A3A5C; border-top:1px solid rgba(255,255,255,.12);
+    box-shadow:0 -2px 12px rgba(0,0,0,.28);
+  }
+  .frame-wrap { bottom:calc(56px + env(safe-area-inset-bottom)); }
+}
 
 /* ── Onboarding première connexion ─────────────────────────── */
 .ob-overlay {
@@ -485,6 +515,14 @@ iframe.active { display:block; }
   <div class="help-btn" id="helpBtn" onclick="toggleHelpDrawer(event)" title="Aide">?</div>
   <div class="topnav-right" id="userDisplay" onclick="show('account')" title="Mon compte" style="margin-left:12px;">Mon compte</div>
 </div>
+
+<!-- Barre d'onglets mobile (visible sous 700px, cf. .mobnav) -->
+<nav class="mobnav" id="mobnav">
+  <button class="mobnav-tab active" id="mtab-bilan"        onclick="show('bilan')"><span class="mobnav-ic">🩺</span><span class="mobnav-lbl">Bilan</span></button>
+  <button class="mobnav-tab" id="mtab-prescription" onclick="show('prescription')"><span class="mobnav-ic">📅</span><span class="mobnav-lbl">Programme</span></button>
+  <button class="mobnav-tab" id="mtab-outils"       onclick="show('outils')"><span class="mobnav-ic">🛠️</span><span class="mobnav-lbl">Outils</span></button>
+  <button class="mobnav-tab" id="mtab-account"      onclick="show('account')"><span class="mobnav-ic">👤</span><span class="mobnav-lbl">Compte</span></button>
+</nav>
 
 <!-- Onboarding première connexion -->
 <div class="ob-overlay" id="obOverlay">
@@ -808,6 +846,10 @@ function show(id) {
   var tab = document.getElementById('tab-' + id);
   if (tab) tab.classList.add('active');
   document.getElementById('frame-' + id).classList.add('active');
+  // Sync de la barre d'onglets mobile
+  document.querySelectorAll('.mobnav-tab').forEach(function(t){ t.classList.remove('active'); });
+  var mtab = document.getElementById('mtab-' + id);
+  if (mtab) mtab.classList.add('active');
 }
 
 /* ═══ TOPNAV ═══ */
@@ -845,11 +887,16 @@ function applyPlan(plan) {
     document.getElementById('tab-bilan').style.display       = 'none';
     document.getElementById('tab-outils').style.display      = 'none';
     document.getElementById('tab-prescription').style.display = 'none';
+    // Barre mobile : Programme + Compte seulement (Bilan/Outils masqués)
+    document.getElementById('mtab-bilan').style.display  = 'none';
+    document.getElementById('mtab-outils').style.display = 'none';
     // Activer Programme par défaut
     document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+    document.querySelectorAll('.mobnav-tab').forEach(function(t){ t.classList.remove('active'); });
     document.querySelectorAll('iframe').forEach(function(f){ f.classList.remove('active'); });
     document.getElementById('frame-prescription').classList.add('active');
     document.getElementById('frame-bilan').classList.remove('active');
+    var mp = document.getElementById('mtab-prescription'); if (mp) mp.classList.add('active');
   }
 }
 

@@ -1873,17 +1873,21 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   .exo-row > .exo-move-btns { display:none; }
   .exo-col-header { grid-template-columns: 1fr 48px 48px 42px 56px 68px 160px 28px; }
   .exo-col-header > .col-lbl:first-child { display:none; }
-}
 
-/* Mobile */
-@media (max-width:700px) {
-  :root { --sidebar-w:100%; }
-  .app { flex-direction:column; }
-  .sidebar { width:100%; max-width:100%; max-height:52vh; border-right:none; border-bottom:1px solid var(--border); }
-  .exo-row { grid-template-columns: 1fr 48px 48px 42px 56px 68px 160px 28px; }
-  .exo-row > .exo-move-btns { display:none; }
-  .exo-col-header { grid-template-columns: 1fr 48px 48px 42px 56px 68px 160px 28px; }
-  .exo-col-header > .col-lbl:first-child { display:none; }
+  /* ── Phase 1 : agenda mobile ──────────────────────────────
+     Hors mode builder, le calendrier passe en premier (la liste
+     des templates descend dessous) : coup d'œil agenda immédiat. */
+  .app:not(.builder-mode) .main { order:0; }
+  .app:not(.builder-mode) .sidebar { order:1; max-height:40vh; }
+  /* La barre d'outils du calendrier s'enroule au lieu de déborder. */
+  .cal-central-header { flex-wrap:wrap; row-gap:6px; }
+  .cal-central-header h2 { flex-basis:100%; order:-1; }
+  /* Grille du mois compacte : 7 colonnes lisibles au doigt sur ~380px. */
+  .cal-grid { grid-auto-rows:62px; gap:1px; }
+  .cal-day { padding:2px 3px; }
+  .cal-day-num { font-size:.64rem; margin-bottom:1px; }
+  .cal-session-chip { font-size:.58rem; padding:1px 4px; gap:2px; }
+  .cal-central-body { padding:10px; }
 }
 
 /* ── Évolution des charges ─────────────────────────────── */
