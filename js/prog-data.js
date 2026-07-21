@@ -1914,12 +1914,14 @@ function renderSession(){
 
         html += '</div></div>';
         html += '<div class="reps-wrap">'
+             +  '<span class="cell-lbl">Reps</span>'
              +  '<input class="cell-input" type="text" value="'+escH(e.reps)+'" placeholder="—" title="Répétitions" oninput="updateField(\''+b.id+'\',\''+e.id+'\',\'reps\',this.value)">'
              +  '<button class="percote-toggle'+(e.perCote?' active':'')+'" data-percote="'+b.id+'-'+e.id+'" onclick="togglePerCote(\''+b.id+'\',\''+e.id+'\')" title="Par côté">/côté</button>'
              +  '</div>';
-        html += '<input class="cell-input" type="text" value="'+escH(e.duree)+'" placeholder="—" title="Durée" oninput="updateField(\''+b.id+'\',\''+e.id+'\',\'duree\',this.value)">';
-        html += '<input class="cell-input" type="text" value="'+escH(e.series)+'" placeholder="—" title="Séries" oninput="updateField(\''+b.id+'\',\''+e.id+'\',\'series\',this.value)">';
+        html += '<div class="cell-wrap"><span class="cell-lbl">Durée</span><input class="cell-input" type="text" value="'+escH(e.duree)+'" placeholder="—" title="Durée" oninput="updateField(\''+b.id+'\',\''+e.id+'\',\'duree\',this.value)"></div>';
+        html += '<div class="cell-wrap"><span class="cell-lbl">Séries</span><input class="cell-input" type="text" value="'+escH(e.series)+'" placeholder="—" title="Séries" oninput="updateField(\''+b.id+'\',\''+e.id+'\',\'series\',this.value)"></div>';
         html += '<div class="chain-recup-wrap">'
+             +  '<span class="cell-lbl">Récup</span>'
              +  '<input class="cell-input'+(exoChained?' chain-dim':'')+'" type="text" value="'+escH(e.recup)+'" placeholder="—" title="Récupération" oninput="updateField(\''+b.id+'\',\''+e.id+'\',\'recup\',this.value)">';
         if(idx < b.exos.length - 1){
           html += '<button class="chain-icon-toggle'+(exoChained?' active':'')+'"'
@@ -1929,7 +1931,7 @@ function renderSession(){
           html += '</button>';
         }
         html += '</div>';
-        html += '<input class="cell-input" type="text" value="'+escH(e.tempo)+'" placeholder="—" title="Tempo" oninput="updateField(\''+b.id+'\',\''+e.id+'\',\'tempo\',this.value)">';
+        html += '<div class="cell-wrap"><span class="cell-lbl">Tempo</span><input class="cell-input" type="text" value="'+escH(e.tempo)+'" placeholder="—" title="Tempo" oninput="updateField(\''+b.id+'\',\''+e.id+'\',\'tempo\',this.value)"></div>';
         html += '<div class="cible-cell">';
         var cibles = (e.cibles && e.cibles.length) ? e.cibles : [{type:e.cibleType||'RPE', min:e.cibleVal||'', max:''}];
         cibles.forEach(function(c, ci){

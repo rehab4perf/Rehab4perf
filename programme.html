@@ -950,6 +950,10 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .builder-body .cell-input { font-size:.7rem; padding:4px 3px; }
 /* Reps + par côté wrapper */
 .reps-wrap { display:flex; flex-direction:column; gap:2px; align-items:stretch; }
+/* Durée/Séries/Tempo : même wrapper que reps/récup, pour un micro-label
+   optionnel (masqué sur desktop, affiché sur mobile — cf. media query). */
+.cell-wrap { display:flex; flex-direction:column; gap:2px; align-items:stretch; }
+.cell-lbl { display:none; }
 .percote-toggle {
   font-size:.57rem; padding:1px 3px; border:1px solid #CBD2DB; border-radius:4px;
   background:#F5F7FA; color:#9AA0A8; cursor:pointer; font-family:inherit;
@@ -1878,10 +1882,34 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   :root { --sidebar-w:100%; }
   .app { flex-direction:column; }
   .sidebar { width:100%; max-width:100%; max-height:52vh; border-right:none; border-bottom:1px solid var(--border); }
-  .exo-row { grid-template-columns: 1fr 48px 48px 42px 56px 68px 160px 28px; }
-  .exo-row > .exo-move-btns { display:none; }
-  .exo-col-header { grid-template-columns: 1fr 48px 48px 42px 56px 68px 160px 28px; }
-  .exo-col-header > .col-lbl:first-child { display:none; }
+  /* ── Ligne d'exercice du builder : illisible/superposée en grille
+     desktop (10 colonnes ultra-étroites, cf. .builder-body .exo-row).
+     Sur mobile : grille 3 colonnes, nom en pleine largeur, cible et
+     consignes en pleine largeur, micro-labels visibles (.cell-lbl,
+     masqués par défaut) pour identifier chaque champ sans l'en-tête
+     de colonnes (masqué, redondant ici). */
+  .exo-col-header { display:none; }
+  .builder-body .exo-row {
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: auto auto auto auto auto;
+    gap:8px 6px;
+    padding:14px 10px;
+    align-items:end;
+  }
+  .builder-body .exo-row > *:nth-child(1) { display:none; }                      /* monter/descendre */
+  .builder-body .exo-row > *:nth-child(2) { grid-column:1 / span 2; grid-row:1; } /* nom + vidéo */
+  .builder-body .exo-row > *:nth-child(3) { grid-column:1; grid-row:2; }          /* reps */
+  .builder-body .exo-row > *:nth-child(4) { grid-column:2; grid-row:2; }          /* durée */
+  .builder-body .exo-row > *:nth-child(5) { grid-column:3; grid-row:2; }          /* séries */
+  .builder-body .exo-row > *:nth-child(6) { grid-column:1; grid-row:3; }          /* récup */
+  .builder-body .exo-row > *:nth-child(7) { grid-column:2; grid-row:3; }          /* tempo */
+  .builder-body .exo-row > *:nth-child(8) { grid-column:1 / -1; grid-row:4; }     /* cible */
+  .builder-body .exo-row > *:nth-child(9) { grid-column:3; grid-row:1; justify-self:end; align-self:start; } /* retirer */
+  .builder-body .exo-row > *:nth-child(10){ grid-column:1 / -1; grid-row:5; }     /* EVA + consignes */
+  .cell-lbl { display:block; font-size:.58rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; }
+  .builder-body .cell-input { font-size:.85rem; padding:7px 6px; }
+  .builder-body .exo-name { font-size:.86rem; }
 
   /* ── Phase 1 : agenda mobile ──────────────────────────────
      Hors mode builder, le calendrier passe en premier (la liste
@@ -1902,8 +1930,23 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   .cal-grid { grid-auto-rows:62px; gap:1px; }
   .cal-day { padding:2px 3px; }
   .cal-day-num { font-size:.64rem; margin-bottom:1px; }
-  .cal-session-chip { font-size:.58rem; padding:1px 4px; gap:2px; }
   .cal-central-body { padding:10px; }
+  /* Séances/notes en pastilles (comme sur athlete.html) plutôt qu'en chips
+     texte : illisibles/tronquées dans une cellule de ~50px de large (cf.
+     capture praticien). Le clic reste sur le conteneur (.cal-session-chip /
+     .cal-note-chip) donc les handlers onclick d'origine restent intacts —
+     seul le contenu enfant (texte, boutons ⋮/×) est masqué. La couleur de
+     fond porte le sens (type de séance, alerte douleur…), comme les dots
+     colorés côté athlète. */
+  .cal-session-chip, .cal-note-chip {
+    display:inline-flex; width:8px; height:8px; min-width:8px; min-height:0;
+    padding:0 !important; margin:0 3px 3px 0 !important; border-radius:50%;
+    overflow:hidden; vertical-align:top; position:relative;
+  }
+  .cal-session-chip > *:not(.cal-fb-dot), .cal-note-chip > * { display:none; }
+  .cal-note-chip.chip-clinique { background:#94a3b8; }
+  .cal-note-chip.chip-patient  { background:#4338CA; }
+  .cal-overflow-badge { font-size:.52rem; padding:0 4px; }
 
   /* ── Phase 2 : builder mobile ──────────────────────────────
      Bug pré-existant : en layout colonne, .app.builder-mode .builder-panel
@@ -2930,7 +2973,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   </div><!-- /tool-panel-drawer -->
 </div><!-- /tool-panel-overlay -->
 
-<script src="js/prog-data.js?v=20260715a"></script>
+<script src="js/prog-data.js?v=20260721a"></script>
 
 <!-- ══ CYCLES MODAL ════════════════════════════════════════════ -->
 <style>
