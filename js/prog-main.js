@@ -5927,6 +5927,7 @@ function _builderUnlinkPhase(){
 function _exitBuilderMode(){
   document.getElementById('builderPanel').classList.remove('open');
   document.querySelector('.app').classList.remove('builder-mode');
+  document.querySelector('.sidebar').classList.remove('mob-lib-open');
   var lib  = document.getElementById('sidebarLibrary');
   var tmpl = document.getElementById('sidebarTemplates');
   if(lib)  lib.style.display  = 'none';
@@ -6060,7 +6061,10 @@ function closeBuilder(){
 }
 
 function toggleSidebar(){
-  document.querySelector('.sidebar').classList.toggle('collapsed');
+  var sb = document.querySelector('.sidebar');
+  var isMobileBuilder = window.innerWidth <= 700 && document.querySelector('.app').classList.contains('builder-mode');
+  if (isMobileBuilder) sb.classList.toggle('mob-lib-open');
+  else sb.classList.toggle('collapsed');
 }
 
 function _updateBuilderTitle(){

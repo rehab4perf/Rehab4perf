@@ -1457,23 +1457,26 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   min-width: 0 !important;
   border-left: none !important;
 }
-/* Zone de travail : pleine largeur */
-.app.builder-mode .session-area {
-  max-width: none;
-  padding: 20px 28px;
+/* Zone de travail : pleine largeur (desktop uniquement — sur mobile le
+   padding est réduit dans le bloc @media max-width:700px plus bas). */
+@media (min-width:701px) {
+  .app.builder-mode .session-area {
+    max-width: none;
+    padding: 20px 28px;
+  }
+  /* Revenir au layout exo-row large (9 colonnes originales) */
+  .app.builder-mode .builder-body .exo-col-header,
+  .app.builder-mode .builder-body .exo-row {
+    grid-template-columns: 28px 1fr 60px 60px 48px 60px 76px 180px 32px;
+    grid-template-rows: auto;
+    gap: 6px;
+  }
+  .app.builder-mode .builder-body .exo-row > *:nth-child(8) { grid-column: auto; grid-row: auto; }
+  .app.builder-mode .builder-body .exo-row > *:nth-child(9) { grid-column: auto; grid-row: auto; }
+  .app.builder-mode .builder-body .exo-row > *:nth-child(10) { grid-column: 1/-1; grid-row: auto; }
+  .app.builder-mode .builder-body .exo-col-header > *:nth-child(8) { display: block; }
+  .app.builder-mode .builder-body .cell-input { font-size: .78rem; padding: 5px 6px; }
 }
-/* Revenir au layout exo-row large (9 colonnes originales) */
-.app.builder-mode .builder-body .exo-col-header,
-.app.builder-mode .builder-body .exo-row {
-  grid-template-columns: 28px 1fr 60px 60px 48px 60px 76px 180px 32px;
-  grid-template-rows: auto;
-  gap: 6px;
-}
-.app.builder-mode .builder-body .exo-row > *:nth-child(8) { grid-column: auto; grid-row: auto; }
-.app.builder-mode .builder-body .exo-row > *:nth-child(9) { grid-column: auto; grid-row: auto; }
-.app.builder-mode .builder-body .exo-row > *:nth-child(10) { grid-column: 1/-1; grid-row: auto; }
-.app.builder-mode .builder-body .exo-col-header > *:nth-child(8) { display: block; }
-.app.builder-mode .builder-body .cell-input { font-size: .78rem; padding: 5px 6px; }
 .cal-central-header {
   padding:10px 14px; background:var(--surface); border-bottom:1px solid var(--border);
   display:flex; align-items:center; gap:8px; flex-shrink:0;
@@ -1857,11 +1860,17 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   .main-header h1 { font-size:.82rem; }
   .btn { padding:6px 10px; font-size:.74rem; }
   .patient-input { width:130px; }
-  /* En portrait, le builder reste dans le flux flex (même mécanique que desktop).
-     Le panel est caché via width:0/overflow:hidden par défaut — pas d'overlay absolu.
-     La sidebar bibliothèque reste visible à gauche quand le builder est ouvert. */
-  .app.builder-mode .sidebar { width:210px !important; min-width:180px !important; }
   .topbar-logo { display:none; }
+}
+
+/* Tablette portrait (701–1024px) uniquement : le builder reste dans le flux
+   flex (même mécanique que desktop), la sidebar bibliothèque reste visible
+   à gauche en rail étroit. En dessous de 701px, voir le tiroir plein écran
+   dans le bloc mobile ci-dessous — les deux media queries ne doivent jamais
+   se chevaucher (bug corrigé : cette règle débordait sur mobile via !important
+   et rendait le builder illisible). */
+@media (min-width:701px) and (max-width:1024px) {
+  .app.builder-mode .sidebar { width:210px !important; min-width:180px !important; }
 }
 
 /* Mobile */
@@ -1888,6 +1897,34 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   .cal-day-num { font-size:.64rem; margin-bottom:1px; }
   .cal-session-chip { font-size:.58rem; padding:1px 4px; gap:2px; }
   .cal-central-body { padding:10px; }
+
+  /* ── Phase 2 : builder mobile ──────────────────────────────
+     Bug pré-existant : en layout colonne, .app.builder-mode .builder-panel
+     forçait width:0 (calculé pour un layout ligne desktop, où flex-grow
+     comblait l'espace) — sur mobile le panneau restait donc invisible.
+     On lui redonne 100% de la largeur, et la bibliothèque (sidebar) passe
+     en tiroir plein écran ouvert à la demande plutôt qu'empilée au-dessus :
+     le builder garde tout l'espace vertical pour éditer les blocs. */
+  .app.builder-mode .builder-panel,
+  .app.builder-mode .builder-panel.open {
+    width:100% !important; min-width:0 !important; flex:1 1 auto !important;
+  }
+  .app.builder-mode .session-area { padding:12px 12px 80px; }
+  /* La sidebar (bibliothèque) démarre fermée en mode builder : le bouton
+     « ☰ Biblio » de la topbar (toujours visible, cf. toggleSidebar()) l'ouvre
+     en tiroir plein écran plutôt qu'empilée au-dessus du builder. */
+  .app.builder-mode .sidebar { display:none; }
+  .app.builder-mode .sidebar.mob-lib-open {
+    display:flex; position:fixed; inset:0; z-index:9500;
+    width:100%; max-width:100%; max-height:none; height:100%;
+  }
+  .mob-lib-close-btn { display:none; }
+  .app.builder-mode .sidebar.mob-lib-open .mob-lib-close-btn {
+    display:flex; align-items:center; justify-content:center;
+    width:30px; height:30px; border-radius:8px; margin-left:auto;
+    background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3);
+    color:#fff; font-size:1rem; cursor:pointer; flex-shrink:0;
+  }
 }
 
 /* ── Évolution des charges ─────────────────────────────── */
@@ -2052,6 +2089,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
     <div class="sb-tabs">
       <button class="sb-tab-btn active" id="sb-tab-btn-lib" onclick="_switchSidebarTab('lib')">Exercices</button>
       <button class="sb-tab-btn" id="sb-tab-btn-picker" onclick="_switchSidebarTab('picker')">Templates</button>
+      <button class="mob-lib-close-btn" onclick="toggleSidebar()" title="Fermer">✕</button>
     </div>
     <!-- Contenu onglet Exercices -->
     <div id="sb-tab-lib">
