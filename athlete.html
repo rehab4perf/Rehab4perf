@@ -2353,9 +2353,9 @@ function _subscribePush() {
     return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: _urlB64ToUint8(VAPID_PUBLIC) });
   }).then(function (sub) {
     var j = sub.toJSON();
-    return fetch(SUPA_URL + '/rest/v1/athlete_push_subscriptions', {
+    return fetch(SUPA_URL + '/functions/v1/save-push-subscription', {
       method: 'POST',
-      headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=ignore-duplicates' },
+      headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({ patient_id: _patientId, endpoint: sub.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth })
     });
   }).then(function () { _hidePushBanner(); })
