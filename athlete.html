@@ -529,6 +529,7 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
     <div class="header-sub" id="headerSub">Programme athlète</div>
     <div class="header-patient" id="headerPatient"></div>
   </div>
+  <button class="header-btn" id="installBtn" onclick="openInstallGuide()" style="margin-right:6px;">📲 Installer</button>
   <button class="header-btn" id="refreshBtn" onclick="refresh()">↻ Actualiser</button>
 </div>
 
@@ -564,6 +565,17 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
       <button class="prog-modal-close" onclick="closeMsgModal()" style="color:#fff;">✕</button>
     </div>
     <div class="prog-modal-body" id="msgModalBody" style="padding:20px;"></div>
+  </div>
+</div>
+
+<!-- Modal tuto installation écran d'accueil -->
+<div class="prog-modal-overlay" id="installModal" onclick="if(event.target===this)closeInstallGuide()">
+  <div class="prog-modal" style="max-width:440px;">
+    <div class="prog-modal-header" style="background:#1A3A5C;">
+      <div class="prog-modal-title" style="color:#fff;">📲 Installer l'app sur ton téléphone</div>
+      <button class="prog-modal-close" onclick="closeInstallGuide()" style="color:#fff;">✕</button>
+    </div>
+    <div class="prog-modal-body" id="installModalBody" style="padding:18px 20px;"></div>
   </div>
 </div>
 
@@ -2325,6 +2337,7 @@ if ('serviceWorker' in navigator) {
     });
   });
 }
+window.addEventListener('load', function () { _maybeOfferInstallGuide(); });
 
 /* ── Web Push : abonnement de l'athlète (app installée) ─────────────── */
 var VAPID_PUBLIC = 'BDmfkeEvhdOG1CGaVFBUn7vsFYqYia4_YUtsFK9n0fPtIIc52WADnUHhVaVIZPnvV3OicUod6aORVvJbXU4ZmMo';
@@ -2377,6 +2390,71 @@ function _maybeOfferPush() {
       else _showPushBanner();                            // demander via bannière
     });
   });
+}
+
+/* ── Tuto « Installer sur l'écran d'accueil » ─────────────────────────
+   iOS et Android n'offrent aucun moyen d'installer une PWA depuis un lien
+   partagé automatiquement (pas de prompt natif fiable, surtout sur iOS
+   Safari) : on explique la manip en quelques étapes, adaptées à l'appareil
+   détecté via userAgent. */
+function _isStandalone() {
+  return window.matchMedia && window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+}
+function _installPlatform() {
+  var ua = navigator.userAgent || '';
+  if (/iPhone|iPad|iPod/i.test(ua)) return 'ios';
+  if (/Android/i.test(ua)) return 'android';
+  return 'other';
+}
+function _installGuideHtml() {
+  var plat = _installPlatform();
+  var steps;
+  if (plat === 'ios') {
+    steps = [
+      ['Appuie sur le bouton <b>Partager</b>', 'L’icône carrée avec une flèche vers le haut, en bas de l’écran Safari (ou en haut sur iPad).'],
+      ['Choisis <b>« Sur l’écran d’accueil »</b>', 'Fais défiler la liste si besoin — l’icône ressemble à un petit rectangle avec un « + ».'],
+      ['Appuie sur <b>Ajouter</b>', 'Une icône Rehab4Perf apparaît sur ton écran d’accueil, comme une vraie application.'],
+      ['Ouvre l’app depuis cette icône', 'C’est important : les notifications ne fonctionnent que si tu l’ouvres depuis l’icône installée, pas depuis Safari.']
+    ];
+  } else if (plat === 'android') {
+    steps = [
+      ['Appuie sur le menu <b>⋮</b> de Chrome', 'En haut à droite de l’écran.'],
+      ['Choisis <b>« Installer l’application »</b>', 'Ou « Ajouter à l’écran d’accueil » selon la version. Un bandeau propose parfois directement l’installation — dans ce cas, appuie dessus.'],
+      ['Confirme l’installation', 'Une icône Rehab4Perf apparaît sur ton écran d’accueil.'],
+      ['Ouvre l’app depuis cette icône', 'Tu retrouveras ton calendrier comme une vraie application, en plein écran.']
+    ];
+  } else {
+    steps = [
+      ['Ouvre ce lien sur ton téléphone', 'Depuis Safari (iPhone/iPad) ou Chrome (Android).'],
+      ['Utilise le menu de partage ou le menu ⋮ du navigateur', 'Cherche « Sur l’écran d’accueil » (iPhone) ou « Installer l’application » (Android).'],
+      ['Ouvre l’app depuis l’icône ajoutée', 'Elle se comporte alors comme une vraie application.']
+    ];
+  }
+  var html = '<p style="margin:0 0 14px;font-size:.85rem;color:var(--muted);line-height:1.5;">Une fois installée, tu retrouves ton calendrier en un tap, sans passer par tes messages — et tu peux activer les notifications pour être prévenu dès que ton praticien modifie ton planning.</p>';
+  html += '<ol style="margin:0;padding:0 0 0 22px;display:flex;flex-direction:column;gap:14px;">';
+  steps.forEach(function (s) {
+    html += '<li style="font-size:.85rem;line-height:1.4;"><div style="font-weight:700;color:var(--text);margin-bottom:2px;">' + s[0] + '</div><div style="color:var(--muted);font-size:.78rem;">' + s[1] + '</div></li>';
+  });
+  html += '</ol>';
+  return html;
+}
+function openInstallGuide() {
+  var body = document.getElementById('installModalBody');
+  if (body) body.innerHTML = _installGuideHtml();
+  var m = document.getElementById('installModal');
+  if (m) m.classList.add('open');
+  try { localStorage.setItem('r4p-install-guide-seen', String(Date.now())); } catch (e) {}
+}
+function closeInstallGuide() {
+  var m = document.getElementById('installModal');
+  if (m) m.classList.remove('open');
+}
+function _maybeOfferInstallGuide() {
+  if (typeof _patientId === 'undefined' || !_patientId || _kineMode) return;
+  if (_isStandalone()) return; // déjà installée
+  try { if (localStorage.getItem('r4p-install-guide-seen')) return; } catch (e) {}
+  setTimeout(openInstallGuide, 900);
 }
 </script>
 </body>

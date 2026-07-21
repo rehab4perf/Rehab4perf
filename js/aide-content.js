@@ -292,7 +292,7 @@ sections: [
       { t:'Menu ⋯ → « Partager le calendrier »', x:'Deux modes : « Partager au patient » (séances et feedback uniquement) ou « Partager à un kiné » (séances + notes cliniques, pour une prise en charge partagée).', img:true },
       { t:'Copiez le lien et envoyez-le', x:'SMS, WhatsApp ou email. Le lien reste valable en permanence : pas besoin de le renvoyer à chaque séance. Le nom du patient est inclus en clair dans le lien copié — pratique pour reconnaître à qui il correspond dans votre historique de conversation, et il s\'affiche aussi en titre dans l\'en-tête de la page que l\'athlète ou le confrère ouvre.' },
       { t:'Le lien de partage d\'un programme (bouton 📤)', x:'Depuis le builder ou l\'historique des programmes, le bouton 📤 copie de la même façon un lien à sens unique vers ce programme précis, avec le nom du patient inclus.' },
-      { t:'Conseillez à l\'athlète de l\'ajouter à son écran d\'accueil', x:'Il retrouvera son calendrier comme une application.' }
+      { t:'Conseillez à l\'athlète de l\'ajouter à son écran d\'accueil', x:'Il retrouvera son calendrier comme une application. Un bouton « 📲 Installer » sur sa page ouvre directement un tuto pas-à-pas adapté à son téléphone (iPhone ou Android) — voir la section Notifications push ci-dessous.' }
     ]},
   { id:'vue-athlete', titre:'Ce que voit l\'athlète',
     intro:'Un calendrier épuré de ses séances, et le détail de chaque exercice avec vidéo.',
@@ -313,6 +313,15 @@ sections: [
       { t:'Séance classique : durée réelle + effort Borg (1–10)', x:'L\'app calcule la charge : RPE × durée = UA.' },
       { t:'Séance CAP / HSR : douleur EVA + effort', x:'Deux échelles distinctes — la douleur pilote l\'adaptation du protocole, jamais convertie en charge.' },
       { t:'Envoi en un clic', x:'Vous recevez une notification dans la cloche dès que le retour arrive.' }
+    ]},
+  { id:'push-athlete', titre:'Notifications push sur le téléphone de l\'athlète 🔔',
+    intro:'Si l\'athlète a installé l\'app sur son écran d\'accueil et activé les notifications, il reçoit une alerte sur son téléphone dès que vous modifiez son planning — sans avoir besoin d\'ouvrir l\'app pour le découvrir.',
+    etapes:[
+      { t:'Ce qui déclenche une notification', x:'Planifier une nouvelle séance (quel que soit le mode : ajout rapide, template, builder, protocole/cycle), déplacer ou dupliquer une séance existante, et envoyer un message patient.' },
+      { t:'Ce qui ne déclenche rien', x:'Les modifications de contenu à l\'intérieur d\'une séance déjà planifiée (exercices, séries…) et les notes cliniques (réservées à vous, jamais visibles par l\'athlète) ne notifient pas.' },
+      { t:'Regroupement automatique', x:'Si vous planifiez plusieurs séances d\'un coup, l\'athlète reçoit une seule notification groupée plutôt qu\'une rafale.' },
+      { t:'Ce que voit l\'athlète', x:'À sa première visite, l\'app lui propose d\'activer les notifications (bannière en bas de l\'écran). Il peut aussi les activer plus tard depuis les réglages de son téléphone.' },
+      { t:'Si l\'athlète ne reçoit rien', x:'Vérifiez qu\'il a bien installé l\'app depuis l\'icône « 📲 Installer » (les notifications ne fonctionnent pas depuis un onglet de navigateur classique, seulement depuis l\'app installée) et qu\'il a autorisé les notifications au niveau de son téléphone.' }
     ]}
 ]},
 
