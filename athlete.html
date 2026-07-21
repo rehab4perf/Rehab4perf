@@ -2451,8 +2451,8 @@ function closeInstallGuide() {
   if (m) m.classList.remove('open');
 }
 function _maybeOfferInstallGuide() {
+  if (_isStandalone()) { var b = document.getElementById('installBtn'); if (b) b.style.display = 'none'; return; }
   if (typeof _patientId === 'undefined' || !_patientId || _kineMode) return;
-  if (_isStandalone()) return; // déjà installée
   try { if (localStorage.getItem('r4p-install-guide-seen')) return; } catch (e) {}
   setTimeout(openInstallGuide, 900);
 }
