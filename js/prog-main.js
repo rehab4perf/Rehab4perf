@@ -1875,6 +1875,7 @@ function addCalEventCloud(progId) {
     if(!r.ok){ return r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); }); }
     closeCalPicker();
     renderCalendar();
+    _notifyAthleteAgenda('Nouvelle séance planifiée le '+_fmtNotifDate(_calPickerDate));
   })
   .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
 }
@@ -5752,7 +5753,7 @@ function confirmQuickAdd(){
       })
       .then(function(r){
         if(!r) return;
-        if(r.ok){ renderCalendar(); _showToast('📅 Séance planifiée !'); }
+        if(r.ok){ renderCalendar(); _showToast('📅 Séance planifiée !'); _notifyAthleteAgenda('Nouvelle séance planifiée le '+_fmtNotifDate(_qaSelectedDate)); }
         else { r.json().then(function(d){ alert('Erreur planification : '+JSON.stringify(d)); }); }
       });
     })
@@ -6015,6 +6016,7 @@ function _saveAndPlanForDate(){
       var _tp = (_builderDate||'').split('-');
       var _months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
       _showToast('✓ Séance planifiée le '+parseInt(_tp[2]||0)+' '+(_months[parseInt(_tp[1]||1)-1]||'')+' !');
+      _notifyAthleteAgenda('Nouvelle séance planifiée le '+_fmtNotifDate(dateToSchedule));
       _resetBuilderState();
       closeBuilder();
       renderCalendar();
@@ -10019,6 +10021,7 @@ function _capExportToCalendar() {
     if (btn) { btn.disabled = false; btn.textContent = 'Ajouter à l\'agenda →'; }
     renderCalendar();
     _renderAgendaProgList('cap');
+    _notifyAthleteAgenda(dates.length===1 ? ('Nouvelle séance planifiée le '+_fmtNotifDate(dates[0])) : (dates.length+' nouvelles séances planifiées'));
   })
   .catch(function(err) {
     if (statusEl) {
@@ -10551,6 +10554,7 @@ function _hsrExportToCalendar() {
     if (btn) { btn.disabled = false; btn.textContent = 'Ajouter à l\'agenda →'; }
     renderCalendar();
     _renderAgendaProgList('hsr');
+    _notifyAthleteAgenda(dates.length===1 ? ('Nouvelle séance planifiée le '+_fmtNotifDate(dates[0])) : (dates.length+' nouvelles séances planifiées'));
   })
   .catch(function(err) {
     if (statusEl) {
