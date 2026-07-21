@@ -1885,7 +1885,14 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 
   /* ── Phase 1 : agenda mobile ──────────────────────────────
      Hors mode builder, le calendrier passe en premier (la liste
-     des templates descend dessous) : coup d'œil agenda immédiat. */
+     des templates descend dessous) : coup d'œil agenda immédiat.
+     Bug corrigé : .builder-panel a une règle de base height:100%
+     (pensée pour le layout ligne desktop, où width:0 suffit à le
+     rendre invisible). En layout colonne mobile, height:100% force
+     ce panneau — pourtant fermé — à occuper TOUTE la hauteur de
+     .app, écrasant .main à 0px et poussant .sidebar hors écran.
+     On lui redonne 0 quand le builder n'est pas ouvert. */
+  .app:not(.builder-mode) .builder-panel { height:0; }
   .app:not(.builder-mode) .main { order:0; }
   .app:not(.builder-mode) .sidebar { order:1; max-height:40vh; }
   /* La barre d'outils du calendrier s'enroule au lieu de déborder. */
@@ -1937,7 +1944,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   .btn-label { display:none; }
   .topbar { padding:0 8px; gap:6px; }
   .topbar-logo { display:none; }
-  .topbar-patient { flex:0 1 auto; min-width:0; }
+  .topbar-patient { flex:1 1 auto; min-width:0; }
   .topbar-right { flex-shrink:0; }
   .topbar-btn { flex-shrink:0; padding:5px 9px; }
 
