@@ -3007,21 +3007,29 @@ function _fmtNotifDate(dateStr){
     return parseInt(p[2],10) + ' ' + m[parseInt(p[1],10)-1];
   } catch(e){ return ''; }
 }
+function _flushAthleteNotif(){
+  clearTimeout(_r4pNotifTimer);
+  var msgs = _r4pNotifMsgs.slice(); _r4pNotifMsgs = [];
+  var pid = _r4pNotifPid;
+  if(!pid || !msgs.length) return;
+  var body = msgs.length === 1 ? msgs[0] : 'Votre planning a été mis à jour.';
+  _fetchRetry(SUPA_URL_P+'/functions/v1/notify-athlete', {
+    method:'POST', headers:_sbHeaders(),
+    body: JSON.stringify({ patient_id:pid, title:'Rehab4Perf', body:body })
+  }).catch(function(){});
+}
+// Le debounce (setTimeout) est mis en pause par le navigateur si l'onglet
+// passe en arrière-plan avant son échéance (fréquent sur mobile : l'utilisateur
+// bascule vers l'app Messages/Notifications juste après l'action) — on force
+// alors l'envoi immédiat plutôt que de perdre silencieusement la notif.
+document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'hidden') _flushAthleteNotif(); });
+window.addEventListener('pagehide', _flushAthleteNotif);
 function _notifyAthleteAgenda(msg){
   if(!_progPatient || !_progUid || !_progPatient.id) return;
   _r4pNotifPid = _progPatient.id;
   if(msg) _r4pNotifMsgs.push(msg);
   clearTimeout(_r4pNotifTimer);
-  _r4pNotifTimer = setTimeout(function(){
-    var msgs = _r4pNotifMsgs.slice(); _r4pNotifMsgs = [];
-    var pid = _r4pNotifPid;
-    if(!pid || !msgs.length) return;
-    var body = msgs.length === 1 ? msgs[0] : 'Votre planning a été mis à jour.';
-    _fetchRetry(SUPA_URL_P+'/functions/v1/notify-athlete', {
-      method:'POST', headers:_sbHeaders(),
-      body: JSON.stringify({ patient_id:pid, title:'Rehab4Perf', body:body })
-    }).catch(function(){});
-  }, 1500);
+  _r4pNotifTimer = setTimeout(_flushAthleteNotif, 1500);
 }
 
 function _calMoveEvent(evId, progId, targetDate, sourceDate){
