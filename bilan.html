@@ -1375,6 +1375,10 @@ textarea { resize:none !important; overflow:hidden !important; }
   .main { min-height: 0; flex: 1; }
   .page-header { padding: 12px 12px 0; }
   .page-content { padding: 12px 10px 24px; }
+  /* Illustration décorative d'angle (aria-hidden, absolue à droite) : sur
+     un en-tête étroit elle passe sous le titre/sous-titre (surtout les CR,
+     au sous-titre long). Masquée sur mobile — le texte prime sur la déco. */
+  .page-corner-icon { display: none; }
   .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr !important; }
   /* Champs empilés en 1 colonne : à ~375px, 2 colonnes tronquent les
      valeurs longues (activité pro, sport/objectif) et débordent (dates). */
