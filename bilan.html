@@ -1406,7 +1406,23 @@ textarea { resize:none !important; overflow:hidden !important; }
   .test-name { padding: 2px 4px; }
   .test-name.sub { padding-left: 14px; }
   .result-cell, .note-cell { width: auto !important; padding: 3px 4px; }
-}
+
+  /* ── Tests fonctionnels (.measure-row) ────────────────────
+     Grille fixe Test | Côté gauche | Côté droit | LSI % | Statut
+     (≈ 625px) → débordait et était clippée par overflow-x:hidden à
+     375px. Sur mobile : l'intitulé « Test » (label des lignes de
+     données, en-tête des lignes de titre) passe en pleine largeur,
+     puis les 4 cellules restantes s'écoulent en 2 colonnes → Côté
+     gauche | Côté droit, puis LSI % | Statut. La comparaison G/D
+     reste côte à côte et chaque cellule s'aligne sous son en-tête. */
+  .measure-row { grid-template-columns: 1fr 1fr !important; }
+  .measure-label,
+  .measure-row > .col-header:first-child { grid-column: 1 / -1; }
+  /* Table normative (5 colonnes, table-layout:auto) : le contenu la
+     forçait ~20px plus large que son conteneur → dernière colonne
+     (Interprétation) clippée. Padding et police resserrés pour tenir. */
+  .norm-table { font-size: .76rem; }
+  .norm-table th, .norm-table td { padding: 6px 5px; }
 /* ── Pain zones ── */
 .pain-zones-wrap { display:flex; flex-direction:column; gap:8px; }
 .pain-zones-list { display:flex; flex-wrap:wrap; gap:6px; min-height:28px; }
