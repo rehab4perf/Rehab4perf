@@ -1379,6 +1379,33 @@ textarea { resize:none !important; overflow:hidden !important; }
   /* Champs empilés en 1 colonne : à ~375px, 2 colonnes tronquent les
      valeurs longues (activité pro, sport/objectif) et débordent (dates). */
   .form-grid, .form-grid.triple { grid-template-columns: 1fr !important; }
+  /* Paires de tableaux mises côte à côte via une grille 2 col inline
+     (98 wrappers) : illisibles à ~187px chacune → une seule colonne.
+     Exception : les blocs bilatéraux (comparaison Côté Gauche/Droit,
+     repérés par leur en-tête .sl-g) gardent leurs 2 colonnes — sinon les
+     en-têtes G/D se retrouvent empilés et déconnectés de leurs colonnes. */
+  [style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr !important; }
+  .block:has(.sl-g) [style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr 1fr !important; }
+
+  /* ── Tableaux de tests cliniques (.test-table) ────────────
+     table-layout:fixed 3 colonnes → la colonne Observation était
+     écrasée à ~35px, inutilisable. Sur mobile chaque ligne devient
+     une carte empilée : nom du test, puis Résultat, puis Observation,
+     chacun en pleine largeur. Le thead (Test/Résultat/Obs.) est masqué
+     (redondant une fois empilé : le select et le champ obs sont
+     explicites). Les colonnes Côté Gauche/Droit (sl-g/sl-d) sont
+     ré-étiquetées via ::before puisque l'en-tête disparaît. */
+  .test-table, .test-table > tbody, .test-table > tbody > tr, .test-table > tbody > tr > td {
+    display: block; width: auto !important;
+  }
+  .test-table thead { display: none; }
+  .test-table > tbody > tr { padding: 8px 4px; border-bottom: 1px solid var(--border); }
+  .test-table > tbody > tr:last-child { border-bottom: none; }
+  .test-table tr:hover td { background: transparent; }
+  .test-table td { border-bottom: none !important; padding: 3px 4px; }
+  .test-name { padding: 2px 4px; }
+  .test-name.sub { padding-left: 14px; }
+  .result-cell, .note-cell { width: auto !important; padding: 3px 4px; }
 }
 /* ── Pain zones ── */
 .pain-zones-wrap { display:flex; flex-direction:column; gap:8px; }
