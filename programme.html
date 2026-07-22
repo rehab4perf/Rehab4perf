@@ -1652,7 +1652,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .cal-view-btn:not(.active):hover { background:var(--bg); }
 .cal-day-header { text-align:center; font-size:.68rem; font-weight:700; color:var(--muted); letter-spacing:.06em; padding:4px 0; }
 .cal-day {
-  height:88px; overflow:hidden; border:1px solid var(--border); border-radius:6px;
+  height:100%; overflow:hidden; border:1px solid var(--border); border-radius:6px;
   padding:4px; background:var(--surface); cursor:pointer; transition:background .12s;
 }
 .cal-day:hover { background:#F0F6FF; }
@@ -1922,7 +1922,16 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
      On lui redonne 0 quand le builder n'est pas ouvert. */
   .app:not(.builder-mode) .builder-panel { height:0; }
   .app:not(.builder-mode) .main { order:0; }
-  .app:not(.builder-mode) .sidebar { order:1; max-height:40vh; }
+  /* L'agenda seul par défaut : la liste Séances & Templates ne s'empile
+     plus dessous (elle prenait jusqu'à 40vh en permanence). Elle passe
+     dans le même tiroir plein écran que la bibliothèque d'exercices,
+     ouvert par le même bouton topbar (cf. toggleSidebar() générique et
+     le libellé qui s'adapte au mode dans _enterBuilderMode/_exitBuilderMode). */
+  .app:not(.builder-mode) .sidebar { display:none; }
+  .app:not(.builder-mode) .sidebar.mob-lib-open {
+    display:flex; position:fixed; inset:0; z-index:9500;
+    width:100%; max-width:100%; max-height:none; height:100%;
+  }
   /* La barre d'outils du calendrier s'enroule au lieu de déborder. */
   .cal-central-header { flex-wrap:wrap; row-gap:6px; }
   .cal-central-header h2 { flex-basis:100%; order:-1; }
@@ -1934,7 +1943,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   /* Séances/notes en pastilles dans la grille du mois (comme athlete.html) :
      illisibles/tronquées en chips texte dans une cellule de ~50px de large.
      Scopé à .cal-day/.cal-week-cell uniquement — la même chip réutilisée
-     dans le popover jour (#cal-day-popover, cf. _dayCellClick ci-dessous)
+     dans la feuille jour (#cal-day-sheet-backdrop, cf. _openDayBottomSheet)
      garde son rendu texte complet, lisible et cliquable individuellement. */
   .cal-day .cal-session-chip, .cal-day .cal-note-chip,
   .cal-week-cell .cal-session-chip, .cal-week-cell .cal-note-chip {
@@ -1947,10 +1956,9 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   .cal-day .cal-note-chip.chip-clinique, .cal-week-cell .cal-note-chip.chip-clinique { background:#94a3b8; }
   .cal-day .cal-note-chip.chip-patient, .cal-week-cell .cal-note-chip.chip-patient  { background:#4338CA; }
   .cal-overflow-badge { font-size:.52rem; padding:0 4px; }
-  /* Popover jour (liste complète, tap = ouvrir la séance) : lignes plus
+  /* Feuille jour (liste complète, tap = ouvrir la séance) : lignes plus
      grandes et tactiles que sur desktop. */
-  #cal-day-popover { max-width:min(88vw,290px) !important; }
-  #cal-day-popover .cal-session-chip, #cal-day-popover .cal-note-chip { font-size:.74rem !important; padding:6px 8px !important; }
+  #cal-day-sheet-backdrop .cal-session-chip, #cal-day-sheet-backdrop .cal-note-chip { font-size:.78rem !important; padding:8px 9px !important; }
 
   /* ── Phase 2 : builder mobile ──────────────────────────────
      Bug pré-existant : en layout colonne, .app.builder-mode .builder-panel
@@ -1973,12 +1981,13 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
     width:100%; max-width:100%; max-height:none; height:100%;
   }
   .mob-lib-close-btn { display:none; }
-  .app.builder-mode .sidebar.mob-lib-open .mob-lib-close-btn {
+  .sidebar.mob-lib-open .mob-lib-close-btn {
     display:flex; align-items:center; justify-content:center;
     width:30px; height:30px; border-radius:8px; margin-left:auto;
     background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3);
     color:#fff; font-size:1rem; cursor:pointer; flex-shrink:0;
   }
+  .stmpl-header { display:flex; align-items:flex-start; gap:8px; }
 
   /* ── En-têtes qui débordaient de l'écran ──────────────────
      La topbar (☰ Biblio / Journal / ··· / + Séance) et l'en-tête du
@@ -2106,7 +2115,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
     <span id="topbarPatientName" class="topbar-patient-name" style="display:none;"></span>
   </div>
   <div class="topbar-right">
-    <button class="topbar-btn" id="topbarBiblioBtn" onclick="toggleSidebar()" title="Bibliothèque d'exercices">📚<span class="btn-label"> Biblio</span></button>
+    <button class="topbar-btn" id="topbarBiblioBtn" onclick="toggleSidebar()" title="Séances & templates">📁<span class="btn-label"> Templates</span></button>
     <button class="topbar-btn" onclick="openJournal()" id="topbarJournalBtn" title="Journal"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="16" height="16" fill="currentColor" style="vertical-align:middle;margin-right:2px"><path fill-rule="evenodd" clip-rule="evenodd" d="M10 11C9.44772 11 9 11.4477 9 12V39C9 39.5523 9.44772 40 10 40H38C38.5509 40 39 39.5515 39 38.9978V12.0022C39 11.4485 38.5509 11 38 11H35V9H38C39.6583 9 41 10.3467 41 12.0022V38.9978C41 40.6533 39.6583 42 38 42H10C8.34315 42 7 40.6569 7 39V12C7 10.3431 8.34315 9 10 9H15V11H10ZM31 11H19V9H31V11Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M39 20H9V18H39V20Z"/><path d="M15 7C15 6.44772 15.4477 6 16 6C16.5523 6 17 6.44772 17 7V14C17 14.5523 16.5523 15 16 15C15.4477 15 15 14.5523 15 14V7Z"/><path d="M31 7C31 6.44772 31.4477 6 32 6C32.5523 6 33 6.44772 33 7V14C33 14.5523 32.5523 15 32 15C31.4477 15 31 14.5523 31 14V7Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M17 25H15V27H17V25ZM15 23C13.8954 23 13 23.8954 13 25V27C13 28.1046 13.8954 29 15 29H17C18.1046 29 19 28.1046 19 27V25C19 23.8954 18.1046 23 17 23H15Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M25 25H23V27H25V25ZM23 23C21.8954 23 21 23.8954 21 25V27C21 28.1046 21.8954 29 23 29H25C26.1046 29 27 28.1046 27 27V25C27 23.8954 26.1046 23 25 23H23Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M33 25H31V27H33V25ZM31 23C29.8954 23 29 23.8954 29 25V27C29 28.1046 29.8954 29 31 29H33C34.1046 29 35 28.1046 35 27V25C35 23.8954 34.1046 23 33 23H31Z"/></svg><span class="btn-label"> Journal</span></button>
     <button class="topbar-btn" id="topbarMoreBtn" onclick="_toggleMoreMenu(event)" title="Plus d'outils" style="letter-spacing:.1em;font-weight:700">···</button>
     <button class="topbar-btn primary" onclick="openBuilderNew()" id="topbarNewBtn" title="Nouvelle séance">+<span class="btn-label"> Séance</span></button>
@@ -2137,8 +2146,11 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   <!-- ── Panel Templates (mode calendrier, affiché par défaut) ── -->
   <div id="sidebarTemplates">
     <div class="stmpl-header">
-      <div class="stmpl-title">Séances &amp; Templates</div>
-      <input class="stmpl-search" type="text" id="stmplSearch" placeholder="Rechercher…" oninput="filterSidebarTemplates()">
+      <div style="flex:1;min-width:0;">
+        <div class="stmpl-title">Séances &amp; Templates</div>
+        <input class="stmpl-search" type="text" id="stmplSearch" placeholder="Rechercher…" oninput="filterSidebarTemplates()">
+      </div>
+      <button class="mob-lib-close-btn" onclick="toggleSidebar()" title="Fermer">✕</button>
     </div>
     <div class="stmpl-filter-bar">
       <select class="stmpl-cat-select" id="stmplCatFilter" onchange="filterSidebarTemplates()">
@@ -3942,6 +3954,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 
 </div>
 
-<script src="js/prog-main.js?v=20260721c"></script>
+<script src="js/prog-main.js?v=20260721d"></script>
 </body>
 </html>

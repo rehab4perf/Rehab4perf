@@ -1540,18 +1540,53 @@ function _feedbackSave(sid) {
 }
 
 /* ── Popover jour complet (overflow chips) ── */
+function _dayPopoverLabel(dateStr){
+  var mshort = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  var dshort = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+  var dt = new Date(dateStr + 'T00:00:00');
+  return dshort[dt.getDay()] + ' ' + dt.getDate() + ' ' + mshort[dt.getMonth()];
+}
+
+/* Mobile : feuille pleine largeur ancrée en bas de l'écran, indépendante
+   de tout calcul de position (contrairement à la version desktop
+   ci-dessous, ancrée près du clic via getBoundingClientRect) — plus de
+   popover mal placé selon le scroll/la mise en page de l'iframe. Un fond
+   plein écran ferme au tap, sans la course désktop->ferme-au-lieu-de-
+   rouvrir d'un simple `document` click listener. */
+function _openDayBottomSheet(dateStr){
+  var existing = document.getElementById('cal-day-sheet-backdrop');
+  if(existing) existing.remove();
+  var cellDate = new Date(dateStr + 'T00:00:00');
+  var allHtml = _buildDayChips(dateStr, cellDate, true);
+  var backdrop = document.createElement('div');
+  backdrop.id = 'cal-day-sheet-backdrop';
+  backdrop.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,.35);'
+    + 'display:flex;align-items:flex-end;justify-content:center;';
+  backdrop.onclick = function(e){ if(e.target===backdrop) backdrop.remove(); };
+  var sheet = document.createElement('div');
+  sheet.style.cssText = 'width:100%;max-width:420px;max-height:70vh;overflow-y:auto;'
+    + 'background:#fff;border-radius:16px 16px 0 0;box-shadow:0 -8px 28px rgba(0,0,0,.2);padding:14px 14px 18px;';
+  sheet.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
+    + '<span style="font-size:.9rem;font-weight:700;color:var(--navy);">'+escH(_dayPopoverLabel(dateStr))+'</span>'
+    + '<button onclick="document.getElementById(\'cal-day-sheet-backdrop\').remove()" '
+    + 'style="border:none;background:var(--bg);border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1rem;line-height:1;color:var(--muted);">✕</button>'
+    + '</div>'
+    + '<div style="display:flex;flex-direction:column;gap:6px;">'+allHtml+'</div>'
+    + '<button onclick="document.getElementById(\'cal-day-sheet-backdrop\').remove();openCalPicker(\''+dateStr+'\')" '
+    + 'style="width:100%;margin-top:10px;padding:10px;border:1px dashed var(--border);border-radius:9px;background:none;'
+    + 'color:var(--accent);font-size:.8rem;font-weight:600;cursor:pointer;font-family:inherit;">+ Ajouter une séance</button>';
+  backdrop.appendChild(sheet);
+  document.body.appendChild(backdrop);
+}
+
 function _openDayPopover(dateStr, anchorId){
+  if (window.innerWidth <= 700) { _openDayBottomSheet(dateStr); return; }
   var existing = document.getElementById('cal-day-popover');
   if(existing){ existing.remove(); return; }
   var anchor = document.getElementById(anchorId);
   if(!anchor) return;
   var rect = anchor.getBoundingClientRect();
-  var cellDate = new Date(dateStr + 'T00:00:00');
-  var allHtml = _buildDayChips(dateStr, cellDate, true);
-  var mshort = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
-  var dshort = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
-  var dt = new Date(dateStr + 'T00:00:00');
-  var dlabel = dshort[dt.getDay()] + ' ' + dt.getDate() + ' ' + mshort[dt.getMonth()];
+  var allHtml = _buildDayChips(dateStr, new Date(dateStr + 'T00:00:00'), true);
   var pop = document.createElement('div');
   pop.id = 'cal-day-popover';
   var left = Math.max(4, Math.min(rect.left, window.innerWidth - 254));
@@ -1561,7 +1596,7 @@ function _openDayPopover(dateStr, anchorId){
     + 'background:#fff;border:1px solid var(--border);border-radius:10px;'
     + 'box-shadow:0 8px 28px rgba(0,0,0,.16);padding:10px;min-width:200px;max-width:250px;';
   pop.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;">'
-    + '<span style="font-size:.78rem;font-weight:700;color:var(--navy);">'+escH(dlabel)+'</span>'
+    + '<span style="font-size:.78rem;font-weight:700;color:var(--navy);">'+escH(_dayPopoverLabel(dateStr))+'</span>'
     + '<button onclick="document.getElementById(\'cal-day-popover\').remove()" '
     + 'style="border:none;background:none;cursor:pointer;font-size:1rem;line-height:1;color:var(--muted);padding:0;">✕</button>'
     + '</div>'
@@ -5812,6 +5847,7 @@ function _enterBuilderMode(){
   var tmpl = document.getElementById('sidebarTemplates');
   if(lib)  lib.style.display  = 'flex';
   if(tmpl) tmpl.style.display = 'none';
+  _updateSidebarToggleBtn(true);
   // Toujours démarrer sur l'onglet exercices
   _switchSidebarTab('lib');
   renderTemplatesInBuilder();
@@ -5953,6 +5989,7 @@ function _exitBuilderMode(){
   var tmpl = document.getElementById('sidebarTemplates');
   if(lib)  lib.style.display  = 'none';
   if(tmpl){ tmpl.style.display = 'flex'; renderSidebarTemplates(); }
+  _updateSidebarToggleBtn(false);
   // Réinitialiser la liaison de phase
   _builderLinkedPhase = null;
   var banner = document.getElementById('builder-proto-banner');
@@ -6081,10 +6118,24 @@ function closeBuilder(){
   _exitBuilderMode();
 }
 
+/* Le bouton topbar ouvre le même panneau latéral dans les deux modes
+   (Bibliothèque d'exercices en builder, Séances & Templates sur l'agenda) :
+   son libellé/icône suit le contenu réellement affiché. */
+function _updateSidebarToggleBtn(isBuilder){
+  var btn = document.getElementById('topbarBiblioBtn');
+  if(!btn) return;
+  if(isBuilder){
+    btn.title = 'Bibliothèque d\'exercices';
+    btn.innerHTML = '📚<span class="btn-label"> Biblio</span>';
+  } else {
+    btn.title = 'Séances & templates';
+    btn.innerHTML = '📁<span class="btn-label"> Templates</span>';
+  }
+}
+
 function toggleSidebar(){
   var sb = document.querySelector('.sidebar');
-  var isMobileBuilder = window.innerWidth <= 700 && document.querySelector('.app').classList.contains('builder-mode');
-  if (isMobileBuilder) sb.classList.toggle('mob-lib-open');
+  if (window.innerWidth <= 700) sb.classList.toggle('mob-lib-open');
   else sb.classList.toggle('collapsed');
 }
 
