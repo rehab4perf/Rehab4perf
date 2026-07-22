@@ -1565,7 +1565,10 @@ function _openDayPopover(dateStr, anchorId){
     + '<button onclick="document.getElementById(\'cal-day-popover\').remove()" '
     + 'style="border:none;background:none;cursor:pointer;font-size:1rem;line-height:1;color:var(--muted);padding:0;">✕</button>'
     + '</div>'
-    + '<div style="display:flex;flex-direction:column;gap:3px;">'+allHtml+'</div>';
+    + '<div style="display:flex;flex-direction:column;gap:3px;">'+allHtml+'</div>'
+    + '<button onclick="document.getElementById(\'cal-day-popover\').remove();openCalPicker(\''+dateStr+'\')" '
+    + 'style="width:100%;margin-top:8px;padding:7px;border:1px dashed var(--border);border-radius:7px;background:none;'
+    + 'color:var(--accent);font-size:.72rem;font-weight:600;cursor:pointer;font-family:inherit;">+ Ajouter une séance</button>';
   document.body.appendChild(pop);
   // Fermer au clic extérieur
   setTimeout(function(){
@@ -1607,15 +1610,15 @@ function _renderWeekUI(){
     var dd = String(cellDate.getDate()).padStart(2,'0');
     var dateStr = y+'-'+mo+'-'+dd;
     var cycleBgW = _dayCycleStyle(cellDate);
-    html += '<div class="cal-week-cell'+(isTod?' today-cell':'')+'"'
+    html += '<div class="cal-week-cell'+(isTod?' today-cell':'')+'" id="cal-week-'+dateStr+'"'
           +(cycleBgW?' style="'+cycleBgW+'"':'')
-          +' onclick="openCalPicker(\''+dateStr+'\')"'
+          +' onclick="_dayCellClick(\''+dateStr+'\',\'cal-week-'+dateStr+'\')"'
           +' ondragover="_calDayDragOver(event,\''+dateStr+'\')"'
           +' ondragleave="_calDayDragLeave(event)"'
           +' ondrop="_calDayDrop(event,\''+dateStr+'\')">'
           + _dayCycleLabelHtml(cellDate, 'cal-week-cycle-lbl')
           + _buildDayChips(dateStr, cellDate)
-          + '<div class="cal-week-add">+ Séance</div>'
+          + '<div class="cal-week-add" onclick="event.stopPropagation();openCalPicker(\''+dateStr+'\')">+ Séance</div>'
           + '</div>';
   }
   var bilan = _weekBilanHTML();
@@ -1655,9 +1658,9 @@ function _renderCalendarUI() {
     var cellDate = new Date(_calYear,_calMonth,d);
     var isToday = cellDate.getTime()===today.getTime();
     var cycleBg = _dayCycleStyle(cellDate);
-    cells += '<div class="cal-day'+(isToday?' today':'')+'"'
+    cells += '<div class="cal-day'+(isToday?' today':'')+'" id="cal-day-'+dateStr+'"'
       +(cycleBg?' style="'+cycleBg+'"':'')
-      +' onclick="openCalPicker(\''+dateStr+'\')"'
+      +' onclick="_dayCellClick(\''+dateStr+'\',\'cal-day-'+dateStr+'\')"'
       +' ondragover="_calDayDragOver(event,\''+dateStr+'\')"'
       +' ondragleave="_calDayDragLeave(event)"'
       +' ondrop="_calDayDrop(event,\''+dateStr+'\')">'
@@ -1741,6 +1744,24 @@ function _markFbSeen(sid){
 window.addEventListener('storage', function(ev){
   if(ev.key === 'r4p-notif-prefs') _applyFbDots();
 });
+
+/* Sur mobile, les séances/notes du jour sont réduites à des pastilles
+   (cf. CSS) : impossible de taper précisément sur l'une d'elles. Un jour
+   qui contient déjà des séances/notes ouvre donc la liste complète du
+   jour (popover, chips en taille normale, cliquables individuellement)
+   plutôt que le formulaire de création. Un jour vide part directement
+   en création — inchangé. Desktop : comportement historique conservé,
+   les chips y sont déjà cliquables directement. */
+function _dayCellClick(dateStr, cellId) {
+  if (window.innerWidth <= 700 && !_planScheduleMode && !_noteTouchMoveMode && !_touchMoveMode && !_calSelMode) {
+    var cell = document.getElementById(cellId);
+    if (cell && cell.querySelector('.cal-session-chip, .cal-note-chip')) {
+      _openDayPopover(dateStr, cellId);
+      return;
+    }
+  }
+  openCalPicker(dateStr);
+}
 
 function openCalPicker(dateStr) {
   // Mode planification agenda — toggle le jour sélectionné

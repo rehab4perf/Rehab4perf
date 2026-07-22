@@ -1931,22 +1931,26 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   .cal-day { padding:2px 3px; }
   .cal-day-num { font-size:.64rem; margin-bottom:1px; }
   .cal-central-body { padding:10px; }
-  /* Séances/notes en pastilles (comme sur athlete.html) plutôt qu'en chips
-     texte : illisibles/tronquées dans une cellule de ~50px de large (cf.
-     capture praticien). Le clic reste sur le conteneur (.cal-session-chip /
-     .cal-note-chip) donc les handlers onclick d'origine restent intacts —
-     seul le contenu enfant (texte, boutons ⋮/×) est masqué. La couleur de
-     fond porte le sens (type de séance, alerte douleur…), comme les dots
-     colorés côté athlète. */
-  .cal-session-chip, .cal-note-chip {
+  /* Séances/notes en pastilles dans la grille du mois (comme athlete.html) :
+     illisibles/tronquées en chips texte dans une cellule de ~50px de large.
+     Scopé à .cal-day/.cal-week-cell uniquement — la même chip réutilisée
+     dans le popover jour (#cal-day-popover, cf. _dayCellClick ci-dessous)
+     garde son rendu texte complet, lisible et cliquable individuellement. */
+  .cal-day .cal-session-chip, .cal-day .cal-note-chip,
+  .cal-week-cell .cal-session-chip, .cal-week-cell .cal-note-chip {
     display:inline-flex; width:8px; height:8px; min-width:8px; min-height:0;
     padding:0 !important; margin:0 3px 3px 0 !important; border-radius:50%;
     overflow:hidden; vertical-align:top; position:relative;
   }
-  .cal-session-chip > *:not(.cal-fb-dot), .cal-note-chip > * { display:none; }
-  .cal-note-chip.chip-clinique { background:#94a3b8; }
-  .cal-note-chip.chip-patient  { background:#4338CA; }
+  .cal-day .cal-session-chip > *:not(.cal-fb-dot), .cal-day .cal-note-chip > *,
+  .cal-week-cell .cal-session-chip > *:not(.cal-fb-dot), .cal-week-cell .cal-note-chip > * { display:none; }
+  .cal-day .cal-note-chip.chip-clinique, .cal-week-cell .cal-note-chip.chip-clinique { background:#94a3b8; }
+  .cal-day .cal-note-chip.chip-patient, .cal-week-cell .cal-note-chip.chip-patient  { background:#4338CA; }
   .cal-overflow-badge { font-size:.52rem; padding:0 4px; }
+  /* Popover jour (liste complète, tap = ouvrir la séance) : lignes plus
+     grandes et tactiles que sur desktop. */
+  #cal-day-popover { max-width:min(88vw,290px) !important; }
+  #cal-day-popover .cal-session-chip, #cal-day-popover .cal-note-chip { font-size:.74rem !important; padding:6px 8px !important; }
 
   /* ── Phase 2 : builder mobile ──────────────────────────────
      Bug pré-existant : en layout colonne, .app.builder-mode .builder-panel
@@ -1985,6 +1989,10 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
      icône seule (le libellé texte est masqué, l'icône + le title=""
      suffisent), tout reste visible sans interaction cachée. */
   .btn-label { display:none; }
+  /* Le bouton Biblio reste le seul à garder son libellé texte : c'est
+     l'action la plus utilisée du builder (ajouter un exercice) et un
+     hamburger/icône seule ne suffit pas à la rendre identifiable. */
+  #topbarBiblioBtn .btn-label { display:inline; }
   .topbar { padding:0 8px; gap:6px; }
   .topbar-logo { display:none; }
   .topbar-patient { flex:1 1 auto; min-width:0; }
@@ -2098,7 +2106,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
     <span id="topbarPatientName" class="topbar-patient-name" style="display:none;"></span>
   </div>
   <div class="topbar-right">
-    <button class="topbar-btn" onclick="toggleSidebar()" title="Bibliothèque">☰<span class="btn-label"> Biblio</span></button>
+    <button class="topbar-btn" id="topbarBiblioBtn" onclick="toggleSidebar()" title="Bibliothèque d'exercices">📚<span class="btn-label"> Biblio</span></button>
     <button class="topbar-btn" onclick="openJournal()" id="topbarJournalBtn" title="Journal"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="16" height="16" fill="currentColor" style="vertical-align:middle;margin-right:2px"><path fill-rule="evenodd" clip-rule="evenodd" d="M10 11C9.44772 11 9 11.4477 9 12V39C9 39.5523 9.44772 40 10 40H38C38.5509 40 39 39.5515 39 38.9978V12.0022C39 11.4485 38.5509 11 38 11H35V9H38C39.6583 9 41 10.3467 41 12.0022V38.9978C41 40.6533 39.6583 42 38 42H10C8.34315 42 7 40.6569 7 39V12C7 10.3431 8.34315 9 10 9H15V11H10ZM31 11H19V9H31V11Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M39 20H9V18H39V20Z"/><path d="M15 7C15 6.44772 15.4477 6 16 6C16.5523 6 17 6.44772 17 7V14C17 14.5523 16.5523 15 16 15C15.4477 15 15 14.5523 15 14V7Z"/><path d="M31 7C31 6.44772 31.4477 6 32 6C32.5523 6 33 6.44772 33 7V14C33 14.5523 32.5523 15 32 15C31.4477 15 31 14.5523 31 14V7Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M17 25H15V27H17V25ZM15 23C13.8954 23 13 23.8954 13 25V27C13 28.1046 13.8954 29 15 29H17C18.1046 29 19 28.1046 19 27V25C19 23.8954 18.1046 23 17 23H15Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M25 25H23V27H25V25ZM23 23C21.8954 23 21 23.8954 21 25V27C21 28.1046 21.8954 29 23 29H25C26.1046 29 27 28.1046 27 27V25C27 23.8954 26.1046 23 25 23H23Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M33 25H31V27H33V25ZM31 23C29.8954 23 29 23.8954 29 25V27C29 28.1046 29.8954 29 31 29H33C34.1046 29 35 28.1046 35 27V25C35 23.8954 34.1046 23 33 23H31Z"/></svg><span class="btn-label"> Journal</span></button>
     <button class="topbar-btn" id="topbarMoreBtn" onclick="_toggleMoreMenu(event)" title="Plus d'outils" style="letter-spacing:.1em;font-weight:700">···</button>
     <button class="topbar-btn primary" onclick="openBuilderNew()" id="topbarNewBtn" title="Nouvelle séance">+<span class="btn-label"> Séance</span></button>
@@ -3934,6 +3942,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 
 </div>
 
-<script src="js/prog-main.js?v=20260721b"></script>
+<script src="js/prog-main.js?v=20260721c"></script>
 </body>
 </html>
