@@ -1667,7 +1667,12 @@ function buildProgHTML(prog){
         cParams.forEach(function(p){ html += '<div class="param-box"><div class="param-label">'+escH(p.l)+'</div><div class="param-val">'+escH(p.v)+'</div></div>'; });
         html += '</div>';
       }
-      if(b.notes) html += '<div class="exo-consigne">💬 '+escH(b.notes)+'</div>';
+      // Deux champs possibles selon l'origine du bloc : "notes" (blocs générés par
+      // un protocole CAP) ou "commentaire" (champ "Consignes" saisi manuellement
+      // dans le builder) — sans ce fallback, les consignes tapées à la main sur un
+      // bloc cardio n'apparaissaient jamais côté athlète.
+      var _cardioConsigne = b.notes || b.commentaire;
+      if(_cardioConsigne) html += '<div class="exo-consigne">💬 '+escH(_cardioConsigne)+'</div>';
       // Douleur session
       var _cKey = 'cardio-'+bIdx;
       html += _buildPainSliderHTML(_cKey, false, '');
@@ -2148,7 +2153,8 @@ function _buildCapProgHTML(prog) {
     if(bloc.distance && bloc.duree_totale) cMeta.push(bloc.distance+' km');
     if(bloc.zone) cMeta.push('Zone '+bloc.zone);
     if(cMeta.length) html += '<div style="font-size:.75rem;color:#0369A1;font-weight:600;">'+escH(cMeta.join(' · '))+'</div>';
-    if(bloc.notes) html += '<div style="font-size:.75rem;color:#475569;margin-top:5px;font-style:italic;">💬 '+escH(bloc.notes)+'</div>';
+    var _capCardioConsigne = bloc.notes || bloc.commentaire;
+    if(_capCardioConsigne) html += '<div style="font-size:.75rem;color:#475569;margin-top:5px;font-style:italic;">💬 '+escH(_capCardioConsigne)+'</div>';
     html += '</div>';
   }
 
