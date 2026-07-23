@@ -2633,6 +2633,15 @@ window.addEventListener('message', function(e){
   if(e.data && e.data.type==='r4p-profile'){
     try { localStorage.setItem(R4P_KEYS.PROFILE, JSON.stringify(e.data.profile)); } catch(ex){}
   }
+  // bilan.html vient d'être sauvegardé pour le patient actif : rafraîchir
+  // les objectifs datés (repère 🎯 dans l'agenda) sans attendre un changement
+  // de patient — sinon un objectif ajouté puis enregistré n'apparaît qu'après
+  // avoir quitté/reselectionné le patient.
+  if(e.data && e.data.type==='r4p-bilan-saved' && e.data.patientId){
+    if(_progPatient && String(_progPatient.id)===String(e.data.patientId) && typeof _loadObjectifsForPatient==='function'){
+      _loadObjectifsForPatient();
+    }
+  }
   // Génère les graphiques pevo pour le CR médecin (outils.html)
   if(e.data && e.data.type==='r4p-pevo-request'){
     var _reqPatId = e.data.patientId;

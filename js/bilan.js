@@ -3790,6 +3790,7 @@ function saveBilan(){
         if(res.error){ btn.innerHTML = _SAVE_ICON + 'Enregistrer les modifications'; alert('Erreur : '+res.error.message); return; }
         _bilanModified = false;
         _syncBilanDatesNotes();
+        try { window.parent.postMessage({ type:'r4p-bilan-saved', patientId: _bilanPatient.id }, window.location.origin); } catch(ex){}
         btn.textContent = '✓ Bilan mis à jour !';
         _bilanNeedsRefresh = true;
         setTimeout(function(){
@@ -3851,6 +3852,7 @@ function saveBilan(){
         _bilanIsSuivi   = false;
         _suiviSnapshot  = null;
         _syncBilanDatesNotes();
+        try { window.parent.postMessage({ type:'r4p-bilan-saved', patientId: _bilanPatient.id }, window.location.origin); } catch(ex){}
         btn.textContent = isNew ? '✓ Nouveau bilan enregistré !' : '✓ Sauvegardé !';
         setTimeout(function(){ btn.innerHTML = _SAVE_ICON + 'Sauvegarder le bilan'; }, 2500);
         // Passer en mode lecture après sauvegarde

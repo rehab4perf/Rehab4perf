@@ -1228,6 +1228,16 @@ window.addEventListener('message', function(e) {
     }
   }
 
+  // bilan.html vient d'être sauvegardé → relayer à l'iframe programme pour
+  // rafraîchir le repère d'objectif daté dans l'agenda (et tout ce qui
+  // dépend du contenu du bilan côté calendrier).
+  if (e.data.type === 'r4p-bilan-saved') {
+    var prescFrameBilan = document.getElementById('frame-prescription');
+    if (prescFrameBilan && prescFrameBilan.contentWindow) {
+      prescFrameBilan.contentWindow.postMessage(e.data, window.location.origin);
+    }
+  }
+
   // outils demande les graphiques pevo → relayer à l'iframe programme
   if (e.data.type === 'r4p-pevo-request') {
     var prescFrame = document.getElementById('frame-prescription');
