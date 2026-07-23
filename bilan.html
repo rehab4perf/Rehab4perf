@@ -790,6 +790,10 @@ td.bl-row-rail button:disabled { opacity: .3 !important; cursor: default; }
   cursor:pointer; transition:all .12s; white-space:nowrap;
 }
 .img-file-btn:hover { border-color:var(--accent); color:var(--accent2); background:var(--accent-l); }
+/* Plusieurs pièces jointes par type (ex : 3 radios) : chips empilées + bouton
+   d'ajout toujours visible en dernier, plutôt qu'un unique slot remplacé. */
+.img-file-chips { display:flex; flex-direction:column; gap:4px; align-items:flex-start; width:100%; }
+.img-file-chips .img-file-btn { align-self:flex-start; }
 .img-file-chip {
   display:flex; align-items:center; gap:4px; background:var(--accent-l);
   border:1px solid var(--accent); border-radius:var(--radius-sm); padding:4px 4px 4px 8px;
@@ -1855,7 +1859,7 @@ textarea { resize:none !important; overflow:hidden !important; }
           <td><input class="img-cell-input" type="text" id="f-img-radio-obs" placeholder="Pas de lésion osseuse"></td>
           <td class="img-file-cell">
             <input type="hidden" id="f-img-radio-file" value="">
-            <input type="file" id="f-img-radio-picker" accept="image/*,.pdf,.dcm" style="display:none" onchange="_imgFileSelected('radio',this)">
+            <input type="file" id="f-img-radio-picker" accept="image/*,.pdf,.dcm" multiple style="display:none" onchange="_imgFileSelected('radio',this)">
             <div id="f-img-radio-filebox"></div>
           </td>
         </tr>
@@ -1865,7 +1869,7 @@ textarea { resize:none !important; overflow:hidden !important; }
           <td><input class="img-cell-input" type="text" id="f-img-irm-obs" placeholder="Rupture LCA totale non rétractée"></td>
           <td class="img-file-cell">
             <input type="hidden" id="f-img-irm-file" value="">
-            <input type="file" id="f-img-irm-picker" accept="image/*,.pdf,.dcm" style="display:none" onchange="_imgFileSelected('irm',this)">
+            <input type="file" id="f-img-irm-picker" accept="image/*,.pdf,.dcm" multiple style="display:none" onchange="_imgFileSelected('irm',this)">
             <div id="f-img-irm-filebox"></div>
           </td>
         </tr>
@@ -1875,7 +1879,7 @@ textarea { resize:none !important; overflow:hidden !important; }
           <td><input class="img-cell-input" type="text" id="f-img-echo-obs" placeholder=""></td>
           <td class="img-file-cell">
             <input type="hidden" id="f-img-echo-file" value="">
-            <input type="file" id="f-img-echo-picker" accept="image/*,.pdf,.dcm" style="display:none" onchange="_imgFileSelected('echo',this)">
+            <input type="file" id="f-img-echo-picker" accept="image/*,.pdf,.dcm" multiple style="display:none" onchange="_imgFileSelected('echo',this)">
             <div id="f-img-echo-filebox"></div>
           </td>
         </tr>
@@ -1885,7 +1889,7 @@ textarea { resize:none !important; overflow:hidden !important; }
           <td><input class="img-cell-input" type="text" id="f-img-scan-obs" placeholder=""></td>
           <td class="img-file-cell">
             <input type="hidden" id="f-img-scan-file" value="">
-            <input type="file" id="f-img-scan-picker" accept="image/*,.pdf,.dcm" style="display:none" onchange="_imgFileSelected('scan',this)">
+            <input type="file" id="f-img-scan-picker" accept="image/*,.pdf,.dcm" multiple style="display:none" onchange="_imgFileSelected('scan',this)">
             <div id="f-img-scan-filebox"></div>
           </td>
         </tr>
@@ -1895,7 +1899,7 @@ textarea { resize:none !important; overflow:hidden !important; }
           <td><input class="img-cell-input" type="text" id="f-img-arthro-obs" placeholder=""></td>
           <td class="img-file-cell">
             <input type="hidden" id="f-img-arthro-file" value="">
-            <input type="file" id="f-img-arthro-picker" accept="image/*,.pdf,.dcm" style="display:none" onchange="_imgFileSelected('arthro',this)">
+            <input type="file" id="f-img-arthro-picker" accept="image/*,.pdf,.dcm" multiple style="display:none" onchange="_imgFileSelected('arthro',this)">
             <div id="f-img-arthro-filebox"></div>
           </td>
         </tr>
@@ -1905,7 +1909,7 @@ textarea { resize:none !important; overflow:hidden !important; }
           <td><input class="img-cell-input" type="text" id="f-img-autre-obs" placeholder="Scintigraphie, DEXA…"></td>
           <td class="img-file-cell">
             <input type="hidden" id="f-img-autre-file" value="">
-            <input type="file" id="f-img-autre-picker" accept="image/*,.pdf,.dcm" style="display:none" onchange="_imgFileSelected('autre',this)">
+            <input type="file" id="f-img-autre-picker" accept="image/*,.pdf,.dcm" multiple style="display:none" onchange="_imgFileSelected('autre',this)">
             <div id="f-img-autre-filebox"></div>
           </td>
         </tr>
@@ -4885,7 +4889,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 
 
 <script src="js/bilan-blocks.js?v=20260710"></script>
-<script src="js/bilan.js?v=20260726"></script>
+<script src="js/bilan.js?v=20260726a"></script>
 
 </body>
 </html>

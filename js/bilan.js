@@ -8979,16 +8979,23 @@ window.addEventListener('load', function(){
     return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  function _imgMeta(type){
+  // Stockage : tableau de métas [{path,name,size,uploadedAt}, …] par type — plusieurs
+  // pièces jointes (ex. 3 radios). Rétro-compatible avec l'ancien format (un seul
+  // objet, pas un tableau) écrit par les bilans enregistrés avant ce changement.
+  function _imgMetaList(type){
     var el = document.getElementById('f-img-'+type+'-file');
-    if(!el || !el.value) return null;
-    try{ return JSON.parse(el.value); }catch(ex){ return null; }
+    if(!el || !el.value) return [];
+    var parsed;
+    try{ parsed = JSON.parse(el.value); }catch(ex){ return []; }
+    if(Array.isArray(parsed)) return parsed;
+    if(parsed && parsed.path) return [parsed]; // ancien format : un seul fichier
+    return [];
   }
 
-  function _imgSetMeta(type, meta){
+  function _imgSetMetaList(type, list){
     var el = document.getElementById('f-img-'+type+'-file');
     if(!el) return;
-    el.value = meta ? JSON.stringify(meta) : '';
+    el.value = (list && list.length) ? JSON.stringify(list) : '';
     try{ el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); }catch(ex){}
   }
 
@@ -8997,16 +9004,16 @@ window.addEventListener('load', function(){
   function _renderImgFileBox(type){
     var box = document.getElementById('f-img-'+type+'-filebox');
     if(!box) return;
-    var meta = _imgMeta(type);
-    if(!meta || !meta.path){
-      box.innerHTML = '<button type="button" class="img-file-btn" onclick="document.getElementById(\'f-img-'+type+'-picker\').click()">'+IMG_CLIP_SVG+' Joindre</button>';
-      return;
-    }
-    box.innerHTML = '<div class="img-file-chip">'
-      + '<span class="img-file-chip-name" title="'+_imgEsc(meta.name||'')+'" onclick="_imgFileDownload(\''+type+'\')">'+_imgEsc(meta.name||'Fichier')+'</span>'
-      + '<button type="button" class="img-file-chip-dl" title="Télécharger" onclick="_imgFileDownload(\''+type+'\')">⬇</button>'
-      + '<button type="button" class="img-file-chip-del" title="Retirer" onclick="_imgFileRemove(\''+type+'\')">×</button>'
-      + '</div>';
+    var list = _imgMetaList(type);
+    var chips = list.map(function(meta, idx){
+      return '<div class="img-file-chip">'
+        + '<span class="img-file-chip-name" title="'+_imgEsc(meta.name||'')+'" onclick="_imgFileDownload(\''+type+'\','+idx+')">'+_imgEsc(meta.name||'Fichier')+'</span>'
+        + '<button type="button" class="img-file-chip-dl" title="Télécharger" onclick="_imgFileDownload(\''+type+'\','+idx+')">⬇</button>'
+        + '<button type="button" class="img-file-chip-del" title="Retirer" onclick="_imgFileRemove(\''+type+'\','+idx+')">×</button>'
+        + '</div>';
+    }).join('');
+    var addBtn = '<button type="button" class="img-file-btn" onclick="document.getElementById(\'f-img-'+type+'-picker\').click()">'+IMG_CLIP_SVG+' '+(list.length ? 'Ajouter' : 'Joindre')+'</button>';
+    box.innerHTML = '<div class="img-file-chips">'+chips+addBtn+'</div>';
   }
 
   window._imgFileRenderAll = function(){
@@ -9014,45 +9021,50 @@ window.addEventListener('load', function(){
   };
 
   window._imgFileSelected = function(type, inputEl){
-    var file = inputEl.files && inputEl.files[0];
-    if(!file) return;
-    if(file.size > IMG_MAX_MB * 1024 * 1024){
-      alert('Fichier trop volumineux (max '+IMG_MAX_MB+' Mo).');
-      inputEl.value = '';
-      return;
-    }
+    var files = inputEl.files ? Array.prototype.slice.call(inputEl.files) : [];
+    if(!files.length) return;
     var patientId = _bilanPatient && _bilanPatient.id;
     if(!patientId){
       alert('Sélectionnez un patient avant de joindre un fichier.');
       inputEl.value = '';
       return;
     }
+    var oversized = files.filter(function(f){ return f.size > IMG_MAX_MB * 1024 * 1024; });
+    if(oversized.length){
+      alert('Fichier(s) trop volumineux (max '+IMG_MAX_MB+' Mo) : '+oversized.map(function(f){ return f.name; }).join(', '));
+      files = files.filter(function(f){ return f.size <= IMG_MAX_MB * 1024 * 1024; });
+      if(!files.length){ inputEl.value = ''; return; }
+    }
     var box = document.getElementById('f-img-'+type+'-filebox');
-    if(box) box.innerHTML = '<span class="img-file-uploading">Envoi…</span>';
-    var ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g,'');
-    var path = patientId + '/' + type + '-' + Date.now() + '.' + ext;
-    var prevMeta = _imgMeta(type);
-    sbB.storage.from(IMG_BUCKET).upload(path, file, { upsert: true, contentType: file.type || undefined })
-      .then(function(res){
-        if(res.error) throw res.error;
-        var meta = { path: path, name: file.name, size: file.size, uploadedAt: new Date().toISOString() };
-        _imgSetMeta(type, meta);
+    if(box) box.innerHTML = '<span class="img-file-uploading">Envoi'+(files.length>1?' de '+files.length+' fichiers':'')+'…</span>';
+    var list = _imgMetaList(type);
+    var uploads = files.map(function(file, i){
+      var ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g,'');
+      // Suffixe aléatoire : plusieurs fichiers uploadés dans la même milliseconde
+      // (sélection multiple) ne doivent jamais écraser le chemin les uns des autres.
+      var path = patientId + '/' + type + '-' + Date.now() + '-' + i + '-' + Math.random().toString(36).slice(2,7) + '.' + ext;
+      return sbB.storage.from(IMG_BUCKET).upload(path, file, { upsert: true, contentType: file.type || undefined })
+        .then(function(res){
+          if(res.error) throw res.error;
+          return { path: path, name: file.name, size: file.size, uploadedAt: new Date().toISOString() };
+        });
+    });
+    Promise.allSettled(uploads)
+      .then(function(results){
+        var failCount = 0;
+        results.forEach(function(r){
+          if(r.status === 'fulfilled') list.push(r.value);
+          else { failCount++; console.error('Erreur upload imagerie:', r.reason); }
+        });
+        _imgSetMetaList(type, list);
         _renderImgFileBox(type);
-        // Nettoyage best-effort de l'ancien fichier (si remplacement)
-        if(prevMeta && prevMeta.path && prevMeta.path !== path){
-          sbB.storage.from(IMG_BUCKET).remove([prevMeta.path]).catch(function(){});
-        }
-      })
-      .catch(function(err){
-        console.error('Erreur upload imagerie:', err);
-        alert('Échec de l\'envoi du fichier. Réessayez.');
-        _renderImgFileBox(type);
+        if(failCount) alert(failCount+' fichier(s) n\'ont pas pu être envoyés. Réessayez.');
       })
       .finally(function(){ inputEl.value = ''; });
   };
 
-  window._imgFileDownload = function(type){
-    var meta = _imgMeta(type);
+  window._imgFileDownload = function(type, idx){
+    var meta = _imgMetaList(type)[idx];
     if(!meta || !meta.path) return;
     sbB.storage.from(IMG_BUCKET).createSignedUrl(meta.path, 120).then(function(res){
       if(res.error || !res.data){ alert('Impossible de récupérer le fichier.'); return; }
@@ -9060,12 +9072,14 @@ window.addEventListener('load', function(){
     });
   };
 
-  window._imgFileRemove = function(type){
-    var meta = _imgMeta(type);
-    if(!meta || !meta.path) return;
+  window._imgFileRemove = function(type, idx){
+    var list = _imgMetaList(type);
+    var meta = list[idx];
+    if(!meta) return;
     if(!confirm('Retirer ce fichier ?')) return;
     sbB.storage.from(IMG_BUCKET).remove([meta.path]).finally(function(){
-      _imgSetMeta(type, null);
+      list.splice(idx, 1);
+      _imgSetMetaList(type, list);
       _renderImgFileBox(type);
     });
   };
