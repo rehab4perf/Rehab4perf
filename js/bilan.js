@@ -2168,7 +2168,7 @@ function _resetBilanFields(){
   document.querySelectorAll('.evo-delta').forEach(function(el){ el.remove(); });
   // Recalculer TOUTES les fonctions d'affichage dérivées (LSI, RSI, déficits, badges…)
   try{ updateAll(); calcRec(); calcPlioq(); }catch(ex){}
-  try{ ['sls','hop','pset','set'].forEach(function(k){ calcLSI(k); }); calcDJ(); calcLunge(); calcHR(); calcMusc(); }catch(ex){}
+  try{ ['sls','hop','pset','set'].forEach(function(k){ calcLSI(k); }); calcDJ(); calcLunge(); calcHR(); calcMusc(); calcPiCIM(); }catch(ex){}
   try{ calcPlioq2(); calcSEBT(); calcUQYBT(); calcSideHop(); }catch(ex){}
   try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht','co-f-ext','co-f-flex'].forEach(calcEpForce); ['ha-f-add','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); ['pi-f-fp','pi-f-fd','pi-f-inv','pi-f-ev','pi-f-lfh'].forEach(calcEpForce); ['ra-fc-inc'].forEach(calcEpForce); }catch(ex){}
   try{ updateBadges(); _initAllRomBars(); _updateSq0Status(); }catch(ex){}
@@ -3697,7 +3697,7 @@ function _deserializeBilan(data){
     try{ el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); }catch(ex){}
   });
   try{ updateAll(); calcRec(); calcPlioq(); }catch(ex){}
-  try{ ['sls','hop','pset','set'].forEach(function(k){ calcLSI(k); }); calcDJ(); calcLunge(); calcHR(); calcMusc(); }catch(ex){}
+  try{ ['sls','hop','pset','set'].forEach(function(k){ calcLSI(k); }); calcDJ(); calcLunge(); calcHR(); calcMusc(); calcPiCIM(); }catch(ex){}
   try{ calcCKC(); calcSHRT(); calcULRT(); }catch(ex){}
   try{ calcRachisStat(); calcLNF(); calcSorensen(); calcPDSLRT(); calcShirado(); }catch(ex){}
   try{ calcPlioq2(); calcSEBT(); calcUQYBT(); updateBadges(); }catch(ex){}
@@ -5307,22 +5307,50 @@ function calcDJ() {
 }
 
 function calcPiCIM() {
-  var gEl = document.getElementById('pi-cim-g');
-  var dEl = document.getElementById('pi-cim-d');
+  var cs2 = parseFloat((document.getElementById('pi-cim2-cs')||{}).value);
+  var ca2 = parseFloat((document.getElementById('pi-cim2-ca')||{}).value);
+  var cs1 = parseFloat((document.getElementById('pi-cim1-cs')||{}).value);
+  var ca1 = parseFloat((document.getElementById('pi-cim1-ca')||{}).value);
   var lsiEl = document.getElementById('pi-cim-lsi');
   var statEl = document.getElementById('pi-cim-stat');
-  if (!gEl || !dEl || !lsiEl || !statEl) return;
-  var g = parseFloat(gEl.value);
-  var d = parseFloat(dEl.value);
-  if (!isNaN(g) && g > 0 && !isNaN(d) && d > 0) {
-    var lsi = Math.min(g, d) / Math.max(g, d) * 100;
-    lsiEl.textContent = lsi.toFixed(0) + '%';
-    if (lsi >= 90)      { statEl.textContent = '✅ ≥ 90%'; statEl.className = 'measure-stat good'; }
-    else if (lsi >= 80) { statEl.textContent = '⚠️ ' + lsi.toFixed(0) + '%'; statEl.className = 'measure-stat warn'; }
-    else                { statEl.textContent = '❌ ' + lsi.toFixed(0) + '%'; statEl.className = 'measure-stat bad'; }
-  } else {
-    lsiEl.textContent = '—';
+  var effCsEl = document.getElementById('pi-cim-eff-cs');
+  var effCaEl = document.getElementById('pi-cim-eff-ca');
+  var finalEl = document.getElementById('pi-cim-final');
+  if (!lsiEl || !statEl || !effCsEl || !effCaEl || !finalEl) return;
+
+  function fmtRatio(el, val) {
+    if (isNaN(val)) { el.textContent = '—'; el.className = 'measure-stat'; return; }
+    el.textContent = val.toFixed(0) + '%';
+    el.className = 'measure-stat ' + (val >= 90 ? 'good' : val >= 80 ? 'warn' : 'bad');
+  }
+
+  var bilateral = _isBilateralForZones(['cheville','pied']);
+  var effCs = (cs2 > 0 && cs1 > 0) ? cs1 / cs2 * 100 : NaN;
+  var effCa = (ca2 > 0 && ca1 > 0) ? ca1 / ca2 * 100 : NaN;
+  var lsi = bilateral
+    ? (cs1 > 0 && ca1 > 0 ? Math.min(cs1, ca1) / Math.max(cs1, ca1) * 100 : NaN)
+    : (cs1 > 0 ? ca1 / cs1 * 100 : NaN);
+
+  fmtRatio(effCsEl, effCs);
+  fmtRatio(effCaEl, effCa);
+
+  if (isNaN(lsi)) {
+    lsiEl.textContent = '—'; lsiEl.className = 'measure-stat';
     statEl.textContent = '—'; statEl.className = 'measure-stat';
+  } else {
+    var lsiCls = lsi >= 90 ? 'good' : lsi >= 80 ? 'warn' : 'bad';
+    lsiEl.textContent = lsi.toFixed(0) + '%';
+    lsiEl.className = 'measure-stat ' + lsiCls;
+    statEl.textContent = lsi >= 90 ? '✅ ≥ 90%' : lsi >= 80 ? '⚠️ ' + lsi.toFixed(0) + '%' : '❌ ' + lsi.toFixed(0) + '%';
+    statEl.className = 'measure-stat ' + lsiCls;
+  }
+
+  if (isNaN(lsi) && isNaN(effCs) && isNaN(effCa)) {
+    finalEl.textContent = '—'; finalEl.className = 'measure-stat';
+  } else {
+    var positive = (!isNaN(lsi) && lsi < 90) || (!isNaN(effCs) && effCs < 90) || (!isNaN(effCa) && effCa < 90);
+    finalEl.textContent = positive ? '❌ Test positif' : '✅ Test négatif';
+    finalEl.className = 'measure-stat ' + (positive ? 'bad' : 'good');
   }
 }
 
@@ -6013,16 +6041,26 @@ function _buildAllTestsHtml() {
     }
     if (sec.label === 'PIED / CHEVILLE') {
       // Course interne mollet
-      var cimG = parseFloat((document.getElementById('pi-cim-g')||{}).value);
-      var cimD = parseFloat((document.getElementById('pi-cim-d')||{}).value);
-      if (!isNaN(cimG) || !isNaN(cimD)) {
+      var cim2Cs = parseFloat((document.getElementById('pi-cim2-cs')||{}).value);
+      var cim2Ca = parseFloat((document.getElementById('pi-cim2-ca')||{}).value);
+      var cim1Cs = parseFloat((document.getElementById('pi-cim1-cs')||{}).value);
+      var cim1Ca = parseFloat((document.getElementById('pi-cim1-ca')||{}).value);
+      if (!isNaN(cim2Cs) || !isNaN(cim2Ca) || !isNaN(cim1Cs) || !isNaN(cim1Ca)) {
+        var cimLblCsEl = document.querySelector('[data-block-id="pied--cliniques"] .sl-cs');
+        var cimLblCaEl = document.querySelector('[data-block-id="pied--cliniques"] .sl-ca');
+        var cimLblCs = cimLblCsEl ? cimLblCsEl.textContent : 'Sain';
+        var cimLblCa = cimLblCaEl ? cimLblCaEl.textContent : 'Atteint';
+        var cimEffCs = document.getElementById('pi-cim-eff-cs');
+        var cimEffCa = document.getElementById('pi-cim-eff-ca');
         var cimLsi = document.getElementById('pi-cim-lsi');
-        var cimStat = document.getElementById('pi-cim-stat');
-        var cimLsiTxt = cimLsi ? cimLsi.textContent : '—';
-        var cimStatTxt = cimStat ? cimStat.textContent.replace(/[✅⚠️❌]\s*/,'') : '—';
-        var cimCls = cimStat ? (cimStat.className.includes('good') ? 'ok' : cimStat.className.includes('warn') ? 'warn' : cimStat.className.includes('bad') ? 'bad' : '') : '';
-        var cimDetail = (!isNaN(cimG) ? 'G : '+cimG+' cm' : '') + ((!isNaN(cimG)&&!isNaN(cimD))?' · ':'') + (!isNaN(cimD) ? 'D : '+cimD+' cm' : '') + ' · LSI : ' + cimLsiTxt;
-        secRows += crItem('Course interne mollet', cimDetail, cimStatTxt, cimCls, ['pi-cim-g','pi-cim-d'].filter(function(i){ var e=document.getElementById(i); return e&&e.value; }));
+        var cimFinal = document.getElementById('pi-cim-final');
+        var cimStatTxt = cimFinal ? cimFinal.textContent.replace(/[✅❌]\s*/,'') : '—';
+        var cimCls = cimFinal ? (cimFinal.className.includes('good') ? 'ok' : cimFinal.className.includes('bad') ? 'bad' : '') : '';
+        var cimDetail = '2 appuis : ' + cimLblCs + '=' + (isNaN(cim2Cs)?'—':cim2Cs+'cm') + ' / ' + cimLblCa + '=' + (isNaN(cim2Ca)?'—':cim2Ca+'cm')
+          + ' · 1 appui : ' + cimLblCs + '=' + (isNaN(cim1Cs)?'—':cim1Cs+'cm') + ' / ' + cimLblCa + '=' + (isNaN(cim1Ca)?'—':cim1Ca+'cm')
+          + ' · Effondrement ' + cimLblCs + '=' + (cimEffCs?cimEffCs.textContent:'—') + ' / ' + cimLblCa + '=' + (cimEffCa?cimEffCa.textContent:'—')
+          + ' · LSI : ' + (cimLsi?cimLsi.textContent:'—');
+        secRows += crItem('Course interne mollet', cimDetail, cimStatTxt, cimCls, ['pi-cim2-cs','pi-cim2-ca','pi-cim1-cs','pi-cim1-ca'].filter(function(i){ var e=document.getElementById(i); return e&&e.value; }));
       }
       // Navicular Drop Test
       ['g','d'].forEach(function(side) {
@@ -7128,7 +7166,7 @@ function loadFromStorage() {
     });
     updateAll(); calcRec(); calcPlioq();
     ['sls','hop','pset','set'].forEach(k => calcLSI(k));
-    calcDJ(); calcLunge(); calcHR(); calcMusc();
+    calcDJ(); calcLunge(); calcHR(); calcMusc(); calcPiCIM();
     calcCKC(); calcSHRT(); calcULRT();
     calcRachisStat(); calcLNF(); calcSorensen(); calcPDSLRT(); calcShirado();
     calcPlioq2(); calcRec(); calcSEBT(); calcUQYBT();
