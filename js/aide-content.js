@@ -207,7 +207,8 @@ sections: [
     etapes:[
       { t:'Ouvrez la séance concernée', x:'Le bouton « Feedback » porte un badge bleu si un retour existe.', img:true },
       { t:'Lisez le retour hiérarchisé', x:'La douleur maximale signalée d\'abord, puis RPE / durée / UA, puis les exercices douloureux triés, avec les notes de l\'athlète.' },
-      { t:'Ajoutez votre EVA praticien', x:'Votre propre évaluation, indépendante de celle de l\'athlète. Pour les séances CAP/HSR : boutons d\'adaptation (régresser / maintenir).' }
+      { t:'Ajoutez votre EVA praticien', x:'Votre propre évaluation, indépendante de celle de l\'athlète. Pour les séances CAP/HSR : boutons d\'adaptation (régresser / maintenir).' },
+      { t:'Alerte visuelle dans l\'agenda', x:'Si votre EVA praticien dépasse 3/10, la chip de cette séance passe en rouge dans l\'agenda (badge ⚠ X/10) — repérable en un coup d\'œil, y compris sur les séances passées.' }
     ]}
 ]},
 
