@@ -60,11 +60,54 @@ function _loadCyclesForPatient(){
     if(typeof renderCalendar === 'function') renderCalendar();
   });
 }
+
+// ── OBJECTIFS DATÉS (bilan) ──────────────────────────────────────
+// Repère visuel dans l'agenda pour les objectifs datés saisis dans le
+// bilan (page Infos Patient → Attentes & objectifs, cf. bilan.js). Lus
+// depuis le bilan le plus récent du patient (le champ f-objectifs est
+// reporté d'un bilan de suivi à l'autre, donc le dernier bilan contient
+// déjà l'ensemble des objectifs actifs — pas besoin d'agréger tous les
+// bilans comme pour J0).
+var _patientObjectifs = [];
+function _loadObjectifsForPatient(){
+  if(!_progPatient){ _patientObjectifs = []; return; }
+  _patientObjectifs = [];
+  var _forPatientId = _progPatient.id;
+  _fetchRetry(SUPA_URL_P + '/rest/v1/bilans?patient_id=eq.' + _forPatientId + '&select=donnees&order=date.desc&limit=1', {
+    headers: _sbHeaders()
+  })
+  .then(function(r){ return r.ok ? r.json() : []; })
+  .then(function(data){
+    if(!_progPatient || _progPatient.id !== _forPatientId) return; // patient changé pendant le fetch
+    var arr = Array.isArray(data) ? data : [];
+    var raw = arr.length && arr[0].donnees ? arr[0].donnees['f-objectifs'] : null;
+    var parsed = [];
+    if(raw){ try { var p = JSON.parse(raw); if(Array.isArray(p)) parsed = p; } catch(e){} }
+    // Seuls les objectifs datés ont un sens dans l'agenda.
+    _patientObjectifs = parsed.filter(function(o){ return o && o.date; });
+    if(typeof renderCalendar === 'function') renderCalendar();
+  })
+  .catch(function(){
+    if(!_progPatient || _progPatient.id !== _forPatientId) return;
+    _patientObjectifs = [];
+  });
+}
+// Repère "🎯 <objectif>" sur le jour concerné, même emplacement que le
+// libellé de cycle (avant les chips de séances).
+function _dayObjectifLabelHtml(dateStr, cls){
+  var matches = _patientObjectifs.filter(function(o){ return o.date === dateStr; });
+  if(!matches.length) return '';
+  var titleFull = matches.map(function(o){ return o.text; }).join(' · ');
+  var label = matches.length > 1
+    ? matches.length + ' objectifs'
+    : (matches[0].text.length > 18 ? matches[0].text.slice(0,18)+'…' : matches[0].text);
+  return '<div class="'+cls+'" title="🎯 '+escH(titleFull)+'">🎯 '+escH(label)+'</div>';
+}
 // prog-data.js s'execute avant ce fichier et a deja restaure _progPatient
 // depuis localStorage au chargement de la page — son propre appel a
 // _loadCyclesForPatient() a cet instant etait un no-op (fonction pas encore
 // definie). On rattrape ici, maintenant que la fonction existe.
-if(_progPatient) _loadCyclesForPatient();
+if(_progPatient) { _loadCyclesForPatient(); _loadObjectifsForPatient(); }
 var _cycleColors = {
   'Force':'#1A3A5C','Puissance':'#C0392B','Hypertrophie':'#2D7D46',
   'Endurance de force':'#2563EB','Récupération':'#D4600A','Réathlétisation':'#9B2C6B'
@@ -1652,6 +1695,7 @@ function _renderWeekUI(){
           +' ondragleave="_calDayDragLeave(event)"'
           +' ondrop="_calDayDrop(event,\''+dateStr+'\')">'
           + _dayCycleLabelHtml(cellDate, 'cal-week-cycle-lbl')
+          + _dayObjectifLabelHtml(dateStr, 'cal-week-objectif-lbl')
           + _buildDayChips(dateStr, cellDate)
           + '<div class="cal-week-add" onclick="event.stopPropagation();openCalPicker(\''+dateStr+'\')">+ Séance</div>'
           + '</div>';
@@ -1701,6 +1745,7 @@ function _renderCalendarUI() {
       +' ondrop="_calDayDrop(event,\''+dateStr+'\')">'
       +'<div class="cal-day-num">'+d+'</div>'
       +_dayCycleLabelHtml(cellDate, 'cal-day-cycle-lbl')
+      +_dayObjectifLabelHtml(dateStr, 'cal-day-objectif-lbl')
       +_buildDayChips(dateStr, cellDate)+'</div>';
   }
   grid.innerHTML = headers + cells;
@@ -3356,6 +3401,7 @@ function _updatePatientUI(){
   // _cycles immediatement, avant que renderCalendar() ci-dessous ne dessine
   // avec les donnees de l'ancien patient encore en memoire.
   if(_progPatient && typeof _loadCyclesForPatient==="function") _loadCyclesForPatient();
+  if(_progPatient && typeof _loadObjectifsForPatient==="function") _loadObjectifsForPatient();
   // Rafraîchir le calendrier pour le nouveau patient
   if(typeof renderCalendar === 'function') renderCalendar();
 }

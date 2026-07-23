@@ -3704,6 +3704,7 @@ function _deserializeBilan(data){
   try{ _initAllRomBars(); }catch(ex){}
   try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht','co-f-ext','co-f-flex'].forEach(calcEpForce); ['ha-f-add','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); ['pi-f-fp','pi-f-fd','pi-f-inv','pi-f-ev','pi-f-lfh'].forEach(calcEpForce); ['ra-fc-inc'].forEach(calcEpForce); }catch(ex){}
   _parsePainZones();
+  try{ _parseObjectifs(); }catch(ex){}
   try{ _imgFileRenderAll(); }catch(ex){}
   _suppressDirty = false;
   _bilanModified = false;
@@ -4219,6 +4220,7 @@ function _newBilanSuiviConfirm(){
   });
   _deserializeBilan(infoKeys);
   try{ _parsePainZones(); }catch(ex){}
+  try{ _parseObjectifs(); }catch(ex){}
 
   // Reporter les noms de tests (valeurs vides) : union de la session courante + tous les bilans
   try{
@@ -6917,7 +6919,6 @@ function buildCR() {
     ['f-eva','EVA actuelle','/10'],['f-eva-max','EVA max 7j','/10'],
     ['f-aggravants','Aggravants',''],['f-soulagants','Soulagants',''],
     ['f-atcd','Antecedents',''],['f-traitements','Traitements',''],
-    ['f-objectifs','Objectifs',''],
     ['f-retentissement','Retentissement',''],['f-remarques','Remarques',''],
   ];
   for (var ii=0; ii<infosMap.length; ii++) {
@@ -6925,6 +6926,14 @@ function buildCR() {
     var v2 = el2 ? el2.value : '';
     if (v2 && el2 && el2.type === 'date') { var _dp = v2.split('-'); v2 = _dp[2]+'/'+_dp[1]+'/'+_dp[0]; }
     if (v2) infosHtml += crItem(infosMap[ii][1], nl2br(v2) + infosMap[ii][2], '', '', [infosMap[ii][0]]);
+  }
+  // Objectifs : liste structurée (texte + date optionnelle), pas un champ
+  // texte simple — rendu à part pour ne pas afficher le JSON brut.
+  if (_objectifs && _objectifs.length) {
+    var objTxt = _objectifs.map(function(o){
+      return _objEsc(o.text) + (o.date ? ' <span style="opacity:.7">(🎯 '+_objDateFmt(o.date)+')</span>' : '');
+    }).join('<br>');
+    infosHtml += crItem('Objectifs', objTxt, '', '', ['f-objectifs']);
   }
   // Imageries disponibles
   var imLines = [
@@ -7844,6 +7853,76 @@ function removePainZone(idx){
   renderPainZones();
 }
 
+/* ── Objectifs datés ─────────────────────────────────────────────
+   Liste répétable (texte + date optionnelle), même pattern que les
+   Zones douloureuses. La date, quand renseignée, alimente un repère
+   visuel dans l'agenda du praticien (programme.html lit le champ
+   f-objectifs du dernier bilan du patient). */
+var _objectifs = [];
+
+function _objDateFmt(iso){
+  if(!iso) return '';
+  var p = iso.split('-');
+  return p.length===3 ? p[2]+'/'+p[1]+'/'+p[0] : iso;
+}
+// bilan.js n'a pas de helper d'échappement HTML global (escH vit dans
+// prog-main.js, un fichier différent) — nécessaire ici car o.text est du
+// texte libre saisi par le praticien.
+function _objEsc(s){
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderObjectifs(){
+  var list = document.getElementById('obj-list');
+  if(!list) return;
+  list.innerHTML = '';
+  _objectifs.forEach(function(o, idx){
+    var dateLbl = o.date ? '<span class="obj-chip-date">🎯 '+_objDateFmt(o.date)+'</span>' : '';
+    list.innerHTML += '<div class="obj-chip">'
+      + '<span class="obj-chip-text">'+_objEsc(o.text)+'</span>'
+      + dateLbl
+      + '<button type="button" class="obj-chip-del" onclick="removeObjectif('+idx+')" title="Supprimer">×</button>'
+      + '</div>';
+  });
+  var hf = document.getElementById('f-objectifs');
+  if(hf) hf.value = JSON.stringify(_objectifs);
+  updateAll();
+}
+
+function addObjectif(){
+  var textEl = document.getElementById('obj-text-input');
+  var dateEl = document.getElementById('obj-date-input');
+  if(!textEl) return;
+  var text = (textEl.value||'').trim();
+  if(!text) return;
+  _objectifs.push({ text:text, date: dateEl ? (dateEl.value||'') : '' });
+  textEl.value = '';
+  if(dateEl) dateEl.value = '';
+  renderObjectifs();
+  textEl.focus();
+}
+
+function removeObjectif(idx){
+  _objectifs.splice(idx,1);
+  renderObjectifs();
+}
+
+function _parseObjectifs(){
+  var hf = document.getElementById('f-objectifs');
+  if(!hf || !hf.value || hf.value==='[]'){ _objectifs = []; }
+  else {
+    try {
+      var parsed = JSON.parse(hf.value);
+      _objectifs = Array.isArray(parsed) ? parsed : [];
+    } catch(e){
+      // Anciens bilans : simple texte libre (pas du JSON) — récupéré comme
+      // un objectif unique sans date, pour ne rien perdre à l'ouverture.
+      _objectifs = hf.value.trim() ? [{text: hf.value.trim(), date:''}] : [];
+    }
+  }
+  renderObjectifs();
+}
+
 function calcGIRD() {
   var cs = parseFloat((document.getElementById('gird-cs')||{}).value);
   var ca = parseFloat((document.getElementById('gird-ca')||{}).value);
@@ -8142,7 +8221,7 @@ init(); // appelle showPage('infos') à la fin → page-infos s'affiche
 
 // Triple garantie — showPage('infos') après la pile JS courante et après load
 setTimeout(function(){ showPage('infos'); }, 0);
-window.addEventListener('load', function(){ showPage('infos'); _parsePainZones(); });
+window.addEventListener('load', function(){ showPage('infos'); _parsePainZones(); _parseObjectifs(); });
 
 /* ── Auto-resize tous les textareas ── */
 function autoResizeTa(el){

@@ -1668,6 +1668,16 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   font-size:.66rem; font-weight:700; margin-bottom:4px; white-space:nowrap;
   overflow:hidden; text-overflow:ellipsis; letter-spacing:.02em;
 }
+/* Repère "🎯 <objectif>" sur le jour cible, saisi dans le bilan (Attentes &
+   objectifs du patient) — même position que le libellé de cycle. */
+.cal-day-objectif-lbl {
+  font-size:.58rem; font-weight:700; margin:-2px 0 3px; white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis; letter-spacing:.02em; color:#B45309;
+}
+.cal-week-objectif-lbl {
+  font-size:.66rem; font-weight:700; margin-bottom:4px; white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis; letter-spacing:.02em; color:#B45309;
+}
 .cal-session-chip {
   display:flex; align-items:center; gap:4px; padding:2px 5px; border-radius:4px;
   font-size:.66rem; font-weight:600; margin-bottom:2px; cursor:pointer;
@@ -2993,7 +3003,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   </div><!-- /tool-panel-drawer -->
 </div><!-- /tool-panel-overlay -->
 
-<script src="js/prog-data.js?v=20260723a"></script>
+<script src="js/prog-data.js?v=20260723b"></script>
 
 <!-- ══ CYCLES MODAL ════════════════════════════════════════════ -->
 <style>
@@ -3954,6 +3964,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 
 </div>
 
-<script src="js/prog-main.js?v=20260723c"></script>
+<script src="js/prog-main.js?v=20260723d"></script>
 </body>
 </html>

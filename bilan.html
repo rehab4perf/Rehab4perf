@@ -1454,6 +1454,28 @@ textarea { resize:none !important; overflow:hidden !important; }
 .pz-add-btn { padding:4px 12px; border:1px solid var(--accent2); border-radius:6px; font-size:.78rem; color:var(--accent2); background:#fff; cursor:pointer; font-weight:600; }
 .pz-add-btn:hover { background:var(--accent-l); }
 
+/* ── Objectifs datés ── */
+.obj-wrap { display:flex; flex-direction:column; gap:8px; }
+.obj-list { display:flex; flex-direction:column; gap:6px; }
+.obj-chip { display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:8px; font-size:.82rem; background:#EEF4FF; border:1px solid #BFDBFE; }
+.obj-chip-text { flex:1; min-width:0; color:var(--text); }
+.obj-chip-date { font-size:.7rem; font-weight:700; color:#1565C0; background:#fff; border-radius:6px; padding:2px 7px; white-space:nowrap; flex-shrink:0; }
+.obj-chip-del { background:none; border:none; cursor:pointer; font-size:1rem; color:var(--muted); opacity:.6; padding:0; line-height:1; flex-shrink:0; }
+.obj-chip-del:hover { opacity:1; color:var(--red); }
+.obj-add { display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:2px; }
+/* Même contrainte que .pain-zone-add (cf. son commentaire plus haut) : ce
+   .field empile plusieurs champs (texte + date + bouton), donc on neutralise
+   le width:100% et le saut au focus prévus pour un .field à un seul input.
+   Sélecteurs ".obj-add input" (classe+élément) : même spécificité que
+   ".field input"/".field input:focus" — un simple ".obj-text-input" seul
+   (classe sans élément) est MOINS spécifique et perd face à .field, comme
+   vu sur le décalage des selects Zones douloureuses. */
+.obj-add input { width:auto; padding:6px 10px; border:1px solid var(--border); border-radius:6px; font-size:.82rem; font-family:var(--font-sans); outline:none; background:#fff; }
+.obj-add input:focus { margin:0; padding:6px 10px; border-color:var(--accent2); background:#fff; }
+.obj-text-input { flex:1 1 160px; }
+.obj-add-btn { padding:6px 14px; border:1px solid var(--accent2); border-radius:6px; font-size:.78rem; font-weight:600; color:var(--accent2); background:#fff; cursor:pointer; white-space:nowrap; }
+.obj-add-btn:hover { background:var(--accent-l); }
+
 /* ── Évolution ──────────────────────────────────────────── */
 .evo-delta { display:inline-flex; align-items:center; font-size:.62rem; font-weight:700; padding:1px 6px; border-radius:10px; margin-left:5px; white-space:nowrap; vertical-align:middle; }
 .evo-delta.evo-pos { background:var(--green-l); color:var(--green); }
@@ -1831,7 +1853,18 @@ textarea { resize:none !important; overflow:hidden !important; }
     <div class="field"><label>Traitements en cours</label><textarea id="f-traitements" placeholder="Kiné 2×/semaine, anti-inflammatoires…" style="min-height:50px"></textarea></div>
   </div>
   <div class="form-grid">
-    <div class="field"><label>Attentes & objectifs du patient</label><textarea id="f-objectifs" placeholder="Reprendre le football en compétition d'ici 3 mois…" style="min-height:50px"></textarea></div>
+    <div class="field">
+      <label>Attentes & objectifs du patient</label>
+      <div class="obj-wrap">
+        <div class="obj-list" id="obj-list"></div>
+        <div class="obj-add">
+          <input type="text" id="obj-text-input" class="obj-text-input" placeholder="Reprendre le football en compétition…" onkeydown="if(event.key==='Enter'){event.preventDefault();addObjectif();}">
+          <input type="date" id="obj-date-input" class="obj-date-input" title="Date cible (optionnel) — apparaît dans l'agenda">
+          <button type="button" class="obj-add-btn" onclick="addObjectif()">+ Ajouter</button>
+        </div>
+      </div>
+      <input type="hidden" id="f-objectifs" value="[]">
+    </div>
     <div class="field"><label>Retentissement sur la vie quotidienne</label><textarea id="f-retentissement" placeholder="Évite les escaliers, arrêt sport complet…" style="min-height:50px"></textarea></div>
   </div>
   <div class="form-grid single">
@@ -4889,7 +4922,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 
 
 <script src="js/bilan-blocks.js?v=20260710"></script>
-<script src="js/bilan.js?v=20260726a"></script>
+<script src="js/bilan.js?v=20260726b"></script>
 
 </body>
 </html>
