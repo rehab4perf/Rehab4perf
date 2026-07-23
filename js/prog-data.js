@@ -1358,8 +1358,16 @@ function addFreeExo(blocId) {
   activeBloc = blocId;
   renderSession();
   setTimeout(function(){
-    var inputs = document.querySelectorAll('.exo-name-input');
-    if(inputs.length) inputs[inputs.length-1].focus();
+    // Scopé au bloc concerné : un querySelectorAll global prenait le dernier
+    // .exo-name-input de TOUTE la page, donc d'un bloc plus bas si celui-ci
+    // n'était pas le dernier de la séance — le focus y envoyait l'écran.
+    var blocEl = document.getElementById('bloc-'+blocId);
+    var inputs = blocEl ? blocEl.querySelectorAll('.exo-name-input') : [];
+    if(inputs.length){
+      var el = inputs[inputs.length-1];
+      el.focus({preventScroll:true});
+      el.scrollIntoView({block:'nearest', behavior:'smooth'});
+    }
   }, 40);
 }
 
