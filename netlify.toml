@@ -29,3 +29,10 @@
   for = "/sw-pro.js"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
+
+# Type MIME correct des manifests PWA (Netlify les sert sinon en octet-stream,
+# ce qui peut bloquer le prompt d'installation sur certains navigateurs Android).
+[[headers]]
+  for = "/*.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json"
