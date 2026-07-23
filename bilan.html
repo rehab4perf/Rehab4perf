@@ -1814,8 +1814,22 @@ textarea { resize:none !important; overflow:hidden !important; }
           </select>
         </div>
         <div class="field"><label>Activité professionnelle</label><input type="text" id="f-activite" placeholder="Infirmier, bureau sédentaire, manutention…"></div>
-        <div class="field"><label>Sport(s) pratiqué(s) / objectif sportif</label><input type="text" id="f-sport" placeholder="Football amateur — objectif : reprise compétition"></div>
+        <div class="field"><label>Sport(s) pratiqué(s)</label><input type="text" id="f-sport" placeholder="Football amateur"></div>
         <div class="field"><label>Médecin prescripteur</label><input type="text" id="f-medecin" placeholder="Dr Martin"></div>
+      </div>
+      <div class="form-grid single">
+        <div class="field">
+          <label>Attentes & objectifs du patient</label>
+          <div class="obj-wrap">
+            <div class="obj-list" id="obj-list"></div>
+            <div class="obj-add">
+              <input type="text" id="obj-text-input" class="obj-text-input" placeholder="Reprendre le football en compétition…" onkeydown="if(event.key==='Enter'){event.preventDefault();addObjectif();}">
+              <input type="date" id="obj-date-input" class="obj-date-input" title="Date cible (optionnel) — apparaît dans l'agenda">
+              <button type="button" class="obj-add-btn" onclick="addObjectif()">+ Ajouter</button>
+            </div>
+          </div>
+          <input type="hidden" id="f-objectifs" value="[]">
+        </div>
       </div>
       <div class="form-grid triple">
         <div class="field"><label>Date du bilan</label><input type="date" id="f-date" oninput="updateAll()"></div>
@@ -1852,19 +1866,7 @@ textarea { resize:none !important; overflow:hidden !important; }
     <div class="field"><label>Antécédents médicaux & chirurgicaux</label><textarea id="f-atcd" placeholder="LCA reconstruit mars 2025 (DIDT)…" style="min-height:50px"></textarea></div>
     <div class="field"><label>Traitements en cours</label><textarea id="f-traitements" placeholder="Kiné 2×/semaine, anti-inflammatoires…" style="min-height:50px"></textarea></div>
   </div>
-  <div class="form-grid">
-    <div class="field">
-      <label>Attentes & objectifs du patient</label>
-      <div class="obj-wrap">
-        <div class="obj-list" id="obj-list"></div>
-        <div class="obj-add">
-          <input type="text" id="obj-text-input" class="obj-text-input" placeholder="Reprendre le football en compétition…" onkeydown="if(event.key==='Enter'){event.preventDefault();addObjectif();}">
-          <input type="date" id="obj-date-input" class="obj-date-input" title="Date cible (optionnel) — apparaît dans l'agenda">
-          <button type="button" class="obj-add-btn" onclick="addObjectif()">+ Ajouter</button>
-        </div>
-      </div>
-      <input type="hidden" id="f-objectifs" value="[]">
-    </div>
+  <div class="form-grid single">
     <div class="field"><label>Retentissement sur la vie quotidienne</label><textarea id="f-retentissement" placeholder="Évite les escaliers, arrêt sport complet…" style="min-height:50px"></textarea></div>
   </div>
   <div class="form-grid single">
