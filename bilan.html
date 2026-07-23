@@ -1438,8 +1438,15 @@ textarea { resize:none !important; overflow:hidden !important; }
 .pz-chip-del { background:none; border:none; cursor:pointer; font-size:.9rem; color:inherit; opacity:.6; padding:0; line-height:1; }
 .pz-chip-del:hover { opacity:1; }
 .pain-zone-add { display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-top:4px; }
-.pain-zone-add select { padding:4px 8px; border:1px solid var(--border); border-radius:6px; font-size:.8rem; background:#fff; outline:none; }
-.pain-zone-add select:focus { border-color:var(--accent2); }
+/* .field select est pensé pour un champ ne contenant qu'UN SEUL input/select
+   (width:100% + le select:focus qui « sort » sur le padding du .field pour
+   un effet de surbrillance plein cadre). Zones douloureuses est le seul champ
+   du bilan à empiler plusieurs selects dans un même .field : sans ce reset,
+   chaque select passe en 100% de large (ils s'empilent au lieu d'être
+   côte à côte) et saute hors de sa position au clic (le select:focus du
+   .field hérite quand même de son margin négatif). */
+.pain-zone-add select { width:auto; padding:4px 8px; border:1px solid var(--border); border-radius:6px; font-size:.8rem; background:#fff; outline:none; }
+.pain-zone-add select:focus { margin:0; padding:4px 8px; background:#fff; border-color:var(--accent2); }
 .pz-add-btn { padding:4px 12px; border:1px solid var(--accent2); border-radius:6px; font-size:.78rem; color:var(--accent2); background:#fff; cursor:pointer; font-weight:600; }
 .pz-add-btn:hover { background:var(--accent-l); }
 
