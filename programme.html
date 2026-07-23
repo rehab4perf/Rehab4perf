@@ -456,6 +456,12 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 }
 /* ── Onglets sidebar builder ── */
 .sb-tabs { display:flex; background:#0F2540; border-bottom:2px solid rgba(255,255,255,.1); flex-shrink:0; }
+/* Bouton ✕ de fermeture des panneaux Biblio/Templates : n'a de sens que sur
+   le tiroir plein écran mobile (cf. @media max-width:700px plus bas, qui le
+   réaffiche uniquement quand .sidebar.mob-lib-open). Règle de base ici —
+   sans elle, rien ne le cachait sur desktop/iPad où il s'affichait comme un
+   bouton ✕ orphelin à côté des onglets, sans action visible utile. */
+.mob-lib-close-btn { display:none; }
 .sb-tab-btn { flex:1; padding:8px 4px; font-size:.72rem; font-weight:600; color:rgba(255,255,255,.6); background:none; border:none; border-bottom:2px solid transparent; margin-bottom:-2px; cursor:pointer; transition:color .15s,border-color .15s,background .15s; font-family:inherit; }
 .sb-tab-btn:hover { color:#fff; background:rgba(255,255,255,.06); }
 .sb-tab-btn.active { color:#fff; border-bottom-color:#60A5FA; background:rgba(96,165,250,.08); }
@@ -1990,7 +1996,9 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
     display:flex; position:fixed; inset:0; z-index:9500;
     width:100%; max-width:100%; max-height:none; height:100%;
   }
-  .mob-lib-close-btn { display:none; }
+  /* Règle "display:none" de base déplacée hors media query (cf. .sb-tabs
+     plus haut) : n'affiche ce bouton que sur mobile, quand le tiroir est
+     réellement ouvert. */
   .sidebar.mob-lib-open .mob-lib-close-btn {
     display:flex; align-items:center; justify-content:center;
     width:30px; height:30px; border-radius:8px; margin-left:auto;
