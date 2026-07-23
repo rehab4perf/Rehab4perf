@@ -6126,7 +6126,7 @@ function _updateSidebarToggleBtn(isBuilder){
   if(!btn) return;
   if(isBuilder){
     btn.title = 'Bibliothèque d\'exercices';
-    btn.innerHTML = '📚<span class="btn-label"> Biblio</span>';
+    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="vertical-align:middle;margin-right:2px"><circle cx="2" cy="4" r="2"/><circle cx="2" cy="12" r="2"/><circle cx="2" cy="20" r="2"/><path d="m8 5h15c.553 0 1-.447 1-1s-.447-1-1-1h-15c-.553 0-1 .447-1 1s.447 1 1 1z"/><path d="m23 11h-15c-.553 0-1 .447-1 1s.447 1 1 1h15c.553 0 1-.447 1-1s-.447-1-1-1z"/><path d="m23 19h-15c-.553 0-1 .447-1 1s.447 1 1 1h15c.553 0 1-.447 1-1s-.447-1-1-1z"/></svg><span class="btn-label"> Biblio</span>';
   } else {
     btn.title = 'Séances & templates';
     btn.innerHTML = '📁<span class="btn-label"> Templates</span>';
