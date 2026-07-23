@@ -1254,11 +1254,16 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
       var ua = _fbIsCharge(fb) ? fb.rpe*fb.duree_min : null;
       var uaSpan = ua ? ' <span style="font-size:.58rem;font-weight:800;padding:1px 4px;border-radius:3px;background:rgba(255,255,255,.22);color:'+_chipUaColor(ua)+';">⚡'+ua+'</span>' : '';
       var genericStravaBadge = _stravaBadge(_linkedAct[String(ev.id)]);
-      // Couleur de phase protocole (si séance liée)
+      // Évaluation praticien (douleur saisie manuellement sur une séance passée) : alerte si > 3/10
+      var evaPrat = (fb && fb.exo_data && fb.exo_data.eva_praticien !== undefined && fb.exo_data.eva_praticien !== null) ? fb.exo_data.eva_praticien : null;
+      var evaPratAlert = evaPrat !== null && evaPrat > 3;
+      var evaPratBadge = evaPratAlert
+        ? ' <span style="font-size:.57rem;font-weight:800;padding:1px 4px;border-radius:3px;background:rgba(0,0,0,.18);">⚠ '+evaPrat+'/10</span>' : '';
+      // Couleur de phase protocole (si séance liée) — l'alerte douleur praticien prime sur la couleur de phase
       var phStyle = _protoPhaseChipStyle(ev.programmes && ev.programmes.donnees);
-      var chipBg    = phStyle ? phStyle.bg    : 'var(--accent)';
-      var chipColor = phStyle ? '#1E3A5F'     : '#fff';
-      var chipExtra = phStyle ? ';border-left:3px solid '+phStyle.border+';padding-left:4px;' : '';
+      var chipBg    = evaPratAlert ? '#dc2626' : (phStyle ? phStyle.bg    : 'var(--accent)');
+      var chipColor = evaPratAlert ? '#fff'    : (phStyle ? '#1E3A5F'     : '#fff');
+      var chipExtra = (phStyle && !evaPratAlert) ? ';border-left:3px solid '+phStyle.border+';padding-left:4px;' : '';
       var phaseTag  = phStyle
         ? ' <span style="font-size:.55rem;background:'+phStyle.border+';color:#fff;border-radius:2px;padding:0 3px;white-space:nowrap;flex-shrink:0;">'+escH(phStyle.label)+'</span>'
         : '';
@@ -1268,9 +1273,9 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
       if (_calSelMode) {
         var chipSel = _calSelSeances.has(String(ev.id));
         var chipSelRing = chipSel ? ';box-shadow:0 0 0 2px rgba(0,0,0,.08),0 0 0 4px var(--accent);filter:brightness(1.08);' : ';opacity:.82;';
-        var chipSelCheck = chipSel ? '<span class="cal-sel-check" style="font-size:.75rem;font-weight:800;flex-shrink:0;margin-left:2px;color:'+(phStyle?'#1E3A5F':'#fff')+';">✓</span>' : '<span class="cal-sel-check"></span>';
+        var chipSelCheck = chipSel ? '<span class="cal-sel-check" style="font-size:.75rem;font-weight:800;flex-shrink:0;margin-left:2px;color:'+((phStyle&&!evaPratAlert)?'#1E3A5F':'#fff')+';">✓</span>' : '<span class="cal-sel-check"></span>';
         return '<div id="cal-chip-'+ev.id+'" class="cal-session-chip" style="background:'+chipBg+';color:'+chipColor+';cursor:pointer'+chipExtra+chipSelRing+'" title="'+escH(nom)+'" onclick="event.stopPropagation();_calSelToggle(\''+ev.id+'\',\'seance\')">'
-          +'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">'+(jLabel?'<span style="opacity:.75;font-size:.85em;">'+escH(jLabel)+'</span>':'📋 ')+escH(nom.length>16?nom.slice(0,16)+'…':nom)+genericStravaBadge+'</span>'
+          +'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">'+(jLabel?'<span style="opacity:.75;font-size:.85em;">'+escH(jLabel)+'</span>':'📋 ')+escH(nom.length>16?nom.slice(0,16)+'…':nom)+genericStravaBadge+evaPratBadge+'</span>'
           +phaseTag+chipSelCheck
           +'</div>';
       }
@@ -1278,14 +1283,14 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
         ? ' ontouchstart="_chipTouchStart(event,\''+ev.id+'\')" ontouchmove="_chipTouchMove(event)" ontouchend="_chipTouchEnd(event,\''+ev.id+'\')"'
         : ' draggable="true" onclick="event.stopPropagation();_openChipInBuilder(\''+ev.programme_id+'\',\''+dateStr+'\',\''+ev.id+'\')" ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"';
       var chipCursor = _isTouchDevice ? 'pointer' : 'grab';
-      var moreBtnColor = phStyle ? 'color:rgba(30,58,95,.7);' : '';
+      var moreBtnColor = (phStyle && !evaPratAlert) ? 'color:rgba(30,58,95,.7);' : '';
       var moreBtn = '<button class="cal-chip-more" style="'+moreBtnColor+'" onclick="event.stopPropagation();_showChipDropdown(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')" ontouchend="event.stopPropagation();event.preventDefault();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')">⋮</button>';
       return '<div id="cal-chip-'+ev.id+'" class="cal-session-chip" style="background:'+chipBg+';color:'+chipColor+';cursor:'+chipCursor+chipExtra+';" title="'+escH(nom)+'"'
         + chipEvtAttrs + '>'
         +moreBtn
-        +'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">'+(jLabel?'<span style="opacity:.75;font-size:.85em;">'+escH(jLabel)+'</span>':'📋 ')+escH(nom.length>16?nom.slice(0,16)+'…':nom)+genericStravaBadge+uaSpan+'</span>'
+        +'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">'+(jLabel?'<span style="opacity:.75;font-size:.85em;">'+escH(jLabel)+'</span>':'📋 ')+escH(nom.length>16?nom.slice(0,16)+'…':nom)+genericStravaBadge+uaSpan+evaPratBadge+'</span>'
         +phaseTag
-        +'<button class="cal-chip-del" style="color:'+(phStyle?'rgba(30,58,95,.5)':'rgba(255,255,255,.7)')+'" onclick="event.stopPropagation();removeCalEventCloud(\''+ev.id+'\')">×</button>'
+        +'<button class="cal-chip-del" style="color:'+((phStyle&&!evaPratAlert)?'rgba(30,58,95,.5)':'rgba(255,255,255,.7)')+'" onclick="event.stopPropagation();removeCalEventCloud(\''+ev.id+'\')">×</button>'
         +'</div>';
     }).filter(Boolean);
   } else {
