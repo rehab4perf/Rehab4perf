@@ -10051,10 +10051,15 @@ function _capSessHtml(s) {
     actions = '<div class="cap-pain-picker"><span class="cap-pain-lbl">EVA&nbsp;:</span>' + nums
       + '<button class="cap-pain-cancel" onclick="_capCancelPain()" title="Annuler">✕</button></div>';
   } else if (s.status === 'pending') {
-    actions = '<div class="cap-sess-btns">'
+    actions = '<div>'
+      + '<div class="cap-sess-btns">'
       + '<button class="cap-btn-v" onclick="_capValidate(' + s._idx + ')">✓ Validée</button>'
       + '<button class="cap-btn-p" onclick="_capShowPain(' + s._idx + ')">⚠ Douleur</button>'
-      + '</div>';
+      + '</div>'
+      + '<div style="margin-top:3px;display:flex;gap:4px;justify-content:flex-end;">'
+      + '<button onclick="_capManualMaintain(' + s._idx + ')" title="Confirmer ce palier, ne rien changer" style="font-size:.62rem;padding:2px 7px;background:none;border:1px solid var(--border);border-radius:10px;color:var(--muted);cursor:pointer;font-family:inherit;">↔ Maintenir</button>'
+      + '<button onclick="_capManualRegress(' + s._idx + ')" title="Insérer une séance intermédiaire et replanifier la suite" style="font-size:.62rem;padding:2px 7px;background:none;border:1px solid var(--border);border-radius:10px;color:var(--muted);cursor:pointer;font-family:inherit;">↩ Régresser</button>'
+      + '</div></div>';
   } else if (s.status === 'done') {
     actions = '<span class="cap-done-tag">✓ Faite</span>';
   } else {
@@ -10194,58 +10199,186 @@ function _capConfirmPain(score) {
   _capRender();
 }
 
-/* ── Adaptation automatique de la prochaine séance selon la douleur ── */
+/* ── Adaptation automatique de la prochaine séance selon la douleur ──
+   Douleur > seuil : la charge tolérée (dernière séance validée) et la charge
+   douloureuse sont deux points connus — on insère un palier intermédiaire
+   exactement entre les deux, puis on replanifie toute la suite du programme
+   depuis ce point sous ACWR ≤ 1,30 (le plan peut s'allonger ou se raccourcir).
+   Douleur = seuil : simple répétition de la même séance, pas de replanification.
+   Douleur < seuil : programme inchangé. ── */
 function _capAdaptNext(idx, score) {
   var sessions = CAP_STATE.sessions;
   var seuil    = (CAP_PATHO_DB[CAP_STATE.profile.patho] || CAP_PATHO_DB.aucune).seuil;
 
-  // Trouver la prochaine séance pending
-  var nextIdx = -1;
-  for (var i = idx + 1; i < sessions.length; i++) {
-    if (sessions[i].status === 'pending') { nextIdx = i; break; }
-  }
-  if (nextIdx === -1) return;
-
-  var template;
   if (score > seuil) {
-    // Régression : reprendre la séance précédente
-    template = idx > 0 ? sessions[idx - 1] : sessions[idx];
-  } else if (score === seuil) {
-    // Répétition : refaire la même séance
-    template = sessions[idx];
-  } else {
-    // En dessous du seuil : programme inchangé
+    var Lpain = _capLoadOf(sessions[idx]);
+    var Lgood = null;
+    for (var g = idx - 1; g >= 0; g--) { if (sessions[g].status === 'done') { Lgood = _capLoadOf(sessions[g]); break; } }
+    if (Lgood == null) Lgood = Math.max(1, Lpain - 1);
+    var Lmid = _capMidpointL(Lgood, Lpain);
+    _capReplanFromIndex(idx + 1, Lmid);
+    return; // _capReplanFromIndex gère déjà save/render (et la sync agenda si besoin)
+  }
+
+  if (score === seuil) {
+    // Trouver la prochaine séance pending et lui donner le même contenu que celle qui a fait mal
+    var nextIdx = -1;
+    for (var i = idx + 1; i < sessions.length; i++) {
+      if (sessions[i].status === 'pending') { nextIdx = i; break; }
+    }
+    if (nextIdx === -1) return;
+
+    var next = sessions[nextIdx];
+    var updated = JSON.parse(JSON.stringify(sessions[idx]));
+    updated.id        = next.id;
+    updated.seance_id = next.seance_id;
+    updated.prog_id   = next.prog_id;
+    updated.date      = next.date;
+    updated.week      = next.week;
+    updated.status    = 'pending';
+    updated.painScore = null;
+    sessions[nextIdx] = updated;
+
+    if (updated.seance_id && updated.prog_id) {
+      var bloc = _capSessionToCardioBloc(updated, CAP_STATE.profile);
+      _fetchRetry(SUPA_URL_P + '/rest/v1/programmes?id=eq.' + updated.prog_id, {
+        method: 'PATCH',
+        headers: _sbHeaders(),
+        body: JSON.stringify({
+          nom: 'CAP — ' + updated.label,
+          donnees: {
+            type: 'cap', session: updated, profile: CAP_STATE.profile,
+            blocs: [bloc],
+            consignes: (CAP_PATHO_DB[CAP_STATE.profile.patho] || CAP_PATHO_DB.aucune).consignes
+          }
+        })
+      }).catch(function(e) { console.warn('CAP adapt patch error:', e); });
+    }
+    return;
+  }
+  // score < seuil : rien à faire, la trajectoire prévue reste valide
+}
+
+// Charge intermédiaire entre une charge tolérée et une charge douloureuse (milieu exact).
+// Si les deux sont trop proches pour former un vrai palier distinct, on répète la charge tolérée.
+function _capMidpointL(Lgood, Lpain) {
+  var mid = Math.round((Lgood + Lpain) / 2);
+  if (mid <= Lgood || mid >= Lpain) mid = Lgood;
+  return Math.max(1, mid);
+}
+
+// Reconstruit la trajectoire à partir d'un index donné (inclus) en repartant de Lmid.
+// Insère ou retire des créneaux selon le besoin réel (le plan s'allonge si nécessaire).
+// Si les séances remplacées étaient déjà exportées vers l'agenda, elles sont supprimées
+// et recréées aux nouvelles dates (mêmes jours de semaine que le plan initial) ; sinon
+// le changement reste local (rien à synchroniser tant que "Ajouter à l'agenda" n'a pas été cliqué).
+function _capReplanFromIndex(anchorIdx, Lmid) {
+  if (!CAP_STATE) return;
+  var sessions = CAP_STATE.sessions;
+  var profile  = CAP_STATE.profile;
+  var spw      = profile.seancesPerWeek;
+
+  var head = sessions.slice(0, anchorIdx);
+  var tail = sessions.slice(anchorIdx);
+
+  var freshTail = _capBuildProgressive(profile, Lmid);
+  var anchorWeek = sessions[anchorIdx] ? sessions[anchorIdx].week : (head.length ? head[head.length - 1].week : 1);
+  // Position déjà occupée dans anchorWeek par les séances conservées (head), pour compléter
+  // la semaine en cours plutôt que d'en ouvrir arbitrairement une nouvelle
+  var posInWeek = 0;
+  for (var k = head.length - 1; k >= 0 && head[k].week === anchorWeek; k--) posInWeek++;
+  freshTail.forEach(function(s, i) { s.week = anchorWeek + Math.floor((posInWeek + i) / spw); });
+
+  var oldExported = tail.filter(function(s) { return s.seance_id && s.prog_id; });
+
+  if (!oldExported.length) {
+    // Plan pas encore envoyé à l'agenda : remplacement purement local
+    CAP_STATE.sessions = head.concat(freshTail);
+    _capSave();
+    _capRender();
+    if (typeof _showToast === 'function') _showToast('↻ Programme replanifié (' + freshTail.length + ' séances restantes).');
     return;
   }
 
-  // Copier le contenu du template dans la prochaine séance (on garde id/date/seance_id)
-  var next = sessions[nextIdx];
-  var updated = JSON.parse(JSON.stringify(template));
-  updated.id        = next.id;
-  updated.seance_id = next.seance_id;
-  updated.prog_id   = next.prog_id;
-  updated.date      = next.date;
-  updated.week      = next.week;
-  updated.status    = 'pending';
-  updated.painScore = null;
-  sessions[nextIdx] = updated;
+  if (!_progPatient) { alert('Sélectionne un patient d\'abord pour synchroniser l\'agenda.'); return; }
 
-  // Mettre à jour le programme dans Supabase si la séance est déjà dans l'agenda
-  if (updated.seance_id && updated.prog_id) {
-    var bloc = _capSessionToCardioBloc(updated, CAP_STATE.profile);
-    _fetchRetry(SUPA_URL_P + '/rest/v1/programmes?id=eq.' + updated.prog_id, {
-      method: 'PATCH',
-      headers: _sbHeaders(),
-      body: JSON.stringify({
-        nom: 'CAP — ' + updated.label,
+  var lastDateStr = head.length ? (head[head.length - 1].date || '') : '';
+  if (!lastDateStr) lastDateStr = new Date().toISOString().split('T')[0];
+  var startAfter = new Date(lastDateStr + 'T12:00:00');
+  startAfter.setDate(startAfter.getDate() + 1);
+  var days = _capSelectedDays && _capSelectedDays.length === spw ? _capSelectedDays : null;
+  var newDates = _capCalcDates(freshTail.length, spw, startAfter.toISOString().split('T')[0], days);
+
+  var seanceIdsToDelete = oldExported.map(function(s) { return s.seance_id; });
+  var progIdsToDelete = oldExported.map(function(s) { return s.prog_id; }).filter(function(v, i, a) { return a.indexOf(v) === i; });
+
+  _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees?id=in.(' + seanceIdsToDelete.join(',') + ')', {
+    method: 'DELETE', headers: _sbHeaders()
+  })
+  .then(function() {
+    return _fetchRetry(SUPA_URL_P + '/rest/v1/programmes?id=in.(' + progIdsToDelete.join(',') + ')', {
+      method: 'DELETE', headers: _sbHeaders()
+    });
+  })
+  .then(function() {
+    var progBodies = freshTail.map(function(s, i) {
+      return {
+        patient_id: _progPatient.id, praticien_id: _progUid,
+        nom: 'CAP — ' + s.label, date: newDates[i],
         donnees: {
-          type: 'cap', session: updated, profile: CAP_STATE.profile,
-          blocs: [bloc],
-          consignes: (CAP_PATHO_DB[CAP_STATE.profile.patho] || CAP_PATHO_DB.aucune).consignes
+          type: 'cap', session: s, profile: profile,
+          blocs: [_capSessionToCardioBloc(s, profile)],
+          consignes: (CAP_PATHO_DB[profile.patho] || CAP_PATHO_DB.aucune).consignes
         }
-      })
-    }).catch(function(e) { console.warn('CAP adapt patch error:', e); });
-  }
+      };
+    });
+    return _fetchRetry(SUPA_URL_P + '/rest/v1/programmes', {
+      method: 'POST', headers: Object.assign({}, _sbHeaders(), { 'Prefer': 'return=representation' }),
+      body: JSON.stringify(progBodies)
+    }).then(function(r) { return r.json(); });
+  })
+  .then(function(progs) {
+    if (!Array.isArray(progs) || !progs.length) throw new Error('Réponse inattendue lors de la recréation des programmes.');
+    var seanceBodies = progs.map(function(p, i) {
+      return { patient_id: _progPatient.id, praticien_id: _progUid, programme_id: p.id, date: newDates[i] };
+    });
+    return _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees', {
+      method: 'POST', headers: Object.assign({}, _sbHeaders(), { 'Prefer': 'return=representation' }),
+      body: JSON.stringify(seanceBodies)
+    }).then(function(r) { return r.json().then(function(seances) { return { progs: progs, seances: seances }; }); });
+  })
+  .then(function(result) {
+    freshTail.forEach(function(s, i) {
+      s.seance_id = result.seances[i] ? result.seances[i].id : null;
+      s.prog_id   = result.progs[i]   ? result.progs[i].id   : null;
+      s.date      = newDates[i];
+      s.status    = 'pending';
+      s.painScore = null;
+    });
+    CAP_STATE.sessions = head.concat(freshTail);
+    _capSave();
+    _capRender();
+    renderCalendar();
+    _renderAgendaProgList('cap');
+    if (typeof _showToast === 'function') _showToast('↻ Programme replanifié et ré-agendé (' + freshTail.length + ' séances).');
+  })
+  .catch(function(err) {
+    alert('Erreur lors de la replanification : ' + (err && err.message ? err.message : 'problème réseau'));
+  });
+}
+
+function _capManualMaintain(idx) {
+  if (typeof _showToast === 'function') _showToast('Programme maintenu tel quel.');
+}
+
+function _capManualRegress(idx) {
+  var sessions = CAP_STATE.sessions;
+  var Lpain = _capLoadOf(sessions[idx]); // charge actuellement prévue, jugée trop ambitieuse par le praticien
+  var Lgood = null;
+  for (var g = idx - 1; g >= 0; g--) { if (sessions[g].status === 'done') { Lgood = _capLoadOf(sessions[g]); break; } }
+  if (Lgood == null) Lgood = Math.max(1, Lpain - 1);
+  var Lmid = _capMidpointL(Lgood, Lpain);
+  _capReplanFromIndex(idx, Lmid);
 }
 
 /* ── CAP → Agenda : sélecteur de jours de la semaine ── */
