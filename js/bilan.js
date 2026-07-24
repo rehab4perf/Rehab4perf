@@ -5311,12 +5311,14 @@ function calcPiCIM() {
   var ca2 = parseFloat((document.getElementById('pi-cim2-ca')||{}).value);
   var cs1 = parseFloat((document.getElementById('pi-cim1-cs')||{}).value);
   var ca1 = parseFloat((document.getElementById('pi-cim1-ca')||{}).value);
+  var lsi2El = document.getElementById('pi-cim2-lsi');
+  var stat2El = document.getElementById('pi-cim2-stat');
   var lsiEl = document.getElementById('pi-cim-lsi');
   var statEl = document.getElementById('pi-cim-stat');
   var effCsEl = document.getElementById('pi-cim-eff-cs');
   var effCaEl = document.getElementById('pi-cim-eff-ca');
   var finalEl = document.getElementById('pi-cim-final');
-  if (!lsiEl || !statEl || !effCsEl || !effCaEl || !finalEl) return;
+  if (!lsi2El || !stat2El || !lsiEl || !statEl || !effCsEl || !effCaEl || !finalEl) return;
 
   function fmtRatio(el, val) {
     if (isNaN(val)) { el.textContent = '—'; el.className = 'measure-stat'; return; }
@@ -5327,10 +5329,20 @@ function calcPiCIM() {
   var bilateral = _isBilateralForZones(['cheville','pied']);
   var effCs = (cs2 > 0 && cs1 > 0) ? cs1 / cs2 * 100 : NaN;
   var effCa = (ca2 > 0 && ca1 > 0) ? ca1 / ca2 * 100 : NaN;
+  var lsi2 = bilateral
+    ? (cs2 > 0 && ca2 > 0 ? Math.min(cs2, ca2) / Math.max(cs2, ca2) * 100 : NaN)
+    : (cs2 > 0 ? ca2 / cs2 * 100 : NaN);
   var lsi = bilateral
     ? (cs1 > 0 && ca1 > 0 ? Math.min(cs1, ca1) / Math.max(cs1, ca1) * 100 : NaN)
     : (cs1 > 0 ? ca1 / cs1 * 100 : NaN);
 
+  fmtRatio(lsi2El, lsi2);
+  if (isNaN(lsi2)) { stat2El.textContent = '—'; stat2El.className = 'measure-stat'; }
+  else {
+    var lsi2Cls = lsi2 >= 90 ? 'good' : lsi2 >= 80 ? 'warn' : 'bad';
+    stat2El.textContent = lsi2 >= 90 ? '✅ ≥ 90%' : lsi2 >= 80 ? '⚠️ ' + lsi2.toFixed(0) + '%' : '❌ ' + lsi2.toFixed(0) + '%';
+    stat2El.className = 'measure-stat ' + lsi2Cls;
+  }
   fmtRatio(effCsEl, effCs);
   fmtRatio(effCaEl, effCa);
 
