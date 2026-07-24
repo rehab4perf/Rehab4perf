@@ -3791,12 +3791,25 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
       </div>
 
       <div>
-        <div class="cap-field-label">Niveau de course</div>
-        <div class="cap-chips" id="capLevelG">
-          <button class="cap-chip" data-val="debutant" onclick="capChipSel(this,'capLevelG')">Débutant</button>
-          <button class="cap-chip active" data-val="intermediaire" onclick="capChipSel(this,'capLevelG')">Intermédiaire</button>
-          <button class="cap-chip" data-val="avance" onclick="capChipSel(this,'capLevelG')">Avancé</button>
+        <div class="cap-field-label">Capacité actuelle sans douleur</div>
+        <div class="cap-chips" id="capStartG">
+          <button class="cap-chip active" data-val="marche" onclick="capChipSel(this,'capStartG')">Marche seule</button>
+          <button class="cap-chip" data-val="1min" onclick="capChipSel(this,'capStartG')">1 min</button>
+          <button class="cap-chip" data-val="2min" onclick="capChipSel(this,'capStartG')">2 min</button>
+          <button class="cap-chip" data-val="5min" onclick="capChipSel(this,'capStartG')">5 min continu</button>
+          <button class="cap-chip" data-val="10min" onclick="capChipSel(this,'capStartG')">10 min continu</button>
+          <button class="cap-chip" data-val="15min" onclick="capChipSel(this,'capStartG')">15 min continu</button>
         </div>
+      </div>
+
+      <div>
+        <div class="cap-field-label">Rythme de progression</div>
+        <div class="cap-chips" id="capRythmeG">
+          <button class="cap-chip active" data-val="prudent" onclick="capChipSel(this,'capRythmeG')">Prudent</button>
+          <button class="cap-chip" data-val="standard" onclick="capChipSel(this,'capRythmeG')">Standard</button>
+          <button class="cap-chip" data-val="soutenu" onclick="capChipSel(this,'capRythmeG')">Soutenu</button>
+        </div>
+        <div style="font-size:.7rem;color:var(--muted);margin-top:3px;">Prudent = post-op / tendon réactif · Soutenu = patient motivé à faible risque</div>
       </div>
 
       <div>
@@ -3975,6 +3988,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 
 </div>
 
-<script src="js/prog-main.js?v=20260723g"></script>
+<script src="js/prog-main.js?v=20260724a"></script>
 </body>
 </html>

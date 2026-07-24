@@ -9674,47 +9674,120 @@ function _capKmLabel(s, allure) {
   return km !== null ? '<span style="font-size:.68rem;color:var(--muted);margin-left:6px;">' + km.toFixed(1) + ' km</span>' : '';
 }
 
-/* ── Construction du programme ── */
-function _capBuildSessions(profile) {
-  _capIdSeq = 0;
+/* ══════════════════════════════════════════════════════════════
+   MOTEUR DE PROGRESSION — piloté par la charge (minutes de course)
+   L = plus longue course tenue, grimpe vers l'objectif. Charge
+   hebdo = enveloppe (ACWR 0,8–1,3). Décharge périodique. Durée
+   dérivée. Un seul levier à la fois. Réf. : Clinique du Coureur
+   (walk-run, modèle douleur), Gabbett (ACWR), règle des 10%.
+══════════════════════════════════════════════════════════════ */
 
-  var level = profile.level;
+// Rythmes de progression (incrément de L + fréquence de décharge)
+var CAP_RYTHME = {
+  prudent:  { incSmall: 1, incMid: 2, incPct: 0.10, deloadEvery: 4, deloadFactor: 0.70, label: 'Prudent' },
+  standard: { incSmall: 2, incMid: 3, incPct: 0.12, deloadEvery: 5, deloadFactor: 0.70, label: 'Standard' },
+  soutenu:  { incSmall: 3, incMid: 4, incPct: 0.15, deloadEvery: 6, deloadFactor: 0.75, label: 'Soutenu' }
+};
 
-  // BIT : génération spécifique avec paliers +10% volume
-  if (profile.patho === 'bit') return _capBITSessions(profile, level);
+// Capacité de départ sans douleur → plus longue course initiale (min)
+var CAP_START_L = { 'marche': 1, '30s': 1, '1min': 1, '2min': 2, '5min': 5, '10min': 10, '15min': 15 };
 
-  var canonical = _capCanonical18(level, profile.objectiveMin);
-  var total = profile.seancesPerWeek * 6;
-  var selected = [];
+function _capPhaseForL(L, obj) {
+  if (L < 5) return 1;               // walk-run
+  if (L < obj * 0.7) return 2;       // course continue courte/moyenne
+  return 3;                          // retour continu
+}
 
-  if (total === canonical.length) {
-    selected = canonical;
-  } else if (total < canonical.length) {
-    // Réduire : sélection homogène
-    for (var i = 0; i < total; i++) {
-      var ci = Math.round(i * (canonical.length - 1) / Math.max(total - 1, 1));
-      var copy = JSON.parse(JSON.stringify(canonical[ci]));
-      copy.id = _capMkId();
-      selected.push(copy);
-    }
-  } else {
-    // Augmenter : intercaler des répétitions régulièrement
-    selected = canonical.slice().map(function(s) { return JSON.parse(JSON.stringify(s)); });
-    var extras = total - canonical.length;
-    var step = Math.floor(canonical.length / extras);
-    for (var e = extras; e > 0; e--) {
-      var pos = e * step;
-      var rep = JSON.parse(JSON.stringify(selected[Math.min(pos - 1, selected.length - 1)]));
-      rep.id = _capMkId();
-      selected.splice(pos, 0, rep);
-    }
+// Construit une séance dont la plus longue course vaut L (min)
+function _capSessionForL(L, obj) {
+  var phase = _capPhaseForL(L, obj);
+  if (L >= obj) { var c = _capC(3, obj); return c; }
+  if (L < 5) {
+    var reps = L <= 1 ? 8 : L <= 2 ? 5 : L <= 3 ? 4 : 3;
+    return _capI(phase, reps, L, 1);
   }
+  return _capC(phase, Math.round(L));
+}
 
-  // Assigner les semaines
+// Charge (min de course) d'une semaine construite au niveau L
+function _capProjWeekLoad(L, obj, spw) {
+  function ld(x) { return x.type === 'continuous' ? (x.durationMin || 0) : x.reps * x.runMin; }
+  var long = ld(_capSessionForL(L, obj));
+  var secTarget = L < 5 ? L : Math.max(5, Math.round(L * 0.7));
+  var sec = ld(_capSessionForL(secTarget, obj));
+  return long + (spw - 1) * sec;
+}
+
+function _capNextL(L, obj, R) {
+  var inc = L < 8 ? R.incSmall : L < 20 ? R.incMid : Math.max(2, Math.round(L * R.incPct));
+  return Math.min(obj, L + inc);
+}
+
+function _capBuildProgressive(profile) {
+  _capIdSeq = 0;
+  var obj = profile.objectiveMin;
   var spw = profile.seancesPerWeek;
-  selected.forEach(function(s, i) { s.week = Math.floor(i / spw) + 1; });
+  var R   = CAP_RYTHME[profile.rythme] || CAP_RYTHME.prudent;
+  var L   = CAP_START_L[profile.startCapacity] || 1;
+  var ACWR_CAP = 1.30;
 
-  return selected;
+  var sessions = [], loads = [], w = 0, guard = 0, graduated = false, held = 0;
+  while (guard++ < 100) {
+    var isDeload = w > 0 && (w % R.deloadEvery === R.deloadEvery - 1) && !graduated && held === 0;
+    var Lw = isDeload ? Math.max(1, Math.round(L * R.deloadFactor)) : L;
+    var week = w + 1;
+
+    // Séance longue (moteur de la progression)
+    var longS = _capSessionForL(Lw, obj);
+    longS.week = week; longS.deload = isDeload; sessions.push(longS);
+    // Séances secondaires (~70% de la longue, plancher 5' en continu)
+    var secTarget = Lw < 5 ? Lw : Math.max(5, Math.round(Lw * 0.7));
+    for (var k = 1; k < spw; k++) {
+      var s = _capSessionForL(secTarget, obj);
+      s.week = week; s.deload = isDeload; sessions.push(s);
+    }
+    loads.push(_capProjWeekLoad(Lw, obj, spw));
+
+    if (graduated) break;              // 1 semaine de confirmation à l'objectif
+    if (!isDeload) {
+      if (L >= obj) { graduated = true; }
+      else {
+        // Gouverneur ACWR : n'avance que si la semaine suivante reste ≤ 1,3
+        var nextL = _capNextL(L, obj, R);
+        var nextLoad = _capProjWeekLoad(nextL, obj, spw);
+        var win = loads.slice(-3).concat([nextLoad]);
+        var chronic = win.reduce(function (a, b) { return a + b; }, 0) / win.length;
+        var projAcwr = chronic > 0 ? nextLoad / chronic : 1;
+        if (projAcwr <= ACWR_CAP || held >= 2) { L = nextL; held = 0; }
+        else { held++; }               // maintien : on répète le palier une semaine
+      }
+    }
+    w++;
+  }
+  return sessions;
+}
+
+// Statistiques par semaine (charge en min de course + ACWR aigu/chronique)
+function _capWeekStats(sessions) {
+  var byWeek = {};
+  sessions.forEach(function (s) {
+    var v = s.type === 'continuous' ? (s.durationMin || 0) : (s.reps * s.runMin);
+    if (!byWeek[s.week]) byWeek[s.week] = { week: s.week, load: 0, deload: !!s.deload };
+    byWeek[s.week].load += v;
+  });
+  var weeks = Object.keys(byWeek).sort(function (a, b) { return +a - +b; }).map(function (k) { return byWeek[k]; });
+  weeks.forEach(function (w, i) {
+    var win = weeks.slice(Math.max(0, i - 3), i + 1).map(function (x) { return x.load; });
+    var chronic = win.reduce(function (a, b) { return a + b; }, 0) / win.length;
+    w.acwr = chronic > 0 ? Math.round(w.load / chronic * 100) / 100 : 1;
+    w.load = Math.round(w.load);
+  });
+  return weeks;
+}
+
+/* ── Construction du programme (route vers le moteur de charge) ── */
+function _capBuildSessions(profile) {
+  return _capBuildProgressive(profile);
 }
 
 /* ── Ouvrir / Fermer ── */
@@ -9760,6 +9833,8 @@ function _capGenerate() {
   var profile = {
     track:          _capChipVal('capTrackG'),
     level:          _capChipVal('capLevelG'),
+    startCapacity:  _capChipVal('capStartG') || '1min',
+    rythme:         _capChipVal('capRythmeG') || 'prudent',
     patho:          document.getElementById('capPathoG').value,
     objectiveMin:   parseInt(document.getElementById('capObjG').value),
     age:            _capChipVal('capAgeG'),
@@ -9829,10 +9904,25 @@ function _capRender() {
     byWeek[s.week].push(s);
   });
 
+  // Stats de charge par semaine (min de course + ACWR) pour badges + courbe
+  var stats = _capWeekStats(state.sessions);
+  var statByWeek = {};
+  stats.forEach(function(w) { statByWeek[w.week] = w; });
+
   var phaseName  = { 1: 'Phase 1 — Réintroduction', 2: 'Phase 2 — Consolidation', 3: 'Phase 3 — Retour continu' };
   var phaseColor = { 1: '#2563EB', 2: '#059669', 3: '#7C3AED' };
   var lastPhase  = 0;
   var html = '';
+
+  // En-tête : durée dérivée + rythme
+  var nbWeeks = stats.length;
+  var rLbl = (CAP_RYTHME[state.profile.rythme] || CAP_RYTHME.prudent).label;
+  html += '<div class="cap-plan-meta" style="display:flex;gap:14px;flex-wrap:wrap;align-items:baseline;padding:2px 2px 10px;font-size:.78rem;color:var(--text2);">'
+        + '<span><b style="color:var(--navy);font-size:.95rem;">' + nbWeeks + ' semaines</b> de progression</span>'
+        + '<span>Rythme : <b>' + rLbl + '</b></span>'
+        + '<span>Objectif : <b>' + state.profile.objectiveMin + '\' continu</b></span>'
+        + '</div>';
+  html += _capLoadChart(stats);
 
   Object.keys(byWeek).sort(function(a, b) { return +a - +b; }).forEach(function(w) {
     var weekSessions = byWeek[w];
@@ -9841,7 +9931,14 @@ function _capRender() {
       html += '<div class="cap-phase-hdr" style="color:' + phaseColor[firstPhase] + '">' + phaseName[firstPhase] + '</div>';
       lastPhase = firstPhase;
     }
-    html += '<div class="cap-week-hdr">Semaine ' + w + '</div>';
+    var st = statByWeek[w] || {};
+    var acwrCls = st.acwr > 1.3 ? '#DC2626' : st.acwr < 0.8 ? '#94A3B8' : '#059669';
+    var wkBadge = st.load != null
+      ? '<span style="font-size:.68rem;color:var(--muted);font-weight:400;margin-left:8px;">'
+        + st.load + '′ · ACWR <span style="color:' + acwrCls + ';font-weight:600;">' + st.acwr.toFixed(2) + '</span></span>'
+      : '';
+    var deloadTag = st.deload ? '<span style="font-size:.62rem;background:#EFF6FF;color:#2563EB;border-radius:10px;padding:1px 7px;margin-left:6px;font-weight:600;">décharge</span>' : '';
+    html += '<div class="cap-week-hdr">Semaine ' + w + deloadTag + wkBadge + '</div>';
     weekSessions.forEach(function(s) { html += _capSessHtml(s); });
   });
 
@@ -9850,6 +9947,43 @@ function _capRender() {
   // Drapeaux
   document.getElementById('capFlagsBody').innerHTML =
     patho.drapeaux.map(function(d) { return '<div class="cap-flag-item">' + d + '</div>'; }).join('');
+}
+
+/* ── Mini-courbe charge hebdo + ACWR (SVG inline) ── */
+function _capLoadChart(stats) {
+  if (!stats || stats.length < 2) return '';
+  var W = 320, H = 90, padL = 6, padR = 6, padT = 10, padB = 16;
+  var n = stats.length;
+  var maxLoad = Math.max.apply(null, stats.map(function(s) { return s.load; }));
+  if (maxLoad <= 0) maxLoad = 1;
+  var bw = (W - padL - padR) / n;
+  var bars = '', dots = '', path = '';
+  stats.forEach(function(s, i) {
+    var x = padL + i * bw;
+    var h = (H - padT - padB) * (s.load / maxLoad);
+    var y = H - padB - h;
+    var col = s.deload ? '#BFDBFE' : '#3B82F6';
+    bars += '<rect x="' + (x + bw * 0.18).toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + (bw * 0.64).toFixed(1)
+          + '" height="' + h.toFixed(1) + '" rx="1.5" fill="' + col + '"><title>S' + s.week + ' · ' + s.load + '′ · ACWR ' + s.acwr.toFixed(2) + '</title></rect>';
+    // Point ACWR (échelle 0,5–1,5 sur la hauteur)
+    var ay = padT + (H - padT - padB) * (1 - (Math.min(1.5, Math.max(0.5, s.acwr)) - 0.5) / 1.0);
+    var acol = s.acwr > 1.3 ? '#DC2626' : s.acwr < 0.8 ? '#94A3B8' : '#059669';
+    var cx = x + bw / 2;
+    path += (i === 0 ? 'M' : 'L') + cx.toFixed(1) + ' ' + ay.toFixed(1) + ' ';
+    dots += '<circle cx="' + cx.toFixed(1) + '" cy="' + ay.toFixed(1) + '" r="2" fill="' + acol + '"/>';
+  });
+  // Ligne repère ACWR = 1,3 (plafond haut)
+  var y13 = padT + (H - padT - padB) * (1 - (1.3 - 0.5) / 1.0);
+  return '<div style="background:#F8FAFC;border:1px solid var(--border);border-radius:9px;padding:10px 12px 6px;margin-bottom:10px;">'
+    + '<div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--muted);margin-bottom:4px;">'
+    + '<span><span style="color:#3B82F6;">▮</span> Charge hebdo (min course)</span>'
+    + '<span><span style="color:#059669;">●</span> ACWR</span></div>'
+    + '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" preserveAspectRatio="none" style="display:block;">'
+    + '<line x1="' + padL + '" y1="' + y13.toFixed(1) + '" x2="' + (W - padR) + '" y2="' + y13.toFixed(1) + '" stroke="#FCA5A5" stroke-width="0.7" stroke-dasharray="3 2"/>'
+    + bars
+    + '<path d="' + path + '" fill="none" stroke="#059669" stroke-width="1.2"/>'
+    + dots
+    + '</svg></div>';
 }
 
 function _capSessHtml(s) {
