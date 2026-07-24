@@ -3864,7 +3864,7 @@ function _renderSidebarPicker(){
   });
 
   /* Filtrer les entrées techniques */
-  progs = progs.filter(function(p){ return (p.nom||'') !== '__r4p_protocols_meta__'; });
+  progs = progs.filter(function(p){ return (p.nom||'') !== '__r4p_protocols_meta__' && (p.type||'') !== '__meta__'; });
   /* Templates sans groupe */
   var orphans = progs.filter(function(p){return !p.group_id;});
 
@@ -3878,7 +3878,8 @@ function _renderSidebarPicker(){
   catKeys.forEach(function(catKey){
     var catGroups = catsMap[catKey];
     var catInfo = (typeof TMPL_CATEGORIES!=='undefined') ? TMPL_CATEGORIES.find(function(c){return c.val===catKey;}) : null;
-    var catLabel = catInfo ? (catInfo.icon+' '+catKey) : (catKey||'Autre');
+    var catAccent = catInfo ? catInfo.textColor : '#9CA3AF';
+    var catIcon = catInfo ? catInfo.icon : '📁';
 
     /* Filtrer groupes avec contenu */
     var visible = catGroups.filter(function(g){
@@ -3887,15 +3888,16 @@ function _renderSidebarPicker(){
     });
     if(!visible.length) return;
 
-    html += '<div class="picker-cat-label">'+escH(catLabel)+'</div>';
+    html += '<div class="picker-cat-label"><span class="picker-cat-icon" style="background:'+catAccent+'26;color:'+catAccent+';">'+catIcon+'</span>'+escH(catKey||'Autre')+'</div>';
     visible.forEach(function(g){
       var gProgs = progs.filter(function(p){return String(p.group_id)===String(g.id);});
       if(search) gProgs = gProgs.filter(function(p){return _pickerProgMatches(p,search);});
       if(!gProgs.length) return;
       var gid = 'pg-'+String(g.id).replace(/[^a-z0-9]/gi,'');
       html += '<div class="picker-group" id="'+gid+'">';
-      html += '<div class="picker-group-hdr" onclick="_pickerToggle(\''+gid+'\')">';
+      html += '<div class="picker-group-hdr" style="border-left-color:'+catAccent+';" onclick="_pickerToggle(\''+gid+'\')">';
       html += '<span class="picker-group-name">'+escH(g.nom)+'</span>';
+      html += '<span class="picker-group-count">'+gProgs.length+' phase'+(gProgs.length!==1?'s':'')+'</span>';
       html += '<span class="picker-chevron">›</span></div>';
       html += '<div class="picker-group-body">';
       if(gProgs.length > 1) html += '<button class="picker-add-all-phases" onclick="_addAllPhasesFromGroup(\''+escJS(String(g.id))+'\')">+ Toutes les phases ('+gProgs.length+')</button>';
@@ -3908,7 +3910,7 @@ function _renderSidebarPicker(){
   if(orphans.length){
     var visOrph = search ? orphans.filter(function(p){return _pickerProgMatches(p,search);}) : orphans;
     if(visOrph.length){
-      html += '<div class="picker-cat-label">📁 Sans protocole</div>';
+      html += '<div class="picker-cat-label"><span class="picker-cat-icon" style="background:rgba(255,255,255,.09);color:rgba(255,255,255,.6);">📁</span>Sans protocole</div>';
       visOrph.forEach(function(p){ html += _pickerRenderTemplate(p, search, addedLibIds); });
     }
   }
