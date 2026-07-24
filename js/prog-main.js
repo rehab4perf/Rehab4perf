@@ -9805,6 +9805,7 @@ function openCAPWizard() {
     document.getElementById('capFormScreen').style.display  = 'none';
     document.getElementById('capResultScreen').style.display = 'flex';
     _capRender();
+    _capInitDayPicker();
   } else {
     document.getElementById('capFormScreen').style.display  = 'flex';
     document.getElementById('capResultScreen').style.display = 'none';
@@ -9848,6 +9849,8 @@ function _capGenerate() {
   document.getElementById('capFormScreen').style.display  = 'none';
   document.getElementById('capResultScreen').style.display = 'flex';
   _capRender();
+  _capSelectedDaysSpw = null; // force le recalcul des jours par défaut sur un nouveau plan
+  _capInitDayPicker();
 }
 
 function _capBackForm() {
@@ -10109,19 +10112,88 @@ function _capAdaptNext(idx, score) {
   }
 }
 
+/* ── CAP → Agenda : sélecteur de jours de la semaine ── */
+var _capSelectedDays    = [];   // 0=Lundi..6=Dimanche
+var _capSelectedDaysSpw = null; // spw pour lequel _capSelectedDays a été calculé
+var CAP_WEEKDAY_LABELS  = ['L','M','M','J','V','S','D'];
+var CAP_WEEKDAY_NAMES   = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
+var CAP_DEFAULT_DAYS    = { 2:[0,3], 3:[0,2,4], 4:[0,1,3,4] };
+
+function _capInitDayPicker() {
+  if (!CAP_STATE || !CAP_STATE.profile) return;
+  var spw = CAP_STATE.profile.seancesPerWeek;
+  if (_capSelectedDaysSpw !== spw) {
+    _capSelectedDays    = (CAP_DEFAULT_DAYS[spw] || CAP_DEFAULT_DAYS[3]).slice();
+    _capSelectedDaysSpw = spw;
+  }
+  _capRenderDayPicker();
+}
+
+function _capRenderDayPicker() {
+  var el = document.getElementById('capDayPicker');
+  if (!el || !CAP_STATE || !CAP_STATE.profile) return;
+  var spw = CAP_STATE.profile.seancesPerWeek;
+  var needEl = document.getElementById('capDaysNeeded');
+  if (needEl) needEl.textContent = spw;
+  el.innerHTML = CAP_WEEKDAY_LABELS.map(function(lbl, i) {
+    var active = _capSelectedDays.indexOf(i) >= 0;
+    return '<button type="button" onclick="_capToggleDay(' + i + ')" title="' + CAP_WEEKDAY_NAMES[i] + '" '
+      + 'style="width:30px;height:30px;border-radius:50%;border:1px solid ' + (active ? 'var(--navy)' : 'var(--border)') + ';'
+      + 'background:' + (active ? 'var(--navy)' : '#fff') + ';color:' + (active ? '#fff' : 'var(--text)') + ';'
+      + 'font-size:.74rem;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0;">' + lbl + '</button>';
+  }).join('');
+  var countEl = document.getElementById('capDaysCount');
+  if (countEl) countEl.textContent = _capSelectedDays.length;
+}
+
+function _capToggleDay(idx) {
+  if (!CAP_STATE || !CAP_STATE.profile) return;
+  var spw = CAP_STATE.profile.seancesPerWeek;
+  var pos = _capSelectedDays.indexOf(idx);
+  if (pos >= 0) {
+    _capSelectedDays.splice(pos, 1);
+  } else {
+    if (_capSelectedDays.length >= spw) {
+      if (typeof _showToast === 'function') _showToast('Choisis exactement ' + spw + ' jour' + (spw > 1 ? 's' : '') + ' — désélectionne-en un d\'abord.');
+      return;
+    }
+    _capSelectedDays.push(idx);
+  }
+  _capRenderDayPicker();
+}
+
+function _capOnStartDateChange() {
+  // La date de départ sert d'ancre : _capCalcDates cherche le premier jour
+  // sélectionné à partir de cette date, aucun recalcul du picker nécessaire.
+}
+
 /* ── CAP → Agenda : calcul des dates ── */
-function _capCalcDates(count, spw, startDateStr) {
-  // Patterns d'espacement (jours depuis le jour 1 de chaque semaine)
-  var patterns = { 2: [0,3], 3: [0,2,4], 4: [0,1,3,4] };
-  var pattern = patterns[spw] || patterns[3];
+function _capCalcDates(count, spw, startDateStr, selectedDays) {
   var dates = [];
   var start = new Date(startDateStr + 'T12:00:00');
+
+  if (selectedDays && selectedDays.length) {
+    // Placement réel sur les jours de semaine choisis, avancement chronologique jour par jour
+    var days = selectedDays.slice().sort(function(a, b) { return a - b; });
+    var d = new Date(start);
+    var guard = 0;
+    while (dates.length < count && guard++ < count * 30) {
+      var wd = (d.getDay() + 6) % 7; // 0=Lundi..6=Dimanche
+      if (days.indexOf(wd) >= 0) dates.push(d.toISOString().split('T')[0]);
+      d.setDate(d.getDate() + 1);
+    }
+    return dates;
+  }
+
+  // Repli : patterns d'espacement fixes (jours depuis le jour 1 de chaque semaine)
+  var patterns = { 2: [0,3], 3: [0,2,4], 4: [0,1,3,4] };
+  var pattern = patterns[spw] || patterns[3];
   for (var i = 0; i < count; i++) {
     var weekNum    = Math.floor(i / spw);
     var dayInWeek  = i % spw;
-    var d = new Date(start);
-    d.setDate(d.getDate() + weekNum * 7 + pattern[dayInWeek]);
-    dates.push(d.toISOString().split('T')[0]);
+    var dd = new Date(start);
+    dd.setDate(dd.getDate() + weekNum * 7 + pattern[dayInWeek]);
+    dates.push(dd.toISOString().split('T')[0]);
   }
   return dates;
 }
@@ -10208,7 +10280,11 @@ function _capExportToCalendar() {
 
   var sessions = CAP_STATE.sessions;
   var spw      = CAP_STATE.profile.seancesPerWeek;
-  var dates    = _capCalcDates(sessions.length, spw, startDate);
+  if (_capSelectedDays.length !== spw) {
+    alert('Sélectionne exactement ' + spw + ' jour' + (spw > 1 ? 's' : '') + ' de la semaine pour ce plan (' + _capSelectedDays.length + ' sélectionné' + (_capSelectedDays.length > 1 ? 's' : '') + ').');
+    return;
+  }
+  var dates    = _capCalcDates(sessions.length, spw, startDate, _capSelectedDays);
 
   var btn = document.getElementById('capExportBtn');
   var statusEl = document.getElementById('capExportStatus');

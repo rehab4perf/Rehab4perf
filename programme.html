@@ -3889,8 +3889,10 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
       <!-- Export vers l'agenda -->
       <div style="background:#F8FAFC;border:1px solid var(--border);border-radius:9px;padding:12px 14px;">
         <div class="cap-field-label" style="margin-bottom:8px;">Ajouter à l'agenda du patient</div>
+        <div style="font-size:.72rem;color:var(--muted);margin-bottom:4px;">Jours de la semaine (<span id="capDaysCount">0</span>/<span id="capDaysNeeded">3</span> sélectionnés — modifiable ensuite par glisser-déposer dans l'agenda)</div>
+        <div id="capDayPicker" style="display:flex;gap:5px;margin-bottom:10px;"></div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <input type="date" id="capStartDate" class="cap-select" style="flex:1;min-width:130px;" title="Premier jour de reprise">
+          <input type="date" id="capStartDate" class="cap-select" style="flex:1;min-width:130px;" title="Premier jour de reprise" onchange="_capOnStartDateChange()">
           <button id="capExportBtn" onclick="_capExportToCalendar()" style="padding:8px 14px;background:var(--navy);color:#fff;border:none;border-radius:7px;font-size:.79rem;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0;white-space:nowrap;">Ajouter à l'agenda →</button>
         </div>
         <div id="capExportStatus" style="font-size:.74rem;margin-top:6px;min-height:1.1em;color:var(--muted);"></div>
@@ -3988,6 +3990,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 
 </div>
 
-<script src="js/prog-main.js?v=20260724a"></script>
+<script src="js/prog-main.js?v=20260724b"></script>
 </body>
 </html>
