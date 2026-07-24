@@ -1530,6 +1530,7 @@ function _feedbackRenderContent(fb, sid) {
   // Adapter (CAP ou HSR)
   if (isCAP || isHSR) {
     html += '<div class="fm-section">Adapter la suite</div>';
+    html += '<div class="fm-sublbl" style="margin-bottom:6px;">Utilisable à tout moment, sans retour obligatoire</div>';
     html += '<div class="fm-adapt-row">';
     if (isCAP) {
       html += '<button class="fm-adapt-btn" onclick="_capAdaptFromBuilder(\'regression\')">↩ Régresser</button>';
@@ -10774,10 +10775,6 @@ function _capAdaptFromBuilder(mode) {
     _showToast('Contexte manquant — rouvrez la séance.');
     return;
   }
-  if (_feedbackEva === null || _feedbackEva === undefined) {
-    _showToast('Choisis d\'abord une douleur (Évaluation praticien) ci-dessus.');
-    return;
-  }
 
   _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees?patient_id=eq.' + _progPatient.id
     + '&select=id,date,programme_id,programmes(id,nom,donnees)&order=date', { headers: _sbHeaders() })
@@ -10823,11 +10820,16 @@ function _capAdaptFromBuilder(mode) {
     var localIdx = sessions.findIndex(function(s){ return String(s.seance_id) === String(_capBbSeanceId); });
     if (localIdx === -1) { _showToast('Séance introuvable dans le plan.'); return; }
 
-    sessions[localIdx].painScore = _feedbackEva;
     sessions[localIdx].status = mode === 'regression' ? 'painful' : 'done';
 
-    // Sauvegarde l'EVA praticien — c'est ce qui alimente le badge rouge de l'agenda (>3/10)
-    _feedbackSave(_capBbSeanceId);
+    // EVA praticien facultative : si renseignée, on la garde et on la sauvegarde
+    // (alimente le badge rouge de l'agenda >3/10) — sinon on adapte sans aucun retour chiffré.
+    if (_feedbackEva !== null && _feedbackEva !== undefined) {
+      sessions[localIdx].painScore = _feedbackEva;
+      _feedbackSave(_capBbSeanceId);
+    } else {
+      sessions[localIdx].painScore = null;
+    }
 
     if (mode === 'regression') {
       var Lpain = _capLoadOf(sessions[localIdx]);
