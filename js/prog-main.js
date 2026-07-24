@@ -9613,6 +9613,34 @@ function capObjStep(delta) {
   }
 }
 
+/* ── Stepper capacité de départ (min de course continue, 0 = marche) ── */
+var CAP_START_LADDER = [0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60];
+
+function _capStartLabel(v) {
+  if (v <= 0) return 'Marche seule';
+  return v + ' min' + (v >= 5 ? ' continu' : '');
+}
+
+function capStartStep(delta) {
+  var inp = document.getElementById('capStartMinG');
+  var cur = parseInt(inp.value) || 0;
+  // Borne haute : strictement en dessous de l'objectif (on ne démarre pas déjà arrivé)
+  var obj = parseInt((document.getElementById('capObjG') || {}).value) || 30;
+  var maxStart = Math.max(0, obj - 1);
+  // Avance le long de l'échelle si possible, sinon pas de 5 min
+  var idx = CAP_START_LADDER.indexOf(cur);
+  var next;
+  if (idx >= 0) {
+    next = CAP_START_LADDER[Math.max(0, Math.min(CAP_START_LADDER.length - 1, idx + delta))];
+  } else {
+    next = cur + delta * 5;
+  }
+  next = Math.max(0, Math.min(maxStart, next));
+  inp.value = next;
+  var disp = document.getElementById('capStartDisplay');
+  if (disp) disp.textContent = _capStartLabel(next);
+}
+
 /* ── Listes canoniques 18 sessions (3/sem × 6 semaines) ── */
 function _capCanonical18(level, obj) {
   // Pour petits objectifs, forcer un niveau plus progressif
@@ -9728,7 +9756,8 @@ function _capBuildProgressive(profile, overrideStartL) {
   var obj = profile.objectiveMin;
   var spw = profile.seancesPerWeek;
   var R   = CAP_RYTHME[profile.rythme] || CAP_RYTHME.prudent;
-  var L   = overrideStartL != null ? overrideStartL : (CAP_START_L[profile.startCapacity] || 1);
+  var L   = overrideStartL != null ? overrideStartL
+          : (profile.startL != null ? profile.startL : (CAP_START_L[profile.startCapacity] || 1));
   var ACWR_CAP = 1.30;
 
   var sessions = [], loads = [], w = 0, guard = 0, graduated = false, held = 0;
@@ -9834,7 +9863,7 @@ function _capGenerate() {
   var profile = {
     track:          _capChipVal('capTrackG'),
     level:          _capChipVal('capLevelG'),
-    startCapacity:  _capChipVal('capStartG') || '1min',
+    startL:         Math.max(1, parseInt((document.getElementById('capStartMinG') || {}).value) || 0),
     rythme:         _capChipVal('capRythmeG') || 'prudent',
     patho:          document.getElementById('capPathoG').value,
     objectiveMin:   parseInt(document.getElementById('capObjG').value),
@@ -10087,7 +10116,8 @@ function _capRecalcAfterBreak() {
 
   var lastDoneIdx = -1;
   for (var i = sessions.length - 1; i >= 0; i--) { if (sessions[i].status === 'done') { lastDoneIdx = i; break; } }
-  var lastL = lastDoneIdx >= 0 ? _capLoadOf(sessions[lastDoneIdx]) : (CAP_START_L[CAP_STATE.profile.startCapacity] || 1);
+  var lastL = lastDoneIdx >= 0 ? _capLoadOf(sessions[lastDoneIdx])
+            : (CAP_STATE.profile.startL != null ? CAP_STATE.profile.startL : (CAP_START_L[CAP_STATE.profile.startCapacity] || 1));
 
   var brk = _capDetectBreak();
   var weeksOff = brk ? Math.ceil(brk.gapDays / 7) : 0;
@@ -10357,12 +10387,16 @@ function _capBITSessions(profile, level) {
 /* ── CAP → Agenda : convertit une session CAP en bloc cardio (pour Évolution) ── */
 function _capSessionToCardioBloc(s, profile) {
   var patho = (profile && profile.patho) || '';
+  var pathoInfo = CAP_PATHO_DB[patho] || CAP_PATHO_DB.aucune;
   var allure = (profile && profile.allure) ? profile.allure : null;
   var consigne = patho === 'periostite'
     ? 'Allure conversation — discuter aisément pendant l\'effort (Zone 2)'
     : '';
   var alComment = allure ? 'Allure cible : ' + allure + ' min/km' : '';
-  var notes = [consigne, alComment].filter(Boolean).join(' · ');
+  // Consignes pathologie + seuil d'arrêt (visibles dans le builder ET chez l'athlète via les notes du bloc)
+  var pathoNotes = (pathoInfo.consignes || []).join(' · ');
+  var stopLine = '⚠ Arrêt si douleur ≥ ' + ((pathoInfo.seuil || 3) + 1) + '/10';
+  var notes = [consigne, alComment, pathoNotes, stopLine].filter(Boolean).join('\n');
 
   if (s.type === 'interval') {
     var totalMin = Math.round(s.reps * (s.runMin + (s.walkMin || 0)));
