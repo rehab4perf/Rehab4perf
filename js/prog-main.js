@@ -3722,7 +3722,7 @@ function _renderBuilderLibraryUI(){
 
     leftHtml += '<div class="blib-cat-hdr" onclick="_toggleLibCat(\''+escJS(catKey)+'\')" style="background:'+catInfo.color+'30;">';
     leftHtml += '<span class="blib-cat-icon">'+catInfo.icon+'</span>';
-    leftHtml += '<span class="blib-cat-label" style="color:'+catInfo.textColor+';">'+escH(catLabel)+'</span>';
+    leftHtml += '<span class="blib-cat-label" style="color:var(--text-dk);">'+escH(catLabel)+'</span>';
     leftHtml += '<span class="blib-cat-cnt">'+catGroups.length+'</span>';
     leftHtml += '<span class="blib-cat-arrow">'+(isCollapsed?'▶':'▼')+'</span>';
     leftHtml += '</div>';
@@ -5663,7 +5663,7 @@ function _renderSidebarWithGroups(){
     html += '<div class="stmpl-cat-section">';
     html += '<div class="stmpl-cat-hdr" onclick="_toggleCatSection(\''+escJS(catKey)+'\')" style="background:'+catInfo.color+'20;">';
     html += '<span class="stmpl-cat-hdr-icon">'+catInfo.icon+'</span>';
-    html += '<span class="stmpl-cat-hdr-name" style="color:'+catInfo.textColor+';">'+(catKey||'Sans catégorie')+'</span>';
+    html += '<span class="stmpl-cat-hdr-name" style="color:var(--text-dk);">'+(catKey||'Sans catégorie')+'</span>';
     html += '<span class="stmpl-cat-hdr-count">'+count+'</span>';
     html += '<span class="stmpl-cat-hdr-toggle">'+(isCollapsed?'▶':'▼')+'</span>';
     html += '</div>';
