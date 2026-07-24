@@ -9723,12 +9723,12 @@ function _capNextL(L, obj, R) {
   return Math.min(obj, L + inc);
 }
 
-function _capBuildProgressive(profile) {
+function _capBuildProgressive(profile, overrideStartL) {
   _capIdSeq = 0;
   var obj = profile.objectiveMin;
   var spw = profile.seancesPerWeek;
   var R   = CAP_RYTHME[profile.rythme] || CAP_RYTHME.prudent;
-  var L   = CAP_START_L[profile.startCapacity] || 1;
+  var L   = overrideStartL != null ? overrideStartL : (CAP_START_L[profile.startCapacity] || 1);
   var ACWR_CAP = 1.30;
 
   var sessions = [], loads = [], w = 0, guard = 0, graduated = false, held = 0;
@@ -9927,6 +9927,20 @@ function _capRender() {
         + '</div>';
   html += _capLoadChart(stats);
 
+  // Bannière de coupure détectée
+  var brk = !_capBreakBannerDismissed ? _capDetectBreak() : null;
+  if (brk) {
+    var weeksOff = Math.ceil(brk.gapDays / 7);
+    html += '<div style="background:#FFF7ED;border:1px solid #FDBA74;border-radius:9px;padding:10px 12px;margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
+      + '<span style="font-size:1.1rem;">⏸</span>'
+      + '<div style="flex:1;min-width:180px;font-size:.76rem;color:#9A3412;">'
+      + '<b>Coupure détectée</b> — ' + brk.gapDays + ' jours (~' + weeksOff + ' semaine' + (weeksOff > 1 ? 's' : '') + ') sans séance validée depuis la dernière séance faite. Reprendre le plan tel quel expose à un ACWR trop élevé.'
+      + '</div>'
+      + '<button onclick="_capRecalcAfterBreak()" style="padding:6px 12px;background:#EA580C;color:#fff;border:none;border-radius:6px;font-size:.74rem;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;">Recalculer le programme</button>'
+      + '<button onclick="_capDismissBreakBanner()" style="padding:6px 10px;background:none;border:1px solid #FDBA74;color:#9A3412;border-radius:6px;font-size:.74rem;cursor:pointer;font-family:inherit;white-space:nowrap;">Ignorer</button>'
+      + '</div>';
+  }
+
   Object.keys(byWeek).sort(function(a, b) { return +a - +b; }).forEach(function(w) {
     var weekSessions = byWeek[w];
     var firstPhase   = weekSessions[0].phase;
@@ -10015,7 +10029,18 @@ function _capSessHtml(s) {
   } else if (s.status === 'done') {
     actions = '<span class="cap-done-tag">✓ Faite</span>';
   } else {
-    actions = '<span class="cap-pain-tag">⚠ ' + (s.painScore ? s.painScore + '/10' : 'douloureuse') + '</span>';
+    // Feu tricolore : sévérité de la douleur par rapport au seuil de la pathologie
+    var seuil = (CAP_STATE && CAP_STATE.profile) ? (CAP_PATHO_DB[CAP_STATE.profile.patho] || CAP_PATHO_DB.aucune).seuil : 3;
+    var score = s.painScore;
+    var fireCol, fireBg, fireNote;
+    if (score == null) { fireCol = '#92400E'; fireBg = '#FEF3C7'; fireNote = ''; }
+    else if (score > seuil)  { fireCol = '#B91C1C'; fireBg = '#FEE2E2'; fireNote = '↩ régression appliquée'; }
+    else if (score === seuil) { fireCol = '#B45309'; fireBg = '#FEF3C7'; fireNote = '↔ répétition de la séance'; }
+    else { fireCol = '#15803D'; fireBg = '#DCFCE7'; fireNote = '✓ progression maintenue'; }
+    actions = '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">'
+      + '<span class="cap-pain-tag" style="background:' + fireBg + ';color:' + fireCol + ';">⚠ ' + (score != null ? score + '/10' : 'douloureuse') + '</span>'
+      + (fireNote ? '<span style="font-size:.62rem;color:' + fireCol + ';">' + fireNote + '</span>' : '')
+      + '</div>';
   }
 
   return '<div class="' + cls + '">'
@@ -10023,6 +10048,87 @@ function _capSessHtml(s) {
     + '<div class="cap-sess-info">' + label + '</div>'
     + '<div class="cap-sess-right">' + actions + '</div>'
     + '</div>';
+}
+
+/* ── Ré-ajustement après coupure ── */
+var _capBreakBannerDismissed = false;
+
+function _capLoadOf(s) { return s.type === 'continuous' ? (s.durationMin || 0) : (s.reps * s.runMin); }
+
+// Détecte une coupure : écart entre aujourd'hui et la dernière séance validée (ou le début du plan)
+function _capDetectBreak() {
+  if (!CAP_STATE || !CAP_STATE.sessions || !CAP_STATE.sessions.length) return null;
+  var sessions = CAP_STATE.sessions;
+  var lastDone = null;
+  for (var i = sessions.length - 1; i >= 0; i--) {
+    if (sessions[i].status === 'done' && sessions[i].date) { lastDone = sessions[i]; break; }
+  }
+  var refDateStr = lastDone ? lastDone.date : sessions[0].date;
+  if (!refDateStr) return null; // pas encore exporté vers l'agenda : pas de référence temporelle
+  var hasPending = sessions.some(function(s) { return s.status === 'pending'; });
+  if (!hasPending) return null; // plan terminé, rien à recalculer
+
+  var refDate = new Date(refDateStr + 'T12:00:00');
+  var today   = new Date(new Date().toISOString().split('T')[0] + 'T12:00:00');
+  var gapDays = Math.round((today - refDate) / 86400000);
+  if (gapDays >= 10) return { gapDays: gapDays, lastDone: lastDone };
+  return null;
+}
+
+// Recalcule les séances restantes depuis la charge réellement acquise, en tenant compte
+// de la durée de la coupure (recul progressif, pas de reprise "comme avant"). Conserve
+// les dates/liens agenda déjà planifiés — seul le contenu des séances à venir change.
+function _capRecalcAfterBreak() {
+  if (!CAP_STATE) return;
+  var sessions = CAP_STATE.sessions;
+  var pendingIdxs = [];
+  sessions.forEach(function(s, i) { if (s.status === 'pending') pendingIdxs.push(i); });
+  if (!pendingIdxs.length) return;
+
+  var lastDoneIdx = -1;
+  for (var i = sessions.length - 1; i >= 0; i--) { if (sessions[i].status === 'done') { lastDoneIdx = i; break; } }
+  var lastL = lastDoneIdx >= 0 ? _capLoadOf(sessions[lastDoneIdx]) : (CAP_START_L[CAP_STATE.profile.startCapacity] || 1);
+
+  var brk = _capDetectBreak();
+  var weeksOff = brk ? Math.ceil(brk.gapDays / 7) : 0;
+  var newStartL = Math.max(1, Math.round(lastL * Math.pow(0.85, weeksOff))); // -15%/sem de coupure
+
+  var freshSessions = _capBuildProgressive(CAP_STATE.profile, newStartL);
+
+  // Ré-échantillonnage homogène sur le nombre de créneaux restants (même technique que _capBuildSessions)
+  pendingIdxs.forEach(function(slotIdx, i) {
+    var ci = Math.round(i * (freshSessions.length - 1) / Math.max(pendingIdxs.length - 1, 1));
+    var tmpl = freshSessions[ci];
+    var old = sessions[slotIdx];
+    var updated = JSON.parse(JSON.stringify(tmpl));
+    updated.id = old.id; updated.seance_id = old.seance_id; updated.prog_id = old.prog_id;
+    updated.date = old.date; updated.week = old.week; updated.status = 'pending'; updated.painScore = null;
+    sessions[slotIdx] = updated;
+
+    if (updated.seance_id && updated.prog_id) {
+      var bloc = _capSessionToCardioBloc(updated, CAP_STATE.profile);
+      _fetchRetry(SUPA_URL_P + '/rest/v1/programmes?id=eq.' + updated.prog_id, {
+        method: 'PATCH', headers: _sbHeaders(),
+        body: JSON.stringify({
+          nom: 'CAP — ' + updated.label,
+          donnees: {
+            type: 'cap', session: updated, profile: CAP_STATE.profile, blocs: [bloc],
+            consignes: (CAP_PATHO_DB[CAP_STATE.profile.patho] || CAP_PATHO_DB.aucune).consignes
+          }
+        })
+      }).catch(function(e) { console.warn('CAP recalc patch error:', e); });
+    }
+  });
+
+  _capBreakBannerDismissed = true;
+  _capSave();
+  _capRender();
+  if (typeof _showToast === 'function') _showToast('↻ Programme recalculé depuis la capacité actuelle.');
+}
+
+function _capDismissBreakBanner() {
+  _capBreakBannerDismissed = true;
+  _capRender();
 }
 
 /* ── Actions ── */
