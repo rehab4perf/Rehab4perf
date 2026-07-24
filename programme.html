@@ -3851,11 +3851,13 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 
       <div>
         <div class="cap-field-label">Séances par semaine</div>
-        <select class="cap-select" id="capSpwG">
-          <option value="2">2 séances / semaine</option>
-          <option value="3" selected>3 séances / semaine</option>
-          <option value="4">4 séances / semaine</option>
-        </select>
+        <div class="cap-stepper">
+          <button class="cap-step-btn" onclick="capSpwStep(-1)" title="Diminuer">−</button>
+          <span class="cap-step-val" id="capSpwDisplay">3 séances / semaine</span>
+          <button class="cap-step-btn" onclick="capSpwStep(+1)" title="Augmenter">+</button>
+          <input type="hidden" id="capSpwG" value="3">
+        </div>
+        <div style="font-size:.7rem;color:var(--muted);margin-top:3px;">Au-delà de 7, plusieurs séances par jour sont réparties automatiquement</div>
       </div>
 
       <button class="cap-gen-btn" onclick="_capGenerate()">Générer le programme →</button>
@@ -3890,6 +3892,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
         <div class="cap-field-label" style="margin-bottom:8px;">Ajouter à l'agenda du patient</div>
         <div style="font-size:.72rem;color:var(--muted);margin-bottom:4px;">Jours de la semaine (<span id="capDaysCount">0</span>/<span id="capDaysNeeded">3</span> sélectionnés — modifiable ensuite par glisser-déposer dans l'agenda)</div>
         <div id="capDayPicker" style="display:flex;gap:5px;margin-bottom:10px;"></div>
+        <div id="capDaysHint" style="display:none;font-size:.72rem;color:var(--muted);margin-bottom:10px;background:#F8FAFC;border:1px solid var(--border);border-radius:7px;padding:7px 10px;"></div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <input type="date" id="capStartDate" class="cap-select" style="flex:1;min-width:130px;" title="Premier jour de reprise" onchange="_capOnStartDateChange()">
           <button id="capExportBtn" onclick="_capExportToCalendar()" style="padding:8px 14px;background:var(--navy);color:#fff;border:none;border-radius:7px;font-size:.79rem;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0;white-space:nowrap;">Ajouter à l'agenda →</button>
@@ -3989,6 +3992,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 
 </div>
 
-<script src="js/prog-main.js?v=20260724e"></script>
+<script src="js/prog-main.js?v=20260724f"></script>
 </body>
 </html>

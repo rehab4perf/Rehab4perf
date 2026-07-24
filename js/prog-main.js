@@ -9641,6 +9641,16 @@ function capStartStep(delta) {
   if (disp) disp.textContent = _capStartLabel(next);
 }
 
+/* ── Stepper séances par semaine (libre, pas plafonné à 7 — plusieurs courses/jour possibles) ── */
+function capSpwStep(delta) {
+  var inp = document.getElementById('capSpwG');
+  var cur = parseInt(inp.value) || 3;
+  var next = Math.max(1, Math.min(21, cur + delta));
+  inp.value = next;
+  var disp = document.getElementById('capSpwDisplay');
+  if (disp) disp.textContent = next + ' séance' + (next > 1 ? 's' : '') + ' / semaine' + (next > 7 ? ' (' + (next/7).toFixed(1).replace('.0','') + '/jour en moyenne)' : '');
+}
+
 /* ── Listes canoniques 18 sessions (3/sem × 6 semaines) ── */
 function _capCanonical18(level, obj) {
   // Pour petits objectifs, forcer un niveau plus progressif
@@ -10173,6 +10183,20 @@ function _capValidate(idx) {
   s.painScore = null;
   _capSave();
   _capRender();
+  // Sync Supabase si déjà exporté — sans ça, une reconstruction du plan depuis l'agenda
+  // (ex. depuis le panneau Feedback du builder) ne verrait pas ce statut "validée"
+  if (s.seance_id && s.prog_id) {
+    var bloc = _capSessionToCardioBloc(s, CAP_STATE.profile);
+    _fetchRetry(SUPA_URL_P + '/rest/v1/programmes?id=eq.' + s.prog_id, {
+      method: 'PATCH', headers: _sbHeaders(),
+      body: JSON.stringify({
+        donnees: {
+          type: 'cap', session: s, profile: CAP_STATE.profile, blocs: [bloc],
+          consignes: (CAP_PATHO_DB[CAP_STATE.profile.patho] || CAP_PATHO_DB.aucune).consignes
+        }
+      })
+    }).catch(function(e) { console.warn('CAP validate sync error:', e); });
+  }
 }
 
 function _capShowPain(idx) {
@@ -10382,17 +10406,25 @@ function _capManualRegress(idx) {
 }
 
 /* ── CAP → Agenda : sélecteur de jours de la semaine ── */
-var _capSelectedDays    = [];   // 0=Lundi..6=Dimanche
+var _capSelectedDays    = [];   // 0=Lundi..6=Dimanche (répétitions possibles si spw > 7)
 var _capSelectedDaysSpw = null; // spw pour lequel _capSelectedDays a été calculé
 var CAP_WEEKDAY_LABELS  = ['L','M','M','J','V','S','D'];
 var CAP_WEEKDAY_NAMES   = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
-var CAP_DEFAULT_DAYS    = { 2:[0,3], 3:[0,2,4], 4:[0,1,3,4] };
+var CAP_MAX_MANUAL_SPW  = 7; // au-delà, la sélection manuelle de jours distincts n'a plus de sens
+
+// Répartition homogène de N séances sur les 7 jours de la semaine (répète des jours si N > 7 —
+// plusieurs séances/jour). ex: 3 -> [0,2,4] (Lun/Mer/Ven), 10 -> [0,0,1,2,2,3,4,4,5,6]
+function _capEvenWeekdays(n) {
+  var out = [];
+  for (var i = 0; i < n; i++) out.push(Math.floor(i * 7 / n));
+  return out;
+}
 
 function _capInitDayPicker() {
   if (!CAP_STATE || !CAP_STATE.profile) return;
   var spw = CAP_STATE.profile.seancesPerWeek;
   if (_capSelectedDaysSpw !== spw) {
-    _capSelectedDays    = (CAP_DEFAULT_DAYS[spw] || CAP_DEFAULT_DAYS[3]).slice();
+    _capSelectedDays    = _capEvenWeekdays(Math.min(spw, CAP_MAX_MANUAL_SPW));
     _capSelectedDaysSpw = spw;
   }
   _capRenderDayPicker();
@@ -10400,10 +10432,25 @@ function _capInitDayPicker() {
 
 function _capRenderDayPicker() {
   var el = document.getElementById('capDayPicker');
+  var hint = document.getElementById('capDaysHint');
   if (!el || !CAP_STATE || !CAP_STATE.profile) return;
   var spw = CAP_STATE.profile.seancesPerWeek;
   var needEl = document.getElementById('capDaysNeeded');
   if (needEl) needEl.textContent = spw;
+
+  if (spw > CAP_MAX_MANUAL_SPW) {
+    el.style.display = 'none';
+    if (hint) {
+      hint.style.display = 'block';
+      hint.textContent = 'Plus de 7 séances/semaine : placement automatique réparti sur les 7 jours (plusieurs séances certains jours).';
+    }
+    var countEl2 = document.getElementById('capDaysCount');
+    if (countEl2) countEl2.textContent = spw;
+    return;
+  }
+  el.style.display = 'flex';
+  if (hint) hint.style.display = 'none';
+
   el.innerHTML = CAP_WEEKDAY_LABELS.map(function(lbl, i) {
     var active = _capSelectedDays.indexOf(i) >= 0;
     return '<button type="button" onclick="_capToggleDay(' + i + ')" title="' + CAP_WEEKDAY_NAMES[i] + '" '
@@ -10441,7 +10488,9 @@ function _capCalcDates(count, spw, startDateStr, selectedDays) {
   var dates = [];
   var start = new Date(startDateStr + 'T12:00:00');
 
-  if (selectedDays && selectedDays.length) {
+  // Au-delà de 7 séances/semaine, plusieurs séances tombent le même jour :
+  // la sélection manuelle de jours distincts ne s'applique plus.
+  if (selectedDays && selectedDays.length && spw <= CAP_MAX_MANUAL_SPW) {
     // Placement réel sur les jours de semaine choisis, avancement chronologique jour par jour
     var days = selectedDays.slice().sort(function(a, b) { return a - b; });
     var d = new Date(start);
@@ -10454,9 +10503,9 @@ function _capCalcDates(count, spw, startDateStr, selectedDays) {
     return dates;
   }
 
-  // Repli : patterns d'espacement fixes (jours depuis le jour 1 de chaque semaine)
-  var patterns = { 2: [0,3], 3: [0,2,4], 4: [0,1,3,4] };
-  var pattern = patterns[spw] || patterns[3];
+  // Repli générique : répartition homogène sur 7 jours, semaine après semaine
+  // (fonctionne pour tout spw, y compris > 7 avec plusieurs séances le même jour)
+  var pattern = _capEvenWeekdays(spw);
   for (var i = 0; i < count; i++) {
     var weekNum    = Math.floor(i / spw);
     var dayInWeek  = i % spw;
@@ -10553,7 +10602,7 @@ function _capExportToCalendar() {
 
   var sessions = CAP_STATE.sessions;
   var spw      = CAP_STATE.profile.seancesPerWeek;
-  if (_capSelectedDays.length !== spw) {
+  if (spw <= CAP_MAX_MANUAL_SPW && _capSelectedDays.length !== spw) {
     alert('Sélectionne exactement ' + spw + ' jour' + (spw > 1 ? 's' : '') + ' de la semaine pour ce plan (' + _capSelectedDays.length + ' sélectionné' + (_capSelectedDays.length > 1 ? 's' : '') + ').');
     return;
   }
@@ -10715,52 +10764,84 @@ function _capBbToggle() {
 
 function _capRenderFeedback() { /* remplacé par _openFeedbackModal */ }
 
+/* ── Adapter depuis le panneau Feedback du builder ──
+   Unifié avec le moteur du wizard CAP (entre-deux + replan complet, cf.
+   _capMidpointL/_capReplanFromIndex) : régresser ici recalcule toute la suite
+   du plan sous ACWR, pas seulement la séance suivante. Sauvegarde aussi
+   l'EVA praticien (alimente le badge rouge de l'agenda). ── */
 function _capAdaptFromBuilder(mode) {
   if (!_capBbSeanceId || !_capBbDonnees || !_progPatient) {
     _showToast('Contexte manquant — rouvrez la séance.');
     return;
   }
+  if (_feedbackEva === null || _feedbackEva === undefined) {
+    _showToast('Choisis d\'abord une douleur (Évaluation praticien) ci-dessus.');
+    return;
+  }
+
   _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees?patient_id=eq.' + _progPatient.id
     + '&select=id,date,programme_id,programmes(id,nom,donnees)&order=date', { headers: _sbHeaders() })
   .then(function(r){ return r.json(); })
   .then(function(all){
-    var capSeances = all.filter(function(s){
+    var capRows = all.filter(function(s){
       return s.programmes && s.programmes.donnees && s.programmes.donnees.type === 'cap';
     });
-    if (!capSeances.length) { _showToast('Aucune séance CAP trouvée.'); return; }
+    if (!capRows.length) { _showToast('Aucune séance CAP trouvée.'); return; }
 
-    var curIdx = capSeances.findIndex(function(s){ return String(s.id) === String(_capBbSeanceId); });
-    if (curIdx === -1) { _showToast('Séance introuvable.'); return; }
+    var idx = capRows.findIndex(function(s){ return String(s.id) === String(_capBbSeanceId); });
+    if (idx === -1) { _showToast('Séance introuvable.'); return; }
 
-    var nextSeance = capSeances[curIdx + 1];
-    if (!nextSeance) { _showToast('Pas de séance suivante à adapter.'); return; }
+    var profile = capRows[idx].programmes.donnees.profile || _capBbDonnees.profile || {};
 
-    var templateDonnees = mode === 'regression'
-      ? (curIdx > 0 ? capSeances[curIdx - 1].programmes.donnees : _capBbDonnees)
-      : _capBbDonnees;
+    // Réutilise l'état local (localStorage) s'il correspond à ce patient et contient
+    // déjà cette séance — sinon reconstruit un CAP_STATE complet depuis l'agenda
+    // (fiable même si le générateur n'a jamais été ouvert sur cet appareil).
+    var state = null;
+    try {
+      var saved = localStorage.getItem('r4p-cap-' + _progPatient.id);
+      if (saved) {
+        var parsed = JSON.parse(saved);
+        if (parsed && parsed.sessions && parsed.sessions.some(function(s){ return String(s.seance_id) === String(_capBbSeanceId); })) {
+          state = parsed;
+        }
+      }
+    } catch(e) {}
 
-    if (!templateDonnees || !templateDonnees.session) { _showToast('Template introuvable.'); return; }
+    if (!state) {
+      var sessions = capRows.map(function(r){
+        var s = JSON.parse(JSON.stringify(r.programmes.donnees.session || {}));
+        s.seance_id = r.id;
+        s.prog_id   = r.programme_id;
+        s.date      = r.date;
+        return s;
+      });
+      state = { profile: profile, sessions: sessions };
+    }
 
-    var profile   = _capBbDonnees.profile || {};
-    var pathoInfo = CAP_PATHO_DB[profile.patho] || CAP_PATHO_DB.aucune;
-    var updSess   = JSON.parse(JSON.stringify(templateDonnees.session));
-    var nextD     = nextSeance.programmes.donnees || {};
+    CAP_STATE = state;
+    var sessions = state.sessions;
+    var localIdx = sessions.findIndex(function(s){ return String(s.seance_id) === String(_capBbSeanceId); });
+    if (localIdx === -1) { _showToast('Séance introuvable dans le plan.'); return; }
 
-    var updDonnees = {
-      type: 'cap', session: updSess, profile: profile,
-      session_index: nextD.session_index, total: nextD.total || _capBbDonnees.total,
-      blocs: [_capSessionToCardioBloc(updSess, profile)],
-      consignes: pathoInfo.consignes
-    };
+    sessions[localIdx].painScore = _feedbackEva;
+    sessions[localIdx].status = mode === 'regression' ? 'painful' : 'done';
 
-    _fetchRetry(SUPA_URL_P + '/rest/v1/programmes?id=eq.' + nextSeance.programmes.id, {
-      method: 'PATCH', headers: _sbHeaders(),
-      body: JSON.stringify({ nom: 'CAP — ' + (updSess.label || ''), donnees: updDonnees })
-    }).then(function(r){
-      if (!r.ok) { _showToast('Erreur lors de l\'adaptation.'); return; }
-      _showToast(mode === 'regression' ? '↩ Séance suivante regressée ✓' : '↔ Séance suivante maintenue ✓');
+    // Sauvegarde l'EVA praticien — c'est ce qui alimente le badge rouge de l'agenda (>3/10)
+    _feedbackSave(_capBbSeanceId);
+
+    if (mode === 'regression') {
+      var Lpain = _capLoadOf(sessions[localIdx]);
+      var Lgood = null;
+      for (var g = localIdx - 1; g >= 0; g--) { if (sessions[g].status === 'done') { Lgood = _capLoadOf(sessions[g]); break; } }
+      if (Lgood == null) Lgood = Math.max(1, Lpain - 1);
+      var Lmid = _capMidpointL(Lgood, Lpain);
+      _capReplanFromIndex(localIdx + 1, Lmid); // gère save/render/agenda, avec sync Supabase
+    } else {
+      _capSave();
       renderCalendar();
-    }).catch(function(){ _showToast('Erreur réseau.'); });
+      _renderAgendaProgList('cap');
+      _showToast('↔ Séance maintenue');
+    }
   })
   .catch(function(){ _showToast('Erreur lors du chargement.'); });
 }

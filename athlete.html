@@ -2220,7 +2220,7 @@ function _buildCapPainCard(seanceId, existing) {
   // ── Douleur EVA ──
   html += '<div class="rpe-card-title">🩹 Douleur (EVA)</div>';
   html += '<div class="rpe-scale-label" style="margin-bottom:8px;">0 = aucune · 10 = insupportable</div>';
-  if(alreadyDone) html += '<div class="rpe-already">Déjà renseigné : '+_capCurrentPain+'/10 — '+((_capPainDescs[_capCurrentPain])||'')+'</div>';
+  if(alreadyDone) html += '<div class="rpe-already">✓ Déjà renseigné : '+_capCurrentPain+'/10 — '+((_capPainDescs[_capCurrentPain])||'')+' — tu peux modifier ton bilan</div>';
   if(alreadyDone && existing && existing.seen_at) html += '<div class="rpe-seen">👁️ Lu par ton kiné le '+_fmtSeenDate(existing.seen_at)+'</div>';
   html += '<div class="rpe-buttons" id="capPainBtns">';
   for(var i=0; i<=10; i++){
@@ -2243,7 +2243,7 @@ function _buildCapPainCard(seanceId, existing) {
   var initBorg = _capCurrentRpe>0 ? BORG_CR10[_capCurrentRpe] : null;
   html += '<div class="rpe-desc" id="capRpeDesc" style="color:'+(initBorg?initBorg.color:'var(--muted)')+'">'+escH(initBorg?initBorg.label:'')+'</div>';
 
-  html += '<button class="rpe-submit-btn" id="capPainSubmit" onclick="_submitCapFeedback()"'+(alreadyDone?' disabled':'')+'>'+( alreadyDone?'Déjà envoyé':'Envoyer mon bilan')+'</button>';
+  html += '<button class="rpe-submit-btn" id="capPainSubmit" onclick="_submitCapFeedback()">'+( alreadyDone?'Mettre à jour mon bilan':'Envoyer mon bilan')+'</button>';
   html += '</div>';
   return html;
 }
@@ -2291,15 +2291,18 @@ function _submitCapFeedback() {
   })
   .then(function(r){
     if(!r.ok){ return r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); if(btn){btn.disabled=false;btn.textContent='Réessayer';} }); }
-    var painColor = _capPainColors[_capCurrentPain]||'#2B5FA6';
+    // Re-rendre la carte interactive (avec le nouveau statut "déjà renseigné") plutôt que
+    // de la figer — l'athlète doit pouvoir corriger son bilan sans recharger la page.
     var card = document.getElementById('rpeCard');
-    if(card) card.innerHTML =
-      '<div class="rpe-success-msg">'
-      +'<div style="font-size:1.4rem;">'+(_capCurrentPain<=2?'✅':_capCurrentPain<=4?'⚠️':'🔴')+'</div>'
-      +'<div style="font-weight:700;color:var(--navy);margin:6px 0;">Bilan enregistré !</div>'
-      +'<div style="font-size:.85rem;margin-bottom:4px;">🩹 Douleur : <strong style="color:'+painColor+'">'+_capCurrentPain+'/10</strong> — '+escH(_capPainDescs[_capCurrentPain]||'')+'</div>'
-      +'<div style="font-size:.85rem;">💪 Effort : <strong>'+_capCurrentRpe+'/10</strong> — '+escH((BORG_CR10[_capCurrentRpe]&&BORG_CR10[_capCurrentRpe].label)||'')+'</div>'
-      +'</div>';
+    if(card){
+      card.outerHTML = _buildCapPainCard(_capCurrentSeanceId, { douleur: _capCurrentPain, effort: _capCurrentRpe, seen_at: null });
+      var freshBtn = document.getElementById('capPainSubmit');
+      if(freshBtn){
+        var savedLabel = freshBtn.textContent;
+        freshBtn.textContent = '✓ Enregistré';
+        setTimeout(function(){ if(freshBtn) freshBtn.textContent = savedLabel; }, 1800);
+      }
+    }
   })
   .catch(function(){ alert('Erreur réseau. Réessaie.'); if(btn){btn.disabled=false;btn.textContent='Réessayer';} });
 }
