@@ -228,25 +228,29 @@ sections: [
       { t:'5 zones FC selon Karvonen', x:'FC cible = FC repos + (FC de réserve × %). Plus fiable qu\'un simple pourcentage de FC max, car ancré sur la FC de repos réelle.', img:true },
       { t:'Zones VMA', x:'%VMA, vitesse en km/h et allure en min/km pour construire les séances de course.' }
     ]},
-  { id:'cap', titre:'Calculateur CAP (retour à la course)',
-    intro:'Un assistant complet de reprise de course à pied : il génère le programme progressif directement dans l\'agenda.',
-    etapes:[
-      { t:'Menu ⋯ → « Calculateur CAP »', x:'Choisissez la pathologie et le point de départ du patient.', img:true },
-      { t:'Le wizard planifie les paliers marche/course', x:'Les séances CAP apparaissent dans l\'agenda (ex. 5×(1\'C/1\'M)) et dans le calendrier de l\'athlète.' },
-      { t:'L\'athlète renseigne douleur et effort après chaque sortie', x:'Selon la douleur EVA, le bandeau CAP du builder vous propose de régresser ou maintenir le palier — l\'adaptation se fait en un clic.' }
-    ]},
-  { id:'hsr', titre:'Calculateur HSR (tendinopathies)',
-    intro:'Le protocole Heavy Slow Resistance pour les tendinopathies, piloté par le 1RM du patient.',
-    etapes:[
-      { t:'Menu ⋯ → « Calculateur HSR »', x:'Renseignez le 1RM de référence de l\'exercice cible.', img:true },
-      { t:'Les séances des phases se planifient automatiquement', x:'Charges calculées en %1RM, progression par phases dans l\'agenda.' },
-      { t:'Suivi par la douleur', x:'L\'athlète note sa douleur EVA après chaque séance ; le bandeau HSR du builder permet d\'adapter, et de mettre à jour le 1RM de référence au fil des progrès.' }
-    ]},
   { id:'acwr-calc', titre:'Calculateur ACWR',
     intro:'Pour vérifier manuellement un ratio charge aiguë / chronique — par exemple avec des données externes à l\'app.',
     etapes:[
       { t:'Menu ⋯ → « Calculateur ACWR »', x:'Saisissez la charge aiguë (7 derniers jours, en UA) et les charges des semaines précédentes.' },
       { t:'Lisez le ratio et sa zone', x:'Le même code couleur que le Bilan de charge (voir la section « Charge d\'entraînement »). Note : pour vos patients suivis dans l\'app, ce ratio se calcule déjà tout seul sous l\'agenda.' }
+    ]}
+]},
+
+/* ── 🏗 GÉNÉRATEURS ──────────────────────────────────────────── */
+{ id:'generateurs', emoji:'🏗', titre:'Générateurs', articles:[
+  { id:'cap', titre:'Générateur CAP (retour à la course)',
+    intro:'Un assistant complet de reprise de course à pied : il génère le programme progressif directement dans l\'agenda.',
+    etapes:[
+      { t:'Menu ⋯ → Générateur → « Générateur CAP »', x:'Choisissez la pathologie et le point de départ du patient.', img:true },
+      { t:'Le wizard planifie les paliers marche/course', x:'Les séances CAP apparaissent dans l\'agenda (ex. 5×(1\'C/1\'M)) et dans le calendrier de l\'athlète.' },
+      { t:'L\'athlète renseigne douleur et effort après chaque sortie', x:'Selon la douleur EVA, le bandeau CAP du builder vous propose de régresser ou maintenir le palier — l\'adaptation se fait en un clic.' }
+    ]},
+  { id:'hsr', titre:'Générateur HSR (tendinopathies)',
+    intro:'Le protocole Heavy Slow Resistance pour les tendinopathies, piloté par le 1RM du patient.',
+    etapes:[
+      { t:'Menu ⋯ → Générateur → « Générateur HSR »', x:'Renseignez le 1RM de référence de l\'exercice cible.', img:true },
+      { t:'Les séances des phases se planifient automatiquement', x:'Charges calculées en %1RM, progression par phases dans l\'agenda.' },
+      { t:'Suivi par la douleur', x:'L\'athlète note sa douleur EVA après chaque séance ; le bandeau HSR du builder permet d\'adapter, et de mettre à jour le 1RM de référence au fil des progrès.' }
     ]}
 ]},
 
