@@ -2032,6 +2032,13 @@ function removeAllCalEventsByType(type) {
     .then(function(r){
       if(!r.ok){ return r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); }); }
       progIds.forEach(function(pid){ _deleteProgIfOrphan(pid); });
+      // Vider le cache local (CAP_STATE/HSR_STATE) — sans ça, rouvrir le générateur
+      // réaffiche l'ancien plan (statuts "Faite" compris) malgré la suppression agenda.
+      if (_progPatient) {
+        try { localStorage.removeItem('r4p-' + type + '-' + _progPatient.id); } catch(e){}
+      }
+      if (type === 'cap') CAP_STATE = null;
+      if (type === 'hsr') HSR_STATE = null;
       renderCalendar();
       _showToast('Séances ' + label + ' supprimées');
     })
@@ -2127,6 +2134,13 @@ function _deleteAgendaBatch(batchKey, label) {
     .then(function(r){
       if(!r.ok){ return r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); }); }
       progIds.forEach(function(pid){ _deleteProgIfOrphan(pid); });
+      // Vider le cache local (CAP_STATE/HSR_STATE) — sans ça, rouvrir le générateur
+      // réaffiche l'ancien plan (statuts "Faite" compris) malgré la suppression agenda.
+      if (_progPatient) {
+        try { localStorage.removeItem('r4p-' + type + '-' + _progPatient.id); } catch(e){}
+      }
+      if (type === 'cap') CAP_STATE = null;
+      if (type === 'hsr') HSR_STATE = null;
       renderCalendar();
       _showToast('Programme '+label+' supprimé ('+count+' séances)');
       _renderAgendaProgList(type);
