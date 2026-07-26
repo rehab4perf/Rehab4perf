@@ -1326,6 +1326,95 @@ function deleteBloc(id){
   renderLib(document.getElementById('searchInput').value.toLowerCase());
 }
 
+/* ── Étapes (regroupement visuel de blocs, ex: Échauffement / Corps de séance) ──
+   Pas d'entité "étape" à part : etapeId/etapeTitle vivent directement sur chaque
+   bloc (dénormalisé). Ça évite de faire transiter une structure séparée dans tous
+   les points de sauvegarde/chargement (séances, templates, brouillons, CAP/HSR…),
+   qui copient déjà l'objet bloc entier tel quel. */
+var ETAPE_COLORS = ['#F59E0B','#2563EB','#0D9488','#7C3AED','#DC2626'];
+
+function _etapeIdsInOrder(){
+  var out = [];
+  blocs.forEach(function(b){ if(b.etapeId && out.indexOf(b.etapeId)<0) out.push(b.etapeId); });
+  return out;
+}
+
+function _etapeColor(etapeId){
+  var idx = _etapeIdsInOrder().indexOf(etapeId);
+  return ETAPE_COLORS[(idx<0?0:idx) % ETAPE_COLORS.length];
+}
+
+function _groupBlocsForRender(){
+  var groups = [];
+  var i = 0;
+  while(i < blocs.length){
+    var b = blocs[i];
+    if(b.etapeId){
+      var members = [];
+      var j = i;
+      while(j < blocs.length && blocs[j].etapeId === b.etapeId){ members.push(blocs[j]); j++; }
+      groups.push({ etapeId: b.etapeId, etapeTitle: b.etapeTitle || 'Étape', blocs: members });
+      i = j;
+    } else {
+      groups.push({ etapeId: null, blocs: [b] });
+      i++;
+    }
+  }
+  return groups;
+}
+
+function addEtape(){
+  var etapeId = genId();
+  var letter = String.fromCharCode(65 + blocs.length);
+  var b = { id: genId(), title: 'Bloc '+letter, exos: [], objectif: 'libre', methode: '', etapeId: etapeId, etapeTitle: 'Nouvelle étape' };
+  blocs.push(b);
+  activeBloc = b.id;
+  renderSession();
+  var input = document.querySelector('.etape-group[data-etapeid="'+etapeId+'"] .etape-title-input');
+  if(input){ input.focus(); input.select(); }
+}
+
+function addBlocToEtape(etapeId){
+  var ref = blocs.find(function(b){ return b.etapeId===etapeId; });
+  var title = ref ? ref.etapeTitle : 'Étape';
+  var lastIdx = -1;
+  blocs.forEach(function(b,i){ if(b.etapeId===etapeId) lastIdx = i; });
+  var letter = String.fromCharCode(65 + blocs.length);
+  var nb = { id: genId(), title: 'Bloc '+letter, exos: [], objectif: 'libre', methode: '', etapeId: etapeId, etapeTitle: title };
+  if(lastIdx>=0) blocs.splice(lastIdx+1, 0, nb); else blocs.push(nb);
+  activeBloc = nb.id;
+  renderSession();
+}
+
+function renameEtape(etapeId, val){
+  blocs.forEach(function(b){ if(b.etapeId===etapeId) b.etapeTitle = val; });
+  if(typeof _draftSave === 'function') _draftSave();
+}
+
+function dissolveEtape(etapeId){
+  blocs.forEach(function(b){ if(b.etapeId===etapeId){ delete b.etapeId; delete b.etapeTitle; } });
+  renderSession();
+}
+
+function assignBlocEtape(blocId, etapeId){
+  var b = blocs.find(function(x){ return x.id===blocId; });
+  if(!b) return;
+  if(!etapeId){
+    delete b.etapeId; delete b.etapeTitle;
+    renderSession();
+    return;
+  }
+  var ref = blocs.find(function(x){ return x.etapeId===etapeId; });
+  b.etapeId = etapeId;
+  b.etapeTitle = ref ? ref.etapeTitle : 'Étape';
+  // Rapproche le bloc du reste de son étape pour garder les groupes visuellement contigus
+  blocs = blocs.filter(function(x){ return x.id!==blocId; });
+  var lastIdx = -1;
+  blocs.forEach(function(x,i){ if(x.etapeId===etapeId) lastIdx = i; });
+  if(lastIdx>=0) blocs.splice(lastIdx+1, 0, b); else blocs.push(b);
+  renderSession();
+}
+
 function addExoFromLib(libId){
   _hideLibPreview();
   var ex = LIBRARY.find(function(e){ return e.id===libId; });
@@ -1813,7 +1902,21 @@ function renderSession(){
     return;
   }
   var html = '';
-  blocs.forEach(function(b, idx){
+  var _etapeIds = _etapeIdsInOrder();
+  var _groups = _groupBlocsForRender();
+  _groups.forEach(function(g){
+  if(g.etapeId){
+    var _ec = _etapeColor(g.etapeId);
+    html += '<div class="etape-group" data-etapeid="'+g.etapeId+'" style="--etape-c:'+_ec+'">';
+    html += '<div class="etape-header">';
+    html += '<span class="etape-dot" style="background:'+_ec+'"></span>';
+    html += '<input class="etape-title-input" value="'+escH(g.etapeTitle)+'" placeholder="Nom de l\'étape" oninput="renameEtape(\''+g.etapeId+'\',this.value)">';
+    html += '<button class="etape-tmpl-btn" onclick="openSaveEtapeTemplate(\''+g.etapeId+'\')" title="Enregistrer cette étape comme template">💾</button>';
+    html += '<button class="etape-del-btn" onclick="dissolveEtape(\''+g.etapeId+'\')" title="Dissoudre l\'étape (les blocs restent)">✕</button>';
+    html += '</div>';
+  }
+  g.blocs.forEach(function(b){
+    var idx = blocs.indexOf(b);
     // ── Bloc Cardio ──
     if(b.type === 'cardio'){ html += _renderCardioBloc(b, idx); return; }
     // ── Bloc Renforcement ──
@@ -1825,6 +1928,15 @@ function renderSession(){
           + '<button class="bloc-move-btn"'+(idx===blocs.length-1?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',1)" title="Descendre">↓</button>'
           + '</span>';
     html += '<input class="bloc-title-input" value="'+escH(b.title)+'" placeholder="Nom du bloc" oninput="updateBlocTitle(\''+b.id+'\',this.value)">';
+    if(_etapeIds.length){
+      html += '<select class="bloc-etape-select" title="Étape" onclick="event.stopPropagation()" onchange="event.stopPropagation();assignBlocEtape(\''+b.id+'\',this.value)">';
+      html += '<option value="">— Sans étape —</option>';
+      _etapeIds.forEach(function(eid){
+        var etitle = (blocs.find(function(x){ return x.etapeId===eid; })||{}).etapeTitle || 'Étape';
+        html += '<option value="'+eid+'"'+(b.etapeId===eid?' selected':'')+'>'+escH(etitle)+'</option>';
+      });
+      html += '</select>';
+    }
     html += '<button class="bloc-del-btn" onclick="event.stopPropagation();deleteBloc(\''+b.id+'\')" title="Supprimer le bloc"></button>';
     html += '</div>';
     // Méthode bar
@@ -1988,11 +2100,16 @@ function renderSession(){
     }
     html += '<button class="add-free-exo-btn" onclick="addFreeExo(\''+b.id+'\')">✚ Exercice libre</button>';
     html += '</div></div>'; // .bloc-body .bloc
-  });
+  }); // g.blocs
+  if(g.etapeId){
+    html += '<button class="etape-addbloc-btn" onclick="addBlocToEtape(\''+g.etapeId+'\')">+ Bloc dans cette étape</button>';
+    html += '</div>'; // .etape-group
+  }
+  }); // _groups
   // Notes
   html += '<div class="notes-bloc"><div class="notes-label">Notes / Consignes</div>';
   html += '<textarea class="notes-ta" id="sessionNotes" placeholder="Conseils, progressions, points d\'attention…" oninput="autoResizeTa(this);if(typeof _notes!==\'undefined\'){_notes=this.value;_draftSaveLazy();}">'+escH(getNotes())+'</textarea></div>';
-  html += '<button class="add-bloc-btn" onclick="addBloc()">+ Ajouter un bloc</button>';
+  html += '<div class="bloc-add-row"><button class="add-bloc-btn" onclick="addBloc()">+ Ajouter un bloc</button><button class="add-bloc-btn etape-add-btn" onclick="addEtape()">📂 + Ajouter une étape</button></div>';
   area.innerHTML = html;
   updateTargetBlocSelect();
   // Auto-resize des consignes déjà remplies + notes

@@ -3572,9 +3572,22 @@ function openSaveTemplate(){
     _openTmplModal({ emoji: _tmplSelectedEmoji });
   }
 }
+
+/* Sauvegarder uniquement les blocs d'une étape comme template réutilisable */
+var _tmplEtapeSourceId = null;
+function openSaveEtapeTemplate(etapeId){
+  var etapeBlocs = blocs.filter(function(b){ return b.etapeId===etapeId; });
+  if(!etapeBlocs.length){ alert('Étape vide.'); return; }
+  _tmplEtapeSourceId = etapeId;
+  var title = etapeBlocs[0].etapeTitle || 'Étape';
+  _openTmplModal({ emoji:_tmplSelectedEmoji, nom:title });
+  document.getElementById('tmplModalTitle').textContent = '📋 Enregistrer l’étape « ' + title + ' »';
+}
+
 function closeSaveTemplate(){
   document.getElementById('templateSaveModal').classList.remove('open');
   _tmplEditId = null;
+  _tmplEtapeSourceId = null;
 }
 
 /* ── Enregistrer / Modifier le template ── */
@@ -3607,7 +3620,9 @@ function doSaveTemplate(){
   }
 
   // ── Mode création ──
-  var donnees = JSON.stringify({ blocs: JSON.parse(JSON.stringify(blocs)) });
+  var isEtapeTmpl = !!_tmplEtapeSourceId;
+  var srcBlocs = isEtapeTmpl ? blocs.filter(function(b){ return b.etapeId===_tmplEtapeSourceId; }) : blocs;
+  var donnees = JSON.stringify({ blocs: JSON.parse(JSON.stringify(srcBlocs)) });
   // Hériter is_public du groupe parent si celui-ci est déjà public
   var parentGroupPublic = !!(groupId && (_groups||[]).find(function(g){ return String(g.id)===String(groupId) && g.is_public; }));
   if(_progToken && _progUid && !_isReader()){
@@ -3617,7 +3632,7 @@ function doSaveTemplate(){
       body: JSON.stringify({ praticien_id:_progUid, nom:nom, categorie:cat, emoji:_tmplSelectedEmoji, donnees:donnees, group_id:groupId, phase_nom:'', phase_ordre:phaseOrdre, is_public:parentGroupPublic })
     }).then(function(r){
       if(r.ok){
-        _draftClear();
+        if(!isEtapeTmpl) _draftClear();
         closeSaveTemplate();
         renderTemplatesInBuilder();
         renderSidebarTemplates();
@@ -3633,11 +3648,11 @@ function doSaveTemplate(){
       nom:nom, categorie:cat, emoji:_tmplSelectedEmoji,
       group_id:groupId||null, phase_nom:'', phase_ordre:phaseOrdre,
       created_at:new Date().toISOString(),
-      _blocs:JSON.parse(JSON.stringify(blocs)),
+      _blocs:JSON.parse(JSON.stringify(srcBlocs)),
       _local:true
     });
     _persistTemplates();
-    _draftClear();
+    if(!isEtapeTmpl) _draftClear();
     closeSaveTemplate();
     renderTemplatesInBuilder();
     renderSidebarTemplates();
@@ -4062,6 +4077,7 @@ function _addBlocFromPicker(tmplId, blocIdx){
   var newBloc = JSON.parse(JSON.stringify(srcBloc));
   newBloc.id = genId();
   newBloc.exos = (newBloc.exos||[]).map(function(e){return Object.assign({},e,{id:genId()});});
+  if(newBloc.etapeId) newBloc.etapeId = genId(); // copie indépendante : ne rejoint pas le groupe d'origine
   blocs.push(newBloc);
   activeBloc = newBloc.id;
   renderSession();
@@ -4117,10 +4133,15 @@ function _addAllPhasesFromGroup(groupId){
     var donnees = p.donnees;
     if(typeof donnees==='string'){try{donnees=JSON.parse(donnees);}catch(e){donnees=null;}}
     if(!donnees||!donnees.blocs) return;
+    var _etapeIdMap = {};
     donnees.blocs.forEach(function(srcBloc){
       var newBloc = JSON.parse(JSON.stringify(srcBloc));
       newBloc.id = genId();
       newBloc.exos = (newBloc.exos||[]).map(function(e){return Object.assign({},e,{id:genId()});});
+      if(newBloc.etapeId){
+        if(!_etapeIdMap[newBloc.etapeId]) _etapeIdMap[newBloc.etapeId] = genId();
+        newBloc.etapeId = _etapeIdMap[newBloc.etapeId];
+      }
       blocs.push(newBloc);
       activeBloc = newBloc.id;
       total++;
@@ -4136,10 +4157,15 @@ function _addAllBlocsFromTemplate(tmplId){
   var donnees = p.donnees;
   if(typeof donnees==='string'){try{donnees=JSON.parse(donnees);}catch(e){donnees=null;}}
   if(!donnees||!donnees.blocs||!donnees.blocs.length) return;
+  var _etapeIdMap = {};
   donnees.blocs.forEach(function(srcBloc){
     var newBloc = JSON.parse(JSON.stringify(srcBloc));
     newBloc.id = genId();
     newBloc.exos = (newBloc.exos||[]).map(function(e){return Object.assign({},e,{id:genId()});});
+    if(newBloc.etapeId){
+      if(!_etapeIdMap[newBloc.etapeId]) _etapeIdMap[newBloc.etapeId] = genId();
+      newBloc.etapeId = _etapeIdMap[newBloc.etapeId];
+    }
     blocs.push(newBloc);
     activeBloc = newBloc.id;
   });

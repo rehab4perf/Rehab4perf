@@ -117,6 +117,19 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
 .bloc-badge.hypertrophie { background:rgba(167,139,250,.3); }
 .bloc-badge.forcemax { background:rgba(248,113,113,.3); }
 
+/* ── ÉTAPE (groupe de blocs, ex: Échauffement) ── */
+.etape-group {
+  border:1.5px solid var(--etape-c,#F59E0B); border-radius:14px;
+  padding:10px; margin-bottom:16px; background:rgba(0,0,0,.015);
+}
+.etape-header-ath {
+  display:flex; align-items:center; gap:8px;
+  font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
+  color:var(--etape-c,#F59E0B); padding:2px 4px 10px;
+}
+.etape-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; background:var(--etape-c,#F59E0B); }
+.etape-group .bloc:last-child { margin-bottom:0; }
+
 .methode-card {
   margin:8px 12px; padding:9px 12px; border-radius:7px; font-size:.76rem;
   line-height:1.5; border-left:3px solid #6b7a8d;
@@ -1643,7 +1656,22 @@ function buildProgHTML(prog){
     return html;
   }
 
+  var ETAPE_COLORS_ATH = ['#F59E0B','#2563EB','#0D9488','#7C3AED','#DC2626'];
+  function _progEtapeColor(etapeId){
+    var order = [];
+    blocs.forEach(function(x){ if(x.etapeId && order.indexOf(x.etapeId)<0) order.push(x.etapeId); });
+    var idx = order.indexOf(etapeId);
+    return ETAPE_COLORS_ATH[(idx<0?0:idx) % ETAPE_COLORS_ATH.length];
+  }
+
   blocs.forEach(function(b, bIdx){
+    var _etapeStart = b.etapeId && (bIdx===0 || blocs[bIdx-1].etapeId !== b.etapeId);
+    var _etapeEnd = b.etapeId && (bIdx===blocs.length-1 || blocs[bIdx+1].etapeId !== b.etapeId);
+    if(_etapeStart){
+      var _ec = _progEtapeColor(b.etapeId);
+      html += '<div class="etape-group" style="--etape-c:'+_ec+'">'
+           +  '<div class="etape-header-ath"><span class="etape-dot" style="background:'+_ec+'"></span>'+escH(b.etapeTitle||'Étape')+'</div>';
+    }
     // ── Bloc cardio ──────────────────────────────────────────────
     if(b.type === 'cardio'){
       var sport = b.sport === 'course' ? 'Course à pied' : (b.sport || 'Cardio');
@@ -1677,6 +1705,7 @@ function buildProgHTML(prog){
       var _cKey = 'cardio-'+bIdx;
       html += _buildPainSliderHTML(_cKey, false, '');
       html += '</div></div></div>';
+      if(_etapeEnd) html += '</div>'; // .etape-group
       return;
     }
     // ── Bloc musculation / autre ──────────────────────────────────
@@ -1782,6 +1811,7 @@ function buildProgHTML(prog){
       }
     });
     html += '</div>';
+    if(_etapeEnd) html += '</div>'; // .etape-group
   });
 
   if(notes&&notes.trim()){

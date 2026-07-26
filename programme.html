@@ -1166,6 +1166,41 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   font-family:inherit; transition:border-color .15s, color .15s; margin-bottom:14px;
 }
 .add-bloc-btn:hover { border-color:var(--accent2); color:var(--accent2); }
+.bloc-add-row { display:flex; gap:10px; }
+.bloc-add-row .add-bloc-btn { margin-bottom:14px; }
+.etape-add-btn { border-color:var(--accent2); color:var(--accent2); }
+
+/* Étape (groupe de blocs, ex: Échauffement) */
+.etape-group {
+  border:1.5px solid var(--etape-c,#F59E0B); border-radius:12px;
+  padding:10px; margin-bottom:14px; background:rgba(0,0,0,.012);
+}
+.etape-header {
+  display:flex; align-items:center; gap:8px; padding:2px 4px 10px;
+}
+.etape-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; background:var(--etape-c,#F59E0B); }
+.etape-title-input {
+  flex:1; background:transparent; border:none; outline:none;
+  font-size:.86rem; font-weight:800; color:var(--etape-c,#F59E0B); letter-spacing:-.01em;
+}
+.etape-title-input::placeholder { color:var(--etape-c,#F59E0B); opacity:.5; }
+.etape-tmpl-btn, .etape-del-btn {
+  background:none; border:none; cursor:pointer; font-size:.85rem; padding:3px 6px;
+  border-radius:4px; color:var(--muted);
+}
+.etape-tmpl-btn:hover, .etape-del-btn:hover { background:rgba(0,0,0,.06); color:var(--text); }
+.etape-group .bloc:last-child { margin-bottom:0; }
+.etape-addbloc-btn {
+  width:100%; padding:7px; border:1.5px dashed var(--etape-c,#F59E0B); border-radius:7px;
+  background:none; color:var(--etape-c,#F59E0B); font-size:.76rem; cursor:pointer;
+  font-family:inherit; opacity:.8;
+}
+.etape-addbloc-btn:hover { opacity:1; }
+.bloc-etape-select {
+  background:rgba(255,255,255,.12); color:#fff; border:1px solid rgba(255,255,255,.25);
+  border-radius:5px; font-size:.68rem; padding:3px 5px; max-width:110px; font-family:inherit;
+}
+.bloc-etape-select option { color:#111; }
 
 /* Notes area */
 .notes-bloc { background:var(--surface); border-radius:10px; border:1px solid var(--border); padding:12px 14px; margin-bottom:14px; }
@@ -3016,7 +3051,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   </div><!-- /tool-panel-drawer -->
 </div><!-- /tool-panel-overlay -->
 
-<script src="js/prog-data.js?v=20260723c"></script>
+<script src="js/prog-data.js?v=20260726a"></script>
 
 <!-- ══ CYCLES MODAL ════════════════════════════════════════════ -->
 <style>
@@ -3994,6 +4029,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 
 </div>
 
-<script src="js/prog-main.js?v=20260725a"></script>
+<script src="js/prog-main.js?v=20260726a"></script>
 </body>
 </html>
