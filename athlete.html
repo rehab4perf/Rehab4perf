@@ -645,6 +645,7 @@ var _stravaActs        = []; // activités Strava du patient
 var _cycleLegendOpen   = false; // état accordéon légende cycles
 var _calMessages       = []; // [{id, date, title, body}] messages patient visibles
 var _calClinicalNotes  = []; // [{id, date, title, body}] notes cliniques (mode kiné uniquement)
+var _activeProtoData   = null; // {pp, proto, phase, checks} du protocole actif, ou null
 
 function _getMonday(d){
   var dt = new Date(d); dt.setHours(0,0,0,0);
@@ -827,6 +828,8 @@ function renderProgInMain(prog){
 function renderCalendar(){
   var btn = document.getElementById('refreshBtn');
   btn.disabled = true; btn.textContent = '⏳';
+  // Protocole actif : chargé à part (dépend du praticien_id), ne bloque pas le reste
+  _loadActiveProto();
   // Charge séances planifiées, cycles ET messages patient en parallèle (+ notes cliniques si mode kiné)
   var fetches = [
     fetch(SUPA_URL + '/rest/v1/seances_planifiees?patient_id=eq.' + _patientId
@@ -950,6 +953,95 @@ function _buildCalNav(label){
     + '</div>';
 }
 
+/* ── Protocole actif (LCA, Latarjet, etc.) : phase en cours + critères ── */
+function _loadActiveProto(){
+  fetch(SUPA_URL + '/rest/v1/patient_protocols?patient_id=eq.' + _patientId
+      + '&status=eq.active&order=started_at.desc&limit=1&select=*', {
+    headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
+  }).then(function(r){ return r.json(); })
+  .then(function(rows){
+    var pp = Array.isArray(rows) && rows[0] ? rows[0] : null;
+    if(!pp){ _activeProtoData = null; _renderProtoSection(); return; }
+    var pratId = pp.praticien_id || _pratId;
+    if(!pratId){ _activeProtoData = null; _renderProtoSection(); return; }
+    Promise.all([
+      fetch(SUPA_URL + '/rest/v1/templates?nom=eq.__r4p_protocols_meta__&praticien_id=eq.' + pratId + '&select=donnees&limit=1', {
+        headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
+      }).then(function(r){ return r.json(); }).catch(function(){ return []; }),
+      fetch(SUPA_URL + '/rest/v1/protocol_criteria_checks?patient_protocol_id=eq.' + pp.id + '&select=phase_id,criteria_index,checked', {
+        headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json' }
+      }).then(function(r){ return r.json(); }).catch(function(){ return []; })
+    ]).then(function(res){
+      var tplRows = res[0], checkRows = res[1];
+      var donnees = tplRows && tplRows[0] && tplRows[0].donnees;
+      if(typeof donnees === 'string'){ try{ donnees = JSON.parse(donnees); }catch(e){ donnees = null; } }
+      var protocols = (donnees && Array.isArray(donnees.protocols)) ? donnees.protocols : [];
+      var proto = protocols.find(function(p){ return p.id === pp.protocol_id; });
+      var phase = proto && (proto.phases||[]).find(function(ph){ return ph.id === pp.current_phase_id; });
+      var checks = {};
+      (checkRows||[]).forEach(function(c){
+        if(c.phase_id !== pp.current_phase_id) return;
+        checks[c.criteria_index] = !!c.checked;
+      });
+      _activeProtoData = (proto && phase) ? { pp:pp, proto:proto, phase:phase, checks:checks } : null;
+      _renderProtoSection();
+    }).catch(function(){ _activeProtoData = null; _renderProtoSection(); });
+  }).catch(function(){ _activeProtoData = null; _renderProtoSection(); });
+}
+
+function _renderProtoSection(){
+  var el = document.getElementById('proto-banner-slot');
+  if(el) el.innerHTML = _buildProtoBanner();
+}
+
+var _PROTO_ICO_CHECK  = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+var _PROTO_ICO_CIRCLE = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#B8C0CC" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>';
+
+function _buildProtoBanner(){
+  var d = _activeProtoData;
+  if(!d) return '';
+  var items = d.phase.exitCriteria || [];
+  var total = items.length;
+  var done  = items.filter(function(_, i){ return !!d.checks[i]; }).length;
+  var pct   = total ? Math.round(done/total*100) : 0;
+  var allDone = total > 0 && done === total;
+  var phaseIdx = (d.proto.phases||[]).findIndex(function(p){ return p.id === d.phase.id; });
+  var phaseLabel = (d.phase.name||'').replace(/^Phase \d+\s*—\s*/,'');
+
+  var html = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;">';
+  html += '<div style="font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">Mon protocole</div>';
+  html += '<div style="font-size:.88rem;font-weight:700;color:var(--navy);">'+escH(d.pp.protocol_name||d.proto.name)+'</div>';
+  html += '<div style="font-size:.78rem;color:var(--text);margin-top:2px;">Phase '+(phaseIdx+1)+(phaseLabel?' — '+escH(phaseLabel):'')+'</div>';
+
+  if(total){
+    html += '<div style="display:flex;align-items:center;gap:8px;margin-top:9px;">'
+      + '<div style="flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden;">'
+      + '<div style="width:'+pct+'%;height:100%;background:var(--accent);border-radius:3px;"></div>'
+      + '</div>'
+      + '<span style="font-size:.68rem;color:var(--muted);white-space:nowrap;">'+done+' / '+total+'</span>'
+      + '</div>';
+  }
+
+  if(allDone){
+    html += '<div style="margin-top:9px;font-size:.72rem;font-weight:700;color:#16A34A;background:#EFFAF0;border-radius:6px;padding:6px 10px;">'
+      + '✓ Phase terminée — en attente de validation par votre praticien</div>';
+  }
+
+  if(total){
+    html += '<ul style="list-style:none;padding:0;margin:10px 0 0;">';
+    items.forEach(function(c, i){
+      var ok = !!d.checks[i];
+      html += '<li style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;font-size:.78rem;'+(ok?'color:var(--text);':'color:var(--muted);')+'">'
+        + '<span style="flex-shrink:0;margin-top:2px;">'+(ok?_PROTO_ICO_CHECK:_PROTO_ICO_CIRCLE)+'</span>'
+        + '<span>'+escH(c)+'</span></li>';
+    });
+    html += '</ul>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
 /* ── Bandeau cycle actuel + légende accordéon ── */
 function _toggleCycleLegend(){
   _cycleLegendOpen = !_cycleLegendOpen;
@@ -1065,6 +1157,7 @@ function _buildUpcomingHtml(){
 /* ── Rendu principal — dispatch mois / semaine / jour ── */
 function _renderCalGrid(){
   var html = _buildCycleBanner();
+  html += '<div id="proto-banner-slot">'+_buildProtoBanner()+'</div>';
   if(_calView === 'week')     html += _buildWeekHtml();
   else if(_calView === 'day') html += _buildDayHtml();
   else                        html += _buildMonthHtml();
