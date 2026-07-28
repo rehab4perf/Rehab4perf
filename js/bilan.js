@@ -6922,8 +6922,13 @@ function _buildCREvoSection() {
     var title = (card.querySelector('.evo-chart-title') || {}).textContent || '';
     var svg   = card.querySelector('svg');
     if (!svg) return;
+    // Les badges d'amélioration (%, LSI…) vivent dans .evo-chart-kpis, pas dans le SVG —
+    // sans ce clone, l'export CR perdait ces valeurs (le SVG seul n'affiche que les points).
+    var kpisEl = card.querySelector('.evo-chart-kpis');
+    var kpisHtml = kpisEl ? '<div class="evo-chart-kpis" style="margin-bottom:8px">' + kpisEl.innerHTML + '</div>' : '';
     html += '<div style="margin-bottom:20px;page-break-inside:avoid">'
-          + '<div style="font-size:.72rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">' + title + '</div>'
+          + '<div style="font-size:.72rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">' + title + '</div>'
+          + kpisHtml
           + '<div style="overflow:hidden;border-radius:6px;border:1px solid var(--border)">' + svg.outerHTML + '</div>'
           + '</div>';
   });
