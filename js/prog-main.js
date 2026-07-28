@@ -3987,7 +3987,7 @@ function renderBuilderLibrary(){
       area.innerHTML = '<div style="padding:10px 14px;color:var(--muted);font-size:.77rem;">Chargement…</div>';
       Promise.all([
         _fetchRetry(SUPA_URL_P+'/rest/v1/template_groups?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&order=created_at.asc',{headers:_sbHeaders()}).then(function(r){ return r.ok?r.json():null; }),
-        _fetchRetry(SUPA_URL_P+'/rest/v1/templates?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&order=phase_ordre.asc,created_at.desc',{headers:_sbHeaders()}).then(function(r){ return r.ok?r.json():null; })
+        _fetchRetry(SUPA_URL_P+'/rest/v1/templates?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&type=neq.__meta__&order=phase_ordre.asc,created_at.desc',{headers:_sbHeaders()}).then(function(r){ return r.ok?r.json():null; })
       ]).then(function(res){
         if(Array.isArray(res[0])) _groups=res[0];
         if(Array.isArray(res[1])) _sidebarProgs=res[1];
@@ -4162,7 +4162,7 @@ function _renderSidebarPicker(){
     scroll.innerHTML = '<div class="picker-empty">Chargement…</div>';
     Promise.all([
       _fetchRetry(SUPA_URL_P+'/rest/v1/template_groups?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&order=created_at.asc',{headers:_sbHeaders()}).then(function(r){return r.ok?r.json():[];}),
-      _fetchRetry(SUPA_URL_P+'/rest/v1/templates?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&order=phase_ordre.asc,created_at.desc',{headers:_sbHeaders()}).then(function(r){return r.ok?r.json():[];})
+      _fetchRetry(SUPA_URL_P+'/rest/v1/templates?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&type=neq.__meta__&order=phase_ordre.asc,created_at.desc',{headers:_sbHeaders()}).then(function(r){return r.ok?r.json():[];})
     ]).then(function(res){
       if(Array.isArray(res[0])) _groups = res[0];
       if(Array.isArray(res[1])) _sidebarProgs = res[1];
@@ -5321,7 +5321,7 @@ function renderSidebarTemplates(){
     }
     Promise.all([
       _fetchRetry(SUPA_URL_P+'/rest/v1/template_groups?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&order=created_at.asc',{headers:_sbHeaders()}).then(function(r){ return r.ok ? r.json() : null; }),
-      _fetchRetry(SUPA_URL_P+'/rest/v1/templates?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&order=phase_ordre.asc,created_at.desc',{headers:_sbHeaders()}).then(function(r){ return r.ok ? r.json() : null; })
+      _fetchRetry(SUPA_URL_P+'/rest/v1/templates?or=(praticien_id.eq.'+_progUid+',is_public.eq.true)&type=neq.__meta__&order=phase_ordre.asc,created_at.desc',{headers:_sbHeaders()}).then(function(r){ return r.ok ? r.json() : null; })
     ]).then(function(res){
       // Ne remplacer les données qu'en cas de réponse valide (évite d'écraser avec une erreur 401)
       if(Array.isArray(res[0])) _groups       = res[0];
