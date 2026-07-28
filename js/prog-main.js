@@ -132,11 +132,35 @@ function _cycleComputeWeeks(startStr, endStr){
    - durée : purement basé sur les dates (comportement historique, inchangé)
    - critères : dès que tous les cycles précédents de la séquence sont
      terminés — le suivant démarre alors automatiquement, sans date requise. */
+/* Un cycle critères contient des phases ; chaque phase a ses propres critères.
+   Valider tous les critères d'une phase fait passer à la phase suivante ;
+   valider la dernière phase termine le cycle (le cycle suivant démarre alors).
+   Rétrocompat : les cycles créés avec une liste de critères à plat sont lus
+   comme un cycle à une seule phase — aucune migration de données requise. */
+function _cyclePhases(c){
+  if(c.mode !== 'criteres') return [];
+  if(Array.isArray(c.phases) && c.phases.length) return c.phases;
+  if(Array.isArray(c.criteria) && c.criteria.length){
+    return [{ id:'p0', nom:'', criteria:c.criteria, checks:c.checks||{} }];
+  }
+  return [];
+}
+function _cyclePhaseIsDone(ph){
+  var items = (ph && ph.criteria) || [];
+  if(!items.length) return false;
+  return items.every(function(_, i){ return ph.checks && ph.checks[i] && ph.checks[i].checked; });
+}
+/* Index de la phase en cours = première phase non terminée. -1 si tout est fait. */
+function _cyclePhaseCurrentIndex(c){
+  var phases = _cyclePhases(c);
+  for(var i=0;i<phases.length;i++){ if(!_cyclePhaseIsDone(phases[i])) return i; }
+  return -1;
+}
 function _cycleIsDone(c, today){
   if(c.mode === 'criteres'){
-    var items = c.criteria || [];
-    if(!items.length) return false;
-    return items.every(function(_, i){ return c.checks && c.checks[i] && c.checks[i].checked; });
+    var phases = _cyclePhases(c);
+    if(!phases.length) return false;
+    return phases.every(_cyclePhaseIsDone);
   }
   if(!c.startDate) return false;
   var end = c.endDate || _cycleComputeEndDate(c.startDate, c.duree);
@@ -355,8 +379,8 @@ function _cycleCriterionRowHtml(text, checked){
     + '<button type="button" class="cycle-criteria-del" onclick="this.parentElement.remove()" title="Retirer">×</button>'
     + '</div>';
 }
-function _cycleAddCriterionRow(text){
-  var wrap = document.getElementById('cycle-criteria-rows');
+function _cycleAddCriterionRow(text, wrapEl){
+  var wrap = wrapEl || document.getElementById('cycle-criteria-rows');
   if(!wrap) return;
   wrap.insertAdjacentHTML('beforeend', _cycleCriterionRowHtml(text, false));
   if(!text){
@@ -364,6 +388,56 @@ function _cycleAddCriterionRow(text){
     var last = inputs[inputs.length-1];
     if(last) last.focus();
   }
+}
+
+/* ── Accordéon de phases dans le formulaire ── */
+function _cyclePhaseBlockHtml(ph, idx){
+  var open = idx === 0;
+  var h = '<div class="cycle-phase-block'+(open?' open':'')+'">';
+  h += '<div class="cycle-phase-block-head" onclick="_cycleTogglePhaseBlock(this)">';
+  h += '<span class="cycle-phase-caret">▶</span>';
+  h += '<span class="cycle-phase-num">Phase <span class="cycle-phase-num-val"></span></span>';
+  h += '<input type="text" class="cycle-phase-nom" value="'+escH((ph&&ph.nom)||'')+'" placeholder="Nom de la phase (optionnel)" onclick="event.stopPropagation()">';
+  h += '<button type="button" class="cycle-criteria-del" title="Supprimer la phase" onclick="event.stopPropagation();_cycleRemovePhaseBlock(this)">×</button>';
+  h += '</div>';
+  h += '<div class="cycle-phase-block-body">';
+  h += '<div class="cycle-phase-criteria"></div>';
+  h += '<button type="button" class="cycle-criteria-add" onclick="_cycleAddCriterionRow(\'\', this.previousElementSibling)">+ Ajouter un critère</button>';
+  h += '</div>';
+  h += '</div>';
+  return h;
+}
+function _cycleRenumberPhaseBlocks(){
+  var wrap = document.getElementById('cycle-phase-rows'); if(!wrap) return;
+  wrap.querySelectorAll('.cycle-phase-block').forEach(function(b, i){
+    var n = b.querySelector('.cycle-phase-num-val'); if(n) n.textContent = (i+1);
+  });
+}
+function _cycleTogglePhaseBlock(headEl){
+  headEl.parentElement.classList.toggle('open');
+}
+function _cycleRemovePhaseBlock(btn){
+  var block = btn.closest('.cycle-phase-block');
+  if(block) block.remove();
+  _cycleRenumberPhaseBlocks();
+}
+function _cycleAddPhaseBlock(ph){
+  var wrap = document.getElementById('cycle-phase-rows'); if(!wrap) return null;
+  var idx = wrap.querySelectorAll('.cycle-phase-block').length;
+  wrap.insertAdjacentHTML('beforeend', _cyclePhaseBlockHtml(ph, idx));
+  var block = wrap.lastElementChild;
+  var critWrap = block.querySelector('.cycle-phase-criteria');
+  ((ph && ph.criteria) || []).forEach(function(text, i){
+    var checked = !!(ph.checks && ph.checks[i] && ph.checks[i].checked);
+    critWrap.insertAdjacentHTML('beforeend', _cycleCriterionRowHtml(text, checked));
+  });
+  if(!ph) block.classList.add('open');
+  _cycleRenumberPhaseBlocks();
+  if(!ph){
+    var nomEl = block.querySelector('.cycle-phase-nom');
+    if(nomEl) nomEl.focus();
+  }
+  return block;
 }
 function submitCycleForm(){
   var nom = (document.getElementById('cycle-nom').value||'').trim();
@@ -374,21 +448,30 @@ function submitCycleForm(){
   var existing = _cycleEditingId ? _cycles.find(function(c){ return c.id===_cycleEditingId; }) : null;
   var payload;
   if(mode === 'criteres'){
-    var rows = document.querySelectorAll('#cycle-criteria-rows .cycle-criteria-edit-row');
-    var criteria = [];
-    var prevCriteria = (existing && existing.criteria) || [];
-    var prevChecks = (existing && existing.checks) || {};
-    var newChecks = {};
-    rows.forEach(function(row){
-      var txt = (row.querySelector('.cycle-criteria-text').value||'').trim();
-      if(!txt) return;
-      var oldIdx = prevCriteria.indexOf(txt);
-      if(oldIdx !== -1 && prevChecks[oldIdx]) newChecks[criteria.length] = prevChecks[oldIdx];
-      criteria.push(txt);
+    // Les cochages déjà faits sont conservés en rapprochant les critères par
+    // leur texte au sein de la même phase (l'ordre peut avoir changé).
+    var prevPhases = existing ? _cyclePhases(existing) : [];
+    var phases = [];
+    var blocks = document.querySelectorAll('#cycle-phase-rows .cycle-phase-block');
+    blocks.forEach(function(block, bi){
+      var phNom = (block.querySelector('.cycle-phase-nom').value||'').trim();
+      var prevPh = prevPhases[bi] || {};
+      var prevCriteria = prevPh.criteria || [];
+      var prevChecks = prevPh.checks || {};
+      var criteria = [], checks = {};
+      block.querySelectorAll('.cycle-criteria-edit-row').forEach(function(row){
+        var txt = (row.querySelector('.cycle-criteria-text').value||'').trim();
+        if(!txt) return;
+        var oldIdx = prevCriteria.indexOf(txt);
+        if(oldIdx !== -1 && prevChecks[oldIdx]) checks[criteria.length] = prevChecks[oldIdx];
+        criteria.push(txt);
+      });
+      if(!criteria.length) return;
+      phases.push({ id: (prevPh.id && prevPh.id!=='p0') ? prevPh.id : 'ph'+Date.now()+'_'+bi, nom:phNom, criteria:criteria, checks:checks });
     });
-    if(!criteria.length){ alert('Ajoutez au moins un critère.'); return; }
+    if(!phases.length){ alert('Ajoutez au moins une phase contenant un critère.'); return; }
     var critStart = (document.getElementById('cycle-criteres-start')||{}).value||'';
-    payload = { nom:nom, mode:'criteres', criteria:criteria, checks:newChecks, startDate:critStart, note:note, color:cycleColor, duree:null, endDate:null };
+    payload = { nom:nom, mode:'criteres', phases:phases, startDate:critStart, note:note, color:cycleColor, duree:null, endDate:null, criteria:null, checks:null };
   } else {
     var startDate = (document.getElementById('cycle-start')||{}).value||'';
     var endDate   = (document.getElementById('cycle-end')||{}).value||'';
@@ -447,14 +530,17 @@ function renderCycleTimeline(){
   _cycles.forEach(function(c){
     var col = c.color || _cycleColor(c.nom);
     if(c.mode === 'criteres'){
-      var items = c.criteria||[];
-      var done = items.filter(function(_,i){ return c.checks && c.checks[i] && c.checks[i].checked; }).length;
+      var phasesT = _cyclePhases(c);
+      var donePh = phasesT.filter(_cyclePhaseIsDone).length;
+      var curPhT = _cyclePhaseCurrentIndex(c);
       var datesLine = c.startDate ? 'depuis le '+_fmtDateShort(c.startDate) : 'durée variable';
       html += '<div class="cycle-block" style="background:'+col+';width:'+minW+'px;flex-shrink:0;cursor:pointer;" title="Modifier" onclick="openCycleForm(\''+c.id+'\')">';
       html += '<button class="cycle-block-del" onclick="event.stopPropagation();deleteCycle(\''+c.id+'\')">×</button>';
       html += '<div style="font-size:.8rem;font-weight:700;margin-bottom:2px;padding-right:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+c.nom+'</div>';
       html += '<div style="font-size:.63rem;opacity:.85;white-space:nowrap;">'+datesLine+'</div>';
-      html += '<div style="font-size:.63rem;opacity:.7;">'+done+' / '+items.length+' critères</div>';
+      html += '<div style="font-size:.63rem;opacity:.7;">'
+            + (phasesT.length>1 ? 'Ph. '+(curPhT<0?phasesT.length:curPhT+1)+'/'+phasesT.length : donePh+'/'+phasesT.length+' phase')
+            + '</div>';
       html += '</div>';
       return;
     }
@@ -485,6 +571,7 @@ function renderCycleTimeline(){
 /* ── Liste des cycles + formulaire inline ── */
 var _CYCLE_ICO_EDIT = '<svg width="13" height="13" viewBox="0 0 348.882 348.882" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M333.988,11.758l-0.42-0.383C325.538,4.04,315.129,0,304.258,0c-12.187,0-23.888,5.159-32.104,14.153L116.803,184.231c-1.416,1.55-2.49,3.379-3.154,5.37l-18.267,54.762c-2.112,6.331-1.052,13.333,2.835,18.729c3.918,5.438,10.23,8.685,16.886,8.685c2.879,0,5.693-0.592,8.362-1.76l52.89-23.138c1.923-0.841,3.648-2.076,5.063-3.626L336.771,73.176C352.937,55.479,351.69,27.929,333.988,11.758zM130.381,234.247l10.719-32.134l0.904-0.99l20.316,18.556l-0.904,0.99L130.381,234.247zM314.621,52.943L182.553,197.53l-20.316-18.556L294.305,34.386c2.583-2.828,6.118-4.386,9.954-4.386c3.365,0,6.588,1.252,9.082,3.53l0.419,0.383C319.244,38.922,319.63,47.459,314.621,52.943z"/><path d="M303.85,138.388c-8.284,0-15,6.716-15,15v127.347c0,21.034-17.113,38.147-38.147,38.147H68.904c-21.035,0-38.147-17.113-38.147-38.147V100.413c0-21.034,17.113-38.147,38.147-38.147h131.587c8.284,0,15-6.716,15-15s-6.716-15-15-15H68.904c-37.577,0-68.147,30.571-68.147,68.147v180.321c0,37.576,30.571,68.147,68.147,68.147h181.798c37.576,0,68.147-30.571,68.147-68.147V153.388C318.85,145.104,312.134,138.388,303.85,138.388z"/></svg>';
 var _CYCLE_ICO_CHECK  = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+var _CYCLE_ICO_CHECK_SM = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
 var _CYCLE_ICO_CIRCLE = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#B8C0CC" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>';
 
 function _cycleListRowHtml(c){
@@ -494,9 +581,12 @@ function _cycleListRowHtml(c){
   var currentBadge = isCurrent ? '<span class="cycle-current-badge">EN COURS</span>' : '';
   var sub;
   if(c.mode === 'criteres'){
-    var items = c.criteria||[];
-    var done = items.filter(function(_,i){ return c.checks && c.checks[i] && c.checks[i].checked; }).length;
-    sub = done+' / '+items.length+' critères validés' + (c.startDate ? '  ·  depuis le '+_fmtDate(c.startDate) : '');
+    var phases = _cyclePhases(c);
+    var curPh = _cyclePhaseCurrentIndex(c);
+    var donePh = phases.filter(_cyclePhaseIsDone).length;
+    sub = (phases.length>1 ? 'Phase '+(curPh<0?phases.length:curPh+1)+' / '+phases.length+'  ·  ' : '')
+        + donePh+' / '+phases.length+' phase'+(phases.length>1?'s':'')+' validée'+(phases.length>1?'s':'')
+        + (c.startDate ? '  ·  depuis le '+_fmtDate(c.startDate) : '');
   } else {
     var endStr = c.endDate || _cycleComputeEndDate(c.startDate, c.duree) || '';
     var datesPart = c.startDate ? _fmtDate(c.startDate)+' → '+_fmtDate(endStr)+' · '+c.duree+' sem.' : c.duree+' sem.';
@@ -519,27 +609,61 @@ function _cycleListRowHtml(c){
     +'<button class="cycle-list-btn del" onclick="deleteCycle(\''+c.id+'\')" title="Supprimer">×</button>'
     +'</div>'
     +'</div>';
-  if(c.mode === 'criteres' && (c.criteria||[]).length){
-    h += '<div class="cycle-criteria-checklist">';
-    c.criteria.forEach(function(text, i){
-      var checked = !!(c.checks && c.checks[i] && c.checks[i].checked);
-      h += '<div class="cycle-criteria-row'+(checked?' done':'')+'" onclick="_cycleToggleCriterion(\''+c.id+'\','+i+')">'
-        + (checked?_CYCLE_ICO_CHECK:_CYCLE_ICO_CIRCLE)
-        + '<span>'+escH(text)+'</span>'
-        + '</div>';
-    });
-    h += '</div>';
+  if(c.mode === 'criteres'){
+    var phasesL = _cyclePhases(c);
+    var curIdxL = _cyclePhaseCurrentIndex(c);
+    if(phasesL.length > 1){
+      // Stepper : reprend le vocabulaire visuel du panneau Protocoles
+      h += '<div class="cycle-phase-steps">';
+      phasesL.forEach(function(ph, pi){
+        var st = _cyclePhaseIsDone(ph) ? 'done' : (pi===curIdxL ? 'cur' : 'todo');
+        h += '<div class="cycle-phase-step '+st+'">'
+          + '<span class="cycle-phase-dot" style="'+(st==='cur'?'background:'+col+';border-color:'+col:'')+'">'
+          + (st==='done' ? _CYCLE_ICO_CHECK_SM : (pi+1))
+          + '</span>'
+          + '<span class="cycle-phase-step-lbl">'+escH(ph.nom||('Phase '+(pi+1)))+'</span>'
+          + '</div>';
+        if(pi < phasesL.length-1) h += '<span class="cycle-phase-line"></span>';
+      });
+      h += '</div>';
+    }
+    // Seule la phase en cours est dépliée avec ses critères cochables
+    var showIdx = curIdxL < 0 ? phasesL.length-1 : curIdxL;
+    var ph = phasesL[showIdx];
+    if(ph && (ph.criteria||[]).length){
+      if(phasesL.length > 1){
+        h += '<div class="cycle-phase-active-lbl">'
+          + (curIdxL<0 ? 'Toutes les phases sont validées' : escH(ph.nom||('Phase '+(showIdx+1))))
+          + '</div>';
+      }
+      h += '<div class="cycle-criteria-checklist">';
+      ph.criteria.forEach(function(text, i){
+        var checked = !!(ph.checks && ph.checks[i] && ph.checks[i].checked);
+        h += '<div class="cycle-criteria-row'+(checked?' done':'')+'" onclick="_cycleToggleCriterion(\''+c.id+'\','+showIdx+','+i+')">'
+          + (checked?_CYCLE_ICO_CHECK:_CYCLE_ICO_CIRCLE)
+          + '<span>'+escH(text)+'</span>'
+          + '</div>';
+      });
+      h += '</div>';
+    }
   }
   return h;
 }
 
 /* ── Interaction directe sur les critères (sans ouvrir le formulaire) ── */
-function _cycleToggleCriterion(cycleId, idx){
+function _cycleToggleCriterion(cycleId, phaseIdx, idx){
   var c = _cycles.find(function(x){ return x.id===cycleId; });
   if(!c) return;
-  if(!c.checks) c.checks = {};
-  var wasChecked = !!(c.checks[idx] && c.checks[idx].checked);
-  c.checks[idx] = wasChecked ? { checked:false, checkedAt:null } : { checked:true, checkedAt:new Date().toISOString() };
+  // Matérialise la forme « phases » si le cycle est encore au format à plat
+  if(!Array.isArray(c.phases) || !c.phases.length){
+    c.phases = _cyclePhases(c).map(function(p){ return { id:p.id, nom:p.nom, criteria:p.criteria.slice(), checks:Object.assign({},p.checks) }; });
+    delete c.criteria; delete c.checks;
+  }
+  var ph = c.phases[phaseIdx];
+  if(!ph) return;
+  if(!ph.checks) ph.checks = {};
+  var wasChecked = !!(ph.checks[idx] && ph.checks[idx].checked);
+  ph.checks[idx] = wasChecked ? { checked:false, checkedAt:null } : { checked:true, checkedAt:new Date().toISOString() };
   _saveCyclesToCloud();
   renderCycleList();
   renderCycleTimeline();
@@ -580,9 +704,9 @@ function _cycleInlineFormHtml(c){
   h += '</div>';
   h += '<div id="cycle-mode-criteres-wrap" style="display:none;">';
   h += '<div class="cycle-field" style="margin-bottom:8px;max-width:200px;"><label>Date de début <span style="font-weight:400;color:#999;">(optionnel)</span></label><input type="date" id="cycle-criteres-start"></div>';
-  h += '<div style="margin-bottom:8px;"><label style="font-size:.72rem;font-weight:600;color:#444;display:block;margin-bottom:5px;">Critères à valider</label>';
-  h += '<div id="cycle-criteria-rows"></div>';
-  h += '<button type="button" class="cycle-criteria-add" onclick="_cycleAddCriterionRow(\'\')">+ Ajouter un critère</button>';
+  h += '<div style="margin-bottom:8px;"><label style="font-size:.72rem;font-weight:600;color:#444;display:block;margin-bottom:5px;">Phases du cycle</label>';
+  h += '<div id="cycle-phase-rows"></div>';
+  h += '<button type="button" class="cycle-criteria-add" onclick="_cycleAddPhaseBlock()">+ Ajouter une phase</button>';
   h += '</div>';
   h += '</div>';
   h += '<div class="cycle-field" style="margin-bottom:0"><label>Note <span style="font-weight:400;color:#999;">(optionnel)</span></label>';
@@ -603,13 +727,14 @@ function _populateCycleForm(c){
     var durEl=document.getElementById('cycle-duree'); if(durEl) durEl.value=d;
     var dispEl=document.getElementById('cycle-duree-display'); if(dispEl) dispEl.textContent=d+(d===1?' semaine':' semaines');
     var critStartEl=document.getElementById('cycle-criteres-start'); if(critStartEl) critStartEl.value=c.startDate||'';
-    var rowsWrap=document.getElementById('cycle-criteria-rows');
-    if(rowsWrap){
-      rowsWrap.innerHTML='';
-      (c.criteria||[]).forEach(function(text,i){
-        var checked = !!(c.checks && c.checks[i] && c.checks[i].checked);
-        rowsWrap.insertAdjacentHTML('beforeend', _cycleCriterionRowHtml(text, checked));
-      });
+    var phWrap=document.getElementById('cycle-phase-rows');
+    if(phWrap){
+      phWrap.innerHTML='';
+      var existPhases = _cyclePhases(c);
+      if(existPhases.length) existPhases.forEach(function(ph){ _cycleAddPhaseBlock(ph); });
+      else _cycleAddPhaseBlock();
+      var first = phWrap.querySelector('.cycle-phase-block');
+      if(first) first.classList.add('open');
     }
     selectCycleMode(c.mode==='criteres' ? 'criteres' : 'duree');
     var noteEl=document.getElementById('cycle-note');
@@ -625,7 +750,8 @@ function _populateCycleForm(c){
     _cycleAutoDate();
     nomEl.value='';
     var noteEl2=document.getElementById('cycle-note'); if(noteEl2) noteEl2.value='';
-    var rowsWrap2=document.getElementById('cycle-criteria-rows'); if(rowsWrap2) rowsWrap2.innerHTML='';
+    var phWrap2=document.getElementById('cycle-phase-rows');
+    if(phWrap2){ phWrap2.innerHTML=''; _cycleAddPhaseBlock(); }
     var critStartEl2=document.getElementById('cycle-criteres-start'); if(critStartEl2) critStartEl2.value='';
     selectCycleMode('duree');
     clearCycleNameBtns();

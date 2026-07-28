@@ -604,13 +604,15 @@ function _cyEndDate(cy){
     if(cy.endDate){ var ec=new Date(cy.endDate); ec.setHours(0,0,0,0); return ec; }
     // Pas de fin planifiée : si terminé, on fige sur la dernière validation ;
     // sinon le cycle reste "ouvert" jusqu'à aujourd'hui.
-    var items = cy.criteria||[];
-    var allDone = items.length>0 && items.every(function(_,i){ return cy.checks && cy.checks[i] && cy.checks[i].checked; });
+    var phases = _cyclePhases(cy);
+    var allDone = phases.length>0 && phases.every(_cyclePhaseIsDone);
     if(allDone){
       var latest = null;
-      items.forEach(function(_,i){
-        var at = cy.checks[i] && cy.checks[i].checkedAt;
-        if(at){ var d=new Date(at); d.setHours(0,0,0,0); if(!latest||d>latest) latest=d; }
+      phases.forEach(function(ph){
+        (ph.criteria||[]).forEach(function(_,i){
+          var at = ph.checks && ph.checks[i] && ph.checks[i].checkedAt;
+          if(at){ var d=new Date(at); d.setHours(0,0,0,0); if(!latest||d>latest) latest=d; }
+        });
       });
       if(latest) return latest;
     }
@@ -621,11 +623,32 @@ function _cyEndDate(cy){
 }
 /* Cycles « critères » : pas de date de fin connue, terminé quand tous les
    critères sont validés par le praticien. Le suivant démarre alors seul. */
+/* Un cycle critères contient des phases ; valider tous les critères d'une
+   phase fait passer à la suivante. Rétrocompat : une liste de critères à plat
+   est lue comme un cycle à une seule phase. */
+function _cyclePhases(c){
+  if(c.mode !== 'criteres') return [];
+  if(Array.isArray(c.phases) && c.phases.length) return c.phases;
+  if(Array.isArray(c.criteria) && c.criteria.length){
+    return [{ id:'p0', nom:'', criteria:c.criteria, checks:c.checks||{} }];
+  }
+  return [];
+}
+function _cyclePhaseIsDone(ph){
+  var items = (ph && ph.criteria) || [];
+  if(!items.length) return false;
+  return items.every(function(_, i){ return ph.checks && ph.checks[i] && ph.checks[i].checked; });
+}
+function _cyclePhaseCurrentIndex(c){
+  var phases = _cyclePhases(c);
+  for(var i=0;i<phases.length;i++){ if(!_cyclePhaseIsDone(phases[i])) return i; }
+  return -1;
+}
 function _cycleIsDone(c, today){
   if(c.mode === 'criteres'){
-    var items = c.criteria || [];
-    if(!items.length) return false;
-    return items.every(function(_, i){ return c.checks && c.checks[i] && c.checks[i].checked; });
+    var phases = _cyclePhases(c);
+    if(!phases.length) return false;
+    return phases.every(_cyclePhaseIsDone);
   }
   if(!c.startDate) return false;
   var e = _cyEndDate(c);
@@ -1106,17 +1129,32 @@ function _buildCycleBanner(){
   var html = '';
 
   if(cur && cur.mode === 'criteres'){
-    var items = cur.criteria||[];
-    var done = items.filter(function(_,i){ return cur.checks && cur.checks[i] && cur.checks[i].checked; }).length;
+    var phases = _cyclePhases(cur);
+    var curPh = _cyclePhaseCurrentIndex(cur);
+    var showIdx = curPh < 0 ? phases.length-1 : curPh;
+    var ph = phases[showIdx] || { criteria:[], checks:{} };
+    var items = ph.criteria||[];
+    var done = items.filter(function(_,i){ return ph.checks && ph.checks[i] && ph.checks[i].checked; }).length;
     var col = cur.color || _cycleColor(cur.nom);
+    var phLabel = phases.length>1
+      ? 'Phase '+(showIdx+1)+' / '+phases.length + (ph.nom ? ' — '+ph.nom : '')
+      : (ph.nom || '');
     html += '<div style="background:'+col+';border-radius:12px;padding:14px 16px;margin-bottom:10px;">'
       +'<div style="font-size:.65rem;color:rgba(255,255,255,.75);margin-bottom:1px;">Cycle en cours</div>'
       +'<div style="font-size:.88rem;font-weight:700;color:#fff;">'+escH(cur.nom)+'</div>'
-      +(cur.note ? '<div style="font-size:.72rem;color:rgba(255,255,255,.85);margin-top:2px;">'+escH(cur.note)+'</div>' : '')
-      +'<div style="font-size:.68rem;color:rgba(255,255,255,.85);margin-top:8px;">'+done+' / '+items.length+' critères validés</div>'
+      +(phLabel ? '<div style="font-size:.75rem;color:rgba(255,255,255,.9);margin-top:2px;">'+escH(phLabel)+'</div>' : '')
+      +(cur.note ? '<div style="font-size:.72rem;color:rgba(255,255,255,.85);margin-top:2px;">'+escH(cur.note)+'</div>' : '');
+    if(phases.length>1){
+      var pctPh = Math.round((phases.filter(_cyclePhaseIsDone).length/phases.length)*100);
+      html += '<div style="display:flex;align-items:center;gap:8px;margin-top:8px;">'
+        +'<div style="flex:1;height:4px;background:rgba(255,255,255,.2);border-radius:2px;overflow:hidden;">'
+        +'<div style="width:'+pctPh+'%;height:100%;background:rgba(255,255,255,.9);border-radius:2px;"></div>'
+        +'</div></div>';
+    }
+    html += '<div style="font-size:.68rem;color:rgba(255,255,255,.85);margin-top:8px;">'+done+' / '+items.length+' critères validés</div>'
       +'<ul style="list-style:none;padding:0;margin:8px 0 0;">'
       + items.map(function(txt,i){
-          var ok = !!(cur.checks && cur.checks[i] && cur.checks[i].checked);
+          var ok = !!(ph.checks && ph.checks[i] && ph.checks[i].checked);
           return '<li style="display:flex;align-items:flex-start;gap:8px;padding:4px 0;font-size:.78rem;color:'+(ok?'#fff':'rgba(255,255,255,.75)')+';">'
             + '<span style="flex-shrink:0;margin-top:1px;">'+(ok?_CYCLE_ICO_CHECK:_CYCLE_ICO_CIRCLE)+'</span><span>'+escH(txt)+'</span></li>';
         }).join('')
@@ -1172,9 +1210,13 @@ function _buildCycleBanner(){
     var isLast = (i === _calCycles.length-1);
     var subLine;
     if(cy.mode === 'criteres'){
-      var items = cy.criteria||[];
-      var done = items.filter(function(_,j){ return cy.checks && cy.checks[j] && cy.checks[j].checked; }).length;
-      subLine = done+' / '+items.length+' critères' + (cy.startDate ? ' · depuis le '+_fmtCyDate(cy.startDate,MC) : '');
+      var phs = _cyclePhases(cy);
+      var donePh = phs.filter(_cyclePhaseIsDone).length;
+      var curPhL = _cyclePhaseCurrentIndex(cy);
+      subLine = (phs.length>1
+          ? 'Phase '+(curPhL<0?phs.length:curPhL+1)+' / '+phs.length
+          : donePh+' / '+phs.length+' phase')
+        + (cy.startDate ? ' · depuis le '+_fmtCyDate(cy.startDate,MC) : '');
     } else if(cy.startDate){
       var e = _cyEndDate(cy);
       subLine = _fmtCyDate(cy.startDate,MC,true)+' – '+_fmtCyDate(e.toISOString().slice(0,10),MC,true)+' · '+cy.duree+' sem.';
