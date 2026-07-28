@@ -2081,10 +2081,47 @@ function _editBilanConfirm(){
     // Injecter les noms de tests personnalisés des autres bilans (valeurs vides)
     // pour que tous les tests de l'historique soient visibles dans ce bilan
     try{ window._ctMergeNamesFromAllBilans(_allBilans); }catch(ex){}
+    // Champs non retestés CE JOUR-LÀ (donc vides en propre) : afficher à titre indicatif
+    // la dernière valeur connue AVANT ce bilan, sans jamais la pré-remplir réellement —
+    // évite l'impression que « les résultats ont disparu » en passant du mode lecture
+    // (vue fusionnée) au mode édition (données propres à ce bilan).
+    try{
+      var _editIdx = _allBilans.findIndex(function(b){ return b.id === _currentBilanId; });
+      var _inherited = _editIdx >= 0 ? _prevMergedFrom(_allBilans, _editIdx + 1) : null;
+      _blShowInheritedHints(_inherited);
+    }catch(ex){}
   }
   var btn = document.getElementById('bilan-save-btn');
   if(btn) btn.innerHTML = _SAVE_ICON + 'Enregistrer les modifications';
   showToast('Mode édition — les modifications seront enregistrées à la date d\'origine');
+}
+
+/* Affiche, sans jamais les enregistrer, les dernières valeurs connues sur les champs
+   laissés vides pour ce bilan (voir _editBilanConfirm). Placeholder pour input/textarea
+   (natif, jamais soumis) ; petite étiquette grise pour les select (pas de placeholder
+   natif) — retirée dès qu'une vraie valeur est choisie. */
+function _blShowInheritedHints(mergedData){
+  document.querySelectorAll('.bl-inherited-hint').forEach(function(el){ el.remove(); });
+  if(!mergedData) return;
+  Object.keys(mergedData).forEach(function(id){
+    var val = mergedData[id];
+    if(val === undefined || val === null || val === '') return;
+    var el = document.getElementById(id);
+    if(!el || el.value !== '') return;
+    if(el.tagName === 'SELECT'){
+      var hint = document.createElement('span');
+      hint.className = 'bl-inherited-hint';
+      hint.textContent = 'Dernier : ' + val;
+      hint.title = 'Valeur héritée d\'un bilan antérieur — non saisie pour ce bilan';
+      el.insertAdjacentElement('afterend', hint);
+      el.addEventListener('change', function _rmHint(){
+        if(el.value !== '' && hint.parentNode) hint.parentNode.removeChild(hint);
+        el.removeEventListener('change', _rmHint);
+      });
+    } else if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA'){
+      if(el.type !== 'checkbox' && el.type !== 'radio') el.placeholder = 'Dernier : ' + val;
+    }
+  });
 }
 
 function _editBilanCancel(){
@@ -3793,10 +3830,20 @@ function saveBilan(){
         try { window.parent.postMessage({ type:'r4p-bilan-saved', patientId: _bilanPatient.id }, window.location.origin); } catch(ex){}
         btn.textContent = '✓ Bilan mis à jour !';
         _bilanNeedsRefresh = true;
-        setTimeout(function(){
+        // Le passage en mode lecture (_enterReadOnlyMode) recharge le formulaire depuis
+        // _allBilans : il ne doit jamais se déclencher avant que ce tableau ait fini de se
+        // rafraîchir, sinon le formulaire se re-remplit avec l'ancienne version (course entre
+        // ce timer fixe et l'appel réseau ci-dessous — la modification qu'on vient de
+        // sauvegarder semble alors « disparaître » avant de revenir plus tard). On attend
+        // les deux : le délai minimal (confort visuel du message "✓ mis à jour") ET la fin
+        // du rafraîchissement réseau, quel que soit celui qui termine en dernier.
+        var _timerDone = false, _fetchDone = false;
+        function _tryEnterReadOnly(){
+          if(!_timerDone || !_fetchDone) return;
           btn.innerHTML = _SAVE_ICON + 'Sauvegarder le bilan';
           _enterReadOnlyMode();
-        }, 2500);
+        }
+        setTimeout(function(){ _timerDone = true; _tryEnterReadOnly(); }, 2500);
         // Rafraîchir _allBilans
         sbB.from('bilans').select('*').eq('patient_id',_bilanPatient.id)
           .order('date',{ascending:false}).limit(50)
@@ -3811,7 +3858,9 @@ function saveBilan(){
                 if(_activePage && _activePage.id === 'page-cr') buildCR();
               }
             }
-          });
+          })
+          .catch(function(){})
+          .then(function(){ _fetchDone = true; _tryEnterReadOnly(); });
       }).catch(function(err){
         btn.disabled = false;
         btn.innerHTML = _SAVE_ICON + 'Mettre à jour ce bilan';
