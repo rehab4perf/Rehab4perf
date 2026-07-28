@@ -600,8 +600,48 @@ var OBJ_LABELS = { libre:'Libre', endurance:'Endurance', puissance:'Puissance', 
 var CYCLE_COLORS = {'Force':'#1A3A5C','Puissance':'#C0392B','Hypertrophie':'#2D7D46','Endurance de force':'#2B5FA6','Récupération':'#D4600A','Réathlétisation':'#9B2C6B'};
 function _cycleColor(nom){ return CYCLE_COLORS[nom] || '#52514E'; }
 function _cyEndDate(cy){
+  if(cy.mode === 'criteres'){
+    if(cy.endDate){ var ec=new Date(cy.endDate); ec.setHours(0,0,0,0); return ec; }
+    // Pas de fin planifiée : si terminé, on fige sur la dernière validation ;
+    // sinon le cycle reste "ouvert" jusqu'à aujourd'hui.
+    var items = cy.criteria||[];
+    var allDone = items.length>0 && items.every(function(_,i){ return cy.checks && cy.checks[i] && cy.checks[i].checked; });
+    if(allDone){
+      var latest = null;
+      items.forEach(function(_,i){
+        var at = cy.checks[i] && cy.checks[i].checkedAt;
+        if(at){ var d=new Date(at); d.setHours(0,0,0,0); if(!latest||d>latest) latest=d; }
+      });
+      if(latest) return latest;
+    }
+    var t=new Date(); t.setHours(0,0,0,0); return t;
+  }
   if(cy.endDate){ var e=new Date(cy.endDate); e.setHours(0,0,0,0); return e; }
   var e=new Date(cy.startDate); e.setHours(0,0,0,0); e.setDate(e.getDate()+cy.duree*7-1); return e;
+}
+/* Cycles « critères » : pas de date de fin connue, terminé quand tous les
+   critères sont validés par le praticien. Le suivant démarre alors seul. */
+function _cycleIsDone(c, today){
+  if(c.mode === 'criteres'){
+    var items = c.criteria || [];
+    if(!items.length) return false;
+    return items.every(function(_, i){ return c.checks && c.checks[i] && c.checks[i].checked; });
+  }
+  if(!c.startDate) return false;
+  var e = _cyEndDate(c);
+  return today > e;
+}
+function _cycleIsCurrent(cycles, idx, today){
+  var c = cycles[idx];
+  if(c.mode === 'criteres'){
+    if(_cycleIsDone(c, today)) return false;
+    for(var i=0;i<idx;i++){ if(!_cycleIsDone(cycles[i], today)) return false; }
+    return true;
+  }
+  if(!c.startDate) return false;
+  var s = new Date(c.startDate); s.setHours(0,0,0,0);
+  var e = _cyEndDate(c);
+  return today >= s && today <= e;
 }
 function _dayCycleBg(cellDate){
   for(var i=0;i<_calCycles.length;i++){
@@ -1051,22 +1091,38 @@ function _toggleCycleLegend(){
   if(caret) caret.textContent = _cycleLegendOpen ? '▲' : '▼';
 }
 
+var _CYCLE_ICO_CHECK  = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+var _CYCLE_ICO_CIRCLE = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>';
+
 function _buildCycleBanner(){
   if(!_calCycles || !_calCycles.length) return '';
   var today = new Date(); today.setHours(0,0,0,0);
   var MC = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
 
-  var cur = null;
-  _calCycles.forEach(function(cy){
-    if(!cy.startDate) return;
-    var s = new Date(cy.startDate); s.setHours(0,0,0,0);
-    var e = _cyEndDate(cy);
-    if(today>=s && today<=e) cur = cy;
-  });
+  var curIdx = -1;
+  for(var i=0;i<_calCycles.length;i++){ if(_cycleIsCurrent(_calCycles, i, today)){ curIdx = i; break; } }
+  var cur = curIdx>=0 ? _calCycles[curIdx] : null;
 
   var html = '';
 
-  if(cur){
+  if(cur && cur.mode === 'criteres'){
+    var items = cur.criteria||[];
+    var done = items.filter(function(_,i){ return cur.checks && cur.checks[i] && cur.checks[i].checked; }).length;
+    var col = cur.color || _cycleColor(cur.nom);
+    html += '<div style="background:'+col+';border-radius:12px;padding:14px 16px;margin-bottom:10px;">'
+      +'<div style="font-size:.65rem;color:rgba(255,255,255,.75);margin-bottom:1px;">Cycle en cours</div>'
+      +'<div style="font-size:.88rem;font-weight:700;color:#fff;">'+escH(cur.nom)+'</div>'
+      +(cur.note ? '<div style="font-size:.72rem;color:rgba(255,255,255,.85);margin-top:2px;">'+escH(cur.note)+'</div>' : '')
+      +'<div style="font-size:.68rem;color:rgba(255,255,255,.85);margin-top:8px;">'+done+' / '+items.length+' critères validés</div>'
+      +'<ul style="list-style:none;padding:0;margin:8px 0 0;">'
+      + items.map(function(txt,i){
+          var ok = !!(cur.checks && cur.checks[i] && cur.checks[i].checked);
+          return '<li style="display:flex;align-items:flex-start;gap:8px;padding:4px 0;font-size:.78rem;color:'+(ok?'#fff':'rgba(255,255,255,.75)')+';">'
+            + '<span style="flex-shrink:0;margin-top:1px;">'+(ok?_CYCLE_ICO_CHECK:_CYCLE_ICO_CIRCLE)+'</span><span>'+escH(txt)+'</span></li>';
+        }).join('')
+      +'</ul>'
+      +'</div>';
+  } else if(cur){
     var cyS = new Date(cur.startDate); cyS.setHours(0,0,0,0);
     var cyE = _cyEndDate(cur);
     var wk  = Math.floor((today-cyS)/(7*24*3600*1000))+1;
@@ -1102,22 +1158,34 @@ function _buildCycleBanner(){
     +'<div id="cycle-legend-panel" style="display:'+(_cycleLegendOpen?'block':'none')+';background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;padding:4px 14px 10px;">';
 
   _calCycles.forEach(function(cy, i){
-    if(!cy.startDate) return;
-    var s = new Date(cy.startDate); s.setHours(0,0,0,0);
-    var e = _cyEndDate(cy);
     var col = cy.color || _cycleColor(cy.nom);
-    var sLbl = s.getDate()+' '+MC[s.getMonth()]+' '+s.getFullYear();
-    var eLbl = e.getDate()+' '+MC[e.getMonth()]+' '+e.getFullYear();
+    var isDone = _cycleIsDone(cy, today);
+    // Un seul cycle « en cours » à la fois : celui identifié pour le bandeau
+    // (i===curIdx), pas un calcul indépendant par ligne — sinon un cycle
+    // durée déjà daté peut s'afficher « en cours » alors que le cycle
+    // critères qui le précède n'est pas encore terminé.
+    var isCur  = (i === curIdx);
     var status, sBg, sTxt;
-    if(today < s){ status='À venir'; sBg='rgba(107,122,141,.1)'; sTxt='var(--muted)'; }
-    else if(today > e){ status='Terminé'; sBg='rgba(107,122,141,.1)'; sTxt='var(--muted)'; }
-    else { status='En cours'; sBg=col+'28'; sTxt=col; }
+    if(isDone){ status='Terminé'; sBg='rgba(107,122,141,.1)'; sTxt='var(--muted)'; }
+    else if(isCur){ status='En cours'; sBg=col+'28'; sTxt=col; }
+    else { status='À venir'; sBg='rgba(107,122,141,.1)'; sTxt='var(--muted)'; }
     var isLast = (i === _calCycles.length-1);
-    html += '<div style="display:flex;align-items:center;gap:10px;padding:9px 0;'+(isLast?'':'border-bottom:1px solid var(--border);')+';opacity:'+(today>=e?.55:1)+';">'
+    var subLine;
+    if(cy.mode === 'criteres'){
+      var items = cy.criteria||[];
+      var done = items.filter(function(_,j){ return cy.checks && cy.checks[j] && cy.checks[j].checked; }).length;
+      subLine = done+' / '+items.length+' critères' + (cy.startDate ? ' · depuis le '+_fmtCyDate(cy.startDate,MC) : '');
+    } else if(cy.startDate){
+      var e = _cyEndDate(cy);
+      subLine = _fmtCyDate(cy.startDate,MC,true)+' – '+_fmtCyDate(e.toISOString().slice(0,10),MC,true)+' · '+cy.duree+' sem.';
+    } else {
+      subLine = cy.duree+' sem.';
+    }
+    html += '<div style="display:flex;align-items:center;gap:10px;padding:9px 0;'+(isLast?'':'border-bottom:1px solid var(--border);')+';opacity:'+(isDone?.55:1)+';">'
       +'<div style="width:10px;height:10px;border-radius:50%;background:'+col+';flex-shrink:0;"></div>'
       +'<div style="flex:1;min-width:0;">'
       +'<div style="font-size:.8rem;font-weight:600;color:var(--text);">'+escH(cy.nom)+'</div>'
-      +'<div style="font-size:.67rem;color:var(--muted);">'+sLbl+' – '+eLbl+' · '+cy.duree+' sem.</div>'
+      +'<div style="font-size:.67rem;color:var(--muted);">'+subLine+'</div>'
       +(cy.note ? '<div style="font-size:.68rem;color:var(--text);margin-top:2px;">'+escH(cy.note)+'</div>' : '')
       +'</div>'
       +'<span style="font-size:.67rem;font-weight:600;background:'+sBg+';color:'+sTxt+';border-radius:5px;padding:3px 8px;white-space:nowrap;">'+status+'</span>'
@@ -1126,6 +1194,10 @@ function _buildCycleBanner(){
 
   html += '</div></div>';
   return html;
+}
+function _fmtCyDate(str, MC, withYear){
+  var d = new Date(str+'T00:00:00');
+  return d.getDate()+' '+MC[d.getMonth()]+(withYear?' '+d.getFullYear():'');
 }
 
 /* ── Bloc "Prochaines séances" commun ── */

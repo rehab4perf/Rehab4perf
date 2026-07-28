@@ -126,6 +126,48 @@ function _cycleComputeWeeks(startStr, endStr){
   var days=Math.round((new Date(endStr+'T00:00:00')-new Date(startStr+'T00:00:00'))/86400000);
   return Math.max(1, Math.round((days+1)/7));
 }
+/* ── Cycles « critères » (durée variable, pas de date de fin connue) ──
+   Un cycle critères est « terminé » quand tous ses critères sont cochés.
+   Un cycle (critères ou durée) est « en cours » selon deux règles distinctes :
+   - durée : purement basé sur les dates (comportement historique, inchangé)
+   - critères : dès que tous les cycles précédents de la séquence sont
+     terminés — le suivant démarre alors automatiquement, sans date requise. */
+function _cycleIsDone(c, today){
+  if(c.mode === 'criteres'){
+    var items = c.criteria || [];
+    if(!items.length) return false;
+    return items.every(function(_, i){ return c.checks && c.checks[i] && c.checks[i].checked; });
+  }
+  if(!c.startDate) return false;
+  var end = c.endDate || _cycleComputeEndDate(c.startDate, c.duree);
+  if(!end) return false;
+  var e = new Date(end+'T00:00:00'); e.setHours(0,0,0,0);
+  return today > e;
+}
+function _cycleIsCurrent(cycles, idx, today){
+  var c = cycles[idx];
+  if(c.mode === 'criteres'){
+    if(_cycleIsDone(c, today)) return false;
+    for(var i=0;i<idx;i++){ if(!_cycleIsDone(cycles[i], today)) return false; }
+    return true;
+  }
+  if(!c.startDate) return false;
+  var s = new Date(c.startDate+'T00:00:00'); s.setHours(0,0,0,0);
+  var end = c.endDate || _cycleComputeEndDate(c.startDate, c.duree);
+  if(!end) return false;
+  var e = new Date(end+'T00:00:00'); e.setHours(0,0,0,0);
+  return today >= s && today <= e;
+}
+/* Un seul cycle « en cours » à la fois : le premier match dans l'ordre de
+   la séquence, pas un calcul indépendant par ligne (sinon un cycle durée
+   déjà daté peut s'afficher « en cours » avant qu'un cycle critères qui
+   le précède ne soit terminé). */
+function _cycleCurrentIndex(cycles){
+  var today = new Date(); today.setHours(0,0,0,0);
+  for(var i=0;i<cycles.length;i++){ if(_cycleIsCurrent(cycles, i, today)) return i; }
+  return -1;
+}
+
 function _fmtDate(str){
   if(!str) return '?';
   var d=new Date(str+'T00:00:00');
@@ -295,22 +337,72 @@ function closeCycleForm(){
   _cycleAddOpen   = false;
   renderCycleList();
 }
+function selectCycleMode(mode){
+  var val = document.getElementById('cycle-mode-val'); if(val) val.value = mode;
+  var btnD = document.getElementById('cycle-mode-btn-duree');
+  var btnC = document.getElementById('cycle-mode-btn-criteres');
+  if(btnD) btnD.classList.toggle('sel', mode==='duree');
+  if(btnC) btnC.classList.toggle('sel', mode==='criteres');
+  var wrapD = document.getElementById('cycle-mode-duree-wrap');
+  var wrapC = document.getElementById('cycle-mode-criteres-wrap');
+  if(wrapD) wrapD.style.display = mode==='duree' ? '' : 'none';
+  if(wrapC) wrapC.style.display = mode==='criteres' ? '' : 'none';
+}
+function _cycleCriterionRowHtml(text, checked){
+  return '<div class="cycle-criteria-edit-row">'
+    + (checked ? _CYCLE_ICO_CHECK : _CYCLE_ICO_CIRCLE)
+    + '<input type="text" class="cycle-criteria-text" value="'+escH(text||'')+'" placeholder="Ex : Extension complète du genou">'
+    + '<button type="button" class="cycle-criteria-del" onclick="this.parentElement.remove()" title="Retirer">×</button>'
+    + '</div>';
+}
+function _cycleAddCriterionRow(text){
+  var wrap = document.getElementById('cycle-criteria-rows');
+  if(!wrap) return;
+  wrap.insertAdjacentHTML('beforeend', _cycleCriterionRowHtml(text, false));
+  if(!text){
+    var inputs = wrap.querySelectorAll('.cycle-criteria-text');
+    var last = inputs[inputs.length-1];
+    if(last) last.focus();
+  }
+}
 function submitCycleForm(){
   var nom = (document.getElementById('cycle-nom').value||'').trim();
   if(!nom){ alert('Veuillez saisir un nom de cycle.'); return; }
-  var startDate = (document.getElementById('cycle-start')||{}).value||'';
-  var endDate   = (document.getElementById('cycle-end')||{}).value||'';
-  var duree;
-  if(startDate && endDate){ duree=_cycleComputeWeeks(startDate,endDate); }
-  else { duree=parseInt((document.getElementById('cycle-duree')||{}).value)||3; }
-  if(startDate && !endDate) endDate=_cycleComputeEndDate(startDate,duree);
+  var mode = (document.getElementById('cycle-mode-val')||{}).value || 'duree';
   var note = (document.getElementById('cycle-note').value||'').trim();
   var cycleColor = (document.getElementById('cycle-color-val')||{}).value||_cycleColors[nom]||'#1A3A5C';
+  var existing = _cycleEditingId ? _cycles.find(function(c){ return c.id===_cycleEditingId; }) : null;
+  var payload;
+  if(mode === 'criteres'){
+    var rows = document.querySelectorAll('#cycle-criteria-rows .cycle-criteria-edit-row');
+    var criteria = [];
+    var prevCriteria = (existing && existing.criteria) || [];
+    var prevChecks = (existing && existing.checks) || {};
+    var newChecks = {};
+    rows.forEach(function(row){
+      var txt = (row.querySelector('.cycle-criteria-text').value||'').trim();
+      if(!txt) return;
+      var oldIdx = prevCriteria.indexOf(txt);
+      if(oldIdx !== -1 && prevChecks[oldIdx]) newChecks[criteria.length] = prevChecks[oldIdx];
+      criteria.push(txt);
+    });
+    if(!criteria.length){ alert('Ajoutez au moins un critère.'); return; }
+    var critStart = (document.getElementById('cycle-criteres-start')||{}).value||'';
+    payload = { nom:nom, mode:'criteres', criteria:criteria, checks:newChecks, startDate:critStart, note:note, color:cycleColor, duree:null, endDate:null };
+  } else {
+    var startDate = (document.getElementById('cycle-start')||{}).value||'';
+    var endDate   = (document.getElementById('cycle-end')||{}).value||'';
+    var duree;
+    if(startDate && endDate){ duree=_cycleComputeWeeks(startDate,endDate); }
+    else { duree=parseInt((document.getElementById('cycle-duree')||{}).value)||3; }
+    if(startDate && !endDate) endDate=_cycleComputeEndDate(startDate,duree);
+    payload = { nom:nom, mode:'duree', duree:duree, startDate:startDate, endDate:endDate, note:note, color:cycleColor };
+  }
   if(_cycleEditingId){
     var idx=_cycles.findIndex(function(c){ return c.id===_cycleEditingId; });
-    if(idx!==-1) _cycles[idx]=Object.assign({},_cycles[idx],{nom:nom,duree:duree,startDate:startDate,endDate:endDate,note:note,color:cycleColor});
+    if(idx!==-1) _cycles[idx]=Object.assign({},_cycles[idx],payload);
   } else {
-    _cycles.push({id:'c'+Date.now(),nom:nom,duree:duree,startDate:startDate,endDate:endDate,note:note,color:cycleColor});
+    _cycles.push(Object.assign({id:'c'+Date.now()},payload));
   }
   _saveCyclesToCloud();
   renderCycleTimeline();
@@ -335,13 +427,15 @@ function renderCycleTimeline(){
     tot.textContent = '';
     return;
   }
-  var totalWeeks = _cycles.reduce(function(s,c){ return s+c.duree; },0);
-  var minW = 60, unitW = Math.max(minW, Math.min(90, 600/totalWeeks));
+  var dureeCycles = _cycles.filter(function(c){ return c.mode!=='criteres'; });
+  var critCycles   = _cycles.filter(function(c){ return c.mode==='criteres'; });
+  var totalWeeks = dureeCycles.reduce(function(s,c){ return s+(c.duree||0); },0);
+  var minW = 60, unitW = Math.max(minW, Math.min(90, 600/Math.max(totalWeeks,1)));
   var today = new Date(); today.setHours(0,0,0,0);
 
   var todayMarkerPct = null;
   var firstStart = _cycles[0] && _cycles[0].startDate ? new Date(_cycles[0].startDate+'T00:00:00') : null;
-  if(firstStart){
+  if(firstStart && totalWeeks>0){
     firstStart.setHours(0,0,0,0);
     var diffDays = Math.round((today - firstStart) / 86400000);
     var diffWeeks = diffDays / 7;
@@ -352,8 +446,20 @@ function renderCycleTimeline(){
   var weekCursor = 1;
   _cycles.forEach(function(c){
     var col = c.color || _cycleColor(c.nom);
-    var w = (c.duree * unitW) + 'px';
-    var weekEnd = weekCursor + c.duree - 1;
+    if(c.mode === 'criteres'){
+      var items = c.criteria||[];
+      var done = items.filter(function(_,i){ return c.checks && c.checks[i] && c.checks[i].checked; }).length;
+      var datesLine = c.startDate ? 'depuis le '+_fmtDateShort(c.startDate) : 'durée variable';
+      html += '<div class="cycle-block" style="background:'+col+';width:'+minW+'px;flex-shrink:0;cursor:pointer;" title="Modifier" onclick="openCycleForm(\''+c.id+'\')">';
+      html += '<button class="cycle-block-del" onclick="event.stopPropagation();deleteCycle(\''+c.id+'\')">×</button>';
+      html += '<div style="font-size:.8rem;font-weight:700;margin-bottom:2px;padding-right:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+c.nom+'</div>';
+      html += '<div style="font-size:.63rem;opacity:.85;white-space:nowrap;">'+datesLine+'</div>';
+      html += '<div style="font-size:.63rem;opacity:.7;">'+done+' / '+items.length+' critères</div>';
+      html += '</div>';
+      return;
+    }
+    var w = ((c.duree||0) * unitW) + 'px';
+    var weekEnd = weekCursor + (c.duree||0) - 1;
     var endStr = c.endDate || _cycleComputeEndDate(c.startDate, c.duree);
     var datesLine = (c.startDate && endStr) ? _fmtDateShort(c.startDate)+' → '+_fmtDateShort(endStr) : 'S'+weekCursor+(c.duree>1?'→S'+weekEnd:'');
     html += '<div class="cycle-block" style="background:'+col+';width:'+w+';flex-shrink:0;cursor:pointer;" title="Modifier" onclick="openCycleForm(\''+c.id+'\')">';
@@ -362,7 +468,7 @@ function renderCycleTimeline(){
     html += '<div style="font-size:.63rem;opacity:.85;white-space:nowrap;">'+datesLine+'</div>';
     html += '<div style="font-size:.63rem;opacity:.7;">'+c.duree+' sem.</div>';
     html += '</div>';
-    weekCursor += c.duree;
+    weekCursor += (c.duree||0);
   });
 
   if(todayMarkerPct !== null){
@@ -373,16 +479,31 @@ function renderCycleTimeline(){
   }
   html += '</div>';
   tl.innerHTML = html;
-  tot.textContent = 'Total : '+totalWeeks+' semaine'+(totalWeeks>1?'s':'');
+  tot.textContent = 'Total : '+totalWeeks+' semaine'+(totalWeeks>1?'s':'') + (critCycles.length ? ' + '+critCycles.length+' cycle'+(critCycles.length>1?'s':'')+' à critères' : '');
 }
 
 /* ── Liste des cycles + formulaire inline ── */
+var _CYCLE_ICO_EDIT = '<svg width="13" height="13" viewBox="0 0 348.882 348.882" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M333.988,11.758l-0.42-0.383C325.538,4.04,315.129,0,304.258,0c-12.187,0-23.888,5.159-32.104,14.153L116.803,184.231c-1.416,1.55-2.49,3.379-3.154,5.37l-18.267,54.762c-2.112,6.331-1.052,13.333,2.835,18.729c3.918,5.438,10.23,8.685,16.886,8.685c2.879,0,5.693-0.592,8.362-1.76l52.89-23.138c1.923-0.841,3.648-2.076,5.063-3.626L336.771,73.176C352.937,55.479,351.69,27.929,333.988,11.758zM130.381,234.247l10.719-32.134l0.904-0.99l20.316,18.556l-0.904,0.99L130.381,234.247zM314.621,52.943L182.553,197.53l-20.316-18.556L294.305,34.386c2.583-2.828,6.118-4.386,9.954-4.386c3.365,0,6.588,1.252,9.082,3.53l0.419,0.383C319.244,38.922,319.63,47.459,314.621,52.943z"/><path d="M303.85,138.388c-8.284,0-15,6.716-15,15v127.347c0,21.034-17.113,38.147-38.147,38.147H68.904c-21.035,0-38.147-17.113-38.147-38.147V100.413c0-21.034,17.113-38.147,38.147-38.147h131.587c8.284,0,15-6.716,15-15s-6.716-15-15-15H68.904c-37.577,0-68.147,30.571-68.147,68.147v180.321c0,37.576,30.571,68.147,68.147,68.147h181.798c37.576,0,68.147-30.571,68.147-68.147V153.388C318.85,145.104,312.134,138.388,303.85,138.388z"/></svg>';
+var _CYCLE_ICO_CHECK  = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+var _CYCLE_ICO_CIRCLE = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#B8C0CC" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>';
+
 function _cycleListRowHtml(c){
   var col = c.color || _cycleColor(c.nom);
-  var endStr = c.endDate || _cycleComputeEndDate(c.startDate, c.duree) || '';
-  var datesPart = c.startDate ? _fmtDate(c.startDate)+' → '+_fmtDate(endStr)+' · '+c.duree+' sem.' : c.duree+' sem.';
-  var sub = datesPart + (c.note ? '  ·  '+c.note : '');
-  return '<div class="cycle-list-row" data-id="'+c.id+'" draggable="true"'
+  var idx = _cycles.findIndex(function(x){ return x.id===c.id; });
+  var isCurrent = idx>=0 && idx === _cycleCurrentIndex(_cycles);
+  var currentBadge = isCurrent ? '<span class="cycle-current-badge">EN COURS</span>' : '';
+  var sub;
+  if(c.mode === 'criteres'){
+    var items = c.criteria||[];
+    var done = items.filter(function(_,i){ return c.checks && c.checks[i] && c.checks[i].checked; }).length;
+    sub = done+' / '+items.length+' critères validés' + (c.startDate ? '  ·  depuis le '+_fmtDate(c.startDate) : '');
+  } else {
+    var endStr = c.endDate || _cycleComputeEndDate(c.startDate, c.duree) || '';
+    var datesPart = c.startDate ? _fmtDate(c.startDate)+' → '+_fmtDate(endStr)+' · '+c.duree+' sem.' : c.duree+' sem.';
+    sub = datesPart;
+  }
+  sub += (c.note ? '  ·  '+c.note : '');
+  var h = '<div class="cycle-list-row" data-id="'+c.id+'" draggable="true"'
     +' ondragstart="_cycleDragStart(event,\''+c.id+'\')"'
     +' ondragover="_cycleDragOver(event,\''+c.id+'\')"'
     +' ondrop="_cycleDrop(event,\''+c.id+'\')"'
@@ -390,14 +511,38 @@ function _cycleListRowHtml(c){
     +'<div class="cycle-list-handle" title="Glisser pour réordonner">⠿</div>'
     +'<div class="cycle-list-dot" style="background:'+col+'"></div>'
     +'<div class="cycle-list-info">'
-    +'<div class="cycle-list-name">'+c.nom+'</div>'
+    +'<div class="cycle-list-name">'+c.nom+currentBadge+'</div>'
     +'<div class="cycle-list-sub">'+sub+'</div>'
     +'</div>'
     +'<div class="cycle-list-actions">'
-    +'<button class="cycle-list-btn" onclick="openCycleForm(\''+c.id+'\')" title="Modifier"><svg width="13" height="13" viewBox="0 0 348.882 348.882" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M333.988,11.758l-0.42-0.383C325.538,4.04,315.129,0,304.258,0c-12.187,0-23.888,5.159-32.104,14.153L116.803,184.231c-1.416,1.55-2.49,3.379-3.154,5.37l-18.267,54.762c-2.112,6.331-1.052,13.333,2.835,18.729c3.918,5.438,10.23,8.685,16.886,8.685c2.879,0,5.693-0.592,8.362-1.76l52.89-23.138c1.923-0.841,3.648-2.076,5.063-3.626L336.771,73.176C352.937,55.479,351.69,27.929,333.988,11.758zM130.381,234.247l10.719-32.134l0.904-0.99l20.316,18.556l-0.904,0.99L130.381,234.247zM314.621,52.943L182.553,197.53l-20.316-18.556L294.305,34.386c2.583-2.828,6.118-4.386,9.954-4.386c3.365,0,6.588,1.252,9.082,3.53l0.419,0.383C319.244,38.922,319.63,47.459,314.621,52.943z"/><path d="M303.85,138.388c-8.284,0-15,6.716-15,15v127.347c0,21.034-17.113,38.147-38.147,38.147H68.904c-21.035,0-38.147-17.113-38.147-38.147V100.413c0-21.034,17.113-38.147,38.147-38.147h131.587c8.284,0,15-6.716,15-15s-6.716-15-15-15H68.904c-37.577,0-68.147,30.571-68.147,68.147v180.321c0,37.576,30.571,68.147,68.147,68.147h181.798c37.576,0,68.147-30.571,68.147-68.147V153.388C318.85,145.104,312.134,138.388,303.85,138.388z"/></svg></button>'
+    +'<button class="cycle-list-btn" onclick="openCycleForm(\''+c.id+'\')" title="Modifier">'+_CYCLE_ICO_EDIT+'</button>'
     +'<button class="cycle-list-btn del" onclick="deleteCycle(\''+c.id+'\')" title="Supprimer">×</button>'
     +'</div>'
     +'</div>';
+  if(c.mode === 'criteres' && (c.criteria||[]).length){
+    h += '<div class="cycle-criteria-checklist">';
+    c.criteria.forEach(function(text, i){
+      var checked = !!(c.checks && c.checks[i] && c.checks[i].checked);
+      h += '<div class="cycle-criteria-row'+(checked?' done':'')+'" onclick="_cycleToggleCriterion(\''+c.id+'\','+i+')">'
+        + (checked?_CYCLE_ICO_CHECK:_CYCLE_ICO_CIRCLE)
+        + '<span>'+escH(text)+'</span>'
+        + '</div>';
+    });
+    h += '</div>';
+  }
+  return h;
+}
+
+/* ── Interaction directe sur les critères (sans ouvrir le formulaire) ── */
+function _cycleToggleCriterion(cycleId, idx){
+  var c = _cycles.find(function(x){ return x.id===cycleId; });
+  if(!c) return;
+  if(!c.checks) c.checks = {};
+  var wasChecked = !!(c.checks[idx] && c.checks[idx].checked);
+  c.checks[idx] = wasChecked ? { checked:false, checkedAt:null } : { checked:true, checkedAt:new Date().toISOString() };
+  _saveCyclesToCloud();
+  renderCycleList();
+  renderCycleTimeline();
 }
 function _cycleInlineFormHtml(c){
   var title = c ? 'Modifier — '+c.nom : 'Nouveau cycle';
@@ -421,10 +566,24 @@ function _cycleInlineFormHtml(c){
   });
   h += '<label class="cycle-swatch cycle-swatch-custom" title="Couleur personnalisée" style="width:22px;height:22px;border-radius:50%;border:2px solid var(--border);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.75rem;overflow:hidden;position:relative;">🎨<input type="color" id="cycle-color" value="#1A3A5C" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;" oninput="selectCycleColorCustom(this.value)"></label>';
   h += '</div><input type="hidden" id="cycle-color-val" value="#1A3A5C"></div>';
+  h += '<div class="cycle-mode-toggle">';
+  h += '<button type="button" class="cycle-mode-btn" id="cycle-mode-btn-duree" onclick="selectCycleMode(\'duree\')">Durée fixe</button>';
+  h += '<button type="button" class="cycle-mode-btn" id="cycle-mode-btn-criteres" onclick="selectCycleMode(\'criteres\')">Critères</button>';
+  h += '</div>';
+  h += '<input type="hidden" id="cycle-mode-val" value="duree">';
+  h += '<div id="cycle-mode-duree-wrap">';
   h += '<div class="cycle-form-grid" style="margin-bottom:8px;">';
   h += '<div class="cycle-field"><label>Date de début</label><input type="date" id="cycle-start" onchange="cycleStartDateChange()"></div>';
   h += '<div class="cycle-field"><label>Date de fin</label><input type="date" id="cycle-end" onchange="cycleEndDateChange()"></div>';
   h += '<div class="cycle-field"><label>Durée</label><div class="cycle-stepper"><button class="cycle-stepper-btn" onclick="cycleDureeChange(-1)">−</button><span class="cycle-stepper-val" id="cycle-duree-display">3 semaines</span><button class="cycle-stepper-btn" onclick="cycleDureeChange(+1)">+</button></div><input type="hidden" id="cycle-duree" value="3"><div id="cycle-duree-hint" style="display:none;align-items:center;gap:4px;font-size:.68rem;color:var(--accent);margin-top:4px;"></div></div>';
+  h += '</div>';
+  h += '</div>';
+  h += '<div id="cycle-mode-criteres-wrap" style="display:none;">';
+  h += '<div class="cycle-field" style="margin-bottom:8px;max-width:200px;"><label>Date de début <span style="font-weight:400;color:#999;">(optionnel)</span></label><input type="date" id="cycle-criteres-start"></div>';
+  h += '<div style="margin-bottom:8px;"><label style="font-size:.72rem;font-weight:600;color:#444;display:block;margin-bottom:5px;">Critères à valider</label>';
+  h += '<div id="cycle-criteria-rows"></div>';
+  h += '<button type="button" class="cycle-criteria-add" onclick="_cycleAddCriterionRow(\'\')">+ Ajouter un critère</button>';
+  h += '</div>';
   h += '</div>';
   h += '<div class="cycle-field" style="margin-bottom:0"><label>Note <span style="font-weight:400;color:#999;">(optionnel)</span></label>';
   h += '<textarea id="cycle-note" placeholder="Ex : Focus contrôle moteur, Préparation compétition…" rows="1" oninput="autoResizeTa(this)" style="width:100%;border:1px solid #d1d5db;border-radius:6px;padding:6px 8px;font-size:.82rem;font-family:inherit;color:var(--text);resize:none;overflow:hidden;outline:none;box-sizing:border-box;"></textarea></div>';
@@ -443,6 +602,16 @@ function _populateCycleForm(c){
     var d=parseInt(c.duree)||3;
     var durEl=document.getElementById('cycle-duree'); if(durEl) durEl.value=d;
     var dispEl=document.getElementById('cycle-duree-display'); if(dispEl) dispEl.textContent=d+(d===1?' semaine':' semaines');
+    var critStartEl=document.getElementById('cycle-criteres-start'); if(critStartEl) critStartEl.value=c.startDate||'';
+    var rowsWrap=document.getElementById('cycle-criteria-rows');
+    if(rowsWrap){
+      rowsWrap.innerHTML='';
+      (c.criteria||[]).forEach(function(text,i){
+        var checked = !!(c.checks && c.checks[i] && c.checks[i].checked);
+        rowsWrap.insertAdjacentHTML('beforeend', _cycleCriterionRowHtml(text, checked));
+      });
+    }
+    selectCycleMode(c.mode==='criteres' ? 'criteres' : 'duree');
     var noteEl=document.getElementById('cycle-note');
     if(noteEl){ noteEl.value=c.note||''; requestAnimationFrame(function(){ autoResizeTa(noteEl); }); }
     _cycleSwatchSelect(c.color||_cycleColors[c.nom]||'#1A3A5C');
@@ -456,6 +625,9 @@ function _populateCycleForm(c){
     _cycleAutoDate();
     nomEl.value='';
     var noteEl2=document.getElementById('cycle-note'); if(noteEl2) noteEl2.value='';
+    var rowsWrap2=document.getElementById('cycle-criteria-rows'); if(rowsWrap2) rowsWrap2.innerHTML='';
+    var critStartEl2=document.getElementById('cycle-criteres-start'); if(critStartEl2) critStartEl2.value='';
+    selectCycleMode('duree');
     clearCycleNameBtns();
     _cycleSwatchSelect('#1A3A5C');
     nomEl.focus();
