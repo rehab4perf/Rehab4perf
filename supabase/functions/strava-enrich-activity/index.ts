@@ -96,12 +96,32 @@ Deno.serve(async (req: Request) => {
       }))
     : null
 
+  // Tours manuels (ex. 8x400m posés au bouton "Lap" pendant la sortie) — endpoint
+  // dedie, distinct de splits_metric (decoupage automatique par km, toujours present
+  // sur cette meme reponse). Absent si l'athlete n'a jamais pose de tour manuel.
+  let laps: { d: number; t: number; hr: number | null }[] | null = null
+  const lapsRes = await fetch(
+    `https://www.strava.com/api/v3/activities/${stravaId}/laps`,
+    { headers: { 'Authorization': `Bearer ${accessToken}` } }
+  )
+  if (lapsRes.ok) {
+    const lapsData = await lapsRes.json()
+    if (Array.isArray(lapsData) && lapsData.length > 1) {
+      laps = lapsData.map((l: Record<string, unknown>) => ({
+        d:  Math.round((l.distance as number) || 0),
+        t:  (l.moving_time as number) || 0,
+        hr: l.average_heartrate ? Math.round(l.average_heartrate as number) : null,
+      }))
+    }
+  }
+
   const mergedDonnees = {
     ...(activity.donnees || {}),
     cadence:  act.average_cadence,
     calories: act.calories,
     polyline: act.map?.summary_polyline || (activity.donnees || {}).polyline || null,
     splits,
+    laps,
   }
 
   await supabase.from('strava_activities')

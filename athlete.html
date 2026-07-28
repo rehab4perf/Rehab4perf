@@ -1598,30 +1598,49 @@ function _buildDayHtml(){
         var color = (p[0]==='CHARGE') ? '#FC4C02' : '#1A1917';
         return '<div style="font-size:.82rem;"><span style="color:#9D6050;font-size:.7rem;font-weight:700;letter-spacing:.04em;display:block;">'+p[0]+'</span><span style="font-weight:700;color:'+color+';">'+p[1]+'</span></div>';
       }).join('');
+      // Construit les barres d'allure (colonnes largeur fixe + scroll horizontal,
+      // sinon les activites longues (49 splits, 105km) debordent du cadre).
+      function _atBuildSplitBars(segs, labelFn, irregular){
+        var paces = segs.map(function(s){ return (s.d > 0 && s.t > 0) ? s.t/(s.d/1000) : null; });
+        var fullPaces = paces.filter(function(p,i){ return p && (irregular || segs[i].d >= 500); });
+        if(fullPaces.length < 2) return '';
+        var minP = Math.min.apply(null, fullPaces), maxP = Math.max.apply(null, fullPaces);
+        var range = Math.max(maxP-minP, 1);
+        return segs.map(function(s, i){
+          var p = paces[i];
+          if(!p) return '';
+          var partial = !irregular && s.d < 500;
+          // Hauteur en pixels absolus, pas en % : le conteneur immédiat de la barre
+          // (colonne flex à hauteur auto) ne fournit aucune hauteur de référence pour
+          // un height:XX%, qui serait alors ignoré par le navigateur (barre invisible).
+          var barPx = 12 + Math.round((1 - (p-minP)/range) * 34);
+          return '<div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;flex:0 0 32px;width:32px;height:60px;">'
+            + '<span style="font-size:.62rem;color:#9D6050;white-space:nowrap;">'+_fmtPace(p)+'</span>'
+            + '<div style="width:70%;background:#FC4C02;border-radius:3px 3px 0 0;height:'+barPx+'px'+(partial?';opacity:.4':'')+'"></div>'
+            + '<span style="font-size:.62rem;color:#9D6050;white-space:nowrap;">'+escH(labelFn(s,i))+'</span></div>';
+        }).join('');
+      }
       // Allures par kilomètre
       var splitsHtml = '';
       if(Array.isArray(d.splits) && d.splits.length > 1){
-        var paces = d.splits.map(function(s){ return (s.d > 0 && s.t > 0) ? s.t/(s.d/1000) : null; });
-        var fullPaces = paces.filter(function(p,i){ return p && d.splits[i].d >= 500; });
-        if(fullPaces.length >= 2){
-          var minP = Math.min.apply(null, fullPaces), maxP = Math.max.apply(null, fullPaces);
-          var range = Math.max(maxP-minP, 1);
-          var bars = d.splits.map(function(s, i){
-            var p = paces[i];
-            if(!p) return '';
-            var partial = s.d < 500;
-            // Hauteur en pixels absolus, pas en % : le conteneur immédiat de la barre
-            // (colonne flex à hauteur auto) ne fournit aucune hauteur de référence pour
-            // un height:XX%, qui serait alors ignoré par le navigateur (barre invisible).
-            var barPx = 12 + Math.round((1 - (p-minP)/range) * 34);
-            var kmLbl = partial ? (s.d/1000).toFixed(1).replace('.',',') : String(i+1);
-            return '<div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;flex:1;height:60px;">'
-              + '<span style="font-size:.62rem;color:#9D6050;">'+_fmtPace(p)+'</span>'
-              + '<div style="width:70%;background:#FC4C02;border-radius:3px 3px 0 0;height:'+barPx+'px'+(partial?';opacity:.4':'')+'"></div>'
-              + '<span style="font-size:.62rem;color:#9D6050;">'+kmLbl+'</span></div>';
-          }).join('');
+        var bars = _atBuildSplitBars(d.splits, function(s,i){
+          return s.d < 500 ? (s.d/1000).toFixed(1).replace('.',',') : String(i+1);
+        });
+        if(bars){
           splitsHtml = '<div style="margin-top:10px;"><div style="font-size:.7rem;font-weight:700;color:#9D6050;letter-spacing:.04em;margin-bottom:6px;">ALLURE PAR KILOMÈTRE</div>'
-            + '<div style="display:flex;align-items:flex-end;gap:3px;">'+bars+'</div></div>';
+            + '<div style="display:flex;align-items:flex-end;gap:3px;overflow-x:auto;padding-bottom:2px;">'+bars+'</div></div>';
+        }
+      }
+      // Tours manuels (ex. 8x400m)
+      var lapsHtml = '';
+      if(Array.isArray(d.laps) && d.laps.length > 1){
+        var lapBars = _atBuildSplitBars(d.laps, function(s,i){ return String(i+1); }, true);
+        if(lapBars){
+          var lapDists = d.laps.map(function(l){ return l.d; }).filter(function(v){ return v>0; });
+          var sameLen = lapDists.length===d.laps.length && lapDists.every(function(v){ return Math.abs(v-lapDists[0])<25; });
+          var lapTitle = sameLen ? (d.laps.length+' × '+(lapDists[0]>=1000?(lapDists[0]/1000).toFixed(2).replace('.',',')+' km':Math.round(lapDists[0])+' m')) : 'TOURS';
+          lapsHtml = '<div style="margin-top:10px;"><div style="font-size:.7rem;font-weight:700;color:#9D6050;letter-spacing:.04em;margin-bottom:6px;">'+escH(lapTitle.toUpperCase())+'</div>'
+            + '<div style="display:flex;align-items:flex-end;gap:3px;overflow-x:auto;padding-bottom:2px;">'+lapBars+'</div></div>';
         }
       }
       // Parcours
@@ -1640,6 +1659,7 @@ function _buildDayHtml(){
             + '<div style="flex:1;min-width:180px;">'
             + '<div style="display:flex;gap:16px;flex-wrap:wrap;">'+pillsHtml+'</div>'
             + splitsHtml
+            + lapsHtml
             + '</div>'
             + '</div>'
             + '</div>';

@@ -5472,6 +5472,89 @@ function _closeChipDrop(){
 }
 
 /* ── Popover détail activité Strava ── */
+/* Contenu (pills + parcours + allures + tours + lien) du popover d'une activite
+   Strava non liee — meme richesse que le panneau du builder (_stravaBuildCardHtml),
+   dans une mise en page compacte adaptee a un popover. Regenere a chaque appel donc
+   reutilisable pour rafraichir en place apres un chargement d'allures. */
+function _stravaDetailDropInnerHtml(act){
+  var typeMap = { Run:'🏃 Course', Ride:'🚴 Vélo', Swim:'🏊 Natation', Walk:'🚶 Marche', WeightTraining:'💪 Musculation', Hike:'🥾 Randonnée', Rowing:'🚣 Aviron', VirtualRide:'🚴 Vélo virtuel', TrailRun:'🏔️ Trail' };
+  var typeLabel = typeMap[act.type] || (act.type || 'Activité');
+  var d = act.donnees || {};
+
+  var pills = [];
+  if(act.distance_m) pills.push([(act.distance_m>=1000?(act.distance_m/1000).toFixed(1).replace('.',',')+' km':act.distance_m+' m'),'Distance']);
+  if(act.duree_s) pills.push([Math.round(act.duree_s/60)+' min','Durée']);
+  var pace = (act.distance_m > 100 && act.duree_s) ? _fmtPace(act.duree_s/(act.distance_m/1000)) : null;
+  if(pace && ['Run','TrailRun','Walk','Hike'].indexOf(act.type) !== -1) pills.push([pace+'/km','Allure moy.']);
+  else if(d.avg_speed) pills.push([(d.avg_speed*3.6).toFixed(1)+' km/h','Vitesse moy.']);
+  if(d.avg_hr) pills.push([Math.round(d.avg_hr),'FC moy.']);
+  if(d.max_hr) pills.push([Math.round(d.max_hr),'FC max']);
+  if(d.elevation) pills.push([Math.round(d.elevation)+' m','D+']);
+  if(act.charge) pills.push([act.charge+' UA','Charge']);
+  var pillsHtml = pills.map(function(p){
+    return '<div class="srb-pill"><div class="srb-pv">'+escH(String(p[0]))+'</div><div class="srb-pl">'+p[1]+'</div></div>';
+  }).join('');
+
+  var splitsHtml = '';
+  if(Array.isArray(d.splits) && d.splits.length > 1){
+    var barsInfo = _stravaBuildSplitBars(d.splits, function(s,i){
+      return s.d < 500 ? (s.d/1000).toFixed(1).replace('.',',') : String(i+1);
+    });
+    if(barsInfo) splitsHtml = '<div class="srb-splits-t">Allure par kilomètre</div><div class="srb-splits-scroll">'+barsInfo+'</div>';
+  }
+  var lapsHtml = '';
+  if(Array.isArray(d.laps) && d.laps.length > 1){
+    var lapBars = _stravaBuildSplitBars(d.laps, function(s,i){ return String(i+1); }, true);
+    if(lapBars){
+      var lapDists = d.laps.map(function(l){ return l.d; }).filter(function(v){ return v>0; });
+      var sameLen = lapDists.length===d.laps.length && lapDists.every(function(v){ return Math.abs(v-lapDists[0])<25; });
+      var lapTitle = sameLen ? (d.laps.length+' × '+(lapDists[0]>=1000?(lapDists[0]/1000).toFixed(2).replace('.',',')+' km':Math.round(lapDists[0])+' m')) : 'Tours (laps)';
+      lapsHtml = '<div class="srb-splits-t">'+escH(lapTitle)+'</div><div class="srb-splits-scroll">'+lapBars+'</div>';
+    }
+  }
+  var runLike = ['Run','TrailRun','Walk','Hike'].indexOf(act.type) !== -1;
+  var loadSplitsHtml = '';
+  if(runLike && !splitsHtml && act.distance_m > 500){
+    loadSplitsHtml = _srbSplitsAttempted[act.strava_id]
+      ? '<div class="srb-splits-note">Allures indisponibles pour cette activité.</div>'
+      : '<div class="srb-splits-note" id="srbSplitsLoading-'+act.strava_id+'">⏳ Chargement des allures…</div>';
+  }
+  var routeHtml = '';
+  if(d.polyline){
+    var svg = _polylineToSvg(d.polyline, 100, 76);
+    if(svg) routeHtml = '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;margin-bottom:8px;">'+svg+'<span class="srb-route-lbl">Parcours</span></div>';
+  }
+
+  var title = '<div style="font-weight:700;font-size:.82rem;color:#FC4C02;margin-bottom:2px;display:flex;align-items:center;gap:6px;">'
+    + '<svg width="13" height="13" viewBox="0 0 24 24" fill="#FC4C02" style="flex-shrink:0"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>'
+    + escH(act.nom || typeLabel) + '</div>'
+    + '<div style="font-size:.72rem;color:var(--text3);margin-bottom:8px;">'+escH(typeLabel + ' · ' + (act.date || ''))+'</div>';
+
+  // ── Lier / Délier a une seance planifiee ──
+  var linkZone = '';
+  if(act.seance_id){
+    var linkedEv = _cloudCalEvents.find(function(ev){ return String(ev.id) === String(act.seance_id); });
+    var linkedNom = linkedEv ? ((linkedEv.programmes&&linkedEv.programmes.nom)||'Séance') : 'Séance';
+    linkZone = '<div style="margin-top:8px;"><div style="font-size:.7rem;color:var(--text3);margin-bottom:4px;">🔗 Liée à : <strong>'+escH(linkedNom.slice(0,28))+'</strong></div>'
+      + '<button style="width:100%;padding:5px;border-radius:6px;border:1px solid var(--border);background:#fff;font-size:.72rem;cursor:pointer;color:#b91c1c;" '
+      + 'onclick="event.stopPropagation();_stravaSetLink('+act.strava_id+', null)">✕ Délier de la séance</button></div>';
+  } else {
+    var dayEvsLink = _cloudCalEvents.filter(function(ev){ return ev.date === act.date; });
+    if(dayEvsLink.length){
+      var btns = dayEvsLink.map(function(ev){
+        var n = (ev.programmes&&ev.programmes.nom)||'Séance';
+        return '<button style="width:100%;padding:5px;border-radius:6px;border:1px solid var(--border);background:#fff;font-size:.72rem;cursor:pointer;margin-top:3px;text-align:left;" '
+          + 'onclick="event.stopPropagation();_stravaSetLink('+act.strava_id+',\''+ev.id+'\')">🔗 '+escH(n.slice(0,30))+'</button>';
+      }).join('');
+      linkZone = '<div style="margin-top:8px;"><div style="font-size:.7rem;color:var(--text3);">Lier à une séance du jour :</div>'+btns+'</div>';
+    }
+  }
+
+  return title + routeHtml
+    + '<div class="srb-pills" style="margin-bottom:6px;">'+pillsHtml+'</div>'
+    + splitsHtml + lapsHtml + loadSplitsHtml + linkZone;
+}
+
 function _showStravaDetail(e, stravaId){
   e.stopPropagation();
   // Capturer l'ancrage AVANT de retirer un eventuel popover parent (groupe) :
@@ -5487,72 +5570,12 @@ function _showStravaDetail(e, stravaId){
   var act = _stravaActivities.find(function(a){ return a.strava_id === stravaId; });
   if(!act) return;
 
-  var typeMap = { Run:'🏃 Course', Ride:'🚴 Vélo', Swim:'🏊 Natation', Walk:'🚶 Marche', WeightTraining:'💪 Musculation', Hike:'🥾 Randonnée', Rowing:'🚣 Aviron', VirtualRide:'🚴 Vélo virtuel', TrailRun:'🏔️ Trail' };
-  var typeLabel = typeMap[act.type] || (act.type || 'Activité');
-  var dist  = act.distance_m ? (act.distance_m >= 1000 ? (act.distance_m/1000).toFixed(2)+' km' : act.distance_m+' m') : null;
-  var dur   = act.duree_s   ? (Math.floor(act.duree_s/3600) > 0 ? Math.floor(act.duree_s/3600)+'h ' : '') + Math.round((act.duree_s%3600)/60)+'min' : null;
-  var d     = act.donnees || {};
-  var elev  = d.elevation != null ? Math.round(d.elevation)+' m D+' : null;
-  var avgHr = d.avg_hr    ? Math.round(d.avg_hr)+' bpm moy.' : null;
-  var maxHr = d.max_hr    ? Math.round(d.max_hr)+' bpm max' : null;
-  var speed = d.avg_speed ? (d.avg_speed*3.6).toFixed(1)+' km/h' : null;
-  var charge= act.charge  ? act.charge+' UA' : null;
-
-  var rows = [
-    ['📏 Distance', dist],
-    ['⏱ Durée',    dur],
-    ['⛰ Dénivelé', elev],
-    ['❤️ FC moy.',  avgHr],
-    ['❤️ FC max',   maxHr],
-    ['💨 Allure',   speed],
-    ['⚡ Charge',   charge],
-  ].filter(function(r){ return r[1]; });
-
   var drop = document.createElement('div');
   drop.className = 'stmpl-kdrop';
   drop.id = '_stravaDetailDrop';
   drop.dataset.sid = stravaId;
-  drop.style.cssText = 'min-width:200px;max-width:260px;padding:10px 12px;';
-
-  var title = document.createElement('div');
-  title.style.cssText = 'font-weight:700;font-size:.82rem;color:#FC4C02;margin-bottom:8px;display:flex;align-items:center;gap:6px;';
-  title.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="#FC4C02"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>'
-    + escH(act.nom || typeLabel);
-  drop.appendChild(title);
-
-  var sub = document.createElement('div');
-  sub.style.cssText = 'font-size:.72rem;color:var(--text3);margin-bottom:8px;';
-  sub.textContent = typeLabel + ' · ' + (act.date || '');
-  drop.appendChild(sub);
-
-  rows.forEach(function(r){
-    var row = document.createElement('div');
-    row.style.cssText = 'display:flex;justify-content:space-between;gap:12px;font-size:.78rem;padding:3px 0;border-bottom:1px solid var(--border);';
-    row.innerHTML = '<span style="color:var(--text3);">'+r[0]+'</span><span style="font-weight:600;color:var(--text1);">'+escH(r[1])+'</span>';
-    drop.appendChild(row);
-  });
-
-  // ── Lier / Délier a une seance planifiee ──
-  var linkZone = document.createElement('div');
-  linkZone.style.cssText = 'margin-top:8px;';
-  if(act.seance_id){
-    var linkedEv = _cloudCalEvents.find(function(ev){ return String(ev.id) === String(act.seance_id); });
-    var linkedNom = linkedEv ? ((linkedEv.programmes&&linkedEv.programmes.nom)||'Séance') : 'Séance';
-    linkZone.innerHTML = '<div style="font-size:.7rem;color:var(--text3);margin-bottom:4px;">🔗 Liée à : <strong>'+escH(linkedNom.slice(0,28))+'</strong></div>'
-      + '<button style="width:100%;padding:5px;border-radius:6px;border:1px solid var(--border);background:#fff;font-size:.72rem;cursor:pointer;color:#b91c1c;" '
-      + 'onclick="event.stopPropagation();_stravaSetLink('+act.strava_id+', null)">✕ Délier de la séance</button>';
-  } else {
-    var dayEvsLink = _cloudCalEvents.filter(function(ev){ return ev.date === act.date; });
-    if(dayEvsLink.length){
-      var btns = dayEvsLink.map(function(ev){
-        var n = (ev.programmes&&ev.programmes.nom)||'Séance';
-        return '<button style="width:100%;padding:5px;border-radius:6px;border:1px solid var(--border);background:#fff;font-size:.72rem;cursor:pointer;margin-top:3px;text-align:left;" '
-          + 'onclick="event.stopPropagation();_stravaSetLink('+act.strava_id+',\''+ev.id+'\')">🔗 '+escH(n.slice(0,30))+'</button>';
-      }).join('');
-      linkZone.innerHTML = '<div style="font-size:.7rem;color:var(--text3);">Lier à une séance du jour :</div>'+btns;
-    }
-  }
-  if(linkZone.innerHTML) drop.appendChild(linkZone);
+  drop.style.cssText = 'min-width:230px;max-width:300px;padding:10px 12px;';
+  drop.innerHTML = _stravaDetailDropInnerHtml(act);
 
   document.body.appendChild(drop);
 
@@ -5565,6 +5588,22 @@ function _showStravaDetail(e, stravaId){
   if(top + dropH > window.innerHeight - 8) top = rect.top - dropH - 6;
   drop.style.left = Math.max(8, left) + 'px';
   drop.style.top  = Math.max(8, top) + 'px';
+
+  // Allures manquantes (activite solo, jamais ouverte dans le builder) : meme
+  // chargement automatique a la demande que le panneau du builder, rafraichit
+  // le popover en place s'il est toujours ouvert quand la reponse arrive.
+  var d0 = act.donnees || {};
+  var runLike0 = ['Run','TrailRun','Walk','Hike'].indexOf(act.type) !== -1;
+  var hasSplits0 = Array.isArray(d0.splits) && d0.splits.length > 1;
+  if(runLike0 && (!hasSplits0 || d0.laps === undefined) && act.distance_m > 500 && !_srbSplitsAttempted[act.strava_id]){
+    _stravaLoadSplits(act.strava_id, act.seance_id || null, function(){
+      var stillOpen = document.getElementById('_stravaDetailDrop');
+      if(stillOpen && +stillOpen.dataset.sid === stravaId){
+        var freshAct = _stravaActivities.find(function(a){ return a.strava_id === stravaId; });
+        if(freshAct) stillOpen.innerHTML = _stravaDetailDropInnerHtml(freshAct);
+      }
+    });
+  }
 
   setTimeout(function(){
     document.addEventListener('click', function rm(){ drop.remove(); document.removeEventListener('click', rm, true); }, { once: true, capture: true });
@@ -5643,10 +5682,34 @@ function _renderStravaRealisedBanner(seanceId){
     var d = act.donnees || {};
     var runLike = ['Run','TrailRun','Walk','Hike'].indexOf(act.type) !== -1;
     var hasSplits = Array.isArray(d.splits) && d.splits.length > 1;
-    if(runLike && !hasSplits && act.distance_m > 500 && !_srbSplitsAttempted[act.strava_id]){
+    // d.laps === undefined : jamais tenté (même sur une activité déjà enrichie avant
+    // l'ajout des tours) → une seule tentative de rattrapage, comme pour les splits.
+    if(runLike && (!hasSplits || d.laps === undefined) && act.distance_m > 500 && !_srbSplitsAttempted[act.strava_id]){
       _stravaLoadSplits(act.strava_id, seanceId);
     }
   });
+}
+
+/* ── Construit les barres d'allure (HTML) pour une liste de segments {d,t} ──
+   labelFn(seg, i) donne le libellé sous chaque barre. irregular=true desactive
+   l'assombrissement "partiel" (utilisé pour les tours manuels, longueurs variables
+   par nature — contrairement aux splits km où seul le dernier peut être incomplet). */
+function _stravaBuildSplitBars(segs, labelFn, irregular){
+  var paces = segs.map(function(s){ return (s.d > 0 && s.t > 0) ? s.t/(s.d/1000) : null; });
+  var fullPaces = paces.filter(function(p,i){ return p && (irregular || segs[i].d >= 500); });
+  if(fullPaces.length < 2) return '';
+  var minP = Math.min.apply(null, fullPaces), maxP = Math.max.apply(null, fullPaces);
+  var range = Math.max(maxP-minP, 1);
+  return segs.map(function(s, i){
+    var p = paces[i];
+    if(!p) return '';
+    var partial = !irregular && s.d < 500;
+    // Plus rapide = barre plus haute (46% → 100%)
+    var hPct = 46 + Math.round((1 - (p-minP)/range) * 54);
+    return '<div class="srb-split"><span class="srb-stime">'+_fmtPace(p)+'</span>'
+      + '<div class="srb-sbar" style="height:'+hPct+'%'+(partial?';opacity:.4':'')+'"></div>'
+      + '<span class="srb-skm">'+escH(labelFn(s,i))+'</span></div>';
+  }).join('');
 }
 
 /* ── Construit la carte HTML d'une activite Strava realisee (une par activite liee) ── */
@@ -5670,26 +5733,25 @@ function _stravaBuildCardHtml(act, ddn){
     return '<div class="srb-pill"><div class="srb-pv">'+escH(String(p[0]))+'</div><div class="srb-pl">'+p[1]+'</div></div>';
   }).join('');
 
-  // Splits (allure par km)
+  // Splits (allure par km) — decoupage automatique
   var splitsHtml = '';
   if(Array.isArray(d.splits) && d.splits.length > 1){
-    var paces = d.splits.map(function(s){ return (s.d > 0 && s.t > 0) ? s.t/(s.d/1000) : null; });
-    var fullPaces = paces.filter(function(p,i){ return p && d.splits[i].d >= 500; });
-    if(fullPaces.length >= 2){
-      var minP = Math.min.apply(null, fullPaces), maxP = Math.max.apply(null, fullPaces);
-      var range = Math.max(maxP-minP, 1);
-      var bars = d.splits.map(function(s, i){
-        var p = paces[i];
-        if(!p) return '';
-        var partial = s.d < 500;
-        // Plus rapide = barre plus haute (46% → 100%)
-        var hPct = 46 + Math.round((1 - (p-minP)/range) * 54);
-        var kmLbl = partial ? (s.d/1000).toFixed(1).replace('.',',') : String(i+1);
-        return '<div class="srb-split"><span class="srb-stime">'+_fmtPace(p)+'</span>'
-          + '<div class="srb-sbar" style="height:'+hPct+'%'+(partial?';opacity:.4':'')+'"></div>'
-          + '<span class="srb-skm">'+kmLbl+'</span></div>';
-      }).join('');
-      splitsHtml = '<div class="srb-splits-t">Allure par kilomètre</div><div class="srb-splits">'+bars+'</div>';
+    var barsInfo = _stravaBuildSplitBars(d.splits, function(s,i){
+      return s.d < 500 ? (s.d/1000).toFixed(1).replace('.',',') : String(i+1);
+    });
+    if(barsInfo) splitsHtml = '<div class="srb-splits-t">Allure par kilomètre</div><div class="srb-splits-scroll">'+barsInfo+'</div>';
+  }
+
+  // Tours manuels (ex. 8x400m) — distincts des splits : distance fixee par l'athlete,
+  // pas forcement 1km. N'existe que si le bouton "Lap" a ete utilise pendant la sortie.
+  var lapsHtml = '';
+  if(Array.isArray(d.laps) && d.laps.length > 1){
+    var lapBars = _stravaBuildSplitBars(d.laps, function(s,i){ return String(i+1); }, true);
+    if(lapBars){
+      var lapDists = d.laps.map(function(l){ return l.d; }).filter(function(v){ return v>0; });
+      var sameLen = lapDists.length===d.laps.length && lapDists.every(function(v){ return Math.abs(v-lapDists[0])<25; });
+      var lapTitle = sameLen ? (d.laps.length+' × '+(lapDists[0]>=1000?(lapDists[0]/1000).toFixed(2).replace('.',',')+' km':Math.round(lapDists[0])+' m')) : 'Tours (laps)';
+      lapsHtml = '<div class="srb-splits-t">'+escH(lapTitle)+'</div><div class="srb-splits-scroll">'+lapBars+'</div>';
     }
   }
 
@@ -5721,7 +5783,7 @@ function _stravaBuildCardHtml(act, ddn){
     + '</div>'
     + '<div class="srb-body">'
     + routeHtml
-    + '<div class="srb-stats"><div class="srb-pills">'+pillsHtml+'</div>'+splitsHtml+loadSplitsHtml+'</div>'
+    + '<div class="srb-stats"><div class="srb-pills">'+pillsHtml+'</div>'+splitsHtml+lapsHtml+loadSplitsHtml+'</div>'
     + '</div>'
     + '</div>';
 }
@@ -5742,7 +5804,7 @@ function _srbToggleCollapse(){
    activite et par session — le resultat est sauvegarde en base, donc les
    ouvertures suivantes de cette meme seance n'appellent plus jamais l'API). ── */
 var _srbSplitsAttempted = {};
-function _stravaLoadSplits(stravaId, forSeanceId){
+function _stravaLoadSplits(stravaId, forSeanceId, onDone){
   _srbSplitsAttempted[stravaId] = true;
   _fetchRetry(SUPA_URL_P + '/functions/v1/strava-enrich-activity', {
     method: 'POST',
@@ -5756,10 +5818,12 @@ function _stravaLoadSplits(stravaId, forSeanceId){
       if(typeof _currentSeanceId !== 'undefined' && String(_currentSeanceId) === String(forSeanceId)){
         _renderStravaRealisedBanner(forSeanceId);
       }
+      if(typeof onDone === 'function') onDone();
     })
     .catch(function(){
       var note = document.getElementById('srbSplitsLoading-'+stravaId);
       if(note) note.textContent = 'Allures indisponibles pour cette activité.';
+      if(typeof onDone === 'function') onDone();
     });
 }
 

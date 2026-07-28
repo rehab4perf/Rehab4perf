@@ -729,12 +729,13 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .srb-pill { background:#f8fafc; border:1px solid #e2e8f0; border-radius:7px; padding:4px 9px; text-align:center; min-width:58px; }
 .srb-pv { font-size:.8rem; font-weight:700; color:#1e293b; }
 .srb-pl { font-size:.56rem; color:#94a3b8; text-transform:uppercase; letter-spacing:.04em; margin-top:1px; }
-.srb-splits-t { font-size:.62rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px; }
-.srb-splits { display:flex; align-items:flex-end; gap:3px; height:48px; }
-.srb-split { flex:1; max-width:44px; display:flex; flex-direction:column; align-items:center; gap:1px; justify-content:flex-end; height:100%; }
+.srb-splits-t { font-size:.62rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.05em; margin:8px 0 4px; }
+.srb-splits-scroll { overflow-x:auto; padding-bottom:3px; }
+.srb-splits { display:flex; align-items:flex-end; gap:3px; height:48px; width:max-content; min-width:100%; }
+.srb-split { flex:0 0 32px; width:32px; display:flex; flex-direction:column; align-items:center; gap:1px; justify-content:flex-end; height:100%; }
 .srb-sbar { width:100%; border-radius:3px 3px 0 0; background:#FC4C02; opacity:.75; min-height:3px; }
 .srb-stime { font-size:.56rem; color:#475569; white-space:nowrap; }
-.srb-skm { font-size:.54rem; color:#94a3b8; }
+.srb-skm { font-size:.54rem; color:#94a3b8; white-space:nowrap; }
 @media (max-width:640px){ .srb-body { flex-direction:column; } .srb-route { border-right:none; border-bottom:1px solid #f1f5f9; flex-basis:auto; } }
 #athlete-retour-panel {
   margin:6px 10px 0; border-radius:8px; font-size:.78rem; line-height:1.45;
@@ -4096,6 +4097,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 
 </div>
 
-<script src="js/prog-main.js?v=20260728c"></script>
+<script src="js/prog-main.js?v=20260728d"></script>
 </body>
 </html>
