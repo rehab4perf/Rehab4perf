@@ -986,6 +986,7 @@ function _buildCycleBanner(){
       +'<div style="flex:1;min-width:0;">'
       +'<div style="font-size:.65rem;color:rgba(255,255,255,.75);margin-bottom:1px;">Cycle en cours</div>'
       +'<div style="font-size:.88rem;font-weight:700;color:#fff;">'+escH(cur.nom)+'</div>'
+      +(cur.note ? '<div style="font-size:.72rem;color:rgba(255,255,255,.85);margin-top:2px;">'+escH(cur.note)+'</div>' : '')
       +'<div style="display:flex;align-items:center;gap:8px;margin-top:5px;">'
       +'<div style="flex:1;height:4px;background:rgba(255,255,255,.2);border-radius:2px;overflow:hidden;">'
       +'<div style="width:'+pct+'%;height:100%;background:rgba(255,255,255,.9);border-radius:2px;"></div>'
@@ -1025,6 +1026,7 @@ function _buildCycleBanner(){
       +'<div style="flex:1;min-width:0;">'
       +'<div style="font-size:.8rem;font-weight:600;color:var(--text);">'+escH(cy.nom)+'</div>'
       +'<div style="font-size:.67rem;color:var(--muted);">'+sLbl+' – '+eLbl+' · '+cy.duree+' sem.</div>'
+      +(cy.note ? '<div style="font-size:.68rem;color:var(--text);margin-top:2px;">'+escH(cy.note)+'</div>' : '')
       +'</div>'
       +'<span style="font-size:.67rem;font-weight:600;background:'+sBg+';color:'+sTxt+';border-radius:5px;padding:3px 8px;white-space:nowrap;">'+status+'</span>'
       +'</div>';
