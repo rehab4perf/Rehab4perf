@@ -2097,9 +2097,11 @@ function _editBilanConfirm(){
 }
 
 /* Affiche, sans jamais les enregistrer, les dernières valeurs connues sur les champs
-   laissés vides pour ce bilan (voir _editBilanConfirm). Placeholder pour input/textarea
-   (natif, jamais soumis) ; petite étiquette grise pour les select (pas de placeholder
-   natif) — retirée dès qu'une vraie valeur est choisie. */
+   laissés vides pour ce bilan (voir _editBilanConfirm). Pastille grise sous le champ
+   plutôt qu'un placeholder : les colonnes numériques étroites (durée, angle…) tronquent
+   le texte du placeholder. Icône « historique » + valeur brute, retirée dès qu'une
+   vraie valeur est saisie. Jamais soumise : c'est un élément voisin, pas une valeur. */
+var _BL_HINT_ICON = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>';
 function _blShowInheritedHints(mergedData){
   document.querySelectorAll('.bl-inherited-hint').forEach(function(el){ el.remove(); });
   if(!mergedData) return;
@@ -2108,19 +2110,20 @@ function _blShowInheritedHints(mergedData){
     if(val === undefined || val === null || val === '') return;
     var el = document.getElementById(id);
     if(!el || el.value !== '') return;
-    if(el.tagName === 'SELECT'){
-      var hint = document.createElement('span');
-      hint.className = 'bl-inherited-hint';
-      hint.textContent = 'Dernier : ' + val;
-      hint.title = 'Valeur héritée d\'un bilan antérieur — non saisie pour ce bilan';
-      el.insertAdjacentElement('afterend', hint);
-      el.addEventListener('change', function _rmHint(){
-        if(el.value !== '' && hint.parentNode) hint.parentNode.removeChild(hint);
-        el.removeEventListener('change', _rmHint);
-      });
-    } else if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA'){
-      if(el.type !== 'checkbox' && el.type !== 'radio') el.placeholder = 'Dernier : ' + val;
-    }
+    if(el.tagName !== 'SELECT' && el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA') return;
+    if(el.type === 'checkbox' || el.type === 'radio') return;
+    var txt = String(val);
+    if(txt.length > 22) txt = txt.slice(0, 21) + '…';
+    var hint = document.createElement('span');
+    hint.className = 'bl-inherited-hint';
+    hint.innerHTML = _BL_HINT_ICON + '<span>' + _blEsc(txt) + '</span>';
+    hint.title = 'Dernière valeur connue (bilan antérieur) — non saisie pour ce bilan';
+    el.insertAdjacentElement('afterend', hint);
+    var evt = (el.tagName === 'SELECT') ? 'change' : 'input';
+    el.addEventListener(evt, function _rmHint(){
+      if(el.value !== '' && hint.parentNode) hint.parentNode.removeChild(hint);
+      el.removeEventListener(evt, _rmHint);
+    });
   });
 }
 
