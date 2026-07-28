@@ -2097,33 +2097,52 @@ function _editBilanConfirm(){
 }
 
 /* Affiche, sans jamais les enregistrer, les dernières valeurs connues sur les champs
-   laissés vides pour ce bilan (voir _editBilanConfirm). Pastille grise sous le champ
-   plutôt qu'un placeholder : les colonnes numériques étroites (durée, angle…) tronquent
-   le texte du placeholder. Icône « historique » + valeur brute, retirée dès qu'une
-   vraie valeur est saisie. Jamais soumise : c'est un élément voisin, pas une valeur. */
-var _BL_HINT_ICON = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>';
+   laissés vides pour ce bilan (voir _editBilanConfirm). Valeur fantôme À L'INTÉRIEUR
+   du champ (placeholder natif pour input/textarea ; texte de l'option vide temporairement
+   remplacé pour select), cadre en pointillés — aucun élément voisin ajouté, donc aucun
+   risque de compresser la largeur du champ dans un conteneur flex. Jamais soumise :
+   pour les select, l'option reste de valeur "" ; pour input/textarea, un placeholder
+   n'est jamais une valeur de champ. Retirée dès qu'une vraie valeur est saisie/choisie. */
 function _blShowInheritedHints(mergedData){
-  document.querySelectorAll('.bl-inherited-hint').forEach(function(el){ el.remove(); });
+  document.querySelectorAll('.bl-inherited-ghost').forEach(function(el){
+    el.classList.remove('bl-inherited-ghost');
+    if(el.tagName === 'SELECT'){
+      var opt0 = el.options[0];
+      if(opt0 && opt0.dataset.blOrigText !== undefined){ opt0.textContent = opt0.dataset.blOrigText; delete opt0.dataset.blOrigText; }
+    } else {
+      el.placeholder = el.dataset.blOrigPlaceholder || '';
+      delete el.dataset.blOrigPlaceholder;
+    }
+  });
   if(!mergedData) return;
   Object.keys(mergedData).forEach(function(id){
     var val = mergedData[id];
     if(val === undefined || val === null || val === '') return;
     var el = document.getElementById(id);
     if(!el || el.value !== '') return;
-    if(el.tagName !== 'SELECT' && el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA') return;
-    if(el.type === 'checkbox' || el.type === 'radio') return;
-    var txt = String(val);
-    if(txt.length > 22) txt = txt.slice(0, 21) + '…';
-    var hint = document.createElement('span');
-    hint.className = 'bl-inherited-hint';
-    hint.innerHTML = _BL_HINT_ICON + '<span>' + _blEsc(txt) + '</span>';
-    hint.title = 'Dernière valeur connue (bilan antérieur) — non saisie pour ce bilan';
-    el.insertAdjacentElement('afterend', hint);
-    var evt = (el.tagName === 'SELECT') ? 'change' : 'input';
-    el.addEventListener(evt, function _rmHint(){
-      if(el.value !== '' && hint.parentNode) hint.parentNode.removeChild(hint);
-      el.removeEventListener(evt, _rmHint);
-    });
+    if(el.tagName === 'SELECT'){
+      var opt0 = el.options[0];
+      if(!opt0 || opt0.value !== '') return; // pas d'option vide à réutiliser
+      opt0.dataset.blOrigText = opt0.textContent;
+      opt0.textContent = val;
+      opt0.selected = true;
+      el.classList.add('bl-inherited-ghost');
+      el.addEventListener('change', function _rmGhost(){
+        if(opt0.dataset.blOrigText !== undefined){ opt0.textContent = opt0.dataset.blOrigText; delete opt0.dataset.blOrigText; }
+        el.classList.remove('bl-inherited-ghost');
+        el.removeEventListener('change', _rmGhost);
+      });
+    } else if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA'){
+      if(el.type === 'checkbox' || el.type === 'radio') return;
+      el.dataset.blOrigPlaceholder = el.placeholder || '';
+      el.placeholder = String(val);
+      el.title = 'Dernière valeur connue (bilan antérieur) — non saisie pour ce bilan';
+      el.classList.add('bl-inherited-ghost');
+      el.addEventListener('input', function _rmGhost(){
+        el.classList.remove('bl-inherited-ghost');
+        el.removeEventListener('input', _rmGhost);
+      });
+    }
   });
 }
 
