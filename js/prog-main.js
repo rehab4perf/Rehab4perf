@@ -5500,7 +5500,7 @@ function _stravaDetailDropInnerHtml(act){
     var barsInfo = _stravaBuildSplitBars(d.splits, function(s,i){
       return s.d < 500 ? (s.d/1000).toFixed(1).replace('.',',') : String(i+1);
     });
-    if(barsInfo) splitsHtml = '<div class="srb-splits-t">Allure par kilomètre</div><div class="srb-splits-scroll">'+barsInfo+'</div>';
+    if(barsInfo) splitsHtml = '<div class="srb-splits-t">Allure par kilomètre</div><div class="srb-splits-scroll"><div class="srb-splits">'+barsInfo+'</div></div>';
   }
   var lapsHtml = '';
   if(Array.isArray(d.laps) && d.laps.length > 1){
@@ -5509,7 +5509,7 @@ function _stravaDetailDropInnerHtml(act){
       var lapDists = d.laps.map(function(l){ return l.d; }).filter(function(v){ return v>0; });
       var sameLen = lapDists.length===d.laps.length && lapDists.every(function(v){ return Math.abs(v-lapDists[0])<25; });
       var lapTitle = sameLen ? (d.laps.length+' × '+(lapDists[0]>=1000?(lapDists[0]/1000).toFixed(2).replace('.',',')+' km':Math.round(lapDists[0])+' m')) : 'Tours (laps)';
-      lapsHtml = '<div class="srb-splits-t">'+escH(lapTitle)+'</div><div class="srb-splits-scroll">'+lapBars+'</div>';
+      lapsHtml = '<div class="srb-splits-t">'+escH(lapTitle)+'</div><div class="srb-splits-scroll"><div class="srb-splits">'+lapBars+'</div></div>';
     }
   }
   var runLike = ['Run','TrailRun','Walk','Hike'].indexOf(act.type) !== -1;
@@ -5739,7 +5739,7 @@ function _stravaBuildCardHtml(act, ddn){
     var barsInfo = _stravaBuildSplitBars(d.splits, function(s,i){
       return s.d < 500 ? (s.d/1000).toFixed(1).replace('.',',') : String(i+1);
     });
-    if(barsInfo) splitsHtml = '<div class="srb-splits-t">Allure par kilomètre</div><div class="srb-splits-scroll">'+barsInfo+'</div>';
+    if(barsInfo) splitsHtml = '<div class="srb-splits-t">Allure par kilomètre</div><div class="srb-splits-scroll"><div class="srb-splits">'+barsInfo+'</div></div>';
   }
 
   // Tours manuels (ex. 8x400m) — distincts des splits : distance fixee par l'athlete,
@@ -5751,7 +5751,7 @@ function _stravaBuildCardHtml(act, ddn){
       var lapDists = d.laps.map(function(l){ return l.d; }).filter(function(v){ return v>0; });
       var sameLen = lapDists.length===d.laps.length && lapDists.every(function(v){ return Math.abs(v-lapDists[0])<25; });
       var lapTitle = sameLen ? (d.laps.length+' × '+(lapDists[0]>=1000?(lapDists[0]/1000).toFixed(2).replace('.',',')+' km':Math.round(lapDists[0])+' m')) : 'Tours (laps)';
-      lapsHtml = '<div class="srb-splits-t">'+escH(lapTitle)+'</div><div class="srb-splits-scroll">'+lapBars+'</div>';
+      lapsHtml = '<div class="srb-splits-t">'+escH(lapTitle)+'</div><div class="srb-splits-scroll"><div class="srb-splits">'+lapBars+'</div></div>';
     }
   }
 
