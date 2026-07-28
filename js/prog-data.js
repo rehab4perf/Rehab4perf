@@ -4900,6 +4900,7 @@ function togglePevoFuture() {
 var _pendingOpenFeedback = false; // true si la cloche de notifications demande l'ouverture directe du feedback
 function _loadProg(id, seanceId){
   _currentSeanceId = seanceId || null; // null si chargé depuis l'historique ou la bibliothèque
+  _builderFromTemplate = null; // ce programme n'est pas (ou plus) un template chargé — évite le bouton "Mettre à jour le template" fantôme
   var url = SUPA_URL_P + '/rest/v1/programmes?id=eq.' + id + '&select=*';
   _fetchRetry(url, {method:'GET', headers:_sbHeaders()})
     .then(function(r){ return r.json(); })
