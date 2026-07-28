@@ -165,6 +165,16 @@ sections: [
       { t:'Consignes et douleur EVA', x:'Une consigne spécifique par exercice, et un badge « EVA » pour noter la douleur observée (0–10) — elle rejoint les courbes de douleur.', img:true },
       { t:'Enregistrez la séance', x:'Elle est sauvegardée pour le patient et apparaît dans son historique de programmes.' }
     ]},
+  { id:'etapes', titre:'Regrouper des blocs en étapes',
+    intro:'Pour que l\'athlète distingue clairement l\'échauffement du corps de séance (ou toute autre organisation), regroupez plusieurs blocs sous une étape nommée et colorée.',
+    etapes:[
+      { t:'Cliquez sur « + Ajouter une étape »', x:'Disponible même sur une séance vide. L\'étape se crée sans bloc à l\'intérieur — vous la remplissez ensuite, à votre rythme.', img:true },
+      { t:'Nommez l\'étape et choisissez sa couleur', x:'Renommage libre à tout moment. Une palette de 8 couleurs permet de distinguer visuellement chaque groupe.' },
+      { t:'Rattachez des blocs existants, ou créez-en dans l\'étape', x:'Chaque bloc a un menu « Étape » pour rejoindre ou quitter un groupe. Le bouton dédié en bas de l\'étape crée directement un nouveau bloc à l\'intérieur.' },
+      { t:'Déplacez une étape entière', x:'Les flèches ↑↓ de son en-tête déplacent tous ses blocs d\'un coup, sans avoir à les manipuler un par un.' },
+      { t:'Enregistrez une étape comme template', x:'Le bouton dédié sauvegarde uniquement les blocs de cette étape (pas toute la séance) — pratique pour réutiliser un échauffement type dans d\'autres séances. L\'injection ultérieure crée une copie indépendante, sans lien avec l\'original.' },
+      { t:'Ce que voit l\'athlète', x:'Les mêmes bandeaux colorés autour des blocs concernés, avec le nom de l\'étape en en-tête — un repère visuel immédiat entre les différentes parties de la séance.', img:true }
+    ]},
   { id:'agenda', titre:'Planifier dans l\'agenda',
     intro:'Vue mois ou semaine, glisser-déposer, et un menu complet sur chaque jour.',
     etapes:[
@@ -174,10 +184,14 @@ sections: [
       { t:'Mode « Sélectionner » pour les actions groupées', x:'Cochez plusieurs séances pour les supprimer ou les déplacer en une fois.' }
     ]},
   { id:'cycles', titre:'Créer des cycles d\'entraînement',
-    intro:'Force, hypertrophie, récupération… Les cycles colorent l\'agenda et donnent la vision macro de la programmation.',
+    intro:'Force, hypertrophie, récupération… Deux façons de programmer un cycle : à durée fixe (nombre de semaines), ou piloté par des critères cliniques organisés en phases — sans durée connue à l\'avance.',
     etapes:[
-      { t:'Ouvrez le panneau Cycles', x:'Nom, durée en semaines (ou dates précises), couleur, note.' },
-      { t:'Le cycle s\'affiche dans l\'agenda', x:'Fond coloré sur chaque jour couvert + nom du cycle en petit dans la cellule. Les cycles sont propres à chaque patient.', img:true }
+      { t:'Ouvrez le panneau Cycles', x:'Nom, couleur, note, et le choix entre « Durée fixe » et « Critères » en haut du formulaire.', img:true },
+      { t:'Durée fixe : le mode classique', x:'Durée en semaines (ou dates précises) — le cycle colore l\'agenda sur toute sa période.' },
+      { t:'Critères : le cycle avance sur des jalons cliniques', x:'Pas de durée à saisir, la date de début est même optionnelle. Vous créez une ou plusieurs phases (ex. « Post-opératoire immédiat », « Renforcement »), chacune avec sa propre liste de critères (ex. « Genou sec », « Extension passive = 0° »).', img:true },
+      { t:'Cochez les critères directement dans la liste', x:'Pas besoin de rouvrir le formulaire — un clic sur un critère le valide. Un stepper (① ② ③) affiche la progression entre les phases.' },
+      { t:'La phase, puis le cycle suivant démarrent tout seuls', x:'Dès que tous les critères d\'une phase sont validés, la phase suivante s\'active automatiquement. Une fois la dernière phase validée, le cycle est terminé et le cycle suivant de la séquence devient actif — sans bouton à cliquer.' },
+      { t:'Ce que voit l\'athlète', x:'Le cycle actif dans son bandeau « Cycle en cours » : pour un cycle à durée fixe, la semaine en cours ; pour un cycle à critères, la phase en cours avec la checklist des critères validés/manquants, mise à jour en temps réel dès que vous cochez quelque chose. Votre note de cycle lui est visible aussi.', img:true }
     ]},
   { id:'notes-rappels', titre:'Notes, messages patient et rappels 🔔',
     intro:'Deux types de notes, et un système de rappel pour ne rien oublier.',
@@ -192,7 +206,8 @@ sections: [
     etapes:[
       { t:'Assignez un protocole au patient', x:'Choisissez la phase de départ.' },
       { t:'Validez les rappels proposés', x:'À partir de la date d\'opération (J0), l\'app propose les jalons du protocole — ex. « CR médecin à réaliser » à J+45, J+150, J+270. Les échéances CR reçoivent automatiquement un rappel 3 jours avant dans la cloche.', img:true },
-      { t:'Suivez la progression par phase', x:'Les séances liées à une phase sont colorées dans l\'agenda ; le protocole affiche le taux de réalisation.' }
+      { t:'Suivez la progression par phase', x:'Les séances liées à une phase sont colorées dans l\'agenda ; le protocole affiche le taux de réalisation.' },
+      { t:'Ce que voit l\'athlète', x:'Une section « Mon protocole » sur son calendrier : le nom du protocole, la phase en cours et la liste de ses critères de sortie, validés ou manquants. Tant que vous n\'avez pas activé la phase suivante (même si tous les critères sont cochés), l\'athlète voit un badge « en attente de validation » — le passage à la phase suivante reste toujours votre décision.', img:true }
     ]},
   { id:'journal-evolution', titre:'Journal et Évolution',
     intro:'Deux lectures complémentaires du parcours du patient : le fil des événements, et les courbes.',
@@ -422,6 +437,10 @@ faq: [
     a:'La date de référence du patient : en priorité la date d\'opération, sinon la date d\'accident, sinon celle du premier bilan. Elle alimente les étiquettes J+ de l\'agenda et le calcul des échéances de protocole (CR médecin à J+45, etc.). Renseignez-la dans la page Infos du bilan.' },
   { q:'Un cycle d\'un patient apparaît chez un autre.',
     a:'Ce bug a été corrigé. Si vous l\'observez encore, faites un rechargement complet de la page (Cmd/Ctrl + Shift + R) : votre navigateur utilise probablement une ancienne version de l\'application.' },
+  { q:'Quelle différence entre un cycle « critères » et un protocole ?',
+    a:'Un protocole (LCA, Latarjet…) vient d\'une bibliothèque réutilisable entre patients, avec objectifs, précautions et rappels automatiques. Un cycle « critères » est propre à un seul patient : plus léger, pensé pour une progression que vous définissez au cas par cas, sans avoir à créer un protocole complet dans la bibliothèque.' },
+  { q:'Un bloc de séance n\'apparaît plus dans son étape.',
+    a:'Vérifiez le menu « Étape » du bloc concerné (dans son en-tête) : il a peut-être été détaché par erreur, il suffit de le rattacher à nouveau. L\'étape elle-même n\'est jamais supprimée automatiquement, même si elle se retrouve vide.' },
   { q:'L\'application fonctionne-t-elle sur téléphone ?',
     a:'Côté athlète, oui — l\'espace athlète est conçu pour mobile. Côté praticien, l\'interface fonctionne dans un navigateur mobile mais elle est optimisée pour un écran d\'ordinateur ou de tablette.' },
   { q:'Qui peut voir mes données patients ?',
