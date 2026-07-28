@@ -8414,7 +8414,7 @@ function _protoSetCheck(protoId, phaseId, idx, checked) {
   data.checkedAt[phaseId][idx] = checked ? now : null;
 
   function _saveCheck(ppId) {
-    _fetchRetry(SUPA_URL_P + '/rest/v1/protocol_criteria_checks', {
+    _fetchRetry(SUPA_URL_P + '/rest/v1/protocol_criteria_checks?on_conflict=patient_protocol_id,phase_id,criteria_index', {
       method: 'POST',
       headers: Object.assign({}, _sbHeaders(), {'Prefer':'resolution=merge-duplicates,return=minimal'}),
       body: JSON.stringify({ patient_protocol_id: ppId, phase_id: phaseId, criteria_index: idx, checked: checked, checked_at: checked ? now : null })
@@ -8502,7 +8502,7 @@ function _protoEditCheckedAt(protoId, phaseId, idx) {
     if(!data.checkedAt[phaseId]) data.checkedAt[phaseId] = {};
     data.checkedAt[phaseId][idx] = iso;
     /* Mise à jour Supabase */
-    _fetchRetry(SUPA_URL_P + '/rest/v1/protocol_criteria_checks', {
+    _fetchRetry(SUPA_URL_P + '/rest/v1/protocol_criteria_checks?on_conflict=patient_protocol_id,phase_id,criteria_index', {
       method: 'POST',
       headers: Object.assign({}, _sbHeaders(), {'Prefer':'resolution=merge-duplicates,return=minimal'}),
       body: JSON.stringify({ patient_protocol_id: data.pp.id, phase_id: phaseId, criteria_index: idx, checked: true, checked_at: iso })
