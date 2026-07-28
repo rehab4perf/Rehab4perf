@@ -629,7 +629,8 @@ function doSaveSession() {
     emoji: _selectedEmoji,
     type: type,
     date: new Date().toLocaleDateString('fr-FR'),
-    blocs: JSON.parse(JSON.stringify(blocs))
+    blocs: JSON.parse(JSON.stringify(blocs)),
+    etapes: JSON.parse(JSON.stringify(etapes||[]))
   };
   _savedSeances.unshift(seance);
   _persistSeances();
@@ -671,6 +672,7 @@ function loadSeance(id) {
   if(!s) return;
   _confirmDialog({id:'cd-load-seance', emoji:'📂', title:'Charger "'+s.name+'" ?', body:'La séance en cours sera remplacée.', confirmLabel:'Charger', confirmColor:'#2563eb'}, function(){
     blocs = JSON.parse(JSON.stringify(s.blocs||[]));
+    etapes = JSON.parse(JSON.stringify(s.etapes||[]));
     activeBloc = blocs.length ? blocs[0].id : null;
     _builderDate = '';
     renderSession();
@@ -3336,7 +3338,7 @@ function confirmPlan(){
   var btn = document.getElementById('planConfirmBtn');
   if(btn){ btn.disabled=true; btn.textContent='⏳ Sauvegarde…'; }
   var nomProg = (document.getElementById('patientName')||{}).value || 'Programme';
-  var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), notes: getNotes() };
+  var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), etapes: JSON.parse(JSON.stringify(etapes||[])), notes: getNotes() };
   var today = new Date().toISOString().split('T')[0];
   _fetchRetry(SUPA_URL_P+'/rest/v1/programmes', {
     method:'POST', headers:_sbHeaders(),
@@ -3577,11 +3579,11 @@ function openSaveTemplate(){
 var _tmplEtapeSourceId = null;
 function openSaveEtapeTemplate(etapeId){
   var etapeBlocs = blocs.filter(function(b){ return b.etapeId===etapeId; });
-  if(!etapeBlocs.length){ alert('Étape vide.'); return; }
+  if(!etapeBlocs.length){ alert('Cette étape est vide : ajoutez-y au moins un bloc avant de l\'enregistrer.'); return; }
   _tmplEtapeSourceId = etapeId;
-  var title = etapeBlocs[0].etapeTitle || 'Étape';
+  var title = (typeof _etapeTitle==='function') ? _etapeTitle(etapeId) : 'Étape';
   _openTmplModal({ emoji:_tmplSelectedEmoji, nom:title });
-  document.getElementById('tmplModalTitle').textContent = '📋 Enregistrer l’étape « ' + title + ' »';
+  document.getElementById('tmplModalTitle').textContent = 'Enregistrer l’étape « ' + title + ' »';
 }
 
 function closeSaveTemplate(){
@@ -3622,7 +3624,11 @@ function doSaveTemplate(){
   // ── Mode création ──
   var isEtapeTmpl = !!_tmplEtapeSourceId;
   var srcBlocs = isEtapeTmpl ? blocs.filter(function(b){ return b.etapeId===_tmplEtapeSourceId; }) : blocs;
-  var donnees = JSON.stringify({ blocs: JSON.parse(JSON.stringify(srcBlocs)) });
+  // Un template d'étape n'emporte que son étape ; un template de séance les emporte toutes.
+  var srcEtapes = isEtapeTmpl
+    ? (etapes||[]).filter(function(e){ return e.id===_tmplEtapeSourceId; })
+    : (etapes||[]);
+  var donnees = JSON.stringify({ blocs: JSON.parse(JSON.stringify(srcBlocs)), etapes: JSON.parse(JSON.stringify(srcEtapes)) });
   // Hériter is_public du groupe parent si celui-ci est déjà public
   var parentGroupPublic = !!(groupId && (_groups||[]).find(function(g){ return String(g.id)===String(groupId) && g.is_public; }));
   if(_progToken && _progUid && !_isReader()){
@@ -3649,6 +3655,7 @@ function doSaveTemplate(){
       group_id:groupId||null, phase_nom:'', phase_ordre:phaseOrdre,
       created_at:new Date().toISOString(),
       _blocs:JSON.parse(JSON.stringify(srcBlocs)),
+      _etapes:JSON.parse(JSON.stringify(srcEtapes)),
       _local:true
     });
     _persistTemplates();
@@ -4065,6 +4072,20 @@ function _addExoFromPicker(tmplId, blocIdx, exoIdx){
   if(el) el.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
+/* Importe les étapes d'un template en copie indépendante : chaque étape source
+   reçoit un nouvel id, et les blocs importés sont réaiguillés dessus. Renvoie la
+   table de correspondance ancien id -> nouvel id. */
+function _importEtapes(donnees){
+  var map = {};
+  var src = (donnees && donnees.etapes) || [];
+  src.forEach(function(e){
+    var ne = { id: genId(), title: e.title || 'Étape', color: e.color || ETAPE_COLORS[(etapes.length)%ETAPE_COLORS.length] };
+    map[e.id] = ne.id;
+    etapes.push(ne);
+  });
+  return map;
+}
+
 /* Ajouter un bloc entier (clone) */
 function _addBlocFromPicker(tmplId, blocIdx){
   var p = (_sidebarProgs||[]).find(function(x){return String(x.id)===String(tmplId);});
@@ -4077,7 +4098,12 @@ function _addBlocFromPicker(tmplId, blocIdx){
   var newBloc = JSON.parse(JSON.stringify(srcBloc));
   newBloc.id = genId();
   newBloc.exos = (newBloc.exos||[]).map(function(e){return Object.assign({},e,{id:genId()});});
-  if(newBloc.etapeId) newBloc.etapeId = genId(); // copie indépendante : ne rejoint pas le groupe d'origine
+  if(newBloc.etapeId){
+    // Copie indépendante : recrée l'étape source sous un nouvel id
+    var _m = _importEtapes(donnees);
+    if(_m[newBloc.etapeId]) newBloc.etapeId = _m[newBloc.etapeId];
+    else delete newBloc.etapeId;
+  }
   blocs.push(newBloc);
   activeBloc = newBloc.id;
   renderSession();
@@ -4133,14 +4159,14 @@ function _addAllPhasesFromGroup(groupId){
     var donnees = p.donnees;
     if(typeof donnees==='string'){try{donnees=JSON.parse(donnees);}catch(e){donnees=null;}}
     if(!donnees||!donnees.blocs) return;
-    var _etapeIdMap = {};
+    var _etapeIdMap = _importEtapes(donnees);
     donnees.blocs.forEach(function(srcBloc){
       var newBloc = JSON.parse(JSON.stringify(srcBloc));
       newBloc.id = genId();
       newBloc.exos = (newBloc.exos||[]).map(function(e){return Object.assign({},e,{id:genId()});});
       if(newBloc.etapeId){
-        if(!_etapeIdMap[newBloc.etapeId]) _etapeIdMap[newBloc.etapeId] = genId();
-        newBloc.etapeId = _etapeIdMap[newBloc.etapeId];
+        if(_etapeIdMap[newBloc.etapeId]) newBloc.etapeId = _etapeIdMap[newBloc.etapeId];
+        else delete newBloc.etapeId;
       }
       blocs.push(newBloc);
       activeBloc = newBloc.id;
@@ -4157,14 +4183,14 @@ function _addAllBlocsFromTemplate(tmplId){
   var donnees = p.donnees;
   if(typeof donnees==='string'){try{donnees=JSON.parse(donnees);}catch(e){donnees=null;}}
   if(!donnees||!donnees.blocs||!donnees.blocs.length) return;
-  var _etapeIdMap = {};
+  var _etapeIdMap = _importEtapes(donnees);
   donnees.blocs.forEach(function(srcBloc){
     var newBloc = JSON.parse(JSON.stringify(srcBloc));
     newBloc.id = genId();
     newBloc.exos = (newBloc.exos||[]).map(function(e){return Object.assign({},e,{id:genId()});});
     if(newBloc.etapeId){
-      if(!_etapeIdMap[newBloc.etapeId]) _etapeIdMap[newBloc.etapeId] = genId();
-      newBloc.etapeId = _etapeIdMap[newBloc.etapeId];
+      if(_etapeIdMap[newBloc.etapeId]) newBloc.etapeId = _etapeIdMap[newBloc.etapeId];
+      else delete newBloc.etapeId;
     }
     blocs.push(newBloc);
     activeBloc = newBloc.id;
@@ -4262,6 +4288,7 @@ function loadLibraryTemplate(id){
     var d = {};
     try { d = JSON.parse(t.donnees||'{}'); } catch(e){}
     blocs = d.blocs ? JSON.parse(JSON.stringify(d.blocs)) : [];
+    etapes = d.etapes ? JSON.parse(JSON.stringify(d.etapes)) : [];
     activeBloc = blocs.length ? blocs[0].id : null;
     _notes = '';
     _currentProgId = null;
@@ -4302,8 +4329,9 @@ function _sessionHash(){
   try {
     return JSON.stringify({
       notes: _notes||'',
+      etapes: (etapes||[]).map(function(e){ return { id:e.id, title:e.title, color:e.color }; }),
       blocs: (blocs||[]).map(function(b){
-        return { id:b.id, title:b.title, objectif:b.objectif, methode:b.methode,
+        return { id:b.id, title:b.title, objectif:b.objectif, methode:b.methode, etapeId:b.etapeId||null,
           exos:(b.exos||[]).map(function(e){
             return {id:e.id, name:e.name, reps:e.reps, series:e.series,
                     duree:e.duree, recup:e.recup, tempo:e.tempo,
@@ -4326,6 +4354,7 @@ function _draftSave(){
     _builderSaved = (currentHash === _lastSavedHash);
     localStorage.setItem(_DRAFT_KEY, JSON.stringify({
       blocs:        JSON.parse(JSON.stringify(blocs)),
+      etapes:       JSON.parse(JSON.stringify(etapes||[])),
       notes:        _notes || '',
       patientName:  (document.getElementById('patientName')||{}).value || '',
       activeGroupId:    _activeGroupId    || null,
@@ -4364,6 +4393,7 @@ function _draftRestore(){
     draftBody += '\n\nRestaurer ce contenu ?';
     _confirmDialog({id:'cd-draft-restore', emoji:'📋', title:draftTitle, body:draftBody, confirmLabel:'Restaurer', confirmColor:'#2563eb'}, function(){
       blocs = d.blocs;
+      etapes = d.etapes || [];
       _notes = d.notes || '';
       if(d.activeGroupId){
         _activeGroupId    = d.activeGroupId;
@@ -4497,7 +4527,7 @@ function _doUpdateTemplate(){
   var btn = document.getElementById('prog-update-btn');
   if(btn){ btn.disabled = true; btn.textContent = '⏳…'; }
   var nomProg = (document.getElementById('patientName')||{}).value || '';
-  var donnees = JSON.stringify({ blocs: JSON.parse(JSON.stringify(blocs||[])), notes: getNotes() });
+  var donnees = JSON.stringify({ blocs: JSON.parse(JSON.stringify(blocs||[])), etapes: JSON.parse(JSON.stringify(etapes||[])), notes: getNotes() });
   _fetchRetry(SUPA_URL_P + '/rest/v1/templates?id=eq.' + _builderFromTemplate, {
     method: 'PATCH',
     headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=representation'}),
@@ -4525,7 +4555,7 @@ function duplicateTemplate(){
   if(!_progToken || !_progUid){ alert('Session non disponible.'); return; }
   var src = (_sidebarProgs||[]).find(function(t){ return String(t.id)===String(_builderFromTemplate); });
   var newNom = 'Copie de ' + (src ? (src.nom||src.phase_nom||'Template') : 'Template');
-  var donnees = JSON.stringify({ blocs: JSON.parse(JSON.stringify(blocs||[])), notes: getNotes() });
+  var donnees = JSON.stringify({ blocs: JSON.parse(JSON.stringify(blocs||[])), etapes: JSON.parse(JSON.stringify(etapes||[])), notes: getNotes() });
   var payload = {
     praticien_id: _progUid,
     nom: newNom,
@@ -4556,6 +4586,7 @@ function loadTemplate(id){
     var d = {};
     try { d = JSON.parse(t.donnees||'{}'); } catch(e){}
     blocs = d.blocs ? JSON.parse(JSON.stringify(d.blocs)) : (t._blocs ? JSON.parse(JSON.stringify(t._blocs)) : []);
+    etapes = d.etapes ? JSON.parse(JSON.stringify(d.etapes)) : (t._etapes ? JSON.parse(JSON.stringify(t._etapes)) : []);
     activeBloc = blocs.length ? blocs[0].id : null;
     _notes = d.notes || '';
     _currentProgId = null;
@@ -4957,7 +4988,7 @@ function addPhaseToGroup(id){
   setActiveGroup(id);
   _expandedGroups[id] = true;
   try{ localStorage.setItem(R4P_KEYS.EXPANDED_GROUPS, JSON.stringify(_expandedGroups)); }catch(e){}
-  blocs = [];
+  blocs = []; etapes = [];
   _notes = '';
   renderSession();
   _refreshSaveBtn();
@@ -5919,7 +5950,8 @@ function confirmQuickAdd(){
       id: '_' + Math.random().toString(36).slice(2,9),
       name: t.nom, emoji: t.emoji||'💪', type: t.type||'',
       date: new Date().toLocaleDateString('fr-FR'),
-      blocs: JSON.parse(JSON.stringify(t._blocs||[]))
+      blocs: JSON.parse(JSON.stringify(t._blocs||[])),
+      etapes: JSON.parse(JSON.stringify(t._etapes||[]))
     };
     _savedSeances.unshift(copy);
     _persistSeances();
@@ -6110,7 +6142,7 @@ function openBuilderForDate(dateStr){
 }
 
 function _resetBuilderState(){
-  blocs = [];
+  blocs = []; etapes = [];
   _notes = '';
   activeBloc = null;
   _currentProgId = null;
@@ -6146,7 +6178,7 @@ function _saveAndPlanForDate(){
   btn.disabled = true; btn.textContent = '⏳ Sauvegarde…';
   var _patName = _progPatient ? ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim() : '';
   var nomProg = (document.getElementById('patientName')||{}).value || _patName || 'Programme';
-  var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), notes: getNotes() };
+  var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), etapes: JSON.parse(JSON.stringify(etapes||[])), notes: getNotes() };
   var today = new Date().toISOString().split('T')[0];
   var dateToSchedule = _builderDate;
   _fetchRetry(SUPA_URL_P + '/rest/v1/programmes', {
@@ -6187,7 +6219,7 @@ function openBuilderNew(){
   // Pas de protocole actif quand on ouvre une nouvelle séance depuis + Séance
   _activeGroupId=null; _activeGroupNom=''; _activePhaseOrdre=1;
   _updateActiveGroupBadge();
-  blocs = [];
+  blocs = []; etapes = [];
   _notes = '';
   renderSession();
   _updateBuilderTitle();
@@ -8121,7 +8153,7 @@ function _protoOpenBranchInBuilder(protoId, branchId) {
   closeProtoPanel();
   if(typeof _enterBuilderMode === 'function') _enterBuilderMode();
   if(branch.blocs && branch.blocs.length) {
-    blocs = [];
+    blocs = []; etapes = [];
     branch.blocs.forEach(function(srcBloc){
       var nb = { id: genId(), title: srcBloc.title||'Bloc', exos: [], objectif:'', methode:'' };
       (srcBloc.exos||[]).forEach(function(e){
@@ -8144,7 +8176,7 @@ function _protoOpenLibraryInBuilder(protoId) {
     _enterBuilderMode();
     // Si des blocs sont définis, les charger
     if(proto.blocs && proto.blocs.length && typeof addBloc === 'function') {
-      blocs = [];
+      blocs = []; etapes = [];
       proto.blocs.forEach(function(srcBloc){
         var newBloc = { id: genId(), title: srcBloc.title||'Bloc', exos: [], objectif:'', methode:'' };
         (srcBloc.exos||[]).forEach(function(e){
@@ -8830,7 +8862,7 @@ function _protoOpenInBuilder(protoId, phaseId) {
   var ph = proto.phases.find(function(p){ return p.id===phaseId; });
   if(!ph) return;
   closeProtoPanel();
-  blocs = []; activeBloc = null;
+  blocs = []; activeBloc = null; etapes = [];
   _notes = _buildPhaseNotes(ph);
   _currentProgId = null; _builderFromTemplate = null; _builderDate = '';
   _lastSavedHash = ''; _builderSaved = false;

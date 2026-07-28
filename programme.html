@@ -1167,8 +1167,9 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 }
 .add-bloc-btn:hover { border-color:var(--accent2); color:var(--accent2); }
 .bloc-add-row { display:flex; gap:10px; }
-.bloc-add-row .add-bloc-btn { margin-bottom:14px; }
+.bloc-add-row .add-bloc-btn { margin-bottom:14px; display:flex; align-items:center; justify-content:center; gap:2px; }
 .etape-add-btn { border-color:var(--accent2); color:var(--accent2); }
+.etape-add-btn:hover { border-color:var(--accent); color:var(--accent); background:var(--tag-bg); }
 
 /* Étape (groupe de blocs, ex: Échauffement) */
 .etape-group {
@@ -1178,17 +1179,37 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .etape-header {
   display:flex; align-items:center; gap:8px; padding:2px 4px 10px;
 }
-.etape-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; background:var(--etape-c,#F59E0B); }
+.etape-move-btns { display:flex; flex-direction:column; gap:1px; flex-shrink:0; }
+.etape-move-btn {
+  background:none; border:none; cursor:pointer; line-height:1; padding:0 3px;
+  font-size:.62rem; color:var(--etape-c,#F59E0B); opacity:.75;
+}
+.etape-move-btn:hover:not(:disabled) { opacity:1; }
+.etape-move-btn:disabled { opacity:.2; cursor:default; }
 .etape-title-input {
-  flex:1; background:transparent; border:none; outline:none;
+  flex:1; min-width:80px; background:transparent; border:none; outline:none;
   font-size:.86rem; font-weight:800; color:var(--etape-c,#F59E0B); letter-spacing:-.01em;
 }
 .etape-title-input::placeholder { color:var(--etape-c,#F59E0B); opacity:.5; }
-.etape-tmpl-btn, .etape-del-btn {
-  background:none; border:none; cursor:pointer; font-size:.85rem; padding:3px 6px;
-  border-radius:4px; color:var(--muted);
+.etape-swatches { display:flex; gap:3px; flex-shrink:0; }
+.etape-swatch {
+  width:13px; height:13px; border-radius:50%; border:1.5px solid transparent;
+  cursor:pointer; padding:0; box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);
 }
-.etape-tmpl-btn:hover, .etape-del-btn:hover { background:rgba(0,0,0,.06); color:var(--text); }
+.etape-swatch:hover { transform:scale(1.18); }
+.etape-swatch.active { border-color:var(--text); }
+.etape-tmpl-btn, .etape-del-btn {
+  background:none; border:none; cursor:pointer; padding:4px 5px; line-height:0;
+  border-radius:4px; color:var(--muted); flex-shrink:0;
+}
+.etape-tmpl-btn:hover:not(:disabled) { background:rgba(0,0,0,.06); color:var(--accent2); }
+.etape-del-btn:hover { background:#FEF0EE; color:var(--red); }
+.etape-tmpl-btn:disabled { opacity:.3; cursor:default; }
+.etape-empty {
+  border:1.5px dashed var(--etape-c,#F59E0B); border-radius:8px;
+  padding:14px 12px; text-align:center; font-size:.76rem; color:var(--muted);
+  background:rgba(255,255,255,.5); margin-bottom:8px;
+}
 .etape-group .bloc:last-child { margin-bottom:0; }
 .etape-addbloc-btn {
   width:100%; padding:7px; border:1.5px dashed var(--etape-c,#F59E0B); border-radius:7px;
@@ -3051,7 +3072,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   </div><!-- /tool-panel-drawer -->
 </div><!-- /tool-panel-overlay -->
 
-<script src="js/prog-data.js?v=20260726a"></script>
+<script src="js/prog-data.js?v=20260726b"></script>
 
 <!-- ══ CYCLES MODAL ════════════════════════════════════════════ -->
 <style>
@@ -4029,6 +4050,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 
 </div>
 
-<script src="js/prog-main.js?v=20260726a"></script>
+<script src="js/prog-main.js?v=20260726b"></script>
 </body>
 </html>

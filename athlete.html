@@ -1656,21 +1656,33 @@ function buildProgHTML(prog){
     return html;
   }
 
-  var ETAPE_COLORS_ATH = ['#F59E0B','#2563EB','#0D9488','#7C3AED','#DC2626'];
-  function _progEtapeColor(etapeId){
+  // Étapes : titre/couleur viennent de la liste `etapes`. Repli sur les champs
+  // portés par le bloc pour les séances enregistrées avant cette liste.
+  var ETAPE_COLORS_ATH = ['#F59E0B','#2563EB','#0D9488','#7C3AED','#DC2626','#16A34A','#DB2777','#0891B2'];
+  var _progEtapes = (!Array.isArray(raw) && Array.isArray(raw.etapes)) ? raw.etapes : [];
+  function _progEtape(etapeId){
+    return _progEtapes.find(function(e){ return e && e.id===etapeId; }) || null;
+  }
+  function _progEtapeColor(etapeId, b){
+    var e = _progEtape(etapeId);
+    if(e && e.color) return e.color;
     var order = [];
     blocs.forEach(function(x){ if(x.etapeId && order.indexOf(x.etapeId)<0) order.push(x.etapeId); });
     var idx = order.indexOf(etapeId);
     return ETAPE_COLORS_ATH[(idx<0?0:idx) % ETAPE_COLORS_ATH.length];
+  }
+  function _progEtapeTitle(etapeId, b){
+    var e = _progEtape(etapeId);
+    return (e && e.title) || (b && b.etapeTitle) || 'Étape';
   }
 
   blocs.forEach(function(b, bIdx){
     var _etapeStart = b.etapeId && (bIdx===0 || blocs[bIdx-1].etapeId !== b.etapeId);
     var _etapeEnd = b.etapeId && (bIdx===blocs.length-1 || blocs[bIdx+1].etapeId !== b.etapeId);
     if(_etapeStart){
-      var _ec = _progEtapeColor(b.etapeId);
+      var _ec = _progEtapeColor(b.etapeId, b);
       html += '<div class="etape-group" style="--etape-c:'+_ec+'">'
-           +  '<div class="etape-header-ath"><span class="etape-dot" style="background:'+_ec+'"></span>'+escH(b.etapeTitle||'Étape')+'</div>';
+           +  '<div class="etape-header-ath"><span class="etape-dot" style="background:'+_ec+'"></span>'+escH(_progEtapeTitle(b.etapeId, b))+'</div>';
     }
     // ── Bloc cardio ──────────────────────────────────────────────
     if(b.type === 'cardio'){

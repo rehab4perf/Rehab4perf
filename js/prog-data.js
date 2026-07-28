@@ -1326,73 +1326,126 @@ function deleteBloc(id){
   renderLib(document.getElementById('searchInput').value.toLowerCase());
 }
 
-/* ── Étapes (regroupement visuel de blocs, ex: Échauffement / Corps de séance) ──
-   Pas d'entité "étape" à part : etapeId/etapeTitle vivent directement sur chaque
-   bloc (dénormalisé). Ça évite de faire transiter une structure séparée dans tous
-   les points de sauvegarde/chargement (séances, templates, brouillons, CAP/HSR…),
-   qui copient déjà l'objet bloc entier tel quel. */
-var ETAPE_COLORS = ['#F59E0B','#2563EB','#0D9488','#7C3AED','#DC2626'];
+/* ── Étapes (regroupement de blocs, ex: Échauffement / Corps de séance) ──
+   `etapes` est une vraie liste ordonnée, indépendante des blocs : c'est ce qui
+   permet à une étape d'exister vide (on la crée d'abord, on la remplit ensuite)
+   et de survivre à la suppression de son dernier bloc. Chaque bloc porte un
+   `etapeId` (ou rien). L'ordre d'affichage reste piloté par `blocs` ; les étapes
+   encore vides s'affichent en fin de séance, là où on vient de les créer. */
+var ETAPE_COLORS = ['#F59E0B','#2563EB','#0D9488','#7C3AED','#DC2626','#16A34A','#DB2777','#0891B2'];
+var etapes = [];
 
-function _etapeIdsInOrder(){
-  var out = [];
-  blocs.forEach(function(b){ if(b.etapeId && out.indexOf(b.etapeId)<0) out.push(b.etapeId); });
-  return out;
+/* Icônes réutilisées depuis le vocabulaire déjà en place dans le site
+   (enregistrer / corbeille / dossier) — pas d'emoji dans le builder. */
+var _ETAPE_ICO_SAVE = '<svg width="14" height="14" fill="currentColor" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><g><path d="m28.702 8.564-4.273-5c-.795-.93-1.954-1.464-3.18-1.464h-14.771c-2.306 0-4.182 1.877-4.182 4.183v19.436c0 2.306 1.876 4.183 4.182 4.183h19.045c2.306 0 4.183-1.877 4.183-4.183v-14.437c-.001-.995-.357-1.96-1.004-2.718zm-6.962 19.536h-11.481v-8.173c0-.631.514-1.144 1.145-1.144h9.191c.631 0 1.145.513 1.145 1.144zm6.164-2.382c0 1.313-1.068 2.382-2.382 2.382h-1.981v-8.173c0-1.623-1.321-2.944-2.945-2.944h-9.191c-1.624 0-2.945 1.321-2.945 2.944v8.173h-1.982c-1.313 0-2.382-1.068-2.382-2.382v-19.436c0-1.313 1.069-2.382 2.382-2.382h14.771c.698 0 1.358.304 1.811.834l4.273 4.999c.369.432.571.982.571 1.549z"/><path d="m9.359 9.31h5.963c.497 0 .9-.403.9-.9s-.403-.9-.9-.9h-5.963c-.497 0-.9.403-.9.9s.403.9.9.9z"/><path d="m22.641 11.572h-13.282c-.497 0-.9.403-.9.9s.403.9.9.9h13.281c.497 0 .9-.403.9-.9s-.402-.9-.899-.9z"/></g></svg>';
+var _ETAPE_ICO_TRASH = '<svg width="13" height="13" fill="currentColor" viewBox="-40 0 427 427.00131" xmlns="http://www.w3.org/2000/svg"><path d="m232.398438 154.703125c-5.523438 0-10 4.476563-10 10v189c0 5.519531 4.476562 10 10 10 5.523437 0 10-4.480469 10-10v-189c0-5.523437-4.476563-10-10-10zm0 0"/><path d="m114.398438 154.703125c-5.523438 0-10 4.476563-10 10v189c0 5.519531 4.476562 10 10 10 5.523437 0 10-4.480469 10-10v-189c0-5.523437-4.476563-10-10-10zm0 0"/><path d="m28.398438 127.121094v246.378906c0 14.5625 5.339843 28.238281 14.667968 38.050781 9.285156 9.839844 22.207032 15.425781 35.730469 15.449219h189.203125c13.527344-.023438 26.449219-5.609375 35.730469-15.449219 9.328125-9.8125 14.667969-23.488281 14.667969-38.050781v-246.378906c18.542968-4.921875 30.558593-22.835938 28.078124-41.863282-2.484374-19.023437-18.691406-33.253906-37.878906-33.257812h-51.199218v-12.5c.058593-10.511719-4.097657-20.605469-11.539063-28.03125-7.441406-7.421875-17.550781-11.5546875-28.0625-11.46875h-88.796875c-10.511719-.0859375-20.621094 4.046875-28.0625 11.46875-7.441406 7.425781-11.597656 17.519531-11.539062 28.03125v12.5h-51.199219c-19.1875.003906-35.394531 14.234375-37.878907 33.257812-2.480468 19.027344 9.535157 36.941407 28.078126 41.863282zm239.601562 279.878906h-189.203125c-17.097656 0-30.398437-14.6875-30.398437-33.5v-245.5h250v245.5c0 18.8125-13.300782 33.5-30.398438 33.5zm-158.601562-367.5c-.066407-5.207031 1.980468-10.21875 5.675781-13.894531 3.691406-3.675781 8.714843-5.695313 13.925781-5.605469h88.796875c5.210937-.089844 10.234375 1.929688 13.925781 5.605469 3.695313 3.671875 5.742188 8.6875 5.675782 13.894531v12.5h-128zm-71.199219 32.5h270.398437c9.941406 0 18 8.058594 18 18s-8.058594 18-18 18h-270.398437c-9.941407 0-18-8.058594-18-18s8.058593-18 18-18zm0 0"/><path d="m173.398438 154.703125c-5.523438 0-10 4.476563-10 10v189c0 5.519531 4.476562 10 10 10 5.523437 0 10-4.480469 10-10v-189c0-5.523437-4.476563-10-10-10zm0 0"/></svg>';
+var _ETAPE_ICO_FOLDER = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 511.999 511.999" width="14" height="14" fill="currentColor" style="vertical-align:middle;margin-right:5px"><path d="M477.418,98.354H262.25l-0.94-6.098c-2.808-18.223-20.093-33.047-38.531-33.047H115.962c-18.44,0-35.724,14.826-38.529,33.047l-0.941,6.098h-0.669c-19.068,0-34.581,15.513-34.581,34.582v23.139H30.71c-9.454,0-17.847,3.738-23.629,10.524c-5.783,6.787-8.14,15.665-6.64,24.999l36.69,228.225c2.922,18.179,20.281,32.968,38.693,32.968h401.594c1.782,0,3.525-0.133,5.222-0.395c16.6-2.525,29.359-16.894,29.359-34.188V132.935C511.999,113.867,496.486,98.354,477.418,98.354z M488.799,431.834c-2,2.347-4.764,3.905-7.98,4.543c-0.133,0.025-0.269,0.04-0.403,0.062c-0.399,0.069-0.799,0.134-1.21,0.175c-0.589,0.057-1.185,0.091-1.789,0.091H75.824c-10.67,0-21.116-8.901-22.811-19.436l-36.69-228.224c-0.74-4.605,0.325-8.87,3.001-12.012c2.677-3.14,6.72-4.87,11.384-4.87h401.593c10.669,0,21.115,8.901,22.808,19.436l36.691,228.224C492.542,424.427,491.475,428.693,488.799,431.834z M81.921,156.076v-0.001v-13.032h381.992v29.598c-7.36-9.889-19.244-16.566-31.61-16.566H81.921z M495.912,344.035l-15.912-98.978V134.998c0-4.442-3.6-8.044-8.044-8.044H73.877c-4.443,0-8.044,3.601-8.044,8.044v21.075h-8.505v-23.139c0-10.198,8.296-18.495,18.494-18.495h7.57c3.969,0,7.345-2.896,7.949-6.818l1.992-12.918c1.619-10.521,11.982-19.409,22.629-19.409h106.817c10.647,0,21.01,8.889,22.633,19.41l1.989,12.916c0.604,3.923,3.98,6.819,7.949,6.819h222.067c10.198,0,18.494,8.297,18.494,18.495V344.035z"/></svg>';
+
+function getEtape(etapeId){
+  return (etapes||[]).find(function(e){ return e.id===etapeId; }) || null;
 }
 
 function _etapeColor(etapeId){
-  var idx = _etapeIdsInOrder().indexOf(etapeId);
-  return ETAPE_COLORS[(idx<0?0:idx) % ETAPE_COLORS.length];
+  var e = getEtape(etapeId);
+  return (e && e.color) || ETAPE_COLORS[0];
 }
 
+function _etapeTitle(etapeId){
+  var e = getEtape(etapeId);
+  return (e && e.title) || 'Étape';
+}
+
+/* Reconstruit `etapes` quand la donnée chargée n'en a pas (séances enregistrées
+   avant l'introduction de la liste, où titre/couleur vivaient sur les blocs).
+   Supprime aussi les etapeId orphelins pour éviter des groupes fantômes. */
+function _normalizeEtapes(){
+  if(!Array.isArray(etapes)) etapes = [];
+  var known = {};
+  etapes.forEach(function(e){ if(e && e.id) known[e.id] = true; });
+  (blocs||[]).forEach(function(b){
+    if(!b.etapeId) return;
+    if(!known[b.etapeId]){
+      known[b.etapeId] = true;
+      etapes.push({ id:b.etapeId, title:b.etapeTitle || 'Étape', color:ETAPE_COLORS[(etapes.length)%ETAPE_COLORS.length] });
+    }
+    // Le titre ne vit plus sur le bloc
+    if(b.etapeTitle !== undefined) delete b.etapeTitle;
+  });
+  etapes.forEach(function(e, i){ if(!e.color) e.color = ETAPE_COLORS[i%ETAPE_COLORS.length]; });
+}
+
+function _blocsOfEtape(etapeId){
+  return (blocs||[]).filter(function(b){ return b.etapeId===etapeId; });
+}
+
+/* Découpe la séance en groupes affichables : blocs hors étape isolés, blocs
+   d'une même étape regroupés, puis les étapes encore vides en fin de liste. */
 function _groupBlocsForRender(){
   var groups = [];
+  var seen = {};
   var i = 0;
   while(i < blocs.length){
     var b = blocs[i];
-    if(b.etapeId){
+    if(b.etapeId && getEtape(b.etapeId)){
       var members = [];
       var j = i;
       while(j < blocs.length && blocs[j].etapeId === b.etapeId){ members.push(blocs[j]); j++; }
-      groups.push({ etapeId: b.etapeId, etapeTitle: b.etapeTitle || 'Étape', blocs: members });
+      seen[b.etapeId] = true;
+      groups.push({ etapeId: b.etapeId, blocs: members });
       i = j;
     } else {
       groups.push({ etapeId: null, blocs: [b] });
       i++;
     }
   }
+  (etapes||[]).forEach(function(e){
+    if(!seen[e.id]) groups.push({ etapeId: e.id, blocs: [] });
+  });
   return groups;
 }
 
 function addEtape(){
-  var etapeId = genId();
-  var letter = String.fromCharCode(65 + blocs.length);
-  var b = { id: genId(), title: 'Bloc '+letter, exos: [], objectif: 'libre', methode: '', etapeId: etapeId, etapeTitle: 'Nouvelle étape' };
-  blocs.push(b);
-  activeBloc = b.id;
+  var e = { id: genId(), title: 'Nouvelle étape', color: ETAPE_COLORS[(etapes.length)%ETAPE_COLORS.length] };
+  etapes.push(e);
   renderSession();
-  var input = document.querySelector('.etape-group[data-etapeid="'+etapeId+'"] .etape-title-input');
+  var input = document.querySelector('.etape-group[data-etapeid="'+e.id+'"] .etape-title-input');
   if(input){ input.focus(); input.select(); }
+  var el = document.querySelector('.etape-group[data-etapeid="'+e.id+'"]');
+  if(el) el.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
 function addBlocToEtape(etapeId){
-  var ref = blocs.find(function(b){ return b.etapeId===etapeId; });
-  var title = ref ? ref.etapeTitle : 'Étape';
+  if(!getEtape(etapeId)) return;
   var lastIdx = -1;
   blocs.forEach(function(b,i){ if(b.etapeId===etapeId) lastIdx = i; });
   var letter = String.fromCharCode(65 + blocs.length);
-  var nb = { id: genId(), title: 'Bloc '+letter, exos: [], objectif: 'libre', methode: '', etapeId: etapeId, etapeTitle: title };
+  var nb = { id: genId(), title: 'Bloc '+letter, exos: [], objectif: 'libre', methode: '', etapeId: etapeId };
   if(lastIdx>=0) blocs.splice(lastIdx+1, 0, nb); else blocs.push(nb);
   activeBloc = nb.id;
   renderSession();
 }
 
 function renameEtape(etapeId, val){
-  blocs.forEach(function(b){ if(b.etapeId===etapeId) b.etapeTitle = val; });
+  var e = getEtape(etapeId);
+  if(!e) return;
+  e.title = val;
+  // Pas de renderSession() : on écrase la frappe en cours dans le champ
+  var sel = document.querySelectorAll('.bloc-etape-select option[value="'+etapeId+'"]');
+  sel.forEach(function(o){ o.textContent = val || 'Étape'; });
   if(typeof _draftSave === 'function') _draftSave();
 }
 
+function setEtapeColor(etapeId, color){
+  var e = getEtape(etapeId);
+  if(!e) return;
+  e.color = color;
+  renderSession();
+}
+
+/* Dissout : le groupement disparaît, les blocs restent dans la séance. */
 function dissolveEtape(etapeId){
-  blocs.forEach(function(b){ if(b.etapeId===etapeId){ delete b.etapeId; delete b.etapeTitle; } });
+  blocs.forEach(function(b){ if(b.etapeId===etapeId) delete b.etapeId; });
+  etapes = etapes.filter(function(e){ return e.id!==etapeId; });
   renderSession();
 }
 
@@ -1400,18 +1453,30 @@ function assignBlocEtape(blocId, etapeId){
   var b = blocs.find(function(x){ return x.id===blocId; });
   if(!b) return;
   if(!etapeId){
-    delete b.etapeId; delete b.etapeTitle;
+    delete b.etapeId;
     renderSession();
     return;
   }
-  var ref = blocs.find(function(x){ return x.etapeId===etapeId; });
+  if(!getEtape(etapeId)) return;
   b.etapeId = etapeId;
-  b.etapeTitle = ref ? ref.etapeTitle : 'Étape';
-  // Rapproche le bloc du reste de son étape pour garder les groupes visuellement contigus
+  // Rapproche le bloc du reste de son étape pour garder les groupes contigus
   blocs = blocs.filter(function(x){ return x.id!==blocId; });
   var lastIdx = -1;
   blocs.forEach(function(x,i){ if(x.etapeId===etapeId) lastIdx = i; });
   if(lastIdx>=0) blocs.splice(lastIdx+1, 0, b); else blocs.push(b);
+  renderSession();
+}
+
+/* Déplace un groupe entier (étape ou bloc isolé) d'un cran dans la séance. */
+function moveEtape(etapeId, dir){
+  var groups = _groupBlocsForRender().filter(function(g){ return g.blocs.length; });
+  var idx = groups.findIndex(function(g){ return g.etapeId===etapeId; });
+  var tgt = idx + dir;
+  if(idx<0 || tgt<0 || tgt>=groups.length) return;
+  var tmp = groups[idx]; groups[idx] = groups[tgt]; groups[tgt] = tmp;
+  var out = [];
+  groups.forEach(function(g){ g.blocs.forEach(function(b){ out.push(b); }); });
+  blocs = out;
   renderSession();
 }
 
@@ -1706,7 +1771,7 @@ function setActiveBloc(id){
 function clearBlocs(){
   if(!blocs.length) return;
   if(!confirm('Vider tous les blocs ?')) return;
-  blocs = [];
+  blocs = []; etapes = [];
   activeBloc = null;
   _draftSave();
   renderSession();
@@ -1716,7 +1781,7 @@ function clearBlocs(){
 function clearSession(){
   if(blocs.length===0) return;
   if(!confirm('Effacer toute la séance ?')) return;
-  blocs = [];
+  blocs = []; etapes = [];
   activeBloc = null;
   document.getElementById('patientName').value = '';
   _draftClear(); // efface aussi le brouillon
@@ -1780,7 +1845,7 @@ function shareBuilderProg(){
   var btn = document.getElementById('prog-share-btn');
   if(btn){ btn.disabled=true; btn.textContent='⏳…'; }
   var nomProg = (document.getElementById('patientName')||{}).value || ('Programme du '+new Date().toLocaleDateString('fr-FR'));
-  var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), notes: getNotes() };
+  var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), etapes: JSON.parse(JSON.stringify(etapes||[])), notes: getNotes() };
   var today = new Date().toISOString().split('T')[0];
   _fetchRetry(SUPA_URL_P+'/rest/v1/programmes', {
     method:'POST', headers:_sbHeaders(),
@@ -1892,28 +1957,51 @@ function _estimateSessionMin(blocsArr){
 /* ================================================================
    RENDER SESSION
    ================================================================ */
+function _renderAddRow(){
+  return '<div class="bloc-add-row">'
+       + '<button class="add-bloc-btn" onclick="addBloc()">+ Ajouter un bloc</button>'
+       + '<button class="add-bloc-btn etape-add-btn" onclick="addEtape()">'+_ETAPE_ICO_FOLDER+'+ Ajouter une étape</button>'
+       + '</div>';
+}
+
 function renderSession(){
   var area = document.getElementById('sessionArea');
   var clearBtn = document.getElementById('clearBlocsBtn');
   if(clearBtn) clearBtn.style.display = blocs.length ? '' : 'none';
-  if(!blocs.length){
-    area.innerHTML = '<div class="empty-state" id="emptyState"><div class="icon">📋</div><p>Ajoutez un bloc puis sélectionnez des exercices<br>depuis la bibliothèque pour construire votre séance.</p></div>';
+  _normalizeEtapes();
+  if(!blocs.length && !etapes.length){
+    area.innerHTML = '<div class="empty-state" id="emptyState"><div class="icon">📋</div><p>Ajoutez un bloc puis sélectionnez des exercices<br>depuis la bibliothèque pour construire votre séance.</p></div>'
+      + _renderAddRow();
     updateTargetBlocSelect();
     return;
   }
   var html = '';
-  var _etapeIds = _etapeIdsInOrder();
   var _groups = _groupBlocsForRender();
+  var _nbGroupesPleins = _groups.filter(function(g){ return g.blocs.length; }).length;
   _groups.forEach(function(g){
   if(g.etapeId){
     var _ec = _etapeColor(g.etapeId);
+    var _gPos = _groups.filter(function(x){ return x.blocs.length; }).findIndex(function(x){ return x.etapeId===g.etapeId; });
     html += '<div class="etape-group" data-etapeid="'+g.etapeId+'" style="--etape-c:'+_ec+'">';
     html += '<div class="etape-header">';
-    html += '<span class="etape-dot" style="background:'+_ec+'"></span>';
-    html += '<input class="etape-title-input" value="'+escH(g.etapeTitle)+'" placeholder="Nom de l\'étape" oninput="renameEtape(\''+g.etapeId+'\',this.value)">';
-    html += '<button class="etape-tmpl-btn" onclick="openSaveEtapeTemplate(\''+g.etapeId+'\')" title="Enregistrer cette étape comme template">💾</button>';
-    html += '<button class="etape-del-btn" onclick="dissolveEtape(\''+g.etapeId+'\')" title="Dissoudre l\'étape (les blocs restent)">✕</button>';
+    if(g.blocs.length){
+      html += '<span class="etape-move-btns">'
+            + '<button class="etape-move-btn"'+(_gPos<=0?' disabled':'')+' onclick="moveEtape(\''+g.etapeId+'\',-1)" title="Monter l\'étape">↑</button>'
+            + '<button class="etape-move-btn"'+(_gPos<0||_gPos>=_nbGroupesPleins-1?' disabled':'')+' onclick="moveEtape(\''+g.etapeId+'\',1)" title="Descendre l\'étape">↓</button>'
+            + '</span>';
+    }
+    html += '<input class="etape-title-input" value="'+escH(_etapeTitle(g.etapeId))+'" placeholder="Nom de l\'étape" oninput="renameEtape(\''+g.etapeId+'\',this.value)">';
+    html += '<span class="etape-swatches">';
+    ETAPE_COLORS.forEach(function(c){
+      html += '<button class="etape-swatch'+(c===_ec?' active':'')+'" style="background:'+c+'" onclick="setEtapeColor(\''+g.etapeId+'\',\''+c+'\')" title="Couleur de l\'étape"></button>';
+    });
+    html += '</span>';
+    html += '<button class="etape-tmpl-btn"'+(g.blocs.length?'':' disabled')+' onclick="openSaveEtapeTemplate(\''+g.etapeId+'\')" title="Enregistrer cette étape comme template">'+_ETAPE_ICO_SAVE+'</button>';
+    html += '<button class="etape-del-btn" onclick="dissolveEtape(\''+g.etapeId+'\')" title="Dissoudre l\'étape — les blocs sont conservés dans la séance">'+_ETAPE_ICO_TRASH+'</button>';
     html += '</div>';
+    if(!g.blocs.length){
+      html += '<div class="etape-empty">Étape vide — créez un bloc ici, ou rattachez un bloc existant avec son menu « Étape ».</div>';
+    }
   }
   g.blocs.forEach(function(b){
     var idx = blocs.indexOf(b);
@@ -1928,12 +2016,11 @@ function renderSession(){
           + '<button class="bloc-move-btn"'+(idx===blocs.length-1?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',1)" title="Descendre">↓</button>'
           + '</span>';
     html += '<input class="bloc-title-input" value="'+escH(b.title)+'" placeholder="Nom du bloc" oninput="updateBlocTitle(\''+b.id+'\',this.value)">';
-    if(_etapeIds.length){
-      html += '<select class="bloc-etape-select" title="Étape" onclick="event.stopPropagation()" onchange="event.stopPropagation();assignBlocEtape(\''+b.id+'\',this.value)">';
+    if(etapes.length){
+      html += '<select class="bloc-etape-select" title="Rattacher ce bloc à une étape" onclick="event.stopPropagation()" onchange="event.stopPropagation();assignBlocEtape(\''+b.id+'\',this.value)">';
       html += '<option value="">— Sans étape —</option>';
-      _etapeIds.forEach(function(eid){
-        var etitle = (blocs.find(function(x){ return x.etapeId===eid; })||{}).etapeTitle || 'Étape';
-        html += '<option value="'+eid+'"'+(b.etapeId===eid?' selected':'')+'>'+escH(etitle)+'</option>';
+      etapes.forEach(function(e){
+        html += '<option value="'+e.id+'"'+(b.etapeId===e.id?' selected':'')+'>'+escH(e.title||'Étape')+'</option>';
       });
       html += '</select>';
     }
@@ -2109,7 +2196,7 @@ function renderSession(){
   // Notes
   html += '<div class="notes-bloc"><div class="notes-label">Notes / Consignes</div>';
   html += '<textarea class="notes-ta" id="sessionNotes" placeholder="Conseils, progressions, points d\'attention…" oninput="autoResizeTa(this);if(typeof _notes!==\'undefined\'){_notes=this.value;_draftSaveLazy();}">'+escH(getNotes())+'</textarea></div>';
-  html += '<div class="bloc-add-row"><button class="add-bloc-btn" onclick="addBloc()">+ Ajouter un bloc</button><button class="add-bloc-btn etape-add-btn" onclick="addEtape()">📂 + Ajouter une étape</button></div>';
+  html += _renderAddRow();
   area.innerHTML = html;
   updateTargetBlocSelect();
   // Auto-resize des consignes déjà remplies + notes
@@ -3070,7 +3157,7 @@ function saveProgToCloud(){
   var btn = document.getElementById('prog-cloud-save-btn');
   btn.disabled = true; btn.textContent = '⏳ Sauvegarde…';
   var nomProg = (document.getElementById('patientName')||{}).value || ('Programme du '+new Date().toLocaleDateString('fr-FR'));
-  var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), notes: getNotes() };
+  var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), etapes: JSON.parse(JSON.stringify(etapes||[])), notes: getNotes() };
   if(_builderLinkedPhase) donnees.linkedPhase = _builderLinkedPhase;
   // Préserver les métadonnées HSR / CAP (type, ref1RM, pct, sets, reps, phase_key, exercice, …)
   if(_currentProgRawDonnees && _currentProgRawDonnees.type){
@@ -3149,7 +3236,7 @@ function _doSaveProgCloud(nomProg, donnees, today, btn){
 /* ── Auto-sauvegarde silencieuse de la liaison de phase ──────────────── */
 function _autoSavePhaseLinkage(){
   if(!_currentProgId || !_progPatient || !_progUid || !_progToken) return;
-  var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), notes: getNotes() };
+  var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), etapes: JSON.parse(JSON.stringify(etapes||[])), notes: getNotes() };
   if(_builderLinkedPhase) donnees.linkedPhase = _builderLinkedPhase;
   // Préserver les métadonnées HSR / CAP
   if(_currentProgRawDonnees && _currentProgRawDonnees.type){
@@ -4822,8 +4909,8 @@ function _loadProg(id, seanceId){
       _currentProgId = d.id;
       // Rétrocompat : donnees peut être un tableau (ancien) ou {blocs,notes} (nouveau)
       var raw = d.donnees || [];
-      if(Array.isArray(raw)){ blocs = raw; _notes = ''; _builderLinkedPhase = null; }
-      else { blocs = raw.blocs || []; _notes = raw.notes || ''; _builderLinkedPhase = raw.linkedPhase || null; }
+      if(Array.isArray(raw)){ blocs = raw; etapes = []; _notes = ''; _builderLinkedPhase = null; }
+      else { blocs = raw.blocs || []; etapes = raw.etapes || []; _notes = raw.notes || ''; _builderLinkedPhase = raw.linkedPhase || null; }
       // Rétrocompat HSR : si le programme a perdu son type:'hsr' (ancien save écrasant),
       // le détecter via le nom de la séance calendrier et reconstruire les métadonnées de phase.
       if (!Array.isArray(raw) && !raw.type && seanceId) {
@@ -4917,7 +5004,7 @@ function _deleteProg(id, nom){
       if(_currentProgId === id){
         _currentProgId = null;
         _currentProgRawDonnees = null;
-        blocs = [];
+        blocs = []; etapes = [];
         renderSession();
         var btn = document.getElementById('prog-cloud-save-btn');
         if(btn){ btn.textContent='☁️ Sauvegarder'; }
@@ -4932,7 +5019,7 @@ function _newProgVierge(){
   if(!confirm('Créer un nouveau programme vierge ? (le programme actuel non sauvegardé sera perdu)')) return;
   _currentProgId = null;
   _currentProgRawDonnees = null;
-  blocs = [];
+  blocs = []; etapes = [];
   renderSession();
   var overlay = document.getElementById('progHistoOverlay');
   if(overlay) overlay.style.display='none';
