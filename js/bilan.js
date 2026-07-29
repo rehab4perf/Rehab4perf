@@ -790,6 +790,7 @@ function init() {
   // Forcer le select LMA sur "Choisir" au chargement (le navigateur mémorise la dernière valeur)
   var lmaSmInit = document.getElementById('lma-sel-membre');
   if (lmaSmInit) { lmaSmInit.value = ''; _lmaUpdateMembre(); }
+  try { EP_MOB_MOVEMENTS.forEach(function(m){ _epMobRefresh(m.key); }); _epScrRefresh(); } catch(ex){}
   _blApplyLayout(); // disposition personnalisée (après restauration du brouillon : non-amputation correcte)
   _blMaybeInjectCustomizeBtn();
   showPage('infos');
@@ -5948,6 +5949,32 @@ function _buildAllTestsHtml() {
       ], true);
       var epRomObs = (document.getElementById('rom-ep-obs')||{}).value||'';
       if (epRomObs) secRows += '<div style="margin:2px 0 6px;padding:5px 10px;background:var(--surface2);border-radius:5px;font-size:.82rem;color:var(--text2);font-style:italic">Obs. Amplitudes Épaule : '+nl2br(epRomObs)+'</div>';
+
+      // Screening fonctionnel
+      var scrVals = EP_SCR_IDS.map(function(id){ return (document.getElementById(id)||{}).value||''; });
+      if (scrVals.some(Boolean)) {
+        var scrTxt = EP_SCR_LABELS.map(function(l,i){ return scrVals[i] ? l+' : '+EP_SCR_VAL_LABELS[scrVals[i]] : ''; }).filter(Boolean).join(' · ');
+        var nbNo = scrVals.filter(function(v){ return v === 'no'; }).length;
+        var nbDif = scrVals.filter(function(v){ return v === 'dif'; }).length;
+        var scrTag = '', scrTagCls = '';
+        if (nbNo > 0) { scrTag = 'Impotence sévère'; scrTagCls = 'bad'; }
+        else if (nbDif >= 2) { scrTag = 'Évoque épaule raide'; scrTagCls = 'warn'; }
+        secRows += crItem('Screening fonctionnel', scrTxt, scrTag, scrTagCls, EP_SCR_IDS);
+      }
+
+      // Mobilités actif/passif
+      var epMobRows = '';
+      EP_MOB_MOVEMENTS.forEach(function(m){
+        var a = (document.getElementById('ep-mob-'+m.key+'-act')||{}).value||'';
+        if (!a) return;
+        var p = (document.getElementById('ep-mob-'+m.key+'-pas')||{}).value||'';
+        var o = (document.getElementById('ep-mob-'+m.key+'-obs')||{}).value||'';
+        var v = _epMobVerdict(a, p);
+        var valStr = 'Actif : '+(EP_MOB_ACT_LABELS[a]||a) + (p ? ' · Passif : '+(EP_MOB_PAS_LABELS[p]||p) : '') + (o ? ' · '+nl2br(o) : '');
+        var tagCls = v[1] === 'muted' ? '' : v[1];
+        epMobRows += crItem(m.label, valStr, v[0] !== '—' ? v[0] : '', tagCls, ['ep-mob-'+m.key+'-act','ep-mob-'+m.key+'-pas','ep-mob-'+m.key+'-obs']);
+      });
+      if (epMobRows) secRows += '<div style="margin:8px 0 4px;font-size:.77rem;font-weight:600;color:var(--text2)">Examens des mobilités</div>' + epMobRows;
     }
     if (sec.label === 'RACHIS') {
       // Mobilité rachis — statut qualitatif
@@ -8049,6 +8076,71 @@ function _parseObjectifs(){
     }
   }
   renderObjectifs();
+}
+
+/* ── Épaule : screening fonctionnel + mobilités actif/passif ── */
+var EP_SCR_IDS = ['ep-scr-bouche','ep-scr-tete','ep-scr-dos'];
+var EP_SCR_LABELS = ['Main à la bouche','Main à la tête','Main dans le dos'];
+var EP_SCR_VAL_LABELS = { ok:'Possible', dif:'Difficile', no:'Impossible' };
+var EP_MOB_MOVEMENTS = [
+  { key:'flex', label:'Flexion' },
+  { key:'abd',  label:'Abduction' },
+  { key:'rl',   label:'Rotation latérale (coude au corps)' },
+  { key:'rm',   label:'Rotation médiale (main dans le dos)' },
+  { key:'addh', label:'Adduction horizontale 90°' },
+];
+var EP_MOB_ACT_LABELS = { libre:'Libre', doul:'Douloureux', lim:'Limité', doullim:'Doul. + limité' };
+var EP_MOB_PAS_LABELS = { libre:'Libre', doul:'Douloureux', lim:'Limité' };
+var EP_MOB_TONE = { muted:'var(--text3)', ok:'var(--green)', warn:'var(--orange)', bad:'var(--red)' };
+
+// Différentiel actif/passif : la valeur clinique du test vient de leur comparaison,
+// pas de chaque mesure isolément (déficit de contrôle vs restriction structurelle).
+function _epMobVerdict(a, p) {
+  if (!a) return ['—', 'muted', ''];
+  if (a === 'libre') return ['Conservée', 'ok', 'Mobilité active libre et indolore — pas de test passif requis'];
+  if (!p) return ['À tester en passif', 'muted', 'Mouvement anormal en actif : comparer en passif pour situer la limitation'];
+  var limited = (a === 'lim' || a === 'doullim');
+  if (limited && p === 'libre') return ['Déficit actif', 'warn', 'Actif limité, passif libre — force, contrôle moteur ou inhibition par la douleur'];
+  if (limited && (p === 'lim' || p === 'doul')) return ['Restriction structurelle', 'bad', 'Actif et passif limités — origine capsulo-ligamentaire ou articulaire'];
+  if (a === 'doul' && p === 'libre') return ['Douleur contractile', 'warn', 'Douleur en actif, passif libre — origine tendino-musculaire'];
+  if (a === 'doul' && p === 'doul') return ['Structure inerte', 'bad', 'Douleur en actif et en passif — structure non contractile'];
+  return ['—', 'muted', ''];
+}
+
+function _epMobRefresh(key) {
+  var a = document.getElementById('ep-mob-' + key + '-act');
+  var p = document.getElementById('ep-mob-' + key + '-pas');
+  var cell = document.getElementById('ep-mob-' + key + '-interp');
+  if (!a || !p || !cell) return;
+  var needsPassive = a.value && a.value !== 'libre';
+  p.disabled = !needsPassive;
+  if (!needsPassive) p.value = '';
+  var v = _epMobVerdict(a.value, p.value);
+  cell.textContent = v[0];
+  cell.style.color = EP_MOB_TONE[v[1]] || 'var(--text3)';
+  cell.title = v[2];
+}
+
+// Le screening à lui seul ne diagnostique rien, mais une restriction globale sur les
+// 3 gestes (sans impotence sévère isolée) est le pattern typique d'une épaule raide
+// (capsulite rétractile, arthrose gléno-humérale) — à distinguer d'un conflit isolé.
+function _epScrRefresh() {
+  var alertEl = document.getElementById('ep-scr-alert');
+  if (!alertEl) return;
+  var vals = EP_SCR_IDS.map(function(id){ var el = document.getElementById(id); return el ? el.value : ''; });
+  var nbImpossible = vals.filter(function(v){ return v === 'no'; }).length;
+  var nbDifficile  = vals.filter(function(v){ return v === 'dif'; }).length;
+  if (nbImpossible > 0) {
+    alertEl.style.display = 'block';
+    alertEl.style.background = 'var(--red-l)'; alertEl.style.color = 'var(--red)';
+    alertEl.textContent = 'Impotence sévère — douleur aiguë ou traumatisme à écarter en priorité.';
+  } else if (nbDifficile >= 2) {
+    alertEl.style.display = 'block';
+    alertEl.style.background = 'var(--orange-l)'; alertEl.style.color = 'var(--orange)';
+    alertEl.textContent = 'Restriction globale des 3 gestes — évoque une épaule raide (capsulite rétractile, arthrose gléno-humérale).';
+  } else {
+    alertEl.style.display = 'none';
+  }
 }
 
 function calcGIRD() {
