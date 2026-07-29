@@ -835,6 +835,7 @@ td.bl-row-rail button:disabled { opacity: .3 !important; cursor: default; }
   color: var(--text);
 }
 .test-name.sub { font-weight: 400; color: var(--text2); padding-left: 24px; font-size: .83rem; }
+.test-name.ep-mob-name { padding-left: 22px; }
 .result-cell { padding: 6px 8px; width: 130px; }
 .result-cell select {
   font-family: var(--font-sans);
@@ -2013,7 +2014,7 @@ select.bl-inherited-ghost { color:var(--text3); font-style:italic; }
       </div>
       <table class="test-table">
         <thead><tr>
-          <th style="width:23%">Mouvement</th>
+          <th style="width:23%;padding-left:22px">Mouvement</th>
           <th style="width:14%">Actif</th>
           <th style="width:14%">Passif</th>
           <th style="width:27%">Observation</th>
@@ -2021,37 +2022,37 @@ select.bl-inherited-ghost { color:var(--text3); font-style:italic; }
         </tr></thead>
         <tbody id="ep-mob-tbody">
           <tr>
-            <td class="test-name">Flexion</td>
+            <td class="test-name ep-mob-name">Flexion</td>
             <td class="result-cell"><select id="ep-mob-flex-act" onchange="_epMobRefresh('flex')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
-            <td class="result-cell"><select id="ep-mob-flex-pas" disabled onchange="_epMobRefresh('flex')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option></select></td>
+            <td class="result-cell"><select id="ep-mob-flex-pas" onchange="_epMobRefresh('flex')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option></select></td>
             <td style="padding:6px 8px"><input type="text" id="ep-mob-flex-obs" class="mob-note-inp" placeholder="Arc douloureux 70–110°…"></td>
             <td style="padding:9px 14px;font-size:.8rem;color:var(--text3)" id="ep-mob-flex-interp">—</td>
           </tr>
           <tr>
-            <td class="test-name">Abduction</td>
+            <td class="test-name ep-mob-name">Abduction</td>
             <td class="result-cell"><select id="ep-mob-abd-act" onchange="_epMobRefresh('abd')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
-            <td class="result-cell"><select id="ep-mob-abd-pas" disabled onchange="_epMobRefresh('abd')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option></select></td>
+            <td class="result-cell"><select id="ep-mob-abd-pas" onchange="_epMobRefresh('abd')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option></select></td>
             <td style="padding:6px 8px"><input type="text" id="ep-mob-abd-obs" class="mob-note-inp" placeholder="Compensation scapulaire dès 60°…"></td>
             <td style="padding:9px 14px;font-size:.8rem;color:var(--text3)" id="ep-mob-abd-interp">—</td>
           </tr>
           <tr>
-            <td class="test-name">Rotation latérale (coude au corps)</td>
+            <td class="test-name ep-mob-name">Rotation latérale (coude au corps)</td>
             <td class="result-cell"><select id="ep-mob-rl-act" onchange="_epMobRefresh('rl')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
-            <td class="result-cell"><select id="ep-mob-rl-pas" disabled onchange="_epMobRefresh('rl')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option></select></td>
+            <td class="result-cell"><select id="ep-mob-rl-pas" onchange="_epMobRefresh('rl')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option></select></td>
             <td style="padding:6px 8px"><input type="text" id="ep-mob-rl-obs" class="mob-note-inp" placeholder="Perte 15° vs côté sain…"></td>
             <td style="padding:9px 14px;font-size:.8rem;color:var(--text3)" id="ep-mob-rl-interp">—</td>
           </tr>
           <tr>
-            <td class="test-name">Rotation médiale (main dans le dos)</td>
+            <td class="test-name ep-mob-name">Rotation médiale (main dans le dos)</td>
             <td class="result-cell"><select id="ep-mob-rm-act" onchange="_epMobRefresh('rm')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
-            <td class="result-cell"><select id="ep-mob-rm-pas" disabled onchange="_epMobRefresh('rm')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option></select></td>
+            <td class="result-cell"><select id="ep-mob-rm-pas" onchange="_epMobRefresh('rm')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option></select></td>
             <td style="padding:6px 8px"><input type="text" id="ep-mob-rm-obs" class="mob-note-inp" placeholder="Pouce atteint L3 vs T12…"></td>
             <td style="padding:9px 14px;font-size:.8rem;color:var(--text3)" id="ep-mob-rm-interp">—</td>
           </tr>
           <tr>
-            <td class="test-name">Adduction horizontale 90°</td>
+            <td class="test-name ep-mob-name">Adduction horizontale 90°</td>
             <td class="result-cell"><select id="ep-mob-addh-act" onchange="_epMobRefresh('addh')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
-            <td class="result-cell"><select id="ep-mob-addh-pas" disabled onchange="_epMobRefresh('addh')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option></select></td>
+            <td class="result-cell"><select id="ep-mob-addh-pas" onchange="_epMobRefresh('addh')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option></select></td>
             <td style="padding:6px 8px"><input type="text" id="ep-mob-addh-obs" class="mob-note-inp" placeholder="Douleur pointe acromio-claviculaire…"></td>
             <td style="padding:9px 14px;font-size:.8rem;color:var(--text3)" id="ep-mob-addh-interp">—</td>
           </tr>
@@ -5016,7 +5017,7 @@ select.bl-inherited-ghost { color:var(--text3); font-style:italic; }
 
 
 <script src="js/bilan-blocks.js?v=20260710"></script>
-<script src="js/bilan.js?v=20260729e"></script>
+<script src="js/bilan.js?v=20260729f"></script>
 
 </body>
 </html>

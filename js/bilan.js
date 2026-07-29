@@ -8097,7 +8097,7 @@ var EP_MOB_TONE = { muted:'var(--text3)', ok:'var(--green)', warn:'var(--orange)
 // Différentiel actif/passif : la valeur clinique du test vient de leur comparaison,
 // pas de chaque mesure isolément (déficit de contrôle vs restriction structurelle).
 function _epMobVerdict(a, p) {
-  if (!a) return ['—', 'muted', ''];
+  if (!a) return p ? ['Passif isolé', 'muted', 'Passif renseigné sans actif — comparaison actif/passif incomplète'] : ['—', 'muted', ''];
   if (a === 'libre') return ['Conservée', 'ok', 'Mobilité active libre et indolore — pas de test passif requis'];
   if (!p) return ['À tester en passif', 'muted', 'Mouvement anormal en actif : comparer en passif pour situer la limitation'];
   var limited = (a === 'lim' || a === 'doullim');
@@ -8113,9 +8113,9 @@ function _epMobRefresh(key) {
   var p = document.getElementById('ep-mob-' + key + '-pas');
   var cell = document.getElementById('ep-mob-' + key + '-interp');
   if (!a || !p || !cell) return;
-  var needsPassive = a.value && a.value !== 'libre';
-  p.disabled = !needsPassive;
-  if (!needsPassive) p.value = '';
+  // Passif toujours saisissable : on ne force plus l'ordre actif → passif,
+  // mais on efface une valeur passive devenue incohérente (actif libre).
+  if (a.value === 'libre') p.value = '';
   var v = _epMobVerdict(a.value, p.value);
   cell.textContent = v[0];
   cell.style.color = EP_MOB_TONE[v[1]] || 'var(--text3)';
