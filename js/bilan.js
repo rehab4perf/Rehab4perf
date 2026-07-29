@@ -782,6 +782,10 @@ function init() {
       '</div>';
   });
 
+  // Analyse fonctionnelle (hanche / genou / cheville) — doit être rendu AVANT
+  // loadFromStorage() pour que les champs existent à la restauration du brouillon
+  _afRender();
+
   // Set today's date
   document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
   updateAll();
@@ -791,6 +795,7 @@ function init() {
   var lmaSmInit = document.getElementById('lma-sel-membre');
   if (lmaSmInit) { lmaSmInit.value = ''; _lmaUpdateMembre(); }
   try { EP_MOB_MOVEMENTS.forEach(function(m){ _epMobRefresh(m.key); }); _epScrRefresh(); } catch(ex){}
+  try { _afRefreshAll(); } catch(ex){}
   _blApplyLayout(); // disposition personnalisée (après restauration du brouillon : non-amputation correcte)
   _blMaybeInjectCustomizeBtn();
   showPage('infos');
@@ -2226,6 +2231,7 @@ function _resetBilanFields(){
   try{ var fd=document.getElementById('f-date'); if(fd) fd.value=new Date().toISOString().split('T')[0]; }catch(ex){}
   _painZones=[]; renderPainZones();
   _objectifs=[]; renderObjectifs();
+  try{ _afRefreshAll(); }catch(ex){}
   document.querySelectorAll('.evo-delta').forEach(function(el){ el.remove(); });
   // Recalculer TOUTES les fonctions d'affichage dérivées (LSI, RSI, déficits, badges…)
   try{ updateAll(); calcRec(); calcPlioq(); }catch(ex){}
@@ -3766,6 +3772,7 @@ function _deserializeBilan(data){
   try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht','co-f-ext','co-f-flex'].forEach(calcEpForce); ['ha-f-add','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); ['pi-f-fp','pi-f-fd','pi-f-inv','pi-f-ev','pi-f-lfh'].forEach(calcEpForce); ['ra-fc-inc'].forEach(calcEpForce); }catch(ex){}
   _parsePainZones();
   try{ _parseObjectifs(); }catch(ex){}
+  try{ _afRefreshAll(); }catch(ex){}
   try{ _imgFileRenderAll(); }catch(ex){}
   _suppressDirty = false;
   _bilanModified = false;
@@ -6320,6 +6327,37 @@ function _buildAllTestsHtml() {
     return ({good:'Symétrique', warn:'Asymétrie modérée', bad:'Déficit'}[cls])||'';
   };
   var tfHtml = '';
+
+  // Analyse fonctionnelle — screening qualitatif, placé avant les tests chiffrés
+  // (même ordre que dans la page).
+  var _ohs = _afOhsData('mi'), _ohsTxt = _afOhsText(_ohs);
+  var _slsQ = _afSlsData('mi'), _slsQTxt = _afSlsText(_slsQ);
+  var _afRows = '';
+  if (_ohsTxt || _ohs.obs) {
+    var _ohsParts = [];
+    if (_ohs.ok.length) _ohsParts.push('<em>Réussis :</em> ' + _ohs.ok.join(', '));
+    if (_ohs.ko.length) _ohsParts.push('<em>Compensations :</em> ' + _ohs.ko.join(', '));
+    if (_ohs.corr)      _ohsParts.push('<em>Talons surélevés :</em> ' + (_ohs.corr === 'oui' ? 'corrige le défaut' : 'ne corrige pas'));
+    if (_ohs.obs)       _ohsParts.push(nl2br(_ohs.obs));
+    if (_ohsTxt)        _ohsParts.push('<span style="color:var(--text2)">' + _ohsTxt + '</span>');
+    var _ohsTone = _afOhsTone(_ohs);
+    _afRows += crItem('Overhead squat', _ohsParts.join('<br>'),
+      _ohs.ko.length + ' compensation' + (_ohs.ko.length > 1 ? 's' : ''),
+      _ohsTone === 'muted' ? '' : _ohsTone,
+      ['af-mi-ohs-obs', 'af-mi-ohs-corr']);
+  }
+  if (_slsQTxt || _slsQ.obs) {
+    var _slsQParts = [];
+    if (_slsQTxt)  _slsQParts.push(_slsQTxt);
+    if (_slsQ.obs) _slsQParts.push(nl2br(_slsQ.obs));
+    var _slsQTone = _afSlsTone(_slsQ);
+    _afRows += crItem('Squat unipodal — qualité', _slsQParts.join('<br>'),
+      'G ' + _slsQ.g + '/' + _slsQ.n + ' · D ' + _slsQ.d + '/' + _slsQ.n,
+      _slsQTone === 'muted' ? '' : _slsQTone,
+      ['af-mi-sls-obs']);
+  }
+  if (_afRows) tfHtml += '<div style="margin:2px 0 4px;font-size:.77rem;font-weight:600;color:var(--text2)">Analyse fonctionnelle — qualité du mouvement</div>' + _afRows;
+
   var slsCA = parseFloat((document.getElementById('sls-ca')||{}).value||'');
   var slsCS = parseFloat((document.getElementById('sls-cs')||{}).value||'');
   var slsH2 = (document.getElementById('sls-hauteur')||{}).value||'';
@@ -7287,6 +7325,7 @@ function loadFromStorage() {
     calcRachisStat(); calcLNF(); calcSorensen(); calcPDSLRT(); calcShirado();
     calcPlioq2(); calcRec(); calcSEBT(); calcUQYBT();
     updateBadges();
+    _afRefreshAll();
   } catch(e) {}
 }
 
@@ -8077,6 +8116,215 @@ function _parseObjectifs(){
     }
   }
   renderObjectifs();
+}
+
+/* ── Analyse fonctionnelle : overhead squat + squat unipodal ──────
+   Bloc identique sur hanche / genou / cheville, rendu en JS depuis une
+   seule source (AF_OHS_GROUPS / AF_SLS_ITEMS).
+
+   ATTENTION — les clés ('thorax', 'lordose', 'valgus'…) sont l'identité des
+   champs : les ids af-<pg>-ohs-<clé> des bilans sauvegardés en dérivent.
+   Ne jamais renommer ni réutiliser une clé — seulement en ajouter. L'ordre
+   d'affichage, lui, peut changer librement. */
+// Une seule instance, dans Tests Fonctionnels MI : le squat interroge cheville,
+// genou, hanche et rachis d'un seul geste — le dupliquer par articulation
+// exposait à des saisies divergentes pour un même mouvement.
+var AF_PAGES = [
+  { pg:'mi', host:'af-mi' },
+];
+
+var AF_OHS_GROUPS = [
+  { title:'Critères de réussite', type:'ok', items:[
+    ['thorax', 'Thorax parallèle au tibia ou horizontal'],
+    ['femur',  'Fémur en dessous de l\'horizontale'],
+  ]},
+  { title:'Compensations — plan sagittal', type:'ko', items:[
+    ['lordose',  'Excès de lordose'],
+    ['cyphose',  'Excès de cyphose'],
+    ['bras',     'Chute des bras'],
+    ['talons',   'Lève les talons'],
+    ['dissoc',   'Perte dissociation lombo-pelvienne < 45°'],
+  ]},
+  { title:'Compensations — plan frontal antérieur', type:'ko', items:[
+    ['piedsext', 'Pieds tournent en extérieur'],
+    ['valgus',   'Genoux en valgus'],
+    ['varus',    'Genoux en varus'],
+  ]},
+  { title:'Compensations — plan frontal postérieur', type:'ko', items:[
+    ['pronation','Pronation / éversion'],
+    ['asym',     'Répartition asymétrique de la charge'],
+  ]},
+  { title:'Compensations — autres', type:'ko', items:[
+    ['douleur',  'Douleur reproduite'],
+    ['shift',    'Shift latéral du bassin à la descente'],
+  ]},
+];
+
+// Orientation clinique par compensation : regroupe les défauts en thèmes pour
+// que la synthèse dise vers quoi chercher, plutôt que de lister des symptômes.
+var AF_OHS_THEME = {
+  lordose:'contrôle lombo-pelvien', dissoc:'contrôle lombo-pelvien',
+  cyphose:'extension thoracique',   bras:'extension thoracique',
+  talons:'dorsiflexion de cheville', piedsext:'dorsiflexion de cheville',
+  valgus:'contrôle frontal hanche/genou', varus:'contrôle frontal hanche/genou',
+  pronation:'contrôle du pied',
+  asym:'asymétrie d\'appui', shift:'asymétrie d\'appui',
+  douleur:'douleur reproduite',
+};
+
+// [clé, libellé complet, libellé court pour la synthèse]
+var AF_SLS_ITEMS = [
+  ['tronc',   'Tronc — inclinaison ou rotation',        'tronc'],
+  ['bassin',  'Bassin — chute controlatérale',          'bassin'],
+  ['hanche',  'Hanche — adduction ou rotation médiale', 'hanche'],
+  ['valgus',  'Valgus du genou',                        'valgus'],
+  ['neuro',   'Perte de contrôle neuromoteur',          'contrôle neuromoteur'],
+  ['douleur', 'Douleur reproduite',                     'douleur'],
+];
+
+var AF_TONE = { ok:'var(--green)', warn:'var(--orange)', bad:'var(--red)', muted:'var(--text3)' };
+
+function _afRender(){
+  AF_PAGES.forEach(function(p){
+    var host = document.getElementById(p.host);
+    if(!host) return;
+    var h = '';
+    // ── Overhead squat (bilatéral) ──
+    h += '<div class="af-mtitle"><span>Overhead squat</span>'
+       + '<span class="af-mref">Hernández-García 2020 — protocole BFA</span></div>';
+    AF_OHS_GROUPS.forEach(function(g){
+      h += '<div class="af-sub">' + g.title + '</div>';
+      g.items.forEach(function(it){
+        h += '<div class="af-row af-' + g.type + '"><span>' + it[1] + '</span>'
+           + '<input type="checkbox" id="af-' + p.pg + '-ohs-' + it[0] + '" onchange="_afSynthOhs(\'' + p.pg + '\')"></div>';
+      });
+    });
+    h += '<div class="af-obs">'
+       + '<div style="font-size:.72rem;color:var(--text2);margin-bottom:5px">Test de correction — talons surélevés</div>'
+       + '<select id="af-' + p.pg + '-ohs-corr" onchange="_afSynthOhs(\'' + p.pg + '\')" style="max-width:280px;width:100%">'
+       + '<option value="">—</option><option value="oui">Corrige le défaut</option><option value="non">Ne corrige pas</option>'
+       + '</select></div>';
+    h += '<div class="af-obs"><input type="text" class="mob-note-inp" id="af-' + p.pg + '-ohs-obs" '
+       + 'placeholder="Profondeur atteinte, stratégie de descente, localisation de la douleur…"></div>';
+    h += '<div class="af-synth" id="af-' + p.pg + '-ohs-synth">—</div>';
+    // ── Squat unipodal (par côté) ──
+    h += '<div class="af-mtitle" style="border-top:2px solid var(--border)"><span>Squat unipodal</span>'
+       + '<span class="af-mref">Crossley 2011</span></div>';
+    h += '<div class="af-row2 af-sub" style="padding:6px 22px"><span>Compensation observée</span>'
+       + '<span style="text-align:center">G</span><span style="text-align:center">D</span></div>';
+    AF_SLS_ITEMS.forEach(function(it){
+      h += '<div class="af-row2"><span>' + it[1] + '</span>'
+         + '<input type="checkbox" id="af-' + p.pg + '-sls-' + it[0] + '-g" onchange="_afSynthSls(\'' + p.pg + '\')">'
+         + '<input type="checkbox" id="af-' + p.pg + '-sls-' + it[0] + '-d" onchange="_afSynthSls(\'' + p.pg + '\')"></div>';
+    });
+    h += '<div class="af-obs"><input type="text" class="mob-note-inp" id="af-' + p.pg + '-sls-obs" '
+       + 'placeholder="Nombre de répétitions, profondeur atteinte, appui controlatéral…"></div>';
+    h += '<div class="af-synth" id="af-' + p.pg + '-sls-synth" style="border-bottom:none">—</div>';
+    host.innerHTML = h;
+  });
+}
+
+function _afOhsData(pg){
+  var ok = [], ko = [], themes = [], nOk = 0;
+  AF_OHS_GROUPS.forEach(function(g){
+    if(g.type === 'ok') nOk += g.items.length;
+    g.items.forEach(function(it){
+      var el = document.getElementById('af-' + pg + '-ohs-' + it[0]);
+      if(!el || !el.checked) return;
+      if(g.type === 'ok'){ ok.push(it[1]); return; }
+      ko.push(it[1]);
+      var t = AF_OHS_THEME[it[0]];
+      if(t && themes.indexOf(t) === -1) themes.push(t);
+    });
+  });
+  var talonsEl = document.getElementById('af-' + pg + '-ohs-talons');
+  return {
+    ok:ok, ko:ko, themes:themes, nOk:nOk,
+    talons: !!(talonsEl && talonsEl.checked),
+    corr: (document.getElementById('af-' + pg + '-ohs-corr')||{}).value || '',
+    obs:  (document.getElementById('af-' + pg + '-ohs-obs')||{}).value  || '',
+  };
+}
+
+function _afOhsText(d){
+  if(!d.ok.length && !d.ko.length && !d.corr) return '';
+  var txt = d.ok.length + '/' + d.nOk + ' critères de réussite · '
+          + d.ko.length + ' compensation' + (d.ko.length > 1 ? 's' : '');
+  if(d.themes.length) txt += ' — ' + d.themes.join(', ');
+  // Le test des talons surélevés discrimine l'origine du défaut : c'est lui qui
+  // transforme la liste descriptive en orientation diagnostique.
+  if(d.talons && d.corr === 'oui') txt += '. Corrigé par talons surélevés : limitation de dorsiflexion de cheville.';
+  else if(d.talons && d.corr === 'non') txt += '. Non corrigé par talons surélevés : orienter vers hanche ou rachis thoracique.';
+  return txt;
+}
+
+function _afOhsTone(d){
+  if(!d.ok.length && !d.ko.length && !d.corr) return 'muted';
+  return d.ko.length >= 4 ? 'bad' : d.ko.length ? 'warn' : 'ok';
+}
+
+function _afSlsData(pg){
+  var g = 0, d = 0, both = 0, onlyG = [], onlyD = [];
+  AF_SLS_ITEMS.forEach(function(it){
+    var eg = document.getElementById('af-' + pg + '-sls-' + it[0] + '-g');
+    var ed = document.getElementById('af-' + pg + '-sls-' + it[0] + '-d');
+    var cg = !!(eg && eg.checked), cd = !!(ed && ed.checked);
+    if(cg) g++;
+    if(cd) d++;
+    if(cg && cd) both++;
+    else if(cg) onlyG.push(it[2]);
+    else if(cd) onlyD.push(it[2]);
+  });
+  return { g:g, d:d, both:both, onlyG:onlyG, onlyD:onlyD, n:AF_SLS_ITEMS.length,
+           obs:(document.getElementById('af-' + pg + '-sls-obs')||{}).value || '' };
+}
+
+function _afSlsText(s){
+  if(!s.g && !s.d) return '';
+  var txt = 'Gauche ' + s.g + '/' + s.n + ' · Droite ' + s.d + '/' + s.n;
+  // « Symétrique » exige les MÊMES lignes cochées des deux côtés : deux totaux
+  // égaux peuvent recouvrir des profils cliniquement opposés.
+  if(!s.onlyG.length && !s.onlyD.length){
+    txt += ' — mêmes compensations des deux côtés';
+  } else {
+    var bits = [];
+    if(s.onlyG.length) bits.push('gauche seulement : ' + s.onlyG.join(', '));
+    if(s.onlyD.length) bits.push('droite seulement : ' + s.onlyD.join(', '));
+    txt += (s.both ? ' · ' + s.both + ' commune' + (s.both > 1 ? 's' : '') : '')
+         + ' — profils différents (' + bits.join(' ; ') + ')';
+  }
+  if(Math.abs(s.g - s.d) >= 2){
+    txt += '. Charge de compensation plus élevée à ' + (s.g > s.d ? 'gauche' : 'droite') + '.';
+  }
+  return txt;
+}
+
+function _afSlsTone(s){
+  if(!s.g && !s.d) return 'muted';
+  if(s.onlyG.length || s.onlyD.length || Math.abs(s.g - s.d) >= 2) return 'bad';
+  return 'warn';
+}
+
+function _afSynthOhs(pg){
+  var cell = document.getElementById('af-' + pg + '-ohs-synth');
+  if(!cell) return;
+  var d = _afOhsData(pg), txt = _afOhsText(d);
+  cell.textContent = txt || 'Aucun critère renseigné';
+  cell.style.color = AF_TONE[_afOhsTone(d)];
+}
+
+function _afSynthSls(pg){
+  var cell = document.getElementById('af-' + pg + '-sls-synth');
+  if(!cell) return;
+  var s = _afSlsData(pg), txt = _afSlsText(s);
+  cell.textContent = txt || 'Aucun critère renseigné';
+  cell.style.color = AF_TONE[_afSlsTone(s)];
+}
+
+// Les restaurations (brouillon, bilan chargé, reset) n'émettent pas toujours
+// d'événement change → rafraîchir explicitement les synthèses.
+function _afRefreshAll(){
+  AF_PAGES.forEach(function(p){ _afSynthOhs(p.pg); _afSynthSls(p.pg); });
 }
 
 /* ── Épaule : screening fonctionnel + mobilités actif/passif ── */

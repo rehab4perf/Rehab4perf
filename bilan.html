@@ -836,6 +836,34 @@ td.bl-row-rail button:disabled { opacity: .3 !important; cursor: default; }
 }
 .test-name.sub { font-weight: 400; color: var(--text2); padding-left: 24px; font-size: .83rem; }
 .test-name.ep-mob-name { padding-left: 22px; }
+
+/* ── Analyse fonctionnelle (overhead squat / squat unipodal) ── */
+.af-mtitle {
+  padding: 9px 14px; background: var(--accent-l);
+  font-size: .8rem; font-weight: 700; color: var(--accent2);
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.af-mref { font-size: .68rem; font-weight: 400; color: var(--text2); }
+.af-sub {
+  padding: 6px 14px; background: var(--surface2);
+  font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--text2); border-bottom: 1px solid var(--border);
+}
+.af-row, .af-row2 {
+  display: grid; align-items: center; gap: 8px;
+  padding: 8px 22px; border-bottom: 1px solid var(--border);
+  font-size: .84rem; color: var(--text);
+}
+.af-row  { grid-template-columns: 1fr 40px; }
+.af-row2 { grid-template-columns: 1fr 40px 40px; }
+.af-row input[type=checkbox], .af-row2 input[type=checkbox] {
+  width: 17px; height: 17px; cursor: pointer; margin: 0 auto; display: block;
+  accent-color: var(--red);
+}
+.af-row.af-ok input[type=checkbox] { accent-color: var(--green); }
+.af-obs { padding: 8px 22px; border-bottom: 1px solid var(--border); }
+.af-synth { padding: 9px 22px; font-size: .82rem; line-height: 1.45; background: var(--surface2); border-bottom: 1px solid var(--border); }
 .result-cell { padding: 6px 8px; width: 130px; }
 .result-cell select {
   font-family: var(--font-sans);
@@ -3255,6 +3283,12 @@ select.bl-inherited-ghost { color:var(--text3); font-style:italic; }
   </div>
   <div class="page-content">
 
+<!-- ANALYSE FONCTIONNELLE — qualité du mouvement (screening qualitatif, avant les tests chiffrés) -->
+<div class="block" data-block-id="fonctionnels--analyse">
+  <div class="block-header">Analyse Fonctionnelle — Qualité du Mouvement</div>
+  <div id="af-mi"></div>
+</div>
+
 <!-- SLS -->
 <div class="block" data-block-id="fonctionnels--sls">
   <div class="block-header">① Force Fonctionnelle — Single Leg Squat (SLS)</div>
@@ -5017,7 +5051,7 @@ select.bl-inherited-ghost { color:var(--text3); font-style:italic; }
 
 
 <script src="js/bilan-blocks.js?v=20260710"></script>
-<script src="js/bilan.js?v=20260729f"></script>
+<script src="js/bilan.js?v=20260729h"></script>
 
 </body>
 </html>
