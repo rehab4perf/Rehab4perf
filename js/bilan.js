@@ -2225,6 +2225,7 @@ function _resetBilanFields(){
   document.querySelectorAll('input[type=checkbox],input[type=radio]').forEach(function(c){ c.checked=false; });
   try{ var fd=document.getElementById('f-date'); if(fd) fd.value=new Date().toISOString().split('T')[0]; }catch(ex){}
   _painZones=[]; renderPainZones();
+  _objectifs=[]; renderObjectifs();
   document.querySelectorAll('.evo-delta').forEach(function(el){ el.remove(); });
   // Recalculer TOUTES les fonctions d'affichage dérivées (LSI, RSI, déficits, badges…)
   try{ updateAll(); calcRec(); calcPlioq(); }catch(ex){}
