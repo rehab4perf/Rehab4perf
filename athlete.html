@@ -658,7 +658,14 @@ function _cycleIsCurrent(cycles, idx, today){
   var c = cycles[idx];
   if(c.mode === 'criteres'){
     if(_cycleIsDone(c, today)) return false;
-    for(var i=0;i<idx;i++){ if(!_cycleIsDone(cycles[i], today)) return false; }
+    for(var i=0;i<idx;i++){
+      var pc = cycles[i];
+      // Un cycle dote precedent qui n'a pas encore commence (date de debut future)
+      // ne doit pas bloquer un cycle criteres sans date : celui-ci reste en cours
+      // tant que rien n'a reellement demarre avant lui dans le plan.
+      var notYetStarted = pc.mode !== 'criteres' && pc.startDate && new Date(pc.startDate) > today;
+      if(!notYetStarted && !_cycleIsDone(pc, today)) return false;
+    }
     return true;
   }
   if(!c.startDate) return false;
