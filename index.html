@@ -1264,11 +1264,14 @@ window.addEventListener('message', function(e) {
   }
 
   // La liste de l'onglet Patients demande une sélection. On passe par
-  // selectPatient() pour n'avoir qu'une seule source de vérité : le topnav se
-  // met à jour et le garde-fou « données non sauvegardées » de bilan.html
-  // continue de s'appliquer via _broadcastPatient().
+  // _selectPatientById() et non selectPatient() : ce dernier exige que
+  // _allPatients soit peuplé, ce qui n'arrive qu'à l'ouverture de la modale
+  // patient — un clic dans la liste sans avoir ouvert la modale ne faisait
+  // donc rien du tout. _selectPatientById se replie sur une requête base.
+  // Le topnav reste la seule source de vérité et le garde-fou « données non
+  // sauvegardées » de bilan.html s'applique toujours via _broadcastPatient().
   if (e.data.type === 'r4p-select-patient' && e.data.patientId) {
-    selectPatient(e.data.patientId);
+    _selectPatientById(e.data.patientId);
   }
 
   // programme a marqué un feedback comme lu → retirer de la cloche
