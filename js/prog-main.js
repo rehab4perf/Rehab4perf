@@ -6802,163 +6802,168 @@ var PROTOCOLS_REF = [
     icon: '🦴',
     category: 'Pathologie',
     joint: 'Épaule',
-    source: 'Dr B. Khatir + Kinesport + UW Health Sports Rehabilitation (2018)',
-    duration: '6 mois (S0 → S24+)',
+    source: 'Bradley et al., 2021 · Falls & Popchak — Return to Competitive Sport After Anterior Shoulder Stabilization',
+    duration: 'Piloté par critères — horizon 4 à 6 mois',
     isBuiltin: true,
+    /* Les identifiants de phase sont volontairement en f1–f5 et non p1–p5 :
+       les validations de critères sont stockées en base par (phase_id,
+       criteria_index). Repartir sur un nouvel espace de noms garantit qu'une
+       coche posée sur l'ancien protocole ne peut pas se reporter sur un
+       nouveau critère qui n'a jamais été passé. */
     phases: [
       {
-        id: 'p1',
-        name: 'Phase 1 — Immobilisation & Protection',
-        weeks: 'S0 → S6',
+        id: 'f1',
+        name: 'Phase 1 — Protection',
+        weeks: 'Attelle 3–4 sem. · sortie sur critères',
         color: '#EFF6FF',
         borderColor: '#3B82F6',
         objectives: [
-          'Protéger l\'épaule post-chirurgicale (transfert coracoïdien)',
-          'Contrôle de la douleur et de l\'œdème',
-          'Activer les muscles stabilisateurs GH et scapulo-thoracique (isométrie sous-maximale)',
-          'Récupérer 135° de PROM en flexion, abduction et RI/RE jusqu\'au point neutre',
-          'Préservation de la mobilité distale (coude, poignet, main)',
-          'Éducation posturale et désensibilisation du nerf axillaire'
+          'Protéger le montage pendant la cicatrisation — immobiliser n\'est pas ne rien faire',
+          'Récupérer 120° de flexion et d\'abduction passives',
+          'Viser 0° de rotation externe minimum, jusqu\'à 30° si l\'ordonnance le permet',
+          'Installer le contrôle neuromusculaire scapulaire dès les premiers jours',
+          'Maintenir la condition physique générale : l\'athlète reste un athlète'
         ],
         precautions: [
-          'Harnais / écharpe stricte 4 à 6 semaines — retrait progressif en environnement sûr à partir de S4',
-          'Hypersensibilité du nerf axillaire fréquente — désensibilisation précoce recommandée',
-          'S0–S3 : Pas d\'extension, abduction, RI ni RE > 20° en position neutre ou RE avec abduction. Arrêter la flexion avant douleur ou à 90°',
-          'S0–S3 : Éviter la flexion active du biceps (détachement coraco-brachial et chef court du biceps)',
-          'S4–S6 : Élévation/flexion progressive jusqu\'à 135° — d\'abord dans le plan scapulaire puis dans les autres plans',
-          'S4–S6 : RI jusqu\'à 50°, RE dans le plan scapulaire et à 90° d\'ABD jusqu\'à 30°',
-          'Aucune mise en charge du membre supérieur'
+          'Attelle 3 à 4 semaines, retirée pendant la séance pour activer la scapula',
+          'Rotation externe < 30° — la butée traverse le subscapulaire, et cicatriser en rotation interne rend la RE très difficile à récupérer ensuite',
+          'Aucune sollicitation active du biceps : la coracoïde transférée porte l\'insertion du chef court, une sollicitation trop précoce menace le montage chirurgical',
+          'Sans mouvement, les trapèzes tirent et se surchargent — la scapula se travaille dès les premiers jours'
         ],
         weekly: [
-          { week: 'S0–S3', content: 'Glaçage · Travail distal (doigts / poignet / coude) · Isométrie sous-maximale deltoïde et coiffe en neutre (RE, flexion, extension, ADD, ABD) · Techniques de désensibilisation nerf axillaire · Exercices posturaux · Éducation portage écharpe' },
-          { week: 'S4–S6', content: 'PROM actif-assisté (AAROM) en flexion / abduction · Rétraction scapulaire et horloge scapulaire (élévation) · ROM active coude / avant-bras / poignet / colonne cervicale · Exercices posturaux · Massage cicatriciel dès J15 · Cardio : marche + vélo stationnaire avec écharpe — pas natation ni tapis de course, pas de course / saut (forces de distraction à l\'atterrissage)' }
+          { week: 'La rotation externe', content: 'Viser 0° minimum, 30° si l\'ordonnance le permet. C\'est l\'amplitude la plus coûteuse à récupérer si on la néglige : la butée traverse le subscapulaire et une cicatrisation en rotation interne la verrouille durablement.' },
+          { week: 'La scapula', content: 'Retirer l\'attelle pendant la séance pour activer la scapula. Sans mouvement, les trapèzes tirent et se surchargent. Bascule et sonnette actives, contrôle neuromusculaire scapulaire.' },
+          { week: 'Le reste du corps', content: 'Éducation croisée et renforcement général. On limite le déconditionnement, et l\'athlète reste un athlète. Cardio adapté sans mise en charge du membre supérieur.' }
         ],
         exitCriteria: [
-          'Force 5/5 en RI et RE à 0° d\'abduction',
-          'PROM en flexion et abduction complètes (≥ 135°)',
-          'Hypersensibilité nerf axillaire contrôlée',
-          'Absence de douleur au repos (EVA < 2)'
+          'EVA < 3/10 au repos',
+          'QuickDASH < 60 %',
+          'Amplitude passive ≥ 120° en flexion et abduction',
+          'Bascule scapulaire active normale'
         ]
       },
       {
-        id: 'p2',
-        name: 'Phase 2 — Récupération des amplitudes',
-        weeks: 'S6 → S12',
+        id: 'f2',
+        name: 'Phase 2 — Endurance',
+        weeks: 'Charge 2–3 kg pendant 6 à 8 sem. · sortie sur critères',
         color: '#F0FDF4',
         borderColor: '#22C55E',
         objectives: [
-          'Récupérer la ROM active complète de l\'épaule dans tous les plans cardinaux',
-          'Progression graduelle de la ROM en RE pour ne pas surcharger les tissus antérieurs',
-          'Renforcer les stabilisateurs de l\'épaule et de la scapula en position protégée (0°–45° ABD)',
-          'Réentraînement proprioceptif et dynamique du contrôle neuromusculaire'
+          'Passer de l\'amplitude active aidée à l\'amplitude active (AAROM → AROM)',
+          'Rechercher la trophicité et l\'endurance — l\'objectif n\'est pas la force',
+          'Restaurer le sens positionnel de l\'épaule',
+          'Renforcer la coiffe des rotateurs et les stabilisateurs scapulaires',
+          'Intégrer progressivement la chaîne cinétique'
         ],
         precautions: [
-          'S6–S9 : Élévation / flexion jusqu\'à 155°, RI à 60°, RE dans le plan scapulaire à 60°, RE à 90° d\'ABD jusqu\'à 75°',
-          'S10–S12 : Passage progressif et graduel à l\'AROM complète',
-          'Pas de port de charge > 1–2 kg avant validation amplitudes',
-          'Contrôle douleur post-séance < 3/10',
-          'Séances : 1 fois toutes les 1 à 2 semaines'
+          '2 à 3 kg maximum, et sur des mouvements proches du corps',
+          'Pendant 6 à 8 semaines, un bras de levier trop long fait courir un risque d\'arrachement de la coracoïde',
+          'Peu de charge, beaucoup de répétitions'
         ],
         weekly: [
-          { week: 'S6–S9', content: 'AAROM puis AROM dans tous les plans cardinaux · Mobilisations douces de l\'épaule au besoin · Renforcement coiffe des rotateurs (0°–45° ABD) · Renforcement muscles scapulaires et contrôle neuromusculaire dynamique · Amplitude active de la colonne cervicale et de la scapula · Exercices posturaux · Renforcement du tronc · Cardio : marche, vélo stationnaire, Stairmaster — pas de natation ni de tapis de course' },
-          { week: 'S10–S12', content: 'Progression AROM complète dans tous les plans · Travail du rythme scapulo-huméral · Renforcement coiffe en positions progressivement plus élevées · Proprioception membre en l\'air · Cardio : marche, vélo, Stairmaster — éviter courir / sauter jusqu\'à force complète de la coiffe' }
+          { week: 'Pourquoi la chaîne fermée', content: 'Elle est très bien tolérée en phase précoce. Elle met de la compression dans la gléno-humérale et redonne énormément d\'information proprioceptive à l\'épaule.' },
+          { week: 'Trois exercices pour démarrer', content: 'Pompes scapulaires · RE1 en couché latéral · Élévation antérieure résistée. Bras de levier court, charge faible, séries longues.' },
+          { week: 'Contenu de la phase', content: 'AAROM → AROM · Chaîne fermée ++ · Sens positionnel · Coiffe des rotateurs · Stabilisateurs scapulaires.' }
         ],
         exitCriteria: [
-          'ROM active complète de l\'épaule dans tous les plans',
-          'Signes d\'appréhension et de conflit négatifs',
-          'Force en RI et RE de l\'épaule 5/5 à 45° d\'abduction'
+          'EVA < 3/10 à l\'activité',
+          'QuickDASH < 40 %',
+          'AAROM = AROM',
+          'Protocole de fatigue réussi — 20 élévations antérieures, 20 abductions, 20 RE coude au corps à 2 % du poids de corps',
+          'JAR réussi sous 90°'
         ]
       },
       {
-        id: 'p3',
-        name: 'Phase 3 — Renforcement musculaire',
-        weeks: 'S12 → S16',
+        id: 'f3',
+        name: 'Phase 3 — Renforcement',
+        weeks: 'Pas avant 8 semaines post-opératoires',
         color: '#FFFBEB',
         borderColor: '#F59E0B',
         objectives: [
-          'AROM complet de l\'épaule dans tous les plans cardinaux avec mouvement scapulo-huméral normal',
-          'Force de la coiffe des rotateurs 5/5 à 90° d\'abduction dans le plan scapulaire',
-          'Force péri-scapulaire 5/5',
-          'Travail en chaîne cinétique fermée, semi-fermée et ouverte'
+          'Construire la force — isolée d\'abord, fonctionnelle ensuite',
+          'Récupérer les amplitudes en position 90/90',
+          'Renforcer en overhead',
+          'Débuter le travail en position d\'appréhension'
         ],
         precautions: [
-          'Éviter les activités où le risque de chute ou de forces extérieures appliquées sur le bras est élevé',
-          'Pas de natation, de lancer ni de sport de contact',
-          'Progression ROM agressive si limitations toujours présentes',
-          'Contrôle du rythme scapulo-huméral à chaque exercice',
-          'Séances : 1 fois toutes les 2 à 3 semaines'
+          'Pas avant 8 semaines post-opératoires : c\'est la cicatrisation qui commande, aucun critère ne peut ouvrir cette phase plus tôt',
+          'Un déficit de force est un facteur de risque — on ne se contente pas d\'un ressenti, on mesure au dynamomètre tout au long de la rééducation',
+          'Évaluer en continu, pas seulement à la fin de la phase'
         ],
         weekly: [
-          { week: 'S12–S14', content: 'Mouvement : glissements postérieurs si raideur de la capsule postérieure · Flexion en décubitus ventral, abduction horizontale en décubitus ventral, full can, diagonale Kabath D1–D2 · Thera-band / poulie / haltères : RI, RE et abduction, rameur · Gainage en position push-up (stabilisation rythmique), chaîne fermée, chaîne semi-fermée, chaîne ouverte, mouvements alternatifs rapides en diagonale D2 couchée · Cardio : marche, vélo, Stairmaster, course à pied si critères phase 2 validés — pas de natation' },
-          { week: 'S14–S16', content: 'Renforcement progressif avec charges croissantes · Travail neuromusculaire dynamique avancé · Stabilisation rythmique en positions variées · Préparation au travail haute vélocité · Cardio : marche, vélo, Stairmaster, course continue' }
+          { week: 'Pourquoi la position 90/90', content: 'C\'est la position d\'armé du lancer, du smash et du service. La récupérer n\'est pas un supplément de confort : c\'est la condition du geste sportif.' },
+          { week: 'Le continuum de rotation externe', content: 'La même fonction, travaillée dans des positions de plus en plus exigeantes — de la RE coude au corps jusqu\'à la position 90/90, puis l\'overhead.' },
+          { week: 'Contenu de la phase', content: 'Amplitudes 90/90 ++ · Renforcement overhead · Isolé puis fonctionnel · Début du travail d\'appréhension.' }
         ],
         exitCriteria: [
-          'AROM complet et symétrique dans tous les plans',
-          'Force de la coiffe des rotateurs 5/5 à 90° d\'abduction',
-          'Force péri-scapulaire 5/5',
-          'Aucun signe d\'appréhension ni d\'empiètement'
+          'Aucune appréhension',
+          'QuickDASH < 20 %',
+          'Amplitude active > 90 % du côté sain',
+          'HHD > 90 % de symétrie avec le côté sain',
+          'JAR réussi en overhead',
+          'Questionnaire SI-RSI renseigné'
         ]
       },
       {
-        id: 'p4',
-        name: 'Phase 4 — Réathlétisation',
-        weeks: 'S16 → S24',
+        id: 'f4',
+        name: 'Phase 4 — Puissance',
+        weeks: 'Moins lourd, plus vite',
         color: '#FFF7ED',
         borderColor: '#F97316',
         objectives: [
-          'Démontrer la stabilité de l\'épaule avec des mouvements à haute vitesse et des changements de direction',
-          'Force de la coiffe 5/5 avec répétitions multiples à 90° d\'abduction dans le plan scapulaire',
-          'AROM complet dans plusieurs plans à haute vélocité',
-          'Proprioception avancée et contrôle neuromusculaire sport-spécifique'
+          'Développer la puissance : P = force × vitesse',
+          'Pliométrie du membre supérieur',
+          'Travail d\'éjection et lancers',
+          'Travail en position d\'appréhension ++',
+          'Retrouver les amplitudes qu\'exige réellement le geste sportif'
         ],
         precautions: [
-          'Augmenter progressivement un facteur à la fois : amplitude, force, contrainte, vitesse, endurance, fatigue',
-          'Pas de natation avant validation des critères phase 3',
-          'Pas de contact avant S20 minimum',
-          'Surveillance signe d\'irritation (douleur nocturne, œdème post-séance)',
-          'Séances : 1 fois toutes les 3 semaines'
+          'Après trois phases passées à monter la charge, on l\'inverse — la puissance n\'est pas de la force',
+          'Le chaos : réaliser des gestes sous fatigue, avec plusieurs informations à traiter en même temps. L\'objectif n\'est plus l\'exercice propre, c\'est de se rapprocher du match',
+          'Les amplitudes visées sont celles du terrain, pas celles du bilan'
         ],
         weekly: [
-          { week: 'S16–S20', content: 'Mouvement : glissements postérieurs si raideur capsule postérieure · Force : exercices avec haltères + médecine-ball intégrant rotation et contrôle du tronc + renforcement coiffe à 90° ABD · TheraBand / poulies / haltères : RI et RE à 90° ABD, rameur · Pliométrie progressive avec Thera-band · Exercices de plyométrie : deux mains sous les épaules → au-dessus de la tête → revenir sous l\'épaule avec une main → progresser jusqu\'au-dessus de la tête · Éducation biomécanique épaule dans les sports spécifiques (natation, raquette, overhead) · Cardio : marche, vélo, Stairmaster, course si critères phase 3 remplis' },
-          { week: 'S20–S24', content: 'Simulation gestes sportifs spécifiques · Entraînements partiels sans contact · Programmes de lancer progressif (distance et intensité) · Test isocinétique de contrôle · Travail haute vélocité et contrôle dynamique · Cardio : marche, vélo, Stairmaster, course continue' }
+          { week: 'Trois entrées vers la pliométrie', content: 'Drop jump en position de pompes — mains sur des steps, on se laisse tomber · Pompes sautées · Contraste lourd / léger.' },
+          { week: 'Contenu de la phase', content: 'Pliométrie · Travail d\'éjection · Lancers · Contraste de charge · Position d\'appréhension ++.' }
         ],
+        /* La batterie de tests est choisie selon le sport : la lister test par
+           test rendrait la phase impossible à valider pour un athlète non
+           concerné (un coureur ne passe pas de test de lancer). Le critère est
+           donc formulé au niveau de la batterie, les tests étant cités en
+           exemples à choisir. */
         exitCriteria: [
-          'Test isocinétique : ratio RE/RI ≥ 66%, déficit < 15% côté sain',
-          'Aucun signe d\'appréhension ni de conflit aux tests dynamiques',
-          'Test pliométrique membres supérieurs : asymétrie < 15%',
-          'Test fonctionnel sport-spécifique validé'
+          'Batterie de tests choisie selon le sport et validée — CKCUEST, ULRT, ASH, UQ-YBT, PSET',
+          'Questionnaire SI-RSI',
+          'Aucune appréhension dans les positions sportives'
         ]
       },
       {
-        id: 'p5',
+        id: 'f5',
         name: 'Phase 5 — Retour au sport',
-        weeks: 'S24+',
+        weeks: 'Horizon 4 à 6 mois',
         color: '#FDF4FF',
         borderColor: '#A855F7',
         objectives: [
-          'Démontrer la stabilité avec des mouvements sport-spécifiques à haute vitesse (natation, lancer, raquette…)',
-          'Aucune appréhension ni instabilité lors des mouvements à grande vitesse bras au-dessus',
-          'Améliorer la force et la mobilité du tronc et des hanches pour éliminer toute contrainte compensatoire',
-          'Capacité d\'endurance cardiovasculaire adaptée aux exigences sportives spécifiques',
-          'Mise en place programme de prévention récidive'
+          'Être fort dans les amplitudes extrêmes demandées par le sport',
+          'Retrouver le niveau d\'avant la blessure',
+          'Restaurer la confiance — la tête décide autant que l\'épaule',
+          'Charger à l\'intensité réelle de la compétition'
         ],
         precautions: [
-          'Continuer la progression vers des schémas de mouvements spécifiques au sport',
-          'Retour compétition contact uniquement si TOUS les critères phase 4 sont atteints',
-          'Suivi médical obligatoire — autorisation chirurgien orthopédique + kinésithérapeute',
-          'Orthèse de protection sportive recommandée lors de la 1ère saison',
-          'Programme d\'entretien à domicile obligatoire'
+          'Le cabinet n\'est pas le terrain : le sport sera toujours plus exigeant que la salle de rééducation',
+          'C\'est la phase où l\'on ose enfin charger. Sous-doser ici, c\'est renvoyer l\'athlète sur le terrain avec une épaule jamais confrontée à ce que le terrain lui demandera',
+          'Aide du coach et du préparateur physique à intégrer'
         ],
         weekly: [
-          { week: 'S24–S28', content: 'Mouvement : glissements postérieurs si raideur capsule postérieure · Force : exercices haltères / médecine-ball intégrant rotation + contrôle tronc + coiffe 90° ABD à haute vitesse · Programmes sport-spécifiques : lancer, raquette au-dessus de la tête, retour à la natation · Renforcement et contrôle dynamique haute vélocité (pliométrique, Thera-band rapide) · Préparer l\'épaule aux situations extrêmes (pires cas de figure) · Cardio : programme selon demande énergétique du sport' },
-          { week: 'Retour compétition', content: 'Entraînements collectifs progressifs · Bilan final kinésithérapique · Remise programme entretien · Suivi 3–6 mois planifié · Intensité sport spécifique intégrée dans les dernières séances de rééducation' }
+          { week: 'Contenu de la phase', content: 'Jeux avec contact · Intensité de match · Drills spécifiques · Lancers par intervalles pour les athlètes overhead.' },
+          { week: 'Ce qu\'on mesure', content: 'La confiance. Le SI-RSI évalue l\'appréhension au retour au sport — la tête décide autant que l\'épaule.' }
         ],
         exitCriteria: [
-          'Tous les critères de la phase 4 validés',
-          'Aucune appréhension ni instabilité aux tests sport-spécifiques',
-          'Score WOSI > 80% ou DASH < 20',
-          'Autorisation chirurgien orthopédique + kinésithérapeute / entraîneur sportif',
-          'Patient confiant — appréhension EVA < 2/10'
+          'Drills sport-spécifiques réussis',
+          'Entraînement mené à intensité de match',
+          'Progression du geste dominant validée — lancers par intervalles pour les athlètes overhead',
+          'Force conservée dans les amplitudes extrêmes du sport',
+          'SI-RSI satisfaisant et athlète confiant'
         ]
       }
     ]
