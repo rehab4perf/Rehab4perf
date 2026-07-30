@@ -96,6 +96,58 @@ table.lst tbody tr.current td { background: var(--accent-l); box-shadow: inset 3
 .pill.recent  { background: #FEF3EB; color: var(--orange); }
 .pill.dormant { background: var(--surface2); color: var(--text3); }
 
+/* Fiche athlète */
+.fi-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.fi-nom { font-size: 1.15rem; font-weight: 700; color: var(--accent2); }
+.fi-meta { font-size: .8rem; color: var(--text2); }
+.fi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 12px 16px; }
+.fi-f { display: flex; flex-direction: column; gap: 4px; }
+.fi-f.wide { grid-column: 1 / -1; }
+.fi-f label { font-size: .74rem; font-weight: 600; color: var(--text2); }
+.fi-f input, .fi-f select, .fi-f textarea {
+  font-family: inherit; font-size: .87rem; color: var(--text);
+  border: 1.5px solid var(--border); border-radius: 6px; padding: 7px 10px;
+  background: var(--surface); outline: none; width: 100%;
+}
+.fi-f textarea { min-height: 62px; resize: vertical; line-height: 1.5; }
+.fi-f input:focus, .fi-f select:focus, .fi-f textarea:focus { border-color: var(--accent); }
+/* Valeur héritée du bilan : affichée en indice dans le champ, jamais écrite.
+   Même vocabulaire visuel que les indices du bilan (bordure pointillée). */
+.fi-f input.inherited, .fi-f textarea.inherited { border-style: dashed; background: var(--surface2); }
+.fi-f input.inherited::placeholder, .fi-f textarea.inherited::placeholder { color: var(--text3); font-style: italic; }
+.fi-hint { font-size: .7rem; color: var(--text3); }
+.fi-bar {
+  position: sticky; bottom: 0; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 11px 16px; margin-top: 18px;
+}
+.fi-save {
+  font-family: inherit; font-size: .85rem; font-weight: 600; color: #fff;
+  background: var(--accent); border: none; border-radius: 7px; padding: 9px 20px; cursor: pointer;
+}
+.fi-save:hover { background: var(--accent2); }
+.fi-save:disabled { opacity: .55; cursor: default; }
+.fi-status { font-size: .8rem; color: var(--text2); }
+.fi-status.ok { color: #2D6A4F; }
+.fi-status.err { color: var(--orange); }
+.atc-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.atc-chip {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface2); border-radius: 6px; padding: 6px 10px; font-size: .84rem;
+}
+.atc-chip .t { flex: 1; color: var(--text); }
+.atc-chip .d { font-size: .74rem; color: var(--text2); white-space: nowrap; }
+.atc-chip button { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0 2px; }
+.atc-chip button:hover { color: var(--orange); }
+.atc-add { display: flex; gap: 7px; flex-wrap: wrap; }
+.atc-add input[type=text] { flex: 1; min-width: 160px; }
+.atc-add button {
+  font-family: inherit; font-size: .82rem; font-weight: 600; color: var(--accent);
+  background: var(--surface); border: 1.5px solid var(--border); border-radius: 6px;
+  padding: 7px 14px; cursor: pointer; white-space: nowrap;
+}
+.atc-add button:hover { border-color: var(--accent); }
+
 /* Filtres de période : une seule rangée, au-dessus des indicateurs */
 .filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 18px; }
 .fchip {
@@ -138,13 +190,14 @@ table.lst tbody tr.current td { background: var(--accent-l); box-shadow: inset 3
 <div class="subnav" id="pv-subnav" style="display:none">
   <button id="nav-overview" onclick="setView('overview')">Vue d'ensemble</button>
   <button id="nav-list"     onclick="setView('list')">Liste</button>
+  <button id="nav-fiche"    onclick="setView('fiche')">Fiche</button>
 </div>
 
 <div id="pv-root">
   <div class="state" id="pv-state">Chargement…</div>
 </div>
 
-<script src="js/patients-data.js?v=20260730c"></script>
+<script src="js/patients-data.js?v=20260730d"></script>
 <script>
 var SUPA_URL = 'https://sxdobjodxkwexaspepdm.supabase.co';
 var SUPA_KEY = 'sb_publishable_zEJrmQOnKyRm-Y_NyojaTA_ERrDx4pl';
@@ -285,6 +338,134 @@ function renderList(rows, bounds){
   document.getElementById('pv-root').innerHTML = h;
 }
 
+/* ── Vue Fiche ─────────────────────────────────────────────────────
+   Les champs qui existent aussi dans le bilan (poids, taille, activité,
+   médecin) affichent la valeur du bilan le plus récent en indice quand la
+   fiche est vide. L'indice n'est jamais enregistré : seule une saisie
+   explicite du praticien devient une valeur de fiche. */
+function ficheField(p, key, bilanKey, label, opts){
+  opts = opts || {};
+  var r = bilanKey ? r4pResolveFicheField(p, _raw.bilans, key, bilanKey) : { value: p[key] || '', source: p[key] ? 'fiche' : '' };
+  var own = (r.source === 'fiche') ? r.value : '';
+  var ghost = (r.source === 'bilan') ? String(r.value) : '';
+  var cls = ghost ? ' class="inherited"' : '';
+  var ph = ghost ? (ghost + (opts.unit || '') + (r.date ? ' — bilan du ' + fmtDate(r.date) : '')) : (opts.placeholder || '');
+  var h = '<div class="fi-f' + (opts.wide ? ' wide' : '') + '"><label for="fi-' + key + '">' + esc(label) + '</label>';
+  if (opts.list) {
+    h += '<select id="fi-' + key + '"><option value="">—</option>'
+       + opts.list.map(function(o){
+           return '<option value="' + o[0] + '"' + (String(own) === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>';
+         }).join('')
+       + '</select>';
+  } else if (opts.textarea) {
+    h += '<textarea id="fi-' + key + '"' + cls + ' placeholder="' + esc(ph) + '">' + esc(own) + '</textarea>';
+  } else {
+    h += '<input type="' + (opts.number ? 'number' : 'text') + '" id="fi-' + key + '"' + cls
+       + (opts.step ? ' step="' + opts.step + '"' : '') + (opts.min ? ' min="' + opts.min + '"' : '') + (opts.max ? ' max="' + opts.max + '"' : '')
+       + ' value="' + esc(own) + '" placeholder="' + esc(ph) + '">';
+  }
+  if (ghost) h += '<span class="fi-hint">Valeur du bilan le plus récent — saisir ici pour la remplacer.</span>';
+  h += '</div>';
+  return h;
+}
+
+function renderFiche(){
+  var root = document.getElementById('pv-root');
+  if (!_currentPatientId) {
+    root.innerHTML = '<div class="pg-wrap"><div class="state">Aucun patient sélectionné.<br>'
+      + 'Choisissez-en un dans la <a href="#" onclick="setView(\'list\');return false;" style="color:var(--accent)">liste</a> ou depuis le sélecteur en haut de page.</div></div>';
+    return;
+  }
+  var p = (_raw.patients || []).find(function(x){ return String(x.id) === String(_currentPatientId); });
+  if (!p) {
+    root.innerHTML = '<div class="pg-wrap"><div class="state">Ce patient n\'est pas dans la liste chargée.</div></div>';
+    return;
+  }
+  var f = p.fiche || {};
+  var age = r4pAge(p.ddn);
+
+  var h = '<div class="pg-wrap">';
+  h += '<div class="fi-head"><span class="fi-nom">' + esc((p.prenom || '') + ' ' + (p.nom || '')) + '</span>'
+     + '<span class="fi-meta">' + (age !== null ? age + ' ans · ' : '')
+     + (p.sexe === 'F' ? 'Femme' : p.sexe === 'H' ? 'Homme' : '—')
+     + (p.sport ? ' · ' + esc(p.sport) : '') + '</span></div>';
+
+  h += '<div class="card"><div class="card-h"><span>Anthropométrie</span></div><div class="card-sub">Le bilan garde sa propre valeur datée — la fiche ne l\'écrase jamais</div><div class="fi-grid">'
+     + ficheField(p, 'poids',  'poids',  'Poids (kg)',  { number: true, step: '0.1', unit: ' kg' })
+     + ficheField(p, 'taille', 'taille', 'Taille (cm)', { number: true, step: '1',   unit: ' cm' })
+     + '</div></div>';
+
+  h += '<div class="card"><div class="card-h"><span>Profil</span></div><div class="card-sub">Listes fermées, pour rester exploitables en statistiques</div><div class="fi-grid">'
+     + ficheField(p, 'niveau',          null, 'Niveau de pratique', { list: R4P_NIVEAUX })
+     + ficheField(p, 'lateralite_main', null, 'Main dominante',     { list: R4P_LAT_MAIN })
+     + ficheField(p, 'lateralite_pied', null, 'Pied dominant',      { list: R4P_LAT_PIED })
+     + '</div></div>';
+
+  h += '<div class="card"><div class="card-h"><span>Contexte</span></div><div class="card-sub"></div><div class="fi-grid">'
+     + ficheField(p, 'activite', 'activite', 'Activité professionnelle', { placeholder: 'Infirmier, bureau sédentaire…' })
+     + ficheField(p, 'medecin',  'medecin',  'Médecin prescripteur',     { placeholder: 'Dr …' })
+     + '</div></div>';
+
+  h += '<div class="card"><div class="card-h"><span>Cadre d\'entraînement</span></div><div class="card-sub">Sert à dimensionner les programmes</div><div class="fi-grid">'
+     + '<div class="fi-f"><label for="fi-seances">Séances par semaine</label>'
+     + '<input type="number" id="fi-seances" min="0" max="21" step="1" value="' + esc(f.seancesSemaine || '') + '" placeholder="3"></div>'
+     + '<div class="fi-f"><label for="fi-materiel">Matériel et lieu</label>'
+     + '<input type="text" id="fi-materiel" value="' + esc(f.materiel || '') + '" placeholder="Salle, barre + haltères, élastiques…"></div>'
+     + '<div class="fi-f wide"><label for="fi-dispo">Disponibilités</label>'
+     + '<input type="text" id="fi-dispo" value="' + esc(f.disponibilites || '') + '" placeholder="Lun/Mer/Ven matin, pas le week-end…"></div>'
+     + '<div class="fi-f wide"><label for="fi-ci">Contre-indications</label>'
+     + '<textarea id="fi-ci" placeholder="Pas d\'impact, éviter la flexion lombaire chargée…">' + esc(f.contreIndications || '') + '</textarea></div>'
+     + '</div></div>';
+
+  /* Antécédents : liste datée, pas un bloc de texte — sinon la chronologie,
+     qui est l'information utile, se perd à la première réécriture. */
+  h += '<div class="card"><div class="card-h"><span>Antécédents</span></div>'
+     + '<div class="card-sub">Une entrée par épisode, avec sa date si elle est connue</div>'
+     + '<div class="atc-list" id="atc-list"></div>'
+     + '<div class="atc-add">'
+     + '<input type="text" id="atc-text" placeholder="Ex : rupture LCA genou gauche">'
+     + '<input type="date" id="atc-date" style="max-width:170px">'
+     + '<button type="button" onclick="addAntecedent()">Ajouter</button>'
+     + '</div></div>';
+
+  h += '<div class="fi-bar"><button class="fi-save" id="fi-save" onclick="saveFiche()">Enregistrer la fiche</button>'
+     + '<span class="fi-status" id="fi-status"></span></div>';
+  h += '</div>';
+  root.innerHTML = h;
+
+  _antecedents = r4pNormAntecedents(f.antecedents);
+  renderAntecedents();
+}
+
+function renderAntecedents(){
+  var el = document.getElementById('atc-list');
+  if (!el) return;
+  if (!_antecedents.length) {
+    el.innerHTML = '<span class="fi-hint">Aucun antécédent renseigné.</span>';
+    return;
+  }
+  el.innerHTML = _antecedents.map(function(a, i){
+    return '<div class="atc-chip"><span class="t">' + esc(a.text) + '</span>'
+      + (a.date ? '<span class="d">' + fmtDate(a.date) + '</span>' : '')
+      + '<button type="button" title="Retirer" onclick="removeAntecedent(' + i + ')">&times;</button></div>';
+  }).join('');
+}
+
+function addAntecedent(){
+  var t = document.getElementById('atc-text'), d = document.getElementById('atc-date');
+  var txt = (t.value || '').trim();
+  if (!txt) return;
+  _antecedents.push({ text: txt, date: d.value || '' });
+  t.value = ''; d.value = '';
+  renderAntecedents();
+  t.focus();
+}
+
+function removeAntecedent(i){
+  _antecedents.splice(i, 1);
+  renderAntecedents();
+}
+
 function render(s, hasBilanPlan, bounds){
   var periodActive = !!(bounds.from || bounds.to);
   var h = '<div class="pg-wrap">';
@@ -409,7 +590,15 @@ function fetchBilans(uid){
 var _period = 'all', _customFrom = '', _customTo = '';
 var _raw = null, _hasBilanPlan = true, _totalGlobal = 0;
 var _view = 'overview', _search = '', _sortKey = 'nom', _sortAsc = true;
-var _currentPatientId = null;
+var _antecedents = [];
+// Le patient courant est déjà connu du shell avant tout postMessage : on lit
+// son cache pour que la fiche soit utilisable dès l'ouverture de l'onglet.
+var _currentPatientId = (function(){
+  try {
+    var p = JSON.parse(localStorage.getItem('r4p-current-patient') || 'null');
+    return p && p.id ? p.id : null;
+  } catch(e){ return null; }
+})();
 
 function currentBounds(){
   if (_period === 'all') return { from: null, to: null };
@@ -431,8 +620,14 @@ function apply(){
   document.getElementById('pv-subnav').style.display = 'flex';
   document.getElementById('nav-overview').className = _view === 'overview' ? 'active' : '';
   document.getElementById('nav-list').className     = _view === 'list'     ? 'active' : '';
+  document.getElementById('nav-fiche').className    = _view === 'fiche'    ? 'active' : '';
   document.getElementById('pg-sub').textContent =
-    _view === 'list' ? 'Liste des patients' : 'Vue d\'ensemble du cabinet';
+    _view === 'list'  ? 'Liste des patients'
+    : _view === 'fiche' ? 'Fiche athlète'
+    : 'Vue d\'ensemble du cabinet';
+
+  // La fiche porte un seul patient : le filtre de période ne s'y applique pas.
+  if (_view === 'fiche') { renderFiche(); return; }
 
   if (_view === 'list') {
     // La liste utilise la cohorte filtrée, mais les dates d'activité et le
@@ -495,6 +690,65 @@ function onSearch(v){
 
 function pickPatient(id){
   window.parent.postMessage({ type: 'r4p-select-patient', patientId: id }, window.location.origin);
+}
+
+/* Lit un champ ; rend null si vide, pour effacer la valeur en base plutôt que
+   d'y écrire une chaîne vide (un champ vide doit redonner la main à l'indice
+   du bilan, pas bloquer sur '' qui compterait comme une saisie). */
+function fVal(id, isNumber){
+  var el = document.getElementById(id);
+  if (!el) return null;
+  var v = (el.value || '').trim();
+  if (!v) return null;
+  if (isNumber) { var n = parseFloat(v.replace(',', '.')); return isNaN(n) ? null : n; }
+  return v;
+}
+
+function saveFiche(){
+  var p = (_raw.patients || []).find(function(x){ return String(x.id) === String(_currentPatientId); });
+  if (!p) return;
+  var btn = document.getElementById('fi-save'), st = document.getElementById('fi-status');
+  btn.disabled = true; st.className = 'fi-status'; st.textContent = 'Enregistrement…';
+
+  var patch = {
+    poids:            fVal('fi-poids', true),
+    taille:           fVal('fi-taille', true),
+    niveau:           fVal('fi-niveau'),
+    lateralite_main:  fVal('fi-lateralite_main'),
+    lateralite_pied:  fVal('fi-lateralite_pied'),
+    activite:         fVal('fi-activite'),
+    medecin:          fVal('fi-medecin'),
+    fiche: {
+      seancesSemaine:    fVal('fi-seances', true),
+      materiel:          fVal('fi-materiel'),
+      disponibilites:    fVal('fi-dispo'),
+      contreIndications: fVal('fi-ci'),
+      antecedents:       _antecedents
+    }
+  };
+
+  sb.from('patients').update(patch).eq('id', p.id).select().single().then(function(res){
+    btn.disabled = false;
+    if (res.error) {
+      st.className = 'fi-status err';
+      // 42703 = colonne inexistante : la migration n'a pas encore été appliquée.
+      // On le dit explicitement, sinon l'erreur brute est incompréhensible.
+      st.textContent = (res.error.code === '42703' || /column .* does not exist/i.test(res.error.message || ''))
+        ? 'Les colonnes de la fiche ne sont pas encore créées en base — exécutez la migration supabase/migrations/20260730_fiche_athlete.sql.'
+        : 'Échec : ' + res.error.message;
+      return;
+    }
+    // Rafraîchir la copie locale pour que les indices et la liste restent justes
+    var i = _raw.patients.findIndex(function(x){ return String(x.id) === String(p.id); });
+    if (i !== -1) _raw.patients[i] = res.data;
+    st.className = 'fi-status ok';
+    st.textContent = 'Fiche enregistrée.';
+    setTimeout(function(){ if (st) st.textContent = ''; }, 3000);
+  }).catch(function(err){
+    btn.disabled = false;
+    st.className = 'fi-status err';
+    st.textContent = 'Erreur réseau : ' + ((err && err.message) || err);
+  });
 }
 
 /* Le topnav diffuse la sélection courante : on s'y synchronise plutôt que de

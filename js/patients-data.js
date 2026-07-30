@@ -144,6 +144,57 @@ function r4pResolveSport(patients, bilans){
   });
 }
 
+/* ── Fiche athlète ─────────────────────────────────────────────────
+   Listes fermées dès le départ : le champ « sport » en texte libre a montré
+   qu'une saisie ouverte rend les statistiques inexploitables, et ici il n'y
+   a aucune valeur existante à migrer. */
+var R4P_NIVEAUX = [
+  ['loisir',        'Loisir'],
+  ['departemental', 'Départemental'],
+  ['regional',      'Régional'],
+  ['national',      'National'],
+  ['international', 'International'],
+  ['professionnel', 'Professionnel'],
+];
+var R4P_LAT_MAIN = [['droite','Droite'], ['gauche','Gauche'], ['ambidextre','Ambidextre']];
+var R4P_LAT_PIED = [['droit','Droit'],   ['gauche','Gauche'], ['indifferent','Indifférent']];
+
+/* Les champs de la fiche qui existent AUSSI dans le bilan (poids, taille,
+   activité, médecin) ne sont pas dupliqués : la fiche fait foi si elle est
+   remplie, sinon on affiche la valeur du bilan le plus récent — comme un
+   indice, sans jamais l'écrire. Même règle que pour le sport, et donc aucun
+   risque d'écraser une saisie récente en éditant un bilan ancien.
+
+   Rend { value, source } où source vaut 'fiche' | 'bilan' | ''. */
+function r4pResolveFicheField(patient, bilans, ficheKey, bilanKey){
+  var own = patient ? patient[ficheKey] : null;
+  if (own !== null && own !== undefined && String(own).trim() !== '') {
+    return { value: own, source: 'fiche' };
+  }
+  var best = null, bestDate = '';
+  (bilans || []).forEach(function(b){
+    if (String(b.patient_id) !== String(patient && patient.id)) return;
+    var v = b[bilanKey];
+    if (v === null || v === undefined || String(v).trim() === '') return;
+    var d = String(b.date || '').slice(0, 10);
+    if (!best || d > bestDate) { best = v; bestDate = d; }
+  });
+  return best !== null ? { value: best, source: 'bilan', date: bestDate } : { value: '', source: '' };
+}
+
+/* Antécédents : liste répétable datée, comme les objectifs et les zones
+   douloureuses du bilan. Un bloc de texte unique perdrait la chronologie,
+   qui est justement l'information utile. */
+function r4pNormAntecedents(raw){
+  if (Array.isArray(raw)) {
+    return raw.filter(function(a){ return a && r4pNorm(a.text); })
+              .map(function(a){ return { text: String(a.text), date: a.date || '' }; });
+  }
+  // Rétrocompatibilité : un texte libre déjà saisi devient une entrée sans date.
+  if (raw && String(raw).trim()) return [{ text: String(raw).trim(), date: '' }];
+  return [];
+}
+
 /* ── Liste des patients ────────────────────────────────────────────
    Une ligne par patient, avec ses dernières dates d'activité et un statut.
    Le statut reprend exactement les seuils des indicateurs (30 / 90 jours)
@@ -375,5 +426,7 @@ if (typeof module !== 'undefined' && module.exports) {
                      r4pPeriodFrom: r4pPeriodFrom, R4P_SPORT_ALIASES: R4P_SPORT_ALIASES,
                      R4P_MOTIF_KEYWORDS: R4P_MOTIF_KEYWORDS,
                      r4pBuildRoster: r4pBuildRoster, r4pSortRoster: r4pSortRoster,
-                     R4P_STATUT_LABELS: R4P_STATUT_LABELS, r4pResolveSport: r4pResolveSport };
+                     R4P_STATUT_LABELS: R4P_STATUT_LABELS, r4pResolveSport: r4pResolveSport,
+                     R4P_NIVEAUX: R4P_NIVEAUX, R4P_LAT_MAIN: R4P_LAT_MAIN, R4P_LAT_PIED: R4P_LAT_PIED,
+                     r4pResolveFicheField: r4pResolveFicheField, r4pNormAntecedents: r4pNormAntecedents };
 }
