@@ -227,6 +227,70 @@ sections: [
     ]}
 ]},
 
+/* ── 👥 PATIENTS ──────────────────────────────────────────────── */
+{ id:'patients', emoji:'👥', titre:'Patients', articles:[
+  { id:'vue-ensemble', titre:'La vue d\'ensemble du cabinet',
+    intro:'Une lecture globale de votre patientèle, sans sélectionner personne. Trois sous-onglets structurent l\'espace : Vue d\'ensemble, Liste et Fiche.',
+    etapes:[
+      { t:'Ouvrez l\'onglet « Patients »', x:'Il s\'ouvre sur la vue d\'ensemble. Aucun patient n\'a besoin d\'être sélectionné : les chiffres portent sur l\'ensemble de votre fichier.', img:true },
+      { t:'Quatre indicateurs en haut', x:'Patients au total, Actifs (séance de moins de 30 jours), Dormants (plus de 90 jours sans rien) et Nouveaux du mois. Actifs et Dormants ne s\'additionnent pas au total : les patients situés entre 30 et 90 jours ne sont dans aucune des deux cases.' },
+      { t:'« Dormants » est l\'indicateur le plus actionnable', x:'Il liste les patients que vous n\'avez pas vus depuis plus de trois mois. Contrairement aux graphiques, qui décrivent, celui-ci suggère une action.' },
+      { t:'Répartition par sexe, âge et sport', x:'Le sexe est déduit de la civilité saisie à la création du patient. L\'âge est calculé depuis la date de naissance. Les sports sont regroupés automatiquement (voir l\'article suivant).' },
+      { t:'Régions atteintes et motifs de consultation', x:'Ces deux blocs portent le badge « Bilan » : ils sont calculés depuis vos bilans et n\'apparaissent donc pas si votre offre ne comprend pas le bilan clinique.' }
+    ]},
+  { id:'comprendre-chiffres', titre:'Bien lire les chiffres',
+    intro:'Quelques règles de calcul à connaître pour ne pas mal interpréter les graphiques. Elles sont volontairement affichées sous chaque bloc.',
+    etapes:[
+      { t:'L\'unité de comptage est le patient, jamais le bilan', x:'Un patient qui a cinq bilans compte pour un. Sinon les patients les plus suivis écraseraient les statistiques.' },
+      { t:'Un patient peut compter dans plusieurs lignes', x:'C\'est le cas pour les régions atteintes (genou et épaule) comme pour les motifs. C\'est pourquoi ces blocs sont en barres et non en camembert : les parts ne se partagent pas un tout, et leur somme dépasse 100 %.' },
+      { t:'« Non renseigné » et « Non reconnu » sont affichés exprès', x:'Ces lignes grises vous disent quelle part de vos données échappe au classement. Sans elles, vous liriez un palmarès en croyant qu\'il couvre tout votre fichier.' },
+      { t:'Surveillez le taux de non-reconnus des motifs', x:'Il est écrit sous le bloc. En dessous de 30 %, le classement est fiable. Au-delà, il devient trompeur : c\'est le signal qu\'il faudrait saisir les motifs de façon plus homogène.' },
+      { t:'Les barres se lisent par leur longueur relative', x:'La plus longue correspond à la valeur la plus élevée de la série, pas à 100 % de vos patients. La valeur exacte est toujours écrite à droite.' }
+    ]},
+  { id:'filtres-periode', titre:'Filtrer sur une période',
+    intro:'Les cinq filtres en haut de page cadrent toute la vue, pas seulement le compteur principal.',
+    etapes:[
+      { t:'3 mois, 6 mois, 1 an, Tout ou Personnalisé', x:'« Personnalisé » fait apparaître deux champs de dates, préremplis sur les trois derniers mois.', img:true },
+      { t:'Un patient est compté s\'il a eu de l\'activité sur la période', x:'Une séance planifiée, un bilan, ou sa création dans votre fichier. C\'est la lecture de « combien de patients ai-je eu sur ces trois mois », qui englobe donc aussi bien les nouveaux que les suivis.' },
+      { t:'La rangée d\'indicateurs change quand un filtre est actif', x:'Actifs et Dormants disparaissent, car ce sont des notions relatives à aujourd\'hui : les afficher à côté d\'une période passée serait trompeur. Ils sont remplacés par Patients sur la période, Nouveaux sur la période et Bilans réalisés, avec le total général conservé comme repère.' },
+      { t:'Changer de filtre ne recharge rien', x:'Les données sont chargées une seule fois à l\'ouverture de l\'onglet ; tout est recalculé localement. Le changement est instantané.' },
+      { t:'Si vous inversez les dates', x:'Un avertissement orange s\'affiche et la plage est ignorée — la vue repasse sur l\'ensemble des données plutôt que d\'afficher un résultat vide sans explication.' }
+    ]},
+  { id:'liste', titre:'La liste des patients',
+    intro:'Un tableau complet, plus lisible que le menu déroulant du bandeau supérieur, pensé pour l\'analyse et le tri.',
+    etapes:[
+      { t:'Cliquez sur « Liste » dans la sous-navigation', x:'Huit colonnes : nom, prénom, âge, sexe, sport, dernière activité, nombre de bilans et statut.', img:true },
+      { t:'Cliquez sur un en-tête pour trier', x:'Un second clic inverse l\'ordre. Les valeurs absentes restent toujours en dernier, dans les deux sens : une date manquante n\'est ni petite ni grande.' },
+      { t:'La recherche porte sur le nom, le prénom et le sport', x:'La saisie est insensible aux accents et à la casse : « course » retrouve « Course à pied ».' },
+      { t:'La pastille de statut', x:'Actif (vert) pour une activité de moins de 30 jours, Récent (orange) entre 30 et 90 jours, Dormant (gris) au-delà ou jamais. La « dernière activité » retient la plus récente entre séance et bilan : un patient vu en bilan sans séance planifiée n\'est pas considéré comme inactif.' },
+      { t:'Cliquez sur une ligne pour sélectionner le patient', x:'Le bandeau supérieur se met à jour et tous les onglets basculent sur son dossier. La ligne du patient actif est surlignée en bleu. Si le bilan contient des données non sauvegardées, la demande de confirmation habituelle s\'affiche.' },
+      { t:'Le filtre de période s\'applique aussi à la liste', x:'En revanche le statut et les dates restent calculés sur tout l\'historique : un patient vu en janvier ne paraîtra pas « jamais actif » sous un filtre 3 mois.' }
+    ]},
+  { id:'fiche', titre:'La fiche athlète',
+    intro:'Les informations durables du patient, regroupées en un endroit : anthropométrie, profil, contexte, cadre d\'entraînement et antécédents. Elle est accessible quelle que soit votre offre, y compris sans le bilan clinique.',
+    etapes:[
+      { t:'Sélectionnez un patient, puis ouvrez « Fiche »', x:'Sans patient sélectionné, la fiche propose un lien vers la liste. Le filtre de période ne s\'applique pas ici : la fiche porte sur une seule personne.', img:true },
+      { t:'Anthropométrie — poids et taille', x:'Ces deux champs existent aussi dans le bilan, où ils sont datés. La fiche ne les écrase jamais.' },
+      { t:'Les champs à bordure pointillée affichent une valeur du bilan', x:'Quand la fiche est vide et qu\'un bilan porte la valeur, celle du bilan le plus récent s\'affiche en gris italique, avec sa date. C\'est un indice de lecture, jamais enregistré. Cela concerne le poids, la taille, l\'activité professionnelle et le médecin prescripteur.' },
+      { t:'Saisir dans le champ remplace l\'indice', x:'Votre saisie devient alors la valeur de référence. Pour revenir à l\'indice du bilan, videz le champ et enregistrez : la fiche redonne la main au bilan.' },
+      { t:'Profil — niveau et latéralité', x:'Trois listes fermées : niveau de pratique (de Loisir à Professionnel), main dominante et pied dominant. Des listes et non du texte libre, pour que ces données restent exploitables en statistiques.' },
+      { t:'Cadre d\'entraînement', x:'Séances par semaine, matériel et lieu, jours d\'entraînement possibles, précisions sur les disponibilités, contre-indications. C\'est la partie qui sert à dimensionner vos programmes.' },
+      { t:'Les jours d\'entraînement sont des boutons à bascule', x:'Cliquez sur un jour pour l\'activer ou le désactiver ; un compteur récapitule la sélection. Le champ de précisions juste en dessous reste utile pour les horaires ou les exceptions.' },
+      { t:'Antécédents — une entrée par épisode', x:'Saisissez le libellé, ajoutez une date si vous la connaissez, puis « Ajouter ». Chaque antécédent devient une étiquette supprimable. Une liste datée plutôt qu\'un bloc de texte : la chronologie se perdrait à la première réécriture.' },
+      { t:'Cliquez sur « Enregistrer la fiche »', x:'Le bouton reste visible en bas de page pendant que vous faites défiler. Un message confirme l\'enregistrement.' }
+    ]},
+  { id:'sport-motifs', titre:'Comment les sports et les motifs sont reconnus',
+    intro:'Vous saisissez librement le sport et le motif de bilan ; le regroupement se fait automatiquement à l\'affichage. Rien n\'est modifié dans vos données.',
+    etapes:[
+      { t:'Les sports sont regroupés par équivalences', x:'« foot », « Football » et « futsal » se retrouvent dans la même barre. Ce qui n\'est pas reconnu apparaît en « Autres », ce qui est vide en « Non renseigné ».' },
+      { t:'Le sport peut venir de deux endroits', x:'Celui de la fiche patient est prioritaire ; s\'il est vide, celui du bilan le plus récent est utilisé. Vous n\'avez donc rien à ressaisir si vous ne l\'aviez renseigné que dans un bilan.' },
+      { t:'Les motifs sont analysés par mots-clés', x:'Un motif est une phrase, pas une étiquette : « Contrôle post-op LCA à 3 mois » alimente à la fois Post-opératoire, LCA et Contrôle. Une trentaine de pathologies sont reconnues, y compris les abréviations courantes (SFP, SBIT, LCA, RTS).' },
+      { t:'Écrire naturellement suffit', x:'Les accents, les tirets et les apostrophes n\'ont pas d\'importance : « fémoro-patellaire », « femoro patellaire » et « SFP » sont traités de la même façon.' },
+      { t:'Un motif sans mot-clé connu part en « Non reconnu »', x:'« Gêne au genou depuis la reprise » n\'est rattachable à aucune pathologie : il est compté à part plutôt que classé au hasard. Pour améliorer la reconnaissance, nommez la pathologie dans le motif.' },
+      { t:'Les négations ne sont pas gérées', x:'« Pas de rupture du LCA » sera compté dans LCA. À garder en tête si vous formulez des motifs par élimination.' }
+    ]}
+]},
+
 /* ── 🧮 CALCULATEURS ─────────────────────────────────────────── */
 { id:'calculateurs', emoji:'🧮', titre:'Calculateurs', articles:[
   { id:'rm', titre:'Calculateur RM (1RM estimé)',
@@ -425,6 +489,20 @@ faq: [
     a:'Cliquez sur le badge S de la chip (ou sur l\'activité), puis « ✕ Délier de la séance ». Vous pouvez ensuite la lier manuellement à la bonne séance du jour. Le lien corrigé est mémorisé définitivement.' },
   { q:'Le retour de mon athlète n\'apparaît pas.',
     a:'Regardez la cloche en haut de l\'écran et les pastilles bleues/oranges sur l\'agenda : le retour y apparaît dès son envoi (actualisation toutes les 2 minutes). Vérifiez aussi que le bon patient est sélectionné.' },
+  { q:'Dans la vue d\'ensemble, Actifs + Dormants ne fait pas le total de mes patients.',
+    a:'C\'est normal. « Actif » signifie une activité de moins de 30 jours, « Dormant » plus de 90 jours. Les patients situés entre les deux ne sont dans aucune des deux cases — ils apparaissent en « Récent » dans la liste. Seul « Patients au total » compte tout le monde.' },
+  { q:'Pourquoi la répartition des régions atteintes dépasse-t-elle 100 % ?',
+    a:'Parce qu\'un patient peut avoir plusieurs zones douloureuses : il compte alors dans plusieurs lignes. C\'est aussi pour cette raison que ce bloc est en barres et non en camembert — un camembert affirmerait visuellement un partage du tout qui n\'existe pas. Le pourcentage se lit « part des patients concernés », pas « part du total ».' },
+  { q:'Beaucoup de mes motifs sont en « Non reconnu ».',
+    a:'La reconnaissance se fait par mots-clés sur le champ « Motif du bilan ». Un motif descriptif comme « Gêne au genou depuis la reprise » ne contient aucune pathologie nommée : il est compté à part plutôt que classé au hasard. Nommez la pathologie dans le motif (SFP, LCA, tendinopathie…) pour améliorer le taux. Au-delà de 30 % de non-reconnus, considérez le classement comme indicatif seulement.' },
+  { q:'Le sport de mon patient n\'apparaît pas dans les statistiques.',
+    a:'Vérifiez d\'abord qu\'il est renseigné : la ligne grise « Non renseigné » compte les patients sans sport. S\'il est renseigné mais atterrit dans « Autres », c\'est que le libellé n\'est pas dans la liste des équivalences reconnues — dites-le nous, la liste s\'enrichit.' },
+  { q:'Dans la fiche athlète, un champ est grisé avec une bordure pointillée.',
+    a:'Ce n\'est pas un champ verrouillé : il affiche la valeur du bilan le plus récent, avec sa date, parce que la fiche est vide sur ce champ. C\'est un indice de lecture, jamais enregistré. Écrivez dedans pour poser votre propre valeur ; videz-le et enregistrez pour redonner la main au bilan.' },
+  { q:'Le poids que je saisis dans la fiche écrase-t-il celui de mes bilans ?',
+    a:'Non, jamais. Le bilan conserve sa propre valeur datée, ce qui permet le suivi dans le temps. La fiche porte la valeur de référence courante, utile notamment si vous n\'avez pas l\'offre bilan. Aucune écriture ne va de la fiche vers les bilans.' },
+  { q:'Je clique sur un patient dans la liste et le sélecteur ne change pas.',
+    a:'Ce bug a été corrigé. Si vous l\'observez encore, faites un rechargement complet de la page (Cmd/Ctrl + Shift + R) : votre navigateur utilise probablement une ancienne version de l\'application.' },
   { q:'Puis-je modifier un compte-rendu déjà généré ?',
     a:'Les CR du bilan se régénèrent en direct : modifiez les données du bilan et le texte se met à jour. Pour le CR médecin (Outils), tous les champs restent éditables avant l\'export — et vous pouvez retoucher la lettre après l\'avoir copiée.' },
   { q:'Comment supprimer plusieurs séances d\'un coup ?',
