@@ -19,6 +19,10 @@ function r4pNorm(s){
   return String(s == null ? '' : s)
     .toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    // Apostrophes et tirets deviennent des espaces : \u00ab tendon d'Achille \u00bb,
+    // \u00ab f\u00e9moro-patellaire \u00bb et \u00ab femoro patellaire \u00bb se ram\u00e8nent ainsi \u00e0 une
+    // seule forme, et les alias n'ont plus besoin d'\u00eatre \u00e9crits en double.
+    .replace(/['\u2019\-\u2013\u2014]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -57,16 +61,59 @@ var R4P_SPORT_ALIASES = [
    rupture du LCA » compte dans LCA), et le dictionnaire n'est jamais
    complet — d'où l'importance de la ligne « Non reconnu ». */
 var R4P_MOTIF_KEYWORDS = [
-  ['Post-opératoire',      ['post op', 'post-op', 'postop', 'post operatoire', 'postoperatoire', 'opere', 'operee', 'operation', 'chirurgie', 'plastie', 'reconstruction', 'arthroscopie', 'prothese']],
+  // ── Contexte de consultation (pas une pathologie) ──
+  ['Post-opératoire',      ['post op', 'postop', 'post operatoire', 'postoperatoire', 'opere', 'operee', 'operation', 'chirurgie', 'plastie', 'reconstruction', 'arthroscopie', 'prothese']],
+
+  // ── Genou ──
   ['LCA',                  ['lca', 'ligament croise anterieur', 'didt', 'kenneth jones', 'acl']],
   ['LCP',                  ['lcp', 'ligament croise posterieur']],
   ['Lésion méniscale',     ['menisque', 'meniscal', 'meniscale', 'meniscectomie']],
-  ['Tendinopathie',        ['tendinopathie', 'tendinite', 'tendineux', 'tendinose', 'tendon']],
+  // « rotulien » seul est volontairement absent : il apparaît autant dans
+  // « syndrome rotulien » (fémoro-patellaire) que dans « tendinopathie
+  // rotulienne », qui est une pathologie différente. Seule la forme complète
+  // est retenue, pour ne pas étiqueter à tort toutes les tendinopathies.
+  ['Syndrome fémoro-patellaire', ['sfp', 'femoro patellaire', 'femoropatellaire', 'syndrome rotulien',
+                                  'chondropathie', 'pfps', 'patellofemoral']],
+  ['Syndrome bandelette ilio-tibiale', ['sbit', 'bandelette', 'ilio tibial', 'iliotibial', 'essuie glace']],
+
+  // ── Épaule ──
+  ['Coiffe des rotateurs', ['coiffe', 'rotateurs', 'sus epineux', 'supra epineux', 'infra epineux']],
+  // « instabilite » seul a été retiré : trop générique, il attrapait aussi
+  // « instabilité chronique de cheville » et étiquetait ces patients en épaule.
+  ['Instabilité d\'épaule',['instabilite epaule', 'instabilite gleno', 'luxation', 'subluxation', 'latarjet', 'bankart']],
+  ['Capsulite rétractile', ['capsulite', 'epaule gelee', 'frozen shoulder', 'retractile']],
+  ['Lésion du labrum',     ['labrum', 'labral', 'slap']],
+
+  // ── Coude, poignet, main ──
+  ['Épicondylite',         ['epicondylite', 'epicondylalgie', 'epicondylien', 'tennis elbow',
+                            'epitrochleite', 'golfer elbow']],
+  // « carpien » seul est écarté : il est contenu dans « métacarpien », donc
+  // une fracture de métacarpien serait comptée en canal carpien.
+  ['Canal carpien',        ['canal carpien']],
+
+  // ── Cheville, pied ──
+  ['Instabilité de cheville', ['instabilite cheville', 'cheville instable', 'instabilite chronique',
+                               'entorses a repetition', 'laxite cheville']],
+  ['Aponévrosite plantaire', ['aponevrosite', 'aponevrose plantaire', 'fasciite plantaire',
+                              'fascia plantaire', 'epine calcaneenne', 'talalgie']],
+  // Exige le mot « rupture » : sans lui, « tendinopathie achilléenne » serait
+  // comptée comme une rupture, ce qui est une pathologie tout autre.
+  ['Rupture du tendon d\'Achille', ['rupture achille', 'rupture achilleenne', 'rupture du tendon d achille',
+                                    'rupture tendon achille', 'rupture d achille']],
+  ['Périostite tibiale',   ['periostite', 'stress tibial', 'syndrome de stress tibial']],
+
+  // ── Transversal ──
+  // « tendon » seul a été retiré : il apparaît dans « rupture du tendon
+  // d'Achille », qui n'est pas une tendinopathie. Un motif vague du type
+  // « problème de tendon » part désormais en non-reconnu, ce qui est plus
+  // honnête qu'un classement erroné.
+  ['Tendinopathie',        ['tendinopathie', 'tendinite', 'tendineux', 'tendinose']],
   ['Entorse',              ['entorse', 'ligamentoplastie', 'ligamentaire']],
+  ['Lésion musculaire',    ['lesion musculaire', 'dechirure', 'claquage', 'elongation', 'contracture',
+                            'lma', 'myo aponevrotique', 'myoaponevrotique', 'desinsertion']],
+  ['Arthrose',             ['arthrose', 'arthrosique', 'gonarthrose', 'coxarthrose', 'omarthrose']],
   ['Lombalgie',            ['lombalgie', 'lombaire', 'lumbago', 'hernie', 'discal', 'sciatique', 'cruralgie']],
   ['Cervicalgie',          ['cervicalgie', 'cervical', 'ncb', 'torticolis']],
-  ['Coiffe des rotateurs', ['coiffe', 'rotateurs', 'sus epineux', 'supra epineux', 'infra epineux']],
-  ['Instabilité d\'épaule',['luxation', 'instabilite', 'latarjet', 'bankart', 'subluxation']],
   ['Pubalgie',             ['pubalgie', 'pubis', 'adducteurs']],
   ['Fracture',             ['fracture', 'fissure']],
   ['Retour au sport',      ['rts', 'retour au sport', 'return to sport', 'reprise du sport', 'reathletisation', 'readaptation']],
