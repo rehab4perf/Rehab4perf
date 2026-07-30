@@ -1263,6 +1263,14 @@ window.addEventListener('message', function(e) {
     deselectPatient();
   }
 
+  // La liste de l'onglet Patients demande une sélection. On passe par
+  // selectPatient() pour n'avoir qu'une seule source de vérité : le topnav se
+  // met à jour et le garde-fou « données non sauvegardées » de bilan.html
+  // continue de s'appliquer via _broadcastPatient().
+  if (e.data.type === 'r4p-select-patient' && e.data.patientId) {
+    selectPatient(e.data.patientId);
+  }
+
   // programme a marqué un feedback comme lu → retirer de la cloche
   if (e.data.type === 'r4p-fb-seen' && e.data.seanceId) {
     if (Array.isArray(_notifFeed)) {
@@ -1679,7 +1687,7 @@ function _broadcastPatient(p) {
       patient: p,
       auth: sess ? { access_token: sess.access_token, refresh_token: sess.refresh_token } : null
     };
-    ['frame-bilan','frame-outils','frame-prescription'].forEach(function(id) {
+    ['frame-bilan','frame-outils','frame-prescription','frame-patients'].forEach(function(id) {
       var f = document.getElementById(id);
       if (f && f.contentWindow) f.contentWindow.postMessage(msg, window.location.origin);
     });

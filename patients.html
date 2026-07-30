@@ -55,6 +55,47 @@ body {
 .split-legend { display: flex; flex-wrap: wrap; gap: 20px; margin-top: 10px; font-size: .85rem; color: var(--text2); }
 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 7px; vertical-align: baseline; }
 
+/* Sous-navigation de l'onglet */
+.subnav { display: flex; gap: 2px; padding: 0 26px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.subnav button {
+  font-family: inherit; font-size: .86rem; font-weight: 600; color: var(--text3);
+  background: none; border: none; border-bottom: 2px solid transparent;
+  padding: 10px 14px; cursor: pointer; transition: color .12s, border-color .12s;
+}
+.subnav button:hover { color: var(--text2); }
+.subnav button.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* Liste */
+.lst-tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.lst-search {
+  font-family: inherit; font-size: .85rem; color: var(--text); flex: 1; min-width: 180px;
+  border: 1.5px solid var(--border); border-radius: 20px; padding: 8px 14px;
+  background: var(--surface); outline: none;
+}
+.lst-search:focus { border-color: var(--accent); }
+.lst-count { font-size: .8rem; color: var(--text2); white-space: nowrap; }
+.lst-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow-x: auto; }
+table.lst { width: 100%; border-collapse: collapse; font-size: .85rem; }
+table.lst th {
+  background: var(--surface2); color: var(--text2); font-size: .7rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .05em; text-align: left;
+  padding: 9px 12px; border-bottom: 1px solid var(--border); white-space: nowrap;
+  cursor: pointer; user-select: none;
+}
+table.lst th:hover { color: var(--text); }
+table.lst th .arrow { color: var(--accent); font-size: .68rem; }
+table.lst td { padding: 10px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+table.lst tr:last-child td { border-bottom: none; }
+table.lst tbody tr { cursor: pointer; }
+table.lst tbody tr:hover td { background: var(--accent-l); }
+table.lst tbody tr.current td { background: var(--accent-l); box-shadow: inset 3px 0 0 var(--accent); }
+.lst-nom { font-weight: 600; color: var(--text); }
+.lst-dim { color: var(--text3); }
+.pill { font-size: .68rem; font-weight: 600; padding: 2px 8px; border-radius: 5px; white-space: nowrap; }
+.pill.actif   { background: #E8F5EE; color: #2D6A4F; }
+.pill.recent  { background: #FEF3EB; color: var(--orange); }
+.pill.dormant { background: var(--surface2); color: var(--text3); }
+
 /* Filtres de période : une seule rangée, au-dessus des indicateurs */
 .filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 18px; }
 .fchip {
@@ -94,11 +135,16 @@ body {
   <div class="pg-sub" id="pg-sub">Vue d'ensemble du cabinet</div>
 </div>
 
+<div class="subnav" id="pv-subnav" style="display:none">
+  <button id="nav-overview" onclick="setView('overview')">Vue d'ensemble</button>
+  <button id="nav-list"     onclick="setView('list')">Liste</button>
+</div>
+
 <div id="pv-root">
   <div class="state" id="pv-state">Chargement…</div>
 </div>
 
-<script src="js/patients-data.js?v=20260730a"></script>
+<script src="js/patients-data.js?v=20260730b"></script>
 <script>
 var SUPA_URL = 'https://sxdobjodxkwexaspepdm.supabase.co';
 var SUPA_KEY = 'sb_publishable_zEJrmQOnKyRm-Y_NyojaTA_ERrDx4pl';
@@ -169,6 +215,74 @@ function scopeLine(s, bounds){
   var fmt = function(d){ if (!d) return '…'; var p = d.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; };
   return '<div class="fscope">Période du <strong>' + fmt(bounds.from) + '</strong> au <strong>' + fmt(bounds.to) + '</strong>'
     + ' — un patient est compté s\'il a eu une séance, un bilan ou a été créé sur cette période.</div>';
+}
+
+function fmtDate(d){
+  if (!d) return '';
+  var p = String(d).slice(0, 10).split('-');
+  return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : d;
+}
+
+/* ── Vue Liste ─────────────────────────────────────────────────────
+   Cliquer une ligne sélectionne le patient globalement : on délègue au
+   topnav via postMessage plutôt que de tenir un état local, pour éviter
+   deux sources de vérité concurrentes. */
+function renderList(rows, bounds){
+  var q = r4pNorm(_search);
+  var filtered = q
+    ? rows.filter(function(r){
+        return r4pNorm(r.nom + ' ' + r.prenom + ' ' + r.sport).indexOf(q) !== -1;
+      })
+    : rows;
+  var sorted = r4pSortRoster(filtered, _sortKey, _sortAsc);
+
+  var cols = [
+    ['nom',              'Nom'],
+    ['prenom',           'Prénom'],
+    ['age',              'Âge'],
+    ['sexe',             'Sexe'],
+    ['sport',            'Sport'],
+    ['derniereActivite', 'Dernière activité'],
+    ['nbBilans',         'Bilans'],
+    ['statut',           'Statut'],
+  ];
+
+  var h = '<div class="pg-wrap">';
+  h += filterBar();
+  h += scopeLine(null, bounds);
+  h += '<div class="lst-tools">'
+    + '<input type="text" class="lst-search" id="lst-q" placeholder="Rechercher un nom, un prénom, un sport…" value="' + esc(_search) + '" oninput="onSearch(this.value)">'
+    + '<span class="lst-count">' + sorted.length + ' patient' + (sorted.length > 1 ? 's' : '') + '</span>'
+    + '</div>';
+
+  if (!sorted.length) {
+    h += '<div class="state">' + (q ? 'Aucun patient ne correspond à cette recherche.' : 'Aucun patient sur cette période.') + '</div></div>';
+    document.getElementById('pv-root').innerHTML = h;
+    return;
+  }
+
+  h += '<div class="lst-wrap"><table class="lst"><thead><tr>';
+  cols.forEach(function(c){
+    var arrow = _sortKey === c[0] ? ' <span class="arrow">' + (_sortAsc ? '▲' : '▼') + '</span>' : '';
+    h += '<th onclick="setSort(\'' + c[0] + '\')">' + c[1] + arrow + '</th>';
+  });
+  h += '</tr></thead><tbody>';
+  sorted.forEach(function(r){
+    var cur = _currentPatientId && String(_currentPatientId) === String(r.id);
+    h += '<tr class="' + (cur ? 'current' : '') + '" onclick="pickPatient(\'' + esc(r.id) + '\')"'
+      + ' title="Sélectionner ' + esc(r.prenom + ' ' + r.nom) + '">'
+      + '<td class="lst-nom">' + esc(r.nom) + '</td>'
+      + '<td>' + esc(r.prenom) + '</td>'
+      + '<td>' + (r.age === null ? '<span class="lst-dim">—</span>' : r.age + ' ans') + '</td>'
+      + '<td>' + (r.sexe ? esc(r.sexe === 'F' ? 'F' : 'H') : '<span class="lst-dim">—</span>') + '</td>'
+      + '<td>' + (r.sport ? esc(r.sport) : '<span class="lst-dim">—</span>') + '</td>'
+      + '<td>' + (r.derniereActivite ? fmtDate(r.derniereActivite) : '<span class="lst-dim">jamais</span>') + '</td>'
+      + '<td>' + (r.nbBilans || '<span class="lst-dim">0</span>') + '</td>'
+      + '<td><span class="pill ' + r.statut + '">' + R4P_STATUT_LABELS[r.statut] + '</span></td>'
+      + '</tr>';
+  });
+  h += '</tbody></table></div></div>';
+  document.getElementById('pv-root').innerHTML = h;
 }
 
 function render(s, hasBilanPlan, bounds){
@@ -294,6 +408,8 @@ function fetchBilans(uid){
    déclenche aucune requête, seulement une nouvelle agrégation locale. */
 var _period = 'all', _customFrom = '', _customTo = '';
 var _raw = null, _hasBilanPlan = true, _totalGlobal = 0;
+var _view = 'overview', _search = '', _sortKey = 'nom', _sortAsc = true;
+var _currentPatientId = null;
 
 function currentBounds(){
   if (_period === 'all') return { from: null, to: null };
@@ -311,6 +427,22 @@ function apply(){
   if (!_raw) return;
   var b = currentBounds();
   var c = r4pFilterCohort(_raw.patients, _raw.seances, _raw.bilans, b.from, b.to);
+
+  document.getElementById('pv-subnav').style.display = 'flex';
+  document.getElementById('nav-overview').className = _view === 'overview' ? 'active' : '';
+  document.getElementById('nav-list').className     = _view === 'list'     ? 'active' : '';
+  document.getElementById('pg-sub').textContent =
+    _view === 'list' ? 'Liste des patients' : 'Vue d\'ensemble du cabinet';
+
+  if (_view === 'list') {
+    // La liste utilise la cohorte filtrée, mais les dates d'activité et le
+    // statut sont calculés sur TOUTES les séances et bilans : sinon un patient
+    // vu en janvier paraîtrait « jamais actif » sous un filtre 3 mois.
+    var rows = r4pBuildRoster(c.patients, _raw.seances, _raw.bilans);
+    renderList(rows, b);
+    return;
+  }
+
   var s = r4pBuildStats(c.patients, c.seances, c.bilans);
   // « Nouveaux sur la période » : dépend des bornes, donc calculé ici et non
   // dans l'agrégat générique.
@@ -343,6 +475,37 @@ function setCustom(){
   _customTo   = t ? t.value : '';
   apply();
 }
+
+function setView(v){ _view = v; apply(); }
+
+function setSort(k){
+  if (_sortKey === k) _sortAsc = !_sortAsc;
+  else { _sortKey = k; _sortAsc = true; }
+  apply();
+}
+
+/* Le re-rendu recrée le champ : on lui rend le focus et le curseur pour que
+   la frappe ne soit pas interrompue à chaque caractère. */
+function onSearch(v){
+  _search = v;
+  apply();
+  var el = document.getElementById('lst-q');
+  if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+}
+
+function pickPatient(id){
+  window.parent.postMessage({ type: 'r4p-select-patient', patientId: id }, window.location.origin);
+}
+
+/* Le topnav diffuse la sélection courante : on s'y synchronise plutôt que de
+   tenir un état parallèle, pour que la ligne surlignée soit toujours juste. */
+window.addEventListener('message', function(e){
+  if (e.origin !== window.location.origin || !e.data) return;
+  if (e.data.type === 'r4p-patient-selected') {
+    _currentPatientId = e.data.patient ? e.data.patient.id : null;
+    if (_raw) apply();
+  }
+});
 
 sb.auth.getUser().then(function(r){
   var user = r.data && r.data.user;

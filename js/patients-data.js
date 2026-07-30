@@ -118,6 +118,71 @@ var R4P_AGE_BINS = [
   ['60 et plus',  60, 200],
 ];
 
+/* ── Liste des patients ────────────────────────────────────────────
+   Une ligne par patient, avec ses dernières dates d'activité et un statut.
+   Le statut reprend exactement les seuils des indicateurs (30 / 90 jours)
+   pour qu'un patient compté « dormant » en haut de page le soit aussi ici. */
+function r4pBuildRoster(patients, seances, bilans, today){
+  var t = today || new Date();
+  patients = patients || []; seances = seances || []; bilans = bilans || [];
+
+  var last = function(rows, key){
+    var out = {};
+    rows.forEach(function(r){
+      var d = String(r.date || '').slice(0, 10);
+      if (!d || !r.patient_id) return;
+      if (!out[r.patient_id] || d > out[r.patient_id]) out[r.patient_id] = d;
+    });
+    return out;
+  };
+  var lastS = last(seances), lastB = last(bilans);
+  var nbB = {};
+  bilans.forEach(function(b){ if (b.patient_id) nbB[b.patient_id] = (nbB[b.patient_id] || 0) + 1; });
+
+  var iso = function(daysAgo){
+    return new Date(t.getTime() - daysAgo * 86400000).toISOString().slice(0, 10);
+  };
+  var seuil30 = iso(30), seuil90 = iso(90);
+
+  return patients.map(function(p){
+    var ls = lastS[p.id] || '', lb = lastB[p.id] || '';
+    // La dernière activité est la plus récente des deux, pas seulement la séance :
+    // un patient vu en bilan sans séance planifiée n'est pas inactif.
+    var derniere = (ls > lb ? ls : lb) || '';
+    var statut;
+    if (derniere && derniere >= seuil30)      statut = 'actif';
+    else if (!derniere || derniere < seuil90) statut = 'dormant';
+    else                                     statut = 'recent';
+    return {
+      id: p.id,
+      nom: p.nom || '', prenom: p.prenom || '',
+      sexe: p.sexe || '', sport: p.sport || '',
+      age: r4pAge(p.ddn, t),
+      derniereSeance: ls, dernierBilan: lb, derniereActivite: derniere,
+      nbBilans: nbB[p.id] || 0,
+      statut: statut
+    };
+  });
+}
+
+var R4P_STATUT_LABELS = { actif: 'Actif', recent: 'Récent', dormant: 'Dormant' };
+
+/* Tri d'une liste déjà construite. Les valeurs vides partent toujours en
+   dernier, quel que soit le sens : une date absente n'est ni petite ni grande. */
+function r4pSortRoster(rows, key, asc){
+  var dir = asc ? 1 : -1;
+  return rows.slice().sort(function(a, b){
+    var va = a[key], vb = b[key];
+    var ea = (va === null || va === undefined || va === '');
+    var eb = (vb === null || vb === undefined || vb === '');
+    if (ea && eb) return 0;
+    if (ea) return 1;
+    if (eb) return -1;
+    if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * dir;
+    return String(va).localeCompare(String(vb), 'fr') * dir;
+  });
+}
+
 /* ── Filtre de période ─────────────────────────────────────────────
    Un patient n'est pas un événement daté : il « appartient » à une période
    s'il y a eu de l'activité le concernant dedans — une séance planifiée, un
@@ -282,5 +347,7 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = { r4pNorm: r4pNorm, r4pAge: r4pAge, r4pMatchGroups: r4pMatchGroups,
                      r4pBuildStats: r4pBuildStats, r4pFilterCohort: r4pFilterCohort,
                      r4pPeriodFrom: r4pPeriodFrom, R4P_SPORT_ALIASES: R4P_SPORT_ALIASES,
-                     R4P_MOTIF_KEYWORDS: R4P_MOTIF_KEYWORDS };
+                     R4P_MOTIF_KEYWORDS: R4P_MOTIF_KEYWORDS,
+                     r4pBuildRoster: r4pBuildRoster, r4pSortRoster: r4pSortRoster,
+                     R4P_STATUT_LABELS: R4P_STATUT_LABELS };
 }
