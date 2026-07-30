@@ -6983,7 +6983,9 @@ function _buildAllTestsHtml() {
   if (toWork.length > 0) {
     var workHtml = '';
     for (var wi=0; wi<toWork.length; wi++) {
-      workHtml += '<div class="cr-item"><span style="margin-right:6px;color:var(--orange)">-></span><span>' + toWork[wi] + '</span></div>';
+      // cr-todo : ligne « flèche + phrase », sans le couple clé/valeur des
+      // autres lignes — le CSS mobile doit la traiter à part (cf. bilan.html).
+      workHtml += '<div class="cr-item cr-todo"><span style="margin-right:6px;color:var(--orange)">-></span><span>' + toWork[wi] + '</span></div>';
     }
     addSec('6. Points a Travailler', workHtml);
   }

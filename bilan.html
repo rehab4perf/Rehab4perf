@@ -1489,6 +1489,31 @@ textarea { resize:none !important; overflow:hidden !important; }
      (Interprétation) clippée. Padding et police resserrés pour tenir. */
   .norm-table { font-size: .76rem; }
   .norm-table th, .norm-table td { padding: 6px 5px; }
+
+  /* ── Compte-rendu (CR Complet / CR Tests) ─────────────────
+     .cr-item est un flex sans wrap : la colonne clé, figée à 180px et
+     non rétractable, ne laissait que ~175px à la valeur une fois la
+     sidebar empilée → le texte se coupait caractère par caractère.
+     Chaque ligne devient une carte : intitulé et statut sur la première
+     ligne, valeur en pleine largeur en dessous. Même principe que le CR
+     exporté en HTML, qui empile déjà clé et valeur sous 640px. */
+  .cr-item { flex-wrap: wrap; row-gap: 3px; padding: 8px 0; }
+  .cr-item .cr-key { min-width: 0; flex: 1 1 auto; font-weight: 600; }
+  /* order : dans le DOM la valeur précède le tag — sans réordonnancement
+     elle s'intercalerait entre l'intitulé et son statut. */
+  .cr-item .cr-tag { order: 1; margin-left: auto; }
+  .cr-item .cr-date-badge { order: 2; }
+  .cr-item .cr-val { order: 3; flex: 1 1 100%; min-width: 0; }
+  /* Les puces « Points à travailler » (.cr-todo) n'ont pas de couple
+     clé/valeur mais une flèche suivie d'une phrase. Le wrap flex se
+     décide sur la taille max-content AVANT tout rétrécissement : une
+     phrase longue passerait donc en bloc sous la flèche, la laissant
+     seule sur sa ligne. On garde nowrap et on laisse la phrase rétrécir. */
+  .cr-item.cr-todo { flex-wrap: nowrap; }
+  /* La flèche doit rester insécable : rétrécie, elle se coupait en « - »
+     puis « > » sur deux lignes. Seule la phrase absorbe la contrainte. */
+  .cr-item.cr-todo > span:first-child { flex: 0 0 auto; }
+  .cr-item.cr-todo > span:last-child { min-width: 0; }
 }
 /* ── Pain zones ── */
 .pain-zones-wrap { display:flex; flex-direction:column; gap:8px; }
@@ -5080,7 +5105,7 @@ select.bl-inherited-ghost { color:var(--text3); font-style:italic; }
 
 
 <script src="js/bilan-blocks.js?v=20260710"></script>
-<script src="js/bilan.js?v=20260730d"></script>
+<script src="js/bilan.js?v=20260730e"></script>
 
 </body>
 </html>
