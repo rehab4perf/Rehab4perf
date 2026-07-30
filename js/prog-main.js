@@ -6869,7 +6869,7 @@ var PROTOCOLS_REF = [
           'EVA < 3/10 à l\'activité',
           'QuickDASH < 40 %',
           'AAROM = AROM',
-          'Protocole de fatigue réussi — 20 élévations antérieures, 20 abductions, 20 RE coude au corps à 2 % du poids de corps',
+          'Protocole de fatigue réussi — 20 élévations antérieures à 90°, 20 abductions à 90°, 20 RE1 en couché latéral à 2 % du poids de corps',
           'JAR réussi sous 90°'
         ]
       },
