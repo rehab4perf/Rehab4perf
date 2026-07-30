@@ -159,6 +159,14 @@ var R4P_NIVEAUX = [
 var R4P_LAT_MAIN = [['droite','Droite'], ['gauche','Gauche'], ['ambidextre','Ambidextre']];
 var R4P_LAT_PIED = [['droit','Droit'],   ['gauche','Gauche'], ['indifferent','Indifférent']];
 
+/* Jours de disponibilité : stockés comme une liste de clés, pas comme du
+   texte. Un « lundi, mercredi, vendredi » saisi à la main serait illisible
+   pour le générateur de programmes ; des clés restent exploitables. */
+var R4P_JOURS = [
+  ['lun','Lun'], ['mar','Mar'], ['mer','Mer'], ['jeu','Jeu'],
+  ['ven','Ven'], ['sam','Sam'], ['dim','Dim'],
+];
+
 /* Les champs de la fiche qui existent AUSSI dans le bilan (poids, taille,
    activité, médecin) ne sont pas dupliqués : la fiche fait foi si elle est
    remplie, sinon on affiche la valeur du bilan le plus récent — comme un
@@ -428,5 +436,6 @@ if (typeof module !== 'undefined' && module.exports) {
                      r4pBuildRoster: r4pBuildRoster, r4pSortRoster: r4pSortRoster,
                      R4P_STATUT_LABELS: R4P_STATUT_LABELS, r4pResolveSport: r4pResolveSport,
                      R4P_NIVEAUX: R4P_NIVEAUX, R4P_LAT_MAIN: R4P_LAT_MAIN, R4P_LAT_PIED: R4P_LAT_PIED,
+                     R4P_JOURS: R4P_JOURS,
                      r4pResolveFicheField: r4pResolveFicheField, r4pNormAntecedents: r4pNormAntecedents };
 }

@@ -148,6 +148,19 @@ table.lst tbody tr.current td { background: var(--accent-l); box-shadow: inset 3
 }
 .atc-add button:hover { border-color: var(--accent); }
 
+/* Jours de disponibilité : bascule par jour, état porté par aria-pressed
+   pour que l'information ne repose pas sur la seule couleur. */
+.jours { display: flex; gap: 6px; flex-wrap: wrap; }
+.jour {
+  font-family: inherit; font-size: .82rem; font-weight: 600;
+  min-width: 46px; padding: 8px 4px; cursor: pointer;
+  border: 1.5px solid var(--border); border-radius: 7px;
+  background: var(--surface); color: var(--text3); transition: all .12s;
+}
+.jour:hover { border-color: var(--text3); color: var(--text2); }
+.jour[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.jours-count { font-size: .7rem; color: var(--text3); margin-top: 5px; }
+
 /* Filtres de période : une seule rangée, au-dessus des indicateurs */
 .filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 18px; }
 .fchip {
@@ -197,7 +210,7 @@ table.lst tbody tr.current td { background: var(--accent-l); box-shadow: inset 3
   <div class="state" id="pv-state">Chargement…</div>
 </div>
 
-<script src="js/patients-data.js?v=20260730d"></script>
+<script src="js/patients-data.js?v=20260730e"></script>
 <script>
 var SUPA_URL = 'https://sxdobjodxkwexaspepdm.supabase.co';
 var SUPA_KEY = 'sb_publishable_zEJrmQOnKyRm-Y_NyojaTA_ERrDx4pl';
@@ -409,10 +422,16 @@ function renderFiche(){
   h += '<div class="card"><div class="card-h"><span>Cadre d\'entraînement</span></div><div class="card-sub">Sert à dimensionner les programmes</div><div class="fi-grid">'
      + '<div class="fi-f"><label for="fi-seances">Séances par semaine</label>'
      + '<input type="number" id="fi-seances" min="0" max="21" step="1" value="' + esc(f.seancesSemaine || '') + '" placeholder="3"></div>'
-     + '<div class="fi-f"><label for="fi-materiel">Matériel et lieu</label>'
-     + '<input type="text" id="fi-materiel" value="' + esc(f.materiel || '') + '" placeholder="Salle, barre + haltères, élastiques…"></div>'
-     + '<div class="fi-f wide"><label for="fi-dispo">Disponibilités</label>'
-     + '<input type="text" id="fi-dispo" value="' + esc(f.disponibilites || '') + '" placeholder="Lun/Mer/Ven matin, pas le week-end…"></div>'
+     + '<div class="fi-f wide"><label for="fi-materiel">Matériel et lieu</label>'
+     + '<textarea id="fi-materiel" style="min-height:88px" placeholder="Salle de sport équipée : barre olympique, haltères 2–40 kg, rack, poulie. À domicile : élastiques et kettlebell 16 kg.">' + esc(f.materiel || '') + '</textarea></div>'
+     + '<div class="fi-f wide"><label>Jours d\'entraînement possibles</label>'
+     + '<div class="jours" id="fi-jours">'
+     + R4P_JOURS.map(function(j){
+         return '<button type="button" class="jour" data-j="' + j[0] + '" aria-pressed="false" onclick="toggleJour(\'' + j[0] + '\')">' + j[1] + '</button>';
+       }).join('')
+     + '</div><span class="jours-count" id="fi-jours-count"></span></div>'
+     + '<div class="fi-f wide"><label for="fi-dispo">Précisions sur les disponibilités</label>'
+     + '<textarea id="fi-dispo" style="min-height:62px" placeholder="Plutôt le matin avant 9 h, sauf le samedi. Indisponible pendant les vacances scolaires.">' + esc(f.disponibilites || '') + '</textarea></div>'
      + '<div class="fi-f wide"><label for="fi-ci">Contre-indications</label>'
      + '<textarea id="fi-ci" placeholder="Pas d\'impact, éviter la flexion lombaire chargée…">' + esc(f.contreIndications || '') + '</textarea></div>'
      + '</div></div>';
@@ -435,6 +454,32 @@ function renderFiche(){
 
   _antecedents = r4pNormAntecedents(f.antecedents);
   renderAntecedents();
+  _jours = Array.isArray(f.jours) ? f.jours.slice() : [];
+  renderJours();
+}
+
+function renderJours(){
+  var wrap = document.getElementById('fi-jours');
+  if (!wrap) return;
+  wrap.querySelectorAll('.jour').forEach(function(b){
+    b.setAttribute('aria-pressed', _jours.indexOf(b.dataset.j) !== -1 ? 'true' : 'false');
+  });
+  var c = document.getElementById('fi-jours-count');
+  if (c) {
+    c.textContent = _jours.length
+      ? _jours.length + ' jour' + (_jours.length > 1 ? 's' : '') + ' sélectionné' + (_jours.length > 1 ? 's' : '')
+      : 'Aucun jour sélectionné.';
+  }
+}
+
+function toggleJour(k){
+  var i = _jours.indexOf(k);
+  if (i === -1) _jours.push(k); else _jours.splice(i, 1);
+  // Réordonner selon la semaine plutôt que selon l'ordre des clics, pour que
+  // la valeur enregistrée soit stable et lisible.
+  var ordre = R4P_JOURS.map(function(j){ return j[0]; });
+  _jours.sort(function(a, b){ return ordre.indexOf(a) - ordre.indexOf(b); });
+  renderJours();
 }
 
 function renderAntecedents(){
@@ -590,7 +635,7 @@ function fetchBilans(uid){
 var _period = 'all', _customFrom = '', _customTo = '';
 var _raw = null, _hasBilanPlan = true, _totalGlobal = 0;
 var _view = 'overview', _search = '', _sortKey = 'nom', _sortAsc = true;
-var _antecedents = [];
+var _antecedents = [], _jours = [];
 // Le patient courant est déjà connu du shell avant tout postMessage : on lit
 // son cache pour que la fiche soit utilisable dès l'ouverture de l'onglet.
 var _currentPatientId = (function(){
@@ -721,6 +766,7 @@ function saveFiche(){
     fiche: {
       seancesSemaine:    fVal('fi-seances', true),
       materiel:          fVal('fi-materiel'),
+      jours:             _jours,
       disponibilites:    fVal('fi-dispo'),
       contreIndications: fVal('fi-ci'),
       antecedents:       _antecedents
