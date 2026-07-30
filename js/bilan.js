@@ -3825,7 +3825,12 @@ function saveBilan(){
       var curr = donnees[k];
       var prevStr = (prev === undefined || prev === null) ? '' : String(prev);
       var currStr = (curr === undefined || curr === null) ? '' : String(curr);
-      if(prevStr !== currStr) _changedFields.push(k);
+      // Un champ vide dans CE bilan de suivi n'a jamais été « changé » : le
+      // suivi ne préremplit que la page Infos, tout le reste démarre vide
+      // (_newBilanSuiviConfirm). Vide veut dire « non retesté », pas « effacé » —
+      // sinon la valeur héritée affichée en lecture (mode fusionné) se retrouve
+      // marquée fraîche à tort, alors qu'elle vient d'un bilan antérieur.
+      if(currStr !== '' && prevStr !== currStr) _changedFields.push(k);
     });
     donnees.changed_fields = _changedFields; // toujours écrire (même vide) pour marquer le bilan comme suivi
   }
@@ -6332,6 +6337,18 @@ function _buildAllTestsHtml() {
   // (même ordre que dans la page).
   var _ohs = _afOhsData('mi'), _ohsTxt = _afOhsText(_ohs);
   var _slsQ = _afSlsData('mi'), _slsQTxt = _afSlsText(_slsQ);
+  // Champs source du grisage « porté d'un bilan antérieur » : la ligne du CR
+  // résume une douzaine de cases par bloc, il faut TOUTES les lister ici — sinon
+  // _crIsCarried() ne vérifie que le sous-ensemble transmis et grise à tort une
+  // ligne dont seules certaines cases ont réellement été cochées aujourd'hui.
+  var _ohsFieldIds = ['af-mi-ohs-obs', 'af-mi-ohs-corr'];
+  AF_OHS_GROUPS.forEach(function(g){ g.items.forEach(function(it){
+    _ohsFieldIds.push('af-mi-ohs-' + it[0], 'af-mi-ohs-' + it[0] + '-obs');
+  }); });
+  var _slsFieldIds = ['af-mi-sls-obs'];
+  AF_SLS_ITEMS.forEach(function(it){
+    _slsFieldIds.push('af-mi-sls-' + it[0] + '-g', 'af-mi-sls-' + it[0] + '-d', 'af-mi-sls-' + it[0] + '-obs');
+  });
   // Observations par ligne : reprises telles quelles pour ne rien perdre, même
   // quand la case correspondante n'est pas cochée.
   var _afNotesHtml = function(notes){
