@@ -8207,6 +8207,7 @@ var AF_SLS_ITEMS = [
   ['bassin',  'Bassin — chute controlatérale',          'bassin'],
   ['hanche',  'Hanche — adduction ou rotation médiale', 'hanche'],
   ['valgus',  'Valgus du genou',                        'valgus'],
+  ['pied',    'Pied — affaissement de l\'arche interne (pronation dynamique)', 'pied'],
   ['neuro',   'Perte de contrôle neuromoteur',          'contrôle neuromoteur'],
   ['douleur', 'Douleur reproduite',                     'douleur'],
 ];
