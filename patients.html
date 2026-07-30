@@ -144,7 +144,7 @@ table.lst tbody tr.current td { background: var(--accent-l); box-shadow: inset 3
   <div class="state" id="pv-state">Chargement…</div>
 </div>
 
-<script src="js/patients-data.js?v=20260730b"></script>
+<script src="js/patients-data.js?v=20260730c"></script>
 <script>
 var SUPA_URL = 'https://sxdobjodxkwexaspepdm.supabase.co';
 var SUPA_KEY = 'sb_publishable_zEJrmQOnKyRm-Y_NyojaTA_ERrDx4pl';
@@ -388,7 +388,7 @@ function render(s, hasBilanPlan, bounds){
    entier si la projection est refusée, pour ne pas perdre la fonctionnalité. */
 function fetchBilans(uid){
   return sb.from('bilans')
-    .select('patient_id,date,zones:donnees->>f-pain-zones,motif:donnees->>f-motif')
+    .select('patient_id,date,zones:donnees->>f-pain-zones,motif:donnees->>f-motif,sport:donnees->>f-sport')
     .eq('praticien_id', uid)
     .then(function(res){
       if (!res.error) return res.data || [];
@@ -397,7 +397,7 @@ function fetchBilans(uid){
           if (r2.error) throw r2.error;
           return (r2.data || []).map(function(b){
             var d = b.donnees || {};
-            return { patient_id: b.patient_id, date: b.date, zones: d['f-pain-zones'], motif: d['f-motif'] };
+            return { patient_id: b.patient_id, date: b.date, zones: d['f-pain-zones'], motif: d['f-motif'], sport: d['f-sport'] };
           });
         });
     });
@@ -523,8 +523,11 @@ sb.auth.getUser().then(function(r){
   Promise.all(jobs).then(function(res){
     var pRes = res[0], sRes = res[1], bilans = res[2];
     if (pRes.error) throw pRes.error;
+    // Résolution du sport à la lecture (voir r4pResolveSport) : deux endroits
+    // de saisie non synchronisés aujourd'hui, patients.sport fait foi et à
+    // défaut on prend le f-sport du bilan le plus récent. Aucune écriture.
     _raw = {
-      patients: pRes.data || [],
+      patients: r4pResolveSport(pRes.data || [], bilans),
       seances:  (sRes && !sRes.error) ? (sRes.data || []) : [],
       bilans:   bilans
     };

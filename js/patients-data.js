@@ -118,6 +118,32 @@ var R4P_AGE_BINS = [
   ['60 et plus',  60, 200],
 ];
 
+/* ── Résolution du sport ───────────────────────────────────────────
+   Aujourd'hui la saisie existe à deux endroits (patients.sport et le champ
+   f-sport de chaque bilan) sans synchronisation entre eux — les deux vont
+   diverger. Plutôt que de les unifier (ce qui toucherait bilan.js), on
+   résout ici, à la lecture : patients.sport fait foi, et à défaut on prend
+   le f-sport du bilan le plus récent du patient. Aucune écriture nulle
+   part, donc aucun risque d'écraser une valeur avec une saisie plus ancienne. */
+function r4pResolveSport(patients, bilans){
+  bilans = bilans || [];
+  var latestBilanSport = {};
+  var latestDate = {};
+  bilans.forEach(function(b){
+    if (!b.patient_id || !r4pNorm(b.sport)) return;
+    var d = String(b.date || '').slice(0, 10);
+    if (!latestDate[b.patient_id] || d > latestDate[b.patient_id]) {
+      latestDate[b.patient_id] = d;
+      latestBilanSport[b.patient_id] = b.sport;
+    }
+  });
+  return (patients || []).map(function(p){
+    if (r4pNorm(p.sport)) return p;
+    var fallback = latestBilanSport[p.id];
+    return fallback ? Object.assign({}, p, { sport: fallback }) : p;
+  });
+}
+
 /* ── Liste des patients ────────────────────────────────────────────
    Une ligne par patient, avec ses dernières dates d'activité et un statut.
    Le statut reprend exactement les seuils des indicateurs (30 / 90 jours)
@@ -349,5 +375,5 @@ if (typeof module !== 'undefined' && module.exports) {
                      r4pPeriodFrom: r4pPeriodFrom, R4P_SPORT_ALIASES: R4P_SPORT_ALIASES,
                      R4P_MOTIF_KEYWORDS: R4P_MOTIF_KEYWORDS,
                      r4pBuildRoster: r4pBuildRoster, r4pSortRoster: r4pSortRoster,
-                     R4P_STATUT_LABELS: R4P_STATUT_LABELS };
+                     R4P_STATUT_LABELS: R4P_STATUT_LABELS, r4pResolveSport: r4pResolveSport };
 }
