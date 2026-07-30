@@ -1,0 +1,286 @@
+/* ═══════════════════════════════════════════════════════════════════
+   Rehab4Perf — Agrégations de l'onglet Patients.
+
+   Fonctions PURES (aucun accès DOM, aucun réseau) : elles prennent les
+   lignes brutes et rendent des compteurs. Isolé dans son propre fichier
+   pour être testable et réutilisable.
+
+   Deux principes appliqués partout :
+   - Unité de comptage = LE PATIENT, jamais le bilan. Sinon un patient
+     avec 5 bilans pèse 5 fois dans les statistiques.
+   - Tout ce qui n'est pas reconnu est compté et affiché (« Non renseigné »,
+     « Non reconnu ») : sans ce taux, on lit un classement en croyant
+     qu'il couvre tout.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Normalisation pour la comparaison de texte libre : minuscules, sans
+   accents, espaces compactés. « Course à Pied » → « course a pied ». */
+function r4pNorm(s){
+  return String(s == null ? '' : s)
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/* ── Sports ────────────────────────────────────────────────────────
+   Regroupement par alias à l'affichage : la saisie reste libre, aucune
+   migration des valeurs existantes. Un champ peut contenir plusieurs
+   sports (« Football, Tennis ») → plusieurs correspondances possibles. */
+var R4P_SPORT_ALIASES = [
+  ['Football',      ['football', 'foot', 'soccer', 'futsal']],
+  ['Course à pied', ['course a pied', 'course', 'running', 'trail', 'jogging', 'marathon', 'semi', 'cap', 'run']],
+  ['Cyclisme',      ['cyclisme', 'velo', 'vtt', 'bike', 'cycling', 'triathlon']],
+  ['Musculation',   ['musculation', 'muscu', 'crossfit', 'cross training', 'halterophilie', 'force athletique', 'renforcement']],
+  ['Rugby',         ['rugby']],
+  ['Tennis',        ['tennis', 'padel', 'squash', 'badminton']],
+  ['Basketball',    ['basketball', 'basket']],
+  ['Handball',      ['handball']],
+  ['Volleyball',    ['volleyball', 'volley']],
+  ['Natation',      ['natation', 'nage', 'swim']],
+  ['Sports de combat', ['judo', 'lutte', 'boxe', 'mma', 'jjb', 'grappling', 'karate', 'taekwondo']],
+  ['Gymnastique',   ['gymnastique', 'gym', 'trampoline']],
+  ['Athlétisme',    ['athletisme', 'sprint', 'saut', 'lancer', 'haies', 'perche']],
+  ['Ski',           ['ski', 'snowboard', 'surf']],
+  ['Danse',         ['danse', 'dance']],
+  ['Escalade',      ['escalade', 'climbing']],
+  ['Golf',          ['golf']],
+  ['Équitation',    ['equitation', 'cheval']],
+];
+
+/* ── Motifs de consultation ────────────────────────────────────────
+   Extraction de MOTS-CLÉS, pas de regroupement de chaînes : un motif est
+   une phrase (« Contrôle post-op LCA à 3 mois »), pas une étiquette.
+   Un motif peut donc alimenter plusieurs catégories.
+
+   Limites connues et assumées : pas de gestion des négations (« pas de
+   rupture du LCA » compte dans LCA), et le dictionnaire n'est jamais
+   complet — d'où l'importance de la ligne « Non reconnu ». */
+var R4P_MOTIF_KEYWORDS = [
+  ['Post-opératoire',      ['post op', 'post-op', 'postop', 'post operatoire', 'postoperatoire', 'opere', 'operee', 'operation', 'chirurgie', 'plastie', 'reconstruction', 'arthroscopie', 'prothese']],
+  ['LCA',                  ['lca', 'ligament croise anterieur', 'didt', 'kenneth jones', 'acl']],
+  ['LCP',                  ['lcp', 'ligament croise posterieur']],
+  ['Lésion méniscale',     ['menisque', 'meniscal', 'meniscale', 'meniscectomie']],
+  ['Tendinopathie',        ['tendinopathie', 'tendinite', 'tendineux', 'tendinose', 'tendon']],
+  ['Entorse',              ['entorse', 'ligamentoplastie', 'ligamentaire']],
+  ['Lombalgie',            ['lombalgie', 'lombaire', 'lumbago', 'hernie', 'discal', 'sciatique', 'cruralgie']],
+  ['Cervicalgie',          ['cervicalgie', 'cervical', 'ncb', 'torticolis']],
+  ['Coiffe des rotateurs', ['coiffe', 'rotateurs', 'sus epineux', 'supra epineux', 'infra epineux']],
+  ['Instabilité d\'épaule',['luxation', 'instabilite', 'latarjet', 'bankart', 'subluxation']],
+  ['Pubalgie',             ['pubalgie', 'pubis', 'adducteurs']],
+  ['Fracture',             ['fracture', 'fissure']],
+  ['Retour au sport',      ['rts', 'retour au sport', 'return to sport', 'reprise du sport', 'reathletisation', 'readaptation']],
+  ['Prévention',           ['prevention', 'preventif', 'depistage', 'screening', 'bilan initial', 'profilage']],
+  ['Contrôle / suivi',     ['controle', 'suivi', 'reevaluation', 'reeval']],
+];
+
+/* Un alias court risque de se retrouver dans un mot sans rapport
+   (« cap » dans « capoeira ») → frontière de mot exigée sous 5 caractères. */
+function r4pMatchAlias(hay, alias){
+  if (alias.length < 5) {
+    return new RegExp('(^|[^a-z0-9])' + alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^a-z0-9]|$)').test(hay);
+  }
+  return hay.indexOf(alias) !== -1;
+}
+
+/* Rend les libellés dont au moins un alias apparaît dans le texte. */
+function r4pMatchGroups(text, table){
+  var hay = r4pNorm(text);
+  if (!hay) return [];
+  var out = [];
+  table.forEach(function(entry){
+    var label = entry[0], aliases = entry[1];
+    for (var i = 0; i < aliases.length; i++) {
+      if (r4pMatchAlias(hay, aliases[i])) { out.push(label); return; }
+    }
+  });
+  return out;
+}
+
+/* ── Âge ───────────────────────────────────────────────────────────
+   Bornes lues comme « anniversaire déjà passé cette année ou non ». */
+function r4pAge(ddn, today){
+  if (!ddn) return null;
+  var d = new Date(String(ddn).slice(0, 10) + 'T00:00:00');
+  if (isNaN(d.getTime())) return null;
+  var t = today || new Date();
+  var age = t.getFullYear() - d.getFullYear();
+  var m = t.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && t.getDate() < d.getDate())) age--;
+  return (age >= 0 && age < 120) ? age : null;
+}
+
+var R4P_AGE_BINS = [
+  ['Moins de 18', 0,  17],
+  ['18 – 29',     18, 29],
+  ['30 – 44',     30, 44],
+  ['45 – 59',     45, 59],
+  ['60 et plus',  60, 200],
+];
+
+/* ── Filtre de période ─────────────────────────────────────────────
+   Un patient n'est pas un événement daté : il « appartient » à une période
+   s'il y a eu de l'activité le concernant dedans — une séance planifiée, un
+   bilan, ou sa création. C'est la lecture de « combien de patients ai-je eu
+   sur cette période », et elle englobe aussi bien les nouveaux que les suivis.
+
+   from / to : 'YYYY-MM-DD' ou null (borne ouverte). Les deux nuls = tout. */
+function r4pFilterCohort(patients, seances, bilans, from, to){
+  patients = patients || []; seances = seances || []; bilans = bilans || [];
+  if (!from && !to) {
+    return { patients: patients, seances: seances, bilans: bilans, filtered: false };
+  }
+  var inRange = function(d){
+    d = String(d == null ? '' : d).slice(0, 10);
+    if (!d) return false;
+    if (from && d < from) return false;
+    if (to   && d > to)   return false;
+    return true;
+  };
+  var fs = seances.filter(function(s){ return inRange(s.date); });
+  var fb = bilans.filter(function(b){ return inRange(b.date); });
+  var keep = {};
+  fs.forEach(function(s){ if (s.patient_id) keep[s.patient_id] = true; });
+  fb.forEach(function(b){ if (b.patient_id) keep[b.patient_id] = true; });
+  patients.forEach(function(p){ if (p.created_at && inRange(p.created_at)) keep[p.id] = true; });
+  return {
+    patients: patients.filter(function(p){ return keep[p.id]; }),
+    seances: fs, bilans: fb, filtered: true
+  };
+}
+
+/* Bornes des périodes prédéfinies, en mois glissants. */
+function r4pPeriodFrom(mois, today){
+  var t = today || new Date();
+  var d = new Date(t.getTime());
+  d.setMonth(d.getMonth() - mois);
+  return d.toISOString().slice(0, 10);
+}
+
+/* ── Agrégat principal ─────────────────────────────────────────────
+   patients : [{id, ddn, sexe, sport, created_at?}]
+   seances  : [{patient_id, date}]                 (activité)
+   bilans   : [{patient_id, date, zones, motif}]   (zones = JSON string ou tableau)
+*/
+function r4pBuildStats(patients, seances, bilans, today){
+  var t = today || new Date();
+  patients = patients || []; seances = seances || []; bilans = bilans || [];
+
+  var stats = { total: patients.length };
+
+  /* — Activité : dernière séance planifiée par patient — */
+  var lastSeance = {};
+  seances.forEach(function(s){
+    var d = String(s.date || '').slice(0, 10);
+    if (!d) return;
+    if (!lastSeance[s.patient_id] || d > lastSeance[s.patient_id]) lastSeance[s.patient_id] = d;
+  });
+  var iso = function(daysAgo){
+    var d = new Date(t.getTime() - daysAgo * 86400000);
+    return d.toISOString().slice(0, 10);
+  };
+  var seuil30 = iso(30), seuil90 = iso(90);
+  stats.actifs = 0; stats.dormants = 0;
+  patients.forEach(function(p){
+    var last = lastSeance[p.id];
+    if (last && last >= seuil30) stats.actifs++;
+    else if (!last || last < seuil90) stats.dormants++;
+  });
+
+  /* — Nouveaux ce mois : seulement si la colonne existe — */
+  stats.nouveaux = null;
+  if (patients.some(function(p){ return p.created_at; })) {
+    var moisCourant = t.toISOString().slice(0, 7);
+    stats.nouveaux = patients.filter(function(p){
+      return String(p.created_at || '').slice(0, 7) === moisCourant;
+    }).length;
+  }
+
+  /* — Sexe — */
+  stats.femmes = patients.filter(function(p){ return p.sexe === 'F'; }).length;
+  stats.hommes = patients.filter(function(p){ return p.sexe === 'H'; }).length;
+  stats.sexeInconnu = patients.length - stats.femmes - stats.hommes;
+
+  /* — Âge — */
+  stats.ages = R4P_AGE_BINS.map(function(b){ return { label: b[0], n: 0 }; });
+  stats.ageInconnu = 0;
+  patients.forEach(function(p){
+    var a = r4pAge(p.ddn, t);
+    if (a === null) { stats.ageInconnu++; return; }
+    for (var i = 0; i < R4P_AGE_BINS.length; i++) {
+      if (a >= R4P_AGE_BINS[i][1] && a <= R4P_AGE_BINS[i][2]) { stats.ages[i].n++; return; }
+    }
+  });
+
+  /* — Sports — « Autres » = renseigné mais hors dictionnaire — */
+  var sportCount = {}, sportAutres = 0, sportVide = 0;
+  patients.forEach(function(p){
+    if (!r4pNorm(p.sport)) { sportVide++; return; }
+    var g = r4pMatchGroups(p.sport, R4P_SPORT_ALIASES);
+    if (!g.length) { sportAutres++; return; }
+    g.forEach(function(l){ sportCount[l] = (sportCount[l] || 0) + 1; });
+  });
+  stats.sports = Object.keys(sportCount)
+    .map(function(k){ return { label: k, n: sportCount[k] }; })
+    .sort(function(a, b){ return b.n - a.n; });
+  stats.sportAutres = sportAutres;
+  stats.sportVide   = sportVide;
+
+  /* — Régions et motifs : union par patient, pas par bilan — */
+  var zonesParPatient = {}, motifsParPatient = {}, patientsAvecBilan = {}, patientsAvecMotif = {};
+  bilans.forEach(function(b){
+    var pid = b.patient_id;
+    if (!pid) return;
+    patientsAvecBilan[pid] = true;
+
+    var zones = b.zones;
+    if (typeof zones === 'string') { try { zones = JSON.parse(zones); } catch(e){ zones = null; } }
+    if (Array.isArray(zones)) {
+      if (!zonesParPatient[pid]) zonesParPatient[pid] = {};
+      zones.forEach(function(z){
+        var nom = z && z.zone;
+        if (nom) zonesParPatient[pid][nom] = true;
+      });
+    }
+
+    if (r4pNorm(b.motif)) {
+      patientsAvecMotif[pid] = true;
+      if (!motifsParPatient[pid]) motifsParPatient[pid] = {};
+      r4pMatchGroups(b.motif, R4P_MOTIF_KEYWORDS).forEach(function(l){
+        motifsParPatient[pid][l] = true;
+      });
+    }
+  });
+
+  stats.patientsAvecBilan = Object.keys(patientsAvecBilan).length;
+  stats.nbBilans = bilans.length;
+
+  var zoneCount = {};
+  Object.keys(zonesParPatient).forEach(function(pid){
+    Object.keys(zonesParPatient[pid]).forEach(function(z){ zoneCount[z] = (zoneCount[z] || 0) + 1; });
+  });
+  stats.regions = Object.keys(zoneCount)
+    .map(function(k){ return { label: k, n: zoneCount[k] }; })
+    .sort(function(a, b){ return b.n - a.n; });
+
+  var motifCount = {}, motifNonReconnu = 0;
+  Object.keys(patientsAvecMotif).forEach(function(pid){
+    var found = Object.keys(motifsParPatient[pid] || {});
+    if (!found.length) { motifNonReconnu++; return; }
+    found.forEach(function(m){ motifCount[m] = (motifCount[m] || 0) + 1; });
+  });
+  stats.motifs = Object.keys(motifCount)
+    .map(function(k){ return { label: k, n: motifCount[k] }; })
+    .sort(function(a, b){ return b.n - a.n; });
+  stats.motifsRenseignes = Object.keys(patientsAvecMotif).length;
+  stats.motifNonReconnu  = motifNonReconnu;
+
+  return stats;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { r4pNorm: r4pNorm, r4pAge: r4pAge, r4pMatchGroups: r4pMatchGroups,
+                     r4pBuildStats: r4pBuildStats, r4pFilterCohort: r4pFilterCohort,
+                     r4pPeriodFrom: r4pPeriodFrom, R4P_SPORT_ALIASES: R4P_SPORT_ALIASES,
+                     R4P_MOTIF_KEYWORDS: R4P_MOTIF_KEYWORDS };
+}
