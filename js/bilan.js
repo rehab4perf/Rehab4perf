@@ -2224,6 +2224,7 @@ function _refreshCRIfVisible(){
 /* ── Reset + auto-chargement au changement de patient ──── */
 function _resetBilanFields(){
   _suppressDirty = true;
+  try{ _afResetTouched(); }catch(ex){}
   document.querySelectorAll('input:not([type=checkbox]):not([type=radio])').forEach(function(i){ i.value=''; });
   document.querySelectorAll('textarea').forEach(function(t){ t.value=''; });
   document.querySelectorAll('select').forEach(function(s){ s.selectedIndex=0; s.className=''; });
@@ -3737,6 +3738,7 @@ function _serializeBilan(){
 
 function _deserializeBilan(data){
   _suppressDirty = true;
+  try{ _afResetTouched(); }catch(ex){}
   // Capturer l'instantané custom du bilan AVANT le rendu (matérialise ses tests perso,
   // même supprimés du modèle depuis) ; les valeurs sont réappliquées après _blApplyLayout.
   try{ _blLoadedCustom = data._blCustom ? JSON.parse(data._blCustom) : null; }catch(ex){ _blLoadedCustom = null; }
@@ -3832,6 +3834,12 @@ function saveBilan(){
       // marquée fraîche à tort, alors qu'elle vient d'un bilan antérieur.
       if(currStr !== '' && prevStr !== currStr) _changedFields.push(k);
     });
+    // Blocs Analyse Fonctionnelle (cases à cocher) : une interaction réelle
+    // aujourd'hui prime sur la comparaison de valeur (voir _afTouched).
+    AF_PAGES.forEach(function(p){
+      if(_afTouched[p.pg + '-ohs']) _afOhsFieldIds(p.pg).forEach(function(id){ if(_changedFields.indexOf(id)===-1) _changedFields.push(id); });
+      if(_afTouched[p.pg + '-sls']) _afSlsFieldIds(p.pg).forEach(function(id){ if(_changedFields.indexOf(id)===-1) _changedFields.push(id); });
+    });
     donnees.changed_fields = _changedFields; // toujours écrire (même vide) pour marquer le bilan comme suivi
   }
 
@@ -3854,6 +3862,11 @@ function saveBilan(){
         var cs = (curr===undefined||curr===null)?'':String(curr);
         var ps = (prev===undefined||prev===null)?'':String(prev);
         if(cs !== '' && cs !== ps) _newCF.push(k);
+      });
+      // Blocs Analyse Fonctionnelle : idem, une interaction réelle prime sur la diff.
+      AF_PAGES.forEach(function(p){
+        if(_afTouched[p.pg + '-ohs']) _afOhsFieldIds(p.pg).forEach(function(id){ if(_newCF.indexOf(id)===-1) _newCF.push(id); });
+        if(_afTouched[p.pg + '-sls']) _afSlsFieldIds(p.pg).forEach(function(id){ if(_newCF.indexOf(id)===-1) _newCF.push(id); });
       });
       donnees.changed_fields = _newCF; // toujours écrire (même vide) : un suivi édité reste un suivi
     }
@@ -6341,14 +6354,8 @@ function _buildAllTestsHtml() {
   // résume une douzaine de cases par bloc, il faut TOUTES les lister ici — sinon
   // _crIsCarried() ne vérifie que le sous-ensemble transmis et grise à tort une
   // ligne dont seules certaines cases ont réellement été cochées aujourd'hui.
-  var _ohsFieldIds = ['af-mi-ohs-obs', 'af-mi-ohs-corr'];
-  AF_OHS_GROUPS.forEach(function(g){ g.items.forEach(function(it){
-    _ohsFieldIds.push('af-mi-ohs-' + it[0], 'af-mi-ohs-' + it[0] + '-obs');
-  }); });
-  var _slsFieldIds = ['af-mi-sls-obs'];
-  AF_SLS_ITEMS.forEach(function(it){
-    _slsFieldIds.push('af-mi-sls-' + it[0] + '-g', 'af-mi-sls-' + it[0] + '-d', 'af-mi-sls-' + it[0] + '-obs');
-  });
+  var _ohsFieldIds = _afOhsFieldIds('mi');
+  var _slsFieldIds = _afSlsFieldIds('mi');
   // Observations par ligne : reprises telles quelles pour ne rien perdre, même
   // quand la case correspondante n'est pas cochée.
   var _afNotesHtml = function(notes){
@@ -8162,6 +8169,39 @@ var AF_PAGES = [
   { pg:'mi', host:'af-mi' },
 ];
 
+// Liste complète des champs (cases + observations) d'un bloc AF — source
+// unique utilisée à la fois pour construire la ligne CR et pour forcer
+// changed_fields lors de la sauvegarde (voir _afTouched ci-dessous).
+function _afOhsFieldIds(pg){
+  var ids = ['af-' + pg + '-ohs-obs', 'af-' + pg + '-ohs-corr'];
+  AF_OHS_GROUPS.forEach(function(g){ g.items.forEach(function(it){
+    ids.push('af-' + pg + '-ohs-' + it[0], 'af-' + pg + '-ohs-' + it[0] + '-obs');
+  }); });
+  return ids;
+}
+function _afSlsFieldIds(pg){
+  var ids = ['af-' + pg + '-sls-obs'];
+  AF_SLS_ITEMS.forEach(function(it){
+    ids.push('af-' + pg + '-sls-' + it[0] + '-g', 'af-' + pg + '-sls-' + it[0] + '-d', 'af-' + pg + '-sls-' + it[0] + '-obs');
+  });
+  return ids;
+}
+
+// Une case à cocher n'a que 2 états (coché/décoché) : contrairement à un champ
+// texte ou un select (dont le vide est un vrai 3e état « non testé »), une case
+// décochée est indiscernable de « jamais évaluée ». Du coup la simple comparaison
+// de valeur (changed_fields) grise à tort un bloc AF retesté aujourd'hui si son
+// résultat est identique au bilan précédent (ex. valgus toujours présent). On
+// trace donc en plus une interaction RÉELLE (event.isTrusted, jamais déclenchée
+// par le rechargement programmatique d'un bilan) pour forcer le statut "frais"
+// indépendamment du résultat.
+var _afTouched = {};
+function _afMarkTouched(pg, kind, ev){
+  if(ev && ev.isTrusted === false) return;
+  _afTouched[pg + '-' + kind] = true;
+}
+function _afResetTouched(){ _afTouched = {}; }
+
 var AF_OHS_GROUPS = [
   { title:'Critères de réussite', type:'ok', items:[
     ['thorax', 'Thorax parallèle au tibia ou horizontal'],
@@ -8226,17 +8266,17 @@ function _afRender(){
       h += '<div class="af-sub">' + g.title + '</div>';
       g.items.forEach(function(it){
         h += '<div class="af-row af-' + g.type + '"><span>' + it[1] + '</span>'
-           + '<input type="checkbox" id="af-' + p.pg + '-ohs-' + it[0] + '" onchange="_afSynthOhs(\'' + p.pg + '\')">'
-           + '<input type="text" class="mob-note-inp" id="af-' + p.pg + '-ohs-' + it[0] + '-obs" placeholder="Observation…"></div>';
+           + '<input type="checkbox" id="af-' + p.pg + '-ohs-' + it[0] + '" onchange="_afSynthOhs(\'' + p.pg + '\');_afMarkTouched(\'' + p.pg + '\',\'ohs\',event)">'
+           + '<input type="text" class="mob-note-inp" id="af-' + p.pg + '-ohs-' + it[0] + '-obs" placeholder="Observation…" oninput="_afMarkTouched(\'' + p.pg + '\',\'ohs\',event)"></div>';
       });
     });
     h += '<div class="af-obs">'
        + '<div style="font-size:.72rem;color:var(--text2);margin-bottom:5px">Test de correction — talons surélevés</div>'
-       + '<select id="af-' + p.pg + '-ohs-corr" onchange="_afSynthOhs(\'' + p.pg + '\')" style="max-width:280px;width:100%">'
+       + '<select id="af-' + p.pg + '-ohs-corr" onchange="_afSynthOhs(\'' + p.pg + '\');_afMarkTouched(\'' + p.pg + '\',\'ohs\',event)" style="max-width:280px;width:100%">'
        + '<option value="">—</option><option value="oui">Corrige le défaut</option><option value="non">Ne corrige pas</option>'
        + '</select></div>';
     h += '<div class="af-obs"><input type="text" class="mob-note-inp" id="af-' + p.pg + '-ohs-obs" '
-       + 'placeholder="Profondeur atteinte, stratégie de descente, localisation de la douleur…"></div>';
+       + 'placeholder="Profondeur atteinte, stratégie de descente, localisation de la douleur…" oninput="_afMarkTouched(\'' + p.pg + '\',\'ohs\',event)"></div>';
     h += '<div class="af-synth" id="af-' + p.pg + '-ohs-synth">—</div>';
     // ── Squat unipodal (par côté) ──
     h += '<div class="af-mtitle" style="border-top:2px solid var(--border)"><span>Squat unipodal</span>'
@@ -8246,12 +8286,12 @@ function _afRender(){
        + '<span>Observation</span></div>';
     AF_SLS_ITEMS.forEach(function(it){
       h += '<div class="af-row2"><span>' + it[1] + '</span>'
-         + '<input type="checkbox" id="af-' + p.pg + '-sls-' + it[0] + '-g" onchange="_afSynthSls(\'' + p.pg + '\')">'
-         + '<input type="checkbox" id="af-' + p.pg + '-sls-' + it[0] + '-d" onchange="_afSynthSls(\'' + p.pg + '\')">'
-         + '<input type="text" class="mob-note-inp" id="af-' + p.pg + '-sls-' + it[0] + '-obs" placeholder="Observation…"></div>';
+         + '<input type="checkbox" id="af-' + p.pg + '-sls-' + it[0] + '-g" onchange="_afSynthSls(\'' + p.pg + '\');_afMarkTouched(\'' + p.pg + '\',\'sls\',event)">'
+         + '<input type="checkbox" id="af-' + p.pg + '-sls-' + it[0] + '-d" onchange="_afSynthSls(\'' + p.pg + '\');_afMarkTouched(\'' + p.pg + '\',\'sls\',event)">'
+         + '<input type="text" class="mob-note-inp" id="af-' + p.pg + '-sls-' + it[0] + '-obs" placeholder="Observation…" oninput="_afMarkTouched(\'' + p.pg + '\',\'sls\',event)"></div>';
     });
     h += '<div class="af-obs"><input type="text" class="mob-note-inp" id="af-' + p.pg + '-sls-obs" '
-       + 'placeholder="Nombre de répétitions, profondeur atteinte, appui controlatéral…"></div>';
+       + 'placeholder="Nombre de répétitions, profondeur atteinte, appui controlatéral…" oninput="_afMarkTouched(\'' + p.pg + '\',\'sls\',event)"></div>';
     h += '<div class="af-synth" id="af-' + p.pg + '-sls-synth" style="border-bottom:none">—</div>';
     host.innerHTML = h;
   });
