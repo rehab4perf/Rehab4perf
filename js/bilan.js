@@ -6356,41 +6356,58 @@ function _buildAllTestsHtml() {
   // ligne dont seules certaines cases ont réellement été cochées aujourd'hui.
   var _ohsFieldIds = _afOhsFieldIds('mi');
   var _slsFieldIds = _afSlsFieldIds('mi');
-  // Observations par ligne : reprises telles quelles pour ne rien perdre, même
-  // quand la case correspondante n'est pas cochée.
-  var _afNotesHtml = function(notes){
-    if(!notes || !notes.length) return '';
-    return '<em>Observations :</em><br>' + notes.map(function(n){
-      return '&nbsp;&nbsp;· ' + n[0] + ' : ' + nl2br(n[1]);
-    }).join('<br>');
+  // Le CR détaille chaque critère retenu : un compteur (« 3/7 ») dit l'ampleur
+  // du déficit mais pas sa nature — or c'est la nature qui oriente le traitement.
+  var _afObsHtml = function(obs){
+    return obs ? '<span class="cr-af-obs"> — ' + nl2br(obs) + '</span>' : '';
   };
   var _afRows = '';
-  if (_ohsTxt || _ohs.obs || _ohs.notes.length) {
-    var _ohsParts = [];
-    if (_ohs.ok.length) _ohsParts.push('<em>Réussis :</em> ' + _ohs.ok.join(', '));
-    if (_ohs.ko.length) _ohsParts.push('<em>Compensations :</em> ' + _ohs.ko.join(', '));
-    if (_ohs.corr)      _ohsParts.push('<em>Talons surélevés :</em> ' + (_ohs.corr === 'oui' ? 'corrige le défaut' : 'ne corrige pas'));
-    var _ohsNotes = _afNotesHtml(_ohs.notes);
-    if (_ohsNotes)      _ohsParts.push(_ohsNotes);
-    if (_ohs.obs)       _ohsParts.push(nl2br(_ohs.obs));
-    if (_ohsTxt)        _ohsParts.push('<span style="color:var(--text2)">' + _ohsTxt + '</span>');
+  if (_ohsTxt || _ohs.obs || _ohs.rows.length) {
+    var _ohsOk = _ohs.rows.filter(function(r){ return r.type === 'ok'; });
+    var _ohsKo = _ohs.rows.filter(function(r){ return r.type === 'ko'; });
+    var _liOhs = function(r){
+      // Une case décochée mais annotée reste affichée : l'observation est une
+      // donnée clinique à part entière, signalée par une puce neutre.
+      var ic = !r.checked ? '<span class="cr-af-ic off">·</span>'
+             : r.type === 'ok' ? '<span class="cr-af-ic ok">✓</span>'
+             : '<span class="cr-af-ic ko">✗</span>';
+      return '<div class="cr-af-li">' + ic + '<span>' + r.label + _afObsHtml(r.obs) + '</span></div>';
+    };
+    var _ohsHtml = '<div class="cr-af">';
+    if (_ohsOk.length) _ohsHtml += '<div><div class="cr-af-h">Critères de réussite — ' + _ohs.ok.length + '/' + _ohs.nOk + '</div>'
+                                 + _ohsOk.map(_liOhs).join('') + '</div>';
+    if (_ohsKo.length) _ohsHtml += '<div><div class="cr-af-h">Compensations — ' + _ohs.ko.length + '</div>'
+                                 + _ohsKo.map(_liOhs).join('') + '</div>';
+    if (_ohs.corr) _ohsHtml += '<div class="cr-af-sy"><strong>Talons surélevés :</strong> '
+                             + (_ohs.corr === 'oui' ? 'corrige le défaut' : 'ne corrige pas') + '</div>';
+    if (_ohs.obs)  _ohsHtml += '<div class="cr-af-sy">' + nl2br(_ohs.obs) + '</div>';
+    if (_ohsTxt)   _ohsHtml += '<div class="cr-af-sy">' + _ohsTxt + '</div>';
+    _ohsHtml += '</div>';
     var _ohsTone = _afOhsTone(_ohs);
-    _afRows += crItem('Overhead squat', _ohsParts.join('<br>'),
+    _afRows += crItem('Overhead squat', _ohsHtml,
       _ohs.ko.length + ' compensation' + (_ohs.ko.length > 1 ? 's' : ''),
       _ohsTone === 'muted' ? '' : _ohsTone,
-      ['af-mi-ohs-obs', 'af-mi-ohs-corr']);
+      _ohsFieldIds);
   }
-  if (_slsQTxt || _slsQ.obs || _slsQ.notes.length) {
-    var _slsQParts = [];
-    if (_slsQTxt)  _slsQParts.push(_slsQTxt);
-    var _slsQNotes = _afNotesHtml(_slsQ.notes);
-    if (_slsQNotes) _slsQParts.push(_slsQNotes);
-    if (_slsQ.obs) _slsQParts.push(nl2br(_slsQ.obs));
+  if (_slsQTxt || _slsQ.obs || _slsQ.rows.length) {
+    // Grille G/D : le côté est l'information clé du squat unipodal, une liste
+    // à puces obligerait à répéter « à gauche / à droite » sur chaque ligne.
+    var _slsHtml = '<div class="cr-af"><div class="cr-af-tbl">'
+      + '<div class="th">Compensation observée</div><div class="th c">G</div><div class="th c">D</div>';
+    _slsQ.rows.forEach(function(r){
+      _slsHtml += '<div>' + r.label + _afObsHtml(r.obs) + '</div>'
+        + '<div class="c ' + (r.g ? 'on' : 'off') + '">' + (r.g ? '●' : '·') + '</div>'
+        + '<div class="c ' + (r.d ? 'on' : 'off') + '">' + (r.d ? '●' : '·') + '</div>';
+    });
+    _slsHtml += '</div>';
+    if (_slsQ.obs) _slsHtml += '<div class="cr-af-sy">' + nl2br(_slsQ.obs) + '</div>';
+    if (_slsQTxt)  _slsHtml += '<div class="cr-af-sy">' + _slsQTxt + '</div>';
+    _slsHtml += '</div>';
     var _slsQTone = _afSlsTone(_slsQ);
-    _afRows += crItem('Squat unipodal — qualité', _slsQParts.join('<br>'),
+    _afRows += crItem('Squat unipodal — qualité', _slsHtml,
       'G ' + _slsQ.g + '/' + _slsQ.n + ' · D ' + _slsQ.d + '/' + _slsQ.n,
       _slsQTone === 'muted' ? '' : _slsQTone,
-      ['af-mi-sls-obs']);
+      _slsFieldIds);
   }
   if (_afRows) tfHtml += '<div style="margin:2px 0 4px;font-size:.77rem;font-weight:600;color:var(--text2)">Analyse fonctionnelle — qualité du mouvement</div>' + _afRows;
 
@@ -8298,7 +8315,7 @@ function _afRender(){
 }
 
 function _afOhsData(pg){
-  var ok = [], ko = [], themes = [], notes = [], nOk = 0;
+  var ok = [], ko = [], themes = [], notes = [], nOk = 0, rows = [];
   AF_OHS_GROUPS.forEach(function(g){
     if(g.type === 'ok') nOk += g.items.length;
     g.items.forEach(function(it){
@@ -8307,7 +8324,11 @@ function _afOhsData(pg){
       // Une observation seule (sans case cochée) reste une donnée clinique :
       // on la remonte quand même dans le CR.
       if(obs) notes.push([it[1], obs]);
-      if(!el || !el.checked) return;
+      var checked = !!(el && el.checked);
+      // rows : détail ligne par ligne pour le CR (le CR liste les critères
+      // cochés, il ne peut pas se contenter des compteurs de la synthèse).
+      if(checked || obs) rows.push({ label:it[1], type:g.type, checked:checked, obs:obs });
+      if(!checked) return;
       var lbl = it[1] + (obs ? ' — ' + obs : '');
       if(g.type === 'ok'){ ok.push(lbl); return; }
       ko.push(lbl);
@@ -8317,7 +8338,7 @@ function _afOhsData(pg){
   });
   var talonsEl = document.getElementById('af-' + pg + '-ohs-talons');
   return {
-    ok:ok, ko:ko, themes:themes, notes:notes, nOk:nOk,
+    ok:ok, ko:ko, themes:themes, notes:notes, nOk:nOk, rows:rows,
     talons: !!(talonsEl && talonsEl.checked),
     corr: (document.getElementById('af-' + pg + '-ohs-corr')||{}).value || '',
     obs:  (document.getElementById('af-' + pg + '-ohs-obs')||{}).value  || '',
@@ -8342,20 +8363,23 @@ function _afOhsTone(d){
 }
 
 function _afSlsData(pg){
-  var g = 0, d = 0, both = 0, onlyG = [], onlyD = [], notes = [];
+  var g = 0, d = 0, both = 0, onlyG = [], onlyD = [], notes = [], rows = [];
   AF_SLS_ITEMS.forEach(function(it){
     var eg = document.getElementById('af-' + pg + '-sls-' + it[0] + '-g');
     var ed = document.getElementById('af-' + pg + '-sls-' + it[0] + '-d');
     var obs = (document.getElementById('af-' + pg + '-sls-' + it[0] + '-obs')||{}).value || '';
     if(obs) notes.push([it[1], obs]);
     var cg = !!(eg && eg.checked), cd = !!(ed && ed.checked);
+    // rows : une entrée par compensation retenue (cochée d'un côté au moins,
+    // ou porteuse d'une observation) — le CR les liste au lieu d'un compteur.
+    if(cg || cd || obs) rows.push({ label:it[1], g:cg, d:cd, obs:obs });
     if(cg) g++;
     if(cd) d++;
     if(cg && cd) both++;
     else if(cg) onlyG.push(it[2]);
     else if(cd) onlyD.push(it[2]);
   });
-  return { g:g, d:d, both:both, onlyG:onlyG, onlyD:onlyD, notes:notes, n:AF_SLS_ITEMS.length,
+  return { g:g, d:d, both:both, onlyG:onlyG, onlyD:onlyD, notes:notes, n:AF_SLS_ITEMS.length, rows:rows,
            obs:(document.getElementById('af-' + pg + '-sls-obs')||{}).value || '' };
 }
 

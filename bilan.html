@@ -1191,6 +1191,35 @@ td.bl-row-rail button:disabled { opacity: .3 !important; cursor: default; }
 .cr-tag.warn { background: var(--orange-l); color: var(--orange); }
 .cr-tag.bad  { background: var(--red-l); color: var(--red); }
 .cr-empty { color: var(--text3); font-size: .85rem; font-style: italic; padding: 12px 0; }
+/* Analyse fonctionnelle dans le CR : détail des critères cochés (le compteur
+   seul ne dit pas QUELLE compensation est présente). */
+.cr-af { display: flex; flex-direction: column; gap: 9px; font-weight: 400; }
+.cr-af-h {
+  font-size: .68rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+  color: var(--text3); margin-bottom: 3px; padding-bottom: 3px; border-bottom: 1px solid var(--border);
+}
+.cr-af-li { display: flex; gap: 7px; align-items: baseline; padding: 1px 0; font-size: .85rem; }
+.cr-af-ic { flex-shrink: 0; width: 11px; text-align: center; font-weight: 700; }
+.cr-af-ic.ok  { color: var(--green); }
+.cr-af-ic.ko  { color: var(--red); }
+.cr-af-ic.off { color: var(--text3); }
+.cr-af-obs { color: var(--text2); font-style: italic; font-weight: 400; }
+/* max-width : sans elle les colonnes G/D partent à l'autre bout de la page,
+   trop loin du libellé pour être lues d'un coup d'œil. */
+.cr-af-tbl { display: grid; grid-template-columns: minmax(280px, 1fr) 24px 24px; gap: 1px 10px; align-items: baseline; font-size: .85rem; max-width: 620px; }
+.cr-af-tbl > .th {
+  font-size: .68rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+  color: var(--text3); padding-bottom: 3px; border-bottom: 1px solid var(--border);
+}
+.cr-af-tbl > .c { text-align: center; font-weight: 700; }
+.cr-af-tbl > .c.on  { color: var(--red); }
+.cr-af-tbl > .c.off { color: var(--text3); opacity: .5; }
+.cr-af-sy { font-size: .8rem; color: var(--text2); }
+/* Le plancher de 280px sur la colonne libellé garantit une grille lisible sur
+   desktop, mais déborderait dans la place étroite laissée par .cr-key sur
+   mobile : on le relâche sous 768px. */
+@media (max-width: 768px) { .cr-af-tbl { grid-template-columns: minmax(0, 1fr) 22px 22px; } }
+@media print { .cr-af-li, .cr-af-tbl { break-inside: avoid; page-break-inside: avoid; } }
 .print-btn {
   display: flex;
   align-items: center;
@@ -5051,7 +5080,7 @@ select.bl-inherited-ghost { color:var(--text3); font-style:italic; }
 
 
 <script src="js/bilan-blocks.js?v=20260710"></script>
-<script src="js/bilan.js?v=20260730c"></script>
+<script src="js/bilan.js?v=20260730d"></script>
 
 </body>
 </html>
