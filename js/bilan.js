@@ -6332,12 +6332,22 @@ function _buildAllTestsHtml() {
   // (même ordre que dans la page).
   var _ohs = _afOhsData('mi'), _ohsTxt = _afOhsText(_ohs);
   var _slsQ = _afSlsData('mi'), _slsQTxt = _afSlsText(_slsQ);
+  // Observations par ligne : reprises telles quelles pour ne rien perdre, même
+  // quand la case correspondante n'est pas cochée.
+  var _afNotesHtml = function(notes){
+    if(!notes || !notes.length) return '';
+    return '<em>Observations :</em><br>' + notes.map(function(n){
+      return '&nbsp;&nbsp;· ' + n[0] + ' : ' + nl2br(n[1]);
+    }).join('<br>');
+  };
   var _afRows = '';
-  if (_ohsTxt || _ohs.obs) {
+  if (_ohsTxt || _ohs.obs || _ohs.notes.length) {
     var _ohsParts = [];
     if (_ohs.ok.length) _ohsParts.push('<em>Réussis :</em> ' + _ohs.ok.join(', '));
     if (_ohs.ko.length) _ohsParts.push('<em>Compensations :</em> ' + _ohs.ko.join(', '));
     if (_ohs.corr)      _ohsParts.push('<em>Talons surélevés :</em> ' + (_ohs.corr === 'oui' ? 'corrige le défaut' : 'ne corrige pas'));
+    var _ohsNotes = _afNotesHtml(_ohs.notes);
+    if (_ohsNotes)      _ohsParts.push(_ohsNotes);
     if (_ohs.obs)       _ohsParts.push(nl2br(_ohs.obs));
     if (_ohsTxt)        _ohsParts.push('<span style="color:var(--text2)">' + _ohsTxt + '</span>');
     var _ohsTone = _afOhsTone(_ohs);
@@ -6346,9 +6356,11 @@ function _buildAllTestsHtml() {
       _ohsTone === 'muted' ? '' : _ohsTone,
       ['af-mi-ohs-obs', 'af-mi-ohs-corr']);
   }
-  if (_slsQTxt || _slsQ.obs) {
+  if (_slsQTxt || _slsQ.obs || _slsQ.notes.length) {
     var _slsQParts = [];
     if (_slsQTxt)  _slsQParts.push(_slsQTxt);
+    var _slsQNotes = _afNotesHtml(_slsQ.notes);
+    if (_slsQNotes) _slsQParts.push(_slsQNotes);
     if (_slsQ.obs) _slsQParts.push(nl2br(_slsQ.obs));
     var _slsQTone = _afSlsTone(_slsQ);
     _afRows += crItem('Squat unipodal — qualité', _slsQParts.join('<br>'),
@@ -8143,7 +8155,7 @@ var AF_OHS_GROUPS = [
     ['cyphose',  'Excès de cyphose'],
     ['bras',     'Chute des bras'],
     ['talons',   'Lève les talons'],
-    ['dissoc',   'Perte dissociation lombo-pelvienne < 45°'],
+    ['dissoc',   'Perte dissociation lombo-pelvienne (butt wink)'],
   ]},
   { title:'Compensations — plan frontal antérieur', type:'ko', items:[
     ['piedsext', 'Pieds tournent en extérieur'],
@@ -8196,7 +8208,8 @@ function _afRender(){
       h += '<div class="af-sub">' + g.title + '</div>';
       g.items.forEach(function(it){
         h += '<div class="af-row af-' + g.type + '"><span>' + it[1] + '</span>'
-           + '<input type="checkbox" id="af-' + p.pg + '-ohs-' + it[0] + '" onchange="_afSynthOhs(\'' + p.pg + '\')"></div>';
+           + '<input type="checkbox" id="af-' + p.pg + '-ohs-' + it[0] + '" onchange="_afSynthOhs(\'' + p.pg + '\')">'
+           + '<input type="text" class="mob-note-inp" id="af-' + p.pg + '-ohs-' + it[0] + '-obs" placeholder="Observation…"></div>';
       });
     });
     h += '<div class="af-obs">'
@@ -8211,11 +8224,13 @@ function _afRender(){
     h += '<div class="af-mtitle" style="border-top:2px solid var(--border)"><span>Squat unipodal</span>'
        + '<span class="af-mref">Crossley 2011</span></div>';
     h += '<div class="af-row2 af-sub" style="padding:6px 22px"><span>Compensation observée</span>'
-       + '<span style="text-align:center">G</span><span style="text-align:center">D</span></div>';
+       + '<span style="text-align:center">G</span><span style="text-align:center">D</span>'
+       + '<span>Observation</span></div>';
     AF_SLS_ITEMS.forEach(function(it){
       h += '<div class="af-row2"><span>' + it[1] + '</span>'
          + '<input type="checkbox" id="af-' + p.pg + '-sls-' + it[0] + '-g" onchange="_afSynthSls(\'' + p.pg + '\')">'
-         + '<input type="checkbox" id="af-' + p.pg + '-sls-' + it[0] + '-d" onchange="_afSynthSls(\'' + p.pg + '\')"></div>';
+         + '<input type="checkbox" id="af-' + p.pg + '-sls-' + it[0] + '-d" onchange="_afSynthSls(\'' + p.pg + '\')">'
+         + '<input type="text" class="mob-note-inp" id="af-' + p.pg + '-sls-' + it[0] + '-obs" placeholder="Observation…"></div>';
     });
     h += '<div class="af-obs"><input type="text" class="mob-note-inp" id="af-' + p.pg + '-sls-obs" '
        + 'placeholder="Nombre de répétitions, profondeur atteinte, appui controlatéral…"></div>';
@@ -8225,21 +8240,26 @@ function _afRender(){
 }
 
 function _afOhsData(pg){
-  var ok = [], ko = [], themes = [], nOk = 0;
+  var ok = [], ko = [], themes = [], notes = [], nOk = 0;
   AF_OHS_GROUPS.forEach(function(g){
     if(g.type === 'ok') nOk += g.items.length;
     g.items.forEach(function(it){
-      var el = document.getElementById('af-' + pg + '-ohs-' + it[0]);
+      var el  = document.getElementById('af-' + pg + '-ohs-' + it[0]);
+      var obs = (document.getElementById('af-' + pg + '-ohs-' + it[0] + '-obs')||{}).value || '';
+      // Une observation seule (sans case cochée) reste une donnée clinique :
+      // on la remonte quand même dans le CR.
+      if(obs) notes.push([it[1], obs]);
       if(!el || !el.checked) return;
-      if(g.type === 'ok'){ ok.push(it[1]); return; }
-      ko.push(it[1]);
+      var lbl = it[1] + (obs ? ' — ' + obs : '');
+      if(g.type === 'ok'){ ok.push(lbl); return; }
+      ko.push(lbl);
       var t = AF_OHS_THEME[it[0]];
       if(t && themes.indexOf(t) === -1) themes.push(t);
     });
   });
   var talonsEl = document.getElementById('af-' + pg + '-ohs-talons');
   return {
-    ok:ok, ko:ko, themes:themes, nOk:nOk,
+    ok:ok, ko:ko, themes:themes, notes:notes, nOk:nOk,
     talons: !!(talonsEl && talonsEl.checked),
     corr: (document.getElementById('af-' + pg + '-ohs-corr')||{}).value || '',
     obs:  (document.getElementById('af-' + pg + '-ohs-obs')||{}).value  || '',
@@ -8264,10 +8284,12 @@ function _afOhsTone(d){
 }
 
 function _afSlsData(pg){
-  var g = 0, d = 0, both = 0, onlyG = [], onlyD = [];
+  var g = 0, d = 0, both = 0, onlyG = [], onlyD = [], notes = [];
   AF_SLS_ITEMS.forEach(function(it){
     var eg = document.getElementById('af-' + pg + '-sls-' + it[0] + '-g');
     var ed = document.getElementById('af-' + pg + '-sls-' + it[0] + '-d');
+    var obs = (document.getElementById('af-' + pg + '-sls-' + it[0] + '-obs')||{}).value || '';
+    if(obs) notes.push([it[1], obs]);
     var cg = !!(eg && eg.checked), cd = !!(ed && ed.checked);
     if(cg) g++;
     if(cd) d++;
@@ -8275,7 +8297,7 @@ function _afSlsData(pg){
     else if(cg) onlyG.push(it[2]);
     else if(cd) onlyD.push(it[2]);
   });
-  return { g:g, d:d, both:both, onlyG:onlyG, onlyD:onlyD, n:AF_SLS_ITEMS.length,
+  return { g:g, d:d, both:both, onlyG:onlyG, onlyD:onlyD, notes:notes, n:AF_SLS_ITEMS.length,
            obs:(document.getElementById('af-' + pg + '-sls-obs')||{}).value || '' };
 }
 

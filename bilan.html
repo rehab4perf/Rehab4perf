@@ -855,8 +855,8 @@ td.bl-row-rail button:disabled { opacity: .3 !important; cursor: default; }
   padding: 8px 22px; border-bottom: 1px solid var(--border);
   font-size: .84rem; color: var(--text);
 }
-.af-row  { grid-template-columns: 1fr 40px; }
-.af-row2 { grid-template-columns: 1fr 40px 40px; }
+.af-row  { grid-template-columns: minmax(0,1fr) 40px minmax(0,1fr); }
+.af-row2 { grid-template-columns: minmax(0,1fr) 40px 40px minmax(0,1fr); }
 .af-row input[type=checkbox], .af-row2 input[type=checkbox] {
   width: 17px; height: 17px; cursor: pointer; margin: 0 auto; display: block;
   accent-color: var(--red);
@@ -5051,7 +5051,7 @@ select.bl-inherited-ghost { color:var(--text3); font-style:italic; }
 
 
 <script src="js/bilan-blocks.js?v=20260710"></script>
-<script src="js/bilan.js?v=20260729h"></script>
+<script src="js/bilan.js?v=20260729i"></script>
 
 </body>
 </html>
