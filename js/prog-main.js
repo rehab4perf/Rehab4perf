@@ -6799,7 +6799,7 @@ var PROTOCOLS_REF = [
     id: 'latarjet',
     type: 'rehab',
     name: 'Latarjet',
-    icon: '🦴',
+    icon: 'epaule',
     category: 'Pathologie',
     joint: 'Épaule',
     source: 'Bradley et al., 2021 · Falls & Popchak — Return to Competitive Sport After Anterior Shoulder Stabilization',
