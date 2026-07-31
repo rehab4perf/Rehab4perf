@@ -4030,6 +4030,18 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
           </div>
 
           <div>
+            <div class="cap-field-label">Tissu concerné</div>
+            <div class="cap-chips" id="capTissuG">
+              <button class="cap-chip" data-val="os" onclick="capChipSel(this,'capTissuG');_capFormRefresh()">Os</button>
+              <button class="cap-chip" data-val="tendon" onclick="capChipSel(this,'capTissuG');_capFormRefresh()">Tendon</button>
+              <button class="cap-chip" data-val="fascia" onclick="capChipSel(this,'capTissuG');_capFormRefresh()">Fascia</button>
+              <button class="cap-chip" data-val="muscle" onclick="capChipSel(this,'capTissuG');_capFormRefresh()">Muscle</button>
+              <button class="cap-chip" data-val="articulaire" onclick="capChipSel(this,'capTissuG');_capFormRefresh()">Articulaire</button>
+            </div>
+            <div class="cap-hint">Détermine le palier de consolidation. À corriger sur les cas ambigus — une métatarsalgie peut être osseuse comme neurologique</div>
+          </div>
+
+          <div>
             <div class="cap-field-label">Objectif de base <span class="cap-unit-lbl">(km)</span></div>
             <input type="number" class="cap-select" id="capObjBase" min="0" step="0.5" placeholder="ex : 10" oninput="_capFormRefresh()">
             <div class="cap-hint">Jalon à franchir sans douleur pour dégeler le levier contraint</div>
@@ -4252,6 +4264,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 
 </div>
 
-<script src="js/prog-main.js?v=20260731a"></script>
+<script src="js/prog-main.js?v=20260731b"></script>
 </body>
 </html>

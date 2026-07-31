@@ -9932,6 +9932,17 @@ var CAP_AXES = {
    multiples) — un seul à la fois, le volume avant l'allure. */
 var CAP_ORDRE_REMONTEE = ['volume', 'allure'];
 
+/* Libellés lisibles des clés internes. Une seule table pour le formulaire et
+   l'écran de résultat : sans ça, 'cotes' finit affiché tel quel au praticien. */
+var CAP_LIBELLES = {
+  cotes:'côtes', descentes:'descentes', devers:'dévers', surfaces_dures:'surfaces dures',
+  vitesse:'vitesse', pieds_nus:'pieds nus', avant_pied:'appui avant-pied',
+  dorsiflexion_chargee:'dorsiflexion chargée', sprint:'sprint',
+  allure:'allure', volume:'volume', cadence:'cadence',
+  longue:'sortie longue', facile:'facile', qualite:'qualité', technique:'technique',
+};
+function _capLbl(k) { return CAP_LIBELLES[k] || k; }
+
 /* ── Base de données pathologies ──────────────────────────────────────
    `axe`   : détermine quel levier est gelé et lequel progresse.
    `tissu` : détermine le palier de consolidation — 3:1 + baisse réelle sur
@@ -10259,6 +10270,9 @@ var CAP_ZONES = [
 ];
 
 var CAP_ZONE_COEF = CAP_ZONES.reduce(function(acc, z) { acc[z.id] = z.coef; return acc; }, {});
+/* La marche est du temps passé, pas de la charge de course : c'est tout
+   l'intérêt du fractionné, décharger le tissu entre les bouts de course. */
+CAP_ZONE_COEF.marche = 0;
 
 /* Allure décimale (min/km) → « 5:31 ». */
 function _capFmtPace(minPerKm) {
@@ -10283,14 +10297,24 @@ function _capZones(allureFooting) {
 /* Charge pondérée d'une séance à segments. Remplacera _capLoadOf(), qui
    réduit une séance à ses minutes brutes et écrase donc la différence de
    nature entre un footing long et une séance de seuil courte. */
+/* Charge d'un segment : effort + récupération, chacun pondéré par SA zone.
+   Les répétitions comptent — une série de 8×1' vaut 8 minutes d'effort, pas
+   une seule. Une récupération en marche pèse 0, une récupération en Z1 pèse
+   ses minutes : ce n'est pas le même coût pour le tissu. */
+function _capSegCharge(seg) {
+  if (!seg) return 0;
+  var n     = seg.reps || 1;
+  var coef  = CAP_ZONE_COEF[seg.zone] != null ? CAP_ZONE_COEF[seg.zone] : 1;
+  var nRec  = n - (seg.recupDerniere === false ? 1 : 0);
+  var cRec  = seg.recupZone ? (CAP_ZONE_COEF[seg.recupZone] != null ? CAP_ZONE_COEF[seg.recupZone] : 1) : 0;
+  return n * (seg.minutes || 0) * coef + nRec * (seg.recupMin || 0) * cRec;
+}
+
 function _capCharge(session) {
   if (!session) return 0;
   var total;
   if (Array.isArray(session.segments) && session.segments.length) {
-    total = session.segments.reduce(function(sum, seg) {
-      var coef = CAP_ZONE_COEF[seg.zone] || 1;
-      return sum + (seg.minutes || 0) * coef;
-    }, 0);
+    total = session.segments.reduce(function(sum, seg) { return sum + _capSegCharge(seg); }, 0);
   } else {
     // Ancien format (sans segments) : minutes de course en Z2 par défaut.
     var mins = session.type === 'continuous'
@@ -10301,6 +10325,514 @@ function _capCharge(session) {
   // Arrondi au dixième : les coefficients décimaux propagent sinon des
   // 55.00000000000001 jusque dans l'affichage et les comparaisons.
   return Math.round(total * 10) / 10;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MODÈLE DE SÉANCE À SEGMENTS
+
+   Un segment vaut soit un bloc continu {minutes, zone}, soit une série
+   {reps, minutes, zone, recupMin, recupZone}. Les segments sont la source
+   de vérité ; les champs de l'ancien modèle (type/reps/runMin/walkMin/
+   durationMin) en sont DÉRIVÉS et maintenus à jour, pour que tout ce qui
+   consomme déjà une séance — écran de résultat, statistiques, export
+   agenda, régression — continue de fonctionner sans réécriture.
+══════════════════════════════════════════════════════════════ */
+
+/* Minutes de course d'un segment. La marche ne compte pas, mais une
+   récupération courue en Z1 est bien du volume de course. */
+function _capSegRun(seg) {
+  if (!seg) return 0;
+  var n    = seg.reps || 1;
+  var eff  = seg.zone === 'marche' ? 0 : n * (seg.minutes || 0);
+  var nRec = n - (seg.recupDerniere === false ? 1 : 0);
+  var rec  = (seg.recupZone && seg.recupZone !== 'marche') ? nRec * (seg.recupMin || 0) : 0;
+  return eff + rec;
+}
+
+/* Temps total d'un segment, récupération et marche comprises. */
+function _capSegDuree(seg) {
+  if (!seg) return 0;
+  var n = seg.reps || 1;
+  return n * (seg.minutes || 0) + (n - (seg.recupDerniere === false ? 1 : 0)) * (seg.recupMin || 0);
+}
+
+function _capVolumeCourse(s) {
+  if (!s || !Array.isArray(s.segments)) return 0;
+  return Math.round(s.segments.reduce(function(t, g) { return t + _capSegRun(g); }, 0) * 10) / 10;
+}
+
+function _capDuree(s) {
+  if (!s || !Array.isArray(s.segments)) return 0;
+  return Math.round(s.segments.reduce(function(t, g) { return t + _capSegDuree(g); }, 0));
+}
+
+function _capSegLabel(seg) {
+  var z = seg.zone === 'marche' ? 'M' : seg.zone;
+  if (seg.reps && seg.reps > 1) {
+    var r = seg.recupMin
+      ? ' (r. ' + _capFmtMin(seg.recupMin) + (seg.recupZone === 'marche' ? 'M' : '') + ')'
+      : '';
+    return seg.reps + '×' + _capFmtMin(seg.minutes) + ' ' + z + r;
+  }
+  return _capFmtMin(seg.minutes) + ' ' + z;
+}
+
+function _capSeanceLabel(s) {
+  if (!Array.isArray(s.segments) || !s.segments.length) return '—';
+  // Cas courant du fractionné de reprise : une seule série course/marche.
+  // On garde l'écriture historique « 8×(1'C / 1'M) », déjà connue du praticien.
+  if (s.segments.length === 1) {
+    var g = s.segments[0];
+    if (g.reps > 1 && g.recupZone === 'marche') {
+      return g.reps + '×(' + _capFmtMin(g.minutes) + 'C / ' + _capFmtMin(g.recupMin) + 'M)';
+    }
+    if (!g.reps || g.reps === 1) {
+      var d = Math.round(g.minutes);
+      var base = d >= 60
+        ? Math.floor(d / 60) + 'h' + (d % 60 ? (d % 60 < 10 ? '0' : '') + d % 60 : '')
+        : d + ' min';
+      return base + (g.zone === 'Z2' ? ' continu' : ' ' + g.zone);
+    }
+  }
+  return s.segments.map(_capSegLabel).join(' · ');
+}
+
+/* Recalcule libellé + champs hérités. À appeler après toute modification
+   des segments — c'est le seul endroit qui connaît la correspondance. */
+function _capSyncSeance(s) {
+  if (!s || !Array.isArray(s.segments)) return s;
+  s.label = _capSeanceLabel(s);
+  var series = s.segments.filter(function(g) { return (g.reps || 1) > 1; });
+  if (s.segments.length === 1 && series.length === 1) {
+    var g = s.segments[0];
+    s.type = 'interval';
+    s.reps = g.reps; s.runMin = g.minutes; s.walkMin = g.recupMin || 0;
+    s.durationMin = null;
+  } else {
+    // Séance à plusieurs segments : l'ancien modèle ne sait pas la décrire.
+    // On l'expose comme un continu de même volume de course — approximation
+    // assumée, le détail réel restant porté par les segments et le libellé.
+    s.type = 'continuous';
+    s.reps = null; s.runMin = null; s.walkMin = null;
+    s.durationMin = Math.max(1, Math.round(_capVolumeCourse(s)));
+  }
+  return s;
+}
+
+function _capSeance(role, segments, opts) {
+  var s = Object.assign({
+    id: _capMkId(), role: role || 'facile', segments: segments || [],
+    cadenceCible: null, statut: 'pending', status: 'pending', painScore: null,
+  }, opts || {});
+  return _capSyncSeance(s);
+}
+
+/* Constructeurs — les trois formes de séance produites par le moteur. */
+function _capSeanceContinu(role, minutes, zone, opts) {
+  return _capSeance(role, [{ minutes: Math.max(1, Math.round(minutes)), zone: zone || 'Z2' }], opts);
+}
+
+function _capSeanceFractionne(role, reps, runMin, walkMin, zone, opts) {
+  return _capSeance(role, [{
+    reps: Math.max(1, Math.round(reps)), minutes: runMin, zone: zone || 'Z2',
+    recupMin: walkMin, recupZone: 'marche',
+  }], opts);
+}
+
+/* Séance de qualité : échauffement + série à l'allure + retour au calme. */
+function _capSeanceQualite(reps, runMin, zoneQ, recupMin, echauffMin, opts) {
+  return _capSeance('qualite', [
+    { minutes: echauffMin, zone: 'Z2' },
+    // recupDerniere:false — le retour au calme qui suit tient lieu de dernière
+    // récupération, la compter deux fois gonflerait la charge.
+    { reps: reps, minutes: runMin, zone: zoneQ, recupMin: recupMin, recupZone: 'Z1', recupDerniere: false },
+    { minutes: Math.max(5, Math.round(echauffMin / 2)), zone: 'Z1' },
+  ], opts);
+}
+
+/* Programmes déjà en cours : reconstruit les segments depuis l'ancien modèle
+   pour que tout passe par le même chemin de calcul (décision « migrer »). */
+function _capNormaliseSeance(s) {
+  if (!s || Array.isArray(s.segments)) return s;
+  s.segments = s.type === 'interval'
+    ? [{ reps: s.reps, minutes: s.runMin, zone: 'Z2', recupMin: s.walkMin || 0, recupZone: 'marche' }]
+    : [{ minutes: s.durationMin || 0, zone: 'Z2' }];
+  if (!s.role) s.role = 'facile';
+  if (!s.statut) s.statut = s.status || 'pending';
+  return _capSyncSeance(s);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CONSTRUCTEUR DE SEMAINE
+
+   Le moteur raisonne en MINUTES de course : les segments sont en minutes,
+   et une distance ne devient une durée qu'une fois l'allure connue. Les
+   cibles saisies en km sont converties à l'entrée, jamais après.
+══════════════════════════════════════════════════════════════ */
+
+function _capVersMin(valeur, p) {
+  if (p.unite !== 'km') return valeur;
+  return valeur * (p.allureFooting || 6);
+}
+
+/* Échelle du fractionné. Le bout de course progresse, la marche reste à 1 min,
+   et le nombre de répétitions DÉCROÎT à mesure que le bout s'allonge : le
+   volume de course par séance monte alors doucement (8, 12, 15, 16, 20, 24…)
+   au lieu de bondir. C'est le volume de l'échelle qui fait foi pendant cette
+   phase — le calculer depuis une cible hebdomadaire produisait une chute de
+   volume au moment de passer en course continue. */
+var CAP_ECHELLE_FRACTIONNE = [
+  { bout: 1,  reps: 8 }, { bout: 2,  reps: 6 }, { bout: 3,  reps: 5 },
+  { bout: 4,  reps: 4 }, { bout: 5,  reps: 4 }, { bout: 6,  reps: 4 },
+  { bout: 8,  reps: 3 }, { bout: 10, reps: 3 }, { bout: 12, reps: 3 },
+];
+
+function _capEchelonFractionne(continuTolere) {
+  var t = Math.max(1, continuTolere || 1);
+  var e = CAP_ECHELLE_FRACTIONNE[0];
+  for (var i = 0; i < CAP_ECHELLE_FRACTIONNE.length; i++) {
+    if (CAP_ECHELLE_FRACTIONNE[i].bout <= t) e = CAP_ECHELLE_FRACTIONNE[i];
+  }
+  return e;
+}
+
+function _capBoutCourse(continuTolere) { return _capEchelonFractionne(continuTolere).bout; }
+
+/* La polarisation suppose de quoi la porter : sans volume ni fréquence, des
+   rôles distincts n'ont pas de sens et la majorité des retours de blessure
+   restent sur un seul type de séance. */
+function _capPolarisable(p, volumeMin, frequence) {
+  if (frequence < 3) return false;
+  return volumeMin >= _capVersMin(_capPlancherPalier(p.unite), { unite: p.unite, allureFooting: p.allureFooting })
+    || volumeMin >= 120;
+}
+
+/* Répartition des rôles sur la semaine, selon l'axe.
+   `degel` : le levier contraint a-t-il été libéré (objectif de base atteint). */
+function _capRolesSemaine(axe, frequence, degel) {
+  var roles = [];
+  if (axe === 'repetition') {
+    // Volume plafonné : pas de sortie longue, c'est le nombre de cycles
+    // consécutifs qui blesse. L'intensité est le levier moteur, donc la
+    // séance de qualité existe dès le départ.
+    roles.push('qualite');
+    while (roles.length < frequence) roles.push('facile');
+  } else if (axe === 'amplitude') {
+    // Technique obligatoire : la cadence est le traitement, pas un à-côté.
+    roles.push('longue', 'technique');
+    while (roles.length < frequence) roles.push('facile');
+  } else {
+    // Charge : le volume progresse, l'allure reste gelée jusqu'au dégel.
+    roles.push('longue');
+    if (degel && frequence >= 4) roles.push('qualite');
+    while (roles.length < frequence) roles.push('facile');
+  }
+  return roles.slice(0, frequence);
+}
+
+/* Part du volume hebdomadaire attribuée à chaque rôle. */
+var CAP_PART_ROLE = { longue: 0.35, qualite: 0.22, technique: 0.15, facile: 1 };
+
+/* Plafond propre à certains rôles, en minutes. La séance technique vise la
+   qualité du geste, pas la charge : elle ne doit jamais absorber le volume
+   redistribué par les autres, sinon on prescrit une heure d'éducatifs. */
+var CAP_PLAFOND_ROLE = { technique: 30 };
+
+/* Répartit un volume selon des poids, en respectant un plafond par séance.
+   Le dépassement d'une séance plafonnée est REDISTRIBUÉ sur les autres :
+   sans ça, plafonner la sortie longue ferait silencieusement perdre le
+   volume correspondant et le programme sous-délivrerait la cible. */
+function _capRepartir(total, poids, plafond) {
+  var out = poids.map(function() { return 0; });
+  var actifs = poids.map(function(_, i) { return i; });
+  var reste = total, garde = 0;
+  while (reste > 0.01 && actifs.length && garde++ < 30) {
+    var somme = actifs.reduce(function(s, i) { return s + poids[i]; }, 0);
+    if (somme <= 0) break;
+    var deborde = 0, encore = [];
+    actifs.forEach(function(i) {
+      var v = out[i] + reste * poids[i] / somme;
+      if (v > plafond) { deborde += v - plafond; out[i] = plafond; }
+      else { out[i] = v; encore.push(i); }
+    });
+    reste = deborde;
+    actifs = encore;
+  }
+  return out;
+}
+
+/* Construit la semaine à un nombre de sorties donné. Le volume délivré peut
+   rester en deçà de la cible si tous les plafonds sont atteints — c'est
+   l'appelant qui décide alors d'ajouter une sortie. */
+function _capBuildSemaineN(p, opts, nbSorties, frequence) {
+  var semaine   = opts.semaine || 1;
+  var volumeMin = Math.max(1, opts.volumeMin != null ? opts.volumeMin
+                            : _capVersMin(opts.volumeHebdo != null ? opts.volumeHebdo : p.cibleHebdo, p));
+  var continu   = opts.continuTolere != null ? opts.continuTolere : p.courseContinueToleree;
+  var degel     = !!opts.degel;
+  var fractionne = (continu || 0) < CAP_SEUILS.fractionne;
+  var plafondSortie = p.plusLongueSortie > 0 ? _capVersMin(p.plusLongueSortie, p) : Infinity;
+
+  var polarise = !fractionne && _capPolarisable(p, volumeMin, nbSorties);
+  var roles = polarise ? _capRolesSemaine(p.axe, nbSorties, degel)
+                       : new Array(nbSorties).fill('facile');
+
+  // Répartition du volume : les rôles nommés prennent leur part, le reste se
+  // partage entre les séances faciles.
+  var nommes  = roles.filter(function(r) { return r !== 'facile'; })
+                     .reduce(function(a, r) { return a + CAP_PART_ROLE[r]; }, 0);
+  var nbFacile = roles.filter(function(r) { return r === 'facile'; }).length;
+  var partFacile = nbFacile ? Math.max(0, 1 - nommes) / nbFacile : 0;
+  var poids = roles.map(function(r) { return r === 'facile' ? partFacile : CAP_PART_ROLE[r]; });
+
+  // La sortie longue ne dépasse jamais la cible fixée quand il y en a une.
+  var plafondLongue = p.cibleSortieLongue ? _capVersMin(p.cibleSortieLongue, p) : plafondSortie;
+  // Les rôles à plafond propre sont servis d'abord et sortis de la
+  // redistribution : le reliquat se répartit sur les séances qui peuvent
+  // réellement l'absorber.
+  var minutesParRole = roles.map(function() { return 0; });
+  var volumeRestant = volumeMin;
+  roles.forEach(function(r, i) {
+    var pl = CAP_PLAFOND_ROLE[r];
+    if (pl == null) return;
+    minutesParRole[i] = Math.min(pl, plafondSortie, volumeMin * poids[i]);
+    volumeRestant -= minutesParRole[i];
+    poids[i] = 0;
+  });
+  var repartis = _capRepartir(Math.max(0, volumeRestant), poids, plafondSortie);
+  roles.forEach(function(r, i) {
+    if (CAP_PLAFOND_ROLE[r] == null) minutesParRole[i] = repartis[i];
+    if (r === 'longue') minutesParRole[i] = Math.min(minutesParRole[i], plafondLongue);
+  });
+
+  var zoneFacile = 'Z2';
+  var zoneQualite = degel ? 'Z4' : 'Z3';
+
+  return roles.map(function(role, i) {
+    var minutes = Math.max(1, minutesParRole[i]);
+    var s;
+
+    if (fractionne) {
+      // L'échelon dicte bout ET répétitions : pendant cette phase c'est lui
+      // qui porte la progression, pas la cible hebdomadaire.
+      var ech = _capEchelonFractionne(continu);
+      s = _capSeanceFractionne(role, ech.reps, ech.bout, 1, zoneFacile);
+    } else if (role === 'qualite') {
+      var echauff = Math.max(10, Math.round(minutes * 0.35));
+      var retour  = Math.max(5, Math.round(echauff / 2));
+      var travail = Math.max(3, minutes - echauff - retour);
+      var runMin  = travail >= 15 ? 3 : travail >= 8 ? 2 : 1;
+      var recup   = 2;
+      // travail = reps×effort + (reps−1)×récup  →  on inverse, sinon les
+      // récupérations s'ajoutent au volume visé et la séance déborde d'un tiers.
+      var reps = Math.max(3, Math.round((travail + recup) / (runMin + recup)));
+      s = _capSeanceQualite(reps, runMin, zoneQualite, recup, echauff);
+    } else if (role === 'technique') {
+      // Éducatifs à cadence cible, en Z1 : c'est la qualité du geste qui
+      // compte, pas la charge.
+      s = _capSeanceContinu('technique', minutes, 'Z1');
+    } else {
+      s = _capSeanceContinu(role, minutes, zoneFacile);
+    }
+
+    s.week = semaine;
+    s.role = role;
+    if (p.cadenceCible && (p.axe === 'amplitude' || role === 'technique')) s.cadenceCible = p.cadenceCible;
+    else if (p.cadenceCible) s.cadenceCible = p.cadenceCible;
+    // Sorties supplémentaires nées du plafond unitaire : elles se placent le
+    // même jour qu'une autre plutôt que de mobiliser un jour de plus.
+    if (i >= frequence) s.memeJour = true;
+    return s;
+  });
+}
+
+function _capBuildSemaine(p, opts) {
+  opts = opts || {};
+  var frequence = Math.max(1, Math.round(p.frequenceCible || 3));
+  var volumeMin = Math.max(1, opts.volumeMin != null ? opts.volumeMin
+                            : _capVersMin(opts.volumeHebdo != null ? opts.volumeHebdo : p.cibleHebdo, p));
+
+  // On ajoute des sorties tant que la semaine ne délivre pas la cible — la
+  // fréquence est le levier du volume, pas la durée (spec §06). On mesure le
+  // volume réellement produit plutôt que de le déduire : les plafonds par
+  // rôle rendent le calcul a priori faux (une séance technique n'absorbe
+  // jamais plus de 30 min, quoi qu'il reste à placer).
+  var nb = frequence, semaine = null;
+  for (var garde = 0; garde < 20; garde++) {
+    semaine = _capBuildSemaineN(p, opts, nb, frequence);
+    var produit = semaine.reduce(function(t, s) { return t + _capVolumeCourse(s); }, 0);
+    if (produit >= volumeMin * 0.97 || nb >= 21) break;
+    nb++;
+  }
+  return semaine;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PROGRESSION — la trajectoire semaine après semaine
+
+   Un seul levier bouge à la fois. Lequel dépend de l'axe : le volume sur
+   CHARGE et AMPLITUDE, l'allure sur RÉPÉTITION où le volume est justement
+   ce qui blesse. Le levier contraint ne se libère qu'à l'atteinte de
+   l'objectif de base — un critère, pas un délai.
+
+   Le plan produit ici est une PROJECTION : il place le dégel là où la
+   trajectoire prévue franchit le jalon. Le retour réel du patient le
+   déplacera, c'est le rôle de la régression.
+══════════════════════════════════════════════════════════════ */
+
+function _capObjectifBaseMin(p) {
+  return p.objectifBase ? _capVersMin(p.objectifBase, p) : null;
+}
+
+/* Prochain échelon du fractionné. */
+function _capBoutSuivant(bout) {
+  var courant = _capBoutCourse(bout);
+  for (var i = 0; i < CAP_ECHELLE_FRACTIONNE.length - 1; i++) {
+    if (CAP_ECHELLE_FRACTIONNE[i].bout === courant) return CAP_ECHELLE_FRACTIONNE[i + 1].bout;
+  }
+  return bout;
+}
+
+/* Une séance dure charge fortement le tissu : deux d'affilée ne laissent pas
+   le temps de récupérer entre elles. La technique et le facile ne comptent
+   pas — c'est justement leur rôle de s'intercaler. */
+var CAP_ROLES_DURS = ['longue', 'qualite'];
+function _capEstDure(s) { return CAP_ROLES_DURS.indexOf(s.role) !== -1; }
+
+/* Écart circulaire en jours entre deux jours de semaine (0 = lundi). */
+function _capEcartJours(a, b) {
+  var d = Math.abs(a - b);
+  return Math.min(d, 7 - d);
+}
+
+/* Ordonne les séances d'une semaine sur les jours disponibles en éloignant
+   au maximum les journées dures. Renvoie {seances, conflits} — on génère
+   toujours, et on signale plutôt que de refuser : le praticien connaît les
+   contraintes réelles du patient mieux que le moteur. */
+function _capOrdonnerSemaine(seances, joursDispo) {
+  var jours = (joursDispo && joursDispo.length ? joursDispo.slice() : [0, 2, 4])
+                .sort(function(a, b) { return a - b; });
+  var durs  = seances.filter(_capEstDure);
+  var doux  = seances.filter(function(s) { return !_capEstDure(s); });
+
+  // Places réservées aux séances dures : réparties le plus régulièrement
+  // possible sur les jours disponibles.
+  var placesDures = [];
+  if (durs.length) {
+    var pas = jours.length / durs.length;
+    for (var i = 0; i < durs.length; i++) placesDures.push(Math.round(i * pas) % jours.length);
+  }
+
+  var ordre = [], iDur = 0, iDoux = 0;
+  for (var k = 0; k < seances.length; k++) {
+    var surJour = k < jours.length;
+    if (surJour && placesDures.indexOf(k) !== -1 && iDur < durs.length) ordre.push(durs[iDur++]);
+    else if (iDoux < doux.length) ordre.push(doux[iDoux++]);
+    else if (iDur < durs.length) ordre.push(durs[iDur++]);
+  }
+
+  // Contrôle a posteriori : deux dures à moins de 2 jours d'intervalle.
+  var conflits = [];
+  var joursDurs = [];
+  ordre.forEach(function(s, idx) { if (_capEstDure(s) && idx < jours.length) joursDurs.push(jours[idx]); });
+  for (var a = 0; a < joursDurs.length - 1; a++) {
+    if (_capEcartJours(joursDurs[a], joursDurs[a + 1]) < 2) {
+      conflits.push(joursDurs[a] + '→' + joursDurs[a + 1]);
+    }
+  }
+  return { seances: ordre, conflits: conflits };
+}
+
+function _capBuildProgrammeV2(p) {
+  _capIdSeq = 0;
+  var frequence = Math.max(1, Math.round(p.frequenceCible || 3));
+  var cibleMin  = _capVersMin(Math.max(1, p.cibleHebdo), p);
+  // Reprise depuis zéro : on ne multiplie pas zéro. On part d'un volume
+  // plancher dérivé de la fréquence, et la croissance devient additive.
+  var reprise   = !(p.chronique > 0);
+  var departMin = reprise ? Math.max(9, frequence * 4) : _capVersMin(p.chronique, p);
+  var semainesVisees = Math.max(1, Math.round(p.semaines || 12));
+  var objBaseMin = _capObjectifBaseMin(p);
+  var ax = CAP_AXES[p.axe] || CAP_AXES.charge;
+  var volumeEstGele = ax.gele.indexOf('volume') !== -1;   // axe RÉPÉTITION
+
+  // Croissance hebdomadaire requise pour tenir le délai demandé.
+  var g = cibleMin > departMin ? Math.pow(cibleMin / departMin, 1 / semainesVisees) : 1;
+
+  var volume  = Math.min(departMin, cibleMin);
+  var continu = p.courseContinueToleree || 0;
+  var degelIntensite = false, degelVolume = false, qualiteTolerees = 0;
+  var sessions = [], semaine = 0, garde = 0, confirme = false;
+  var conflitsEspacement = [];
+
+  while (garde++ < 60) {
+    semaine++;
+
+    // ── Dégel : sur critère atteint, jamais sur calendrier ──
+    if (volumeEstGele) {
+      // Axe RÉPÉTITION : le volume est justement ce qui blesse, il est gelé.
+      // Adosser son dégel à un seuil de volume serait circulaire — le volume
+      // ne peut pas croître pour atteindre le seuil qui l'autoriserait à
+      // croître. Le critère porte donc sur l'autre levier : le nombre de
+      // séances de qualité encaissées. En projection on suppose qu'elles le
+      // sont ; le retour réel du patient déplacera le jalon.
+      degelIntensite = qualiteTolerees >= 2;          // Z3 → Z4
+      degelVolume    = qualiteTolerees >= 5;          // puis le volume s'ouvre
+    } else {
+      if (!degelIntensite) {
+        degelIntensite = objBaseMin
+          ? (continu >= objBaseMin || volume >= objBaseMin * Math.max(1, frequence - 1))
+          : volume >= cibleMin * 0.6;
+      }
+      degelVolume = true;   // le volume n'a jamais été le levier contraint
+    }
+
+    // ── Palier de consolidation ──
+    var volUnite = p.unite === 'km' ? volume / (p.allureFooting || 6) : volume;
+    var pal = _capPalier(p.tissu, volUnite, p.unite);
+    // Décharger depuis un plateau n'a aucun sens : rien ne s'y accumule.
+    var progresse = volumeEstGele ? degelVolume : true;
+    var estPalier = pal.cycle > 0 && progresse && semaine % pal.cycle === 0;
+    var volumeSemaine = (estPalier && pal.mode === 'baisse') ? volume * 0.7 : volume;
+
+    var sem = _capBuildSemaine(p, {
+      volumeMin: volumeSemaine, continuTolere: continu,
+      degel: degelIntensite, semaine: semaine,
+    });
+    // Pendant le fractionné, le volume réel vient de l'échelle et non de la
+    // trajectoire. On le resynchronise pour que le passage en course continue
+    // reparte du niveau atteint, sans la chute qu'un compteur figé provoquait.
+    if (continu > 0 && continu < CAP_SEUILS.fractionne) {
+      volume = Math.min(cibleMin, sem.reduce(function(t, s) { return t + _capVolumeCourse(s); }, 0));
+    }
+    var ordonne = _capOrdonnerSemaine(sem, p.joursDispo);
+    if (ordonne.conflits.length) conflitsEspacement.push(semaine);
+    ordonne.seances.forEach(function(s) {
+      s.palier = estPalier ? pal.mode : null;
+      sessions.push(s);
+    });
+    if (!estPalier && sem.some(function(s) { return s.role === 'qualite'; })) qualiteTolerees++;
+
+    if (confirme) break;
+    if (volume >= cibleMin * 0.99 && degelIntensite && degelVolume) { confirme = true; continue; }
+
+    // ── Progression : un seul levier ──
+    if (!estPalier) {
+      if (continu > 0 && continu < CAP_SEUILS.fractionne) {
+        // Mode fractionné : c'est le bout de course qui progresse, pas le
+        // volume — allonger les deux la même semaine ferait deux leviers.
+        continu = _capBoutSuivant(continu);
+      } else if (!volumeEstGele || degelVolume) {
+        volume = reprise ? Math.min(cibleMin, volume + Math.max(3, volume * 0.15))
+                         : Math.min(cibleMin, volume * g);
+      }
+    }
+  }
+  // Objet et non tableau : JSON.stringify laisse tomber les propriétés
+  // ajoutées à un tableau, et le plan transite par localStorage. Le
+  // signalement doit survivre au rechargement, pas seulement s'afficher
+  // au moment de la génération.
+  return { seances: sessions, conflitsEspacement: conflitsEspacement };
 }
 
 /* ── État global ── */
@@ -10417,9 +10949,16 @@ function _capFillPathoSelects() {
 /* Sélection de pathologie → pré-remplit l'axe (modifiable ensuite). */
 function _capOnPathoChange() {
   var p1 = CAP_PATHO_DB[(document.getElementById('capPathoG') || {}).value] || CAP_PATHO_DB.aucune;
+  var p2 = CAP_PATHO_DB[(document.getElementById('capPatho2G') || {}).value];
   var axe = p1.axe || 'charge';
   document.querySelectorAll('#capAxeG .cap-chip').forEach(function(c) {
     c.classList.toggle('active', c.dataset.val === axe);
+  });
+  // Tissu : l'os prime quand deux pathologies coexistent — c'est le tissu au
+  // signal douloureux le plus tardif, donc celui qui commande la prudence.
+  var tissu = (p1.tissu === 'os' || (p2 && p2.tissu === 'os')) ? 'os' : (p1.tissu || 'tendon');
+  document.querySelectorAll('#capTissuG .cap-chip').forEach(function(c) {
+    c.classList.toggle('active', c.dataset.val === tissu);
   });
   _capFormRefresh();
 }
@@ -10437,11 +10976,14 @@ function _capPathos() {
 /* Palier de consolidation : 3:1 + baisse réelle sur l'os (signal douloureux
    tardif, fenêtre de remodelage) ; 4:1 + maintien à charge constante sur les
    autres tissus, et purement réactif tant que le volume reste faible. */
-function _capPalier(tissus, volumeHebdo, unite) {
-  var os = tissus.indexOf('os') !== -1;
-  var plancher = unite === 'min' ? 120 : 20;   // 2 h ou 20 km hebdomadaires
-  if (os) return { cycle: 3, mode: 'baisse', why: 'tissu osseux' };
-  if (volumeHebdo >= plancher) return { cycle: 4, mode: 'maintien', why: 'volume élevé' };
+function _capPlancherPalier(unite) { return unite === 'min' ? 120 : 20; }
+
+/* Le palier dépend du volume de la SEMAINE considérée, pas de la cible : un
+   patient qui part de 5 km/sem vers 40 passe ses premières semaines sous le
+   plancher, et n'a donc rien à consolider avant de l'avoir franchi. */
+function _capPalier(tissu, volumeHebdo, unite) {
+  if (tissu === 'os') return { cycle: 3, mode: 'baisse', why: 'tissu osseux' };
+  if (volumeHebdo >= _capPlancherPalier(unite)) return { cycle: 4, mode: 'maintien', why: 'volume élevé' };
   return { cycle: 0, mode: 'reactif', why: 'volume faible' };
 }
 
@@ -10471,7 +11013,10 @@ function _capReadForm() {
     pathoAssoc:   (document.getElementById('capPatho2G') || {}).value || null,
     axe:          _capChipVal('capAxeG') || 'charge',
     axes:         pathos.map(function(p) { return p.axe; }),
-    tissus:       pathos.map(function(p) { return p.tissu; }),
+    // Le tissu est pré-rempli par la pathologie mais reste un arbitrage
+    // clinique : le coussinet graisseux n'est aucun des cinq types, une
+    // métatarsalgie peut être osseuse comme neurologique.
+    tissu:        _capChipVal('capTissuG') || 'tendon',
     interdits:    pathos.reduce(function(acc, p) {   // union des interdits
                     (p.interdits || []).forEach(function(i) { if (acc.indexOf(i) === -1) acc.push(i); });
                     return acc;
@@ -10541,12 +11086,7 @@ function _capRenderConstraints(p) {
 
   var ax = CAP_AXES[p.axe] || CAP_AXES.charge;
   var rows = [];
-  // Les clés internes ne doivent pas fuiter à l'écran ('cotes' → « côtes »).
-  var LBL = { cotes:'côtes', descentes:'descentes', devers:'dévers', surfaces_dures:'surfaces dures',
-              vitesse:'vitesse', pieds_nus:'pieds nus', avant_pied:'appui avant-pied',
-              dorsiflexion_chargee:'dorsiflexion chargée', sprint:'sprint',
-              allure:'allure', volume:'volume', cadence:'cadence' };
-  var lbl = function(k) { return LBL[k] || k; };
+  var lbl = _capLbl;
 
   // Conflit d'axes : on baisse tous les leviers responsables, puis on remonte
   // le volume d'abord, l'allure ensuite (jamais les deux la même semaine).
@@ -10569,10 +11109,20 @@ function _capRenderConstraints(p) {
     rows.push(['Cadence cible', cad]);
   }
 
-  var pal = _capPalier(p.tissus, p.cibleHebdo, p.unite);
-  rows.push(['Palier', pal.cycle
-    ? pal.cycle + ':1 — ' + (pal.mode === 'baisse' ? 'baisse réelle' : 'maintien à charge constante') + ' (' + pal.why + ')'
-    : 'réactif seul — pas de palier programmé (' + pal.why + ')']);
+  // Le palier peut changer en cours de programme : on affiche l'état au départ
+  // et, s'il diffère, le seuil à partir duquel il bascule.
+  var txt = function(x) {
+    return x.cycle
+      ? x.cycle + ':1 — ' + (x.mode === 'baisse' ? 'baisse réelle' : 'maintien à charge constante')
+      : 'réactif seul, pas de palier programmé';
+  };
+  var palDebut = _capPalier(p.tissu, p.chronique, p.unite);
+  var palFin   = _capPalier(p.tissu, p.cibleHebdo, p.unite);
+  var uLbl = p.unite === 'min' ? 'min' : 'km';
+  rows.push(['Palier', palDebut.cycle === palFin.cycle
+    ? txt(palDebut) + ' (' + palDebut.why + ')'
+    : txt(palDebut) + ' au départ, puis ' + txt(palFin)
+      + ' au-delà de ' + _capPlancherPalier(p.unite) + ' ' + uLbl + '/sem']);
 
   box.innerHTML = rows.map(function(r) {
     return '<div class="cc-row"><span class="cc-k">' + r[0] + '</span><span>' + r[1] + '</span></div>';
@@ -10725,55 +11275,6 @@ function _capRenderJoursHint(p) {
     : n + ' jour' + (n > 1 ? 's' : '') + ' pour ' + p.frequenceCible + ' sorties — plusieurs séances le même jour';
 }
 
-/* ── Listes canoniques 18 sessions (3/sem × 6 semaines) ── */
-function _capCanonical18(level, obj) {
-  // Pour petits objectifs, forcer un niveau plus progressif
-  var effectiveLevel = level;
-  if (obj < 20) effectiveLevel = 'debutant';
-
-  // Durée maximale d'intervalle en phase 3 : proportionnelle à l'objectif, plafonnée
-  var p3run = Math.min(12, Math.max(2, Math.round(obj * 0.3)));
-  var p3r1  = p3run >= 6 ? 2 : 3;
-  var p3r2  = p3run >= 6 ? 3 : 5;
-
-  // Cibles continues (% de l'objectif)
-  var o1 = Math.max(Math.round(obj * 0.55), 5);
-  var o2 = Math.round(obj * 0.70);
-  var o3 = Math.round(obj * 0.85);
-  var o4 = Math.round((o3 + obj) / 2);
-
-  if (effectiveLevel === 'debutant') {
-    var p1r = obj < 12 ? 0.5 : 1; // 30s pour très petits objectifs
-    return [
-      _capI(1,5,p1r,1),  _capI(1,8,p1r,1),  _capI(1,12,p1r,1),
-      _capI(1,5,1,1),    _capI(1,8,1,1),    _capI(1,12,1,1),
-      _capI(2,5,1.5,1),  _capI(2,8,1.5,1),  _capI(2,4,2,1),
-      _capI(2,6,2,1),    _capI(2,4,3,1),    _capI(2,3,4,1),
-      _capI(3,p3r1,Math.min(5,p3run),1), _capI(3,p3r2,Math.min(7,p3run),1), _capC(3,o1),
-      _capC(3,o2),       _capC(3,o3),       _capC(3,obj)
-    ];
-  } else if (effectiveLevel === 'intermediaire') {
-    return [
-      _capI(1,5,1,1),         _capI(1,7,1,1),         _capI(1,10,1,1),
-      _capI(1,12,1,1),        _capI(1,5,2,1),         _capI(1,7,2,1),
-      _capI(2,10,2,1),        _capI(2,4,3,1),         _capI(2,6,3,1),
-      _capI(2,8,3,1),         _capI(2,4,4,1),         _capI(2,6,4,1),
-      _capI(3,p3r1,p3run,1),  _capI(3,p3r2,p3run,1),  _capC(3,o2),
-      _capC(3,o3),            _capC(3,o4),             _capC(3,obj)
-    ];
-  } else { // avance
-    var p2max = Math.min(12, Math.max(6, Math.round(obj * 0.25)));
-    return [
-      _capI(1,5,2,1),          _capI(1,8,2,1),          _capI(1,10,2,1),
-      _capI(1,5,3,1),          _capI(1,4,4,1),          _capI(1,6,4,1),
-      _capI(2,4,5,1),          _capI(2,3,6,1),          _capI(2,3,Math.min(8,p2max),1),
-      _capI(2,2,p2max,1),      _capI(2,2,p3run,1),      _capI(2,3,p3run,1),
-      _capC(3,o1),             _capC(3,o2),             _capC(3,o3),
-      _capC(3,obj),            _capC(3,o4),             _capC(3,obj)
-    ];
-  }
-}
-
 /* ── Helpers volume ── */
 function _capSessKm(s, allure) {
   if (!allure || allure <= 0) return null;
@@ -10880,12 +11381,15 @@ function _capBuildProgressive(profile, overrideStartL) {
   return sessions;
 }
 
-// Statistiques par semaine (charge en min de course + ACWR aigu/chronique)
+// Statistiques par semaine (charge pondérée par zone + ACWR aigu/chronique).
+// _capCharge plutôt que les minutes brutes : sans pondération, 25 min de
+// seuil pèseraient moins que 30 min de footing et l'ACWR serait faux dès
+// qu'une séance de qualité entre dans la semaine.
 function _capWeekStats(sessions) {
   var byWeek = {};
   sessions.forEach(function (s) {
-    var v = s.type === 'continuous' ? (s.durationMin || 0) : (s.reps * s.runMin);
-    if (!byWeek[s.week]) byWeek[s.week] = { week: s.week, load: 0, deload: !!s.deload };
+    var v = _capCharge(s);
+    if (!byWeek[s.week]) byWeek[s.week] = { week: s.week, load: 0, deload: !!s.deload || !!s.palier };
     byWeek[s.week].load += v;
   });
   var weeks = Object.keys(byWeek).sort(function (a, b) { return +a - +b; }).map(function (k) { return byWeek[k]; });
@@ -10898,10 +11402,18 @@ function _capWeekStats(sessions) {
   return weeks;
 }
 
-/* ── Construction du programme (route vers le moteur de charge) ── */
+/* ── Construction du programme ──────────────────────────────────────────
+   Route vers le moteur v2, piloté par l'axe pathologique. Le résultat porte
+   aussi les signalements (espacement impossible) que l'écran de résultat
+   affiche. L'ancien moteur reste joignable pour un plan déjà en cours qui
+   n'aurait pas de profil v2. */
 function _capBuildSessions(profile) {
-  return _capBuildProgressive(profile);
+  if (!profile || profile.axe == null) return _capBuildProgressive(profile);
+  var r = _capBuildProgrammeV2(profile);
+  _capDernierPlanInfos = { conflitsEspacement: r.conflitsEspacement };
+  return r.seances;
 }
+var _capDernierPlanInfos = null;
 
 /* ── Ouvrir / Fermer ── */
 function openCAPWizard() {
@@ -10986,6 +11498,9 @@ function _capGenerate() {
   var profile = Object.assign({}, p, _capToLegacyProfile(p));
 
   CAP_STATE = { profile: profile, sessions: _capBuildSessions(profile) };
+  // Les signalements du moteur voyagent avec l'état : ils doivent survivre au
+  // rechargement, pas seulement s'afficher juste après la génération.
+  if (_capDernierPlanInfos) CAP_STATE.conflitsEspacement = _capDernierPlanInfos.conflitsEspacement;
   _capSave();
 
   document.getElementById('capFormScreen').style.display  = 'none';
@@ -11061,14 +11576,29 @@ function _capRender() {
   var lastPhase  = 0;
   var html = '';
 
-  // En-tête : durée dérivée + rythme
+  // En-tête : ce qui pilote réellement le plan — l'axe et sa cible.
   var nbWeeks = stats.length;
-  var rLbl = (CAP_RYTHME[state.profile.rythme] || CAP_RYTHME.prudent).label;
+  var pr = state.profile;
+  var uLbl = pr.unite === 'min' ? 'min' : 'km';
   html += '<div class="cap-plan-meta" style="display:flex;gap:14px;flex-wrap:wrap;align-items:baseline;padding:2px 2px 10px;font-size:.78rem;color:var(--text2);">'
-        + '<span><b style="color:var(--navy);font-size:.95rem;">' + nbWeeks + ' semaines</b> de progression</span>'
-        + '<span>Rythme : <b>' + rLbl + '</b></span>'
-        + '<span>Objectif : <b>' + state.profile.objectiveMin + '\' continu</b></span>'
-        + '</div>';
+        + '<span><b style="color:var(--navy);font-size:.95rem;">' + nbWeeks + ' semaines</b> de progression</span>';
+  if (pr.axe && CAP_AXES[pr.axe]) {
+    var ax = CAP_AXES[pr.axe];
+    html += '<span>Axe : <b>' + ax.label + '</b> — gèle ' + ax.gele.map(_capLbl).join(', ') + '</span>';
+  }
+  if (pr.cibleHebdo) html += '<span>Cible : <b>' + pr.cibleHebdo + ' ' + uLbl + '/sem</b></span>';
+  else html += '<span>Objectif : <b>' + pr.objectiveMin + '\' continu</b></span>';
+  if (pr.cibleSortieLongue) html += '<span>Sortie longue : <b>' + pr.cibleSortieLongue + ' ' + uLbl + '</b></span>';
+  html += '</div>';
+
+  // Espacement impossible : on a généré quand même, il faut le dire.
+  var conflits = state.conflitsEspacement || [];
+  if (conflits.length) {
+    html += '<div style="margin:0 2px 10px;padding:9px 11px;border-radius:7px;background:#fdf4e8;border:1px solid #f0d6ab;color:#8a5410;font-size:.76rem;line-height:1.5;">'
+          + '<b>Espacement serré</b> — les jours disponibles ne permettent pas d’intercaler une séance facile entre deux séances dures en semaine '
+          + conflits.slice(0, 8).join(', ') + (conflits.length > 8 ? '…' : '')
+          + '. Le plan est généré tel quel : ajoute un jour disponible si le patient le peut.</div>';
+  }
   html += _capLoadChart(stats);
 
   // Bannière de coupure détectée
@@ -11137,7 +11667,7 @@ function _capLoadChart(stats) {
   var y13 = padT + (H - padT - padB) * (1 - (1.3 - 0.5) / 1.0);
   return '<div style="background:#F8FAFC;border:1px solid var(--border);border-radius:9px;padding:10px 12px 6px;margin-bottom:10px;">'
     + '<div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--muted);margin-bottom:4px;">'
-    + '<span><span style="color:#3B82F6;">▮</span> Charge hebdo (min course)</span>'
+    + '<span><span style="color:#3B82F6;">▮</span> Charge hebdo (pondérée par zone)</span>'
     + '<span><span style="color:#059669;">●</span> ACWR</span></div>'
     + '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" preserveAspectRatio="none" style="display:block;">'
     + '<line x1="' + padL + '" y1="' + y13.toFixed(1) + '" x2="' + (W - padR) + '" y2="' + y13.toFixed(1) + '" stroke="#FCA5A5" stroke-width="0.7" stroke-dasharray="3 2"/>'
@@ -11256,13 +11786,13 @@ function _capRecalcAfterBreak() {
     sessions[slotIdx] = updated;
 
     if (updated.seance_id && updated.prog_id) {
-      var bloc = _capSessionToCardioBloc(updated, CAP_STATE.profile);
+      var blocs = _capSessionToBlocs(updated, CAP_STATE.profile);
       _fetchRetry(SUPA_URL_P + '/rest/v1/programmes?id=eq.' + updated.prog_id, {
         method: 'PATCH', headers: _sbHeaders(),
         body: JSON.stringify({
           nom: 'CAP — ' + updated.label,
           donnees: {
-            type: 'cap', session: updated, profile: CAP_STATE.profile, blocs: [bloc],
+            type: 'cap', session: updated, profile: CAP_STATE.profile, blocs: blocs,
             consignes: (CAP_PATHO_DB[CAP_STATE.profile.patho] || CAP_PATHO_DB.aucune).consignes
           }
         })
@@ -11291,12 +11821,12 @@ function _capValidate(idx) {
   // Sync Supabase si déjà exporté — sans ça, une reconstruction du plan depuis l'agenda
   // (ex. depuis le panneau Feedback du builder) ne verrait pas ce statut "validée"
   if (s.seance_id && s.prog_id) {
-    var bloc = _capSessionToCardioBloc(s, CAP_STATE.profile);
+    var blocs = _capSessionToBlocs(s, CAP_STATE.profile);
     _fetchRetry(SUPA_URL_P + '/rest/v1/programmes?id=eq.' + s.prog_id, {
       method: 'PATCH', headers: _sbHeaders(),
       body: JSON.stringify({
         donnees: {
-          type: 'cap', session: s, profile: CAP_STATE.profile, blocs: [bloc],
+          type: 'cap', session: s, profile: CAP_STATE.profile, blocs: blocs,
           consignes: (CAP_PATHO_DB[CAP_STATE.profile.patho] || CAP_PATHO_DB.aucune).consignes
         }
       })
@@ -11335,18 +11865,112 @@ function _capConfirmPain(score) {
    depuis ce point sous ACWR ≤ 1,30 (le plan peut s'allonger ou se raccourcir).
    Douleur = seuil : simple répétition de la même séance, pas de replanification.
    Douleur < seuil : programme inchangé. ── */
+/* ══════════════════════════════════════════════════════════════
+   RÉGRESSION POLARISÉE
+
+   Trois différences avec la règle d'origine, qui supposait toutes les
+   séances de même nature :
+
+   1. La référence se cherche parmi les séances du MÊME RÔLE. Comparer une
+      séance de seuil à un footing facile produirait un milieu absurde.
+   2. L'entre-deux porte sur la dimension du rôle : le volume pour une
+      longue ou une facile, le volume à l'allure puis la zone pour une
+      qualité.
+   3. Une douleur sur une séance FACILE n'est pas un problème de dosage
+      local : aucun levier n'y a été poussé, c'est la charge cumulée qui
+      parle. On décharge alors globalement au lieu de calculer un milieu.
+══════════════════════════════════════════════════════════════ */
+
+/* Met les segments à l'échelle pour atteindre un volume de course cible. */
+function _capMettreEchelle(s, cibleMin) {
+  var actuel = _capVolumeCourse(s);
+  if (!(actuel > 0) || !(cibleMin > 0)) return s;
+  var k = cibleMin / actuel;
+  s.segments.forEach(function(g) {
+    if ((g.reps || 1) > 1) g.reps = Math.max(1, Math.round(g.reps * k));
+    else g.minutes = Math.max(1, Math.round(g.minutes * k));
+  });
+  return _capSyncSeance(s);
+}
+
+/* Descend d'une zone la partie travaillée d'une séance de qualité. */
+function _capDescendreZone(s) {
+  var ordre = ['Z1', 'Z2', 'Z3', 'Z4', 'Z5'];
+  var change = false;
+  s.segments.forEach(function(g) {
+    var i = ordre.indexOf(g.zone);
+    if (i > 1 && (g.reps || 1) > 1) { g.zone = ordre[i - 1]; change = true; }
+  });
+  return change ? _capSyncSeance(s) : null;
+}
+
+/* Dernière séance validée du même rôle — la seule référence comparable. */
+function _capDerniereDuRole(sessions, idx, role) {
+  for (var i = idx - 1; i >= 0; i--) {
+    var s = sessions[i];
+    var ok = s.status === 'done' || s.statut === 'confirme' || s.statut === 'presume';
+    if (ok && (s.role || 'facile') === role) return s;
+  }
+  return null;
+}
+
+/* Décharge globale : toutes les séances à venir, toutes filières confondues. */
+function _capDechargeGlobale(sessions, depuis, facteur) {
+  for (var i = depuis; i < sessions.length; i++) {
+    var s = sessions[i];
+    if (s.status !== 'pending') continue;
+    if (!Array.isArray(s.segments)) _capNormaliseSeance(s);
+    _capMettreEchelle(s, Math.max(1, _capVolumeCourse(s) * facteur));
+  }
+}
+
 function _capAdaptNext(idx, score) {
   var sessions = CAP_STATE.sessions;
   var seuil    = (CAP_PATHO_DB[CAP_STATE.profile.patho] || CAP_PATHO_DB.aucune).seuil;
 
   if (score > seuil) {
-    var Lpain = _capLoadOf(sessions[idx]);
-    var Lgood = null;
-    for (var g = idx - 1; g >= 0; g--) { if (sessions[g].status === 'done') { Lgood = _capLoadOf(sessions[g]); break; } }
-    if (Lgood == null) Lgood = Math.max(1, Lpain - 1);
-    var Lmid = _capMidpointL(Lgood, Lpain);
-    _capReplanFromIndex(idx + 1, Lmid);
-    return; // _capReplanFromIndex gère déjà save/render (et la sync agenda si besoin)
+    var douloureuse = sessions[idx];
+    if (!Array.isArray(douloureuse.segments)) _capNormaliseSeance(douloureuse);
+    var role = douloureuse.role || 'facile';
+
+    // Cas 3 — la douleur sur la séance la moins exigeante est la plus grave.
+    if (role === 'facile' || role === 'technique') {
+      _capDechargeGlobale(sessions, idx + 1, 0.7);
+      _capSave(); _capRender();
+      if (typeof _showToast === 'function') {
+        _showToast('Douleur sur une séance facile : décharge globale de 30 % — c’est la charge cumulée qui est en cause, pas cette séance.');
+      }
+      return;
+    }
+
+    // Cas 1 et 2 — entre-deux sur la filière du rôle touché uniquement.
+    var ref = _capDerniereDuRole(sessions, idx, role);
+    var volPain = _capVolumeCourse(douloureuse);
+    var volRef  = ref ? _capVolumeCourse(ref) : null;
+    // Sans antécédent du même rôle, on répète la charge en cours plutôt que
+    // d'inventer un milieu à partir d'une séance de nature différente.
+    var volCible = volRef == null ? volPain * 0.85 : (volRef + volPain) / 2;
+    if (volCible >= volPain) volCible = volPain * 0.85;
+
+    var descendue = false;
+    for (var i = idx + 1; i < sessions.length; i++) {
+      var s = sessions[i];
+      if (s.status !== 'pending' || (s.role || 'facile') !== role) continue;
+      if (!Array.isArray(s.segments)) _capNormaliseSeance(s);
+      if (role === 'qualite' && volCible <= volPain * 0.6) {
+        // Volume à l'allure déjà au plancher : c'est la zone qui descend.
+        if (_capDescendreZone(s)) { descendue = true; continue; }
+      }
+      _capMettreEchelle(s, volCible);
+    }
+
+    _capSave(); _capRender();
+    if (typeof _showToast === 'function') {
+      _showToast(descendue
+        ? 'Séances « ' + _capLbl(role) + ' » régressées d’une zone d’allure.'
+        : 'Séances « ' + _capLbl(role) + ' » ramenées à ' + Math.round(volCible) + ' min de course. Le reste du plan est inchangé.');
+    }
+    return;
   }
 
   if (score === seuil) {
@@ -11369,7 +11993,7 @@ function _capAdaptNext(idx, score) {
     sessions[nextIdx] = updated;
 
     if (updated.seance_id && updated.prog_id) {
-      var bloc = _capSessionToCardioBloc(updated, CAP_STATE.profile);
+      var blocs = _capSessionToBlocs(updated, CAP_STATE.profile);
       _fetchRetry(SUPA_URL_P + '/rest/v1/programmes?id=eq.' + updated.prog_id, {
         method: 'PATCH',
         headers: _sbHeaders(),
@@ -11377,7 +12001,7 @@ function _capAdaptNext(idx, score) {
           nom: 'CAP — ' + updated.label,
           donnees: {
             type: 'cap', session: updated, profile: CAP_STATE.profile,
-            blocs: [bloc],
+            blocs: blocs,
             consignes: (CAP_PATHO_DB[CAP_STATE.profile.patho] || CAP_PATHO_DB.aucune).consignes
           }
         })
@@ -11456,7 +12080,7 @@ function _capReplanFromIndex(anchorIdx, Lmid) {
         nom: 'CAP — ' + s.label, date: newDates[i],
         donnees: {
           type: 'cap', session: s, profile: profile,
-          blocs: [_capSessionToCardioBloc(s, profile)],
+          blocs: _capSessionToBlocs(s, profile),
           consignes: (CAP_PATHO_DB[profile.patho] || CAP_PATHO_DB.aucune).consignes
         }
       };
@@ -11621,56 +12245,6 @@ function _capCalcDates(count, spw, startDateStr, selectedDays) {
   return dates;
 }
 
-/* ── BIT : génération avec paliers +10% volume par séance ── */
-function _capBITSessions(profile, level) {
-  var canonical = _capCanonical18(level, profile.objectiveMin);
-  var total = profile.seancesPerWeek * 6;
-  var allure = profile.allure;
-
-  // Calcul du volume unitaire d'une session (reps×runMin pour interval, durationMin pour continu)
-  function volUnit(s) {
-    return s.type === 'interval' ? s.reps * s.runMin : (s.durationMin || 0);
-  }
-
-  // Régénère le label après modification des reps/durée
-  function refreshLabel(s) {
-    if (s.type === 'interval') {
-      s.label = s.reps + '\xd7(' + _capFmtMin(s.runMin) + 'C / ' + _capFmtMin(s.walkMin) + 'M)';
-    } else {
-      var d = s.durationMin || 0;
-      s.label = d >= 60 ? Math.floor(d/60) + 'h' + (d%60 ? (d%60) + '\'' : '') : d + '\'';
-    }
-    return s;
-  }
-
-  // Base : volume de la session canonique 1
-  var base = volUnit(canonical[0]);
-  var sessions = [];
-
-  // Sélectionne le template canonique le plus proche pour chaque step
-  for (var i = 0; i < total; i++) {
-    var ci = Math.round(i * (canonical.length - 1) / Math.max(total - 1, 1));
-    var s = JSON.parse(JSON.stringify(canonical[ci]));
-    s.id = _capMkId();
-
-    // Cible : base × 1.10^i, plafonnée au volume final du canonical
-    var targetVol = base * Math.pow(1.10, i);
-    var maxVol = volUnit(canonical[canonical.length - 1]);
-    targetVol = Math.min(targetVol, maxVol);
-
-    // Adapter reps ou durée pour atteindre la cible
-    if (s.type === 'interval' && s.runMin > 0) {
-      s.reps = Math.max(1, Math.round(targetVol / s.runMin));
-    } else if (s.type === 'continu') {
-      s.durationMin = Math.max(1, Math.round(targetVol));
-    }
-    refreshLabel(s);
-    s.week = Math.floor(i / profile.seancesPerWeek) + 1;
-    sessions.push(s);
-  }
-  return sessions;
-}
-
 /* ── CAP → Agenda : convertit une session CAP en bloc cardio (pour Évolution) ── */
 function _capSessionToCardioBloc(s, profile) {
   var patho = (profile && profile.patho) || '';
@@ -11697,6 +12271,43 @@ function _capSessionToCardioBloc(s, profile) {
            duree_totale: s.durationMin || 0,
            zone: patho === 'periostite' ? '2' : null,
            notes: notes || null };
+}
+
+/* Une séance à plusieurs segments ne rentre pas dans un bloc unique : elle
+   arriverait chez l'athlète en « 25 min continu », détail perdu. On émet donc
+   un bloc par segment, avec sa zone — l'athlète voit l'échauffement, la série
+   et le retour au calme, chacun avec son allure. */
+function _capSessionToBlocs(s, profile) {
+  if (!Array.isArray(s.segments) || s.segments.length <= 1) {
+    return [_capSessionToCardioBloc(s, profile)];
+  }
+  var base   = _capSessionToCardioBloc(s, profile);
+  var zones  = _capZones(profile && (profile.allureFooting || profile.allure));
+  var paceDe = function(z) {
+    var found = zones.filter(function(x) { return x.id === z; })[0];
+    return found ? found.paceLabel + ' min/km' : null;
+  };
+  return s.segments.map(function(seg, i) {
+    var n = seg.reps || 1;
+    var allureSeg = seg.zone === 'marche' ? 'marche' : paceDe(seg.zone);
+    var note = [seg.zone === 'marche' ? 'Marche' : 'Zone ' + seg.zone.replace('Z', ''),
+                allureSeg ? '(' + allureSeg + ')' : ''].filter(Boolean).join(' ');
+    // Les consignes pathologie ne sont portées que par le premier bloc :
+    // les répéter sur chaque segment noierait l'information.
+    var notesSeg = i === 0 ? note + '\n' + (base.notes || '') : note;
+    if (n > 1) {
+      return { type: 'cardio', sport: 'course', effort_type: 'fractionne',
+               repetitions: String(n), duree_effort: _capFmtMin(seg.minutes),
+               duree_recup: _capFmtMin(seg.recupMin || 0),
+               duree_totale: Math.round(_capSegDuree(seg)),
+               zone: seg.zone === 'marche' ? null : seg.zone.replace('Z', ''),
+               notes: notesSeg };
+    }
+    return { type: 'cardio', sport: 'course', effort_type: 'continu',
+             duree_totale: Math.round(seg.minutes),
+             zone: seg.zone === 'marche' ? null : seg.zone.replace('Z', ''),
+             notes: notesSeg };
+  });
 }
 
 /* ── CAP → Agenda : export Supabase ── */
@@ -11733,7 +12344,7 @@ function _capExportToCalendar() {
         profile:       CAP_STATE.profile,
         session_index: i,
         total:         sessions.length,
-        blocs:         [_capSessionToCardioBloc(s, CAP_STATE.profile)],
+        blocs:         _capSessionToBlocs(s, CAP_STATE.profile),
         consignes:     (CAP_PATHO_DB[CAP_STATE.profile.patho] || CAP_PATHO_DB.aucune).consignes
       }
     };
