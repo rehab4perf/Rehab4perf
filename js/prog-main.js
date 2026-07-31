@@ -9887,10 +9887,63 @@ function _toolOverlayClick(e){
    Progressive Adaptive Running Programme
 ══════════════════════════════════════════════════════════════ */
 
-/* ── Base de données pathologies ── */
+/* ── Axes de la pyramide de La Clinique du Coureur ──────────────────────
+   Chaque axe désigne le levier à GELER et le levier MOTEUR. CHARGE et
+   RÉPÉTITION mobilisent les deux mêmes leviers en sens inverse : c'est ce
+   qui permet un moteur unique plutôt qu'un programme par pathologie.
+   AMPLITUDE est à part — la cadence n'est pas une dose qu'on progresse,
+   c'est une correction technique appliquée d'emblée. */
+var CAP_AXES = {
+  charge: {
+    label: 'Charge',
+    desc:  'L\'intensité de l\'impact à chaque foulée',
+    gele:  ['allure', 'cotes'],
+    moteur: 'volume',
+    zonesGel:   ['Z1','Z2'],
+    zonesDegel: ['Z1','Z2','Z3','Z4'],
+    crossTraining: ['velo'],
+    roles: { longue:'progresse', facile:'majoritaire', qualite:'gelee', technique:'option' },
+  },
+  repetition: {
+    label: 'Répétition',
+    desc:  'Le nombre de cycles — le volume',
+    gele:  ['volume'],
+    moteur: 'allure',
+    zonesGel:   ['Z1','Z2','Z3'],
+    zonesDegel: ['Z1','Z2','Z3','Z4'],
+    crossTraining: ['velo'],
+    fractionner: true,      // découper les sorties plutôt que les allonger
+    varierSurfaces: true,
+    roles: { longue:'plafonnee', facile:'oui', qualite:'progresse', technique:'option' },
+  },
+  amplitude: {
+    label: 'Amplitude',
+    desc:  'La longueur de foulée',
+    gele:  ['vitesse', 'cotes'],
+    moteur: 'cadence',
+    zonesGel:   ['Z1','Z2'],
+    zonesDegel: ['Z1','Z2','Z3'],
+    crossTraining: ['velo'],
+    roles: { longue:'cadenceCible', facile:'oui', qualite:'exclue', technique:'obligatoire' },
+  },
+};
+
+/* Ordre de remontée quand plusieurs leviers ont été baissés (pathologies
+   multiples) — un seul à la fois, le volume avant l'allure. */
+var CAP_ORDRE_REMONTEE = ['volume', 'allure'];
+
+/* ── Base de données pathologies ──────────────────────────────────────
+   `axe`   : détermine quel levier est gelé et lequel progresse.
+   `tissu` : détermine le palier de consolidation — 3:1 + baisse réelle sur
+             l'os (la douleur y est un signal tardif, et la fenêtre de
+             remodelage bénéficie d'une contrainte réduite) ; 4:1 + maintien
+             à charge constante sur tendon/fascia/muscle, qui ont besoin de
+             charge pour se remodeler.
+   `seuil` : conservé sous ce nom — le feu tricolore de douleur le lit déjà. */
 var CAP_PATHO_DB = {
   aucune: {
     label: 'Sans pathologie spécifique',
+    axe: 'charge', tissu: 'tendon',
     seuil: 3,
     consignes: [
       'Ne pas augmenter vitesse et durée simultanément'
@@ -9901,22 +9954,16 @@ var CAP_PATHO_DB = {
       'Boiterie ou compensation → arrêt et réévaluation'
     ]
   },
-  bit: {
-    label: 'Bandelette ilio-tibiale (BIT)',
-    seuil: 2,
-    consignes: [
-      'Cadence cible ≥ 175 pas/min — réduit l\'adduction de hanche et la contrainte latérale',
-      'Éviter les descentes et le dévers jusqu\'à la semaine 5'
-    ],
-    drapeaux: [
-      'Douleur ≥ 3/10 pendant la course → arrêt immédiat, régression d\'une phase',
-      'Douleur résiduelle le lendemain → répéter la même séance sans progresser',
-      'Gonflement ou douleur au repos → suspendre et réévaluer'
-    ]
-  },
+
+  /* ─────────── AXE CHARGE — gèle l'allure, progresse le volume ─────────── */
+
   achille: {
-    label: 'Tendinopathie achilléenne',
+    // Anciennement « Tendinopathie achilléenne » (corporéale + insertionnelle
+    // confondues). La pyramide les sépare : voir achille_insert.
+    label: 'Tendinopathie achilléenne corporéale',
+    axe: 'charge', tissu: 'tendon',
     seuil: 3,
+    interdits: ['cotes', 'surfaces_dures'],
     consignes: [
       'Éviter les côtes et surfaces dures les 4 premières semaines — privilégier chemins souples',
       'Raideur matinale acceptable si elle disparaît en < 20 min ; la surveiller séance après séance'
@@ -9928,51 +9975,11 @@ var CAP_PATHO_DB = {
       'Craquement ou sensation de déchirure → arrêt urgent'
     ]
   },
-  rotule: {
-    label: 'Tendinopathie rotulienne / Syndrome fémoro-patellaire',
-    seuil: 3,
-    consignes: [
-      'Éviter les descentes et les surfaces en dévers jusqu\'à la semaine 5',
-      'Cadence ≥ 170 pas/min pour réduire les forces de compression patellaires',
-      'Réduire la vitesse si douleur en montée ou en descente de marches'
-    ],
-    drapeaux: [
-      'Douleur ≥ 4/10 → arrêt de la séance',
-      'Gonflement du genou → arrêt et consultation',
-      'Douleur résiduelle le lendemain → répéter sans progresser'
-    ]
-  },
-  pubalgie: {
-    label: 'Pubalgie / douleur inguinale',
-    seuil: 2,
-    consignes: [
-      'Augmenter le volume avant l\'intensité — pas de sprint ni de changement de direction avant la semaine 5',
-      'Éviter les côtes montantes les 4 premières semaines'
-    ],
-    drapeaux: [
-      'Douleur à la palpation pubienne en augmentation → pause 48h minimum',
-      'Douleur irradiante vers le testicule ou l\'aine → consultation urgente',
-      'Douleur nocturne ou au repos → bilan avant reprise',
-      'Douleur ≥ 3/10 → arrêt et régression d\'une phase'
-    ]
-  },
-  fasciite: {
-    label: 'Fasciopathie plantaire',
-    seuil: 2,
-    consignes: [
-      'Les premières minutes de course peuvent être légèrement douloureuses (< 2/10) — normal si ça s\'atténue à l\'échauffement',
-      'Privilégier surfaces souples, éviter pieds nus et chaussures minimalistes'
-    ],
-    drapeaux: [
-      'Douleur après la course supérieure à la douleur de départ → régression d\'une étape',
-      'Douleur au talon invalidante le matin au lever → pause et réévaluation',
-      'Gonflement du talon → consultation et imagerie',
-      'Douleur ≥ 3/10 → arrêt'
-    ]
-  },
   periostite: {
-    label: 'Périostite tibiale (Shin splints)',
+    label: 'Périostite tibiale (SSTM)',
+    axe: 'charge', tissu: 'os',
     seuil: 2,
+    interdits: ['surfaces_dures', 'cotes'],
     consignes: [
       'Surfaces souples exclusivement les 3 premières semaines (herbe, piste, chemin)',
       'Chaussures absorbantes avec bon maintien — remplacer si > 700 km',
@@ -9985,9 +9992,244 @@ var CAP_PATHO_DB = {
       'Gonflement localisé sur le tibia → arrêt immédiat'
     ]
   },
+  fracture_stress: {
+    label: 'Fracture de stress (tibia, fibula, métatarse)',
+    axe: 'charge', tissu: 'os',
+    seuil: 1,
+    interdits: ['surfaces_dures', 'cotes', 'vitesse'],
+    consignes: [
+      'Reprise conditionnée à l\'accord médical et au contrôle d\'imagerie',
+      'Surfaces souples exclusivement — aucune séance sur route les 6 premières semaines',
+      'Progression du volume uniquement ; aucune intensité avant validation'
+    ],
+    drapeaux: [
+      'Toute douleur localisée sur le site de fracture → arrêt immédiat et imagerie',
+      'Douleur au repos ou nocturne → arrêt et consultation',
+      'Douleur au saut à cloche-pied → reprise prématurée, suspendre'
+    ]
+  },
+  coussinet: {
+    label: 'Syndrome du coussinet graisseux (talon)',
+    axe: 'charge', tissu: 'fascia',
+    seuil: 2,
+    interdits: ['surfaces_dures', 'pieds_nus'],
+    consignes: [
+      'Chaussage amorti au talon — proscrire les chaussures minimalistes et la marche pieds nus',
+      'Talonnette amortissante si la douleur persiste à l\'appui'
+    ],
+    drapeaux: [
+      'Douleur ≥ 3/10 à l\'appui talon → arrêt',
+      'Douleur qui persiste au repos → réévaluation'
+    ]
+  },
+  metatarsalgie: {
+    label: 'Métatarsalgie',
+    axe: 'charge', tissu: 'os',
+    seuil: 2,
+    interdits: ['avant_pied', 'surfaces_dures', 'vitesse'],
+    consignes: [
+      'Éviter la course sur avant-pied et les relances rapides',
+      'Vérifier le chaussant — largeur d\'avant-pied suffisante, semelle non usée'
+    ],
+    drapeaux: [
+      'Douleur nocturne ou point exquis sur un métatarsien → éliminer une fracture de fatigue',
+      'Sensation de décharge électrique dans les orteils → avis (névrome)',
+      'Douleur ≥ 3/10 → arrêt'
+    ]
+  },
+  fasciite: {
+    label: 'Fasciopathie plantaire',
+    axe: 'charge', tissu: 'fascia',
+    seuil: 2,
+    interdits: ['pieds_nus', 'surfaces_dures'],
+    consignes: [
+      'Les premières minutes de course peuvent être légèrement douloureuses (< 2/10) — normal si ça s\'atténue à l\'échauffement',
+      'Privilégier surfaces souples, éviter pieds nus et chaussures minimalistes'
+    ],
+    drapeaux: [
+      'Douleur après la course supérieure à la douleur de départ → régression d\'une étape',
+      'Douleur au talon invalidante le matin au lever → pause et réévaluation',
+      'Gonflement du talon → consultation et imagerie',
+      'Douleur ≥ 3/10 → arrêt'
+    ]
+  },
+  rotule: {
+    // Anciennement fusionné avec le syndrome fémoro-patellaire, qui relève
+    // pourtant de l'axe opposé (voir sfp) : prises en charge inverses.
+    label: 'Tendinopathie rotulienne (patellaire)',
+    axe: 'charge', tissu: 'tendon',
+    seuil: 3,
+    interdits: ['descentes', 'cotes'],
+    consignes: [
+      'Éviter les descentes et les surfaces en dévers jusqu\'à la semaine 5',
+      'Réduire la vitesse si douleur en montée ou en descente de marches'
+    ],
+    drapeaux: [
+      'Douleur ≥ 4/10 → arrêt de la séance',
+      'Gonflement du genou → arrêt et consultation',
+      'Douleur résiduelle le lendemain → répéter sans progresser'
+    ]
+  },
+
+  /* ──────── AXE AMPLITUDE — corrige la cadence, gèle vitesse et côtes ──────── */
+
+  achille_insert: {
+    label: 'Tendinopathie achilléenne insertionnelle',
+    axe: 'amplitude', axeSecondaire: 'charge', tissu: 'tendon',
+    seuil: 3,
+    cadenceCible: 175,
+    interdits: ['cotes', 'vitesse', 'dorsiflexion_chargee'],
+    consignes: [
+      'Proscrire la dorsiflexion chargée — pas de côtes, pas d\'étirement en charge du tendon',
+      'Talonnette de décharge les premières semaines',
+      'Augmenter la cadence pour réduire l\'amplitude de foulée'
+    ],
+    drapeaux: [
+      'Douleur ≥ 4/10 → arrêt',
+      'Douleur exquise à l\'insertion calcanéenne en augmentation → suspendre',
+      'Gonflement postérieur du talon → consultation'
+    ]
+  },
+  claquage: {
+    label: 'Claquage musculaire',
+    axe: 'amplitude', tissu: 'muscle',
+    seuil: 2,
+    interdits: ['vitesse', 'sprint', 'cotes'],
+    consignes: [
+      'Aucun allongement sous vitesse — pas de sprint ni de fractionné rapide',
+      'Reprise en course souple à amplitude contrôlée avant tout travail d\'allure'
+    ],
+    drapeaux: [
+      'Douleur à la contraction résistée → arrêt et réévaluation',
+      'Sensation de déchirure ou de coup de poignard → arrêt immédiat',
+      'Hématome ou dépression palpable → imagerie avant reprise'
+    ]
+  },
+  ischio_prox: {
+    label: 'Tendinopathie proximale des ischio-jambiers',
+    axe: 'amplitude', tissu: 'tendon',
+    seuil: 2,
+    interdits: ['cotes', 'sprint', 'vitesse'],
+    consignes: [
+      'Pas de côtes ni de sprint — ce sont les positions de hanche fléchie chargée qui compriment le tendon',
+      'Éviter la position assise prolongée sur surface dure entre les séances',
+      'Augmenter la cadence pour raccourcir la foulée'
+    ],
+    drapeaux: [
+      'Douleur ischiatique à l\'appui assis en augmentation → réduire la charge',
+      'Irradiation postérieure de cuisse → avis (composante neurale)',
+      'Douleur ≥ 3/10 → arrêt'
+    ]
+  },
+  lombalgie: {
+    label: 'Lombalgie du coureur',
+    axe: 'amplitude', tissu: 'articulaire',
+    seuil: 3,
+    cadenceCible: 175,
+    interdits: ['cotes', 'vitesse'],
+    consignes: [
+      'Cadence élevée et foulée courte — limite l\'oscillation verticale et la contrainte lombaire',
+      'Travail de contrôle du bassin en complément des séances de course'
+    ],
+    drapeaux: [
+      'Irradiation dans le membre inférieur → avis avant poursuite',
+      'Douleur nocturne ou au repos → réévaluation',
+      'Perte de force ou trouble sensitif → consultation urgente'
+    ]
+  },
+  psoas: {
+    label: 'Tendinopathie des fléchisseurs de hanche',
+    axe: 'amplitude', tissu: 'tendon',
+    seuil: 2,
+    interdits: ['cotes', 'vitesse'],
+    consignes: [
+      'Pas de montées — la flexion de hanche répétée sous charge est le geste provocateur',
+      'Réduire l\'amplitude de foulée, augmenter la cadence'
+    ],
+    drapeaux: [
+      'Douleur inguinale antérieure à la montée de genou → réduire la charge',
+      'Ressaut douloureux de hanche → réévaluation',
+      'Douleur ≥ 3/10 → arrêt'
+    ]
+  },
+
+  /* ────────── AXE RÉPÉTITION — gèle le volume, progresse l'allure ────────── */
+
+  sfp: {
+    label: 'Syndrome fémoro-patellaire',
+    axe: 'repetition', axeSecondaire: 'charge', tissu: 'articulaire',
+    seuil: 3,
+    cadenceCible: 170,
+    interdits: ['descentes', 'devers'],
+    consignes: [
+      'Cadence ≥ 170 pas/min pour réduire les forces de compression fémoro-patellaires',
+      'Éviter les descentes et les surfaces en dévers',
+      'Privilégier plusieurs sorties courtes plutôt qu\'une sortie longue'
+    ],
+    drapeaux: [
+      'Douleur ≥ 4/10 → arrêt de la séance',
+      'Gonflement du genou → arrêt et consultation',
+      'Dérobement ou blocage → réévaluation'
+    ]
+  },
+  patte_oie: {
+    label: 'Syndrome de la patte d\'oie',
+    axe: 'repetition', tissu: 'tendon',
+    seuil: 2,
+    interdits: ['devers'],
+    consignes: [
+      'Varier les surfaces et les parcours — la répétition du même geste est le facteur dominant',
+      'Fractionner le volume sur plus de sorties plutôt que d\'allonger'
+    ],
+    drapeaux: [
+      'Douleur médiale du genou en augmentation séance après séance → réduire le volume',
+      'Gonflement local → réévaluation',
+      'Douleur ≥ 3/10 → arrêt'
+    ]
+  },
+  bit: {
+    label: 'Syndrome de la bandelette ilio-tibiale',
+    axe: 'repetition', tissu: 'fascia',
+    seuil: 2,
+    cadenceCible: 175,
+    interdits: ['descentes', 'devers'],
+    consignes: [
+      'Cadence cible ≥ 175 pas/min — réduit l\'adduction de hanche et la contrainte latérale',
+      'Éviter les descentes et le dévers',
+      'Tolère mal les sorties longues : maintenir le volume par la fréquence, pas par la durée'
+    ],
+    drapeaux: [
+      'Douleur ≥ 3/10 pendant la course → arrêt immédiat, régression d\'une phase',
+      'Douleur résiduelle le lendemain → répéter la même séance sans progresser',
+      'Gonflement ou douleur au repos → suspendre et réévaluer'
+    ]
+  },
+
+  /* ── Hors pyramide — conservées de la liste précédente ───────────────────
+     Ces trois entrées ne figurent pas sur la pyramide de La Clinique du
+     Coureur : leur axe est une transposition, à confirmer cliniquement. */
+
+  pubalgie: {
+    label: 'Pubalgie / douleur inguinale',
+    axe: 'amplitude', tissu: 'tendon',
+    seuil: 2,
+    interdits: ['cotes', 'sprint', 'vitesse'],
+    consignes: [
+      'Augmenter le volume avant l\'intensité — pas de sprint ni de changement de direction avant la semaine 5',
+      'Éviter les côtes montantes les 4 premières semaines'
+    ],
+    drapeaux: [
+      'Douleur à la palpation pubienne en augmentation → pause 48h minimum',
+      'Douleur irradiante vers le testicule ou l\'aine → consultation urgente',
+      'Douleur nocturne ou au repos → bilan avant reprise',
+      'Douleur ≥ 3/10 → arrêt et régression d\'une phase'
+    ]
+  },
   postop_genou: {
     label: 'Post-opératoire genou (LCA / LCP / ménisque)',
+    axe: 'charge', tissu: 'articulaire',
     seuil: 2,
+    interdits: ['cotes', 'descentes', 'vitesse'],
     consignes: [
       'Observer la symétrie de foulée à chaque séance — arrêt si boiterie ou compensation visible',
       'Surveiller le gonflement post-séance — toute augmentation par rapport à J-1 → repos 48h avant la séance suivante',
@@ -9999,6 +10241,67 @@ var CAP_PATHO_DB = {
     ]
   }
 };
+
+/* ── Zones d'allure ────────────────────────────────────────────────────
+   Une seule saisie — l'allure de footing (Z2) — et le reste se dérive.
+   `pace` : coefficient sur l'allure en min/km (> 1 = plus lent).
+   `coef` : pondération de charge, qui rend comparables des séances de
+            nature différente (25 min de seuil pèsent plus que 50 min de
+            footing). Même principe que les UA de Foster utilisées ailleurs.
+   En retour de blessure, Z1 à Z3 suffisent presque toujours : Z4 n'apparaît
+   que tard sur les pathologies « répétition », Z5 relève du mode Performance. */
+var CAP_ZONES = [
+  { id:'Z1', label:'Récupération',            usage:'Décrassage, retour au calme', pace:1.08, coef:1.0 },
+  { id:'Z2', label:'Endurance fondamentale',  usage:'Le gros du volume',           pace:1.00, coef:1.2 },
+  { id:'Z3', label:'Endurance active',        usage:'Allure marathon',             pace:0.92, coef:1.6 },
+  { id:'Z4', label:'Seuil',                   usage:'Allure 10 km',                pace:0.86, coef:2.2 },
+  { id:'Z5', label:'VMA',                     usage:'Intervalles courts',          pace:0.78, coef:3.0 },
+];
+
+var CAP_ZONE_COEF = CAP_ZONES.reduce(function(acc, z) { acc[z.id] = z.coef; return acc; }, {});
+
+/* Allure décimale (min/km) → « 5:31 ». */
+function _capFmtPace(minPerKm) {
+  if (!isFinite(minPerKm) || minPerKm <= 0) return '—';
+  var totalSec = Math.round(minPerKm * 60);
+  var m = Math.floor(totalSec / 60), s = totalSec % 60;
+  return m + ':' + (s < 10 ? '0' : '') + s;
+}
+
+/* Dérive les 5 zones depuis l'allure de footing. Retourne [] si non saisie —
+   le générateur doit pouvoir fonctionner sans, l'allure ne conditionne que
+   l'affichage et les séances de qualité. */
+function _capZones(allureFooting) {
+  var base = parseFloat(allureFooting);
+  if (!isFinite(base) || base <= 0) return [];
+  return CAP_ZONES.map(function(z) {
+    var pace = base * z.pace;
+    return { id:z.id, label:z.label, usage:z.usage, coef:z.coef, pace:pace, paceLabel:_capFmtPace(pace) };
+  });
+}
+
+/* Charge pondérée d'une séance à segments. Remplacera _capLoadOf(), qui
+   réduit une séance à ses minutes brutes et écrase donc la différence de
+   nature entre un footing long et une séance de seuil courte. */
+function _capCharge(session) {
+  if (!session) return 0;
+  var total;
+  if (Array.isArray(session.segments) && session.segments.length) {
+    total = session.segments.reduce(function(sum, seg) {
+      var coef = CAP_ZONE_COEF[seg.zone] || 1;
+      return sum + (seg.minutes || 0) * coef;
+    }, 0);
+  } else {
+    // Ancien format (sans segments) : minutes de course en Z2 par défaut.
+    var mins = session.type === 'continuous'
+      ? (session.durationMin || 0)
+      : (session.reps || 0) * (session.runMin || 0);
+    total = mins * CAP_ZONE_COEF.Z2;
+  }
+  // Arrondi au dixième : les coefficients décimaux propagent sinon des
+  // 55.00000000000001 jusque dans l'affichage et les comparaisons.
+  return Math.round(total * 10) / 10;
+}
 
 /* ── État global ── */
 var CAP_STATE  = null;
@@ -10038,57 +10341,388 @@ function _capC(phase, dur) {
   };
 }
 
-/* ── Stepper objectif ── */
-function capObjStep(delta) {
-  var inp = document.getElementById('capObjG');
-  var cur = parseInt(inp.value) || 30;
-  // Pas de 5 min, bornes 1–240
-  var next = Math.max(1, Math.min(240, cur + delta));
+/* ══════════════════════════════════════════════════════════════
+   FICHE DE PARAMÈTRES — lecture, retours en direct, cohérence
+══════════════════════════════════════════════════════════════ */
+
+/* Seuils de la fiche, regroupés pour être ajustables d'un seul endroit. */
+var CAP_SEUILS = {
+  fractionne:     5,     // min de course continue en dessous desquels on passe en course/marche
+  longueRatioOk:  0.35,  // sortie longue / volume hebdo — au-delà, déséquilibre
+  longueRatioBad: 0.45,
+  acwrOk:         1.15,  // progressif
+  acwrWarn:       1.30,  // soutenu
+};
+
+function capChipTog(el) { el.classList.toggle('active'); }
+
+function _capChipVals(groupId) {
+  return Array.prototype.map.call(
+    document.querySelectorAll('#' + groupId + ' .cap-chip.active'),
+    function(c) { return c.dataset.val; });
+}
+
+function _capNum(id, dflt) {
+  var el = document.getElementById(id);
+  var v = el ? parseFloat(el.value) : NaN;
+  return isFinite(v) ? v : (dflt === undefined ? 0 : dflt);
+}
+
+/* Allure saisie en « 6:00 » ou « 6.5 » → minutes décimales. Les deux écritures
+   circulent en pratique, autant les accepter plutôt que d'imposer un format. */
+function _capParsePace(raw) {
+  var s = String(raw || '').trim().replace(',', '.');
+  if (!s) return NaN;
+  var mm = s.match(/^(\d+)\s*[:'’]\s*(\d{1,2})$/);
+  if (mm) return parseInt(mm[1], 10) + parseInt(mm[2], 10) / 60;
+  var v = parseFloat(s);
+  return isFinite(v) && v > 0 ? v : NaN;
+}
+
+function capSemStep(delta) {
+  var inp = document.getElementById('capSemG');
+  if (!inp) return;
+  var next = Math.max(1, Math.min(104, (parseInt(inp.value, 10) || 12) + delta));
   inp.value = next;
-  var disp = document.getElementById('capObjDisplay');
-  if (disp) {
-    disp.textContent = next >= 60
-      ? Math.floor(next/60) + 'h' + (next%60 ? (next%60 < 10 ? '0' : '') + next%60 : '')
-      : next + ' min';
+  var disp = document.getElementById('capSemDisplay');
+  if (disp) disp.textContent = next + ' sem.';
+  _capFormRefresh();
+}
+
+/* Remplit les deux listes de pathologies depuis CAP_PATHO_DB, groupées par
+   axe pour que le choix de l'axe soit lisible dès la sélection. */
+function _capFillPathoSelects() {
+  var groups = [
+    { axe:'charge',     label:'Charge — gèle l’allure, progresse le volume' },
+    { axe:'amplitude',  label:'Amplitude — corrige la cadence' },
+    { axe:'repetition', label:'Répétition — gèle le volume, progresse l’allure' },
+  ];
+  var s1 = document.getElementById('capPathoG');
+  var s2 = document.getElementById('capPatho2G');
+  if (!s1 || !s2) return;
+  var opts = '<option value="aucune">Aucune pathologie spécifique</option>';
+  groups.forEach(function(g) {
+    var inner = '';
+    Object.keys(CAP_PATHO_DB).forEach(function(k) {
+      var p = CAP_PATHO_DB[k];
+      if (k === 'aucune' || p.axe !== g.axe) return;
+      inner += '<option value="' + k + '">' + p.label + '</option>';
+    });
+    if (inner) opts += '<optgroup label="' + g.label + '">' + inner + '</optgroup>';
+  });
+  s1.innerHTML = opts;
+  s2.innerHTML = '<option value="">— aucune —</option>' + opts.replace(/^<option value="aucune">[^<]*<\/option>/, '');
+}
+
+/* Sélection de pathologie → pré-remplit l'axe (modifiable ensuite). */
+function _capOnPathoChange() {
+  var p1 = CAP_PATHO_DB[(document.getElementById('capPathoG') || {}).value] || CAP_PATHO_DB.aucune;
+  var axe = p1.axe || 'charge';
+  document.querySelectorAll('#capAxeG .cap-chip').forEach(function(c) {
+    c.classList.toggle('active', c.dataset.val === axe);
+  });
+  _capFormRefresh();
+}
+
+/* Les deux pathologies retenues (la seconde est optionnelle). */
+function _capPathos() {
+  var out = [];
+  var k1 = (document.getElementById('capPathoG') || {}).value;
+  var k2 = (document.getElementById('capPatho2G') || {}).value;
+  if (k1 && CAP_PATHO_DB[k1]) out.push(CAP_PATHO_DB[k1]);
+  if (k2 && k2 !== k1 && CAP_PATHO_DB[k2]) out.push(CAP_PATHO_DB[k2]);
+  return out;
+}
+
+/* Palier de consolidation : 3:1 + baisse réelle sur l'os (signal douloureux
+   tardif, fenêtre de remodelage) ; 4:1 + maintien à charge constante sur les
+   autres tissus, et purement réactif tant que le volume reste faible. */
+function _capPalier(tissus, volumeHebdo, unite) {
+  var os = tissus.indexOf('os') !== -1;
+  var plancher = unite === 'min' ? 120 : 20;   // 2 h ou 20 km hebdomadaires
+  if (os) return { cycle: 3, mode: 'baisse', why: 'tissu osseux' };
+  if (volumeHebdo >= plancher) return { cycle: 4, mode: 'maintien', why: 'volume élevé' };
+  return { cycle: 0, mode: 'reactif', why: 'volume faible' };
+}
+
+/* Lit toute la fiche. Une seule source de vérité pour l'affichage et pour
+   la génération — le formulaire ne doit jamais être relu ailleurs. */
+function _capReadForm() {
+  var unite   = _capChipVal('capUniteG') || 'km';
+  var semaines = parseInt((document.getElementById('capSemG') || {}).value, 10) || 12;
+  var weeks = [_capNum('capW4'), _capNum('capW3'), _capNum('capW2'), _capNum('capW1')];
+  // Toujours diviser par 4 : les champs sont pré-remplis à 0, donc « vide »
+  // ne peut plus être confondu avec « je ne sais pas ».
+  var chronique = weeks.reduce(function(a, b) { return a + b; }, 0) / 4;
+  var pathos = _capPathos();
+
+  return {
+    unite:          unite,
+    semaineCharges: weeks,
+    chronique:      Math.round(chronique * 10) / 10,
+    frequenceAct:   _capNum('capFreqAct'),
+    frequenceCible: Math.max(1, _capNum('capFreqCible', 3)),
+    plusLongueSortie:      _capNum('capSortieMax'),
+    courseContinueToleree: _capNum('capContinu'),
+    cadenceSpontanee:      _capNum('capCadence', null) || null,
+    allureFooting:         _capParsePace((document.getElementById('capAllureG') || {}).value) || null,
+
+    patho:        (document.getElementById('capPathoG') || {}).value || 'aucune',
+    pathoAssoc:   (document.getElementById('capPatho2G') || {}).value || null,
+    axe:          _capChipVal('capAxeG') || 'charge',
+    axes:         pathos.map(function(p) { return p.axe; }),
+    tissus:       pathos.map(function(p) { return p.tissu; }),
+    interdits:    pathos.reduce(function(acc, p) {   // union des interdits
+                    (p.interdits || []).forEach(function(i) { if (acc.indexOf(i) === -1) acc.push(i); });
+                    return acc;
+                  }, []),
+    cadenceCible: pathos.reduce(function(m, p) { return Math.max(m, p.cadenceCible || 0); }, 0) || null,
+    objectifBase: _capNum('capObjBase', null) || null,
+
+    cibleHebdo:        Math.max(1, _capNum('capCibleHebdo', 30)),
+    cibleSortieLongue: _capNum('capCibleLongue', null) || null,
+    semaines:          semaines,
+
+    terrain:       _capChipVals('capTerrainG'),
+    crossTraining: _capChipVals('capCrossG'),
+    joursDispo:    _capChipVals('capJoursG').map(Number),
+  };
+}
+
+/* ── Retours en direct ─────────────────────────────────────────────── */
+
+function _capFormRefresh() {
+  if (!document.getElementById('capPathoG')) return;   // formulaire pas encore rendu
+  var p = _capReadForm();
+  var uLbl = p.unite === 'min' ? 'min' : 'km';
+
+  // Étiquettes d'unité
+  document.querySelectorAll('.cap-unit-lbl').forEach(function(el) {
+    el.textContent = el.textContent.replace(/\((km|min)([^)]*)\)/, '(' + uLbl + '$2)');
+  });
+
+  // Charge chronique
+  var hint = document.getElementById('capChroniqueHint');
+  if (hint) {
+    hint.innerHTML = p.chronique > 0
+      ? 'Charge chronique : <b>' + p.chronique + ' ' + uLbl + '/sem</b> — moyenne sur 4 semaines'
+      : 'Charge chronique : <b>0</b> — reprise depuis zéro (mode course/marche)';
   }
+
+  // Mode fractionné
+  var cHint = document.getElementById('capContinuHint');
+  if (cHint) {
+    cHint.textContent = p.courseContinueToleree < CAP_SEUILS.fractionne
+      ? 'Mode course/marche — l’intervalle progressera vers l’objectif de base'
+      : 'Course continue';
+  }
+
+  // Zones dérivées
+  var zBox = document.getElementById('capZonesBox');
+  if (zBox) {
+    var zones = _capZones(p.allureFooting);
+    zBox.innerHTML = zones.length
+      ? zones.map(function(z) {
+          return '<span class="cap-zone-pill"><b>' + z.id + '</b><span>' + z.paceLabel + '</span></span>';
+        }).join('')
+      : '';
+  }
+
+  _capRenderConstraints(p);
+  _capRenderVerdict(p);
+  _capRenderJoursHint(p);
 }
 
-/* ── Stepper capacité de départ (min de course continue, 0 = marche) ── */
-var CAP_START_LADDER = [0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60];
+/* Contraintes déduites : ce que l'axe gèle, les interdits cumulés, le palier. */
+function _capRenderConstraints(p) {
+  var box = document.getElementById('capConstraintsBox');
+  if (!box) return;
+  if (p.patho === 'aucune' && !p.pathoAssoc) { box.innerHTML = ''; }
 
-function _capStartLabel(v) {
-  if (v <= 0) return 'Marche seule';
-  return v + ' min' + (v >= 5 ? ' continu' : '');
-}
+  var ax = CAP_AXES[p.axe] || CAP_AXES.charge;
+  var rows = [];
+  // Les clés internes ne doivent pas fuiter à l'écran ('cotes' → « côtes »).
+  var LBL = { cotes:'côtes', descentes:'descentes', devers:'dévers', surfaces_dures:'surfaces dures',
+              vitesse:'vitesse', pieds_nus:'pieds nus', avant_pied:'appui avant-pied',
+              dorsiflexion_chargee:'dorsiflexion chargée', sprint:'sprint',
+              allure:'allure', volume:'volume', cadence:'cadence' };
+  var lbl = function(k) { return LBL[k] || k; };
 
-function capStartStep(delta) {
-  var inp = document.getElementById('capStartMinG');
-  var cur = parseInt(inp.value) || 0;
-  // Borne haute : strictement en dessous de l'objectif (on ne démarre pas déjà arrivé)
-  var obj = parseInt((document.getElementById('capObjG') || {}).value) || 30;
-  var maxStart = Math.max(0, obj - 1);
-  // Avance le long de l'échelle si possible, sinon pas de 5 min
-  var idx = CAP_START_LADDER.indexOf(cur);
-  var next;
-  if (idx >= 0) {
-    next = CAP_START_LADDER[Math.max(0, Math.min(CAP_START_LADDER.length - 1, idx + delta))];
+  // Conflit d'axes : on baisse tous les leviers responsables, puis on remonte
+  // le volume d'abord, l'allure ensuite (jamais les deux la même semaine).
+  var axesUniq = p.axes.filter(function(a, i, arr) { return a && arr.indexOf(a) === i; });
+  if (axesUniq.length > 1) {
+    rows.push(['Axes', '<b>' + axesUniq.map(function(a) { return CAP_AXES[a].label; }).join(' + ') + '</b> — '
+      + 'tous les leviers responsables sont baissés, puis remontés dans l’ordre : '
+      + CAP_ORDRE_REMONTEE.join(', ') + '.']);
   } else {
-    next = cur + delta * 5;
+    rows.push(['Levier gelé', ax.gele.map(lbl).join(', ') + ' — moteur : <b>' + lbl(ax.moteur) + '</b>']);
   }
-  next = Math.max(0, Math.min(maxStart, next));
-  inp.value = next;
-  var disp = document.getElementById('capStartDisplay');
-  if (disp) disp.textContent = _capStartLabel(next);
+
+  if (p.interdits.length) {
+    rows.push(['Interdits', p.interdits.map(lbl).join(' · ')]);
+  }
+  if (p.cadenceCible) {
+    var cad = p.cadenceSpontanee
+      ? p.cadenceCible + ' pas/min (actuelle : ' + p.cadenceSpontanee + ')'
+      : p.cadenceCible + ' pas/min';
+    rows.push(['Cadence cible', cad]);
+  }
+
+  var pal = _capPalier(p.tissus, p.cibleHebdo, p.unite);
+  rows.push(['Palier', pal.cycle
+    ? pal.cycle + ':1 — ' + (pal.mode === 'baisse' ? 'baisse réelle' : 'maintien à charge constante') + ' (' + pal.why + ')'
+    : 'réactif seul — pas de palier programmé (' + pal.why + ')']);
+
+  box.innerHTML = rows.map(function(r) {
+    return '<div class="cc-row"><span class="cc-k">' + r[0] + '</span><span>' + r[1] + '</span></div>';
+  }).join('');
 }
 
-/* ── Stepper séances par semaine (libre, pas plafonné à 7 — plusieurs courses/jour possibles) ── */
-function capSpwStep(delta) {
-  var inp = document.getElementById('capSpwG');
-  var cur = parseInt(inp.value) || 3;
-  var next = Math.max(1, Math.min(21, cur + delta));
-  inp.value = next;
-  var disp = document.getElementById('capSpwDisplay');
-  if (disp) disp.textContent = next + ' séance' + (next > 1 ? 's' : '') + ' / semaine' + (next > 7 ? ' (' + (next/7).toFixed(1).replace('.0','') + '/jour en moyenne)' : '');
+/* Verdict : ACWR indicatif + cohérence sortie longue. Jamais bloquant —
+   une reprise volontairement agressive est un choix clinique assumé, le
+   filet de sécurité étant la régression sur douleur. */
+function _capRenderVerdict(p) {
+  var box = document.getElementById('capVerdictBox');
+  if (!box) return;
+  var parts = [], cls = 'ok';
+
+  if (p.chronique > 0 && p.cibleHebdo > p.chronique) {
+    var g = Math.pow(p.cibleHebdo / p.chronique, 1 / Math.max(1, p.semaines));
+    var acwr = 4 / (1 + Math.pow(g,-1) + Math.pow(g,-2) + Math.pow(g,-3));
+    var pct = Math.round((g - 1) * 1000) / 10;
+    var verdict = acwr <= CAP_SEUILS.acwrOk ? 'progressif'
+                : acwr <= CAP_SEUILS.acwrWarn ? 'soutenu — surveiller le retour douleur'
+                : 'agressif — assumé, feedback séance par séance';
+    cls = acwr <= CAP_SEUILS.acwrOk ? 'ok' : acwr <= CAP_SEUILS.acwrWarn ? 'warn' : 'bad';
+    parts.push('De <b>' + p.chronique + '</b> à <b>' + p.cibleHebdo + '</b> ' + (p.unite === 'min' ? 'min' : 'km')
+      + '/sem en <b>' + p.semaines + '</b> semaines : <b>+' + pct + ' %</b>/sem, ACWR <b>'
+      + (Math.round(acwr * 100) / 100) + '</b> — ' + verdict + '.');
+  } else if (p.chronique === 0) {
+    parts.push('Reprise depuis zéro : progression par paliers absolus, l’ACWR n’a pas de sens tant qu’il n’y a pas de charge chronique.');
+  }
+
+  // Cohérence des deux cibles — contrôle de saisie, pas de génération
+  if (p.cibleSortieLongue) {
+    var ratio = p.cibleSortieLongue / p.cibleHebdo;
+    if (ratio > CAP_SEUILS.longueRatioBad) {
+      cls = 'bad';
+      parts.push('Sortie longue = <b>' + Math.round(ratio * 100) + ' %</b> du volume hebdomadaire : intenable. Relever le volume ou baisser la sortie longue.');
+    } else if (ratio > CAP_SEUILS.longueRatioOk) {
+      if (cls === 'ok') cls = 'warn';
+      parts.push('Sortie longue = <b>' + Math.round(ratio * 100) + ' %</b> du volume hebdomadaire : dominante.');
+    }
+  }
+
+  // Saut de fréquence : passer de 2 à 5 sorties par semaine est un risque en
+  // soi, même à volume hebdomadaire constant — chaque jour de course en plus
+  // retire un jour de récupération. Non déductible du volume, d'où le champ.
+  // Repartir de 0 est le cas normal d'une reprise : rien à signaler.
+  if (p.frequenceAct > 0 && p.frequenceCible - p.frequenceAct >= 2) {
+    if (cls === 'ok') cls = 'warn';
+    parts.push('Fréquence : <b>' + p.frequenceAct + '</b> → <b>' + p.frequenceCible
+      + '</b> sorties/sem. Ajouter une sortie à la fois, en laissant une semaine à chaque palier.');
+  }
+
+  // Arithmétique fréquence / sortie unitaire
+  if (p.plusLongueSortie > 0) {
+    var parSortie = p.cibleHebdo / p.frequenceCible;
+    if (parSortie > p.plusLongueSortie) {
+      if (cls === 'ok') cls = 'warn';
+      var freqMin = Math.ceil(p.cibleHebdo / p.plusLongueSortie);
+      parts.push('<b>' + (Math.round(parSortie * 10) / 10) + '</b> ' + (p.unite === 'min' ? 'min' : 'km')
+        + ' par sortie dépasse la tolérance (<b>' + p.plusLongueSortie + '</b>) : passer à <b>'
+        + freqMin + '</b> sorties/semaine, ou fractionner dans la journée.');
+    }
+  }
+
+  box.className = 'cap-verdict ' + cls;
+  box.innerHTML = parts.join('<br>');
+}
+
+/* ── Pré-remplissage depuis Strava ──────────────────────────────────────
+   Calcule le bloc 1 depuis les 4 dernières semaines réellement courues.
+   Le praticien valide ou corrige : on remplit les champs, on ne génère pas
+   dans la foulée, et rien n'est écrasé sans que ce soit visible à l'écran. */
+function _capFillFromStrava() {
+  var btn = document.getElementById('capStravaBtn');
+  var acts = (_stravaActivities || []).filter(function(a) {
+    return /run|course|trail/i.test(a.type || '');
+  });
+  if (!acts.length) {
+    if (btn) { btn.textContent = 'Aucune course'; setTimeout(function(){ btn.textContent = 'Depuis Strava'; }, 2200); }
+    return;
+  }
+
+  var unite = _capChipVal('capUniteG') || 'km';
+  var today = new Date(new Date().toISOString().slice(0, 10) + 'T12:00:00');
+  var val = function(a) {
+    return unite === 'min' ? (a.duree_s || 0) / 60 : (a.distance_m || 0) / 1000;
+  };
+
+  // Quatre fenêtres de 7 jours : S-1 = les 7 derniers jours, etc.
+  var weeks = [0, 0, 0, 0], counts = [0, 0, 0, 0];
+  acts.forEach(function(a) {
+    if (!a.date) return;
+    var d = new Date(a.date + 'T12:00:00');
+    var age = Math.floor((today - d) / 86400000);
+    if (age < 0 || age >= 28) return;
+    var w = Math.floor(age / 7);          // 0 = S-1 … 3 = S-4
+    weeks[w] += val(a);
+    counts[w] += 1;
+  });
+
+  var recent = acts.filter(function(a) {
+    if (!a.date) return false;
+    var age = Math.floor((today - new Date(a.date + 'T12:00:00')) / 86400000);
+    return age >= 0 && age < 28;
+  });
+
+  var set = function(id, v) { var el = document.getElementById(id); if (el) el.value = v; };
+  set('capW1', Math.round(weeks[0]));
+  set('capW2', Math.round(weeks[1]));
+  set('capW3', Math.round(weeks[2]));
+  set('capW4', Math.round(weeks[3]));
+  set('capFreqAct', Math.round(counts.reduce(function(a, b) { return a + b; }, 0) / 4));
+
+  // Plus longue sortie réellement réalisée sur la période
+  var longest = recent.reduce(function(m, a) { return Math.max(m, val(a)); }, 0);
+  if (longest > 0) set('capSortieMax', Math.round(longest * 10) / 10);
+
+  // Cadence : Strava compte les foulées d'une seule jambe pour la course.
+  var cads = recent.map(function(a) { return (a.donnees || {}).cadence; })
+                   .filter(function(c) { return c > 0; });
+  if (cads.length) {
+    var moy = cads.reduce(function(a, b) { return a + b; }, 0) / cads.length;
+    set('capCadence', Math.round(moy * 2));
+  }
+
+  // Allure de footing : médiane des allures de sortie, moins sensible aux
+  // séances rapides qu'une moyenne — on cherche l'allure habituelle, pas la
+  // moyenne arithmétique tirée vers le haut par une compétition.
+  var paces = recent.map(function(a) {
+      var km = (a.distance_m || 0) / 1000, min = (a.duree_s || 0) / 60;
+      return km > 0.5 ? min / km : null;
+    }).filter(function(p) { return p && isFinite(p); }).sort(function(a, b) { return a - b; });
+  if (paces.length) {
+    var med = paces[Math.floor(paces.length / 2)];
+    set('capAllureG', _capFmtPace(med));
+  }
+
+  _capFormRefresh();
+  if (btn) {
+    btn.textContent = recent.length + ' sortie' + (recent.length > 1 ? 's' : '') + ' — à valider';
+    setTimeout(function() { btn.textContent = 'Depuis Strava'; }, 3200);
+  }
+}
+
+function _capRenderJoursHint(p) {
+  var h = document.getElementById('capJoursHint');
+  if (!h) return;
+  var n = p.joursDispo.length;
+  h.textContent = n >= p.frequenceCible
+    ? n + ' jour' + (n > 1 ? 's' : '') + ' pour ' + p.frequenceCible + ' sortie' + (p.frequenceCible > 1 ? 's' : '')
+    : n + ' jour' + (n > 1 ? 's' : '') + ' pour ' + p.frequenceCible + ' sorties — plusieurs séances le même jour';
 }
 
 /* ── Listes canoniques 18 sessions (3/sem × 6 semaines) ── */
@@ -10279,6 +10913,10 @@ function openCAPWizard() {
 
   document.getElementById('capOverlay').classList.add('open');
   _renderAgendaProgList('cap');
+  // Les listes de pathologies sont construites depuis CAP_PATHO_DB : une seule
+  // source, pas de liste dupliquée dans le HTML qui divergerait à l'ajout.
+  _capFillPathoSelects();
+  _capOnPathoChange();
 
   if (CAP_STATE && CAP_STATE.sessions && CAP_STATE.sessions.length) {
     document.getElementById('capFormScreen').style.display  = 'none';
@@ -10307,20 +10945,45 @@ function _capChipVal(groupId) {
   return el ? el.dataset.val : null;
 }
 
+/* ── Adaptateur vers le moteur actuel ─────────────────────────────────
+   Le moteur (_capBuildProgressive) raisonne encore en {objectiveMin, startL,
+   rythme, seancesPerWeek}. Tant qu'il n'est pas réécrit selon la spec v2, on
+   dérive ces quatre valeurs de la fiche pour que la génération reste
+   fonctionnelle. Les paramètres propres à la v2 — axe, tissu, zones,
+   interdits, cibles, palier — sont conservés dans le profil mais restent
+   INERTES : ils seront lus par le nouveau moteur, pas par celui-ci. */
+function _capToLegacyProfile(p) {
+  // Objectif en minutes : le moteur actuel ne connaît que la durée continue.
+  var obj = p.cibleSortieLongue || p.cibleHebdo / Math.max(1, p.frequenceCible);
+  if (p.unite === 'km') obj = obj * (p.allureFooting || 6);   // km → min
+  obj = Math.max(5, Math.round(obj));
+
+  // Départ : la course continue tolérée est exactement ce que startL désigne.
+  var startL = Math.max(1, Math.round(p.courseContinueToleree || 1));
+
+  // Rythme : dérivé de la croissance réellement demandée, faute de mieux.
+  var rythme = 'prudent';
+  if (p.chronique > 0 && p.cibleHebdo > p.chronique) {
+    var g = Math.pow(p.cibleHebdo / p.chronique, 1 / Math.max(1, p.semaines)) - 1;
+    rythme = g >= 0.15 ? 'soutenu' : g >= 0.07 ? 'standard' : 'prudent';
+  }
+
+  return {
+    objectiveMin:   obj,
+    startL:         Math.min(startL, obj - 1) || 1,
+    rythme:         rythme,
+    seancesPerWeek: Math.max(1, Math.round(p.frequenceCible)),
+    allure:         p.allureFooting || null,
+    patho:          p.patho,
+  };
+}
+
 /* ── Générer ── */
 function _capGenerate() {
-  var allureRaw = parseFloat(document.getElementById('capAllureG').value);
-  var profile = {
-    track:          _capChipVal('capTrackG'),
-    level:          _capChipVal('capLevelG'),
-    startL:         Math.max(1, parseInt((document.getElementById('capStartMinG') || {}).value) || 0),
-    rythme:         _capChipVal('capRythmeG') || 'prudent',
-    patho:          document.getElementById('capPathoG').value,
-    objectiveMin:   parseInt(document.getElementById('capObjG').value),
-    age:            _capChipVal('capAgeG'),
-    seancesPerWeek: parseInt(document.getElementById('capSpwG').value),
-    allure:         isNaN(allureRaw) || allureRaw <= 0 ? null : allureRaw
-  };
+  var p = _capReadForm();
+  // Le profil porte la fiche v2 complète ET les clés attendues par le moteur
+  // actuel : le nouveau moteur pourra ignorer les secondes sans migration.
+  var profile = Object.assign({}, p, _capToLegacyProfile(p));
 
   CAP_STATE = { profile: profile, sessions: _capBuildSessions(profile) };
   _capSave();
@@ -10335,11 +10998,13 @@ function _capGenerate() {
 function _capBackForm() {
   document.getElementById('capResultScreen').style.display = 'none';
   document.getElementById('capFormScreen').style.display  = 'flex';
-  // Restaurer l'allure si le profil existe
+  // Restaurer l'allure si le profil existe — au format mm:ss, celui affiché
+  // dans les pastilles de zones (le champ accepte les deux écritures).
   if (CAP_STATE && CAP_STATE.profile && CAP_STATE.profile.allure) {
     var el = document.getElementById('capAllureG');
-    if (el) el.value = CAP_STATE.profile.allure;
+    if (el) el.value = _capFmtPace(CAP_STATE.profile.allure);
   }
+  _capFormRefresh();
 }
 
 function _capNewProg() {
