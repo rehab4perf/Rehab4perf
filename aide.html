@@ -74,11 +74,10 @@ html,body { background:var(--bg); font-family:'Figtree',-apple-system,sans-serif
   padding:14px; text-align:center; font-size:.72rem; color:#94a3b8;
 }
 /* Schémas dessinés : ils s'adaptent à la largeur et restent nets à l'impression */
-.aide-svg {
-  margin-top:10px; background:var(--surface); border:1px solid var(--border);
-  border-radius:8px; padding:14px 10px;
-}
-.aide-svg svg { display:block; width:100%; height:auto; max-width:560px; margin:0 auto; }
+/* Le schema porte son propre fond : pas de cadre ni de padding autour,
+   qui feraient un liseré clair autour d'un visuel bleu nuit. */
+.aide-svg { margin-top:12px; }
+.aide-svg svg { display:block; width:100%; height:auto; border-radius:10px; }
 /* Le texte du schéma hérite de la police du site plutôt que de la fixer :
    une famille codée en dur dans l'attribut SVG jurerait avec le reste. */
 .aide-svg text { font-family:inherit; }
@@ -135,7 +134,7 @@ html,body { background:var(--bg); font-family:'Figtree',-apple-system,sans-serif
 
 <div class="lb" id="lightbox" onclick="this.classList.remove('open')"><img id="lightboxImg" src="" alt=""></div>
 
-<script src="js/aide-content.js?v=20260731e"></script>
+<script src="js/aide-content.js?v=20260731f"></script>
 <script>
 function escA(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
