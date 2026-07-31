@@ -5652,6 +5652,20 @@ function _buildAllTestsHtml() {
   var sections = [];
   function addSec(title, html) { if (html && html.trim()) sections.push({title: title, html: html}); }
 
+  /* Sous-groupe à l'intérieur d'une section articulaire. Les tests de force
+     sont saisis dans leur propre page (Tests de Force MI/MS/Rachis) mais le CR
+     les ventile par articulation : sans repère visuel ils se confondent avec
+     les tests orthopédiques qui les précèdent. Même habillage que « Tests
+     personnalisés », déjà présent dans le CR — on réutilise un repère connu
+     plutôt que d'en introduire un nouveau. Rien n'est rendu si le groupe est
+     vide, pour ne pas laisser un titre orphelin. */
+  function crGroup(label, rows) {
+    if (!rows || !rows.trim()) return '';
+    return '<div style="margin-top:10px;border-top:1px dashed var(--border);padding-top:6px">'
+      + '<div style="font-size:.7rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">' + label + '</div>'
+      + rows + '</div>';
+  }
+
   function nl2br(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
   function crItem(key, val, tag, tagClass, fieldIds) {
     if (!val) return '';
@@ -5850,6 +5864,7 @@ function _buildAllTestsHtml() {
         {key:'ha-f-ri',    label:'RI'},
         {key:'ha-f-re',    label:'RE'},
       ];
+      var haForceRows = '';
       haForceTests.forEach(function(ft) {
         var csN = parseFloat((document.getElementById(ft.key+'-cs')||{}).value);
         var caN = parseFloat((document.getElementById(ft.key+'-ca')||{}).value);
@@ -5859,17 +5874,18 @@ function _buildAllTestsHtml() {
           var lsiV = !isNaN(caN) ? caN/csN*100 : NaN;
           var isPos = !isNaN(lsiV) && lsiV < 90;
           var valStr = 'CS='+csN+' kg'+(!isNaN(caN)?' CA='+caN+' kg':'')+(!isNaN(lsiV)?' LSI='+lsiV.toFixed(0)+'%':'');
-          secRows += crItem(ft.label, valStr, isPos?'Positif':'Négatif', isPos?'bad':'ok', [ft.key+'-cs',ft.key+'-ca']);
+          haForceRows += crItem(ft.label, valStr, isPos?'Positif':'Négatif', isPos?'bad':'ok', [ft.key+'-cs',ft.key+'-ca']);
         } else if (csA || caA) {
           var parts = [];
           if (csA) parts.push(_labelCS+'='+csA);
           if (caA) parts.push(_labelCA+'='+caA);
           var anyPos = csA==='Positif' || caA==='Positif';
           if (anyPos || csA==='Négatif' || caA==='Négatif') {
-            secRows += crItem(ft.label, parts.join(' · '), anyPos?'Positif':'Négatif', anyPos?'bad':'ok', [ft.key+'-apr-cs',ft.key+'-apr-ca']);
+            haForceRows += crItem(ft.label, parts.join(' · '), anyPos?'Positif':'Négatif', anyPos?'bad':'ok', [ft.key+'-apr-cs',ft.key+'-apr-ca']);
           }
         }
       });
+      secRows += crGroup('Force musculaire', haForceRows);
     }
     if (sec.label === 'GENOU') {
       var geMobFields = ['flex','ext','ri','re','abd','add'];
@@ -5895,6 +5911,7 @@ function _buildAllTestsHtml() {
         {key:'ge-f-quad', label:'Quadriceps'},
         {key:'ge-f-ij',   label:'Ischio-jambiers'},
       ];
+      var geForceRows = '';
       geForceTests.forEach(function(ft) {
         var csN = parseFloat((document.getElementById(ft.key+'-cs')||{}).value);
         var caN = parseFloat((document.getElementById(ft.key+'-ca')||{}).value);
@@ -5904,17 +5921,18 @@ function _buildAllTestsHtml() {
           var lsiV = !isNaN(caN) ? caN/csN*100 : NaN;
           var isPos = !isNaN(lsiV) && lsiV < 90;
           var valStr = 'CS='+csN+' kg'+(!isNaN(caN)?' CA='+caN+' kg':'')+(!isNaN(lsiV)?' LSI='+lsiV.toFixed(0)+'%':'');
-          secRows += crItem(ft.label, valStr, isPos?'Positif':'Négatif', isPos?'bad':'ok', [ft.key+'-cs',ft.key+'-ca']);
+          geForceRows += crItem(ft.label, valStr, isPos?'Positif':'Négatif', isPos?'bad':'ok', [ft.key+'-cs',ft.key+'-ca']);
         } else if (csA || caA) {
           var parts = [];
           if (csA) parts.push(_labelCS+'='+csA);
           if (caA) parts.push(_labelCA+'='+caA);
           var anyPos = csA==='Positif' || caA==='Positif';
           if (anyPos || csA==='Négatif' || caA==='Négatif') {
-            secRows += crItem(ft.label, parts.join(' · '), anyPos?'Positif':'Négatif', anyPos?'bad':'ok', [ft.key+'-apr-cs',ft.key+'-apr-ca']);
+            geForceRows += crItem(ft.label, parts.join(' · '), anyPos?'Positif':'Négatif', anyPos?'bad':'ok', [ft.key+'-apr-cs',ft.key+'-apr-ca']);
           }
         }
       });
+      secRows += crGroup('Force musculaire', geForceRows);
     }
     if (sec.label === 'EPAULE') {
       // GIRD
@@ -5939,6 +5957,7 @@ function _buildAllTestsHtml() {
         {key:'co-f-ext', label:'Extension coude'},
         {key:'co-f-flex', label:'Flexion coude'},
       ];
+      var epForceRows = '';
       epForceTests.forEach(function(ft) {
         var csN = parseFloat((document.getElementById(ft.key+'-cs')||{}).value);
         var caN = parseFloat((document.getElementById(ft.key+'-ca')||{}).value);
@@ -5952,17 +5971,20 @@ function _buildAllTestsHtml() {
           var valStr = (isDent ? 'CS=' + csN + ' rép' : 'CS=' + csN + ' N') +
                        (!isNaN(caN) ? (isDent ? ' CA=' + caN + ' rép' : ' CA=' + caN + ' N') : '') +
                        (!isNaN(lsiV) ? ' LSI=' + lsiV.toFixed(0) + '%' : '');
-          secRows += crItem(ft.label, valStr, isPos ? 'Positif' : 'Négatif', isPos ? 'bad' : 'ok', [ft.key+'-cs', ft.key+'-ca']);
+          epForceRows += crItem(ft.label, valStr, isPos ? 'Positif' : 'Négatif', isPos ? 'bad' : 'ok', [ft.key+'-cs', ft.key+'-ca']);
         } else if (csA || caA) {
           var parts = [];
           if (csA) parts.push(_labelCS + '=' + csA);
           if (caA) parts.push(_labelCA + '=' + caA);
           var anyPos = csA === 'Positif' || caA === 'Positif';
           if (anyPos || csA === 'Négatif' || caA === 'Négatif') {
-            secRows += crItem(ft.label, parts.join(' · '), anyPos ? 'Positif' : 'Négatif', anyPos ? 'bad' : 'ok', [ft.key+'-apr-cs', ft.key+'-apr-ca']);
+            epForceRows += crItem(ft.label, parts.join(' · '), anyPos ? 'Positif' : 'Négatif', anyPos ? 'bad' : 'ok', [ft.key+'-apr-cs', ft.key+'-apr-ca']);
           }
         }
       });
+      // Les break tests de cette liste couvrent aussi le coude (co-f-*) : le
+      // libellé le précise pour ne pas laisser croire à un oubli épaule.
+      secRows += crGroup('Force musculaire — break tests', epForceRows);
       secRows += romCrTable('Amplitudes Articulaires — Épaule (°)', [
         {label:'Flexion',          dId:'rom-ep-d-flex',  gId:'rom-ep-g-flex'},
         {label:'Extension',        dId:'rom-ep-d-ext',   gId:'rom-ep-g-ext'},
@@ -6047,13 +6069,16 @@ function _buildAllTestsHtml() {
         {key:'ra-fl-ext',  label:'Extension lombaire (force)'},
         {key:'ra-fl-flex', label:'Flexion lombaire (force)'},
       ];
+      // Valeurs brutes et inclinaison partagent le même groupe : ce sont
+      // toutes des mesures de force, saisies dans Tests de Force Rachis.
+      var raForceRows = '';
       raRawTests.forEach(function(t) {
         var v = parseFloat((document.getElementById(t.key)||{}).value);
         var obs = ((document.getElementById(t.key+'-obs')||{}).value||'').trim();
         if (!isNaN(v) && v > 0) {
-          secRows += crItem(t.label, v+' kg'+(obs?' — '+obs:''), '', 'ok', [t.key]);
+          raForceRows += crItem(t.label, v+' kg'+(obs?' — '+obs:''), '', 'ok', [t.key]);
         } else if (obs) {
-          secRows += crItem(t.label, obs, '', 'ok', [t.key+'-obs']);
+          raForceRows += crItem(t.label, obs, '', 'ok', [t.key+'-obs']);
         }
       });
       // Inclinaison cervicale (LSI)
@@ -6066,17 +6091,18 @@ function _buildAllTestsHtml() {
           var lsiV = !isNaN(caN) ? caN/csN*100 : NaN;
           var isPos = !isNaN(lsiV) && lsiV < 90;
           var valStr = 'CS='+csN+' kg'+(!isNaN(caN)?' CA='+caN+' kg':'')+(!isNaN(lsiV)?' LSI='+lsiV.toFixed(0)+'%':'');
-          secRows += crItem('Inclinaison cervicale', valStr, isPos?'Positif':'Négatif', isPos?'bad':'ok', ['ra-fc-inc-cs','ra-fc-inc-ca']);
+          raForceRows += crItem('Inclinaison cervicale', valStr, isPos?'Positif':'Négatif', isPos?'bad':'ok', ['ra-fc-inc-cs','ra-fc-inc-ca']);
         } else if (csA || caA) {
           var parts = [];
           if (csA) parts.push(_labelCS+'='+csA);
           if (caA) parts.push(_labelCA+'='+caA);
           var anyPos = csA==='Positif' || caA==='Positif';
           if (anyPos || csA==='Négatif' || caA==='Négatif') {
-            secRows += crItem('Inclinaison cervicale', parts.join(' · '), anyPos?'Positif':'Négatif', anyPos?'bad':'ok', ['ra-fc-inc-apr-cs','ra-fc-inc-apr-ca']);
+            raForceRows += crItem('Inclinaison cervicale', parts.join(' · '), anyPos?'Positif':'Négatif', anyPos?'bad':'ok', ['ra-fc-inc-apr-cs','ra-fc-inc-apr-ca']);
           }
         }
       })();
+      secRows += crGroup('Force musculaire', raForceRows);
     }
     if (sec.label === 'RACHIS LOMBAIRE') {
       var rlMobItems = MOB.concat(['Glissement D', 'Glissement G']);
@@ -6217,6 +6243,7 @@ function _buildAllTestsHtml() {
         {key:'pi-f-ev',  label:'Éversion'},
         {key:'pi-f-lfh', label:'Long Fléchisseur de l\'Hallux (LFH)'},
       ];
+      var piForceRows = '';
       piForceTests.forEach(function(ft) {
         var csN = parseFloat((document.getElementById(ft.key+'-cs')||{}).value);
         var caN = parseFloat((document.getElementById(ft.key+'-ca')||{}).value);
@@ -6226,17 +6253,18 @@ function _buildAllTestsHtml() {
           var lsiV = !isNaN(caN) ? caN/csN*100 : NaN;
           var isPos = !isNaN(lsiV) && lsiV < 90;
           var valStr = 'CS='+csN+' kg'+(!isNaN(caN)?' CA='+caN+' kg':'')+(!isNaN(lsiV)?' LSI='+lsiV.toFixed(0)+'%':'');
-          secRows += crItem(ft.label, valStr, isPos?'Positif':'Négatif', isPos?'bad':'ok', [ft.key+'-cs',ft.key+'-ca']);
+          piForceRows += crItem(ft.label, valStr, isPos?'Positif':'Négatif', isPos?'bad':'ok', [ft.key+'-cs',ft.key+'-ca']);
         } else if (csA || caA) {
           var parts = [];
           if (csA) parts.push(_labelCS+'='+csA);
           if (caA) parts.push(_labelCA+'='+caA);
           var anyPos = csA==='Positif' || caA==='Positif';
           if (anyPos || csA==='Négatif' || caA==='Négatif') {
-            secRows += crItem(ft.label, parts.join(' · '), anyPos?'Positif':'Négatif', anyPos?'bad':'ok', [ft.key+'-apr-cs',ft.key+'-apr-ca']);
+            piForceRows += crItem(ft.label, parts.join(' · '), anyPos?'Positif':'Négatif', anyPos?'bad':'ok', [ft.key+'-apr-cs',ft.key+'-apr-ca']);
           }
         }
       });
+      secRows += crGroup('Force musculaire', piForceRows);
     }
     if (sec.label === 'GENOU' || sec.label === 'HANCHE' || sec.label === 'EPAULE' || sec.label === 'RACHIS') {
       var cfCA2 = parseFloat((document.getElementById('cf-q-ca')||{}).value||'');
