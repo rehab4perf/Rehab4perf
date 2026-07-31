@@ -10651,12 +10651,22 @@ function _capBuildSemaine(p, opts) {
   var frequence = Math.max(1, Math.round(p.frequenceCible || 3));
   var volumeMin = Math.max(1, opts.volumeMin != null ? opts.volumeMin
                             : _capVersMin(opts.volumeHebdo != null ? opts.volumeHebdo : p.cibleHebdo, p));
+  var continu = opts.continuTolere != null ? opts.continuTolere : p.courseContinueToleree;
 
-  // On ajoute des sorties tant que la semaine ne délivre pas la cible — la
-  // fréquence est le levier du volume, pas la durée (spec §06). On mesure le
-  // volume réellement produit plutôt que de le déduire : les plafonds par
-  // rôle rendent le calcul a priori faux (une séance technique n'absorbe
-  // jamais plus de 30 min, quoi qu'il reste à placer).
+  // En mode course/marche, le contenu de la séance est dicté par l'échelon et
+  // c'est LUI qui porte la progression : le volume de la semaine est ce que
+  // l'échelle délivre, pas une cible à rattraper. Ajouter des sorties ici
+  // reviendrait à multiplier les séances identiques au lieu d'allonger le
+  // bout de course — ce que le patient attend justement.
+  if (continu < CAP_SEUILS.fractionne) {
+    return _capBuildSemaineN(p, opts, frequence, frequence);
+  }
+
+  // Course continue : on ajoute des sorties tant que la semaine ne délivre pas
+  // la cible — la fréquence est le levier du volume, pas la durée (spec §06).
+  // On mesure le volume réellement produit plutôt que de le déduire : les
+  // plafonds par rôle rendent le calcul a priori faux (une séance technique
+  // n'absorbe jamais plus de 30 min, quoi qu'il reste à placer).
   var nb = frequence, semaine = null;
   for (var garde = 0; garde < 20; garde++) {
     semaine = _capBuildSemaineN(p, opts, nb, frequence);
@@ -10820,13 +10830,13 @@ function _capBuildProgrammeV2(p) {
     // Pendant le fractionné, le volume réel vient de l'échelle et non de la
     // trajectoire. On le resynchronise pour que le passage en course continue
     // reparte du niveau atteint, sans la chute qu'un compteur figé provoquait.
-    if (continu > 0 && continu < CAP_SEUILS.fractionne) {
+    if (continu < CAP_SEUILS.fractionne) {
       volume = Math.min(cibleMin, sem.reduce(function(t, s) { return t + _capVolumeCourse(s); }, 0));
     }
     // `phase` alimente les intertitres de l'écran de résultat, qui existent
     // depuis la v1. Sans lui, ils s'affichent « UNDEFINED ». On le dérive de
     // l'état réel de la progression plutôt que de l'inventer.
-    var phase = (continu > 0 && continu < CAP_SEUILS.fractionne) ? 1 : (degelIntensite ? 3 : 2);
+    var phase = (continu < CAP_SEUILS.fractionne) ? 1 : (degelIntensite ? 3 : 2);
 
     var ordonne = _capOrdonnerSemaine(sem, p.joursDispo);
     if (ordonne.conflits.length) conflitsEspacement.push(semaine);
@@ -10842,7 +10852,7 @@ function _capBuildProgrammeV2(p) {
 
     // ── Progression : un seul levier ──
     if (!estPalier) {
-      if (continu > 0 && continu < CAP_SEUILS.fractionne) {
+      if (continu < CAP_SEUILS.fractionne) {
         // Mode fractionné : c'est le bout de course qui progresse, pas le
         // volume — allonger les deux la même semaine ferait deux leviers.
         continu = _capBoutSuivant(continu);
