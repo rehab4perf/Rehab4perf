@@ -10694,13 +10694,115 @@ function _capObjectifBaseMin(p) {
   return p.objectifBase ? _capVersMin(p.objectifBase, p) : null;
 }
 
-/* Prochain échelon du fractionné. */
-function _capBoutSuivant(bout) {
-  var courant = _capBoutCourse(bout);
-  for (var i = 0; i < CAP_ECHELLE_FRACTIONNE.length - 1; i++) {
-    if (CAP_ECHELLE_FRACTIONNE[i].bout === courant) return CAP_ECHELLE_FRACTIONNE[i + 1].bout;
+/* Prochain échelon du fractionné. `pas` > 1 saute des barreaux : un délai plus
+   court que l'échelle ne peut être tenu qu'en sautant, c'est un choix assumé
+   qui remonte à l'écran, pas un raccourci silencieux. */
+function _capBoutSuivant(bout, pas) {
+  var courant = _capBoutCourse(bout), idx = -1;
+  for (var i = 0; i < CAP_ECHELLE_FRACTIONNE.length; i++) {
+    if (CAP_ECHELLE_FRACTIONNE[i].bout === courant) idx = i;
   }
-  return bout;
+  if (idx === -1) return bout;
+  var suiv = Math.min(CAP_ECHELLE_FRACTIONNE.length - 1, idx + Math.max(1, pas || 1));
+  return CAP_ECHELLE_FRACTIONNE[suiv].bout;
+}
+
+/* Barreaux restants avant de pouvoir courir en continu. Déterministe : c'est
+   la durée incompressible de la phase course/marche, à raison d'un par semaine. */
+function _capEchelonsRestants(continuTolere) {
+  var courant = _capBoutCourse(continuTolere), n = 0;
+  for (var i = 0; i < CAP_ECHELLE_FRACTIONNE.length; i++) {
+    var b = CAP_ECHELLE_FRACTIONNE[i].bout;
+    if (b <= courant) continue;
+    n++;
+    if (b >= CAP_SEUILS.fractionne) break;
+  }
+  return n;
+}
+
+/* Dernier échelon avant la course continue : c'est le volume de séance dont on
+   hérite en entrant en continu, et donc le vrai point de départ de la
+   progression du volume — pas la charge chronique, qui vaut zéro ici. */
+function _capDernierEchelonFractionne() {
+  var e = CAP_ECHELLE_FRACTIONNE[0];
+  for (var i = 0; i < CAP_ECHELLE_FRACTIONNE.length; i++) {
+    if (CAP_ECHELLE_FRACTIONNE[i].bout < CAP_SEUILS.fractionne) e = CAP_ECHELLE_FRACTIONNE[i];
+  }
+  return e;
+}
+
+/* ACWR d'une croissance régulière au facteur g : aigu = la semaine courante,
+   chronique = la moyenne des quatre dernières. */
+function _capACWRPourG(g) {
+  return 4 / (1 + Math.pow(g, -1) + Math.pow(g, -2) + Math.pow(g, -3));
+}
+
+/* L'inverse, par bissection : quel facteur hebdomadaire maximal tient sous un
+   ACWR donné. Calculé plutôt que codé en dur pour suivre CAP_SEUILS. */
+function _capGPourACWR(acwrCible) {
+  var lo = 1, hi = 3;
+  for (var i = 0; i < 60; i++) {
+    var g = (lo + hi) / 2;
+    if (_capACWRPourG(g) < acwrCible) lo = g; else hi = g;
+  }
+  return (lo + hi) / 2;
+}
+
+/* Facteur à appliquer cette semaine pour atteindre la cible pile à la dernière
+   semaine du délai. Recalculé chaque semaine sur le volume réellement atteint :
+   la phase course/marche fixe elle-même son volume, une pente figée au départ
+   se retrouvait donc fausse dès la bascule en continu. */
+function _capTauxSemaine(volume, cible, semaine, total, cycle) {
+  if (!(cible > volume)) return 1;
+  var inc = 0;
+  for (var w = semaine; w < total; w++) {
+    if (!(cycle > 0 && w % cycle === 0)) inc++;   // un palier ne fait pas progresser
+  }
+  return Math.pow(cible / volume, 1 / Math.max(1, inc));
+}
+
+/* Trajectoire projetée d'une fiche : d'où part la progression du volume,
+   combien de semaines de course/marche la précèdent, à quel rythme il faut
+   croître pour tenir le délai, et quel délai serait « juste » au sens de
+   l'ACWR. Source unique du moteur, du verdict et du délai conseillé — sinon
+   l'écran annonce une chose et le plan en produit une autre. */
+function _capTrajectoire(p) {
+  var frequence = Math.max(1, Math.round(p.frequenceCible || 3));
+  var cibleMin  = _capVersMin(Math.max(1, p.cibleHebdo), p);
+  var continu   = p.courseContinueToleree || 0;
+  var semFrac = 0, departMin;
+
+  if (continu < CAP_SEUILS.fractionne) {
+    semFrac = _capEchelonsRestants(continu);
+    var e = _capDernierEchelonFractionne();
+    departMin = e.reps * e.bout * frequence;
+  } else {
+    departMin = p.chronique > 0 ? _capVersMin(p.chronique, p) : Math.max(9, frequence * 4);
+  }
+  departMin = Math.min(departMin, cibleMin);
+
+  var cycle = _capPalier(p.tissu, p.cibleHebdo, p.unite).cycle;
+  var croissanceIdeale = cibleMin > departMin
+    ? Math.ceil(Math.log(cibleMin / departMin) / Math.log(_capGPourACWR(CAP_SEUILS.acwrOk)))
+    : 0;
+  // Les semaines de palier ne font pas progresser : il en faut une de plus
+  // toutes les `cycle - 1` semaines de croissance pour arriver au bout.
+  var avecPaliers = cycle ? Math.ceil(croissanceIdeale * cycle / (cycle - 1)) : croissanceIdeale;
+  var conseille = Math.max(1, Math.min(104, semFrac + avecPaliers));
+
+  // Rythme réellement imposé par le délai demandé
+  var demande = Math.max(1, Math.round(p.semaines || 12));
+  var dispo   = Math.max(1, demande - semFrac);
+  var croiss  = cycle ? Math.max(1, dispo - Math.floor(dispo / cycle)) : dispo;
+  var g = cibleMin > departMin ? Math.pow(cibleMin / departMin, 1 / croiss) : 1;
+
+  return {
+    semFractionne: semFrac, departMin: departMin, cibleMin: cibleMin,
+    frequence: frequence, cycle: cycle, conseille: conseille, demande: demande,
+    g: g, acwr: _capACWRPourG(g),
+    // Le délai ne laisse même pas la place à l'échelle course/marche
+    fractionneComprime: semFrac >= demande,
+  };
 }
 
 /* Une séance dure charge fortement le tissu : deux d'affilée ne laissent pas
@@ -10774,26 +10876,27 @@ function _capBuildProgrammeV2(p) {
   var polarisableACible = _capPolarisable(p, cibleMin, frequence);
   var volumeEstGele = ax.gele.indexOf('volume') !== -1 && polarisableACible && !reprise;
 
-  // Croissance hebdomadaire requise pour tenir le délai demandé. departMin
-  // n'est jamais nul (plancher de reprise), donc la formule géométrique
-  // s'applique aussi à une reprise depuis zéro — et le délai saisi est
-  // respecté, ce qu'une progression additive ignorait.
-  // Les semaines de palier ne font pas progresser : les répartir sur le délai
-  // sans les déduire ferait déborder le plan de leur nombre. On estime le
-  // cycle sur le volume cible, faute de connaître la trajectoire d'avance.
-  var cycleEstime = _capPalier(p.tissu, p.cibleHebdo, p.unite).cycle;
-  var semainesCroissance = cycleEstime
-    ? Math.max(1, semainesVisees - Math.floor(semainesVisees / cycleEstime))
-    : semainesVisees;
-  var g = cibleMin > departMin ? Math.pow(cibleMin / departMin, 1 / semainesCroissance) : 1;
+  // Le délai est une DURÉE, pas une pente de départ. Le plan fait donc
+  // exactement le nombre de semaines demandé, et c'est le rythme qui s'y plie —
+  // recalculé chaque semaine sur le volume réellement atteint (cf.
+  // _capTauxSemaine). Une pente figée au départ se retrouvait fausse dès que la
+  // phase course/marche imposait son propre volume, et la boucle s'arrêtait sur
+  // « cible atteinte » : 14 semaines demandées en produisaient 11.
+  var traj = _capTrajectoire(p);
+  // L'échelle course/marche est incompressible à un barreau par semaine. Si le
+  // délai ne lui laisse même pas la place, on saute des barreaux plutôt que de
+  // déborder — le signalement remonte à l'écran.
+  var pasFractionne = traj.fractionneComprime
+    ? Math.min(2, Math.ceil(traj.semFractionne / Math.max(1, semainesVisees - 1)))
+    : 1;
 
   var volume  = Math.min(departMin, cibleMin);
   var continu = p.courseContinueToleree || 0;
   var degelIntensite = false, degelVolume = false, qualiteTolerees = 0;
-  var sessions = [], semaine = 0, garde = 0, confirme = false;
+  var sessions = [], semaine = 0;
   var conflitsEspacement = [];
 
-  while (garde++ < 60) {
+  while (semaine < semainesVisees) {
     semaine++;
 
     // ── Dégel : sur critère atteint, jamais sur calendrier ──
@@ -10847,17 +10950,15 @@ function _capBuildProgrammeV2(p) {
     });
     if (!estPalier && sem.some(function(s) { return s.role === 'qualite'; })) qualiteTolerees++;
 
-    if (confirme) break;
-    if (volume >= cibleMin * 0.99 && degelIntensite && degelVolume) { confirme = true; continue; }
-
     // ── Progression : un seul levier ──
     if (!estPalier) {
       if (continu < CAP_SEUILS.fractionne) {
         // Mode fractionné : c'est le bout de course qui progresse, pas le
         // volume — allonger les deux la même semaine ferait deux leviers.
-        continu = _capBoutSuivant(continu);
+        continu = _capBoutSuivant(continu, pasFractionne);
       } else if (!volumeEstGele || degelVolume) {
-        volume = Math.min(cibleMin, volume * g);
+        volume = Math.min(cibleMin,
+          volume * _capTauxSemaine(volume, cibleMin, semaine, semainesVisees, pal.cycle));
       }
     }
   }
@@ -10865,7 +10966,11 @@ function _capBuildProgrammeV2(p) {
   // ajoutées à un tableau, et le plan transite par localStorage. Le
   // signalement doit survivre au rechargement, pas seulement s'afficher
   // au moment de la génération.
-  return { seances: sessions, conflitsEspacement: conflitsEspacement };
+  return {
+    seances: sessions,
+    conflitsEspacement: conflitsEspacement,
+    fractionneComprime: traj.fractionneComprime,
+  };
 }
 
 /* ── État global ── */
@@ -10944,13 +11049,30 @@ function _capParsePace(raw) {
   return isFinite(v) && v > 0 ? v : NaN;
 }
 
+/* Tant que le praticien n'a pas touché au stepper, le délai suit le calcul
+   ACWR : la valeur par défaut est celle qui est juste, pas un nombre rond. Dès
+   qu'il y touche, elle lui appartient — on ne la lui reprend plus. */
+var _capDelaiAuto = true;
+
+function _capSetDelai(n) {
+  var inp = document.getElementById('capSemG');
+  if (!inp) return;
+  inp.value = n;
+  var disp = document.getElementById('capSemDisplay');
+  if (disp) disp.textContent = n + ' sem.';
+}
+
 function capSemStep(delta) {
   var inp = document.getElementById('capSemG');
   if (!inp) return;
-  var next = Math.max(1, Math.min(104, (parseInt(inp.value, 10) || 12) + delta));
-  inp.value = next;
-  var disp = document.getElementById('capSemDisplay');
-  if (disp) disp.textContent = next + ' sem.';
+  _capDelaiAuto = false;
+  _capSetDelai(Math.max(1, Math.min(104, (parseInt(inp.value, 10) || 12) + delta)));
+  _capFormRefresh();
+}
+
+/* Retour au délai conseillé. */
+function capSemAuto() {
+  _capDelaiAuto = true;
   _capFormRefresh();
 }
 
@@ -11074,6 +11196,15 @@ function _capFormRefresh() {
   var p = _capReadForm();
   var uLbl = p.unite === 'min' ? 'min' : 'km';
 
+  // Délai : caler sur l'ACWR tant que le praticien n'a rien imposé. Il faut le
+  // faire AVANT le verdict, qui juge la trajectoire du délai retenu.
+  var conseille = _capTrajectoire(p).conseille;
+  if (_capDelaiAuto && conseille !== p.semaines) {
+    _capSetDelai(conseille);
+    p.semaines = conseille;
+  }
+  _capRenderDelai(p, conseille);
+
   // Étiquettes d'unité
   document.querySelectorAll('.cap-unit-lbl').forEach(function(el) {
     el.textContent = el.textContent.replace(/\((km|min)([^)]*)\)/, '(' + uLbl + '$2)');
@@ -11109,6 +11240,25 @@ function _capFormRefresh() {
   _capRenderConstraints(p);
   _capRenderVerdict(p);
   _capRenderJoursHint(p);
+}
+
+/* Délai : ce que dit le calcul, et ce que le praticien en fait. Le conseillé
+   est le nombre de semaines qui maintient l'ACWR sous le seuil « progressif »,
+   paliers de consolidation et échelle course/marche compris. Raccourcir reste
+   possible — c'est un arbitrage clinique, pas une erreur de saisie. */
+function _capRenderDelai(p, conseille) {
+  var box = document.getElementById('capSemHint');
+  if (!box) return;
+  if (_capDelaiAuto) {
+    box.innerHTML = 'Calé sur l’ACWR : <b>' + conseille + ' sem.</b> pour rester sous '
+      + CAP_SEUILS.acwrOk + '. Raccourcir pour une reprise plus agressive.';
+    return;
+  }
+  box.innerHTML = p.semaines === conseille
+    ? 'Correspond au délai conseillé par l’ACWR.'
+    : (p.semaines < conseille ? 'Plus court que le' : 'Plus long que le')
+      + ' délai conseillé (<b>' + conseille + ' sem.</b>) — '
+      + '<a href="#" onclick="capSemAuto();return false;">y revenir</a>';
 }
 
 /* Contraintes déduites : ce que l'axe gèle, les interdits cumulés, le palier. */
@@ -11170,19 +11320,34 @@ function _capRenderVerdict(p) {
   if (!box) return;
   var parts = [], cls = 'ok';
 
-  if (p.chronique > 0 && p.cibleHebdo > p.chronique) {
-    var g = Math.pow(p.cibleHebdo / p.chronique, 1 / Math.max(1, p.semaines));
-    var acwr = 4 / (1 + Math.pow(g,-1) + Math.pow(g,-2) + Math.pow(g,-3));
-    var pct = Math.round((g - 1) * 1000) / 10;
-    var verdict = acwr <= CAP_SEUILS.acwrOk ? 'progressif'
-                : acwr <= CAP_SEUILS.acwrWarn ? 'soutenu — surveiller le retour douleur'
+  // La trajectoire réellement produite par le moteur, pas une approximation
+  // recalculée ici : une reprise depuis zéro ne part pas de la charge
+  // chronique (qui vaut zéro) mais du volume atteint en sortie de l'échelle
+  // course/marche. Juger sur zéro n'avait aucun sens, d'où l'ancien renoncement.
+  var t = _capTrajectoire(p);
+  var uL = p.unite === 'min' ? 'min' : 'km';
+  var enUnite = function(min) {
+    var v = p.unite === 'km' ? min / (p.allureFooting || 6) : min;
+    return Math.round(v * 10) / 10;
+  };
+
+  if (t.semFractionne > 0) {
+    parts.push('<b>' + t.semFractionne + ' semaines</b> de course/marche avant la course continue'
+      + (t.fractionneComprime
+          ? ' — le délai demandé oblige à sauter des barreaux de l’échelle.'
+          : ', puis progression du volume sur les <b>' + Math.max(0, p.semaines - t.semFractionne) + '</b> restantes.'));
+    if (t.fractionneComprime) cls = 'bad';
+  }
+
+  if (t.cibleMin > t.departMin) {
+    var pct = Math.round((t.g - 1) * 1000) / 10;
+    var verdict = t.acwr <= CAP_SEUILS.acwrOk ? 'progressif'
+                : t.acwr <= CAP_SEUILS.acwrWarn ? 'soutenu — surveiller le retour douleur'
                 : 'agressif — assumé, feedback séance par séance';
-    cls = acwr <= CAP_SEUILS.acwrOk ? 'ok' : acwr <= CAP_SEUILS.acwrWarn ? 'warn' : 'bad';
-    parts.push('De <b>' + p.chronique + '</b> à <b>' + p.cibleHebdo + '</b> ' + (p.unite === 'min' ? 'min' : 'km')
-      + '/sem en <b>' + p.semaines + '</b> semaines : <b>+' + pct + ' %</b>/sem, ACWR <b>'
-      + (Math.round(acwr * 100) / 100) + '</b> — ' + verdict + '.');
-  } else if (p.chronique === 0) {
-    parts.push('Reprise depuis zéro : progression par paliers absolus, l’ACWR n’a pas de sens tant qu’il n’y a pas de charge chronique.');
+    if (cls !== 'bad') cls = t.acwr <= CAP_SEUILS.acwrOk ? 'ok' : t.acwr <= CAP_SEUILS.acwrWarn ? 'warn' : 'bad';
+    parts.push('De <b>' + enUnite(t.departMin) + '</b> à <b>' + p.cibleHebdo + '</b> ' + uL
+      + '/sem : <b>+' + pct + ' %</b>/sem, ACWR <b>'
+      + (Math.round(t.acwr * 100) / 100) + '</b> — ' + verdict + '.');
   }
 
   // Cohérence des deux cibles — contrôle de saisie, pas de génération
@@ -11461,6 +11626,7 @@ function openCAPWizard() {
   // Les listes de pathologies sont construites depuis CAP_PATHO_DB : une seule
   // source, pas de liste dupliquée dans le HTML qui divergerait à l'ajout.
   _capFillPathoSelects();
+  _capDelaiAuto = true;      // nouvelle fiche : on repart du délai conseillé
   _capOnPathoChange();
 
   if (CAP_STATE && CAP_STATE.sessions && CAP_STATE.sessions.length) {
