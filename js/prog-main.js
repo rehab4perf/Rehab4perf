@@ -10754,10 +10754,28 @@ function _capBuildProgrammeV2(p) {
   var semainesVisees = Math.max(1, Math.round(p.semaines || 12));
   var objBaseMin = _capObjectifBaseMin(p);
   var ax = CAP_AXES[p.axe] || CAP_AXES.charge;
-  var volumeEstGele = ax.gele.indexOf('volume') !== -1;   // axe RÉPÉTITION
 
-  // Croissance hebdomadaire requise pour tenir le délai demandé.
-  var g = cibleMin > departMin ? Math.pow(cibleMin / departMin, 1 / semainesVisees) : 1;
+  // Geler le volume (axe RÉPÉTITION) suppose que l'AUTRE levier soit
+  // disponible. Sans polarisation il n'y a pas de séance de qualité, donc
+  // pas d'intensité à progresser : tout figer ne ferait rien avancer, et la
+  // condition de dégel — des séances de qualité encaissées — ne pourrait
+  // jamais être remplie. On ne gèle pas non plus le volume de quelqu'un qui
+  // part de zéro : il n'y a rien à geler, il faut d'abord le construire.
+  var polarisableACible = _capPolarisable(p, cibleMin, frequence);
+  var volumeEstGele = ax.gele.indexOf('volume') !== -1 && polarisableACible && !reprise;
+
+  // Croissance hebdomadaire requise pour tenir le délai demandé. departMin
+  // n'est jamais nul (plancher de reprise), donc la formule géométrique
+  // s'applique aussi à une reprise depuis zéro — et le délai saisi est
+  // respecté, ce qu'une progression additive ignorait.
+  // Les semaines de palier ne font pas progresser : les répartir sur le délai
+  // sans les déduire ferait déborder le plan de leur nombre. On estime le
+  // cycle sur le volume cible, faute de connaître la trajectoire d'avance.
+  var cycleEstime = _capPalier(p.tissu, p.cibleHebdo, p.unite).cycle;
+  var semainesCroissance = cycleEstime
+    ? Math.max(1, semainesVisees - Math.floor(semainesVisees / cycleEstime))
+    : semainesVisees;
+  var g = cibleMin > departMin ? Math.pow(cibleMin / departMin, 1 / semainesCroissance) : 1;
 
   var volume  = Math.min(departMin, cibleMin);
   var continu = p.courseContinueToleree || 0;
@@ -10805,10 +10823,16 @@ function _capBuildProgrammeV2(p) {
     if (continu > 0 && continu < CAP_SEUILS.fractionne) {
       volume = Math.min(cibleMin, sem.reduce(function(t, s) { return t + _capVolumeCourse(s); }, 0));
     }
+    // `phase` alimente les intertitres de l'écran de résultat, qui existent
+    // depuis la v1. Sans lui, ils s'affichent « UNDEFINED ». On le dérive de
+    // l'état réel de la progression plutôt que de l'inventer.
+    var phase = (continu > 0 && continu < CAP_SEUILS.fractionne) ? 1 : (degelIntensite ? 3 : 2);
+
     var ordonne = _capOrdonnerSemaine(sem, p.joursDispo);
     if (ordonne.conflits.length) conflitsEspacement.push(semaine);
     ordonne.seances.forEach(function(s) {
       s.palier = estPalier ? pal.mode : null;
+      s.phase = phase;
       sessions.push(s);
     });
     if (!estPalier && sem.some(function(s) { return s.role === 'qualite'; })) qualiteTolerees++;
@@ -10823,8 +10847,7 @@ function _capBuildProgrammeV2(p) {
         // volume — allonger les deux la même semaine ferait deux leviers.
         continu = _capBoutSuivant(continu);
       } else if (!volumeEstGele || degelVolume) {
-        volume = reprise ? Math.min(cibleMin, volume + Math.max(3, volume * 0.15))
-                         : Math.min(cibleMin, volume * g);
+        volume = Math.min(cibleMin, volume * g);
       }
     }
   }
