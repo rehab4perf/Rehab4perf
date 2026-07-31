@@ -8113,6 +8113,11 @@ function renderPainZones(){
   if(fc) fc.value = _painZones.length ? _painZones[0].cote : '';
   updateAll();
   if(typeof _updateSideLabels === 'function') _updateSideLabels();
+  // f-cote est un champ caché (jamais de 'change' natif) : les tests
+  // personnalisés doivent être réévalués explicitement à chaque zone
+  // ajoutée/retirée, sinon leurs libellés Atteint/Sain vs Gauche/Droit
+  // restent figés sur l'état du tout premier ajout.
+  if(typeof window._ctRefreshLabels === 'function') window._ctRefreshLabels();
 }
 
 function addPainZone(){
@@ -9231,6 +9236,18 @@ window.addEventListener('load', function(){
   var _ctData = {};
 
   function _ctIsBilat(){
+    // f-cote (champ caché) ne reflète que la PREMIÈRE zone douloureuse ajoutée
+    // (renderPainZones) — avec plusieurs zones sur des côtés différents (ex.
+    // genou droit + cheville gauche), f-cote reste bloqué sur ce premier côté
+    // et fait passer Atteint/Sain à tort. On regarde donc directement tous les
+    // côtés déclarés dans _painZones : s'ils divergent (ou qu'une zone est
+    // déjà notée BILATÉRAL), il n'y a pas de « côté atteint » unique.
+    if(_painZones && _painZones.length){
+      var cotes = _painZones.map(function(p){ return p.cote; });
+      var unique = cotes.filter(function(v,i,a){ return a.indexOf(v)===i; });
+      if(unique.length > 1) return true;
+      return unique[0] !== 'DROIT' && unique[0] !== 'GAUCHE';
+    }
     var c = ((document.getElementById('f-cote')||{}).value||'').toUpperCase();
     return c !== 'DROIT' && c !== 'GAUCHE';
   }
