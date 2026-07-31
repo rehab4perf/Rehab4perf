@@ -10662,19 +10662,23 @@ function _capBuildSemaine(p, opts) {
     return _capBuildSemaineN(p, opts, frequence, frequence);
   }
 
-  // Course continue : on ajoute des sorties tant que la semaine ne délivre pas
-  // la cible — la fréquence est le levier du volume, pas la durée (spec §06).
-  // On mesure le volume réellement produit plutôt que de le déduire : les
-  // plafonds par rôle rendent le calcul a priori faux (une séance technique
-  // n'absorbe jamais plus de 30 min, quoi qu'il reste à placer).
-  var nb = frequence, semaine = null;
-  for (var garde = 0; garde < 20; garde++) {
-    semaine = _capBuildSemaineN(p, opts, nb, frequence);
-    var produit = semaine.reduce(function(t, s) { return t + _capVolumeCourse(s); }, 0);
-    if (produit >= volumeMin * 0.97 || nb >= 21) break;
-    nb++;
+  // Course continue : la fréquence prescrite est une contrainte du praticien,
+  // pas une variable d'ajustement. Une sortie ne s'ajoute que si une séance
+  // dépasserait la plus longue sortie tolérée — seul motif clinique de
+  // fractionner la semaine davantage.
+  //
+  // L'ancienne boucle ajoutait des sorties tant que le volume produit n'égalait
+  // pas la cible. Sur les petits volumes, l'arrondi à la minute suffisait à
+  // déclencher l'ajout : 13,3 min sur 3 sorties donne 4 min arrondies, soit
+  // 12 min produites — donc une 4e sortie, qui raccourcit encore chaque séance
+  // et aggrave l'arrondi. D'où les semaines à 5 et 6 sorties sur 15 min de
+  // course, alors que 3 étaient demandées.
+  var plafond = p.plusLongueSortie > 0 ? _capVersMin(p.plusLongueSortie, p) : Infinity;
+  var nb = frequence;
+  if (plafond !== Infinity && volumeMin / nb > plafond) {
+    nb = Math.min(21, Math.max(frequence, Math.ceil(volumeMin / plafond)));
   }
-  return semaine;
+  return _capBuildSemaineN(p, opts, nb, frequence);
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -10766,6 +10770,16 @@ function _capTauxSemaine(volume, cible, semaine, total, cycle) {
    croître pour tenir le délai, et quel délai serait « juste » au sens de
    l'ACWR. Source unique du moteur, du verdict et du délai conseillé — sinon
    l'écran annonce une chose et le plan en produit une autre. */
+/* Volume hebdomadaire de départ quand il n'y a pas de charge chronique. Le
+   plancher ne peut pas ignorer ce que le patient tolère déjà : quelqu'un qui
+   court 12 min d'affilée sans douleur ne repart pas à 4 min par sortie. On
+   part donc de sa tolérance, et le plancher ne joue que si elle est plus
+   basse encore. */
+function _capDepartReprise(p, frequence) {
+  var continu = p.courseContinueToleree || 0;
+  return Math.max(9, frequence * Math.max(4, continu));
+}
+
 function _capTrajectoire(p) {
   var frequence = Math.max(1, Math.round(p.frequenceCible || 3));
   var cibleMin  = _capVersMin(Math.max(1, p.cibleHebdo), p);
@@ -10777,7 +10791,7 @@ function _capTrajectoire(p) {
     var e = _capDernierEchelonFractionne();
     departMin = e.reps * e.bout * frequence;
   } else {
-    departMin = p.chronique > 0 ? _capVersMin(p.chronique, p) : Math.max(9, frequence * 4);
+    departMin = p.chronique > 0 ? _capVersMin(p.chronique, p) : _capDepartReprise(p, frequence);
   }
   departMin = Math.min(departMin, cibleMin);
 
@@ -10862,7 +10876,7 @@ function _capBuildProgrammeV2(p) {
   // Reprise depuis zéro : on ne multiplie pas zéro. On part d'un volume
   // plancher dérivé de la fréquence, et la croissance devient additive.
   var reprise   = !(p.chronique > 0);
-  var departMin = reprise ? Math.max(9, frequence * 4) : _capVersMin(p.chronique, p);
+  var departMin = reprise ? _capDepartReprise(p, frequence) : _capVersMin(p.chronique, p);
   var semainesVisees = Math.max(1, Math.round(p.semaines || 12));
   var objBaseMin = _capObjectifBaseMin(p);
   var ax = CAP_AXES[p.axe] || CAP_AXES.charge;
@@ -11341,11 +11355,20 @@ function _capRenderVerdict(p) {
 
   if (t.cibleMin > t.departMin) {
     var pct = Math.round((t.g - 1) * 1000) / 10;
+    // Dire d'où sort le point de départ : sans charge chronique, ce n'est pas
+    // une donnée saisie, et un chiffre qui tombe du ciel dans le verdict n'est
+    // pas exploitable en consultation.
+    var origine = p.chronique > 0
+      ? 'charge chronique'
+      : (t.semFractionne > 0
+          ? 'sortie de l’échelle course/marche'
+          : p.frequenceCible + ' × ' + Math.round(t.departMin / t.frequence) + ' min, votre tolérance en course continue');
     var verdict = t.acwr <= CAP_SEUILS.acwrOk ? 'progressif'
                 : t.acwr <= CAP_SEUILS.acwrWarn ? 'soutenu — surveiller le retour douleur'
                 : 'agressif — assumé, feedback séance par séance';
     if (cls !== 'bad') cls = t.acwr <= CAP_SEUILS.acwrOk ? 'ok' : t.acwr <= CAP_SEUILS.acwrWarn ? 'warn' : 'bad';
-    parts.push('De <b>' + enUnite(t.departMin) + '</b> à <b>' + p.cibleHebdo + '</b> ' + uL
+    parts.push('De <b>' + enUnite(t.departMin) + '</b> <span class="cap-orig">(' + origine + ')</span> à <b>'
+      + p.cibleHebdo + '</b> ' + uL
       + '/sem : <b>+' + pct + ' %</b>/sem, ACWR <b>'
       + (Math.round(t.acwr * 100) / 100) + '</b> — ' + verdict + '.');
   }
@@ -11483,6 +11506,29 @@ function _capSessKm(s, allure) {
 function _capKmLabel(s, allure) {
   var km = _capSessKm(s, allure);
   return km !== null ? '<span style="font-size:.68rem;color:var(--muted);margin-left:6px;">' + km.toFixed(1) + ' km</span>' : '';
+}
+
+/* Allure à tenir, zone par zone. Le libellé d'une séance continue s'écrit
+   « 24 min continu » sans rien dire du rythme : l'information est bien dans
+   les segments (zone Z2), mais le praticien devait la déduire. On la sort. */
+function _capAllureLabel(s, allure) {
+  if (!allure || allure <= 0 || !Array.isArray(s.segments)) return '';
+  var zones = _capZones(allure), vues = [], out = [];
+  s.segments.forEach(function(g) {
+    [g.zone, g.recupZone].forEach(function(z) {
+      if (!z || z === 'marche' || vues.indexOf(z) !== -1) return;
+      var zz = zones.filter(function(x) { return x.id === z; })[0];
+      if (!zz) return;
+      vues.push(z);
+      out.push(z + '&nbsp;' + zz.paceLabel);
+    });
+  });
+  if (s.segments.some(function(g) { return g.zone === 'marche' || g.recupZone === 'marche'; })) {
+    out.push('M&nbsp;marche');
+  }
+  return out.length
+    ? '<div class="cap-sess-allure">' + out.join(' · ') + '</div>'
+    : '';
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -11883,7 +11929,8 @@ function _capSessHtml(s) {
 
   var allure = CAP_STATE && CAP_STATE.profile && CAP_STATE.profile.allure;
   var dot    = '<div class="cap-sess-dot cap-dot-' + s.status + '"></div>';
-  var label  = '<div class="cap-sess-label">' + s.label + _capKmLabel(s, allure) + '</div>';
+  var label  = '<div class="cap-sess-label">' + s.label + _capKmLabel(s, allure) + '</div>'
+             + _capAllureLabel(s, allure);
 
   var actions = '';
   if (s._idx === _capPainIdx) {
