@@ -9893,38 +9893,43 @@ function _toolOverlayClick(e){
    qui permet un moteur unique plutôt qu'un programme par pathologie.
    AMPLITUDE est à part — la cadence n'est pas une dose qu'on progresse,
    c'est une correction technique appliquée d'emblée. */
+/* Le paramètre COUPABLE est celui qui a blessé : on le réduit au départ, on le
+   reconstruit à la fin — c'est lui, le traitement. Les paramètres INNOCENTS
+   partent à la tolérance du coureur et n'y touchent plus : les développer
+   reviendrait à charger un tissu qui n'a rien demandé, et geler le coupable
+   sans jamais le remonter ne ramène personne à la course.
+
+   `gele` et `moteur` désignaient deux paramètres différents — on gelait le
+   coupable et on développait l'innocent. C'était l'inverse de la logique de la
+   pyramide, et cela produisait des programmes où l'axe annoncé ne pilotait
+   rien : une bandelette « moteur allure » gardait 9 min de Z3+ six semaines
+   d'affilée. */
 var CAP_AXES = {
   charge: {
     label: 'Charge',
     desc:  'L\'intensité de l\'impact à chaque foulée',
-    gele:  ['allure', 'cotes'],
-    moteur: 'volume',
+    coupable: 'intensite',
+    innocents: ['volume'],
     zonesGel:   ['Z1','Z2'],
     zonesDegel: ['Z1','Z2','Z3','Z4'],
-    crossTraining: ['velo'],
-    roles: { longue:'progresse', facile:'majoritaire', qualite:'gelee', technique:'option' },
   },
   repetition: {
     label: 'Répétition',
     desc:  'Le nombre de cycles — le volume',
-    gele:  ['volume'],
-    moteur: 'allure',
+    coupable: 'volume',
+    innocents: ['intensite'],
     zonesGel:   ['Z1','Z2','Z3'],
     zonesDegel: ['Z1','Z2','Z3','Z4'],
-    crossTraining: ['velo'],
-    fractionner: true,      // découper les sorties plutôt que les allonger
-    varierSurfaces: true,
-    roles: { longue:'plafonnee', facile:'oui', qualite:'progresse', technique:'option' },
+    sansLongue: true,      // le volume d'un seul tenant est justement ce qui blesse
   },
   amplitude: {
     label: 'Amplitude',
     desc:  'La longueur de foulée',
-    gele:  ['vitesse', 'cotes'],
-    moteur: 'cadence',
+    coupable: 'amplitude',
+    innocents: ['volume', 'intensite'],
     zonesGel:   ['Z1','Z2'],
     zonesDegel: ['Z1','Z2','Z3'],
-    crossTraining: ['velo'],
-    roles: { longue:'cadenceCible', facile:'oui', qualite:'exclue', technique:'obligatoire' },
+    technique: true,       // la cadence est le traitement, pas un à-côté
   },
 };
 
@@ -9939,6 +9944,7 @@ var CAP_LIBELLES = {
   vitesse:'vitesse', pieds_nus:'pieds nus', avant_pied:'appui avant-pied',
   dorsiflexion_chargee:'dorsiflexion chargée', sprint:'sprint',
   allure:'allure', volume:'volume', cadence:'cadence',
+  intensite:'allure (minutes de qualité)', amplitude:'amplitude de foulée',
   longue:'sortie longue', facile:'facile', qualite:'qualité', technique:'technique',
 };
 function _capLbl(k) { return CAP_LIBELLES[k] || k; }
@@ -10507,26 +10513,19 @@ function _capPolarisable(p, volumeMin, frequence) {
     || volumeMin >= 120;
 }
 
-/* Répartition des rôles sur la semaine, selon l'axe.
-   `degel` : le levier contraint a-t-il été libéré (objectif de base atteint). */
-function _capRolesSemaine(axe, frequence, degel) {
+/* Répartition des rôles sur la semaine. La séance de qualité n'existe que si
+   la semaine porte des minutes d'intensité — c'est la trajectoire d'intensité
+   qui décide, pas l'axe : sur Charge elle vaut zéro pendant la décharge puis
+   monte, sur Répétition elle est là dès la première semaine. */
+function _capRolesSemaine(axe, frequence, avecQualite) {
+  var ax = CAP_AXES[axe] || CAP_AXES.charge;
   var roles = [];
-  if (axe === 'repetition') {
-    // Volume plafonné : pas de sortie longue, c'est le nombre de cycles
-    // consécutifs qui blesse. L'intensité est le levier moteur, donc la
-    // séance de qualité existe dès le départ.
-    roles.push('qualite');
-    while (roles.length < frequence) roles.push('facile');
-  } else if (axe === 'amplitude') {
-    // Technique obligatoire : la cadence est le traitement, pas un à-côté.
-    roles.push('longue', 'technique');
-    while (roles.length < frequence) roles.push('facile');
-  } else {
-    // Charge : le volume progresse, l'allure reste gelée jusqu'au dégel.
-    roles.push('longue');
-    if (degel && frequence >= 4) roles.push('qualite');
-    while (roles.length < frequence) roles.push('facile');
-  }
+  if (ax.technique) roles.push('technique');
+  if (avecQualite) roles.push('qualite');
+  // Une sortie longue n'a de sens que si le volume d'un seul tenant n'est pas
+  // le paramètre coupable, et qu'il reste de la place dans la semaine.
+  if (!ax.sansLongue && roles.length < frequence - 1) roles.push('longue');
+  while (roles.length < frequence) roles.push('facile');
   return roles.slice(0, frequence);
 }
 
@@ -10561,6 +10560,27 @@ function _capRepartir(total, poids, plafond) {
   return out;
 }
 
+/* Séance de qualité construite À PARTIR des minutes d'intensité voulues, et
+   non d'une part du volume hebdomadaire. C'est l'inversion qui rend l'allure
+   pilotable : `intensiteMin` est la grandeur que la trajectoire fait monter,
+   la séance n'est que sa mise en forme.
+
+   La durée d'une répétition suit le total : on ne demande pas 3 minutes
+   d'affilée à quelqu'un qui en est à 4 minutes de qualité par semaine. */
+function _capSpecQualite(intensiteMin, zone) {
+  var total  = Math.max(1, Math.round(intensiteMin));
+  var runMin = total >= 15 ? 3 : total >= 8 ? 2 : 1;
+  var reps   = Math.max(2, Math.round(total / runMin));
+  var recup  = runMin >= 3 ? 2 : 1;
+  var echauff = Math.max(10, Math.round(total * 0.8));
+  var retour  = Math.max(5, Math.round(echauff / 2));
+  // Volume de COURSE de la séance : échauffement + effort + récupérations
+  // courues (la dernière est remplacée par le retour au calme) + retour.
+  var volume = echauff + reps * runMin + (reps - 1) * recup + retour;
+  return { reps: reps, runMin: runMin, recup: recup, echauff: echauff,
+           zone: zone || 'Z3', volume: volume, effort: reps * runMin };
+}
+
 /* Construit la semaine à un nombre de sorties donné. Le volume délivré peut
    rester en deçà de la cible si tous les plafonds sont atteints — c'est
    l'appelant qui décide alors d'ajouter une sortie. */
@@ -10569,44 +10589,65 @@ function _capBuildSemaineN(p, opts, nbSorties, frequence) {
   var volumeMin = Math.max(1, opts.volumeMin != null ? opts.volumeMin
                             : _capVersMin(opts.volumeHebdo != null ? opts.volumeHebdo : p.cibleHebdo, p));
   var continu   = opts.continuTolere != null ? opts.continuTolere : p.courseContinueToleree;
-  var degel     = !!opts.degel;
+  var intensite = Math.max(0, opts.intensiteMin || 0);   // minutes de Z3+ de la semaine
   var fractionne = (continu || 0) < CAP_SEUILS.fractionne;
   var plafondSortie = p.plusLongueSortie > 0 ? _capVersMin(p.plusLongueSortie, p) : Infinity;
 
+  // La qualité n'est plus une part du volume : c'est la trajectoire
+  // d'intensité qui la commande. Sans minutes de Z3+, pas de séance de
+  // qualité — l'axe Charge en décharge n'en produit aucune, par construction.
   var polarise = !fractionne && _capPolarisable(p, volumeMin, nbSorties);
-  var roles = polarise ? _capRolesSemaine(p.axe, nbSorties, degel)
+  var avecQualite = polarise && intensite > 0;
+  var roles = polarise ? _capRolesSemaine(p.axe, nbSorties, avecQualite)
                        : new Array(nbSorties).fill('facile');
 
-  // Répartition du volume : les rôles nommés prennent leur part, le reste se
+  // La séance de qualité est dimensionnée AVANT la répartition : son volume de
+  // course découle des minutes d'intensité prescrites, échauffement et retour
+  // au calme compris. Le reliquat se partage entre les autres séances.
+  var minutesParRole = roles.map(function() { return 0; });
+  var volumeRestant  = volumeMin;
+  var qualiteSpec = null;
+  var iQualite = roles.indexOf('qualite');
+  if (iQualite !== -1) {
+    qualiteSpec = _capSpecQualite(intensite, opts.zoneQualite || 'Z3');
+    minutesParRole[iQualite] = qualiteSpec.volume;
+    volumeRestant -= qualiteSpec.volume;
+  }
+
+  // Répartition du reste : les rôles nommés prennent leur part, le solde se
   // partage entre les séances faciles.
-  var nommes  = roles.filter(function(r) { return r !== 'facile'; })
-                     .reduce(function(a, r) { return a + CAP_PART_ROLE[r]; }, 0);
+  var poids = roles.map(function(r, i) {
+    if (i === iQualite) return 0;
+    return r === 'facile' ? 0 : CAP_PART_ROLE[r];
+  });
+  var nommes = poids.reduce(function(a, v) { return a + v; }, 0);
   var nbFacile = roles.filter(function(r) { return r === 'facile'; }).length;
   var partFacile = nbFacile ? Math.max(0, 1 - nommes) / nbFacile : 0;
-  var poids = roles.map(function(r) { return r === 'facile' ? partFacile : CAP_PART_ROLE[r]; });
+  poids = roles.map(function(r, i) {
+    if (i === iQualite) return 0;
+    return r === 'facile' ? partFacile : CAP_PART_ROLE[r];
+  });
 
   // La sortie longue ne dépasse jamais la cible fixée quand il y en a une.
   var plafondLongue = p.cibleSortieLongue ? _capVersMin(p.cibleSortieLongue, p) : plafondSortie;
   // Les rôles à plafond propre sont servis d'abord et sortis de la
   // redistribution : le reliquat se répartit sur les séances qui peuvent
   // réellement l'absorber.
-  var minutesParRole = roles.map(function() { return 0; });
-  var volumeRestant = volumeMin;
   roles.forEach(function(r, i) {
     var pl = CAP_PLAFOND_ROLE[r];
-    if (pl == null) return;
+    if (pl == null || i === iQualite) return;
     minutesParRole[i] = Math.min(pl, plafondSortie, volumeMin * poids[i]);
     volumeRestant -= minutesParRole[i];
     poids[i] = 0;
   });
   var repartis = _capRepartir(Math.max(0, volumeRestant), poids, plafondSortie);
   roles.forEach(function(r, i) {
+    if (i === iQualite) return;
     if (CAP_PLAFOND_ROLE[r] == null) minutesParRole[i] = repartis[i];
     if (r === 'longue') minutesParRole[i] = Math.min(minutesParRole[i], plafondLongue);
   });
 
   var zoneFacile = 'Z2';
-  var zoneQualite = degel ? 'Z4' : 'Z3';
 
   return roles.map(function(role, i) {
     var minutes = Math.max(1, minutesParRole[i]);
@@ -10618,15 +10659,8 @@ function _capBuildSemaineN(p, opts, nbSorties, frequence) {
       var ech = _capEchelonFractionne(continu);
       s = _capSeanceFractionne(role, ech.reps, ech.bout, 1, zoneFacile);
     } else if (role === 'qualite') {
-      var echauff = Math.max(10, Math.round(minutes * 0.35));
-      var retour  = Math.max(5, Math.round(echauff / 2));
-      var travail = Math.max(3, minutes - echauff - retour);
-      var runMin  = travail >= 15 ? 3 : travail >= 8 ? 2 : 1;
-      var recup   = 2;
-      // travail = reps×effort + (reps−1)×récup  →  on inverse, sinon les
-      // récupérations s'ajoutent au volume visé et la séance déborde d'un tiers.
-      var reps = Math.max(3, Math.round((travail + recup) / (runMin + recup)));
-      s = _capSeanceQualite(reps, runMin, zoneQualite, recup, echauff);
+      s = _capSeanceQualite(qualiteSpec.reps, qualiteSpec.runMin, qualiteSpec.zone,
+                            qualiteSpec.recup, qualiteSpec.echauff);
     } else if (role === 'technique') {
       // Éducatifs à cadence cible, en Z1 : c'est la qualité du geste qui
       // compte, pas la charge.
@@ -10675,10 +10709,30 @@ function _capBuildSemaine(p, opts) {
   // course, alors que 3 étaient demandées.
   var plafond = p.plusLongueSortie > 0 ? _capVersMin(p.plusLongueSortie, p) : Infinity;
   var nb = frequence;
-  if (plafond !== Infinity && volumeMin / nb > plafond) {
-    nb = Math.min(21, Math.max(frequence, Math.ceil(volumeMin / plafond)));
+  if (plafond !== Infinity) {
+    // La séance de qualité a une taille propre, dictée par les minutes
+    // d'intensité et non par une part du volume : elle est souvent bien plus
+    // courte qu'une sortie moyenne, et tout ce qu'elle ne prend pas retombe
+    // sur les autres. C'est donc le volume RESTANT qu'il faut confronter au
+    // plafond, sinon la semaine sous-délivre en silence.
+    var volQualite = (opts.intensiteMin > 0 && _capPolarisable(p, volumeMin, frequence))
+      ? _capSpecQualite(opts.intensiteMin, 'Z3').volume : 0;
+    var reste  = Math.max(0, volumeMin - volQualite);
+    var autres = Math.max(1, nb - (volQualite > 0 ? 1 : 0));
+    while (nb < 21 && reste / autres > plafond) { nb++; autres++; }
   }
   return _capBuildSemaineN(p, opts, nb, frequence);
+}
+
+/* Minutes de Z3+ effectivement produites par une semaine. Sert au contrôle
+   plutôt qu'à l'affichage : c'est la grandeur que la trajectoire prétend
+   piloter, autant pouvoir la mesurer sur le résultat. */
+function _capIntensiteSemaine(seances) {
+  return (seances || []).reduce(function(t, s) {
+    return t + (s.segments || []).reduce(function(u, g) {
+      return u + (CAP_ZONE_COEF[g.zone] >= CAP_ZONE_COEF.Z3 ? (g.reps || 1) * (g.minutes || 0) : 0);
+    }, 0);
+  }, 0);
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -10765,11 +10819,6 @@ function _capTauxSemaine(volume, cible, semaine, total, cycle) {
   return Math.pow(cible / volume, 1 / Math.max(1, inc));
 }
 
-/* Trajectoire projetée d'une fiche : d'où part la progression du volume,
-   combien de semaines de course/marche la précèdent, à quel rythme il faut
-   croître pour tenir le délai, et quel délai serait « juste » au sens de
-   l'ACWR. Source unique du moteur, du verdict et du délai conseillé — sinon
-   l'écran annonce une chose et le plan en produit une autre. */
 /* Volume hebdomadaire de départ quand il n'y a pas de charge chronique. Le
    plancher ne peut pas ignorer ce que le patient tolère déjà : quelqu'un qui
    court 12 min d'affilée sans douleur ne repart pas à 4 min par sortie. On
@@ -10780,39 +10829,178 @@ function _capDepartReprise(p, frequence) {
   return Math.max(9, frequence * Math.max(4, continu));
 }
 
+/* Volume que le coureur tolère AUJOURD'HUI, en minutes par semaine. Quand le
+   volume n'est pas le paramètre coupable, c'est là que le programme démarre —
+   et il n'en bouge plus. La plus longue sortie tolérée est l'expression la
+   plus directe de cette tolérance : elle ne peut pas rester un simple plafond. */
+function _capVolumeTolere(p, frequence) {
+  var cible = _capVersMin(Math.max(1, p.cibleHebdo), p);
+  var declaree = 0;
+  // La charge chronique prime : c'est ce que le coureur encaisse RÉELLEMENT.
+  // La plus longue sortie tolérée ne prend le relais que faute de mieux.
+  if (p.chronique > 0)             declaree = _capVersMin(p.chronique, p);
+  else if (p.plusLongueSortie > 0) declaree = _capVersMin(p.plusLongueSortie, p) * frequence;
+  // Rien de déclaré — ni charge chronique, ni sortie tolérée : il n'y a aucune
+  // tolérance à préserver. C'est une reprise depuis zéro, et la cible devient
+  // le seul repère. Figer le volume à la sortie de l'échelle course/marche
+  // laisserait un post-opéré à 16 min de course pour toujours.
+  if (!declaree) return cible;
+  // La tolérance peut dépasser ce que le praticien veut prescrire : quatre
+  // sorties de 12 km font 48 km/sem même s'il en visait 45. La cible saisie
+  // reste un plafond — c'est sa décision, pas une déduction.
+  return Math.min(declaree, cible);
+}
+
+/* Minutes hebdomadaires en Z3+. À défaut de saisie, une part du volume — 15 %,
+   l'ordre de grandeur d'un coureur qui a retrouvé sa qualité sans être en
+   préparation spécifique. Le volume de référence dépend du rôle : la CIBLE
+   quand l'intensité est ce qu'on reconstruit, le volume de DÉPART quand elle
+   est seulement maintenue — un paramètre innocent ne progresse pas, il ne peut
+   donc pas être calé sur une cible qu'il n'atteindra jamais. */
+function _capIntensitePour(p, volumeReferenceMin) {
+  if (p.cibleIntensite > 0) return p.cibleIntensite;
+  return Math.max(CAP_SEUILS.intensitePlancher, Math.round(volumeReferenceMin * 0.15));
+}
+
+/* Zone de la séance de qualité, graduée sur l'avancement de la remontée. Les
+   zones disponibles viennent de l'axe : l'axe Amplitude plafonne à Z3, parce
+   que corriger une foulée à pleine vitesse n'a pas de sens. C'est la seule
+   lecture de `zonesDegel` — sans elle, la table décrivait une règle que le
+   moteur n'appliquait pas. */
+function _capZoneQualite(ax, intensiteSemaine, cibleIntensite) {
+  var zones = (ax.zonesDegel || ['Z3', 'Z4']).filter(function(z) {
+    return CAP_ZONE_COEF[z] >= CAP_ZONE_COEF.Z3;
+  });
+  if (!zones.length) return 'Z3';
+  var part = cibleIntensite > 0 ? intensiteSemaine / cibleIntensite : 0;
+  var i = Math.floor(part * zones.length);
+  return zones[Math.max(0, Math.min(zones.length - 1, i))];
+}
+
+/* Semaines de décharge avant de rouvrir le paramètre coupable. L'os signale
+   tard : on lui en laisse une de plus. Elles ne s'ajoutent que s'il n'y a pas
+   déjà une phase de construction du volume — cette phase-là ne comporte aucune
+   séance de qualité, elle EST une décharge pour l'allure, et la faire suivre
+   d'une décharge supplémentaire ne ferait qu'immobiliser le plan. */
+function _capSemDecharge(p) {
+  return p.tissu === 'os' ? 3 : 2;
+}
+
+/* Trajectoire projetée d'une fiche.
+
+   Deux grandeurs sont pilotées : le VOLUME (min/sem) et l'INTENSITÉ (min/sem
+   en Z3+). L'axe désigne laquelle est COUPABLE — réduite au départ, remontée
+   à la fin, c'est elle le traitement — et laquelle est INNOCENTE : celle-là
+   monte jusqu'à la tolérance du coureur et n'y touche plus.
+
+   Le plan se découpe en quatre phases successives, dans cet ordre :
+     1. échelle course/marche, si le patient ne court pas d'un trait ;
+     2. construction du volume jusqu'à la tolérance, s'il en est loin ;
+     3. décharge du paramètre coupable ;
+     4. reconstruction du paramètre coupable.
+   L'ordre « volume d'abord, allure ensuite » est celui de la remontée après
+   une baisse de tous les leviers ; une phase vaut zéro semaine quand elle n'a
+   pas lieu d'être.
+
+   Source unique du moteur, du verdict et du délai conseillé : sinon l'écran
+   annonce une chose et le plan en produit une autre. */
 function _capTrajectoire(p) {
   var frequence = Math.max(1, Math.round(p.frequenceCible || 3));
-  var cibleMin  = _capVersMin(Math.max(1, p.cibleHebdo), p);
+  var ax        = CAP_AXES[p.axe] || CAP_AXES.charge;
   var continu   = p.courseContinueToleree || 0;
-  var semFrac = 0, departMin;
+  var volumeCoupable    = ax.coupable === 'volume';
+  var intensiteCoupable = ax.coupable === 'intensite';
+  var demande = Math.max(1, Math.round(p.semaines || 12));
 
+  var cibleSaisie = _capVersMin(Math.max(1, p.cibleHebdo), p);
+  var tolere = _capVolumeTolere(p, frequence);
+  // Le volume monte jusqu'à la cible quand c'est LUI qu'on reconstruit, et
+  // seulement jusqu'à la tolérance quand il est innocent.
+  //
+  // Sauf qu'une séance de qualité a besoin d'un volume minimal pour exister :
+  // figer le volume en dessous de ce seuil rendrait la reconstruction de
+  // l'allure impossible, et le plan produirait des semaines rigoureusement
+  // identiques du début à la fin. Le volume monte alors jusqu'au seuil — ce
+  // n'est pas le développer, c'est lui rendre la capacité de porter le
+  // traitement. La cible saisie reste le plafond absolu.
+  var volumePlafond = cibleSaisie;
+  if (!volumeCoupable) {
+    var seuilPolarisation = _capVersMin(_capPlancherPalier(p.unite),
+                                        { unite: p.unite, allureFooting: p.allureFooting });
+    volumePlafond = Math.min(cibleSaisie, Math.max(tolere, seuilPolarisation));
+  }
+
+  var semFrac = 0, departMin;
   if (continu < CAP_SEUILS.fractionne) {
+    // Personne ne court en continu : l'échelle course/marche passe avant tout
+    // arbitrage d'axe, et fixe elle-même le volume de sortie.
     semFrac = _capEchelonsRestants(continu);
     var e = _capDernierEchelonFractionne();
     departMin = e.reps * e.bout * frequence;
+  } else if (p.chronique > 0) {
+    departMin = _capVersMin(p.chronique, p);
+  } else if (p.plusLongueSortie > 0) {
+    departMin = _capVersMin(p.plusLongueSortie, p) * frequence;
   } else {
-    departMin = p.chronique > 0 ? _capVersMin(p.chronique, p) : _capDepartReprise(p, frequence);
+    departMin = _capDepartReprise(p, frequence);
   }
-  departMin = Math.min(departMin, cibleMin);
+  departMin = Math.min(departMin, volumePlafond);
 
-  var cycle = _capPalier(p.tissu, p.cibleHebdo, p.unite).cycle;
-  var croissanceIdeale = cibleMin > departMin
-    ? Math.ceil(Math.log(cibleMin / departMin) / Math.log(_capGPourACWR(CAP_SEUILS.acwrOk)))
+  var cibleIntensite = _capIntensitePour(p, intensiteCoupable ? volumePlafond : departMin);
+  var cycle = _capPalier(p.tissu,
+    p.unite === 'km' ? volumePlafond / (p.allureFooting || 6) : volumePlafond, p.unite).cycle;
+
+  // ── Durée idéale de chaque phase ──
+  // Volume : la référence est l'ACWR. Intensité : l'ACWR est muet (multiplier
+  // par cinq 4 min de Z3+ noyées dans 240 min de course ne bouge presque pas
+  // la charge pondérée), la référence devient le rythme de réintroduction de
+  // l'allure, plafonné en pourcentage hebdomadaire.
+  var semVolumeIdeal = volumePlafond > departMin
+    ? Math.ceil(Math.log(volumePlafond / departMin) / Math.log(_capGPourACWR(CAP_SEUILS.acwrOk)))
     : 0;
-  // Les semaines de palier ne font pas progresser : il en faut une de plus
-  // toutes les `cycle - 1` semaines de croissance pour arriver au bout.
-  var avecPaliers = cycle ? Math.ceil(croissanceIdeale * cycle / (cycle - 1)) : croissanceIdeale;
-  var conseille = Math.max(1, Math.min(104, semFrac + avecPaliers));
+  // Sans polarisation possible, il n'y a pas de séance de qualité : la
+  // reconstruction de l'allure n'a nulle part où se loger. Programmer une
+  // phase d'intensité produirait des semaines strictement identiques.
+  var peutPolariser = _capPolarisable(p, volumePlafond, frequence);
+  var semDecharge = (intensiteCoupable && peutPolariser && semVolumeIdeal === 0)
+    ? _capSemDecharge(p) : 0;
+  var semIntensiteIdeal = intensiteCoupable
+    ? (peutPolariser
+        ? Math.max(1, Math.ceil(Math.log(cibleIntensite / CAP_SEUILS.intensitePlancher)
+                                / Math.log(1 + CAP_SEUILS.intensiteMaxPct)))
+        : 0)
+    : (volumeCoupable ? 0 : 4);   // amplitude : la cadence se corrige en quelques semaines
 
-  // Rythme réellement imposé par le délai demandé
-  var demande = Math.max(1, Math.round(p.semaines || 12));
-  var dispo   = Math.max(1, demande - semFrac);
-  var croiss  = cycle ? Math.max(1, dispo - Math.floor(dispo / cycle)) : dispo;
-  var g = cibleMin > departMin ? Math.pow(cibleMin / departMin, 1 / croiss) : 1;
+  var croissance  = semVolumeIdeal + semIntensiteIdeal;
+  var avecPaliers = cycle ? Math.ceil(croissance * cycle / (cycle - 1)) : croissance;
+  var conseille = Math.max(1, Math.min(104, semFrac + semDecharge + avecPaliers));
+
+  // ── Répartition réelle du délai demandé entre les phases ──
+  var dispo = Math.max(1, demande - semFrac - semDecharge);
+  var semVolume = 0;
+  if (semVolumeIdeal > 0) {
+    semVolume = semIntensiteIdeal > 0
+      ? Math.max(1, Math.min(dispo - 1, Math.round(dispo * semVolumeIdeal / croissance)))
+      : dispo;
+  }
+  var finFractionne = semFrac;
+  var finVolume     = finFractionne + semVolume;
+  var finDecharge   = finVolume + semDecharge;
+
+  var croiss = cycle ? Math.max(1, dispo - Math.floor(dispo / cycle)) : dispo;
+  var g  = volumePlafond > departMin ? Math.pow(volumePlafond / departMin, 1 / croiss) : 1;
 
   return {
-    semFractionne: semFrac, departMin: departMin, cibleMin: cibleMin,
+    axe: p.axe, coupable: ax.coupable,
+    semFractionne: semFrac, semVolume: semVolume, semDecharge: semDecharge,
+    finFractionne: finFractionne, finVolume: finVolume, finDecharge: finDecharge,
+    departMin: departMin, cibleMin: volumePlafond, volumeTolere: tolere,
+    // L'intensité innocente est là dès la première semaine ; coupable, elle
+    // part du plancher de réintroduction.
+    departIntensite: intensiteCoupable ? 0 : cibleIntensite,
+    cibleIntensite: cibleIntensite,
     frequence: frequence, cycle: cycle, conseille: conseille, demande: demande,
+    peutPolariser: peutPolariser, cibleSaisie: cibleSaisie,
     g: g, acwr: _capACWRPourG(g),
     // Le délai ne laisse même pas la place à l'échelle course/marche
     fractionneComprime: semFrac >= demande,
@@ -10871,32 +11059,15 @@ function _capOrdonnerSemaine(seances, joursDispo) {
 
 function _capBuildProgrammeV2(p) {
   _capIdSeq = 0;
-  var frequence = Math.max(1, Math.round(p.frequenceCible || 3));
-  var cibleMin  = _capVersMin(Math.max(1, p.cibleHebdo), p);
-  // Reprise depuis zéro : on ne multiplie pas zéro. On part d'un volume
-  // plancher dérivé de la fréquence, et la croissance devient additive.
-  var reprise   = !(p.chronique > 0);
-  var departMin = reprise ? _capDepartReprise(p, frequence) : _capVersMin(p.chronique, p);
   var semainesVisees = Math.max(1, Math.round(p.semaines || 12));
   var objBaseMin = _capObjectifBaseMin(p);
   var ax = CAP_AXES[p.axe] || CAP_AXES.charge;
 
-  // Geler le volume (axe RÉPÉTITION) suppose que l'AUTRE levier soit
-  // disponible. Sans polarisation il n'y a pas de séance de qualité, donc
-  // pas d'intensité à progresser : tout figer ne ferait rien avancer, et la
-  // condition de dégel — des séances de qualité encaissées — ne pourrait
-  // jamais être remplie. On ne gèle pas non plus le volume de quelqu'un qui
-  // part de zéro : il n'y a rien à geler, il faut d'abord le construire.
-  var polarisableACible = _capPolarisable(p, cibleMin, frequence);
-  var volumeEstGele = ax.gele.indexOf('volume') !== -1 && polarisableACible && !reprise;
-
   // Le délai est une DURÉE, pas une pente de départ. Le plan fait donc
   // exactement le nombre de semaines demandé, et c'est le rythme qui s'y plie —
-  // recalculé chaque semaine sur le volume réellement atteint (cf.
-  // _capTauxSemaine). Une pente figée au départ se retrouvait fausse dès que la
-  // phase course/marche imposait son propre volume, et la boucle s'arrêtait sur
-  // « cible atteinte » : 14 semaines demandées en produisaient 11.
+  // recalculé chaque semaine sur la valeur réellement atteinte.
   var traj = _capTrajectoire(p);
+  var cibleMin = traj.cibleMin;
   // L'échelle course/marche est incompressible à un barreau par semaine. Si le
   // délai ne lui laisse même pas la place, on saute des barreaux plutôt que de
   // déborder — le signalement remonte à l'écran.
@@ -10904,45 +11075,62 @@ function _capBuildProgrammeV2(p) {
     ? Math.min(2, Math.ceil(traj.semFractionne / Math.max(1, semainesVisees - 1)))
     : 1;
 
-  var volume  = Math.min(departMin, cibleMin);
-  var continu = p.courseContinueToleree || 0;
-  var degelIntensite = false, degelVolume = false, qualiteTolerees = 0;
-  var sessions = [], semaine = 0;
+  // Les deux grandeurs pilotées. Le paramètre coupable part bas et remonte ;
+  // l'innocent part à la tolérance du coureur et n'y touche plus.
+  var volume    = traj.departMin;
+  var intensite = traj.departIntensite;
+  var continu   = p.courseContinueToleree || 0;
+  var volumeCoupable    = ax.coupable === 'volume';
+  var intensiteCoupable = ax.coupable === 'intensite';
+
+  var degel = false, sessions = [], semaine = 0;
   var conflitsEspacement = [];
 
   while (semaine < semainesVisees) {
     semaine++;
 
-    // ── Dégel : sur critère atteint, jamais sur calendrier ──
-    if (volumeEstGele) {
-      // Axe RÉPÉTITION : le volume est justement ce qui blesse, il est gelé.
-      // Adosser son dégel à un seuil de volume serait circulaire — le volume
-      // ne peut pas croître pour atteindre le seuil qui l'autoriserait à
-      // croître. Le critère porte donc sur l'autre levier : le nombre de
-      // séances de qualité encaissées. En projection on suppose qu'elles le
-      // sont ; le retour réel du patient déplacera le jalon.
-      degelIntensite = qualiteTolerees >= 2;          // Z3 → Z4
-      degelVolume    = qualiteTolerees >= 5;          // puis le volume s'ouvre
-    } else {
-      if (!degelIntensite) {
-        degelIntensite = objBaseMin
-          ? (continu >= objBaseMin || volume >= objBaseMin * Math.max(1, frequence - 1))
-          : volume >= cibleMin * 0.6;
-      }
-      degelVolume = true;   // le volume n'a jamais été le levier contraint
+    // ── Dégel du paramètre coupable ──
+    // Il ne peut pas s'ouvrir avant que le volume ait atteint la tolérance :
+    // reconstruire l'allure d'un coureur qui n'a pas encore retrouvé son
+    // volume reviendrait à bouger deux leviers. D'où l'ordre volume puis
+    // allure. L'objectif de base reste le jalon quand il est renseigné ; à
+    // défaut, les semaines de décharge tranchent — seul cas où le calendrier
+    // décide, et il est explicite.
+    if (!degel && semaine > traj.finVolume && semaine > traj.finDecharge) {
+      // L'objectif de base ne peut que RETARDER le dégel, jamais l'empêcher.
+      // Adosser son critère au volume alors que le volume est figé par
+      // construction le rendait inatteignable : le plan restait bloqué en
+      // décharge pour toujours, sans jamais reconstruire quoi que ce soit.
+      // Le volume arrivé à son plafond vaut donc objectif atteint.
+      degel = !objBaseMin
+           || continu >= objBaseMin
+           || volume >= cibleMin
+           || volume >= objBaseMin * Math.max(1, traj.frequence - 1);
     }
 
     // ── Palier de consolidation ──
+    // Il porte sur le paramètre qui progresse : décharger un paramètre figé
+    // n'a aucun sens, rien ne s'y accumule.
     var volUnite = p.unite === 'km' ? volume / (p.allureFooting || 6) : volume;
     var pal = _capPalier(p.tissu, volUnite, p.unite);
-    // Décharger depuis un plateau n'a aucun sens : rien ne s'y accumule.
-    var progresse = volumeEstGele ? degelVolume : true;
-    var estPalier = pal.cycle > 0 && progresse && semaine % pal.cycle === 0;
-    var volumeSemaine = (estPalier && pal.mode === 'baisse') ? volume * 0.7 : volume;
+    // Une semaine de consolidation n'a de sens que si quelque chose progresse —
+    // et le volume progresse pendant sa propre phase, bien avant le dégel du
+    // paramètre coupable.
+    var enCroissance = continu < CAP_SEUILS.fractionne || semaine <= traj.finVolume || degel;
+    var estPalier = pal.cycle > 0 && enCroissance && semaine % pal.cycle === 0;
+    var baisse = estPalier && pal.mode === 'baisse' ? 0.7 : 1;
+
+    var volumeSemaine    = volumeCoupable ? volume * baisse : volume;
+    var intensiteSemaine = intensiteCoupable
+      ? (degel ? intensite * baisse : 0)
+      : intensite * baisse;
+    // Course/marche : aucune qualité tant que le patient ne court pas d'un trait.
+    if (continu < CAP_SEUILS.fractionne) intensiteSemaine = 0;
 
     var sem = _capBuildSemaine(p, {
       volumeMin: volumeSemaine, continuTolere: continu,
-      degel: degelIntensite, semaine: semaine,
+      intensiteMin: intensiteSemaine, semaine: semaine,
+      zoneQualite: _capZoneQualite(ax, intensiteSemaine, traj.cibleIntensite),
     });
     // Pendant le fractionné, le volume réel vient de l'échelle et non de la
     // trajectoire. On le resynchronise pour que le passage en course continue
@@ -10950,10 +11138,8 @@ function _capBuildProgrammeV2(p) {
     if (continu < CAP_SEUILS.fractionne) {
       volume = Math.min(cibleMin, sem.reduce(function(t, s) { return t + _capVolumeCourse(s); }, 0));
     }
-    // `phase` alimente les intertitres de l'écran de résultat, qui existent
-    // depuis la v1. Sans lui, ils s'affichent « UNDEFINED ». On le dérive de
-    // l'état réel de la progression plutôt que de l'inventer.
-    var phase = (continu < CAP_SEUILS.fractionne) ? 1 : (degelIntensite ? 3 : 2);
+    // `phase` alimente les intertitres de l'écran de résultat.
+    var phase = (continu < CAP_SEUILS.fractionne) ? 1 : (degel ? 3 : 2);
 
     var ordonne = _capOrdonnerSemaine(sem, p.joursDispo);
     if (ordonne.conflits.length) conflitsEspacement.push(semaine);
@@ -10962,17 +11148,27 @@ function _capBuildProgrammeV2(p) {
       s.phase = phase;
       sessions.push(s);
     });
-    if (!estPalier && sem.some(function(s) { return s.role === 'qualite'; })) qualiteTolerees++;
 
-    // ── Progression : un seul levier ──
+    // ── Progression : un seul levier à la fois ──
     if (!estPalier) {
       if (continu < CAP_SEUILS.fractionne) {
-        // Mode fractionné : c'est le bout de course qui progresse, pas le
+        // Course/marche : c'est le bout de course qui progresse, pas le
         // volume — allonger les deux la même semaine ferait deux leviers.
         continu = _capBoutSuivant(continu, pasFractionne);
-      } else if (!volumeEstGele || degelVolume) {
+      } else if (semaine <= traj.finVolume) {
+        // Phase volume : elle vaut tout le délai quand le volume est le
+        // paramètre coupable, et seulement le temps de rejoindre la tolérance
+        // quand il est innocent.
+        var finPhase = volumeCoupable ? semainesVisees : traj.finVolume;
         volume = Math.min(cibleMin,
-          volume * _capTauxSemaine(volume, cibleMin, semaine, semainesVisees, pal.cycle));
+          volume * _capTauxSemaine(volume, cibleMin, semaine, finPhase, pal.cycle));
+      } else if (intensiteCoupable && degel) {
+        // Première semaine de réintroduction : on part du plancher, on ne
+        // multiplie pas zéro.
+        intensite = intensite > 0
+          ? Math.min(traj.cibleIntensite,
+              intensite * _capTauxSemaine(intensite, traj.cibleIntensite, semaine, semainesVisees, pal.cycle))
+          : CAP_SEUILS.intensitePlancher;
       }
     }
   }
@@ -11036,6 +11232,8 @@ var CAP_SEUILS = {
   longueRatioBad: 0.45,
   acwrOk:         1.15,  // progressif
   acwrWarn:       1.30,  // soutenu
+  intensitePlancher: 4,    // min de Z3+ de la première semaine de réintroduction
+  intensiteMaxPct:   0.25, // croissance hebdo max des minutes de qualité
 };
 
 function capChipTog(el) { el.classList.toggle('active'); }
@@ -11195,6 +11393,7 @@ function _capReadForm() {
 
     cibleHebdo:        Math.max(1, _capNum('capCibleHebdo', 30)),
     cibleSortieLongue: _capNum('capCibleLongue', null) || null,
+    cibleIntensite:    _capNum('capCibleIntensite', null) || null,
     semaines:          semaines,
 
     terrain:       _capChipVals('capTerrainG'),
@@ -11212,12 +11411,12 @@ function _capFormRefresh() {
 
   // Délai : caler sur l'ACWR tant que le praticien n'a rien imposé. Il faut le
   // faire AVANT le verdict, qui juge la trajectoire du délai retenu.
-  var conseille = _capTrajectoire(p).conseille;
-  if (_capDelaiAuto && conseille !== p.semaines) {
-    _capSetDelai(conseille);
-    p.semaines = conseille;
+  var trajDelai = _capTrajectoire(p);
+  if (_capDelaiAuto && trajDelai.conseille !== p.semaines) {
+    _capSetDelai(trajDelai.conseille);
+    p.semaines = trajDelai.conseille;
   }
-  _capRenderDelai(p, conseille);
+  _capRenderDelai(p, trajDelai.conseille, trajDelai.coupable);
 
   // Étiquettes d'unité
   document.querySelectorAll('.cap-unit-lbl').forEach(function(el) {
@@ -11260,12 +11459,17 @@ function _capFormRefresh() {
    est le nombre de semaines qui maintient l'ACWR sous le seuil « progressif »,
    paliers de consolidation et échelle course/marche compris. Raccourcir reste
    possible — c'est un arbitrage clinique, pas une erreur de saisie. */
-function _capRenderDelai(p, conseille) {
+function _capRenderDelai(p, conseille, coupable) {
   var box = document.getElementById('capSemHint');
   if (!box) return;
+  // Nommer le critère réel : sur un axe où c'est l'allure qu'on reconstruit,
+  // l'ACWR ne dit rien, et l'invoquer donnerait une fausse caution au chiffre.
+  var critere = coupable === 'intensite'
+    ? 'le rythme de réintroduction de l’allure (+' + Math.round(CAP_SEUILS.intensiteMaxPct * 100) + ' %/sem max)'
+    : 'l’ACWR (≤ ' + CAP_SEUILS.acwrOk + ')';
   if (_capDelaiAuto) {
-    box.innerHTML = 'Calé sur l’ACWR : <b>' + conseille + ' sem.</b> pour rester sous '
-      + CAP_SEUILS.acwrOk + '. Raccourcir pour une reprise plus agressive.';
+    box.innerHTML = 'Calé sur ' + critere + ' : <b>' + conseille
+      + ' sem.</b> Raccourcir pour une reprise plus agressive.';
     return;
   }
   box.innerHTML = p.semaines === conseille
@@ -11293,7 +11497,8 @@ function _capRenderConstraints(p) {
       + 'tous les leviers responsables sont baissés, puis remontés dans l’ordre : '
       + CAP_ORDRE_REMONTEE.join(', ') + '.']);
   } else {
-    rows.push(['Levier gelé', ax.gele.map(lbl).join(', ') + ' — moteur : <b>' + lbl(ax.moteur) + '</b>']);
+    rows.push(['Paramètre en cause', '<b>' + lbl(ax.coupable) + '</b> — réduit au départ, reconstruit ensuite']);
+    rows.push(['Maintenus', ax.innocents.map(lbl).join(', ') + ' — à la tolérance actuelle, sans progression']);
   }
 
   if (p.interdits.length) {
@@ -11353,7 +11558,7 @@ function _capRenderVerdict(p) {
     if (t.fractionneComprime) cls = 'bad';
   }
 
-  if (t.cibleMin > t.departMin) {
+  if (t.coupable === 'volume' && t.cibleMin > t.departMin) {
     var pct = Math.round((t.g - 1) * 1000) / 10;
     // Dire d'où sort le point de départ : sans charge chronique, ce n'est pas
     // une donnée saisie, et un chiffre qui tombe du ciel dans le verdict n'est
@@ -11368,9 +11573,33 @@ function _capRenderVerdict(p) {
                 : 'agressif — assumé, feedback séance par séance';
     if (cls !== 'bad') cls = t.acwr <= CAP_SEUILS.acwrOk ? 'ok' : t.acwr <= CAP_SEUILS.acwrWarn ? 'warn' : 'bad';
     parts.push('De <b>' + enUnite(t.departMin) + '</b> <span class="cap-orig">(' + origine + ')</span> à <b>'
-      + p.cibleHebdo + '</b> ' + uL
+      + enUnite(t.cibleMin) + '</b> ' + uL
       + '/sem : <b>+' + pct + ' %</b>/sem, ACWR <b>'
       + (Math.round(t.acwr * 100) / 100) + '</b> — ' + verdict + '.');
+  } else if (t.coupable === 'intensite') {
+    // Le volume ne bouge pas : l'ACWR resterait à 1,0 et ne dirait rien. Ce
+    // qu'il faut juger ici, c'est le rythme de réintroduction de l'allure.
+    var semRemontee = Math.max(1, p.semaines - t.finDecharge);
+    var gI = Math.pow(t.cibleIntensite / CAP_SEUILS.intensitePlancher, 1 / semRemontee);
+    var pctI = Math.round((gI - 1) * 1000) / 10;
+    var vI = gI <= 1 + CAP_SEUILS.intensiteMaxPct ? 'progressif'
+           : gI <= 1 + CAP_SEUILS.intensiteMaxPct * 2 ? 'soutenu — surveiller le retour douleur'
+           : 'agressif — assumé, feedback séance par séance';
+    if (cls !== 'bad') cls = gI <= 1 + CAP_SEUILS.intensiteMaxPct ? 'ok'
+                           : gI <= 1 + CAP_SEUILS.intensiteMaxPct * 2 ? 'warn' : 'bad';
+    parts.push('Volume figé à <b>' + enUnite(t.volumeTolere) + '</b> ' + uL
+      + '/sem <span class="cap-orig">(la tolérance actuelle — ce n’est pas lui qui a blessé)</span>.'
+      + (t.volumeTolere < t.cibleSaisie - 0.5
+          ? ' La cible de ' + p.cibleHebdo + ' ' + uL + '/sem ne sera pas atteinte : sur cet axe, c’est l’allure qu’on reconstruit.'
+          : ''));
+    if (!t.peutPolariser) {
+      cls = 'warn';
+      parts.push('À ce volume et cette fréquence, aucune séance de qualité ne tient : il n’y a pas de place pour reconstruire l’allure. Monter le volume ou la fréquence, ou changer d’axe.');
+    } else {
+      parts.push('Allure reconstruite de <b>' + CAP_SEUILS.intensitePlancher + '</b> à <b>'
+        + t.cibleIntensite + '</b> min de Z3+/sem sur <b>' + semRemontee + '</b> semaines, après <b>'
+        + t.finDecharge + '</b> semaines de décharge : <b>+' + pctI + ' %</b>/sem — ' + vI + '.');
+    }
   }
 
   // Cohérence des deux cibles — contrôle de saisie, pas de génération
@@ -11395,15 +11624,21 @@ function _capRenderVerdict(p) {
       + '</b> sorties/sem. Ajouter une sortie à la fois, en laissant une semaine à chaque palier.');
   }
 
-  // Arithmétique fréquence / sortie unitaire
+  // Arithmétique fréquence / sortie unitaire. La séance de qualité a une taille
+  // propre et souvent bien plus courte qu'une sortie moyenne : elle laisse aux
+  // autres davantage à porter. On prédit donc le nombre de sorties que le
+  // moteur produira réellement, pas celui d'une division naïve — sinon la fiche
+  // annonce 4 sorties et le plan en génère 5.
   if (p.plusLongueSortie > 0) {
-    var parSortie = p.cibleHebdo / p.frequenceCible;
-    if (parSortie > p.plusLongueSortie) {
+    var plafM  = _capVersMin(p.plusLongueSortie, p);
+    var volQ   = t.cibleIntensite > 0 ? _capSpecQualite(t.cibleIntensite, 'Z4').volume : 0;
+    var resteM = Math.max(0, t.cibleMin - volQ);
+    var sortiesReelles = (volQ > 0 ? 1 : 0) + Math.ceil(resteM / plafM);
+    if (sortiesReelles > p.frequenceCible) {
       if (cls === 'ok') cls = 'warn';
-      var freqMin = Math.ceil(p.cibleHebdo / p.plusLongueSortie);
-      parts.push('<b>' + (Math.round(parSortie * 10) / 10) + '</b> ' + (p.unite === 'min' ? 'min' : 'km')
-        + ' par sortie dépasse la tolérance (<b>' + p.plusLongueSortie + '</b>) : passer à <b>'
-        + freqMin + '</b> sorties/semaine, ou fractionner dans la journée.');
+      parts.push('<b>' + sortiesReelles + '</b> sorties seront nécessaires (et non ' + p.frequenceCible
+        + ') : à <b>' + p.plusLongueSortie + '</b> ' + uL + ' maximum par sortie, le volume ne tient pas en '
+        + p.frequenceCible + '. Relever la tolérance par sortie, baisser le volume, ou accepter la sortie de plus.');
     }
   }
 
@@ -11829,9 +12064,17 @@ function _capRender() {
         + '<span><b style="color:var(--navy);font-size:.95rem;">' + nbWeeks + ' semaines</b> de progression</span>';
   if (pr.axe && CAP_AXES[pr.axe]) {
     var ax = CAP_AXES[pr.axe];
-    html += '<span>Axe : <b>' + ax.label + '</b> — gèle ' + ax.gele.map(_capLbl).join(', ') + '</span>';
+    html += '<span>Axe : <b>' + ax.label + '</b> — reconstruit ' + _capLbl(ax.coupable) + '</span>';
   }
-  if (pr.cibleHebdo) html += '<span>Cible : <b>' + pr.cibleHebdo + ' ' + uLbl + '/sem</b></span>';
+  // Annoncer la cible saisie quand le volume est figé en dessous mentirait sur
+  // ce que le plan produit : on affiche ce qui sera réellement délivré.
+  var tr = (pr.axe && CAP_AXES[pr.axe]) ? _capTrajectoire(pr) : null;
+  if (tr && tr.coupable !== 'volume') {
+    var volAff = pr.unite === 'km' ? tr.cibleMin / (pr.allureFooting || 6) : tr.cibleMin;
+    html += '<span>Volume figé : <b>' + (Math.round(volAff * 10) / 10) + ' ' + uLbl + '/sem</b></span>'
+          + '<span>Qualité visée : <b>' + tr.cibleIntensite + '′ Z3+/sem</b></span>';
+  }
+  else if (pr.cibleHebdo) html += '<span>Cible : <b>' + pr.cibleHebdo + ' ' + uLbl + '/sem</b></span>';
   else html += '<span>Objectif : <b>' + pr.objectiveMin + '\' continu</b></span>';
   if (pr.cibleSortieLongue) html += '<span>Sortie longue : <b>' + pr.cibleSortieLongue + ' ' + uLbl + '</b></span>';
   html += '</div>';
@@ -11873,8 +12116,14 @@ function _capRender() {
       ? '<span style="font-size:.68rem;color:var(--muted);font-weight:400;margin-left:8px;">'
         + st.load + '′ · ACWR <span style="color:' + acwrCls + ';font-weight:600;">' + st.acwr.toFixed(2) + '</span></span>'
       : '';
+    // Minutes de qualité de la semaine : sur un axe Charge c'est LA grandeur
+    // qui progresse, et sans elle l'écran ne montre qu'un volume immobile.
+    var z3 = Math.round(_capIntensiteSemaine(weekSessions));
+    var z3Badge = z3 > 0
+      ? '<span style="font-size:.68rem;color:#B45309;font-weight:600;margin-left:8px;">' + z3 + '′ Z3+</span>'
+      : '';
     var deloadTag = st.deload ? '<span style="font-size:.62rem;background:#EFF6FF;color:#2563EB;border-radius:10px;padding:1px 7px;margin-left:6px;font-weight:600;">décharge</span>' : '';
-    html += '<div class="cap-week-hdr">Semaine ' + w + deloadTag + wkBadge + '</div>';
+    html += '<div class="cap-week-hdr">Semaine ' + w + deloadTag + wkBadge + z3Badge + '</div>';
     weekSessions.forEach(function(s) { html += _capSessHtml(s); });
   });
 

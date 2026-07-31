@@ -4074,6 +4074,12 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
           </div>
 
           <div>
+            <div class="cap-field-label">Minutes de qualité visées <span class="cap-opt">Z3+</span></div>
+            <input type="number" class="cap-select" id="capCibleIntensite" min="0" step="1" placeholder="calculé" oninput="_capFormRefresh()">
+            <div class="cap-hint" id="capIntensiteHint">Laisser vide : 15 % du volume, l’ordre de grandeur d’un coureur hors préparation</div>
+          </div>
+
+          <div>
             <div class="cap-field-label">Délai (semaines)</div>
             <div class="cap-stepper">
               <button class="cap-step-btn" onclick="capSemStep(-1)" title="Diminuer">−</button>
@@ -4267,6 +4273,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 
 </div>
 
-<script src="js/prog-main.js?v=20260801b"></script>
+<script src="js/prog-main.js?v=20260801d"></script>
 </body>
 </html>
