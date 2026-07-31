@@ -100,6 +100,9 @@ html, body { height:100%; overflow:hidden; background:#1A3A5C; }
 }
 .help-step-t { font-size:.76rem; font-weight:600; color:#1a2433; }
 .help-step-x { font-size:.72rem; color:#6b7a8d; line-height:1.5; margin-top:1px; }
+.help-svg { margin-top:8px; background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:10px 6px; }
+.help-svg svg { display:block; width:100%; height:auto; }
+.help-svg text { font-family:inherit; }
 .help-img {
   display:block; max-width:100%; border:1px solid #dde3ec; border-radius:7px; margin-top:6px;
 }
@@ -767,7 +770,7 @@ iframe.active { display:block; }
   <iframe id="frame-account"      src="account.html"      ></iframe>
 </div>
 
-<script src="js/aide-content.js?v=20260730a"></script>
+<script src="js/aide-content.js?v=20260731e"></script>
 <script>
 /* ── Constantes localStorage ─────────────────────────────────────────
    Source unique de vérité pour toutes les clés de stockage local.
@@ -1312,6 +1315,8 @@ function _renderHelpDrawer(){
       return '<div class="help-step"><div class="help-step-n">'+(i+1)+'</div><div style="flex:1;min-width:0">'
         + '<div class="help-step-t">'+_helpEsc(e.t)+'</div>'
         + '<div class="help-step-x">'+_helpEsc(e.x)+'</div>'
+        // e.svg : schéma dessiné, rendu tel quel comme dans aide.html
+        + (e.svg ? '<div class="help-svg">'+e.svg+'</div>' : '')
         + (e.img ? _helpImgHtml(sec.id, art.id, i+1) : '')
         + '</div></div>';
     }).join('');

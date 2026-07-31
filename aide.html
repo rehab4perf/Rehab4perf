@@ -73,6 +73,15 @@ html,body { background:var(--bg); font-family:'Figtree',-apple-system,sans-serif
   margin-top:8px; background:#f1f5f9; border:1px dashed #cbd5e1; border-radius:8px;
   padding:14px; text-align:center; font-size:.72rem; color:#94a3b8;
 }
+/* Schémas dessinés : ils s'adaptent à la largeur et restent nets à l'impression */
+.aide-svg {
+  margin-top:10px; background:var(--surface); border:1px solid var(--border);
+  border-radius:8px; padding:14px 10px;
+}
+.aide-svg svg { display:block; width:100%; height:auto; max-width:560px; margin:0 auto; }
+/* Le texte du schéma hérite de la police du site plutôt que de la fixer :
+   une famille codée en dur dans l'attribut SVG jurerait avec le reste. */
+.aide-svg text { font-family:inherit; }
 
 /* ── FAQ ── */
 .faq-item { background:var(--surface); border:1px solid var(--border); border-radius:10px; margin-bottom:8px; overflow:hidden; }
@@ -126,7 +135,7 @@ html,body { background:var(--bg); font-family:'Figtree',-apple-system,sans-serif
 
 <div class="lb" id="lightbox" onclick="this.classList.remove('open')"><img id="lightboxImg" src="" alt=""></div>
 
-<script src="js/aide-content.js?v=20260730a"></script>
+<script src="js/aide-content.js?v=20260731e"></script>
 <script>
 function escA(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
@@ -152,9 +161,12 @@ function renderAide(){
         + '<div class="art-title">'+escA(art.titre)+'</div>'
         + '<div class="art-intro">'+escA(art.intro)+'</div>';
       art.etapes.forEach(function(e, i){
+        // e.svg : schéma dessiné plutôt que capturé. Il suit le thème et reste
+        // net à l'impression, ce qu'un PNG ne fait pas.
         html += '<div class="step"><div class="step-n">'+(i+1)+'</div><div class="step-body">'
           + '<div class="step-t">'+escA(e.t)+'</div>'
           + '<div class="step-x">'+escA(e.x)+'</div>'
+          + (e.svg ? '<div class="aide-svg">'+e.svg+'</div>' : '')
           + (e.img ? _imgHtml(sec.id, art.id, i+1) : '')
           + '</div></div>';
       });

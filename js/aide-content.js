@@ -317,12 +317,35 @@ sections: [
 
 /* ── 🏗 GÉNÉRATEURS ──────────────────────────────────────────── */
 { id:'generateurs', emoji:'🏗', titre:'Générateurs', articles:[
-  { id:'cap', titre:'Générateur CAP (retour à la course)',
-    intro:'Un assistant complet de reprise de course à pied : il génère le programme progressif directement dans l\'agenda.',
+  { id:'cap', titre:'Générateur CAP : remplir la fiche',
+    intro:'Le générateur part de la charge réelle du coureur, pas de zéro, et déduit ses contraintes de la pathologie. La fiche se remplit en quatre blocs — c\'est là que se joue la pertinence du programme.',
     etapes:[
-      { t:'Menu ⋯ → Générateur → « Générateur CAP »', x:'Choisissez la pathologie et le point de départ du patient.', img:true },
-      { t:'Le wizard planifie les paliers marche/course', x:'Les séances CAP apparaissent dans l\'agenda (ex. 5×(1\'C/1\'M)) et dans le calendrier de l\'athlète.' },
-      { t:'L\'athlète renseigne douleur et effort après chaque sortie', x:'Selon la douleur EVA, le bandeau CAP du builder vous propose de régresser ou maintenir le palier — l\'adaptation se fait en un clic.' }
+      { t:'Menu ⋯ → Générateur → « Générateur CAP »', x:'La fiche s\'ouvre sur le bloc 1. Si un programme existe déjà pour ce patient, vous arrivez sur l\'écran de résultat : « ← Paramètres » ramène à la fiche.', img:true },
+      { t:'Bloc 1 — l\'état actuel du coureur', x:'Choisissez d\'abord l\'unité (km ou minutes), puis renseignez les quatre dernières semaines de volume. Leur moyenne est la charge chronique : elle sert à la fois de point de départ et de référence pour l\'ACWR. Le bouton « Depuis Strava » remplit tout le bloc à partir des sorties réelles — vous n\'avez plus qu\'à valider.' },
+      { t:'Deux tolérances à ne pas confondre', x:'« Plus longue sortie tolérée » est une durée totale, marche comprise : elle décide de la répartition du volume entre les sorties. « Course continue sans douleur » est le nombre de minutes courues d\'affilée : en dessous de 5 min, le programme bascule en course/marche. Un patient peut tenir 40 min de sortie et seulement 2 min de course d\'un trait.' },
+      { t:'Bloc 2 — la pathologie et son axe', x:'La liste est groupée par axe. Choisir une pathologie pré-remplit l\'axe dominant et le tissu concerné, tous deux modifiables : ce sont des arbitrages cliniques, pas des données. Une seconde pathologie peut être ajoutée. L\'encadré gris récapitule ce que le moteur va appliquer — levier gelé, interdits, cadence cible, palier.' },
+      { t:'L\'objectif de base est le critère de dégel', x:'C\'est le jalon à franchir sans douleur pour libérer le levier contraint. Il ne s\'agit pas d\'un délai : tant qu\'il n\'est pas atteint, le levier ne bouge pas.' },
+      { t:'Bloc 3 — la cible et le délai', x:'Le volume hebdomadaire visé est la cible principale. La sortie longue est optionnelle et ne concerne que l\'athlète confirmé qui en a besoin — laissée vide, le volume se répartit sur la fréquence. L\'encadré vous dit alors si le délai demandé est progressif, soutenu ou agressif, sans jamais l\'interdire.' },
+      { t:'Bloc 4 — le contexte d\'exécution', x:'Terrain disponible, cross-training autorisé et jours de la semaine. Ces informations ne sont pas déductibles : le moteur ne peut pas deviner si votre patient a des côtes à proximité ou un vélo.' }
+    ]},
+  { id:'cap-lire', titre:'Lire un programme CAP généré',
+    intro:'Le programme n\'est plus une simple montée en durée : chaque séance a un rôle, et la semaine est construite autour de l\'axe de la pathologie.',
+    etapes:[
+      { t:'L\'en-tête donne la logique du plan', x:'Nombre de semaines, axe retenu et ce qu\'il gèle, cible hebdomadaire. C\'est le résumé de ce que le moteur a décidé.' },
+      { t:'Les quatre rôles de séance', x:'La sortie longue porte le volume. Les séances faciles sont le gros du travail. La séance de qualité travaille l\'allure. La séance technique porte la cadence. Toutes les semaines n\'ont pas les quatre : la polarisation ne s\'ouvre que si le patient a le volume pour la porter — la plupart des retours de blessure n\'ont que des séances faciles, et c\'est normal.' },
+      { t:'Le graphe de charge est pondéré par zone', x:'Une séance de seuil pèse plus qu\'un footing de même durée. La courbe verte est l\'ACWR calculé sur cette charge pondérée.' },
+      { t:'Les semaines de palier', x:'Selon le tissu concerné, le plan intègre des semaines de consolidation : une sur trois avec baisse réelle sur l\'os, une sur quatre à charge constante sur les tendons. En dessous d\'un volume faible, aucun palier programmé — c\'est le retour du patient qui pilote.' },
+      { t:'Un signalement d\'espacement peut apparaître', x:'Si les jours disponibles ne permettent pas d\'intercaler une séance facile entre deux séances dures, le plan est généré quand même et l\'encadré orange vous le dit. Ajouter un jour disponible résout le problème.' },
+      { t:'Puis « Ajouter à l\'agenda »', x:'Chaque séance devient un programme daté, visible par l\'athlète. Une séance à plusieurs blocs (échauffement, série, retour au calme) lui arrive détaillée, avec l\'allure de chaque partie.' }
+    ]},
+  { id:'cap-adapter', titre:'Adapter un programme CAP en cours',
+    intro:'L\'erreur initiale est inévitable : c\'est la boucle de retour qui fait la sécurité, pas la précision de la saisie.',
+    etapes:[
+      { t:'L\'athlète note sa douleur après chaque sortie', x:'Le seuil d\'arrêt dépend de la pathologie et figure dans les consignes envoyées à l\'athlète.' },
+      { t:'Douleur au niveau du seuil → la séance suivante répète', x:'Le palier est simplement redonné à l\'identique, sans progresser.' },
+      { t:'Douleur au-dessus du seuil sur une sortie longue ou une qualité', x:'Seule cette filière régresse : le moteur cherche la dernière séance validée du même rôle et vise le milieu. Les autres séances du plan ne bougent pas.' },
+      { t:'Douleur au-dessus du seuil sur une séance facile', x:'C\'est le cas le plus sérieux, et c\'est contre-intuitif : aucun levier n\'a été poussé sur cette séance, donc le problème vient de la charge accumulée. Le moteur décharge alors l\'ensemble du plan de 30 %.' },
+      { t:'Vous pouvez aussi décider à la main', x:'Le bandeau CAP du builder propose « Régresser » et « Maintenir » à tout moment, sans attendre un retour de l\'athlète.' }
     ]},
   { id:'hsr', titre:'Générateur HSR (tendinopathies)',
     intro:'Le protocole Heavy Slow Resistance pour les tendinopathies, piloté par le 1RM du patient.',
@@ -330,6 +353,47 @@ sections: [
       { t:'Menu ⋯ → Générateur → « Générateur HSR »', x:'Renseignez le 1RM de référence de l\'exercice cible.', img:true },
       { t:'Les séances des phases se planifient automatiquement', x:'Charges calculées en %1RM, progression par phases dans l\'agenda.' },
       { t:'Suivi par la douleur', x:'L\'athlète note sa douleur EVA après chaque séance ; le bandeau HSR du builder permet d\'adapter, et de mettre à jour le 1RM de référence au fil des progrès.' }
+    ]}
+]},
+
+/* ── 🏃 COMPRENDRE LA COURSE À PIED ──────────────────────────── */
+{ id:'cap-savoir', emoji:'🏃', titre:'Comprendre la course à pied', articles:[
+  { id:'pyramide', titre:'La pyramide de La Clinique du Coureur',
+    intro:'Il n\'y a pas une charge en course à pied, mais trois contraintes tissulaires distinctes. Savoir laquelle a blessé votre patient détermine tout le reste du programme.',
+    etapes:[
+      { t:'Trois sommets, trois façons de se blesser',
+        x:'CHARGE, c\'est l\'intensité de l\'impact à chaque foulée. RÉPÉTITION, c\'est le nombre de cycles — le volume. AMPLITUDE, c\'est la longueur de la foulée. Chaque pathologie du coureur se positionne selon la contrainte qui la provoque.',
+        svg:'<svg viewBox="0 0 680 392" role="img" aria-label="Pyramide des trois axes : Charge, Amplitude, Repetition"><defs><radialGradient id="pgC" cx="50%" cy="8%" r="86%"><stop offset="0%" stop-color="#E2761B" stop-opacity=".62"/><stop offset="100%" stop-color="#E2761B" stop-opacity=".10"/></radialGradient><radialGradient id="pgA" cx="6%" cy="94%" r="86%"><stop offset="0%" stop-color="#2E7BC4" stop-opacity=".62"/><stop offset="100%" stop-color="#2E7BC4" stop-opacity=".10"/></radialGradient><radialGradient id="pgR" cx="94%" cy="94%" r="86%"><stop offset="0%" stop-color="#31955A" stop-opacity=".62"/><stop offset="100%" stop-color="#31955A" stop-opacity=".10"/></radialGradient><filter id="pgSh" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="7" stdDeviation="9" flood-color="#1A3A5C" flood-opacity=".16"/></filter></defs><g filter="url(#pgSh)"><polygon points="340,104 522,300 158,300" fill="#fff"/><polygon points="340,104 431,202 340,234.7 249,202" fill="url(#pgC)"/><polygon points="158,300 249,202 340,234.7 340,300" fill="url(#pgA)"/><polygon points="522,300 340,300 340,234.7 431,202" fill="url(#pgR)"/><g stroke="#fff" stroke-width="2.5" stroke-linecap="round"><line x1="340" y1="234.667" x2="249" y2="202"/><line x1="340" y1="234.667" x2="431" y2="202"/><line x1="340" y1="234.667" x2="340" y2="300"/></g><polygon points="340,104 522,300 158,300" fill="none" stroke="#fff" stroke-width="3" stroke-linejoin="round"/></g><text x="340" y="168" text-anchor="middle" font-size="9.5" fill="#9A4E12">p\u00e9riostite \u00b7 fracture de stress</text><text x="240" y="268" text-anchor="middle" font-size="9.5" fill="#1B5590">ischio-jambiers \u00b7 lombalgie</text><text x="442" y="268" text-anchor="middle" font-size="9.5" fill="#1F6B41">bandelette \u00b7 f\u00e9moro-patellaire</text><circle cx="340" cy="104" r="7" fill="#E2761B" stroke="#fff" stroke-width="2.5"/><circle cx="158" cy="300" r="7" fill="#2E7BC4" stroke="#fff" stroke-width="2.5"/><circle cx="522" cy="300" r="7" fill="#31955A" stroke="#fff" stroke-width="2.5"/><text x="340" y="34" text-anchor="middle" font-size="16" font-weight="800" letter-spacing="2.2" fill="#C25A16">CHARGE</text><rect x="322" y="42" width="36" height="2.5" rx="1.25" fill="#E2761B"/><text x="340" y="62" text-anchor="middle" font-size="10.5" fill="#7A8899">l\u2019impact \u00e0 chaque foul\u00e9e</text><text x="340" y="80" text-anchor="middle" font-size="11.5" font-weight="700" fill="#C25A16">g\u00e8le l\u2019allure \u00b7 monte le volume</text><text x="10" y="336" font-size="16" font-weight="800" letter-spacing="2.2" fill="#1F5F9E">AMPLITUDE</text><rect x="10" y="344" width="36" height="2.5" rx="1.25" fill="#2E7BC4"/><text x="10" y="364" font-size="10.5" fill="#7A8899">la longueur de foul\u00e9e</text><text x="10" y="382" font-size="11.5" font-weight="700" fill="#1F5F9E">corrige la cadence</text><text x="670" y="336" text-anchor="end" font-size="16" font-weight="800" letter-spacing="2.2" fill="#2A7A46">R\u00c9P\u00c9TITION</text><rect x="634" y="344" width="36" height="2.5" rx="1.25" fill="#31955A"/><text x="670" y="364" text-anchor="end" font-size="10.5" fill="#7A8899">le nombre de cycles</text><text x="670" y="382" text-anchor="end" font-size="11.5" font-weight="700" fill="#2A7A46">g\u00e8le le volume \u00b7 monte l\u2019allure</text></svg>' },
+      { t:'CHARGE et RÉPÉTITION sont exactement symétriques', x:'Sur une pathologie de charge — périostite, fracture de stress, tendinopathie achilléenne corporéale — on coupe l\'intensité et on monte d\'abord le volume. Sur une pathologie de répétition — bandelette ilio-tibiale, syndrome fémoro-patellaire, patte d\'oie — c\'est l\'inverse : on coupe le volume et on monte d\'abord l\'intensité. Ce sont les deux mêmes leviers, on inverse simplement lequel est gelé.' },
+      { t:'AMPLITUDE n\'est pas une question de dose', x:'C\'est une question de technique. Augmenter la cadence raccourcit la foulée, réduit l\'attaque talon et le freinage. Ce n\'est donc pas une progression : c\'est une correction appliquée dès la première séance, en évitant la vitesse et les côtes qui allongent la foulée.' },
+      { t:'Deux distinctions qui changent la prise en charge', x:'La tendinopathie rotulienne relève de la charge, le syndrome fémoro-patellaire de la répétition : leurs traitements sont opposés. De même, la tendinopathie achilléenne corporéale relève de la charge, l\'insertionnelle de l\'amplitude. Les confondre revient à appliquer l\'inverse de ce qu\'il faudrait.' },
+      { t:'Et quand deux pathologies coexistent ?', x:'Si leurs axes s\'opposent, on baisse tous les leviers responsables, puis on les remonte un par un — le volume d\'abord, l\'allure ensuite. Les interdits des deux pathologies s\'additionnent.' }
+    ]},
+  { id:'leviers', titre:'Volume, allure, cadence : un seul levier à la fois',
+    intro:'La règle qui structure tout le générateur, et qui vaut aussi quand vous prescrivez à la main.',
+    etapes:[
+      { t:'Ne jamais augmenter deux paramètres la même semaine', x:'Si le patient va mieux, vous ne savez pas ce qui a marché. S\'il va moins bien, vous ne savez pas ce qui a fait mal. Un seul levier bouge, les autres tiennent.' },
+      { t:'Le levier gelé n\'est jamais la cause d\'une douleur', x:'C\'est ce qui rend la régression simple : puisqu\'il n\'a pas bougé, il ne peut pas expliquer l\'aggravation. On régresse celui qui progressait.' },
+      { t:'La fréquence avant la durée', x:'Pour atteindre un volume hebdomadaire, ajouter des sorties est presque toujours préférable à les allonger. Allonger concentre la contrainte sur une séance ; multiplier la répartit. C\'est particulièrement vrai des pathologies de répétition, qui tolèrent mal les sorties longues.' },
+      { t:'La marche n\'est pas du temps perdu', x:'Dans un fractionné course/marche, la marche décharge activement l\'os et le tendon entre les bouts de course. C\'est ce qui permet de faire du volume sans accumuler la contrainte.' }
+    ]},
+  { id:'zones-allure', titre:'Les zones d\'allure et la charge pondérée',
+    intro:'Une seule saisie — l\'allure de footing — et le reste se calcule. Comprendre pourquoi les séances ne pèsent pas toutes pareil.',
+    etapes:[
+      { t:'Tout se dérive du footing', x:'Renseignez l\'allure à laquelle votre patient court en endurance fondamentale (Z2). Les autres zones s\'en déduisent : récupération environ 8 % plus lent, endurance active 8 % plus rapide, seuil 14 %, VMA 22 %. Les pastilles sous le champ affichent le résultat.' },
+      { t:'En retour de blessure, Z1 à Z3 suffisent presque toujours', x:'Le seuil (Z4) n\'apparaît que tard, et seulement sur les pathologies où l\'intensité est le levier moteur. La VMA relève de la performance, pas de la reprise.' },
+      { t:'Une minute de seuil ne vaut pas une minute de footing', x:'C\'est pourquoi la charge est pondérée par la zone : Z1 compte pour 1, Z2 pour 1,2, Z3 pour 1,6, Z4 pour 2,2, Z5 pour 3. Vingt-cinq minutes de seuil pèsent ainsi presque autant que cinquante minutes de footing — ce qui correspond à la réalité du tissu.' },
+      { t:'La marche compte pour zéro', x:'Elle allonge la durée de la séance sans ajouter de charge de course. Une récupération courue en Z1, en revanche, compte bien ses minutes.' },
+      { t:'C\'est cette charge pondérée qui alimente l\'ACWR du programme', x:'Sans pondération, introduire une séance de qualité ferait baisser l\'ACWR affiché alors que la contrainte augmente. Le graphe du générateur CAP utilise donc la charge pondérée, pas les minutes brutes.' }
+    ]},
+  { id:'paliers', titre:'Pourquoi certaines semaines n\'augmentent pas',
+    intro:'La semaine de consolidation n\'est pas une semaine perdue, et elle ne se justifie pas de la même façon qu\'en entraînement classique.',
+    etapes:[
+      { t:'En rééducation, ce qui manque n\'est pas du repos', x:'C\'est du temps à charge constante. Aux volumes d\'une reprise, il n\'y a quasiment pas de fatigue accumulée à évacuer — le modèle de la décharge, importé de l\'entraînement, ne s\'y transpose pas tel quel.' },
+      { t:'Le tissu conjonctif s\'adapte plus lentement que le cardio', x:'C\'est le piège classique : le coureur se sent parfaitement bien sur le plan cardio-vasculaire, il augmente, et le tissu n\'a pas suivi. L\'os passe même par une phase où la résorption précède la formation — il est transitoirement plus fragile avant d\'être plus solide.' },
+      { t:'Sur l\'os, on baisse réellement', x:'Périostite, fracture de stress : une semaine sur trois à −30 %. La fenêtre de remodelage bénéficie d\'une contrainte réduite, et la douleur y est un signal tardif — quand elle apparaît, la lésion est déjà constituée. Attendre le retour du patient serait systématiquement trop tard.' },
+      { t:'Sur le tendon, on maintient', x:'Un tendon a besoin de charge pour se remodeler : le décharger franchement est contre-productif. Une semaine sur quatre à charge constante suffit, et seulement au-dessus d\'un volume significatif.' },
+      { t:'À faible volume, aucun palier programmé', x:'Il n\'y a rien à consolider quand rien ne s\'accumule. C\'est le retour du patient qui pilote, et lui seul.' }
     ]}
 ]},
 
@@ -481,6 +545,16 @@ sections: [
 
 /* ── ❓ FAQ ──────────────────────────────────────────────────── */
 faq: [
+  { q:'Le générateur CAP me demande la charge des 4 dernières semaines : et si le patient ne court plus du tout ?',
+    a:'Laissez les quatre champs à 0. Le générateur bascule alors en mode course/marche et progresse par paliers absolus : c\'est le cas d\'une reprise post-opératoire. À l\'inverse, un coureur qui encaisse déjà 40 km par semaine ne doit pas repartir de zéro — c\'est précisément ce que ces quatre champs évitent.' },
+  { q:'Quelle différence entre « plus longue sortie tolérée » et « course continue sans douleur » ?',
+    a:'La première est une durée totale de sortie, marche comprise : elle décide comment le volume se répartit entre les séances. La seconde est le nombre de minutes courues d\'affilée avant que la douleur apparaisse : en dessous de 5 minutes, le programme passe en course/marche. Un patient peut très bien tenir 40 minutes de sortie en alternant, et seulement 2 minutes de course d\'un trait.' },
+  { q:'Pourquoi mon programme n\'a-t-il que des séances faciles, sans sortie longue ni séance de qualité ?',
+    a:'La polarisation ne s\'ouvre que si le patient a le volume et la fréquence pour la porter. La grande majorité des retours de blessure n\'ont qu\'un seul type de séance, et c\'est le comportement attendu : distinguer des rôles n\'a de sens qu\'à partir d\'un certain volume.' },
+  { q:'Le générateur me dit que ma progression est « agressive ». Est-ce qu\'il refuse de générer ?',
+    a:'Non, jamais. L\'ACWR est un indicateur, pas une barrière : une reprise volontairement rapide peut être un choix clinique assumé. Le vrai filet de sécurité est la boucle de retour — la régression sur douleur, séance après séance.' },
+  { q:'Mon patient a mal après une séance facile. Pourquoi le programme baisse-t-il partout ?',
+    a:'Parce que c\'est le signal le plus sérieux, même s\'il paraît anodin. Aucun levier n\'a été poussé sur une séance facile : si elle fait mal, ce n\'est pas un problème de dosage de cette séance mais de charge accumulée. Réduire seulement les séances faciles laisserait le problème entier.' },
   { q:'Mon athlète ne voit pas son programme, que vérifier ?',
     a:'Vérifiez que la séance est bien planifiée dans l\'agenda du bon patient, puis renvoyez-lui son lien personnel (il ne change pas d\'une séance à l\'autre). Sur son téléphone, un simple rechargement de la page suffit souvent — le bouton « ↻ Actualiser » est prévu pour ça.' },
   { q:'Les activités Strava ne remontent pas.',
