@@ -97,25 +97,38 @@ rôle (§ 6).
 
 ### Cycles 2 et suivants — une seule horloge
 
-Le cycle enchaîne toujours les mêmes trois positions, et **un seul levier bouge
-par semaine** :
+Microcycle **4:1** — trois semaines de progression, une de consolidation
+(`CAP_SEUILS.cycleProgression = 4`). **Un seul levier bouge par semaine**, et
+il alterne :
 
 ```
-position 0   intensité ↑    volume inchangé
-position 1   volume ↑       intensité inchangée
-position 2   consolidation  rien ne monte
+S4  intensité ↑     S8   intensité ↑ (rebond)
+S5  volume ↑        S9   volume ↑
+S6  intensité ↑     S10  intensité ↑
+S7  consolidation   S11  consolidation
 ```
+
+Le levier alterne sur le compteur des semaines de **progression**, pas sur le
+numéro de semaine : la consolidation ne doit pas décaler l'alternance. Chaque
+cycle porte donc trois progressions — I, V, I puis V, I, V — et les deux
+leviers restent à égalité sur deux cycles.
 
 Le cycle 2 s'ouvre par l'intensité, puisque le volume vient tout juste de
 retrouver la tolérance. Les faire monter ensemble ne permettrait plus de savoir
 lequel a fait mal en cas de retour douloureux.
 
 En dessous du plancher de volume (§ 7), rien ne s'accumule encore : pas de
-semaine de consolidation programmée, le cycle se réduit à deux positions.
+consolidation programmée, le cycle se réduit à la simple alternance.
 
-**Piège historique — trois horloges pour un seul rythme.** Le cycle de 3
-semaines, une alternance sur 2 et un palier tissulaire sur 3 ou 4 ont un temps
-tourné en parallèle. Ils se déphasaient, et le plan produisait ceci :
+**La semaine qui suit une consolidation en baisse ne progresse pas** : elle
+remonte au niveau d'avant la décharge, et c'est tout. Sans cette règle, le
+rebond de la grandeur déchargée s'ajoutait à la progression de l'autre, et deux
+leviers montaient la même semaine — exactement ce que la consolidation
+cherchait à éviter.
+
+**Piège historique — trois horloges pour un seul rythme.** Le cycle de
+progression, une alternance sur 2 semaines et un palier tissulaire sur 3 ou 4
+ont un temps tourné en parallèle. Ils se déphasaient, et le plan produisait ceci :
 
 ```
 S7   INTENSITÉ
@@ -283,9 +296,11 @@ Seuil de « volume faible » : `_capPlancherPalier` = 20 km ou 2 h par semaine.
 La consolidation porte sur **le paramètre en cause**. Décharger un paramètre
 figé n'a aucun sens.
 
-**Conséquence sur le délai conseillé.** Chaque levier ne prend qu'un tour par
-cycle, et le pas est plafonné : reconstruire 30 min de qualité hebdomadaire
-depuis 4 min demande une trentaine de semaines au rythme prudent. C'est long,
+**Conséquence sur le délai conseillé.** Le pas d'un tour est plafonné :
+reconstruire 30 min de qualité hebdomadaire depuis 4 min demande une trentaine
+de semaines au rythme prudent. Le facteur limitant est le plafond de +25 % par
+tour, pas la consolidation — passer d'un 3:1 à un 4:1 n'a fait gagner que trois
+semaines. C'est long,
 et c'est le prix de la prudence — le stepper reste libre, et le verdict dit ce
 que coûte un raccourci.
 

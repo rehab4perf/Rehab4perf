@@ -10981,12 +10981,14 @@ function _capTrajectoire(p) {
   // par cinq 4 min de Z3+ noyées dans 240 min de course ne bouge presque pas
   // la charge pondérée), la référence devient le rythme de réintroduction de
   // l'allure, plafonné en pourcentage hebdomadaire.
-  // Un cycle vaut 3 semaines quand une consolidation est programmée, 2 sinon.
-  // Chaque levier ne bouge qu'une fois par cycle : les durées se comptent donc
-  // en TOURS, convertis en semaines à la fin.
-  var parCycle = _capPalier(p.tissu,
-    p.unite === 'km' ? volumePlafond / (p.allureFooting || 6) : volumePlafond, p.unite).cycle > 0 ? 3 : 2;
-  var gVolume = Math.pow(_capGPourACWR(CAP_SEUILS.acwrOk), parCycle);
+  // Microcycle 4:1 quand une consolidation est programmée, simple alternance
+  // sinon. Les durées se comptent en TOURS d'un levier, convertis en semaines
+  // à la fin : `semParTour` est l'écart moyen entre deux tours du même levier.
+  var aConsolidation = _capPalier(p.tissu,
+    p.unite === 'km' ? volumePlafond / (p.allureFooting || 6) : volumePlafond, p.unite).cycle > 0;
+  var parCycle = aConsolidation ? CAP_SEUILS.cycleProgression : 2;
+  var semParTour = parCycle / Math.max(1, (parCycle - (aConsolidation ? 1 : 0)) / 2);
+  var gVolume = Math.pow(_capGPourACWR(CAP_SEUILS.acwrOk), semParTour);
   var semVolumeIdeal = volumePlafond > departMin
     ? Math.ceil(Math.log(volumePlafond / departMin) / Math.log(gVolume))
     : 0;
@@ -11011,7 +11013,7 @@ function _capTrajectoire(p) {
   var cycle1Ideal = (continu >= CAP_SEUILS.fractionne && (p.patho && p.patho !== 'aucune'))
     ? CAP_SEUILS.cycle : 0;
   var conseille = Math.max(1, Math.min(104,
-    semFrac + cycle1Ideal + semDecharge + toursNecessaires * parCycle));
+    semFrac + cycle1Ideal + semDecharge + Math.ceil(toursNecessaires * semParTour)));
 
   // ── Répartition réelle du délai demandé entre les phases ──
   var dispo = Math.max(1, demande - semFrac - semDecharge);
@@ -11125,6 +11127,10 @@ function _capBuildProgrammeV2(p) {
   var intensiteCoupable = ax.coupable === 'intensite';
 
   var degel = false, sessions = [], semaine = 0;
+  // Compteur des semaines de progression : c'est LUI qui décide du levier, pas
+  // le numéro de semaine, sans quoi une consolidation décale l'alternance.
+  var tourNum = 0;
+  var baissePrecedente = false;
   var conflitsEspacement = [];
   // Le premier cycle sert à revenir à la tolérance, pas à la dépasser. Il
   // n'existe qu'en course continue : une reprise course/marche a déjà son
@@ -11177,10 +11183,13 @@ function _capBuildProgrammeV2(p) {
     var pal = _capPalier(p.tissu, volUnite, p.unite);
     // En dessous du plancher de volume, rien ne s'accumule encore : pas de
     // semaine de consolidation programmée, le cycle se réduit à l'alternance.
+    // Microcycle 4:1 — trois semaines de progression, une de consolidation.
+    // En dessous du plancher de volume, rien ne s'accumule encore : pas de
+    // consolidation programmée, le cycle se réduit à l'alternance seule.
     var aConsolidation = pal.cycle > 0;
-    var parCycle = aConsolidation ? 3 : 2;
+    var parCycle = aConsolidation ? CAP_SEUILS.cycleProgression : 2;
     var pos = enCycle1 ? -1 : ((semaine - cycle1 - 1) % parCycle);
-    var estPalier = !enCycle1 && aConsolidation && pos === 2;
+    var estPalier = !enCycle1 && aConsolidation && pos === parCycle - 1;
     var baisse = estPalier && pal.mode === 'baisse' ? 0.7 : 1;
 
     // ── Progression : appliquée en DÉBUT de semaine ──
@@ -11188,25 +11197,42 @@ function _capBuildProgrammeV2(p) {
     // suivante — donc parfois sur la semaine de consolidation, qui se
     // retrouvait à monter le volume tout en baissant l'intensité. Deux leviers
     // le jour même où l'on est censé ne rien bouger.
-    if (!enCycle1 && continu >= CAP_SEUILS.fractionne && semaine > cycle1 + 1) {
-      var tours = Math.max(1, Math.ceil((semainesVisees - semaine) / parCycle));
-      // Le pas d'un tour est plafonné. Sans plafond, le dernier tour absorbait
-      // tout l'écart restant : l'intensité passait de 18 à 30 min en une
-      // semaine, +67 %, ce qu'aucune règle ne justifie. Un délai trop court
-      // fait donc terminer le plan sous sa cible — c'est plus honnête qu'un
-      // saut final, et le verdict de la fiche le dit.
-      if (pos === 0 && intensite > 0 && traj.cibleIntensite > intensite) {
-        var gI = Math.min(1 + CAP_SEUILS.intensiteMaxPct,
-                          Math.pow(traj.cibleIntensite / intensite, 1 / tours));
-        intensite = Math.min(traj.cibleIntensite, intensite * gI);
-      } else if (pos === 1 && volume < cibleMin) {
-        // L'ACWR borne une croissance HEBDOMADAIRE. Le volume ne bougeant
-        // qu'une fois par cycle, son pas vaut ce que la borne autorise sur
-        // toute la durée du cycle — sinon la progression est divisée par deux
-        // ou par trois et le programme n'atteint jamais son objectif.
-        var gV = Math.min(Math.pow(_capGPourACWR(CAP_SEUILS.acwrOk), parCycle),
-                          Math.pow(cibleMin / volume, 1 / tours));
-        volume = Math.min(cibleMin, volume * gV);
+    //
+    // Le levier alterne sur le compteur des semaines de PROGRESSION, pas sur
+    // le numéro de semaine : la consolidation ne doit pas décaler l'alternance.
+    // Sur un 4:1 chaque cycle porte donc trois progressions — I, V, I puis
+    // V, I, V — et les deux leviers restent à égalité sur deux cycles.
+    // La semaine qui suit une consolidation en BAISSE ne progresse pas : elle
+    // remonte au niveau d'avant la décharge, et c'est tout. Sans cette règle,
+    // le rebond de la grandeur déchargée s'ajoutait à la progression de
+    // l'autre, et deux leviers montaient la même semaine — précisément ce que
+    // la consolidation cherchait à éviter.
+    if (!enCycle1 && continu >= CAP_SEUILS.fractionne && !estPalier && !baissePrecedente) {
+      var tourIntensite = (tourNum % 2) === 0;
+      tourNum++;
+      if (semaine > cycle1 + 1) {
+        // Semaines de progression restantes, partagées entre les deux leviers.
+        var progRestantes = (semainesVisees - semaine) * (parCycle - (aConsolidation ? 1 : 0)) / parCycle;
+        var tours = Math.max(1, Math.round(progRestantes / 2));
+        // Nombre moyen de semaines entre deux tours du même levier : c'est sur
+        // cette durée que la borne ACWR, qui est hebdomadaire, doit être
+        // rapportée. La rapporter à une seule semaine divisait la progression
+        // par deux ou trois et le programme n'atteignait jamais son objectif.
+        var semParTour = parCycle / Math.max(1, (parCycle - (aConsolidation ? 1 : 0)) / 2);
+        // Le pas d'un tour est plafonné. Sans plafond, le dernier tour
+        // absorbait tout l'écart restant : l'intensité passait de 18 à 30 min
+        // en une semaine, +67 %, ce qu'aucune règle ne justifie. Un délai trop
+        // court fait donc terminer le plan sous sa cible — plus honnête qu'un
+        // saut final, et le verdict de la fiche le dit.
+        if (tourIntensite && intensite > 0 && traj.cibleIntensite > intensite) {
+          var gI = Math.min(1 + CAP_SEUILS.intensiteMaxPct,
+                            Math.pow(traj.cibleIntensite / intensite, 1 / tours));
+          intensite = Math.min(traj.cibleIntensite, intensite * gI);
+        } else if (!tourIntensite && volume < cibleMin) {
+          var gV = Math.min(Math.pow(_capGPourACWR(CAP_SEUILS.acwrOk), semParTour),
+                            Math.pow(cibleMin / volume, 1 / tours));
+          volume = Math.min(cibleMin, volume * gV);
+        }
       }
     }
 
@@ -11253,6 +11279,7 @@ function _capBuildProgrammeV2(p) {
       sessions.push(s);
     });
 
+    baissePrecedente = estPalier && pal.mode === 'baisse';
     // Course/marche : c'est le bout de course qui progresse d'un barreau par
     // semaine, pas le volume — allonger les deux ferait deux leviers.
     if (continu < CAP_SEUILS.fractionne) continu = _capBoutSuivant(continu, pasFractionne);
@@ -11321,7 +11348,8 @@ var CAP_SEUILS = {
   acwrWarn:       1.30,  // soutenu
   intensitePlancher: 4,    // min de Z3+ de la première semaine de réintroduction
   intensiteMaxPct:   0.25, // croissance hebdo max des minutes de qualité
-  cycle:             3,    // longueur d'un cycle, en semaines
+  cycle:             3,    // cycle 1 : −20 %, −10 %, 0 % pour revenir à la tolérance
+  cycleProgression:  4,    // 4:1 — trois semaines de progression, une de consolidation
   dechargeInitiale:  0.20, // le volume repart 20 % sous la tolérance
 };
 
