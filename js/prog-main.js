@@ -10300,9 +10300,9 @@ function _capZones(allureFooting) {
   });
 }
 
-/* Charge pondérée d'une séance à segments. Remplacera _capLoadOf(), qui
-   réduit une séance à ses minutes brutes et écrase donc la différence de
-   nature entre un footing long et une séance de seuil courte. */
+/* Charge pondérée d'une séance à segments. Elle remplace le comptage en
+   minutes brutes du moteur v1, qui écrasait la différence de nature entre un
+   footing long et une séance de seuil courte. */
 /* Charge d'un segment : effort + récupération, chacun pondéré par SA zone.
    Les répétitions comptent — une série de 8×1' vaut 8 minutes d'effort, pas
    une seule. Une récupération en marche pèse 0, une récupération en Z1 pèse
@@ -11342,6 +11342,25 @@ function _capBuildProgrammeV2(p, reprise) {
   };
 }
 
+/* Charge hebdomadaire pondérée et ACWR glissant sur quatre semaines —
+   alimente le graphe et les en-têtes de semaine de l'écran de résultat. */
+function _capWeekStats(sessions) {
+  var byWeek = {};
+  sessions.forEach(function (s) {
+    var v = _capCharge(s);
+    if (!byWeek[s.week]) byWeek[s.week] = { week: s.week, load: 0, deload: !!s.deload || !!s.palier };
+    byWeek[s.week].load += v;
+  });
+  var weeks = Object.keys(byWeek).sort(function (a, b) { return +a - +b; }).map(function (k) { return byWeek[k]; });
+  weeks.forEach(function (w, i) {
+    var win = weeks.slice(Math.max(0, i - 3), i + 1).map(function (x) { return x.load; });
+    var chronic = win.reduce(function (a, b) { return a + b; }, 0) / win.length;
+    w.acwr = chronic > 0 ? Math.round(w.load / chronic * 100) / 100 : 1;
+    w.load = Math.round(w.load);
+  });
+  return weeks;
+}
+
 /* ══════════════════════════════════════════════════════════════
    RÉGRESSION — proposer, jamais appliquer d'office
 
@@ -12134,120 +12153,15 @@ function _capAllureLabel(s, allure) {
    (walk-run, modèle douleur), Gabbett (ACWR), règle des 10%.
 ══════════════════════════════════════════════════════════════ */
 
-// Rythmes de progression (incrément de L + fréquence de décharge)
-var CAP_RYTHME = {
-  prudent:  { incSmall: 1, incMid: 2, incPct: 0.10, deloadEvery: 4, deloadFactor: 0.70, label: 'Prudent' },
-  standard: { incSmall: 2, incMid: 3, incPct: 0.12, deloadEvery: 5, deloadFactor: 0.70, label: 'Standard' },
-  soutenu:  { incSmall: 3, incMid: 4, incPct: 0.15, deloadEvery: 6, deloadFactor: 0.75, label: 'Soutenu' }
-};
-
-// Capacité de départ sans douleur → plus longue course initiale (min)
-var CAP_START_L = { 'marche': 1, '30s': 1, '1min': 1, '2min': 2, '5min': 5, '10min': 10, '15min': 15 };
-
-function _capPhaseForL(L, obj) {
-  if (L < 5) return 1;               // walk-run
-  if (L < obj * 0.7) return 2;       // course continue courte/moyenne
-  return 3;                          // retour continu
-}
-
-// Construit une séance dont la plus longue course vaut L (min)
-function _capSessionForL(L, obj) {
-  var phase = _capPhaseForL(L, obj);
-  if (L >= obj) { var c = _capC(3, obj); return c; }
-  if (L < 5) {
-    var reps = L <= 1 ? 8 : L <= 2 ? 5 : L <= 3 ? 4 : 3;
-    return _capI(phase, reps, L, 1);
-  }
-  return _capC(phase, Math.round(L));
-}
-
-// Charge (min de course) d'une semaine construite au niveau L
-function _capProjWeekLoad(L, obj, spw) {
-  function ld(x) { return x.type === 'continuous' ? (x.durationMin || 0) : x.reps * x.runMin; }
-  var long = ld(_capSessionForL(L, obj));
-  var secTarget = L < 5 ? L : Math.max(5, Math.round(L * 0.7));
-  var sec = ld(_capSessionForL(secTarget, obj));
-  return long + (spw - 1) * sec;
-}
-
-function _capNextL(L, obj, R) {
-  var inc = L < 8 ? R.incSmall : L < 20 ? R.incMid : Math.max(2, Math.round(L * R.incPct));
-  return Math.min(obj, L + inc);
-}
-
-function _capBuildProgressive(profile, overrideStartL) {
-  _capIdSeq = 0;
-  var obj = profile.objectiveMin;
-  var spw = profile.seancesPerWeek;
-  var R   = CAP_RYTHME[profile.rythme] || CAP_RYTHME.prudent;
-  var L   = overrideStartL != null ? overrideStartL
-          : (profile.startL != null ? profile.startL : (CAP_START_L[profile.startCapacity] || 1));
-  var ACWR_CAP = 1.30;
-
-  var sessions = [], loads = [], w = 0, guard = 0, graduated = false, held = 0;
-  while (guard++ < 100) {
-    var isDeload = w > 0 && (w % R.deloadEvery === R.deloadEvery - 1) && !graduated && held === 0;
-    var Lw = isDeload ? Math.max(1, Math.round(L * R.deloadFactor)) : L;
-    var week = w + 1;
-
-    // Séance longue (moteur de la progression)
-    var longS = _capSessionForL(Lw, obj);
-    longS.week = week; longS.deload = isDeload; sessions.push(longS);
-    // Séances secondaires (~70% de la longue, plancher 5' en continu)
-    var secTarget = Lw < 5 ? Lw : Math.max(5, Math.round(Lw * 0.7));
-    for (var k = 1; k < spw; k++) {
-      var s = _capSessionForL(secTarget, obj);
-      s.week = week; s.deload = isDeload; sessions.push(s);
-    }
-    loads.push(_capProjWeekLoad(Lw, obj, spw));
-
-    if (graduated) break;              // 1 semaine de confirmation à l'objectif
-    if (!isDeload) {
-      if (L >= obj) { graduated = true; }
-      else {
-        // Gouverneur ACWR : n'avance que si la semaine suivante reste ≤ 1,3
-        var nextL = _capNextL(L, obj, R);
-        var nextLoad = _capProjWeekLoad(nextL, obj, spw);
-        var win = loads.slice(-3).concat([nextLoad]);
-        var chronic = win.reduce(function (a, b) { return a + b; }, 0) / win.length;
-        var projAcwr = chronic > 0 ? nextLoad / chronic : 1;
-        if (projAcwr <= ACWR_CAP || held >= 2) { L = nextL; held = 0; }
-        else { held++; }               // maintien : on répète le palier une semaine
-      }
-    }
-    w++;
-  }
-  return sessions;
-}
-
-// Statistiques par semaine (charge pondérée par zone + ACWR aigu/chronique).
-// _capCharge plutôt que les minutes brutes : sans pondération, 25 min de
-// seuil pèseraient moins que 30 min de footing et l'ACWR serait faux dès
-// qu'une séance de qualité entre dans la semaine.
-function _capWeekStats(sessions) {
-  var byWeek = {};
-  sessions.forEach(function (s) {
-    var v = _capCharge(s);
-    if (!byWeek[s.week]) byWeek[s.week] = { week: s.week, load: 0, deload: !!s.deload || !!s.palier };
-    byWeek[s.week].load += v;
-  });
-  var weeks = Object.keys(byWeek).sort(function (a, b) { return +a - +b; }).map(function (k) { return byWeek[k]; });
-  weeks.forEach(function (w, i) {
-    var win = weeks.slice(Math.max(0, i - 3), i + 1).map(function (x) { return x.load; });
-    var chronic = win.reduce(function (a, b) { return a + b; }, 0) / win.length;
-    w.acwr = chronic > 0 ? Math.round(w.load / chronic * 100) / 100 : 1;
-    w.load = Math.round(w.load);
-  });
-  return weeks;
-}
-
 /* ── Construction du programme ──────────────────────────────────────────
    Route vers le moteur v2, piloté par l'axe pathologique. Le résultat porte
    aussi les signalements (espacement impossible) que l'écran de résultat
    affiche. L'ancien moteur reste joignable pour un plan déjà en cours qui
    n'aurait pas de profil v2. */
 function _capBuildSessions(profile) {
-  if (!profile || profile.axe == null) return _capBuildProgressive(profile);
+  // Plus de repli : le moteur v1 a été retiré. Un plan sans axe date d'avant la
+  // v2 et n'est plus régénérable — il faut repasser par la fiche.
+  if (!profile || profile.axe == null) return [];
   var r = _capBuildProgrammeV2(profile);
   _capDernierPlanInfos = { conflitsEspacement: r.conflitsEspacement, etats: r.etats };
   return r.seances;
@@ -12298,12 +12212,8 @@ function _capChipVal(groupId) {
 }
 
 /* ── Adaptateur vers le moteur actuel ─────────────────────────────────
-   Le moteur (_capBuildProgressive) raisonne encore en {objectiveMin, startL,
-   rythme, seancesPerWeek}. Tant qu'il n'est pas réécrit selon la spec v2, on
-   dérive ces quatre valeurs de la fiche pour que la génération reste
-   fonctionnelle. Les paramètres propres à la v2 — axe, tissu, zones,
-   interdits, cibles, palier — sont conservés dans le profil mais restent
-   INERTES : ils seront lus par le nouveau moteur, pas par celui-ci. */
+   Champs dérivés partagés par l'agenda et l'affichage : nombre de séances par
+   semaine, allure, objectif en minutes. Ils ne pilotent plus aucun moteur.*/
 function _capToLegacyProfile(p) {
   // Objectif en minutes : le moteur actuel ne connaît que la durée continue.
   var obj = p.cibleSortieLongue || p.cibleHebdo / Math.max(1, p.frequenceCible);
@@ -12630,9 +12540,6 @@ function _capSessHtml(s) {
 /* ── Ré-ajustement après coupure ── */
 var _capBreakBannerDismissed = false;
 
-function _capLoadOf(s) { return s.type === 'continuous' ? (s.durationMin || 0) : (s.reps * s.runMin); }
-
-// Détecte une coupure : écart entre aujourd'hui et la dernière séance validée (ou le début du plan)
 function _capDetectBreak() {
   if (!CAP_STATE || !CAP_STATE.sessions || !CAP_STATE.sessions.length) return null;
   var sessions = CAP_STATE.sessions;
@@ -12656,52 +12563,49 @@ function _capDetectBreak() {
 // de la durée de la coupure (recul progressif, pas de reprise "comme avant"). Conserve
 // les dates/liens agenda déjà planifiés — seul le contenu des séances à venir change.
 function _capRecalcAfterBreak() {
-  if (!CAP_STATE) return;
-  var sessions = CAP_STATE.sessions;
-  var pendingIdxs = [];
-  sessions.forEach(function(s, i) { if (s.status === 'pending') pendingIdxs.push(i); });
-  if (!pendingIdxs.length) return;
-
-  var lastDoneIdx = -1;
-  for (var i = sessions.length - 1; i >= 0; i--) { if (sessions[i].status === 'done') { lastDoneIdx = i; break; } }
-  var lastL = lastDoneIdx >= 0 ? _capLoadOf(sessions[lastDoneIdx])
-            : (CAP_STATE.profile.startL != null ? CAP_STATE.profile.startL : (CAP_START_L[CAP_STATE.profile.startCapacity] || 1));
-
+  if (!CAP_STATE || !CAP_STATE.etats) return;
   var brk = _capDetectBreak();
   var weeksOff = brk ? Math.ceil(brk.gapDays / 7) : 0;
-  var newStartL = Math.max(1, Math.round(lastL * Math.pow(0.85, weeksOff))); // -15%/sem de coupure
+  if (!weeksOff) return;
 
-  var freshSessions = _capBuildProgressive(CAP_STATE.profile, newStartL);
-
-  // Ré-échantillonnage homogène sur le nombre de créneaux restants (même technique que _capBuildSessions)
-  pendingIdxs.forEach(function(slotIdx, i) {
-    var ci = Math.round(i * (freshSessions.length - 1) / Math.max(pendingIdxs.length - 1, 1));
-    var tmpl = freshSessions[ci];
-    var old = sessions[slotIdx];
-    var updated = JSON.parse(JSON.stringify(tmpl));
-    updated.id = old.id; updated.seance_id = old.seance_id; updated.prog_id = old.prog_id;
-    updated.date = old.date; updated.week = old.week; updated.status = 'pending'; updated.painScore = null;
-    sessions[slotIdx] = updated;
-
-    if (updated.seance_id && updated.prog_id) {
-      var blocs = _capSessionToBlocs(updated, CAP_STATE.profile);
-      _fetchRetry(SUPA_URL_P + '/rest/v1/programmes?id=eq.' + updated.prog_id, {
-        method: 'PATCH', headers: _sbHeaders(),
-        body: JSON.stringify({
-          nom: 'CAP — ' + updated.label,
-          donnees: {
-            type: 'cap', session: updated, profile: CAP_STATE.profile, blocs: blocs,
-            consignes: (CAP_PATHO_DB[CAP_STATE.profile.patho] || CAP_PATHO_DB.aucune).consignes
-          }
-        })
-      }).catch(function(e) { console.warn('CAP recalc patch error:', e); });
-    }
+  // On repart de la dernière semaine réellement faite : c'est la capacité
+  // acquise, et non celle que le plan avait prévue.
+  var derniere = 0;
+  CAP_STATE.sessions.forEach(function(s) {
+    if (s.status === 'done') derniere = Math.max(derniere, s.week);
   });
+  var etat = CAP_STATE.etats.filter(function(e) { return e.semaine === derniere; })[0];
+  if (!etat) {
+    // Rien de fait : le plan n'a pas commencé, il n'y a pas de capacité à
+    // décoter. On le régénère simplement depuis le début.
+    etat = { semaine: 0, sortie: null };
+  }
+
+  // −15 % par semaine de coupure, sur les deux grandeurs. Le désentraînement
+  // ne choisit pas entre volume et allure.
+  var k = Math.pow(0.85, weeksOff);
+  var base = etat.sortie || { volume: 0, intensite: 0, continu: 0, degel: false, tourNum: 0 };
+  var prop = {
+    semaine: etat.semaine,
+    reprise: {
+      semaine: etat.semaine + 1,
+      volume: Math.max(1, base.volume * k),
+      intensite: Math.max(0, base.intensite * k),
+      continu: base.continu, degel: base.degel,
+      tourNum: base.tourNum, baissePrecedente: false,
+    },
+  };
+  // Durée conservée : une coupure ne doit pas rallonger le plan sans que le
+  // praticien l'ait décidé. Il peut toujours l'allonger ensuite.
+  _capAppliquerRegression(prop, false);
 
   _capBreakBannerDismissed = true;
   _capSave();
   _capRender();
-  if (typeof _showToast === 'function') _showToast('↻ Programme recalculé depuis la capacité actuelle.');
+  if (typeof _showToast === 'function') {
+    _showToast('↻ Programme recalculé : −' + Math.round((1 - k) * 100)
+      + ' % après ' + weeksOff + ' semaine' + (weeksOff > 1 ? 's' : '') + ' de coupure.');
+  }
 }
 
 function _capDismissBreakBanner() {
@@ -12981,244 +12885,6 @@ function _capPropositionHtml() {
 ══════════════════════════════════════════════════════════════ */
 
 /* Met les segments à l'échelle pour atteindre un volume de course cible. */
-function _capMettreEchelle(s, cibleMin) {
-  var actuel = _capVolumeCourse(s);
-  if (!(actuel > 0) || !(cibleMin > 0)) return s;
-  var k = cibleMin / actuel;
-  s.segments.forEach(function(g) {
-    if ((g.reps || 1) > 1) g.reps = Math.max(1, Math.round(g.reps * k));
-    else g.minutes = Math.max(1, Math.round(g.minutes * k));
-  });
-  return _capSyncSeance(s);
-}
-
-/* Descend d'une zone la partie travaillée d'une séance de qualité. */
-function _capDescendreZone(s) {
-  var ordre = ['Z1', 'Z2', 'Z3', 'Z4', 'Z5'];
-  var change = false;
-  s.segments.forEach(function(g) {
-    var i = ordre.indexOf(g.zone);
-    if (i > 1 && (g.reps || 1) > 1) { g.zone = ordre[i - 1]; change = true; }
-  });
-  return change ? _capSyncSeance(s) : null;
-}
-
-/* Dernière séance validée du même rôle — la seule référence comparable. */
-function _capDerniereDuRole(sessions, idx, role) {
-  for (var i = idx - 1; i >= 0; i--) {
-    var s = sessions[i];
-    var ok = s.status === 'done' || s.statut === 'confirme' || s.statut === 'presume';
-    if (ok && (s.role || 'facile') === role) return s;
-  }
-  return null;
-}
-
-/* Décharge globale : toutes les séances à venir, toutes filières confondues. */
-function _capDechargeGlobale(sessions, depuis, facteur) {
-  for (var i = depuis; i < sessions.length; i++) {
-    var s = sessions[i];
-    if (s.status !== 'pending') continue;
-    if (!Array.isArray(s.segments)) _capNormaliseSeance(s);
-    _capMettreEchelle(s, Math.max(1, _capVolumeCourse(s) * facteur));
-  }
-}
-
-function _capAdaptNext(idx, score) {
-  var sessions = CAP_STATE.sessions;
-  var seuil    = (CAP_PATHO_DB[CAP_STATE.profile.patho] || CAP_PATHO_DB.aucune).seuil;
-
-  if (score > seuil) {
-    var douloureuse = sessions[idx];
-    if (!Array.isArray(douloureuse.segments)) _capNormaliseSeance(douloureuse);
-    var role = douloureuse.role || 'facile';
-
-    // Cas 3 — la douleur sur la séance la moins exigeante est la plus grave.
-    if (role === 'facile' || role === 'technique') {
-      _capDechargeGlobale(sessions, idx + 1, 0.7);
-      _capSave(); _capRender();
-      if (typeof _showToast === 'function') {
-        _showToast('Douleur sur une séance facile : décharge globale de 30 % — c’est la charge cumulée qui est en cause, pas cette séance.');
-      }
-      return;
-    }
-
-    // Cas 1 et 2 — entre-deux sur la filière du rôle touché uniquement.
-    var ref = _capDerniereDuRole(sessions, idx, role);
-    var volPain = _capVolumeCourse(douloureuse);
-    var volRef  = ref ? _capVolumeCourse(ref) : null;
-    // Sans antécédent du même rôle, on répète la charge en cours plutôt que
-    // d'inventer un milieu à partir d'une séance de nature différente.
-    var volCible = volRef == null ? volPain * 0.85 : (volRef + volPain) / 2;
-    if (volCible >= volPain) volCible = volPain * 0.85;
-
-    var descendue = false;
-    for (var i = idx + 1; i < sessions.length; i++) {
-      var s = sessions[i];
-      if (s.status !== 'pending' || (s.role || 'facile') !== role) continue;
-      if (!Array.isArray(s.segments)) _capNormaliseSeance(s);
-      if (role === 'qualite' && volCible <= volPain * 0.6) {
-        // Volume à l'allure déjà au plancher : c'est la zone qui descend.
-        if (_capDescendreZone(s)) { descendue = true; continue; }
-      }
-      _capMettreEchelle(s, volCible);
-    }
-
-    _capSave(); _capRender();
-    if (typeof _showToast === 'function') {
-      _showToast(descendue
-        ? 'Séances « ' + _capLbl(role) + ' » régressées d’une zone d’allure.'
-        : 'Séances « ' + _capLbl(role) + ' » ramenées à ' + Math.round(volCible) + ' min de course. Le reste du plan est inchangé.');
-    }
-    return;
-  }
-
-  if (score === seuil) {
-    // Trouver la prochaine séance pending et lui donner le même contenu que celle qui a fait mal
-    var nextIdx = -1;
-    for (var i = idx + 1; i < sessions.length; i++) {
-      if (sessions[i].status === 'pending') { nextIdx = i; break; }
-    }
-    if (nextIdx === -1) return;
-
-    var next = sessions[nextIdx];
-    var updated = JSON.parse(JSON.stringify(sessions[idx]));
-    updated.id        = next.id;
-    updated.seance_id = next.seance_id;
-    updated.prog_id   = next.prog_id;
-    updated.date      = next.date;
-    updated.week      = next.week;
-    updated.status    = 'pending';
-    updated.painScore = null;
-    sessions[nextIdx] = updated;
-
-    if (updated.seance_id && updated.prog_id) {
-      var blocs = _capSessionToBlocs(updated, CAP_STATE.profile);
-      _fetchRetry(SUPA_URL_P + '/rest/v1/programmes?id=eq.' + updated.prog_id, {
-        method: 'PATCH',
-        headers: _sbHeaders(),
-        body: JSON.stringify({
-          nom: 'CAP — ' + updated.label,
-          donnees: {
-            type: 'cap', session: updated, profile: CAP_STATE.profile,
-            blocs: blocs,
-            consignes: (CAP_PATHO_DB[CAP_STATE.profile.patho] || CAP_PATHO_DB.aucune).consignes
-          }
-        })
-      }).catch(function(e) { console.warn('CAP adapt patch error:', e); });
-    }
-    return;
-  }
-  // score < seuil : rien à faire, la trajectoire prévue reste valide
-}
-
-// Charge intermédiaire entre une charge tolérée et une charge douloureuse (milieu exact).
-// Si les deux sont trop proches pour former un vrai palier distinct, on répète la charge tolérée.
-function _capMidpointL(Lgood, Lpain) {
-  var mid = Math.round((Lgood + Lpain) / 2);
-  if (mid <= Lgood || mid >= Lpain) mid = Lgood;
-  return Math.max(1, mid);
-}
-
-// Reconstruit la trajectoire à partir d'un index donné (inclus) en repartant de Lmid.
-// Insère ou retire des créneaux selon le besoin réel (le plan s'allonge si nécessaire).
-// Si les séances remplacées étaient déjà exportées vers l'agenda, elles sont supprimées
-// et recréées aux nouvelles dates (mêmes jours de semaine que le plan initial) ; sinon
-// le changement reste local (rien à synchroniser tant que "Ajouter à l'agenda" n'a pas été cliqué).
-function _capReplanFromIndex(anchorIdx, Lmid) {
-  if (!CAP_STATE) return;
-  var sessions = CAP_STATE.sessions;
-  var profile  = CAP_STATE.profile;
-  var spw      = profile.seancesPerWeek;
-
-  var head = sessions.slice(0, anchorIdx);
-  var tail = sessions.slice(anchorIdx);
-
-  var freshTail = _capBuildProgressive(profile, Lmid);
-  var anchorWeek = sessions[anchorIdx] ? sessions[anchorIdx].week : (head.length ? head[head.length - 1].week : 1);
-  // Position déjà occupée dans anchorWeek par les séances conservées (head), pour compléter
-  // la semaine en cours plutôt que d'en ouvrir arbitrairement une nouvelle
-  var posInWeek = 0;
-  for (var k = head.length - 1; k >= 0 && head[k].week === anchorWeek; k--) posInWeek++;
-  freshTail.forEach(function(s, i) { s.week = anchorWeek + Math.floor((posInWeek + i) / spw); });
-
-  var oldExported = tail.filter(function(s) { return s.seance_id && s.prog_id; });
-
-  if (!oldExported.length) {
-    // Plan pas encore envoyé à l'agenda : remplacement purement local
-    CAP_STATE.sessions = head.concat(freshTail);
-    _capSave();
-    _capRender();
-    if (typeof _showToast === 'function') _showToast('↻ Programme replanifié (' + freshTail.length + ' séances restantes).');
-    return;
-  }
-
-  if (!_progPatient) { alert('Sélectionne un patient d\'abord pour synchroniser l\'agenda.'); return; }
-
-  var lastDateStr = head.length ? (head[head.length - 1].date || '') : '';
-  if (!lastDateStr) lastDateStr = new Date().toISOString().split('T')[0];
-  var startAfter = new Date(lastDateStr + 'T12:00:00');
-  startAfter.setDate(startAfter.getDate() + 1);
-  var days = _capSelectedDays && _capSelectedDays.length === spw ? _capSelectedDays : null;
-  var newDates = _capCalcDates(freshTail.length, spw, startAfter.toISOString().split('T')[0], days);
-
-  var seanceIdsToDelete = oldExported.map(function(s) { return s.seance_id; });
-  var progIdsToDelete = oldExported.map(function(s) { return s.prog_id; }).filter(function(v, i, a) { return a.indexOf(v) === i; });
-
-  _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees?id=in.(' + seanceIdsToDelete.join(',') + ')', {
-    method: 'DELETE', headers: _sbHeaders()
-  })
-  .then(function() {
-    return _fetchRetry(SUPA_URL_P + '/rest/v1/programmes?id=in.(' + progIdsToDelete.join(',') + ')', {
-      method: 'DELETE', headers: _sbHeaders()
-    });
-  })
-  .then(function() {
-    var progBodies = freshTail.map(function(s, i) {
-      return {
-        patient_id: _progPatient.id, praticien_id: _progUid,
-        nom: 'CAP — ' + s.label, date: newDates[i],
-        donnees: {
-          type: 'cap', session: s, profile: profile,
-          blocs: _capSessionToBlocs(s, profile),
-          consignes: (CAP_PATHO_DB[profile.patho] || CAP_PATHO_DB.aucune).consignes
-        }
-      };
-    });
-    return _fetchRetry(SUPA_URL_P + '/rest/v1/programmes', {
-      method: 'POST', headers: Object.assign({}, _sbHeaders(), { 'Prefer': 'return=representation' }),
-      body: JSON.stringify(progBodies)
-    }).then(function(r) { return r.json(); });
-  })
-  .then(function(progs) {
-    if (!Array.isArray(progs) || !progs.length) throw new Error('Réponse inattendue lors de la recréation des programmes.');
-    var seanceBodies = progs.map(function(p, i) {
-      return { patient_id: _progPatient.id, praticien_id: _progUid, programme_id: p.id, date: newDates[i] };
-    });
-    return _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees', {
-      method: 'POST', headers: Object.assign({}, _sbHeaders(), { 'Prefer': 'return=representation' }),
-      body: JSON.stringify(seanceBodies)
-    }).then(function(r) { return r.json().then(function(seances) { return { progs: progs, seances: seances }; }); });
-  })
-  .then(function(result) {
-    freshTail.forEach(function(s, i) {
-      s.seance_id = result.seances[i] ? result.seances[i].id : null;
-      s.prog_id   = result.progs[i]   ? result.progs[i].id   : null;
-      s.date      = newDates[i];
-      s.status    = 'pending';
-      s.painScore = null;
-    });
-    CAP_STATE.sessions = head.concat(freshTail);
-    _capSave();
-    _capRender();
-    renderCalendar();
-    _renderAgendaProgList('cap');
-    if (typeof _showToast === 'function') _showToast('↻ Programme replanifié et ré-agendé (' + freshTail.length + ' séances).');
-  })
-  .catch(function(err) {
-    alert('Erreur lors de la replanification : ' + (err && err.message ? err.message : 'problème réseau'));
-  });
-}
-
 function _capManualMaintain(idx) {
   // Plan v2 : répéter la semaine, avec le choix d'allonger ou non. Le bouton
   // ne faisait qu'afficher un message — il ne maintenait rien du tout.
@@ -13236,13 +12902,9 @@ function _capManualRegress(idx) {
     var prop = _capProposerRegression(idx);
     if (prop) { prop.score = '—'; prop.allonger = false; _capProposition = prop; _capRender(); return; }
   }
-  var sessions = CAP_STATE.sessions;
-  var Lpain = _capLoadOf(sessions[idx]); // charge actuellement prévue, jugée trop ambitieuse par le praticien
-  var Lgood = null;
-  for (var g = idx - 1; g >= 0; g--) { if (sessions[g].status === 'done') { Lgood = _capLoadOf(sessions[g]); break; } }
-  if (Lgood == null) Lgood = Math.max(1, Lpain - 1);
-  var Lmid = _capMidpointL(Lgood, Lpain);
-  _capReplanFromIndex(idx, Lmid);
+  if (typeof _showToast === 'function') {
+    _showToast('Ce plan est antérieur à la v2 : régénérez-le depuis la fiche.');
+  }
 }
 
 /* ── CAP → Agenda : sélecteur de jours de la semaine ── */
@@ -13592,10 +13254,10 @@ function _capBbToggle() {
 function _capRenderFeedback() { /* remplacé par _openFeedbackModal */ }
 
 /* ── Adapter depuis le panneau Feedback du builder ──
-   Unifié avec le moteur du wizard CAP (entre-deux + replan complet, cf.
-   _capMidpointL/_capReplanFromIndex) : régresser ici recalcule toute la suite
-   du plan sous ACWR, pas seulement la séance suivante. Sauvegarde aussi
-   l'EVA praticien (alimente le badge rouge de l'agenda). ── */
+   Unifié avec le moteur du wizard CAP : régresser ici fait reculer le
+   paramètre en cause et régénère la suite du plan depuis cet état, pas
+   seulement la séance suivante. Sauvegarde aussi l'EVA praticien (alimente le
+   badge rouge de l'agenda). ── */
 function _capAdaptFromBuilder(mode) {
   if (!_capBbSeanceId || !_capBbDonnees || !_progPatient) {
     _showToast('Contexte manquant — rouvrez la séance.');
@@ -13658,12 +13320,18 @@ function _capAdaptFromBuilder(mode) {
     }
 
     if (mode === 'regression') {
-      var Lpain = _capLoadOf(sessions[localIdx]);
-      var Lgood = null;
-      for (var g = localIdx - 1; g >= 0; g--) { if (sessions[g].status === 'done') { Lgood = _capLoadOf(sessions[g]); break; } }
-      if (Lgood == null) Lgood = Math.max(1, Lpain - 1);
-      var Lmid = _capMidpointL(Lgood, Lpain);
-      _capReplanFromIndex(localIdx + 1, Lmid); // gère save/render/agenda, avec sync Supabase
+      // Même régression que dans le wizard : le paramètre en cause recule d'un
+      // tour et la suite est régénérée depuis cet état, en gardant les liens
+      // agenda. Rien n'est supprimé ni recréé côté Supabase.
+      var prop = state.etats ? _capProposerRegression(localIdx) : null;
+      if (!prop) { _showToast('Ce plan est antérieur à la v2 : régénérez-le depuis la fiche.'); return; }
+      _capAppliquerRegression(prop, false);
+      _capSave();
+      _capRender();
+      renderCalendar();
+      _renderAgendaProgList('cap');
+      _showToast('↩ ' + _capLbl(prop.levier === 'intensite' ? 'intensite' : 'volume')
+        + ' en recul — la suite du plan est reprise depuis la semaine ' + prop.semaine + '.');
     } else {
       _capSave();
       renderCalendar();

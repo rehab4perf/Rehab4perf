@@ -445,11 +445,11 @@ n'entame pas l'acquis.
 
 ## 12. La régression sur douleur
 
-> **Reste à faire.** Les trois boutons passent désormais par la proposition
-> quand le plan est en v2. Le moteur v1 (`_capBuildProgressive`, `_capLoadOf`,
-> `_capMidpointL`, `_capReplanFromIndex`) subsiste comme **repli pour les plans
-> sans axe** — générés avant la v2. Il ne peut donc pas être retiré tant que
-> ces plans peuvent exister.
+> **Le moteur v1 a été retiré** — 415 lignes. Tous les chemins passent par le
+> moteur v2 : le bouton Douleur, Maintenir, Régresser, le panneau Feedback du
+> builder d'agenda et la reprise après coupure. Un plan généré avant la v2 n'a
+> pas d'`axe` : il n'est plus régénérable et l'app invite à repasser par la
+> fiche, plutôt que de le traiter avec des règles qui n'existent plus.
 
 ### On propose, on n'applique jamais d'office
 
@@ -539,6 +539,14 @@ le volume ne bouge pas.
 `−` / `+` ajustent d'une minute sur l'allure, de cinq points de pourcentage sur
 une décharge globale. **Ignorer** laisse la douleur consignée sur la séance et
 le plan intact.
+
+### La reprise après coupure
+
+Dix jours sans séance validée déclenchent une bannière. « Recalculer » repart
+de la **dernière semaine réellement faite** — la capacité acquise, non celle
+que le plan avait prévue — et applique **−15 % par semaine de coupure sur les
+deux grandeurs** : le désentraînement ne choisit pas entre volume et allure. La
+durée est conservée ; c'est au praticien d'allonger s'il le souhaite.
 
 ### Les deux autres boutons
 
