@@ -10446,13 +10446,16 @@ function _capSeanceFractionne(role, reps, runMin, walkMin, zone, opts) {
 }
 
 /* Séance de qualité : échauffement + série à l'allure + retour au calme. */
-function _capSeanceQualite(reps, runMin, zoneQ, recupMin, echauffMin, opts) {
+function _capSeanceQualite(spec, opts) {
   return _capSeance('qualite', [
-    { minutes: echauffMin, zone: 'Z2' },
-    // recupDerniere:false — le retour au calme qui suit tient lieu de dernière
+    { minutes: spec.echauff, zone: 'Z2' },
+    // La récupération se court au footing, pas en Z1 : c'est du fractionné
+    // inséré dans une sortie, le coureur ne s'arrête pas entre les fractions.
+    // recupDerniere:false — le retour au calme tient lieu de dernière
     // récupération, la compter deux fois gonflerait la charge.
-    { reps: reps, minutes: runMin, zone: zoneQ, recupMin: recupMin, recupZone: 'Z1', recupDerniere: false },
-    { minutes: Math.max(5, Math.round(echauffMin / 2)), zone: 'Z1' },
+    { reps: spec.reps, minutes: spec.runMin, zone: spec.zone,
+      recupMin: spec.recup, recupZone: 'Z2', recupDerniere: false },
+    { minutes: spec.retour, zone: 'Z2' },
   ], opts);
 }
 
@@ -10535,7 +10538,7 @@ var CAP_PART_ROLE = { longue: 0.35, qualite: 0.22, technique: 0.15, facile: 1 };
 /* Plafond propre à certains rôles, en minutes. La séance technique vise la
    qualité du geste, pas la charge : elle ne doit jamais absorber le volume
    redistribué par les autres, sinon on prescrit une heure d'éducatifs. */
-var CAP_PLAFOND_ROLE = { technique: 30 };
+var CAP_PLAFOND_ROLE = {};
 
 /* Répartit un volume selon des poids, en respectant un plafond par séance.
    Le dépassement d'une séance plafonnée est REDISTRIBUÉ sur les autres :
@@ -10567,18 +10570,24 @@ function _capRepartir(total, poids, plafond) {
 
    La durée d'une répétition suit le total : on ne demande pas 3 minutes
    d'affilée à quelqu'un qui en est à 4 minutes de qualité par semaine. */
-function _capSpecQualite(intensiteMin, zone) {
+function _capSpecQualite(intensiteMin, zone, volumeSeance) {
   var total  = Math.max(1, Math.round(intensiteMin));
   var runMin = total >= 15 ? 3 : total >= 8 ? 2 : 1;
   var reps   = Math.max(2, Math.round(total / runMin));
-  var recup  = runMin >= 3 ? 2 : 1;
-  var echauff = Math.max(10, Math.round(total * 0.8));
-  var retour  = Math.max(5, Math.round(echauff / 2));
-  // Volume de COURSE de la séance : échauffement + effort + récupérations
-  // courues (la dernière est remplacée par le retour au calme) + retour.
-  var volume = echauff + reps * runMin + (reps - 1) * recup + retour;
-  return { reps: reps, runMin: runMin, recup: recup, echauff: echauff,
-           zone: zone || 'Z3', volume: volume, effort: reps * runMin };
+  // Récupération égale au temps d'effort au départ : c'est le rapport le plus
+  // sûr, il se resserre à mesure que le total monte.
+  var recup  = total >= 15 ? Math.max(1, Math.round(runMin / 2)) : runMin;
+  var serie  = reps * runMin + (reps - 1) * recup;
+  // La séance dure ce que dure une sortie normale : le fractionné s'insère
+  // DANS le footing, il ne le remplace pas. Une séance courte et dédiée
+  // obligeait les autres sorties à absorber son reliquat, ce qui faisait
+  // naître une sortie de plus dans la semaine.
+  var seance  = Math.max(serie + 15, Math.round(volumeSeance || 0));
+  var reste   = Math.max(15, seance - serie);
+  var echauff = Math.max(10, Math.round(reste * 0.6));
+  var retour  = Math.max(5, reste - echauff);
+  return { reps: reps, runMin: runMin, recup: recup, echauff: echauff, retour: retour,
+           zone: zone || 'Z3', volume: echauff + serie + retour, effort: reps * runMin };
 }
 
 /* Construit la semaine à un nombre de sorties donné. Le volume délivré peut
@@ -10588,7 +10597,7 @@ function _capBuildSemaineN(p, opts, nbSorties, frequence) {
   var semaine   = opts.semaine || 1;
   var volumeMin = Math.max(1, opts.volumeMin != null ? opts.volumeMin
                             : _capVersMin(opts.volumeHebdo != null ? opts.volumeHebdo : p.cibleHebdo, p));
-  var continu   = opts.continuTolere != null ? opts.continuTolere : p.courseContinueToleree;
+  var continu   = opts.continuTolere != null ? opts.continuTolere : _capContinuTolere(p);
   var intensite = Math.max(0, opts.intensiteMin || 0);   // minutes de Z3+ de la semaine
   var fractionne = (continu || 0) < CAP_SEUILS.fractionne;
   var plafondSortie = p.plusLongueSortie > 0 ? _capVersMin(p.plusLongueSortie, p) : Infinity;
@@ -10604,28 +10613,20 @@ function _capBuildSemaineN(p, opts, nbSorties, frequence) {
   // La séance de qualité est dimensionnée AVANT la répartition : son volume de
   // course découle des minutes d'intensité prescrites, échauffement et retour
   // au calme compris. Le reliquat se partage entre les autres séances.
+  // La séance de qualité prend une part de volume comme les autres : elle EST
+  // une sortie de la semaine, avec du fractionné dedans.
   var minutesParRole = roles.map(function() { return 0; });
   var volumeRestant  = volumeMin;
-  var qualiteSpec = null;
   var iQualite = roles.indexOf('qualite');
-  if (iQualite !== -1) {
-    qualiteSpec = _capSpecQualite(intensite, opts.zoneQualite || 'Z3');
-    minutesParRole[iQualite] = qualiteSpec.volume;
-    volumeRestant -= qualiteSpec.volume;
-  }
 
-  // Répartition du reste : les rôles nommés prennent leur part, le solde se
-  // partage entre les séances faciles.
-  var poids = roles.map(function(r, i) {
-    if (i === iQualite) return 0;
-    return r === 'facile' ? 0 : CAP_PART_ROLE[r];
+  var poids = roles.map(function(r) {
+    return (r === 'facile' || r === 'qualite') ? 0 : CAP_PART_ROLE[r];
   });
   var nommes = poids.reduce(function(a, v) { return a + v; }, 0);
-  var nbFacile = roles.filter(function(r) { return r === 'facile'; }).length;
-  var partFacile = nbFacile ? Math.max(0, 1 - nommes) / nbFacile : 0;
-  poids = roles.map(function(r, i) {
-    if (i === iQualite) return 0;
-    return r === 'facile' ? partFacile : CAP_PART_ROLE[r];
+  var nbLibres = roles.filter(function(r) { return r === 'facile' || r === 'qualite'; }).length;
+  var partLibre = nbLibres ? Math.max(0, 1 - nommes) / nbLibres : 0;
+  poids = roles.map(function(r) {
+    return (r === 'facile' || r === 'qualite') ? partLibre : CAP_PART_ROLE[r];
   });
 
   // La sortie longue ne dépasse jamais la cible fixée quand il y en a une.
@@ -10635,17 +10636,19 @@ function _capBuildSemaineN(p, opts, nbSorties, frequence) {
   // réellement l'absorber.
   roles.forEach(function(r, i) {
     var pl = CAP_PLAFOND_ROLE[r];
-    if (pl == null || i === iQualite) return;
+    if (pl == null) return;
     minutesParRole[i] = Math.min(pl, plafondSortie, volumeMin * poids[i]);
     volumeRestant -= minutesParRole[i];
     poids[i] = 0;
   });
   var repartis = _capRepartir(Math.max(0, volumeRestant), poids, plafondSortie);
   roles.forEach(function(r, i) {
-    if (i === iQualite) return;
     if (CAP_PLAFOND_ROLE[r] == null) minutesParRole[i] = repartis[i];
     if (r === 'longue') minutesParRole[i] = Math.min(minutesParRole[i], plafondLongue);
   });
+  var qualiteSpec = iQualite !== -1
+    ? _capSpecQualite(intensite, opts.zoneQualite || 'Z3', minutesParRole[iQualite])
+    : null;
 
   var zoneFacile = 'Z2';
 
@@ -10659,8 +10662,7 @@ function _capBuildSemaineN(p, opts, nbSorties, frequence) {
       var ech = _capEchelonFractionne(continu);
       s = _capSeanceFractionne(role, ech.reps, ech.bout, 1, zoneFacile);
     } else if (role === 'qualite') {
-      s = _capSeanceQualite(qualiteSpec.reps, qualiteSpec.runMin, qualiteSpec.zone,
-                            qualiteSpec.recup, qualiteSpec.echauff);
+      s = _capSeanceQualite(qualiteSpec);
     } else if (role === 'technique') {
       // Éducatifs à cadence cible, en Z1 : c'est la qualité du geste qui
       // compte, pas la charge.
@@ -10685,7 +10687,7 @@ function _capBuildSemaine(p, opts) {
   var frequence = Math.max(1, Math.round(p.frequenceCible || 3));
   var volumeMin = Math.max(1, opts.volumeMin != null ? opts.volumeMin
                             : _capVersMin(opts.volumeHebdo != null ? opts.volumeHebdo : p.cibleHebdo, p));
-  var continu = opts.continuTolere != null ? opts.continuTolere : p.courseContinueToleree;
+  var continu = opts.continuTolere != null ? opts.continuTolere : _capContinuTolere(p);
 
   // En mode course/marche, le contenu de la séance est dicté par l'échelon et
   // c'est LUI qui porte la progression : le volume de la semaine est ce que
@@ -10709,17 +10711,11 @@ function _capBuildSemaine(p, opts) {
   // course, alors que 3 étaient demandées.
   var plafond = p.plusLongueSortie > 0 ? _capVersMin(p.plusLongueSortie, p) : Infinity;
   var nb = frequence;
-  if (plafond !== Infinity) {
-    // La séance de qualité a une taille propre, dictée par les minutes
-    // d'intensité et non par une part du volume : elle est souvent bien plus
-    // courte qu'une sortie moyenne, et tout ce qu'elle ne prend pas retombe
-    // sur les autres. C'est donc le volume RESTANT qu'il faut confronter au
-    // plafond, sinon la semaine sous-délivre en silence.
-    var volQualite = (opts.intensiteMin > 0 && _capPolarisable(p, volumeMin, frequence))
-      ? _capSpecQualite(opts.intensiteMin, 'Z3').volume : 0;
-    var reste  = Math.max(0, volumeMin - volQualite);
-    var autres = Math.max(1, nb - (volQualite > 0 ? 1 : 0));
-    while (nb < 21 && reste / autres > plafond) { nb++; autres++; }
+  // Toutes les sorties se valent désormais en volume — la séance de qualité
+  // comprise, qui n'est qu'une sortie avec du fractionné dedans. Une sortie
+  // ne s'ajoute donc que si la part de chacune dépasse la tolérance déclarée.
+  if (plafond !== Infinity && volumeMin / nb > plafond) {
+    nb = Math.min(21, Math.max(frequence, Math.ceil(volumeMin / plafond)));
   }
   return _capBuildSemaineN(p, opts, nb, frequence);
 }
@@ -10819,13 +10815,44 @@ function _capTauxSemaine(volume, cible, semaine, total, cycle) {
   return Math.pow(cible / volume, 1 / Math.max(1, inc));
 }
 
+/* Minutes de course continue que le coureur tient d'un trait.
+
+   Le champ « course continue sans douleur » vaut 0 par défaut, et 0 signifie
+   pour le moteur « ne court pas une seule minute d'affilée » — donc bascule en
+   course/marche. Un praticien qui renseigne « tolère 10 km sur une sortie »
+   sans toucher à ce champ voyait son patient renvoyé au fractionné de reprise :
+   le champ vide écrasait le champ rempli.
+
+   Une sortie tolérée ou une charge chronique impliquent nécessairement de
+   courir en continu. À défaut de saisie explicite, on en déduit la tolérance,
+   prudemment : la moitié de la plus longue sortie. Une saisie explicite, elle,
+   fait toujours foi. */
+function _capContinuTolere(p) {
+  var saisi = p.courseContinueToleree || 0;
+  if (saisi > 0) return saisi;
+  var frequence = Math.max(1, Math.round(p.frequenceCible || 3));
+  if (p.plusLongueSortie > 0) return _capVersMin(p.plusLongueSortie, p) / 2;
+  if (p.chronique > 0)        return _capVersMin(p.chronique, p) / frequence / 2;
+  return 0;                    // rien de déclaré : c'est une reprise depuis zéro
+}
+
+/* Contradiction franche entre deux champs : le praticien déclare une sortie
+   longue tolérée ET une course continue trop courte pour la porter. On ne
+   tranche pas en silence, on l'affiche. */
+function _capContradictionSaisie(p) {
+  if (!(p.courseContinueToleree > 0) || !(p.plusLongueSortie > 0)) return null;
+  var sortie = _capVersMin(p.plusLongueSortie, p);
+  if (p.courseContinueToleree >= sortie * 0.4) return null;
+  return { sortieMin: sortie, continuMin: p.courseContinueToleree };
+}
+
 /* Volume hebdomadaire de départ quand il n'y a pas de charge chronique. Le
    plancher ne peut pas ignorer ce que le patient tolère déjà : quelqu'un qui
    court 12 min d'affilée sans douleur ne repart pas à 4 min par sortie. On
    part donc de sa tolérance, et le plancher ne joue que si elle est plus
    basse encore. */
 function _capDepartReprise(p, frequence) {
-  var continu = p.courseContinueToleree || 0;
+  var continu = _capContinuTolere(p);
   return Math.max(9, frequence * Math.max(4, continu));
 }
 
@@ -10907,7 +10934,7 @@ function _capSemDecharge(p) {
 function _capTrajectoire(p) {
   var frequence = Math.max(1, Math.round(p.frequenceCible || 3));
   var ax        = CAP_AXES[p.axe] || CAP_AXES.charge;
-  var continu   = p.courseContinueToleree || 0;
+  var continu   = _capContinuTolere(p);
   var volumeCoupable    = ax.coupable === 'volume';
   var intensiteCoupable = ax.coupable === 'intensite';
   var demande = Math.max(1, Math.round(p.semaines || 12));
@@ -10923,12 +10950,11 @@ function _capTrajectoire(p) {
   // identiques du début à la fin. Le volume monte alors jusqu'au seuil — ce
   // n'est pas le développer, c'est lui rendre la capacité de porter le
   // traitement. La cible saisie reste le plafond absolu.
+  // Le plafond du volume est toujours la cible saisie. La tolérance, elle, ne
+  // fixe que la fin du cycle 1 : on y revient d'abord, puis on va chercher un
+  // peu plus. Plafonner à la tolérance interdisait toute progression du volume
+  // au-delà du premier cycle.
   var volumePlafond = cibleSaisie;
-  if (!volumeCoupable) {
-    var seuilPolarisation = _capVersMin(_capPlancherPalier(p.unite),
-                                        { unite: p.unite, allureFooting: p.allureFooting });
-    volumePlafond = Math.min(cibleSaisie, Math.max(tolere, seuilPolarisation));
-  }
 
   var semFrac = 0, departMin;
   if (continu < CAP_SEUILS.fractionne) {
@@ -11001,6 +11027,9 @@ function _capTrajectoire(p) {
     cibleIntensite: cibleIntensite,
     frequence: frequence, cycle: cycle, conseille: conseille, demande: demande,
     peutPolariser: peutPolariser, cibleSaisie: cibleSaisie,
+    // Une décharge n'a de sens que s'il y a quelque chose à décharger : sans
+    // pathologie renseignée, rien ne justifie de faire reculer le coureur.
+    decharge: (p.patho && p.patho !== 'aucune') ? CAP_SEUILS.dechargeInitiale : 0,
     g: g, acwr: _capACWRPourG(g),
     // Le délai ne laisse même pas la place à l'échelle course/marche
     fractionneComprime: semFrac >= demande,
@@ -11079,29 +11108,43 @@ function _capBuildProgrammeV2(p) {
   // l'innocent part à la tolérance du coureur et n'y touche plus.
   var volume    = traj.departMin;
   var intensite = traj.departIntensite;
-  var continu   = p.courseContinueToleree || 0;
+  var continu   = _capContinuTolere(p);
   var volumeCoupable    = ax.coupable === 'volume';
   var intensiteCoupable = ax.coupable === 'intensite';
 
   var degel = false, sessions = [], semaine = 0;
   var conflitsEspacement = [];
+  // Le premier cycle sert à revenir à la tolérance, pas à la dépasser. Il
+  // n'existe qu'en course continue : une reprise course/marche a déjà son
+  // échelle, qui joue le même rôle.
+  var cycle1 = continu >= CAP_SEUILS.fractionne && traj.decharge > 0
+    ? CAP_SEUILS.cycle : 0;
 
   while (semaine < semainesVisees) {
     semaine++;
 
+    // ── Cycle 1 : retour à la tolérance ──
+    // Le volume part sous la tolérance et remonte par paliers égaux pour être
+    // pile dessus à la dernière semaine du cycle. Aucune intensité : c'est
+    // elle le vrai danger, elle n'ouvre qu'au cycle suivant.
+    var enCycle1 = semaine <= cycle1;
+    // Ouverture du cycle 2 : la première dose d'intensité est posée AVANT de
+    // construire la semaine. Calculée en fin de semaine, elle n'apparaissait
+    // qu'à la suivante — le cycle 2 s'ouvrait sur une semaine vide.
+    if (!enCycle1 && cycle1 > 0 && intensite === 0
+        && traj.cibleIntensite > 0 && ax.coupable !== 'amplitude'
+        && continu >= CAP_SEUILS.fractionne) {
+      intensite = CAP_SEUILS.intensitePlancher;
+      degel = true;
+    }
+
     // ── Dégel du paramètre coupable ──
-    // Il ne peut pas s'ouvrir avant que le volume ait atteint la tolérance :
-    // reconstruire l'allure d'un coureur qui n'a pas encore retrouvé son
-    // volume reviendrait à bouger deux leviers. D'où l'ordre volume puis
-    // allure. L'objectif de base reste le jalon quand il est renseigné ; à
-    // défaut, les semaines de décharge tranchent — seul cas où le calendrier
-    // décide, et il est explicite.
-    if (!degel && semaine > traj.finVolume && semaine > traj.finDecharge) {
-      // L'objectif de base ne peut que RETARDER le dégel, jamais l'empêcher.
-      // Adosser son critère au volume alors que le volume est figé par
-      // construction le rendait inatteignable : le plan restait bloqué en
-      // décharge pour toujours, sans jamais reconstruire quoi que ce soit.
-      // Le volume arrivé à son plafond vaut donc objectif atteint.
+    // Il ne peut pas s'ouvrir avant que le volume ait retrouvé la tolérance :
+    // reconstruire l'allure d'un coureur qui n'a pas encore son volume
+    // reviendrait à bouger deux leviers. L'objectif de base peut RETARDER ce
+    // dégel, jamais l'empêcher — adosser son critère au volume alors que le
+    // volume est figé par construction le rendait inatteignable.
+    if (!degel && !enCycle1 && semaine > traj.finVolume) {
       degel = !objBaseMin
            || continu >= objBaseMin
            || volume >= cibleMin
@@ -11117,15 +11160,29 @@ function _capBuildProgrammeV2(p) {
     // et le volume progresse pendant sa propre phase, bien avant le dégel du
     // paramètre coupable.
     var enCroissance = continu < CAP_SEUILS.fractionne || semaine <= traj.finVolume || degel;
-    var estPalier = pal.cycle > 0 && enCroissance && semaine % pal.cycle === 0;
+    var estPalier = !enCycle1 && pal.cycle > 0 && enCroissance && semaine % pal.cycle === 0;
     var baisse = estPalier && pal.mode === 'baisse' ? 0.7 : 1;
 
-    var volumeSemaine    = volumeCoupable ? volume * baisse : volume;
-    var intensiteSemaine = intensiteCoupable
-      ? (degel ? intensite * baisse : 0)
-      : intensite * baisse;
+    var volumeSemaine, intensiteSemaine;
+    if (enCycle1) {
+      // −20 %, −10 %, 0 % pour un cycle de 3 : la décharge se résorbe d'un pas
+      // égal par semaine et tombe à zéro pile en fin de cycle.
+      var reste = (cycle1 - semaine) / (cycle1 - 1);
+      volumeSemaine = traj.volumeTolere * (1 - traj.decharge * reste);
+      // L'intensité ne disparaît que si c'est ELLE qui a blessé. Sur un axe
+      // Répétition, l'allure est innocente : la retirer priverait le coureur
+      // d'une qualité qu'il encaissait déjà, sans rien traiter.
+      intensiteSemaine = intensiteCoupable ? 0 : intensite;
+    } else {
+      volumeSemaine    = volumeCoupable ? volume * baisse : volume;
+      intensiteSemaine = intensiteCoupable ? (degel ? intensite * baisse : 0)
+                                           : intensite * baisse;
+    }
     // Course/marche : aucune qualité tant que le patient ne court pas d'un trait.
     if (continu < CAP_SEUILS.fractionne) intensiteSemaine = 0;
+    // L'axe Amplitude se traite par la technique de course, pas par l'allure :
+    // aucune séance rapide de tout le programme.
+    if (ax.coupable === 'amplitude') intensiteSemaine = 0;
 
     var sem = _capBuildSemaine(p, {
       volumeMin: volumeSemaine, continuTolere: continu,
@@ -11150,25 +11207,33 @@ function _capBuildProgrammeV2(p) {
     });
 
     // ── Progression : un seul levier à la fois ──
+    // À partir du cycle 2, volume et intensité alternent d'une semaine sur
+    // l'autre. Les faire monter ensemble reviendrait à bouger deux leviers,
+    // et on ne saurait plus lequel a fait mal en cas de retour douloureux.
     if (!estPalier) {
       if (continu < CAP_SEUILS.fractionne) {
         // Course/marche : c'est le bout de course qui progresse, pas le
         // volume — allonger les deux la même semaine ferait deux leviers.
         continu = _capBoutSuivant(continu, pasFractionne);
-      } else if (semaine <= traj.finVolume) {
-        // Phase volume : elle vaut tout le délai quand le volume est le
-        // paramètre coupable, et seulement le temps de rejoindre la tolérance
-        // quand il est innocent.
-        var finPhase = volumeCoupable ? semainesVisees : traj.finVolume;
-        volume = Math.min(cibleMin,
-          volume * _capTauxSemaine(volume, cibleMin, semaine, finPhase, pal.cycle));
-      } else if (intensiteCoupable && degel) {
-        // Première semaine de réintroduction : on part du plancher, on ne
-        // multiplie pas zéro.
-        intensite = intensite > 0
-          ? Math.min(traj.cibleIntensite,
-              intensite * _capTauxSemaine(intensite, traj.cibleIntensite, semaine, semainesVisees, pal.cycle))
-          : CAP_SEUILS.intensitePlancher;
+      } else if (enCycle1) {
+        volume = traj.volumeTolere;   // le cycle 1 recale, il ne progresse pas
+      } else {
+        // Semaine paire depuis l'ouverture du cycle 2 : l'intensité. Impaire :
+        // le volume. Le cycle 2 s'ouvre par l'intensité, puisque le volume
+        // vient tout juste de retrouver la tolérance.
+        // Chaque levier ne bouge qu'une semaine sur deux : son taux se calcule
+        // donc sur le nombre de TOURS qui lui restent, pas sur les semaines
+        // restantes. Sinon il progresse deux fois trop lentement et n'atteint
+        // jamais sa cible.
+        var tours = Math.max(1, Math.floor((semainesVisees - semaine) / 2));
+        var tourIntensite = ((semaine - cycle1) % 2) === 0;
+        var peutIntensite = intensite > 0 && traj.cibleIntensite > 0;
+        if (tourIntensite && peutIntensite) {
+          intensite = Math.min(traj.cibleIntensite,
+            intensite * Math.pow(traj.cibleIntensite / intensite, 1 / tours));
+        } else if (volume < cibleMin) {
+          volume = Math.min(cibleMin, volume * Math.pow(cibleMin / volume, 1 / tours));
+        }
       }
     }
   }
@@ -11234,6 +11299,8 @@ var CAP_SEUILS = {
   acwrWarn:       1.30,  // soutenu
   intensitePlancher: 4,    // min de Z3+ de la première semaine de réintroduction
   intensiteMaxPct:   0.25, // croissance hebdo max des minutes de qualité
+  cycle:             3,    // longueur d'un cycle, en semaines
+  dechargeInitiale:  0.20, // le volume repart 20 % sous la tolérance
 };
 
 function capChipTog(el) { el.classList.toggle('active'); }
