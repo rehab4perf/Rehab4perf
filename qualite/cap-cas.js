@@ -45,7 +45,11 @@ function chargerMoteur() {
   // Un `document` inerte suffit à couvrir un appel involontaire.
   const code = src.slice(a, b)
     + '\nmodule.exports = { CAP_AXES, CAP_PATHO_DB, CAP_SEUILS, _capBuildProgrammeV2,'
-    + ' _capTrajectoire, _capVolumeCourse, _capIntensiteSemaine, _capVersMin };';
+    + ' _capTrajectoire, _capVolumeCourse, _capIntensiteSemaine, _capVersMin,'
+    + ' _capProposerRegression, _capAppliquerRegression,'
+    // CAP_STATE est une variable de module : les cas de régression ont besoin
+    // de l'écrire et de la relire.
+    + ' setState: function(s) { CAP_STATE = s; }, getState: function() { return CAP_STATE; } };';
   const m = { exports: {} };
   const faux = { getElementById: () => null, querySelectorAll: () => [] };
   new Function('module', 'exports', 'document', 'window', 'localStorage', code)(
@@ -318,6 +322,154 @@ CAS.forEach((cas) => {
     if (r.semaines.length > 8) console.log('    …');
   }
   resultats.forEach((x) => console.log('  ' + (x.ok ? '✓' : '✗') + ' ' + x.libelle));
+  console.log('');
+});
+
+/* ═══ 7. LA RÉGRESSION SUR DOULEUR ═══════════════════════════════════
+   Même exigence que pour la génération : le résultat attendu est écrit
+   avant le code, et il est rejoué à chaque modification. La régression
+   est la partie qui compte le plus en consultation — c'est là que le
+   plan rencontre le patient réel.
+═══════════════════════════════════════════════════════════════════════ */
+
+/* Monte un plan et le pose dans CAP_STATE, comme après une génération. */
+function planPour(saisie) {
+  const p = fiche(saisie, DEFAUTS);
+  const r = MOTEUR._capBuildProgrammeV2(p);
+  const state = { profile: p, sessions: r.seances, etats: r.etats };
+  MOTEUR.setState(state);
+  return state;
+}
+
+const nbSemaines = (st) => new Set(st.sessions.map((s) => s.week)).size;
+const seanceOu = (st, sem, avecZ3) => st.sessions.findIndex(
+  (s) => s.week === sem && (MOTEUR._capIntensiteSemaine([s]) > 0) === avecZ3);
+
+const SAISIE_CHARGE = { patho: 'periostite', capSortieMax: '12', capAllureG: '5:30',
+                        capFreqCible: '3', capCibleHebdo: '36', capContinu: '50',
+                        capW1: '30', capW2: '30', capW3: '30', capW4: '30',
+                        capSemG: '15' };
+const SAISIE_AMPLITUDE = Object.assign({}, SAISIE_CHARGE, { patho: 'lombalgie', capContinu: '45' });
+
+const CAS_REGRESSION = [
+  {
+    titre: 'Douleur sur une séance à allure élevée — l\'allure recule, le volume non',
+    exec: () => {
+      const st = planPour(SAISIE_CHARGE);
+      const prop = MOTEUR._capProposerRegression(seanceOu(st, 10, true));
+      return { st, prop };
+    },
+    attendu: [
+      ['Le levier est l\'allure', ({ prop }) => prop.levier === 'intensite'],
+      ['Les minutes de Z3+ reculent', ({ prop }) => prop.apres.intensite < prop.avant.intensite],
+      ['Le volume ne bouge pas', ({ prop }) => Math.abs(prop.apres.volume - prop.avant.volume) < 0.5],
+      ['Le recul est d\'un tour, pas un effondrement',
+        ({ prop }) => prop.apres.intensite >= prop.avant.intensite * 0.6],
+      ['Le repère EVA de la pathologie est fourni', ({ prop }) => prop.seuilPatho > 0],
+    ],
+  },
+  {
+    titre: 'Douleur sur un footing — décharge globale de 30 %',
+    exec: () => {
+      const st = planPour(SAISIE_CHARGE);
+      const prop = MOTEUR._capProposerRegression(seanceOu(st, 10, false));
+      return { st, prop };
+    },
+    attendu: [
+      ['Le levier est global', ({ prop }) => prop.levier === 'global'],
+      ['Le volume baisse de 30 %',
+        ({ prop }) => Math.abs(prop.apres.volume - prop.avant.volume * 0.7) < 0.5],
+      ['L\'allure baisse aussi',
+        ({ prop }) => prop.apres.intensite < prop.avant.intensite],
+    ],
+  },
+  {
+    titre: 'Douleur sur une séance technique — décharge, et le geste est à reprendre',
+    exec: () => {
+      const st = planPour(SAISIE_AMPLITUDE);
+      const idx = st.sessions.findIndex((s) => s.week === 8 && s.role === 'technique');
+      return { st, prop: idx >= 0 ? MOTEUR._capProposerRegression(idx) : null, idx };
+    },
+    attendu: [
+      ['Une séance technique existe sur l\'axe Amplitude', ({ idx }) => idx >= 0],
+      ['Le levier est global', ({ prop }) => prop && prop.levier === 'global'],
+      ['La reprise du geste est signalée', ({ prop }) => prop && prop.technique === true],
+      ['La cadence cible est rappelée', ({ prop }) => prop && prop.cadenceCible > 0],
+      ['Aucune Z3+ annoncée : cet axe n\'en prescrit jamais',
+        ({ prop }) => prop && prop.avantAff.intensite === 0 && prop.apresAff.intensite === 0],
+    ],
+  },
+  {
+    titre: 'Appliquer — les semaines vécues ne sont jamais réécrites',
+    exec: () => {
+      const st = planPour(SAISIE_CHARGE);
+      const avant = JSON.stringify(st.sessions.filter((s) => s.week <= 10).map((s) => s.label));
+      const nAvant = nbSemaines(st);
+      const prop = MOTEUR._capProposerRegression(seanceOu(st, 10, true));
+      MOTEUR._capAppliquerRegression(prop, false);
+      const apres = MOTEUR.getState();
+      return {
+        st: apres, prop, nAvant,
+        identiques: avant === JSON.stringify(apres.sessions.filter((s) => s.week <= 10).map((s) => s.label)),
+      };
+    },
+    attendu: [
+      ['S1 à S10 strictement inchangées', ({ identiques }) => identiques],
+      ['La durée est conservée', ({ st, nAvant }) => nbSemaines(st) === nAvant],
+      ['Un état par semaine, toujours',
+        ({ st }) => st.etats.length === nbSemaines(st)],
+      ['Les états restent numérotés sans trou',
+        ({ st }) => st.etats.every((e, i) => e.semaine === i + 1)],
+      ['La suite repart sous le niveau douloureux',
+        ({ st, prop }) => {
+          const s11 = st.etats.filter((e) => e.semaine === 11)[0];
+          return s11 && s11.prescrit.intensite <= prop.avant.intensite;
+        }],
+    ],
+  },
+  {
+    titre: 'Appliquer en allongeant — le plan gagne un cycle',
+    exec: () => {
+      const st = planPour(SAISIE_CHARGE);
+      const nAvant = nbSemaines(st);
+      const prop = MOTEUR._capProposerRegression(seanceOu(st, 10, true));
+      MOTEUR._capAppliquerRegression(prop, true);
+      return { st: MOTEUR.getState(), nAvant };
+    },
+    attendu: [
+      ['Le plan s\'allonge d\'un cycle',
+        ({ st, nAvant }) => nbSemaines(st) === nAvant + MOTEUR.CAP_SEUILS.cycleProgression],
+      ['Un état par semaine, toujours',
+        ({ st }) => st.etats.length === nbSemaines(st)],
+    ],
+  },
+];
+
+console.log('─'.repeat(72));
+console.log('RÉGRESSION SUR DOULEUR\n');
+
+CAS_REGRESSION.forEach((cas) => {
+  let ctx, erreur = null;
+  try { ctx = cas.exec(); } catch (e) { erreur = e; }
+  const resultats = erreur ? [] : cas.attendu.map(([libelle, test]) => {
+    let ok = false;
+    try { ok = !!test(ctx); } catch (e) { ok = false; }
+    return { libelle, ok };
+  });
+  const rates = resultats.filter((x) => !x.ok);
+  total += cas.attendu.length;
+  echecs += erreur ? cas.attendu.length : rates.length;
+  if (court && !erreur && !rates.length) return;
+
+  console.log('  ' + cas.titre);
+  if (erreur) { console.log('  ✗ ERREUR : ' + erreur.message + '\n'); return; }
+  if (!court && ctx.prop) {
+    console.log('    ' + ctx.prop.motif);
+    console.log('    Z3+ ' + ctx.prop.avantAff.intensite + "' → " + ctx.prop.apresAff.intensite
+      + "'   ·   volume " + ctx.prop.avantAff.volume + ' → ' + ctx.prop.apresAff.volume
+      + ' ' + ctx.prop.unite);
+  }
+  resultats.forEach((x) => console.log('    ' + (x.ok ? '✓' : '✗') + ' ' + x.libelle));
   console.log('');
 });
 

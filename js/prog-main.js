@@ -11390,11 +11390,17 @@ function _capProposerRegression(idx) {
   if (!etat) return null;
 
   var p = state.profile || {};
+  var axe = CAP_AXES[p.axe] || CAP_AXES.charge;
   var zoneRapide = _capIntensiteSemaine([s]) > 0;
-  var avant = { volume: etat.sortie.volume, intensite: etat.sortie.intensite };
+  // L'axe Amplitude ne prescrit jamais de Z3+ : l'état en porte une valeur
+  // parce que l'intensité y est « innocente », mais elle n'atteint aucune
+  // séance. L'afficher reviendrait à proposer de réduire une grandeur que le
+  // plan ne contient pas.
+  var intensiteReelle = axe.coupable === 'amplitude' ? 0 : etat.sortie.intensite;
+  var avant = { volume: etat.sortie.volume, intensite: intensiteReelle };
   var apres, levier, motif, technique = false;
 
-  if (zoneRapide && etat.sortie.intensite > CAP_SEUILS.intensitePlancher) {
+  if (zoneRapide && intensiteReelle > CAP_SEUILS.intensitePlancher) {
     // L'allure d'abord : c'est elle qu'on redescend en premier.
     levier = 'intensite';
     apres = {

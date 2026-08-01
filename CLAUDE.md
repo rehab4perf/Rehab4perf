@@ -61,6 +61,9 @@ Les cas de référence partent du formulaire réel (défauts lus dans
 node qualite/cap-cas.js
 ```
 
+Le fichier couvre la **génération** (six situations de saisie) et la
+**régression sur douleur** (proposition, application, semaines déjà vécues).
+
 Ordre obligatoire : écrire ou corriger le cas attendu **d'abord**, modifier le
 moteur ensuite, puis vérifier que le test repasse au vert.
 
