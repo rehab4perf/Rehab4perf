@@ -48,6 +48,22 @@ missing = [t for t in tests if t not in tbodies]
 print('TESTS sans tbody:', missing or 'Aucun ✓')
 ```
 
+## Générateur CAP (retour à la course)
+
+Les règles cliniques sont dans `SPEC-CAP.md` — **à lire avant toute
+modification** du moteur CAP dans `js/prog-main.js`. Elles font foi : quand le
+code diverge, c'est le code qui a tort.
+
+Les cas de référence partent du formulaire réel (défauts lus dans
+`programme.html`), pas d'un profil écrit à la main :
+
+```bash
+node qualite/cap-cas.js
+```
+
+Ordre obligatoire : écrire ou corriger le cas attendu **d'abord**, modifier le
+moteur ensuite, puis vérifier que le test repasse au vert.
+
 ## Pre-deploy checklist
 
 See `TESTS_AVANT_DEPLOY.md` — mandatory before any push. If a test fails, do not push. On regression: `git revert HEAD`, fix, re-test, push fix.
