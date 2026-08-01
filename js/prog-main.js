@@ -11466,6 +11466,54 @@ function _capProposerRegression(idx) {
    corrigé, en conservant tout ce qui a déjà été fait.
    `allonger` : le plan gagne des semaines pour tenir sa cible ; sinon il garde
    sa durée et termine plus bas. */
+/* Transfère l'identité agenda des anciennes séances vers les nouvelles, semaine
+   par semaine et rang par rang. Une régression change le CONTENU des séances à
+   venir, pas le calendrier : la date, la séance planifiée et le programme
+   Supabase doivent survivre. Sans ce report, chaque régression laissait des
+   programmes orphelins chez le patient et des séances sans lien dans le plan. */
+function _capReporterLiensAgenda(anciennes, nouvelles) {
+  var parSemaine = {};
+  anciennes.forEach(function(s) { (parSemaine[s.week] = parSemaine[s.week] || []).push(s); });
+  var rang = {};
+  var orphelines = [], sansLien = 0;
+
+  nouvelles.forEach(function(s) {
+    var i = rang[s.week] = (rang[s.week] || 0);
+    rang[s.week]++;
+    var old = (parSemaine[s.week] || [])[i];
+    if (old) {
+      s.date = old.date; s.seance_id = old.seance_id; s.prog_id = old.prog_id;
+    } else if (Object.keys(parSemaine).length) {
+      sansLien++;                       // séance en plus : à ajouter à l'agenda
+    }
+  });
+  // Séances de l'ancien plan qu'aucune nouvelle ne reprend : leur programme
+  // reste dans l'agenda du patient et doit être retiré à la main.
+  Object.keys(parSemaine).forEach(function(w) {
+    var reste = parSemaine[w].slice(rang[w] || 0);
+    reste.forEach(function(s) { if (s.seance_id) orphelines.push(s); });
+  });
+  return { orphelines: orphelines, sansLien: sansLien };
+}
+
+/* Met à jour dans Supabase le contenu des programmes déjà planifiés dont la
+   séance a changé. Les dates ne bougent pas : on ne recrée rien. */
+function _capSyncContenuAgenda(seances, profil) {
+  var liees = seances.filter(function(s) { return s.seance_id && s.prog_id; });
+  if (!liees.length || typeof _fetchRetry !== 'function') return;
+  var consignes = (CAP_PATHO_DB[profil.patho] || CAP_PATHO_DB.aucune).consignes;
+  liees.forEach(function(s) {
+    _fetchRetry(SUPA_URL_P + '/rest/v1/programmes?id=eq.' + s.prog_id, {
+      method: 'PATCH', headers: _sbHeaders(),
+      body: JSON.stringify({
+        nom: 'CAP — ' + s.label,
+        donnees: { type: 'cap', session: s, profile: profil,
+                   blocs: _capSessionToBlocs(s, profil), consignes: consignes },
+      }),
+    }).catch(function(e) { console.warn('CAP sync agenda:', e); });
+  });
+}
+
 function _capAppliquerRegression(prop, allonger) {
   var state = CAP_STATE;
   var profil = Object.assign({}, state.profile);
@@ -11474,14 +11522,21 @@ function _capAppliquerRegression(prop, allonger) {
   var r = _capBuildProgrammeV2(profil, prop.reprise);
   // Les semaines déjà vécues ne se réécrivent pas.
   var gardees = state.sessions.filter(function(x) { return x.week <= prop.semaine; });
+  var anciennes = state.sessions.filter(function(x) { return x.week > prop.semaine; });
   var suite   = r.seances.filter(function(x) { return x.week > prop.semaine; });
   var etatsG  = state.etats.filter(function(e) { return e.semaine <= prop.semaine; });
   var etatsS  = r.etats.filter(function(e) { return e.semaine > prop.semaine; });
+
+  var bilan = _capReporterLiensAgenda(anciennes, suite);
 
   state.sessions = gardees.concat(suite);
   state.etats    = etatsG.concat(etatsS);
   state.profile  = profil;
   state.conflitsEspacement = r.conflitsEspacement;
+  state.agendaADeplacer = (bilan.orphelines.length || bilan.sansLien)
+    ? { retirees: bilan.orphelines.length, ajoutees: bilan.sansLien } : null;
+
+  _capSyncContenuAgenda(suite, profil);
   return state;
 }
 
@@ -12391,6 +12446,21 @@ function _capRender() {
 
   // Une décision est en attente : elle passe avant tout le reste.
   html += _capPropositionHtml();
+
+  // Le plan a changé de longueur alors qu'il était déjà dans l'agenda : le
+  // contenu des séances existantes est resynchronisé tout seul, mais les
+  // séances en plus ou en moins demandent une action.
+  var ag = state.agendaADeplacer;
+  if (ag && (ag.ajoutees || ag.retirees)) {
+    html += '<div style="margin:0 2px 10px;padding:9px 11px;border-radius:7px;background:#fdf4e8;'
+      + 'border:1px solid #f0d6ab;color:#8a5410;font-size:.76rem;line-height:1.5;">'
+      + '<b>Agenda à mettre à jour</b> — le contenu des séances déjà planifiées a été actualisé, mais '
+      + (ag.ajoutees ? '<b>' + ag.ajoutees + '</b> séance' + (ag.ajoutees > 1 ? 's' : '') + ' en plus '
+          + (ag.ajoutees > 1 ? 'restent' : 'reste') + ' à ajouter' : '')
+      + (ag.ajoutees && ag.retirees ? ', et ' : '')
+      + (ag.retirees ? '<b>' + ag.retirees + '</b> séance' + (ag.retirees > 1 ? 's' : '') + ' à retirer' : '')
+      + '. Utilise « Ajouter à l’agenda » pour resynchroniser.</div>';
+  }
 
   // Plus de sorties que prescrit : c'est une décision du moteur, elle doit
   // s'expliquer là où le praticien la constate. La fiche prévient avant

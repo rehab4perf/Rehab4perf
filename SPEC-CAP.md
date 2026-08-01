@@ -487,6 +487,24 @@ La dernière valeur strictement inférieure dans l'historique des états (§ 11)
 On lit `sortie`, l'acquis — et non `prescrit`, qu'une semaine de consolidation
 abaisse artificiellement.
 
+### Les liens agenda survivent
+
+Une régression change le **contenu** des séances à venir, pas le calendrier. La
+date, la séance planifiée et le programme Supabase sont donc reportés de
+l'ancienne séance vers la nouvelle, semaine par semaine et rang par rang
+(`_capReporterLiensAgenda`), puis le contenu des programmes déjà planifiés est
+mis à jour dans Supabase — sans rien supprimer ni recréer.
+
+**Piège historique.** Sans ce report, appliquer une régression sur un plan déjà
+envoyé à l'agenda faisait perdre `date`, `seance_id` et `prog_id` à toutes les
+séances suivantes : les anciens programmes restaient orphelins chez le patient,
+et les nouvelles séances n'apparaissaient nulle part. Dix-huit séances sur un
+plan de quinze semaines.
+
+Quand le plan change de longueur — allongement, ou séances en plus dans une
+semaine — les séances sans lien sont **comptées et signalées** par un bandeau :
+c'est au praticien de resynchroniser avec « Ajouter à l'agenda ».
+
 ### Appliquer, c'est régénérer
 
 `_capAppliquerRegression` ne rééchelonne pas les séances à venir une à une :
