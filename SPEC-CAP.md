@@ -95,25 +95,49 @@ pathologie, il n'y a rien à décharger et le programme démarre à la toléranc
 Le cycle 1 n'existe pas en course/marche : l'échelle de reprise joue déjà ce
 rôle (§ 6).
 
-### Cycles 2 et suivants — alterner
+### Cycles 2 et suivants — une seule horloge
 
-À partir de S4, **un seul levier bouge par semaine**, en alternance. Le cycle 2
-s'ouvre par l'intensité, puisque le volume vient tout juste de retrouver la
-tolérance.
+Le cycle enchaîne toujours les mêmes trois positions, et **un seul levier bouge
+par semaine** :
 
 ```
-S4  volume =    intensité ↑ (première dose)
-S5  volume ↑    intensité =
-S6  volume =    intensité ↑
-S7  volume ↑    intensité =
+position 0   intensité ↑    volume inchangé
+position 1   volume ↑       intensité inchangée
+position 2   consolidation  rien ne monte
 ```
 
-Les faire monter ensemble ne permettrait plus de savoir lequel a fait mal en
-cas de retour douloureux.
+Le cycle 2 s'ouvre par l'intensité, puisque le volume vient tout juste de
+retrouver la tolérance. Les faire monter ensemble ne permettrait plus de savoir
+lequel a fait mal en cas de retour douloureux.
 
-**Piège de calcul.** Un levier qui ne bouge qu'une semaine sur deux doit
-calculer son taux sur les **tours** qui lui restent, pas sur les semaines.
-Sinon il progresse deux fois trop lentement et n'atteint jamais sa cible.
+En dessous du plancher de volume (§ 7), rien ne s'accumule encore : pas de
+semaine de consolidation programmée, le cycle se réduit à deux positions.
+
+**Piège historique — trois horloges pour un seul rythme.** Le cycle de 3
+semaines, une alternance sur 2 et un palier tissulaire sur 3 ou 4 ont un temps
+tourné en parallèle. Ils se déphasaient, et le plan produisait ceci :
+
+```
+S7   INTENSITÉ
+S8   INTENSITÉ            ← deux semaines d'intensité d'affilée
+S9   VOLUME + intensité↓  ← deux leviers la même semaine
+```
+
+Le tissu ne décide donc plus de la **cadence** des consolidations — c'est le
+cycle qui la fixe — mais seulement de leur **amplitude** (§ 7).
+
+**Piège de calcul, deux fois.** D'abord : un levier qui ne bouge qu'une fois
+par cycle calcule son taux sur les **tours** qui lui restent, pas sur les
+semaines. Ensuite : la progression s'applique en **début** de semaine. Calculée
+en fin de semaine, l'augmentation atterrissait sur la semaine suivante — donc
+parfois sur la consolidation, qui se retrouvait à monter le volume tout en
+baissant l'intensité.
+
+**Le pas d'un tour est plafonné** — `intensiteMaxPct` pour l'allure, la borne
+ACWR rapportée à la durée du cycle pour le volume. Sans plafond, le dernier
+tour absorbait tout l'écart restant : l'intensité passait de 18 à 30 min en une
+semaine, +67 %. Conséquence assumée : un délai trop court fait terminer le plan
+**sous** sa cible, ce qui vaut mieux qu'un saut final.
 
 ---
 
@@ -245,16 +269,25 @@ volume cible, produisant 11 sorties hebdomadaires de `8×(1'C/1'M)` identiques.
 
 `_capPalier(tissu, volume, unite)`
 
-| Tissu | Cycle | Mode | Pourquoi |
-|---|---|---|---|
-| **os** | 3:1 | baisse réelle (−30 %) | signal douloureux tardif, fenêtre de remodelage |
-| autres | 4:1 | maintien à charge constante | |
-| volume faible | — | réactif seul, aucun palier programmé | rien ne s'accumule encore |
+La consolidation tombe en position 2 du cycle (§ 3). Le tissu n'en fixe que
+l'**amplitude** :
+
+| Tissu | Amplitude de la consolidation | Pourquoi |
+|---|---|---|
+| **os** | baisse réelle de 30 % sur le paramètre en cause | signal douloureux tardif, fenêtre de remodelage |
+| autres | maintien à charge constante | |
+| volume faible | aucune consolidation programmée | rien ne s'accumule encore |
 
 Seuil de « volume faible » : `_capPlancherPalier` = 20 km ou 2 h par semaine.
 
-Le palier porte sur **le paramètre qui progresse**. Décharger un paramètre
+La consolidation porte sur **le paramètre en cause**. Décharger un paramètre
 figé n'a aucun sens.
+
+**Conséquence sur le délai conseillé.** Chaque levier ne prend qu'un tour par
+cycle, et le pas est plafonné : reconstruire 30 min de qualité hebdomadaire
+depuis 4 min demande une trentaine de semaines au rythme prudent. C'est long,
+et c'est le prix de la prudence — le stepper reste libre, et le verdict dit ce
+que coûte un raccourci.
 
 Le tissu est pré-rempli par la pathologie mais reste modifiable : c'est un
 arbitrage clinique. Le coussinet graisseux n'est aucun des cinq types, une

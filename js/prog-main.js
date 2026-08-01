@@ -10981,8 +10981,14 @@ function _capTrajectoire(p) {
   // par cinq 4 min de Z3+ noyées dans 240 min de course ne bouge presque pas
   // la charge pondérée), la référence devient le rythme de réintroduction de
   // l'allure, plafonné en pourcentage hebdomadaire.
+  // Un cycle vaut 3 semaines quand une consolidation est programmée, 2 sinon.
+  // Chaque levier ne bouge qu'une fois par cycle : les durées se comptent donc
+  // en TOURS, convertis en semaines à la fin.
+  var parCycle = _capPalier(p.tissu,
+    p.unite === 'km' ? volumePlafond / (p.allureFooting || 6) : volumePlafond, p.unite).cycle > 0 ? 3 : 2;
+  var gVolume = Math.pow(_capGPourACWR(CAP_SEUILS.acwrOk), parCycle);
   var semVolumeIdeal = volumePlafond > departMin
-    ? Math.ceil(Math.log(volumePlafond / departMin) / Math.log(_capGPourACWR(CAP_SEUILS.acwrOk)))
+    ? Math.ceil(Math.log(volumePlafond / departMin) / Math.log(gVolume))
     : 0;
   // Sans polarisation possible, il n'y a pas de séance de qualité : la
   // reconstruction de l'allure n'a nulle part où se loger. Programmer une
@@ -10997,9 +11003,15 @@ function _capTrajectoire(p) {
         : 0)
     : (volumeCoupable ? 0 : 4);   // amplitude : la cadence se corrige en quelques semaines
 
-  var croissance  = semVolumeIdeal + semIntensiteIdeal;
-  var avecPaliers = cycle ? Math.ceil(croissance * cycle / (cycle - 1)) : croissance;
-  var conseille = Math.max(1, Math.min(104, semFrac + semDecharge + avecPaliers));
+  // Volume et intensité prennent chacun un tour par cycle, en parallèle : la
+  // durée est celle du levier le plus lent, pas la somme des deux. Le cycle 1
+  // s'y ajoute quand il existe (retour à la tolérance, sans intensité).
+  var croissance = semVolumeIdeal + semIntensiteIdeal;
+  var toursNecessaires = Math.max(semVolumeIdeal, semIntensiteIdeal);
+  var cycle1Ideal = (continu >= CAP_SEUILS.fractionne && (p.patho && p.patho !== 'aucune'))
+    ? CAP_SEUILS.cycle : 0;
+  var conseille = Math.max(1, Math.min(104,
+    semFrac + cycle1Ideal + semDecharge + toursNecessaires * parCycle));
 
   // ── Répartition réelle du délai demandé entre les phases ──
   var dispo = Math.max(1, demande - semFrac - semDecharge);
@@ -11151,17 +11163,52 @@ function _capBuildProgrammeV2(p) {
            || volume >= objBaseMin * Math.max(1, traj.frequence - 1);
     }
 
-    // ── Palier de consolidation ──
-    // Il porte sur le paramètre qui progresse : décharger un paramètre figé
-    // n'a aucun sens, rien ne s'y accumule.
+    // ── Le rythme du cycle ──
+    // Une seule horloge. Le cycle enchaîne : intensité, volume, consolidation.
+    // Le tissu ne décide plus de la CADENCE des paliers mais de leur AMPLITUDE
+    // — vraie baisse sur l'os, simple maintien ailleurs.
+    //
+    // Auparavant trois horloges tournaient en parallèle — le cycle de 3
+    // semaines, l'alternance sur 2, et un palier tissulaire sur 3 ou 4. Elles
+    // se déphasaient, et le plan produisait deux semaines d'intensité
+    // d'affilée, ou un volume qui montait pendant que l'intensité baissait :
+    // deux leviers la même semaine, exactement ce que la règle interdit.
     var volUnite = p.unite === 'km' ? volume / (p.allureFooting || 6) : volume;
     var pal = _capPalier(p.tissu, volUnite, p.unite);
-    // Une semaine de consolidation n'a de sens que si quelque chose progresse —
-    // et le volume progresse pendant sa propre phase, bien avant le dégel du
-    // paramètre coupable.
-    var enCroissance = continu < CAP_SEUILS.fractionne || semaine <= traj.finVolume || degel;
-    var estPalier = !enCycle1 && pal.cycle > 0 && enCroissance && semaine % pal.cycle === 0;
+    // En dessous du plancher de volume, rien ne s'accumule encore : pas de
+    // semaine de consolidation programmée, le cycle se réduit à l'alternance.
+    var aConsolidation = pal.cycle > 0;
+    var parCycle = aConsolidation ? 3 : 2;
+    var pos = enCycle1 ? -1 : ((semaine - cycle1 - 1) % parCycle);
+    var estPalier = !enCycle1 && aConsolidation && pos === 2;
     var baisse = estPalier && pal.mode === 'baisse' ? 0.7 : 1;
+
+    // ── Progression : appliquée en DÉBUT de semaine ──
+    // Calculée en fin de semaine, l'augmentation atterrissait sur la semaine
+    // suivante — donc parfois sur la semaine de consolidation, qui se
+    // retrouvait à monter le volume tout en baissant l'intensité. Deux leviers
+    // le jour même où l'on est censé ne rien bouger.
+    if (!enCycle1 && continu >= CAP_SEUILS.fractionne && semaine > cycle1 + 1) {
+      var tours = Math.max(1, Math.ceil((semainesVisees - semaine) / parCycle));
+      // Le pas d'un tour est plafonné. Sans plafond, le dernier tour absorbait
+      // tout l'écart restant : l'intensité passait de 18 à 30 min en une
+      // semaine, +67 %, ce qu'aucune règle ne justifie. Un délai trop court
+      // fait donc terminer le plan sous sa cible — c'est plus honnête qu'un
+      // saut final, et le verdict de la fiche le dit.
+      if (pos === 0 && intensite > 0 && traj.cibleIntensite > intensite) {
+        var gI = Math.min(1 + CAP_SEUILS.intensiteMaxPct,
+                          Math.pow(traj.cibleIntensite / intensite, 1 / tours));
+        intensite = Math.min(traj.cibleIntensite, intensite * gI);
+      } else if (pos === 1 && volume < cibleMin) {
+        // L'ACWR borne une croissance HEBDOMADAIRE. Le volume ne bougeant
+        // qu'une fois par cycle, son pas vaut ce que la borne autorise sur
+        // toute la durée du cycle — sinon la progression est divisée par deux
+        // ou par trois et le programme n'atteint jamais son objectif.
+        var gV = Math.min(Math.pow(_capGPourACWR(CAP_SEUILS.acwrOk), parCycle),
+                          Math.pow(cibleMin / volume, 1 / tours));
+        volume = Math.min(cibleMin, volume * gV);
+      }
+    }
 
     var volumeSemaine, intensiteSemaine;
     if (enCycle1) {
@@ -11206,36 +11253,11 @@ function _capBuildProgrammeV2(p) {
       sessions.push(s);
     });
 
-    // ── Progression : un seul levier à la fois ──
-    // À partir du cycle 2, volume et intensité alternent d'une semaine sur
-    // l'autre. Les faire monter ensemble reviendrait à bouger deux leviers,
-    // et on ne saurait plus lequel a fait mal en cas de retour douloureux.
-    if (!estPalier) {
-      if (continu < CAP_SEUILS.fractionne) {
-        // Course/marche : c'est le bout de course qui progresse, pas le
-        // volume — allonger les deux la même semaine ferait deux leviers.
-        continu = _capBoutSuivant(continu, pasFractionne);
-      } else if (enCycle1) {
-        volume = traj.volumeTolere;   // le cycle 1 recale, il ne progresse pas
-      } else {
-        // Semaine paire depuis l'ouverture du cycle 2 : l'intensité. Impaire :
-        // le volume. Le cycle 2 s'ouvre par l'intensité, puisque le volume
-        // vient tout juste de retrouver la tolérance.
-        // Chaque levier ne bouge qu'une semaine sur deux : son taux se calcule
-        // donc sur le nombre de TOURS qui lui restent, pas sur les semaines
-        // restantes. Sinon il progresse deux fois trop lentement et n'atteint
-        // jamais sa cible.
-        var tours = Math.max(1, Math.floor((semainesVisees - semaine) / 2));
-        var tourIntensite = ((semaine - cycle1) % 2) === 0;
-        var peutIntensite = intensite > 0 && traj.cibleIntensite > 0;
-        if (tourIntensite && peutIntensite) {
-          intensite = Math.min(traj.cibleIntensite,
-            intensite * Math.pow(traj.cibleIntensite / intensite, 1 / tours));
-        } else if (volume < cibleMin) {
-          volume = Math.min(cibleMin, volume * Math.pow(cibleMin / volume, 1 / tours));
-        }
-      }
-    }
+    // Course/marche : c'est le bout de course qui progresse d'un barreau par
+    // semaine, pas le volume — allonger les deux ferait deux leviers.
+    if (continu < CAP_SEUILS.fractionne) continu = _capBoutSuivant(continu, pasFractionne);
+    // Le cycle 1 recale sur la tolérance, il ne progresse pas.
+    else if (enCycle1) volume = traj.volumeTolere;
   }
   // Objet et non tableau : JSON.stringify laisse tomber les propriétés
   // ajoutées à un tableau, et le plan transite par localStorage. Le
