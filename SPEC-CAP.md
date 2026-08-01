@@ -420,7 +420,30 @@ l'arrondi. D'où des semaines à 5 et 6 sorties sur 15 min de course.
 
 ---
 
-## 11. La régression sur douleur
+## 11. L'état de la trajectoire, semaine par semaine
+
+`_capBuildProgrammeV2` renvoie `etats` — une entrée par semaine — et
+`CAP_STATE.etats` la persiste avec le plan :
+
+| Champ | Contenu |
+|---|---|
+| `prescrit` | ce que la semaine délivre : volume, minutes de Z3+, course continue |
+| `sortie` | de quoi REPRENDRE à la semaine suivante : volume, intensité, continu, dégel, `tourNum`, `baissePrecedente` |
+| `cycle1`, `pos`, `palier` | où l'on se trouve dans le microcycle |
+
+Sans cette trace, le plan enregistré n'est qu'une liste de séances : impossible
+de savoir, en semaine 7, à quel volume et à quelle intensité le moteur en
+était, ni où l'on en est dans le cycle. Une régression ne pourrait alors que
+rééchelonner des séances au jugé, **hors du modèle** — ce que fait encore le
+code v1 (§ 12).
+
+Lecture utile : sur une semaine de consolidation en baisse, `prescrit.intensite`
+est inférieur à `sortie.intensite`. La décharge s'applique à la semaine, elle
+n'entame pas l'acquis.
+
+---
+
+## 12. La régression sur douleur
 
 Trois cas, selon le rôle de la séance douloureuse (`_capAdaptNext`) :
 
@@ -436,7 +459,7 @@ supprimé une fois par erreur en le croyant mort.
 
 ---
 
-## 12. Les 18 pathologies
+## 13. Les 18 pathologies
 
 `CAP_PATHO_DB` — chaque entrée porte `axe`, `tissu`, `seuil` de douleur,
 `interdits`, `cadenceCible`, `consignes` et `drapeaux`.
@@ -457,7 +480,7 @@ confirmer cliniquement.
 
 ---
 
-## 13. Ce qui n'est pas branché
+## 14. Ce qui n'est pas branché
 
 À jour au 1ᵉʳ août 2026. Ces champs existent mais ne contraignent rien :
 
@@ -469,7 +492,7 @@ confirmer cliniquement.
 
 ---
 
-## 14. Questions ouvertes
+## 15. Questions ouvertes
 
 **La plus longue sortie tolérée est-elle un plafond figé, ou une valeur de
 départ qui progresse ?** Pour une bandelette dont l'objectif *est* de
@@ -483,7 +506,7 @@ peut-être pas besoin.
 
 ---
 
-## 15. Méthode de travail — pourquoi ce document existe
+## 16. Méthode de travail — pourquoi ce document existe
 
 Quatre corrections successives ont été livrées, chacune vérifiée, et le
 premier essai en consultation réelle échouait encore. La cause n'était pas

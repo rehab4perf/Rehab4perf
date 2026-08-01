@@ -11126,6 +11126,12 @@ function _capBuildProgrammeV2(p) {
   var volumeCoupable    = ax.coupable === 'volume';
   var intensiteCoupable = ax.coupable === 'intensite';
 
+  // État de la trajectoire, semaine par semaine. Sans lui le plan enregistré
+  // n'est qu'une liste de séances : impossible de savoir, en semaine 7, à quel
+  // volume et à quelle intensité le moteur en était, ni où l'on se trouve dans
+  // le microcycle. Une régression ne pourrait alors que rééchelonner des
+  // séances au jugé, hors du modèle. C'est ce que fait encore le code v1.
+  var etats = [];
   var degel = false, sessions = [], semaine = 0;
   // Compteur des semaines de progression : c'est LUI qui décide du levier, pas
   // le numéro de semaine, sans quoi une consolidation décale l'alternance.
@@ -11279,12 +11285,32 @@ function _capBuildProgrammeV2(p) {
       sessions.push(s);
     });
 
+    var continuSemaine = continu;
     baissePrecedente = estPalier && pal.mode === 'baisse';
     // Course/marche : c'est le bout de course qui progresse d'un barreau par
     // semaine, pas le volume — allonger les deux ferait deux leviers.
     if (continu < CAP_SEUILS.fractionne) continu = _capBoutSuivant(continu, pasFractionne);
     // Le cycle 1 recale sur la tolérance, il ne progresse pas.
     else if (enCycle1) volume = traj.volumeTolere;
+
+    // ── Trace de l'état ──
+    // `prescrit` est ce que la semaine a réellement délivré ; `sortie` est ce
+    // qu'il faut pour REPRENDRE la génération à la semaine suivante. Une
+    // régression n'a donc plus à deviner où en était le moteur : elle corrige
+    // l'état d'une semaine et régénère la suite depuis celui-ci.
+    etats.push({
+      semaine: semaine,
+      cycle1: enCycle1, pos: pos, palier: estPalier ? pal.mode : null,
+      prescrit: {
+        volume: Math.round(volumeSemaine),
+        intensite: Math.round(intensiteSemaine),
+        continu: continuSemaine,
+      },
+      sortie: {
+        volume: volume, intensite: intensite, continu: continu,
+        degel: degel, tourNum: tourNum, baissePrecedente: baissePrecedente,
+      },
+    });
   }
   // Objet et non tableau : JSON.stringify laisse tomber les propriétés
   // ajoutées à un tableau, et le plan transite par localStorage. Le
@@ -11292,6 +11318,7 @@ function _capBuildProgrammeV2(p) {
   // au moment de la génération.
   return {
     seances: sessions,
+    etats: etats,
     conflitsEspacement: conflitsEspacement,
     fractionneComprime: traj.fractionneComprime,
   };
@@ -12006,7 +12033,7 @@ function _capWeekStats(sessions) {
 function _capBuildSessions(profile) {
   if (!profile || profile.axe == null) return _capBuildProgressive(profile);
   var r = _capBuildProgrammeV2(profile);
-  _capDernierPlanInfos = { conflitsEspacement: r.conflitsEspacement };
+  _capDernierPlanInfos = { conflitsEspacement: r.conflitsEspacement, etats: r.etats };
   return r.seances;
 }
 var _capDernierPlanInfos = null;
@@ -12097,7 +12124,12 @@ function _capGenerate() {
   CAP_STATE = { profile: profile, sessions: _capBuildSessions(profile) };
   // Les signalements du moteur voyagent avec l'état : ils doivent survivre au
   // rechargement, pas seulement s'afficher juste après la génération.
-  if (_capDernierPlanInfos) CAP_STATE.conflitsEspacement = _capDernierPlanInfos.conflitsEspacement;
+  if (_capDernierPlanInfos) {
+    CAP_STATE.conflitsEspacement = _capDernierPlanInfos.conflitsEspacement;
+    // L'état semaine par semaine voyage avec le plan : sans lui, une régression
+    // ne saurait pas d'où repartir après un rechargement de la page.
+    CAP_STATE.etats = _capDernierPlanInfos.etats;
+  }
   _capSave();
 
   document.getElementById('capFormScreen').style.display  = 'none';
