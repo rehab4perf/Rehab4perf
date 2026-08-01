@@ -11100,7 +11100,14 @@ function _capOrdonnerSemaine(seances, joursDispo) {
   return { seances: ordre, conflits: conflits };
 }
 
-function _capBuildProgrammeV2(p) {
+/* `reprise` permet de repartir d'un état corrigé au lieu du début : c'est ce
+   qui rend une régression conforme au modèle. On ne rééchelonne pas les
+   séances à venir une à une — on remet le moteur dans l'état voulu et on lui
+   fait rejouer la suite, si bien que le microcycle, l'alternance et les
+   plafonds restent respectés par construction.
+   Forme attendue : { semaine, volume, intensite, continu, degel, tourNum,
+   baissePrecedente }. La semaine indiquée est la PREMIÈRE régénérée. */
+function _capBuildProgrammeV2(p, reprise) {
   _capIdSeq = 0;
   var semainesVisees = Math.max(1, Math.round(p.semaines || 12));
   var objBaseMin = _capObjectifBaseMin(p);
@@ -11138,6 +11145,17 @@ function _capBuildProgrammeV2(p) {
   var tourNum = 0;
   var baissePrecedente = false;
   var conflitsEspacement = [];
+
+  // Reprise à mi-parcours : on réinjecte l'état voulu et on rejoue la suite.
+  if (reprise && reprise.semaine > 1) {
+    semaine   = reprise.semaine - 1;   // la boucle incrémente avant de bâtir
+    volume    = reprise.volume;
+    intensite = reprise.intensite;
+    continu   = reprise.continu;
+    degel     = !!reprise.degel;
+    tourNum   = reprise.tourNum || 0;
+    baissePrecedente = !!reprise.baissePrecedente;
+  }
   // Le premier cycle sert à revenir à la tolérance, pas à la dépasser. Il
   // n'existe qu'en course continue : une reprise course/marche a déjà son
   // échelle, qui joue le même rôle.
@@ -11322,6 +11340,129 @@ function _capBuildProgrammeV2(p) {
     conflitsEspacement: conflitsEspacement,
     fractionneComprime: traj.fractionneComprime,
   };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RÉGRESSION — proposer, jamais appliquer d'office
+
+   Toute douleur signalée ouvre une PROPOSITION. Le praticien la lit, l'ajuste
+   et décide : l'interprétation d'un score EVA varie d'une pathologie à l'autre,
+   et c'est un jugement clinique, pas un calcul.
+
+   Le recul est FIXE — un tour en arrière — quel que soit le score. L'EVA est
+   enregistrée et affichée à côté du repère de la pathologie, mais ne pilote
+   aucune formule.
+
+   Ordre de régression : le miroir exact de la remontée. On remonte le volume
+   d'abord et l'allure ensuite, on redescend donc l'allure d'abord et le volume
+   ensuite.
+══════════════════════════════════════════════════════════════ */
+
+/* Valeur d'un levier un tour en arrière : la dernière valeur strictement
+   inférieure dans l'historique. On lit `sortie`, l'acquis — et non `prescrit`,
+   qu'une semaine de consolidation abaisse artificiellement. */
+function _capTourPrecedent(etats, semaine, cle, plancher) {
+  var courant = null, i;
+  for (i = 0; i < etats.length; i++) {
+    if (etats[i].semaine === semaine) { courant = etats[i].sortie[cle]; break; }
+  }
+  if (courant == null) return null;
+  for (i = i - 1; i >= 0; i--) {
+    var v = etats[i].sortie[cle];
+    if (v < courant - 0.01) return v;
+  }
+  return plancher != null ? plancher : courant;
+}
+
+/* Proposition de régression pour la séance d'indice `idx`. Fonction pure :
+   elle ne modifie rien, elle décrit ce qu'il faudrait faire. */
+function _capProposerRegression(idx) {
+  var state = CAP_STATE;
+  if (!state || !state.sessions || !state.etats) return null;
+  var s = state.sessions[idx];
+  if (!s) return null;
+  if (!Array.isArray(s.segments)) _capNormaliseSeance(s);
+
+  var etat = null;
+  for (var i = 0; i < state.etats.length; i++) {
+    if (state.etats[i].semaine === s.week) { etat = state.etats[i]; break; }
+  }
+  if (!etat) return null;
+
+  var p = state.profile || {};
+  var zoneRapide = _capIntensiteSemaine([s]) > 0;
+  var avant = { volume: etat.sortie.volume, intensite: etat.sortie.intensite };
+  var apres, levier, motif;
+
+  if (zoneRapide && etat.sortie.intensite > CAP_SEUILS.intensitePlancher) {
+    // L'allure d'abord : c'est elle qu'on redescend en premier.
+    levier = 'intensite';
+    apres = {
+      volume: avant.volume,
+      intensite: _capTourPrecedent(state.etats, s.week, 'intensite', CAP_SEUILS.intensitePlancher),
+    };
+    motif = 'Douleur sur une séance à allure élevée : l’allure recule d’un tour, le volume ne bouge pas.';
+  } else if (zoneRapide) {
+    // Déjà au plancher d'allure : il n'y a plus rien à retirer de ce côté,
+    // c'est le volume qui prend le relais.
+    levier = 'volume';
+    apres = {
+      volume: _capTourPrecedent(state.etats, s.week, 'volume', avant.volume * 0.9),
+      intensite: 0,
+    };
+    motif = 'L’allure est déjà au plancher : on la retire, et le volume recule d’un tour.';
+  } else {
+    // Douleur sur un footing : aucun levier n'a été poussé sur cette séance,
+    // donc c'est la charge cumulée. Décharge globale.
+    levier = 'global';
+    apres = { volume: avant.volume * 0.7, intensite: avant.intensite * 0.7 };
+    motif = 'Douleur sur une séance facile : c’est la charge cumulée qui est en cause, pas cette séance. Décharge globale de 30 %.';
+  }
+
+  var uLbl = p.unite === 'min' ? 'min' : 'km';
+  var enUnite = function(min) {
+    var v = p.unite === 'km' ? min / (p.allureFooting || 6) : min;
+    return Math.round(v * 10) / 10;
+  };
+  var seuilPatho = (CAP_PATHO_DB[p.patho] || CAP_PATHO_DB.aucune).seuil;
+
+  return {
+    idx: idx, semaine: s.week, levier: levier, motif: motif,
+    seuilPatho: seuilPatho, unite: uLbl,
+    avant: avant, apres: apres,
+    avantAff: { volume: enUnite(avant.volume), intensite: Math.round(avant.intensite) },
+    apresAff: { volume: enUnite(apres.volume), intensite: Math.round(apres.intensite) },
+    // État à réinjecter dans le moteur pour régénérer la suite
+    reprise: {
+      semaine: s.week + 1,
+      volume: apres.volume, intensite: apres.intensite,
+      continu: etat.sortie.continu, degel: etat.sortie.degel,
+      tourNum: etat.sortie.tourNum, baissePrecedente: false,
+    },
+  };
+}
+
+/* Applique une proposition : régénère les semaines suivantes depuis l'état
+   corrigé, en conservant tout ce qui a déjà été fait.
+   `allonger` : le plan gagne des semaines pour tenir sa cible ; sinon il garde
+   sa durée et termine plus bas. */
+function _capAppliquerRegression(prop, allonger) {
+  var state = CAP_STATE;
+  var profil = Object.assign({}, state.profile);
+  if (allonger) profil.semaines = (profil.semaines || 12) + CAP_SEUILS.cycleProgression;
+
+  var r = _capBuildProgrammeV2(profil, prop.reprise);
+  // Les semaines déjà vécues ne se réécrivent pas.
+  var gardees = state.sessions.filter(function(x) { return x.week <= prop.semaine; });
+  var suite   = r.seances.filter(function(x) { return x.week > prop.semaine; });
+  var etatsG  = state.etats.filter(function(e) { return e.semaine <= prop.semaine; });
+  var etatsS  = r.etats.filter(function(e) { return e.semaine > prop.semaine; });
+
+  state.sessions = gardees.concat(suite);
+  state.etats    = etatsG.concat(etatsS);
+  state.profile  = profil;
+  state.conflitsEspacement = r.conflitsEspacement;
+  return state;
 }
 
 /* ── État global ── */
