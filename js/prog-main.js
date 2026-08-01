@@ -11392,7 +11392,7 @@ function _capProposerRegression(idx) {
   var p = state.profile || {};
   var zoneRapide = _capIntensiteSemaine([s]) > 0;
   var avant = { volume: etat.sortie.volume, intensite: etat.sortie.intensite };
-  var apres, levier, motif;
+  var apres, levier, motif, technique = false;
 
   if (zoneRapide && etat.sortie.intensite > CAP_SEUILS.intensitePlancher) {
     // L'allure d'abord : c'est elle qu'on redescend en premier.
@@ -11411,12 +11411,23 @@ function _capProposerRegression(idx) {
       intensite: 0,
     };
     motif = 'L’allure est déjà au plancher : on la retire, et le volume recule d’un tour.';
+  } else if ((s.role || 'facile') === 'technique') {
+    // La séance technique est en Z1, sous le footing : aucun levier n'y a été
+    // poussé non plus. La décharge s'impose, mais elle ne suffit pas — si la
+    // douleur survient sur des éducatifs, c'est le geste lui-même qui est à
+    // reprendre, et ça, le moteur ne sait pas le faire à votre place.
+    levier = 'global';
+    technique = true;
+    apres = { volume: avant.volume * 0.7, intensite: avant.intensite * 0.7 };
+    motif = 'Douleur sur une séance technique, en Z1 : aucun levier n’a été poussé. Décharge globale de 30 %, '
+          + 'et la technique de course est à retravailler'
+          + (p.cadenceCible ? ' — cadence cible ' + p.cadenceCible + ' pas/min.' : '.');
   } else {
     // Douleur sur un footing : aucun levier n'a été poussé sur cette séance,
     // donc c'est la charge cumulée. Décharge globale.
     levier = 'global';
     apres = { volume: avant.volume * 0.7, intensite: avant.intensite * 0.7 };
-    motif = 'Douleur sur une séance facile : c’est la charge cumulée qui est en cause, pas cette séance. Décharge globale de 30 %.';
+    motif = 'Douleur sur un footing : c’est la charge cumulée qui est en cause, pas cette séance. Décharge globale de 30 %.';
   }
 
   var uLbl = p.unite === 'min' ? 'min' : 'km';
@@ -11428,6 +11439,9 @@ function _capProposerRegression(idx) {
 
   return {
     idx: idx, semaine: s.week, levier: levier, motif: motif,
+    // Le panneau met en avant la reprise du geste : c'est la part que le
+    // moteur ne peut pas traiter à la place du praticien.
+    technique: technique, cadenceCible: p.cadenceCible || null,
     seuilPatho: seuilPatho, unite: uLbl,
     avant: avant, apres: apres,
     avantAff: { volume: enUnite(avant.volume), intensite: Math.round(avant.intensite) },

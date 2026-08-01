@@ -445,17 +445,72 @@ n'entame pas l'acquis.
 
 ## 12. La régression sur douleur
 
-Trois cas, selon le rôle de la séance douloureuse (`_capAdaptNext`) :
+> **En cours de chantier.** Le calcul est écrit et vérifié
+> (`_capProposerRegression`, `_capAppliquerRegression`), mais **rien n'est
+> encore branché à l'interface** : le bouton Douleur appelle toujours
+> `_capAdaptNext`, hérité du moteur v1, qui rééchelonne les séances au jugé
+> hors du modèle. Le branchement et le retrait du v1 restent à faire.
 
-| Séance | Réponse |
+### On propose, on n'applique jamais d'office
+
+Toute douleur signalée ouvre une **proposition**. Le praticien la lit,
+l'ajuste, décide. L'interprétation d'un score EVA varie d'une pathologie à
+l'autre : c'est un jugement clinique, pas un calcul.
+
+Le recul est **fixe — un tour en arrière** — quel que soit le score. L'EVA est
+enregistrée et affichée à côté du repère de la pathologie (`seuil` dans
+`CAP_PATHO_DB`, en EVA), mais **ne pilote aucune formule**.
+
+Le moment de la douleur — pendant la course ou dans les 24 h — n'entre pas en
+compte : un seul canal de saisie.
+
+### L'ordre : le miroir exact de la remontée
+
+On remonte le volume d'abord et l'allure ensuite (§ 3). On redescend donc
+l'allure d'abord, le volume ensuite.
+
+| Séance douloureuse | Réponse |
 |---|---|
-| **Sortie longue ou qualité** | Seule cette filière régresse : le moteur cherche la dernière séance validée du même rôle et vise le milieu. |
-| **Séance facile** | Le cas le plus sérieux, et contre-intuitif : aucun levier n'a été poussé, donc c'est la charge cumulée. **Décharge globale de 30 %** sur tout le plan. |
-| **Qualité déjà au plancher** | C'est la zone qui descend, plus le volume. |
+| **Contient du Z3+** | L'allure recule d'un tour. Le volume ne bouge pas. |
+| **Contient du Z3+, allure déjà au plancher** | Plus rien à retirer de ce côté : on retire l'allure et le volume recule d'un tour. |
+| **Footing** (Z2 continu, sans Z3+) | Aucun levier n'a été poussé sur cette séance : c'est la charge cumulée. **Décharge globale de 30 %.** |
+| **Technique** (Z1) | Décharge globale de 30 %, **et la technique de course est à retravailler** — la part que le moteur ne peut pas traiter à votre place. La cadence cible est rappelée. |
 
-Le seuil de douleur est propre à chaque pathologie (`seuil` dans
-`CAP_PATHO_DB`, en EVA). **Ce champ est lu par la régression** — il a été
-supprimé une fois par erreur en le croyant mort.
+Un footing, c'est du Z2 continu — il n'a pas d'allure : dans tout le moteur,
+Z2 vaut `allureFooting × 1,00`, une constante du plan que rien ne fait varier.
+« Geler l'allure » revient donc à ne prescrire que des footings, ce que fait le
+cycle 1.
+
+### Un tour en arrière, concrètement
+
+La dernière valeur strictement inférieure dans l'historique des états (§ 11).
+On lit `sortie`, l'acquis — et non `prescrit`, qu'une semaine de consolidation
+abaisse artificiellement.
+
+### Appliquer, c'est régénérer
+
+`_capAppliquerRegression` ne rééchelonne pas les séances à venir une à une :
+elle remet le moteur dans l'état corrigé et lui fait **rejouer la suite**, si
+bien que le microcycle, l'alternance et les plafonds restent respectés par
+construction. Les semaines déjà vécues ne sont jamais réécrites.
+
+Deux issues, au choix du praticien : **allonger** le plan d'un cycle pour tenir
+la cible, ou **garder la durée** et terminer plus bas. C'est le patient qui
+décide, pas une règle.
+
+### Exemple
+
+Périostite, douleur sur une séance de qualité en semaine 10 :
+
+```
+levier   : allure
+Z3+      : 6' → 5'          un tour en arrière
+volume   : 33,6 km          inchangé
+repère   : 2/10 pour une périostite
+```
+
+Le plan reprend ensuite sa progression depuis ce niveau. La même douleur sur un
+footing de la même semaine donnerait : volume 33,6 → 23,5 km et Z3+ 6' → 4'.
 
 ---
 
