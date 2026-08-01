@@ -12146,6 +12146,26 @@ function _capRender() {
   if (pr.cibleSortieLongue) html += '<span>Sortie longue : <b>' + pr.cibleSortieLongue + ' ' + uLbl + '</b></span>';
   html += '</div>';
 
+  // Plus de sorties que prescrit : c'est une décision du moteur, elle doit
+  // s'expliquer là où le praticien la constate. La fiche prévient avant
+  // génération, mais l'écran de résultat ne disait rien — il fallait deviner
+  // pourquoi 3 séances demandées en donnaient 4.
+  if (pr.frequenceCible > 0 && pr.plusLongueSortie > 0) {
+    var maxSorties = 0;
+    Object.keys(byWeek).forEach(function(w) {
+      maxSorties = Math.max(maxSorties, byWeek[w].length);
+    });
+    if (maxSorties > pr.frequenceCible) {
+      var parSortie = Math.round(pr.cibleHebdo / pr.frequenceCible * 10) / 10;
+      html += '<div style="margin:0 2px 10px;padding:9px 11px;border-radius:7px;background:#fdf4e8;border:1px solid #f0d6ab;color:#8a5410;font-size:.76rem;line-height:1.5;">'
+        + '<b>' + maxSorties + ' sorties au lieu de ' + pr.frequenceCible + '</b> — '
+        + pr.cibleHebdo + ' ' + uLbl + '/sem sur ' + pr.frequenceCible + ' sorties feraient <b>'
+        + parSortie + ' ' + uLbl + '</b> par sortie, au-delà de la tolérance déclarée ('
+        + pr.plusLongueSortie + ' ' + uLbl + '). Le plan répartit plutôt que de dépasser le seuil douloureux. '
+        + 'Pour rester à ' + pr.frequenceCible + ' : relever la sortie tolérée, ou baisser le volume cible.</div>';
+    }
+  }
+
   // Espacement impossible : on a généré quand même, il faut le dire.
   var conflits = state.conflitsEspacement || [];
   if (conflits.length) {

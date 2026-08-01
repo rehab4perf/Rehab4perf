@@ -352,6 +352,18 @@ de trancher en silence.
 La fréquence prescrite est une contrainte du praticien. Une sortie ne s'ajoute
 que si la part de chacune **dépasserait la plus longue sortie tolérée**.
 
+```
+32 km/sem ÷ 3 sorties = 10,7 km      >  8 km tolérés   →  4 sorties
+32 km/sem ÷ 4 sorties =  8,0 km      ✓
+```
+
+Le moteur fait passer la contrainte clinique (ne pas dépasser le seuil
+douloureux sur une sortie) avant la contrainte d'organisation (le nombre de
+séances). L'écran de résultat affiche alors un bandeau qui dit combien de
+sorties sont produites, pourquoi, et les deux façons de revenir à la fréquence
+prescrite — relever la sortie tolérée, ou baisser le volume cible. Sans lui, le
+praticien constate 4 séances là où il en a demandé 3 sans aucune explication.
+
 **Piège historique.** L'ancienne boucle ajoutait une sortie tant que le volume
 produit n'égalait pas la cible. Sur les petits volumes, l'arrondi à la minute
 suffisait : 13,3 min sur 3 sorties donne 4 min arrondies, soit 12 min
