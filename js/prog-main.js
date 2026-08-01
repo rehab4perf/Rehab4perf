@@ -12389,6 +12389,9 @@ function _capRender() {
   if (pr.cibleSortieLongue) html += '<span>Sortie longue : <b>' + pr.cibleSortieLongue + ' ' + uLbl + '</b></span>';
   html += '</div>';
 
+  // Une décision est en attente : elle passe avant tout le reste.
+  html += _capPropositionHtml();
+
   // Plus de sorties que prescrit : c'est une décision du moteur, elle doit
   // s'expliquer là où le praticien la constate. La fiche prévient avant
   // génération, mais l'écran de résultat ne disait rien — il fallait deviner
@@ -12669,6 +12672,10 @@ function _capCancelPain() {
   _capRender();
 }
 
+/* Proposition de régression en attente de décision. Tant qu'elle existe, le
+   plan n'a pas bougé : c'est le praticien qui tranche. */
+var _capProposition = null;
+
 function _capConfirmPain(score) {
   var idx     = _capPainIdx;
   _capPainIdx = -1;
@@ -12677,10 +12684,122 @@ function _capConfirmPain(score) {
   s.status    = 'painful';
   s.painScore = score;
 
-  _capAdaptNext(idx, score);
+  // On PROPOSE, on n'applique pas. L'interprétation d'un score EVA varie d'une
+  // pathologie à l'autre : c'est un jugement clinique, pas un calcul.
+  var prop = _capProposerRegression(idx);
+  if (prop) {
+    prop.score = score;
+    prop.allonger = false;
+    _capProposition = prop;
+  }
 
   _capSave();
   _capRender();
+}
+
+/* Ajuste la proposition avant application. Sur l'allure, une minute à la fois ;
+   sur une décharge globale, cinq points de pourcentage. */
+function _capPropAjuster(sens) {
+  var pr = _capProposition;
+  if (!pr) return;
+  if (pr.levier === 'intensite') {
+    var v = pr.apres.intensite + sens;
+    pr.apres.intensite = Math.max(0, Math.min(pr.avant.intensite, v));
+  } else {
+    var k = sens > 0 ? 1.05 : 1 / 1.05;
+    pr.apres.volume    = Math.max(1, Math.min(pr.avant.volume, pr.apres.volume * k));
+    pr.apres.intensite = Math.max(0, Math.min(pr.avant.intensite, pr.apres.intensite * k));
+  }
+  _capMajAffichageProp(pr);
+  _capRender();
+}
+
+function _capPropDuree(allonger) {
+  if (!_capProposition) return;
+  _capProposition.allonger = !!allonger;
+  _capRender();
+}
+
+/* Recalcule l'affichage et l'état de reprise après un ajustement manuel. */
+function _capMajAffichageProp(pr) {
+  var p = (CAP_STATE && CAP_STATE.profile) || {};
+  var enUnite = function(min) {
+    var v = p.unite === 'km' ? min / (p.allureFooting || 6) : min;
+    return Math.round(v * 10) / 10;
+  };
+  pr.apresAff = { volume: enUnite(pr.apres.volume), intensite: Math.round(pr.apres.intensite) };
+  pr.reprise.volume    = pr.apres.volume;
+  pr.reprise.intensite = pr.apres.intensite;
+}
+
+function _capPropAppliquer() {
+  var pr = _capProposition;
+  if (!pr) return;
+  _capAppliquerRegression(pr, pr.allonger);
+  _capProposition = null;
+  _capSave();
+  _capRender();
+  if (typeof _showToast === 'function') {
+    _showToast('Plan repris depuis la semaine ' + pr.semaine + '. Les semaines déjà faites sont inchangées.');
+  }
+}
+
+/* Ignorer : la douleur reste consignée sur la séance, le plan ne bouge pas. */
+function _capPropIgnorer() {
+  _capProposition = null;
+  _capRender();
+}
+
+/* Le panneau. Il n'apparaît qu'en attente de décision. */
+function _capPropositionHtml() {
+  var pr = _capProposition;
+  if (!pr) return '';
+  var u = pr.unite;
+  var ligne = function(libelle, avant, apres, unite, change) {
+    return '<div style="display:flex;gap:8px;align-items:baseline;font-size:.76rem;margin-top:3px;">'
+      + '<span style="min-width:104px;color:var(--muted);">' + libelle + '</span>'
+      + '<span style="font-variant-numeric:tabular-nums;' + (change ? 'font-weight:600;' : 'color:var(--muted);') + '">'
+      + avant + (change ? ' → ' + apres : ' — inchangé') + (change ? ' ' + unite : '') + '</span></div>';
+  };
+  var chgVol = Math.abs(pr.apresAff.volume - pr.avantAff.volume) > 0.05;
+  var chgInt = pr.avantAff.intensite !== pr.apresAff.intensite;
+
+  var choix = function(val, titre, detail) {
+    var actif = pr.allonger === val;
+    return '<button onclick="_capPropDuree(' + val + ')" style="flex:1;min-width:150px;text-align:left;'
+      + 'padding:7px 9px;border-radius:7px;cursor:pointer;font-family:inherit;font-size:.72rem;'
+      + 'border:1px solid ' + (actif ? 'var(--navy)' : 'var(--border)') + ';'
+      + 'background:' + (actif ? '#EFF6FF' : 'transparent') + ';color:var(--text);">'
+      + '<b>' + titre + '</b><br><span style="color:var(--muted);">' + detail + '</span></button>';
+  };
+
+  var nb = CAP_STATE.sessions.reduce(function(m, x) { return Math.max(m, x.week); }, 0);
+  return '<div style="margin:0 2px 10px;padding:11px 13px;border-radius:9px;'
+    + 'background:#FEF2F2;border:1px solid #FCA5A5;">'
+    + '<div style="font-size:.8rem;font-weight:700;color:#991B1B;">Douleur ' + pr.score + '/10 — semaine ' + pr.semaine
+    + '<span style="font-weight:400;color:#B91C1C;font-size:.72rem;margin-left:8px;">repère pour cette pathologie : '
+    + pr.seuilPatho + '/10</span></div>'
+    + '<div style="font-size:.75rem;color:#7F1D1D;line-height:1.5;margin-top:5px;">' + pr.motif + '</div>'
+    + '<div style="margin-top:9px;padding:8px 10px;background:#fff;border-radius:7px;">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;">'
+    + '<span style="font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);">Proposition</span>'
+    + '<span><button onclick="_capPropAjuster(-1)" style="border:1px solid var(--border);background:none;border-radius:6px;'
+    + 'width:24px;height:22px;cursor:pointer;font-family:inherit;">−</button>'
+    + '<button onclick="_capPropAjuster(1)" style="border:1px solid var(--border);background:none;border-radius:6px;'
+    + 'width:24px;height:22px;cursor:pointer;font-family:inherit;margin-left:3px;">+</button></span></div>'
+    + ligne('Allure (Z3+)', pr.avantAff.intensite + '′', pr.apresAff.intensite + '′', '', chgInt)
+    + ligne('Volume', pr.avantAff.volume, pr.apresAff.volume, u, chgVol)
+    + '</div>'
+    + '<div style="display:flex;gap:6px;margin-top:9px;flex-wrap:wrap;">'
+    + choix(true,  'Allonger le plan', nb + ' → ' + (nb + CAP_SEUILS.cycleProgression) + ' sem., la cible est tenue')
+    + choix(false, 'Garder ' + nb + ' sem.', 'le plan termine plus bas')
+    + '</div>'
+    + '<div style="display:flex;gap:6px;margin-top:9px;justify-content:flex-end;">'
+    + '<button onclick="_capPropIgnorer()" style="padding:5px 12px;border:1px solid var(--border);background:none;'
+    + 'border-radius:14px;cursor:pointer;font-family:inherit;font-size:.73rem;color:var(--muted);">Ignorer</button>'
+    + '<button onclick="_capPropAppliquer()" style="padding:5px 14px;border:none;background:var(--navy);color:#fff;'
+    + 'border-radius:14px;cursor:pointer;font-family:inherit;font-size:.73rem;font-weight:600;">Appliquer</button>'
+    + '</div></div>';
 }
 
 /* ── Adaptation automatique de la prochaine séance selon la douleur ──

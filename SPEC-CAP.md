@@ -445,11 +445,11 @@ n'entame pas l'acquis.
 
 ## 12. La régression sur douleur
 
-> **En cours de chantier.** Le calcul est écrit et vérifié
-> (`_capProposerRegression`, `_capAppliquerRegression`), mais **rien n'est
-> encore branché à l'interface** : le bouton Douleur appelle toujours
-> `_capAdaptNext`, hérité du moteur v1, qui rééchelonne les séances au jugé
-> hors du modèle. Le branchement et le retrait du v1 restent à faire.
+> **Reste à faire.** Le bouton Douleur passe désormais par la proposition. Les
+> boutons **Maintenir** et **Régresser** tournent encore sur le moteur v1
+> (`_capManualMaintain`, `_capManualRegress`, `_capLoadOf`, `_capMidpointL`,
+> `_capReplanFromIndex`), qui rééchelonne les séances au jugé, hors du modèle.
+> Leur rebranchement et le retrait du code v1 restent à faire.
 
 ### On propose, on n'applique jamais d'office
 
@@ -497,6 +497,30 @@ construction. Les semaines déjà vécues ne sont jamais réécrites.
 Deux issues, au choix du praticien : **allonger** le plan d'un cycle pour tenir
 la cible, ou **garder la durée** et terminer plus bas. C'est le patient qui
 décide, pas une règle.
+
+### Le panneau
+
+Le clic sur **Douleur** ouvre le curseur EVA, puis le panneau — et **le plan ne
+bouge pas** tant qu'aucune décision n'est prise (`_capProposition`).
+
+```
+Douleur 4/10 — semaine 10        repère pour cette pathologie : 2/10
+Douleur sur une séance à allure élevée : l'allure recule d'un tour,
+le volume ne bouge pas.
+
+  PROPOSITION                                              [ − ] [ + ]
+  Allure (Z3+)     6′ → 5′
+  Volume           33.6 — inchangé
+
+  [ Allonger le plan          ]  [ Garder 15 sem.        ]
+    15 → 19 sem., cible tenue      le plan termine plus bas
+
+                                        [ Ignorer ]  [ Appliquer ]
+```
+
+`−` / `+` ajustent d'une minute sur l'allure, de cinq points de pourcentage sur
+une décharge globale. **Ignorer** laisse la douleur consignée sur la séance et
+le plan intact.
 
 ### Exemple
 
