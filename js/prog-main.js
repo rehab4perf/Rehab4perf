@@ -12735,12 +12735,15 @@ function _capMajAffichageProp(pr) {
 function _capPropAppliquer() {
   var pr = _capProposition;
   if (!pr) return;
-  _capAppliquerRegression(pr, pr.allonger);
+  if (pr.type === 'maintien') _capAppliquerMaintien(pr);
+  else                        _capAppliquerRegression(pr, pr.allonger);
   _capProposition = null;
   _capSave();
   _capRender();
   if (typeof _showToast === 'function') {
-    _showToast('Plan repris depuis la semaine ' + pr.semaine + '. Les semaines déjà faites sont inchangées.');
+    _showToast(pr.type === 'maintien'
+      ? 'Semaine ' + pr.semaine + ' répétée. ' + (pr.allonger ? 'Le plan gagne une semaine.' : 'La durée est conservée.')
+      : 'Plan repris depuis la semaine ' + pr.semaine + '. Les semaines déjà faites sont inchangées.');
   }
 }
 
@@ -12750,10 +12753,109 @@ function _capPropIgnorer() {
   _capRender();
 }
 
+/* ── Maintenir ──────────────────────────────────────────────────────────
+   Répéter la semaine à l'identique. Le plan prend logiquement une semaine de
+   retard — mais c'est un choix, pas une fatalité : on peut aussi garder la
+   durée, auquel cas la dernière semaine saute et le plan termine plus bas. */
+function _capProposerMaintien(idx) {
+  var st = CAP_STATE;
+  if (!st || !st.etats) return null;
+  var s = st.sessions[idx];
+  if (!s) return null;
+  var nb = st.sessions.reduce(function(m, x) { return Math.max(m, x.week); }, 0);
+  return {
+    type: 'maintien', idx: idx, semaine: s.week, allonger: true, nbSemaines: nb,
+    motif: 'La semaine ' + s.week + ' sera répétée à l’identique avant de reprendre la progression. '
+         + 'Le palier est confirmé, aucun levier ne bouge.',
+  };
+}
+
+/* Duplication littérale : « répéter la semaine » ne se simule pas en rejouant
+   le moteur — la position dans le microcycle changerait et la semaine produite
+   ne serait plus la même. On recopie donc les séances, et tout ce qui suit
+   décale d'une semaine, dates comprises pour ne pas désynchroniser l'agenda. */
+function _capAppliquerMaintien(prop) {
+  var st = CAP_STATE, sem = prop.semaine;
+  var decale = function(x, cle) {
+    if (!x[cle]) return;
+    var d = new Date(x[cle]);
+    if (isNaN(d)) return;
+    d.setDate(d.getDate() + 7);
+    x[cle] = d.toISOString().slice(0, 10);
+  };
+  var copies = st.sessions.filter(function(x) { return x.week === sem; }).map(function(x) {
+    var c = JSON.parse(JSON.stringify(x));
+    c.id = _capMkId();
+    c.week = sem + 1;
+    c.status = 'pending'; c.statut = 'pending'; c.painScore = null;
+    // La copie est une nouvelle séance : elle ne reprend pas le lien agenda de
+    // l'originale, sans quoi deux séances pointeraient le même programme.
+    delete c.seance_id; delete c.prog_id;
+    decale(c, 'date');
+    return c;
+  });
+  st.sessions.forEach(function(x) { if (x.week > sem) { x.week += 1; decale(x, 'date'); } });
+  st.etats.forEach(function(e) { if (e.semaine > sem) e.semaine += 1; });
+
+  var etatSem = st.etats.filter(function(e) { return e.semaine === sem; })[0];
+  if (etatSem) {
+    var c = JSON.parse(JSON.stringify(etatSem));
+    c.semaine = sem + 1;
+    st.etats.push(c);
+  }
+  st.sessions = st.sessions.concat(copies);
+  st.sessions.sort(function(a, b) { return a.week - b.week; });
+  st.etats.sort(function(a, b) { return a.semaine - b.semaine; });
+
+  if (prop.allonger) {
+    st.profile.semaines = (st.profile.semaines || 12) + 1;
+  } else {
+    // Durée conservée : la dernière semaine saute, le plan termine plus bas.
+    var max = st.etats.reduce(function(m, e) { return Math.max(m, e.semaine); }, 0);
+    st.sessions = st.sessions.filter(function(x) { return x.week < max; });
+    st.etats    = st.etats.filter(function(e) { return e.semaine < max; });
+  }
+  return st;
+}
+
 /* Le panneau. Il n'apparaît qu'en attente de décision. */
 function _capPropositionHtml() {
   var pr = _capProposition;
   if (!pr) return '';
+
+  var boutons = function(couleur) {
+    return '<div style="display:flex;gap:6px;margin-top:9px;justify-content:flex-end;">'
+      + '<button onclick="_capPropIgnorer()" style="padding:5px 12px;border:1px solid var(--border);background:none;'
+      + 'border-radius:14px;cursor:pointer;font-family:inherit;font-size:.73rem;color:var(--muted);">Annuler</button>'
+      + '<button onclick="_capPropAppliquer()" style="padding:5px 14px;border:none;background:' + couleur + ';color:#fff;'
+      + 'border-radius:14px;cursor:pointer;font-family:inherit;font-size:.73rem;font-weight:600;">Appliquer</button>'
+      + '</div>';
+  };
+  var choixDuree = function(nb, dApres, libelleCourt) {
+    var b = function(val, titre, detail) {
+      var actif = pr.allonger === val;
+      return '<button onclick="_capPropDuree(' + val + ')" style="flex:1;min-width:150px;text-align:left;'
+        + 'padding:7px 9px;border-radius:7px;cursor:pointer;font-family:inherit;font-size:.72rem;'
+        + 'border:1px solid ' + (actif ? 'var(--navy)' : 'var(--border)') + ';'
+        + 'background:' + (actif ? '#EFF6FF' : 'transparent') + ';color:var(--text);">'
+        + '<b>' + titre + '</b><br><span style="color:var(--muted);">' + detail + '</span></button>';
+    };
+    return '<div style="display:flex;gap:6px;margin-top:9px;flex-wrap:wrap;">'
+      + b(true,  'Allonger le plan', nb + ' → ' + dApres + ' sem., la cible est tenue')
+      + b(false, 'Garder ' + nb + ' sem.', libelleCourt)
+      + '</div>';
+  };
+
+  // ── Maintenir : pas de levier à ajuster, seulement la durée ──
+  if (pr.type === 'maintien') {
+    return '<div style="margin:0 2px 10px;padding:11px 13px;border-radius:9px;'
+      + 'background:#EFF6FF;border:1px solid #BFDBFE;">'
+      + '<div style="font-size:.8rem;font-weight:700;color:#1E40AF;">Maintenir la semaine ' + pr.semaine + '</div>'
+      + '<div style="font-size:.75rem;color:#1E3A8A;line-height:1.5;margin-top:5px;">' + pr.motif + '</div>'
+      + choixDuree(pr.nbSemaines, pr.nbSemaines + 1, 'la dernière semaine saute, le plan termine plus bas')
+      + boutons('#1D4ED8') + '</div>';
+  }
+
   var u = pr.unite;
   var ligne = function(libelle, avant, apres, unite, change) {
     return '<div style="display:flex;gap:8px;align-items:baseline;font-size:.76rem;margin-top:3px;">'
@@ -12763,15 +12865,6 @@ function _capPropositionHtml() {
   };
   var chgVol = Math.abs(pr.apresAff.volume - pr.avantAff.volume) > 0.05;
   var chgInt = pr.avantAff.intensite !== pr.apresAff.intensite;
-
-  var choix = function(val, titre, detail) {
-    var actif = pr.allonger === val;
-    return '<button onclick="_capPropDuree(' + val + ')" style="flex:1;min-width:150px;text-align:left;'
-      + 'padding:7px 9px;border-radius:7px;cursor:pointer;font-family:inherit;font-size:.72rem;'
-      + 'border:1px solid ' + (actif ? 'var(--navy)' : 'var(--border)') + ';'
-      + 'background:' + (actif ? '#EFF6FF' : 'transparent') + ';color:var(--text);">'
-      + '<b>' + titre + '</b><br><span style="color:var(--muted);">' + detail + '</span></button>';
-  };
 
   var nb = CAP_STATE.sessions.reduce(function(m, x) { return Math.max(m, x.week); }, 0);
   return '<div style="margin:0 2px 10px;padding:11px 13px;border-radius:9px;'
@@ -12790,16 +12883,8 @@ function _capPropositionHtml() {
     + ligne('Allure (Z3+)', pr.avantAff.intensite + '′', pr.apresAff.intensite + '′', '', chgInt)
     + ligne('Volume', pr.avantAff.volume, pr.apresAff.volume, u, chgVol)
     + '</div>'
-    + '<div style="display:flex;gap:6px;margin-top:9px;flex-wrap:wrap;">'
-    + choix(true,  'Allonger le plan', nb + ' → ' + (nb + CAP_SEUILS.cycleProgression) + ' sem., la cible est tenue')
-    + choix(false, 'Garder ' + nb + ' sem.', 'le plan termine plus bas')
-    + '</div>'
-    + '<div style="display:flex;gap:6px;margin-top:9px;justify-content:flex-end;">'
-    + '<button onclick="_capPropIgnorer()" style="padding:5px 12px;border:1px solid var(--border);background:none;'
-    + 'border-radius:14px;cursor:pointer;font-family:inherit;font-size:.73rem;color:var(--muted);">Ignorer</button>'
-    + '<button onclick="_capPropAppliquer()" style="padding:5px 14px;border:none;background:var(--navy);color:#fff;'
-    + 'border-radius:14px;cursor:pointer;font-family:inherit;font-size:.73rem;font-weight:600;">Appliquer</button>'
-    + '</div></div>';
+    + choixDuree(nb, nb + CAP_SEUILS.cycleProgression, 'le plan termine plus bas')
+    + boutons('var(--navy)') + '</div>';
 }
 
 /* ── Adaptation automatique de la prochaine séance selon la douleur ──
@@ -13065,10 +13150,22 @@ function _capReplanFromIndex(anchorIdx, Lmid) {
 }
 
 function _capManualMaintain(idx) {
+  // Plan v2 : répéter la semaine, avec le choix d'allonger ou non. Le bouton
+  // ne faisait qu'afficher un message — il ne maintenait rien du tout.
+  if (CAP_STATE && CAP_STATE.etats) {
+    var prop = _capProposerMaintien(idx);
+    if (prop) { _capProposition = prop; _capRender(); return; }
+  }
   if (typeof _showToast === 'function') _showToast('Programme maintenu tel quel.');
 }
 
 function _capManualRegress(idx) {
+  // Plan v2 : même proposition que sur douleur, sans score — le praticien juge
+  // la séance trop ambitieuse avant même de l'avoir faite.
+  if (CAP_STATE && CAP_STATE.etats) {
+    var prop = _capProposerRegression(idx);
+    if (prop) { prop.score = '—'; prop.allonger = false; _capProposition = prop; _capRender(); return; }
+  }
   var sessions = CAP_STATE.sessions;
   var Lpain = _capLoadOf(sessions[idx]); // charge actuellement prévue, jugée trop ambitieuse par le praticien
   var Lgood = null;

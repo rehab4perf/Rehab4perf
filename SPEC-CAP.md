@@ -445,11 +445,11 @@ n'entame pas l'acquis.
 
 ## 12. La régression sur douleur
 
-> **Reste à faire.** Le bouton Douleur passe désormais par la proposition. Les
-> boutons **Maintenir** et **Régresser** tournent encore sur le moteur v1
-> (`_capManualMaintain`, `_capManualRegress`, `_capLoadOf`, `_capMidpointL`,
-> `_capReplanFromIndex`), qui rééchelonne les séances au jugé, hors du modèle.
-> Leur rebranchement et le retrait du code v1 restent à faire.
+> **Reste à faire.** Les trois boutons passent désormais par la proposition
+> quand le plan est en v2. Le moteur v1 (`_capBuildProgressive`, `_capLoadOf`,
+> `_capMidpointL`, `_capReplanFromIndex`) subsiste comme **repli pour les plans
+> sans axe** — générés avant la v2. Il ne peut donc pas être retiré tant que
+> ces plans peuvent exister.
 
 ### On propose, on n'applique jamais d'office
 
@@ -521,6 +521,21 @@ le volume ne bouge pas.
 `−` / `+` ajustent d'une minute sur l'allure, de cinq points de pourcentage sur
 une décharge globale. **Ignorer** laisse la douleur consignée sur la séance et
 le plan intact.
+
+### Les deux autres boutons
+
+**Régresser** ouvre la même proposition, sans score : le praticien juge la
+séance trop ambitieuse avant même qu'elle soit faite.
+
+**Maintenir** répète la semaine à l'identique. C'est une duplication littérale
+— les séances sont recopiées, tout ce qui suit décale d'une semaine, dates
+comprises pour ne pas désynchroniser l'agenda, et les copies perdent leur lien
+`seance_id` / `prog_id` pour que deux séances ne pointent pas le même
+programme. Rejouer le moteur ne conviendrait pas : la position dans le
+microcycle changerait et la semaine produite ne serait plus la même.
+
+Le plan prend donc une semaine de retard — c'est la logique. Mais le choix
+reste offert : garder la durée fait sauter la dernière semaine.
 
 ### Exemple
 
