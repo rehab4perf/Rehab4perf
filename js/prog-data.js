@@ -1019,7 +1019,7 @@ var FC_ZONES = [
 
 function addCardioBloc(){
   var id = genId();
-  var letter = String.fromCharCode(65 + blocs.length);
+  var letter = String.fromCharCode(65 + _blocsReels().length);
   blocs.push({
     id:id, title:'Bloc '+letter, type:'cardio',
     sport:'course', effort_type:'continu',
@@ -1221,8 +1221,8 @@ function _renderCardioBloc(b, idx){
   // Header
   h += '<div class="bloc-header" data-blocid="'+bid+'" style="opacity:'+(isActive?'1':'.75')+'" onclick="setActiveBloc(\''+bid+'\')">';
   h += '<span class="bloc-move-btns">'
-    +  '<button class="bloc-move-btn"'+(idx===0?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',-1)" title="Monter">↑</button>'
-    +  '<button class="bloc-move-btn"'+(idx===blocs.length-1?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',1)" title="Descendre">↓</button>'
+    +  '<button class="bloc-move-btn"'+(_estPremierBlocReel(idx)?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',-1)" title="Monter">↑</button>'
+    +  '<button class="bloc-move-btn"'+(_estDernierBlocReel(idx)?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',1)" title="Descendre">↓</button>'
     +  '</span>';
   h += '<input class="bloc-title-input" value="'+escH(b.title)+'" placeholder="Nom du bloc" oninput="updateBlocTitle(\''+bid+'\',this.value)" onclick="event.stopPropagation()">';
   h += '<span class="cardio-tag">🏃 Cardio</span>';
@@ -1313,7 +1313,7 @@ function _renderCardioBloc(b, idx){
 
 function addBloc(){
   var id = genId();
-  var letter = String.fromCharCode(65 + blocs.length);
+  var letter = String.fromCharCode(65 + _blocsReels().length);
   blocs.push({id:id, title:'Bloc '+letter, exos:[], objectif:'libre', methode:''});
   activeBloc = id;
   renderSession();
@@ -1321,7 +1321,7 @@ function addBloc(){
 
 function deleteBloc(id){
   blocs = blocs.filter(function(b){ return b.id!==id; });
-  if(activeBloc===id) activeBloc = blocs.length ? blocs[blocs.length-1].id : null;
+  if(activeBloc===id){ var r = _blocsReels(); activeBloc = r.length ? r[r.length-1].id : null; }
   renderSession();
   renderLib(document.getElementById('searchInput').value.toLowerCase());
 }
@@ -1362,65 +1362,147 @@ function _normalizeEtapes(){
   if(!Array.isArray(etapes)) etapes = [];
   var known = {};
   etapes.forEach(function(e){ if(e && e.id) known[e.id] = true; });
+
+  // Étapes connues des blocs mais absentes de la liste (anciens formats).
   (blocs||[]).forEach(function(b){
+    if(_estMarqueur(b)){
+      if(!known[b.id]){
+        known[b.id] = true;
+        etapes.push({ id:b.id, title:'Étape', color:ETAPE_COLORS[etapes.length%ETAPE_COLORS.length] });
+      }
+      return;
+    }
     if(!b.etapeId) return;
     if(!known[b.etapeId]){
       known[b.etapeId] = true;
       etapes.push({ id:b.etapeId, title:b.etapeTitle || 'Étape', color:ETAPE_COLORS[(etapes.length)%ETAPE_COLORS.length] });
     }
-    // Le titre ne vit plus sur le bloc
-    if(b.etapeTitle !== undefined) delete b.etapeTitle;
+    if(b.etapeTitle !== undefined) delete b.etapeTitle;   // le titre ne vit plus sur le bloc
   });
   etapes.forEach(function(e, i){ if(!e.color) e.color = ETAPE_COLORS[i%ETAPE_COLORS.length]; });
+
+  // ── Migration : une séance enregistrée avant le modèle plat n'a pas de
+  // séparateurs. On les pose devant le premier bloc de chaque étape, en
+  // conservant l'ordre d'affichage qu'elle avait. Une étape sans bloc atterrit
+  // en fin de séance, faute de mieux — c'est là qu'elle s'affichait déjà.
+  var manquantes = etapes.filter(function(e){ return _indexMarqueur(e.id) < 0; });
+  manquantes.forEach(function(e){
+    var i = (blocs||[]).findIndex(function(b){ return !_estMarqueur(b) && b.etapeId === e.id; });
+    if(i < 0) blocs.push({ id:e.id, type:'etape' });
+    else      blocs.splice(i, 0, { id:e.id, type:'etape' });
+  });
+
+  // Une étape dont le séparateur a disparu n'existe plus.
+  etapes = etapes.filter(function(e){ return _indexMarqueur(e.id) >= 0; });
+  _syncEtapeIds();
 }
 
 function _blocsOfEtape(etapeId){
-  return (blocs||[]).filter(function(b){ return b.etapeId===etapeId; });
+  return (blocs||[]).filter(function(b){ return !_estMarqueur(b) && b.etapeId===etapeId; });
 }
 
-/* Découpe la séance en groupes affichables : blocs hors étape isolés, blocs
-   d'une même étape regroupés, puis les étapes encore vides en fin de liste. */
+/* ── L'ordre vit dans `blocs`, et nulle part ailleurs ──────────────────
+   Une étape est une ENTRÉE de `blocs` : un séparateur `{type:'etape'}`. Les
+   blocs qui le suivent lui appartiennent, jusqu'au séparateur suivant.
+
+   Avant, l'ordre d'affichage était reconstruit depuis `blocs` tandis que les
+   étapes vivaient dans une seconde liste ordonnée : deux sources d'ordre pour
+   une seule séance. Les étapes vides étaient collées en fin de liste, si bien
+   qu'ajouter un bloc à la deuxième étape la faisait remonter en première
+   position — elle passait soudain par `blocs`, l'autre restait « en attente ».
+   Et une étape ne pouvait naître qu'à la fin.
+
+   `etapes[]` ne porte plus que les métadonnées (titre, couleur). */
+
+function _estMarqueur(b){ return !!(b && b.type === 'etape'); }
+
+/* Bornes réelles : un séparateur n'est pas un bloc, il ne doit ni bloquer une
+   flèche ni en absorber une. */
+function _estPremierBlocReel(idx){
+  for(var i = 0; i < idx; i++) if(!_estMarqueur(blocs[i])) return false;
+  return true;
+}
+function _estDernierBlocReel(idx){
+  for(var i = idx + 1; i < blocs.length; i++) if(!_estMarqueur(blocs[i])) return false;
+  return true;
+}
+
+/* Les blocs réels, séparateurs exclus — pour compter et pour nommer. */
+function _blocsReels(){
+  return (blocs||[]).filter(function(b){ return !_estMarqueur(b); });
+}
+
+/* Index du séparateur d'une étape dans `blocs`, ou -1. */
+function _indexMarqueur(etapeId){
+  return (blocs||[]).findIndex(function(b){ return _estMarqueur(b) && b.id === etapeId; });
+}
+
+/* Étape à laquelle appartient le bloc d'index `i` : le dernier séparateur
+   rencontré avant lui. */
+function _etapeDeIndex(i){
+  for(var k = i - 1; k >= 0; k--) if(_estMarqueur(blocs[k])) return blocs[k].id;
+  return null;
+}
+
+/* Découpe la séance en groupes affichables. Un seul parcours, un seul ordre. */
 function _groupBlocsForRender(){
   var groups = [];
-  var seen = {};
-  var i = 0;
-  while(i < blocs.length){
-    var b = blocs[i];
-    if(b.etapeId && getEtape(b.etapeId)){
-      var members = [];
-      var j = i;
-      while(j < blocs.length && blocs[j].etapeId === b.etapeId){ members.push(blocs[j]); j++; }
-      seen[b.etapeId] = true;
-      groups.push({ etapeId: b.etapeId, blocs: members });
-      i = j;
-    } else {
-      groups.push({ etapeId: null, blocs: [b] });
-      i++;
+  var courant = null;
+  (blocs||[]).forEach(function(b){
+    if(_estMarqueur(b)){
+      courant = { etapeId: b.id, blocs: [] };
+      groups.push(courant);
+      return;
     }
-  }
-  (etapes||[]).forEach(function(e){
-    if(!seen[e.id]) groups.push({ etapeId: e.id, blocs: [] });
+    if(courant) courant.blocs.push(b);
+    else groups.push({ etapeId: null, blocs: [b] });
   });
   return groups;
 }
 
-function addEtape(){
-  var e = { id: genId(), title: 'Nouvelle étape', color: ETAPE_COLORS[(etapes.length)%ETAPE_COLORS.length] };
+/* Chaque bloc porte l'étape déduite de sa position. Le champ n'est plus la
+   source de vérité — il est recalculé — mais il reste écrit parce que l'espace
+   athlète groupe les blocs avec. */
+function _syncEtapeIds(){
+  var courant = null;
+  (blocs||[]).forEach(function(b){
+    if(_estMarqueur(b)){ courant = b.id; return; }
+    if(courant) b.etapeId = courant; else delete b.etapeId;
+  });
+}
+
+/* Crée une étape à l'index voulu dans la séance. Sans index, à la fin. */
+function addEtape(atIndex){
+  var id = genId();
+  var nbEtapes = (blocs||[]).filter(_estMarqueur).length;
+  var e = { id: id, title: 'Nouvelle étape', color: ETAPE_COLORS[nbEtapes % ETAPE_COLORS.length] };
   etapes.push(e);
+  var pos = (typeof atIndex === 'number' && atIndex >= 0 && atIndex <= blocs.length)
+    ? atIndex : blocs.length;
+  blocs.splice(pos, 0, { id: id, type: 'etape' });
+  _syncEtapeIds();
   renderSession();
-  var input = document.querySelector('.etape-group[data-etapeid="'+e.id+'"] .etape-title-input');
+  var input = document.querySelector('.etape-group[data-etapeid="'+id+'"] .etape-title-input');
   if(input){ input.focus(); input.select(); }
-  var el = document.querySelector('.etape-group[data-etapeid="'+e.id+'"]');
+  var el = document.querySelector('.etape-group[data-etapeid="'+id+'"]');
   if(el) el.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
+/* Fin du groupe d'une étape : l'index juste avant le séparateur suivant. */
+function _finDeGroupe(etapeId){
+  var i = _indexMarqueur(etapeId);
+  if(i < 0) return blocs.length;
+  var j = i + 1;
+  while(j < blocs.length && !_estMarqueur(blocs[j])) j++;
+  return j;
+}
+
 function addBlocToEtape(etapeId){
-  if(!getEtape(etapeId)) return;
-  var lastIdx = -1;
-  blocs.forEach(function(b,i){ if(b.etapeId===etapeId) lastIdx = i; });
-  var letter = String.fromCharCode(65 + blocs.length);
-  var nb = { id: genId(), title: 'Bloc '+letter, exos: [], objectif: 'libre', methode: '', etapeId: etapeId };
-  if(lastIdx>=0) blocs.splice(lastIdx+1, 0, nb); else blocs.push(nb);
+  if(_indexMarqueur(etapeId) < 0) return;
+  var letter = String.fromCharCode(65 + _blocsReels().length);
+  var nb = { id: genId(), title: 'Bloc '+letter, exos: [], objectif: 'libre', methode: '' };
+  blocs.splice(_finDeGroupe(etapeId), 0, nb);
+  _syncEtapeIds();
   activeBloc = nb.id;
   renderSession();
 }
@@ -1443,41 +1525,52 @@ function setEtapeColor(etapeId, color){
 }
 
 /* Dissout : le groupement disparaît, les blocs restent dans la séance. */
+/* Dissout : le séparateur disparaît, les blocs restent en place — ils
+   rejoignent l'étape précédente, ou aucune s'il n'y en a pas. */
 function dissolveEtape(etapeId){
-  blocs.forEach(function(b){ if(b.etapeId===etapeId) delete b.etapeId; });
+  var i = _indexMarqueur(etapeId);
+  if(i >= 0) blocs.splice(i, 1);
   etapes = etapes.filter(function(e){ return e.id!==etapeId; });
+  _syncEtapeIds();
   renderSession();
 }
 
+/* Rattacher un bloc à une étape, c'est le DÉPLACER dans son groupe : la
+   position fait l'appartenance, plus un champ. */
 function assignBlocEtape(blocId, etapeId){
-  var b = blocs.find(function(x){ return x.id===blocId; });
-  if(!b) return;
-  if(!etapeId){
-    delete b.etapeId;
-    renderSession();
-    return;
+  var i = (blocs||[]).findIndex(function(x){ return x.id===blocId && !_estMarqueur(x); });
+  if(i < 0) return;
+  var b = blocs.splice(i, 1)[0];
+  if(!etapeId || _indexMarqueur(etapeId) < 0){
+    // Hors étape : avant le tout premier séparateur, seule zone qui n'appartient
+    // à aucune étape.
+    var premier = (blocs||[]).findIndex(_estMarqueur);
+    blocs.splice(premier < 0 ? blocs.length : premier, 0, b);
+  } else {
+    blocs.splice(_finDeGroupe(etapeId), 0, b);
   }
-  if(!getEtape(etapeId)) return;
-  b.etapeId = etapeId;
-  // Rapproche le bloc du reste de son étape pour garder les groupes contigus
-  blocs = blocs.filter(function(x){ return x.id!==blocId; });
-  var lastIdx = -1;
-  blocs.forEach(function(x,i){ if(x.etapeId===etapeId) lastIdx = i; });
-  if(lastIdx>=0) blocs.splice(lastIdx+1, 0, b); else blocs.push(b);
+  _syncEtapeIds();
   renderSession();
 }
 
 /* Déplace un groupe entier (étape ou bloc isolé) d'un cran dans la séance. */
+/* Déplace une étape ET son contenu d'un cran. Les groupes vides comptent :
+   une étape qu'on vient de créer doit pouvoir remonter avant d'être remplie. */
 function moveEtape(etapeId, dir){
-  var groups = _groupBlocsForRender().filter(function(g){ return g.blocs.length; });
+  var groups = _groupBlocsForRender();
   var idx = groups.findIndex(function(g){ return g.etapeId===etapeId; });
   var tgt = idx + dir;
   if(idx<0 || tgt<0 || tgt>=groups.length) return;
   var tmp = groups[idx]; groups[idx] = groups[tgt]; groups[tgt] = tmp;
   var out = [];
-  groups.forEach(function(g){ g.blocs.forEach(function(b){ out.push(b); }); });
+  groups.forEach(function(g){
+    if(g.etapeId) out.push({ id:g.etapeId, type:'etape' });
+    g.blocs.forEach(function(b){ out.push(b); });
+  });
   blocs = out;
+  _syncEtapeIds();
   renderSession();
+  if(typeof _draftSaveLazy === 'function') _draftSaveLazy();
 }
 
 function addExoFromLib(libId){
@@ -1485,13 +1578,14 @@ function addExoFromLib(libId){
   var ex = LIBRARY.find(function(e){ return e.id===libId; });
   if(!ex) return;
   // If no bloc, create one
-  if(!blocs.length) addBloc();
+  if(!_blocsReels().length) addBloc();
   // Use target-bloc-select, activeBloc, or last bloc
   var targetBlocSel = document.getElementById('target-bloc-select');
   var selectedBlocId = targetBlocSel ? targetBlocSel.value : '';
-  var targetId = selectedBlocId || activeBloc || blocs[blocs.length-1].id;
+  var _reels = _blocsReels();
+  var targetId = selectedBlocId || activeBloc || _reels[_reels.length-1].id;
   var bloc = blocs.find(function(b){ return b.id===targetId; });
-  if(!bloc) { bloc = blocs[blocs.length-1]; targetId = bloc ? bloc.id : null; }
+  if(!bloc || _estMarqueur(bloc)) { bloc = _reels[_reels.length-1]; targetId = bloc ? bloc.id : null; }
   if(!bloc) return;
   var row = {id:genId(), libId:ex.id, name:ex.name, url:ex.url, reps:'', duree:'', series:'', cibles:[{type:'kg', min:'', max:''}], obj:ex.obj, tempo:'', recup:'', chained:false, consigne:'', perCote:false, nrs:null};
   bloc.exos.push(row);
@@ -1890,11 +1984,15 @@ function moveExo(blocId, idx, dir){
 }
 
 /* ── Réordonnancement des blocs ─────────────────────────────────────────── */
+/* Monter ou descendre un bloc d'un cran, en sautant les séparateurs : franchir
+   un séparateur, c'est changer d'étape, et ça se fait alors d'un seul geste. */
 function moveBloc(idx, dir){
   var newIdx = idx + dir;
+  while(newIdx >= 0 && newIdx < blocs.length && _estMarqueur(blocs[newIdx])) newIdx += dir;
   if(newIdx < 0 || newIdx >= blocs.length) return;
   var moved = blocs.splice(idx, 1)[0];
   blocs.splice(newIdx, 0, moved);
+  _syncEtapeIds();
   renderSession();
   if(typeof _draftSaveLazy === 'function') _draftSaveLazy();
 }
@@ -2004,6 +2102,7 @@ function renderSession(){
     }
   }
   g.blocs.forEach(function(b){
+    if(_estMarqueur(b)) return;          // le séparateur est déjà rendu par l'en-tête
     var idx = blocs.indexOf(b);
     // ── Bloc Cardio ──
     if(b.type === 'cardio'){ html += _renderCardioBloc(b, idx); return; }
@@ -2012,8 +2111,8 @@ function renderSession(){
     html += '<div class="bloc" id="bloc-'+b.id+'">';
     html += '<div class="bloc-header" data-blocid="'+b.id+'" style="opacity:'+(isActive?'1':'.8')+'" onclick="setActiveBloc(\''+b.id+'\')">';
     html += '<span class="bloc-move-btns">'
-          + '<button class="bloc-move-btn"'+(idx===0?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',-1)" title="Monter">↑</button>'
-          + '<button class="bloc-move-btn"'+(idx===blocs.length-1?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',1)" title="Descendre">↓</button>'
+          + '<button class="bloc-move-btn"'+(_estPremierBlocReel(idx)?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',-1)" title="Monter">↑</button>'
+          + '<button class="bloc-move-btn"'+(_estDernierBlocReel(idx)?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',1)" title="Descendre">↓</button>'
           + '</span>';
     html += '<input class="bloc-title-input" value="'+escH(b.title)+'" placeholder="Nom du bloc" oninput="updateBlocTitle(\''+b.id+'\',this.value)">';
     if(etapes.length){
