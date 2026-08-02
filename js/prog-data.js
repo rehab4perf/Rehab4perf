@@ -1309,6 +1309,11 @@ function _renderChronoExos(b){
     if(b.type === 'emom'){
       h += '<span class="chrono-min">min '+(i+1)+'</span>';
     }
+    // Vignette vidéo, comme dans un bloc d'exercices : un AMRAP se démontre
+    // autant qu'il se lit. Une place fixe est réservée même sans vidéo, pour
+    // que les noms restent alignés d'une ligne à l'autre.
+    var _vt = e.url ? _ytThumbHtml(e.url) : null;
+    h += _vt || '<span class="chrono-exo-vide" title="Pas de vidéo">—</span>';
     h += '<div class="chrono-exo-nom">';
     if(e.free){
       h += '<input class="exo-name-input" type="text" value="'+escH(e.name||'')+'" placeholder="Nom de l\'exercice…" oninput="updateExoName(\''+b.id+'\',\''+e.id+'\',this.value)">';

@@ -68,6 +68,11 @@
   --fs-2xs:.625rem;  --fs-xs:.6875rem; --fs-sm:.75rem;
   --fs-md:.8125rem;  --fs-lg:.875rem;  --fs-xl:1rem;
   --fs-2xl:1.25rem;  --fs-3xl:1.5rem;  --fs-4xl:2rem;
+  /* Types de bloc, mêmes teintes que côté praticien : la pastille porte le
+     type, le filet reste à l'étape. */
+  --amrap:#B45309;  --amrap-l:#FDF0E1;
+  --emom:#6D28D9;   --emom-l:#F1EAFE;
+  --bloc-texte:#475569; --bloc-texte-l:#EEF1F5;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 html,body { background:var(--bg); font-family:var(--font-sans); color:var(--text); min-height:100%; }
@@ -552,13 +557,19 @@ html,body { background:var(--bg); font-family:var(--font-sans); color:var(--text
 .exo-pill.recup-dim .exo-pill-val { color:#CBD2DB; font-style:italic; }
 .exo-pain-v3 { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
 .exo-pain-label { font-size:var(--fs-xs); font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; white-space:nowrap; }
-.bloc-texte .bloc-header { border-left-color:#64748B; }
+.bloc-texte .bloc-badge { background:var(--bloc-texte-l); color:var(--bloc-texte); }
 .texte-corps { padding:12px 14px; font-size:var(--fs-lg); line-height:1.6; color:var(--text,var(--text)); white-space:normal; }
-.bloc-amrap .bloc-header { border-left-color:#B45309; }
-.bloc-emom  .bloc-header { border-left-color:#6D28D9; }
+/* Le filet reste a l'etape : c'est elle qui structure la seance chez le
+   patient comme chez le praticien. Le type de bloc passe dans sa pastille. */
+.bloc-amrap .bloc-badge { background:var(--amrap-l); color:var(--amrap); }
+.bloc-emom  .bloc-badge { background:var(--emom-l); color:var(--emom); }
 .chrono-item { display:flex; align-items:center; gap:9px; }
 .chrono-min-ath { font-size:var(--fs-xs); font-weight:700; color:#6b7280; min-width:46px; text-transform:uppercase; font-variant-numeric:tabular-nums; }
-.chrono-nom-ath { flex:1; }
+.chrono-nom-ath { flex:1; min-width:0; }
+.chrono-vig { width:52px; height:30px; border-radius:5px; overflow:hidden; flex-shrink:0;
+  background:var(--bg); display:block; cursor:pointer; }
+.chrono-vig img { display:block; width:100%; height:100%; object-fit:cover; }
+.chrono-vig.no-vid { cursor:default; box-shadow:inset 0 0 0 1px var(--border); }
 .chrono-reps-ath { font-weight:700; font-size:var(--fs-lg); }
 /* « / côté » se lit comme une precision, pas comme une valeur. */
 .chrono-cote-ath { font-weight:600; font-size:var(--fs-sm); color:var(--muted); }
@@ -2003,8 +2014,15 @@ function buildProgHTML(prog){
            +  '<span class="bloc-badge">'+entete+'</span></div>';
       html += '<div class="exo-list">';
       (b.exos || []).forEach(function(e, i){
+        // Vignette video, comme dans un bloc d'exercices : un mouvement se
+        // montre. Place reservee sans video, pour garder les noms alignes.
+        var _cy = _ytId(e.url||'');
         html += '<div class="exo-item chrono-item">'
              +  (estAmrap ? '' : '<span class="chrono-min-ath">min '+(i+1)+'</span>')
+             +  (_cy
+                 ? '<span class="chrono-vig" onclick="openYtModal(\''+_cy+'\')" title="Voir la video">'
+                   + '<img src="https://img.youtube.com/vi/'+_cy+'/hqdefault.jpg" alt="video" loading="lazy"></span>'
+                 : '<span class="chrono-vig no-vid"></span>')
              +  '<span class="chrono-nom-ath">'+escH(e.name || '')+'</span>'
              +  (e.reps ? '<span class="chrono-reps-ath">'+escH(e.reps)+(e.perCote?' <span class="chrono-cote-ath">/ côté</span>':'')+'</span>' : '')
              +  '</div>';

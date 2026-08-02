@@ -29,6 +29,13 @@
   --fs-2xs:.625rem;  --fs-xs:.6875rem; --fs-sm:.75rem;
   --fs-md:.8125rem;  --fs-lg:.875rem;  --fs-xl:1rem;
   --fs-2xl:1.25rem;  --fs-3xl:1.5rem;  --fs-4xl:2rem;
+  /* Types de bloc : chaque famille a sa teinte et son fond clair. Ce sont
+     ces couleurs qui portaient l'en-tête plein ; elles vivent désormais dans
+     la pastille, le filet appartenant à l'étape. */
+  --amrap:#B45309;  --amrap-l:#FDF0E1;
+  --emom:#6D28D9;   --emom-l:#F1EAFE;
+  --cardio:#0E7490; --cardio-l:#E2F5F9;
+  --bloc-texte:#475569; --bloc-texte-l:#EEF1F5;
   --sidebar-w:300px;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -1218,16 +1225,18 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .add-menu-item:hover { background:var(--tag-bg); color:var(--accent2); }
 .add-menu-sep { height:1px; background:var(--border); margin:4px 6px; }
 /* Bloc texte : ni exercice ni effort mesuré, une couleur qui le dit. */
-.texte-bloc .bloc-header { border-left-color:#64748B; }
-.texte-tag { background:rgba(255,255,255,.18); color:#fff; border-radius:11px; padding:2px 9px; font-size:var(--fs-xs); font-weight:600; white-space:nowrap; }
+/* Le filet reste a l'etape : c'est elle qui structure la seance. Le type de
+   bloc s'annonce par sa pastille. */
+.texte-tag  { background:var(--bloc-texte-l); color:var(--bloc-texte); }
+.texte-tag { border-radius:11px; padding:2px 9px; font-size:var(--fs-xs); font-weight:700; white-space:nowrap; flex-shrink:0; }
 .texte-ta { width:100%; border:1px solid var(--border); border-radius:7px; padding:9px 11px;
   font-family:inherit; font-size:var(--fs-md); line-height:1.55; color:var(--text); background:var(--surface);
   resize:none; overflow:hidden; min-height:64px; }
 .texte-ta:focus { outline:none; border-color:var(--accent2); }
 /* AMRAP / EMOM : deux formats à contrainte de temps, distingués par la teinte. */
-.amrap-bloc .bloc-header { border-left-color:#B45309; }
-.emom-bloc  .bloc-header { border-left-color:#6D28D9; }
-.chrono-tag { background:rgba(255,255,255,.18); color:#fff; border-radius:11px; padding:2px 9px; font-size:var(--fs-xs); font-weight:600; white-space:nowrap; }
+.amrap-bloc .chrono-tag { background:var(--amrap-l); color:var(--amrap); }
+.emom-bloc  .chrono-tag { background:var(--emom-l); color:var(--emom); }
+.chrono-tag { border-radius:11px; padding:2px 9px; font-size:var(--fs-xs); font-weight:700; white-space:nowrap; flex-shrink:0; }
 .chrono-form { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
 .chrono-form .cardio-field { flex:1; min-width:120px; }
 .chrono-resume { font-size:var(--fs-sm); color:var(--muted); margin-bottom:8px; }
@@ -1238,6 +1247,11 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .chrono-reps { width:74px; border:1px solid var(--border); border-radius:6px; padding:4px 7px; font-family:inherit; font-size:var(--fs-sm); text-align:center; }
 .chrono-reps:focus { outline:none; border-color:var(--accent2); }
 .chrono-exo .percote-toggle { flex-shrink:0; }
+.chrono-exo .yt-thumb-wrap img { width:44px; height:25px; border-radius:4px; }
+.chrono-exo .yt-thumb-wrap .yt-play::after { border-left-width:7px; border-top-width:4px; border-bottom-width:4px; }
+.chrono-exo-vide { width:44px; height:25px; border-radius:4px; background:var(--bg);
+  flex-shrink:0; display:flex; align-items:center; justify-content:center;
+  color:var(--text3); font-size:var(--fs-2xs); }
 .chrono-vide { padding:12px; text-align:center; color:var(--muted); font-size:var(--fs-sm); }
 .etape-add-btn:hover { border-color:var(--accent); color:var(--accent); background:var(--tag-bg); }
 
@@ -1363,13 +1377,13 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .methode-card.obj-isometrie    { background:#FFFBEB; border-color:#B45309; color:#78350f; }
 
 /* ── Blocs Cardio ── */
-.cardio-bloc .bloc-header { border-left-color:#0891B2; }
+.cardio-bloc .cardio-tag { background:var(--cardio-l); color:var(--cardio); }
 .cardio-bloc .bloc-title-input { color:#fff; }
 .cardio-bloc .bloc-title-input::placeholder { color:rgba(255,255,255,.5); }
 .cardio-tag {
   display:inline-flex; align-items:center; gap:3px;
   padding:2px 8px; border-radius:10px; font-size:var(--fs-xs); font-weight:700;
-  background:rgba(255,255,255,.2); color:#fff; white-space:nowrap; flex-shrink:0;
+  white-space:nowrap; flex-shrink:0;
 }
 .cardio-form {
   padding:12px 14px; display:flex; flex-direction:column; gap:10px;
@@ -3175,7 +3189,7 @@ input[type="number"], table, time,
   </div><!-- /tool-panel-drawer -->
 </div><!-- /tool-panel-overlay -->
 
-<script src="js/prog-data.js?v=20260802k"></script>
+<script src="js/prog-data.js?v=20260802l"></script>
 
 <!-- ══ CYCLES MODAL ════════════════════════════════════════════ -->
 <style>
