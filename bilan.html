@@ -223,7 +223,7 @@ body {
   display: none;
   margin: 0 0 10px;
   padding: 7px 10px;
-  background: #EEF2FF;
+  background: var(--accent-l);
   border: 1px solid #C7D2FE;
   border-radius: 6px;
   font-size: .75rem;
@@ -426,7 +426,7 @@ body {
 .histo-item:hover { background: var(--bg); }
 .histo-item-num {
   flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%;
-  background: #E8EDF5; color: var(--accent2); font-size: .72rem; font-weight: 700;
+  background: var(--accent-l); color: var(--accent2); font-size: .72rem; font-weight: 700;
   display: flex; align-items: center; justify-content: center;
 }
 .histo-item.current .histo-item-num { background: var(--accent2); color: #fff; }
@@ -446,7 +446,7 @@ body {
 .histo-item-load:hover { background: var(--accent); }
 .histo-item.current .histo-item-load { background: var(--green); }
 .histo-item.current .histo-item-load:hover { background: #1B4332; }
-.histo-item.current { background: #F0FDF4; }
+.histo-item.current { background: var(--green-l); }
 .histo-new-btn {
   display: block; width: calc(100% - 32px); margin: 12px 16px;
   padding: 9px; background: var(--green); color: #fff; border: none;
@@ -467,7 +467,7 @@ body {
   font-size: .75rem; cursor: pointer; font-family: inherit;
   transition: all .12s; line-height: 1;
 }
-.histo-item-edit:hover { background: #F0F4FB; border-color: var(--accent); color: var(--accent); }
+.histo-item-edit:hover { background: var(--accent-l); border-color: var(--accent); color: var(--accent); }
 .histo-date-edit-wrap {
   display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0;
 }
@@ -716,7 +716,7 @@ td.bl-row-rail button:disabled { opacity: .3 !important; cursor: default; }
 .pl-btn-save { background:var(--accent2); color:#fff; border-color:var(--accent2); }
 .pl-btn-cancel { background:transparent; border-color:var(--border); color:var(--text2); }
 .pl-btn-delete { background:transparent; border-color:#E55; color:#C00; margin-right:auto; }
-.pl-btn-delete:hover { background:#FFECEC; }
+.pl-btn-delete:hover { background:var(--red-l); }
 
 /* ── Form elements ───────────────────────────────────────── */
 .form-grid {
@@ -1526,7 +1526,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 .pz-chip { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; font-size:.78rem; font-weight:600; }
 .pz-chip.cote-d  { background:#E3F2FD; color:#1565C0; border:1px solid #90CAF9; }
 .pz-chip.cote-g  { background:#F3E5F5; color:#6A1B9A; border:1px solid #CE93D8; }
-.pz-chip.cote-bi { background:#E8F5E9; color:#2E7D32; border:1px solid #A5D6A7; }
+.pz-chip.cote-bi { background:var(--green-l); color:#2E7D32; border:1px solid #A5D6A7; }
 .pz-chip-del { background:none; border:none; cursor:pointer; font-size:.9rem; color:inherit; opacity:.6; padding:0; line-height:1; }
 .pz-chip-del:hover { opacity:1; }
 .pain-zone-add { display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-top:4px; }
@@ -1545,7 +1545,7 @@ textarea { resize:none !important; overflow:hidden !important; }
 /* ── Objectifs datés ── */
 .obj-wrap { display:flex; flex-direction:column; gap:8px; }
 .obj-list { display:flex; flex-direction:column; gap:6px; }
-.obj-chip { display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:8px; font-size:.82rem; background:#EEF4FF; border:1px solid #BFDBFE; }
+.obj-chip { display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:8px; font-size:.82rem; background:var(--accent-l); border:1px solid #BFDBFE; }
 .obj-chip-text { flex:1; min-width:0; color:var(--text); }
 .obj-chip-date { font-size:.7rem; font-weight:700; color:#1565C0; background:#fff; border-radius:6px; padding:2px 7px; white-space:nowrap; flex-shrink:0; }
 .obj-chip-del { background:none; border:none; cursor:pointer; font-size:1rem; color:var(--muted); opacity:.6; padding:0; line-height:1; flex-shrink:0; }
@@ -1571,7 +1571,7 @@ textarea { resize:none !important; overflow:hidden !important; }
    confondu avec une valeur réellement saisie. */
 .bl-inherited-ghost {
   border-style:dashed !important; border-color:var(--border2,#CBC8C0) !important;
-  background:var(--surface2,#F5F4F2) !important;
+  background:var(--surface2,var(--bg)) !important;
 }
 input.bl-inherited-ghost::placeholder, textarea.bl-inherited-ghost::placeholder {
   color:var(--text3); opacity:1; font-style:italic;
