@@ -3726,6 +3726,8 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .cap-verdict.bad  { background:#fdeeec; border-color:#f2c4bd; color:#9c2f21; }
 .cap-verdict b { font-variant-numeric:tabular-nums; }
 .cap-orig { opacity:.75; font-size:.93em; }
+.cap-check { display:flex; align-items:center; gap:7px; cursor:pointer; font-size:.78rem; color:var(--text); }
+.cap-check input { width:15px; height:15px; accent-color:var(--navy); cursor:pointer; }
 
 @media (max-width:520px) { .cap-two { grid-template-columns:1fr; } }
 
@@ -3936,125 +3938,87 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
     </div>
     <div class="cap-fbody">
 
-      <!-- ═══ BLOC 1 — État actuel du coureur ═══ -->
+      <!-- ═══ BLOC 1 — La pathologie choisit le mode ═══ -->
       <div class="cap-bloc">
         <div class="cap-bloc-hd">
           <span class="cap-bloc-num">1</span>
-          <span class="cap-bloc-title">État actuel du coureur</span>
+          <span class="cap-bloc-title">Pathologie</span>
+        </div>
+        <div class="cap-bloc-body">
+          <div>
+            <div class="cap-field-label">Pathologie principale</div>
+            <select class="cap-select" id="capPathoG" onchange="_capOnPathoChange()"></select>
+          </div>
+          <div>
+            <div class="cap-field-label">Tissu concerné</div>
+            <div class="cap-chips" id="capTissuG">
+              <button class="cap-chip active" data-val="tendon" onclick="capChipOne(this);_capFormRefresh()">Tendon</button>
+              <button class="cap-chip" data-val="os" onclick="capChipOne(this);_capFormRefresh()">Os</button>
+              <button class="cap-chip" data-val="muscle" onclick="capChipOne(this);_capFormRefresh()">Muscle</button>
+              <button class="cap-chip" data-val="fascia" onclick="capChipOne(this);_capFormRefresh()">Fascia</button>
+              <button class="cap-chip" data-val="articulaire" onclick="capChipOne(this);_capFormRefresh()">Articulaire</button>
+            </div>
+          </div>
+          <div class="cap-verdict ok" id="capModeBox"></div>
+        </div>
+      </div>
+
+      <!-- ═══ BLOC 2 — D'où l'on part ═══ -->
+      <div class="cap-bloc">
+        <div class="cap-bloc-hd">
+          <span class="cap-bloc-num">2</span>
+          <span class="cap-bloc-title">Ce qu’il tolère aujourd’hui</span>
           <button class="cap-strava-btn" id="capStravaBtn" onclick="_capFillFromStrava()" title="Pré-remplir depuis les 4 dernières semaines Strava">Depuis Strava</button>
         </div>
         <div class="cap-bloc-body">
 
           <div>
-            <div class="cap-field-label">Unité de travail</div>
+            <div class="cap-field-label">Unité</div>
             <div class="cap-chips" id="capUniteG">
-              <button class="cap-chip active" data-val="km" onclick="capChipSel(this,'capUniteG');_capFormRefresh()">Kilomètres</button>
-              <button class="cap-chip" data-val="min" onclick="capChipSel(this,'capUniteG');_capFormRefresh()">Minutes</button>
+              <button class="cap-chip active" data-val="km" onclick="capChipOne(this);_capFormRefresh()">Kilomètres</button>
+              <button class="cap-chip" data-val="min" onclick="capChipOne(this);_capFormRefresh()">Minutes</button>
             </div>
+          </div>
+
+          <!-- Mode volume / amplitude -->
+          <div id="capBlocTolerance">
+            <div class="cap-field-label">Volume toléré</div>
+            <div class="cap-chips" id="capTolUniteG">
+              <button class="cap-chip active" data-val="sortie" onclick="capChipOne(this);_capFormRefresh()">Par sortie</button>
+              <button class="cap-chip" data-val="semaine" onclick="capChipOne(this);_capFormRefresh()">Par semaine</button>
+            </div>
+            <input type="number" class="cap-select" id="capTolVal" min="0" step="0.5" placeholder="ex : 8" oninput="_capFormRefresh()" style="margin-top:6px;">
+          </div>
+
+          <!-- Mode allure -->
+          <div id="capBlocVolMaintenu" style="display:none;">
+            <div class="cap-field-label">Volume hebdomadaire à maintenir <span class="cap-unit-lbl">(km/sem)</span></div>
+            <input type="number" class="cap-select" id="capVolMaintenu" min="1" step="1" placeholder="ex : 30" oninput="_capFormRefresh()">
+            <div class="cap-hint">Il ne bougera pas : sur cet axe, c’est l’allure qu’on reconstruit.</div>
+          </div>
+
+          <div id="capBlocQualiteActuelle">
+            <div class="cap-field-label">Minutes de qualité actuelles <span class="cap-opt">Z3+</span></div>
+            <input type="number" class="cap-select" id="capQualiteActuelle" min="0" step="1" placeholder="aucune" oninput="_capFormRefresh()">
+            <div class="cap-hint" id="capQualiteActuelleHint">Laisser vide : le plan reste en endurance pure</div>
           </div>
 
           <div>
-            <div class="cap-field-label">Charge des 4 dernières semaines <span class="cap-unit-lbl">(km/sem)</span></div>
-            <div class="cap-weeks">
-              <label><span>S-4</span><input type="number" min="0" step="1" id="capW4" value="0" oninput="_capFormRefresh()"></label>
-              <label><span>S-3</span><input type="number" min="0" step="1" id="capW3" value="0" oninput="_capFormRefresh()"></label>
-              <label><span>S-2</span><input type="number" min="0" step="1" id="capW2" value="0" oninput="_capFormRefresh()"></label>
-              <label><span>S-1</span><input type="number" min="0" step="1" id="capW1" value="0" oninput="_capFormRefresh()"></label>
-            </div>
-            <div class="cap-hint" id="capChroniqueHint">Charge chronique : 0 — reprise depuis zéro (mode course/marche)</div>
+            <div class="cap-field-label">Course continue sans douleur <span class="cap-opt">(min)</span></div>
+            <input type="number" class="cap-select" id="capContinu" min="0" max="180" step="1" value="0" oninput="_capFormRefresh()">
+            <div class="cap-hint" id="capContinuHint"></div>
           </div>
 
-          <div class="cap-two">
-            <div>
-              <div class="cap-field-label">Sorties / semaine actuelles</div>
-              <input type="number" class="cap-select" id="capFreqAct" min="0" max="21" step="1" value="0" oninput="_capFormRefresh()">
-            </div>
-            <div>
-              <div class="cap-field-label">Sorties / semaine souhaitées</div>
-              <input type="number" class="cap-select" id="capFreqCible" min="1" max="21" step="1" value="3" oninput="_capFormRefresh()">
-            </div>
+          <div>
+            <div class="cap-field-label">Allure footing</div>
+            <input type="text" class="cap-select" id="capAllureG" placeholder="ex : 6:00" oninput="_capFormRefresh()">
+            <div class="cap-zones" id="capZonesBox"></div>
           </div>
-
-          <div class="cap-two">
-            <div>
-              <div class="cap-field-label">Plus longue sortie tolérée <span class="cap-unit-lbl">(km)</span></div>
-              <input type="number" class="cap-select" id="capSortieMax" min="0" step="0.5" value="0" oninput="_capFormRefresh()">
-              <div class="cap-hint">Durée totale, marche comprise</div>
-            </div>
-            <div>
-              <div class="cap-field-label">Course continue sans douleur (min)</div>
-              <input type="number" class="cap-select" id="capContinu" min="0" max="180" step="1" value="0" oninput="_capFormRefresh()">
-              <div class="cap-hint" id="capContinuHint">Sous 5 min → mode course/marche</div>
-            </div>
-          </div>
-
-          <div class="cap-two">
-            <div>
-              <div class="cap-field-label">Cadence spontanée (pas/min)</div>
-              <input type="number" class="cap-select" id="capCadence" min="120" max="220" step="1" placeholder="ex : 168" oninput="_capFormRefresh()">
-            </div>
-            <div>
-              <div class="cap-field-label">Allure de footing (min/km)</div>
-              <input type="text" class="cap-select" id="capAllureG" placeholder="ex : 6:00" oninput="_capFormRefresh()">
-            </div>
-          </div>
-          <div class="cap-zones" id="capZonesBox"></div>
 
         </div>
       </div>
 
-      <!-- ═══ BLOC 2 — Pathologie et contraintes ═══ -->
-      <div class="cap-bloc">
-        <div class="cap-bloc-hd">
-          <span class="cap-bloc-num">2</span>
-          <span class="cap-bloc-title">Pathologie et contraintes</span>
-        </div>
-        <div class="cap-bloc-body">
-
-          <div>
-            <div class="cap-field-label">Pathologie</div>
-            <select class="cap-select" id="capPathoG" onchange="_capOnPathoChange()"></select>
-          </div>
-
-          <div>
-            <div class="cap-field-label">Pathologie associée <span class="cap-opt">optionnel</span></div>
-            <select class="cap-select" id="capPatho2G" onchange="_capOnPathoChange()"></select>
-          </div>
-
-          <div>
-            <div class="cap-field-label">Axe dominant</div>
-            <div class="cap-chips" id="capAxeG">
-              <button class="cap-chip" data-val="charge" onclick="capChipSel(this,'capAxeG');_capFormRefresh()">Charge</button>
-              <button class="cap-chip" data-val="amplitude" onclick="capChipSel(this,'capAxeG');_capFormRefresh()">Amplitude</button>
-              <button class="cap-chip" data-val="repetition" onclick="capChipSel(this,'capAxeG');_capFormRefresh()">Répétition</button>
-            </div>
-            <div class="cap-hint" id="capAxeHint"></div>
-          </div>
-
-          <div>
-            <div class="cap-field-label">Tissu concerné</div>
-            <div class="cap-chips" id="capTissuG">
-              <button class="cap-chip" data-val="os" onclick="capChipSel(this,'capTissuG');_capFormRefresh()">Os</button>
-              <button class="cap-chip" data-val="tendon" onclick="capChipSel(this,'capTissuG');_capFormRefresh()">Tendon</button>
-              <button class="cap-chip" data-val="fascia" onclick="capChipSel(this,'capTissuG');_capFormRefresh()">Fascia</button>
-              <button class="cap-chip" data-val="muscle" onclick="capChipSel(this,'capTissuG');_capFormRefresh()">Muscle</button>
-              <button class="cap-chip" data-val="articulaire" onclick="capChipSel(this,'capTissuG');_capFormRefresh()">Articulaire</button>
-            </div>
-            <div class="cap-hint">Détermine le palier de consolidation. À corriger sur les cas ambigus — une métatarsalgie peut être osseuse comme neurologique</div>
-          </div>
-
-          <div>
-            <div class="cap-field-label">Objectif de base <span class="cap-unit-lbl">(km)</span></div>
-            <input type="number" class="cap-select" id="capObjBase" min="0" step="0.5" placeholder="ex : 10" oninput="_capFormRefresh()">
-            <div class="cap-hint">Jalon à franchir sans douleur pour dégeler le levier contraint</div>
-          </div>
-
-          <div class="cap-constraints" id="capConstraintsBox"></div>
-
-        </div>
-      </div>
-
-      <!-- ═══ BLOC 3 — Objectif ═══ -->
+      <!-- ═══ BLOC 3 — Où l'on va ═══ -->
       <div class="cap-bloc">
         <div class="cap-bloc-hd">
           <span class="cap-bloc-num">3</span>
@@ -4062,32 +4026,40 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
         </div>
         <div class="cap-bloc-body">
 
-          <div>
-            <div class="cap-field-label">Volume hebdomadaire cible <span class="cap-unit-lbl">(km/sem)</span></div>
-            <input type="number" class="cap-select" id="capCibleHebdo" min="1" step="1" value="30" oninput="_capFormRefresh()">
+          <div id="capBlocObjVolume">
+            <div class="cap-field-label">Objectif par sortie <span class="cap-opt">optionnel</span> <span class="cap-unit-lbl">(km)</span></div>
+            <input type="number" class="cap-select" id="capObjSortie" min="0" step="0.5" placeholder="ex : 12" oninput="_capFormRefresh()">
+            <div class="cap-field-label" style="margin-top:9px;">Objectif hebdomadaire <span class="cap-opt">optionnel</span> <span class="cap-unit-lbl">(km/sem)</span></div>
+            <input type="number" class="cap-select" id="capObjHebdo" min="0" step="1" placeholder="ex : 36" oninput="_capFormRefresh()">
+            <div class="cap-hint">L’un, l’autre, ou les deux — l’hebdomadaire fixe la destination, celui par sortie devient un plafond par séance.</div>
+          </div>
+
+          <div id="capBlocObjAllure" style="display:none;">
+            <div class="cap-field-label">Minutes de qualité visées <span class="cap-opt">(Z3+, min/sem)</span></div>
+            <input type="number" class="cap-select" id="capQualiteCible" min="0" step="1" placeholder="ex : 20" oninput="_capFormRefresh()">
           </div>
 
           <div>
-            <div class="cap-field-label">Sortie longue cible <span class="cap-opt">optionnel</span> <span class="cap-unit-lbl">(km)</span></div>
-            <input type="number" class="cap-select" id="capCibleLongue" min="0" step="0.5" placeholder="athlète confirmé uniquement" oninput="_capFormRefresh()">
-            <div class="cap-hint" id="capLongueHint">Laisser vide : le volume se répartit sur la fréquence</div>
+            <div class="cap-field-label">Fréquence</div>
+            <input type="number" class="cap-select" id="capFreqCible" min="1" max="21" step="1" value="3" oninput="_capFormRefresh()">
           </div>
 
           <div>
-            <div class="cap-field-label">Minutes de qualité visées <span class="cap-opt">Z3+</span></div>
-            <input type="number" class="cap-select" id="capCibleIntensite" min="0" step="1" placeholder="calculé" oninput="_capFormRefresh()">
-            <div class="cap-hint" id="capIntensiteHint">Laisser vide : 15 % du volume, l’ordre de grandeur d’un coureur hors préparation</div>
-          </div>
-
-          <div>
-            <div class="cap-field-label">Délai (semaines)</div>
+            <div class="cap-field-label">Nombre de semaines</div>
             <div class="cap-stepper">
               <button class="cap-step-btn" onclick="capSemStep(-1)" title="Diminuer">−</button>
               <span class="cap-step-val" id="capSemDisplay">12 sem.</span>
               <button class="cap-step-btn" onclick="capSemStep(+1)" title="Augmenter">+</button>
               <input type="hidden" id="capSemG" value="12">
             </div>
-            <div class="cap-hint" id="capSemHint"></div>
+          </div>
+
+          <div>
+            <label class="cap-check">
+              <input type="checkbox" id="capConsolidation" onchange="_capFormRefresh()">
+              <span>Semaine de consolidation toutes les 4</span>
+            </label>
+            <div class="cap-hint">Elle répète la précédente. La rampe se resserre d’autant sur les semaines qui restent.</div>
           </div>
 
           <div class="cap-verdict" id="capVerdictBox"></div>
@@ -4121,7 +4093,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
               <button class="cap-chip" data-val="elliptique" onclick="capChipTog(this)">Elliptique</button>
               <button class="cap-chip" data-val="rameur" onclick="capChipTog(this)">Rameur</button>
             </div>
-            <div class="cap-hint">Maintient le cardio pendant que le levier principal est gelé</div>
+            <div class="cap-hint">Maintient le cardio pendant la reconstruction</div>
           </div>
 
           <div>
@@ -4273,6 +4245,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 
 </div>
 
-<script src="js/prog-main.js?v=20260801o"></script>
+<script src="js/prog-main.js?v=20260801r"></script>
 </body>
 </html>

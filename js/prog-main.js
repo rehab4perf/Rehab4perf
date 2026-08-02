@@ -11452,6 +11452,15 @@ var CAP_SEUILS = {
 
 function capChipTog(el) { el.classList.toggle('active'); }
 
+/* Choix unique dans un groupe de puces : l'ancien formulaire n'en avait pas
+   besoin, le nouveau en a plusieurs (unité, tissu, par sortie / par semaine). */
+function capChipOne(el) {
+  var parent = el.parentNode;
+  Array.prototype.forEach.call(parent.querySelectorAll('.cap-chip'), function(c) {
+    c.classList.toggle('active', c === el);
+  });
+}
+
 function _capChipVals(groupId) {
   return Array.prototype.map.call(
     document.querySelectorAll('#' + groupId + ' .cap-chip.active'),
@@ -11475,11 +11484,6 @@ function _capParsePace(raw) {
   return isFinite(v) && v > 0 ? v : NaN;
 }
 
-/* Tant que le praticien n'a pas touché au stepper, le délai suit le calcul
-   ACWR : la valeur par défaut est celle qui est juste, pas un nombre rond. Dès
-   qu'il y touche, elle lui appartient — on ne la lui reprend plus. */
-var _capDelaiAuto = true;
-
 function _capSetDelai(n) {
   var inp = document.getElementById('capSemG');
   if (!inp) return;
@@ -11488,17 +11492,13 @@ function _capSetDelai(n) {
   if (disp) disp.textContent = n + ' sem.';
 }
 
+/* Le nombre de semaines est une décision du praticien, plus une suggestion du
+   moteur : il joue avec le curseur et regarde l'ACWR se recalculer. Le délai
+   conseillé a disparu avec les cycles — il prétendait savoir mieux. */
 function capSemStep(delta) {
   var inp = document.getElementById('capSemG');
   if (!inp) return;
-  _capDelaiAuto = false;
   _capSetDelai(Math.max(1, Math.min(104, (parseInt(inp.value, 10) || 12) + delta)));
-  _capFormRefresh();
-}
-
-/* Retour au délai conseillé. */
-function capSemAuto() {
-  _capDelaiAuto = true;
   _capFormRefresh();
 }
 
@@ -11512,7 +11512,10 @@ function _capFillPathoSelects() {
   ];
   var s1 = document.getElementById('capPathoG');
   var s2 = document.getElementById('capPatho2G');
-  if (!s1 || !s2) return;
+  // La seconde liste a disparu de la fiche : son absence ne doit pas empêcher
+  // de remplir la première, sinon aucune pathologie n'est sélectionnable et
+  // l'axe retombe silencieusement sur Charge.
+  if (!s1) return;
   var opts = '<option value="aucune">Aucune pathologie spécifique</option>';
   groups.forEach(function(g) {
     var inner = '';
@@ -11524,22 +11527,17 @@ function _capFillPathoSelects() {
     if (inner) opts += '<optgroup label="' + g.label + '">' + inner + '</optgroup>';
   });
   s1.innerHTML = opts;
-  s2.innerHTML = '<option value="">— aucune —</option>' + opts.replace(/^<option value="aucune">[^<]*<\/option>/, '');
+  if (s2) s2.innerHTML = '<option value="">— aucune —</option>' + opts.replace(/^<option value="aucune">[^<]*<\/option>/, '');
 }
 
 /* Sélection de pathologie → pré-remplit l'axe (modifiable ensuite). */
 function _capOnPathoChange() {
   var p1 = CAP_PATHO_DB[(document.getElementById('capPathoG') || {}).value] || CAP_PATHO_DB.aucune;
-  var p2 = CAP_PATHO_DB[(document.getElementById('capPatho2G') || {}).value];
-  var axe = p1.axe || 'charge';
-  document.querySelectorAll('#capAxeG .cap-chip').forEach(function(c) {
-    c.classList.toggle('active', c.dataset.val === axe);
-  });
-  // Tissu : l'os prime quand deux pathologies coexistent — c'est le tissu au
-  // signal douloureux le plus tardif, donc celui qui commande la prudence.
-  var tissu = (p1.tissu === 'os' || (p2 && p2.tissu === 'os')) ? 'os' : (p1.tissu || 'tendon');
+  // Le tissu est pré-rempli par la pathologie mais reste un arbitrage
+  // clinique : le coussinet graisseux n'est aucun des cinq types, une
+  // métatarsalgie peut être osseuse comme neurologique.
   document.querySelectorAll('#capTissuG .cap-chip').forEach(function(c) {
-    c.classList.toggle('active', c.dataset.val === tissu);
+    c.classList.toggle('active', c.dataset.val === (p1.tissu || 'tendon'));
   });
   _capFormRefresh();
 }
@@ -11571,45 +11569,37 @@ function _capPalier(tissu, volumeHebdo, unite) {
 /* Lit toute la fiche. Une seule source de vérité pour l'affichage et pour
    la génération — le formulaire ne doit jamais être relu ailleurs. */
 function _capReadForm() {
-  var unite   = _capChipVal('capUniteG') || 'km';
-  var semaines = parseInt((document.getElementById('capSemG') || {}).value, 10) || 12;
-  var weeks = [_capNum('capW4'), _capNum('capW3'), _capNum('capW2'), _capNum('capW1')];
-  // Toujours diviser par 4 : les champs sont pré-remplis à 0, donc « vide »
-  // ne peut plus être confondu avec « je ne sais pas ».
-  var chronique = weeks.reduce(function(a, b) { return a + b; }, 0) / 4;
   var pathos = _capPathos();
+  var p1 = pathos[0] || CAP_PATHO_DB.aucune;
+  var axe = _capChipVal('capAxeG') || p1.axe || 'charge';
+  var ax  = CAP_AXES[axe] || CAP_AXES.charge;
+  var freq = Math.max(1, _capNum('capFreqCible', 3));
 
   return {
-    unite:          unite,
-    semaineCharges: weeks,
-    chronique:      Math.round(chronique * 10) / 10,
-    frequenceAct:   _capNum('capFreqAct'),
-    frequenceCible: Math.max(1, _capNum('capFreqCible', 3)),
-    plusLongueSortie:      _capNum('capSortieMax'),
+    unite: _capChipVal('capUniteG') || 'km',
+    mode:  ax.mode || 'volume',
+    frequenceCible: freq,
+    allureFooting: _capParsePace((document.getElementById('capAllureG') || {}).value) || null,
     courseContinueToleree: _capNum('capContinu'),
-    cadenceSpontanee:      _capNum('capCadence', null) || null,
-    allureFooting:         _capParsePace((document.getElementById('capAllureG') || {}).value) || null,
+    semaines: Math.max(1, parseInt((document.getElementById('capSemG') || {}).value, 10) || 12),
+    consolidation: !!(document.getElementById('capConsolidation') || {}).checked,
 
-    patho:        (document.getElementById('capPathoG') || {}).value || 'aucune',
-    pathoAssoc:   (document.getElementById('capPatho2G') || {}).value || null,
-    axe:          _capChipVal('capAxeG') || 'charge',
-    axes:         pathos.map(function(p) { return p.axe; }),
-    // Le tissu est pré-rempli par la pathologie mais reste un arbitrage
-    // clinique : le coussinet graisseux n'est aucun des cinq types, une
-    // métatarsalgie peut être osseuse comme neurologique.
-    tissu:        _capChipVal('capTissuG') || 'tendon',
-    interdits:    pathos.reduce(function(acc, p) {   // union des interdits
-                    (p.interdits || []).forEach(function(i) { if (acc.indexOf(i) === -1) acc.push(i); });
-                    return acc;
-                  }, []),
-    cadenceCible: pathos.reduce(function(m, p) { return Math.max(m, p.cadenceCible || 0); }, 0) || null,
-    objectifBase: _capNum('capObjBase', null) || null,
+    // Mode volume : d'où l'on part, où l'on va.
+    tolUnite:  _capChipVal('capTolUniteG') || 'sortie',
+    tolVal:    _capNum('capTolVal', null) || null,
+    objSortie: _capNum('capObjSortie', null) || null,
+    objHebdo:  _capNum('capObjHebdo', null) || null,
 
-    cibleHebdo:        Math.max(1, _capNum('capCibleHebdo', 30)),
-    cibleSortieLongue: _capNum('capCibleLongue', null) || null,
-    cibleIntensite:    _capNum('capCibleIntensite', null) || null,
-    semaines:          semaines,
+    // Mode allure : le volume ne bouge pas, la qualité monte.
+    volMaintenu:     _capNum('capVolMaintenu', null) || null,
+    qualiteActuelle: _capNum('capQualiteActuelle', null) || 0,
+    qualiteCible:    _capNum('capQualiteCible', null) || null,
 
+    patho: (document.getElementById('capPathoG') || {}).value || 'aucune',
+    axe: axe, axes: [axe],
+    tissu: _capChipVal('capTissuG') || p1.tissu || 'tendon',
+    interdits: p1.interdits || [],
+    cadenceCible: p1.cadenceCible || null,
     terrain:       _capChipVals('capTerrainG'),
     crossTraining: _capChipVals('capCrossG'),
     joursDispo:    _capChipVals('capJoursG').map(Number),
@@ -11622,34 +11612,44 @@ function _capFormRefresh() {
   if (!document.getElementById('capPathoG')) return;   // formulaire pas encore rendu
   var p = _capReadForm();
   var uLbl = p.unite === 'min' ? 'min' : 'km';
-
-  // Délai : caler sur l'ACWR tant que le praticien n'a rien imposé. Il faut le
-  // faire AVANT le verdict, qui juge la trajectoire du délai retenu.
-  var trajDelai = _capTrajectoire(p);
-  if (_capDelaiAuto && trajDelai.conseille !== p.semaines) {
-    _capSetDelai(trajDelai.conseille);
-    p.semaines = trajDelai.conseille;
-  }
-  _capRenderDelai(p, trajDelai.conseille, trajDelai.coupable);
+  var ax = CAP_AXES[p.axe] || CAP_AXES.charge;
 
   // Étiquettes d'unité
   document.querySelectorAll('.cap-unit-lbl').forEach(function(el) {
     el.textContent = el.textContent.replace(/\((km|min)([^)]*)\)/, '(' + uLbl + '$2)');
   });
 
-  // Charge chronique
-  var hint = document.getElementById('capChroniqueHint');
-  if (hint) {
-    hint.innerHTML = p.chronique > 0
-      ? 'Charge chronique : <b>' + p.chronique + ' ' + uLbl + '/sem</b> — moyenne sur 4 semaines'
-      : 'Charge chronique : <b>0</b> — reprise depuis zéro (mode course/marche)';
+  // ── Le mode commande les champs affichés ──
+  // Demander un objectif de volume sur un axe où le volume ne bouge pas, ou une
+  // cible de qualité là où il n'y en aura jamais, ne sert qu'à égarer.
+  var estAllure = p.mode === 'allure';
+  var montre = function(id, oui) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = oui ? '' : 'none';
+  };
+  montre('capBlocTolerance',       !estAllure);
+  montre('capBlocVolMaintenu',      estAllure);
+  montre('capBlocObjVolume',       !estAllure);
+  montre('capBlocObjAllure',        estAllure);
+  // L'amplitude se traite par la technique : aucune allure de tout le plan.
+  montre('capBlocQualiteActuelle', p.mode === 'volume');
+
+  var modeBox = document.getElementById('capModeBox');
+  if (modeBox) {
+    var texte = {
+      volume:    '<b>Le volume monte</b>, l’allure reste à ce que le coureur fait déjà.',
+      allure:    '<b>Le volume est maintenu</b>, ce sont les minutes de qualité qui montent.',
+      amplitude: '<b>Le volume monte</b> avec une séance technique chaque semaine, et aucune allure de tout le plan.',
+    }[p.mode];
+    modeBox.className = 'cap-verdict ok';
+    modeBox.innerHTML = 'Axe <b>' + ax.label + '</b> — ' + texte;
   }
 
-  // Mode fractionné
+  // Mode course/marche
   var cHint = document.getElementById('capContinuHint');
   if (cHint) {
     cHint.textContent = p.courseContinueToleree < CAP_SEUILS.fractionne
-      ? 'Mode course/marche — l’intervalle progressera vers l’objectif de base'
+      ? 'Sous 5 min, le plan démarre en course/marche et reconstruit le volume — quel que soit l’axe.'
       : 'Course continue';
   }
 
@@ -11664,196 +11664,71 @@ function _capFormRefresh() {
       : '';
   }
 
-  _capRenderConstraints(p);
   _capRenderVerdict(p);
   _capRenderJoursHint(p);
 }
 
-/* Délai : ce que dit le calcul, et ce que le praticien en fait. Le conseillé
-   est le nombre de semaines qui maintient l'ACWR sous le seuil « progressif »,
-   paliers de consolidation et échelle course/marche compris. Raccourcir reste
-   possible — c'est un arbitrage clinique, pas une erreur de saisie. */
-function _capRenderDelai(p, conseille, coupable) {
-  var box = document.getElementById('capSemHint');
-  if (!box) return;
-  // Nommer le critère réel : sur un axe où c'est l'allure qu'on reconstruit,
-  // l'ACWR ne dit rien, et l'invoquer donnerait une fausse caution au chiffre.
-  var critere = coupable === 'intensite'
-    ? 'le rythme de réintroduction de l’allure (+' + Math.round(CAP_SEUILS.intensiteMaxPct * 100) + ' %/sem max)'
-    : 'l’ACWR (≤ ' + CAP_SEUILS.acwrOk + ')';
-  if (_capDelaiAuto) {
-    box.innerHTML = 'Calé sur ' + critere + ' : <b>' + conseille
-      + ' sem.</b> Raccourcir pour une reprise plus agressive.';
-    return;
-  }
-  box.innerHTML = p.semaines === conseille
-    ? 'Correspond au délai conseillé par l’ACWR.'
-    : (p.semaines < conseille ? 'Plus court que le' : 'Plus long que le')
-      + ' délai conseillé (<b>' + conseille + ' sem.</b>) — '
-      + '<a href="#" onclick="capSemAuto();return false;">y revenir</a>';
-}
-
-/* Contraintes déduites : ce que l'axe gèle, les interdits cumulés, le palier. */
-function _capRenderConstraints(p) {
-  var box = document.getElementById('capConstraintsBox');
-  if (!box) return;
-  if (p.patho === 'aucune' && !p.pathoAssoc) { box.innerHTML = ''; }
-
-  var ax = CAP_AXES[p.axe] || CAP_AXES.charge;
-  var rows = [];
-  var lbl = _capLbl;
-
-  // Conflit d'axes : on baisse tous les leviers responsables, puis on remonte
-  // le volume d'abord, l'allure ensuite (jamais les deux la même semaine).
-  var axesUniq = p.axes.filter(function(a, i, arr) { return a && arr.indexOf(a) === i; });
-  if (axesUniq.length > 1) {
-    rows.push(['Axes', '<b>' + axesUniq.map(function(a) { return CAP_AXES[a].label; }).join(' + ') + '</b> — '
-      + 'tous les leviers responsables sont baissés, puis remontés dans l’ordre : '
-      + CAP_ORDRE_REMONTEE.join(', ') + '.']);
-  } else {
-    rows.push(['Paramètre en cause', '<b>' + lbl(ax.coupable) + '</b> — réduit au départ, reconstruit ensuite']);
-    rows.push(['Maintenus', ax.innocents.map(lbl).join(', ') + ' — à la tolérance actuelle, sans progression']);
-  }
-
-  if (p.interdits.length) {
-    rows.push(['Interdits', p.interdits.map(lbl).join(' · ')]);
-  }
-  if (p.cadenceCible) {
-    var cad = p.cadenceSpontanee
-      ? p.cadenceCible + ' pas/min (actuelle : ' + p.cadenceSpontanee + ')'
-      : p.cadenceCible + ' pas/min';
-    rows.push(['Cadence cible', cad]);
-  }
-
-  // Le palier peut changer en cours de programme : on affiche l'état au départ
-  // et, s'il diffère, le seuil à partir duquel il bascule.
-  var txt = function(x) {
-    return x.cycle
-      ? x.cycle + ':1 — ' + (x.mode === 'baisse' ? 'baisse réelle' : 'maintien à charge constante')
-      : 'réactif seul, pas de palier programmé';
-  };
-  var palDebut = _capPalier(p.tissu, p.chronique, p.unite);
-  var palFin   = _capPalier(p.tissu, p.cibleHebdo, p.unite);
-  var uLbl = p.unite === 'min' ? 'min' : 'km';
-  rows.push(['Palier', palDebut.cycle === palFin.cycle
-    ? txt(palDebut) + ' (' + palDebut.why + ')'
-    : txt(palDebut) + ' au départ, puis ' + txt(palFin)
-      + ' au-delà de ' + _capPlancherPalier(p.unite) + ' ' + uLbl + '/sem']);
-
-  box.innerHTML = rows.map(function(r) {
-    return '<div class="cc-row"><span class="cc-k">' + r[0] + '</span><span>' + r[1] + '</span></div>';
-  }).join('');
-}
-
-/* Verdict : ACWR indicatif + cohérence sortie longue. Jamais bloquant —
-   une reprise volontairement agressive est un choix clinique assumé, le
-   filet de sécurité étant la régression sur douleur. */
+/* Verdict : la rampe et ce qu'elle coûte. La couleur juge la grandeur QUI
+   PROGRESSE — le volume, ou les minutes de qualité — et l'ACWR est calculé sur
+   la série réellement prescrite, arrondie à la minute. Jamais bloquant : une
+   reprise volontairement rapide est un choix clinique assumé, le filet de
+   sécurité étant la régression sur douleur. */
 function _capRenderVerdict(p) {
   var box = document.getElementById('capVerdictBox');
   if (!box) return;
-  var parts = [], cls = 'ok';
-
-  // La trajectoire réellement produite par le moteur, pas une approximation
-  // recalculée ici : une reprise depuis zéro ne part pas de la charge
-  // chronique (qui vaut zéro) mais du volume atteint en sortie de l'échelle
-  // course/marche. Juger sur zéro n'avait aucun sens, d'où l'ancien renoncement.
-  var t = _capTrajectoire(p);
-  var uL = p.unite === 'min' ? 'min' : 'km';
+  var uLbl = p.unite === 'min' ? 'min' : 'km';
   var enUnite = function(min) {
     var v = p.unite === 'km' ? min / (p.allureFooting || 6) : min;
     return Math.round(v * 10) / 10;
   };
 
+  var manque = [];
+  if (!p.allureFooting) manque.push('l’allure footing');
+  if (p.mode === 'allure') {
+    if (!p.volMaintenu)  manque.push('le volume à maintenir');
+    if (!p.qualiteCible) manque.push('les minutes de qualité visées');
+  } else {
+    if (!p.tolVal)                        manque.push('le volume toléré');
+    if (!p.objSortie && !p.objHebdo)      manque.push('un objectif');
+  }
+  if (manque.length) {
+    box.className = 'cap-verdict';
+    box.innerHTML = 'À renseigner : ' + manque.join(', ') + '.';
+    return;
+  }
+
+  var t = _capTrajectoire(p);
+  var parts = [];
   if (t.semFractionne > 0) {
-    parts.push('<b>' + t.semFractionne + ' semaines</b> de course/marche avant la course continue'
-      + (t.fractionneComprime
-          ? ' — le délai demandé oblige à sauter des barreaux de l’échelle.'
-          : ', puis progression du volume sur les <b>' + Math.max(0, p.semaines - t.semFractionne) + '</b> restantes.'));
-    if (t.fractionneComprime) cls = 'bad';
+    parts.push('<b>' + t.semFractionne + ' semaines</b> de course/marche avant la course continue, '
+      + 'puis la rampe sur les <b>' + Math.max(0, p.semaines - t.semFractionne) + '</b> restantes.');
   }
 
-  if (t.coupable === 'volume' && t.cibleMin > t.departMin) {
-    var pct = Math.round((t.g - 1) * 1000) / 10;
-    // Dire d'où sort le point de départ : sans charge chronique, ce n'est pas
-    // une donnée saisie, et un chiffre qui tombe du ciel dans le verdict n'est
-    // pas exploitable en consultation.
-    var origine = p.chronique > 0
-      ? 'charge chronique'
-      : (t.semFractionne > 0
-          ? 'sortie de l’échelle course/marche'
-          : p.frequenceCible + ' × ' + Math.round(t.departMin / t.frequence) + ' min, votre tolérance en course continue');
-    var verdict = t.acwr <= CAP_SEUILS.acwrOk ? 'progressif'
-                : t.acwr <= CAP_SEUILS.acwrWarn ? 'soutenu — surveiller le retour douleur'
-                : 'agressif — assumé, feedback séance par séance';
-    if (cls !== 'bad') cls = t.acwr <= CAP_SEUILS.acwrOk ? 'ok' : t.acwr <= CAP_SEUILS.acwrWarn ? 'warn' : 'bad';
-    parts.push('De <b>' + enUnite(t.departMin) + '</b> <span class="cap-orig">(' + origine + ')</span> à <b>'
-      + enUnite(t.cibleMin) + '</b> ' + uL
-      + '/sem : <b>+' + pct + ' %</b>/sem, ACWR <b>'
-      + (Math.round(t.acwr * 100) / 100) + '</b> — ' + verdict + '.');
-  } else if (t.coupable === 'intensite') {
-    // Le volume ne bouge pas : l'ACWR resterait à 1,0 et ne dirait rien. Ce
-    // qu'il faut juger ici, c'est le rythme de réintroduction de l'allure.
-    var semRemontee = Math.max(1, p.semaines - t.finDecharge);
-    var gI = Math.pow(t.cibleIntensite / CAP_SEUILS.intensitePlancher, 1 / semRemontee);
-    var pctI = Math.round((gI - 1) * 1000) / 10;
-    var vI = gI <= 1 + CAP_SEUILS.intensiteMaxPct ? 'progressif'
-           : gI <= 1 + CAP_SEUILS.intensiteMaxPct * 2 ? 'soutenu — surveiller le retour douleur'
-           : 'agressif — assumé, feedback séance par séance';
-    if (cls !== 'bad') cls = gI <= 1 + CAP_SEUILS.intensiteMaxPct ? 'ok'
-                           : gI <= 1 + CAP_SEUILS.intensiteMaxPct * 2 ? 'warn' : 'bad';
-    parts.push('Volume figé à <b>' + enUnite(t.volumeTolere) + '</b> ' + uL
-      + '/sem <span class="cap-orig">(la tolérance actuelle — ce n’est pas lui qui a blessé)</span>.'
-      + (t.volumeTolere < t.cibleSaisie - 0.5
-          ? ' La cible de ' + p.cibleHebdo + ' ' + uL + '/sem ne sera pas atteinte : sur cet axe, c’est l’allure qu’on reconstruit.'
-          : ''));
-    if (!t.peutPolariser) {
-      cls = 'warn';
-      parts.push('À ce volume et cette fréquence, aucune séance de qualité ne tient : il n’y a pas de place pour reconstruire l’allure. Monter le volume ou la fréquence, ou changer d’axe.');
-    } else {
-      parts.push('Allure reconstruite de <b>' + CAP_SEUILS.intensitePlancher + '</b> à <b>'
-        + t.cibleIntensite + '</b> min de Z3+/sem sur <b>' + semRemontee + '</b> semaines, après <b>'
-        + t.finDecharge + '</b> semaines de décharge : <b>+' + pctI + ' %</b>/sem — ' + vI + '.');
-    }
+  var depart, arrivee, unite;
+  if (t.mode === 'allure') {
+    depart = t.departInt; arrivee = t.cibleInt; unite = 'min de Z3+/sem';
+    parts.push('Volume figé à <b>' + enUnite(t.departVol) + '</b> ' + uLbl + '/sem.');
+  } else {
+    depart = enUnite(t.departVol); arrivee = enUnite(t.cibleVol); unite = uLbl + '/sem';
   }
 
-  // Cohérence des deux cibles — contrôle de saisie, pas de génération
-  if (p.cibleSortieLongue) {
-    var ratio = p.cibleSortieLongue / p.cibleHebdo;
-    if (ratio > CAP_SEUILS.longueRatioBad) {
-      cls = 'bad';
-      parts.push('Sortie longue = <b>' + Math.round(ratio * 100) + ' %</b> du volume hebdomadaire : intenable. Relever le volume ou baisser la sortie longue.');
-    } else if (ratio > CAP_SEUILS.longueRatioOk) {
-      if (cls === 'ok') cls = 'warn';
-      parts.push('Sortie longue = <b>' + Math.round(ratio * 100) + ' %</b> du volume hebdomadaire : dominante.');
-    }
-  }
+  var verdict = t.acwr <= CAP_SEUILS.acwrOk ? 'progressif'
+              : t.acwr <= CAP_SEUILS.acwrWarn ? 'soutenu — surveiller le retour douleur'
+              : 'agressif — assumé, feedback séance par séance';
+  var cls = t.acwr <= CAP_SEUILS.acwrOk ? 'ok' : t.acwr <= CAP_SEUILS.acwrWarn ? 'warn' : 'bad';
 
-  // Saut de fréquence : passer de 2 à 5 sorties par semaine est un risque en
-  // soi, même à volume hebdomadaire constant — chaque jour de course en plus
-  // retire un jour de récupération. Non déductible du volume, d'où le champ.
-  // Repartir de 0 est le cas normal d'une reprise : rien à signaler.
-  if (p.frequenceAct > 0 && p.frequenceCible - p.frequenceAct >= 2) {
+  parts.push('De <b>' + depart + '</b> à <b>' + arrivee + '</b> ' + unite
+    + ' en <b>' + p.semaines + '</b> semaines : <b>+' + t.pente + ' %</b>/sem, '
+    + 'ACWR <b>' + t.acwr + '</b> <span class="cap-orig">(mesuré sur ' + t.grandeur + ')</span> — '
+    + verdict + '.');
+
+  // Le plafond par sortie peut imposer plus de sorties que la fréquence saisie.
+  if (t.plafondSortie !== Infinity && t.cibleVol / p.frequenceCible > t.plafondSortie + 0.5) {
+    var n = Math.ceil(t.cibleVol / t.plafondSortie);
+    parts.push('<b>' + n + '</b> sorties seront nécessaires en fin de plan : à <b>'
+      + enUnite(t.plafondSortie) + '</b> ' + uLbl + ' maximum par sortie, l’objectif ne tient pas en '
+      + p.frequenceCible + '.');
     if (cls === 'ok') cls = 'warn';
-    parts.push('Fréquence : <b>' + p.frequenceAct + '</b> → <b>' + p.frequenceCible
-      + '</b> sorties/sem. Ajouter une sortie à la fois, en laissant une semaine à chaque palier.');
-  }
-
-  // Arithmétique fréquence / sortie unitaire. La séance de qualité a une taille
-  // propre et souvent bien plus courte qu'une sortie moyenne : elle laisse aux
-  // autres davantage à porter. On prédit donc le nombre de sorties que le
-  // moteur produira réellement, pas celui d'une division naïve — sinon la fiche
-  // annonce 4 sorties et le plan en génère 5.
-  if (p.plusLongueSortie > 0) {
-    var plafM  = _capVersMin(p.plusLongueSortie, p);
-    var volQ   = t.cibleIntensite > 0 ? _capSpecQualite(t.cibleIntensite, 'Z4').volume : 0;
-    var resteM = Math.max(0, t.cibleMin - volQ);
-    var sortiesReelles = (volQ > 0 ? 1 : 0) + Math.ceil(resteM / plafM);
-    if (sortiesReelles > p.frequenceCible) {
-      if (cls === 'ok') cls = 'warn';
-      parts.push('<b>' + sortiesReelles + '</b> sorties seront nécessaires (et non ' + p.frequenceCible
-        + ') : à <b>' + p.plusLongueSortie + '</b> ' + uL + ' maximum par sortie, le volume ne tient pas en '
-        + p.frequenceCible + '. Relever la tolérance par sortie, baisser le volume, ou accepter la sortie de plus.');
-    }
   }
 
   box.className = 'cap-verdict ' + cls;
@@ -12016,7 +11891,6 @@ function openCAPWizard() {
   // Les listes de pathologies sont construites depuis CAP_PATHO_DB : une seule
   // source, pas de liste dupliquée dans le HTML qui divergerait à l'ajout.
   _capFillPathoSelects();
-  _capDelaiAuto = true;      // nouvelle fiche : on repart du délai conseillé
   _capOnPathoChange();
 
   if (CAP_STATE && CAP_STATE.sessions && CAP_STATE.sessions.length) {
