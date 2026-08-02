@@ -1017,10 +1017,10 @@ var FC_ZONES = [
   { key:'Z5', label:'Z5', desc:'VO2max / PMA',      range:'90–100% FCmax' },
 ];
 
-function addCardioBloc(){
+function addCardioBloc(atIndex){
   var id = genId();
   var letter = String.fromCharCode(65 + _blocsReels().length);
-  blocs.push({
+  blocs.splice(_posInsertion(atIndex), 0, {
     id:id, title:'Bloc '+letter, type:'cardio',
     sport:'course', effort_type:'continu',
     duree_totale:'', distance:'',
@@ -1032,6 +1032,7 @@ function addCardioBloc(){
     commentaire:'',
     exos:[]
   });
+  _syncEtapeIds();
   activeBloc = id;
   renderSession();
 }
@@ -1311,10 +1312,18 @@ function _renderCardioBloc(b, idx){
   return h;
 }
 
-function addBloc(){
+/* `atIndex` : position d'insertion dans `blocs`. Absent ou négatif = à la fin. */
+function _posInsertion(atIndex){
+  return (typeof atIndex === 'number' && atIndex >= 0 && atIndex <= blocs.length)
+    ? atIndex : blocs.length;
+}
+
+function addBloc(atIndex){
   var id = genId();
   var letter = String.fromCharCode(65 + _blocsReels().length);
-  blocs.push({id:id, title:'Bloc '+letter, exos:[], objectif:'libre', methode:''});
+  blocs.splice(_posInsertion(atIndex), 0,
+    {id:id, title:'Bloc '+letter, exos:[], objectif:'libre', methode:''});
+  _syncEtapeIds();
   activeBloc = id;
   renderSession();
 }
@@ -2055,12 +2064,58 @@ function _estimateSessionMin(blocsArr){
 /* ================================================================
    RENDER SESSION
    ================================================================ */
+/* ── Ajouter : un seul point d'entrée, à n'importe quel endroit ───────
+   Un menu unique remplace les boutons épars, et un « + » discret s'intercale
+   entre chaque élément : on ajoute au bon endroit du premier coup, au lieu
+   d'ajouter à la fin puis de déplacer. */
+var _menuAjoutOuvert = null;      // index d'insertion du menu actuellement ouvert
+
+var TYPES_BLOC = [
+  { id:'exos',   label:'Bloc d\'exercices', fn:'addBloc' },
+  { id:'cardio', label:'Cardio',            fn:'addCardioBloc' },
+];
+
+function _fermerMenuAjout(){
+  _menuAjoutOuvert = null;
+  document.querySelectorAll('.add-menu').forEach(function(m){ m.remove(); });
+  document.removeEventListener('click', _fermerMenuAjout, true);
+}
+
+function ouvrirMenuAjout(ev, atIndex){
+  ev.stopPropagation();
+  var deja = _menuAjoutOuvert === atIndex;
+  _fermerMenuAjout();
+  if(deja) return;
+  _menuAjoutOuvert = atIndex;
+
+  var html = '<div class="add-menu">';
+  TYPES_BLOC.forEach(function(t){
+    html += '<button class="add-menu-item" onclick="event.stopPropagation();_fermerMenuAjout();'
+          + t.fn + '(' + atIndex + ')">' + escH(t.label) + '</button>';
+  });
+  html += '<div class="add-menu-sep"></div>'
+        + '<button class="add-menu-item" onclick="event.stopPropagation();_fermerMenuAjout();addEtape('
+        + atIndex + ')">' + _ETAPE_ICO_FOLDER + 'Étape</button>'
+        + '</div>';
+
+  var wrap = ev.currentTarget.parentNode;
+  wrap.insertAdjacentHTML('beforeend', html);
+  setTimeout(function(){ document.addEventListener('click', _fermerMenuAjout, true); }, 0);
+}
+
+/* Le « + » intercalaire. `atIndex` est la position dans `blocs` où insérer. */
+function _pointInsertion(atIndex){
+  return '<div class="add-point"><button class="add-point-btn" title="Insérer ici" '
+       + 'onclick="ouvrirMenuAjout(event,' + atIndex + ')">+</button></div>';
+}
+
+/* La rangée de fin, avec le même menu. */
 function _renderAddRow(){
   return '<div class="bloc-add-row">'
-       + '<button class="add-bloc-btn" onclick="addBloc()">+ Ajouter un bloc</button>'
-       + '<button class="add-bloc-btn etape-add-btn" onclick="addEtape()">'+_ETAPE_ICO_FOLDER+'+ Ajouter une étape</button>'
+       + '<button class="add-bloc-btn" onclick="ouvrirMenuAjout(event,-1)">+ Ajouter</button>'
        + '</div>';
 }
+
 
 function renderSession(){
   var area = document.getElementById('sessionArea');
@@ -2077,6 +2132,10 @@ function renderSession(){
   var _groups = _groupBlocsForRender();
   var _nbGroupesPleins = _groups.filter(function(g){ return g.blocs.length; }).length;
   _groups.forEach(function(g){
+  // Un « + » avant chaque groupe : c'est là qu'on insère au bon endroit.
+  var _iGroupe = g.etapeId ? _indexMarqueur(g.etapeId)
+                           : (g.blocs.length ? blocs.indexOf(g.blocs[0]) : blocs.length);
+  html += _pointInsertion(_iGroupe);
   if(g.etapeId){
     var _ec = _etapeColor(g.etapeId);
     var _gPos = _groups.filter(function(x){ return x.blocs.length; }).findIndex(function(x){ return x.etapeId===g.etapeId; });
@@ -2101,9 +2160,10 @@ function renderSession(){
       html += '<div class="etape-empty">Étape vide — créez un bloc ici, ou rattachez un bloc existant avec son menu « Étape ».</div>';
     }
   }
-  g.blocs.forEach(function(b){
+  g.blocs.forEach(function(b, _iDansGroupe){
     if(_estMarqueur(b)) return;          // le séparateur est déjà rendu par l'en-tête
     var idx = blocs.indexOf(b);
+    if(_iDansGroupe > 0) html += _pointInsertion(idx);
     // ── Bloc Cardio ──
     if(b.type === 'cardio'){ html += _renderCardioBloc(b, idx); return; }
     // ── Bloc Renforcement ──
@@ -2287,6 +2347,9 @@ function renderSession(){
     html += '<button class="add-free-exo-btn" onclick="addFreeExo(\''+b.id+'\')">✚ Exercice libre</button>';
     html += '</div></div>'; // .bloc-body .bloc
   }); // g.blocs
+  // Pas de point APRÈS un groupe : il tomberait au même index que celui d'avant
+  // le groupe suivant. La fin de séance est couverte par « + Ajouter », la fin
+  // d'une étape par « + Bloc dans cette étape ».
   if(g.etapeId){
     html += '<button class="etape-addbloc-btn" onclick="addBlocToEtape(\''+g.etapeId+'\')">+ Bloc dans cette étape</button>';
     html += '</div>'; // .etape-group
