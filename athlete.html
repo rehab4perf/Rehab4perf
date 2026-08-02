@@ -152,12 +152,12 @@ html,body { background:var(--bg); font-family:var(--font-sans); color:var(--text
 
 .methode-card {
   margin:8px 12px; padding:9px 12px; border-radius:7px; font-size:var(--fs-sm);
-  line-height:1.5; border-left:3px solid #6b7a8d;
+  line-height:1.5; border-left:3px solid var(--muted);
   background:#F5F7FA; color:#4a5568;
 }
 .methode-card.mc-endurance    { background:#F0FAF0; border-color:#2D7D46; color:#1a4d28; }
 .methode-card.mc-puissance    { background:#F5F0FF; border-color:#7B2DBF; color:#4a1d8a; }
-.methode-card.mc-hypertrophie { background:#EEF3FB; border-color:#2B5FA6; color:#1a3a6e; }
+.methode-card.mc-hypertrophie { background:#EEF3FB; border-color:var(--accent); color:#1a3a6e; }
 .methode-card.mc-forcemax     { background:#FEF0EE; border-color:#C0392B; color:#7a1a10; }
 .methode-card-label { font-weight:700; margin-bottom:3px; font-size:var(--fs-sm); }
 .methode-card-desc  { opacity:.9; }
@@ -226,7 +226,7 @@ html,body { background:var(--bg); font-family:var(--font-sans); color:var(--text
 .exo-pain-num {
   width:26px; height:26px; border-radius:7px; flex-shrink:0;
   display:flex; align-items:center; justify-content:center;
-  font-size:var(--fs-sm); font-weight:700; background:#f0f4f8; color:#9aa8b8;
+  font-size:var(--fs-sm); font-weight:700; background:var(--bg); color:#9aa8b8;
   transition:background .15s, color .15s; cursor:pointer; user-select:none;
 }
 .exo-pain-body { flex:1; min-width:0; display:flex; align-items:center; gap:8px; }
@@ -581,7 +581,7 @@ input[type="number"], table, time,
 .tabnum { font-variant-numeric:tabular-nums; }
 
 :focus-visible {
-  outline:2px solid var(--accent2,#4A90D9) !important;
+  outline:2px solid var(--accent2,var(--accent2)) !important;
   outline-offset:2px;
 }
 

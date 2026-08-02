@@ -170,7 +170,7 @@ body {
   border: 1.5px solid #FCD34D;
   box-shadow: none;
 }
-.btn-save-bilan.no-patient:hover { background: #FFFBEB; }
+.btn-save-bilan.no-patient:hover { background: var(--yellow-l); }
 .btn-history-bilan {
   display: flex; align-items: center; justify-content: center; gap: 6px;
   width: 100%; padding: 6px 10px; border-radius: 6px;
@@ -202,7 +202,7 @@ body {
   padding: 4px 6px; border-radius: 4px;
   border: 1px solid #F59E0B; cursor: pointer;
   font-family: inherit; font-size: .72rem; font-weight: 500;
-  color: #92400E; background: #FFFBEB; transition: all .12s;
+  color: #92400E; background: var(--yellow-l); transition: all .12s;
 }
 .btn-exit-histo:hover { background: #FEF3C7; border-color: #D97706; }
 /* ── Mode lecture ──────────────────────────────────────────── */
@@ -420,10 +420,10 @@ body {
 .histo-empty { padding: 28px 20px; text-align: center; color: var(--text3); font-size: .88rem; font-style: italic; }
 .histo-item {
   display: flex; align-items: center; gap: 12px;
-  padding: 11px 16px; border-bottom: 1px solid #F1F0ED;
+  padding: 11px 16px; border-bottom: 1px solid var(--surface2);
   transition: background .1s;
 }
-.histo-item:hover { background: #F7F6F3; }
+.histo-item:hover { background: var(--bg); }
 .histo-item-num {
   flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%;
   background: #E8EDF5; color: var(--accent2); font-size: .72rem; font-weight: 700;
@@ -460,7 +460,7 @@ body {
   font-size: .78rem; cursor: pointer; font-family: inherit;
   transition: all .12s; line-height: 1;
 }
-.histo-item-del:hover { background: #FDECEA; border-color: var(--red); }
+.histo-item-del:hover { background: var(--red-l); border-color: var(--red); }
 .histo-item-edit {
   flex-shrink: 0; background: none; border: 1.5px solid var(--border);
   border-radius: 5px; color: var(--text2); padding: 5px 7px;

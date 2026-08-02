@@ -62,6 +62,27 @@ chiffres à chasse fixe, anneau `:focus-visible` (en `!important`, seul moyen
 de passer devant les dizaines d'`outline:none` plus spécifiques), et respect
 de `prefers-reduced-motion`.
 
+## Couleurs (OBLIGATOIRE après toute couleur ajoutée)
+
+```bash
+node qualite/check-couleurs.js            # contrôle (exit 1 si nouveauté)
+node qualite/check-couleurs.js --write    # entériner après absorption
+```
+
+La palette de `programme.html` compte 17 jetons pour 196 couleurs écrites hors
+palette. C'est la raison de fond pour laquelle `--card` est passé inaperçu :
+quand presque toute la couleur est écrite à côté des jetons, plus personne ne
+regarde les jetons. Le contrôle n'échoue que sur une couleur **nouvelle**.
+
+Le blanc et le noir ne sont pas comptés : `#fff` est tantôt une surface,
+tantôt du texte sur fond navy.
+
+**Piège à ne jamais réintroduire** : toute conversion automatique doit masquer
+les `<script>` d'abord. Ils contiennent des chaînes où figurent littéralement
+`<style>` et `</style>` — une regex naïve entre donc dans des documents
+autonomes (exports, impressions) où les jetons n'existent pas, et la
+déclaration y devient invalide, ignorée en silence.
+
 ## Variables CSS (OBLIGATOIRE après toute règle CSS ajoutée)
 
 ```bash
