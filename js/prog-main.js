@@ -12035,8 +12035,10 @@ function _capRender() {
   var statByWeek = {};
   stats.forEach(function(w) { statByWeek[w.week] = w; });
 
-  var phaseName  = { 1: 'Phase 1 — Réintroduction', 2: 'Phase 2 — Consolidation', 3: 'Phase 3 — Retour continu' };
-  var phaseColor = { 1: '#2563EB', 2: '#059669', 3: '#7C3AED' };
+  // Les noms de phase venaient d'un modèle en trois temps qui n'existe plus :
+  // ils annonçaient « Phase 3 — Retour continu » dès la semaine 1. On ne
+  // numérote plus que les cycles, et seulement s'il y en a.
+  var parCycle = state.profile && state.profile.consolidation ? CAP_SEUILS.cycleProgression : 0;
   var lastPhase  = 0;
   var html = '';
 
@@ -12046,21 +12048,26 @@ function _capRender() {
   var uLbl = pr.unite === 'min' ? 'min' : 'km';
   html += '<div class="cap-plan-meta" style="display:flex;gap:14px;flex-wrap:wrap;align-items:baseline;padding:2px 2px 10px;font-size:.78rem;color:var(--text2);">'
         + '<span><b style="color:var(--navy);font-size:.95rem;">' + nbWeeks + ' semaines</b> de progression</span>';
-  if (pr.axe && CAP_AXES[pr.axe]) {
-    var ax = CAP_AXES[pr.axe];
-    html += '<span>Axe : <b>' + ax.label + '</b> — reconstruit ' + _capLbl(ax.coupable) + '</span>';
+  // L'en-tête décrit ce que le plan délivre vraiment, dans les grandeurs du
+  // mode retenu. Les anciens champs (cibleHebdo, objectiveMin) n'existent plus
+  // dans la fiche : les lire affichait « NaN km/sem » et « undefined' Z3+ ».
+  var tr = null;
+  try { tr = (pr.axe && CAP_AXES[pr.axe]) ? _capTrajectoire(pr) : null; } catch (e) {}
+  if (tr) {
+    var enU = function(min) {
+      var v = pr.unite === 'km' ? min / (pr.allureFooting || 6) : min;
+      return Math.round(v * 10) / 10;
+    };
+    html += '<span>Axe : <b>' + (CAP_AXES[pr.axe] || {}).label + '</b></span>';
+    if (tr.mode === 'allure') {
+      html += '<span>Volume maintenu : <b>' + enU(tr.cibleVol) + ' ' + uLbl + '/sem</b></span>'
+            + '<span>Qualité visée : <b>' + Math.round(tr.cibleInt) + '′ Z3+/sem</b></span>';
+    } else {
+      html += '<span>Volume : <b>' + enU(tr.departVol) + ' → ' + enU(tr.cibleVol) + ' ' + uLbl + '/sem</b></span>';
+      if (tr.cibleInt > 0) html += '<span>Qualité maintenue : <b>' + Math.round(tr.cibleInt) + '′ Z3+/sem</b></span>';
+    }
+    html += '<span>+' + tr.pente + ' %/sem · ACWR <b>' + tr.acwr + '</b></span>';
   }
-  // Annoncer la cible saisie quand le volume est figé en dessous mentirait sur
-  // ce que le plan produit : on affiche ce qui sera réellement délivré.
-  var tr = (pr.axe && CAP_AXES[pr.axe]) ? _capTrajectoire(pr) : null;
-  if (tr && tr.coupable !== 'volume') {
-    var volAff = pr.unite === 'km' ? tr.cibleMin / (pr.allureFooting || 6) : tr.cibleMin;
-    html += '<span>Volume figé : <b>' + (Math.round(volAff * 10) / 10) + ' ' + uLbl + '/sem</b></span>'
-          + '<span>Qualité visée : <b>' + tr.cibleIntensite + '′ Z3+/sem</b></span>';
-  }
-  else if (pr.cibleHebdo) html += '<span>Cible : <b>' + pr.cibleHebdo + ' ' + uLbl + '/sem</b></span>';
-  else html += '<span>Objectif : <b>' + pr.objectiveMin + '\' continu</b></span>';
-  if (pr.cibleSortieLongue) html += '<span>Sortie longue : <b>' + pr.cibleSortieLongue + ' ' + uLbl + '</b></span>';
   html += '</div>';
 
   // Une décision est en attente : elle passe avant tout le reste.
@@ -12127,10 +12134,12 @@ function _capRender() {
 
   Object.keys(byWeek).sort(function(a, b) { return +a - +b; }).forEach(function(w) {
     var weekSessions = byWeek[w];
-    var firstPhase   = weekSessions[0].phase;
-    if (firstPhase !== lastPhase) {
-      html += '<div class="cap-phase-hdr" style="color:' + phaseColor[firstPhase] + '">' + phaseName[firstPhase] + '</div>';
-      lastPhase = firstPhase;
+    if (parCycle) {
+      var cycle = Math.ceil(+w / parCycle);
+      if (cycle !== lastPhase) {
+        html += '<div class="cap-phase-hdr" style="color:#2563EB">Cycle ' + cycle + '</div>';
+        lastPhase = cycle;
+      }
     }
     var st = statByWeek[w] || {};
     var acwrCls = st.acwr > 1.3 ? '#DC2626' : st.acwr < 0.8 ? '#94A3B8' : '#059669';

@@ -219,7 +219,29 @@ aggravait l'arrondi. D'où des semaines à 5 et 6 sorties sur 15 min de course.
 
 ---
 
-## 8. L'état de la trajectoire, semaine par semaine
+## 8. L'écran de résultat
+
+L'en-tête décrit ce que le plan délivre, dans les grandeurs du mode :
+
+```
+10 semaines de progression   Axe : Répétition   Volume : 24 → 36 km/sem
++6 %/sem · ACWR 1.09
+```
+
+Sur un mode allure, « Volume maintenu » et « Qualité visée » remplacent la
+plage de volume.
+
+**Piège historique.** L'en-tête lisait `cibleHebdo` et `objectiveMin`, champs
+supprimés de la fiche : il affichait « NaN km/sem » et « undefined′ Z3+ ».
+
+**Pas de noms de phase.** Ils venaient d'un modèle en trois temps qui n'existe
+plus et annonçaient « Phase 3 — Retour continu » dès la semaine 1. Les
+intertitres ne numérotent que les **cycles**, et seulement quand la
+consolidation est cochée : `Cycle 1`, `Cycle 2`…
+
+---
+
+## 9. L'état de la trajectoire, semaine par semaine
 
 `_capBuildProgrammeV2` renvoie `etats` — une entrée par semaine — et
 `CAP_STATE.etats` la persiste avec le plan :
@@ -235,7 +257,7 @@ régression ne pourrait que rééchelonner des séances au jugé, hors du modèl
 
 ---
 
-## 9. La régression sur douleur
+## 10. La régression sur douleur
 
 ### On propose, on n'applique jamais d'office
 
@@ -299,7 +321,7 @@ volume et allure.
 
 ---
 
-## 10. Les 18 pathologies
+## 11. Les 18 pathologies
 
 `CAP_PATHO_DB` — chaque entrée porte `axe`, `tissu`, `seuil` de douleur,
 `interdits`, `cadenceCible`, `consignes` et `drapeaux`.
@@ -319,7 +341,7 @@ Clinique du Coureur : leur axe est une transposition, à confirmer cliniquement.
 
 ---
 
-## 11. Ce qui a été retiré, et pourquoi
+## 12. Ce qui a été retiré, et pourquoi
 
 À jour au 2 août 2026.
 
@@ -340,7 +362,7 @@ sont plus lus par la génération. À supprimer si rien ne les reprend.
 
 ---
 
-## 12. Ce qui n'est pas branché
+## 13. Ce qui n'est pas branché
 
 - **`interdits`** (côtes, surfaces dures, descentes, dévers) — affichés en
   consigne, sans effet sur la génération. Les rendre contraignants suppose que
@@ -352,7 +374,7 @@ sont plus lus par la génération. À supprimer si rien ne les reprend.
 
 ---
 
-## 13. Questions ouvertes
+## 14. Questions ouvertes
 
 **Le plafond par sortie doit-il progresser ?** Un coureur dont l'objectif est
 de recomposer une sortie d'une heure d'un seul tenant a besoin que sa tolérance
@@ -363,7 +385,7 @@ l'ancien modèle, jamais discuté cliniquement.
 
 ---
 
-## 14. Méthode de travail — pourquoi ce document existe
+## 15. Méthode de travail — pourquoi ce document existe
 
 Quatre corrections successives ont été livrées, chacune vérifiée, et le premier
 essai en consultation réelle échouait encore. La cause n'était pas dans les
