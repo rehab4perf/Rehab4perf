@@ -2020,9 +2020,13 @@ function buildProgHTML(prog){
     var obj = b.objectif||'libre';
     html += '<div class="bloc">'
          +  '<div class="bloc-header">'
-         +  '<div class="bloc-title">'+escH(b.title||'Bloc')+'</div>'
-         +  '<span class="bloc-badge '+escH(obj)+'">'+escH(OBJ_LABELS[obj]||obj)+'</span>'
-         +  '</div>';
+         +  '<div class="bloc-title">'+escH(b.title||'Bloc')+'</div>';
+    // « Libre » est la valeur de repli, pas un objectif choisi — et le mot ne
+    // dit rien à un patient. Pas de badge tant qu'il n'y a rien à annoncer.
+    if(obj !== 'libre'){
+      html += '<span class="bloc-badge '+escH(obj)+'">'+escH(OBJ_LABELS[obj]||obj)+'</span>';
+    }
+    html += '</div>';
     if(b.methode){
       var objDef = METHODES[obj] || METHODES.libre;
       var methObj = objDef.methods.find(function(m){ return m.id===b.methode; });
@@ -2082,11 +2086,14 @@ function buildProgHTML(prog){
       var cibles = e.cibles&&e.cibles.length ? e.cibles : (e.cibleType?[{type:e.cibleType,min:e.cibleVal||'',max:''}]:[]);
       cibles.forEach(function(c,ci){ var cf=fmtCible(c); if(cf) pills.push({l:'Cible'+(cibles.length>1?' '+(ci+1):''), v:cf, cls:''}); });
       // Récup : grisée si mid-chain (pas de pause), sinon valeur réelle
-      var _recupCls, _recupVal;
-      if(e.chained && !isLastInChain){ _recupCls='recup recup-dim'; _recupVal='—'; }
-      else if(e.recup){               _recupCls='recup';            _recupVal=e.recup; }
-      else {                          _recupCls='recup recup-dim';  _recupVal='—'; }
-      pills.push({l:'Récup', v:_recupVal, cls:_recupCls});
+      // Enchaîné : pas de pause, c'est une consigne et elle s'affiche. Récup
+      // non renseignée : rien à dire, donc pas de pastille — un tiret encadré
+      // occupait autant de place qu'une vraie valeur.
+      if(e.chained && !isLastInChain){
+        pills.push({l:'Récup', v:'enchaîné', cls:'recup recup-dim'});
+      } else if(e.recup){
+        pills.push({l:'Récup', v:e.recup, cls:'recup'});
+      }
       r += '<div class="exo-pills">';
       pills.forEach(function(p){
         r += '<div class="exo-pill '+p.cls+'">'
