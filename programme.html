@@ -1181,9 +1181,11 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .add-point-btn:hover, .add-point-btn:focus { opacity:1; border-color:var(--accent2); color:var(--accent2); }
 /* Menu d'ajout, commun au bouton de fin et aux points d'insertion. */
 .bloc-add-row, .add-point { position:relative; }
-.add-menu { position:absolute; top:100%; left:50%; transform:translateX(-50%); margin-top:4px;
-  background:var(--card); border:1px solid var(--border); border-radius:9px; z-index:40;
-  box-shadow:0 6px 20px rgba(0,0,0,.13); padding:4px; min-width:186px; }
+/* Posé sur le <body> en position fixe : accroché à son bouton, le menu héritait
+   du contexte d'empilement de la barre d'outils et passait sous les blocs. */
+.add-menu { position:fixed; background:var(--card); border:1px solid var(--border);
+  border-radius:9px; z-index:9000; box-shadow:0 8px 26px rgba(0,0,0,.18);
+  padding:4px; min-width:186px; }
 .add-menu-item { display:flex; align-items:center; gap:6px; width:100%; text-align:left;
   background:none; border:none; padding:7px 10px; border-radius:6px; cursor:pointer;
   font-family:inherit; font-size:.79rem; color:var(--text); white-space:nowrap; }
@@ -3112,7 +3114,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   </div><!-- /tool-panel-drawer -->
 </div><!-- /tool-panel-overlay -->
 
-<script src="js/prog-data.js?v=20260802f"></script>
+<script src="js/prog-data.js?v=20260802g"></script>
 
 <!-- ══ CYCLES MODAL ════════════════════════════════════════════ -->
 <style>

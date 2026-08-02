@@ -2244,11 +2244,14 @@ function _fermerMenuAjout(){
   _menuAjoutOuvert = null;
   document.querySelectorAll('.add-menu').forEach(function(m){ m.remove(); });
   document.removeEventListener('click', _fermerMenuAjout, true);
+  window.removeEventListener('scroll', _fermerMenuAjout, true);
+  window.removeEventListener('resize', _fermerMenuAjout, true);
 }
 
 function ouvrirMenuAjout(ev, atIndex){
   ev.stopPropagation();
   var deja = _menuAjoutOuvert === atIndex;
+  var bouton = ev.currentTarget;
   _fermerMenuAjout();
   if(deja) return;
   _menuAjoutOuvert = atIndex;
@@ -2263,9 +2266,32 @@ function ouvrirMenuAjout(ev, atIndex){
         + atIndex + ')">' + _ETAPE_ICO_FOLDER + 'Étape</button>'
         + '</div>';
 
-  var wrap = ev.currentTarget.parentNode;
-  wrap.insertAdjacentHTML('beforeend', html);
-  setTimeout(function(){ document.addEventListener('click', _fermerMenuAjout, true); }, 0);
+  // Le menu est posé sur le <body>, en position fixe : accroché à son bouton, il
+  // héritait du contexte d'empilement de la barre d'outils et passait SOUS les
+  // blocs — ses deux premières entrées disparaissaient derrière l'en-tête du
+  // premier bloc.
+  document.body.insertAdjacentHTML('beforeend', html);
+  var menu = document.body.lastElementChild;
+  var r = bouton.getBoundingClientRect();
+  menu.style.position = 'fixed';
+  menu.style.top = Math.round(r.bottom + 4) + 'px';
+  menu.style.left = Math.round(r.left + r.width / 2) + 'px';
+  menu.style.transform = 'translateX(-50%)';
+  // Ne jamais déborder de la fenêtre
+  var m = menu.getBoundingClientRect();
+  if(m.right > window.innerWidth - 8){
+    menu.style.left = Math.round(window.innerWidth - 8 - m.width / 2) + 'px';
+  }
+  if(m.left < 8) menu.style.left = Math.round(8 + m.width / 2) + 'px';
+  if(m.bottom > window.innerHeight - 8){
+    menu.style.top = Math.round(r.top - m.height - 4) + 'px';
+  }
+
+  setTimeout(function(){
+    document.addEventListener('click', _fermerMenuAjout, true);
+    window.addEventListener('scroll', _fermerMenuAjout, true);
+    window.addEventListener('resize', _fermerMenuAjout, true);
+  }, 0);
 }
 
 /* Le « + » intercalaire. `atIndex` est la position dans `blocs` où insérer. */
