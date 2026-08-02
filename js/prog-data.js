@@ -1318,6 +1318,10 @@ function _renderChronoExos(b){
     h += '</div>';
     h += '<input class="chrono-reps" type="text" value="'+escH(e.reps||'')+'" placeholder="reps" '
       +  'oninput="updateExoReps(\''+b.id+'\',\''+e.id+'\',this.value)">';
+    // Un exercice unilatéral le reste dans un AMRAP ou un EMOM : la bascule
+    // manquait ici alors que la donnée, elle, existait déjà sur l'exercice.
+    h += '<button class="percote-toggle'+(e.perCote?' active':'')+'" data-percote="'+b.id+'-'+e.id+'"'
+      +  ' onclick="event.stopPropagation();togglePerCote(\''+b.id+'\',\''+e.id+'\')" title="Par côté">/côté</button>';
     h += '<button class="exo-del-btn" onclick="removeExo(\''+b.id+'\',\''+e.id+'\')" title="Retirer"></button>';
     h += '</div>';
   });

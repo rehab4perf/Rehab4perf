@@ -560,6 +560,8 @@ html,body { background:var(--bg); font-family:var(--font-sans); color:var(--text
 .chrono-min-ath { font-size:var(--fs-xs); font-weight:700; color:#6b7280; min-width:46px; text-transform:uppercase; font-variant-numeric:tabular-nums; }
 .chrono-nom-ath { flex:1; }
 .chrono-reps-ath { font-weight:700; font-size:var(--fs-lg); }
+/* « / côté » se lit comme une precision, pas comme une valeur. */
+.chrono-cote-ath { font-weight:600; font-size:var(--fs-sm); color:var(--muted); }
 .chrono-saisie { display:flex; align-items:center; gap:10px; padding:11px 14px; border-top:1px solid #e5e7eb; }
 .chrono-saisie label { font-size:var(--fs-md); color:#374151; }
 .chrono-saisie input { width:84px; padding:7px 9px; border:1px solid #d1d5db; border-radius:7px; font-family:inherit; font-size:var(--fs-lg); text-align:center; }
@@ -2004,7 +2006,7 @@ function buildProgHTML(prog){
         html += '<div class="exo-item chrono-item">'
              +  (estAmrap ? '' : '<span class="chrono-min-ath">min '+(i+1)+'</span>')
              +  '<span class="chrono-nom-ath">'+escH(e.name || '')+'</span>'
-             +  (e.reps ? '<span class="chrono-reps-ath">'+escH(e.reps)+'</span>' : '')
+             +  (e.reps ? '<span class="chrono-reps-ath">'+escH(e.reps)+(e.perCote?' <span class="chrono-cote-ath">/ côté</span>':'')+'</span>' : '')
              +  '</div>';
       });
       html += '</div>';
