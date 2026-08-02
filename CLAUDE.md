@@ -15,6 +15,20 @@ node --check js/prog-data.js
 node --check js/prog-main.js
 ```
 
+## Étapes du builder — l'ordre vit dans `blocs`
+
+```bash
+node qualite/etapes-cas.js
+```
+
+Un séparateur d'étape est une entrée `{id, type:'etape'}` dans `blocs`, et
+l'appartenance d'un bloc à une étape est **positionnelle** : c'est le dernier
+séparateur rencontré avant lui. Conséquence à ne jamais perdre de vue — tout
+bloc poussé derrière un séparateur est **absorbé** par cette étape. Les blocs
+placés avant la première étape n'appartiennent à aucune et doivent le rester.
+`bloc.etapeId` est recalculé par `_syncEtapeIds()` ; il n'est pas la source de
+vérité, il n'est écrit que parce que `athlete.html` groupe avec.
+
 ## Variables CSS (OBLIGATOIRE après toute règle CSS ajoutée)
 
 ```bash

@@ -8,11 +8,14 @@
 
 ```bash
 node qualite/check-css-vars.js
+node qualite/etapes-cas.js
 ```
 
 - [ ] Sortie verte. Une variable CSS non définie est ignorée en silence par le
       navigateur : l'élément perd son fond ou sa couleur sans qu'aucune erreur
       n'apparaisse, et le défaut ne se voit que sur certaines zones de la page.
+- [ ] Sortie verte. L'appartenance d'un bloc à une étape est positionnelle :
+      tout bloc poussé derrière un séparateur est absorbé par cette étape.
 
 ---
 

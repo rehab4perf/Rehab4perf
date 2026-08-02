@@ -1227,13 +1227,16 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .etape-header {
   display:flex; align-items:center; gap:8px; padding:2px 4px 10px;
 }
-.etape-move-btns { display:flex; flex-direction:column; gap:1px; flex-shrink:0; }
+.etape-move-btns { display:flex; flex-direction:column; gap:2px; flex-shrink:0; }
 .etape-move-btn {
-  background:none; border:none; cursor:pointer; line-height:1; padding:0 3px;
-  font-size:.62rem; color:var(--etape-c,#F59E0B); opacity:.75;
+  display:flex; align-items:center; justify-content:center;
+  width:22px; height:17px; padding:0; border-radius:5px;
+  background:none; border:none; cursor:pointer; line-height:0;
+  color:var(--etape-c,#F59E0B); opacity:.65; transition:opacity .12s, background .12s;
 }
-.etape-move-btn:hover:not(:disabled) { opacity:1; }
-.etape-move-btn:disabled { opacity:.2; cursor:default; }
+.etape-move-btn:hover:not(:disabled) { opacity:1; background:rgba(0,0,0,.06); }
+.etape-move-btn:focus-visible { outline:2px solid var(--etape-c,#F59E0B); outline-offset:1px; }
+.etape-move-btn:disabled { opacity:.18; cursor:default; }
 .etape-title-input {
   flex:1; min-width:80px; background:transparent; border:none; outline:none;
   font-size:.86rem; font-weight:800; color:var(--etape-c,#F59E0B); letter-spacing:-.01em;
@@ -3119,7 +3122,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   </div><!-- /tool-panel-drawer -->
 </div><!-- /tool-panel-overlay -->
 
-<script src="js/prog-data.js?v=20260802g"></script>
+<script src="js/prog-data.js?v=20260802h"></script>
 
 <!-- ══ CYCLES MODAL ════════════════════════════════════════════ -->
 <style>
