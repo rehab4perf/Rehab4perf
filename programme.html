@@ -1174,7 +1174,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
    rien tant qu'on ne le cherche pas, et reste atteignable au doigt. */
 .add-point { height:0; display:flex; justify-content:center; position:relative; z-index:3; }
 .add-point-btn { transform:translateY(-9px); width:20px; height:18px; border-radius:9px;
-  border:1px solid var(--border); background:var(--card); color:var(--muted);
+  border:1px solid var(--border); background:var(--surface); color:var(--muted);
   font-size:.78rem; line-height:1; cursor:pointer; font-family:inherit; opacity:0;
   transition:opacity .12s, border-color .12s, color .12s; padding:0; }
 .session-area:hover .add-point-btn { opacity:.45; }
@@ -1183,7 +1183,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .bloc-add-row, .add-point { position:relative; }
 /* Posé sur le <body> en position fixe : accroché à son bouton, le menu héritait
    du contexte d'empilement de la barre d'outils et passait sous les blocs. */
-.add-menu { position:fixed; background:var(--card); border:1px solid var(--border);
+.add-menu { position:fixed; background:var(--surface,#fff); border:1px solid var(--border);
   border-radius:9px; z-index:9000; box-shadow:0 8px 26px rgba(0,0,0,.18);
   padding:4px; min-width:186px; }
 .add-menu-item { display:flex; align-items:center; gap:6px; width:100%; text-align:left;
@@ -1195,7 +1195,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .texte-bloc .bloc-header { background:#64748B; }
 .texte-tag { background:rgba(255,255,255,.18); color:#fff; border-radius:11px; padding:2px 9px; font-size:.66rem; font-weight:600; white-space:nowrap; }
 .texte-ta { width:100%; border:1px solid var(--border); border-radius:7px; padding:9px 11px;
-  font-family:inherit; font-size:.82rem; line-height:1.55; color:var(--text); background:var(--card);
+  font-family:inherit; font-size:.82rem; line-height:1.55; color:var(--text); background:var(--surface);
   resize:none; overflow:hidden; min-height:64px; }
 .texte-ta:focus { outline:none; border-color:var(--accent2); }
 /* AMRAP / EMOM : deux formats à contrainte de temps, distingués par la teinte. */
@@ -1206,7 +1206,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .chrono-form .cardio-field { flex:1; min-width:120px; }
 .chrono-resume { font-size:.74rem; color:var(--muted); margin-bottom:8px; }
 .chrono-exos { display:flex; flex-direction:column; gap:5px; }
-.chrono-exo { display:flex; align-items:center; gap:8px; padding:6px 8px; border:1px solid var(--border); border-radius:7px; background:var(--card); }
+.chrono-exo { display:flex; align-items:center; gap:8px; padding:6px 8px; border:1px solid var(--border); border-radius:7px; background:var(--surface); }
 .chrono-min { font-size:.68rem; font-weight:700; color:var(--muted); min-width:44px; text-transform:uppercase; letter-spacing:.02em; }
 .chrono-exo-nom { flex:1; font-size:.82rem; color:var(--text); min-width:0; }
 .chrono-reps { width:74px; border:1px solid var(--border); border-radius:6px; padding:4px 7px; font-family:inherit; font-size:.78rem; text-align:center; }
