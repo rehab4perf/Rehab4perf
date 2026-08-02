@@ -1189,6 +1189,27 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   font-family:inherit; font-size:.79rem; color:var(--text); white-space:nowrap; }
 .add-menu-item:hover { background:var(--tag-bg); color:var(--accent2); }
 .add-menu-sep { height:1px; background:var(--border); margin:4px 6px; }
+/* Bloc texte : ni exercice ni effort mesuré, une couleur qui le dit. */
+.texte-bloc .bloc-header { background:#64748B; }
+.texte-tag { background:rgba(255,255,255,.18); color:#fff; border-radius:11px; padding:2px 9px; font-size:.66rem; font-weight:600; white-space:nowrap; }
+.texte-ta { width:100%; border:1px solid var(--border); border-radius:7px; padding:9px 11px;
+  font-family:inherit; font-size:.82rem; line-height:1.55; color:var(--text); background:var(--card);
+  resize:none; overflow:hidden; min-height:64px; }
+.texte-ta:focus { outline:none; border-color:var(--accent2); }
+/* AMRAP / EMOM : deux formats à contrainte de temps, distingués par la teinte. */
+.amrap-bloc .bloc-header { background:#B45309; }
+.emom-bloc  .bloc-header { background:#6D28D9; }
+.chrono-tag { background:rgba(255,255,255,.18); color:#fff; border-radius:11px; padding:2px 9px; font-size:.66rem; font-weight:600; white-space:nowrap; }
+.chrono-form { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+.chrono-form .cardio-field { flex:1; min-width:120px; }
+.chrono-resume { font-size:.74rem; color:var(--muted); margin-bottom:8px; }
+.chrono-exos { display:flex; flex-direction:column; gap:5px; }
+.chrono-exo { display:flex; align-items:center; gap:8px; padding:6px 8px; border:1px solid var(--border); border-radius:7px; background:var(--card); }
+.chrono-min { font-size:.68rem; font-weight:700; color:var(--muted); min-width:44px; text-transform:uppercase; letter-spacing:.02em; }
+.chrono-exo-nom { flex:1; font-size:.82rem; color:var(--text); min-width:0; }
+.chrono-reps { width:74px; border:1px solid var(--border); border-radius:6px; padding:4px 7px; font-family:inherit; font-size:.78rem; text-align:center; }
+.chrono-reps:focus { outline:none; border-color:var(--accent2); }
+.chrono-vide { padding:12px; text-align:center; color:var(--muted); font-size:.78rem; }
 .etape-add-btn:hover { border-color:var(--accent); color:var(--accent); background:var(--tag-bg); }
 
 /* Étape (groupe de blocs, ex: Échauffement) */
@@ -3091,7 +3112,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   </div><!-- /tool-panel-drawer -->
 </div><!-- /tool-panel-overlay -->
 
-<script src="js/prog-data.js?v=20260802c"></script>
+<script src="js/prog-data.js?v=20260802f"></script>
 
 <!-- ══ CYCLES MODAL ════════════════════════════════════════════ -->
 <style>

@@ -532,6 +532,17 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
 .exo-pill.recup-dim .exo-pill-val { color:#CBD2DB; font-style:italic; }
 .exo-pain-v3 { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
 .exo-pain-label { font-size:.68rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; white-space:nowrap; }
+.bloc-texte .bloc-header { background:#64748B; }
+.texte-corps { padding:12px 14px; font-size:.88rem; line-height:1.6; color:var(--text,#1f2937); white-space:normal; }
+.bloc-amrap .bloc-header { background:#B45309; }
+.bloc-emom  .bloc-header { background:#6D28D9; }
+.chrono-item { display:flex; align-items:center; gap:9px; }
+.chrono-min-ath { font-size:.7rem; font-weight:700; color:#6b7280; min-width:46px; text-transform:uppercase; }
+.chrono-nom-ath { flex:1; }
+.chrono-reps-ath { font-weight:700; font-size:.9rem; }
+.chrono-saisie { display:flex; align-items:center; gap:10px; padding:11px 14px; border-top:1px solid #e5e7eb; }
+.chrono-saisie label { font-size:.82rem; color:#374151; }
+.chrono-saisie input { width:84px; padding:7px 9px; border:1px solid #d1d5db; border-radius:7px; font-family:inherit; font-size:.9rem; text-align:center; }
 </style>
 </head>
 <body>
@@ -1925,6 +1936,46 @@ function buildProgHTML(prog){
       html += '<div class="etape-group" style="--etape-c:'+_ec+'">'
            +  '<div class="etape-header-ath"><span class="etape-dot" style="background:'+_ec+'"></span>'+escH(_progEtapeTitle(b.etapeId, b))+'</div>';
     }
+    // ── AMRAP / EMOM ─────────────────────────────────────────────
+    if(b.type === 'amrap' || b.type === 'emom'){
+      var estAmrap = b.type === 'amrap';
+      var entete = estAmrap
+        ? 'AMRAP ' + escH(b.duree || '?') + ' min'
+        : 'EMOM ' + escH(b.dureeTotale || '?') + ' min — ' + escH(b.intervalle || '1') + ' min par exercice';
+      html += '<div class="bloc bloc-chrono '+(estAmrap?'bloc-amrap':'bloc-emom')+'">'
+           +  '<div class="bloc-header"><div class="bloc-title">'+escH(b.title || (estAmrap?'AMRAP':'EMOM'))+'</div>'
+           +  '<span class="bloc-badge">'+entete+'</span></div>';
+      html += '<div class="exo-list">';
+      (b.exos || []).forEach(function(e, i){
+        html += '<div class="exo-item chrono-item">'
+             +  (estAmrap ? '' : '<span class="chrono-min-ath">min '+(i+1)+'</span>')
+             +  '<span class="chrono-nom-ath">'+escH(e.name || '')+'</span>'
+             +  (e.reps ? '<span class="chrono-reps-ath">'+escH(e.reps)+'</span>' : '')
+             +  '</div>';
+      });
+      html += '</div>';
+      if(estAmrap){
+        var cible = b.toursCible ? ' (objectif ' + escH(b.toursCible) + ')' : '';
+        html += '<div class="chrono-saisie">'
+             +  '<label for="tours-'+escH(b.id)+'">Tours réalisés'+cible+'</label>'
+             +  '<input id="tours-'+escH(b.id)+'" type="number" min="0" inputmode="numeric" '
+             +  'value="'+escH(_toursRealises[b.id] || '')+'" '
+             +  'oninput="_saveTours(\''+escH(b.id)+'\',this.value)">'
+             +  '</div>';
+      }
+      if(b.commentaire) html += '<div class="texte-corps">'+escH(b.commentaire).replace(/\n/g,'<br>')+'</div>';
+      html += '</div>';
+      if(_etapeEnd) html += '</div>';
+      return;
+    }
+    // ── Bloc texte ───────────────────────────────────────────────
+    if(b.type === 'texte'){
+      html += '<div class="bloc bloc-texte"><div class="bloc-header">'
+           +  '<div class="bloc-title">'+escH(b.title||'Consigne')+'</div>'
+           +  '</div><div class="texte-corps">'+escH(b.contenu||'').replace(/\n/g,'<br>')+'</div></div>';
+      if(_etapeEnd) html += '</div>';
+      return;
+    }
     // ── Bloc cardio ──────────────────────────────────────────────
     if(b.type === 'cardio'){
       var sport = b.sport === 'course' ? 'Course à pied' : (b.sport || 'Cardio');
@@ -2267,6 +2318,20 @@ function _loadSessionNote(){
     _sessionNote = raw ? JSON.parse(raw) : '';
   } catch(e){ _sessionNote = ''; }
 }
+
+/* Tours réalisés sur un AMRAP. Le praticien vise un nombre, l'athlète note ce
+   qu'il a fait : c'est ce qui rend un AMRAP comparable d'une séance à l'autre. */
+var _toursRealises = {};
+try {
+  var _tr = localStorage.getItem('r4p-tours-' + (_currentSeanceId || _seanceId || ''));
+  if(_tr) _toursRealises = JSON.parse(_tr) || {};
+} catch(e){}
+
+window._saveTours = function(blocId, val){
+  _toursRealises[blocId] = val;
+  var cle = 'r4p-tours-' + (_currentSeanceId || _seanceId || '');
+  try { localStorage.setItem(cle, JSON.stringify(_toursRealises)); } catch(e){}
+};
 
 window._saveSessionNote = function(){
   var ta = document.getElementById('sessionNoteTA');

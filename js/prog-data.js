@@ -1189,6 +1189,168 @@ function toggleFcZone(blocId, scope, idx, zoneKey){
   renderSession();
 }
 
+/* ── Bloc texte ───────────────────────────────────────────────────────
+   Un titre et un corps de texte, rien d'autre. Sert aux consignes, au
+   contexte, aux rappels de sécurité — tout ce qui n'est ni un exercice ni un
+   effort mesuré. */
+function addTexteBloc(atIndex){
+  var id = genId();
+  blocs.splice(_posInsertion(atIndex), 0,
+    { id:id, type:'texte', title:'Consigne', contenu:'' });
+  _syncEtapeIds();
+  activeBloc = id;
+  renderSession();
+}
+
+function updateTexteContenu(id, val){
+  var b = blocs.find(function(x){ return x.id===id; });
+  if(!b) return;
+  b.contenu = val;
+  if(typeof _draftSaveLazy === 'function') _draftSaveLazy();
+}
+
+function _renderTexteBloc(b, idx){
+  var bid = b.id;
+  var h = '<div class="bloc texte-bloc" id="bloc-'+bid+'">';
+  h += '<div class="bloc-header" data-blocid="'+bid+'">';
+  h += '<span class="bloc-move-btns">'
+    +  '<button class="bloc-move-btn"'+(_estPremierBlocReel(idx)?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',-1)" title="Monter">↑</button>'
+    +  '<button class="bloc-move-btn"'+(_estDernierBlocReel(idx)?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',1)" title="Descendre">↓</button>'
+    +  '</span>';
+  h += '<input class="bloc-title-input" value="'+escH(b.title||'')+'" placeholder="Titre" oninput="updateBlocTitle(\''+bid+'\',this.value)" onclick="event.stopPropagation()">';
+  h += '<span class="texte-tag">Texte</span>';
+  h += '<button class="bloc-del-btn" onclick="event.stopPropagation();deleteBloc(\''+bid+'\')" title="Supprimer le bloc"></button>';
+  h += '</div>';
+  h += '<div class="bloc-body"><textarea class="texte-ta" placeholder="Consigne, contexte, rappel…" '
+    +  'oninput="autoResizeTa(this);updateTexteContenu(\''+bid+'\',this.value)">'+escH(b.contenu||'')+'</textarea></div>';
+  h += '</div>';
+  return h;
+}
+
+/* ── AMRAP et EMOM ────────────────────────────────────────────────────
+   Deux formats à contrainte de temps, qui partagent la même liste
+   d'exercices que les blocs classiques : la bibliothèque y dépose donc ses
+   exercices sans rien changer.
+
+   AMRAP — une durée, des exercices avec leurs répétitions, le patient
+   enchaîne les tours. Le praticien peut viser un nombre de tours ; l'athlète
+   note ce qu'il a réellement fait, ce qui rend l'AMRAP comparable d'une
+   séance à l'autre.
+
+   EMOM — une durée totale et un intervalle. Les exercices ALTERNENT : minute
+   1 le premier, minute 2 le deuxième, et ainsi de suite en boucle. */
+function addAmrapBloc(atIndex){
+  var id = genId();
+  blocs.splice(_posInsertion(atIndex), 0,
+    { id:id, type:'amrap', title:'AMRAP', duree:'12', toursCible:'', exos:[], commentaire:'' });
+  _syncEtapeIds();
+  activeBloc = id;
+  renderSession();
+}
+
+function addEmomBloc(atIndex){
+  var id = genId();
+  blocs.splice(_posInsertion(atIndex), 0,
+    { id:id, type:'emom', title:'EMOM', dureeTotale:'10', intervalle:'1', exos:[], commentaire:'' });
+  _syncEtapeIds();
+  activeBloc = id;
+  renderSession();
+}
+
+function updateChronoField(id, field, val){
+  var b = blocs.find(function(x){ return x.id===id; });
+  if(!b) return;
+  b[field] = val;
+  if(field === 'intervalle' || field === 'dureeTotale') renderSession();
+  else if(typeof _draftSaveLazy === 'function') _draftSaveLazy();
+}
+
+function updateExoReps(blocId, exoId, val){
+  var b = blocs.find(function(x){ return x.id===blocId; });
+  if(!b) return;
+  var e = (b.exos||[]).find(function(x){ return x.id===exoId; });
+  if(!e) return;
+  e.reps = val;
+  if(typeof _draftSaveLazy === 'function') _draftSaveLazy();
+}
+
+/* Nombre de tours d'un EMOM : chaque exercice revient toutes les N minutes. */
+function _emomTours(b){
+  var total = parseFloat(b.dureeTotale) || 0;
+  var inter = parseFloat(b.intervalle) || 1;
+  return inter > 0 ? Math.floor(total / inter) : 0;
+}
+
+/* Liste d'exercices commune aux deux formats : nom, répétitions, suppression. */
+function _renderChronoExos(b){
+  var h = '<div class="chrono-exos">';
+  if(!b.exos || !b.exos.length){
+    h += '<div class="chrono-vide">Cliquez sur un exercice dans la bibliothèque pour l\'ajouter ici</div>';
+  }
+  (b.exos||[]).forEach(function(e, i){
+    h += '<div class="chrono-exo">';
+    if(b.type === 'emom'){
+      h += '<span class="chrono-min">min '+(i+1)+'</span>';
+    }
+    h += '<div class="chrono-exo-nom">';
+    if(e.free){
+      h += '<input class="exo-name-input" type="text" value="'+escH(e.name||'')+'" placeholder="Nom de l\'exercice…" oninput="updateExoName(\''+b.id+'\',\''+e.id+'\',this.value)">';
+    } else {
+      h += escH(e.name || '');
+    }
+    h += '</div>';
+    h += '<input class="chrono-reps" type="text" value="'+escH(e.reps||'')+'" placeholder="reps" '
+      +  'oninput="updateExoReps(\''+b.id+'\',\''+e.id+'\',this.value)">';
+    h += '<button class="exo-del-btn" onclick="removeExo(\''+b.id+'\',\''+e.id+'\')" title="Retirer"></button>';
+    h += '</div>';
+  });
+  h += '<button class="add-free-exo-btn" onclick="addFreeExo(\''+b.id+'\')">✚ Exercice libre</button>';
+  h += '</div>';
+  return h;
+}
+
+function _renderChronoBloc(b, idx){
+  var bid = b.id;
+  var estAmrap = b.type === 'amrap';
+  var isActive = b.id === activeBloc;
+  var h = '<div class="bloc chrono-bloc '+(estAmrap?'amrap-bloc':'emom-bloc')+'" id="bloc-'+bid+'">';
+  h += '<div class="bloc-header" data-blocid="'+bid+'" style="opacity:'+(isActive?'1':'.8')+'" onclick="setActiveBloc(\''+bid+'\')">';
+  h += '<span class="bloc-move-btns">'
+    +  '<button class="bloc-move-btn"'+(_estPremierBlocReel(idx)?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',-1)" title="Monter">↑</button>'
+    +  '<button class="bloc-move-btn"'+(_estDernierBlocReel(idx)?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',1)" title="Descendre">↓</button>'
+    +  '</span>';
+  h += '<input class="bloc-title-input" value="'+escH(b.title||'')+'" placeholder="Nom du bloc" oninput="updateBlocTitle(\''+bid+'\',this.value)" onclick="event.stopPropagation()">';
+  h += '<span class="chrono-tag">'+(estAmrap?'AMRAP':'EMOM')+'</span>';
+  h += '<button class="bloc-del-btn" onclick="event.stopPropagation();deleteBloc(\''+bid+'\')" title="Supprimer le bloc"></button>';
+  h += '</div>';
+
+  h += '<div class="bloc-body"><div class="chrono-form">';
+  if(estAmrap){
+    h += '<div class="cardio-field"><label class="cardio-lbl">Durée (min)</label>'
+      +  '<input type="number" class="cardio-inp" min="1" value="'+escH(b.duree||'')+'" placeholder="12" oninput="updateChronoField(\''+bid+'\',\'duree\',this.value)"></div>';
+    h += '<div class="cardio-field"><label class="cardio-lbl">Tours visés <span class="cap-opt">optionnel</span></label>'
+      +  '<input type="number" class="cardio-inp" min="0" value="'+escH(b.toursCible||'')+'" placeholder="—" oninput="updateChronoField(\''+bid+'\',\'toursCible\',this.value)"></div>';
+  } else {
+    h += '<div class="cardio-field"><label class="cardio-lbl">Durée totale (min)</label>'
+      +  '<input type="number" class="cardio-inp" min="1" value="'+escH(b.dureeTotale||'')+'" placeholder="10" oninput="updateChronoField(\''+bid+'\',\'dureeTotale\',this.value)"></div>';
+    h += '<div class="cardio-field"><label class="cardio-lbl">Intervalle (min)</label>'
+      +  '<input type="number" class="cardio-inp" min="0.5" step="0.5" value="'+escH(b.intervalle||'')+'" placeholder="1" oninput="updateChronoField(\''+bid+'\',\'intervalle\',this.value)"></div>';
+  }
+  h += '</div>';
+
+  if(!estAmrap && (b.exos||[]).length){
+    var tours = _emomTours(b);
+    var cycles = Math.ceil(tours / b.exos.length);
+    h += '<div class="chrono-resume">'+tours+' intervalles — chaque exercice revient '
+      +  cycles + (cycles > 1 ? ' fois' : ' fois') + '.</div>';
+  }
+  h += _renderChronoExos(b);
+  h += '<textarea class="texte-ta" style="margin-top:8px;min-height:44px;" placeholder="Consignes…" '
+    +  'oninput="autoResizeTa(this);updateChronoField(\''+bid+'\',\'commentaire\',this.value)">'+escH(b.commentaire||'')+'</textarea>';
+  h += '</div></div>';
+  return h;
+}
+
 function _renderCardioBloc(b, idx){
   var isActive = b.id===activeBloc;
   var bid = b.id;
@@ -2073,6 +2235,9 @@ var _menuAjoutOuvert = null;      // index d'insertion du menu actuellement ouve
 var TYPES_BLOC = [
   { id:'exos',   label:'Bloc d\'exercices', fn:'addBloc' },
   { id:'cardio', label:'Cardio',            fn:'addCardioBloc' },
+  { id:'amrap',  label:'AMRAP',            fn:'addAmrapBloc' },
+  { id:'emom',   label:'EMOM',             fn:'addEmomBloc' },
+  { id:'texte',  label:'Texte libre',       fn:'addTexteBloc' },
 ];
 
 function _fermerMenuAjout(){
@@ -2166,6 +2331,8 @@ function renderSession(){
     if(_iDansGroupe > 0) html += _pointInsertion(idx);
     // ── Bloc Cardio ──
     if(b.type === 'cardio'){ html += _renderCardioBloc(b, idx); return; }
+    if(b.type === 'texte'){  html += _renderTexteBloc(b, idx);  return; }
+    if(b.type === 'amrap' || b.type === 'emom'){ html += _renderChronoBloc(b, idx); return; }
     // ── Bloc Renforcement ──
     var isActive = b.id===activeBloc;
     html += '<div class="bloc" id="bloc-'+b.id+'">';
