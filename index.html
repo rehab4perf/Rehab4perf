@@ -508,6 +508,36 @@ iframe.active { display:block; }
   .ob-spot-callout { width:210px; }
 }
 
+
+/* ── Socle commun ──────────────────────────────────────────────────────
+   Trois règles qui valent pour toute l'application, posées en fin de
+   feuille pour passer devant les déclarations locales.
+
+   1. Chiffres à chasse fixe. Sans ça, une valeur qui change fait sauter
+      toute la colonne : « 11 » n'a pas la largeur de « 18 ».
+   2. Anneau de focus clavier. Il y a des dizaines d'`outline:none` dans
+      ce fichier, tous plus spécifiques que cette règle — le !important
+      est ici le seul moyen d'assurer une base commune sans reprendre
+      chaque déclaration une à une. `:focus-visible` ne se déclenche pas
+      au clic souris, l'anneau n'apparaît donc qu'au clavier.
+   3. Mouvement réduit, pour qui l'a demandé au niveau du système.
+   ────────────────────────────────────────────────────────────────────── */
+input[type="number"], table, time,
+.tabnum { font-variant-numeric:tabular-nums; }
+
+:focus-visible {
+  outline:2px solid var(--accent2,#4A90D9) !important;
+  outline-offset:2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;
+    scroll-behavior:auto !important;
+  }
+}
 </style>
 </head>
 <body>

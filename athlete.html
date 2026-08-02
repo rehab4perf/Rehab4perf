@@ -54,9 +54,23 @@
   --navy:#1A3A5C; --accent:#2B5FA6; --accent2:#4A90D9;
   --bg:#F0F4F8; --surface:#fff; --text:#1a2433; --muted:#6b7a8d;
   --border:#dde3ec;
+  /* La page chargeait fonts.css sans jamais utiliser Figtree : le patient
+     voyait une autre typographie que le praticien, sur le même produit. */
+  --font-sans:'Figtree', -apple-system, 'Helvetica Neue', sans-serif;
+  /* ── Échelle typographique ────────────────────────────────────────
+     Neuf pas, et pas un de plus. Ce fichier en comptait des dizaines,
+     avec des voisines indiscernables (.64 / .65 / .66 / .67 / .68) : ce
+     ne sont plus des décisions, c'est de la dérive, et c'est ce qui fait
+     qu'une interface paraît « presque juste » sans qu'on sache dire
+     pourquoi. `node qualite/check-echelle.js` empêche d'en rajouter.
+     Base 16 px — ne pas recopier ces valeurs dans outils.html, dont la
+     racine est à 14 px. */
+  --fs-2xs:.625rem;  --fs-xs:.6875rem; --fs-sm:.75rem;
+  --fs-md:.8125rem;  --fs-lg:.875rem;  --fs-xl:1rem;
+  --fs-2xl:1.25rem;  --fs-3xl:1.5rem;  --fs-4xl:2rem;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
-html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Arial,sans-serif; color:var(--text); min-height:100%; }
+html,body { background:var(--bg); font-family:var(--font-sans); color:var(--text); min-height:100%; }
 
 /* ── HEADER ── */
 .app-header {
@@ -113,9 +127,9 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
   border-left:3px solid var(--etape-c,#94A3B8);
   display:flex; align-items:center; gap:10px;
 }
-.bloc-title { color:var(--text); font-size:.88rem; font-weight:700; flex:1; }
+.bloc-title { color:var(--text); font-size:var(--fs-lg); font-weight:700; flex:1; }
 .bloc-badge {
-  font-size:.62rem; font-weight:700; padding:3px 8px; border-radius:10px;
+  font-size:var(--fs-2xs); font-weight:700; padding:3px 8px; border-radius:10px;
   background:#EDF2F7; color:#546578; text-transform:uppercase; letter-spacing:.04em;
 }
 .bloc-badge.endurance    { background:#E0F2FE; color:#075985; }
@@ -153,7 +167,7 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
 .exo-item { padding:11px 14px; border-bottom:1px solid var(--border); }
 .exo-item:last-child { border-bottom:none; }
 .exo-item.chained { border-left:3px solid var(--accent2); }
-.exo-name { font-size:.88rem; font-weight:600; color:var(--text); margin-bottom:5px; }
+.exo-name { font-size:var(--fs-lg); font-weight:600; color:var(--text); margin-bottom:5px; }
 .exo-tags { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:7px; }
 .exo-tag {
   font-size:.7rem; padding:3px 8px; border-radius:10px;
@@ -533,7 +547,7 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
 .exo-pills { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:9px; }
 .exo-pill { display:flex; flex-direction:column; align-items:center; background:#F5F8FF; border:1px solid #E2E8F0; border-radius:8px; padding:6px 12px; min-width:52px; }
 .exo-pill-lbl { font-size:.58rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:3px; }
-.exo-pill-val { font-size:.88rem; font-weight:700; color:var(--navy); }
+.exo-pill-val { font-size:var(--fs-lg); font-weight:700; color:var(--navy); font-variant-numeric:tabular-nums; }
 .exo-pill.recup { background:#EEF3FB; border-color:#C5D5F0; }
 .exo-pill.recup-dim .exo-pill-val { color:#CBD2DB; font-style:italic; }
 .exo-pain-v3 { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
@@ -543,12 +557,42 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
 .bloc-amrap .bloc-header { border-left-color:#B45309; }
 .bloc-emom  .bloc-header { border-left-color:#6D28D9; }
 .chrono-item { display:flex; align-items:center; gap:9px; }
-.chrono-min-ath { font-size:.7rem; font-weight:700; color:#6b7280; min-width:46px; text-transform:uppercase; }
+.chrono-min-ath { font-size:var(--fs-xs); font-weight:700; color:#6b7280; min-width:46px; text-transform:uppercase; font-variant-numeric:tabular-nums; }
 .chrono-nom-ath { flex:1; }
 .chrono-reps-ath { font-weight:700; font-size:.9rem; }
 .chrono-saisie { display:flex; align-items:center; gap:10px; padding:11px 14px; border-top:1px solid #e5e7eb; }
 .chrono-saisie label { font-size:.82rem; color:#374151; }
 .chrono-saisie input { width:84px; padding:7px 9px; border:1px solid #d1d5db; border-radius:7px; font-family:inherit; font-size:.9rem; text-align:center; }
+
+/* ── Socle commun ──────────────────────────────────────────────────────
+   Trois règles qui valent pour toute l'application, posées en fin de
+   feuille pour passer devant les déclarations locales.
+
+   1. Chiffres à chasse fixe. Sans ça, une valeur qui change fait sauter
+      toute la colonne : « 11 » n'a pas la largeur de « 18 ».
+   2. Anneau de focus clavier. Il y a des dizaines d'`outline:none` dans
+      ce fichier, tous plus spécifiques que cette règle — le !important
+      est ici le seul moyen d'assurer une base commune sans reprendre
+      chaque déclaration une à une. `:focus-visible` ne se déclenche pas
+      au clic souris, l'anneau n'apparaît donc qu'au clavier.
+   3. Mouvement réduit, pour qui l'a demandé au niveau du système.
+   ────────────────────────────────────────────────────────────────────── */
+input[type="number"], table, time,
+.tabnum { font-variant-numeric:tabular-nums; }
+
+:focus-visible {
+  outline:2px solid var(--accent2,#4A90D9) !important;
+  outline-offset:2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;
+    scroll-behavior:auto !important;
+  }
+}
 </style>
 </head>
 <body>

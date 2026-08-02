@@ -36,6 +36,32 @@ lui ils s'accumulent à chaque sortie. `bloc.etapeId` est recalculé par
 que `athlete.html` groupe avec — et `athlete.html` doit filtrer **les deux**
 types de séparateurs.
 
+## Échelle typographique (OBLIGATOIRE après toute taille de police ajoutée)
+
+```bash
+node qualite/check-echelle.js            # contrôle (exit 1 si nouveauté)
+node qualite/check-echelle.js --write    # entériner après conversion
+```
+
+Neuf pas en jetons `--fs-*` dans `athlete.html` et `programme.html`. Ces deux
+fichiers comptaient 37 et 50 tailles distinctes, avec des voisines
+indiscernables (`.64` / `.65` / `.66` / `.67` / `.68`). Le contrôle n'échoue
+que sur une taille **nouvelle** : le compteur ne doit que baisser.
+
+`outils.html` est exclu — sa racine est à `14px`, les mêmes `rem` n'y donnent
+pas les mêmes pixels. Ne jamais y recopier les valeurs de l'échelle.
+
+## Typographie et socle commun
+
+Une seule famille pour tout le produit : `var(--font-sans)`, Figtree, servie
+depuis `fonts/fonts.css`. `athlete.html` la chargeait sans l'utiliser — le
+patient voyait une autre typographie que le praticien.
+
+Chaque page porte en fin de première feuille un bloc « Socle commun » :
+chiffres à chasse fixe, anneau `:focus-visible` (en `!important`, seul moyen
+de passer devant les dizaines d'`outline:none` plus spécifiques), et respect
+de `prefers-reduced-motion`.
+
 ## Variables CSS (OBLIGATOIRE après toute règle CSS ajoutée)
 
 ```bash

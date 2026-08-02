@@ -28,12 +28,12 @@
   --radius-sm: 5px;
   --shadow:    0 1px 3px rgba(0,0,0,.06), 0 1px 8px rgba(0,0,0,.04);
   --font-serif: 'Georgia', serif;
-  --font-sans:  -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  --font-sans:  'Figtree', -apple-system, 'Helvetica Neue', sans-serif;
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-size: 14px; -webkit-text-size-adjust: 100%; background: #F7F6F3 !important; }
 body {
-  font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  font-family: var(--font-sans);
   background: #F7F6F3;
   color: #1A1917;
   height: 100vh;
@@ -67,7 +67,7 @@ body {
   color: #6B6860;
   cursor: pointer;
   border: none; background: none;
-  font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  font-family: var(--font-sans);
   border-bottom: 3px solid transparent;
   margin-bottom: -1px;
   transition: all .12s;
@@ -128,7 +128,7 @@ body {
   color: #6B6860;
 }
 .rm-field input, .rm-field select {
-  font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  font-family: var(--font-sans);
   font-size: 1.05rem; font-weight: 600;
   color: #1A3A5C;
   border: none; outline: none; background: transparent; width: 100%;
@@ -199,7 +199,7 @@ body {
 }
 .hsr-sticky label { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #6B6860; }
 .hsr-sticky input {
-  font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif; font-size: 1rem; font-weight: 700;
+  font-family: var(--font-sans); font-size: 1rem; font-weight: 700;
   border: 1.5px solid #D3D1CB; border-radius: 5px;
   padding: 5px 10px; width: 86px; outline: none;
   color: #1A3A5C; text-align: center; background: #FFFFFF;
@@ -538,6 +538,36 @@ body {
 .cr-amp-row input { flex:1; min-width:0; }
 .cr-amp-row select { width:88px; font-size:.7rem; flex-shrink:0; padding:7px 4px; }
 
+
+/* ── Socle commun ──────────────────────────────────────────────────────
+   Trois règles qui valent pour toute l'application, posées en fin de
+   feuille pour passer devant les déclarations locales.
+
+   1. Chiffres à chasse fixe. Sans ça, une valeur qui change fait sauter
+      toute la colonne : « 11 » n'a pas la largeur de « 18 ».
+   2. Anneau de focus clavier. Il y a des dizaines d'`outline:none` dans
+      ce fichier, tous plus spécifiques que cette règle — le !important
+      est ici le seul moyen d'assurer une base commune sans reprendre
+      chaque déclaration une à une. `:focus-visible` ne se déclenche pas
+      au clic souris, l'anneau n'apparaît donc qu'au clavier.
+   3. Mouvement réduit, pour qui l'a demandé au niveau du système.
+   ────────────────────────────────────────────────────────────────────── */
+input[type="number"], table, time,
+.tabnum { font-variant-numeric:tabular-nums; }
+
+:focus-visible {
+  outline:2px solid var(--accent2,#4A90D9) !important;
+  outline-offset:2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;
+    scroll-behavior:auto !important;
+  }
+}
 </style>
 </head>
 <body>
@@ -849,7 +879,7 @@ body {
 .presc-field input,
 .presc-field select,
 .presc-field textarea {
-  font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  font-family: var(--font-sans);
   font-size: .95rem;
   color: #1A1917;
   border: 1.5px solid #D3D1CB;

@@ -18,6 +18,17 @@
      ignoree (fond transparent, couleur heritee). Valeurs alignees sur la
      palette froide de cette page, pas sur celle du bilan. */
   --surface2:#F5F8FC; --border2:#C6D0DE; --text2:#6b7a8d; --text3:#9AA7B8;
+  /* ── Échelle typographique ────────────────────────────────────────
+     Neuf pas, et pas un de plus. Ce fichier en comptait des dizaines,
+     avec des voisines indiscernables (.64 / .65 / .66 / .67 / .68) : ce
+     ne sont plus des décisions, c'est de la dérive, et c'est ce qui fait
+     qu'une interface paraît « presque juste » sans qu'on sache dire
+     pourquoi. `node qualite/check-echelle.js` empêche d'en rajouter.
+     Base 16 px — ne pas recopier ces valeurs dans outils.html, dont la
+     racine est à 14 px. */
+  --fs-2xs:.625rem;  --fs-xs:.6875rem; --fs-sm:.75rem;
+  --fs-md:.8125rem;  --fs-lg:.875rem;  --fs-xl:1rem;
+  --fs-2xl:1.25rem;  --fs-3xl:1.5rem;  --fs-4xl:2rem;
   --sidebar-w:300px;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -1023,7 +1034,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .bloc-header.actif { background:var(--accent-ll); }
 .bloc-title-input {
   flex:1; background:transparent; border:none; color:var(--text);
-  font-size:.88rem; font-weight:800; outline:none; letter-spacing:-.01em;
+  font-size:var(--fs-lg); font-weight:800; outline:none; letter-spacing:-.01em;
 }
 .bloc-title-input::placeholder { color:var(--muted); }
 .bloc-del-btn { background:none; border:none; color:var(--muted); cursor:pointer; font-size:.9rem; padding:2px 6px; border-radius:4px; }
@@ -1064,7 +1075,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .bloc-move-btns { display:flex; gap:2px; align-items:center; flex-shrink:0; opacity:0; transition:opacity .15s; }
 .bloc-header:hover .bloc-move-btns { opacity:1; }
 @media (hover:none) { .bloc-move-btns { opacity:1; } }
-.bloc-move-btn { background:none; border:none; cursor:pointer; color:var(--muted); font-size:.7rem; border-radius:4px; padding:2px 5px; line-height:1; transition:background .12s, color .12s; font-family:inherit; }
+.bloc-move-btn { background:none; border:none; cursor:pointer; color:var(--muted); font-size:var(--fs-xs); border-radius:4px; padding:2px 5px; line-height:1; transition:background .12s, color .12s; font-family:inherit; }
 .bloc-move-btn:hover:not(:disabled) { background:var(--tag-bg); color:var(--accent2); }
 /* Grisée, pas escamotée : l'en-tête du premier bloc était décalé par rapport
    aux autres, la flèche disparaissant complètement. */
@@ -1203,7 +1214,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   padding:4px; min-width:186px; }
 .add-menu-item { display:flex; align-items:center; gap:6px; width:100%; text-align:left;
   background:none; border:none; padding:7px 10px; border-radius:6px; cursor:pointer;
-  font-family:inherit; font-size:.79rem; color:var(--text); white-space:nowrap; }
+  font-family:inherit; font-size:var(--fs-md); color:var(--text); white-space:nowrap; }
 .add-menu-item:hover { background:var(--tag-bg); color:var(--accent2); }
 .add-menu-sep { height:1px; background:var(--border); margin:4px 6px; }
 /* Bloc texte : ni exercice ni effort mesuré, une couleur qui le dit. */
@@ -1249,7 +1260,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .etape-move-btn:disabled { opacity:.18; cursor:default; }
 .etape-title-input {
   flex:1; min-width:80px; background:transparent; border:none; outline:none;
-  font-size:.86rem; font-weight:800; color:var(--etape-c,#F59E0B); letter-spacing:-.01em;
+  font-size:var(--fs-lg); font-weight:800; color:var(--etape-c,#F59E0B); letter-spacing:-.01em;
 }
 .etape-title-input::placeholder { color:var(--etape-c,#F59E0B); opacity:.5; }
 .etape-swatches { display:flex; gap:3px; flex-shrink:0; align-items:center; }
@@ -1281,7 +1292,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .etape-addbloc-btn:hover { opacity:1; }
 .bloc-etape-select {
   background:var(--tag-bg); color:var(--accent); border:1px solid var(--border);
-  border-radius:5px; font-size:.68rem; padding:3px 5px; max-width:110px; font-family:inherit;
+  border-radius:5px; font-size:var(--fs-xs); padding:3px 5px; max-width:110px; font-family:inherit;
 }
 .bloc-etape-select option { color:var(--text); }
 
@@ -2242,6 +2253,36 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .pevo-line-pill.active { opacity:1; }
 .pevo-line-pill:not(.active) { opacity:.3; }
 
+
+/* ── Socle commun ──────────────────────────────────────────────────────
+   Trois règles qui valent pour toute l'application, posées en fin de
+   feuille pour passer devant les déclarations locales.
+
+   1. Chiffres à chasse fixe. Sans ça, une valeur qui change fait sauter
+      toute la colonne : « 11 » n'a pas la largeur de « 18 ».
+   2. Anneau de focus clavier. Il y a des dizaines d'`outline:none` dans
+      ce fichier, tous plus spécifiques que cette règle — le !important
+      est ici le seul moyen d'assurer une base commune sans reprendre
+      chaque déclaration une à une. `:focus-visible` ne se déclenche pas
+      au clic souris, l'anneau n'apparaît donc qu'au clavier.
+   3. Mouvement réduit, pour qui l'a demandé au niveau du système.
+   ────────────────────────────────────────────────────────────────────── */
+input[type="number"], table, time,
+.tabnum { font-variant-numeric:tabular-nums; }
+
+:focus-visible {
+  outline:2px solid var(--accent2,#4A90D9) !important;
+  outline-offset:2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;
+    scroll-behavior:auto !important;
+  }
+}
 </style>
 </head>
 <body>
