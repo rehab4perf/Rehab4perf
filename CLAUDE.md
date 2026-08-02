@@ -15,6 +15,20 @@ node --check js/prog-data.js
 node --check js/prog-main.js
 ```
 
+## Variables CSS (OBLIGATOIRE après toute règle CSS ajoutée)
+
+```bash
+node qualite/check-css-vars.js
+```
+
+Une variable CSS non définie ne provoque **aucune erreur** : la déclaration
+entière devient invalide et le navigateur l'ignore en silence. `background:
+var(--card)` dans un fichier dont la palette est `--surface` ne donne pas un
+mauvais fond, il ne donne **aucun** fond — le défaut n'est visible que là où
+l'élément passe sur une zone colorée. Chaque page a sa propre palette dans son
+`:root` : ne jamais recopier un nom de variable d'un fichier à l'autre sans
+vérifier qu'il y existe.
+
 ## Catalogue TESTS{} — append-only (OBLIGATOIRE si TESTS modifié)
 
 L'identité d'un test = son index dans `TESTS[tbody].items` (les ids `sel-`/`note-` des bilans sauvegardés en dérivent). Ne JAMAIS insérer au milieu, réordonner ou supprimer — toujours ajouter en fin de liste. Vérification :

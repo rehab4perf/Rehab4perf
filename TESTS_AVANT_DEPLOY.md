@@ -4,6 +4,18 @@
 
 ---
 
+## ⚙️ Contrôles automatiques — à lancer systématiquement
+
+```bash
+node qualite/check-css-vars.js
+```
+
+- [ ] Sortie verte. Une variable CSS non définie est ignorée en silence par le
+      navigateur : l'élément perd son fond ou sa couleur sans qu'aucune erreur
+      n'apparaisse, et le défaut ne se voit que sur certaines zones de la page.
+
+---
+
 ## 🔵 BUILDER PROGRAMME — Tests obligatoires si `programme.html` est modifié
 
 ### Flux 1 — Création template via protocole (+ Nouvelle phase)
