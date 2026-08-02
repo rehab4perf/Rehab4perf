@@ -1009,17 +1009,25 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 
 /* Bloc section */
 .bloc { background:var(--surface); border-radius:10px; border:1px solid var(--border); margin-bottom:14px; overflow:hidden; }
+/* En-tête clair, filet à la couleur de l'étape — même langage que l'espace
+   athlète. Le bandeau navy se disputait le premier plan avec la couleur de
+   l'étape ; il n'en reste qu'une. Hors étape, un gris neutre. */
 .bloc-header {
-  display:flex; align-items:center; gap:10px; padding:10px 14px;
-  background:var(--navy); color:#fff;
+  display:flex; align-items:center; gap:10px; padding:9px 13px 9px 11px;
+  background:var(--surface); color:var(--text);
+  border-bottom:1px solid var(--border);
+  border-left:3px solid var(--etape-c,#94A3B8);
 }
+/* Le bloc actif se signale par un fond teinté, pas en délavant les autres :
+   baisser l'opacité dégradait la lisibilité du titre pour dire « inactif ». */
+.bloc-header.actif { background:var(--accent-ll); }
 .bloc-title-input {
-  flex:1; background:transparent; border:none; color:#fff;
+  flex:1; background:transparent; border:none; color:var(--text);
   font-size:.88rem; font-weight:800; outline:none; letter-spacing:-.01em;
 }
-.bloc-title-input::placeholder { color:rgba(255,255,255,.5); }
-.bloc-del-btn { background:none; border:none; color:rgba(255,255,255,.55); cursor:pointer; font-size:.9rem; padding:2px 6px; border-radius:4px; }
-.bloc-del-btn:hover { color:#fff; background:rgba(255,255,255,.15); }
+.bloc-title-input::placeholder { color:var(--muted); }
+.bloc-del-btn { background:none; border:none; color:var(--muted); cursor:pointer; font-size:.9rem; padding:2px 6px; border-radius:4px; }
+.bloc-del-btn:hover { color:var(--red); background:var(--tag-bg); }
 .bloc-del-btn::before { content:'×'; font-size:1.2rem; line-height:1; }
 .bloc-body { padding:8px; }
 
@@ -1056,9 +1064,11 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .bloc-move-btns { display:flex; gap:2px; align-items:center; flex-shrink:0; opacity:0; transition:opacity .15s; }
 .bloc-header:hover .bloc-move-btns { opacity:1; }
 @media (hover:none) { .bloc-move-btns { opacity:1; } }
-.bloc-move-btn { background:rgba(255,255,255,.12); border:none; cursor:pointer; color:rgba(255,255,255,.75); font-size:.7rem; border-radius:3px; padding:2px 6px; line-height:1; transition:background .12s, color .12s; font-family:inherit; }
-.bloc-move-btn:hover:not(:disabled) { background:rgba(255,255,255,.3); color:#fff; }
-.bloc-move-btn:disabled { opacity:0; pointer-events:none; }
+.bloc-move-btn { background:none; border:none; cursor:pointer; color:var(--muted); font-size:.7rem; border-radius:4px; padding:2px 5px; line-height:1; transition:background .12s, color .12s; font-family:inherit; }
+.bloc-move-btn:hover:not(:disabled) { background:var(--tag-bg); color:var(--accent2); }
+/* Grisée, pas escamotée : l'en-tête du premier bloc était décalé par rapport
+   aux autres, la flèche disparaissant complètement. */
+.bloc-move-btn:disabled { opacity:.2; pointer-events:none; }
 .exo-consigne-row { grid-column:1/-1; padding:0 4px 4px 34px; }
 .exo-consigne-ta {
   width:100%; min-height:24px; border:1px dashed transparent; border-radius:4px;
@@ -1197,15 +1207,15 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .add-menu-item:hover { background:var(--tag-bg); color:var(--accent2); }
 .add-menu-sep { height:1px; background:var(--border); margin:4px 6px; }
 /* Bloc texte : ni exercice ni effort mesuré, une couleur qui le dit. */
-.texte-bloc .bloc-header { background:#64748B; }
+.texte-bloc .bloc-header { border-left-color:#64748B; }
 .texte-tag { background:rgba(255,255,255,.18); color:#fff; border-radius:11px; padding:2px 9px; font-size:.66rem; font-weight:600; white-space:nowrap; }
 .texte-ta { width:100%; border:1px solid var(--border); border-radius:7px; padding:9px 11px;
   font-family:inherit; font-size:.82rem; line-height:1.55; color:var(--text); background:var(--surface);
   resize:none; overflow:hidden; min-height:64px; }
 .texte-ta:focus { outline:none; border-color:var(--accent2); }
 /* AMRAP / EMOM : deux formats à contrainte de temps, distingués par la teinte. */
-.amrap-bloc .bloc-header { background:#B45309; }
-.emom-bloc  .bloc-header { background:#6D28D9; }
+.amrap-bloc .bloc-header { border-left-color:#B45309; }
+.emom-bloc  .bloc-header { border-left-color:#6D28D9; }
 .chrono-tag { background:rgba(255,255,255,.18); color:#fff; border-radius:11px; padding:2px 9px; font-size:.66rem; font-weight:600; white-space:nowrap; }
 .chrono-form { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
 .chrono-form .cardio-field { flex:1; min-width:120px; }
@@ -1242,7 +1252,8 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   font-size:.86rem; font-weight:800; color:var(--etape-c,#F59E0B); letter-spacing:-.01em;
 }
 .etape-title-input::placeholder { color:var(--etape-c,#F59E0B); opacity:.5; }
-.etape-swatches { display:flex; gap:3px; flex-shrink:0; }
+.etape-swatches { display:flex; gap:3px; flex-shrink:0; align-items:center; }
+.etape-swatches[data-open="0"] .etape-swatch.repli { display:none; }
 .etape-swatch {
   width:13px; height:13px; border-radius:50%; border:1.5px solid transparent;
   cursor:pointer; padding:0; box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);
@@ -1269,10 +1280,10 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 }
 .etape-addbloc-btn:hover { opacity:1; }
 .bloc-etape-select {
-  background:rgba(255,255,255,.12); color:#fff; border:1px solid rgba(255,255,255,.25);
+  background:var(--tag-bg); color:var(--accent); border:1px solid var(--border);
   border-radius:5px; font-size:.68rem; padding:3px 5px; max-width:110px; font-family:inherit;
 }
-.bloc-etape-select option { color:#111; }
+.bloc-etape-select option { color:var(--text); }
 
 /* Notes area */
 .notes-bloc { background:var(--surface); border-radius:10px; border:1px solid var(--border); padding:12px 14px; margin-bottom:14px; }
@@ -1340,7 +1351,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .methode-card.obj-isometrie    { background:#FFFBEB; border-color:#B45309; color:#78350f; }
 
 /* ── Blocs Cardio ── */
-.cardio-bloc .bloc-header { background:linear-gradient(135deg,#0E7490,#0891B2); }
+.cardio-bloc .bloc-header { border-left-color:#0891B2; }
 .cardio-bloc .bloc-title-input { color:#fff; }
 .cardio-bloc .bloc-title-input::placeholder { color:rgba(255,255,255,.5); }
 .cardio-tag {
@@ -3122,7 +3133,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   </div><!-- /tool-panel-drawer -->
 </div><!-- /tool-panel-overlay -->
 
-<script src="js/prog-data.js?v=20260802i"></script>
+<script src="js/prog-data.js?v=20260802j"></script>
 
 <!-- ══ CYCLES MODAL ════════════════════════════════════════════ -->
 <style>

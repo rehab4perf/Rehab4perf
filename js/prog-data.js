@@ -1331,7 +1331,7 @@ function _renderChronoBloc(b, idx){
   var estAmrap = b.type === 'amrap';
   var isActive = b.id === activeBloc;
   var h = '<div class="bloc chrono-bloc '+(estAmrap?'amrap-bloc':'emom-bloc')+'" id="bloc-'+bid+'">';
-  h += '<div class="bloc-header" data-blocid="'+bid+'" style="opacity:'+(isActive?'1':'.8')+'" onclick="setActiveBloc(\''+bid+'\')">';
+  h += '<div class="bloc-header'+(isActive?' actif':'')+'" data-blocid="'+bid+'" onclick="setActiveBloc(\''+bid+'\')">';
   h += '<span class="bloc-move-btns">'
     +  '<button class="bloc-move-btn"'+(_estPremierDuGroupe(idx)?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',-1)" title="Monter">↑</button>'
     +  '<button class="bloc-move-btn"'+(_estDernierDuGroupe(idx)?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',1)" title="Descendre">↓</button>'
@@ -1400,7 +1400,7 @@ function _renderCardioBloc(b, idx){
 
   var h = '<div class="bloc cardio-bloc" id="bloc-'+bid+'">';
   // Header
-  h += '<div class="bloc-header" data-blocid="'+bid+'" style="opacity:'+(isActive?'1':'.75')+'" onclick="setActiveBloc(\''+bid+'\')">';
+  h += '<div class="bloc-header'+(isActive?' actif':'')+'" data-blocid="'+bid+'" onclick="setActiveBloc(\''+bid+'\')">';
   h += '<span class="bloc-move-btns">'
     +  '<button class="bloc-move-btn"'+(_estPremierDuGroupe(idx)?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',-1)" title="Monter">↑</button>'
     +  '<button class="bloc-move-btn"'+(_estDernierDuGroupe(idx)?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',1)" title="Descendre">↓</button>'
@@ -1744,6 +1744,15 @@ function renameEtape(etapeId, val){
   var sel = document.querySelectorAll('.bloc-etape-select option[value="'+etapeId+'"]');
   sel.forEach(function(o){ o.textContent = val || 'Étape'; });
   if(typeof _draftSave === 'function') _draftSave();
+}
+
+/* Déplie la palette d'une étape. Repliée, elle ne montre que la couleur en
+   cours ; le clic suivant sur une pastille choisit et referme (le rendu
+   repart de zéro). */
+function _toggleSwatches(ev){
+  ev.stopPropagation();
+  var w = ev.currentTarget.parentNode;
+  w.setAttribute('data-open', w.getAttribute('data-open') === '1' ? '0' : '1');
 }
 
 function setEtapeColor(etapeId, color){
@@ -2428,9 +2437,13 @@ function renderSession(){
           + (_bas ? 'Déjà la dernière étape' : 'Descendre l\'étape et son contenu')+'">'+_ETAPE_ICO_DOWN+'</button>'
           + '</span>';
     html += '<input class="etape-title-input" value="'+escH(_etapeTitle(g.etapeId))+'" placeholder="Nom de l\'étape" oninput="renameEtape(\''+g.etapeId+'\',this.value)">';
-    html += '<span class="etape-swatches">';
+    // Repliées derrière la couleur active : huit pastilles occupaient la ligne
+    // en permanence pour un réglage qu'on touche une fois.
+    html += '<span class="etape-swatches" data-open="0">';
+    html += '<button class="etape-swatch active" style="background:'+_ec+'" onclick="_toggleSwatches(event)" title="Changer la couleur de l\'étape"></button>';
     ETAPE_COLORS.forEach(function(c){
-      html += '<button class="etape-swatch'+(c===_ec?' active':'')+'" style="background:'+c+'" onclick="setEtapeColor(\''+g.etapeId+'\',\''+c+'\')" title="Couleur de l\'étape"></button>';
+      if(c === _ec) return;
+      html += '<button class="etape-swatch repli" style="background:'+c+'" onclick="setEtapeColor(\''+g.etapeId+'\',\''+c+'\')" title="Couleur de l\'étape"></button>';
     });
     html += '</span>';
     html += '<button class="etape-tmpl-btn"'+(g.blocs.length?'':' disabled')+' onclick="openSaveEtapeTemplate(\''+g.etapeId+'\')" title="Enregistrer cette étape comme template">'+_ETAPE_ICO_SAVE+'</button>';
@@ -2451,7 +2464,7 @@ function renderSession(){
     // ── Bloc Renforcement ──
     var isActive = b.id===activeBloc;
     html += '<div class="bloc" id="bloc-'+b.id+'">';
-    html += '<div class="bloc-header" data-blocid="'+b.id+'" style="opacity:'+(isActive?'1':'.8')+'" onclick="setActiveBloc(\''+b.id+'\')">';
+    html += '<div class="bloc-header'+(isActive?' actif':'')+'" data-blocid="'+b.id+'" onclick="setActiveBloc(\''+b.id+'\')">';
     html += '<span class="bloc-move-btns">'
           + '<button class="bloc-move-btn"'+(_estPremierDuGroupe(idx)?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',-1)" title="Monter">↑</button>'
           + '<button class="bloc-move-btn"'+(_estDernierDuGroupe(idx)?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',1)" title="Descendre">↓</button>'

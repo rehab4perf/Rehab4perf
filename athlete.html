@@ -103,19 +103,25 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
   background:var(--surface); border-radius:12px;
   border:1px solid var(--border); margin-bottom:14px; overflow:hidden;
 }
+/* En-tête clair, filet à la couleur de l'étape. Le bandeau navy pleine largeur
+   pesait plus que le contenu sur un bloc à un seul exercice, et se disputait le
+   premier plan avec l'anneau de l'étape : trois couleurs porteuses dans une même
+   carte. Il n'en reste qu'une, celle de l'étape. Hors étape, un gris neutre. */
 .bloc-header {
-  padding:11px 14px; background:var(--navy);
+  padding:10px 13px 10px 12px; background:var(--surface);
+  border-bottom:1px solid var(--border);
+  border-left:3px solid var(--etape-c,#94A3B8);
   display:flex; align-items:center; gap:10px;
 }
-.bloc-title { color:#fff; font-size:.92rem; font-weight:700; flex:1; }
+.bloc-title { color:var(--text); font-size:.88rem; font-weight:700; flex:1; }
 .bloc-badge {
   font-size:.62rem; font-weight:700; padding:3px 8px; border-radius:10px;
-  background:rgba(255,255,255,.2); color:rgba(255,255,255,.9); text-transform:uppercase; letter-spacing:.04em;
+  background:#EDF2F7; color:#546578; text-transform:uppercase; letter-spacing:.04em;
 }
-.bloc-badge.endurance { background:rgba(56,189,248,.3); }
-.bloc-badge.puissance { background:rgba(251,146,60,.3); }
-.bloc-badge.hypertrophie { background:rgba(167,139,250,.3); }
-.bloc-badge.forcemax { background:rgba(248,113,113,.3); }
+.bloc-badge.endurance    { background:#E0F2FE; color:#075985; }
+.bloc-badge.puissance    { background:#FFEDD5; color:#9A3412; }
+.bloc-badge.hypertrophie { background:#EDE9FE; color:#5B21B6; }
+.bloc-badge.forcemax     { background:#FEE2E2; color:#991B1B; }
 
 /* ── ÉTAPE (groupe de blocs, ex: Échauffement) ── */
 .etape-group {
@@ -532,10 +538,10 @@ html,body { background:var(--bg); font-family:-apple-system,'Helvetica Neue',Ari
 .exo-pill.recup-dim .exo-pill-val { color:#CBD2DB; font-style:italic; }
 .exo-pain-v3 { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
 .exo-pain-label { font-size:.68rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; white-space:nowrap; }
-.bloc-texte .bloc-header { background:#64748B; }
+.bloc-texte .bloc-header { border-left-color:#64748B; }
 .texte-corps { padding:12px 14px; font-size:.88rem; line-height:1.6; color:var(--text,#1f2937); white-space:normal; }
-.bloc-amrap .bloc-header { background:#B45309; }
-.bloc-emom  .bloc-header { background:#6D28D9; }
+.bloc-amrap .bloc-header { border-left-color:#B45309; }
+.bloc-emom  .bloc-header { border-left-color:#6D28D9; }
 .chrono-item { display:flex; align-items:center; gap:9px; }
 .chrono-min-ath { font-size:.7rem; font-weight:700; color:#6b7280; min-width:46px; text-transform:uppercase; }
 .chrono-nom-ath { flex:1; }
