@@ -75,7 +75,13 @@ function defautsFormulaire() {
   return out;
 }
 
-/* ── 3. Construire le profil comme le fait _capReadForm ─────────────── */
+/* ── 3. Construire le profil comme le fait _capReadForm ───────────────
+   La pathologie choisit le MODE, et le mode décide des champs qui comptent :
+
+     volume   le volume monte, l'allure est maintenue à ce qu'il fait déjà
+     allure   le volume est maintenu, les minutes de Z3+ montent
+     amplitude  le volume monte, aucune allure de tout le plan
+*/
 function fiche(saisie, defauts) {
   const ch = Object.assign({}, defauts, saisie);
   const nb = (v, d) => {
@@ -89,38 +95,57 @@ function fiche(saisie, defauts) {
     const v = parseFloat(s);
     return isFinite(v) && v > 0 ? v : null;
   };
-  const { CAP_PATHO_DB } = MOTEUR;
-  const pathos = [];
-  if (ch.patho && CAP_PATHO_DB[ch.patho]) pathos.push(CAP_PATHO_DB[ch.patho]);
-  const p1 = pathos[0] || CAP_PATHO_DB.aucune;
+  const { CAP_PATHO_DB, CAP_AXES } = MOTEUR;
+  const p1 = (ch.patho && CAP_PATHO_DB[ch.patho]) || CAP_PATHO_DB.aucune;
+  const axe = ch.axe || p1.axe || 'charge';
+  const mode = (CAP_AXES[axe] || CAP_AXES.charge).mode;
+  const freq = Math.max(1, nb(ch.capFreqCible, 3));
 
-  const semaines = [nb(ch.capW4), nb(ch.capW3), nb(ch.capW2), nb(ch.capW1)];
   return {
     unite: ch.unite || 'km',
-    chronique: Math.round(semaines.reduce((a, b) => a + b, 0) / 4 * 10) / 10,
-    frequenceAct: nb(ch.capFreqAct),
-    frequenceCible: Math.max(1, nb(ch.capFreqCible, 3)),
-    plusLongueSortie: nb(ch.capSortieMax),
-    courseContinueToleree: nb(ch.capContinu),
-    cadenceSpontanee: nb(ch.capCadence, null) || null,
+    mode: mode,
+    frequenceCible: freq,
     allureFooting: allure(ch.capAllureG),
+    courseContinueToleree: nb(ch.capContinu),
+    semaines: Math.max(1, nb(ch.capSemG, 12)),
+    consolidation: ch.capConsolidation === '1' || ch.capConsolidation === true,
+
+    // Mode volume : d'où l'on part, où l'on va. La tolérance et l'objectif se
+    // saisissent par sortie OU par semaine — deux façons de dire la même chose.
+    tolUnite:  ch.capTolUnite || 'semaine',
+    tolVal:    nb(ch.capTolVal, null),
+    objSortie: nb(ch.capObjSortie, null) || null,
+    objHebdo:  nb(ch.capObjHebdo, null) || null,
+
+    // Mode allure : le volume ne bouge pas, ce sont les minutes de Z3+ qui montent.
+    volMaintenu:      nb(ch.capVolMaintenu, null) || null,
+    qualiteActuelle:  nb(ch.capQualiteActuelle, null) || 0,
+    qualiteCible:     nb(ch.capQualiteCible, null) || null,
+
     patho: ch.patho || 'aucune',
-    axe: ch.axe || p1.axe || 'charge',
-    axes: [ch.axe || p1.axe || 'charge'],
+    axe: axe, axes: [axe],
     tissu: ch.tissu || p1.tissu || 'tendon',
     interdits: p1.interdits || [],
     cadenceCible: p1.cadenceCible || null,
-    objectifBase: nb(ch.capObjBase, null) || null,
-    cibleHebdo: Math.max(1, nb(ch.capCibleHebdo, 30)),
-    cibleSortieLongue: nb(ch.capCibleLongue, null) || null,
-    cibleIntensite: nb(ch.capCibleIntensite, null) || null,
-    semaines: Math.max(1, nb(ch.capSemG, 12)),
     terrain: ['plat'], crossTraining: [],
     joursDispo: ch.joursDispo || [0, 2, 4],
   };
 }
 
-/* ── 4. Décrire ce que le plan produit, en termes de praticien ──────── */
+/* ── 4. Décrire ce que le plan produit, en termes de praticien ────────
+   L'ACWR est calculé sur la grandeur QUI PROGRESSE : le volume en mode
+   volume, les minutes de Z3+ en mode allure. Même formule, mêmes seuils,
+   mêmes couleurs — seule la grandeur mesurée change. Le mesurer sur la
+   charge pondérée totale afficherait 1,00 tout vert pendant que l'allure
+   quintuple. */
+function acwrSerie(valeurs) {
+  return valeurs.map((v, i) => {
+    const fen = valeurs.slice(Math.max(0, i - 3), i + 1);
+    const chronique = fen.reduce((a, b) => a + b, 0) / fen.length;
+    return chronique > 0 ? Math.round(v / chronique * 100) / 100 : 1;
+  });
+}
+
 function resume(p) {
   const r = MOTEUR._capBuildProgrammeV2(p);
   const parSem = {};
@@ -135,18 +160,30 @@ function resume(p) {
       n,
       sorties: sem.length,
       volume: Math.round(enUnite(volMin) * 10) / 10,
+      volumeMin: volMin,
       intensite: Math.round(MOTEUR._capIntensiteSemaine(sem)),
+      technique: sem.some((s) => s.role === 'technique'),
       marche: sem.some((s) => (s.segments || []).some((g) => g.recupZone === 'marche')),
       libelles: [...new Set(sem.map((s) => s.label))],
     };
   });
+  const suivie = semaines.map((s) => (p.mode === 'allure' ? s.intensite : s.volumeMin));
+  const acwr = acwrSerie(suivie);
   const premiereQualite = semaines.find((s) => s.intensite > 0);
+
   return {
-    semaines,
+    semaines, acwr,
     nbSemaines: semaines.length,
+    acwrMax: Math.max(...acwr),
     premiereQualite: premiereQualite ? premiereQualite.n : null,
     volumeMax: Math.max(...semaines.map((s) => s.volume)),
     intensiteMax: Math.max(...semaines.map((s) => s.intensite)),
+    // Croissance hebdomadaire moyenne de la grandeur suivie
+    pente: (() => {
+      const a = suivie.find((v) => v > 0), b = suivie[suivie.length - 1];
+      if (!a || !b || suivie.length < 2) return 0;
+      return Math.round((Math.pow(b / a, 1 / (suivie.length - 1)) - 1) * 1000) / 10;
+    })(),
   };
 }
 
@@ -154,128 +191,121 @@ function resume(p) {
    `saisie`  : uniquement ce que le praticien tape. Tout le reste garde
                la valeur par défaut du formulaire.
    `attendu` : la règle clinique, dictée par le praticien.
+
+   Le générateur ne décide plus à la place du praticien : il trace une
+   rampe de A à B sur le nombre de semaines choisi, et l'ACWR dit ce
+   qu'elle coûte. C'est le praticien qui joue avec le curseur.
 ═══════════════════════════════════════════════════════════════════════ */
+const COMMUN = { capAllureG: '5:30', capFreqCible: '3', capContinu: '50' };
+
 const CAS = [
   {
     id: 1,
-    titre: 'Charge — périostite, tolère 10 km à allure footing',
-    contexte: 'Il court déjà. Au-delà de 10 km sur une sortie, ça fait mal.',
-    saisie: { patho: 'periostite', capSortieMax: '10', capAllureG: '5:30',
-              capFreqCible: '3', capCibleHebdo: '36' },
-    /* Cycle 1 : le volume part 20 % sous la tolérance et remonte de 10 points
-       par semaine — −20 %, −10 %, 0 % — pour être pile à la tolérance en S3.
-       Aucune intensité pendant ce cycle : elle n'arrive qu'au cycle 2, et
-       c'est elle le vrai danger. */
+    titre: 'Volume — tolérance saisie par sortie',
+    contexte: 'Bandelette. Tolère 8 km par sortie, 3 sorties. Objectif 12 km par sortie, en 10 semaines.',
+    saisie: Object.assign({}, COMMUN, {
+      patho: 'bit', capTolUnite: 'sortie', capTolVal: '8',
+      capObjSortie: '12', capSemG: '10' }),
     attendu: [
-      ['Aucune course/marche : il court déjà en continu',
-        (r) => !r.semaines.some((s) => s.marche)],
-      ['S1 à −20 % de la tolérance, soit 24 km',
-        (r) => Math.abs(r.semaines[0].volume - 24) <= 1],
-      ['S2 à −10 %, soit 27 km',
-        (r) => Math.abs(r.semaines[1].volume - 27) <= 1],
-      ['S3 pile à la tolérance, 30 km',
-        (r) => Math.abs(r.semaines[2].volume - 30) <= 1],
-      ['Aucune intensité pendant tout le cycle 1 (S1 à S3)',
-        (r) => r.semaines.slice(0, 3).every((s) => s.intensite === 0)],
-      ['Première allure élevée en S4, à l\'ouverture du cycle 2',
-        (r) => r.premiereQualite === 4],
-      ['Première dose : 4 min à allure élevée, pas plus',
-        (r) => r.semaines[3].intensite === 4],
-      ['Elle est insérée dans une sortie, pas dans une séance dédiée',
-        (r) => r.semaines[3].sorties === 3],
-      ['Le volume dépasse la tolérance et vise la cible (36 km)',
-        (r) => r.volumeMax >= 35],
-      ['Un seul levier bouge par semaine : jamais volume ET intensité ensemble',
-        (r) => !r.semaines.some((s, i) => i > 0
-          && s.volume > r.semaines[i - 1].volume + 0.6
-          && s.intensite > r.semaines[i - 1].intensite)],
-      ['Programme en cycles de 3 semaines',
-        (r) => r.nbSemaines % 3 === 0],
+      ['S1 à 24 km — trois sorties de 8', (r) => Math.abs(r.semaines[0].volume - 24) <= 0.6],
+      ['S10 à 36 km — trois sorties de 12', (r) => Math.abs(r.volumeMax - 36) <= 0.6],
+      ['Le volume monte sans jamais redescendre',
+        (r) => r.semaines.every((s, i) => i === 0 || s.volume >= r.semaines[i - 1].volume - 0.3)],
+      ['Aucune minute de Z3+ : le champ qualité est vide', (r) => r.intensiteMax === 0],
+      ['Pente d\'environ +4,6 %/sem', (r) => Math.abs(r.pente - 4.6) <= 0.6],
+      ['ACWR autour de 1,07 — vert', (r) => Math.abs(r.acwrMax - 1.07) <= 0.04],
+      ['Trois sorties chaque semaine', (r) => r.semaines.every((s) => s.sorties === 3)],
+      ['Dix semaines, ni plus ni moins', (r) => r.nbSemaines === 10],
     ],
   },
   {
     id: 2,
-    titre: 'Répétition — bandelette, cible 1 h sans douleur',
-    contexte: 'Il court déjà. C\'est le volume d\'un seul tenant qui blesse.',
-    saisie: { patho: 'bit', unite: 'min', capSortieMax: '35', capAllureG: '5:00',
-              capFreqCible: '4', capCibleHebdo: '240', capObjBase: '60',
-              capW1: '150', capW2: '150', capW3: '150', capW4: '150',
-              joursDispo: [0, 2, 4, 6] },
+    titre: 'Volume — le même, saisi par semaine',
+    contexte: '24 km/sem vers 36 km/sem. Doit produire exactement le même plan que le cas 1.',
+    saisie: Object.assign({}, COMMUN, {
+      patho: 'bit', capTolUnite: 'semaine', capTolVal: '24',
+      capObjHebdo: '36', capSemG: '10' }),
     attendu: [
-      ['Les sorties sont découpées au départ, pas d\'un seul tenant',
-        (r) => r.semaines[0].sorties >= 4],
-      ['De l\'intensité dès la première semaine',
-        (r) => r.premiereQualite === 1],
-      ['Le volume progresse vers la cible',
-        (r) => r.volumeMax >= 230],
-      ['La plus longue sortie finit par atteindre 1 h d\'un tenant',
-        (r) => r.semaines[r.semaines.length - 1].libelles.some((l) => /1h|6[0-9] min/.test(l))],
+      ['S1 à 24 km', (r) => Math.abs(r.semaines[0].volume - 24) <= 0.6],
+      ['S10 à 36 km', (r) => Math.abs(r.volumeMax - 36) <= 0.6],
+      ['Même pente que le cas 1', (r) => Math.abs(r.pente - 4.6) <= 0.6],
+      ['Même ACWR que le cas 1', (r) => Math.abs(r.acwrMax - 1.07) <= 0.04],
+      ['Les deux unités disent la même chose',
+        (r) => r.semaines.map((s) => s.volume).join() === REFERENCE_CAS1],
     ],
   },
   {
     id: 3,
-    titre: 'Post-op LCA — ne court pas du tout',
-    contexte: 'Validé en l\'état : course/marche progressive vers 30 min continu.',
-    saisie: { patho: 'postop_genou', unite: 'min', capAllureG: '6:00',
-              capFreqCible: '3', capCibleHebdo: '90', capObjBase: '30', capSemG: '12' },
+    titre: 'Allure — le volume ne bouge pas, la qualité monte',
+    contexte: 'Périostite. 30 km/sem à maintenir, aucune qualité aujourd\'hui, objectif 20 min de Z3+ en 12 semaines.',
+    saisie: Object.assign({}, COMMUN, {
+      patho: 'periostite', capVolMaintenu: '30',
+      capQualiteActuelle: '', capQualiteCible: '20', capSemG: '12' }),
     attendu: [
-      ['Démarre en course/marche',
-        (r) => r.semaines[0].marche],
-      ['Le bout de course s\'allonge d\'une semaine à l\'autre',
-        (r) => r.semaines[1].libelles[0] !== r.semaines[0].libelles[0]],
-      ['3 sorties par semaine du début à la fin',
-        (r) => r.semaines.every((s) => s.sorties === 3)],
-      ['Arrive à 30 min continu',
-        (r) => r.semaines[r.semaines.length - 1].libelles.some((l) => /30 min continu/.test(l))],
-      ['Le délai demandé est tenu exactement',
-        (r) => r.nbSemaines === 12],
+      ['Le volume reste à 30 km toutes les semaines',
+        (r) => r.semaines.every((s) => Math.abs(s.volume - 30) <= 0.8)],
+      ['S1 porte déjà 4 min de Z3+ — le plancher',
+        (r) => r.semaines[0].intensite === 4],
+      ['Le fractionné est dans une sortie, pas en séance dédiée',
+        (r) => r.semaines[0].sorties === 3],
+      ['S12 à 20 min de Z3+', (r) => r.intensiteMax === 20],
+      ['La qualité monte sans jamais redescendre',
+        (r) => r.semaines.every((s, i) => i === 0 || s.intensite >= r.semaines[i - 1].intensite)],
+      ['Pente d\'environ +15,7 %/sem sur la qualité', (r) => Math.abs(r.pente - 15.7) <= 1],
+      ['ACWR mesuré sur les minutes de Z3+, autour de 1,23 — orange',
+        (r) => Math.abs(r.acwrMax - 1.23) <= 0.05],
     ],
   },
   {
     id: 4,
-    titre: 'Faible volume — 8 km/sem, veut 20 km',
-    contexte: 'Il court, peu. Départ à ce qu\'il tolère, puis montée du volume.',
-    saisie: { patho: 'aucune', capAllureG: '6:00', capFreqCible: '3',
-              capSortieMax: '3', capContinu: '18', capCibleHebdo: '20',
-              capW1: '8', capW2: '8', capW3: '8', capW4: '8' },
+    titre: 'Course/marche — il ne court pas du tout',
+    contexte: 'Post-op genou. Objectif 30 min continu, 3 sorties, 12 semaines.',
+    saisie: { patho: 'postop_genou', unite: 'min', capAllureG: '6:00',
+              capFreqCible: '3', capContinu: '0',
+              capTolUnite: 'semaine', capTolVal: '', capObjHebdo: '90',
+              capSemG: '12' },
     attendu: [
-      ['Pas de course/marche : il court déjà 18 min d\'affilée',
-        (r) => !r.semaines.some((s) => s.marche)],
-      ['Semaine 1 à ce qu\'il tolère déjà (~8 km), pas en dessous',
-        (r) => r.semaines[0].volume >= 7 && r.semaines[0].volume <= 9],
-      ['Le volume progresse vers 20 km',
-        (r) => r.volumeMax >= 19],
+      ['S1 en course/marche', (r) => r.semaines[0].marche],
+      ['S1 sur l\'échelle : 8×(1\'C / 1\'M)',
+        (r) => r.semaines[0].libelles.some((l) => /8×\(1'C/.test(l))],
+      ['Le bout de course s\'allonge d\'une semaine à l\'autre',
+        (r) => r.semaines[1].libelles[0] !== r.semaines[0].libelles[0]],
+      ['Trois sorties du début à la fin', (r) => r.semaines.every((s) => s.sorties === 3)],
+      ['Arrive à 30 min continu',
+        (r) => r.semaines[r.semaines.length - 1].libelles.some((l) => /30 min continu/.test(l))],
+      ['Aucune qualité pendant la course/marche', (r) => r.intensiteMax === 0],
+      ['Douze semaines', (r) => r.nbSemaines === 12],
     ],
   },
   {
     id: 5,
-    titre: 'Amplitude — travail technique uniquement',
-    contexte: 'Volume légèrement réduit, uniquement de la technique, puis remontée.',
-    saisie: { patho: 'claquage', capAllureG: '5:30', capFreqCible: '3',
-              capSortieMax: '10', capContinu: '45', capCibleHebdo: '30',
-              capW1: '30', capW2: '30', capW3: '30', capW4: '30' },
+    titre: 'Amplitude — technique seule, aucune allure',
+    contexte: 'Claquage. 30 km/sem vers 36 km, 10 semaines.',
+    saisie: Object.assign({}, COMMUN, {
+      patho: 'claquage', capTolUnite: 'semaine', capTolVal: '30',
+      capObjHebdo: '36', capSemG: '10' }),
     attendu: [
-      ['Semaine 1 sous le volume habituel',
-        (r) => r.semaines[0].volume < 30],
-      ['Aucune séance à allure élevée sur tout le programme',
-        (r) => r.intensiteMax === 0],
-      ['Une séance technique dès la première semaine',
-        (r) => r.semaines[0].sorties >= 3],
-      ['Le volume remonte à 30 km',
-        (r) => r.volumeMax >= 29],
+      ['Une séance technique dès S1', (r) => r.semaines[0].technique],
+      ['Une séance technique toutes les semaines', (r) => r.semaines.every((s) => s.technique)],
+      ['Aucune minute de Z3+ sur tout le plan', (r) => r.intensiteMax === 0],
+      ['Le volume monte de 30 à 36 km',
+        (r) => Math.abs(r.semaines[0].volume - 30) <= 0.8 && Math.abs(r.volumeMax - 36) <= 0.8],
     ],
   },
   {
     id: 6,
-    titre: 'Contradiction de saisie — 10 km tolérés, course continue laissée à 0',
-    contexte: 'Le champ non rempli ne doit pas écraser le champ rempli.',
-    saisie: { patho: 'periostite', capSortieMax: '10', capAllureG: '5:30',
-              capFreqCible: '3', capCibleHebdo: '30' },
+    titre: 'Consolidation cochée — une semaine sur quatre ne progresse pas',
+    contexte: 'Le cas 1, avec la case « semaine de consolidation toutes les 4 ».',
+    saisie: Object.assign({}, COMMUN, {
+      patho: 'bit', capTolUnite: 'sortie', capTolVal: '8',
+      capObjSortie: '12', capSemG: '10', capConsolidation: '1' }),
     attendu: [
-      ['Aucune course/marche : 10 km tolérés implique de courir en continu',
-        (r) => !r.semaines.some((s) => s.marche)],
-      ['Le programme ne dépasse pas 12 semaines',
-        (r) => r.nbSemaines <= 12],
+      ['S4 répète S3', (r) => Math.abs(r.semaines[3].volume - r.semaines[2].volume) <= 0.3],
+      ['S8 répète S7', (r) => Math.abs(r.semaines[7].volume - r.semaines[6].volume) <= 0.3],
+      ['S10 atteint quand même 36 km', (r) => Math.abs(r.volumeMax - 36) <= 0.6],
+      ['La rampe se resserre sur les semaines qui restent : +6,0 %/sem',
+        (r) => Math.abs(r.pente - 6.0) <= 0.8],
+      ['Dix semaines', (r) => r.nbSemaines === 10],
     ],
   },
 ];
@@ -289,6 +319,8 @@ let echecs = 0, total = 0;
 console.log('\nCAS DE RÉFÉRENCE — GÉNÉRATEUR CAP');
 console.log('Défauts du formulaire : ' + Object.keys(DEFAUTS).length + ' champs lus dans programme.html\n');
 
+let REFERENCE_CAS1 = null;
+
 CAS.forEach((cas) => {
   const p = fiche(cas.saisie, DEFAUTS);
   let r, erreur = null;
@@ -299,6 +331,7 @@ CAS.forEach((cas) => {
     try { ok = !!test(r); } catch (e) { ok = false; }
     return { libelle, ok };
   });
+  if (!erreur && cas.id === 1) REFERENCE_CAS1 = r.semaines.map((x) => x.volume).join();
   const rates = resultats.filter((x) => !x.ok);
   total += cas.attendu.length;
   echecs += erreur ? cas.attendu.length : rates.length;
@@ -345,11 +378,12 @@ const nbSemaines = (st) => new Set(st.sessions.map((s) => s.week)).size;
 const seanceOu = (st, sem, avecZ3) => st.sessions.findIndex(
   (s) => s.week === sem && (MOTEUR._capIntensiteSemaine([s]) > 0) === avecZ3);
 
-const SAISIE_CHARGE = { patho: 'periostite', capSortieMax: '12', capAllureG: '5:30',
-                        capFreqCible: '3', capCibleHebdo: '36', capContinu: '50',
-                        capW1: '30', capW2: '30', capW3: '30', capW4: '30',
-                        capSemG: '15' };
-const SAISIE_AMPLITUDE = Object.assign({}, SAISIE_CHARGE, { patho: 'lombalgie', capContinu: '45' });
+const SAISIE_CHARGE = { patho: 'periostite', capAllureG: '5:30', capFreqCible: '3',
+                        capContinu: '50', capVolMaintenu: '30',
+                        capQualiteCible: '20', capSemG: '15' };
+const SAISIE_AMPLITUDE = { patho: 'lombalgie', capAllureG: '5:30', capFreqCible: '3',
+                           capContinu: '45', capTolUnite: 'semaine', capTolVal: '30',
+                           capObjHebdo: '36', capSemG: '15' };
 
 const CAS_REGRESSION = [
   {
