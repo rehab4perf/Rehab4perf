@@ -77,6 +77,21 @@ regarde les jetons. Le contrôle n'échoue que sur une couleur **nouvelle**.
 Le blanc et le noir ne sont pas comptés : `#fff` est tantôt une surface,
 tantôt du texte sur fond navy.
 
+**Rampe d'états** (`programme.html`) : `--ok`, `--warn`, `--alerte`, chacune
+en cinq paliers — `-d` texte foncé, teinte pleine, `-b` bordure claire, `-l`
+fond, `-xl` lavis. Ces trois familles existaient en 79 teintes dans ce seul
+fichier : trois générations de palettes superposées disant la même chose.
+
+L'ambre d'avertissement est **volontairement distinct** de l'ambre des étapes,
+sur décision du praticien : un ACWR élevé ne doit pas se confondre avec une
+étape ambre.
+
+**Jamais fondus** — les couleurs qui portent une information clinique :
+objectifs de bloc (endurance, puissance, hypertrophie, force max), zones
+d'allure, couleurs de cycle, jauge ACWR, et l'orange de marque Strava
+(`#FC4C02`). Les sélecteurs correspondants sont exclus des conversions
+automatiques.
+
 **Piège à ne jamais réintroduire** : toute conversion automatique doit masquer
 les `<script>` d'abord. Ils contiennent des chaînes où figurent littéralement
 `<style>` et `</style>` — une regex naïve entre donc dans des documents
