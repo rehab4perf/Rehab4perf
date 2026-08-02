@@ -147,6 +147,7 @@ function acwrSerie(valeurs) {
 }
 
 function resume(p) {
+  const traj = MOTEUR._capTrajectoire(p);
   const r = MOTEUR._capBuildProgrammeV2(p);
   const parSem = {};
   r.seances.forEach((s) => { (parSem[s.week] = parSem[s.week] || []).push(s); });
@@ -172,17 +173,31 @@ function resume(p) {
   const premiereQualite = semaines.find((s) => s.intensite > 0);
 
   return {
-    semaines, acwr,
+    semaines, acwr, traj,
+    // Ce que la fiche annonce doit être ce que le plan délivre : sans cette
+    // égalité, le praticien règle son curseur sur un chiffre qui ne se
+    // réalise pas.
+    fideleALaFiche: (() => {
+      const annonce = (p.mode === 'allure' ? traj.intensites : traj.volumes).map((v) => Math.round(v));
+      const produit = suivie.map((v) => Math.round(v));
+      if (annonce.length !== produit.length) return false;
+      return annonce.every((v, i) => Math.abs(v - produit[i]) <= Math.max(1, v * 0.03));
+    })(),
     nbSemaines: semaines.length,
     acwrMax: Math.max(...acwr),
     premiereQualite: premiereQualite ? premiereQualite.n : null,
     volumeMax: Math.max(...semaines.map((s) => s.volume)),
     intensiteMax: Math.max(...semaines.map((s) => s.intensite)),
     // Croissance hebdomadaire moyenne de la grandeur suivie
+    // Pente des semaines qui PROGRESSENT : une semaine de consolidation ne
+    // fait pas partie de la rampe, la compter diluerait le rythme réel.
     pente: (() => {
       const a = suivie.find((v) => v > 0), b = suivie[suivie.length - 1];
-      if (!a || !b || suivie.length < 2) return 0;
-      return Math.round((Math.pow(b / a, 1 / (suivie.length - 1)) - 1) * 1000) / 10;
+      if (!a || !b) return 0;
+      let pas = 0;
+      for (let i = 1; i < suivie.length; i++) if (suivie[i] > suivie[i - 1] + 0.01) pas++;
+      if (!pas) return 0;
+      return Math.round((Math.pow(b / a, 1 / pas) - 1) * 1000) / 10;
     })(),
   };
 }
@@ -216,6 +231,7 @@ const CAS = [
       ['ACWR autour de 1,07 — vert', (r) => Math.abs(r.acwrMax - 1.07) <= 0.04],
       ['Trois sorties chaque semaine', (r) => r.semaines.every((s) => s.sorties === 3)],
       ['Dix semaines, ni plus ni moins', (r) => r.nbSemaines === 10],
+      ['Le plan délivre la série annoncée par la fiche', (r) => r.fideleALaFiche],
     ],
   },
   {
@@ -251,9 +267,12 @@ const CAS = [
       ['S12 à 20 min de Z3+', (r) => r.intensiteMax === 20],
       ['La qualité monte sans jamais redescendre',
         (r) => r.semaines.every((s, i) => i === 0 || s.intensite >= r.semaines[i - 1].intensite)],
-      ['Pente d\'environ +15,7 %/sem sur la qualité', (r) => Math.abs(r.pente - 15.7) <= 1],
-      ['ACWR mesuré sur les minutes de Z3+, autour de 1,23 — orange',
-        (r) => Math.abs(r.acwrMax - 1.23) <= 0.05],
+      ['Pente annoncée d\'environ +15,8 %/sem sur la qualité',
+        (r) => Math.abs(r.traj.pente - 15.8) <= 0.5],
+      ['ACWR sur les minutes de Z3+, autour de 1,29 — orange',
+        (r) => Math.abs(r.traj.acwr - 1.29) <= 0.04],
+      ['Le plan délivre exactement la série annoncée par la fiche',
+        (r) => r.fideleALaFiche],
     ],
   },
   {

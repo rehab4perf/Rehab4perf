@@ -9904,32 +9904,39 @@ function _toolOverlayClick(e){
    pyramide, et cela produisait des programmes où l'axe annoncé ne pilotait
    rien : une bandelette « moteur allure » gardait 9 min de Z3+ six semaines
    d'affilée. */
+/* La pathologie choisit le MODE, et le mode décide de ce qui progresse.
+
+   Le générateur ne décide plus à la place du praticien : il trace une rampe de
+   A à B sur le nombre de semaines choisi, et l'ACWR dit ce qu'elle coûte. Les
+   cycles, l'alternance des leviers et les décharges automatiques ont été
+   retirés — ils produisaient des plans de trente semaines illisibles, et
+   c'était de l'extrapolation, pas une règle clinique. */
 var CAP_AXES = {
   charge: {
     label: 'Charge',
     desc:  'L\'intensité de l\'impact à chaque foulée',
-    coupable: 'intensite',
-    innocents: ['volume'],
+    mode:  'allure',        // le volume est maintenu, les minutes de Z3+ montent
+    coupable: 'intensite', innocents: ['volume'],
     zonesGel:   ['Z1','Z2'],
     zonesDegel: ['Z1','Z2','Z3','Z4'],
   },
   repetition: {
     label: 'Répétition',
     desc:  'Le nombre de cycles — le volume',
-    coupable: 'volume',
-    innocents: ['intensite'],
+    mode:  'volume',        // le volume monte, l'allure reste à ce qu'il fait déjà
+    coupable: 'volume', innocents: ['intensite'],
     zonesGel:   ['Z1','Z2','Z3'],
     zonesDegel: ['Z1','Z2','Z3','Z4'],
-    sansLongue: true,      // le volume d'un seul tenant est justement ce qui blesse
+    sansLongue: true,       // le volume d'un seul tenant est justement ce qui blesse
   },
   amplitude: {
     label: 'Amplitude',
     desc:  'La longueur de foulée',
-    coupable: 'amplitude',
-    innocents: ['volume', 'intensite'],
+    mode:  'amplitude',     // le volume monte, aucune allure de tout le plan
+    coupable: 'amplitude', innocents: ['volume', 'intensite'],
     zonesGel:   ['Z1','Z2'],
     zonesDegel: ['Z1','Z2','Z3'],
-    technique: true,       // la cadence est le traitement, pas un à-côté
+    technique: true,        // la cadence est le traitement, pas un à-côté
   },
 };
 
@@ -10572,8 +10579,16 @@ function _capRepartir(total, poids, plafond) {
    d'affilée à quelqu'un qui en est à 4 minutes de qualité par semaine. */
 function _capSpecQualite(intensiteMin, zone, volumeSeance) {
   var total  = Math.max(1, Math.round(intensiteMin));
-  var runMin = total >= 15 ? 3 : total >= 8 ? 2 : 1;
-  var reps   = Math.max(2, Math.round(total / runMin));
+  // On essaie les trois durées de répétition et on garde celle qui tombe le
+  // plus près du total voulu — à égalité, la plus longue. Choisir la durée
+  // d'abord et arrondir ensuite faisait déborder : 20 min devenaient 7×3' = 21.
+  var runMin = 1, reps = total, ecart = Infinity;
+  [3, 2, 1].forEach(function(d) {
+    if (total < d * 2) return;                 // au moins deux répétitions
+    var n = Math.max(2, Math.round(total / d));
+    var e = Math.abs(n * d - total);
+    if (e < ecart) { ecart = e; runMin = d; reps = n; }
+  });
   // Récupération égale au temps d'effort au départ : c'est le rapport le plus
   // sûr, il se resserre à mesure que le total monte.
   var recup  = total >= 15 ? Math.max(1, Math.round(runMin / 2)) : runMin;
@@ -10913,140 +10928,115 @@ function _capSemDecharge(p) {
   return p.tissu === 'os' ? 3 : 2;
 }
 
-/* Trajectoire projetée d'une fiche.
+/* ── La rampe ────────────────────────────────────────────────────────
+   Une progression géométrique de `depart` à `cible` sur `n` semaines. Quand
+   la consolidation est cochée, une semaine sur quatre ne progresse pas : elle
+   répète la précédente, et la rampe se resserre d'autant sur les semaines qui
+   restent pour arriver quand même à destination. */
+function _capRampe(depart, cible, n, consolidation) {
+  var vals = [], holds = [], i;
+  for (i = 2; i <= n; i++) {
+    if (consolidation && i % CAP_SEUILS.cycleProgression === 0) holds.push(i);
+  }
+  var pas = Math.max(1, (n - 1) - holds.length);
+  var g = (depart > 0 && cible > depart) ? Math.pow(cible / depart, 1 / pas) : 1;
+  var v = depart;
+  for (i = 1; i <= n; i++) {
+    if (i > 1 && holds.indexOf(i) === -1) v = Math.min(cible, v * g);
+    vals.push(v);
+  }
+  return { valeurs: vals, g: g, paliers: holds };
+}
 
-   Deux grandeurs sont pilotées : le VOLUME (min/sem) et l'INTENSITÉ (min/sem
-   en Z3+). L'axe désigne laquelle est COUPABLE — réduite au départ, remontée
-   à la fin, c'est elle le traitement — et laquelle est INNOCENTE : celle-là
-   monte jusqu'à la tolérance du coureur et n'y touche plus.
-
-   Le plan se découpe en quatre phases successives, dans cet ordre :
-     1. échelle course/marche, si le patient ne court pas d'un trait ;
-     2. construction du volume jusqu'à la tolérance, s'il en est loin ;
-     3. décharge du paramètre coupable ;
-     4. reconstruction du paramètre coupable.
-   L'ordre « volume d'abord, allure ensuite » est celui de la remontée après
-   une baisse de tous les leviers ; une phase vaut zéro semaine quand elle n'a
-   pas lieu d'être.
-
-   Source unique du moteur, du verdict et du délai conseillé : sinon l'écran
-   annonce une chose et le plan en produit une autre. */
+/* ── Trajectoire ─────────────────────────────────────────────────────
+   Traduit la fiche en deux séries hebdomadaires, en minutes : le volume et
+   les minutes de Z3+. Le mode décide laquelle progresse et laquelle ne bouge
+   pas. Source unique du moteur, du verdict et de l'ACWR affiché — sinon
+   l'écran annonce une chose et le plan en produit une autre. */
 function _capTrajectoire(p) {
   var frequence = Math.max(1, Math.round(p.frequenceCible || 3));
-  var ax        = CAP_AXES[p.axe] || CAP_AXES.charge;
-  var continu   = _capContinuTolere(p);
-  var volumeCoupable    = ax.coupable === 'volume';
-  var intensiteCoupable = ax.coupable === 'intensite';
-  var demande = Math.max(1, Math.round(p.semaines || 12));
+  var ax   = CAP_AXES[p.axe] || CAP_AXES.charge;
+  var mode = p.mode || ax.mode || 'volume';
+  var n    = Math.max(1, Math.round(p.semaines || 12));
+  var continu = _capContinuTolere(p);
+  // Un patient qui ne court pas d'un trait reconstruit son VOLUME, quel que
+  // soit l'axe de sa pathologie : travailler l'allure suppose un volume qui
+  // n'existe pas encore. L'allure fera l'objet d'un plan suivant.
+  if (continu < CAP_SEUILS.fractionne && mode === 'allure') mode = 'volume';
 
-  var cibleSaisie = _capVersMin(Math.max(1, p.cibleHebdo), p);
-  var tolere = _capVolumeTolere(p, frequence);
-  // Le volume monte jusqu'à la cible quand c'est LUI qu'on reconstruit, et
-  // seulement jusqu'à la tolérance quand il est innocent.
-  //
-  // Sauf qu'une séance de qualité a besoin d'un volume minimal pour exister :
-  // figer le volume en dessous de ce seuil rendrait la reconstruction de
-  // l'allure impossible, et le plan produirait des semaines rigoureusement
-  // identiques du début à la fin. Le volume monte alors jusqu'au seuil — ce
-  // n'est pas le développer, c'est lui rendre la capacité de porter le
-  // traitement. La cible saisie reste le plafond absolu.
-  // Le plafond du volume est toujours la cible saisie. La tolérance, elle, ne
-  // fixe que la fin du cycle 1 : on y revient d'abord, puis on va chercher un
-  // peu plus. Plafonner à la tolérance interdisait toute progression du volume
-  // au-delà du premier cycle.
-  var volumePlafond = cibleSaisie;
-
-  var semFrac = 0, departMin;
+  // Course/marche : l'échelle passe avant tout arbitrage de mode, et fixe
+  // elle-même le volume dont on hérite en repassant en course continue.
+  var semFrac = 0, sortieEchelle = 0;
   if (continu < CAP_SEUILS.fractionne) {
-    // Personne ne court en continu : l'échelle course/marche passe avant tout
-    // arbitrage d'axe, et fixe elle-même le volume de sortie.
-    semFrac = _capEchelonsRestants(continu);
+    semFrac = Math.min(n, _capEchelonsRestants(continu));
     var e = _capDernierEchelonFractionne();
-    departMin = e.reps * e.bout * frequence;
-  } else if (p.chronique > 0) {
-    departMin = _capVersMin(p.chronique, p);
-  } else if (p.plusLongueSortie > 0) {
-    departMin = _capVersMin(p.plusLongueSortie, p) * frequence;
+    sortieEchelle = e.reps * e.bout * frequence;
+  }
+
+  // ── Volume : d'où l'on part, où l'on va ──
+  var departVol, cibleVol, plafondSortie = Infinity;
+  if (mode === 'allure') {
+    departVol = cibleVol = _capVersMin(Math.max(1, p.volMaintenu || 1), p);
   } else {
-    departMin = _capDepartReprise(p, frequence);
+    var tol = p.tolVal > 0
+      ? _capVersMin(p.tolVal, p) * (p.tolUnite === 'sortie' ? frequence : 1)
+      : 0;
+    // Les deux objectifs peuvent coexister : l'hebdomadaire fixe la
+    // destination, celui par sortie devient un plafond par séance.
+    if (p.objSortie > 0) plafondSortie = _capVersMin(p.objSortie, p);
+    cibleVol = p.objHebdo > 0 ? _capVersMin(p.objHebdo, p)
+             : (p.objSortie > 0 ? _capVersMin(p.objSortie, p) * frequence : tol);
+    departVol = tol > 0 ? tol : (sortieEchelle || cibleVol);
   }
-  departMin = Math.min(departMin, volumePlafond);
+  if (semFrac > 0) departVol = sortieEchelle;      // on hérite de l'échelle
+  departVol = Math.max(1, Math.min(departVol, cibleVol));
 
-  var cibleIntensite = _capIntensitePour(p, intensiteCoupable ? volumePlafond : departMin);
-  var cycle = _capPalier(p.tissu,
-    p.unite === 'km' ? volumePlafond / (p.allureFooting || 6) : volumePlafond, p.unite).cycle;
-
-  // ── Durée idéale de chaque phase ──
-  // Volume : la référence est l'ACWR. Intensité : l'ACWR est muet (multiplier
-  // par cinq 4 min de Z3+ noyées dans 240 min de course ne bouge presque pas
-  // la charge pondérée), la référence devient le rythme de réintroduction de
-  // l'allure, plafonné en pourcentage hebdomadaire.
-  // Microcycle 4:1 quand une consolidation est programmée, simple alternance
-  // sinon. Les durées se comptent en TOURS d'un levier, convertis en semaines
-  // à la fin : `semParTour` est l'écart moyen entre deux tours du même levier.
-  var aConsolidation = _capPalier(p.tissu,
-    p.unite === 'km' ? volumePlafond / (p.allureFooting || 6) : volumePlafond, p.unite).cycle > 0;
-  var parCycle = aConsolidation ? CAP_SEUILS.cycleProgression : 2;
-  var semParTour = parCycle / Math.max(1, (parCycle - (aConsolidation ? 1 : 0)) / 2);
-  var gVolume = Math.pow(_capGPourACWR(CAP_SEUILS.acwrOk), semParTour);
-  var semVolumeIdeal = volumePlafond > departMin
-    ? Math.ceil(Math.log(volumePlafond / departMin) / Math.log(gVolume))
-    : 0;
-  // Sans polarisation possible, il n'y a pas de séance de qualité : la
-  // reconstruction de l'allure n'a nulle part où se loger. Programmer une
-  // phase d'intensité produirait des semaines strictement identiques.
-  var peutPolariser = _capPolarisable(p, volumePlafond, frequence);
-  var semDecharge = (intensiteCoupable && peutPolariser && semVolumeIdeal === 0)
-    ? _capSemDecharge(p) : 0;
-  var semIntensiteIdeal = intensiteCoupable
-    ? (peutPolariser
-        ? Math.max(1, Math.ceil(Math.log(cibleIntensite / CAP_SEUILS.intensitePlancher)
-                                / Math.log(1 + CAP_SEUILS.intensiteMaxPct)))
-        : 0)
-    : (volumeCoupable ? 0 : 4);   // amplitude : la cadence se corrige en quelques semaines
-
-  // Volume et intensité prennent chacun un tour par cycle, en parallèle : la
-  // durée est celle du levier le plus lent, pas la somme des deux. Le cycle 1
-  // s'y ajoute quand il existe (retour à la tolérance, sans intensité).
-  var croissance = semVolumeIdeal + semIntensiteIdeal;
-  var toursNecessaires = Math.max(semVolumeIdeal, semIntensiteIdeal);
-  var cycle1Ideal = (continu >= CAP_SEUILS.fractionne && (p.patho && p.patho !== 'aucune'))
-    ? CAP_SEUILS.cycle : 0;
-  var conseille = Math.max(1, Math.min(104,
-    semFrac + cycle1Ideal + semDecharge + Math.ceil(toursNecessaires * semParTour)));
-
-  // ── Répartition réelle du délai demandé entre les phases ──
-  var dispo = Math.max(1, demande - semFrac - semDecharge);
-  var semVolume = 0;
-  if (semVolumeIdeal > 0) {
-    semVolume = semIntensiteIdeal > 0
-      ? Math.max(1, Math.min(dispo - 1, Math.round(dispo * semVolumeIdeal / croissance)))
-      : dispo;
+  // ── Intensité : minutes de Z3+ par semaine ──
+  var departInt = 0, cibleInt = 0;
+  if (mode === 'allure') {
+    // On ne multiplie pas zéro : la première dose est un plancher.
+    departInt = p.qualiteActuelle > 0 ? p.qualiteActuelle : CAP_SEUILS.intensitePlancher;
+    cibleInt  = Math.max(departInt, p.qualiteCible || departInt);
+  } else if (mode === 'volume') {
+    // L'allure est maintenue à ce que le coureur encaisse déjà. Vide : rien.
+    departInt = cibleInt = Math.max(0, p.qualiteActuelle || 0);
   }
-  var finFractionne = semFrac;
-  var finVolume     = finFractionne + semVolume;
-  var finDecharge   = finVolume + semDecharge;
+  // mode amplitude : aucune allure, jamais.
 
-  var croiss = cycle ? Math.max(1, dispo - Math.floor(dispo / cycle)) : dispo;
-  var g  = volumePlafond > departMin ? Math.pow(volumePlafond / departMin, 1 / croiss) : 1;
+  var nRampe = Math.max(1, n - semFrac);
+  var rVol = _capRampe(departVol, cibleVol, nRampe, p.consolidation);
+  var rInt = _capRampe(departInt, cibleInt, nRampe, p.consolidation);
+  // On ne prescrit pas 4,6 minutes de Z3 : le plan arrondit à la minute. La
+  // fiche doit donc juger la série ARRONDIE, celle que le patient encaissera
+  // vraiment, et non la rampe idéale — sinon elle annonce 1,23 quand le plan
+  // délivre 1,29.
+  rInt.valeurs = rInt.valeurs.map(function(v) { return Math.round(v); });
+
+  // ── Ce que l'ACWR mesure : la grandeur QUI PROGRESSE ──
+  // Sur un axe où seule l'allure monte, mesurer la charge pondérée totale
+  // afficherait 1,00 tout vert pendant que la qualité quintuple.
+  var suivie = mode === 'allure' ? rInt.valeurs : rVol.valeurs;
+  var g = mode === 'allure' ? rInt.g : rVol.g;
+  // ACWR calculé sur la série réellement prescrite, fenêtre glissante de
+  // quatre semaines — et non depuis le facteur de croissance théorique.
+  var acwr = 1;
+  suivie.forEach(function(v, i) {
+    var fen = suivie.slice(Math.max(0, i - 3), i + 1);
+    var chron = fen.reduce(function(a2, b2) { return a2 + b2; }, 0) / fen.length;
+    if (chron > 0) acwr = Math.max(acwr, v / chron);
+  });
+  acwr = Math.round(acwr * 100) / 100;
 
   return {
-    axe: p.axe, coupable: ax.coupable,
-    semFractionne: semFrac, semVolume: semVolume, semDecharge: semDecharge,
-    finFractionne: finFractionne, finVolume: finVolume, finDecharge: finDecharge,
-    departMin: departMin, cibleMin: volumePlafond, volumeTolere: tolere,
-    // L'intensité innocente est là dès la première semaine ; coupable, elle
-    // part du plancher de réintroduction.
-    departIntensite: intensiteCoupable ? 0 : cibleIntensite,
-    cibleIntensite: cibleIntensite,
-    frequence: frequence, cycle: cycle, conseille: conseille, demande: demande,
-    peutPolariser: peutPolariser, cibleSaisie: cibleSaisie,
-    // Une décharge n'a de sens que s'il y a quelque chose à décharger : sans
-    // pathologie renseignée, rien ne justifie de faire reculer le coureur.
-    decharge: (p.patho && p.patho !== 'aucune') ? CAP_SEUILS.dechargeInitiale : 0,
-    g: g, acwr: _capACWRPourG(g),
-    // Le délai ne laisse même pas la place à l'échelle course/marche
-    fractionneComprime: semFrac >= demande,
+    mode: mode, axe: p.axe, frequence: frequence, semaines: n,
+    semFractionne: semFrac, plafondSortie: plafondSortie,
+    volumes: rVol.valeurs, intensites: rInt.valeurs, paliers: rVol.paliers,
+    departVol: departVol, cibleVol: cibleVol,
+    departInt: departInt, cibleInt: cibleInt,
+    g: g, pente: Math.round((g - 1) * 1000) / 10, acwr: acwr,
+    suivie: suivie,
+    // Ce que la couleur juge, dans les mots du praticien
+    grandeur: mode === 'allure' ? 'minutes de qualité' : 'volume',
   };
 }
 
@@ -11103,242 +11093,87 @@ function _capOrdonnerSemaine(seances, joursDispo) {
 /* `reprise` permet de repartir d'un état corrigé au lieu du début : c'est ce
    qui rend une régression conforme au modèle. On ne rééchelonne pas les
    séances à venir une à une — on remet le moteur dans l'état voulu et on lui
-   fait rejouer la suite, si bien que le microcycle, l'alternance et les
-   plafonds restent respectés par construction.
-   Forme attendue : { semaine, volume, intensite, continu, degel, tourNum,
-   baissePrecedente }. La semaine indiquée est la PREMIÈRE régénérée. */
+   fait rejouer la suite.
+   Forme attendue : { semaine, volume, intensite, continu }. La semaine
+   indiquée est la PREMIÈRE régénérée. */
 function _capBuildProgrammeV2(p, reprise) {
   _capIdSeq = 0;
-  var semainesVisees = Math.max(1, Math.round(p.semaines || 12));
-  var objBaseMin = _capObjectifBaseMin(p);
-  var ax = CAP_AXES[p.axe] || CAP_AXES.charge;
-
-  // Le délai est une DURÉE, pas une pente de départ. Le plan fait donc
-  // exactement le nombre de semaines demandé, et c'est le rythme qui s'y plie —
-  // recalculé chaque semaine sur la valeur réellement atteinte.
+  var ax  = CAP_AXES[p.axe] || CAP_AXES.charge;
   var traj = _capTrajectoire(p);
-  var cibleMin = traj.cibleMin;
-  // L'échelle course/marche est incompressible à un barreau par semaine. Si le
-  // délai ne lui laisse même pas la place, on saute des barreaux plutôt que de
-  // déborder — le signalement remonte à l'écran.
-  var pasFractionne = traj.fractionneComprime
-    ? Math.min(2, Math.ceil(traj.semFractionne / Math.max(1, semainesVisees - 1)))
-    : 1;
+  var n = traj.semaines;
+  var continu = _capContinuTolere(p);
 
-  // Les deux grandeurs pilotées. Le paramètre coupable part bas et remonte ;
-  // l'innocent part à la tolérance du coureur et n'y touche plus.
-  var volume    = traj.departMin;
-  var intensite = traj.departIntensite;
-  var continu   = _capContinuTolere(p);
-  var volumeCoupable    = ax.coupable === 'volume';
-  var intensiteCoupable = ax.coupable === 'intensite';
-
-  // État de la trajectoire, semaine par semaine. Sans lui le plan enregistré
-  // n'est qu'une liste de séances : impossible de savoir, en semaine 7, à quel
-  // volume et à quelle intensité le moteur en était, ni où l'on se trouve dans
-  // le microcycle. Une régression ne pourrait alors que rééchelonner des
-  // séances au jugé, hors du modèle. C'est ce que fait encore le code v1.
-  var etats = [];
-  var degel = false, sessions = [], semaine = 0;
-  // Compteur des semaines de progression : c'est LUI qui décide du levier, pas
-  // le numéro de semaine, sans quoi une consolidation décale l'alternance.
-  var tourNum = 0;
-  var baissePrecedente = false;
-  var conflitsEspacement = [];
-
-  // Reprise à mi-parcours : on réinjecte l'état voulu et on rejoue la suite.
-  if (reprise && reprise.semaine > 1) {
-    semaine   = reprise.semaine - 1;   // la boucle incrémente avant de bâtir
-    volume    = reprise.volume;
-    intensite = reprise.intensite;
-    continu   = reprise.continu;
-    degel     = !!reprise.degel;
-    tourNum   = reprise.tourNum || 0;
-    baissePrecedente = !!reprise.baissePrecedente;
+  var sessions = [], etats = [], conflitsEspacement = [];
+  // Une reprise décale la rampe : on rejoue depuis l'état corrigé, en gardant
+  // le nombre de semaines restantes.
+  var repriseDepuis = (reprise && reprise.semaine > 1) ? reprise.semaine : 0;
+  var rampeVol = traj.volumes, rampeInt = traj.intensites;
+  if (repriseDepuis) {
+    var reste = Math.max(1, n - repriseDepuis + 1);
+    var rV = _capRampe(reprise.volume, traj.cibleVol, reste, p.consolidation);
+    var rI = _capRampe(reprise.intensite,
+                       Math.max(reprise.intensite, traj.cibleInt), reste, p.consolidation);
+    rampeVol = rV.valeurs; rampeInt = rI.valeurs;
+    if (reprise.continu != null) continu = reprise.continu;
   }
-  // Le premier cycle sert à revenir à la tolérance, pas à la dépasser. Il
-  // n'existe qu'en course continue : une reprise course/marche a déjà son
-  // échelle, qui joue le même rôle.
-  var cycle1 = continu >= CAP_SEUILS.fractionne && traj.decharge > 0
-    ? CAP_SEUILS.cycle : 0;
 
-  while (semaine < semainesVisees) {
-    semaine++;
-
-    // ── Cycle 1 : retour à la tolérance ──
-    // Le volume part sous la tolérance et remonte par paliers égaux pour être
-    // pile dessus à la dernière semaine du cycle. Aucune intensité : c'est
-    // elle le vrai danger, elle n'ouvre qu'au cycle suivant.
-    var enCycle1 = semaine <= cycle1;
-    // Ouverture du cycle 2 : la première dose d'intensité est posée AVANT de
-    // construire la semaine. Calculée en fin de semaine, elle n'apparaissait
-    // qu'à la suivante — le cycle 2 s'ouvrait sur une semaine vide.
-    if (!enCycle1 && cycle1 > 0 && intensite === 0
-        && traj.cibleIntensite > 0 && ax.coupable !== 'amplitude'
-        && continu >= CAP_SEUILS.fractionne) {
-      intensite = CAP_SEUILS.intensitePlancher;
-      degel = true;
-    }
-
-    // ── Dégel du paramètre coupable ──
-    // Il ne peut pas s'ouvrir avant que le volume ait retrouvé la tolérance :
-    // reconstruire l'allure d'un coureur qui n'a pas encore son volume
-    // reviendrait à bouger deux leviers. L'objectif de base peut RETARDER ce
-    // dégel, jamais l'empêcher — adosser son critère au volume alors que le
-    // volume est figé par construction le rendait inatteignable.
-    if (!degel && !enCycle1 && semaine > traj.finVolume) {
-      degel = !objBaseMin
-           || continu >= objBaseMin
-           || volume >= cibleMin
-           || volume >= objBaseMin * Math.max(1, traj.frequence - 1);
-    }
-
-    // ── Le rythme du cycle ──
-    // Une seule horloge. Le cycle enchaîne : intensité, volume, consolidation.
-    // Le tissu ne décide plus de la CADENCE des paliers mais de leur AMPLITUDE
-    // — vraie baisse sur l'os, simple maintien ailleurs.
-    //
-    // Auparavant trois horloges tournaient en parallèle — le cycle de 3
-    // semaines, l'alternance sur 2, et un palier tissulaire sur 3 ou 4. Elles
-    // se déphasaient, et le plan produisait deux semaines d'intensité
-    // d'affilée, ou un volume qui montait pendant que l'intensité baissait :
-    // deux leviers la même semaine, exactement ce que la règle interdit.
-    var volUnite = p.unite === 'km' ? volume / (p.allureFooting || 6) : volume;
-    var pal = _capPalier(p.tissu, volUnite, p.unite);
-    // En dessous du plancher de volume, rien ne s'accumule encore : pas de
-    // semaine de consolidation programmée, le cycle se réduit à l'alternance.
-    // Microcycle 4:1 — trois semaines de progression, une de consolidation.
-    // En dessous du plancher de volume, rien ne s'accumule encore : pas de
-    // consolidation programmée, le cycle se réduit à l'alternance seule.
-    var aConsolidation = pal.cycle > 0;
-    var parCycle = aConsolidation ? CAP_SEUILS.cycleProgression : 2;
-    var pos = enCycle1 ? -1 : ((semaine - cycle1 - 1) % parCycle);
-    var estPalier = !enCycle1 && aConsolidation && pos === parCycle - 1;
-    var baisse = estPalier && pal.mode === 'baisse' ? 0.7 : 1;
-
-    // ── Progression : appliquée en DÉBUT de semaine ──
-    // Calculée en fin de semaine, l'augmentation atterrissait sur la semaine
-    // suivante — donc parfois sur la semaine de consolidation, qui se
-    // retrouvait à monter le volume tout en baissant l'intensité. Deux leviers
-    // le jour même où l'on est censé ne rien bouger.
-    //
-    // Le levier alterne sur le compteur des semaines de PROGRESSION, pas sur
-    // le numéro de semaine : la consolidation ne doit pas décaler l'alternance.
-    // Sur un 4:1 chaque cycle porte donc trois progressions — I, V, I puis
-    // V, I, V — et les deux leviers restent à égalité sur deux cycles.
-    // La semaine qui suit une consolidation en BAISSE ne progresse pas : elle
-    // remonte au niveau d'avant la décharge, et c'est tout. Sans cette règle,
-    // le rebond de la grandeur déchargée s'ajoutait à la progression de
-    // l'autre, et deux leviers montaient la même semaine — précisément ce que
-    // la consolidation cherchait à éviter.
-    if (!enCycle1 && continu >= CAP_SEUILS.fractionne && !estPalier && !baissePrecedente) {
-      var tourIntensite = (tourNum % 2) === 0;
-      tourNum++;
-      if (semaine > cycle1 + 1) {
-        // Semaines de progression restantes, partagées entre les deux leviers.
-        var progRestantes = (semainesVisees - semaine) * (parCycle - (aConsolidation ? 1 : 0)) / parCycle;
-        var tours = Math.max(1, Math.round(progRestantes / 2));
-        // Nombre moyen de semaines entre deux tours du même levier : c'est sur
-        // cette durée que la borne ACWR, qui est hebdomadaire, doit être
-        // rapportée. La rapporter à une seule semaine divisait la progression
-        // par deux ou trois et le programme n'atteignait jamais son objectif.
-        var semParTour = parCycle / Math.max(1, (parCycle - (aConsolidation ? 1 : 0)) / 2);
-        // Le pas d'un tour est plafonné. Sans plafond, le dernier tour
-        // absorbait tout l'écart restant : l'intensité passait de 18 à 30 min
-        // en une semaine, +67 %, ce qu'aucune règle ne justifie. Un délai trop
-        // court fait donc terminer le plan sous sa cible — plus honnête qu'un
-        // saut final, et le verdict de la fiche le dit.
-        if (tourIntensite && intensite > 0 && traj.cibleIntensite > intensite) {
-          var gI = Math.min(1 + CAP_SEUILS.intensiteMaxPct,
-                            Math.pow(traj.cibleIntensite / intensite, 1 / tours));
-          intensite = Math.min(traj.cibleIntensite, intensite * gI);
-        } else if (!tourIntensite && volume < cibleMin) {
-          var gV = Math.min(Math.pow(_capGPourACWR(CAP_SEUILS.acwrOk), semParTour),
-                            Math.pow(cibleMin / volume, 1 / tours));
-          volume = Math.min(cibleMin, volume * gV);
-        }
-      }
-    }
-
+  for (var semaine = repriseDepuis || 1; semaine <= n; semaine++) {
+    var enEchelle = semaine <= traj.semFractionne && continu < CAP_SEUILS.fractionne;
+    var i = repriseDepuis
+      ? semaine - repriseDepuis
+      : semaine - traj.semFractionne - 1;
     var volumeSemaine, intensiteSemaine;
-    if (enCycle1) {
-      // −20 %, −10 %, 0 % pour un cycle de 3 : la décharge se résorbe d'un pas
-      // égal par semaine et tombe à zéro pile en fin de cycle.
-      var reste = (cycle1 - semaine) / (cycle1 - 1);
-      volumeSemaine = traj.volumeTolere * (1 - traj.decharge * reste);
-      // L'intensité ne disparaît que si c'est ELLE qui a blessé. Sur un axe
-      // Répétition, l'allure est innocente : la retirer priverait le coureur
-      // d'une qualité qu'il encaissait déjà, sans rien traiter.
-      intensiteSemaine = intensiteCoupable ? 0 : intensite;
+
+    if (enEchelle) {
+      // Le contenu vient de l'échelle : le volume de la semaine est ce qu'elle
+      // délivre, jamais une cible à rattraper.
+      volumeSemaine = rampeVol[0];
+      intensiteSemaine = 0;
     } else {
-      volumeSemaine    = volumeCoupable ? volume * baisse : volume;
-      intensiteSemaine = intensiteCoupable ? (degel ? intensite * baisse : 0)
-                                           : intensite * baisse;
+      var k = Math.max(0, Math.min(rampeVol.length - 1, i));
+      volumeSemaine    = rampeVol[k];
+      intensiteSemaine = rampeInt[k];
     }
-    // Course/marche : aucune qualité tant que le patient ne court pas d'un trait.
+    if (traj.mode === 'amplitude') intensiteSemaine = 0;
     if (continu < CAP_SEUILS.fractionne) intensiteSemaine = 0;
-    // L'axe Amplitude se traite par la technique de course, pas par l'allure :
-    // aucune séance rapide de tout le programme.
-    if (ax.coupable === 'amplitude') intensiteSemaine = 0;
 
     var sem = _capBuildSemaine(p, {
       volumeMin: volumeSemaine, continuTolere: continu,
       intensiteMin: intensiteSemaine, semaine: semaine,
-      zoneQualite: _capZoneQualite(ax, intensiteSemaine, traj.cibleIntensite),
+      plafondSortie: traj.plafondSortie,
+      zoneQualite: _capZoneQualite(ax, intensiteSemaine, traj.cibleInt),
     });
-    // Pendant le fractionné, le volume réel vient de l'échelle et non de la
-    // trajectoire. On le resynchronise pour que le passage en course continue
-    // reparte du niveau atteint, sans la chute qu'un compteur figé provoquait.
-    if (continu < CAP_SEUILS.fractionne) {
-      volume = Math.min(cibleMin, sem.reduce(function(t, s) { return t + _capVolumeCourse(s); }, 0));
+    if (enEchelle) {
+      volumeSemaine = sem.reduce(function(t, x) { return t + _capVolumeCourse(x); }, 0);
     }
-    // `phase` alimente les intertitres de l'écran de résultat.
-    var phase = (continu < CAP_SEUILS.fractionne) ? 1 : (degel ? 3 : 2);
 
+    var phase = enEchelle ? 1 : (intensiteSemaine > 0 ? 3 : 2);
     var ordonne = _capOrdonnerSemaine(sem, p.joursDispo);
     if (ordonne.conflits.length) conflitsEspacement.push(semaine);
-    ordonne.seances.forEach(function(s) {
-      s.palier = estPalier ? pal.mode : null;
-      s.phase = phase;
-      sessions.push(s);
+    ordonne.seances.forEach(function(x) {
+      x.palier = traj.paliers.indexOf(i + 1) !== -1 ? 'maintien' : null;
+      x.phase = phase;
+      sessions.push(x);
     });
 
-    var continuSemaine = continu;
-    baissePrecedente = estPalier && pal.mode === 'baisse';
-    // Course/marche : c'est le bout de course qui progresse d'un barreau par
-    // semaine, pas le volume — allonger les deux ferait deux leviers.
-    if (continu < CAP_SEUILS.fractionne) continu = _capBoutSuivant(continu, pasFractionne);
-    // Le cycle 1 recale sur la tolérance, il ne progresse pas.
-    else if (enCycle1) volume = traj.volumeTolere;
-
-    // ── Trace de l'état ──
-    // `prescrit` est ce que la semaine a réellement délivré ; `sortie` est ce
-    // qu'il faut pour REPRENDRE la génération à la semaine suivante. Une
-    // régression n'a donc plus à deviner où en était le moteur : elle corrige
-    // l'état d'une semaine et régénère la suite depuis celui-ci.
     etats.push({
       semaine: semaine,
-      cycle1: enCycle1, pos: pos, palier: estPalier ? pal.mode : null,
-      prescrit: {
-        volume: Math.round(volumeSemaine),
-        intensite: Math.round(intensiteSemaine),
-        continu: continuSemaine,
-      },
-      sortie: {
-        volume: volume, intensite: intensite, continu: continu,
-        degel: degel, tourNum: tourNum, baissePrecedente: baissePrecedente,
-      },
+      palier: traj.paliers.indexOf(i + 1) !== -1 ? 'maintien' : null,
+      prescrit: { volume: Math.round(volumeSemaine),
+                  intensite: Math.round(intensiteSemaine), continu: continu },
+      sortie: { volume: volumeSemaine, intensite: intensiteSemaine,
+                continu: continu, degel: intensiteSemaine > 0, tourNum: 0,
+                baissePrecedente: false },
     });
+
+    if (enEchelle) continu = _capBoutSuivant(continu, 1);
   }
-  // Objet et non tableau : JSON.stringify laisse tomber les propriétés
-  // ajoutées à un tableau, et le plan transite par localStorage. Le
-  // signalement doit survivre au rechargement, pas seulement s'afficher
-  // au moment de la génération.
+
   return {
     seances: sessions,
     etats: etats,
     conflitsEspacement: conflitsEspacement,
-    fractionneComprime: traj.fractionneComprime,
+    fractionneComprime: traj.semFractionne >= n,
   };
 }
 
