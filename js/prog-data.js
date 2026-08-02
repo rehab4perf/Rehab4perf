@@ -1209,16 +1209,33 @@ function updateTexteContenu(id, val){
   if(typeof _draftSaveLazy === 'function') _draftSaveLazy();
 }
 
+/* Le sélecteur « Étape », commun à TOUS les types de blocs. Il n'existait que
+   sur le bloc d'exercices : un bloc cardio, texte, AMRAP ou EMOM créé au
+   mauvais endroit ne pouvait plus être rangé. C'est aussi le seul chemin pour
+   changer un bloc d'étape, les flèches ne franchissant plus les frontières. */
+function _selectEtape(b){
+  if(!etapes.length) return '';
+  var h = '<select class="bloc-etape-select" title="Rattacher ce bloc à une étape"'
+        + ' onclick="event.stopPropagation()"'
+        + ' onchange="event.stopPropagation();assignBlocEtape(\''+b.id+'\',this.value)">';
+  h += '<option value="">— Sans étape —</option>';
+  etapes.forEach(function(e){
+    h += '<option value="'+e.id+'"'+(b.etapeId===e.id?' selected':'')+'>'+escH(e.title||'Étape')+'</option>';
+  });
+  return h + '</select>';
+}
+
 function _renderTexteBloc(b, idx){
   var bid = b.id;
   var h = '<div class="bloc texte-bloc" id="bloc-'+bid+'">';
   h += '<div class="bloc-header" data-blocid="'+bid+'">';
   h += '<span class="bloc-move-btns">'
-    +  '<button class="bloc-move-btn"'+(_estPremierBlocReel(idx)?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',-1)" title="Monter">↑</button>'
-    +  '<button class="bloc-move-btn"'+(_estDernierBlocReel(idx)?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',1)" title="Descendre">↓</button>'
+    +  '<button class="bloc-move-btn"'+(_estPremierDuGroupe(idx)?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',-1)" title="Monter">↑</button>'
+    +  '<button class="bloc-move-btn"'+(_estDernierDuGroupe(idx)?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',1)" title="Descendre">↓</button>'
     +  '</span>';
   h += '<input class="bloc-title-input" value="'+escH(b.title||'')+'" placeholder="Titre" oninput="updateBlocTitle(\''+bid+'\',this.value)" onclick="event.stopPropagation()">';
   h += '<span class="texte-tag">Texte</span>';
+  h += _selectEtape(b);
   h += '<button class="bloc-del-btn" onclick="event.stopPropagation();deleteBloc(\''+bid+'\')" title="Supprimer le bloc"></button>';
   h += '</div>';
   h += '<div class="bloc-body"><textarea class="texte-ta" placeholder="Consigne, contexte, rappel…" '
@@ -1316,11 +1333,12 @@ function _renderChronoBloc(b, idx){
   var h = '<div class="bloc chrono-bloc '+(estAmrap?'amrap-bloc':'emom-bloc')+'" id="bloc-'+bid+'">';
   h += '<div class="bloc-header" data-blocid="'+bid+'" style="opacity:'+(isActive?'1':'.8')+'" onclick="setActiveBloc(\''+bid+'\')">';
   h += '<span class="bloc-move-btns">'
-    +  '<button class="bloc-move-btn"'+(_estPremierBlocReel(idx)?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',-1)" title="Monter">↑</button>'
-    +  '<button class="bloc-move-btn"'+(_estDernierBlocReel(idx)?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',1)" title="Descendre">↓</button>'
+    +  '<button class="bloc-move-btn"'+(_estPremierDuGroupe(idx)?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',-1)" title="Monter">↑</button>'
+    +  '<button class="bloc-move-btn"'+(_estDernierDuGroupe(idx)?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',1)" title="Descendre">↓</button>'
     +  '</span>';
   h += '<input class="bloc-title-input" value="'+escH(b.title||'')+'" placeholder="Nom du bloc" oninput="updateBlocTitle(\''+bid+'\',this.value)" onclick="event.stopPropagation()">';
   h += '<span class="chrono-tag">'+(estAmrap?'AMRAP':'EMOM')+'</span>';
+  h += _selectEtape(b);
   h += '<button class="bloc-del-btn" onclick="event.stopPropagation();deleteBloc(\''+bid+'\')" title="Supprimer le bloc"></button>';
   h += '</div>';
 
@@ -1384,11 +1402,12 @@ function _renderCardioBloc(b, idx){
   // Header
   h += '<div class="bloc-header" data-blocid="'+bid+'" style="opacity:'+(isActive?'1':'.75')+'" onclick="setActiveBloc(\''+bid+'\')">';
   h += '<span class="bloc-move-btns">'
-    +  '<button class="bloc-move-btn"'+(_estPremierBlocReel(idx)?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',-1)" title="Monter">↑</button>'
-    +  '<button class="bloc-move-btn"'+(_estDernierBlocReel(idx)?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',1)" title="Descendre">↓</button>'
+    +  '<button class="bloc-move-btn"'+(_estPremierDuGroupe(idx)?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',-1)" title="Monter">↑</button>'
+    +  '<button class="bloc-move-btn"'+(_estDernierDuGroupe(idx)?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',1)" title="Descendre">↓</button>'
     +  '</span>';
   h += '<input class="bloc-title-input" value="'+escH(b.title)+'" placeholder="Nom du bloc" oninput="updateBlocTitle(\''+bid+'\',this.value)" onclick="event.stopPropagation()">';
   h += '<span class="cardio-tag">🏃 Cardio</span>';
+  h += _selectEtape(b);
   h += '<button class="bloc-del-btn" onclick="event.stopPropagation();deleteBloc(\''+bid+'\')" title="Supprimer le bloc"></button>';
   h += '</div>';
 
@@ -1491,7 +1510,9 @@ function addBloc(atIndex){
 }
 
 function deleteBloc(id){
-  blocs = blocs.filter(function(b){ return b.id!==id; });
+  blocs = blocs.filter(function(b){ return _estMarqueur(b) || b.id!==id; });
+  // Supprimer le dernier bloc d'une zone libre y laisse un séparateur orphelin.
+  _compacterMarqueurs();
   if(activeBloc===id){ var r = _blocsReels(); activeBloc = r.length ? r[r.length-1].id : null; }
   renderSession();
   renderLib(document.getElementById('searchInput').value.toLowerCase());
@@ -1541,7 +1562,7 @@ function _normalizeEtapes(){
   // Étapes connues des blocs mais absentes de la liste (anciens formats).
   (blocs||[]).forEach(function(b){
     if(_estMarqueur(b)){
-      if(!known[b.id]){
+      if(_estMarqueurEtape(b) && !known[b.id]){
         known[b.id] = true;
         etapes.push({ id:b.id, title:'Étape', color:ETAPE_COLORS[etapes.length%ETAPE_COLORS.length] });
       }
@@ -1589,17 +1610,44 @@ function _blocsOfEtape(etapeId){
 
    `etapes[]` ne porte plus que les métadonnées (titre, couleur). */
 
-function _estMarqueur(b){ return !!(b && b.type === 'etape'); }
+/* Deux sortes de séparateurs. `etape` ouvre une étape nommée ; `libre` ouvre
+   une zone qui n'appartient à aucune. Sans ce second marqueur, « hors étape »
+   ne pourrait exister qu'avant le tout premier séparateur — c'est-à-dire en
+   tête de séance — et sortir un bloc de son étape le ferait sauter en haut. */
+function _estMarqueur(b){ return !!(b && (b.type === 'etape' || b.type === 'libre')); }
+function _estMarqueurEtape(b){ return !!(b && b.type === 'etape'); }
+function _estMarqueurLibre(b){ return !!(b && b.type === 'libre'); }
 
-/* Bornes réelles : un séparateur n'est pas un bloc, il ne doit ni bloquer une
-   flèche ni en absorber une. */
-function _estPremierBlocReel(idx){
-  for(var i = 0; i < idx; i++) if(!_estMarqueur(blocs[i])) return false;
-  return true;
+/* Bornes du GROUPE, pas de la séance : les flèches d'un bloc ne lui font pas
+   franchir une frontière d'étape, il y serait absorbé sans le dire. Pour
+   changer d'étape, on passe par le sélecteur « Étape » de son en-tête. */
+function _estPremierDuGroupe(idx){
+  return idx <= 0 || _estMarqueur(blocs[idx - 1]);
 }
-function _estDernierBlocReel(idx){
-  for(var i = idx + 1; i < blocs.length; i++) if(!_estMarqueur(blocs[i])) return false;
-  return true;
+function _estDernierDuGroupe(idx){
+  return idx >= blocs.length - 1 || _estMarqueur(blocs[idx + 1]);
+}
+
+/* Retire les séparateurs libres qui ne servent à rien : celui qui ouvre une
+   zone déjà libre, celui qu'un autre séparateur suit aussitôt, celui qui
+   termine la séance. Sans ce nettoyage ils s'accumulent à chaque sortie. */
+function _compacterMarqueurs(){
+  var out = [];
+  (blocs||[]).forEach(function(b){
+    if(_estMarqueurLibre(b)){
+      var dernier = null;
+      for(var k = out.length - 1; k >= 0; k--){
+        if(_estMarqueur(out[k])){ dernier = out[k]; break; }
+      }
+      if(!_estMarqueurEtape(dernier)) return;   // la zone en cours est déjà libre
+    }
+    out.push(b);
+  });
+  out = out.filter(function(b, i){
+    return !(_estMarqueurLibre(b) && _estMarqueur(out[i + 1]));
+  });
+  while(out.length && _estMarqueurLibre(out[out.length - 1])) out.pop();
+  blocs = out;
 }
 
 /* Les blocs réels, séparateurs exclus — pour compter et pour nommer. */
@@ -1609,30 +1657,46 @@ function _blocsReels(){
 
 /* Index du séparateur d'une étape dans `blocs`, ou -1. */
 function _indexMarqueur(etapeId){
-  return (blocs||[]).findIndex(function(b){ return _estMarqueur(b) && b.id === etapeId; });
+  return (blocs||[]).findIndex(function(b){ return _estMarqueurEtape(b) && b.id === etapeId; });
 }
 
 /* Étape à laquelle appartient le bloc d'index `i` : le dernier séparateur
-   rencontré avant lui. */
+   rencontré avant lui, ou aucune s'il ouvre une zone libre. */
 function _etapeDeIndex(i){
-  for(var k = i - 1; k >= 0; k--) if(_estMarqueur(blocs[k])) return blocs[k].id;
+  for(var k = i - 1; k >= 0; k--){
+    if(_estMarqueur(blocs[k])) return _estMarqueurEtape(blocs[k]) ? blocs[k].id : null;
+  }
   return null;
 }
 
-/* Découpe la séance en groupes affichables. Un seul parcours, un seul ordre. */
+/* Découpe la séance en groupes affichables. Un seul parcours, un seul ordre.
+   Les blocs hors étape voisins forment UN groupe, pas un groupe chacun. */
 function _groupBlocsForRender(){
   var groups = [];
   var courant = null;
   (blocs||[]).forEach(function(b){
     if(_estMarqueur(b)){
-      courant = { etapeId: b.id, blocs: [] };
+      courant = { etapeId: _estMarqueurEtape(b) ? b.id : null, blocs: [] };
       groups.push(courant);
       return;
     }
-    if(courant) courant.blocs.push(b);
-    else groups.push({ etapeId: null, blocs: [b] });
+    if(!courant){ courant = { etapeId: null, blocs: [] }; groups.push(courant); }
+    courant.blocs.push(b);
   });
   return groups;
+}
+
+/* Réécrit `blocs` depuis une liste de groupes. Le premier groupe, s'il est
+   hors étape, n'a besoin d'aucun séparateur : le début de séance l'est déjà. */
+function _reconstruireDepuisGroupes(groups){
+  var out = [];
+  groups.forEach(function(g, i){
+    if(g.etapeId) out.push({ id: g.etapeId, type: 'etape' });
+    else if(i > 0) out.push({ type: 'libre' });
+    g.blocs.forEach(function(b){ out.push(b); });
+  });
+  blocs = out;
+  _compacterMarqueurs();
 }
 
 /* Chaque bloc porte l'étape déduite de sa position. Le champ n'est plus la
@@ -1641,7 +1705,7 @@ function _groupBlocsForRender(){
 function _syncEtapeIds(){
   var courant = null;
   (blocs||[]).forEach(function(b){
-    if(_estMarqueur(b)){ courant = b.id; return; }
+    if(_estMarqueur(b)){ courant = _estMarqueurEtape(b) ? b.id : null; return; }
     if(courant) b.etapeId = courant; else delete b.etapeId;
   });
 }
@@ -1672,16 +1736,6 @@ function _finDeGroupe(etapeId){
   return j;
 }
 
-function addBlocToEtape(etapeId){
-  if(_indexMarqueur(etapeId) < 0) return;
-  var letter = String.fromCharCode(65 + _blocsReels().length);
-  var nb = { id: genId(), title: 'Bloc '+letter, exos: [], objectif: 'libre', methode: '' };
-  blocs.splice(_finDeGroupe(etapeId), 0, nb);
-  _syncEtapeIds();
-  activeBloc = nb.id;
-  renderSession();
-}
-
 function renameEtape(etapeId, val){
   var e = getEtape(etapeId);
   if(!e) return;
@@ -1706,6 +1760,9 @@ function dissolveEtape(etapeId){
   var i = _indexMarqueur(etapeId);
   if(i >= 0) blocs.splice(i, 1);
   etapes = etapes.filter(function(e){ return e.id!==etapeId; });
+  // La zone qui suivait peut être devenue libre elle aussi : son séparateur
+  // ne sert alors plus à rien.
+  _compacterMarqueurs();
   _syncEtapeIds();
   renderSession();
 }
@@ -1715,17 +1772,26 @@ function dissolveEtape(etapeId){
 function assignBlocEtape(blocId, etapeId){
   var i = (blocs||[]).findIndex(function(x){ return x.id===blocId && !_estMarqueur(x); });
   if(i < 0) return;
-  var b = blocs.splice(i, 1)[0];
+
   if(!etapeId || _indexMarqueur(etapeId) < 0){
-    // Hors étape : avant le tout premier séparateur, seule zone qui n'appartient
-    // à aucune étape.
-    var premier = (blocs||[]).findIndex(_estMarqueur);
-    blocs.splice(premier < 0 ? blocs.length : premier, 0, b);
+    var courante = _etapeDeIndex(i);
+    if(courante === null) return;                  // déjà hors étape
+    // Le bloc sort de son étape et se pose juste APRÈS elle, dans une zone
+    // libre. Le remonter avant le premier séparateur — seule autre zone sans
+    // étape — le ferait sauter en tête de séance sans raison. Le sortir sur
+    // place ferait sortir avec lui tous les blocs qui le suivent, puisque
+    // l'appartenance est positionnelle.
+    var b0 = blocs.splice(i, 1)[0];
+    blocs.splice(_finDeGroupe(courante), 0, { type:'libre' }, b0);
   } else {
+    var b = blocs.splice(i, 1)[0];
     blocs.splice(_finDeGroupe(etapeId), 0, b);
   }
+
+  _compacterMarqueurs();
   _syncEtapeIds();
   renderSession();
+  if(typeof _draftSaveLazy === 'function') _draftSaveLazy();
 }
 
 /* Déplace une étape ET son contenu d'un cran, parmi les étapes seulement.
@@ -1738,22 +1804,17 @@ function assignBlocEtape(blocId, etapeId){
    absorbé par l'étape. C'est pour ça que le déplacement porte sur la liste des
    étapes et non sur celle des groupes affichés. */
 function moveEtape(etapeId, dir){
-  var libres = [], etGroupes = [];
-  _groupBlocsForRender().forEach(function(g){
-    if(g.etapeId) etGroupes.push(g);
-    else libres = libres.concat(g.blocs);
-  });
-  var idx = etGroupes.findIndex(function(g){ return g.etapeId===etapeId; });
-  var tgt = idx + dir;
-  if(idx < 0 || tgt < 0 || tgt >= etGroupes.length) return;
-  var tmp = etGroupes[idx]; etGroupes[idx] = etGroupes[tgt]; etGroupes[tgt] = tmp;
+  var groups = _groupBlocsForRender();
+  // Les zones hors étape gardent leur place dans la séance : seules deux
+  // étapes voisines échangent leur contenu.
+  var posEtapes = [];
+  groups.forEach(function(g, i){ if(g.etapeId) posEtapes.push(i); });
+  var k = posEtapes.findIndex(function(i){ return groups[i].etapeId === etapeId; });
+  if(k < 0 || k + dir < 0 || k + dir >= posEtapes.length) return;
+  var a = posEtapes[k], b = posEtapes[k + dir];
+  var tmp = groups[a]; groups[a] = groups[b]; groups[b] = tmp;
 
-  var out = libres.slice();
-  etGroupes.forEach(function(g){
-    out.push({ id: g.etapeId, type: 'etape' });
-    g.blocs.forEach(function(b){ out.push(b); });
-  });
-  blocs = out;
+  _reconstruireDepuisGroupes(groups);
   _syncEtapeIds();
   renderSession();
   if(typeof _draftSaveLazy === 'function') _draftSaveLazy();
@@ -2173,10 +2234,13 @@ function moveExo(blocId, idx, dir){
 /* Monter ou descendre un bloc d'un cran, en sautant les séparateurs : franchir
    un séparateur, c'est changer d'étape, et ça se fait alors d'un seul geste. */
 function moveBloc(idx, dir){
+  var moved = blocs[idx];
+  if(!moved || _estMarqueur(moved)) return;
   var newIdx = idx + dir;
-  while(newIdx >= 0 && newIdx < blocs.length && _estMarqueur(blocs[newIdx])) newIdx += dir;
-  if(newIdx < 0 || newIdx >= blocs.length) return;
-  var moved = blocs.splice(idx, 1)[0];
+  // Une flèche ne franchit pas un séparateur. Elle le faisait, et le bloc
+  // changeait alors d'étape en silence tout en sautant par-dessus son voisin.
+  if(newIdx < 0 || newIdx >= blocs.length || _estMarqueur(blocs[newIdx])) return;
+  blocs.splice(idx, 1);
   blocs.splice(newIdx, 0, moved);
   _syncEtapeIds();
   renderSession();
@@ -2263,23 +2327,28 @@ function _fermerMenuAjout(){
   window.removeEventListener('resize', _fermerMenuAjout, true);
 }
 
-function ouvrirMenuAjout(ev, atIndex){
+/* `sansEtape` : ouvert depuis l'intérieur d'une étape, le menu ne propose pas
+   d'en créer une — une étape dans une étape n'a pas de sens. */
+function ouvrirMenuAjout(ev, atIndex, sansEtape){
   ev.stopPropagation();
-  var deja = _menuAjoutOuvert === atIndex;
+  var cle = atIndex + (sansEtape ? ':e' : '');
+  var deja = _menuAjoutOuvert === cle;
   var bouton = ev.currentTarget;
   _fermerMenuAjout();
   if(deja) return;
-  _menuAjoutOuvert = atIndex;
+  _menuAjoutOuvert = cle;
 
   var html = '<div class="add-menu">';
   TYPES_BLOC.forEach(function(t){
     html += '<button class="add-menu-item" onclick="event.stopPropagation();_fermerMenuAjout();'
           + t.fn + '(' + atIndex + ')">' + escH(t.label) + '</button>';
   });
-  html += '<div class="add-menu-sep"></div>'
-        + '<button class="add-menu-item" onclick="event.stopPropagation();_fermerMenuAjout();addEtape('
-        + atIndex + ')">' + _ETAPE_ICO_FOLDER + 'Étape</button>'
-        + '</div>';
+  if(!sansEtape){
+    html += '<div class="add-menu-sep"></div>'
+          + '<button class="add-menu-item" onclick="event.stopPropagation();_fermerMenuAjout();addEtape('
+          + atIndex + ')">' + _ETAPE_ICO_FOLDER + 'Étape</button>';
+  }
+  html += '</div>';
 
   // Le menu est posé sur le <body>, en position fixe : accroché à son bouton, il
   // héritait du contexte d'empilement de la barre d'outils et passait SOUS les
@@ -2341,9 +2410,9 @@ function renderSession(){
   var _etGroupes = _groups.filter(function(g){ return g.etapeId; });
   _groups.forEach(function(g){
   // Un « + » avant chaque groupe : c'est là qu'on insère au bon endroit.
-  var _iGroupe = g.etapeId ? _indexMarqueur(g.etapeId)
-                           : (g.blocs.length ? blocs.indexOf(g.blocs[0]) : blocs.length);
-  html += _pointInsertion(_iGroupe);
+  // Un point devant le séparateur, pour insérer AVANT l'étape. Devant une zone
+  // libre il tomberait au même index que celui du premier bloc : doublon.
+  if(g.etapeId) html += _pointInsertion(_indexMarqueur(g.etapeId));
   if(g.etapeId){
     var _ec = _etapeColor(g.etapeId);
     var _gPos = _etGroupes.findIndex(function(x){ return x.etapeId===g.etapeId; });
@@ -2374,7 +2443,7 @@ function renderSession(){
   g.blocs.forEach(function(b, _iDansGroupe){
     if(_estMarqueur(b)) return;          // le séparateur est déjà rendu par l'en-tête
     var idx = blocs.indexOf(b);
-    if(_iDansGroupe > 0) html += _pointInsertion(idx);
+    html += _pointInsertion(idx);
     // ── Bloc Cardio ──
     if(b.type === 'cardio'){ html += _renderCardioBloc(b, idx); return; }
     if(b.type === 'texte'){  html += _renderTexteBloc(b, idx);  return; }
@@ -2384,18 +2453,11 @@ function renderSession(){
     html += '<div class="bloc" id="bloc-'+b.id+'">';
     html += '<div class="bloc-header" data-blocid="'+b.id+'" style="opacity:'+(isActive?'1':'.8')+'" onclick="setActiveBloc(\''+b.id+'\')">';
     html += '<span class="bloc-move-btns">'
-          + '<button class="bloc-move-btn"'+(_estPremierBlocReel(idx)?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',-1)" title="Monter">↑</button>'
-          + '<button class="bloc-move-btn"'+(_estDernierBlocReel(idx)?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',1)" title="Descendre">↓</button>'
+          + '<button class="bloc-move-btn"'+(_estPremierDuGroupe(idx)?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',-1)" title="Monter">↑</button>'
+          + '<button class="bloc-move-btn"'+(_estDernierDuGroupe(idx)?' disabled':'')+' onclick="event.stopPropagation();moveBloc('+idx+',1)" title="Descendre">↓</button>'
           + '</span>';
     html += '<input class="bloc-title-input" value="'+escH(b.title)+'" placeholder="Nom du bloc" oninput="updateBlocTitle(\''+b.id+'\',this.value)">';
-    if(etapes.length){
-      html += '<select class="bloc-etape-select" title="Rattacher ce bloc à une étape" onclick="event.stopPropagation()" onchange="event.stopPropagation();assignBlocEtape(\''+b.id+'\',this.value)">';
-      html += '<option value="">— Sans étape —</option>';
-      etapes.forEach(function(e){
-        html += '<option value="'+e.id+'"'+(b.etapeId===e.id?' selected':'')+'>'+escH(e.title||'Étape')+'</option>';
-      });
-      html += '</select>';
-    }
+    html += _selectEtape(b);
     html += '<button class="bloc-del-btn" onclick="event.stopPropagation();deleteBloc(\''+b.id+'\')" title="Supprimer le bloc"></button>';
     html += '</div>';
     // Méthode bar
@@ -2564,7 +2626,9 @@ function renderSession(){
   // le groupe suivant. La fin de séance est couverte par « + Ajouter », la fin
   // d'une étape par « + Bloc dans cette étape ».
   if(g.etapeId){
-    html += '<button class="etape-addbloc-btn" onclick="addBlocToEtape(\''+g.etapeId+'\')">+ Bloc dans cette étape</button>';
+    // Le même menu que partout ailleurs : le bouton imposait un bloc
+    // d'exercices. L'index est calculé au clic, les positions bougeant.
+    html += '<button class="etape-addbloc-btn" onclick="ouvrirMenuAjout(event,_finDeGroupe(\''+g.etapeId+'\'),1)">+ Ajouter dans cette étape</button>';
     html += '</div>'; // .etape-group
   }
   }); // _groups
@@ -5326,7 +5390,13 @@ function _loadProg(id, seanceId){
       // HSR : vider les blocs uniquement s'ils sont invalides (renfo sans tableau exos)
       // pour éviter le crash dans renderSession. Les blocs valides (avec exos) sont conservés.
       if (raw && raw.type === 'hsr') {
-        var _hsrBlocInvalid = blocs.some(function(b){ return b.type !== 'cardio' && !Array.isArray(b.exos); });
+        // Un séparateur n'a pas d'exos et n'est pas invalide pour autant :
+        // sans cette exception, ouvrir un HSR contenant des étapes vidait
+        // toute la séance.
+        var _hsrBlocInvalid = blocs.some(function(b){
+          if(_estMarqueur(b) || b.type === 'cardio' || b.type === 'texte') return false;
+          return !Array.isArray(b.exos);
+        });
         if (_hsrBlocInvalid) blocs = [];
       }
       var pnEl = document.getElementById('patientName');

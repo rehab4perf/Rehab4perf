@@ -1,14 +1,16 @@
 #!/usr/bin/env node
 /* Cas de référence — ordre des étapes dans le builder.
  *
- * Le modèle : l'ordre de la séance vit dans `blocs` et nulle part ailleurs. Un
- * séparateur est une entrée `{id, type:'etape'}`, et l'appartenance d'un bloc à
- * une étape est POSITIONNELLE — le dernier séparateur rencontré avant lui.
+ * Le modèle : l'ordre de la séance vit dans `blocs` et nulle part ailleurs.
+ * Deux séparateurs y cohabitent — `{id, type:'etape'}` ouvre une étape nommée,
+ * `{type:'libre'}` ouvre une zone qui n'appartient à aucune. L'appartenance
+ * d'un bloc est POSITIONNELLE : c'est le dernier séparateur avant lui.
  *
  * D'où le piège central, vérifié ici : tout bloc poussé derrière un séparateur
- * est absorbé par l'étape correspondante. Les blocs placés avant la première
- * étape n'appartiennent à aucune ; un déplacement d'étape ne doit jamais les
- * faire passer sous un séparateur.
+ * d'étape est absorbé par elle. C'est pour ça qu'un déplacement d'étape ne
+ * traverse pas les zones libres, qu'une flèche de bloc ne franchit pas une
+ * frontière, et que sortir un bloc d'une étape ouvre une zone libre au lieu de
+ * l'expédier en tête de séance.
  *
  *   node qualite/etapes-cas.js
  */
@@ -20,15 +22,26 @@ var path = require('path');
 /* ── Chargement du module ────────────────────────────────────────────────── */
 
 var src = fs.readFileSync(path.join(__dirname, '..', 'js', 'prog-data.js'), 'utf8');
-var debut = src.indexOf('function _estMarqueur');
-var fin = src.indexOf('function addExoFromLib');
-if (debut < 0 || fin < 0 || fin <= debut) {
-  console.error('Bornes introuvables dans js/prog-data.js.');
-  console.error('Le test extrait la zone entre `function _estMarqueur` et');
-  console.error('`function addExoFromLib`. Si ces fonctions ont ete renommees ou');
-  console.error('deplacees, corriger les bornes ci-dessus.');
-  process.exit(1);
+
+/* Deux zones a extraire : les helpers d'etape, et moveBloc qui vit ailleurs. */
+function zone(depuis, jusqua) {
+  var a = src.indexOf(depuis), b = src.indexOf(jusqua);
+  if (a < 0 || b < 0 || b <= a) {
+    console.error('Bornes introuvables dans js/prog-data.js : « ' + depuis +
+      ' » .. « ' + jusqua + ' ».');
+    console.error('Si ces fonctions ont ete renommees ou deplacees, corriger les');
+    console.error('bornes en tete de ce fichier.');
+    process.exit(1);
+  }
+  // Reculer sur un commentaire ouvert juste avant la borne : le tronquer
+  // laisserait un /* jamais fermé dans le code extrait.
+  var ouvert = src.lastIndexOf('/*', b);
+  if (ouvert > a && src.indexOf('*/', ouvert) > b) b = ouvert;
+  return src.slice(a, b);
 }
+
+var moteur = zone('function _estMarqueur', 'function addExoFromLib') + '\n' +
+             zone('function moveBloc', '   TEMPS ESTIMÉ');
 
 var prelude = [
   'var blocs = [], etapes = [], activeBloc = null;',
@@ -43,11 +56,14 @@ var prelude = [
 ].join('\n');
 
 var api = new Function(
-  prelude + '\n' + src.slice(debut, fin) + '\n' +
+  prelude + '\n' + moteur + '\n' +
   'return { setEtat: function(b, e){ blocs = b; etapes = e; },' +
   '         etat: function(){ return blocs; },' +
-  '         addEtape: addEtape, moveEtape: moveEtape,' +
+  '         addEtape: addEtape, moveEtape: moveEtape, moveBloc: moveBloc,' +
+  '         assignBlocEtape: assignBlocEtape,' +
   '         dissolveEtape: dissolveEtape, syncEtapeIds: _syncEtapeIds,' +
+  '         premierDuGroupe: _estPremierDuGroupe,' +
+  '         dernierDuGroupe: _estDernierDuGroupe,' +
   '         groupes: _groupBlocsForRender };'
 )();
 
@@ -58,10 +74,13 @@ var nbOk = 0, nbKo = 0;
 function bloc(nom) { return { id: nom, title: nom, exos: [] }; }
 function sep(nom) { return { id: nom, type: 'etape' }; }
 
-/* Une séance se lit « E1 [ A B ] E2 [ C ] », les blocs hors étape en tête. */
+/* Une séance se lit « |E1 A B |E2 C ». `|X` ouvre l'étape X, `|` seul ouvre
+   une zone hors étape. */
 function lire() {
   return api.etat().map(function(b) {
-    return b.type === 'etape' ? '|' + b.id : b.id;
+    if (b.type === 'etape') return '|' + b.id;
+    if (b.type === 'libre') return '|';
+    return b.id;
   }).join(' ');
 }
 
@@ -75,7 +94,7 @@ function verifier(intitule, attendu, obtenu) {
 
 function appartenances() {
   api.syncEtapeIds();
-  return api.etat().filter(function(b) { return b.type !== 'etape'; })
+  return api.etat().filter(function(b) { return b.type !== 'etape' && b.type !== 'libre'; })
     .map(function(b) { return b.id + '→' + (b.etapeId || 'aucune'); }).join(' ');
 }
 
@@ -172,6 +191,99 @@ verifier('le séparateur disparaît, les blocs restent en place',
   '|E1 A B', lire());
 verifier('B rejoint l\'étape qui le précède désormais',
   'A→E1 B→E1', appartenances());
+
+/* ── Cas 7 : sortir un bloc d'une étape ne le renvoie pas en tête ────────── */
+
+console.log('\nCas 7 — « Sans étape » sort le bloc sur place, pas en tête de séance');
+api.setEtat(
+  [sep('E1'), bloc('A'), bloc('B'), bloc('C')],
+  [{ id: 'E1' }]
+);
+api.assignBlocEtape('B', '');
+verifier('B sort de E1 et se pose juste après elle',
+  '|E1 A C | B', lire());
+verifier('A et C restent dans E1, B n\'appartient à aucune',
+  'A→E1 C→E1 B→aucune', appartenances());
+
+api.setEtat(
+  [sep('E1'), bloc('A'), bloc('B')],
+  [{ id: 'E1' }]
+);
+api.assignBlocEtape('B', '');
+verifier('le dernier bloc d\'une étape ne bouge pas du tout',
+  '|E1 A | B', lire());
+
+/* ── Cas 8 : les séparateurs libres redondants disparaissent ─────────────── */
+
+console.log('\nCas 8 — pas de zone libre inutile qui s\'accumule');
+api.setEtat(
+  [sep('E1'), bloc('A'), bloc('B'), bloc('C')],
+  [{ id: 'E1' }]
+);
+api.assignBlocEtape('C', '');
+api.assignBlocEtape('B', '');
+// B sort après C mais se pose au début de la zone libre, donc devant lui :
+// les deux blocs gardent l'ordre relatif qu'ils avaient dans l'étape.
+verifier('deux sorties de suite ne créent qu\'une seule zone libre',
+  '|E1 A | B C', lire());
+
+api.setEtat([bloc('A'), sep('E1'), bloc('B')], [{ id: 'E1' }]);
+api.assignBlocEtape('A', '');
+verifier('un bloc déjà hors étape n\'ouvre pas de zone',
+  'A |E1 B', lire());
+
+/* ── Cas 9 : un bloc rejoint une étape ───────────────────────────────────── */
+
+console.log('\nCas 9 — rattacher un bloc le place à la fin de l\'étape visée');
+api.setEtat(
+  [bloc('LIBRE'), sep('E1'), bloc('A'), sep('E2'), bloc('B')],
+  [{ id: 'E1' }, { id: 'E2' }]
+);
+api.assignBlocEtape('LIBRE', 'E2');
+verifier('LIBRE rejoint la fin de E2',
+  '|E1 A |E2 B LIBRE', lire());
+verifier('il appartient bien à E2',
+  'A→E1 B→E2 LIBRE→E2', appartenances());
+
+/* ── Cas 10 : les flèches d'un bloc ne franchissent pas une étape ────────── */
+
+console.log('\nCas 10 — un bloc ne change pas d\'étape avec les flèches');
+api.setEtat(
+  [sep('E1'), bloc('A'), sep('E2'), bloc('B'), bloc('C')],
+  [{ id: 'E1' }, { id: 'E2' }]
+);
+api.moveBloc(3, -1);   // B, premier de E2, vers le haut
+verifier('B ne saute pas dans E1',
+  '|E1 A |E2 B C', lire());
+verifier('la flèche du premier bloc du groupe est désactivée',
+  'true', String(api.premierDuGroupe(3)));
+
+api.moveBloc(4, -1);   // C passe devant B, dans la même étape
+verifier('à l\'intérieur d\'une étape, le bloc se déplace normalement',
+  '|E1 A |E2 C B', lire());
+verifier('les deux restent dans E2',
+  'A→E1 C→E2 B→E2', appartenances());
+
+api.moveBloc(4, 1);    // B, dernier de E2, vers le bas
+verifier('le dernier bloc de la séance ne sort pas de son étape',
+  '|E1 A |E2 C B', lire());
+verifier('la flèche du dernier bloc du groupe est désactivée',
+  'true', String(api.dernierDuGroupe(4)));
+
+/* ── Cas 11 : dissoudre une étape rend sa zone libre inutile ─────────────── */
+
+console.log('\nCas 11 — pas de séparateur libre orphelin après dissolution');
+api.setEtat(
+  [sep('E1'), bloc('A'), { type: 'libre' }, bloc('B')],
+  [{ id: 'E1' }]
+);
+verifier('au départ, B est hors étape et A dedans',
+  'A→E1 B→aucune', appartenances());
+api.dissolveEtape('E1');
+verifier('E1 dissoute, le séparateur libre ne sert plus à rien',
+  'A B', lire());
+verifier('les deux blocs sont hors étape',
+  'A→aucune B→aucune', appartenances());
 
 /* ── Verdict ─────────────────────────────────────────────────────────────── */
 

@@ -21,13 +21,20 @@ node --check js/prog-main.js
 node qualite/etapes-cas.js
 ```
 
-Un séparateur d'étape est une entrée `{id, type:'etape'}` dans `blocs`, et
-l'appartenance d'un bloc à une étape est **positionnelle** : c'est le dernier
-séparateur rencontré avant lui. Conséquence à ne jamais perdre de vue — tout
-bloc poussé derrière un séparateur est **absorbé** par cette étape. Les blocs
-placés avant la première étape n'appartiennent à aucune et doivent le rester.
-`bloc.etapeId` est recalculé par `_syncEtapeIds()` ; il n'est pas la source de
-vérité, il n'est écrit que parce que `athlete.html` groupe avec.
+Deux séparateurs cohabitent dans `blocs` : `{id, type:'etape'}` ouvre une étape
+nommée, `{type:'libre'}` ouvre une zone qui n'appartient à aucune.
+L'appartenance d'un bloc est **positionnelle** — c'est le dernier séparateur
+rencontré avant lui. Conséquence à ne jamais perdre de vue : tout bloc poussé
+derrière un séparateur d'étape est **absorbé** par elle. C'est pourquoi une
+flèche de bloc ne franchit pas une frontière (on change d'étape par le
+sélecteur), et pourquoi sortir un bloc de son étape ouvre une zone libre juste
+après elle au lieu de l'expédier en tête de séance.
+
+`_compacterMarqueurs()` supprime les marqueurs libres devenus inutiles ; sans
+lui ils s'accumulent à chaque sortie. `bloc.etapeId` est recalculé par
+`_syncEtapeIds()` : ce n'est pas la source de vérité, il n'est écrit que parce
+que `athlete.html` groupe avec — et `athlete.html` doit filtrer **les deux**
+types de séparateurs.
 
 ## Variables CSS (OBLIGATOIRE après toute règle CSS ajoutée)
 

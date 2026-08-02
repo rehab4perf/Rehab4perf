@@ -1926,7 +1926,11 @@ function buildProgHTML(prog){
   // Les séparateurs d'étape sont des entrées de `blocs` qui portent l'ordre,
   // pas du contenu : le groupement se lit toujours via etapeId, recalculé à
   // l'enregistrement depuis la position.
-  blocs = (blocs||[]).filter(function(b){ return !b || b.type !== 'etape'; });
+  // Deux sortes de séparateurs côté praticien : `etape` ouvre une étape,
+  // `libre` ouvre une zone qui n'en a pas. Ni l'un ni l'autre n'est un bloc.
+  blocs = (blocs||[]).filter(function(b){
+    return !b || (b.type !== 'etape' && b.type !== 'libre');
+  });
 
   blocs.forEach(function(b, bIdx){
     var _etapeStart = b.etapeId && (bIdx===0 || blocs[bIdx-1].etapeId !== b.etapeId);
