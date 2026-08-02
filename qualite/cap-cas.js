@@ -29,7 +29,7 @@ const RACINE = path.join(__dirname, '..');
    prog-main.js est un script de navigateur : on n'en évalue que la
    section CAP, délimitée par des repères stables du fichier. */
 const DEBUT_CAP = 'var CAP_AXES = {';
-const FIN_CAP   = '/* ── Pré-remplissage depuis Strava';
+const FIN_CAP   = '/* ── CAP → Agenda : sélecteur de jours de la semaine ── */';
 
 function chargerMoteur() {
   const src = fs.readFileSync(path.join(RACINE, 'js/prog-main.js'), 'utf8');

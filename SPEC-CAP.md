@@ -13,8 +13,11 @@ node qualite/cap-cas.js
 ```
 
 Code : `js/prog-main.js`, section délimitée par `var CAP_AXES = {` et
-`/* ── Pré-remplissage depuis Strava`. Formulaire : `programme.html`, bloc
-`#capFormScreen`.
+`/* ── CAP → Agenda : sélecteur de jours de la semaine ── */`. Formulaire :
+`programme.html`, bloc `#capFormScreen`.
+
+Ces deux repères servent aussi à `cap-cas.js` pour charger le moteur : les
+déplacer casse le test, qui le dit explicitement.
 
 ---
 
@@ -369,8 +372,9 @@ sont plus lus par la génération. À supprimer si rien ne les reprend.
   le moteur sache produire du dénivelé, ce qu'il ne fait pas.
 - **`terrain`** et **`crossTraining`** — jamais lus.
 - **`cadenceCible`** — posée sur la séance, ne modifie aucun contenu.
-- **Le pré-remplissage Strava** vise `capW1`…`capW4`, champs supprimés de la
-  fiche. À réécrire vers `capTolVal` / `capVolMaintenu`.
+- **Le pré-remplissage Strava a été retiré.** Il visait `capW1`…`capW4`, champs
+  supprimés de la fiche. Les données Strava restent disponibles ailleurs dans
+  l'app ; si le bouton revient, il devra viser `capTolVal` / `capVolMaintenu`.
 
 ---
 
