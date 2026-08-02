@@ -26,6 +26,16 @@ var empreinte = path.join(__dirname, 'echelle-empreinte.json');
    14 px, les mêmes rem n'y donnent pas les mêmes pixels. */
 var FICHIERS = ['athlete.html', 'programme.html'];
 
+/* Seules les feuilles de style sont controlees. Les declarations ecrites dans
+   du JS construisent parfois des documents autonomes (exports, impressions)
+   ou les jetons --fs-* n'existent pas : y mettre var(--fs-…) rendrait la
+   declaration invalide, et le navigateur l'ignorerait en silence. */
+function feuilles(src) {
+  var out = [], re = /<style[^>]*>([\s\S]*?)<\/style>/g, m;
+  while ((m = re.exec(src))) out.push(m[1]);
+  return out.join('\n');
+}
+
 function pasDeLEchelle(src) {
   var pas = {};
   var re = /--fs-[a-z0-9]+\s*:\s*([0-9.]+rem)/g;
@@ -46,7 +56,7 @@ function litterales(src) {
 
 var etat = {};
 FICHIERS.forEach(function (nom) {
-  var src = fs.readFileSync(path.join(racine, nom), 'utf8');
+  var src = feuilles(fs.readFileSync(path.join(racine, nom), 'utf8'));
   var pas = pasDeLEchelle(src);
   var vues = litterales(src);
   var hors = Object.keys(vues).filter(function (v) { return !pas[v]; });
