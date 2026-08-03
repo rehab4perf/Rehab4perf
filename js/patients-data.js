@@ -115,8 +115,11 @@ var R4P_MOTIF_KEYWORDS = [
                               'fascia plantaire', 'epine calcaneenne', 'talalgie']],
   // Exige le mot « rupture » : sans lui, « tendinopathie achilléenne » serait
   // comptée comme une rupture, ce qui est une pathologie tout autre.
-  ['Rupture du tendon d\'Achille', ['rupture achille', 'rupture achilleenne', 'rupture du tendon d achille',
-                                    'rupture tendon achille', 'rupture d achille']],
+  // Alias en LISTE : « rupture » et le site doivent etre presents, mais pas
+  // colles. Les expressions contigues cassaient des qu'un mot s'intercalait —
+  // « rupture PARTIELLE du tendon d'Achille » partait en non-reconnu.
+  ['Rupture du tendon d\'Achille', [['rupture', 'achille'], ['rupture', 'achilleen'],
+                                    ['rupture', 'calcaneen'], ['desinsertion', 'achille']]],
   ['Périostite tibiale',   ['periostite', 'stress tibial', 'syndrome de stress tibial']],
 
   // ── Tendinopathies par site ──

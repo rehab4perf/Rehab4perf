@@ -63,6 +63,14 @@ attendu('Lésion musculaire des ischio-jambiers', ['Lésion musculaire']);
 attendu('Désinsertion proximale ischio-jambiers droite', ['Lésion musculaire']);
 // La rupture reste une rupture, pas une tendinopathie.
 attendu('Rupture du tendon d\'Achille', ['Rupture du tendon d\'Achille']);
+// Un mot insere entre « rupture » et « achille » cassait l'alias contigu.
+attendu('Rupture partielle du tendon d\'Achille', ['Rupture du tendon d\'Achille']);
+attendu('Rupture complète achilléen', ['Rupture du tendon d\'Achille']);
+attendu('Rupture du tendon calcanéen', ['Rupture du tendon d\'Achille']);
+attendu('Rupture achille gauche post op',
+        ['Post-opératoire', 'Rupture du tendon d\'Achille']);
+// Sans le mot « rupture », ce n'en est pas une.
+attendu('Tendinopathie achilléenne', ['Tendinopathie d\'Achille']);
 // Formulation vague : le groupe générique reste le filet.
 attendu('Tendinopathie chronique', ['Tendinopathie']);
 attendu('Problème de tendinite ancienne', ['Tendinopathie']);
