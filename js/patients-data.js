@@ -62,7 +62,10 @@ var R4P_SPORT_ALIASES = [
    complet — d'où l'importance de la ligne « Non reconnu ». */
 var R4P_MOTIF_KEYWORDS = [
   // ── Contexte de consultation (pas une pathologie) ──
-  ['Post-opératoire',      ['post op', 'postop', 'post operatoire', 'postoperatoire', 'opere', 'operee', 'operation', 'chirurgie', 'plastie', 'reconstruction', 'arthroscopie', 'prothese']],
+  ['Post-opératoire',      ['post op', 'postop', 'post operatoire', 'postoperatoire', 'opere', 'operee', 'operation', 'chirurgie', 'plastie', 'reconstruction', 'arthroscopie', 'prothese',
+                            // Gestes nommes par leur eponyme : ce sont des chirurgies,
+                            // meme quand le mot « operation » n'est pas ecrit.
+                            'latarjet', 'bristow', '=butee', '=buttee', 'ligamentoplastie']],
 
   // ── Genou ──
   ['LCA',                  ['lca', 'ligament croise anterieur', 'didt', 'kenneth jones', 'acl']],
@@ -92,7 +95,12 @@ var R4P_MOTIF_KEYWORDS = [
   ['Coiffe des rotateurs', ['coiffe', 'rotateurs', 'sus epineux', 'supra epineux', 'infra epineux']],
   // « instabilite » seul a été retiré : trop générique, il attrapait aussi
   // « instabilité chronique de cheville » et étiquetait ces patients en épaule.
-  ['Instabilité d\'épaule',['instabilite epaule', 'instabilite gleno', 'luxation', 'subluxation', 'latarjet', 'bankart']],
+  // Alias en LISTE pour « instabilite » : le mot seul attrapait la cheville,
+  // mais la forme contigue « instabilite epaule » cassait des qu'un mot
+  // s'intercalait — « instabilite ANTERIEURE d'epaule ».
+  ['Instabilité d\'épaule',[['instabilite', 'epaule'], ['instabilite', 'gleno'],
+                            'luxation', 'subluxation', 'latarjet', 'bankart',
+                            '=butee', '=buttee', 'bristow']],
   ['Capsulite rétractile', ['capsulite', 'epaule gelee', 'frozen shoulder', 'retractile']],
   ['Lésion du labrum',     ['labrum', 'labral', 'slap']],
   // Le motif d'épaule le plus fréquent manquait. « bursite » seul est écarté :
@@ -197,10 +205,16 @@ function r4pMatchAlias(hay, alias){
     }
     return true;
   }
-  if (alias.length < 5) {
-    return new RegExp('(^|[^a-z0-9])' + alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^a-z0-9]|$)').test(hay);
+  // Un alias prefixe de « = » exige le MOT ENTIER, quelle que soit sa longueur.
+  // Necessaire des qu'un terme court se cache dans un mot courant : « butee »
+  // se trouve dans « debutee », et « reeducation debutee » basculait en
+  // chirurgie d'epaule.
+  var motEntier = alias.charAt(0) === '=';
+  var terme = motEntier ? alias.slice(1) : alias;
+  if (motEntier || terme.length < 5) {
+    return new RegExp('(^|[^a-z0-9])' + terme.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^a-z0-9]|$)').test(hay);
   }
-  return hay.indexOf(alias) !== -1;
+  return hay.indexOf(terme) !== -1;
 }
 
 /* Rend les libellés dont au moins un alias apparaît dans le texte. */

@@ -195,6 +195,16 @@ Un alias de moins de 5 caractères est cherché entre frontières de mot ; à
 partir de 5, en sous-chaîne. D'où les commentaires du fichier expliquant
 pourquoi `rotulien`, `carpien`, `instabilite` et `tendon` seuls ont été retirés.
 
+Un alias **préfixé de `=`** exige le mot entier quelle que soit sa longueur.
+Nécessaire dès qu'un terme se cache dans un mot courant : `butee` se trouve
+dans « dé**butée** », et « rééducation débutée » basculait en chirurgie
+d'épaule.
+
+**Piège récurrent** : un alias multi-mots est une expression **contiguë**. Un
+seul mot intercalé le casse — « rupture PARTIELLE du tendon d'Achille »,
+« instabilité ANTÉRIEURE d'épaule ». Écrire ces alias en listes
+(`['rupture', 'achille']`) plutôt qu'en phrases.
+
 ## Générateur CAP (retour à la course)
 
 Les règles cliniques sont dans `SPEC-CAP.md` — **à lire avant toute

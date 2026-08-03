@@ -81,6 +81,23 @@ console.log('\nÉpaule — conflit et articulation acromio-claviculaire');
 attendu('Conflit sous-acromial épaule droite', ['Conflit sous-acromial']);
 attendu('Bursite sous-acromiale', ['Conflit sous-acromial']);
 attendu('Disjonction acromio-claviculaire stade 2', ['Lésion acromio-claviculaire']);
+// Latarjet, Bristow et « butée » designent la meme chirurgie de stabilisation :
+// elles impliquent donc l'instabilite ET le contexte post-operatoire.
+attendu('Post Latarjet', ['Post-opératoire', 'Instabilité d\'épaule']);
+attendu('Butée d\'épaule', ['Post-opératoire', 'Instabilité d\'épaule']);
+attendu('Buttée d\'épaule droite', ['Post-opératoire', 'Instabilité d\'épaule']);
+attendu('Butée coracoïdienne', ['Post-opératoire', 'Instabilité d\'épaule']);
+attendu('Bristow-Latarjet', ['Post-opératoire', 'Instabilité d\'épaule']);
+// Un mot intercale cassait l'alias contigu « instabilite epaule ».
+attendu('Instabilité antérieure d\'épaule opérée',
+        ['Post-opératoire', 'Instabilité d\'épaule']);
+attendu('Instabilité d\'épaule', ['Instabilité d\'épaule']);
+// « instabilite » seul ne doit toujours pas basculer la cheville en epaule.
+attendu('Instabilité chronique de cheville', ['Instabilité de cheville']);
+// « butee » fait cinq caracteres, donc cherche en sous-chaine : il se trouve
+// dans « deBUTEE ». Un alias prefixe de « = » exige le mot entier.
+attendu('Rééducation débutée en janvier', []);
+attendu('Reprise débutée après 6 semaines', []);
 
 /* ── Rachis ───────────────────────────────────────────────────────────────── */
 
