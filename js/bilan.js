@@ -5661,7 +5661,11 @@ function _buildAllTestsHtml() {
      vide, pour ne pas laisser un titre orphelin. */
   function crGroup(label, rows) {
     if (!rows || !rows.trim()) return '';
-    return '<div style="margin-top:10px;border-top:1px dashed var(--border);padding-top:6px">'
+    // Pas de filet ici : la derniere ligne du bloc porte deja sa bordure
+    // basse, et les deux se cumulaient — un trait plein puis un pointille
+    // pour une seule separation. L'intertitre en capitales suffit a ouvrir
+    // le groupe, l'espace fait le reste.
+    return '<div style="margin-top:14px;padding-top:2px">'
       + '<div style="font-size:.7rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">' + label + '</div>'
       + rows + '</div>';
   }
