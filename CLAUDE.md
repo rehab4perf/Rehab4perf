@@ -152,6 +152,32 @@ missing = [t for t in tests if t not in tbodies]
 print('TESTS sans tbody:', missing or 'Aucun ✓')
 ```
 
+## Motifs de bilan — onglet Patients
+
+```bash
+node qualite/motifs-cas.js
+```
+
+`R4P_MOTIF_KEYWORDS` dans `js/patients-data.js` classe le champ « motif » en
+groupes. Ce que l'onglet appelle **non reconnu** n'est pas une faute de saisie :
+c'est un motif que la table ne sait pas ranger. Le taux se réduit en couvrant
+ce que le praticien écrit vraiment, **fautes de frappe comprises** — `isquios`
+se rencontre autant que `ischios`.
+
+Deux mécanismes, à connaître avant d'ajouter un groupe :
+
+- Un alias peut être une **liste** : tous ses termes doivent être présents.
+  C'est ce qui permet d'exiger la nature *et* le site (`['tendinopathie',
+  'ischio']`). Sans ça, « lésion musculaire des ischio-jambiers » serait rangée
+  en tendinopathie — le site seul ne dit rien de la lésion.
+- Un groupe **générique** s'efface devant un groupe précis de sa famille
+  (`{generique:'tendinopathie'}` contre `{famille:'tendinopathie'}`). Sinon le
+  patient compte deux fois et les deux barres sont fausses.
+
+Un alias de moins de 5 caractères est cherché entre frontières de mot ; à
+partir de 5, en sous-chaîne. D'où les commentaires du fichier expliquant
+pourquoi `rotulien`, `carpien`, `instabilite` et `tendon` seuls ont été retirés.
+
 ## Générateur CAP (retour à la course)
 
 Les règles cliniques sont dans `SPEC-CAP.md` — **à lire avant toute

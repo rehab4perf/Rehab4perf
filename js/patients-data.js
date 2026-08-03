@@ -76,6 +76,18 @@ var R4P_MOTIF_KEYWORDS = [
                                   'chondropathie', 'pfps', 'patellofemoral']],
   ['Syndrome bandelette ilio-tibiale', ['sbit', 'bandelette', 'ilio tibial', 'iliotibial', 'essuie glace']],
 
+  // ── Hanche ──
+  // La région n'apparaissait nulle part dans cette table, alors qu'elle est une
+  // page entière du bilan : tout ce qui en venait partait en non-reconnu.
+  ['Conflit fémoro-acétabulaire', ['conflit femoro acetabulaire', 'femoro acetabulaire',
+                                   'conflit de hanche', 'conflit coxo femoral',
+                                   'came femorale', 'cam femoral', 'pincer acetabulaire', 'fai']],
+  ['Tendinopathie glutéale', ['gluteale', 'grand trochanter', 'trochanterien', 'trochanterienne',
+                              'moyen fessier', 'petit fessier', 'gtps', 'abducteurs de hanche'],
+                             { famille: 'tendinopathie' }],
+  ['Tendinopathie du psoas', [['tendinopathie', 'psoas'], ['tendinite', 'psoas'],
+                              'psoas iliaque', 'ilio psoas'], { famille: 'tendinopathie' }],
+
   // ── Épaule ──
   ['Coiffe des rotateurs', ['coiffe', 'rotateurs', 'sus epineux', 'supra epineux', 'infra epineux']],
   // « instabilite » seul a été retiré : trop générique, il attrapait aussi
@@ -83,6 +95,11 @@ var R4P_MOTIF_KEYWORDS = [
   ['Instabilité d\'épaule',['instabilite epaule', 'instabilite gleno', 'luxation', 'subluxation', 'latarjet', 'bankart']],
   ['Capsulite rétractile', ['capsulite', 'epaule gelee', 'frozen shoulder', 'retractile']],
   ['Lésion du labrum',     ['labrum', 'labral', 'slap']],
+  // Le motif d'épaule le plus fréquent manquait. « bursite » seul est écarté :
+  // il existe aussi au trochanter, et rangerait ces patients en épaule.
+  ['Conflit sous-acromial', ['sous acromial', 'sous acromiale', 'impingement', 'acromioplastie',
+                             'conflit epaule', 'conflit d epaule']],
+  ['Lésion acromio-claviculaire', ['acromio claviculaire', 'disjonction', 'entorse acromio']],
 
   // ── Coude, poignet, main ──
   ['Épicondylite',         ['epicondylite', 'epicondylalgie', 'epicondylien', 'tennis elbow',
@@ -102,20 +119,63 @@ var R4P_MOTIF_KEYWORDS = [
                                     'rupture tendon achille', 'rupture d achille']],
   ['Périostite tibiale',   ['periostite', 'stress tibial', 'syndrome de stress tibial']],
 
+  // ── Tendinopathies par site ──
+  // Nature ET site sont exigés. Les variantes couvrent ce qui se tape vraiment,
+  // fautes comprises : « isquios » pour « ischios » se rencontre autant que la
+  // forme correcte, et une table juste en théorie est fausse en pratique.
+  ['Tendinopathie des ischio-jambiers', [['tendinopathie', 'ischio'], ['tendinopathie', 'isquio'],
+                                         ['tendinopathie', 'ichio'], ['tendinite', 'ischio'],
+                                         ['tendinite', 'isquio'], ['tendinose', 'ischio'],
+                                         ['tendinopathie', 'hamstring'], 'high hamstring'],
+                                        { famille: 'tendinopathie' }],
+  ['Tendinopathie rotulienne', [['tendinopathie', 'rotulien'], ['tendinite', 'rotulien'],
+                                ['tendinopathie', 'patellaire'], ['tendinose', 'rotulien'],
+                                'jumper knee', 'jumpers knee', 'tendon rotulien'],
+                               { famille: 'tendinopathie' }],
+  ['Tendinopathie d\'Achille', [['tendinopathie', 'achille'], ['tendinite', 'achille'],
+                                ['tendinopathie', 'achilleen'], ['tendinite', 'achilleen'],
+                                ['tendinose', 'achille'], 'tendinopathie calcaneenne'],
+                               { famille: 'tendinopathie' }],
+  ['Tendinopathie du tibial postérieur', ['tibial posterieur', 'jambier posterieur'],
+                                         { famille: 'tendinopathie' }],
+
+  // ── Rachis ──
+  ['Dorsalgie', ['dorsalgie', 'rachialgie thoracique', 'douleur thoracique', 'dorso lombaire']],
+  ['Spondylolyse / spondylolisthésis', ['spondylolyse', 'spondylolisthesis', 'spondylolisthese',
+                                        'lyse isthmique', 'isthmique']],
+  ['Canal lombaire étroit', ['canal lombaire', 'stenose lombaire', 'stenose canalaire',
+                             'canal etroit'], { famille: 'lombaire' }],
+
+  // ── Jambe et pied ──
+  ['Syndrome des loges', ['syndrome des loges', 'syndrome de loge', 'loge anterieure',
+                          'aponevrotomie', 'chronic exertional']],
+  ['Fracture de fatigue', ['fracture de fatigue', 'fracture de stress', 'stress fracture',
+                           'fatigue osseuse', 'oedeme osseux'], { famille: 'fracture' }],
+  ['Névrome de Morton', ['morton', 'nevrome']],
+
+  // ── Général ──
+  ['SDRC / algodystrophie', ['sdrc', 'algodystrophie', 'algoneurodystrophie', 'crps',
+                             'syndrome douloureux regional']],
+  ['Commotion cérébrale', ['commotion', 'traumatisme cranien']],
+  ['Préparation physique', ['preparation physique', 'prepa physique', 'preparation marathon',
+                            'plan marathon', 'objectif course', 'ppg']],
+
   // ── Transversal ──
   // « tendon » seul a été retiré : il apparaît dans « rupture du tendon
   // d'Achille », qui n'est pas une tendinopathie. Un motif vague du type
   // « problème de tendon » part désormais en non-reconnu, ce qui est plus
   // honnête qu'un classement erroné.
-  ['Tendinopathie',        ['tendinopathie', 'tendinite', 'tendineux', 'tendinose']],
+  ['Tendinopathie',        ['tendinopathie', 'tendinite', 'tendineux', 'tendinose'],
+                           { generique: 'tendinopathie' }],
   ['Entorse',              ['entorse', 'ligamentoplastie', 'ligamentaire']],
   ['Lésion musculaire',    ['lesion musculaire', 'dechirure', 'claquage', 'elongation', 'contracture',
                             'lma', 'myo aponevrotique', 'myoaponevrotique', 'desinsertion']],
   ['Arthrose',             ['arthrose', 'arthrosique', 'gonarthrose', 'coxarthrose', 'omarthrose']],
-  ['Lombalgie',            ['lombalgie', 'lombaire', 'lumbago', 'hernie', 'discal', 'sciatique', 'cruralgie']],
+  ['Lombalgie',            ['lombalgie', 'lombaire', 'lumbago', 'hernie', 'discal', 'sciatique', 'cruralgie'],
+                           { generique: 'lombaire' }],
   ['Cervicalgie',          ['cervicalgie', 'cervical', 'ncb', 'torticolis']],
   ['Pubalgie',             ['pubalgie', 'pubis', 'adducteurs']],
-  ['Fracture',             ['fracture', 'fissure']],
+  ['Fracture',             ['fracture', 'fissure'], { generique: 'fracture' }],
   ['Retour au sport',      ['rts', 'retour au sport', 'return to sport', 'reprise du sport', 'reathletisation', 'readaptation']],
   ['Prévention',           ['prevention', 'preventif', 'depistage', 'screening', 'bilan initial', 'profilage']],
   ['Contrôle / suivi',     ['controle', 'suivi', 'reevaluation', 'reeval']],
@@ -124,6 +184,16 @@ var R4P_MOTIF_KEYWORDS = [
 /* Un alias court risque de se retrouver dans un mot sans rapport
    (« cap » dans « capoeira ») → frontière de mot exigée sous 5 caractères. */
 function r4pMatchAlias(hay, alias){
+  // Un alias peut etre une LISTE : tous ses termes doivent etre presents.
+  // C'est ce qui permet d'exiger la nature ET le site — « tendinopathie » +
+  // « ischio » — sans quoi « lesion musculaire des ischio-jambiers » serait
+  // etiquetee tendinopathie, le site seul ne disant rien de la lesion.
+  if (Array.isArray(alias)) {
+    for (var k = 0; k < alias.length; k++) {
+      if (!r4pMatchAlias(hay, alias[k])) return false;
+    }
+    return true;
+  }
   if (alias.length < 5) {
     return new RegExp('(^|[^a-z0-9])' + alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^a-z0-9]|$)').test(hay);
   }
@@ -134,12 +204,24 @@ function r4pMatchAlias(hay, alias){
 function r4pMatchGroups(text, table){
   var hay = r4pNorm(text);
   if (!hay) return [];
-  var out = [];
+  var out = [], familles = {}, generiques = [];
   table.forEach(function(entry){
-    var label = entry[0], aliases = entry[1];
+    var label = entry[0], aliases = entry[1], opt = entry[2] || {};
     for (var i = 0; i < aliases.length; i++) {
-      if (r4pMatchAlias(hay, aliases[i])) { out.push(label); return; }
+      if (!r4pMatchAlias(hay, aliases[i])) continue;
+      out.push(label);
+      if (opt.famille) familles[opt.famille] = true;
+      if (opt.generique) generiques.push({ label: label, famille: opt.generique });
+      return;
     }
+  });
+  // Un groupe generique s'efface devant un groupe precis de sa famille : sans
+  // ca le patient compterait deux fois, en « Tendinopathie » et en
+  // « Tendinopathie des ischio-jambiers », et les deux barres seraient fausses.
+  generiques.forEach(function(g){
+    if (!familles[g.famille]) return;
+    var i = out.indexOf(g.label);
+    if (i >= 0) out.splice(i, 1);
   });
   return out;
 }
