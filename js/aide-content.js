@@ -236,15 +236,15 @@ sections: [
       { t:'Quatre indicateurs en haut', x:'Patients au total, Actifs (séance de moins de 30 jours), Dormants (plus de 90 jours sans rien) et Nouveaux du mois. Actifs et Dormants ne s\'additionnent pas au total : les patients situés entre 30 et 90 jours ne sont dans aucune des deux cases.' },
       { t:'« Dormants » est l\'indicateur le plus actionnable', x:'Il liste les patients que vous n\'avez pas vus depuis plus de trois mois. Contrairement aux graphiques, qui décrivent, celui-ci suggère une action.' },
       { t:'Répartition par sexe, âge et sport', x:'Le sexe est déduit de la civilité saisie à la création du patient. L\'âge est calculé depuis la date de naissance. Les sports sont regroupés automatiquement (voir l\'article suivant).' },
-      { t:'Régions atteintes et motifs de consultation', x:'Ces deux blocs portent le badge « Bilan » : ils sont calculés depuis vos bilans et n\'apparaissent donc pas si votre offre ne comprend pas le bilan clinique.' }
+      { t:'Régions atteintes et diagnostics', x:'Ces deux blocs portent le badge « Bilan » : ils sont calculés depuis vos bilans et n\'apparaissent donc pas si votre offre ne comprend pas le bilan clinique.' }
     ]},
   { id:'comprendre-chiffres', titre:'Bien lire les chiffres',
     intro:'Quelques règles de calcul à connaître pour ne pas mal interpréter les graphiques. Elles sont volontairement affichées sous chaque bloc.',
     etapes:[
       { t:'L\'unité de comptage est le patient, jamais le bilan', x:'Un patient qui a cinq bilans compte pour un. Sinon les patients les plus suivis écraseraient les statistiques.' },
-      { t:'Un patient peut compter dans plusieurs lignes', x:'C\'est le cas pour les régions atteintes (genou et épaule) comme pour les motifs. C\'est pourquoi ces blocs sont en barres et non en camembert : les parts ne se partagent pas un tout, et leur somme dépasse 100 %.' },
+      { t:'Un patient peut compter dans plusieurs lignes', x:'C\'est le cas pour les régions atteintes (genou et épaule) comme pour les diagnostics. C\'est pourquoi ces blocs sont en barres et non en camembert : les parts ne se partagent pas un tout, et leur somme dépasse 100 %.' },
       { t:'« Non renseigné » et « Non reconnu » sont affichés exprès', x:'Ces lignes grises vous disent quelle part de vos données échappe au classement. Sans elles, vous liriez un palmarès en croyant qu\'il couvre tout votre fichier.' },
-      { t:'Surveillez le taux de non-reconnus des motifs', x:'Il est écrit sous le bloc. En dessous de 30 %, le classement est fiable. Au-delà, il devient trompeur : c\'est le signal qu\'il faudrait saisir les motifs de façon plus homogène.' },
+      { t:'Surveillez le taux de non-reconnus des diagnostics', x:'Il est écrit sous le bloc. En dessous de 30 %, le classement est fiable. Au-delà, il devient trompeur : c\'est le signal qu\'il faut nommer la pathologie dans le champ Diagnostic, et non la décrire.' },
       { t:'Les barres se lisent par leur longueur relative', x:'La plus longue correspond à la valeur la plus élevée de la série, pas à 100 % de vos patients. La valeur exacte est toujours écrite à droite.' }
     ]},
   { id:'filtres-periode', titre:'Filtrer sur une période',
@@ -279,15 +279,15 @@ sections: [
       { t:'Antécédents — une entrée par épisode', x:'Saisissez le libellé, ajoutez une date si vous la connaissez, puis « Ajouter ». Chaque antécédent devient une étiquette supprimable. Une liste datée plutôt qu\'un bloc de texte : la chronologie se perdrait à la première réécriture.' },
       { t:'Cliquez sur « Enregistrer la fiche »', x:'Le bouton reste visible en bas de page pendant que vous faites défiler. Un message confirme l\'enregistrement.' }
     ]},
-  { id:'sport-motifs', titre:'Comment les sports et les motifs sont reconnus',
-    intro:'Vous saisissez librement le sport et le motif de bilan ; le regroupement se fait automatiquement à l\'affichage. Rien n\'est modifié dans vos données.',
+  { id:'sport-motifs', titre:'Comment les sports et les diagnostics sont reconnus',
+    intro:'Vous saisissez librement le sport et le diagnostic ; le regroupement se fait automatiquement à l\'affichage. Rien n\'est modifié dans vos données.',
     etapes:[
       { t:'Les sports sont regroupés par équivalences', x:'« foot », « Football » et « futsal » se retrouvent dans la même barre. Ce qui n\'est pas reconnu apparaît en « Autres », ce qui est vide en « Non renseigné ».' },
       { t:'Le sport peut venir de deux endroits', x:'Celui de la fiche patient est prioritaire ; s\'il est vide, celui du bilan le plus récent est utilisé. Vous n\'avez donc rien à ressaisir si vous ne l\'aviez renseigné que dans un bilan.' },
-      { t:'Les motifs sont analysés par mots-clés', x:'Un motif est une phrase, pas une étiquette : « Contrôle post-op LCA à 3 mois » alimente à la fois Post-opératoire, LCA et Contrôle. Une trentaine de pathologies sont reconnues, y compris les abréviations courantes (SFP, SBIT, LCA, RTS).' },
+      { t:'Les diagnostics sont analysés par mots-clés', x:'Le champ est une phrase, pas une étiquette : « Contrôle post-op LCA à 3 mois » alimente à la fois Post-opératoire, LCA et Contrôle. Une quarantaine de pathologies sont reconnues, y compris les abréviations courantes (SFP, SBIT, LCA, RTS) et les fautes de frappe fréquentes.' },
       { t:'Écrire naturellement suffit', x:'Les accents, les tirets et les apostrophes n\'ont pas d\'importance : « fémoro-patellaire », « femoro patellaire » et « SFP » sont traités de la même façon.' },
-      { t:'Un motif sans mot-clé connu part en « Non reconnu »', x:'« Gêne au genou depuis la reprise » n\'est rattachable à aucune pathologie : il est compté à part plutôt que classé au hasard. Pour améliorer la reconnaissance, nommez la pathologie dans le motif.' },
-      { t:'Les négations ne sont pas gérées', x:'« Pas de rupture du LCA » sera compté dans LCA. À garder en tête si vous formulez des motifs par élimination.' }
+      { t:'Un diagnostic sans mot-clé connu part en « Non reconnu »', x:'« Gêne au genou depuis la reprise » n\'est rattachable à aucune pathologie : c\'est une description, pas un diagnostic. Il est compté à part plutôt que classé au hasard. Pour améliorer la reconnaissance, nommez la pathologie — la description détaillée a sa place dans le motif de consultation, juste en dessous.' },
+      { t:'Les négations ne sont pas gérées', x:'« Pas de rupture du LCA » sera compté dans LCA. À garder en tête si vous formulez un diagnostic par élimination.' }
     ]}
 ]},
 
@@ -571,8 +571,8 @@ faq: [
     a:'C\'est normal. « Actif » signifie une activité de moins de 30 jours, « Dormant » plus de 90 jours. Les patients situés entre les deux ne sont dans aucune des deux cases — ils apparaissent en « Récent » dans la liste. Seul « Patients au total » compte tout le monde.' },
   { q:'Pourquoi la répartition des régions atteintes dépasse-t-elle 100 % ?',
     a:'Parce qu\'un patient peut avoir plusieurs zones douloureuses : il compte alors dans plusieurs lignes. C\'est aussi pour cette raison que ce bloc est en barres et non en camembert — un camembert affirmerait visuellement un partage du tout qui n\'existe pas. Le pourcentage se lit « part des patients concernés », pas « part du total ».' },
-  { q:'Beaucoup de mes motifs sont en « Non reconnu ».',
-    a:'La reconnaissance se fait par mots-clés sur le champ « Motif du bilan ». Un motif descriptif comme « Gêne au genou depuis la reprise » ne contient aucune pathologie nommée : il est compté à part plutôt que classé au hasard. Nommez la pathologie dans le motif (SFP, LCA, tendinopathie…) pour améliorer le taux. Au-delà de 30 % de non-reconnus, considérez le classement comme indicatif seulement.' },
+  { q:'Beaucoup de mes diagnostics sont en « Non reconnu ».',
+    a:'La reconnaissance se fait par mots-clés sur le champ « Diagnostic » du bilan. Une formulation descriptive comme « Gêne au genou depuis la reprise » ne contient aucune pathologie nommée : elle est comptée à part plutôt que classée au hasard. Nommez la pathologie (SFP, LCA, tendinopathie de la coiffe…) pour améliorer le taux ; la description libre a sa place dans le motif de consultation, juste en dessous. Au-delà de 30 % de non-reconnus, considérez le classement comme indicatif seulement.' },
   { q:'Le sport de mon patient n\'apparaît pas dans les statistiques.',
     a:'Vérifiez d\'abord qu\'il est renseigné : la ligne grise « Non renseigné » compte les patients sans sport. S\'il est renseigné mais atterrit dans « Autres », c\'est que le libellé n\'est pas dans la liste des équivalences reconnues — dites-le nous, la liste s\'enrichit.' },
   { q:'Dans la fiche athlète, un champ est grisé avec une bordure pointillée.',

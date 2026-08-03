@@ -633,11 +633,11 @@ function render(s, hasBilanPlan, bounds){
       var reconnus = s.motifsRenseignes - s.motifNonReconnu;
       var tauxNon = s.motifsRenseignes ? Math.round(s.motifNonReconnu / s.motifsRenseignes * 100) : 0;
       var bodyMotif = barRows(motifItems, { asPct: true, denom: s.motifsRenseignes })
-        + '<div class="note">' + s.motifsRenseignes + ' motif(s) renseigné(s) · ' + reconnus + ' reconnu(s), '
+        + '<div class="note">' + s.motifsRenseignes + ' diagnostic(s) renseigné(s) · ' + reconnus + ' reconnu(s), '
         + s.motifNonReconnu + ' non reconnu(s) — ' + tauxNon + ' %.'
-        + ' <span style="color:var(--text3)">Au-delà de 30 % de non-reconnus, le classement devient trompeur : c\'est le signal qu\'un champ pathologie structuré serait nécessaire.</span></div>';
-      h += card('Motifs de consultation',
-        'Extraits par mots-clés du champ « Motif du bilan » — un motif peut compter dans plusieurs lignes',
+        + ' <span style="color:var(--text3)">Au-delà de 30 % de non-reconnus, le classement devient trompeur : c\'est le signal qu\'il faut nommer la pathologie dans le diagnostic.</span></div>';
+      h += card('Diagnostics',
+        'Extraits par mots-clés du champ « Diagnostic » du bilan — un diagnostic peut compter dans plusieurs lignes',
         bodyMotif, 'Bilan');
     }
   }

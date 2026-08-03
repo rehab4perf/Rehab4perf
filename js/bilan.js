@@ -7195,7 +7195,7 @@ function buildCR() {
   var infosHtml = '';
   var infosMap = [
     ['f-sexe','Sexe',''],['f-activite','Activité professionnelle',''],['f-sport','Sport / Objectif',''],['f-date-accident','Date accident',''],['f-date-op','Date opération',''],
-    ['f-motif','Motif du bilan',''],['f-motif-patient','Motif (patient)',''],
+    ['f-motif','Diagnostic',''],['f-motif-patient','Motif (patient)',''],
     ['f-douleur','Douleur',''],['f-debut','Debut',''],['f-mecanisme','Mecanisme',''],
     ['f-eva','EVA actuelle','/10'],['f-eva-max','EVA max 7j','/10'],
     ['f-aggravants','Aggravants',''],['f-soulagants','Soulagants',''],
