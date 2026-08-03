@@ -9574,7 +9574,9 @@ window.addEventListener('load', function(){
       }
       if(rawPrev){ try{ (JSON.parse(rawPrev)||[]).forEach(function(t){ if(t.name) prevByName[t.name]=t; }); }catch(e){} }
     }
-    var html = '<div style="margin-top:10px;border-top:1px dashed var(--border);padding-top:6px">'+
+    // Meme motif que crGroup, recopie ici : pas de filet, la ligne au-dessus
+    // porte deja sa bordure basse et les deux se cumulaient.
+    var html = '<div style="margin-top:14px;padding-top:2px">'+
       '<div style="font-size:.7rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Tests personnalisés</div>';
     data.forEach(function(t){
       var valStr = '';
