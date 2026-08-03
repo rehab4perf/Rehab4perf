@@ -31,8 +31,13 @@ var FICHIERS = ['athlete.html', 'programme.html'];
    ou les jetons --fs-* n'existent pas : y mettre var(--fs-…) rendrait la
    declaration invalide, et le navigateur l'ignorerait en silence. */
 function feuilles(src) {
+  // Masquer les <script> AVANT d'extraire les feuilles : leurs chaines
+  // contiennent litteralement <style> et </style>, pour des documents
+  // autonomes ou les jetons n'existent pas. Les compter ici reviendrait a
+  // reclamer une conversion qu'il ne faut surtout pas faire.
+  var sans = src.replace(/<script[\s\S]*?<\/script>/g, '');
   var out = [], re = /<style[^>]*>([\s\S]*?)<\/style>/g, m;
-  while ((m = re.exec(src))) out.push(m[1]);
+  while ((m = re.exec(sans))) out.push(m[1]);
   return out.join('\n');
 }
 

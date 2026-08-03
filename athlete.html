@@ -75,6 +75,22 @@
   --bloc-texte:#475569; --bloc-texte-l:#EEF1F5;
   /* Niveaux secondaires, dans la meme famille froide que --text. */
   --text-dk:#374151; --text2:#546578; --text3:#9AA8B8; --border2:#C6D0DE;
+  /* ── Couleurs porteuses d'information ──────────────────────────────
+     Objectifs de bloc, echelle de douleur, marque : jamais fondues, jamais
+     anonymes. Memes valeurs que cote praticien pour les objectifs. */
+  --obj-endurance:#075985;    --obj-endurance-l:#E0F2FE;
+  --obj-endurance-d:#1A4D28;  --obj-endurance-b:#2D7D46;  --obj-endurance-xl:#F0FAF0;
+  --obj-puissance:#9A3412;    --obj-puissance-l:#FFEDD5;
+  --obj-puissance-t:#7B2DBF;  --obj-puissance-td:#4A1D8A; --obj-puissance-tl:#F5F0FF;
+  --obj-hypertrophie:#5B21B6; --obj-hypertrophie-l:#EDE9FE; --obj-hypertrophie-d:#1A3A6E;
+  --obj-forcemax:#C0392B;     --obj-forcemax-d:#7A1A10;   --obj-forcemax-l:#FEF0EE;
+  --etape-defaut:#F59E0B;
+  --douleur-0:#27AE60; --douleur-1:#82D03E; --douleur-2:#F4D03F; --douleur-3:#F39C12;
+  --douleur-4:#E67E22; --douleur-5:#E74C3C; --douleur-6:#922B21;
+  --curseur:#94A3B8;
+  --tag-chain:#5B4FBF; --tag-chain-l:#F3F0FF; --tag-exo-l:#EBF3FF;
+  --note:#4338CA; --note-b:#C7D2FE; --note-l:#EEF2FF;
+  --suivi:#0F766E; --rpe-h:#1A4D8A; --logo-e:#7FA8D9;
   /* ── États ─────────────────────────────────────────────────────────
      Mêmes noms et mêmes valeurs que dans programme.html : un vert de
      réussite doit être le même vert des deux côtés du produit. */
@@ -95,7 +111,7 @@ html,body { background:var(--bg); font-family:var(--font-sans); color:var(--text
 .header-logo svg { display:block; flex-shrink:0; }
 .logo-w { display:inline-flex; align-items:baseline; line-height:1; white-space:nowrap; }
 .logo-r { font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:600; font-size:20px; color:#fff; letter-spacing:-.01em; }
-.logo-e { font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:600; font-size:.44em; vertical-align:super; color:#7FA8D9; margin:0 .05em 0 .01em; line-height:0; }
+.logo-e { font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:600; font-size:.44em; vertical-align:super; color:var(--logo-e); margin:0 .05em 0 .01em; line-height:0; }
 .logo-p { font-family:'Poppins',sans-serif; font-weight:800; font-size:16px; color:#fff; letter-spacing:-.025em; margin-left:.02em; }
 .header-sub { font-size:var(--fs-xs); color:rgba(255,255,255,.6); margin-top:1px; }
 .header-patient { font-size:.95rem; font-weight:700; color:#fff; margin-top:2px; line-height:1.2; }
@@ -137,7 +153,7 @@ html,body { background:var(--bg); font-family:var(--font-sans); color:var(--text
 .bloc-header {
   padding:10px 13px 10px 12px; background:var(--surface);
   border-bottom:1px solid var(--border);
-  border-left:3px solid var(--etape-c,#94A3B8);
+  border-left:3px solid var(--etape-c,var(--curseur));
   display:flex; align-items:center; gap:10px;
 }
 .bloc-title { color:var(--text); font-size:var(--fs-lg); font-weight:700; flex:1; }
@@ -145,33 +161,33 @@ html,body { background:var(--bg); font-family:var(--font-sans); color:var(--text
   font-size:var(--fs-2xs); font-weight:700; padding:3px 8px; border-radius:10px;
   background:var(--bg); color:var(--text2); text-transform:uppercase; letter-spacing:.04em;
 }
-.bloc-badge.endurance    { background:#E0F2FE; color:#075985; }
-.bloc-badge.puissance    { background:#FFEDD5; color:#9A3412; }
-.bloc-badge.hypertrophie { background:#EDE9FE; color:#5B21B6; }
+.bloc-badge.endurance    { background:var(--obj-endurance-l); color:var(--obj-endurance); }
+.bloc-badge.puissance    { background:var(--obj-puissance-l); color:var(--obj-puissance); }
+.bloc-badge.hypertrophie { background:var(--obj-hypertrophie-l); color:var(--obj-hypertrophie); }
 .bloc-badge.forcemax     { background:#FEE2E2; color:#991B1B; }
 
 /* ── ÉTAPE (groupe de blocs, ex: Échauffement) ── */
 .etape-group {
-  border:1.5px solid var(--etape-c,#F59E0B); border-radius:14px;
+  border:1.5px solid var(--etape-c,var(--etape-defaut)); border-radius:14px;
   padding:10px; margin-bottom:16px; background:rgba(0,0,0,.015);
 }
 .etape-header-ath {
   display:flex; align-items:center; gap:8px;
   font-size:var(--fs-sm); font-weight:700; text-transform:uppercase; letter-spacing:.05em;
-  color:var(--etape-c,#F59E0B); padding:2px 4px 10px;
+  color:var(--etape-c,var(--etape-defaut)); padding:2px 4px 10px;
 }
-.etape-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; background:var(--etape-c,#F59E0B); }
+.etape-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; background:var(--etape-c,var(--etape-defaut)); }
 .etape-group .bloc:last-child { margin-bottom:0; }
 
 .methode-card {
   margin:8px 12px; padding:9px 12px; border-radius:7px; font-size:var(--fs-sm);
   line-height:1.5; border-left:3px solid var(--muted);
-  background:var(--bg); color:#4a5568;
+  background:var(--bg); color:var(--text-dk);
 }
-.methode-card.mc-endurance    { background:#F0FAF0; border-color:#2D7D46; color:#1a4d28; }
-.methode-card.mc-puissance    { background:#F5F0FF; border-color:#7B2DBF; color:#4a1d8a; }
-.methode-card.mc-hypertrophie { background:var(--bg); border-color:var(--accent); color:#1a3a6e; }
-.methode-card.mc-forcemax     { background:#FEF0EE; border-color:#C0392B; color:#7a1a10; }
+.methode-card.mc-endurance    { background:var(--obj-endurance-xl); border-color:var(--obj-endurance-b); color:var(--obj-endurance-d); }
+.methode-card.mc-puissance    { background:var(--obj-puissance-tl); border-color:var(--obj-puissance-t); color:var(--obj-puissance-td); }
+.methode-card.mc-hypertrophie { background:var(--bg); border-color:var(--accent); color:var(--obj-hypertrophie-d); }
+.methode-card.mc-forcemax     { background:var(--obj-forcemax-l); border-color:var(--obj-forcemax); color:var(--obj-forcemax-d); }
 .methode-card-label { font-weight:700; margin-bottom:3px; font-size:var(--fs-sm); }
 .methode-card-desc  { opacity:.9; }
 .methode-card-protocol { margin-top:5px; font-size:var(--fs-xs); opacity:.75; }
@@ -184,10 +200,10 @@ html,body { background:var(--bg); font-family:var(--font-sans); color:var(--text
 .exo-tags { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:7px; }
 .exo-tag {
   font-size:var(--fs-xs); padding:3px 8px; border-radius:10px;
-  background:#EBF3FF; color:var(--accent); font-weight:500; text-decoration:none;
+  background:var(--tag-exo-l); color:var(--accent); font-weight:500; text-decoration:none;
 }
 .exo-tag.video { background:var(--ok-l); color:var(--ok-d); }
-.exo-tag.chain { background:#F3F0FF; color:#5B4FBF; }
+.exo-tag.chain { background:var(--tag-chain-l); color:var(--tag-chain); }
 /* ── YouTube vignette ── */
 .yt-thumb-wrap {
   display:inline-block; position:relative; cursor:pointer; border-radius:5px;
@@ -246,16 +262,16 @@ html,body { background:var(--bg); font-family:var(--font-sans); color:var(--text
 .pain-slider {
   -webkit-appearance:none; appearance:none; flex:1; height:3px; border-radius:2px;
   outline:none; margin:0; display:block;
-  background:linear-gradient(to right,#27AE60 0%,#82D03E 20%,#F4D03F 40%,#F39C12 55%,#E67E22 70%,#E74C3C 85%,#922B21 100%);
+  background:linear-gradient(to right,var(--douleur-0) 0%,var(--douleur-1) 20%,var(--douleur-2) 40%,var(--douleur-3) 55%,var(--douleur-4) 70%,var(--douleur-5) 85%,var(--douleur-6) 100%);
   opacity:.75;
 }
 .pain-slider::-webkit-slider-thumb {
   -webkit-appearance:none; width:14px; height:14px; border-radius:50%;
-  background:#fff; border:1.5px solid #94a3b8; cursor:pointer;
+  background:#fff; border:1.5px solid var(--curseur); cursor:pointer;
   box-shadow:0 1px 2px rgba(0,0,0,.15);
 }
 .pain-slider::-moz-range-thumb {
-  width:14px; height:14px; border-radius:50%; background:#fff; border:1.5px solid #94a3b8;
+  width:14px; height:14px; border-radius:50%; background:#fff; border:1.5px solid var(--curseur);
   cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,.15);
 }
 .exo-pain-state { font-size:var(--fs-2xs); font-weight:600; white-space:nowrap; flex-shrink:0; min-width:82px; text-align:right; }
@@ -360,7 +376,7 @@ html,body { background:var(--bg); font-family:var(--font-sans); color:var(--text
 .cal-chip:hover { opacity:.85; }
 .cal-msg-chip {
   font-size:var(--fs-xs); font-weight:600; padding:3px 6px; border-radius:5px;
-  background:#EEF2FF; color:#4338CA; border:1px solid #C7D2FE;
+  background:var(--note-l); color:var(--note); border:1px solid var(--note-b);
   margin-bottom:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   cursor:pointer; transition:opacity .12s;
 }
@@ -495,13 +511,13 @@ html,body { background:var(--bg); font-family:var(--font-sans); color:var(--text
 .rpe-desc { font-size:var(--fs-md); font-weight:700; min-height:1.4em; margin-bottom:8px; transition:color .2s; }
 .rpe-ua-display { font-size:1.05rem; font-weight:800; min-height:1.5em; margin-bottom:14px; transition:color .2s; }
 .rpe-already { font-size:var(--fs-sm); color:var(--muted); margin-bottom:10px; font-style:italic; }
-.rpe-seen { font-size:var(--fs-sm); color:#0F766E; margin-bottom:10px; font-weight:600; display:flex; align-items:center; gap:5px; }
+.rpe-seen { font-size:var(--fs-sm); color:var(--suivi); margin-bottom:10px; font-weight:600; display:flex; align-items:center; gap:5px; }
 .rpe-submit-btn {
   width:100%; padding:12px; background:var(--accent); color:#fff;
   border:none; border-radius:10px; font-size:var(--fs-lg); font-weight:700;
   cursor:pointer; transition:background .15s; font-family:inherit;
 }
-.rpe-submit-btn:hover { background:#1a4d8a; }
+.rpe-submit-btn:hover { background:var(--rpe-h); }
 .rpe-submit-btn:disabled { opacity:.5; cursor:default; }
 .rpe-success-msg { text-align:center; padding:18px 10px; }
 .rpe-success-ua { font-size:var(--fs-3xl); font-weight:800; margin:8px 0 4px; }
@@ -518,7 +534,7 @@ html,body { background:var(--bg); font-family:var(--font-sans); color:var(--text
 .exo-accordion-body.open { display:block; }
 .exo-feedback-row {
   display:flex; align-items:center; gap:8px; padding:7px 0;
-  border-bottom:1px solid #eef2f8;
+  border-bottom:1px solid var(--surface);
 }
 .exo-feedback-row:last-of-type { border-bottom:none; }
 .exo-feedback-name { flex:1; color:var(--navy); font-size:var(--fs-md); font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -561,7 +577,7 @@ html,body { background:var(--bg); font-family:var(--font-sans); color:var(--text
 .exo-pill { display:flex; flex-direction:column; align-items:center; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:6px 12px; min-width:52px; }
 .exo-pill-lbl { font-size:.58rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:3px; }
 .exo-pill-val { font-size:var(--fs-lg); font-weight:700; color:var(--navy); font-variant-numeric:tabular-nums; }
-.exo-pill.recup { background:var(--bg); border-color:#C5D5F0; }
+.exo-pill.recup { background:var(--bg); border-color:var(--border2); }
 .exo-pill.recup-dim .exo-pill-val { color:var(--border2); font-style:italic; }
 .exo-pain-v3 { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
 .exo-pain-label { font-size:var(--fs-xs); font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; white-space:nowrap; }

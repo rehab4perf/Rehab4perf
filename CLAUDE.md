@@ -69,10 +69,17 @@ node qualite/check-couleurs.js            # contrôle (exit 1 si nouveauté)
 node qualite/check-couleurs.js --write    # entériner après absorption
 ```
 
-La palette de `programme.html` compte 17 jetons pour 196 couleurs écrites hors
-palette. C'est la raison de fond pour laquelle `--card` est passé inaperçu :
-quand presque toute la couleur est écrite à côté des jetons, plus personne ne
-regarde les jetons. Le contrôle n'échoue que sur une couleur **nouvelle**.
+**Plus aucune couleur anonyme** dans `athlete.html`, `programme.html`,
+`bilan.html` et `outils.html` : le compteur est à zéro partout. Il était à 347.
+C'était la raison de fond pour laquelle `--card` est passé inaperçu — quand
+presque toute la couleur est écrite à côté des jetons, plus personne ne regarde
+les jetons. Toute couleur nouvelle fait désormais échouer le contrôle : il faut
+la nommer dans le `:root` du fichier concerné.
+
+Une couleur peut être **exclue des fusions sans être anonyme**. Les couleurs
+cliniques ont chacune leur jeton — `--obj-*`, `--douleur-0..6`, `--cote-d/g/bi`,
+`--zone-*`, `--acwr-*`, `--strava`. Elles ne se fondent pas, mais elles portent
+un nom : une couleur sans nom finit toujours par être recopiée de travers.
 
 Le blanc et le noir ne sont pas comptés : `#fff` est tantôt une surface,
 tantôt du texte sur fond navy.
