@@ -62,6 +62,16 @@ chiffres à chasse fixe, anneau `:focus-visible` (en `!important`, seul moyen
 de passer devant les dizaines d'`outline:none` plus spécifiques), et respect
 de `prefers-reduced-motion`.
 
+L'anneau utilise `--focus`, **jamais `--accent2`** : ce nom vaut un bleu clair
+dans le builder et l'espace athlète, mais le navy foncé dans le bilan et les
+outils — l'anneau y devenait un gros cadre noir. Même piège que `--card` : un
+nom qui existe partout sans valoir la même chose.
+
+Sur un bouton, `:focus-visible` ne se déclenche qu'au clavier ; sur un **champ
+de texte il se déclenche aussi au clic**, la spécification considérant qu'on va
+y taper. D'où l'anneau plus fin et sans décalage sur les champs : un décalage
+transforme un focus ordinaire en encadré.
+
 ## Couleurs (OBLIGATOIRE après toute couleur ajoutée)
 
 ```bash

@@ -557,16 +557,27 @@ body {
    2. Anneau de focus clavier. Il y a des dizaines d'`outline:none` dans
       ce fichier, tous plus spécifiques que cette règle — le !important
       est ici le seul moyen d'assurer une base commune sans reprendre
-      chaque déclaration une à une. `:focus-visible` ne se déclenche pas
-      au clic souris, l'anneau n'apparaît donc qu'au clavier.
+      chaque déclaration une à une. Sur un bouton, `:focus-visible` ne se
+      déclenche qu'au clavier ; sur un champ de texte il se déclenche aussi
+      au clic, la spécification considérant qu'on va y taper — d'où l'anneau
+      plus fin et sans décalage sur les champs.
    3. Mouvement réduit, pour qui l'a demandé au niveau du système.
    ────────────────────────────────────────────────────────────────────── */
 input[type="number"], table, time,
 .tabnum { font-variant-numeric:tabular-nums; }
 
 :focus-visible {
-  outline:2px solid var(--accent2,var(--focus)) !important;
+  outline:2px solid var(--focus,#4A90D9) !important;
   outline-offset:2px;
+}
+/* Champs de saisie : l'anneau colle au champ, sans decalage. Un anneau
+   decale transforme un focus ordinaire en gros cadre — et `:focus-visible`
+   se declenche BIEN a la souris sur un champ de texte, contrairement a un
+   bouton : la specification considere qu'on va y taper. */
+input:focus-visible, textarea:focus-visible, select:focus-visible,
+[contenteditable]:focus-visible {
+  outline-width:1.5px !important;
+  outline-offset:0;
 }
 
 @media (prefers-reduced-motion: reduce) {
