@@ -113,7 +113,7 @@ body {
 }
 .block-header.org  { background: var(--orange); }
 .block-header.grn  { background: var(--green); }
-.block-header.grey { background: #52514E; }
+.block-header.grey { background: var(--text2); }
 
 /* ── RM Inputs ──────────────────────────────────────────── */
 .rm-inputs {
@@ -295,9 +295,9 @@ body {
   box-shadow:0 20px 60px rgba(0,0,0,.25); position:relative;
 }
 #exportOutils-modal h3 { font-size:.95rem; color:var(--accent2); margin-bottom:6px; }
-#exportOutils-modal p { font-size:.8rem; color:#6b7a8d; margin-bottom:16px; line-height:1.5; }
+#exportOutils-modal p { font-size:.8rem; color:var(--text2); margin-bottom:16px; line-height:1.5; }
 #exportOutils-modal .modal-btns { display:flex; gap:8px; flex-wrap:wrap; }
-.modal-x { position:absolute; top:10px; right:14px; background:none; border:none; font-size:1.3rem; cursor:pointer; color:#aaa; }
+.modal-x { position:absolute; top:10px; right:14px; background:none; border:none; font-size:1.3rem; cursor:pointer; color:var(--text3); }
 
 @media print {
   .sub-tabs, .export-patient-bar, #exportOutils-modal { display:none !important; }
@@ -926,7 +926,7 @@ input[type="number"], table, time,
   border-radius: 8px;
   padding: 36px 40px;
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  color: #111;
+  color: var(--text);
   line-height: 1.55;
   box-shadow: 0 1px 3px rgba(0,0,0,.06);
 }
@@ -1602,7 +1602,7 @@ function printPrescription() {
 /* ── PROMs chip styles ── */
 .proms-chip {
   padding:5px 13px; border-radius:20px; font-size:.74rem; font-weight:500;
-  border:1px solid #dde3ec; background:transparent; color:#6b7a8d;
+  border:1px solid #dde3ec; background:transparent; color:var(--text2);
   cursor:pointer; transition:all .15s; font-family:inherit;
 }
 .proms-chip:hover { border-color:var(--accent2); color:var(--accent2); background:var(--accent-l); }
@@ -1616,11 +1616,11 @@ function printPrescription() {
 }
 .prom-card:hover { box-shadow:0 4px 16px rgba(0,0,0,.07); transform:translateY(-1px); }
 .prom-acronym { font-size:.95rem; font-weight:700; color:var(--accent2); margin-bottom:2px; }
-.prom-fullname { font-size:.75rem; color:#888; font-style:italic; margin-bottom:8px; line-height:1.3; }
+.prom-fullname { font-size:.75rem; color:var(--text3); font-style:italic; margin-bottom:8px; line-height:1.3; }
 .prom-tags { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px; }
 .prom-tag { font-size:.66rem; padding:2px 7px; border-radius:4px; font-weight:600; background:var(--accent-l); color:var(--accent); }
 .prom-tag.rts { background:#E0F9F3; color:var(--green-d); }
-.prom-note { font-size:.76rem; color:#555; line-height:1.5; border-top:1px solid #f0f4f8; padding-top:8px; margin-top:4px; }
+.prom-note { font-size:.76rem; color:var(--text2); line-height:1.5; border-top:1px solid #f0f4f8; padding-top:8px; margin-top:4px; }
 .prom-meta { display:flex; gap:12px; margin-top:8px; font-size:.68rem; color:var(--text3); }
 /* ── PROM questionnaire modal styles ── */
 .prom-q { padding:12px 0; border-bottom:1px solid #f0f4f8; }
@@ -1628,10 +1628,10 @@ function printPrescription() {
 .prom-q-num { font-size:.68rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px; }
 .prom-q-text { font-size:.85rem;font-weight:500;color:#1a2433;margin-bottom:8px;line-height:1.4; }
 .prom-q-opts { display:flex;flex-direction:column;gap:5px; }
-.prom-q-opts label { font-size:.82rem;color:#444;cursor:pointer;display:flex;align-items:flex-start;gap:6px;line-height:1.4; }
+.prom-q-opts label { font-size:.82rem;color:var(--text);cursor:pointer;display:flex;align-items:flex-start;gap:6px;line-height:1.4; }
 .prom-q-opts input[type=radio], .prom-q-opts input[type=checkbox] { margin-top:2px;flex-shrink:0;accent-color:var(--accent2); }
 .prom-section-label { font-size:.72rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;background:#F0F4F8;padding:8px 12px;margin:12px -24px;border-left:3px solid var(--accent); }
-.prom-intro { font-size:.82rem;color:#666;line-height:1.6;background:#F8FAFC;border-radius:7px;padding:12px 14px;margin-bottom:16px;border:1px solid #dde3ec; }
+.prom-intro { font-size:.82rem;color:var(--text2);line-height:1.6;background:#F8FAFC;border-radius:7px;padding:12px 14px;margin-bottom:16px;border:1px solid #dde3ec; }
 /* Section header in grid */
 .prom-section-hdr {
   grid-column: 1 / -1;
@@ -1641,7 +1641,7 @@ function printPrescription() {
   text-transform:uppercase; letter-spacing:.06em;
   border-bottom:2px solid var(--navy);
 }
-.prom-section-count { margin-left:auto; font-weight:400; color:#888; font-size:.7rem; text-transform:none; letter-spacing:0; }
+.prom-section-count { margin-left:auto; font-weight:400; color:var(--text3); font-size:.7rem; text-transform:none; letter-spacing:0; }
 </style>
 
 <script>

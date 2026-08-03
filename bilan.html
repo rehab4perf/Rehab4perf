@@ -668,7 +668,7 @@ td.bl-row-rail button:disabled { opacity: .3 !important; cursor: default; }
 }
 .block-header.green  { background: var(--green); }
 .block-header.red    { background: var(--red); }
-.block-header.grey   { background: #52514E; }
+.block-header.grey   { background: var(--text2); }
 .cr-toggle-label { margin-left:auto; display:inline-flex; align-items:center; gap:5px; font-size:.7rem; font-weight:500; color:rgba(255,255,255,.75); cursor:pointer; white-space:nowrap; text-transform:none; letter-spacing:0; }
 .cr-toggle-label input[type=checkbox] { width:14px; height:14px; accent-color:var(--green); cursor:pointer; flex-shrink:0; }
 .cr-toggle-label:has(input:checked) { color:var(--green); font-weight:700; }
@@ -958,7 +958,7 @@ td.bl-row-rail button:disabled { opacity: .3 !important; cursor: default; }
 .mob-dir-row:last-child { border-bottom: none; }
 .mob-dir-label { font-size: .8rem; font-weight: 600; color: var(--text); }
 .mob-status-sel {
-  border-radius: 20px; border: 1.5px solid #D1D5DB;
+  border-radius: 20px; border: 1.5px solid var(--border2);
   padding: 4px 26px 4px 11px; font-size: .76rem; font-weight: 600;
   cursor: pointer; outline: none; background: #fff;
   font-family: var(--font-sans); color: var(--text2);
@@ -1576,7 +1576,7 @@ textarea { resize:none !important; overflow:hidden !important; }
    compresser un champ voisin dans un conteneur flex. Gris sur gris, jamais
    confondu avec une valeur réellement saisie. */
 .bl-inherited-ghost {
-  border-style:dashed !important; border-color:var(--border2,#CBC8C0) !important;
+  border-style:dashed !important; border-color:var(--border2,var(--border2)) !important;
   background:var(--surface2,var(--bg)) !important;
 }
 input.bl-inherited-ghost::placeholder, textarea.bl-inherited-ghost::placeholder {

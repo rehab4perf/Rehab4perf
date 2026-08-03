@@ -73,6 +73,8 @@
   --amrap:#B45309;  --amrap-l:#FDF0E1;
   --emom:#6D28D9;   --emom-l:#F1EAFE;
   --bloc-texte:#475569; --bloc-texte-l:#EEF1F5;
+  /* Niveaux secondaires, dans la meme famille froide que --text. */
+  --text-dk:#374151; --text2:#546578; --text3:#9AA8B8; --border2:#C6D0DE;
   /* ── États ─────────────────────────────────────────────────────────
      Mêmes noms et mêmes valeurs que dans programme.html : un vert de
      réussite doit être le même vert des deux côtés du produit. */
@@ -141,7 +143,7 @@ html,body { background:var(--bg); font-family:var(--font-sans); color:var(--text
 .bloc-title { color:var(--text); font-size:var(--fs-lg); font-weight:700; flex:1; }
 .bloc-badge {
   font-size:var(--fs-2xs); font-weight:700; padding:3px 8px; border-radius:10px;
-  background:var(--bg); color:#546578; text-transform:uppercase; letter-spacing:.04em;
+  background:var(--bg); color:var(--text2); text-transform:uppercase; letter-spacing:.04em;
 }
 .bloc-badge.endurance    { background:#E0F2FE; color:#075985; }
 .bloc-badge.puissance    { background:#FFEDD5; color:#9A3412; }
@@ -259,7 +261,7 @@ html,body { background:var(--bg); font-family:var(--font-sans); color:var(--text
 .exo-pain-state { font-size:var(--fs-2xs); font-weight:600; white-space:nowrap; flex-shrink:0; min-width:82px; text-align:right; }
 .exo-note-toggle {
   width:26px; height:26px; border-radius:7px; border:1px solid var(--border);
-  background:#fff; color:#9aa8b8; cursor:pointer; font-size:var(--fs-sm); flex-shrink:0;
+  background:#fff; color:var(--text3); cursor:pointer; font-size:var(--fs-sm); flex-shrink:0;
   display:flex; align-items:center; justify-content:center; padding:0;
   transition:border-color .12s, color .12s;
 }
@@ -560,7 +562,7 @@ html,body { background:var(--bg); font-family:var(--font-sans); color:var(--text
 .exo-pill-lbl { font-size:.58rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:3px; }
 .exo-pill-val { font-size:var(--fs-lg); font-weight:700; color:var(--navy); font-variant-numeric:tabular-nums; }
 .exo-pill.recup { background:var(--bg); border-color:#C5D5F0; }
-.exo-pill.recup-dim .exo-pill-val { color:#CBD2DB; font-style:italic; }
+.exo-pill.recup-dim .exo-pill-val { color:var(--border2); font-style:italic; }
 .exo-pain-v3 { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
 .exo-pain-label { font-size:var(--fs-xs); font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; white-space:nowrap; }
 .bloc-texte .bloc-badge { background:var(--bloc-texte-l); color:var(--bloc-texte); }
@@ -570,7 +572,7 @@ html,body { background:var(--bg); font-family:var(--font-sans); color:var(--text
 .bloc-amrap .bloc-badge { background:var(--amrap-l); color:var(--amrap); }
 .bloc-emom  .bloc-badge { background:var(--emom-l); color:var(--emom); }
 .chrono-item { display:flex; align-items:center; gap:9px; }
-.chrono-min-ath { font-size:var(--fs-xs); font-weight:700; color:#6b7280; min-width:46px; text-transform:uppercase; font-variant-numeric:tabular-nums; }
+.chrono-min-ath { font-size:var(--fs-xs); font-weight:700; color:var(--text2); min-width:46px; text-transform:uppercase; font-variant-numeric:tabular-nums; }
 .chrono-nom-ath { flex:1; min-width:0; }
 .chrono-vig { width:52px; height:30px; border-radius:5px; overflow:hidden; flex-shrink:0;
   background:var(--bg); display:block; cursor:pointer; }
@@ -579,9 +581,9 @@ html,body { background:var(--bg); font-family:var(--font-sans); color:var(--text
 .chrono-reps-ath { font-weight:700; font-size:var(--fs-lg); }
 /* « / côté » se lit comme une precision, pas comme une valeur. */
 .chrono-cote-ath { font-weight:600; font-size:var(--fs-sm); color:var(--muted); }
-.chrono-saisie { display:flex; align-items:center; gap:10px; padding:11px 14px; border-top:1px solid #e5e7eb; }
-.chrono-saisie label { font-size:var(--fs-md); color:#374151; }
-.chrono-saisie input { width:84px; padding:7px 9px; border:1px solid #d1d5db; border-radius:7px; font-family:inherit; font-size:var(--fs-lg); text-align:center; }
+.chrono-saisie { display:flex; align-items:center; gap:10px; padding:11px 14px; border-top:1px solid var(--border); }
+.chrono-saisie label { font-size:var(--fs-md); color:var(--text-dk); }
+.chrono-saisie input { width:84px; padding:7px 9px; border:1px solid var(--border2); border-radius:7px; font-family:inherit; font-size:var(--fs-lg); text-align:center; }
 
 /* ── Socle commun ──────────────────────────────────────────────────────
    Trois règles qui valent pour toute l'application, posées en fin de
