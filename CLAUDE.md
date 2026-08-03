@@ -69,8 +69,15 @@ nom qui existe partout sans valoir la même chose.
 
 Sur un bouton, `:focus-visible` ne se déclenche qu'au clavier ; sur un **champ
 de texte il se déclenche aussi au clic**, la spécification considérant qu'on va
-y taper. D'où l'anneau plus fin et sans décalage sur les champs : un décalage
-transforme un focus ordinaire en encadré.
+y taper. Les champs sont donc **exclus de l'anneau** : ils ont déjà leur propre
+marque de focus (fond teinté, bordure d'accent), et l'anneau faisait doublon à
+chaque clic. Il reste sur tout le reste — boutons, liens, onglets, contrôles
+sur mesure — où rien d'autre ne signale où l'on se trouve au clavier.
+
+Conséquence à connaître : un champ dont le seul style de focus serait
+`outline:none`, sans remplacement, n'a plus aucune indication. Si un tel champ
+apparaît, lui donner sa propre bordure ou son propre fond au focus — ne pas
+rétablir l'anneau global.
 
 ## Couleurs (OBLIGATOIRE après toute couleur ajoutée)
 
