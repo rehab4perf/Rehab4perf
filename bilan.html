@@ -1584,9 +1584,12 @@ textarea { resize:none !important; overflow:hidden !important; }
    cadre en pointillés — aucun élément ajouté à côté, donc aucun risque de
    compresser un champ voisin dans un conteneur flex. Gris sur gris, jamais
    confondu avec une valeur réellement saisie. */
+/* Un filet a gauche, rien de plus. Le cadre en pointillés sur fond gris
+   couvrait tout le champ et se lisait comme une anomalie ; il ne reste que ce
+   qui distingue cette valeur d'un placeholder d'exemple ordinaire. Le texte
+   gris italique porte deja l'essentiel : ce champ est VIDE. */
 .bl-inherited-ghost {
-  border-style:dashed !important; border-color:var(--border2,var(--border2)) !important;
-  background:var(--surface2,var(--bg)) !important;
+  border-left:3px solid var(--border2) !important;
 }
 input.bl-inherited-ghost::placeholder, textarea.bl-inherited-ghost::placeholder {
   color:var(--text3); opacity:1; font-style:italic;
@@ -5171,7 +5174,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260710"></script>
-<script src="js/bilan.js?v=20260803c"></script>
+<script src="js/bilan.js?v=20260803d"></script>
 
 </body>
 </html>

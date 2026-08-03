@@ -2142,7 +2142,7 @@ function _blShowInheritedHints(mergedData){
       if(el.type === 'checkbox' || el.type === 'radio') return;
       el.dataset.blOrigPlaceholder = el.placeholder || '';
       el.placeholder = String(val);
-      el.title = 'Dernière valeur connue (bilan antérieur) — non saisie pour ce bilan';
+      el.title = 'Champ VIDE. Texte affiché = dernière valeur connue, reprise d\'un bilan antérieur. Elle ne sera pas enregistrée tant que vous ne l\'aurez pas saisie.';
       el.classList.add('bl-inherited-ghost');
       el.addEventListener('input', function _rmGhost(){
         el.classList.remove('bl-inherited-ghost');
