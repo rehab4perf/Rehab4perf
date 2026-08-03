@@ -1592,10 +1592,13 @@ textarea { resize:none !important; overflow:hidden !important; }
    d'une vraie valeur du bilan precedent. L'infobulle le dit, et le champ
    reste vide tant qu'on n'y a pas ecrit — ce que la classe sert encore a
    savoir, cote JS. */
+/* Meme encre que partout ailleurs. Une valeur heritee reste un rappel — elle
+   n'est jamais enregistree — mais rien ne la distingue plus a l'oeil d'une
+   valeur saisie : c'est la mise en page du reste de la page qui prime. */
 input.bl-inherited-ghost::placeholder, textarea.bl-inherited-ghost::placeholder {
-  color:var(--text3); opacity:1;
+  color:var(--text); opacity:1;
 }
-select.bl-inherited-ghost { color:var(--text3); }
+select.bl-inherited-ghost { color:var(--text); }
 
 /* ── Évolution ──────────────────────────────────────────── */
 .evo-delta { display:inline-flex; align-items:center; font-size:.62rem; font-weight:700; padding:1px 6px; border-radius:10px; margin-left:5px; white-space:nowrap; vertical-align:middle; }
@@ -5175,7 +5178,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260710"></script>
-<script src="js/bilan.js?v=20260803e"></script>
+<script src="js/bilan.js?v=20260803f"></script>
 
 </body>
 </html>
