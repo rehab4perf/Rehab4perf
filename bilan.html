@@ -1584,17 +1584,18 @@ textarea { resize:none !important; overflow:hidden !important; }
    cadre en pointillés — aucun élément ajouté à côté, donc aucun risque de
    compresser un champ voisin dans un conteneur flex. Gris sur gris, jamais
    confondu avec une valeur réellement saisie. */
-/* Un filet a gauche, rien de plus. Le cadre en pointillés sur fond gris
-   couvrait tout le champ et se lisait comme une anomalie ; il ne reste que ce
-   qui distingue cette valeur d'un placeholder d'exemple ordinaire. Le texte
-   gris italique porte deja l'essentiel : ce champ est VIDE. */
-.bl-inherited-ghost {
-  border-left:3px solid var(--border2) !important;
-}
+/* Aucune decoration : une valeur heritee s'affiche comme n'importe quel
+   placeholder, dans la meme grise que les autres champs. Le cadre en
+   pointilles puis le filet a gauche faisaient de ce champ une exception
+   visuelle sur une page qui n'en a aucune autre.
+   Ce que l'on perd : rien ne distingue plus a l'oeil un exemple generique
+   d'une vraie valeur du bilan precedent. L'infobulle le dit, et le champ
+   reste vide tant qu'on n'y a pas ecrit — ce que la classe sert encore a
+   savoir, cote JS. */
 input.bl-inherited-ghost::placeholder, textarea.bl-inherited-ghost::placeholder {
-  color:var(--text3); opacity:1; font-style:italic;
+  color:var(--text3); opacity:1;
 }
-select.bl-inherited-ghost { color:var(--text3); font-style:italic; }
+select.bl-inherited-ghost { color:var(--text3); }
 
 /* ── Évolution ──────────────────────────────────────────── */
 .evo-delta { display:inline-flex; align-items:center; font-size:.62rem; font-weight:700; padding:1px 6px; border-radius:10px; margin-left:5px; white-space:nowrap; vertical-align:middle; }
@@ -5174,7 +5175,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260710"></script>
-<script src="js/bilan.js?v=20260803d"></script>
+<script src="js/bilan.js?v=20260803e"></script>
 
 </body>
 </html>
