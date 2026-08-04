@@ -169,6 +169,26 @@ missing = [t for t in tests if t not in tbodies]
 print('TESTS sans tbody:', missing or 'Aucun ✓')
 ```
 
+## Empreinte de séance du builder
+
+```bash
+node qualite/hash-cas.js
+```
+
+`_sessionHash()` pilote trois signaux : le badge « non sauvegardé »,
+l'avertissement de fermeture d'onglet et celui de fermeture du builder. Tout
+ce qu'elle ne couvre pas peut donc être modifié puis perdu **sans aucun
+signal**.
+
+Elle était écrite comme une liste de champs tenue à la main, et cette liste
+avait dérivé : ni `perCote`, ni le contenu des blocs cardio, texte, AMRAP et
+EMOM n'y figuraient. Elle sérialise désormais le contenu entier, en écartant
+les clés préfixées `_` — état d'interface, pas contenu. **Ne jamais revenir à
+une liste explicite** : un champ ajouté au modèle doit être couvert d'office.
+
+Corollaire : un champ purement transitoire posé sur un bloc ou un exercice
+doit être préfixé `_`, sinon il allumera le badge tout seul.
+
 ## Pliométrie qualitative — critère partagé
 
 Le groupe `plioq` illustre un cas à connaître avant d'ajouter un critère

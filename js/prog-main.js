@@ -4625,19 +4625,23 @@ function _draftSaveLazy(){
 // Empreinte légère du contenu pour détecter les vrais changements
 function _sessionHash(){
   try {
+    /* Empreinte du contenu ENTIER, jamais d'une liste de champs tenue a la
+       main. Cette liste avait derive : elle ignorait le « /cote » et tout le
+       contenu des blocs cardio, texte, AMRAP et EMOM — duree, cible, tours
+       vises, intervalle, texte libre. Ces modifications n'allumaient donc ni
+       le badge « non sauvegarde » ni l'avertissement de fermeture, et
+       pouvaient se perdre sans le moindre signal.
+
+       Les cles prefixees « _ » sont ecartees : etat d'interface, pas contenu.
+       Un champ ajoute au modele est ainsi couvert d'office. */
+    var sansTechnique = function(cle, val){
+      return (cle && cle.charAt(0) === '_') ? undefined : val;
+    };
     return JSON.stringify({
-      notes: _notes||'',
-      etapes: (etapes||[]).map(function(e){ return { id:e.id, title:e.title, color:e.color }; }),
-      blocs: (blocs||[]).map(function(b){
-        return { id:b.id, title:b.title, objectif:b.objectif, methode:b.methode, etapeId:b.etapeId||null,
-          exos:(b.exos||[]).map(function(e){
-            return {id:e.id, name:e.name, reps:e.reps, series:e.series,
-                    duree:e.duree, recup:e.recup, tempo:e.tempo,
-                    cibles:e.cibles, chained:e.chained, consigne:e.consigne||'', nrs:e.nrs||null};
-          })
-        };
-      })
-    });
+      notes:  _notes || '',
+      etapes: etapes || [],
+      blocs:  blocs  || []
+    }, sansTechnique);
   } catch(e){ return ''; }
 }
 
