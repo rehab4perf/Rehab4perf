@@ -2663,7 +2663,12 @@ function renderSession(){
   // Auto-resize des consignes déjà remplies + notes
   // Différé via rAF : le layout doit être calculé avant de mesurer scrollHeight
   requestAnimationFrame(function(){
-    area.querySelectorAll('.exo-consigne-ta.has-value').forEach(function(ta){ autoResizeTa(ta); });
+    // Toutes les zones qui grandissent a la frappe doivent aussi grandir au
+    // rendu, sinon elles rouvrent a leur hauteur minimale et COUPENT leur
+    // contenu : le bloc de texte libre, les consignes d'un bloc chrono ou
+    // cardio, celles d'un exercice, et les notes de seance.
+    area.querySelectorAll('.exo-consigne-ta.has-value, .texte-ta, .cardio-txt')
+      .forEach(function(ta){ if(ta.value) autoResizeTa(ta); });
     var notesTa = document.getElementById('sessionNotes');
     if(notesTa && notesTa.value) autoResizeTa(notesTa);
   });
