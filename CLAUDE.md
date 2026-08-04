@@ -169,6 +169,24 @@ missing = [t for t in tests if t not in tbodies]
 print('TESTS sans tbody:', missing or 'Aucun ✓')
 ```
 
+## Asymétrie affichée (bilan)
+
+```bash
+node qualite/lsi-cas.js
+```
+
+Le LSI est **toujours calculé** comme avant — `min/max` en bilatéral,
+`atteint/sain` en unilatéral. Seul l'affichage bascule : `asymTxt(lsi)` montre
+`100 − LSI`. 80 % de symétrie s'affiche « 20 % ».
+
+**Les seuils de couleur n'ont pas changé** : `lsiClass()` lit toujours le LSI.
+C'est ce qui rend la bascule sûre — une seule chose change, le nombre affiché.
+Ne jamais y passer une valeur d'asymétrie.
+
+En unilatéral le LSI peut dépasser 100 % : l'asymétrie devient alors négative
+et le signe porte l'information (côté atteint supérieur au sain). Une valeur
+qui arrondit à zéro ne s'affiche jamais « -0 ».
+
 ## Motifs de bilan — onglet Patients
 
 ```bash

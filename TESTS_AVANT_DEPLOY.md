@@ -12,6 +12,7 @@ node qualite/check-echelle.js
 node qualite/check-couleurs.js
 node qualite/etapes-cas.js
 node qualite/motifs-cas.js
+node qualite/lsi-cas.js
 ```
 
 - [ ] Sortie verte. Une variable CSS non définie est ignorée en silence par le

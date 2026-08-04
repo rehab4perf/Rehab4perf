@@ -1494,12 +1494,12 @@ textarea { resize:none !important; overflow:hidden !important; }
   .result-cell, .note-cell { width: auto !important; padding: 3px 4px; }
 
   /* ── Tests fonctionnels (.measure-row) ────────────────────
-     Grille fixe Test | Côté gauche | Côté droit | LSI % | Statut
+     Grille fixe Test | Côté gauche | Côté droit | Asym. % | Statut
      (≈ 625px) → débordait et était clippée par overflow-x:hidden à
      375px. Sur mobile : l'intitulé « Test » (label des lignes de
      données, en-tête des lignes de titre) passe en pleine largeur,
      puis les 4 cellules restantes s'écoulent en 2 colonnes → Côté
-     gauche | Côté droit, puis LSI % | Statut. La comparaison G/D
+     gauche | Côté droit, puis Asym. % | Statut. La comparaison G/D
      reste côte à côte et chaque cellule s'aligne sous son en-tête. */
   .measure-row { grid-template-columns: 1fr 1fr !important; }
   .measure-label,
@@ -3141,7 +3141,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   <div style="padding:3px 22px 3px;font-size:.71rem;font-weight:600;color:var(--text2);background:var(--surface2);border-bottom:1px solid var(--border)">Contraction Flash Isométrique — 20 secondes</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
-      <div class="col-header">Muscle</div><div class="col-header sl-cs">Côté sain</div><div class="col-header sl-ca">Côté atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+      <div class="col-header">Muscle</div><div class="col-header sl-cs">Côté sain</div><div class="col-header sl-ca">Côté atteint</div><div class="col-header">Asym. %</div><div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
       <div class="measure-label">Quadriceps — Répétitions max</div>
@@ -3151,7 +3151,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
       <div class="measure-stat" id="cf-q-stat">—</div>
     </div>
   </div>
-  <div style="padding:6px 14px 8px;font-size:.75rem;color:var(--text3)">Contraction isométrique maximale 20s — nombre de répétitions · LSI ≥ 90%</div>
+  <div style="padding:6px 14px 8px;font-size:.75rem;color:var(--text3)">Contraction isométrique maximale 20s — nombre de répétitions · asymétrie ≤ 10%</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
       <div class="sl-cs" style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:4px">Observations — Côté Sain</div>
@@ -3230,12 +3230,12 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
     <div class="block" data-block-id="pied--chopart" id="pi-bilateral-chopart" style="display:none"><div class="block-header red">Chopart</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-chopart-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-chopart-d"></tbody></table></div></div>
     <div class="block" data-block-id="pied--cliniques">
   <div class="block-header red">Tests Cliniques</div>
-  <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">LSI = min(sain,atteint)/max × 100 · Effondrement = 1 appui / 2 appuis × 100 (positif si &lt; 90%) · Navicular Drop : effondrement si &gt; 10 mm</div>
+  <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Asymétrie = 100 − LSI, le LSI restant min(sain,atteint)/max × 100 · Effondrement = 1 appui / 2 appuis × 100 (positif si &lt; 90%) · Navicular Drop : effondrement si &gt; 10 mm</div>
   <!-- Course interne mollet -->
   <div class="measure-row" style="background:var(--surface2)">
     <div class="col-header">Course interne mollet — talon/sol (cm)</div>
     <div class="col-header sl-cs">Côté sain</div><div class="col-header sl-ca">Côté atteint</div>
-    <div class="col-header">LSI %</div><div class="col-header">Statut</div>
+    <div class="col-header">Asym. %</div><div class="col-header">Statut</div>
   </div>
   <div class="measure-row">
     <div class="measure-label" style="display:flex;flex-direction:column;align-items:flex-start;gap:3px">Distance talon-sol — 2 appuis<span style="font-size:.72rem;color:var(--text3);font-weight:400">Debout pieds joints, montée maximale sur pointes de pied</span></div>
@@ -3418,7 +3418,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   <div class="block-header">① Force Fonctionnelle — Single Leg Squat (SLS)</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
-      <div class="col-header">Test</div><div class="col-header sl-cs">Côté sain</div><div class="col-header sl-ca">Côté atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+      <div class="col-header">Test</div><div class="col-header sl-cs">Côté sain</div><div class="col-header sl-ca">Côté atteint</div><div class="col-header">Asym. %</div><div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
       <div class="measure-label">Répétitions max à 90° (tempo 3s/2s)</div>
@@ -3449,7 +3449,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   <div class="block-header">② Propulsion — Single Hop Test</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
-      <div class="col-header">Test</div><div class="col-header sl-cs">Côté sain (cm)</div><div class="col-header sl-ca">Côté atteint (cm)</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+      <div class="col-header">Test</div><div class="col-header sl-cs">Côté sain (cm)</div><div class="col-header sl-ca">Côté atteint (cm)</div><div class="col-header">Asym. %</div><div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
       <div class="measure-label">Distance saut unipodal max</div>
@@ -3565,7 +3565,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   <div class="block-header">⑥ Force du Mollet — Heel Rise Test</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
-      <div class="col-header">Mesure</div><div class="col-header sl-cs">Côté sain</div><div class="col-header sl-ca">Côté atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+      <div class="col-header">Mesure</div><div class="col-header sl-cs">Côté sain</div><div class="col-header sl-ca">Côté atteint</div><div class="col-header">Asym. %</div><div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
       <div class="measure-label">Répétitions max (unipodales)<br><span style="font-size:.72rem;color:var(--text3);font-weight:400">Cadence 60 bpm · 1s montée + 1s descente</span></div>
@@ -3610,7 +3610,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   <div class="block-header">⑦ Flexion Dorsale de Cheville — Lunge Test WBLT</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
-      <div class="col-header">Mesure</div><div class="col-header sl-cs">Côté sain (cm)</div><div class="col-header sl-ca">Côté atteint (cm)</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+      <div class="col-header">Mesure</div><div class="col-header sl-cs">Côté sain (cm)</div><div class="col-header sl-ca">Côté atteint (cm)</div><div class="col-header">Asym. %</div><div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
       <div class="measure-label">Distance pied-mur</div>
@@ -3641,7 +3641,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   <div class="block-header">⑤ Pliométrie Quantitative — Single Leg Drop Jump</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
-      <div class="col-header">Mesure</div><div class="col-header sl-cs">Côté sain</div><div class="col-header sl-ca">Côté atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+      <div class="col-header">Mesure</div><div class="col-header sl-cs">Côté sain</div><div class="col-header sl-ca">Côté atteint</div><div class="col-header">Asym. %</div><div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
       <div class="measure-label">Hauteur saut (cm)</div>
@@ -3708,7 +3708,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
       <div class="col-header">Mesure</div>
       <div class="col-header sl-cs">Côté sain</div>
       <div class="col-header sl-ca">Côté atteint</div>
-      <div class="col-header">LSI %</div>
+      <div class="col-header">Asym. %</div>
       <div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
@@ -3735,7 +3735,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
     </div>
   </div>
   <div style="padding:6px 14px 8px;font-size:.75rem;color:var(--text3)">
-    RTS Explosivité : ≥ 25 sauts/15s (F) · ≥ 30 sauts/15s (H) &nbsp;|&nbsp; RTS Endurance = 2 × sauts_15s_CS × 90% &nbsp;|&nbsp; LSI ≥ 90%
+    RTS Explosivité : ≥ 25 sauts/15s (F) · ≥ 30 sauts/15s (H) &nbsp;|&nbsp; RTS Endurance = 2 × sauts_15s_CS × 90% &nbsp;|&nbsp; asymétrie ≤ 10%
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
     <div style="background:var(--surface);padding:8px 14px 10px">
@@ -3947,7 +3947,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   <div style="padding:4px 14px 6px;font-size:.78rem;color:var(--text2)">Saut unipodal en 8 autour de 2 cônes espacés de 5 m · 2 tours consécutifs = 20 m · Mesure du temps (s)</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
-      <div class="col-header">Test</div><div class="col-header sl-cs">Côté Sain (s)</div><div class="col-header sl-ca">Côté Atteint (s)</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+      <div class="col-header">Test</div><div class="col-header sl-cs">Côté Sain (s)</div><div class="col-header sl-ca">Côté Atteint (s)</div><div class="col-header">Asym. %</div><div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
       <div class="measure-label">Temps de parcours (20 m)</div>
@@ -4031,9 +4031,9 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 <div class="block" data-block-id="force-ms--epaule">
   <div class="block-header">Épaule</div>
-  <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Avec dynamomètre → renseigner en kg (LSI auto · ❌ si &lt; 90%). Sans dynamomètre → appréciation directe par côté.</div>
+  <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Avec dynamomètre → renseigner en kg (asymétrie auto · ❌ si &gt; 10%). Sans dynamomètre → appréciation directe par côté.</div>
   <div class="measure-row" style="background:var(--surface2)">
-    <div class="col-header">Test</div><div class="col-header sl-cs">Côté Sain</div><div class="col-header sl-ca">Côté Atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+    <div class="col-header">Test</div><div class="col-header sl-cs">Côté Sain</div><div class="col-header sl-ca">Côté Atteint</div><div class="col-header">Asym. %</div><div class="col-header">Statut</div>
   </div>
   <!-- Trapèze inférieur — Y Test -->
   <div class="measure-row">
@@ -4159,9 +4159,9 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 <div class="block" data-block-id="force-ms--coude">
   <div class="block-header">Coude</div>
-  <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Avec dynamomètre → renseigner en kg (LSI auto · ❌ si &lt; 90%). Sans dynamomètre → appréciation directe par côté.</div>
+  <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Avec dynamomètre → renseigner en kg (asymétrie auto · ❌ si &gt; 10%). Sans dynamomètre → appréciation directe par côté.</div>
   <div class="measure-row" style="background:var(--surface2)">
-    <div class="col-header">Test</div><div class="col-header sl-cs">Côté Sain</div><div class="col-header sl-ca">Côté Atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+    <div class="col-header">Test</div><div class="col-header sl-cs">Côté Sain</div><div class="col-header sl-ca">Côté Atteint</div><div class="col-header">Asym. %</div><div class="col-header">Statut</div>
   </div>
   <!-- Extension coude -->
   <div class="measure-row">
@@ -4210,7 +4210,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 <div class="block" data-block-id="force-rachis--cervical">
   <div class="block-header grey">Cervical</div>
-  <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Extension / Flexion → valeur brute en kg (suivi dans le temps, pas de LSI).</div>
+  <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Extension / Flexion → valeur brute en kg (suivi dans le temps, pas d'asymétrie).</div>
   <div class="measure-row" style="background:var(--surface2);grid-template-columns: 1fr 120px 1fr">
     <div class="col-header">Test</div>
     <div class="col-header">Valeur (kg)</div>
@@ -4226,9 +4226,9 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
     <div class="measure-input"><input type="number" id="ra-fc-flex" min="0" placeholder="—"></div>
     <div class="measure-input"><input type="text" id="ra-fc-flex-obs" placeholder="…"></div>
   </div>
-  <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">Inclinaison → comparer les deux côtés (LSI auto · ❌ si &lt; 90%).</div>
+  <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">Inclinaison → comparer les deux côtés (asymétrie auto · ❌ si &gt; 10%).</div>
   <div class="measure-row" style="background:var(--surface2)">
-    <div class="col-header">Test</div><div class="col-header sl-cs">Côté Sain</div><div class="col-header sl-ca">Côté Atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+    <div class="col-header">Test</div><div class="col-header sl-cs">Côté Sain</div><div class="col-header sl-ca">Côté Atteint</div><div class="col-header">Asym. %</div><div class="col-header">Statut</div>
   </div>
   <div class="measure-row">
     <div class="measure-label">Inclinaison</div>
@@ -4282,9 +4282,9 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 <div class="block" data-block-id="force-mi--hanche">
   <div class="block-header green">Hanche</div>
-  <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Avec dynamomètre → renseigner en kg (LSI auto · ❌ si &lt; 90%). Sans dynamomètre → appréciation directe par côté.</div>
+  <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Avec dynamomètre → renseigner en kg (asymétrie auto · ❌ si &gt; 10%). Sans dynamomètre → appréciation directe par côté.</div>
   <div class="measure-row" style="background:var(--surface2)">
-    <div class="col-header">Test</div><div class="col-header sl-cs">Côté Sain</div><div class="col-header sl-ca">Côté Atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+    <div class="col-header">Test</div><div class="col-header sl-cs">Côté Sain</div><div class="col-header sl-ca">Côté Atteint</div><div class="col-header">Asym. %</div><div class="col-header">Statut</div>
   </div>
   <!-- Fléchisseurs -->
   <div class="measure-row">
@@ -4365,9 +4365,9 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 <div class="block" data-block-id="force-mi--genou">
   <div class="block-header green">Genou</div>
-  <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Avec dynamomètre → renseigner en kg (LSI auto · ❌ si &lt; 90%). Sans dynamomètre → appréciation directe par côté.</div>
+  <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Avec dynamomètre → renseigner en kg (asymétrie auto · ❌ si &gt; 10%). Sans dynamomètre → appréciation directe par côté.</div>
   <div class="measure-row" style="background:var(--surface2)">
-    <div class="col-header">Test</div><div class="col-header sl-cs">Côté Sain</div><div class="col-header sl-ca">Côté Atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+    <div class="col-header">Test</div><div class="col-header sl-cs">Côté Sain</div><div class="col-header sl-ca">Côté Atteint</div><div class="col-header">Asym. %</div><div class="col-header">Statut</div>
   </div>
   <!-- Quadriceps -->
   <div class="measure-row">
@@ -4403,9 +4403,9 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 <div class="block" data-block-id="force-mi--pied-cheville">
   <div class="block-header green">Pied / Cheville</div>
-  <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Avec dynamomètre → renseigner en kg (LSI auto · ❌ si &lt; 90%). Sans dynamomètre → appréciation directe par côté.</div>
+  <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Avec dynamomètre → renseigner en kg (asymétrie auto · ❌ si &gt; 10%). Sans dynamomètre → appréciation directe par côté.</div>
   <div class="measure-row" style="background:var(--surface2)">
-    <div class="col-header">Test</div><div class="col-header sl-cs">Côté Sain</div><div class="col-header sl-ca">Côté Atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+    <div class="col-header">Test</div><div class="col-header sl-cs">Côté Sain</div><div class="col-header sl-ca">Côté Atteint</div><div class="col-header">Asym. %</div><div class="col-header">Statut</div>
   </div>
   <!-- Flexion plantaire -->
   <div class="measure-row">
@@ -4506,7 +4506,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   </div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
-      <div class="col-header">Mesure</div><div class="col-header sl-cs">Côté sain</div><div class="col-header sl-ca">Côté atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+      <div class="col-header">Mesure</div><div class="col-header sl-cs">Côté sain</div><div class="col-header sl-ca">Côté atteint</div><div class="col-header">Asym. %</div><div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
       <div class="measure-label">Répétitions max (Tempo 2/0/2/0)</div>
@@ -4519,7 +4519,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
       <div class="measure-label" style="background:var(--surface2);font-size:.8rem;color:var(--text2)">Poids utilisé réellement (kg)</div>
       <div class="measure-input" style="background:var(--surface2)"><input type="number" id="pset-poids-reel" step="0.1" placeholder="—" style="background:var(--surface2)"></div>
       <div class="measure-input" style="background:var(--surface2)"></div>
-      <div class="measure-stat" style="background:var(--surface2);font-size:.72rem;color:var(--text3)">LSI ≥ 90%</div>
+      <div class="measure-stat" style="background:var(--surface2);font-size:.72rem;color:var(--text3)">Asym. ≤ 10%</div>
       <div class="measure-stat" style="background:var(--surface2);font-size:.72rem;color:var(--text3)">Poids = 2% PC</div>
     </div>
   </div>
@@ -4631,7 +4631,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   <div class="block-header">③ Side Hold Rotation Test</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
-      <div class="col-header">Mesure</div><div class="col-header sl-g" data-col="g">Côté Gauche</div><div class="col-header sl-d" data-col="d">Côté Droit</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+      <div class="col-header">Mesure</div><div class="col-header sl-g" data-col="g">Côté Gauche</div><div class="col-header sl-d" data-col="d">Côté Droit</div><div class="col-header">Asym. %</div><div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
       <div class="measure-label">Répétitions valides / 1 min</div>
@@ -4662,7 +4662,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   <div class="block-header">④ Shoulder Endurance Test</div>
   <div style="padding:1px 0">
     <div class="measure-row" style="background:var(--surface2)">
-      <div class="col-header">Mesure</div><div class="col-header sl-cs">Côté sain</div><div class="col-header sl-ca">Côté atteint</div><div class="col-header">LSI %</div><div class="col-header">Statut</div>
+      <div class="col-header">Mesure</div><div class="col-header sl-cs">Côté sain</div><div class="col-header sl-ca">Côté atteint</div><div class="col-header">Asym. %</div><div class="col-header">Statut</div>
     </div>
     <div class="measure-row">
       <div class="measure-label">Total répétitions (ou palier d'arrêt)</div>
@@ -4715,7 +4715,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
       <div class="measure-stat" id="ulrt-d-moy" style="background:var(--surface2);font-size:1rem;font-weight:700;color:var(--accent2)">—</div>
     </div>
     <div class="measure-row">
-      <div class="measure-label">LSI D/G & Asymétrie</div>
+      <div class="measure-label">Asymétrie D/G</div>
       <div class="measure-stat" id="ulrt-lsi" style="grid-column:span 3">—</div>
       <div class="measure-stat" id="ulrt-stat">—</div>
     </div>
@@ -5178,7 +5178,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260710"></script>
-<script src="js/bilan.js?v=20260803f"></script>
+<script src="js/bilan.js?v=20260804a"></script>
 
 </body>
 </html>

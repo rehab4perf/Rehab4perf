@@ -3270,7 +3270,7 @@ function _renderEvolutionPage(){
             : (lastB_val > 0 ? Math.round(lastA/lastB_val*100) : NaN);
           if(!isNaN(lsiVal)){
             var lsiCls=lsiVal>=90?'evo-pos':lsiVal>=75?'evo-neutral':'evo-neg';
-            lsiHtml='<span class="evo-kpi '+lsiCls+'">LSI '+lsiVal+'%</span>';
+            lsiHtml='<span class="evo-kpi '+lsiCls+'">Asym. '+asymTxt(parseFloat(lsiVal), 0)+'</span>';
           }
         }
         var _dOpts={unit:grp.unit,dir:grp.dir,labelA:grp.labelA,labelB:grp.labelB,chartId:id,colorA:'var(--accent)',colorB:'var(--green)'};
@@ -3448,7 +3448,7 @@ function _renderEvolutionPage(){
         var lsiHtml2='';
         if(!isNaN(lastA)&&!isNaN(lastB)&&Math.max(lastA,lastB)>0){
           var lsiV=bilat?Math.round(Math.min(lastA,lastB)/Math.max(lastA,lastB)*100):(lastB>0?Math.round(lastA/lastB*100):NaN);
-          if(!isNaN(lsiV)){var lC=lsiV>=90?'evo-pos':lsiV>=75?'evo-neutral':'evo-neg';lsiHtml2='<span class="evo-kpi '+lC+'">LSI '+lsiV+'%</span>';}
+          if(!isNaN(lsiV)){var lC=lsiV>=90?'evo-pos':lsiV>=75?'evo-neutral':'evo-neg';lsiHtml2='<span class="evo-kpi '+lC+'">Asym. '+asymTxt(lsiV,0)+'</span>';}
         }
         function _pctBadgeCT(first,last){
           if(isNaN(first)||isNaN(last)||first===0)return '';
@@ -5187,17 +5187,44 @@ function _isBilateralForZones(zones) {
   return c !== 'DROIT' && c !== 'GAUCHE';
 }
 
+/* ── Asymétrie affichée ───────────────────────────────────────────────────
+   Le LSI reste calculé partout comme avant — min/max en bilatéral, atteint
+   sur sain en unilatéral. Seul l'AFFICHAGE bascule : on montre l'écart au
+   lieu de la ressemblance. 80 % de symétrie devient 20 % d'asymétrie.
+
+   Les seuils de couleur ne bougent pas : ils lisent toujours le LSI. C'est
+   ce qui rend ce changement sûr — une seule chose change, le nombre affiché.
+
+   En unilatéral le LSI peut dépasser 100 % : le côté atteint est alors
+   MEILLEUR que le sain, et l'asymétrie devient négative. Le signe porte
+   l'information, la valeur absolue la perdrait. */
+
 function lsiClass(v, higher=true) {
   if (isNaN(v)) return '';
   if (higher) return v >= 90 ? 'good' : v >= 80 ? 'warn' : 'bad';
   return v <= 110 ? 'good' : 'bad';
 }
 
+function asymPct(lsi) {
+  return isNaN(lsi) ? NaN : 100 - lsi;
+}
+
+/* Texte prêt à afficher. `dec` : décimales, 1 par défaut. */
+function asymTxt(lsi, dec) {
+  var a = asymPct(lsi);
+  if (isNaN(a)) return '';
+  var d = (dec === undefined ? 1 : dec);
+  var s = Math.abs(a).toFixed(d);
+  // Un écart qui arrondit à zéro ne s'affiche jamais « -0 ».
+  var nul = parseFloat(s) === 0;
+  return (a < 0 && !nul ? '-' : '') + s + '%';
+}
+
 function setLSI(lsiEl, statEl, lsi, seuil, higher, bilateral) {
   seuil = seuil || '>= 90%'; higher = (higher !== false);
   if (isNaN(lsi)) { lsiEl.textContent='-'; lsiEl.className='measure-stat'; statEl.textContent='-'; statEl.className='measure-stat'; return; }
   const cls = lsiClass(lsi, higher);
-  lsiEl.textContent = lsi.toFixed(1) + '%';
+  lsiEl.textContent = asymTxt(lsi);
   lsiEl.className = 'measure-stat ' + cls;
   const icons = bilateral
     ? {good:' Symétrique', warn:' Asymétrie modérée', bad:' Asymétrie significative'}
@@ -5364,11 +5391,11 @@ function calcLunge() {
       cls='warn'; stat='Asymetrie > 1,5 cm';
       interp = 'Difference = ' + diff.toFixed(1) + ' cm entre les deux cotes (seuil : <= 1,5 cm)';
     } else if (!isNaN(lsi) && lsi < 90) {
-      cls='warn'; stat= luBilateral ? 'Asymetrie > 10%' : 'LSI < 90%';
-      interp = (luBilateral ? 'Symétrie = ' : 'LSI = ') + lsi.toFixed(1) + '% - asymetrie relative (Hoch 2011)';
+      cls='warn'; stat= 'Asymétrie > 10%';
+      interp = 'Asymétrie = ' + asymTxt(lsi) + ' - asymetrie relative (Hoch 2011)';
     } else {
       cls='good'; stat='OK Symetrique et suffisant';
-      interp = 'CA = ' + ca + ' cm (>=10 cm), diff = ' + diff.toFixed(1) + ' cm (<=1,5 cm)' + (!isNaN(lsi) ? ', LSI = ' + lsi.toFixed(1) + '%' : '');
+      interp = 'CA = ' + ca + ' cm (>=10 cm), diff = ' + diff.toFixed(1) + ' cm (<=1,5 cm)' + (!isNaN(lsi) ? ', Asym. = ' + asymTxt(lsi) : '');
     }
     lsiEl.className = 'measure-stat ' + cls;
   }
@@ -5696,7 +5723,7 @@ function _buildAllTestsHtml() {
       ? (ca > 0 && cs > 0 ? Math.min(ca,cs)/Math.max(ca,cs)*100 : NaN)
       : (cs > 0 ? ca/cs*100 : NaN);
     if (isNaN(v)) return '';
-    return (_isBilat ? 'Sym. = ' : 'LSI = ') + v.toFixed(1) + '%';
+    return 'Asym. = ' + asymTxt(v);
   };
   var lsiCls2 = function(ca,cs) {
     if (isNaN(ca)||isNaN(cs)) return '';
@@ -5877,7 +5904,7 @@ function _buildAllTestsHtml() {
         if (!isNaN(csN) && csN > 0) {
           var lsiV = !isNaN(caN) ? caN/csN*100 : NaN;
           var isPos = !isNaN(lsiV) && lsiV < 90;
-          var valStr = 'CS='+csN+' kg'+(!isNaN(caN)?' CA='+caN+' kg':'')+(!isNaN(lsiV)?' LSI='+lsiV.toFixed(0)+'%':'');
+          var valStr = 'CS='+csN+' kg'+(!isNaN(caN)?' CA='+caN+' kg':'')+(!isNaN(lsiV)?' Asym.=' + asymTxt(lsiV, 0):'');
           haForceRows += crItem(ft.label, valStr, isPos?'Positif':'Négatif', isPos?'bad':'ok', [ft.key+'-cs',ft.key+'-ca']);
         } else if (csA || caA) {
           var parts = [];
@@ -5924,7 +5951,7 @@ function _buildAllTestsHtml() {
         if (!isNaN(csN) && csN > 0) {
           var lsiV = !isNaN(caN) ? caN/csN*100 : NaN;
           var isPos = !isNaN(lsiV) && lsiV < 90;
-          var valStr = 'CS='+csN+' kg'+(!isNaN(caN)?' CA='+caN+' kg':'')+(!isNaN(lsiV)?' LSI='+lsiV.toFixed(0)+'%':'');
+          var valStr = 'CS='+csN+' kg'+(!isNaN(caN)?' CA='+caN+' kg':'')+(!isNaN(lsiV)?' Asym.=' + asymTxt(lsiV, 0):'');
           geForceRows += crItem(ft.label, valStr, isPos?'Positif':'Négatif', isPos?'bad':'ok', [ft.key+'-cs',ft.key+'-ca']);
         } else if (csA || caA) {
           var parts = [];
@@ -5974,7 +6001,7 @@ function _buildAllTestsHtml() {
                              : (!isNaN(lsiV) && lsiV < 90);
           var valStr = (isDent ? 'CS=' + csN + ' rép' : 'CS=' + csN + ' N') +
                        (!isNaN(caN) ? (isDent ? ' CA=' + caN + ' rép' : ' CA=' + caN + ' N') : '') +
-                       (!isNaN(lsiV) ? ' LSI=' + lsiV.toFixed(0) + '%' : '');
+                       (!isNaN(lsiV) ? ' Asym.=' + asymTxt(lsiV, 0) : '');
           epForceRows += crItem(ft.label, valStr, isPos ? 'Positif' : 'Négatif', isPos ? 'bad' : 'ok', [ft.key+'-cs', ft.key+'-ca']);
         } else if (csA || caA) {
           var parts = [];
@@ -6094,7 +6121,7 @@ function _buildAllTestsHtml() {
         if (!isNaN(csN) && csN > 0) {
           var lsiV = !isNaN(caN) ? caN/csN*100 : NaN;
           var isPos = !isNaN(lsiV) && lsiV < 90;
-          var valStr = 'CS='+csN+' kg'+(!isNaN(caN)?' CA='+caN+' kg':'')+(!isNaN(lsiV)?' LSI='+lsiV.toFixed(0)+'%':'');
+          var valStr = 'CS='+csN+' kg'+(!isNaN(caN)?' CA='+caN+' kg':'')+(!isNaN(lsiV)?' Asym.=' + asymTxt(lsiV, 0):'');
           raForceRows += crItem('Inclinaison cervicale', valStr, isPos?'Positif':'Négatif', isPos?'bad':'ok', ['ra-fc-inc-cs','ra-fc-inc-ca']);
         } else if (csA || caA) {
           var parts = [];
@@ -6225,7 +6252,7 @@ function _buildAllTestsHtml() {
         var cimDetail = '2 appuis : ' + cimLblCs + '=' + (isNaN(cim2Cs)?'—':cim2Cs+'cm') + ' / ' + cimLblCa + '=' + (isNaN(cim2Ca)?'—':cim2Ca+'cm')
           + ' · 1 appui : ' + cimLblCs + '=' + (isNaN(cim1Cs)?'—':cim1Cs+'cm') + ' / ' + cimLblCa + '=' + (isNaN(cim1Ca)?'—':cim1Ca+'cm')
           + ' · Effondrement ' + cimLblCs + '=' + (cimEffCs?cimEffCs.textContent:'—') + ' / ' + cimLblCa + '=' + (cimEffCa?cimEffCa.textContent:'—')
-          + ' · LSI : ' + (cimLsi?cimLsi.textContent:'—');
+          + ' · Asym. : ' + (cimLsi?cimLsi.textContent:'—');
         secRows += crItem('Course interne mollet', cimDetail, cimStatTxt, cimCls, ['pi-cim2-cs','pi-cim2-ca','pi-cim1-cs','pi-cim1-ca'].filter(function(i){ var e=document.getElementById(i); return e&&e.value; }));
       }
       // Navicular Drop Test
@@ -6256,7 +6283,7 @@ function _buildAllTestsHtml() {
         if (!isNaN(csN) && csN > 0) {
           var lsiV = !isNaN(caN) ? caN/csN*100 : NaN;
           var isPos = !isNaN(lsiV) && lsiV < 90;
-          var valStr = 'CS='+csN+' kg'+(!isNaN(caN)?' CA='+caN+' kg':'')+(!isNaN(lsiV)?' LSI='+lsiV.toFixed(0)+'%':'');
+          var valStr = 'CS='+csN+' kg'+(!isNaN(caN)?' CA='+caN+' kg':'')+(!isNaN(lsiV)?' Asym.=' + asymTxt(lsiV, 0):'');
           piForceRows += crItem(ft.label, valStr, isPos?'Positif':'Négatif', isPos?'bad':'ok', [ft.key+'-cs',ft.key+'-ca']);
         } else if (csA || caA) {
           var parts = [];
@@ -6364,7 +6391,7 @@ function _buildAllTestsHtml() {
     if (isNaN(ca)||isNaN(cs)) return '';
     var v = _isBilatMI ? (ca>0&&cs>0 ? Math.min(ca,cs)/Math.max(ca,cs)*100 : NaN) : (cs>0 ? ca/cs*100 : NaN);
     if (isNaN(v)) return '';
-    return (_isBilatMI ? 'Sym. = ' : 'LSI = ') + v.toFixed(1) + '%';
+    return 'Asym. = ' + asymTxt(v);
   };
   lsiCls2 = function(ca,cs) {
     if (isNaN(ca)||isNaN(cs)) return '';
@@ -6517,7 +6544,7 @@ function _buildAllTestsHtml() {
   var djRsiLsiv = ((document.getElementById('dj-rsi-lsi')||{}).textContent||'').trim();
   if (djRsiCAv && djRsiCAv !== '-' && parseFloat(djRsiCAv) > 0) {
     var rsiCls = lsiCls2(parseFloat(djRsiCAv), parseFloat(djRsiCSv));
-    tfHtml += crItem('Drop Jump — RSI', _p(djRsiCAv,djRsiCSv)+'   LSI='+djRsiLsiv, statOf2(rsiCls), rsiCls, ['dj-t-ca','dj-t-cs']);
+    tfHtml += crItem('Drop Jump — RSI', _p(djRsiCAv,djRsiCSv)+'   Asym.='+djRsiLsiv, statOf2(rsiCls), rsiCls, ['dj-t-ca','dj-t-cs']);
   }
   // Pliométrie verticale qualitative
   var plioqCA2 = 0; var plioqCS2 = 0; var plioqTouched = false;
@@ -6572,10 +6599,10 @@ function _buildAllTestsHtml() {
       ? (_isBilatMI ? Math.min(f8CA,f8CS)/Math.max(f8CA,f8CS)*100 : f8CS/f8CA*100)
       : NaN;
     var f8Cls = isNaN(f8Lsi) ? '' : (f8Lsi >= 90 ? 'good' : f8Lsi >= 80 ? 'warn' : 'bad');
-    var f8Lsi_s = isNaN(f8Lsi) ? '' : '   ' + (_isBilatMI ? 'Sym. = ' : 'LSI = ') + f8Lsi.toFixed(1) + '%';
+    var f8Lsi_s = isNaN(f8Lsi) ? '' : '   Asym. = ' + asymTxt(f8Lsi);
     var f8Seuil = f8CA <= 12 ? '   Seuil <12s ✓' : '   >12s ✗';
     tfHtml += crItem('Figure-of-8 Hop Test', _p(f8CA+'s', (!isNaN(f8CS)?f8CS+'s':'-'), '') + f8Lsi_s + f8Seuil,
-      f8Cls==='good' ? 'LSI ≥90%' : f8Cls==='warn' ? 'LSI 80-89%' : f8Cls==='bad' ? 'LSI <80%' : '',
+      f8Cls==='good' ? 'Asym. ≤10%' : f8Cls==='warn' ? 'Asym. 11-20%' : f8Cls==='bad' ? 'Asym. >20%' : '',
       f8Cls, ['f8-ca','f8-cs']);
   }
   tfHtml += obsBlock('f8-obs-ca','f8-obs-cs');
@@ -6607,12 +6634,12 @@ function _buildAllTestsHtml() {
   var ulrtEl2 = document.getElementById('ulrt-lsi');
   if (!isNaN(psetCAv)) {
     var pl = psetCSv>0?(psetCAv/psetCSv*100):NaN;
-    var psetVal = _labelCA+'='+psetCAv+'   '+_labelCS+'='+(isNaN(psetCSv)?'-':psetCSv)+(!isNaN(pl)?'   LSI='+pl.toFixed(1)+'%':'');
+    var psetVal = _labelCA+'='+psetCAv+'   '+_labelCS+'='+(isNaN(psetCSv)?'-':psetCSv)+(!isNaN(pl)?'   Asym.='+asymTxt(pl):'');
     if (psetPoidsReelV) psetVal += '   — Poids utilisé : ' + psetPoidsReelV + ' kg';
     tfMsHtml += crItem('PSET', psetVal, statOf2(lsiCls2(psetCAv,psetCSv)), lsiCls2(psetCAv,psetCSv), ['pset-ca','pset-cs']);
   }
   tfMsHtml += obsBlock('pset-obs-ca','pset-obs-cs');
-  if (!isNaN(setCAv))  { var sl = setCSv>0?(setCAv/setCSv*100):NaN; tfMsHtml += crItem('Shoulder Endurance', _labelCA+'='+setCAv+'   '+_labelCS+'='+setCSv+(!isNaN(sl)?'   LSI='+sl.toFixed(1)+'%':''), statOf2(lsiCls2(setCAv,setCSv)), lsiCls2(setCAv,setCSv), ['set-ca','set-cs']); }
+  if (!isNaN(setCAv))  { var sl = setCSv>0?(setCAv/setCSv*100):NaN; tfMsHtml += crItem('Shoulder Endurance', _labelCA+'='+setCAv+'   '+_labelCS+'='+setCSv+(!isNaN(sl)?'   Asym.=' + asymTxt(sl, 1):''), statOf2(lsiCls2(setCAv,setCSv)), lsiCls2(setCAv,setCSv), ['set-ca','set-cs']); }
   tfMsHtml += obsBlock('set-obs-ca','set-obs-cs');
   (function(){
     var s2 = parseFloat((document.getElementById('ckc-s2')||{}).value||'');
@@ -6633,7 +6660,7 @@ function _buildAllTestsHtml() {
     if (ckcObs) tfMsHtml += '<div style="margin:2px 0 8px;padding:6px 10px;background:var(--surface2);border-radius:5px;font-size:.82rem;color:var(--text2);font-style:italic">Obs. : ' + nl2br(ckcObs) + '</div>';
   })();
   var lsiClsFn2 = function(v){ return v>=90?'good':v>=80?'warn':'bad'; };
-  var lsiTagFn2 = function(v){ return v>=90?'LSI ≥ 90 % — OK':v>=80?'LSI 80–90 % — Acceptable':'LSI < 80 % — Insuffisant'; };
+  var lsiTagFn2 = function(v){ return v>=90?'Asym. ≤ 10 % — OK':v>=80?'Asym. 10–20 % — Acceptable':'Asym. > 20 % — Insuffisant'; };
   if (shrtEl2 && shrtEl2.textContent && shrtEl2.textContent !== '-' && shrtEl2.textContent !== '—' && shrtEl2.textContent !== '--') {
     var shrtV2 = parseFloat(shrtEl2.textContent);
     tfMsHtml += crItem('Side Hold Rotation', shrtEl2.textContent, !isNaN(shrtV2)?lsiTagFn2(shrtV2):'', !isNaN(shrtV2)?lsiClsFn2(shrtV2):'ok', ['shrt-g','shrt-d']);
@@ -6776,14 +6803,14 @@ function _buildAllTestsHtml() {
             var lsiDent = csN > 0 ? caN / csN * 100 : NaN;
             var caReasons = [];
             if (caN < 20) caReasons.push(caN + ' rép < 20');
-            if (!isNaN(lsiDent) && lsiDent < 90) caReasons.push('LSI ' + lsiDent.toFixed(0) + '%');
+            if (!isNaN(lsiDent) && lsiDent < 90) caReasons.push('Asym. ' + asymTxt(lsiDent, 0));
             if (caReasons.length > 0) {
               var dentCA = ft.label + ' — ' + _labelCA + ' (' + caReasons.join(', ') + ')';
               if (toWork.indexOf(dentCA) < 0) toWork.push(dentCA);
             }
           }
         } else {
-          if (!isNaN(caN) && csN > 0 && caN/csN*100 < 90) { var i4 = ft.label + ' — ' + _labelCA + ' (LSI ' + (caN/csN*100).toFixed(0) + '%)'; if (toWork.indexOf(i4)<0) toWork.push(i4); }
+          if (!isNaN(caN) && csN > 0 && caN/csN*100 < 90) { var i4 = ft.label + ' — ' + _labelCA + ' (Asym. ' + asymTxt((caN/csN*100), 0) + ')'; if (toWork.indexOf(i4)<0) toWork.push(i4); }
         }
       } else {
         // Mode appréciation
@@ -6816,7 +6843,7 @@ function _buildAllTestsHtml() {
       var csA = (document.getElementById(ft.key+'-apr-cs')||{}).value||'';
       var caA = (document.getElementById(ft.key+'-apr-ca')||{}).value||'';
       if (!isNaN(csN) && csN > 0) {
-        if (!isNaN(caN) && csN > 0 && caN/csN*100 < 90) { var iH = ft.label+' — '+_labelCA+' (LSI '+(caN/csN*100).toFixed(0)+'%)'; if (toWork.indexOf(iH)<0) toWork.push(iH); }
+        if (!isNaN(caN) && csN > 0 && caN/csN*100 < 90) { var iH = ft.label+' — '+_labelCA+' (Asym. ' + asymTxt((caN/csN*100), 0) + ')'; if (toWork.indexOf(iH)<0) toWork.push(iH); }
       } else {
         if (csA==='Positif') { var iHa = ft.label+' — '+_labelCS; if (toWork.indexOf(iHa)<0) toWork.push(iHa); }
         if (caA==='Positif') { var iHb = ft.label+' — '+_labelCA; if (toWork.indexOf(iHb)<0) toWork.push(iHb); }
@@ -6839,7 +6866,7 @@ function _buildAllTestsHtml() {
       var csA = (document.getElementById(ft.key+'-apr-cs')||{}).value||'';
       var caA = (document.getElementById(ft.key+'-apr-ca')||{}).value||'';
       if (!isNaN(csN) && csN > 0) {
-        if (!isNaN(caN) && csN > 0 && caN/csN*100 < 90) { var iP = ft.label+' — '+_labelCA+' (LSI '+(caN/csN*100).toFixed(0)+'%)'; if (toWork.indexOf(iP)<0) toWork.push(iP); }
+        if (!isNaN(caN) && csN > 0 && caN/csN*100 < 90) { var iP = ft.label+' — '+_labelCA+' (Asym. ' + asymTxt((caN/csN*100), 0) + ')'; if (toWork.indexOf(iP)<0) toWork.push(iP); }
       } else {
         if (csA==='Positif') { var iPa = ft.label+' — '+_labelCS; if (toWork.indexOf(iPa)<0) toWork.push(iPa); }
         if (caA==='Positif') { var iPb = ft.label+' — '+_labelCA; if (toWork.indexOf(iPb)<0) toWork.push(iPb); }
@@ -6859,7 +6886,7 @@ function _buildAllTestsHtml() {
       var csA = (document.getElementById(ft.key+'-apr-cs')||{}).value||'';
       var caA = (document.getElementById(ft.key+'-apr-ca')||{}).value||'';
       if (!isNaN(csN) && csN > 0) {
-        if (!isNaN(caN) && csN > 0 && caN/csN*100 < 90) { var iG = ft.label+' — '+_labelCA+' (LSI '+(caN/csN*100).toFixed(0)+'%)'; if (toWork.indexOf(iG)<0) toWork.push(iG); }
+        if (!isNaN(caN) && csN > 0 && caN/csN*100 < 90) { var iG = ft.label+' — '+_labelCA+' (Asym. ' + asymTxt((caN/csN*100), 0) + ')'; if (toWork.indexOf(iG)<0) toWork.push(iG); }
       } else {
         if (csA==='Positif') { var iGa = ft.label+' — '+_labelCS; if (toWork.indexOf(iGa)<0) toWork.push(iGa); }
         if (caA==='Positif') { var iGb = ft.label+' — '+_labelCA; if (toWork.indexOf(iGb)<0) toWork.push(iGb); }
@@ -6885,7 +6912,7 @@ function _buildAllTestsHtml() {
   // ── PSET ─────────────────────────────────────────────────────────────────
   if (!isNaN(psetCAv) && psetCSv > 0) {
     var psetLsiTW = psetCAv / psetCSv * 100;
-    if (psetLsiTW < 90) toWork.push('Renforcer la coiffe des rotateurs postérieure gléno-humérale (PSET LSI ' + psetLsiTW.toFixed(1) + '%)');
+    if (psetLsiTW < 90) toWork.push('Renforcer la coiffe des rotateurs postérieure gléno-humérale (PSET Asym. ' + asymTxt(psetLsiTW, 1) + ')');
   }
 
   // ── mCKCUEST ─────────────────────────────────────────────────────────────
@@ -6956,8 +6983,8 @@ function _buildAllTestsHtml() {
   var slsLsi2 = slsCS>0?slsCA/slsCS*100:NaN;
   var hopLsi2 = hopCS>0?hopCA/hopCS*100:NaN;
   var hrLsi2  = hrCS>0?hrCA/hrCS*100:NaN;
-  if (!isNaN(slsLsi2) && slsLsi2<90) toWork.push('Renforcement MI — squat unilatéral (LSI SLS ' + slsLsi2.toFixed(1) + '%)');
-  if (!isNaN(hopLsi2) && hopLsi2<90) toWork.push('Travail de propulsion — saut unipodal (LSI Hop ' + hopLsi2.toFixed(1) + '%)');
+  if (!isNaN(slsLsi2) && slsLsi2<90) toWork.push('Renforcement MI — squat unilatéral (Asym. SLS ' + asymTxt(slsLsi2) + ')');
+  if (!isNaN(hopLsi2) && hopLsi2<90) toWork.push('Travail de propulsion — saut unipodal (Asym. Hop ' + asymTxt(hopLsi2) + ')');
   // Test de réception — par critère non validé côté atteint
   (function(){
     // Le test est considéré comme rempli si le toggle CR est coché OU si au moins un critère CA ou CS est coché
@@ -6976,7 +7003,7 @@ function _buildAllTestsHtml() {
     if (rec4CA && !rec4CA.checked) toWork.push('Travailler le contrôle du tronc');
   })();
   if (!isNaN(luCA) && (luCA<10 || Math.abs(luCA-(luCS||0))>1.5)) toWork.push('Déficit de flexion dorsale de cheville (Lunge ' + luCA + 'cm — < 10 cm ou asymétrie > 1,5 cm)');
-  if (!isNaN(hrLsi2) && hrLsi2<90) toWork.push('Renforcement du mollet — Heel Rise progressif (LSI ' + hrLsi2.toFixed(1) + '%)');
+  if (!isNaN(hrLsi2) && hrLsi2<90) toWork.push('Renforcement du mollet — Heel Rise progressif (Asym. ' + asymTxt(hrLsi2, 1) + ')');
   if (!isNaN(qfCA) && !isNaN(qfCS) && qfCS>0 && (1-qfCA/qfCS)*100>10) toWork.push('Renforcement quadriceps (déficit ' + ((1-qfCA/qfCS)*100).toFixed(1) + '%)');
   // Flash Isométrique 20s (cf-q-ca / cf-q-cs) — distinct de l'isokinétique
   (function(){
@@ -6984,23 +7011,23 @@ function _buildAllTestsHtml() {
     var cfqCS = parseFloat((document.getElementById('cf-q-cs')||{}).value||'');
     if (!isNaN(cfqCA) && !isNaN(cfqCS) && cfqCS>0) {
       var cfqLsi = cfqCA/cfqCS*100;
-      if (cfqLsi < 90) toWork.push('Renforcement quadriceps isométrique (Flash 20s — LSI ' + cfqLsi.toFixed(1) + '%)');
+      if (cfqLsi < 90) toWork.push('Renforcement quadriceps isométrique (Flash 20s — Asym. ' + asymTxt(cfqLsi, 1) + ')');
     }
   })();
   if (!isNaN(ijfCA) && !isNaN(ijfCS) && ijfCS>0 && (1-ijfCA/ijfCS)*100>10) toWork.push('Renforcement ischio-jambiers — Nordic Hamstring, excentrique (déficit ' + ((1-ijfCA/ijfCS)*100).toFixed(1) + '%)');
   // Drop Jump H
   var djLsiTW = (!isNaN(djHca)&&djHcs>0)?djHca/djHcs*100:NaN;
-  if (!isNaN(djLsiTW) && djLsiTW<90) toWork.push('Travail pliométrique — explosivité verticale (DJ LSI ' + djLsiTW.toFixed(1) + '%)');
+  if (!isNaN(djLsiTW) && djLsiTW<90) toWork.push('Travail pliométrique — explosivité verticale (DJ Asym. ' + asymTxt(djLsiTW, 1) + ')');
   // Side Hop
   var shExpLsiTW = (!isNaN(shExpCA2)&&!isNaN(shExpCS2)&&shExpCS2>0)?shExpCA2/shExpCS2*100:NaN;
   var shEndLsiTW = (!isNaN(shEndCA2)&&!isNaN(shEndCS2)&&shEndCS2>0)?shEndCA2/shEndCS2*100:NaN;
-  if (!isNaN(shExpLsiTW) && shExpLsiTW<90) toWork.push('Travail latéral explosif — Side Hop 15s (LSI ' + shExpLsiTW.toFixed(1) + '%)');
-  if (!isNaN(shEndLsiTW) && shEndLsiTW<90) toWork.push('Travail latéral endurance — Side Hop 30s (LSI ' + shEndLsiTW.toFixed(1) + '%)');
+  if (!isNaN(shExpLsiTW) && shExpLsiTW<90) toWork.push('Travail latéral explosif — Side Hop 15s (Asym. ' + asymTxt(shExpLsiTW, 1) + ')');
+  if (!isNaN(shEndLsiTW) && shEndLsiTW<90) toWork.push('Travail latéral endurance — Side Hop 30s (Asym. ' + asymTxt(shEndLsiTW, 1) + ')');
   // SEBT
   var sebtDeficit = false;
-  if (!isNaN(sebtAntCA2)&&!isNaN(sebtAntCS2)&&sebtAntCS2>0&&sebtAntCA2/sebtAntCS2*100<90){ sebtDeficit=true; toWork.push('Améliorer contrôle postural dynamique — SEBT antérieur (LSI ' + (sebtAntCA2/sebtAntCS2*100).toFixed(1) + '%)'); }
-  if (!isNaN(sebtPmCA2) &&!isNaN(sebtPmCS2) &&sebtPmCS2>0 &&sebtPmCA2/sebtPmCS2*100<90) { sebtDeficit=true; toWork.push('Améliorer contrôle postural dynamique — SEBT postéro-médial (LSI ' + (sebtPmCA2/sebtPmCS2*100).toFixed(1) + '%)'); }
-  if (!isNaN(sebtPlCA2) &&!isNaN(sebtPlCS2) &&sebtPlCS2>0 &&sebtPlCA2/sebtPlCS2*100<90) { sebtDeficit=true; toWork.push('Améliorer contrôle postural dynamique — SEBT postéro-latéral (LSI ' + (sebtPlCA2/sebtPlCS2*100).toFixed(1) + '%)'); }
+  if (!isNaN(sebtAntCA2)&&!isNaN(sebtAntCS2)&&sebtAntCS2>0&&sebtAntCA2/sebtAntCS2*100<90){ sebtDeficit=true; toWork.push('Améliorer contrôle postural dynamique — SEBT antérieur (Asym. ' + asymTxt((sebtAntCA2/sebtAntCS2*100), 1) + ')'); }
+  if (!isNaN(sebtPmCA2) &&!isNaN(sebtPmCS2) &&sebtPmCS2>0 &&sebtPmCA2/sebtPmCS2*100<90) { sebtDeficit=true; toWork.push('Améliorer contrôle postural dynamique — SEBT postéro-médial (Asym. ' + asymTxt((sebtPmCA2/sebtPmCS2*100), 1) + ')'); }
+  if (!isNaN(sebtPlCA2) &&!isNaN(sebtPlCS2) &&sebtPlCS2>0 &&sebtPlCA2/sebtPlCS2*100<90) { sebtDeficit=true; toWork.push('Améliorer contrôle postural dynamique — SEBT postéro-latéral (Asym. ' + asymTxt((sebtPlCA2/sebtPlCS2*100), 1) + ')'); }
   // UQYBT
   for (var twi=0; twi<uqDirs.length; twi++) {
     var twDiffTxt = ((document.getElementById('uqybt-'+uqDirs[twi].id+'-diff')||{}).textContent||'').trim();
@@ -7534,7 +7561,7 @@ function calcSHRT() {
     var min = Math.min(d, g);
     var lsi = min / ref * 100;
     var cls = lsi >= 90 ? 'good' : lsi >= 75 ? 'warn' : 'bad';
-    lsiEl.textContent = lsi.toFixed(1) + '%';
+    lsiEl.textContent = asymTxt(lsi);
     lsiEl.style.background = cls === 'good' ? 'var(--green-l)' : cls === 'warn' ? 'var(--orange-l)' : 'var(--red-l)';
     lsiEl.style.color = cls === 'good' ? 'var(--green)' : cls === 'warn' ? 'var(--orange)' : 'var(--red)';
     statEl.textContent = cls === 'good' ? ' Symétrique' : cls === 'warn' ? ' Asymétrie modérée' : ' Déficit';
@@ -7577,7 +7604,7 @@ function calcULRT() {
     var asym = diff / ref * 100;
     var cls = asym <= 10 ? 'good' : asym <= 20 ? 'warn' : 'bad';
     if (elLsi) {
-      elLsi.textContent = 'LSI = ' + lsi.toFixed(1) + '%  |  Asymétrie = ' + asym.toFixed(1) + '%  (seuil significatif > 10%)';
+      elLsi.textContent = 'Asymétrie = ' + asymTxt(lsi) + '  (seuil significatif > 10%)';
       elLsi.style.background = cls === 'good' ? 'var(--green-l)' : cls === 'warn' ? 'var(--orange-l)' : 'var(--red-l)';
       elLsi.style.color = cls === 'good' ? 'var(--green)' : cls === 'warn' ? 'var(--orange)' : 'var(--red)';
     }
@@ -8588,7 +8615,7 @@ function calcEpForce(key) {
         var reasons = [];
         if (cs < 20) reasons.push('CS ' + cs + ' rép < 20');
         if (!isNaN(ca) && ca < 20) reasons.push('CA ' + ca + ' rép < 20');
-        if (!isNaN(lsi) && lsi < 90) reasons.push('LSI ' + lsi.toFixed(0) + '%');
+        if (!isNaN(lsi) && lsi < 90) reasons.push('Asym. ' + asymTxt(lsi, 0));
         statEl.textContent = '❌ ' + reasons.join(' · '); statEl.className = 'measure-stat bad';
       } else {
         statEl.textContent = '✅ OK'; statEl.className = 'measure-stat good';
@@ -9271,7 +9298,7 @@ window.addEventListener('load', function(){
   }
 
   function _ctLsiText(lsi){
-    return isNaN(lsi) ? '—' : Math.round(lsi)+'%';
+    return isNaN(lsi) ? '—' : asymTxt(lsi, 0);
   }
 
   function _ctSave(pk){
@@ -9350,7 +9377,7 @@ window.addEventListener('load', function(){
     if(compItems.length){
       var ch = document.createElement('div');
       ch.className = 'ct-sub-hdr ct-sub-hdr-comp';
-      ch.innerHTML = '<span class="sh-left">Comparaison</span><span>'+lbl.b+'</span><span>'+lbl.a+'</span><span>LSI</span>';
+      ch.innerHTML = '<span class="sh-left">Comparaison</span><span>'+lbl.b+'</span><span>'+lbl.a+'</span><span>Asym.</span>';
       container.appendChild(ch);
       compItems.forEach(function(item){
         var t = item.t, idx = item.i;
@@ -9509,7 +9536,7 @@ window.addEventListener('load', function(){
         '<th style="text-align:left;padding:3px 8px;font-weight:600">Test</th>'+
         '<th style="text-align:center;padding:3px 8px;font-weight:600">'+lbl.a+'</th>'+
         '<th style="text-align:center;padding:3px 8px;font-weight:600">'+lbl.b+'</th>'+
-        '<th style="text-align:center;padding:3px 8px;font-weight:600">'+(bilat?'Sym.':'LSI')+'</th>'+
+        '<th style="text-align:center;padding:3px 8px;font-weight:600">Asym.</th>'+
         '</tr></thead><tbody>';
       data.forEach(function(t){
         if(t.type === 'perf'){
@@ -9587,7 +9614,7 @@ window.addEventListener('load', function(){
         var lsi = _ctLsiCalc(t.valA, t.valB);
         valStr = lbl.a+'='+(t.valA!==''?t.valA:'—')+'   '+lbl.b+'='+(t.valB!==''?t.valB:'—');
         if(!isNaN(lsi)){
-          valStr += '   '+(bilat?'Sym.':'LSI')+'='+Math.round(lsi)+'%';
+          valStr += '   Asym.='+asymTxt(lsi, 0);
           tag = Math.round(lsi)+'%';
           tagCls = lsi>=90?'good':lsi>=75?'warn':'bad';
         }

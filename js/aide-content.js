@@ -124,10 +124,10 @@ sections: [
       { t:'Saisissez les tests fonctionnels', x:'Chaque test (Single Leg Stance, mSEBT, Side Hop, Figure-of-8) affiche ses consignes et ses critères de cotation. Le mSEBT se saisit en 3 essais par direction (ANT/PM/PL) — la moyenne se calcule automatiquement.' },
       { t:'Renseignez la date de la blessure', x:'Importée automatiquement avec « Associer les infos patient » (date d\'accident ou d\'opération du bilan), ou saisie à la main. Elle détermine quel seuil de couleur s\'applique.' },
       { t:'Lisez le score et sa couleur', x:'La couleur dépend du délai depuis la blessure : à 2 mois ou moins, vert dès 8 pts (prédit un retour au niveau pré-blessure), orange à 7 pts (zone intermédiaire), rouge sous 7 pts (prédit une absence de retour au sport). Au-delà de 2 mois ou si la date est inconnue, orange tant que le score n\'atteint pas 19,6 pts (niveau des sujets sains). À 19,6 pts ou plus, le score est toujours vert (« Ankle-GO validé »), quelle que soit la date.' },
-      { t:'Consultez la symétrie (LSI)', x:'Si le côté sain est renseigné, un LSI (Limb Symmetry Index) est calculé par test — complémentaire, il n\'entre pas dans le score /25. Seuil usuel : ≥90 %.' },
+      { t:'Consultez l\'asymétrie', x:'Si le côté sain est renseigné, l\'écart entre les deux côtés est calculé par test — complémentaire, il n\'entre pas dans le score /25. Il s\'affiche en asymétrie : 20 % signifie que le côté atteint est 20 % en dessous du sain. Seuil usuel : ≤10 %. Une valeur négative indique un côté atteint supérieur au sain.' },
       { t:'Consultez le profil détaillé', x:'Les réponses aux questionnaires sont listées triées de la plus défavorable à la plus favorable — utile pour repérer rapidement l\'appréhension ou les activités les plus limitantes du patient.' },
       { t:'Basculez barres / radar', x:'Vue barres (par défaut) pour lire les points par composant, ou radar pour une vue d\'ensemble. Le PDF exporté reprend la vue sélectionnée.' },
-      { t:'Générez le rapport PDF', x:'Score, symétrie et profil détaillé sont inclus dans un rapport prêt à imprimer ou archiver.' }
+      { t:'Générez le rapport PDF', x:'Score, asymétrie et profil détaillé sont inclus dans un rapport prêt à imprimer ou archiver.' }
     ]},
   { id:'cr-medecin', titre:'Rédiger un CR médecin',
     intro:'Un courrier structuré destiné au médecin, avec aperçu en temps réel pendant la saisie.',
