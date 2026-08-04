@@ -169,6 +169,40 @@ missing = [t for t in tests if t not in tbodies]
 print('TESTS sans tbody:', missing or 'Aucun ✓')
 ```
 
+## Templates — on ajoute, on ne remplace jamais
+
+```bash
+node qualite/templates-cas.js
+```
+
+Un template s'**ajoute** à la séance en cours, quel que soit son contenu —
+séance, étape ou phase de protocole. « Vider » est un geste séparé : c'est lui
+qu'on emploie pour repartir du template seul. Un seul verbe, donc aucune
+destruction silencieuse, et aucune confirmation à poser.
+
+Tous les chemins d'import passent par `_injecterTemplate()` : le picker (un
+bloc ou tous), les phases d'un protocole, la bibliothèque publiée et le
+chargement d'un template. Ne jamais réécrire un import à la main.
+
+**Le piège qu'elle referme** : l'ancienne `_importEtapes()` écrivait `etapeId`
+sur les blocs importés sans poser de séparateur. Comme l'appartenance est
+positionnelle, `_syncEtapeIds()` réécrivait ce champ depuis la position — le
+contenu importé se faisait absorber par la dernière étape en place, et l'étape
+importée restait orpheline. `_injecterTemplate` pose de vrais séparateurs, et
+un marqueur `libre` quand le template n'a pas d'étape mais qu'une étape est
+ouverte en fin de séance.
+
+Deux formats de template coexistent et sont tous deux lus : avec séparateurs
+(enregistrés après la refonte) et avec `etapeId` seul (avant).
+
+**Le lien `_builderFromTemplate`** — celui qui transforme le bouton en « Mettre
+à jour le template » — ne s'établit que si la séance était **vide** avant
+l'injection. Ajouté par-dessus autre chose, on compose une nouvelle séance : la
+mettre à jour écraserait le template avec un contenu qui n'est plus le sien.
+
+`loadSeance` fait exception et remplace : charger une séance enregistrée est un
+autre geste, et il confirme.
+
 ## Empreinte de séance du builder
 
 ```bash

@@ -168,12 +168,23 @@ sections: [
   { id:'etapes', titre:'Regrouper des blocs en étapes',
     intro:'Pour que l\'athlète distingue clairement l\'échauffement du corps de séance (ou toute autre organisation), regroupez plusieurs blocs sous une étape nommée et colorée.',
     etapes:[
-      { t:'Cliquez sur « + Ajouter une étape »', x:'Disponible même sur une séance vide. L\'étape se crée sans bloc à l\'intérieur — vous la remplissez ensuite, à votre rythme.', img:true },
+      { t:'Créez l\'étape depuis « + Ajouter »', x:'Le menu « + Ajouter » propose « Étape » en dernière entrée. Un « + » discret apparaît aussi entre deux éléments de la séance : il insère exactement là où vous cliquez. Une étape peut se créer sur une séance vide et rester vide — vous la remplissez ensuite.', img:true },
       { t:'Nommez l\'étape et choisissez sa couleur', x:'Renommage libre à tout moment. Une palette de 8 couleurs permet de distinguer visuellement chaque groupe.' },
-      { t:'Rattachez des blocs existants, ou créez-en dans l\'étape', x:'Chaque bloc a un menu « Étape » pour rejoindre ou quitter un groupe. Le bouton dédié en bas de l\'étape crée directement un nouveau bloc à l\'intérieur.' },
+      { t:'Rattachez des blocs existants, ou créez-en dans l\'étape', x:'Chaque bloc a un menu « Étape » pour rejoindre ou quitter un groupe — y compris les blocs cardio, texte, AMRAP et EMOM. Le bouton en bas de l\'étape ouvre le même menu qu\'ailleurs : vous choisissez le type de bloc à créer dedans.' },
+      { t:'Sortir un bloc d\'une étape le laisse sur place', x:'Il se pose juste après l\'étape, dans une zone sans étape — il ne remonte pas en tête de séance. C\'est aussi pour cette raison que les flèches d\'un bloc ne franchissent pas la frontière d\'une étape : pour en changer, passez par son menu « Étape », sinon le bloc serait absorbé sans le dire.' },
       { t:'Déplacez une étape entière', x:'Les flèches ↑↓ de son en-tête déplacent tous ses blocs d\'un coup, sans avoir à les manipuler un par un.' },
-      { t:'Enregistrez une étape comme template', x:'Le bouton dédié sauvegarde uniquement les blocs de cette étape (pas toute la séance) — pratique pour réutiliser un échauffement type dans d\'autres séances. L\'injection ultérieure crée une copie indépendante, sans lien avec l\'original.' },
+      { t:'Enregistrez une étape comme template', x:'Le bouton dédié sauvegarde uniquement les blocs de cette étape, pas toute la séance — pratique pour réutiliser un échauffement type. Comme tout template, il s\'ajoutera ensuite à la séance en cours, en copie indépendante et sans lien avec l\'original.' },
       { t:'Ce que voit l\'athlète', x:'Les mêmes bandeaux colorés autour des blocs concernés, avec le nom de l\'étape en en-tête — un repère visuel immédiat entre les différentes parties de la séance.', img:true }
+    ]},
+  { id:'templates', titre:'Réutiliser une séance : les templates',
+    intro:'Un template est un morceau de séance mis de côté pour le réutiliser : une séance entière, une étape, ou une phase de protocole. Le geste est toujours le même — il s\'ajoute à ce que vous avez déjà.',
+    etapes:[
+      { t:'Un template s\'ajoute, il ne remplace jamais', x:'Son contenu vient s\'ajouter à la suite de la séance en cours. Rien n\'est écrasé, donc rien ne se perd sans que vous l\'ayez demandé. Si vous voulez repartir du template seul, videz la séance d\'abord : « Vider » est là pour ça.' },
+      { t:'Composer une séance à partir de plusieurs templates', x:'C\'est la conséquence directe : ajoutez un échauffement type, puis un bloc de renforcement, puis un finisher — chacun venant d\'un template différent. Chaque ajout est une copie indépendante, modifier l\'une ne touche pas l\'original.' },
+      { t:'Les étapes suivent leur contenu', x:'Si le template contient des étapes, elles arrivent avec lui, sous leur nom et leur couleur. Elles ne se mélangent pas avec celles déjà en place. Un template sans étape s\'ajoute hors étape, même si votre séance se terminait par une.' },
+      { t:'Piocher un seul bloc plutôt que tout le template', x:'Dans le panneau latéral, dépliez un template pour voir ses blocs et ajoutez celui qui vous intéresse. Vous pouvez aussi n\'ajouter qu\'un exercice. Le reste du template n\'est pas touché.' },
+      { t:'« Mettre à jour le template »', x:'Ce bouton n\'apparaît que si le template est seul dans la séance — c\'est-à-dire si vous avez vidé avant de l\'ajouter. Dès que vous composez à partir de plusieurs sources, la séance n\'est plus ce template : le bouton propose alors d\'en enregistrer un nouveau, pour ne pas écraser l\'original avec autre chose.' },
+      { t:'Enregistrer la séance en cours comme template', x:'Nom, emoji et catégorie. Vous pouvez aussi la rattacher à un protocole en lui donnant un numéro de phase — elle devient alors une étape de ce parcours.' }
     ]},
   { id:'agenda', titre:'Planifier dans l\'agenda',
     intro:'Vue mois ou semaine, glisser-déposer, et un menu complet sur chaque jour.',

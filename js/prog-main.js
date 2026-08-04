@@ -4099,7 +4099,7 @@ function _renderBuilderLibraryUI(){
         +'<div class="builder-lib-sname">'+escH(p.nom||'Sans nom')+'</div>'
         +(meta.length?'<div class="builder-lib-smeta">'+meta.join(' · ')+'</div>':'')
         +'</div>'
-        +'<button class="builder-lib-load" onclick="loadTemplate(\''+pid+'\');_enterBuilderMode();">Charger</button>'
+        +'<button class="builder-lib-load" onclick="loadTemplate(\''+pid+'\');_enterBuilderMode();" title="Ajouter le contenu de ce template à la séance en cours">Ajouter</button>'
         +'</div>';
     }).join('');
   }
@@ -4274,7 +4274,7 @@ function _pickerRenderTemplate(p, search, addedLibIds){
   h += '<span class="picker-tmpl-name">'+escH(p.nom)+'</span>';
   if(totalExos) h += '<span style="font-size:.63rem;color:rgba(255,255,255,.38);flex-shrink:0;margin-left:2px;">'+totalExos+' ex.</span>';
   h += '<button class="picker-fav-btn'+(isFavPicker?' active':'')+'" onclick="event.stopPropagation();_togglePickerFav(\''+escJS(String(p.id))+'\')" title="Épingler en favoris">★</button>';
-  h += '<button class="picker-load-btn" onclick="event.stopPropagation();loadTemplate(\''+escJS(String(p.id))+'\');_enterBuilderMode();" title="Charger cette séance dans le builder">⤓</button>';
+  h += '<button class="picker-load-btn" onclick="event.stopPropagation();loadTemplate(\''+escJS(String(p.id))+'\');_enterBuilderMode();" title="Ajouter tout le contenu de cette séance à la séance en cours">⤓</button>';
   h += '<span class="picker-chevron">›</span></div>';
   h += '<div class="picker-tmpl-body">';
 
@@ -4373,15 +4373,74 @@ function _addExoFromPicker(tmplId, blocIdx, exoIdx){
 /* Importe les étapes d'un template en copie indépendante : chaque étape source
    reçoit un nouvel id, et les blocs importés sont réaiguillés dessus. Renvoie la
    table de correspondance ancien id -> nouvel id. */
-function _importEtapes(donnees){
-  var map = {};
-  var src = (donnees && donnees.etapes) || [];
-  src.forEach(function(e){
-    var ne = { id: genId(), title: e.title || 'Étape', color: e.color || ETAPE_COLORS[(etapes.length)%ETAPE_COLORS.length] };
-    map[e.id] = ne.id;
-    etapes.push(ne);
+/* Injecte le contenu d'un template A LA SUITE de la seance courante. Jamais de
+   remplacement : « Vider » est un geste separe, et c'est celui-la qu'on emploie
+   pour repartir du template seul. Un seul verbe, aucune destruction silencieuse.
+
+   Le piege du modele d'etapes : l'ordre vit dans `blocs` et l'appartenance est
+   POSITIONNELLE. Ecrire etapeId sur un bloc importe ne suffit pas —
+   _syncEtapeIds() le reecrira depuis la position, et le contenu se fait
+   absorber par la derniere etape en place. Il faut poser de vrais separateurs.
+
+   Deux formats de template coexistent : avec separateurs (enregistres apres la
+   refonte) et avec etapeId seul (avant). Les deux sont lus.
+
+   Retourne le nombre de blocs ajoutes. */
+function _injecterTemplate(donnees){
+  var d = donnees || {};
+  var srcBlocs = d.blocs || [];
+  if(!srcBlocs.length) return 0;
+
+  var meta = {};
+  (d.etapes || []).forEach(function(e){ if(e && e.id) meta[e.id] = e; });
+
+  // Regroupement de la source. Les separateurs font foi quand il y en a ;
+  // sinon on se rabat sur etapeId, en changeant de groupe a chaque rupture.
+  var avecMarqueurs = srcBlocs.some(function(b){
+    return b && (b.type === 'etape' || b.type === 'libre');
   });
-  return map;
+  var groupes = [], courant = null;
+  srcBlocs.forEach(function(b){
+    if(!b) return;
+    if(avecMarqueurs){
+      if(b.type === 'etape'){ courant = { src:b.id, blocs:[] }; groupes.push(courant); return; }
+      if(b.type === 'libre'){ courant = { src:null,  blocs:[] }; groupes.push(courant); return; }
+      if(!courant){ courant = { src:null, blocs:[] }; groupes.push(courant); }
+      courant.blocs.push(b);
+      return;
+    }
+    var cle = b.etapeId || null;
+    if(!courant || courant.src !== cle){ courant = { src:cle, blocs:[] }; groupes.push(courant); }
+    courant.blocs.push(b);
+  });
+
+  var ajoutes = 0;
+  groupes.forEach(function(g){
+    if(g.src){
+      var m = meta[g.src] || {};
+      var ne = { id: genId(), title: m.title || 'Étape',
+                 color: m.color || ETAPE_COLORS[(etapes.length) % ETAPE_COLORS.length] };
+      etapes.push(ne);
+      blocs.push({ id: ne.id, type: 'etape' });
+    } else if(_etapeDeIndex(blocs.length) !== null){
+      // Une etape est ouverte en fin de seance : sans ce separateur, les blocs
+      // importes y entreraient.
+      blocs.push({ type: 'libre' });
+    }
+    g.blocs.forEach(function(b){
+      var nb = JSON.parse(JSON.stringify(b));
+      nb.id = genId();
+      nb.exos = (nb.exos || []).map(function(e){ return Object.assign({}, e, { id: genId() }); });
+      delete nb.etapeId;            // recalcule depuis la position
+      blocs.push(nb);
+      activeBloc = nb.id;
+      ajoutes++;
+    });
+  });
+
+  if(typeof _compacterMarqueurs === 'function') _compacterMarqueurs();
+  if(typeof _syncEtapeIds === 'function') _syncEtapeIds();
+  return ajoutes;
 }
 
 /* Ajouter un bloc entier (clone) */
@@ -4393,21 +4452,14 @@ function _addBlocFromPicker(tmplId, blocIdx){
   var srcBloc = donnees&&donnees.blocs&&donnees.blocs[blocIdx];
   if(!srcBloc) return;
 
-  var newBloc = JSON.parse(JSON.stringify(srcBloc));
-  newBloc.id = genId();
-  newBloc.exos = (newBloc.exos||[]).map(function(e){return Object.assign({},e,{id:genId()});});
-  if(newBloc.etapeId){
-    // Copie indépendante : recrée l'étape source sous un nouvel id
-    var _m = _importEtapes(donnees);
-    if(_m[newBloc.etapeId]) newBloc.etapeId = _m[newBloc.etapeId];
-    else delete newBloc.etapeId;
-  }
-  blocs.push(newBloc);
-  activeBloc = newBloc.id;
+  // Un seul bloc : on passe par le meme chemin, avec l'etape d'origine si le
+  // bloc en avait une. Sans separateur, il serait absorbe par l'etape en place.
+  var _sousTmpl = { etapes: (donnees.etapes||[]), blocs: [srcBloc] };
+  _injecterTemplate(_sousTmpl);
   renderSession();
   _pickerRefreshAddedState();
-  _showToast('✚ Bloc « '+escH(newBloc.title||'Bloc')+' » ajouté');
-  var el = document.getElementById('bloc-'+newBloc.id);
+  _showToast('✚ Bloc « '+escH(srcBloc.title||'Bloc')+' » ajouté');
+  var el = document.getElementById('bloc-'+activeBloc);
   if(el) el.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
@@ -4457,19 +4509,7 @@ function _addAllPhasesFromGroup(groupId){
     var donnees = p.donnees;
     if(typeof donnees==='string'){try{donnees=JSON.parse(donnees);}catch(e){donnees=null;}}
     if(!donnees||!donnees.blocs) return;
-    var _etapeIdMap = _importEtapes(donnees);
-    donnees.blocs.forEach(function(srcBloc){
-      var newBloc = JSON.parse(JSON.stringify(srcBloc));
-      newBloc.id = genId();
-      newBloc.exos = (newBloc.exos||[]).map(function(e){return Object.assign({},e,{id:genId()});});
-      if(newBloc.etapeId){
-        if(_etapeIdMap[newBloc.etapeId]) newBloc.etapeId = _etapeIdMap[newBloc.etapeId];
-        else delete newBloc.etapeId;
-      }
-      blocs.push(newBloc);
-      activeBloc = newBloc.id;
-      total++;
-    });
+    total += _injecterTemplate(donnees);
   });
   if(total){ renderSession(); _showToast('✚ '+total+' blocs ajoutés ('+phases.length+' phases)'); _pickerRefreshAddedState(); }
 }
@@ -4481,21 +4521,10 @@ function _addAllBlocsFromTemplate(tmplId){
   var donnees = p.donnees;
   if(typeof donnees==='string'){try{donnees=JSON.parse(donnees);}catch(e){donnees=null;}}
   if(!donnees||!donnees.blocs||!donnees.blocs.length) return;
-  var _etapeIdMap = _importEtapes(donnees);
-  donnees.blocs.forEach(function(srcBloc){
-    var newBloc = JSON.parse(JSON.stringify(srcBloc));
-    newBloc.id = genId();
-    newBloc.exos = (newBloc.exos||[]).map(function(e){return Object.assign({},e,{id:genId()});});
-    if(newBloc.etapeId){
-      if(_etapeIdMap[newBloc.etapeId]) newBloc.etapeId = _etapeIdMap[newBloc.etapeId];
-      else delete newBloc.etapeId;
-    }
-    blocs.push(newBloc);
-    activeBloc = newBloc.id;
-  });
+  var n = _injecterTemplate(donnees);
   renderSession();
   _pickerRefreshAddedState();
-  _showToast('✚ '+donnees.blocs.length+' blocs ajoutés');
+  _showToast('✚ '+n+' bloc'+(n>1?'s':'')+' ajouté'+(n>1?'s':''));
 }
 
 /* ── Publier un template dans la bibliothèque ── */
@@ -4585,19 +4614,17 @@ function loadLibraryTemplate(id){
     var t = data[0];
     var d = {};
     try { d = JSON.parse(t.donnees||'{}'); } catch(e){}
-    blocs = d.blocs ? JSON.parse(JSON.stringify(d.blocs)) : [];
-    etapes = d.etapes ? JSON.parse(JSON.stringify(d.etapes)) : [];
-    activeBloc = blocs.length ? blocs[0].id : null;
-    _notes = '';
-    _currentProgId = null;
-    _builderFromTemplate = null; // lecture seule — save créera un nouveau programme
+    // Comme partout : on AJOUTE, on ne remplace pas.
+    var seanceVide = !(blocs && blocs.length);
+    var n = _injecterTemplate(d);
+    if(seanceVide) _currentProgId = null;
+    _builderFromTemplate = null; // vient de la bibliotheque : save creera un nouveau programme
     _applyBuilderReadOnly(false);
     renderSession();
     _updateBuilderTitle();
     _refreshSaveBtn();
-    var pn = document.getElementById('patientName');
-    if(pn && !pn.value) pn.value = t.nom||'';
-    _showToast('🌐 « '+escH(t.nom||'Template')+' » chargé depuis la bibliothèque');
+    if(!seanceVide){ _builderSaved = false; _refreshDraftBadge(); }
+    _showToast('🌐 « '+escH(t.nom||'Template')+' » — '+n+' bloc'+(n>1?'s':'')+' ajouté'+(n>1?'s':''));
   })
   .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
 }
@@ -4884,31 +4911,53 @@ function duplicateTemplate(){
 }
 
 function loadTemplate(id){
+  /* Un template s'AJOUTE a la seance courante, il ne la remplace jamais.
+     « Vider » est un geste separe : c'est lui qu'on emploie pour repartir du
+     template seul. Il n'y a donc qu'un seul verbe, et rien ne se perd sans
+     qu'on l'ait demande. */
   function _applyTemplate(t){
     var d = {};
     try { d = JSON.parse(t.donnees||'{}'); } catch(e){}
-    blocs = d.blocs ? JSON.parse(JSON.stringify(d.blocs)) : (t._blocs ? JSON.parse(JSON.stringify(t._blocs)) : []);
-    etapes = d.etapes ? JSON.parse(JSON.stringify(d.etapes)) : (t._etapes ? JSON.parse(JSON.stringify(t._etapes)) : []);
-    activeBloc = blocs.length ? blocs[0].id : null;
-    _notes = d.notes || '';
-    _currentProgId = null;
-    _builderFromTemplate = String(t.id);
-    // Tous les utilisateurs peuvent composer des séances depuis n'importe quel template
+    if(!d.blocs && t._blocs) d = { blocs:t._blocs, etapes:t._etapes||[], notes:t.notes||'' };
+
+    var seanceVide = !(blocs && blocs.length);
+    var n = _injecterTemplate(d);
+
+    // Les notes du template ne s'imposent que si la seance n'en avait pas.
+    if(d.notes && !(_notes||'').trim()) _notes = d.notes;
+
+    /* Le lien « cette seance EST ce template » n'a de sens que si le template
+       est seul dans la seance — c'est lui qui transforme le bouton en « Mettre
+       a jour le template ». Ajoute par-dessus autre chose, on compose une
+       nouvelle seance : le bouton doit proposer d'enregistrer, pas d'ecraser
+       le template avec un contenu qui n'est plus le sien. */
+    if(seanceVide){
+      _currentProgId = null;
+      _builderFromTemplate = String(t.id);
+      _activeGroupId=null; _activeGroupNom=''; _activePhaseOrdre=1;
+      _updateActiveGroupBadge();
+    } else {
+      _builderFromTemplate = null;
+    }
+
     _applyBuilderReadOnly(false);
-    // Charger un template existant → pas de mode "nouvelle phase"
-    _activeGroupId=null; _activeGroupNom=''; _activePhaseOrdre=1;
-    _updateActiveGroupBadge();
     renderSession();
     _updateBuilderTitle();
     _refreshSaveBtn();
     var pn = document.getElementById('patientName');
-    if(pn && !pn.value) pn.value = t.nom || '';
     if(_builderReadOnly && pn) pn.readOnly = true;
     else if(pn) pn.readOnly = false;
-    // Marquer l'état chargé comme "sauvegardé" pour éviter la pastille parasite
-    _lastSavedHash = _sessionHash();
-    _builderSaved = true;
+
+    if(seanceVide){
+      // Rien n'a ete compose : l'etat charge vaut « sauvegarde ».
+      _lastSavedHash = _sessionHash();
+      _builderSaved = true;
+    } else {
+      // Ajout dans une seance existante : c'est une modification.
+      _builderSaved = false;
+    }
     _refreshDraftBadge();
+    _showToast('✚ « ' + (t.nom||'Template') + ' » — ' + n + ' bloc' + (n>1?'s':'') + ' ajouté' + (n>1?'s':''));
   }
 
   if(_progToken && _progUid){
