@@ -958,11 +958,36 @@ function renderSeances() {
       +'<div class="seance-card-meta">'+s.date+' · '+(s.blocs||[]).length+' bloc(s) · '+nbExos+' exercice(s)</div>'
       +'<div class="seance-card-actions">'
       +'<button class="btn btn-primary" style="font-size:.76rem;padding:5px 12px;" onclick="loadSeance(\''+s.id+'\')">📋 Charger</button>'
+      +'<button class="btn btn-outline" style="font-size:.76rem;padding:5px 12px;" onclick="seanceVersTemplate(\''+s.id+'\')" title="Réutiliser cette séance pour d\'autres patients">Faire un template</button>'
       +'<button class="btn btn-danger" style="font-size:.76rem;padding:5px 12px;" onclick="deleteSeance(\''+s.id+'\')"><svg style="vertical-align:middle;margin-right:4px" width="16" height="16" fill="currentColor" viewBox="-40 0 427 427.00131" xmlns="http://www.w3.org/2000/svg"><path d="m232.398438 154.703125c-5.523438 0-10 4.476563-10 10v189c0 5.519531 4.476562 10 10 10 5.523437 0 10-4.480469 10-10v-189c0-5.523437-4.476563-10-10-10zm0 0"/><path d="m114.398438 154.703125c-5.523438 0-10 4.476563-10 10v189c0 5.519531 4.476562 10 10 10 5.523437 0 10-4.480469 10-10v-189c0-5.523437-4.476563-10-10-10zm0 0"/><path d="m28.398438 127.121094v246.378906c0 14.5625 5.339843 28.238281 14.667968 38.050781 9.285156 9.839844 22.207032 15.425781 35.730469 15.449219h189.203125c13.527344-.023438 26.449219-5.609375 35.730469-15.449219 9.328125-9.8125 14.667969-23.488281 14.667969-38.050781v-246.378906c18.542968-4.921875 30.558593-22.835938 28.078124-41.863282-2.484374-19.023437-18.691406-33.253906-37.878906-33.257812h-51.199218v-12.5c.058593-10.511719-4.097657-20.605469-11.539063-28.03125-7.441406-7.421875-17.550781-11.5546875-28.0625-11.46875h-88.796875c-10.511719-.0859375-20.621094 4.046875-28.0625 11.46875-7.441406 7.425781-11.597656 17.519531-11.539062 28.03125v12.5h-51.199219c-19.1875.003906-35.394531 14.234375-37.878907 33.257812-2.480468 19.027344 9.535157 36.941407 28.078126 41.863282zm239.601562 279.878906h-189.203125c-17.097656 0-30.398437-14.6875-30.398437-33.5v-245.5h250v245.5c0 18.8125-13.300782 33.5-30.398438 33.5zm-158.601562-367.5c-.066407-5.207031 1.980468-10.21875 5.675781-13.894531 3.691406-3.675781 8.714843-5.695313 13.925781-5.605469h88.796875c5.210937-.089844 10.234375 1.929688 13.925781 5.605469 3.695313 3.671875 5.742188 8.6875 5.675782 13.894531v12.5h-128zm-71.199219 32.5h270.398437c9.941406 0 18 8.058594 18 18s-8.058594 18-18 18h-270.398437c-9.941407 0-18-8.058594-18-18s8.058593-18 18-18zm0 0"/><path d="m173.398438 154.703125c-5.523438 0-10 4.476563-10 10v189c0 5.519531 4.476562 10 10 10 5.523437 0 10-4.480469 10-10v-189c0-5.523437-4.476563-10-10-10zm0 0"/></svg>Supprimer</button>'
       +'</div>'
       +'</div>';
   }).join('');
 }
+
+/* Faire un template d'une seance deja enregistree, sans repasser par le
+   builder. C'est APRES avoir compose une seance pour un patient qu'on se dit
+   « celle-la, je la referai » — obliger a la recharger d'abord pour
+   l'enregistrer une seconde fois etait le detour le plus couteux du systeme. */
+function seanceVersTemplate(id){
+  _loadSeances();
+  var s = _savedSeances.find(function(x){ return x.id===id; });
+  if(!s){ _showToast('⚠️ Séance introuvable.'); return; }
+  if(!(s.blocs||[]).length){ _showToast('⚠️ Cette séance est vide.'); return; }
+
+  /* La seance courante n'est pas touchee : doSaveTemplate lit `blocs` et
+     `etapes`, on les prete le temps de l'enregistrement puis on les rend. */
+  var blocsAvant = blocs, etapesAvant = etapes, notesAvant = _notes;
+  blocs  = JSON.parse(JSON.stringify(s.blocs  || []));
+  etapes = JSON.parse(JSON.stringify(s.etapes || []));
+  _notes = s.notes || '';
+  _seanceTmplRestore = function(){
+    blocs = blocsAvant; etapes = etapesAvant; _notes = notesAvant;
+    _seanceTmplRestore = null;
+  };
+  _openTmplModal({ emoji:_tmplSelectedEmoji, nom:s.name || '' });
+}
+var _seanceTmplRestore = null;
 
 function loadSeance(id) {
   _loadSeances();
@@ -3795,6 +3820,35 @@ function _onTmplCatChange(){
   }
 }
 
+/* Etiquette effective d'un template : la sienne, sinon celle de son
+   protocole. Sans cet heritage il faudrait saisir la meme pathologie sur
+   chacune des phases d'un protocole. */
+function _tmplEtiquette(p, champ){
+  if(!p) return '';
+  if(p[champ]) return p[champ];
+  if(!p.group_id) return '';
+  var g = (_groups||[]).find(function(x){ return String(x.id)===String(p.group_id); });
+  return (g && g[champ]) || '';
+}
+
+/* Les etiquettes deja saisies, proposees en autocompletion. Champ libre par
+   choix du praticien : la liste aide sans contraindre, et evite que « LCA »,
+   « lca » et « L.C.A. » coexistent sans le vouloir. */
+function _remplirSuggestionsEtiquettes(){
+  [['pathologie','tmplPathoList'], ['sport','tmplSportList']].forEach(function(pair){
+    var el = document.getElementById(pair[1]);
+    if(!el) return;
+    var vues = {};
+    (_sidebarProgs||[]).concat(_groups||[]).forEach(function(x){
+      var v = x && x[pair[0]];
+      if(v && String(v).trim()) vues[String(v).trim()] = true;
+    });
+    el.innerHTML = Object.keys(vues).sort().map(function(v){
+      return '<option value="'+escH(v)+'">';
+    }).join('');
+  });
+}
+
 function _openTmplModal(opts){
   // opts = { nom, cat, emoji, groupId, phaseOrdre, editId }
   _tmplEditId = opts.editId || null;
@@ -3820,6 +3874,9 @@ function _openTmplModal(opts){
   document.getElementById('tmplNameInput').value = opts.nom || '';
   document.getElementById('tmplCatInput').value  = opts.cat || '';
   _onTmplCatChange();
+  _remplirSuggestionsEtiquettes();
+  document.getElementById('tmplPathoInput').value = opts.pathologie || '';
+  document.getElementById('tmplSportInput').value = opts.sport || '';
 
   // Protocoles
   var grpSel = document.getElementById('tmplGroupInput');
@@ -3851,7 +3908,7 @@ function openEditTemplate(id){
     _loadTemplates();
     var t = _templates.find(function(x){ return String(x.id)===String(id); });
     if(!t){ alert('Template introuvable.'); return; }
-    _openTmplModal({ editId:id, nom:t.nom, cat:t.categorie, type:t.type, emoji:t.emoji, groupId:t.group_id, phaseNom:t.phase_nom, phaseOrdre:t.phase_ordre });
+    _openTmplModal({ editId:id, nom:t.nom, cat:t.categorie, type:t.type, emoji:t.emoji, groupId:t.group_id, phaseNom:t.phase_nom, phaseOrdre:t.phase_ordre, pathologie:t.pathologie, sport:t.sport });
     return;
   }
   _fetchRetry(SUPA_URL_P+'/rest/v1/templates?id=eq.'+id+'&select=*', { headers:_sbHeaders() })
@@ -3859,7 +3916,7 @@ function openEditTemplate(id){
   .then(function(data){
     if(!Array.isArray(data)||!data[0]){ alert('Template introuvable.'); return; }
     var t = data[0];
-    _openTmplModal({ editId:id, nom:t.nom, cat:t.categorie, type:t.type, emoji:t.emoji, groupId:t.group_id, phaseNom:t.phase_nom, phaseOrdre:t.phase_ordre });
+    _openTmplModal({ editId:id, nom:t.nom, cat:t.categorie, type:t.type, emoji:t.emoji, groupId:t.group_id, phaseNom:t.phase_nom, phaseOrdre:t.phase_ordre, pathologie:t.pathologie, sport:t.sport });
   })
   .catch(function(){ alert('Erreur réseau.'); });
 }
@@ -3888,6 +3945,9 @@ function closeSaveTemplate(){
   document.getElementById('templateSaveModal').classList.remove('open');
   _tmplEditId = null;
   _tmplEtapeSourceId = null;
+  // Rendre la seance courante si elle avait ete pretee par seanceVersTemplate,
+  // que l'enregistrement ait abouti ou non.
+  if(typeof _seanceTmplRestore === 'function') _seanceTmplRestore();
 }
 
 /* ── Enregistrer / Modifier le template ── */
@@ -3897,11 +3957,15 @@ function doSaveTemplate(){
   var phaseOrdre = groupId ? (parseInt(document.getElementById('tmplPhaseOrdreInput').value)||1) : 0;
   var nom = document.getElementById('tmplNameInput').value.trim();
   if(!nom){ alert('Donnez un nom au template.'); return; }
+  var patho    = (document.getElementById('tmplPathoInput')||{}).value || '';
+  var sportTxt = (document.getElementById('tmplSportInput')||{}).value || '';
+  patho = patho.trim(); sportTxt = sportTxt.trim();
 
   if(_tmplEditId){
     // ── Mode édition : PATCH sans toucher aux blocs ──
     var id = _tmplEditId;
-    var patch = { nom:nom, categorie:cat, emoji:_tmplSelectedEmoji, group_id:groupId, phase_nom:'', phase_ordre:phaseOrdre };
+    var patch = { nom:nom, categorie:cat, emoji:_tmplSelectedEmoji, group_id:groupId, phase_nom:'', phase_ordre:phaseOrdre,
+                  pathologie:patho, sport:sportTxt };
     if(_progToken && _progUid && !_isReader()){
       _fetchRetry(SUPA_URL_P+'/rest/v1/templates?id=eq.'+id, {
         method:'PATCH', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
@@ -3913,7 +3977,8 @@ function doSaveTemplate(){
     } else {
       _loadTemplates();
       var t = _templates.find(function(x){ return String(x.id)===String(id); });
-      if(t){ t.nom=nom; t.categorie=cat; t.emoji=_tmplSelectedEmoji; t.group_id=groupId; t.phase_nom=''; t.phase_ordre=phaseOrdre; _persistTemplates(); }
+      if(t){ t.nom=nom; t.categorie=cat; t.emoji=_tmplSelectedEmoji; t.group_id=groupId; t.phase_nom=''; t.phase_ordre=phaseOrdre;
+             t.pathologie=patho; t.sport=sportTxt; _persistTemplates(); }
       closeSaveTemplate(); renderTemplatesInBuilder(); renderSidebarTemplates(); _showToast('✏️ Template « '+nom+' » mis à jour !');
     }
     return;
@@ -3933,10 +3998,11 @@ function doSaveTemplate(){
     _fetchRetry(SUPA_URL_P + '/rest/v1/templates', {
       method: 'POST',
       headers: _sbHeaders(),
-      body: JSON.stringify({ praticien_id:_progUid, nom:nom, categorie:cat, emoji:_tmplSelectedEmoji, donnees:donnees, group_id:groupId, phase_nom:'', phase_ordre:phaseOrdre, is_public:parentGroupPublic })
+      body: JSON.stringify({ praticien_id:_progUid, nom:nom, categorie:cat, emoji:_tmplSelectedEmoji, donnees:donnees, group_id:groupId, phase_nom:'', phase_ordre:phaseOrdre, is_public:parentGroupPublic,
+                             pathologie:patho, sport:sportTxt })
     }).then(function(r){
       if(r.ok){
-        if(!isEtapeTmpl) _draftClear();
+        if(!isEtapeTmpl && !_seanceTmplRestore) _draftClear();
         closeSaveTemplate();
         renderTemplatesInBuilder();
         renderSidebarTemplates();
@@ -3951,13 +4017,14 @@ function doSaveTemplate(){
       id:'_t'+Math.random().toString(36).slice(2,9),
       nom:nom, categorie:cat, emoji:_tmplSelectedEmoji,
       group_id:groupId||null, phase_nom:'', phase_ordre:phaseOrdre,
+      pathologie:patho, sport:sportTxt,
       created_at:new Date().toISOString(),
       _blocs:JSON.parse(JSON.stringify(srcBlocs)),
       _etapes:JSON.parse(JSON.stringify(srcEtapes)),
       _local:true
     });
     _persistTemplates();
-    if(!isEtapeTmpl) _draftClear();
+    if(!isEtapeTmpl && !_seanceTmplRestore) _draftClear();
     closeSaveTemplate();
     renderTemplatesInBuilder();
     renderSidebarTemplates();
@@ -5024,6 +5091,9 @@ function openCreateGroup(){
   document.getElementById('grpNameInput').value = '';
   document.getElementById('grpCatInput').value = '';
   document.getElementById('grpDescInput').value = '';
+  document.getElementById('grpPathoInput').value = '';
+  document.getElementById('grpSportInput').value = '';
+  _remplirSuggestionsEtiquettes();
   document.getElementById('grpLibSection').style.display = 'none';
   document.getElementById('grpDuplicateBtn').style.display = 'none';
   document.getElementById('groupCreateModal').classList.add('open');
@@ -5038,6 +5108,9 @@ function openEditGroup(id){
   document.getElementById('grpNameInput').value = g.nom||'';
   document.getElementById('grpCatInput').value = g.categorie||'';
   document.getElementById('grpDescInput').value = g.description||'';
+  document.getElementById('grpPathoInput').value = g.pathologie||'';
+  document.getElementById('grpSportInput').value = g.sport||'';
+  _remplirSuggestionsEtiquettes();
   document.getElementById('grpDuplicateBtn').style.display = '';
   // Section publication
   var libSec = document.getElementById('grpLibSection');
@@ -5086,6 +5159,8 @@ function doCreateGroup(){
   if(!nom){ alert('Donnez un nom au protocole.'); return; }
   var cat  = document.getElementById('grpCatInput').value;
   var desc = document.getElementById('grpDescInput').value.trim();
+  var gPatho = (document.getElementById('grpPathoInput')||{}).value.trim();
+  var gSport = (document.getElementById('grpSportInput')||{}).value.trim();
 
   if(_grpEditId){
     // ── Mode édition ──
@@ -5103,7 +5178,7 @@ function doCreateGroup(){
     if(_progToken && _progUid && !_isReader()){
       _fetchRetry(SUPA_URL_P + '/rest/v1/template_groups?id=eq.' + id, {
         method:'PATCH', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
-        body: JSON.stringify({ nom: nom, categorie: cat, description: desc })
+        body: JSON.stringify({ nom: nom, categorie: cat, description: desc, pathologie: gPatho, sport: gSport })
       }).then(function(r){
         if(!r.ok){ r.text().then(function(t){ alert('Erreur PATCH : ' + t); }); return; }
         closeCreateGroup(); renderSidebarTemplates(); _showToast('✏️ Protocole mis à jour !');
@@ -5115,7 +5190,7 @@ function doCreateGroup(){
     } else {
       _loadGroups();
       var g = _groups.find(function(x){ return String(x.id)===String(id); });
-      if(g){ g.nom=nom; g.categorie=cat; g.description=desc; _persistGroups(); }
+      if(g){ g.nom=nom; g.categorie=cat; g.description=desc; g.pathologie=gPatho; g.sport=gSport; _persistGroups(); }
       closeCreateGroup(); renderSidebarTemplates(); _showToast('✏️ Protocole mis à jour !');
     }
     return;
@@ -5125,14 +5200,15 @@ function doCreateGroup(){
   if(_progToken && _progUid && !_isReader()){
     _fetchRetry(SUPA_URL_P + '/rest/v1/template_groups', {
       method: 'POST', headers: _sbHeaders(),
-      body: JSON.stringify({ praticien_id: _progUid, nom: nom, categorie: cat, description: desc })
+      body: JSON.stringify({ praticien_id: _progUid, nom: nom, categorie: cat, description: desc, pathologie: gPatho, sport: gSport })
     }).then(function(r){
       if(r.ok){ closeCreateGroup(); renderSidebarTemplates(); _showToast('📁 Protocole « ' + nom + ' » créé !'); }
       else { r.json().then(function(d){ alert('Erreur : ' + JSON.stringify(d)); }); }
     }).catch(function(){ alert('Erreur réseau.'); });
   } else {
     _loadGroups();
-    _groups.unshift({ id:'_g'+Math.random().toString(36).slice(2,9), nom:nom, categorie:cat, description:desc, created_at:new Date().toISOString(), _local:true });
+    _groups.unshift({ id:'_g'+Math.random().toString(36).slice(2,9), nom:nom, categorie:cat, description:desc,
+                      pathologie:gPatho, sport:gSport, created_at:new Date().toISOString(), _local:true });
     _persistGroups();
     closeCreateGroup(); renderSidebarTemplates(); _showToast('📁 Protocole « ' + nom + ' » créé !');
   }
@@ -6209,6 +6285,12 @@ function _renderTmplCard(p, isPhase, phaseNum, hideCat){
   if(nbExos)   sub += (sub?' · ':'')+nbExos+' exo'+(nbExos>1?'s':'');
   if(nbCardio) sub += (sub?' · ':'')+nbCardio+' cardio';
   if(nbVideo)  sub += (sub?' · ':'')+'▶ '+nbVideo;
+  // Etiquettes : celles du template, sinon celles heritees de son protocole.
+  var etPatho = _tmplEtiquette(p, 'pathologie');
+  var etSport = _tmplEtiquette(p, 'sport');
+  var etBdg = '';
+  if(etPatho) etBdg += '<span class="stmpl-tag stmpl-tag-patho">'+escH(etPatho)+'</span>';
+  if(etSport) etBdg += '<span class="stmpl-tag stmpl-tag-sport">'+escH(etSport)+'</span>';
   var catSt  = _tmplCatStyle(p.categorie||'');
   // Badge catégorie seulement si pas dans une section catégorie (hideCat=false/undefined) et pas une phase
   var catBdg = (!isPhase && !hideCat && p.categorie) ? '<span class="stmpl-cat-badge" style="background:'+catSt.bg+';color:'+catSt.fg+';">'+escH(p.categorie)+'</span>' : '';
@@ -6220,7 +6302,7 @@ function _renderTmplCard(p, isPhase, phaseNum, hideCat){
   return '<div class="'+cls+'" onclick="_sidebarLoadProg(\''+pid+'\')">'
     +phN+'<div class="stmpl-card-emoji">'+emoji+'</div>'
     +'<div class="stmpl-card-body"><div class="stmpl-card-name">'+pnom+' '+pubBdg+'</div>'
-    +'<div class="stmpl-card-meta">'+catBdg+(sub?escH(sub):'')+'</div></div>'
+    +'<div class="stmpl-card-meta">'+catBdg+etBdg+(sub?escH(sub):'')+'</div></div>'
     +'<button class="stmpl-kebab" title="Actions" onclick="event.stopPropagation();_openKebab(event,\'tmpl\',\''+pid+'\',\''+escJS(dispNom)+'\',\''+escJS(String(p.praticien_id||''))+'\')" >···</button>'
     +'<button class="stmpl-add-btn" title="Planifier" onclick="event.stopPropagation();_openQuickAdd(\''+pid+'\',\''+pnom+'\')">+</button>'
     +'</div>';

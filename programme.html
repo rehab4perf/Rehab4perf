@@ -175,6 +175,14 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 }
 .stmpl-cat-select option { background:var(--navy); color:#fff; }
 .stmpl-cat-select.has-filter { background-color:rgba(74,144,217,.4); background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,.6)'/%3E%3C/svg%3E"); }
+/* Etiquettes de template : ce que la seance soigne, et pour qui. Elles
+   remplacent la lecture d'un nom tronque. */
+.stmpl-tag {
+  display:inline-block; font-size:var(--fs-2xs); font-weight:700;
+  padding:1px 7px; border-radius:9px; margin-right:4px; white-space:nowrap;
+}
+.stmpl-tag-patho { background:var(--tag-bg); color:var(--accent); }
+.stmpl-tag-sport { background:var(--ok-l); color:var(--ok-d); }
 .stmpl-cat-badge { display:inline-block; padding:1px 7px; border-radius:10px; font-size:var(--fs-xs); font-weight:600; margin-right:4px; vertical-align:middle; }
 
 /* ── Bouton charger template dans le picker sidebar ── */
@@ -273,6 +281,9 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .tmpl-save-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:600; display:none; align-items:center; justify-content:center; }
 .tmpl-save-overlay.open { display:flex; }
 .tmpl-save-modal { background:#fff; border-radius:12px; padding:22px 24px 18px; width:350px; box-shadow:0 14px 44px rgba(0,0,0,.22); }
+.save-field-duo { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.save-hint { font-weight:400; color:var(--text3); font-size:var(--fs-2xs); margin-left:4px; }
+@media (max-width:520px) { .save-field-duo { grid-template-columns:1fr; } }
 .tmpl-save-modal h2 { font-size:.92rem; font-weight:700; color:var(--navy); margin-bottom:16px; }
 /* ── Publish to library modal ── */
 .pub-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:700; display:none; align-items:center; justify-content:center; }
@@ -2511,6 +2522,16 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
         <option value="Autre">📁 Autre</option>
       </select>
     </div>
+    <div class="save-field save-field-duo">
+      <div>
+        <label>Pathologie <span class="save-hint">héritée par les phases</span></label>
+        <input type="text" id="grpPathoInput" placeholder="Ex : LCA" list="tmplPathoList">
+      </div>
+      <div>
+        <label>Sport <span class="save-hint">hérité par les phases</span></label>
+        <input type="text" id="grpSportInput" placeholder="Ex : foot" list="tmplSportList">
+      </div>
+    </div>
     <div class="save-field">
       <label>Description (optionnel)</label>
       <textarea id="grpDescInput" placeholder="Protocole post-opératoire LCA…"></textarea>
@@ -2564,10 +2585,18 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
       <label>Nom du template</label>
       <input type="text" id="tmplNameInput" placeholder="Ex : Renfo genou — Phase 2">
     </div>
-    <div class="save-field">
-      <label>Emoji</label>
-      <div class="emoji-row" id="tmplEmojiRow"></div>
+    <div class="save-field save-field-duo">
+      <div>
+        <label>Pathologie <span class="save-hint">optionnel</span></label>
+        <input type="text" id="tmplPathoInput" placeholder="Ex : LCA, tendinopathie d'Achille" list="tmplPathoList">
+      </div>
+      <div>
+        <label>Sport <span class="save-hint">optionnel</span></label>
+        <input type="text" id="tmplSportInput" placeholder="Ex : course à pied, foot" list="tmplSportList">
+      </div>
     </div>
+    <datalist id="tmplPathoList"></datalist>
+    <datalist id="tmplSportList"></datalist>
     <div class="save-field">
       <label>Catégorie</label>
       <select id="tmplCatInput" onchange="_onTmplCatChange()">
@@ -2593,6 +2622,10 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
         <label>Ordre d'affichage</label>
         <input type="number" id="tmplPhaseOrdreInput" min="1" value="1" style="width:80px;">
       </div>
+    </div>
+    <div class="save-field">
+      <label>Emoji <span class="save-hint">repère visuel</span></label>
+      <div class="emoji-row" id="tmplEmojiRow"></div>
     </div>
     <div class="save-modal-btns">
       <button class="btn btn-primary" id="tmplModalConfirmBtn" onclick="doSaveTemplate()">📋 Enregistrer le template</button>
@@ -4407,6 +4440,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 </div>
 
-<script src="js/prog-main.js?v=20260804b"></script>
+<script src="js/prog-main.js?v=20260804c"></script>
 </body>
 </html>
