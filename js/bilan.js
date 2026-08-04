@@ -2109,9 +2109,9 @@ function _editBilanConfirm(){
    risque de compresser la largeur du champ dans un conteneur flex. Jamais soumise :
    pour les select, l'option reste de valeur "" ; pour input/textarea, un placeholder
    n'est jamais une valeur de champ. Retirée dès qu'une vraie valeur est saisie/choisie. */
-function _blShowInheritedHints(mergedData){
+function _blShowInheritedHints(mergedData, grise){
   document.querySelectorAll('.bl-inherited-ghost').forEach(function(el){
-    el.classList.remove('bl-inherited-ghost');
+    el.classList.remove('bl-inherited-ghost', 'bl-ghost-grise');
     if(el.tagName === 'SELECT'){
       var opt0 = el.options[0];
       if(opt0 && opt0.dataset.blOrigText !== undefined){ opt0.textContent = opt0.dataset.blOrigText; delete opt0.dataset.blOrigText; }
@@ -2133,9 +2133,10 @@ function _blShowInheritedHints(mergedData){
       opt0.textContent = val;
       opt0.selected = true;
       el.classList.add('bl-inherited-ghost');
+      if(grise) el.classList.add('bl-ghost-grise');
       el.addEventListener('change', function _rmGhost(){
         if(opt0.dataset.blOrigText !== undefined){ opt0.textContent = opt0.dataset.blOrigText; delete opt0.dataset.blOrigText; }
-        el.classList.remove('bl-inherited-ghost');
+        el.classList.remove('bl-inherited-ghost', 'bl-ghost-grise');
         el.removeEventListener('change', _rmGhost);
       });
     } else if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA'){
@@ -2144,8 +2145,9 @@ function _blShowInheritedHints(mergedData){
       el.placeholder = String(val);
       el.title = 'Champ VIDE. Texte affiché = dernière valeur connue, reprise d\'un bilan antérieur. Elle ne sera pas enregistrée tant que vous ne l\'aurez pas saisie.';
       el.classList.add('bl-inherited-ghost');
+      if(grise) el.classList.add('bl-ghost-grise');
       el.addEventListener('input', function _rmGhost(){
-        el.classList.remove('bl-inherited-ghost');
+        el.classList.remove('bl-inherited-ghost', 'bl-ghost-grise');
         el.removeEventListener('input', _rmGhost);
       });
     }
@@ -4352,6 +4354,11 @@ function _newBilanSuiviConfirm(){
   var today = _dn.getFullYear()+'-'+String(_dn.getMonth()+1).padStart(2,'0')+'-'+String(_dn.getDate()).padStart(2,'0');
   var fd = document.getElementById('f-date');
   if(fd){ fd.value = today; }
+
+  // Anciens resultats en fond, grises : on retape par-dessus. Ils ne sont pas
+  // enregistres — ce sont des placeholders, effaces des la premiere frappe —
+  // donc le snapshot ci-dessous reste bien celui d'un bilan vierge.
+  try{ _blShowInheritedHints(_prevDonnees, true); }catch(ex){}
 
   // Snapshot des valeurs héritées (pour détecter les changements au moment de la sauvegarde)
   _suiviSnapshot = _serializeBilan();
