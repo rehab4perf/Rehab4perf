@@ -5369,8 +5369,16 @@ function _loadProg(id, seanceId){
       var d = Array.isArray(data) ? data[0] : data;
       if(!d || d.code){ alert('Erreur lors du chargement.'); return; }
       _currentProgId = d.id;
-      // Rétrocompat : donnees peut être un tableau (ancien) ou {blocs,notes} (nouveau)
+      // Rétrocompat : donnees peut être un tableau (ancien) ou {blocs,notes} (nouveau).
+      // Et parfois une CHAINE JSON : la planification depuis la barre latérale
+      // recopiait telle quelle la valeur d'un template, qui est stockee en
+      // chaine. La seance s'affichait alors vide. Corrige a la source, mais les
+      // programmes deja crees ainsi restent en base — on les repare a la
+      // lecture plutot que de les laisser inaccessibles.
       var raw = d.donnees || [];
+      if(typeof raw === 'string'){
+        try { raw = JSON.parse(raw || '{}'); } catch(e){ raw = []; }
+      }
       if(Array.isArray(raw)){ blocs = raw; etapes = []; _notes = ''; _builderLinkedPhase = null; }
       else { blocs = raw.blocs || []; etapes = raw.etapes || []; _notes = raw.notes || ''; _builderLinkedPhase = raw.linkedPhase || null; }
       // Rétrocompat HSR : si le programme a perdu son type:'hsr' (ancien save écrasant),

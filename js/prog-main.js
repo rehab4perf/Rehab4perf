@@ -6351,6 +6351,17 @@ function _sidebarLoadProg(id){
   _enterBuilderMode();
 }
 
+/* La colonne `donnees` d'un template contient une CHAINE JSON — doSaveTemplate
+   fait JSON.stringify. Celle d'un programme attend un OBJET. Recopier l'une
+   dans l'autre sans conversion stockait une chaine JSON scalaire, et _loadProg
+   lisait alors `raw.blocs` sur une chaine : undefined, donc seance VIDE. */
+function _donneesObjet(v){
+  if(typeof v === 'string'){
+    try { return JSON.parse(v || '{}'); } catch(e){ return {}; }
+  }
+  return v || {};
+}
+
 function _openQuickAdd(progId, nom){
   _qaProgId = progId;
   _qaProgNom = nom;
@@ -6415,7 +6426,7 @@ function confirmQuickAdd(){
           praticien_id: _progUid,
           nom:          t.nom,
           date:         _qaSelectedDate,
-          donnees:      t.donnees
+          donnees:      _donneesObjet(t.donnees)
         })
       })
       .then(function(r){ return r.json(); })
@@ -6447,8 +6458,8 @@ function confirmQuickAdd(){
       id: '_' + Math.random().toString(36).slice(2,9),
       name: t.nom, emoji: t.emoji||'💪', type: t.type||'',
       date: new Date().toLocaleDateString('fr-FR'),
-      blocs: JSON.parse(JSON.stringify(t._blocs||[])),
-      etapes: JSON.parse(JSON.stringify(t._etapes||[]))
+      blocs: JSON.parse(JSON.stringify(t._blocs || _donneesObjet(t.donnees).blocs || [])),
+      etapes: JSON.parse(JSON.stringify(t._etapes || _donneesObjet(t.donnees).etapes || []))
     };
     _savedSeances.unshift(copy);
     _persistSeances();
