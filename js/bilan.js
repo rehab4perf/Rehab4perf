@@ -3003,26 +3003,40 @@ var QUAL_GROUPS = [
     title:'Pliométrie Qualitative',
     prefixA:'plioq-cs', prefixB:'plioq-ca',
     labelA:'Côté sain', labelB:'Côté atteint',
-    count:2,
+    count:3,
+    // Le critere 1 compare les deux cotes : il n'existe pas « un deficit de
+    // hauteur du cote sain ». Une seule case, et il ne compte pas dans le
+    // score par cote — d'ou scoreIdx.
+    partage:[1],
+    scoreIdx:[0, 2],
     crToggleId:'plioq-cr-toggle',
-    criteria:['Absence de raideur du membre','Absence de déficit de hauteur']
+    // Formule positivement : cocher = observe = bon. « Absence de… » coche
+    // imposait une double negation, et inverser le sens aurait reinterprete
+    // a l'envers tous les bilans deja enregistres.
+    criteria:['Contact au sol bref et élastique',
+              'Hauteur symétrique entre les deux côtés',
+              'Hauteur maintenue sur les 20 sauts']
   }
 ];
 
 /* Calcule le score (0..count) d'un test depuis donnees sérialisées.
    Retourne NaN si aucun champ n'est présent dans donnees (test non renseigné). */
-function _qualScore(donnees, prefix, count){
+function _qualScore(donnees, prefix, count, scoreIdx){
   /* Retourne NaN si aucune case n'est cochée (=test non réalisé).
      Un score 0 n'est retourné que si au moins une case est explicitement
-     présente comme true (test réalisé, critères non validés). */
+     présente comme true (test réalisé, critères non validés).
+     `scoreIdx` limite le décompte à certains critères : un critère partagé
+     entre les deux côtés ne compte pas dans le score de chacun. */
+  var idx = (scoreIdx && scoreIdx.length) ? scoreIdx : null;
+  if(!idx){ idx = []; for(var k=0; k<count; k++) idx.push(k); }
   var hasAnyTrue = false;
-  for(var i=0; i<count; i++){
-    if(donnees[prefix+'-'+i]===true){ hasAnyTrue=true; break; }
+  for(var i=0; i<idx.length; i++){
+    if(donnees[prefix+'-'+idx[i]]===true){ hasAnyTrue=true; break; }
   }
   if(!hasAnyTrue) return NaN;
   var score=0;
-  for(var i=0; i<count; i++){
-    if(donnees[prefix+'-'+i]===true) score++;
+  for(var j=0; j<idx.length; j++){
+    if(donnees[prefix+'-'+idx[j]]===true) score++;
   }
   return score;
 }
@@ -3096,6 +3110,19 @@ function _buildQualGrid(bilansAsc, dates, grp){
   html += '</tr></thead><tbody>';
   // Lignes critères
   grp.criteria.forEach(function(label, ci){
+    // Un critère partagé décrit la paire, pas un côté : une seule ligne, lue
+    // sur le côté atteint qui lui sert de stockage.
+    if((grp.partage||[]).indexOf(ci) >= 0){
+      html += '<tr><td class="qual-crit-lbl">'+label+'</td>';
+      bilansAsc.forEach(function(b){
+        var vp = (b.donnees||{})[grp.prefixB+'-'+ci];
+        html += '<td>' + (vp===true ? '<span class="qual-chip ok">✓</span>'
+                        : vp===false ? '<span class="qual-chip bad">✗</span>'
+                        : '<span class="qual-chip na">—</span>') + '</td>';
+      });
+      html += '</tr>';
+      return;
+    }
     // Ligne critère label
     html += '<tr><td class="qual-crit-lbl" rowspan="2">'+label+'</td>';
     // Côté sain (A)
@@ -3116,9 +3143,9 @@ function _buildQualGrid(bilansAsc, dates, grp){
   // Ligne score
   html += '<tr><td class="qual-crit-lbl" style="font-weight:700">Score</td>';
   bilansAsc.forEach(function(b, bi){
-    var sa = _qualScore(b.donnees||{}, grp.prefixA, grp.count);
-    var sb = _qualScore(b.donnees||{}, grp.prefixB, grp.count);
-    var maxV = grp.count;
+    var sa = _qualScore(b.donnees||{}, grp.prefixA, grp.count, grp.scoreIdx);
+    var sb = _qualScore(b.donnees||{}, grp.prefixB, grp.count, grp.scoreIdx);
+    var maxV = (grp.scoreIdx && grp.scoreIdx.length) ? grp.scoreIdx.length : grp.count;
     function badge(sc){ if(isNaN(sc)) return '<span class="qual-chip na">—</span>'; var cls=sc===maxV?'ok':sc>0?'warn':'bad'; return '<span class="qual-score-badge '+cls+'">'+sc+'/'+maxV+'</span>'; }
     html += '<td style="vertical-align:middle"><div style="display:flex;flex-direction:column;gap:3px;align-items:center"><div style="font-size:.6rem;color:var(--accent);font-weight:600">CS</div>'+badge(sa)+'<div style="font-size:.6rem;color:#16A34A;font-weight:600">CA</div>'+badge(sb)+'</div></td>';
   });
@@ -3334,8 +3361,8 @@ function _renderEvolutionPage(){
   QUAL_GROUPS.forEach(function(grp){
     _chartCounter++;
     var qid = _chartCounter;
-    var scoresA = bilansAsc.map(function(b){ return _qualScore(b.donnees||{}, grp.prefixA, grp.count); });
-    var scoresB = bilansAsc.map(function(b){ return _qualScore(b.donnees||{}, grp.prefixB, grp.count); });
+    var scoresA = bilansAsc.map(function(b){ return _qualScore(b.donnees||{}, grp.prefixA, grp.count, grp.scoreIdx); });
+    var scoresB = bilansAsc.map(function(b){ return _qualScore(b.donnees||{}, grp.prefixB, grp.count, grp.scoreIdx); });
     var validA = scoresA.filter(function(v){ return !isNaN(v); });
     var validB = scoresB.filter(function(v){ return !isNaN(v); });
     if(validA.length < 2 && validB.length < 2) return;
@@ -4587,6 +4614,16 @@ function _renderSuiviRapide(){
         var elA=document.getElementById(grp.prefixA+'-'+ci);
         var elB=document.getElementById(grp.prefixB+'-'+ci);
         var chkA=elA?elA.checked:false, chkB=elB?elB.checked:false;
+        // Critère partagé : une seule case, à cheval sur les deux colonnes.
+        if((grp.partage||[]).indexOf(ci) >= 0){
+          _suiviRapideInitial[grp.prefixB+'-'+ci]=chkB;
+          html+='<tr>'
+            +'<td class="suivi-rapide-qual-crit">'+_esc2(label)+'</td>'
+            +'<td class="suivi-rapide-qual-cell" colspan="2"><input type="checkbox" class="suivi-rapide-check"'
+            +' data-metric-id="'+grp.prefixB+'-'+ci+'" data-is-cb="1"'+(chkB?' checked':'')+'></td>'
+            +'</tr>';
+          return;
+        }
         _suiviRapideInitial[grp.prefixA+'-'+ci]=chkA;
         _suiviRapideInitial[grp.prefixB+'-'+ci]=chkB;
         html+='<tr>'
@@ -6555,15 +6592,21 @@ function _buildAllTestsHtml() {
   }
   // Pliométrie verticale qualitative
   var plioqCA2 = 0; var plioqCS2 = 0; var plioqTouched = false;
-  for (var pi2=0; pi2<2; pi2++) {
+  [0, 2].forEach(function(pi2) {
     var pcaEl = document.getElementById('plioq-ca-'+pi2);
     var pcsEl = document.getElementById('plioq-cs-'+pi2);
     if(pcaEl && pcaEl.checked){ plioqCA2++; plioqTouched = true; }
     if(pcsEl && pcsEl.checked){ plioqCS2++; plioqTouched = true; }
-  }
+  });
+  var plioqSymEl = document.getElementById('plioq-ca-1');
+  var plioqSym = !!(plioqSymEl && plioqSymEl.checked);
+  if (plioqSym) plioqTouched = true;
   var plioqCrToggle = document.getElementById('plioq-cr-toggle');
   if ((plioqCrToggle && plioqCrToggle.checked) || plioqTouched) {
-    tfHtml += crItem('Pliométrie verticale (qualitative)', _p(plioqCA2+'/2', plioqCS2+'/2'), plioqCA2===2?'Réussi':'À améliorer', plioqCA2===2?'good':'warn', ['plioq-ca-0','plioq-ca-1']);
+    tfHtml += crItem('Pliométrie verticale (qualitative)',
+      _p(plioqCA2+'/2', plioqCS2+'/2') + '   ' + (plioqSym ? 'Hauteur symétrique' : 'Déficit de hauteur'),
+      plioqCA2===2?'Réussi':'À améliorer', plioqCA2===2?'good':'warn',
+      ['plioq-ca-0','plioq-ca-1','plioq-ca-2']);
   }
   tfHtml += obsBlock('plioq-obs-ca','plioq-obs-cs');
   // SEBT
@@ -7046,6 +7089,7 @@ function _buildAllTestsHtml() {
   }
   // Pliométrie qualitative
   if (plioqTouched && plioqCA2 < 2) toWork.push('Améliorer qualité pliométrique et coordination (score CA ' + plioqCA2 + '/2)');
+  if (plioqTouched && !plioqSym) toWork.push('Rétablir la symétrie de hauteur en pliométrie unipodale');
   if (toWork.length > 0) {
     var workHtml = '';
     for (var wi=0; wi<toWork.length; wi++) {
@@ -7794,19 +7838,31 @@ function calcShirado() {
   }
 }
 
+/* Score par côté sur les seuls critères observés côté par côté — contact au
+   sol (0) et maintien de la hauteur (2). La symétrie (1) compare les deux
+   côtés : elle a sa propre ligne, elle n'entre dans aucun des deux scores. */
+var PLIOQ_IDX_COTE = [0, 2];
+
 function calcPlioq2() {
   var scores = {ca:0, cs:0};
-  for (var pi=0; pi<2; pi++) {
+  PLIOQ_IDX_COTE.forEach(function(pi) {
     var elCA = document.getElementById('plioq-ca-' + pi);
     var elCS = document.getElementById('plioq-cs-' + pi);
     if (elCA && elCA.checked) scores.ca++;
     if (elCS && elCS.checked) scores.cs++;
+  });
+  // Symétrie : une seule case, stockée sur le côté atteint.
+  var elSym  = document.getElementById('plioq-ca-1');
+  var elSymT = document.getElementById('plioq-sym-stat');
+  if (elSymT) {
+    var sym = elSym && elSym.checked;
+    elSymT.textContent = sym ? 'Hauteur symétrique' : 'Déficit de hauteur';
+    elSymT.style.color = sym ? 'var(--green)' : 'var(--orange)';
   }
   var elCA_stat = document.getElementById('plioq-stat-ca');
   var elCS_stat = document.getElementById('plioq-stat-cs');
   var setScore = function(el, score) {
     if (!el) return;
-    var cls = score === 2 ? 'good' : 'warn';
     el.textContent = score + '/2 - ' + (score === 2 ? 'Reussi' : 'A ameliorer');
     el.style.color = score === 2 ? 'var(--green)' : 'var(--orange)';
   };

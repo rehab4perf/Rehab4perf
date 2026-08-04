@@ -3535,26 +3535,39 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   <div class="block-header">④ Pliométrie Verticale Qualitative
     <label class="cr-toggle-label"><input type="checkbox" id="plioq-cr-toggle"> ✓ Inclure dans le CR</label>
   </div>
-  <div style="padding:8px 14px 4px;font-size:.82rem;color:var(--accent2);background:var(--accent-l);font-weight:500">
-    Objectif : temps de contact au sol le + bref possible ET hauteur de saut la + haute possible (rebond type corde à sauter, intensité max)
+  <div style="padding:8px 14px 6px;font-size:.82rem;color:var(--accent2);background:var(--accent-l);font-weight:500">
+    Consignes : <strong>20 sauts</strong> à cloche-pied, en place, intensité maximale — rebond type corde à sauter.
+    Temps de contact au sol le plus bref possible ET hauteur de saut la plus haute possible.
+    Même consigne des deux côtés, en comparant la hauteur maximale atteinte.
   </div>
   <div style="padding:8px 14px 6px;font-size:.82rem;color:var(--text2)">
-    <strong>Score /2</strong> — cocher les critères observés · 0-1/2 = à améliorer · 2/2 = réussi
+    <strong>Score /2 par côté</strong> — cocher ce qui est observé · 0-1/2 = à améliorer · 2/2 = réussi.
+    La symétrie compare les deux côtés : elle a sa propre ligne et n'entre dans aucun des deux scores.
   </div>
   <div style="background:var(--border);padding:1px">
     <div style="background:var(--surface2);display:grid;grid-template-columns:1fr 1fr 1fr;padding:6px 14px;font-size:.7rem;font-weight:700;text-transform:uppercase;color:var(--text2);letter-spacing:.05em;gap:1px">
       <div>Critère</div><div class="sl-cs" style="text-align:center">Côté sain</div><div class="sl-ca" style="text-align:center">Côté atteint</div>
     </div>
     <div style="background:var(--surface);display:grid;grid-template-columns:1fr 1fr 1fr;padding:10px 14px;border-bottom:1px solid var(--border);align-items:center;gap:4px">
-      <div style="font-size:.85rem;font-weight:500">① Absence de raideur du membre <span style="font-size:.72rem;color:var(--text3);font-weight:400;display:block">Contact au sol bref et élastique</span></div>
+      <div style="font-size:.85rem;font-weight:500">① Contact au sol bref et élastique <span style="font-size:.72rem;color:var(--text3);font-weight:400;display:block">Pas de raideur : le pied rebondit, il ne s'écrase pas</span></div>
       <div style="text-align:center"><input type="checkbox" id="plioq-cs-0" onchange="calcPlioq2()" style="width:18px;height:18px;cursor:pointer;accent-color:var(--green)"></div>
       <div style="text-align:center"><input type="checkbox" id="plioq-ca-0" onchange="calcPlioq2()" style="width:18px;height:18px;cursor:pointer;accent-color:var(--green)"></div>
     </div>
     <div style="background:var(--surface2);display:grid;grid-template-columns:1fr 1fr 1fr;padding:10px 14px;align-items:center;gap:4px">
-      <div style="font-size:.85rem;font-weight:500">② Absence de déficit de hauteur <span style="font-size:.72rem;color:var(--text3);font-weight:400;display:block">Hauteur de saut symétrique ou suffisante</span></div>
-      <div style="text-align:center"><input type="checkbox" id="plioq-cs-1" onchange="calcPlioq2()" style="width:18px;height:18px;cursor:pointer;accent-color:var(--green)"></div>
+      <div style="font-size:.85rem;font-weight:500">② Hauteur maintenue sur les 20 sauts <span style="font-size:.72rem;color:var(--text3);font-weight:400;display:block">Les derniers sauts montent aussi haut que les premiers</span></div>
+      <div style="text-align:center"><input type="checkbox" id="plioq-cs-2" onchange="calcPlioq2()" style="width:18px;height:18px;cursor:pointer;accent-color:var(--green)"></div>
+      <div style="text-align:center"><input type="checkbox" id="plioq-ca-2" onchange="calcPlioq2()" style="width:18px;height:18px;cursor:pointer;accent-color:var(--green)"></div>
+    </div>
+    <!-- La symétrie compare les deux côtés : une seule case, à cheval sur les
+         deux colonnes. Il n'existe pas « un déficit de hauteur du côté sain ».
+         Elle est stockée sur plioq-ca-1, l'identifiant déjà utilisé avant. -->
+    <div style="background:var(--surface);display:grid;grid-template-columns:1fr 2fr;padding:10px 14px;border-top:1px solid var(--border);align-items:center;gap:4px">
+      <div style="font-size:.85rem;font-weight:500">③ Hauteur symétrique entre les deux côtés <span style="font-size:.72rem;color:var(--text3);font-weight:400;display:block">Comparaison des hauteurs maximales gauche / droite</span></div>
       <div style="text-align:center"><input type="checkbox" id="plioq-ca-1" onchange="calcPlioq2()" style="width:18px;height:18px;cursor:pointer;accent-color:var(--green)"></div>
     </div>
+  </div>
+  <div style="padding:6px 14px 0;text-align:center">
+    <span id="plioq-sym-stat" style="font-size:.85rem;font-weight:700;color:var(--text3)">—</span>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 14px">
     <div style="text-align:center">
@@ -5196,7 +5209,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260710"></script>
-<script src="js/bilan.js?v=20260804c"></script>
+<script src="js/bilan.js?v=20260804d"></script>
 
 </body>
 </html>

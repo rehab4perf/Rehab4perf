@@ -169,6 +169,28 @@ missing = [t for t in tests if t not in tbodies]
 print('TESTS sans tbody:', missing or 'Aucun ✓')
 ```
 
+## Pliométrie qualitative — critère partagé
+
+Le groupe `plioq` illustre un cas à connaître avant d'ajouter un critère
+qualitatif : **tous ne s'observent pas côté par côté**. La symétrie de hauteur
+compare les deux côtés — il n'existe pas « un déficit de hauteur du côté
+sain ». Elle est donc rendue sur **une seule case** et exclue du score de
+chaque côté, via deux champs de la définition du groupe :
+
+- `partage:[1]` — l'index est rendu sur une seule ligne, stocké sur `prefixB` ;
+- `scoreIdx:[0,2]` — seuls ces index comptent dans le score par côté.
+
+Les libellés sont formulés **positivement** (« Contact au sol bref et
+élastique »), jamais en « Absence de… ». Deux raisons : la double négation
+oblige à cocher ce qu'on ne voit pas, et surtout inverser le sens d'une case
+réinterpréterait à l'envers tous les bilans déjà enregistrés — une case cochée
+a toujours voulu dire « bon ».
+
+**Assumé** : ajouter un critère change le dénominateur. Un bilan ancien noté
+2/2 se relit 1/2, la fatigabilité n'y ayant jamais été évaluée. Décision du
+praticien : les anciens bilans sont incomplets sur ce test, on ne rétro-note
+pas.
+
 ## Asymétrie affichée (bilan)
 
 ```bash
