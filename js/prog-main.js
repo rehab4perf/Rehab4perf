@@ -1707,6 +1707,28 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
     + '<div id="'+_ovfId+'" class="cal-overflow-badge" onclick="event.stopPropagation();_openDayPopover(\''+escJS(dateStr)+'\',\''+_ovfId+'\')">+'+_ovfN+' de plus</div>';
 }
 
+/* Retrouve le nom d'un exercice depuis la cle de feedback (« b0e2 », ou
+   « cardio-1 »). Les index sont ceux de la liste SANS separateurs d'etape,
+   telle que l'espace athlete l'affiche. Renvoie '' si la cle ne correspond a
+   rien dans la seance chargee — on garde alors le nom stocke. */
+function _nomDepuisCleFeedback(cle){
+  if(!cle || !blocs || !blocs.length) return '';
+  var reels = blocs.filter(function(b){
+    return b && b.type !== 'etape' && b.type !== 'libre';
+  });
+  var mc = String(cle).match(/^cardio-(\d+)$/);
+  if(mc){
+    var bc = reels[parseInt(mc[1], 10)];
+    return (bc && (bc.sport || 'Cardio')) || '';
+  }
+  var m = String(cle).match(/^b(\d+)e(\d+)$/);
+  if(!m) return '';
+  var b = reels[parseInt(m[1], 10)];
+  if(!b || !b.exos) return '';
+  var e = b.exos[parseInt(m[2], 10)];
+  return (e && e.name) || '';
+}
+
 /* ── Retour athlète dans le builder — accordéon style CAP ── */
 function _renderAthleteRetour(seanceId) {
   // CAP/HSR : leur bandeau gère déjà le bouton feedback
@@ -1790,6 +1812,15 @@ function _feedbackRenderContent(fb, sid) {
     var ua = (fb.rpe||0) * (fb.duree_min||0);
     var exoData = fb.exo_data;
     var exos = (exoData && exoData.exos) ? exoData.exos : [];
+    /* Le nom stocke avec le retour a pu etre fausse : la collecte cote athlete
+       numerotait les blocs sur une liste NON filtree alors que l'affichage les
+       numerotait sur la liste filtree des separateurs. La CLE, elle, designe
+       bien ce que l'athlete avait sous les yeux — on recalcule le nom depuis
+       elle pour reparer les retours deja enregistres. */
+    exos = exos.map(function(e){
+      var n = _nomDepuisCleFeedback(e.key);
+      return n ? Object.assign({}, e, { name: n }) : e;
+    });
     var withPain = exos.filter(function(e){ return e.pain !== null && e.pain !== undefined && e.pain > 0; })
                        .sort(function(a,b){ return b.pain - a.pain; });
     var noteOnly = exos.filter(function(e){ return (e.pain === null || e.pain === undefined || e.pain === 0) && e.note; });

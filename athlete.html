@@ -998,7 +998,7 @@ function renderProgInMain(prog){
     _loadSessionNote();
     _initExoEffortsFromFeedback(existing && existing.exo_data);
     html = isCap ? _buildCapProgHTML(prog) : (isHsr ? _buildHsrProgHTML(prog) : buildProgHTML(prog));
-    html += (isCap || isHsr) ? _buildCapPainCard(_seanceId, existing) : buildRpeCard(_seanceId, blocs, existing);
+    html += (isCap || isHsr) ? _buildCapPainCard(_seanceId, existing) : buildRpeCard(_seanceId, _blocsVisibles(blocs), existing);
     document.getElementById('mainContent').innerHTML = html;
   })
   .catch(function(){
@@ -1825,7 +1825,7 @@ function openProgModal(progId, seanceId){
     var isHsr = donnees.type === 'hsr' || (prog.nom && prog.nom.indexOf('HSR —') === 0);
     _initExoEffortsFromFeedback(existing && existing.exo_data);
     var html = isCap ? _buildCapProgHTML(prog) : (isHsr ? _buildHsrProgHTML(prog) : buildProgHTML(prog));
-    if(seanceId) html += (isCap || isHsr) ? _buildCapPainCard(seanceId, existing) : buildRpeCard(seanceId, blocs, existing);
+    if(seanceId) html += (isCap || isHsr) ? _buildCapPainCard(seanceId, existing) : buildRpeCard(seanceId, _blocsVisibles(blocs), existing);
     document.getElementById('progModalBody').innerHTML = html;
   })
   .catch(function(){
@@ -1988,6 +1988,17 @@ window._toggleDone = function(key){
 };
 
 // ── Construction HTML d'un programme ────────────────
+/* Les separateurs d'etape ne sont pas des blocs. Ce filtre doit etre applique
+   AU MEME ENDROIT pour l'affichage et pour la collecte du ressenti : les cles
+   de feedback sont construites a partir de la POSITION du bloc, et une liste
+   filtree d'un cote seulement decale toutes les cles. C'est ce qui attribuait
+   les commentaires au mauvais exercice. */
+function _blocsVisibles(blocs){
+  return (blocs||[]).filter(function(b){
+    return !b || (b.type !== 'etape' && b.type !== 'libre');
+  });
+}
+
 function buildProgHTML(prog){
   var raw = prog.donnees || [];
   var blocs = Array.isArray(raw) ? raw : (raw.blocs || []);
@@ -2029,9 +2040,7 @@ function buildProgHTML(prog){
   // l'enregistrement depuis la position.
   // Deux sortes de séparateurs côté praticien : `etape` ouvre une étape,
   // `libre` ouvre une zone qui n'en a pas. Ni l'un ni l'autre n'est un bloc.
-  blocs = (blocs||[]).filter(function(b){
-    return !b || (b.type !== 'etape' && b.type !== 'libre');
-  });
+  blocs = _blocsVisibles(blocs);
 
   blocs.forEach(function(b, bIdx){
     var _etapeStart = b.etapeId && (bIdx===0 || blocs[bIdx-1].etapeId !== b.etapeId);
