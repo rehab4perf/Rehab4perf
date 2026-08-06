@@ -76,6 +76,45 @@ verifie('LSI 110 % → vert (borne incluse)', 'good', api.lsiClass(110, false));
 verifie('LSI 111 % → rouge', 'bad', api.lsiClass(111, false));
 verifie('affichage du Drop Jump à 110 % → -10 %', '-10.0%', api.asymTxt(110));
 
+/* ══════════════════════════════════════════════════════════════════════════
+   Garde-fou : personne ne fabrique un pourcentage depuis un LSI a la main.
+
+   Les cas ci-dessus verifient la CONVERSION. Ils ne verifiaient pas QUI
+   l'appelle — et c'etait precisement le trou : asymPct/asymTxt etaient
+   justes, mais trois fonctions de calcul (calcEpForce, calcPiCIM, calcLunge)
+   ecrivaient `lsi.toFixed(0) + '%'` en direct. Vingt-six cellules affichaient
+   donc la symetrie sous une colonne intitulee « Asym. % ».
+
+   Ce controle est textuel a dessein : il attrape la faute a la source, dans
+   n'importe quelle fonction, y compris celles qui n'existent pas encore.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+console.log('\nAucun pourcentage fabriqué depuis un LSI sans passer par asymTxt');
+
+var pourcentDepuisLsi = [
+  /\b\w*lsi\w*\s*\.\s*toFixed\s*\([^)]*\)\s*\+\s*'%'/i,
+  /Math\.round\s*\(\s*\w*lsi\w*\s*\)\s*\+\s*'%'/i
+];
+
+var fautes = [];
+src.split('\n').forEach(function (ligne, i) {
+  var t = ligne.trim();
+  if (!t || t.indexOf('//') === 0 || t.indexOf('*') === 0) return;
+  if (/asymTxt|asymPct/.test(ligne)) return;   // la conversion est faite
+  if (pourcentDepuisLsi.some(function (re) { return re.test(ligne); })) {
+    fautes.push('    js/bilan.js:' + (i + 1) + '  ' + t.slice(0, 88));
+  }
+});
+
+if (fautes.length) {
+  nbKo++;
+  console.log('    ✗ ' + fautes.length + ' endroit(s) affichent encore la symétrie :');
+  fautes.forEach(function (f) { console.log(f); });
+} else {
+  nbOk++;
+  console.log('    ✓ aucun');
+}
+
 /* ── Verdict ─────────────────────────────────────────────────────────────── */
 
 console.log('\n' + '─'.repeat(64));

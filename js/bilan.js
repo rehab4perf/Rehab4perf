@@ -5426,7 +5426,7 @@ function calcLunge() {
     var lsi = luBilateral
       ? (ca > 0 && cs > 0 ? Math.min(ca, cs) / Math.max(ca, cs) * 100 : NaN)
       : (cs !== 0 ? ca / cs * 100 : NaN);
-    lsiEl.textContent = !isNaN(lsi) ? lsi.toFixed(1) + '%' : '-';
+    lsiEl.textContent = !isNaN(lsi) ? asymTxt(lsi) : '-';
     var diff = Math.abs(ca - cs);
     if (ca < 10) {
       cls='bad'; stat='Deficit absolu (< 10 cm)';
@@ -5505,26 +5505,14 @@ function calcPiCIM() {
     ? (cs1 > 0 && ca1 > 0 ? Math.min(cs1, ca1) / Math.max(cs1, ca1) * 100 : NaN)
     : (cs1 > 0 ? ca1 / cs1 * 100 : NaN);
 
-  fmtRatio(lsi2El, lsi2);
-  if (isNaN(lsi2)) { stat2El.textContent = '—'; stat2El.className = 'measure-stat'; }
-  else {
-    var lsi2Cls = lsi2 >= 90 ? 'good' : lsi2 >= 80 ? 'warn' : 'bad';
-    stat2El.textContent = lsi2 >= 90 ? '✅ ≥ 90%' : lsi2 >= 80 ? '⚠️ ' + lsi2.toFixed(0) + '%' : '❌ ' + lsi2.toFixed(0) + '%';
-    stat2El.className = 'measure-stat ' + lsi2Cls;
-  }
+  /* setLSI ecrit l'asymetrie et le statut verbal, comme pour tous les autres
+     tests. fmtRatio reste reservee aux ratios d'efficacite ci-dessous, qui ne
+     sont PAS des LSI et doivent continuer de s'afficher tels quels. */
+  setLSI(lsi2El, stat2El, lsi2, '>= 90%', true, bilateral);
   fmtRatio(effCsEl, effCs);
   fmtRatio(effCaEl, effCa);
 
-  if (isNaN(lsi)) {
-    lsiEl.textContent = '—'; lsiEl.className = 'measure-stat';
-    statEl.textContent = '—'; statEl.className = 'measure-stat';
-  } else {
-    var lsiCls = lsi >= 90 ? 'good' : lsi >= 80 ? 'warn' : 'bad';
-    lsiEl.textContent = lsi.toFixed(0) + '%';
-    lsiEl.className = 'measure-stat ' + lsiCls;
-    statEl.textContent = lsi >= 90 ? '✅ ≥ 90%' : lsi >= 80 ? '⚠️ ' + lsi.toFixed(0) + '%' : '❌ ' + lsi.toFixed(0) + '%';
-    statEl.className = 'measure-stat ' + lsiCls;
-  }
+  setLSI(lsiEl, statEl, lsi, '>= 90%', true, bilateral);
 
   if (isNaN(lsi) && isNaN(effCs) && isNaN(effCa)) {
     finalEl.textContent = '—'; finalEl.className = 'measure-stat';
@@ -8670,7 +8658,7 @@ function calcEpForce(key) {
     var lsi = bilateral
       ? (!isNaN(ca) && ca > 0 ? Math.min(ca,cs)/Math.max(ca,cs)*100 : NaN)
       : (!isNaN(ca) ? ca/cs*100 : NaN);
-    lsiEl.textContent = isNaN(lsi) ? '—' : lsi.toFixed(0) + '%';
+    lsiEl.textContent = isNaN(lsi) ? '—' : asymTxt(lsi, 0);
     // Dentelé : positif si CS < 20 OU CA < 20 OU LSI < 90%
     if (key === 'ep-dent') {
       var dentPos = cs < 20 || (!isNaN(ca) && ca < 20) || (!isNaN(lsi) && lsi < 90);
@@ -8687,11 +8675,13 @@ function calcEpForce(key) {
       if (isNaN(lsi)) {
         statEl.textContent = '—'; statEl.className = 'measure-stat';
       } else if (lsi >= 90) {
-        statEl.textContent = '✅ ≥ 90%'; statEl.className = 'measure-stat good';
+        /* Le seuil s'enonce desormais en asymetrie : « <= 10% » dit la meme
+           chose que « >= 90% » de symetrie, dans l'unite de la colonne. */
+        statEl.textContent = '✅ ≤ 10%'; statEl.className = 'measure-stat good';
       } else if (lsi >= 80) {
-        statEl.textContent = '⚠️ ' + lsi.toFixed(0) + '%'; statEl.className = 'measure-stat warn';
+        statEl.textContent = '⚠️ ' + asymTxt(lsi, 0); statEl.className = 'measure-stat warn';
       } else {
-        statEl.textContent = '❌ ' + lsi.toFixed(0) + '%'; statEl.className = 'measure-stat bad';
+        statEl.textContent = '❌ ' + asymTxt(lsi, 0); statEl.className = 'measure-stat bad';
       }
     }
   } else {
@@ -9615,7 +9605,7 @@ window.addEventListener('load', function(){
             '<td style="padding:3px 8px">'+(t.name||'—')+'</td>'+
             '<td style="text-align:center;padding:3px 8px">'+(t.valA!==''?t.valA:'—')+'</td>'+
             '<td style="text-align:center;padding:3px 8px">'+(t.valB!==''?t.valB:'—')+'</td>'+
-            '<td style="text-align:center;padding:3px 8px;font-weight:700;'+clr+'">'+(isNaN(lsi)?'—':Math.round(lsi)+'%')+'</td>'+
+            '<td style="text-align:center;padding:3px 8px;font-weight:700;'+clr+'">'+(isNaN(lsi)?'—':asymTxt(lsi, 0))+'</td>'+
             '</tr>';
         }
       });
@@ -9678,7 +9668,7 @@ window.addEventListener('load', function(){
         valStr = lbl.a+'='+(t.valA!==''?t.valA:'—')+'   '+lbl.b+'='+(t.valB!==''?t.valB:'—');
         if(!isNaN(lsi)){
           valStr += '   Asym.='+asymTxt(lsi, 0);
-          tag = Math.round(lsi)+'%';
+          tag = asymTxt(lsi, 0);
           tagCls = lsi>=90?'good':lsi>=75?'warn':'bad';
         }
       }

@@ -320,6 +320,22 @@ En unilatéral le LSI peut dépasser 100 % : l'asymétrie devient alors négativ
 et le signe porte l'information (côté atteint supérieur au sain). Une valeur
 qui arrondit à zéro ne s'affiche jamais « -0 ».
 
+**Le fichier de cas contient aussi un garde-fou textuel** : il échoue si une
+ligne de `js/bilan.js` fabrique un pourcentage depuis une variable nommée
+`lsi…` sans passer par `asymTxt`. Les cas vérifiaient la conversion, pas
+**qui l'appelle** — et c'était le trou : `calcEpForce`, `calcPiCIM` et
+`calcLunge` écrivaient `lsi.toFixed(0) + '%'` en direct, si bien que
+26 cellules affichaient encore la symétrie sous une colonne intitulée
+« Asym. % ».
+
+Deux pièges à connaître avant de toucher à ces fonctions :
+
+- **Tous les pourcentages ne sont pas des LSI.** `fmtRatio()` dans
+  `calcPiCIM` sert aussi aux **ratios d'efficacité** (1 appui / 2 appuis),
+  qui doivent rester tels quels. Une conversion globale les casserait.
+- **Le seuil s'énonce dans l'unité affichée.** Un statut « ≥ 90 % » sous une
+  colonne d'asymétrie est faux : il devient « ≤ 10 % ».
+
 ## Motifs de bilan — onglet Patients
 
 ```bash
