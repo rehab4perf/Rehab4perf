@@ -988,6 +988,64 @@ td.bl-row-rail button:disabled { opacity: .3 !important; cursor: default; }
 .mob-note-inp:focus { border-color: var(--accent); }
 .mob-note-inp::placeholder { color: var(--text3); font-style: italic; }
 
+/* ── Tableau de tests à l'allure d'une grille de mobilité ──────────────
+   Le test d'extension thoracique est un statut qualitatif, comme les
+   directions de mobilité juste au-dessus : il doit s'y ressembler. Les
+   DONNÉES restent celles d'un test de catalogue (c'est ce qui le fait
+   remonter au CR et compter dans la pastille de l'onglet) — seule
+   l'apparence est reprise. D'où ce jeu de règles plutôt qu'un composant
+   de mobilité, qui lui ne remonte pas au CR sur ces deux pages. */
+.test-table--mob { display: block; }
+.test-table--mob thead { display: none; }
+.test-table--mob tbody { display: block; }
+.test-table--mob tr {
+  display: grid;
+  grid-template-columns: 150px 136px 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--border);
+  background: none;
+}
+.test-table--mob tr:last-child { border-bottom: none; }
+.test-table--mob td { display: block; padding: 0; border: none; background: none; }
+/* `.test-table .test-name` porte un padding-bas qui creusait la ligne de
+   11 px de plus que celles de la grille de mobilite. */
+.test-table--mob .test-name {
+  font-size: .8rem; font-weight: 600; color: var(--text);
+  padding: 0; margin: 0; line-height: 1.3; white-space: nowrap;
+}
+.test-table--mob .test-name span {
+  display: block; font-size: .68rem; font-weight: 400; color: var(--text3); margin-top: 1px;
+}
+/* Même pastille que .mob-status-sel — les couleurs viennent des classes
+   st-* posées par _amplStatusClass. */
+.test-table--mob .result-cell select {
+  width: 100%;
+  border-radius: 20px; border: 1.5px solid var(--border2);
+  padding: 4px 26px 4px 11px; font-size: .76rem; font-weight: 600;
+  cursor: pointer; outline: none; background-color: #fff;
+  font-family: var(--font-sans); color: var(--text2);
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236B7280'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 9px center;
+  transition: background-color .15s, border-color .15s, color .15s;
+}
+.test-table--mob select.st-ok          { background-color:var(--green-l); border-color:var(--green-b); color:var(--green); }
+.test-table--mob select.st-acceptable  { background-color:var(--yellow-l); border-color:var(--yellow-b); color:var(--orange-d); }
+.test-table--mob select.st-insuffisant { background-color:var(--red-l); border-color:var(--red-b); color:var(--red); }
+.test-table--mob .note-cell input {
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 9px; font-size: .77rem; outline: none;
+  font-family: var(--font-sans); color: var(--text);
+  background: transparent; width: 100%; box-sizing: border-box;
+}
+.test-table--mob .note-cell input:focus { border-color: var(--accent); }
+.test-table--mob .note-cell input::placeholder { color: var(--text3); font-style: italic; }
+@media (max-width: 720px) {
+  .test-table--mob tr { grid-template-columns: 1fr; gap: 5px; }
+}
+
 /* ── ROM Widget ──────────────────────────────────────────── */
 .rom-block { width:100%; border-collapse:collapse; font-size:.82rem; }
 .rom-block thead th { background:var(--accent2); color:#fff; padding:6px 10px; font-size:.72rem; font-weight:700; text-align:center; }
@@ -2772,8 +2830,8 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
     <!-- Section thoracique -->
     <div class="block" data-block-id="rachis-cerv--thoracique">
-      <div class="block-header">Section thoracique</div>
-      <table class="test-table">
+      <div class="block-header">Section thoracique (T1–T12)</div>
+      <table class="test-table test-table--mob">
         <thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
         <tbody id="tb-cv-thor"></tbody>
       </table>
@@ -3027,8 +3085,8 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
     <!-- Section thoracique -->
     <div class="block" data-block-id="rachis-lomb--thoracique">
-      <div class="block-header">Section thoracique</div>
-      <table class="test-table">
+      <div class="block-header">Section thoracique (T1–T12)</div>
+      <table class="test-table test-table--mob">
         <thead><tr><th>Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
         <tbody id="tb-rl-thor"></tbody>
       </table>
@@ -5243,7 +5301,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260806g"></script>
-<script src="js/bilan.js?v=20260806g"></script>
+<script src="js/bilan.js?v=20260806h"></script>
 
 </body>
 </html>

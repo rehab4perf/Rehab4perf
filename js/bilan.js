@@ -562,9 +562,9 @@ const TESTS = {
      et un patient vu sur les deux pages n'écrase pas l'une avec l'autre.
      Ajoutées EN FIN de catalogue — l'identité d'un test est son index. */
   'tb-cv-thor': {type:'ortho', opts:['Ok','Acceptable','Insuffisant'], items:[
-    'Extension thoracique <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Évalue le rachis THORACIQUE (T1–T12), et non le segment de cette page. Sujet assis ou en décubitus dorsal sur rouleau, extension segmentaire active. Ok : extension libre et segmentaire · Acceptable : limitée mais présente · Insuffisant : bloquée ou compensée en lombaire.</span>']},
+    'Extension thoracique']},
   'tb-rl-thor': {type:'ortho', opts:['Ok','Acceptable','Insuffisant'], items:[
-    'Extension thoracique <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Évalue le rachis THORACIQUE (T1–T12), et non le segment de cette page. Sujet assis ou en décubitus dorsal sur rouleau, extension segmentaire active. Ok : extension libre et segmentaire · Acceptable : limitée mais présente · Insuffisant : bloquée ou compensée en lombaire.</span>']},
+    'Extension thoracique']},
 };
 
 const CRITERIA_REC = [
@@ -648,6 +648,16 @@ var ROM_CONFIG = {
 function _mobStatusChange(sel) {
   sel.className = 'mob-status-sel';
   if (sel.value) sel.classList.add('st-' + sel.value);
+}
+
+/* Echelle qualitative Ok / Acceptable / Insuffisant des tests de catalogue.
+   Elle reprend la pastille coloree de la grille de mobilite — memes classes
+   `st-*`, donc memes couleurs. Extrait ici parce que TROIS chemins
+   restaurent les couleurs d'un select (brouillon, bilan charge, changement
+   en direct) : une regle recopiee trois fois finit par diverger. */
+function _amplStatusClass(v) {
+  return (v === 'Ok' || v === 'Acceptable' || v === 'Insuffisant')
+    ? 'st-' + v.toLowerCase() : '';
 }
 
 function updateRomBar(el) {
@@ -3796,6 +3806,7 @@ function _deserializeBilan(data){
       // Options personnalisées : mobilités (Normal/Réduit/Récurvatum) et DN4 (Oui/Non)
       else if(v==='Réduit'||v==='Récurvatum'||v==='Oui') el.classList.add('positif-ortho');
       else if(v==='Normal'||v==='Non') el.classList.add('negatif-ortho');
+      var _amp = _amplStatusClass(v); if (_amp) el.classList.add(_amp);
     }
     // Restaurer les selects appréciation épaule (ep-apr-sel)
     if(el.tagName==='SELECT' && el.classList.contains('ep-apr-sel')){
@@ -5090,6 +5101,7 @@ function onTestChange(sel, tableId, idx) {
   // Options personnalisées : mobilités (Normal/Réduit/Récurvatum) et DN4 (Oui/Non)
   else if (v === 'Réduit' || v === 'Récurvatum' || v === 'Oui') sel.classList.add('positif-ortho');
   else if (v === 'Normal' || v === 'Non') sel.classList.add('negatif-ortho');
+  var _amp = _amplStatusClass(v); if (_amp) sel.classList.add(_amp);
   if (!_suppressDirty) {
     var wainnerTables = {'tb-cv-ulnt-g':1,'tb-cv-ulnt-d':1,'tb-cv-mecanique':1};
     if (wainnerTables[tableId]) _calcWainnerCerv();
@@ -7646,6 +7658,7 @@ function loadFromStorage() {
         const type = el.dataset.type;
         if (v === 'Positif') el.classList.add(type === 'fonc' ? 'positif-fonc' : 'positif-ortho');
         else if (v === 'Négatif') el.classList.add(type === 'fonc' ? 'negatif-fonc' : 'negatif-ortho');
+        var _amp = _amplStatusClass(v); if (_amp) el.classList.add(_amp);
       }
       // Restore mob status colors
       if (el.classList.contains('mob-status-sel') && el.value) _mobStatusChange(el);
