@@ -115,6 +115,62 @@ if (fautes.length) {
   console.log('    ✓ aucun');
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   Effondrement 2 → 1 appui — meme bascule, autre grandeur.
+
+   Ce chiffre n'a JAMAIS ete un LSI : c'est le rapport 1 appui / 2 appuis a
+   l'interieur d'un meme cote, pas une comparaison entre les deux cotes. Sa
+   colonne « Asym. » est vide, et c'est normal.
+
+   Mais la ligne s'appelle « Effondrement » et affichait le pourcentage
+   CONSERVE : 83 % se lisait « 83 % d'effondrement » alors qu'il n'y en avait
+   que 17. Le mot et le chiffre disaient l'inverse l'un de l'autre.
+
+   Comme pour le LSI, une seule chose bascule — le nombre affiche. Le ratio
+   continue de piloter la couleur et le statut du test, ce qui rend le
+   changement sur : un seuil « ≥ 90 % » devient « ≤ 10 % » sans qu'aucune
+   decision clinique ne change.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+var debE = src.indexOf('function fmtRatio');
+// Cherché APRÈS fmtRatio : `_isBilateralForZones` apparaît aussi plus haut,
+// dans une autre fonction — sans le décalage, la borne de fin précède le début.
+var finE = src.indexOf('var bilateral = _isBilateralForZones', debE);
+if (debE < 0 || finE < 0 || finE <= debE) {
+  console.error('Bornes de fmtRatio introuvables dans js/bilan.js (calcPiCIM).');
+  process.exit(1);
+}
+var eff = new Function(
+  'var el = { textContent: "", className: "" };' +
+  src.slice(debE, finE) +
+  '\nreturn function (val) { fmtRatio(el, val); return el; };')();
+
+console.log('\nEffondrement 2 → 1 appui — la perte, pas ce qui reste');
+verifie('ratio 83 % → 17 % d\'effondrement', '17%', eff(82.6).textContent);
+verifie('ratio 78 % → 22 %', '22%', eff(78.3).textContent);
+verifie('ratio 100 % → 0 %, aucune perte', '0%', eff(100).textContent);
+verifie('valeur absente → tiret', '—', eff(NaN).textContent);
+// Le 1 appui peut depasser le 2 appuis : la perte est alors negative.
+verifie('ratio 104 % → -4 %, le signe dit le sens', '-4%', eff(104).textContent);
+verifie('une perte nulle ne s\'affiche jamais négative', '0%', eff(100.4).textContent);
+
+console.log('\nCouleurs de l\'effondrement — elles lisent toujours le ratio');
+verifie('ratio 92 % (8 % de perte) → vert', 'measure-stat good', eff(92).className);
+verifie('ratio 90 % (10 %, borne incluse) → vert', 'measure-stat good', eff(90).className);
+verifie('ratio 85 % (15 %) → orange', 'measure-stat warn', eff(85).className);
+verifie('ratio 80 % (20 %, borne incluse) → orange', 'measure-stat warn', eff(80).className);
+verifie('ratio 79 % (21 %) → rouge', 'measure-stat bad', eff(79).className);
+
+/* Le seuil ne peut plus s'enoncer « ≥ 90 % » sous une colonne qui affiche une
+   perte. Les deux legendes du formulaire doivent parler dans l'unite affichee. */
+console.log('\nLes légendes s\'énoncent dans l\'unité affichée');
+var html = fs.readFileSync(path.join(__dirname, '..', 'bilan.html'), 'utf8');
+var zoneCim = html.slice(html.indexOf('data-block-id="pied--cliniques"'),
+                         html.indexOf('Navicular Drop Test'));
+verifie('aucun seuil « positif si < 90% » ne subsiste', false, /positif si\s*&lt;\s*90/.test(zoneCim));
+verifie('aucune légende ne décrit encore le rapport brut', false,
+        /\(1 appui \/ 2 appuis\) × 100, par côté/.test(zoneCim));
+
 /* ── Verdict ─────────────────────────────────────────────────────────────── */
 
 console.log('\n' + '─'.repeat(64));

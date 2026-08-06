@@ -358,10 +358,30 @@ est le document que reçoit le médecin.
 Deux pièges à connaître avant de toucher à ces fonctions :
 
 - **Tous les pourcentages ne sont pas des LSI.** `fmtRatio()` dans
-  `calcPiCIM` sert aussi aux **ratios d'efficacité** (1 appui / 2 appuis),
-  qui doivent rester tels quels. Une conversion globale les casserait.
+  `calcPiCIM` rend l'**effondrement 2 → 1 appui**, un rapport interne à un
+  seul côté — d'où sa colonne « Asym. » vide. Ne jamais l'inclure dans une
+  conversion d'asymétrie : il ne compare pas les deux côtés.
 - **Le seuil s'énonce dans l'unité affichée.** Un statut « ≥ 90 % » sous une
   colonne d'asymétrie est faux : il devient « ≤ 10 % ».
+
+## Effondrement 2 → 1 appui — le mot disait l'inverse du chiffre
+
+`fmtRatio()` affichait le pourcentage **conservé** sous un intitulé qui
+annonce une perte : 83 % se lisait « 83 % d'effondrement » alors qu'il n'y en
+avait que 17. Elle montre désormais `100 − ratio`.
+
+Même garde-fou que le LSI : **la couleur continue de lire le ratio**, donc
+aucun seuil ne bouge — `val >= 90 ? good : val >= 80 ? warn : bad` reste
+écrit sur le ratio, et le statut « Test positif » (`eff < 90`) aussi. Ne
+jamais passer une perte à cette fonction.
+
+Le 1 appui peut dépasser le 2 appuis : la perte devient négative et le signe
+porte l'information. Une perte qui arrondit à zéro ne s'écrit jamais « -0 ».
+
+**Les deux légendes du formulaire font partie du lot** — celle du bloc
+« Tests Cliniques » et le sous-titre de la ligne. Elles énonçaient la formule
+du rapport brut et le seuil « positif si < 90 % » ; sous une colonne de perte
+ils sont faux. `qualite/lsi-cas.js` échoue si l'un des deux réapparaît.
 
 ## Motifs de bilan — onglet Patients
 

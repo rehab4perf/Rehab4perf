@@ -5489,9 +5489,19 @@ function calcPiCIM() {
   var finalEl = document.getElementById('pi-cim-final');
   if (!lsi2El || !stat2El || !lsiEl || !statEl || !effCsEl || !effCaEl || !finalEl) return;
 
+  /* Affiche la PERTE du 2 appuis au 1 appui, pas ce qui reste. `val` est le
+     rapport 1 appui / 2 appuis ; on montre `100 − val`. Meme bascule que le
+     LSI, et meme garde-fou : la couleur continue de lire le RATIO, si bien
+     qu'aucun seuil ne bouge — « ≥ 90 % de ratio » s'enonce « ≤ 10 % de
+     perte ». Ne jamais passer une perte a cette fonction.
+     Le 1 appui peut depasser le 2 appuis : la perte est alors negative et le
+     signe porte l'information. Une perte qui arrondit a zero ne s'ecrit
+     jamais « -0 ». */
   function fmtRatio(el, val) {
     if (isNaN(val)) { el.textContent = '—'; el.className = 'measure-stat'; return; }
-    el.textContent = val.toFixed(0) + '%';
+    var perte = 100 - val;
+    if (Math.abs(perte) < 0.5) perte = 0;
+    el.textContent = perte.toFixed(0) + '%';
     el.className = 'measure-stat ' + (val >= 90 ? 'good' : val >= 80 ? 'warn' : 'bad');
   }
 
@@ -5506,8 +5516,9 @@ function calcPiCIM() {
     : (cs1 > 0 ? ca1 / cs1 * 100 : NaN);
 
   /* setLSI ecrit l'asymetrie et le statut verbal, comme pour tous les autres
-     tests. fmtRatio reste reservee aux ratios d'efficacite ci-dessous, qui ne
-     sont PAS des LSI et doivent continuer de s'afficher tels quels. */
+     tests. fmtRatio est reservee a l'effondrement ci-dessous : ce n'est PAS
+     un LSI — c'est un rapport interne a un cote, d'ou sa colonne « Asym. »
+     vide — mais il bascule lui aussi vers la perte a l'affichage. */
   setLSI(lsi2El, stat2El, lsi2, '>= 90%', true, bilateral);
   fmtRatio(effCsEl, effCs);
   fmtRatio(effCaEl, effCa);
