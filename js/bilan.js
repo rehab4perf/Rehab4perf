@@ -5745,6 +5745,38 @@ function _buildAllTestsHtml() {
     return '<div class="cr-item' + cls + '"><span class="cr-key">' + key + '</span><span class="cr-val">' + val + '</span>' + tagHtml + dateBadge + '</div>';
   }
 
+  /* Fabrique un mini-tableau de mesures pour une ligne de CR. Generique et
+     defini TOT dans la fonction : plusieurs regions (epaule, rachis…) en ont
+     besoin bien avant que les helpers du bloc « membres inferieurs » ne
+     soient assignes. `rows` : [{l, a, b, asym}]. */
+  function _crMesTab(rows, labelA, labelB, opts) {
+    var r = (rows||[]).filter(function(x){ return x && (x.a || x.b || x.asym); });
+    if (!r.length) return '';
+    var o = opts || {};
+    var avecAsym = r.some(function(x){ return x.asym; });
+    /* Colonne « Mesure » seulement quand il y a plusieurs lignes a distinguer.
+       Sur un test a une seule mesure, l'intitule de la ligne de CR la nomme
+       deja et l'unite est sur la valeur : « Force / 100 N » sous la cle
+       « Rotateurs lat. RE1 » ne dit rien de plus, et cette colonne vide de
+       sens alourdissait trente-sept lignes sur trente-huit. */
+    var avecLbl = r.length > 1 && r.some(function(x){ return x.l; });
+    var vide = function(v){ return (v === '' || v == null || v === '-') ? '—' : v; };
+    var h = '<table class="cr-mt"><thead><tr>'
+          + (avecLbl ? '<th class="lbl">Mesure</th>' : '')
+          + '<th>' + (labelA||'') + '</th><th>' + (labelB||'') + '</th>'
+          + (avecAsym ? '<th>Asym.</th>' : '') + '</tr></thead><tbody>';
+    r.forEach(function(x){
+      h += '<tr>' + (avecLbl ? '<td class="lbl">' + (x.l||'') + '</td>' : '')
+         + '<td class="num">' + vide(x.a) + '</td>'
+         + '<td class="num">' + vide(x.b) + '</td>'
+         + (avecAsym ? '<td class="der">' + vide(x.asym) + '</td>' : '')
+         + '</tr>';
+    });
+    h += '</tbody></table>';
+    if (o.note) h += '<div class="cr-mt-note">' + o.note + '</div>';
+    return h;
+  }
+
   // ── Résolution du côté atteint ────────────────────────────────
   var _cotePrimaire = ((document.getElementById('f-cote')||{}).value||'').toUpperCase();
   var _isBilat  = (_cotePrimaire !== 'DROIT' && _cotePrimaire !== 'GAUCHE'); // '' et 'BILATÉRAL' → bilatéral
@@ -5936,7 +5968,8 @@ function _buildAllTestsHtml() {
         if (!isNaN(csN) && csN > 0) {
           var lsiV = !isNaN(caN) ? caN/csN*100 : NaN;
           var isPos = !isNaN(lsiV) && lsiV < 90;
-          var valStr = 'CS='+csN+' kg'+(!isNaN(caN)?' CA='+caN+' kg':'')+(!isNaN(lsiV)?' Asym.=' + asymTxt(lsiV, 0):'');
+          var valStr = _crMesTab([{ l:'Force', a:csN+' kg', b:(isNaN(caN)?'':caN+' kg'),
+                                    asym:(isNaN(lsiV)?'':asymTxt(lsiV, 0)) }], _labelCS, _labelCA);
           haForceRows += crItem(ft.label, valStr, isPos?'Positif':'Négatif', isPos?'bad':'ok', [ft.key+'-cs',ft.key+'-ca']);
         } else if (csA || caA) {
           var parts = [];
@@ -5983,7 +6016,8 @@ function _buildAllTestsHtml() {
         if (!isNaN(csN) && csN > 0) {
           var lsiV = !isNaN(caN) ? caN/csN*100 : NaN;
           var isPos = !isNaN(lsiV) && lsiV < 90;
-          var valStr = 'CS='+csN+' kg'+(!isNaN(caN)?' CA='+caN+' kg':'')+(!isNaN(lsiV)?' Asym.=' + asymTxt(lsiV, 0):'');
+          var valStr = _crMesTab([{ l:'Force', a:csN+' kg', b:(isNaN(caN)?'':caN+' kg'),
+                                    asym:(isNaN(lsiV)?'':asymTxt(lsiV, 0)) }], _labelCS, _labelCA);
           geForceRows += crItem(ft.label, valStr, isPos?'Positif':'Négatif', isPos?'bad':'ok', [ft.key+'-cs',ft.key+'-ca']);
         } else if (csA || caA) {
           var parts = [];
@@ -6005,7 +6039,10 @@ function _buildAllTestsHtml() {
         var girdDiff = girdCS - girdCA;
         var girdTag = girdDiff > 15 ? 'Positif' : 'Négatif';
         var girdCls = girdDiff > 15 ? 'bad' : 'ok';
-        secRows += crItem('GIRD — RI', 'CS=' + girdCS + '° CA=' + girdCA + '° (diff ' + (girdDiff>=0?'+':'') + girdDiff.toFixed(0) + '°)', girdTag, girdCls, ['gird-cs','gird-ca']);
+        secRows += crItem('GIRD — RI',
+          _crMesTab([{ l:'Rotation interne', a:girdCS+' °', b:girdCA+' °' }], _labelCS, _labelCA,
+            { note: 'Différence : ' + (girdDiff>=0?'+':'') + girdDiff.toFixed(0) + ' °' }),
+          girdTag, girdCls, ['gird-cs','gird-ca']);
       }
       // Force break tests
       var epForceTests = [
@@ -6031,9 +6068,12 @@ function _buildAllTestsHtml() {
           var isDent = ft.key === 'ep-dent';
           var isPos = isDent ? (csN < 20 || (!isNaN(caN) && caN < 20) || (!isNaN(lsiV) && lsiV < 90))
                              : (!isNaN(lsiV) && lsiV < 90);
-          var valStr = (isDent ? 'CS=' + csN + ' rép' : 'CS=' + csN + ' N') +
-                       (!isNaN(caN) ? (isDent ? ' CA=' + caN + ' rép' : ' CA=' + caN + ' N') : '') +
-                       (!isNaN(lsiV) ? ' Asym.=' + asymTxt(lsiV, 0) : '');
+          var _u = isDent ? ' rép' : ' N';
+          var valStr = _crMesTab([{ l: isDent ? 'Répétitions' : 'Force',
+                                    a: csN + _u,
+                                    b: isNaN(caN) ? '' : caN + _u,
+                                    asym: isNaN(lsiV) ? '' : asymTxt(lsiV, 0) }],
+                                 _labelCS, _labelCA);
           epForceRows += crItem(ft.label, valStr, isPos ? 'Positif' : 'Négatif', isPos ? 'bad' : 'ok', [ft.key+'-cs', ft.key+'-ca']);
         } else if (csA || caA) {
           var parts = [];
@@ -6153,7 +6193,8 @@ function _buildAllTestsHtml() {
         if (!isNaN(csN) && csN > 0) {
           var lsiV = !isNaN(caN) ? caN/csN*100 : NaN;
           var isPos = !isNaN(lsiV) && lsiV < 90;
-          var valStr = 'CS='+csN+' kg'+(!isNaN(caN)?' CA='+caN+' kg':'')+(!isNaN(lsiV)?' Asym.=' + asymTxt(lsiV, 0):'');
+          var valStr = _crMesTab([{ l:'Force', a:csN+' kg', b:(isNaN(caN)?'':caN+' kg'),
+                                    asym:(isNaN(lsiV)?'':asymTxt(lsiV, 0)) }], _labelCS, _labelCA);
           raForceRows += crItem('Inclinaison cervicale', valStr, isPos?'Positif':'Négatif', isPos?'bad':'ok', ['ra-fc-inc-cs','ra-fc-inc-ca']);
         } else if (csA || caA) {
           var parts = [];
@@ -6281,10 +6322,18 @@ function _buildAllTestsHtml() {
         var cimFinal = document.getElementById('pi-cim-final');
         var cimStatTxt = cimFinal ? cimFinal.textContent.replace(/[✅❌]\s*/,'') : '—';
         var cimCls = cimFinal ? (cimFinal.className.includes('good') ? 'ok' : cimFinal.className.includes('bad') ? 'bad' : '') : '';
-        var cimDetail = '2 appuis : ' + cimLblCs + '=' + (isNaN(cim2Cs)?'—':cim2Cs+'cm') + ' / ' + cimLblCa + '=' + (isNaN(cim2Ca)?'—':cim2Ca+'cm')
-          + ' · 1 appui : ' + cimLblCs + '=' + (isNaN(cim1Cs)?'—':cim1Cs+'cm') + ' / ' + cimLblCa + '=' + (isNaN(cim1Ca)?'—':cim1Ca+'cm')
-          + ' · Effondrement ' + cimLblCs + '=' + (cimEffCs?cimEffCs.textContent:'—') + ' / ' + cimLblCa + '=' + (cimEffCa?cimEffCa.textContent:'—')
-          + ' · Asym. : ' + (cimLsi?cimLsi.textContent:'—');
+        /* Quatre groupes de valeurs tenaient dans une seule phrase, avec trois
+           separateurs differents. Un tableau : une ligne par mesure, une
+           colonne par cote. L'asymetrie du 1 appui est celle que le test
+           produit — les deux autres lignes n'en ont pas. */
+        var _cimCm = function(v){ return isNaN(v) ? '' : v + ' cm'; };
+        var _cimTxt = function(el){ var t = el ? (el.textContent||'').trim() : ''; return (!t || t === '—' || t === '-') ? '' : t; };
+        var cimDetail = '<table class="cr-mt"><thead><tr><th class="lbl">Mesure</th>'
+          + '<th>' + cimLblCs + '</th><th>' + cimLblCa + '</th><th>Asym.</th></tr></thead><tbody>'
+          + '<tr><td class="lbl">2 appuis</td><td class="num">' + (_cimCm(cim2Cs)||'—') + '</td><td class="num">' + (_cimCm(cim2Ca)||'—') + '</td><td class="der">—</td></tr>'
+          + '<tr><td class="lbl">1 appui</td><td class="num">' + (_cimCm(cim1Cs)||'—') + '</td><td class="num">' + (_cimCm(cim1Ca)||'—') + '</td><td class="der">' + (_cimTxt(cimLsi)||'—') + '</td></tr>'
+          + '<tr><td class="lbl">Effondrement</td><td class="num">' + (_cimTxt(cimEffCs)||'—') + '</td><td class="num">' + (_cimTxt(cimEffCa)||'—') + '</td><td class="der">—</td></tr>'
+          + '</tbody></table>';
         secRows += crItem('Course interne mollet', cimDetail, cimStatTxt, cimCls, ['pi-cim2-cs','pi-cim2-ca','pi-cim1-cs','pi-cim1-ca'].filter(function(i){ var e=document.getElementById(i); return e&&e.value; }));
       }
       // Navicular Drop Test
@@ -6315,7 +6364,8 @@ function _buildAllTestsHtml() {
         if (!isNaN(csN) && csN > 0) {
           var lsiV = !isNaN(caN) ? caN/csN*100 : NaN;
           var isPos = !isNaN(lsiV) && lsiV < 90;
-          var valStr = 'CS='+csN+' kg'+(!isNaN(caN)?' CA='+caN+' kg':'')+(!isNaN(lsiV)?' Asym.=' + asymTxt(lsiV, 0):'');
+          var valStr = _crMesTab([{ l:'Force', a:csN+' kg', b:(isNaN(caN)?'':caN+' kg'),
+                                    asym:(isNaN(lsiV)?'':asymTxt(lsiV, 0)) }], _labelCS, _labelCA);
           piForceRows += crItem(ft.label, valStr, isPos?'Positif':'Négatif', isPos?'bad':'ok', [ft.key+'-cs',ft.key+'-ca']);
         } else if (csA || caA) {
           var parts = [];
@@ -6335,7 +6385,8 @@ function _buildAllTestsHtml() {
       var cfObs2 = (document.getElementById('cf-obs-ca')||{}).value||'';
       if (sec.label === 'GENOU' && !isNaN(cfCA2)) {
         secRows += crItem('Contraction Flash Isométrique 20s',
-          _labelCA+'='+cfCA2+'N   '+_labelCS+'='+(isNaN(cfCS2)?'-':cfCS2)+'N   '+lsiStr(cfCA2,cfCS2),
+          _crMesTab([{ l:'Force', a:cfCA2+' N', b:(isNaN(cfCS2)?'':cfCS2+' N'),
+                       asym:(isNaN(cfCA2)||isNaN(cfCS2)||cfCS2<=0)?'':asymTxt(cfCA2/cfCS2*100) }], _labelCA, _labelCS),
           statOf2(lsiCls2(cfCA2,cfCS2)), lsiCls2(cfCA2,cfCS2), ['cf-q-ca','cf-q-cs']);
       }
       if (sec.label === 'GENOU' && cfObs2) secRows += '<div style="margin:2px 0 8px;padding:6px 10px;background:var(--surface2);border-radius:5px;font-size:.82rem;color:var(--text2);font-style:italic">' + cfObs2 + '</div>';
@@ -6418,6 +6469,42 @@ function _buildAllTestsHtml() {
     var vA = _isBilatMI ? csVal : caVal;
     var vB = _isBilatMI ? caVal : csVal;
     return lA+'='+vA+u+'   '+lB+'='+vB+u;
+  };
+
+  /* ── Mesures d'une ligne de CR, en mini-tableau ────────────────────────────
+     Une ligne par mesure, une colonne par cote, l'asymetrie en derniere
+     colonne. Remplace la phrase continue « G=11cm  D=9cm  Asym. = 18.2% » :
+     elle melangeait trois separateurs (=, /, ·) et rejetait en fin de phrase
+     le chiffre qu'on cherche. Les nombres sont en chasse fixe, donc alignes
+     et comparables d'une ligne a l'autre.
+
+     `rows` : [{ l:'Distance', a:'11 cm', b:'9 cm', asym:'18.2%' }]
+     L'ordre des colonnes suit la convention de _p : Gauche d'abord en
+     bilateral, cote atteint d'abord en unilateral. */
+  var _mesTab = function(rows, opts) {
+    return _crMesTab(rows, _isBilatMI ? _labelCS : _labelCA,
+                           _isBilatMI ? _labelCA : _labelCS, opts);
+  };
+
+  /* Asymetrie seule, sans le prefixe « Asym. = » : la colonne le dit deja. */
+  var _asymOf = function(ca, cs) {
+    if (isNaN(ca) || isNaN(cs)) return '';
+    var v = _isBilatMI ? (ca > 0 && cs > 0 ? Math.min(ca,cs)/Math.max(ca,cs)*100 : NaN)
+                       : (cs > 0 ? ca/cs*100 : NaN);
+    return isNaN(v) ? '' : asymTxt(v);
+  };
+
+  /* Cas courant : une mesure, deux cotes, une asymetrie. */
+  var _pair = function(label, caVal, csVal, unit, asym) {
+    var u = unit || '';
+    var f = function(v){
+      if (v === '' || v == null || v === '-') return '';
+      if (typeof v === 'number' && isNaN(v)) return '';
+      return v + u;
+    };
+    var vA = _isBilatMI ? csVal : caVal;
+    var vB = _isBilatMI ? caVal : csVal;
+    return _mesTab([{ l: label, a: f(vA), b: f(vB), asym: asym || '' }]);
   };
   lsiStr = function(ca,cs) {
     if (isNaN(ca)||isNaN(cs)) return '';
@@ -6516,18 +6603,21 @@ function _buildAllTestsHtml() {
   var djHca = parseFloat((document.getElementById('dj-h-ca')||{}).value||'');
   var djHcs = parseFloat((document.getElementById('dj-h-cs')||{}).value||'');
   if (!isNaN(slsCA)) {
-    var slsVal2 = _p(slsCA,slsCS,' rep.')+'   '+lsiStr(slsCA,slsCS)+(slsH2?'   |   Repère EIAS-sol : '+slsH2+(slsH2.indexOf('cm')===-1?' cm':''):'');
+    var slsVal2 = _mesTab([{ l:'Répétitions', a:(_isBilatMI?slsCS:slsCA)+' rép.', b:(_isBilatMI?slsCA:slsCS)+' rép.', asym:_asymOf(slsCA,slsCS) }],
+      { note: slsH2 ? 'Repère EIAS-sol : '+slsH2+(slsH2.indexOf('cm')===-1?' cm':'') : '' });
     tfHtml += crItem('SLS', slsVal2, statOf2(lsiCls2(slsCA,slsCS)), lsiCls2(slsCA,slsCS), ['sls-ca','sls-cs']);
   }
   tfHtml += obsBlock('sls-obs-ca','sls-obs-cs');
   if (!isNaN(hopCA)) {
-    var hopDesc = _p(hopCA,hopCS,'cm')+'   '+lsiStr(hopCA, hopCS);
-    if (!isNaN(hopCS) && hopCS > 0) hopDesc += '   Repère 80% CS = ' + (hopCS * 0.8).toFixed(1) + 'cm';
+    var hopNote = [];
+    if (!isNaN(hopCS) && hopCS > 0) hopNote.push('Repère 80 % CS = ' + (hopCS * 0.8).toFixed(1) + ' cm');
     if (!isNaN(hopTaille) && hopTaille > 0) {
-      if (hopSexe === 'F') { var hopSeuil = (hopTaille * 0.80).toFixed(1); hopDesc += '   |   Seuil RTS 80% taille (F) = ' + hopSeuil + 'cm → ' + (hopCA >= parseFloat(hopSeuil) ? '✓ Atteint' : '✗ Non atteint'); }
-      else if (hopSexe === 'H') { var hopSeuil = (hopTaille * 0.90).toFixed(1); hopDesc += '   |   Seuil RTS 90% taille (H) = ' + hopSeuil + 'cm → ' + (hopCA >= parseFloat(hopSeuil) ? '✓ Atteint' : '✗ Non atteint'); }
-      else { hopDesc += '   |   Seuil RTS : ≥' + (hopTaille * 0.80).toFixed(1) + 'cm (F) / ≥' + (hopTaille * 0.90).toFixed(1) + 'cm (H)'; }
+      if (hopSexe === 'F') { var hopSeuil = (hopTaille * 0.80).toFixed(1); hopNote.push('Seuil RTS 80 % taille (F) = ' + hopSeuil + ' cm → ' + (hopCA >= parseFloat(hopSeuil) ? '✓ atteint' : '✗ non atteint')); }
+      else if (hopSexe === 'H') { var hopSeuil = (hopTaille * 0.90).toFixed(1); hopNote.push('Seuil RTS 90 % taille (H) = ' + hopSeuil + ' cm → ' + (hopCA >= parseFloat(hopSeuil) ? '✓ atteint' : '✗ non atteint')); }
+      else { hopNote.push('Seuil RTS : ≥ ' + (hopTaille * 0.80).toFixed(1) + ' cm (F) / ≥ ' + (hopTaille * 0.90).toFixed(1) + ' cm (H)'); }
     }
+    var hopDesc = _pair('Distance', hopCA, hopCS, ' cm', _asymOf(hopCA, hopCS))
+                + (hopNote.length ? '<div class="cr-mt-note">' + hopNote.join(' · ') + '</div>' : '');
     tfHtml += crItem('Hop Test', hopDesc, statOf2(lsiCls2(hopCA, hopCS)), lsiCls2(hopCA, hopCS), ['hop-ca','hop-cs']);
   }
   tfHtml += obsBlock('hop-obs-ca','hop-obs-cs');
@@ -6540,25 +6630,28 @@ function _buildAllTestsHtml() {
   if ((recCrToggle && recCrToggle.checked) || scoreCA2 > 0 || scoreCS2 > 0) {
     var rclsCA = scoreCA2===recN?'good':scoreCA2>0?'warn':'bad';
     tfHtml += crItem('Réception — 80% Hop Test',
-      _p(scoreCA2+'/'+recN, scoreCS2+'/'+recN),
+      _pair('Critères validés', scoreCA2+'/'+recN, scoreCS2+'/'+recN, ''),
       statOf2(rclsCA), rclsCA, ['rec-ca-0','rec-ca-1','rec-ca-2','rec-ca-3','rec-ca-4']);
   }
   tfHtml += obsBlock('rec-obs-ca','rec-obs-cs');
-  if (!isNaN(hrCA)) tfHtml += crItem('Heel Rise', _p(hrCA,hrCS)+'   '+lsiStr(hrCA,hrCS), statOf2(lsiCls2(hrCA,hrCS)), lsiCls2(hrCA,hrCS), ['hr-ca','hr-cs']);
+  if (!isNaN(hrCA)) tfHtml += crItem('Heel Rise', _pair('Répétitions', hrCA, hrCS, '', _asymOf(hrCA,hrCS)), statOf2(lsiCls2(hrCA,hrCS)), lsiCls2(hrCA,hrCS), ['hr-ca','hr-cs']);
   tfHtml += obsBlock('hr-obs-ca','hr-obs-cs');
   if (!isNaN(luCA)) {
     var luDiff2 = Math.abs(luCA-luCS); var luBad2 = luCA<10 || luDiff2>1.5;
-    tfHtml += crItem('Lunge WBLT', _p(luCA,luCS,'cm')+'   Diff='+luDiff2.toFixed(1)+'cm   '+lsiStr(luCA,luCS), luBad2?'Deficit':'OK', luBad2?'bad':'good', ['lu-ca','lu-cs']);
+    tfHtml += crItem('Lunge WBLT',
+      _mesTab([{ l:'Distance', a:(_isBilatMI?luCS:luCA)+' cm', b:(_isBilatMI?luCA:luCS)+' cm', asym:_asymOf(luCA,luCS) }],
+        { note: 'Différence : ' + luDiff2.toFixed(1) + ' cm' }),
+      luBad2?'Deficit':'OK', luBad2?'bad':'good', ['lu-ca','lu-cs']);
   }
   tfHtml += obsBlock('lu-obs-ca','lu-obs-cs');
-  if (!isNaN(djHca)) tfHtml += crItem('Drop Jump H', _p(djHca,djHcs,'cm')+'   '+lsiStr(djHca,djHcs), statOf2(lsiCls2(djHca,djHcs)), lsiCls2(djHca,djHcs), ['dj-h-ca','dj-h-cs']);
+  if (!isNaN(djHca)) tfHtml += crItem('Drop Jump H', _pair('Hauteur', djHca, djHcs, ' cm', _asymOf(djHca,djHcs)), statOf2(lsiCls2(djHca,djHcs)), lsiCls2(djHca,djHcs), ['dj-h-ca','dj-h-cs']);
   tfHtml += obsBlock('dj-obs-ca','dj-obs-cs');
   var shExpCA2 = parseFloat((document.getElementById('sh-exp-ca')||{}).value||'');
   var shExpCS2 = parseFloat((document.getElementById('sh-exp-cs')||{}).value||'');
   var shEndCA2 = parseFloat((document.getElementById('sh-end-ca')||{}).value||'');
   var shEndCS2 = parseFloat((document.getElementById('sh-end-cs')||{}).value||'');
-  if (!isNaN(shExpCA2)) tfHtml += crItem('Side Hop — Explosivité (15s)', _p(shExpCA2,(isNaN(shExpCS2)?'-':shExpCS2),' sauts')+'   '+lsiStr(shExpCA2,shExpCS2), statOf2(lsiCls2(shExpCA2,shExpCS2)), lsiCls2(shExpCA2,shExpCS2), ['sh-exp-ca','sh-exp-cs']);
-  if (!isNaN(shEndCA2)) tfHtml += crItem('Side Hop — Endurance (30s)', _p(shEndCA2,(isNaN(shEndCS2)?'-':shEndCS2),' sauts')+'   '+lsiStr(shEndCA2,shEndCS2), statOf2(lsiCls2(shEndCA2,shEndCS2)), lsiCls2(shEndCA2,shEndCS2), ['sh-end-ca','sh-end-cs']);
+  if (!isNaN(shExpCA2)) tfHtml += crItem('Side Hop — Explosivité (15s)', _pair('Sauts', shExpCA2, (isNaN(shExpCS2)?'-':shExpCS2), ' sauts', _asymOf(shExpCA2,shExpCS2)), statOf2(lsiCls2(shExpCA2,shExpCS2)), lsiCls2(shExpCA2,shExpCS2), ['sh-exp-ca','sh-exp-cs']);
+  if (!isNaN(shEndCA2)) tfHtml += crItem('Side Hop — Endurance (30s)', _pair('Sauts', shEndCA2, (isNaN(shEndCS2)?'-':shEndCS2), ' sauts', _asymOf(shEndCA2,shEndCS2)), statOf2(lsiCls2(shEndCA2,shEndCS2)), lsiCls2(shEndCA2,shEndCS2), ['sh-end-ca','sh-end-cs']);
   tfHtml += obsBlock('sh-obs-ca','sh-obs-cs');
   var qfCA = parseFloat((document.getElementById('q-f-ca')||{}).value||'');
   var qfCS = parseFloat((document.getElementById('q-f-cs')||{}).value||'');
@@ -6569,14 +6662,14 @@ function _buildAllTestsHtml() {
   // Drop Jump — Temps contact
   var djTca = parseFloat((document.getElementById('dj-t-ca')||{}).value||'');
   var djTcs = parseFloat((document.getElementById('dj-t-cs')||{}).value||'');
-  if (!isNaN(djTca)) tfHtml += crItem('Drop Jump — Temps contact', _p(djTca,djTcs,'ms')+'   '+lsiStr(djTca,djTcs), statOf2(lsiCls2(djTca,djTcs)), lsiCls2(djTca,djTcs), ['dj-t-ca','dj-t-cs']);
+  if (!isNaN(djTca)) tfHtml += crItem('Drop Jump — Temps contact', _pair('Temps', djTca, djTcs, ' ms', _asymOf(djTca,djTcs)), statOf2(lsiCls2(djTca,djTcs)), lsiCls2(djTca,djTcs), ['dj-t-ca','dj-t-cs']);
   // Drop Jump — RSI (calculé, affiché en textContent)
   var djRsiCAv = ((document.getElementById('dj-rsi-ca')||{}).textContent||'').trim();
   var djRsiCSv = ((document.getElementById('dj-rsi-cs')||{}).textContent||'').trim();
   var djRsiLsiv = ((document.getElementById('dj-rsi-lsi')||{}).textContent||'').trim();
   if (djRsiCAv && djRsiCAv !== '-' && parseFloat(djRsiCAv) > 0) {
     var rsiCls = lsiCls2(parseFloat(djRsiCAv), parseFloat(djRsiCSv));
-    tfHtml += crItem('Drop Jump — RSI', _p(djRsiCAv,djRsiCSv)+'   Asym.='+djRsiLsiv, statOf2(rsiCls), rsiCls, ['dj-t-ca','dj-t-cs']);
+    tfHtml += crItem('Drop Jump — RSI', _pair('RSI', djRsiCAv, djRsiCSv, '', djRsiLsiv), statOf2(rsiCls), rsiCls, ['dj-t-ca','dj-t-cs']);
   }
   // Pliométrie verticale qualitative
   var plioqCA2 = 0; var plioqCS2 = 0; var plioqTouched = false;
@@ -6592,7 +6685,8 @@ function _buildAllTestsHtml() {
   var plioqCrToggle = document.getElementById('plioq-cr-toggle');
   if ((plioqCrToggle && plioqCrToggle.checked) || plioqTouched) {
     tfHtml += crItem('Pliométrie verticale (qualitative)',
-      _p(plioqCA2+'/2', plioqCS2+'/2') + '   ' + (plioqSym ? 'Hauteur symétrique' : 'Déficit de hauteur'),
+      _pair('Critères validés', plioqCA2+'/2', plioqCS2+'/2', '', '')
+        .replace('</table>', '</table><div class="cr-mt-note">' + (plioqSym ? 'Hauteur symétrique' : 'Déficit de hauteur') + '</div>'),
       plioqCA2===2?'Réussi':'À améliorer', plioqCA2===2?'good':'warn',
       ['plioq-ca-0','plioq-ca-1','plioq-ca-2']);
   }
@@ -6606,9 +6700,9 @@ function _buildAllTestsHtml() {
   var sebtPlCS2  = parseFloat((document.getElementById('sebt-pl-cs')||{}).value||'');
   var sebtCompCA2 = ((document.getElementById('sebt-comp-ca')||{}).textContent||'').trim();
   var sebtCompCS2 = ((document.getElementById('sebt-comp-cs')||{}).textContent||'').trim();
-  if (!isNaN(sebtAntCA2)) tfHtml += crItem('SEBT — Antérieur',       _p(sebtAntCA2,sebtAntCS2,'cm')+'   '+lsiStr(sebtAntCA2,sebtAntCS2), statOf2(lsiCls2(sebtAntCA2,sebtAntCS2)), lsiCls2(sebtAntCA2,sebtAntCS2), ['sebt-ant-ca','sebt-ant-cs']);
-  if (!isNaN(sebtPmCA2))  tfHtml += crItem('SEBT — Postéro-médial',  _p(sebtPmCA2,sebtPmCS2,'cm')+'   '+lsiStr(sebtPmCA2,sebtPmCS2),   statOf2(lsiCls2(sebtPmCA2,sebtPmCS2)),   lsiCls2(sebtPmCA2,sebtPmCS2), ['sebt-pm-ca','sebt-pm-cs']);
-  if (!isNaN(sebtPlCA2))  tfHtml += crItem('SEBT — Postéro-latéral', _p(sebtPlCA2,sebtPlCS2,'cm')+'   '+lsiStr(sebtPlCA2,sebtPlCS2),   statOf2(lsiCls2(sebtPlCA2,sebtPlCS2)),   lsiCls2(sebtPlCA2,sebtPlCS2), ['sebt-pl-ca','sebt-pl-cs']);
+  if (!isNaN(sebtAntCA2)) tfHtml += crItem('SEBT — Antérieur',       _pair('Distance', sebtAntCA2, sebtAntCS2, ' cm', _asymOf(sebtAntCA2,sebtAntCS2)), statOf2(lsiCls2(sebtAntCA2,sebtAntCS2)), lsiCls2(sebtAntCA2,sebtAntCS2), ['sebt-ant-ca','sebt-ant-cs']);
+  if (!isNaN(sebtPmCA2))  tfHtml += crItem('SEBT — Postéro-médial',  _pair('Distance', sebtPmCA2, sebtPmCS2, ' cm', _asymOf(sebtPmCA2,sebtPmCS2)),   statOf2(lsiCls2(sebtPmCA2,sebtPmCS2)),   lsiCls2(sebtPmCA2,sebtPmCS2), ['sebt-pm-ca','sebt-pm-cs']);
+  if (!isNaN(sebtPlCA2))  tfHtml += crItem('SEBT — Postéro-latéral', _pair('Distance', sebtPlCA2, sebtPlCS2, ' cm', _asymOf(sebtPlCA2,sebtPlCS2)),   statOf2(lsiCls2(sebtPlCA2,sebtPlCS2)),   lsiCls2(sebtPlCA2,sebtPlCS2), ['sebt-pl-ca','sebt-pl-cs']);
   if (sebtCompCA2 && sebtCompCA2.indexOf('CA :') === 0) {
     var _sebtA = _isBilatMI ? sebtCompCS2 : sebtCompCA2, _sebtB = _isBilatMI ? sebtCompCA2 : sebtCompCS2;
     var _lA = _isBilatMI ? _labelCS : _labelCA, _lB = _isBilatMI ? _labelCA : _labelCS;
@@ -6626,7 +6720,7 @@ function _buildAllTestsHtml() {
   if (slstTouched) {
     var slstCls = slstCATotal <= 1 ? 'good' : slstCATotal <= 3 ? 'warn' : 'bad';
     var slstStat = slstCATotal <= 1 ? 'Bon équilibre' : slstCATotal <= 3 ? 'Équilibre altéré' : 'Déficit significatif';
-    tfHtml += crItem('Single-Leg Stance Test', _p(slstCATotal+' err.', slstCSTotal+' err.', ''), slstStat, slstCls, ['slst-ca-1','slst-cs-1']);
+    tfHtml += crItem('Single-Leg Stance Test', _pair('Erreurs', slstCATotal+' err.', slstCSTotal+' err.', ''), slstStat, slstCls, ['slst-ca-1','slst-cs-1']);
   }
   tfHtml += obsBlock('slst-obs-ca','slst-obs-cs');
   // Figure-of-8 Hop Test (temps : lower is better → LSI = sain/atteint)
@@ -6639,7 +6733,9 @@ function _buildAllTestsHtml() {
     var f8Cls = isNaN(f8Lsi) ? '' : (f8Lsi >= 90 ? 'good' : f8Lsi >= 80 ? 'warn' : 'bad');
     var f8Lsi_s = isNaN(f8Lsi) ? '' : '   Asym. = ' + asymTxt(f8Lsi);
     var f8Seuil = f8CA <= 12 ? '   Seuil <12s ✓' : '   >12s ✗';
-    tfHtml += crItem('Figure-of-8 Hop Test', _p(f8CA+'s', (!isNaN(f8CS)?f8CS+'s':'-'), '') + f8Lsi_s + f8Seuil,
+    tfHtml += crItem('Figure-of-8 Hop Test',
+      _mesTab([{ l:'Temps', a:(_isBilatMI?(!isNaN(f8CS)?f8CS+' s':''):f8CA+' s'), b:(_isBilatMI?f8CA+' s':(!isNaN(f8CS)?f8CS+' s':'')), asym:(isNaN(f8Lsi)?'':asymTxt(f8Lsi)) }],
+        { note: f8CA <= 12 ? 'Seuil < 12 s ✓' : 'Seuil < 12 s ✗' }),
       f8Cls==='good' ? 'Asym. ≤10%' : f8Cls==='warn' ? 'Asym. 11-20%' : f8Cls==='bad' ? 'Asym. >20%' : '',
       f8Cls, ['f8-ca','f8-cs']);
   }
@@ -6652,7 +6748,9 @@ function _buildAllTestsHtml() {
     var uqDiffTxt = ((document.getElementById('uqybt-'+uqDirs[ui].id+'-diff')||{}).textContent||'').trim();
     if (!isNaN(uqD) && !isNaN(uqG)) {
       var uqBad = parseFloat(uqDiffTxt) > 5;
-      tfHtml += crItem('UQYBT — '+uqDirs[ui].label, 'D='+uqD+'cm   G='+uqG+'cm   Diff='+uqDiffTxt, uqBad?'>5% Asymétrie':'OK', uqBad?'warn':'good', ['uqybt-'+uqDirs[ui].id+'-d','uqybt-'+uqDirs[ui].id+'-g']);
+      tfHtml += crItem('UQYBT — '+uqDirs[ui].label,
+        _crMesTab([{ l:'Distance', a:uqG+' cm', b:uqD+' cm' }], 'Gauche', 'Droit',
+          { note: 'Différence : ' + uqDiffTxt }), uqBad?'>5% Asymétrie':'OK', uqBad?'warn':'good', ['uqybt-'+uqDirs[ui].id+'-d','uqybt-'+uqDirs[ui].id+'-g']);
     }
   }
   if(typeof window._ctBuildSectionHtml === 'function') tfHtml += window._ctBuildSectionHtml('fonctionnels');
@@ -6672,12 +6770,13 @@ function _buildAllTestsHtml() {
   var ulrtEl2 = document.getElementById('ulrt-lsi');
   if (!isNaN(psetCAv)) {
     var pl = psetCSv>0?(psetCAv/psetCSv*100):NaN;
-    var psetVal = _labelCA+'='+psetCAv+'   '+_labelCS+'='+(isNaN(psetCSv)?'-':psetCSv)+(!isNaN(pl)?'   Asym.='+asymTxt(pl):'');
-    if (psetPoidsReelV) psetVal += '   — Poids utilisé : ' + psetPoidsReelV + ' kg';
+    var psetVal = _crMesTab([{ l:'Répétitions', a:psetCAv, b:(isNaN(psetCSv)?'':psetCSv),
+                               asym:(isNaN(pl)?'':asymTxt(pl)) }], _labelCA, _labelCS,
+                             { note: psetPoidsReelV ? 'Poids utilisé : ' + psetPoidsReelV + ' kg' : '' });
     tfMsHtml += crItem('PSET', psetVal, statOf2(lsiCls2(psetCAv,psetCSv)), lsiCls2(psetCAv,psetCSv), ['pset-ca','pset-cs']);
   }
   tfMsHtml += obsBlock('pset-obs-ca','pset-obs-cs');
-  if (!isNaN(setCAv))  { var sl = setCSv>0?(setCAv/setCSv*100):NaN; tfMsHtml += crItem('Shoulder Endurance', _labelCA+'='+setCAv+'   '+_labelCS+'='+setCSv+(!isNaN(sl)?'   Asym.=' + asymTxt(sl, 1):''), statOf2(lsiCls2(setCAv,setCSv)), lsiCls2(setCAv,setCSv), ['set-ca','set-cs']); }
+  if (!isNaN(setCAv))  { var sl = setCSv>0?(setCAv/setCSv*100):NaN; tfMsHtml += crItem('Shoulder Endurance', _crMesTab([{ l:'Répétitions', a:setCAv, b:setCSv, asym:(isNaN(sl)?'':asymTxt(sl,1)) }], _labelCA, _labelCS), statOf2(lsiCls2(setCAv,setCSv)), lsiCls2(setCAv,setCSv), ['set-ca','set-cs']); }
   tfMsHtml += obsBlock('set-obs-ca','set-obs-cs');
   (function(){
     var s2 = parseFloat((document.getElementById('ckc-s2')||{}).value||'');
@@ -6727,7 +6826,7 @@ function _buildAllTestsHtml() {
   var rfNotes = (document.getElementById('rf-notes')||{}).value||'';
   if (!isNaN(flxV2)) { tfRachisHtml += crItem('Endurance Fléchisseurs Cervicaux', flxV2+'s', flxV2>=39?'Normal':flxV2>=24?'Limite':'Deficit', flxV2>=39?'ok':flxV2>=24?'warn':'bad', ['rf-flx-cerv']); tfRachisHtml += obsSingle('rf-flx-obs'); }
   if (!isNaN(extV2)) { tfRachisHtml += crItem('Endurance Extenseurs Cervicaux', extV2+'s', extV2>=20?'OK':'Insuffisant', extV2>=20?'ok':'bad', ['rf-ext-cerv']); tfRachisHtml += obsSingle('rf-ext-obs'); }
-  if (!isNaN(latD2) && !isNaN(latG2)) { var latRatio2 = Math.min(latD2,latG2)/Math.max(latD2,latG2)*100; tfRachisHtml += crItem('Endurance Latérale Cervicale', 'D='+latD2+'s   G='+latG2+'s   Ratio='+latRatio2.toFixed(1)+'%', latRatio2>=70?'Symétrie OK':'Asymétrie', latRatio2>=70?'ok':'warn', ['rf-lat-d','rf-lat-g']); tfRachisHtml += obsSingle('rf-lat-obs'); }
+  if (!isNaN(latD2) && !isNaN(latG2)) { var latRatio2 = Math.min(latD2,latG2)/Math.max(latD2,latG2)*100; tfRachisHtml += crItem('Endurance Latérale Cervicale', _crMesTab([{ l:'Tenue', a:latG2+' s', b:latD2+' s', asym:asymTxt(latRatio2,1) }], 'Gauche', 'Droit'), latRatio2>=70?'Symétrie OK':'Asymétrie', latRatio2>=70?'ok':'warn', ['rf-lat-d','rf-lat-g']); tfRachisHtml += obsSingle('rf-lat-obs'); }
   if (!isNaN(sorV2)) { tfRachisHtml += crItem('Test de Sørensen', sorV2+'s', sorV2>=198?'Facteur protecteur':sorV2>=176?'Zone intermédiaire':'Facteur de risque', sorV2>=198?'ok':sorV2>=176?'warn':'bad', ['rf-sorensen']); tfRachisHtml += obsSingle('rf-sor-obs'); }
   if (!isNaN(pdslV2)) { tfRachisHtml += crItem('PDSLRT', pdslV2+'s', pdslV2>=30?'OK':'Deficit', pdslV2>=30?'ok':'bad', ['rf-pdslrt']); tfRachisHtml += obsSingle('rf-pdslrt-obs'); }
   if (rfNotes) tfRachisHtml += crItem('Notes', rfNotes, '', '', ['rf-notes']);
@@ -8049,7 +8148,7 @@ function _buildBilanHTML(type) {
     .replace(/(<div class="cr-section">)(<h3>2\. Bilan)/g,  '<div class="cr-section cr-ortho">$2')
     .replace(/(<div class="cr-section">)(<h3>[345]\. Tests)/g, '<div class="cr-section cr-tests">$2');
 
-  var css = `:root{--green:#2D6A4F;--green-l:#E8F5EE;--red:#C0392B;--red-l:#FDECEA;--orange:#D4600A;--orange-l:#FEF3EB;--border:#E8E6E1;--text:#1A1917;--text2:#6B6860;--text3:#9D9B96;--accent2:#1A3A5C;--surface2:#F1F0ED;--surface:#FFFFFF;--accent:#2B5FA6;--accent-l:#EEF3FB}*{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}html{font-size:14px}body{font-family:'Figtree',-apple-system,sans-serif;background:#F5F7FA;color:#1A1917;padding:0}.page-wrap{max-width:800px;margin:0 auto;padding:0 0 48px}.doc-header{background:var(--accent2);padding:16px 28px 14px}.doc-hdr-row1{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}.doc-hdr-sep{border:none;border-top:1px solid rgba(255,255,255,.12);margin:0 0 10px}.doc-hdr-row2{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}.doc-logo{display:inline-flex;align-items:center;gap:8px;flex-shrink:0}.doc-logo svg{display:block;flex-shrink:0}.doc-logo .w{display:inline-flex;align-items:baseline;line-height:1;white-space:nowrap}.doc-logo .r{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:22px;color:#fff;letter-spacing:-.01em}.doc-logo .e{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:.44em;vertical-align:super;color:#7FA8D9;margin:0 .05em 0 .01em;line-height:0}.doc-logo .p{font-family:'Poppins',sans-serif;font-weight:800;font-size:17px;color:#fff;letter-spacing:-.025em;margin-left:.02em}.doc-type-badge{font-size:.62rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.2);border-radius:4px;padding:3px 10px}.doc-pract-name{font-size:.88rem;font-weight:700;color:#fff;letter-spacing:-.01em}.doc-pract-meta{font-size:.72rem;color:rgba(255,255,255,.7);display:flex;align-items:center;gap:10px;flex-wrap:wrap}.patient-card{background:#fff;margin:0;padding:22px 28px;border-bottom:3px solid var(--accent-l);display:flex;align-items:center;gap:18px}.patient-avatar{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:800;flex-shrink:0}.patient-name{font-size:1.35rem;font-weight:800;color:var(--accent2);margin-bottom:4px;letter-spacing:-.03em;line-height:1.1}.patient-sub{font-size:.8rem;color:var(--text2)}.patient-badges{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}.pat-badge{border-radius:6px;padding:3px 10px;font-size:.68rem;font-weight:600;letter-spacing:.01em;background:var(--accent-l);color:var(--accent)}.pat-badge.orange{background:#FEF3EB;color:#D4600A}.pat-badge.navy{background:var(--accent2);color:#fff;font-weight:700}.doc-date-bar{background:var(--accent-l);padding:7px 28px;font-size:.73rem;color:var(--accent);border-bottom:1px solid #D3D9F0;font-weight:500;letter-spacing:.01em}.doc-date-bar strong{font-weight:700;color:var(--accent2)}.doc-body{padding:20px 28px 0}.block{display:none}.cr-section{background:#fff;border-radius:10px;margin-bottom:16px;overflow:hidden;border:1px solid var(--border)}.cr-section h3{padding:11px 16px 11px 20px;font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent2);margin:0;border-left:4px solid var(--accent2);background:#F7F8FC}.cr-ortho h3{border-left-color:var(--green);color:var(--green);background:#F3FAF6}.cr-tests h3{border-left-color:var(--accent);color:var(--accent);background:#F0F4FC}.cr-alert h3{border-left-color:#D4600A;color:#D4600A;background:#FFF8F3}.cr-item{display:flex;align-items:flex-start;gap:16px;padding:10px 16px;border-bottom:1px solid #F5F4F2;line-height:1.5}.cr-item:last-child{border-bottom:none}.cr-key{font-size:.65rem;font-weight:700;color:var(--text3);min-width:175px;flex-shrink:0;padding-top:3px;text-transform:uppercase;letter-spacing:.06em}.cr-val{flex:1;font-size:.88rem;color:#1A1917;line-height:1.55}.cr-tag{display:inline-block;padding:2px 9px;border-radius:5px;font-size:.65rem;font-weight:700;white-space:nowrap;margin-left:8px;vertical-align:middle;letter-spacing:.02em}.cr-tag.ok,.cr-tag.good{background:#E8F5EE;color:var(--green)}.cr-tag.warn{background:#FEF3EB;color:#D4600A}.cr-tag.bad{background:#FDECEA;color:var(--red)}.cr-alert .cr-item{padding:10px 16px;align-items:flex-start;background:#FFFAF7}.cr-alert .cr-item:nth-child(odd){background:#fff}.cr-alert .cr-item>span:first-child{color:#D4600A;font-weight:700;font-size:.95rem;flex-shrink:0}.cr-empty{padding:40px;text-align:center;color:var(--text3);font-style:italic;font-size:.9rem}@media print{body{background:#F5F7FA!important}.doc-header{background:var(--accent2)!important}.cr-section{break-inside:avoid;page-break-inside:avoid}.doc-body{padding:12px 28px 0}}@media(max-width:640px){.doc-header{padding:13px 16px 11px}.doc-pract-name{font-size:.8rem}.doc-pract-meta{font-size:.67rem;gap:6px}.patient-card{padding:14px 16px;gap:12px}.patient-avatar{width:44px;height:44px;font-size:1rem}.patient-name{font-size:1.05rem}.pat-badge{font-size:.66rem;padding:2px 8px}.doc-date-bar{padding:6px 16px;font-size:.71rem}.doc-body{padding:10px 16px 0}.cr-section{border-radius:8px;margin-bottom:10px}.cr-section h3{padding:9px 12px 9px 14px;font-size:.65rem}.cr-item{flex-direction:column;gap:3px;padding:10px 12px}.cr-key{min-width:0;width:100%;padding-top:0;padding-bottom:1px}.cr-val{font-size:.9rem;width:100%}.cr-tag{margin-left:0;margin-top:6px}.cr-alert .cr-item{flex-direction:row;gap:10px}}svg{max-width:100%;height:auto;display:block}`;
+  var css = `:root{--green:#2D6A4F;--green-l:#E8F5EE;--red:#C0392B;--red-l:#FDECEA;--orange:#D4600A;--orange-l:#FEF3EB;--border:#E8E6E1;--text:#1A1917;--text2:#6B6860;--text3:#9D9B96;--accent2:#1A3A5C;--surface2:#F1F0ED;--surface:#FFFFFF;--accent:#2B5FA6;--accent-l:#EEF3FB}*{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}html{font-size:14px}body{font-family:'Figtree',-apple-system,sans-serif;background:#F5F7FA;color:#1A1917;padding:0}.page-wrap{max-width:800px;margin:0 auto;padding:0 0 48px}.doc-header{background:var(--accent2);padding:16px 28px 14px}.doc-hdr-row1{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}.doc-hdr-sep{border:none;border-top:1px solid rgba(255,255,255,.12);margin:0 0 10px}.doc-hdr-row2{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}.doc-logo{display:inline-flex;align-items:center;gap:8px;flex-shrink:0}.doc-logo svg{display:block;flex-shrink:0}.doc-logo .w{display:inline-flex;align-items:baseline;line-height:1;white-space:nowrap}.doc-logo .r{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:22px;color:#fff;letter-spacing:-.01em}.doc-logo .e{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:.44em;vertical-align:super;color:#7FA8D9;margin:0 .05em 0 .01em;line-height:0}.doc-logo .p{font-family:'Poppins',sans-serif;font-weight:800;font-size:17px;color:#fff;letter-spacing:-.025em;margin-left:.02em}.doc-type-badge{font-size:.62rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.2);border-radius:4px;padding:3px 10px}.doc-pract-name{font-size:.88rem;font-weight:700;color:#fff;letter-spacing:-.01em}.doc-pract-meta{font-size:.72rem;color:rgba(255,255,255,.7);display:flex;align-items:center;gap:10px;flex-wrap:wrap}.patient-card{background:#fff;margin:0;padding:22px 28px;border-bottom:3px solid var(--accent-l);display:flex;align-items:center;gap:18px}.patient-avatar{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:800;flex-shrink:0}.patient-name{font-size:1.35rem;font-weight:800;color:var(--accent2);margin-bottom:4px;letter-spacing:-.03em;line-height:1.1}.patient-sub{font-size:.8rem;color:var(--text2)}.patient-badges{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}.pat-badge{border-radius:6px;padding:3px 10px;font-size:.68rem;font-weight:600;letter-spacing:.01em;background:var(--accent-l);color:var(--accent)}.pat-badge.orange{background:#FEF3EB;color:#D4600A}.pat-badge.navy{background:var(--accent2);color:#fff;font-weight:700}.doc-date-bar{background:var(--accent-l);padding:7px 28px;font-size:.73rem;color:var(--accent);border-bottom:1px solid #D3D9F0;font-weight:500;letter-spacing:.01em}.doc-date-bar strong{font-weight:700;color:var(--accent2)}.doc-body{padding:20px 28px 0}.block{display:none}.cr-section{background:#fff;border-radius:10px;margin-bottom:16px;overflow:hidden;border:1px solid var(--border)}.cr-section h3{padding:11px 16px 11px 20px;font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent2);margin:0;border-left:4px solid var(--accent2);background:#F7F8FC}.cr-ortho h3{border-left-color:var(--green);color:var(--green);background:#F3FAF6}.cr-tests h3{border-left-color:var(--accent);color:var(--accent);background:#F0F4FC}.cr-alert h3{border-left-color:#D4600A;color:#D4600A;background:#FFF8F3}.cr-item{display:flex;align-items:flex-start;gap:16px;padding:10px 16px;border-bottom:1px solid #F5F4F2;line-height:1.5}.cr-item:last-child{border-bottom:none}.cr-key{font-size:.65rem;font-weight:700;color:var(--text3);min-width:175px;flex-shrink:0;padding-top:3px;text-transform:uppercase;letter-spacing:.06em}.cr-val{flex:1;font-size:.88rem;color:#1A1917;line-height:1.55}.cr-tag{display:inline-block;padding:2px 9px;border-radius:5px;font-size:.65rem;font-weight:700;white-space:nowrap;margin-left:8px;vertical-align:middle;letter-spacing:.02em}.cr-tag.ok,.cr-tag.good{background:#E8F5EE;color:var(--green)}.cr-tag.warn{background:#FEF3EB;color:#D4600A}.cr-tag.bad{background:#FDECEA;color:var(--red)}.cr-alert .cr-item{padding:10px 16px;align-items:flex-start;background:#FFFAF7}.cr-alert .cr-item:nth-child(odd){background:#fff}.cr-alert .cr-item>span:first-child{color:#D4600A;font-weight:700;font-size:.95rem;flex-shrink:0}.cr-empty{padding:40px;text-align:center;color:var(--text3);font-style:italic;font-size:.9rem}@media print{body{background:#F5F7FA!important}.doc-header{background:var(--accent2)!important}.cr-section{break-inside:avoid;page-break-inside:avoid}.doc-body{padding:12px 28px 0}}@media(max-width:640px){.doc-header{padding:13px 16px 11px}.doc-pract-name{font-size:.8rem}.doc-pract-meta{font-size:.67rem;gap:6px}.patient-card{padding:14px 16px;gap:12px}.patient-avatar{width:44px;height:44px;font-size:1rem}.patient-name{font-size:1.05rem}.pat-badge{font-size:.66rem;padding:2px 8px}.doc-date-bar{padding:6px 16px;font-size:.71rem}.doc-body{padding:10px 16px 0}.cr-section{border-radius:8px;margin-bottom:10px}.cr-section h3{padding:9px 12px 9px 14px;font-size:.65rem}.cr-item{flex-direction:column;gap:3px;padding:10px 12px}.cr-key{min-width:0;width:100%;padding-top:0;padding-bottom:1px}.cr-val{font-size:.9rem;width:100%}.cr-tag{margin-left:0;margin-top:6px}.cr-alert .cr-item{flex-direction:row;gap:10px}}.cr-mt{border-collapse:collapse;font-variant-numeric:tabular-nums}.cr-mt th{font-size:.64rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text2);text-align:right;padding:0 0 3px 14px;white-space:nowrap}.cr-mt td{font-size:.84rem;padding:2px 0 2px 14px;text-align:right;white-space:nowrap}.cr-mt th.lbl,.cr-mt td.lbl{text-align:left}.cr-mt td.lbl{color:var(--text2);font-size:.8rem}.cr-mt th:first-child,.cr-mt td:first-child{padding-left:0}.cr-mt th:not(.lbl),.cr-mt td:not(.lbl){width:86px}.cr-mt tr+tr td{border-top:1px solid #F5F4F2}.cr-mt .num{font-weight:700;color:var(--text)}.cr-mt .der{font-weight:800;color:var(--accent)}.cr-mt-note{font-size:.74rem;color:var(--text2);margin-top:4px}@media(max-width:640px){.cr-mt th,.cr-mt td{padding-left:9px}.cr-mt th:not(.lbl),.cr-mt td:not(.lbl){width:76px}.cr-mt td{font-size:.8rem}}svg{max-width:100%;height:auto;display:block}`;
 
   var practNameStr = praticien + (cabinet ? ' — ' + cabinet : '');
   var metaItems = [];

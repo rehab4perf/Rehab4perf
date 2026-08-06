@@ -91,6 +91,7 @@ sections: [
     etapes:[
       { t:'« CR Tests » : le condensé des tests réalisés', x:'Idéal pour un suivi interne ou un point rapide.' },
       { t:'« CR Complet » : le bilan intégral structuré', x:'Toutes les régions évaluées, les scores et vos commentaires.' },
+      { t:'Les tests à deux côtés se lisent en colonnes', x:'Chaque test bilatéral affiche ses valeurs sous « Droit », « Gauche » et « Asym. » plutôt qu\'en une phrase. Les chiffres sont alignés d\'une ligne à l\'autre : on repère l\'écart d\'un coup d\'œil, sur ordinateur comme sur téléphone.' },
       { t:'Copiez ou exportez le résultat', x:'Le texte se met à jour en direct si vous modifiez le bilan. Pour un courrier destiné au médecin, utilisez plutôt le CR médecin de l\'onglet Outils.' }
     ]},
   { id:'sauvegarder-bilan', titre:'Sauvegarder, modifier et suivre un bilan',

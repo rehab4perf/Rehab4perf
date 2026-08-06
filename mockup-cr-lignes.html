@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lignes de résultat du CR — options</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+:root{
+  --green:#2D6A4F; --green-l:#E8F5EE; --red:#C0392B; --red-l:#FDECEA;
+  --orange:#D4600A; --orange-l:#FEF3EB; --border:#E8E6E1;
+  --text:#1A1917; --text2:#6B6860; --text3:#9D9B96;
+  --accent2:#1A3A5C; --accent:#2B5FA6; --accent-l:#EEF3FB; --surface2:#F1F0ED;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Figtree',-apple-system,sans-serif;background:#F5F7FA;color:var(--text);padding:26px 20px 60px;font-size:14px}
+h1{font-size:1.3rem;color:var(--accent2);margin-bottom:6px}
+.sub{font-size:.85rem;color:var(--text2);max-width:80ch;line-height:1.6;margin-bottom:8px}
+.opt{margin-top:30px}
+.opt-hd{font-size:.8rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--accent2);margin-bottom:3px}
+.opt-note{font-size:.78rem;color:var(--text2);line-height:1.55;margin-bottom:12px;max-width:82ch}
+.pair{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap}
+.dev{flex-shrink:0}
+.dev-lbl{font-size:.62rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:5px}
+.desktop{width:720px}
+.iphone{width:375px}
+.sheet{background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.sheet h3{padding:10px 16px;font-size:.66rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green);border-left:4px solid var(--green);background:#F3FAF6}
+
+/* ══ structure commune ══ */
+.cr-item{display:flex;align-items:flex-start;gap:16px;padding:11px 16px;border-bottom:1px solid #F5F4F2;line-height:1.5}
+.cr-item:last-child{border-bottom:none}
+.cr-key{font-size:.65rem;font-weight:700;color:var(--text3);min-width:170px;flex-shrink:0;padding-top:3px;text-transform:uppercase;letter-spacing:.06em}
+.cr-val{flex:1;font-size:.88rem;line-height:1.55;min-width:0}
+.cr-tag{display:inline-block;padding:2px 9px;border-radius:5px;font-size:.65rem;font-weight:700;white-space:nowrap;margin-left:8px;letter-spacing:.02em;flex-shrink:0}
+.cr-tag.bad{background:var(--red-l);color:var(--red)}
+.cr-tag.ok{background:var(--green-l);color:var(--green)}
+.iphone .cr-item{flex-direction:column;gap:4px;padding:11px 13px}
+.iphone .cr-key{min-width:0;width:100%;padding-top:0}
+.iphone .cr-tag{margin-left:0;margin-top:7px;align-self:flex-start}
+
+/* ══ A — chips étiquetées ══ */
+.mz{display:flex;flex-wrap:wrap;gap:7px}
+.mz-c{background:var(--surface2);border-radius:7px;padding:4px 9px;min-width:60px}
+.mz-l{display:block;font-size:.58rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);line-height:1.3}
+.mz-v{display:block;font-size:.88rem;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;line-height:1.35}
+.mz-c.hi{background:var(--accent-l)}
+.mz-c.hi .mz-l{color:var(--accent)}
+.mz-c.hi .mz-v{color:var(--accent2)}
+
+/* ══ B — mini-tableau ══ */
+.mt{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.mt th{font-size:.58rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);text-align:right;padding:0 0 3px 10px;white-space:nowrap}
+.mt th:first-child{text-align:left;padding-left:0}
+.mt td{font-size:.85rem;padding:2px 0 2px 10px;text-align:right;white-space:nowrap}
+.mt td:first-child{text-align:left;padding-left:0;color:var(--text2);font-size:.8rem}
+.mt tr+tr td{border-top:1px solid #F5F4F2}
+.mt .num{font-weight:700}
+.mt .der{color:var(--accent2);font-weight:800}
+
+/* ══ C — ligne compacte + dérivés ══ */
+.lc{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px}
+.lc-g{display:inline-flex;align-items:baseline;gap:6px;white-space:nowrap}
+.lc-t{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3)}
+.lc-p{font-size:.9rem;font-weight:700;font-variant-numeric:tabular-nums}
+.lc-s{color:var(--text3);font-weight:400;margin:0 1px}
+.lc-u{font-size:.76rem;color:var(--text2);font-weight:500}
+.lc-d{display:inline-flex;align-items:baseline;gap:5px;background:var(--accent-l);border-radius:6px;padding:2px 8px;white-space:nowrap}
+.lc-d .lc-t{color:var(--accent)}
+.lc-d .lc-p{color:var(--accent2);font-size:.85rem}
+</style>
+</head>
+<body>
+
+<h1>Lignes de résultat du CR complet</h1>
+<p class="sub">Trois exemples réels : « Course interne mollet » (le plus chargé, quatre groupes de valeurs), « Lunge WBLT » et « Side Hop ». Chaque option est montrée en <b>ordinateur (720 px)</b> et en <b>iPhone (375 px)</b>.</p>
+
+<!-- ══════════ ACTUEL ══════════ -->
+<div class="opt">
+  <div class="opt-hd">Actuel</div>
+  <div class="opt-note">Une phrase continue, trois séparateurs différents (<code>=</code>, <code>/</code>, <code>·</code>), et l'asymétrie — le chiffre qu'on cherche — arrive en dernier. Sur iPhone, la ligne se casse n'importe où.</div>
+  <div class="pair">
+    <div class="dev desktop">
+      <div class="dev-lbl">Ordinateur</div>
+      <div class="sheet"><h3>Pied / Cheville</h3>
+        <div class="cr-item"><span class="cr-key">Course interne mollet</span><span class="cr-val">2 appuis : Côté gauche=11.5cm / Côté droit=11.5cm · 1 appui : Côté gauche=9.5cm / Côté droit=9cm · Effondrement Côté gauche=83% / Côté droit=78% · Asym. : 5.3%</span><span class="cr-tag bad">Test positif</span></div>
+        <div class="cr-item"><span class="cr-key">Lunge WBLT</span><span class="cr-val">Gauche=11cm Droit=9cm Diff=2.0cm Asym. = 18.2%</span><span class="cr-tag bad">Déficit</span></div>
+        <div class="cr-item"><span class="cr-key">Side Hop — Explosivité</span><span class="cr-val">Gauche=24 sauts Droit=19 sauts Asym. = 20.8%</span><span class="cr-tag bad">Insuffisant</span></div>
+      </div>
+    </div>
+    <div class="dev iphone">
+      <div class="dev-lbl">iPhone</div>
+      <div class="sheet"><h3>Pied / Cheville</h3>
+        <div class="cr-item"><span class="cr-key">Course interne mollet</span><span class="cr-val">2 appuis : Côté gauche=11.5cm / Côté droit=11.5cm · 1 appui : Côté gauche=9.5cm / Côté droit=9cm · Effondrement Côté gauche=83% / Côté droit=78% · Asym. : 5.3%</span><span class="cr-tag bad">Test positif</span></div>
+        <div class="cr-item"><span class="cr-key">Lunge WBLT</span><span class="cr-val">Gauche=11cm Droit=9cm Diff=2.0cm Asym. = 18.2%</span><span class="cr-tag bad">Déficit</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ A ══════════ -->
+<div class="opt">
+  <div class="opt-hd">A · Chips étiquetées</div>
+  <div class="opt-note">Chaque valeur devient une pastille : intitulé minuscule au-dessus, chiffre en gras dessous. Les valeurs dérivées (asymétrie, différence) sont en bleu, ce qui les distingue des mesures brutes. Se replie naturellement sur iPhone, aucune règle spécifique.</div>
+  <div class="pair">
+    <div class="dev desktop">
+      <div class="dev-lbl">Ordinateur</div>
+      <div class="sheet"><h3>Pied / Cheville</h3>
+        <div class="cr-item"><span class="cr-key">Course interne mollet</span><span class="cr-val">
+          <span class="mz">
+            <span class="mz-c"><span class="mz-l">2 app. G</span><span class="mz-v">11,5 cm</span></span>
+            <span class="mz-c"><span class="mz-l">2 app. D</span><span class="mz-v">11,5 cm</span></span>
+            <span class="mz-c"><span class="mz-l">1 app. G</span><span class="mz-v">9,5 cm</span></span>
+            <span class="mz-c"><span class="mz-l">1 app. D</span><span class="mz-v">9 cm</span></span>
+            <span class="mz-c"><span class="mz-l">Effondr. G</span><span class="mz-v">83 %</span></span>
+            <span class="mz-c"><span class="mz-l">Effondr. D</span><span class="mz-v">78 %</span></span>
+            <span class="mz-c hi"><span class="mz-l">Asymétrie</span><span class="mz-v">5,3 %</span></span>
+          </span></span><span class="cr-tag bad">Test positif</span></div>
+        <div class="cr-item"><span class="cr-key">Lunge WBLT</span><span class="cr-val">
+          <span class="mz">
+            <span class="mz-c"><span class="mz-l">Gauche</span><span class="mz-v">11 cm</span></span>
+            <span class="mz-c"><span class="mz-l">Droit</span><span class="mz-v">9 cm</span></span>
+            <span class="mz-c hi"><span class="mz-l">Différence</span><span class="mz-v">2,0 cm</span></span>
+            <span class="mz-c hi"><span class="mz-l">Asymétrie</span><span class="mz-v">18,2 %</span></span>
+          </span></span><span class="cr-tag bad">Déficit</span></div>
+        <div class="cr-item"><span class="cr-key">Side Hop — Explosivité</span><span class="cr-val">
+          <span class="mz">
+            <span class="mz-c"><span class="mz-l">Gauche</span><span class="mz-v">24 sauts</span></span>
+            <span class="mz-c"><span class="mz-l">Droit</span><span class="mz-v">19 sauts</span></span>
+            <span class="mz-c hi"><span class="mz-l">Asymétrie</span><span class="mz-v">20,8 %</span></span>
+          </span></span><span class="cr-tag bad">Insuffisant</span></div>
+      </div>
+    </div>
+    <div class="dev iphone">
+      <div class="dev-lbl">iPhone</div>
+      <div class="sheet"><h3>Pied / Cheville</h3>
+        <div class="cr-item"><span class="cr-key">Course interne mollet</span><span class="cr-val">
+          <span class="mz">
+            <span class="mz-c"><span class="mz-l">2 app. G</span><span class="mz-v">11,5 cm</span></span>
+            <span class="mz-c"><span class="mz-l">2 app. D</span><span class="mz-v">11,5 cm</span></span>
+            <span class="mz-c"><span class="mz-l">1 app. G</span><span class="mz-v">9,5 cm</span></span>
+            <span class="mz-c"><span class="mz-l">1 app. D</span><span class="mz-v">9 cm</span></span>
+            <span class="mz-c"><span class="mz-l">Effondr. G</span><span class="mz-v">83 %</span></span>
+            <span class="mz-c"><span class="mz-l">Effondr. D</span><span class="mz-v">78 %</span></span>
+            <span class="mz-c hi"><span class="mz-l">Asymétrie</span><span class="mz-v">5,3 %</span></span>
+          </span></span><span class="cr-tag bad">Test positif</span></div>
+        <div class="cr-item"><span class="cr-key">Lunge WBLT</span><span class="cr-val">
+          <span class="mz">
+            <span class="mz-c"><span class="mz-l">Gauche</span><span class="mz-v">11 cm</span></span>
+            <span class="mz-c"><span class="mz-l">Droit</span><span class="mz-v">9 cm</span></span>
+            <span class="mz-c hi"><span class="mz-l">Différence</span><span class="mz-v">2,0 cm</span></span>
+            <span class="mz-c hi"><span class="mz-l">Asymétrie</span><span class="mz-v">18,2 %</span></span>
+          </span></span><span class="cr-tag bad">Déficit</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ B ══════════ -->
+<div class="opt">
+  <div class="opt-hd">B · Mini-tableau côté par côté</div>
+  <div class="opt-note">Les deux côtés deviennent deux colonnes, les mesures des lignes. La comparaison gauche/droite se lit d'un coup d'œil, chiffres alignés à la virgule. C'est la forme la plus dense en information, mais la plus « document » — et la plus haute quand un test n'a qu'une mesure.</div>
+  <div class="pair">
+    <div class="dev desktop">
+      <div class="dev-lbl">Ordinateur</div>
+      <div class="sheet"><h3>Pied / Cheville</h3>
+        <div class="cr-item"><span class="cr-key">Course interne mollet</span><span class="cr-val">
+          <table class="mt">
+            <tr><th>Mesure</th><th>Gauche</th><th>Droit</th><th>Asym.</th></tr>
+            <tr><td>2 appuis</td><td class="num">11,5 cm</td><td class="num">11,5 cm</td><td class="der">—</td></tr>
+            <tr><td>1 appui</td><td class="num">9,5 cm</td><td class="num">9 cm</td><td class="der">5,3 %</td></tr>
+            <tr><td>Effondrement</td><td class="num">83 %</td><td class="num">78 %</td><td class="der">—</td></tr>
+          </table></span><span class="cr-tag bad">Test positif</span></div>
+        <div class="cr-item"><span class="cr-key">Lunge WBLT</span><span class="cr-val">
+          <table class="mt">
+            <tr><th>Mesure</th><th>Gauche</th><th>Droit</th><th>Asym.</th></tr>
+            <tr><td>Distance</td><td class="num">11 cm</td><td class="num">9 cm</td><td class="der">18,2 %</td></tr>
+          </table></span><span class="cr-tag bad">Déficit</span></div>
+        <div class="cr-item"><span class="cr-key">Side Hop — Explosivité</span><span class="cr-val">
+          <table class="mt">
+            <tr><th>Mesure</th><th>Gauche</th><th>Droit</th><th>Asym.</th></tr>
+            <tr><td>Sauts (15 s)</td><td class="num">24</td><td class="num">19</td><td class="der">20,8 %</td></tr>
+          </table></span><span class="cr-tag bad">Insuffisant</span></div>
+      </div>
+    </div>
+    <div class="dev iphone">
+      <div class="dev-lbl">iPhone</div>
+      <div class="sheet"><h3>Pied / Cheville</h3>
+        <div class="cr-item"><span class="cr-key">Course interne mollet</span><span class="cr-val">
+          <table class="mt">
+            <tr><th>Mesure</th><th>G</th><th>D</th><th>Asym.</th></tr>
+            <tr><td>2 appuis</td><td class="num">11,5</td><td class="num">11,5</td><td class="der">—</td></tr>
+            <tr><td>1 appui</td><td class="num">9,5</td><td class="num">9</td><td class="der">5,3 %</td></tr>
+            <tr><td>Effondrement</td><td class="num">83 %</td><td class="num">78 %</td><td class="der">—</td></tr>
+          </table></span><span class="cr-tag bad">Test positif</span></div>
+        <div class="cr-item"><span class="cr-key">Lunge WBLT</span><span class="cr-val">
+          <table class="mt">
+            <tr><th>Mesure</th><th>G</th><th>D</th><th>Asym.</th></tr>
+            <tr><td>Distance</td><td class="num">11 cm</td><td class="num">9 cm</td><td class="der">18,2 %</td></tr>
+          </table></span><span class="cr-tag bad">Déficit</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ C ══════════ -->
+<div class="opt">
+  <div class="opt-hd">C · Ligne compacte + dérivés détachés</div>
+  <div class="opt-note">Les deux côtés restent sur une ligne, séparés par une barre discrète (<b>11,5 / 11,5 cm</b>), précédés de l'intitulé de la mesure. Les valeurs dérivées se détachent dans une pastille bleue. La forme la plus proche de l'actuelle, mais avec une grammaire unique et l'asymétrie qui ressort.</div>
+  <div class="pair">
+    <div class="dev desktop">
+      <div class="dev-lbl">Ordinateur</div>
+      <div class="sheet"><h3>Pied / Cheville</h3>
+        <div class="cr-item"><span class="cr-key">Course interne mollet</span><span class="cr-val">
+          <span class="lc">
+            <span class="lc-g"><span class="lc-t">2 appuis</span><span class="lc-p">11,5<span class="lc-s">/</span>11,5</span><span class="lc-u">cm</span></span>
+            <span class="lc-g"><span class="lc-t">1 appui</span><span class="lc-p">9,5<span class="lc-s">/</span>9</span><span class="lc-u">cm</span></span>
+            <span class="lc-g"><span class="lc-t">Effondr.</span><span class="lc-p">83<span class="lc-s">/</span>78</span><span class="lc-u">%</span></span>
+            <span class="lc-d"><span class="lc-t">Asym.</span><span class="lc-p">5,3 %</span></span>
+          </span></span><span class="cr-tag bad">Test positif</span></div>
+        <div class="cr-item"><span class="cr-key">Lunge WBLT</span><span class="cr-val">
+          <span class="lc">
+            <span class="lc-g"><span class="lc-t">G / D</span><span class="lc-p">11<span class="lc-s">/</span>9</span><span class="lc-u">cm</span></span>
+            <span class="lc-d"><span class="lc-t">Diff.</span><span class="lc-p">2,0 cm</span></span>
+            <span class="lc-d"><span class="lc-t">Asym.</span><span class="lc-p">18,2 %</span></span>
+          </span></span><span class="cr-tag bad">Déficit</span></div>
+        <div class="cr-item"><span class="cr-key">Side Hop — Explosivité</span><span class="cr-val">
+          <span class="lc">
+            <span class="lc-g"><span class="lc-t">G / D</span><span class="lc-p">24<span class="lc-s">/</span>19</span><span class="lc-u">sauts</span></span>
+            <span class="lc-d"><span class="lc-t">Asym.</span><span class="lc-p">20,8 %</span></span>
+          </span></span><span class="cr-tag bad">Insuffisant</span></div>
+      </div>
+    </div>
+    <div class="dev iphone">
+      <div class="dev-lbl">iPhone</div>
+      <div class="sheet"><h3>Pied / Cheville</h3>
+        <div class="cr-item"><span class="cr-key">Course interne mollet</span><span class="cr-val">
+          <span class="lc">
+            <span class="lc-g"><span class="lc-t">2 appuis</span><span class="lc-p">11,5<span class="lc-s">/</span>11,5</span><span class="lc-u">cm</span></span>
+            <span class="lc-g"><span class="lc-t">1 appui</span><span class="lc-p">9,5<span class="lc-s">/</span>9</span><span class="lc-u">cm</span></span>
+            <span class="lc-g"><span class="lc-t">Effondr.</span><span class="lc-p">83<span class="lc-s">/</span>78</span><span class="lc-u">%</span></span>
+            <span class="lc-d"><span class="lc-t">Asym.</span><span class="lc-p">5,3 %</span></span>
+          </span></span><span class="cr-tag bad">Test positif</span></div>
+        <div class="cr-item"><span class="cr-key">Lunge WBLT</span><span class="cr-val">
+          <span class="lc">
+            <span class="lc-g"><span class="lc-t">G / D</span><span class="lc-p">11<span class="lc-s">/</span>9</span><span class="lc-u">cm</span></span>
+            <span class="lc-d"><span class="lc-t">Diff.</span><span class="lc-p">2,0 cm</span></span>
+            <span class="lc-d"><span class="lc-t">Asym.</span><span class="lc-p">18,2 %</span></span>
+          </span></span><span class="cr-tag bad">Déficit</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:34px;font-size:.85rem;color:var(--text);max-width:82ch;line-height:1.65">
+  <h2 style="font-size:.95rem;color:var(--accent2);margin-bottom:6px">Ce que les trois corrigent</h2>
+  <ul style="margin-left:18px">
+    <li>Une <b>seule grammaire</b> : plus de mélange <code>=</code> / <code>/</code> / <code>·</code>.</li>
+    <li>L'<b>asymétrie ressort</b> au lieu d'être en fin de phrase.</li>
+    <li>Les chiffres sont en <b>chasse fixe</b> — ils s'alignent et se comparent.</li>
+    <li>Sur iPhone, le repli est <b>prévu</b>, il ne subit plus la casse du texte.</li>
+    <li>Le <b>badge de statut</b> ne se retrouve plus collé au milieu d'une phrase.</li>
+  </ul>
+</div>
+
+</body>
+</html>

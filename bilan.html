@@ -1191,6 +1191,38 @@ td.bl-row-rail button:disabled { opacity: .3 !important; cursor: default; }
 .cr-item:last-child { border-bottom: none; }
 .cr-item .cr-key { color: var(--text2); font-size: .78rem; min-width: 180px; flex-shrink: 0; }
 .cr-item .cr-val { color: var(--text); font-weight: 500; }
+/* ── Mini-tableau de mesures dans une ligne de CR ──────────────────────────
+   Une ligne par mesure, une colonne par côté. Les nombres sont en chasse
+   fixe : c'est ce qui les rend comparables d'une ligne à l'autre. Le tableau
+   s'aligne en haut de la ligne — d'où l'align-items:flex-start ci-dessous,
+   sans quoi la baseline du premier chiffre décalait tout l'intitulé. */
+.cr-item:has(.cr-mt) { align-items: flex-start; }
+.cr-mt { border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.cr-mt th {
+  font-size: .64rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--text2); text-align: right; padding: 0 0 3px 14px; white-space: nowrap;
+}
+.cr-mt td { font-size: .84rem; padding: 2px 0 2px 14px; text-align: right; white-space: nowrap; }
+/* La colonne d'intitules disparait quand le test n'a qu'une mesure : c'est
+   `.lbl` qui la designe, jamais `:first-child` — sans elle, la premiere
+   colonne de chiffres heriterait de l'alignement a gauche. */
+.cr-mt th.lbl, .cr-mt td.lbl { text-align: left; }
+.cr-mt td.lbl { color: var(--text2); font-size: .8rem; }
+.cr-mt th:first-child, .cr-mt td:first-child { padding-left: 0; }
+/* Largeur fixe sur les colonnes de valeurs : sans elle chaque tableau se
+   dimensionne sur son propre contenu, et deux lignes de CR qui se suivent
+   n'alignent plus leurs colonnes — « 100 N » et « 100 rep » decalaient tout
+   le bloc des break tests d'une ligne a l'autre. */
+.cr-mt th:not(.lbl), .cr-mt td:not(.lbl) { width: 86px; }
+.cr-mt tr + tr td { border-top: 1px solid var(--border); }
+.cr-mt .num { font-weight: 700; color: var(--text); }
+.cr-mt .der { font-weight: 800; color: var(--accent); }
+.cr-mt-note { font-size: .74rem; color: var(--text2); margin-top: 4px; }
+@media (max-width: 640px) {
+  .cr-mt th, .cr-mt td { padding-left: 9px; }
+  .cr-mt th:not(.lbl), .cr-mt td:not(.lbl) { width: 76px; }
+  .cr-mt td { font-size: .8rem; }
+}
 .cr-item--carried { opacity: 0.42; }
 .cr-item--fresh { border-left: 2px solid var(--accent); padding-left: 10px; border-radius: 0; }
 .cr-date-badge { font-size: .6rem; font-weight: 600; color: var(--text3); margin-left: 8px; white-space: nowrap; flex-shrink: 0; }
@@ -5209,7 +5241,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260710"></script>
-<script src="js/bilan.js?v=20260806a"></script>
+<script src="js/bilan.js?v=20260806b"></script>
 
 </body>
 </html>

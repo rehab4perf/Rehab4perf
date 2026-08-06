@@ -328,6 +328,33 @@ ligne de `js/bilan.js` fabrique un pourcentage depuis une variable nommée
 26 cellules affichaient encore la symétrie sous une colonne intitulée
 « Asym. % ».
 
+## Lignes de résultat du CR — `_crMesTab`
+
+Un test à deux côtés ne s'écrit plus en phrase (`CS=100 kg CA=80 kg
+Asym.=20%`) mais en **mini-tableau** : une colonne par côté, une par mesure,
+`Asym.` en dernier. Toutes les lignes passent par `_crMesTab(rows, labelA,
+labelB, opts)` — ne jamais reconstruire une chaîne à la main, c'est la seule
+façon de garder l'alignement.
+
+Trois règles portées par la fonction elle-même :
+
+- La colonne **« Mesure » n'apparaît qu'à partir de deux lignes**. Sur un test
+  à une seule mesure, la clé de la ligne de CR la nomme déjà et l'unité est
+  sur la valeur : « Force / 100 N » sous « Rotateurs lat. RE1 » n'ajoute rien.
+  Trente-sept lignes sur trente-huit sont dans ce cas.
+- Cette colonne se désigne par **`.lbl`, jamais `:first-child`** : quand elle
+  disparaît, la première colonne de chiffres hériterait sinon de son
+  alignement à gauche.
+- Les colonnes de valeurs ont une **largeur fixe** (86 px, 76 px sous 640 px).
+  Sans elle chaque tableau se dimensionne sur son propre contenu et deux
+  lignes consécutives n'alignent plus leurs colonnes — « 100 N » et
+  « 100 rép » décalaient tout le bloc des break tests.
+
+**Le CSS existe en deux exemplaires** : dans `bilan.html` (~1200) pour le CR à
+l'écran, et dans la chaîne `var css = \`…\`` de `js/bilan.js` (~8150) pour
+l'export autonome. Une règle ajoutée d'un seul côté ne se voit pas — l'export
+est le document que reçoit le médecin.
+
 Deux pièges à connaître avant de toucher à ces fonctions :
 
 - **Tous les pourcentages ne sont pas des LSI.** `fmtRatio()` dans
