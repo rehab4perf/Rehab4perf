@@ -1678,6 +1678,32 @@ function _etapeDeIndex(i){
   return null;
 }
 
+/* Ajoute UNE copie d'un bloc a la fin de la seance — le geste « piocher un
+   bloc dans un repertoire ».
+
+   Une etape est un decoupage de la SEANCE, pas une propriete du bloc : on
+   prend le contenu, jamais le contenant. `etapeId` est donc supprime de la
+   copie, puis _syncEtapeIds le recalcule DEPUIS LA POSITION. Le bloc pioche se
+   comporte ainsi exactement comme un bloc cree par « + Ajouter » : il rejoint
+   l'etape ouverte en fin de seance s'il y en a une, sinon aucune.
+
+   Ne jamais repasser par _injecterTemplate pour un bloc seul : sans separateur
+   dans le tableau, ce moteur se rabat sur `etapeId` et RECREE l'etape source —
+   une etape neuve a chaque clic, donc des doublons du meme nom.
+
+   node qualite/templates-cas.js */
+function _ajouterBlocPioche(srcBloc){
+  if(!srcBloc) return null;
+  var nb = JSON.parse(JSON.stringify(srcBloc));
+  nb.id = genId();
+  nb.exos = (nb.exos || []).map(function(e){ return Object.assign({}, e, { id: genId() }); });
+  delete nb.etapeId;
+  blocs.push(nb);
+  activeBloc = nb.id;
+  _syncEtapeIds();
+  return nb;
+}
+
 /* Découpe la séance en groupes affichables. Un seul parcours, un seul ordre.
    Les blocs hors étape voisins forment UN groupe, pas un groupe chacun. */
 function _groupBlocsForRender(){

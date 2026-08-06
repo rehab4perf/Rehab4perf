@@ -4330,9 +4330,20 @@ function _pickerRenderTemplate(p, search, addedLibIds){
   var srcBlocs = (donnees&&donnees.blocs)||[];
   addedLibIds = addedLibIds || {};
 
+  /* Les separateurs d'etape ({type:'etape'} / {type:'libre'}) ne sont PAS des
+     blocs : les afficher donnait une ligne avec un « + » qui ajoutait une etape
+     vide, sans contenu. On les ecarte — mais on conserve l'indice d'ORIGINE,
+     car _addBlocFromPicker et _addExoFromPicker indexent donnees.blocs.
+     Reindexer sur la liste filtree est exactement l'erreur qui avait mal
+     attribue les retours patients. */
+  var srcReels = [];
+  srcBlocs.forEach(function(b, i){
+    if(b && b.type !== 'etape' && b.type !== 'libre') srcReels.push({ b:b, i:i });
+  });
+
   var isFavPicker = _getPickerFavs().has(String(p.id));
   var h = '<div class="picker-tmpl" id="'+pid+'">';
-  var totalExos = srcBlocs.reduce(function(a,b){ return a+(b.exos||[]).length; },0);
+  var totalExos = srcReels.reduce(function(a,x){ return a+(x.b.exos||[]).length; },0);
   h += '<div class="picker-tmpl-hdr" onclick="_pickerToggle(\''+pid+'\')">';
   h += '<span>'+escH(p.emoji||'📋')+'</span>';
   h += '<span class="picker-tmpl-name">'+escH(p.nom)+'</span>';
@@ -4342,11 +4353,15 @@ function _pickerRenderTemplate(p, search, addedLibIds){
   h += '<span class="picker-chevron">›</span></div>';
   h += '<div class="picker-tmpl-body">';
 
-  if(!srcBlocs.length){
+  if(!srcReels.length){
     h += '<div style="padding:5px 10px 5px 28px;font-size:.7rem;color:rgba(255,255,255,.3);font-style:italic;">Aucun exercice</div>';
   } else {
+    /* « Ajouter tous les blocs » passe par _injecterTemplate avec les donnees
+       COMPLETES : la, les etapes sont pertinentes, on reprend le decoupage du
+       repertoire tel quel. C'est le seul chemin qui importe des etapes. */
     h += '<button class="picker-add-all" onclick="_addAllBlocsFromTemplate(\''+p.id+'\')">+ Ajouter tous les blocs</button>';
-    srcBlocs.forEach(function(bloc, bi){
+    srcReels.forEach(function(entree){
+      var bloc = entree.b, bi = entree.i;
       if(bloc.type==='cardio'){
         h += '<div class="picker-exo-row">';
         h += '<span class="picker-exo-name" title="'+escH(bloc.title||'Cardio')+'" onclick="_pickerToggleWrap(this)">🏃 '+escH(bloc.title||'Cardio')+'</span>';
@@ -4516,10 +4531,8 @@ function _addBlocFromPicker(tmplId, blocIdx){
   var srcBloc = donnees&&donnees.blocs&&donnees.blocs[blocIdx];
   if(!srcBloc) return;
 
-  // Un seul bloc : on passe par le meme chemin, avec l'etape d'origine si le
-  // bloc en avait une. Sans separateur, il serait absorbe par l'etape en place.
-  var _sousTmpl = { etapes: (donnees.etapes||[]), blocs: [srcBloc] };
-  _injecterTemplate(_sousTmpl);
+  /* Un bloc pioche ne rapporte PAS son etape : voir _ajouterBlocPioche. */
+  _ajouterBlocPioche(srcBloc);
   renderSession();
   _pickerRefreshAddedState();
   _showToast('✚ Bloc « '+escH(srcBloc.title||'Bloc')+' » ajouté');
@@ -6387,7 +6400,20 @@ function _pickerExpandAll(){
   if(scroll) scroll.querySelectorAll('.picker-group,.picker-tmpl,.picker-bloc').forEach(function(el){ el.classList.add('open'); });
 }
 
+/* « Ouvrir dans le builder » depuis l'agenda vaut « + Seance », avec le
+   repertoire dedans.
+
+   Sans remise a zero, le repertoire s'ajoutait au contenu laisse en memoire —
+   y compris une seance PLANIFIEE ouverte depuis une chip du calendrier.
+   _currentSeanceId etant pose par _loadProg et efface par aucune fermeture du
+   builder, le bouton restait en « Enregistrer la seance » (contexte B) et
+   l'enregistrement faisait un PATCH : on modifiait la seance deja chez le
+   patient, sans le moindre signal. */
 function _sidebarLoadProg(id){
+  _resetBuilderState();
+  _activeGroupId=null; _activeGroupNom=''; _activePhaseOrdre=1;
+  _updateActiveGroupBadge();
+  _applyBuilderReadOnly(false);
   loadTemplate(id);
   _enterBuilderMode();
 }
@@ -6818,6 +6844,10 @@ function _saveAndPlanForDate(){
 function openBuilderNew(){
   _builderDate = '';
   _currentProgId = null;
+  /* Meme piege que _sidebarLoadProg : sans ca, « + Seance » apres avoir ouvert
+     une seance planifiee gardait _currentSeanceId, et l'enregistrement
+     modifiait cette seance-la au lieu d'en creer une. */
+  _currentSeanceId = null;
   _builderFromTemplate = null;
   _applyBuilderReadOnly(false);
   // Pas de protocole actif quand on ouvre une nouvelle séance depuis + Séance

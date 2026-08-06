@@ -180,9 +180,26 @@ séance, étape ou phase de protocole. « Vider » est un geste séparé : c'est
 qu'on emploie pour repartir du template seul. Un seul verbe, donc aucune
 destruction silencieuse, et aucune confirmation à poser.
 
-Tous les chemins d'import passent par `_injecterTemplate()` : le picker (un
-bloc ou tous), les phases d'un protocole, la bibliothèque publiée et le
-chargement d'un template. Ne jamais réécrire un import à la main.
+Les imports d'un contenu **entier** passent par `_injecterTemplate()` :
+« Ajouter tous les blocs », les phases d'un protocole, la bibliothèque publiée
+et le chargement d'un template. Ne jamais réécrire un import à la main.
+
+**Un bloc pioché seul est l'exception, et il le doit** — il passe par
+`_ajouterBlocPioche()`. Une étape est un découpage de la SÉANCE, pas une
+propriété du bloc : on prend le contenu, jamais le contenant. La copie perd
+son `etapeId`, que `_syncEtapeIds()` recalcule depuis la position — le bloc
+rejoint donc l'étape ouverte en fin de séance, exactement comme un bloc créé
+par « + Ajouter ».
+
+Repasser un bloc seul par `_injecterTemplate()` est le piège : sans séparateur
+dans un tableau d'un seul élément, ce moteur se rabat sur `etapeId` et
+**recrée l'étape source**. Chaque clic étant un appel séparé avec un `genId()`
+neuf, deux blocs de la même étape donnaient deux étapes du même nom.
+
+**Le picker filtre les séparateurs à l'affichage** — sinon ils apparaissent
+comme des blocs avec un « + » qui ajoute une étape vide. Il conserve l'**indice
+d'origine** dans `donnees.blocs` : réindexer sur la liste filtrée est
+exactement l'erreur qui avait mal attribué les retours patients.
 
 **Le piège qu'elle referme** : l'ancienne `_importEtapes()` écrivait `etapeId`
 sur les blocs importés sans poser de séparateur. Comme l'appartenance est
@@ -202,6 +219,14 @@ mettre à jour écraserait le template avec un contenu qui n'est plus le sien.
 
 `loadSeance` fait exception et remplace : charger une séance enregistrée est un
 autre geste, et il confirme.
+
+**Ouvrir un répertoire depuis l'agenda vaut « + Séance »** : `_sidebarLoadProg`
+remet le builder à zéro avant d'injecter. Sans ça, le répertoire s'ajoutait au
+contenu resté en mémoire — y compris une séance **planifiée** ouverte depuis
+une chip. `_currentSeanceId` n'étant effacé par aucune fermeture du builder, le
+bouton restait en « Enregistrer la séance » et l'enregistrement faisait un
+PATCH : on modifiait la séance déjà chez le patient, sans le moindre signal.
+`openBuilderNew()` avait le même oubli.
 
 ## Mode template — un plan de travail emprunté
 

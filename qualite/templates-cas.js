@@ -64,6 +64,7 @@ var api = new Function(
   '         set: function(b, e){ blocs = b; etapes = e; },' +
   '         blocs: function(){ return blocs; },' +
   '         etapes: function(){ return etapes; },' +
+  '         piocher: _ajouterBlocPioche,' +
   '         sync: _syncEtapeIds };'
 )();
 
@@ -274,6 +275,67 @@ var refSeule = atl.hash();
 verifie('la restitution est refusée', 'false', String(atl.restore()));
 verifie('le mode est inchangé', 'seance', atl.mode());
 verifie('la séance est intacte', refSeule, atl.hash());
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Piocher UN bloc — l'etape ne suit pas.
+
+   Une etape est un decoupage de la SEANCE, pas une propriete du bloc : le
+   modele le dit deja, l'appartenance est positionnelle et `bloc.etapeId` n'est
+   qu'un champ recalcule. Piocher un bloc, c'est prendre son CONTENU.
+
+   L'ancienne version passait par _injecterTemplate en lui donnant toutes les
+   etapes du repertoire source. Sans separateur dans un tableau d'un seul bloc,
+   le moteur se rabattait sur `etapeId` — renseigne sur le bloc enregistre — et
+   recreait l'etape. Chaque clic etant un appel separe avec un genId() neuf,
+   deux blocs de la meme etape source donnaient DEUX etapes du meme nom.
+
+   Le bloc pioche se comporte desormais comme n'importe quel bloc ajoute par
+   « + Ajouter » : il arrive au point d'insertion et suit la regle positionnelle
+   de la seance qu'on compose.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Un bloc tel qu'il est ENREGISTRE dans un repertoire : il porte etapeId,
+   ecrit par _syncEtapeIds au moment de la sauvegarde. C'est ce champ qui
+   faisait revenir l'etape. */
+function blocEnregistre(titre, etapeId) {
+  return { id: 'src-' + titre, title: titre, objectif: 'libre', methode: '',
+           etapeId: etapeId || null,
+           exos: [{ id: 'e-' + titre, name: 'Exercice ' + titre, reps: '10' }] };
+}
+
+console.log('\nPiocher un bloc — aucune étape importée');
+api.set([], []);
+api.piocher(blocEnregistre('B1', 'E-SOURCE'));
+verifie('séance vide : le bloc arrive seul, sans étape', 'B1', lire());
+verifie('aucune étape créée', '0', String(api.etapes().length));
+
+console.log('\nDeux blocs de la même étape source — plus de doublon d\'étape');
+api.set([], []);
+api.piocher(blocEnregistre('B1', 'E-SOURCE'));
+api.piocher(blocEnregistre('B2', 'E-SOURCE'));
+verifie('les deux blocs se suivent, sans séparateur entre eux', 'B1 B2', lire());
+// Le defaut signale : deux etapes du meme nom apparaissaient ici.
+verifie('toujours aucune étape', '0', String(api.etapes().length));
+
+console.log('\nLe bloc pioché suit la règle positionnelle de LA séance composée');
+api.set([sep('E1'), bloc('Deja la')], [{ id: 'E1', title: 'Échauffement', color: '#F59E0B' }]);
+api.piocher(blocEnregistre('B1', 'E-SOURCE'));
+verifie('il rejoint l\'étape ouverte en fin de séance, comme « + Ajouter »',
+  '|Échauffement Deja la B1', lire());
+verifie('l\'étape de la séance n\'a pas été dupliquée', '1', String(api.etapes().length));
+verifie('son titre n\'a pas été remplacé par celui de la source',
+  'Échauffement', api.etapes()[0].title);
+
+console.log('\nLe bloc source n\'est jamais modifié');
+api.set([], []);
+var src = blocEnregistre('B1', 'E-SOURCE');
+api.piocher(src);
+verifie('l\'original garde son identifiant', 'src-B1', src.id);
+verifie('l\'original garde son etapeId', 'E-SOURCE', String(src.etapeId));
+verifie('la copie a reçu un nouvel identifiant', 'true',
+  String(api.blocs()[0].id !== 'src-B1'));
+verifie('la copie n\'emporte pas etapeId — il est positionnel', 'undefined',
+  String(api.blocs()[0].etapeId));
 
 /* ── Verdict ─────────────────────────────────────────────────────────────── */
 

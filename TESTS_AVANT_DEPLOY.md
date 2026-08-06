@@ -14,7 +14,7 @@ node qualite/etapes-cas.js
 node qualite/motifs-cas.js
 node qualite/lsi-cas.js
 node qualite/hash-cas.js
-node qualite/répertoires-cas.js
+node qualite/templates-cas.js
 node qualite/feedback-cas.js
 node qualite/cap-cas.js
 ```
@@ -76,9 +76,13 @@ node qualite/cap-cas.js
 - [ ] Cliquer à nouveau → elle se replie
 - [ ] Répertoire vide → message "Ce répertoire est vide." affiché
 - [ ] Cliquer le kebab (⋮) ou le "+" sur une carte dépliée → n'affecte pas le pli
-- [ ] Dans la carte dépliée, cliquer "Ouvrir dans le builder" → SEUL geste qui
-      ouvre le builder ; le contenu s'ajoute à la séance en cours (jamais
-      d'écrasement)
+- [ ] Dans la carte dépliée, cliquer "Ouvrir dans le builder" → ouvre une
+      séance NEUVE avec le répertoire dedans (équivalent "+ Séance" pré-rempli)
+- [ ] ⚠️ RÉGRESSION À SURVEILLER : ouvrir une séance planifiée depuis une chip,
+      fermer le builder, puis "Ouvrir dans le builder" un répertoire →
+      le builder doit être VIDE de la séance précédente, et le bouton doit
+      afficher "Sauvegarder" (PAS "Enregistrer la séance"). Sinon
+      l'enregistrement modifierait la séance déjà planifiée chez le patient.
 - [ ] Dans le builder, onglet "Répertoires" → dépliage bloc/exercice inchangé
       (surface distincte, non touchée par ce lot)
 
@@ -95,6 +99,17 @@ node qualite/cap-cas.js
       copie du répertoire (une seule ligne `programmes`)
 - [ ] Repli "saisir les dates une par une" → fonctionne identiquement au
       builder (ajout de lignes de date, "Planifier")
+
+### Flux 3 ter — Piocher dans un répertoire (onglet Répertoires du builder)
+- [ ] Déplier un répertoire qui contient une étape → AUCUNE ligne ne correspond
+      au séparateur d'étape (pas de ligne "+" sans exercices)
+- [ ] Ajouter un bloc seul → il arrive sans étape ; séance vide → 0 étape
+- [ ] Ajouter un 2e bloc de la même étape source → les deux se suivent,
+      toujours 0 étape (le défaut donnait 2 étapes du même nom)
+- [ ] Séance dont la fin est une étape ouverte → le bloc pioché la REJOINT,
+      il n'en crée pas une nouvelle et n'en change pas le titre
+- [ ] "+ Ajouter tous les blocs" → l'étape du répertoire est bien importée,
+      avec son titre d'origine (seul chemin qui importe des étapes)
 
 ### Flux 4 — Bouton "+ Enregistrer" (tabs)
 - [ ] Bouton "＋ Enregistrer" visible en permanence dans la barre des tabs
