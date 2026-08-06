@@ -342,24 +342,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .lib-del-btn { background:none; border:none; color:var(--border2); cursor:pointer; font-size:.95rem; padding:2px 5px; transition:color .12s; }
 .lib-del-btn:hover { color:var(--red); }
 
-/* Quick-add modal */
-.qa-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:500; display:none; align-items:center; justify-content:center; }
-.qa-overlay.open { display:flex; }
-.qa-modal    { background:#fff; border-radius:12px; padding:20px 22px 18px; width:330px; box-shadow:0 12px 40px rgba(0,0,0,.22); }
-.qa-modal h3 { font-size:var(--fs-lg); font-weight:700; color:var(--navy); margin-bottom:4px; }
-.qa-prog-name{ font-size:var(--fs-sm); color:var(--muted); margin-bottom:14px; min-height:1em; }
-.qa-days     { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
-.qa-day-btn  { padding:5px 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); color:var(--text); font-size:var(--fs-sm); cursor:pointer; transition:background .12s, border-color .12s; white-space:nowrap; }
-.qa-day-btn:hover  { background:var(--tag-bg); border-color:var(--accent2); }
-.qa-day-btn.active { background:var(--accent2); border-color:var(--accent2); color:#fff; }
-.qa-sep      { font-size:var(--fs-xs); color:var(--muted); margin-bottom:6px; letter-spacing:.02em; }
-.qa-date-input { width:100%; padding:6px 8px; border:1px solid var(--border); border-radius:6px; font-size:var(--fs-md); outline:none; margin-bottom:14px; color:var(--text); }
-.qa-date-input:focus { border-color:var(--accent2); }
-.qa-actions  { display:flex; gap:8px; justify-content:flex-end; }
-.qa-cancel   { padding:6px 14px; border:1px solid var(--border); border-radius:7px; background:#fff; font-size:var(--fs-sm); cursor:pointer; color:var(--text); }
-.qa-confirm  { padding:6px 14px; border:none; border-radius:7px; background:var(--accent2); color:#fff; font-size:var(--fs-sm); cursor:pointer; font-weight:600; }
-.qa-confirm:hover { background:var(--accent-h); }
-
 /* Editor modal */
 .editor-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:200; display:none; align-items:flex-start; justify-content:center; overflow-y:auto; padding:16px; }
 .editor-overlay.open { display:flex; }
@@ -2645,21 +2627,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   </div>
 </div>
 
-<!-- ═══════ QUICK-ADD MODAL ═══════ -->
-<div class="qa-overlay" id="qaOverlay">
-  <div class="qa-modal">
-    <h3>Planifier la séance</h3>
-    <div class="qa-prog-name" id="qaProgName"></div>
-    <div class="qa-days" id="qaDays"></div>
-    <div class="qa-sep">Ou choisir une date :</div>
-    <input class="qa-date-input" type="date" id="qaDateInput" oninput="_qaSelectDate(this.value)">
-    <div class="qa-actions">
-      <button class="qa-cancel" onclick="closeQuickAdd()">Annuler</button>
-      <button class="qa-confirm" onclick="confirmQuickAdd()">Ajouter au calendrier</button>
-    </div>
-  </div>
-</div>
-
 <!-- ═══════ EDITOR MODAL ═══════ -->
 <div class="editor-overlay" id="editorModal">
   <div class="editor-box">
@@ -4436,6 +4403,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 </div>
 
-<script src="js/prog-main.js?v=20260806i"></script>
+<script src="js/prog-main.js?v=20260806j"></script>
 </body>
 </html>

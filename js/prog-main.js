@@ -5414,9 +5414,6 @@ function _onTmplGroupChange(){
 
 // ── Sidebar Templates ──
 var _sidebarProgs = [];
-var _qaProgId = null;
-var _qaProgNom = '';
-var _qaSelectedDate = '';
 
 function renderSidebarTemplates(){
   var scroll = document.getElementById('stmplScroll');
@@ -6406,112 +6403,48 @@ function _donneesObjet(v){
   return v || {};
 }
 
+/* Planifier un repertoire suit desormais le MEME chemin que planifier une
+   seance existante (touchSheetSchedule) : « Cocher les jours sur l'agenda »
+   en premier, la saisie date par date en repli — au lieu d'un petit modal a
+   part avec sept jours fixes qui ne ressemblait a rien d'autre dans le
+   produit pour le meme geste. La copie patient du repertoire est creee tout
+   de suite (rien a sauvegarder en differe, contrairement au builder), puis
+   _planOverrideProgId fait retrouver exactement le mecanisme deja en place
+   pour planifier une seance sur plusieurs jours. */
 function _openQuickAdd(progId, nom){
-  _qaProgId = progId;
-  _qaProgNom = nom;
-  _qaSelectedDate = '';
-  document.getElementById('qaProgName').textContent = nom;
-  var today = new Date(); today.setHours(0,0,0,0);
-  var fr = ['dim','lun','mar','mer','jeu','ven','sam'];
-  var months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
-  var html = '';
-  for(var i = 0; i < 7; i++){
-    var d = new Date(today.getTime() + i * 86400000);
-    var ds = _dateStr(d);
-    var lbl = i === 0 ? "Aujourd'hui" : i === 1 ? 'Demain'
-      : fr[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()];
-    html += '<button class="qa-day-btn" data-date="' + ds + '" onclick="_qaSelectDate(\'' + ds + '\')">' + lbl + '</button>';
-  }
-  document.getElementById('qaDays').innerHTML = html;
-  var todayStr = _dateStr(today);
-  document.getElementById('qaDateInput').value = todayStr;
-  _qaSelectedDate = todayStr;
-  _qaHighlight(todayStr);
-  document.getElementById('qaOverlay').classList.add('open');
-}
-
-function _qaSelectDate(dateStr){
-  if(!dateStr) return;
-  _qaSelectedDate = dateStr;
-  var inp = document.getElementById('qaDateInput');
-  if(inp) inp.value = dateStr;
-  _qaHighlight(dateStr);
-}
-
-function _qaHighlight(dateStr){
-  document.querySelectorAll('.qa-day-btn').forEach(function(b){
-    b.classList.toggle('active', b.dataset.date === dateStr);
-  });
-}
-
-function closeQuickAdd(){
-  document.getElementById('qaOverlay').classList.remove('open');
-}
-
-function confirmQuickAdd(){
-  if(!_qaSelectedDate || !_qaProgId){ closeQuickAdd(); return; }
-  if(_progToken && _progPatient && _progUid){
-    if(!_progPatient){ closeQuickAdd(); alert('Sélectionnez un patient avant de planifier.'); return; }
-    closeQuickAdd();
-    // 1. Récupérer le template
-    _fetchRetry(SUPA_URL_P + '/rest/v1/templates?id=eq.' + _qaProgId + '&select=nom,donnees,type,emoji', {
-      headers: _sbHeaders()
+  if(!_progPatient){ alert('Sélectionnez un patient avant de planifier.'); return; }
+  if(!_progToken || !_progUid){ alert('Session non disponible.'); return; }
+  _fetchRetry(SUPA_URL_P + '/rest/v1/templates?id=eq.' + progId + '&select=nom,donnees,type,emoji', {
+    headers: _sbHeaders()
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    var t = Array.isArray(data) ? data[0] : null;
+    if(!t){ alert('Répertoire introuvable.'); return; }
+    var today = _dateStr(new Date());
+    return _fetchRetry(SUPA_URL_P + '/rest/v1/programmes', {
+      method: 'POST', headers: _sbHeaders(),
+      body: JSON.stringify({
+        patient_id:   _progPatient.id,
+        praticien_id: _progUid,
+        nom:          t.nom || nom,
+        date:         today,
+        donnees:      _donneesObjet(t.donnees)
+      })
     })
     .then(function(r){ return r.json(); })
-    .then(function(data){
-      var t = Array.isArray(data) ? data[0] : null;
-      if(!t){ alert('Répertoire introuvable.'); return; }
-      // 2. Créer une copie du programme pour ce patient
-      var hCopy = _sbHeaders(); // Prefer: return=representation par défaut
-      return _fetchRetry(SUPA_URL_P + '/rest/v1/programmes', {
-        method: 'POST', headers: hCopy,
-        body: JSON.stringify({
-          patient_id:   _progPatient.id,
-          praticien_id: _progUid,
-          nom:          t.nom,
-          date:         _qaSelectedDate,
-          donnees:      _donneesObjet(t.donnees)
-        })
-      })
-      .then(function(r){ return r.json(); })
-      .then(function(prog){
-        var newProgId = Array.isArray(prog) ? (prog[0]&&prog[0].id) : prog.id;
-        if(!newProgId){ alert('Erreur création programme.'); return; }
-        // 3. Planifier la copie
-        var hPlan = _sbHeaders(); hPlan['Prefer'] = 'return=minimal';
-        return _fetchRetry(SUPA_URL_P + '/rest/v1/seances_planifiees', {
-          method: 'POST', headers: hPlan,
-          body: JSON.stringify({ patient_id: _progPatient.id, programme_id: newProgId, praticien_id: _progUid, date: _qaSelectedDate })
-        });
-      })
-      .then(function(r){
-        if(!r) return;
-        if(r.ok){ renderCalendar(); _showToast('📅 Séance planifiée !'); _notifyAthleteAgenda('Nouvelle séance planifiée le '+_fmtNotifDate(_qaSelectedDate)); }
-        else { r.json().then(function(d){ alert('Erreur planification : '+JSON.stringify(d)); }); }
-      });
-    })
-    .catch(function(){ alert('Erreur réseau.'); });
-  } else {
-    closeQuickAdd();
-    // Mode local : copier le template dans _savedSeances puis ajouter au calendrier
-    _loadTemplates();
-    var t = _templates.find(function(x){ return x.id === _qaProgId; });
-    if(!t){ alert('Répertoire introuvable.'); return; }
-    _loadSeances();
-    var copy = {
-      id: '_' + Math.random().toString(36).slice(2,9),
-      name: t.nom, emoji: t.emoji||'💪', type: t.type||'',
-      date: new Date().toLocaleDateString('fr-FR'),
-      blocs: JSON.parse(JSON.stringify(t._blocs || _donneesObjet(t.donnees).blocs || [])),
-      etapes: JSON.parse(JSON.stringify(t._etapes || _donneesObjet(t.donnees).etapes || []))
-    };
-    _savedSeances.unshift(copy);
-    _persistSeances();
-    _loadCalEvents();
-    _calEvents.push({ id: '_' + Math.random().toString(36).slice(2,9), date: _qaSelectedDate, seanceId: copy.id });
-    _persistCalEvents();
-    renderCalendar();
-  }
+    .then(function(prog){
+      var newProgId = Array.isArray(prog) ? (prog[0]&&prog[0].id) : prog.id;
+      if(!newProgId){ alert('Erreur création programme.'); return; }
+      _planOverrideProgId  = newProgId;
+      _planOverrideProgNom = t.nom || nom || 'Séance';
+      var container = document.getElementById('planDatesContainer');
+      container.innerHTML = '';
+      _addPlanDateRow('');
+      document.getElementById('planModal').classList.add('open');
+    });
+  })
+  .catch(function(){ alert('Erreur réseau.'); });
 }
 
 /* ── Plan de travail emprunté ────────────────────────────────────────────────

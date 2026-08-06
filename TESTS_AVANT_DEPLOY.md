@@ -82,6 +82,20 @@ node qualite/cap-cas.js
 - [ ] Dans le builder, onglet "Répertoires" → dépliage bloc/exercice inchangé
       (surface distincte, non touchée par ce lot)
 
+### Flux 3 bis — Bouton "+" (planifier un répertoire sans passer par le builder)
+- [ ] Patient sélectionné → cliquer "+" sur une carte → une copie du répertoire
+      est créée pour ce patient, PUIS le même modal "Planifier la séance" que
+      celui du builder s'ouvre (bouton "Cocher les jours sur l'agenda" en
+      premier, saisie date par date en repli) — plus l'ancien mini-modal à
+      7 jours fixes
+- [ ] Aucun patient sélectionné → clic sur "+" → alerte demandant de
+      sélectionner un patient, aucune requête réseau
+- [ ] "Cocher les jours sur l'agenda" → calendrier en sélection → cocher 2 ou
+      3 jours → valider → autant de séances planifiées, toutes sur LA MÊME
+      copie du répertoire (une seule ligne `programmes`)
+- [ ] Repli "saisir les dates une par une" → fonctionne identiquement au
+      builder (ajout de lignes de date, "Planifier")
+
 ### Flux 4 — Bouton "+ Enregistrer" (tabs)
 - [ ] Bouton "＋ Enregistrer" visible en permanence dans la barre des tabs
 - [ ] Builder vide → clic → alerte "La séance est vide"
