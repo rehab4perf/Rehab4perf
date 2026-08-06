@@ -3965,16 +3965,7 @@ function closeSaveTemplate(){
 
 /* ── Enregistrer / Modifier le template ── */
 function doSaveTemplate(){
-  /* L'ancien axe « categorie » n'est plus saisissable. On ne lit surtout pas
-     le select cache : il ne porte qu'une option vide, donc lui affecter une
-     ancienne valeur la remet a '' — modifier un template effacerait son
-     classement historique. On relit la valeur enregistree. */
-  var cat = '';
-  if(_tmplEditId){
-    var _ref = (_sidebarProgs||[]).find(function(x){ return String(x.id)===String(_tmplEditId); })
-           || (_templates||[]).find(function(x){ return String(x.id)===String(_tmplEditId); });
-    cat = (_ref && _ref.categorie) || '';
-  }
+  var cat        = document.getElementById('tmplCatInput').value;
   var groupId    = document.getElementById('tmplGroupInput').value || (_activeGroupId ? String(_activeGroupId) : null);
   var phaseOrdre = groupId ? (parseInt(document.getElementById('tmplPhaseOrdreInput').value)||1) : 0;
   var nom = document.getElementById('tmplNameInput').value.trim();
@@ -4106,11 +4097,11 @@ function _renderBuilderLibraryUI(){
   // Templates sans protocole = groupe virtuel en fin de liste
   var orphans = progs.filter(function(p){ return !p.group_id; });
   var allGroups = groups.slice();
-  if(orphans.length) allGroups.push({id:'__orphan__', nom:'Sans catégorie', categorie:'__orphan_cat__', _virtual:true});
+  if(orphans.length) allGroups.push({id:'__orphan__', nom:'Sans protocole', categorie:'__orphan_cat__', _virtual:true});
 
   if(!allGroups.length){
     area.innerHTML = '<div style="padding:18px 14px;color:var(--muted);font-size:.77rem;font-style:italic;text-align:center;">'
-      +'Aucune catégorie.<br><span style="font-size:.7rem;">Créez-en une dans la barre latérale pour commencer.</span></div>';
+      +'Aucun protocole.<br><span style="font-size:.7rem;">Créez un protocole dans la barre latérale pour commencer.</span></div>';
     return;
   }
 
@@ -4143,7 +4134,7 @@ function _renderBuilderLibraryUI(){
     var catGroups = catsMap[catKey];
     var catInfo = TMPL_CATEGORIES.find(function(c){ return c.val===catKey; })
                 || { icon:'📁', color:'#F3F4F6', textColor:'var(--text-dk)' };
-    var catLabel = catKey==='__orphan_cat__' ? 'Sans catégorie' : (catKey||'Sans catégorie');
+    var catLabel = catKey==='__orphan_cat__' ? 'Sans protocole' : (catKey||'Sans catégorie');
     var isCollapsed = !!_libCatCollapsed[catKey]; // ouvert par défaut
 
     leftHtml += '<div class="blib-cat-hdr" onclick="_toggleLibCat(\''+escJS(catKey)+'\')" style="background:'+catInfo.color+'30;">';
@@ -4281,37 +4272,62 @@ function _renderSidebarPicker(){
     }
   }
 
+  /* Grouper par catégorie */
+  var catsMap = {};
+  groups.forEach(function(g){
+    var cat = g.categorie||'';
+    if(!catsMap[cat]) catsMap[cat]=[];
+    catsMap[cat].push(g);
+  });
+
   /* Filtrer les entrées techniques */
   progs = progs.filter(function(p){ return (p.nom||'') !== '__r4p_protocols_meta__' && (p.type||'') !== '__meta__'; });
-  /* Templates sans catégorie */
+  /* Templates sans groupe */
   var orphans = progs.filter(function(p){return !p.group_id;});
 
-  /* Les categories a plat. L'ancien axe (Renforcement, Mobilite…) sectionnait
-     cette liste par-dessus : deux rangements superposes pour la meme chose. Le
-     picker suit desormais la meme structure que la barre laterale de l'agenda —
-     c'est la meme etagere, elle ne doit pas se lire de deux facons. */
-  var catAccent = 'rgba(255,255,255,.45)';
-  groups.forEach(function(g){
-    var gProgs = progs.filter(function(p){return String(p.group_id)===String(g.id);});
-    if(search) gProgs = gProgs.filter(function(p){return _pickerProgMatches(p,search);});
-    if(!gProgs.length) return;
-    var gid = 'pg-'+String(g.id).replace(/[^a-z0-9]/gi,'');
-    html += '<div class="picker-group" id="'+gid+'">';
-    html += '<div class="picker-group-hdr" style="border-left-color:'+catAccent+';" onclick="_pickerToggle(\''+gid+'\')">';
-    html += '<span class="picker-group-name">'+escH(g.nom)+'</span>';
-    html += '<span class="picker-group-count">'+gProgs.length+'</span>';
-    html += '<span class="picker-chevron">›</span></div>';
-    html += '<div class="picker-group-body">';
-    if(gProgs.length > 1) html += '<button class="picker-add-all-phases" onclick="_addAllPhasesFromGroup(\''+escJS(String(g.id))+'\')">+ Tous les templates ('+gProgs.length+')</button>';
-    gProgs.forEach(function(p){ html += _pickerRenderTemplate(p, search, addedLibIds); });
-    html += '</div></div>';
+  var catKeys = Object.keys(catsMap).sort(function(a,b){
+    var ia=catOrder.indexOf(a), ib=catOrder.indexOf(b);
+    if(ia===-1&&ib===-1) return a.localeCompare(b);
+    if(ia===-1) return 1; if(ib===-1) return -1;
+    return ia-ib;
+  });
+
+  catKeys.forEach(function(catKey){
+    var catGroups = catsMap[catKey];
+    var catInfo = (typeof TMPL_CATEGORIES!=='undefined') ? TMPL_CATEGORIES.find(function(c){return c.val===catKey;}) : null;
+    var catAccent = catInfo ? catInfo.textColor : '#9CA3AF';
+    var catIcon = catInfo ? catInfo.icon : '📁';
+
+    /* Filtrer groupes avec contenu */
+    var visible = catGroups.filter(function(g){
+      var gProgs = progs.filter(function(p){return String(p.group_id)===String(g.id);});
+      return search ? gProgs.some(function(p){return _pickerProgMatches(p,search);}) : gProgs.length>0;
+    });
+    if(!visible.length) return;
+
+    html += '<div class="picker-cat-label"><span class="picker-cat-icon" style="background:'+catAccent+'26;color:'+catAccent+';">'+catIcon+'</span>'+escH(catKey||'Autre')+'</div>';
+    visible.forEach(function(g){
+      var gProgs = progs.filter(function(p){return String(p.group_id)===String(g.id);});
+      if(search) gProgs = gProgs.filter(function(p){return _pickerProgMatches(p,search);});
+      if(!gProgs.length) return;
+      var gid = 'pg-'+String(g.id).replace(/[^a-z0-9]/gi,'');
+      html += '<div class="picker-group" id="'+gid+'">';
+      html += '<div class="picker-group-hdr" style="border-left-color:'+catAccent+';" onclick="_pickerToggle(\''+gid+'\')">';
+      html += '<span class="picker-group-name">'+escH(g.nom)+'</span>';
+      html += '<span class="picker-group-count">'+gProgs.length+' phase'+(gProgs.length!==1?'s':'')+'</span>';
+      html += '<span class="picker-chevron">›</span></div>';
+      html += '<div class="picker-group-body">';
+      if(gProgs.length > 1) html += '<button class="picker-add-all-phases" onclick="_addAllPhasesFromGroup(\''+escJS(String(g.id))+'\')">+ Toutes les phases ('+gProgs.length+')</button>';
+      gProgs.forEach(function(p){ html += _pickerRenderTemplate(p, search, addedLibIds); });
+      html += '</div></div>';
+    });
   });
 
   /* Orphelins */
   if(orphans.length){
     var visOrph = search ? orphans.filter(function(p){return _pickerProgMatches(p,search);}) : orphans;
     if(visOrph.length){
-      html += '<div class="picker-cat-label"><span class="picker-cat-icon" style="background:rgba(255,255,255,.09);color:rgba(255,255,255,.6);"></span>Sans catégorie</div>';
+      html += '<div class="picker-cat-label"><span class="picker-cat-icon" style="background:rgba(255,255,255,.09);color:rgba(255,255,255,.6);">📁</span>Sans protocole</div>';
       visOrph.forEach(function(p){ html += _pickerRenderTemplate(p, search, addedLibIds); });
     }
   }
@@ -4788,7 +4804,7 @@ function _draftRestore(){
     if(d.savedAt){ var t=new Date(d.savedAt); ago=' — '+t.toLocaleDateString('fr-FR')+' '+t.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); }
     var draftTitle = 'Brouillon non sauvegardé trouvé';
     var draftBody = nbExos + ' exercice'+(nbExos>1?'s':'')+ago;
-    if(d.activeGroupNom) draftBody += '\nCatégorie : « ' + d.activeGroupNom + ' »';
+    if(d.activeGroupNom) draftBody += '\nProtocole : « ' + d.activeGroupNom + ' »';
     draftBody += '\n\nRestaurer ce contenu ?';
     _confirmDialog({id:'cd-draft-restore', emoji:'📋', title:draftTitle, body:draftBody, confirmLabel:'Restaurer', confirmColor:'#2563eb'}, function(){
       blocs = d.blocs;
@@ -4828,7 +4844,7 @@ function openSaveDest(){
   // Hint contextuel
   var hint = '';
   if(_activeGroupId){
-    hint = 'Catégorie active : « ' + (_activeGroupNom||'') + ' »';
+    hint = 'Protocole actif : « ' + (_activeGroupNom||'') + ' »';
   } else if(_builderFromTemplate){
     var _tCur = (_sidebarProgs||[]).find(function(x){ return String(x.id)===String(_builderFromTemplate); });
     if(_tCur) hint = 'Template chargé : « ' + (_tCur.nom||'Template') + ' »';
@@ -5082,9 +5098,7 @@ function deleteTemplate(id){
 }
 
 // ══════════════════════════════════════════════
-//  CATEGORIES DE TEMPLATES (table `template_groups`)
-//  A ne pas confondre avec les PROTOCOLES cliniques (patient_protocols),
-//  qui sont une autre fonctionnalite portant le meme mot jusqu'ici.
+//  GROUPES DE TEMPLATES (protocoles / pathologies)
 // ══════════════════════════════════════════════
 var _groups = [];
 var _expandedGroups = (function(){ try{ return JSON.parse(localStorage.getItem(R4P_KEYS.EXPANDED_GROUPS)||'{}'); }catch(e){ return {}; } })();
@@ -5105,8 +5119,8 @@ var _grpLibCheckDone   = false; // true quand la vérification async est termin�
 
 function openCreateGroup(){
   _grpEditId = null; _grpLibId = null; _grpLibCheckDone = false;
-  document.getElementById('grpModalTitle').textContent = 'Nouvelle catégorie';
-  document.getElementById('grpModalConfirmBtn').textContent = 'Créer la catégorie';
+  document.getElementById('grpModalTitle').textContent = '📁 Nouveau protocole';
+  document.getElementById('grpModalConfirmBtn').textContent = '📁 Créer le protocole';
   document.getElementById('grpNameInput').value = '';
   document.getElementById('grpCatInput').value = '';
   document.getElementById('grpDescInput').value = '';
@@ -5120,9 +5134,9 @@ function openCreateGroup(){
 }
 function openEditGroup(id){
   var g = (_groups||[]).find(function(x){ return String(x.id)===String(id); });
-  if(!g){ alert('Catégorie introuvable.'); return; }
+  if(!g){ alert('Protocole introuvable.'); return; }
   _grpEditId = id; _grpLibId = null; _grpLibCheckDone = false;
-  document.getElementById('grpModalTitle').textContent = 'Modifier la catégorie';
+  document.getElementById('grpModalTitle').textContent = '✏️ Modifier le protocole';
   document.getElementById('grpModalConfirmBtn').innerHTML = _PROG_SAVE_ICON + 'Enregistrer';
   document.getElementById('grpNameInput').value = g.nom||'';
   document.getElementById('grpCatInput').value = g.categorie||'';
@@ -5175,11 +5189,8 @@ function closeCreateGroup(){
 }
 function doCreateGroup(){
   var nom = document.getElementById('grpNameInput').value.trim();
-  if(!nom){ alert('Donnez un nom à la catégorie.'); return; }
-  /* Meme raison que dans doSaveTemplate : on conserve la valeur enregistree
-     plutot que de relire un select vide. */
-  var _gRef = _grpEditId ? (_groups||[]).find(function(x){ return String(x.id)===String(_grpEditId); }) : null;
-  var cat  = (_gRef && _gRef.categorie) || '';
+  if(!nom){ alert('Donnez un nom au protocole.'); return; }
+  var cat  = document.getElementById('grpCatInput').value;
   var desc = document.getElementById('grpDescInput').value.trim();
   var gPatho = (document.getElementById('grpPathoInput')||{}).value.trim();
   var gSport = (document.getElementById('grpSportInput')||{}).value.trim();
@@ -5203,7 +5214,7 @@ function doCreateGroup(){
         body: JSON.stringify({ nom: nom, categorie: cat, description: desc, pathologie: gPatho, sport: gSport })
       }).then(function(r){
         if(!r.ok){ r.text().then(function(t){ alert('Erreur PATCH : ' + t); }); return; }
-        closeCreateGroup(); renderSidebarTemplates(); _showToast('Catégorie mise à jour');
+        closeCreateGroup(); renderSidebarTemplates(); _showToast('✏️ Protocole mis à jour !');
         // Gérer publication après fermeture du modal
         if(wantPublish && !libIdSnap)        _doPublishGroup(id, nom, cat, desc);
         else if(wantPublish && libIdSnap)    _doUpdateGroupInLib(libIdSnap, id, nom, cat, desc);
@@ -5213,7 +5224,7 @@ function doCreateGroup(){
       _loadGroups();
       var g = _groups.find(function(x){ return String(x.id)===String(id); });
       if(g){ g.nom=nom; g.categorie=cat; g.description=desc; g.pathologie=gPatho; g.sport=gSport; _persistGroups(); }
-      closeCreateGroup(); renderSidebarTemplates(); _showToast('Catégorie mise à jour');
+      closeCreateGroup(); renderSidebarTemplates(); _showToast('✏️ Protocole mis à jour !');
     }
     return;
   }
@@ -5224,7 +5235,7 @@ function doCreateGroup(){
       method: 'POST', headers: _sbHeaders(),
       body: JSON.stringify({ praticien_id: _progUid, nom: nom, categorie: cat, description: desc, pathologie: gPatho, sport: gSport })
     }).then(function(r){
-      if(r.ok){ closeCreateGroup(); renderSidebarTemplates(); _showToast('Catégorie « ' + nom + ' » créée'); }
+      if(r.ok){ closeCreateGroup(); renderSidebarTemplates(); _showToast('📁 Protocole « ' + nom + ' » créé !'); }
       else { r.json().then(function(d){ alert('Erreur : ' + JSON.stringify(d)); }); }
     }).catch(function(){ alert('Erreur réseau.'); });
   } else {
@@ -5232,7 +5243,7 @@ function doCreateGroup(){
     _groups.unshift({ id:'_g'+Math.random().toString(36).slice(2,9), nom:nom, categorie:cat, description:desc,
                       pathologie:gPatho, sport:gSport, created_at:new Date().toISOString(), _local:true });
     _persistGroups();
-    closeCreateGroup(); renderSidebarTemplates(); _showToast('Catégorie « ' + nom + ' » créée');
+    closeCreateGroup(); renderSidebarTemplates(); _showToast('📁 Protocole « ' + nom + ' » créé !');
   }
 }
 
@@ -5263,7 +5274,7 @@ function _doPublishGroup(groupId, nom, cat, desc){
   })
   .then(function(r){
     if(r.ok||r.status===201){
-      _showToast('Catégorie publiée dans la bibliothèque');
+      _showToast('🌐 Protocole publié dans la bibliothèque !');
     } else {
       r.text().then(function(t){
         console.error('[_doPublishGroup] erreur', r.status, t);
@@ -5294,7 +5305,7 @@ function _doUnpublishGroup(libId){
     method:'DELETE', headers:_sbHeaders()
   })
   .then(function(r){
-    if(r.ok||r.status===204) _showToast('Catégorie retirée de la bibliothèque');
+    if(r.ok||r.status===204) _showToast('🔒 Protocole retiré de la bibliothèque.');
     else r.text().then(function(t){
       console.error('[_doUnpublishGroup] erreur', r.status, t);
       alert('Erreur retrait ('+r.status+') : '+t);
@@ -5305,11 +5316,11 @@ function _doUnpublishGroup(libId){
 
 function duplicateGroup(){
   var id = _grpEditId;
-  if(!id){ alert('Catégorie introuvable.'); return; }
+  if(!id){ alert('Protocole introuvable.'); return; }
   var g = (_groups||[]).find(function(x){ return String(x.id)===String(id); });
-  if(!g){ alert('Catégorie introuvable.'); return; }
+  if(!g){ alert('Protocole introuvable.'); return; }
   if(!_progToken || !_progUid){ alert('Session non disponible.'); return; }
-  var newNom = 'Copie de ' + (g.nom||'Catégorie');
+  var newNom = 'Copie de ' + (g.nom||'Protocole');
   // 1. Créer le nouveau groupe
   _fetchRetry(SUPA_URL_P+'/rest/v1/template_groups', {
     method:'POST',
@@ -5318,7 +5329,7 @@ function duplicateGroup(){
   })
   .then(function(r){ return r.ok ? r.json() : null; })
   .then(function(data){
-    if(!data || !data[0]){ alert('Erreur lors de la duplication de la catégorie.'); return; }
+    if(!data || !data[0]){ alert('Erreur lors de la duplication du protocole.'); return; }
     var newGroupId = data[0].id;
     // 2. Dupliquer les templates du groupe
     var tmplsToCopy = (_sidebarProgs||[]).filter(function(p){ return String(p.group_id)===String(id); });
@@ -5336,12 +5347,12 @@ function duplicateGroup(){
       };
     });
     var done = 0;
-    if(!copies.length){ closeCreateGroup(); renderSidebarTemplates(); _showToast('Catégorie « '+newNom+' » dupliquée !'); return; }
+    if(!copies.length){ closeCreateGroup(); renderSidebarTemplates(); _showToast('📋 Protocole « '+newNom+' » dupliqué !'); return; }
     copies.forEach(function(c){
       _fetchRetry(SUPA_URL_P+'/rest/v1/templates', {
         method:'POST', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
         body: JSON.stringify(c)
-      }).then(function(){ done++; if(done===copies.length){ closeCreateGroup(); renderSidebarTemplates(); _showToast('Catégorie « '+newNom+' » dupliquée !'); } });
+      }).then(function(){ done++; if(done===copies.length){ closeCreateGroup(); renderSidebarTemplates(); _showToast('📋 Protocole « '+newNom+' » dupliqué !'); } });
     });
   })
   .catch(function(e){ alert('Erreur réseau : '+(e&&e.message||e)); });
@@ -5351,7 +5362,7 @@ function deleteGroup(id){
   /* Compter les phases associées pour l'avertissement */
   var phases = (_sidebarProgs||[]).filter(function(p){ return String(p.group_id)===String(id); });
   var group   = (_groups||[]).find(function(g){ return String(g.id)===String(id); });
-  var groupName = group ? (group.nom||'cette catégorie') : 'cette catégorie';
+  var groupName = group ? (group.nom||'ce protocole') : 'ce protocole';
 
   var confirmBody = '';
   if(phases.length > 0){
@@ -5360,7 +5371,7 @@ function deleteGroup(id){
   }
   confirmBody += 'Cette action est irréversible.';
 
-  _confirmDialog({id:'cd-del-group', emoji:'🗑️', title:'Supprimer la catégorie « ' + groupName + ' » ?', body:confirmBody, confirmLabel:'Supprimer'}, function(){
+  _confirmDialog({id:'cd-del-group', emoji:'🗑️', title:'Supprimer le protocole « ' + groupName + ' » ?', body:confirmBody, confirmLabel:'Supprimer'}, function(){
 
   if(_progToken && _progUid){
     /* 1. Supprimer les phases du groupe, puis 2. supprimer le groupe */
@@ -5372,7 +5383,7 @@ function deleteGroup(id){
       if(!r.ok){ alert('Erreur lors de la suppression des séances.'); return; }
       return _fetchRetry(SUPA_URL_P + '/rest/v1/template_groups?id=eq.' + id, { method:'DELETE', headers:_sbHeaders() });
     }).then(function(r){
-      if(!r || !r.ok){ alert('Erreur lors de la suppression de la catégorie.'); return; }
+      if(!r || !r.ok){ alert('Erreur lors de la suppression du protocole.'); return; }
       /* Mettre à jour le cache local */
       _sidebarProgs = (_sidebarProgs||[]).filter(function(p){ return String(p.group_id)!==String(id); });
       renderSidebarTemplates();
@@ -6148,8 +6159,8 @@ function duplicateTemplateById(id){
 // Duplication protocole depuis la sidebar (wrapper qui évite d'ouvrir le modal)
 function duplicateGroupById(id){
   var g = (_groups||[]).find(function(x){ return String(x.id)===String(id); });
-  if(!g){ alert('Catégorie introuvable.'); return; }
-  var newNom = 'Copie de ' + (g.nom||'Catégorie');
+  if(!g){ alert('Protocole introuvable.'); return; }
+  var newNom = 'Copie de ' + (g.nom||'Protocole');
   // Lecteur : duplication locale uniquement
   if(_isReader()){
     _loadGroups();
@@ -6199,85 +6210,104 @@ function duplicateGroupById(id){
 function _renderSidebarWithGroups(){
   var scroll = document.getElementById('stmplScroll');
   if(!scroll) return;
-  var q = ((document.getElementById('stmplSearch')||{}).value||'').toLowerCase();
+  var q   = ((document.getElementById('stmplSearch')||{}).value||'').toLowerCase();
+  var catFilter = ((document.getElementById('stmplCatFilter')||{}).value||'');
 
-  /* Deux portes de creation. Le template d'abord — c'est le geste courant ;
-     la categorie ne sert qu'a ranger, elle reste secondaire. */
+  /* Deux portes de creation, cote a cote et au meme niveau : un template seul,
+     ou un protocole qui en regroupera plusieurs. Le template d'abord — c'est
+     le geste courant ; le protocole ne sert qu'a ranger. */
   var html = '<div class="stmpl-group-add-row">'
     + '<button class="stmpl-new-tmpl-btn" onclick="nouveauTemplate()">' + _TMPL_ICON + 'Nouveau template</button>'
-    + '<button class="stmpl-new-group-btn" onclick="openCreateGroup()">Nouvelle catégorie</button>'
+    + '<button class="stmpl-new-group-btn" onclick="openCreateGroup()">Nouveau protocole</button>'
     + '</div>';
 
-  /* Un seul axe de rangement : la CATEGORIE, c'est-a-dire l'ancien « protocole ».
-     L'ancien axe (Renforcement, Mobilite, Pathologie…) sectionnait la liste
-     par-dessus celui-ci — deux rangements pour la meme chose, dont l'un
-     dupliquait l'etiquette pathologie. Il ne sert plus a l'affichage ; les
-     valeurs restent en base et ne sont jamais ecrasees. */
-  function correspond(p){
+  // Filtrer groupes et templates
+  var filteredGroups = _groups.filter(function(g){
+    return !catFilter || (g.categorie||'') === catFilter;
+  });
+  var filteredTmpl = _sidebarProgs.filter(function(p){
     if((p.nom||'')==='__r4p_protocols_meta__') return false;
-    if(!q) return true;
-    return (p.nom||'').toLowerCase().indexOf(q)>-1
-        || (p.phase_nom||'').toLowerCase().indexOf(q)>-1
-        || (_tmplEtiquette(p,'pathologie')||'').toLowerCase().indexOf(q)>-1
-        || (_tmplEtiquette(p,'sport')||'').toLowerCase().indexOf(q)>-1;
-  }
-  var visibles   = (_sidebarProgs||[]).filter(correspond);
-  var dansCat    = visibles.filter(function(p){ return p.group_id; });
-  var horsCat    = visibles.filter(function(p){ return !p.group_id; });
+    var mQ = !q || (p.nom||'').toLowerCase().indexOf(q)>-1 || (p.phase_nom||'').toLowerCase().indexOf(q)>-1;
+    var mC = !catFilter || (p.categorie||'') === catFilter;
+    return mQ && mC;
+  });
+  var groupedTmpl = filteredTmpl.filter(function(p){ return p.group_id; });
+  var freeTmpl    = filteredTmpl.filter(function(p){ return !p.group_id; });
 
-  /* Une categorie reste affichee si son NOM correspond a la recherche, meme
-     quand aucun de ses templates ne correspond : on cherche souvent la
-     categorie elle-meme (« LCA ») avant son contenu. */
-  var cats = (_groups||[]).filter(function(g){
-    if(!q) return true;
-    if((g.nom||'').toLowerCase().indexOf(q)>-1) return true;
-    return dansCat.some(function(p){ return String(p.group_id)===String(g.id); });
+  // Construire la liste ordonnée de catégories (ordre défini + "Autre" + sans catégorie)
+  var catOrder = TMPL_CATEGORIES.map(function(c){ return c.val; });
+  // Collecter toutes les cats présentes
+  var catsPresentes = {};
+  filteredGroups.forEach(function(g){ catsPresentes[g.categorie||'']  = true; });
+  freeTmpl.forEach(function(p){       catsPresentes[p.categorie||'']  = true; });
+
+  // Trier : ordre TMPL_CATEGORIES d'abord, puis inconnues
+  var allCats = Object.keys(catsPresentes).sort(function(a,b){
+    var ia = catOrder.indexOf(a); var ib = catOrder.indexOf(b);
+    if(ia===-1&&ib===-1) return a.localeCompare(b);
+    if(ia===-1) return 1;
+    if(ib===-1) return -1;
+    return ia-ib;
   });
 
   var hasContent = false;
 
-  cats.forEach(function(g){
+  allCats.forEach(function(catKey){
+    var catInfo = TMPL_CATEGORIES.find(function(c){ return c.val===catKey; }) || { icon:'📁', color:'#F3F4F6', textColor:'var(--text-dk)' };
+    var catGroups = filteredGroups.filter(function(g){ return (g.categorie||'')===catKey; });
+    var catFree   = freeTmpl.filter(function(p){ return (p.categorie||'')===catKey; });
+    if(!catGroups.length && !catFree.length) return;
     hasContent = true;
-    var isOpen  = !!_expandedGroups[g.id];
-    var membres = dansCat.filter(function(p){ return String(p.group_id)===String(g.id); });
-    membres.sort(function(a,b){ return (a.phase_ordre||0)-(b.phase_ordre||0); });
-    var gid = escH(String(g.id));
-    var isActiveGrp = _activeGroupId && String(_activeGroupId)===String(g.id);
-    html += '<div class="stmpl-group">';
-    html += '<div class="stmpl-group-header'+(isActiveGrp?' is-active-grp':'')+'" onclick="_toggleGroup(\''+gid+'\')">';
-    html += '<span class="stmpl-group-toggle">'+(isOpen?'▼':'▶')+'</span>';
-    html += '<div class="stmpl-group-info"><div class="stmpl-group-name">'+escH(g.nom||'Sans nom')+'</div>';
-    var etP = _tmplEtiquette(g, 'pathologie'), etS = _tmplEtiquette(g, 'sport');
-    var sousTitre = '<span style="font-size:.68rem;color:var(--muted);">'
-      + membres.length + ' template' + (membres.length!==1?'s':'') + '</span>';
-    if(etP) sousTitre += '<span class="stmpl-tag stmpl-tag-patho">'+escH(etP)+'</span>';
-    if(etS) sousTitre += '<span class="stmpl-tag stmpl-tag-sport">'+escH(etS)+'</span>';
-    html += '<div style="margin-top:2px;">'+sousTitre+'</div></div>';
-    html += '<button class="stmpl-kebab" onclick="event.stopPropagation();_openKebab(event,\'group\',\''+gid+'\',\''+escJS(g.nom||'')+'\',\''+escJS(String(g.praticien_id||''))+'\')" title="Actions">···</button></div>';
-    if(isOpen){
-      html += '<div class="stmpl-group-body">';
-      if(!membres.length) html += '<div class="stmpl-phase-empty">Catégorie vide — utilisez le bouton ci-dessous.</div>';
-      membres.forEach(function(p,i){ html += _renderTmplCard(p,true,i+1); });
-      html += '<button class="stmpl-add-phase-btn" onclick="event.stopPropagation();addPhaseToGroup(\''+gid+'\')">＋ Nouveau template ici</button>';
+
+    var count = catGroups.length + catFree.length;
+    // Fermé par défaut : ouvert seulement si l'utilisateur a explicitement cliqué (valeur === false)
+    var isCollapsed = (_collapsedCats[catKey] !== false);
+    var safeKey = escH(catKey||'__sans__');
+
+    html += '<div class="stmpl-cat-section">';
+    html += '<div class="stmpl-cat-hdr" onclick="_toggleCatSection(\''+escJS(catKey)+'\')" style="background:'+catInfo.color+'20;">';
+    html += '<span class="stmpl-cat-hdr-icon">'+catInfo.icon+'</span>';
+    html += '<span class="stmpl-cat-hdr-name" style="color:var(--text-dk);">'+(catKey||'Sans catégorie')+'</span>';
+    html += '<span class="stmpl-cat-hdr-count">'+count+'</span>';
+    html += '<span class="stmpl-cat-hdr-toggle">'+(isCollapsed?'▶':'▼')+'</span>';
+    html += '</div>';
+
+    if(!isCollapsed){
+      html += '<div class="stmpl-cat-body">';
+
+      // Protocoles de cette catégorie
+      catGroups.forEach(function(g){
+        var isOpen = !!_expandedGroups[g.id];
+        var phases = groupedTmpl.filter(function(p){ return String(p.group_id)===String(g.id); });
+        phases.sort(function(a,b){ return (a.phase_ordre||0)-(b.phase_ordre||0); });
+        var gid = escH(String(g.id));
+        html += '<div class="stmpl-group">';
+        var isActiveGrp = _activeGroupId && String(_activeGroupId)===String(g.id);
+        html += '<div class="stmpl-group-header'+(isActiveGrp?' is-active-grp':'')+'" onclick="_toggleGroup(\''+gid+'\')">';
+        html += '<span class="stmpl-group-toggle">'+(isOpen?'▼':'▶')+'</span>';
+        html += '<div class="stmpl-group-info"><div class="stmpl-group-name">'+escH(g.nom||'Sans nom')+'</div>';
+        html += '<div style="margin-top:2px;"><span style="font-size:.68rem;color:var(--muted);">'+phases.length+' phase'+(phases.length!==1?'s':'')+'</span></div></div>';
+        html += '<button class="stmpl-kebab" onclick="event.stopPropagation();_openKebab(event,\'group\',\''+gid+'\',\''+escJS(g.nom||'')+'\',\''+escJS(String(g.praticien_id||''))+'\')" title="Actions">···</button></div>';
+        if(isOpen){
+          html += '<div class="stmpl-group-body">';
+          if(!phases.length) html += '<div class="stmpl-phase-empty">Aucune phase — cliquez + ci-dessous pour en créer une.</div>';
+          phases.forEach(function(p,i){ html += _renderTmplCard(p,true,i+1); });
+          html += '<button class="stmpl-add-phase-btn" onclick="event.stopPropagation();addPhaseToGroup(\''+gid+'\')">＋ Nouvelle phase</button>';
+          html += '</div>';
+        }
+        html += '</div>';
+      });
+
+      // Templates libres de cette catégorie (sans badge cat, déjà dans la section)
+      catFree.forEach(function(p){ html += _renderTmplCard(p,false,null,true); });
+
       html += '</div>';
     }
     html += '</div>';
   });
 
-  /* Templates sans categorie : a plat, en fin de liste. Ils ne sont pas dans un
-     faux dossier « Sans categorie » — l'absence de rangement n'est pas un
-     rangement, et les enfermer les rendrait plus difficiles a voir. */
-  if(horsCat.length){
-    hasContent = true;
-    html += '<div class="stmpl-freelist-hdr">Sans catégorie</div>';
-    horsCat.forEach(function(p){ html += _renderTmplCard(p,false,null,true); });
-  }
-
   if(!hasContent){
-    html += '<div class="stmpl-empty">'
-      + (q ? 'Aucun résultat pour « '+escH(q)+' ».'
-           : 'Aucun template.<br>Créez-en un avec « Nouveau template ».')
-      + '</div>';
+    html += '<div class="stmpl-empty">Aucun template'+(catFilter?' dans cette catégorie':'')+'.<br>Créez-en un depuis le builder (📋 Enregistrer).</div>';
   }
   scroll.innerHTML = html;
 }
@@ -6300,10 +6330,9 @@ function _renderTmplCard(p, isPhase, phaseNum, hideCat){
   var etBdg = '';
   if(etPatho) etBdg += '<span class="stmpl-tag stmpl-tag-patho">'+escH(etPatho)+'</span>';
   if(etSport) etBdg += '<span class="stmpl-tag stmpl-tag-sport">'+escH(etSport)+'</span>';
-  /* Plus de badge pour l'ancien axe « categorie » : ce mot designe desormais le
-     regroupement lui-meme, et afficher les deux ferait lire deux categories sur
-     une meme carte. La valeur reste en base, elle n'est simplement plus rendue. */
-  var catBdg = '';
+  var catSt  = _tmplCatStyle(p.categorie||'');
+  // Badge catégorie seulement si pas dans une section catégorie (hideCat=false/undefined) et pas une phase
+  var catBdg = (!isPhase && !hideCat && p.categorie) ? '<span class="stmpl-cat-badge" style="background:'+catSt.bg+';color:'+catSt.fg+';">'+escH(p.categorie)+'</span>' : '';
   var pid  = escH(String(p.id));
   var pnom = escH(dispNom);
   var cls  = 'stmpl-card'+(isPhase?' stmpl-phase-card':'');
