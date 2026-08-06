@@ -5895,7 +5895,7 @@ function _buildAllTestsHtml() {
   function _crMobTable(titre, seg, items) {
     var stLbl = { ok:'OK', acceptable:'Acceptable', insuffisant:'Insuffisant' };
     var stCls = { ok:'ok', acceptable:'warn', insuffisant:'bad' };
-    var mobItems = items || (seg === 'lomb' ? MOB.concat(['Glissement D', 'Glissement G']) : MOB);
+    var mobItems = items || ((seg === 'lomb' || seg === 'rl') ? MOB.concat(['Glissement D', 'Glissement G']) : MOB);
     var rows = '';
     mobItems.forEach(function(m) {
       var mKey = 'mob-' + seg + '-' + m.replace(/[\s.\/]+/g, '_');
@@ -6048,19 +6048,12 @@ function _buildAllTestsHtml() {
       secRows += crGroup('Force musculaire', haForceRows);
     }
     if (sec.label === 'GENOU') {
-      var geMobFields = ['flex','ext','ri','re','abd','add'];
-      var geMobLabels = ['Flex','Ext','RI','RE','Abd','Add'];
-      function geMobSide(prefix, sideLabel) {
-        var vals = geMobFields.map(function(f){ return (document.getElementById(prefix+'-'+f)||{}).value||''; });
-        var hasVal = vals.some(function(v){ return v.trim()!==''; });
-        if (!hasVal) return '';
-        var obs = (document.getElementById(prefix+'-obs')||{}).value||'';
-        var valStr = geMobLabels.map(function(l,i){ return vals[i]?l+'='+vals[i]:''; }).filter(Boolean).join('   ');
-        var out = crItem('Mobilité Hanche (genou) — '+sideLabel, valStr);
-        if (obs) out += '<div style="margin:2px 0 8px;padding:6px 10px;background:var(--surface2);border-radius:5px;font-size:.82rem;color:var(--text2);font-style:italic">Obs. : '+nl2br(obs)+'</div>';
-        return out;
-      }
-      secRows += geMobSide('ge-mob-g','Gauche') + geMobSide('ge-mob-d','Droit');
+      /* Un bloc « Mobilite Hanche (genou) » vivait ici. Il lisait des champs
+         `ge-mob-g-flex`, `ge-mob-d-flex`… qui n'existent nulle part dans le
+         formulaire : sa condition « au moins une valeur » etait donc toujours
+         fausse et il ne produisait jamais rien. La mobilite de hanche est
+         saisie sur la page AGP + Hanche et sort deja au CR sous
+         « Amplitudes Articulaires — Hanche ». Code mort, retire. */
       secRows += romCrTable('Amplitudes Articulaires — Genou (°)', [
         {label:'Flexion active',     dId:'rom-ge-d-flexa', gId:'rom-ge-g-flexa'},
         {label:'Flexion passive',    dId:'rom-ge-d-flexp', gId:'rom-ge-g-flexp'},
@@ -6234,41 +6227,17 @@ function _buildAllTestsHtml() {
       secRows += crGroup('Force musculaire', raForceRows);
     }
     if (sec.label === 'RACHIS CERVICAL') {
+      /* La grille de cette page ne remontait pas : on pouvait renseigner six
+         directions et leurs marqueurs sans qu'aucun n'apparaisse au CR. */
+      secRows += _crMobTable('Mobilité Cervicale',  'cv');
       secRows += _crMobTable('Mobilité Thoracique', 'cvthor', ['Extension thoracique']);
     }
     if (sec.label === 'RACHIS LOMBAIRE') {
       secRows += _crMobTable('Mobilité Thoracique', 'rlthor', ['Extension thoracique']);
     }
     if (sec.label === 'RACHIS LOMBAIRE') {
-      var rlMobItems = MOB.concat(['Glissement D', 'Glissement G']);
-      var rlStLblMap = { ok:'OK', acceptable:'Acceptable', insuffisant:'Insuffisant' };
-      var rlStClsMap = { ok:'ok', acceptable:'warn', insuffisant:'bad' };
-      var rlAnyMob = false, rlMobRows = '';
-      rlMobItems.forEach(function(m) {
-        var mKey = 'mob-rl-' + m.replace(/[\s.\/]+/g, '_');
-        var stEl = document.getElementById(mKey + '-st');
-        var ntEl = document.getElementById(mKey + '-nt');
-        var stVal = stEl ? stEl.value : '';
-        var ntVal = ntEl ? ntEl.value.trim() : '';
-        if (!stVal && !ntVal) return;
-        rlAnyMob = true;
-        var stTag = stVal ? ('<span class="cr-tag '+rlStClsMap[stVal]+'">'+rlStLblMap[stVal]+'</span>') : '';
-        rlMobRows += '<tr style="border-top:1px solid var(--border)">'
-          + '<td style="padding:3px 8px;font-size:.8rem;color:var(--text2)">'+m+'</td>'
-          + '<td style="padding:3px 8px;font-size:.8rem;text-align:center">'+stTag+'</td>'
-          + '<td style="padding:3px 8px;font-size:.78rem;color:var(--text2);font-style:italic">'+nl2br(ntVal)+'</td>'
-          + '</tr>';
-      });
-      if (rlAnyMob) {
-        secRows += '<div style="margin:4px 0 10px">'
-          + '<div style="font-size:.77rem;font-weight:600;color:var(--text2);margin-bottom:3px">Mobilité Lombaire</div>'
-          + '<table style="width:100%;border-collapse:collapse">'
-          + '<thead><tr style="background:var(--surface2)">'
-          + '<th style="padding:3px 8px;text-align:left;font-size:.72rem;color:var(--text3);font-weight:600">Mouvement</th>'
-          + '<th style="padding:3px 8px;text-align:center;font-size:.72rem;color:var(--text3);font-weight:600">Statut</th>'
-          + '<th style="padding:3px 8px;text-align:left;font-size:.72rem;color:var(--text3);font-weight:600">Marqueur</th>'
-          + '</tr></thead><tbody>'+rlMobRows+'</tbody></table></div>';
-      }
+      secRows += _crMobTable('Mobilité Lombaire', 'rl');
+
       // TFD / TFA primaires
       (function() {
         var tfdRes = (document.getElementById('rl-tfd-res')||{}).value || '';
