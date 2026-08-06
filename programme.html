@@ -244,6 +244,18 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .stmpl-new-group-btn:hover { background:rgba(255,255,255,.1); color:#fff; }
 /* UNE carte par protocole, pas une par niveau. Le filet gauche remplace le
    fond colore et l'imbrication de cadres. */
+/* Choix de couleur d'un protocole. Les teintes viennent d'ETAPE_COLORS
+   (js/prog-data.js) : la meme palette que les etapes du builder, pour ne pas
+   ouvrir une seconde famille de couleurs dans le produit. */
+.grp-color-row { display:flex; gap:7px; flex-wrap:wrap; align-items:center; }
+.grp-color-sw {
+  width:26px; height:26px; border-radius:50%; cursor:pointer;
+  border:2px solid transparent; box-shadow:0 0 0 1px var(--border) inset;
+  padding:0; outline:none; transition:transform .12s, border-color .12s;
+}
+.grp-color-sw:hover { transform:scale(1.12); }
+.grp-color-sw.sel   { border-color:var(--navy); transform:scale(1.12); }
+.grp-color-sw-def   { background:var(--accent); }
 .stmpl-group { margin:0 8px 8px; border:1px solid var(--border); border-radius:9px; background:var(--surface); overflow:hidden; }
 .stmpl-group-header {
   display:flex; align-items:center; gap:7px; padding:9px 11px; cursor:pointer;
@@ -2548,6 +2560,10 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
       <input type="text" id="grpNameInput" placeholder="Ex : LCA — Protocole complet">
     </div>
     <div class="save-field">
+      <label>Couleur <span class="save-hint">liseré du protocole dans la bibliothèque</span></label>
+      <div class="grp-color-row" id="grpColorRow"></div>
+    </div>
+    <div class="save-field">
       <label>Catégorie</label>
       <select id="grpCatInput">
         <option value="">— Choisir —</option>
@@ -4448,6 +4464,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 </div>
 
-<script src="js/prog-main.js?v=20260806p"></script>
+<script src="js/prog-main.js?v=20260806q"></script>
 </body>
 </html>

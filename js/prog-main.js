@@ -5063,7 +5063,43 @@ function _persistGroups(){
   try { localStorage.setItem(R4P_KEYS.TEMPLATE_GROUPS, JSON.stringify(_groups)); } catch(e){}
 }
 
+/* La colonne `couleur` de template_groups peut ne pas encore exister : la
+   migration SQL est a la main du praticien. PostgREST refuse alors la requete
+   entiere (PGRST204) et la creation d'un protocole echouerait — pour une
+   couleur. On rejoue donc une fois sans le champ, et le protocole se cree
+   quand meme, en liseré par defaut. A retirer quand la migration sera passee
+   partout. */
+function _grpFetchTolerant(url, opts, corps){
+  return _fetchRetry(url, Object.assign({}, opts, { body: JSON.stringify(corps) }))
+    .then(function(r){
+      if(r.ok || !('couleur' in corps)) return r;
+      return r.clone().text().then(function(t){
+        if(!/couleur/i.test(t)) return r;
+        var sansCouleur = Object.assign({}, corps); delete sansCouleur.couleur;
+        return _fetchRetry(url, Object.assign({}, opts, { body: JSON.stringify(sansCouleur) }));
+      });
+    });
+}
+
 var _grpEditId = null; // null = création, sinon id du groupe à modifier
+/* null = liseré par défaut (le bleu d'accent). Une couleur choisie est stockée
+   telle quelle sur le groupe ; les teintes viennent d'ETAPE_COLORS, la palette
+   des étapes du builder — on n'ouvre pas une seconde famille de couleurs. */
+var _grpSelectedColor = null;
+
+function _renderGrpColors(){
+  var row = document.getElementById('grpColorRow');
+  if(!row) return;
+  var h = '<button type="button" class="grp-color-sw grp-color-sw-def'
+        + (_grpSelectedColor ? '' : ' sel')
+        + '" title="Couleur par défaut" onclick="_pickGrpColor(null)"></button>';
+  ETAPE_COLORS.forEach(function(c){
+    h += '<button type="button" class="grp-color-sw' + (_grpSelectedColor===c ? ' sel' : '')
+       + '" style="background:' + c + '" title="' + c + '" onclick="_pickGrpColor(\'' + c + '\')"></button>';
+  });
+  row.innerHTML = h;
+}
+function _pickGrpColor(c){ _grpSelectedColor = c; _renderGrpColors(); }
 var _grpLibId          = null;  // id de l'entrée templates_library si déjà publié
 var _grpLibCheckDone   = false; // true quand la vérification async est terminée
 
@@ -5076,6 +5112,7 @@ function openCreateGroup(){
   document.getElementById('grpDescInput').value = '';
   document.getElementById('grpPathoInput').value = '';
   document.getElementById('grpSportInput').value = '';
+  _grpSelectedColor = null; _renderGrpColors();
   _remplirSuggestionsEtiquettes();
   document.getElementById('grpLibSection').style.display = 'none';
   document.getElementById('grpDuplicateBtn').style.display = 'none';
@@ -5093,6 +5130,7 @@ function openEditGroup(id){
   document.getElementById('grpDescInput').value = g.description||'';
   document.getElementById('grpPathoInput').value = g.pathologie||'';
   document.getElementById('grpSportInput').value = g.sport||'';
+  _grpSelectedColor = g.couleur || null; _renderGrpColors();
   _remplirSuggestionsEtiquettes();
   document.getElementById('grpDuplicateBtn').style.display = '';
   // Section publication
@@ -5159,10 +5197,10 @@ function doCreateGroup(){
     }
     var libIdSnap = _grpLibId; // snapshot après vérification complète
     if(_progToken && _progUid && !_isReader()){
-      _fetchRetry(SUPA_URL_P + '/rest/v1/template_groups?id=eq.' + id, {
-        method:'PATCH', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
-        body: JSON.stringify({ nom: nom, categorie: cat, description: desc, pathologie: gPatho, sport: gSport })
-      }).then(function(r){
+      _grpFetchTolerant(SUPA_URL_P + '/rest/v1/template_groups?id=eq.' + id, {
+        method:'PATCH', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'})
+      }, { nom: nom, categorie: cat, description: desc, pathologie: gPatho, sport: gSport, couleur: _grpSelectedColor })
+      .then(function(r){
         if(!r.ok){ r.text().then(function(t){ alert('Erreur PATCH : ' + t); }); return; }
         closeCreateGroup(); renderSidebarTemplates(); _showToast('✏️ Protocole mis à jour !');
         // Gérer publication après fermeture du modal
@@ -5173,7 +5211,7 @@ function doCreateGroup(){
     } else {
       _loadGroups();
       var g = _groups.find(function(x){ return String(x.id)===String(id); });
-      if(g){ g.nom=nom; g.categorie=cat; g.description=desc; g.pathologie=gPatho; g.sport=gSport; _persistGroups(); }
+      if(g){ g.nom=nom; g.categorie=cat; g.description=desc; g.pathologie=gPatho; g.sport=gSport; g.couleur=_grpSelectedColor; _persistGroups(); }
       closeCreateGroup(); renderSidebarTemplates(); _showToast('✏️ Protocole mis à jour !');
     }
     return;
@@ -5181,17 +5219,18 @@ function doCreateGroup(){
 
   // ── Mode création ──
   if(_progToken && _progUid && !_isReader()){
-    _fetchRetry(SUPA_URL_P + '/rest/v1/template_groups', {
-      method: 'POST', headers: _sbHeaders(),
-      body: JSON.stringify({ praticien_id: _progUid, nom: nom, categorie: cat, description: desc, pathologie: gPatho, sport: gSport })
-    }).then(function(r){
+    _grpFetchTolerant(SUPA_URL_P + '/rest/v1/template_groups', {
+      method: 'POST', headers: _sbHeaders()
+    }, { praticien_id: _progUid, nom: nom, categorie: cat, description: desc, pathologie: gPatho, sport: gSport, couleur: _grpSelectedColor })
+    .then(function(r){
       if(r.ok){ closeCreateGroup(); renderSidebarTemplates(); _showToast('📁 Protocole « ' + nom + ' » créé !'); }
       else { r.json().then(function(d){ alert('Erreur : ' + JSON.stringify(d)); }); }
     }).catch(function(){ alert('Erreur réseau.'); });
   } else {
     _loadGroups();
     _groups.unshift({ id:'_g'+Math.random().toString(36).slice(2,9), nom:nom, categorie:cat, description:desc,
-                      pathologie:gPatho, sport:gSport, created_at:new Date().toISOString(), _local:true });
+                      pathologie:gPatho, sport:gSport, couleur:_grpSelectedColor,
+                      created_at:new Date().toISOString(), _local:true });
     _persistGroups();
     closeCreateGroup(); renderSidebarTemplates(); _showToast('📁 Protocole « ' + nom + ' » créé !');
   }
@@ -6252,7 +6291,10 @@ function _renderSidebarWithGroups(){
         if(etS) etHtml += '<span class="stmpl-tag stmpl-tag-sport">'+escH(etS)+'</span>';
 
         html += '<div class="stmpl-group'+(isActiveGrp?' is-active-grp':'')+'">';
-        html += '<div class="stmpl-group-header" onclick="_toggleGroup(\''+gid+'\')">';
+        /* Sans couleur choisie, on laisse la regle CSS decider : le bleu
+           d'accent reste le defaut, et rien n'est ecrit en dur ici. */
+        var gCol = g.couleur ? ' style="border-left-color:'+escH(g.couleur)+'"' : '';
+        html += '<div class="stmpl-group-header"'+gCol+' onclick="_toggleGroup(\''+gid+'\')">';
         html += '<span class="stmpl-group-toggle">'+(isOpen?'▾':'▸')+'</span>';
         html += '<span class="stmpl-group-name">'+escH(g.nom||'Sans nom')+'</span>';
         html += etHtml;
