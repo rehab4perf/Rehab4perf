@@ -6662,6 +6662,12 @@ var _builderDate = '';
 var _builderLinkedPhase = null; // { protoId, phaseId, ppId, phaseName, protoName } quand lié à une phase
 
 function _enterBuilderMode(){
+  /* Douze endroits appellent cette fonction, et deux d'entre eux le font alors
+     que le builder est DEJA ouvert : les boutons « charger ce modele » de
+     l'onglet Bibliotheque. Repositionner l'onglet dans ce cas ejectait le
+     praticien vers les Exercices au moment meme ou il piochait dans la
+     bibliotheque. On ne le fait donc qu'a la veritable ouverture. */
+  var _dejaOuvert = document.getElementById('builderPanel').classList.contains('open');
   document.getElementById('builderPanel').classList.add('open');
   document.querySelector('.app').classList.add('builder-mode');
   var lib  = document.getElementById('sidebarLibrary');
@@ -6669,8 +6675,8 @@ function _enterBuilderMode(){
   if(lib)  lib.style.display  = 'flex';
   if(tmpl) tmpl.style.display = 'none';
   _updateSidebarToggleBtn(true);
-  // Toujours démarrer sur l'onglet exercices
-  _switchSidebarTab('lib');
+  // On DEMARRE sur l'onglet exercices — on n'y renvoie pas en cours de route.
+  if(!_dejaOuvert) _switchSidebarTab('lib');
   renderTemplatesInBuilder();
   // Proposer de restaurer le brouillon si le builder est vide
   setTimeout(_draftRestore, 120);
