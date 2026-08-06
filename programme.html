@@ -582,7 +582,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .picker-search::placeholder { color:rgba(255,255,255,.3); }
 .picker-scroll { flex:1; overflow-y:auto; background:var(--navy-d); }
 .picker-cat-label { display:flex; align-items:center; gap:7px; padding:11px 10px 6px; font-size:var(--fs-xs); font-weight:600; color:rgba(255,255,255,.85); text-transform:uppercase; letter-spacing:.06em; }
-.picker-cat-icon { width:19px; height:19px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:var(--fs-sm); flex-shrink:0; }
+.picker-cat-dot  { width:7px; height:7px; border-radius:2px; flex-shrink:0; }
 .picker-group { margin:0 7px 3px; }
 .picker-group-hdr { display:flex; align-items:center; gap:6px; padding:8px 9px; cursor:pointer; transition:background .1s; border-left:3px solid transparent; border-radius:0 8px 8px 0; background:rgba(255,255,255,.035); }
 .picker-group-hdr:hover { background:rgba(255,255,255,.08); }
@@ -2446,14 +2446,14 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
     <div class="stmpl-filter-bar">
       <select class="stmpl-cat-select" id="stmplCatFilter" onchange="filterSidebarTemplates()">
         <option value="">— Toutes catégories —</option>
-        <option value="Renforcement">💪 Renforcement</option>
-        <option value="Mobilité">🧘 Mobilité</option>
-        <option value="Prépa physique">⚡ Prépa physique</option>
-        <option value="Course à pied">🏃 Course à pied</option>
-        <option value="Vélo">🚴 Vélo</option>
-        <option value="Natation">🏊 Natation</option>
-        <option value="Pathologie">🩺 Pathologie</option>
-        <option value="Autre">📁 Autre</option>
+        <option value="Renforcement">Renforcement</option>
+        <option value="Mobilité">Mobilité</option>
+        <option value="Prépa physique">Prépa physique</option>
+        <option value="Course à pied">Course à pied</option>
+        <option value="Vélo">Vélo</option>
+        <option value="Natation">Natation</option>
+        <option value="Pathologie">Pathologie</option>
+        <option value="Autre">Autre</option>
       </select>
     </div>
     <div class="stmpl-collapse-row">
@@ -2536,7 +2536,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 <!-- ═══════ GROUP CREATE MODAL ═══════ -->
 <div class="grp-modal-overlay" id="groupCreateModal" onclick="if(event.target===this)closeCreateGroup()">
   <div class="grp-modal">
-    <h2 id="grpModalTitle">📁 Nouveau protocole</h2>
+    <h2 id="grpModalTitle">Nouveau protocole</h2>
     <div class="save-field">
       <label>Nom du protocole</label>
       <input type="text" id="grpNameInput" placeholder="Ex : LCA — Protocole complet">
@@ -2545,14 +2545,14 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
       <label>Catégorie</label>
       <select id="grpCatInput">
         <option value="">— Choisir —</option>
-        <option value="Renforcement">💪 Renforcement</option>
-        <option value="Mobilité">🧘 Mobilité</option>
-        <option value="Prépa physique">⚡ Prépa physique</option>
-        <option value="Course à pied">🏃 Course à pied</option>
-        <option value="Vélo">🚴 Vélo</option>
-        <option value="Natation">🏊 Natation</option>
-        <option value="Pathologie">🩺 Pathologie</option>
-        <option value="Autre">📁 Autre</option>
+        <option value="Renforcement">Renforcement</option>
+        <option value="Mobilité">Mobilité</option>
+        <option value="Prépa physique">Prépa physique</option>
+        <option value="Course à pied">Course à pied</option>
+        <option value="Vélo">Vélo</option>
+        <option value="Natation">Natation</option>
+        <option value="Pathologie">Pathologie</option>
+        <option value="Autre">Autre</option>
       </select>
     </div>
     <div class="save-field save-field-duo">
@@ -2581,7 +2581,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
       <p class="grp-lib-status" id="grpLibStatus">Vérification…</p>
     </div>
     <div class="save-modal-btns">
-      <button class="btn btn-primary" id="grpModalConfirmBtn" onclick="doCreateGroup()">📁 Créer le protocole</button>
+      <button class="btn btn-primary" id="grpModalConfirmBtn" onclick="doCreateGroup()">Créer le protocole</button>
       <button class="btn btn-outline" id="grpDuplicateBtn" style="display:none" onclick="duplicateGroup()"><svg style="vertical-align:middle;margin-right:4px" width="14" height="14" fill="currentColor" viewBox="0 0 480 480" xmlns="http://www.w3.org/2000/svg"><path d="m440 0h-336c-22.082031.0273438-39.972656 17.917969-40 40v24h-24c-22.082031.027344-39.9726562 17.917969-40 40v336c.0273438 22.082031 17.917969 39.972656 40 40h336c22.082031-.027344 39.972656-17.917969 40-40v-24h24c22.082031-.027344 39.972656-17.917969 40-40v-336c-.027344-22.082031-17.917969-39.9726562-40-40zm-40 440c0 13.253906-10.746094 24-24 24h-336c-13.253906 0-24-10.746094-24-24v-336c0-13.253906 10.746094-24 24-24h336c13.253906 0 24 10.746094 24 24zm64-64c0 13.253906-10.746094 24-24 24h-24v-296c-.027344-22.082031-17.917969-39.972656-40-40h-296v-24c0-13.253906 10.746094-24 24-24h336c13.253906 0 24 10.746094 24 24zm0 0"/><path d="m296 264h-80v-80c0-4.417969-3.582031-8-8-8s-8 3.582031-8 8v80h-80c-4.417969 0-8 3.582031-8 8s3.582031 8 8 8h80v80c0 4.417969 3.582031 8 8 8s8-3.582031 8-8v-80h80c4.417969 0 8-3.582031 8-8s-3.582031-8-8-8zm0 0"/></svg>Dupliquer</button>
       <button class="btn btn-outline" onclick="closeCreateGroup()">Annuler</button>
     </div>
@@ -2613,19 +2613,19 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
          Les garder ouverts faisait sept champs à remplir pour enregistrer une
          séance type, ce qui décourageait d'en créer. -->
     <details class="tmpl-plus">
-      <summary>Classement <span class="save-hint">catégorie, protocole, emoji</span></summary>
+      <summary>Classement <span class="save-hint">catégorie, protocole</span></summary>
     <div class="save-field">
       <label>Catégorie</label>
       <select id="tmplCatInput" onchange="_onTmplCatChange()">
         <option value="">— Choisir —</option>
-        <option value="Renforcement">💪 Renforcement</option>
-        <option value="Mobilité">🧘 Mobilité</option>
-        <option value="Prépa physique">⚡ Prépa physique</option>
-        <option value="Course à pied">🏃 Course à pied</option>
-        <option value="Vélo">🚴 Vélo</option>
-        <option value="Natation">🏊 Natation</option>
-        <option value="Pathologie">🩺 Pathologie</option>
-        <option value="Autre">📁 Autre</option>
+        <option value="Renforcement">Renforcement</option>
+        <option value="Mobilité">Mobilité</option>
+        <option value="Prépa physique">Prépa physique</option>
+        <option value="Course à pied">Course à pied</option>
+        <option value="Vélo">Vélo</option>
+        <option value="Natation">Natation</option>
+        <option value="Pathologie">Pathologie</option>
+        <option value="Autre">Autre</option>
       </select>
     </div>
     <div class="save-field">
@@ -2640,10 +2640,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
         <input type="number" id="tmplPhaseOrdreInput" min="1" value="1" style="width:80px;">
       </div>
     </div>
-    <div class="save-field">
-      <label>Emoji <span class="save-hint">repère visuel</span></label>
-      <div class="emoji-row" id="tmplEmojiRow"></div>
-    </div>
+    
     </details>
     <div class="save-modal-btns">
       <button class="btn btn-primary" id="tmplModalConfirmBtn" onclick="doSaveTemplate()">Enregistrer le répertoire</button>
@@ -4445,6 +4442,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 </div>
 
-<script src="js/prog-main.js?v=20260806l"></script>
+<script src="js/prog-main.js?v=20260806n"></script>
 </body>
 </html>

@@ -3785,7 +3785,7 @@ var TMPL_SUBTYPES = {
 };
 
 var _templates        = [];
-var _tmplSelectedEmoji = '💪';
+var _tmplSelectedEmoji = null;
 var _builderFromTemplate = null;
 var _builderReadOnly = false; // true = template public d'un autre user chargé par lecteur
 var _tmplEditId = null; // null = création, sinon id du template à modifier
@@ -3807,18 +3807,9 @@ function _persistTemplates(){
 }
 
 /* ── Ouvrir modal sauvegarde template ── */
-/* Met à jour les sous-types et l'emoji suggéré selon la catégorie choisie */
-function _onTmplCatChange(){
-  var cat = document.getElementById('tmplCatInput').value;
-  // Suggérer l'emoji de la catégorie
-  var catInfo = TMPL_CATEGORIES.find(function(c){ return c.val === cat; });
-  if(catInfo){
-    _tmplSelectedEmoji = catInfo.icon;
-    document.querySelectorAll('#tmplEmojiRow .emoji-opt').forEach(function(b){
-      b.classList.toggle('selected', b.textContent === catInfo.icon);
-    });
-  }
-}
+/* Conserve pour compatibilite : le select categorie appelle encore ce
+   callback, mais il n'a plus rien a suggerer depuis le retrait des emoji. */
+function _onTmplCatChange(){}
 
 /* Etiquette effective d'un template : la sienne, sinon celle de son
    protocole. Sans cet heritage il faudrait saisir la meme pathologie sur
@@ -3855,21 +3846,10 @@ function _openTmplModal(opts){
   document.getElementById('tmplModalTitle').textContent = _tmplEditId ? 'Modifier le répertoire' : 'Enregistrer un répertoire';
   document.getElementById('tmplModalConfirmBtn').innerHTML = _tmplEditId ? _PROG_SAVE_ICON+'Enregistrer les modifications' : _PROG_SAVE_ICON+'Enregistrer le répertoire';
 
-  // Emoji row
-  var row = document.getElementById('tmplEmojiRow');
-  _tmplSelectedEmoji = opts.emoji || '💪';
-  row.innerHTML = '';
-  SAVE_EMOJIS.forEach(function(em){
-    var b = document.createElement('button');
-    b.className = 'emoji-opt' + (em === _tmplSelectedEmoji ? ' selected' : '');
-    b.textContent = em;
-    b.onclick = function(){
-      _tmplSelectedEmoji = em;
-      document.querySelectorAll('#tmplEmojiRow .emoji-opt').forEach(function(x){ x.classList.remove('selected'); });
-      b.classList.add('selected');
-    };
-    row.appendChild(b);
-  });
+  /* Plus de choix d'emoji : plus rien ne l'affiche depuis que la sidebar et le
+     picker s'en passent. On CONSERVE la valeur deja enregistree — la retirer
+     du formulaire ne doit pas l'effacer en base. */
+  _tmplSelectedEmoji = opts.emoji || null;
 
   document.getElementById('tmplNameInput').value = opts.nom || '';
   document.getElementById('tmplCatInput').value  = opts.cat || '';
@@ -3924,9 +3904,9 @@ function openEditTemplate(id){
 function openSaveTemplate(){
   if(!blocs.length){ alert('La séance est vide.'); return; }
   if(_activeGroupId){
-    _openTmplModal({ emoji:_tmplSelectedEmoji, groupId:_activeGroupId, phaseOrdre:_activePhaseOrdre, _simplified:true });
+    _openTmplModal({ groupId:_activeGroupId, phaseOrdre:_activePhaseOrdre, _simplified:true });
   } else {
-    _openTmplModal({ emoji: _tmplSelectedEmoji });
+    _openTmplModal({});
   }
 }
 
@@ -3937,7 +3917,7 @@ function openSaveEtapeTemplate(etapeId){
   if(!etapeBlocs.length){ alert('Cette étape est vide : ajoutez-y au moins un bloc avant de l\'enregistrer.'); return; }
   _tmplEtapeSourceId = etapeId;
   var title = (typeof _etapeTitle==='function') ? _etapeTitle(etapeId) : 'Étape';
-  _openTmplModal({ emoji:_tmplSelectedEmoji, nom:title });
+  _openTmplModal({ nom:title });
   document.getElementById('tmplModalTitle').textContent = 'Enregistrer l’étape « ' + title + ' »';
 }
 
@@ -4280,7 +4260,6 @@ function _renderSidebarPicker(){
     var catGroups = catsMap[catKey];
     var catInfo = (typeof TMPL_CATEGORIES!=='undefined') ? TMPL_CATEGORIES.find(function(c){return c.val===catKey;}) : null;
     var catAccent = catInfo ? catInfo.textColor : '#9CA3AF';
-    var catIcon = catInfo ? catInfo.icon : '📁';
 
     /* Filtrer groupes avec contenu */
     var visible = catGroups.filter(function(g){
@@ -4289,7 +4268,9 @@ function _renderSidebarPicker(){
     });
     if(!visible.length) return;
 
-    html += '<div class="picker-cat-label"><span class="picker-cat-icon" style="background:'+catAccent+'26;color:'+catAccent+';">'+catIcon+'</span>'+escH(catKey||'Autre')+'</div>';
+    /* La pastille de couleur suffit a distinguer les categories : l'emoji
+       faisait doublon et sortait du vocabulaire d'icones du site. */
+    html += '<div class="picker-cat-label"><span class="picker-cat-dot" style="background:'+catAccent+';"></span>'+escH(catKey||'Autre')+'</div>';
     visible.forEach(function(g){
       var gProgs = progs.filter(function(p){return String(p.group_id)===String(g.id);});
       if(search) gProgs = gProgs.filter(function(p){return _pickerProgMatches(p,search);});
@@ -4311,7 +4292,7 @@ function _renderSidebarPicker(){
   if(orphans.length){
     var visOrph = search ? orphans.filter(function(p){return _pickerProgMatches(p,search);}) : orphans;
     if(visOrph.length){
-      html += '<div class="picker-cat-label"><span class="picker-cat-icon" style="background:rgba(255,255,255,.09);color:rgba(255,255,255,.6);">📁</span>Sans protocole</div>';
+      html += '<div class="picker-cat-label"><span class="picker-cat-dot" style="background:rgba(255,255,255,.35);"></span>Sans protocole</div>';
       visOrph.forEach(function(p){ html += _pickerRenderTemplate(p, search, addedLibIds); });
     }
   }
@@ -4347,7 +4328,6 @@ function _pickerRenderTemplate(p, search, addedLibIds){
   var h = '<div class="picker-tmpl" id="'+pid+'">';
   var totalExos = srcReels.reduce(function(a,x){ return a+(x.b.exos||[]).length; },0);
   h += '<div class="picker-tmpl-hdr" onclick="_pickerToggle(\''+pid+'\')">';
-  h += '<span>'+escH(p.emoji||'📋')+'</span>';
   h += '<span class="picker-tmpl-name">'+escH(p.nom)+'</span>';
   if(totalExos) h += '<span style="font-size:.63rem;color:rgba(255,255,255,.38);flex-shrink:0;margin-left:2px;">'+totalExos+' ex.</span>';
   h += '<button class="picker-fav-btn'+(isFavPicker?' active':'')+'" onclick="event.stopPropagation();_togglePickerFav(\''+escJS(String(p.id))+'\')" title="Épingler en favoris">★</button>';
@@ -4617,7 +4597,7 @@ function openPublishModal(id){
   .then(function(data){
     if(!Array.isArray(data)||!data[0]){ alert('Répertoire introuvable.'); return; }
     _pubTmplData = data[0];
-    document.getElementById('pubTmplName').textContent = (_pubTmplData.emoji||'📋')+' '+(_pubTmplData.nom||'Sans nom');
+    document.getElementById('pubTmplName').textContent = (_pubTmplData.nom||'Sans nom');
     document.getElementById('pubDescInput').value = _pubTmplData.description||'';
     document.getElementById('pubLibModal').classList.add('open');
     setTimeout(function(){ document.getElementById('pubDescInput').focus(); }, 100);
@@ -5079,8 +5059,8 @@ var _grpLibCheckDone   = false; // true quand la vérification async est termin�
 
 function openCreateGroup(){
   _grpEditId = null; _grpLibId = null; _grpLibCheckDone = false;
-  document.getElementById('grpModalTitle').textContent = '📁 Nouveau protocole';
-  document.getElementById('grpModalConfirmBtn').textContent = '📁 Créer le protocole';
+  document.getElementById('grpModalTitle').textContent = 'Nouveau protocole';
+  document.getElementById('grpModalConfirmBtn').textContent = 'Créer le protocole';
   document.getElementById('grpNameInput').value = '';
   document.getElementById('grpCatInput').value = '';
   document.getElementById('grpDescInput').value = '';
@@ -5096,7 +5076,7 @@ function openEditGroup(id){
   var g = (_groups||[]).find(function(x){ return String(x.id)===String(id); });
   if(!g){ alert('Protocole introuvable.'); return; }
   _grpEditId = id; _grpLibId = null; _grpLibCheckDone = false;
-  document.getElementById('grpModalTitle').textContent = '✏️ Modifier le protocole';
+  document.getElementById('grpModalTitle').textContent = 'Modifier le protocole';
   document.getElementById('grpModalConfirmBtn').innerHTML = _PROG_SAVE_ICON + 'Enregistrer';
   document.getElementById('grpNameInput').value = g.nom||'';
   document.getElementById('grpCatInput').value = g.categorie||'';
