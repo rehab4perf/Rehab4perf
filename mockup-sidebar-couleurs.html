@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Couleur des libellés de section — options</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+:root{
+  --navy:#1A3A5C; --accent:#2B5FA6; --accent2:#4A90D9;
+  --bg:#F0F4F8; --surface:#fff; --text:#1a2433; --muted:#6b7a8d;
+  --border:#dde3ec; --tag-bg:#EBF3FF; --tag-color:#2B5FA6;
+  --text-dk:#374151; --border-l:#E2E8F0; --accent-ll:#EFF6FF; --text-sm:#6B7280;
+  --surface2:#F5F8FC; --border2:#C6D0DE; --text2:#6b7a8d; --text3:#9AA7B8;
+  --fs-2xs:.625rem; --fs-xs:.6875rem; --fs-sm:.75rem; --fs-md:.8125rem;
+  --fs-lg:.875rem; --fs-xl:1rem; --fs-2xl:1.25rem;
+  --ok-l:#DCFCE7; --ok-d:#15803D;
+  --font-sans:'Figtree',system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);background:var(--bg);color:var(--text);padding:26px 20px 60px}
+h1{font-size:var(--fs-2xl);color:var(--navy);margin-bottom:6px}
+.sub{font-size:var(--fs-md);color:var(--muted);margin-bottom:24px;max-width:78ch;line-height:1.6}
+.grid{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap}
+.col{width:264px;flex-shrink:0}
+.col-hd{font-size:var(--fs-sm);font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--navy)}
+.ratio{font-size:var(--fs-2xs);font-weight:700;margin:3px 0 2px;font-variant-numeric:tabular-nums}
+.ok{color:var(--ok-d)}.ko{color:#DC2626}
+.col-note{font-size:var(--fs-xs);color:var(--muted);line-height:1.5;margin-bottom:9px;min-height:52px}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(26,58,92,.06)}
+.ph{background:var(--navy);color:#fff;padding:9px 12px;font-size:var(--fs-sm);font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.srch{margin:8px;padding:6px 10px;border:1px solid var(--border);border-radius:7px;font-size:var(--fs-sm);color:var(--text3);background:var(--surface2)}
+.sec{display:flex;align-items:center;gap:6px;padding:12px 12px 6px;cursor:pointer}
+.sec-n{font-size:var(--fs-2xs);font-weight:800;letter-spacing:.11em;text-transform:uppercase;flex:1}
+.sec-t{font-size:var(--fs-2xs);flex-shrink:0}
+.grp{margin:0 8px 8px;border:1px solid var(--border);border-radius:9px;background:var(--surface)}
+.gh{display:flex;align-items:center;gap:7px;padding:9px 11px;border-left:3px solid var(--accent)}
+.gn{font-size:var(--fs-md);font-weight:700;flex:1}
+.gc{font-size:var(--fs-2xs);color:var(--muted)}
+.tg{font-size:var(--fs-2xs);font-weight:700;border-radius:4px;padding:1px 5px;background:var(--tag-bg);color:var(--tag-color)}
+.tg.s{background:var(--ok-l);color:var(--ok-d)}
+.solo{margin:0 8px 8px;border:1px solid var(--border);border-left:3px solid var(--text3);border-radius:9px;background:var(--surface);padding:9px 11px}
+.nm{font-size:var(--fs-md);font-weight:600;line-height:1.35}
+.mt{font-size:var(--fs-2xs);color:var(--muted);margin-top:3px}
+
+/* ── Les cinq options ─────────────────────────────────────────────── */
+.o1 .sec-n,.o1 .sec-t{color:var(--text3)}                                  /* actuel */
+.o2 .sec-n,.o2 .sec-t{color:var(--text-sm)}                                /* gris neutre */
+.o3 .sec-n,.o3 .sec-t{color:var(--navy)}                                   /* navy de marque */
+.o4 .sec-n,.o4 .sec-t{color:var(--accent)}                                 /* bleu accent */
+.o5 .sec-n,.o5 .sec-t{color:var(--navy)}
+.o5 .sec{border-bottom:1px solid var(--border);padding-bottom:7px;margin:0 10px}
+.o5 .sec-n{letter-spacing:.13em}
+
+.legend{margin-top:32px;font-size:var(--fs-md);color:var(--text-dk);max-width:80ch;line-height:1.65}
+.legend h2{font-size:var(--fs-lg);color:var(--navy);margin:16px 0 6px}
+.legend li{margin:4px 0 4px 18px}
+table{border-collapse:collapse;margin-top:10px;font-size:var(--fs-sm)}
+th,td{text-align:left;padding:4px 14px 4px 0}
+th{color:var(--navy);font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.06em}
+td:nth-child(3){font-variant-numeric:tabular-nums;font-weight:700}
+</style>
+</head>
+<body>
+
+<h1>Couleur des libellés de section</h1>
+<p class="sub">Les libellés de catégorie (<b>PRÉPA PHYSIQUE</b>, <b>PATHOLOGIE</b>…) sont aujourd'hui en <code>--text3</code>, qui donne <b>2,44:1</b> sur blanc — bien en dessous du minimum lisible de 4,5:1. Toutes les options ci-dessous sont des jetons déjà présents dans <code>programme.html</code> : aucune couleur nouvelle.</p>
+
+<div class="grid">
+
+  <div class="col o1">
+    <div class="col-hd">Actuel</div>
+    <div class="ratio ko">--text3 · 2,44:1 · échoue</div>
+    <div class="col-note">Trop clair pour du texte, même en gras. C'est ce que vous voyez comme « absent ».</div>
+    <div class="panel">
+      <div class="ph">Séances &amp; Répertoires</div><div class="srch">Rechercher…</div>
+      <div class="sec"><span class="sec-n">Prépa physique</span><span class="sec-t">▸</span></div>
+      <div class="sec"><span class="sec-n">Pathologie</span><span class="sec-t">▾</span></div>
+      <div class="grp"><div class="gh"><span class="gn">LCA</span><span class="tg">LCA</span><span class="gc">3</span></div></div>
+      <div class="sec"><span class="sec-n">Sans catégorie</span><span class="sec-t">▾</span></div>
+      <div class="solo"><div class="nm">Réveil matinal épaule</div><div class="mt">1 exercice</div></div>
+    </div>
+  </div>
+
+  <div class="col o2">
+    <div class="col-hd">1 · Gris neutre</div>
+    <div class="ratio ok">--text-sm · 4,83:1 · conforme</div>
+    <div class="col-note">Le minimum honnête. La section reste secondaire, mais devient lisible. Aucun changement de caractère.</div>
+    <div class="panel">
+      <div class="ph">Séances &amp; Répertoires</div><div class="srch">Rechercher…</div>
+      <div class="sec"><span class="sec-n">Prépa physique</span><span class="sec-t">▸</span></div>
+      <div class="sec"><span class="sec-n">Pathologie</span><span class="sec-t">▾</span></div>
+      <div class="grp"><div class="gh"><span class="gn">LCA</span><span class="tg">LCA</span><span class="gc">3</span></div></div>
+      <div class="sec"><span class="sec-n">Sans catégorie</span><span class="sec-t">▾</span></div>
+      <div class="solo"><div class="nm">Réveil matinal épaule</div><div class="mt">1 exercice</div></div>
+    </div>
+  </div>
+
+  <div class="col o3">
+    <div class="col-hd">2 · Navy de marque</div>
+    <div class="ratio ok">--navy · 11,64:1 · conforme</div>
+    <div class="col-note">La couleur du logo et des en-têtes. Affirme la structure et ancre la sidebar dans l'identité. Mon choix.</div>
+    <div class="panel">
+      <div class="ph">Séances &amp; Répertoires</div><div class="srch">Rechercher…</div>
+      <div class="sec"><span class="sec-n">Prépa physique</span><span class="sec-t">▸</span></div>
+      <div class="sec"><span class="sec-n">Pathologie</span><span class="sec-t">▾</span></div>
+      <div class="grp"><div class="gh"><span class="gn">LCA</span><span class="tg">LCA</span><span class="gc">3</span></div></div>
+      <div class="sec"><span class="sec-n">Sans catégorie</span><span class="sec-t">▾</span></div>
+      <div class="solo"><div class="nm">Réveil matinal épaule</div><div class="mt">1 exercice</div></div>
+    </div>
+  </div>
+
+  <div class="col o4">
+    <div class="col-hd">3 · Bleu accent</div>
+    <div class="ratio ok">--accent · 6,38:1 · conforme</div>
+    <div class="col-note">Plus vivant, signale que la section se replie. Réserve : ce bleu est celui des boutons — il peut se lire comme cliquable-action.</div>
+    <div class="panel">
+      <div class="ph">Séances &amp; Répertoires</div><div class="srch">Rechercher…</div>
+      <div class="sec"><span class="sec-n">Prépa physique</span><span class="sec-t">▸</span></div>
+      <div class="sec"><span class="sec-n">Pathologie</span><span class="sec-t">▾</span></div>
+      <div class="grp"><div class="gh"><span class="gn">LCA</span><span class="tg">LCA</span><span class="gc">3</span></div></div>
+      <div class="sec"><span class="sec-n">Sans catégorie</span><span class="sec-t">▾</span></div>
+      <div class="solo"><div class="nm">Réveil matinal épaule</div><div class="mt">1 exercice</div></div>
+    </div>
+  </div>
+
+  <div class="col o5">
+    <div class="col-hd">4 · Navy + filet</div>
+    <div class="ratio ok">--navy · 11,64:1 · conforme</div>
+    <div class="col-note">Le navy, plus un filet de séparation sous le libellé. La hiérarchie se lit sans monter le contraste davantage.</div>
+    <div class="panel">
+      <div class="ph">Séances &amp; Répertoires</div><div class="srch">Rechercher…</div>
+      <div class="sec"><span class="sec-n">Prépa physique</span><span class="sec-t">▸</span></div>
+      <div class="sec"><span class="sec-n">Pathologie</span><span class="sec-t">▾</span></div>
+      <div class="grp"><div class="gh"><span class="gn">LCA</span><span class="tg">LCA</span><span class="gc">3</span></div></div>
+      <div class="sec"><span class="sec-n">Sans catégorie</span><span class="sec-t">▾</span></div>
+      <div class="solo"><div class="nm">Réveil matinal épaule</div><div class="mt">1 exercice</div></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="legend">
+  <h2>Contrastes mesurés sur fond blanc</h2>
+  <table>
+    <tr><th>Jeton</th><th>Hex</th><th>Ratio</th><th>Verdict</th></tr>
+    <tr><td>--text3 <i>(actuel)</i></td><td>#9AA7B8</td><td class="ko">2,44</td><td>échoue, même en gras</td></tr>
+    <tr><td>--muted / --text2</td><td>#6b7a8d</td><td>4,38</td><td>limite — passe en gras seulement</td></tr>
+    <tr><td>--text-sm</td><td>#6B7280</td><td class="ok">4,83</td><td>conforme</td></tr>
+    <tr><td>--accent</td><td>#2B5FA6</td><td class="ok">6,38</td><td>conforme</td></tr>
+    <tr><td>--navy</td><td>#1A3A5C</td><td class="ok">11,64</td><td>conforme, large marge</td></tr>
+  </table>
+
+  <h2>Ce que je recommande</h2>
+  <p><b>L'option 2 (navy)</b>. C'est la couleur du logo, de la barre du haut et des en-têtes de panneau : le libellé de section rejoint la famille des repères de structure du produit, au lieu d'être un gris de plus. Et à 11,64:1 la question de la lisibilité ne se reposera pas, y compris sur un écran de tablette en cabinet.</p>
+  <p>Si vous la trouvez trop présente, <b>l'option 1</b> est le repli sûr : c'est exactement l'apparence actuelle, simplement lisible.</p>
+</div>
+
+</body>
+</html>

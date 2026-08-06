@@ -289,7 +289,13 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .stmpl-cat-hdr      { display:flex; align-items:center; gap:6px; padding:12px 12px 6px; cursor:pointer; user-select:none; -webkit-user-select:none; }
 .stmpl-cat-hdr:hover .stmpl-cat-hdr-name { color:var(--accent); }
 
-.stmpl-cat-hdr-name { font-size:var(--fs-2xs); font-weight:800; letter-spacing:.11em; text-transform:uppercase; color:var(--text3); flex:1; }
+/* Navy, pas --text3 : ce dernier donne 2,44:1 sur blanc, tres en dessous du
+   minimum lisible de 4,5:1 — le libelle n'etait pas discret, il etait
+   illisible. Le navy (11,64:1) est la couleur du logo, de la barre du haut
+   et des en-tetes : le libelle de section rejoint la famille des reperes de
+   structure au lieu d'etre un gris de plus.
+   Le chevron, lui, reste clair : c'est un ornement, pas du texte. */
+.stmpl-cat-hdr-name { font-size:var(--fs-2xs); font-weight:800; letter-spacing:.11em; text-transform:uppercase; color:var(--navy); flex:1; }
 
 .stmpl-cat-hdr-toggle{ font-size:var(--fs-2xs); color:var(--text3); flex-shrink:0; width:10px; }
 .stmpl-cat-body     { }
@@ -4442,6 +4448,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 </div>
 
-<script src="js/prog-main.js?v=20260806n"></script>
+<script src="js/prog-main.js?v=20260806o"></script>
 </body>
 </html>
