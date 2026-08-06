@@ -35,14 +35,14 @@ node qualite/cap-cas.js
 
 ## 🔵 BUILDER PROGRAMME — Tests obligatoires si `programme.html` est modifié
 
-### Flux 1 — Création d'un répertoire (mode répertoire)
-- [ ] Cliquer "📋 Nouveau répertoire" en tête du panneau → builder vide, titre
-      "Nouveau répertoire", pas de date, pas de bouton "Planifier", pas de champ nom
-- [ ] Le bouton d'enregistrement dit "Enregistrer le répertoire" (pas "Sauvegarder")
+### Flux 1 — Création d'un modèle (mode modèle)
+- [ ] Cliquer "📋 Nouveau modèle" en tête du panneau → builder vide, titre
+      "Nouveau modèle", pas de date, pas de bouton "Planifier", pas de champ nom
+- [ ] Le bouton d'enregistrement dit "Enregistrer le modèle" (pas "Sauvegarder")
 - [ ] Ajouter au moins 1 exercice → badge "● non sauvegardé" apparaît
 - [ ] Fermer sans enregistrer → la confirmation parle bien du TEMPLATE, pas de la séance
 - [ ] Enregistrer → modal : seuls Nom, Pathologie et Sport visibles ; "Classement" replié
-- [ ] Confirmer → retour à l'agenda, le répertoire apparaît dans le panneau
+- [ ] Confirmer → retour à l'agenda, le modèle apparaît dans le panneau
 
 ### Flux 1 bis — La séance en cours n'est JAMAIS perdue
 > Le défaut historique : "Nouvelle phase" faisait `blocs = []` sans rien demander.
@@ -52,7 +52,7 @@ node qualite/cap-cas.js
 - [ ] Fermer le builder → la séance de départ est retrouvée à l'identique,
       avec sa date et son badge "● non sauvegardé"
 - [ ] Rouvrir le builder → le brouillon proposé est celui de la SÉANCE,
-      pas celui du répertoire
+      pas celui du modèle
 
 ### Flux 1 ter — Une même séance sur plusieurs jours
 - [ ] Depuis un jour de l'agenda, composer une séance (non enregistrée)
@@ -72,8 +72,8 @@ node qualite/cap-cas.js
 - [ ] Ajouter exercices → cliquer "💾 Sauvegarder" → séance sauvegardée (pas une erreur)
 - [ ] Vérifier que le badge "● non sauvegardé" disparaît
 
-### Flux 3 — Consulter et ouvrir un répertoire depuis l'agenda
-- [ ] Cliquer sur une carte de répertoire dans la sidebar → elle se DÉPLIE sur
+### Flux 3 — Consulter et ouvrir un modèle depuis l'agenda
+- [ ] Cliquer sur une carte de modèle dans la sidebar → elle se DÉPLIE sur
       place (blocs et exercices lisibles), le builder ne s'ouvre PAS
 - [ ] Le nom d'une phase n'est JAMAIS tronqué : il passe sur deux lignes, et
       le préfixe du protocole est retiré (« LCA — Phase 1 : Récupération »
@@ -83,20 +83,20 @@ node qualite/cap-cas.js
 - [ ] Aucun emoji dans la sidebar
 - [ ] Chaque carte fait au moins 44 px de haut (cible tactile)
 - [ ] Cliquer à nouveau → elle se replie
-- [ ] Répertoire vide → message "Ce répertoire est vide." affiché
+- [ ] Modèle vide → message "Ce modèle est vide." affiché
 - [ ] Cliquer le kebab (⋮) ou le "+" sur une carte dépliée → n'affecte pas le pli
 - [ ] Dans la carte dépliée, cliquer "Ouvrir dans le builder" → ouvre une
-      séance NEUVE avec le répertoire dedans (équivalent "+ Séance" pré-rempli)
+      séance NEUVE avec le modèle dedans (équivalent "+ Séance" pré-rempli)
 - [ ] ⚠️ RÉGRESSION À SURVEILLER : ouvrir une séance planifiée depuis une chip,
-      fermer le builder, puis "Ouvrir dans le builder" un répertoire →
+      fermer le builder, puis "Ouvrir dans le builder" un modèle →
       le builder doit être VIDE de la séance précédente, et le bouton doit
       afficher "Sauvegarder" (PAS "Enregistrer la séance"). Sinon
       l'enregistrement modifierait la séance déjà planifiée chez le patient.
-- [ ] Dans le builder, onglet "Répertoires" → dépliage bloc/exercice inchangé
+- [ ] Dans le builder, onglet "Modèles" → dépliage bloc/exercice inchangé
       (surface distincte, non touchée par ce lot)
 
-### Flux 3 bis — Bouton "+" (planifier un répertoire sans passer par le builder)
-- [ ] Patient sélectionné → cliquer "+" sur une carte → une copie du répertoire
+### Flux 3 bis — Bouton "+" (planifier un modèle sans passer par le builder)
+- [ ] Patient sélectionné → cliquer "+" sur une carte → une copie du modèle
       est créée pour ce patient, PUIS le même modal "Planifier la séance" que
       celui du builder s'ouvre (bouton "Cocher les jours sur l'agenda" en
       premier, saisie date par date en repli) — plus l'ancien mini-modal à
@@ -105,19 +105,19 @@ node qualite/cap-cas.js
       sélectionner un patient, aucune requête réseau
 - [ ] "Cocher les jours sur l'agenda" → calendrier en sélection → cocher 2 ou
       3 jours → valider → autant de séances planifiées, toutes sur LA MÊME
-      copie du répertoire (une seule ligne `programmes`)
+      copie du modèle (une seule ligne `programmes`)
 - [ ] Repli "saisir les dates une par une" → fonctionne identiquement au
       builder (ajout de lignes de date, "Planifier")
 
-### Flux 3 ter — Piocher dans un répertoire (onglet Répertoires du builder)
-- [ ] Déplier un répertoire qui contient une étape → AUCUNE ligne ne correspond
+### Flux 3 ter — Piocher dans un modèle (onglet Modèles du builder)
+- [ ] Déplier un modèle qui contient une étape → AUCUNE ligne ne correspond
       au séparateur d'étape (pas de ligne "+" sans exercices)
 - [ ] Ajouter un bloc seul → il arrive sans étape ; séance vide → 0 étape
 - [ ] Ajouter un 2e bloc de la même étape source → les deux se suivent,
       toujours 0 étape (le défaut donnait 2 étapes du même nom)
 - [ ] Séance dont la fin est une étape ouverte → le bloc pioché la REJOINT,
       il n'en crée pas une nouvelle et n'en change pas le titre
-- [ ] "+ Ajouter tous les blocs" → l'étape du répertoire est bien importée,
+- [ ] "+ Ajouter tous les blocs" → l'étape du modèle est bien importée,
       avec son titre d'origine (seul chemin qui importe des étapes)
 
 ### Flux 4 — Bouton "+ Enregistrer" (tabs)
@@ -126,7 +126,7 @@ node qualite/cap-cas.js
 - [ ] Builder avec contenu, patient sélectionné, hors contexte date/chip →
       clic → enregistrement DIRECT (plus de modal de destination)
 - [ ] Aucun patient sélectionné dans ce même contexte → alerte demandant de
-      sélectionner un patient (pas de repli silencieux vers un répertoire)
+      sélectionner un patient (pas de repli silencieux vers un modèle)
 
 ---
 

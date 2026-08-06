@@ -337,6 +337,54 @@ verifie('la copie a reçu un nouvel identifiant', 'true',
 verifie('la copie n\'emporte pas etapeId — il est positionnel', 'undefined',
   String(api.blocs()[0].etapeId));
 
+/* ══════════════════════════════════════════════════════════════════════════
+   Le nom d'un repertoire ne se perd pas en route.
+
+   Ouvrir un repertoire dans le builder n'affichait pas son nom : le champ de
+   nom restait vide. Or c'est CE champ que « Mettre a jour » renvoie au
+   serveur — le repertoire se retrouvait donc sans nom des la premiere
+   modification, et devenait introuvable dans la liste.
+
+   Deux verrous, parce qu'un seul ne suffit pas : le champ est rempli a
+   l'ouverture, ET une valeur vide ne s'ecrit jamais par-dessus le nom connu.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+console.log('\nLe nom d\'un modèle survit à son ouverture et à sa mise à jour');
+
+var mainSrc = fs.readFileSync(path.join(__dirname, '..', 'js', 'prog-main.js'), 'utf8');
+
+/* `loadTemplate` est definie APRES `_doUpdateTemplate` dans le fichier : une
+   borne de fin prise a l'aveugle donnerait une tranche vide. */
+var _dl = mainSrc.indexOf('function loadTemplate');
+var zoneLoad = mainSrc.slice(_dl, mainSrc.indexOf('\nfunction ', _dl + 10));
+verifie('l\'ouverture renseigne le champ de nom', true,
+  /getElementById\('patientName'\)[\s\S]{0,200}=\s*t\.nom/.test(zoneLoad));
+
+var zoneMaj = mainSrc.slice(mainSrc.indexOf('function _doUpdateTemplate'),
+                            mainSrc.indexOf('function duplicateTemplate'));
+verifie('la mise à jour retombe sur le nom déjà enregistré', true,
+  /nomProg\s*=[\s\S]{0,220}_tRefNom[\s\S]{0,40}\.nom/.test(zoneMaj));
+verifie('elle n\'envoie plus le champ brut sans repli', false,
+  /var nomProg = \(document\.getElementById\('patientName'\)\|\|\{\}\)\.value \|\| '';/.test(zoneMaj));
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Planifier un repertoire ne pre-coche aucun jour.
+
+   `_builderDate` survit a la fermeture du builder. « Cocher les jours sur
+   l'agenda » lance depuis une carte de repertoire le prenait pour le jour
+   d'origine et cochait une date au hasard — on croyait avoir valide une
+   journee par megarde en touchant l'option. Le meme defaut avait deja ete
+   corrige pour le menu d'une seance de l'agenda ; ce chemin-la l'avait
+   conserve.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+console.log('\nPlanifier depuis une carte de modèle ne pré-coche pas de jour');
+
+var _dp = mainSrc.indexOf('function _switchToCalendarPlanMode');
+var zonePlan = mainSrc.slice(_dp, mainSrc.indexOf('\nfunction ', _dp + 10));
+verifie('la planification par carte n\'est pas prise pour un départ du builder', true,
+  /var depuisBuilder = !_touchSheetData && !_planOverrideProgId;/.test(zonePlan));
+
 /* ── Verdict ─────────────────────────────────────────────────────────────── */
 
 console.log('\n' + '─'.repeat(64));

@@ -220,8 +220,8 @@ mettre à jour écraserait le template avec un contenu qui n'est plus le sien.
 `loadSeance` fait exception et remplace : charger une séance enregistrée est un
 autre geste, et il confirme.
 
-**Ouvrir un répertoire depuis l'agenda vaut « + Séance »** : `_sidebarLoadProg`
-remet le builder à zéro avant d'injecter. Sans ça, le répertoire s'ajoutait au
+**Ouvrir un modèle depuis l'agenda vaut « + Séance »** : `_sidebarLoadProg`
+remet le builder à zéro avant d'injecter. Sans ça, le modèle s'ajoutait au
 contenu resté en mémoire — y compris une séance **planifiée** ouverte depuis
 une chip. `_currentSeanceId` n'étant effacé par aucune fermeture du builder, le
 bouton restait en « Enregistrer la séance » et l'enregistrement faisait un

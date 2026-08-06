@@ -3843,8 +3843,8 @@ function _remplirSuggestionsEtiquettes(){
 function _openTmplModal(opts){
   // opts = { nom, cat, emoji, groupId, phaseOrdre, editId }
   _tmplEditId = opts.editId || null;
-  document.getElementById('tmplModalTitle').textContent = _tmplEditId ? 'Modifier le répertoire' : 'Enregistrer un répertoire';
-  document.getElementById('tmplModalConfirmBtn').innerHTML = _tmplEditId ? _PROG_SAVE_ICON+'Enregistrer les modifications' : _PROG_SAVE_ICON+'Enregistrer le répertoire';
+  document.getElementById('tmplModalTitle').textContent = _tmplEditId ? 'Modifier le modèle' : 'Enregistrer un modèle';
+  document.getElementById('tmplModalConfirmBtn').innerHTML = _tmplEditId ? _PROG_SAVE_ICON+'Enregistrer les modifications' : _PROG_SAVE_ICON+'Enregistrer le modèle';
 
   /* Plus de choix d'emoji : plus rien ne l'affiche depuis que la sidebar et le
      picker s'en passent. On CONSERVE la valeur deja enregistree — la retirer
@@ -3887,14 +3887,14 @@ function openEditTemplate(id){
     // local
     _loadTemplates();
     var t = _templates.find(function(x){ return String(x.id)===String(id); });
-    if(!t){ alert('Répertoire introuvable.'); return; }
+    if(!t){ alert('Modèle introuvable.'); return; }
     _openTmplModal({ editId:id, nom:t.nom, cat:t.categorie, type:t.type, emoji:t.emoji, groupId:t.group_id, phaseNom:t.phase_nom, phaseOrdre:t.phase_ordre, pathologie:t.pathologie, sport:t.sport });
     return;
   }
   _fetchRetry(SUPA_URL_P+'/rest/v1/templates?id=eq.'+id+'&select=*', { headers:_sbHeaders() })
   .then(function(r){ return r.json(); })
   .then(function(data){
-    if(!Array.isArray(data)||!data[0]){ alert('Répertoire introuvable.'); return; }
+    if(!Array.isArray(data)||!data[0]){ alert('Modèle introuvable.'); return; }
     var t = data[0];
     _openTmplModal({ editId:id, nom:t.nom, cat:t.categorie, type:t.type, emoji:t.emoji, groupId:t.group_id, phaseNom:t.phase_nom, phaseOrdre:t.phase_ordre, pathologie:t.pathologie, sport:t.sport });
   })
@@ -3933,7 +3933,7 @@ function doSaveTemplate(){
   var groupId    = document.getElementById('tmplGroupInput').value || (_activeGroupId ? String(_activeGroupId) : null);
   var phaseOrdre = groupId ? (parseInt(document.getElementById('tmplPhaseOrdreInput').value)||1) : 0;
   var nom = document.getElementById('tmplNameInput').value.trim();
-  if(!nom){ alert('Donnez un nom au répertoire.'); return; }
+  if(!nom){ alert('Donnez un nom au modèle.'); return; }
   var patho    = (document.getElementById('tmplPathoInput')||{}).value || '';
   var sportTxt = (document.getElementById('tmplSportInput')||{}).value || '';
   patho = patho.trim(); sportTxt = sportTxt.trim();
@@ -3948,7 +3948,7 @@ function doSaveTemplate(){
         method:'PATCH', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
         body: JSON.stringify(patch)
       }).then(function(r){
-        if(r.ok){ closeSaveTemplate(); renderTemplatesInBuilder(); renderSidebarTemplates(); _showToast('Répertoire « '+nom+' » mis à jour !'); }
+        if(r.ok){ closeSaveTemplate(); renderTemplatesInBuilder(); renderSidebarTemplates(); _showToast('Modèle « '+nom+' » mis à jour !'); }
         else { r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); }); }
       }).catch(function(){ alert('Erreur réseau.'); });
     } else {
@@ -3956,7 +3956,7 @@ function doSaveTemplate(){
       var t = _templates.find(function(x){ return String(x.id)===String(id); });
       if(t){ t.nom=nom; t.categorie=cat; t.emoji=_tmplSelectedEmoji; t.group_id=groupId; t.phase_nom=''; t.phase_ordre=phaseOrdre;
              t.pathologie=patho; t.sport=sportTxt; _persistTemplates(); }
-      closeSaveTemplate(); renderTemplatesInBuilder(); renderSidebarTemplates(); _showToast('Répertoire « '+nom+' » mis à jour !');
+      closeSaveTemplate(); renderTemplatesInBuilder(); renderSidebarTemplates(); _showToast('Modèle « '+nom+' » mis à jour !');
     }
     return;
   }
@@ -3984,7 +3984,7 @@ function doSaveTemplate(){
         renderTemplatesInBuilder();
         renderSidebarTemplates();
         _finirModeTemplate();
-        _showToast('Répertoire « ' + nom + ' » enregistré !');
+        _showToast('Modèle « ' + nom + ' » enregistré !');
       } else {
         r.json().then(function(d){ alert('Erreur : ' + JSON.stringify(d)); });
       }
@@ -4007,7 +4007,7 @@ function doSaveTemplate(){
     renderTemplatesInBuilder();
     renderSidebarTemplates();
     _finirModeTemplate();
-    _showToast('Répertoire « ' + nom + ' » enregistré !');
+    _showToast('Modèle « ' + nom + ' » enregistré !');
   }
 }
 
@@ -4145,7 +4145,7 @@ function _renderBuilderLibraryUI(){
         +'<div class="builder-lib-sname">'+escH(p.nom||'Sans nom')+'</div>'
         +(meta.length?'<div class="builder-lib-smeta">'+meta.join(' · ')+'</div>':'')
         +'</div>'
-        +'<button class="builder-lib-load" onclick="loadTemplate(\''+pid+'\');_enterBuilderMode();" title="Ajouter le contenu de ce répertoire à la séance en cours">Ajouter</button>'
+        +'<button class="builder-lib-load" onclick="loadTemplate(\''+pid+'\');_enterBuilderMode();" title="Ajouter le contenu de ce modèle à la séance en cours">Ajouter</button>'
         +'</div>';
     }).join('');
   }
@@ -4297,7 +4297,7 @@ function _renderSidebarPicker(){
     }
   }
 
-  if(!html) html = '<div class="picker-empty">'+(search?'Aucun résultat pour « '+escH(_sbPickerSearch)+' »':'Aucun répertoire disponible.')+'</div>';
+  if(!html) html = '<div class="picker-empty">'+(search?'Aucun résultat pour « '+escH(_sbPickerSearch)+' »':'Aucun modèle disponible.')+'</div>';
   scroll.innerHTML = html;
 
   /* Auto-dépliage si recherche active */
@@ -4595,7 +4595,7 @@ function openPublishModal(id){
   _fetchRetry(SUPA_URL_P+'/rest/v1/templates?id=eq.'+id+'&select=*', { headers:_sbHeaders() })
   .then(function(r){ return r.json(); })
   .then(function(data){
-    if(!Array.isArray(data)||!data[0]){ alert('Répertoire introuvable.'); return; }
+    if(!Array.isArray(data)||!data[0]){ alert('Modèle introuvable.'); return; }
     _pubTmplData = data[0];
     document.getElementById('pubTmplName').textContent = (_pubTmplData.nom||'Sans nom');
     document.getElementById('pubDescInput').value = _pubTmplData.description||'';
@@ -4633,7 +4633,7 @@ function doPublishTemplate(){
     if(btn){ btn.disabled=false; btn.textContent='📚 Publier'; }
     if(r.ok||r.status===201){
       closePublishModal();
-      _showToast('Répertoire publié dans la bibliothèque');
+      _showToast('Modèle publié dans la bibliothèque partagée');
       // Rafraîchir la bibliothèque
       renderBuilderLibrary();
     } else {
@@ -4647,14 +4647,14 @@ function doPublishTemplate(){
 }
 
 function unpublishLibTemplate(id){
-  _confirmDialog({id:'cd-unpublish-lib', emoji:'📚', title:'Retirer ce répertoire ?', body:'Ce répertoire sera retiré de la bibliothèque partagée.', confirmLabel:'Retirer', confirmColor:'#d97706'}, function(){
+  _confirmDialog({id:'cd-unpublish-lib', emoji:'📚', title:'Retirer ce modèle ?', body:'Ce modèle sera retiré de la bibliothèque partagée.', confirmLabel:'Retirer', confirmColor:'#d97706'}, function(){
     _fetchRetry(SUPA_URL_P+'/rest/v1/templates_library?id=eq.'+id, {
       method:'DELETE',
       headers: _sbHeaders()
     })
     .then(function(r){
       if(r.ok||r.status===204){
-        _showToast('Répertoire retiré de la bibliothèque');
+        _showToast('Modèle retiré de la bibliothèque partagée');
         renderLibraryTemplates();
       } else {
         r.text().then(function(t){ alert('Erreur '+r.status+' : '+t); });
@@ -4669,7 +4669,7 @@ function loadLibraryTemplate(id){
   _fetchRetry(SUPA_URL_P+'/rest/v1/templates_library?id=eq.'+id+'&select=*', { headers:_sbHeaders() })
   .then(function(r){ return r.json(); })
   .then(function(data){
-    if(!Array.isArray(data)||!data[0]){ alert('Répertoire introuvable.'); return; }
+    if(!Array.isArray(data)||!data[0]){ alert('Modèle introuvable.'); return; }
     var t = data[0];
     var d = {};
     try { d = JSON.parse(t.donnees||'{}'); } catch(e){}
@@ -4683,7 +4683,7 @@ function loadLibraryTemplate(id){
     _updateBuilderTitle();
     _refreshSaveBtn();
     if(!seanceVide){ _builderSaved = false; _refreshDraftBadge(); }
-    _showToast('🌐 « '+escH(t.nom||'Répertoire')+' » — '+n+' bloc'+(n>1?'s':'')+' ajouté'+(n>1?'s':''));
+    _showToast('🌐 « '+escH(t.nom||'Modèle')+' » — '+n+' bloc'+(n>1?'s':'')+' ajouté'+(n>1?'s':''));
   })
   .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
 }
@@ -4824,7 +4824,7 @@ function _refreshDraftBadge(){
 function _builderSaveBtnClick(){
   if(!blocs || !blocs.length){ alert('La séance est vide.'); return; }
   /* La destination est connue depuis l'entree : on va droit au modal du
-     répertoire, sans repasser par saveProgToCloud. */
+     modèle, sans repasser par saveProgToCloud. */
   if(_builderMode === 'template'){ openSaveTemplate(); return; }
   if(_currentSeanceId){
     // Contexte B : modification d'un chip existant → save direct
@@ -4847,8 +4847,8 @@ function _refreshSaveBtn(){
      sortie — elle a ete posee a l'entree. « Planifier » et « Mettre a jour le
      template » n'ont pas de sens sur un objet qu'on est en train de creer. */
   if(_builderMode === 'template'){
-    btn.innerHTML = _PROG_SAVE_ICON + 'Enregistrer le répertoire';
-    btn.title = 'Enregistrer ce contenu comme répertoire';
+    btn.innerHTML = _PROG_SAVE_ICON + 'Enregistrer le modèle';
+    btn.title = 'Enregistrer ce contenu comme modèle';
     btn.style.background = '';
     if(planBtn) planBtn.style.display = 'none';
     if(updBtn)  updBtn.style.display  = 'none';
@@ -4879,7 +4879,7 @@ function _refreshSaveBtn(){
   if(updBtn){
     if(_builderFromTemplate){
       var _tRef = (_sidebarProgs||[]).find(function(x){ return String(x.id)===String(_builderFromTemplate); });
-      var _tName = _tRef ? (_tRef.nom||'Répertoire') : 'Template';
+      var _tName = _tRef ? (_tRef.nom||'Modèle') : 'Template';
       var _tLabel = _tName.length > 20 ? _tName.substring(0,19)+'…' : _tName;
       updBtn.textContent = '🔄 ' + _tLabel;
       updBtn.title = 'Mettre à jour « ' + _tName + ' »';
@@ -4895,7 +4895,12 @@ function _doUpdateTemplate(){
   if(!_progToken || !_progUid){ alert('Session non disponible.'); return; }
   var btn = document.getElementById('prog-update-btn');
   if(btn){ btn.disabled = true; btn.textContent = '⏳…'; }
-  var nomProg = (document.getElementById('patientName')||{}).value || '';
+  /* Un champ vide ne vaut pas « efface le nom » : on retombe sur celui deja
+     enregistre. Sans ce repli, mettre a jour un repertoire dont le champ
+     n'avait pas ete rempli le laissait sans nom dans la liste. */
+  var _tRefNom = (_sidebarProgs||[]).find(function(x){ return String(x.id)===String(_builderFromTemplate); });
+  var nomProg = ((document.getElementById('patientName')||{}).value || '').trim()
+             || (_tRefNom && _tRefNom.nom) || '';
   var donnees = JSON.stringify({ blocs: JSON.parse(JSON.stringify(blocs||[])), etapes: JSON.parse(JSON.stringify(etapes||[])), notes: getNotes() });
   _fetchRetry(SUPA_URL_P + '/rest/v1/templates?id=eq.' + _builderFromTemplate, {
     method: 'PATCH',
@@ -4905,8 +4910,8 @@ function _doUpdateTemplate(){
   .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, status:r.status, data:d}; }); })
   .then(function(res){
     if(btn) btn.disabled = false;
-    if(!res.ok){ _refreshSaveBtn(); _handleApiError(res.status, res.data, 'mise à jour répertoire'); return; }
-    _showToast('Répertoire mis à jour');
+    if(!res.ok){ _refreshSaveBtn(); _handleApiError(res.status, res.data, 'mise à jour modèle'); return; }
+    _showToast('Modèle mis à jour');
     _draftClear();
     _refreshSaveBtn();
     renderSidebarTemplates();
@@ -4920,10 +4925,10 @@ function _doUpdateTemplate(){
 // ─────────────────────────────────────────────────────────────────────────────
 
 function duplicateTemplate(){
-  if(!_builderFromTemplate){ _showToast('Aucun répertoire chargé.'); return; }
+  if(!_builderFromTemplate){ _showToast('Aucun modèle chargé.'); return; }
   if(!_progToken || !_progUid){ alert('Session non disponible.'); return; }
   var src = (_sidebarProgs||[]).find(function(t){ return String(t.id)===String(_builderFromTemplate); });
-  var newNom = 'Copie de ' + (src ? (src.nom||src.phase_nom||'Répertoire') : 'Template');
+  var newNom = 'Copie de ' + (src ? (src.nom||src.phase_nom||'Modèle') : 'Template');
   var donnees = JSON.stringify({ blocs: JSON.parse(JSON.stringify(blocs||[])), etapes: JSON.parse(JSON.stringify(etapes||[])), notes: getNotes() });
   var payload = {
     praticien_id: _progUid,
@@ -4945,7 +4950,7 @@ function duplicateTemplate(){
   .then(function(data){
     if(!data || !data[0]){ alert('Erreur lors de la duplication.'); return; }
     renderSidebarTemplates();
-    _showToast('Répertoire « '+newNom+' » dupliqué !');
+    _showToast('Modèle « '+newNom+' » dupliqué !');
   })
   .catch(function(e){ alert('Erreur réseau : '+(e&&e.message||e)); });
 }
@@ -4974,6 +4979,11 @@ function loadTemplate(id){
     if(seanceVide){
       _currentProgId = null;
       _builderFromTemplate = String(t.id);
+      /* Le champ de nom EST ce qui sera re-enregistre : le laisser vide, c'est
+         effacer le nom du repertoire a la premiere mise a jour. On l'affiche
+         donc, et l'utilisateur voit ce sur quoi il travaille. */
+      var _pnEl = document.getElementById('patientName');
+      if(_pnEl && !(_pnEl.value||'').trim()) _pnEl.value = t.nom || '';
       _activeGroupId=null; _activeGroupNom=''; _activePhaseOrdre=1;
       _updateActiveGroupBadge();
     } else {
@@ -4997,7 +5007,7 @@ function loadTemplate(id){
       _builderSaved = false;
     }
     _refreshDraftBadge();
-    _showToast('✚ « ' + (t.nom||'Répertoire') + ' » — ' + n + ' bloc' + (n>1?'s':'') + ' ajouté' + (n>1?'s':''));
+    _showToast('✚ « ' + (t.nom||'Modèle') + ' » — ' + n + ' bloc' + (n>1?'s':'') + ' ajouté' + (n>1?'s':''));
   }
 
   if(_progToken && _progUid){
@@ -5005,21 +5015,21 @@ function loadTemplate(id){
     .then(function(r){ return r.json(); })
     .then(function(data){
       var t = Array.isArray(data) ? data[0] : null;
-      if(!t){ alert('Répertoire introuvable.'); return; }
+      if(!t){ alert('Modèle introuvable.'); return; }
       _applyTemplate(t);
     })
-    .catch(function(){ alert('Erreur chargement répertoire.'); });
+    .catch(function(){ alert('Erreur chargement modèle.'); });
   } else {
     _loadTemplates();
     var t = _templates.find(function(x){ return x.id === id; });
-    if(!t){ alert('Répertoire introuvable.'); return; }
+    if(!t){ alert('Modèle introuvable.'); return; }
     _applyTemplate(t);
   }
 }
 
 /* ── Supprimer un template ── */
 function deleteTemplate(id){
-  _confirmDialog({id:'cd-del-template', emoji:'🗑️', title:'Supprimer ce répertoire ?', body:'Cette action est irréversible.', confirmLabel:'Supprimer'}, function(){
+  _confirmDialog({id:'cd-del-template', emoji:'🗑️', title:'Supprimer ce modèle ?', body:'Cette action est irréversible.', confirmLabel:'Supprimer'}, function(){
     if(_progToken && _progUid){
       _fetchRetry(SUPA_URL_P + '/rest/v1/templates?id=eq.' + id, {
         method: 'DELETE', headers: _sbHeaders()
@@ -5214,7 +5224,7 @@ function _doPublishGroup(groupId, nom, cat, desc){
   })
   .then(function(r){
     if(r.ok||r.status===201){
-      _showToast('🌐 Protocole publié dans la bibliothèque !');
+      _showToast('🌐 Protocole publié dans la bibliothèque partagée !');
     } else {
       r.text().then(function(t){
         console.error('[_doPublishGroup] erreur', r.status, t);
@@ -5235,7 +5245,7 @@ function _doUpdateGroupInLib(libId, groupId, nom, cat, desc){
     if(r.ok) _showToast('🌐 Bibliothèque mise à jour !');
     else r.text().then(function(t){
       console.error('[_doUpdateGroupInLib] erreur', r.status, t);
-      alert('Erreur mise à jour bibliothèque ('+r.status+') : '+t);
+      alert('Erreur mise à jour bibliothèque partagée ('+r.status+') : '+t);
     });
   })
   .catch(function(e){ alert('Erreur réseau mise à jour : '+(e&&e.message||e)); });
@@ -5245,7 +5255,7 @@ function _doUnpublishGroup(libId){
     method:'DELETE', headers:_sbHeaders()
   })
   .then(function(r){
-    if(r.ok||r.status===204) _showToast('🔒 Protocole retiré de la bibliothèque.');
+    if(r.ok||r.status===204) _showToast('🔒 Protocole retiré de la bibliothèque partagée.');
     else r.text().then(function(t){
       console.error('[_doUnpublishGroup] erreur', r.status, t);
       alert('Erreur retrait ('+r.status+') : '+t);
@@ -6035,7 +6045,12 @@ function _switchToCalendarPlanMode(){
   /* Depuis le menu d'une seance de l'agenda, on ne vient PAS du builder :
      _builderDate peut y avoir survecu d'une session precedente et cocherait un
      jour au hasard. On ne pre-coche que depuis le builder. */
-  var depuisBuilder = !_touchSheetData;
+  /* `_planOverrideProgId` marque une planification lancee depuis une carte de
+     repertoire : on ne vient pas davantage du builder que depuis le menu d'une
+     seance. Sans cette condition, `_builderDate` — survivant d'une seance
+     ouverte plus tot — pre-cochait un jour au hasard, et l'on croyait avoir
+     valide une date par megarde en touchant l'option. */
+  var depuisBuilder = !_touchSheetData && !_planOverrideProgId;
   if(_touchSheetData){
     progId = _touchSheetData.progId;
     nom    = _touchSheetData.nom;
@@ -6065,8 +6080,8 @@ function _switchToCalendarPlanMode(){
 function duplicateTemplateById(id){
   var src = (_sidebarProgs||[]).find(function(t){ return String(t.id)===String(id); });
   if(!src){ _loadTemplates(); src = _templates.find(function(t){ return String(t.id)===String(id); }); }
-  if(!src){ alert('Répertoire introuvable.'); return; }
-  var newNom = 'Copie de ' + (src.phase_nom||src.nom||'Répertoire');
+  if(!src){ alert('Modèle introuvable.'); return; }
+  var newNom = 'Copie de ' + (src.phase_nom||src.nom||'Modèle');
   // Lecteur : duplication en localStorage uniquement
   if(_isReader()){
     _loadTemplates();
@@ -6168,7 +6183,7 @@ function _renderSidebarWithGroups(){
      ou un protocole qui en regroupera plusieurs. Le template d'abord — c'est
      le geste courant ; le protocole ne sert qu'a ranger. */
   var html = '<div class="stmpl-group-add-row">'
-    + '<button class="stmpl-new-tmpl-btn" onclick="nouveauTemplate()">' + _TMPL_ICON + 'Nouveau répertoire</button>'
+    + '<button class="stmpl-new-tmpl-btn" onclick="nouveauTemplate()">' + _TMPL_ICON + 'Nouveau modèle</button>'
     + '<button class="stmpl-new-group-btn" onclick="openCreateGroup()">Nouveau protocole</button>'
     + '</div>';
 
@@ -6262,7 +6277,7 @@ function _renderSidebarWithGroups(){
   });
 
   if(!hasContent){
-    html += '<div class="stmpl-empty">Aucun répertoire'+(catFilter?' dans cette catégorie':'')+'.<br>Créez-en un depuis le builder (📋 Enregistrer).</div>';
+    html += '<div class="stmpl-empty">Aucun modèle'+(catFilter?' dans cette catégorie':'')+'.<br>Créez-en un depuis le builder (📋 Enregistrer).</div>';
   }
   scroll.innerHTML = html;
 }
@@ -6324,7 +6339,7 @@ function _renderTmplCard(p, isPhase, phaseNum, hideCat, groupe){
   var isOpen = !!_expandedTmplCards[p.id];
   var cls  = 'stmpl-card'+(isPhase?' stmpl-phase-card':' stmpl-card-solo')+(isOpen?' stmpl-card-open':'');
   var phN  = (isPhase&&phaseNum) ? '<span class="stmpl-phase-num">'+phaseNum+'</span>' : '';
-  var pubBdg = p.is_public ? '<span class="stmpl-public-badge" title="Répertoire public">'+_ICO_PUBLIC+'</span>' : '';
+  var pubBdg = p.is_public ? '<span class="stmpl-public-badge" title="Modèle public">'+_ICO_PUBLIC+'</span>' : '';
 
   var html = '<div class="'+cls+'" onclick="_toggleTmplCard(\''+pid+'\')">'
     +phN
@@ -6348,7 +6363,7 @@ function _renderTmplCard(p, isPhase, phaseNum, hideCat, groupe){
    s'applique a lui, pas au simple fait de regarder. */
 function _renderTmplCardTree(bl, pid){
   if(!bl.length){
-    return '<div class="stmpl-card-tree"><div class="stmpl-card-tree-empty">Ce répertoire est vide.</div></div>';
+    return '<div class="stmpl-card-tree"><div class="stmpl-card-tree-empty">Ce modèle est vide.</div></div>';
   }
   var h = '<div class="stmpl-card-tree">';
   bl.forEach(function(bloc){
@@ -6454,7 +6469,7 @@ function _openQuickAdd(progId, nom){
   .then(function(r){ return r.json(); })
   .then(function(data){
     var t = Array.isArray(data) ? data[0] : null;
-    if(!t){ alert('Répertoire introuvable.'); return; }
+    if(!t){ alert('Modèle introuvable.'); return; }
     var today = _dateStr(new Date());
     return _fetchRetry(SUPA_URL_P + '/rest/v1/programmes', {
       method: 'POST', headers: _sbHeaders(),
@@ -6577,8 +6592,8 @@ function _quitterModeTemplate(){
    posait la question a la fin, apres le travail. */
 function nouveauTemplate(opts){
   _entrerModeTemplate(opts);
-  _showToast(((opts&&opts.groupNom) ? 'Nouvelle phase de « '+opts.groupNom+' »' : 'Nouveau répertoire')
-             + ' — composez, puis « Enregistrer le répertoire »');
+  _showToast(((opts&&opts.groupNom) ? 'Nouvelle phase de « '+opts.groupNom+' »' : 'Nouveau modèle')
+             + ' — composez, puis « Enregistrer le modèle »');
 }
 
 /* Fin de course apres un enregistrement reussi : la seance empruntee revient
@@ -6873,8 +6888,8 @@ function closeBuilder(){
   var estTmpl = (_builderMode === 'template');
   if(blocs && blocs.length && !_builderSaved){
     _confirmDialog({id:'cd-close-builder', emoji:'⚠️',
-      title: estTmpl ? 'Répertoire non enregistré' : 'Contenu non sauvegardé',
-      body: (estTmpl ? 'Ce répertoire n\'a pas été enregistré.' : 'La séance contient du contenu non sauvegardé.')
+      title: estTmpl ? 'Modèle non enregistré' : 'Contenu non sauvegardé',
+      body: (estTmpl ? 'Ce modèle n\'a pas été enregistré.' : 'La séance contient du contenu non sauvegardé.')
             + '\n\nFermer quand même ?',
       confirmLabel:'Fermer quand même', confirmColor:'#d97706'}, function(){
       _draftClear();
@@ -6896,7 +6911,7 @@ function closeBuilder(){
 }
 
 /* Le bouton topbar ouvre le même panneau latéral dans les deux modes
-   (Bibliothèque d'exercices en builder, Séances & Répertoires sur l'agenda) :
+   (Exercices en builder, Bibliotheque sur l'agenda) :
    son libellé/icône suit le contenu réellement affiché. */
 function _updateSidebarToggleBtn(isBuilder){
   var btn = document.getElementById('topbarBiblioBtn');
@@ -6905,8 +6920,8 @@ function _updateSidebarToggleBtn(isBuilder){
     btn.title = 'Bibliothèque d\'exercices';
     btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="vertical-align:middle;margin-right:2px"><circle cx="2" cy="4" r="2"/><circle cx="2" cy="12" r="2"/><circle cx="2" cy="20" r="2"/><path d="m8 5h15c.553 0 1-.447 1-1s-.447-1-1-1h-15c-.553 0-1 .447-1 1s.447 1 1 1z"/><path d="m23 11h-15c-.553 0-1 .447-1 1s.447 1 1 1h15c.553 0 1-.447 1-1s-.447-1-1-1z"/><path d="m23 19h-15c-.553 0-1 .447-1 1s.447 1 1 1h15c.553 0 1-.447 1-1s-.447-1-1-1z"/></svg><span class="btn-label"> Biblio</span>';
   } else {
-    btn.title = 'Séances & répertoires';
-    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 511.999 511.999" width="14" height="14" fill="currentColor" style="vertical-align:middle;margin-right:2px"><path d="M477.418,98.354H262.25l-0.94-6.098c-2.808-18.223-20.093-33.047-38.531-33.047H115.962c-18.44,0-35.724,14.826-38.529,33.047l-0.941,6.098h-0.669c-19.068,0-34.581,15.513-34.581,34.582v23.139H30.71c-9.454,0-17.847,3.738-23.629,10.524c-5.783,6.787-8.14,15.665-6.64,24.999l36.69,228.225c2.922,18.179,20.281,32.968,38.693,32.968h401.594c1.782,0,3.525-0.133,5.222-0.395c16.6-2.525,29.359-16.894,29.359-34.188V132.935C511.999,113.867,496.486,98.354,477.418,98.354z M488.799,431.834c-2,2.347-4.764,3.905-7.98,4.543c-0.133,0.025-0.269,0.04-0.403,0.062c-0.399,0.069-0.799,0.134-1.21,0.175c-0.589,0.057-1.185,0.091-1.789,0.091H75.824c-10.67,0-21.116-8.901-22.811-19.436l-36.69-228.224c-0.74-4.605,0.325-8.87,3.001-12.012c2.677-3.14,6.72-4.87,11.384-4.87h401.593c10.669,0,21.115,8.901,22.808,19.436l36.691,228.224C492.542,424.427,491.475,428.693,488.799,431.834z M81.921,156.076v-0.001v-13.032h381.992v29.598c-7.36-9.889-19.244-16.566-31.61-16.566H81.921z M495.912,344.035l-15.912-98.978V134.998c0-4.442-3.6-8.044-8.044-8.044H73.877c-4.443,0-8.044,3.601-8.044,8.044v21.075h-8.505v-23.139c0-10.198,8.296-18.495,18.494-18.495h7.57c3.969,0,7.345-2.896,7.949-6.818l1.992-12.918c1.619-10.521,11.982-19.409,22.629-19.409h106.817c10.647,0,21.01,8.889,22.633,19.41l1.989,12.916c0.604,3.923,3.98,6.819,7.949,6.819h222.067c10.198,0,18.494,8.297,18.494,18.495V344.035z"/></svg><span class="btn-label"> Répertoires</span>';
+    btn.title = 'Bibliothèque';
+    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 511.999 511.999" width="14" height="14" fill="currentColor" style="vertical-align:middle;margin-right:2px"><path d="M477.418,98.354H262.25l-0.94-6.098c-2.808-18.223-20.093-33.047-38.531-33.047H115.962c-18.44,0-35.724,14.826-38.529,33.047l-0.941,6.098h-0.669c-19.068,0-34.581,15.513-34.581,34.582v23.139H30.71c-9.454,0-17.847,3.738-23.629,10.524c-5.783,6.787-8.14,15.665-6.64,24.999l36.69,228.225c2.922,18.179,20.281,32.968,38.693,32.968h401.594c1.782,0,3.525-0.133,5.222-0.395c16.6-2.525,29.359-16.894,29.359-34.188V132.935C511.999,113.867,496.486,98.354,477.418,98.354z M488.799,431.834c-2,2.347-4.764,3.905-7.98,4.543c-0.133,0.025-0.269,0.04-0.403,0.062c-0.399,0.069-0.799,0.134-1.21,0.175c-0.589,0.057-1.185,0.091-1.789,0.091H75.824c-10.67,0-21.116-8.901-22.811-19.436l-36.69-228.224c-0.74-4.605,0.325-8.87,3.001-12.012c2.677-3.14,6.72-4.87,11.384-4.87h401.593c10.669,0,21.115,8.901,22.808,19.436l36.691,228.224C492.542,424.427,491.475,428.693,488.799,431.834z M81.921,156.076v-0.001v-13.032h381.992v29.598c-7.36-9.889-19.244-16.566-31.61-16.566H81.921z M495.912,344.035l-15.912-98.978V134.998c0-4.442-3.6-8.044-8.044-8.044H73.877c-4.443,0-8.044,3.601-8.044,8.044v21.075h-8.505v-23.139c0-10.198,8.296-18.495,18.494-18.495h7.57c3.969,0,7.345-2.896,7.949-6.818l1.992-12.918c1.619-10.521,11.982-19.409,22.629-19.409h106.817c10.647,0,21.01,8.889,22.633,19.41l1.989,12.916c0.604,3.923,3.98,6.819,7.949,6.819h222.067c10.198,0,18.494,8.297,18.494,18.495V344.035z"/></svg><span class="btn-label"> Modèles</span>';
   }
 }
 
@@ -6924,7 +6939,7 @@ function _updateBuilderTitle(){
   if(_builderMode === 'template'){
     if(titleEl) titleEl.textContent = _activeGroupNom
       ? 'Nouvelle phase — ' + _activeGroupNom
-      : 'Nouveau répertoire';
+      : 'Nouveau modèle';
     if(dateBar) dateBar.style.display = 'none';
     return;
   }
