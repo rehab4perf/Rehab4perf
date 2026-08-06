@@ -38,6 +38,16 @@ var moteur =
   // Si elle est renommee ou deplacee, corriger ici — le test le dira.
   zone(main, 'function _injecterTemplate', 'function _addBlocFromPicker');
 
+/* Le plan de travail emprunte et l'empreinte de seance, extraits a part : ils
+   servent la seconde moitie du fichier (mode template). L'empreinte est ce qui
+   permet de verifier « rendue a l'identique » sans comparer champ par champ —
+   une liste de champs tenue a la main derive, c'est deja arrive. */
+var atelier =
+  zone(main, '/* ── Plan de travail emprunté', '/* ── fin du plan de travail emprunté') + '\n' +
+  // Borne de fin avec la parenthese : « function _draftSave » seul tombe sur
+  // _draftSaveLazy, qui la precede.
+  zone(main, 'function _sessionHash', 'function _draftSave(){');
+
 var prelude = [
   'var blocs = [], etapes = [], activeBloc = null;',
   'var ETAPE_COLORS = ["#F59E0B","#2563EB","#0D9488"];',
@@ -55,6 +65,25 @@ var api = new Function(
   '         blocs: function(){ return blocs; },' +
   '         etapes: function(){ return etapes; },' +
   '         sync: _syncEtapeIds };'
+)();
+
+/* Second bac d'essai, avec les globales de seance que le mode template met de
+   cote. Separe du premier : _injecterTemplate n'a rien a voir avec elles. */
+var atl = new Function(
+  'var blocs = [], etapes = [], _notes = "";\n' +
+  'var _currentProgId = null, _currentSeanceId = null, _builderDate = "";\n' +
+  'var _builderFromTemplate = null, _builderSaved = true, _lastSavedHash = "";\n' +
+  'var _activeGroupId = null, _activeGroupNom = "", _activePhaseOrdre = 1;\n' +
+  atelier + '\n' +
+  'return { stash: _stashSeance, restore: _restoreSeance, hash: _sessionHash,' +
+  '         mode: function(){ return _builderMode; },' +
+  '         poser: function(o){ blocs = o.blocs; etapes = o.etapes; _notes = o.notes||"";' +
+  '           _currentProgId = o.progId||null; _currentSeanceId = o.seanceId||null;' +
+  '           _builderDate = o.date||""; _builderFromTemplate = o.fromTemplate||null;' +
+  '           _builderSaved = !!o.saved; },' +
+  '         lire: function(){ return { blocs: blocs, etapes: etapes, notes: _notes,' +
+  '           progId: _currentProgId, seanceId: _currentSeanceId, date: _builderDate,' +
+  '           fromTemplate: _builderFromTemplate, saved: _builderSaved }; } };'
 )();
 
 var nbOk = 0, nbKo = 0;
@@ -162,6 +191,89 @@ api.injecter({ blocs: [], etapes: [] });
 verifie('un template vide ne touche à rien', '|Intacte Z1', lire());
 api.injecter(null);
 verifie('une donnée absente ne casse rien', '|Intacte Z1', lire());
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Mode template — un plan de travail EMPRUNTÉ, jamais volé.
+
+   Composer un template se fait dans le builder : c'est le seul outil de
+   composition, en écrire un second serait absurde. Mais le builder tient
+   peut-être déjà une séance. « Ouvrir un builder neuf » ne doit donc jamais
+   vouloir dire « effacer ce qui s'y trouve » — c'était exactement le défaut
+   d'addPhaseToGroup, qui faisait `blocs = []` sans rien demander.
+
+   La séance est mise de côté à l'entrée, rendue à l'identique à la sortie.
+
+   Les repères de séance — programme, séance planifiée, date — sont effacés
+   PENDANT le mode template, et pas seulement masqués : _refreshSaveBtn lit
+   `_builderDate` pour écrire « Enregistrer — 6 août ». Les laisser en place
+   afficherait une date sur un objet qui n'en a pas.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Une séance en cours, avec ses repères : elle est planifiée le 6 août, elle
+   vient d'un programme, et elle n'est pas enregistrée. Le cas le plus exposé —
+   c'est là qu'une perte serait invisible et définitive. */
+function seanceEnCours() {
+  return {
+    blocs: [ { id:'b1', title:'Échauffement', exos:[{ id:'e1', name:'Vélo', reps:'' }] },
+             { id:'b2', title:'Renfo',        exos:[{ id:'e2', name:'Squat', reps:'8' }] } ],
+    etapes: [ { id:'E1', title:'Mise en route', color:'#F59E0B' } ],
+    notes: 'Attention au genou droit',
+    progId: 'p-42', seanceId: 's-7', date: '2026-08-06',
+    fromTemplate: 't-9', saved: false
+  };
+}
+
+console.log('\nEmprunter — la séance est mise de côté, pas effacée');
+atl.poser(seanceEnCours());
+var empreinteAvant = atl.hash();
+verifie('on démarre en mode séance', 'seance', atl.mode());
+verifie('l\'emprunt est accordé', 'true', String(atl.stash()));
+verifie('le mode a basculé', 'template', atl.mode());
+verifie('le plan de travail est vide', '0 blocs / 0 étapes',
+  atl.lire().blocs.length + ' blocs / ' + atl.lire().etapes.length + ' étapes');
+verifie('les notes de la séance ne débordent pas sur le template', '', atl.lire().notes);
+
+console.log('\nLes repères de séance sont effacés, pas seulement masqués');
+verifie('aucune date — sinon le bouton afficherait « Enregistrer — 6 août »',
+  '', atl.lire().date);
+verifie('aucun programme rattaché', 'null', String(atl.lire().progId));
+verifie('aucune séance planifiée rattachée', 'null', String(atl.lire().seanceId));
+verifie('aucun lien vers un template chargé', 'null', String(atl.lire().fromTemplate));
+
+console.log('\nComposer un template ne touche pas à la séance mise de côté');
+atl.poser({ blocs:[{ id:'t1', title:'Bloc du template', exos:[] }], etapes:[], notes:'Notes du template' });
+verifie('la restitution est accordée', 'true', String(atl.restore()));
+verifie('retour en mode séance', 'seance', atl.mode());
+verifie('la séance est rendue à l\'identique', empreinteAvant, atl.hash());
+verifie('rien du template n\'a fui dans la séance', 'Échauffement Renfo',
+  atl.lire().blocs.map(function(b){ return b.title; }).join(' '));
+
+console.log('\nLes repères de séance reviennent avec elle');
+var apres = atl.lire();
+verifie('la date de planification', '2026-08-06', apres.date);
+verifie('le programme', 'p-42', String(apres.progId));
+verifie('la séance planifiée', 's-7', String(apres.seanceId));
+verifie('le lien au template chargé', 't-9', String(apres.fromTemplate));
+// Une séance non enregistrée qui revient « enregistrée » perdrait son badge :
+// le praticien croirait son travail à l'abri alors qu'il ne l'est pas.
+verifie('l\'état « non enregistrée » est conservé', 'false', String(apres.saved));
+
+console.log('\nDouble emprunt — la séance mise de côté ne s\'écrase jamais');
+atl.poser(seanceEnCours());
+var refDouble = atl.hash();
+atl.stash();
+atl.poser({ blocs:[{ id:'x1', title:'Brouillon de template', exos:[] }], etapes:[], notes:'' });
+verifie('un second emprunt est refusé', 'false', String(atl.stash()));
+verifie('le mode reste template', 'template', atl.mode());
+atl.restore();
+verifie('la séance rendue est bien la vraie, pas le brouillon', refDouble, atl.hash());
+
+console.log('\nRestitution sans emprunt — refus franc, aucun dégât');
+atl.poser(seanceEnCours());
+var refSeule = atl.hash();
+verifie('la restitution est refusée', 'false', String(atl.restore()));
+verifie('le mode est inchangé', 'seance', atl.mode());
+verifie('la séance est intacte', refSeule, atl.hash());
 
 /* ── Verdict ─────────────────────────────────────────────────────────────── */
 

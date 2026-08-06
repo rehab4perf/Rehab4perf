@@ -198,7 +198,16 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .lib-tmpl-load  { flex-shrink:0; background:var(--accent2); border:none; color:#fff; border-radius:6px; padding:3px 9px; font-size:var(--fs-xs); cursor:pointer; transition:background .12s; white-space:nowrap; }
 .lib-tmpl-load:hover { background:var(--accent-h); }
 /* ── Groupes de templates (protocoles) ── */
-.stmpl-group-add-row { padding:6px 10px; background:var(--navy); }
+/* Les deux portes de création, empilées. Le template est le geste courant :
+   il est plein et vient en premier. Le protocole ne fait que ranger — il reste
+   en pointillés, comme avant. */
+.stmpl-group-add-row { padding:6px 10px; background:var(--navy); display:flex; flex-direction:column; gap:5px; }
+.stmpl-new-tmpl-btn {
+  width:100%; padding:6px 10px; border:1px solid rgba(255,255,255,.22);
+  border-radius:6px; background:rgba(255,255,255,.1); color:#fff; font-size:var(--fs-sm);
+  font-weight:600; cursor:pointer; text-align:left; transition:background .12s; font-family:inherit;
+}
+.stmpl-new-tmpl-btn:hover { background:rgba(255,255,255,.18); }
 .stmpl-new-group-btn {
   width:100%; padding:5px 10px; border:1px dashed rgba(255,255,255,.3);
   border-radius:6px; background:none; color:rgba(255,255,255,.7); font-size:var(--fs-sm);
@@ -281,7 +290,19 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .tmpl-save-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:600; display:none; align-items:center; justify-content:center; }
 .tmpl-save-overlay.open { display:flex; }
 .tmpl-save-modal { background:#fff; border-radius:12px; padding:22px 24px 18px; width:350px; box-shadow:0 14px 44px rgba(0,0,0,.22); }
-.save-field-duo { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+/* align-items:end aligne les DEUX champs par le bas : « Pathologie optionnel »
+   repasse à la ligne dans sa colonne alors que « Sport optionnel » tient sur
+   une seule, et les deux saisies se retrouvaient décalées verticalement. */
+.save-field-duo { display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:end; }
+/* Repli du classement dans le modal de template. */
+.tmpl-plus { margin-bottom:12px; border-top:1px solid var(--border); padding-top:10px; }
+.tmpl-plus > summary {
+  cursor:pointer; list-style:none; font-size:var(--fs-sm); font-weight:700;
+  color:var(--muted); letter-spacing:.04em; text-transform:uppercase; margin-bottom:10px;
+}
+.tmpl-plus > summary::-webkit-details-marker { display:none; }
+.tmpl-plus > summary::before { content:'▸ '; }
+.tmpl-plus[open] > summary::before { content:'▾ '; }
 .save-hint { font-weight:400; color:var(--text3); font-size:var(--fs-2xs); margin-left:4px; }
 @media (max-width:520px) { .save-field-duo { grid-template-columns:1fr; } }
 .tmpl-save-modal h2 { font-size:.92rem; font-weight:700; color:var(--navy); margin-bottom:16px; }
@@ -2597,6 +2618,12 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
     </div>
     <datalist id="tmplPathoList"></datalist>
     <datalist id="tmplSportList"></datalist>
+    <!-- Classement : replié par défaut. Rien n'a été supprimé — ces quatre
+         champs servent à ranger, pas à décrire, et aucun n'est obligatoire.
+         Les garder ouverts faisait sept champs à remplir pour enregistrer une
+         séance type, ce qui décourageait d'en créer. -->
+    <details class="tmpl-plus">
+      <summary>Classement <span class="save-hint">catégorie, protocole, emoji</span></summary>
     <div class="save-field">
       <label>Catégorie</label>
       <select id="tmplCatInput" onchange="_onTmplCatChange()">
@@ -2627,6 +2654,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
       <label>Emoji <span class="save-hint">repère visuel</span></label>
       <div class="emoji-row" id="tmplEmojiRow"></div>
     </div>
+    </details>
     <div class="save-modal-btns">
       <button class="btn btn-primary" id="tmplModalConfirmBtn" onclick="doSaveTemplate()">📋 Enregistrer le template</button>
       <button class="btn btn-outline" onclick="closeSaveTemplate()">Annuler</button>
@@ -4440,6 +4468,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 </div>
 
-<script src="js/prog-main.js?v=20260806a"></script>
+<script src="js/prog-main.js?v=20260806b"></script>
 </body>
 </html>

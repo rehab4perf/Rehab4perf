@@ -203,6 +203,38 @@ mettre à jour écraserait le template avec un contenu qui n'est plus le sien.
 `loadSeance` fait exception et remplace : charger une séance enregistrée est un
 autre geste, et il confirme.
 
+## Mode template — un plan de travail emprunté
+
+```bash
+node qualite/templates-cas.js
+```
+
+Composer un template se fait dans le builder — c'est le seul outil de
+composition. Mais le builder tient peut-être déjà une séance : **ouvrir un
+builder neuf ne doit jamais vouloir dire effacer ce qui s'y trouve.**
+`_stashSeance()` met la séance de côté, `_restoreSeance()` la rend à
+l'identique. Un second emprunt est **refusé** — il écraserait la première
+séance mise de côté, qui serait perdue sans le moindre signal.
+
+C'était le défaut d'`addPhaseToGroup`, qui posait `blocs = []` sans rien
+demander. Elle passe désormais par `nouveauTemplate({groupId})` : une phase
+n'est rien d'autre qu'un template rangé dans un protocole.
+
+**L'objet se déclare à l'entrée, pas à la sortie.** `openSaveDest` posait la
+question — « programme patient ou template ? » — après le travail, et tout ce
+qui précédait était en forme de séance. En mode template, `_updateBuilderTitle`
+et `_refreshSaveBtn` sortent tôt avec leur propre décor : ces deux fonctions
+sont appelées depuis trop d'endroits pour qu'on puisse corriger l'affichage
+après coup.
+
+Les repères de séance — `_currentProgId`, `_currentSeanceId`, `_builderDate` —
+sont **effacés**, pas seulement masqués : `_refreshSaveBtn` lit `_builderDate`
+pour écrire « Enregistrer — 6 août ». Les laisser en place afficherait une date
+sur un objet qui n'en a pas.
+
+Le brouillon suit le mode (`_draftKey()`) : sans ça, composer un template
+écraserait celui d'une séance laissée en plan.
+
 ## Empreinte de séance du builder
 
 ```bash

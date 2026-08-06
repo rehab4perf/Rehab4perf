@@ -4015,6 +4015,7 @@ function doSaveTemplate(){
         closeSaveTemplate();
         renderTemplatesInBuilder();
         renderSidebarTemplates();
+        _finirModeTemplate();
         _showToast('📋 Template « ' + nom + ' » enregistré !');
       } else {
         r.json().then(function(d){ alert('Erreur : ' + JSON.stringify(d)); });
@@ -4037,6 +4038,7 @@ function doSaveTemplate(){
     closeSaveTemplate();
     renderTemplatesInBuilder();
     renderSidebarTemplates();
+    _finirModeTemplate();
     _showToast('📋 Template « ' + nom + ' » enregistré !');
   }
 }
@@ -4710,6 +4712,10 @@ function loadLibraryTemplate(id){
 //  AUTO-SAVE BROUILLON BUILDER (localStorage)
 // ══════════════════════════════════════════════
 var _DRAFT_KEY     = 'r4p-builder-draft';
+/* Le mode template a son propre brouillon : composer un template ne doit pas
+   ecraser celui d'une seance laissee en plan, ni se faire proposer a sa
+   place a la prochaine ouverture. */
+function _draftKey(){ return (_builderMode === 'template') ? _DRAFT_KEY + '-tmpl' : _DRAFT_KEY; }
 var _builderSaved  = true; // devient false dès qu'on modifie sans sauvegarder
 var _lastSavedHash = ''; // empreinte du contenu au dernier save
 var _draftSaveTimer = null; // timer debounce
@@ -4757,7 +4763,7 @@ function _draftSave(){
     var currentHash = _sessionHash();
     // Si le contenu n'a pas changé depuis le dernier save → pas de badge
     _builderSaved = (currentHash === _lastSavedHash);
-    localStorage.setItem(_DRAFT_KEY, JSON.stringify({
+    localStorage.setItem(_draftKey(), JSON.stringify({
       blocs:        JSON.parse(JSON.stringify(blocs)),
       etapes:       JSON.parse(JSON.stringify(etapes||[])),
       notes:        _notes || '',
@@ -4772,7 +4778,7 @@ function _draftSave(){
 }
 
 function _draftClear(){
-  try { localStorage.removeItem(_DRAFT_KEY); } catch(e){}
+  try { localStorage.removeItem(_draftKey()); } catch(e){}
   _lastSavedHash = _sessionHash(); // mémorise l'état actuel comme "sauvegardé"
   _builderSaved = true;
   _refreshDraftBadge();
@@ -4782,7 +4788,7 @@ function _draftRestore(){
   // Proposer de restaurer uniquement si le builder est vide à l'ouverture
   if(blocs && blocs.length) return;
   try {
-    var raw = localStorage.getItem(_DRAFT_KEY);
+    var raw = localStorage.getItem(_draftKey());
     if(!raw) return;
     var d = JSON.parse(raw);
     if(!d || !d.blocs || !d.blocs.length) return;
@@ -4877,6 +4883,9 @@ function _saveDest(dest){
 
 function _builderSaveBtnClick(){
   if(!blocs || !blocs.length){ alert('La séance est vide.'); return; }
+  /* La destination est connue depuis l'entree : on va droit au modal du
+     template, sans repasser par openSaveDest. */
+  if(_builderMode === 'template'){ openSaveTemplate(); return; }
   if(_currentSeanceId){
     // Contexte B : modification d'un chip existant → save direct
     saveProgToCloud();
@@ -4894,6 +4903,17 @@ function _refreshSaveBtn(){
   var updBtn = document.getElementById('prog-update-btn');
   var planBtn = document.getElementById('builder-plan-btn');
   if(!btn) return;
+  /* Mode template : un seul verbe, et aucune question de destination a la
+     sortie — elle a ete posee a l'entree. « Planifier » et « Mettre a jour le
+     template » n'ont pas de sens sur un objet qu'on est en train de creer. */
+  if(_builderMode === 'template'){
+    btn.innerHTML = _PROG_SAVE_ICON + 'Enregistrer le template';
+    btn.title = 'Enregistrer ce contenu comme template';
+    btn.style.background = '';
+    if(planBtn) planBtn.style.display = 'none';
+    if(updBtn)  updBtn.style.display  = 'none';
+    return;
+  }
   var isContexteA = _builderDate && !_currentProgId && !_currentSeanceId;
   var isContexteB = !!_currentSeanceId;
   if(isContexteB){
@@ -5420,16 +5440,16 @@ function _updateActiveGroupBadge(){
   }
 }
 
+/* Une phase EST un template, range dans un protocole. Meme porte, un
+   parametre — et surtout : plus de `blocs = []`. L'ancienne version vidait le
+   builder sans rien demander, ce qui pouvait effacer une seance en cours. */
 function addPhaseToGroup(id){
   setActiveGroup(id);
   _expandedGroups[id] = true;
   try{ localStorage.setItem(R4P_KEYS.EXPANDED_GROUPS, JSON.stringify(_expandedGroups)); }catch(e){}
-  blocs = []; etapes = [];
-  _notes = '';
-  renderSession();
-  _refreshSaveBtn();
-  _enterBuilderMode();
-  _showToast('📁 Protocole « '+_activeGroupNom+' » actif — ajoutez des exercices puis cliquez « Enregistrer la phase »');
+  var g = (_groups||[]).find(function(x){ return String(x.id)===String(id); });
+  var nbPhases = (_sidebarProgs||[]).filter(function(p){ return String(p.group_id)===String(id); }).length;
+  nouveauTemplate({ groupId:id, groupNom:(g&&g.nom)||_activeGroupNom||'', phaseOrdre:nbPhases+1 });
 }
 
 /* Callback onchange du select groupe dans le modal save */
@@ -6189,7 +6209,13 @@ function _renderSidebarWithGroups(){
   var q   = ((document.getElementById('stmplSearch')||{}).value||'').toLowerCase();
   var catFilter = ((document.getElementById('stmplCatFilter')||{}).value||'');
 
-  var html = '<div class="stmpl-group-add-row"><button class="stmpl-new-group-btn" onclick="openCreateGroup()">📁 Nouveau protocole</button></div>';
+  /* Deux portes de creation, cote a cote et au meme niveau : un template seul,
+     ou un protocole qui en regroupera plusieurs. Le template d'abord — c'est
+     le geste courant ; le protocole ne sert qu'a ranger. */
+  var html = '<div class="stmpl-group-add-row">'
+    + '<button class="stmpl-new-tmpl-btn" onclick="nouveauTemplate()">📋 Nouveau template</button>'
+    + '<button class="stmpl-new-group-btn" onclick="openCreateGroup()">📁 Nouveau protocole</button>'
+    + '</div>';
 
   // Filtrer groupes et templates
   var filteredGroups = _groups.filter(function(g){
@@ -6479,6 +6505,124 @@ function confirmQuickAdd(){
   }
 }
 
+/* ── Plan de travail emprunté ────────────────────────────────────────────────
+
+   Composer un template se fait dans le builder — c'est le seul outil de
+   composition qu'on ait, en ecrire un second serait absurde. Mais le builder
+   tient peut-etre deja une seance. « Ouvrir un builder neuf » ne doit donc
+   jamais vouloir dire « effacer ce qui s'y trouve » : c'etait le defaut
+   d'addPhaseToGroup, qui posait `blocs = []` sans rien demander.
+
+   La seance est mise de cote a l'entree et rendue a l'identique a la sortie.
+   Le mecanisme n'est pas neuf : seanceVersTemplate empruntait deja les
+   globales le temps d'un enregistrement. Il est ici generalise et nomme.
+
+   Les reperes de seance — programme, seance planifiee, date — sont EFFACES
+   pendant le mode template, pas seulement masques : _refreshSaveBtn lit
+   `_builderDate` pour ecrire « Enregistrer — 6 aout ». Les laisser en place
+   afficherait une date sur un objet qui n'en a pas.
+
+   node qualite/templates-cas.js
+   ─────────────────────────────────────────────────────────────────────────── */
+var _builderMode  = 'seance';   // 'seance' | 'template'
+var _seanceStash  = null;
+
+function _stashSeance(){
+  /* Un second emprunt ecraserait la seance mise de cote la premiere fois :
+     elle serait perdue sans que rien ne le signale. On refuse. */
+  if(_seanceStash) return false;
+  _seanceStash = {
+    blocs: blocs, etapes: etapes, notes: _notes,
+    progId: _currentProgId, seanceId: _currentSeanceId, date: _builderDate,
+    fromTemplate: _builderFromTemplate,
+    groupId: _activeGroupId, groupNom: _activeGroupNom, phaseOrdre: _activePhaseOrdre,
+    saved: _builderSaved, lastHash: _lastSavedHash
+  };
+  blocs = []; etapes = []; _notes = '';
+  _currentProgId = null; _currentSeanceId = null; _builderDate = '';
+  _builderFromTemplate = null;
+  _builderMode = 'template';
+  return true;
+}
+
+function _restoreSeance(){
+  if(!_seanceStash) return false;
+  var s = _seanceStash;
+  _seanceStash = null;
+  blocs = s.blocs; etapes = s.etapes; _notes = s.notes;
+  _currentProgId = s.progId; _currentSeanceId = s.seanceId; _builderDate = s.date;
+  _builderFromTemplate = s.fromTemplate;
+  _activeGroupId = s.groupId; _activeGroupNom = s.groupNom; _activePhaseOrdre = s.phaseOrdre;
+  /* L'etat « non enregistree » revient avec elle : une seance qui reapparait
+     marquee enregistree ferait croire le travail a l'abri alors qu'il ne
+     l'est pas. */
+  _builderSaved = s.saved; _lastSavedHash = s.lastHash;
+  _builderMode = 'seance';
+  return true;
+}
+/* ── fin du plan de travail emprunté ── */
+
+/* Entrer en mode template. `opts.groupId` pre-range le template dans un
+   protocole — c'est ce qui remplace addPhaseToGroup, qui vidait le builder. */
+function _entrerModeTemplate(opts){
+  opts = opts || {};
+  if(_builderMode === 'template'){ _enterBuilderMode(); _appliquerModeBuilder(); return; }
+  _stashSeance();
+  _activeGroupId    = opts.groupId    || null;
+  _activeGroupNom   = opts.groupNom   || '';
+  _activePhaseOrdre = opts.phaseOrdre || 1;
+  if(typeof _updateActiveGroupBadge === 'function') _updateActiveGroupBadge();
+  activeBloc = null;
+  renderSession();
+  _enterBuilderMode();
+  _appliquerModeBuilder();
+  /* Le plan de travail est vide et n'a rien perdu : il est « a jour ». Sans
+     ca le badge « non sauvegarde » s'allumerait sur une page blanche. */
+  _lastSavedHash = _sessionHash();
+  _builderSaved  = true;
+  _refreshDraftBadge();
+}
+
+/* Quitter le mode template et rendre la seance empruntee. Appele a la
+   fermeture du builder ET apres un enregistrement reussi. */
+function _quitterModeTemplate(){
+  if(_builderMode !== 'template') return;
+  _restoreSeance();
+  activeBloc = (blocs && blocs.length) ? blocs[0].id : null;
+  renderSession();
+  _appliquerModeBuilder();
+  _refreshDraftBadge();
+}
+
+/* La porte d'entree, appelee par le bouton « Nouveau template » de la barre
+   laterale et par « Nouvelle phase » d'un protocole. L'objet qu'on fabrique
+   est declare AU DEPART — c'est toute la difference avec openSaveDest, qui
+   posait la question a la fin, apres le travail. */
+function nouveauTemplate(opts){
+  _entrerModeTemplate(opts);
+  _showToast(((opts&&opts.groupNom) ? '📁 Nouvelle phase de « '+opts.groupNom+' »' : '📋 Nouveau template')
+             + ' — composez, puis « Enregistrer le template »');
+}
+
+/* Fin de course apres un enregistrement reussi : la seance empruntee revient
+   et on retourne a l'agenda, ou le nouveau template est desormais visible. */
+function _finirModeTemplate(){
+  if(_builderMode !== 'template') return;
+  _quitterModeTemplate();
+  _exitBuilderMode();
+}
+
+/* Le decor suit le mode. _updateBuilderTitle et _refreshSaveBtn se chargent
+   eux-memes du titre et des boutons — ils sont appeles depuis trop d'endroits
+   pour qu'on puisse les corriger apres coup. Ne reste ici que le champ nom,
+   qui n'a pas de fonction dediee. */
+function _appliquerModeBuilder(){
+  var pn = document.getElementById('patientName');
+  if(pn) pn.style.display = (_builderMode === 'template') ? 'none' : '';
+  _updateBuilderTitle();
+  _refreshSaveBtn();
+}
+
 // ── Builder panel ──
 var _builderDate = '';
 var _builderLinkedPhase = null; // { protoId, phaseId, ppId, phaseName, protoName } quand lié à une phase
@@ -6745,9 +6889,15 @@ function openBuilderNew(){
 }
 
 function closeBuilder(){
+  var estTmpl = (_builderMode === 'template');
   if(blocs && blocs.length && !_builderSaved){
-    _confirmDialog({id:'cd-close-builder', emoji:'⚠️', title:'Contenu non sauvegardé', body:'La séance contient du contenu non sauvegardé.\n\nFermer quand même ?', confirmLabel:'Fermer quand même', confirmColor:'#d97706'}, function(){
+    _confirmDialog({id:'cd-close-builder', emoji:'⚠️',
+      title: estTmpl ? 'Template non enregistré' : 'Contenu non sauvegardé',
+      body: (estTmpl ? 'Ce template n\'a pas été enregistré.' : 'La séance contient du contenu non sauvegardé.')
+            + '\n\nFermer quand même ?',
+      confirmLabel:'Fermer quand même', confirmColor:'#d97706'}, function(){
       _draftClear();
+      _quitterModeTemplate();
       _exitBuilderMode();
     });
     return;
@@ -6758,6 +6908,9 @@ function closeBuilder(){
     if(_draftSaveTimer){ clearTimeout(_draftSaveTimer); _draftSaveTimer = null; }
     _draftClear();
   }
+  /* Rendre la seance empruntee AVANT de fermer : _exitBuilderMode re-affiche
+     la sidebar des templates, et la seance doit deja etre revenue en place. */
+  _quitterModeTemplate();
   _exitBuilderMode();
 }
 
@@ -6785,6 +6938,15 @@ function toggleSidebar(){
 function _updateBuilderTitle(){
   var titleEl = document.getElementById('builderTitle');
   var dateBar = document.getElementById('builderDateBar');
+  /* En mode template, le decor ne doit rien raconter d'une seance : ni le nom
+     du patient selectionne, ni une date de planification. */
+  if(_builderMode === 'template'){
+    if(titleEl) titleEl.textContent = _activeGroupNom
+      ? 'Nouvelle phase — ' + _activeGroupNom
+      : 'Nouveau template';
+    if(dateBar) dateBar.style.display = 'none';
+    return;
+  }
   var patNom = _progPatient ? ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim() : '';
   if(titleEl) titleEl.textContent = patNom || 'Nouvelle séance';
   if(dateBar){

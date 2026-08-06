@@ -15,6 +15,8 @@ node qualite/motifs-cas.js
 node qualite/lsi-cas.js
 node qualite/hash-cas.js
 node qualite/templates-cas.js
+node qualite/feedback-cas.js
+node qualite/cap-cas.js
 ```
 
 - [ ] Sortie verte. Une variable CSS non définie est ignorée en silence par le
@@ -31,14 +33,24 @@ node qualite/templates-cas.js
 
 ## 🔵 BUILDER PROGRAMME — Tests obligatoires si `programme.html` est modifié
 
-### Flux 1 — Création template via protocole (+ Nouvelle phase)
-- [ ] Cliquer sur un protocole dans la sidebar → il s'ouvre et reste ouvert après rechargement
-- [ ] Cliquer "＋ Nouvelle phase" → builder s'ouvre, badge protocole visible en haut (vert)
+### Flux 1 — Création d'un template (mode template)
+- [ ] Cliquer "📋 Nouveau template" en tête du panneau → builder vide, titre
+      "Nouveau template", pas de date, pas de bouton "Planifier", pas de champ nom
+- [ ] Le bouton d'enregistrement dit "Enregistrer le template" (pas "Sauvegarder")
 - [ ] Ajouter au moins 1 exercice → badge "● non sauvegardé" apparaît
-- [ ] Fermer le builder sans sauvegarder → confirmation s'affiche
-- [ ] Rouvrir le builder → brouillon proposé à la restauration
-- [ ] Ajouter exercices → cliquer "📋 Enregistrer la phase" → modal s'ouvre avec protocole pré-sélectionné
-- [ ] Confirmer → template apparaît dans la sidebar sous le protocole
+- [ ] Fermer sans enregistrer → la confirmation parle bien du TEMPLATE, pas de la séance
+- [ ] Enregistrer → modal : seuls Nom, Pathologie et Sport visibles ; "Classement" replié
+- [ ] Confirmer → retour à l'agenda, le template apparaît dans le panneau
+
+### Flux 1 bis — La séance en cours n'est JAMAIS perdue
+> Le défaut historique : "Nouvelle phase" faisait `blocs = []` sans rien demander.
+- [ ] Composer une séance dans le builder, la laisser NON enregistrée
+- [ ] Cliquer "＋ Nouvelle phase" sous un protocole → plan de travail vide,
+      titre "Nouvelle phase — <protocole>", numéro de phase pré-rempli
+- [ ] Fermer le builder → la séance de départ est retrouvée à l'identique,
+      avec sa date et son badge "● non sauvegardé"
+- [ ] Rouvrir le builder → le brouillon proposé est celui de la SÉANCE,
+      pas celui du template
 
 ### Flux 2 — Sauvegarde séance patient
 - [ ] Sélectionner un patient → cliquer "+ Séance" → badge protocole absent
@@ -47,7 +59,7 @@ node qualite/templates-cas.js
 
 ### Flux 3 — Chargement template existant
 - [ ] Cliquer sur un template dans la sidebar → exercices chargés dans le builder
-- [ ] Bouton affiche "🔄 Mettre à jour" (pas "Enregistrer la phase")
+- [ ] Bouton affiche "🔄 Mettre à jour" (le template doit être SEUL dans la séance)
 - [ ] Modifier un exercice → "🔄 Mettre à jour" → toast de confirmation
 
 ### Flux 4 — Bouton "+ Enregistrer" (tabs)
