@@ -5253,11 +5253,16 @@ function asymPct(lsi) {
   return isNaN(lsi) ? NaN : 100 - lsi;
 }
 
-/* Texte prêt à afficher. `dec` : décimales, 1 par défaut. */
+/* Texte prêt à afficher. `dec` : décimales, AUCUNE par défaut.
+   Elle valait 1, et la moitié des appels passaient explicitement 0 : le même
+   CR affichait « 20% » sur les tests de force et « 20.0% » sur les tests
+   fonctionnels. Le défaut porte donc la règle, sinon chaque appel écrit
+   demain la retranche à nouveau. Un dixième de pourcent d'asymétrie est de
+   toute façon une précision que la mesure manuelle n'a pas. */
 function asymTxt(lsi, dec) {
   var a = asymPct(lsi);
   if (isNaN(a)) return '';
-  var d = (dec === undefined ? 1 : dec);
+  var d = (dec === undefined ? 0 : dec);
   var s = Math.abs(a).toFixed(d);
   // Un écart qui arrondit à zéro ne s'affiche jamais « -0 ».
   var nul = parseFloat(s) === 0;
@@ -5756,38 +5761,6 @@ function _buildAllTestsHtml() {
     return '<div class="cr-item' + cls + '"><span class="cr-key">' + key + '</span><span class="cr-val">' + val + '</span>' + tagHtml + dateBadge + '</div>';
   }
 
-  /* Fabrique un mini-tableau de mesures pour une ligne de CR. Generique et
-     defini TOT dans la fonction : plusieurs regions (epaule, rachis…) en ont
-     besoin bien avant que les helpers du bloc « membres inferieurs » ne
-     soient assignes. `rows` : [{l, a, b, asym}]. */
-  function _crMesTab(rows, labelA, labelB, opts) {
-    var r = (rows||[]).filter(function(x){ return x && (x.a || x.b || x.asym); });
-    if (!r.length) return '';
-    var o = opts || {};
-    var avecAsym = r.some(function(x){ return x.asym; });
-    /* Colonne « Mesure » seulement quand il y a plusieurs lignes a distinguer.
-       Sur un test a une seule mesure, l'intitule de la ligne de CR la nomme
-       deja et l'unite est sur la valeur : « Force / 100 N » sous la cle
-       « Rotateurs lat. RE1 » ne dit rien de plus, et cette colonne vide de
-       sens alourdissait trente-sept lignes sur trente-huit. */
-    var avecLbl = r.length > 1 && r.some(function(x){ return x.l; });
-    var vide = function(v){ return (v === '' || v == null || v === '-') ? '—' : v; };
-    var h = '<table class="cr-mt"><thead><tr>'
-          + (avecLbl ? '<th class="lbl">Mesure</th>' : '')
-          + '<th>' + (labelA||'') + '</th><th>' + (labelB||'') + '</th>'
-          + (avecAsym ? '<th>Asym.</th>' : '') + '</tr></thead><tbody>';
-    r.forEach(function(x){
-      h += '<tr>' + (avecLbl ? '<td class="lbl">' + (x.l||'') + '</td>' : '')
-         + '<td class="num">' + vide(x.a) + '</td>'
-         + '<td class="num">' + vide(x.b) + '</td>'
-         + (avecAsym ? '<td class="der">' + vide(x.asym) + '</td>' : '')
-         + '</tr>';
-    });
-    h += '</tbody></table>';
-    if (o.note) h += '<div class="cr-mt-note">' + o.note + '</div>';
-    return h;
-  }
-
   // ── Résolution du côté atteint ────────────────────────────────
   var _cotePrimaire = ((document.getElementById('f-cote')||{}).value||'').toUpperCase();
   var _isBilat  = (_cotePrimaire !== 'DROIT' && _cotePrimaire !== 'GAUCHE'); // '' et 'BILATÉRAL' → bilatéral
@@ -5983,12 +5956,10 @@ function _buildAllTestsHtml() {
                                     asym:(isNaN(lsiV)?'':asymTxt(lsiV, 0)) }], _labelCS, _labelCA);
           haForceRows += crItem(ft.label, valStr, isPos?'Positif':'Négatif', isPos?'bad':'ok', [ft.key+'-cs',ft.key+'-ca']);
         } else if (csA || caA) {
-          var parts = [];
-          if (csA) parts.push(_labelCS+'='+csA);
-          if (caA) parts.push(_labelCA+'='+caA);
+          var parts = _crMesTab([{ l:'Appréciation', a:csA, b:caA }], _labelCS, _labelCA);
           var anyPos = csA==='Positif' || caA==='Positif';
           if (anyPos || csA==='Négatif' || caA==='Négatif') {
-            haForceRows += crItem(ft.label, parts.join(' · '), anyPos?'Positif':'Négatif', anyPos?'bad':'ok', [ft.key+'-apr-cs',ft.key+'-apr-ca']);
+            haForceRows += crItem(ft.label, parts, anyPos?'Positif':'Négatif', anyPos?'bad':'ok', [ft.key+'-apr-cs',ft.key+'-apr-ca']);
           }
         }
       });
@@ -6031,12 +6002,10 @@ function _buildAllTestsHtml() {
                                     asym:(isNaN(lsiV)?'':asymTxt(lsiV, 0)) }], _labelCS, _labelCA);
           geForceRows += crItem(ft.label, valStr, isPos?'Positif':'Négatif', isPos?'bad':'ok', [ft.key+'-cs',ft.key+'-ca']);
         } else if (csA || caA) {
-          var parts = [];
-          if (csA) parts.push(_labelCS+'='+csA);
-          if (caA) parts.push(_labelCA+'='+caA);
+          var parts = _crMesTab([{ l:'Appréciation', a:csA, b:caA }], _labelCS, _labelCA);
           var anyPos = csA==='Positif' || caA==='Positif';
           if (anyPos || csA==='Négatif' || caA==='Négatif') {
-            geForceRows += crItem(ft.label, parts.join(' · '), anyPos?'Positif':'Négatif', anyPos?'bad':'ok', [ft.key+'-apr-cs',ft.key+'-apr-ca']);
+            geForceRows += crItem(ft.label, parts, anyPos?'Positif':'Négatif', anyPos?'bad':'ok', [ft.key+'-apr-cs',ft.key+'-apr-ca']);
           }
         }
       });
@@ -6087,12 +6056,10 @@ function _buildAllTestsHtml() {
                                  _labelCS, _labelCA);
           epForceRows += crItem(ft.label, valStr, isPos ? 'Positif' : 'Négatif', isPos ? 'bad' : 'ok', [ft.key+'-cs', ft.key+'-ca']);
         } else if (csA || caA) {
-          var parts = [];
-          if (csA) parts.push(_labelCS + '=' + csA);
-          if (caA) parts.push(_labelCA + '=' + caA);
+          var parts = _crMesTab([{ l:'Appréciation', a:csA, b:caA }], _labelCS, _labelCA);
           var anyPos = csA === 'Positif' || caA === 'Positif';
           if (anyPos || csA === 'Négatif' || caA === 'Négatif') {
-            epForceRows += crItem(ft.label, parts.join(' · '), anyPos ? 'Positif' : 'Négatif', anyPos ? 'bad' : 'ok', [ft.key+'-apr-cs', ft.key+'-apr-ca']);
+            epForceRows += crItem(ft.label, parts, anyPos ? 'Positif' : 'Négatif', anyPos ? 'bad' : 'ok', [ft.key+'-apr-cs', ft.key+'-apr-ca']);
           }
         }
       });
@@ -6208,12 +6175,10 @@ function _buildAllTestsHtml() {
                                     asym:(isNaN(lsiV)?'':asymTxt(lsiV, 0)) }], _labelCS, _labelCA);
           raForceRows += crItem('Inclinaison cervicale', valStr, isPos?'Positif':'Négatif', isPos?'bad':'ok', ['ra-fc-inc-cs','ra-fc-inc-ca']);
         } else if (csA || caA) {
-          var parts = [];
-          if (csA) parts.push(_labelCS+'='+csA);
-          if (caA) parts.push(_labelCA+'='+caA);
+          var parts = _crMesTab([{ l:'Appréciation', a:csA, b:caA }], _labelCS, _labelCA);
           var anyPos = csA==='Positif' || caA==='Positif';
           if (anyPos || csA==='Négatif' || caA==='Négatif') {
-            raForceRows += crItem('Inclinaison cervicale', parts.join(' · '), anyPos?'Positif':'Négatif', anyPos?'bad':'ok', ['ra-fc-inc-apr-cs','ra-fc-inc-apr-ca']);
+            raForceRows += crItem('Inclinaison cervicale', parts, anyPos?'Positif':'Négatif', anyPos?'bad':'ok', ['ra-fc-inc-apr-cs','ra-fc-inc-apr-ca']);
           }
         }
       })();
@@ -6325,8 +6290,15 @@ function _buildAllTestsHtml() {
       if (!isNaN(cim2Cs) || !isNaN(cim2Ca) || !isNaN(cim1Cs) || !isNaN(cim1Ca)) {
         var cimLblCsEl = document.querySelector('[data-block-id="pied--cliniques"] .sl-cs');
         var cimLblCaEl = document.querySelector('[data-block-id="pied--cliniques"] .sl-ca');
-        var cimLblCs = cimLblCsEl ? cimLblCsEl.textContent : 'Sain';
-        var cimLblCa = cimLblCaEl ? cimLblCaEl.textContent : 'Atteint';
+        /* Le formulaire écrit « Côté gauche » ; le CR dit « Gauche » partout
+           ailleurs. On retire le préfixe, sinon cette seule ligne porte des
+           en-têtes plus longs que les trente-sept autres. */
+        var _sansCote = function(t){
+          var v = String(t||'').replace(/^\s*côté\s+/i, '').trim();
+          return v ? v.charAt(0).toUpperCase() + v.slice(1) : v;
+        };
+        var cimLblCs = cimLblCsEl ? _sansCote(cimLblCsEl.textContent) : 'Sain';
+        var cimLblCa = cimLblCaEl ? _sansCote(cimLblCaEl.textContent) : 'Atteint';
         var cimEffCs = document.getElementById('pi-cim-eff-cs');
         var cimEffCa = document.getElementById('pi-cim-eff-ca');
         var cimLsi = document.getElementById('pi-cim-lsi');
@@ -6339,12 +6311,13 @@ function _buildAllTestsHtml() {
            produit — les deux autres lignes n'en ont pas. */
         var _cimCm = function(v){ return isNaN(v) ? '' : v + ' cm'; };
         var _cimTxt = function(el){ var t = el ? (el.textContent||'').trim() : ''; return (!t || t === '—' || t === '-') ? '' : t; };
-        var cimDetail = '<table class="cr-mt"><thead><tr><th class="lbl">Mesure</th>'
-          + '<th>' + cimLblCs + '</th><th>' + cimLblCa + '</th><th>Asym.</th></tr></thead><tbody>'
-          + '<tr><td class="lbl">2 appuis</td><td class="num">' + (_cimCm(cim2Cs)||'—') + '</td><td class="num">' + (_cimCm(cim2Ca)||'—') + '</td><td class="der">—</td></tr>'
-          + '<tr><td class="lbl">1 appui</td><td class="num">' + (_cimCm(cim1Cs)||'—') + '</td><td class="num">' + (_cimCm(cim1Ca)||'—') + '</td><td class="der">' + (_cimTxt(cimLsi)||'—') + '</td></tr>'
-          + '<tr><td class="lbl">Effondrement</td><td class="num">' + (_cimTxt(cimEffCs)||'—') + '</td><td class="num">' + (_cimTxt(cimEffCa)||'—') + '</td><td class="der">—</td></tr>'
-          + '</tbody></table>';
+        /* Ce tableau etait le dernier ecrit a la main — donc le seul qui
+           n'heritait pas de la remise en ordre des colonnes. */
+        var cimDetail = _crMesTab([
+          { l:'2 appuis',     a:_cimCm(cim2Cs),      b:_cimCm(cim2Ca) },
+          { l:'1 appui',      a:_cimCm(cim1Cs),      b:_cimCm(cim1Ca), asym:_cimTxt(cimLsi) },
+          { l:'Effondrement', a:_cimTxt(cimEffCs),   b:_cimTxt(cimEffCa) }
+        ], cimLblCs, cimLblCa, { lbl:true });
         secRows += crItem('Course interne mollet', cimDetail, cimStatTxt, cimCls, ['pi-cim2-cs','pi-cim2-ca','pi-cim1-cs','pi-cim1-ca'].filter(function(i){ var e=document.getElementById(i); return e&&e.value; }));
       }
       // Navicular Drop Test
@@ -6379,12 +6352,10 @@ function _buildAllTestsHtml() {
                                     asym:(isNaN(lsiV)?'':asymTxt(lsiV, 0)) }], _labelCS, _labelCA);
           piForceRows += crItem(ft.label, valStr, isPos?'Positif':'Négatif', isPos?'bad':'ok', [ft.key+'-cs',ft.key+'-ca']);
         } else if (csA || caA) {
-          var parts = [];
-          if (csA) parts.push(_labelCS+'='+csA);
-          if (caA) parts.push(_labelCA+'='+caA);
+          var parts = _crMesTab([{ l:'Appréciation', a:csA, b:caA }], _labelCS, _labelCA);
           var anyPos = csA==='Positif' || caA==='Positif';
           if (anyPos || csA==='Négatif' || caA==='Négatif') {
-            piForceRows += crItem(ft.label, parts.join(' · '), anyPos?'Positif':'Négatif', anyPos?'bad':'ok', [ft.key+'-apr-cs',ft.key+'-apr-ca']);
+            piForceRows += crItem(ft.label, parts, anyPos?'Positif':'Négatif', anyPos?'bad':'ok', [ft.key+'-apr-cs',ft.key+'-apr-ca']);
           }
         }
       });
@@ -6397,7 +6368,7 @@ function _buildAllTestsHtml() {
       if (sec.label === 'GENOU' && !isNaN(cfCA2)) {
         secRows += crItem('Contraction Flash Isométrique 20s',
           _crMesTab([{ l:'Force', a:cfCA2+' N', b:(isNaN(cfCS2)?'':cfCS2+' N'),
-                       asym:(isNaN(cfCA2)||isNaN(cfCS2)||cfCS2<=0)?'':asymTxt(cfCA2/cfCS2*100) }], _labelCA, _labelCS),
+                       asym:(isNaN(cfCA2)||isNaN(cfCS2)||cfCS2<=0)?'':asymTxt(cfCA2/cfCS2*100, 0) }], _labelCA, _labelCS),
           statOf2(lsiCls2(cfCA2,cfCS2)), lsiCls2(cfCA2,cfCS2), ['cf-q-ca','cf-q-cs']);
       }
       if (sec.label === 'GENOU' && cfObs2) secRows += '<div style="margin:2px 0 8px;padding:6px 10px;background:var(--surface2);border-radius:5px;font-size:.82rem;color:var(--text2);font-style:italic">' + cfObs2 + '</div>';
@@ -6472,15 +6443,6 @@ function _buildAllTestsHtml() {
   var _isBilatMI = (_miScope !== 'DROIT' && _miScope !== 'GAUCHE');
   _labelCA = _isBilatMI ? 'Droit' : (_miScope === 'DROIT' ? 'Droit' : 'Gauche');
   _labelCS = _isBilatMI ? 'Gauche' : (_miScope === 'DROIT' ? 'Gauche' : 'Droit');
-  // Affichage Gauche en premier en bilatéral (convention UI) ; unilatéral inchangé (atteint en premier)
-  var _p = function(caVal, csVal, unit) {
-    var u = unit||'';
-    var lA = _isBilatMI ? _labelCS : _labelCA; // Gauche (bilatéral) ou Atteint (unilatéral)
-    var lB = _isBilatMI ? _labelCA : _labelCS; // Droit  (bilatéral) ou Sain   (unilatéral)
-    var vA = _isBilatMI ? csVal : caVal;
-    var vB = _isBilatMI ? caVal : csVal;
-    return lA+'='+vA+u+'   '+lB+'='+vB+u;
-  };
 
   /* ── Mesures d'une ligne de CR, en mini-tableau ────────────────────────────
      Une ligne par mesure, une colonne par cote, l'asymetrie en derniere
@@ -6787,7 +6749,7 @@ function _buildAllTestsHtml() {
     tfMsHtml += crItem('PSET', psetVal, statOf2(lsiCls2(psetCAv,psetCSv)), lsiCls2(psetCAv,psetCSv), ['pset-ca','pset-cs']);
   }
   tfMsHtml += obsBlock('pset-obs-ca','pset-obs-cs');
-  if (!isNaN(setCAv))  { var sl = setCSv>0?(setCAv/setCSv*100):NaN; tfMsHtml += crItem('Shoulder Endurance', _crMesTab([{ l:'Répétitions', a:setCAv, b:setCSv, asym:(isNaN(sl)?'':asymTxt(sl,1)) }], _labelCA, _labelCS), statOf2(lsiCls2(setCAv,setCSv)), lsiCls2(setCAv,setCSv), ['set-ca','set-cs']); }
+  if (!isNaN(setCAv))  { var sl = setCSv>0?(setCAv/setCSv*100):NaN; tfMsHtml += crItem('Shoulder Endurance', _crMesTab([{ l:'Répétitions', a:setCAv, b:setCSv, asym:(isNaN(sl)?'':asymTxt(sl)) }], _labelCA, _labelCS), statOf2(lsiCls2(setCAv,setCSv)), lsiCls2(setCAv,setCSv), ['set-ca','set-cs']); }
   tfMsHtml += obsBlock('set-obs-ca','set-obs-cs');
   (function(){
     var s2 = parseFloat((document.getElementById('ckc-s2')||{}).value||'');
@@ -6837,7 +6799,7 @@ function _buildAllTestsHtml() {
   var rfNotes = (document.getElementById('rf-notes')||{}).value||'';
   if (!isNaN(flxV2)) { tfRachisHtml += crItem('Endurance Fléchisseurs Cervicaux', flxV2+'s', flxV2>=39?'Normal':flxV2>=24?'Limite':'Deficit', flxV2>=39?'ok':flxV2>=24?'warn':'bad', ['rf-flx-cerv']); tfRachisHtml += obsSingle('rf-flx-obs'); }
   if (!isNaN(extV2)) { tfRachisHtml += crItem('Endurance Extenseurs Cervicaux', extV2+'s', extV2>=20?'OK':'Insuffisant', extV2>=20?'ok':'bad', ['rf-ext-cerv']); tfRachisHtml += obsSingle('rf-ext-obs'); }
-  if (!isNaN(latD2) && !isNaN(latG2)) { var latRatio2 = Math.min(latD2,latG2)/Math.max(latD2,latG2)*100; tfRachisHtml += crItem('Endurance Latérale Cervicale', _crMesTab([{ l:'Tenue', a:latG2+' s', b:latD2+' s', asym:asymTxt(latRatio2,1) }], 'Gauche', 'Droit'), latRatio2>=70?'Symétrie OK':'Asymétrie', latRatio2>=70?'ok':'warn', ['rf-lat-d','rf-lat-g']); tfRachisHtml += obsSingle('rf-lat-obs'); }
+  if (!isNaN(latD2) && !isNaN(latG2)) { var latRatio2 = Math.min(latD2,latG2)/Math.max(latD2,latG2)*100; tfRachisHtml += crItem('Endurance Latérale Cervicale', _crMesTab([{ l:'Tenue', a:latG2+' s', b:latD2+' s', asym:asymTxt(latRatio2) }], 'Gauche', 'Droit'), latRatio2>=70?'Symétrie OK':'Asymétrie', latRatio2>=70?'ok':'warn', ['rf-lat-d','rf-lat-g']); tfRachisHtml += obsSingle('rf-lat-obs'); }
   if (!isNaN(sorV2)) { tfRachisHtml += crItem('Test de Sørensen', sorV2+'s', sorV2>=198?'Facteur protecteur':sorV2>=176?'Zone intermédiaire':'Facteur de risque', sorV2>=198?'ok':sorV2>=176?'warn':'bad', ['rf-sorensen']); tfRachisHtml += obsSingle('rf-sor-obs'); }
   if (!isNaN(pdslV2)) { tfRachisHtml += crItem('PDSLRT', pdslV2+'s', pdslV2>=30?'OK':'Deficit', pdslV2>=30?'ok':'bad', ['rf-pdslrt']); tfRachisHtml += obsSingle('rf-pdslrt-obs'); }
   if (rfNotes) tfRachisHtml += crItem('Notes', rfNotes, '', '', ['rf-notes']);
@@ -7060,7 +7022,7 @@ function _buildAllTestsHtml() {
   // ── PSET ─────────────────────────────────────────────────────────────────
   if (!isNaN(psetCAv) && psetCSv > 0) {
     var psetLsiTW = psetCAv / psetCSv * 100;
-    if (psetLsiTW < 90) toWork.push('Renforcer la coiffe des rotateurs postérieure gléno-humérale (PSET Asym. ' + asymTxt(psetLsiTW, 1) + ')');
+    if (psetLsiTW < 90) toWork.push('Renforcer la coiffe des rotateurs postérieure gléno-humérale (PSET Asym. ' + asymTxt(psetLsiTW) + ')');
   }
 
   // ── mCKCUEST ─────────────────────────────────────────────────────────────
@@ -7151,7 +7113,7 @@ function _buildAllTestsHtml() {
     if (rec4CA && !rec4CA.checked) toWork.push('Travailler le contrôle du tronc');
   })();
   if (!isNaN(luCA) && (luCA<10 || Math.abs(luCA-(luCS||0))>1.5)) toWork.push('Déficit de flexion dorsale de cheville (Lunge ' + luCA + 'cm — < 10 cm ou asymétrie > 1,5 cm)');
-  if (!isNaN(hrLsi2) && hrLsi2<90) toWork.push('Renforcement du mollet — Heel Rise progressif (Asym. ' + asymTxt(hrLsi2, 1) + ')');
+  if (!isNaN(hrLsi2) && hrLsi2<90) toWork.push('Renforcement du mollet — Heel Rise progressif (Asym. ' + asymTxt(hrLsi2) + ')');
   if (!isNaN(qfCA) && !isNaN(qfCS) && qfCS>0 && (1-qfCA/qfCS)*100>10) toWork.push('Renforcement quadriceps (déficit ' + ((1-qfCA/qfCS)*100).toFixed(1) + '%)');
   // Flash Isométrique 20s (cf-q-ca / cf-q-cs) — distinct de l'isokinétique
   (function(){
@@ -7159,18 +7121,18 @@ function _buildAllTestsHtml() {
     var cfqCS = parseFloat((document.getElementById('cf-q-cs')||{}).value||'');
     if (!isNaN(cfqCA) && !isNaN(cfqCS) && cfqCS>0) {
       var cfqLsi = cfqCA/cfqCS*100;
-      if (cfqLsi < 90) toWork.push('Renforcement quadriceps isométrique (Flash 20s — Asym. ' + asymTxt(cfqLsi, 1) + ')');
+      if (cfqLsi < 90) toWork.push('Renforcement quadriceps isométrique (Flash 20s — Asym. ' + asymTxt(cfqLsi) + ')');
     }
   })();
   if (!isNaN(ijfCA) && !isNaN(ijfCS) && ijfCS>0 && (1-ijfCA/ijfCS)*100>10) toWork.push('Renforcement ischio-jambiers — Nordic Hamstring, excentrique (déficit ' + ((1-ijfCA/ijfCS)*100).toFixed(1) + '%)');
   // Drop Jump H
   var djLsiTW = (!isNaN(djHca)&&djHcs>0)?djHca/djHcs*100:NaN;
-  if (!isNaN(djLsiTW) && djLsiTW<90) toWork.push('Travail pliométrique — explosivité verticale (DJ Asym. ' + asymTxt(djLsiTW, 1) + ')');
+  if (!isNaN(djLsiTW) && djLsiTW<90) toWork.push('Travail pliométrique — explosivité verticale (DJ Asym. ' + asymTxt(djLsiTW) + ')');
   // Side Hop
   var shExpLsiTW = (!isNaN(shExpCA2)&&!isNaN(shExpCS2)&&shExpCS2>0)?shExpCA2/shExpCS2*100:NaN;
   var shEndLsiTW = (!isNaN(shEndCA2)&&!isNaN(shEndCS2)&&shEndCS2>0)?shEndCA2/shEndCS2*100:NaN;
-  if (!isNaN(shExpLsiTW) && shExpLsiTW<90) toWork.push('Travail latéral explosif — Side Hop 15s (Asym. ' + asymTxt(shExpLsiTW, 1) + ')');
-  if (!isNaN(shEndLsiTW) && shEndLsiTW<90) toWork.push('Travail latéral endurance — Side Hop 30s (Asym. ' + asymTxt(shEndLsiTW, 1) + ')');
+  if (!isNaN(shExpLsiTW) && shExpLsiTW<90) toWork.push('Travail latéral explosif — Side Hop 15s (Asym. ' + asymTxt(shExpLsiTW) + ')');
+  if (!isNaN(shEndLsiTW) && shEndLsiTW<90) toWork.push('Travail latéral endurance — Side Hop 30s (Asym. ' + asymTxt(shEndLsiTW) + ')');
   // SEBT
   var sebtDeficit = false;
   if (!isNaN(sebtAntCA2)&&!isNaN(sebtAntCS2)&&sebtAntCS2>0&&sebtAntCA2/sebtAntCS2*100<90){ sebtDeficit=true; toWork.push('Améliorer contrôle postural dynamique — SEBT antérieur (Asym. ' + asymTxt((sebtAntCA2/sebtAntCS2*100), 1) + ')'); }
@@ -7334,6 +7296,65 @@ function _buildCREvoSection() {
   });
   html += '</div>';
   return html;
+}
+
+/* Fabrique un mini-tableau de mesures pour une ligne de CR. Generique et
+   defini TOT dans la fonction : plusieurs regions (epaule, rachis…) en ont
+   besoin bien avant que les helpers du bloc « membres inferieurs » ne
+   soient assignes. `rows` : [{l, a, b, asym}]. */
+function _crMesTab(rows, labelA, labelB, opts) {
+  var r = (rows||[]).filter(function(x){ return x && (x.a || x.b || x.asym); });
+  if (!r.length) return '';
+  var o = opts || {};
+
+  /* « Droit » ne passe jamais avant « Gauche ». Les appels ne s'accordent
+     pas entre eux — la plupart passent (côté sain, côté atteint), la
+     Contraction Flash passe l'inverse — et le libellé de chacun dépend du
+     côté atteint du patient. Un même CR affichait donc « DROIT | GAUCHE »
+     sur une ligne et « GAUCHE | DROIT » sur la suivante.
+
+     La remise en ordre se fait ICI, pas dans les appels : c'est le seul
+     endroit par où tout passe, et un appel écrit demain hérite de la règle
+     sans que personne y pense.
+
+     On échange les libellés ET les valeurs ensemble : les dissocier
+     inverserait les deux côtés du patient en silence. L'asymétrie ne bouge
+     pas — c'est un écart, il n'appartient à aucune colonne.
+
+     Deux couples seulement sont admis, et chacun dans un seul sens :
+     « Gauche | Droit » et « Sain | Atteint ». Un couple mixte
+     (« Droit | Atteint ») ne déclenche rien — il ne devrait pas exister,
+     et le retourner à l'aveugle serait pire que de le laisser voir. */
+  var _aG = /gauche/i.test(labelA || ''), _bG = /gauche/i.test(labelB || '');
+  var _aD = /droit/i.test(labelA || ''),  _bD = /droit/i.test(labelB || '');
+  var _aS = /sain/i.test(labelA || ''),   _bS = /sain/i.test(labelB || '');
+  var _aA = /atteint/i.test(labelA || ''), _bA = /atteint/i.test(labelB || '');
+  if ((_aD && _bG) || (_aA && _bS)) {
+    var tmp = labelA; labelA = labelB; labelB = tmp;
+    r = r.map(function(x){ return { l: x.l, a: x.b, b: x.a, asym: x.asym }; });
+  }
+  var avecAsym = r.some(function(x){ return x.asym; });
+  /* Colonne « Mesure » seulement quand il y a plusieurs lignes a distinguer.
+     Sur un test a une seule mesure, l'intitule de la ligne de CR la nomme
+     deja et l'unite est sur la valeur : « Force / 100 N » sous la cle
+     « Rotateurs lat. RE1 » ne dit rien de plus, et cette colonne vide de
+     sens alourdissait trente-sept lignes sur trente-huit. */
+  var avecLbl = (o.lbl || r.length > 1) && r.some(function(x){ return x.l; });
+  var vide = function(v){ return (v === '' || v == null || v === '-') ? '—' : v; };
+  var h = '<table class="cr-mt"><thead><tr>'
+        + (avecLbl ? '<th class="lbl">Mesure</th>' : '')
+        + '<th>' + (labelA||'') + '</th><th>' + (labelB||'') + '</th>'
+        + (avecAsym ? '<th>Asym.</th>' : '') + '</tr></thead><tbody>';
+  r.forEach(function(x){
+    h += '<tr>' + (avecLbl ? '<td class="lbl">' + (x.l||'') + '</td>' : '')
+       + '<td class="num">' + vide(x.a) + '</td>'
+       + '<td class="num">' + vide(x.b) + '</td>'
+       + (avecAsym ? '<td class="der">' + vide(x.asym) + '</td>' : '')
+       + '</tr>';
+  });
+  h += '</tbody></table>';
+  if (o.note) h += '<div class="cr-mt-note">' + o.note + '</div>';
+  return h;
 }
 
 function buildCR() {
@@ -9775,9 +9796,9 @@ window.addEventListener('load', function(){
         valStr = t.valA !== '' ? String(t.valA) : '—';
       } else {
         var lsi = _ctLsiCalc(t.valA, t.valB);
-        valStr = lbl.a+'='+(t.valA!==''?t.valA:'—')+'   '+lbl.b+'='+(t.valB!==''?t.valB:'—');
+        valStr = _crMesTab([{ a:(t.valA!==''?String(t.valA):''), b:(t.valB!==''?String(t.valB):''),
+                              asym:(isNaN(lsi)?'':asymTxt(lsi, 0)) }], lbl.a, lbl.b);
         if(!isNaN(lsi)){
-          valStr += '   Asym.='+asymTxt(lsi, 0);
           tag = asymTxt(lsi, 0);
           tagCls = lsi>=90?'good':lsi>=75?'warn':'bad';
         }

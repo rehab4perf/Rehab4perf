@@ -336,7 +336,21 @@ Asym.=20%`) mais en **mini-tableau** : une colonne par côté, une par mesure,
 labelB, opts)` — ne jamais reconstruire une chaîne à la main, c'est la seule
 façon de garder l'alignement.
 
-Trois règles portées par la fonction elle-même :
+```bash
+node qualite/cr-lignes-cas.js
+```
+
+Quatre règles portées par la fonction elle-même :
+
+- **L'ordre des colonnes se normalise DANS `_crMesTab`, pas dans les appels.**
+  « Droit » ne passe jamais avant « Gauche », ni « Atteint » avant « Sain ».
+  Les appels ne s'accordaient pas : la plupart passent (sain, atteint), la
+  Contraction Flash passe l'inverse, et le libellé de chacun dépend du côté
+  atteint du patient — un même CR affichait « DROIT | GAUCHE » sur une ligne
+  et « GAUCHE | DROIT » sur la suivante. Le piège mortel : échanger les
+  en-têtes **sans** échanger les valeurs inverserait les deux côtés du
+  patient en silence. Les deux bougent ensemble, l'asymétrie ne bouge pas.
+  Un couple mixte (« Droit | Atteint ») ne déclenche rien.
 
 - La colonne **« Mesure » n'apparaît qu'à partir de deux lignes**. Sur un test
   à une seule mesure, la clé de la ligne de CR la nomme déjà et l'unité est
@@ -349,6 +363,11 @@ Trois règles portées par la fonction elle-même :
   Sans elle chaque tableau se dimensionne sur son propre contenu et deux
   lignes consécutives n'alignent plus leurs colonnes — « 100 N » et
   « 100 rép » décalaient tout le bloc des break tests.
+
+`asymTxt` n'affiche **aucune décimale** par défaut. Elle en mettait une, et
+la moitié des appels passaient explicitement `0` : le même CR affichait
+« 20% » sur les tests de force et « 20.0% » sur les tests fonctionnels. Le
+défaut porte la règle, sinon chaque appel écrit demain la retranche à nouveau.
 
 **Le CSS existe en deux exemplaires** : dans `bilan.html` (~1200) pour le CR à
 l'écran, et dans la chaîne `var css = \`…\`` de `js/bilan.js` (~8150) pour

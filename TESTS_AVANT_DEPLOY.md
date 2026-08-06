@@ -13,6 +13,7 @@ node qualite/check-couleurs.js
 node qualite/etapes-cas.js
 node qualite/motifs-cas.js
 node qualite/lsi-cas.js
+node qualite/cr-lignes-cas.js
 node qualite/hash-cas.js
 node qualite/templates-cas.js
 node qualite/feedback-cas.js

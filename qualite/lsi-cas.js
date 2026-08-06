@@ -45,20 +45,21 @@ function verifie(intitule, attendu, obtenu) {
 /* ── Conversion ──────────────────────────────────────────────────────────── */
 
 console.log('\nConversion — l\'écart, pas la ressemblance');
-verifie('LSI 80 % → 20 % d\'asymétrie', '20.0%', api.asymTxt(80));
-verifie('LSI 92 % → 8 %', '8.0%', api.asymTxt(92));
-verifie('LSI 100 % → 0 %', '0.0%', api.asymTxt(100));
-verifie('LSI 74,5 % → 25,5 %', '25.5%', api.asymTxt(74.5));
+verifie('LSI 80 % → 20 % d\'asymétrie', '20%', api.asymTxt(80));
+verifie('LSI 92 % → 8 %', '8%', api.asymTxt(92));
+verifie('LSI 100 % → 0 %', '0%', api.asymTxt(100));
+verifie('LSI 74,5 % → 26 % (arrondi)', '26%', api.asymTxt(74.5));
+verifie('une décimale reste possible sur demande', '25.5%', api.asymTxt(74.5, 1));
 verifie('valeur absente → chaîne vide', '', api.asymTxt(NaN));
-verifie('arrondi à l\'entier sur demande', '20%', api.asymTxt(80, 0));
+verifie('l\'entier est le défaut, pas une option', '20%', api.asymTxt(80, 0));
 
 /* ── Côté atteint meilleur que le sain ───────────────────────────────────── */
 
 console.log('\nUnilatéral — le côté atteint peut dépasser le sain');
-verifie('LSI 108 % → -8 %, le signe dit le sens', '-8.0%', api.asymTxt(108));
-verifie('LSI 120 % → -20 %', '-20.0%', api.asymTxt(120));
+verifie('LSI 108 % → -8 %, le signe dit le sens', '-8%', api.asymTxt(108));
+verifie('LSI 120 % → -20 %', '-20%', api.asymTxt(120));
 // 100,04 arrondit à 0,0 : pas de « -0.0% », qui n'aurait aucun sens.
-verifie('un écart nul ne s\'affiche jamais négatif', '0.0%', api.asymTxt(100.04));
+verifie('un écart nul ne s\'affiche jamais négatif', '0%', api.asymTxt(100.04));
 
 /* ── Couleurs : elles lisent le LSI, elles ne changent pas ───────────────── */
 
@@ -74,7 +75,7 @@ console.log('\nDrop Jump — logique inverse, plus c\'est bas mieux c\'est');
 verifie('LSI 105 % → vert', 'good', api.lsiClass(105, false));
 verifie('LSI 110 % → vert (borne incluse)', 'good', api.lsiClass(110, false));
 verifie('LSI 111 % → rouge', 'bad', api.lsiClass(111, false));
-verifie('affichage du Drop Jump à 110 % → -10 %', '-10.0%', api.asymTxt(110));
+verifie('affichage du Drop Jump à 110 % → -10 %', '-10%', api.asymTxt(110));
 
 /* ══════════════════════════════════════════════════════════════════════════
    Garde-fou : personne ne fabrique un pourcentage depuis un LSI a la main.
