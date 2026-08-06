@@ -1707,28 +1707,6 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
     + '<div id="'+_ovfId+'" class="cal-overflow-badge" onclick="event.stopPropagation();_openDayPopover(\''+escJS(dateStr)+'\',\''+_ovfId+'\')">+'+_ovfN+' de plus</div>';
 }
 
-/* Retrouve le nom d'un exercice depuis la cle de feedback (« b0e2 », ou
-   « cardio-1 »). Les index sont ceux de la liste SANS separateurs d'etape,
-   telle que l'espace athlete l'affiche. Renvoie '' si la cle ne correspond a
-   rien dans la seance chargee — on garde alors le nom stocke. */
-function _nomDepuisCleFeedback(cle){
-  if(!cle || !blocs || !blocs.length) return '';
-  var reels = blocs.filter(function(b){
-    return b && b.type !== 'etape' && b.type !== 'libre';
-  });
-  var mc = String(cle).match(/^cardio-(\d+)$/);
-  if(mc){
-    var bc = reels[parseInt(mc[1], 10)];
-    return (bc && (bc.sport || 'Cardio')) || '';
-  }
-  var m = String(cle).match(/^b(\d+)e(\d+)$/);
-  if(!m) return '';
-  var b = reels[parseInt(m[1], 10)];
-  if(!b || !b.exos) return '';
-  var e = b.exos[parseInt(m[2], 10)];
-  return (e && e.name) || '';
-}
-
 /* ── Retour athlète dans le builder — accordéon style CAP ── */
 function _renderAthleteRetour(seanceId) {
   // CAP/HSR : leur bandeau gère déjà le bouton feedback
@@ -1818,7 +1796,7 @@ function _feedbackRenderContent(fb, sid) {
        bien ce que l'athlete avait sous les yeux — on recalcule le nom depuis
        elle pour reparer les retours deja enregistres. */
     exos = exos.map(function(e){
-      var n = _nomDepuisCleFeedback(e.key);
+      var n = _nomDepuisCleFeedback(e.key, blocs);
       return n ? Object.assign({}, e, { name: n }) : e;
     });
     var withPain = exos.filter(function(e){ return e.pain !== null && e.pain !== undefined && e.pain > 0; })
@@ -9628,7 +9606,10 @@ function _renderJournal() {
         isHsr:   isHsrN,
         rpe:     rpe   !== undefined ? rpe   : null,
         duree:   duree !== undefined ? duree : null,
-        exo_data: fb ? fb.exo_data : null
+        exo_data: fb ? fb.exo_data : null,
+        // Blocs de CETTE seance : les cles de feedback sont positionnelles, seule
+        // sa propre liste permet de retrouver a quel exercice chacune renvoie.
+        blocs: (ev.programmes ? (_donneesObjet(ev.programmes.donnees).blocs || []) : [])
       });
     });
   }
@@ -9767,7 +9748,8 @@ function _renderJournal() {
           var col2 = exo.effort===1?'#166534':exo.effort===2?'#713f12':exo.effort===3?'#991b1b':'';
           retourDetail += '<div class="journal-retour-exo-row">';
           if(e1) retourDetail += '<span style="background:'+bg2+';color:'+col2+';border-radius:4px;padding:1px 5px;font-size:.82rem;flex-shrink:0;">'+e1+'</span>';
-          retourDetail += '<div><span style="font-weight:600;color:#1e293b;">'+escH(exo.name||'Exercice')+'</span>';
+          var nomExo = _nomDepuisCleFeedback(exo.key, item.blocs) || exo.name || 'Exercice';
+          retourDetail += '<div><span style="font-weight:600;color:#1e293b;">'+escH(nomExo)+'</span>';
           if(exo.note) retourDetail += '<span style="color:#6b7280;font-style:italic;"> — '+escH(exo.note)+'</span>';
           retourDetail += '</div></div>';
         });

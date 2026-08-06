@@ -3851,6 +3851,35 @@ function _extractExoLoads(seances) {
   return result;
 }
 
+/* Retrouve le nom d'un exercice depuis la cle de feedback (« b0e2 », ou
+   « cardio-1 »). Les index sont ceux de la liste SANS separateurs d'etape,
+   telle que l'espace athlete l'affiche. Renvoie '' si la cle ne correspond a
+   rien dans la seance fournie — on garde alors le nom stocke.
+
+   `source` est la liste de blocs de LA seance a laquelle appartient ce
+   feedback. Trois lecteurs s'en servent, tous sur des seances differentes :
+   le panneau Feedback du builder, le journal, et les courbes de douleur. Un
+   nom stocke a pu etre fausse (la collecte cote athlete numerotait sur une
+   liste NON filtree des separateurs, l'affichage sur la liste filtree) — la
+   CLE, elle, designe bien ce que l'athlete avait sous les yeux. */
+function _nomDepuisCleFeedback(cle, source){
+  if(!cle || !source || !source.length) return '';
+  var reels = source.filter(function(b){
+    return b && b.type !== 'etape' && b.type !== 'libre';
+  });
+  var mc = String(cle).match(/^cardio-(\d+)$/);
+  if(mc){
+    var bc = reels[parseInt(mc[1], 10)];
+    return (bc && (bc.sport || 'Cardio')) || '';
+  }
+  var m = String(cle).match(/^b(\d+)e(\d+)$/);
+  if(!m) return '';
+  var b = reels[parseInt(m[1], 10)];
+  if(!b || !b.exos) return '';
+  var e = b.exos[parseInt(m[2], 10)];
+  return (e && e.name) || '';
+}
+
 /* Extrait les données NRS (douleur) par exercice à partir des séances chargées.
    Deux sources fusionnées : NRS praticien (exo.nrs dans donnees) et douleur
    athlète (athlete_feedback.exo_data.exos[].pain). L'athlète est prioritaire
@@ -3897,8 +3926,14 @@ function _extractExoNRS(seances) {
   seances.forEach(function(s) {
     var fb = s.athlete_feedback;
     var exos = (fb && fb.exo_data && fb.exo_data.exos) ? fb.exo_data.exos : [];
+    // Les points sont regroupes PAR NOM : un nom fausse ferait migrer la
+    // douleur sur la courbe d'un autre exercice. On le recalcule depuis la cle
+    // sur les blocs de cette seance-la.
+    var rawS = (s.programmes && s.programmes.donnees) || {};
+    if(typeof rawS === 'string'){ try { rawS = JSON.parse(rawS || '{}'); } catch(e){ rawS = {}; } }
+    var blocsS = Array.isArray(rawS) ? rawS : (rawS.blocs || []);
     exos.forEach(function(ex) {
-      var name = (ex.name || '').trim();
+      var name = (_nomDepuisCleFeedback(ex.key, blocsS) || ex.name || '').trim();
       if(!name) return;
       if(ex.pain === null || ex.pain === undefined) return;
       _addPt(name, s.date || '', ex.pain, true);
