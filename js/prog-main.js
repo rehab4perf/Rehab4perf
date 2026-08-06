@@ -962,36 +962,12 @@ function renderSeances() {
       +'<div class="seance-card-meta">'+s.date+' · '+(s.blocs||[]).length+' bloc(s) · '+nbExos+' exercice(s)</div>'
       +'<div class="seance-card-actions">'
       +'<button class="btn btn-primary" style="font-size:.76rem;padding:5px 12px;" onclick="loadSeance(\''+s.id+'\')">📋 Charger</button>'
-      +'<button class="btn btn-outline" style="font-size:.76rem;padding:5px 12px;" onclick="seanceVersTemplate(\''+s.id+'\')" title="Réutiliser cette séance pour d\'autres patients">Faire un répertoire</button>'
       +'<button class="btn btn-danger" style="font-size:.76rem;padding:5px 12px;" onclick="deleteSeance(\''+s.id+'\')"><svg style="vertical-align:middle;margin-right:4px" width="16" height="16" fill="currentColor" viewBox="-40 0 427 427.00131" xmlns="http://www.w3.org/2000/svg"><path d="m232.398438 154.703125c-5.523438 0-10 4.476563-10 10v189c0 5.519531 4.476562 10 10 10 5.523437 0 10-4.480469 10-10v-189c0-5.523437-4.476563-10-10-10zm0 0"/><path d="m114.398438 154.703125c-5.523438 0-10 4.476563-10 10v189c0 5.519531 4.476562 10 10 10 5.523437 0 10-4.480469 10-10v-189c0-5.523437-4.476563-10-10-10zm0 0"/><path d="m28.398438 127.121094v246.378906c0 14.5625 5.339843 28.238281 14.667968 38.050781 9.285156 9.839844 22.207032 15.425781 35.730469 15.449219h189.203125c13.527344-.023438 26.449219-5.609375 35.730469-15.449219 9.328125-9.8125 14.667969-23.488281 14.667969-38.050781v-246.378906c18.542968-4.921875 30.558593-22.835938 28.078124-41.863282-2.484374-19.023437-18.691406-33.253906-37.878906-33.257812h-51.199218v-12.5c.058593-10.511719-4.097657-20.605469-11.539063-28.03125-7.441406-7.421875-17.550781-11.5546875-28.0625-11.46875h-88.796875c-10.511719-.0859375-20.621094 4.046875-28.0625 11.46875-7.441406 7.425781-11.597656 17.519531-11.539062 28.03125v12.5h-51.199219c-19.1875.003906-35.394531 14.234375-37.878907 33.257812-2.480468 19.027344 9.535157 36.941407 28.078126 41.863282zm239.601562 279.878906h-189.203125c-17.097656 0-30.398437-14.6875-30.398437-33.5v-245.5h250v245.5c0 18.8125-13.300782 33.5-30.398438 33.5zm-158.601562-367.5c-.066407-5.207031 1.980468-10.21875 5.675781-13.894531 3.691406-3.675781 8.714843-5.695313 13.925781-5.605469h88.796875c5.210937-.089844 10.234375 1.929688 13.925781 5.605469 3.695313 3.671875 5.742188 8.6875 5.675782 13.894531v12.5h-128zm-71.199219 32.5h270.398437c9.941406 0 18 8.058594 18 18s-8.058594 18-18 18h-270.398437c-9.941407 0-18-8.058594-18-18s8.058593-18 18-18zm0 0"/><path d="m173.398438 154.703125c-5.523438 0-10 4.476563-10 10v189c0 5.519531 4.476562 10 10 10 5.523437 0 10-4.480469 10-10v-189c0-5.523437-4.476563-10-10-10zm0 0"/></svg>Supprimer</button>'
       +'</div>'
       +'</div>';
   }).join('');
 }
 
-/* Faire un template d'une seance deja enregistree, sans repasser par le
-   builder. C'est APRES avoir compose une seance pour un patient qu'on se dit
-   « celle-la, je la referai » — obliger a la recharger d'abord pour
-   l'enregistrer une seconde fois etait le detour le plus couteux du systeme. */
-function seanceVersTemplate(id){
-  _loadSeances();
-  var s = _savedSeances.find(function(x){ return x.id===id; });
-  if(!s){ _showToast('⚠️ Séance introuvable.'); return; }
-  if(!(s.blocs||[]).length){ _showToast('⚠️ Cette séance est vide.'); return; }
-
-  /* La seance courante n'est pas touchee : doSaveTemplate lit `blocs` et
-     `etapes`, on les prete le temps de l'enregistrement puis on les rend. */
-  var blocsAvant = blocs, etapesAvant = etapes, notesAvant = _notes;
-  blocs  = JSON.parse(JSON.stringify(s.blocs  || []));
-  etapes = JSON.parse(JSON.stringify(s.etapes || []));
-  _notes = s.notes || '';
-  _seanceTmplRestore = function(){
-    blocs = blocsAvant; etapes = etapesAvant; _notes = notesAvant;
-    _seanceTmplRestore = null;
-  };
-  _openTmplModal({ emoji:_tmplSelectedEmoji, nom:s.name || '' });
-}
-var _seanceTmplRestore = null;
 
 function loadSeance(id) {
   _loadSeances();
@@ -3967,9 +3943,6 @@ function closeSaveTemplate(){
   document.getElementById('templateSaveModal').classList.remove('open');
   _tmplEditId = null;
   _tmplEtapeSourceId = null;
-  // Rendre la seance courante si elle avait ete pretee par seanceVersTemplate,
-  // que l'enregistrement ait abouti ou non.
-  if(typeof _seanceTmplRestore === 'function') _seanceTmplRestore();
 }
 
 /* ── Enregistrer / Modifier le template ── */
@@ -4024,7 +3997,7 @@ function doSaveTemplate(){
                              pathologie:patho, sport:sportTxt })
     }).then(function(r){
       if(r.ok){
-        if(!isEtapeTmpl && !_seanceTmplRestore) _draftClear();
+        if(!isEtapeTmpl) _draftClear();
         closeSaveTemplate();
         renderTemplatesInBuilder();
         renderSidebarTemplates();
@@ -4047,7 +4020,7 @@ function doSaveTemplate(){
       _local:true
     });
     _persistTemplates();
-    if(!isEtapeTmpl && !_seanceTmplRestore) _draftClear();
+    if(!isEtapeTmpl) _draftClear();
     closeSaveTemplate();
     renderTemplatesInBuilder();
     renderSidebarTemplates();
@@ -4848,56 +4821,15 @@ function _refreshDraftBadge(){
 
 // ── Bouton save contextuel ───────────────────────────────────────────────────
 /* ── Destination de sauvegarde ── */
-function openSaveDest(){
-  if(!blocs || !blocs.length){ alert('La séance est vide.'); return; }
-  // Hint contextuel
-  var hint = '';
-  if(_activeGroupId){
-    hint = 'Protocole actif : « ' + (_activeGroupNom||'') + ' »';
-  } else if(_builderFromTemplate){
-    var _tCur = (_sidebarProgs||[]).find(function(x){ return String(x.id)===String(_builderFromTemplate); });
-    if(_tCur) hint = 'Répertoire chargé : « ' + (_tCur.nom||'Répertoire') + ' »';
-  } else if(_progPatient){
-    hint = 'Patient : ' + ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim();
-  }
-  document.getElementById('sdm-hint').textContent = hint;
-  // Pré-sélection de la tuile
-  ['patient','library'].forEach(function(k){
-    var el = document.getElementById('sdm-tile-'+k);
-    if(el) el.classList.remove('active');
-  });
-  // Afficher la tuile "Programme patient" seulement si patient sélectionné
-  var tilePatient = document.getElementById('sdm-tile-patient');
-  if(tilePatient) tilePatient.style.display = _progPatient ? '' : 'none';
-  if(_progPatient){
-    document.getElementById('sdm-tile-patient').classList.add('active');
-  } else {
-    document.getElementById('sdm-tile-library').classList.add('active');
-  }
-  document.getElementById('saveDestOverlay').classList.add('open');
-}
-
-function _closeSaveDest(){
-  document.getElementById('saveDestOverlay').classList.remove('open');
-}
-
-function _saveDest(dest){
-  _closeSaveDest();
-  if(dest === 'library'){
-    if(_activeGroupId){
-      _openTmplModal({ emoji:_tmplSelectedEmoji, groupId:_activeGroupId, phaseOrdre:_activePhaseOrdre, _simplified:true });
-    } else {
-      _openTmplModal({ emoji:_tmplSelectedEmoji });
-    }
-  } else {
-    saveProgToCloud();
-  }
-}
-
+/* Enregistrer une repertoire depuis une seance composee pour un patient
+   n'est plus une porte : ce n'est pas un geste que le praticien utilise (les
+   deux portes retenues sont « Nouveau repertoire » et l'enregistrement
+   d'une etape seule). La seule destination possible en Contexte C est donc
+   le patient — plus de question a poser, plus de modal. */
 function _builderSaveBtnClick(){
   if(!blocs || !blocs.length){ alert('La séance est vide.'); return; }
   /* La destination est connue depuis l'entree : on va droit au modal du
-     template, sans repasser par openSaveDest. */
+     répertoire, sans repasser par saveProgToCloud. */
   if(_builderMode === 'template'){ openSaveTemplate(); return; }
   if(_currentSeanceId){
     // Contexte B : modification d'un chip existant → save direct
@@ -4906,8 +4838,8 @@ function _builderSaveBtnClick(){
     // Contexte A : nouvelle séance depuis le calendrier → save + planifier + fermer
     _saveAndPlanForDate();
   } else {
-    // Contexte C : builder libre → modal de destination
-    openSaveDest();
+    // Contexte C : builder libre, seance pour un patient → save direct
+    saveProgToCloud();
   }
 }
 
@@ -4964,7 +4896,7 @@ function _refreshSaveBtn(){
 }
 
 function _doUpdateTemplate(){
-  if(!_builderFromTemplate){ openSaveDest(); return; }
+  if(!_builderFromTemplate){ saveProgToCloud(); return; }
   if(!_progToken || !_progUid){ alert('Session non disponible.'); return; }
   var btn = document.getElementById('prog-update-btn');
   if(btn){ btn.disabled = true; btn.textContent = '⏳…'; }
@@ -6545,7 +6477,7 @@ function confirmQuickAdd(){
    d'addPhaseToGroup, qui posait `blocs = []` sans rien demander.
 
    La seance est mise de cote a l'entree et rendue a l'identique a la sortie.
-   Le mecanisme n'est pas neuf : seanceVersTemplate empruntait deja les
+   Le mecanisme n'est pas neuf : un ancien chemin (retire depuis) empruntait deja les
    globales le temps d'un enregistrement. Il est ici generalise et nomme.
 
    Les reperes de seance — programme, seance planifiee, date — sont EFFACES
@@ -6627,7 +6559,8 @@ function _quitterModeTemplate(){
 
 /* La porte d'entree, appelee par le bouton « Nouveau template » de la barre
    laterale et par « Nouvelle phase » d'un protocole. L'objet qu'on fabrique
-   est declare AU DEPART — c'est toute la difference avec openSaveDest, qui
+   est declare AU DEPART — c'est toute la difference avec l'ancienne modal de
+   destination (retiree depuis), qui
    posait la question a la fin, apres le travail. */
 function nouveauTemplate(opts){
   _entrerModeTemplate(opts);

@@ -987,43 +987,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .builder-update-btn:hover { background:var(--ok-d); }
 .builder-update-btn:disabled { opacity:.6; cursor:default; }
 
-/* ── Save Destination Modal ── */
-#saveDestOverlay {
-  display:none; position:fixed; inset:0; z-index:9500;
-  background:rgba(0,0,0,.5); backdrop-filter:blur(3px);
-  align-items:center; justify-content:center;
-}
-#saveDestOverlay.open { display:flex; }
-#saveDestModal {
-  background:#fff; border-radius:12px; width:100%; max-width:400px;
-  margin:16px; box-shadow:0 12px 48px rgba(0,0,0,.28); overflow:hidden;
-}
-.sdm-header {
-  background:var(--navy); color:#fff; padding:14px 18px;
-  display:flex; align-items:center; gap:10px;
-}
-.sdm-header h2 { flex:1; font-size:.92rem; font-weight:700; margin:0; }
-.sdm-header button {
-  background:none; border:none; color:rgba(255,255,255,.7);
-  font-size:1.3rem; cursor:pointer; line-height:1; padding:0;
-}
-.sdm-tiles {
-  display:grid; grid-template-columns:repeat(2,1fr); gap:12px;
-  padding:20px 18px 10px;
-}
-.sdm-tile {
-  border:2px solid var(--border-l); border-radius:10px; padding:16px 8px;
-  text-align:center; cursor:pointer; transition:border-color .15s, background .15s;
-  user-select:none;
-}
-.sdm-tile:hover { border-color:var(--accent); background:var(--accent-ll); }
-.sdm-tile.active { border-color:var(--accent); background:var(--tag-bg); }
-.sdm-tile-icon { font-size:var(--fs-3xl); margin-bottom:6px; }
-.sdm-tile-label { font-size:var(--fs-xs); font-weight:600; color:var(--text-dk); line-height:1.3; }
-.sdm-hint {
-  font-size:var(--fs-sm); color:var(--text-sm); text-align:center;
-  padding:4px 18px 18px; min-height:24px; margin:0;
-}
 .builder-body { flex:1; overflow-y:auto; display:flex; flex-direction:column; }
 
 /* ── Exo rows inside builder panel: layout compact 2 rows ── */
@@ -2582,28 +2545,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
       <button class="btn btn-outline" id="grpDuplicateBtn" style="display:none" onclick="duplicateGroup()"><svg style="vertical-align:middle;margin-right:4px" width="14" height="14" fill="currentColor" viewBox="0 0 480 480" xmlns="http://www.w3.org/2000/svg"><path d="m440 0h-336c-22.082031.0273438-39.972656 17.917969-40 40v24h-24c-22.082031.027344-39.9726562 17.917969-40 40v336c.0273438 22.082031 17.917969 39.972656 40 40h336c22.082031-.027344 39.972656-17.917969 40-40v-24h24c22.082031-.027344 39.972656-17.917969 40-40v-336c-.027344-22.082031-17.917969-39.9726562-40-40zm-40 440c0 13.253906-10.746094 24-24 24h-336c-13.253906 0-24-10.746094-24-24v-336c0-13.253906 10.746094-24 24-24h336c13.253906 0 24 10.746094 24 24zm64-64c0 13.253906-10.746094 24-24 24h-24v-296c-.027344-22.082031-17.917969-39.972656-40-40h-296v-24c0-13.253906 10.746094-24 24-24h336c13.253906 0 24 10.746094 24 24zm0 0"/><path d="m296 264h-80v-80c0-4.417969-3.582031-8-8-8s-8 3.582031-8 8v80h-80c-4.417969 0-8 3.582031-8 8s3.582031 8 8 8h80v80c0 4.417969 3.582031 8 8 8s8-3.582031 8-8v-80h80c4.417969 0 8-3.582031 8-8s-3.582031-8-8-8zm0 0"/></svg>Dupliquer</button>
       <button class="btn btn-outline" onclick="closeCreateGroup()">Annuler</button>
     </div>
-  </div>
-</div>
-
-<!-- ═══════ SAVE DESTINATION MODAL ═══════ -->
-<div id="saveDestOverlay" onclick="if(event.target===this)_closeSaveDest()">
-  <div id="saveDestModal">
-    <div class="sdm-header">
-      <h2><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>Sauvegarder la séance</h2>
-      <button onclick="_closeSaveDest()">✕</button>
-    </div>
-    <div class="sdm-tiles">
-      <div class="sdm-tile" id="sdm-tile-patient" onclick="_saveDest('patient')">
-        <div class="sdm-tile-icon">👤</div>
-        <div class="sdm-tile-label">Programme patient</div>
-      </div>
-      <div class="sdm-tile" id="sdm-tile-library" onclick="_saveDest('library')">
-        <div class="sdm-tile-icon">📚</div>
-        <div class="sdm-tile-label">Bibliothèque</div>
-        <div class="sdm-tile-sub" style="font-size:.62rem;color:var(--text-sm);margin-top:2px;">Répertoire / Protocole</div>
-      </div>
-    </div>
-    <p class="sdm-hint" id="sdm-hint"></p>
   </div>
 </div>
 
@@ -4479,6 +4420,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 </div>
 
-<script src="js/prog-main.js?v=20260806g"></script>
+<script src="js/prog-main.js?v=20260806h"></script>
 </body>
 </html>
