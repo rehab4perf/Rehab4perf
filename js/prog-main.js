@@ -1,6 +1,8 @@
 /* Icone « templates » du produit — la meme que le bouton Templates de la barre
    du haut. Une seule image pour une seule idee : on ne reinvente pas un
    pictogramme par endroit. */
+var _ICO_PLUS = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+var _ICO_PUBLIC = '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/><path d="M12 3a15 15 0 0 1 4 9 15 15 0 0 1-4 9 15 15 0 0 1-4-9 15 15 0 0 1 4-9z"/></svg>';
 var _TMPL_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 511.999 511.999" width="13" height="13" fill="currentColor" style="vertical-align:-1px;margin-right:6px"><path d="M477.418,98.354H262.25l-0.94-6.098c-2.808-18.223-20.093-33.047-38.531-33.047H115.962c-18.44,0-35.724,14.826-38.529,33.047l-0.941,6.098h-0.669c-19.068,0-34.581,15.513-34.581,34.582v23.139H30.71c-9.454,0-17.847,3.738-23.629,10.524c-5.783,6.787-8.14,15.665-6.64,24.999l36.69,228.225c2.922,18.179,20.281,32.968,38.693,32.968h401.594c1.782,0,3.525-0.133,5.222-0.395c16.6-2.525,29.359-16.894,29.359-34.188V132.935C511.999,113.867,496.486,98.354,477.418,98.354z M488.799,431.834c-2,2.347-4.764,3.905-7.98,4.543c-0.133,0.025-0.269,0.04-0.403,0.062c-0.399,0.069-0.799,0.134-1.21,0.175c-0.589,0.057-1.185,0.091-1.789,0.091H75.824c-10.67,0-21.116-8.901-22.811-19.436l-36.69-228.224c-0.74-4.605,0.325-8.87,3.001-12.012c2.677-3.14,6.72-4.87,11.384-4.87h401.593c10.669,0,21.115,8.901,22.808,19.436l36.691,228.224C492.542,424.427,491.475,428.693,488.799,431.834z M81.921,156.076v-0.001v-13.032h381.992v29.598c-7.36-9.889-19.244-16.566-31.61-16.566H81.921z M495.912,344.035l-15.912-98.978V134.998c0-4.442-3.6-8.044-8.044-8.044H73.877c-4.443,0-8.044,3.601-8.044,8.044v21.075h-8.505v-23.139c0-10.198,8.296-18.495,18.494-18.495h7.57c3.969,0,7.345-2.896,7.949-6.818l1.992-12.918c1.619-10.521,11.982-19.409,22.629-19.409h106.817c10.647,0,21.01,8.889,22.633,19.41l1.989,12.916c0.604,3.923,3.98,6.819,7.949,6.819h222.067c10.198,0,18.494,8.297,18.494,18.495V344.035z"/></svg>';
 var _HSR_ICON = '<svg style="vertical-align:middle;margin-right:4px" width="16" height="16" fill="currentColor" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg"><path d="m248.2 87.8c1.7-3.9 6.3-5.6 10.1-3.8 3.9 1.7 5.6 6.3 3.8 10.1l-10.6 23.3c-1.7 3.9-6.3 5.6-10.1 3.8-3.9-1.7-5.6-6.3-3.9-10.1zm-63.2-5.3c-.4-4.2 2.7-7.9 6.9-8.3s7.9 2.7 8.3 6.9l2.5 25.5c.4 4.2-2.7 7.9-6.9 8.3s-7.9-2.7-8.3-6.9zm-57.4 27.1c-2.4-3.4-1.7-8.2 1.8-10.6 3.4-2.4 8.2-1.7 10.6 1.8l14.9 20.8c2.4 3.4 1.6 8.2-1.8 10.6s-8.2 1.7-10.6-1.8zm213.3 154.9v200.7c0 4.2-3.4 7.7-7.6 7.7h-43.1c-4.2 0-7.6-3.4-7.6-7.7v-200.7c0-4.2 3.4-7.6 7.6-7.6h43.1c4.2-.1 7.6 3.4 7.6 7.6zm-15.3 193v-185.4h-27.8v185.4zm57.6-201.2v201.3h27.8v-253.3zm-15.3 208.9v-210.8c0-1.2.3-2.4.9-3.6l42.7-79.9c3.8-8 14.7-4.9 14.7 3v291.3c0 4.2-3.4 7.7-7.7 7.7h-43.1c-4.1 0-7.5-3.5-7.5-7.7zm-197.7-136.4v136.4c0 4.2-3.4 7.7-7.7 7.7h-43.1c-4.2 0-7.6-3.4-7.6-7.7v-59.8c0-1.5.4-2.9 1.2-4.1l42.9-76.2c3.8-6.9 14.3-4.1 14.3 3.7zm-15.3 128.7v-99.5l-27.7 49.4v50.2h27.7zm100.7-193v200.7c0 4.2-3.4 7.7-7.6 7.7h-43.1c-4.2 0-7.7-3.4-7.7-7.7v-200.7c0-4.2 3.4-7.6 7.7-7.6h43.1c4.1-.1 7.6 3.4 7.6 7.6zm-15.3 193v-185.4h-27.8v185.4zm199-422.7v109.1c0 5.6-6.2 10-12.1 6.2l-18.3-10.5-53.3 99.7c-1.4 2.6-4 4-6.7 4h-167.2l-63.7 114.6c-2.1 3.8-6.9 5.1-10.8 2.7l-42.6-24.6c-3.6-2.1-4.9-6.7-2.8-10.3l79.8-143.2c1.4-2.5 4-3.9 6.7-3.9h166.8l38-71.4-19.6-11.3c-5.1-3-5.1-10.3.1-13.3l94.4-54.5c4.9-2.9 11.2.9 11.3 6.7zm-15.4 95.8v-82.6l-71.6 41.3 14.4 8.3c3.7 2 5 6.6 3.1 10.3l-43.3 81.3c-1.2 2.8-3.9 4.7-7 4.7h-166.9l-73.9 132.7 29.7 17.2 61.8-111.3c1.2-2.7 3.9-4.5 7-4.5h167.1l54.8-102.5c2.1-3.9 6.8-5.2 10.5-3z"/></svg>';
 var _PLAN_ICON = '<svg style="vertical-align:middle;margin-right:4px" width="16" height="16" fill="currentColor" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="M452,311.145V75c0-24.813-20.187-45-45-45h-15V15c0-8.284-6.716-15-15-15s-15,6.716-15,15v15h-60V15c0-8.284-6.716-15-15-15s-15,6.716-15,15v15h-92V15c0-8.284-6.716-15-15-15s-15,6.716-15,15v15H90V15c0-8.284-6.716-15-15-15S60,6.716,60,15v15H45C20.187,30,0,50.187,0,75v331c0,24.813,20.187,45,45,45h266.946c16.795,36.01,53.085,61,95.054,61c57.897,0,105-47.551,105-106C512,364.198,487.443,328.027,452,311.145z M30,75c0-8.271,6.729-15,15-15h15v15c0,8.284,6.716,15,15,15s15-6.716,15-15V60h60v15c0,8.284,6.716,15,15,15s15-6.716,15-15V60h92v15c0,8.284,6.716,15,15,15s15-6.716,15-15V60h60v15c0,8.284,6.716,15,15,15s15-6.716,15-15V60h15c8.271,0,15,6.729,15,15v46H30V75z M303.056,421H45c-8.271,0-15-6.729-15-15V151h392v151.076c-4.901-0.704-9.907-1.076-15-1.076c-57.897,0-105,47.103-105,105C302,411.092,302.365,416.098,303.056,421z M407,482c-41.355,0-75-34.093-75-76c0-41.355,33.645-75,75-75c41.355,0,75,33.645,75,75C482,447.907,448.355,482,407,482z"/><path d="M437,391h-15v-15c0-8.284-6.716-15-15-15s-15,6.716-15,15v30c0,8.284,6.716,15,15,15h30c8.284,0,15-6.716,15-15S445.284,391,437,391z"/><path d="M105,181H75c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S113.284,181,105,181z"/><path d="M196,181h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S204.284,181,196,181z"/><path d="M287,181h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S295.284,181,287,181z"/><path d="M377,181h-30c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S385.284,181,377,181z"/><path d="M105,241H75c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S113.284,241,105,241z"/><path d="M196,241h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S204.284,241,196,241z"/><path d="M287,241h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S295.284,241,287,241z"/><path d="M377,241h-30c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S385.284,241,377,241z"/><path d="M105,301H75c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S113.284,301,105,301z"/><path d="M196,301h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S204.284,301,196,301z"/><path d="M287,301h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S295.284,301,287,301z"/><path d="M105,361H75c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S113.284,361,105,361z"/><path d="M196,361h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S204.284,361,196,361z"/><path d="M287,361h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S295.284,361,287,361z"/></svg>';
@@ -6221,54 +6223,58 @@ function _renderSidebarWithGroups(){
 
   var hasContent = false;
 
+  /* Direction « fiche calme » : UNE carte par protocole, pas une par niveau.
+     La categorie redevient une simple etiquette de section — plus de bandeau
+     colore ni d'icone : elle situe, elle ne se dispute pas l'attention avec le
+     contenu. Les etiquettes heritees montent sur l'en-tete du protocole au
+     lieu d'etre repetees sur chacune de ses phases. */
   allCats.forEach(function(catKey){
-    var catInfo = TMPL_CATEGORIES.find(function(c){ return c.val===catKey; }) || { icon:'📁', color:'#F3F4F6', textColor:'var(--text-dk)' };
     var catGroups = filteredGroups.filter(function(g){ return (g.categorie||'')===catKey; });
     var catFree   = freeTmpl.filter(function(p){ return (p.categorie||'')===catKey; });
     if(!catGroups.length && !catFree.length) return;
     hasContent = true;
 
-    var count = catGroups.length + catFree.length;
-    // Fermé par défaut : ouvert seulement si l'utilisateur a explicitement cliqué (valeur === false)
     var isCollapsed = (_collapsedCats[catKey] !== false);
-    var safeKey = escH(catKey||'__sans__');
-
     html += '<div class="stmpl-cat-section">';
-    html += '<div class="stmpl-cat-hdr" onclick="_toggleCatSection(\''+escJS(catKey)+'\')" style="background:'+catInfo.color+'20;">';
-    html += '<span class="stmpl-cat-hdr-icon">'+catInfo.icon+'</span>';
-    html += '<span class="stmpl-cat-hdr-name" style="color:var(--text-dk);">'+(catKey||'Sans catégorie')+'</span>';
-    html += '<span class="stmpl-cat-hdr-count">'+count+'</span>';
-    html += '<span class="stmpl-cat-hdr-toggle">'+(isCollapsed?'▶':'▼')+'</span>';
+    html += '<div class="stmpl-cat-hdr" onclick="_toggleCatSection(\''+escJS(catKey)+'\')">';
+    html += '<span class="stmpl-cat-hdr-name">'+escH(catKey||'Sans catégorie')+'</span>';
+    html += '<span class="stmpl-cat-hdr-toggle">'+(isCollapsed?'▸':'▾')+'</span>';
     html += '</div>';
 
     if(!isCollapsed){
       html += '<div class="stmpl-cat-body">';
 
-      // Protocoles de cette catégorie
       catGroups.forEach(function(g){
         var isOpen = !!_expandedGroups[g.id];
         var phases = groupedTmpl.filter(function(p){ return String(p.group_id)===String(g.id); });
         phases.sort(function(a,b){ return (a.phase_ordre||0)-(b.phase_ordre||0); });
         var gid = escH(String(g.id));
-        html += '<div class="stmpl-group">';
         var isActiveGrp = _activeGroupId && String(_activeGroupId)===String(g.id);
-        html += '<div class="stmpl-group-header'+(isActiveGrp?' is-active-grp':'')+'" onclick="_toggleGroup(\''+gid+'\')">';
-        html += '<span class="stmpl-group-toggle">'+(isOpen?'▼':'▶')+'</span>';
-        html += '<div class="stmpl-group-info"><div class="stmpl-group-name">'+escH(g.nom||'Sans nom')+'</div>';
-        html += '<div style="margin-top:2px;"><span style="font-size:.68rem;color:var(--muted);">'+phases.length+' phase'+(phases.length!==1?'s':'')+'</span></div></div>';
-        html += '<button class="stmpl-kebab" onclick="event.stopPropagation();_openKebab(event,\'group\',\''+gid+'\',\''+escJS(g.nom||'')+'\',\''+escJS(String(g.praticien_id||''))+'\')" title="Actions">···</button></div>';
+
+        var etP = _tmplEtiquette(g, 'pathologie'), etS = _tmplEtiquette(g, 'sport');
+        var etHtml = '';
+        if(etP) etHtml += '<span class="stmpl-tag stmpl-tag-patho">'+escH(etP)+'</span>';
+        if(etS) etHtml += '<span class="stmpl-tag stmpl-tag-sport">'+escH(etS)+'</span>';
+
+        html += '<div class="stmpl-group'+(isActiveGrp?' is-active-grp':'')+'">';
+        html += '<div class="stmpl-group-header" onclick="_toggleGroup(\''+gid+'\')">';
+        html += '<span class="stmpl-group-toggle">'+(isOpen?'▾':'▸')+'</span>';
+        html += '<span class="stmpl-group-name">'+escH(g.nom||'Sans nom')+'</span>';
+        html += etHtml;
+        html += '<span class="stmpl-group-count">'+phases.length+'</span>';
+        html += '<button class="stmpl-kebab" onclick="event.stopPropagation();_openKebab(event,\'group\',\''+gid+'\',\''+escJS(g.nom||'')+'\',\''+escJS(String(g.praticien_id||''))+'\')" title="Actions">···</button>';
+        html += '</div>';
         if(isOpen){
           html += '<div class="stmpl-group-body">';
-          if(!phases.length) html += '<div class="stmpl-phase-empty">Aucune phase — cliquez + ci-dessous pour en créer une.</div>';
-          phases.forEach(function(p,i){ html += _renderTmplCard(p,true,i+1); });
+          if(!phases.length) html += '<div class="stmpl-phase-empty">Aucune phase — utilisez le bouton ci-dessous.</div>';
+          phases.forEach(function(p,i){ html += _renderTmplCard(p,true,i+1,true,g); });
           html += '<button class="stmpl-add-phase-btn" onclick="event.stopPropagation();addPhaseToGroup(\''+gid+'\')">＋ Nouvelle phase</button>';
           html += '</div>';
         }
         html += '</div>';
       });
 
-      // Templates libres de cette catégorie (sans badge cat, déjà dans la section)
-      catFree.forEach(function(p){ html += _renderTmplCard(p,false,null,true); });
+      catFree.forEach(function(p){ html += _renderTmplCard(p,false,null,true,null); });
 
       html += '</div>';
     }
@@ -6295,40 +6301,62 @@ function _toggleTmplCard(id){
    un repertoire est fait pour etre consulte avant d'etre choisi. La carte se
    deplie sur place ; « Ouvrir dans le builder » devient un geste explicite,
    au lieu d'etre le resultat d'un simple clic de consultation. */
-function _renderTmplCard(p, isPhase, phaseNum, hideCat){
-  var emoji = p.emoji||'💪';
+/* Retire du nom d'une phase le prefixe qui repete son protocole. Sous « LCA »,
+   « LCA — Phase 1 : Recuperation » se lit « Phase 1 : Recuperation » : le
+   contexte porte deja l'information, et c'est la FIN du nom qui distingue les
+   phases entre elles — or c'etait elle que la troncature effacait. */
+function _nomSansPrefixeGroupe(nom, groupe){
+  if(!nom || !groupe || !groupe.nom) return nom || '';
+  var g = String(groupe.nom).trim();
+  if(!g) return nom;
+  var n = String(nom).trim();
+  if(n.toLowerCase().indexOf(g.toLowerCase()) !== 0) return n;
+  var reste = n.slice(g.length).replace(/^\s*[—–\-:·|]+\s*/, '').trim();
+  return reste || n;
+}
+
+function _renderTmplCard(p, isPhase, phaseNum, hideCat, groupe){
   var bl = p._blocs||[];
   if(!bl.length && p.donnees){ try{ bl=(JSON.parse(p.donnees).blocs)||[]; }catch(e){} }
   var nbExos   = bl.reduce(function(a,b){ return a+(b.exos||[]).length; },0);
   var nbCardio = bl.filter(function(b){ return b.type==='cardio'; }).length;
-  var nbVideo  = bl.reduce(function(a,b){ return a+(b.exos||[]).filter(function(e){return !!e.url;}).length; },0);
   var dispNom  = isPhase ? (p.phase_nom||p.nom||'Sans nom') : (p.nom||'Sans nom');
-  var sub = (!isPhase&&p.type) ? p.type : '';
-  if(nbExos)   sub += (sub?' · ':'')+nbExos+' exo'+(nbExos>1?'s':'');
+  if(isPhase) dispNom = _nomSansPrefixeGroupe(dispNom, groupe);
+
+  var sub = '';
+  if(nbExos)   sub += nbExos+' exercice'+(nbExos>1?'s':'');
   if(nbCardio) sub += (sub?' · ':'')+nbCardio+' cardio';
-  if(nbVideo)  sub += (sub?' · ':'')+'▶ '+nbVideo;
-  // Etiquettes : celles du template, sinon celles heritees de son protocole.
-  var etPatho = _tmplEtiquette(p, 'pathologie');
-  var etSport = _tmplEtiquette(p, 'sport');
+  if(!sub)     sub = 'Vide';
+
+  /* Les etiquettes ne sont portees que par les repertoires LIBRES. Dans un
+     protocole elles sont deja sur son en-tete : les repeter sur chaque phase
+     faisait apparaitre « LCA » quatre fois sur une meme ligne. */
   var etBdg = '';
-  if(etPatho) etBdg += '<span class="stmpl-tag stmpl-tag-patho">'+escH(etPatho)+'</span>';
-  if(etSport) etBdg += '<span class="stmpl-tag stmpl-tag-sport">'+escH(etSport)+'</span>';
-  var catSt  = _tmplCatStyle(p.categorie||'');
-  // Badge catégorie seulement si pas dans une section catégorie (hideCat=false/undefined) et pas une phase
-  var catBdg = (!isPhase && !hideCat && p.categorie) ? '<span class="stmpl-cat-badge" style="background:'+catSt.bg+';color:'+catSt.fg+';">'+escH(p.categorie)+'</span>' : '';
+  if(!isPhase){
+    var etPatho = _tmplEtiquette(p, 'pathologie');
+    var etSport = _tmplEtiquette(p, 'sport');
+    if(etPatho) etBdg += '<span class="stmpl-tag stmpl-tag-patho">'+escH(etPatho)+'</span>';
+    if(etSport) etBdg += '<span class="stmpl-tag stmpl-tag-sport">'+escH(etSport)+'</span>';
+  }
+
   var pid  = escH(String(p.id));
   var pnom = escH(dispNom);
   var isOpen = !!_expandedTmplCards[p.id];
-  var cls  = 'stmpl-card'+(isPhase?' stmpl-phase-card':'')+(isOpen?' stmpl-card-open':'');
+  var cls  = 'stmpl-card'+(isPhase?' stmpl-phase-card':' stmpl-card-solo')+(isOpen?' stmpl-card-open':'');
   var phN  = (isPhase&&phaseNum) ? '<span class="stmpl-phase-num">'+phaseNum+'</span>' : '';
-  var pubBdg = p.is_public ? '<span class="stmpl-public-badge" title="Répertoire public">🌐</span>' : '';
-  var chevron = '<span class="stmpl-card-chevron">'+(isOpen?'▼':'▶')+'</span>';
+  var pubBdg = p.is_public ? '<span class="stmpl-public-badge" title="Répertoire public">'+_ICO_PUBLIC+'</span>' : '';
+
   var html = '<div class="'+cls+'" onclick="_toggleTmplCard(\''+pid+'\')">'
-    +chevron+phN+'<div class="stmpl-card-emoji">'+emoji+'</div>'
-    +'<div class="stmpl-card-body"><div class="stmpl-card-name">'+pnom+' '+pubBdg+'</div>'
-    +'<div class="stmpl-card-meta">'+catBdg+etBdg+(sub?escH(sub):'')+'</div></div>'
-    +'<button class="stmpl-kebab" title="Actions" onclick="event.stopPropagation();_openKebab(event,\'tmpl\',\''+pid+'\',\''+escJS(dispNom)+'\',\''+escJS(String(p.praticien_id||''))+'\')" >···</button>'
-    +'<button class="stmpl-add-btn" title="Planifier" onclick="event.stopPropagation();_openQuickAdd(\''+pid+'\',\''+pnom+'\')">+</button>'
+    +phN
+    +'<div class="stmpl-card-body">'
+      +'<div class="stmpl-card-name">'+pnom+pubBdg+'</div>'
+      +(etBdg ? '<div class="stmpl-card-tags">'+etBdg+'</div>' : '')
+      +'<div class="stmpl-card-meta">'+escH(sub)+'</div>'
+    +'</div>'
+    +'<div class="stmpl-card-act">'
+      +'<button class="stmpl-ib" title="Actions" onclick="event.stopPropagation();_openKebab(event,\'tmpl\',\''+pid+'\',\''+escJS(dispNom)+'\',\''+escJS(String(p.praticien_id||''))+'\')">···</button>'
+      +'<button class="stmpl-ib" title="Planifier" onclick="event.stopPropagation();_openQuickAdd(\''+pid+'\',\''+pnom+'\')">'+_ICO_PLUS+'</button>'
+    +'</div>'
     +'</div>';
   if(isOpen) html += _renderTmplCardTree(bl, pid);
   return html;

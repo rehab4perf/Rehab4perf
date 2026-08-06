@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Maquettes — sidebar Répertoires</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+:root{
+  --navy:#1A3A5C; --accent:#2B5FA6; --accent2:#4A90D9;
+  --bg:#F0F4F8; --surface:#fff; --text:#1a2433; --muted:#6b7a8d;
+  --border:#dde3ec; --tag-bg:#EBF3FF; --tag-color:#2B5FA6;
+  --text-dk:#374151; --border-l:#E2E8F0; --accent-ll:#EFF6FF; --text-sm:#6B7280;
+  --surface2:#F5F8FC; --border2:#C6D0DE; --text2:#6b7a8d; --text3:#9AA7B8;
+  --fs-2xs:.625rem; --fs-xs:.6875rem; --fs-sm:.75rem; --fs-md:.8125rem;
+  --fs-lg:.875rem; --fs-xl:1rem; --fs-2xl:1.25rem;
+  --ok:#16A34A; --ok-d:#15803D; --ok-l:#DCFCE7;
+  --etape-defaut:#F59E0B; --proto-phase:#8B5CF6; --cap:#0D9488;
+  --focus:#4A90D9; --accent-d:#245097;
+  --font-sans:'Figtree',system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);background:var(--bg);color:var(--text);padding:28px 20px 60px}
+h1{font-size:var(--fs-2xl);color:var(--navy);margin-bottom:6px}
+.sub{font-size:var(--fs-md);color:var(--muted);margin-bottom:26px;max-width:70ch;line-height:1.6}
+.grid{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap}
+.col{width:300px;flex-shrink:0}
+.col-hd{font-size:var(--fs-sm);font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--navy);margin-bottom:4px}
+.col-note{font-size:var(--fs-xs);color:var(--muted);line-height:1.55;margin-bottom:10px;min-height:60px}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(26,58,92,.06)}
+.ph{background:var(--navy);color:#fff;padding:9px 12px;font-size:var(--fs-sm);font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.srch{margin:8px;padding:6px 10px;border:1px solid var(--border);border-radius:7px;font-size:var(--fs-sm);color:var(--text3);background:var(--surface2)}
+svg{flex-shrink:0}
+
+/* ══ ACTUEL ══ */
+.a-cat{display:flex;align-items:center;gap:6px;padding:6px 12px;font-size:var(--fs-sm);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dk)}
+.a-cat.p{background:#FEE2E220}.a-cat.m{background:#EDE9FE20}.a-cat.pp{background:#FEF3C720}
+.a-cnt{margin-left:auto;font-size:var(--fs-2xs);color:var(--muted)}
+.a-grp{border-bottom:1px solid var(--border)}
+.a-grph{display:flex;align-items:center;gap:6px;padding:7px 12px;background:var(--accent-ll)}
+.a-grpn{font-size:var(--fs-md);font-weight:700}
+.a-grps{font-size:var(--fs-2xs);color:var(--muted)}
+.a-card{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--border);background:var(--surface2)}
+.a-num{width:18px;height:18px;border-radius:50%;background:var(--accent2);color:#fff;font-size:var(--fs-2xs);font-weight:700;display:flex;align-items:center;justify-content:center}
+.a-nm{font-size:var(--fs-md);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.a-meta{font-size:var(--fs-xs);color:var(--muted);margin-top:2px;display:flex;gap:4px;flex-wrap:wrap}
+.a-tag{background:var(--tag-bg);color:var(--tag-color);border-radius:4px;padding:0 4px;font-size:var(--fs-2xs);font-weight:700}
+.a-tag.s{background:var(--ok-l);color:var(--ok-d)}
+.a-plus{margin-left:auto;width:26px;height:26px;border-radius:6px;background:var(--accent2);color:#fff;border:none;font-size:1.05rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* ══ A — Lisibilité ══ */
+.A-sec{padding:11px 12px 3px;font-size:var(--fs-2xs);font-weight:800;letter-spacing:.11em;text-transform:uppercase;color:var(--text3)}
+.A-grp{padding:8px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;border-bottom:1px solid var(--border)}
+.A-grp:hover{background:var(--surface2)}
+.A-chev{color:var(--text3);transition:transform .15s}
+.A-grp.open .A-chev{transform:rotate(90deg)}
+.A-gn{font-size:var(--fs-md);font-weight:700;flex:1;min-width:0}
+.A-gc{font-size:var(--fs-2xs);color:var(--muted);font-variant-numeric:tabular-nums}
+.A-body{border-bottom:1px solid var(--border)}
+.A-row{display:flex;align-items:flex-start;gap:9px;padding:9px 12px 9px 26px;cursor:pointer;position:relative;min-height:44px}
+.A-row:hover{background:var(--accent-ll)}
+.A-row+.A-row{border-top:1px solid var(--border-l)}
+.A-idx{font-size:var(--fs-2xs);font-weight:800;color:var(--text3);font-variant-numeric:tabular-nums;padding-top:2px;width:12px}
+.A-txt{flex:1;min-width:0}
+.A-nm{font-size:var(--fs-md);font-weight:600;line-height:1.35;overflow-wrap:anywhere}
+.A-mt{font-size:var(--fs-2xs);color:var(--muted);margin-top:3px;font-variant-numeric:tabular-nums}
+.A-act{opacity:0;display:flex;gap:2px;flex-shrink:0}
+.A-row:hover .A-act{opacity:1}
+.A-ib{width:26px;height:26px;border-radius:6px;border:1px solid var(--border2);background:var(--surface);color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.A-ib:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-ll)}
+.A-free{padding:9px 12px;display:flex;align-items:flex-start;gap:9px;min-height:44px;cursor:pointer;border-top:1px solid var(--border-l)}
+.A-free:hover{background:var(--accent-ll)}
+
+/* ══ B — Filet, zéro cadre ══ */
+.B-sec{padding:12px 14px 4px;font-size:var(--fs-2xs);font-weight:800;letter-spacing:.11em;text-transform:uppercase;color:var(--text3)}
+.B-grp{display:flex;align-items:center;gap:8px;padding:8px 14px;cursor:pointer}
+.B-grp:hover{background:var(--surface2)}
+.B-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+.B-gn{font-size:var(--fs-md);font-weight:700;flex:1;min-width:0}
+.B-gc{font-size:var(--fs-2xs);color:var(--text3);font-variant-numeric:tabular-nums}
+.B-kids{margin-left:18px;border-left:2px solid var(--border-l);padding-left:0}
+.B-row{display:flex;align-items:flex-start;gap:8px;padding:8px 14px 8px 12px;cursor:pointer;min-height:44px;position:relative}
+.B-row:hover{background:var(--accent-ll)}
+.B-row:hover::before{content:'';position:absolute;left:-2px;top:0;bottom:0;width:2px;background:var(--accent2)}
+.B-nm{font-size:var(--fs-md);font-weight:600;line-height:1.35;overflow-wrap:anywhere}
+.B-mt{font-size:var(--fs-2xs);color:var(--text3);margin-top:3px;font-variant-numeric:tabular-nums}
+.B-act{margin-left:auto;opacity:0;display:flex;gap:2px}
+.B-row:hover .B-act{opacity:1}
+
+/* ══ C — Fiche calme ══ */
+.C-sec{padding:12px 12px 6px;font-size:var(--fs-2xs);font-weight:800;letter-spacing:.11em;text-transform:uppercase;color:var(--text3)}
+.C-grp{margin:0 8px 8px;border:1px solid var(--border);border-radius:9px;overflow:hidden;background:var(--surface)}
+.C-gh{display:flex;align-items:center;gap:8px;padding:9px 11px;cursor:pointer;border-left:3px solid var(--accent)}
+.C-gh:hover{background:var(--surface2)}
+.C-gn{font-size:var(--fs-md);font-weight:700;flex:1;min-width:0}
+.C-gc{font-size:var(--fs-2xs);color:var(--muted);font-variant-numeric:tabular-nums}
+.C-row{padding:9px 11px 9px 14px;border-top:1px solid var(--border-l);cursor:pointer;min-height:44px;display:flex;gap:9px;align-items:flex-start}
+.C-row:hover{background:var(--accent-ll)}
+.C-idx{font-size:var(--fs-2xs);font-weight:800;color:#fff;background:var(--text3);border-radius:4px;min-width:15px;height:15px;display:flex;align-items:center;justify-content:center;margin-top:2px;font-variant-numeric:tabular-nums}
+.C-nm{font-size:var(--fs-md);font-weight:600;line-height:1.35;overflow-wrap:anywhere}
+.C-mt{font-size:var(--fs-2xs);color:var(--muted);margin-top:3px}
+.C-act{margin-left:auto;opacity:0;display:flex;gap:2px}
+.C-row:hover .C-act{opacity:1}
+.C-solo{margin:0 8px 8px;border:1px solid var(--border);border-radius:9px;background:var(--surface);padding:9px 11px;display:flex;gap:9px;align-items:flex-start;cursor:pointer;min-height:44px;border-left:3px solid var(--text3)}
+.C-solo:hover{background:var(--accent-ll)}
+.tagline{display:inline-flex;gap:4px;margin-top:4px}
+.tg{font-size:var(--fs-2xs);font-weight:700;border-radius:4px;padding:1px 5px;background:var(--tag-bg);color:var(--tag-color)}
+.tg.s{background:var(--ok-l);color:var(--ok-d)}
+.legend{margin-top:34px;font-size:var(--fs-md);color:var(--text-dk);max-width:78ch;line-height:1.65}
+.legend h2{font-size:var(--fs-lg);color:var(--navy);margin:18px 0 6px}
+.legend li{margin:3px 0 3px 18px}
+</style>
+</head>
+<body>
+
+<h1>Sidebar Répertoires — trois directions</h1>
+<p class="sub">Mêmes données dans les quatre colonnes, mêmes jetons que <code>programme.html</code> (échelle <code>--fs-*</code>, palette, Figtree). Survolez les lignes : les actions n'apparaissent qu'au survol dans A, B et C.</p>
+
+<div class="grid">
+
+  <!-- ══════════ ACTUEL ══════════ -->
+  <div class="col">
+    <div class="col-hd">Actuel</div>
+    <div class="col-note">Noms tronqués sur ce qui les distingue. « LCA » écrit 4× par ligne. Emoji en icônes. Le « + » bleu pèse plus lourd que le nom.</div>
+    <div class="panel">
+      <div class="ph">Séances &amp; Répertoires</div>
+      <div class="srch">Rechercher…</div>
+      <div class="a-cat m">🧘 <span>Mobilité</span><span class="a-cnt">1 ▾</span></div>
+      <div class="a-card"><span style="color:var(--text3);font-size:.6rem">▶</span><span>🧘</span>
+        <div><div class="a-nm">Réveil matinal épaule</div><div class="a-meta">1 exo</div></div>
+        <button class="a-plus">+</button></div>
+      <div class="a-cat pp">⚡ <span>Prépa physique</span><span class="a-cnt">2 ▾</span></div>
+      <div class="a-grph"><div><div class="a-grpn">Hyrox</div><div class="a-grps">0 phases</div></div></div>
+      <div class="a-card"><span style="color:var(--text3);font-size:.6rem">▶</span><span>⚡</span>
+        <div><div class="a-nm">WARM-UP MARP</div><div class="a-meta"><span class="a-tag s">triathlon</span> 3 exos</div></div>
+        <button class="a-plus">+</button></div>
+      <div class="a-cat p">🩺 <span>Pathologie</span><span class="a-cnt">2 ▾</span></div>
+      <div class="a-grph"><div><div class="a-grpn">LCA</div><div class="a-grps">3 phases</div></div></div>
+      <div class="a-card" style="padding-left:22px"><span style="color:var(--text3);font-size:.6rem">▶</span><span class="a-num">1</span><span>💪</span>
+        <div style="min-width:0"><div class="a-nm">LCA — Phase 1 : Réc…</div><div class="a-meta"><span class="a-tag">LCA</span><span class="a-tag s">foot</span> 5 exos</div></div>
+        <button class="a-plus">+</button></div>
+      <div class="a-card" style="padding-left:22px"><span style="color:var(--text3);font-size:.6rem">▶</span><span class="a-num">2</span><span>🦵</span>
+        <div style="min-width:0"><div class="a-nm">LCA — Phase 2 : Re…</div><div class="a-meta"><span class="a-tag">LCA</span><span class="a-tag s">foot</span> 2 exos · 1 cardio</div></div>
+        <button class="a-plus">+</button></div>
+      <div class="a-card" style="padding-left:22px"><span style="color:var(--text3);font-size:.6rem">▶</span><span class="a-num">3</span><span>🏃</span>
+        <div style="min-width:0"><div class="a-nm">LCA — Phase 3 : Co…</div><div class="a-meta"><span class="a-tag">LCA</span><span class="a-tag s">foot</span> 1 exo</div></div>
+        <button class="a-plus">+</button></div>
+    </div>
+  </div>
+
+  <!-- ══════════ A ══════════ -->
+  <div class="col">
+    <div class="col-hd">A · Lisibilité</div>
+    <div class="col-note">Correctif minimal. Le nom passe sur deux lignes au lieu d'être coupé, le préfixe redondant du protocole disparaît, les étiquettes héritées ne se répètent plus. Actions au survol.</div>
+    <div class="panel">
+      <div class="ph">Séances &amp; Répertoires</div>
+      <div class="srch">Rechercher…</div>
+
+      <div class="A-sec">Mobilité</div>
+      <div class="A-free">
+        <div class="A-txt"><div class="A-nm">Réveil matinal épaule</div><div class="A-mt">1 exercice</div></div>
+        <div class="A-act"><button class="A-ib" title="Actions">⋯</button><button class="A-ib" title="Planifier">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div>
+      </div>
+
+      <div class="A-sec">Prépa physique</div>
+      <div class="A-grp"><svg class="A-chev" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="9,6 15,12 9,18"/></svg><span class="A-gn">Hyrox</span><span class="A-gc">0</span></div>
+      <div class="A-free">
+        <div class="A-txt"><div class="A-nm">WARM-UP MARP</div><div class="A-mt">3 exercices · triathlon</div></div>
+        <div class="A-act"><button class="A-ib">⋯</button><button class="A-ib">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div>
+      </div>
+
+      <div class="A-sec">Pathologie</div>
+      <div class="A-grp open"><svg class="A-chev" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="9,6 15,12 9,18"/></svg><span class="A-gn">LCA</span><span class="A-gc">3</span></div>
+      <div class="A-body">
+        <div class="A-row"><span class="A-idx">1</span><div class="A-txt"><div class="A-nm">Phase 1 : Récupération</div><div class="A-mt">5 exercices</div></div>
+          <div class="A-act"><button class="A-ib">⋯</button><button class="A-ib"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div></div>
+        <div class="A-row"><span class="A-idx">2</span><div class="A-txt"><div class="A-nm">Phase 2 : Renforcement</div><div class="A-mt">2 exercices · 1 cardio</div></div>
+          <div class="A-act"><button class="A-ib">⋯</button><button class="A-ib"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div></div>
+        <div class="A-row"><span class="A-idx">3</span><div class="A-txt"><div class="A-nm">Phase 3 : Course</div><div class="A-mt">1 exercice</div></div>
+          <div class="A-act"><button class="A-ib">⋯</button><button class="A-ib"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ B ══════════ -->
+  <div class="col">
+    <div class="col-hd">B · Filet</div>
+    <div class="col-note">Plus aucun cadre ni fond coloré : un filet vertical porte l'appartenance. Une pastille de couleur identifie la catégorie sans bandeau. Le plus dense et le plus calme.</div>
+    <div class="panel">
+      <div class="ph">Séances &amp; Répertoires</div>
+      <div class="srch">Rechercher…</div>
+
+      <div class="B-sec">Mobilité</div>
+      <div class="B-row" style="padding-left:14px"><div><div class="B-nm">Réveil matinal épaule</div><div class="B-mt">1 exercice</div></div>
+        <div class="B-act"><button class="A-ib">⋯</button><button class="A-ib"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div></div>
+
+      <div class="B-sec">Prépa physique</div>
+      <div class="B-grp"><span class="B-dot" style="background:var(--etape-defaut)"></span><span class="B-gn">Hyrox</span><span class="B-gc">0</span></div>
+      <div class="B-row" style="padding-left:14px"><div><div class="B-nm">WARM-UP MARP</div><div class="B-mt">3 exercices · triathlon</div></div>
+        <div class="B-act"><button class="A-ib">⋯</button><button class="A-ib"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div></div>
+
+      <div class="B-sec">Pathologie</div>
+      <div class="B-grp"><span class="B-dot" style="background:var(--proto-phase)"></span><span class="B-gn">LCA</span><span class="B-gc">3</span></div>
+      <div class="B-kids">
+        <div class="B-row"><div><div class="B-nm">Phase 1 : Récupération</div><div class="B-mt">5 exercices</div></div>
+          <div class="B-act"><button class="A-ib">⋯</button><button class="A-ib"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div></div>
+        <div class="B-row"><div><div class="B-nm">Phase 2 : Renforcement</div><div class="B-mt">2 exercices · 1 cardio</div></div>
+          <div class="B-act"><button class="A-ib">⋯</button><button class="A-ib"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div></div>
+        <div class="B-row"><div><div class="B-nm">Phase 3 : Course</div><div class="B-mt">1 exercice</div></div>
+          <div class="B-act"><button class="A-ib">⋯</button><button class="A-ib"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div></div>
+      </div>
+      <div class="B-grp"><span class="B-dot" style="background:var(--proto-phase)"></span><span class="B-gn">Épaule — coiffe</span><span class="B-gc">1</span></div>
+    </div>
+  </div>
+
+  <!-- ══════════ C ══════════ -->
+  <div class="col">
+    <div class="col-hd">C · Fiche calme</div>
+    <div class="col-note">On garde des cartes, mais une seule par protocole — pas une par niveau. Filet de couleur à gauche, numéro de phase en pastille sobre. Le plus proche de l'existant.</div>
+    <div class="panel">
+      <div class="ph">Séances &amp; Répertoires</div>
+      <div class="srch">Rechercher…</div>
+
+      <div class="C-sec">Mobilité</div>
+      <div class="C-solo"><div><div class="C-nm">Réveil matinal épaule</div><div class="C-mt">1 exercice</div></div>
+        <div class="C-act" style="opacity:1"><button class="A-ib">⋯</button></div></div>
+
+      <div class="C-sec">Prépa physique</div>
+      <div class="C-solo"><div><div class="C-nm">WARM-UP MARP</div><div class="tagline"><span class="tg s">triathlon</span></div><div class="C-mt">3 exercices</div></div>
+        <div class="C-act" style="opacity:1"><button class="A-ib">⋯</button></div></div>
+
+      <div class="C-sec">Pathologie</div>
+      <div class="C-grp">
+        <div class="C-gh"><span class="C-gn">LCA</span><span class="tg">LCA</span><span class="tg s">foot</span><span class="C-gc">3</span></div>
+        <div class="C-row"><span class="C-idx">1</span><div style="flex:1;min-width:0"><div class="C-nm">Phase 1 : Récupération</div><div class="C-mt">5 exercices</div></div>
+          <div class="C-act"><button class="A-ib">⋯</button></div></div>
+        <div class="C-row"><span class="C-idx">2</span><div style="flex:1;min-width:0"><div class="C-nm">Phase 2 : Renforcement</div><div class="C-mt">2 exercices · 1 cardio</div></div>
+          <div class="C-act"><button class="A-ib">⋯</button></div></div>
+        <div class="C-row"><span class="C-idx">3</span><div style="flex:1;min-width:0"><div class="C-nm">Phase 3 : Course</div><div class="C-mt">1 exercice</div></div>
+          <div class="C-act"><button class="A-ib">⋯</button></div></div>
+      </div>
+      <div class="C-grp"><div class="C-gh"><span class="C-gn">Épaule — coiffe</span><span class="tg">coiffe</span><span class="C-gc">1</span></div></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="legend">
+  <h2>Ce que les trois corrigent en commun</h2>
+  <ul>
+    <li><b>Le nom n'est plus tronqué.</b> C'est le défaut principal : vous cherchez par le nom, et c'est justement la partie distinctive qui était coupée.</li>
+    <li><b>Le préfixe redondant disparaît.</b> Sous « LCA », inutile de réécrire « LCA — » sur chaque phase.</li>
+    <li><b>Les étiquettes héritées ne se répètent plus</b> sur chaque carte : elles vivent sur le protocole.</li>
+    <li><b>Plus d'emoji</b> — cohérent avec le reste du produit.</li>
+    <li><b>Le « + » plein cède la vedette au nom</b> ; les actions apparaissent au survol.</li>
+    <li><b>Lignes à 44 px minimum</b>, cible tactile correcte sur tablette.</li>
+  </ul>
+</div>
+
+</body>
+</html>

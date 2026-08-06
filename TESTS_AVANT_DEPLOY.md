@@ -73,6 +73,13 @@ node qualite/cap-cas.js
 ### Flux 3 — Consulter et ouvrir un répertoire depuis l'agenda
 - [ ] Cliquer sur une carte de répertoire dans la sidebar → elle se DÉPLIE sur
       place (blocs et exercices lisibles), le builder ne s'ouvre PAS
+- [ ] Le nom d'une phase n'est JAMAIS tronqué : il passe sur deux lignes, et
+      le préfixe du protocole est retiré (« LCA — Phase 1 : Récupération »
+      sous le protocole « LCA » s'affiche « Phase 1 : Récupération »)
+- [ ] Les étiquettes pathologie/sport sont sur l'en-tête du protocole, pas
+      répétées sur chaque phase
+- [ ] Aucun emoji dans la sidebar
+- [ ] Chaque carte fait au moins 44 px de haut (cible tactile)
 - [ ] Cliquer à nouveau → elle se replie
 - [ ] Répertoire vide → message "Ce répertoire est vide." affiché
 - [ ] Cliquer le kebab (⋮) ou le "+" sur une carte dépliée → n'affecte pas le pli

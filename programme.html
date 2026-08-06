@@ -149,19 +149,30 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .stmpl-search { width:100%; padding:6px 10px; border:none; border-radius:6px; background:rgba(255,255,255,.15); color:#fff; font-size:var(--fs-md); outline:none; }
 .stmpl-search::placeholder { color:rgba(255,255,255,.5); }
 .stmpl-scroll { flex:1; overflow-y:auto; padding:8px 0; }
-.stmpl-card   { display:flex; align-items:center; gap:8px; padding:9px 12px; border-bottom:1px solid var(--border); cursor:pointer; transition:background .12s; }
-.stmpl-card:hover { background:var(--tag-bg); }
-.stmpl-card-emoji { font-size:var(--fs-2xl); flex-shrink:0; }
+/* Une carte par repertoire, alignee en haut : le nom peut prendre deux
+   lignes sans decaler le numero ni les actions. min-height 44px = cible
+   tactile correcte sur tablette. */
+.stmpl-card   { display:flex; align-items:flex-start; gap:9px; padding:9px 11px; cursor:pointer; transition:background .12s; min-height:44px; }
+.stmpl-card:hover .stmpl-card-act { opacity:1; }
+/* Sans survol (tactile), les actions restent visibles en permanence. */
+@media (hover:none) { .stmpl-card-act { opacity:1 !important; } }
+.stmpl-card:hover { background:var(--accent-ll); }
+
 .stmpl-card-body  { flex:1; min-width:0; }
-.stmpl-card-name  { font-size:var(--fs-md); font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:4px; }
-.stmpl-public-badge { font-size:var(--fs-xs); flex-shrink:0; opacity:.75; }
-.stmpl-card-meta  { font-size:var(--fs-xs); color:var(--muted); margin-top:2px; }
-.stmpl-add-btn    { flex-shrink:0; background:var(--accent2); border:none; color:#fff; border-radius:6px; width:26px; height:26px; font-size:1.1rem; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .12s; }
-.stmpl-add-btn:hover { background:var(--accent-h); }
+.stmpl-card-name  { font-size:var(--fs-md); font-weight:600; color:var(--text); line-height:1.35; overflow-wrap:anywhere; display:flex; align-items:baseline; gap:5px; }
+.stmpl-public-badge { flex-shrink:0; color:var(--text3); display:inline-flex; }
+.stmpl-card-meta  { font-size:var(--fs-2xs); color:var(--muted); margin-top:3px; font-variant-numeric:tabular-nums; }
+.stmpl-card-tags  { margin-top:4px; display:flex; gap:4px; flex-wrap:wrap; }
+/* Actions discretes : le nom garde le poids visuel, le bouton ne le vole plus. */
+.stmpl-card-act   { display:flex; gap:2px; flex-shrink:0; opacity:0; transition:opacity .12s; }
+.stmpl-ib { width:26px; height:26px; border-radius:6px; border:1px solid var(--border2);
+  background:var(--surface); color:var(--muted); cursor:pointer; font-size:var(--fs-sm);
+  display:flex; align-items:center; justify-content:center; line-height:1; font-family:inherit; transition:border-color .12s,color .12s,background .12s; }
+.stmpl-ib:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-ll); }
 .stmpl-card-chevron { font-size:var(--fs-2xs); color:var(--muted); flex-shrink:0; width:10px; text-align:center; }
-.stmpl-card-open { background:var(--tag-bg); }
+.stmpl-card-open { background:var(--accent-ll); }
 /* Contenu deplie d'une carte : lecture seule, en retrait sous elle. */
-.stmpl-card-tree { padding:2px 12px 8px 44px; background:var(--surface2); }
+.stmpl-card-tree { padding:2px 12px 8px 30px; background:var(--surface2); }
 .stmpl-card-tree-bloc { margin-bottom:6px; }
 .stmpl-card-tree-bloctitle { font-size:var(--fs-xs); font-weight:700; color:var(--text-dk); text-transform:uppercase; letter-spacing:.03em; margin-bottom:2px; }
 .stmpl-card-tree-exo { font-size:var(--fs-sm); color:var(--text); padding:1px 0 1px 8px; }
@@ -231,15 +242,18 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   cursor:pointer; text-align:left; transition:background .12s, color .12s; font-family:inherit;
 }
 .stmpl-new-group-btn:hover { background:rgba(255,255,255,.1); color:#fff; }
-.stmpl-group { border-bottom:1px solid var(--border); }
+/* UNE carte par protocole, pas une par niveau. Le filet gauche remplace le
+   fond colore et l'imbrication de cadres. */
+.stmpl-group { margin:0 8px 8px; border:1px solid var(--border); border-radius:9px; background:var(--surface); overflow:hidden; }
 .stmpl-group-header {
-  display:flex; align-items:center; gap:7px; padding:8px 12px;
-  cursor:pointer; background:var(--surface2); transition:background .12s;
+  display:flex; align-items:center; gap:7px; padding:9px 11px; cursor:pointer;
+  border-left:3px solid var(--accent); transition:background .12s; min-height:44px;
 }
 .stmpl-group-header:hover { background:var(--bg); }
-.stmpl-group-toggle { font-size:var(--fs-2xs); color:var(--muted); flex-shrink:0; width:10px; }
+.stmpl-group-toggle { font-size:var(--fs-2xs); color:var(--text3); flex-shrink:0; width:10px; text-align:center; }
 .stmpl-group-info   { flex:1; min-width:0; }
-.stmpl-group-name   { font-size:var(--fs-md); font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.stmpl-group-name   { font-size:var(--fs-md); font-weight:700; color:var(--text); flex:1; min-width:0; overflow-wrap:anywhere; }
+.stmpl-group-count  { font-size:var(--fs-2xs); color:var(--muted); flex-shrink:0; font-variant-numeric:tabular-nums; }
 /* ── Kebab menu (···) sidebar ── */
 .stmpl-kebab {
   flex-shrink:0; background:none; border:none; color:var(--muted);
@@ -248,8 +262,8 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   font-family:inherit; letter-spacing:.05em;
 }
 .stmpl-group-header:hover .stmpl-kebab,
-.stmpl-card:hover .stmpl-kebab,
 .stmpl-kebab:focus { opacity:1; }
+@media (hover:none) { .stmpl-kebab { opacity:1; } }
 .stmpl-kebab:hover { background:rgba(0,0,0,.07); color:var(--text); }
 /* Dropdown */
 .stmpl-kdrop {
@@ -269,16 +283,20 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .stmpl-kdrop-item.danger:hover { background:var(--alerte-l); }
 .stmpl-group-body   { background:var(--surface2); }
 /* ── En-têtes de catégorie dans la sidebar ── */
-.stmpl-cat-section  { border-bottom:1px solid var(--border); }
-.stmpl-cat-hdr      { display:flex; align-items:center; gap:6px; padding:6px 12px; cursor:pointer; user-select:none; -webkit-user-select:none; transition:background .1s; }
-.stmpl-cat-hdr:hover { background:var(--bg); }
-.stmpl-cat-hdr-icon { font-size:var(--fs-lg); flex-shrink:0; }
-.stmpl-cat-hdr-name { font-size:var(--fs-xs); font-weight:700; letter-spacing:.1em; text-transform:uppercase; flex:1; }
-.stmpl-cat-hdr-count{ font-size:var(--fs-xs); color:var(--muted); flex-shrink:0; }
-.stmpl-cat-hdr-toggle{ font-size:var(--fs-2xs); color:var(--muted); flex-shrink:0; width:10px; }
+.stmpl-cat-section  { }
+/* La categorie situe, elle ne se dispute pas l'attention avec le contenu :
+   plus de bandeau colore ni d'icone, une simple etiquette de section. */
+.stmpl-cat-hdr      { display:flex; align-items:center; gap:6px; padding:12px 12px 6px; cursor:pointer; user-select:none; -webkit-user-select:none; }
+.stmpl-cat-hdr:hover .stmpl-cat-hdr-name { color:var(--accent); }
+
+.stmpl-cat-hdr-name { font-size:var(--fs-2xs); font-weight:800; letter-spacing:.11em; text-transform:uppercase; color:var(--text3); flex:1; }
+
+.stmpl-cat-hdr-toggle{ font-size:var(--fs-2xs); color:var(--text3); flex-shrink:0; width:10px; }
 .stmpl-cat-body     { }
-.stmpl-phase-card   { padding-left:28px !important; border-left:3px solid var(--accent2) !important; background:var(--surface2); }
-.stmpl-phase-card:hover { background:var(--tag-bg); }
+.stmpl-phase-card   { padding-left:14px; border-top:1px solid var(--border-l); }
+.stmpl-phase-card:hover { background:var(--accent-ll); }
+/* Un repertoire libre est sa propre carte — meme objet, sans protocole. */
+.stmpl-card-solo { margin:0 8px 8px; border:1px solid var(--border); border-left:3px solid var(--text3); border-radius:9px; background:var(--surface); }
 /* ── Toggle switch bibliothèque ── */
 .grp-lib-section { border-top:1px solid var(--border); margin-top:14px; padding-top:14px; }
 .grp-lib-row     { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
@@ -291,7 +309,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .toggle-sw .sl:before { content:''; position:absolute; height:16px; width:16px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.2); }
 .toggle-sw input:checked + .sl { background:var(--accent2); }
 .toggle-sw input:checked + .sl:before { transform:translateX(16px); }
-.stmpl-phase-num    { flex-shrink:0; width:18px; height:18px; border-radius:50%; background:var(--accent2); color:#fff; font-size:var(--fs-2xs); font-weight:700; display:flex; align-items:center; justify-content:center; }
+.stmpl-phase-num    { flex-shrink:0; min-width:16px; height:16px; padding:0 3px; border-radius:4px; background:var(--text3); color:#fff; font-size:var(--fs-2xs); font-weight:800; display:flex; align-items:center; justify-content:center; margin-top:2px; font-variant-numeric:tabular-nums; }
 .stmpl-phase-empty  { padding:8px 16px; font-size:var(--fs-sm); color:var(--muted); font-style:italic; }
 .stmpl-section-sep  { padding:6px 14px 4px; font-size:var(--fs-2xs); font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; background:var(--bg); border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
 
@@ -606,7 +624,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   /* Zones tactiles sidebar templates gauche */
   .stmpl-card       { padding:12px 14px; min-height:52px; }
   .stmpl-phase-card { padding-top:11px !important; padding-bottom:11px !important; min-height:48px; }
-  .stmpl-add-btn    { width:34px; height:34px; font-size:1.2rem; }
+  .stmpl-ib         { width:34px; height:34px; }
   .stmpl-kebab      { padding:8px 10px; opacity:1; }
   .stmpl-group-header { padding:10px 12px; min-height:46px; }
 }
@@ -4427,6 +4445,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 </div>
 
-<script src="js/prog-main.js?v=20260806k"></script>
+<script src="js/prog-main.js?v=20260806l"></script>
 </body>
 </html>
