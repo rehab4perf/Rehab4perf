@@ -158,6 +158,22 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .stmpl-card-meta  { font-size:var(--fs-xs); color:var(--muted); margin-top:2px; }
 .stmpl-add-btn    { flex-shrink:0; background:var(--accent2); border:none; color:#fff; border-radius:6px; width:26px; height:26px; font-size:1.1rem; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .12s; }
 .stmpl-add-btn:hover { background:var(--accent-h); }
+.stmpl-card-chevron { font-size:var(--fs-2xs); color:var(--muted); flex-shrink:0; width:10px; text-align:center; }
+.stmpl-card-open { background:var(--tag-bg); }
+/* Contenu deplie d'une carte : lecture seule, en retrait sous elle. */
+.stmpl-card-tree { padding:2px 12px 8px 44px; background:var(--surface2); }
+.stmpl-card-tree-bloc { margin-bottom:6px; }
+.stmpl-card-tree-bloctitle { font-size:var(--fs-xs); font-weight:700; color:var(--text-dk); text-transform:uppercase; letter-spacing:.03em; margin-bottom:2px; }
+.stmpl-card-tree-exo { font-size:var(--fs-sm); color:var(--text); padding:1px 0 1px 8px; }
+.stmpl-card-tree-row { font-size:var(--fs-sm); font-weight:600; color:var(--text); padding:3px 0; }
+.stmpl-card-tree-empty { font-size:var(--fs-sm); color:var(--muted); font-style:italic; padding:4px 0; }
+.stmpl-card-tree-open {
+  width:calc(100% - 56px); margin:2px 12px 8px 44px; padding:7px 10px;
+  border:1px solid var(--accent); border-radius:7px; background:var(--accent2);
+  color:#fff; font-size:var(--fs-sm); font-weight:600; cursor:pointer; font-family:inherit;
+  transition:filter .12s;
+}
+.stmpl-card-tree-open:hover { filter:brightness(1.08); }
 .stmpl-empty  { padding:28px 16px; text-align:center; color:var(--muted); font-style:italic; font-size:var(--fs-md); line-height:1.5; }
 .stmpl-filter-bar { padding:6px 10px 8px; background:var(--navy); }
 .stmpl-collapse-row { display:flex; gap:4px; padding:0 10px 7px; background:var(--navy); }
@@ -4420,6 +4436,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 </div>
 
-<script src="js/prog-main.js?v=20260806h"></script>
+<script src="js/prog-main.js?v=20260806i"></script>
 </body>
 </html>

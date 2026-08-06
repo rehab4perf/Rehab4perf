@@ -70,15 +70,25 @@ node qualite/cap-cas.js
 - [ ] Ajouter exercices → cliquer "💾 Sauvegarder" → séance sauvegardée (pas une erreur)
 - [ ] Vérifier que le badge "● non sauvegardé" disparaît
 
-### Flux 3 — Chargement répertoire existant
-- [ ] Cliquer sur un répertoire dans la sidebar → exercices chargés dans le builder
-- [ ] Bouton affiche "🔄 Mettre à jour" (le répertoire doit être SEUL dans la séance)
-- [ ] Modifier un exercice → "🔄 Mettre à jour" → toast de confirmation
+### Flux 3 — Consulter et ouvrir un répertoire depuis l'agenda
+- [ ] Cliquer sur une carte de répertoire dans la sidebar → elle se DÉPLIE sur
+      place (blocs et exercices lisibles), le builder ne s'ouvre PAS
+- [ ] Cliquer à nouveau → elle se replie
+- [ ] Répertoire vide → message "Ce répertoire est vide." affiché
+- [ ] Cliquer le kebab (⋮) ou le "+" sur une carte dépliée → n'affecte pas le pli
+- [ ] Dans la carte dépliée, cliquer "Ouvrir dans le builder" → SEUL geste qui
+      ouvre le builder ; le contenu s'ajoute à la séance en cours (jamais
+      d'écrasement)
+- [ ] Dans le builder, onglet "Répertoires" → dépliage bloc/exercice inchangé
+      (surface distincte, non touchée par ce lot)
 
 ### Flux 4 — Bouton "+ Enregistrer" (tabs)
 - [ ] Bouton "＋ Enregistrer" visible en permanence dans la barre des tabs
 - [ ] Builder vide → clic → alerte "La séance est vide"
-- [ ] Builder avec contenu → clic → modal répertoire s'ouvre
+- [ ] Builder avec contenu, patient sélectionné, hors contexte date/chip →
+      clic → enregistrement DIRECT (plus de modal de destination)
+- [ ] Aucun patient sélectionné dans ce même contexte → alerte demandant de
+      sélectionner un patient (pas de repli silencieux vers un répertoire)
 
 ---
 

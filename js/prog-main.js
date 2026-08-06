@@ -6271,6 +6271,20 @@ function _renderSidebarWithGroups(){
   scroll.innerHTML = html;
 }
 
+/* Cartes depliees : etat purement visuel, non persiste — inutile de le
+   retrouver d'une session a l'autre, contrairement a _expandedGroups. */
+var _expandedTmplCards = {};
+
+function _toggleTmplCard(id){
+  _expandedTmplCards[id] = !_expandedTmplCards[id];
+  _renderSidebarWithGroups();
+}
+
+/* Le clic sur une carte ne redirige plus vers le builder : depuis l'agenda,
+   il n'y a pas de seance en cours a laquelle ajouter quoi que ce soit, et
+   un repertoire est fait pour etre consulte avant d'etre choisi. La carte se
+   deplie sur place ; « Ouvrir dans le builder » devient un geste explicite,
+   au lieu d'etre le resultat d'un simple clic de consultation. */
 function _renderTmplCard(p, isPhase, phaseNum, hideCat){
   var emoji = p.emoji||'💪';
   var bl = p._blocs||[];
@@ -6294,16 +6308,48 @@ function _renderTmplCard(p, isPhase, phaseNum, hideCat){
   var catBdg = (!isPhase && !hideCat && p.categorie) ? '<span class="stmpl-cat-badge" style="background:'+catSt.bg+';color:'+catSt.fg+';">'+escH(p.categorie)+'</span>' : '';
   var pid  = escH(String(p.id));
   var pnom = escH(dispNom);
-  var cls  = 'stmpl-card'+(isPhase?' stmpl-phase-card':'');
+  var isOpen = !!_expandedTmplCards[p.id];
+  var cls  = 'stmpl-card'+(isPhase?' stmpl-phase-card':'')+(isOpen?' stmpl-card-open':'');
   var phN  = (isPhase&&phaseNum) ? '<span class="stmpl-phase-num">'+phaseNum+'</span>' : '';
   var pubBdg = p.is_public ? '<span class="stmpl-public-badge" title="Répertoire public">🌐</span>' : '';
-  return '<div class="'+cls+'" onclick="_sidebarLoadProg(\''+pid+'\')">'
-    +phN+'<div class="stmpl-card-emoji">'+emoji+'</div>'
+  var chevron = '<span class="stmpl-card-chevron">'+(isOpen?'▼':'▶')+'</span>';
+  var html = '<div class="'+cls+'" onclick="_toggleTmplCard(\''+pid+'\')">'
+    +chevron+phN+'<div class="stmpl-card-emoji">'+emoji+'</div>'
     +'<div class="stmpl-card-body"><div class="stmpl-card-name">'+pnom+' '+pubBdg+'</div>'
     +'<div class="stmpl-card-meta">'+catBdg+etBdg+(sub?escH(sub):'')+'</div></div>'
     +'<button class="stmpl-kebab" title="Actions" onclick="event.stopPropagation();_openKebab(event,\'tmpl\',\''+pid+'\',\''+escJS(dispNom)+'\',\''+escJS(String(p.praticien_id||''))+'\')" >···</button>'
     +'<button class="stmpl-add-btn" title="Planifier" onclick="event.stopPropagation();_openQuickAdd(\''+pid+'\',\''+pnom+'\')">+</button>'
     +'</div>';
+  if(isOpen) html += _renderTmplCardTree(bl, pid);
+  return html;
+}
+
+/* Contenu deplie d'une carte : lecture seule, juste de quoi reconnaitre le
+   repertoire avant de decider. « Ouvrir dans le builder » reste le seul
+   geste qui compose quelque chose — la regle « on ajoute sans rien demander »
+   s'applique a lui, pas au simple fait de regarder. */
+function _renderTmplCardTree(bl, pid){
+  if(!bl.length){
+    return '<div class="stmpl-card-tree"><div class="stmpl-card-tree-empty">Ce répertoire est vide.</div></div>';
+  }
+  var h = '<div class="stmpl-card-tree">';
+  bl.forEach(function(bloc){
+    if(bloc.type==='cardio'){
+      h += '<div class="stmpl-card-tree-row">'+escH(bloc.title||bloc.sport||'Cardio')+'</div>';
+    } else if(bloc.type==='texte'){
+      h += '<div class="stmpl-card-tree-row">'+escH(bloc.title||'Texte')+'</div>';
+    } else {
+      h += '<div class="stmpl-card-tree-bloc">';
+      h += '<div class="stmpl-card-tree-bloctitle">'+escH(bloc.title||'Bloc')+'</div>';
+      (bloc.exos||[]).forEach(function(exo){
+        h += '<div class="stmpl-card-tree-exo">'+escH(exo.name||'Exercice')+'</div>';
+      });
+      h += '</div>';
+    }
+  });
+  h += '</div>';
+  h += '<button class="stmpl-card-tree-open" onclick="event.stopPropagation();_sidebarLoadProg(\''+pid+'\')">Ouvrir dans le builder</button>';
+  return h;
 }
 
 function filterSidebarTemplates(){
