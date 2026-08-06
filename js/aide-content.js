@@ -198,7 +198,8 @@ sections: [
       { t:'Cliquez sur un jour', x:'Trois choix : « Nouvelle séance » (ouvre le builder), « Ajouter une séance existante » (un programme déjà créé) ou « Ajouter une note ».', img:true },
       { t:'Déplacez une séance par glisser-déposer', x:'Sur mobile, un appui long ouvre les mêmes actions (déplacer, dupliquer).' },
       { t:'Cliquez sur une chip pour l\'ouvrir dans le builder', x:'Le bouton ⋮ propose les actions rapides ; le ✕ supprime la séance planifiée.' },
-      { t:'Mode « Sélectionner » pour les actions groupées', x:'Cochez plusieurs séances pour les supprimer ou les déplacer en une fois.' }
+      { t:'Mode « Sélectionner » pour les actions groupées', x:'Cochez plusieurs séances pour les supprimer ou les déplacer en une fois.' },
+      { t:'Une même séance sur plusieurs jours', x:'Depuis le builder, « Planifier » puis « Cocher les jours sur l\'agenda » : le calendrier passe en sélection, vous cliquez les jours voulus et validez. Le jour d\'où vous venez est déjà coché. La séance n\'est enregistrée qu\'une fois — les jours pointent tous vers elle, donc la modifier les met tous à jour.' }
     ]},
   { id:'cycles', titre:'Créer des cycles d\'entraînement',
     intro:'Force, hypertrophie, récupération… Deux façons de programmer un cycle : à durée fixe (nombre de semaines), ou piloté par des critères cliniques organisés en phases — sans durée connue à l\'avance.',

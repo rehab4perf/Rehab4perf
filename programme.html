@@ -667,6 +667,14 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .plan-modal-header h3 { flex:1; font-size:.92rem; font-weight:700; }
 .plan-modal-close { background:none; border:none; color:rgba(255,255,255,.7); font-size:1.3rem; cursor:pointer; line-height:1; }
 .plan-modal-body { padding:16px 18px; }
+/* Chemin principal du modal : on coche les jours sur l'agenda. La saisie
+   date par date reste en dessous pour les cas ou l'on connait deja les dates. */
+.plan-agenda-btn {
+  width:100%; padding:10px 14px; border:1px solid var(--accent); border-radius:8px;
+  background:var(--accent); color:#fff; font-size:var(--fs-md); font-weight:600;
+  cursor:pointer; font-family:inherit; transition:filter .12s;
+}
+.plan-agenda-btn:hover { filter:brightness(1.08); }
 .plan-modal-hint { font-size:var(--fs-sm); color:var(--muted); margin-bottom:12px; }
 .plan-date-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
 .plan-date-input {
@@ -2914,17 +2922,19 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   <div class="plan-modal">
     <div class="plan-modal-header">
       <button class="btn-back" onclick="closePlanModal()" title="Retour">←</button>
-      <h3>📅 Planifier la séance</h3>
+      <h3>Planifier la séance</h3>
       <button class="plan-modal-close" onclick="closePlanModal()">✕</button>
     </div>
     <div class="plan-modal-body">
-      <p class="plan-modal-hint">Choisissez un ou plusieurs jours pour assigner cette séance :</p>
+      <!-- Cocher les jours sur l'agenda est le geste demandé : il passe devant
+           la saisie date par date, qui reste disponible en dessous. -->
+      <button class="plan-agenda-btn" onclick="_switchToCalendarPlanMode()">Cocher les jours sur l'agenda</button>
+      <p class="plan-modal-hint" style="margin-top:14px;">…ou saisir les dates une par une :</p>
       <div id="planDatesContainer"></div>
       <button class="plan-add-btn" onclick="addPlanDateRow()">+ Ajouter un autre jour</button>
     </div>
     <div class="plan-modal-footer">
       <button class="btn" onclick="closePlanModal()">Annuler</button>
-      <button class="btn" onclick="_switchToCalendarPlanMode()" title="Choisir les dates directement sur l'agenda" style="white-space:nowrap;">📅 Sur l'agenda</button>
       <button class="btn btn-primary" id="planConfirmBtn" onclick="confirmPlan()"><svg style="vertical-align:middle;margin-right:4px" width="16" height="16" fill="currentColor" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="M452,311.145V75c0-24.813-20.187-45-45-45h-15V15c0-8.284-6.716-15-15-15s-15,6.716-15,15v15h-60V15c0-8.284-6.716-15-15-15s-15,6.716-15,15v15h-92V15c0-8.284-6.716-15-15-15s-15,6.716-15,15v15H90V15c0-8.284-6.716-15-15-15S60,6.716,60,15v15H45C20.187,30,0,50.187,0,75v331c0,24.813,20.187,45,45,45h266.946c16.795,36.01,53.085,61,95.054,61c57.897,0,105-47.551,105-106C512,364.198,487.443,328.027,452,311.145z M30,75c0-8.271,6.729-15,15-15h15v15c0,8.284,6.716,15,15,15s15-6.716,15-15V60h60v15c0,8.284,6.716,15,15,15s15-6.716,15-15V60h92v15c0,8.284,6.716,15,15,15s15-6.716,15-15V60h60v15c0,8.284,6.716,15,15,15s15-6.716,15-15V60h15c8.271,0,15,6.729,15,15v46H30V75z M303.056,421H45c-8.271,0-15-6.729-15-15V151h392v151.076c-4.901-0.704-9.907-1.076-15-1.076c-57.897,0-105,47.103-105,105C302,411.092,302.365,416.098,303.056,421z M407,482c-41.355,0-75-34.093-75-76c0-41.355,33.645-75,75-75c41.355,0,75,33.645,75,75C482,447.907,448.355,482,407,482z"/><path d="M437,391h-15v-15c0-8.284-6.716-15-15-15s-15,6.716-15,15v30c0,8.284,6.716,15,15,15h30c8.284,0,15-6.716,15-15S445.284,391,437,391z"/><path d="M105,181H75c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S113.284,181,105,181z"/><path d="M196,181h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S204.284,181,196,181z"/><path d="M287,181h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S295.284,181,287,181z"/><path d="M377,181h-30c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S385.284,181,377,181z"/><path d="M105,241H75c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S113.284,241,105,241z"/><path d="M196,241h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S204.284,241,196,241z"/><path d="M287,241h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S295.284,241,287,241z"/><path d="M377,241h-30c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S385.284,241,377,241z"/><path d="M105,301H75c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S113.284,301,105,301z"/><path d="M196,301h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S204.284,301,196,301z"/><path d="M287,301h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S295.284,301,287,301z"/><path d="M105,361H75c-8.284,0-15,6.716-15,15s6.716,15,15,15h30c8.284,0,15-6.716,15-15S113.284,361,105,361z"/><path d="M196,361h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S204.284,361,196,361z"/><path d="M287,361h-31c-8.284,0-15,6.716-15,15s6.716,15,15,15h31c8.284,0,15-6.716,15-15S295.284,361,287,361z"/></svg>Planifier</button>
     </div>
   </div>
@@ -4469,6 +4479,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 </div>
 
-<script src="js/prog-main.js?v=20260806f"></script>
+<script src="js/prog-main.js?v=20260806g"></script>
 </body>
 </html>

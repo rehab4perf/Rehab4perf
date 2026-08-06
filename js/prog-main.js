@@ -3660,19 +3660,19 @@ function _addPlanDateRow(val){
   if(!val) setTimeout(function(){ inp.focus(); }, 50);
 }
 
-function confirmPlan(){
-  var dates = Array.from(document.querySelectorAll('.plan-date-input'))
-    .map(function(i){ return i.value; }).filter(Boolean);
-  if(!dates.length){ alert('Sélectionnez au moins une date.'); return; }
+/* Garantit que la seance en cours existe cote serveur, puis appelle `suite`
+   avec son identifiant. Ce code n'etait ecrit que dans confirmPlan : le bouton
+   « Sur l'agenda » du meme modal, lui, refusait tout net avec « Sauvegardez
+   d'abord ». Deux boutons cote a cote, l'un qui se debrouille, l'autre qui
+   renvoie l'utilisateur faire le travail a la main. */
+function _assurerProgrammeEnregistre(suite){
+  var dejaLa = _planOverrideProgId || _currentProgId;
+  if(dejaLa){ _planOverrideProgId = null; suite(dejaLa); return; }
   if(!_progPatient){ alert('Sélectionnez un patient.'); return; }
-
-  var targetProgId = _planOverrideProgId || _currentProgId;
-  if(targetProgId){ _planOverrideProgId = null; _doPlanDates(dates, targetProgId); return; }
-
-  // Pas encore sauvegardé : auto-save d'abord
   if(!_progUid || !_progToken){ alert('Session non disponible. Sélectionnez à nouveau le patient.'); return; }
+  if(!blocs || !blocs.length){ alert('La séance est vide.'); return; }
   var btn = document.getElementById('planConfirmBtn');
-  if(btn){ btn.disabled=true; btn.textContent='⏳ Sauvegarde…'; }
+  if(btn){ btn.disabled = true; btn.textContent = '⏳ Sauvegarde…'; }
   var nomProg = (document.getElementById('patientName')||{}).value || 'Programme';
   var donnees = { blocs: JSON.parse(JSON.stringify(blocs||[])), etapes: JSON.parse(JSON.stringify(etapes||[])), notes: getNotes() };
   var today = new Date().toISOString().split('T')[0];
@@ -3685,17 +3685,26 @@ function confirmPlan(){
     if(btn){ btn.disabled=false; btn.innerHTML=_PLAN_ICON+'Planifier'; }
     if(!res.ok){ alert('Erreur sauvegarde : '+JSON.stringify(res.data)); return; }
     var d = Array.isArray(res.data) ? res.data[0] : res.data;
-    if(d && d.id){
-      _currentProgId = d.id;
-      var sb = document.getElementById('prog-cloud-save-btn');
-      if(sb){ sb.innerHTML=_PROG_SAVE_ICON+'✓ Sauvegardé'; setTimeout(function(){ sb.innerHTML=_PROG_SAVE_ICON+'Sauvegarder'; },2500); }
-      _doPlanDates(dates, d.id);
-    }
+    if(!d || !d.id){ alert('Programme non créé.'); return; }
+    _currentProgId = d.id;
+    /* Le programme existe : on n'est plus en « contexte A ». Le bouton
+       d'enregistrement doit cesser de proposer « Enregistrer — 6 aout », qui
+       creerait un SECOND programme et planifierait en double. */
+    _refreshSaveBtn();
+    suite(d.id);
   })
   .catch(function(err){
     if(btn){ btn.disabled=false; btn.innerHTML=_PLAN_ICON+'Planifier'; }
     alert('Erreur réseau : '+(err&&err.message||err));
   });
+}
+
+function confirmPlan(){
+  var dates = Array.from(document.querySelectorAll('.plan-date-input'))
+    .map(function(i){ return i.value; }).filter(Boolean);
+  if(!dates.length){ alert('Sélectionnez au moins une date.'); return; }
+  if(!_progPatient){ alert('Sélectionnez un patient.'); return; }
+  _assurerProgrammeEnregistre(function(progId){ _doPlanDates(dates, progId); });
 }
 
 function _doPlanDates(dates, progId){
@@ -4933,8 +4942,12 @@ function _refreshSaveBtn(){
     btn.title = '';
   }
   btn.style.background = '';
-  // "Planifier" masqué en Contexte A (le bouton save le fait déjà) — visible en B et C
-  if(planBtn) planBtn.style.display = isContexteA ? 'none' : '';
+  /* « Planifier » reste visible en contexte A. Il y etait masque parce que le
+     bouton d'enregistrement planifie deja — mais sur UNE seule date. C'est
+     precisement la, une date en main et d'autres a ajouter, qu'on en a besoin.
+     Aucun risque de doublon : des que _assurerProgrammeEnregistre a cree le
+     programme, _currentProgId est pose et l'on quitte le contexte A. */
+  if(planBtn) planBtn.style.display = '';
   // Bouton "Mettre à jour template"
   if(updBtn){
     if(_builderFromTemplate){
@@ -6047,8 +6060,9 @@ function _showStravaGroup(e, dateStr){
 }
 
 // ── Mode planification agenda ─────────────────────────────────────────────────
-function _openPlanScheduleMode(progId, nom){
+function _openPlanScheduleMode(progId, nom, datePreCochee){
   _planScheduleMode = { progId: progId, progNom: nom, selectedDates: {} };
+  if(datePreCochee) _planScheduleMode.selectedDates[datePreCochee] = true;
   _updatePlanScheduleBanner();
   renderCalendar();
 }
@@ -6094,6 +6108,10 @@ function _cancelPlanSchedule(){
 
 function _switchToCalendarPlanMode(){
   var progId, nom;
+  /* Depuis le menu d'une seance de l'agenda, on ne vient PAS du builder :
+     _builderDate peut y avoir survecu d'une session precedente et cocherait un
+     jour au hasard. On ne pre-coche que depuis le builder. */
+  var depuisBuilder = !_touchSheetData;
   if(_touchSheetData){
     progId = _touchSheetData.progId;
     nom    = _touchSheetData.nom;
@@ -6105,9 +6123,18 @@ function _switchToCalendarPlanMode(){
     _planOverrideProgNom = '';
     closePlanModal();
   }
-  if(!progId){ alert('Sauvegardez d\'abord la séance avant de planifier sur l\'agenda.'); return; }
-  _exitBuilderMode();
-  _openPlanScheduleMode(progId, nom);
+  /* Le jour d'ou l'on vient est deja coche : on l'a choisi en ouvrant le
+     builder, le redemander serait absurde. */
+  var dejaCoche = depuisBuilder ? (_builderDate || '') : '';
+  if(progId){
+    _exitBuilderMode();
+    _openPlanScheduleMode(progId, nom, dejaCoche);
+    return;
+  }
+  _assurerProgrammeEnregistre(function(id){
+    _exitBuilderMode();
+    _openPlanScheduleMode(id, nom, dejaCoche);
+  });
 }
 
 // Duplication template depuis la sidebar (sans besoin que le template soit chargé)

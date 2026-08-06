@@ -52,6 +52,19 @@ node qualite/cap-cas.js
 - [ ] Rouvrir le builder → le brouillon proposé est celui de la SÉANCE,
       pas celui du répertoire
 
+### Flux 1 ter — Une même séance sur plusieurs jours
+- [ ] Depuis un jour de l'agenda, composer une séance (non enregistrée)
+- [ ] Le bouton « Planifier » est visible (il était masqué dans ce contexte)
+- [ ] « Cocher les jours sur l'agenda » → la séance s'enregistre toute seule,
+      le builder se ferme, le calendrier passe en sélection
+- [ ] Le jour d'origine est DÉJÀ coché ; le bandeau affiche « 1 jour sélectionné »
+- [ ] Cocher deux autres jours → valider → 3 séances planifiées, une seule
+      séance enregistrée (les 3 pointent vers le même programme)
+- [ ] Le bouton d'enregistrement ne dit plus « Enregistrer — <date> » mais
+      « Sauvegarder » : sinon on créerait un second programme en double
+- [ ] Depuis le menu ⋮ d'une séance de l'agenda, « Planifier sur d'autres dates »
+      → aucun jour n'est pré-coché (on ne vient pas du builder)
+
 ### Flux 2 — Sauvegarde séance patient
 - [ ] Sélectionner un patient → cliquer "+ Séance" → badge protocole absent
 - [ ] Ajouter exercices → cliquer "💾 Sauvegarder" → séance sauvegardée (pas une erreur)
