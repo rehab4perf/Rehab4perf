@@ -962,7 +962,7 @@ function renderSeances() {
       +'<div class="seance-card-meta">'+s.date+' · '+(s.blocs||[]).length+' bloc(s) · '+nbExos+' exercice(s)</div>'
       +'<div class="seance-card-actions">'
       +'<button class="btn btn-primary" style="font-size:.76rem;padding:5px 12px;" onclick="loadSeance(\''+s.id+'\')">📋 Charger</button>'
-      +'<button class="btn btn-outline" style="font-size:.76rem;padding:5px 12px;" onclick="seanceVersTemplate(\''+s.id+'\')" title="Réutiliser cette séance pour d\'autres patients">Faire un template</button>'
+      +'<button class="btn btn-outline" style="font-size:.76rem;padding:5px 12px;" onclick="seanceVersTemplate(\''+s.id+'\')" title="Réutiliser cette séance pour d\'autres patients">Faire un répertoire</button>'
       +'<button class="btn btn-danger" style="font-size:.76rem;padding:5px 12px;" onclick="deleteSeance(\''+s.id+'\')"><svg style="vertical-align:middle;margin-right:4px" width="16" height="16" fill="currentColor" viewBox="-40 0 427 427.00131" xmlns="http://www.w3.org/2000/svg"><path d="m232.398438 154.703125c-5.523438 0-10 4.476563-10 10v189c0 5.519531 4.476562 10 10 10 5.523437 0 10-4.480469 10-10v-189c0-5.523437-4.476563-10-10-10zm0 0"/><path d="m114.398438 154.703125c-5.523438 0-10 4.476563-10 10v189c0 5.519531 4.476562 10 10 10 5.523437 0 10-4.480469 10-10v-189c0-5.523437-4.476563-10-10-10zm0 0"/><path d="m28.398438 127.121094v246.378906c0 14.5625 5.339843 28.238281 14.667968 38.050781 9.285156 9.839844 22.207032 15.425781 35.730469 15.449219h189.203125c13.527344-.023438 26.449219-5.609375 35.730469-15.449219 9.328125-9.8125 14.667969-23.488281 14.667969-38.050781v-246.378906c18.542968-4.921875 30.558593-22.835938 28.078124-41.863282-2.484374-19.023437-18.691406-33.253906-37.878906-33.257812h-51.199218v-12.5c.058593-10.511719-4.097657-20.605469-11.539063-28.03125-7.441406-7.421875-17.550781-11.5546875-28.0625-11.46875h-88.796875c-10.511719-.0859375-20.621094 4.046875-28.0625 11.46875-7.441406 7.425781-11.597656 17.519531-11.539062 28.03125v12.5h-51.199219c-19.1875.003906-35.394531 14.234375-37.878907 33.257812-2.480468 19.027344 9.535157 36.941407 28.078126 41.863282zm239.601562 279.878906h-189.203125c-17.097656 0-30.398437-14.6875-30.398437-33.5v-245.5h250v245.5c0 18.8125-13.300782 33.5-30.398438 33.5zm-158.601562-367.5c-.066407-5.207031 1.980468-10.21875 5.675781-13.894531 3.691406-3.675781 8.714843-5.695313 13.925781-5.605469h88.796875c5.210937-.089844 10.234375 1.929688 13.925781 5.605469 3.695313 3.671875 5.742188 8.6875 5.675782 13.894531v12.5h-128zm-71.199219 32.5h270.398437c9.941406 0 18 8.058594 18 18s-8.058594 18-18 18h-270.398437c-9.941407 0-18-8.058594-18-18s8.058593-18 18-18zm0 0"/><path d="m173.398438 154.703125c-5.523438 0-10 4.476563-10 10v189c0 5.519531 4.476562 10 10 10 5.523437 0 10-4.480469 10-10v-189c0-5.523437-4.476563-10-10-10zm0 0"/></svg>Supprimer</button>'
       +'</div>'
       +'</div>';
@@ -3865,8 +3865,8 @@ function _remplirSuggestionsEtiquettes(){
 function _openTmplModal(opts){
   // opts = { nom, cat, emoji, groupId, phaseOrdre, editId }
   _tmplEditId = opts.editId || null;
-  document.getElementById('tmplModalTitle').textContent = _tmplEditId ? '✏️ Modifier le template' : '📋 Sauvegarder comme template';
-  document.getElementById('tmplModalConfirmBtn').innerHTML = _tmplEditId ? _PROG_SAVE_ICON+'Enregistrer les modifications' : _PROG_SAVE_ICON+'Enregistrer le template';
+  document.getElementById('tmplModalTitle').textContent = _tmplEditId ? 'Modifier le répertoire' : 'Enregistrer un répertoire';
+  document.getElementById('tmplModalConfirmBtn').innerHTML = _tmplEditId ? _PROG_SAVE_ICON+'Enregistrer les modifications' : _PROG_SAVE_ICON+'Enregistrer le répertoire';
 
   // Emoji row
   var row = document.getElementById('tmplEmojiRow');
@@ -3920,14 +3920,14 @@ function openEditTemplate(id){
     // local
     _loadTemplates();
     var t = _templates.find(function(x){ return String(x.id)===String(id); });
-    if(!t){ alert('Template introuvable.'); return; }
+    if(!t){ alert('Répertoire introuvable.'); return; }
     _openTmplModal({ editId:id, nom:t.nom, cat:t.categorie, type:t.type, emoji:t.emoji, groupId:t.group_id, phaseNom:t.phase_nom, phaseOrdre:t.phase_ordre, pathologie:t.pathologie, sport:t.sport });
     return;
   }
   _fetchRetry(SUPA_URL_P+'/rest/v1/templates?id=eq.'+id+'&select=*', { headers:_sbHeaders() })
   .then(function(r){ return r.json(); })
   .then(function(data){
-    if(!Array.isArray(data)||!data[0]){ alert('Template introuvable.'); return; }
+    if(!Array.isArray(data)||!data[0]){ alert('Répertoire introuvable.'); return; }
     var t = data[0];
     _openTmplModal({ editId:id, nom:t.nom, cat:t.categorie, type:t.type, emoji:t.emoji, groupId:t.group_id, phaseNom:t.phase_nom, phaseOrdre:t.phase_ordre, pathologie:t.pathologie, sport:t.sport });
   })
@@ -3969,7 +3969,7 @@ function doSaveTemplate(){
   var groupId    = document.getElementById('tmplGroupInput').value || (_activeGroupId ? String(_activeGroupId) : null);
   var phaseOrdre = groupId ? (parseInt(document.getElementById('tmplPhaseOrdreInput').value)||1) : 0;
   var nom = document.getElementById('tmplNameInput').value.trim();
-  if(!nom){ alert('Donnez un nom au template.'); return; }
+  if(!nom){ alert('Donnez un nom au répertoire.'); return; }
   var patho    = (document.getElementById('tmplPathoInput')||{}).value || '';
   var sportTxt = (document.getElementById('tmplSportInput')||{}).value || '';
   patho = patho.trim(); sportTxt = sportTxt.trim();
@@ -3984,7 +3984,7 @@ function doSaveTemplate(){
         method:'PATCH', headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=minimal'}),
         body: JSON.stringify(patch)
       }).then(function(r){
-        if(r.ok){ closeSaveTemplate(); renderTemplatesInBuilder(); renderSidebarTemplates(); _showToast('✏️ Template « '+nom+' » mis à jour !'); }
+        if(r.ok){ closeSaveTemplate(); renderTemplatesInBuilder(); renderSidebarTemplates(); _showToast('Répertoire « '+nom+' » mis à jour !'); }
         else { r.json().then(function(d){ alert('Erreur : '+JSON.stringify(d)); }); }
       }).catch(function(){ alert('Erreur réseau.'); });
     } else {
@@ -3992,7 +3992,7 @@ function doSaveTemplate(){
       var t = _templates.find(function(x){ return String(x.id)===String(id); });
       if(t){ t.nom=nom; t.categorie=cat; t.emoji=_tmplSelectedEmoji; t.group_id=groupId; t.phase_nom=''; t.phase_ordre=phaseOrdre;
              t.pathologie=patho; t.sport=sportTxt; _persistTemplates(); }
-      closeSaveTemplate(); renderTemplatesInBuilder(); renderSidebarTemplates(); _showToast('✏️ Template « '+nom+' » mis à jour !');
+      closeSaveTemplate(); renderTemplatesInBuilder(); renderSidebarTemplates(); _showToast('Répertoire « '+nom+' » mis à jour !');
     }
     return;
   }
@@ -4020,7 +4020,7 @@ function doSaveTemplate(){
         renderTemplatesInBuilder();
         renderSidebarTemplates();
         _finirModeTemplate();
-        _showToast('📋 Template « ' + nom + ' » enregistré !');
+        _showToast('Répertoire « ' + nom + ' » enregistré !');
       } else {
         r.json().then(function(d){ alert('Erreur : ' + JSON.stringify(d)); });
       }
@@ -4043,7 +4043,7 @@ function doSaveTemplate(){
     renderTemplatesInBuilder();
     renderSidebarTemplates();
     _finirModeTemplate();
-    _showToast('📋 Template « ' + nom + ' » enregistré !');
+    _showToast('Répertoire « ' + nom + ' » enregistré !');
   }
 }
 
@@ -4181,7 +4181,7 @@ function _renderBuilderLibraryUI(){
         +'<div class="builder-lib-sname">'+escH(p.nom||'Sans nom')+'</div>'
         +(meta.length?'<div class="builder-lib-smeta">'+meta.join(' · ')+'</div>':'')
         +'</div>'
-        +'<button class="builder-lib-load" onclick="loadTemplate(\''+pid+'\');_enterBuilderMode();" title="Ajouter le contenu de ce template à la séance en cours">Ajouter</button>'
+        +'<button class="builder-lib-load" onclick="loadTemplate(\''+pid+'\');_enterBuilderMode();" title="Ajouter le contenu de ce répertoire à la séance en cours">Ajouter</button>'
         +'</div>';
     }).join('');
   }
@@ -4332,7 +4332,7 @@ function _renderSidebarPicker(){
     }
   }
 
-  if(!html) html = '<div class="picker-empty">'+(search?'Aucun résultat pour « '+escH(_sbPickerSearch)+' »':'Aucun template disponible.')+'</div>';
+  if(!html) html = '<div class="picker-empty">'+(search?'Aucun résultat pour « '+escH(_sbPickerSearch)+' »':'Aucun répertoire disponible.')+'</div>';
   scroll.innerHTML = html;
 
   /* Auto-dépliage si recherche active */
@@ -4618,7 +4618,7 @@ function openPublishModal(id){
   _fetchRetry(SUPA_URL_P+'/rest/v1/templates?id=eq.'+id+'&select=*', { headers:_sbHeaders() })
   .then(function(r){ return r.json(); })
   .then(function(data){
-    if(!Array.isArray(data)||!data[0]){ alert('Template introuvable.'); return; }
+    if(!Array.isArray(data)||!data[0]){ alert('Répertoire introuvable.'); return; }
     _pubTmplData = data[0];
     document.getElementById('pubTmplName').textContent = (_pubTmplData.emoji||'📋')+' '+(_pubTmplData.nom||'Sans nom');
     document.getElementById('pubDescInput').value = _pubTmplData.description||'';
@@ -4656,7 +4656,7 @@ function doPublishTemplate(){
     if(btn){ btn.disabled=false; btn.textContent='📚 Publier'; }
     if(r.ok||r.status===201){
       closePublishModal();
-      _showToast('📚 Template publié dans la bibliothèque !');
+      _showToast('Répertoire publié dans la bibliothèque');
       // Rafraîchir la bibliothèque
       renderBuilderLibrary();
     } else {
@@ -4670,14 +4670,14 @@ function doPublishTemplate(){
 }
 
 function unpublishLibTemplate(id){
-  _confirmDialog({id:'cd-unpublish-lib', emoji:'📚', title:'Retirer ce template ?', body:'Ce template sera retiré de la bibliothèque partagée.', confirmLabel:'Retirer', confirmColor:'#d97706'}, function(){
+  _confirmDialog({id:'cd-unpublish-lib', emoji:'📚', title:'Retirer ce répertoire ?', body:'Ce répertoire sera retiré de la bibliothèque partagée.', confirmLabel:'Retirer', confirmColor:'#d97706'}, function(){
     _fetchRetry(SUPA_URL_P+'/rest/v1/templates_library?id=eq.'+id, {
       method:'DELETE',
       headers: _sbHeaders()
     })
     .then(function(r){
       if(r.ok||r.status===204){
-        _showToast('🗑 Template retiré de la bibliothèque.');
+        _showToast('Répertoire retiré de la bibliothèque');
         renderLibraryTemplates();
       } else {
         r.text().then(function(t){ alert('Erreur '+r.status+' : '+t); });
@@ -4692,7 +4692,7 @@ function loadLibraryTemplate(id){
   _fetchRetry(SUPA_URL_P+'/rest/v1/templates_library?id=eq.'+id+'&select=*', { headers:_sbHeaders() })
   .then(function(r){ return r.json(); })
   .then(function(data){
-    if(!Array.isArray(data)||!data[0]){ alert('Template introuvable.'); return; }
+    if(!Array.isArray(data)||!data[0]){ alert('Répertoire introuvable.'); return; }
     var t = data[0];
     var d = {};
     try { d = JSON.parse(t.donnees||'{}'); } catch(e){}
@@ -4706,7 +4706,7 @@ function loadLibraryTemplate(id){
     _updateBuilderTitle();
     _refreshSaveBtn();
     if(!seanceVide){ _builderSaved = false; _refreshDraftBadge(); }
-    _showToast('🌐 « '+escH(t.nom||'Template')+' » — '+n+' bloc'+(n>1?'s':'')+' ajouté'+(n>1?'s':''));
+    _showToast('🌐 « '+escH(t.nom||'Répertoire')+' » — '+n+' bloc'+(n>1?'s':'')+' ajouté'+(n>1?'s':''));
   })
   .catch(function(err){ alert('Erreur réseau : '+(err&&err.message||err)); });
 }
@@ -4847,7 +4847,7 @@ function openSaveDest(){
     hint = 'Protocole actif : « ' + (_activeGroupNom||'') + ' »';
   } else if(_builderFromTemplate){
     var _tCur = (_sidebarProgs||[]).find(function(x){ return String(x.id)===String(_builderFromTemplate); });
-    if(_tCur) hint = 'Template chargé : « ' + (_tCur.nom||'Template') + ' »';
+    if(_tCur) hint = 'Répertoire chargé : « ' + (_tCur.nom||'Répertoire') + ' »';
   } else if(_progPatient){
     hint = 'Patient : ' + ((_progPatient.prenom||'')+' '+(_progPatient.nom||'')).trim();
   }
@@ -4911,8 +4911,8 @@ function _refreshSaveBtn(){
      sortie — elle a ete posee a l'entree. « Planifier » et « Mettre a jour le
      template » n'ont pas de sens sur un objet qu'on est en train de creer. */
   if(_builderMode === 'template'){
-    btn.innerHTML = _PROG_SAVE_ICON + 'Enregistrer le template';
-    btn.title = 'Enregistrer ce contenu comme template';
+    btn.innerHTML = _PROG_SAVE_ICON + 'Enregistrer le répertoire';
+    btn.title = 'Enregistrer ce contenu comme répertoire';
     btn.style.background = '';
     if(planBtn) planBtn.style.display = 'none';
     if(updBtn)  updBtn.style.display  = 'none';
@@ -4939,7 +4939,7 @@ function _refreshSaveBtn(){
   if(updBtn){
     if(_builderFromTemplate){
       var _tRef = (_sidebarProgs||[]).find(function(x){ return String(x.id)===String(_builderFromTemplate); });
-      var _tName = _tRef ? (_tRef.nom||'Template') : 'Template';
+      var _tName = _tRef ? (_tRef.nom||'Répertoire') : 'Template';
       var _tLabel = _tName.length > 20 ? _tName.substring(0,19)+'…' : _tName;
       updBtn.textContent = '🔄 ' + _tLabel;
       updBtn.title = 'Mettre à jour « ' + _tName + ' »';
@@ -4965,8 +4965,8 @@ function _doUpdateTemplate(){
   .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, status:r.status, data:d}; }); })
   .then(function(res){
     if(btn) btn.disabled = false;
-    if(!res.ok){ _refreshSaveBtn(); _handleApiError(res.status, res.data, 'mise à jour template'); return; }
-    _showToast('✓ Template mis à jour !');
+    if(!res.ok){ _refreshSaveBtn(); _handleApiError(res.status, res.data, 'mise à jour répertoire'); return; }
+    _showToast('Répertoire mis à jour');
     _draftClear();
     _refreshSaveBtn();
     renderSidebarTemplates();
@@ -4980,10 +4980,10 @@ function _doUpdateTemplate(){
 // ─────────────────────────────────────────────────────────────────────────────
 
 function duplicateTemplate(){
-  if(!_builderFromTemplate){ _showToast('⚠️ Aucun template chargé.'); return; }
+  if(!_builderFromTemplate){ _showToast('Aucun répertoire chargé.'); return; }
   if(!_progToken || !_progUid){ alert('Session non disponible.'); return; }
   var src = (_sidebarProgs||[]).find(function(t){ return String(t.id)===String(_builderFromTemplate); });
-  var newNom = 'Copie de ' + (src ? (src.nom||src.phase_nom||'Template') : 'Template');
+  var newNom = 'Copie de ' + (src ? (src.nom||src.phase_nom||'Répertoire') : 'Template');
   var donnees = JSON.stringify({ blocs: JSON.parse(JSON.stringify(blocs||[])), etapes: JSON.parse(JSON.stringify(etapes||[])), notes: getNotes() });
   var payload = {
     praticien_id: _progUid,
@@ -5005,7 +5005,7 @@ function duplicateTemplate(){
   .then(function(data){
     if(!data || !data[0]){ alert('Erreur lors de la duplication.'); return; }
     renderSidebarTemplates();
-    _showToast('📋 Template « '+newNom+' » dupliqué !');
+    _showToast('Répertoire « '+newNom+' » dupliqué !');
   })
   .catch(function(e){ alert('Erreur réseau : '+(e&&e.message||e)); });
 }
@@ -5057,7 +5057,7 @@ function loadTemplate(id){
       _builderSaved = false;
     }
     _refreshDraftBadge();
-    _showToast('✚ « ' + (t.nom||'Template') + ' » — ' + n + ' bloc' + (n>1?'s':'') + ' ajouté' + (n>1?'s':''));
+    _showToast('✚ « ' + (t.nom||'Répertoire') + ' » — ' + n + ' bloc' + (n>1?'s':'') + ' ajouté' + (n>1?'s':''));
   }
 
   if(_progToken && _progUid){
@@ -5065,21 +5065,21 @@ function loadTemplate(id){
     .then(function(r){ return r.json(); })
     .then(function(data){
       var t = Array.isArray(data) ? data[0] : null;
-      if(!t){ alert('Template introuvable.'); return; }
+      if(!t){ alert('Répertoire introuvable.'); return; }
       _applyTemplate(t);
     })
-    .catch(function(){ alert('Erreur chargement template.'); });
+    .catch(function(){ alert('Erreur chargement répertoire.'); });
   } else {
     _loadTemplates();
     var t = _templates.find(function(x){ return x.id === id; });
-    if(!t){ alert('Template introuvable.'); return; }
+    if(!t){ alert('Répertoire introuvable.'); return; }
     _applyTemplate(t);
   }
 }
 
 /* ── Supprimer un template ── */
 function deleteTemplate(id){
-  _confirmDialog({id:'cd-del-template', emoji:'🗑️', title:'Supprimer ce template ?', body:'Cette action est irréversible.', confirmLabel:'Supprimer'}, function(){
+  _confirmDialog({id:'cd-del-template', emoji:'🗑️', title:'Supprimer ce répertoire ?', body:'Cette action est irréversible.', confirmLabel:'Supprimer'}, function(){
     if(_progToken && _progUid){
       _fetchRetry(SUPA_URL_P + '/rest/v1/templates?id=eq.' + id, {
         method: 'DELETE', headers: _sbHeaders()
@@ -6114,8 +6114,8 @@ function _switchToCalendarPlanMode(){
 function duplicateTemplateById(id){
   var src = (_sidebarProgs||[]).find(function(t){ return String(t.id)===String(id); });
   if(!src){ _loadTemplates(); src = _templates.find(function(t){ return String(t.id)===String(id); }); }
-  if(!src){ alert('Template introuvable.'); return; }
-  var newNom = 'Copie de ' + (src.phase_nom||src.nom||'Template');
+  if(!src){ alert('Répertoire introuvable.'); return; }
+  var newNom = 'Copie de ' + (src.phase_nom||src.nom||'Répertoire');
   // Lecteur : duplication en localStorage uniquement
   if(_isReader()){
     _loadTemplates();
@@ -6217,7 +6217,7 @@ function _renderSidebarWithGroups(){
      ou un protocole qui en regroupera plusieurs. Le template d'abord — c'est
      le geste courant ; le protocole ne sert qu'a ranger. */
   var html = '<div class="stmpl-group-add-row">'
-    + '<button class="stmpl-new-tmpl-btn" onclick="nouveauTemplate()">' + _TMPL_ICON + 'Nouveau template</button>'
+    + '<button class="stmpl-new-tmpl-btn" onclick="nouveauTemplate()">' + _TMPL_ICON + 'Nouveau répertoire</button>'
     + '<button class="stmpl-new-group-btn" onclick="openCreateGroup()">Nouveau protocole</button>'
     + '</div>';
 
@@ -6307,7 +6307,7 @@ function _renderSidebarWithGroups(){
   });
 
   if(!hasContent){
-    html += '<div class="stmpl-empty">Aucun template'+(catFilter?' dans cette catégorie':'')+'.<br>Créez-en un depuis le builder (📋 Enregistrer).</div>';
+    html += '<div class="stmpl-empty">Aucun répertoire'+(catFilter?' dans cette catégorie':'')+'.<br>Créez-en un depuis le builder (📋 Enregistrer).</div>';
   }
   scroll.innerHTML = html;
 }
@@ -6337,7 +6337,7 @@ function _renderTmplCard(p, isPhase, phaseNum, hideCat){
   var pnom = escH(dispNom);
   var cls  = 'stmpl-card'+(isPhase?' stmpl-phase-card':'');
   var phN  = (isPhase&&phaseNum) ? '<span class="stmpl-phase-num">'+phaseNum+'</span>' : '';
-  var pubBdg = p.is_public ? '<span class="stmpl-public-badge" title="Template public">🌐</span>' : '';
+  var pubBdg = p.is_public ? '<span class="stmpl-public-badge" title="Répertoire public">🌐</span>' : '';
   return '<div class="'+cls+'" onclick="_sidebarLoadProg(\''+pid+'\')">'
     +phN+'<div class="stmpl-card-emoji">'+emoji+'</div>'
     +'<div class="stmpl-card-body"><div class="stmpl-card-name">'+pnom+' '+pubBdg+'</div>'
@@ -6455,7 +6455,7 @@ function confirmQuickAdd(){
     .then(function(r){ return r.json(); })
     .then(function(data){
       var t = Array.isArray(data) ? data[0] : null;
-      if(!t){ alert('Template introuvable.'); return; }
+      if(!t){ alert('Répertoire introuvable.'); return; }
       // 2. Créer une copie du programme pour ce patient
       var hCopy = _sbHeaders(); // Prefer: return=representation par défaut
       return _fetchRetry(SUPA_URL_P + '/rest/v1/programmes', {
@@ -6491,7 +6491,7 @@ function confirmQuickAdd(){
     // Mode local : copier le template dans _savedSeances puis ajouter au calendrier
     _loadTemplates();
     var t = _templates.find(function(x){ return x.id === _qaProgId; });
-    if(!t){ alert('Template introuvable.'); return; }
+    if(!t){ alert('Répertoire introuvable.'); return; }
     _loadSeances();
     var copy = {
       id: '_' + Math.random().toString(36).slice(2,9),
@@ -6604,8 +6604,8 @@ function _quitterModeTemplate(){
    posait la question a la fin, apres le travail. */
 function nouveauTemplate(opts){
   _entrerModeTemplate(opts);
-  _showToast(((opts&&opts.groupNom) ? 'Nouvelle phase de « '+opts.groupNom+' »' : 'Nouveau template')
-             + ' — composez, puis « Enregistrer le template »');
+  _showToast(((opts&&opts.groupNom) ? 'Nouvelle phase de « '+opts.groupNom+' »' : 'Nouveau répertoire')
+             + ' — composez, puis « Enregistrer le répertoire »');
 }
 
 /* Fin de course apres un enregistrement reussi : la seance empruntee revient
@@ -6896,8 +6896,8 @@ function closeBuilder(){
   var estTmpl = (_builderMode === 'template');
   if(blocs && blocs.length && !_builderSaved){
     _confirmDialog({id:'cd-close-builder', emoji:'⚠️',
-      title: estTmpl ? 'Template non enregistré' : 'Contenu non sauvegardé',
-      body: (estTmpl ? 'Ce template n\'a pas été enregistré.' : 'La séance contient du contenu non sauvegardé.')
+      title: estTmpl ? 'Répertoire non enregistré' : 'Contenu non sauvegardé',
+      body: (estTmpl ? 'Ce répertoire n\'a pas été enregistré.' : 'La séance contient du contenu non sauvegardé.')
             + '\n\nFermer quand même ?',
       confirmLabel:'Fermer quand même', confirmColor:'#d97706'}, function(){
       _draftClear();
@@ -6919,7 +6919,7 @@ function closeBuilder(){
 }
 
 /* Le bouton topbar ouvre le même panneau latéral dans les deux modes
-   (Bibliothèque d'exercices en builder, Séances & Templates sur l'agenda) :
+   (Bibliothèque d'exercices en builder, Séances & Répertoires sur l'agenda) :
    son libellé/icône suit le contenu réellement affiché. */
 function _updateSidebarToggleBtn(isBuilder){
   var btn = document.getElementById('topbarBiblioBtn');
@@ -6928,8 +6928,8 @@ function _updateSidebarToggleBtn(isBuilder){
     btn.title = 'Bibliothèque d\'exercices';
     btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="vertical-align:middle;margin-right:2px"><circle cx="2" cy="4" r="2"/><circle cx="2" cy="12" r="2"/><circle cx="2" cy="20" r="2"/><path d="m8 5h15c.553 0 1-.447 1-1s-.447-1-1-1h-15c-.553 0-1 .447-1 1s.447 1 1 1z"/><path d="m23 11h-15c-.553 0-1 .447-1 1s.447 1 1 1h15c.553 0 1-.447 1-1s-.447-1-1-1z"/><path d="m23 19h-15c-.553 0-1 .447-1 1s.447 1 1 1h15c.553 0 1-.447 1-1s-.447-1-1-1z"/></svg><span class="btn-label"> Biblio</span>';
   } else {
-    btn.title = 'Séances & templates';
-    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 511.999 511.999" width="14" height="14" fill="currentColor" style="vertical-align:middle;margin-right:2px"><path d="M477.418,98.354H262.25l-0.94-6.098c-2.808-18.223-20.093-33.047-38.531-33.047H115.962c-18.44,0-35.724,14.826-38.529,33.047l-0.941,6.098h-0.669c-19.068,0-34.581,15.513-34.581,34.582v23.139H30.71c-9.454,0-17.847,3.738-23.629,10.524c-5.783,6.787-8.14,15.665-6.64,24.999l36.69,228.225c2.922,18.179,20.281,32.968,38.693,32.968h401.594c1.782,0,3.525-0.133,5.222-0.395c16.6-2.525,29.359-16.894,29.359-34.188V132.935C511.999,113.867,496.486,98.354,477.418,98.354z M488.799,431.834c-2,2.347-4.764,3.905-7.98,4.543c-0.133,0.025-0.269,0.04-0.403,0.062c-0.399,0.069-0.799,0.134-1.21,0.175c-0.589,0.057-1.185,0.091-1.789,0.091H75.824c-10.67,0-21.116-8.901-22.811-19.436l-36.69-228.224c-0.74-4.605,0.325-8.87,3.001-12.012c2.677-3.14,6.72-4.87,11.384-4.87h401.593c10.669,0,21.115,8.901,22.808,19.436l36.691,228.224C492.542,424.427,491.475,428.693,488.799,431.834z M81.921,156.076v-0.001v-13.032h381.992v29.598c-7.36-9.889-19.244-16.566-31.61-16.566H81.921z M495.912,344.035l-15.912-98.978V134.998c0-4.442-3.6-8.044-8.044-8.044H73.877c-4.443,0-8.044,3.601-8.044,8.044v21.075h-8.505v-23.139c0-10.198,8.296-18.495,18.494-18.495h7.57c3.969,0,7.345-2.896,7.949-6.818l1.992-12.918c1.619-10.521,11.982-19.409,22.629-19.409h106.817c10.647,0,21.01,8.889,22.633,19.41l1.989,12.916c0.604,3.923,3.98,6.819,7.949,6.819h222.067c10.198,0,18.494,8.297,18.494,18.495V344.035z"/></svg><span class="btn-label"> Templates</span>';
+    btn.title = 'Séances & répertoires';
+    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 511.999 511.999" width="14" height="14" fill="currentColor" style="vertical-align:middle;margin-right:2px"><path d="M477.418,98.354H262.25l-0.94-6.098c-2.808-18.223-20.093-33.047-38.531-33.047H115.962c-18.44,0-35.724,14.826-38.529,33.047l-0.941,6.098h-0.669c-19.068,0-34.581,15.513-34.581,34.582v23.139H30.71c-9.454,0-17.847,3.738-23.629,10.524c-5.783,6.787-8.14,15.665-6.64,24.999l36.69,228.225c2.922,18.179,20.281,32.968,38.693,32.968h401.594c1.782,0,3.525-0.133,5.222-0.395c16.6-2.525,29.359-16.894,29.359-34.188V132.935C511.999,113.867,496.486,98.354,477.418,98.354z M488.799,431.834c-2,2.347-4.764,3.905-7.98,4.543c-0.133,0.025-0.269,0.04-0.403,0.062c-0.399,0.069-0.799,0.134-1.21,0.175c-0.589,0.057-1.185,0.091-1.789,0.091H75.824c-10.67,0-21.116-8.901-22.811-19.436l-36.69-228.224c-0.74-4.605,0.325-8.87,3.001-12.012c2.677-3.14,6.72-4.87,11.384-4.87h401.593c10.669,0,21.115,8.901,22.808,19.436l36.691,228.224C492.542,424.427,491.475,428.693,488.799,431.834z M81.921,156.076v-0.001v-13.032h381.992v29.598c-7.36-9.889-19.244-16.566-31.61-16.566H81.921z M495.912,344.035l-15.912-98.978V134.998c0-4.442-3.6-8.044-8.044-8.044H73.877c-4.443,0-8.044,3.601-8.044,8.044v21.075h-8.505v-23.139c0-10.198,8.296-18.495,18.494-18.495h7.57c3.969,0,7.345-2.896,7.949-6.818l1.992-12.918c1.619-10.521,11.982-19.409,22.629-19.409h106.817c10.647,0,21.01,8.889,22.633,19.41l1.989,12.916c0.604,3.923,3.98,6.819,7.949,6.819h222.067c10.198,0,18.494,8.297,18.494,18.495V344.035z"/></svg><span class="btn-label"> Répertoires</span>';
   }
 }
 
@@ -6947,7 +6947,7 @@ function _updateBuilderTitle(){
   if(_builderMode === 'template'){
     if(titleEl) titleEl.textContent = _activeGroupNom
       ? 'Nouvelle phase — ' + _activeGroupNom
-      : 'Nouveau template';
+      : 'Nouveau répertoire';
     if(dateBar) dateBar.style.display = 'none';
     return;
   }

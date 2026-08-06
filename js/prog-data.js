@@ -2455,7 +2455,7 @@ function renderSession(){
       html += '<button class="etape-swatch repli" style="background:'+c+'" onclick="setEtapeColor(\''+g.etapeId+'\',\''+c+'\')" title="Couleur de l\'étape"></button>';
     });
     html += '</span>';
-    html += '<button class="etape-tmpl-btn"'+(g.blocs.length?'':' disabled')+' onclick="openSaveEtapeTemplate(\''+g.etapeId+'\')" title="Enregistrer cette étape comme template">'+_ETAPE_ICO_SAVE+'</button>';
+    html += '<button class="etape-tmpl-btn"'+(g.blocs.length?'':' disabled')+' onclick="openSaveEtapeTemplate(\''+g.etapeId+'\')" title="Enregistrer cette étape comme répertoire">'+_ETAPE_ICO_SAVE+'</button>';
     html += '<button class="etape-del-btn" onclick="dissolveEtape(\''+g.etapeId+'\')" title="Dissoudre l\'étape — les blocs sont conservés dans la séance">'+_ETAPE_ICO_TRASH+'</button>';
     html += '</div>';
     if(!g.blocs.length){

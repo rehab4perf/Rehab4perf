@@ -14,7 +14,7 @@ node qualite/etapes-cas.js
 node qualite/motifs-cas.js
 node qualite/lsi-cas.js
 node qualite/hash-cas.js
-node qualite/templates-cas.js
+node qualite/répertoires-cas.js
 node qualite/feedback-cas.js
 node qualite/cap-cas.js
 ```
@@ -33,14 +33,14 @@ node qualite/cap-cas.js
 
 ## 🔵 BUILDER PROGRAMME — Tests obligatoires si `programme.html` est modifié
 
-### Flux 1 — Création d'un template (mode template)
-- [ ] Cliquer "📋 Nouveau template" en tête du panneau → builder vide, titre
-      "Nouveau template", pas de date, pas de bouton "Planifier", pas de champ nom
-- [ ] Le bouton d'enregistrement dit "Enregistrer le template" (pas "Sauvegarder")
+### Flux 1 — Création d'un répertoire (mode répertoire)
+- [ ] Cliquer "📋 Nouveau répertoire" en tête du panneau → builder vide, titre
+      "Nouveau répertoire", pas de date, pas de bouton "Planifier", pas de champ nom
+- [ ] Le bouton d'enregistrement dit "Enregistrer le répertoire" (pas "Sauvegarder")
 - [ ] Ajouter au moins 1 exercice → badge "● non sauvegardé" apparaît
 - [ ] Fermer sans enregistrer → la confirmation parle bien du TEMPLATE, pas de la séance
 - [ ] Enregistrer → modal : seuls Nom, Pathologie et Sport visibles ; "Classement" replié
-- [ ] Confirmer → retour à l'agenda, le template apparaît dans le panneau
+- [ ] Confirmer → retour à l'agenda, le répertoire apparaît dans le panneau
 
 ### Flux 1 bis — La séance en cours n'est JAMAIS perdue
 > Le défaut historique : "Nouvelle phase" faisait `blocs = []` sans rien demander.
@@ -50,22 +50,22 @@ node qualite/cap-cas.js
 - [ ] Fermer le builder → la séance de départ est retrouvée à l'identique,
       avec sa date et son badge "● non sauvegardé"
 - [ ] Rouvrir le builder → le brouillon proposé est celui de la SÉANCE,
-      pas celui du template
+      pas celui du répertoire
 
 ### Flux 2 — Sauvegarde séance patient
 - [ ] Sélectionner un patient → cliquer "+ Séance" → badge protocole absent
 - [ ] Ajouter exercices → cliquer "💾 Sauvegarder" → séance sauvegardée (pas une erreur)
 - [ ] Vérifier que le badge "● non sauvegardé" disparaît
 
-### Flux 3 — Chargement template existant
-- [ ] Cliquer sur un template dans la sidebar → exercices chargés dans le builder
-- [ ] Bouton affiche "🔄 Mettre à jour" (le template doit être SEUL dans la séance)
+### Flux 3 — Chargement répertoire existant
+- [ ] Cliquer sur un répertoire dans la sidebar → exercices chargés dans le builder
+- [ ] Bouton affiche "🔄 Mettre à jour" (le répertoire doit être SEUL dans la séance)
 - [ ] Modifier un exercice → "🔄 Mettre à jour" → toast de confirmation
 
 ### Flux 4 — Bouton "+ Enregistrer" (tabs)
 - [ ] Bouton "＋ Enregistrer" visible en permanence dans la barre des tabs
 - [ ] Builder vide → clic → alerte "La séance est vide"
-- [ ] Builder avec contenu → clic → modal template s'ouvre
+- [ ] Builder avec contenu → clic → modal répertoire s'ouvre
 
 ---
 
