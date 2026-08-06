@@ -554,6 +554,17 @@ const TESTS = {
   'tb-lma-quadri': {type:'ortho',items:['Étirement actif','Étirement passif','Contraction isométrique course interne','Contraction isométrique course externe','Contraction excentrique','Palpation']},
   'tb-lma-adduct': {type:'ortho',items:['Étirement actif','Étirement passif','Contraction isométrique course interne','Contraction isométrique course externe','Contraction excentrique','Palpation']},
   'tb-lma-mollet': {type:'ortho',items:['Étirement actif','Étirement passif','Contraction isométrique course interne','Contraction isométrique course externe','Contraction excentrique','Palpation']},
+
+  /* ── Section thoracique — évaluée depuis les pages cervicale et lombaire ──
+     L'onglet Rachis Thoracique n'existe plus (il était vide). L'extension
+     thoracique se juge en pratique depuis l'un ou l'autre de ces deux
+     examens, d'où deux entrées distinctes : chacune garde sa propre saisie,
+     et un patient vu sur les deux pages n'écrase pas l'une avec l'autre.
+     Ajoutées EN FIN de catalogue — l'identité d'un test est son index. */
+  'tb-cv-thor': {type:'ortho', opts:['Ok','Acceptable','Insuffisant'], items:[
+    'Extension thoracique <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Évalue le rachis THORACIQUE (T1–T12), et non le segment de cette page. Sujet assis ou en décubitus dorsal sur rouleau, extension segmentaire active. Ok : extension libre et segmentaire · Acceptable : limitée mais présente · Insuffisant : bloquée ou compensée en lombaire.</span>']},
+  'tb-rl-thor': {type:'ortho', opts:['Ok','Acceptable','Insuffisant'], items:[
+    'Extension thoracique <span style="font-size:.68rem;color:var(--text3);font-weight:400;display:block">Évalue le rachis THORACIQUE (T1–T12), et non le segment de cette page. Sujet assis ou en décubitus dorsal sur rouleau, extension segmentaire active. Ok : extension libre et segmentaire · Acceptable : limitée mais présente · Insuffisant : bloquée ou compensée en lombaire.</span>']},
 };
 
 const CRITERIA_REC = [
@@ -5097,8 +5108,8 @@ function updateBadges() {
   const sections = {
     'epaule': ['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho-mob','tb-ep-ortho-conf'],
     'rachis': ['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-transverse'],
-    'rachis-cerv': ['tb-cv-vascul','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-dn4-itw','tb-cv-dn4-exam','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-sensib-g','tb-cv-sensib-d'],
-    'rachis-lomb': ['tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-plet','tb-rl-laslett-1','tb-rl-laslett-2','tb-rl-laslett-3','tb-rl-instab','tb-rl-tfd-suite','tb-rl-tfa-suite','tb-rl-transverse'],
+    'rachis-cerv': ['tb-cv-thor','tb-cv-vascul','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-dn4-itw','tb-cv-dn4-exam','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-sensib-g','tb-cv-sensib-d'],
+    'rachis-lomb': ['tb-rl-thor','tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-plet','tb-rl-laslett-1','tb-rl-laslett-2','tb-rl-laslett-3','tb-rl-instab','tb-rl-tfd-suite','tb-rl-tfa-suite','tb-rl-transverse'],
     'hanche': ['tb-ha-neuro','tb-ha-laslett-1','tb-ha-laslett-2','tb-ha-laslett-3','tb-ha-fracture','tb-ha-agp-clock','tb-ha-agp-demem','tb-ha-agp-add','tb-ha-agp-pubis','tb-ha-agp-flech','tb-ha-agp-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-neuro-g','tb-ha-neuro-d','tb-ha-fracture-g','tb-ha-fracture-d','tb-ha-agp-g','tb-ha-agp-d','tb-ha-hanche-g','tb-ha-hanche-d'],
     'genou':  ['tb-ge-global','tb-ge-mob-flex','tb-ge-mob-ext','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-ext',
                'tb-ge-global-g','tb-ge-global-d','tb-ge-mob-flex-g','tb-ge-mob-flex-d','tb-ge-mob-ext-g','tb-ge-mob-ext-d','tb-ge-lig-g','tb-ge-lig-d','tb-ge-lca-g','tb-ge-lca-d',
@@ -5163,7 +5174,7 @@ function updateAll() {
 
   // Headers for each page
   const hdrTxt = [fullName, date ? formatDate(date) : null].filter(Boolean).join(' - ');
-  ['epaule','coude','main','rachis','rachis-cerv','rachis-thor','rachis-lomb','hanche','genou','pied','fonc-mi','fonc-ms','fonc-rachis','musc','force-ms','force-rachis','force-mi'].forEach(function(p){
+  ['epaule','coude','main','rachis','rachis-cerv','rachis-lomb','hanche','genou','pied','fonc-mi','fonc-ms','fonc-rachis','musc','force-ms','force-rachis','force-mi'].forEach(function(p){
     var el = document.getElementById('hdr-' + p);
     if(!el) return;
     var coteStr = getCoteForHdr(p);
@@ -5874,8 +5885,8 @@ function _buildAllTestsHtml() {
   // 2. Bilan ortho
   var orthoSections = [
     { label:'EPAULE', zones:['epaule','coude','poignet'], pk:'epaule', fields:[['ep-type','Type'],['ep-marqueur','Marqueur']], tables:['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho-mob','tb-ep-ortho-conf','tb-ep-irrit-g','tb-ep-irrit-d','tb-ep-trau-g','tb-ep-trau-d','tb-ep-fonc-g','tb-ep-fonc-d','tb-ep-ortho-g','tb-ep-ortho-d'], concl:'ep-conclusion', opt:'ep-opt' },
-    { label:'RACHIS CERVICAL', zones:['rachis-c','rachis-l'], pk:'', fields:[['cv-marqueur','Marqueur']], tables:['tb-cv-vascul','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-dn4-itw','tb-cv-dn4-exam','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-sensib-g','tb-cv-sensib-d'], concl:'cv-conclusion' },
-    { label:'RACHIS LOMBAIRE', zones:['rachis-c','rachis-l'], pk:'', fields:[['rl-marqueur','Marqueur']], tables:['tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-plet','tb-rl-laslett-1','tb-rl-laslett-2','tb-rl-laslett-3','tb-rl-instab','tb-rl-tfd-suite','tb-rl-tfa-suite','tb-rl-transverse'], concl:'rl-conclusion' },
+    { label:'RACHIS CERVICAL', zones:['rachis-c','rachis-l'], pk:'', fields:[['cv-marqueur','Marqueur']], tables:['tb-cv-thor','tb-cv-vascul','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-dn4-itw','tb-cv-dn4-exam','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-sensib-g','tb-cv-sensib-d'], concl:'cv-conclusion' },
+    { label:'RACHIS LOMBAIRE', zones:['rachis-c','rachis-l'], pk:'', fields:[['rl-marqueur','Marqueur']], tables:['tb-rl-thor','tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-plet','tb-rl-laslett-1','tb-rl-laslett-2','tb-rl-laslett-3','tb-rl-instab','tb-rl-tfd-suite','tb-rl-tfa-suite','tb-rl-transverse'], concl:'rl-conclusion' },
     { label:'RACHIS', zones:['rachis-c','rachis-l'], pk:'rachis', fields:[['ra-marqueur','Marqueur'],['ra-mckenzie','McKenzie']], tables:['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-transverse'], concl:'ra-conclusion', opt:'ra-opt' },
     { label:'HANCHE', zones:['hanche'], pk:'hanche', fields:[['ha-marqueur','Marqueur']], tables:['tb-ha-neuro','tb-ha-laslett-1','tb-ha-laslett-2','tb-ha-laslett-3','tb-ha-fracture','tb-ha-agp-clock','tb-ha-agp-demem','tb-ha-agp-add','tb-ha-agp-pubis','tb-ha-agp-flech','tb-ha-agp-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-neuro-g','tb-ha-neuro-d','tb-ha-fracture-g','tb-ha-fracture-d','tb-ha-agp-g','tb-ha-agp-d','tb-ha-hanche-g','tb-ha-hanche-d'], concl:'ha-conclusion', opt:'ha-opt' },
     { label:'GENOU', zones:['genou'], pk:'genou', fields:[['ge-marqueur','Marqueur']], tables:[

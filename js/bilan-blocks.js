@@ -368,6 +368,18 @@ var BILAN_BLOCKS = {
    "locked": false
   },
   {
+   "id": "rachis-cerv--thoracique",
+   "name": "Section thoracique",
+   "tests": [
+    {
+     "tbody": "tb-cv-thor",
+     "idx": 0
+    }
+   ],
+   "bilateral": false,
+   "locked": false
+  },
+  {
    "id": "rachis-cerv--conclusion",
    "name": "Conclusion",
    "tests": [],
@@ -457,6 +469,18 @@ var BILAN_BLOCKS = {
    "tests": [
     "tb-rl-tfd-suite",
     "tb-rl-tfa-suite"
+   ],
+   "bilateral": false,
+   "locked": false
+  },
+  {
+   "id": "rachis-lomb--thoracique",
+   "name": "Section thoracique",
+   "tests": [
+    {
+     "tbody": "tb-rl-thor",
+     "idx": 0
+    }
    ],
    "bilateral": false,
    "locked": false
