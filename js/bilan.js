@@ -5723,6 +5723,27 @@ function _crPrevMerged(){
   return _crPrevMergedCache;
 }
 
+/* Libelles de colonnes du CR pour une region donnee.
+   Aligne mot pour mot sur `_applyLabels`, qui habille le formulaire : un cote
+   atteint connu donne « Cote sain / Cote atteint », le bilateral donne
+   « Gauche / Droit » avec `-cs` a GAUCHE et `-ca` a DROITE.
+
+   Le CR ne traduit plus un cote atteint en gauche/droite. Il le faisait a
+   partir d'un champ GLOBAL alors que le formulaire resout la question par
+   region : sur un patient dont la fiche disait DROIT mais dont l'epaule
+   douloureuse etait la GAUCHE, le CR placait le cote atteint a droite. Le
+   document part chez le medecin — il ne peut pas se tromper de membre.
+
+   `videEstUnilateral` : la Hanche traite « aucune zone » comme un cas
+   unilateral, pas comme du bilateral. C'est sa regle dans _updateSideLabels,
+   on la reprend telle quelle plutot que d'en inventer une seconde. */
+function _crLabelsForCote(cote, videEstUnilateral) {
+  var bilateral = (cote !== 'DROIT' && cote !== 'GAUCHE');
+  if (videEstUnilateral && !cote) bilateral = false;
+  return bilateral ? { cs: 'Gauche', ca: 'Droit' }
+                   : { cs: 'Côté sain', ca: 'Côté atteint' };
+}
+
 function _buildAllTestsHtml() {
   var sections = [];
   function addSec(title, html) { if (html && html.trim()) sections.push({title: title, html: html}); }
@@ -5787,8 +5808,11 @@ function _buildAllTestsHtml() {
   };
   // Pour unilatéral : CA = côté douloureux, CS = côté sain
   // Pour bilatéral  : Gauche en premier (sens de lecture), Droit en second
-  var _labelCA = _cotePrimaire === 'DROIT' ? 'Droit' : _cotePrimaire === 'GAUCHE' ? 'Gauche' : 'Gauche';
-  var _labelCS = _cotePrimaire === 'DROIT' ? 'Gauche' : _cotePrimaire === 'GAUCHE' ? 'Droit' : 'Droit';
+  /* Valeurs de repli seulement : chaque region les reecrit depuis SA zone
+     douloureuse, et les blocs fonctionnels font de meme. Elles ne doivent plus
+     jamais etre derivees du champ global. */
+  var _labelCA = 'Côté atteint';
+  var _labelCS = 'Côté sain';
 
   var obsBlock = function(idCA, idCS) {
     var ca = (document.getElementById(idCA)||{}).value||'';
@@ -5829,8 +5853,10 @@ function _buildAllTestsHtml() {
       var gStr2=gEl2?(isNaN(gV2)?'—':gV2+'° '+romStatTag(gV2,ROM_CONFIG[r2.gId])):'';
       rowsHtml+='<tr style="border-top:1px solid var(--border)">'
         +'<td style="padding:3px 8px;font-size:.8rem;color:var(--text2)">'+r2.label+'</td>'
-        +'<td style="padding:3px 8px;font-size:.8rem;text-align:center">'+dStr2+'</td>'
+        /* Gauche d'abord, comme partout ailleurs dans le CR. Les valeurs
+           suivent l'en-tete : les dissocier inverserait les deux cotes. */
         +(twoSides?'<td style="padding:3px 8px;font-size:.8rem;text-align:center">'+gStr2+'</td>':'')
+        +'<td style="padding:3px 8px;font-size:.8rem;text-align:center">'+dStr2+'</td>'
         +'</tr>';
     }
     if(!anyVal) return '';
@@ -5840,25 +5866,25 @@ function _buildAllTestsHtml() {
       +'<thead><tr style="background:var(--surface2)">'
       +'<th style="padding:3px 8px;text-align:left;font-size:.72rem;color:var(--text3);font-weight:600">Mouvement</th>'
       +(twoSides
-        ?'<th style="padding:3px 8px;text-align:center;font-size:.72rem;color:var(--text3);font-weight:600">Droit</th>'
-         +'<th style="padding:3px 8px;text-align:center;font-size:.72rem;color:var(--text3);font-weight:600">Gauche</th>'
+        ?'<th style="padding:3px 8px;text-align:center;font-size:.72rem;color:var(--text3);font-weight:600">Gauche</th>'
+         +'<th style="padding:3px 8px;text-align:center;font-size:.72rem;color:var(--text3);font-weight:600">Droit</th>'
         :'<th style="padding:3px 8px;text-align:center;font-size:.72rem;color:var(--text3);font-weight:600">Valeur</th>')
       +'</tr></thead><tbody>'+rowsHtml+'</tbody></table></div>';
   }
   // 2. Bilan ortho
   var orthoSections = [
-    { label:'EPAULE', pk:'epaule', fields:[['ep-type','Type'],['ep-marqueur','Marqueur']], tables:['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho-mob','tb-ep-ortho-conf','tb-ep-irrit-g','tb-ep-irrit-d','tb-ep-trau-g','tb-ep-trau-d','tb-ep-fonc-g','tb-ep-fonc-d','tb-ep-ortho-g','tb-ep-ortho-d'], concl:'ep-conclusion', opt:'ep-opt' },
-    { label:'RACHIS CERVICAL', pk:'', fields:[['cv-marqueur','Marqueur']], tables:['tb-cv-vascul','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-dn4-itw','tb-cv-dn4-exam','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-sensib-g','tb-cv-sensib-d'], concl:'cv-conclusion' },
-    { label:'RACHIS LOMBAIRE', pk:'', fields:[['rl-marqueur','Marqueur']], tables:['tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-plet','tb-rl-laslett-1','tb-rl-laslett-2','tb-rl-laslett-3','tb-rl-instab','tb-rl-tfd-suite','tb-rl-tfa-suite','tb-rl-transverse'], concl:'rl-conclusion' },
-    { label:'RACHIS', pk:'rachis', fields:[['ra-marqueur','Marqueur'],['ra-mckenzie','McKenzie']], tables:['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-transverse'], concl:'ra-conclusion', opt:'ra-opt' },
-    { label:'HANCHE', pk:'hanche', fields:[['ha-marqueur','Marqueur']], tables:['tb-ha-neuro','tb-ha-laslett-1','tb-ha-laslett-2','tb-ha-laslett-3','tb-ha-fracture','tb-ha-agp-clock','tb-ha-agp-demem','tb-ha-agp-add','tb-ha-agp-pubis','tb-ha-agp-flech','tb-ha-agp-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-neuro-g','tb-ha-neuro-d','tb-ha-fracture-g','tb-ha-fracture-d','tb-ha-agp-g','tb-ha-agp-d','tb-ha-hanche-g','tb-ha-hanche-d'], concl:'ha-conclusion', opt:'ha-opt' },
-    { label:'GENOU', pk:'genou', fields:[['ge-marqueur','Marqueur']], tables:[
+    { label:'EPAULE', zones:['epaule','coude','poignet'], pk:'epaule', fields:[['ep-type','Type'],['ep-marqueur','Marqueur']], tables:['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho-mob','tb-ep-ortho-conf','tb-ep-irrit-g','tb-ep-irrit-d','tb-ep-trau-g','tb-ep-trau-d','tb-ep-fonc-g','tb-ep-fonc-d','tb-ep-ortho-g','tb-ep-ortho-d'], concl:'ep-conclusion', opt:'ep-opt' },
+    { label:'RACHIS CERVICAL', zones:['rachis-c','rachis-l'], pk:'', fields:[['cv-marqueur','Marqueur']], tables:['tb-cv-vascul','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-dn4-itw','tb-cv-dn4-exam','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-sensib-g','tb-cv-sensib-d'], concl:'cv-conclusion' },
+    { label:'RACHIS LOMBAIRE', zones:['rachis-c','rachis-l'], pk:'', fields:[['rl-marqueur','Marqueur']], tables:['tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-plet','tb-rl-laslett-1','tb-rl-laslett-2','tb-rl-laslett-3','tb-rl-instab','tb-rl-tfd-suite','tb-rl-tfa-suite','tb-rl-transverse'], concl:'rl-conclusion' },
+    { label:'RACHIS', zones:['rachis-c','rachis-l'], pk:'rachis', fields:[['ra-marqueur','Marqueur'],['ra-mckenzie','McKenzie']], tables:['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-transverse'], concl:'ra-conclusion', opt:'ra-opt' },
+    { label:'HANCHE', zones:['hanche'], pk:'hanche', fields:[['ha-marqueur','Marqueur']], tables:['tb-ha-neuro','tb-ha-laslett-1','tb-ha-laslett-2','tb-ha-laslett-3','tb-ha-fracture','tb-ha-agp-clock','tb-ha-agp-demem','tb-ha-agp-add','tb-ha-agp-pubis','tb-ha-agp-flech','tb-ha-agp-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-neuro-g','tb-ha-neuro-d','tb-ha-fracture-g','tb-ha-fracture-d','tb-ha-agp-g','tb-ha-agp-d','tb-ha-hanche-g','tb-ha-hanche-d'], concl:'ha-conclusion', opt:'ha-opt' },
+    { label:'GENOU', zones:['genou'], pk:'genou', fields:[['ge-marqueur','Marqueur']], tables:[
         'tb-ge-global','tb-ge-mob-flex','tb-ge-mob-ext','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-ext',
         'tb-ge-global-g','tb-ge-global-d','tb-ge-mob-flex-g','tb-ge-mob-flex-d','tb-ge-mob-ext-g','tb-ge-mob-ext-d','tb-ge-lig-g','tb-ge-lig-d','tb-ge-lca-g','tb-ge-lca-d',
         'tb-ge-men-g','tb-ge-men-d','tb-ge-rot-g','tb-ge-rot-d','tb-ge-sbit-g','tb-ge-sbit-d',
         'tb-ge-plicae-g','tb-ge-plicae-d','tb-ge-ext-g','tb-ge-ext-d',
         ], concl:'ge-conclusion', opt:'ge-opt' },
-    { label:'PIED / CHEVILLE', pk:'pied', fields:[['pi-marqueur','Marqueur']], tables:[
+    { label:'PIED / CHEVILLE', zones:['cheville','pied'], pk:'pied', fields:[['pi-marqueur','Marqueur']], tables:[
         'tb-pi-ottawa','tb-pi-global','tb-pi-tt','tb-pi-synd','tb-pi-conf','tb-pi-st','tb-pi-chopart',
         'tb-pi-ottawa-g','tb-pi-ottawa-d','tb-pi-global-g','tb-pi-global-d','tb-pi-amp-g','tb-pi-amp-d','tb-pi-tt-g','tb-pi-tt-d','tb-pi-synd-g','tb-pi-synd-d','tb-pi-conf-g','tb-pi-conf-d','tb-pi-st-g','tb-pi-st-d','tb-pi-chopart-g','tb-pi-chopart-d',
         'tb-pi-tc-g','tb-pi-tc-d'], concl:'pi-conclusion', opt:'pi-opt' },
@@ -5866,6 +5892,11 @@ function _buildAllTestsHtml() {
   var orthoHtml = '';
   for (var oi=0; oi<orthoSections.length; oi++) {
     var sec = orthoSections[oi];
+    /* Chaque region resout SON cote : c'est la divergence entre le champ
+       global et la zone douloureuse de la region qui faisait nommer le
+       mauvais membre. */
+    var _secLbl = _crLabelsForCote(_getCoteForScope(sec.zones || []), sec.label === 'HANCHE');
+    _labelCS = _secLbl.cs; _labelCA = _secLbl.ca;
     var secRows = '';
     for (var fi=0; fi<sec.fields.length; fi++) {
       var fEl = document.getElementById(sec.fields[fi][0]);
@@ -6441,8 +6472,8 @@ function _buildAllTestsHtml() {
   var _savedLsiStr = lsiStr, _savedLsiCls2 = lsiCls2, _savedStatOf2 = statOf2;
   var _miScope = _getCoteForScope(_MI_ZONES);
   var _isBilatMI = (_miScope !== 'DROIT' && _miScope !== 'GAUCHE');
-  _labelCA = _isBilatMI ? 'Droit' : (_miScope === 'DROIT' ? 'Droit' : 'Gauche');
-  _labelCS = _isBilatMI ? 'Gauche' : (_miScope === 'DROIT' ? 'Gauche' : 'Droit');
+  var _lblMI = _crLabelsForCote(_miScope);
+  _labelCA = _lblMI.ca; _labelCS = _lblMI.cs;
 
   /* ── Mesures d'une ligne de CR, en mini-tableau ────────────────────────────
      Une ligne par mesure, une colonne par cote, l'asymetrie en derniere
@@ -6733,6 +6764,10 @@ function _buildAllTestsHtml() {
   lsiStr = _savedLsiStr; lsiCls2 = _savedLsiCls2; statOf2 = _savedStatOf2;
 
   // 4. Tests MS
+  /* Meme scope que page-fonctionnelsMS dans _updateSideLabels : ces tests
+     lisaient jusqu'ici les libelles restaures du champ global. */
+  var _lblMS = _crLabelsForCote(_getCoteForScope(['epaule','coude','poignet']));
+  _labelCS = _lblMS.cs; _labelCA = _lblMS.ca;
   var tfMsHtml = '';
   var psetCAv = parseFloat((document.getElementById('pset-ca')||{}).value||'');
   var psetCSv = parseFloat((document.getElementById('pset-cs')||{}).value||'');
@@ -6785,6 +6820,8 @@ function _buildAllTestsHtml() {
   addSec('4. Tests Fonctionnels - Membres Superieurs', tfMsHtml);
 
   // 5. Tests Fonctionnels Rachis
+  var _lblRa = _crLabelsForCote(_getCoteForScope(['rachis-c','rachis-l']));
+  _labelCS = _lblRa.cs; _labelCA = _lblRa.ca;
   var tfRachisHtml = '';
   var obsSingle = function(id) {
     var v = (document.getElementById(id)||{}).value||'';

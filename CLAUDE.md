@@ -383,6 +383,42 @@ Deux pièges à connaître avant de toucher à ces fonctions :
 - **Le seuil s'énonce dans l'unité affichée.** Un statut « ≥ 90 % » sous une
   colonne d'asymétrie est faux : il devient « ≤ 10 % ».
 
+## Quel côté le CR nomme — une résolution par région
+
+```bash
+node qualite/cr-cotes-cas.js
+```
+
+Le formulaire résout le côté atteint **par région** : les colonnes de la page
+Épaule lisent la zone douloureuse `epaule`, celles du Genou la zone `genou`
+(`_updateSideLabels` → `_applyLabels`). Le CR, lui, lisait le champ **global**
+`f-cote` et le traduisait en « Gauche »/« Droit ».
+
+Or `f-cote` ne reflète que la **première zone douloureuse saisie** — c'est
+écrit noir sur blanc dans `_ctIsBilat`, qui avait déjà été corrigé pour cette
+raison. Sur un patient « genou droit + épaule gauche », `f-cote` vaut DROIT :
+le CR plaçait donc le côté atteint de l'ÉPAULE à droite. Le formulaire
+affichait « Sain 78 / Atteint 55 », le CR écrivait « Gauche 78 | Droit 55 ».
+**Un compte-rendu envoyé au médecin désignait le mauvais membre.**
+
+La règle retenue : **le CR ne traduit plus**. `_crLabelsForCote(cote)` rend
+« Côté sain / Côté atteint » dès qu'un côté atteint est connu, et
+« Gauche / Droit » sinon — exactement ce qu'affiche le formulaire. Pas de
+traduction, donc pas de traduction fausse.
+
+Chaque entrée de `orthoSections` porte ses `zones:`, et les blocs fonctionnels
+MS et Rachis résolvent le leur. Le membre inférieur le faisait déjà — il était
+le seul, et c'est ce qui masquait le défaut.
+
+Second piège refermé au passage : en bilatéral, `_applyLabels` nomme l'entrée
+`-cs` **« Gauche »** et `-ca` **« Droit »**. Le CR faisait l'inverse. Deux
+conventions contradictoires dans le même fichier, donc des côtés inversés sur
+tout patient bilatéral.
+
+`romCrTable` (amplitudes) construit ses propres colonnes sans passer par
+`_crMesTab` : elle affichait « Droit » avant « Gauche ». En-têtes et valeurs
+ont été échangés **ensemble** — les dissocier inverserait les deux côtés.
+
 ## Effondrement 2 → 1 appui — le mot disait l'inverse du chiffre
 
 `fmtRatio()` affichait le pourcentage **conservé** sous un intitulé qui
