@@ -555,16 +555,6 @@ const TESTS = {
   'tb-lma-adduct': {type:'ortho',items:['Étirement actif','Étirement passif','Contraction isométrique course interne','Contraction isométrique course externe','Contraction excentrique','Palpation']},
   'tb-lma-mollet': {type:'ortho',items:['Étirement actif','Étirement passif','Contraction isométrique course interne','Contraction isométrique course externe','Contraction excentrique','Palpation']},
 
-  /* ── Section thoracique — évaluée depuis les pages cervicale et lombaire ──
-     L'onglet Rachis Thoracique n'existe plus (il était vide). L'extension
-     thoracique se juge en pratique depuis l'un ou l'autre de ces deux
-     examens, d'où deux entrées distinctes : chacune garde sa propre saisie,
-     et un patient vu sur les deux pages n'écrase pas l'une avec l'autre.
-     Ajoutées EN FIN de catalogue — l'identité d'un test est son index. */
-  'tb-cv-thor': {type:'ortho', opts:['Ok','Acceptable','Insuffisant'], items:[
-    'Extension thoracique']},
-  'tb-rl-thor': {type:'ortho', opts:['Ok','Acceptable','Insuffisant'], items:[
-    'Extension thoracique']},
 };
 
 const CRITERIA_REC = [
@@ -650,15 +640,6 @@ function _mobStatusChange(sel) {
   if (sel.value) sel.classList.add('st-' + sel.value);
 }
 
-/* Echelle qualitative Ok / Acceptable / Insuffisant des tests de catalogue.
-   Elle reprend la pastille coloree de la grille de mobilite — memes classes
-   `st-*`, donc memes couleurs. Extrait ici parce que TROIS chemins
-   restaurent les couleurs d'un select (brouillon, bilan charge, changement
-   en direct) : une regle recopiee trois fois finit par diverger. */
-function _amplStatusClass(v) {
-  return (v === 'Ok' || v === 'Acceptable' || v === 'Insuffisant')
-    ? 'st-' + v.toLowerCase() : '';
-}
 
 function updateRomBar(el) {
   var id = el.id;
@@ -752,6 +733,8 @@ function init() {
     'thor-Incl__G':    'Ex\u00a0: sym\u00e9trique D=G\u2026',
     'thor-Rot__D':     'Ex\u00a0: \u00e9paule\u2011mur 3\u00a0cm\u2026',
     'thor-Rot__G':     'Ex\u00a0: \u00e9paule\u2011mur 3\u00a0cm\u2026',
+    'cvthor-Extension_thoracique': 'Ex\u00a0: sternum\u2011table 20\u00a0cm\u2026',
+    'rlthor-Extension_thoracique': 'Ex\u00a0: sternum\u2011table 20\u00a0cm\u2026',
     'lomb-Flexion':       'Ex\u00a0: DDS 5\u00a0cm, Schober 14\u00a0cm\u2026',
     'lomb-Extension':     'Ex\u00a0: Schober extension 8\u00a0cm\u2026',
     'lomb-Incl__D':       'Ex\u00a0: majeur\u2011sol 23\u00a0cm\u2026',
@@ -770,11 +753,19 @@ function init() {
     'rl-Glissement_G':  'Ex\u00a0: shift lat\u00e9ral gauche spontan\u00e9, correction active\u2026',
   };
   var LOMB_EXTRA_MOB = ['Glissement D', 'Glissement G'];
-  ['cerv','cv','thor','lomb','rl'].forEach(function(seg) {
+  /* `cvthor` et `rlthor` : le bloc « Mobilité Thoracique » pose sur la page
+     cervicale et sur la page lombaire. Un seul mouvement y est evalue, mais
+     c'est le MEME composant que les autres grilles — meme pastille, meme
+     champ de marqueur, meme mecanique d'enregistrement (les champs sont
+     serialises par id). Deux segments distincts et non un seul partage : un
+     patient vu sur les deux pages garde deux saisies independantes. */
+  var MOB_UNE_DIRECTION = { cvthor: ['Extension thoracique'], rlthor: ['Extension thoracique'] };
+  ['cerv','cv','thor','lomb','rl','cvthor','rlthor'].forEach(function(seg) {
     var grid = document.getElementById('mob-' + seg);
     if (!grid) return;
     grid.className = ''; // retire mobility-grid (grille 6 colonnes)
-    var items = (seg === 'lomb' || seg === 'rl') ? MOB.concat(LOMB_EXTRA_MOB) : MOB;
+    var items = MOB_UNE_DIRECTION[seg]
+      || ((seg === 'lomb' || seg === 'rl') ? MOB.concat(LOMB_EXTRA_MOB) : MOB);
     grid.innerHTML = items.map(function(m) {
       var mKey = 'mob-' + seg + '-' + m.replace(/[\s.\/]+/g, '_');
       var phKey = seg + '-' + m.replace(/[\s.\/]+/g, '_');
@@ -3806,7 +3797,6 @@ function _deserializeBilan(data){
       // Options personnalisées : mobilités (Normal/Réduit/Récurvatum) et DN4 (Oui/Non)
       else if(v==='Réduit'||v==='Récurvatum'||v==='Oui') el.classList.add('positif-ortho');
       else if(v==='Normal'||v==='Non') el.classList.add('negatif-ortho');
-      var _amp = _amplStatusClass(v); if (_amp) el.classList.add(_amp);
     }
     // Restaurer les selects appréciation épaule (ep-apr-sel)
     if(el.tagName==='SELECT' && el.classList.contains('ep-apr-sel')){
@@ -5101,7 +5091,6 @@ function onTestChange(sel, tableId, idx) {
   // Options personnalisées : mobilités (Normal/Réduit/Récurvatum) et DN4 (Oui/Non)
   else if (v === 'Réduit' || v === 'Récurvatum' || v === 'Oui') sel.classList.add('positif-ortho');
   else if (v === 'Normal' || v === 'Non') sel.classList.add('negatif-ortho');
-  var _amp = _amplStatusClass(v); if (_amp) sel.classList.add(_amp);
   if (!_suppressDirty) {
     var wainnerTables = {'tb-cv-ulnt-g':1,'tb-cv-ulnt-d':1,'tb-cv-mecanique':1};
     if (wainnerTables[tableId]) _calcWainnerCerv();
@@ -5120,8 +5109,8 @@ function updateBadges() {
   const sections = {
     'epaule': ['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho-mob','tb-ep-ortho-conf'],
     'rachis': ['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-transverse'],
-    'rachis-cerv': ['tb-cv-thor','tb-cv-vascul','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-dn4-itw','tb-cv-dn4-exam','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-sensib-g','tb-cv-sensib-d'],
-    'rachis-lomb': ['tb-rl-thor','tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-plet','tb-rl-laslett-1','tb-rl-laslett-2','tb-rl-laslett-3','tb-rl-instab','tb-rl-tfd-suite','tb-rl-tfa-suite','tb-rl-transverse'],
+    'rachis-cerv': ['tb-cv-vascul','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-dn4-itw','tb-cv-dn4-exam','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-sensib-g','tb-cv-sensib-d'],
+    'rachis-lomb': ['tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-plet','tb-rl-laslett-1','tb-rl-laslett-2','tb-rl-laslett-3','tb-rl-instab','tb-rl-tfd-suite','tb-rl-tfa-suite','tb-rl-transverse'],
     'hanche': ['tb-ha-neuro','tb-ha-laslett-1','tb-ha-laslett-2','tb-ha-laslett-3','tb-ha-fracture','tb-ha-agp-clock','tb-ha-agp-demem','tb-ha-agp-add','tb-ha-agp-pubis','tb-ha-agp-flech','tb-ha-agp-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-neuro-g','tb-ha-neuro-d','tb-ha-fracture-g','tb-ha-fracture-d','tb-ha-agp-g','tb-ha-agp-d','tb-ha-hanche-g','tb-ha-hanche-d'],
     'genou':  ['tb-ge-global','tb-ge-mob-flex','tb-ge-mob-ext','tb-ge-lig','tb-ge-lca','tb-ge-men','tb-ge-rot','tb-ge-sbit','tb-ge-plicae','tb-ge-ext',
                'tb-ge-global-g','tb-ge-global-d','tb-ge-mob-flex-g','tb-ge-mob-flex-d','tb-ge-mob-ext-g','tb-ge-mob-ext-d','tb-ge-lig-g','tb-ge-lig-d','tb-ge-lca-g','tb-ge-lca-d',
@@ -5894,11 +5883,50 @@ function _buildAllTestsHtml() {
         :'<th style="padding:3px 8px;text-align:center;font-size:.72rem;color:var(--text3);font-weight:600">Valeur</th>')
       +'</tr></thead><tbody>'+rowsHtml+'</tbody></table></div>';
   }
+
+  /* Rend une grille de mobilite en tableau de CR. Extraite parce que le bloc
+     « Mobilite Thoracique » vit sur DEUX autres pages (cervicale et lombaire)
+     et devait sinon recopier trente lignes de balisage.
+
+     A savoir : les grilles `cv` et `rl` — les mobilites propres aux pages
+     Rachis Cervical et Rachis Lombaire — ne sont toujours PAS rendues ici.
+     C'est un manque anterieur, laisse en l'etat volontairement : les faire
+     apparaitre changerait le contenu de tous les CR deja etablis. */
+  function _crMobTable(titre, seg, items) {
+    var stLbl = { ok:'OK', acceptable:'Acceptable', insuffisant:'Insuffisant' };
+    var stCls = { ok:'ok', acceptable:'warn', insuffisant:'bad' };
+    var mobItems = items || (seg === 'lomb' ? MOB.concat(['Glissement D', 'Glissement G']) : MOB);
+    var rows = '';
+    mobItems.forEach(function(m) {
+      var mKey = 'mob-' + seg + '-' + m.replace(/[\s.\/]+/g, '_');
+      var stEl = document.getElementById(mKey + '-st');
+      var ntEl = document.getElementById(mKey + '-nt');
+      var stVal = stEl ? stEl.value : '';
+      var ntVal = ntEl ? ntEl.value.trim() : '';
+      if (!stVal && !ntVal) return;
+      var stTag = stVal ? ('<span class="cr-tag '+stCls[stVal]+'">'+stLbl[stVal]+'</span>') : '';
+      rows += '<tr style="border-top:1px solid var(--border)">'
+        + '<td style="padding:3px 8px;font-size:.8rem;color:var(--text2)">'+m+'</td>'
+        + '<td style="padding:3px 8px;font-size:.8rem;text-align:center">'+stTag+'</td>'
+        + '<td style="padding:3px 8px;font-size:.78rem;color:var(--text2);font-style:italic">'+nl2br(ntVal)+'</td>'
+        + '</tr>';
+    });
+    if (!rows) return '';
+    return '<div style="margin:4px 0 10px">'
+      + '<div style="font-size:.77rem;font-weight:600;color:var(--text2);margin-bottom:3px">'+titre+'</div>'
+      + '<table style="width:100%;border-collapse:collapse">'
+      + '<thead><tr style="background:var(--surface2)">'
+      + '<th style="padding:3px 8px;text-align:left;font-size:.72rem;color:var(--text3);font-weight:600">Mouvement</th>'
+      + '<th style="padding:3px 8px;text-align:center;font-size:.72rem;color:var(--text3);font-weight:600">Statut</th>'
+      + '<th style="padding:3px 8px;text-align:left;font-size:.72rem;color:var(--text3);font-weight:600">Marqueur</th>'
+      + '</tr></thead><tbody>'+rows+'</tbody></table></div>';
+  }
+
   // 2. Bilan ortho
   var orthoSections = [
     { label:'EPAULE', zones:['epaule','coude','poignet'], pk:'epaule', fields:[['ep-type','Type'],['ep-marqueur','Marqueur']], tables:['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho-mob','tb-ep-ortho-conf','tb-ep-irrit-g','tb-ep-irrit-d','tb-ep-trau-g','tb-ep-trau-d','tb-ep-fonc-g','tb-ep-fonc-d','tb-ep-ortho-g','tb-ep-ortho-d'], concl:'ep-conclusion', opt:'ep-opt' },
-    { label:'RACHIS CERVICAL', zones:['rachis-c','rachis-l'], pk:'', fields:[['cv-marqueur','Marqueur']], tables:['tb-cv-thor','tb-cv-vascul','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-dn4-itw','tb-cv-dn4-exam','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-sensib-g','tb-cv-sensib-d'], concl:'cv-conclusion' },
-    { label:'RACHIS LOMBAIRE', zones:['rachis-c','rachis-l'], pk:'', fields:[['rl-marqueur','Marqueur']], tables:['tb-rl-thor','tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-plet','tb-rl-laslett-1','tb-rl-laslett-2','tb-rl-laslett-3','tb-rl-instab','tb-rl-tfd-suite','tb-rl-tfa-suite','tb-rl-transverse'], concl:'rl-conclusion' },
+    { label:'RACHIS CERVICAL', zones:['rachis-c','rachis-l'], pk:'', fields:[['cv-marqueur','Marqueur']], tables:['tb-cv-vascul','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-dn4-itw','tb-cv-dn4-exam','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-sensib-g','tb-cv-sensib-d'], concl:'cv-conclusion' },
+    { label:'RACHIS LOMBAIRE', zones:['rachis-c','rachis-l'], pk:'', fields:[['rl-marqueur','Marqueur']], tables:['tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-plet','tb-rl-laslett-1','tb-rl-laslett-2','tb-rl-laslett-3','tb-rl-instab','tb-rl-tfd-suite','tb-rl-tfa-suite','tb-rl-transverse'], concl:'rl-conclusion' },
     { label:'RACHIS', zones:['rachis-c','rachis-l'], pk:'rachis', fields:[['ra-marqueur','Marqueur'],['ra-mckenzie','McKenzie']], tables:['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-transverse'], concl:'ra-conclusion', opt:'ra-opt' },
     { label:'HANCHE', zones:['hanche'], pk:'hanche', fields:[['ha-marqueur','Marqueur']], tables:['tb-ha-neuro','tb-ha-laslett-1','tb-ha-laslett-2','tb-ha-laslett-3','tb-ha-fracture','tb-ha-agp-clock','tb-ha-agp-demem','tb-ha-agp-add','tb-ha-agp-pubis','tb-ha-agp-flech','tb-ha-agp-inguinal','tb-ha-hanche','tb-ha-fonc','tb-ha-neuro-g','tb-ha-neuro-d','tb-ha-fracture-g','tb-ha-fracture-d','tb-ha-agp-g','tb-ha-agp-d','tb-ha-hanche-g','tb-ha-hanche-d'], concl:'ha-conclusion', opt:'ha-opt' },
     { label:'GENOU', zones:['genou'], pk:'genou', fields:[['ge-marqueur','Marqueur']], tables:[
@@ -6161,42 +6189,9 @@ function _buildAllTestsHtml() {
     }
     if (sec.label === 'RACHIS') {
       // Mobilité rachis — statut qualitatif
-      var mobSegments = [
-        { title:'Mobilité Cervicale', seg:'cerv' },
-        { title:'Mobilité Thoracique', seg:'thor' },
-        { title:'Mobilité Lombaire',   seg:'lomb' },
-      ];
-      var stLblMap = { ok:'OK', acceptable:'Acceptable', insuffisant:'Insuffisant' };
-      var stClsMap = { ok:'ok', acceptable:'warn', insuffisant:'bad' };
-      mobSegments.forEach(function(ms) {
-        var anyMob = false, mobRows = '';
-        var mobItems = ms.seg === 'lomb' ? MOB.concat(['Glissement D', 'Glissement G']) : MOB;
-        mobItems.forEach(function(m) {
-          var mKey = 'mob-' + ms.seg + '-' + m.replace(/[\s.\/]+/g, '_');
-          var stEl = document.getElementById(mKey + '-st');
-          var ntEl = document.getElementById(mKey + '-nt');
-          var stVal = stEl ? stEl.value : '';
-          var ntVal = ntEl ? ntEl.value.trim() : '';
-          if (!stVal && !ntVal) return;
-          anyMob = true;
-          var stTag = stVal ? ('<span class="cr-tag '+stClsMap[stVal]+'">'+stLblMap[stVal]+'</span>') : '';
-          mobRows += '<tr style="border-top:1px solid var(--border)">'
-            + '<td style="padding:3px 8px;font-size:.8rem;color:var(--text2)">'+m+'</td>'
-            + '<td style="padding:3px 8px;font-size:.8rem;text-align:center">'+stTag+'</td>'
-            + '<td style="padding:3px 8px;font-size:.78rem;color:var(--text2);font-style:italic">'+nl2br(ntVal)+'</td>'
-            + '</tr>';
-        });
-        if (anyMob) {
-          secRows += '<div style="margin:4px 0 10px">'
-            + '<div style="font-size:.77rem;font-weight:600;color:var(--text2);margin-bottom:3px">'+ms.title+'</div>'
-            + '<table style="width:100%;border-collapse:collapse">'
-            + '<thead><tr style="background:var(--surface2)">'
-            + '<th style="padding:3px 8px;text-align:left;font-size:.72rem;color:var(--text3);font-weight:600">Mouvement</th>'
-            + '<th style="padding:3px 8px;text-align:center;font-size:.72rem;color:var(--text3);font-weight:600">Statut</th>'
-            + '<th style="padding:3px 8px;text-align:left;font-size:.72rem;color:var(--text3);font-weight:600">Marqueur</th>'
-            + '</tr></thead><tbody>'+mobRows+'</tbody></table></div>';
-        }
-      });
+      secRows += _crMobTable('Mobilité Cervicale',  'cerv');
+      secRows += _crMobTable('Mobilité Thoracique', 'thor');
+      secRows += _crMobTable('Mobilité Lombaire',   'lomb');
       // Force cervicale + lombaire (valeurs brutes)
       var raRawTests = [
         {key:'ra-fc-ext',  label:'Extension cervicale (force)'},
@@ -6237,6 +6232,12 @@ function _buildAllTestsHtml() {
         }
       })();
       secRows += crGroup('Force musculaire', raForceRows);
+    }
+    if (sec.label === 'RACHIS CERVICAL') {
+      secRows += _crMobTable('Mobilité Thoracique', 'cvthor', ['Extension thoracique']);
+    }
+    if (sec.label === 'RACHIS LOMBAIRE') {
+      secRows += _crMobTable('Mobilité Thoracique', 'rlthor', ['Extension thoracique']);
     }
     if (sec.label === 'RACHIS LOMBAIRE') {
       var rlMobItems = MOB.concat(['Glissement D', 'Glissement G']);
@@ -7658,7 +7659,6 @@ function loadFromStorage() {
         const type = el.dataset.type;
         if (v === 'Positif') el.classList.add(type === 'fonc' ? 'positif-fonc' : 'positif-ortho');
         else if (v === 'Négatif') el.classList.add(type === 'fonc' ? 'negatif-fonc' : 'negatif-ortho');
-        var _amp = _amplStatusClass(v); if (_amp) el.classList.add(_amp);
       }
       // Restore mob status colors
       if (el.classList.contains('mob-status-sel') && el.value) _mobStatusChange(el);

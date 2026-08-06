@@ -368,14 +368,9 @@ var BILAN_BLOCKS = {
    "locked": false
   },
   {
-   "id": "rachis-cerv--thoracique",
-   "name": "Section thoracique",
-   "tests": [
-    {
-     "tbody": "tb-cv-thor",
-     "idx": 0
-    }
-   ],
+   "id": "rachis-cerv--mobilite-thoracique",
+   "name": "Mobilité Thoracique",
+   "tests": [],
    "bilateral": false,
    "locked": false
   },
@@ -474,14 +469,9 @@ var BILAN_BLOCKS = {
    "locked": false
   },
   {
-   "id": "rachis-lomb--thoracique",
-   "name": "Section thoracique",
-   "tests": [
-    {
-     "tbody": "tb-rl-thor",
-     "idx": 0
-    }
-   ],
+   "id": "rachis-lomb--mobilite-thoracique",
+   "name": "Mobilité Thoracique",
+   "tests": [],
    "bilateral": false,
    "locked": false
   },
