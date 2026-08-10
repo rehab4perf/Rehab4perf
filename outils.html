@@ -355,13 +355,19 @@ body {
   transition: border-color .15s, color .15s;
 }
 .cr-btn-copy:hover { border-color: var(--accent); color: var(--accent); }
+/* Seule action d'import de la barre : elle se distingue des boutons neutres
+   qui l'entourent (Copier, Reinit., Exporter). Dimensions alignees sur eux —
+   c'est la couleur qui la designe, pas la taille. */
 .cr-btn-import {
-  padding: 6px 13px; border: 1px solid var(--border2);
-  background: var(--surface2); border-radius: var(--radius-sm);
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 6px 13px; border: 1px solid var(--accent);
+  background: var(--accent-l); border-radius: var(--radius-sm);
   font-size: .78rem; font-weight: 600; font-family: inherit;
-  color: var(--text2); cursor: pointer; transition: all .15s;
+  color: var(--accent); cursor: pointer; white-space: nowrap;
+  transition: background .15s, color .15s;
 }
-.cr-btn-import:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-l); }
+.cr-btn-import:hover { background: var(--accent); color: #fff; }
+.cr-btn-import svg { flex-shrink: 0; }
 .cr-preview-scroll {
   flex: 1; overflow-y: auto; padding: 24px 20px;
   scrollbar-width: thin; scrollbar-color: var(--border2) transparent;
@@ -918,16 +924,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 .presc-field textarea { resize: vertical; min-height: 60px; }
 .presc-field select { cursor: pointer; }
 .presc-field input[type=date] { cursor: pointer; min-width: 0; max-width: 100%; }
-.presc-patient-import { margin-bottom: 12px; }
-.presc-import-btn {
-  display: inline-flex; align-items: center; gap: 7px;
-  background: var(--accent-l); color: var(--accent); border: 1px solid var(--accent);
-  border-radius: 7px; padding: 7px 13px; font-size: .82rem; font-weight: 600;
-  font-family: inherit; cursor: pointer; transition: background .15s, color .15s;
-}
-.presc-import-btn:hover { background: var(--accent); color: #fff; }
-.presc-import-nom { font-weight: 700; opacity: .85; }
-.presc-import-nom:not(:empty)::before { content: '— '; font-weight: 400; opacity: .6; }
 .presc-print-btn {
   display: flex;
   align-items: center;
@@ -1032,12 +1028,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
     <div class="presc-card">
       <div class="presc-card-header">📋 Informations de la prescription</div>
       <div class="presc-card-body">
-        <div class="presc-patient-import" id="presc-patient-import" style="display:none">
-          <button type="button" class="presc-import-btn" onclick="_prescImportPatient()">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            Associer les infos patient <span class="presc-import-nom" id="presc-patient-nom"></span>
-          </button>
-        </div>
         <div class="presc-field-row">
           <div class="presc-field" style="flex:0 0 90px">
             <label>Civilité</label>
@@ -1388,7 +1378,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
     <main class="cr-right">
       <div class="cr-preview-bar">
         <span class="cr-preview-label">Prévisualisation</span>
-        <button class="cr-btn-import" onclick="crImportPatient()" title="Associer les infos du bilan et du dossier patient">⬇ Associer les infos patient</button>
+        <button class="cr-btn-import" onclick="crImportPatient()" title="Associer les infos du bilan et du dossier patient"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Associer les infos patient</button>
         <button class="cr-btn-copy" onclick="crCopyLetter()" title="Copier le texte">⎘ Copier</button>
         <button class="cr-btn-copy" onclick="crReset()" title="Réinitialiser le formulaire" style="border-color:#C0392B;color:#C0392B;">↺ Réinit.</button>
         <button class="cr-btn-copy" onclick="crExportPDF()" title="Exporter en PDF / Imprimer" style="border-color:var(--accent2);color:var(--accent2);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px"><polyline points="6,9 6,2 18,2 18,9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/><circle cx="18" cy="11.5" r="1" fill="currentColor"/></svg>PDF</button>
@@ -1567,26 +1557,6 @@ function _prescLirePatient() {
   return _prescPatient;
 }
 
-/* Le bouton « Reprendre » ne s'affiche que s'il y a quelqu'un a reprendre, et
-   il porte le nom : on sait ce qu'on va importer avant de cliquer. */
-function _prescMajBoutonPatient() {
-  var box = document.getElementById('presc-patient-import');
-  var lbl = document.getElementById('presc-patient-nom');
-  if (!box || !lbl) return;
-  var p = _prescLirePatient();
-  var nom = p ? [(p.prenom||''), (p.nom||'')].filter(Boolean).join(' ').trim() : '';
-  if (!nom) { box.style.display = 'none'; return; }
-  lbl.textContent = nom;
-  box.style.display = '';
-}
-
-/* Geste explicite : on remplace, meme ce qui a ete saisi. C'est tout l'objet
-   du bouton — sinon il ne servirait a rien apres une premiere saisie. */
-function _prescImportPatient() {
-  if (!_prescLirePatient()) { alert('Aucun patient sélectionné.'); return; }
-  _prescFillFromPatient(true);
-}
-
 /* `force` : une nouvelle selection de patient ecrase ce qui etait saisi (c'est
    un geste explicite, on change de personne). A la simple ouverture de
    l'onglet on ne remplit que les champs vides, pour ne pas effacer une saisie
@@ -1616,7 +1586,6 @@ function _prescRefresh() {
   _updatePrescHeader(prof);
   _updatePrescAssets(prof);
   _prescFillFromPatient(false);
-  _prescMajBoutonPatient();
 }
 
 function updatePrescDoc() {
@@ -4146,7 +4115,7 @@ function showTab(id) {
      vide, et il ne dependait plus que d'un message postMessage arrivant a
      temps pour se remplir. S'il se perd, le praticien voit une ordonnance
      sans son nom ni son cabinet — sans rien pour le lui dire. */
-  if (id === 'prescriptions') { try { _prescRefresh(); } catch(e){} }
+  if (id === 'prescriptions') { try { _prescRefresh(); } catch(e){ console.error('_prescRefresh:', e); } }
   document.querySelectorAll('.sub-tab').forEach(function(t){ t.classList.remove('active'); });
   document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
   var activeBtn = document.getElementById('stab-' + id);
@@ -4668,7 +4637,7 @@ window.addEventListener('message', function(e){
   }
   if(e.data && e.data.type==='r4p-patient-selected'){
     _prescPatient = e.data.patient || null;
-    try { _prescFillFromPatient(true); _prescMajBoutonPatient(); } catch(ex){}
+    try { _prescFillFromPatient(true); } catch(ex){ console.error('_prescFillFromPatient:', ex); }
     _crPatientId = e.data.patient ? e.data.patient.id : null;
     _crPevoContentHTML = null;
     _crPevoCards = [];
