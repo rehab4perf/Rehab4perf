@@ -2147,11 +2147,40 @@ function applyMethode(id){
 
 function setActiveBloc(id){
   activeBloc = id;
-  // Highlight active bloc header
   document.querySelectorAll('.bloc-header').forEach(function(h){
-    h.style.opacity = h.dataset.blocid===id ? '1' : '.72';
+    var estLui = h.dataset.blocid === id;
+    h.style.opacity = estLui ? '1' : '.72';
+    /* La classe portait le fond teinte mais n'etait posee qu'au rendu : le
+       bloc precedemment actif gardait sa couleur jusqu'au prochain
+       renderSession, et deux blocs paraissaient actifs a la fois. */
+    h.classList.toggle('actif', estLui);
   });
+  /* Le selecteur « Ajouter au bloc » l'emporte sur activeBloc dans
+     addExoFromLib. Deux designations concurrentes du meme choix — l'une
+     visible, l'autre non — et c'est la visible qui gagne : cliquer un bloc
+     n'aurait rien change tant que ce menu pointait ailleurs. On les tient
+     donc alignes : un seul choix, montre a deux endroits. */
+  var sel = document.getElementById('target-bloc-select');
+  if (sel && sel.value !== id) {
+    var existe = Array.prototype.some.call(sel.options, function(o){ return o.value === id; });
+    if (existe) sel.value = id;
+  }
 }
+
+/* Cliquer n'importe ou dans un bloc le rend actif — pas seulement sur sa
+   barre de titre. Une seule ecoute deleguee sur le conteneur : les quatre
+   types de blocs (normal, cardio, texte, chrono) partagent `class="bloc"` et
+   `id="bloc-<id>"`, et un type ajoute demain en heritera sans rien faire.
+   Les boutons deplacer/supprimer arretent la propagation pour leurs propres
+   raisons : ils ne changent donc pas le bloc actif, ce qui est souhaitable. */
+document.addEventListener('click', function(e){
+  var zone = document.getElementById('sessionArea');
+  if (!zone || !zone.contains(e.target)) return;
+  var el = e.target.closest ? e.target.closest('.bloc') : null;
+  if (!el || !el.id || el.id.indexOf('bloc-') !== 0) return;
+  var id = el.id.slice(5);
+  if (id && id !== activeBloc) setActiveBloc(id);
+});
 
 function clearBlocs(){
   if(!blocs.length) return;
