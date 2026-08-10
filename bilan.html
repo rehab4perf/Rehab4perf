@@ -992,6 +992,36 @@ td.bl-row-rail button:disabled { opacity: .3 !important; cursor: default; }
 .mob-note-inp:focus { border-color: var(--accent); }
 .mob-note-inp::placeholder { color: var(--text3); font-style: italic; }
 
+/* ── Quick Scan fonctionnel : groupes, pistes, recapitulatif ────────────
+   Le regroupement est PUREMENT visuel : memes lignes, memes rangs, dans le
+   meme tableau. Decouper en plusieurs tbody romprait le lien avec les bilans
+   deja enregistres, dont les reponses sont rattachees a ces rangs. */
+.test-table tr.tgrp-hd td {
+  background: var(--surface2); padding: 7px 14px;
+  border-top: 1px solid var(--border2);
+}
+.tgrp-name  { font-size: .72rem; font-weight: 800; letter-spacing: .07em;
+              text-transform: uppercase; color: var(--accent2); }
+.tgrp-count { font-size: .7rem; color: var(--text3); margin-left: 9px;
+              font-variant-numeric: tabular-nums; }
+.tgrp-state { float: right; font-size: .67rem; font-weight: 700; border-radius: 20px;
+              padding: 2px 10px; background: var(--surface); color: var(--text3);
+              border: 1px solid var(--border2); }
+.tgrp-state.tgrp-on { background: var(--green-l); color: var(--green); border-color: var(--green); }
+.test-table tr.tline-on td { background: var(--green-l); }
+.test-table tr.tgrp-todo td {
+  background: var(--accent-l); padding: 8px 14px; border-top: 1px solid var(--border);
+}
+.tgrp-todo-lbl  { display: block; font-size: .62rem; font-weight: 800; letter-spacing: .08em;
+                  text-transform: uppercase; color: var(--accent); margin-bottom: 2px; }
+.tgrp-todo-item { font-size: .82rem; line-height: 1.45; color: var(--accent2); }
+.tgrp-recap { padding: 10px 14px; background: var(--surface2); border-top: 2px solid var(--border); }
+.tgrp-recap-lbl  { font-size: .62rem; font-weight: 800; letter-spacing: .08em;
+                   text-transform: uppercase; color: var(--text2); margin-bottom: 5px; }
+.tgrp-recap ul   { margin: 0; padding-left: 17px; }
+.tgrp-recap li   { font-size: .82rem; line-height: 1.5; color: var(--text); margin: 2px 0; }
+.tgrp-recap-none { font-size: .82rem; color: var(--text3); font-style: italic; }
+
 
 /* ── ROM Widget ──────────────────────────────────────────── */
 .rom-block { width:100%; border-collapse:collapse; font-size:.82rem; }
@@ -2312,6 +2342,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
     <thead><tr><th style="width:50%">Test</th><th style="width:130px">Résultat</th><th>Observations</th></tr></thead>
     <tbody id="tb-ep-fonc"></tbody>
   </table>
+  <div class="tgrp-recap" id="ep-fonc-recap"></div>
 </div>
 <div class="block" data-block-id="epaule--fonc" id="ep-bilateral-fonc" style="display:none">
   <div class="block-header green">Quick Scan Fonctionnel — Positif = ✅ (signe favorable)</div>
@@ -5244,7 +5275,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260806i"></script>
-<script src="js/bilan.js?v=20260806j"></script>
+<script src="js/bilan.js?v=20260810b"></script>
 
 </body>
 </html>

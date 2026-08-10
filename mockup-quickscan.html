@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Quick Scan fonctionnel — maquette</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+:root{
+  --bg:#F7F6F3; --surface:#FFFFFF; --surface2:#F1F0ED;
+  --border:#E8E6E1; --border2:#D3D1CB;
+  --text:#1A1917; --text2:#6B6860; --text3:#9D9B96;
+  --accent:#2B5FA6; --accent-l:#EEF3FB; --accent2:#1A3A5C;
+  --green:#2D6A4F; --green-l:#E8F5EE; --green-b:#A7D8BF;
+  --orange:#D4600A; --orange-l:#FEF3EB;
+  --font-sans:'Figtree',system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);background:var(--bg);color:var(--text);padding:26px 20px 60px;font-size:15px}
+h1{font-size:1.25rem;color:var(--accent2);margin-bottom:4px}
+.sub{font-size:.83rem;color:var(--text2);max-width:82ch;line-height:1.6;margin-bottom:22px}
+.cols{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap}
+.col{flex:1 1 460px;min-width:420px}
+.col-hd{font-size:.72rem;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--accent2);margin-bottom:7px}
+
+/* ── Bloc ─────────────────────────────────────────────── */
+.block{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;
+       box-shadow:0 1px 3px rgba(26,58,92,.05);margin-bottom:18px}
+.block-header{background:var(--green);color:#fff;padding:10px 15px;font-size:.76rem;font-weight:700;
+              letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;gap:9px}
+.block-header .legend{margin-left:auto;font-size:.68rem;font-weight:600;opacity:.9;text-transform:none;letter-spacing:0}
+
+/* ── Sous-catégorie ───────────────────────────────────── */
+.grp{border-top:1px solid var(--border)}
+.grp:first-of-type{border-top:none}
+.grp-hd{display:flex;align-items:center;gap:9px;padding:9px 15px;background:var(--surface2);cursor:pointer}
+.grp-chev{font-size:.62rem;color:var(--text3);width:9px}
+.grp-name{font-size:.76rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--accent2)}
+.grp-count{font-size:.7rem;color:var(--text3);font-variant-numeric:tabular-nums}
+.grp-state{margin-left:auto;font-size:.68rem;font-weight:700;border-radius:20px;padding:2px 10px}
+.st-vierge{background:var(--surface);color:var(--text3);border:1px solid var(--border2)}
+.st-actif {background:var(--green-l);color:var(--green);border:1px solid var(--green-b)}
+
+/* ── Lignes de test ───────────────────────────────────── */
+table{width:100%;border-collapse:collapse}
+th{font-size:.63rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);
+   text-align:left;padding:5px 15px;background:var(--surface)}
+td{padding:7px 15px;font-size:.82rem;border-top:1px solid var(--border)}
+tr.on td{background:var(--green-l)}
+.tname{color:var(--text)}
+.tsub{display:block;font-size:.68rem;color:var(--text3);margin-top:1px}
+select{font-family:inherit;font-size:.76rem;font-weight:600;padding:4px 24px 4px 10px;border-radius:20px;
+       border:1.5px solid var(--border2);background:var(--surface);color:var(--text2);appearance:none;
+       background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236B7280'/%3E%3C/svg%3E");
+       background-repeat:no-repeat;background-position:right 8px center;min-width:112px}
+select.pos{background-color:var(--green-l);border-color:var(--green-b);color:var(--green)}
+.obs{width:100%;border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:.75rem;
+     font-family:inherit;color:var(--text);background:transparent}
+.obs::placeholder{color:var(--text3);font-style:italic}
+
+/* ── Bandeau « à travailler » ─────────────────────────── */
+.todo{display:flex;gap:9px;align-items:flex-start;padding:9px 15px;background:var(--accent-l);
+      border-top:1px solid var(--border)}
+.todo svg{flex-shrink:0;margin-top:1px;color:var(--accent)}
+.todo-txt{font-size:.79rem;line-height:1.45;color:var(--accent2)}
+.todo-lbl{display:block;font-size:.63rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+          color:var(--accent);margin-bottom:2px}
+.todo-src{font-size:.67rem;color:var(--text2);font-style:italic;margin-top:3px}
+
+/* ── Synthèse de bloc ─────────────────────────────────── */
+.recap{padding:11px 15px;background:var(--surface2);border-top:2px solid var(--border)}
+.recap-lbl{font-size:.63rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);margin-bottom:6px}
+.recap ul{margin:0;padding-left:17px}
+.recap li{font-size:.79rem;line-height:1.5;color:var(--text);margin:2px 0}
+.recap .none{font-size:.79rem;color:var(--text3);font-style:italic}
+
+.note{font-size:.79rem;color:var(--text2);line-height:1.6;max-width:82ch;margin-top:26px}
+.note h2{font-size:.95rem;color:var(--accent2);margin:16px 0 5px}
+.note b{color:var(--text)}
+.note li{margin:4px 0 4px 18px}
+</style>
+</head>
+<body>
+
+<h1>Quick Scan fonctionnel — épaule</h1>
+<p class="sub">À gauche, le bloc tel qu'il se présente avant toute saisie. À droite, le même bloc avec trois tests renseignés.
+Les recommandations affichées sont <b>exactement</b> celles que le compte-rendu écrit déjà dans « Points à travailler » — rien n'a été inventé pour la maquette.</p>
+
+<div class="cols">
+
+<!-- ══════════════ COLONNE 1 — VIERGE ══════════════ -->
+<div class="col">
+  <div class="col-hd">Avant saisie</div>
+  <div class="block">
+    <div class="block-header">
+      Quick Scan fonctionnel
+      <span class="legend">Positif = signe favorable</span>
+    </div>
+
+    <div class="grp">
+      <div class="grp-hd"><span class="grp-chev">▾</span><span class="grp-name">Extension thoracique</span>
+        <span class="grp-count">1 test</span><span class="grp-state st-vierge">Non évalué</span></div>
+      <table>
+        <thead><tr><th>Test</th><th style="width:132px">Résultat</th><th style="width:34%">Observations</th></tr></thead>
+        <tbody>
+          <tr><td class="tname">Extension thoracique <span class="tsub">inspiration + rétraction scapulaire</span></td>
+              <td><select><option>—</option></select></td><td><input class="obs" placeholder="Observation…"></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grp">
+      <div class="grp-hd"><span class="grp-chev">▾</span><span class="grp-name">Activation de la coiffe</span>
+        <span class="grp-count">5 tests</span><span class="grp-state st-vierge">Non évalué</span></div>
+      <table>
+        <thead><tr><th>Test</th><th style="width:132px">Résultat</th><th style="width:34%">Observations</th></tr></thead>
+        <tbody>
+          <tr><td class="tname">Préhension</td><td><select><option>—</option></select></td><td><input class="obs" placeholder="Observation…"></td></tr>
+          <tr><td class="tname">Pré-activation RE</td><td><select><option>—</option></select></td><td><input class="obs" placeholder="Observation…"></td></tr>
+          <tr><td class="tname">Contre résistance</td><td><select><option>—</option></select></td><td><input class="obs" placeholder="Observation…"></td></tr>
+          <tr><td class="tname">Chaîne croisée</td><td><select><option>—</option></select></td><td><input class="obs" placeholder="Observation…"></td></tr>
+          <tr><td class="tname">Bord ulnaire</td><td><select><option>—</option></select></td><td><input class="obs" placeholder="Observation…"></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grp">
+      <div class="grp-hd"><span class="grp-chev">▾</span><span class="grp-name">Réponses de la coiffe</span>
+        <span class="grp-count">2 tests</span><span class="grp-state st-vierge">Non évalué</span></div>
+      <table>
+        <thead><tr><th>Test</th><th style="width:132px">Résultat</th><th style="width:34%">Observations</th></tr></thead>
+        <tbody>
+          <tr><td class="tname">Inhibition coiffe</td><td><select><option>—</option></select></td><td><input class="obs" placeholder="Observation…"></td></tr>
+          <tr><td class="tname">Postériorisation GH</td><td><select><option>—</option></select></td><td><input class="obs" placeholder="Observation…"></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grp">
+      <div class="grp-hd"><span class="grp-chev">▾</span><span class="grp-name">Contrôle scapulaire</span>
+        <span class="grp-count">2 tests</span><span class="grp-state st-vierge">Non évalué</span></div>
+      <table>
+        <thead><tr><th>Test</th><th style="width:132px">Résultat</th><th style="width:34%">Observations</th></tr></thead>
+        <tbody>
+          <tr><td class="tname">SRT <span class="tsub">Shoulder Rotation Test</span></td><td><select><option>—</option></select></td><td><input class="obs" placeholder="Observation…"></td></tr>
+          <tr><td class="tname">SAT <span class="tsub">Scapular Assistance Test</span></td><td><select><option>—</option></select></td><td><input class="obs" placeholder="Observation…"></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="recap">
+      <div class="recap-lbl">À travailler — d'après ce bloc</div>
+      <span class="none">Aucun test renseigné pour l'instant.</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ COLONNE 2 — RENSEIGNÉ ══════════════ -->
+<div class="col">
+  <div class="col-hd">Trois tests renseignés</div>
+  <div class="block">
+    <div class="block-header">
+      Quick Scan fonctionnel
+      <span class="legend">Positif = signe favorable</span>
+    </div>
+
+    <div class="grp">
+      <div class="grp-hd"><span class="grp-chev">▾</span><span class="grp-name">Extension thoracique</span>
+        <span class="grp-count">1 test</span><span class="grp-state st-vierge">Négatif</span></div>
+      <table>
+        <thead><tr><th>Test</th><th style="width:132px">Résultat</th><th style="width:34%">Observations</th></tr></thead>
+        <tbody>
+          <tr><td class="tname">Extension thoracique <span class="tsub">inspiration + rétraction scapulaire</span></td>
+              <td><select><option>Négatif</option></select></td><td><input class="obs" value="pas de gain sur l'élévation"></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grp">
+      <div class="grp-hd"><span class="grp-chev">▾</span><span class="grp-name">Activation de la coiffe</span>
+        <span class="grp-count">2 / 5 positifs</span><span class="grp-state st-actif">Piste retenue</span></div>
+      <table>
+        <thead><tr><th>Test</th><th style="width:132px">Résultat</th><th style="width:34%">Observations</th></tr></thead>
+        <tbody>
+          <tr class="on"><td class="tname">Préhension</td><td><select class="pos"><option>Positif</option></select></td><td><input class="obs" value="+30° d'élévation indolore"></td></tr>
+          <tr><td class="tname">Pré-activation RE</td><td><select><option>Négatif</option></select></td><td><input class="obs" placeholder="Observation…"></td></tr>
+          <tr class="on"><td class="tname">Contre résistance</td><td><select class="pos"><option>Positif</option></select></td><td><input class="obs" placeholder="Observation…"></td></tr>
+          <tr><td class="tname">Chaîne croisée</td><td><select><option>—</option></select></td><td><input class="obs" placeholder="Observation…"></td></tr>
+          <tr><td class="tname">Bord ulnaire</td><td><select><option>—</option></select></td><td><input class="obs" placeholder="Observation…"></td></tr>
+        </tbody>
+      </table>
+      <div class="todo">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        <div class="todo-txt"><span class="todo-lbl">À travailler</span>Renforcement de la coiffe des rotateurs
+          <div class="todo-src">Une seule ligne, quel que soit le nombre de tests positifs du groupe.</div></div>
+      </div>
+    </div>
+
+    <div class="grp">
+      <div class="grp-hd"><span class="grp-chev">▾</span><span class="grp-name">Réponses de la coiffe</span>
+        <span class="grp-count">1 / 2 positifs</span><span class="grp-state st-actif">Piste retenue</span></div>
+      <table>
+        <thead><tr><th>Test</th><th style="width:132px">Résultat</th><th style="width:34%">Observations</th></tr></thead>
+        <tbody>
+          <tr><td class="tname">Inhibition coiffe</td><td><select><option>Négatif</option></select></td><td><input class="obs" placeholder="Observation…"></td></tr>
+          <tr class="on"><td class="tname">Postériorisation GH</td><td><select class="pos"><option>Positif</option></select></td><td><input class="obs" placeholder="Observation…"></td></tr>
+        </tbody>
+      </table>
+      <div class="todo">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        <div class="todo-txt"><span class="todo-lbl">À travailler</span>Renforcer les muscles postérieurs de l'épaule</div>
+      </div>
+    </div>
+
+    <div class="grp">
+      <div class="grp-hd"><span class="grp-chev">▸</span><span class="grp-name">Contrôle scapulaire</span>
+        <span class="grp-count">2 tests</span><span class="grp-state st-vierge">Non évalué</span></div>
+    </div>
+
+    <div class="recap">
+      <div class="recap-lbl">À travailler — d'après ce bloc</div>
+      <ul>
+        <li>Renforcement de la coiffe des rotateurs</li>
+        <li>Renforcer les muscles postérieurs de l'épaule</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div class="note">
+  <h2>Ce que montre la maquette</h2>
+  <ul>
+    <li><b>Quatre sous-catégories</b> au lieu d'une liste de dix lignes : Extension thoracique, Activation de la coiffe, Réponses de la coiffe, Contrôle scapulaire. Chacune se replie — la dernière est repliée à droite pour le montrer.</li>
+    <li><b>La recommandation vit sur la sous-catégorie, pas sur le test.</b> C'est le point décisif : les cinq tests d'activation partagent une seule et même phrase dans le compte-rendu. L'afficher par test la répéterait cinq fois.</li>
+    <li><b>Le préfixe disparaît des libellés.</b> « Activation coiffe - préhension » devient « Préhension » : la sous-catégorie porte déjà le mot. Dix lignes gagnent en lisibilité.</li>
+    <li><b>Une synthèse en pied de bloc</b> reprend les pistes retenues — l'aperçu de ce qui partira dans le compte-rendu, sans avoir à l'ouvrir.</li>
+    <li><b>« Piste retenue », pas « déficit ».</b> Dans ce bloc, positif est un signe favorable : le test dit qu'une stratégie fonctionne, donc qu'on peut la travailler. Le vocabulaire de la maquette respecte ce sens.</li>
+  </ul>
+
+  <h2>Une contrainte à connaître avant de coder</h2>
+  <p>L'identité d'un test est son <b>rang dans le catalogue</b> : les réponses des bilans déjà enregistrés y sont rattachées par ce numéro. Le regroupement doit donc être <b>uniquement visuel</b> — même tableau, mêmes rangs, en insérant des en-têtes de groupe. Découper en plusieurs tableaux romprait le lien avec tous les bilans passés, qui afficheraient des réponses vides.</p>
+
+  <h2>Ce que je n'ai pas tranché</h2>
+  <p>Les recommandations sont aujourd'hui écrites en dur dans le générateur de compte-rendu. Pour les afficher ici, il faut les en extraire vers une table partagée — sinon les deux textes divergeront un jour. C'est le vrai travail de fond de ce chantier ; le reste est de la mise en forme.</p>
+</div>
+
+</body>
+</html>

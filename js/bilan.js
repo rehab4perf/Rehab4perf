@@ -694,14 +694,155 @@ function _blTestDisplayOrder(tbodyId, cfg) {
   return out;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   Quick Scan fonctionnel epaule — groupes et pistes de travail
+
+   UNE SEULE SOURCE. Ces phrases etaient ecrites en dur dans buildCR, et nulle
+   part ailleurs : le formulaire ne pouvait donc pas les montrer. Les afficher
+   en les recopiant aurait cree deux textes pour la meme chose, voues a
+   diverger des la premiere retouche.
+
+   Le CR les lit maintenant PAR INDICE, non plus en comparant des libelles :
+   renommer un test ne casse plus la correspondance.
+
+   `groupes` ne fait que du VISUEL. L'identite d'un test reste son rang dans
+   `TESTS['tb-ep-fonc'].items` — les bilans enregistres y sont rattaches par ce
+   numero. Regrouper ne doit jamais deplacer ni renumeroter.
+
+   Attention : « positif » vaut ici signe FAVORABLE. Le test dit qu'une
+   strategie soulage, donc qu'on peut la travailler — ce n'est pas un deficit.
+   ══════════════════════════════════════════════════════════════════════════ */
+var EP_FONC_TODO = {
+  0: 'Travailler l\'extension thoracique',
+  1: 'Renforcement de la coiffe des rotateurs',
+  2: 'Renforcement de la coiffe des rotateurs',
+  3: 'Renforcement de la coiffe des rotateurs',
+  4: 'Renforcement de la coiffe des rotateurs',
+  5: 'Renforcement de la coiffe des rotateurs',
+  6: 'Travail en compression + renforcement musculaire des grands muscles de l\'épaule',
+  7: 'Renforcer les muscles postérieurs de l\'épaule',
+  8: 'Renforcer les stabilisateurs de l\'omoplate : rhomboïdes, trapèze moyen et inférieur, dentelé antérieur',
+  9: 'Renforcer les muscles de la sonnette latérale : trapèze supérieur, élévateur de la scapula, dentelé antérieur'
+};
+
+/* `prefixe` : retire a l'AFFICHAGE seulement — le groupe porte deja le mot.
+   Le libelle du catalogue, lui, ne bouge pas : c'est lui qui nomme la ligne
+   dans le compte-rendu, ou le groupe n'apparait pas. */
+var EP_FONC_GROUPES = [
+  { nom:'Extension thoracique',    idx:[0] },
+  { nom:'Activation de la coiffe', idx:[1,2,3,4,5], prefixe:'Activation coiffe - ' },
+  { nom:'Réponses de la coiffe',   idx:[6,7] },
+  { nom:'Contrôle scapulaire',     idx:[8,9] }
+];
+
+function _epFoncGroupeDe(i){
+  for (var g = 0; g < EP_FONC_GROUPES.length; g++)
+    if (EP_FONC_GROUPES[g].idx.indexOf(i) >= 0) return EP_FONC_GROUPES[g];
+  return null;
+}
+
+/* Etat vivant du Quick Scan : pastilles de groupe, bandeaux « a travailler »
+   et recapitulatif de bloc. Rejoue a chaque changement et apres tout
+   chargement — un bilan restaure doit montrer les memes pistes qu'a la
+   saisie. */
+function _epFoncRefresh(){
+  var tb = document.getElementById('tb-ep-fonc');
+  if (!tb) return;
+
+  var positifsPar = {}, todosPar = {}, vus = {};
+  tb.querySelectorAll('tr[data-test-idx]').forEach(function(tr){
+    var i = parseInt(tr.dataset.testIdx, 10);
+    var g = _epFoncGroupeDe(i);
+    if (!g) return;
+    var sel = tr.querySelector('select');
+    var v = sel ? sel.value : '';
+    vus[g.nom] = (vus[g.nom] || 0) + (v ? 1 : 0);
+    tr.classList.toggle('tline-on', v === 'Positif');
+    if (v !== 'Positif') return;
+    positifsPar[g.nom] = (positifsPar[g.nom] || 0) + 1;
+    var t = EP_FONC_TODO[i];
+    if (!t) return;
+    todosPar[g.nom] = todosPar[g.nom] || [];
+    /* Les cinq tests d'activation partagent une seule phrase : sans ce
+       dedoublonnage elle s'afficherait cinq fois. */
+    if (todosPar[g.nom].indexOf(t) < 0) todosPar[g.nom].push(t);
+  });
+
+  EP_FONC_GROUPES.forEach(function(g){
+    var n = positifsPar[g.nom] || 0;
+    var cnt = tb.querySelector('[data-grpcount="' + g.nom + '"]');
+    var st  = tb.querySelector('[data-grpstate="' + g.nom + '"]');
+    if (cnt) cnt.textContent = n ? (n + ' / ' + g.idx.length + ' positifs')
+                                 : (g.idx.length + (g.idx.length > 1 ? ' tests' : ' test'));
+    if (st) {
+      st.textContent = n ? 'Piste retenue' : (vus[g.nom] ? 'Négatif' : 'Non évalué');
+      st.className = 'tgrp-state' + (n ? ' tgrp-on' : '');
+    }
+    // Bandeau des pistes, pose juste apres la derniere ligne du groupe
+    var anc = null;
+    tb.querySelectorAll('tr[data-test-idx]').forEach(function(tr){
+      if (_epFoncGroupeDe(parseInt(tr.dataset.testIdx,10)) === g) anc = tr;
+    });
+    var ex = tb.querySelector('tr[data-grptodo="' + g.nom + '"]');
+    var todos = todosPar[g.nom] || [];
+    if (!todos.length) { if (ex) ex.remove(); return; }
+    if (!ex) {
+      ex = document.createElement('tr');
+      ex.className = 'tgrp-todo';
+      ex.dataset.grptodo = g.nom;
+      if (anc && anc.nextSibling) tb.insertBefore(ex, anc.nextSibling);
+      else tb.appendChild(ex);
+    }
+    ex.innerHTML = '<td colspan="3"><span class="tgrp-todo-lbl">À travailler</span>'
+      + todos.map(function(t){ return '<div class="tgrp-todo-item">' + t + '</div>'; }).join('')
+      + '</td>';
+  });
+
+  var recap = document.getElementById('ep-fonc-recap');
+  if (recap) {
+    var tous = [];
+    EP_FONC_GROUPES.forEach(function(g){
+      (todosPar[g.nom] || []).forEach(function(t){ if (tous.indexOf(t) < 0) tous.push(t); });
+    });
+    recap.innerHTML = '<div class="tgrp-recap-lbl">À travailler — d\'après ce bloc</div>'
+      + (tous.length
+          ? '<ul>' + tous.map(function(t){ return '<li>' + t + '</li>'; }).join('') + '</ul>'
+          : '<span class="tgrp-recap-none">Aucun test renseigné pour l\'instant.</span>');
+  }
+}
+
 // -- INIT ------------------------------------------------------
 function init() {
   // Build test tables (dans l'ordre d'affichage, avec les ids d'identité catalogue)
   Object.entries(TESTS).forEach(([id, cfg]) => {
     const tbody = document.getElementById(id);
     if (!tbody) return;
+    var _grpPrec = null;   // dernier groupe rendu — sert a n'inserer qu'un en-tete
     _blTestDisplayOrder(id, cfg).forEach((i) => {
-      const name = cfg.items[i];
+      let name = cfg.items[i];
+      /* Quick Scan epaule : on intercale un en-tete DES QUE le groupe change.
+         Fonde sur le changement et non sur des positions fixes, il survit a
+         une reorganisation faite depuis « Personnaliser ». */
+      if (id === 'tb-ep-fonc') {
+        var _g = _epFoncGroupeDe(i);
+        if (_g && _g !== _grpPrec) {
+          const hd = document.createElement('tr');
+          hd.className = 'tgrp-hd';
+          hd.dataset.grp = _g.nom;
+          hd.innerHTML = '<td colspan="3">'
+            + '<span class="tgrp-name">' + _g.nom + '</span>'
+            + '<span class="tgrp-count" data-grpcount="' + _g.nom + '"></span>'
+            + '<span class="tgrp-state" data-grpstate="' + _g.nom + '">Non évalué</span>'
+            + '</td>';
+          tbody.appendChild(hd);
+          _grpPrec = _g;
+        }
+        if (_g && _g.prefixe && name.indexOf(_g.prefixe) === 0) {
+          // Affichage seul : le catalogue garde le libelle entier.
+          name = name.slice(_g.prefixe.length);
+          name = name.charAt(0).toUpperCase() + name.slice(1);
+        }
+      }
       const tr = document.createElement('tr');
       tr.dataset.testIdx = i; // identité catalogue de la ligne — les lecteurs (CR) ne dépendent plus de la position DOM
       var opts = cfg.opts ? cfg.opts : ['Positif', 'Négatif', 'N/A'];
@@ -2249,7 +2390,7 @@ function _resetBilanFields(){
   try{ _afRefreshAll(); }catch(ex){}
   document.querySelectorAll('.evo-delta').forEach(function(el){ el.remove(); });
   // Recalculer TOUTES les fonctions d'affichage dérivées (LSI, RSI, déficits, badges…)
-  try{ updateAll(); calcRec(); calcPlioq(); }catch(ex){}
+  try{ updateAll(); calcRec(); calcPlioq(); _epFoncRefresh(); }catch(ex){}
   try{ ['sls','hop','pset','set'].forEach(function(k){ calcLSI(k); }); calcDJ(); calcLunge(); calcHR(); calcMusc(); calcPiCIM(); }catch(ex){}
   try{ calcPlioq2(); calcSEBT(); calcUQYBT(); calcSideHop(); }catch(ex){}
   try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht','co-f-ext','co-f-flex'].forEach(calcEpForce); ['ha-f-add','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); ['pi-f-fp','pi-f-fd','pi-f-inv','pi-f-ev','pi-f-lfh'].forEach(calcEpForce); ['ra-fc-inc'].forEach(calcEpForce); }catch(ex){}
@@ -3806,7 +3947,7 @@ function _deserializeBilan(data){
     }
     try{ el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); }catch(ex){}
   });
-  try{ updateAll(); calcRec(); calcPlioq(); }catch(ex){}
+  try{ updateAll(); calcRec(); calcPlioq(); _epFoncRefresh(); }catch(ex){}
   try{ ['sls','hop','pset','set'].forEach(function(k){ calcLSI(k); }); calcDJ(); calcLunge(); calcHR(); calcMusc(); calcPiCIM(); }catch(ex){}
   try{ calcCKC(); calcSHRT(); calcULRT(); }catch(ex){}
   try{ calcRachisStat(); calcLNF(); calcSorensen(); calcPDSLRT(); calcShirado(); }catch(ex){}
@@ -4786,7 +4927,7 @@ function _saveSuiviRapide(){
           if(el.type==='checkbox'||el.type==='radio') el.checked = !!delta[mid];
           else el.value = delta[mid];
         });
-        try{ updateAll(); calcRec(); calcPlioq(); calcPlioq2(); }catch(ex){}
+        try{ updateAll(); calcRec(); calcPlioq(); _epFoncRefresh(); calcPlioq2(); }catch(ex){}
 
         // Mettre à jour l'initial pour détecter de nouveaux changements
         Object.keys(delta).forEach(function(mid){ _suiviRapideInitial[mid]=delta[mid]; });
@@ -5096,6 +5237,7 @@ function onTestChange(sel, tableId, idx) {
     if (wainnerTables[tableId]) _calcWainnerCerv();
     var dn4Tables = {'tb-cv-dn4-itw':1,'tb-cv-dn4-exam':1};
     if (dn4Tables[tableId]) _calcDN4();
+    if (tableId === 'tb-ep-fonc') _epFoncRefresh();
     if (tableId === 'tb-rl-instab') _calcInstabLomb();
     var lasslett = {'tb-rl-laslett-1':1,'tb-rl-laslett-2':1,'tb-rl-laslett-3':1};
     if (lasslett[tableId]) _calcLaslett();
@@ -6889,24 +7031,13 @@ function _buildAllTestsHtml() {
   // ── Tests fonctionnels épaule (tb-ep-fonc) ──────────────────────────────
   var epFoncTbody = document.getElementById('tb-ep-fonc');
   if (epFoncTbody) {
-    epFoncTbody.querySelectorAll('tr').forEach(function(row) {
+    /* Lecture PAR INDICE dans EP_FONC_TODO, la table que le formulaire affiche
+       aussi. L'ancienne version comparait des libelles (« indexOf('SAT') »…) :
+       renommer un test cassait la correspondance en silence, et les deux
+       textes vivaient a deux endroits. */
+    epFoncTbody.querySelectorAll('tr[data-test-idx]').forEach(function(row) {
       var sel = row.querySelector('select'); if (!sel || sel.value !== 'Positif') return;
-      var tdEl = row.querySelector('td'); if (!tdEl) return;
-      var name = tdEl.textContent.trim();
-      var item = null;
-      if (name.indexOf('Activation coiffe') !== -1) {
-        item = 'Renforcement de la coiffe des rotateurs';
-      } else if (name === 'Inhibition coiffe') {
-        item = 'Travail en compression + renforcement musculaire des grands muscles de l\'épaule';
-      } else if (name === 'Postériorisation GH') {
-        item = 'Renforcer les muscles postérieurs de l\'épaule';
-      } else if (name.indexOf('Extension thoracique') !== -1) {
-        item = 'Travailler l\'extension thoracique';
-      } else if (name.indexOf('SAT') !== -1) {
-        item = 'Renforcer les muscles de la sonnette latérale : trapèze supérieur, élévateur de la scapula, dentelé antérieur';
-      } else if (name.indexOf('SRT') !== -1) {
-        item = 'Renforcer les stabilisateurs de l\'omoplate : rhomboïdes, trapèze moyen et inférieur, dentelé antérieur';
-      }
+      var item = EP_FONC_TODO[parseInt(row.dataset.testIdx, 10)];
       if (item && toWork.indexOf(item) === -1) toWork.push(item);
     });
   }
@@ -7632,7 +7763,7 @@ function loadFromStorage() {
       // Restore mob status colors
       if (el.classList.contains('mob-status-sel') && el.value) _mobStatusChange(el);
     });
-    updateAll(); calcRec(); calcPlioq();
+    updateAll(); calcRec(); calcPlioq(); _epFoncRefresh();
     ['sls','hop','pset','set'].forEach(k => calcLSI(k));
     calcDJ(); calcLunge(); calcHR(); calcMusc(); calcPiCIM();
     calcCKC(); calcSHRT(); calcULRT();
