@@ -12,7 +12,7 @@
    - /athlete.html → ignoré (géré par sw.js, scope plus spécifique).
    Bump CACHE à chaque changement de logique de cache.
    ═══════════════════════════════════════════════════════════════════ */
-var CACHE = 'r4p-pro-v69';
+var CACHE = 'r4p-pro-v70';
 var PRECACHE = [
   '/',
   '/index.html',
@@ -66,7 +66,12 @@ self.addEventListener('fetch', function (e) {
         caches.open(CACHE).then(function (c) { c.put(req, copy); });
         return res;
       }).catch(function () {
-        return caches.match(req).then(function (hit) { return hit || caches.match('/index.html'); });
+        /* `ignoreSearch` : les iframes sont servies versionnees
+           (`outils.html?v=…`) pour echapper au cache du navigateur. Hors
+           ligne, l'URL exacte ne correspond a rien de precache — sans cette
+           tolerance on retombait sur la coquille au lieu de la page. */
+        return caches.match(req, { ignoreSearch: true })
+          .then(function (hit) { return hit || caches.match('/index.html'); });
       })
     );
     return;

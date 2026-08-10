@@ -15,6 +15,26 @@ node --check js/prog-data.js
 node --check js/prog-main.js
 ```
 
+## Cache — tout ce qui est servi doit porter un numéro
+
+Les scripts JS sont versionnés (`js/bilan.js?v=20260806j`), **et les pages
+d'iframe le sont aussi** depuis qu'elles ont manqué de l'être :
+`index.html` charge `outils.html?v=…`, `bilan.html?v=…`, etc.
+
+Sans ce numéro, le navigateur garde sa copie et **une correction déployée
+reste invisible** — y compris pendant les tests. Le piège a coûté deux fausses
+pistes : des fonctions qu'on venait d'écrire n'existaient pas dans la page
+chargée, et l'on a cherché le défaut dans du code correct.
+
+Après modification d'un de ces fichiers, incrémenter le numéro dans
+`index.html` **et** bumper `CACHE` dans `sw-pro.js`.
+
+Le service worker sert les iframes en **réseau d'abord** (`req.mode ===
+'navigate'`) : ce n'est donc pas lui qui périme, mais son repli hors ligne
+cherche l'URL exacte. D'où le `caches.match(req, { ignoreSearch: true })` —
+sans lui, une page versionnée ne correspond à rien de préchargé et l'on
+retombe sur la coquille.
+
 ## Étapes du builder — l'ordre vit dans `blocs`
 
 ```bash
