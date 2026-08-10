@@ -1888,11 +1888,32 @@ function _feedbackSave(sid) {
   var existingExoData = (_feedbackCurrentFb && _feedbackCurrentFb.exo_data)
     ? Object.assign({}, _feedbackCurrentFb.exo_data) : {};
   existingExoData.eva_praticien = _feedbackEva;
-  _fetchRetry(SUPA_URL_P + '/rest/v1/athlete_feedback', {
-    method: 'POST',
-    headers: Object.assign({}, _sbHeaders(), { 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
-    body: JSON.stringify({ seance_id: sid, exo_data: existingExoData, submitted_at: new Date().toISOString() })
-  }).then(function(r) {
+  /* Une SEULE ligne existe par seance, partagee avec l'athlete : on ne peut
+     donc pas l'etiqueter d'une source, le dernier ecrivain ecraserait
+     l'autre. On horodate a la place notre propre saisie.
+
+     `submitted_at` n'est PAS touche : il appartient au patient. L'ecraser
+     faisait sonner la cloche pour notre propre ecriture — le defaut corrige
+     ici — et remontait la ligne en tete du flux sans que le patient ait
+     rien envoye. */
+  var _majPrat = new Date().toISOString();
+  var _corpsPrat = { seance_id: sid, exo_data: existingExoData, eva_praticien_at: _majPrat };
+  var _envoiPrat = function(corps){
+    return _fetchRetry(SUPA_URL_P + '/rest/v1/athlete_feedback', {
+      method: 'POST',
+      headers: Object.assign({}, _sbHeaders(), { 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
+      body: JSON.stringify(corps)
+    });
+  };
+  _envoiPrat(_corpsPrat)
+    .then(function(r){
+      if(r.ok) return r;
+      /* Colonne absente : on enregistre quand meme l'EVA, sans l'horodatage. */
+      return r.clone().text().then(function(t){
+        if(!/eva_praticien_at/i.test(t)) return r;
+        return _envoiPrat({ seance_id: sid, exo_data: existingExoData });
+      });
+    }).then(function(r) {
     if (!r.ok) { _showToast('Erreur enregistrement.'); if(btn){btn.disabled=false;btn.textContent='Enregistrer';} return; }
     if (btn) { btn.textContent = '✓ Enregistré'; btn.style.background = '#15803d'; }
     if (_feedbackCurrentFb) _feedbackCurrentFb = Object.assign({}, _feedbackCurrentFb, { exo_data: existingExoData });
@@ -2087,6 +2108,31 @@ function _notifPrefs(){
   catch(e){ return d; }
 }
 
+/* Un retour PATIENT, par opposition a l'EVA que le praticien saisit lui-meme
+   dans le builder. Les deux vivent sur la MEME ligne — une par seance — donc
+   ni une source ni un horodatage seul ne suffisent :
+
+   - il faut du contenu venant du patient (rpe, duree, douleur, effort, ou une
+     douleur par exercice). Sans cela, la ligne n'existe que parce que le
+     praticien a note quelque chose ;
+   - et si le praticien a note APRES le dernier envoi du patient, il n'y a rien
+     de neuf a signaler.
+
+   `eva_praticien_at` absent (migration non passee) : on retombe sur le seul
+   test de contenu, ce qui corrige deja le cas courant. */
+function _fbEstRetourPatient(fb){
+  if(!fb) return false;
+  var duPatient = (fb.rpe !== null && fb.rpe !== undefined)
+                || (fb.duree_min !== null && fb.duree_min !== undefined)
+                || (fb.douleur !== null && fb.douleur !== undefined)
+                || (fb.effort !== null && fb.effort !== undefined)
+                || !!(fb.exo_data && fb.exo_data.exos && fb.exo_data.exos.length);
+  if(!duPatient) return false;
+  var prat = fb.eva_praticien_at, envoi = fb.submitted_at;
+  if(prat && envoi && new Date(envoi) <= new Date(prat)) return false;
+  return true;
+}
+
 function _fbMaxPain(fb){
   var mx = null;
   var exos = (fb.exo_data && fb.exo_data.exos) || [];
@@ -2101,13 +2147,16 @@ function _fbMaxPain(fb){
 function _fetchUnseenFb(patientId){
   _fbUnseen = {};
   if(!patientId){ _applyFbDots(); return; }
-  var url = SUPA_URL_P + '/rest/v1/athlete_feedback'
-    + '?select=seance_id,rpe,duree_min,douleur,effort,exo_data,seances_planifiees!inner(patient_id)'
-    + '&seen_at=is.null&seances_planifiees.patient_id=eq.' + patientId;
-  _fetchRetry(url, { headers: _sbHeaders() })
+  /* Meme precaution que pour la cloche : sans la colonne, PostgREST rejette
+     la requete entiere et les pastilles disparaitraient. */
+  var COLS = 'seance_id,rpe,duree_min,douleur,effort,exo_data,submitted_at,seances_planifiees!inner(patient_id)';
+  var QUEUE = '&seen_at=is.null&seances_planifiees.patient_id=eq.' + patientId;
+  var base = SUPA_URL_P + '/rest/v1/athlete_feedback?select=';
+  _fetchRetry(base + 'eva_praticien_at,' + COLS + QUEUE, { headers: _sbHeaders() })
+    .then(function(r){ return r.ok ? r : _fetchRetry(base + COLS + QUEUE, { headers: _sbHeaders() }); })
     .then(function(r){ if(!r.ok) throw new Error('unseen'); return r.json(); })
     .then(function(arr){
-      (Array.isArray(arr) ? arr : []).forEach(function(fb){
+      (Array.isArray(arr) ? arr : []).filter(_fbEstRetourPatient).forEach(function(fb){
         _fbUnseen[fb.seance_id] = { pain: _fbMaxPain(fb) };
       });
       _applyFbDots();

@@ -806,11 +806,11 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   </div>
 </div>
 <div class="frame-wrap">
-  <iframe id="frame-bilan"        src="bilan.html?v=20260806a"        class="active"></iframe>
-  <iframe id="frame-outils"       src="outils.html?v=20260806a"       ></iframe>
-  <iframe id="frame-prescription" src="programme.html?v=20260806a" ></iframe>
-  <iframe id="frame-patients"     src="patients.html?v=20260806a"     ></iframe>
-  <iframe id="frame-account"      src="account.html?v=20260806a"      ></iframe>
+  <iframe id="frame-bilan"        src="bilan.html?v=20260810a"        class="active"></iframe>
+  <iframe id="frame-outils"       src="outils.html?v=20260810a"       ></iframe>
+  <iframe id="frame-prescription" src="programme.html?v=20260810a" ></iframe>
+  <iframe id="frame-patients"     src="patients.html?v=20260810a"     ></iframe>
+  <iframe id="frame-account"      src="account.html?v=20260810a"      ></iframe>
 </div>
 
 <script src="js/aide-content.js?v=20260806p"></script>
@@ -1419,6 +1419,31 @@ function _notifFbEffortV(fb){
   return null;
 }
 
+/* Un retour PATIENT, par opposition a l'EVA que le praticien saisit lui-meme
+   dans le builder. Les deux vivent sur la MEME ligne — une par seance — donc
+   ni une source ni un horodatage seul ne suffisent :
+
+   - il faut du contenu venant du patient (rpe, duree, douleur, effort, ou une
+     douleur par exercice). Sans cela, la ligne n'existe que parce que le
+     praticien a note quelque chose ;
+   - et si le praticien a note APRES le dernier envoi du patient, il n'y a rien
+     de neuf a signaler.
+
+   `eva_praticien_at` absent (migration non passee) : on retombe sur le seul
+   test de contenu, ce qui corrige deja le cas courant. */
+function _notifEstRetourPatient(fb){
+  if(!fb) return false;
+  var duPatient = (fb.rpe !== null && fb.rpe !== undefined)
+                || (fb.duree_min !== null && fb.duree_min !== undefined)
+                || (fb.douleur !== null && fb.douleur !== undefined)
+                || (fb.effort !== null && fb.effort !== undefined)
+                || !!(fb.exo_data && fb.exo_data.exos && fb.exo_data.exos.length);
+  if(!duPatient) return false;
+  var prat = fb.eva_praticien_at, envoi = fb.submitted_at;
+  if(prat && envoi && new Date(envoi) <= new Date(prat)) return false;
+  return true;
+}
+
 function _notifMaxPain(fb){
   var mx = null;
   var exos = (fb.exo_data && fb.exo_data.exos) || [];
@@ -1426,6 +1451,11 @@ function _notifMaxPain(fb){
     if(ex.pain !== null && ex.pain !== undefined && (mx === null || ex.pain > mx)) mx = ex.pain;
   });
   if(mx === null) mx = _notifFbDouleur(fb);
+  /* L'EVA saisie par le praticien vit dans `exo_data.eva_praticien`, pas dans
+     la colonne `douleur` ni dans `exos[].pain`. Elle n'etait lue nulle part
+     ici : une douleur notee a 8/10 s'affichait « RAS ». */
+  var ep = fb.exo_data && fb.exo_data.eva_praticien;
+  if(ep !== null && ep !== undefined && (mx === null || ep > mx)) mx = ep;
   return mx;
 }
 
@@ -1453,12 +1483,24 @@ function _fbBellPoll(){
     if(!ids.length){ _notifFeed = []; _remindersFeed = []; _renderBell(); return; }
     var todayStr = new Date().toISOString().slice(0,10);
     Promise.all([
-      sb.from('athlete_feedback')
-        .select('seance_id,rpe,duree_min,douleur,effort,exo_data,submitted_at,seances_planifiees!inner(id,date,patient_id,programme_id,programmes(nom))')
-        .is('seen_at', null)
-        .in('seances_planifiees.patient_id', ids)
-        .order('submitted_at', { ascending:false })
-        .limit(30),
+      /* `eva_praticien_at` peut ne pas exister encore (migration a la main du
+         praticien). PostgREST rejette alors la requete ENTIERE et la cloche
+         serait coupee net — on rejoue donc une fois sans la colonne. */
+      (function(){
+        var COLS = 'seance_id,rpe,duree_min,douleur,effort,exo_data,submitted_at,'
+                 + 'seances_planifiees!inner(id,date,patient_id,programme_id,programmes(nom))';
+        function q(cols){
+          return sb.from('athlete_feedback').select(cols)
+            .is('seen_at', null)
+            .in('seances_planifiees.patient_id', ids)
+            .order('submitted_at', { ascending:false })
+            .limit(30);
+        }
+        return q('eva_praticien_at,' + COLS).then(function(r){
+          if(!r.error) return r;
+          return /eva_praticien_at/i.test(JSON.stringify(r.error||'')) ? q(COLS) : r;
+        });
+      })(),
       sb.from('clinical_notes')
         .select('id,patient_id,date,title,body,remind_at')
         .eq('praticien_id', _currentUid)
@@ -1469,7 +1511,10 @@ function _fbBellPoll(){
         .limit(30)
     ]).then(function(results){
       var fbRes = results[0], remRes = results[1];
-      _notifFeed = fbRes.error ? null : (fbRes.data || []);
+      /* On ne retient que ce qui vient VRAIMENT du patient : sans ce filtre,
+         l'EVA saisie par le praticien lui-meme faisait sonner sa propre
+         cloche. */
+      _notifFeed = fbRes.error ? null : (fbRes.data || []).filter(_notifEstRetourPatient);
       _remindersFeed = remRes.error ? [] : (remRes.data || []);
       _renderBell();
       _fireBrowserNotifs();
