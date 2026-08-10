@@ -1491,7 +1491,16 @@ var _PP_EXT_MAP   = { logo: 'logoExt', signature: 'sigExt', tampon: 'tamponExt' 
 // expiresIn court pour l'aperçu (renouvelé à chaque arrivée de profil), plus long pour
 // l'impression/export (l'utilisateur peut s'attarder sur le dialog natif d'impression).
 function _ppFetchSignedUrl(type, ext, expiresIn) {
-  if (!_ppToken && !_ppRefreshToken()) return Promise.resolve(null);
+  /* On RELIT le jeton a chaque appel. Il etait garde en memoire et n'etait
+     relu que s'il valait null : passe l'heure de validite, chaque demande
+     d'URL signee repartait en 401, le .catch masquait l'image, et le logo
+     comme la signature disparaissaient de la prescription sans un mot — on
+     croyait alors ne pas les avoir enregistres.
+     Relire coute une lecture de localStorage : le SDK du parent y ecrit
+     toujours le jeton le plus frais. C'est ce que fait deja _batAuthToken
+     dans ce meme fichier ; _ppRefreshToken etait reste sur l'ancien motif. */
+  _ppRefreshToken();
+  if (!_ppToken || !_ppUid) return Promise.resolve(null);
   var path = _ppUid + '/' + type + '.' + ext;
   return fetch(PP_SUPA_URL + '/storage/v1/object/sign/' + PP_BUCKET + '/' + path, {
     method: 'POST',
@@ -1600,6 +1609,15 @@ function printPrescription() {
 
   Promise.all(assetPromises).then(function(urls) {
     var logoSrc = urls[0], sigSrc = urls[1], tamponSrc = urls[2];
+    /* Une image declaree dans le profil mais introuvable a l'impression est le
+       genre de manque qu'on ne remarque qu'apres avoir remis l'ordonnance. */
+    var manquants = Object.keys(_PP_ASSET_MAP).filter(function(t, i){
+      return (profile[_PP_EXT_MAP[t]] || '').trim() && !urls[i];
+    });
+    if (manquants.length) {
+      alert('Attention : ' + manquants.join(', ') + ' n\'a pas pu être chargé.\n'
+          + 'Le document va s\'imprimer sans. Rechargez la page et réessayez.');
+    }
     var logosHtml = logoSrc ? '<div class="pp-logos"><img src="' + logoSrc + '" alt="Logo cabinet"></div>' : '';
     var sigImgHtml    = sigSrc    ? '<img class="pp-sig-img" src="' + sigSrc + '" alt="Signature">' : '';
     var tamponImgHtml = tamponSrc ? '<img class="pp-tampon" src="' + tamponSrc + '" alt="Tampon">' : '';
