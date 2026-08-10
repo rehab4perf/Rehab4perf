@@ -1535,6 +1535,40 @@ function _updatePrescAssets(profile) {
   });
 }
 
+/* Patient courant relaye par la coquille — sert a pre-remplir la prescription. */
+var _prescPatient = null;
+
+/* `force` : une nouvelle selection de patient ecrase ce qui etait saisi (c'est
+   un geste explicite, on change de personne). A la simple ouverture de
+   l'onglet on ne remplit que les champs vides, pour ne pas effacer une saisie
+   en cours. */
+function _prescFillFromPatient(force) {
+  var p = _prescPatient;
+  if (!p) return;
+  var vals = { 'presc-nom': p.nom || '', 'presc-prenom': p.prenom || '', 'presc-ddn': p.ddn || '' };
+  Object.keys(vals).forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (force || !el.value) el.value = vals[id];
+  });
+  var civ = document.getElementById('presc-civ');
+  var sexe = (p.sexe || '').trim().toUpperCase();
+  if (civ && sexe) {
+    if (sexe.charAt(0) === 'F') civ.value = 'Mme.';
+    else if (sexe.charAt(0) === 'M') civ.value = 'M.';
+  }
+  updatePrescDoc();
+}
+
+/* Relit le profil le plus frais et redessine tout ce qui en depend. */
+function _prescRefresh() {
+  var prof = {};
+  try { prof = JSON.parse(localStorage.getItem('r4p-profile') || '{}'); } catch(e) {}
+  _updatePrescHeader(prof);
+  _updatePrescAssets(prof);
+  _prescFillFromPatient(false);
+}
+
 function updatePrescDoc() {
   var civ  = document.getElementById('presc-civ').value;
   var nom  = (document.getElementById('presc-nom').value||'').trim().toUpperCase();
@@ -4056,6 +4090,13 @@ PROMS_QUESTIONNAIRES['VISA-H'] = {
 
 // -- Tab navigation ----------------------------------------
 function showTab(id) {
+  /* La prescription se reconstruit A CHAQUE OUVERTURE plutot qu'au seul
+     chargement de l'iframe. Celle-ci demarre avant que la session du parent
+     soit resolue : le profil n'est pas encore en cache, l'en-tete se dessine
+     vide, et il ne dependait plus que d'un message postMessage arrivant a
+     temps pour se remplir. S'il se perd, le praticien voit une ordonnance
+     sans son nom ni son cabinet — sans rien pour le lui dire. */
+  if (id === 'prescriptions') { try { _prescRefresh(); } catch(e){} }
   document.querySelectorAll('.sub-tab').forEach(function(t){ t.classList.remove('active'); });
   document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
   var activeBtn = document.getElementById('stab-' + id);
@@ -4576,6 +4617,8 @@ window.addEventListener('message', function(e){
     _updatePrescAssets(e.data.profile || {});
   }
   if(e.data && e.data.type==='r4p-patient-selected'){
+    _prescPatient = e.data.patient || null;
+    try { _prescFillFromPatient(true); } catch(ex){}
     _crPatientId = e.data.patient ? e.data.patient.id : null;
     _crPevoContentHTML = null;
     _crPevoCards = [];
