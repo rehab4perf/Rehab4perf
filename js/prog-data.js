@@ -1019,9 +1019,10 @@ var FC_ZONES = [
 
 function addCardioBloc(atIndex){
   var id = genId();
-  var letter = _prochaineLettreBloc(atIndex);
-  blocs.splice(_posInsertion(atIndex), 0, {
-    id:id, title:'Bloc '+letter, type:'cardio',
+  var pos = _posInsertion(atIndex);
+  var etapeCible = _etapeDeIndex(pos) || null;
+  blocs.splice(pos, 0, {
+    id:id, title:'Bloc', type:'cardio', _titreAuto:true,
     sport:'course', effort_type:'continu',
     duree_totale:'', distance:'',
     cibles:[{type:'bpm', min:'', max:''}],
@@ -1033,6 +1034,7 @@ function addCardioBloc(atIndex){
     exos:[]
   });
   _syncEtapeIds();
+  _relettrerEtape(etapeCible);
   activeBloc = id;
   renderSession();
 }
@@ -1510,18 +1512,23 @@ function _posInsertion(atIndex){
 
 function addBloc(atIndex){
   var id = genId();
-  var letter = _prochaineLettreBloc(atIndex);
-  blocs.splice(_posInsertion(atIndex), 0,
-    {id:id, title:'Bloc '+letter, exos:[], objectif:'libre', methode:''});
+  var pos = _posInsertion(atIndex);
+  var etapeCible = _etapeDeIndex(pos) || null;
+  blocs.splice(pos, 0,
+    {id:id, title:'Bloc', exos:[], objectif:'libre', methode:'', _titreAuto:true});
   _syncEtapeIds();
+  _relettrerEtape(etapeCible);
   activeBloc = id;
   renderSession();
 }
 
 function deleteBloc(id){
+  var supprime = blocs.find(function(b){ return !_estMarqueur(b) && b.id===id; });
+  var etapeDeSuppr = supprime ? (supprime.etapeId||null) : null;
   blocs = blocs.filter(function(b){ return _estMarqueur(b) || b.id!==id; });
   // Supprimer le dernier bloc d'une zone libre y laisse un séparateur orphelin.
   _compacterMarqueurs();
+  _relettrerEtape(etapeDeSuppr);
   if(activeBloc===id){ var r = _blocsReels(); activeBloc = r.length ? r[r.length-1].id : null; }
   renderSession();
   renderLib(document.getElementById('searchInput').value.toLowerCase());
@@ -1688,16 +1695,25 @@ function _etapeDeIndex(i){
   return null;
 }
 
-/* Lettre par défaut du prochain bloc — recommence à A dans chaque étape.
-   Compter sur l'ensemble de la séance ferait dériver les lettres au fil des
-   étapes (« Bloc D » dans une étape qui n'a que deux blocs). L'appartenance
-   se lit sur `etapeId`, déjà à jour au moment de l'appel puisque chaque ajout
-   suit un `_syncEtapeIds()`. */
-function _prochaineLettreBloc(atIndex){
-  var cible = _etapeDeIndex(_posInsertion(atIndex)) || null;
+/* Renomme les blocs « Bloc X » — jamais ceux nommés à la main — pour qu'ils
+   suivent A, B, C… dans l'ordre d'affichage de LEUR étape (`etapeId===cible`,
+   `null` pour la zone hors étape). `n` compte TOUS les blocs réels de l'étape,
+   nommés à la main ou non : un bloc renommé « Squat » garde sa place dans le
+   compte, sinon les lettres qui le suivent ne correspondraient plus à leur
+   position. Seul le TITRE des blocs `_titreAuto` est réécrit.
+
+   Appelée après tout geste qui change l'ordre ou l'appartenance d'un bloc :
+   création, déplacement, changement d'étape, suppression. Un bloc déjà
+   enregistré avant cette fonctionnalité n'a pas `_titreAuto` — il ne sera
+   jamais renommé tout seul, même déplacé. */
+function _relettrerEtape(etapeId){
+  var cible = etapeId || null;
   var n = 0;
-  _blocsReels().forEach(function(b){ if((b.etapeId||null) === cible) n++; });
-  return String.fromCharCode(65 + n);
+  _blocsReels().forEach(function(b){
+    if((b.etapeId||null) !== cible) return;
+    n++;
+    if(b._titreAuto) b.title = 'Bloc ' + String.fromCharCode(64 + n);
+  });
 }
 
 /* Ajoute UNE copie d'un bloc a la fin de la seance — le geste « piocher un
@@ -1723,6 +1739,7 @@ function _ajouterBlocPioche(srcBloc){
   blocs.push(nb);
   activeBloc = nb.id;
   _syncEtapeIds();
+  _relettrerEtape(nb.etapeId||null);
   return nb;
 }
 
@@ -1838,9 +1855,11 @@ function dissolveEtape(etapeId){
 function assignBlocEtape(blocId, etapeId){
   var i = (blocs||[]).findIndex(function(x){ return x.id===blocId && !_estMarqueur(x); });
   if(i < 0) return;
+  var etapeAvant = _etapeDeIndex(i);
+  var etapeDest = (etapeId && _indexMarqueur(etapeId) >= 0) ? etapeId : null;
 
   if(!etapeId || _indexMarqueur(etapeId) < 0){
-    var courante = _etapeDeIndex(i);
+    var courante = etapeAvant;
     if(courante === null) return;                  // déjà hors étape
     // Le bloc sort de son étape et se pose juste APRÈS elle, dans une zone
     // libre. Le remonter avant le premier séparateur — seule autre zone sans
@@ -1856,6 +1875,8 @@ function assignBlocEtape(blocId, etapeId){
 
   _compacterMarqueurs();
   _syncEtapeIds();
+  _relettrerEtape(etapeAvant);
+  _relettrerEtape(etapeDest);
   renderSession();
   if(typeof _draftSaveLazy === 'function') _draftSaveLazy();
 }
@@ -2080,7 +2101,7 @@ function toggleExoChain(blocId, exoId){
 
 function updateBlocTitle(id, val){
   var bloc = blocs.find(function(b){ return b.id===id; });
-  if(bloc) bloc.title = val;
+  if(bloc){ bloc.title = val; bloc._titreAuto = false; }
   _draftSaveLazy();
 }
 
@@ -2357,6 +2378,7 @@ function moveBloc(idx, dir){
   blocs.splice(idx, 1);
   blocs.splice(newIdx, 0, moved);
   _syncEtapeIds();
+  _relettrerEtape(moved.etapeId||null);
   renderSession();
   if(typeof _draftSaveLazy === 'function') _draftSaveLazy();
 }
