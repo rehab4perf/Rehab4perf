@@ -2076,8 +2076,24 @@ function updateBlocMethode(id, val){
   var bloc = blocs.find(function(b){ return b.id===id; });
   if(!bloc) return;
   bloc.methode = val;
-  // Nouvelle méthode choisie → remettre toutes les cases à coché
-  bloc.exos.forEach(function(e){ delete e._methChecked; delete e._methApplied; });
+  /* Toutes les cases cochees : appliquer au bloc entier est le cas courant, et
+     l'intention etait deja ecrite ici — le code, lui, les decochait, ce qui
+     obligeait a tout recocher avant de pouvoir appliquer quoi que ce soit. */
+  bloc.exos.forEach(function(e){ e._methChecked = true; delete e._methApplied; });
+  /* On ouvre le mode selection : c'est le geste qui suit naturellement. En
+     sortir n'efface pas la methode — le bandeau continue de documenter ce
+     qui a ete applique au bloc. */
+  if(val) bloc._methSel = true; else delete bloc._methSel;
+  renderSession();
+}
+
+/* Rouvre le mode selection sur un bloc dont la methode est deja posee — pour
+   la reappliquer a d'autres exercices, ou apres en avoir ajoute un. */
+function _ouvrirSelMethode(id){
+  var bloc = blocs.find(function(b){ return b.id===id; });
+  if(!bloc) return;
+  bloc._methSel = true;
+  bloc.exos.forEach(function(e){ e._methChecked = true; });
   renderSession();
 }
 
@@ -2137,6 +2153,9 @@ function applyMethode(id){
     e._methChecked  = false; // décocher après application
   });
   if(appliedCount === 0){ _showToast('⚠️ Aucun exercice sélectionné.'); return; }
+  /* Applique : on rend la main. Les fleches de deplacement reviennent, la
+     methode et son bandeau restent. */
+  delete bloc._methSel;
   renderSession();
   // Effacer les pastilles après 3s (les cases restent décochées)
   setTimeout(function(){
@@ -2557,7 +2576,15 @@ function renderSession(){
         html += '<option value="'+m.id+'"'+(methVal===m.id?' selected':'')+'>'+escH(m.label)+'</option>';
       });
       html += '</select>';
-      if(methObj){
+      /* `_methSel` : le mode SELECTION, distinct du choix de la methode.
+         Auparavant, choisir une methode remplacait durablement les fleches de
+         deplacement par des cases a cocher — on ne pouvait plus reordonner les
+         exercices du bloc, et rien ne rendait la main. Le mode s'ouvre au
+         choix d'une methode, se ferme des qu'on a applique. */
+      if(methObj && !b._methSel){
+        html += '<button class="meth-select-all-btn" onclick="_ouvrirSelMethode(\''+b.id+'\')" title="Choisir les exercices auxquels appliquer la méthode">Sélectionner…</button>';
+      }
+      if(methObj && b._methSel){
         var allChecked = b.exos.length > 0 && b.exos.every(function(e){ return e._methChecked === true; });
         html += '<button class="meth-select-all-btn" onclick="_toggleAllExoChecks(\''+b.id+'\')" title="'+(allChecked?'Tout désélectionner':'Tout sélectionner')+'">'
               + (allChecked ? '☑ Tout désélectionner' : '☐ Tout sélectionner')
@@ -2605,7 +2632,7 @@ function renderSession(){
 
         }
         html += '<div class="exo-row">';
-        if(methObj){
+        if(methObj && b._methSel){
           var isChecked = (e._methChecked === true);
           html += '<div class="exo-move-btns" style="justify-content:center;">'
                 + '<input type="checkbox" class="exo-meth-check" id="exo-check-'+b.id+'-'+e.id+'"'
@@ -2709,10 +2736,13 @@ function renderSession(){
     html += '</div>'; // .etape-group
   }
   }); // _groups
+  /* « + Ajouter » passe AVANT les notes : on compose la seance de haut en bas,
+     et le bouton d'ajout se trouvait derriere un pave de texte. Les notes
+     ferment la seance, ce qui est leur place. */
+  html += _renderAddRow();
   // Notes
   html += '<div class="notes-bloc"><div class="notes-label">Notes / Consignes</div>';
   html += '<textarea class="notes-ta" id="sessionNotes" placeholder="Conseils, progressions, points d\'attention…" oninput="autoResizeTa(this);if(typeof _notes!==\'undefined\'){_notes=this.value;_draftSaveLazy();}">'+escH(getNotes())+'</textarea></div>';
-  html += _renderAddRow();
   area.innerHTML = html;
   updateTargetBlocSelect();
   // Auto-resize des consignes déjà remplies + notes

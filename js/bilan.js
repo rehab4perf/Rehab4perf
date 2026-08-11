@@ -8257,14 +8257,25 @@ function buildCRTF() {
       var garde = pgs.some(function(p){ return PAGES_TF.indexOf(p) >= 0; });
       if (!garde) it.remove();
     });
-    /* Un intertitre de groupe (« Force musculaire », « Amplitudes »…) qui n'a
-       plus aucune ligne sous lui n'a plus de raison d'etre. */
-    tmp.querySelectorAll('div').forEach(function(d){
-      if (d.querySelector('.cr-item')) return;
-      if (d.querySelector('input,select,textarea,table')) return;
-      if (!d.textContent.trim()) { d.remove(); return; }
-      if (d.children.length === 0 && d.textContent.trim().length < 60) d.remove();
+    /* Un intertitre de groupe vide n'a plus de raison d'etre — mais on ne
+       descend JAMAIS dans une ligne. La version precedente balayait tous les
+       <div> du document, y compris les cellules internes : la grille G/D de
+       l'analyse du squat (« Compensation | G | D » et ses pastilles) etait
+       detruite, chaque cellule etant un div sans enfant de moins de 60
+       caracteres. Seuls les elements de PREMIER NIVEAU sont examines. */
+    var enfants = Array.prototype.slice.call(tmp.children);
+    var etiquetteEnAttente = null;
+    enfants.forEach(function(el){
+      var porteUneLigne = el.classList.contains('cr-item') || !!el.querySelector('.cr-item');
+      if (porteUneLigne) { etiquetteEnAttente = null; return; }
+      /* Un conteneur de groupe vide part avec son intertitre. Une etiquette
+         seule n'est retiree que si aucune ligne ne la suit — sinon elle
+         annonce des lignes bien presentes. */
+      if (el.children.length > 0) { el.remove(); return; }
+      if (etiquetteEnAttente) etiquetteEnAttente.remove();
+      etiquetteEnAttente = el;
     });
+    if (etiquetteEnAttente) etiquetteEnAttente.remove();
     return tmp.querySelector('.cr-item') ? tmp.innerHTML : '';
   }
   /* Les titres viennent du CR Complet, ou la numerotation a un sens. Ici elle
