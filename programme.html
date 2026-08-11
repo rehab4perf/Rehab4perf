@@ -178,6 +178,12 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .stmpl-card-tree-exo { font-size:var(--fs-sm); color:var(--text); padding:1px 0 1px 8px; }
 .stmpl-card-tree-row { font-size:var(--fs-sm); font-weight:600; color:var(--text); padding:3px 0; }
 .stmpl-card-tree-empty { font-size:var(--fs-sm); color:var(--muted); font-style:italic; padding:4px 0; }
+/* Nom de l'etape, avec sa couleur du builder. Ce qui la suit est en retrait :
+   c'est le seul signe de ce qu'elle contient, le separateur n'ayant pas de fin. */
+.stmpl-card-tree-etape { display:flex; align-items:center; gap:6px; font-size:var(--fs-xs); font-weight:800; color:var(--text-dk); text-transform:uppercase; letter-spacing:.04em; margin:7px 0 3px; }
+.stmpl-card-tree-etape:first-child { margin-top:0; }
+.stmpl-card-tree-etape i { flex:none; width:3px; height:12px; border-radius:2px; }
+.stmpl-card-tree-in { padding-left:10px; }
 .stmpl-card-tree-open {
   width:calc(100% - 56px); margin:2px 12px 8px 44px; padding:7px 10px;
   border:1px solid var(--accent); border-radius:7px; background:var(--accent2);
@@ -3296,7 +3302,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   </div><!-- /tool-panel-drawer -->
 </div><!-- /tool-panel-overlay -->
 
-<script src="js/prog-data.js?v=20260810f"></script>
+<script src="js/prog-data.js?v=20260811b"></script>
 
 <!-- ══ CYCLES MODAL ════════════════════════════════════════════ -->
 <style>
@@ -4464,6 +4470,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 </div>
 
-<script src="js/prog-main.js?v=20260810g"></script>
+<script src="js/prog-main.js?v=20260811b"></script>
 </body>
 </html>

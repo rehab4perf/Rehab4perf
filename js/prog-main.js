@@ -6417,7 +6417,14 @@ function _nomSansPrefixeGroupe(nom, groupe){
 
 function _renderTmplCard(p, isPhase, phaseNum, hideCat, groupe){
   var bl = p._blocs||[];
-  if(!bl.length && p.donnees){ try{ bl=(JSON.parse(p.donnees).blocs)||[]; }catch(e){} }
+  var etp = p._etapes||[];
+  if((!bl.length || !etp.length) && p.donnees){
+    try{
+      var _d = JSON.parse(p.donnees);
+      if(!bl.length)  bl  = _d.blocs||[];
+      if(!etp.length) etp = _d.etapes||[];
+    }catch(e){}
+  }
   var nbExos   = bl.reduce(function(a,b){ return a+(b.exos||[]).length; },0);
   var nbCardio = bl.filter(function(b){ return b.type==='cardio'; }).length;
   var dispNom  = isPhase ? (p.phase_nom||p.nom||'Sans nom') : (p.nom||'Sans nom');
@@ -6458,7 +6465,7 @@ function _renderTmplCard(p, isPhase, phaseNum, hideCat, groupe){
       +'<button class="stmpl-ib" title="Planifier" onclick="event.stopPropagation();_openQuickAdd(\''+pid+'\',\''+pnom+'\')">'+_ICO_PLUS+'</button>'
     +'</div>'
     +'</div>';
-  if(isOpen) html += _renderTmplCardTree(bl, pid);
+  if(isOpen) html += _renderTmplCardTree(bl, pid, etp);
   return html;
 }
 
@@ -6466,18 +6473,36 @@ function _renderTmplCard(p, isPhase, phaseNum, hideCat, groupe){
    repertoire avant de decider. « Ouvrir dans le builder » reste le seul
    geste qui compose quelque chose — la regle « on ajoute sans rien demander »
    s'applique a lui, pas au simple fait de regarder. */
-function _renderTmplCardTree(bl, pid){
+/* Les separateurs ne sont pas des blocs : `{type:'etape'}` ouvre une etape
+   nommee, `{type:'libre'}` une zone qui n'appartient a aucune. Rendus comme le
+   reste, ils s'affichaient « BLOC » — un bloc fantome, sans exercice, a la
+   place du nom de l'etape. Le titre ne vit pas sur le separateur : il est dans
+   `etapes[]`, que la carte doit donc lire elle aussi. */
+function _renderTmplCardTree(bl, pid, etapes){
   if(!bl.length){
     return '<div class="stmpl-card-tree"><div class="stmpl-card-tree-empty">Ce modèle est vide.</div></div>';
   }
+  var meta = {};
+  (etapes||[]).forEach(function(e){ if(e && e.id) meta[e.id] = e; });
+
   var h = '<div class="stmpl-card-tree">';
+  var dansEtape = false;
   bl.forEach(function(bloc){
+    if(bloc.type==='etape'){
+      var e = meta[bloc.id] || {};
+      var pastille = e.color ? '<i style="background:'+escH(String(e.color))+'"></i>' : '';
+      h += '<div class="stmpl-card-tree-etape">'+pastille+escH(e.title||'Étape')+'</div>';
+      dansEtape = true;
+      return;
+    }
+    if(bloc.type==='libre'){ dansEtape = false; return; }
+    var dec = dansEtape ? ' stmpl-card-tree-in' : '';
     if(bloc.type==='cardio'){
-      h += '<div class="stmpl-card-tree-row">'+escH(bloc.title||bloc.sport||'Cardio')+'</div>';
+      h += '<div class="stmpl-card-tree-row'+dec+'">'+escH(bloc.title||bloc.sport||'Cardio')+'</div>';
     } else if(bloc.type==='texte'){
-      h += '<div class="stmpl-card-tree-row">'+escH(bloc.title||'Texte')+'</div>';
+      h += '<div class="stmpl-card-tree-row'+dec+'">'+escH(bloc.title||'Texte')+'</div>';
     } else {
-      h += '<div class="stmpl-card-tree-bloc">';
+      h += '<div class="stmpl-card-tree-bloc'+dec+'">';
       h += '<div class="stmpl-card-tree-bloctitle">'+escH(bloc.title||'Bloc')+'</div>';
       (bloc.exos||[]).forEach(function(exo){
         h += '<div class="stmpl-card-tree-exo">'+escH(exo.name||'Exercice')+'</div>';

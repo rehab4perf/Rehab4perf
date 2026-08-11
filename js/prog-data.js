@@ -1019,7 +1019,7 @@ var FC_ZONES = [
 
 function addCardioBloc(atIndex){
   var id = genId();
-  var letter = String.fromCharCode(65 + _blocsReels().length);
+  var letter = _prochaineLettreBloc(atIndex);
   blocs.splice(_posInsertion(atIndex), 0, {
     id:id, title:'Bloc '+letter, type:'cardio',
     sport:'course', effort_type:'continu',
@@ -1510,7 +1510,7 @@ function _posInsertion(atIndex){
 
 function addBloc(atIndex){
   var id = genId();
-  var letter = String.fromCharCode(65 + _blocsReels().length);
+  var letter = _prochaineLettreBloc(atIndex);
   blocs.splice(_posInsertion(atIndex), 0,
     {id:id, title:'Bloc '+letter, exos:[], objectif:'libre', methode:''});
   _syncEtapeIds();
@@ -1686,6 +1686,18 @@ function _etapeDeIndex(i){
     if(_estMarqueur(blocs[k])) return _estMarqueurEtape(blocs[k]) ? blocs[k].id : null;
   }
   return null;
+}
+
+/* Lettre par défaut du prochain bloc — recommence à A dans chaque étape.
+   Compter sur l'ensemble de la séance ferait dériver les lettres au fil des
+   étapes (« Bloc D » dans une étape qui n'a que deux blocs). L'appartenance
+   se lit sur `etapeId`, déjà à jour au moment de l'appel puisque chaque ajout
+   suit un `_syncEtapeIds()`. */
+function _prochaineLettreBloc(atIndex){
+  var cible = _etapeDeIndex(_posInsertion(atIndex)) || null;
+  var n = 0;
+  _blocsReels().forEach(function(b){ if((b.etapeId||null) === cible) n++; });
+  return String.fromCharCode(65 + n);
 }
 
 /* Ajoute UNE copie d'un bloc a la fin de la seance — le geste « piocher un
