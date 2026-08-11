@@ -2017,7 +2017,7 @@ function buildProgHTML(prog){
 
   // Étapes : titre/couleur viennent de la liste `etapes`. Repli sur les champs
   // portés par le bloc pour les séances enregistrées avant cette liste.
-  var ETAPE_COLORS_ATH = ['#F59E0B','#2563EB','#0D9488','#7C3AED','#DC2626','#16A34A','#DB2777','#0891B2'];
+  var ETAPE_COLORS_ATH = ['#2563EB','#DC2626','#16A34A','#F59E0B','#0D9488','#7C3AED','#DB2777','#0891B2'];  // MEME ORDRE que ETAPE_COLORS (js/prog-data.js) : sert d'indice de repli
   var _progEtapes = (!Array.isArray(raw) && Array.isArray(raw.etapes)) ? raw.etapes : [];
   function _progEtape(etapeId){
     return _progEtapes.find(function(e){ return e && e.id===etapeId; }) || null;

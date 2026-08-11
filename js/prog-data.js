@@ -1533,7 +1533,17 @@ function deleteBloc(id){
    et de survivre à la suppression de son dernier bloc. Chaque bloc porte un
    `etapeId` (ou rien). L'ordre d'affichage reste piloté par `blocs` ; les étapes
    encore vides s'affichent en fin de séance, là où on vient de les créer. */
-var ETAPE_COLORS = ['#F59E0B','#2563EB','#0D9488','#7C3AED','#DC2626','#16A34A','#DB2777','#0891B2'];
+/* Ordre voulu par le praticien : bleu, rouge, vert d'abord — les trois
+   premieres etapes d'une seance sont les plus frequentes et se distinguent
+   ainsi au premier coup d'oeil. La suite importe peu.
+
+   La couleur est STOCKEE sur chaque etape, pas son indice : reordonner ici ne
+   repeint aucune seance deja enregistree. Une exception, et elle impose de
+   tenir les deux fichiers d'accord — `athlete.html` garde sa propre copie
+   (ETAPE_COLORS_ATH) et s'en sert PAR INDICE pour les seances anterieures a
+   la liste `etapes`. Les deux listes doivent rester identiques, sinon le
+   patient voit d'autres couleurs que le praticien sur ces seances-la. */
+var ETAPE_COLORS = ['#2563EB','#DC2626','#16A34A','#F59E0B','#0D9488','#7C3AED','#DB2777','#0891B2'];
 var etapes = [];
 
 /* Icônes réutilisées depuis le vocabulaire déjà en place dans le site
