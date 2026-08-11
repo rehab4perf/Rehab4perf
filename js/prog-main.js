@@ -983,6 +983,11 @@ function loadSeance(id) {
     renderSession();
     _updateBuilderTitle();
     renderLib(document.getElementById('searchInput').value.toLowerCase());
+    /* Une seance ouverte depuis l'agenda n'appartient a aucun protocole : sans
+       cet effacement, un protocole choisi plus tot restait colle a toutes les
+       seances suivantes. */
+    _activeGroupId=null; _activeGroupNom=''; _activePhaseOrdre=1;
+    _updateActiveGroupBadge();
     _enterBuilderMode();
   });
 }
@@ -5471,7 +5476,11 @@ function clearActiveGroup(){
 function _updateActiveGroupBadge(){
   var el = document.getElementById('builderActiveGroupBadge');
   if(!el) return;
-  if(_activeGroupId && _activeGroupNom){
+  /* Le protocole ne dit ou ranger qu'un MODELE. Sur une seance, enregistrer
+     ecrit dans le programme du patient : le badge annoncait un classement qui
+     n'aurait pas lieu, et rien ne permettait de s'en servir. Il ne parait donc
+     plus qu'en mode template. */
+  if(_activeGroupId && _activeGroupNom && _builderMode === 'template'){
     el.style.display = 'inline-flex';
     el.innerHTML = '<span>📁 '+escH(_activeGroupNom)+'</span>'
       +'<span class="badge-clear" onclick="event.stopPropagation();clearActiveGroup()" title="Retirer">✕</span>';
@@ -5486,7 +5495,12 @@ function _updateActiveGroupBadge(){
    parametre — et surtout : plus de `blocs = []`. L'ancienne version vidait le
    builder sans rien demander, ce qui pouvait effacer une seance en cours. */
 function addPhaseToGroup(id){
-  setActiveGroup(id);
+  /* `setActiveGroup` etait appele AVANT que la seance en cours ne soit mise de
+     cote : _stashSeance capturait donc le protocole comme s'il avait toujours
+     ete celui de cette seance, et _restoreSeance le lui rendait a la sortie.
+     La seance repartait avec un protocole qu'elle n'avait jamais eu.
+     `nouveauTemplate` pose le protocole APRES la mise de cote — c'est sa
+     place, le protocole appartient au template. */
   _expandedGroups[id] = true;
   try{ localStorage.setItem(R4P_KEYS.EXPANDED_GROUPS, JSON.stringify(_expandedGroups)); }catch(e){}
   var g = (_groups||[]).find(function(x){ return String(x.id)===String(id); });
@@ -6635,6 +6649,7 @@ function _restoreSeance(){
   _currentProgId = s.progId; _currentSeanceId = s.seanceId; _builderDate = s.date;
   _builderFromTemplate = s.fromTemplate;
   _activeGroupId = s.groupId; _activeGroupNom = s.groupNom; _activePhaseOrdre = s.phaseOrdre;
+  if(typeof _updateActiveGroupBadge === 'function') _updateActiveGroupBadge();
   /* L'etat « non enregistree » revient avec elle : une seance qui reapparait
      marquee enregistree ferait croire le travail a l'abri alors qu'il ne
      l'est pas. */
