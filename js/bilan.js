@@ -5933,7 +5933,23 @@ function _buildAllTestsHtml() {
         if (_od) dateBadge = '<span class="cr-date-badge">' + _od + '</span>';
       } else { cls = ' cr-item--fresh'; }
     }
-    return '<div class="cr-item' + cls + '"><span class="cr-key">' + key + '</span><span class="cr-val">' + val + '</span>' + tagHtml + dateBadge + '</div>';
+    /* Chaque ligne retient la ou les PAGES d'ou viennent ses champs. C'est ce
+       qui permet au CR Tests de ne garder que les onglets Tests de force et
+       Tests fonctionnels : la reponse est deduite du formulaire lui-meme, pas
+       d'une liste tenue a la main qui aurait vieilli au premier test ajoute.
+       Necessaire parce que les tests de force ne forment PAS une section du
+       CR — ils sont rendus DANS le Bilan Orthopedique, meles aux tests
+       orthopediques de la meme region. */
+    var _pgs = [];
+    if (fieldIds && fieldIds.length) {
+      fieldIds.forEach(function(fid){
+        var el = document.getElementById(fid);
+        var pg = el && el.closest ? el.closest('.page') : null;
+        if (pg && pg.id && _pgs.indexOf(pg.id) < 0) _pgs.push(pg.id);
+      });
+    }
+    return '<div class="cr-item' + cls + '"' + (_pgs.length ? ' data-pages="' + _pgs.join(' ') + '"' : '')
+      + '><span class="cr-key">' + key + '</span><span class="cr-val">' + val + '</span>' + tagHtml + dateBadge + '</div>';
   }
 
   // ── Résolution du côté atteint ────────────────────────────────
@@ -8223,8 +8239,44 @@ function buildCRTF() {
       '</div>';
   }
 
-  // Toutes les sections tests via helper partagé (tests perso inclus inline)
-  _buildAllTestsHtml().forEach(function(sec){ addTFSection(sec.title, sec.html); });
+  /* CR Tests = les onglets « Tests de force » et « Tests fonctionnels », rien
+     d'autre. On ne peut pas filtrer par section : les tests de force sont
+     rendus DANS le Bilan Orthopedique, aux cotes des tests orthopediques de
+     la meme region. On filtre donc LIGNE A LIGNE, sur la page d'origine des
+     champs que chacune lit — l'information posee par crItem.
+
+     Une ligne sans provenance connue (conclusion, marqueur, valeur calculee
+     sans champ rattache) est ecartee : elle ne vient d'aucun de ces onglets. */
+  var PAGES_TF = ['page-force-ms','page-force-rachis','page-force-mi','page-musculaires',
+                  'page-fonctionnelsMS','page-fonctionnelsRachis','page-fonctionnels'];
+  function _neGarderQueTF(html){
+    var tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    tmp.querySelectorAll('.cr-item').forEach(function(it){
+      var pgs = (it.getAttribute('data-pages') || '').split(/\s+/).filter(Boolean);
+      var garde = pgs.some(function(p){ return PAGES_TF.indexOf(p) >= 0; });
+      if (!garde) it.remove();
+    });
+    /* Un intertitre de groupe (« Force musculaire », « Amplitudes »…) qui n'a
+       plus aucune ligne sous lui n'a plus de raison d'etre. */
+    tmp.querySelectorAll('div').forEach(function(d){
+      if (d.querySelector('.cr-item')) return;
+      if (d.querySelector('input,select,textarea,table')) return;
+      if (!d.textContent.trim()) { d.remove(); return; }
+      if (d.children.length === 0 && d.textContent.trim().length < 60) d.remove();
+    });
+    return tmp.querySelector('.cr-item') ? tmp.innerHTML : '';
+  }
+  /* Les titres viennent du CR Complet, ou la numerotation a un sens. Ici elle
+     n'en a plus — les sections ecartees laisseraient des trous — et surtout
+     « Bilan Orthopedique » annoncerait l'inverse de ce qu'il reste : apres
+     filtrage cette section ne contient que des tests de force. */
+  function _titreTF(t){
+    var x = String(t || '').replace(/^\s*\d+\.\s*/, '');
+    if (/Bilan Orthop/i.test(x)) return 'Tests de force';
+    return x;
+  }
+  _buildAllTestsHtml().forEach(function(sec){ addTFSection(_titreTF(sec.title), _neGarderQueTF(sec.html)); });
 
   if (!content.innerHTML.trim() || content.innerHTML === '<div style="margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid var(--border)"></div>') {
     content.innerHTML = '<div style="color:var(--text3);font-style:italic;padding:40px 0;text-align:center;font-size:.9rem">Aucun test renseigné.<br>Remplissez les onglets pour générer le compte-rendu.</div>';
