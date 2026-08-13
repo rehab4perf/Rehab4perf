@@ -1073,19 +1073,24 @@ td.bl-row-rail button:disabled { opacity: .3 !important; cursor: default; }
 .cp-gauge-hd strong { color: var(--text); }
 .cp-gauge-track { position: relative; height: 10px; border-radius: 20px;
   background: var(--surface2); margin-top: 26px; }
-.cp-gauge-cible { position: absolute; top: 0; bottom: 0; background: var(--green-l);
-  border: 1px solid var(--green-b); border-radius: 3px; }
+/* Deux repères seulement, et tous deux STATIQUES : l'échelle va de 140 à 190,
+   donc 165 tombe à 50 % et 180 à 80 %. Aucune cible n'est calculée — la page
+   constate où se situe le coureur, elle ne lui prescrit pas une hausse. */
+.cp-gauge-bas { position: absolute; top: 0; bottom: 0; left: 0; width: 50%;
+  background: var(--red-l); border-radius: 20px 0 0 20px; }
+.cp-gauge-ref { position: absolute; top: -3px; bottom: -3px; left: 80%; width: 1px;
+  border-left: 1px dashed var(--text2); }
+/* Le repère se lit SOUS la piste, la valeur mesurée au-dessus : un coureur
+   pile à 180 — le cas même où la référence est parlante — superposait sinon
+   les deux étiquettes. */
+.cp-gauge-ref span { position: absolute; top: 15px; left: 5px; font-size: .6rem;
+  font-weight: 600; color: var(--text2); white-space: nowrap; }
 .cp-gauge-base { position: absolute; top: -6px; width: 3px; height: 22px;
   border-radius: 2px; background: var(--accent2); }
 .cp-gauge-lbl { position: absolute; top: -26px; font-size: .66rem; font-weight: 800;
   white-space: nowrap; font-variant-numeric: tabular-nums; transform: translateX(-50%); }
 .cp-gauge-lbl.base { color: var(--accent2); }
-.cp-gauge-lbl.cible { color: var(--green-d); }
-.cp-gauge-elite { position: absolute; top: -3px; bottom: -3px; left: 80%; width: 1px;
-  border-left: 1px dashed var(--text3); }
-.cp-gauge-elite span { position: absolute; top: -17px; left: 5px; font-size: .6rem;
-  color: var(--text3); white-space: nowrap; }
-.cp-gauge-scale { display: flex; justify-content: space-between; margin-top: 10px;
+.cp-gauge-scale { display: flex; justify-content: space-between; margin-top: 28px;
   font-size: .62rem; color: var(--text3); font-variant-numeric: tabular-nums; }
 
 /* Schéma d'attaque du pied — trois positions, une seule retenue. */
@@ -5396,21 +5401,19 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
         </div>
         <div class="measure-input"><input type="number" id="cp-cadence" placeholder="—" oninput="_cpMajCadence()"></div>
         <div class="measure-stat" id="cp-cadence-stat">—</div>
-        <div class="measure-norme">Cible = <strong>+5 à +10 % de la valeur du coureur</strong>, pas un chiffre absolu.</div>
+        <div class="measure-norme"><strong>180 pas/min</strong> est la référence mondiale en performance. En deçà de <strong>165</strong>, la cadence est insuffisante.</div>
       </div>
 
       <div class="cp-gauge" id="cp-gauge" style="display:none">
         <div class="cp-gauge-hd">
-          La cible n'est pas 180 : elle se calcule <strong>depuis la cadence mesurée</strong> — c'est ce qui
-          a été testé dans les études d'intervention, et cela tient compte de la taille et de l'allure du
-          coureur. Ici <strong id="cp-g-base-txt">—</strong> pas/min → cible <strong id="cp-g-cible-txt">—</strong>.
+          <strong>180 pas/min</strong> est la référence mondiale en performance.
+          En deçà de <strong>165</strong>, la cadence est notée insuffisante.
         </div>
         <div class="cp-gauge-track">
-          <div class="cp-gauge-cible" id="cp-g-cible"></div>
+          <div class="cp-gauge-bas"></div>
+          <div class="cp-gauge-ref"><span>180 — référence mondiale</span></div>
           <div class="cp-gauge-base" id="cp-g-base"></div>
           <div class="cp-gauge-lbl base" id="cp-g-lbl-base"></div>
-          <div class="cp-gauge-lbl cible" id="cp-g-lbl-cible"></div>
-          <div class="cp-gauge-elite"><span>180 — observation élites, pas une norme</span></div>
         </div>
         <div class="cp-gauge-scale"><span>140</span><span>150</span><span>160</span><span>170</span><span>180</span><span>190</span></div>
       </div>
@@ -5790,7 +5793,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260806i"></script>
-<script src="js/bilan.js?v=20260813e"></script>
+<script src="js/bilan.js?v=20260813f"></script>
 
 </body>
 </html>

@@ -68,7 +68,8 @@ global.document = {
 
 var pre = ''
   + ext('_crMesTab') + '\n'
-  + ext('_cpCadenceCible') + '\n'
+  + 'var CP_CADENCE_MIN = 165, CP_CADENCE_REF = 180;\n'
+  + ext('_cpCadenceInsuffisante') + '\n'
   + src.slice(src.indexOf('var CP_STRIKE_LBL'),
               src.indexOf('};', src.indexOf('var CP_STRIKE_LBL')) + 2) + '\n'
   + 'function nl2br(s){ return String(s||"").replace(/\\n/g,"<br>"); }\n'
@@ -112,7 +113,9 @@ function verifie(intitule, cond, detail){
 
 console.log('\nSection CR — contenu');
 verifie('conditions avec chaussure et drop', /Nike Pegasus 41 — drop 10 mm/.test(html));
-verifie('cadence avec cible relative 170–178', /162 pas\/min/.test(html) && /Cible 170–178/.test(html));
+verifie('cadence en constat, sans cible',
+  /162 pas\/min \(référence performance : 180\)/.test(html));
+verifie('aucune cible de progression dans le CR', !/Cible |\+5 à \+10/.test(html));
 verifie('le CR reprend le libellé du formulaire, pas « Insuffisant »',
   html.indexOf(OPTS['cp-gct-q'].insuffisant + ' — 278 ms') >= 0,
   'attendu : ' + OPTS['cp-gct-q'].insuffisant + ' — 278 ms');
@@ -145,7 +148,8 @@ console.log(pts.map(function(p){ return '        • ' + p; }).join('\n'));
 verifie('bassin droit remonté', pts.some(function(p){ return /bassin, hanche droite/.test(p); }));
 verifie('valgus droit remonté', pts.some(function(p){ return /valgus dynamique, hanche droite/.test(p); }));
 verifie('overstride remonté', pts.some(function(p){ return /overstride/.test(p); }));
-verifie('cadence avec cible chiffrée', pts.some(function(p){ return /162 → 170–178/.test(p); }));
+verifie('cadence sous 165 remontée comme insuffisante',
+  pts.some(function(p){ return /Cadence insuffisante — 162 pas\/min \(seuil 165\)/.test(p); }));
 verifie('extension de hanche remontée', pts.some(function(p){ return /Extension de hanche/.test(p); }));
 verifie('asymétrie remontée avec son écart', pts.some(function(p){ return /Asymétrie des appuis \(9 % d'écart\)/.test(p); }));
 verifie('appui long remonté', pts.some(function(p){ return /pied qui s'écrase/.test(p); }));
@@ -162,6 +166,22 @@ var comboMod = dbSrc + '\n' + ext('_cpComboFiltre')
 var TMP2 = path.join(require('os').tmpdir(), '_r4p_course_combo.js');
 fs.writeFileSync(TMP2, comboMod);
 var cb = require(TMP2);
+
+console.log('\nCadence — un seuil, aucune cible');
+var cadSauve = CH['cp-cadence'];
+[[180, false], [170, false], [165, false], [164, true], [150, true]].forEach(function(c){
+  CH['cp-cadence'] = String(c[0]);
+  var p = m.pointsCAP();
+  var remonte = p.some(function(x){ return /Cadence insuffisante/.test(x); });
+  verifie(c[0] + ' pas/min ' + (c[1] ? 'remonte' : 'ne remonte pas'), remonte === c[1]);
+});
+CH['cp-cadence'] = '180';
+/* Cibler « cadence » tout court attrapait « passer par la cadence » de la
+   ligne overstride — c'est un moyen, pas une consigne sur la cadence. */
+verifie('180 ne reçoit aucune consigne sur sa cadence',
+  !m.pointsCAP().some(function(x){ return /^Cadence/.test(x); }));
+verifie('180 apparaît quand même dans le CR', /180 pas\/min/.test(m.sectionCAP()));
+CH['cp-cadence'] = cadSauve;
 
 console.log('\nSans capteur — le statut seul doit suffire');
 var sauve = {};

@@ -714,13 +714,17 @@ function _cpChaussureChange() {
   }
 }
 
-/* Cible de cadence RELATIVE : +5 à +10 % de la valeur du coureur.
-   Surtout pas un chiffre absolu — le fameux « 180 pas/min » vient d'une
-   observation de coureurs d'élite, pas d'une norme validée, et la cadence
-   dépend de l'allure et de la longueur des membres. Les études d'intervention
-   ont toutes testé une hausse relative depuis la valeur mesurée. */
-function _cpCadenceCible(base) {
-  return { min: Math.round(base * 1.05), max: Math.round(base * 1.10) };
+/* Cadence — un seul seuil, et aucune cible.
+   La page CONSTATE : 180 pas/min est la référence mondiale en performance,
+   et en deçà de 165 la cadence est insuffisante. Rien de plus. La version
+   précédente calculait une hausse de +5 à +10 % pour tout le monde, ce qui
+   demandait 189–198 à un coureur déjà à 180 — une prescription absurde, née
+   d'une règle appliquée sans regarder la valeur de départ. */
+var CP_CADENCE_MIN = 165;
+var CP_CADENCE_REF = 180;
+
+function _cpCadenceInsuffisante(v) {
+  return !isNaN(v) && v > 0 && v < CP_CADENCE_MIN;
 }
 
 function _cpMajCadence() {
@@ -728,28 +732,26 @@ function _cpMajCadence() {
   var jauge = document.getElementById('cp-gauge');
   var stat = document.getElementById('cp-cadence-stat');
   if (!el || !jauge) return;
-  var base = parseFloat(el.value);
-  if (isNaN(base) || base <= 0) {
+  var v = parseFloat(el.value);
+  if (isNaN(v) || v <= 0) {
     jauge.style.display = 'none';
     if (stat) { stat.textContent = '—'; stat.className = 'measure-stat'; }
     return;
   }
-  var c = _cpCadenceCible(base);
   jauge.style.display = 'block';
   var MIN = 140, MAX = 190;
-  var pos = function(v){ return Math.max(0, Math.min(100, (v - MIN) / (MAX - MIN) * 100)); };
-  var set = function(id, prop, val){ var e = document.getElementById(id); if (e) e.style[prop] = val; };
-  var txt = function(id, val){ var e = document.getElementById(id); if (e) e.textContent = val; };
-  set('cp-g-base', 'left', pos(base) + '%');
-  set('cp-g-cible', 'left', pos(c.min) + '%');
-  set('cp-g-cible', 'width', (pos(c.max) - pos(c.min)) + '%');
-  set('cp-g-lbl-base', 'left', pos(base) + '%');
-  set('cp-g-lbl-cible', 'left', ((pos(c.min) + pos(c.max)) / 2) + '%');
-  txt('cp-g-lbl-base', 'mesuré ' + base);
-  txt('cp-g-lbl-cible', c.min + ' – ' + c.max);
-  txt('cp-g-base-txt', base);
-  txt('cp-g-cible-txt', c.min + ' – ' + c.max);
-  if (stat) { stat.textContent = 'Cible ' + c.min + '–' + c.max; stat.className = 'measure-stat warn'; }
+  var pos = Math.max(0, Math.min(100, (v - MIN) / (MAX - MIN) * 100));
+  var b = document.getElementById('cp-g-base');
+  var l = document.getElementById('cp-g-lbl-base');
+  if (b) b.style.left = pos + '%';
+  if (l) { l.style.left = pos + '%'; l.textContent = 'mesuré ' + v; }
+  if (stat) {
+    /* Au-dessus du seuil, aucun jugement : le chiffre se suffit. Poser un
+       « OK » laisserait entendre qu'il y a une bonne valeur à atteindre. */
+    var bas = _cpCadenceInsuffisante(v);
+    stat.textContent = bas ? 'Insuffisant' : v + ' pas/min';
+    stat.className = 'measure-stat' + (bas ? ' bad' : '');
+  }
 }
 
 function _cpStrike(val) {
@@ -796,11 +798,12 @@ function _cpPointsATravailler() {
   });
   if (v('cp-strike') === 'devant')
     out.push({ n:'bad', t:'Corriger l\'overstride — le pied se pose devant le centre de masse (passer par la cadence)' });
+  /* La cadence ne remonte QUE si elle est sous le seuil. Elle remontait
+     systématiquement, avec une cible de +5 à +10 % — un coureur à 180 se
+     voyait donc demander 189. Un constat, pas une consigne de progression. */
   var cad = parseFloat(v('cp-cadence'));
-  if (!isNaN(cad)) {
-    var ci = _cpCadenceCible(cad);
-    out.push({ n:'bad', t:'Augmenter la cadence de course — ' + cad + ' → ' + ci.min + '–' + ci.max + ' pas/min (+5 à +10 %)' });
-  }
+  if (_cpCadenceInsuffisante(cad))
+    out.push({ n:'bad', t:'Cadence insuffisante — ' + cad + ' pas/min (seuil ' + CP_CADENCE_MIN + ')' });
   if (v('cp-exthanche') === 'insuffisant')
     out.push({ n:'warn', t:'Extension de hanche en fin d\'appui — mobilité des fléchisseurs et propulsion' });
   if (v('cp-amorti') === 'insuffisant')
@@ -7391,11 +7394,14 @@ function _buildAllTestsHtml() {
     ['cp-chaussure','cp-drop','cp-allure','cp-support','cp-echauff','cp-km']);
   if (cpV('cp-douleur')) cpHtml += crItem('Douleur pendant la course', cpV('cp-douleur'), '', '', ['cp-douleur']);
 
-  // Spatio-temporel. La cadence porte sa cible RELATIVE — pas de seuil absolu.
+  /* Cadence : un seuil bas, aucune cible. Au-dessus de 165 le chiffre part
+     sans pastille — le médecin n'a pas à lire un objectif que l'examen ne
+     fixe pas. La référence mondiale accompagne la valeur, en constat. */
   var cpCad = cpNum('cp-cadence');
   if (!isNaN(cpCad)) {
-    var cpC = _cpCadenceCible(cpCad);
-    cpHtml += crItem('Cadence', cpCad + ' pas/min', 'Cible ' + cpC.min + '–' + cpC.max + ' (+5 à +10 %)', 'warn', ['cp-cadence']);
+    var cpBas = _cpCadenceInsuffisante(cpCad);
+    cpHtml += crItem('Cadence', cpCad + ' pas/min (référence performance : ' + CP_CADENCE_REF + ')',
+      cpBas ? 'Insuffisant' : '', cpBas ? 'bad' : '', ['cp-cadence']);
   }
   /* Statut observé d'abord, chiffre en appoint quand il existe : ces trois-là
      ne se lisent pas à l'œil, ils viennent d'un capteur ou d'un comptage
