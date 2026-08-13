@@ -992,6 +992,104 @@ td.bl-row-rail button:disabled { opacity: .3 !important; cursor: default; }
 .mob-note-inp:focus { border-color: var(--accent); }
 .mob-note-inp::placeholder { color: var(--text3); font-style: italic; }
 
+/* ── Analyse de Course à pied ──────────────────────────────────────────
+   Les selects qualitatifs REUTILISENT `.mob-status-sel` : même composant,
+   mêmes couleurs, et surtout même chemin de restauration au chargement
+   (_deserializeBilan repeint tout `.mob-status-sel` porteur d'une valeur).
+   Un composant jumeau aurait eu l'air identique et n'aurait rien restauré. */
+.cp-grid-4 { grid-template-columns: 2fr 1fr 1fr 1fr; }
+.cp-hint { font-size: .65rem; color: var(--text3); margin-top: 3px; font-style: italic; }
+/* Source : petite, grise, sous le critère. */
+.cp-src { display: block; font-size: .64rem; color: var(--text3); font-weight: 400;
+  font-style: italic; margin-top: 3px; letter-spacing: .01em; }
+.cp-src-inline { display: inline; margin-left: 4px; }
+.cp-aide { padding: 10px 14px; background: var(--surface2); border-top: 1px solid var(--border);
+  font-size: .73rem; color: var(--text2); line-height: 1.5; }
+.cp-aide strong { color: var(--text); }
+.cp-aide.attention { background: var(--yellow-l); border-top-color: var(--yellow-b); color: var(--orange-d); }
+.cp-aide.attention strong { color: var(--orange-d); }
+.cp-subhd { font-size: .68rem; }
+.cp-mrow { grid-template-columns: 1fr 110px 150px 1.2fr; }
+.cp-mlabel { flex-direction: column; justify-content: center; align-items: flex-start; }
+.cp-mlabel small { display: block; font-weight: 400; color: var(--text2); font-size: .72rem;
+  margin-top: 2px; line-height: 1.35; }
+
+/* Jauge de cadence — cible RELATIVE au coureur, jamais un chiffre absolu. */
+.cp-gauge { padding: 16px; background: var(--surface); border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border); }
+.cp-gauge-hd { font-size: .72rem; color: var(--text2); margin-bottom: 14px; line-height: 1.5; }
+.cp-gauge-hd strong { color: var(--text); }
+.cp-gauge-track { position: relative; height: 10px; border-radius: 20px;
+  background: var(--surface2); margin-top: 26px; }
+.cp-gauge-cible { position: absolute; top: 0; bottom: 0; background: var(--green-l);
+  border: 1px solid var(--green-b); border-radius: 3px; }
+.cp-gauge-base { position: absolute; top: -6px; width: 3px; height: 22px;
+  border-radius: 2px; background: var(--accent2); }
+.cp-gauge-lbl { position: absolute; top: -26px; font-size: .66rem; font-weight: 800;
+  white-space: nowrap; font-variant-numeric: tabular-nums; transform: translateX(-50%); }
+.cp-gauge-lbl.base { color: var(--accent2); }
+.cp-gauge-lbl.cible { color: var(--green-d); }
+.cp-gauge-elite { position: absolute; top: -3px; bottom: -3px; left: 80%; width: 1px;
+  border-left: 1px dashed var(--text3); }
+.cp-gauge-elite span { position: absolute; top: -17px; left: 5px; font-size: .6rem;
+  color: var(--text3); white-space: nowrap; }
+.cp-gauge-scale { display: flex; justify-content: space-between; margin-top: 10px;
+  font-size: .62rem; color: var(--text3); font-variant-numeric: tabular-nums; }
+
+/* Schéma d'attaque du pied — trois positions, une seule retenue. */
+.cp-strike { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; background: var(--border); }
+.cp-strike-opt { background: var(--surface); padding: 14px 12px 12px; text-align: center;
+  cursor: pointer; border: none; font-family: inherit; transition: background .15s; }
+.cp-strike-opt:hover { background: var(--surface2); }
+.cp-strike-opt svg { width: 100%; max-width: 170px; height: 118px; }
+.cp-strike-nom { font-size: .8rem; font-weight: 700; color: var(--text); margin-top: 8px; }
+.cp-strike-desc { font-size: .7rem; color: var(--text2); margin-top: 3px; line-height: 1.4; }
+.cp-strike-opt.sel { background: var(--accent-l); box-shadow: inset 0 0 0 2px var(--accent); }
+.cp-strike-opt.sel .cp-strike-nom { color: var(--accent); }
+.cp-strike-opt.sel.warn { background: var(--red-l); box-shadow: inset 0 0 0 2px var(--red); }
+.cp-strike-opt.sel.warn .cp-strike-nom { color: var(--red-d); }
+.cp-sk-com { stroke: var(--accent2); stroke-width: 1.6; stroke-dasharray: 4 3; }
+.cp-sk-body { stroke: var(--text2); stroke-width: 2.6; stroke-linecap: round; fill: none; }
+.cp-sk-head { fill: var(--text2); }
+.cp-sk-leg { stroke: var(--accent); stroke-width: 3; stroke-linecap: round; fill: none; }
+.cp-sk-leg.warn { stroke: var(--red); }
+.cp-sk-ground { stroke: var(--border2); stroke-width: 1.5; }
+.cp-sk-mark { fill: var(--accent); }
+.cp-sk-mark.warn { fill: var(--red); }
+.cp-sk-arrow { stroke: var(--red); stroke-width: 1.6; fill: none; }
+.cp-sk-arrowh { fill: var(--red); }
+.cp-sk-lbl { font-size: 8.5px; font-weight: 700; fill: var(--text3); letter-spacing: .06em; }
+
+/* Lignes qualitatives et colonnes Gauche / Droit. */
+.cp-q-row { display: grid; grid-template-columns: 1fr 158px 1fr; align-items: center;
+  gap: 10px; padding: 8px 14px; border-bottom: 1px solid var(--border); }
+.cp-q-row:last-child { border-bottom: none; }
+.cp-q-head { background: var(--surface2); font-size: .7rem; font-weight: 600;
+  letter-spacing: .05em; text-transform: uppercase; color: var(--text2); }
+.cp-q-lbl { font-size: .82rem; font-weight: 600; color: var(--text); }
+.cp-q-lbl small { display: block; font-weight: 400; color: var(--text2); font-size: .71rem;
+  margin-top: 1px; line-height: 1.35; }
+.cp-zone-sel { border-radius: 20px; border: 1.5px solid var(--border2); padding: 4px 26px 4px 11px;
+  font-size: .76rem; font-weight: 600; cursor: pointer; outline: none; background-color: #fff;
+  font-family: var(--font-sans); color: var(--text2); appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236B7280'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 9px center; }
+.cp-cotes-hd { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); }
+.cp-cote-hd { padding: 6px 14px; font-size: .73rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; text-align: center; color: #fff; }
+.cp-cote-hd.g { background: var(--cote-g); }
+.cp-cote-hd.d { background: var(--cote-d); }
+.cp-cotes-body { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); }
+.cp-cote-col { background: var(--surface); }
+.cp-cote-col .cp-q-row { grid-template-columns: 1fr 148px; }
+
+@media (max-width: 900px) {
+  .cp-grid-4 { grid-template-columns: 1fr 1fr; }
+  .cp-mrow { grid-template-columns: 1fr 90px 120px; }
+  .cp-mrow .measure-norme { grid-column: 1 / -1; }
+  .cp-strike { grid-template-columns: 1fr; }
+}
+
 /* ── Quick Scan fonctionnel : groupes, pistes, recapitulatif ────────────
    Le regroupement est PUREMENT visuel : memes lignes, memes rangs, dans le
    meme tableau. Decouper en plusieurs tbody romprait le lien avec les bilans
@@ -1946,6 +2044,9 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 </button>
 <button class="nav-item" onclick="showPage('fonctionnels')" data-page="fonctionnels">
   <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 152.5394 225.2882" width="16" height="16" fill="currentColor"><ellipse cx="130.035" cy="37.064" rx="22.5" ry="22.5" transform="matrix(.204 -.979 .979 .204 67.251 156.817)"/><path d="m116.7551 133.4764 10.9541-11.2881c3.6045-3.7148 4.5469-9.2666 2.3701-13.9619-2.1772-4.6963-7.021-7.5547-12.1875-7.2148l-34.2417 2.324c-1.4128 2.1469-2.7622 4.3312-4.0041 6.5441z"/><path d="m61.052 154.9793c-4.8076 4.9541-4.689 12.8682.2656 17.6758 2.4282 2.3564 5.5679 3.5293 8.7041 3.5293 3.2617 0 6.5205-1.2686 8.9717-3.7949l16.7118-17.2213-21.5432-13.6987z"/><path d="m146.3337 207.2889-4.42-11.3082-19.6504-53.2471c-.9473-2.5674-2.71-4.7529-5.0195-6.2207l-40.6465-25.8457c3.5031-6.6089 7.9557-12.9623 12.4597-18.808 4.3755-5.679 8.7994-10.8788 12.4485-15.359 7.2178-7.4307 9.5146-19.707 2.9854-25.6016-1.4749-1.3323-3.2873-2.4492-5.3366-3.2631l-69.5262-46.2939c-3.6772-2.4482-8.644-1.4521-11.0923 2.2256-2.4487 3.6777-1.4526 8.6436 2.2251 11.0928l34.3732 22.8874 37.3705 16.2173c1.6869.7313 3.1476 1.9003 4.2245 3.38 2.14 2.9404 2.5698 6.8368 1.1241 10.1693-1.0952 2.523-3.1075 4.4695-5.6672 5.4797-2.5583 1.0104-5.3583.9636-7.882-.1324l-20.5548-8.92c-6.5042 7.2612-11.3149 14.3929-15.752 23.4547-1.9078 3.8964-3.7481 8.1459-5.6246 12.9223-4.8203 15.6787 4.1377 22.332 12.2773 26.543.8213.4248 1.5996.8164 2.3438 1.166l43.2764 27.5186 17.177 46.5448c1.6876 4.5731 4.918 8.4139 9.134 10.8604l10.0822 5.8505 10.7852 6.2584c1.8651 1.0823 4.3673.0181 4.6439-2.1206.0435-.3367.0207-.6639-.0968-.9647z"/><path d="m95.7431 66.3979c1.759-4.0521-.1005-8.7645-4.1539-10.5237l-80.4023-34.8916c-4.0535-1.7592-8.7653.1011-10.5237 4.1539-1.1699 2.6958-.7388 5.6829.8743 7.8993.8114 1.1149 1.9233 2.0353 3.2796 2.6244l80.4023 34.8915c4.0536 1.7593 8.7653-.101 10.5237-4.1538z"/></svg></span> Tests Fonctionnels MI
+</button>
+<button class="nav-item" onclick="showPage('course')" data-page="course">
+  <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="17" cy="4.5" r="1.8"/><path d="M13.5 21l1.8-5.4-3.3-2.7.9-4.5"/><path d="M8.1 12.6L6.3 8.1l4.5-1.8 3.6 1.8 2.7 2.7h2.7"/><path d="M9 21l-1.8-3.6-3.6.9"/></svg></span> Analyse de Course à pied
 </button>
 <div class="nav-section">Synthèse</div>
 <button class="nav-item" onclick="showPage('cr-tf')" data-page="cr-tf">
@@ -5135,6 +5236,285 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   </div>
 </div>
 
+<!-- ══ PAGE: ANALYSE DE COURSE À PIED ═══════════════════════ -->
+
+<div class="page" id="page-course">
+  <div class="page-header">
+    <div class="page-title">Analyse de Course à pied
+    <div class="page-corner-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="17" cy="4.5" r="1.8"/><path d="M13.5 21l1.8-5.4-3.3-2.7.9-4.5"/><path d="M8.1 12.6L6.3 8.1l4.5-1.8 3.6 1.8 2.7 2.7h2.7"/><path d="M9 21l-1.8-3.6-3.6.9"/></svg></div></div>
+    <div class="page-subtitle">Analyse vidéo 2D — profil, face et dos</div>
+  </div>
+  <div class="page-content">
+
+    <!-- ① Conditions ─────────────────────────────────────── -->
+    <div class="block" data-block-id="course--conditions">
+      <div class="block-header light">Conditions de l'analyse</div>
+      <div class="form-grid cp-grid-4">
+        <div class="field">
+          <label>Chaussage</label>
+          <input list="cp-dl-chaussures" id="cp-chaussure" placeholder="Tapez ou choisissez…" oninput="_cpChaussureChange()">
+          <div class="cp-hint" id="cp-chaussure-hint">Drop rempli automatiquement — modifiable si la version diffère</div>
+        </div>
+        <div class="field"><label>Drop (mm)</label><input type="number" id="cp-drop" placeholder="—"></div>
+        <div class="field"><label>Allure de capture</label><input id="cp-allure" placeholder="5:30 /km"></div>
+        <div class="field"><label>Support</label>
+          <select id="cp-support">
+            <option value=""></option>
+            <option>Tapis roulant</option><option>Piste</option>
+            <option>Extérieur — bitume</option><option>Extérieur — chemin</option>
+          </select></div>
+      </div>
+      <div class="form-grid triple">
+        <div class="field"><label>Échauffement avant capture</label><input id="cp-echauff" placeholder="8 min"></div>
+        <div class="field"><label>Kilométrage hebdomadaire actuel</label><input id="cp-km" placeholder="42 km"></div>
+        <div class="field"><label>Douleur pendant la course</label><input id="cp-douleur" placeholder="2/10 — face ant. genou D"></div>
+      </div>
+      <div class="cp-aide">
+        <strong>Pourquoi ce bloc en premier :</strong> cadence, temps de contact et attaque du pied varient
+        tous avec l'allure et le chaussage. Comparer deux bilans capturés dans des conditions différentes
+        ferait conclure à un progrès là où il n'y a qu'un changement de vitesse ou de chaussure.
+      </div>
+    </div>
+
+    <!-- ② Paramètres spatio-temporels ────────────────────── -->
+    <div class="block" data-block-id="course--spatiotemp">
+      <div class="block-header">Paramètres spatio-temporels</div>
+      <div class="measure-row cp-mrow">
+        <div class="col-header" style="text-align:left">Paramètre</div>
+        <div class="col-header">Valeur</div>
+        <div class="col-header">Statut</div>
+        <div class="col-header" style="text-align:left">Repère</div>
+      </div>
+
+      <div class="measure-row cp-mrow">
+        <div class="measure-label cp-mlabel">
+          <span>Cadence</span>
+          <small>Pas par minute, les deux pieds</small>
+          <span class="cp-src">Heiderscheit et al. 2011 · Bramah et al. 2019</span>
+        </div>
+        <div class="measure-input"><input type="number" id="cp-cadence" placeholder="—" oninput="_cpMajCadence()"></div>
+        <div class="measure-stat" id="cp-cadence-stat">—</div>
+        <div class="measure-norme">Cible = <strong>+5 à +10 % de la valeur du coureur</strong>, pas un chiffre absolu.</div>
+      </div>
+
+      <div class="cp-gauge" id="cp-gauge" style="display:none">
+        <div class="cp-gauge-hd">
+          La cible n'est pas 180 : elle se calcule <strong>depuis la cadence mesurée</strong> — c'est ce qui
+          a été testé dans les études d'intervention, et cela tient compte de la taille et de l'allure du
+          coureur. Ici <strong id="cp-g-base-txt">—</strong> pas/min → cible <strong id="cp-g-cible-txt">—</strong>.
+        </div>
+        <div class="cp-gauge-track">
+          <div class="cp-gauge-cible" id="cp-g-cible"></div>
+          <div class="cp-gauge-base" id="cp-g-base"></div>
+          <div class="cp-gauge-lbl base" id="cp-g-lbl-base"></div>
+          <div class="cp-gauge-lbl cible" id="cp-g-lbl-cible"></div>
+          <div class="cp-gauge-elite"><span>180 — observation élites, pas une norme</span></div>
+        </div>
+        <div class="cp-gauge-scale"><span>140</span><span>150</span><span>160</span><span>170</span><span>180</span><span>190</span></div>
+      </div>
+
+      <div class="measure-row cp-mrow">
+        <div class="measure-label cp-mlabel">
+          <span>Temps de contact au sol (ms)</span>
+          <small>Moyenne des deux pieds, en ralenti</small>
+          <span class="cp-src">Folland et al. 2017</span>
+        </div>
+        <div class="measure-input"><input type="number" id="cp-gct" placeholder="—" oninput="_cpMajStats()"></div>
+        <div class="measure-stat" id="cp-gct-stat">—</div>
+        <div class="measure-norme">Dépend fortement de l'allure — aucun seuil de blessure. Utile en <strong>suivi du même coureur</strong>.</div>
+      </div>
+
+      <div class="measure-row cp-mrow">
+        <div class="measure-label cp-mlabel">
+          <span>Asymétrie du temps de contact (%)</span>
+          <small>|D − G| ÷ moyenne</small>
+        </div>
+        <div class="measure-input"><input type="number" id="cp-gct-asym" placeholder="—" oninput="_cpMajStats()"></div>
+        <div class="measure-stat" id="cp-gct-asym-stat">—</div>
+        <div class="measure-norme">Le seul chiffre qui compare les deux côtés. Seuil de 5 % <strong>indicatif</strong> — issu de la pratique.</div>
+      </div>
+
+      <div class="measure-row cp-mrow">
+        <div class="measure-label cp-mlabel">
+          <span>Oscillation verticale (cm)</span>
+          <small>Déplacement vertical du bassin</small>
+          <span class="cp-src">Folland et al. 2017</span>
+        </div>
+        <div class="measure-input"><input type="number" step="0.1" id="cp-osc" placeholder="—" oninput="_cpMajStats()"></div>
+        <div class="measure-stat" id="cp-osc-stat">—</div>
+        <div class="measure-norme">Liée à l'économie de course. Diminue mécaniquement quand la cadence monte.</div>
+      </div>
+    </div>
+
+    <!-- ③ Attaque du pied ────────────────────────────────── -->
+    <div class="block" data-block-id="course--attaque">
+      <div class="block-header">Attaque du pied — plan sagittal</div>
+      <div class="block-header light cp-subhd">Position du pied à l'attaque, par rapport au centre de masse</div>
+
+      <input type="hidden" id="cp-strike" value="">
+      <div class="cp-strike" id="cp-strike-zone">
+        <button type="button" class="cp-strike-opt" data-v="sous" onclick="_cpStrike('sous')">
+          <svg viewBox="0 0 150 118" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <line class="cp-sk-ground" x1="12" y1="104" x2="138" y2="104"/>
+            <line class="cp-sk-com" x1="75" y1="8" x2="75" y2="112"/>
+            <text class="cp-sk-lbl" x="79" y="15">CDM</text>
+            <circle class="cp-sk-head" cx="75" cy="24" r="7"/>
+            <path class="cp-sk-body" d="M75 31 L74 62"/><path class="cp-sk-body" d="M74 40 L60 52"/>
+            <path class="cp-sk-body" d="M74 40 L88 50"/>
+            <path class="cp-sk-leg" d="M74 62 L73 84 L74 103"/><path class="cp-sk-leg" d="M74 103 L84 103"/>
+            <path class="cp-sk-body" d="M74 62 L88 76 L84 90"/>
+            <circle class="cp-sk-mark" cx="74" cy="103" r="3.4"/>
+          </svg>
+          <div class="cp-strike-nom">Sous le centre de masse</div>
+          <div class="cp-strike-desc">Tibia vertical à l'impact · freinage minimal</div>
+        </button>
+        <button type="button" class="cp-strike-opt warn" data-v="devant" onclick="_cpStrike('devant')">
+          <svg viewBox="0 0 150 118" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <line class="cp-sk-ground" x1="12" y1="104" x2="138" y2="104"/>
+            <line class="cp-sk-com" x1="66" y1="8" x2="66" y2="112"/>
+            <text class="cp-sk-lbl" x="24" y="15">CDM</text>
+            <circle class="cp-sk-head" cx="66" cy="24" r="7"/>
+            <path class="cp-sk-body" d="M66 31 L65 62"/><path class="cp-sk-body" d="M65 40 L51 50"/>
+            <path class="cp-sk-body" d="M65 40 L79 52"/>
+            <path class="cp-sk-leg warn" d="M65 62 L88 82 L104 102"/>
+            <path class="cp-sk-leg warn" d="M104 102 L116 100"/>
+            <path class="cp-sk-arrow" d="M104 92 L88 92"/>
+            <path class="cp-sk-arrowh" d="M90 89 L86 92 L90 95 Z"/>
+            <path class="cp-sk-body" d="M65 62 L58 80 L62 94"/>
+            <circle class="cp-sk-mark warn" cx="104" cy="102" r="3.4"/>
+          </svg>
+          <div class="cp-strike-nom">Devant — overstride</div>
+          <div class="cp-strike-desc">Force de freinage à chaque pas · genou tendu, talon en avant</div>
+        </button>
+        <button type="button" class="cp-strike-opt" data-v="derriere" onclick="_cpStrike('derriere')">
+          <svg viewBox="0 0 150 118" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <line class="cp-sk-ground" x1="12" y1="104" x2="138" y2="104"/>
+            <line class="cp-sk-com" x1="84" y1="8" x2="84" y2="112"/>
+            <text class="cp-sk-lbl" x="88" y="15">CDM</text>
+            <circle class="cp-sk-head" cx="84" cy="24" r="7"/>
+            <path class="cp-sk-body" d="M84 31 L83 62"/><path class="cp-sk-body" d="M83 40 L69 52"/>
+            <path class="cp-sk-body" d="M83 40 L97 50"/>
+            <path class="cp-sk-leg" d="M83 62 L72 82 L63 102"/><path class="cp-sk-leg" d="M63 102 L73 103"/>
+            <path class="cp-sk-body" d="M83 62 L96 76 L92 90"/>
+            <circle class="cp-sk-mark" cx="63" cy="102" r="3.4"/>
+          </svg>
+          <div class="cp-strike-nom">Derrière</div>
+          <div class="cp-strike-desc">Rare · buste très penché en avant, course « en poussée »</div>
+        </button>
+      </div>
+      <div class="cp-aide">
+        <strong>Ce que dit ce schéma :</strong> la ligne en pointillé est le centre de masse. Plus le pied
+        se pose loin devant, plus la force de freinage est grande à chaque appui. C'est le paramètre
+        d'attaque le mieux étayé — et il se corrige <strong>par la cadence</strong>, pas par une consigne
+        sur le pied. <span class="cp-src cp-src-inline">Heiderscheit et al. 2011</span>
+      </div>
+
+      <div class="block-header light cp-subhd">Autres repères d'attaque — par côté</div>
+      <div class="cp-cotes-hd"><div class="cp-cote-hd g">Gauche</div><div class="cp-cote-hd d">Droit</div></div>
+      <div class="cp-cotes-body">
+        <div class="cp-cote-col">
+          <div class="cp-q-row"><div class="cp-q-lbl">Zone d'attaque<small>Décrit, ne juge pas</small><span class="cp-src">Lieberman et al. 2010</span></div>
+            <select id="cp-zone-g" class="cp-zone-sel"><option value=""></option><option>Talon</option><option>Médio-pied</option><option>Avant-pied</option></select></div>
+          <div class="cp-q-row"><div class="cp-q-lbl">Angle du tibia à l'impact<small>Vertical = neutre</small><span class="cp-src">Heiderscheit et al. 2011</span></div>
+            <select id="cp-tibia-g" class="mob-status-sel" onchange="_mobStatusChange(this)"><option value=""></option><option value="ok">Vertical</option><option value="acceptable">Légèrement incliné</option><option value="insuffisant">Très incliné</option></select></div>
+          <div class="cp-q-row"><div class="cp-q-lbl">Bruit d'impact<span class="cp-src">Lieberman et al. 2010</span></div>
+            <select id="cp-bruit-g" class="mob-status-sel" onchange="_mobStatusChange(this)"><option value=""></option><option value="ok">Silencieux</option><option value="acceptable">Modéré</option><option value="insuffisant">Bruyant</option></select></div>
+        </div>
+        <div class="cp-cote-col">
+          <div class="cp-q-row"><div class="cp-q-lbl">Zone d'attaque<small>Décrit, ne juge pas</small><span class="cp-src">Lieberman et al. 2010</span></div>
+            <select id="cp-zone-d" class="cp-zone-sel"><option value=""></option><option>Talon</option><option>Médio-pied</option><option>Avant-pied</option></select></div>
+          <div class="cp-q-row"><div class="cp-q-lbl">Angle du tibia à l'impact<small>Vertical = neutre</small><span class="cp-src">Heiderscheit et al. 2011</span></div>
+            <select id="cp-tibia-d" class="mob-status-sel" onchange="_mobStatusChange(this)"><option value=""></option><option value="ok">Vertical</option><option value="acceptable">Légèrement incliné</option><option value="insuffisant">Très incliné</option></select></div>
+          <div class="cp-q-row"><div class="cp-q-lbl">Bruit d'impact<span class="cp-src">Lieberman et al. 2010</span></div>
+            <select id="cp-bruit-d" class="mob-status-sel" onchange="_mobStatusChange(this)"><option value=""></option><option value="ok">Silencieux</option><option value="acceptable">Modéré</option><option value="insuffisant">Bruyant</option></select></div>
+        </div>
+      </div>
+      <div class="cp-aide attention">
+        <strong>Attention à la zone d'attaque :</strong> pas d'association constante entre attaque talon et
+        blessure. Changer de zone d'attaque <strong>déplace</strong> la charge du genou vers le mollet et
+        l'Achille — elle ne la réduit pas. La ligne décrit, elle ne prescrit pas.
+      </div>
+    </div>
+
+    <!-- ④ Appui et propulsion ────────────────────────────── -->
+    <div class="block" data-block-id="course--appui">
+      <div class="block-header">Appui et propulsion — plan sagittal</div>
+      <div class="cp-q-row cp-q-head">
+        <div>Critère</div><div style="text-align:center">Statut</div><div>Observation</div>
+      </div>
+      <div class="cp-q-row">
+        <div class="cp-q-lbl">Flexion de genou en amortissement<small>Absorption entre l'attaque et le milieu d'appui</small></div>
+        <select id="cp-amorti" class="mob-status-sel" onchange="_mobStatusChange(this)"><option value=""></option><option value="ok">OK</option><option value="acceptable">Acceptable</option><option value="insuffisant">Insuffisant</option></select>
+        <input class="mob-note-inp" id="cp-amorti-nt" placeholder="Ex : genou raide côté D, absorption réduite">
+      </div>
+      <div class="cp-q-row">
+        <div class="cp-q-lbl">Extension de hanche en fin d'appui<small>Le moteur de la propulsion</small></div>
+        <select id="cp-exthanche" class="mob-status-sel" onchange="_mobStatusChange(this)"><option value=""></option><option value="ok">OK</option><option value="acceptable">Acceptable</option><option value="insuffisant">Insuffisant</option></select>
+        <input class="mob-note-inp" id="cp-exthanche-nt" placeholder="Ex : limitée bilatéralement, bassin en antéversion">
+      </div>
+      <div class="cp-q-row">
+        <div class="cp-q-lbl">Inclinaison du tronc<small>Depuis les chevilles, sans casser la charnière lombaire</small><span class="cp-src">Teng &amp; Powers 2015 · Bramah et al. 2018</span></div>
+        <select id="cp-tronc" class="mob-status-sel" onchange="_mobStatusChange(this)"><option value=""></option><option value="ok">OK</option><option value="acceptable">Acceptable</option><option value="insuffisant">Insuffisant</option></select>
+        <input class="mob-note-inp" id="cp-tronc-nt" placeholder="Ex : buste quasi vertical">
+      </div>
+      <div class="cp-q-row">
+        <div class="cp-q-lbl">Retour du talon en phase oscillante<small>Talon qui remonte vers la fesse</small></div>
+        <select id="cp-talon" class="mob-status-sel" onchange="_mobStatusChange(this)"><option value=""></option><option value="ok">OK</option><option value="acceptable">Acceptable</option><option value="insuffisant">Insuffisant</option></select>
+        <input class="mob-note-inp" id="cp-talon-nt" placeholder="—">
+      </div>
+      <div class="cp-q-row">
+        <div class="cp-q-lbl">Balancement des bras<small>Amplitude et sens du mouvement</small></div>
+        <select id="cp-bras" class="mob-status-sel" onchange="_mobStatusChange(this)"><option value=""></option><option value="ok">OK</option><option value="acceptable">Acceptable</option><option value="insuffisant">Insuffisant</option></select>
+        <input class="mob-note-inp" id="cp-bras-nt" placeholder="Ex : bras droit croise la ligne médiane">
+      </div>
+    </div>
+
+    <!-- ⑤ Contrôle frontal ───────────────────────────────── -->
+    <div class="block" data-block-id="course--frontal">
+      <div class="block-header">Contrôle frontal — vues de face et de dos</div>
+      <div class="cp-cotes-hd"><div class="cp-cote-hd g">Gauche</div><div class="cp-cote-hd d">Droit</div></div>
+      <div class="cp-cotes-body">
+        <div class="cp-cote-col">
+          <div class="cp-q-row"><div class="cp-q-lbl">Chute pelvienne controlatérale<small>Trendelenburg dynamique</small><span class="cp-src">Bramah et al. 2018</span></div>
+            <select id="cp-pelvis-g" class="mob-status-sel" onchange="_mobStatusChange(this)"><option value=""></option><option value="ok">OK</option><option value="acceptable">Acceptable</option><option value="insuffisant">Insuffisant</option></select></div>
+          <div class="cp-q-row"><div class="cp-q-lbl">Adduction de hanche / valgus dynamique<span class="cp-src">Noehren et al. 2013</span></div>
+            <select id="cp-valgus-g" class="mob-status-sel" onchange="_mobStatusChange(this)"><option value=""></option><option value="ok">OK</option><option value="acceptable">Acceptable</option><option value="insuffisant">Insuffisant</option></select></div>
+          <div class="cp-q-row"><div class="cp-q-lbl">Croisement de la ligne médiane<small>Cross-over</small><span class="cp-src">Meardon &amp; Derrick 2014</span></div>
+            <select id="cp-crossover-g" class="mob-status-sel" onchange="_mobStatusChange(this)"><option value=""></option><option value="ok">OK</option><option value="acceptable">Acceptable</option><option value="insuffisant">Insuffisant</option></select></div>
+          <div class="cp-q-row"><div class="cp-q-lbl">Éversion calcanéenne<small>Vue postérieure</small><span class="cp-src">Nielsen et al. 2014</span></div>
+            <select id="cp-eversion-g" class="mob-status-sel" onchange="_mobStatusChange(this)"><option value=""></option><option value="ok">OK</option><option value="acceptable">Acceptable</option><option value="insuffisant">Insuffisant</option></select></div>
+        </div>
+        <div class="cp-cote-col">
+          <div class="cp-q-row"><div class="cp-q-lbl">Chute pelvienne controlatérale<small>Trendelenburg dynamique</small><span class="cp-src">Bramah et al. 2018</span></div>
+            <select id="cp-pelvis-d" class="mob-status-sel" onchange="_mobStatusChange(this)"><option value=""></option><option value="ok">OK</option><option value="acceptable">Acceptable</option><option value="insuffisant">Insuffisant</option></select></div>
+          <div class="cp-q-row"><div class="cp-q-lbl">Adduction de hanche / valgus dynamique<span class="cp-src">Noehren et al. 2013</span></div>
+            <select id="cp-valgus-d" class="mob-status-sel" onchange="_mobStatusChange(this)"><option value=""></option><option value="ok">OK</option><option value="acceptable">Acceptable</option><option value="insuffisant">Insuffisant</option></select></div>
+          <div class="cp-q-row"><div class="cp-q-lbl">Croisement de la ligne médiane<small>Cross-over</small><span class="cp-src">Meardon &amp; Derrick 2014</span></div>
+            <select id="cp-crossover-d" class="mob-status-sel" onchange="_mobStatusChange(this)"><option value=""></option><option value="ok">OK</option><option value="acceptable">Acceptable</option><option value="insuffisant">Insuffisant</option></select></div>
+          <div class="cp-q-row"><div class="cp-q-lbl">Éversion calcanéenne<small>Vue postérieure</small><span class="cp-src">Nielsen et al. 2014</span></div>
+            <select id="cp-eversion-d" class="mob-status-sel" onchange="_mobStatusChange(this)"><option value=""></option><option value="ok">OK</option><option value="acceptable">Acceptable</option><option value="insuffisant">Insuffisant</option></select></div>
+        </div>
+      </div>
+      <div class="cp-aide">
+        <strong>C'est le bloc le mieux étayé de la page.</strong> La chute pelvienne controlatérale
+        distingue le mieux les coureurs blessés des coureurs sains, et elle s'améliore avec la même
+        intervention que l'overstride : augmenter la cadence.
+        <br><strong>L'éversion calcanéenne, à l'inverse,</strong> n'a pas tenu en étude prospective —
+        elle décrit, elle n'oriente pas.
+      </div>
+    </div>
+
+    <!-- ⑥ Conclusion ─────────────────────────────────────── -->
+    <div class="block" data-block-id="course--conclusion">
+      <div class="block-header">Conclusion</div>
+      <textarea class="concl-area" id="cp-conclusion" placeholder="Overstride marqué avec cadence basse et défaut de contrôle frontal du bassin à droite…"></textarea>
+    </div>
+
+    <datalist id="cp-dl-chaussures"></datalist>
+
+  </div>
+</div>
+
 <!-- ══ PAGE: CR TESTS FONCTIONNELS ══════════════════════════ -->
 
 <div class="page" id="page-cr-tf">
@@ -5275,7 +5655,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260806i"></script>
-<script src="js/bilan.js?v=20260810e"></script>
+<script src="js/bilan.js?v=20260813a"></script>
 
 </body>
 </html>

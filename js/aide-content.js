@@ -86,6 +86,18 @@ sections: [
       { t:'Un bilan déjà sauvegardé reste toujours fidèle à lui-même', x:'Masquer ou réordonner un test après coup n\'efface jamais une valeur déjà saisie sur un ancien bilan : si un test masqué contient une donnée, il redevient visible automatiquement pour ce bilan-là. Vos tests personnalisés sont aussi conservés dans chaque bilan, même si vous les supprimez plus tard de votre modèle.' },
       { t:'Cas particulier : Tests fonctionnels, Force et LMA', x:'Sur ces pages, chaque « test » est un bloc de score autonome (ex. Single Leg Squat) plutôt qu\'une ligne de tableau — vous pouvez donc réordonner/masquer ces blocs et en créer de nouveaux, mais pas éditer leur contenu interne. Sur LMA, la personnalisation porte sur les tests du muscle actuellement sélectionné (les blocs musculaires eux-mêmes sont pilotés par le sélecteur Membre / Muscle).' }
     ]},
+  { id:'analyse-course', titre:'Analyser une course à pied',
+    intro:'Un onglet dédié, sous les tests fonctionnels, pour l\'analyse vidéo 2D du coureur. Il alimente le CR Tests, le CR Complet, les points à travailler et les courbes d\'évolution.',
+    etapes:[
+      { t:'Commencez par les conditions', x:'Chaussage, drop, allure, support, échauffement. Ce n\'est pas de la paperasse : cadence, temps de contact et attaque du pied varient tous avec l\'allure et la chaussure. Sans ces conditions notées, comparer deux bilans ferait conclure à un progrès là où il n\'y a qu\'un changement de vitesse.' },
+      { t:'Le chaussage se complète tout seul', x:'Tapez les premières lettres du modèle : une bibliothèque d\'une soixantaine de chaussures remplit le drop. Le champ « Drop » reste modifiable — un même nom commercial change de drop d\'une version à l\'autre. Un modèle absent se tape librement, vous renseignez alors le drop à la main.' },
+      { t:'La cible de cadence est RELATIVE, jamais 180', x:'Saisissez la cadence mesurée : la jauge calcule la cible à +5 à +10 % de cette valeur. Le chiffre de 180 pas/min vient d\'une observation de coureurs d\'élite, pas d\'une norme validée — il n\'apparaît qu\'en repère grisé. Toutes les études d\'intervention ont testé une hausse relative depuis la valeur du coureur.' },
+      { t:'Cliquez sur le schéma d\'attaque du pied', x:'Trois positions par rapport au centre de masse : sous, devant (overstride), derrière. Recliquer la position retenue l\'annule. Plus le pied se pose devant, plus la force de freinage est grande à chaque appui — et cela se corrige par la cadence, pas par une consigne sur le pied.' },
+      { t:'Les colonnes sont Gauche et Droit, pas Sain et Atteint', x:'En course les deux jambes travaillent : « le côté sain » n\'y désigne rien. Le compte-rendu emploie les mêmes mots que le formulaire.' },
+      { t:'Deux lignes décrivent sans prescrire', x:'La zone d\'attaque (talon / médio / avant-pied) et l\'éversion calcanéenne sont renseignées pour décrire le coureur. Les données ne retrouvent pas d\'association constante avec la blessure, et changer de zone d\'attaque déplace la charge du genou vers l\'Achille au lieu de la réduire.' },
+      { t:'La source est indiquée sous chaque critère', x:'En petit et en gris. Les critères sans source n\'en portent pas — c\'est volontaire plutôt qu\'approximatif.' },
+      { t:'Quatre mesures entrent dans l\'Évolution', x:'Cadence, temps de contact, asymétrie et oscillation verticale. Au bilan de suivi, l\'écart avec le bilan précédent s\'affiche directement à côté du champ, et les courbes se construisent dans l\'onglet Évolution.' }
+    ]},
   { id:'generer-cr', titre:'Générer un compte-rendu',
     intro:'Deux formats générés automatiquement à partir de vos saisies — rien à rédiger à la main.',
     etapes:[

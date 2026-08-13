@@ -640,6 +640,178 @@ function _mobStatusChange(sel) {
   if (sel.value) sel.classList.add('st-' + sel.value);
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+   ANALYSE DE COURSE À PIED
+   ══════════════════════════════════════════════════════════════════════
+
+   BIBLIOTHÈQUE DE CHAUSSURES — modèle : drop en mm.
+
+   Tenue à jour à la main par le praticien : ajouter une ligne suffit. Les
+   valeurs sont celles des versions courantes au moment de l'écriture, et un
+   même nom commercial CHANGE de drop d'une version à l'autre. C'est pourquoi
+   le champ « Drop » reste toujours saisissable : la bibliothèque pré-remplit,
+   elle ne décide pas. */
+var CHAUSSURES_DROP = {
+  /* Nike */
+  'Nike Pegasus 41':10, 'Nike Pegasus 40':10, 'Nike Vomero 17':10,
+  'Nike Structure 25':10, 'Nike Invincible 3':9, 'Nike Zoom Fly 5':8,
+  'Nike Vaporfly 3':8, 'Nike Alphafly 3':8, 'Nike Free Run 5.0':6,
+  /* Adidas */
+  'Adidas Adizero Adios Pro 3':6.5, 'Adidas Adizero Boston 12':7.5,
+  'Adidas Adizero SL':8.5, 'Adidas Ultraboost Light':10,
+  'Adidas Supernova Rise':10, 'Adidas Solarglide 6':10,
+  /* Asics */
+  'Asics Gel-Nimbus 26':8, 'Asics Gel-Kayano 30':10, 'Asics Novablast 4':8,
+  'Asics Gel-Cumulus 26':8, 'Asics GT-2000 12':8, 'Asics Magic Speed 3':7,
+  'Asics Metaspeed Sky+':5, 'Asics Superblast':8,
+  /* Brooks */
+  'Brooks Ghost 16':12, 'Brooks Glycerin 21':10, 'Brooks Adrenaline GTS 23':12,
+  'Brooks Launch 10':10, 'Brooks Hyperion Elite 4':8, 'Brooks Caldera 7':6,
+  /* Hoka */
+  'Hoka Clifton 9':5, 'Hoka Bondi 8':4, 'Hoka Mach 6':5, 'Hoka Rincon 3':5,
+  'Hoka Arahi 6':5, 'Hoka Speedgoat 5':4, 'Hoka Rocket X2':5,
+  /* New Balance */
+  'New Balance Fresh Foam 1080 v13':6, 'New Balance FuelCell Rebel v4':6,
+  'New Balance FuelCell SC Elite v4':4, 'New Balance 880 v13':6,
+  /* Saucony */
+  'Saucony Ride 17':8, 'Saucony Triumph 21':10, 'Saucony Guide 17':6,
+  'Saucony Kinvara 14':4, 'Saucony Endorphin Speed 4':8,
+  'Saucony Endorphin Pro 4':8, 'Saucony Peregrine 14':4,
+  /* On */
+  'On Cloudmonster':6, 'On Cloudsurfer':7, 'On Cloudflow 4':6, 'On Cloudboom Echo 3':9,
+  /* Mizuno */
+  'Mizuno Wave Rider 27':12, 'Mizuno Wave Inspire 20':12, 'Mizuno Wave Sky 7':8,
+  /* Salomon (trail) */
+  'Salomon Speedcross 6':10, 'Salomon Sense Ride 5':8, 'Salomon Ultra Glide 2':6,
+  /* Puma */
+  'Puma Deviate Nitro 2':8, 'Puma Velocity Nitro 3':10,
+  /* Altra — zéro drop sur toute la gamme */
+  'Altra Lone Peak 8':0, 'Altra Torin 7':0, 'Altra Escalante 4':0,
+  /* Minimaliste */
+  'Vibram FiveFingers':0, 'Merrell Trail Glove 7':0
+};
+
+/* Libellés du schéma d'attaque — partagés entre le formulaire et le CR, pour
+   qu'une reformulation ne puisse pas les faire diverger. */
+var CP_STRIKE_LBL = {
+  sous:     'Sous le centre de masse',
+  devant:   'Devant le centre de masse (overstride)',
+  derriere: 'Derrière le centre de masse'
+};
+
+function _cpChaussureChange() {
+  var inp = document.getElementById('cp-chaussure');
+  var drop = document.getElementById('cp-drop');
+  var hint = document.getElementById('cp-chaussure-hint');
+  if (!inp || !drop) return;
+  var v = CHAUSSURES_DROP[inp.value.trim()];
+  if (v !== undefined) {
+    drop.value = v;
+    if (hint) { hint.textContent = 'Drop repris de la bibliothèque — modifiable si la version diffère'; hint.style.color = 'var(--green)'; }
+  } else if (hint) {
+    hint.textContent = 'Modèle hors bibliothèque — saisissez le drop à la main';
+    hint.style.color = 'var(--text3)';
+  }
+}
+
+/* Cible de cadence RELATIVE : +5 à +10 % de la valeur du coureur.
+   Surtout pas un chiffre absolu — le fameux « 180 pas/min » vient d'une
+   observation de coureurs d'élite, pas d'une norme validée, et la cadence
+   dépend de l'allure et de la longueur des membres. Les études d'intervention
+   ont toutes testé une hausse relative depuis la valeur mesurée. */
+function _cpCadenceCible(base) {
+  return { min: Math.round(base * 1.05), max: Math.round(base * 1.10) };
+}
+
+function _cpMajCadence() {
+  var el = document.getElementById('cp-cadence');
+  var jauge = document.getElementById('cp-gauge');
+  var stat = document.getElementById('cp-cadence-stat');
+  if (!el || !jauge) return;
+  var base = parseFloat(el.value);
+  if (isNaN(base) || base <= 0) {
+    jauge.style.display = 'none';
+    if (stat) { stat.textContent = '—'; stat.className = 'measure-stat'; }
+    return;
+  }
+  var c = _cpCadenceCible(base);
+  jauge.style.display = 'block';
+  var MIN = 140, MAX = 190;
+  var pos = function(v){ return Math.max(0, Math.min(100, (v - MIN) / (MAX - MIN) * 100)); };
+  var set = function(id, prop, val){ var e = document.getElementById(id); if (e) e.style[prop] = val; };
+  var txt = function(id, val){ var e = document.getElementById(id); if (e) e.textContent = val; };
+  set('cp-g-base', 'left', pos(base) + '%');
+  set('cp-g-cible', 'left', pos(c.min) + '%');
+  set('cp-g-cible', 'width', (pos(c.max) - pos(c.min)) + '%');
+  set('cp-g-lbl-base', 'left', pos(base) + '%');
+  set('cp-g-lbl-cible', 'left', ((pos(c.min) + pos(c.max)) / 2) + '%');
+  txt('cp-g-lbl-base', 'mesuré ' + base);
+  txt('cp-g-lbl-cible', c.min + ' – ' + c.max);
+  txt('cp-g-base-txt', base);
+  txt('cp-g-cible-txt', c.min + ' – ' + c.max);
+  if (stat) { stat.textContent = 'Cible ' + c.min + '–' + c.max; stat.className = 'measure-stat warn'; }
+  _cpMajStats();
+}
+
+/* Les deux autres mesures n'ont AUCUN seuil lésionnel : elles dépendent de
+   l'allure et servent au suivi du même coureur. Elles n'affichent donc que
+   leur valeur, sans couleur — colorer reviendrait à annoncer une norme qui
+   n'existe pas. Seule l'asymétrie, qui compare les deux côtés, se colore. */
+function _cpMajStats() {
+  var poser = function(id, txt, cls){
+    var e = document.getElementById(id); if (!e) return;
+    e.textContent = txt; e.className = 'measure-stat' + (cls ? ' ' + cls : '');
+  };
+  var gct = parseFloat((document.getElementById('cp-gct')||{}).value);
+  poser('cp-gct-stat', isNaN(gct) ? '—' : gct + ' ms', '');
+  var osc = parseFloat((document.getElementById('cp-osc')||{}).value);
+  poser('cp-osc-stat', isNaN(osc) ? '—' : osc + ' cm', '');
+  var asym = parseFloat((document.getElementById('cp-gct-asym')||{}).value);
+  if (isNaN(asym)) poser('cp-gct-asym-stat', '—', '');
+  else poser('cp-gct-asym-stat', asym + ' %', asym < 3 ? 'good' : asym <= 5 ? 'warn' : 'bad');
+}
+
+function _cpStrike(val) {
+  var hf = document.getElementById('cp-strike');
+  var zone = document.getElementById('cp-strike-zone');
+  if (!hf || !zone) return;
+  // Recliquer la position déjà retenue l'annule — sinon un choix posé par
+  // erreur ne pourrait plus être retiré, ce champ n'ayant pas d'option vide.
+  hf.value = (hf.value === val) ? '' : val;
+  _cpStrikeRepaint();
+  try { hf.dispatchEvent(new Event('input', {bubbles:true})); } catch(ex){}
+}
+
+function _cpStrikeRepaint() {
+  var hf = document.getElementById('cp-strike');
+  var zone = document.getElementById('cp-strike-zone');
+  if (!hf || !zone) return;
+  zone.querySelectorAll('.cp-strike-opt').forEach(function(b){
+    b.classList.toggle('sel', b.getAttribute('data-v') === hf.value && !!hf.value);
+  });
+}
+
+/* Rafraîchit toute la page — appelé après désérialisation d'un bilan. */
+function _cpRefresh() {
+  try { _cpMajCadence(); } catch(ex){}
+  try { _cpMajStats(); } catch(ex){}
+  try { _cpStrikeRepaint(); } catch(ex){}
+}
+
+(function(){
+  function _cpInitDatalist(){
+    var dl = document.getElementById('cp-dl-chaussures');
+    if (!dl || dl.children.length) return;
+    Object.keys(CHAUSSURES_DROP).sort().forEach(function(m){
+      var o = document.createElement('option');
+      o.value = m; o.label = CHAUSSURES_DROP[m] + ' mm';
+      dl.appendChild(o);
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _cpInitDatalist);
+  else _cpInitDatalist();
+})();
+
 
 function updateRomBar(el) {
   var id = el.id;
@@ -1534,7 +1706,7 @@ function _blCustomSnapshot(){
 var _BL_EDITABLE_PAGES = ['epaule','coude','main','rachis-cerv','rachis-lomb','hanche','genou','pied',
   // Pages fonctionnelles/force : chaque test est un bloc-widget autonome (pas de tbody) —
   // profil réduit assumé (masquage/réordre de blocs + blocs perso, pas d'édition par ligne).
-  'fonctionnels','fonctionnelsMS','fonctionnelsRachis','force-ms','force-rachis','force-mi','musculaires',
+  'fonctionnels','fonctionnelsMS','fonctionnelsRachis','course','force-ms','force-rachis','force-mi','musculaires',
   // LMA : profil « tests seulement » — les blocs muscle sont pilotés par le sélecteur
   // (mutuellement exclusifs), donc pas d'op au niveau bloc. Voir garde 'lma' dans _blDecorate.
   'lma'];
@@ -2651,6 +2823,16 @@ var TRACKED_METRICS = [
   {id:'rf-lat-d',       label:'Endurance latérale cerv. D',    unit:'s',   dir:'up',   cat:'Tests Fonctionnels Rachis'},
   {id:'rf-sorensen',    label:'Sørensen (ext. lombaires)',      unit:'s',   dir:'up',   cat:'Tests Fonctionnels Rachis'},
   {id:'rf-pdslrt',      label:'PDSLRT (lombaires)',             unit:'s',   dir:'up',   cat:'Tests Fonctionnels Rachis'},
+  /* ── Course à pied ────────────────────────────────────────
+     La réévaluation à 6 semaines est le geste même de l'analyse de course :
+     sans ces quatre lignes, la page se remplirait à chaque bilan sans que rien
+     ne se compare, et le badge de delta inline (« 162 → 176 ») n'existerait pas.
+     `dir` dit le sens souhaité : la cadence doit MONTER, le temps de contact,
+     l'oscillation et l'asymétrie doivent BAISSER. */
+  {id:'cp-cadence',     label:'Cadence',                        unit:' pas/min', dir:'up',   cat:'Course à pied'},
+  {id:'cp-gct',         label:'Temps de contact au sol',        unit:' ms',      dir:'down', cat:'Course à pied'},
+  {id:'cp-gct-asym',    label:'Asymétrie temps de contact',     unit:' %',       dir:'down', cat:'Course à pied'},
+  {id:'cp-osc',         label:'Oscillation verticale',          unit:' cm',      dir:'down', cat:'Course à pied'},
 ];
 
 /* ── Configuration des graphiques d'évolution ─────────── */
@@ -3554,7 +3736,8 @@ function _renderEvolutionPage(){
   var _ctPageLabels = {
     epaule:'Épaule', rachis:'Rachis', hanche:'Hanche', genou:'Genou',
     pied:'Pied', lma:'LMA', fonctionnels:'Tests Fonctionnels MI',
-    fonctionnelsMS:'Tests Fonctionnels MS', fonctionnelsRachis:'Tests Fonctionnels Rachis'
+    fonctionnelsMS:'Tests Fonctionnels MS', fonctionnelsRachis:'Tests Fonctionnels Rachis',
+    course:'Analyse de Course a pied'
   };
   var ctHtml = '';
   var bilat = _isBilateral();
@@ -3958,6 +4141,7 @@ function _deserializeBilan(data){
   try{ _parseObjectifs(); }catch(ex){}
   try{ _afRefreshAll(); }catch(ex){}
   try{ _imgFileRenderAll(); }catch(ex){}
+  try{ _cpRefresh(); }catch(ex){}
   _suppressDirty = false;
   _bilanModified = false;
   try{ _calcWainnerCerv(); _calcDN4(); _calcLaslett(); _calcHaLaslett(); _calcInstabLomb(); _calcFlexionLomb(); _calcMckenzie(); }catch(ex){}
@@ -6994,7 +7178,84 @@ function _buildAllTestsHtml() {
   if(typeof window._ctBuildSectionHtml === 'function') tfRachisHtml += window._ctBuildSectionHtml('fonctionnelsRachis');
   addSec('5. Tests Fonctionnels - Rachis', tfRachisHtml);
 
-  // 6. Points à travailler
+  /* ── 6. Analyse de Course à pied ────────────────────────────────────────
+     Les colonnes sont GAUCHE / DROIT, jamais sain / atteint. Ce n'est pas un
+     oubli : le formulaire de cette page nomme lui aussi les deux côtés, parce
+     qu'en course les deux jambes travaillent — « le côté sain » n'y désigne
+     rien. Et le CR doit dire ce que dit le formulaire, c'est la règle posée
+     par qualite/cr-cotes-cas.js : ne pas traduire, donc ne pas traduire faux. */
+  var cpV   = function(id){ return ((document.getElementById(id)||{}).value||'').trim(); };
+  var cpNum = function(id){ return parseFloat((document.getElementById(id)||{}).value); };
+  var CP_ST_LBL = { ok:'OK', acceptable:'Acceptable', insuffisant:'Insuffisant' };
+  var CP_ST_CLS = { ok:'ok', acceptable:'warn', insuffisant:'bad' };
+  var cpHtml = '';
+
+  // Conditions — elles conditionnent la lecture de tout le reste.
+  var cpCond = [];
+  var cpChauss = cpV('cp-chaussure'), cpDrop = cpV('cp-drop');
+  if (cpChauss || cpDrop) cpCond.push(cpChauss + (cpDrop !== '' ? (cpChauss ? ' — drop ' : 'Drop ') + cpDrop + ' mm' : ''));
+  if (cpV('cp-allure'))  cpCond.push('Allure ' + cpV('cp-allure'));
+  if (cpV('cp-support')) cpCond.push(cpV('cp-support'));
+  if (cpV('cp-echauff')) cpCond.push('Échauffement ' + cpV('cp-echauff'));
+  if (cpV('cp-km'))      cpCond.push(cpV('cp-km') + '/sem.');
+  if (cpCond.length) cpHtml += crItem('Conditions', cpCond.join(' · '), '', '',
+    ['cp-chaussure','cp-drop','cp-allure','cp-support','cp-echauff','cp-km']);
+  if (cpV('cp-douleur')) cpHtml += crItem('Douleur pendant la course', cpV('cp-douleur'), '', '', ['cp-douleur']);
+
+  // Spatio-temporel. La cadence porte sa cible RELATIVE — pas de seuil absolu.
+  var cpCad = cpNum('cp-cadence');
+  if (!isNaN(cpCad)) {
+    var cpC = _cpCadenceCible(cpCad);
+    cpHtml += crItem('Cadence', cpCad + ' pas/min', 'Cible ' + cpC.min + '–' + cpC.max + ' (+5 à +10 %)', 'warn', ['cp-cadence']);
+  }
+  var cpGct = cpNum('cp-gct');
+  if (!isNaN(cpGct)) cpHtml += crItem('Temps de contact au sol', cpGct + ' ms', '', '', ['cp-gct']);
+  var cpAsym = cpNum('cp-gct-asym');
+  if (!isNaN(cpAsym)) cpHtml += crItem('Asymétrie du temps de contact', cpAsym + ' %',
+    cpAsym < 3 ? 'Symétrique' : cpAsym <= 5 ? 'Limite' : 'Marquée',
+    cpAsym < 3 ? 'ok' : cpAsym <= 5 ? 'warn' : 'bad', ['cp-gct-asym']);
+  var cpOsc = cpNum('cp-osc');
+  if (!isNaN(cpOsc)) cpHtml += crItem('Oscillation verticale', cpOsc + ' cm', '', '', ['cp-osc']);
+
+  // Attaque du pied.
+  var cpStrike = cpV('cp-strike');
+  if (cpStrike) cpHtml += crItem('Position du pied à l\'attaque', CP_STRIKE_LBL[cpStrike] || cpStrike,
+    cpStrike === 'sous' ? 'OK' : 'À corriger', cpStrike === 'sous' ? 'ok' : 'bad', ['cp-strike']);
+
+  // Un critère par côté : une ligne, deux colonnes, dans l'ordre Gauche puis Droit.
+  var cpDeux = function(cle, idG, idD, traduire) {
+    var g = cpV(idG), d = cpV(idD);
+    if (!g && !d) return '';
+    var f = traduire ? function(v){ return v ? CP_ST_LBL[v] || v : ''; } : function(v){ return v; };
+    return crItem(cle, _crMesTab([{ l:'', a:f(g), b:f(d) }], 'Gauche', 'Droit'), '', '', [idG, idD]);
+  };
+  cpHtml += cpDeux('Zone d\'attaque',            'cp-zone-g',      'cp-zone-d',      false);
+  cpHtml += cpDeux('Angle du tibia à l\'impact', 'cp-tibia-g',     'cp-tibia-d',     true);
+  cpHtml += cpDeux('Bruit d\'impact',            'cp-bruit-g',     'cp-bruit-d',     true);
+
+  // Appui et propulsion — critères globaux, avec leur observation.
+  [['cp-amorti','Flexion de genou en amortissement'],
+   ['cp-exthanche','Extension de hanche en fin d\'appui'],
+   ['cp-tronc','Inclinaison du tronc'],
+   ['cp-talon','Retour du talon en phase oscillante'],
+   ['cp-bras','Balancement des bras']].forEach(function(p){
+    var st = cpV(p[0]), nt = cpV(p[0] + '-nt');
+    if (!st && !nt) return;
+    cpHtml += crItem(p[1], nt || CP_ST_LBL[st] || '—',
+      st ? CP_ST_LBL[st] : '', st ? CP_ST_CLS[st] : '', [p[0], p[0] + '-nt']);
+  });
+
+  // Contrôle frontal — le bloc le mieux étayé, tout par côté.
+  cpHtml += cpDeux('Chute pelvienne controlatérale',      'cp-pelvis-g',    'cp-pelvis-d',    true);
+  cpHtml += cpDeux('Adduction de hanche / valgus dyn.',   'cp-valgus-g',    'cp-valgus-d',    true);
+  cpHtml += cpDeux('Croisement de la ligne médiane',      'cp-crossover-g', 'cp-crossover-d', true);
+  cpHtml += cpDeux('Éversion calcanéenne',                'cp-eversion-g',  'cp-eversion-d',  true);
+
+  if (cpV('cp-conclusion')) cpHtml += crItem('Conclusion', nl2br(cpV('cp-conclusion')), '', '', ['cp-conclusion']);
+  if(typeof window._ctBuildSectionHtml === 'function') cpHtml += window._ctBuildSectionHtml('course');
+  addSec('6. Analyse de Course a pied', cpHtml);
+
+  // 7. Points à travailler
   var toWork = [];
 
   // ── Force musculaire rachis ──────────────────────────────────────────────
@@ -7327,6 +7588,38 @@ function _buildAllTestsHtml() {
   // Pliométrie qualitative
   if (plioqTouched && plioqCA2 < 2) toWork.push('Améliorer qualité pliométrique et coordination (score CA ' + plioqCA2 + '/2)');
   if (plioqTouched && !plioqSym) toWork.push('Rétablir la symétrie de hauteur en pliométrie unipodale');
+
+  /* ── Course à pied ────────────────────────────────────────────────────
+     Ces points rejoignent la liste COMMUNE plutôt que d'en former une
+     seconde : deux listes de « points à travailler » dans le même CR
+     finiraient par se contredire, et le médecin ne saurait pas laquelle lit
+     l'autre. L'ordre suit la solidité des données — chute pelvienne et
+     overstride d'abord, ils répondent tous deux à la cadence. */
+  (function(){
+    var v = function(id){ return ((document.getElementById(id)||{}).value||'').trim(); };
+    ['g','d'].forEach(function(c){
+      var cote = c === 'g' ? 'gauche' : 'droite';
+      if (v('cp-pelvis-' + c) === 'insuffisant')
+        toWork.push('Contrôle frontal du bassin, hanche ' + cote + ' — moyen fessier (chute pelvienne controlatérale)');
+      if (v('cp-valgus-' + c) === 'insuffisant')
+        toWork.push('Contrôle du valgus dynamique, hanche ' + cote + ' — abducteurs et rotateurs latéraux');
+    });
+    if (v('cp-strike') === 'devant')
+      toWork.push('Corriger l\'overstride — le pied se pose devant le centre de masse (passer par la cadence)');
+    var cad = parseFloat(v('cp-cadence'));
+    if (!isNaN(cad)) {
+      var ci = _cpCadenceCible(cad);
+      toWork.push('Augmenter la cadence de course — ' + cad + ' → ' + ci.min + '–' + ci.max + ' pas/min (+5 à +10 %)');
+    }
+    if (v('cp-exthanche') === 'insuffisant')
+      toWork.push('Extension de hanche en fin d\'appui — mobilité des fléchisseurs et propulsion');
+    if (v('cp-amorti') === 'insuffisant')
+      toWork.push('Amortissement du genou à la réception — excentrique quadriceps');
+    var asym = parseFloat(v('cp-gct-asym'));
+    if (!isNaN(asym) && asym > 5)
+      toWork.push('Asymétrie du temps de contact au sol (' + asym + ' %) — en chercher la cause');
+  })();
+
   if (toWork.length > 0) {
     var workHtml = '';
     for (var wi=0; wi<toWork.length; wi++) {
@@ -7334,7 +7627,7 @@ function _buildAllTestsHtml() {
       // autres lignes — le CSS mobile doit la traiter à part (cf. bilan.html).
       workHtml += '<div class="cr-item cr-todo"><span style="margin-right:6px;color:var(--orange)">-></span><span>' + toWork[wi] + '</span></div>';
     }
-    addSec('6. Points a Travailler', workHtml);
+    addSec('7. Points a Travailler', workHtml);
   }
 
   return sections;
@@ -7787,6 +8080,7 @@ function loadFromStorage() {
     calcPlioq2(); calcRec(); calcSEBT(); calcUQYBT();
     updateBadges();
     _afRefreshAll();
+    _cpRefresh();
   } catch(e) {}
 }
 
@@ -8248,7 +8542,8 @@ function buildCRTF() {
      Une ligne sans provenance connue (conclusion, marqueur, valeur calculee
      sans champ rattache) est ecartee : elle ne vient d'aucun de ces onglets. */
   var PAGES_TF = ['page-force-ms','page-force-rachis','page-force-mi','page-musculaires',
-                  'page-fonctionnelsMS','page-fonctionnelsRachis','page-fonctionnels'];
+                  'page-fonctionnelsMS','page-fonctionnelsRachis','page-fonctionnels',
+                  'page-course'];
   function _neGarderQueTF(html){
     var tmp = document.createElement('div');
     tmp.innerHTML = html;
@@ -9670,7 +9965,7 @@ window.addEventListener('load', function(){
 ══════════════════════════════════════════════════════ */
 (function(){
   var _CT_PAGES = ['epaule','coude','main','rachis','hanche','genou','pied','lma',
-                   'fonctionnels','fonctionnelsMS','fonctionnelsRachis',
+                   'fonctionnels','fonctionnelsMS','fonctionnelsRachis','course',
                    'rachis-cerv','rachis-lomb'];
   var _ctData = {};
 
@@ -9875,7 +10170,7 @@ window.addEventListener('load', function(){
       pc.appendChild(hf);
 
       var lbl = _ctLabels();
-      var _FUNC_PAGES = ['fonctionnels','fonctionnelsMS','fonctionnelsRachis'];
+      var _FUNC_PAGES = ['fonctionnels','fonctionnelsMS','fonctionnelsRachis','course'];
       var hdrClass = _FUNC_PAGES.indexOf(pk) !== -1 ? 'block-header' : 'block-header grey';
       var sec = document.createElement('div');
       sec.className = 'block';
@@ -9932,7 +10227,8 @@ window.addEventListener('load', function(){
     var PAGE_LABELS = {
       epaule:'Épaule', rachis:'Rachis', hanche:'Hanche', genou:'Genou',
       pied:'Pied', lma:'LMA', fonctionnels:'Tests Fonctionnels MI',
-      fonctionnelsMS:'Tests Fonctionnels MS', fonctionnelsRachis:'Tests Fonctionnels Rachis'
+      fonctionnelsMS:'Tests Fonctionnels MS', fonctionnelsRachis:'Tests Fonctionnels Rachis',
+      course:'Analyse de Course a pied'
     };
     var bilat = _ctIsBilat();
     var lbl = _ctLabels();
