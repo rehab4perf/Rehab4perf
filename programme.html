@@ -2530,7 +2530,12 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
     </div>
     <div style="padding:6px 14px 8px; background:var(--navy);">
       <div class="filter-label" style="margin-top:0;margin-bottom:3px;">Ajouter au bloc</div>
-      <select class="filter-select" id="target-bloc-select" style="width:100%;">
+      <!-- Ce menu et le bloc actif sont UN SEUL choix montre a deux endroits.
+           Le clic sur un bloc alignait deja le menu (setActiveBloc) ; sans ce
+           onchange l'inverse restait faux, et choisir ici un bloc laissait la
+           surbrillance sur un autre — deux reponses a « ou va l'exercice ». -->
+      <select class="filter-select" id="target-bloc-select" style="width:100%;"
+              onchange="setActiveBloc(this.value)">
         <option value="">— Dernier bloc —</option>
       </select>
     </div>
@@ -3302,7 +3307,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   </div><!-- /tool-panel-drawer -->
 </div><!-- /tool-panel-overlay -->
 
-<script src="js/prog-data.js?v=20260811c"></script>
+<script src="js/prog-data.js?v=20260811d"></script>
 
 <!-- ══ CYCLES MODAL ════════════════════════════════════════════ -->
 <style>
@@ -4470,6 +4475,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 </div>
 
-<script src="js/prog-main.js?v=20260811b"></script>
+<script src="js/prog-main.js?v=20260811d"></script>
 </body>
 </html>

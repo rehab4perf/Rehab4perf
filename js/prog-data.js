@@ -1037,6 +1037,7 @@ function addCardioBloc(atIndex){
   _relettrerEtape(etapeCible);
   activeBloc = id;
   renderSession();
+  setActiveBloc(id);
 }
 
 function updateCardioField(id, field, val){
@@ -1202,6 +1203,7 @@ function addTexteBloc(atIndex){
   _syncEtapeIds();
   activeBloc = id;
   renderSession();
+  setActiveBloc(id);
 }
 
 function updateTexteContenu(id, val){
@@ -1265,6 +1267,7 @@ function addAmrapBloc(atIndex){
   _syncEtapeIds();
   activeBloc = id;
   renderSession();
+  setActiveBloc(id);
 }
 
 function addEmomBloc(atIndex){
@@ -1274,6 +1277,7 @@ function addEmomBloc(atIndex){
   _syncEtapeIds();
   activeBloc = id;
   renderSession();
+  setActiveBloc(id);
 }
 
 function updateChronoField(id, field, val){
@@ -1520,6 +1524,7 @@ function addBloc(atIndex){
   _relettrerEtape(etapeCible);
   activeBloc = id;
   renderSession();
+  setActiveBloc(id);
 }
 
 function deleteBloc(id){

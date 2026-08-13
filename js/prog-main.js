@@ -4570,6 +4570,7 @@ function _addBlocFromPicker(tmplId, blocIdx){
   /* Un bloc pioche ne rapporte PAS son etape : voir _ajouterBlocPioche. */
   _ajouterBlocPioche(srcBloc);
   renderSession();
+  setActiveBloc(activeBloc);          // aligne « Ajouter au bloc » sur le bloc pioché
   _pickerRefreshAddedState();
   _showToast('✚ Bloc « '+escH(srcBloc.title||'Bloc')+' » ajouté');
   var el = document.getElementById('bloc-'+activeBloc);
