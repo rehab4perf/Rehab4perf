@@ -999,6 +999,41 @@ td.bl-row-rail button:disabled { opacity: .3 !important; cursor: default; }
    Un composant jumeau aurait eu l'air identique et n'aurait rien restauré. */
 .cp-grid-4 { grid-template-columns: 2fr 1fr 1fr 1fr; }
 .cp-hint { font-size: .65rem; color: var(--text3); margin-top: 3px; font-style: italic; }
+
+/* Liste de chaussures — habillage du produit, pas celui du navigateur.
+   `position:fixed` sur le `<body>` et non `absolute` dans le champ : `.block`
+   porte `overflow:hidden`, une liste en absolu y serait coupée au ras de la
+   première ligne. Coordonnées calculées à l'ouverture, liste refermée au
+   défilement — c'est le prix du positionnement fixe. */
+.cp-combo-pop {
+  position: fixed; z-index: 9200;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  max-height: 300px; overflow-y: auto;
+  padding: 4px;
+}
+.cp-combo-item {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 7px 10px; border-radius: var(--radius-sm);
+  cursor: pointer; font-size: .84rem; color: var(--text);
+}
+.cp-combo-item:hover, .cp-combo-item.on { background: var(--accent-l); color: var(--accent); }
+.cp-combo-item b { font-weight: 600; }
+.cp-combo-item .cp-combo-drop {
+  margin-left: auto; flex: none;
+  font-size: .7rem; font-weight: 700; color: var(--text2);
+  font-variant-numeric: tabular-nums;
+}
+.cp-combo-item.on .cp-combo-drop { color: var(--accent); }
+.cp-combo-marque {
+  padding: 8px 10px 3px; font-size: .62rem; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--text3);
+}
+.cp-combo-vide {
+  padding: 10px; font-size: .78rem; color: var(--text3); font-style: italic;
+}
 /* Source : petite, grise, sous le critère. */
 .cp-src { display: block; font-size: .64rem; color: var(--text3); font-weight: 400;
   font-style: italic; margin-top: 3px; letter-spacing: .01em; }
@@ -5252,7 +5287,12 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
       <div class="form-grid cp-grid-4">
         <div class="field">
           <label>Chaussage</label>
-          <input list="cp-dl-chaussures" id="cp-chaussure" placeholder="Tapez ou choisissez…" oninput="_cpChaussureChange()">
+          <!-- Liste maison, pas de <datalist> : Chrome le rend avec son propre
+               habillage sombre et y mêle son autofill d'adresses (« Gérer les
+               adresses… »). autocomplete=off coupe cette heuristique. -->
+          <input id="cp-chaussure" placeholder="Tapez ou choisissez…" autocomplete="off"
+                 oninput="_cpChaussureChange();_cpComboOuvrir()"
+                 onfocus="_cpComboOuvrir()" onkeydown="_cpComboTouche(event)">
           <div class="cp-hint" id="cp-chaussure-hint">Drop rempli automatiquement — modifiable si la version diffère</div>
         </div>
         <div class="field"><label>Drop (mm)</label><input type="number" id="cp-drop" placeholder="—"></div>
@@ -5510,7 +5550,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
       <textarea class="concl-area" id="cp-conclusion" placeholder="Overstride marqué avec cadence basse et défaut de contrôle frontal du bassin à droite…"></textarea>
     </div>
 
-    <datalist id="cp-dl-chaussures"></datalist>
 
   </div>
 </div>
@@ -5655,7 +5694,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260806i"></script>
-<script src="js/bilan.js?v=20260813a"></script>
+<script src="js/bilan.js?v=20260813b"></script>
 
 </body>
 </html>

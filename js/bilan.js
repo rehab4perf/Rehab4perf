@@ -798,19 +798,132 @@ function _cpRefresh() {
   try { _cpStrikeRepaint(); } catch(ex){}
 }
 
-(function(){
-  function _cpInitDatalist(){
-    var dl = document.getElementById('cp-dl-chaussures');
-    if (!dl || dl.children.length) return;
-    Object.keys(CHAUSSURES_DROP).sort().forEach(function(m){
-      var o = document.createElement('option');
-      o.value = m; o.label = CHAUSSURES_DROP[m] + ' mm';
-      dl.appendChild(o);
+/* ── Liste de chaussures : composant maison ────────────────────────────
+   Un `<datalist>` était plus court à écrire, mais Chrome le rend avec son
+   propre habillage — panneau sombre, typographie système — et y mêle son
+   autofill d'adresses, jusqu'à afficher « Gérer les adresses… » sous une
+   liste de chaussures. Aucun CSS ne porte sur ce panneau : il est dessiné
+   par le navigateur, hors du document.
+
+   La liste est donc rendue par le produit. Elle vit sur le `<body>` en
+   `position:fixed` : `.block` porte `overflow:hidden`, et une liste posée
+   en `absolute` dans le champ serait coupée au ras de la première ligne.
+   Contrepartie du fixe : les coordonnées ne suivent pas le défilement, on
+   referme donc la liste dès qu'on défile. */
+var _cpComboIdx = -1;   // ligne survolée au clavier, -1 = aucune
+
+function _cpComboFermer() {
+  var p = document.getElementById('cp-combo-pop');
+  if (p) p.remove();
+  _cpComboIdx = -1;
+  document.removeEventListener('mousedown', _cpComboDehors, true);
+  window.removeEventListener('scroll', _cpComboFermer, true);
+  window.removeEventListener('resize', _cpComboFermer, true);
+}
+
+function _cpComboDehors(e) {
+  var p = document.getElementById('cp-combo-pop');
+  var inp = document.getElementById('cp-chaussure');
+  if (!p) return;
+  if (p.contains(e.target) || e.target === inp) return;
+  _cpComboFermer();
+}
+
+/* Modèles correspondant à la saisie. Recherche sur tous les mots, dans
+   n'importe quel ordre : « nike peg » et « peg nike » trouvent la même
+   chaussure — on tape rarement la marque en premier quand on cherche vite. */
+function _cpComboFiltre(q) {
+  var mots = String(q || '').toLowerCase().split(/\s+/).filter(Boolean);
+  return Object.keys(CHAUSSURES_DROP).sort().filter(function(m) {
+    var bas = m.toLowerCase();
+    return mots.every(function(w){ return bas.indexOf(w) >= 0; });
+  });
+}
+
+function _cpComboOuvrir() {
+  var inp = document.getElementById('cp-chaussure');
+  if (!inp) return;
+  _cpComboFermer();
+
+  var liste = _cpComboFiltre(inp.value);
+  var pop = document.createElement('div');
+  pop.id = 'cp-combo-pop';
+  pop.className = 'cp-combo-pop';
+
+  if (!liste.length) {
+    pop.innerHTML = '<div class="cp-combo-vide">Aucun modèle connu — saisie libre, renseignez le drop à la main.</div>';
+  } else {
+    var html = '', marque = null;
+    liste.forEach(function(m, i) {
+      var mq = m.split(' ')[0];
+      if (mq !== marque) { marque = mq; html += '<div class="cp-combo-marque">' + mq + '</div>'; }
+      html += '<div class="cp-combo-item" data-i="' + i + '" data-m="' + m.replace(/"/g,'&quot;') + '">'
+            + '<b>' + m + '</b>'
+            + '<span class="cp-combo-drop">' + CHAUSSURES_DROP[m] + ' mm</span>'
+            + '</div>';
     });
+    pop.innerHTML = html;
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _cpInitDatalist);
-  else _cpInitDatalist();
-})();
+
+  var r = inp.getBoundingClientRect();
+  pop.style.left  = r.left + 'px';
+  pop.style.width = Math.max(r.width, 260) + 'px';
+  // Sous le champ, sauf s'il n'y a plus la place — alors au-dessus.
+  var placeBas = window.innerHeight - r.bottom;
+  if (placeBas < 180 && r.top > placeBas) {
+    pop.style.bottom = (window.innerHeight - r.top + 4) + 'px';
+    pop.style.maxHeight = Math.min(300, r.top - 12) + 'px';
+  } else {
+    pop.style.top = (r.bottom + 4) + 'px';
+    pop.style.maxHeight = Math.min(300, placeBas - 12) + 'px';
+  }
+  document.body.appendChild(pop);
+
+  pop.querySelectorAll('.cp-combo-item').forEach(function(el) {
+    // `mousedown` et non `click` : le champ perd le focus avant le click,
+    // et le gestionnaire de fermeture aurait déjà retiré la liste.
+    el.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      _cpComboChoisir(el.getAttribute('data-m'));
+    });
+  });
+
+  document.addEventListener('mousedown', _cpComboDehors, true);
+  window.addEventListener('scroll', _cpComboFermer, true);
+  window.addEventListener('resize', _cpComboFermer, true);
+}
+
+function _cpComboChoisir(modele) {
+  var inp = document.getElementById('cp-chaussure');
+  if (!inp) return;
+  inp.value = modele;
+  _cpComboFermer();
+  _cpChaussureChange();
+  // Le bilan ne se marque modifié que sur un événement du champ : le poser à
+  // la main ne suffit pas, la saisie serait perdue sans avertissement.
+  try { inp.dispatchEvent(new Event('input', {bubbles:true})); } catch(ex){}
+  inp.focus();
+}
+
+function _cpComboTouche(e) {
+  var pop = document.getElementById('cp-combo-pop');
+  if (e.key === 'Escape') { _cpComboFermer(); return; }
+  if (e.key === 'ArrowDown' && !pop) { _cpComboOuvrir(); return; }
+  if (!pop) return;
+  var items = Array.prototype.slice.call(pop.querySelectorAll('.cp-combo-item'));
+  if (!items.length) return;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    _cpComboIdx += (e.key === 'ArrowDown' ? 1 : -1);
+    if (_cpComboIdx < 0) _cpComboIdx = items.length - 1;
+    if (_cpComboIdx >= items.length) _cpComboIdx = 0;
+    items.forEach(function(el, i){ el.classList.toggle('on', i === _cpComboIdx); });
+    items[_cpComboIdx].scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'Enter' && _cpComboIdx >= 0) {
+    e.preventDefault();
+    _cpComboChoisir(items[_cpComboIdx].getAttribute('data-m'));
+  }
+}
 
 
 function updateRomBar(el) {

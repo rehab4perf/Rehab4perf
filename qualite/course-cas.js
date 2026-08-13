@@ -119,6 +119,30 @@ verifie('extension de hanche remontée', pts.some(function(p){ return /Extension
 verifie('asymétrie > 5 % remontée', pts.some(function(p){ return /Asymétrie du temps de contact au sol \(9 %\)/.test(p); }));
 verifie('rien pour le côté gauche (tout OK)', !pts.some(function(p){ return /gauche/.test(p); }));
 
+/* ── Bibliothèque de chaussures ──────────────────────────────────────────
+   Le <datalist> a été remplacé par une liste maison : Chrome rendait le sien
+   avec son propre habillage sombre et y mêlait son autofill d'adresses. */
+var dbSrc = src.slice(src.indexOf('var CHAUSSURES_DROP'),
+                      src.indexOf('\n};', src.indexOf('var CHAUSSURES_DROP')) + 3);
+var comboMod = dbSrc + '\n' + ext('_cpComboFiltre')
+  + '\nmodule.exports = { f:_cpComboFiltre, db:CHAUSSURES_DROP,'
+  + ' n:Object.keys(CHAUSSURES_DROP).length };';
+var TMP2 = path.join(require('os').tmpdir(), '_r4p_course_combo.js');
+fs.writeFileSync(TMP2, comboMod);
+var cb = require(TMP2);
+
+console.log('\nBibliothèque de chaussures');
+verifie('au moins 60 modèles', cb.n >= 60, cb.n + ' modèles');
+verifie('champ vide — tout est proposé', cb.f('').length === cb.n);
+verifie('recherche par marque', cb.f('nike').length === 9);
+verifie('recherche partielle', cb.f('peg').length === 2 && cb.f('peg').every(function(x){ return /Pegasus/.test(x); }));
+verifie('mots dans le désordre', cb.f('peg nike').join() === cb.f('nike peg').join());
+verifie('insensible à la casse', cb.f('HOKA CLIFTON').length === 1);
+verifie('modèle inconnu — aucune proposition', cb.f('zzz').length === 0);
+verifie('Altra en drop nul', cb.db['Altra Lone Peak 8'] === 0);
+verifie('Brooks Ghost en 12 mm', cb.db['Brooks Ghost 16'] === 12);
+
+
 console.log('\n' + '─'.repeat(64));
 if (ko) { console.log('✗ ' + ko + ' échec(s) sur ' + (ok + ko)); process.exit(1); }
 console.log('✓ ' + ok + ' attentes vérifiées');
