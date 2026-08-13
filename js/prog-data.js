@@ -1312,6 +1312,16 @@ function _renderChronoExos(b){
   }
   (b.exos||[]).forEach(function(e, i){
     h += '<div class="chrono-exo">';
+    /* Les fleches manquaient ici alors que `moveExo` est generique : l'ordre
+       etait fige a la saisie, sans aucun moyen de le reprendre. Il compte
+       pourtant plus qu'ailleurs — dans un EMOM la position EST la minute, et
+       dans un AMRAP elle fixe l'enchainement du tour. Meme classe que les
+       blocs d'exercices : elle porte deja le masquage en lecture seule et a
+       l'impression, et l'affichage permanent sur ecran tactile. */
+    h += '<div class="exo-move-btns">'
+      +  '<button class="exo-move-btn"'+(i===0?' disabled':'')+' onclick="event.stopPropagation();moveExo(\''+b.id+'\','+i+',-1)" title="Monter">↑</button>'
+      +  '<button class="exo-move-btn"'+(i===(b.exos.length-1)?' disabled':'')+' onclick="event.stopPropagation();moveExo(\''+b.id+'\','+i+',1)" title="Descendre">↓</button>'
+      +  '</div>';
     if(b.type === 'emom'){
       h += '<span class="chrono-min">min '+(i+1)+'</span>';
     }

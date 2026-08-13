@@ -1350,6 +1350,10 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .chrono-reps { width:74px; border:1px solid var(--border); border-radius:6px; padding:4px 7px; font-family:inherit; font-size:var(--fs-sm); text-align:center; }
 .chrono-reps:focus { outline:none; border-color:var(--accent2); }
 .chrono-exo .percote-toggle { flex-shrink:0; }
+/* Les fleches sont masquees par defaut (opacity:0) et revelees au survol de
+   LEUR ligne. La regle d'origine ne vise que `.exo-row` : sans ce doublon,
+   elles resteraient invisibles a la souris dans un AMRAP ou un EMOM. */
+.chrono-exo:hover .exo-move-btns { opacity:1; }
 .chrono-exo .yt-thumb-wrap img { width:44px; height:25px; border-radius:4px; }
 .chrono-exo .yt-thumb-wrap .yt-play::after { border-left-width:7px; border-top-width:4px; border-bottom-width:4px; }
 .chrono-exo-vide { width:44px; height:25px; border-radius:4px; background:var(--bg);
@@ -3307,7 +3311,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   </div><!-- /tool-panel-drawer -->
 </div><!-- /tool-panel-overlay -->
 
-<script src="js/prog-data.js?v=20260811d"></script>
+<script src="js/prog-data.js?v=20260811e"></script>
 
 <!-- ══ CYCLES MODAL ════════════════════════════════════════════ -->
 <style>
