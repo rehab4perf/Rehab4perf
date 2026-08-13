@@ -1098,7 +1098,7 @@ td.bl-row-rail button:disabled { opacity: .3 !important; cursor: default; }
 .cp-strike-opt { background: var(--surface); padding: 14px 12px 12px; text-align: center;
   cursor: pointer; border: none; font-family: inherit; transition: background .15s; }
 .cp-strike-opt:hover { background: var(--surface2); }
-.cp-strike-opt svg { width: 100%; max-width: 170px; height: 118px; }
+.cp-strike-opt svg { width: 100%; max-width: 182px; height: 148px; }
 .cp-strike-nom { font-size: .8rem; font-weight: 700; color: var(--text); margin-top: 8px; }
 .cp-strike-desc { font-size: .7rem; color: var(--text2); margin-top: 3px; line-height: 1.4; }
 .cp-strike-opt.sel { background: var(--accent-l); box-shadow: inset 0 0 0 2px var(--accent); }
@@ -1126,6 +1126,10 @@ td.bl-row-rail button:disabled { opacity: .3 !important; cursor: default; }
 .cp-sk-arrow { stroke: var(--red); stroke-width: 1.6; fill: none; }
 .cp-sk-arrowh { fill: var(--red); }
 .cp-sk-lbl { font-size: 8.5px; font-weight: 700; fill: var(--text3); letter-spacing: .06em; }
+/* Sens de course : sans lui, un coureur de profil peut se lire dans les
+   deux sens, et « devant » perd tout son sens. */
+.cp-sk-dir { stroke: var(--text3); stroke-width: 1.4; fill: none;
+  stroke-linecap: round; stroke-linejoin: round; }
 
 /* Lignes qualitatives et colonnes Gauche / Droit. */
 .cp-q-row { display: grid; grid-template-columns: 1fr 158px 1fr; align-items: center;
@@ -5482,52 +5486,19 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
       <input type="hidden" id="cp-strike" value="">
       <div class="cp-strike" id="cp-strike-zone">
         <button type="button" class="cp-strike-opt" data-v="sous" onclick="_cpStrike('sous')" title="Sous le centre de masse — cliquez à nouveau pour annuler ce choix">
-          <svg viewBox="0 0 150 118" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <line class="cp-sk-ground" x1="12" y1="104" x2="138" y2="104"/>
-            <line class="cp-sk-com" x1="75" y1="8" x2="75" y2="112"/>
-            <text class="cp-sk-lbl" x="79" y="15">CDM</text>
-            <circle class="cp-sk-head" cx="75" cy="24" r="7"/>
-            <path class="cp-sk-body" d="M75 31 L74 62"/><path class="cp-sk-body" d="M74 40 L60 52"/>
-            <path class="cp-sk-body" d="M74 40 L88 50"/>
-            <path class="cp-sk-leg" d="M74 62 L73 84 L74 103"/><path class="cp-sk-leg" d="M74 103 L84 103"/>
-            <path class="cp-sk-body" d="M74 62 L88 76 L84 90"/>
-            <circle class="cp-sk-mark" cx="74" cy="103" r="3.4"/>
-          </svg>
+          <svg viewBox="0 0 160 130" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><line class="cp-sk-ground" x1="10" y1="112" x2="150" y2="112"/><line class="cp-sk-com" x1="80" y1="10" x2="80" y2="122"/><text class="cp-sk-lbl" x="85" y="17">CDM</text><circle class="cp-sk-head" cx="88" cy="24" r="7.5"/><path class="cp-sk-body" d="M80 66 L84 34"/><path class="cp-sk-body" d="M84 34 L96 45 L102 36"/><path class="cp-sk-body" d="M84 34 L72 46 L64 53"/><path class="cp-sk-body" d="M80 66 L96 74 L88 58"/><path class="cp-sk-leg" d="M80 66 L84 88 L80 108"/><path class="cp-sk-leg" d="M80 108 L90 111"/><circle class="cp-sk-mark" cx="80" cy="108" r="3.6"/><path class="cp-sk-dir" d="M130 122 L146 122 M142 119 L146 122 L142 125"/></svg>
           <div class="cp-strike-nom">Sous le centre de masse</div>
           <div class="cp-strike-desc">Tibia vertical à l'impact · freinage minimal</div>
           <div class="cp-strike-annul">Cliquer à nouveau pour annuler</div>
         </button>
         <button type="button" class="cp-strike-opt warn" data-v="devant" onclick="_cpStrike('devant')" title="Devant — overstride — cliquez à nouveau pour annuler ce choix">
-          <svg viewBox="0 0 150 118" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <line class="cp-sk-ground" x1="12" y1="104" x2="138" y2="104"/>
-            <line class="cp-sk-com" x1="66" y1="8" x2="66" y2="112"/>
-            <text class="cp-sk-lbl" x="24" y="15">CDM</text>
-            <circle class="cp-sk-head" cx="66" cy="24" r="7"/>
-            <path class="cp-sk-body" d="M66 31 L65 62"/><path class="cp-sk-body" d="M65 40 L51 50"/>
-            <path class="cp-sk-body" d="M65 40 L79 52"/>
-            <path class="cp-sk-leg warn" d="M65 62 L88 82 L104 102"/>
-            <path class="cp-sk-leg warn" d="M104 102 L116 100"/>
-            <path class="cp-sk-arrow" d="M104 92 L88 92"/>
-            <path class="cp-sk-arrowh" d="M90 89 L86 92 L90 95 Z"/>
-            <path class="cp-sk-body" d="M65 62 L58 80 L62 94"/>
-            <circle class="cp-sk-mark warn" cx="104" cy="102" r="3.4"/>
-          </svg>
+          <svg viewBox="0 0 160 130" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><line class="cp-sk-ground" x1="10" y1="112" x2="150" y2="112"/><line class="cp-sk-com" x1="80" y1="10" x2="80" y2="122"/><text class="cp-sk-lbl" x="85" y="17">CDM</text><circle class="cp-sk-head" cx="88" cy="24" r="7.5"/><path class="cp-sk-body" d="M80 66 L84 34"/><path class="cp-sk-body" d="M84 34 L96 45 L102 36"/><path class="cp-sk-body" d="M84 34 L72 46 L64 53"/><path class="cp-sk-body" d="M80 66 L68 82 L74 98"/><path class="cp-sk-leg warn" d="M80 66 L100 84 L118 104"/><path class="cp-sk-leg warn" d="M118 104 L129 98"/><path class="cp-sk-arrow" d="M116 92 L100 92"/><path class="cp-sk-arrowh" d="M102 89 L98 92 L102 95 Z"/><circle class="cp-sk-mark warn" cx="118" cy="104" r="3.6"/><path class="cp-sk-dir" d="M130 122 L146 122 M142 119 L146 122 L142 125"/></svg>
           <div class="cp-strike-nom">Devant — overstride</div>
           <div class="cp-strike-desc">Force de freinage à chaque pas · genou tendu, talon en avant</div>
           <div class="cp-strike-annul">Cliquer à nouveau pour annuler</div>
         </button>
         <button type="button" class="cp-strike-opt" data-v="derriere" onclick="_cpStrike('derriere')" title="Derrière — cliquez à nouveau pour annuler ce choix">
-          <svg viewBox="0 0 150 118" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <line class="cp-sk-ground" x1="12" y1="104" x2="138" y2="104"/>
-            <line class="cp-sk-com" x1="84" y1="8" x2="84" y2="112"/>
-            <text class="cp-sk-lbl" x="88" y="15">CDM</text>
-            <circle class="cp-sk-head" cx="84" cy="24" r="7"/>
-            <path class="cp-sk-body" d="M84 31 L83 62"/><path class="cp-sk-body" d="M83 40 L69 52"/>
-            <path class="cp-sk-body" d="M83 40 L97 50"/>
-            <path class="cp-sk-leg" d="M83 62 L72 82 L63 102"/><path class="cp-sk-leg" d="M63 102 L73 103"/>
-            <path class="cp-sk-body" d="M83 62 L96 76 L92 90"/>
-            <circle class="cp-sk-mark" cx="63" cy="102" r="3.4"/>
-          </svg>
+          <svg viewBox="0 0 160 130" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><line class="cp-sk-ground" x1="10" y1="112" x2="150" y2="112"/><line class="cp-sk-com" x1="80" y1="10" x2="80" y2="122"/><text class="cp-sk-lbl" x="85" y="17">CDM</text><circle class="cp-sk-head" cx="94" cy="26" r="7.5"/><path class="cp-sk-body" d="M80 66 L89 36"/><path class="cp-sk-body" d="M89 36 L101 46 L107 37"/><path class="cp-sk-body" d="M89 36 L77 47 L69 54"/><path class="cp-sk-body" d="M80 66 L98 72 L104 88"/><path class="cp-sk-leg" d="M80 66 L68 86 L54 106"/><path class="cp-sk-leg" d="M54 106 L64 110"/><circle class="cp-sk-mark" cx="54" cy="106" r="3.6"/><path class="cp-sk-dir" d="M130 122 L146 122 M142 119 L146 122 L142 125"/></svg>
           <div class="cp-strike-nom">Derrière</div>
           <div class="cp-strike-desc">Rare · buste très penché en avant, course « en poussée »</div>
           <div class="cp-strike-annul">Cliquer à nouveau pour annuler</div>
@@ -5793,7 +5764,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260806i"></script>
-<script src="js/bilan.js?v=20260813f"></script>
+<script src="js/bilan.js?v=20260813g"></script>
 
 </body>
 </html>
