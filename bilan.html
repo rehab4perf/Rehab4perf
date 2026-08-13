@@ -1100,6 +1100,16 @@ td.bl-row-rail button:disabled { opacity: .3 !important; cursor: default; }
 .cp-strike-opt.sel .cp-strike-nom { color: var(--accent); }
 .cp-strike-opt.sel.warn { background: var(--red-l); box-shadow: inset 0 0 0 2px var(--red); }
 .cp-strike-opt.sel.warn .cp-strike-nom { color: var(--red-d); }
+/* Le re-clic annulait déjà le choix, mais rien ne le disait : sans repère
+   visible, un praticien pense simplement qu'il ne peut plus revenir en
+   arrière. La mention ne s'affiche que sur la position retenue — c'est la
+   seule sur laquelle le geste a un sens. */
+.cp-hint-hd { margin-left: auto; font-size: .63rem; font-weight: 500;
+  letter-spacing: .02em; text-transform: none; color: var(--text2); }
+.cp-strike-annul { display: none; margin-top: 6px; font-size: .64rem; font-weight: 600;
+  letter-spacing: .02em; color: var(--text3); }
+.cp-strike-opt.sel .cp-strike-annul { display: block; }
+.cp-strike-opt.sel.warn .cp-strike-annul { color: var(--red-d); opacity: .75; }
 .cp-sk-com { stroke: var(--accent2); stroke-width: 1.6; stroke-dasharray: 4 3; }
 .cp-sk-body { stroke: var(--text2); stroke-width: 2.6; stroke-linecap: round; fill: none; }
 .cp-sk-head { fill: var(--text2); }
@@ -2133,7 +2143,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 152.5394 225.2882" width="16" height="16" fill="currentColor"><ellipse cx="130.035" cy="37.064" rx="22.5" ry="22.5" transform="matrix(.204 -.979 .979 .204 67.251 156.817)"/><path d="m116.7551 133.4764 10.9541-11.2881c3.6045-3.7148 4.5469-9.2666 2.3701-13.9619-2.1772-4.6963-7.021-7.5547-12.1875-7.2148l-34.2417 2.324c-1.4128 2.1469-2.7622 4.3312-4.0041 6.5441z"/><path d="m61.052 154.9793c-4.8076 4.9541-4.689 12.8682.2656 17.6758 2.4282 2.3564 5.5679 3.5293 8.7041 3.5293 3.2617 0 6.5205-1.2686 8.9717-3.7949l16.7118-17.2213-21.5432-13.6987z"/><path d="m146.3337 207.2889-4.42-11.3082-19.6504-53.2471c-.9473-2.5674-2.71-4.7529-5.0195-6.2207l-40.6465-25.8457c3.5031-6.6089 7.9557-12.9623 12.4597-18.808 4.3755-5.679 8.7994-10.8788 12.4485-15.359 7.2178-7.4307 9.5146-19.707 2.9854-25.6016-1.4749-1.3323-3.2873-2.4492-5.3366-3.2631l-69.5262-46.2939c-3.6772-2.4482-8.644-1.4521-11.0923 2.2256-2.4487 3.6777-1.4526 8.6436 2.2251 11.0928l34.3732 22.8874 37.3705 16.2173c1.6869.7313 3.1476 1.9003 4.2245 3.38 2.14 2.9404 2.5698 6.8368 1.1241 10.1693-1.0952 2.523-3.1075 4.4695-5.6672 5.4797-2.5583 1.0104-5.3583.9636-7.882-.1324l-20.5548-8.92c-6.5042 7.2612-11.3149 14.3929-15.752 23.4547-1.9078 3.8964-3.7481 8.1459-5.6246 12.9223-4.8203 15.6787 4.1377 22.332 12.2773 26.543.8213.4248 1.5996.8164 2.3438 1.166l43.2764 27.5186 17.177 46.5448c1.6876 4.5731 4.918 8.4139 9.134 10.8604l10.0822 5.8505 10.7852 6.2584c1.8651 1.0823 4.3673.0181 4.6439-2.1206.0435-.3367.0207-.6639-.0968-.9647z"/><path d="m95.7431 66.3979c1.759-4.0521-.1005-8.7645-4.1539-10.5237l-80.4023-34.8916c-4.0535-1.7592-8.7653.1011-10.5237 4.1539-1.1699 2.6958-.7388 5.6829.8743 7.8993.8114 1.1149 1.9233 2.0353 3.2796 2.6244l80.4023 34.8915c4.0536 1.7593 8.7653-.101 10.5237-4.1538z"/></svg></span> Tests Fonctionnels MI
 </button>
 <button class="nav-item" onclick="showPage('course')" data-page="course">
-  <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="17" cy="4.5" r="1.8"/><path d="M13.5 21l1.8-5.4-3.3-2.7.9-4.5"/><path d="M8.1 12.6L6.3 8.1l4.5-1.8 3.6 1.8 2.7 2.7h2.7"/><path d="M9 21l-1.8-3.6-3.6.9"/></svg></span> Analyse de Course à pied
+  <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor" width="16" height="16"><path d="m112 295.988c0-8.284-6.716-15-15-15h-82c-8.284 0-15 6.716-15 15s6.716 15 15 15h82c8.284 0 15-6.716 15-15z"/><path d="m15 250.988h32c8.284 0 15-6.716 15-15s-6.716-15-15-15h-32c-8.284 0-15 6.716-15 15s6.716 15 15 15z"/><ellipse cx="347.925" cy="56.002" rx="55" ry="55" transform="matrix(.707 -.707 .707 .707 62.306 262.423)"/><path d="m492.252 65.934c-15.569-5.667-32.784 2.361-38.451 17.93l-25.652 70.477-50.94-18.541c-9.134 3.362-18.998 5.201-29.284 5.201-31.463 0-58.967-17.196-73.663-42.671l-12.266-4.464c-15.11-5.499-31.28-7.455-47.265-5.717l-57.268 6.229c-17.045 1.854-31.556 13.233-37.421 29.345l-23.392 64.268c-5.667 15.569 2.361 32.785 17.93 38.451 15.569 5.667 32.785-2.361 38.451-17.93l19.289-52.997 60.65-5.826-72.89 200.262h-75.5c-19.33 0-34.999 15.67-35 34.999v.001c0 19.33 15.67 35 35 35h93.006c18.918 0 35.816-11.832 42.286-29.609l16.418-45.109 56.382 20.522-35.768 98.272c-8.309 22.828 8.596 46.97 32.889 46.97 14.714 0 27.857-9.203 32.889-23.029l44.318-121.764c8.5-23.354-3.542-49.177-26.896-57.677l-23.492-8.55 39.332-108.065 65.779 23.942c23.354 8.5 49.177-3.541 57.677-26.896l30.781-84.572c5.668-15.57-2.359-32.785-17.929-38.452z"/></svg></span> Analyse de Course à pied
 </button>
 <div class="nav-section">Synthèse</div>
 <button class="nav-item" onclick="showPage('cr-tf')" data-page="cr-tf">
@@ -5328,7 +5338,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 <div class="page" id="page-course">
   <div class="page-header">
     <div class="page-title">Analyse de Course à pied
-    <div class="page-corner-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="17" cy="4.5" r="1.8"/><path d="M13.5 21l1.8-5.4-3.3-2.7.9-4.5"/><path d="M8.1 12.6L6.3 8.1l4.5-1.8 3.6 1.8 2.7 2.7h2.7"/><path d="M9 21l-1.8-3.6-3.6.9"/></svg></div></div>
+    <div class="page-corner-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor"><path d="m112 295.988c0-8.284-6.716-15-15-15h-82c-8.284 0-15 6.716-15 15s6.716 15 15 15h82c8.284 0 15-6.716 15-15z"/><path d="m15 250.988h32c8.284 0 15-6.716 15-15s-6.716-15-15-15h-32c-8.284 0-15 6.716-15 15s6.716 15 15 15z"/><ellipse cx="347.925" cy="56.002" rx="55" ry="55" transform="matrix(.707 -.707 .707 .707 62.306 262.423)"/><path d="m492.252 65.934c-15.569-5.667-32.784 2.361-38.451 17.93l-25.652 70.477-50.94-18.541c-9.134 3.362-18.998 5.201-29.284 5.201-31.463 0-58.967-17.196-73.663-42.671l-12.266-4.464c-15.11-5.499-31.28-7.455-47.265-5.717l-57.268 6.229c-17.045 1.854-31.556 13.233-37.421 29.345l-23.392 64.268c-5.667 15.569 2.361 32.785 17.93 38.451 15.569 5.667 32.785-2.361 38.451-17.93l19.289-52.997 60.65-5.826-72.89 200.262h-75.5c-19.33 0-34.999 15.67-35 34.999v.001c0 19.33 15.67 35 35 35h93.006c18.918 0 35.816-11.832 42.286-29.609l16.418-45.109 56.382 20.522-35.768 98.272c-8.309 22.828 8.596 46.97 32.889 46.97 14.714 0 27.857-9.203 32.889-23.029l44.318-121.764c8.5-23.354-3.542-49.177-26.896-57.677l-23.492-8.55 39.332-108.065 65.779 23.942c23.354 8.5 49.177-3.541 57.677-26.896l30.781-84.572c5.668-15.57-2.359-32.785-17.929-38.452z"/></svg></div></div>
     <div class="page-subtitle">Analyse vidéo 2D — profil, face et dos</div>
   </div>
   <div class="page-content">
@@ -5462,11 +5472,13 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
     <!-- ③ Attaque du pied ────────────────────────────────── -->
     <div class="block" data-block-id="course--attaque">
       <div class="block-header">Attaque du pied — plan sagittal</div>
-      <div class="block-header light cp-subhd">Position du pied à l'attaque, par rapport au centre de masse</div>
+      <div class="block-header light cp-subhd">Position du pied à l'attaque, par rapport au centre de masse
+        <span class="cp-hint-hd">Cliquez pour choisir · re-cliquez pour annuler</span>
+      </div>
 
       <input type="hidden" id="cp-strike" value="">
       <div class="cp-strike" id="cp-strike-zone">
-        <button type="button" class="cp-strike-opt" data-v="sous" onclick="_cpStrike('sous')">
+        <button type="button" class="cp-strike-opt" data-v="sous" onclick="_cpStrike('sous')" title="Sous le centre de masse — cliquez à nouveau pour annuler ce choix">
           <svg viewBox="0 0 150 118" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <line class="cp-sk-ground" x1="12" y1="104" x2="138" y2="104"/>
             <line class="cp-sk-com" x1="75" y1="8" x2="75" y2="112"/>
@@ -5480,8 +5492,9 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
           </svg>
           <div class="cp-strike-nom">Sous le centre de masse</div>
           <div class="cp-strike-desc">Tibia vertical à l'impact · freinage minimal</div>
+          <div class="cp-strike-annul">Cliquer à nouveau pour annuler</div>
         </button>
-        <button type="button" class="cp-strike-opt warn" data-v="devant" onclick="_cpStrike('devant')">
+        <button type="button" class="cp-strike-opt warn" data-v="devant" onclick="_cpStrike('devant')" title="Devant — overstride — cliquez à nouveau pour annuler ce choix">
           <svg viewBox="0 0 150 118" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <line class="cp-sk-ground" x1="12" y1="104" x2="138" y2="104"/>
             <line class="cp-sk-com" x1="66" y1="8" x2="66" y2="112"/>
@@ -5498,8 +5511,9 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
           </svg>
           <div class="cp-strike-nom">Devant — overstride</div>
           <div class="cp-strike-desc">Force de freinage à chaque pas · genou tendu, talon en avant</div>
+          <div class="cp-strike-annul">Cliquer à nouveau pour annuler</div>
         </button>
-        <button type="button" class="cp-strike-opt" data-v="derriere" onclick="_cpStrike('derriere')">
+        <button type="button" class="cp-strike-opt" data-v="derriere" onclick="_cpStrike('derriere')" title="Derrière — cliquez à nouveau pour annuler ce choix">
           <svg viewBox="0 0 150 118" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <line class="cp-sk-ground" x1="12" y1="104" x2="138" y2="104"/>
             <line class="cp-sk-com" x1="84" y1="8" x2="84" y2="112"/>
@@ -5513,6 +5527,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
           </svg>
           <div class="cp-strike-nom">Derrière</div>
           <div class="cp-strike-desc">Rare · buste très penché en avant, course « en poussée »</div>
+          <div class="cp-strike-annul">Cliquer à nouveau pour annuler</div>
         </button>
       </div>
       <div class="cp-aide">
@@ -5775,7 +5790,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260806i"></script>
-<script src="js/bilan.js?v=20260813d"></script>
+<script src="js/bilan.js?v=20260813e"></script>
 
 </body>
 </html>

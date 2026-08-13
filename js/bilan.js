@@ -2726,7 +2726,18 @@ function _resetBilanFields(){
   try{ _afResetTouched(); }catch(ex){}
   document.querySelectorAll('input:not([type=checkbox]):not([type=radio])').forEach(function(i){ i.value=''; });
   document.querySelectorAll('textarea').forEach(function(t){ t.value=''; });
-  document.querySelectorAll('select').forEach(function(s){ s.selectedIndex=0; s.className=''; });
+  /* `className=''` effaçait tout, y compris la classe de BASE du composant.
+     Or `mob-status-sel`, `cp-zone-sel` et `ep-apr-sel` ne sont pas des états :
+     les retirer laisse un select nu — bordure système, pas de pastille — et
+     rien ne les remet, sauf à ce que le bloc soit régénéré. Les grilles de
+     mobilité s'en sortaient parce qu'elles sont reconstruites en JS ; les
+     selects écrits en dur dans la page, eux, restaient nus définitivement.
+     Seuls les états (positif-ortho, st-insuffisant…) doivent partir. */
+  var BASES_SELECT = ['mob-status-sel', 'cp-zone-sel', 'ep-apr-sel'];
+  document.querySelectorAll('select').forEach(function(s){
+    s.selectedIndex = 0;
+    s.className = BASES_SELECT.filter(function(c){ return s.classList.contains(c); }).join(' ');
+  });
   document.querySelectorAll('input[type=checkbox],input[type=radio]').forEach(function(c){ c.checked=false; });
   try{ var fd=document.getElementById('f-date'); if(fd) fd.value=new Date().toISOString().split('T')[0]; }catch(ex){}
   _painZones=[]; renderPainZones();
@@ -2744,6 +2755,12 @@ function _resetBilanFields(){
   // Tests personnalisés : purge mémoire + champ caché + rendu (les flux qui doivent
   // les conserver — suivi, chargement d'un bilan — les réinjectent après ce reset)
   try{ if(window._ctResetAll) window._ctResetAll(); }catch(ex){}
+  /* Course à pied : le champ caché du schéma d'attaque est bien vidé par la
+     boucle générique, mais rien ne retire la surbrillance de la position
+     choisie — le patient suivant héritait visuellement de l'attaque du
+     précédent. Même chose pour la jauge de cadence et la synthèse, qui
+     seraient restées affichées avec les constats de l'ancien dossier. */
+  try{ _cpRefresh(); }catch(ex){}
   _suppressDirty = false;
   _bilanModified = false;
   _refreshCRIfVisible();
