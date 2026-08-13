@@ -59,19 +59,18 @@ var se = src.indexOf("  addSec('6. Analyse de Course a pied', cpHtml);");
 if (si < 0 || se < 0) { console.error('Section CAP introuvable'); process.exit(1); }
 var sectionSrc = src.slice(si, se);
 
-/* Les points a travailler. La borne se cherche APRES « var toWork = [] » :
-   le meme intitule de commentaire ouvre aussi le bloc de TRACKED_METRICS,
-   bien plus haut dans le fichier, et un indexOf depuis zero tombe dessus. */
-var wDeb = src.indexOf('  // 7. Points à travailler');
-var wi = src.indexOf('  /* ── Course à pied ─', wDeb);
-var we = src.indexOf('  })();', wi) + 7;
-if (wDeb < 0 || wi < 0) { console.error('Bloc toWork Course introuvable'); process.exit(1); }
-var workSrc = src.slice(wi, we);
+/* SOURCE UNIQUE : la meme fonction alimente la synthese de l'onglet et la
+   section « Points a Travailler » des deux comptes-rendus. */
+var ptsSrc = ext('_cpPointsATravailler');
+if (!ptsSrc) { console.error('_cpPointsATravailler introuvable'); process.exit(1); }
 
-var mod = pre
+var mod = pre + ptsSrc + '\n'
   + 'function sectionCAP(){\n' + sectionSrc + '\n  return cpHtml;\n}\n'
-  + 'function pointsCAP(){ var toWork = [];\n' + workSrc + '\n  return toWork;\n}\n'
-  + 'module.exports = { sectionCAP: sectionCAP, pointsCAP: pointsCAP };';
+  + 'function pointsCAP(){ var toWork = [];\n'
+  + '  _cpPointsATravailler().forEach(function(p){ toWork.push(p.t); });\n'
+  + '  return toWork;\n}\n'
+  + 'module.exports = { sectionCAP: sectionCAP, pointsCAP: pointsCAP,'
+  + ' brut: _cpPointsATravailler };';
 var TMP = path.join(require('os').tmpdir(), '_r4p_course_mod.js');
 fs.writeFileSync(TMP, mod);
 var m = require(TMP);
@@ -130,6 +129,14 @@ var comboMod = dbSrc + '\n' + ext('_cpComboFiltre')
 var TMP2 = path.join(require('os').tmpdir(), '_r4p_course_combo.js');
 fs.writeFileSync(TMP2, comboMod);
 var cb = require(TMP2);
+
+console.log('\nSynthèse de l\'onglet et CR — une seule source');
+var brut = m.brut();
+verifie('mêmes lignes que les points à travailler du CR',
+  brut.map(function(p){ return p.t; }).join('|') === pts.join('|'));
+verifie('chaque ligne porte un niveau', brut.every(function(p){ return p.n === 'bad' || p.n === 'warn'; }));
+verifie('les constats les mieux étayés en tête',
+  brut[0].n === 'bad' && brut[brut.length - 1].n === 'warn');
 
 console.log('\nBibliothèque de chaussures');
 verifie('au moins 60 modèles', cb.n >= 60, cb.n + ' modèles');

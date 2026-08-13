@@ -1044,10 +1044,27 @@ td.bl-row-rail button:disabled { opacity: .3 !important; cursor: default; }
 .cp-aide.attention { background: var(--yellow-l); border-top-color: var(--yellow-b); color: var(--orange-d); }
 .cp-aide.attention strong { color: var(--orange-d); }
 .cp-subhd { font-size: .68rem; }
-.cp-mrow { grid-template-columns: 1fr 110px 150px 1.2fr; }
-.cp-mlabel { flex-direction: column; justify-content: center; align-items: flex-start; }
-.cp-mlabel small { display: block; font-weight: 400; color: var(--text2); font-size: .72rem;
-  margin-top: 2px; line-height: 1.35; }
+/* Sélecteurs à DEUX classes, volontairement : `.measure-row` et
+   `.measure-label` sont déclarées ~140 lignes plus bas dans cette feuille. À
+   spécificité égale c'est la dernière qui gagne — la grille de 5 colonnes de
+   `.measure-row` écrasait donc celle de 4 posée ici, le repère atterrissait
+   dans une colonne de 110 px et 200 px restaient vides à droite. Deux classes
+   l'emportent quel que soit l'ordre : la règle ne dépend plus de sa position. */
+.measure-row.cp-mrow { grid-template-columns: 1fr 110px 150px 1.4fr; }
+.measure-label.cp-mlabel { flex-direction: column; justify-content: center; align-items: flex-start; }
+.measure-label.cp-mlabel small { display: block; font-weight: 400; color: var(--text2);
+  font-size: .72rem; margin-top: 2px; line-height: 1.35; }
+/* `.measure-norme` n'existe nulle part ailleurs dans cette feuille : la
+   colonne « Repère » est propre à cette page. Sans fond ni marge, la cellule
+   se posait à même la couleur de grille de `.measure-row` — d'où un pavé gris
+   collé aux bords, qu'on prend pour un défaut d'alignement. */
+/* `display:block` et non `flex` : un conteneur flex fait de chaque nœud un
+   élément et SUPPRIME les blancs qui les séparent — « Cible = <strong>+5 »
+   s'affichait « Cible =+5 ». Le centrage vertical ne valait pas ce prix sur
+   une cellule de texte qui court sur plusieurs lignes. */
+.measure-norme { background: var(--surface); padding: 10px 14px; font-size: .72rem;
+  color: var(--text2); line-height: 1.45; }
+.measure-norme strong { color: var(--text); }
 
 /* Jauge de cadence — cible RELATIVE au coureur, jamais un chiffre absolu. */
 .cp-gauge { padding: 16px; background: var(--surface); border-top: 1px solid var(--border);
@@ -1118,10 +1135,23 @@ td.bl-row-rail button:disabled { opacity: .3 !important; cursor: default; }
 .cp-cote-col { background: var(--surface); }
 .cp-cote-col .cp-q-row { grid-template-columns: 1fr 148px; }
 
+/* Synthèse des points à travailler, affichée dans l'onglet. */
+.cp-bh-note { margin-left: auto; font-size: .63rem; font-weight: 500; letter-spacing: .02em;
+  text-transform: none; color: rgba(255,255,255,.72); }
+.cp-synth { padding: 14px 16px; background: var(--surface);
+  display: flex; flex-wrap: wrap; gap: 8px; }
+.cp-chip { display: inline-flex; align-items: center; gap: 7px; border-radius: 20px;
+  padding: 6px 13px 6px 10px; font-size: .78rem; font-weight: 600; border: 1px solid; }
+.cp-chip svg { width: 13px; height: 13px; flex: none; }
+.cp-chip.bad  { background: var(--red-l);    border-color: var(--red-b);    color: var(--red-d); }
+.cp-chip.warn { background: var(--yellow-l); border-color: var(--yellow-b); color: var(--orange-d); }
+.cp-synth-vide { font-size: .8rem; color: var(--text3); font-style: italic; }
+
 @media (max-width: 900px) {
   .cp-grid-4 { grid-template-columns: 1fr 1fr; }
-  .cp-mrow { grid-template-columns: 1fr 90px 120px; }
-  .cp-mrow .measure-norme { grid-column: 1 / -1; }
+  /* Même raison que plus haut : deux classes pour passer devant `.measure-row`. */
+  .measure-row.cp-mrow { grid-template-columns: 1fr 90px 120px; }
+  .measure-row.cp-mrow .measure-norme { grid-column: 1 / -1; }
   .cp-strike { grid-template-columns: 1fr; }
 }
 
@@ -5544,7 +5574,15 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
       </div>
     </div>
 
-    <!-- ⑥ Conclusion ─────────────────────────────────────── -->
+    <!-- ⑥ Synthèse ───────────────────────────────────────── -->
+    <div class="block" data-block-id="course--synthese">
+      <div class="block-header grey">Points à travailler
+        <span class="cp-bh-note">Se construit à mesure de la saisie · repris tel quel dans les deux comptes-rendus</span>
+      </div>
+      <div class="cp-synth" id="cp-synthese"></div>
+    </div>
+
+    <!-- ⑦ Conclusion ─────────────────────────────────────── -->
     <div class="block" data-block-id="course--conclusion">
       <div class="block-header">Conclusion</div>
       <textarea class="concl-area" id="cp-conclusion" placeholder="Overstride marqué avec cadence basse et défaut de contrôle frontal du bassin à droite…"></textarea>
@@ -5694,7 +5732,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260806i"></script>
-<script src="js/bilan.js?v=20260813b"></script>
+<script src="js/bilan.js?v=20260813c"></script>
 
 </body>
 </html>

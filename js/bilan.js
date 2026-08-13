@@ -791,12 +791,84 @@ function _cpStrikeRepaint() {
   });
 }
 
+/* ── Points à travailler ───────────────────────────────────────────────
+   SOURCE UNIQUE, lue par la synthèse affichée dans l'onglet ET par la
+   section « Points à Travailler » des deux comptes-rendus. Reconstruire la
+   liste à deux endroits reviendrait à en avoir deux : elles finiraient par
+   diverger, et le praticien ne saurait pas laquelle fait foi.
+
+   L'ordre suit la solidité des données — contrôle frontal du bassin et
+   overstride d'abord. Ce n'est pas décoratif : ces deux-là répondent à la
+   même intervention, augmenter la cadence, et doivent être lus ensemble.
+
+   `n` porte le niveau pour l'affichage de l'onglet ; le CR n'utilise que
+   `t`, sa mise en forme étant la même pour toutes les lignes. */
+function _cpPointsATravailler() {
+  var v = function(id){ return ((document.getElementById(id)||{}).value||'').trim(); };
+  var out = [];
+  ['g','d'].forEach(function(c){
+    var cote = c === 'g' ? 'gauche' : 'droite';
+    if (v('cp-pelvis-' + c) === 'insuffisant')
+      out.push({ n:'bad', t:'Contrôle frontal du bassin, hanche ' + cote + ' — moyen fessier (chute pelvienne controlatérale)' });
+    if (v('cp-valgus-' + c) === 'insuffisant')
+      out.push({ n:'bad', t:'Contrôle du valgus dynamique, hanche ' + cote + ' — abducteurs et rotateurs latéraux' });
+  });
+  if (v('cp-strike') === 'devant')
+    out.push({ n:'bad', t:'Corriger l\'overstride — le pied se pose devant le centre de masse (passer par la cadence)' });
+  var cad = parseFloat(v('cp-cadence'));
+  if (!isNaN(cad)) {
+    var ci = _cpCadenceCible(cad);
+    out.push({ n:'bad', t:'Augmenter la cadence de course — ' + cad + ' → ' + ci.min + '–' + ci.max + ' pas/min (+5 à +10 %)' });
+  }
+  if (v('cp-exthanche') === 'insuffisant')
+    out.push({ n:'warn', t:'Extension de hanche en fin d\'appui — mobilité des fléchisseurs et propulsion' });
+  if (v('cp-amorti') === 'insuffisant')
+    out.push({ n:'warn', t:'Amortissement du genou à la réception — excentrique quadriceps' });
+  var asym = parseFloat(v('cp-gct-asym'));
+  if (!isNaN(asym) && asym > 5)
+    out.push({ n:'warn', t:'Asymétrie du temps de contact au sol (' + asym + ' %) — en chercher la cause' });
+  return out;
+}
+
+var _CP_ICO_ALERTE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 17h.01"/></svg>';
+
+/* La synthèse est affichée DANS l'onglet, pas seulement dans les CR : c'est
+   pendant l'analyse qu'elle sert, quand on décide quoi travailler avec le
+   coureur en face de soi. */
+function _cpSyntheseRefresh() {
+  var box = document.getElementById('cp-synthese');
+  if (!box) return;
+  var pts = _cpPointsATravailler();
+  if (!pts.length) {
+    box.innerHTML = '<div class="cp-synth-vide">Aucun point à travailler pour l\'instant — '
+      + 'renseignez les paramètres ci-dessus, la synthèse se construit à mesure.</div>';
+    return;
+  }
+  box.innerHTML = pts.map(function(p){
+    return '<span class="cp-chip ' + p.n + '">' + _CP_ICO_ALERTE + _esc2(p.t) + '</span>';
+  }).join('');
+}
+
 /* Rafraîchit toute la page — appelé après désérialisation d'un bilan. */
 function _cpRefresh() {
   try { _cpMajCadence(); } catch(ex){}
   try { _cpMajStats(); } catch(ex){}
   try { _cpStrikeRepaint(); } catch(ex){}
+  try { _cpSyntheseRefresh(); } catch(ex){}
 }
+
+/* Une seule écoute déléguée sur la page plutôt qu'un appel ajouté à chacun
+   des trente champs : un critère ajouté demain sera couvert sans que
+   personne y pense — c'est exactement l'oubli qui laisserait la synthèse
+   afficher un état périmé sans le moindre signal. */
+document.addEventListener('input', function(e){
+  var pg = document.getElementById('page-course');
+  if (pg && e.target && pg.contains(e.target)) _cpSyntheseRefresh();
+}, true);
+document.addEventListener('change', function(e){
+  var pg = document.getElementById('page-course');
+  if (pg && e.target && pg.contains(e.target)) _cpSyntheseRefresh();
+}, true);
 
 /* ── Liste de chaussures : composant maison ────────────────────────────
    Un `<datalist>` était plus court à écrire, mais Chrome le rend avec son
@@ -7706,32 +7778,9 @@ function _buildAllTestsHtml() {
      Ces points rejoignent la liste COMMUNE plutôt que d'en former une
      seconde : deux listes de « points à travailler » dans le même CR
      finiraient par se contredire, et le médecin ne saurait pas laquelle lit
-     l'autre. L'ordre suit la solidité des données — chute pelvienne et
-     overstride d'abord, ils répondent tous deux à la cadence. */
-  (function(){
-    var v = function(id){ return ((document.getElementById(id)||{}).value||'').trim(); };
-    ['g','d'].forEach(function(c){
-      var cote = c === 'g' ? 'gauche' : 'droite';
-      if (v('cp-pelvis-' + c) === 'insuffisant')
-        toWork.push('Contrôle frontal du bassin, hanche ' + cote + ' — moyen fessier (chute pelvienne controlatérale)');
-      if (v('cp-valgus-' + c) === 'insuffisant')
-        toWork.push('Contrôle du valgus dynamique, hanche ' + cote + ' — abducteurs et rotateurs latéraux');
-    });
-    if (v('cp-strike') === 'devant')
-      toWork.push('Corriger l\'overstride — le pied se pose devant le centre de masse (passer par la cadence)');
-    var cad = parseFloat(v('cp-cadence'));
-    if (!isNaN(cad)) {
-      var ci = _cpCadenceCible(cad);
-      toWork.push('Augmenter la cadence de course — ' + cad + ' → ' + ci.min + '–' + ci.max + ' pas/min (+5 à +10 %)');
-    }
-    if (v('cp-exthanche') === 'insuffisant')
-      toWork.push('Extension de hanche en fin d\'appui — mobilité des fléchisseurs et propulsion');
-    if (v('cp-amorti') === 'insuffisant')
-      toWork.push('Amortissement du genou à la réception — excentrique quadriceps');
-    var asym = parseFloat(v('cp-gct-asym'));
-    if (!isNaN(asym) && asym > 5)
-      toWork.push('Asymétrie du temps de contact au sol (' + asym + ' %) — en chercher la cause');
-  })();
+     l'autre. Même raison pour la synthèse affichée dans l'onglet : elle
+     appelle _cpPointsATravailler(), la fonction utilisée ici. */
+  _cpPointsATravailler().forEach(function(p){ toWork.push(p.t); });
 
   if (toWork.length > 0) {
     var workHtml = '';
