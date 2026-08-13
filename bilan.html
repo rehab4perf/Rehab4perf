@@ -1126,6 +1126,23 @@ td.bl-row-rail button:disabled { opacity: .3 !important; cursor: default; }
   font-family: var(--font-sans); color: var(--text2); appearance: none; -webkit-appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236B7280'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 9px center; }
+/* Statut observé + chiffre facultatif. Le chiffre n'est pas la mesure de
+   référence : temps de contact, symétrie et oscillation ne se lisent pas à
+   l'œil — ils viennent d'un capteur ou d'un comptage d'images. Le geste
+   courant est donc le statut ; le nombre n'est là que pour ceux qui l'ont. */
+.cp-st-row { display: grid; grid-template-columns: 1fr 210px 168px; align-items: center;
+  gap: 10px; padding: 8px 14px; border-bottom: 1px solid var(--border); }
+.cp-st-row:last-of-type { border-bottom: none; }
+.cp-st-head { background: var(--surface2); font-size: .7rem; font-weight: 600;
+  letter-spacing: .05em; text-transform: uppercase; color: var(--text2); }
+.cp-st-row .mob-status-sel { width: 100%; }
+.cp-num-opt { display: flex; align-items: center; gap: 6px; }
+.cp-num-opt input { width: 84px; flex: none; border: 1.5px solid var(--border2);
+  border-radius: var(--radius-sm); padding: 5px 6px; text-align: center;
+  font-family: var(--font-sans); font-size: .84rem; color: var(--text); outline: none; }
+.cp-num-opt input:focus { border-color: var(--accent); }
+.cp-num-unit { font-size: .7rem; color: var(--text3); }
+
 .cp-cotes-hd { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); }
 .cp-cote-hd { padding: 6px 14px; font-size: .73rem; font-weight: 700; text-transform: uppercase;
   letter-spacing: .05em; text-align: center; color: #fff; }
@@ -1152,6 +1169,11 @@ td.bl-row-rail button:disabled { opacity: .3 !important; cursor: default; }
   /* Même raison que plus haut : deux classes pour passer devant `.measure-row`. */
   .measure-row.cp-mrow { grid-template-columns: 1fr 90px 120px; }
   .measure-row.cp-mrow .measure-norme { grid-column: 1 / -1; }
+  /* Le repère passe en pleine largeur sous sa ligne : son en-tête n'a plus de
+     colonne à coiffer et se retrouvait seul sur une deuxième rangée. */
+  .measure-row.cp-mrow .col-header:nth-child(4) { display: none; }
+  .cp-st-row { grid-template-columns: 1fr; gap: 6px; }
+  .cp-st-head { display: none; }
   .cp-strike { grid-template-columns: 1fr; }
 }
 
@@ -5383,36 +5405,57 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
         <div class="cp-gauge-scale"><span>140</span><span>150</span><span>160</span><span>170</span><span>180</span><span>190</span></div>
       </div>
 
-      <div class="measure-row cp-mrow">
-        <div class="measure-label cp-mlabel">
-          <span>Temps de contact au sol (ms)</span>
-          <small>Moyenne des deux pieds, en ralenti</small>
-          <span class="cp-src">Folland et al. 2017</span>
-        </div>
-        <div class="measure-input"><input type="number" id="cp-gct" placeholder="—" oninput="_cpMajStats()"></div>
-        <div class="measure-stat" id="cp-gct-stat">—</div>
-        <div class="measure-norme">Dépend fortement de l'allure — aucun seuil de blessure. Utile en <strong>suivi du même coureur</strong>.</div>
+      <div class="block-header light cp-subhd">
+        Ce qui s'observe — le chiffre seulement si le coureur porte un capteur
+      </div>
+      <div class="cp-st-row cp-st-head">
+        <div>Critère</div>
+        <div style="text-align:center">Ce que vous observez</div>
+        <div>Chiffre — facultatif</div>
       </div>
 
-      <div class="measure-row cp-mrow">
-        <div class="measure-label cp-mlabel">
-          <span>Asymétrie du temps de contact (%)</span>
-          <small>|D − G| ÷ moyenne</small>
-        </div>
-        <div class="measure-input"><input type="number" id="cp-gct-asym" placeholder="—" oninput="_cpMajStats()"></div>
-        <div class="measure-stat" id="cp-gct-asym-stat">—</div>
-        <div class="measure-norme">Le seul chiffre qui compare les deux côtés. Seuil de 5 % <strong>indicatif</strong> — issu de la pratique.</div>
+      <div class="cp-st-row">
+        <div class="cp-q-lbl">Temps de contact au sol<small>Appui bref et élastique, ou pied qui s'écrase</small><span class="cp-src">Folland et al. 2017</span></div>
+        <select id="cp-gct-q" class="mob-status-sel" onchange="_mobStatusChange(this)">
+          <option value=""></option>
+          <option value="ok">Bref et élastique</option>
+          <option value="acceptable">Moyen</option>
+          <option value="insuffisant">Long — l'appui s'écrase</option>
+        </select>
+        <div class="cp-num-opt"><input type="number" id="cp-gct" placeholder="—"><span class="cp-num-unit">ms</span></div>
       </div>
 
-      <div class="measure-row cp-mrow">
-        <div class="measure-label cp-mlabel">
-          <span>Oscillation verticale (cm)</span>
-          <small>Déplacement vertical du bassin</small>
-          <span class="cp-src">Folland et al. 2017</span>
-        </div>
-        <div class="measure-input"><input type="number" step="0.1" id="cp-osc" placeholder="—" oninput="_cpMajStats()"></div>
-        <div class="measure-stat" id="cp-osc-stat">—</div>
-        <div class="measure-norme">Liée à l'économie de course. Diminue mécaniquement quand la cadence monte.</div>
+      <div class="cp-st-row">
+        <div class="cp-q-lbl">Symétrie des appuis<small>Une asymétrie s'entend autant qu'elle se voit — un appui plus sonore, un rythme qui boite</small></div>
+        <select id="cp-sym-q" class="mob-status-sel" onchange="_mobStatusChange(this)">
+          <option value=""></option>
+          <option value="ok">Symétrique</option>
+          <option value="acceptable">Doute</option>
+          <option value="insuffisant">Asymétrie visible ou audible</option>
+        </select>
+        <div class="cp-num-opt"><input type="number" id="cp-gct-asym" placeholder="—"><span class="cp-num-unit">% écart</span></div>
+      </div>
+
+      <div class="cp-st-row">
+        <div class="cp-q-lbl">Oscillation verticale<small>Course rasante ou coureur qui rebondit</small><span class="cp-src">Folland et al. 2017</span></div>
+        <select id="cp-osc-q" class="mob-status-sel" onchange="_mobStatusChange(this)">
+          <option value=""></option>
+          <option value="ok">Rasante</option>
+          <option value="acceptable">Modérée</option>
+          <option value="insuffisant">Course en hauteur</option>
+        </select>
+        <div class="cp-num-opt"><input type="number" step="0.1" id="cp-osc" placeholder="—"><span class="cp-num-unit">cm</span></div>
+      </div>
+
+      <div class="cp-aide">
+        <strong>Comment obtenir ces chiffres.</strong>
+        <br><strong>Cadence</strong> — comptez les appuis <em>d'un seul pied pendant 30 s, ×4</em>. Toute montre GPS
+        l'affiche aussi, et Strava l'enregistre déjà pour les activités synchronisées.
+        <br><strong>Temps de contact</strong> — au ralenti : un iPhone filme à 240 im/s, soit <em>4,2 ms par image</em>.
+        Comptez les images entre la pose et le décollement, multipliez par 4,17. À 120 im/s, une image vaut 8,3 ms ;
+        à 60 im/s la précision devient insuffisante.
+        <br><strong>Les trois chiffres</strong> sont donnés directement par une ceinture Garmin HRM-Pro, un pod
+        Running Dynamics, un Stryd ou une montre Coros. Sans capteur, le statut observé suffit — c'est lui qui compte.
       </div>
     </div>
 
@@ -5732,7 +5775,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260806i"></script>
-<script src="js/bilan.js?v=20260813c"></script>
+<script src="js/bilan.js?v=20260813d"></script>
 
 </body>
 </html>

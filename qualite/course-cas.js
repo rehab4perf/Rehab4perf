@@ -16,7 +16,12 @@ var CH = {
   'cp-chaussure':'Nike Pegasus 41', 'cp-drop':'10', 'cp-allure':'5:30 /km',
   'cp-support':'Tapis roulant', 'cp-echauff':'8 min', 'cp-km':'42 km',
   'cp-douleur':'2/10 - face ant. genou D',
-  'cp-cadence':'162', 'cp-gct':'278', 'cp-gct-asym':'9', 'cp-osc':'9.5',
+  'cp-cadence':'162',
+  /* Statut observe + chiffre facultatif : le chiffre vient d'un capteur ou
+     d'un comptage d'images, jamais de l'oeil nu. */
+  'cp-gct-q':'insuffisant', 'cp-gct':'278',
+  'cp-sym-q':'insuffisant',  'cp-gct-asym':'9',
+  'cp-osc-q':'acceptable',   'cp-osc':'9.5',
   'cp-strike':'devant',
   'cp-zone-g':'Talon', 'cp-zone-d':'Talon',
   'cp-tibia-g':'ok', 'cp-tibia-d':'insuffisant',
@@ -32,11 +37,32 @@ var CH = {
   'cp-eversion-g':'ok', 'cp-eversion-d':'acceptable',
   'cp-conclusion':'Overstride marque avec cadence basse.'
 };
+/* Les libelles des statuts observes sont lus SUR LE FORMULAIRE par le CR.
+   Le faux DOM extrait donc les vraies options de bilan.html : ce cas verifie
+   du meme coup que les deux fichiers disent les memes mots. */
+var htmlSrc = fs.readFileSync(path.join(__dirname, '..', 'bilan.html'), 'utf8');
+function optionsDe(id) {
+  var re = new RegExp('<select[^>]*id="' + id + '"[\\s\\S]*?<\\/select>');
+  var bloc = htmlSrc.match(re);
+  if (!bloc) return null;
+  var out = {};
+  bloc[0].replace(/<option value="([^"]*)"[^>]*>([^<]*)<\/option>/g,
+    function(_, v, t){ if (v) out[v] = t.trim(); return ''; });
+  return out;
+}
+var OPTS = {};
+['cp-gct-q','cp-sym-q','cp-osc-q'].forEach(function(id){
+  OPTS[id] = optionsDe(id);
+  if (!OPTS[id]) { console.error('Options introuvables pour ' + id + ' dans bilan.html'); process.exit(1); }
+});
+
 global.window = {};
 global.document = {
   getElementById: function(id){
     if (CH[id] === undefined) return null;
-    return { value: CH[id], closest: function(){ return { id:'page-course' }; } };
+    var el = { value: CH[id], closest: function(){ return { id:'page-course' }; } };
+    if (OPTS[id] && CH[id]) el.selectedOptions = [{ textContent: OPTS[id][CH[id]] || '' }];
+    return el;
   }
 };
 
@@ -87,7 +113,13 @@ function verifie(intitule, cond, detail){
 console.log('\nSection CR — contenu');
 verifie('conditions avec chaussure et drop', /Nike Pegasus 41 — drop 10 mm/.test(html));
 verifie('cadence avec cible relative 170–178', /162 pas\/min/.test(html) && /Cible 170–178/.test(html));
-verifie('asymétrie 9 % marquée', /9 %/.test(html) && /Marquée/.test(html));
+verifie('le CR reprend le libellé du formulaire, pas « Insuffisant »',
+  html.indexOf(OPTS['cp-gct-q'].insuffisant + ' — 278 ms') >= 0,
+  'attendu : ' + OPTS['cp-gct-q'].insuffisant + ' — 278 ms');
+verifie('symétrie des appuis avec écart', /Symétrie des appuis/.test(html) && /9 % écart/.test(html));
+verifie('oscillation au libellé du formulaire',
+  /Oscillation verticale/.test(html) && html.indexOf(OPTS['cp-osc-q'].acceptable) >= 0);
+verifie('la pastille garde le statut générique', /cr-tag bad">Insuffisant</.test(html));
 verifie('overstride nommé', /Devant le centre de masse \(overstride\)/.test(html));
 verifie('conclusion reprise', /Overstride marque avec cadence basse/.test(html));
 
@@ -115,7 +147,8 @@ verifie('valgus droit remonté', pts.some(function(p){ return /valgus dynamique,
 verifie('overstride remonté', pts.some(function(p){ return /overstride/.test(p); }));
 verifie('cadence avec cible chiffrée', pts.some(function(p){ return /162 → 170–178/.test(p); }));
 verifie('extension de hanche remontée', pts.some(function(p){ return /Extension de hanche/.test(p); }));
-verifie('asymétrie > 5 % remontée', pts.some(function(p){ return /Asymétrie du temps de contact au sol \(9 %\)/.test(p); }));
+verifie('asymétrie remontée avec son écart', pts.some(function(p){ return /Asymétrie des appuis \(9 % d'écart\)/.test(p); }));
+verifie('appui long remonté', pts.some(function(p){ return /pied qui s'écrase/.test(p); }));
 verifie('rien pour le côté gauche (tout OK)', !pts.some(function(p){ return /gauche/.test(p); }));
 
 /* ── Bibliothèque de chaussures ──────────────────────────────────────────
@@ -129,6 +162,19 @@ var comboMod = dbSrc + '\n' + ext('_cpComboFiltre')
 var TMP2 = path.join(require('os').tmpdir(), '_r4p_course_combo.js');
 fs.writeFileSync(TMP2, comboMod);
 var cb = require(TMP2);
+
+console.log('\nSans capteur — le statut seul doit suffire');
+var sauve = {};
+['cp-gct','cp-gct-asym','cp-osc'].forEach(function(k){ sauve[k] = CH[k]; CH[k] = ''; });
+var htmlSansN = m.sectionCAP();
+var ptsSansN  = m.pointsCAP();
+verifie('asymétrie remontée sans aucun chiffre',
+  ptsSansN.some(function(p){ return /^Asymétrie des appuis — en chercher/.test(p); }),
+  ptsSansN.filter(function(p){ return /Asym/.test(p); }).join(' | '));
+verifie('le CR affiche le libellé seul, sans chiffre',
+  htmlSansN.indexOf('>' + OPTS['cp-gct-q'].insuffisant + '<') >= 0);
+verifie('aucun « undefined » ni « NaN » dans le CR', !/undefined|NaN/.test(htmlSansN));
+['cp-gct','cp-gct-asym','cp-osc'].forEach(function(k){ CH[k] = sauve[k]; });
 
 console.log('\nSynthèse de l\'onglet et CR — une seule source');
 var brut = m.brut();

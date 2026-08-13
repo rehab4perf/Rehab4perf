@@ -750,25 +750,6 @@ function _cpMajCadence() {
   txt('cp-g-base-txt', base);
   txt('cp-g-cible-txt', c.min + ' – ' + c.max);
   if (stat) { stat.textContent = 'Cible ' + c.min + '–' + c.max; stat.className = 'measure-stat warn'; }
-  _cpMajStats();
-}
-
-/* Les deux autres mesures n'ont AUCUN seuil lésionnel : elles dépendent de
-   l'allure et servent au suivi du même coureur. Elles n'affichent donc que
-   leur valeur, sans couleur — colorer reviendrait à annoncer une norme qui
-   n'existe pas. Seule l'asymétrie, qui compare les deux côtés, se colore. */
-function _cpMajStats() {
-  var poser = function(id, txt, cls){
-    var e = document.getElementById(id); if (!e) return;
-    e.textContent = txt; e.className = 'measure-stat' + (cls ? ' ' + cls : '');
-  };
-  var gct = parseFloat((document.getElementById('cp-gct')||{}).value);
-  poser('cp-gct-stat', isNaN(gct) ? '—' : gct + ' ms', '');
-  var osc = parseFloat((document.getElementById('cp-osc')||{}).value);
-  poser('cp-osc-stat', isNaN(osc) ? '—' : osc + ' cm', '');
-  var asym = parseFloat((document.getElementById('cp-gct-asym')||{}).value);
-  if (isNaN(asym)) poser('cp-gct-asym-stat', '—', '');
-  else poser('cp-gct-asym-stat', asym + ' %', asym < 3 ? 'good' : asym <= 5 ? 'warn' : 'bad');
 }
 
 function _cpStrike(val) {
@@ -824,9 +805,16 @@ function _cpPointsATravailler() {
     out.push({ n:'warn', t:'Extension de hanche en fin d\'appui — mobilité des fléchisseurs et propulsion' });
   if (v('cp-amorti') === 'insuffisant')
     out.push({ n:'warn', t:'Amortissement du genou à la réception — excentrique quadriceps' });
+  /* L'asymétrie remonte sur le STATUT observé, et le chiffre ne fait que la
+     préciser quand il existe. La déclencher sur le seul nombre laisserait
+     passer tous les coureurs sans capteur — c'est-à-dire presque tous. */
   var asym = parseFloat(v('cp-gct-asym'));
-  if (!isNaN(asym) && asym > 5)
-    out.push({ n:'warn', t:'Asymétrie du temps de contact au sol (' + asym + ' %) — en chercher la cause' });
+  var asymQ = v('cp-sym-q');
+  if (asymQ === 'insuffisant' || (!isNaN(asym) && asym > 5))
+    out.push({ n:'warn', t:'Asymétrie des appuis'
+      + (!isNaN(asym) ? ' (' + asym + ' % d\'écart)' : '') + ' — en chercher la cause' });
+  if (v('cp-gct-q') === 'insuffisant')
+    out.push({ n:'warn', t:'Appui long, pied qui s\'écrase — raideur et renvoi élastique' });
   return out;
 }
 
@@ -852,7 +840,6 @@ function _cpSyntheseRefresh() {
 /* Rafraîchit toute la page — appelé après désérialisation d'un bilan. */
 function _cpRefresh() {
   try { _cpMajCadence(); } catch(ex){}
-  try { _cpMajStats(); } catch(ex){}
   try { _cpStrikeRepaint(); } catch(ex){}
   try { _cpSyntheseRefresh(); } catch(ex){}
 }
@@ -7393,14 +7380,32 @@ function _buildAllTestsHtml() {
     var cpC = _cpCadenceCible(cpCad);
     cpHtml += crItem('Cadence', cpCad + ' pas/min', 'Cible ' + cpC.min + '–' + cpC.max + ' (+5 à +10 %)', 'warn', ['cp-cadence']);
   }
-  var cpGct = cpNum('cp-gct');
-  if (!isNaN(cpGct)) cpHtml += crItem('Temps de contact au sol', cpGct + ' ms', '', '', ['cp-gct']);
-  var cpAsym = cpNum('cp-gct-asym');
-  if (!isNaN(cpAsym)) cpHtml += crItem('Asymétrie du temps de contact', cpAsym + ' %',
-    cpAsym < 3 ? 'Symétrique' : cpAsym <= 5 ? 'Limite' : 'Marquée',
-    cpAsym < 3 ? 'ok' : cpAsym <= 5 ? 'warn' : 'bad', ['cp-gct-asym']);
-  var cpOsc = cpNum('cp-osc');
-  if (!isNaN(cpOsc)) cpHtml += crItem('Oscillation verticale', cpOsc + ' cm', '', '', ['cp-osc']);
+  /* Statut observé d'abord, chiffre en appoint quand il existe : ces trois-là
+     ne se lisent pas à l'œil, ils viennent d'un capteur ou d'un comptage
+     d'images. Écrire « 278 ms » sans dire d'où ça sort donnerait au médecin
+     une précision que l'examen n'a pas. */
+  /* Le libellé est lu SUR L'OPTION DU FORMULAIRE, pas dans une table parallèle.
+     « Insuffisant » ne dit pas la même chose que « Long — l'appui s'écrase », et
+     deux listes de mots finissent toujours par diverger. Le CR dit donc
+     exactement ce que le praticien a coché. Le statut générique reste sur la
+     pastille, c'est lui qui porte la couleur. */
+  var cpObsLbl = function(idQ) {
+    var el = document.getElementById(idQ);
+    if (!el || !el.value) return '';
+    var opt = el.selectedOptions && el.selectedOptions[0];
+    var txt = opt ? String(opt.textContent || '').trim() : '';
+    return txt || CP_ST_LBL[el.value] || el.value;
+  };
+  var cpObs = function(cle, idQ, idN, unite, ids) {
+    var q = cpV(idQ), n = cpNum(idN);
+    if (!q && isNaN(n)) return '';
+    var val = q ? cpObsLbl(idQ) : '—';
+    if (!isNaN(n)) val += (q ? ' — ' : '') + n + unite;
+    return crItem(cle, val, q ? CP_ST_LBL[q] : '', q ? CP_ST_CLS[q] : '', ids);
+  };
+  cpHtml += cpObs('Temps de contact au sol', 'cp-gct-q',  'cp-gct',      ' ms',      ['cp-gct-q','cp-gct']);
+  cpHtml += cpObs('Symétrie des appuis',     'cp-sym-q',  'cp-gct-asym', ' % écart', ['cp-sym-q','cp-gct-asym']);
+  cpHtml += cpObs('Oscillation verticale',   'cp-osc-q',  'cp-osc',      ' cm',      ['cp-osc-q','cp-osc']);
 
   // Attaque du pied.
   var cpStrike = cpV('cp-strike');
