@@ -872,15 +872,34 @@ document.addEventListener('change', function(e){
    en `absolute` dans le champ serait coupée au ras de la première ligne.
    Contrepartie du fixe : les coordonnées ne suivent pas le défilement, on
    referme donc la liste dès qu'on défile. */
-var _cpComboIdx = -1;   // ligne survolée au clavier, -1 = aucune
+var _cpComboIdx = -1;         // ligne survolée au clavier, -1 = aucune
+var _cpComboSuspendu = false; // empêche la réouverture pendant un choix
 
 function _cpComboFermer() {
   var p = document.getElementById('cp-combo-pop');
   if (p) p.remove();
   _cpComboIdx = -1;
   document.removeEventListener('mousedown', _cpComboDehors, true);
-  window.removeEventListener('scroll', _cpComboFermer, true);
+  window.removeEventListener('scroll', _cpComboDefilement, true);
   window.removeEventListener('resize', _cpComboFermer, true);
+}
+
+/* La liste est en `position:fixed` : ses coordonnées ne suivent pas la page,
+   on la referme donc quand la page défile. Mais l'écoute est en CAPTURE, et
+   attrape à ce titre le défilement de N'IMPORTE QUEL élément — la liste
+   elle-même comprise, puisqu'elle a son propre `overflow-y:auto`. Elle
+   déclenchait donc sa propre fermeture au premier coup de molette dedans,
+   et devenait impossible à parcourir au-delà des premières entrées. */
+function _cpComboDefilement(e) {
+  var p = document.getElementById('cp-combo-pop');
+  /* `nodeType` avant `contains` : la cible d'un scroll n'est pas toujours un
+     noeud — c'est `window` quand le defilement vient de la fenetre — et
+     `contains(window)` LEVE une exception, qui interrompait la fonction avant
+     la fermeture. Une liste qui refuse de se fermer, pour une garde censee la
+     garder ouverte au bon moment. */
+  var cible = e && e.target;
+  if (p && cible && cible.nodeType && (cible === p || p.contains(cible))) return;
+  _cpComboFermer();
 }
 
 function _cpComboDehors(e) {
@@ -903,6 +922,7 @@ function _cpComboFiltre(q) {
 }
 
 function _cpComboOuvrir() {
+  if (_cpComboSuspendu) return;
   var inp = document.getElementById('cp-chaussure');
   if (!inp) return;
   _cpComboFermer();
@@ -951,20 +971,29 @@ function _cpComboOuvrir() {
   });
 
   document.addEventListener('mousedown', _cpComboDehors, true);
-  window.addEventListener('scroll', _cpComboFermer, true);
+  window.addEventListener('scroll', _cpComboDefilement, true);
   window.addEventListener('resize', _cpComboFermer, true);
 }
 
 function _cpComboChoisir(modele) {
   var inp = document.getElementById('cp-chaussure');
   if (!inp) return;
-  inp.value = modele;
+  /* Le champ rouvre la liste sur `input` ET sur `focus`. Or choisir une
+     entrée fait les deux : on redistribue `input` pour marquer le bilan
+     modifié — le poser à la main ne suffit pas, la saisie serait perdue sans
+     avertissement — puis on rend le focus. La liste se rouvrait donc aussitôt
+     refermée, réduite au seul modèle choisi. On suspend l'ouverture le temps
+     de ces deux gestes plutôt que de renoncer à l'un des deux. */
+  _cpComboSuspendu = true;
+  try {
+    inp.value = modele;
+    _cpChaussureChange();
+    try { inp.dispatchEvent(new Event('input', {bubbles:true})); } catch(ex){}
+    inp.focus();
+  } finally {
+    _cpComboSuspendu = false;
+  }
   _cpComboFermer();
-  _cpChaussureChange();
-  // Le bilan ne se marque modifié que sur un événement du champ : le poser à
-  // la main ne suffit pas, la saisie serait perdue sans avertissement.
-  try { inp.dispatchEvent(new Event('input', {bubbles:true})); } catch(ex){}
-  inp.focus();
 }
 
 function _cpComboTouche(e) {
