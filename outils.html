@@ -325,7 +325,7 @@ body {
 #panel-cr.active { display: flex; flex-direction: row; }
 .cr-layout { display: flex; width: 100%; height: 100%; overflow: hidden; }
 .cr-left {
-  width: 360px; min-width: 300px; flex-shrink: 0;
+  width: 460px; min-width: 320px; flex-shrink: 0;
   background: var(--surface); border-right: 1px solid var(--border);
   display: flex; flex-direction: column; overflow: hidden;
 }
@@ -333,6 +333,52 @@ body {
   flex: 1; overflow-y: auto; padding: 16px 14px 28px;
   scrollbar-width: thin; scrollbar-color: var(--border2) transparent;
 }
+.cr-tf-actions { display:flex; align-items:center; gap:6px; margin-bottom:7px; }
+.cr-tf-mini {
+  padding:3px 8px; border:1px solid var(--border); background:var(--surface);
+  border-radius:5px; font-size:.68rem; font-weight:600; font-family:inherit;
+  color:var(--text2); cursor:pointer;
+}
+.cr-tf-mini:hover { border-color:var(--accent); color:var(--accent); }
+.cr-tf-compte { margin-left:auto; font-size:.68rem; color:var(--text3); font-variant-numeric:tabular-nums; }
+.cr-tf-zone {
+  font-size:.63rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase;
+  color:var(--text3); margin:9px 0 4px;
+}
+.cr-tf-zone:first-child { margin-top:0; }
+.cr-tf-row {
+  display:flex; align-items:flex-start; gap:8px; padding:5px 7px;
+  border-radius:6px; cursor:pointer; transition:background .12s;
+}
+.cr-tf-row:hover { background:var(--surface2); }
+.cr-tf-row input { margin:2px 0 0; flex:none; accent-color:var(--accent); cursor:pointer; }
+.cr-tf-lbl { flex:1; min-width:0; }
+.cr-tf-nom { font-size:.78rem; font-weight:600; color:var(--text); line-height:1.3; }
+.cr-tf-val { font-size:.71rem; color:var(--text2); margin-top:1px; line-height:1.35; }
+.cr-tf-tag {
+  flex:none; font-size:.62rem; font-weight:700; border-radius:20px;
+  padding:1px 7px; border:1px solid; white-space:nowrap; margin-top:1px;
+}
+.cr-tf-tag.ok  { background:var(--green-l);  border-color:var(--green-b);  color:var(--green-d); }
+/* Palette d'outils.html : elle n'a pas de famille `--yellow`, contrairement
+   a bilan.html. Recopier un nom de variable d'un fichier a l'autre rend la
+   declaration invalide, donc ignoree — la pastille serait restee sans fond. */
+.cr-tf-tag.mid { background:var(--orange-l); border-color:var(--orange-b); color:var(--orange-d); }
+.cr-tf-tag.bad { background:var(--red-l);    border-color:var(--red-b);    color:var(--red-d); }
+.cr-tf-vide { font-size:.74rem; color:var(--text3); font-style:italic; line-height:1.45; padding:4px 0; }
+.cr-tf-note { font-size:.65rem; color:var(--text3); font-style:italic; margin-top:7px; line-height:1.4; }
+
+.cr-resizer {
+  width: 5px; flex-shrink: 0; cursor: col-resize; background: var(--border);
+  transition: background .15s; position: relative;
+}
+.cr-resizer::after {
+  /* Zone de saisie plus large que le trait : 5 px se manquent à la souris. */
+  content: ''; position: absolute; inset: 0 -4px;
+}
+.cr-resizer:hover, .cr-resizer.cr-dragging { background: var(--accent); }
+body.cr-resizing { cursor: col-resize; user-select: none; }
+
 .cr-left-scroll::-webkit-scrollbar { width: 5px; }
 .cr-left-scroll::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
 .cr-right {
@@ -1261,6 +1307,23 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
             <div class="cr-fg"><label>LSI SLS (%)</label><input type="number" id="cr-sls-lsi" placeholder="ex. 87" min="0" max="120"></div>
           </div>
         </div>
+        <!-- Tests fonctionnels repris du bilan. Le bilan sait deja formater
+             ses trente-deux tests ; on lit son resume plutot que de refaire
+             cette mise en forme ici, ou elle divergerait. -->
+        <div class="cr-field-group">
+          <div class="cr-field-group-title" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>Tests du bilan</span>
+            <button class="cr-amp-cfg-btn" onclick="crChargerTestsBilan()" title="Relire le bilan en cours" style="font-size:.7rem;padding:3px 7px;">&#8635; Actualiser</button>
+          </div>
+          <div class="cr-tf-actions" id="cr-tf-actions" style="display:none">
+            <button type="button" class="cr-tf-mini" onclick="crCocherTests(true)">Tout cocher</button>
+            <button type="button" class="cr-tf-mini" onclick="crCocherTests(false)">Tout décocher</button>
+            <span class="cr-tf-compte" id="cr-tf-compte"></span>
+          </div>
+          <div id="cr-tf-liste"></div>
+          <div class="cr-tf-note">Les intitulés sont traduits pour le médecin : « SLS » devient « Force fonctionnelle du membre inférieur en appui unipodal ».</div>
+        </div>
+
         <div class="cr-field-group">
           <div class="cr-field-group-title" style="display:flex;align-items:center;justify-content:space-between;">
             <span>Signes cliniques</span>
@@ -1373,6 +1436,11 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
       </div><!-- /cr-left-scroll -->
     </aside>
+
+    <!-- Poignée de redimensionnement : c'est le formulaire qu'on remplit,
+         l'aperçu ne sert qu'à la fin. Sa largeur est donc un réglage du
+         praticien, mémorisé, pas une valeur choisie à sa place. -->
+    <div class="cr-resizer" id="crResizer" title="Glisser pour ajuster la largeur du formulaire"></div>
 
     <!-- RIGHT PREVIEW -->
     <main class="cr-right">
@@ -4116,6 +4184,10 @@ function showTab(id) {
      temps pour se remplir. S'il se perd, le praticien voit une ordonnance
      sans son nom ni son cabinet — sans rien pour le lui dire. */
   if (id === 'prescriptions') { try { _prescRefresh(); } catch(e){ console.error('_prescRefresh:', e); } }
+  /* Meme raison pour le CR medecin : la liste des tests vient du bilan, qui
+     a pu etre rempli APRES le chargement de cette iframe. On la relit donc a
+     chaque ouverture de l'onglet, pas une seule fois au demarrage. */
+  if (id === 'cr') { try { crChargerTestsBilan(); } catch(e){ console.error('crChargerTestsBilan:', e); } }
   document.querySelectorAll('.sub-tab').forEach(function(t){ t.classList.remove('active'); });
   document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
   var activeBtn = document.getElementById('stab-' + id);
@@ -5837,6 +5909,68 @@ _updateOutilsPatientBtns();
   };
 
   var crSlsLsiOn = false;
+  /* ── Largeur du formulaire : réglée par le praticien, mémorisée ──────
+     Le formulaire est ce qu'on remplit ; l'aperçu ne sert qu'à la fin. Sa
+     largeur est donc un réglage, pas une constante — et il se retient d'une
+     séance à l'autre.
+
+     La position se lit sur le CONTENEUR, pas sur la fenêtre : l'onglet vit
+     dans une iframe décalée de la barre latérale du site, et un simple
+     `clientX` donnerait une largeur fausse de toute cette marge. */
+  var CR_LARGEUR_CLE = 'r4p-cr-largeur-form';
+  var CR_MIN = 320, CR_MAX = 760;
+
+  function crAppliquerLargeur(px) {
+    var g = document.querySelector('.cr-left');
+    if (!g) return;
+    g.style.width = Math.max(CR_MIN, Math.min(CR_MAX, px)) + 'px';
+  }
+
+  (function crInitResizer() {
+    var poignee = document.getElementById('crResizer');
+    var gauche  = document.querySelector('.cr-left');
+    if (!poignee || !gauche) return;
+
+    try {
+      var memo = parseInt(localStorage.getItem(CR_LARGEUR_CLE), 10);
+      if (!isNaN(memo)) crAppliquerLargeur(memo);
+    } catch (e) {}
+
+    var enCours = false;
+
+    function debut(e) {
+      enCours = true;
+      poignee.classList.add('cr-dragging');
+      document.body.classList.add('cr-resizing');
+      e.preventDefault();
+    }
+    function bouge(e) {
+      if (!enCours) return;
+      var boite = gauche.parentNode.getBoundingClientRect();
+      var x = (e.touches && e.touches[0] ? e.touches[0].clientX : e.clientX);
+      crAppliquerLargeur(x - boite.left);
+    }
+    function fin() {
+      if (!enCours) return;
+      enCours = false;
+      poignee.classList.remove('cr-dragging');
+      document.body.classList.remove('cr-resizing');
+      try { localStorage.setItem(CR_LARGEUR_CLE, parseInt(gauche.style.width, 10)); } catch (e) {}
+    }
+
+    poignee.addEventListener('mousedown', debut);
+    poignee.addEventListener('touchstart', debut, { passive: false });
+    document.addEventListener('mousemove', bouge);
+    document.addEventListener('touchmove', bouge, { passive: false });
+    document.addEventListener('mouseup', fin);
+    document.addEventListener('touchend', fin);
+    // Double-clic : retour à la largeur d'origine, sans passer par un réglage.
+    poignee.addEventListener('dblclick', function () {
+      crAppliquerLargeur(460);
+      try { localStorage.setItem(CR_LARGEUR_CLE, 460); } catch (e) {}
+    });
+  })();
+
   window.crToggleSLSLSI = function() {
     crSlsLsiOn = !crSlsLsiOn;
     var track = document.getElementById('cr-toggle-sls-lsi');
@@ -5956,6 +6090,117 @@ _updateOutilsPatientBtns();
     el.style.height = 'auto';
     el.style.height = el.scrollHeight + 'px';
   };
+
+  /* ── Tests fonctionnels repris du bilan ──────────────────────────────
+     Le bilan ecrit un resume structure de ses tests RENSEIGNES dans
+     `r4p-cr-med-tests` (voir _crMedResumeTests dans js/bilan.js), deja
+     traduit en langage medecin. On ne refait donc ici ni le calcul ni la
+     mise en forme : un test ajoute au bilan demain apparait tout seul dans
+     cette liste, sans qu'une ligne soit ecrite de ce cote. */
+  var _crTestsFonc = [];
+  var _crTestsCoches = {};
+
+  /* Le niveau vient du bilan, qui l'a calcule. Le deviner ici a partir des
+     mots donnerait des couleurs fausses — « Facteur de risque » se lit
+     rassurant pour une expression reguliere naive. Repli neutre si absent. */
+  function _crTagClasse(t) {
+    if (t && t.niveau === 'bad')  return 'bad';
+    if (t && t.niveau === 'warn') return 'mid';
+    if (t && t.niveau === 'ok')   return 'ok';
+    return 'mid';
+  }
+
+  window.crChargerTestsBilan = function () {
+    var brut = [];
+    try { brut = JSON.parse(localStorage.getItem('r4p-cr-med-tests') || '[]'); } catch (e) {}
+    _crTestsFonc = Array.isArray(brut) ? brut : [];
+    /* Tout coche par defaut : on decoche plus vite qu'on ne coche, et le
+       praticien qui a fait le test veut generalement qu'il figure. Un choix
+       deja pose sur une cle est conserve d'un rechargement a l'autre. */
+    _crTestsFonc.forEach(function (t) {
+      if (_crTestsCoches[t.cle] === undefined) _crTestsCoches[t.cle] = true;
+    });
+    _crRenderTestsFonc();
+  };
+
+  window.crCocherTests = function (val) {
+    _crTestsFonc.forEach(function (t) { _crTestsCoches[t.cle] = !!val; });
+    _crRenderTestsFonc();
+  };
+
+  window.crBasculerTest = function (cle, coche) {
+    _crTestsCoches[cle] = !!coche;
+    /* On ne reconstruit PAS la liste : elle se redessinerait sous le curseur,
+       et la case suivante changerait de noeud entre deux clics. Seul le
+       compteur bouge. */
+    _crMajCompteTests();
+  };
+
+  function _crMajCompteTests() {
+    var compte = document.getElementById('cr-tf-compte');
+    if (!compte) return;
+    var nb = _crTestsFonc.filter(function (t) { return _crTestsCoches[t.cle]; }).length;
+    compte.textContent = nb + ' / ' + _crTestsFonc.length + ' retenus';
+  }
+
+  function _crRenderTestsFonc() {
+    var boite   = document.getElementById('cr-tf-liste');
+    var actions = document.getElementById('cr-tf-actions');
+    var compte  = document.getElementById('cr-tf-compte');
+    if (!boite) return;
+
+    if (!_crTestsFonc.length) {
+      if (actions) actions.style.display = 'none';
+      boite.innerHTML = '<div class="cr-tf-vide">Aucun test fonctionnel renseigné dans le bilan en cours. '
+        + 'Remplissez-les dans l\'onglet Bilan clinique, puis revenez ici — ils apparaîtront à cocher.</div>';
+      return;
+    }
+
+    if (actions) actions.style.display = 'flex';
+
+    var html = '', zoneEnCours = null;
+    _crTestsFonc.forEach(function (t) {
+      if (t.zone !== zoneEnCours) {
+        zoneEnCours = t.zone;
+        html += '<div class="cr-tf-zone">' + _crEsc(zoneEnCours) + '</div>';
+      }
+      var coche = _crTestsCoches[t.cle] ? ' checked' : '';
+      html += '<label class="cr-tf-row">'
+            /* Guillemets ECHAPPES : `JSON.stringify` en produit de doubles,
+               qui refermaient l'attribut `onchange="` — le gestionnaire
+               n'etait alors jamais appele, et decocher ne faisait rien. */
+            +   '<input type="checkbox"' + coche
+            +     ' onchange="crBasculerTest(' + _crEsc(JSON.stringify(t.cle)) + ', this.checked)">'
+            +   '<span class="cr-tf-lbl">'
+            +     '<span class="cr-tf-nom">' + _crEsc(t.label) + '</span>'
+            +     '<span class="cr-tf-val">' + _crEsc(t.valeur) + '</span>'
+            +   '</span>'
+            +   (t.statut ? '<span class="cr-tf-tag ' + _crTagClasse(t) + '">' + _crEsc(t.statut) + '</span>' : '')
+            + '</label>';
+    });
+    boite.innerHTML = html;
+    _crMajCompteTests();
+  }
+
+  function _crEsc(v) {
+    return String(v == null ? '' : v)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  /* Lignes de courrier — uniquement les tests coches. */
+  function _crAppendTestsFonc(lines) {
+    var retenus = _crTestsFonc.filter(function (t) { return _crTestsCoches[t.cle]; });
+    if (!retenus.length) return;
+    var zoneEnCours = null;
+    retenus.forEach(function (t) {
+      if (t.zone !== zoneEnCours) {
+        zoneEnCours = t.zone;
+        lines.push(zoneEnCours + ' :');
+      }
+      lines.push('  • ' + t.label + ' : ' + t.valeur + (t.statut ? ' (' + t.statut + ')' : ''));
+    });
+    lines.push('');
+  }
 
   function _crAppendSls(lines) {
     var slsCS = crV('cr-sls-cs'), slsCA = crV('cr-sls-ca');
@@ -6103,6 +6348,7 @@ _updateOutilsPatientBtns();
 
     // 7b. SLS (toutes pathologies)
     _crAppendSls(lines);
+    _crAppendTestsFonc(lines);
 
     // 8. Signes cliniques — 3 états groupés
     var signDefs = crSignConfig; // utilise la config dynamique
@@ -6274,6 +6520,7 @@ _updateOutilsPatientBtns();
 
     // SLS (toutes pathologies)
     _crAppendSls(lines);
+    _crAppendTestsFonc(lines);
 
     var commentaire = crV('cr-commentaire');
     if (commentaire) { lines.push(''); lines.push(commentaire); }

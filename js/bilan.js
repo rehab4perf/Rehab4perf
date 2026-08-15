@@ -6,9 +6,158 @@ var R4P_KEYS = {
   PROFILE        : 'r4p-profile',
   CACHED_PROFILE : 'r4p-cached-profile',
   BILAN_DRAFT    : 'athletik-bilan',
+  /* Résumé des tests fonctionnels renseignés, relu par le CR médecin de
+     l'onglet Outils. Voir _crMedResumeTests(). */
+  CR_MED_TESTS   : 'r4p-cr-med-tests',
   SUPABASE_AUTH  : 'sb-sxdobjodxkwexaspepdm-auth-token',
   USER_SETTINGS  : 'r4p-user-settings'
 };
+
+/* ══════════════════════════════════════════════════════════════════════
+   LEXIQUE MÉDECIN
+   ══════════════════════════════════════════════════════════════════════
+   Un chirurgien ne sait pas ce qu'est un « SLS ». Le courrier qui lui est
+   adressé nomme donc la FONCTION MESURÉE, pas le protocole — le nom
+   technique reste sur vos écrans de bilan et dans vos CR internes, qui sont
+   votre langue de travail.
+
+   La clé est l'intitulé exact de la ligne de CR (`crItem(key, …)`). Le
+   rapprochement se fait sur le début de la clé, pour couvrir d'un coup les
+   familles déclinées (« SEBT — Antérieur », « UQYBT — Médial »…).
+
+   Un test absent de cette table garde son nom d'origine : la liste peut donc
+   rester incomplète sans jamais rien casser. */
+var CR_MED_LEXIQUE = [
+  /* ── Membre inférieur ── */
+  ['SLS',                              'Force fonctionnelle du membre inférieur en appui unipodal'],
+  ['Hop Test',                         'Capacité de saut en longueur sur un pied'],
+  ['Réception — 80% Hop Test',         'Qualité de réception après saut'],
+  ['Drop Jump — Temps contact',        'Temps de contact au sol à la réception'],
+  ['Drop Jump — RSI',                  'Indice de raideur réactive'],
+  ['Drop Jump H',                      'Détente verticale après réception'],
+  ['Side Hop — Explosivité',           'Explosivité latérale'],
+  ['Side Hop — Endurance',             'Endurance latérale'],
+  ['Heel Rise',                        'Endurance du triceps sural'],
+  ['Lunge WBLT',                       'Mobilité de la cheville en flexion dorsale'],
+  ['Quadriceps deficit',               'Déficit de force du quadriceps'],
+  ['IJ deficit',                       'Déficit de force des ischio-jambiers'],
+  ['SEBT — Score composite',           'Contrôle postural dynamique — score global'],
+  ['SEBT — Antérieur',                 'Contrôle postural dynamique — direction antérieure'],
+  ['SEBT — Postéro-médial',            'Contrôle postural dynamique — direction postéro-médiale'],
+  ['SEBT — Postéro-latéral',           'Contrôle postural dynamique — direction postéro-latérale'],
+  ['Single-Leg Stance Test',           'Équilibre en appui unipodal'],
+  ['Figure-of-8 Hop Test',             'Agilité en saut avec changement de direction'],
+  ['Overhead squat',                   'Contrôle moteur global'],
+  ['Squat unipodal — qualité',         'Contrôle du membre inférieur en appui unipodal'],
+  ['Pliométrie verticale',             'Qualité du saut et de la réception'],
+  /* ── Membre supérieur ── */
+  ['PSET',                             'Endurance des muscles postérieurs de l\'épaule'],
+  ['Shoulder Endurance',               'Endurance de l\'épaule'],
+  ['mCKCUEST',                         'Stabilité de l\'épaule en chaîne fermée'],
+  ['Side Hold Rotation',               'Endurance du tronc et de la ceinture scapulaire'],
+  ['ULRT',                             'Endurance rotatoire du membre supérieur'],
+  ['UQYBT',                            'Contrôle postural dynamique du membre supérieur'],
+  /* ── Rachis ── */
+  ['Endurance Fléchisseurs Cervicaux', 'Endurance des fléchisseurs profonds du cou'],
+  ['Endurance Extenseurs Cervicaux',   'Endurance des extenseurs du cou'],
+  ['Endurance Latérale Cervicale',     'Endurance des fléchisseurs latéraux du cou'],
+  ['Test de Sørensen',                 'Endurance des extenseurs lombaires'],
+  ['Shirado',                          'Endurance des fléchisseurs du tronc'],
+  ['PDSLRT',                           'Endurance des fléchisseurs de hanche et de la sangle abdominale']
+];
+
+/* Traduction d'un intitulé de ligne. Les entrées sont essayées de la plus
+   longue à la plus courte : sans ça « Drop Jump H » serait attrapé par
+   « Drop Jump — RSI » si l'ordre changeait, et « SEBT — Antérieur » par
+   « SEBT — Score composite ». Le tri retire cette dépendance à l'ordre
+   d'écriture de la table. */
+var _CR_MED_TRIE = null;
+function _crMedLabel(cle) {
+  var k = String(cle || '').trim();
+  if (!k) return k;
+  if (!_CR_MED_TRIE) {
+    _CR_MED_TRIE = CR_MED_LEXIQUE.slice().sort(function (a, b) { return b[0].length - a[0].length; });
+  }
+  for (var i = 0; i < _CR_MED_TRIE.length; i++) {
+    if (k.indexOf(_CR_MED_TRIE[i][0]) === 0) {
+      // Ce qui suit le motif est conservé : « UQYBT — Médial » garde « — Médial ».
+      return _CR_MED_TRIE[i][1] + k.slice(_CR_MED_TRIE[i][0].length);
+    }
+  }
+  return k;   // hors lexique : le nom d'origine, jamais rien de perdu
+}
+
+/* Une valeur de CR est parfois un mini-tableau (`_crMesTab`) : en prendre le
+   `textContent` brut donne « GaucheDroitAsym.15 rép.11 rép.27% », illisible
+   dans un courrier. On rapproche donc chaque cellule de son en-tête pour
+   écrire « Gauche 15 rép. · Droit 11 rép. · Asym. 27% ». */
+function _crMedValeurLisible(el) {
+  if (!el) return '';
+  var tab = el.querySelector('table.cr-mt');
+  if (!tab) return (el.textContent || '').replace(/\s+/g, ' ').trim();
+
+  var ths = Array.prototype.map.call(tab.querySelectorAll('thead th'), function (th) {
+    return (th.textContent || '').trim();
+  });
+  var lignes = [];
+  Array.prototype.forEach.call(tab.querySelectorAll('tbody tr'), function (tr) {
+    var tds = Array.prototype.map.call(tr.children, function (td) {
+      return (td.textContent || '').trim();
+    });
+    var morceaux = [];
+    // La colonne « Mesure » nomme la ligne ; les autres se lisent « en-tête valeur ».
+    var offset = tab.querySelector('thead th.lbl') ? 1 : 0;
+    if (offset && tds[0] && tds[0] !== '—') morceaux.push(tds[0]);
+    for (var i = offset; i < tds.length; i++) {
+      if (!tds[i] || tds[i] === '—') continue;
+      morceaux.push((ths[i] ? ths[i] + ' ' : '') + tds[i]);
+    }
+    if (morceaux.length) lignes.push(morceaux.join(' · '));
+  });
+
+  var note = tab.parentNode ? tab.parentNode.querySelector('.cr-mt-note') : null;
+  var txt = lignes.join(' — ');
+  if (note && note.textContent.trim()) txt += (txt ? ' — ' : '') + note.textContent.trim();
+  return txt.replace(/\s+/g, ' ').trim();
+}
+
+/* Résumé des tests fonctionnels RENSEIGNÉS, pour le CR médecin.
+   Il est extrait du CR déjà construit plutôt que recalculé : le bilan sait
+   formater ses trente-deux tests, redéployer cette mise en forme dans
+   outils.html garantirait la divergence — un seuil corrigé d'un côté, pas de
+   l'autre. Un test ajouté demain apparaît donc ici sans qu'on y touche. */
+function _crMedResumeTests() {
+  var out = [];
+  try {
+    _buildAllTestsHtml().forEach(function (sec) {
+      if (!/Tests Fonctionnels/i.test(sec.title || '')) return;
+      var zone = String(sec.title).replace(/^\s*\d+\.\s*/, '');
+      var tmp = document.createElement('div');
+      tmp.innerHTML = sec.html;
+      tmp.querySelectorAll('.cr-item').forEach(function (it) {
+        var cle = (it.querySelector('.cr-key') || {}).textContent || '';
+        var tagEl = it.querySelector('.cr-tag');
+        var tag = tagEl ? (tagEl.textContent || '').trim() : '';
+        /* Le NIVEAU voyage avec le texte. `crItem` l'a déjà posé en classe —
+           le redeviner dans outils.html à partir des mots (« Facteur de
+           risque » lu comme rassurant…) donnerait des couleurs fausses. */
+        var niveau = '';
+        if (tagEl) {
+          if (tagEl.classList.contains('bad')) niveau = 'bad';
+          else if (tagEl.classList.contains('warn')) niveau = 'warn';
+          else if (tagEl.classList.contains('ok') || tagEl.classList.contains('good')) niveau = 'ok';
+        }
+        var val = _crMedValeurLisible(it.querySelector('.cr-val'));
+        cle = cle.trim();
+        // Conclusions, marqueurs et notes ne sont pas des tests.
+        if (!cle || !val) return;
+        if (/^(Conclusion|Marqueur|Notes?)$/i.test(cle)) return;
+        out.push({ cle: cle, label: _crMedLabel(cle), valeur: val, statut: tag, niveau: niveau, zone: zone });
+      });
+    });
+  } catch (ex) {}
+  return out;
+}
 var _SAVE_ICON = '<svg style="vertical-align:middle;margin-right:4px" width="16" height="16" fill="currentColor" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><g><path d="m28.702 8.564-4.273-5c-.795-.93-1.954-1.464-3.18-1.464h-14.771c-2.306 0-4.182 1.877-4.182 4.183v19.436c0 2.306 1.876 4.183 4.182 4.183h19.045c2.306 0 4.183-1.877 4.183-4.183v-14.437c-.001-.995-.357-1.96-1.004-2.718zm-6.962 19.536h-11.481v-8.173c0-.631.514-1.144 1.145-1.144h9.191c.631 0 1.145.513 1.145 1.144zm6.164-2.382c0 1.313-1.068 2.382-2.382 2.382h-1.981v-8.173c0-1.623-1.321-2.944-2.945-2.944h-9.191c-1.624 0-2.945 1.321-2.945 2.944v8.173h-1.982c-1.313 0-2.382-1.068-2.382-2.382v-19.436c0-1.313 1.069-2.382 2.382-2.382h14.771c.698 0 1.358.304 1.811.834l4.273 4.999c.369.432.571.982.571 1.549z"/><path d="m9.359 9.31h5.963c.497 0 .9-.403.9-.9s-.403-.9-.9-.9h-5.963c-.497 0-.9.403-.9.9s.403.9.9.9z"/><path d="m22.641 11.572h-13.282c-.497 0-.9.403-.9.9s.403.9.9.9h13.281c.497 0 .9-.403.9-.9s-.402-.9-.899-.9z"/></g></svg>';
 
 
@@ -7326,19 +7475,6 @@ function _buildAllTestsHtml() {
       f8Cls, ['f8-ca','f8-cs']);
   }
   tfHtml += obsBlock('f8-obs-ca','f8-obs-cs');
-  // UQYBT
-  var uqDirs = [{id:'med',label:'Médial'},{id:'il',label:'Inféro-latéral'},{id:'sl',label:'Supéro-latéral'}];
-  for (var ui=0; ui<uqDirs.length; ui++) {
-    var uqD = parseFloat((document.getElementById('uqybt-'+uqDirs[ui].id+'-d')||{}).value||'');
-    var uqG = parseFloat((document.getElementById('uqybt-'+uqDirs[ui].id+'-g')||{}).value||'');
-    var uqDiffTxt = ((document.getElementById('uqybt-'+uqDirs[ui].id+'-diff')||{}).textContent||'').trim();
-    if (!isNaN(uqD) && !isNaN(uqG)) {
-      var uqBad = parseFloat(uqDiffTxt) > 5;
-      tfHtml += crItem('UQYBT — '+uqDirs[ui].label,
-        _crMesTab([{ l:'Distance', a:uqG+' cm', b:uqD+' cm' }], 'Gauche', 'Droit',
-          { note: 'Différence : ' + uqDiffTxt }), uqBad?'>5% Asymétrie':'OK', uqBad?'warn':'good', ['uqybt-'+uqDirs[ui].id+'-d','uqybt-'+uqDirs[ui].id+'-g']);
-    }
-  }
   if(typeof window._ctBuildSectionHtml === 'function') tfHtml += window._ctBuildSectionHtml('fonctionnels');
   addSec('3. Tests Fonctionnels & Musculaires - Membres Inferieurs', tfHtml);
   // Restaurer les variables globales pour les sections MS et suivantes
@@ -7398,6 +7534,22 @@ function _buildAllTestsHtml() {
     tfMsHtml += crItem('ULRT', ulrtEl2.textContent, !isNaN(ulrtV2)?lsiTagFn2(ulrtV2):'', !isNaN(ulrtV2)?lsiClsFn2(ulrtV2):'ok', ['ulrt-d1','ulrt-g1']);
   }
   tfMsHtml += obsBlock('ulrt-obs-ca','ulrt-obs-cs');
+  /* UQYBT — Upper Quarter Y Balance Test. Il etait rendu dans la section du
+     membre INFERIEUR : un test du membre superieur, sous un titre qui annonce
+     les jambes. Il rejoint la section MS, ou le medecin ira le chercher.
+     Les colonnes restent Gauche/Droit, comme le formulaire (ids -d / -g). */
+  var uqDirs = [{id:'med',label:'Médial'},{id:'il',label:'Inféro-latéral'},{id:'sl',label:'Supéro-latéral'}];
+  for (var ui=0; ui<uqDirs.length; ui++) {
+    var uqD = parseFloat((document.getElementById('uqybt-'+uqDirs[ui].id+'-d')||{}).value||'');
+    var uqG = parseFloat((document.getElementById('uqybt-'+uqDirs[ui].id+'-g')||{}).value||'');
+    var uqDiffTxt = ((document.getElementById('uqybt-'+uqDirs[ui].id+'-diff')||{}).textContent||'').trim();
+    if (!isNaN(uqD) && !isNaN(uqG)) {
+      var uqBad = parseFloat(uqDiffTxt) > 5;
+      tfMsHtml += crItem('UQYBT — '+uqDirs[ui].label,
+        _crMesTab([{ l:'Distance', a:uqG+' cm', b:uqD+' cm' }], 'Gauche', 'Droit',
+          { note: 'Différence : ' + uqDiffTxt }), uqBad?'>5% Asymétrie':'OK', uqBad?'warn':'good', ['uqybt-'+uqDirs[ui].id+'-d','uqybt-'+uqDirs[ui].id+'-g']);
+    }
+  }
   if(typeof window._ctBuildSectionHtml === 'function') tfMsHtml += window._ctBuildSectionHtml('fonctionnelsMS');
   addSec('4. Tests Fonctionnels - Membres Superieurs', tfMsHtml);
 
@@ -8299,6 +8451,12 @@ function saveToStorage() {
       }
     });
     localStorage.setItem(R4P_KEYS.BILAN_DRAFT, JSON.stringify(data));
+  } catch(e) {}
+  /* Résumé des tests fonctionnels pour le CR médecin. Dans son propre try :
+     il traverse tout le constructeur de CR, et une erreur là ne doit jamais
+     emporter la sauvegarde du brouillon, qui la précède. */
+  try {
+    localStorage.setItem(R4P_KEYS.CR_MED_TESTS, JSON.stringify(_crMedResumeTests()));
   } catch(e) {}
 }
 
