@@ -92,9 +92,18 @@ function _crMedLabel(cle) {
    dans un courrier. On rapproche donc chaque cellule de son en-tête pour
    écrire « Gauche 15 rép. · Droit 11 rép. · Asym. 27% ». */
 function _crMedValeurLisible(el) {
-  if (!el) return '';
+  return _crMedValeur(el).texte;
+}
+
+/* Renvoie DEUX formes de la meme valeur :
+   - `texte`    : une phrase, pour la copie et le mail ;
+   - `cellules` : les colonnes du mini-tableau, pour en refaire un tableau
+                  dans le courrier du medecin.
+   Les deux sortent de la meme lecture : impossible qu'elles se contredisent. */
+function _crMedValeur(el) {
+  if (!el) return { texte: '', cellules: [] };
   var tab = el.querySelector('table.cr-mt');
-  if (!tab) return (el.textContent || '').replace(/\s+/g, ' ').trim();
+  if (!tab) return { texte: (el.textContent || '').replace(/\s+/g, ' ').trim(), cellules: [] };
 
   var ths = Array.prototype.map.call(tab.querySelectorAll('thead th'), function (th) {
     return (th.textContent || '').trim();
@@ -118,7 +127,25 @@ function _crMedValeurLisible(el) {
   var note = tab.parentNode ? tab.parentNode.querySelector('.cr-mt-note') : null;
   var txt = lignes.join(' — ');
   if (note && note.textContent.trim()) txt += (txt ? ' — ' : '') + note.textContent.trim();
-  return txt.replace(/\s+/g, ' ').trim();
+
+  /* Colonnes de la PREMIERE ligne seulement : un test a plusieurs mesures
+     (rare) reste lisible par sa phrase, mais on ne fabrique pas un tableau
+     bancal a partir d'elle. */
+  var cellules = [];
+  var tr1 = tab.querySelector('tbody tr');
+  if (tr1) {
+    var offset = tab.querySelector('thead th.lbl') ? 1 : 0;
+    var thsL = Array.prototype.map.call(tab.querySelectorAll('thead th'), function (th) {
+      return (th.textContent || '').trim();
+    });
+    Array.prototype.forEach.call(tr1.children, function (td, i) {
+      if (i < offset) return;
+      var v = (td.textContent || '').trim();
+      cellules.push({ entete: thsL[i] || '', valeur: (v === '—' ? '' : v) });
+    });
+  }
+  return { texte: txt.replace(/\s+/g, ' ').trim(), cellules: cellules,
+           note: note ? note.textContent.trim() : '' };
 }
 
 /* Résumé des tests fonctionnels RENSEIGNÉS, pour le CR médecin.
@@ -147,12 +174,14 @@ function _crMedResumeTests() {
           else if (tagEl.classList.contains('warn')) niveau = 'warn';
           else if (tagEl.classList.contains('ok') || tagEl.classList.contains('good')) niveau = 'ok';
         }
-        var val = _crMedValeurLisible(it.querySelector('.cr-val'));
+        var v = _crMedValeur(it.querySelector('.cr-val'));
+        var val = v.texte;
         cle = cle.trim();
         // Conclusions, marqueurs et notes ne sont pas des tests.
         if (!cle || !val) return;
         if (/^(Conclusion|Marqueur|Notes?)$/i.test(cle)) return;
-        out.push({ cle: cle, label: _crMedLabel(cle), valeur: val, statut: tag, niveau: niveau, zone: zone });
+        out.push({ cle: cle, label: _crMedLabel(cle), valeur: val, cellules: v.cellules || [],
+                   note: v.note || '', statut: tag, niveau: niveau, zone: zone });
       });
     });
   } catch (ex) {}

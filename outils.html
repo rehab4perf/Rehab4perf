@@ -1280,33 +1280,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
             <div class="cr-fg"><label for="cr-lsi-ij">LSI IJ (%)</label><input type="number" id="cr-lsi-ij" placeholder="ex. 92" min="0" max="120"></div>
           </div>
         </div>
-        <div class="cr-field-group cr-block-hidden" id="cr-block-fonctionnel">
-          <div class="cr-field-group-title">Tests fonctionnels</div>
-          <div class="cr-grid2">
-            <div class="cr-fg"><label for="cr-hop-test">Hop test (cm)</label><input type="text" id="cr-hop-test" placeholder="ex. 142 / 156"></div>
-            <div class="cr-fg"><label for="cr-lsi-hop">LSI hop (%)</label><input type="number" id="cr-lsi-hop" placeholder="ex. 91" min="0" max="120"></div>
-          </div>
-          <div class="cr-form-row" style="margin-top:5px">
-            <div class="cr-fg"><label for="cr-qualite-amorti">Qualité amorti</label>
-              <select id="cr-qualite-amorti"><option value="">—</option><option>Excellent</option><option>Bon</option><option>Satisfaisant</option><option>Insuffisant</option></select>
-            </div>
-            <div class="cr-fg"><label for="cr-acl-rsi">ACL-RSI (/100)</label><input type="number" id="cr-acl-rsi" placeholder="ex. 64" min="0" max="100"></div>
-          </div>
-        </div>
-        <div class="cr-field-group">
-          <div class="cr-field-group-title">Single Leg Squat (SLS)</div>
-          <div class="cr-grid2">
-            <div class="cr-fg"><label>Côté sain (rép.)</label><input type="number" id="cr-sls-cs" placeholder="ex. 15" min="0"></div>
-            <div class="cr-fg"><label>Côté atteint (rép.)</label><input type="number" id="cr-sls-ca" placeholder="ex. 12" min="0"></div>
-          </div>
-          <div class="cr-toggle-row" onclick="crToggleSLSLSI()" style="margin-top:9px">
-            <div class="cr-toggle-track" id="cr-toggle-sls-lsi"><div class="cr-toggle-thumb"></div></div>
-            <span style="font-size:.79rem;font-weight:600;color:var(--text2)">LSI SLS</span>
-          </div>
-          <div class="cr-lsi-row" id="cr-sls-lsi-row">
-            <div class="cr-fg"><label>LSI SLS (%)</label><input type="number" id="cr-sls-lsi" placeholder="ex. 87" min="0" max="120"></div>
-          </div>
-        </div>
         <!-- Tests fonctionnels repris du bilan. Le bilan sait deja formater
              ses trente-deux tests ; on lit son resume plutot que de refaire
              cette mise en forme ici, ou elle divergerait. -->
@@ -5837,7 +5810,6 @@ _updateOutilsPatientBtns();
     crPatientSexe = civ === 'Mme' ? 'F' : (civ === 'M.' ? 'M' : '');
   };
   var CR_PATHO_FORCE = ['lca','lcp','meniscectomie','suture_meniscale','syndrome_rotulien'];
-  var CR_PATHO_FONCT = ['lca','lcp','meniscectomie','suture_meniscale'];
   var CR_PATHO_EPAULE = ['latarjet'];
 
   window.crSelectPatho = function(btn) {
@@ -5852,9 +5824,7 @@ _updateOutilsPatientBtns();
   };
   function crUpdateBlocks() {
     var hasForce = crPathos.some(function(k){ return CR_PATHO_FORCE.indexOf(k) !== -1; });
-    var hasFonct = crPathos.some(function(k){ return CR_PATHO_FONCT.indexOf(k) !== -1; });
     crToggleBlock('cr-block-force',      hasForce);
-    crToggleBlock('cr-block-fonctionnel', hasFonct);
   }
   function crToggleBlock(id, show) {
     var el = document.getElementById(id);
@@ -5908,7 +5878,6 @@ _updateOutilsPatientBtns();
     if (row)   { if (crLsiOn) row.classList.add('visible'); else row.classList.remove('visible'); }
   };
 
-  var crSlsLsiOn = false;
   /* ── Largeur du formulaire : réglée par le praticien, mémorisée ──────
      Le formulaire est ce qu'on remplit ; l'aperçu ne sert qu'à la fin. Sa
      largeur est donc un réglage, pas une constante — et il se retient d'une
@@ -5971,13 +5940,6 @@ _updateOutilsPatientBtns();
     });
   })();
 
-  window.crToggleSLSLSI = function() {
-    crSlsLsiOn = !crSlsLsiOn;
-    var track = document.getElementById('cr-toggle-sls-lsi');
-    var row   = document.getElementById('cr-sls-lsi-row');
-    if (track) { if (crSlsLsiOn) track.classList.add('on'); else track.classList.remove('on'); }
-    if (row)   { if (crSlsLsiOn) row.classList.add('visible'); else row.classList.remove('visible'); }
-  };
 
   var _crBuildPevoSelector = window._crBuildPevoSelector = function() {
     var grid = document.getElementById('cr-pevo-grid');
@@ -6195,24 +6157,143 @@ _updateOutilsPatientBtns();
     retenus.forEach(function (t) {
       if (t.zone !== zoneEnCours) {
         zoneEnCours = t.zone;
-        lines.push(zoneEnCours + ' :');
+        lines.push({ t: 'sec', txt: zoneEnCours });
       }
-      lines.push('  • ' + t.label + ' : ' + t.valeur + (t.statut ? ' (' + t.statut + ')' : ''));
+      lines.push({ t: 'test', label: t.label, valeur: t.valeur, cellules: t.cellules || [],
+                   note: t.note || '', statut: t.statut, niveau: t.niveau });
     });
     lines.push('');
   }
 
-  function _crAppendSls(lines) {
-    var slsCS = crV('cr-sls-cs'), slsCA = crV('cr-sls-ca');
-    if (!slsCS && !slsCA) return;
-    var parts = [];
-    if (slsCS) parts.push(slsCS + ' rép. côté sain');
-    if (slsCA) parts.push(slsCA + ' rép. côté atteint');
-    var txt = 'Single Leg Squat (SLS) : ' + parts.join(' / ');
-    var slsLsi = crV('cr-sls-lsi');
-    if (slsLsi) txt += ' — LSI : ' + slsLsi + '%';
-    lines.push(txt + '.');
-    lines.push('');
+  /* ══ Le courrier est une STRUCTURE, rendue de deux facons ═══════════
+     Il n existait qu en texte : l ecran, la copie, le PDF et le mail
+     recevaient la meme chaine — d ou un pave gris. Le colorer sans salir la
+     copie demandait de separer le fond de la forme.
+
+     `lines` accepte donc des CHAINES (paragraphes, inchangees) et des OBJETS
+     typees pour ce qui merite mieux. Un seul constructeur, deux rendus : ils
+     ne peuvent pas diverger. Ajouter un `lines.push('...')` demain continue
+     de fonctionner sans rien savoir de tout ceci. */
+
+  /* ══ Habillage du courrier — UN SEUL exemplaire ═══════════════════════
+     Il sert a l ecran ET au PDF. Ecrit deux fois, il aurait derive : une
+     regle corrigee d un cote, pas de l autre, et le medecin recevrait un
+     document different de celui affiche. Il est donc pose ici, injecte dans
+     la page au chargement et recopie tel quel dans le document imprime. */
+  var CR_LETTRE_CSS = [
+    '.lt-p{font-size:.83rem;line-height:1.65;margin:0 0 12px}',
+    '.lt-pat{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:#E8E6E1;',
+      'border:1px solid #E8E6E1;border-radius:6px;overflow:hidden;margin:0 0 16px}',
+    '.lt-pat > div{background:#fff;padding:7px 11px}',
+    '.lt-pat dt{font-size:.6rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;',
+      'color:#9D9B96;margin:0 0 2px}',
+    '.lt-pat dd{margin:0;font-size:.82rem;font-weight:600;color:#1A1917}',
+    '.lt-sec{margin:18px 0 8px;padding-left:10px;border-left:3px solid #2B5FA6}',
+    '.lt-sec h3{margin:0;font-size:.76rem;font-weight:700;letter-spacing:.05em;',
+      'text-transform:uppercase;color:#1A3A5C}',
+    'table.lt-t{width:100%;border-collapse:collapse;font-size:.78rem;margin-bottom:6px}',
+    'table.lt-t th{text-align:left;font-size:.62rem;font-weight:700;letter-spacing:.06em;',
+      'text-transform:uppercase;color:#9D9B96;padding:5px 8px;border-bottom:1px solid #E8E6E1}',
+    /* Les colonnes de chiffres sont ETROITES et le nom du test prend le
+       reste : a 660 px de carte, des colonnes larges le repliaient sur
+       trois lignes et le tableau perdait sa lisibilite. */
+    'table.lt-t th.n,table.lt-t td.n{text-align:center;font-variant-numeric:tabular-nums;',
+      'width:62px;white-space:nowrap}',
+    'table.lt-t th.s,table.lt-t td.s{text-align:right;width:104px}',
+    'table.lt-t td.lbl,table.lt-t th:first-child{width:auto}',
+    'table.lt-t td{padding:7px 8px;border-bottom:1px solid #E8E6E1;vertical-align:middle}',
+    'table.lt-t tr:last-child td{border-bottom:none}',
+    'table.lt-t td.lbl{color:#1A1917;font-weight:500;line-height:1.35}',
+    '.lt-note{display:block;font-size:.66rem;color:#9D9B96;font-style:italic;margin-top:1px}',
+    '.lt-chip{display:inline-block;font-size:.63rem;font-weight:700;border-radius:20px;',
+      'padding:2px 8px;border:1px solid;white-space:nowrap}',
+    '.lt-chip.ok{background:#E8F5EE;border-color:#AECBBE;color:#1A4130}',
+    '.lt-chip.mid{background:#FEF3EB;border-color:#DEB89C;color:#823903}',
+    '.lt-chip.bad{background:#FDECEA;border-color:#D4AAA6;color:#752018}',
+    '.lt-concl{margin-top:16px;background:#EEF3FB;border-left:3px solid #2B5FA6;',
+      'border-radius:0 6px 6px 0;padding:11px 14px;font-size:.81rem;line-height:1.6}',
+    '.lt-concl b{color:#1A3A5C}'
+  ].join('');
+
+  (function crInjecterCssLettre() {
+    if (document.getElementById('cr-lettre-css')) return;
+    var st = document.createElement('style');
+    st.id = 'cr-lettre-css';
+    st.textContent = CR_LETTRE_CSS;
+    document.head.appendChild(st);
+  })();
+
+  function _crEstBloc(x) { return x && typeof x === 'object' && x.t; }
+
+  /* ── Rendu TEXTE — copie, mail ─────────────────────────────────────── */
+  function _crBlocsTexte(blocs) {
+    var out = [];
+    (blocs || []).forEach(function (b) {
+      if (!_crEstBloc(b)) { out.push(String(b == null ? '' : b)); return; }
+      if (b.t === 'sec')     { out.push(''); out.push(b.txt.toUpperCase()); return; }
+      if (b.t === 'patient') { b.champs.forEach(function (c) { out.push(c[0] + ' : ' + c[1]); }); return; }
+      if (b.t === 'concl')   { out.push(''); out.push('CONCLUSION'); out.push(b.txt); return; }
+      if (b.t === 'test') {
+        out.push('  ' + b.label);
+        var det = (b.cellules || []).filter(function (c) { return c.valeur; })
+          .map(function (c) { return (c.entete ? c.entete.toLowerCase() + ' ' : '') + c.valeur; }).join(' · ');
+        if (!det) det = b.valeur;
+        if (b.note) det += (det ? ' — ' : '') + b.note;
+        out.push('      ' + det + (b.statut ? '   → ' + b.statut.toLowerCase() : ''));
+        return;
+      }
+    });
+    return out.join('\n');
+  }
+
+  /* ── Rendu HTML — ecran, PDF ───────────────────────────────────────── */
+  function _crBlocsHtml(blocs) {
+    var h = '', tableOuverte = false;
+    function fermerTable() { if (tableOuverte) { h += '</tbody></table>'; tableOuverte = false; } }
+
+    (blocs || []).forEach(function (b) {
+      if (!_crEstBloc(b)) {
+        fermerTable();
+        var t = String(b == null ? '' : b);
+        if (t.trim()) h += '<p class="lt-p">' + _crEsc(t) + '</p>';
+        return;
+      }
+      if (b.t === 'sec') {
+        fermerTable();
+        h += '<div class="lt-sec"><h3>' + _crEsc(b.txt) + '</h3></div>';
+        return;
+      }
+      if (b.t === 'patient') {
+        fermerTable();
+        h += '<div class="lt-pat">' + b.champs.map(function (c) {
+          return '<div><dt>' + _crEsc(c[0]) + '</dt><dd>' + _crEsc(c[1]) + '</dd></div>';
+        }).join('') + '</div>';
+        return;
+      }
+      if (b.t === 'concl') {
+        fermerTable();
+        h += '<div class="lt-concl"><b>Conclusion.</b> ' + _crEsc(b.txt).replace(/\n/g, '<br>') + '</div>';
+        return;
+      }
+      if (b.t === 'test') {
+        var cels = (b.cellules || []).filter(function (c) { return c.valeur; });
+        if (!tableOuverte) {
+          h += '<table class="lt-t"><thead><tr><th>Test</th>'
+             + cels.map(function (c) { return '<th class="n">' + _crEsc(c.entete) + '</th>'; }).join('')
+             + '<th class="s">Résultat</th></tr></thead><tbody>';
+          tableOuverte = true;
+        }
+        h += '<tr><td class="lbl">' + _crEsc(b.label)
+           + (b.note ? '<span class="lt-note">' + _crEsc(b.note) + '</span>' : '') + '</td>'
+           + cels.map(function (c) { return '<td class="n">' + _crEsc(c.valeur) + '</td>'; }).join('')
+           + '<td class="s">' + (b.statut
+               ? '<span class="lt-chip ' + _crTagClasse(b) + '">' + _crEsc(b.statut) + '</span>' : '')
+           + '</td></tr>';
+        return;
+      }
+    });
+    fermerTable();
+    return h;
   }
 
   function crBuildLetter() {
@@ -6271,17 +6352,21 @@ _updateOutilsPatientBtns();
     if (patNom || patDob || patAccident || patOp || patPEC || crPathos.length) {
       var patLine = (patCiv ? patCiv + ' ' : '') + (patNom || crF('votre patient', 'votre patient', 'votre patiente'));
       if (patDob)  patLine += ', ' + crF('né', 'né', 'née') + ' le ' + patDob;
-      lines.push('Patient : ' + patLine + '.');
+      /* Bloc patient en cases : le medecin cherche le cote atteint et la date
+         d operation, il ne les lit pas dans une suite de phrases. La version
+         texte, elle, les rend ligne par ligne — voir _crBlocsTexte. */
+      var _patChamps = [['Patient', patLine]];
       var diagLine = crPathosLabel();
       if (pathoDetail) diagLine = diagLine ? diagLine + ' — ' + pathoDetail : pathoDetail;
       var articuLabel = crArticuList.map(function(a){ return crAmpConfig[a]?crAmpConfig[a].label:''; }).filter(Boolean).join(' + ');
       if (articuLabel) diagLine += (diagLine ? ' — ' : '') + articuLabel;
-      if (patCote) diagLine += (diagLine ? ' — ' : '') + patCote;
       if (patAccident) diagLine += (diagLine ? ', ' : '') + crF('accidenté', 'accidenté', 'accidentée') + ' le ' + patAccident;
       if (patOp)       diagLine += (diagLine ? ', ' : '') + crF('opéré', 'opéré', 'opérée') + ' le ' + patOp;
       if (joursStr)    diagLine += (diagLine ? ' — ' : '') + joursStr + (_isOp ? ' post-opératoire' : ' post-traumatique');
-      if (diagLine) lines.push('Pathologie : ' + diagLine + '.');
-      if (patPEC) lines.push('Prise en charge rééducative débutée le ' + patPEC + '.');
+      if (diagLine) _patChamps.push(['Pathologie', diagLine]);
+      if (patCote)  _patChamps.push(['Côté atteint', patCote]);
+      if (patPEC)   _patChamps.push(['Début de prise en charge', patPEC]);
+      lines.push({ t: 'patient', champs: _patChamps });
       lines.push('');
     }
 
@@ -6335,19 +6420,8 @@ _updateOutilsPatientBtns();
       }
     }
 
-    // 7. Tests fonctionnels
-    if (!document.getElementById('cr-block-fonctionnel').classList.contains('cr-block-hidden')) {
-      var hop = crV('cr-hop-test'), lHop = crV('cr-lsi-hop');
-      var amorti = crV('cr-qualite-amorti'), aclRsi = crV('cr-acl-rsi');
-      var fonct = [];
-      if (hop) { var hl = 'Hop test : ' + hop + ' cm'; if (lHop) hl += ' (LSI : ' + lHop + '%)'; fonct.push(hl); }
-      if (amorti) fonct.push('Qualité d\'amorti : ' + amorti.toLowerCase());
-      if (aclRsi) fonct.push('Score ACL-RSI : ' + aclRsi + '/100');
-      if (fonct.length) { lines.push('Tests fonctionnels : ' + fonct.join(' — ') + '.'); lines.push(''); }
-    }
 
     // 7b. SLS (toutes pathologies)
-    _crAppendSls(lines);
     _crAppendTestsFonc(lines);
 
     // 8. Signes cliniques — 3 états groupés
@@ -6377,7 +6451,7 @@ _updateOutilsPatientBtns();
     }
 
     // 9. Évolution
-    if (commentaire) { lines.push(commentaire); lines.push(''); }
+    if (commentaire) { lines.push({ t: 'concl', txt: commentaire }); lines.push(''); }
     else if (evolution) { lines.push('L\'évolution est ' + crEvolLabel(evolution) + '.'); lines.push(''); }
 
     // 10. Plan
@@ -6388,7 +6462,7 @@ _updateOutilsPatientBtns();
     lines.push(''); lines.push('Cordialement,'); lines.push('');
     lines.push(crProfile.name);
     if (crProfile.cabinet) lines.push(crProfile.cabinet);
-    return lines.join('\n');
+    return lines;
   }
 
   // ── Template D : Début de prise en charge ────────────────────
@@ -6519,11 +6593,10 @@ _updateOutilsPatientBtns();
     }
 
     // SLS (toutes pathologies)
-    _crAppendSls(lines);
     _crAppendTestsFonc(lines);
 
     var commentaire = crV('cr-commentaire');
-    if (commentaire) { lines.push(''); lines.push(commentaire); }
+    if (commentaire) lines.push({ t: 'concl', txt: commentaire });
     lines.push('');
 
     // Protocole
@@ -6548,21 +6621,22 @@ _updateOutilsPatientBtns();
     lines.push(''); lines.push('Cordialement,'); lines.push('');
     lines.push(crProfile.name);
     if (crProfile.cabinet) lines.push(crProfile.cabinet);
-    return lines.join('\n');
+    return lines;
   }
 
   // Export PDF — ouvre une fenêtre dédiée et lance l'impression
   window.crExportPDF = function() {
-    var body = document.getElementById('cr-letter-body');
-    var text = body ? body.textContent : '';
-    if (!text || (body && body.querySelector('.letter-empty'))) { _crToast('Générez d\'abord le courrier'); return; }
+    var text = _crTexteCourant;
+    if (!text.trim()) { _crToast('Générez d\'abord le courrier'); return; }
     var nameEl  = document.getElementById('cr-lp-name');
     var titleEl = document.getElementById('cr-lp-title');
     var dateEl  = document.getElementById('cr-letter-date');
     var practName      = nameEl  ? nameEl.textContent  : crProfile.name;
     var practTitleHtml = titleEl ? titleEl.innerHTML   : crProfile.title;
     var letterDate     = dateEl  ? dateEl.textContent  : '';
-    var textEsc        = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    /* Le PDF prend le rendu RICHE : c est le document que recoit le medecin,
+       il doit porter les memes couleurs que l ecran. */
+    var textEsc        = _crHtmlCourant;
 
     var patNomPDF = crV('cr-pat-nom') || '';
     var html = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">'
@@ -6591,7 +6665,8 @@ _updateOutilsPatientBtns();
       + '.cr-pract-name{font-size:.87rem;font-weight:700;color:#fff;letter-spacing:-.01em}'
       + '.cr-pract-meta{font-size:.72rem;color:rgba(255,255,255,.7);display:flex;align-items:center;gap:10px;flex-wrap:wrap}'
       + '.cr-date-bar{font-size:.8rem;color:#6B6860;padding:10px 28px 12px;border-bottom:1.5px solid #DDE3EC;margin-bottom:18px}'
-      + '#cr-body{white-space:pre-wrap;line-height:1.72;padding:0 28px}'
+      + '#cr-body{line-height:1.6;padding:0 28px}'
+      + CR_LETTRE_CSS
       + 'svg{max-width:100%;height:auto;display:block}'
       + '.cr-evo-section{margin-top:24px;padding:16px 24px 0;border-top:2px solid #1A3A5C}'
       + '.cr-evo-section-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#1A3A5C;margin-bottom:14px}'
@@ -6656,9 +6731,8 @@ _updateOutilsPatientBtns();
 
   // Export email — inbox Gmail + compose flottant pré-rempli + copie presse-papier
   window.crExportEmail = function() {
-    var bodyEl = document.getElementById('cr-letter-body');
-    var text = bodyEl ? bodyEl.textContent : '';
-    if (!text || (bodyEl && bodyEl.querySelector('.letter-empty'))) { _crToast('Générez d\'abord le courrier'); return; }
+    var text = _crTexteCourant;
+    if (!text.trim()) { _crToast('Générez d\'abord le courrier'); return; }
     var patNom    = [crV('cr-pat-prenom'), crV('cr-pat-nom')].filter(Boolean).join(' ');
     var destEmail = crV('cr-dest-email') || '';
     var subject   = encodeURIComponent('Compte-rendu de rééducation' + (patNom ? ' — ' + patNom : ''));
@@ -6800,9 +6874,15 @@ _updateOutilsPatientBtns();
   };
 
   window.crGenerate = function() {
-    var text = crBuildLetter();
+    var blocs = crBuildLetter();
+    /* La version TEXTE est conservee a part : `body.textContent` ne peut plus
+       la fournir depuis que l apercu est du HTML riche — il rendrait un
+       tableau colle, « GaucheDroit17 rep.15 rep. ». Copie, mail et PDF
+       lisent donc cette variable, jamais le DOM. */
+    _crTexteCourant = _crBlocsTexte(blocs);
+    _crHtmlCourant  = _crBlocsHtml(blocs);
     var body = document.getElementById('cr-letter-body');
-    if (body) { body.innerHTML = ''; body.textContent = text; }
+    if (body) body.innerHTML = _crHtmlCourant;
     var graphsDiv = document.getElementById('cr-letter-graphs');
     if (graphsDiv) {
       var evoHtml  = _crGetEvoSectionHtml();
@@ -6817,10 +6897,11 @@ _updateOutilsPatientBtns();
     }
   };
 
+  var _crTexteCourant = '', _crHtmlCourant = '';
+
   window.crCopyLetter = function() {
-    var body = document.getElementById('cr-letter-body');
-    var text = body ? body.textContent : '';
-    if (!text || (body && body.querySelector('.letter-empty'))) { _crToast('Aucun courrier à copier'); return; }
+    var text = _crTexteCourant;
+    if (!text.trim()) { _crToast('Aucun courrier à copier'); return; }
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(function(){ _crToast('Courrier copié dans le presse-papiers'); }).catch(function(){ _crFallbackCopy(text); });
     } else { _crFallbackCopy(text); }
@@ -6941,64 +7022,10 @@ _updateOutilsPatientBtns();
         filled++;
       }
 
-      // ── Hop test ─────────────────────────────────────────────
-      var hopCa  = (bilan['hop-ca'] || '').toString().trim();
-      var hopCs  = (bilan['hop-cs'] || '').toString().trim();
-      var hopEl  = document.getElementById('cr-hop-test');
-      if (hopEl && (hopCa || hopCs) && !hopEl.value.trim()) {
-        hopEl.value = hopCa && hopCs ? hopCa + ' / ' + hopCs + ' cm (atteint / sain)' : (hopCa || hopCs) + ' cm';
-        var bfonct = document.getElementById('cr-block-fonctionnel');
-        if (bfonct) bfonct.classList.remove('cr-block-hidden');
-        filled++;
-      }
-
-      // ── LSI hop ───────────────────────────────────────────────
-      var lsiHopRaw = (bilan['hop-lsi'] || '').toString().trim().replace('%','').trim();
-      var lsiHopEl  = document.getElementById('cr-lsi-hop');
-      if (lsiHopEl && lsiHopRaw && !isNaN(parseFloat(lsiHopRaw)) && !lsiHopEl.value.trim()) {
-        lsiHopEl.value = parseFloat(lsiHopRaw).toFixed(0);
-        var bfonct2 = document.getElementById('cr-block-fonctionnel');
-        if (bfonct2) bfonct2.classList.remove('cr-block-hidden');
-        filled++;
-      }
-
-      // ── ACL-RSI ───────────────────────────────────────────────
-      var aclRsiVal = (bilan['f-aclrsi'] || '').toString().trim();
-      var aclRsiEl  = document.getElementById('cr-acl-rsi');
-      if (aclRsiEl && aclRsiVal && !aclRsiEl.value.trim()) {
-        aclRsiEl.value = aclRsiVal;
-        var bfonct3 = document.getElementById('cr-block-fonctionnel');
-        if (bfonct3) bfonct3.classList.remove('cr-block-hidden');
-        filled++;
-      }
-
-      // ── SLS — bilan le plus récent avec données SLS ───────────
-      try {
-        var bilanFrame = window.parent && window.parent.document.getElementById('frame-bilan');
-        if (bilanFrame && bilanFrame.contentWindow && bilanFrame.contentWindow._allBilans) {
-          var allB = bilanFrame.contentWindow._allBilans; // newest first
-          for (var bi = 0; bi < allB.length; bi++) {
-            var bd = allB[bi].donnees || {};
-            var slsCsRaw = (bd['sls-cs'] || '').toString().trim();
-            var slsCaRaw = (bd['sls-ca'] || '').toString().trim();
-            if (slsCsRaw || slsCaRaw) {
-              var slsCsEl = document.getElementById('cr-sls-cs');
-              var slsCaEl = document.getElementById('cr-sls-ca');
-              var slsCsVal = parseFloat(slsCsRaw);
-              var slsCaVal = parseFloat(slsCaRaw);
-              if (slsCsEl && !isNaN(slsCsVal)) { slsCsEl.value = slsCsVal; filled++; }
-              if (slsCaEl && !isNaN(slsCaVal)) { slsCaEl.value = slsCaVal; filled++; }
-              if (!isNaN(slsCsVal) && slsCsVal > 0 && !isNaN(slsCaVal) && slsCaVal > 0) {
-                var lsiVal = Math.round(slsCaVal / slsCsVal * 100);
-                var lsiEl = document.getElementById('cr-sls-lsi');
-                if (lsiEl) { lsiEl.value = lsiVal; filled++; }
-                if (!crSlsLsiOn) crToggleSLSLSI();
-              }
-              break;
-            }
-          }
-        }
-      } catch(eSls) {}
+      /* Hop test, LSI hop, ACL-RSI et SLS ne sont plus recopies ici : ces
+         champs ont disparu du formulaire, remplaces par le bloc « Tests du
+         bilan », qui reprend l ENSEMBLE des tests fonctionnels renseignes
+         plutot qu une poignee choisie a la main. Voir crChargerTestsBilan. */
 
       if (filled > 0) _crToast(filled + ' champ' + (filled > 1 ? 's' : '') + ' associé' + (filled > 1 ? 's' : '') + ' ✓');
       else _crToast('Aucune donnée patient disponible — ouvrez un bilan d\'abord');
