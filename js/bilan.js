@@ -31,7 +31,7 @@ var CR_MED_LEXIQUE = [
   /* ── Membre inférieur ── */
   ['SLS',                              'Force fonctionnelle du membre inférieur en appui unipodal'],
   ['Hop Test',                         'Capacité de saut en longueur sur un pied'],
-  ['Réception — 80% Hop Test',         'Qualité de réception après saut'],
+  ['Réception — 80% Hop Test',         'Qualité de réception sur une jambe'],
   ['Drop Jump — Temps contact',        'Temps de contact au sol à la réception'],
   ['Drop Jump — RSI',                  'Indice de raideur réactive'],
   ['Drop Jump H',                      'Détente verticale après réception'],
@@ -49,7 +49,12 @@ var CR_MED_LEXIQUE = [
   ['Figure-of-8 Hop Test',             'Agilité en saut avec changement de direction'],
   ['Overhead squat',                   'Contrôle moteur global'],
   ['Squat unipodal — qualité',         'Contrôle du membre inférieur en appui unipodal'],
-  ['Pliométrie verticale',             'Qualité du saut et de la réception'],
+  /* Clé complète, suffixe compris : « Qualité de rebond (qualitative) »
+     serait redondant, le libellé disant déjà qu'on juge une qualité. Le
+     rapprochement se faisant du motif le plus long au plus court, cette
+     entrée passe avant la suivante. */
+  ['Pliométrie verticale (qualitative)', 'Qualité de rebond'],
+  ['Pliométrie verticale',             'Qualité de rebond'],
   /* ── Membre supérieur ── */
   ['PSET',                             'Endurance des muscles postérieurs de l\'épaule'],
   ['Shoulder Endurance',               'Endurance de l\'épaule'],
@@ -6561,6 +6566,14 @@ function _buildAllTestsHtml() {
     if (_isBilat) return ({good:'Symétrique', warn:'Asymétrie modérée', bad:'Asymétrie significative'}[cls])||'';
     return ({good:'OK', warn:'Acceptable', bad:'Insuffisant'}[cls])||'';
   };
+  /* Verdict des tests notés en CRITÈRES VALIDÉS — réception, rebond. Ceux-là
+     ne se comparent pas d'un côté à l'autre : on n'y mesure rien, on coche ce
+     qui est acquis. `statOf2` y annonçait pourtant « Symétrique » ou
+     « Asymétrie modérée », ce qui ne veut rien dire sur un décompte de
+     critères, et laissait croire à une comparaison qui n'a pas lieu. */
+  var statCriteres = function(cls) {
+    return ({good:'Acquis', warn:'Incomplet', bad:'Non acquis'}[cls])||'';
+  };
   // Pour unilatéral : CA = côté douloureux, CS = côté sain
   // Pour bilatéral  : Gauche en premier (sens de lecture), Droit en second
   /* Valeurs de repli seulement : chaque region les reecrit depuis SA zone
@@ -7395,7 +7408,7 @@ function _buildAllTestsHtml() {
     var rclsCA = scoreCA2===recN?'good':scoreCA2>0?'warn':'bad';
     tfHtml += crItem('Réception — 80% Hop Test',
       _pair('Critères validés', scoreCA2+'/'+recN, scoreCS2+'/'+recN, ''),
-      statOf2(rclsCA), rclsCA, ['rec-ca-0','rec-ca-1','rec-ca-2','rec-ca-3','rec-ca-4']);
+      statCriteres(rclsCA), rclsCA, ['rec-ca-0','rec-ca-1','rec-ca-2','rec-ca-3','rec-ca-4']);
   }
   tfHtml += obsBlock('rec-obs-ca','rec-obs-cs');
   if (!isNaN(hrCA)) tfHtml += crItem('Heel Rise', _pair('Répétitions', hrCA, hrCS, '', _asymOf(hrCA,hrCS)), statOf2(lsiCls2(hrCA,hrCS)), lsiCls2(hrCA,hrCS), ['hr-ca','hr-cs']);
@@ -7451,7 +7464,10 @@ function _buildAllTestsHtml() {
     tfHtml += crItem('Pliométrie verticale (qualitative)',
       _pair('Critères validés', plioqCA2+'/2', plioqCS2+'/2', '', '')
         .replace('</table>', '</table><div class="cr-mt-note">' + (plioqSym ? 'Hauteur symétrique' : 'Déficit de hauteur') + '</div>'),
-      plioqCA2===2?'Réussi':'À améliorer', plioqCA2===2?'good':'warn',
+      /* Trois niveaux et non deux : « À améliorer » couvrait aussi bien un
+         critère sur deux qu'aucun, alors que ce n'est pas le même tableau. */
+      statCriteres(plioqCA2===2?'good':plioqCA2>0?'warn':'bad'),
+      plioqCA2===2?'good':plioqCA2>0?'warn':'bad',
       ['plioq-ca-0','plioq-ca-1','plioq-ca-2']);
   }
   tfHtml += obsBlock('plioq-obs-ca','plioq-obs-cs');
