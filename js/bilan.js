@@ -2780,7 +2780,7 @@ function _resetBilanFields(){
   try{ updateAll(); calcRec(); calcPlioq(); _epFoncRefresh(); }catch(ex){}
   try{ ['sls','hop','pset','set'].forEach(function(k){ calcLSI(k); }); calcDJ(); calcLunge(); calcHR(); calcMusc(); calcPiCIM(); }catch(ex){}
   try{ calcPlioq2(); calcSEBT(); calcUQYBT(); calcSideHop(); }catch(ex){}
-  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht','co-f-ext','co-f-flex'].forEach(calcEpForce); ['ha-f-add','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); ['pi-f-fp','pi-f-fd','pi-f-inv','pi-f-ev','pi-f-lfh'].forEach(calcEpForce); ['ra-fc-inc'].forEach(calcEpForce); }catch(ex){}
+  try{ calcGIRD(); ['ms-grip','ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht','co-f-ext','co-f-flex'].forEach(calcEpForce); ['ha-f-add','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); ['pi-f-fp','pi-f-fd','pi-f-inv','pi-f-ev','pi-f-lfh'].forEach(calcEpForce); ['ra-fc-inc'].forEach(calcEpForce); }catch(ex){}
   try{ updateBadges(); _initAllRomBars(); _updateSq0Status(); }catch(ex){}
   // Éléments non couverts par les fonctions ci-dessus
   try{ var hl=document.getElementById('hdr-lma'); if(hl) hl.textContent='—'; }catch(ex){}
@@ -2943,6 +2943,8 @@ var TRACKED_METRICS = [
   {id:'ep-bht-ca',      label:'BHT (côté atteint)',           unit:'kg',  dir:'up',   cat:'Épaule — Force'},
   {id:'ep-bht-cs',      label:'BHT (côté sain)',              unit:'kg',  dir:'up',   cat:'Épaule — Force'},
   // ── Coude — Force ───────────────────────────────────────────
+  {id:'ms-grip-ca',     label:'Préhension (atteint)',          unit:'kg',  dir:'up',   cat:'Membre supérieur — Préhension'},
+  {id:'ms-grip-cs',     label:'Préhension (sain)',             unit:'kg',  dir:'up',   cat:'Membre supérieur — Préhension'},
   {id:'co-f-ext-ca',    label:'Extension coude (atteint)',    unit:'kg',  dir:'up',   cat:'Coude — Force'},
   {id:'co-f-ext-cs',    label:'Extension coude (sain)',       unit:'kg',  dir:'up',   cat:'Coude — Force'},
   {id:'co-f-flex-ca',   label:'Flexion coude (atteint)',      unit:'kg',  dir:'up',   cat:'Coude — Force'},
@@ -4357,7 +4359,7 @@ function _deserializeBilan(data){
   try{ calcRachisStat(); calcLNF(); calcSorensen(); calcPDSLRT(); calcShirado(); }catch(ex){}
   try{ calcPlioq2(); calcSEBT(); calcUQYBT(); updateBadges(); }catch(ex){}
   try{ _initAllRomBars(); }catch(ex){}
-  try{ calcGIRD(); ['ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht','co-f-ext','co-f-flex'].forEach(calcEpForce); ['ha-f-add','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); ['pi-f-fp','pi-f-fd','pi-f-inv','pi-f-ev','pi-f-lfh'].forEach(calcEpForce); ['ra-fc-inc'].forEach(calcEpForce); }catch(ex){}
+  try{ calcGIRD(); ['ms-grip','ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht','co-f-ext','co-f-flex'].forEach(calcEpForce); ['ha-f-add','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); ['pi-f-fp','pi-f-fd','pi-f-inv','pi-f-ev','pi-f-lfh'].forEach(calcEpForce); ['ra-fc-inc'].forEach(calcEpForce); }catch(ex){}
   _parsePainZones();
   try{ _parseObjectifs(); }catch(ex){}
   try{ _afRefreshAll(); }catch(ex){}
@@ -6704,6 +6706,30 @@ function _buildAllTestsHtml() {
       // Les break tests de cette liste couvrent aussi le coude (co-f-*) : le
       // libellé le précise pour ne pas laisser croire à un oubli épaule.
       secRows += crGroup('Force musculaire — break tests', epForceRows);
+
+      // ── Force de préhension ──────────────────────────────────────────
+      // Groupe à part : c'est une mesure du MEMBRE, pas d'une articulation.
+      // La noyer dans les break tests la ferait lire comme un test d'épaule.
+      // La main dominante accompagne la mesure SANS la corriger — la règle
+      // des 10 % est trop inconstante pour porter un calcul.
+      var grCS = parseFloat((document.getElementById('ms-grip-cs')||{}).value);
+      var grCA = parseFloat((document.getElementById('ms-grip-ca')||{}).value);
+      var grDom = ((document.getElementById('ms-dom')||{}).value||'').trim();
+      if (!isNaN(grCS) && grCS > 0) {
+        var grLsi = !isNaN(grCA) && grCA > 0 ? grCA/grCS*100 : NaN;
+        var grPos = !isNaN(grLsi) && grLsi < 90;
+        var grRows = crItem('Force de préhension',
+          _crMesTab([{ l:'Force', a: grCS + ' kg',
+                       b: isNaN(grCA) ? '' : grCA + ' kg',
+                       asym: isNaN(grLsi) ? '' : asymTxt(grLsi) }],
+                    _labelCS, _labelCA,
+                    grDom ? { note: 'Main dominante : ' + grDom } : {}),
+          grPos ? 'Positif' : 'Négatif', grPos ? 'bad' : 'ok',
+          ['ms-grip-cs','ms-grip-ca']);
+        var grObs = ((document.getElementById('ms-grip-obs')||{}).value||'').trim();
+        if (grObs) grRows += crItem('Préhension — observation', nl2br(grObs), '', '', ['ms-grip-obs']);
+        secRows += crGroup('Force de préhension', grRows);
+      }
       secRows += romCrTable('Amplitudes Articulaires — Épaule (°)', [
         {label:'Flexion',          dId:'rom-ep-d-flex',  gId:'rom-ep-g-flex'},
         {label:'Extension',        dId:'rom-ep-d-ext',   gId:'rom-ep-g-ext'},
@@ -7574,6 +7600,11 @@ function _buildAllTestsHtml() {
       {key:'ep-bht',   label:'Renforcer le sub-scapulaire'},
       {key:'co-f-ext', label:'Renforcer les extenseurs du coude'},
       {key:'co-f-flex',label:'Renforcer les fléchisseurs du coude'},
+      /* La préhension est traitée par cette boucle comme les break tests :
+         mêmes suffixes `-cs`/`-ca`, même seuil de 90 %. Elle n'a pas de
+         champs d'appréciation — sans dynamomètre, le test ne se fait pas —
+         et la boucle les ignore d'elle-même quand ils sont absents. */
+      {key:'ms-grip', label:'Renforcer la préhension et la chaîne de saisie'},
     ];
     epForceMap.forEach(function(ft) {
       var csN = parseFloat((document.getElementById(ft.key+'-cs')||{}).value);
@@ -9518,9 +9549,16 @@ function calcEpForce(key) {
   if (!csEl || !caEl || !lsiEl || !statEl) return;
   var cs = parseFloat(csEl.value);
   var ca = parseFloat(caEl.value);
-  // Zone scope → bilateral detection
+  /* Zone lue pour décider si le patient est bilatéral. Elle se déduit du
+     PRÉFIXE de la clé, et la branche du membre supérieur ne reconnaissait
+     que `ep-` : les tests de coude (`co-f-`) tombaient donc dans la branche
+     du membre inférieur, et lisaient les zones de la jambe. Un patient à
+     zone bilatérale au genou faisait basculer le calcul de ses tests de
+     coude — sans le moindre signal, le LSI passant de `atteint/sain` à
+     `min/max`. Tout préfixe du membre supérieur ajouté demain doit être
+     inscrit ICI, la branche par défaut étant celle du membre inférieur. */
   var zones = /^ra-/.test(key) ? ['rachis-c','rachis-l']
-             : /^ep-/.test(key) ? ['epaule','coude','poignet']
+             : /^(ep-|co-f-|ms-)/.test(key) ? ['epaule','coude','poignet']
              : ['genou','hanche','cheville','pied','cuisse','jambe'];
   var bilateral = _isBilateralForZones(zones);
   if (!isNaN(cs) && cs > 0) {

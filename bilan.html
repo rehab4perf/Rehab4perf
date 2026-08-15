@@ -4333,6 +4333,36 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   </div>
   <div class="page-content">
 
+<!-- La préhension mesure le MEMBRE, pas une articulation : elle ouvre la page
+     plutôt que d'être glissée sous Épaule, où elle se lirait comme un test
+     d'épaule. Elle rejoint le CR dans son propre groupe. -->
+<div class="block" data-block-id="force-ms--prehension">
+  <div class="block-header">Force de préhension</div>
+  <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Mesure globale du membre supérieur — assis, épaule au corps, coude à 90°, avant-bras neutre. Retenir la <strong>moyenne de 3 essais</strong> par main. Positif si asymétrie &gt; 10 %.</div>
+  <div class="form-grid single">
+    <div class="field">
+      <label>Main dominante</label>
+      <select id="ms-dom">
+        <option value=""></option>
+        <option>Droite</option>
+        <option>Gauche</option>
+      </select>
+      <div style="font-size:.65rem;color:var(--text3);margin-top:3px;font-style:italic">Notée pour votre lecture, jamais déduite dans le calcul : la main dominante est souvent dite plus forte d'environ 10 %, mais l'écart est inconstant.</div>
+    </div>
+  </div>
+  <div class="measure-row" style="background:var(--surface2)">
+    <div class="col-header">Test</div><div class="col-header sl-cs">Côté Sain</div><div class="col-header sl-ca">Côté Atteint</div><div class="col-header">Asym. %</div><div class="col-header">Statut</div>
+  </div>
+  <div class="measure-row">
+    <div class="measure-label">Force de préhension</div>
+    <div class="measure-input"><input type="number" id="ms-grip-cs" min="0" step="0.5" placeholder="— kg" oninput="calcEpForce('ms-grip')"></div>
+    <div class="measure-input"><input type="number" id="ms-grip-ca" min="0" step="0.5" placeholder="— kg" oninput="calcEpForce('ms-grip')"></div>
+    <div class="measure-stat" id="ms-grip-lsi">—</div>
+    <div class="measure-stat" id="ms-grip-stat">—</div>
+  </div>
+  <div style="padding:5px 12px 7px;border-bottom:1px solid var(--border)"><textarea id="ms-grip-obs" placeholder="Observation… (dynamomètre utilisé, douleur pendant la mesure, essais écartés)" style="font-family:inherit;font-size:.76rem;color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 7px;width:100%;min-height:30px;resize:vertical;outline:none;background:var(--surface)"></textarea></div>
+</div>
+
 <div class="block" data-block-id="force-ms--epaule">
   <div class="block-header">Épaule</div>
   <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Avec dynamomètre → renseigner en kg (asymétrie auto · ❌ si &gt; 10%). Sans dynamomètre → appréciation directe par côté.</div>
@@ -5764,7 +5794,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260806i"></script>
-<script src="js/bilan.js?v=20260814a"></script>
+<script src="js/bilan.js?v=20260815a"></script>
 
 </body>
 </html>

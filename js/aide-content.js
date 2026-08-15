@@ -72,7 +72,9 @@ sections: [
     etapes:[
       { t:'Naviguez vers la région concernée', x:'Le menu du bilan liste toutes les pages disponibles.' },
       { t:'Saisissez les valeurs côté gauche / côté droit', x:'Amplitudes, forces, scores… Les asymétries se calculent automatiquement quand c\'est pertinent.' },
-      { t:'Ajoutez des commentaires libres si besoin', x:'Ils seront repris dans le compte-rendu.' }
+      { t:'Ajoutez des commentaires libres si besoin', x:'Ils seront repris dans le compte-rendu.' },
+      { t:'La force de préhension ouvre les Tests de Force MS', x:'Elle mesure le membre supérieur dans son ensemble, pas une articulation : elle a donc son propre bloc, en tête de page, et son propre groupe dans le compte-rendu. Protocole : assis, épaule au corps, coude à 90°, avant-bras neutre, moyenne de trois essais par main. Positif au-delà de 10 % d\'asymétrie.' },
+      { t:'La main dominante est notée, jamais déduite', x:'On lit souvent que la main dominante serait plus forte d\'environ 10 %. L\'écart est en réalité inconstant, notamment chez les gauchers : le champ sert donc à votre lecture, et aucun calcul ne s\'en sert. Si le côté atteint est le dominant, le déficit réel est plus grand que l\'asymétrie affichée.' }
     ]},
   { id:'personnaliser-bilan', titre:'Personnaliser vos pages de bilan',
     intro:'Chaque praticien évalue différemment. Vous pouvez masquer ou réordonner des blocs et des tests, ajouter vos propres descriptions, et même créer des blocs et des tests entièrement personnalisés — sans jamais perdre ni corrompre les bilans déjà sauvegardés.',
