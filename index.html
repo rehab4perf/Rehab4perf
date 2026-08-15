@@ -47,25 +47,42 @@ html, body { height:100%; overflow:hidden; background:#1A3A5C; }
 }
 .topnav-right:hover { color:#fff; }
 
+/* ── Contrôles de la barre : patient, cloche, centre d'aide ──────────
+   Une SEULE regle porte ce qu'ils ont en commun. Ils divergeaient sur cinq
+   proprietes — hauteur, rayon, taille et graisse de police, couleur du
+   texte — parce que chacun avait ete ecrit dans son coin. Trois copies des
+   memes valeurs finissent toujours par se desynchroniser : ici la hauteur
+   du bouton patient venait d'un `padding`, celle des deux autres d'un
+   `height`, et personne ne pouvait s'en apercevoir en lisant une seule
+   declaration.
+
+   Ne mettre ici que ce qui doit rester identique. Le `display` en est
+   exclu : la cloche est masquee tant qu'il n'y a rien a signaler. */
+.patient-btn, .notif-bell, .help-btn {
+  box-sizing:border-box; height:34px; flex-shrink:0;
+  border-radius:8px;
+  background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2);
+  align-items:center; justify-content:center;
+  font-family:'Figtree',sans-serif; font-size:.75rem; font-weight:600;
+  color:#fff; cursor:pointer; white-space:nowrap;
+  transition:background .15s, border-color .15s;
+}
+
 /* ── Cloche notifications feedback ───────────────────────── */
 .notif-bell {
-  position:relative; width:34px; height:34px; border-radius:8px; flex-shrink:0;
-  background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2);
-  display:none; align-items:center; justify-content:center;
-  font-size:.95rem; cursor:pointer; margin-left:10px; color:#fff;
-  transition:background .15s;
+  position:relative; width:34px;
+  display:none;
+  margin-left:10px;
 }
 .notif-bell:hover { background:rgba(255,255,255,.18); }
 .notif-bell.visible { display:flex; }
 
 /* ── Bouton aide « ? » + drawer contextuel ────────────────── */
 .help-btn {
-  position:relative; height:34px; border-radius:8px; flex-shrink:0;
-  background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2);
-  display:flex; align-items:center; justify-content:center; gap:7px;
-  padding:0 12px; white-space:nowrap;
-  font-size:.75rem; font-weight:600; cursor:pointer; margin-left:10px; color:#fff;
-  transition:background .15s; font-family:'Figtree',sans-serif;
+  position:relative;
+  display:flex;
+  padding:0 12px;
+  margin-left:10px;
 }
 .help-btn:hover { background:rgba(255,255,255,.18); }
 .help-drawer {
@@ -182,14 +199,14 @@ iframe.active { display:block; }
 /* ── Patient selector button ─────────────────────────────── */
 .patient-btn {
   margin-left:auto;
-  display:flex; align-items:center; gap:6px;
-  background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2);
-  border-radius:6px; padding:5px 11px; cursor:pointer;
-  font-family:'Figtree',sans-serif;
-  font-size:.78rem; font-weight:500; color:rgba(255,255,255,.85);
-  white-space:nowrap; transition:background .15s, border-color .15s;
+  display:flex; gap:6px;
+  padding:0 11px;
   max-width:180px; overflow:hidden;
 }
+/* Seule nuance conservee de l'ancien style : tant qu'aucun patient n'est
+   choisi, le libelle reste attenue. C'est un signal — le bouton attend une
+   action — et l'unification portait sur la taille, pas sur ce contraste. */
+.patient-btn:not(.has-patient) { color:rgba(255,255,255,.85); }
 .patient-btn:hover { background:rgba(255,255,255,.18); border-color:rgba(255,255,255,.35); }
 .patient-btn.has-patient { background:rgba(74,144,217,.25); border-color:rgba(74,144,217,.5); color:#fff; }
 .patient-btn-label { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -376,14 +393,18 @@ iframe.active { display:block; }
   .tab { padding:0 10px; font-size:.8rem; }
   .logo { margin-right:10px; }
   .topnav-right { font-size:.68rem; }
-  /* Le libelle reste lisible a toutes les largeurs — c'est lui qui porte le
-     sens. On resserre le bouton plutot que de le tronquer. */
-  .help-btn { padding:0 9px; font-size:.7rem; margin-left:6px; }
+  /* Les trois se resserrent ENSEMBLE, sinon la police du bouton d'aide
+     seule aurait baisse et l'alignement recree serait aussitot rompu.
+     Le libelle reste lisible a toutes les largeurs — c'est lui qui porte le
+     sens, le masquer laisserait un bouton vide. */
+  .patient-btn, .notif-bell, .help-btn { font-size:.7rem; }
+  .help-btn { padding:0 9px; margin-left:6px; }
+  .notif-bell { margin-left:6px; }
 }
 @media (max-width:600px) {
   .topnav { padding:0 8px; } .tab { padding:0 8px; font-size:.75rem; }
   .logo { margin-right:6px; font-size:.92rem; } .topnav-right { display:none; }
-  .patient-btn { max-width:120px; font-size:.7rem; padding:4px 6px; }
+  .patient-btn { max-width:120px; padding:0 6px; }
   .pm-overlay { padding-top:52px; }
   .pm-card { max-width:100%; border-radius:10px 10px 0 0; }
 }
