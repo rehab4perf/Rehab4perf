@@ -6248,8 +6248,40 @@ _updateOutilsPatientBtns();
 
   /* ── Rendu HTML — ecran, PDF ───────────────────────────────────────── */
   function _crBlocsHtml(blocs) {
-    var h = '', tableOuverte = false;
-    function fermerTable() { if (tableOuverte) { h += '</tbody></table>'; tableOuverte = false; } }
+    var h = '', tampon = [];
+
+    /* Les lignes de test sont MISES EN ATTENTE, puis ecrites d un coup.
+       L en-tete se construisait auparavant sur la premiere ligne venue — or
+       toutes n ont pas les memes colonnes : un test note en criteres valides
+       (reception, rebond) n a pas d ecart, et son statut glissait alors d une
+       case vers la gauche, sous « Asym. ». Il faut connaitre TOUTES les
+       lignes du groupe avant de decider des colonnes. */
+    function fermerTable() {
+      if (!tampon.length) return;
+      var entetes = [];
+      tampon.forEach(function (t) {
+        (t.cellules || []).forEach(function (c) {
+          if (c.valeur && entetes.indexOf(c.entete) < 0) entetes.push(c.entete);
+        });
+      });
+      h += '<table class="lt-t"><thead><tr><th>Test</th>'
+         + entetes.map(function (e) { return '<th class="n">' + _crEsc(e) + '</th>'; }).join('')
+         + '<th class="s">Résultat</th></tr></thead><tbody>';
+      tampon.forEach(function (t) {
+        var par = {};
+        (t.cellules || []).forEach(function (c) { if (c.valeur) par[c.entete] = c.valeur; });
+        h += '<tr><td class="lbl">' + _crEsc(t.label)
+           + (t.note ? '<span class="lt-note">' + _crEsc(t.note) + '</span>' : '') + '</td>'
+           + entetes.map(function (e) {
+               return '<td class="n">' + (par[e] ? _crEsc(par[e]) : '') + '</td>';
+             }).join('')
+           + '<td class="s">' + (t.statut
+               ? '<span class="lt-chip ' + _crTagClasse(t) + '">' + _crEsc(t.statut) + '</span>' : '')
+           + '</td></tr>';
+      });
+      h += '</tbody></table>';
+      tampon = [];
+    }
 
     (blocs || []).forEach(function (b) {
       if (!_crEstBloc(b)) {
@@ -6275,22 +6307,7 @@ _updateOutilsPatientBtns();
         h += '<div class="lt-concl"><b>Conclusion.</b> ' + _crEsc(b.txt).replace(/\n/g, '<br>') + '</div>';
         return;
       }
-      if (b.t === 'test') {
-        var cels = (b.cellules || []).filter(function (c) { return c.valeur; });
-        if (!tableOuverte) {
-          h += '<table class="lt-t"><thead><tr><th>Test</th>'
-             + cels.map(function (c) { return '<th class="n">' + _crEsc(c.entete) + '</th>'; }).join('')
-             + '<th class="s">Résultat</th></tr></thead><tbody>';
-          tableOuverte = true;
-        }
-        h += '<tr><td class="lbl">' + _crEsc(b.label)
-           + (b.note ? '<span class="lt-note">' + _crEsc(b.note) + '</span>' : '') + '</td>'
-           + cels.map(function (c) { return '<td class="n">' + _crEsc(c.valeur) + '</td>'; }).join('')
-           + '<td class="s">' + (b.statut
-               ? '<span class="lt-chip ' + _crTagClasse(b) + '">' + _crEsc(b.statut) + '</span>' : '')
-           + '</td></tr>';
-        return;
-      }
+      if (b.t === 'test') { tampon.push(b); return; }
     });
     fermerTable();
     return h;
