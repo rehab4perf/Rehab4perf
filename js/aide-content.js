@@ -152,7 +152,7 @@ sections: [
     intro:'Un courrier structuré destiné au médecin, avec aperçu en temps réel pendant la saisie.',
     etapes:[
       { t:'Renseignez le destinataire', x:'Dr, spécialité, email.' },
-      { t:'Cliquez sur « ⤓ Bilan » pour préremplir', x:'Les informations du dernier bilan du patient (dates, côté atteint, pathologie…) sont importées automatiquement.', img:true },
+      { t:'Les infos du bilan s\'associent toutes seules', x:'Côté atteint, date d\'accident, date d\'opération, début de prise en charge, médecin prescripteur et EVA sont repris du bilan dès que vous changez de patient — sans rien cliquer. Si vous corrigez une de ces valeurs à la main, elle est conservée : l\'association n\'a lieu qu\'une fois, au changement de patient. Le bouton « Associer les infos patient » reste disponible pour la relancer.', img:true },
       { t:'Complétez pathologie, bilan clinique et plan', x:'Amplitudes, force, tests fonctionnels, signes cliniques, phase, évolution, plan de traitement — l\'aperçu à droite se met à jour à chaque champ.' },
       { t:'Exportez', x:'Copier la lettre, exporter en PDF ou envoyer par email directement.' },
       { t:'Changer de patient vide le formulaire', x:'Le nom, le prénom et la date de naissance sont réécrits depuis le nouveau patient ; tout le reste — pathologie, côté, amplitudes, signes, tests cochés, commentaire — repart de zéro, pour qu\'aucune donnée du patient précédent ne se retrouve dans son courrier. Si le CR est déjà entamé, une confirmation vous est demandée avant.' },

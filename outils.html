@@ -4705,13 +4705,41 @@ function _crViderPevo(){
    Petit differe : le bilan enregistre a chaque frappe, on ne redessine pas la
    liste soixante fois pendant qu'une observation se tape. */
 var _crTestsMaj = null;
+
+/* Cote atteint, dates d'accident et d'operation, debut de prise en charge,
+   medecin prescripteur, EVA : tout cela vit dans le bilan et se remplissait
+   uniquement au clic sur « Associer les infos patient ». On l'associe
+   desormais tout seul apres un changement de patient.
+
+   Le drapeau est indispensable : `athletik-bilan` est reecrit a CHAQUE frappe
+   dans le bilan. Sans lui, une correction faite a la main dans le CR — un
+   cote rectifie, par exemple — serait ecrasee a la frappe suivante. L'import
+   automatique n'a donc lieu qu'UNE fois, juste apres la bascule.
+
+   Le differe attend que les ecritures se taisent : le bilan en emet une rafale
+   pendant qu'il charge le nouveau patient, et importer au milieu prendrait
+   encore les valeurs de l'ancien. */
+var _crAttenteImport = false;
+var _crImportMaj = null;
+
 window.addEventListener('storage', function(e){
-  if (e.key !== 'r4p-cr-med-tests') return;
-  clearTimeout(_crTestsMaj);
-  _crTestsMaj = setTimeout(function(){
-    try { window.crChargerTestsBilan(); }
-    catch(ex){ console.error('crChargerTestsBilan (storage):', ex); }
-  }, 300);
+  if (e.key === 'r4p-cr-med-tests') {
+    clearTimeout(_crTestsMaj);
+    _crTestsMaj = setTimeout(function(){
+      try { window.crChargerTestsBilan(); }
+      catch(ex){ console.error('crChargerTestsBilan (storage):', ex); }
+    }, 300);
+    return;
+  }
+  if (e.key === 'athletik-bilan' && _crAttenteImport) {
+    clearTimeout(_crImportMaj);
+    _crImportMaj = setTimeout(function(){
+      if (!_crAttenteImport) return;
+      _crAttenteImport = false;
+      try { window.crImportPatient(true); }
+      catch(ex){ console.error('crImportPatient (storage):', ex); }
+    }, 600);
+  }
 });
 
 window.addEventListener('message', function(e){
@@ -4754,6 +4782,11 @@ window.addEventListener('message', function(e){
     _crViderPevo();
     if(_crChange){
       try { window._crAppliquerPatient(_crNouveau); } catch(ex){ console.error('_crAppliquerPatient:', ex); }
+      /* On arme l'import : le bilan va charger le nouveau patient puis ecrire
+         `athletik-bilan`, et c'est cette ecriture-la qui declenchera
+         l'association. Sans patient, rien a associer. */
+      _crAttenteImport = !!_crNouveau;
+      clearTimeout(_crImportMaj);
     }
   }
   if(e.data && e.data.type==='r4p-pevo-response'){
@@ -6376,6 +6409,40 @@ _updateOutilsPatientBtns();
     return h;
   }
 
+  /* La case « Pathologie » melangeait deux choses de nature differente : le
+     DIAGNOSTIC (pathologie, detail, articulation) et des REPERES TEMPORELS
+     (accident, operation, J+N). Sur un patient dont la pathologie n'est pas
+     saisie, la case affichait « operee le 19/03/2026 — J+150 post-operatoire »
+     sous l'intitule « Pathologie » : une date d'intervention n'est pas un
+     diagnostic, et le medecin lisait un intitule qui mentait sur son contenu.
+
+     Les deux sont desormais separes, et l'intitule du second suit ce qu'il
+     contient — une intervention n'est pas un traumatisme. Ecrit une seule
+     fois : les deux constructeurs de courrier fabriquaient chacun leur
+     version de cette ligne. */
+  function _crDiagnostic() {
+    var d = crPathosLabel();
+    var det = crV('cr-patho-detail');
+    if (det) d = d ? d + ' — ' + det : det;
+    var art = crArticuList.map(function(a){ return crAmpConfig[a] ? crAmpConfig[a].label : ''; }).filter(Boolean).join(' + ');
+    if (art) d += (d ? ' — ' : '') + art;
+    return d;
+  }
+
+  function _crAntecedent(patAccident, patOp, joursStr, isOp) {
+    var t = '';
+    if (patAccident) t += crF('accidenté', 'accidenté', 'accidentée') + ' le ' + patAccident;
+    if (patOp)       t += (t ? ', ' : '') + crF('opéré', 'opéré', 'opérée') + ' le ' + patOp;
+    if (joursStr)    t += (t ? ' — ' : '') + joursStr + (isOp ? ' post-opératoire' : ' post-traumatique');
+    return t;
+  }
+
+  function _crAntecedentLabel(patAccident, patOp) {
+    if (patAccident && patOp) return 'Antécédents';
+    if (patOp) return 'Intervention';
+    return 'Traumatisme';
+  }
+
   function crBuildLetter() {
     if (crTemplate === 'debut') return crBuildDebutLetter();
 
@@ -6436,14 +6503,10 @@ _updateOutilsPatientBtns();
          d operation, il ne les lit pas dans une suite de phrases. La version
          texte, elle, les rend ligne par ligne — voir _crBlocsTexte. */
       var _patChamps = [['Patient', patLine]];
-      var diagLine = crPathosLabel();
-      if (pathoDetail) diagLine = diagLine ? diagLine + ' — ' + pathoDetail : pathoDetail;
-      var articuLabel = crArticuList.map(function(a){ return crAmpConfig[a]?crAmpConfig[a].label:''; }).filter(Boolean).join(' + ');
-      if (articuLabel) diagLine += (diagLine ? ' — ' : '') + articuLabel;
-      if (patAccident) diagLine += (diagLine ? ', ' : '') + crF('accidenté', 'accidenté', 'accidentée') + ' le ' + patAccident;
-      if (patOp)       diagLine += (diagLine ? ', ' : '') + crF('opéré', 'opéré', 'opérée') + ' le ' + patOp;
-      if (joursStr)    diagLine += (diagLine ? ' — ' : '') + joursStr + (_isOp ? ' post-opératoire' : ' post-traumatique');
-      if (diagLine) _patChamps.push(['Pathologie', diagLine]);
+      var _diag = _crDiagnostic();
+      var _ant  = _crAntecedent(patAccident, patOp, joursStr, _isOp);
+      if (_diag) _patChamps.push(['Pathologie', _diag]);
+      if (_ant)  _patChamps.push([_crAntecedentLabel(patAccident, patOp), _ant]);
       if (patCote)  _patChamps.push(['Côté atteint', patCote]);
       if (patPEC)   _patChamps.push(['Début de prise en charge', patPEC]);
       lines.push({ t: 'patient', champs: _patChamps });
@@ -6607,14 +6670,16 @@ _updateOutilsPatientBtns();
 
     // Diagnostic / côté
     if (crPathos.length || pathoDetail || patAccident || patOp || patCote) {
-      var diagLine = crPathosLabel();
-      if (pathoDetail) diagLine = diagLine ? diagLine + ' — ' + pathoDetail : pathoDetail;
-      var articuLabel2 = crArticuList.map(function(a){ return crAmpConfig[a]?crAmpConfig[a].label:''; }).filter(Boolean).join(' + ');
-      if (articuLabel2) diagLine += (diagLine ? ' — ' : '') + articuLabel2;
-      if (patAccident) diagLine += (diagLine ? ', ' : '') + crF('accidenté', 'accidenté', 'accidentée') + ' le ' + patAccident;
-      if (patOp)       diagLine += (diagLine ? ', ' : '') + crF('opéré', 'opéré', 'opérée') + ' le ' + patOp;
-      if (patCote) diagLine += (diagLine ? ' — ' : '') + 'côté ' + patCote.toLowerCase();
-      if (diagLine) { lines.push('Pathologie : ' + diagLine + '.'); lines.push(''); }
+      /* joursStr n'est PAS passe ici : dans ce modele il compte le delai
+         operation -> debut de prise en charge, pas J+N depuis l'operation.
+         Il a deja sa place dans l'en-tete « BILAN INITIAL » ci-dessous, et
+         le reprendre ici lui ferait dire autre chose. */
+      var _diag2 = _crDiagnostic();
+      if (patCote) _diag2 += (_diag2 ? ' — ' : '') + 'côté ' + patCote.toLowerCase();
+      var _ant2 = _crAntecedent(patAccident, patOp, '', _isOp);
+      if (_diag2) lines.push('Pathologie : ' + _diag2 + '.');
+      if (_ant2)  lines.push(_crAntecedentLabel(patAccident, patOp) + ' : ' + _ant2 + '.');
+      if (_diag2 || _ant2) lines.push('');
     }
 
     // Bilan initial
@@ -7107,7 +7172,7 @@ _updateOutilsPatientBtns();
   }
 
   // Associer les infos patient — lit athletik-bilan (Bilan.html) + r4p-current-patient
-  window.crImportPatient = function() {
+  window.crImportPatient = function(auto) {
     try {
       // Lire les deux sources
       var bilan = {};
@@ -7211,9 +7276,16 @@ _updateOutilsPatientBtns();
          bilan », qui reprend l ENSEMBLE des tests fonctionnels renseignes
          plutot qu une poignee choisie a la main. Voir crChargerTestsBilan. */
 
-      if (filled > 0) _crToast(filled + ' champ' + (filled > 1 ? 's' : '') + ' associé' + (filled > 1 ? 's' : '') + ' ✓');
-      else _crToast('Aucune donnée patient disponible — ouvrez un bilan d\'abord');
-    } catch(e) { console.error(e); _crToast('Impossible d\'associer le patient'); }
+      /* `auto` : appel declenche par un changement de patient, pas par le
+         bouton. On confirme ce qui a ete rempli — c'est utile — mais on se
+         tait quand il n'y a rien : un patient sans bilan n'est pas une
+         anomalie a signaler a chaque bascule. */
+      if (filled > 0) {
+        _crToast(filled + ' champ' + (filled > 1 ? 's' : '') + ' associé' + (filled > 1 ? 's' : '') + ' ✓');
+        try { _crMarquerPropre(); } catch(ex){}
+      }
+      else if (!auto) _crToast('Aucune donnée patient disponible — ouvrez un bilan d\'abord');
+    } catch(e) { console.error(e); if (!auto) _crToast('Impossible d\'associer le patient'); }
   };
 
   // ── Supabase — config CR partagée (même système que programme.html) ──
