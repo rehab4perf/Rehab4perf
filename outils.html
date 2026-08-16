@@ -4722,6 +4722,7 @@ var _crTestsMaj = null;
 var _crAttenteImport = false;
 var _crImportMaj = null;
 var _crPatientAttendu = null;
+var _crPatientCourant = null;
 
 /* Le bilan appartient-il DEJA au patient qu'on vient de selectionner ?
    C'est ce controle qui rend l'import insensible a l'ordre des evenements :
@@ -4746,12 +4747,29 @@ function _crBilanCorrespond(pat){
       && bp === String(pat.prenom || '').trim().toLowerCase();
 }
 
+/* Les tests fonctionnels n'emportent PAS l'identite du patient : ils sont
+   ecrits par le meme `saveToStorage()` que `athletik-bilan`, donc c'est ce
+   dernier qui dit a qui ils appartiennent. Sans patient selectionne il n'y a
+   rien a verifier — le CR peut viser quelqu'un hors patientele. */
+window._crBilanEstDuPatient = function(){
+  if (!_crPatientCourant) return true;
+  return _crBilanCorrespond(_crPatientCourant);
+};
+
 function _crTenterImport(){
   if (!_crAttenteImport) return;
   if (!_crBilanCorrespond(_crPatientAttendu)) return;
   _crAttenteImport = false;
   try { window.crImportPatient(true); }
   catch(ex){ console.error('crImportPatient (auto):', ex); }
+  /* Les tests suivent le meme sort : eux non plus n'arrivaient pas au
+     chargement de la page, le bilan ayant deja ecrit avant qu'on n'ecoute. */
+  try { window.crChargerTestsBilan(); }
+  catch(ex){ console.error('crChargerTestsBilan (auto):', ex); }
+  /* Remise a plat APRES les deux : rien de tout cela n'est du travail du
+     praticien. `crImportPatient` marque deja, mais le chargement des tests
+     vient ensuite et deferait ce marquage. */
+  try { window._crMarquerPropre(); } catch(ex){}
 }
 
 window.addEventListener('storage', function(e){
@@ -4808,6 +4826,7 @@ window.addEventListener('message', function(e){
     _prescPatient = _crNouveau;
     try { _prescFillFromPatient(true); } catch(ex){ console.error('_prescFillFromPatient:', ex); }
     _crPatientId = _crNouveau ? _crNouveau.id : null;
+    _crPatientCourant = _crNouveau;
     _crViderPevo();
     if(_crChange){
       try { window._crAppliquerPatient(_crNouveau); } catch(ex){ console.error('_crAppliquerPatient:', ex); }
@@ -6205,6 +6224,18 @@ _updateOutilsPatientBtns();
 
   window.crChargerTestsBilan = function () {
     var brut = [];
+    /* Le bilan en memoire est-il bien celui du patient selectionne ? Il peut
+       porter encore le precedent — pendant qu'il charge, ou si l'onglet Bilan
+       n'a pas suivi la bascule. Charger sans verifier ferait entrer les tests
+       fonctionnels de quelqu'un d'autre dans un courrier medical.
+       La verification vaut aussi pour le bouton « Actualiser » : rien de
+       legitime a charger ne se trouve dans un bilan qui n'est pas le sien. */
+    if (window._crBilanEstDuPatient && !window._crBilanEstDuPatient()) {
+      _crTestsFonc = [];
+      _crTestsCoches = {};
+      _crRenderTestsFonc();
+      return;
+    }
     try { brut = JSON.parse(localStorage.getItem('r4p-cr-med-tests') || '[]'); } catch (e) {}
     _crTestsFonc = Array.isArray(brut) ? brut : [];
     /* Tout coche par defaut : on decoche plus vite qu'on ne coche, et le
@@ -7109,7 +7140,13 @@ _updateOutilsPatientBtns();
     parts.push('P:' + JSON.stringify(crPathos || []));
     parts.push('S:' + _crActifs(crSigns));
     parts.push('T:' + _crActifs(crTests));
-    parts.push('F:' + ((_crTestsFonc || []).length));
+    /* Ce qui compte n'est PAS le nombre de tests disponibles — cette liste
+       vient du bilan et se remplit toute seule — mais ceux que le praticien a
+       DECOCHES. Compter la liste faisait passer le CR pour entame des qu'un
+       test arrivait, et une confirmation s'ouvrait a chaque changement de
+       patient sans que personne n'ait rien saisi. */
+    var _dec = Object.keys(_crTestsCoches || {}).filter(function(k){ return !_crTestsCoches[k]; });
+    parts.push('F:' + _dec.sort().join(','));
     parts.push('G:' + (_crTexteCourant ? '1' : '0'));
     return parts.join('|');
   }
@@ -7120,6 +7157,7 @@ _updateOutilsPatientBtns();
      de l'application. */
   var _crRefSignature = null;
   function _crMarquerPropre() { _crRefSignature = _crSignature(); }
+  window._crMarquerPropre = _crMarquerPropre;
 
   /* Le sens du test est volontaire : tout ce qui n'est pas explicitement
      ignore compte comme du travail. Un champ ajoute demain fera donc demander
