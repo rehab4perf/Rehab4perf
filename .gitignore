@@ -2,16 +2,13 @@
 .claude/
 supabase/.temp/
 
-# Brouillons / mockups hors production (icones, essais CR)
-cr-mockup-*.html
-icon-*.html
-icon-*.svg
-icon-*.png
-muscle.svg
+# Banque de SVG achetee (non utilisee telle quelle par l'app)
 mycollection/
-r4p-icon*.html
-r4p-icons*.html
-shoulder*.png
+
+# Travaux marketing (carrousels Instagram, maquettes de communication).
+# Netlify publie la RACINE du repo : tout fichier commite ici serait servi
+# publiquement sur rehab4perf.netlify.app. Ces fichiers restent donc locaux.
+marketing/
 
 # Jeu de test golden-master (donnees patients reelles - ne jamais commiter)
 tests-golden/
