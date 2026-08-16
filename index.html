@@ -832,13 +832,13 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 </div>
 <div class="frame-wrap">
   <iframe id="frame-bilan"        src="bilan.html?v=20260815d"        class="active"></iframe>
-  <iframe id="frame-outils"       src="outils.html?v=20260815e"       ></iframe>
+  <iframe id="frame-outils"       src="outils.html?v=20260816a"       ></iframe>
   <iframe id="frame-prescription" src="programme.html?v=20260811e" ></iframe>
   <iframe id="frame-patients"     src="patients.html?v=20260810e"     ></iframe>
   <iframe id="frame-account"      src="account.html?v=20260810e"      ></iframe>
 </div>
 
-<script src="js/aide-content.js?v=20260815a"></script>
+<script src="js/aide-content.js?v=20260816a"></script>
 <script>
 /* ── Constantes localStorage ─────────────────────────────────────────
    Source unique de vérité pour toutes les clés de stockage local.
@@ -1266,8 +1266,16 @@ window.addEventListener('message', function(e) {
     try { localStorage.setItem(R4P_KEYS.PATIENT, _currentPatient ? JSON.stringify(_currentPatient) : ''); } catch(ex) {}
     _updatePatientBtn();
     renderPatients(_allPatients);
-    // Re-broadcaster le patient rollbacké aux autres iframes (pas bilan qui n'a jamais changé)
-    // pour éviter que programme/outils restent sur le nouveau patient.
+    // Re-broadcaster le patient rollbacké aux autres iframes pour éviter qu'elles
+    // restent sur le nouveau patient.
+    // `source` dit QUI a annulé : celle-là n'a jamais changé de patient et n'a donc
+    // rien à recevoir, toutes les autres si. Historiquement seul bilan.html annulait,
+    // et il était exclu en dur — depuis qu'outils.html peut annuler pour un CR médecin
+    // en cours, cette exclusion figée laissait le bilan sur le NOUVEAU patient pendant
+    // que la barre du haut affichait l'ancien.
+    var _annuleur = e.data.source === 'outils' ? 'frame-outils' : 'frame-bilan';
+    var _ciblesRollback = ['frame-bilan','frame-outils','frame-prescription']
+      .filter(function(id){ return id !== _annuleur; });
     (function(rolledBack){
       sb.auth.getSession().then(function(r) {
         var sess = r.data && r.data.session;
@@ -1276,7 +1284,7 @@ window.addEventListener('message', function(e) {
           patient: rolledBack,
           auth: sess ? { access_token: sess.access_token, refresh_token: sess.refresh_token } : null
         };
-        ['frame-outils','frame-prescription'].forEach(function(id) {
+        _ciblesRollback.forEach(function(id) {
           var f = document.getElementById(id);
           if (f && f.contentWindow) f.contentWindow.postMessage(msg, window.location.origin);
         });

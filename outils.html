@@ -4674,6 +4674,20 @@ var _crPatientId = null;
 var _crPevoContentHTML = null;
 var _crPevoCards = [];
 
+/* Cartes d'evolution du patient : vidage partage entre le changement de
+   patient et la reinitialisation du formulaire. Ecrit une seule fois — les
+   deux chemins l'oubliaient chacun a leur tour. */
+function _crViderPevo(){
+  _crPevoContentHTML = null;
+  _crPevoCards = [];
+  var tog = document.getElementById('cr-pevo-toggle');
+  var grd = document.getElementById('cr-pevo-grid');
+  var sta = document.getElementById('cr-pevo-status');
+  if(tog) tog.checked = false;
+  if(grd) { grd.innerHTML = ''; grd.style.display = 'none'; }
+  if(sta) sta.style.display = 'none';
+}
+
 window.addEventListener('message', function(e){
   if(e.data && e.data.type==='r4p-profile'){
     try { localStorage.setItem('r4p-profile', JSON.stringify(e.data.profile)); } catch(ex){}
@@ -4681,17 +4695,40 @@ window.addEventListener('message', function(e){
     _updatePrescAssets(e.data.profile || {});
   }
   if(e.data && e.data.type==='r4p-patient-selected'){
-    _prescPatient = e.data.patient || null;
+    var _crNouveau = e.data.patient || null;
+    var _crChange  = (_crNouveau ? _crNouveau.id : null) !== _crPatientId;
+
+    /* Le CR medecin ne se vidait PAS au changement de patient : seules les
+       cartes d'evolution partaient. Pathologie, cote, phase, dates,
+       amplitudes, signes et tests fonctionnels restaient en place. On pouvait
+       donc envoyer au medecin un courrier au nom du nouveau patient portant
+       la pathologie et le cote du precedent.
+
+       Un CR se remplit en plusieurs minutes : le vider en silence parce qu'un
+       patient a ete clique dans la barre du haut ferait perdre ce travail.
+       On demande donc confirmation, et on rend la main au parent s'il refuse
+       — meme mecanisme que bilan.html, `source` en plus pour qu'il sache que
+       c'est ici qu'il faut revenir en arriere. */
+    if(_crChange && typeof window._crEstEntame === 'function' && window._crEstEntame()){
+      if(!confirm('Un compte-rendu médecin est en cours.\n\nChanger de patient va le vider. Continuer ?')){
+        try {
+          window.parent.postMessage({
+            type: 'r4p-cancel-patient-switch',
+            patientId: _crPatientId,
+            source: 'outils'
+          }, window.location.origin);
+        } catch(ex){}
+        return;
+      }
+    }
+
+    _prescPatient = _crNouveau;
     try { _prescFillFromPatient(true); } catch(ex){ console.error('_prescFillFromPatient:', ex); }
-    _crPatientId = e.data.patient ? e.data.patient.id : null;
-    _crPevoContentHTML = null;
-    _crPevoCards = [];
-    var tog = document.getElementById('cr-pevo-toggle');
-    var grd = document.getElementById('cr-pevo-grid');
-    var sta = document.getElementById('cr-pevo-status');
-    if(tog) tog.checked = false;
-    if(grd) { grd.innerHTML = ''; grd.style.display = 'none'; }
-    if(sta) sta.style.display = 'none';
+    _crPatientId = _crNouveau ? _crNouveau.id : null;
+    _crViderPevo();
+    if(_crChange){
+      try { window._crAppliquerPatient(_crNouveau); } catch(ex){ console.error('_crAppliquerPatient:', ex); }
+    }
   }
   if(e.data && e.data.type==='r4p-pevo-response'){
     var tog2 = document.getElementById('cr-pevo-toggle');
@@ -6854,10 +6891,20 @@ _updateOutilsPatientBtns();
     });
   }
 
-  window.crReset = function() {
-    if (!confirm('Réinitialiser tous les champs du formulaire ?')) return;
-    document.querySelectorAll('#panel-cr input[type="text"], #panel-cr input[type="date"], #panel-cr input[type="number"]').forEach(function(el){ el.value = ''; });
-    document.querySelectorAll('#panel-cr select').forEach(function(el){ el.value = ''; });
+  /* Champs d'identite du patient. Au changement de patient on les REMPLIT
+     depuis le nouveau — les effacer juste avant n'aurait pas de sens. Le
+     bouton « Réinit. », lui, les vide aussi : il sert a partir sur quelqu'un
+     qui n'est pas dans la patientele. */
+  var CR_IDENTITE = ['cr-pat-civ','cr-pat-nom','cr-pat-prenom','cr-pat-dob'];
+
+  /* Le vidage est CADRE sur #panel-cr, jamais ecrit en liste de champs : un
+     champ ajoute demain est couvert d'office. La liste tenue a la main etait
+     precisement le defaut — les tests fonctionnels, ajoutes apres coup, ne
+     figuraient nulle part et survivaient a la reinitialisation. */
+  function _crResetCore(garderIdentite) {
+    var garde = garderIdentite ? CR_IDENTITE : [];
+    document.querySelectorAll('#panel-cr input[type="text"], #panel-cr input[type="date"], #panel-cr input[type="number"]').forEach(function(el){ if (garde.indexOf(el.id) < 0) el.value = ''; });
+    document.querySelectorAll('#panel-cr select').forEach(function(el){ if (garde.indexOf(el.id) < 0) el.value = ''; });
     document.querySelectorAll('#panel-cr textarea').forEach(function(el){ el.value = ''; crAutoExpand(el); });
     crPathos = [];
     crPatientSexe = '';
@@ -6887,6 +6934,100 @@ _updateOutilsPatientBtns();
     if (body) body.innerHTML = '<span class="letter-empty">Remplissez le formulaire et cliquez sur « ✦ Générer le courrier ».</span>';
     var graphsDiv = document.getElementById('cr-letter-graphs');
     if (graphsDiv) { graphsDiv.innerHTML = ''; graphsDiv.style.display = 'none'; }
+
+    /* Tests fonctionnels importes du bilan : ils appartiennent au patient
+       precedent. Sans ce vidage ils restaient listes et coches, et partaient
+       dans le courrier du suivant. */
+    _crTestsFonc = [];
+    _crTestsCoches = {};
+    _crRenderTestsFonc();
+
+    /* Courrier deja genere. Copie, mail et PDF lisent ces deux variables et
+       jamais le DOM : les laisser permettrait d'exporter le courrier de
+       l'ancien patient depuis un formulaire vide. */
+    _crTexteCourant = '';
+    _crHtmlCourant  = '';
+
+    _crViderPevo();
+    _crMarquerPropre();
+  }
+
+  /* Empreinte du formulaire, sur le modele de `_sessionHash` du builder : on
+     ne tient pas la liste des champs a la main, on serialise ce qui existe.
+     L'identite est exclue — elle est remplie automatiquement et ne temoigne
+     d'aucun travail du praticien. */
+  /* Seules les valeurs NON VIDES entrent dans l'empreinte, et elles sont
+     triees. Deux raisons, toutes deux vecues :
+     - la configuration du CR (amplitudes, signes, tests) arrive de Supabase
+       APRES l'ouverture et cree ses champs ; compter les champs vides ferait
+       deriver l'empreinte toute seule, et le formulaire passerait pour
+       entame sans que personne n'ait rien saisi ;
+     - l'ordre du DOM change quand ces blocs se redessinent.
+     Les cles a zero de `crSigns`/`crTests` sont ecartees pour la meme raison :
+     un objet vide et un objet tout a zero doivent se valoir. */
+  function _crActifs(o) {
+    var r = [];
+    Object.keys(o || {}).forEach(function(k){ if (o[k]) r.push(k + ':' + o[k]); });
+    return r.sort().join(',');
+  }
+
+  function _crSignature() {
+    var parts = [];
+    document.querySelectorAll('#panel-cr input, #panel-cr select, #panel-cr textarea').forEach(function(el){
+      if (CR_IDENTITE.indexOf(el.id) >= 0) return;
+      var v = (el.type === 'checkbox' || el.type === 'radio') ? (el.checked ? '1' : '') : (el.value || '');
+      if (!String(v).trim()) return;
+      parts.push((el.id || el.name || '') + '=' + v);
+    });
+    parts.sort();
+    parts.push('P:' + JSON.stringify(crPathos || []));
+    parts.push('S:' + _crActifs(crSigns));
+    parts.push('T:' + _crActifs(crTests));
+    parts.push('F:' + ((_crTestsFonc || []).length));
+    parts.push('G:' + (_crTexteCourant ? '1' : '0'));
+    return parts.join('|');
+  }
+
+  /* `null` tant qu'aucune reference n'a ete posee. Au tout premier message de
+     patient — celui que le parent envoie a l'ouverture — il n'y a rien a
+     perdre : sans ce cas, une boite de confirmation s'ouvrirait au lancement
+     de l'application. */
+  var _crRefSignature = null;
+  function _crMarquerPropre() { _crRefSignature = _crSignature(); }
+
+  /* Le sens du test est volontaire : tout ce qui n'est pas explicitement
+     ignore compte comme du travail. Un champ ajoute demain fera donc demander
+     confirmation plutot que disparaitre en silence. */
+  window._crEstEntame = function() {
+    if (_crRefSignature === null) return false;
+    return _crSignature() !== _crRefSignature;
+  };
+
+  /* Changement de patient : on vide tout SAUF l'identite, qu'on reecrit
+     depuis le patient recu. Les valeurs viennent du message lui-meme, jamais
+     du localStorage du bilan — celui-ci porte encore le patient precedent a
+     l'instant ou ce message arrive. */
+  window._crAppliquerPatient = function(pat) {
+    _crResetCore(true);
+    var prenomEl = document.getElementById('cr-pat-prenom');
+    var nomEl    = document.getElementById('cr-pat-nom');
+    var dobEl    = document.getElementById('cr-pat-dob');
+    var civEl    = document.getElementById('cr-pat-civ');
+    if (prenomEl) prenomEl.value = pat && pat.prenom ? pat.prenom : '';
+    if (nomEl)    nomEl.value    = pat && pat.nom ? String(pat.nom).toUpperCase() : '';
+    if (dobEl)    dobEl.value    = pat && pat.ddn ? pat.ddn : '';
+    if (civEl) {
+      var s = pat && pat.sexe ? String(pat.sexe).trim().toUpperCase().charAt(0) : '';
+      civEl.value = s === 'F' ? 'Mme' : (s === 'H' || s === 'M') ? 'M.' : '';
+      try { crUpdateGender(); } catch(e){}
+    }
+    try { crAutoFillObjet(); } catch(e){}
+    _crMarquerPropre();
+  };
+
+  window.crReset = function() {
+    if (!confirm('Réinitialiser tous les champs du formulaire ?')) return;
+    _crResetCore(false);
     _crToast('Formulaire réinitialisé');
   };
 
