@@ -156,7 +156,8 @@ sections: [
       { t:'Complétez pathologie, bilan clinique et plan', x:'Amplitudes, force, tests fonctionnels, signes cliniques, phase, évolution, plan de traitement — l\'aperçu à droite se met à jour à chaque champ.' },
       { t:'Exportez', x:'Copier la lettre, exporter en PDF ou envoyer par email directement.' },
       { t:'Changer de patient vide le formulaire', x:'Le nom, le prénom et la date de naissance sont réécrits depuis le nouveau patient ; tout le reste — pathologie, côté, amplitudes, signes, tests cochés, commentaire — repart de zéro, pour qu\'aucune donnée du patient précédent ne se retrouve dans son courrier. Si le CR est déjà entamé, une confirmation vous est demandée avant.' },
-      { t:'« ↺ Réinit. » pour un courrier hors patientèle', x:'Ce bouton vide le formulaire en entier, identité comprise — utile pour rédiger un CR concernant quelqu\'un qui n\'est pas dans vos patients.' }
+      { t:'« ↺ Réinit. » pour un courrier hors patientèle', x:'Ce bouton vide le formulaire en entier, identité comprise — utile pour rédiger un CR concernant quelqu\'un qui n\'est pas dans vos patients.' },
+      { t:'Les tests du bilan se mettent à jour tout seuls', x:'Dès que vous enregistrez quelque chose dans le bilan clinique, la liste « Tests du bilan » se recharge d\'elle-même — y compris après un changement de patient. Le bouton « ↻ Actualiser » ne sert plus qu\'en dépannage.' }
     ]},
   { id:'config-cr', titre:'Personnaliser le configurateur CR',
     intro:'Pathologies, amplitudes de référence, signes cliniques et statuts sont modifiables — vos réglages sont synchronisés sur votre compte.',

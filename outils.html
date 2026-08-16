@@ -4688,6 +4688,32 @@ function _crViderPevo(){
   if(sta) sta.style.display = 'none';
 }
 
+/* Les tests du bilan se rechargent SEULS. `bilan.html` ecrit la cle
+   `r4p-cr-med-tests` a chaque enregistrement, et l'evenement `storage` est
+   emis dans les AUTRES documents de la meme origine — donc ici, sans sondage
+   ni message a relayer par le parent.
+
+   Il n'y a pas de course : le bilan n'ecrit qu'apres avoir charge et
+   deserialise le patient (une seule ecriture, voir saveToStorage), donc bien
+   apres le vidage synchrone declenche ici par le changement de patient.
+
+   Sans ce branchement il fallait cliquer « Actualiser » a chaque changement
+   de patient, puisque le formulaire vide desormais la liste — le chargement
+   automatique existant ne se declenche qu'a l'ouverture de l'onglet CR, et
+   pas si l'on s'y trouve deja.
+
+   Petit differe : le bilan enregistre a chaque frappe, on ne redessine pas la
+   liste soixante fois pendant qu'une observation se tape. */
+var _crTestsMaj = null;
+window.addEventListener('storage', function(e){
+  if (e.key !== 'r4p-cr-med-tests') return;
+  clearTimeout(_crTestsMaj);
+  _crTestsMaj = setTimeout(function(){
+    try { window.crChargerTestsBilan(); }
+    catch(ex){ console.error('crChargerTestsBilan (storage):', ex); }
+  }, 300);
+});
+
 window.addEventListener('message', function(e){
   if(e.data && e.data.type==='r4p-profile'){
     try { localStorage.setItem('r4p-profile', JSON.stringify(e.data.profile)); } catch(ex){}
