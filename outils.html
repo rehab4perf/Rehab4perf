@@ -4721,6 +4721,38 @@ var _crTestsMaj = null;
    encore les valeurs de l'ancien. */
 var _crAttenteImport = false;
 var _crImportMaj = null;
+var _crPatientAttendu = null;
+
+/* Le bilan appartient-il DEJA au patient qu'on vient de selectionner ?
+   C'est ce controle qui rend l'import insensible a l'ordre des evenements :
+   il autorise a se servir de ce qui est deja en place, sans risquer de
+   reprendre les dates et le cote du patient precedent.
+
+   Il faut les deux chemins. Au rechargement de la page, `bilan.html` restaure
+   son brouillon depuis localStorage — sans reseau, donc tres tot, souvent
+   AVANT qu'outils.html n'ait recu le patient et arme l'attente. Cette
+   ecriture-la passait inapercue et l'import n'avait jamais lieu. A l'inverse,
+   lors d'un changement de patient en cours de session, le bilan doit d'abord
+   aller le chercher : la donnee n'arrive qu'apres, et seul l'evenement le
+   dit. */
+function _crBilanCorrespond(pat){
+  if (!pat) return false;
+  var b = {};
+  try { b = JSON.parse(localStorage.getItem('athletik-bilan') || '{}'); } catch(e){ return false; }
+  var bn = String(b['f-nom'] || '').trim().toLowerCase();
+  var bp = String(b['f-prenom'] || '').trim().toLowerCase();
+  if (!bn && !bp) return false;
+  return bn === String(pat.nom || '').trim().toLowerCase()
+      && bp === String(pat.prenom || '').trim().toLowerCase();
+}
+
+function _crTenterImport(){
+  if (!_crAttenteImport) return;
+  if (!_crBilanCorrespond(_crPatientAttendu)) return;
+  _crAttenteImport = false;
+  try { window.crImportPatient(true); }
+  catch(ex){ console.error('crImportPatient (auto):', ex); }
+}
 
 window.addEventListener('storage', function(e){
   if (e.key === 'r4p-cr-med-tests') {
@@ -4732,13 +4764,10 @@ window.addEventListener('storage', function(e){
     return;
   }
   if (e.key === 'athletik-bilan' && _crAttenteImport) {
+    /* Le bilan reecrit a chaque frappe et emet une rafale pendant qu'il
+       charge : on attend que les ecritures se taisent. */
     clearTimeout(_crImportMaj);
-    _crImportMaj = setTimeout(function(){
-      if (!_crAttenteImport) return;
-      _crAttenteImport = false;
-      try { window.crImportPatient(true); }
-      catch(ex){ console.error('crImportPatient (storage):', ex); }
-    }, 600);
+    _crImportMaj = setTimeout(_crTenterImport, 600);
   }
 });
 
@@ -4782,11 +4811,17 @@ window.addEventListener('message', function(e){
     _crViderPevo();
     if(_crChange){
       try { window._crAppliquerPatient(_crNouveau); } catch(ex){ console.error('_crAppliquerPatient:', ex); }
-      /* On arme l'import : le bilan va charger le nouveau patient puis ecrire
-         `athletik-bilan`, et c'est cette ecriture-la qui declenchera
-         l'association. Sans patient, rien a associer. */
+      /* On arme l'import, puis on tente TOUT DE SUITE : le bilan porte
+         peut-etre deja ce patient (rechargement de page, ou onglet Bilan
+         ouvert avant celui-ci). Si ce n'est pas lui, `_crBilanCorrespond` le
+         refuse et l'attente reste armee — l'ecriture du bilan la levera.
+         Une seconde tentative differee couvre le cas ou le bilan finit son
+         chargement sans qu'aucun evenement `storage` ne nous parvienne. */
       _crAttenteImport = !!_crNouveau;
+      _crPatientAttendu = _crNouveau;
       clearTimeout(_crImportMaj);
+      _crTenterImport();
+      if (_crAttenteImport) _crImportMaj = setTimeout(_crTenterImport, 1500);
     }
   }
   if(e.data && e.data.type==='r4p-pevo-response'){
