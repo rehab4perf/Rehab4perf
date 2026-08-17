@@ -1026,6 +1026,47 @@ var _calMonth = new Date().getMonth();
 var _calPickerDate = '';
 var _cloudCalEvents = [];
 var _stravaActivities = []; // activités Strava du patient courant
+
+/* Strava n'envoie pas qu'un `create` : il envoie un `update` a chaque
+   modification du titre, de l'equipement ou de la description, et parfois pour
+   son propre traitement differe. L'upsert du webhook ne precisait aucune cible
+   de conflit — il se rabattait donc sur la cle primaire et INSERAIT une ligne
+   neuve a chaque fois. Une seule sortie pouvait produire trois lignes.
+
+   `_buildUaMap()` ADDITIONNE la charge de chaque ligne : trois lignes, c'est
+   trois fois la charge, et l'ACWR part au rouge sans raison.
+
+   On dedoublonne donc a la LECTURE, une fois pour toutes les fonctions qui
+   lisent `_stravaActivities` — pas seulement dans le calcul de charge. C'est ce
+   qui rend la correction retroactive : les doublons deja en base cessent de
+   compter double sans qu'aucun nettoyage ne soit necessaire.
+
+   L'ORDRE de la requete (`date.asc`) doit survivre au dedoublonnage : on
+   remplace sur place au lieu de reconstruire depuis un objet indexe. Un
+   `strava_id` est numerique, et `Object.keys()` trierait alors les cles par
+   valeur croissante — l'agenda et les courbes se retrouveraient dans l'ordre
+   des identifiants Strava, pas dans l'ordre des dates. */
+function _dedoublonnerStrava(liste){
+  var sortie = [], indexParId = {};
+  liste.forEach(function(a){
+    if(!a) return;
+    /* Sans identifiant, aucun dedoublonnage possible : on garde plutot que de
+       risquer d'en perdre une. */
+    if(a.strava_id == null){ sortie.push(a); return; }
+    var cle = 'k' + a.strava_id;
+    if(!(cle in indexParId)){
+      indexParId[cle] = sortie.length;
+      sortie.push(a);
+      return;
+    }
+    var i = indexParId[cle];
+    /* Le lien vers une seance prime : le perdre casserait le panneau
+       « Realisee avec Strava » et ferait recompter l'activite comme libre.
+       A lien egal, la derniere recue gagne — c'est la plus a jour. */
+    if(!sortie[i].seance_id) sortie[i] = a;
+  });
+  return sortie;
+}
 var _calView = 'month';      // 'month' | 'week'
 var _calWeekStart = null;    // Date (lundi de la semaine affichée)
 
@@ -1097,7 +1138,7 @@ function renderCalendar() {
           .then(function(sr){ return sr.json(); })
           .then(function(sdata){
             if(_progPatient && _progPatient.id === _fetchPatientId)
-              _stravaActivities = Array.isArray(sdata) ? sdata : [];
+              _stravaActivities = _dedoublonnerStrava(Array.isArray(sdata) ? sdata : []);
             _ensureJ0ForPatient(_fetchPatientId, function(){ _renderCalendarUI(); });
             _fetchUnseenFb(_fetchPatientId);
           })
@@ -5795,9 +5836,60 @@ function _stravaDetailDropInnerHtml(act){
     }
   }
 
+  /* Suppression d'une activite importee. N'existait nulle part : un doublon
+     Strava, ou un trajet velo qu'on ne veut pas compter, restait dans la charge
+     sans aucun moyen de l'en sortir. */
+  var supprZone = '<div style="margin-top:8px;border-top:1px solid var(--border);padding-top:7px;">'
+    + '<button style="width:100%;padding:5px;border-radius:6px;border:1px solid #f0c9c4;background:#fff;'
+    + 'font-size:.72rem;cursor:pointer;color:#b91c1c;font-family:inherit;" '
+    + 'onclick="event.stopPropagation();_stravaSupprimer('+act.strava_id+')">'
+    + '🗑 Retirer cette activité</button></div>';
+
   return title + routeHtml
     + '<div class="srb-pills" style="margin-bottom:6px;">'+pillsHtml+'</div>'
-    + splitsHtml + lapsHtml + loadSplitsHtml + linkZone;
+    + splitsHtml + lapsHtml + loadSplitsHtml + linkZone + supprZone;
+}
+
+/* Supprime TOUTES les lignes portant ce `strava_id` pour ce patient. C'est
+   voulu : sur un doublon, c'est exactement ce qu'on veut ; sur une activite
+   unique, c'est la suppression demandee. Le `patient_id` borne la portee — sans
+   lui, une meme activite partagee entre deux dossiers disparaitrait des deux.
+
+   A savoir : la suppression n'est pas definitive cote Strava. Si l'athlete
+   modifie ensuite l'activite, le webhook la recreera. Rendre l'exclusion
+   durable demande une colonne « ignoree » en base — a faire avec la migration
+   qui ajoutera la contrainte unique. */
+function _stravaSupprimer(stravaId){
+  var act = _stravaActivities.find(function(a){ return a.strava_id === stravaId; });
+  if(!act || !_progPatient) return;
+  var nom = act.nom || 'cette activité';
+  if(!confirm('Retirer « ' + nom + ' » du dossier ?\n\n'
+    + 'Elle ne comptera plus dans la charge ni dans l\'ACWR.\n'
+    + 'Si l\'athlète modifie l\'activité sur Strava, elle réapparaîtra.')) return;
+
+  var url = SUPA_URL_P + '/rest/v1/strava_activities?strava_id=eq.' + encodeURIComponent(stravaId)
+          + '&patient_id=eq.' + encodeURIComponent(_progPatient.id);
+  _fetchRetry(url, {
+    method: 'DELETE',
+    headers: {
+      'apikey': SUPA_KEY_P,
+      'Authorization': 'Bearer ' + _progToken,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal'
+    }
+  }).then(function(r){
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    var drop = document.getElementById('_stravaDetailDrop');
+    if(drop) drop.remove();
+    /* On retire localement plutot que de tout recharger : le calendrier et les
+       courbes se redessinent immediatement, et l'ACWR se recalcule sans
+       l'activite retiree. */
+    _stravaActivities = _stravaActivities.filter(function(a){ return a.strava_id !== stravaId; });
+    _renderCalendarUI();
+    _showToast('🗑 Activité retirée');
+  }).catch(function(){
+    _showToast('⚠️ Suppression impossible — réessayez');
+  });
 }
 
 function _showStravaDetail(e, stravaId){

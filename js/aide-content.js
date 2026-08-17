@@ -542,7 +542,9 @@ sections: [
     intro:'Quand la liaison automatique n\'a pas osé (une muscu Strava un jour de séance renfo, par exemple).',
     etapes:[
       { t:'Cliquez sur l\'activité orange', x:'Le détail propose « 🔗 Lier à une séance du jour » avec la liste des séances planifiées ce jour-là.', img:true },
-      { t:'Ou « ✕ Délier » sur une activité déjà liée', x:'Le lien est enregistré en base : même résultat sur tous vos appareils.' }
+      { t:'Ou « ✕ Délier » sur une activité déjà liée', x:'Le lien est enregistré en base : même résultat sur tous vos appareils.' },
+      { t:'« 🗑 Retirer cette activité » pour l\'exclure de la charge', x:'Elle disparaît du dossier et ne compte plus dans la charge ni dans l\'ACWR — utile pour un trajet vélo que vous ne voulez pas comptabiliser. Attention : si l\'athlète modifie ensuite l\'activité sur Strava, elle réapparaîtra.' },
+      { t:'Les doublons Strava ne comptent plus double', x:'Strava peut envoyer plusieurs fois la même sortie (à chaque modification du titre, de l\'équipement…). Une sortie n\'est désormais comptée qu\'une fois, quel que soit le nombre de copies reçues — y compris pour les doublons déjà présents avant cette correction.' }
     ]},
   { id:'panneau-strava', titre:'Le panneau « Réalisée avec Strava »',
     intro:'La séance liée, ouverte dans le builder, affiche tout ce que Strava sait de la sortie.',
