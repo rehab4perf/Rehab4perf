@@ -544,7 +544,8 @@ sections: [
       { t:'Cliquez sur l\'activité orange', x:'Le détail propose « 🔗 Lier à une séance du jour » avec la liste des séances planifiées ce jour-là.', img:true },
       { t:'Ou « ✕ Délier » sur une activité déjà liée', x:'Le lien est enregistré en base : même résultat sur tous vos appareils.' },
       { t:'« 🗑 Retirer cette activité » pour l\'exclure de la charge', x:'Elle disparaît du dossier et ne compte plus dans la charge ni dans l\'ACWR — utile pour un trajet vélo que vous ne voulez pas comptabiliser. Attention : si l\'athlète modifie ensuite l\'activité sur Strava, elle réapparaîtra.' },
-      { t:'Les doublons Strava ne comptent plus double', x:'Strava peut envoyer plusieurs fois la même sortie (à chaque modification du titre, de l\'équipement…). Une sortie n\'est désormais comptée qu\'une fois, quel que soit le nombre de copies reçues — y compris pour les doublons déjà présents avant cette correction.' }
+      { t:'Les doublons probables sont signalés', x:'Quand deux activités du même jour portent le même nom avec des durées proches, la chip est cerclée de blanc et porte une marque. Le détail affiche les deux côte à côte — « 108 min / 53,2 km » contre « 107 min / 53,1 km » ne laisse aucun doute. C\'est le cas de la sortie enregistrée à la fois sur la montre et sur le téléphone : les deux comptent dans la charge et faussent l\'ACWR.' },
+      { t:'Le signalement ne supprime jamais tout seul', x:'Deux footings de 9 et 7 minutes le même jour peuvent être un échauffement et un retour au calme — deux efforts réels. Aucune règle ne peut trancher à votre place : demandez à l\'athlète, puis retirez celle qui fait doublon.' }
     ]},
   { id:'panneau-strava', titre:'Le panneau « Réalisée avec Strava »',
     intro:'La séance liée, ouverte dans le builder, affiche tout ce que Strava sait de la sortie.',

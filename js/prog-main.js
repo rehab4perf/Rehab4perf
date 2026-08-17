@@ -1067,6 +1067,85 @@ function _dedoublonnerStrava(liste){
   });
   return sortie;
 }
+/* ══════════════════════════════════════════════════════════════════════
+   DOUBLONS PROBABLES — signaler, jamais decider
+   ══════════════════════════════════════════════════════════════════════
+   `strava_id` est unique en base : la meme activite Strava ne peut pas exister
+   deux fois. Le vrai doublon est donc DEUX activites Strava distinctes pour un
+   seul effort — montre et telephone qui televersent tous les deux, ou un
+   enregistrement coupe puis relance. Vu en production :
+
+     « Sunset biking club » 108 min / 53,2 km  ET  107 min / 53,1 km
+
+   Les deux comptent dans la charge, et 107 minutes de velo comptees deux fois
+   suffisent a faire basculer un ACWR.
+
+   AUCUNE regle ne peut trancher a la place du praticien. Le meme jour, deux
+   lignes « Course a pied le midi » de 9 et 7 minutes sont peut-etre un
+   echauffement et un retour au calme — deux efforts reels. Supprimer
+   automatiquement effacerait de la charge vraie en silence. On SIGNALE donc, et
+   le praticien demande a son athlete.
+
+   Le signalement est volontairement LARGE : un faux positif coute un message,
+   un oubli coute un ACWR faux. D'ou deux criteres seulement — meme jour, meme
+   nom — et une bande de duree genereuse.
+
+   La bande : 15 % d'ecart, OU deux minutes d'ecart en absolu. La seconde
+   clause est indispensable sur les activites courtes, ou 15 % ne fait que
+   quelques secondes : 4 min contre 3 min, c'est 25 % d'ecart mais une seule
+   minute — a signaler. Elle evite aussi de rapprocher 31 min et 5 min, qui sont
+   bien deux efforts distincts. */
+var CAP_DOUBLON_ECART_REL = 0.15;
+var CAP_DOUBLON_ECART_ABS_S = 120;
+
+/* Le nom est comparé sans casse, sans accents, sans emoji ni ponctuation :
+   Strava renomme parfois d'un televersement a l'autre, et « Sunset biking
+   club 💆‍♂️ » ne doit pas differer de « sunset biking club ». */
+function _stravaNomNorm(nom){
+  return String(nom || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function _stravaDureesProches(a, b){
+  var da = a.duree_s || 0, db = b.duree_s || 0;
+  if(!da || !db) return false;
+  if(Math.abs(da - db) <= CAP_DOUBLON_ECART_ABS_S) return true;
+  return Math.abs(da - db) / Math.max(da, db) <= CAP_DOUBLON_ECART_REL;
+}
+
+/* Rend, pour chaque `strava_id`, la liste des activites du MEME jour qui lui
+   ressemblent. Calcule une fois par rendu : le cout est en n² sur les seules
+   activites d'une meme journee, jamais sur la liste entiere. */
+function _stravaDoublonsMap(){
+  var parJour = {}, res = {};
+  (_stravaActivities || []).forEach(function(a){
+    if(!a || !a.date) return;
+    (parJour[a.date] = parJour[a.date] || []).push(a);
+  });
+  Object.keys(parJour).forEach(function(d){
+    var jour = parJour[d];
+    if(jour.length < 2) return;
+    jour.forEach(function(a){
+      var nomA = _stravaNomNorm(a.nom);
+      if(!nomA) return;   // sans nom, aucun rapprochement fiable
+      var jumeaux = jour.filter(function(b){
+        return b !== a
+          && b.strava_id !== a.strava_id
+          && _stravaNomNorm(b.nom) === nomA
+          && _stravaDureesProches(a, b);
+      });
+      if(jumeaux.length) res['k' + a.strava_id] = jumeaux;
+    });
+  });
+  return res;
+}
+
+var _stravaDoublons = {};
+function _stravaJumeaux(stravaId){ return _stravaDoublons['k' + stravaId] || []; }
+
 var _calView = 'month';      // 'month' | 'week'
 var _calWeekStart = null;    // Date (lundi de la semaine affichée)
 
@@ -1137,8 +1216,10 @@ function renderCalendar() {
         _fetchRetry(stravaUrl, { headers: calHeaders })
           .then(function(sr){ return sr.json(); })
           .then(function(sdata){
-            if(_progPatient && _progPatient.id === _fetchPatientId)
+            if(_progPatient && _progPatient.id === _fetchPatientId){
               _stravaActivities = _dedoublonnerStrava(Array.isArray(sdata) ? sdata : []);
+              _stravaDoublons = _stravaDoublonsMap();
+            }
             _ensureJ0ForPatient(_fetchPatientId, function(){ _renderCalendarUI(); });
             _fetchUnseenFb(_fetchPatientId);
           })
@@ -1669,10 +1750,18 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
       // Regroupement : une seule chip compacte pour toutes les activites libres du jour
       var _grpEmojis = _unlinked.map(function(a){ return _typeMap[a.type]||'⚡'; }).join('');
       var _grpTitle = _unlinked.map(function(a){ return (a.nom||a.type||'Activité'); }).join(' · ');
+      /* C'est ICI que les doublons se cachent le plus souvent : deux activites
+         libres le meme jour sont repliees en une seule chip, et sans marque
+         rien ne distingue « renfo + footing » de « la meme sortie deux fois ». */
+      var _grpDouble = _unlinked.some(function(a){ return _stravaJumeaux(a.strava_id).length; });
       allChips.push(
-        '<div class="cal-session-chip" style="background:#FC4C02;color:#fff;cursor:pointer;opacity:.9;" title="'+escH(_grpTitle)+'"'
+        '<div class="cal-session-chip" style="background:#FC4C02;color:#fff;cursor:pointer;opacity:.9;'
+        +(_grpDouble ? 'box-shadow:inset 0 0 0 1.5px #fff;' : '')+'" title="'
+        +escH(_grpTitle + (_grpDouble ? '\n⚠ Doublon probable — ouvrez pour vérifier' : ''))+'"'
         +' onclick="event.stopPropagation();_showStravaGroup(event,\''+dateStr+'\')">'
         +'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">'+_grpEmojis+' '+_unlinked.length+' activités</span>'
+        +(_grpDouble ? '<span title="Doublon probable" style="flex-shrink:0;background:#fff;color:#FC4C02;'
+          +'border-radius:3px;padding:0 3px;font-size:.56rem;font-weight:800;margin-left:2px;">⚠</span>' : '')
         +'</div>'
       );
     } else {
@@ -1682,12 +1771,26 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
         var dur  = act.duree_s   ? Math.round(act.duree_s/60)+'min' : '';
         var meta = [dist, dur].filter(Boolean).join(' · ');
         var label = act.nom ? act.nom.slice(0,16)+(act.nom.length>16?'…':'') : (act.type||'Activité');
+        /* Marque de doublon probable : elle attire l'oeil sans rien decider.
+           L'infobulle nomme le jumeau, pour comprendre sans ouvrir. */
+        var jum = _stravaJumeaux(act.strava_id);
+        var marque = '', titreSup = '';
+        if(jum.length){
+          titreSup = '\n⚠ Doublon probable de : '
+            + jum.map(function(b){ return (b.nom||b.type||'?') + ' — ' + Math.round((b.duree_s||0)/60) + ' min'; }).join(', ');
+          marque = ' <span title="Doublon probable" style="flex-shrink:0;display:inline-flex;align-items:center;'
+            + 'background:#fff;color:#FC4C02;border-radius:3px;padding:0 3px;font-size:.56rem;font-weight:800;">'
+            + '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="9" height="9" fill="none" '
+            + 'stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="margin-right:1px;">'
+            + '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>2×</span>';
+        }
         allChips.push(
-          '<div class="cal-session-chip" style="background:#FC4C02;color:#fff;cursor:pointer;opacity:.9;" title="'
-          +escH((act.nom||act.type||'')+(meta?' — '+meta:''))+'" onclick="event.stopPropagation();_showStravaDetail(event,'+act.strava_id+')">'
+          '<div class="cal-session-chip" style="background:#FC4C02;color:#fff;cursor:pointer;opacity:.9;'
+          +(jum.length ? 'box-shadow:inset 0 0 0 1.5px #fff;' : '')+'" title="'
+          +escH((act.nom||act.type||'')+(meta?' — '+meta:'')+titreSup)+'" onclick="event.stopPropagation();_showStravaDetail(event,'+act.strava_id+')">'
           +'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">'+emoji+' '+escH(label)
           +(meta ? ' <span style="font-size:.58rem;font-weight:800;padding:1px 4px;border-radius:3px;background:rgba(0,0,0,.2);">'+escH(meta)+'</span>' : '')
-          +'</span>'
+          +'</span>' + marque
           +'</div>'
         );
       });
@@ -5836,6 +5939,33 @@ function _stravaDetailDropInnerHtml(act){
     }
   }
 
+  /* Doublon probable : on NOMME le jumeau et on affiche les deux chiffres cote
+     a cote, parce que c'est l'ecart qui permet de trancher — « 108 min / 53,2 km »
+     contre « 107 min / 53,1 km » ne laisse aucun doute, « 9 min » contre
+     « 7 min » en laisse un. Aucun bouton ne supprime a votre place. */
+  var _jum = _stravaJumeaux(act.strava_id);
+  var doublonZone = '';
+  if(_jum.length){
+    var _fmtJum = function(b){
+      var dj = b.distance_m ? (b.distance_m/1000).toFixed(1).replace('.',',') + ' km' : '';
+      return '<div style="display:flex;justify-content:space-between;gap:8px;margin-top:3px;">'
+        + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escH(b.nom || b.type || '?') + '</span>'
+        + '<span style="flex-shrink:0;font-variant-numeric:tabular-nums;">'
+        + Math.round((b.duree_s||0)/60) + ' min' + (dj ? ' · ' + dj : '') + '</span></div>';
+    };
+    var _dm = act.distance_m ? (act.distance_m/1000).toFixed(1).replace('.',',') + ' km' : '';
+    doublonZone = '<div style="margin-top:8px;background:#FFF4ED;border:1px solid #f6cdb4;border-radius:6px;padding:6px 8px;font-size:.7rem;color:#8a4b1d;">'
+      + '<div style="font-weight:700;margin-bottom:3px;">⚠ Doublon probable</div>'
+      + '<div style="display:flex;justify-content:space-between;gap:8px;">'
+      + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;">Celle-ci</span>'
+      + '<span style="flex-shrink:0;font-variant-numeric:tabular-nums;font-weight:600;">'
+      + Math.round((act.duree_s||0)/60) + ' min' + (_dm ? ' · ' + _dm : '') + '</span></div>'
+      + _jum.map(_fmtJum).join('')
+      + '<div style="margin-top:5px;font-size:.66rem;opacity:.85;">Même jour, même nom, durées proches. '
+      + 'Les deux comptent dans la charge — demandez à l\'athlète, puis retirez celle qui fait doublon.</div>'
+      + '</div>';
+  }
+
   /* Suppression d'une activite importee. N'existait nulle part : un doublon
      Strava, ou un trajet velo qu'on ne veut pas compter, restait dans la charge
      sans aucun moyen de l'en sortir. */
@@ -5847,7 +5977,7 @@ function _stravaDetailDropInnerHtml(act){
 
   return title + routeHtml
     + '<div class="srb-pills" style="margin-bottom:6px;">'+pillsHtml+'</div>'
-    + splitsHtml + lapsHtml + loadSplitsHtml + linkZone + supprZone;
+    + splitsHtml + lapsHtml + loadSplitsHtml + doublonZone + linkZone + supprZone;
 }
 
 /* Supprime TOUTES les lignes portant ce `strava_id` pour ce patient. C'est
@@ -5885,6 +6015,9 @@ function _stravaSupprimer(stravaId){
        courbes se redessinent immediatement, et l'ACWR se recalcule sans
        l'activite retiree. */
     _stravaActivities = _stravaActivities.filter(function(a){ return a.strava_id !== stravaId; });
+    /* Recalcul du signalement : sans ca, l'activite restante garderait sa
+       marque « doublon probable » alors que son jumeau vient de partir. */
+    _stravaDoublons = _stravaDoublonsMap();
     _renderCalendarUI();
     _showToast('🗑 Activité retirée');
   }).catch(function(){

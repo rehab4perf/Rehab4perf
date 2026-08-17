@@ -126,5 +126,103 @@ verifier('appliqué au chargement des activités',
     /_stravaActivities\s*=\s*_stravaActivities\.filter/.test(zone));
 }
 
+/* ── 8. Signalement de doublon probable ──
+   Cas tirés des données RÉELLES du praticien (requête du 17/08/2026). Une
+   règle inventée en chambre passerait à côté : ce sont ces lignes-là qu'il
+   faut savoir classer. */
+{
+  const zoneDet = ['_stravaNomNorm', '_stravaDureesProches', '_stravaDoublonsMap', '_stravaJumeaux']
+    .map(n => {
+      const i = src.indexOf('function ' + n);
+      return i < 0 ? '' : src.slice(i, src.indexOf('\n}', i) + 2);
+    }).join('\n');
+  const consts = (src.match(/var CAP_DOUBLON_ECART_REL[^\n]*\n[^\n]*CAP_DOUBLON_ECART_ABS_S[^\n]*/) || [''])[0];
+
+  const bac = new Function('activites',
+    'var _stravaActivities = activites;\n' + consts + '\n' + zoneDet +
+    '\nreturn _stravaDoublonsMap();')
+
+  const flagues = (acts) => {
+    const m = bac(acts);
+    return acts.filter(a => (m['k' + a.strava_id] || []).length).map(a => a.strava_id);
+  };
+
+  /* Le vrai doublon vu en production : même nom, 108 vs 107 min, 53,2 vs 53,1 km. */
+  verifier('Sunset biking club (108 vs 107 min) → signalé',
+    flagues([
+      { strava_id: 19700575646, date: '2026-08-10', nom: 'Sunset biking club 💆‍♂️', duree_s: 108 * 60, distance_m: 53200 },
+      { strava_id: 19700765306, date: '2026-08-10', nom: 'Sunset biking club 💆‍♂️', duree_s: 107 * 60, distance_m: 53100 },
+    ]).length === 2);
+
+  /* 19 vs 18 min : 5,3 % d'écart. Une bande de 5 % l'aurait raté. */
+  verifier('Entraînement en soirée (19 vs 18 min) → signalé',
+    flagues([
+      { strava_id: 19204804470, date: '2026-07-06', nom: 'Entraînement en soirée', duree_s: 19 * 60 },
+      { strava_id: 19205098236, date: '2026-07-06', nom: 'Entraînement en soirée', duree_s: 18 * 60 },
+    ]).length === 2);
+
+  /* Deux efforts RÉELS le même jour : noms différents, rien à signaler. */
+  verifier('renfo + footing (noms différents) → non signalé',
+    flagues([
+      { strava_id: 1, date: '2026-08-15', nom: 'RUN 🥵', duree_s: 28 * 60, distance_m: 5000 },
+      { strava_id: 2, date: '2026-08-15', nom: 'RENFO', duree_s: 17 * 60 },
+    ]).length === 0);
+
+  /* Même nom mais 31 min contre 5 min : deux efforts distincts, la clause des
+     deux minutes ne doit PAS les rapprocher. */
+  verifier('même nom, 31 vs 5 min → non signalé',
+    flagues([
+      { strava_id: 1, date: '2026-07-27', nom: 'ALTERNER FOOTING & RENFO', duree_s: 31 * 60, distance_m: 4400 },
+      { strava_id: 2, date: '2026-07-27', nom: 'ALTERNER FOOTING & RENFO', duree_s: 5 * 60 },
+    ]).length === 0);
+
+  /* 4 vs 3 min : 25 % d'écart mais une seule minute. Sur des activités courtes
+     c'est la clause absolue qui doit prendre le relais. */
+  verifier('même nom, 4 vs 3 min → signalé (clause des 2 minutes)',
+    flagues([
+      { strava_id: 1, date: '2026-07-27', nom: 'ALTERNER FOOTING & RENFO', duree_s: 4 * 60 },
+      { strava_id: 2, date: '2026-07-27', nom: 'ALTERNER FOOTING & RENFO', duree_s: 3 * 60 },
+    ]).length === 2);
+
+  /* Deux jours différents ne se comparent jamais, même nom identique. */
+  verifier('même nom mais jours différents → non signalé',
+    flagues([
+      { strava_id: 1, date: '2026-08-10', nom: 'Muscu', duree_s: 60 * 60 },
+      { strava_id: 2, date: '2026-08-11', nom: 'Muscu', duree_s: 60 * 60 },
+    ]).length === 0);
+
+  /* Emoji, accents et casse ne doivent pas séparer deux lignes jumelles :
+     Strava renomme parfois d'un téléversement à l'autre. */
+  verifier('nom normalisé (emoji, accents, casse) → signalé',
+    flagues([
+      { strava_id: 1, date: '2026-08-10', nom: 'Résidence d’été 🌶️', duree_s: 55 * 60 },
+      { strava_id: 2, date: '2026-08-10', nom: 'RESIDENCE D ETE', duree_s: 55 * 60 },
+    ]).length === 2);
+
+  /* Sans nom, aucun rapprochement fiable : on se tait plutôt que d'inventer. */
+  verifier('activités sans nom → non signalées',
+    flagues([
+      { strava_id: 1, date: '2026-08-10', nom: '', duree_s: 30 * 60 },
+      { strava_id: 2, date: '2026-08-10', nom: null, duree_s: 30 * 60 },
+    ]).length === 0);
+
+  /* Une durée manquante ne doit pas produire un rapprochement par défaut. */
+  verifier('durée absente → non signalée',
+    flagues([
+      { strava_id: 1, date: '2026-08-10', nom: 'Muscu', duree_s: 0 },
+      { strava_id: 2, date: '2026-08-10', nom: 'Muscu', duree_s: 0 },
+    ]).length === 0);
+}
+
+/* ── 9. Le signalement est branché, et recalculé après suppression ── */
+verifier('signalement calculé au chargement',
+  /_stravaDoublons\s*=\s*_stravaDoublonsMap\(\)/.test(src));
+{
+  const i = src.indexOf('function _stravaSupprimer');
+  verifier('signalement recalculé après suppression',
+    /_stravaDoublons\s*=\s*_stravaDoublonsMap\(\)/.test(src.slice(i, i + 1600)));
+}
+verifier('la chip groupée porte la marque', /_grpDouble/.test(src));
+
 console.log(echecs ? '\n' + echecs + ' cas en échec\n' : '\nTous les cas passent\n');
 process.exit(echecs ? 1 : 0);
