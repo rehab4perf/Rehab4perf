@@ -883,6 +883,29 @@ td.bl-row-rail button:disabled { opacity: .3 !important; cursor: default; }
 }
 .af-row.af-ok input[type=checkbox] { accent-color: var(--green); }
 .af-obs { padding: 8px 22px; border-bottom: 1px solid var(--border); }
+/* Les observations de l'analyse fonctionnelle étaient des champs d'une ligne :
+   au-delà d'une phrase le texte défilait hors du champ et n'était plus
+   relisible. Ce sont des <textarea> dont la hauteur suit le contenu
+   (voir _afGrandir dans js/bilan.js) — d'où resize:none et overflow:hidden,
+   c'est le script qui dimensionne, pas la poignée ni une barre de défilement. */
+textarea.mob-note-inp {
+  resize: none; overflow: hidden; display: block;
+  line-height: 1.5; min-height: 26px;
+}
+/* Observations par côté du squat unipodal, alignées sur ses colonnes G/D. */
+.af-obs2 {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+  background: var(--border); border-bottom: 1px solid var(--border);
+}
+.af-obs2 > div { padding: 8px 14px 10px; }
+.af-obs2 > div:first-child { background: var(--surface); }
+.af-obs2 > div:last-child  { background: var(--surface2); }
+.af-obs2 > div:last-child textarea { background: var(--surface); }
+.af-obs-cap {
+  font-size: .68rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--text2); margin-bottom: 5px;
+}
+@media (max-width: 620px) { .af-obs2 { grid-template-columns: 1fr; } }
 .af-synth { padding: 9px 22px; font-size: .82rem; line-height: 1.45; background: var(--surface2); border-bottom: 1px solid var(--border); }
 .result-cell { padding: 6px 8px; width: 130px; }
 .result-cell select {
@@ -5794,7 +5817,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260806i"></script>
-<script src="js/bilan.js?v=20260815d"></script>
+<script src="js/bilan.js?v=20260816a"></script>
 
 </body>
 </html>

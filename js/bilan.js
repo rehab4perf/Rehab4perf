@@ -2976,6 +2976,7 @@ function _resetBilanFields(){
      précédent. Même chose pour la jauge de cadence et la synthèse, qui
      seraient restées affichées avec les constats de l'ancien dossier. */
   try{ _cpRefresh(); }catch(ex){}
+  try{ _afGrandirTous(); }catch(ex){}
   _suppressDirty = false;
   _bilanModified = false;
   _refreshCRIfVisible();
@@ -4548,6 +4549,11 @@ function _deserializeBilan(data){
   try{ _afRefreshAll(); }catch(ex){}
   try{ _imgFileRenderAll(); }catch(ex){}
   try{ _cpRefresh(); }catch(ex){}
+  /* Les observations de l'analyse fonctionnelle sont des zones dont la hauteur
+     suit le contenu. Une valeur restaurée par script ne déclenche aucun
+     `input` : sans ce rappel, trois lignes de texte s'affichent dans une
+     boîte d'une ligne et le praticien ne voit pas ce qu'il avait écrit. */
+  try{ _afGrandirTous(); }catch(ex){}
   _suppressDirty = false;
   _bilanModified = false;
   try{ _calcWainnerCerv(); _calcDN4(); _calcLaslett(); _calcHaLaslett(); _calcInstabLomb(); _calcFlexionLomb(); _calcMckenzie(); }catch(ex){}
@@ -5625,6 +5631,10 @@ function showPage(id) {
   if (pg) { pg.style.display = 'flex'; pg.classList.add('active'); }
   var nb = document.querySelector('[data-page="' + id + '"]');
   if (nb) nb.classList.add('active');
+  /* Les zones d'observation de l'analyse fonctionnelle ne peuvent être
+     dimensionnées que visibles — d'où ce rappel à chaque ouverture de page,
+     et pas seulement au chargement du bilan. */
+  try { _afGrandirTous(); } catch(e){}
   if (id === 'cr') buildCR();
   if (id === 'cr-tf') buildCRTF();
   if (id === 'evolution') _renderEvolutionPage();
@@ -7344,7 +7354,7 @@ function _buildAllTestsHtml() {
       _ohsTone === 'muted' ? '' : _ohsTone,
       _ohsFieldIds);
   }
-  if (_slsQTxt || _slsQ.obs || _slsQ.rows.length) {
+  if (_slsQTxt || _slsQ.obs || _slsQ.obsG || _slsQ.obsD || _slsQ.rows.length) {
     // Grille G/D : le côté est l'information clé du squat unipodal, une liste
     // à puces obligerait à répéter « à gauche / à droite » sur chaque ligne.
     var _slsHtml = '<div class="cr-af"><div class="cr-af-tbl">'
@@ -7355,6 +7365,11 @@ function _buildAllTestsHtml() {
         + '<div class="c ' + (r.d ? 'on' : 'off') + '">' + (r.d ? '●' : '·') + '</div>';
     });
     _slsHtml += '</div>';
+    /* Les observations par côté sont NOMMÉES dans le CR. Les fondre dans un
+       seul paragraphe ferait perdre l'information la plus utile du test — de
+       quel côté on parle. */
+    if (_slsQ.obsG) _slsHtml += '<div class="cr-af-sy"><strong>Gauche :</strong> ' + nl2br(_slsQ.obsG) + '</div>';
+    if (_slsQ.obsD) _slsHtml += '<div class="cr-af-sy"><strong>Droit :</strong> ' + nl2br(_slsQ.obsD) + '</div>';
     if (_slsQ.obs) _slsHtml += '<div class="cr-af-sy">' + nl2br(_slsQ.obs) + '</div>';
     if (_slsQTxt)  _slsHtml += '<div class="cr-af-sy">' + _slsQTxt + '</div>';
     _slsHtml += '</div>';
@@ -8534,6 +8549,7 @@ function loadFromStorage() {
     updateBadges();
     _afRefreshAll();
     _cpRefresh();
+    _afGrandirTous();
   } catch(e) {}
 }
 
@@ -9417,11 +9433,47 @@ function _afOhsFieldIds(pg){
   return ids;
 }
 function _afSlsFieldIds(pg){
-  var ids = ['af-' + pg + '-sls-obs'];
+  /* `-obs` est la note GÉNÉRALE, antérieure aux observations par côté. Elle est
+     conservée telle quelle : des bilans enregistrés y ont du texte, décrivant
+     répétitions et profondeur — pas un côté. La renommer « gauche » ferait dire
+     à d'anciennes saisies ce qu'elles ne disaient pas. `-obs-g` et `-obs-d`
+     sont donc AJOUTÉS, jamais un détournement de l'ancien. */
+  var ids = ['af-' + pg + '-sls-obs', 'af-' + pg + '-sls-obs-g', 'af-' + pg + '-sls-obs-d'];
   AF_SLS_ITEMS.forEach(function(it){
     ids.push('af-' + pg + '-sls-' + it[0] + '-g', 'af-' + pg + '-sls-' + it[0] + '-d', 'af-' + pg + '-sls-' + it[0] + '-obs');
   });
   return ids;
+}
+
+/* Les observations étaient des <input type="text"> : une seule ligne, donc
+   illisibles dès qu'on écrivait une phrase — le texte défilait hors du champ.
+   Ce sont des <textarea> qui grandissent en écrivant.
+
+   La hauteur est remise à `auto` AVANT d'être relue : sans ça `scrollHeight`
+   ne redescend jamais quand on efface, et la boîte reste haute pour toujours. */
+function _afGrandir(t){
+  if(!t) return;
+  /* Un élément d'une page masquée a un `scrollHeight` de 0. Écrire cette
+     hauteur la figerait au plancher CSS, et un texte de trois lignes restauré
+     resterait coupé à une ligne — sans rien pour le signaler. On ne dimensionne
+     donc que ce qui est réellement affiché, et `showPage` repasse au moment où
+     la page s'ouvre. */
+  if(t.offsetParent === null) return;
+  t.style.height = 'auto';
+  t.style.height = t.scrollHeight + 'px';
+}
+
+/* À appeler après tout remplissage programmatique — rendu initial et
+   chargement d'un bilan. Un champ restauré garderait sinon la hauteur d'une
+   ligne pour trois lignes de texte, et le praticien ne verrait pas ce qu'il
+   avait écrit la fois précédente. */
+function _afGrandirTous(){
+  document.querySelectorAll('textarea.af-ta').forEach(_afGrandir);
+}
+
+function _afObsTa(id, ph, pg, kind){
+  return '<textarea class="mob-note-inp af-ta" rows="1" id="' + id + '" placeholder="' + ph + '" '
+       + 'oninput="_afGrandir(this);_afMarkTouched(\'' + pg + '\',\'' + kind + '\',event)"></textarea>';
 }
 
 // Une case à cocher n'a que 2 états (coché/décoché) : contrairement à un champ
@@ -9504,7 +9556,7 @@ function _afRender(){
       g.items.forEach(function(it){
         h += '<div class="af-row af-' + g.type + '"><span>' + it[1] + '</span>'
            + '<input type="checkbox" id="af-' + p.pg + '-ohs-' + it[0] + '" onchange="_afSynthOhs(\'' + p.pg + '\');_afMarkTouched(\'' + p.pg + '\',\'ohs\',event)">'
-           + '<input type="text" class="mob-note-inp" id="af-' + p.pg + '-ohs-' + it[0] + '-obs" placeholder="Observation…" oninput="_afMarkTouched(\'' + p.pg + '\',\'ohs\',event)"></div>';
+           + _afObsTa('af-' + p.pg + '-ohs-' + it[0] + '-obs', 'Observation…', p.pg, 'ohs') + '</div>';
       });
     });
     h += '<div class="af-obs">'
@@ -9512,8 +9564,10 @@ function _afRender(){
        + '<select id="af-' + p.pg + '-ohs-corr" onchange="_afSynthOhs(\'' + p.pg + '\');_afMarkTouched(\'' + p.pg + '\',\'ohs\',event)" style="max-width:280px;width:100%">'
        + '<option value="">—</option><option value="oui">Corrige le défaut</option><option value="non">Ne corrige pas</option>'
        + '</select></div>';
-    h += '<div class="af-obs"><input type="text" class="mob-note-inp" id="af-' + p.pg + '-ohs-obs" '
-       + 'placeholder="Profondeur atteinte, stratégie de descente, localisation de la douleur…" oninput="_afMarkTouched(\'' + p.pg + '\',\'ohs\',event)"></div>';
+    h += '<div class="af-obs"><div class="af-obs-cap">Observation générale — overhead squat</div>'
+       + _afObsTa('af-' + p.pg + '-ohs-obs',
+                  'Profondeur atteinte, stratégie de descente, localisation de la douleur…',
+                  p.pg, 'ohs') + '</div>';
     h += '<div class="af-synth" id="af-' + p.pg + '-ohs-synth">—</div>';
     // ── Squat unipodal (par côté) ──
     h += '<div class="af-mtitle" style="border-top:2px solid var(--border)"><span>Squat unipodal</span>'
@@ -9525,13 +9579,24 @@ function _afRender(){
       h += '<div class="af-row2"><span>' + it[1] + '</span>'
          + '<input type="checkbox" id="af-' + p.pg + '-sls-' + it[0] + '-g" onchange="_afSynthSls(\'' + p.pg + '\');_afMarkTouched(\'' + p.pg + '\',\'sls\',event)">'
          + '<input type="checkbox" id="af-' + p.pg + '-sls-' + it[0] + '-d" onchange="_afSynthSls(\'' + p.pg + '\');_afMarkTouched(\'' + p.pg + '\',\'sls\',event)">'
-         + '<input type="text" class="mob-note-inp" id="af-' + p.pg + '-sls-' + it[0] + '-obs" placeholder="Observation…" oninput="_afMarkTouched(\'' + p.pg + '\',\'sls\',event)"></div>';
+         + _afObsTa('af-' + p.pg + '-sls-' + it[0] + '-obs', 'Observation…', p.pg, 'sls') + '</div>';
     });
-    h += '<div class="af-obs"><input type="text" class="mob-note-inp" id="af-' + p.pg + '-sls-obs" '
-       + 'placeholder="Nombre de répétitions, profondeur atteinte, appui controlatéral…" oninput="_afMarkTouched(\'' + p.pg + '\',\'sls\',event)"></div>';
+    /* Observations par côté, alignées sur les colonnes G/D des cases : le côté
+       est l'information clé de ce test, et le regard descend dans la même
+       verticale que les cases qu'il vient de cocher. */
+    h += '<div class="af-obs2">'
+       + '<div><div class="af-obs-cap">Observations — Gauche</div>'
+       + _afObsTa('af-' + p.pg + '-sls-obs-g', 'Exécution, profondeur, nombre de répétitions…', p.pg, 'sls')
+       + '</div>'
+       + '<div><div class="af-obs-cap">Observations — Droit</div>'
+       + _afObsTa('af-' + p.pg + '-sls-obs-d', 'Exécution, profondeur, nombre de répétitions…', p.pg, 'sls')
+       + '</div></div>';
+    h += '<div class="af-obs"><div class="af-obs-cap">Note générale — squat unipodal</div>'
+       + _afObsTa('af-' + p.pg + '-sls-obs', 'Ce qui vaut pour les deux côtés…', p.pg, 'sls') + '</div>';
     h += '<div class="af-synth" id="af-' + p.pg + '-sls-synth" style="border-bottom:none">—</div>';
     host.innerHTML = h;
   });
+  _afGrandirTous();
 }
 
 function _afOhsData(pg){
@@ -9600,7 +9665,9 @@ function _afSlsData(pg){
     else if(cd) onlyD.push(it[2]);
   });
   return { g:g, d:d, both:both, onlyG:onlyG, onlyD:onlyD, notes:notes, n:AF_SLS_ITEMS.length, rows:rows,
-           obs:(document.getElementById('af-' + pg + '-sls-obs')||{}).value || '' };
+           obs:(document.getElementById('af-' + pg + '-sls-obs')||{}).value || '',
+           obsG:(document.getElementById('af-' + pg + '-sls-obs-g')||{}).value || '',
+           obsD:(document.getElementById('af-' + pg + '-sls-obs-d')||{}).value || '' };
 }
 
 function _afSlsText(s){
