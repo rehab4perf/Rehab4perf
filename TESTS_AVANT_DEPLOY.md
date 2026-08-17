@@ -19,6 +19,9 @@ node qualite/hash-cas.js
 node qualite/templates-cas.js
 node qualite/feedback-cas.js
 node qualite/cap-cas.js
+node qualite/course-cas.js
+node qualite/prehension-cas.js
+node qualite/tactile-cas.js
 ```
 
 - [ ] Sortie verte. Une variable CSS non définie est ignorée en silence par le

@@ -1519,9 +1519,10 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
             + '<span class="cal-sel-check" style="font-size:.75rem;font-weight:800;flex-shrink:0;margin-left:2px;">'+(capSel?'✓':'')+'</span>'
             + '</div>';
         }
-        var capEvtAttrs = _isTouchDevice
-          ? ' ontouchstart="_chipTouchStart(event,\''+ev.id+'\')" ontouchmove="_chipTouchMove(event)" ontouchend="_chipTouchEnd(event,\''+ev.id+'\')"'
-          : ' draggable="true" onclick="event.stopPropagation();_openChipInBuilder(\''+ev.programme_id+'\',\''+dateStr+'\',\''+ev.id+'\')" ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"';
+        var capEvtAttrs = ' onclick="event.stopPropagation();_chipOuvrirClic(\''+ev.programme_id+'\',\''+dateStr+'\',\''+ev.id+'\')"'
+          + (_isTouchDevice
+              ? ' ontouchstart="_chipTouchStart(event,\''+ev.id+'\')" ontouchmove="_chipTouchMove(event)" ontouchend="_chipTouchEnd(event,\''+ev.id+'\')"'
+              : ' draggable="true" ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"');
         return '<div class="cal-session-chip" style="background:'+capBg+';color:#fff;cursor:grab;" title="'+escH(nom)+'"'
           + capEvtAttrs + '>'
           + '<button class="cal-chip-more" onclick="event.stopPropagation();_showChipDropdown(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')" ontouchend="event.stopPropagation();event.preventDefault();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')">⋮</button>'
@@ -1548,9 +1549,10 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
             + '<span class="cal-sel-check" style="font-size:.75rem;font-weight:800;flex-shrink:0;margin-left:2px;">'+(hsrSel?'✓':'')+'</span>'
             + '</div>';
         }
-        var hsrEvtAttrs = _isTouchDevice
-          ? ' ontouchstart="_chipTouchStart(event,\''+ev.id+'\')" ontouchmove="_chipTouchMove(event)" ontouchend="_chipTouchEnd(event,\''+ev.id+'\')"'
-          : ' draggable="true" onclick="event.stopPropagation();_openChipInBuilder(\''+ev.programme_id+'\',\''+dateStr+'\',\''+ev.id+'\')" ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"';
+        var hsrEvtAttrs = ' onclick="event.stopPropagation();_chipOuvrirClic(\''+ev.programme_id+'\',\''+dateStr+'\',\''+ev.id+'\')"'
+          + (_isTouchDevice
+              ? ' ontouchstart="_chipTouchStart(event,\''+ev.id+'\')" ontouchmove="_chipTouchMove(event)" ontouchend="_chipTouchEnd(event,\''+ev.id+'\')"'
+              : ' draggable="true" ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"');
         return '<div class="cal-session-chip" style="background:'+hsrBg+';color:#fff;cursor:grab;" title="'+escH(nom)+'"'
           + hsrEvtAttrs + '>'
           + '<button class="cal-chip-more" onclick="event.stopPropagation();_showChipDropdown(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')" ontouchend="event.stopPropagation();event.preventDefault();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')">⋮</button>'
@@ -1591,9 +1593,10 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
           +phaseTag+chipSelCheck
           +'</div>';
       }
-      var chipEvtAttrs = _isTouchDevice
-        ? ' ontouchstart="_chipTouchStart(event,\''+ev.id+'\')" ontouchmove="_chipTouchMove(event)" ontouchend="_chipTouchEnd(event,\''+ev.id+'\')"'
-        : ' draggable="true" onclick="event.stopPropagation();_openChipInBuilder(\''+ev.programme_id+'\',\''+dateStr+'\',\''+ev.id+'\')" ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"';
+      var chipEvtAttrs = ' onclick="event.stopPropagation();_chipOuvrirClic(\''+ev.programme_id+'\',\''+dateStr+'\',\''+ev.id+'\')"'
+        + (_isTouchDevice
+            ? ' ontouchstart="_chipTouchStart(event,\''+ev.id+'\')" ontouchmove="_chipTouchMove(event)" ontouchend="_chipTouchEnd(event,\''+ev.id+'\')"'
+            : ' draggable="true" ondragstart="_calChipDragStart(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"');
       var chipCursor = _isTouchDevice ? 'pointer' : 'grab';
       var moreBtnColor = (phStyle && !evaPratAlert) ? 'color:rgba(30,58,95,.7);' : '';
       var moreBtn = '<button class="cal-chip-more" style="'+moreBtnColor+'" onclick="event.stopPropagation();_showChipDropdown(event,\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')" ontouchend="event.stopPropagation();event.preventDefault();_showTouchActionSheet(\''+ev.id+'\',\''+ev.programme_id+'\',\''+dateStr+'\',\''+escJS(nom)+'\')">⋮</button>';
@@ -1666,9 +1669,10 @@ function _buildDayChips(dateStr, cellDate, _skipCap){
         +'</div>');
       return;
     }
-    var noteEvtAttrs = _isTouchDevice
-      ? ' ontouchstart="_noteChipTouchStart(event,\''+note.id+'\')" ontouchmove="_noteChipTouchMove(event)" ontouchend="_noteChipTouchEnd(event,\''+note.id+'\')"'
-      : ' onclick="event.stopPropagation();_openCalNoteView(\''+note.id+'\')" draggable="true" ondragstart="_calNoteChipDragStart(event,\''+note.id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"';
+    var noteEvtAttrs = ' onclick="event.stopPropagation();_noteOuvrirClic(\''+note.id+'\')"'
+      + (_isTouchDevice
+          ? ' ontouchstart="_noteChipTouchStart(event,\''+note.id+'\')" ontouchmove="_noteChipTouchMove(event)" ontouchend="_noteChipTouchEnd(event,\''+note.id+'\')"'
+          : ' draggable="true" ondragstart="_calNoteChipDragStart(event,\''+note.id+'\',\''+dateStr+'\')" ondragend="_calChipDragEnd(event)"');
     var noteMoreBtn = '<button class="cal-note-chip-more"'
       +' ontouchstart="event.stopPropagation()"'
       +' ontouchend="event.stopPropagation();event.preventDefault();_showNoteActionSheet(\''+note.id+'\',\''+escJS(lbl)+'\')"'
@@ -3104,6 +3108,7 @@ function _noteChipTouchMove(e){
 
 function _noteChipTouchEnd(e, noteId){
   clearTimeout(_noteTouchTimer); _noteTouchTimer = null;
+  _chipMarquerTactile();
   if(_noteTouchDidLong){ _noteTouchDidLong = false; e.preventDefault(); return; }
   e.preventDefault();
   _openCalNoteView(noteId);
@@ -3222,6 +3227,33 @@ function _calNoteDuplicateToDate(noteId, targetDate){
   _showToast('📄 Note dupliquée');
 }
 
+/* Un iPad avec clavier est tactile ET pointeur. `_isTouchDevice` y vaut
+   toujours vrai — il teste la CAPACITÉ, pas le geste en cours — et les chips
+   ne recevaient donc que des gestionnaires tactiles, sans `onclick`. Or un clic
+   de trackpad n'émet aucun événement tactile sur iPadOS : il émet un `click`.
+   Rien ne l'écoutait, le clic tombait dans le vide, et le seul chemin restant
+   était le « ⋮ » — qui porte les deux depuis toujours.
+
+   On branche donc les deux partout : un appareil n'est pas tactile OU pointeur,
+   il peut être les deux et l'utilisateur passe de l'un à l'autre.
+
+   Ce drapeau évite la double ouverture. `_chipTouchEnd` appelle déjà
+   `preventDefault()`, ce qui supprime normalement le clic de synthèse, mais
+   Safari en a déjà produit des fantômes ici — voir les 350 ms de
+   `_showTouchActionSheet`. On ne se fie donc pas au seul preventDefault. */
+var _chipTactileJusque = 0;
+function _chipMarquerTactile(){ _chipTactileJusque = Date.now() + 450; }
+
+function _chipOuvrirClic(progId, dateStr, seanceId){
+  if(Date.now() < _chipTactileJusque) return;
+  _openChipInBuilder(progId, dateStr, seanceId);
+}
+
+function _noteOuvrirClic(noteId){
+  if(Date.now() < _chipTactileJusque) return;
+  _openCalNoteView(noteId);
+}
+
 function _chipTouchStart(e, evId){
   e.stopPropagation();
   if (_calSelMode) { _calSelToggle(evId, 'seance'); return; }
@@ -3243,6 +3275,7 @@ function _chipTouchMove(e){
 
 function _chipTouchEnd(e, evId){
   clearTimeout(_touchLongTimer); _touchLongTimer = null;
+  _chipMarquerTactile();
   if(_touchDidLong){ _touchDidLong = false; e.preventDefault(); return; }
   e.preventDefault();
   var d = _chipTouchMeta[evId] || {};
