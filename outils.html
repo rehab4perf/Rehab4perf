@@ -7133,9 +7133,22 @@ _updateOutilsPatientBtns();
     var parts = [];
     document.querySelectorAll('#panel-cr input, #panel-cr select, #panel-cr textarea').forEach(function(el){
       if (CR_IDENTITE.indexOf(el.id) >= 0) return;
+      /* Un element sans `id` ni `name` n'est pas identifiable : plusieurs
+         produiraient la meme entree, et l'empreinte se mettrait a compter des
+         anonymes au lieu de les nommer.
+
+         C'est ce qui faisait passer le CR pour entame TOUT SEUL. Les cases du
+         bloc « Tests du bilan » n'ont pas d'id, elles sont rendues COCHEES par
+         defaut, et elles vivent dans `#panel-cr`. Trois tests renseignes dans
+         le bilan suffisaient donc a declencher la confirmation « informations
+         non sauvegardees » alors que rien n'avait ete saisi ici.
+
+         Rien n'est perdu : ce qui compte sur ces cases, c'est celles qu'on a
+         DECOCHEES, et cet etat voyage deja dans `F:` plus bas. */
+      if (!el.id && !el.name) return;
       var v = (el.type === 'checkbox' || el.type === 'radio') ? (el.checked ? '1' : '') : (el.value || '');
       if (!String(v).trim()) return;
-      parts.push((el.id || el.name || '') + '=' + v);
+      parts.push((el.id || el.name) + '=' + v);
     });
     parts.sort();
     parts.push('P:' + JSON.stringify(crPathos || []));
