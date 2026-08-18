@@ -1172,19 +1172,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 /* Checkbox sélection méthode */
 .exo-meth-check { width:15px; height:15px; cursor:pointer; display:block; flex-shrink:0; }
 /* Pastille "méthode appliquée" */
-/* Marque durable de la méthode portée par UN exercice — à ne pas confondre
-   avec `.meth-applied-badge`, qui est la pastille verte de confirmation et
-   s'efface au bout de trois secondes. Celle-ci reste : c'est elle qui dit
-   quels exercices d'un bloc sont concernés quand la méthode n'a été appliquée
-   qu'à une partie d'entre eux. Volontairement discrète — elle informe, elle
-   ne doit pas concurrencer le nom de l'exercice. */
-.meth-exo-tag {
-  display:inline-flex; align-items:center;
-  background:var(--surface2); color:var(--muted); border:1px solid var(--border);
-  border-radius:10px; font-size:var(--fs-2xs); font-weight:600;
-  padding:1px 7px; margin-left:6px; vertical-align:middle;
-  white-space:nowrap;
-}
 .meth-applied-badge {
   display:inline-flex; align-items:center; gap:3px;
   background:var(--ok-l); color:var(--ok-d); border:1px solid var(--ok-b);
@@ -1486,15 +1473,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .obj-forcemax .meth-apply-btn  { background:var(--alerte); color:#fff; }
 .obj-isometrie .meth-apply-btn { background:var(--amrap); color:#fff; }
 .meth-apply-btn:hover { opacity:.85; }
-.methode-card {
-  margin:0 8px 8px; padding:8px 12px; border-radius:6px; font-size:var(--fs-sm); line-height:1.5;
-  border-left:3px solid;
-}
-.methode-card.obj-endurance    { background:var(--ok-xl); border-color:var(--ok-d); color:var(--ok-d); }
-.methode-card.obj-puissance    { background:var(--obj-puissance-l); border-color:var(--obj-puissance); color:var(--obj-puissance-d); }
-.methode-card.obj-hypertrophie { background:var(--accent-ll); border-color:var(--accent); color:var(--obj-hypertrophie); }
-.methode-card.obj-forcemax     { background:var(--alerte-xl); border-color:var(--alerte); color:var(--alerte-d); }
-.methode-card.obj-isometrie    { background:var(--warn-xl); border-color:var(--amrap); color:var(--warn-d); }
 
 /* ── Blocs Cardio ── */
 .cardio-bloc .cardio-tag { background:var(--cardio-l); color:var(--cardio-d); }
@@ -1625,10 +1603,6 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .chain-group .exo-row:last-child { border-bottom: none; }
 /* Ancien connecteur textuel — plus utilisé */
 .chain-link { display: none; }
-.protocol-steps {
-  margin-top:5px; padding:5px 10px; background:rgba(255,255,255,.55);
-  border-radius:4px; font-size:var(--fs-sm); font-weight:600; line-height:1.8; color:inherit;
-}
 
 /* Bouton toggle enchaînement (sous colonne Récup, style /côté) */
 .chain-recup-wrap { display:flex; flex-direction:column; gap:2px; align-items:stretch; }
@@ -3325,7 +3299,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   </div><!-- /tool-panel-drawer -->
 </div><!-- /tool-panel-overlay -->
 
-<script src="js/prog-data.js?v=20260818a"></script>
+<script src="js/prog-data.js?v=20260818b"></script>
 
 <!-- ══ CYCLES MODAL ════════════════════════════════════════════ -->
 <style>

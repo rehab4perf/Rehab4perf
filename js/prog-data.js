@@ -2185,46 +2185,6 @@ function _onExoCheckChange(cb){
   if(exo) exo._methChecked = cb.checked;
 }
 
-/* Les identifiants de methode sont uniques d'un objectif a l'autre (verifie :
-   aucun doublon sur les 27), un seul champ suffit donc a retrouver le libelle. */
-function _methDef(methId){
-  if(!methId) return null;
-  var trouve = null;
-  Object.keys(METHODES).forEach(function(k){
-    (METHODES[k].methods || []).forEach(function(m){ if(m.id === methId) trouve = m; });
-  });
-  return trouve;
-}
-
-/* Portee REELLE d'une methode dans un bloc, lue sur les exercices eux-memes.
-   C'est ce constat qui remplace l'affirmation : la carte ne suppose plus que
-   la methode couvre tout le bloc, elle dit ce qu'elle couvre.
-
-   Les blocs cardio, texte, AMRAP et EMOM n'ont pas d'exercices notes de cette
-   facon — `exos` peut etre absent. */
-function _methPortee(bloc){
-  var exos = (bloc && bloc.exos) || [];
-  var total = exos.length;
-  var comptes = {}, porteurs = 0;
-  exos.forEach(function(e){
-    if(!e.methode) return;
-    porteurs++;
-    comptes[e.methode] = (comptes[e.methode] || 0) + 1;
-  });
-  var ids = Object.keys(comptes);
-  return {
-    total: total,
-    porteurs: porteurs,
-    ids: ids,
-    comptes: comptes,
-    aucun:    porteurs === 0,
-    /* « Tout le bloc » exige une SEULE methode ET tous les exercices : deux
-       methodes couvrant chacune la moitie ne font pas un bloc uniforme. */
-    uniforme: ids.length === 1 && porteurs === total && total > 0,
-    multiple: ids.length > 1
-  };
-}
-
 function applyMethode(id){
   var bloc = blocs.find(function(b){ return b.id===id; });
   if(!bloc || !bloc.methode) return;
@@ -2253,15 +2213,6 @@ function applyMethode(id){
       e.cibles = [];
     }
     e.chained     = !!(methObj.chained);
-    /* Trace DURABLE de la méthode portée par cet exercice — sans souligné,
-       donc conservée à l'enregistrement et couverte par l'empreinte de séance.
-
-       Elle manquait, et c'est ce qui rendait la carte du bloc mensongère :
-       `_methApplied` est effacé au bout de trois secondes, l'application ne
-       savait donc plus QUI portait la méthode. La carte affirmait « les
-       exercices de ce bloc sont enchaînés » même quand la méthode n'avait été
-       appliquée qu'à deux exercices sur cinq. */
-    e.methode     = bloc.methode;
     e._methApplied  = true;  // pastille verte
     e._methChecked  = false; // décocher après application
   });
@@ -2707,52 +2658,14 @@ function renderSession(){
       }
     }
     html += '</div>';
-    /* La carte DISAIT « les exercices de ce bloc sont enchaînés » alors que la
-       méthode ne s'applique qu'à une SÉLECTION. Sur un bloc de cinq exercices
-       dont deux en circuit, elle affirmait quelque chose de faux — et la
-       description longue laissait croire que la consigne valait pour tous.
-
-       Elle ne suppose plus rien : elle lit la portée réelle sur les exercices.
-       Trois états, et un quatrième où elle se tait. */
-    var _pt = _methPortee(b);
-    if(methObj && !_pt.multiple){
-      html += '<div class="methode-card obj-'+obj+'">';
-      if(_pt.aucun){
-        /* Méthode choisie, pas encore appliquée : la description sert d'aide
-           au choix, c'est le seul moment où elle est utile en entier. */
-        html += '<strong>'+escH(methObj.label)+'</strong> — '+escH(methObj.desc);
-        if(methObj.protocol){
-          html += '<div class="protocol-steps">⚙ Structure intra-série : '+escH(methObj.protocol)+'</div>';
-        }
-      } else {
-        /* Appliquée : les paramètres sont déjà dans les colonnes, la répéter
-           n'apporte rien. On dit la PORTÉE, qui elle ne se lit nulle part. */
-        var _lbl = _methDef(_pt.ids[0]);
-        html += '<strong>' + escH(_lbl ? _lbl.label : methObj.label) + '</strong> — '
-             +  (_pt.uniforme
-                  ? 'appliquée à tout le bloc'
-                  : 'appliquée à ' + _pt.porteurs + ' exercice' + (_pt.porteurs > 1 ? 's' : '')
-                    + ' sur ' + _pt.total);
-        if(_lbl && _lbl.protocol){
-          html += '<div class="protocol-steps">⚙ Structure intra-série : '+escH(_lbl.protocol)+'</div>';
-        }
-        /* L'enchaînement se lit desormais sur les lignes concernees — le
-           cadre `chain-group` les entoure deja. Plus besoin de l'affirmer ici,
-           et surtout plus le droit de dire « ce bloc ». */
-      }
-      html += '</div>';
-    }
-    /* Deux méthodes ou plus dans le même bloc : aucune phrase ne peut le
-       résumer sans mentir. Les marques de ligne disent tout, la carte se tait. */
-    if(_pt.multiple){
-      html += '<div class="methode-card obj-'+obj+'">'
-           +  '<strong>Méthodes multiples</strong> — '
-           +  _pt.ids.map(function(mid){
-                var d = _methDef(mid);
-                return escH(d ? d.label : mid) + ' ×' + _pt.comptes[mid];
-              }).join(' · ')
-           +  '</div>';
-    }
+    /* Plus de carte de methode. Choisir une methode est un RACCOURCI DE SAISIE :
+       elle ecrit les parametres dans les colonnes, et les colonnes sont ensuite
+       la seule verite. Une description au niveau du bloc ne pouvait que
+       repeter ce que Duree, Series, Recup et Cible affichent deja — ou pire,
+       laisser croire qu'une consigne valait pour des exercices qu'elle ne
+       touchait pas, la methode ne s'appliquant qu'a une selection.
+       Ce qui doit etre explique au patient l'est par le praticien, dans la
+       consigne de l'exercice. */
     html += '<div class="bloc-body">';
     if(b.exos.length){
       html += '<div class="exo-col-header">';
@@ -2804,21 +2717,6 @@ function renderSession(){
                +  (e._methApplied ? '<span class="meth-applied-badge">✓ méthode appliquée</span>' : '')+'</div>';
         }
         html += '<div class="exo-sub">';
-        /* Marque de méthode portée par la LIGNE, pas par le bloc : c'est ce qui
-           rend l'ambiguïté impossible. Un exercice sans méthode n'a rien, et
-           l'on voit d'un coup d'œil lesquels sont concernés.
-
-           Elle vit dans `.exo-sub` et non à côté du nom : la colonne du nom est
-           étroite, une pastille inline y écrasait le libellé de l'exercice.
-           `.exo-sub` est déjà en `flex-wrap`, elle y passe à la ligne.
-
-           Rien quand tout le bloc porte la même méthode — la carte le dit déjà,
-           la répéter sur chaque ligne serait du bruit. */
-        var _mDef = e.methode ? _methDef(e.methode) : null;
-        if(_mDef && !_pt.uniforme){
-          html += '<span class="meth-exo-tag" title="Méthode appliquée à cet exercice">'
-               +  escH(_mDef.label) + '</span>';
-        }
         if(e.url){ var _vt=_ytThumbHtml(e.url); html += _vt ? _vt : '<a class="vid-link" href="'+escH(e.url)+'" target="_blank">▶ Vidéo</a>'; }
         var exoMin=estimateExoMin(e); if(exoMin!==null) html+='<span class="time-tag">⏱ '+fmtMin(exoMin)+'</span>';
 
