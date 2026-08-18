@@ -112,7 +112,8 @@ sections: [
       { t:'« CR Tests » : le condensé des tests réalisés', x:'Idéal pour un suivi interne ou un point rapide.' },
       { t:'« CR Complet » : le bilan intégral structuré', x:'Toutes les régions évaluées, les scores et vos commentaires.' },
       { t:'Les tests à deux côtés se lisent en colonnes', x:'Chaque test bilatéral affiche ses valeurs sous « Droit », « Gauche » et « Asym. » plutôt qu\'en une phrase. Les chiffres sont alignés d\'une ligne à l\'autre : on repère l\'écart d\'un coup d\'œil, sur ordinateur comme sur téléphone.' },
-      { t:'Copiez ou exportez le résultat', x:'Le texte se met à jour en direct si vous modifiez le bilan. Pour un courrier destiné au médecin, utilisez plutôt le CR médecin de l\'onglet Outils.' }
+      { t:'Copiez ou exportez le résultat', x:'Le texte se met à jour en direct si vous modifiez le bilan. Pour un courrier destiné au médecin, utilisez plutôt le CR médecin de l\'onglet Outils.' },
+      { t:'La page Poignet / Mains remonte au CR', x:'Mobilité du poignet — flexion, extension, pronation, supination, inclinaisons — tests neurologiques (ULNT, Phalen), tests ligamentaires et De Quervain apparaissent désormais dans le CR Complet, sous « Poignet / Main ». Vos bilans déjà enregistrés retrouvent ces données : elles étaient saisies et conservées, simplement jamais affichées.' }
     ]},
   { id:'sauvegarder-bilan', titre:'Sauvegarder, modifier et suivre un bilan',
     intro:'Un bilan est enregistré à une date donnée. Comprendre la différence entre corriger un bilan existant et créer un bilan de suivi est essentiel : c\'est ce qui construit — ou non — les courbes d\'évolution du patient.',

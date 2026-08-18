@@ -6664,7 +6664,16 @@ function _buildAllTestsHtml() {
     var mobItems = items || ((seg === 'lomb' || seg === 'rl') ? MOB.concat(['Glissement D', 'Glissement G']) : MOB);
     var rows = '';
     mobItems.forEach(function(m) {
-      var mKey = 'mob-' + seg + '-' + m.replace(/[\s.\/]+/g, '_');
+      /* Un item peut être une chaîne — l'identifiant se déduit alors du libellé,
+         comme sur le rachis — ou une paire [clé, libellé] quand les deux
+         divergent. Le poignet est dans ce cas : ses champs s'appellent
+         `mob-po-InclUlnaire`, sans souligné, alors que la déduction donnerait
+         `mob-po-Incl_Ulnaire`. Sans cette paire, la ligne serait cherchée sous
+         un identifiant inexistant et resterait muette — un défaut silencieux,
+         exactement celui qu'on est en train de corriger. */
+      var mLbl = Array.isArray(m) ? m[1] : m;
+      var mId  = Array.isArray(m) ? m[0] : m.replace(/[\s.\/]+/g, '_');
+      var mKey = 'mob-' + seg + '-' + mId;
       var stEl = document.getElementById(mKey + '-st');
       var ntEl = document.getElementById(mKey + '-nt');
       var stVal = stEl ? stEl.value : '';
@@ -6672,7 +6681,7 @@ function _buildAllTestsHtml() {
       if (!stVal && !ntVal) return;
       var stTag = stVal ? ('<span class="cr-tag '+stCls[stVal]+'">'+stLbl[stVal]+'</span>') : '';
       rows += '<tr style="border-top:1px solid var(--border)">'
-        + '<td style="padding:3px 8px;font-size:.8rem;color:var(--text2)">'+m+'</td>'
+        + '<td style="padding:3px 8px;font-size:.8rem;color:var(--text2)">'+mLbl+'</td>'
         + '<td style="padding:3px 8px;font-size:.8rem;text-align:center">'+stTag+'</td>'
         + '<td style="padding:3px 8px;font-size:.78rem;color:var(--text2);font-style:italic">'+nl2br(ntVal)+'</td>'
         + '</tr>';
@@ -6691,6 +6700,19 @@ function _buildAllTestsHtml() {
   // 2. Bilan ortho
   var orthoSections = [
     { label:'EPAULE', zones:['epaule','coude','poignet'], pk:'epaule', fields:[['ep-type','Type'],['ep-marqueur','Marqueur']], tables:['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho-mob','tb-ep-ortho-conf','tb-ep-irrit-g','tb-ep-irrit-d','tb-ep-trau-g','tb-ep-trau-d','tb-ep-fonc-g','tb-ep-fonc-d','tb-ep-ortho-g','tb-ep-ortho-d'], concl:'ep-conclusion', opt:'ep-opt' },
+    /* La page « Poignet / Mains » n'avait AUCUNE section : ses neuf tableaux
+       figuraient au catalogue TESTS mais dans aucune section du CR, et sa
+       grille de mobilité n'était lue nulle part. On pouvait donc remplir la
+       page entière — mobilité, ULNT, Phalen, tests ligamentaires, De Quervain —
+       sans qu'une seule ligne n'apparaisse au compte-rendu.
+
+       `zones:['poignet']` et rien d'autre : c'est la règle documentée du côté
+       atteint. Reprendre la liste de l'ÉPAULE (`epaule, coude, poignet`)
+       laisserait une douleur d'épaule décider du côté nommé pour le poignet —
+       le défaut qui avait fait désigner le mauvais membre dans un CR. */
+    { label:'POIGNET / MAIN', zones:['poignet'], pk:'', fields:[['po-marqueur','Marqueur']],
+      tables:['tb-po-neuro','tb-po-lig','tb-po-pouce',
+              'tb-po-neuro-g','tb-po-neuro-d','tb-po-lig-g','tb-po-lig-d','tb-po-pouce-g','tb-po-pouce-d'] },
     { label:'RACHIS CERVICAL', zones:['rachis-c','rachis-l'], pk:'', fields:[['cv-marqueur','Marqueur']], tables:['tb-cv-vascul','tb-cv-defilé-g','tb-cv-defilé-d','tb-cv-mecanique','tb-cv-ulnt-g','tb-cv-ulnt-d','tb-cv-dn4-itw','tb-cv-dn4-exam','tb-cv-motric-g','tb-cv-motric-d','tb-cv-rot-g','tb-cv-rot-d','tb-cv-sensib-g','tb-cv-sensib-d'], concl:'cv-conclusion' },
     { label:'RACHIS LOMBAIRE', zones:['rachis-c','rachis-l'], pk:'', fields:[['rl-marqueur','Marqueur']], tables:['tb-rl-nerveux-g','tb-rl-nerveux-d','tb-rl-rot-g','tb-rl-rot-d','tb-rl-motric-g','tb-rl-motric-d','tb-rl-sensib-g','tb-rl-sensib-d','tb-rl-plet','tb-rl-laslett-1','tb-rl-laslett-2','tb-rl-laslett-3','tb-rl-instab','tb-rl-tfd-suite','tb-rl-tfa-suite','tb-rl-transverse'], concl:'rl-conclusion' },
     { label:'RACHIS', zones:['rachis-c','rachis-l'], pk:'rachis', fields:[['ra-marqueur','Marqueur'],['ra-mckenzie','McKenzie']], tables:['tb-ra-cerv','tb-ra-cerv-neuro-g','tb-ra-cerv-neuro-d','tb-ra-lomb-g','tb-ra-lomb-d','tb-ra-transverse'], concl:'ra-conclusion', opt:'ra-opt' },
@@ -7015,6 +7037,14 @@ function _buildAllTestsHtml() {
         }
       })();
       secRows += crGroup('Force musculaire', raForceRows);
+    }
+    if (sec.label === 'POIGNET / MAIN') {
+      /* Les deux inclinaisons passent en paire [clé, libellé] : leurs champs
+         s'appellent `InclUlnaire` / `InclRadiale`, sans souligné. */
+      secRows += _crMobTable('Mobilité du Poignet', 'po', [
+        'Flexion', 'Extension', 'Pronation', 'Supination',
+        ['InclUlnaire', 'Incl. Ulnaire'], ['InclRadiale', 'Incl. Radiale']
+      ]);
     }
     if (sec.label === 'RACHIS CERVICAL') {
       /* La grille de cette page ne remontait pas : on pouvait renseigner six
