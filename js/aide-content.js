@@ -185,6 +185,8 @@ sections: [
     intro:'Le builder assemble des blocs d\'exercices avec tous les paramètres d\'entraînement.',
     etapes:[
       { t:'Créez un bloc (+ Bloc) ou un bloc Cardio', x:'Chaque bloc a un objectif (libre, force, hypertrophie…) et éventuellement une méthode structurée.' },
+      { t:'Une méthode s\'applique à qui vous voulez', x:'« Sélectionner… » puis « Appliquer à la sélection » : la méthode ne touche que les exercices cochés. Le bandeau dit alors sa portée réelle — « appliquée à tout le bloc » ou « appliquée à 2 exercices sur 5 » — et une petite étiquette marque les exercices concernés. Il n\'affirme plus que la consigne vaut pour tout le bloc quand ce n\'est pas le cas.' },
+      { t:'Deux méthodes dans un même bloc', x:'C\'est permis : le bandeau les liste avec leur nombre (« Circuit Training ×2 · HIIT-Tabata ×1 ») et chaque exercice porte son étiquette. Tant que la méthode n\'est pas appliquée, sa description complète reste affichée pour vous aider à choisir.' },
       { t:'Paramétrez chaque exercice', x:'Répétitions ou durée, séries, récupération, tempo, option « /côté », enchaînement avec l\'exercice suivant.' },
       { t:'Ajoutez des cibles', x:'kg, RPE, RIR, %1RM ou vitesse — avec fourchette min–max possible. C\'est ce qui alimente les courbes d\'évolution de charge.' },
       { t:'Consignes et douleur EVA', x:'Une consigne spécifique par exercice, et un badge « EVA » pour noter la douleur observée (0–10) — elle rejoint les courbes de douleur.', img:true },
