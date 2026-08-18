@@ -2106,10 +2106,27 @@ function buildProgHTML(prog){
     }
     // ── Bloc cardio ──────────────────────────────────────────────
     if(b.type === 'cardio'){
-      var sport = b.sport === 'course' ? 'Course à pied' : (b.sport || 'Cardio');
+      /* Seul « course » etait traduit : l'athlete lisait `velo`, `natation`,
+         `rameur`, `ski_erg` en cle brute, et toujours sous une icone de
+         coureur. Les libelles portent donc desormais leur propre icone, et la
+         table couvre TOUS les sports.
+         Elle recopie CARDIO_SPORTS de js/prog-data.js — athlete.html est un
+         document separe qui ne peut pas l'importer. `qualite/cardio-cas.js`
+         echoue si les deux listes divergent. */
+      var CARDIO_SPORTS_ATH = {
+        marche:   '🚶 Marche',
+        course:   '🏃 Course à pied',
+        velo:     '🚴 Vélo',
+        natation: '🏊 Natation',
+        rameur:   '🚣 Rameur',
+        ski_erg:  '❄️ Ski Erg'
+      };
+      /* Repli sur la valeur telle quelle : d'anciennes seances ont pu y ecrire
+         un libelle libre, mieux vaut l'afficher que le remplacer par « Cardio ». */
+      var sport = CARDIO_SPORTS_ATH[b.sport] || b.sport || 'Cardio';
       var effortLbl = b.effort_type === 'fractionne' ? 'Fractionné' : (b.effort_type === 'continu' ? 'Continu' : '');
       html += '<div class="bloc"><div class="bloc-header">'
-           +  '<div class="bloc-title">🏃 '+escH(sport)+'</div>'
+           +  '<div class="bloc-title">'+escH(sport)+'</div>'
            +  (effortLbl ? '<span class="bloc-badge endurance">'+escH(effortLbl)+'</span>' : '')
            +  '</div><div class="exo-list"><div class="exo-item">';
       // Détails workout

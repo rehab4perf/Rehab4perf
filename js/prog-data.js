@@ -993,7 +993,13 @@ function genId(){ return '_'+Math.random().toString(36).slice(2,9); }
    BLOCS CARDIO
    ══════════════════════════════════════ */
 var CARDIO_ZONES = ['Z1 — Récup','Z2 — Endurance','Z3 — Tempo','Z4 — Seuil','Z5 — VO2max'];
+/* La marche ouvre la liste : c'est le premier palier de remise en charge, celui
+   qui precede la course dans un retour au sport. L'ordre de cette liste est
+   l'ordre de progression, pas l'ordre alphabetique.
+   Les `val` sont enregistrees dans les seances : on AJOUTE, on ne renomme
+   jamais — une cle changee rendrait illisibles les seances deja envoyees. */
 var CARDIO_SPORTS = [
+  {val:'marche',   label:'🚶 Marche'},
   {val:'course',   label:'🏃 Course à pied'},
   {val:'velo',     label:'🚴 Vélo'},
   {val:'natation', label:'🏊 Natation'},

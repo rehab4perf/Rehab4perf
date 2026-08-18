@@ -24,6 +24,7 @@ node qualite/prehension-cas.js
 node qualite/tactile-cas.js
 node qualite/strava-doublons-cas.js
 node qualite/cr-sections-cas.js
+node qualite/cardio-cas.js
 ```
 
 - [ ] Sortie verte. Une variable CSS non définie est ignorée en silence par le
