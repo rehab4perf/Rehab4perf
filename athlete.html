@@ -270,7 +270,6 @@ html,body { background:var(--bg); font-family:var(--font-sans); color:var(--text
   width:14px; height:14px; border-radius:50%; background:#fff; border:1.5px solid var(--curseur);
   cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,.15);
 }
-.exo-pain-state { font-size:var(--fs-2xs); font-weight:600; white-space:nowrap; flex-shrink:0; min-width:82px; text-align:right; }
 /* La question ne s'efface plus : elle est un intitulé, au-dessus du curseur.
    Auparavant elle vivait à DROITE du curseur, en gris clair, et disparaissait
    au premier contact — elle s'effaçait au moment même où l'on y répondait. */
@@ -280,18 +279,21 @@ html,body { background:var(--bg); font-family:var(--font-sans); color:var(--text
 }
 .exo-pain-opt { font-weight:500; color:var(--text3); }
 
-/* Les ancres donnent l'échelle sans qu'on ait à bouger le curseur pour la
+/* Les repères donnent l'échelle sans qu'on ait à bouger le curseur pour la
    découvrir — un patient qui n'ose pas y toucher ne saurait pas ce que vaut 7.
 
-   Elles doivent tomber sous les EXTRÉMITÉS DU CURSEUR, pas sous la ligne
-   entière : à gauche 35 px pour la pastille et son écart, à droite 90 px pour
-   le libellé d'état (min-width 82 px + 8 px d'écart). Sans ce retrait droit,
-   « 10 · insupportable » se plaçait sous « Non renseigné », 90 px trop loin. */
+   Ils doivent tomber sous les EXTRÉMITÉS DU CURSEUR, pas sous la ligne entière.
+   À gauche, 35 px : la pastille (26 px) et son écart (9 px). À droite, plus
+   rien à réserver depuis que le libellé adaptatif a disparu — il occupait
+   90 px et décalait d'autant le repère « 10 ».
+
+   Les deux largeurs sont liées : `.exo-pain-slider-row` et cette ligne
+   partagent le même `max-width`. Changer l'un sans l'autre désaligne. */
 .exo-pain-ancres {
   display:flex; justify-content:space-between;
   font-size:var(--fs-2xs); color:var(--text3);
-  margin-top:3px; max-width:340px;
-  padding-left:35px; padding-right:90px;
+  margin-top:5px; max-width:340px;
+  padding-left:35px;
 }
 
 /* Bouton de remarque : c'était un emoji nu de 26 px, sans libellé — rien ne
@@ -1923,23 +1925,19 @@ function _savePainRatings(){
 }
 
 var PAIN_COLORS = ['#27AE60','#2ECC71','#82D03E','#A9CC3E','#F4D03F','#F39C12','#E67E22','#D35400','#E74C3C','#C0392B','#922B21'];
-var PAIN_LABELS = ['Aucune douleur','Très légère','Légère','Légère','Modérée','Modérée','Importante','Importante','Forte','Très forte','Insupportable'];
 
 function _updatePainUI(key){
   var v = _painRatings[key];
   var num = document.getElementById('painNum-'+key);
-  var st  = document.getElementById('painState-'+key);
   var sl  = document.getElementById('painSlider-'+key);
   if(v === undefined){
+    /* Le tiret distingue l'absence de réponse du zéro : ce sont deux
+       informations différentes, et cette distinction compte autant pour la
+       lecture clinique que pour le patient. */
     if(num){ num.textContent='–'; num.style.background='#f0f4f8'; num.style.color='#9aa8b8'; }
-    /* « Non renseigné », jamais « Aucune douleur » : l'absence de réponse et le
-       zéro sont deux informations différentes. La question, elle, vit
-       desormais dans l'intitulé et ne s'efface plus. */
-    if(st){ st.textContent='Non renseigné'; st.style.color='var(--muted)'; st.style.fontWeight='400'; }
     if(sl) sl.value = 0;
   } else {
     if(num){ num.textContent=v; num.style.background=PAIN_COLORS[v]; num.style.color=(v===4?'#1a2433':'#fff'); }
-    if(st){ st.textContent=PAIN_LABELS[v]; st.style.color=PAIN_COLORS[v]; st.style.fontWeight='700'; }
     if(sl) sl.value = v;
   }
 }
@@ -2003,19 +2001,21 @@ function _buildPainSliderHTML(key, withNote, initNote){
   var has = v !== undefined;
   var numBg  = has ? PAIN_COLORS[v] : '#f0f4f8';
   var numCol = has ? (v===4?'#1a2433':'#fff') : '#9aa8b8';
-  var stTxt  = has ? PAIN_LABELS[v] : 'Non renseigné';
-  var stCss  = has ? 'color:'+PAIN_COLORS[v] : 'color:var(--muted);font-weight:400';
+  /* Plus de libelle adaptatif a droite du curseur. Il changeait a chaque cran
+     — « Legere », « Moderee », « Importante » — et cette glose mouvante
+     encombrait sans rien apporter : la pastille donne deja le chiffre et sa
+     couleur, et les deux reperes fixes donnent l'echelle. */
   var h = '<div class="exo-pain-q">Douleur pendant l\'exercice&nbsp;?'
     + '<span class="exo-pain-opt">— facultatif</span></div>'
     + '<div class="exo-pain-slider-row">'
     + '<div class="exo-pain-num" id="painNum-'+key+'" style="background:'+numBg+';color:'+numCol+'" onclick="_togglePainZero(\''+key+'\')" title="Toucher : aucune douleur / effacer">'+(has?v:'–')+'</div>'
     + '<div class="exo-pain-body">'
     + '<input type="range" class="pain-slider" id="painSlider-'+key+'" min="0" max="10" step="1" value="'+(has?v:0)+'" oninput="_setPainSlider(\''+key+'\',this.value)" onchange="_setPainSlider(\''+key+'\',this.value)">'
-    + '<span class="exo-pain-state" id="painState-'+key+'" style="'+stCss+'">'+stTxt+'</span>'
     + '</div>'
     + '</div>'
-    /* Les ancres donnent l'echelle sans qu'on ait a bouger le curseur pour la
-       decouvrir — un patient qui n'ose pas toucher ne saurait pas ce que vaut 7. */
+    /* Les reperes donnent l'echelle sans qu'on ait a bouger le curseur pour la
+       decouvrir — un patient qui n'ose pas toucher ne saurait pas ce que vaut 7.
+       Ils sont FIXES : ce sont les bornes, pas un commentaire de la valeur. */
     + '<div class="exo-pain-ancres"><span>0 · aucune</span><span>10 · insupportable</span></div>';
   if(withNote){
     h += '<div id="exoNoteDisp-'+key+'">' + _noteDispHTML(key, initNote) + '</div>';

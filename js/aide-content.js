@@ -502,9 +502,9 @@ sections: [
     intro:'Sous chaque exercice, une question posée clairement et un curseur de 0 à 10.',
     etapes:[
       { t:'La question est écrite au-dessus du curseur', x:'« Douleur pendant l\'exercice ? — facultatif ». Elle ne bouge plus : auparavant elle s\'affichait à droite en gris clair et disparaissait dès que l\'athlète touchait le curseur — elle s\'effaçait au moment même où il y répondait.', img:true },
-      { t:'« Non renseigné » tant qu\'il n\'a pas répondu', x:'À ne pas confondre avec « Aucune douleur ». Un curseur posé sur 0 ne se distinguait pas d\'une question sans réponse — la différence compte pour votre lecture autant que pour lui.' },
+      { t:'La pastille dit « – » tant qu\'il n\'a pas répondu', x:'À ne pas confondre avec 0. Un curseur posé sur zéro ne se distinguait pas d\'une question sans réponse — la différence compte pour votre lecture autant que pour lui.' },
       { t:'Les repères 0 et 10 sont affichés', x:'« 0 · aucune » et « 10 · insupportable » sous les extrémités du curseur : l\'athlète connaît l\'échelle sans avoir à le bouger pour la découvrir.' },
-      { t:'L\'athlète glisse le curseur', x:'La pastille affiche le chiffre avec un code couleur et un libellé (« Légère », « Importante »…).' },
+      { t:'L\'athlète glisse le curseur', x:'La pastille affiche le chiffre avec son code couleur. Aucun libellé ne commente la valeur : la glose changeait à chaque cran (« Légère », « Modérée », « Importante »…) et encombrait sans rien apprendre — le chiffre, sa couleur et les deux repères suffisent.' },
       { t:'Un toucher sur la pastille = « aucune douleur »', x:'Un second toucher efface la saisie.' },
       { t:'« + Ajouter une remarque » ouvre une note par exercice', x:'Un lien discret sous le curseur. C\'était un simple pictogramme, rien ne disait qu\'il ouvrait un champ de saisie.' },
       { t:'Une fois écrite, la remarque remplace le lien', x:'L\'athlète relit ses propres mots entre guillemets, avec « modifier » pour y revenir — plutôt qu\'un bouton qui ne dit rien. « Ça pique en fin d\'amplitude », etc. Tout vous remonte dans le feedback.' }
