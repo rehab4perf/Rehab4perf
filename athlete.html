@@ -297,17 +297,35 @@ html,body { background:var(--bg); font-family:var(--font-sans); color:var(--text
 /* Bouton de remarque : c'était un emoji nu de 26 px, sans libellé — rien ne
    disait qu'il ouvrait un champ de texte. Il porte son texte, et sa cible
    tactile passe de 26 px à toute la largeur du libellé. */
-.exo-note-btn {
+/* Lien de remarque — état vide.
+   La pastille bordée pesait sur chaque exercice : dix mouvements, dix boutons
+   de 44 px. Le lien paraît léger, mais son rembourrage VERTICAL garde la cible
+   tactile à 44 px — c'est un doigt de patient qui le vise, pas une souris. */
+.exo-note-lien {
   display:inline-flex; align-items:center; gap:5px;
-  border:1px solid var(--border); background:#fff; color:var(--text2);
-  border-radius:22px; padding:0 18px; margin-top:10px;
-  /* 44 px : la cible tactile du protocole. L'ancien bouton emoji en faisait 26,
-     et c'est un doigt de patient qui le vise, pas une souris. */
-  min-height:44px;
+  background:none; border:0; color:var(--accent);
   font-family:inherit; font-size:var(--fs-xs); font-weight:600;
-  cursor:pointer; transition:border-color .12s, color .12s, background .12s;
+  cursor:pointer; padding:0 2px; margin-top:-2px;
+  /* Hauteur FIXEE plutot qu'un rembourrage calcule : un padding qui « tombe
+     juste » aujourd'hui derive a la premiere variation de police. */
+  min-height:44px;
 }
-.exo-note-btn.has-note { border-color:var(--accent2); color:var(--accent); background:var(--bg); }
+.exo-note-lien .plus { font-size:.95rem; line-height:0; font-weight:400; }
+
+/* Remarque écrite — elle remplace le bouton.
+   « Remarque ajoutée » ne disait rien ; les mots de l'athlète disent tout, et
+   il les relit sans avoir à rouvrir quoi que ce soit. */
+.exo-note-faite {
+  display:flex; gap:7px; align-items:flex-start;
+  background:var(--bg); border-radius:8px;
+  padding:9px 11px; margin-top:9px; cursor:pointer;
+}
+.exo-note-faite .guill { color:var(--accent2); font-weight:700; flex-shrink:0; line-height:1; }
+.exo-note-faite .txt {
+  flex:1; min-width:0; font-size:var(--fs-xs); color:var(--text2);
+  line-height:1.45; font-style:italic; white-space:pre-wrap; word-break:break-word;
+}
+.exo-note-faite .modif { flex-shrink:0; color:var(--text3); font-size:var(--fs-2xs); font-weight:700; }
 .exo-note-area { display:none; margin-top:6px; }
 .exo-note-area.open { display:block; }
 
@@ -1940,22 +1958,30 @@ window._togglePainZero = function(key){
   _updatePainUI(key);
 };
 
+/* Passage en ECRITURE : le champ prend la place de l'affichage au repos.
+   L'affichage se reconstruit a la sortie du champ (voir `_fermerExoNote`) —
+   `blur` est le signal naturel de « j'ai fini » sur un telephone, il n'y a pas
+   de bouton « valider » a chercher. */
 window._toggleExoNote = function(key){
   var area = document.getElementById('exoNoteArea-'+key);
-  var tog  = document.getElementById('exoNoteToggle-'+key);
+  var disp = document.getElementById('exoNoteDisp-'+key);
   if(!area) return;
-  area.classList.toggle('open');
-  var isOpen = area.classList.contains('open');
-  if(tog){
-    tog.classList.toggle('has-note', isOpen);
-    /* Le libellé suit l'état : le bouton ne portait qu'un emoji, il dit
-       maintenant ce qu'il fait ET où l'on en est. */
-    tog.textContent = isOpen ? 'Remarque ajoutée' : 'Ajouter une remarque';
-  }
-  if(isOpen){
-    var ta = document.getElementById('exoNote-'+key);
-    if(ta){ ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; ta.focus(); }
-  }
+  area.classList.add('open');
+  if(disp) disp.style.display = 'none';
+  var ta = document.getElementById('exoNote-'+key);
+  if(ta){ ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; ta.focus(); }
+};
+
+window._fermerExoNote = function(key){
+  var area = document.getElementById('exoNoteArea-'+key);
+  var disp = document.getElementById('exoNoteDisp-'+key);
+  var ta   = document.getElementById('exoNote-'+key);
+  if(!area || !disp) return;
+  /* Le champ RESTE dans le DOM, seulement masque : c'est lui que relit l'envoi
+     du ressenti (`#exoNote-<clé>`). Le detruire perdrait la saisie. */
+  area.classList.remove('open');
+  disp.style.display = '';
+  disp.innerHTML = _noteDispHTML(key, ta ? ta.value : '');
 };
 
 /* Curseur de douleur + bouton de remarque.
@@ -1992,11 +2018,31 @@ function _buildPainSliderHTML(key, withNote, initNote){
        decouvrir — un patient qui n'ose pas toucher ne saurait pas ce que vaut 7. */
     + '<div class="exo-pain-ancres"><span>0 · aucune</span><span>10 · insupportable</span></div>';
   if(withNote){
-    h += '<button class="exo-note-btn'+(initNote?' has-note':'')+'" id="exoNoteToggle-'+key+'" onclick="_toggleExoNote(\''+key+'\')">'
-      +  (initNote ? 'Remarque ajoutée' : 'Ajouter une remarque')
-      +  '</button>';
+    h += '<div id="exoNoteDisp-'+key+'">' + _noteDispHTML(key, initNote) + '</div>';
   }
   return h;
+}
+
+/* Affichage au repos de la remarque. Deux etats, jamais un bouton bavard :
+
+   - RIEN d'ecrit : un lien discret. La pastille bordee de 44 px pesait sur
+     chaque exercice — dix mouvements, dix boutons. Le rembourrage vertical
+     garde la cible tactile a 44 px alors que le lien parait leger.
+
+   - QUELQUE CHOSE d'ecrit : la note ELLE-MEME. « Remarque ajoutee » ne disait
+     rien ; les mots de l'athlete disent tout, et il les relit sans rouvrir. */
+function _noteDispHTML(key, note){
+  var n = (note || '').trim();
+  if(!n){
+    return '<button class="exo-note-lien" onclick="_toggleExoNote(\''+key+'\')">'
+         + '<span class="plus">+</span> Ajouter une remarque</button>';
+  }
+  return '<div class="exo-note-faite" onclick="_toggleExoNote(\''+key+'\')" '
+       + 'role="button" tabindex="0" title="Modifier la remarque">'
+       + '<span class="guill">&#8220;</span>'
+       + '<span class="txt">'+escH(n)+'</span>'
+       + '<span class="modif">modifier</span>'
+       + '</div>';
 }
 
 window._toggleDone = function(key){
@@ -2255,8 +2301,12 @@ function buildProgHTML(prog){
       // Douleur (curseur) + note repliée
       var _initNote = _existingExoNotes[_eKey] || '';
       r += _buildPainSliderHTML(_eKey, true, _initNote);
-      r += '<div class="exo-note-area'+(_initNote?' open':'')+'" id="exoNoteArea-'+_eKey+'">'
-         + '<textarea id="exoNote-'+_eKey+'" class="exo-exo-note-inp" placeholder="Remarque sur cet exercice…" rows="1" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'">'+escH(_initNote)+'</textarea>'
+      /* Jamais ouverte au depart, meme avec une note existante : c'est la note
+         elle-meme qui s'affiche au repos, pas un champ de saisie. */
+      r += '<div class="exo-note-area" id="exoNoteArea-'+_eKey+'">'
+         + '<textarea id="exoNote-'+_eKey+'" class="exo-exo-note-inp" placeholder="Remarque sur cet exercice…" rows="1" '
+         + 'oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'" '
+         + 'onblur="_fermerExoNote(\''+_eKey+'\')">'+escH(_initNote)+'</textarea>'
          + '</div>';
       r += '</div>';
       return r;

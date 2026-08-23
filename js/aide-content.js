@@ -506,7 +506,8 @@ sections: [
       { t:'Les repères 0 et 10 sont affichés', x:'« 0 · aucune » et « 10 · insupportable » sous les extrémités du curseur : l\'athlète connaît l\'échelle sans avoir à le bouger pour la découvrir.' },
       { t:'L\'athlète glisse le curseur', x:'La pastille affiche le chiffre avec un code couleur et un libellé (« Légère », « Importante »…).' },
       { t:'Un toucher sur la pastille = « aucune douleur »', x:'Un second toucher efface la saisie.' },
-      { t:'« Ajouter une remarque » ouvre une note par exercice', x:'Le bouton porte son texte — c\'était un simple pictogramme, rien ne disait qu\'il ouvrait un champ de saisie. « Pique en fin d\'amplitude », etc. Tout vous remonte dans le feedback.' }
+      { t:'« + Ajouter une remarque » ouvre une note par exercice', x:'Un lien discret sous le curseur. C\'était un simple pictogramme, rien ne disait qu\'il ouvrait un champ de saisie.' },
+      { t:'Une fois écrite, la remarque remplace le lien', x:'L\'athlète relit ses propres mots entre guillemets, avec « modifier » pour y revenir — plutôt qu\'un bouton qui ne dit rien. « Ça pique en fin d\'amplitude », etc. Tout vous remonte dans le feedback.' }
     ]},
   { id:'ressenti-seance', titre:'Le ressenti de fin de séance',
     intro:'C\'est la donnée qui alimente vos calculs de charge.',
