@@ -271,13 +271,43 @@ html,body { background:var(--bg); font-family:var(--font-sans); color:var(--text
   cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,.15);
 }
 .exo-pain-state { font-size:var(--fs-2xs); font-weight:600; white-space:nowrap; flex-shrink:0; min-width:82px; text-align:right; }
-.exo-note-toggle {
-  width:26px; height:26px; border-radius:7px; border:1px solid var(--border);
-  background:#fff; color:var(--text3); cursor:pointer; font-size:var(--fs-sm); flex-shrink:0;
-  display:flex; align-items:center; justify-content:center; padding:0;
-  transition:border-color .12s, color .12s;
+/* La question ne s'efface plus : elle est un intitulé, au-dessus du curseur.
+   Auparavant elle vivait à DROITE du curseur, en gris clair, et disparaissait
+   au premier contact — elle s'effaçait au moment même où l'on y répondait. */
+.exo-pain-q {
+  font-size:var(--fs-xs); font-weight:700; color:var(--text2);
+  margin:11px 0 5px; display:flex; align-items:center; gap:5px; flex-wrap:wrap;
 }
-.exo-note-toggle.has-note { border-color:var(--accent2); color:var(--accent2); background:var(--bg); }
+.exo-pain-opt { font-weight:500; color:var(--text3); }
+
+/* Les ancres donnent l'échelle sans qu'on ait à bouger le curseur pour la
+   découvrir — un patient qui n'ose pas y toucher ne saurait pas ce que vaut 7.
+
+   Elles doivent tomber sous les EXTRÉMITÉS DU CURSEUR, pas sous la ligne
+   entière : à gauche 35 px pour la pastille et son écart, à droite 90 px pour
+   le libellé d'état (min-width 82 px + 8 px d'écart). Sans ce retrait droit,
+   « 10 · insupportable » se plaçait sous « Non renseigné », 90 px trop loin. */
+.exo-pain-ancres {
+  display:flex; justify-content:space-between;
+  font-size:var(--fs-2xs); color:var(--text3);
+  margin-top:3px; max-width:340px;
+  padding-left:35px; padding-right:90px;
+}
+
+/* Bouton de remarque : c'était un emoji nu de 26 px, sans libellé — rien ne
+   disait qu'il ouvrait un champ de texte. Il porte son texte, et sa cible
+   tactile passe de 26 px à toute la largeur du libellé. */
+.exo-note-btn {
+  display:inline-flex; align-items:center; gap:5px;
+  border:1px solid var(--border); background:#fff; color:var(--text2);
+  border-radius:22px; padding:0 18px; margin-top:10px;
+  /* 44 px : la cible tactile du protocole. L'ancien bouton emoji en faisait 26,
+     et c'est un doigt de patient qui le vise, pas une souris. */
+  min-height:44px;
+  font-family:inherit; font-size:var(--fs-xs); font-weight:600;
+  cursor:pointer; transition:border-color .12s, color .12s, background .12s;
+}
+.exo-note-btn.has-note { border-color:var(--accent2); color:var(--accent); background:var(--bg); }
 .exo-note-area { display:none; margin-top:6px; }
 .exo-note-area.open { display:block; }
 
@@ -1884,7 +1914,10 @@ function _updatePainUI(key){
   var sl  = document.getElementById('painSlider-'+key);
   if(v === undefined){
     if(num){ num.textContent='–'; num.style.background='#f0f4f8'; num.style.color='#9aa8b8'; }
-    if(st){ st.textContent='Douleur ?'; st.style.color='var(--muted)'; st.style.fontWeight='400'; }
+    /* « Non renseigné », jamais « Aucune douleur » : l'absence de réponse et le
+       zéro sont deux informations différentes. La question, elle, vit
+       desormais dans l'intitulé et ne s'efface plus. */
+    if(st){ st.textContent='Non renseigné'; st.style.color='var(--muted)'; st.style.fontWeight='400'; }
     if(sl) sl.value = 0;
   } else {
     if(num){ num.textContent=v; num.style.background=PAIN_COLORS[v]; num.style.color=(v===4?'#1a2433':'#fff'); }
@@ -1913,31 +1946,56 @@ window._toggleExoNote = function(key){
   if(!area) return;
   area.classList.toggle('open');
   var isOpen = area.classList.contains('open');
-  if(tog) tog.classList.toggle('has-note', isOpen);
+  if(tog){
+    tog.classList.toggle('has-note', isOpen);
+    /* Le libellé suit l'état : le bouton ne portait qu'un emoji, il dit
+       maintenant ce qu'il fait ET où l'on en est. */
+    tog.textContent = isOpen ? 'Remarque ajoutée' : 'Ajouter une remarque';
+  }
   if(isOpen){
     var ta = document.getElementById('exoNote-'+key);
     if(ta){ ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; ta.focus(); }
   }
 };
 
-/* Ligne curseur douleur (pastille + slider + 💬 optionnel) */
+/* Curseur de douleur + bouton de remarque.
+
+   Trois ambiguites corrigees, toutes vecues par le patient :
+
+   1. La QUESTION s'affichait en gris clair a droite du curseur, et disparaissait
+      des qu'on y touchait — elle s'effacait au moment meme ou l'on repondait.
+      Elle est desormais un intitule, au-dessus, qui ne bouge plus.
+
+   2. Un curseur pose a 0 ne se distinguait pas d'une question SANS REPONSE.
+      L'etat vide dit maintenant « Non renseigne », jamais « Aucune douleur » :
+      la difference compte autant pour la lecture clinique que pour le patient.
+
+   3. Le bouton de remarque etait un emoji nu de 26 px, sans libelle. Il porte
+      son texte. */
 function _buildPainSliderHTML(key, withNote, initNote){
   var v = _painRatings[key];
   var has = v !== undefined;
   var numBg  = has ? PAIN_COLORS[v] : '#f0f4f8';
   var numCol = has ? (v===4?'#1a2433':'#fff') : '#9aa8b8';
-  var stTxt  = has ? PAIN_LABELS[v] : 'Douleur ?';
+  var stTxt  = has ? PAIN_LABELS[v] : 'Non renseigné';
   var stCss  = has ? 'color:'+PAIN_COLORS[v] : 'color:var(--muted);font-weight:400';
-  var h = '<div class="exo-pain-slider-row">'
+  var h = '<div class="exo-pain-q">Douleur pendant l\'exercice&nbsp;?'
+    + '<span class="exo-pain-opt">— facultatif</span></div>'
+    + '<div class="exo-pain-slider-row">'
     + '<div class="exo-pain-num" id="painNum-'+key+'" style="background:'+numBg+';color:'+numCol+'" onclick="_togglePainZero(\''+key+'\')" title="Toucher : aucune douleur / effacer">'+(has?v:'–')+'</div>'
     + '<div class="exo-pain-body">'
     + '<input type="range" class="pain-slider" id="painSlider-'+key+'" min="0" max="10" step="1" value="'+(has?v:0)+'" oninput="_setPainSlider(\''+key+'\',this.value)" onchange="_setPainSlider(\''+key+'\',this.value)">'
     + '<span class="exo-pain-state" id="painState-'+key+'" style="'+stCss+'">'+stTxt+'</span>'
-    + '</div>';
+    + '</div>'
+    + '</div>'
+    /* Les ancres donnent l'echelle sans qu'on ait a bouger le curseur pour la
+       decouvrir — un patient qui n'ose pas toucher ne saurait pas ce que vaut 7. */
+    + '<div class="exo-pain-ancres"><span>0 · aucune</span><span>10 · insupportable</span></div>';
   if(withNote){
-    h += '<button class="exo-note-toggle'+(initNote?' has-note':'')+'" id="exoNoteToggle-'+key+'" onclick="_toggleExoNote(\''+key+'\')" title="Remarque">💬</button>';
+    h += '<button class="exo-note-btn'+(initNote?' has-note':'')+'" id="exoNoteToggle-'+key+'" onclick="_toggleExoNote(\''+key+'\')">'
+      +  (initNote ? 'Remarque ajoutée' : 'Ajouter une remarque')
+      +  '</button>';
   }
-  h += '</div>';
   return h;
 }
 
