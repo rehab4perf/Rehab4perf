@@ -543,6 +543,13 @@ Corollaire assumé et refermé dans le code : dans un bloc marqué, un champ res
 **vide** reste « ancien » — la marque porte sur le bloc, l'affirmation sur le
 champ.
 
+**Une première mesure ne porte AUCUNE mention** — règle du praticien : ce qui
+n'est pas marqué « réévalué » en est une, et un libellé de plus dirait ce que
+l'absence dit déjà. L'état reste néanmoins **distingué en interne** : sans lui,
+une première mesure serait annoncée « réévaluée », ce qui est faux. Ne pas
+« simplifier » en supprimant l'état — c'est le libellé qui a été retiré, pas la
+distinction.
+
 **Une première mesure n'est pas une réévaluation.** Le mot « réévalué » sur un
 test fait pour la première fois est faux, et le médecin le lit comme un suivi.
 `_crDejaEvalue` répond « ce test avait-il déjà été évalué ? » par deux indices,

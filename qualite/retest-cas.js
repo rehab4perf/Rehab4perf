@@ -155,6 +155,23 @@ console.log('\n  Une PREMIÈRE évaluation n\'est pas une réévaluation');
   verifie('marque antérieure sur le bloc → déjà évalué', 'neuf', e.etat(['sel-amp-0']));
 }
 
+/* La regle du praticien : ce qui n'est pas marque « reevalue » EST une premiere
+   evaluation. L'etat reste donc distingue en interne — sans lui la ligne serait
+   annoncee « reevaluee », ce qui est faux — mais il ne rend AUCUNE mention. */
+console.log('\n  Une première évaluation ne porte aucune mention');
+{
+  var sansCom = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  var d = sansCom.indexOf('function _crMarquage');
+  var f = sansCom.indexOf('function _crLegendeMarquage');
+  var corps = sansCom.slice(d, f);
+  var i = corps.indexOf("et === 'initial'");
+  verifie('l\'état initial est bien traité', 'true', String(i !== -1));
+  verifie('… et il ne rend pas de badge', 'true',
+          String(/et === 'initial'\)\s*return\s*\{[^}]*badge:\s*''/.test(corps)));
+  verifie('aucun libellé « 1re évaluation » ne subsiste', 'false',
+          String(/1<sup>re<\/sup>/.test(src)));
+}
+
 console.log('\n  Un test resté vide dans un bloc marqué');
 {
   /* Le bloc a été rouvert, mais CE test-là n'a pas été refait. La marque porte

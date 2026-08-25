@@ -1549,11 +1549,9 @@ textarea.mob-note-inp {
 .cr-item--reev { border-left: 2px solid var(--accent); padding-left: 10px; border-radius: 0; }
 .cr-mention { font-size: .65rem; font-weight: 700; border-radius: 20px; padding: 1px 8px; margin-left: 8px; white-space: nowrap; flex-shrink: 0; letter-spacing: .01em; }
 .cr-mention.neuf { background: var(--accent-l); color: var(--accent); }
-/* Première évaluation : même famille que « réévalué », en contour plutôt qu'en
-   aplat. Aucune teinte nouvelle — c'est le mot qui porte la distinction, la
-   forme ne fait que la rendre repérable en survolant la page. */
-.cr-mention.init { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
-.cr-mention sup { font-size: .75em; line-height: 0; }
+/* Une première évaluation ne porte AUCUNE mention : ce qui n'est pas marqué
+   « réévalué » en est une. Seule la barre d'accent à gauche de la ligne dit
+   qu'elle a été mesurée dans ce bilan. */
 .cr-mention.inch { background: var(--surface2); color: var(--text2); }
 .cr-mention.anc  { background: transparent; color: var(--text3); border: 1px solid var(--border); font-weight: 600; }
 .cr-legende { font-size: .72rem; color: var(--text2); background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 9px 13px; margin: 0 0 14px; line-height: 1.55; }
@@ -5888,7 +5886,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260806i"></script>
-<script src="js/bilan.js?v=20260825e"></script>
+<script src="js/bilan.js?v=20260825f"></script>
 
 </body>
 </html>
