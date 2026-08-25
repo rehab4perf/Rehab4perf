@@ -158,6 +158,13 @@ sections: [
       { t:'Basculez barres / radar', x:'Vue barres (par défaut) pour lire les points par composant, ou radar pour une vue d\'ensemble. Le PDF exporté reprend la vue sélectionnée.' },
       { t:'Générez le rapport PDF', x:'Score, asymétrie et profil détaillé sont inclus dans un rapport prêt à imprimer ou archiver.' }
     ]},
+  { id:'cr-force-medecin', titre:'La force dans le CR médecin',
+    intro:'Le bloc « Force musculaire » à saisir à la main a été retiré : la force remonte du bilan, comme les tests fonctionnels.',
+    etapes:[
+      { t:'Pourquoi il a disparu', x:'Il se préremplissait depuis la Contraction Flash. Le courrier annonçait donc « Bilan de force — Quadriceps 42 / 42 » à partir d\'une mesure de qualité de contraction, qui n\'est pas un test de force. Un chiffre juste sous un intitulé faux.' },
+      { t:'Où saisir la force désormais', x:'Dans les onglets « Tests de Force MS / Rachis / MI » et « Tests musculaires » du bilan clinique. Vos saisies remontent ensuite toutes seules dans le bloc « Tests du bilan » du CR médecin, à cocher ou décocher comme les tests fonctionnels.' },
+      { t:'Rien à recopier', x:'Le bilan sait déjà calculer l\'asymétrie et traduire les intitulés pour le médecin. Un test de force ajouté au bilan demain apparaîtra tout seul dans cette liste.' }
+    ]},
   { id:'cr-medecin', titre:'Rédiger un CR médecin',
     intro:'Un courrier structuré destiné au médecin, avec aperçu en temps réel pendant la saisie.',
     etapes:[

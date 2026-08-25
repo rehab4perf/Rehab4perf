@@ -655,6 +655,27 @@ porte l'information. Une perte qui arrondit à zéro ne s'écrit jamais « -0 »
 du rapport brut et le seuil « positif si < 90 % » ; sous une colonne de perte
 ils sont faux. `qualite/lsi-cas.js` échoue si l'un des deux réapparaît.
 
+## La force remonte du bilan, elle ne se saisit plus
+
+Le CR médecin portait un bloc « Force musculaire » à saisie manuelle,
+**prérempli depuis la Contraction Flash** (`cf-q-ca` / `cf-q-cs`). Le courrier
+annonçait donc « Bilan de force — Quadriceps 42 / 42 » à partir d'une mesure de
+qualité de contraction, qui n'est pas un test de force. Le bloc est **retiré**.
+
+La force emprunte désormais le canal des tests fonctionnels — `_crMedResumeTests`
+→ `r4p-cr-med-tests` → bloc « Tests du bilan » d'`outils.html`. Rien à écrire
+côté outils : un test ajouté au bilan demain y apparaît tout seul.
+
+Le filtre a dû changer de nature. Il matchait le TITRE de section
+(`/Tests Fonctionnels/i`) — or **les tests de force ne forment pas une section
+du CR** : ils sont rendus DANS le Bilan Orthopédique, mêlés aux tests de la même
+région. Ils étaient donc entièrement invisibles. On filtre maintenant **ligne à
+ligne sur `data-pages`**, l'information que `crItem` pose déjà.
+
+`CR_MED_PAGES` est la **source unique** : `_neGarderQueTF` (CR Tests) la
+réutilise. Les deux listes existaient en double, dans un ordre d'écriture
+différent — une page ajoutée à l'une aurait manqué à l'autre en silence.
+
 ## Courrier au médecin — mise en page du document imprimé
 
 Le CR médecin est un **courrier**, pas une page web : il est lu sur papier ou
@@ -683,6 +704,20 @@ retrouvait seule en tête de page suivante.
 morde le bord en tête de document. À la page 2, le texte repartait donc collé
 au bord supérieur. Seule la première page garde ce bord à bord :
 `@page{margin:16mm 0 14mm}` + `@page :first{margin-top:0}`.
+
+**Les listes sont des listes.** Amplitudes, signes cliniques et tests cliniques
+sortaient en PARAGRAPHES — un par item, chacun avec sa marge basse : le bloc le
+plus haut du document pour l'information la plus brève. En `<ul>` sur deux
+colonnes, la même chose tient dans **moins de la moitié** de la hauteur (mesuré :
+355 px → 175 px). Une liste d'un seul item repasse sur une colonne — sinon le
+lecteur cherche ce qui manque dans la colonne vide.
+
+**Le pied courant ne numérote pas, il identifie.** Un `position:fixed` se répète
+sur chaque page imprimée ; c'est le seul moyen d'obtenir un pied de page. Les
+boîtes de marge `@page`, seules à savoir compter les pages, **ne sont pas
+implémentées par les navigateurs** — « 2 / 3 » n'est pas atteignable en CSS
+d'impression. Le pied porte donc patient, date et praticien : une feuille
+détachée reste rattachable.
 
 **Trois rendus, une seule source.** `_crBlocsHtml` (écran + PDF) et
 `_crBlocsTexte` (copie, mail) lisent les mêmes blocs. Un type de bloc ajouté

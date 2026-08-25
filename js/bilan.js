@@ -158,15 +158,30 @@ function _crMedValeur(el) {
    formater ses trente-deux tests, redéployer cette mise en forme dans
    outils.html garantirait la divergence — un seuil corrigé d'un côté, pas de
    l'autre. Un test ajouté demain apparaît donc ici sans qu'on y touche. */
+/* Pages dont les lignes remontent au CR médecin. Les tests de FORCE ne forment
+   pas une section du CR — ils sont rendus DANS le Bilan Orthopédique, mêlés aux
+   tests orthopédiques de la même région. Filtrer sur le titre de section les
+   laissait donc entièrement de côté : le praticien n'avait, pour parler de
+   force, qu'un champ de saisie manuelle prérempli depuis la Contraction Flash,
+   qui n'est pas un test de force.
+
+   On filtre donc LIGNE À LIGNE sur `data-pages`, l'information que `crItem`
+   pose déjà — exactement le critère qu'emploie le CR Tests. Un test ajouté à
+   l'une de ces pages demain remonte tout seul. */
+var CR_MED_PAGES = ['page-fonctionnels','page-fonctionnelsMS','page-fonctionnelsRachis',
+                    'page-force-mi','page-force-ms','page-force-rachis','page-musculaires',
+                    'page-course'];
+
 function _crMedResumeTests() {
   var out = [];
   try {
     _buildAllTestsHtml().forEach(function (sec) {
-      if (!/Tests Fonctionnels/i.test(sec.title || '')) return;
-      var zone = String(sec.title).replace(/^\s*\d+\.\s*/, '');
+      var zone = String(sec.title || '').replace(/^\s*\d+\.\s*/, '');
       var tmp = document.createElement('div');
       tmp.innerHTML = sec.html;
       tmp.querySelectorAll('.cr-item').forEach(function (it) {
+        var pgs = (it.getAttribute('data-pages') || '').split(/\s+/).filter(Boolean);
+        if (!pgs.some(function (p) { return CR_MED_PAGES.indexOf(p) >= 0; })) return;
         var cle = (it.querySelector('.cr-key') || {}).textContent || '';
         var tagEl = it.querySelector('.cr-tag');
         var tag = tagEl ? (tagEl.textContent || '').trim() : '';
@@ -9342,9 +9357,11 @@ function buildCRTF() {
 
      Une ligne sans provenance connue (conclusion, marqueur, valeur calculee
      sans champ rattache) est ecartee : elle ne vient d'aucun de ces onglets. */
-  var PAGES_TF = ['page-force-ms','page-force-rachis','page-force-mi','page-musculaires',
-                  'page-fonctionnelsMS','page-fonctionnelsRachis','page-fonctionnels',
-                  'page-course'];
+  /* Meme liste que celle qui alimente le CR medecin — une seule source.
+     Elles etaient ecrites deux fois, dans le meme ordre logique mais pas le
+     meme ordre d'ecriture : une page ajoutee a l'une aurait manque a l'autre
+     sans que rien ne le signale. */
+  var PAGES_TF = CR_MED_PAGES;
   function _neGarderQueTF(html){
     var tmp = document.createElement('div');
     tmp.innerHTML = html;

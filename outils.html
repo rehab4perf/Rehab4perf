@@ -1266,21 +1266,12 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
             <span style="font-size:.78rem;color:var(--text3);font-style:italic;">Sélectionnez une articulation ci-dessus</span>
           </div>
         </div>
-        <div class="cr-field-group cr-block-hidden" id="cr-block-force">
-          <div class="cr-field-group-title">Force musculaire</div>
-          <div class="cr-grid2">
-            <div class="cr-fg"><label for="cr-force-quad">Quadriceps</label><input type="text" id="cr-force-quad" placeholder="ex. 85 Nm"></div>
-            <div class="cr-fg"><label for="cr-force-ij">Ischio-jambiers</label><input type="text" id="cr-force-ij" placeholder="ex. 72 Nm"></div>
-          </div>
-          <div class="cr-toggle-row" onclick="crToggleLSI()" style="margin-top:9px">
-            <div class="cr-toggle-track" id="cr-toggle-lsi"><div class="cr-toggle-thumb"></div></div>
-            <span style="font-size:.79rem;font-weight:600;color:var(--text2)">LSI isocinétique</span>
-          </div>
-          <div class="cr-lsi-row" id="cr-lsi-row">
-            <div class="cr-fg"><label for="cr-lsi-quad">LSI quad (%)</label><input type="number" id="cr-lsi-quad" placeholder="ex. 87" min="0" max="120"></div>
-            <div class="cr-fg"><label for="cr-lsi-ij">LSI IJ (%)</label><input type="number" id="cr-lsi-ij" placeholder="ex. 92" min="0" max="120"></div>
-          </div>
-        </div>
+        <!-- Le bloc « Force musculaire » a ete RETIRE. Il etait prerempli depuis
+             la Contraction Flash (`cf-q-*`), qui n'est pas un test de force :
+             le courrier annoncait « Bilan de force — Quadriceps 42 / 42 » a
+             partir d'une mesure de qualite de contraction. La force remonte
+             desormais du bilan comme les tests fonctionnels, par le meme canal
+             (`r4p-cr-med-tests`), depuis les onglets Tests de Force. -->
         <!-- Tests fonctionnels repris du bilan. Le bilan sait deja formater
              ses trente-deux tests ; on lit son resume plutot que de refaire
              cette mise en forme ici, ou elle divergerait. -->
@@ -5973,10 +5964,11 @@ _updateOutilsPatientBtns();
     // Auto-ajout de l'articulation liée à la pathologie (si pas déjà sélectionnée)
     crAutoSelectArticu(btn.dataset.key);
   };
-  function crUpdateBlocks() {
-    var hasForce = crPathos.some(function(k){ return CR_PATHO_FORCE.indexOf(k) !== -1; });
-    crToggleBlock('cr-block-force',      hasForce);
-  }
+  /* Le bloc « Force musculaire » ayant ete retire, plus aucun bloc du
+     formulaire ne depend de la pathologie choisie. La fonction est conservee
+     — elle est appelee depuis plusieurs endroits — mais n'a plus rien a
+     montrer ni a cacher. */
+  function crUpdateBlocks() {}
   function crToggleBlock(id, show) {
     var el = document.getElementById(id);
     if (!el) return;
@@ -6021,6 +6013,8 @@ _updateOutilsPatientBtns();
     btn.textContent = labels[crSigns[key]];
     btn.className   = 'cr-sign-cycle ' + cls[crSigns[key]];
   };
+  /* Conserve : le bouton a disparu avec le bloc, mais la fonction reste
+     appelable sans dommage (les elements sont absents, elle ne fait rien). */
   window.crToggleLSI = function() {
     crLsiOn = !crLsiOn;
     var track = document.getElementById('cr-toggle-lsi');
@@ -6362,7 +6356,7 @@ _updateOutilsPatientBtns();
       'text-transform:uppercase;color:#1A3A5C}',
     'table.lt-t{width:100%;border-collapse:collapse;font-size:.78rem;margin-bottom:6px}',
     'table.lt-t th{text-align:left;font-size:.62rem;font-weight:700;letter-spacing:.06em;',
-      'text-transform:uppercase;color:#9D9B96;padding:5px 8px;border-bottom:1px solid #E8E6E1}',
+      'text-transform:uppercase;color:#9D9B96;padding:4px 8px;border-bottom:1px solid #E8E6E1}',
     /* Les colonnes de chiffres sont ETROITES et le nom du test prend le
        reste : a 660 px de carte, des colonnes larges le repliaient sur
        trois lignes et le tableau perdait sa lisibilite. */
@@ -6370,7 +6364,7 @@ _updateOutilsPatientBtns();
       'width:62px;white-space:nowrap}',
     'table.lt-t th.s,table.lt-t td.s{text-align:right;width:104px}',
     'table.lt-t td.lbl,table.lt-t th:first-child{width:auto}',
-    'table.lt-t td{padding:7px 8px;border-bottom:1px solid #E8E6E1;vertical-align:middle}',
+    'table.lt-t td{padding:5px 8px;border-bottom:1px solid #E8E6E1;vertical-align:middle}',
     'table.lt-t tr:last-child td{border-bottom:none}',
     'table.lt-t td.lbl{color:#1A1917;font-weight:500;line-height:1.35}',
     '.lt-note{display:block;font-size:.66rem;color:#9D9B96;font-style:italic;margin-top:1px}',
@@ -6403,6 +6397,19 @@ _updateOutilsPatientBtns();
     'table.lt-t thead{display:table-header-group}',
     '.lt-sec{break-after:avoid;page-break-after:avoid;break-inside:avoid}',
     '.lt-p{orphans:3;widows:3}',
+    /* Amplitudes, signes, tests cliniques sortaient en PARAGRAPHES — un par
+       item, chacun avec sa marge basse. C'etait le bloc le plus haut du
+       document pour l'information la plus breve. En liste sur deux colonnes,
+       la meme chose tient dans moins de la moitie de la hauteur. */
+    '.lt-liste{list-style:none;margin:0 0 12px;padding:0;columns:2;column-gap:22px}',
+    '.lt-liste li{font-size:.79rem;line-height:1.5;margin:0 0 2px;padding-left:15px;',
+      'position:relative;break-inside:avoid;page-break-inside:avoid}',
+    '.lt-liste li .ic{position:absolute;left:0;top:0;font-size:.72rem}',
+    /* Une liste d'un seul item sur deux colonnes laisse une colonne vide et
+       le lecteur cherche ce qui manque. */
+    '.lt-liste.lt-liste-1{columns:1}',
+    '.lt-liste-t{font-size:.79rem;font-weight:700;color:#1A1917;margin:0 0 4px}',
+    '.lt-liste-w{break-inside:avoid;page-break-inside:avoid;margin:0 0 12px}',
     '.lt-fin{break-inside:avoid;page-break-inside:avoid}',
     '.lt-fin .lt-p:last-child{margin-bottom:0}'
   ].join('');
@@ -6424,9 +6431,17 @@ _updateOutilsPatientBtns();
       if (!_crEstBloc(b)) { out.push(String(b == null ? '' : b)); return; }
       if (b.t === 'sec')     { out.push(''); out.push(b.txt.toUpperCase()); return; }
       if (b.t === 'patient') { b.champs.forEach(function (c) { out.push(c[0] + ' : ' + c[1]); }); return; }
-      if (b.t === 'concl')   { out.push(''); out.push('CONCLUSION'); out.push(b.txt); return; }
-      if (b.t === 'plan')    { out.push(''); out.push('PLAN DE TRAITEMENT'); out.push(b.txt); return; }
+      if (b.t === 'concl')   { out.push(''); out.push('Conclusion :'); out.push(b.txt); return; }
+      if (b.t === 'plan')    { out.push(''); out.push('Plan de traitement :'); out.push(b.txt); return; }
       if (b.t === 'fin')     { (b.lignes || []).forEach(function (l) { out.push(l); }); return; }
+      if (b.t === 'liste') {
+        var its = (b.items || []).filter(function (x) { return x && x.txt; });
+        if (!its.length) return;
+        if (b.titre) out.push(b.titre);
+        its.forEach(function (x) { out.push('  ' + (x.ic ? x.ic + ' ' : '- ') + x.txt); });
+        out.push('');
+        return;
+      }
       if (b.t === 'test') {
         out.push('  ' + b.label);
         var det = (b.cellules || []).filter(function (c) { return c.valeur; })
@@ -6507,6 +6522,20 @@ _updateOutilsPatientBtns();
       /* Salutation, « Cordialement », nom, cabinet : quatre paragraphes que
          rien ne retenait ensemble. Une coupure au milieu laissait la signature
          seule en tete de page suivante. */
+      if (b.t === 'liste') {
+        fermerTable();
+        var _its = (b.items || []).filter(function (x) { return x && x.txt; });
+        if (!_its.length) return;
+        h += '<div class="lt-liste-w">'
+           + (b.titre ? '<div class="lt-liste-t">' + _crEsc(b.titre) + '</div>' : '')
+           + '<ul class="lt-liste' + (_its.length < 2 ? ' lt-liste-1' : '') + '">'
+           + _its.map(function (x) {
+               return '<li>' + (x.ic ? '<span class="ic">' + _crEsc(x.ic) + '</span>' : '')
+                    + _crEsc(x.txt) + '</li>';
+             }).join('')
+           + '</ul></div>';
+        return;
+      }
       if (b.t === 'fin') {
         fermerTable();
         h += '<div class="lt-fin">' + (b.lignes || []).map(function (l) {
@@ -6646,33 +6675,15 @@ _updateOutilsPatientBtns();
       var hasAmp = ampNeutral.length || crStatutsConfig.some(function(s){ return (ampByStatus[s.key]||[]).length; });
       if (hasAmp) {
         hasAnyAmp = true;
-        lines.push('Amplitudes articulaires — ' + crAmpConfig[articu].label + ' :');
+        var _itAmp = [];
         crStatutsConfig.forEach(function(s) {
-          (ampByStatus[s.key] || []).forEach(function(txt) { lines.push('  ' + s.icon + ' ' + txt + ' (' + s.cr + ')'); });
+          (ampByStatus[s.key] || []).forEach(function(txt) { _itAmp.push({ ic: s.icon, txt: txt + ' (' + s.cr + ')' }); });
         });
-        ampNeutral.forEach(function(s){ lines.push('  - ' + s); });
-        lines.push('');
+        ampNeutral.forEach(function(s){ _itAmp.push({ ic: '', txt: s }); });
+        lines.push({ t: 'liste', titre: 'Amplitudes articulaires — ' + crAmpConfig[articu].label, items: _itAmp });
       }
     });
 
-    // 6. Force + LSI
-    if (!document.getElementById('cr-block-force').classList.contains('cr-block-hidden')) {
-      var fQ = crV('cr-force-quad'), fIJ = crV('cr-force-ij');
-      var lQ = crV('cr-lsi-quad'),   lIJ = crV('cr-lsi-ij');
-      var fp = [];
-      if (fQ)  fp.push('  - Quadriceps : ' + fQ);
-      if (fIJ) fp.push('  - Ischio-jambiers : ' + fIJ);
-      if (fp.length) {
-        lines.push('Bilan de force :');
-        fp.forEach(function(l){ lines.push(l); });
-        if (crLsiOn && (lQ || lIJ)) {
-          lines.push('  LSI isocinétique :');
-          if (lQ)  lines.push('  - Quadriceps : ' + lQ + '%');
-          if (lIJ) lines.push('  - Ischio-jambiers : ' + lIJ + '%');
-        }
-        lines.push('');
-      }
-    }
 
 
     // 7b. SLS (toutes pathologies)
@@ -6684,11 +6695,11 @@ _updateOutilsPatientBtns();
     signDefs.forEach(function(s){ if(crSigns[s.key]===1) valideSigns.push(s.valide); else if(crSigns[s.key]===2) coursSigns.push(s.cours); });
     var signesLibre = crV('cr-signes-libre');
     if (valideSigns.length || coursSigns.length || signesLibre) {
-      lines.push('Signes cliniques :');
-      valideSigns.forEach(function(s){ lines.push('  ✓ ' + s); });
-      coursSigns.forEach(function(s){ lines.push('  ⟳ ' + s); });
-      if (signesLibre) lines.push('  - ' + signesLibre);
-      lines.push('');
+      var _itSig = [];
+      valideSigns.forEach(function(s){ _itSig.push({ ic: '✓', txt: s }); });
+      coursSigns.forEach(function(s){ _itSig.push({ ic: '⟳', txt: s }); });
+      if (signesLibre) _itSig.push({ ic: '', txt: signesLibre });
+      lines.push({ t: 'liste', titre: 'Signes cliniques', items: _itSig });
     }
 
     // 8b. Tests cliniques
@@ -6698,10 +6709,10 @@ _updateOutilsPatientBtns();
       else if (crTests[t.key] === 2) negatifTests.push(t.label);
     });
     if (positifTests.length || negatifTests.length) {
-      lines.push('Tests cliniques :');
-      positifTests.forEach(function(t){ lines.push('  ❌ ' + t + ' — Positif'); });
-      negatifTests.forEach(function(t){ lines.push('  ✓ ' + t + ' — Négatif'); });
-      lines.push('');
+      var _itTc = [];
+      positifTests.forEach(function(t){ _itTc.push({ ic: '❌', txt: t + ' — Positif' }); });
+      negatifTests.forEach(function(t){ _itTc.push({ ic: '✓', txt: t + ' — Négatif' }); });
+      lines.push({ t: 'liste', titre: 'Tests cliniques', items: _itTc });
     }
 
     // 9. Évolution
@@ -6816,12 +6827,12 @@ _updateOutilsPatientBtns();
       var sectionHasAmp = ampNeutral.length || crStatutsConfig.some(function(s){ return (ampByStatus[s.key]||[]).length; });
       if (sectionHasAmp) {
         hasAmp = true;
-        lines.push('Amplitudes articulaires — ' + crAmpConfig[articu].label + ' :');
+        var _itAmp = [];
         crStatutsConfig.forEach(function(s) {
-          (ampByStatus[s.key] || []).forEach(function(txt) { lines.push('  ' + s.icon + ' ' + txt + ' (' + s.cr + ')'); });
+          (ampByStatus[s.key] || []).forEach(function(txt) { _itAmp.push({ ic: s.icon, txt: txt + ' (' + s.cr + ')' }); });
         });
-        ampNeutral.forEach(function(s){ lines.push('  - ' + s); });
-        lines.push('');
+        ampNeutral.forEach(function(s){ _itAmp.push({ ic: '', txt: s }); });
+        lines.push({ t: 'liste', titre: 'Amplitudes articulaires — ' + crAmpConfig[articu].label, items: _itAmp });
       }
     });
     // Signes cliniques — 3 états groupés
@@ -6830,10 +6841,11 @@ _updateOutilsPatientBtns();
     signDefs.forEach(function(s){ if(crSigns[s.key]===1) valideSigns.push(s.valide); else if(crSigns[s.key]===2) coursSigns.push(s.cours); });
     var signesLibre = crV('cr-signes-libre');
     if (valideSigns.length || coursSigns.length || signesLibre) {
-      lines.push('Signes cliniques :');
-      valideSigns.forEach(function(s){ lines.push('  ✓ ' + s); });
-      coursSigns.forEach(function(s){ lines.push('  ⟳ ' + s); });
-      if (signesLibre) lines.push('  - ' + signesLibre);
+      var _itSig = [];
+      valideSigns.forEach(function(s){ _itSig.push({ ic: '✓', txt: s }); });
+      coursSigns.forEach(function(s){ _itSig.push({ ic: '⟳', txt: s }); });
+      if (signesLibre) _itSig.push({ ic: '', txt: signesLibre });
+      lines.push({ t: 'liste', titre: 'Signes cliniques', items: _itSig });
     }
 
     // Tests cliniques
@@ -6843,9 +6855,10 @@ _updateOutilsPatientBtns();
       else if (crTests[t.key] === 2) negatifTestsD.push(t.label);
     });
     if (positifTestsD.length || negatifTestsD.length) {
-      lines.push('Tests cliniques :');
-      positifTestsD.forEach(function(t){ lines.push('  ❌ ' + t + ' — Positif'); });
-      negatifTestsD.forEach(function(t){ lines.push('  ✓ ' + t + ' — Négatif'); });
+      var _itTcD = [];
+      positifTestsD.forEach(function(t){ _itTcD.push({ ic: '❌', txt: t + ' — Positif' }); });
+      negatifTestsD.forEach(function(t){ _itTcD.push({ ic: '✓', txt: t + ' — Négatif' }); });
+      lines.push({ t: 'liste', titre: 'Tests cliniques', items: _itTcD });
     }
 
     // SLS (toutes pathologies)
@@ -6949,9 +6962,20 @@ _updateOutilsPatientBtns();
       + '@page :first{margin-top:0}'
       /* Le pied de lettre — salutation, signature — ne se coupe pas. */
       + '.lt-fin{break-inside:avoid;page-break-inside:avoid}'
+      /* Un element `position:fixed` se REPETE sur chaque page imprimee. C'est
+         le seul moyen d'obtenir un pied courant : les boites de marge `@page`,
+         seules a savoir compter les pages, ne sont pas implementees par les
+         navigateurs. On identifie donc chaque feuille sans la numeroter — une
+         page detachee reste rattachable a son patient et a sa date. */
+      + '#cr-runfoot{display:block!important}'
       + '}'
+      + '#cr-runfoot{display:none;position:fixed;bottom:4mm;left:0;right:0;'
+      + 'text-align:center;font-size:7.5pt;color:#9D9B96;letter-spacing:.02em}'
       + '</style>'
       + '</head><body>'
+      + '<div id="cr-runfoot">' + _crEsc(patNomPDF ? patNomPDF.toUpperCase() : '')
+      + (letterDate ? (patNomPDF ? ' &nbsp;·&nbsp; ' : '') + _crEsc(letterDate) : '')
+      + (practName ? ' &nbsp;·&nbsp; ' + _crEsc(practName) : '') + '</div>'
       + '<div id="cr-topbar">'
       + '<button class="btn-back" onclick="window.close()">← Retour</button>'
       + '<span id="cr-scale-info"></span>'
@@ -7135,7 +7159,7 @@ _updateOutilsPatientBtns();
     crRenderSignRows();
     crTestsConfig.forEach(function(t){ crTests[t.key] = 0; });
     crRenderTestRows();
-    if (crLsiOn) crToggleLSI();
+
     crUpdateBlocks();
     _objetEdited = false;
     crSetTemplate('suivi');
@@ -7386,29 +7410,8 @@ _updateOutilsPatientBtns();
         filled++;
       }
 
-      // ── Force quadriceps (cf-q) ───────────────────────────────
-      var fQca = (bilan['cf-q-ca'] || '').toString().trim();
-      var fQcs = (bilan['cf-q-cs'] || '').toString().trim();
-      var forceEl = document.getElementById('cr-force-quad');
-      if (forceEl && (fQca || fQcs) && !forceEl.value.trim()) {
-        forceEl.value = fQca && fQcs ? fQca + ' / ' + fQcs + ' (atteint / sain)' : fQca || fQcs;
-        // Afficher le bloc force
-        var bf = document.getElementById('cr-block-force');
-        if (bf) bf.classList.remove('cr-block-hidden');
-        filled++;
-      }
-
-      // ── LSI quad ─────────────────────────────────────────────
-      var lsiQRaw = (bilan['cf-q-lsi'] || '').toString().trim().replace('%','').trim();
-      var lsiQEl  = document.getElementById('cr-lsi-quad');
-      if (lsiQEl && lsiQRaw && !isNaN(parseFloat(lsiQRaw)) && !lsiQEl.value.trim()) {
-        lsiQEl.value = parseFloat(lsiQRaw).toFixed(0);
-        // Activer le toggle LSI si pas déjà actif
-        if (!crLsiOn) crToggleLSI();
-        var bf2 = document.getElementById('cr-block-force');
-        if (bf2) bf2.classList.remove('cr-block-hidden');
-        filled++;
-      }
+      /* Le preremplissage « Force quadriceps » depuis `cf-q-*` a ete retire
+         avec son bloc : la Contraction Flash n'est pas un test de force. */
 
       /* Hop test, LSI hop, ACL-RSI et SLS ne sont plus recopies ici : ces
          champs ont disparu du formulaire, remplaces par le bloc « Tests du
