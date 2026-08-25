@@ -155,6 +155,20 @@ console.log('\n  Une PREMIÈRE évaluation n\'est pas une réévaluation');
   verifie('marque antérieure sur le bloc → déjà évalué', 'neuf', e.etat(['sel-amp-0']));
 }
 
+/* Garde-fou — TOUT chemin d'enregistrement doit ecrire la marque.
+   Le Suivi rapide construit ses `donnees` a la main (`merged`) au lieu de
+   passer par `_serializeBilan` : il ecrivait `_meta` et `_blCustom` mais
+   jamais `_reeval`. Un bilan cree par ce chemin ne portait donc aucune marque,
+   et le CR retombait en silence sur l'ancienne comparaison de valeurs. */
+console.log('\n  Tous les chemins d\'enregistrement écrivent la marque');
+{
+  var sansC = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  var nbMeta   = (sansC.match(/_meta = JSON\.stringify\(\{ catalogueVersion/g) || []).length;
+  var nbReeval = (sansC.match(/_reeval = JSON\.stringify|_reeval = _reevalSerialiser/g) || []).length;
+  verifie('autant d\'écritures de _reeval que de tampons _meta',
+          String(nbMeta), String(nbReeval));
+}
+
 /* La regle du praticien : ce qui n'est pas marque « reevalue » EST une premiere
    evaluation. L'etat reste donc distingue en interne — sans lui la ligne serait
    annoncee « reevaluee », ce qui est faux — mais il ne rend AUCUNE mention. */
@@ -190,6 +204,16 @@ console.log('\n  Bilan enregistré AVANT la marque');
   var a = api(scene({ 'sel-lig-0': 'Positif', 'sel-lig-1': 'Négatif' }, undefined, ANCIEN));
   verifie('valeur nouvelle → neuf',        'neuf',   a.etat(['sel-lig-0']));
   verifie('valeur identique → ancien',     'ancien', a.etat(['sel-lig-1']));
+
+  /* LE TROU QUI RESTAIT. `_crDejaEvalue` n'était consulté que dans la branche
+     des bilans MARQUÉS. Or aucune base n'en portait encore : on passait donc
+     toujours par ce repli, qui répondait « réévalué » sans jamais se demander
+     si le test existait avant. Une première mesure y était annoncée comme un
+     contrôle de suivi — exactement ce qui se voyait à l'écran. */
+  var b = api(scene({ 'sel-amp-0': '140' }, undefined, { 'sel-lig-0': 'Négatif' }));
+  verifie('sans marque, première mesure → initial', 'initial', b.etat(['sel-amp-0']));
+  var c = api(scene({ 'sel-amp-0': '140' }, undefined, { 'sel-amp-0': '130' }));
+  verifie('sans marque, valeur déjà connue → neuf', 'neuf',    c.etat(['sel-amp-0']));
 }
 
 console.log('\n  `null` et `[]` ne veulent pas dire la même chose');

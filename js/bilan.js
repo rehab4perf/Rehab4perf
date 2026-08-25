@@ -4652,7 +4652,7 @@ function saveBilan(){
     var _suiviPrev = _prevMergedFrom(_allBilans, 0) || _suiviSnapshot || {};
     var _changedFields = [];
     Object.keys(donnees).forEach(function(k){
-      if(k === '_meta' || k === '_blCustom') return; // métadonnées, jamais un champ clinique
+      if(k === '_meta' || k === '_blCustom' || k === '_reeval') return; // métadonnées, jamais un champ clinique
       var prev = _suiviPrev[k];
       var curr = donnees[k];
       var prevStr = (prev === undefined || prev === null) ? '' : String(prev);
@@ -4690,7 +4690,7 @@ function saveBilan(){
       var _prevD = (_curIdx !== -1 ? _prevMergedFrom(_allBilans, _curIdx + 1) : null) || {};
       var _newCF = [];
       Object.keys(donnees).forEach(function(k){
-        if(k === 'changed_fields' || k === '_meta' || k === '_blCustom') return;
+        if(k === 'changed_fields' || k === '_meta' || k === '_blCustom' || k === '_reeval') return;
         var curr = donnees[k]; var prev = _prevD[k];
         var cs = (curr===undefined||curr===null)?'':String(curr);
         var ps = (prev===undefined||prev===null)?'':String(prev);
@@ -5608,6 +5608,26 @@ function _saveSuiviRapide(){
       Object.keys(delta).forEach(function(k){ merged[k]=delta[k]; });
       merged._meta = JSON.stringify({ catalogueVersion: BILAN_CATALOGUE_VERSION, savedAt: new Date().toISOString() });
       try{ var _blc2 = _blCustomSnapshot(); if(_blc2) merged._blCustom = JSON.stringify(_blc2); }catch(ex){}
+      /* Le Suivi rapide ecrivait `_meta` et `_blCustom` mais JAMAIS `_reeval` :
+         un bilan cree par ce chemin ne portait aucune marque, et le CR
+         retombait sur l'ancienne comparaison de valeurs sans le dire.
+
+         Ici la marque ne se pose pas a l'interaction — il n'y a pas de blocs a
+         l'ecran — mais se DEDUIT du delta : les champs qu'on vient de saisir
+         designent leurs blocs. C'est exactement ce que le formulaire complet
+         enregistre, par un autre chemin.
+
+         Union avec les marques deja portees par le bilan du jour : une saisie
+         rapide qui complete un bilan ne doit pas effacer ce qu'il disait. */
+      try{
+        var _rvBase = _reevalLire(baseDonnees) || [];
+        var _rvSet  = _rvBase.slice();
+        Object.keys(delta).forEach(function(k){
+          var b = _reevalMap && _reevalMap[k];
+          if(b && _rvSet.indexOf(b) === -1) _rvSet.push(b);
+        });
+        merged._reeval = JSON.stringify(_rvSet.sort());
+      }catch(ex){}
 
       var p = existingId
         ? _sbRetry(function(){ return sbB.from('bilans').update({donnees:merged}).eq('id',existingId).select().single(); })
@@ -6672,7 +6692,13 @@ function _crEtat(fieldIds) {
       return _crValeursIdentiques(fieldIds, vals, prev) ? 'inchange' : 'neuf';
     }
   }
-  return _crCarriedLegacy(fieldIds, ctx, vals, prev) ? 'ancien' : 'neuf';
+  /* Repli sur l'ancienne regle — bilan enregistre avant le mecanisme de marque,
+     ou champ hors de tout bloc. Elle repondait « reevalue » sans jamais se
+     demander si le test existait AVANT : une premiere mesure y etait donc
+     annoncee comme un controle de suivi, ce qui est faux. La question « deja
+     evalue ? » se pose ici aussi — elle ne depend d'aucune marque. */
+  if (_crCarriedLegacy(fieldIds, ctx, vals, prev)) return 'ancien';
+  return _crDejaEvalue(fieldIds, ctx, prev) ? 'neuf' : 'initial';
 }
 
 // Conservé pour compatibilité : d'autres appelants demandent encore un booléen.

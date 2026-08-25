@@ -562,6 +562,21 @@ juin ne dit pas que le test a été fait ce jour-là — elle est indiscernable 
 « jamais évaluée », exactement le raisonnement posé pour `_afTouched`. Sans
 cette exclusion, **aucun bloc à cases ne serait jamais reconnu comme initial**.
 
+**La question « déjà évalué ? » se pose AUSSI dans le repli.** `_crDejaEvalue`
+n'était consulté que pour les bilans portant une marque — or aucune base n'en
+portait encore. On passait donc toujours par l'ancienne comparaison de valeurs,
+qui répondait « réévalué » sans jamais se demander si le test existait avant :
+une première mesure y était annoncée comme un contrôle de suivi. Le repli
+tranche désormais lui aussi entre `initial` et `neuf`.
+
+**Tout chemin d'enregistrement doit écrire `_reeval`.** Le Suivi rapide
+construit ses `donnees` à la main (`merged`) au lieu de passer par
+`_serializeBilan` : il écrivait `_meta` et `_blCustom` mais jamais `_reeval`.
+La marque s'y **déduit du delta** — les champs saisis désignent leurs blocs via
+`_reevalMap` — et s'unit à celles que portait déjà le bilan du jour. Un cas de
+référence compte les écritures de `_reeval` et les tampons `_meta` : le jour où
+un troisième chemin apparaîtra, il échouera.
+
 **`null` et `[]` ne veulent pas dire la même chose.** `_reevalLire` rend `null`
 quand la clé est absente : bilan enregistré avant le mécanisme, on retombe sur
 l'ancienne comparaison de valeurs. `[]` veut dire « rien n'a été réévalué ».
