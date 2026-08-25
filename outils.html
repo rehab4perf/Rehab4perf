@@ -6396,7 +6396,7 @@ _updateOutilsPatientBtns();
         lines.push({ t: 'sec', txt: _z });
       }
       lines.push({ t: 'test', label: t.label, valeur: t.valeur, cellules: t.cellules || [],
-                   note: t.note || '', statut: t.statut, niveau: t.niveau });
+                   note: t.note || '', statut: t.statut, niveau: t.niveau, af: t.af || null });
     });
     lines.push('');
   }
@@ -6451,6 +6451,15 @@ _updateOutilsPatientBtns();
     'table.lt-t td.lt-libre{text-align:left;font-variant-numeric:normal;width:auto;',
       'white-space:normal;color:#1A1917}',
     'table.lt-t th.obs,table.lt-t td.obs{text-align:left;width:auto;white-space:normal}',
+    /* Une compensation par sous-ligne : indentee, sans filet, elle se rattache
+       visiblement au test au-dessus au lieu de former une ligne de plus. */
+    'table.lt-t tr.lt-af-par td{border-bottom:none;padding-bottom:1px}',
+    'table.lt-t tr.lt-af-sub td{border-bottom:none;padding:1px 8px}',
+    'table.lt-t tr.lt-af-sub:last-child td{border-bottom:none}',
+    'table.lt-t tr.lt-af-sub td.lbl{padding-left:24px;font-weight:400;color:#6B6860;font-size:.74rem}',
+    'table.lt-t td.lt-af-sy{font-style:italic;color:#9D9B96;font-size:.72rem;padding-top:2px}',
+    'table.lt-t tr.lt-af-sub + tr:not(.lt-af-sub) td{border-top:1px solid #E8E6E1}',
+    '.lt-af-pt{color:#C0392B;font-weight:700;font-size:.7rem}',
     '.lt-note{display:block;font-size:.66rem;color:#9D9B96;font-style:italic;margin-top:1px}',
     '.lt-chip{display:inline-block;font-size:.63rem;font-weight:700;border-radius:20px;',
       'padding:2px 8px;border:1px solid;white-space:nowrap}',
@@ -6528,6 +6537,17 @@ _updateOutilsPatientBtns();
       }
       if (b.t === 'test') {
         out.push('  ' + b.label);
+        /* Les compensations : une par ligne, cote nomme. Le texte brut n'a pas
+           de colonnes ou poser des pastilles — c'est ce qui part dans un mail. */
+        if (b.af && b.af.length) {
+          if (b.statut) out.push('      → ' + b.statut.toLowerCase());
+          b.af.forEach(function (c) {
+            var cote = (c.g && c.d) ? ' (gauche et droite)' : (c.g ? ' (gauche)' : (c.d ? ' (droite)' : ''));
+            out.push('      - ' + c.label + cote);
+          });
+          if (b.note) out.push('      ' + b.note);
+          return;
+        }
         var det = (b.cellules || []).filter(function (c) { return c.valeur; })
           .map(function (c) { return (c.entete ? c.entete.toLowerCase() + ' ' : '') + c.valeur; }).join(' · ');
         if (!det) det = b.valeur;
@@ -6587,6 +6607,38 @@ _updateOutilsPatientBtns();
          Quand AUCUNE ligne du groupe n'a de colonnes, il en faut malgre tout
          une pour y loger le texte : `colspan="0"` n'existe pas. */
       var _colspan = Math.max(entetes.length, 1);
+
+      /* ── Compensations, une SOUS-LIGNE chacune ──────────────────────────
+         Les pastilles ne se posent dans les colonnes de cote QUE si celles-ci
+         s'appellent vraiment « Gauche » et « Droit ». Sur un patient dont le
+         cote atteint est connu, elles s'appellent « Cote sain » et « Cote
+         atteint » — la grille d'analyse fonctionnelle, elle, est TOUJOURS en
+         gauche/droite. Y poser les pastilles inverserait les cotes du patient
+         dans un document medical. Le cote est alors nomme en toutes lettres. */
+      var _iG = -1, _iD = -1;
+      entetes.forEach(function (e, i) {
+        var n = String(e).toLowerCase();
+        if (n === 'gauche' || n === 'g') _iG = i;
+        if (n === 'droit' || n === 'droite' || n === 'd') _iD = i;
+      });
+      var _cotesSurs = (_iG !== -1 && _iD !== -1);
+
+      function _afSousLignes(t) {
+        (t.af || []).forEach(function (c) {
+          var cells;
+          if (_cotesSurs) {
+            cells = entetes.map(function (e, i) {
+              var pt = (i === _iG && c.g) || (i === _iD && c.d);
+              return '<td class="n">' + (pt ? '<span class="lt-af-pt">●</span>' : '') + '</td>';
+            }).join('');
+          } else {
+            var cote = (c.g && c.d) ? 'gauche et droite' : (c.g ? 'gauche' : (c.d ? 'droite' : ''));
+            cells = '<td class="n lt-libre" colspan="' + _colspan + '">' + _crEsc(cote) + '</td>';
+          }
+          h += '<tr class="lt-af-sub"><td class="lbl">' + _crEsc(c.label) + '</td>'
+             + cells + '<td class="s"></td></tr>';
+        });
+      }
       /* Sans colonne de cote, la colonne qui reste n'accueille plus des chiffres
          mais des observations : elle se nomme, et elle s'aligne a gauche. */
       h += '<table class="lt-t"><thead><tr><th>Test</th>'
@@ -6598,6 +6650,22 @@ _updateOutilsPatientBtns();
         var par = {};
         (t.cellules || []).forEach(function (c) { if (c.valeur) par[c.entete] = c.valeur; });
         var _vide = entetes.every(function (e) { return !par[e]; });
+        /* La ligne parente d'une analyse fonctionnelle ne porte AUCUNE valeur :
+           tout est dans ses sous-lignes. Sans ce cas, elle se rabattrait sur
+           `valeur` — la phrase d'une seule traite, qu'on vient justement de
+           remplacer — et le detail apparaitrait deux fois. */
+        if (t.af && t.af.length) {
+          h += '<tr class="lt-af-par"><td class="lbl">' + _crEsc(t.label) + '</td>'
+             + (entetes.length ? entetes.map(function () { return '<td class="n"></td>'; }).join('')
+                               : '<td class="obs"></td>')
+             + '<td class="s">' + (t.statut
+                 ? '<span class="lt-chip ' + _crTagClasse(t) + '">' + _crEsc(t.statut) + '</span>' : '')
+             + '</td></tr>';
+          _afSousLignes(t);
+          if (t.note) h += '<tr class="lt-af-sub"><td class="lbl lt-af-sy" colspan="'
+                        + (2 + Math.max(entetes.length, 1)) + '">' + _crEsc(t.note) + '</td></tr>';
+          return;
+        }
         var _cols = (_vide && t.valeur)
           ? '<td class="n lt-libre" colspan="' + _colspan + '">' + _crEsc(t.valeur) + '</td>'
           : (entetes.length
@@ -6605,12 +6673,14 @@ _updateOutilsPatientBtns();
                   return '<td class="n">' + (par[e] ? _crEsc(par[e]) : '') + '</td>';
                 }).join('')
               : '<td class="obs"></td>');
-        h += '<tr><td class="lbl">' + _crEsc(t.label)
+        h += '<tr' + (t.af && t.af.length ? ' class="lt-af-par"' : '') + '><td class="lbl">'
+           + _crEsc(t.label)
            + (t.note ? '<span class="lt-note">' + _crEsc(t.note) + '</span>' : '') + '</td>'
            + _cols
            + '<td class="s">' + (t.statut
                ? '<span class="lt-chip ' + _crTagClasse(t) + '">' + _crEsc(t.statut) + '</span>' : '')
            + '</td></tr>';
+
       });
       h += '</tbody></table>';
       tampon = [];

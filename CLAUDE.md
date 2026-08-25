@@ -808,6 +808,23 @@ puces, illisible. `_crMedAnalyseFonc` la relit — seules les compensations
 PRÉSENTES, chacune avec ses côtés, puis les phrases de synthèse. Même traitement
 pour la liste à puces de l'Overhead squat, où seules les croix comptent.
 
+Elle sort en **sous-lignes** : une compensation par ligne, indentée sous le test,
+avec sa pastille dans la colonne du côté. C'est la grille du bilan rendue dans le
+tableau du courrier.
+
+**Piège mortel : les colonnes de côté ne s'appellent pas toujours Gauche/Droit.**
+`_crLabelsForCote` les nomme « Côté sain / Côté atteint » dès qu'un côté atteint
+est connu — la grille, elle, est TOUJOURS en gauche/droite. Y poser les pastilles
+sans vérifier inverserait les côtés du patient dans un document médical. Le rendu
+ne pose donc les pastilles **que** si les en-têtes s'appellent littéralement
+Gauche et Droit ; sinon le côté est nommé en toutes lettres.
+
+**Le score « G 2/7 · D 2/7 » ne sort pas du cabinet.** Le dénominateur — sept
+critères possibles — ne dit rien à qui ne le connaît pas. `_crMedResumeTests`
+réécrit le statut en NOMBRE de compensations (« 2 compensations », ou
+« 1 à gauche · 2 à droite » quand les côtés diffèrent). Le CR interne du bilan,
+lui, garde le score : c'est le praticien qui le lit.
+
 **Trois rendus, une seule source.** `_crBlocsHtml` (écran + PDF) et
 `_crBlocsTexte` (copie, mail) lisent les mêmes blocs. Un type de bloc ajouté
 d'un seul côté disparaît de l'autre sans le moindre signal.

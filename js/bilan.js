@@ -114,7 +114,7 @@ function _crMedValeurLisible(el) {
    On la relit donc : seules les compensations PRESENTES, chacune avec ses
    cotes, puis les phrases de synthese que le CR affiche deja sous la grille. */
 function _crMedAnalyseFonc(el) {
-  var out = [];
+  var lignes = [], synth = [];
   var tbl = el.querySelector('.cr-af-tbl');
   if (tbl) {
     var cells = Array.prototype.slice.call(tbl.children);
@@ -122,30 +122,37 @@ function _crMedAnalyseFonc(el) {
     for (var i = 3; i + 2 < cells.length; i += 3) {
       var g = /●/.test(cells[i + 1].textContent || '');
       var d = /●/.test(cells[i + 2].textContent || '');
-      if (!g && !d) continue;
-      var cotes = g && d ? 'gauche et droite' : (g ? 'gauche' : 'droite');
-      out.push((cells[i].textContent || '').replace(/\s+/g, ' ').trim() + ' (' + cotes + ')');
+      if (!g && !d) continue; // un critere non observe n'est pas une compensation
+      lignes.push({ label: (cells[i].textContent || '').replace(/\s+/g, ' ').trim(), g: g, d: d });
     }
   }
-  /* Liste a puces de l'Overhead squat : une coche par critere. */
+  /* Liste a puces de l'Overhead squat : seules les CROIX comptent — un critere
+     reussi n'est pas une compensation. Elle n'a pas de cotes. */
   Array.prototype.forEach.call(el.querySelectorAll('.cr-af-li'), function (li) {
     var ic = li.querySelector('.cr-af-ic');
     if (!ic || !/✗/.test(ic.textContent || '')) return;
     var t = (li.textContent || '').replace(/[✓✗·]/g, '').replace(/\s+/g, ' ').trim();
-    if (t) out.push(t);
+    if (t) lignes.push({ label: t, g: false, d: false });
   });
-  var lignes = out.length ? [out.join(' · ')] : [];
   Array.prototype.forEach.call(el.querySelectorAll('.cr-af-sy'), function (sy) {
     var t = (sy.textContent || '').replace(/\s+/g, ' ').trim();
-    if (t) lignes.push(t);
+    if (t) synth.push(t);
   });
-  return lignes.join(' — ');
+  /* Forme d'UNE SEULE PHRASE, pour la copie et le mail — un courrier colle dans
+     un mail n'a pas de tableau ou loger des sous-lignes. */
+  var phrase = lignes.map(function (l) {
+    if (!l.g && !l.d) return l.label;
+    return l.label + ' (' + (l.g && l.d ? 'gauche et droite' : (l.g ? 'gauche' : 'droite')) + ')';
+  }).join(' · ');
+  return { texte: [phrase].concat(synth).filter(Boolean).join(' — '),
+           lignes: lignes, synthese: synth.join(' ') };
 }
 
 function _crMedValeur(el) {
   if (!el) return { texte: '', cellules: [] };
   if (el.querySelector('.cr-af')) {
-    return { texte: _crMedAnalyseFonc(el), cellules: [] };
+    var _af = _crMedAnalyseFonc(el);
+    return { texte: _af.texte, cellules: [], af: _af };
   }
   var tab = el.querySelector('table.cr-mt');
   if (!tab) return { texte: (el.textContent || '').replace(/\s+/g, ' ').trim(), cellules: [] };
@@ -259,8 +266,25 @@ function _crMedResumeTests() {
         // Conclusions, marqueurs et notes ne sont pas des tests.
         if (!cle || !val) return;
         if (/^(Conclusion|Marqueur|Notes?)$/i.test(cle)) return;
-        out.push({ cle: cle, label: _crMedLabel(cle), valeur: val, cellules: v.cellules || [],
-                   note: v.note || '', statut: tag, niveau: niveau, zone: zoneLigne });
+        var _entree = { cle: cle, label: _crMedLabel(cle), valeur: val, cellules: v.cellules || [],
+                        note: v.note || '', statut: tag, niveau: niveau, zone: zoneLigne };
+        if (v.af && v.af.lignes.length) {
+          _entree.af = v.af.lignes;
+          _entree.note = v.af.synthese || _entree.note;
+          /* Le score « G 2/7 · D 2/7 » ne dit rien a qui ne connait pas le
+             denominateur — sept criteres possibles. Le courrier annonce donc un
+             NOMBRE de compensations, en toutes lettres. */
+          var _ng = 0, _nd = 0;
+          v.af.lignes.forEach(function (l) { if (l.g) _ng++; if (l.d) _nd++; });
+          if (_ng || _nd) {
+            _entree.statut = (_ng === _nd)
+              ? _ng + ' compensation' + (_ng > 1 ? 's' : '')
+              : _ng + ' à gauche · ' + _nd + ' à droite';
+          } else {
+            _entree.statut = v.af.lignes.length + ' compensation' + (v.af.lignes.length > 1 ? 's' : '');
+          }
+        }
+        out.push(_entree);
       });
     });
   } catch (ex) {}

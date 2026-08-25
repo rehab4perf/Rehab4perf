@@ -181,6 +181,92 @@ console.log('\n  Le regroupement — un intertitre par zone, jamais répété');
           zones.join('|'));
 }
 
+console.log('\n  Lecture de la grille — seules les compensations OBSERVÉES');
+{
+  /* Ces cas portent sur `_crMedAnalyseFonc`, la fonction qui relit la grille.
+     Les suivants stubbent `_crMedValeur` et ne la traversent donc pas : sans
+     ce bloc, retirer le filtre des critères non observés passerait inaperçu. */
+  var codeAF = bloc('function _crMedAnalyseFonc', 'function _crMedValeur');
+  function cel(txt) { return { textContent: txt }; }
+  function grille(rangs, synth) {
+    var enfants = [cel('Compensation observée'), cel('G'), cel('D')];
+    rangs.forEach(function (r) {
+      enfants.push(cel(r[0]), cel(r[1] ? '●' : '·'), cel(r[2] ? '●' : '·'));
+    });
+    var el = {
+      querySelector: function (sel) { return sel === '.cr-af-tbl' ? { children: enfants } : null; },
+      querySelectorAll: function (sel) {
+        if (sel === '.cr-af-sy') return (synth || []).map(function (t) { return cel(t); });
+        return [];
+      }
+    };
+    return new Function('el', codeAF + '\n return _crMedAnalyseFonc(el);')(el);
+  }
+
+  var r = grille([['Tronc — inclinaison', 1, 1],
+                  ['Genou — valgus',      0, 1],
+                  ['Hanche — adduction',  0, 0]], ['Mêmes compensations.']);
+  verifie('un critère sans pastille est écarté', '2', String(r.lignes.length));
+  verifie('les côtés sont lus',                  'true,false',
+          String(r.lignes[0].g) + ',' + String(r.lignes[1].g));
+  verifie('la phrase nomme les côtés',
+          'Tronc — inclinaison (gauche et droite) · Genou — valgus (droite) — Mêmes compensations.',
+          r.texte);
+  verifie('la synthèse est isolée', 'Mêmes compensations.', r.synthese);
+
+  var vide = grille([['Hanche — adduction', 0, 0]], []);
+  verifie('aucune compensation → aucune ligne', '0', String(vide.lignes.length));
+}
+
+console.log('\n  Analyse fonctionnelle — le score sur 7 ne sort pas du cabinet');
+{
+  /* `_crMedResumeTests` reecrit le statut quand la ligne porte des
+     compensations : « G 2/7 · D 2/7 » ne dit rien a qui ignore le
+     denominateur — sept criteres possibles. Le courrier annonce un NOMBRE. */
+  var code2 = bloc('var CR_MED_PAGES', 'var _SAVE_ICON');
+  function statutDe(lignes, tagInitial) {
+    var fauxEl = {
+      getAttribute: function () { return 'page-fonctionnels'; },
+      querySelector: function (sel) {
+        if (sel === '.cr-key') return { textContent: 'Squat unipodal — qualité' };
+        if (sel === '.cr-tag') return { textContent: tagInitial, classList: { contains: function () { return false; } } };
+        if (sel === '.cr-val') return {};
+        return null;
+      }
+    };
+    var doc = { createElement: function () {
+      return { set innerHTML(h) {}, querySelectorAll: function () { return [fauxEl]; } }; } };
+    var res = new Function('document', 'lignes', `
+      function _buildAllTestsHtml(){ return [{ title:'TESTS FONCTIONNELS', html:'' }]; }
+      function _crMedLabel(c){ return c; }
+      function _crMedValeur(el){
+        return { texte:'…', cellules:[], af:{ lignes: lignes, synthese:'Mêmes compensations.' } };
+      }
+      ${code2}
+      return _crMedResumeTests();
+    `)(doc, lignes);
+    return res[0];
+  }
+
+  var sym = statutDe([{ label:'Tronc', g:true, d:true }, { label:'Genou', g:true, d:true }], 'G 2/7 · D 2/7');
+  verifie('deux compensations des deux côtés', '2 compensations', sym.statut);
+  verifie('plus aucun « /7 »', 'false', String(/\/\d/.test(sym.statut)));
+  verifie('la synthèse passe en note', 'Mêmes compensations.', sym.note);
+  verifie('les compensations sont transmises', '2', String((sym.af || []).length));
+
+  var asym = statutDe([{ label:'Tronc', g:true, d:true }, { label:'Genou', g:false, d:true }], 'G 1/7 · D 2/7');
+  verifie('côtés inégaux → les deux nombres', '1 à gauche · 2 à droite', asym.statut);
+
+  var une = statutDe([{ label:'Tronc', g:true, d:true }], 'G 1/7 · D 1/7');
+  verifie('une seule → singulier', '1 compensation', une.statut);
+
+  /* L'Overhead squat n'a pas de côtés : ses compensations sortent sans g ni d.
+     Sans ce cas, le compte tomberait a zero et le statut serait vide. */
+  var ohs = statutDe([{ label:'Excès de lordose', g:false, d:false },
+                      { label:'Talons décollés',  g:false, d:false }], '2 compensations');
+  verifie('sans côtés → le nombre malgré tout', '2 compensations', ohs.statut);
+}
+
 console.log('\n  Une seule liste de pages pour les deux lecteurs');
 {
   /* `_neGarderQueTF` (CR Tests) et `_crMedResumeTests` filtraient sur deux
