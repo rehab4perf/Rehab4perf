@@ -697,6 +697,56 @@ loger le texte).
 réutilise. Les deux listes existaient en double, dans un ordre d'écriture
 différent — une page ajoutée à l'une aurait manqué à l'autre en silence.
 
+## Générateur de CR — deux destinataires, une seule donnée
+
+```bash
+node qualite/cr-colonnes-cas.js
+```
+
+L'onglet « CR Médecin » est devenu **Générateur de CR** : le premier geste est
+le choix du destinataire, `crAudience` (`medecin` par défaut).
+
+**Les données ne changent pas.** Mêmes tests, mêmes tableaux, mêmes chiffres,
+même conclusion — le praticien n'écrit qu'un texte. Seuls l'ouverture, l'objet
+et la clôture changent. Vouvoiement dans les deux cas, sur décision du
+praticien ; les intitulés de tests restent ceux traduits pour le médecin.
+
+**Le défaut revient à `medecin` à chaque remise à zéro.** Un courrier au patient
+parti chez un médecin se remarque tout de suite ; l'inverse — un patient qui
+reçoit « Bonjour Docteur » suivi de son propre dossier — passe beaucoup moins
+bien. Le défaut protège du second cas.
+
+Les coordonnées du médecin sont **masquées, jamais vidées** : basculer d'un
+destinataire à l'autre ne doit rien faire perdre.
+
+`crSetAudience` **régénère** le courrier affiché. Le laisser à l'écran avec le
+ton de l'ancien destinataire ferait croire qu'il a suivi la bascule.
+
+### Une colonne n'existe qu'à partir de la moitié des lignes
+
+Le tableau du courrier n'affiche une colonne que si **la moitié au moins** des
+lignes du groupe la remplit — la règle déjà posée dans le bilan pour la colonne
+« Mesure ».
+
+Le cas qui l'a motivée : l'analyse de course à pied. « Conditions », « Cadence »,
+« Temps de contact » n'ont pas deux côtés ; seule « Zone d'attaque » en a. Les
+en-têtes « Gauche / Droit » coiffaient cinq lignes dont une seule s'y rapportait.
+
+**La moitié, et non « au moins deux »** : un groupe d'UN SEUL test à deux côtés
+— un dynamomètre isolé — garde ses colonnes, ce qui est juste. Ce seuil est la
+chose à ne pas « simplifier » : le porter à 2 prive le test de force unique de
+ses colonnes, l'abaisser à 1 ramène le défaut d'origine.
+
+Une cellule **vide ne compte pas**, sans quoi une colonne entièrement vide
+survivrait — des en-têtes au-dessus de rien. Sans colonne de côté, celle qui
+reste se nomme « Observation » et s'aligne à gauche : ce ne sont plus des
+chiffres.
+
+**`zone` peut manquer.** `r4p-cr-med-tests` est un contenu de `localStorage`, et
+celui d'un praticien peut avoir été écrit par une version antérieure du bilan.
+Sans repli, `b.txt.toUpperCase()` levait une exception et **aucun courrier ne se
+générait** — le formulaire restait muet, sans dire pourquoi.
+
 ## Courrier au médecin — mise en page du document imprimé
 
 Le CR médecin est un **courrier**, pas une page web : il est lu sur papier ou

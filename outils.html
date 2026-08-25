@@ -320,7 +320,21 @@ body {
   .sub-tab { padding: 11px 12px; font-size: .82rem; }
 }
 
-/* ── CR Médecin panel ───────────────────────────────────────── */
+/* ── Générateur de CR panel ─────────────────────────────────── */
+/* Destinataire : deux choix exclusifs, donc un segment — pas deux boutons
+   independants, qui laisseraient croire qu'on peut n'en cocher aucun. */
+.cr-aud-row { display: flex; border: 1.5px solid var(--border2); border-radius: 8px; overflow: hidden; background: var(--surface); }
+.cr-aud-btn {
+  flex: 1; border: none; background: transparent; cursor: pointer;
+  font-family: inherit; font-size: .8rem; font-weight: 600; color: var(--text2);
+  padding: 9px 10px; display: inline-flex; align-items: center; justify-content: center;
+  gap: 7px; transition: background .12s, color .12s; min-height: 40px;
+}
+.cr-aud-btn + .cr-aud-btn { border-left: 1.5px solid var(--border2); }
+.cr-aud-btn:hover { background: var(--surface2); }
+.cr-aud-btn.active { background: var(--accent); color: #fff; }
+.cr-aud-btn.active:hover { background: var(--accent); }
+
 #panel-cr { padding: 0; overflow: hidden !important; }
 #panel-cr.active { display: flex; flex-direction: row; }
 .cr-layout { display: flex; width: 100%; height: 100%; overflow: hidden; }
@@ -653,7 +667,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   <button class="sub-tab" onclick="showTab('batteries')" id="stab-batteries"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="16" height="16" fill="none" stroke="currentColor" stroke-width="15" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px"><polyline points="235.932,77.53 202.485,77.53 202.485,156.909 235.932,156.909"/><line x1="233.466" y1="117.22" x2="202.485" y2="117.22"/><path d="M311.895,85.034c0,0-14.375-12.083-31.327-6.977c-15.565,4.689-17.742,22.636-6.481,29.978c0,0,11.05,4.93,23.306,9.45c29.502,10.882,16.794,39.424-6.956,39.424c-11.893,0-21.875-5.208-27.917-11.875"/><line x1="342.68" y1="76.798" x2="386.922" y2="76.798"/><line x1="364.711" y1="79.357" x2="364.711" y2="156.909"/><line x1="125.078" y1="76.798" x2="169.32" y2="76.798"/><line x1="147.11" y1="79.357" x2="147.11" y2="156.909"/><line x1="288.66" y1="233.091" x2="396.927" y2="233.091"/><line x1="288.66" y1="295.125" x2="396.927" y2="295.125"/><line x1="288.66" y1="360.086" x2="396.927" y2="360.086"/><line x1="288.66" y1="422.119" x2="396.927" y2="422.119"/><path d="M227.843,225.757c-7.871-7.75-20.534-7.651-28.283,0.221l-33.783,34.314l-17.05-15.928c-8.071-7.54-20.727-7.111-28.269,0.962c-7.54,8.071-7.109,20.728,0.962,28.268l31.287,29.228c3.852,3.598,8.755,5.385,13.651,5.385c5.176,0,10.345-1.998,14.254-5.969l47.451-48.198C235.812,246.169,235.714,233.506,227.843,225.757z"/><path d="M227.843,352.752c-7.871-7.75-20.534-7.651-28.283,0.221l-33.783,34.314l-17.05-15.928c-8.071-7.54-20.727-7.111-28.269,0.962c-7.54,8.071-7.109,20.728,0.962,28.268l31.287,29.228c3.852,3.598,8.755,5.385,13.651,5.385c5.176,0,10.345-1.998,14.254-5.969l47.451-48.198C235.812,373.164,235.714,360.501,227.843,352.752z"/><path d="M54.766,426.103V471.7c0,18.115,14.685,32.8,32.8,32.8h336.867c18.115,0,32.8-14.685,32.8-32.8V40.3c0-18.115-14.685-32.8-32.8-32.8h-42.022"/><path d="M347.411,7.5H87.567c-18.115,0-32.8,14.685-32.8,32.8v350.802"/></svg> <span class="tab-full">Batteries</span><span class="tab-short">Batt.</span></button>
   <button class="sub-tab" onclick="showTab('ressources')" id="stab-ressources"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="16" height="16" fill="currentColor" style="vertical-align:middle;margin-right:3px"><path fill-rule="evenodd" clip-rule="evenodd" d="M24.7117 10.5554L27.1538 15H39C40.6569 15 42 16.3431 42 18V36C42 37.6569 40.6569 39 39 39H9C7.34315 39 6 37.6569 6 36V12C6 10.3431 7.34315 9 9 9H22.0825C23.177 9 24.1847 9.59609 24.7117 10.5554ZM8 12C8 11.4477 8.44772 11 9 11H22.0825C22.4473 11 22.7832 11.1987 22.9589 11.5184L24.8718 15H8V12Z"/></svg> <span class="tab-full">Ressources</span><span class="tab-short">Res.</span></button>
   <button class="sub-tab" onclick="showTab('prescriptions')" id="stab-prescriptions"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="16" height="16" fill="currentColor" style="vertical-align:middle;margin-right:3px"><path fill-rule="evenodd" clip-rule="evenodd" d="M27 15V4H10C9.44772 4 9 4.44772 9 5V43C9 43.5523 9.44772 44 10 44H38C38.5523 44 39 43.5523 39 43V16H28C27.4477 16 27 15.5523 27 15ZM29 14V4.58579L38.4142 14H29ZM17 19C17 18.4477 17.4477 18 18 18H23C25.2091 18 27 19.7909 27 22C27 24.0759 25.4186 25.7825 23.3948 25.9808L27 29.5859L30.2929 26.293L31.7072 27.7072L28.4142 31.0001L31.7071 34.293L30.2928 35.7072L27 32.4143L23.7072 35.7072L22.2929 34.293L25.5858 31.0001L20.5857 26H19V33H17V25V19ZM23 24H19V20H23C24.1046 20 25 20.8954 25 22C25 23.1046 24.1046 24 23 24Z"/></svg> <span class="tab-full">Prescriptions</span><span class="tab-short">Ordonnance</span></button>
-  <button class="sub-tab" onclick="showTab('cr')" id="stab-cr"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="16" height="16" fill="currentColor" style="vertical-align:middle;margin-right:3px"><path fill-rule="evenodd" clip-rule="evenodd" d="M26 6C26.5523 6 27 6.44772 27 7V10.0008C27 10.5531 27.4477 11.0008 28 11.0008C28.5523 11.0008 29 10.5531 29 10.0008V8H30C31.6569 8 33 9.34315 33 11V35C33 36.6569 31.6569 38 30 38H13C11.3431 38 10 36.6569 10 35V11C10 9.34315 11.3431 8 13 8H15V7C15 6.44772 15.4477 6 16 6C16.5523 6 17 6.44772 17 7V10.0008C17 10.5531 17.4477 11.0008 18 11.0008C18.5523 11.0008 19 10.5531 19 10.0008V8H25V7C25 6.44772 25.4477 6 26 6ZM15 18C14.4477 18 14 18.4477 14 19C14 19.5523 14.4477 20 15 20H28C28.5523 20 29 19.5523 29 19C29 18.4477 28.5523 18 28 18H15ZM14 24C14 23.4477 14.4477 23 15 23H22C22.5523 23 23 23.4477 23 24C23 24.5523 22.5523 25 22 25H15C14.4477 25 14 24.5523 14 24ZM15 28C14.4477 28 14 28.4477 14 29C14 29.5523 14.4477 30 15 30H26C26.5523 30 27 29.5523 27 29C27 28.4477 26.5523 28 26 28H15Z"/><path d="M13 42C9.13401 42 6 38.866 6 35V10H8V35C8 37.7614 10.2386 40 13 40H30V42H13Z"/><path d="M36 13C36 11.3431 37.3431 10 39 10C40.6569 10 42 11.3431 42 13V16H36V13Z"/><path d="M36 33V18H42V33L39 37L36 33Z"/></svg> <span class="tab-full">CR </span>Médecin</button>
+  <button class="sub-tab" onclick="showTab('cr')" id="stab-cr"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="16" height="16" fill="currentColor" style="vertical-align:middle;margin-right:3px"><path fill-rule="evenodd" clip-rule="evenodd" d="M26 6C26.5523 6 27 6.44772 27 7V10.0008C27 10.5531 27.4477 11.0008 28 11.0008C28.5523 11.0008 29 10.5531 29 10.0008V8H30C31.6569 8 33 9.34315 33 11V35C33 36.6569 31.6569 38 30 38H13C11.3431 38 10 36.6569 10 35V11C10 9.34315 11.3431 8 13 8H15V7C15 6.44772 15.4477 6 16 6C16.5523 6 17 6.44772 17 7V10.0008C17 10.5531 17.4477 11.0008 18 11.0008C18.5523 11.0008 19 10.5531 19 10.0008V8H25V7C25 6.44772 25.4477 6 26 6ZM15 18C14.4477 18 14 18.4477 14 19C14 19.5523 14.4477 20 15 20H28C28.5523 20 29 19.5523 29 19C29 18.4477 28.5523 18 28 18H15ZM14 24C14 23.4477 14.4477 23 15 23H22C22.5523 23 23 23.4477 23 24C23 24.5523 22.5523 25 22 25H15C14.4477 25 14 24.5523 14 24ZM15 28C14.4477 28 14 28.4477 14 29C14 29.5523 14.4477 30 15 30H26C26.5523 30 27 29.5523 27 29C27 28.4477 26.5523 28 26 28H15Z"/><path d="M13 42C9.13401 42 6 38.866 6 35V10H8V35C8 37.7614 10.2386 40 13 40H30V42H13Z"/><path d="M36 13C36 11.3431 37.3431 10 39 10C40.6569 10 42 11.3431 42 13V16H36V13Z"/><path d="M36 33V18H42V33L39 37L36 33Z"/></svg> <span class="tab-full">Générateur de </span>CR</button>
 
 </div>
 
@@ -1155,6 +1169,23 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
     <aside class="cr-left">
       <div class="cr-left-scroll">
 
+        <!-- Destinataire du courrier — PREMIER geste : c'est lui qui fixe le
+             ton de tout le reste. Les donnees, elles, ne changent pas d'un
+             iota : memes tests, memes tableaux, memes chiffres. -->
+        <div style="margin-bottom:14px;">
+          <div style="font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:7px;">Destinataire du courrier</div>
+          <div class="cr-aud-row" role="group" aria-label="Destinataire du courrier">
+            <button type="button" class="cr-aud-btn active" id="cr-aud-medecin" aria-pressed="true" onclick="crSetAudience('medecin')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4M16 2v4M3 10h18"/><rect x="3" y="4" width="18" height="18" rx="2"/></svg>
+              Médecin
+            </button>
+            <button type="button" class="cr-aud-btn" id="cr-aud-patient" aria-pressed="false" onclick="crSetAudience('patient')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              Patient
+            </button>
+          </div>
+        </div>
+
         <!-- Sélecteur de template -->
         <div style="margin-bottom:14px;">
           <div style="font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:7px;">Type de courrier</div>
@@ -1166,21 +1197,29 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
           </div>
         </div>
 
-        <div class="cr-section-hdr" style="margin-top:0">Destinataire</div>
-        <div class="cr-fg">
-          <label for="cr-dest-nom">Titre &amp; Nom du médecin</label>
-          <input type="text" id="cr-dest-nom" placeholder="Dr. Martin Sophie">
-        </div>
-        <div class="cr-fg">
-          <label for="cr-dest-spec">Spécialité <span style="text-transform:none;font-weight:400">(optionnel)</span></label>
-          <input type="text" id="cr-dest-spec" placeholder="Chirurgien orthopédiste">
-        </div>
-        <div class="cr-fg">
-          <label for="cr-dest-email">Email du médecin <span style="text-transform:none;font-weight:400">(optionnel — pré-remplit Gmail)</span></label>
-          <input type="email" id="cr-dest-email" placeholder="docteur.martin@cabinet.fr">
+        <!-- Coordonnees du medecin : masquees quand le courrier s'adresse au
+             patient. Un champ « Titre & Nom du medecin » sur un mot destine a
+             l'athlete laisse croire qu'il faut le remplir. Masque, jamais vide :
+             la bascule d'un destinataire a l'autre ne doit rien faire perdre. -->
+        <div id="cr-bloc-medecin">
+          <div class="cr-section-hdr" style="margin-top:0">Destinataire</div>
+          <div class="cr-fg">
+            <label for="cr-dest-nom">Titre &amp; Nom du médecin</label>
+            <input type="text" id="cr-dest-nom" placeholder="Dr. Martin Sophie">
+          </div>
+          <div class="cr-fg">
+            <label for="cr-dest-spec">Spécialité <span style="text-transform:none;font-weight:400">(optionnel)</span></label>
+            <input type="text" id="cr-dest-spec" placeholder="Chirurgien orthopédiste">
+          </div>
+          <div class="cr-fg">
+            <label for="cr-dest-email">Email du médecin <span style="text-transform:none;font-weight:400">(optionnel — pré-remplit Gmail)</span></label>
+            <input type="email" id="cr-dest-email" placeholder="docteur.martin@cabinet.fr">
+          </div>
         </div>
 
-        <div class="cr-fg" style="margin-bottom:12px;">
+        <!-- L'objet reste : il sert aux deux, meme si la version patient le
+             reecrit en « Point sur votre reeducation ». -->
+        <div class="cr-fg" id="cr-fg-objet" style="margin-bottom:12px;">
           <label for="cr-objet-txt" style="font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text2);">Objet du courrier</label>
           <input type="text" id="cr-objet-txt" placeholder="ex. Suivi de prise en charge — LCA Droit" style="font-weight:600;">
         </div>
@@ -5929,6 +5968,40 @@ _updateOutilsPatientBtns();
   // State
   var crPathos = []; // multi-sélection de pathologies
   var crLsiOn = false;
+
+  /* ── Destinataire du courrier ────────────────────────────────────────
+     Les DONNEES ne changent pas : memes tests, memes tableaux, memes chiffres,
+     meme conclusion. Seuls l'ouverture, l'objet et la cloture changent — c'est
+     tout ce qui separe un courrier confraternel d'un mot au patient.
+
+     Vouvoiement dans les deux cas, sur decision du praticien.
+
+     Le defaut est MEDECIN, et il le reste a chaque reinitialisation : un
+     courrier au patient envoye par erreur a un medecin se remarque tout de
+     suite ; l'inverse — un patient qui recoit « Bonjour Docteur » suivi de son
+     propre dossier — passe moins bien. */
+  var crAudience = 'medecin';
+
+  window.crSetAudience = function (a) {
+    crAudience = (a === 'patient') ? 'patient' : 'medecin';
+    ['medecin', 'patient'].forEach(function (k) {
+      var b = document.getElementById('cr-aud-' + k);
+      if (!b) return;
+      var on = (k === crAudience);
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    var bm = document.getElementById('cr-bloc-medecin');
+    if (bm) bm.style.display = (crAudience === 'patient') ? 'none' : '';
+    /* Le courrier deja genere porte le ton de l'ancien destinataire : le
+       laisser a l'ecran ferait croire qu'il a suivi la bascule. */
+    if (typeof crGenerate === 'function' && _crTexteCourant) { try { crGenerate(); } catch (e) {} }
+  };
+
+  /* Prenom seul pour s'adresser au patient ; a defaut, le nom. */
+  function _crPrenomPatient() {
+    return (crV('cr-pat-prenom') || crV('cr-pat-nom') || '').trim();
+  }
   // ── Sign config ───────────────────────────────────────────────
   var CR_SIGN_DEFAULTS = [
     { key:'epanchement', label:'Épanchement articulaire',      valide:'Épanchement absent',                     cours:'Épanchement articulaire résiduel',                          articulations:['genou'] },
@@ -6312,9 +6385,15 @@ _updateOutilsPatientBtns();
     if (!retenus.length) return;
     var zoneEnCours = null;
     retenus.forEach(function (t) {
-      if (t.zone !== zoneEnCours) {
-        zoneEnCours = t.zone;
-        lines.push({ t: 'sec', txt: zoneEnCours });
+      /* `zone` peut manquer : `r4p-cr-med-tests` est un contenu de
+         `localStorage`, et celui d'un praticien peut avoir ete ecrit par une
+         version anterieure du bilan. Sans repli, `b.txt.toUpperCase()` levait
+         une exception et AUCUN courrier ne se generait — le formulaire restait
+         muet, sans rien dire de la raison. */
+      var _z = t.zone || 'Tests du bilan';
+      if (_z !== zoneEnCours) {
+        zoneEnCours = _z;
+        lines.push({ t: 'sec', txt: _z });
       }
       lines.push({ t: 'test', label: t.label, valeur: t.valeur, cellules: t.cellules || [],
                    note: t.note || '', statut: t.statut, niveau: t.niveau });
@@ -6371,6 +6450,7 @@ _updateOutilsPatientBtns();
        sous une colonne de chiffres et n'a pas a etre en chasse fixe. */
     'table.lt-t td.lt-libre{text-align:left;font-variant-numeric:normal;width:auto;',
       'white-space:normal;color:#1A1917}',
+    'table.lt-t th.obs,table.lt-t td.obs{text-align:left;width:auto;white-space:normal}',
     '.lt-note{display:block;font-size:.66rem;color:#9D9B96;font-style:italic;margin-top:1px}',
     '.lt-chip{display:inline-block;font-size:.63rem;font-weight:700;border-radius:20px;',
       'padding:2px 8px;border:1px solid;white-space:nowrap}',
@@ -6433,7 +6513,7 @@ _updateOutilsPatientBtns();
     var out = [];
     (blocs || []).forEach(function (b) {
       if (!_crEstBloc(b)) { out.push(String(b == null ? '' : b)); return; }
-      if (b.t === 'sec')     { out.push(''); out.push(b.txt.toUpperCase()); return; }
+      if (b.t === 'sec')     { out.push(''); out.push(String(b.txt || '').toUpperCase()); return; }
       if (b.t === 'patient') { b.champs.forEach(function (c) { out.push(c[0] + ' : ' + c[1]); }); return; }
       if (b.t === 'concl')   { out.push(''); out.push('Conclusion :'); out.push(b.txt); return; }
       if (b.t === 'plan')    { out.push(''); out.push('Plan de traitement :'); out.push(b.txt); return; }
@@ -6471,12 +6551,32 @@ _updateOutilsPatientBtns();
        lignes du groupe avant de decider des colonnes. */
     function fermerTable() {
       if (!tampon.length) return;
-      var entetes = [];
+      /* Une colonne n'existe que si la MOITIE AU MOINS des lignes du groupe la
+         remplit. C'est la regle deja posee dans le bilan pour la colonne
+         « Mesure » — une colonne qu'une seule ligne utilise fait chercher au
+         lecteur une lecture qui n'a pas lieu.
+
+         Le cas qui l'a motivee : l'analyse de course a pied. « Conditions »,
+         « Cadence », « Temps de contact » n'ont pas deux cotes ; seule « Zone
+         d'attaque » en a. Les en-tetes « Gauche / Droit » coiffaient donc cinq
+         lignes dont une seule s'y rapportait.
+
+         La moitie, et non « au moins deux » : un groupe d'UN SEUL test a deux
+         cotes — un dynamometre isole — garde ses colonnes, ce qui est juste.
+         Une ligne dont les colonnes ont disparu se rabat sur `valeur`, la forme
+         en toutes lettres que le bilan a deja calculee (« Gauche Medio-pied ·
+         Droit Medio-pied »). */
+      var compte = {}, ordre = [];
       tampon.forEach(function (t) {
+        var vues = {};
         (t.cellules || []).forEach(function (c) {
-          if (c.valeur && entetes.indexOf(c.entete) < 0) entetes.push(c.entete);
+          if (!c.valeur || vues[c.entete]) return;
+          vues[c.entete] = 1;
+          if (compte[c.entete] === undefined) { compte[c.entete] = 0; ordre.push(c.entete); }
+          compte[c.entete]++;
         });
       });
+      var entetes = ordre.filter(function (e) { return compte[e] * 2 >= tampon.length; });
       /* Toutes les lignes ne sont pas des mesures a deux cotes. « Conditions »,
          « Cadence », « Zone d'attaque » n'ont qu'une valeur en toutes lettres :
          le bilan la range dans `valeur`, sans `cellules`. Le tableau ne lisait
@@ -6487,10 +6587,12 @@ _updateOutilsPatientBtns();
          Quand AUCUNE ligne du groupe n'a de colonnes, il en faut malgre tout
          une pour y loger le texte : `colspan="0"` n'existe pas. */
       var _colspan = Math.max(entetes.length, 1);
+      /* Sans colonne de cote, la colonne qui reste n'accueille plus des chiffres
+         mais des observations : elle se nomme, et elle s'aligne a gauche. */
       h += '<table class="lt-t"><thead><tr><th>Test</th>'
          + (entetes.length
              ? entetes.map(function (e) { return '<th class="n">' + _crEsc(e) + '</th>'; }).join('')
-             : '<th class="n"></th>')
+             : '<th class="obs">Observation</th>')
          + '<th class="s">Résultat</th></tr></thead><tbody>';
       tampon.forEach(function (t) {
         var par = {};
@@ -6502,7 +6604,7 @@ _updateOutilsPatientBtns();
               ? entetes.map(function (e) {
                   return '<td class="n">' + (par[e] ? _crEsc(par[e]) : '') + '</td>';
                 }).join('')
-              : '<td class="n"></td>');
+              : '<td class="obs"></td>');
         h += '<tr><td class="lbl">' + _crEsc(t.label)
            + (t.note ? '<span class="lt-note">' + _crEsc(t.note) + '</span>' : '') + '</td>'
            + _cols
@@ -6523,7 +6625,7 @@ _updateOutilsPatientBtns();
       }
       if (b.t === 'sec') {
         fermerTable();
-        h += '<div class="lt-sec"><h3>' + _crEsc(b.txt) + '</h3></div>';
+        h += '<div class="lt-sec"><h3>' + _crEsc(b.txt || '') + '</h3></div>';
         return;
       }
       if (b.t === 'patient') {
@@ -6648,14 +6750,19 @@ _updateOutilsPatientBtns();
     }
 
     // 1. Salutation
-    var greeting = 'Bonjour Docteur,';
+    var _pat = (crAudience === 'patient');
+    var _pren = _crPrenomPatient();
+    var greeting = _pat ? ('Bonjour' + (_pren ? ' ' + _pren : '') + ',') : 'Bonjour Docteur,';
     lines.push(greeting); lines.push('');
 
     // 2. Objet
     var objetTxt = crV('cr-objet-txt');
-    if (objetTxt) { lines.push('Objet : ' + objetTxt); lines.push(''); }
+    if (objetTxt) { lines.push('Objet : ' + (_pat ? 'Point sur votre rééducation' : objetTxt)); lines.push(''); }
     var patRef = patNom ? patNom : crF('votre patient(e)', 'votre patient', 'votre patiente');
-    lines.push('Je vous adresse ce compte-rendu de rééducation' + (patNom ? ' concernant ' + patNom : '') + '.'); lines.push('');
+    lines.push(_pat
+      ? 'Voici le point sur votre rééducation à ce jour. Vous trouverez ci-dessous le détail des tests réalisés et ce qu\'ils indiquent.'
+      : 'Je vous adresse ce compte-rendu de rééducation' + (patNom ? ' concernant ' + patNom : '') + '.');
+    lines.push('');
 
     // 3. Identité patient
     if (patNom || patDob || patAccident || patOp || patPEC || crPathos.length) {
@@ -6745,8 +6852,11 @@ _updateOutilsPatientBtns();
     if (plan) { lines.push({ t: 'plan', txt: plan }); lines.push(''); }
 
     // 11. Closing
-    var _fin = ['Je reste à votre disposition pour tout complément d\'information.',
-                '', 'Cordialement,', '', crProfile.name];
+    var _fin = _pat
+      ? ['N\'hésitez pas à me poser vos questions, en séance ou par message.',
+         '', 'À bientôt,', '', crProfile.name]
+      : ['Je reste à votre disposition pour tout complément d\'information.',
+         '', 'Cordialement,', '', crProfile.name];
     if (crProfile.cabinet) _fin.push(crProfile.cabinet);
     lines.push({ t: 'fin', lignes: _fin });
     return lines;
@@ -6792,24 +6902,36 @@ _updateOutilsPatientBtns();
     }
 
     // Salutation
-    var greeting = 'Bonjour Docteur,';
+    var _pat = (crAudience === 'patient');
+    var _pren = _crPrenomPatient();
+    var greeting = _pat ? ('Bonjour' + (_pren ? ' ' + _pren : '') + ',') : 'Bonjour Docteur,';
     lines.push(greeting); lines.push('');
 
     // Objet
     var objetTxtDebut = crV('cr-objet-txt');
-    if (objetTxtDebut) { lines.push('Objet : ' + objetTxtDebut); lines.push(''); }
+    if (objetTxtDebut) { lines.push('Objet : ' + (_pat ? 'Début de votre rééducation' : objetTxtDebut)); lines.push(''); }
 
     // Intro spécifique début PEC
     var intro = 'Je vous informe de la prise en charge rééducative de ' + crF('votre patient', 'votre patient', 'votre patiente');
     if (patCiv && patNom) intro = 'Je vous informe de la prise en charge rééducative de ' + patCiv + ' ' + patNom;
     else if (patNom) intro += ' ' + patNom;
     if (patDob) intro += ', ' + crF('né', 'né', 'née') + ' le ' + patDob;
+    /* Au patient, l'introduction ne le presente pas a lui-meme : elle dit ce
+       qu'on a fait aujourd'hui et ce qui suit. Le contexte clinique — date
+       d'operation, J+N — reste dans le tableau, ou il est a sa place. */
+    if (_pat) intro = 'Voici le point de départ de votre rééducation. Vous trouverez ci-dessous le bilan réalisé aujourd\'hui, qui servira de référence pour mesurer vos progrès.';
     var contextParts = [];
     if (patPEC) contextParts.push(crF('reçu', 'reçu', 'reçue') + ' en consultation initiale le ' + patPEC);
     if (joursStr) contextParts.push(joursStr + ' ' + (_isOp ? 'post-opératoire' : 'post-traumatique'));
     if (patAccident || patOp) { var diagCtx = crPathosLabel(); if (pathoDetail) diagCtx = diagCtx ? diagCtx + ' — ' + pathoDetail : pathoDetail; if (diagCtx) contextParts.push('de sa ' + diagCtx.toLowerCase()); }
-    if (contextParts.length) intro += ', ' + contextParts.join(', ');
-    intro += '.';
+    /* La phrase adressee au patient est deja complete et ponctuee. Lui accoler
+       « , recu en consultation initiale le …, J+214 post-operatoire » la
+       rendrait bancale et lui apprendrait ce qu'il sait deja. Ce contexte reste
+       dans le tableau d'identite, ou il est a sa place. */
+    if (!_pat) {
+      if (contextParts.length) intro += ', ' + contextParts.join(', ');
+      intro += '.';
+    }
     lines.push(intro); lines.push('');
 
     // Diagnostic / côté
@@ -6907,9 +7029,11 @@ _updateOutilsPatientBtns();
 
     // Closing
     var dispo = crV('cr-dispo');
-    var _fin2 = ['Je reste naturellement disponible pour tout échange ou question concernant la prise en charge de ' + crF('votre patient(e)', 'votre patient', 'votre patiente') + '.'];
+    var _fin2 = _pat
+      ? ['N\'hésitez pas à me poser vos questions, en séance ou par message.']
+      : ['Je reste naturellement disponible pour tout échange ou question concernant la prise en charge de ' + crF('votre patient(e)', 'votre patient', 'votre patiente') + '.'];
     if (dispo) _fin2.push('Disponibilités : ' + dispo + '.');
-    _fin2.push('', 'Cordialement,', '', crProfile.name);
+    _fin2.push('', _pat ? 'À bientôt,' : 'Cordialement,', '', crProfile.name);
     if (crProfile.cabinet) _fin2.push(crProfile.cabinet);
     lines.push({ t: 'fin', lignes: _fin2 });
     return lines;
@@ -7164,6 +7288,11 @@ _updateOutilsPatientBtns();
     document.querySelectorAll('#panel-cr textarea').forEach(function(el){ el.value = ''; crAutoExpand(el); });
     crPathos = [];
     crPatientSexe = '';
+    /* Le destinataire revient au MEDECIN a chaque remise a zero. Un courrier au
+       patient parti chez un medecin se remarque tout de suite ; l'inverse — un
+       patient qui recoit « Bonjour Docteur » suivi de son propre dossier —
+       passe beaucoup moins bien. Le defaut protege du second cas. */
+    try{ window.crSetAudience('medecin'); }catch(e){}
     crAmpArticu = '';
     crArticuList = [];
     _crArticuPathoMap = {};

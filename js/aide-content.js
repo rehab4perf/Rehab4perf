@@ -158,6 +158,14 @@ sections: [
       { t:'Basculez barres / radar', x:'Vue barres (par défaut) pour lire les points par composant, ou radar pour une vue d\'ensemble. Le PDF exporté reprend la vue sélectionnée.' },
       { t:'Générez le rapport PDF', x:'Score, asymétrie et profil détaillé sont inclus dans un rapport prêt à imprimer ou archiver.' }
     ]},
+  { id:'cr-destinataire', titre:'Écrire au médecin ou au patient',
+    intro:'L\'onglet est devenu « Générateur de CR ». Le premier geste est le choix du destinataire — c\'est lui qui donne le ton au reste.',
+    etapes:[
+      { t:'Médecin ou patient', x:'Le sélecteur en haut du formulaire. Par défaut : médecin. Il y revient à chaque réinitialisation — un courrier au patient parti chez un médecin se remarque tout de suite, l\'inverse beaucoup moins.' },
+      { t:'Ce qui change, et ce qui ne change pas', x:'Les données ne bougent pas : mêmes tests, mêmes tableaux, mêmes chiffres, même conclusion. Vous n\'écrivez qu\'un seul texte. Seuls l\'ouverture, l\'objet et la clôture changent — « Bonjour Docteur » devient « Bonjour Florian », « Cordialement » devient « À bientôt ».' },
+      { t:'Le vouvoiement est conservé', x:'La version patient reste au vous. Les intitulés de tests restent également ceux traduits pour le médecin : « Force fonctionnelle du membre inférieur en appui unipodal », pas « force sur une jambe ».' },
+      { t:'Les coordonnées du médecin disparaissent', x:'Elles sont masquées, jamais effacées : vous pouvez basculer d\'un destinataire à l\'autre sans rien reperdre.' }
+    ]},
   { id:'cr-force-medecin', titre:'La force dans le CR médecin',
     intro:'Le bloc « Force musculaire » à saisir à la main a été retiré : la force remonte du bilan, comme les tests fonctionnels.',
     etapes:[
