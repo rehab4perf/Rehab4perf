@@ -672,6 +672,27 @@ du CR** : ils sont rendus DANS le Bilan Orthopédique, mêlés aux tests de la m
 région. Ils étaient donc entièrement invisibles. On filtre maintenant **ligne à
 ligne sur `data-pages`**, l'information que `crItem` pose déjà.
 
+**La ZONE ne peut pas être le titre de section.** Elle l'était, si bien qu'un
+dynamomètre à « Ischio-jambiers 32,6 / 35,2 kg » s'annonçait sous « BILAN
+ORTHOPÉDIQUE » — un intitulé qui ne correspond pas à l'examen. `CR_MED_ZONES`
+donne aux pages de force leur propre intitulé ; la page d'origine dit vrai là où
+le titre de section ment.
+
+**Le regroupement se fait à la source.** Les deux consommateurs — la liste à
+cocher et le courrier — ouvrent un intertitre dès que la zone CHANGE. Les tests
+de force étant dispersés dans chaque section articulaire (Épaule, force, Genou,
+force…), « Tests de force » se serait répété à chaque région. `_crMedResumeTests`
+regroupe une fois, en conservant l'ordre de **première apparition** — celui du
+bilan.
+
+**Toutes les lignes ne sont pas des mesures à deux côtés.** « Conditions »,
+« Cadence », « Zone d'attaque » n'ont qu'une valeur en toutes lettres : le bilan
+la range dans `valeur`, sans `cellules`. Le tableau du courrier ne lisait **que**
+les cellules — ces lignes s'affichaient avec leur intitulé et des colonnes vides,
+**la valeur perdue en route**. Elles occupent désormais toute la largeur des
+colonnes de mesure (`colspan`, jamais `0` : il faut au moins une colonne pour y
+loger le texte).
+
 `CR_MED_PAGES` est la **source unique** : `_neGarderQueTF` (CR Tests) la
 réutilise. Les deux listes existaient en double, dans un ordre d'écriture
 différent — une page ajoutée à l'une aurait manqué à l'autre en silence.

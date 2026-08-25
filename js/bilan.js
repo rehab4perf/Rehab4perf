@@ -172,6 +172,19 @@ var CR_MED_PAGES = ['page-fonctionnels','page-fonctionnelsMS','page-fonctionnels
                     'page-force-mi','page-force-ms','page-force-rachis','page-musculaires',
                     'page-course'];
 
+/* La ZONE regroupe les lignes dans le courrier du medecin. Elle valait le titre
+   de la section du CR — or les tests de force sont rendus DANS le Bilan
+   Orthopedique, mele aux tests de la meme region : un dynamometre a
+   « Ischio-jambiers 32,6 / 35,2 kg » s'annoncait donc sous « BILAN
+   ORTHOPEDIQUE ». Le medecin lisait un intitule qui ne correspond pas a
+   l'examen. La page d'origine, elle, dit vrai. */
+var CR_MED_ZONES = {
+  'page-force-mi'    : 'Tests de force',
+  'page-force-ms'    : 'Tests de force',
+  'page-force-rachis': 'Tests de force',
+  'page-musculaires' : 'Tests de force'
+};
+
 function _crMedResumeTests() {
   var out = [];
   try {
@@ -182,6 +195,12 @@ function _crMedResumeTests() {
       tmp.querySelectorAll('.cr-item').forEach(function (it) {
         var pgs = (it.getAttribute('data-pages') || '').split(/\s+/).filter(Boolean);
         if (!pgs.some(function (p) { return CR_MED_PAGES.indexOf(p) >= 0; })) return;
+        /* Une ligne peut lire des champs de plusieurs pages ; la premiere qui
+           porte un intitule propre l'emporte sur le titre de section. */
+        var zoneLigne = zone;
+        for (var _z = 0; _z < pgs.length; _z++) {
+          if (CR_MED_ZONES[pgs[_z]]) { zoneLigne = CR_MED_ZONES[pgs[_z]]; break; }
+        }
         var cle = (it.querySelector('.cr-key') || {}).textContent || '';
         var tagEl = it.querySelector('.cr-tag');
         var tag = tagEl ? (tagEl.textContent || '').trim() : '';
@@ -201,11 +220,26 @@ function _crMedResumeTests() {
         if (!cle || !val) return;
         if (/^(Conclusion|Marqueur|Notes?)$/i.test(cle)) return;
         out.push({ cle: cle, label: _crMedLabel(cle), valeur: val, cellules: v.cellules || [],
-                   note: v.note || '', statut: tag, niveau: niveau, zone: zone });
+                   note: v.note || '', statut: tag, niveau: niveau, zone: zoneLigne });
       });
     });
   } catch (ex) {}
-  return out;
+  /* Les deux consommateurs — la liste a cocher et le courrier — ouvrent un
+     intertitre des que la zone CHANGE. Or les tests de force sont rendus dans
+     chaque section articulaire : Epaule, force, Genou, force… « Tests de
+     force » se serait donc repete a chaque region. On regroupe ici, une fois,
+     plutot que des deux cotes.
+
+     L'ordre de PREMIERE apparition est conserve : c'est celui du bilan, et le
+     medecin lit les regions dans l'ordre ou elles ont ete examinees. */
+  var parZone = {}, ordre = [];
+  out.forEach(function (t) {
+    if (!parZone[t.zone]) { parZone[t.zone] = []; ordre.push(t.zone); }
+    parZone[t.zone].push(t);
+  });
+  var groupe = [];
+  ordre.forEach(function (z) { groupe = groupe.concat(parZone[z]); });
+  return groupe;
 }
 var _SAVE_ICON = '<svg style="vertical-align:middle;margin-right:4px" width="16" height="16" fill="currentColor" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><g><path d="m28.702 8.564-4.273-5c-.795-.93-1.954-1.464-3.18-1.464h-14.771c-2.306 0-4.182 1.877-4.182 4.183v19.436c0 2.306 1.876 4.183 4.182 4.183h19.045c2.306 0 4.183-1.877 4.183-4.183v-14.437c-.001-.995-.357-1.96-1.004-2.718zm-6.962 19.536h-11.481v-8.173c0-.631.514-1.144 1.145-1.144h9.191c.631 0 1.145.513 1.145 1.144zm6.164-2.382c0 1.313-1.068 2.382-2.382 2.382h-1.981v-8.173c0-1.623-1.321-2.944-2.945-2.944h-9.191c-1.624 0-2.945 1.321-2.945 2.944v8.173h-1.982c-1.313 0-2.382-1.068-2.382-2.382v-19.436c0-1.313 1.069-2.382 2.382-2.382h14.771c.698 0 1.358.304 1.811.834l4.273 4.999c.369.432.571.982.571 1.549z"/><path d="m9.359 9.31h5.963c.497 0 .9-.403.9-.9s-.403-.9-.9-.9h-5.963c-.497 0-.9.403-.9.9s.403.9.9.9z"/><path d="m22.641 11.572h-13.282c-.497 0-.9.403-.9.9s.403.9.9.9h13.281c.497 0 .9-.403.9-.9s-.402-.9-.899-.9z"/></g></svg>';
 

@@ -6367,6 +6367,10 @@ _updateOutilsPatientBtns();
     'table.lt-t td{padding:5px 8px;border-bottom:1px solid #E8E6E1;vertical-align:middle}',
     'table.lt-t tr:last-child td{border-bottom:none}',
     'table.lt-t td.lbl{color:#1A1917;font-weight:500;line-height:1.35}',
+    /* Une valeur en toutes lettres n'est pas un nombre : elle ne se centre pas
+       sous une colonne de chiffres et n'a pas a etre en chasse fixe. */
+    'table.lt-t td.lt-libre{text-align:left;font-variant-numeric:normal;width:auto;',
+      'white-space:normal;color:#1A1917}',
     '.lt-note{display:block;font-size:.66rem;color:#9D9B96;font-style:italic;margin-top:1px}',
     '.lt-chip{display:inline-block;font-size:.63rem;font-weight:700;border-radius:20px;',
       'padding:2px 8px;border:1px solid;white-space:nowrap}',
@@ -6473,17 +6477,35 @@ _updateOutilsPatientBtns();
           if (c.valeur && entetes.indexOf(c.entete) < 0) entetes.push(c.entete);
         });
       });
+      /* Toutes les lignes ne sont pas des mesures a deux cotes. « Conditions »,
+         « Cadence », « Zone d'attaque » n'ont qu'une valeur en toutes lettres :
+         le bilan la range dans `valeur`, sans `cellules`. Le tableau ne lisait
+         QUE les cellules — ces lignes s'affichaient donc avec un intitule et
+         des colonnes VIDES, la valeur perdue en route. Elles occupent
+         desormais toute la largeur des colonnes de mesure.
+
+         Quand AUCUNE ligne du groupe n'a de colonnes, il en faut malgre tout
+         une pour y loger le texte : `colspan="0"` n'existe pas. */
+      var _colspan = Math.max(entetes.length, 1);
       h += '<table class="lt-t"><thead><tr><th>Test</th>'
-         + entetes.map(function (e) { return '<th class="n">' + _crEsc(e) + '</th>'; }).join('')
+         + (entetes.length
+             ? entetes.map(function (e) { return '<th class="n">' + _crEsc(e) + '</th>'; }).join('')
+             : '<th class="n"></th>')
          + '<th class="s">Résultat</th></tr></thead><tbody>';
       tampon.forEach(function (t) {
         var par = {};
         (t.cellules || []).forEach(function (c) { if (c.valeur) par[c.entete] = c.valeur; });
+        var _vide = entetes.every(function (e) { return !par[e]; });
+        var _cols = (_vide && t.valeur)
+          ? '<td class="n lt-libre" colspan="' + _colspan + '">' + _crEsc(t.valeur) + '</td>'
+          : (entetes.length
+              ? entetes.map(function (e) {
+                  return '<td class="n">' + (par[e] ? _crEsc(par[e]) : '') + '</td>';
+                }).join('')
+              : '<td class="n"></td>');
         h += '<tr><td class="lbl">' + _crEsc(t.label)
            + (t.note ? '<span class="lt-note">' + _crEsc(t.note) + '</span>' : '') + '</td>'
-           + entetes.map(function (e) {
-               return '<td class="n">' + (par[e] ? _crEsc(par[e]) : '') + '</td>';
-             }).join('')
+           + _cols
            + '<td class="s">' + (t.statut
                ? '<span class="lt-chip ' + _crTagClasse(t) + '">' + _crEsc(t.statut) + '</span>' : '')
            + '</td></tr>';
