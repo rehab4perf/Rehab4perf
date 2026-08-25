@@ -103,6 +103,11 @@ function lancerAvec(sections) {
       return sections.map(function(s){ return { title: s.title, html: '', _s: s }; });
     }
     function _crMedLabel(c){ return c; }
+    /* _crMedResumeTests appelle aussi le geste : sans ce stub elle levait, le
+       try/catch avalait l'exception et rendait un tableau VIDE — les cas
+       tombaient sur undefined sans dire pourquoi. Pas d'accent grave ici : on
+       est DANS un gabarit, il le refermerait. */
+    function _crMedGeste(){ return ''; }
     function _crMedValeur(el){ return { texte: el._val, cellules: [], note: '' }; }
     var _origForEach = Array.prototype.forEach;
     ${code.replace('_buildAllTestsHtml().forEach(function (sec) {',
@@ -181,6 +186,42 @@ console.log('\n  Le regroupement — un intertitre par zone, jamais répété');
           zones.join('|'));
 }
 
+console.log('\n  Le lexique complète le nom du test, il ne le remplace plus');
+{
+  /* « Contrôle moteur global » ne disait ni quel membre, ni quel mouvement :
+     le nom technique n'avait pas ete traduit, il avait ete SUPPRIME. */
+  var codeLex = bloc('var CR_MED_LEXIQUE', 'function _crMedValeurLisible');
+  var lex = new Function(codeLex + '\n return { l: _crMedLabel, g: _crMedGeste };')();
+
+  verifie('le protocole suit la fonction',
+          'Contrôle moteur global (Overhead Squat)', lex.l('Overhead squat'));
+  verifie('… et le geste part à côté', 'squat bras levés', lex.g('Overhead squat'));
+
+  verifie('le squat unipodal se nomme',
+          'Contrôle du membre inférieur (Squat unipodal)', lex.l('Squat unipodal — qualité'));
+
+  /* Ce qui suit le motif est conserve : les declinaisons gardent leur suffixe,
+     et le protocole se place APRES lui. */
+  verifie('une déclinaison garde son suffixe',
+          'Contrôle postural dynamique — direction antérieure (SEBT)', lex.l('SEBT — Antérieur'));
+
+  /* Protocole vide quand il ne dirait rien de plus que la fonction. */
+  verifie('pas de parenthèse redondante',
+          'Endurance des extenseurs du cou', lex.l('Endurance Extenseurs Cervicaux'));
+  verifie('… ni de geste inventé', '', lex.g('Endurance Extenseurs Cervicaux'));
+
+  /* Geste vide quand la fonction le porte deja. */
+  verifie('le Hop Test n\'a rien à ajouter', '', lex.g('Hop Test'));
+
+  /* Hors lexique : le nom d'origine, jamais rien de perdu. */
+  verifie('un test inconnu garde son nom', 'Machin inconnu', lex.l('Machin inconnu'));
+
+  /* Le tri du plus long au plus court retire la dependance a l'ordre
+     d'ecriture : « Drop Jump H » ne doit pas etre attrape par « Drop Jump ». */
+  verifie('la clé la plus longue gagne',
+          'Qualité de rebond (Pliométrie verticale)', lex.l('Pliométrie verticale (qualitative)'));
+}
+
 console.log('\n  Lecture de la grille — seules les compensations OBSERVÉES');
 {
   /* Ces cas portent sur `_crMedAnalyseFonc`, la fonction qui relit la grille.
@@ -256,6 +297,11 @@ console.log('\n  Analyse fonctionnelle — le score sur 7 ne sort pas du cabinet
     var res = new Function('document', 'lignes', `
       function _buildAllTestsHtml(){ return [{ title:'TESTS FONCTIONNELS', html:'' }]; }
       function _crMedLabel(c){ return c; }
+    /* _crMedResumeTests appelle aussi le geste : sans ce stub elle levait, le
+       try/catch avalait l'exception et rendait un tableau VIDE — les cas
+       tombaient sur undefined sans dire pourquoi. Pas d'accent grave ici : on
+       est DANS un gabarit, il le refermerait. */
+    function _crMedGeste(){ return ''; }
       function _crMedValeur(el){
         return { texte:'…', cellules:[], af:{ lignes: lignes, synthese:'Mêmes compensations.' } };
       }
@@ -270,8 +316,10 @@ console.log('\n  Analyse fonctionnelle — le score sur 7 ne sort pas du cabinet
      la meme section souvent en COTE SAIN / COTE ATTEINT. Deux conventions dans
      un meme tableau ne se reconcilient pas — elle prend donc sa propre zone,
      donc son propre tableau. */
-  verifie('elle quitte la section des tests chiffrés',
-          'Analyse fonctionnelle — qualité du mouvement', sym.zone);
+  /* Le MEMBRE est nomme : l'analyse fonctionnelle ne porte que sur le membre
+     inferieur, et rien dans le courrier ne le disait. */
+  verifie('elle quitte la section des tests chiffrés, membre nommé',
+          'Analyse fonctionnelle du membre inférieur — qualité du mouvement', sym.zone);
   verifie('deux compensations des deux côtés', '2 compensations', sym.statut);
   verifie('plus aucun « /7 »', 'false', String(/\/\d/.test(sym.statut)));
   verifie('la synthèse passe en note', 'Mêmes compensations.', sym.note);

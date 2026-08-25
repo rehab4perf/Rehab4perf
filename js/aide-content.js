@@ -171,7 +171,8 @@ sections: [
     etapes:[
       { t:'Pourquoi il a disparu', x:'Il se préremplissait depuis la Contraction Flash. Le courrier annonçait donc « Bilan de force — Quadriceps 42 / 42 » à partir d\'une mesure de qualité de contraction, qui n\'est pas un test de force. Un chiffre juste sous un intitulé faux.' },
       { t:'Où saisir la force désormais', x:'Dans les onglets « Tests de Force MS / Rachis / MI » et « Tests musculaires » du bilan clinique. Vos saisies remontent ensuite toutes seules dans le bloc « Tests du bilan » du CR médecin, à cocher ou décocher comme les tests fonctionnels.' },
-      { t:'Rien à recopier', x:'Le bilan sait déjà calculer l\'asymétrie et traduire les intitulés pour le médecin. Un test de force ajouté au bilan demain apparaîtra tout seul dans cette liste.' }
+      { t:'Rien à recopier', x:'Le bilan sait déjà calculer l\'asymétrie et traduire les intitulés pour le médecin. Un test de force ajouté au bilan demain apparaîtra tout seul dans cette liste.' },
+      { t:'Comment les tests sont nommés au médecin', x:'Trois éléments : la fonction mesurée (« Contrôle du membre inférieur »), le nom du protocole entre parenthèses (« Squat unipodal ») pour le médecin du sport qui le reconnaît, et le geste réalisé en petit dessous (« squat sur une jambe »). Auparavant seule la fonction sortait — le médecin ne savait ni quel membre, ni quel mouvement avait été testé.' }
     ]},
   { id:'cr-medecin', titre:'Rédiger un CR médecin',
     intro:'Un courrier structuré destiné au médecin, avec aperçu en temps réel pendant la saisie.',

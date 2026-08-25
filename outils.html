@@ -368,6 +368,9 @@ body {
 .cr-tf-row input { margin:2px 0 0; flex:none; accent-color:var(--accent); cursor:pointer; }
 .cr-tf-lbl { flex:1; min-width:0; }
 .cr-tf-nom { font-size:.78rem; font-weight:600; color:var(--text); line-height:1.3; }
+/* Le geste, en clair et en gris : le praticien coche vite, il n'a pas a
+   relire l'intitule medical en entier pour reconnaitre son test. */
+.cr-tf-geste { font-weight:400; color:var(--text3); }
 .cr-tf-val { font-size:.71rem; color:var(--text2); margin-top:1px; line-height:1.35; }
 .cr-tf-tag {
   flex:none; font-size:.62rem; font-weight:700; border-radius:20px;
@@ -6364,7 +6367,9 @@ _updateOutilsPatientBtns();
             +   '<input type="checkbox"' + coche
             +     ' onchange="crBasculerTest(' + _crEsc(JSON.stringify(t.cle)) + ', this.checked)">'
             +   '<span class="cr-tf-lbl">'
-            +     '<span class="cr-tf-nom">' + _crEsc(t.label) + '</span>'
+            +     '<span class="cr-tf-nom">' + _crEsc(t.label)
+            +       (t.geste ? ' <span class="cr-tf-geste">— ' + _crEsc(t.geste) + '</span>' : '')
+            +     '</span>'
             +     '<span class="cr-tf-val">' + _crEsc(t.valeur) + '</span>'
             +   '</span>'
             +   (t.statut ? '<span class="cr-tf-tag ' + _crTagClasse(t) + '">' + _crEsc(t.statut) + '</span>' : '')
@@ -6396,7 +6401,8 @@ _updateOutilsPatientBtns();
         lines.push({ t: 'sec', txt: _z });
       }
       lines.push({ t: 'test', label: t.label, valeur: t.valeur, cellules: t.cellules || [],
-                   note: t.note || '', statut: t.statut, niveau: t.niveau, af: t.af || null });
+                   note: t.note || '', statut: t.statut, niveau: t.niveau, af: t.af || null,
+                   geste: t.geste || '' });
     });
     lines.push('');
   }
@@ -6536,7 +6542,7 @@ _updateOutilsPatientBtns();
         return;
       }
       if (b.t === 'test') {
-        out.push('  ' + b.label);
+        out.push('  ' + b.label + (b.geste ? ' — ' + b.geste : ''));
         /* Les compensations : une par ligne, cote nomme. Le texte brut n'a pas
            de colonnes ou poser des pastilles — c'est ce qui part dans un mail. */
         if (b.af && b.af.length) {
@@ -6663,7 +6669,8 @@ _updateOutilsPatientBtns();
            `valeur` — la phrase d'une seule traite, qu'on vient justement de
            remplacer — et le detail apparaitrait deux fois. */
         if (t.af && t.af.length) {
-          h += '<tr class="lt-af-par"><td class="lbl">' + _crEsc(t.label) + '</td>'
+          h += '<tr class="lt-af-par"><td class="lbl">' + _crEsc(t.label)
+             + (t.geste ? '<span class="lt-note">' + _crEsc(t.geste) + '</span>' : '') + '</td>'
              + (entetes.length ? entetes.map(function () { return '<td class="n"></td>'; }).join('')
                                : '<td class="obs"></td>')
              + '<td class="s">' + (t.statut
@@ -6683,6 +6690,9 @@ _updateOutilsPatientBtns();
               : '<td class="obs"></td>');
         h += '<tr' + (t.af && t.af.length ? ' class="lt-af-par"' : '') + '><td class="lbl">'
            + _crEsc(t.label)
+           /* Le geste d'abord — il dit CE QU'ON A FAIT ; la note qui suit dit
+              dans quelles conditions (« Repère EIAS-sol : 45 cm »). */
+           + (t.geste ? '<span class="lt-note">' + _crEsc(t.geste) + '</span>' : '')
            + (t.note ? '<span class="lt-note">' + _crEsc(t.note) + '</span>' : '') + '</td>'
            + _cols
            + '<td class="s">' + (t.statut

@@ -697,6 +697,37 @@ loger le texte).
 réutilise. Les deux listes existaient en double, dans un ordre d'écriture
 différent — une page ajoutée à l'une aurait manqué à l'autre en silence.
 
+## Intitulés des tests — le lexique complète, il ne remplace pas
+
+`CR_MED_LEXIQUE` traduisait le nom du test **en le supprimant** : « Overhead
+squat » devenait « Contrôle moteur global », qui ne dit ni quel membre ni quel
+mouvement. Le médecin ne pouvait ni juger si le test répondait à sa question, ni
+le refaire, ni en discuter.
+
+Chaque entrée porte désormais **quatre champs** —
+`[clé, fonction, protocole, geste]` :
+
+- la **fonction** ouvre l'intitulé : elle se comprend sans jargon ;
+- le **protocole** suit entre parenthèses, pour qui le reconnaît. Vide quand il
+  ne dirait rien de plus (endurances cervicales, déficits au dynamomètre) ;
+- le **geste** part en petit sous l'intitulé, là où figure déjà « Repère
+  EIAS-sol : 45 cm ». Sur la même ligne il doublait la hauteur de la colonne.
+  Vide quand la fonction le porte déjà — « Capacité de saut en longueur sur un
+  pied » n'a rien à ajouter.
+
+Le tri du plus long au plus court est **conservé** : sans lui « Drop Jump H »
+serait attrapé par « Drop Jump — RSI », et « Pliométrie verticale
+(qualitative) » par « Pliométrie verticale ». Ce qui suit le motif est gardé —
+« SEBT — Antérieur » rend « … — direction antérieure (SEBT) », protocole après
+le suffixe.
+
+Un test **hors lexique garde son nom d'origine** : la table peut rester
+incomplète sans jamais rien casser.
+
+**Le membre est nommé** dans l'intertitre de l'analyse fonctionnelle : elle ne
+porte que sur le membre inférieur (`AF_PAGES`), et rien dans le courrier ne le
+disait.
+
 ## Générateur de CR — deux destinataires, une seule donnée
 
 ```bash
