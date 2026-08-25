@@ -802,8 +802,15 @@ td.bl-row-rail button:disabled { opacity: .3 !important; cursor: default; }
    case vide, grise, sans intitule ni contenu. Le defaut est apparu au retrait
    du champ « Date du bilan », qui a laisse une grille de trois colonnes avec
    deux champs. La classe a ete corrigee — cette regle fait qu'un prochain
-   retrait ne le reproduira pas en silence. */
-.form-grid > .field:last-child:nth-child(odd)         { grid-column: 1 / -1; }
+   retrait ne le reproduira pas en silence.
+
+   `:not(.triple)` n'est PAS decoratif. Sans lui, la premiere regle s'appliquait
+   aussi aux grilles de trois colonnes : dans « Nom · Prenom · Date de
+   naissance », le TROISIEME champ est en position impaire et dernier, il
+   passait donc en pleine largeur — et laissait la troisieme colonne de la
+   premiere ligne a nu. Un garde-fou qui creait le defaut qu'il devait
+   empecher. */
+.form-grid:not(.single):not(.triple) > .field:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .form-grid.triple > .field:last-child:nth-child(3n+1) { grid-column: 1 / -1; }
 .form-grid.triple > .field:last-child:nth-child(3n+2) { grid-column: 2 / -1; }
 .field {
@@ -1792,6 +1799,13 @@ textarea { resize:none !important; overflow:hidden !important; }
   /* Les formulaires du bilan utilisent .form-grid (2 col) / .triple (3 col),
      pas .grid-N : à 3 colonnes ils débordent hors écran (dates, identité). */
   .form-grid.triple { grid-template-columns: 1fr 1fr !important; }
+  /* Repliee a DEUX colonnes, une grille `triple` suit les regles a deux
+     colonnes : ses rangees de trois se coupent en 2 + 1, et le champ isole
+     laisserait sinon une case grise. Les regles a trois colonnes sont
+     neutralisees d'abord — a deux colonnes, « 2 / -1 » designerait la seule
+     colonne de droite. */
+  .form-grid.triple > .field:last-child            { grid-column: auto; }
+  .form-grid.triple > .field:last-child:nth-child(odd) { grid-column: 1 / -1; }
 }
 @media (max-width: 600px) {
   body { flex-direction: column; }
@@ -1837,6 +1851,8 @@ textarea { resize:none !important; overflow:hidden !important; }
   /* Champs empilés en 1 colonne : à ~375px, 2 colonnes tronquent les
      valeurs longues (activité pro, sport/objectif) et débordent (dates). */
   .form-grid, .form-grid.triple { grid-template-columns: 1fr !important; }
+  /* Une seule colonne : chaque champ l'occupe deja, plus rien a etendre. */
+  .form-grid > .field:last-child, .form-grid.triple > .field:last-child { grid-column: auto !important; }
   /* Paires de tableaux mises côte à côte via une grille 2 col inline
      (98 wrappers) : illisibles à ~187px chacune → une seule colonne.
      Exception : les blocs bilatéraux (comparaison Côté Gauche/Droit,
