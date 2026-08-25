@@ -403,6 +403,43 @@ Deux pièges à connaître avant de toucher à ces fonctions :
 - **Le seuil s'énonce dans l'unité affichée.** Un statut « ≥ 90 % » sous une
   colonne d'asymétrie est faux : il devient « ≤ 10 % ».
 
+## Webhook Strava — un « ok » rendu à tort perd l'activité
+
+```bash
+npx esbuild supabase/functions/strava-webhook/index.ts --bundle=false --outfile=/dev/null
+```
+
+**Strava ne rejoue jamais un événement acquitté.** Toute sortie en `200` qui
+n'a pas fait le travail perd l'activité définitivement — sans trace nulle part.
+Le webhook en comptait trois : l'écriture n'était pas vérifiée, une lecture
+d'activité en échec rendait `ok` quel qu'en soit le motif, et l'événement
+`delete` n'était pas traité.
+
+La règle : **`200` seulement pour ce qui est fait ou définitivement sans objet**
+(athlète non relié, activité `404`). Tout ce qui peut réussir plus tard —
+limite de débit, panne Strava, écriture refusée — rend un `500`, et Strava
+repasse.
+
+`delete` compte autant que `create`. Supprimer un doublon depuis Strava est
+exactement le geste qu'on demande à l'athlète : sans ce traitement, l'activité
+disparaissait chez lui et **restait chez le praticien**, où elle continuait de
+fausser l'ACWR.
+
+`refreshIfNeeded` est **recopiée dans trois fonctions** — `strava-webhook`,
+`strava-sync-history`, `strava-enrich-activity`. Elle ne regardait pas
+`res.ok` : sur un refresh_token révoqué, Strava répond `400` sans `expires_at`,
+et `new Date(undefined * 1000).toISOString()` levait une `RangeError` non
+capturée. On ne voyait qu'un 500 nu, jamais le motif. Elle échoue désormais
+explicitement, et **sans écrire** — un corps partiel aurait remplacé un
+refresh_token encore valide par `undefined`, ce qui délie l'athlète pour de bon.
+Toute correction ici est à porter **dans les trois**.
+
+`.single()` lève quand aucune ligne ne correspond. Sur une table où l'absence
+est un cas normal — un athlète non relié — c'est `.maybeSingle()` qu'il faut.
+
+**`git push` ne déploie PAS les fonctions** : Netlify ne sert que le statique.
+Elles passent par `supabase functions deploy <nom>`, séparément.
+
 ## La date du bilan — elle se lit, elle ne se saisit pas
 
 La sauvegarde écrit **toujours** `today` dans la colonne `date`, et une

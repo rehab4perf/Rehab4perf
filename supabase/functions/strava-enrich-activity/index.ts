@@ -32,13 +32,30 @@ async function refreshIfNeeded(token: Record<string, string>): Promise<string> {
       refresh_token: token.refresh_token,
     }),
   })
+  /* Strava refuse un refresh_token revoque ou deja tourne : il repond 400 avec
+     un corps d'erreur, sans `expires_at`. `new Date(undefined * 1000)` est une
+     date invalide, et `.toISOString()` levait alors une RangeError NON CAPTUREE
+     — le vrai motif (« refresh token invalide ») n'apparaissait nulle part, on
+     ne voyait qu'un 500 sans explication. On echoue desormais explicitement,
+     et SANS ecrire : un corps partiel aurait pu remplacer un refresh_token
+     encore valide par `undefined`, ce qui delie l'athlete definitivement. */
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '')
+    throw new Error(`Strava refresh ${res.status} (token ${token.id}) : ${detail.slice(0, 200)}`)
+  }
   const data = await res.json()
-  await supabase.from('strava_tokens').update({
+  if (!data.access_token || !data.expires_at) {
+    throw new Error(`Strava refresh : reponse sans access_token (token ${token.id})`)
+  }
+  const { error: majErr } = await supabase.from('strava_tokens').update({
     access_token:  data.access_token,
     refresh_token: data.refresh_token,
     expires_at:    new Date(data.expires_at * 1000).toISOString(),
     updated_at:    new Date().toISOString(),
   }).eq('id', token.id)
+  // Un token rafraichi mais non ecrit rejouerait le refresh a chaque appel,
+  // jusqu'a ce que Strava invalide celui qu'on n'a pas su ranger.
+  if (majErr) throw new Error(`Ecriture du token echouee : ${majErr.message}`)
   return data.access_token
 }
 
