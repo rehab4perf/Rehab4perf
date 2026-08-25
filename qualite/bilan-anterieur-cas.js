@@ -130,6 +130,21 @@ console.log('\n  Garde-fou — aucune refusion non bornée dans la vue en lectur
   var corpsL = sansCom.slice(dl, fl);
   verifie('loadBilan ne fusionne pas non plus sur _allBilans entier',
           'false', String(/_buildMergedDonnees\(\s*_allBilans\s*\)/.test(corpsL)));
+
+  /* Borner la source ne suffit pas : `_deserializeBilan` n'ECRIT que les clés
+     qu'on lui passe, elle n'efface jamais. Sans remise à zéro préalable, tout
+     champ absent du bilan consulté garde à l'écran la valeur du bilan
+     précédemment affiché — donc celle d'un bilan POSTÉRIEUR quand on vient de
+     la vue courante. La source était propre, le résidu restait. */
+  function avantDeserialize(corps){
+    var i = corps.indexOf('_deserializeBilan(_mergedDuBilanCourant()');
+    if (i === -1) return 'appel introuvable';
+    return corps.lastIndexOf('_resetBilanFields()', i) !== -1 ? 'reset' : 'sans reset';
+  }
+  verifie('loadBilan efface le formulaire avant de charger',
+          'reset', avantDeserialize(corpsL));
+  verifie('_enterReadOnlyMode aussi',
+          'reset', avantDeserialize(corps));
 }
 
 console.log('\n  ' + (nbKo ? '✗ ' + nbKo + ' échec(s), ' : '✓ ') + nbOk + ' cas vérifiés.\n');

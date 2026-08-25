@@ -488,6 +488,18 @@ n'apparaissait qu'une fois sur deux : c'est ce qui le rendait insaisissable.
 Et enregistrer depuis cette vue écrivait les valeurs récentes **dans** le bilan
 ancien.
 
+**Borner la source ne suffisait pas.** `_deserializeBilan` n'ÉCRIT que les clés
+qu'on lui passe — elle n'efface **jamais**. Tout champ absent du bilan consulté
+gardait donc à l'écran la valeur du bilan précédemment affiché, c'est-à-dire
+celle d'un bilan POSTÉRIEUR quand on venait de la vue courante. La source était
+propre, le résidu restait. `loadBilan` et `_enterReadOnlyMode` appellent
+`_resetBilanFields()` avant de charger — ce que `_editBilanConfirm` faisait déjà.
+
+Corollaire : `_ctMergeNamesFromAllBilans` est rejouée après l'effacement, pour
+que les tests personnalisés des autres bilans restent visibles **valeurs vides**.
+Un nom de test n'est pas une mesure ; les masquer ferait croire que le test n'a
+jamais existé.
+
 Toute fusion destinée au formulaire passe désormais par
 `_mergedDuBilanCourant()`. Sur le plus récent l'indice vaut 0, donc `slice(0)` :
 son comportement ne change pas d'un iota. La comparaison d'id s'y fait en

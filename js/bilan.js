@@ -2770,6 +2770,10 @@ function _enterReadOnlyMode(){
        défaut n'apparaissait qu'une fois sur deux — d'où sa difficulté à être
        cerné. Pire, enregistrer depuis cette vue écrivait les valeurs récentes
        dans le bilan ancien. */
+    // Meme raison qu'au-dessus : la fusion bornee ne porte pas les champs que
+    // seuls des bilans posterieurs renseignent, et sans effacement ils
+    // resteraient affiches.
+    _resetBilanFields();
     _deserializeBilan(_mergedDuBilanCourant());
     document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
     if(_prevDonnees) _renderDeltas(_prevDonnees);
@@ -5090,7 +5094,21 @@ function loadBilan(id){
     _currentBilanId   = res.data.id;
     _currentBilanDate = res.data.date ? res.data.date.split('T')[0] : null;
     try{ _majDateSidebar(); }catch(ex){}
+    /* `_deserializeBilan` n'ECRIT que les cles presentes dans l'objet recu :
+       elle n'efface JAMAIS. Sans remise a zero prealable, tout champ que le
+       bilan consulte ne porte pas garde a l'ecran la valeur du bilan
+       precedemment affiche — donc celle d'un bilan POSTERIEUR quand on vient
+       de la vue courante. Borner la fusion ne suffisait pas : la source etait
+       propre, le residu restait.
+
+       C'est ce que fait deja `_editBilanConfirm` avant de charger les donnees
+       propres d'un bilan ; la consultation le devait tout autant. */
+    _resetBilanFields();
     _deserializeBilan(_mergedDuBilanCourant());
+    // Les tests personnalises des AUTRES bilans restent visibles, valeurs vides :
+    // un nom de test n'est pas une mesure, et les masquer donnerait l'impression
+    // que le test n'a jamais existe.
+    try{ window._ctMergeNamesFromAllBilans(_allBilans); }catch(ex){}
     closeHistoModal();
     // Entrer en mode lecture (sauvegarde patche à la date originale via _bilanHistoMode)
     _bilanHistoMode = true;
