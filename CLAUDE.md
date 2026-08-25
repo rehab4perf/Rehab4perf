@@ -752,6 +752,16 @@ générait** — le formulaire restait muet, sans dire pourquoi.
 Le CR médecin est un **courrier**, pas une page web : il est lu sur papier ou
 en PDF, et sa mise en page doit tenir la coupure de page.
 
+**Une case grise orpheline, deux fois le même mécanisme.** Le fond gris d'une
+grille sert à dessiner les filets entre champs (`gap:1px`) — une dernière ligne
+incomplète le laisse donc voir à nu. C'est arrivé dans `.lt-pat` (CR médecin,
+nombre impair de champs) **et** dans `.form-grid` du bilan, où le retrait de
+« Date du bilan » a laissé une grille `triple` avec deux champs. La classe a été
+corrigée, et une règle générale couvre désormais tous les cas : la dernière
+case d'une ligne incomplète s'étend jusqu'au bord. Le contrôle à faire en
+ajoutant ou retirant un champ : le nombre de `.field` doit rester un multiple
+du nombre de colonnes de la classe.
+
 **La cellule grise vide.** `.lt-pat` est une grille à deux colonnes dont le
 fond gris sert à dessiner les filets (`gap:1px`). Avec un nombre **impair** de
 champs, la dernière case ne remplit qu'une colonne et le gris apparaît à nu
@@ -789,6 +799,14 @@ boîtes de marge `@page`, seules à savoir compter les pages, **ne sont pas
 implémentées par les navigateurs** — « 2 / 3 » n'est pas atteignable en CSS
 d'impression. Le pied porte donc patient, date et praticien : une feuille
 détachée reste rattachable.
+
+**L'analyse fonctionnelle n'est pas un tableau de mesures** mais une GRILLE de
+pastilles — une ligne par compensation, une pastille par côté. Lue en
+`textContent`, elle rendait « Compensation observeeGDTronc — inclinaison ou
+rotation••Genou — valgus•• » : en-têtes collés aux libellés, pastilles devenues
+puces, illisible. `_crMedAnalyseFonc` la relit — seules les compensations
+PRÉSENTES, chacune avec ses côtés, puis les phrases de synthèse. Même traitement
+pour la liste à puces de l'Overhead squat, où seules les croix comptent.
 
 **Trois rendus, une seule source.** `_crBlocsHtml` (écran + PDF) et
 `_crBlocsTexte` (copie, mail) lisent les mêmes blocs. Un type de bloc ajouté

@@ -796,6 +796,16 @@ td.bl-row-rail button:disabled { opacity: .3 !important; cursor: default; }
 }
 .form-grid.single { grid-template-columns: 1fr; }
 .form-grid.triple { grid-template-columns: 1fr 1fr 1fr; }
+/* ── Jamais de case grise orpheline ──────────────────────────────────
+   Le fond gris du conteneur sert a dessiner les filets entre champs
+   (`gap:1px`). Une derniere ligne incomplete le laisse donc voir a nu : une
+   case vide, grise, sans intitule ni contenu. Le defaut est apparu au retrait
+   du champ « Date du bilan », qui a laisse une grille de trois colonnes avec
+   deux champs. La classe a ete corrigee — cette regle fait qu'un prochain
+   retrait ne le reproduira pas en silence. */
+.form-grid > .field:last-child:nth-child(odd)         { grid-column: 1 / -1; }
+.form-grid.triple > .field:last-child:nth-child(3n+1) { grid-column: 1 / -1; }
+.form-grid.triple > .field:last-child:nth-child(3n+2) { grid-column: 2 / -1; }
 .field {
   display: flex;
   flex-direction: column;
@@ -2379,7 +2389,10 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
           <input type="hidden" id="f-objectifs" value="[]">
         </div>
       </div>
-      <div class="form-grid triple">
+      <!-- Deux champs depuis le retrait de « Date du bilan » : la classe suit.
+           En `triple`, la troisieme colonne restait vide et laissait voir le
+           fond gris du conteneur — une case sans intitule ni contenu. -->
+      <div class="form-grid">
         <div class="field"><label>Date d'accident</label><input type="date" id="f-date-accident" oninput="updateAll()"></div>
         <div class="field"><label>Date d'opération <span style="font-size:.7em;opacity:.55">(si chir.)</span></label><input type="date" id="f-date-op" oninput="updateAll()"></div>
       </div>
@@ -5886,7 +5899,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260806i"></script>
-<script src="js/bilan.js?v=20260825i"></script>
+<script src="js/bilan.js?v=20260825j"></script>
 
 </body>
 </html>

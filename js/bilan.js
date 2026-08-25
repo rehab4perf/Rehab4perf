@@ -105,8 +105,48 @@ function _crMedValeurLisible(el) {
    - `cellules` : les colonnes du mini-tableau, pour en refaire un tableau
                   dans le courrier du medecin.
    Les deux sortent de la meme lecture : impossible qu'elles se contredisent. */
+/* L'analyse fonctionnelle n'est pas un tableau de mesures mais une GRILLE de
+   pastilles : une ligne par compensation, une pastille par cote. Lue en
+   `textContent`, elle rendait « Compensation observeeGDTronc — inclinaison ou
+   rotation••Genou — valgus•• » — les en-tetes colles aux libelles, les
+   pastilles devenues des puces, et le tout illisible dans le courrier.
+
+   On la relit donc : seules les compensations PRESENTES, chacune avec ses
+   cotes, puis les phrases de synthese que le CR affiche deja sous la grille. */
+function _crMedAnalyseFonc(el) {
+  var out = [];
+  var tbl = el.querySelector('.cr-af-tbl');
+  if (tbl) {
+    var cells = Array.prototype.slice.call(tbl.children);
+    /* Trois cellules d'en-tete, puis trois par ligne : libelle, gauche, droit. */
+    for (var i = 3; i + 2 < cells.length; i += 3) {
+      var g = /●/.test(cells[i + 1].textContent || '');
+      var d = /●/.test(cells[i + 2].textContent || '');
+      if (!g && !d) continue;
+      var cotes = g && d ? 'gauche et droite' : (g ? 'gauche' : 'droite');
+      out.push((cells[i].textContent || '').replace(/\s+/g, ' ').trim() + ' (' + cotes + ')');
+    }
+  }
+  /* Liste a puces de l'Overhead squat : une coche par critere. */
+  Array.prototype.forEach.call(el.querySelectorAll('.cr-af-li'), function (li) {
+    var ic = li.querySelector('.cr-af-ic');
+    if (!ic || !/✗/.test(ic.textContent || '')) return;
+    var t = (li.textContent || '').replace(/[✓✗·]/g, '').replace(/\s+/g, ' ').trim();
+    if (t) out.push(t);
+  });
+  var lignes = out.length ? [out.join(' · ')] : [];
+  Array.prototype.forEach.call(el.querySelectorAll('.cr-af-sy'), function (sy) {
+    var t = (sy.textContent || '').replace(/\s+/g, ' ').trim();
+    if (t) lignes.push(t);
+  });
+  return lignes.join(' — ');
+}
+
 function _crMedValeur(el) {
   if (!el) return { texte: '', cellules: [] };
+  if (el.querySelector('.cr-af')) {
+    return { texte: _crMedAnalyseFonc(el), cellules: [] };
+  }
   var tab = el.querySelector('table.cr-mt');
   if (!tab) return { texte: (el.textContent || '').replace(/\s+/g, ' ').trim(), cellules: [] };
 
