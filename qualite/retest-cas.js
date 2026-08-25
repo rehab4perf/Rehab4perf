@@ -7,11 +7,14 @@
  * l'information la plus forte du suivi.
  *
  * La question posée est désormais « ai-je refait ce test ? », et elle ne se
- * déduit d'aucune donnée : elle se marque, par bloc. Trois états en sortent.
+ * déduit d'aucune donnée : elle se marque, par bloc. Quatre états en sortent.
  *
  * Ce que ce fichier tient :
  *
- *   - Les trois états, dont `inchange` qui n'existait pas.
+ *   - Les quatre états, dont `inchange` et `initial` qui n'existaient pas.
+ *   - « Réévalué » sur une PREMIÈRE mesure est faux : le médecin le lit comme
+ *     un suivi. Une case à `false` dans un bilan ancien ne prouve rien — tout
+ *     le formulaire est sérialisé à chaque enregistrement.
  *   - Le repli sur l'ancienne règle pour les bilans enregistrés AVANT la
  *     marque (`_reeval` absent). On ne réinvente pas un passé qu'on ignore :
  *     `null` et `[]` ne veulent PAS dire la même chose.
@@ -115,6 +118,41 @@ console.log('\n  Les trois états');
   verifie('valeur nouvelle → neuf',                'neuf',     a.etat(['sel-lig-0']));
   verifie('résultat identique → inchange',         'inchange', a.etat(['sel-lig-1']));
   verifie('bloc non réévalué → ancien',            'ancien',   a.etat(['sel-amp-0']));
+}
+
+console.log('\n  Une PREMIÈRE évaluation n\'est pas une réévaluation');
+{
+  /* Le mot « réévalué » sur un test fait pour la première fois est faux, et le
+     médecin le lit comme un suivi alors que c'est une mesure initiale. */
+  var a = api(scene({ 'sel-amp-0': '140' }, ['bl-amp'], { 'sel-lig-0': 'Négatif' }));
+  verifie('aucune valeur antérieure → initial', 'initial', a.etat(['sel-amp-0']));
+
+  var b = api(scene({ 'sel-amp-0': '140' }, ['bl-amp'], { 'sel-amp-0': '130' }));
+  verifie('une valeur antérieure existe → neuf', 'neuf', b.etat(['sel-amp-0']));
+
+  /* `_serializeBilan` parcourt TOUT le formulaire : chaque bilan enregistre
+     chaque case, cochée ou non. Une case à `false` en juin ne dit pas que le
+     test a été fait — elle est indiscernable de « jamais évaluée ». Sans cette
+     exclusion, aucun bloc à cases ne serait jamais reconnu comme initial. */
+  var c = api(scene({ 'sel-amp-0': 'true' }, ['bl-amp'], { 'sel-amp-0': false }));
+  verifie('case à false en juin → toujours initial', 'initial', c.etat(['sel-amp-0']));
+
+  // Case cochée en juin, décochée aujourd'hui : le test AVAIT été fait.
+  var d = api(scene({ 'sel-amp-0': false }, ['bl-amp'], { 'sel-amp-0': true }));
+  verifie('case à true en juin → déjà évalué', 'neuf', d.etat(['sel-amp-0']));
+  // Et si le résultat n'a pas bougé, c'est « inchangé », jamais « 1re évaluation ».
+  var d2 = api(scene({ 'sel-amp-0': true }, ['bl-amp'], { 'sel-amp-0': true }));
+  verifie('case à true des deux côtés → inchange', 'inchange', d2.etat(['sel-amp-0']));
+
+  /* Second indice : le bilan antérieur portait la MARQUE sur ce bloc. Il l'a
+     donc bien évalué, même si toutes ses cases sont à false. */
+  var e = api({
+    bilans: [
+      { id: 'B2', date: '2026-08-18', donnees: { 'sel-amp-0': 'true', _reeval: '["bl-amp"]' } },
+      { id: 'B1', date: '2026-06-18', donnees: { 'sel-amp-0': false,  _reeval: '["bl-amp"]' } }
+    ], courant: 'B2', map: MAP, champs: CHAMPS
+  });
+  verifie('marque antérieure sur le bloc → déjà évalué', 'neuf', e.etat(['sel-amp-0']));
 }
 
 console.log('\n  Un test resté vide dans un bloc marqué');

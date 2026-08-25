@@ -543,6 +543,18 @@ Corollaire assumé et refermé dans le code : dans un bloc marqué, un champ res
 **vide** reste « ancien » — la marque porte sur le bloc, l'affirmation sur le
 champ.
 
+**Une première mesure n'est pas une réévaluation.** Le mot « réévalué » sur un
+test fait pour la première fois est faux, et le médecin le lit comme un suivi.
+`_crDejaEvalue` répond « ce test avait-il déjà été évalué ? » par deux indices,
+car aucun ne suffit seul : une marque sur ce bloc dans un bilan antérieur, ou
+une vraie valeur dans la fusion des antérieurs.
+
+« Vraie » **exclut `false`** : `_serializeBilan` parcourt tout le formulaire,
+donc chaque bilan enregistre chaque case, cochée ou non. Une case à `false` en
+juin ne dit pas que le test a été fait ce jour-là — elle est indiscernable de
+« jamais évaluée », exactement le raisonnement posé pour `_afTouched`. Sans
+cette exclusion, **aucun bloc à cases ne serait jamais reconnu comme initial**.
+
 **`null` et `[]` ne veulent pas dire la même chose.** `_reevalLire` rend `null`
 quand la clé est absente : bilan enregistré avant le mécanisme, on retombe sur
 l'ancienne comparaison de valeurs. `[]` veut dire « rien n'a été réévalué ».
