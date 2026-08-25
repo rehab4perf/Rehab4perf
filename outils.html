@@ -6348,6 +6348,12 @@ _updateOutilsPatientBtns();
     '.lt-pat{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:#E8E6E1;',
       'border:1px solid #E8E6E1;border-radius:6px;overflow:hidden;margin:0 0 16px}',
     '.lt-pat > div{background:#fff;padding:7px 11px}',
+    /* Le fond gris du conteneur sert a dessiner les filets entre cellules (gap
+       de 1 px). Avec un nombre IMPAIR de champs, la derniere case ne remplit
+       qu'une colonne et le gris apparait a nu dans l'autre — une cellule vide
+       et grise, sans contenu ni intitule. On ne peut pas inventer un champ
+       manquant : la derniere case prend donc toute la largeur. */
+    '.lt-pat > div:last-child:nth-child(odd){grid-column:1 / -1}',
     '.lt-pat dt{font-size:.6rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;',
       'color:#9D9B96;margin:0 0 2px}',
     '.lt-pat dd{margin:0;font-size:.82rem;font-weight:600;color:#1A1917}',
@@ -6373,9 +6379,32 @@ _updateOutilsPatientBtns();
     '.lt-chip.ok{background:#E8F5EE;border-color:#AECBBE;color:#1A4130}',
     '.lt-chip.mid{background:#FEF3EB;border-color:#DEB89C;color:#823903}',
     '.lt-chip.bad{background:#FDECEA;border-color:#D4AAA6;color:#752018}',
-    '.lt-concl{margin-top:16px;background:#EEF3FB;border-left:3px solid #2B5FA6;',
-      'border-radius:0 6px 6px 0;padding:11px 14px;font-size:.81rem;line-height:1.6}',
-    '.lt-concl b{color:#1A3A5C}'
+    /* Conclusion et plan de traitement : deux encadres JUMEAUX, et non un
+       encadre suivi de deux paragraphes nus. Le plan sortait en texte courant
+       juste sous la conclusion mise en valeur — le lecteur ne voyait plus ou
+       finissait l'une et ou commencait l'autre. Ce sont deux propos distincts :
+       l'un dit ou en est le patient, l'autre ce qui va etre fait. */
+    '.lt-bloc{margin-top:14px;border-left:3px solid;border-radius:0 6px 6px 0;',
+      'padding:10px 14px 11px;font-size:.81rem;line-height:1.6}',
+    '.lt-bloc-t{font-size:.6rem;font-weight:700;letter-spacing:.08em;',
+      'text-transform:uppercase;margin:0 0 3px}',
+    '.lt-concl{background:#EEF3FB;border-left-color:#2B5FA6}',
+    '.lt-concl .lt-bloc-t{color:#2B5FA6}',
+    '.lt-plan{background:#F1F0ED;border-left-color:#1A3A5C}',
+    '.lt-plan .lt-bloc-t{color:#1A3A5C}',
+    '.lt-concl b{color:#1A3A5C}',
+    /* ── Coupures de page ──────────────────────────────────────────────
+       Rien n'empechait une rupture au milieu d'un tableau, d'un encadre ou
+       entre un intertitre et ce qu'il annonce. Un intertitre seul en pied de
+       page annonce une section qui commence ailleurs — c'est ce qui donnait
+       l'impression d'un document coupe n'importe ou. */
+    '.lt-pat,.lt-bloc,table.lt-t{break-inside:avoid;page-break-inside:avoid}',
+    'table.lt-t tr{break-inside:avoid;page-break-inside:avoid}',
+    'table.lt-t thead{display:table-header-group}',
+    '.lt-sec{break-after:avoid;page-break-after:avoid;break-inside:avoid}',
+    '.lt-p{orphans:3;widows:3}',
+    '.lt-fin{break-inside:avoid;page-break-inside:avoid}',
+    '.lt-fin .lt-p:last-child{margin-bottom:0}'
   ].join('');
 
   (function crInjecterCssLettre() {
@@ -6396,6 +6425,8 @@ _updateOutilsPatientBtns();
       if (b.t === 'sec')     { out.push(''); out.push(b.txt.toUpperCase()); return; }
       if (b.t === 'patient') { b.champs.forEach(function (c) { out.push(c[0] + ' : ' + c[1]); }); return; }
       if (b.t === 'concl')   { out.push(''); out.push('CONCLUSION'); out.push(b.txt); return; }
+      if (b.t === 'plan')    { out.push(''); out.push('PLAN DE TRAITEMENT'); out.push(b.txt); return; }
+      if (b.t === 'fin')     { (b.lignes || []).forEach(function (l) { out.push(l); }); return; }
       if (b.t === 'test') {
         out.push('  ' + b.label);
         var det = (b.cellules || []).filter(function (c) { return c.valeur; })
@@ -6465,9 +6496,22 @@ _updateOutilsPatientBtns();
         }).join('') + '</div>';
         return;
       }
-      if (b.t === 'concl') {
+      if (b.t === 'concl' || b.t === 'plan') {
         fermerTable();
-        h += '<div class="lt-concl"><b>Conclusion.</b> ' + _crEsc(b.txt).replace(/\n/g, '<br>') + '</div>';
+        var _est = b.t === 'concl';
+        h += '<div class="lt-bloc ' + (_est ? 'lt-concl' : 'lt-plan') + '">'
+           + '<div class="lt-bloc-t">' + (_est ? 'Conclusion' : 'Plan de traitement') + '</div>'
+           + _crEsc(b.txt).replace(/\n/g, '<br>') + '</div>';
+        return;
+      }
+      /* Salutation, « Cordialement », nom, cabinet : quatre paragraphes que
+         rien ne retenait ensemble. Une coupure au milieu laissait la signature
+         seule en tete de page suivante. */
+      if (b.t === 'fin') {
+        fermerTable();
+        h += '<div class="lt-fin">' + (b.lignes || []).map(function (l) {
+          return l ? '<p class="lt-p">' + _crEsc(l) + '</p>' : '';
+        }).join('') + '</div>';
         return;
       }
       if (b.t === 'test') { tampon.push(b); return; }
@@ -6665,13 +6709,13 @@ _updateOutilsPatientBtns();
     else if (evolution) { lines.push('L\'évolution est ' + crEvolLabel(evolution) + '.'); lines.push(''); }
 
     // 10. Plan
-    if (plan) { lines.push('Plan de traitement :'); lines.push(plan); lines.push(''); }
+    if (plan) { lines.push({ t: 'plan', txt: plan }); lines.push(''); }
 
     // 11. Closing
-    lines.push('Je reste à votre disposition pour tout complément d\'information.');
-    lines.push(''); lines.push('Cordialement,'); lines.push('');
-    lines.push(crProfile.name);
-    if (crProfile.cabinet) lines.push(crProfile.cabinet);
+    var _fin = ['Je reste à votre disposition pour tout complément d\'information.',
+                '', 'Cordialement,', '', crProfile.name];
+    if (crProfile.cabinet) _fin.push(crProfile.cabinet);
+    lines.push({ t: 'fin', lignes: _fin });
     return lines;
   }
 
@@ -6828,11 +6872,11 @@ _updateOutilsPatientBtns();
 
     // Closing
     var dispo = crV('cr-dispo');
-    lines.push('Je reste naturellement disponible pour tout échange ou question concernant la prise en charge de ' + crF('votre patient(e)', 'votre patient', 'votre patiente') + '.');
-    if (dispo) lines.push('Disponibilités : ' + dispo + '.');
-    lines.push(''); lines.push('Cordialement,'); lines.push('');
-    lines.push(crProfile.name);
-    if (crProfile.cabinet) lines.push(crProfile.cabinet);
+    var _fin2 = ['Je reste naturellement disponible pour tout échange ou question concernant la prise en charge de ' + crF('votre patient(e)', 'votre patient', 'votre patiente') + '.'];
+    if (dispo) _fin2.push('Disponibilités : ' + dispo + '.');
+    _fin2.push('', 'Cordialement,', '', crProfile.name);
+    if (crProfile.cabinet) _fin2.push(crProfile.cabinet);
+    lines.push({ t: 'fin', lignes: _fin2 });
     return lines;
   }
 
@@ -6896,7 +6940,15 @@ _updateOutilsPatientBtns();
       + '#cr-topbar{display:none!important}'
       + '#cr-page{margin:0!important;padding:0!important;max-width:none!important}'
       + '.cr-letter-hdr{margin:0}'
-      + '@page{size:A4 portrait;margin:0 0 12mm}'
+      /* La marge haute etait a ZERO sur toutes les pages, pour que le bandeau
+         navy morde le bord en tete de document. Consequence : a la page 2, le
+         texte repartait collé au bord superieur, et la coupure paraissait
+         brutale. Seule la PREMIERE page garde ce bord a bord ; les suivantes
+         reprennent une marge de courrier. */
+      + '@page{size:A4 portrait;margin:16mm 0 14mm}'
+      + '@page :first{margin-top:0}'
+      /* Le pied de lettre — salutation, signature — ne se coupe pas. */
+      + '.lt-fin{break-inside:avoid;page-break-inside:avoid}'
       + '}'
       + '</style>'
       + '</head><body>'

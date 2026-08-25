@@ -655,6 +655,39 @@ porte l'information. Une perte qui arrondit à zéro ne s'écrit jamais « -0 »
 du rapport brut et le seuil « positif si < 90 % » ; sous une colonne de perte
 ils sont faux. `qualite/lsi-cas.js` échoue si l'un des deux réapparaît.
 
+## Courrier au médecin — mise en page du document imprimé
+
+Le CR médecin est un **courrier**, pas une page web : il est lu sur papier ou
+en PDF, et sa mise en page doit tenir la coupure de page.
+
+**La cellule grise vide.** `.lt-pat` est une grille à deux colonnes dont le
+fond gris sert à dessiner les filets (`gap:1px`). Avec un nombre **impair** de
+champs, la dernière case ne remplit qu'une colonne et le gris apparaît à nu
+dans l'autre : une cellule vide, grise, sans intitulé. On ne peut pas inventer
+un champ manquant — la dernière case prend donc toute la largeur
+(`:last-child:nth-child(odd){grid-column:1/-1}`).
+
+**Conclusion et plan sont deux propos distincts.** Le plan sortait en
+paragraphes nus juste sous l'encadré de conclusion : le lecteur ne voyait plus
+où finissait l'une et où commençait l'autre. Ce sont deux encadrés **jumeaux**
+(`.lt-bloc` + `.lt-concl` / `.lt-plan`), chacun avec son intitulé. L'un dit où
+en est le patient, l'autre ce qui va être fait.
+
+**Rien ne se coupe au milieu.** `break-inside:avoid` sur la grille patient, les
+encadrés, les tableaux et leurs lignes ; `break-after:avoid` sur `.lt-sec` —
+un intertitre seul en pied de page annonce une section qui commence ailleurs.
+Le pied de lettre est groupé dans `.lt-fin`, sans quoi la signature se
+retrouvait seule en tête de page suivante.
+
+**La marge haute était à zéro sur TOUTES les pages**, pour que le bandeau navy
+morde le bord en tête de document. À la page 2, le texte repartait donc collé
+au bord supérieur. Seule la première page garde ce bord à bord :
+`@page{margin:16mm 0 14mm}` + `@page :first{margin-top:0}`.
+
+**Trois rendus, une seule source.** `_crBlocsHtml` (écran + PDF) et
+`_crBlocsTexte` (copie, mail) lisent les mêmes blocs. Un type de bloc ajouté
+d'un seul côté disparaît de l'autre sans le moindre signal.
+
 ## Motifs de bilan — onglet Patients
 
 ```bash
