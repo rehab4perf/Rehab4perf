@@ -216,6 +216,23 @@ console.log('\n  Lecture de la grille — seules les compensations OBSERVÉES');
 
   var vide = grille([['Hanche — adduction', 0, 0]], []);
   verifie('aucune compensation → aucune ligne', '0', String(vide.lignes.length));
+
+  /* La phrase de synthese s'ouvre sur le meme score sur sept que le statut.
+     Il ne sort pas du cabinet — mais ce qui SUIT est la vraie information
+     clinique et doit rester. */
+  var sc = grille([['Tronc', 1, 1]], ['Gauche 2/7 · Droite 2/7 — mêmes compensations des deux côtés']);
+  verifie('le score disparaît, la phrase reste',
+          'Mêmes compensations des deux côtés', sc.synthese);
+
+  var diff = grille([['Tronc', 1, 0]],
+    ['Gauche 3/7 · Droite 4/7 · 3 communes — profils différents (droite seulement : hanche)']);
+  /* « 3 communes » n'a pas de denominateur : il se comprend seul, il reste. */
+  verifie('un décompte sans dénominateur survit',
+          '3 communes — profils différents (droite seulement : hanche)', diff.synthese);
+
+  var libre = grille([['Tronc', 1, 1]], ['Talons surélevés : amélioration nette']);
+  verifie('une observation libre n\'est pas touchée',
+          'Talons surélevés : amélioration nette', libre.synthese);
 }
 
 console.log('\n  Analyse fonctionnelle — le score sur 7 ne sort pas du cabinet');

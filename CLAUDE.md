@@ -830,6 +830,13 @@ L'alternative écartée : traduire gauche/droite en sain/atteint. C'est
 précisément ce que le CR a **cessé** de faire après avoir désigné le mauvais
 membre dans un courrier.
 
+**Le score sur sept ne sort pas du cabinet — à DEUX endroits.** Il figure dans le
+statut (« G 2/7 · D 2/7 ») *et* en tête de la phrase de synthèse (« Gauche 2/7 ·
+Droite 2/7 — mêmes compensations des deux côtés »). Corriger le premier seul
+laissait le second en italique sous le tableau. Ce qui SUIT le score est la vraie
+information clinique et reste ; un décompte sans dénominateur — « 3 communes » —
+reste aussi, il se comprend seul.
+
 **Le score « G 2/7 · D 2/7 » ne sort pas du cabinet.** Le dénominateur — sept
 critères possibles — ne dit rien à qui ne le connaît pas. `_crMedResumeTests`
 réécrit le statut en NOMBRE de compensations (« 2 compensations », ou

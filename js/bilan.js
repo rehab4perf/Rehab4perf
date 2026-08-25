@@ -136,6 +136,15 @@ function _crMedAnalyseFonc(el) {
   });
   Array.prototype.forEach.call(el.querySelectorAll('.cr-af-sy'), function (sy) {
     var t = (sy.textContent || '').replace(/\s+/g, ' ').trim();
+    /* La phrase de synthese s'ouvre sur « Gauche 2/7 · Droite 2/7 » — le meme
+       score sur sept que le statut, et le meme probleme : le denominateur ne
+       dit rien a qui ne le connait pas. On retire l'ouverture chiffree et on
+       garde ce qui suit, qui est la vraie information clinique : « memes
+       compensations des deux cotes », « profils differents (droite seulement :
+       hanche) ». Un decompte SANS denominateur — « 3 communes » — reste : il
+       se comprend seul. */
+    t = t.replace(/^Gauche\s+\d+\s*\/\s*\d+\s*·\s*Droite\s+\d+\s*\/\s*\d+\s*(?:·\s*|—\s*)?/i, '');
+    if (t) t = t.charAt(0).toUpperCase() + t.slice(1);
     if (t) synth.push(t);
   });
   /* Forme d'UNE SEULE PHRASE, pour la copie et le mail — un courrier colle dans
