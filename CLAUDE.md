@@ -403,6 +403,57 @@ Deux pièges à connaître avant de toucher à ces fonctions :
 - **Le seuil s'énonce dans l'unité affichée.** Un statut « ≥ 90 % » sous une
   colonne d'asymétrie est faux : il devient « ≤ 10 % ».
 
+## Marquage du retest — le CR ne devine plus, il lit une marque
+
+```bash
+node qualite/retest-cas.js
+```
+
+Le CR décidait « frais ou ancien » en **comparant les valeurs**. Un test refait
+dont le résultat n'a pas bougé — un Lachman toujours négatif à huit semaines —
+se retrouvait donc daté du bilan précédent. C'est faux, et c'est justement
+l'information la plus forte du suivi.
+
+La question posée est désormais « ai-je refait ce test ? ». Elle ne se déduit
+d'aucune donnée : elle se **marque**, par bloc, dans `donnees._reeval`. La
+marque se pose **seule** dès qu'un champ du bloc est touché — `isTrusted`
+écarte les écritures programmatiques, sans quoi ouvrir un bilan ancien le
+marquerait entièrement. Le praticien ne clique que dans le seul cas où la
+machine ne peut pas savoir : test refait, résultat identique.
+
+C'est la généralisation de `_afTouched`, qui traitait déjà ce problème pour les
+seules cases de l'Analyse Fonctionnelle. Les deux coexistent : l'AF est rendue
+en JS hors de tout `.block[data-block-id]`.
+
+Le grain est le **bloc**. Marquer une page déclarerait réévalués dix tests qu'on
+n'a pas refaits ; marquer le champ redemanderait ce que l'interaction dit déjà.
+Corollaire assumé et refermé dans le code : dans un bloc marqué, un champ resté
+**vide** reste « ancien » — la marque porte sur le bloc, l'affirmation sur le
+champ.
+
+**`null` et `[]` ne veulent pas dire la même chose.** `_reevalLire` rend `null`
+quand la clé est absente : bilan enregistré avant le mécanisme, on retombe sur
+l'ancienne comparaison de valeurs. `[]` veut dire « rien n'a été réévalué ».
+Confondre les deux griserait entièrement tous les bilans anciens.
+
+**Une marque ne se perd pas.** `_reevalBlocsPourSauvegarde` réunit les marques
+de la session à celles que portait déjà le bilan édité. Rouvrir un bilan pour
+corriger une faute de frappe l'aurait sinon vidé de ce qu'il disait, sans le
+moindre signal.
+
+`_crCtx()` remplace le calcul en dur sur `_allBilans[0]` : `_crInSuiviMode`
+répondait `false` dès qu'on consultait un bilan qui n'était pas le plus récent,
+et **tout un CR ancien s'affichait sans distinction**. Le contexte se calcule
+depuis le bilan **consulté** — `_crPrevMerged(start)` porte donc `start` dans sa
+clé de cache, faute de quoi passer d'un bilan à l'autre rendrait la mauvaise
+fusion.
+
+**Le CSS d'export ne contenait aucune de ces règles.** `.cr-item--carried`,
+`--fresh` et `.cr-date-badge` étaient émis par le HTML mais absents de la chaîne
+`var css = \`…\`` : le marquage était **totalement invisible dans le document
+envoyé au médecin**. Même piège que d'habitude — une règle ajoutée d'un seul
+côté ne se voit pas là où le document est lu.
+
 ## Quel côté le CR nomme — une résolution par région
 
 ```bash

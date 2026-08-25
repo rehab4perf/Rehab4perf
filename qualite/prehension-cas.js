@@ -114,6 +114,7 @@ var ge = src.indexOf('\n  }', gi);
 
 var mod = ext('_crMesTab') + '\n' + ext('asymPct') + '\n' + ext('asymTxt') + '\n'
   + 'function _crInSuiviMode(){ return false; }\n'
+  + 'function _crMarquage(){ return { cls: "", badge: "" }; }\n'
   + src.slice(bi, be + 4) + '\n'
   + src.slice(gi, ge + 4) + '\n'
   + 'var _labelCS = "Côté sain", _labelCA = "Côté atteint";\n'

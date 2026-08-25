@@ -682,6 +682,39 @@ td.bl-row-rail button:disabled { opacity: .3 !important; cursor: default; }
 .cr-toggle-label input[type=checkbox] { width:14px; height:14px; accent-color:var(--green); cursor:pointer; flex-shrink:0; }
 .cr-toggle-label:has(input:checked) { color:var(--green); font-weight:700; }
 .block-header.light  { background: var(--surface2); color: var(--text); border-bottom: 1px solid var(--border); }
+/* ── Pastille « Réévalué » ────────────────────────────────────────────
+   Posée par _reevalRender() à droite de l'en-tête, dont le flex fait déjà
+   tout le travail. Elle s'habille en `currentColor` : l'en-tête existe en
+   cinq variantes de fond (navy, vert, rouge, gris, clair) et une couleur
+   écrite en dur en aurait raté quatre. */
+.reeval-chip {
+  position: relative; margin-left: auto; flex-shrink: 0;
+  display: inline-flex; align-items: center; gap: 5px;
+  border: 1px solid currentColor; background: transparent; color: inherit;
+  border-radius: 20px; padding: 3px 9px;
+  font-family: inherit; font-size: .6rem; font-weight: 700;
+  text-transform: none; letter-spacing: 0; white-space: nowrap;
+  cursor: pointer; opacity: .6; transition: opacity .15s;
+}
+/* Cible tactile : la pastille mesure 24 px de haut, en imposer 44 déformerait
+   l'en-tête. La zone cliquable est donc étendue sans toucher à la mise en
+   page — un pseudo-élément absolu ne pousse rien. */
+.reeval-chip::before { content: ''; position: absolute; inset: -13px -8px; }
+/* Deux en-têtes portent déjà « Inclure dans le CR », lui aussi en
+   `margin-left:auto`. Deux marges automatiques se PARTAGENT l'espace libre :
+   le toggle serait parti flotter au milieu du titre. La pastille étant
+   toujours ajoutée en dernier, elle se contente ici d'un écart fixe. */
+.block-header .cr-toggle-label ~ .reeval-chip { margin-left: 8px; }
+.reeval-chip:hover { opacity: .95; }
+.reeval-chip.on { opacity: 1; }
+.reeval-chip .reeval-box {
+  width: 11px; height: 11px; border-radius: 3px; border: 1.5px solid currentColor;
+  flex-shrink: 0; transition: background .15s;
+}
+/* La case pleine EST l'état coché : un ✓ dessiné dedans devrait être peint
+   dans le fond de l'en-tête, qui change avec la variante. */
+.reeval-chip.on .reeval-box { background: currentColor; }
+@media print { .reeval-chip { display: none; } }
 /* ── Favoris tests fonctionnels ── */
 .fav-star-btn {
   margin-left: auto; flex-shrink: 0;
@@ -1485,9 +1518,20 @@ textarea.mob-note-inp {
   .cr-mt th:not(.lbl), .cr-mt td:not(.lbl) { width: 76px; }
   .cr-mt td { font-size: .8rem; }
 }
-.cr-item--carried { opacity: 0.42; }
-.cr-item--fresh { border-left: 2px solid var(--accent); padding-left: 10px; border-radius: 0; }
-.cr-date-badge { font-size: .6rem; font-weight: 600; color: var(--text3); margin-left: 8px; white-space: nowrap; flex-shrink: 0; }
+/* ── Marquage de suivi ────────────────────────────────────────────────
+   Voir _crEtat() dans js/bilan.js. L'ancien état « porté » n'était qu'une
+   opacité à 42 % : elle disparaît à l'impression et en PDF, c'est-à-dire
+   précisément là où ce document est lu. Elle laisse place à un italique dans
+   un gris qui reste lisible, et chaque ligne porte désormais une mention en
+   toutes lettres — une absence de marque ne se lit pas. */
+.cr-item--anc .cr-val { font-style: italic; color: var(--text2); font-weight: 400; }
+.cr-item--reev { border-left: 2px solid var(--accent); padding-left: 10px; border-radius: 0; }
+.cr-mention { font-size: .65rem; font-weight: 700; border-radius: 20px; padding: 1px 8px; margin-left: 8px; white-space: nowrap; flex-shrink: 0; letter-spacing: .01em; }
+.cr-mention.neuf { background: var(--accent-l); color: var(--accent); }
+.cr-mention.inch { background: var(--surface2); color: var(--text2); }
+.cr-mention.anc  { background: transparent; color: var(--text3); border: 1px solid var(--border); font-weight: 600; }
+.cr-legende { font-size: .72rem; color: var(--text2); background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 9px 13px; margin: 0 0 14px; line-height: 1.55; }
+.cr-legende em { font-style: normal; font-weight: 700; color: var(--text); }
 .cr-item .cr-tag {
   margin-left: auto;
   font-size: .7rem;
@@ -1816,7 +1860,7 @@ textarea { resize:none !important; overflow:hidden !important; }
   /* order : dans le DOM la valeur précède le tag — sans réordonnancement
      elle s'intercalerait entre l'intitulé et son statut. */
   .cr-item .cr-tag { order: 1; margin-left: auto; }
-  .cr-item .cr-date-badge { order: 2; }
+  .cr-item .cr-mention { order: 2; }
   .cr-item .cr-val { order: 3; flex: 1 1 100%; min-width: 0; }
   /* Les puces « Points à travailler » (.cr-todo) n'ont pas de couple
      clé/valeur mais une flèche suivie d'une phrase. Le wrap flex se
@@ -5818,7 +5862,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260806i"></script>
-<script src="js/bilan.js?v=20260816b"></script>
+<script src="js/bilan.js?v=20260825a"></script>
 
 </body>
 </html>

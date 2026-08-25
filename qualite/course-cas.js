@@ -73,7 +73,8 @@ var pre = ''
   + src.slice(src.indexOf('var CP_STRIKE_LBL'),
               src.indexOf('};', src.indexOf('var CP_STRIKE_LBL')) + 2) + '\n'
   + 'function nl2br(s){ return String(s||"").replace(/\\n/g,"<br>"); }\n'
-  + 'function _crInSuiviMode(){ return false; }\n';
+  + 'function _crInSuiviMode(){ return false; }\n'
+  + 'function _crMarquage(){ return { cls: "", badge: "" }; }\n';
 
 // crItem, extrait de _buildAllTestsHtml
 var bi = src.indexOf('function crItem(key, val, tag, tagClass, fieldIds)');

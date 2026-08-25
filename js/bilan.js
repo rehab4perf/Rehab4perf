@@ -1928,6 +1928,11 @@ function _blApplyLayout(){
       _blApplyDescs(tbId, tl);
     });
   } catch(e){ /* la disposition ne doit jamais casser le bilan */ }
+  /* La pastille de réévaluation vit DANS l'en-tête du bloc : un bloc re-rendu
+     perd la sienne, et l'index champ → bloc vieillit dès qu'un test perso
+     apparaît. On repose les deux ici, seul point par lequel passe toute
+     reconstruction de la disposition. */
+  try{ _reevalRender(); }catch(e){}
   if(_blScroller){
     _blScroller.scrollTop = _blScrollTop;
     requestAnimationFrame(function(){ _blScroller.scrollTop = _blScrollTop; });
@@ -2939,6 +2944,7 @@ function _refreshCRIfVisible(){
 function _resetBilanFields(){
   _suppressDirty = true;
   try{ _afResetTouched(); }catch(ex){}
+  try{ _reevalReset(); }catch(ex){}
   document.querySelectorAll('input:not([type=checkbox]):not([type=radio])').forEach(function(i){ i.value=''; });
   document.querySelectorAll('textarea').forEach(function(t){ t.value=''; });
   /* `className=''` effaçait tout, y compris la classe de BASE du composant.
@@ -4511,6 +4517,7 @@ function _serializeBilan(){
 function _deserializeBilan(data){
   _suppressDirty = true;
   try{ _afResetTouched(); }catch(ex){}
+  try{ _reevalReset(); }catch(ex){}
   // Capturer l'instantané custom du bilan AVANT le rendu (matérialise ses tests perso,
   // même supprimés du modèle depuis) ; les valeurs sont réappliquées après _blApplyLayout.
   try{ _blLoadedCustom = data._blCustom ? JSON.parse(data._blCustom) : null; }catch(ex){ _blLoadedCustom = null; }
@@ -4590,6 +4597,10 @@ function saveBilan(){
   // Instantané des tests/blocs personnalisés présents dans ce bilan (fallback d'affichage
   // si le modèle les supprime plus tard) — les valeurs, elles, sont déjà dans sel-/note-<cid>.
   try{ var _blc = _blCustomSnapshot(); if(_blc) donnees._blCustom = JSON.stringify(_blc); }catch(ex){}
+  // Blocs réévalués dans CE bilan — toujours écrit, même vide : l'absence de la
+  // clé signifie « bilan antérieur au mécanisme », un tableau vide signifie
+  // « rien n'a été réévalué ». Les deux se lisent différemment (voir _reevalLire).
+  try{ donnees._reeval = _reevalSerialiser(); }catch(ex){}
 
   // Bilan de suivi : calculer les champs réellement modifiés.
   // Référence = état FUSIONNÉ des bilans antérieurs (pas le snapshot de début de suivi :
@@ -4618,6 +4629,9 @@ function saveBilan(){
       if(_afTouched[p.pg + '-ohs']) _afOhsFieldIds(p.pg).forEach(function(id){ if(_changedFields.indexOf(id)===-1) _changedFields.push(id); });
       if(_afTouched[p.pg + '-sls']) _afSlsFieldIds(p.pg).forEach(function(id){ if(_changedFields.indexOf(id)===-1) _changedFields.push(id); });
     });
+    // Blocs marqués réévalués : leurs champs comptent comme testés ce jour même
+    // si la valeur n'a pas bougé — c'est tout l'objet de la marque.
+    _reevalChampsMarques(donnees).forEach(function(id){ if(_changedFields.indexOf(id)===-1) _changedFields.push(id); });
     donnees.changed_fields = _changedFields; // toujours écrire (même vide) pour marquer le bilan comme suivi
   }
 
@@ -4646,6 +4660,7 @@ function saveBilan(){
         if(_afTouched[p.pg + '-ohs']) _afOhsFieldIds(p.pg).forEach(function(id){ if(_newCF.indexOf(id)===-1) _newCF.push(id); });
         if(_afTouched[p.pg + '-sls']) _afSlsFieldIds(p.pg).forEach(function(id){ if(_newCF.indexOf(id)===-1) _newCF.push(id); });
       });
+      _reevalChampsMarques(donnees).forEach(function(id){ if(_newCF.indexOf(id)===-1) _newCF.push(id); });
       donnees.changed_fields = _newCF; // toujours écrire (même vide) : un suivi édité reste un suivi
     }
     _sbRetry(function(){ return sbB.from('bilans').update({donnees:donnees}).eq('id', _currentBilanId).select().single(); })
@@ -6399,20 +6414,46 @@ function calcMusc() {
 }
 
 // -- HELPER TESTS SECTIONS (partagé CR Complet + CR Tests) ----
-// Retourne true si on est dans un contexte suivi (bilan le plus récent avec un antérieur)
-function _crInSuiviMode() {
-  if (_bilanIsSuivi && _suiviSnapshot) return true;
-  if (!_allBilans || _allBilans.length < 2) return false;
-  if (!_currentBilanId) return false; // nouveau bilan vierge non sauvegardé
-  // Bilan historique (pas le plus récent) : pas de grisé suivi
-  if (_allBilans[0] && _allBilans[0].id && _currentBilanId !== _allBilans[0].id) return false;
-  return true;
+
+/* Contexte de lecture du CR : QUEL bilan est affiché, et à partir de quel
+   indice commencent ses antérieurs. Tout le marquage en dépend.
+
+   `_crInSuiviMode` répondait `false` dès qu'on consultait un bilan qui n'était
+   pas le plus récent — un CR ancien paraissait donc entièrement frais, alors
+   qu'il portait exactement la même distinction que le CR du jour. Le contexte
+   est désormais calculé par rapport au bilan CONSULTÉ, jamais par rapport à
+   `_allBilans[0]`. */
+function _crCtx() {
+  if (_bilanIsSuivi && _suiviSnapshot) return { live: true, viewIdx: -1, prevStart: 0 };
+  if (!_allBilans || !_allBilans.length || !_currentBilanId) return null;
+  var idx = -1;
+  for (var i = 0; i < _allBilans.length; i++) {
+    if (_allBilans[i].id === _currentBilanId) { idx = i; break; }
+  }
+  if (idx === -1) return null;
+  if (idx + 1 >= _allBilans.length) return null; // premier bilan : aucun antérieur, rien à marquer
+  return { live: false, viewIdx: idx, prevStart: idx + 1 };
+}
+
+function _crInSuiviMode() { return !!_crCtx(); }
+
+// Date (dd/mm) du bilan consulté — celle que porteront les mentions « réévalué le … »
+function _crDateVue() {
+  var ctx = _crCtx();
+  var d;
+  if (!ctx || ctx.live) {
+    d = new Date();
+    return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+  }
+  d = (_allBilans[ctx.viewIdx].date || '').slice(0, 10);
+  return d.length >= 10 ? d.slice(8, 10) + '/' + d.slice(5, 7) : '';
 }
 
 // Retourne la date (dd/mm) du bilan d'origine d'un champ porté
 function _crOriginDate(fieldIds) {
   if (!fieldIds || !fieldIds.length || !_allBilans || !_allBilans.length) return '';
-  var startIdx = (_bilanIsSuivi && _suiviSnapshot) ? 0 : 1;
+  var _ctxO = _crCtx();
+  var startIdx = _ctxO ? _ctxO.prevStart : 1;
   for (var _oi = startIdx; _oi < _allBilans.length; _oi++) {
     var _od = _allBilans[_oi].donnees || {};
     for (var _oj = 0; _oj < fieldIds.length; _oj++) {
@@ -6426,53 +6467,156 @@ function _crOriginDate(fieldIds) {
   return '';
 }
 
-// Retourne true si le champ vient d'un bilan précédent (non remesuré dans le suivi actuel)
-function _crIsCarried(fieldIds) {
-  if (!fieldIds || !fieldIds.length) return false;
-  // Suivi en cours (avant enregistrement) — comparer au snapshot
-  if (_bilanIsSuivi && _suiviSnapshot) {
+// Valeur courante d'un champ : lue dans les donnees d'un bilan enregistré, ou
+// dans le formulaire quand le suivi n'est pas encore sauvegardé.
+function _crValeurCourante(fid, vals) {
+  if (vals) { var v = vals[fid]; return (v === undefined || v === null) ? '' : String(v); }
+  var el = document.getElementById(fid);
+  if (!el) return '';
+  return (el.type === 'checkbox' || el.type === 'radio') ? String(el.checked) : (el.value || '');
+}
+
+// true si toutes les valeurs renseignées sont identiques à l'état antérieur fusionné.
+// `vu` évite de déclarer « inchangée » une ligne qui n'a aucune valeur du tout.
+function _crValeursIdentiques(fieldIds, vals, prev) {
+  var vu = false;
+  for (var i = 0; i < fieldIds.length; i++) {
+    var c = _crValeurCourante(fieldIds[i], vals);
+    if (c === '') continue;
+    vu = true;
+    var p = prev[fieldIds[i]];
+    var ps = (p === undefined || p === null) ? '' : String(p);
+    if (c !== ps) return false;
+  }
+  return vu;
+}
+
+/* État d'une ligne de CR — trois réponses possibles, plus le vide hors suivi :
+
+     'neuf'     bloc réévalué dans ce bilan, valeur nouvelle
+     'inchange' bloc réévalué dans ce bilan, résultat identique au précédent
+     'ancien'   bloc non réévalué : la valeur vient d'un bilan antérieur
+
+   `'inchange'` est l'état qui n'existait pas, et c'est le plus utile au
+   médecin : « toujours négatif après huit semaines » est une information
+   clinique forte que le CR perdait entièrement.
+
+   La marque du bloc prime sur la comparaison de valeurs. La comparaison ne
+   sert plus qu'à départager 'neuf' de 'inchange' — et, pour les bilans
+   enregistrés AVANT ce mécanisme, à tenir lieu de réponse à défaut de mieux
+   (`_reevalLire` rend alors `null`). On ne réinvente pas un passé qu'on ne
+   connaît pas : ces bilans se relisent exactement comme avant. */
+function _crEtat(fieldIds) {
+  var ctx = _crCtx();
+  if (!ctx || !fieldIds || !fieldIds.length) return '';
+  var vals = ctx.live ? null : (_allBilans[ctx.viewIdx].donnees || {});
+  var prev = _crPrevMerged(ctx.prevStart);
+  var reeval = ctx.live
+    ? Object.keys(_reevalBlocs).filter(function(k){ return _reevalBlocs[k]; })
+    : _reevalLire(vals);
+
+  if (reeval) {
+    /* Un champ qu'aucun bloc ne réclame (rendu hors `.block[data-block-id]`)
+       ne peut pas être tranché par la marque — sans ce repli il passerait
+       « ancien » pour toujours, sans que rien ne le signale. */
+    var connu = false, marque = false;
+    for (var i = 0; i < fieldIds.length; i++) {
+      var b = _reevalMap && _reevalMap[fieldIds[i]];
+      if (!b) continue;
+      connu = true;
+      if (reeval.indexOf(b) !== -1) { marque = true; break; }
+    }
+    if (connu) {
+      if (!marque) return 'ancien';
+      /* Le bloc a été rouvert, mais CE test-là est resté vide : il n'a pas été
+         refait, sa valeur au CR vient de la fusion des bilans antérieurs. La
+         marque vaut pour le bloc, l'affirmation reste au champ. */
+      var rempli = false;
+      for (var _r = 0; _r < fieldIds.length; _r++) {
+        if (_crValeurCourante(fieldIds[_r], vals) !== '') { rempli = true; break; }
+      }
+      if (!rempli) return 'ancien';
+      return _crValeursIdentiques(fieldIds, vals, prev) ? 'inchange' : 'neuf';
+    }
+  }
+  return _crCarriedLegacy(fieldIds, ctx, vals, prev) ? 'ancien' : 'neuf';
+}
+
+// Conservé pour compatibilité : d'autres appelants demandent encore un booléen.
+function _crIsCarried(fieldIds) { return _crEtat(fieldIds) === 'ancien'; }
+
+/* Habillage d'une ligne de CR — classe et mention, en un seul endroit.
+   Le rendu existait en deux exemplaires (CR Complet et CR Tests) : une
+   mention ajoutée d'un seul côté ne se serait vue que dans l'un des deux. */
+function _crMarquage(fieldIds) {
+  var et = fieldIds ? _crEtat(fieldIds) : '';
+  if (et === 'ancien') {
+    var od = _crOriginDate(fieldIds);
+    return { cls: ' cr-item--anc',
+             badge: '<span class="cr-mention anc">' + (od || 'antérieur') + '</span>' };
+  }
+  if (et === 'neuf' || et === 'inchange') {
+    var dv = _crDateVue();
+    return { cls: ' cr-item--reev',
+             badge: '<span class="cr-mention ' + (et === 'inchange' ? 'inch' : 'neuf') + '">'
+                  + 'réévalué' + (dv ? ' le ' + dv : '')
+                  + (et === 'inchange' ? ' &mdash; inchangé' : '') + '</span>' };
+  }
+  return { cls: '', badge: '' };
+}
+
+/* Le médecin ne peut pas deviner la convention : le CR la lui énonce.
+   Rendue une seule fois, en tête du document. */
+function _crLegendeMarquage() {
+  if (!_crInSuiviMode()) return '';
+  return '<div class="cr-legende">Bilan de suivi. Chaque résultat porte la date de sa '
+       + 'dernière réalisation&nbsp;: <em>réévalué le&nbsp;…</em> pour un test refait ce jour, '
+       + '<em>inchangé</em> lorsque le résultat est identique au précédent. Les valeurs en '
+       + 'italique proviennent d\'un bilan antérieur et n\'ont pas été recontrôlées.</div>';
+}
+
+/* Ancienne règle, inchangée sur le fond — seule sa référence a bougé : elle
+   lisait `_allBilans[0]` en dur, elle lit maintenant le bilan consulté. */
+function _crCarriedLegacy(fieldIds, ctx, vals, prev) {
+  if (ctx.live) {
     var hasVal = false;
     for (var _ci = 0; _ci < fieldIds.length; _ci++) {
-      var _el = document.getElementById(fieldIds[_ci]);
-      if (!_el) continue;
-      var _curr = (_el.type === 'checkbox' || _el.type === 'radio') ? String(_el.checked) : (_el.value || '');
+      var _curr = _crValeurCourante(fieldIds[_ci], null);
       if (!_curr) continue;
       hasVal = true;
-      var _prevStr = _suiviSnapshot[fieldIds[_ci]] !== undefined ? String(_suiviSnapshot[fieldIds[_ci]]) : '';
-      if (_curr !== _prevStr) return false; // au moins un champ modifié aujourd'hui
+      var _ps = _suiviSnapshot[fieldIds[_ci]] !== undefined ? String(_suiviSnapshot[fieldIds[_ci]]) : '';
+      if (_curr !== _ps) return false; // au moins un champ modifié aujourd'hui
     }
     return hasVal;
   }
-  // Bilan sauvegardé — vérifier changed_fields si présent, sinon comparer les donnees brutes
-  if (!_allBilans || _allBilans.length < 2) return false;
-  var _d0 = _allBilans[0].donnees || {};
-  var _cf = _d0.changed_fields;
+  var _cf = vals.changed_fields;
   if (_cf !== undefined && _cf !== null) {
-    // Nouveau format : changed_fields explicite
     for (var _cj = 0; _cj < fieldIds.length; _cj++) {
       if (_cf.indexOf(fieldIds[_cj]) !== -1) return false;
     }
     return true;
   }
   // Ancien format (sans changed_fields) : comparaison avec l'état FUSIONNÉ des bilans
-  // antérieurs — jamais le seul bilan [1], qu'une simple note de suivi rapide rendrait
+  // antérieurs — jamais le seul bilan suivant, qu'une simple note de suivi rapide rendrait
   // trompeur (tous les champs paraîtraient « fraîchement testés »).
-  var _d1 = _crPrevMerged();
   for (var _ck = 0; _ck < fieldIds.length; _ck++) {
-    var _v0 = _d0[fieldIds[_ck]]; var _v1 = _d1[fieldIds[_ck]];
-    var _s0 = (_v0 === undefined || _v0 === null) ? '' : String(_v0);
+    var _s0 = _crValeurCourante(fieldIds[_ck], vals);
+    var _v1 = prev[fieldIds[_ck]];
     var _s1 = (_v1 === undefined || _v1 === null) ? '' : String(_v1);
     if (_s0 !== '' && _s0 !== _s1) return false; // champ renseigné et différent = mesuré dans ce bilan
   }
   return true; // tout vide ou identique = porté du bilan précédent
 }
-/* Fusion des bilans antérieurs au plus récent, mise en cache par rendu
-   (crItem est appelé pour chaque ligne du CR — on ne refusionne pas à chaque appel). */
+/* Fusion des bilans antérieurs au bilan consulté, mise en cache par rendu
+   (crItem est appelé pour chaque ligne du CR — on ne refusionne pas à chaque appel).
+   La clé porte `start` : consulter un bilan ancien puis le plus récent change
+   la fusion, et un cache indifférent au point de départ rendrait la mauvaise. */
 var _crPrevMergedCache = null, _crPrevMergedKey = '';
-function _crPrevMerged(){
-  var key = ((_allBilans[0] && _allBilans[0].id) || '') + ':' + _allBilans.length;
+function _crPrevMerged(start){
+  if (start === undefined) start = 1;
+  var key = ((_allBilans[0] && _allBilans[0].id) || '') + ':' + _allBilans.length + ':' + start;
   if (_crPrevMergedKey === key && _crPrevMergedCache) return _crPrevMergedCache;
-  _crPrevMergedCache = _prevMergedFrom(_allBilans, 1) || {};
+  _crPrevMergedCache = _prevMergedFrom(_allBilans, start) || {};
   _crPrevMergedKey = key;
   return _crPrevMergedCache;
 }
@@ -6525,14 +6669,8 @@ function _buildAllTestsHtml() {
     if (!val) return '';
     tag = tag || ''; tagClass = tagClass || '';
     var tagHtml = tag ? '<span class="cr-tag ' + tagClass + '">' + tag + '</span>' : '';
-    var cls = ''; var dateBadge = '';
-    if (fieldIds && _crInSuiviMode()) {
-      if (_crIsCarried(fieldIds)) {
-        cls = ' cr-item--carried';
-        var _od = _crOriginDate(fieldIds);
-        if (_od) dateBadge = '<span class="cr-date-badge">' + _od + '</span>';
-      } else { cls = ' cr-item--fresh'; }
-    }
+    var _mq = _crMarquage(fieldIds);
+    var cls = _mq.cls; var dateBadge = _mq.badge;
     /* Chaque ligne retient la ou les PAGES d'ou viennent ses champs. C'est ce
        qui permet au CR Tests de ne garder que les onglets Tests de force et
        Tests fonctionnels : la reponse est deduite du formulaire lui-meme, pas
@@ -8160,7 +8298,7 @@ function _buildCRPatientHeaderHtml() {
       (metaParts.length ? '<div style="font-size:.78rem;color:var(--text2);margin-bottom:' + (chipsHtml ? '8px' : '0') + '">' + metaParts.join(' · ') + '</div>' : '') +
       (chipsHtml ? '<div style="display:flex;flex-wrap:wrap;gap:6px">' + chipsHtml + '</div>' : '') +
     '</div>' +
-  '</div>';
+  '</div>' + _crLegendeMarquage();
 }
 
 
@@ -8339,14 +8477,8 @@ function buildCR() {
     if (!val) return '';
     tag = tag || ''; tagClass = tagClass || '';
     var tagHtml = tag ? '<span class="cr-tag ' + tagClass + '">' + tag + '</span>' : '';
-    var cls = ''; var dateBadge = '';
-    if (fieldIds && _crInSuiviMode()) {
-      if (_crIsCarried(fieldIds)) {
-        cls = ' cr-item--carried';
-        var _od = _crOriginDate(fieldIds);
-        if (_od) dateBadge = '<span class="cr-date-badge">' + _od + '</span>';
-      } else { cls = ' cr-item--fresh'; }
-    }
+    var _mq = _crMarquage(fieldIds);
+    var cls = _mq.cls; var dateBadge = _mq.badge;
     return '<div class="cr-item' + cls + '"><span class="cr-key">' + key + '</span><span class="cr-val">' + val + '</span>' + tagHtml + dateBadge + '</div>';
   }
 
@@ -9198,7 +9330,7 @@ function _buildBilanHTML(type) {
     .replace(/(<div class="cr-section">)(<h3>2\. Bilan)/g,  '<div class="cr-section cr-ortho">$2')
     .replace(/(<div class="cr-section">)(<h3>[345]\. Tests)/g, '<div class="cr-section cr-tests">$2');
 
-  var css = `:root{--green:#2D6A4F;--green-l:#E8F5EE;--red:#C0392B;--red-l:#FDECEA;--orange:#D4600A;--orange-l:#FEF3EB;--border:#E8E6E1;--text:#1A1917;--text2:#6B6860;--text3:#9D9B96;--accent2:#1A3A5C;--surface2:#F1F0ED;--surface:#FFFFFF;--accent:#2B5FA6;--accent-l:#EEF3FB}*{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}html{font-size:14px}body{font-family:'Figtree',-apple-system,sans-serif;background:#F5F7FA;color:#1A1917;padding:0}.page-wrap{max-width:800px;margin:0 auto;padding:0 0 48px}.doc-header{background:var(--accent2);padding:16px 28px 14px}.doc-hdr-row1{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}.doc-hdr-sep{border:none;border-top:1px solid rgba(255,255,255,.12);margin:0 0 10px}.doc-hdr-row2{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}.doc-logo{display:inline-flex;align-items:center;gap:8px;flex-shrink:0}.doc-logo svg{display:block;flex-shrink:0}.doc-logo .w{display:inline-flex;align-items:baseline;line-height:1;white-space:nowrap}.doc-logo .r{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:22px;color:#fff;letter-spacing:-.01em}.doc-logo .e{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:.44em;vertical-align:super;color:#7FA8D9;margin:0 .05em 0 .01em;line-height:0}.doc-logo .p{font-family:'Poppins',sans-serif;font-weight:800;font-size:17px;color:#fff;letter-spacing:-.025em;margin-left:.02em}.doc-type-badge{font-size:.62rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.2);border-radius:4px;padding:3px 10px}.doc-pract-name{font-size:.88rem;font-weight:700;color:#fff;letter-spacing:-.01em}.doc-pract-meta{font-size:.72rem;color:rgba(255,255,255,.7);display:flex;align-items:center;gap:10px;flex-wrap:wrap}.patient-card{background:#fff;margin:0;padding:22px 28px;border-bottom:3px solid var(--accent-l);display:flex;align-items:center;gap:18px}.patient-avatar{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:800;flex-shrink:0}.patient-name{font-size:1.35rem;font-weight:800;color:var(--accent2);margin-bottom:4px;letter-spacing:-.03em;line-height:1.1}.patient-sub{font-size:.8rem;color:var(--text2)}.patient-badges{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}.pat-badge{border-radius:6px;padding:3px 10px;font-size:.68rem;font-weight:600;letter-spacing:.01em;background:var(--accent-l);color:var(--accent)}.pat-badge.orange{background:#FEF3EB;color:#D4600A}.pat-badge.navy{background:var(--accent2);color:#fff;font-weight:700}.doc-date-bar{background:var(--accent-l);padding:7px 28px;font-size:.73rem;color:var(--accent);border-bottom:1px solid #D3D9F0;font-weight:500;letter-spacing:.01em}.doc-date-bar strong{font-weight:700;color:var(--accent2)}.doc-body{padding:20px 28px 0}.block{display:none}.cr-section{background:#fff;border-radius:10px;margin-bottom:16px;overflow:hidden;border:1px solid var(--border)}.cr-section h3{padding:11px 16px 11px 20px;font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent2);margin:0;border-left:4px solid var(--accent2);background:#F7F8FC}.cr-ortho h3{border-left-color:var(--green);color:var(--green);background:#F3FAF6}.cr-tests h3{border-left-color:var(--accent);color:var(--accent);background:#F0F4FC}.cr-alert h3{border-left-color:#D4600A;color:#D4600A;background:#FFF8F3}.cr-item{display:flex;align-items:flex-start;gap:16px;padding:10px 16px;border-bottom:1px solid #F5F4F2;line-height:1.5}.cr-item:last-child{border-bottom:none}.cr-key{font-size:.65rem;font-weight:700;color:var(--text3);min-width:175px;flex-shrink:0;padding-top:3px;text-transform:uppercase;letter-spacing:.06em}.cr-val{flex:1;font-size:.88rem;color:#1A1917;line-height:1.55}.cr-tag{display:inline-block;padding:2px 9px;border-radius:5px;font-size:.65rem;font-weight:700;white-space:nowrap;margin-left:8px;vertical-align:middle;letter-spacing:.02em}.cr-tag.ok,.cr-tag.good{background:#E8F5EE;color:var(--green)}.cr-tag.warn{background:#FEF3EB;color:#D4600A}.cr-tag.bad{background:#FDECEA;color:var(--red)}.cr-alert .cr-item{padding:10px 16px;align-items:flex-start;background:#FFFAF7}.cr-alert .cr-item:nth-child(odd){background:#fff}.cr-alert .cr-item>span:first-child{color:#D4600A;font-weight:700;font-size:.95rem;flex-shrink:0}.cr-empty{padding:40px;text-align:center;color:var(--text3);font-style:italic;font-size:.9rem}@media print{body{background:#F5F7FA!important}.doc-header{background:var(--accent2)!important}.cr-section{break-inside:avoid;page-break-inside:avoid}.doc-body{padding:12px 28px 0}}@media(max-width:640px){.doc-header{padding:13px 16px 11px}.doc-pract-name{font-size:.8rem}.doc-pract-meta{font-size:.67rem;gap:6px}.patient-card{padding:14px 16px;gap:12px}.patient-avatar{width:44px;height:44px;font-size:1rem}.patient-name{font-size:1.05rem}.pat-badge{font-size:.66rem;padding:2px 8px}.doc-date-bar{padding:6px 16px;font-size:.71rem}.doc-body{padding:10px 16px 0}.cr-section{border-radius:8px;margin-bottom:10px}.cr-section h3{padding:9px 12px 9px 14px;font-size:.65rem}.cr-item{flex-direction:column;gap:3px;padding:10px 12px}.cr-key{min-width:0;width:100%;padding-top:0;padding-bottom:1px}.cr-val{font-size:.9rem;width:100%}.cr-tag{margin-left:0;margin-top:6px}.cr-alert .cr-item{flex-direction:row;gap:10px}}.cr-mt{border-collapse:collapse;font-variant-numeric:tabular-nums}.cr-mt th{font-size:.64rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text2);text-align:right;padding:0 0 3px 14px;white-space:nowrap}.cr-mt td{font-size:.84rem;padding:2px 0 2px 14px;text-align:right;white-space:nowrap}.cr-mt th.lbl,.cr-mt td.lbl{text-align:left}.cr-mt td.lbl{color:var(--text2);font-size:.8rem}.cr-mt th:first-child,.cr-mt td:first-child{padding-left:0}.cr-mt th:not(.lbl),.cr-mt td:not(.lbl){width:86px}.cr-mt tr+tr td{border-top:1px solid #F5F4F2}.cr-mt .num{font-weight:700;color:var(--text)}.cr-mt .der{font-weight:800;color:var(--accent)}.cr-mt-note{font-size:.74rem;color:var(--text2);margin-top:4px}@media(max-width:640px){.cr-mt th,.cr-mt td{padding-left:9px}.cr-mt th:not(.lbl),.cr-mt td:not(.lbl){width:76px}.cr-mt td{font-size:.8rem}}svg{max-width:100%;height:auto;display:block}`;
+  var css = `:root{--green:#2D6A4F;--green-l:#E8F5EE;--red:#C0392B;--red-l:#FDECEA;--orange:#D4600A;--orange-l:#FEF3EB;--border:#E8E6E1;--text:#1A1917;--text2:#6B6860;--text3:#9D9B96;--accent2:#1A3A5C;--surface2:#F1F0ED;--surface:#FFFFFF;--accent:#2B5FA6;--accent-l:#EEF3FB}*{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}html{font-size:14px}body{font-family:'Figtree',-apple-system,sans-serif;background:#F5F7FA;color:#1A1917;padding:0}.page-wrap{max-width:800px;margin:0 auto;padding:0 0 48px}.doc-header{background:var(--accent2);padding:16px 28px 14px}.doc-hdr-row1{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}.doc-hdr-sep{border:none;border-top:1px solid rgba(255,255,255,.12);margin:0 0 10px}.doc-hdr-row2{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}.doc-logo{display:inline-flex;align-items:center;gap:8px;flex-shrink:0}.doc-logo svg{display:block;flex-shrink:0}.doc-logo .w{display:inline-flex;align-items:baseline;line-height:1;white-space:nowrap}.doc-logo .r{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:22px;color:#fff;letter-spacing:-.01em}.doc-logo .e{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:.44em;vertical-align:super;color:#7FA8D9;margin:0 .05em 0 .01em;line-height:0}.doc-logo .p{font-family:'Poppins',sans-serif;font-weight:800;font-size:17px;color:#fff;letter-spacing:-.025em;margin-left:.02em}.doc-type-badge{font-size:.62rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.2);border-radius:4px;padding:3px 10px}.doc-pract-name{font-size:.88rem;font-weight:700;color:#fff;letter-spacing:-.01em}.doc-pract-meta{font-size:.72rem;color:rgba(255,255,255,.7);display:flex;align-items:center;gap:10px;flex-wrap:wrap}.patient-card{background:#fff;margin:0;padding:22px 28px;border-bottom:3px solid var(--accent-l);display:flex;align-items:center;gap:18px}.patient-avatar{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:800;flex-shrink:0}.patient-name{font-size:1.35rem;font-weight:800;color:var(--accent2);margin-bottom:4px;letter-spacing:-.03em;line-height:1.1}.patient-sub{font-size:.8rem;color:var(--text2)}.patient-badges{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}.pat-badge{border-radius:6px;padding:3px 10px;font-size:.68rem;font-weight:600;letter-spacing:.01em;background:var(--accent-l);color:var(--accent)}.pat-badge.orange{background:#FEF3EB;color:#D4600A}.pat-badge.navy{background:var(--accent2);color:#fff;font-weight:700}.doc-date-bar{background:var(--accent-l);padding:7px 28px;font-size:.73rem;color:var(--accent);border-bottom:1px solid #D3D9F0;font-weight:500;letter-spacing:.01em}.doc-date-bar strong{font-weight:700;color:var(--accent2)}.doc-body{padding:20px 28px 0}.block{display:none}.cr-section{background:#fff;border-radius:10px;margin-bottom:16px;overflow:hidden;border:1px solid var(--border)}.cr-section h3{padding:11px 16px 11px 20px;font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent2);margin:0;border-left:4px solid var(--accent2);background:#F7F8FC}.cr-ortho h3{border-left-color:var(--green);color:var(--green);background:#F3FAF6}.cr-tests h3{border-left-color:var(--accent);color:var(--accent);background:#F0F4FC}.cr-alert h3{border-left-color:#D4600A;color:#D4600A;background:#FFF8F3}.cr-item{display:flex;align-items:flex-start;gap:16px;padding:10px 16px;border-bottom:1px solid #F5F4F2;line-height:1.5}.cr-item:last-child{border-bottom:none}.cr-key{font-size:.65rem;font-weight:700;color:var(--text3);min-width:175px;flex-shrink:0;padding-top:3px;text-transform:uppercase;letter-spacing:.06em}.cr-val{flex:1;font-size:.88rem;color:#1A1917;line-height:1.55}.cr-tag{display:inline-block;padding:2px 9px;border-radius:5px;font-size:.65rem;font-weight:700;white-space:nowrap;margin-left:8px;vertical-align:middle;letter-spacing:.02em}.cr-tag.ok,.cr-tag.good{background:#E8F5EE;color:var(--green)}.cr-tag.warn{background:#FEF3EB;color:#D4600A}.cr-tag.bad{background:#FDECEA;color:var(--red)}.cr-alert .cr-item{padding:10px 16px;align-items:flex-start;background:#FFFAF7}.cr-alert .cr-item:nth-child(odd){background:#fff}.cr-alert .cr-item>span:first-child{color:#D4600A;font-weight:700;font-size:.95rem;flex-shrink:0}.cr-empty{padding:40px;text-align:center;color:var(--text3);font-style:italic;font-size:.9rem}@media print{body{background:#F5F7FA!important}.doc-header{background:var(--accent2)!important}.cr-section{break-inside:avoid;page-break-inside:avoid}.doc-body{padding:12px 28px 0}}@media(max-width:640px){.doc-header{padding:13px 16px 11px}.doc-pract-name{font-size:.8rem}.doc-pract-meta{font-size:.67rem;gap:6px}.patient-card{padding:14px 16px;gap:12px}.patient-avatar{width:44px;height:44px;font-size:1rem}.patient-name{font-size:1.05rem}.pat-badge{font-size:.66rem;padding:2px 8px}.doc-date-bar{padding:6px 16px;font-size:.71rem}.doc-body{padding:10px 16px 0}.cr-section{border-radius:8px;margin-bottom:10px}.cr-section h3{padding:9px 12px 9px 14px;font-size:.65rem}.cr-item{flex-direction:column;gap:3px;padding:10px 12px}.cr-key{min-width:0;width:100%;padding-top:0;padding-bottom:1px}.cr-val{font-size:.9rem;width:100%}.cr-tag{margin-left:0;margin-top:6px}.cr-alert .cr-item{flex-direction:row;gap:10px}}.cr-mt{border-collapse:collapse;font-variant-numeric:tabular-nums}.cr-mt th{font-size:.64rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text2);text-align:right;padding:0 0 3px 14px;white-space:nowrap}.cr-mt td{font-size:.84rem;padding:2px 0 2px 14px;text-align:right;white-space:nowrap}.cr-mt th.lbl,.cr-mt td.lbl{text-align:left}.cr-mt td.lbl{color:var(--text2);font-size:.8rem}.cr-mt th:first-child,.cr-mt td:first-child{padding-left:0}.cr-mt th:not(.lbl),.cr-mt td:not(.lbl){width:86px}.cr-mt tr+tr td{border-top:1px solid #F5F4F2}.cr-mt .num{font-weight:700;color:var(--text)}.cr-mt .der{font-weight:800;color:var(--accent)}.cr-mt-note{font-size:.74rem;color:var(--text2);margin-top:4px}@media(max-width:640px){.cr-mt th,.cr-mt td{padding-left:9px}.cr-mt th:not(.lbl),.cr-mt td:not(.lbl){width:76px}.cr-mt td{font-size:.8rem}}.cr-item--anc .cr-val{font-style:italic;color:var(--text2);font-weight:400}.cr-item--reev{border-left:2px solid var(--accent);padding-left:10px}.cr-mention{font-size:.65rem;font-weight:700;border-radius:20px;padding:1px 8px;margin-left:8px;white-space:nowrap;flex-shrink:0;letter-spacing:.01em;align-self:flex-start;margin-top:2px}.cr-mention.neuf{background:var(--accent-l);color:var(--accent)}.cr-mention.inch{background:var(--surface2);color:var(--text2)}.cr-mention.anc{background:transparent;color:var(--text3);border:1px solid var(--border);font-weight:600}.cr-legende{font-size:.72rem;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 13px;margin:0 28px 14px;line-height:1.55}.cr-legende em{font-style:normal;font-weight:700;color:var(--text)}.reeval-chip{display:none}svg{max-width:100%;height:auto;display:block}`;
 
   var practNameStr = praticien + (cabinet ? ' — ' + cabinet : '');
   var metaItems = [];
@@ -9520,6 +9652,197 @@ function _afMarkTouched(pg, kind, ev){
   _afTouched[pg + '-' + kind] = true;
 }
 function _afResetTouched(){ _afTouched = {}; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   RÉÉVALUATION PAR BLOC
+
+   Le CR décidait « frais ou ancien » en comparant les valeurs. Un test refait
+   dont le résultat n'a pas bougé — un Lachman toujours négatif à huit semaines —
+   se retrouvait donc daté du bilan précédent. C'est faux, et c'est justement
+   l'information la plus forte du suivi.
+
+   La question posée n'est plus « la valeur a-t-elle changé ? » mais « ai-je
+   refait ce test ? ». Elle ne se déduit d'aucune donnée : elle se marque.
+   La marque se pose SEULE dès qu'un champ du bloc est touché — le praticien ne
+   change rien à ses habitudes. Il ne clique que dans le seul cas où la machine
+   ne peut pas savoir : test refait, résultat identique, rien à modifier.
+
+   C'est la généralisation de `_afTouched`, qui résolvait déjà ce problème pour
+   les seules cases de l'Analyse Fonctionnelle. Les deux coexistent : AF est
+   rendue en JS hors de tout `.block[data-block-id]`, elle garde son mécanisme.
+
+   Le grain est le BLOC, jamais la page : marquer une page entière déclarerait
+   « réévalués » dix tests qu'on n'a pas refaits — un mensonge au lieu d'un
+   oubli. Jamais le champ non plus : ce serait redemander au praticien ce que
+   l'interaction dit déjà.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+var _reevalBlocs = {};    // blocId -> true, pour le bilan en cours de saisie
+var _reevalMap = null;    // fieldId -> blocId, construit depuis le DOM
+var _reevalChamps = null; // blocId -> [fieldId]
+
+function _reevalReset(){
+  _reevalBlocs = {};
+  // Les pastilles vivent dans le DOM : sans repeinte, celles d'un bilan
+  // précédent resteraient allumées sur le suivant.
+  try{
+    document.querySelectorAll('.reeval-chip').forEach(function(c){
+      _reevalPeindre(c, c.getAttribute('data-bloc'));
+    });
+  }catch(e){}
+}
+
+/* `data-block-id` est PARTAGÉ par les paires unilatéral/bilatéral d'un même
+   bloc (c'est déjà la raison pour laquelle le contrôle de doublons d'id
+   l'exclut). Les champs des deux variantes s'accumulent donc sous une seule
+   clé — ce qui est le comportement voulu : c'est le même bloc clinique, et la
+   variante masquée n'a de toute façon aucune valeur. */
+function _reevalIndexer(){
+  _reevalMap = {}; _reevalChamps = {};
+  document.querySelectorAll('.block[data-block-id]').forEach(function(bl){
+    var bid = bl.getAttribute('data-block-id');
+    if(!bid) return;
+    var ids = _reevalChamps[bid] || (_reevalChamps[bid] = []);
+    bl.querySelectorAll('input[id],select[id],textarea[id]').forEach(function(el){
+      if(el.closest('#print-header')) return;
+      if(_reevalMap[el.id] === undefined) _reevalMap[el.id] = bid;
+      if(ids.indexOf(el.id) === -1) ids.push(el.id);
+    });
+  });
+}
+
+function _reevalPeindre(chip, bid){
+  var on = !!_reevalBlocs[bid];
+  chip.classList.toggle('on', on);
+  chip.setAttribute('aria-pressed', on ? 'true' : 'false');
+  chip.title = on
+    ? 'Ce bloc sera marqué « réévalué » dans le compte-rendu. Cliquer pour retirer la marque.'
+    : 'Test refait sans que le résultat change ? Cliquer pour le marquer réévalué.';
+  chip.innerHTML = '<span class="reeval-box"></span>'
+                 + '<span class="reeval-txt">' + (on ? 'Réévalué' : 'Réévalué&nbsp;?') + '</span>';
+}
+
+function _reevalRepeindre(bid){
+  document.querySelectorAll('.reeval-chip[data-bloc="' + bid + '"]').forEach(function(c){
+    _reevalPeindre(c, bid);
+  });
+}
+
+window._reevalToggle = function(bid){
+  if(_reevalBlocs[bid]) delete _reevalBlocs[bid]; else _reevalBlocs[bid] = true;
+  _reevalRepeindre(bid);
+  if(!_suppressDirty) _bilanModified = true;
+};
+
+/* À rappeler après toute reconstruction de blocs (`_blApplyLayout`) : la
+   pastille vit DANS l'en-tête, un bloc re-rendu perd la sienne. */
+function _reevalRender(){
+  _reevalIndexer();
+  document.querySelectorAll('.block[data-block-id]').forEach(function(bl){
+    var bid = bl.getAttribute('data-block-id');
+    if(!bid) return;
+    // Identité, anamnèse, imageries : ce ne sont pas des tests, on ne les réévalue pas.
+    if(bl.closest('#page-infos')) return;
+    if(!(_reevalChamps[bid] || []).length) return;
+    var hd = bl.querySelector('.block-header');
+    if(!hd) return;
+    var chip = hd.querySelector('.reeval-chip');
+    if(!chip){
+      chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'reeval-chip';
+      chip.setAttribute('data-bloc', bid);
+      chip.addEventListener('click', function(ev){
+        ev.preventDefault(); ev.stopPropagation();
+        window._reevalToggle(bid);
+      });
+      hd.appendChild(chip);
+    }
+    _reevalPeindre(chip, bid);
+  });
+}
+
+/* `isTrusted === false` écarte les écritures programmatiques : le rechargement
+   d'un bilan, le re-broadcast du patient, les autofills. Sans ce garde-fou,
+   ouvrir un bilan ancien le marquerait entièrement réévalué. */
+function _reevalEcouter(ev){
+  if(!ev || ev.isTrusted === false) return;
+  var t = ev.target;
+  if(!t || !t.id) return;
+  var bid = _reevalMap && _reevalMap[t.id];
+  if(!bid && t.closest){
+    var bl = t.closest('.block[data-block-id]');
+    bid = bl && bl.getAttribute('data-block-id');
+  }
+  if(!bid || _reevalBlocs[bid]) return;
+  if(document.getElementById('page-infos') &&
+     document.getElementById('page-infos').contains(t)) return;
+  _reevalBlocs[bid] = true;
+  _reevalRepeindre(bid);
+}
+document.addEventListener('input', _reevalEcouter, true);
+document.addEventListener('change', _reevalEcouter, true);
+
+/* Tous les champs des blocs marqués — c'est ce qui les fait entrer dans
+   changed_fields, et donc ce qui les fait apparaître dans les courbes
+   d'évolution. Un test refait au résultat identique est un vrai point de
+   mesure : il ne doit pas manquer à la courbe. */
+/* Ensemble des blocs à enregistrer.
+
+   Rouvrir un bilan pour corriger une faute de frappe ne doit pas effacer ce
+   qu'il disait. `_reevalBlocs` ne retient que ce qui a été touché DANS LA
+   SESSION — l'enregistrer tel quel réécrirait l'histoire en silence : un bloc
+   réévalué la semaine dernière repasserait « ancien » au premier re-save, et
+   rien ne l'aurait signalé. Les marques déjà portées par le bilan édité sont
+   donc réunies aux nouvelles.
+
+   Réunion, jamais remplacement : c'est aussi ce qui interdit d'enlever une
+   marque posée lors d'une session précédente. Le cas ne s'est jamais présenté
+   — décocher sert à corriger un clic qu'on vient de faire — et l'alternative
+   (autoriser le retrait) rendrait indistinguables « je retire » et « je n'ai
+   pas rouvert ce bloc ». */
+function _reevalBlocsPourSauvegarde(){
+  var out = Object.keys(_reevalBlocs).filter(function(k){ return _reevalBlocs[k]; });
+  if(_bilanHistoMode && _currentBilanId && _allBilans){
+    var ob = _allBilans.find(function(b){ return b.id === _currentBilanId; });
+    var anc = _reevalLire((ob && ob.donnees) || {});
+    if(anc) anc.forEach(function(b){ if(out.indexOf(b) === -1) out.push(b); });
+  }
+  return out.sort();
+}
+
+function _reevalChampsMarques(donnees){
+  if(!_reevalChamps) { try{ _reevalIndexer(); }catch(e){ return []; } }
+  var out = [];
+  _reevalBlocsPourSauvegarde().forEach(function(bid){
+    (_reevalChamps[bid] || []).forEach(function(id){
+      /* Un champ resté VIDE dans un bloc marqué n'a pas été mesuré : le bloc a
+         été rouvert, ce test-là non. L'inscrire ferait apparaître un point de
+         mesure inexistant dans les courbes d'évolution. La marque porte sur le
+         bloc, la mesure reste au champ. */
+      if(donnees){
+        var v = donnees[id];
+        if(v === undefined || v === null || String(v) === '') return;
+      }
+      if(out.indexOf(id)===-1) out.push(id);
+    });
+  });
+  return out;
+}
+
+function _reevalSerialiser(){
+  return JSON.stringify(_reevalBlocsPourSauvegarde());
+}
+
+/* Rend `null` — et non `[]` — quand le bilan ne porte aucune marque. La
+   distinction est capitale : `null` veut dire « bilan enregistré avant ce
+   mécanisme », et le CR retombe alors sur l'ancienne comparaison de valeurs.
+   `[]` voudrait dire « rien n'a été réévalué », ce qui griserait tout. */
+function _reevalLire(donnees){
+  if(!donnees || donnees._reeval === undefined || donnees._reeval === null) return null;
+  try{ var a = JSON.parse(donnees._reeval); return Array.isArray(a) ? a : null; }
+  catch(e){ return null; }
+}
 
 var AF_OHS_GROUPS = [
   { title:'Critères de réussite', type:'ok', items:[
@@ -10857,8 +11180,10 @@ window.addEventListener('load', function(){
       if(_bilanIsSuivi && _suiviSnapshot){
         rawPrev = _suiviSnapshot['ct-data-'+pk] || '';
       } else if(_allBilans && _allBilans.length >= 2){
-        // Fusion des bilans antérieurs : couvre le cas où _allBilans[1] est lui-même un suivi vide
-        rawPrev = (_buildMergedDonnees(_allBilans.slice(1)) || {})['ct-data-'+pk] || '';
+        // Fusion des bilans antérieurs AU BILAN CONSULTÉ (pas au plus récent) :
+        // couvre aussi le cas où le bilan suivant est lui-même un suivi vide.
+        var _ctxP = _crCtx();
+        rawPrev = (_buildMergedDonnees(_allBilans.slice(_ctxP ? _ctxP.prevStart : 1)) || {})['ct-data-'+pk] || '';
       }
       if(rawPrev){ try{ (JSON.parse(rawPrev)||[]).forEach(function(t){ if(t.name) prevByName[t.name]=t; }); }catch(e){} }
     }
@@ -10886,13 +11211,23 @@ window.addEventListener('load', function(){
         if(prev){
           var valAEq = String(t.valA||'') === String(prev.valA||'');
           var valBEq = t.type === 'perf' || String(t.valB||'') === String(prev.valB||'');
-          cls = (valAEq && valBEq) ? ' cr-item--carried' : ' cr-item--fresh';
+          cls = (valAEq && valBEq) ? ' cr-item--anc' : ' cr-item--reev';
         } else {
-          cls = ' cr-item--fresh';
+          cls = ' cr-item--reev';
         }
-        if(cls === ' cr-item--carried'){
+        /* Les tests personnalisés vivent dans un JSON (`ct-data-<pk>`), hors de
+           tout `.block[data-block-id]` : aucune marque de réévaluation ne peut
+           s'y accrocher. Ils gardent donc la comparaison de valeurs, et n'ont
+           pas de mention « inchangé » — on ne sait pas s'ils ont été refaits.
+           Une mention affirmée ici serait une invention. */
+        if(cls === ' cr-item--reev'){
+          var _dvC = _crDateVue();
+          dateBadge = '<span class="cr-mention neuf">réévalué' + (_dvC ? ' le ' + _dvC : '') + '</span>';
+        }
+        if(cls === ' cr-item--anc'){
           // Cherche le bilan d'origine (le plus récent bilan précédent avec une valeur non-vide)
-          var startIdx = (_bilanIsSuivi && _suiviSnapshot) ? 0 : 1;
+          var _ctxC = _crCtx();
+          var startIdx = _ctxC ? _ctxC.prevStart : 1;
           for(var _oi2=startIdx; _oi2<(_allBilans||[]).length; _oi2++){
             var _rawB = ((_allBilans[_oi2].donnees)||{})['ct-data-'+pk]||'';
             if(!_rawB) continue;
@@ -10906,7 +11241,7 @@ window.addEventListener('load', function(){
               }
               if(_found){
                 var _od = (_allBilans[_oi2].date||'').slice(0,10);
-                if(_od.length>=10) dateBadge='<span class="cr-date-badge">'+_od.slice(8,10)+'/'+_od.slice(5,7)+'</span>';
+                if(_od.length>=10) dateBadge='<span class="cr-mention anc">'+_od.slice(8,10)+'/'+_od.slice(5,7)+'</span>';
                 break;
               }
             }catch(e){}
