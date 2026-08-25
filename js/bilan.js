@@ -2763,7 +2763,14 @@ function _enterReadOnlyMode(){
   // l'utilisateur a cliqué "Modifier" (la fenêtre de vulnérabilité est fermée).
   if(_bilanNeedsRefresh && _allBilans && _allBilans.length){
     _bilanNeedsRefresh = false;
-    _deserializeBilan(_buildMergedDonnees(_allBilans));
+    /* Cette refusion portait sur `_allBilans` ENTIER. Elle s'exécute juste
+       après `loadBilan`, qui venait pourtant de charger la bonne vue bornée :
+       elle l'écrasait, et un bilan de juin se mettait à afficher les valeurs
+       d'août. `_bilanNeedsRefresh` n'étant vrai qu'après une sauvegarde, le
+       défaut n'apparaissait qu'une fois sur deux — d'où sa difficulté à être
+       cerné. Pire, enregistrer depuis cette vue écrivait les valeurs récentes
+       dans le bilan ancien. */
+    _deserializeBilan(_mergedDuBilanCourant());
     document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
     if(_prevDonnees) _renderDeltas(_prevDonnees);
   }
@@ -3056,6 +3063,27 @@ function _showPatientToast(msg){
 function _prevMergedFrom(arr, fromIdx){
   var older = (arr || []).slice(fromIdx);
   return older.length ? _buildMergedDonnees(older) : null;
+}
+
+/* Fusion bornée au bilan CONSULTÉ : lui-même et les plus anciens, jamais un
+   bilan postérieur.
+
+   Le bilan le plus récent est une synthèse — il reprend tout l'historique, avec
+   les mentions de réévaluation et les dates. Un bilan ANTÉRIEUR ne le peut pas :
+   il porte ce qui a été mesuré ce jour-là, plus ce qui le précède, et rien de ce
+   qui a été mesuré après. Afficher une valeur d'août sur un bilan de juin, c'est
+   lui faire dire ce qu'il ne disait pas.
+
+   Sur le bilan le plus récent l'indice vaut 0, donc `slice(0)` — le comportement
+   ne change pas d'un iota pour lui. */
+function _mergedDuBilanCourant(){
+  if(!_allBilans || !_allBilans.length) return {};
+  var idx = 0;
+  if(_currentBilanId){
+    var i = _allBilans.findIndex(function(b){ return String(b.id) === String(_currentBilanId); });
+    if(i !== -1) idx = i;
+  }
+  return _buildMergedDonnees(_allBilans.slice(idx));
 }
 
 function _buildMergedDonnees(allBilans){
@@ -5062,7 +5090,7 @@ function loadBilan(id){
     _currentBilanId   = res.data.id;
     _currentBilanDate = res.data.date ? res.data.date.split('T')[0] : null;
     try{ _majDateSidebar(); }catch(ex){}
-    _deserializeBilan(_buildMergedDonnees(_allBilans.slice(_allBilans.findIndex(function(b){ return b.id === res.data.id; }))));
+    _deserializeBilan(_mergedDuBilanCourant());
     closeHistoModal();
     // Entrer en mode lecture (sauvegarde patche à la date originale via _bilanHistoMode)
     _bilanHistoMode = true;

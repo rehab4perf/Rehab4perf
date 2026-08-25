@@ -467,6 +467,42 @@ passe en ambre (`.passe`) dès que le bilan consulté n'est pas celui du jour. L
 date a été **retirée de `sb-meta`** au passage : deux fois la même, dont une
 sans étiquette, ne disait rien de plus.
 
+## Un bilan antérieur ne montre jamais l'avenir
+
+```bash
+node qualite/bilan-anterieur-cas.js
+```
+
+Le bilan **le plus récent est une synthèse** : il reprend tout l'historique,
+avec les mentions de réévaluation et les dates. Un bilan **antérieur ne le peut
+pas** — il porte ce qui a été mesuré ce jour-là, plus ce qui le précède, et rien
+de ce qui a été mesuré après.
+
+`loadBilan` chargeait la bonne vue, bornée au bilan consulté. Puis
+`_enterReadOnlyMode`, appelée deux lignes plus bas, **l'écrasait** avec
+`_buildMergedDonnees(_allBilans)` — l'historique ENTIER, bilans postérieurs
+compris. Un bilan de juin affichait donc les valeurs d'août.
+
+`_bilanNeedsRefresh` n'étant vrai qu'**après une sauvegarde**, le défaut
+n'apparaissait qu'une fois sur deux : c'est ce qui le rendait insaisissable.
+Et enregistrer depuis cette vue écrivait les valeurs récentes **dans** le bilan
+ancien.
+
+Toute fusion destinée au formulaire passe désormais par
+`_mergedDuBilanCourant()`. Sur le plus récent l'indice vaut 0, donc `slice(0)` :
+son comportement ne change pas d'un iota. La comparaison d'id s'y fait en
+`String()` — le SDK Supabase livre les `bigint` tantôt en nombre, tantôt en
+chaîne, et un `===` strict retombait sur l'indice 0, c'est-à-dire précisément
+sur la synthèse.
+
+Le CR suit sans rien de plus : il se construit depuis le formulaire.
+
+**Le fichier de cas porte aussi un garde-fou textuel.** Les cas vérifient la
+fonction, pas **qui l'appelle** — et le défaut était exactement là : une
+seconde fusion, non bornée, écrasant la première. Il échoue si
+`_enterReadOnlyMode` ou `loadBilan` réintroduit un
+`_buildMergedDonnees(_allBilans)`.
+
 ## Marquage du retest — le CR ne devine plus, il lit une marque
 
 ```bash
