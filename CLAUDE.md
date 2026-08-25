@@ -812,12 +812,23 @@ Elle sort en **sous-lignes** : une compensation par ligne, indentée sous le tes
 avec sa pastille dans la colonne du côté. C'est la grille du bilan rendue dans le
 tableau du courrier.
 
-**Piège mortel : les colonnes de côté ne s'appellent pas toujours Gauche/Droit.**
-`_crLabelsForCote` les nomme « Côté sain / Côté atteint » dès qu'un côté atteint
-est connu — la grille, elle, est TOUJOURS en gauche/droite. Y poser les pastilles
-sans vérifier inverserait les côtés du patient dans un document médical. Le rendu
-ne pose donc les pastilles **que** si les en-têtes s'appellent littéralement
-Gauche et Droit ; sinon le côté est nommé en toutes lettres.
+**Deux conventions ne cohabitent pas dans un tableau.** L'analyse fonctionnelle
+se lit en GAUCHE / DROITE — ce sont des côtés anatomiques. Les tests chiffrés de
+la même section se lisent souvent en CÔTÉ SAIN / CÔTÉ ATTEINT
+(`_crLabelsForCote`, dès qu'un côté atteint est connu). Aucune mise en forme ne
+les réconcilie : l'analyse fonctionnelle reçoit donc sa **propre zone**, donc son
+propre intertitre et son propre tableau, où « Gauche » veut dire gauche.
+
+C'est aussi ce qui rend `_cotesSurs` vrai par construction dans ce tableau. Le
+repli — nommer le côté en toutes lettres quand les en-têtes ne sont pas
+Gauche/Droit — **reste en place** : il couvre le cas où une ligne d'analyse
+fonctionnelle atterrirait ailleurs. Ne pas le retirer en croyant nettoyer du code
+mort ; sans lui, les côtés du patient s'inverseraient en silence dans un document
+médical (voir `qualite/cr-cotes-cas.js`).
+
+L'alternative écartée : traduire gauche/droite en sain/atteint. C'est
+précisément ce que le CR a **cessé** de faire après avoir désigné le mauvais
+membre dans un courrier.
 
 **Le score « G 2/7 · D 2/7 » ne sort pas du cabinet.** Le dénominateur — sept
 critères possibles — ne dit rien à qui ne le connaît pas. `_crMedResumeTests`

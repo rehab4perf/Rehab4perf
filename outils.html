@@ -6597,6 +6597,14 @@ _updateOutilsPatientBtns();
         });
       });
       var entetes = ordre.filter(function (e) { return compte[e] * 2 >= tampon.length; });
+
+      /* Un groupe d'analyse fonctionnelle impose SES colonnes : gauche et
+         droite, toujours. Ses lignes n'ont aucune cellule de mesure — le
+         filtre ci-dessus rendrait donc un tableau sans colonne, et les
+         pastilles n'auraient nulle part ou se poser. C'est aussi ce qui rend
+         `_cotesSurs` vrai par construction : dans SON tableau, « Gauche » veut
+         dire gauche. */
+      if (tampon.some(function (t) { return t.af && t.af.length; })) entetes = ['Gauche', 'Droit'];
       /* Toutes les lignes ne sont pas des mesures a deux cotes. « Conditions »,
          « Cadence », « Zone d'attaque » n'ont qu'une valeur en toutes lettres :
          le bilan la range dans `valeur`, sans `cellules`. Le tableau ne lisait

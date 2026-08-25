@@ -270,6 +270,18 @@ function _crMedResumeTests() {
                         note: v.note || '', statut: tag, niveau: niveau, zone: zoneLigne };
         if (v.af && v.af.lignes.length) {
           _entree.af = v.af.lignes;
+          /* ── Section a part ────────────────────────────────────────────
+             L'analyse fonctionnelle se lit en GAUCHE / DROITE — ce sont des
+             cotes anatomiques. Les tests chiffres de la meme section se lisent
+             souvent en COTE SAIN / COTE ATTEINT. Deux conventions dans un meme
+             tableau, et aucune mise en forme ne les reconcilie : il faut les
+             separer. Elle recoit donc sa propre zone, donc son propre
+             intertitre et son propre tableau, avec ses colonnes a elle.
+
+             L'alternative — traduire gauche/droite en sain/atteint — est
+             precisement ce que le CR a cesse de faire apres avoir designe le
+             mauvais membre dans un courrier (voir qualite/cr-cotes-cas.js). */
+          _entree.zone = 'Analyse fonctionnelle — qualité du mouvement';
           _entree.note = v.af.synthese || _entree.note;
           /* Le score « G 2/7 · D 2/7 » ne dit rien a qui ne connait pas le
              denominateur — sept criteres possibles. Le courrier annonce donc un

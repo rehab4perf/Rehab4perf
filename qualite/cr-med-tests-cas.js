@@ -249,6 +249,12 @@ console.log('\n  Analyse fonctionnelle — le score sur 7 ne sort pas du cabinet
   }
 
   var sym = statutDe([{ label:'Tronc', g:true, d:true }, { label:'Genou', g:true, d:true }], 'G 2/7 · D 2/7');
+  /* L'analyse fonctionnelle se lit en GAUCHE / DROITE ; les tests chiffres de
+     la meme section souvent en COTE SAIN / COTE ATTEINT. Deux conventions dans
+     un meme tableau ne se reconcilient pas — elle prend donc sa propre zone,
+     donc son propre tableau. */
+  verifie('elle quitte la section des tests chiffrés',
+          'Analyse fonctionnelle — qualité du mouvement', sym.zone);
   verifie('deux compensations des deux côtés', '2 compensations', sym.statut);
   verifie('plus aucun « /7 »', 'false', String(/\/\d/.test(sym.statut)));
   verifie('la synthèse passe en note', 'Mêmes compensations.', sym.note);
