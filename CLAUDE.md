@@ -403,6 +403,33 @@ Deux pièges à connaître avant de toucher à ces fonctions :
 - **Le seuil s'énonce dans l'unité affichée.** Un statut « ≥ 90 % » sous une
   colonne d'asymétrie est faux : il devient « ≤ 10 % ».
 
+## La date du bilan — elle se lit, elle ne se saisit pas
+
+La sauvegarde écrit **toujours** `today` dans la colonne `date`, et une
+correction passe par « Bilans précédents ». Le champ « Date du bilan »
+(`f-date`) ne pilotait donc **rien** — mais tout l'affichage le lisait :
+en-têtes de page, en-tête de CR, export autonome.
+
+Deux mensonges en résultaient. Il valait « aujourd'hui » pendant qu'on éditait
+un bilan de juin (il est posé à la date du jour à l'init, au reset et à la
+création d'un suivi). Et il restait **figé** quand la date était corrigée depuis
+l'historique : le CR annonçait alors une date que la base ne portait plus.
+
+Le champ est retiré du formulaire. `_bilanDateEffective()` rend
+`_currentBilanDate`, ou le jour même si aucun bilan n'est chargé — c'est la
+source unique. `_majDateSidebar()` est appelée après **chaque** affectation de
+`_currentBilanDate` (huit sites) et depuis `updateAll`.
+
+`f-date` **subsiste comme clé des donnees**, mais dérivée : `_serializeBilan`
+l'écrit depuis la date effective. `outils.html` la lit dans le brouillon
+(`athletik-bilan`) pour préremplir le début de prise en charge du CR médecin, et
+tous les bilans déjà enregistrés la portent. La supprimer aurait cassé les deux.
+
+La pastille `.sb-bilan-date` la montre en permanence sous le nom du patient, et
+passe en ambre (`.passe`) dès que le bilan consulté n'est pas celui du jour. La
+date a été **retirée de `sb-meta`** au passage : deux fois la même, dont une
+sans étiquette, ne disait rien de plus.
+
 ## Marquage du retest — le CR ne devine plus, il lit une marque
 
 ```bash

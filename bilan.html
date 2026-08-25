@@ -110,6 +110,27 @@ body {
   color: var(--text2);
   margin-top: 2px;
 }
+/* ── Date du bilan, toujours visible ──────────────────────────────────
+   Le champ « Date du bilan » du formulaire a été retiré : il n'a jamais
+   piloté la date enregistrée et affichait souvent autre chose qu'elle. Ce
+   repère lit la vraie date — celle de la colonne `date` — et reste sous les
+   yeux pendant qu'on remplit le bilan.
+   `.passe` : le bilan consulté n'est pas daté d'aujourd'hui. Le bandeau
+   orange plus bas dit pourquoi ; ici on se contente de ne pas laisser croire
+   qu'on écrit à la date du jour. */
+.sb-bilan-date {
+  margin-top: 5px;
+  display: inline-block;
+  font-size: .7rem; font-weight: 600;
+  color: var(--accent); background: var(--surface);
+  border: 1px solid var(--border2); border-radius: 20px;
+  padding: 2px 9px;
+  font-variant-numeric: tabular-nums;
+}
+.sb-bilan-date.passe {
+  color: var(--orange-d); background: var(--yellow-l);
+  border-color: var(--orange);
+}
 .nav { flex: 1; padding: 8px 8px; }
 .nav-item {
   display: flex;
@@ -2145,6 +2166,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   <div class="sidebar-patient">
     <div class="patient-name" id="sb-name">Nouveau patient</div>
     <div class="patient-meta" id="sb-meta">—</div>
+    <div class="sb-bilan-date" id="sb-bilan-date">Bilan du —</div>
     <div class="progress-bar mt-12">
       <div class="progress-fill" id="sb-progress" style="width:0%"></div>
     </div>
@@ -2355,7 +2377,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
         </div>
       </div>
       <div class="form-grid triple">
-        <div class="field"><label>Date du bilan</label><input type="date" id="f-date" oninput="updateAll()"></div>
         <div class="field"><label>Date d'accident</label><input type="date" id="f-date-accident" oninput="updateAll()"></div>
         <div class="field"><label>Date d'opération <span style="font-size:.7em;opacity:.55">(si chir.)</span></label><input type="date" id="f-date-op" oninput="updateAll()"></div>
       </div>
@@ -5862,7 +5883,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260806i"></script>
-<script src="js/bilan.js?v=20260825a"></script>
+<script src="js/bilan.js?v=20260825b"></script>
 
 </body>
 </html>

@@ -1499,7 +1499,7 @@ function init() {
   _afRender();
 
   // Set today's date
-  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+  _majDateSidebar();
   updateAll();
   loadFromStorage();
   applyProfile(getProfile());
@@ -2885,6 +2885,7 @@ function exitHistoMode(){
     var latest = _allBilans[0];
     _currentBilanId   = latest.id;
     _currentBilanDate = latest.date ? latest.date.split('T')[0] : null;
+    try{ _majDateSidebar(); }catch(ex){}
     _suppressDirty = true;
     _resetBilanFields();
     _autofillPatientFields(_bilanPatient);
@@ -2960,7 +2961,7 @@ function _resetBilanFields(){
     s.className = BASES_SELECT.filter(function(c){ return s.classList.contains(c); }).join(' ');
   });
   document.querySelectorAll('input[type=checkbox],input[type=radio]').forEach(function(c){ c.checked=false; });
-  try{ var fd=document.getElementById('f-date'); if(fd) fd.value=new Date().toISOString().split('T')[0]; }catch(ex){}
+  try{ _majDateSidebar(); }catch(ex){}
   _painZones=[]; renderPainZones();
   _objectifs=[]; renderObjectifs();
   try{ _afRefreshAll(); }catch(ex){}
@@ -3015,6 +3016,7 @@ function _resetAndLoadPatient(p){
       var b = res.data[0];
       _currentBilanId   = b.id;
       _currentBilanDate = b.date ? b.date.split('T')[0] : null;
+      try{ _majDateSidebar(); }catch(ex){}
       // Charger le snapshot fusionné (valeur la plus récente par champ)
       // → le formulaire reflète l'état courant même si certains champs
       //   viennent de bilans de suivi partiels.
@@ -4511,6 +4513,13 @@ function _serializeBilan(){
     if(el.type==='checkbox'||el.type==='radio') data[el.id]=el.checked;
     else data[el.id]=el.value;
   });
+  /* `f-date` n'est plus un champ du formulaire mais reste une clé des donnees :
+     `outils.html` la lit dans le brouillon pour préremplir le début de prise en
+     charge du CR médecin, et tous les bilans déjà enregistrés la portent.
+     Elle est désormais DÉRIVÉE de la vraie date au lieu d'être saisie — ce qui
+     referme au passage le cas où la date corrigée depuis « Bilans précédents »
+     laissait `f-date` figée sur son ancienne valeur. */
+  try{ data['f-date'] = _bilanDateEffective(); }catch(ex){}
   return data;
 }
 
@@ -4739,6 +4748,7 @@ function saveBilan(){
         if(res.error){ btn.innerHTML = _SAVE_ICON + 'Sauvegarder le bilan'; alert('Erreur : '+res.error.message); return; }
         _currentBilanId   = res.data.id;
         _currentBilanDate = res.data.date ? res.data.date.split('T')[0] : today;
+        try{ _majDateSidebar(); }catch(ex){}
         _bilanModified  = false;
         _bilanIsSuivi   = false;
         _suiviSnapshot  = null;
@@ -4961,6 +4971,7 @@ function _confirmEditBilanDate(bilanId) {
     // Si c'est le bilan actif, mettre à jour _currentBilanDate
     if (String(_currentBilanId) === String(bilanId)) {
       _currentBilanDate = newDate;
+      try{ _majDateSidebar(); }catch(ex){}
     }
 
     // Recalculer _prevDonnees selon le nouvel ordre
@@ -4978,6 +4989,40 @@ function _confirmEditBilanDate(bilanId) {
 }
 
 // Helpers de formatage date (réutilisables)
+/* ── La date du bilan : une seule source ─────────────────────────────────
+   Le champ « Date du bilan » (`f-date`) n'a JAMAIS piloté la date enregistrée :
+   la sauvegarde écrit toujours `today` en base, et une correction de date passe
+   par l'onglet « Bilans précédents ». Le champ était donc purement décoratif —
+   et trompeur : il affichait aujourd'hui pendant qu'on éditait un bilan de juin,
+   et gardait sa valeur d'origine quand la date était corrigée dans l'historique.
+   C'est lui qui produisait les dates incohérentes du CR et des en-têtes de page.
+
+   Il a été retiré du formulaire. Tout ce qui affichait une date lit désormais
+   `_currentBilanDate`, la vraie, celle de la colonne `date` — et le jour même
+   quand aucun bilan n'est encore enregistré. */
+function _bilanDateEffective() {
+  if (_currentBilanDate) return String(_currentBilanDate).slice(0, 10);
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')
+       + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+/* Repère permanent dans la barre latérale. En réalisant un bilan on veut savoir
+   d'un coup d'œil à quelle date on écrit — le bandeau orange ne le disait que
+   pendant une consultation d'historique. */
+function _majDateSidebar() {
+  var el = document.getElementById('sb-bilan-date');
+  if (!el) return;
+  var iso = _bilanDateEffective();
+  var d = new Date(); var today = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0')
+        + '-' + String(d.getDate()).padStart(2,'0');
+  el.textContent = 'Bilan du ' + _isoToReadable(iso);
+  el.classList.toggle('passe', iso !== today);
+  el.title = (iso === today)
+    ? 'Date du jour. Un bilan enregistré aujourd\'hui porte cette date.'
+    : 'Ce bilan est daté du ' + _isoToReadable(iso) + '. Sa date se corrige depuis « Bilans précédents ».';
+}
+
 function _isoToReadable(iso) {
   if (!iso) return '—';
   var parts  = iso.split('-');
@@ -5016,6 +5061,7 @@ function loadBilan(id){
     if(res.error){ alert('Erreur : '+res.error.message); closeHistoModal(); return; }
     _currentBilanId   = res.data.id;
     _currentBilanDate = res.data.date ? res.data.date.split('T')[0] : null;
+    try{ _majDateSidebar(); }catch(ex){}
     _deserializeBilan(_buildMergedDonnees(_allBilans.slice(_allBilans.findIndex(function(b){ return b.id === res.data.id; }))));
     closeHistoModal();
     // Entrer en mode lecture (sauvegarde patche à la date originale via _bilanHistoMode)
@@ -5143,8 +5189,7 @@ function _newBilanSuiviConfirm(){
   // Date du bilan = aujourd'hui
   var _dn = new Date();
   var today = _dn.getFullYear()+'-'+String(_dn.getMonth()+1).padStart(2,'0')+'-'+String(_dn.getDate()).padStart(2,'0');
-  var fd = document.getElementById('f-date');
-  if(fd){ fd.value = today; }
+  try{ _majDateSidebar(); }catch(ex){}
 
   // Anciens resultats en fond, grises : on retape par-dessus. Ils ne sont pas
   // enregistres — ce sont des placeholders, effaces des la premiere frappe —
@@ -5552,6 +5597,7 @@ function _saveSuiviRapide(){
               _allBilans       = r2.data;
               _currentBilanId  = newBilanId;
               _currentBilanDate = today;
+              try{ _majDateSidebar(); }catch(ex){}
               // Re-fusionner dans le formulaire (les champs non touchés
               // reprennent la valeur la plus récente de l'historique)
               _suppressDirty = true;
@@ -5593,6 +5639,7 @@ function deleteBilan(id, dateStr, isInitial, e) {
       // Bilan actif supprimé → charger le plus récent restant, sinon vierge
       _currentBilanId = null;
       _currentBilanDate = null;
+      try{ _majDateSidebar(); }catch(ex){}
       _prevDonnees = null;
       document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
       if (_allBilans.length > 0) {
@@ -5601,6 +5648,7 @@ function deleteBilan(id, dateStr, isInitial, e) {
           if (!r.error && r.data) {
             _currentBilanId   = r.data.id;
             _currentBilanDate = r.data.date ? r.data.date.split('T')[0] : null;
+            try{ _majDateSidebar(); }catch(ex){}
             _deserializeBilan(r.data.donnees || {});
             if (_allBilans.length >= 2) {
               _prevDonnees = _prevMergedFrom(_allBilans, 1);
@@ -5911,7 +5959,7 @@ function updateAll() {
   const nom = document.getElementById('f-nom').value;
   const prenom = document.getElementById('f-prenom').value;
   const cote = document.getElementById('f-cote').value;
-  const date = document.getElementById('f-date').value;
+  const date = _bilanDateEffective();
   const dob = document.getElementById('f-dob').value;
   const fullName = [prenom, nom].filter(Boolean).join(' ') || 'Nouveau patient';
   document.getElementById('sb-name').textContent = fullName;
@@ -5927,8 +5975,13 @@ function updateAll() {
     var cfg = PAIN_ZONES_CONFIG ? PAIN_ZONES_CONFIG.find(function(z){ return z.key===p.zone; }) : null;
     return (cfg?cfg.label:p.zone)+' '+p.cote;
   }).join(' • ');
-  const meta = [age ? (age + ' ans') : null, cotesMeta||cote||null, date ? formatDate(date) : null].filter(Boolean).join('   ');
+  /* La date n'est plus reprise ici : la pastille « Bilan du … » juste en
+     dessous la porte, en toutes lettres et avec son avertissement quand le
+     bilan consulté n'est pas celui du jour. Deux fois la même date, dont une
+     sans étiquette, ne disait rien de plus. */
+  const meta = [age ? (age + ' ans') : null, cotesMeta||cote||null].filter(Boolean).join('   ');
   document.getElementById('sb-meta').textContent = meta || '-';
+  _majDateSidebar();
 
   // Headers for each page
   const hdrTxt = [fullName, date ? formatDate(date) : null].filter(Boolean).join(' - ');
@@ -8271,7 +8324,7 @@ function _buildCRPatientHeaderHtml() {
   var nom    = (document.getElementById('f-nom')   ||{}).value || '';
   var prenom = (document.getElementById('f-prenom')||{}).value || '';
   var dob    = (document.getElementById('f-dob')   ||{}).value || '';
-  var date   = (document.getElementById('f-date')  ||{}).value || '';
+  var date   = _bilanDateEffective();
   var sexe   = (document.getElementById('f-sexe')  ||{}).value || '';
   var cote   = (document.getElementById('f-cote')  ||{}).value || '';
   var fullName = [prenom, nom].filter(Boolean).join(' ');
@@ -9354,7 +9407,7 @@ function _buildBilanHTML(type) {
     badges += '<span class="pat-badge">'+cote+'</span>';
   }
   if(age)  badges += '<span class="pat-badge">'+age+'</span>';
-  var bilanDate = (document.getElementById('f-date')||{}).value || '';
+  var bilanDate = _bilanDateEffective();
   if(bilanDate) badges += '<span class="pat-badge navy">Bilan du '+bilanDate.split('-').reverse().join('/')+'</span>';
 
   return {
