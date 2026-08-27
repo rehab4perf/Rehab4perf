@@ -741,6 +741,21 @@ les cellules — ces lignes s'affichaient avec leur intitulé et des colonnes vi
 colonnes de mesure (`colspan`, jamais `0` : il faut au moins une colonne pour y
 loger le texte).
 
+**Un test mesuré peut vivre sur une page articulaire.** La Course interne du
+mollet est saisie sur la page Pied — le filtre par page la laissait de côté, et
+elle manquait au CR médecin comme à l'Évolution. C'est pourtant une mesure de
+hauteur de montée sur pointes comparée entre les deux côtés, de même nature que
+le Heel Rise qui, lui, remonte déjà. `CR_MED_CLES` est une liste **explicite**,
+courte, où chaque entrée dit pourquoi elle y est — le filtre par page ne peut
+pas deviner ces cas.
+
+**Un test à plusieurs mesures sort en sous-lignes.** `_crMedValeur` ne remontait
+que la PREMIÈRE ligne du tableau : la Course interne du mollet en a trois —
+2 appuis, 1 appui, effondrement — et les deux dernières se perdaient en
+silence, dont celle qui porte le verdict. Chaque mesure devient une sous-ligne
+avec ses valeurs, et les colonnes du groupe sont l'**union** de ce que les
+lignes remplissent.
+
 `CR_MED_PAGES` est la **source unique** : `_neGarderQueTF` (CR Tests) la
 réutilise. Les deux listes existaient en double, dans un ordre d'écriture
 différent — une page ajoutée à l'une aurait manqué à l'autre en silence.

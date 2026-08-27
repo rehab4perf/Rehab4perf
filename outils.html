@@ -6403,7 +6403,8 @@ _updateOutilsPatientBtns();
       lines.push({ t: 'test', label: t.label, valeur: t.valeur, cellules: t.cellules || [],
                    note: t.note || '', notes: t.notes || null,
                    statut: t.statut, niveau: t.niveau, af: t.af || null,
-                   afCotes: t.afCotes || null, afMode: t.afMode || '', geste: t.geste || '' });
+                   afCotes: t.afCotes || null, afMode: t.afMode || '',
+                   mesures: t.mesures || null, geste: t.geste || '' });
     });
     lines.push('');
   }
@@ -6736,6 +6737,30 @@ _updateOutilsPatientBtns();
       tampon.forEach(function (t) {
         var par = {};
         (t.cellules || []).forEach(function (c) { if (c.valeur) par[c.entete] = c.valeur; });
+        /* Un test a PLUSIEURS mesures — 2 appuis, 1 appui, effondrement — sort
+           en sous-lignes, chacune avec ses valeurs. Les tasser sur une ligne
+           en perdait deux sur trois. */
+        if (t.mesures && t.mesures.length > 1) {
+          h += '<tr class="lt-af-par"><td class="lbl">' + _crEsc(t.label)
+             + (t.geste ? '<span class="lt-note">' + _crEsc(t.geste) + '</span>' : '') + '</td>'
+             + (entetes.length ? entetes.map(function () { return '<td class="n"></td>'; }).join('')
+                               : '<td class="obs"></td>')
+             + '<td class="s">' + (t.statut
+                 ? '<span class="lt-chip ' + _crTagClasse(t) + '">' + _crEsc(t.statut) + '</span>' : '')
+             + '</td></tr>';
+          t.mesures.forEach(function (m) {
+            var pm = {};
+            (m.cellules || []).forEach(function (c) { if (c.valeur) pm[c.entete] = c.valeur; });
+            h += '<tr class="lt-af-sub"><td class="lbl">' + _crEsc(m.label) + '</td>'
+               + (entetes.length
+                   ? entetes.map(function (e) { return '<td class="n">' + (pm[e] ? _crEsc(pm[e]) : '') + '</td>'; }).join('')
+                   : '<td class="obs"></td>')
+               + '<td class="s"></td></tr>';
+          });
+          if (t.note) h += '<tr class="lt-af-sub"><td class="lbl lt-af-sy" colspan="'
+                        + (2 + Math.max(entetes.length, 1)) + '">' + _crEsc(t.note) + '</td></tr>';
+          return;
+        }
         var _vide = entetes.every(function (e) { return !par[e]; });
         /* La ligne parente d'une analyse fonctionnelle ne porte AUCUNE valeur :
            tout est dans ses sous-lignes. Sans ce cas, elle se rabattrait sur

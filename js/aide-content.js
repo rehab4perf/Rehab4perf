@@ -158,6 +158,13 @@ sections: [
       { t:'Basculez barres / radar', x:'Vue barres (par défaut) pour lire les points par composant, ou radar pour une vue d\'ensemble. Le PDF exporté reprend la vue sélectionnée.' },
       { t:'Générez le rapport PDF', x:'Score, asymétrie et profil détaillé sont inclus dans un rapport prêt à imprimer ou archiver.' }
     ]},
+  { id:'course-interne-mollet', titre:'La Course interne du mollet suit le patient',
+    intro:'Elle manquait à l\'onglet Évolution et au CR médecin.',
+    etapes:[
+      { t:'Dans Évolution', x:'Les hauteurs talon-sol — 2 appuis et 1 appui, chaque côté — sont désormais suivies dans « Pied/Cheville — Force », avec leurs deux graphiques Atteint vs Sain. C\'est une mesure qu\'on refait : la hauteur remonte avec la force du triceps sural.' },
+      { t:'Dans le CR médecin', x:'Elle apparaît sous « Tests de force », avec ses TROIS mesures en sous-lignes : 2 appuis, 1 appui, effondrement. Auparavant, seule la première serait remontée — et c\'est l\'effondrement qui porte le verdict.' },
+      { t:'Pourquoi elle manquait', x:'Le compte-rendu médecin sélectionne les tests par leur page d\'origine. La Course interne du mollet est saisie sur la page Pied, parmi les tests orthopédiques, alors que c\'est une mesure fonctionnelle. Elle est maintenant nommée explicitement.' }
+    ]},
   { id:'force-symetrie', titre:'Les tests de force se lisent en symétrie',
     intro:'« Positif / Négatif » a laissé place au vocabulaire de la symétrie, avec un seuil à 10 %.',
     etapes:[

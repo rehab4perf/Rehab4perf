@@ -266,23 +266,41 @@ function _crMedValeur(el) {
   var txt = lignes.join(' — ');
   if (note && note.textContent.trim()) txt += (txt ? ' — ' : '') + note.textContent.trim();
 
-  /* Colonnes de la PREMIERE ligne seulement : un test a plusieurs mesures
-     (rare) reste lisible par sa phrase, mais on ne fabrique pas un tableau
-     bancal a partir d'elle. */
-  var cellules = [];
-  var tr1 = tab.querySelector('tbody tr');
-  if (tr1) {
-    var offset = tab.querySelector('thead th.lbl') ? 1 : 0;
-    var thsL = Array.prototype.map.call(tab.querySelectorAll('thead th'), function (th) {
-      return (th.textContent || '').trim();
-    });
-    Array.prototype.forEach.call(tr1.children, function (td, i) {
+  var cellules = [], mesures = [];
+  var trs = tab.querySelectorAll('tbody tr');
+  var offset = tab.querySelector('thead th.lbl') ? 1 : 0;
+  var thsL = Array.prototype.map.call(tab.querySelectorAll('thead th'), function (th) {
+    return (th.textContent || '').trim();
+  });
+  var _cellulesDe = function (tr) {
+    var out = [];
+    Array.prototype.forEach.call(tr.children, function (td, i) {
       if (i < offset) return;
       var v = (td.textContent || '').trim();
-      cellules.push({ entete: thsL[i] || '', valeur: (v === '—' ? '' : v) });
+      out.push({ entete: thsL[i] || '', valeur: (v === '—' ? '' : v) });
+    });
+    return out;
+  };
+  if (trs.length) cellules = _cellulesDe(trs[0]);
+  /* Un test a PLUSIEURS mesures — la Course interne du mollet en a trois :
+     2 appuis, 1 appui, effondrement. Ne remonter que la premiere ligne en
+     perdait deux en silence, et c'est justement l'effondrement qui porte le
+     verdict. Chaque mesure devient une sous-ligne, et les colonnes du groupe
+     sont l'UNION de ce que les lignes remplissent. */
+  if (trs.length > 1) {
+    Array.prototype.forEach.call(trs, function (tr) {
+      mesures.push({ label: offset ? (tr.children[0].textContent || '').trim() : '',
+                     cellules: _cellulesDe(tr) });
+    });
+    var vus = {};
+    cellules = [];
+    mesures.forEach(function (m) {
+      m.cellules.forEach(function (c) {
+        if (c.valeur && !vus[c.entete]) { vus[c.entete] = 1; cellules.push({ entete: c.entete, valeur: c.valeur }); }
+      });
     });
   }
-  return { texte: txt.replace(/\s+/g, ' ').trim(), cellules: cellules,
+  return { texte: txt.replace(/\s+/g, ' ').trim(), cellules: cellules, mesures: mesures,
            note: note ? note.textContent.trim() : '' };
 }
 
@@ -311,6 +329,18 @@ var CR_MED_PAGES = ['page-fonctionnels','page-fonctionnelsMS','page-fonctionnels
    « Ischio-jambiers 32,6 / 35,2 kg » s'annoncait donc sous « BILAN
    ORTHOPEDIQUE ». Le medecin lisait un intitule qui ne correspond pas a
    l'examen. La page d'origine, elle, dit vrai. */
+/* Quelques tests MESURES vivent sur une page articulaire alors qu'ils sont de
+   nature fonctionnelle. Le filtre par page les laisse de cote — il ne peut pas
+   les deviner. Une liste EXPLICITE, courte, ou chaque entree dit pourquoi elle
+   y est.
+
+   `Course interne mollet` : saisie sur la page Pied, mais c'est une mesure de
+   hauteur de montee sur pointes comparee entre les deux cotes, de meme nature
+   que le Heel Rise qui, lui, remonte deja. */
+var CR_MED_CLES = {
+  'Course interne mollet': 'Tests de force'
+};
+
 var CR_MED_ZONES = {
   'page-force-mi'    : 'Tests de force',
   'page-force-ms'    : 'Tests de force',
@@ -327,12 +357,16 @@ function _crMedResumeTests() {
       tmp.innerHTML = sec.html;
       tmp.querySelectorAll('.cr-item').forEach(function (it) {
         var pgs = (it.getAttribute('data-pages') || '').split(/\s+/).filter(Boolean);
-        if (!pgs.some(function (p) { return CR_MED_PAGES.indexOf(p) >= 0; })) return;
+        var _cleBrute = ((it.querySelector('.cr-key') || {}).textContent || '').trim();
+        var _cleExplicite = CR_MED_CLES[_cleBrute];
+        if (!_cleExplicite && !pgs.some(function (p) { return CR_MED_PAGES.indexOf(p) >= 0; })) return;
         /* Une ligne peut lire des champs de plusieurs pages ; la premiere qui
            porte un intitule propre l'emporte sur le titre de section. */
-        var zoneLigne = zone;
-        for (var _z = 0; _z < pgs.length; _z++) {
-          if (CR_MED_ZONES[pgs[_z]]) { zoneLigne = CR_MED_ZONES[pgs[_z]]; break; }
+        var zoneLigne = _cleExplicite || zone;
+        if (!_cleExplicite) {
+          for (var _z = 0; _z < pgs.length; _z++) {
+            if (CR_MED_ZONES[pgs[_z]]) { zoneLigne = CR_MED_ZONES[pgs[_z]]; break; }
+          }
         }
         var cle = (it.querySelector('.cr-key') || {}).textContent || '';
         var tagEl = it.querySelector('.cr-tag');
@@ -359,6 +393,7 @@ function _crMedResumeTests() {
         if (/^(Conclusion|Marqueur|Notes?)$/i.test(cle)) return;
         var _entree = { cle: cle, label: _crMedLabel(cle), geste: _crMedGeste(cle),
                         valeur: val, cellules: v.cellules || [],
+                        mesures: (v.mesures && v.mesures.length > 1) ? v.mesures : null,
                         note: v.note || '', statut: tag, niveau: niveau, zone: zoneLigne };
         /* `v.af` suffit : la ligne EST une analyse fonctionnelle, qu'on y ait
            trouve des compensations ou non. La condition exigeait auparavant au
@@ -3530,6 +3565,14 @@ var TRACKED_METRICS = [
   {id:'cp-gct',         label:'Temps de contact au sol',        unit:' ms',      dir:'down', cat:'Course à pied'},
   {id:'cp-gct-asym',    label:'Asymétrie temps de contact',     unit:' %',       dir:'down', cat:'Course à pied'},
   {id:'cp-osc',         label:'Oscillation verticale',          unit:' cm',      dir:'down', cat:'Course à pied'},
+  /* Course interne du mollet — hauteur de montee sur pointes, talon/sol. Elle
+     etait absente de l'evolution alors que c'est precisement une mesure qu'on
+     refait : la hauteur remonte avec la force du triceps sural. Le 1 appui est
+     le plus parlant, mais le 2 appuis sert de reference — les deux sont la. */
+  {id:'pi-cim2-ca',     label:'Course interne mollet 2 appuis (atteint)', unit:' cm', dir:'up', cat:'Pied/Cheville — Force'},
+  {id:'pi-cim2-cs',     label:'Course interne mollet 2 appuis (sain)',    unit:' cm', dir:'up', cat:'Pied/Cheville — Force'},
+  {id:'pi-cim1-ca',     label:'Course interne mollet 1 appui (atteint)',  unit:' cm', dir:'up', cat:'Pied/Cheville — Force'},
+  {id:'pi-cim1-cs',     label:'Course interne mollet 1 appui (sain)',     unit:' cm', dir:'up', cat:'Pied/Cheville — Force'},
 ];
 
 /* ── Configuration des graphiques d'évolution ─────────── */
@@ -3564,6 +3607,8 @@ var CHART_GROUPS = [
   {cat:'Pied/Cheville — Force', title:'Flex. dorsale — Atteint vs Sain',   type:'dual', idA:'pi-f-fd-ca', idB:'pi-f-fd-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
   {cat:'Pied/Cheville — Force', title:'Inversion — Atteint vs Sain',       type:'dual', idA:'pi-f-inv-ca', idB:'pi-f-inv-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
   {cat:'Pied/Cheville — Force', title:'Éversion — Atteint vs Sain',        type:'dual', idA:'pi-f-ev-ca', idB:'pi-f-ev-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Pied/Cheville — Force', title:'Course interne mollet 2 appuis — Atteint vs Sain', type:'dual', idA:'pi-cim2-ca', idB:'pi-cim2-cs', unit:'cm', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Pied/Cheville — Force', title:'Course interne mollet 1 appui — Atteint vs Sain',  type:'dual', idA:'pi-cim1-ca', idB:'pi-cim1-cs', unit:'cm', dir:'up', labelA:'Atteint', labelB:'Sain'},
   {cat:'Pied/Cheville — Force', title:'LFH — Atteint vs Sain',             type:'dual', idA:'pi-f-lfh-ca', idB:'pi-f-lfh-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
   // ─ Hanche — Mobilité ─
   {cat:'Hanche — Mobilité', title:'Flexion hanche D vs G', type:'dual', idA:'ha-mob-d-flex', idB:'ha-mob-g-flex', unit:'°', dir:'up', labelA:'Côté D', labelB:'Côté G'},

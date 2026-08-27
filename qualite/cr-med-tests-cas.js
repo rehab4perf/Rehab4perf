@@ -152,6 +152,25 @@ console.log('\n  Le filtre — les tests de force remontent, les orthopédiques 
   verifie('une ligne de course remonte',       'true',  String(cles.indexOf('Cadence') >= 0));
 }
 
+console.log('\n  Un test mesuré sur une page articulaire peut remonter quand même');
+{
+  /* La Course interne du mollet est saisie sur la page Pied : le filtre par
+     page la laissait de côté. C'est pourtant une mesure de hauteur de montée
+     sur pointes comparée entre les deux côtés — même nature que le Heel Rise,
+     qui remonte déjà. Une liste EXPLICITE, jamais devinée. */
+  var avecCim = lancerAvec([
+    section('1. BILAN ORTHOPÉDIQUE — PIED / CHEVILLE', [
+      ligne('Navicular Drop', '8 mm', 'page-pied', 'Normal'),
+      ligne('Course interne mollet', '12 / 10 cm', 'page-pied', 'Test positif')
+    ])
+  ]);
+  var cles = avecCim.map(function (t) { return t.cle; });
+  verifie('le test explicite remonte',        'true',  String(cles.indexOf('Course interne mollet') >= 0));
+  verifie('le reste de la page ne suit pas',  'false', String(cles.indexOf('Navicular Drop') >= 0));
+  verifie('il porte SA zone, pas le titre de section', 'Tests de force',
+          avecCim.filter(function (t) { return t.cle === 'Course interne mollet'; })[0].zone);
+}
+
 console.log('\n  La zone — un test de force n\'est pas un bilan orthopédique');
 {
   function zoneDe(cle) {
