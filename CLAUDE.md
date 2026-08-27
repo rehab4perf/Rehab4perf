@@ -156,6 +156,47 @@ l'élément passe sur une zone colorée. Chaque page a sa propre palette dans so
 `:root` : ne jamais recopier un nom de variable d'un fichier à l'autre sans
 vérifier qu'il y existe.
 
+## Mobilités actif / passif — un mécanisme, trois segments
+
+```bash
+node qualite/mob-actif-passif-cas.js
+```
+
+Le différentiel actif/passif situe l'origine d'une limitation : actif limité et
+passif libre, c'est la commande ; les deux limités, c'est la structure. Il
+n'existait que sur l'épaule ; le coude et le poignet l'ont désormais.
+
+`MOB_AP` range les mouvements **par segment** et une seule fonction —
+`_mobApRefresh(seg, key)` — les interprète tous. Recopier la fonction par région
+aurait fait dériver l'interprétation d'un segment à l'autre.
+
+Les identifiants gardent la forme `<seg>-mob-<clé>-act|pas|obs|interp`, et
+**ceux de l'épaule ne bougent pas d'un caractère** : les bilans enregistrés les
+retrouvent tels quels.
+
+**Le câblage se vérifie dans les deux sens.** Un `onchange` qui désigne une
+autre clé que celle de sa ligne ne casse rien de visible — la colonne
+« Interprétation » reste muette. Et un mouvement déclaré dans `MOB_AP` sans
+ligne dans la page n'est ni interprété, ni remonté au CR. Le fichier de cas
+contrôle les deux.
+
+**`_mobApRefreshAll()` doit être rejouée après tout chargement.** Elle ne
+l'était qu'à l'ouverture de la page : rouvrir un bilan laissait la colonne à
+« — » alors que les deux menus étaient renseignés — défaut préexistant sur
+l'épaule, qui se serait étendu aux deux nouveaux segments.
+
+**La page COUDE n'avait AUCUNE section au CR.** Douze tableaux au catalogue
+TESTS, une grille de mobilité dans la page, et rien de tout cela n'était lu : on
+pouvait remplir la page entière sans qu'une seule ligne n'apparaisse au
+compte-rendu. Exactement le manque déjà refermé pour le Poignet. `zones:['coude']`
+et rien d'autre — reprendre la liste de l'ÉPAULE laisserait une douleur d'épaule
+décider du côté nommé pour le coude.
+
+**Les lignes de statut ne sont pas remplacées.** Le tableau actif/passif
+s'ajoute sous elles : `mob-co-*` et `mob-po-*` portent des données déjà
+enregistrées et alimentent `_crMobTable`. Les retirer effacerait des lignes de
+CR sur tous les bilans passés.
+
 ## Catalogue TESTS{} — append-only (OBLIGATOIRE si TESTS modifié)
 
 L'identité d'un test = son index dans `TESTS[tbody].items` (les ids `sel-`/`note-` des bilans sauvegardés en dérivent). Ne JAMAIS insérer au milieu, réordonner ou supprimer — toujours ajouter en fin de liste. Vérification :

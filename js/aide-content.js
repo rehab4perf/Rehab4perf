@@ -78,6 +78,15 @@ sections: [
       { t:'Les observations de l\'analyse fonctionnelle s\'agrandissent', x:'Chaque zone d\'observation suit votre texte, ligne après ligne, sans barre de défilement ni hauteur à régler. Vos saisies d\'un bilan précédent se rouvrent à leur pleine hauteur.' },
       { t:'Le squat unipodal a une observation par côté', x:'Deux zones, Gauche et Droit, alignées sur les colonnes de cases — le compte-rendu les nomme séparément. La note générale au-dessous reste destinée à ce qui vaut pour les deux côtés (répétitions, appui controlatéral…).' }
     ]},
+  { id:'mob-actif-passif', titre:'Amplitudes actif / passif — coude et poignet',
+    intro:'Le tableau différentiel de l\'épaule existe désormais aussi au coude et au poignet.',
+    etapes:[
+      { t:'Pourquoi comparer les deux', x:'Un mouvement limité en actif mais libre en passif ne dit pas la même chose qu\'un mouvement limité dans les deux cas : le premier oriente vers la force, le contrôle moteur ou l\'inhibition par la douleur, le second vers une restriction capsulo-ligamentaire ou articulaire. La colonne « Interprétation » l\'écrit pour vous.' },
+      { t:'Où le trouver', x:'Dans le bloc « Amplitudes Articulaires » du Coude et du Poignet, sous les lignes de statut habituelles. Coude : flexion, extension, pronation, supination. Poignet : les mêmes, plus les deux inclinaisons.' },
+      { t:'L\'actif d\'abord', x:'Une ligne n\'apparaît au compte-rendu que si l\'actif est renseigné — le verdict se lit sur la comparaison, un passif seul ne dit rien au médecin. Un actif libre et indolore n\'appelle pas de test passif : le champ se vide de lui-même.' },
+      { t:'Vos lignes de statut ne bougent pas', x:'Les colonnes OK / Acceptable / Insuffisant et leurs marqueurs restent en place, avec tout ce que vous y avez déjà saisi. Le tableau actif/passif s\'ajoute en dessous.' },
+      { t:'La page Coude apparaît enfin au compte-rendu', x:'Elle n\'y figurait dans AUCUNE section : ses tests de compartiment — latéral, médial, antérieur, postérieur — et sa grille de mobilité pouvaient être remplis sans qu\'une seule ligne n\'en sorte. Vos bilans déjà enregistrés retrouvent ces données : elles étaient saisies et conservées, simplement jamais affichées.' }
+    ]},
   { id:'personnaliser-bilan', titre:'Personnaliser vos pages de bilan',
     intro:'Chaque praticien évalue différemment. Vous pouvez masquer ou réordonner des blocs et des tests, ajouter vos propres descriptions, et même créer des blocs et des tests entièrement personnalisés — sans jamais perdre ni corrompre les bilans déjà sauvegardés.',
     etapes:[

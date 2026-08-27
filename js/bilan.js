@@ -1843,7 +1843,7 @@ function init() {
   // Forcer le select LMA sur "Choisir" au chargement (le navigateur mémorise la dernière valeur)
   var lmaSmInit = document.getElementById('lma-sel-membre');
   if (lmaSmInit) { lmaSmInit.value = ''; _lmaUpdateMembre(); }
-  try { EP_MOB_MOVEMENTS.forEach(function(m){ _epMobRefresh(m.key); }); _epScrRefresh(); } catch(ex){}
+  try { _mobApRefreshAll(); _epScrRefresh(); } catch(ex){}
   try { _afRefreshAll(); } catch(ex){}
   _blApplyLayout(); // disposition personnalisée (après restauration du brouillon : non-amputation correcte)
   _blMaybeInjectCustomizeBtn();
@@ -3342,7 +3342,7 @@ function _resetBilanFields(){
   try{ _afRefreshAll(); }catch(ex){}
   document.querySelectorAll('.evo-delta').forEach(function(el){ el.remove(); });
   // Recalculer TOUTES les fonctions d'affichage dérivées (LSI, RSI, déficits, badges…)
-  try{ updateAll(); calcRec(); calcPlioq(); _epFoncRefresh(); }catch(ex){}
+  try{ updateAll(); calcRec(); calcPlioq(); _epFoncRefresh(); _mobApRefreshAll(); }catch(ex){}
   try{ ['sls','hop','pset','set'].forEach(function(k){ calcLSI(k); }); calcDJ(); calcLunge(); calcHR(); calcMusc(); calcPiCIM(); }catch(ex){}
   try{ calcPlioq2(); calcSEBT(); calcUQYBT(); calcSideHop(); }catch(ex){}
   try{ calcGIRD(); ['ms-grip','ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht','co-f-ext','co-f-flex'].forEach(calcEpForce); ['ha-f-add','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); ['pi-f-fp','pi-f-fd','pi-f-inv','pi-f-ev','pi-f-lfh'].forEach(calcEpForce); ['ra-fc-inc'].forEach(calcEpForce); }catch(ex){}
@@ -4960,7 +4960,7 @@ function _deserializeBilan(data){
     }
     try{ el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); }catch(ex){}
   });
-  try{ updateAll(); calcRec(); calcPlioq(); _epFoncRefresh(); }catch(ex){}
+  try{ updateAll(); calcRec(); calcPlioq(); _epFoncRefresh(); _mobApRefreshAll(); }catch(ex){}
   try{ ['sls','hop','pset','set'].forEach(function(k){ calcLSI(k); }); calcDJ(); calcLunge(); calcHR(); calcMusc(); calcPiCIM(); }catch(ex){}
   try{ calcCKC(); calcSHRT(); calcULRT(); }catch(ex){}
   try{ calcRachisStat(); calcLNF(); calcSorensen(); calcPDSLRT(); calcShirado(); }catch(ex){}
@@ -7447,9 +7447,48 @@ function _buildAllTestsHtml() {
       + '</tr></thead><tbody>'+rows+'</tbody></table></div>';
   }
 
+  /* Mobilites actif/passif d'un segment, en lignes de CR. Extraite du bloc de
+     l'epaule quand le coude et le poignet ont recu la meme grille : recopiee,
+     l'interpretation aurait derive d'une region a l'autre.
+
+     Une ligne n'existe que si l'ACTIF est renseigne : le verdict se lit sur la
+     comparaison, et « passif seul » ne dit rien au medecin. */
+  function _crMobApRows(seg) {
+    var rows = '';
+    (MOB_AP[seg] || []).forEach(function(m){
+      var base = seg + '-mob-' + m.key;
+      var a = (document.getElementById(base+'-act')||{}).value||'';
+      if (!a) return;
+      var p = (document.getElementById(base+'-pas')||{}).value||'';
+      var o = (document.getElementById(base+'-obs')||{}).value||'';
+      var v = _epMobVerdict(a, p);
+      var valStr = 'Actif : '+(EP_MOB_ACT_LABELS[a]||a)
+                 + (p ? ' · Passif : '+(EP_MOB_PAS_LABELS[p]||p) : '')
+                 + (o ? ' · '+nl2br(o) : '');
+      rows += crItem(m.label, valStr, v[0] !== '—' ? v[0] : '', v[1] === 'muted' ? '' : v[1],
+                     [base+'-act', base+'-pas', base+'-obs']);
+    });
+    if (!rows) return '';
+    return '<div style="margin:8px 0 4px;font-size:.77rem;font-weight:600;color:var(--text2)">'
+         + 'Examens des mobilités</div>' + rows;
+  }
+
   // 2. Bilan ortho
   var orthoSections = [
     { label:'EPAULE', zones:['epaule','coude','poignet'], pk:'epaule', fields:[['ep-type','Type'],['ep-marqueur','Marqueur']], tables:['tb-ep-irrit','tb-ep-trau-gh','tb-ep-trau-ac','tb-ep-trau-lab','tb-ep-trau-coiffe','tb-ep-fonc','tb-ep-ortho-mob','tb-ep-ortho-conf','tb-ep-irrit-g','tb-ep-irrit-d','tb-ep-trau-g','tb-ep-trau-d','tb-ep-fonc-g','tb-ep-fonc-d','tb-ep-ortho-g','tb-ep-ortho-d'], concl:'ep-conclusion', opt:'ep-opt' },
+    /* La page COUDE n'avait elle non plus AUCUNE section : ses douze tableaux
+       figuraient au catalogue TESTS et sa grille de mobilite dans la page, mais
+       rien de tout cela n'etait lu — exactement le meme manque que le Poignet
+       juste en dessous, decouvert en lui ajoutant sa grille actif/passif.
+
+       `zones:['coude']` et rien d'autre : reprendre la liste de l'EPAULE
+       (`epaule, coude, poignet`) laisserait une douleur d'epaule decider du cote
+       nomme pour le coude — le defaut qui avait fait designer le mauvais membre
+       dans un courrier. */
+    { label:'COUDE', zones:['coude'], pk:'', fields:[['co-marqueur','Marqueur']],
+      tables:['tb-co-lat','tb-co-med','tb-co-ant','tb-co-post',
+              'tb-co-lat-g','tb-co-lat-d','tb-co-med-g','tb-co-med-d',
+              'tb-co-ant-g','tb-co-ant-d','tb-co-post-g','tb-co-post-d'] },
     /* La page « Poignet / Mains » n'avait AUCUNE section : ses neuf tableaux
        figuraient au catalogue TESTS mais dans aucune section du CR, et sa
        grille de mobilité n'était lue nulle part. On pouvait donc remplir la
@@ -7735,19 +7774,7 @@ function _buildAllTestsHtml() {
         secRows += crItem('Screening fonctionnel', scrTxt, scrTag, scrTagCls, EP_SCR_IDS);
       }
 
-      // Mobilités actif/passif
-      var epMobRows = '';
-      EP_MOB_MOVEMENTS.forEach(function(m){
-        var a = (document.getElementById('ep-mob-'+m.key+'-act')||{}).value||'';
-        if (!a) return;
-        var p = (document.getElementById('ep-mob-'+m.key+'-pas')||{}).value||'';
-        var o = (document.getElementById('ep-mob-'+m.key+'-obs')||{}).value||'';
-        var v = _epMobVerdict(a, p);
-        var valStr = 'Actif : '+(EP_MOB_ACT_LABELS[a]||a) + (p ? ' · Passif : '+(EP_MOB_PAS_LABELS[p]||p) : '') + (o ? ' · '+nl2br(o) : '');
-        var tagCls = v[1] === 'muted' ? '' : v[1];
-        epMobRows += crItem(m.label, valStr, v[0] !== '—' ? v[0] : '', tagCls, ['ep-mob-'+m.key+'-act','ep-mob-'+m.key+'-pas','ep-mob-'+m.key+'-obs']);
-      });
-      if (epMobRows) secRows += '<div style="margin:8px 0 4px;font-size:.77rem;font-weight:600;color:var(--text2)">Examens des mobilités</div>' + epMobRows;
+      secRows += _crMobApRows('ep');
     }
     if (sec.label === 'RACHIS') {
       // Mobilité rachis — statut qualitatif
@@ -7795,6 +7822,10 @@ function _buildAllTestsHtml() {
       })();
       secRows += crGroup('Force musculaire', raForceRows);
     }
+    if (sec.label === 'COUDE') {
+      secRows += _crMobTable('Mobilité du Coude', 'co', ['Flexion', 'Extension', 'Pronation', 'Supination']);
+      secRows += _crMobApRows('co');
+    }
     if (sec.label === 'POIGNET / MAIN') {
       /* Les deux inclinaisons passent en paire [clé, libellé] : leurs champs
          s'appellent `InclUlnaire` / `InclRadiale`, sans souligné. */
@@ -7802,6 +7833,7 @@ function _buildAllTestsHtml() {
         'Flexion', 'Extension', 'Pronation', 'Supination',
         ['InclUlnaire', 'Incl. Ulnaire'], ['InclRadiale', 'Incl. Radiale']
       ]);
+      secRows += _crMobApRows('po');
     }
     if (sec.label === 'RACHIS CERVICAL') {
       /* La grille de cette page ne remontait pas : on pouvait renseigner six
@@ -9355,6 +9387,11 @@ function loadFromStorage() {
       if (el.classList.contains('mob-status-sel') && el.value) _mobStatusChange(el);
     });
     updateAll(); calcRec(); calcPlioq(); _epFoncRefresh();
+    /* L'interpretation actif/passif n'etait rejouee qu'au CHARGEMENT de la
+       page : restaurer un brouillon laissait la colonne a « — » alors que les
+       deux menus etaient renseignes. Le defaut existait deja sur l'epaule ; il
+       se serait etendu au coude et au poignet. */
+    try { _mobApRefreshAll(); } catch(ex){}
     ['sls','hop','pset','set'].forEach(k => calcLSI(k));
     calcDJ(); calcLunge(); calcHR(); calcMusc(); calcPiCIM();
     calcCKC(); calcSHRT(); calcULRT();
@@ -10778,13 +10815,38 @@ function _afRefreshAll(){
 var EP_SCR_IDS = ['ep-scr-bouche','ep-scr-tete','ep-scr-dos'];
 var EP_SCR_LABELS = ['Main à la bouche','Main à la tête','Main dans le dos'];
 var EP_SCR_VAL_LABELS = { ok:'Possible', dif:'Difficile', no:'Impossible' };
-var EP_MOB_MOVEMENTS = [
-  { key:'flex', label:'Flexion' },
-  { key:'abd',  label:'Abduction' },
-  { key:'rl',   label:'Rotation latérale (coude au corps)' },
-  { key:'rm',   label:'Rotation médiale (main dans le dos)' },
-  { key:'addh', label:'Adduction horizontale 90°' },
-];
+/* Le differentiel actif/passif ne concerne plus la seule epaule : le coude et
+   le poignet ont la meme grille. Les mouvements sont donc ranges par segment,
+   et une SEULE fonction les rafraichit tous — recopier la fonction de l'epaule par
+   region aurait fait deriver l'interpretation d'un segment a l'autre.
+
+   Les identifiants gardent la forme `<seg>-mob-<cle>-act|pas|obs|interp` :
+   ceux de l'epaule ne bougent pas d'un caractere, les bilans enregistres les
+   retrouvent tels quels. */
+var MOB_AP = {
+  ep: [
+    { key:'flex', label:'Flexion' },
+    { key:'abd',  label:'Abduction' },
+    { key:'rl',   label:'Rotation latérale (coude au corps)' },
+    { key:'rm',   label:'Rotation médiale (main dans le dos)' },
+    { key:'addh', label:'Adduction horizontale 90°' },
+  ],
+  co: [
+    { key:'flex', label:'Flexion' },
+    { key:'ext',  label:'Extension' },
+    { key:'pro',  label:'Pronation' },
+    { key:'sup',  label:'Supination' },
+  ],
+  po: [
+    { key:'flex', label:'Flexion' },
+    { key:'ext',  label:'Extension' },
+    { key:'pro',  label:'Pronation' },
+    { key:'sup',  label:'Supination' },
+    { key:'incu', label:'Inclinaison ulnaire' },
+    { key:'incr', label:'Inclinaison radiale' },
+  ],
+};
+var EP_MOB_MOVEMENTS = MOB_AP.ep;
 var EP_MOB_ACT_LABELS = { libre:'Libre', doul:'Douloureux', lim:'Limité', doullim:'Doul. + limité' };
 var EP_MOB_PAS_LABELS = { libre:'Libre', doul:'Douloureux', lim:'Limité' };
 var EP_MOB_TONE = { muted:'var(--text3)', ok:'var(--green)', warn:'var(--orange)', bad:'var(--red)' };
@@ -10803,10 +10865,10 @@ function _epMobVerdict(a, p) {
   return ['—', 'muted', ''];
 }
 
-function _epMobRefresh(key) {
-  var a = document.getElementById('ep-mob-' + key + '-act');
-  var p = document.getElementById('ep-mob-' + key + '-pas');
-  var cell = document.getElementById('ep-mob-' + key + '-interp');
+function _mobApRefresh(seg, key) {
+  var a = document.getElementById(seg + '-mob-' + key + '-act');
+  var p = document.getElementById(seg + '-mob-' + key + '-pas');
+  var cell = document.getElementById(seg + '-mob-' + key + '-interp');
   if (!a || !p || !cell) return;
   // Passif toujours saisissable : on ne force plus l'ordre actif → passif,
   // mais on efface une valeur passive devenue incohérente (actif libre).
@@ -10815,6 +10877,15 @@ function _epMobRefresh(key) {
   cell.textContent = v[0];
   cell.style.color = EP_MOB_TONE[v[1]] || 'var(--text3)';
   cell.title = v[2];
+}
+
+/* Rejoue l'interpretation de TOUS les segments. Appelee au chargement et
+   apres restauration d'un bilan : sans elle, la colonne « Interpretation »
+   reste a « — » alors que les deux menus sont renseignes. */
+function _mobApRefreshAll() {
+  Object.keys(MOB_AP).forEach(function(seg){
+    MOB_AP[seg].forEach(function(m){ _mobApRefresh(seg, m.key); });
+  });
 }
 
 // Le screening à lui seul ne diagnostique rien, mais une restriction globale sur les
