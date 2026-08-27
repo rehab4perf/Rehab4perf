@@ -174,6 +174,33 @@ Les identifiants gardent la forme `<seg>-mob-<clé>-act|pas|obs|interp`, et
 **ceux de l'épaule ne bougent pas d'un caractère** : les bilans enregistrés les
 retrouvent tels quels.
 
+`_mobApVerdict(actif, passif, endFeel)` rend **quatre** valeurs : libellé, ton,
+phrase courte, détail. La phrase courte s'affiche sous le verdict *et* part au
+compte-rendu ; le détail reste en infobulle. Le vocabulaire vient du tableau
+« Lire l'écart actif vs passif » du praticien — **Limitation articulaire**,
+**Limitation musculaire**, **Pathologie tendineuse**, **Artefact ou laxité** —
+et c'est lui qui permet à l'explication de tenir en une ligne. « Conservée »
+n'en porte aucune : un verdict bien nommé rend l'explication superflue.
+
+**L'end-feel requalifie le verdict**, il ne s'y ajoute pas : *dur* → Butée
+osseuse, *mou* → Œdème ou laxité, *ferme-élastique* → le verdict de base.
+**Le vide prime sur tout le reste** — ce n'est pas une raideur mais un arrêt par
+la douleur avant toute butée. Le subordonner à l'état de l'actif le ferait
+disparaître là où il compte le plus.
+
+La fin de course ne se demande **qu'en passif** : sans lui elle n'a pas d'objet,
+et une valeur restée là ferait basculer en drapeau rouge un mouvement non testé.
+Le menu est donc désactivé et vidé, pas masqué — le masquer changerait la
+largeur des colonnes d'une ligne à l'autre.
+
+**Deux verrous empêchaient le profil atypique de sortir**, à deux étages :
+`a === 'libre'` court-circuitait la comparaison AVANT elle, et `_mobApRefresh`
+**effaçait** le passif dès que l'actif était libre. Corriger l'un sans l'autre
+n'aurait rien changé — et l'effacement supprimait au passage une saisie du
+praticien sans le moindre signal. Actif libre avec passif limité est le profil
+atypique ; actif libre avec passif douloureux désigne une structure non
+contractile.
+
 **Le câblage se vérifie dans les deux sens.** Un `onchange` qui désigne une
 autre clé que celle de sa ligne ne casse rien de visible — la colonne
 « Interprétation » reste muette. Et un mouvement déclaré dans `MOB_AP` sans

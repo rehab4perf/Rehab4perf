@@ -924,6 +924,16 @@ td.bl-row-rail button:disabled { opacity: .3 !important; cursor: default; }
 }
 .test-name.sub { font-weight: 400; color: var(--text2); padding-left: 24px; font-size: .83rem; }
 .test-name.mob-ap-name { padding-left: 22px; }
+/* Le verdict et sa raison, l'un sous l'autre. La cellule porte deja la couleur
+   du ton — le verdict en herite, la phrase reste en gris : elle explique, elle
+   n'alerte pas une seconde fois. */
+.mob-ap-verdict { display: block; font-weight: 600; }
+.mob-ap-why { display: block; margin-top: 2px; font-size: .72rem; font-style: italic;
+  color: var(--text3); font-weight: 400; line-height: 1.35; }
+/* Sans passif, la fin de course n'a pas d'objet : le menu est desactive, pas
+   masque — le tableau garderait sinon des colonnes de largeurs differentes
+   d'une ligne a l'autre. */
+.result-cell select:disabled { cursor: not-allowed; background: var(--surface2); }
 
 /* ── Analyse fonctionnelle (overhead squat / squat unipodal) ── */
 .af-mtitle {
@@ -2621,45 +2631,51 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
       </div>
       <table class="test-table">
         <thead><tr>
-          <th style="width:23%;padding-left:22px">Mouvement</th>
-          <th style="width:14%">Actif</th>
-          <th style="width:14%">Passif</th>
-          <th style="width:27%">Observation</th>
-          <th style="width:22%">Interprétation</th>
+          <th style="width:17%;padding-left:22px">Mouvement</th>
+          <th style="width:12%">Actif</th>
+          <th style="width:12%">Passif</th>
+          <th style="width:14%">End-feel</th>
+          <th style="width:22%">Marqueur / observations</th>
+          <th style="width:23%">Interprétation</th>
         </tr></thead>
         <tbody id="ep-mob-tbody">
           <tr>
             <td class="test-name mob-ap-name">Flexion</td>
             <td class="result-cell"><select id="ep-mob-flex-act" onchange="_mobApRefresh('ep','flex')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
-            <td class="result-cell"><select id="ep-mob-flex-pas" onchange="_mobApRefresh('ep','flex')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option></select></td>
+            <td class="result-cell"><select id="ep-mob-flex-pas" onchange="_mobApRefresh('ep','flex')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
+            <td class="result-cell"><select id="ep-mob-flex-ef" onchange="_mobApRefresh('ep','flex')"><option value="">—</option><option value="ferme">Ferme-élastique</option><option value="dur">Dur</option><option value="mou">Mou</option><option value="vide">Vide</option></select></td>
             <td style="padding:6px 8px"><input type="text" id="ep-mob-flex-obs" class="mob-note-inp" placeholder="Arc douloureux 70–110°…"></td>
             <td style="padding:9px 14px;font-size:.8rem;color:var(--text3)" id="ep-mob-flex-interp">—</td>
           </tr>
           <tr>
             <td class="test-name mob-ap-name">Abduction</td>
             <td class="result-cell"><select id="ep-mob-abd-act" onchange="_mobApRefresh('ep','abd')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
-            <td class="result-cell"><select id="ep-mob-abd-pas" onchange="_mobApRefresh('ep','abd')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option></select></td>
+            <td class="result-cell"><select id="ep-mob-abd-pas" onchange="_mobApRefresh('ep','abd')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
+            <td class="result-cell"><select id="ep-mob-abd-ef" onchange="_mobApRefresh('ep','abd')"><option value="">—</option><option value="ferme">Ferme-élastique</option><option value="dur">Dur</option><option value="mou">Mou</option><option value="vide">Vide</option></select></td>
             <td style="padding:6px 8px"><input type="text" id="ep-mob-abd-obs" class="mob-note-inp" placeholder="Compensation scapulaire dès 60°…"></td>
             <td style="padding:9px 14px;font-size:.8rem;color:var(--text3)" id="ep-mob-abd-interp">—</td>
           </tr>
           <tr>
             <td class="test-name mob-ap-name">Rotation latérale (coude au corps)</td>
             <td class="result-cell"><select id="ep-mob-rl-act" onchange="_mobApRefresh('ep','rl')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
-            <td class="result-cell"><select id="ep-mob-rl-pas" onchange="_mobApRefresh('ep','rl')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option></select></td>
+            <td class="result-cell"><select id="ep-mob-rl-pas" onchange="_mobApRefresh('ep','rl')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
+            <td class="result-cell"><select id="ep-mob-rl-ef" onchange="_mobApRefresh('ep','rl')"><option value="">—</option><option value="ferme">Ferme-élastique</option><option value="dur">Dur</option><option value="mou">Mou</option><option value="vide">Vide</option></select></td>
             <td style="padding:6px 8px"><input type="text" id="ep-mob-rl-obs" class="mob-note-inp" placeholder="Perte 15° vs côté sain…"></td>
             <td style="padding:9px 14px;font-size:.8rem;color:var(--text3)" id="ep-mob-rl-interp">—</td>
           </tr>
           <tr>
             <td class="test-name mob-ap-name">Rotation médiale (main dans le dos)</td>
             <td class="result-cell"><select id="ep-mob-rm-act" onchange="_mobApRefresh('ep','rm')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
-            <td class="result-cell"><select id="ep-mob-rm-pas" onchange="_mobApRefresh('ep','rm')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option></select></td>
+            <td class="result-cell"><select id="ep-mob-rm-pas" onchange="_mobApRefresh('ep','rm')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
+            <td class="result-cell"><select id="ep-mob-rm-ef" onchange="_mobApRefresh('ep','rm')"><option value="">—</option><option value="ferme">Ferme-élastique</option><option value="dur">Dur</option><option value="mou">Mou</option><option value="vide">Vide</option></select></td>
             <td style="padding:6px 8px"><input type="text" id="ep-mob-rm-obs" class="mob-note-inp" placeholder="Pouce atteint L3 vs T12…"></td>
             <td style="padding:9px 14px;font-size:.8rem;color:var(--text3)" id="ep-mob-rm-interp">—</td>
           </tr>
           <tr>
             <td class="test-name mob-ap-name">Adduction horizontale 90°</td>
             <td class="result-cell"><select id="ep-mob-addh-act" onchange="_mobApRefresh('ep','addh')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
-            <td class="result-cell"><select id="ep-mob-addh-pas" onchange="_mobApRefresh('ep','addh')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option></select></td>
+            <td class="result-cell"><select id="ep-mob-addh-pas" onchange="_mobApRefresh('ep','addh')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
+            <td class="result-cell"><select id="ep-mob-addh-ef" onchange="_mobApRefresh('ep','addh')"><option value="">—</option><option value="ferme">Ferme-élastique</option><option value="dur">Dur</option><option value="mou">Mou</option><option value="vide">Vide</option></select></td>
             <td style="padding:6px 8px"><input type="text" id="ep-mob-addh-obs" class="mob-note-inp" placeholder="Douleur pointe acromio-claviculaire…"></td>
             <td style="padding:9px 14px;font-size:.8rem;color:var(--text3)" id="ep-mob-addh-interp">—</td>
           </tr>
@@ -2831,38 +2847,43 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
       <div class="block-header grey">Amplitudes Articulaires — Coude</div>
       <table class="test-table">
         <thead><tr>
-          <th style="width:23%;padding-left:22px">Mouvement</th>
-          <th style="width:14%">Actif</th>
-          <th style="width:14%">Passif</th>
-          <th style="width:27%">Observation</th>
-          <th style="width:22%">Interprétation</th>
+          <th style="width:17%;padding-left:22px">Mouvement</th>
+          <th style="width:12%">Actif</th>
+          <th style="width:12%">Passif</th>
+          <th style="width:14%">End-feel</th>
+          <th style="width:22%">Marqueur / observations</th>
+          <th style="width:23%">Interprétation</th>
         </tr></thead>
         <tbody id="co-mob-tbody">
           <tr>
             <td class="test-name mob-ap-name">Flexion</td>
             <td class="result-cell"><select id="co-mob-flex-act" onchange="_mobApRefresh('co','flex')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
-            <td class="result-cell"><select id="co-mob-flex-pas" onchange="_mobApRefresh('co','flex')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option></select></td>
+            <td class="result-cell"><select id="co-mob-flex-pas" onchange="_mobApRefresh('co','flex')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
+            <td class="result-cell"><select id="co-mob-flex-ef" onchange="_mobApRefresh('co','flex')"><option value="">—</option><option value="ferme">Ferme-élastique</option><option value="dur">Dur</option><option value="mou">Mou</option><option value="vide">Vide</option></select></td>
             <td style="padding:6px 8px"><input type="text" id="co-mob-flex-obs" class="mob-note-inp" placeholder="Butée molle, gêne postérieure…"></td>
             <td style="padding:9px 14px;font-size:.8rem;color:var(--text3)" id="co-mob-flex-interp">—</td>
           </tr>
           <tr>
             <td class="test-name mob-ap-name">Extension</td>
             <td class="result-cell"><select id="co-mob-ext-act" onchange="_mobApRefresh('co','ext')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
-            <td class="result-cell"><select id="co-mob-ext-pas" onchange="_mobApRefresh('co','ext')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option></select></td>
+            <td class="result-cell"><select id="co-mob-ext-pas" onchange="_mobApRefresh('co','ext')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
+            <td class="result-cell"><select id="co-mob-ext-ef" onchange="_mobApRefresh('co','ext')"><option value="">—</option><option value="ferme">Ferme-élastique</option><option value="dur">Dur</option><option value="mou">Mou</option><option value="vide">Vide</option></select></td>
             <td style="padding:6px 8px"><input type="text" id="co-mob-ext-obs" class="mob-note-inp" placeholder="Déficit −10°, butée dure…"></td>
             <td style="padding:9px 14px;font-size:.8rem;color:var(--text3)" id="co-mob-ext-interp">—</td>
           </tr>
           <tr>
             <td class="test-name mob-ap-name">Pronation</td>
             <td class="result-cell"><select id="co-mob-pro-act" onchange="_mobApRefresh('co','pro')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
-            <td class="result-cell"><select id="co-mob-pro-pas" onchange="_mobApRefresh('co','pro')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option></select></td>
+            <td class="result-cell"><select id="co-mob-pro-pas" onchange="_mobApRefresh('co','pro')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
+            <td class="result-cell"><select id="co-mob-pro-ef" onchange="_mobApRefresh('co','pro')"><option value="">—</option><option value="ferme">Ferme-élastique</option><option value="dur">Dur</option><option value="mou">Mou</option><option value="vide">Vide</option></select></td>
             <td style="padding:6px 8px"><input type="text" id="co-mob-pro-obs" class="mob-note-inp" placeholder="Douleur médiale en fin d'amplitude…"></td>
             <td style="padding:9px 14px;font-size:.8rem;color:var(--text3)" id="co-mob-pro-interp">—</td>
           </tr>
           <tr>
             <td class="test-name mob-ap-name">Supination</td>
             <td class="result-cell"><select id="co-mob-sup-act" onchange="_mobApRefresh('co','sup')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
-            <td class="result-cell"><select id="co-mob-sup-pas" onchange="_mobApRefresh('co','sup')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option></select></td>
+            <td class="result-cell"><select id="co-mob-sup-pas" onchange="_mobApRefresh('co','sup')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
+            <td class="result-cell"><select id="co-mob-sup-ef" onchange="_mobApRefresh('co','sup')"><option value="">—</option><option value="ferme">Ferme-élastique</option><option value="dur">Dur</option><option value="mou">Mou</option><option value="vide">Vide</option></select></td>
             <td style="padding:6px 8px"><input type="text" id="co-mob-sup-obs" class="mob-note-inp" placeholder="Douleur latérale, compensation d'épaule…"></td>
             <td style="padding:9px 14px;font-size:.8rem;color:var(--text3)" id="co-mob-sup-interp">—</td>
           </tr>
@@ -2944,52 +2965,59 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
       <div class="block-header grey">Amplitudes Articulaires — Poignet</div>
       <table class="test-table">
         <thead><tr>
-          <th style="width:23%;padding-left:22px">Mouvement</th>
-          <th style="width:14%">Actif</th>
-          <th style="width:14%">Passif</th>
-          <th style="width:27%">Observation</th>
-          <th style="width:22%">Interprétation</th>
+          <th style="width:17%;padding-left:22px">Mouvement</th>
+          <th style="width:12%">Actif</th>
+          <th style="width:12%">Passif</th>
+          <th style="width:14%">End-feel</th>
+          <th style="width:22%">Marqueur / observations</th>
+          <th style="width:23%">Interprétation</th>
         </tr></thead>
         <tbody id="po-mob-tbody">
           <tr>
             <td class="test-name mob-ap-name">Flexion</td>
             <td class="result-cell"><select id="po-mob-flex-act" onchange="_mobApRefresh('po','flex')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
-            <td class="result-cell"><select id="po-mob-flex-pas" onchange="_mobApRefresh('po','flex')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option></select></td>
+            <td class="result-cell"><select id="po-mob-flex-pas" onchange="_mobApRefresh('po','flex')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
+            <td class="result-cell"><select id="po-mob-flex-ef" onchange="_mobApRefresh('po','flex')"><option value="">—</option><option value="ferme">Ferme-élastique</option><option value="dur">Dur</option><option value="mou">Mou</option><option value="vide">Vide</option></select></td>
             <td style="padding:6px 8px"><input type="text" id="po-mob-flex-obs" class="mob-note-inp" placeholder="Douleur dorsale en fin d'amplitude…"></td>
             <td style="padding:9px 14px;font-size:.8rem;color:var(--text3)" id="po-mob-flex-interp">—</td>
           </tr>
           <tr>
             <td class="test-name mob-ap-name">Extension</td>
             <td class="result-cell"><select id="po-mob-ext-act" onchange="_mobApRefresh('po','ext')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
-            <td class="result-cell"><select id="po-mob-ext-pas" onchange="_mobApRefresh('po','ext')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option></select></td>
+            <td class="result-cell"><select id="po-mob-ext-pas" onchange="_mobApRefresh('po','ext')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
+            <td class="result-cell"><select id="po-mob-ext-ef" onchange="_mobApRefresh('po','ext')"><option value="">—</option><option value="ferme">Ferme-élastique</option><option value="dur">Dur</option><option value="mou">Mou</option><option value="vide">Vide</option></select></td>
             <td style="padding:6px 8px"><input type="text" id="po-mob-ext-obs" class="mob-note-inp" placeholder="Douleur radiale, appui paume impossible…"></td>
             <td style="padding:9px 14px;font-size:.8rem;color:var(--text3)" id="po-mob-ext-interp">—</td>
           </tr>
           <tr>
             <td class="test-name mob-ap-name">Pronation</td>
             <td class="result-cell"><select id="po-mob-pro-act" onchange="_mobApRefresh('po','pro')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
-            <td class="result-cell"><select id="po-mob-pro-pas" onchange="_mobApRefresh('po','pro')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option></select></td>
+            <td class="result-cell"><select id="po-mob-pro-pas" onchange="_mobApRefresh('po','pro')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
+            <td class="result-cell"><select id="po-mob-pro-ef" onchange="_mobApRefresh('po','pro')"><option value="">—</option><option value="ferme">Ferme-élastique</option><option value="dur">Dur</option><option value="mou">Mou</option><option value="vide">Vide</option></select></td>
             <td style="padding:6px 8px"><input type="text" id="po-mob-pro-obs" class="mob-note-inp" placeholder="Douleur radio-ulnaire distale…"></td>
             <td style="padding:9px 14px;font-size:.8rem;color:var(--text3)" id="po-mob-pro-interp">—</td>
           </tr>
           <tr>
             <td class="test-name mob-ap-name">Supination</td>
             <td class="result-cell"><select id="po-mob-sup-act" onchange="_mobApRefresh('po','sup')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
-            <td class="result-cell"><select id="po-mob-sup-pas" onchange="_mobApRefresh('po','sup')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option></select></td>
+            <td class="result-cell"><select id="po-mob-sup-pas" onchange="_mobApRefresh('po','sup')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
+            <td class="result-cell"><select id="po-mob-sup-ef" onchange="_mobApRefresh('po','sup')"><option value="">—</option><option value="ferme">Ferme-élastique</option><option value="dur">Dur</option><option value="mou">Mou</option><option value="vide">Vide</option></select></td>
             <td style="padding:6px 8px"><input type="text" id="po-mob-sup-obs" class="mob-note-inp" placeholder="Douleur ulnaire, compensation de coude…"></td>
             <td style="padding:9px 14px;font-size:.8rem;color:var(--text3)" id="po-mob-sup-interp">—</td>
           </tr>
           <tr>
             <td class="test-name mob-ap-name">Inclinaison ulnaire</td>
             <td class="result-cell"><select id="po-mob-incu-act" onchange="_mobApRefresh('po','incu')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
-            <td class="result-cell"><select id="po-mob-incu-pas" onchange="_mobApRefresh('po','incu')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option></select></td>
+            <td class="result-cell"><select id="po-mob-incu-pas" onchange="_mobApRefresh('po','incu')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
+            <td class="result-cell"><select id="po-mob-incu-ef" onchange="_mobApRefresh('po','incu')"><option value="">—</option><option value="ferme">Ferme-élastique</option><option value="dur">Dur</option><option value="mou">Mou</option><option value="vide">Vide</option></select></td>
             <td style="padding:6px 8px"><input type="text" id="po-mob-incu-obs" class="mob-note-inp" placeholder="Douleur TFCC…"></td>
             <td style="padding:9px 14px;font-size:.8rem;color:var(--text3)" id="po-mob-incu-interp">—</td>
           </tr>
           <tr>
             <td class="test-name mob-ap-name">Inclinaison radiale</td>
             <td class="result-cell"><select id="po-mob-incr-act" onchange="_mobApRefresh('po','incr')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
-            <td class="result-cell"><select id="po-mob-incr-pas" onchange="_mobApRefresh('po','incr')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option></select></td>
+            <td class="result-cell"><select id="po-mob-incr-pas" onchange="_mobApRefresh('po','incr')"><option value="">—</option><option value="libre">Libre</option><option value="doul">Douloureux</option><option value="lim">Limité</option><option value="doullim">Doul. + lim.</option></select></td>
+            <td class="result-cell"><select id="po-mob-incr-ef" onchange="_mobApRefresh('po','incr')"><option value="">—</option><option value="ferme">Ferme-élastique</option><option value="dur">Dur</option><option value="mou">Mou</option><option value="vide">Vide</option></select></td>
             <td style="padding:6px 8px"><input type="text" id="po-mob-incr-obs" class="mob-note-inp" placeholder="Butée, douleur styloïde radiale…"></td>
             <td style="padding:9px 14px;font-size:.8rem;color:var(--text3)" id="po-mob-incr-interp">—</td>
           </tr>
@@ -6043,7 +6071,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260806i"></script>
-<script src="js/bilan.js?v=20260827i"></script>
+<script src="js/bilan.js?v=20260827j"></script>
 
 </body>
 </html>

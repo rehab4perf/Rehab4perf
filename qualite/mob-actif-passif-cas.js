@@ -33,8 +33,8 @@ function extrait(sig, fin) {
   return js.slice(d, f);
 }
 var MOB_AP  = new Function(extrait('var MOB_AP = {', '\nvar EP_MOB_MOVEMENTS') + '\n return MOB_AP;')();
-var verdict = new Function(extrait('function _epMobVerdict(a, p) {', '\nfunction _mobApRefresh') +
-                           '\n return _epMobVerdict;')();
+var verdict = new Function(extrait('function _mobApVerdict(a, p, e) {', '\nfunction _mobApRefresh') +
+                           '\n return _mobApVerdict;')();
 
 var nbOk = 0, nbKo = 0;
 function verifie(intitule, attendu, obtenu) {
@@ -64,7 +64,7 @@ console.log('\n  Chaque mouvement a ses quatre champs dans la page');
   Object.keys(MOB_AP).forEach(function (seg) {
     MOB_AP[seg].forEach(function (m) {
       var base = seg + '-mob-' + m.key;
-      ['act', 'pas', 'obs', 'interp'].forEach(function (suf) {
+      ['act', 'pas', 'ef', 'obs', 'interp'].forEach(function (suf) {
         if (html.indexOf('id="' + base + '-' + suf + '"') === -1) manquants.push(base + '-' + suf);
       });
       /* Le `onchange` doit designer le mouvement de SA ligne. Une cle qui
@@ -91,16 +91,65 @@ console.log('\n  Chaque mouvement a ses quatre champs dans la page');
 
 console.log('\n  L\'interprétation du différentiel');
 {
-  function v(a, p) { return verdict(a, p)[0] + '/' + verdict(a, p)[1]; }
-  verifie('rien de saisi',                   '—/muted',                       v('', ''));
-  verifie('passif seul',                     'Passif isolé/muted',            v('', 'lim'));
-  verifie('actif libre',                     'Conservée/ok',                  v('libre', ''));
-  verifie('actif anormal, passif non testé', 'À tester en passif/muted',      v('lim', ''));
-  verifie('actif limité, passif libre',      'Déficit actif/warn',            v('lim', 'libre'));
-  verifie('les deux limités',                'Restriction structurelle/bad',  v('lim', 'lim'));
-  verifie('douleur en actif seul',           'Douleur contractile/warn',      v('doul', 'libre'));
-  verifie('douleur des deux côtés',          'Structure inerte/bad',          v('doul', 'doul'));
-  verifie('douloureux ET limité, passif libre', 'Déficit actif/warn',         v('doullim', 'libre'));
+  /* Vocabulaire repris du tableau « Lire l'écart actif vs passif » : les mots
+     que le praticien lit dans sa formation sont ceux qu'il retrouve ici — et
+     c'est ce qui permet à l'explication de tenir en une ligne. */
+  function v(a, p, e) { var r = verdict(a, p, e); return r[0] + '/' + r[1]; }
+  verifie('rien de saisi',                    '—/muted',                     v('', '', ''));
+  verifie('passif seul',                      'Passif isolé/muted',          v('', 'lim', ''));
+  verifie('actif libre, passif non testé',    'Conservée/ok',                v('libre', '', ''));
+  verifie('actif anormal, passif non testé',  'À tester en passif/muted',    v('lim', '', ''));
+  verifie('actif = passif limités',           'Limitation articulaire/bad',  v('lim', 'lim', ''));
+  verifie('actif < passif',                   'Limitation musculaire/warn',  v('lim', 'libre', ''));
+  verifie('douleur active seule',             'Pathologie tendineuse/warn',  v('doul', 'libre', ''));
+  verifie('douleur active et passive',        'Structure inerte/bad',        v('doul', 'doul', ''));
+  verifie('douleur passive seule',            'Structure inerte/bad',        v('libre', 'doul', ''));
+  verifie('les deux libres',                  'Conservée/ok',                v('libre', 'libre', ''));
+  verifie('douloureux ET limité vs passif libre', 'Limitation musculaire/warn', v('doullim', 'libre', ''));
+}
+
+console.log('\n  Le profil atypique — celui qui ne sortait jamais');
+{
+  /* Deux verrous l'empêchaient, à deux étages :
+     `a === 'libre'` court-circuitait la comparaison AVANT elle, et
+     `_mobApRefresh` EFFAÇAIT le passif dès que l'actif était libre. Corriger
+     l'un sans l'autre n'aurait rien changé — et l'effacement supprimait au
+     passage une saisie du praticien sans le moindre signal. */
+  var r = verdict('libre', 'lim', '');
+  verifie('actif libre, passif limité', 'Artefact ou laxité/warn', r[0] + '/' + r[1]);
+  var propre = js.replace(/\/\*[\s\S]*?\*\//g, '');
+  verifie('le passif n\'est plus effacé', 'false',
+          String(/if \(a\.value === 'libre'\) p\.value = '';/.test(propre)));
+  verifie('le raccourci « actif libre » est borné au passif vide', 'true',
+          String(/if \(!p\) return a === 'libre'/.test(propre)));
+}
+
+console.log('\n  L\'end-feel requalifie, et prime quand il est vide');
+{
+  function v(a, p, e) { var r = verdict(a, p, e); return r[0] + '/' + r[1]; }
+  verifie('ferme-élastique → verdict de base', 'Limitation articulaire/bad', v('lim', 'lim', 'ferme'));
+  verifie('dur → butée osseuse',               'Butée osseuse/bad',          v('lim', 'lim', 'dur'));
+  verifie('mou → œdème ou laxité',             'Œdème ou laxité/warn',       v('lim', 'lim', 'mou'));
+  /* Le vide prime sur TOUT : il ne décrit pas une raideur mais un arrêt par la
+     douleur avant toute butée. Le subordonner au reste de la ligne le ferait
+     disparaître là où il compte le plus. */
+  verifie('vide sur un actif limité',  'Arrêt par la douleur/bad', v('lim', 'lim', 'vide'));
+  verifie('vide sur un actif libre',   'Arrêt par la douleur/bad', v('libre', 'libre', 'vide'));
+  verifie('vide sans actif du tout',   'Arrêt par la douleur/bad', v('', '', 'vide'));
+  /* Sans passif, la fin de course n'a pas d'objet : une valeur restée là ferait
+     basculer en drapeau rouge un mouvement qu'on n'a pas testé. */
+  verifie('elle se vide quand le passif s\'efface', 'true',
+          String(/if \(!actif\) e\.value = '';/.test(js)));
+}
+
+console.log('\n  La phrase d\'explication reste courte');
+{
+  verifie('« Conservée » n\'en porte aucune', '', verdict('libre', '', '')[2]);
+  verifie('« Limitation articulaire » tient en une ligne',
+          'Capsulite, arthrose, raideur post-immobilisation.', verdict('lim', 'lim', '')[2]);
+  verifie('chaque verdict garde son détail en infobulle', 'true',
+          String([['lim','lim',''],['lim','libre',''],['doul','libre',''],['libre','lim','']]
+            .every(function (t) { return !!verdict(t[0], t[1], t[2])[3]; })));
 }
 
 console.log('\n  Le compte-rendu lit les trois segments');
@@ -111,8 +160,37 @@ console.log('\n  Le compte-rendu lit les trois segments');
   });
   /* Une ligne n'existe que si l'ACTIF est renseigne : le verdict se lit sur la
      comparaison, « passif seul » ne dit rien au medecin. */
+  verifie('la fin de course figure au courrier', 'true',
+          /Fin de course : '\+\(EP_MOB_EF_LABELS\[e\]\|\|e\)/.test(sansCom) + '');
+  /* La phrase COURTE part au courrier, jamais le détail : le médecin lit un
+     verdict et sa raison en une ligne. C'est ce qui a rendu le vocabulaire du
+     verdict décisif. */
+  verifie('la phrase courte part au courrier', 'true',
+          /\(v\[2\] \? ' · '\+v\[2\] : ''\)/.test(sansCom) + '');
+  verifie('la fin de course compte comme champ réévalué', 'true',
+          /base\+'-act', base\+'-pas', base\+'-ef', base\+'-obs'/.test(sansCom) + '');
   verifie('pas de ligne sans actif', 'true',
           /var a = \(document\.getElementById\(base\+'-act'\)\|\|\{\}\)\.value\|\|'';\s*if \(!a\) return;/.test(sansCom));
+}
+
+console.log('\n  Le balisage des trois tableaux');
+{
+  verifie('quinze menus de fin de course', 15, (html.match(/id="[\w-]+-mob-\w+-ef"/g) || []).length);
+  /* Bornée aux trois tableaux actif/passif : « Observation » reste un en-tête
+     légitime ailleurs — les répétitions du rachis lombaire en portent un. */
+  var entetes = (html.match(/<thead><tr>[\s\S]*?<\/tr><\/thead>\s*<tbody id="\w+-mob-tbody">/g) || []);
+  verifie('trois tableaux actif/passif', 3, entetes.length);
+  verifie('chacun a ses six colonnes', 3, entetes.filter(function (t) {
+    return ['Mouvement', 'Actif', 'Passif', 'End-feel', 'Marqueur / observations', 'Interprétation']
+      .every(function (c) { return t.indexOf('>' + c + '<') !== -1; });
+  }).length);
+  /* Le passif accepte désormais « douloureux + limité », comme l'actif : sans
+     lui, un mouvement à la fois douloureux et limité en passif devait être
+     rangé dans l'une des deux cases, et le verdict s'en trouvait faussé. */
+  var menusPas = html.match(/<select id="[\w-]+-mob-\w+-pas"[\s\S]*?<\/select>/g) || [];
+  verifie('quinze menus passif', 15, menusPas.length);
+  verifie('tous acceptent « doul. + lim. »', 15,
+          menusPas.filter(function (m) { return m.indexOf('value="doullim"') !== -1; }).length);
 }
 
 console.log('\n  La page Coude a enfin sa section');

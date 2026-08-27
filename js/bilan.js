@@ -7456,13 +7456,20 @@ function _buildAllTestsHtml() {
       var a = (document.getElementById(base+'-act')||{}).value||'';
       if (!a) return;
       var p = (document.getElementById(base+'-pas')||{}).value||'';
+      var e = (document.getElementById(base+'-ef') ||{}).value||'';
       var o = (document.getElementById(base+'-obs')||{}).value||'';
-      var v = _epMobVerdict(a, p);
+      var v = _mobApVerdict(a, p, e);
+      /* La PHRASE COURTE part au courrier, jamais le détail : le médecin lit un
+         verdict et sa raison en une ligne. C'est ce qui a rendu le vocabulaire
+         du verdict décisif — bien nommé, il rend l'explication presque
+         superflue, et « Conservée » n'en porte aucune. */
       var valStr = 'Actif : '+(EP_MOB_ACT_LABELS[a]||a)
                  + (p ? ' · Passif : '+(EP_MOB_PAS_LABELS[p]||p) : '')
+                 + (e ? ' · Fin de course : '+(EP_MOB_EF_LABELS[e]||e) : '')
+                 + (v[2] ? ' · '+v[2] : '')
                  + (o ? ' · '+nl2br(o) : '');
       rows += crItem(m.label, valStr, v[0] !== '—' ? v[0] : '', v[1] === 'muted' ? '' : v[1],
-                     [base+'-act', base+'-pas', base+'-obs']);
+                     [base+'-act', base+'-pas', base+'-ef', base+'-obs']);
     });
     if (!rows) return '';
     return '<div style="margin:8px 0 4px;font-size:.77rem;font-weight:600;color:var(--text2)">'
@@ -10840,32 +10847,82 @@ var EP_MOB_ACT_LABELS = { libre:'Libre', doul:'Douloureux', lim:'Limité', doull
 var EP_MOB_PAS_LABELS = { libre:'Libre', doul:'Douloureux', lim:'Limité' };
 var EP_MOB_TONE = { muted:'var(--text3)', ok:'var(--green)', warn:'var(--orange)', bad:'var(--red)' };
 
-// Différentiel actif/passif : la valeur clinique du test vient de leur comparaison,
-// pas de chaque mesure isolément (déficit de contrôle vs restriction structurelle).
-function _epMobVerdict(a, p) {
-  if (!a) return p ? ['Passif isolé', 'muted', 'Passif renseigné sans actif — comparaison actif/passif incomplète'] : ['—', 'muted', ''];
-  if (a === 'libre') return ['Conservée', 'ok', 'Mobilité active libre et indolore — pas de test passif requis'];
-  if (!p) return ['À tester en passif', 'muted', 'Mouvement anormal en actif : comparer en passif pour situer la limitation'];
-  var limited = (a === 'lim' || a === 'doullim');
-  if (limited && p === 'libre') return ['Déficit actif', 'warn', 'Actif limité, passif libre — force, contrôle moteur ou inhibition par la douleur'];
-  if (limited && (p === 'lim' || p === 'doul')) return ['Restriction structurelle', 'bad', 'Actif et passif limités — origine capsulo-ligamentaire ou articulaire'];
-  if (a === 'doul' && p === 'libre') return ['Douleur contractile', 'warn', 'Douleur en actif, passif libre — origine tendino-musculaire'];
-  if (a === 'doul' && p === 'doul') return ['Structure inerte', 'bad', 'Douleur en actif et en passif — structure non contractile'];
-  return ['—', 'muted', ''];
+var EP_MOB_EF_LABELS = { ferme:'Ferme-élastique', dur:'Dur', mou:'Mou', vide:'Vide' };
+
+/* Différentiel actif/passif — la valeur clinique vient de la COMPARAISON, pas
+   de chaque mesure isolément. Vocabulaire repris du tableau « Lire l'écart
+   actif vs passif » : les mots que le praticien lit dans sa formation sont ceux
+   qu'il doit retrouver ici, et ce sont eux qui rendent l'explication courte.
+
+   Rend [libellé, ton, phrase courte, détail]. La phrase courte s'affiche sous
+   le verdict et part au compte-rendu ; le détail reste en infobulle. Un verdict
+   bien nommé rend l'explication presque superflue — « Conservée » n'en porte
+   aucune. */
+function _mobApVerdict(a, p, e) {
+  /* La fin de course VIDE prime sur tout le reste : la douleur arrête avant
+     toute butée tissulaire. Ce n'est pas une raideur, c'est un signal. */
+  if (e === 'vide') return ['Arrêt par la douleur', 'bad',
+    'Stop avant la butée — rupture massive, tumeur ou capsulite. Avis médical.',
+    'La douleur arrête le mouvement avant toute butée tissulaire. Ce n\'est pas une raideur : rupture massive, tumeur ou capsulite. Avis médical avant toute mise en charge.'];
+  if (!a) return p ? ['Passif isolé', 'muted', 'Renseigner l\'actif pour conclure.',
+    'Le passif seul ne se lit pas : c\'est l\'écart avec l\'actif qui oriente.'] : ['—', 'muted', '', ''];
+  if (!p) return a === 'libre'
+    ? ['Conservée', 'ok', '', 'Amplitude active complète et indolore — le passif n\'apporterait rien.']
+    : ['À tester en passif', 'muted', 'Le passif situe la limite.',
+       'Mouvement anormal en actif : le passif dira si la limite est articulaire ou musculaire.'];
+  /* Les deux sont renseignés : c'est l'ÉCART qui parle. Le raccourci « actif
+     libre » ne peut donc plus court-circuiter la comparaison — actif libre et
+     passif limité est justement le profil atypique, qui ne sortait jamais. */
+  var aLim = (a === 'lim' || a === 'doullim'), pLim = (p === 'lim' || p === 'doullim');
+  var aDoul = (a === 'doul' || a === 'doullim'), pDoul = (p === 'doul' || p === 'doullim');
+  if (aLim && pLim) {
+    if (e === 'dur')  return ['Butée osseuse', 'bad', 'Bloc osseux — arthrose, ostéophyte, cal vicieux.',
+      'Actif et passif limités, fin de course dure : contact os contre os. L\'amplitude ne se regagne pas.'];
+    if (e === 'mou')  return ['Œdème ou laxité', 'warn', 'Fin de course molle — traiter la cause.',
+      'Actif et passif limités, fin de course molle : œdème, épanchement ou laxité. Traiter la cause avant de chercher l\'amplitude.'];
+    return ['Limitation articulaire', 'bad', 'Capsulite, arthrose, raideur post-immobilisation.',
+      'Actif et passif limités au même endroit : la limite est dans le tissu. Tester la réponse aux mobilisations — un gain immédiat confirme les tissus mous.'];
+  }
+  if (aLim && !pLim) return ['Limitation musculaire', 'warn', 'Force, contrôle moteur ou appréhension.',
+    'Passif disponible, actif inférieur : l\'amplitude existe mais ne s\'exprime pas. Activation, puis réévaluation immédiate.'];
+  if (!aLim && pLim) return ['Artefact ou laxité', 'warn', 'Très rare — reprendre la mesure.',
+    'Actif supérieur au passif : artefact méthodologique le plus souvent. S\'il se confirme, penser laxité avec instabilité fonctionnelle.'];
+  if (aDoul && !pDoul) return ['Pathologie tendineuse', 'warn', 'Souffrance en charge — coiffe, conflit.',
+    'Douleur active sans limitation passive : la structure souffre sous charge plutôt qu\'elle ne raidit.'];
+  if (pDoul) return ['Structure inerte', 'bad', 'Capsule, bourse ou os.',
+    'Douleur à la mise en tension passive : la structure douloureuse n\'est pas contractile.'];
+  return ['Conservée', 'ok', '', 'Actif et passif libres et indolores.'];
 }
 
 function _mobApRefresh(seg, key) {
-  var a = document.getElementById(seg + '-mob-' + key + '-act');
-  var p = document.getElementById(seg + '-mob-' + key + '-pas');
-  var cell = document.getElementById(seg + '-mob-' + key + '-interp');
+  var base = seg + '-mob-' + key;
+  var a = document.getElementById(base + '-act');
+  var p = document.getElementById(base + '-pas');
+  var e = document.getElementById(base + '-ef');
+  var cell = document.getElementById(base + '-interp');
   if (!a || !p || !cell) return;
-  // Passif toujours saisissable : on ne force plus l'ordre actif → passif,
-  // mais on efface une valeur passive devenue incohérente (actif libre).
-  if (a.value === 'libre') p.value = '';
-  var v = _epMobVerdict(a.value, p.value);
-  cell.textContent = v[0];
+  /* Le passif n'est PLUS efface quand l'actif est libre. Cette ligne partait
+     du principe qu'un actif libre rend le passif sans objet — ce n'est plus
+     vrai : actif libre et passif limite est le profil atypique du tableau
+     (artefact de mesure ou laxite), et actif libre avec passif douloureux
+     designe une structure non contractile. Les effacer empechait ces deux
+     verdicts de sortir, et supprimait au passage une saisie du praticien sans
+     le moindre signal. */
+  /* La fin de course ne se demande qu'en passif : c'est ce que sent le
+     thérapeute en menant le mouvement. Sans passif elle n'a pas d'objet, et
+     une valeur restée là fausserait le verdict — « vide » le ferait basculer
+     en drapeau rouge sur un mouvement qu'on n'a pas testé. */
+  if (e) {
+    var actif = !!p.value;
+    e.disabled = !actif;
+    if (!actif) e.value = '';
+    e.style.opacity = actif ? '' : '.4';
+  }
+  var v = _mobApVerdict(a.value, p.value, e ? e.value : '');
+  cell.innerHTML = '<span class="mob-ap-verdict">' + v[0] + '</span>'
+                 + (v[2] ? '<span class="mob-ap-why">' + v[2] + '</span>' : '');
   cell.style.color = EP_MOB_TONE[v[1]] || 'var(--text3)';
-  cell.title = v[2];
+  cell.title = v[3];
 }
 
 /* Rejoue l'interpretation de TOUS les segments. Appelee au chargement et
