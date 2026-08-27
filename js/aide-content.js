@@ -158,6 +158,12 @@ sections: [
       { t:'Basculez barres / radar', x:'Vue barres (par défaut) pour lire les points par composant, ou radar pour une vue d\'ensemble. Le PDF exporté reprend la vue sélectionnée.' },
       { t:'Générez le rapport PDF', x:'Score, asymétrie et profil détaillé sont inclus dans un rapport prêt à imprimer ou archiver.' }
     ]},
+  { id:'outils-onglets', titre:'L\'onglet Outils s\'ouvre sur le Générateur de CR',
+    intro:'L\'ordre des onglets suit l\'usage, et l\'ouverture se fait sur le premier.',
+    etapes:[
+      { t:'Le nouvel ordre', x:'Générateur de CR · Prescriptions · Batteries · PROMs · Ressources · Protocole HSR.' },
+      { t:'Ouverture directe', x:'Cliquer sur « Outils » vous amène désormais sur le Générateur de CR, avec les tests du bilan déjà relus. Les autres onglets restent à un clic.' }
+    ]},
   { id:'cr-destinataire', titre:'Écrire au médecin ou au patient',
     intro:'L\'onglet est devenu « Générateur de CR ». Le premier geste est le choix du destinataire — c\'est lui qui donne le ton au reste.',
     etapes:[
