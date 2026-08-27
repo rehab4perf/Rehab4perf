@@ -158,6 +158,14 @@ sections: [
       { t:'Basculez barres / radar', x:'Vue barres (par défaut) pour lire les points par composant, ou radar pour une vue d\'ensemble. Le PDF exporté reprend la vue sélectionnée.' },
       { t:'Générez le rapport PDF', x:'Score, asymétrie et profil détaillé sont inclus dans un rapport prêt à imprimer ou archiver.' }
     ]},
+  { id:'force-symetrie', titre:'Les tests de force se lisent en symétrie',
+    intro:'« Positif / Négatif » a laissé place au vocabulaire de la symétrie, avec un seuil à 10 %.',
+    etapes:[
+      { t:'Pourquoi le changement', x:'Un test de force ne cherche pas un signe clinique, il compare deux côtés. « Positif » se lisait comme un test provoquant une douleur — et le même écart de 5 % s\'annonçait « Négatif » au dynamomètre et « Symétrique » sur un test fonctionnel, dans le même courrier.' },
+      { t:'Le barème', x:'Symétrique jusqu\'à 10 % d\'asymétrie · Asymétrie modérée de 10 à 20 % · Asymétrie significative au-delà. Ce sont les paliers déjà employés par les tests fonctionnels : le calcul n\'a pas changé, seul le mot.' },
+      { t:'Deux exceptions', x:'Le dentelé antérieur garde un seuil absolu de 20 répétitions : deux côtés égaux mais tous deux sous la norme sont annoncés « Insuffisant », pas « Symétrique ». Et la GIRD reste en Positif/Négatif — c\'est un vrai signe clinique à 15°, pas une mesure de symétrie.' },
+      { t:'Vos appréciations manuelles', x:'Quand vous choisissez « Positif » ou « Négatif » dans la liste déroulante d\'un test de force, le compte-rendu rapporte votre mot tel quel.' }
+    ]},
   { id:'reception-criteres', titre:'Le Test de Réception détaille ses critères',
     intro:'« 5/5 » disait l\'ampleur du déficit, pas sa nature.',
     etapes:[

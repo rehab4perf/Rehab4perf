@@ -600,6 +600,38 @@ fusion.
 envoyé au médecin**. Même piège que d'habitude — une règle ajoutée d'un seul
 côté ne se voit pas là où le document est lu.
 
+## Un test de force se lit en symétrie, pas en « positif / négatif »
+
+```bash
+node qualite/prehension-cas.js
+```
+
+Un test de force ne cherche pas un signe clinique : il **compare deux côtés**.
+`Positif` s'y lisait comme un test provoquant une douleur, et le même écart de
+5 % se disait « Négatif » sur un dynamomètre et « Symétrique » sur un test
+fonctionnel — **dans le même courrier**.
+
+`_statForce(lsi)` rend les trois paliers déjà employés partout ailleurs
+(`statOf2`) : **Symétrique** (LSI ≥ 90, soit ≤ 10 % d'asymétrie), **Asymétrie
+modérée** (≥ 80), **Asymétrie significative** en deçà. Le calcul n'a pas
+changé — `lsi < 90` était déjà exactement le seuil de 10 %.
+
+**Deux exceptions, et elles sont voulues** :
+
+- Le **dentelé antérieur** (`ep-dent`) a un seuil ABSOLU de 20 répétitions.
+  Deux côtés égaux mais tous deux sous la norme sont symétriques *et*
+  insuffisants : le seuil absolu prime et porte son propre mot,
+  « Insuffisant ».
+- La **GIRD** est un vrai signe clinique à 15° d'écart, pas une mesure de
+  symétrie. Elle garde « Positif / Négatif ».
+
+Les branches « **appréciation** » gardent aussi Positif/Négatif : le praticien
+a littéralement choisi ce mot dans une liste déroulante, le CR le rapporte.
+
+**Un LSI supérieur à 100 % reste « Symétrique »** — côté atteint plus fort que
+le sain. C'est la convention de toute l'application (voir l'asymétrie affichée),
+et c'est une décision clinique : ne pas la changer sans le praticien.
+
 ## Quel côté le CR nomme — une résolution par région
 
 ```bash

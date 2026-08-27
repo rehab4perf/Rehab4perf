@@ -115,6 +115,14 @@ var ge = src.indexOf('\n  }', gi);
 var mod = ext('_crMesTab') + '\n' + ext('asymPct') + '\n' + ext('asymTxt') + '\n'
   + 'function _crInSuiviMode(){ return false; }\n'
   + 'function _crMarquage(){ return { cls: "", badge: "" }; }\n'
+  /* Un test de force se lit en SYMETRIE, pas en « positif / negatif » : le
+     meme ecart de 5 % se disait « Negatif » au dynamometre et « Symetrique »
+     sur un test fonctionnel, dans le meme courrier. */
+  /* EXTRAITE de la source, jamais recopiee : le seuil de symetrie est une
+     decision clinique. Un stub ecrit a la main aurait laisse passer un
+     changement de seuil — ou un retour au « positif / negatif » — sans que
+     rien ne rougisse. C'est exactement ce qui est arrive au premier jet. */
+  + ext('_statForce') + '\n'
   + src.slice(bi, be + 4) + '\n'
   + src.slice(gi, ge + 4) + '\n'
   + 'var _labelCS = "Côté sain", _labelCA = "Côté atteint";\n'
@@ -131,13 +139,34 @@ var h1 = ligneCR();
 verifie('la force des deux côtés y figure', /46 kg/.test(h1) && /38 kg/.test(h1));
 verifie('l\'asymétrie est affichée, pas la symétrie', /17\s*%/.test(h1),
   '38/46 = 82,6 % de symétrie → 17 % d\'asymétrie');
-verifie('sous 90 %, la ligne est positive', /cr-tag bad">Positif</.test(h1));
+/* 38/46 = 82,6 % de symetrie, soit 17 % d'asymetrie : la bande 80-90 %. Le
+   verdict binaire d'avant disait « Positif » a 11 % comme a 40 % ; les trois
+   paliers distinguent ce que le praticien distingue deja. */
+verifie('17 % d\'asymétrie → modérée', /cr-tag warn">Asymétrie modérée</.test(h1),
+  '82,6 % de symétrie tombe dans la bande 80-90 %');
 verifie('la main dominante accompagne la mesure', /Main dominante : Droite/.test(h1));
+
+/* Les BORNES du barème, pas seulement un point au milieu. Sans elles, déplacer
+   un seuil de 80 à 70 % ne faisait rougir aucun cas — 82,6 % reste « modérée »
+   des deux côtés. Un test qui ne teste que le milieu d'une bande ne teste pas
+   la bande. */
+CH = { 'ms-grip-cs': '50', 'ms-grip-ca': '39', 'ms-dom': 'Droite' };   // 78 %
+verifie('sous 80 % → significative',
+  /cr-tag bad">Asymétrie significative</.test(ligneCR()), '39/50 = 78 %');
+CH = { 'ms-grip-cs': '50', 'ms-grip-ca': '40', 'ms-dom': 'Droite' };   // 80 % pile
+verifie('80 % pile → modérée',
+  /cr-tag warn">Asymétrie modérée</.test(ligneCR()), 'la borne appartient à la bande du dessus');
+CH = { 'ms-grip-cs': '50', 'ms-grip-ca': '45', 'ms-dom': 'Droite' };   // 90 % pile
+verifie('90 % pile → symétrique',
+  /cr-tag ok">Symétrique</.test(ligneCR()), '10 % d\'asymétrie reste symétrique');
+CH = { 'ms-grip-cs': '50', 'ms-grip-ca': '44', 'ms-dom': 'Droite' };   // 88 %
+verifie('sous 90 % → modérée',
+  /cr-tag warn">Asymétrie modérée</.test(ligneCR()), '12 % d\'asymétrie dépasse le seuil');
 
 console.log('\nLigne de CR — symétrie conservée');
 CH = { 'ms-grip-cs': '46', 'ms-grip-ca': '44', 'ms-dom': 'Gauche' };
 var h2 = ligneCR();
-verifie('au-dessus de 90 %, la ligne est négative', /cr-tag ok">Négatif</.test(h2));
+verifie('au-dessus de 90 %, la ligne est symétrique', /cr-tag ok">Symétrique</.test(h2));
 verifie('la dominante suit le champ, elle n\'est pas figée', /Main dominante : Gauche/.test(h2));
 
 console.log('\nLa dominante ne corrige RIEN');

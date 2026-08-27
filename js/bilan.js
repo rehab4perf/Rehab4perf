@@ -7058,6 +7058,24 @@ function _crPrevMerged(start){
    quadriceps en gauche/droit — dans le meme tableau. La regle a ete alignee
    dans `_updateSideLabels`, cote formulaire, et le CR n'a plus d'exception a
    porter. */
+/* Un test de force ne se lit pas « positif / negatif » : il ne cherche pas un
+   signe clinique, il COMPARE DEUX COTES. Le mot juste est la symetrie.
+
+   Le seuil de 10 % ne change rien au calcul — `lsi < 90` etait deja
+   exactement cela. Seul le vocabulaire etait faux, et il l'etait deux fois :
+   « Positif » se lit comme un test provoquant une douleur, et le meme ecart de
+   5 % se disait « Negatif » sur un dynamometre et « Symetrique » sur un test
+   fonctionnel, dans le meme courrier.
+
+   Les trois paliers sont ceux du reste du CR (`statOf2`) : une seule ligne du
+   document ne doit pas se dire de deux facons selon la page d'ou elle vient. */
+function _statForce(lsi) {
+  if (isNaN(lsi)) return { txt: '', cls: '' };
+  if (lsi >= 90) return { txt: 'Symétrique',              cls: 'ok'   };
+  if (lsi >= 80) return { txt: 'Asymétrie modérée',       cls: 'warn' };
+  return         { txt: 'Asymétrie significative', cls: 'bad'  };
+}
+
 function _crLabelsForCote(cote) {
   var bilateral = (cote !== 'DROIT' && cote !== 'GAUCHE');
   return bilateral ? { cs: 'Gauche', ca: 'Droit' }
@@ -7381,10 +7399,10 @@ function _buildAllTestsHtml() {
         var caA = (document.getElementById(ft.key+'-apr-ca')||{}).value||'';
         if (!isNaN(csN) && csN > 0) {
           var lsiV = !isNaN(caN) ? caN/csN*100 : NaN;
-          var isPos = !isNaN(lsiV) && lsiV < 90;
           var valStr = _crMesTab([{ l:'Force', a:csN+' kg', b:(isNaN(caN)?'':caN+' kg'),
                                     asym:(isNaN(lsiV)?'':asymTxt(lsiV, 0)) }], _labelCS, _labelCA);
-          haForceRows += crItem(ft.label, valStr, isPos?'Positif':'Négatif', isPos?'bad':'ok', [ft.key+'-cs',ft.key+'-ca']);
+          var _sf = _statForce(lsiV);
+          haForceRows += crItem(ft.label, valStr, _sf.txt, _sf.cls, [ft.key+'-cs',ft.key+'-ca']);
         } else if (csA || caA) {
           var parts = _crMesTab([{ l:'Appréciation', a:csA, b:caA }], _labelCS, _labelCA);
           var anyPos = csA==='Positif' || caA==='Positif';
@@ -7420,10 +7438,10 @@ function _buildAllTestsHtml() {
         var caA = (document.getElementById(ft.key+'-apr-ca')||{}).value||'';
         if (!isNaN(csN) && csN > 0) {
           var lsiV = !isNaN(caN) ? caN/csN*100 : NaN;
-          var isPos = !isNaN(lsiV) && lsiV < 90;
           var valStr = _crMesTab([{ l:'Force', a:csN+' kg', b:(isNaN(caN)?'':caN+' kg'),
                                     asym:(isNaN(lsiV)?'':asymTxt(lsiV, 0)) }], _labelCS, _labelCA);
-          geForceRows += crItem(ft.label, valStr, isPos?'Positif':'Négatif', isPos?'bad':'ok', [ft.key+'-cs',ft.key+'-ca']);
+          var _sf = _statForce(lsiV);
+          geForceRows += crItem(ft.label, valStr, _sf.txt, _sf.cls, [ft.key+'-cs',ft.key+'-ca']);
         } else if (csA || caA) {
           var parts = _crMesTab([{ l:'Appréciation', a:csA, b:caA }], _labelCS, _labelCA);
           var anyPos = csA==='Positif' || caA==='Positif';
@@ -7469,15 +7487,19 @@ function _buildAllTestsHtml() {
         if (!isNaN(csN) && csN > 0) {
           var lsiV = !isNaN(caN) ? caN/csN*100 : NaN;
           var isDent = ft.key === 'ep-dent';
-          var isPos = isDent ? (csN < 20 || (!isNaN(caN) && caN < 20) || (!isNaN(lsiV) && lsiV < 90))
-                             : (!isNaN(lsiV) && lsiV < 90);
+          /* Le dentele antérieur a un seuil ABSOLU — 20 repetitions — en plus
+             de la symetrie. Deux cotes egaux mais tous deux sous la norme sont
+             symetriques ET insuffisants : le dire « symetrique » tairait le
+             defaut. Le seuil absolu prime donc, et il porte son propre mot. */
+          var _dentInsuf = isDent && (csN < 20 || (!isNaN(caN) && caN < 20));
           var _u = isDent ? ' rép' : ' N';
           var valStr = _crMesTab([{ l: isDent ? 'Répétitions' : 'Force',
                                     a: csN + _u,
                                     b: isNaN(caN) ? '' : caN + _u,
                                     asym: isNaN(lsiV) ? '' : asymTxt(lsiV, 0) }],
                                  _labelCS, _labelCA);
-          epForceRows += crItem(ft.label, valStr, isPos ? 'Positif' : 'Négatif', isPos ? 'bad' : 'ok', [ft.key+'-cs', ft.key+'-ca']);
+          var _sfEp = _dentInsuf ? { txt: 'Insuffisant', cls: 'bad' } : _statForce(lsiV);
+          epForceRows += crItem(ft.label, valStr, _sfEp.txt, _sfEp.cls, [ft.key+'-cs', ft.key+'-ca']);
         } else if (csA || caA) {
           var parts = _crMesTab([{ l:'Appréciation', a:csA, b:caA }], _labelCS, _labelCA);
           var anyPos = csA === 'Positif' || caA === 'Positif';
@@ -7500,14 +7522,17 @@ function _buildAllTestsHtml() {
       var grDom = ((document.getElementById('ms-dom')||{}).value||'').trim();
       if (!isNaN(grCS) && grCS > 0) {
         var grLsi = !isNaN(grCA) && grCA > 0 ? grCA/grCS*100 : NaN;
-        var grPos = !isNaN(grLsi) && grLsi < 90;
+        /* La prehension est un test de FORCE : elle se lit en symetrie, pas en
+           « positif / negatif ». La GIRD juste au-dessus, elle, est un vrai
+           signe clinique a seuil absolu (15°) et garde son vocabulaire. */
+        var _sfGr = _statForce(grLsi);
         var grRows = crItem('Force de préhension',
           _crMesTab([{ l:'Force', a: grCS + ' kg',
                        b: isNaN(grCA) ? '' : grCA + ' kg',
                        asym: isNaN(grLsi) ? '' : asymTxt(grLsi) }],
                     _labelCS, _labelCA,
                     grDom ? { note: 'Main dominante : ' + grDom } : {}),
-          grPos ? 'Positif' : 'Négatif', grPos ? 'bad' : 'ok',
+          _sfGr.txt, _sfGr.cls,
           ['ms-grip-cs','ms-grip-ca']);
         var grObs = ((document.getElementById('ms-grip-obs')||{}).value||'').trim();
         if (grObs) grRows += crItem('Préhension — observation', nl2br(grObs), '', '', ['ms-grip-obs']);
@@ -7584,10 +7609,10 @@ function _buildAllTestsHtml() {
         var caA = (document.getElementById('ra-fc-inc-apr-ca')||{}).value||'';
         if (!isNaN(csN) && csN > 0) {
           var lsiV = !isNaN(caN) ? caN/csN*100 : NaN;
-          var isPos = !isNaN(lsiV) && lsiV < 90;
           var valStr = _crMesTab([{ l:'Force', a:csN+' kg', b:(isNaN(caN)?'':caN+' kg'),
                                     asym:(isNaN(lsiV)?'':asymTxt(lsiV, 0)) }], _labelCS, _labelCA);
-          raForceRows += crItem('Inclinaison cervicale', valStr, isPos?'Positif':'Négatif', isPos?'bad':'ok', ['ra-fc-inc-cs','ra-fc-inc-ca']);
+          var _sfRa = _statForce(lsiV);
+          raForceRows += crItem('Inclinaison cervicale', valStr, _sfRa.txt, _sfRa.cls, ['ra-fc-inc-cs','ra-fc-inc-ca']);
         } else if (csA || caA) {
           var parts = _crMesTab([{ l:'Appréciation', a:csA, b:caA }], _labelCS, _labelCA);
           var anyPos = csA==='Positif' || caA==='Positif';
@@ -7751,10 +7776,10 @@ function _buildAllTestsHtml() {
         var caA = (document.getElementById(ft.key+'-apr-ca')||{}).value||'';
         if (!isNaN(csN) && csN > 0) {
           var lsiV = !isNaN(caN) ? caN/csN*100 : NaN;
-          var isPos = !isNaN(lsiV) && lsiV < 90;
           var valStr = _crMesTab([{ l:'Force', a:csN+' kg', b:(isNaN(caN)?'':caN+' kg'),
                                     asym:(isNaN(lsiV)?'':asymTxt(lsiV, 0)) }], _labelCS, _labelCA);
-          piForceRows += crItem(ft.label, valStr, isPos?'Positif':'Négatif', isPos?'bad':'ok', [ft.key+'-cs',ft.key+'-ca']);
+          var _sf = _statForce(lsiV);
+          piForceRows += crItem(ft.label, valStr, _sf.txt, _sf.cls, [ft.key+'-cs',ft.key+'-ca']);
         } else if (csA || caA) {
           var parts = _crMesTab([{ l:'Appréciation', a:csA, b:caA }], _labelCS, _labelCA);
           var anyPos = csA==='Positif' || caA==='Positif';
