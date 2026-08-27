@@ -158,6 +158,13 @@ sections: [
       { t:'Basculez barres / radar', x:'Vue barres (par défaut) pour lire les points par composant, ou radar pour une vue d\'ensemble. Le PDF exporté reprend la vue sélectionnée.' },
       { t:'Générez le rapport PDF', x:'Score, asymétrie et profil détaillé sont inclus dans un rapport prêt à imprimer ou archiver.' }
     ]},
+  { id:'af-inclure-cr', titre:'Faire figurer une analyse fonctionnelle parfaite',
+    intro:'Un examen où tout est normal ne laissait aucune trace dans le compte-rendu.',
+    etapes:[
+      { t:'Le problème', x:'Sans case cochée ni observation, la ligne n\'apparaissait pas au CR — indiscernable d\'un test que vous n\'auriez pas fait. Or « je l\'ai regardé et il n\'y avait rien » est une information clinique, souvent la meilleure.' },
+      { t:'La case « Inclure au CR »', x:'En haut à droite des blocs Overhead squat et Squat unipodal, dans l\'Analyse fonctionnelle. Cochée, elle fait figurer le test au compte-rendu avec la mention « Aucune compensation », même si rien d\'autre n\'est renseigné.' },
+      { t:'Vous connaissez déjà ce mécanisme', x:'C\'est le même que « Inclure dans le CR » du Test de Réception et de la Pliométrie qualitative.' }
+    ]},
   { id:'outils-onglets', titre:'L\'onglet Outils s\'ouvre sur le Générateur de CR',
     intro:'L\'ordre des onglets suit l\'usage, et l\'ouverture se fait sur le premier.',
     etapes:[

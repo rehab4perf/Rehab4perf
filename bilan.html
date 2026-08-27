@@ -935,6 +935,25 @@ td.bl-row-rail button:disabled { opacity: .3 !important; cursor: default; }
   display: flex; justify-content: space-between; align-items: center; gap: 8px;
   border-bottom: 1px solid var(--border);
 }
+/* Référence et case « Inclure au CR » forment le groupe de DROITE : avec
+   `space-between`, trois enfants directs se seraient répartis sur toute la
+   largeur, la référence flottant au milieu du titre. */
+.af-mright { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+/* Même intention que `.cr-toggle-label`, mais sur fond CLAIR : celle-ci est
+   écrite en blanc pour les en-têtes navy, elle serait invisible ici. */
+.af-cr-tog {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: .7rem; font-weight: 600; color: var(--text2);
+  cursor: pointer; white-space: nowrap; text-transform: none; letter-spacing: 0;
+  position: relative; min-height: 22px;
+}
+/* Cible tactile étendue sans toucher à la mise en page — l'en-tête ferait
+   sinon 44 px de haut pour une case de 14. */
+.af-cr-tog::before { content: ''; position: absolute; inset: -11px -6px; }
+.af-cr-tog input[type=checkbox] {
+  width: 14px; height: 14px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0;
+}
+.af-cr-tog:has(input:checked) { color: var(--accent); font-weight: 700; }
 .af-mref { font-size: .68rem; font-weight: 400; color: var(--text2); }
 .af-sub {
   padding: 6px 14px; background: var(--surface2);
@@ -5915,7 +5934,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260806i"></script>
-<script src="js/bilan.js?v=20260825r"></script>
+<script src="js/bilan.js?v=20260825s"></script>
 
 </body>
 </html>

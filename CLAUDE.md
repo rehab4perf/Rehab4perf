@@ -785,6 +785,25 @@ chaîne vide : sinon l'analyse de course se scinde en deux, « Conditions » et
 « Cadence » n'ayant pas de côté et ouvrant un premier lot avant « Zone
 d'attaque ».
 
+### Un examen parfait doit se lire
+
+Sans case cochée ni observation, la ligne d'analyse fonctionnelle **n'apparaît
+pas** au CR — indiscernable d'un test non fait. Or « je l'ai regardé et il n'y
+avait rien » est une information clinique.
+
+Deux cases « Inclure au CR » (`af-mi-ohs-cr`, `af-mi-sls-cr`) forcent
+l'apparition de la ligne. C'est le mécanisme déjà en place pour les tests
+fonctionnels — `rec-cr-toggle`, `plioq-cr-toggle` — repris à l'identique plutôt
+que réinventé.
+
+Trois endroits devaient suivre, et **chacun aurait suffi à faire disparaître la
+ligne** :
+
+- la condition d'affichage dans `_buildAllTestsHtml` ;
+- le statut de l'Overhead squat, qui rendait « 0 compensations » ;
+- `_crMedResumeTests`, qui jetait toute ligne sans valeur texte — or une
+  analyse fonctionnelle vide n'a pas de texte, son statut porte tout.
+
 ### `v.af` présent, MÊME VIDE, veut dire « analyse fonctionnelle »
 
 La condition exigeait au moins une compensation. Un patient **sans aucune

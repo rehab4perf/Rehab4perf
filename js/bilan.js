@@ -315,7 +315,12 @@ function _crMedResumeTests() {
         var val = v.texte;
         cle = cle.trim();
         // Conclusions, marqueurs et notes ne sont pas des tests.
-        if (!cle || !val) return;
+        /* Une ligne d'analyse fonctionnelle SANS texte reste porteuse : son
+           statut dit « Aucune compensation ». La jeter parce que sa valeur est
+           vide reproduirait le defaut qu'on vient de corriger un etage plus
+           haut — un examen parfait qui disparait. */
+        if (!cle) return;
+        if (!val && !(v.af && v.af.lignes)) return;
         if (/^(Conclusion|Marqueur|Notes?)$/i.test(cle)) return;
         var _entree = { cle: cle, label: _crMedLabel(cle), geste: _crMedGeste(cle),
                         valeur: val, cellules: v.cellules || [],
@@ -7859,7 +7864,11 @@ function _buildAllTestsHtml() {
     return obs ? '<span class="cr-af-obs"> — ' + nl2br(obs) + '</span>' : '';
   };
   var _afRows = '';
-  if (_ohsTxt || _ohs.obs || _ohs.rows.length) {
+  /* La case « Inclure au CR » fait apparaitre la ligne meme sans rien de
+     coche : un examen ou tout est parfait doit se lire, sans quoi il est
+     indiscernable d'un test non fait. */
+  var _ohsForce = (document.getElementById('af-mi-ohs-cr') || {}).checked;
+  if (_ohsTxt || _ohs.obs || _ohs.rows.length || _ohsForce) {
     var _ohsOk = _ohs.rows.filter(function(r){ return r.type === 'ok'; });
     var _ohsKo = _ohs.rows.filter(function(r){ return r.type === 'ko'; });
     var _liOhs = function(r){
@@ -7882,11 +7891,13 @@ function _buildAllTestsHtml() {
     _ohsHtml += '</div>';
     var _ohsTone = _afOhsTone(_ohs);
     _afRows += crItem('Overhead squat', _ohsHtml,
-      _ohs.ko.length + ' compensation' + (_ohs.ko.length > 1 ? 's' : ''),
+      _ohs.ko.length ? _ohs.ko.length + ' compensation' + (_ohs.ko.length > 1 ? 's' : '')
+                     : 'Aucune compensation',
       _ohsTone === 'muted' ? '' : _ohsTone,
       _ohsFieldIds);
   }
-  if (_slsQTxt || _slsQ.obs || _slsQ.obsG || _slsQ.obsD || _slsQ.rows.length) {
+  var _slsForce = (document.getElementById('af-mi-sls-cr') || {}).checked;
+  if (_slsQTxt || _slsQ.obs || _slsQ.obsG || _slsQ.obsD || _slsQ.rows.length || _slsForce) {
     // Grille G/D : le côté est l'information clé du squat unipodal, une liste
     // à puces obligerait à répéter « à gauche / à droite » sur chaque ligne.
     var _slsHtml = '<div class="cr-af"><div class="cr-af-tbl">'
@@ -10269,7 +10280,17 @@ function _afRender(){
     var h = '';
     // ── Overhead squat (bilatéral) ──
     h += '<div class="af-mtitle"><span>Overhead squat</span>'
-       + '<span class="af-mref">Hernández-García 2020 — protocole BFA</span></div>';
+       + '<span class="af-mright">'
+       + '<span class="af-mref">Hernández-García 2020 — protocole BFA</span>'
+       /* Un examen ou TOUT est parfait ne laisse aucune trace : sans case
+          cochee ni observation, la ligne n'apparait pas au CR — indiscernable
+          d'un test non fait. Cette case dit « je l'ai regarde, et il n'y avait
+          rien ». Meme mecanisme que « Inclure dans le CR » des tests
+          fonctionnels (`rec-cr-toggle`, `plioq-cr-toggle`). */
+       + '<label class="af-cr-tog" title="Fait apparaitre ce test au compte-rendu meme sans compensation">'
+       +   '<input type="checkbox" id="af-' + p.pg + '-ohs-cr">'
+       +   '<span>Inclure au CR</span></label>'
+       + '</span>' + '</div>';
     AF_OHS_GROUPS.forEach(function(g){
       h += '<div class="af-sub">' + g.title + '</div>';
       g.items.forEach(function(it){
@@ -10290,7 +10311,17 @@ function _afRender(){
     h += '<div class="af-synth" id="af-' + p.pg + '-ohs-synth">—</div>';
     // ── Squat unipodal (par côté) ──
     h += '<div class="af-mtitle" style="border-top:2px solid var(--border)"><span>Squat unipodal</span>'
-       + '<span class="af-mref">Crossley 2011</span></div>';
+       + '<span class="af-mright">'
+       + '<span class="af-mref">Crossley 2011</span>'
+       /* Un examen ou TOUT est parfait ne laisse aucune trace : sans case
+          cochee ni observation, la ligne n'apparait pas au CR — indiscernable
+          d'un test non fait. Cette case dit « je l'ai regarde, et il n'y avait
+          rien ». Meme mecanisme que « Inclure dans le CR » des tests
+          fonctionnels (`rec-cr-toggle`, `plioq-cr-toggle`). */
+       + '<label class="af-cr-tog" title="Fait apparaitre ce test au compte-rendu meme sans compensation">'
+       +   '<input type="checkbox" id="af-' + p.pg + '-sls-cr">'
+       +   '<span>Inclure au CR</span></label>'
+       + '</span>' + '</div>';
     h += '<div class="af-row2 af-sub" style="padding:6px 22px"><span>Compensation observée</span>'
        + '<span style="text-align:center">G</span><span style="text-align:center">D</span>'
        + '<span>Observation</span></div>';
