@@ -208,7 +208,7 @@ sections: [
     etapes:[
       { t:'Trois critères décident', x:'Le talon au-delà du repère de 80 %, la descente fluide jusqu\'à 90° et le maintien statique 3 s conditionnent la réussite. S\'il en manque un, d\'un côté ou de l\'autre, le test est « Non acquis ».' },
       { t:'Ils ne figurent plus dans le courrier', x:'Leur détail n\'apprend rien au médecin, qui veut savoir si le test est passé. La mention « Acquis » ou « Non acquis » les résume.' },
-      { t:'Le valgus et le contrôle du tronc restent', x:'Ces deux-là sont observés à titre indicatif : ils ne font pas basculer le verdict, mais ils orientent le travail. Ils restent donc en sous-lignes, avec leurs deux côtés.' },
+      { t:'Le valgus et le contrôle du tronc ne sortent que s\'ils font défaut', x:'Ces deux-là sont observés à titre indicatif : ils ne font pas basculer le verdict, mais ils orientent le travail. Ils n\'apparaissent en sous-ligne que lorsqu\'ils manquent — le courrier énonce ce qui fait défaut, pas ce qui va bien, exactement comme pour les compensations. La pastille rouge désigne alors le côté concerné, et l\'intitulé nomme le défaut : « Valgus dynamique du genou », « Contrôle du tronc insuffisant ».' },
       { t:'Le « 5/5 » disparaît du courrier', x:'Il comptait cinq critères alors que le courrier n\'en montre plus que deux — sous deux lignes, il se lisait de travers.' },
       { t:'Votre bilan, lui, garde tout', x:'La grille complète et le score par côté restent affichés dans le CR du bilan : c\'est vous qui les lisez. Seul le courrier au médecin tranche.' }
     ]},

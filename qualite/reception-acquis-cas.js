@@ -60,6 +60,8 @@ console.log('\n  Quels critères conditionnent la réussite');
   verifie('le maintien 3 s conditionne',       'true',      String(!!critRec[2].acquis));
   verifie('le valgus reste indicatif',         'undefined', String(critRec[3].acquis));
   verifie('le contrôle du tronc reste indicatif', 'undefined', String(critRec[4].acquis));
+  verifie('le valgus porte son libellé de défaut', 'Valgus dynamique du genou', critRec[3].defaut);
+  verifie('le tronc porte le sien',  'Contrôle du tronc insuffisant', critRec[4].defaut);
 }
 
 /* ── Le verdict ──────────────────────────────────────────────────────────── */
@@ -67,7 +69,8 @@ function grille(etats) {
   /* etats : [[g,d], …] dans l'ordre de CRITERIA_REC */
   return {
     af: critRec.map(function (c, i) {
-      return { label: c.label.trim(), g: etats[i][0], d: etats[i][1], acquis: !!c.acquis };
+      return { label: c.label.trim(), g: etats[i][0], d: etats[i][1],
+             acquis: !!c.acquis, defaut: c.defaut || '' };
     }),
     statut: 'Incomplet',
     notes: ['Côté sain 5/5 · Côté atteint 5/5']
@@ -101,25 +104,43 @@ console.log('\n  Le verdict est binaire, et lit les DEUX côtés');
   });
 }
 
-console.log('\n  Ce que le courrier montre encore');
+console.log('\n  Le courrier n\'énonce que ce qui fait défaut');
 {
+  /* Un critère indicatif VALIDÉ ne se dit pas : le courrier énonce ce qui
+     manque, pas ce qui va bien. C'est la règle déjà posée pour les
+     compensations. */
+  var e = grille(TOUT); crit(e);
+  verifie('tout validé → aucune sous-ligne', 0, e.af.length);
+  verifie('le verdict reste', 'Acquis', e.statut);
+
   var etats = TOUT.map(function (p) { return p.slice(); });
   etats[3][1] = false;                         // valgus non contrôlé à droite
-  var e = grille(etats); crit(e);
-  verifie('deux sous-lignes seulement', 2, e.af.length);
-  verifie('le valgus reste',        'true', String(/valgus/i.test(e.af[0].label)));
-  verifie('le contrôle du tronc reste', 'true', String(/tronc/i.test(e.af[1].label)));
+  var f = grille(etats); crit(f);
+  verifie('seul le critère en défaut sort', 1, f.af.length);
+  verifie('avec son libellé de défaut', 'Valgus dynamique du genou', f.af[0].label);
+  /* Dans la grille une pastille marque un critère RÉUSSI ; ici la ligne
+     n'existe que parce qu'il manque. Transmettre les côtés tels quels
+     poserait la pastille sur le côté sain — exactement à l'envers. */
+  verifie('la pastille marque le côté où le défaut est', 'false,true',
+          String(f.af[0].g) + ',' + String(f.af[0].d));
+  verifie('les lignes transmises sont des défauts', 'compensation', f.afMode);
   verifie('aucun critère conditionnant ne subsiste', 0,
-          e.af.filter(function (l) { return l.acquis; }).length);
-  verifie('les côtés du critère indicatif sont conservés', 'true,false',
-          String(e.af[0].g) + ',' + String(e.af[0].d));
-  /* « 5/5 » compterait cinq critères sous deux lignes affichées. */
-  verifie('la synthèse chiffrée est retirée', 0, e.notes.length);
+          f.af.filter(function (l) { return l.acquis; }).length);
+  /* « 5/5 » compterait cinq critères sous une seule ligne affichée. */
+  verifie('la synthèse chiffrée est retirée', 0, f.notes.length);
+
+  var etats2 = TOUT.map(function (p) { return p.slice(); });
+  etats2[4][0] = false; etats2[4][1] = false;  // tronc non contrôlé des deux côtés
+  var g2 = grille(etats2); crit(g2);
+  verifie('un défaut bilatéral marque les deux côtés', 'true,true',
+          String(g2.af[0].g) + ',' + String(g2.af[0].d));
+  verifie('avec son libellé de défaut', 'Contrôle du tronc insuffisant', g2.af[0].label);
 }
 
 console.log('\n  Une grille sans critère conditionnant n\'est pas touchée');
 {
-  var e = { af: [{ label: 'Genou — valgus', g: true, d: false }], statut: 'Incomplet', notes: ['x'] };
+  var e = { af: [{ label: 'Genou — valgus', g: true, d: false }],
+            statut: 'Incomplet', notes: ['x'], afMode: 'compensation' };
   crit(e);
   verifie('statut inchangé', 'Incomplet', e.statut);
   verifie('lignes inchangées', 1, e.af.length);
@@ -140,8 +161,11 @@ console.log('\n  L\'attribut traverse la grille HTML');
   }
   var cells = [cell('Critère'), cell('Côté sain'), cell('Côté atteint')];
   critRec.forEach(function (c, i) {
-    cells.push(cell(c.label.trim(), c.acquis ? { 'data-crit': 'acquis' } : null));
-    cells.push(cell(i === 3 ? '·' : '●'));
+    var at = {};
+    if (c.acquis) at['data-crit'] = 'acquis';
+    if (c.defaut) at['data-defaut'] = c.defaut;
+    cells.push(cell(c.label.trim(), at));
+    cells.push(cell(i === 3 ? '·' : '●', c.defaut ? { 'data-defaut': c.defaut } : null));
     cells.push(cell('●'));
   });
   var tbl = { getAttribute: function (a) { return a === 'data-af-mode' ? 'critere' : null; }, children: cells };
@@ -157,10 +181,13 @@ console.log('\n  L\'attribut traverse la grille HTML');
 
   /* Le round-trip complet : grille → relecture → verdict. Le valgus manque à
      gauche, mais il est indicatif : le test reste acquis. */
+  verifie('le libellé de défaut traverse aussi', 'Valgus dynamique du genou',
+          lu.lignes[3].defaut);
   var e = { af: lu.lignes, statut: 'Incomplet', notes: ['Côté sain 4/5 · Côté atteint 5/5'] };
   crit(e);
   verifie('verdict de bout en bout', 'Acquis', e.statut);
-  verifie('deux sous-lignes de bout en bout', 2, e.af.length);
+  verifie('une seule sous-ligne de bout en bout', 1, e.af.length);
+  verifie('c\'est bien le défaut relevé', 'Valgus dynamique du genou', e.af[0].label);
 }
 
 /* ── Garde-fous textuels ─────────────────────────────────────────────────── */
@@ -173,6 +200,19 @@ console.log('\n  Garde-fous — la règle doit être appelée');
           /c\.acquis \? ' data-crit="acquis"' : ''/.test(sansCom) + '');
   verifie('la relecture lit bien data-crit', 'true',
           /getAttribute\('data-crit'\) === 'acquis'/.test(sansCom) + '');
+  /* Le round-trip fabrique ses propres cellules : il verifie que le LECTEUR
+     sait lire l'attribut, jamais que la grille l'ECRIT. Retirer l'ecriture
+     restait donc vert — et le courrier serait retombe sur le libelle du
+     formulaire, qui ne dit pas si le controle est present ou absent. */
+  verifie('la grille écrit bien data-defaut', 'true',
+          /' data-defaut="' \+ c\.defaut/.test(sansCom) + '');
+  verifie('la relecture lit bien data-defaut', 'true',
+          /getAttribute\('data-defaut'\)/.test(sansCom) + '');
+  /* La section du Test de Reception depend de sa GRILLE. Keyer sur
+     `_entree.afMode`, que `_crMedCriteres` bascule, l'expedierait sous
+     « Analyse fonctionnelle » le jour ou l'ordre des lignes changerait. */
+  verifie('la zone se decide sur le mode source', 'true',
+          /if \(v\.af\.mode === 'compensation'\)/.test(sansCom) + '');
   /* Le bilan garde sa grille entiere et son score : c'est le praticien qui la
      lit. Meme partage que le score sur sept de l'analyse fonctionnelle. */
   verifie('le CR du bilan garde ses cinq lignes', 'true',

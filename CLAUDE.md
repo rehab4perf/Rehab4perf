@@ -949,8 +949,28 @@ d'un côté ou de l'autre, et le test n'est pas acquis : il se passe sur chaque
 jambe. Le badge du bilan, lui, ne lit que le côté atteint ; ne pas l'aligner
 sans le praticien.
 
+**Un critère indicatif VALIDÉ ne se dit pas non plus.** Le courrier énonce ce
+qui fait défaut, pas ce qui va bien — la règle des compensations, appliquée
+ici. Ne sortent donc que les indicatifs qui manquent d'au moins un côté.
+
+**Les côtés sont INVERSÉS au passage.** Dans la grille, une pastille marque un
+critère *réussi* ; dans le courrier, la ligne n'existe que parce qu'il manque,
+et la pastille doit désigner le côté **où il manque**. La transmettre telle
+quelle la poserait sur le côté sain. `afMode` bascule donc en `compensation` :
+c'est ce que ces lignes disent désormais, et c'est ce qui leur donne la
+pastille rouge du défaut plutôt que la verte de la réussite.
+
+**Le libellé suit** (`defaut:` sur le critère) : « Contrôle du tronc (TSB) »
+sous une pastille rouge ne dit pas si le contrôle est présent ou absent. Il
+devient « Contrôle du tronc insuffisant ».
+
+**La zone se décide sur `v.af.mode`, pas sur `_entree.afMode`** — ce dernier
+décrit ce que les lignes transmises veulent dire, et `_crMedCriteres` le
+bascule. La section du Test de Réception dépend de sa GRILLE, pas de ce qu'on
+en tire.
+
 **La synthèse chiffrée part avec eux.** « Côté sain 5/5 » compte cinq critères
-alors que le courrier n'en montre plus que deux.
+alors que le courrier n'en montre plus qu'un ou deux — souvent aucun.
 
 **L'attribut voyage entre deux fonctions** : la grille écrit `data-crit`,
 `_crMedAnalyseFonc` le relit. Un nom qui diverge ne casse rien — plus aucun

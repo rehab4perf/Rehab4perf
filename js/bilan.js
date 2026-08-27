@@ -182,7 +182,8 @@ function _crMedAnalyseFonc(el) {
       var d = /●/.test(cells[i + 2].textContent || '');
       if (mode !== 'critere' && !g && !d) continue;
       lignes.push({ label: (cells[i].textContent || '').replace(/\s+/g, ' ').trim(), g: g, d: d,
-                    acquis: cells[i].getAttribute('data-crit') === 'acquis' });
+                    acquis: cells[i].getAttribute('data-crit') === 'acquis',
+                    defaut: cells[i].getAttribute('data-defaut') || '' });
     }
   }
   /* Liste a puces de l'Overhead squat : seules les CROIX comptent — un critere
@@ -359,7 +360,24 @@ function _crMedCriteres(entree) {
   if (!conditionnants.length) return;          // grille sans critere conditionnant
   var acquis = conditionnants.every(function (l) { return l.g && l.d; });
   entree.statut = acquis ? 'Acquis' : 'Non acquis';
-  entree.af = lignes.filter(function (l) { return !l.acquis; });
+  /* Un critere indicatif VALIDE ne se dit pas — c'est la regle deja posee pour
+     les compensations : le courrier enonce ce qui fait defaut, pas ce qui va
+     bien. Ne restent donc que ceux qui manquent d'au moins un cote.
+
+     Les cotes sont INVERSES au passage. Dans la grille, une pastille marque un
+     critere REUSSI ; ici la ligne n'existe que parce qu'il manque, et la
+     pastille doit designer le cote OU IL MANQUE. La transmettre telle quelle
+     la poserait sur le cote sain — exactement a l'envers.
+
+     `afMode` bascule donc en `compensation` : c'est ce que ces lignes disent
+     desormais, et c'est ce qui leur donne la pastille rouge du defaut plutot
+     que la verte de la reussite. Le libelle suit — « Contrôle du tronc (TSB) »
+     sous une pastille rouge ne dit pas si le controle est present ou absent. */
+  entree.af = lignes.filter(function (l) { return !l.acquis && !(l.g && l.d); })
+                    .map(function (l) {
+                      return { label: l.defaut || l.label, g: !l.g, d: !l.d };
+                    });
+  entree.afMode = 'compensation';
   entree.notes = [];                            // « 5/5 » ne compte plus ce qu'on montre
 }
 
@@ -435,7 +453,12 @@ function _crMedResumeTests() {
 
              Le membre est NOMME : l'analyse fonctionnelle ne porte que sur le
              membre inferieur (AF_PAGES), et rien dans le courrier ne le disait. */
-          if (_entree.afMode === 'compensation') {
+          /* Sur le mode SOURCE, jamais sur `_entree.afMode` : ce dernier decrit
+             ce que les lignes TRANSMISES veulent dire, et `_crMedCriteres` le
+             bascule en `compensation` des lors qu'il n'envoie plus que des
+             defauts. Les deux se liraient pareil aujourd'hui, mais la section
+             du Test de Reception depend de sa GRILLE, pas de ce qu'on en tire. */
+          if (v.af.mode === 'compensation') {
             _entree.zone = 'Analyse fonctionnelle du membre inférieur — qualité du mouvement';
           }
           // `[].concat` : une chaine deviendrait un tableau d'une ligne, la ou
@@ -1051,8 +1074,10 @@ const CRITERIA_REC = [
   {label:' Le talon a dépassé le repère de 80%', ref:'Critère de distance', acquis:true},
   {label:' Descente fluide sans arrêt jusqu\'à 90°', ref:'Myer 2008', acquis:true},
   {label:' Maintien statique 3s à 90°', ref:'Schmitt 2012', acquis:true},
-  {label:' Contrôle neuromusculaire du genou (valgus dynamique)', ref:'Hewett 2005 (AJSM)'},
-  {label:' Contrôle du tronc (TSB)', ref:'Trunk Sway & Balance'},
+  {label:' Contrôle neuromusculaire du genou (valgus dynamique)', ref:'Hewett 2005 (AJSM)',
+   defaut:'Valgus dynamique du genou'},
+  {label:' Contrôle du tronc (TSB)', ref:'Trunk Sway & Balance',
+   defaut:'Contrôle du tronc insuffisant'},
 ];
 
 const MOB = ['Flexion','Extension','Incl. D','Incl. G','Rot. D','Rot. G'];
@@ -8162,7 +8187,9 @@ function _buildAllTestsHtml() {
     CRITERIA_REC.forEach(function(c, i){
       var okCS = (document.getElementById('rec-cs-'+i)||{}).checked;
       var okCA = (document.getElementById('rec-ca-'+i)||{}).checked;
-      _recHtml += '<div' + (c.acquis ? ' data-crit="acquis"' : '') + '>' + nl2br(c.label.trim()) + '</div>'
+      _recHtml += '<div' + (c.acquis ? ' data-crit="acquis"' : '')
+                 + (c.defaut ? ' data-defaut="' + c.defaut.replace(/"/g, '&quot;') + '"' : '')
+                 + '>' + nl2br(c.label.trim()) + '</div>'
         + '<div class="c ' + (okCS ? 'on' : 'off') + '">' + (okCS ? '●' : '·') + '</div>'
         + '<div class="c ' + (okCA ? 'on' : 'off') + '">' + (okCA ? '●' : '·') + '</div>';
     });
