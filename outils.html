@@ -451,6 +451,14 @@ body.cr-resizing { cursor: col-resize; user-select: none; }
   font-size: .65rem; font-weight: 700; text-transform: uppercase;
   letter-spacing: .05em; color: var(--text2);
 }
+/* La case et son intitule sur une ligne : l'etiquette de `.cr-fg` est en
+   petites capitales, elle sert telle quelle de libelle a la case. */
+.cr-eva-lbl { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.cr-eva-lbl input[type="checkbox"] { width: auto; margin: 0; cursor: pointer; accent-color: var(--accent); }
+/* Decochee, l'EVA reste ecrite mais ne partira pas au courrier — le champ
+   s'attenue pour le dire, plutot que de se vider. */
+.cr-eva-fg:has(#cr-eva-inc:not(:checked)) #cr-eva-txt { opacity: .45; }
+
 .cr-fg input[type="text"], .cr-fg input[type="date"],
 .cr-fg input[type="number"], .cr-fg select, .cr-fg textarea {
   border: 1.5px solid var(--border); border-radius: var(--radius-sm);
@@ -1337,6 +1345,17 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
             <button class="cr-amp-cfg-btn" onclick="crOpenSignConfig()" title="Configurer les signes (admin)" style="font-size:.7rem;padding:3px 7px;">⚙</button>
           </div>
           <div id="cr-sign-rows-container"></div>
+          <!-- L'EVA se reprenait du bilan dans « Precisions », melee aux
+               remarques libres : pour la retirer du courrier il fallait
+               l'effacer, et la reprendre imposait de la retaper. Elle a son
+               champ et sa case. -->
+          <div class="cr-fg cr-eva-fg" style="margin-top:8px">
+            <label class="cr-eva-lbl" for="cr-eva-inc">
+              <input type="checkbox" id="cr-eva-inc" checked onchange="crUpdateBlocks()">
+              <span>Douleur (EVA)</span>
+            </label>
+            <input type="text" id="cr-eva-txt" placeholder="EVA repos : …/10">
+          </div>
           <div class="cr-fg" style="margin-top:8px">
             <label for="cr-signes-libre">Précisions</label>
             <input type="text" id="cr-signes-libre" placeholder="Remarques cliniques complémentaires…">
@@ -6465,7 +6484,18 @@ _updateOutilsPatientBtns();
     'table.lt-t tr.lt-af-sub td{border-bottom:none;padding:1px 8px}',
     'table.lt-t tr.lt-af-sub:last-child td{border-bottom:none}',
     'table.lt-t tr.lt-af-sub td.lbl{padding-left:24px;font-weight:400;color:#6B6860;font-size:.74rem}',
-    'table.lt-t td.lt-af-sy{font-style:italic;color:#9D9B96;font-size:.72rem;padding-top:2px}',
+    /* Une observation n'est PAS un critere de plus. Elle portait pourtant le
+       meme retrait et la meme forme de ligne : « Droit : execution hyper
+       correct » se lisait comme une compensation supplementaire, sous la
+       colonne de laquelle elle n'a d'ailleurs aucune pastille.
+
+       Trois marques la separent : de l'air au-dessus, un filet vertical qui la
+       designe comme un propos rapporte, et un retrait plus profond que celui
+       des criteres. Aucune n'occupe de ligne de tableau — la mise en page ne
+       bouge pas. */
+    'table.lt-t td.lt-af-sy{font-style:italic;color:#9D9B96;font-size:.72rem;padding-top:6px}',
+    'table.lt-t tr.lt-af-obs + tr.lt-af-obs td.lt-af-sy{padding-top:2px}',
+    'table.lt-t td.lt-af-sy > span{display:inline-block;border-left:2px solid #DCD9D2;padding-left:8px}',
     'table.lt-t tr.lt-af-sub + tr:not(.lt-af-sub) td{border-top:1px solid #E8E6E1}',
     '.lt-af-pt{color:#C0392B;font-weight:700;font-size:.7rem}',
     '.lt-af-pt.ok{color:#2D6A4F}',
@@ -6554,8 +6584,10 @@ _updateOutilsPatientBtns();
             var cote = (c.g && c.d) ? ' (gauche et droite)' : (c.g ? ' (gauche)' : (c.d ? ' (droite)' : ''));
             out.push('      - ' + c.label + cote);
           });
+          /* Deux espaces de plus que les criteres : colle au meme retrait,
+             une observation se lit comme un critere sans pastille. */
           ((b.notes && b.notes.length) ? b.notes : (b.note ? [b.note] : []))
-            .forEach(function (l) { out.push('      ' + l); });
+            .forEach(function (l) { out.push('        ' + l); });
           return;
         }
         var det = (b.cellules || []).filter(function (c) { return c.valeur; })
@@ -6757,8 +6789,9 @@ _updateOutilsPatientBtns();
                    : '<td class="obs"></td>')
                + '<td class="s"></td></tr>';
           });
-          if (t.note) h += '<tr class="lt-af-sub"><td class="lbl lt-af-sy" colspan="'
-                        + (2 + Math.max(entetes.length, 1)) + '">' + _crEsc(t.note) + '</td></tr>';
+          if (t.note) h += '<tr class="lt-af-sub lt-af-obs"><td class="lbl lt-af-sy" colspan="'
+                        + (2 + Math.max(entetes.length, 1)) + '"><span>'
+                        + _crEsc(t.note) + '</span></td></tr>';
           return;
         }
         var _vide = entetes.every(function (e) { return !par[e]; });
@@ -6784,8 +6817,9 @@ _updateOutilsPatientBtns();
              deux fois avant de voir ou l'un finit. */
           var _sy = (t.notes && t.notes.length) ? t.notes : (t.note ? [t.note] : []);
           _sy.forEach(function (ligne) {
-            h += '<tr class="lt-af-sub"><td class="lbl lt-af-sy" colspan="'
-               + (2 + Math.max(entetes.length, 1)) + '">' + _crEsc(ligne) + '</td></tr>';
+            h += '<tr class="lt-af-sub lt-af-obs"><td class="lbl lt-af-sy" colspan="'
+               + (2 + Math.max(entetes.length, 1)) + '"><span>'
+               + _crEsc(ligne) + '</span></td></tr>';
           });
           return;
         }
@@ -7018,10 +7052,12 @@ _updateOutilsPatientBtns();
     var valideSigns = [], coursSigns = [];
     signDefs.forEach(function(s){ if(crSigns[s.key]===1) valideSigns.push(s.valide); else if(crSigns[s.key]===2) coursSigns.push(s.cours); });
     var signesLibre = crV('cr-signes-libre');
-    if (valideSigns.length || coursSigns.length || signesLibre) {
+    var evaTxt = _crEvaRetenue();
+    if (valideSigns.length || coursSigns.length || signesLibre || evaTxt) {
       var _itSig = [];
       valideSigns.forEach(function(s){ _itSig.push({ ic: '✓', txt: s }); });
       coursSigns.forEach(function(s){ _itSig.push({ ic: '⟳', txt: s }); });
+      if (evaTxt) _itSig.push({ ic: '', txt: evaTxt });
       if (signesLibre) _itSig.push({ ic: '', txt: signesLibre });
       lines.push({ t: 'liste', titre: 'Signes cliniques', items: _itSig });
     }
@@ -7179,10 +7215,12 @@ _updateOutilsPatientBtns();
     var valideSigns = [], coursSigns = [];
     signDefs.forEach(function(s){ if(crSigns[s.key]===1) valideSigns.push(s.valide); else if(crSigns[s.key]===2) coursSigns.push(s.cours); });
     var signesLibre = crV('cr-signes-libre');
-    if (valideSigns.length || coursSigns.length || signesLibre) {
+    var evaTxt = _crEvaRetenue();
+    if (valideSigns.length || coursSigns.length || signesLibre || evaTxt) {
       var _itSig = [];
       valideSigns.forEach(function(s){ _itSig.push({ ic: '✓', txt: s }); });
       coursSigns.forEach(function(s){ _itSig.push({ ic: '⟳', txt: s }); });
+      if (evaTxt) _itSig.push({ ic: '', txt: evaTxt });
       if (signesLibre) _itSig.push({ ic: '', txt: signesLibre });
       lines.push({ t: 'liste', titre: 'Signes cliniques', items: _itSig });
     }
@@ -7470,6 +7508,15 @@ _updateOutilsPatientBtns();
      depuis le nouveau — les effacer juste avant n'aurait pas de sens. Le
      bouton « Réinit. », lui, les vide aussi : il sert a partir sur quelqu'un
      qui n'est pas dans la patientele. */
+  /* L'EVA n'entre au courrier que si la case est cochee. Elle reste ecrite
+     dans son champ quand on la decoche — on la remet d'un clic, sans avoir a
+     la retaper. Meme contrat que les cases « Inclure au CR » du bilan. */
+  function _crEvaRetenue() {
+    var c = document.getElementById('cr-eva-inc');
+    if (c && !c.checked) return '';
+    return crV('cr-eva-txt');
+  }
+
   var CR_IDENTITE = ['cr-pat-civ','cr-pat-nom','cr-pat-prenom','cr-pat-dob'];
 
   /* Le vidage est CADRE sur #panel-cr, jamais ecrit en liste de champs : un
@@ -7481,6 +7528,10 @@ _updateOutilsPatientBtns();
     document.querySelectorAll('#panel-cr input[type="text"], #panel-cr input[type="date"], #panel-cr input[type="number"]').forEach(function(el){ if (garde.indexOf(el.id) < 0) el.value = ''; });
     document.querySelectorAll('#panel-cr select').forEach(function(el){ if (garde.indexOf(el.id) < 0) el.value = ''; });
     document.querySelectorAll('#panel-cr textarea').forEach(function(el){ el.value = ''; crAutoExpand(el); });
+    /* Les cases ne sont pas couvertes par le vidage des champs texte. Sans
+       cela, une EVA decochee le restait pour le patient suivant. */
+    var _evaInc = document.getElementById('cr-eva-inc');
+    if (_evaInc) _evaInc.checked = true;
     crPathos = [];
     crPatientSexe = '';
     /* Le destinataire revient au MEDECIN a chaque remise a zero. Un courrier au
@@ -7555,6 +7606,12 @@ _updateOutilsPatientBtns();
     var parts = [];
     document.querySelectorAll('#panel-cr input, #panel-cr select, #panel-cr textarea').forEach(function(el){
       if (CR_IDENTITE.indexOf(el.id) >= 0) return;
+      /* Cochee par defaut : la compter ferait passer le CR pour entame des
+         l'ouverture, et une confirmation s'ouvrirait a chaque changement de
+         patient sans que personne n'ait rien saisi. Meme piege que les cases
+         du bloc « Tests du bilan » juste en dessous. Ce qui compte — l'avoir
+         DECOCHEE — se lit dans le texte de l'EVA, qui lui est bien compte. */
+      if (el.id === 'cr-eva-inc') return;
       /* Un element sans `id` ni `name` n'est pas identifiable : plusieurs
          produiraient la meme entree, et l'empreinte se mettrait a compter des
          anonymes au lieu de les nommer.
@@ -7747,12 +7804,12 @@ _updateOutilsPatientBtns();
       // ── EVA → signes libres ───────────────────────────────────
       var eva = (bilan['f-eva'] || '').toString().trim();
       var evaMax = (bilan['f-eva-max'] || '').toString().trim();
-      var signesEl = document.getElementById('cr-signes-libre');
-      if (signesEl && (eva || evaMax) && !signesEl.value.trim()) {
+      var evaEl = document.getElementById('cr-eva-txt');
+      if (evaEl && (eva || evaMax) && !evaEl.value.trim()) {
         var evaStr = '';
         if (eva) evaStr = 'EVA repos : ' + eva + '/10';
         if (evaMax) evaStr += (evaStr ? ' — ' : '') + 'EVA max : ' + evaMax + '/10';
-        signesEl.value = evaStr;
+        evaEl.value = evaStr;
         filled++;
       }
 

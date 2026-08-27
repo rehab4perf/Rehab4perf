@@ -82,12 +82,17 @@ console.log('\n  Le verdict est binaire, et lit les DEUX côtés');
 {
   var e = grille(TOUT); crit(e);
   verifie('tout validé → Acquis', 'Acquis', e.statut);
+  /* Le NIVEAU pilote la couleur du badge dans le courrier. Il venait du
+     decompte du bilan — « 3/5 » y vaut `warn`, donc un badge ambre — alors que
+     le courrier annonce « Non acquis » : un verdict binaire ne se nuance pas. */
+  verifie('acquis → badge vert', 'ok', e.niveau);
 
   [0, 1, 2].forEach(function (i) {
     var etats = TOUT.map(function (p) { return p.slice(); });
     etats[i][1] = false;                       // manque du côté droit
     var x = grille(etats); crit(x);
     verifie('critère conditionnant ' + (i + 1) + ' manquant à droite → Non acquis', 'Non acquis', x.statut);
+    verifie('non acquis → badge rouge', 'bad', x.niveau);
     var etats2 = TOUT.map(function (p) { return p.slice(); });
     etats2[i][0] = false;                      // manque du côté gauche
     var y = grille(etats2); crit(y);

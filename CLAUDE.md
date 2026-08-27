@@ -969,6 +969,11 @@ décrit ce que les lignes transmises veulent dire, et `_crMedCriteres` le
 bascule. La section du Test de Réception dépend de sa GRILLE, pas de ce qu'on
 en tire.
 
+**Le NIVEAU suit le verdict, pas le décompte.** Il venait de la pastille du
+bilan — « 3/5 » y vaut `warn`, donc un badge ambre — alors que le courrier
+n'annonce plus « incomplet » mais « non acquis » : un verdict binaire ne se
+nuance pas en orange.
+
 **La synthèse chiffrée part avec eux.** « Côté sain 5/5 » compte cinq critères
 alors que le courrier n'en montre plus qu'un ou deux — souvent aucun.
 

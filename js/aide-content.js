@@ -203,12 +203,21 @@ sections: [
       { t:'Les pastilles sont vertes', x:'Ici une pastille signale une réussite, pas un défaut. Dans l\'analyse fonctionnelle elles sont rouges, parce qu\'elles signalent une compensation. Même forme, sens inverse.' },
       { t:'Le score reste, en petit', x:'« Côté sain 4/5 · Côté atteint 3/5 » figure sous la liste : le dénominateur y a un sens, contrairement au score sur sept de l\'analyse fonctionnelle.' }
     ]},
+  { id:'cr-eva', titre:'Inclure ou retirer l\'EVA du courrier',
+    intro:'La douleur reprise du bilan a son champ et sa case, au lieu d\'être mêlée aux remarques libres.',
+    etapes:[
+      { t:'Elle se reprend du bilan toute seule', x:'« EVA repos » et « EVA max » remplissent le champ « Douleur (EVA) » au changement de patient, comme les autres informations associées.' },
+      { t:'La case décide de ce qui part au médecin', x:'Décochez-la et l\'EVA ne figure plus au courrier — mais elle reste écrite dans son champ, grisée. Vous la remettez d\'un clic, sans avoir à la retaper. Avant, il fallait effacer le texte, donc le ressaisir pour le reprendre.' },
+      { t:'Elle n\'est plus dans « Précisions »', x:'Ce champ redevient ce qu\'il annonce : vos remarques cliniques à vous. L\'EVA ne s\'y mélange plus.' },
+      { t:'« ↺ Réinit. » la recoche', x:'Une EVA décochée pour un patient ne le reste pas pour le suivant.' }
+    ]},
   { id:'reception-acquis', titre:'Le Test de Réception au courrier : acquis ou non acquis',
     intro:'Le médecin lit un verdict, pas le détail des critères qui y mènent.',
     etapes:[
       { t:'Trois critères décident', x:'Le talon au-delà du repère de 80 %, la descente fluide jusqu\'à 90° et le maintien statique 3 s conditionnent la réussite. S\'il en manque un, d\'un côté ou de l\'autre, le test est « Non acquis ».' },
       { t:'Ils ne figurent plus dans le courrier', x:'Leur détail n\'apprend rien au médecin, qui veut savoir si le test est passé. La mention « Acquis » ou « Non acquis » les résume.' },
       { t:'Le valgus et le contrôle du tronc ne sortent que s\'ils font défaut', x:'Ces deux-là sont observés à titre indicatif : ils ne font pas basculer le verdict, mais ils orientent le travail. Ils n\'apparaissent en sous-ligne que lorsqu\'ils manquent — le courrier énonce ce qui fait défaut, pas ce qui va bien, exactement comme pour les compensations. La pastille rouge désigne alors le côté concerné, et l\'intitulé nomme le défaut : « Valgus dynamique du genou », « Contrôle du tronc insuffisant ».' },
+      { t:'« Non acquis » sort en rouge', x:'Le badge suivait le décompte du bilan — « 3/5 » y vaut un badge ambre. Le courrier annonce désormais un verdict binaire : vert s\'il est acquis, rouge sinon. Un verdict binaire ne se nuance pas en orange.' },
       { t:'Le « 5/5 » disparaît du courrier', x:'Il comptait cinq critères alors que le courrier n\'en montre plus que deux — sous deux lignes, il se lisait de travers.' },
       { t:'Votre bilan, lui, garde tout', x:'La grille complète et le score par côté restent affichés dans le CR du bilan : c\'est vous qui les lisez. Seul le courrier au médecin tranche.' }
     ]},

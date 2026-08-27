@@ -360,6 +360,11 @@ function _crMedCriteres(entree) {
   if (!conditionnants.length) return;          // grille sans critere conditionnant
   var acquis = conditionnants.every(function (l) { return l.g && l.d; });
   entree.statut = acquis ? 'Acquis' : 'Non acquis';
+  /* Le NIVEAU suit le verdict, pas le decompte. Il venait de la pastille du
+     bilan — « 3/5 » y vaut `warn`, donc un badge ambre — alors que le courrier
+     ne dit plus « incomplet » mais « non acquis » : un verdict binaire ne se
+     nuance pas en orange. */
+  entree.niveau = acquis ? 'ok' : 'bad';
   /* Un critere indicatif VALIDE ne se dit pas — c'est la regle deja posee pour
      les compensations : le courrier enonce ce qui fait defaut, pas ce qui va
      bien. Ne restent donc que ceux qui manquent d'au moins un cote.
