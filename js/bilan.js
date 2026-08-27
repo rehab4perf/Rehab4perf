@@ -3112,6 +3112,8 @@ function _blShowInheritedHints(mergedData, grise){
     if(el.tagName === 'SELECT'){
       var opt0 = el.options[0];
       if(opt0 && opt0.dataset.blOrigText !== undefined){ opt0.textContent = opt0.dataset.blOrigText; delete opt0.dataset.blOrigText; }
+    } else if(el.type === 'checkbox' || el.type === 'radio'){
+      el.removeAttribute('title');
     } else {
       el.placeholder = el.dataset.blOrigPlaceholder || '';
       delete el.dataset.blOrigPlaceholder;
@@ -3122,7 +3124,12 @@ function _blShowInheritedHints(mergedData, grise){
     var val = mergedData[id];
     if(val === undefined || val === null || val === '') return;
     var el = document.getElementById(id);
-    if(!el || el.value !== '') return;
+    if(!el) return;
+    /* « Champ vide » ne se dit pas pareil selon le controle : `value` vaut 'on'
+       sur une case a cocher meme decochee — la tester ici les ecartait toutes
+       avant meme d'atteindre leur branche. Pour elles, vide = non cochee. */
+    var estCase = (el.type === 'checkbox' || el.type === 'radio');
+    if(estCase ? el.checked : el.value !== '') return;
     if(el.tagName === 'SELECT'){
       var opt0 = el.options[0];
       if(!opt0 || opt0.value !== '') return; // pas d'option vide à réutiliser
@@ -3136,8 +3143,26 @@ function _blShowInheritedHints(mergedData, grise){
         el.classList.remove('bl-inherited-ghost', 'bl-ghost-grise');
         el.removeEventListener('change', _rmGhost);
       });
+    } else if(el.type === 'checkbox' || el.type === 'radio'){
+      /* Une case ne peut pas porter de placeholder : sa marque heritee est un
+         anneau gris pointille autour de la case, jamais une coche. Elle n'est
+         PAS cochee — donc jamais serialisee — et part au premier clic.
+
+         Seule une case qui etait COCHEE peut laisser une trace. `_serializeBilan`
+         parcourt tout le formulaire : chaque bilan enregistre chaque case, cochee
+         ou non, si bien qu'un `false` est indiscernable de « jamais evaluee ».
+         Marquer les cases decochees baliserait donc les 45 cellules des grilles
+         a chaque suivi, sans rien dire. Meme raisonnement que `_crDejaEvalue`. */
+      if(val === false || String(val) === 'false' || String(val) === '0') return;
+      el.title = 'Case VIDE. L\'anneau indique qu\'elle \u00e9tait coch\u00e9e au bilan pr\u00e9c\u00e9dent. Elle ne sera pas enregistr\u00e9e tant que vous ne l\'aurez pas coch\u00e9e.';
+      el.classList.add('bl-inherited-ghost');
+      if(grise) el.classList.add('bl-ghost-grise');
+      el.addEventListener('change', function _rmGhost(){
+        el.classList.remove('bl-inherited-ghost', 'bl-ghost-grise');
+        el.removeAttribute('title');
+        el.removeEventListener('change', _rmGhost);
+      });
     } else if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA'){
-      if(el.type === 'checkbox' || el.type === 'radio') return;
       el.dataset.blOrigPlaceholder = el.placeholder || '';
       el.placeholder = String(val);
       el.title = 'Champ VIDE. Texte affiché = dernière valeur connue, reprise d\'un bilan antérieur. Elle ne sera pas enregistrée tant que vous ne l\'aurez pas saisie.';

@@ -2018,8 +2018,33 @@ textarea.bl-inherited-ghost.bl-ghost-grise::placeholder {
   color:var(--text3); opacity:1; font-style:italic;
 }
 select.bl-inherited-ghost.bl-ghost-grise { color:var(--text3); font-style:italic; }
-input.bl-ghost-grise, textarea.bl-ghost-grise, select.bl-ghost-grise {
+input.bl-ghost-grise:not([type=checkbox]):not([type=radio]),
+textarea.bl-ghost-grise, select.bl-ghost-grise {
   background:var(--surface2);
+}
+
+/* Une case a cocher n'a pas de placeholder : sa valeur heritee se dit par un
+   anneau gris pointille, jamais par une coche — une coche grise se confondrait
+   avec une vraie, et la case n'est PAS cochee (rien n'est enregistre).
+
+   Le fond gris des champs texte du suivi est rendu ici par un `box-shadow`
+   plein qui remplit l'espace menage par `outline-offset`, et NON par un fond
+   pose sur un element voisin : les cases des grilles n'ont pas toutes de
+   cellule a elles — celles de l'analyse fonctionnelle sont des enfants directs
+   de la ligne, teinter leur parent teinterait la ligne entiere. Ni outline ni
+   box-shadow n'occupent de place dans le flux : aucune grille ne bouge.
+
+   L'anneau de focus clavier reste prioritaire — il est pose en `!important`
+   dans le socle commun, celui-ci ne l'est pas. */
+input[type=checkbox].bl-inherited-ghost,
+input[type=radio].bl-inherited-ghost {
+  outline:2px dashed var(--text3);
+  outline-offset:3px;
+  border-radius:3px;
+}
+input[type=checkbox].bl-inherited-ghost.bl-ghost-grise,
+input[type=radio].bl-inherited-ghost.bl-ghost-grise {
+  box-shadow:0 0 0 3px var(--surface2);
 }
 
 /* ── Évolution ──────────────────────────────────────────── */
@@ -5935,7 +5960,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260806i"></script>
-<script src="js/bilan.js?v=20260825y"></script>
+<script src="js/bilan.js?v=20260827b"></script>
 
 </body>
 </html>
