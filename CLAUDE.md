@@ -537,6 +537,18 @@ C'est la généralisation de `_afTouched`, qui traitait déjà ce problème pour
 seules cases de l'Analyse Fonctionnelle. Les deux coexistent : l'AF est rendue
 en JS hors de tout `.block[data-block-id]`.
 
+**La pastille ne s'affiche que si elle peut servir.** Il faut un bilan
+antérieur pour qu'il y ait quelque chose à réévaluer : sur un premier bilan,
+« Réévalué » ne veut rien dire et la pastille n'est que du bruit sur 164 blocs.
+`_reevalMajVisibilite` suit `_crInSuiviMode`.
+
+**Le MARQUAGE, lui, tourne dans tous les cas** — y compris sur ce premier
+bilan. C'est ce qui permettra au bilan SUIVANT de savoir que ces tests
+existaient déjà (`_crDejaEvalue`). Masquer la pastille ne doit jamais couper le
+mécanisme : ni `_reevalEcouter` ni `_reevalBlocsPourSauvegarde` ne consultent la
+visibilité, et un cas de référence le garde. Les confondre ferait annoncer
+« réévalué » sur des tests faits pour la première fois.
+
 Le grain est le **bloc**. Marquer une page déclarerait réévalués dix tests qu'on
 n'a pas refaits ; marquer le champ redemanderait ce que l'interaction dit déjà.
 Corollaire assumé et refermé dans le code : dans un bloc marqué, un champ resté

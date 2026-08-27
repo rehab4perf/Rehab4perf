@@ -3166,6 +3166,7 @@ function exitHistoMode(){
     _currentBilanId   = latest.id;
     _currentBilanDate = latest.date ? latest.date.split('T')[0] : null;
     try{ _majDateSidebar(); }catch(ex){}
+  try{ _reevalMajVisibilite(); }catch(ex){}
     _suppressDirty = true;
     _resetBilanFields();
     _autofillPatientFields(_bilanPatient);
@@ -3242,6 +3243,7 @@ function _resetBilanFields(){
   });
   document.querySelectorAll('input[type=checkbox],input[type=radio]').forEach(function(c){ c.checked=false; });
   try{ _majDateSidebar(); }catch(ex){}
+  try{ _reevalMajVisibilite(); }catch(ex){}
   _painZones=[]; renderPainZones();
   _objectifs=[]; renderObjectifs();
   try{ _afRefreshAll(); }catch(ex){}
@@ -3297,6 +3299,7 @@ function _resetAndLoadPatient(p){
       _currentBilanId   = b.id;
       _currentBilanDate = b.date ? b.date.split('T')[0] : null;
       try{ _majDateSidebar(); }catch(ex){}
+  try{ _reevalMajVisibilite(); }catch(ex){}
       // Charger le snapshot fusionné (valeur la plus récente par champ)
       // → le formulaire reflète l'état courant même si certains champs
       //   viennent de bilans de suivi partiels.
@@ -5060,6 +5063,7 @@ function saveBilan(){
         _currentBilanId   = res.data.id;
         _currentBilanDate = res.data.date ? res.data.date.split('T')[0] : today;
         try{ _majDateSidebar(); }catch(ex){}
+  try{ _reevalMajVisibilite(); }catch(ex){}
         _bilanModified  = false;
         _bilanIsSuivi   = false;
         _suiviSnapshot  = null;
@@ -5283,6 +5287,7 @@ function _confirmEditBilanDate(bilanId) {
     if (String(_currentBilanId) === String(bilanId)) {
       _currentBilanDate = newDate;
       try{ _majDateSidebar(); }catch(ex){}
+  try{ _reevalMajVisibilite(); }catch(ex){}
     }
 
     // Recalculer _prevDonnees selon le nouvel ordre
@@ -5373,6 +5378,7 @@ function loadBilan(id){
     _currentBilanId   = res.data.id;
     _currentBilanDate = res.data.date ? res.data.date.split('T')[0] : null;
     try{ _majDateSidebar(); }catch(ex){}
+  try{ _reevalMajVisibilite(); }catch(ex){}
     /* `_deserializeBilan` n'ECRIT que les cles presentes dans l'objet recu :
        elle n'efface JAMAIS. Sans remise a zero prealable, tout champ que le
        bilan consulte ne porte pas garde a l'ecran la valeur du bilan
@@ -5515,6 +5521,7 @@ function _newBilanSuiviConfirm(){
   var _dn = new Date();
   var today = _dn.getFullYear()+'-'+String(_dn.getMonth()+1).padStart(2,'0')+'-'+String(_dn.getDate()).padStart(2,'0');
   try{ _majDateSidebar(); }catch(ex){}
+  try{ _reevalMajVisibilite(); }catch(ex){}
 
   // Anciens resultats en fond, grises : on retape par-dessus. Ils ne sont pas
   // enregistres — ce sont des placeholders, effaces des la premiere frappe —
@@ -5943,6 +5950,7 @@ function _saveSuiviRapide(){
               _currentBilanId  = newBilanId;
               _currentBilanDate = today;
               try{ _majDateSidebar(); }catch(ex){}
+  try{ _reevalMajVisibilite(); }catch(ex){}
               // Re-fusionner dans le formulaire (les champs non touchés
               // reprennent la valeur la plus récente de l'historique)
               _suppressDirty = true;
@@ -5985,6 +5993,7 @@ function deleteBilan(id, dateStr, isInitial, e) {
       _currentBilanId = null;
       _currentBilanDate = null;
       try{ _majDateSidebar(); }catch(ex){}
+  try{ _reevalMajVisibilite(); }catch(ex){}
       _prevDonnees = null;
       document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
       if (_allBilans.length > 0) {
@@ -5994,6 +6003,7 @@ function deleteBilan(id, dateStr, isInitial, e) {
             _currentBilanId   = r.data.id;
             _currentBilanDate = r.data.date ? r.data.date.split('T')[0] : null;
             try{ _majDateSidebar(); }catch(ex){}
+  try{ _reevalMajVisibilite(); }catch(ex){}
             _deserializeBilan(r.data.donnees || {});
             if (_allBilans.length >= 2) {
               _prevDonnees = _prevMergedFrom(_allBilans, 1);
@@ -6327,6 +6337,7 @@ function updateAll() {
   const meta = [age ? (age + ' ans') : null, cotesMeta||cote||null].filter(Boolean).join('   ');
   document.getElementById('sb-meta').textContent = meta || '-';
   _majDateSidebar();
+  try{ _reevalMajVisibilite(); }catch(ex){}
 
   // Headers for each page
   const hdrTxt = [fullName, date ? formatDate(date) : null].filter(Boolean).join(' - ');
@@ -10268,6 +10279,33 @@ function _reevalRender(){
       hd.appendChild(chip);
     }
     _reevalPeindre(chip, bid);
+  });
+  /* Des pastilles viennent d'etre creees : on force le recalcul, sinon les
+     nouvelles gardent l'affichage par defaut quel que soit le contexte. */
+  _reevalVisible = null;
+  _reevalMajVisibilite();
+}
+
+/* La pastille ne s'affiche que si elle PEUT servir : il faut un bilan
+   anterieur pour qu'il y ait quelque chose a reevaluer. Sur un premier bilan,
+   « Reevalue » ne veut rien dire et la pastille n'est que du bruit sur 164
+   blocs.
+
+   Le MARQUAGE, lui, continue de tourner dans tous les cas — y compris sur ce
+   premier bilan. C'est ce qui permettra au bilan SUIVANT de savoir ce qui a
+   ete evalue aujourd'hui (`_crDejaEvalue`). Masquer la pastille ne doit pas
+   couper le mecanisme : ce sont deux choses distinctes.
+
+   L'etat precedent est retenu pour ne pas repeindre 164 elements a chaque
+   frappe — `updateAll` s'execute a chaque `input`. */
+var _reevalVisible = null;
+function _reevalMajVisibilite(){
+  var utile = false;
+  try { utile = !!_crInSuiviMode(); } catch(e){}
+  if (utile === _reevalVisible) return;
+  _reevalVisible = utile;
+  document.querySelectorAll('.reeval-chip').forEach(function(c){
+    c.style.display = utile ? '' : 'none';
   });
 }
 

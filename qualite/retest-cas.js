@@ -266,5 +266,38 @@ console.log('\n  Un champ hors de tout bloc');
   verifie('champ inconnu de l\'index → ancienne règle', 'neuf', a.etat(['f-conclusion']));
 }
 
+/* ── La pastille se cache, le marquage continue ────────────────────────────
+   Deux choses distinctes, et les confondre casserait le mécanisme : sur un
+   PREMIER bilan « Réévalué » ne veut rien dire — il n'y a rien à réévaluer —
+   mais ce qu'on y évalue doit être enregistré, sinon le bilan SUIVANT ne
+   saura pas que ces tests existaient déjà (`_crDejaEvalue`). */
+console.log('\n  La pastille se cache quand elle ne peut pas servir');
+{
+  var sansCom = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+
+  var dV = sansCom.indexOf('function _reevalMajVisibilite');
+  var fV = sansCom.indexOf('function _reevalEcouter');
+  var corpsV = sansCom.slice(dV, fV);
+  verifie('la visibilité existe',            'true', String(dV > 0));
+  verifie('… et suit le contexte de suivi',  'true', String(/_crInSuiviMode\(\)/.test(corpsV)));
+
+  /* Le marquage ne doit RIEN savoir de la visibilité. S'il la consultait, un
+     premier bilan n'enregistrerait aucune marque — et le second annoncerait
+     « réévalué » sur des tests faits pour la première fois. */
+  var dE = sansCom.indexOf('function _reevalEcouter');
+  var fE = sansCom.indexOf('document.addEventListener(\'input\'', dE);
+  var corpsE = sansCom.slice(dE, fE);
+  verifie('le marquage ignore la visibilité', 'false',
+          String(/_reevalVisible|_reevalMajVisibilite|_crInSuiviMode/.test(corpsE)));
+  verifie('… et garde son garde-fou isTrusted', 'true',
+          String(/isTrusted === false/.test(corpsE)));
+
+  /* La sérialisation non plus : ce qui est marqué part en base, visible ou non. */
+  var dS = sansCom.indexOf('function _reevalBlocsPourSauvegarde');
+  var fS = sansCom.indexOf('function _reevalChampsMarques');
+  verifie('l\'enregistrement ignore la visibilité', 'false',
+          String(/_reevalVisible/.test(sansCom.slice(dS, fS))));
+}
+
 console.log('\n  ' + (nbKo ? '✗ ' + nbKo + ' échec(s), ' : '✓ ') + nbOk + ' cas vérifiés.\n');
 process.exit(nbKo ? 1 : 0);
