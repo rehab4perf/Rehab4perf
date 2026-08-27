@@ -6994,12 +6994,14 @@ function _crPrevMerged(start){
    douloureuse etait la GAUCHE, le CR placait le cote atteint a droite. Le
    document part chez le medecin — il ne peut pas se tromper de membre.
 
-   `videEstUnilateral` : la Hanche traite « aucune zone » comme un cas
-   unilateral, pas comme du bilateral. C'est sa regle dans _updateSideLabels,
-   on la reprend telle quelle plutot que d'en inventer une seconde. */
-function _crLabelsForCote(cote, videEstUnilateral) {
+   Aucun cote connu vaut GAUCHE/DROITE, sans exception. La Hanche en faisait
+   une : elle traitait « aucune zone » comme un cote atteint a droite, si bien
+   qu'un patient sans latéralité voyait ses adducteurs en sain/atteint et son
+   quadriceps en gauche/droit — dans le meme tableau. La regle a ete alignee
+   dans `_updateSideLabels`, cote formulaire, et le CR n'a plus d'exception a
+   porter. */
+function _crLabelsForCote(cote) {
   var bilateral = (cote !== 'DROIT' && cote !== 'GAUCHE');
-  if (videEstUnilateral && !cote) bilateral = false;
   return bilateral ? { cs: 'Gauche', ca: 'Droit' }
                    : { cs: 'Côté sain', ca: 'Côté atteint' };
 }
@@ -7234,7 +7236,7 @@ function _buildAllTestsHtml() {
     /* Chaque region resout SON cote : c'est la divergence entre le champ
        global et la zone douloureuse de la region qui faisait nommer le
        mauvais membre. */
-    var _secLbl = _crLabelsForCote(_getCoteForScope(sec.zones || []), sec.label === 'HANCHE');
+    var _secLbl = _crLabelsForCote(_getCoteForScope(sec.zones || []));
     _labelCS = _secLbl.cs; _labelCA = _secLbl.ca;
     var secRows = '';
     for (var fi=0; fi<sec.fields.length; fi++) {
@@ -10766,12 +10768,19 @@ function _updateSideLabels(){
   });
   // Hanche : logique explicite pour contourner la dépendance à slOrig
   // BILATÉRAL  → CÔTÉ GAUCHE / CÔTÉ DROIT (force le texte + réinitialise slOrig)
-  // DROIT/GAUCHE → CÔTÉ SAIN / CÔTÉ ATTEINT via _applyLabels
-  // '' (rien)  → traité comme DROIT (SAIN/ATTEINT)
+  /* DROIT/GAUCHE → CÔTÉ SAIN / CÔTÉ ATTEINT via _applyLabels.
+
+     '' (aucune zone douloureuse) valait auparavant DROIT : la page Hanche
+     affichait donc « Côté sain / Côté atteint » sur un patient dont AUCUNE
+     latéralité n'était renseignée, et le CR le reprenait fidèlement — d'où un
+     courrier où les adducteurs se lisaient en sain/atteint et le quadriceps en
+     gauche/droit. La Hanche était la seule région à faire ça : partout
+     ailleurs, pas de côté connu veut dire gauche/droite. Elle rentre dans le
+     rang. */
   var haCote = _getCoteForScope(['hanche']);
   var haEl = document.getElementById('page-hanche');
   if(haEl) {
-    if(haCote === 'BILATÉRAL') {
+    if(haCote === 'BILATÉRAL' || !haCote) {
       haEl.querySelectorAll('.sl-g').forEach(function(el){
         el.dataset.slOrig = 'CÔTÉ GAUCHE';
         el.textContent    = 'CÔTÉ GAUCHE';
@@ -10782,8 +10791,7 @@ function _updateSideLabels(){
       });
       _applyColOrder(haEl, 'BILATÉRAL');
     } else {
-      var haEffective = haCote || 'DROIT'; // '' → 'DROIT' (SAIN/ATTEINT)
-      _applyLabels(haEl, haEffective);
+      _applyLabels(haEl, haCote);
     }
   }
   _updateHancheBilateral();

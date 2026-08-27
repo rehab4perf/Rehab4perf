@@ -618,6 +618,22 @@ le CR plaçait donc le côté atteint de l'ÉPAULE à droite. Le formulaire
 affichait « Sain 78 / Atteint 55 », le CR écrivait « Gauche 78 | Droit 55 ».
 **Un compte-rendu envoyé au médecin désignait le mauvais membre.**
 
+**Pas de côté connu vaut gauche/droite — partout, sans exception.** La Hanche
+en faisait une : `_updateSideLabels` y traitait « aucune zone » comme un côté
+atteint à DROITE, et `_crLabelsForCote` portait un second paramètre pour la
+suivre. Sur un patient sans latéralité renseignée, ses adducteurs se lisaient
+donc en « Côté sain / Côté atteint » pendant que son quadriceps se lisait en
+« Gauche / Droit » — deux conventions dans le même tableau, sans rien pour le
+justifier.
+
+La règle est alignée **côté formulaire**, et le CR n'a plus d'exception à
+porter : `_crLabelsForCote` a perdu son second paramètre.
+
+**Effet sur les données déjà saisies** : les valeurs ne bougent pas — elles
+restent dans `-cs` et `-ca`. Seuls les intitulés changent, et uniquement sur les
+patients dont la latéralité n'est pas renseignée. Sur ceux-là, « côté sain » ne
+désignait déjà rien.
+
 La règle retenue : **le CR ne traduit plus**. `_crLabelsForCote(cote)` rend
 « Côté sain / Côté atteint » dès qu'un côté atteint est connu, et
 « Gauche / Droit » sinon — exactement ce qu'affiche le formulaire. Pas de

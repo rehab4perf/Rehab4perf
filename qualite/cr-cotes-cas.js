@@ -69,10 +69,30 @@ console.log('\nEn bilatéral, `-cs` est la GAUCHE — comme dans le formulaire')
 verifie('la colonne du côté sain porte Gauche', 'Gauche', labels('').cs);
 verifie('la colonne du côté atteint porte Droit', 'Droit', labels('').ca);
 
-console.log('\nHanche — sans zone renseignée, elle reste en sain/atteint');
-verifie('aucune zone hanche', 'Côté sain | Côté atteint', couple(labels('', true)));
-verifie('hanche bilatérale explicite', 'Gauche | Droit', couple(labels('BILATÉRAL', true)));
-verifie('hanche gauche atteinte', 'Côté sain | Côté atteint', couple(labels('GAUCHE', true)));
+/* La Hanche N'EST PLUS une exception. Elle traitait « aucune zone » comme un
+   côté atteint à droite : sur un patient sans latéralité renseignée, ses
+   adducteurs se lisaient en « Côté sain / Côté atteint » pendant que le
+   quadriceps se lisait en « Gauche / Droit » — deux conventions dans le même
+   tableau, sans que rien ne le justifie. La règle a été alignée côté
+   formulaire (`_updateSideLabels`), et `_crLabelsForCote` n'a plus de second
+   paramètre.
+
+   Décision du praticien : pas de côté connu veut dire gauche/droite, partout. */
+console.log('\nHanche — sans zone renseignée, elle est en gauche/droite comme les autres');
+verifie('aucune zone hanche', 'Gauche | Droit', couple(labels('')));
+verifie('hanche bilatérale explicite', 'Gauche | Droit', couple(labels('BILATÉRAL')));
+verifie('hanche gauche atteinte', 'Côté sain | Côté atteint', couple(labels('GAUCHE')));
+
+/* Garde-fou : le formulaire ne doit plus transformer « aucune zone » en DROIT
+   sur la page Hanche. Les cas ci-dessus portent sur le CR ; celui-ci porte sur
+   la source, car c'est elle qui décidait. */
+{
+  var sansCom = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  verifie('plus de repli « \'\' → DROIT » sur la Hanche', 'false',
+          String(/haCote \|\| 'DROIT'/.test(sansCom)));
+  verifie('« aucune zone » rejoint la branche bilatérale', 'true',
+          String(/haCote === 'BILATÉRAL' \|\| !haCote/.test(sansCom)));
+}
 
 /* ══════════════════════════════════════════════════════════════════════════
    Garde-fou : aucune section ne redevient aveugle a sa propre region.
