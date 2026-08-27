@@ -4887,8 +4887,8 @@ function _deserializeBilan(data){
     // Restaurer les selects appréciation épaule (ep-apr-sel)
     if(el.tagName==='SELECT' && el.classList.contains('ep-apr-sel')){
       el.className = 'ep-apr-sel';
-      if(el.value==='Positif') el.classList.add('positif-ortho');
-      else if(el.value==='Négatif') el.classList.add('negatif-ortho');
+      var _ui = _apprUi(el.value);
+      if(_ui) el.classList.add(_ui);
     }
     try{ el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); }catch(ex){}
   });
@@ -7141,6 +7141,45 @@ function _statForce(lsi) {
   return         { txt: 'Asymétrie significative', cls: 'bad'  };
 }
 
+/* Appréciation d'un test de force — quand il n'y a pas de dynamomètre.
+   Ce menu ne cherche pas un signe clinique : il qualifie la force d'UN côté.
+   « Positif » y disait donc le contraire de ce qu'il dit sur un Laslett ou un
+   Ottawa, et le même mot rouge servait pour une baisse discrète et pour un
+   déficit franc.
+
+   LES VALEURS NE CHANGENT PAS — `Positif`, `Négatif` et `N/A` sont la clé des
+   bilans déjà enregistrés, écrite en clair dans `donnees` depuis toujours. Les
+   renommer relirait tous les anciens bilans de travers. Seuls les LIBELLÉS
+   changent, et un palier s'ajoute : c'est la même règle que le catalogue
+   TESTS{} — on ajoute, on ne réécrit jamais l'identité.
+
+   `sev` classe du plus sain au plus atteint : c'est ce qui permet au CR de
+   rapporter le côté le plus atteint des deux sans énumérer les cas. */
+var APPR_FORCE = {
+  'Négatif': { txt: 'Force normale',       cls: 'ok',   ui: 'negatif-ortho', sev: 1 },
+  'Légère':  { txt: 'Légèrement diminuée', cls: 'warn', ui: 'attenue-ortho', sev: 2 },
+  'Positif': { txt: 'Nettement diminuée',  cls: 'bad',  ui: 'positif-ortho', sev: 3 },
+  'N/A':     { txt: 'Non testé',           cls: '',     ui: '',              sev: 0 }
+};
+function _apprTxt(v) { var a = APPR_FORCE[v]; return a ? a.txt : (v || ''); }
+function _apprUi(v)  { var a = APPR_FORCE[v]; return a ? a.ui  : ''; }
+/* Un déficit d'un côté suffit à qualifier le test : le CR rapporte le plus
+   atteint des deux. Rend null quand aucun côté n'a été apprécié — la ligne ne
+   doit alors pas apparaître, un test non fait n'est pas un test normal. */
+function _statAppreciation(a, b) {
+  var pire = null;
+  [a, b].forEach(function (v) {
+    var d = APPR_FORCE[v];
+    if (!d || !d.sev) return;
+    if (!pire || d.sev > pire.sev) pire = d;
+  });
+  return pire ? { txt: pire.txt, cls: pire.cls } : null;
+}
+/* « Y a-t-il un deficit ? » — sert au plan de traitement. Une baisse legere en
+   est un : c'est justement pour la distinguer d'un deficit franc, non pour
+   cesser de la traiter, que le palier a ete ajoute. */
+function _apprDeficit(v) { var a = APPR_FORCE[v]; return !!a && a.sev >= 2; }
+
 function _crLabelsForCote(cote) {
   var bilateral = (cote !== 'DROIT' && cote !== 'GAUCHE');
   return bilateral ? { cs: 'Gauche', ca: 'Droit' }
@@ -7469,10 +7508,10 @@ function _buildAllTestsHtml() {
           var _sf = _statForce(lsiV);
           haForceRows += crItem(ft.label, valStr, _sf.txt, _sf.cls, [ft.key+'-cs',ft.key+'-ca']);
         } else if (csA || caA) {
-          var parts = _crMesTab([{ l:'Appréciation', a:csA, b:caA }], _labelCS, _labelCA);
-          var anyPos = csA==='Positif' || caA==='Positif';
-          if (anyPos || csA==='Négatif' || caA==='Négatif') {
-            haForceRows += crItem(ft.label, parts, anyPos?'Positif':'Négatif', anyPos?'bad':'ok', [ft.key+'-apr-cs',ft.key+'-apr-ca']);
+          var _ap = _statAppreciation(csA, caA);
+          if (_ap) {
+            var parts = _crMesTab([{ l:'Appréciation', a:_apprTxt(csA), b:_apprTxt(caA) }], _labelCS, _labelCA);
+            haForceRows += crItem(ft.label, parts, _ap.txt, _ap.cls, [ft.key+'-apr-cs',ft.key+'-apr-ca']);
           }
         }
       });
@@ -7508,10 +7547,10 @@ function _buildAllTestsHtml() {
           var _sf = _statForce(lsiV);
           geForceRows += crItem(ft.label, valStr, _sf.txt, _sf.cls, [ft.key+'-cs',ft.key+'-ca']);
         } else if (csA || caA) {
-          var parts = _crMesTab([{ l:'Appréciation', a:csA, b:caA }], _labelCS, _labelCA);
-          var anyPos = csA==='Positif' || caA==='Positif';
-          if (anyPos || csA==='Négatif' || caA==='Négatif') {
-            geForceRows += crItem(ft.label, parts, anyPos?'Positif':'Négatif', anyPos?'bad':'ok', [ft.key+'-apr-cs',ft.key+'-apr-ca']);
+          var _ap = _statAppreciation(csA, caA);
+          if (_ap) {
+            var parts = _crMesTab([{ l:'Appréciation', a:_apprTxt(csA), b:_apprTxt(caA) }], _labelCS, _labelCA);
+            geForceRows += crItem(ft.label, parts, _ap.txt, _ap.cls, [ft.key+'-apr-cs',ft.key+'-apr-ca']);
           }
         }
       });
@@ -7566,10 +7605,10 @@ function _buildAllTestsHtml() {
           var _sfEp = _dentInsuf ? { txt: 'Insuffisant', cls: 'bad' } : _statForce(lsiV);
           epForceRows += crItem(ft.label, valStr, _sfEp.txt, _sfEp.cls, [ft.key+'-cs', ft.key+'-ca']);
         } else if (csA || caA) {
-          var parts = _crMesTab([{ l:'Appréciation', a:csA, b:caA }], _labelCS, _labelCA);
-          var anyPos = csA === 'Positif' || caA === 'Positif';
-          if (anyPos || csA === 'Négatif' || caA === 'Négatif') {
-            epForceRows += crItem(ft.label, parts, anyPos ? 'Positif' : 'Négatif', anyPos ? 'bad' : 'ok', [ft.key+'-apr-cs', ft.key+'-apr-ca']);
+          var _ap = _statAppreciation(csA, caA);
+          if (_ap) {
+            var parts = _crMesTab([{ l:'Appréciation', a:_apprTxt(csA), b:_apprTxt(caA) }], _labelCS, _labelCA);
+            epForceRows += crItem(ft.label, parts, _ap.txt, _ap.cls, [ft.key+'-apr-cs', ft.key+'-apr-ca']);
           }
         }
       });
@@ -7679,10 +7718,10 @@ function _buildAllTestsHtml() {
           var _sfRa = _statForce(lsiV);
           raForceRows += crItem('Inclinaison cervicale', valStr, _sfRa.txt, _sfRa.cls, ['ra-fc-inc-cs','ra-fc-inc-ca']);
         } else if (csA || caA) {
-          var parts = _crMesTab([{ l:'Appréciation', a:csA, b:caA }], _labelCS, _labelCA);
-          var anyPos = csA==='Positif' || caA==='Positif';
-          if (anyPos || csA==='Négatif' || caA==='Négatif') {
-            raForceRows += crItem('Inclinaison cervicale', parts, anyPos?'Positif':'Négatif', anyPos?'bad':'ok', ['ra-fc-inc-apr-cs','ra-fc-inc-apr-ca']);
+          var _ap = _statAppreciation(csA, caA);
+          if (_ap) {
+            var parts = _crMesTab([{ l:'Appréciation', a:_apprTxt(csA), b:_apprTxt(caA) }], _labelCS, _labelCA);
+            raForceRows += crItem('Inclinaison cervicale', parts, _ap.txt, _ap.cls, ['ra-fc-inc-apr-cs','ra-fc-inc-apr-ca']);
           }
         }
       })();
@@ -7808,10 +7847,10 @@ function _buildAllTestsHtml() {
           var _sf = _statForce(lsiV);
           piForceRows += crItem(ft.label, valStr, _sf.txt, _sf.cls, [ft.key+'-cs',ft.key+'-ca']);
         } else if (csA || caA) {
-          var parts = _crMesTab([{ l:'Appréciation', a:csA, b:caA }], _labelCS, _labelCA);
-          var anyPos = csA==='Positif' || caA==='Positif';
-          if (anyPos || csA==='Négatif' || caA==='Négatif') {
-            piForceRows += crItem(ft.label, parts, anyPos?'Positif':'Négatif', anyPos?'bad':'ok', [ft.key+'-apr-cs',ft.key+'-apr-ca']);
+          var _ap = _statAppreciation(csA, caA);
+          if (_ap) {
+            var parts = _crMesTab([{ l:'Appréciation', a:_apprTxt(csA), b:_apprTxt(caA) }], _labelCS, _labelCA);
+            piForceRows += crItem(ft.label, parts, _ap.txt, _ap.cls, [ft.key+'-apr-cs',ft.key+'-apr-ca']);
           }
         }
       });
@@ -8459,7 +8498,7 @@ function _buildAllTestsHtml() {
       var caN = parseFloat((document.getElementById(m.key+'-ca')||{}).value);
       var caA = (document.getElementById(m.key+'-apr-ca')||{}).value||'';
       var lsiLow = !isNaN(csN) && csN > 0 && !isNaN(caN) && caN/csN*100 < 90;
-      if (lsiLow || caA === 'Positif') {
+      if (lsiLow || _apprDeficit(caA)) {
         var item = 'Renforcer ' + m.label;
         if (toWork.indexOf(item) === -1) toWork.push(item);
       }
@@ -8558,8 +8597,8 @@ function _buildAllTestsHtml() {
         }
       } else {
         // Mode appréciation
-        if (csA === 'Positif') { var i5 = ft.label + ' — ' + _labelCS; if (toWork.indexOf(i5)<0) toWork.push(i5); }
-        if (caA === 'Positif') { var i6 = ft.label + ' — ' + _labelCA; if (toWork.indexOf(i6)<0) toWork.push(i6); }
+        if (_apprDeficit(csA)) { var i5 = ft.label + ' — ' + _labelCS; if (toWork.indexOf(i5)<0) toWork.push(i5); }
+        if (_apprDeficit(caA)) { var i6 = ft.label + ' — ' + _labelCA; if (toWork.indexOf(i6)<0) toWork.push(i6); }
       }
     });
     // GIRD
@@ -8589,8 +8628,8 @@ function _buildAllTestsHtml() {
       if (!isNaN(csN) && csN > 0) {
         if (!isNaN(caN) && csN > 0 && caN/csN*100 < 90) { var iH = ft.label+' — '+_labelCA+' (Asym. ' + asymTxt((caN/csN*100), 0) + ')'; if (toWork.indexOf(iH)<0) toWork.push(iH); }
       } else {
-        if (csA==='Positif') { var iHa = ft.label+' — '+_labelCS; if (toWork.indexOf(iHa)<0) toWork.push(iHa); }
-        if (caA==='Positif') { var iHb = ft.label+' — '+_labelCA; if (toWork.indexOf(iHb)<0) toWork.push(iHb); }
+        if (_apprDeficit(csA)) { var iHa = ft.label+' — '+_labelCS; if (toWork.indexOf(iHa)<0) toWork.push(iHa); }
+        if (_apprDeficit(caA)) { var iHb = ft.label+' — '+_labelCA; if (toWork.indexOf(iHb)<0) toWork.push(iHb); }
       }
     });
   })();
@@ -8612,8 +8651,8 @@ function _buildAllTestsHtml() {
       if (!isNaN(csN) && csN > 0) {
         if (!isNaN(caN) && csN > 0 && caN/csN*100 < 90) { var iP = ft.label+' — '+_labelCA+' (Asym. ' + asymTxt((caN/csN*100), 0) + ')'; if (toWork.indexOf(iP)<0) toWork.push(iP); }
       } else {
-        if (csA==='Positif') { var iPa = ft.label+' — '+_labelCS; if (toWork.indexOf(iPa)<0) toWork.push(iPa); }
-        if (caA==='Positif') { var iPb = ft.label+' — '+_labelCA; if (toWork.indexOf(iPb)<0) toWork.push(iPb); }
+        if (_apprDeficit(csA)) { var iPa = ft.label+' — '+_labelCS; if (toWork.indexOf(iPa)<0) toWork.push(iPa); }
+        if (_apprDeficit(caA)) { var iPb = ft.label+' — '+_labelCA; if (toWork.indexOf(iPb)<0) toWork.push(iPb); }
       }
     });
   })();
@@ -8632,8 +8671,8 @@ function _buildAllTestsHtml() {
       if (!isNaN(csN) && csN > 0) {
         if (!isNaN(caN) && csN > 0 && caN/csN*100 < 90) { var iG = ft.label+' — '+_labelCA+' (Asym. ' + asymTxt((caN/csN*100), 0) + ')'; if (toWork.indexOf(iG)<0) toWork.push(iG); }
       } else {
-        if (csA==='Positif') { var iGa = ft.label+' — '+_labelCS; if (toWork.indexOf(iGa)<0) toWork.push(iGa); }
-        if (caA==='Positif') { var iGb = ft.label+' — '+_labelCA; if (toWork.indexOf(iGb)<0) toWork.push(iGb); }
+        if (_apprDeficit(csA)) { var iGa = ft.label+' — '+_labelCS; if (toWork.indexOf(iGa)<0) toWork.push(iGa); }
+        if (_apprDeficit(caA)) { var iGb = ft.label+' — '+_labelCA; if (toWork.indexOf(iGb)<0) toWork.push(iGb); }
       }
     });
   })();
@@ -10753,9 +10792,8 @@ function calcGIRD() {
 
 function onEpAprChange(sel) {
   sel.className = 'ep-apr-sel';
-  var v = sel.value;
-  if (v === 'Positif') sel.classList.add('positif-ortho');
-  else if (v === 'Négatif') sel.classList.add('negatif-ortho');
+  var ui = _apprUi(sel.value);
+  if (ui) sel.classList.add(ui);
 }
 
 function calcEpForce(key) {

@@ -637,8 +637,43 @@ changé — `lsi < 90` était déjà exactement le seuil de 10 %.
 - La **GIRD** est un vrai signe clinique à 15° d'écart, pas une mesure de
   symétrie. Elle garde « Positif / Négatif ».
 
-Les branches « **appréciation** » gardent aussi Positif/Négatif : le praticien
-a littéralement choisi ce mot dans une liste déroulante, le CR le rapporte.
+Les branches « **appréciation** » — le menu par côté, quand il n'y a pas de
+dynamomètre — ne disaient pas mieux : « Positif » y voulait dire l'inverse de
+ce qu'il dit sur un Laslett, et le même mot rouge couvrait une baisse discrète
+et un déficit franc. Elles suivent maintenant le testing manuel, en trois
+paliers : **Force normale**, **Légèrement diminuée**, **Nettement diminuée**,
+plus **Non testé**.
+
+```bash
+node qualite/appreciation-force-cas.js
+```
+
+**Les VALEURS n'ont pas bougé, et ne doivent jamais bouger.** Ces 46 menus
+s'écrivaient `<option>Positif</option>`, sans attribut `value` : le texte
+affiché ÉTAIT la valeur enregistrée. `Positif`, `Négatif` et `N/A` sont donc
+écrits en clair dans les `donnees` de tous les bilans déjà en base. `APPR_FORCE`
+associe à chacune son libellé, sa couleur et sa sévérité ; le palier ajouté
+porte la valeur neuve `Légère`. Même règle que le catalogue TESTS{} : on ajoute,
+on ne réécrit jamais l'identité.
+
+**Le trou était dans les appelants, pas dans la table.** Cinq lignes de CR et
+neuf lignes de plan de traitement comparaient `csA === 'Positif'` en direct :
+un palier ajouté à la table ne les aurait pas atteintes, et une force
+légèrement diminuée serait sortie du plan sans le moindre signal. Tout passe
+désormais par `_statAppreciation` (le côté le plus atteint des deux),
+`_apprTxt` (libellé au CR), `_apprUi` (couleur du menu) et `_apprDeficit`
+(plan de traitement). Le fichier de cas échoue si une comparaison en dur
+réapparaît.
+
+**Un déficit léger reste à renforcer.** Le palier a été ajouté pour le
+distinguer d'un déficit franc, non pour cesser de le traiter.
+
+**Un test non fait n'est pas un test normal** : deux côtés à « Non testé » ou
+vides ne produisent aucune ligne de CR. Sans cette distinction, un test jamais
+réalisé s'annoncerait « Force normale » au médecin.
+
+Les **vrais tests cliniques** — Laslett, Ottawa, ULNT, flexion debout/assis —
+gardent Positif/Négatif : eux cherchent bien un signe.
 
 **Un LSI supérieur à 100 % reste « Symétrique »** — côté atteint plus fort que
 le sain. C'est la convention de toute l'application (voir l'asymétrie affichée),

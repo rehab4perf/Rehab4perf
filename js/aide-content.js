@@ -184,6 +184,17 @@ sections: [
       { t:'Deux exceptions', x:'Le dentelé antérieur garde un seuil absolu de 20 répétitions : deux côtés égaux mais tous deux sous la norme sont annoncés « Insuffisant », pas « Symétrique ». Et la GIRD reste en Positif/Négatif — c\'est un vrai signe clinique à 15°, pas une mesure de symétrie.' },
       { t:'Vos appréciations manuelles', x:'Quand vous choisissez « Positif » ou « Négatif » dans la liste déroulante d\'un test de force, le compte-rendu rapporte votre mot tel quel.' }
     ]},
+  { id:'appreciation-force', titre:'L\'appréciation d\'un test de force, sans dynamomètre',
+    intro:'Le menu par côté ne dit plus « Positif / Négatif » mais où en est la force, en trois paliers.',
+    etapes:[
+      { t:'Pourquoi le mot a changé', x:'« Positif » est le vocabulaire des tests orthopédiques : sur un Laslett ou un Ottawa, il annonce un signe trouvé. Sur un test de force il ne voulait pas dire grand-chose — et le même mot rouge couvrait aussi bien une baisse discrète qu\'un déficit franc.' },
+      { t:'Les trois paliers', x:'« Force normale » (vert), « Légèrement diminuée » (ambre), « Nettement diminuée » (rouge), plus « Non testé ». C\'est la lecture du testing manuel, sans en afficher les cotations chiffrées.' },
+      { t:'Ce que le compte-rendu en fait', x:'Il rapporte le côté le plus atteint des deux : un déficit franc d\'un côté ne se laisse pas masquer par une simple baisse de l\'autre. Chaque côté garde son propre libellé dans le tableau.' },
+      { t:'Le plan de traitement retient les deux paliers', x:'Une force légèrement diminuée reste proposée au renforcement. Le palier a été ajouté pour la distinguer d\'un déficit franc, pas pour cesser de la traiter.' },
+      { t:'Un test non fait n\'est pas un test normal', x:'Deux côtés laissés vides, ou marqués « Non testé », ne produisent aucune ligne au compte-rendu — sans quoi un test jamais réalisé s\'annoncerait « Force normale » au médecin.' },
+      { t:'Vos anciens bilans', x:'Un « Positif » enregistré avant ce changement se relit « Nettement diminuée », un « Négatif » se relit « Force normale ». Aucune donnée n\'a bougé : seul le mot affiché change.' },
+      { t:'Les vrais tests cliniques n\'ont pas changé', x:'Laslett, Ottawa, ULNT, tests de flexion debout et assis gardent « Positif / Négatif » : eux cherchent bien un signe.' }
+    ]},
   { id:'reception-criteres', titre:'Le Test de Réception détaille ses critères',
     intro:'« 5/5 » disait l\'ampleur du déficit, pas sa nature.',
     etapes:[

@@ -12,7 +12,7 @@
    - /athlete.html → ignoré (géré par sw.js, scope plus spécifique).
    Bump CACHE à chaque changement de logique de cache.
    ═══════════════════════════════════════════════════════════════════ */
-var CACHE = 'r4p-pro-v146';
+var CACHE = 'r4p-pro-v147';
 var PRECACHE = [
   '/',
   '/index.html',
