@@ -133,8 +133,33 @@ console.log('\n  La page Coude a enfin sa section');
                   'tb-co-ant-g', 'tb-co-ant-d', 'tb-co-post-g', 'tb-co-post-d']
     .filter(function (t) { return sec.indexOf("'" + t + "'") === -1; });
   verifie('ses douze tableaux y figurent', '', absentes.join(','));
-  verifie('sa grille de statut remonte aussi', 'true',
-          String(/_crMobTable\('Mobilité du Coude', 'co'/.test(sansCom)));
+}
+
+console.log('\n  Le tableau REMPLACE les lignes de statut, il ne s\'y ajoute pas');
+{
+  /* Decision du praticien : deux facons de dire la mobilite dans le meme bloc
+     se lisaient comme un doublon. Les champs `mob-co-*` / `mob-po-*` ne sont
+     plus dans la page — leurs valeurs restent en base mais ne sont ni
+     affichees ni reportees, et c'est assume. */
+  verifie('plus aucune ligne de statut au coude', 0,
+          (html.match(/id="mob-co-\w+-(st|nt)"/g) || []).length);
+  verifie('plus aucune ligne de statut au poignet', 0,
+          (html.match(/id="mob-po-\w+-(st|nt)"/g) || []).length);
+  /* Les appels de CR doivent partir AVEC les champs : laisses en place ils
+     chercheraient des identifiants qui n'existent plus, sans rien rendre — du
+     code mort qui fait croire que la mobilite remonte deux fois. */
+  verifie('le CR n\'appelle plus la grille du coude', 'false',
+          String(/_crMobTable\([^)]*'co'/.test(sansCom)));
+  verifie('le CR n\'appelle plus la grille du poignet', 'false',
+          String(/_crMobTable\([^)]*'po'/.test(sansCom)));
+  /* Le rachis, lui, garde ses grilles de statut : elles n'ont pas d'equivalent
+     actif/passif. */
+  verifie('le rachis garde les siennes', 'true',
+          String(/_crMobTable\('Mobilité Cervicale',  'cerv'\)/.test(sansCom)));
+  /* La forme [cle, libelle] ne servait qu'au poignet. Un mecanisme qui ne sert
+     plus est un piege pour la lecture suivante. */
+  verifie('la forme [clé, libellé] a été retirée', 'false',
+          String(/Array\.isArray\(m\)/.test(sansCom)));
 }
 
 console.log('\n  L\'interprétation se rejoue après chargement');

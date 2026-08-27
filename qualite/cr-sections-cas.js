@@ -123,8 +123,28 @@ console.log('\nCR — aucune page remplie ne doit rester invisible\n');
       /zones:\['poignet'\]/.test(ligne),
       ligne.match(/zones:\[[^\]]*\]/)?.[0] || '');
   }
-  verifier('sa grille de mobilité est appelée',
-    /_crMobTable\('Mobilité du Poignet',\s*'po'/.test(js));
+  /* Sa mobilité passe désormais par le tableau actif/passif : la grille de
+     statut du poignet a été remplacée, pas supprimée. Ce qui compte reste le
+     même — la section doit rapporter SA mobilité, sinon on remplit la page
+     pour rien. */
+  verifier('sa mobilité est rapportée',
+    /_crMobApRows\('po'\)/.test(js));
+}
+
+/* ── 4. Le coude aussi — même manque, refermé en même temps ──
+   Douze tableaux au catalogue TESTS et une grille de mobilité dans la page, et
+   rien de tout cela n'était lu : la page entière pouvait être remplie sans
+   qu'une seule ligne n'apparaisse au compte-rendu. */
+{
+  const i = js.indexOf("label:'COUDE'");
+  verifier('la section COUDE existe', i >= 0);
+  if (i >= 0) {
+    const ligne = js.slice(i, i + 220);
+    verifier('elle résout le côté sur la zone coude, et elle seule',
+      /zones:\['coude'\]/.test(ligne),
+      ligne.match(/zones:\[[^\]]*\]/)?.[0] || '');
+  }
+  verifier('sa mobilité est rapportée', /_crMobApRows\('co'\)/.test(js));
 }
 
 console.log(echecs ? '\n' + echecs + ' cas en échec\n' : '\nTous les cas passent\n');

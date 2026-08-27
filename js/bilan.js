@@ -7414,16 +7414,12 @@ function _buildAllTestsHtml() {
     var mobItems = items || ((seg === 'lomb' || seg === 'rl') ? MOB.concat(['Glissement D', 'Glissement G']) : MOB);
     var rows = '';
     mobItems.forEach(function(m) {
-      /* Un item peut être une chaîne — l'identifiant se déduit alors du libellé,
-         comme sur le rachis — ou une paire [clé, libellé] quand les deux
-         divergent. Le poignet est dans ce cas : ses champs s'appellent
-         `mob-po-InclUlnaire`, sans souligné, alors que la déduction donnerait
-         `mob-po-Incl_Ulnaire`. Sans cette paire, la ligne serait cherchée sous
-         un identifiant inexistant et resterait muette — un défaut silencieux,
-         exactement celui qu'on est en train de corriger. */
-      var mLbl = Array.isArray(m) ? m[1] : m;
-      var mId  = Array.isArray(m) ? m[0] : m.replace(/[\s.\/]+/g, '_');
-      var mKey = 'mob-' + seg + '-' + mId;
+      /* L'identifiant se déduit du libellé. La forme [clé, libellé] servait au
+         poignet, dont les champs s'appelaient `mob-po-InclUlnaire` sans
+         souligné ; sa grille de statut a été remplacée par le tableau
+         actif/passif, et plus aucun appelant ne s'en sert. Un mécanisme qui ne
+         sert plus est un piège pour la lecture suivante. */
+      var mKey = 'mob-' + seg + '-' + m.replace(/[\s.\/]+/g, '_');
       var stEl = document.getElementById(mKey + '-st');
       var ntEl = document.getElementById(mKey + '-nt');
       var stVal = stEl ? stEl.value : '';
@@ -7431,7 +7427,7 @@ function _buildAllTestsHtml() {
       if (!stVal && !ntVal) return;
       var stTag = stVal ? ('<span class="cr-tag '+stCls[stVal]+'">'+stLbl[stVal]+'</span>') : '';
       rows += '<tr style="border-top:1px solid var(--border)">'
-        + '<td style="padding:3px 8px;font-size:.8rem;color:var(--text2)">'+mLbl+'</td>'
+        + '<td style="padding:3px 8px;font-size:.8rem;color:var(--text2)">'+m+'</td>'
         + '<td style="padding:3px 8px;font-size:.8rem;text-align:center">'+stTag+'</td>'
         + '<td style="padding:3px 8px;font-size:.78rem;color:var(--text2);font-style:italic">'+nl2br(ntVal)+'</td>'
         + '</tr>';
@@ -7823,16 +7819,9 @@ function _buildAllTestsHtml() {
       secRows += crGroup('Force musculaire', raForceRows);
     }
     if (sec.label === 'COUDE') {
-      secRows += _crMobTable('Mobilité du Coude', 'co', ['Flexion', 'Extension', 'Pronation', 'Supination']);
       secRows += _crMobApRows('co');
     }
     if (sec.label === 'POIGNET / MAIN') {
-      /* Les deux inclinaisons passent en paire [clé, libellé] : leurs champs
-         s'appellent `InclUlnaire` / `InclRadiale`, sans souligné. */
-      secRows += _crMobTable('Mobilité du Poignet', 'po', [
-        'Flexion', 'Extension', 'Pronation', 'Supination',
-        ['InclUlnaire', 'Incl. Ulnaire'], ['InclRadiale', 'Incl. Radiale']
-      ]);
       secRows += _crMobApRows('po');
     }
     if (sec.label === 'RACHIS CERVICAL') {

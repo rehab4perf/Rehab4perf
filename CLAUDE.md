@@ -192,10 +192,19 @@ compte-rendu. Exactement le manque déjà refermé pour le Poignet. `zones:['cou
 et rien d'autre — reprendre la liste de l'ÉPAULE laisserait une douleur d'épaule
 décider du côté nommé pour le coude.
 
-**Les lignes de statut ne sont pas remplacées.** Le tableau actif/passif
-s'ajoute sous elles : `mob-co-*` et `mob-po-*` portent des données déjà
-enregistrées et alimentent `_crMobTable`. Les retirer effacerait des lignes de
-CR sur tous les bilans passés.
+**Le tableau REMPLACE les lignes de statut** — décision du praticien : deux
+façons de dire la mobilité dans le même bloc se lisaient comme un doublon.
+`mob-co-*` et `mob-po-*` ne sont plus dans la page ; leurs valeurs restent en
+base mais ne sont ni affichées ni reportées, et c'est assumé.
+
+Les appels `_crMobTable(…, 'co')` et `(…, 'po')` sont partis **avec** les
+champs : laissés en place, ils chercheraient des identifiants inexistants sans
+rien rendre — du code mort qui fait croire que la mobilité remonte deux fois.
+Le Rachis garde les siennes : il n'a pas d'équivalent actif/passif.
+
+La forme `[clé, libellé]` de `_crMobTable` ne servait qu'au poignet. Elle a été
+retirée avec lui : un mécanisme qui ne sert plus est un piège pour la lecture
+suivante.
 
 ## Catalogue TESTS{} — append-only (OBLIGATOIRE si TESTS modifié)
 
