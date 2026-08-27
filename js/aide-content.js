@@ -106,12 +106,20 @@ sections: [
       { t:'La source est indiquée sous chaque critère', x:'En petit et en gris. Les critères sans source n\'en portent pas — c\'est volontaire plutôt qu\'approximatif.' },
       { t:'Les chiffres saisis entrent dans l\'Évolution', x:'Cadence, et les trois chiffres facultatifs quand ils sont renseignés. Au bilan de suivi, l\'écart avec le bilan précédent s\'affiche directement à côté du champ, et les courbes se construisent dans l\'onglet Évolution.' }
     ]},
+  { id:'cote-lateralite', titre:'Gauche / droite ou sain / atteint : comment le côté est nommé',
+    intro:'Les colonnes du bilan — et celles du compte-rendu — prennent le nom que la zone douloureuse impose, région par région.',
+    etapes:[
+      { t:'Le côté se résout par région, pas pour tout le patient', x:'Les colonnes de la page Épaule lisent la zone douloureuse « épaule », celles du Genou lisent la zone « genou ». Un patient « genou droit + épaule gauche » a donc un côté atteint différent sur chaque page — c\'est voulu.' },
+      { t:'Sans côté atteint, tout se lit en Gauche / Droit', x:'Si vous n\'avez renseigné aucune latéralité pour la région, les colonnes s\'appellent « Gauche » et « Droit ». La page Hanche faisait exception et supposait « Droit » par défaut : ce n\'est plus le cas, elle suit la même règle que les autres.' },
+      { t:'Le compte-rendu ne traduit jamais', x:'Il reprend mot pour mot ce que le formulaire affiche. Un CR qui traduirait « atteint » en « droit » à partir d\'une autre région désignerait le mauvais membre au médecin — c\'est exactement ce qu\'il a cessé de faire.' },
+      { t:'À vérifier avant d\'envoyer', x:'Si une colonne vous surprend, c\'est la zone douloureuse de cette région qu\'il faut regarder dans « Informations patient », pas le compte-rendu.' }
+    ]},
   { id:'generer-cr', titre:'Générer un compte-rendu',
     intro:'Deux formats générés automatiquement à partir de vos saisies — rien à rédiger à la main.',
     etapes:[
       { t:'« CR Tests » : le condensé des tests réalisés', x:'Idéal pour un suivi interne ou un point rapide.' },
       { t:'« CR Complet » : le bilan intégral structuré', x:'Toutes les régions évaluées, les scores et vos commentaires.' },
-      { t:'Les tests à deux côtés se lisent en colonnes', x:'Chaque test bilatéral affiche ses valeurs sous « Droit », « Gauche » et « Asym. » plutôt qu\'en une phrase. Les chiffres sont alignés d\'une ligne à l\'autre : on repère l\'écart d\'un coup d\'œil, sur ordinateur comme sur téléphone.' },
+      { t:'Les tests à deux côtés se lisent en colonnes', x:'Chaque test bilatéral affiche ses valeurs sous « Gauche », « Droit » et « Asym. » — ou « Côté sain » et « Côté atteint » quand la région a un côté atteint connu plutôt qu\'en une phrase. Les chiffres sont alignés d\'une ligne à l\'autre : on repère l\'écart d\'un coup d\'œil, sur ordinateur comme sur téléphone.' },
       { t:'Copiez ou exportez le résultat', x:'Le texte se met à jour en direct si vous modifiez le bilan. Pour un courrier destiné au médecin, utilisez plutôt le CR médecin de l\'onglet Outils.' },
       { t:'La page Poignet / Mains remonte au CR', x:'Mobilité du poignet — flexion, extension, pronation, supination, inclinaisons — tests neurologiques (ULNT, Phalen), tests ligamentaires et De Quervain apparaissent désormais dans le CR Complet, sous « Poignet / Main ». Vos bilans déjà enregistrés retrouvent ces données : elles étaient saisies et conservées, simplement jamais affichées.' },
       { t:'Sur un bilan de suivi, chaque ligne dit quand elle a été mesurée', x:'Trois mentions, et une absence de mention qui compte autant. « Réévalué le 18/08 » : test déjà connu, refait ce jour, résultat nouveau. « Réévalué le 18/08 — inchangé » : test refait, résultat identique au précédent — c\'est souvent l\'information la plus utile au médecin. Une simple date en gris, avec la valeur en italique : test non recontrôlé, la valeur vient d\'un bilan antérieur. Aucune mention du tout : le test est mesuré pour la première fois — ce qui n\'est pas marqué « réévalué » en est une première évaluation, inutile de l\'écrire. Une légende reprend la convention en tête du CR, pour son destinataire.' },
@@ -125,7 +133,7 @@ sections: [
       { t:'Sauvegarder le bilan', x:'Le bouton « Sauvegarder le bilan » enregistre l\'ensemble de vos saisies pour le patient actif, daté du jour. Une fois sauvegardé, le bilan passe en mode lecture (📖) pour éviter les modifications accidentelles.', img:true },
       { t:'Mode lecture', x:'Après sauvegarde, les champs sont verrouillés. Deux options s\'offrent alors : « Modifier ce bilan » (corriger) ou « Bilan de suivi » (nouvelle évaluation).' },
       { t:'Modifier ce bilan', x:'Corrige le bilan en cas d\'erreur de saisie. Les corrections sont enregistrées à la DATE D\'ORIGINE du bilan et ne créent AUCUN nouveau point dans l\'évolution. À utiliser pour rectifier, pas pour un nouveau contrôle.' },
-      { t:'Bilan de suivi', x:'À utiliser lors d\'une nouvelle consultation de contrôle. Tous les champs sont pré-remplis depuis le dernier bilan : vous ne re-saisissez que ce qui a changé. Les valeurs que vous modifiez créent un nouveau point daté du jour dans les courbes d\'évolution — et un test refait sans changement en crée un aussi, à condition que son bloc soit marqué « Réévalué ».' },
+      { t:'Bilan de suivi', x:'À utiliser lors d\'une nouvelle consultation de contrôle. Tous les champs sont pré-remplis depuis le dernier bilan : vous ne re-saisissez que ce qui a changé. Les valeurs que vous modifiez créent un nouveau point daté du jour dans les courbes d\'évolution — et un test refait dont le résultat n\'a pas bougé est lui aussi annoncé comme réévalué dans le compte-rendu.' },
       { t:'La marque « Réévalué », dans l\'en-tête de chaque bloc', x:'Vous n\'avez RIEN à faire : elle apparaît toute seule dès que vous saisissez quelque chose dans le bloc. Ce n\'est pas un bouton, il n\'y a rien à cocher — c\'est un simple témoin qui vous montre ce que le compte-rendu annoncera comme réévalué. Elle a été cliquable un temps, pour le cas « test refait sans rien changer » ; ce cas n\'existe pas, puisqu\'un bilan de suivi part de champs vides et qu\'y consigner un résultat suppose toujours une saisie.' },
       { t:'Elle n\'apparaît qu\'en situation de suivi', x:'Sur un premier bilan, « réévalué » ne veut rien dire — il n\'y a rien à réévaluer. La pastille est donc masquée tant qu\'aucun bilan antérieur n\'existe. Le marquage continue pourtant en arrière-plan : c\'est ce qui permettra au bilan suivant de savoir que ces tests avaient déjà été faits.' },
       { t:'Ce que la marque change, et ce qu\'elle ne change pas', x:'Elle porte sur le BLOC, pas sur le test : dans un bloc marqué, un test resté vide reste donné pour ancien — la marque ne fait pas dire au CR plus que ce que vous avez fait. Les bilans enregistrés avant l\'apparition de cette marque se relisent exactement comme avant : on ne réinvente pas un passé qu\'on ne connaît pas.' },
@@ -211,10 +219,39 @@ sections: [
       { t:'Rien à recopier', x:'Le bilan sait déjà calculer l\'asymétrie et traduire les intitulés pour le médecin. Un test de force ajouté au bilan demain apparaîtra tout seul dans cette liste.' },
       { t:'Comment les tests sont nommés au médecin', x:'Trois éléments : la fonction mesurée (« Contrôle du membre inférieur »), le nom du protocole entre parenthèses (« Squat unipodal ») pour le médecin du sport qui le reconnaît, et le geste réalisé en petit dessous (« squat sur une jambe »). Auparavant seule la fonction sortait — le médecin ne savait ni quel membre, ni quel mouvement avait été testé.' }
     ]},
-  { id:'cr-medecin', titre:'Rédiger un CR médecin',
+  { id:'cr-colonnes', titre:'Les colonnes du tableau des tests',
+    intro:'Le tableau du courrier n\'affiche que les colonnes qui servent — et sépare les tests qui ne se lisent pas de la même façon.',
+    etapes:[
+      { t:'Une colonne n\'apparaît qu\'à partir de la moitié des lignes', x:'Dans un groupe de tests, une colonne « Gauche / Droit » ne s\'affiche que si la moitié au moins des lignes la remplit. C\'est le cas de l\'analyse de course à pied : « Conditions », « Cadence » et « Temps de contact » n\'ont pas deux côtés, seule « Zone d\'attaque » en a. Les en-têtes ne coiffent donc plus quatre lignes sur cinq qui ne s\'y rapportent pas.' },
+      { t:'Un test isolé garde ses colonnes', x:'Un dynamomètre seul dans « Tests de force » est une ligne sur une : il conserve « Côté sain / Côté atteint », ce qui reste la lecture la plus claire.' },
+      { t:'Sans colonnes de côté, la valeur passe en toutes lettres', x:'La colonne restante s\'intitule « Observation » et s\'aligne à gauche — ce ne sont plus des chiffres à comparer.' },
+      { t:'Deux conventions de côté ne partagent pas un tableau', x:'Si une même section réunit des tests en « Côté sain / Côté atteint » et d\'autres en « Gauche / Droit », le courrier écrit deux tableaux au lieu d\'un seul à cinq colonnes à moitié vides. L\'ordre des tests reste celui du bilan.' },
+      { t:'Un test à plusieurs mesures sort en sous-lignes', x:'La Course interne du mollet, par exemple, montre ses 2 appuis, son 1 appui et son effondrement l\'un sous l\'autre, indentés sous le nom du test — au lieu de n\'en faire voyager qu\'un seul.' }
+    ]},
+  { id:'cr-af-section', titre:'L\'analyse fonctionnelle dans le courrier',
+    intro:'Elle a sa propre section, ses propres colonnes, et ne sort plus le score sur 7.',
+    etapes:[
+      { t:'Une section à part', x:'L\'analyse fonctionnelle se lit en Gauche / Droite — ce sont des côtés anatomiques. Les tests chiffrés de la même région se lisent souvent en Côté sain / Côté atteint. Les deux ne peuvent pas cohabiter dans un tableau sans risque de confusion : l\'analyse fonctionnelle reçoit donc son propre intertitre et son propre tableau.' },
+      { t:'Une compensation par ligne', x:'Chaque compensation observée descend en sous-ligne sous le nom du test, avec sa pastille dans la colonne du côté concerné. C\'est la grille du bilan, rendue dans le tableau du courrier.' },
+      { t:'Seules les compensations présentes figurent', x:'La liste ne reprend pas les items non observés — le courrier dit ce qui a été vu.' },
+      { t:'Le score sur 7 ne sort pas du cabinet', x:'Le dénominateur ne dit rien à qui ne le connaît pas. Le statut devient un nombre de compensations (« 2 compensations », ou « 1 à gauche · 2 à droite » quand les côtés diffèrent), et la phrase de synthèse garde son information clinique sans le score. Le CR interne du bilan, lui, continue d\'afficher le score : c\'est vous qui le lisez.' },
+      { t:'Le membre est nommé', x:'L\'intertitre précise qu\'il s\'agit du membre inférieur — rien ne le disait auparavant dans le courrier.' }
+    ]},
+  { id:'cr-mise-en-page', titre:'Le courrier à l\'impression',
+    intro:'Le CR est lu sur papier ou en PDF : sa mise en page a été refaite pour tenir la coupure de page.',
+    etapes:[
+      { t:'Conclusion et plan sont deux encadrés jumeaux', x:'Le plan sortait en paragraphes nus juste sous la conclusion, et l\'on ne voyait plus où l\'une finissait. Chacun a désormais son cadre et son intitulé : l\'un dit où en est le patient, l\'autre ce qui va être fait.' },
+      { t:'Rien ne se coupe au milieu', x:'Grille patient, encadrés, tableaux et lignes de tableau ne se scindent plus entre deux pages. Un intertitre seul en pied de page — qui annoncerait une section commençant ailleurs — est repoussé avec sa section, et la signature ne part plus seule en tête de page suivante.' },
+      { t:'Les listes sont des listes', x:'Amplitudes, signes cliniques et tests cliniques sortaient en paragraphes, un par item : le bloc le plus haut du document pour l\'information la plus brève. Ils tiennent maintenant sur deux colonnes, dans moins de la moitié de la hauteur. Une liste d\'un seul item repasse sur une colonne.' },
+      { t:'Un pied de page identifie chaque feuille', x:'Patient, date et praticien sont répétés en bas de chaque page : une feuille détachée reste rattachable. Il n\'y a pas de « page 2 / 3 » — compter les pages n\'est pas réalisable en impression navigateur, et mieux vaut ne rien afficher qu\'un compteur faux.' },
+      { t:'Les marges', x:'Seule la première page va bord à bord, pour que le bandeau d\'en-tête morde le bord du papier. Les suivantes reprennent une marge haute : le texte ne repart plus collé au bord.' },
+      { t:'Plus de case grise vide', x:'La grille des informations patient laissait apparaître une cellule grise sans intitulé quand le nombre de champs était impair. La dernière case s\'étend maintenant jusqu\'au bord.' }
+    ]},
+  { id:'cr-medecin', titre:'Rédiger un CR',
     intro:'Un courrier structuré destiné au médecin, avec aperçu en temps réel pendant la saisie.',
     etapes:[
-      { t:'Renseignez le destinataire', x:'Dr, spécialité, email.' },
+      { t:'Choisissez d\'abord le destinataire', x:'Médecin ou patient — c\'est le premier geste du générateur. Les données ne changent pas : mêmes tests, mêmes tableaux, mêmes chiffres. Seuls l\'ouverture, l\'objet et la clôture s\'adaptent. Voir « Écrire au médecin ou au patient ».' },
+      { t:'Renseignez le destinataire', x:'Dr, spécialité, email. Ces coordonnées sont masquées — jamais vidées — quand vous écrivez au patient.' },
       { t:'Les infos du bilan s\'associent toutes seules', x:'Côté atteint, date d\'accident, date d\'opération, début de prise en charge, médecin prescripteur et EVA sont repris du bilan dès que vous changez de patient — sans rien cliquer. Si vous corrigez une de ces valeurs à la main, elle est conservée : l\'association n\'a lieu qu\'une fois, au changement de patient. Le bouton « Associer les infos patient » reste disponible pour la relancer.', img:true },
       { t:'Complétez pathologie, bilan clinique et plan', x:'Amplitudes, force, tests fonctionnels, signes cliniques, phase, évolution, plan de traitement — l\'aperçu à droite se met à jour à chaque champ.' },
       { t:'Exportez', x:'Copier la lettre, exporter en PDF ou envoyer par email directement.' },
@@ -610,6 +647,7 @@ sections: [
       { t:'Ou « ✕ Délier » sur une activité déjà liée', x:'Le lien est enregistré en base : même résultat sur tous vos appareils.' },
       { t:'« 🗑 Retirer cette activité » pour l\'exclure de la charge', x:'Elle disparaît du dossier et ne compte plus dans la charge ni dans l\'ACWR — utile pour un trajet vélo que vous ne voulez pas comptabiliser. Attention : si l\'athlète modifie ensuite l\'activité sur Strava, elle réapparaîtra.' },
       { t:'Les doublons probables sont signalés', x:'Quand deux activités du même jour portent le même nom avec des durées proches, la chip est cerclée de blanc et porte une marque. Le détail affiche les deux côte à côte — « 108 min / 53,2 km » contre « 107 min / 53,1 km » ne laisse aucun doute. C\'est le cas de la sortie enregistrée à la fois sur la montre et sur le téléphone : les deux comptent dans la charge et faussent l\'ACWR.' },
+      { t:'Supprimer le doublon sur Strava le retire aussi ici', x:'Quand l\'athlète supprime l\'activité en double depuis Strava, elle disparaît maintenant de votre côté également. Elle restait auparavant dans le dossier et continuait de fausser l\'ACWR alors qu\'elle n\'existait plus chez lui.' },
       { t:'Le signalement ne supprime jamais tout seul', x:'Deux footings de 9 et 7 minutes le même jour peuvent être un échauffement et un retour au calme — deux efforts réels. Aucune règle ne peut trancher à votre place : demandez à l\'athlète, puis retirez celle qui fait doublon.' }
     ]},
   { id:'panneau-strava', titre:'Le panneau « Réalisée avec Strava »',
