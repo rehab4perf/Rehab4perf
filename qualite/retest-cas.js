@@ -275,6 +275,20 @@ console.log('\n  La pastille se cache quand elle ne peut pas servir');
 {
   var sansCom = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
+  /* TEMOIN, jamais commande. Elle a ete cliquable pour un cas qui n'existe
+     pas : « test refait, resultat identique, donc rien a saisir ». A la
+     creation d'un bilan de suivi les champs sont VIDES — les anciennes valeurs
+     ne sont qu'un texte d'option ou un placeholder (`_blShowInheritedHints`).
+     Enregistrer un resultat suppose donc toujours une saisie, et la marque se
+     pose seule. Un bouton qui ne fait rien est pire qu'aucun bouton. */
+  verifie('plus de bascule manuelle',        'false', String(/_reevalToggle/.test(sansCom)));
+  var dP = sansCom.indexOf('function _reevalRender');
+  var fP = sansCom.indexOf('function _reevalEcouter');
+  var corpsP = sansCom.slice(dP, fP);
+  verifie('la pastille est un <span>, pas un bouton', 'true',
+          String(/createElement\('span'\)/.test(corpsP)));
+  verifie('… sans gestionnaire de clic',     'false', String(/addEventListener\('click'/.test(corpsP)));
+
   var dV = sansCom.indexOf('function _reevalMajVisibilite');
   var fV = sansCom.indexOf('function _reevalEcouter');
   var corpsV = sansCom.slice(dV, fV);

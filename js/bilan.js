@@ -10231,15 +10231,26 @@ function _reevalIndexer(){
   });
 }
 
+/* TEMOIN, pas commande. La pastille etait cliquable pour un cas precis :
+   « test refait, resultat identique, donc rien a saisir ». Ce cas N'EXISTE PAS
+   dans le flux de suivi — a la creation d'un bilan de suivi les champs sont
+   VIDES (les anciennes valeurs ne sont qu'un texte d'option ou un placeholder,
+   voir `_blShowInheritedHints`). Enregistrer un resultat, identique ou non,
+   suppose donc toujours une saisie, et la marque se pose seule.
+
+   Verifie sur les 137 blocs : aucun n'est compose uniquement de cases a
+   cocher, et les quatre blocs mixtes portent deja leur propre case « Inclure
+   au CR » pour dire « regarde, rien a signaler ».
+
+   Elle ne s'affiche donc que MARQUEE : sur un bilan de suivi, les blocs
+   remplis aujourd'hui portent la mention, les autres ne portent rien. */
 function _reevalPeindre(chip, bid){
   var on = !!_reevalBlocs[bid];
   chip.classList.toggle('on', on);
-  chip.setAttribute('aria-pressed', on ? 'true' : 'false');
-  chip.title = on
-    ? 'Ce bloc sera marqué « réévalué » dans le compte-rendu. Cliquer pour retirer la marque.'
-    : 'Test refait sans que le résultat change ? Cliquer pour le marquer réévalué.';
+  chip.style.visibility = on ? '' : 'hidden';
+  chip.title = 'Ce test sera annoncé « réévalué » dans le compte-rendu.';
   chip.innerHTML = '<span class="reeval-box"></span>'
-                 + '<span class="reeval-txt">' + (on ? 'Réévalué' : 'Réévalué&nbsp;?') + '</span>';
+                 + '<span class="reeval-txt">Réévalué</span>';
 }
 
 function _reevalRepeindre(bid){
@@ -10247,12 +10258,6 @@ function _reevalRepeindre(bid){
     _reevalPeindre(c, bid);
   });
 }
-
-window._reevalToggle = function(bid){
-  if(_reevalBlocs[bid]) delete _reevalBlocs[bid]; else _reevalBlocs[bid] = true;
-  _reevalRepeindre(bid);
-  if(!_suppressDirty) _bilanModified = true;
-};
 
 /* À rappeler après toute reconstruction de blocs (`_blApplyLayout`) : la
    pastille vit DANS l'en-tête, un bloc re-rendu perd la sienne. */
@@ -10268,14 +10273,11 @@ function _reevalRender(){
     if(!hd) return;
     var chip = hd.querySelector('.reeval-chip');
     if(!chip){
-      chip = document.createElement('button');
-      chip.type = 'button';
+      /* Un <span>, plus un <button> : rien a cliquer, rien a atteindre au
+         clavier. Un bouton qui ne fait rien est pire qu'aucun bouton. */
+      chip = document.createElement('span');
       chip.className = 'reeval-chip';
       chip.setAttribute('data-bloc', bid);
-      chip.addEventListener('click', function(ev){
-        ev.preventDefault(); ev.stopPropagation();
-        window._reevalToggle(bid);
-      });
       hd.appendChild(chip);
     }
     _reevalPeindre(chip, bid);

@@ -708,26 +708,23 @@ td.bl-row-rail button:disabled { opacity: .3 !important; cursor: default; }
    tout le travail. Elle s'habille en `currentColor` : l'en-tête existe en
    cinq variantes de fond (navy, vert, rouge, gris, clair) et une couleur
    écrite en dur en aurait raté quatre. */
+/* TÉMOIN, pas commande — voir `_reevalPeindre`. Elle n'a plus ni curseur de
+   clic, ni zone tactile, ni état « éteint » : elle n'apparaît que lorsque le
+   bloc EST marqué, et il n'y a rien à y faire. */
 .reeval-chip {
-  position: relative; margin-left: auto; flex-shrink: 0;
+  margin-left: auto; flex-shrink: 0;
   display: inline-flex; align-items: center; gap: 5px;
   border: 1px solid currentColor; background: transparent; color: inherit;
   border-radius: 20px; padding: 3px 9px;
   font-family: inherit; font-size: .6rem; font-weight: 700;
   text-transform: none; letter-spacing: 0; white-space: nowrap;
-  cursor: pointer; opacity: .6; transition: opacity .15s;
 }
-/* Cible tactile : la pastille mesure 24 px de haut, en imposer 44 déformerait
-   l'en-tête. La zone cliquable est donc étendue sans toucher à la mise en
-   page — un pseudo-élément absolu ne pousse rien. */
-.reeval-chip::before { content: ''; position: absolute; inset: -13px -8px; }
 /* Deux en-têtes portent déjà « Inclure dans le CR », lui aussi en
    `margin-left:auto`. Deux marges automatiques se PARTAGENT l'espace libre :
    le toggle serait parti flotter au milieu du titre. La pastille étant
    toujours ajoutée en dernier, elle se contente ici d'un écart fixe. */
 .block-header .cr-toggle-label ~ .reeval-chip { margin-left: 8px; }
-.reeval-chip:hover { opacity: .95; }
-.reeval-chip.on { opacity: 1; }
+
 .reeval-chip .reeval-box {
   width: 11px; height: 11px; border-radius: 3px; border: 1.5px solid currentColor;
   flex-shrink: 0; transition: background .15s;
@@ -5938,7 +5935,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260806i"></script>
-<script src="js/bilan.js?v=20260825x"></script>
+<script src="js/bilan.js?v=20260825y"></script>
 
 </body>
 </html>
