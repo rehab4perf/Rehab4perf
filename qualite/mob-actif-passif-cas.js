@@ -47,7 +47,7 @@ function verifie(intitule, attendu, obtenu) {
 
 console.log('\n  Les segments et leurs mouvements');
 {
-  verifie('trois segments', 'ep,co,po', Object.keys(MOB_AP).join(','));
+  verifie('quatre segments', 'ep,co,po,ha', Object.keys(MOB_AP).join(','));
   /* Les cles de l'EPAULE sont la partie des identifiants deja enregistree dans
      les bilans. Les renommer relirait ces bilans de travers, en silence. */
   verifie('l\'épaule garde ses clés', 'flex,abd,rl,rm,addh',
@@ -142,9 +142,9 @@ console.log('\n  L\'end-feel requalifie, et prime quand il est vide');
   /* Le vide prime sur TOUT : il ne décrit pas une raideur mais un arrêt par la
      douleur avant toute butée. Le subordonner au reste de la ligne le ferait
      disparaître là où il compte le plus. */
-  verifie('vide sur un actif limité',  'Arrêt par la douleur/bad', v('lim', 'lim', 'vide'));
-  verifie('vide sur un actif libre',   'Arrêt par la douleur/bad', v('libre', 'libre', 'vide'));
-  verifie('vide sans actif du tout',   'Arrêt par la douleur/bad', v('', '', 'vide'));
+  verifie('vide sur un actif limité',  'Arrêt sur douleur/bad', v('lim', 'lim', 'vide'));
+  verifie('vide sur un actif libre',   'Arrêt sur douleur/bad', v('libre', 'libre', 'vide'));
+  verifie('vide sans actif du tout',   'Arrêt sur douleur/bad', v('', '', 'vide'));
   /* Sans passif, la fin de course n'a pas d'objet : une valeur restée là ferait
      basculer en drapeau rouge un mouvement qu'on n'a pas testé. */
   verifie('elle se vide quand le passif s\'efface', 'true',
@@ -161,9 +161,52 @@ console.log('\n  La phrase d\'explication reste courte');
             .every(function (t) { return !!verdict(t[0], t[1], t[2])[3]; })));
 }
 
-console.log('\n  Le compte-rendu lit les trois segments');
+
+console.log('\n  La hanche — les deux côtés, systématiquement');
 {
-  ['ep', 'co', 'po'].forEach(function (seg) {
+  /* La hanche s'examine toujours des deux côtés : le côté entre dans la clé,
+     ce qui donne `ha-mob-g-flex-act` — la forme des identifiants de degrés
+     qu'elle portait, prolongée d'un suffixe. */
+  verifie('douze lignes', 12, (MOB_AP.ha || []).length);
+  verifie('six mouvements, deux côtés', 'G,D,G,D,G,D,G,D,G,D,G,D',
+          MOB_AP.ha.map(function (m) { return m.cote; }).join(','));
+  verifie('rangés par mouvement puis par côté', 'Flexion,Flexion,Extension,Extension',
+          MOB_AP.ha.slice(0, 4).map(function (m) { return m.label; }).join(','));
+  /* Les degrés ont disparu de la page : le praticien note l'amplitude en clair
+     dans le marqueur s'il veut préciser. Leurs valeurs déjà enregistrées
+     restent lisibles dans l'Évolution, qui lit les `donnees`, pas la page. */
+  verifie('plus aucun champ de degré', 0,
+          (html.match(/id="ha-mob-[gd]-(?:flex|ext|ri|re|abd|add)"/g) || []).length);
+  verifie('le CR ne rend plus le tableau de degrés', 'false',
+          String(/romCrTable\('Amplitudes Articulaires — Hanche/.test(js)));
+  verifie('il rend le différentiel', 'true', String(/_crMobApRows\('ha'\)/.test(js)));
+  /* Les observations par côté sont CONSERVÉES : rien dans le nouveau tableau
+     ne les remplace — le marqueur est par mouvement — et le CR les lit. */
+  verifie('les observations par côté subsistent', 'true',
+          String(/id="ha-mob-g-obs"/.test(html) && /id="ha-mob-d-obs"/.test(html)));
+  /* Le côté est nommé en toutes lettres au courrier : ce sont des côtés
+     ANATOMIQUES, la grille les lit tels quels et le CR ne traduit pas. */
+  verifie('le courrier nomme le côté', 'true',
+          String(/m\.cote \? m\.label \+ ' — ' \+ \(m\.cote === 'G' \? 'Gauche' : 'Droit'\)/.test(js)));
+}
+
+console.log('\n  Le libellé « Vide »');
+{
+  /* « Vide » cohabitait avec le « — » du menu non renseigné : les deux se
+     lisaient pareil au premier coup d'œil. Le terme canonique reste en tête,
+     la formulation du praticien le précise. */
+  verifie('vingt-sept menus le portent', 27,
+          (html.match(/<option value="vide">Vide \(arrêt sur douleur\)<\/option>/g) || []).length);
+  verifie('aucun « Vide » nu ne subsiste', 0,
+          (html.match(/<option value="vide">Vide<\/option>/g) || []).length);
+  /* LA VALEUR ne bouge pas : elle est la clé des bilans enregistrés. */
+  verifie('la valeur reste « vide »', 27, (html.match(/value="vide"/g) || []).length);
+  verifie('le verdict suit la même formulation', 'Arrêt sur douleur', verdict('', '', 'vide')[0]);
+}
+
+console.log('\n  Le compte-rendu lit les quatre segments');
+{
+  ['ep', 'co', 'po', 'ha'].forEach(function (seg) {
     verifie('_crMobApRows(\'' + seg + '\') est appelé', 'true',
             String(sansCom.indexOf("_crMobApRows('" + seg + "')") !== -1));
   });
@@ -184,21 +227,21 @@ console.log('\n  Le compte-rendu lit les trois segments');
 
 console.log('\n  Le balisage des trois tableaux');
 {
-  verifie('quinze menus de fin de course', 15, (html.match(/id="[\w-]+-mob-\w+-ef"/g) || []).length);
-  /* Bornée aux trois tableaux actif/passif : « Observation » reste un en-tête
+  verifie('vingt-sept menus de fin de course', 27, (html.match(/id="[\w-]+-mob-[\w-]+-ef"/g) || []).length);
+  /* Bornée aux tableaux actif/passif : « Observation » reste un en-tête
      légitime ailleurs — les répétitions du rachis lombaire en portent un. */
-  var entetes = (html.match(/<thead><tr>[\s\S]*?<\/tr><\/thead>\s*<tbody id="\w+-mob-tbody">/g) || []);
-  verifie('trois tableaux actif/passif', 3, entetes.length);
-  verifie('chacun a ses six colonnes', 3, entetes.filter(function (t) {
+  var entetes = (html.match(/<thead><tr>[\s\S]*?<\/tr><\/thead>\s*<tbody id="[\w-]*mob-tbody">/g) || []);
+  verifie('quatre tableaux actif/passif', 4, entetes.length);
+  verifie('chacun a ses colonnes', 4, entetes.filter(function (t) {
     return ['Mouvement', 'Actif', 'Passif', 'End-feel', 'Marqueur / observations', 'Interprétation']
       .every(function (c) { return t.indexOf('>' + c + '<') !== -1; });
   }).length);
-  /* Le passif accepte désormais « douloureux + limité », comme l'actif : sans
-     lui, un mouvement à la fois douloureux et limité en passif devait être
-     rangé dans l'une des deux cases, et le verdict s'en trouvait faussé. */
-  var menusPas = html.match(/<select id="[\w-]+-mob-\w+-pas"[\s\S]*?<\/select>/g) || [];
-  verifie('quinze menus passif', 15, menusPas.length);
-  verifie('tous acceptent « doul. + lim. »', 15,
+  /* La hanche en a une de plus : elle s'examine des deux côtés, toujours. */
+  verifie('la hanche ajoute la colonne « Côté »', 1,
+          entetes.filter(function (t) { return t.indexOf('>Côté<') !== -1; }).length);
+  var menusPas = html.match(/<select id="[\w-]+-mob-[\w-]+-pas"[\s\S]*?<\/select>/g) || [];
+  verifie('vingt-sept menus passif', 27, menusPas.length);
+  verifie('tous acceptent « doul. + lim. »', 27,
           menusPas.filter(function (m) { return m.indexOf('value="doullim"') !== -1; }).length);
 }
 

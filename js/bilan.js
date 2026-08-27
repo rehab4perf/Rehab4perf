@@ -7468,7 +7468,11 @@ function _buildAllTestsHtml() {
                  + (e ? ' · Fin de course : '+(EP_MOB_EF_LABELS[e]||e) : '')
                  + (v[2] ? ' · '+v[2] : '')
                  + (o ? ' · '+nl2br(o) : '');
-      rows += crItem(m.label, valStr, v[0] !== '—' ? v[0] : '', v[1] === 'muted' ? '' : v[1],
+      /* Le cote est nomme en toutes lettres quand le mouvement en porte un :
+         « Flexion — Gauche ». Ce sont des cotes ANATOMIQUES, pas la convention
+         sain/atteint — la grille les lit tels quels, le CR ne traduit pas. */
+      var libelle = m.cote ? m.label + ' — ' + (m.cote === 'G' ? 'Gauche' : 'Droit') : m.label;
+      rows += crItem(libelle, valStr, v[0] !== '—' ? v[0] : '', v[1] === 'muted' ? '' : v[1],
                      [base+'-act', base+'-pas', base+'-ef', base+'-obs']);
     });
     if (!rows) return '';
@@ -7585,14 +7589,7 @@ function _buildAllTestsHtml() {
       }
     }
     if (sec.label === 'HANCHE') {
-      secRows += romCrTable('Amplitudes Articulaires — Hanche (°)', [
-        {label:'Flexion',   dId:'ha-mob-d-flex', gId:'ha-mob-g-flex'},
-        {label:'Extension', dId:'ha-mob-d-ext',  gId:'ha-mob-g-ext'},
-        {label:'RI',        dId:'ha-mob-d-ri',   gId:'ha-mob-g-ri'},
-        {label:'RE',        dId:'ha-mob-d-re',   gId:'ha-mob-g-re'},
-        {label:'ABD',       dId:'ha-mob-d-abd',  gId:'ha-mob-g-abd'},
-        {label:'ADD',       dId:'ha-mob-d-add',  gId:'ha-mob-g-add'},
-      ], true);
+      secRows += _crMobApRows('ha');
       var haObsG = (document.getElementById('ha-mob-g-obs')||{}).value||'';
       var haObsD = (document.getElementById('ha-mob-d-obs')||{}).value||'';
       if (haObsG) secRows += '<div style="margin:2px 0 6px;padding:5px 10px;background:var(--surface2);border-radius:5px;font-size:.82rem;color:var(--text2);font-style:italic">Obs. Hanche G : '+nl2br(haObsG)+'</div>';
@@ -10841,13 +10838,26 @@ var MOB_AP = {
     { key:'incu', label:'Inclinaison ulnaire' },
     { key:'incr', label:'Inclinaison radiale' },
   ],
+  /* La hanche s'examine TOUJOURS des deux cotes : le cote entre donc dans la
+     cle, ce qui donne `ha-mob-g-flex-act` — la forme des identifiants de
+     degres qu'elle portait avant, prolongee d'un suffixe. Les mouvements sont
+     ranges par mouvement PUIS par cote : c'est l'ordre du tableau, ou le
+     libelle du mouvement coiffe ses deux lignes. */
+  ha: [
+    { key:'g-flex', label:'Flexion',   cote:'G' }, { key:'d-flex', label:'Flexion',   cote:'D' },
+    { key:'g-ext',  label:'Extension', cote:'G' }, { key:'d-ext',  label:'Extension', cote:'D' },
+    { key:'g-ri',   label:'Rotation interne', cote:'G' }, { key:'d-ri', label:'Rotation interne', cote:'D' },
+    { key:'g-re',   label:'Rotation externe', cote:'G' }, { key:'d-re', label:'Rotation externe', cote:'D' },
+    { key:'g-abd',  label:'Abduction', cote:'G' }, { key:'d-abd', label:'Abduction', cote:'D' },
+    { key:'g-add',  label:'Adduction', cote:'G' }, { key:'d-add', label:'Adduction', cote:'D' },
+  ],
 };
 var EP_MOB_MOVEMENTS = MOB_AP.ep;
 var EP_MOB_ACT_LABELS = { libre:'Libre', doul:'Douloureux', lim:'Limité', doullim:'Doul. + limité' };
 var EP_MOB_PAS_LABELS = { libre:'Libre', doul:'Douloureux', lim:'Limité' };
 var EP_MOB_TONE = { muted:'var(--text3)', ok:'var(--green)', warn:'var(--orange)', bad:'var(--red)' };
 
-var EP_MOB_EF_LABELS = { ferme:'Ferme-élastique', dur:'Dur', mou:'Mou', vide:'Vide' };
+var EP_MOB_EF_LABELS = { ferme:'Ferme-élastique', dur:'Dur', mou:'Mou', vide:'Vide (arrêt sur douleur)' };
 
 /* Différentiel actif/passif — la valeur clinique vient de la COMPARAISON, pas
    de chaque mesure isolément. Vocabulaire repris du tableau « Lire l'écart
@@ -10861,7 +10871,7 @@ var EP_MOB_EF_LABELS = { ferme:'Ferme-élastique', dur:'Dur', mou:'Mou', vide:'V
 function _mobApVerdict(a, p, e) {
   /* La fin de course VIDE prime sur tout le reste : la douleur arrête avant
      toute butée tissulaire. Ce n'est pas une raideur, c'est un signal. */
-  if (e === 'vide') return ['Arrêt par la douleur', 'bad',
+  if (e === 'vide') return ['Arrêt sur douleur', 'bad',
     'Stop avant la butée — rupture massive, tumeur ou capsulite. Avis médical.',
     'La douleur arrête le mouvement avant toute butée tissulaire. Ce n\'est pas une raideur : rupture massive, tumeur ou capsulite. Avis médical avant toute mise en charge.'];
   if (!a) return p ? ['Passif isolé', 'muted', 'Renseigner l\'actif pour conclure.',

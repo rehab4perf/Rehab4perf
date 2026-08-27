@@ -207,6 +207,25 @@ autre clé que celle de sa ligne ne casse rien de visible — la colonne
 ligne dans la page n'est ni interprété, ni remonté au CR. Le fichier de cas
 contrôle les deux.
 
+**La hanche s'examine toujours des DEUX côtés** : le côté entre dans la clé
+(`g-flex`, `d-flex`…), ce qui donne `ha-mob-g-flex-act` — la forme des
+identifiants de degrés qu'elle portait, prolongée d'un suffixe. Les mouvements
+sont rangés par mouvement PUIS par côté : c'est l'ordre du tableau, où le
+libellé coiffe ses deux lignes. Le CR nomme le côté en toutes lettres
+(« Flexion — Gauche ») ; ce sont des côtés **anatomiques**, la grille les lit
+tels quels et le CR ne traduit pas.
+
+**Les degrés de hanche ont disparu de la page** — décision du praticien : noter
+six angles par côté à chaque bilan est trop lourd, et l'amplitude se précise
+dans le marqueur quand elle compte. Conséquence assumée : les six mesures par
+côté ne sont plus collectées. **Les 13 suivis d'Évolution restent définis** et
+leurs points déjà enregistrés restent tracés — `_getMetricVal` lit les
+`donnees`, pas la page. Les supprimer effacerait cet historique de l'écran.
+
+**Les observations par côté de la hanche sont CONSERVÉES** (`ha-mob-g-obs`,
+`ha-mob-d-obs`) : rien dans le nouveau tableau ne les remplace — le marqueur est
+par mouvement — et le CR les lit.
+
 **`_mobApRefreshAll()` doit être rejouée après tout chargement.** Elle ne
 l'était qu'à l'ouverture de la page : rouvrir un bilan laissait la colonne à
 « — » alors que les deux menus étaient renseignés — défaut préexistant sur
