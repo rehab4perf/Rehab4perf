@@ -10889,8 +10889,15 @@ function _mobApVerdict(a, p, e) {
     'Actif supérieur au passif : artefact méthodologique le plus souvent. S\'il se confirme, penser laxité avec instabilité fonctionnelle.'];
   if (aDoul && !pDoul) return ['Pathologie tendineuse', 'warn', 'Souffrance en charge — coiffe, conflit.',
     'Douleur active sans limitation passive : la structure souffre sous charge plutôt qu\'elle ne raidit.'];
-  if (pDoul) return ['Structure inerte', 'bad', 'Capsule, bourse ou os.',
-    'Douleur à la mise en tension passive : la structure douloureuse n\'est pas contractile.'];
+  /* « Structure inerte » est le terme de Cyriax ; « non contractile » dit la
+     meme chose sans le supposer connu — le courrier part chez un medecin.
+
+     L'os a ete retire de la liste : il figure dans l'inventaire theorique des
+     structures inertes, mais une douleur osseuse ne se reproduit quasiment
+     jamais par une mise en tension passive. Le ligament, lui, est le premier
+     candidat et manquait. */
+  if (pDoul) return ['Structure non contractile', 'bad', 'Capsule, ligament ou bourse.',
+    'Douleur à la mise en tension passive : la structure douloureuse ne se contracte pas.'];
   return ['Conservée', 'ok', '', 'Actif et passif libres et indolores.'];
 }
 

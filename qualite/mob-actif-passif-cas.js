@@ -102,8 +102,17 @@ console.log('\n  L\'interprétation du différentiel');
   verifie('actif = passif limités',           'Limitation articulaire/bad',  v('lim', 'lim', ''));
   verifie('actif < passif',                   'Limitation musculaire/warn',  v('lim', 'libre', ''));
   verifie('douleur active seule',             'Pathologie tendineuse/warn',  v('doul', 'libre', ''));
-  verifie('douleur active et passive',        'Structure inerte/bad',        v('doul', 'doul', ''));
-  verifie('douleur passive seule',            'Structure inerte/bad',        v('libre', 'doul', ''));
+  verifie('douleur active et passive',        'Structure non contractile/bad',        v('doul', 'doul', ''));
+  verifie('douleur passive seule',            'Structure non contractile/bad',        v('libre', 'doul', ''));
+  /* Le libellé se dit sans supposer Cyriax connu : le courrier part chez un
+     médecin. Et l'os a été retiré de la liste — il figure dans l'inventaire
+     théorique des structures inertes, mais une douleur osseuse ne se reproduit
+     quasiment jamais par une mise en tension passive. Le ligament, lui, est le
+     premier candidat et manquait. */
+  verifie('le mot « inerte » ne sort plus', 'false',
+          String(/Structure inerte/.test(js.replace(/\/\*[\s\S]*?\*\//g, ''))));
+  verifie('l\'os a quitté la liste', 'Capsule, ligament ou bourse.',
+          verdict('libre', 'doul', '')[2]);
   verifie('les deux libres',                  'Conservée/ok',                v('libre', 'libre', ''));
   verifie('douloureux ET limité vs passif libre', 'Limitation musculaire/warn', v('doullim', 'libre', ''));
 }
