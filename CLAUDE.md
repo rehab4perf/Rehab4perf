@@ -924,9 +924,41 @@ contraire de ce qu'on observe :
 - **`critere`** (Test de Réception) : une pastille signale une RÉUSSITE.
   TOUTES les lignes sortent, validées ou non — un critère non acquis est une
   information, et « 5/5 » disait l'ampleur sans dire lequel manque. Pastille
-  **verte**, statut d'origine conservé (« Acquis » / « Incomplet »), et le test
-  **reste dans sa section** : il emprunte la grille, il ne devient pas une
-  analyse fonctionnelle.
+  **verte**, et le test **reste dans sa section** : il emprunte la grille, il
+  ne devient pas une analyse fonctionnelle.
+
+### Critères conditionnants — le courrier tranche, le bilan détaille
+
+```bash
+node qualite/reception-acquis-cas.js
+```
+
+Un critère marqué `acquis:true` dans `CRITERIA_REC` **conditionne la réussite**
+du test ; les autres sont observés à titre indicatif. Le courrier n'énumère plus
+les conditionnants — leur détail n'apprend rien au médecin, qui veut savoir si
+le test est passé : `_crMedCriteres` les remplace par **« Acquis » / « Non
+acquis »** et ne laisse en sous-lignes que les indicatifs (valgus dynamique,
+contrôle du tronc), qui eux orientent le travail.
+
+**Le rôle est porté par le critère, jamais par sa position.** « Les trois
+premiers » cesserait d'être vrai le jour où un critère serait inséré, et le
+verdict changerait sans que personne ne s'en aperçoive.
+
+**Les DEUX côtés comptent** — décision du praticien. Un conditionnant manque
+d'un côté ou de l'autre, et le test n'est pas acquis : il se passe sur chaque
+jambe. Le badge du bilan, lui, ne lit que le côté atteint ; ne pas l'aligner
+sans le praticien.
+
+**La synthèse chiffrée part avec eux.** « Côté sain 5/5 » compte cinq critères
+alors que le courrier n'en montre plus que deux.
+
+**L'attribut voyage entre deux fonctions** : la grille écrit `data-crit`,
+`_crMedAnalyseFonc` le relit. Un nom qui diverge ne casse rien — plus aucun
+critère n'est conditionnant, et le test est déclaré « Acquis » quoi qu'il
+arrive. Un cas de référence fait le trajet complet.
+
+Le bilan garde sa grille entière et son score : c'est le praticien qui la lit.
+Même partage que le score sur sept de l'analyse fonctionnelle.
 
 **Les libellés de côté se relisent, ils ne se supposent pas.** La grille du
 squat unipodal dit « G / D », celle de la réception « Côté sain / Côté

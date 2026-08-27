@@ -261,7 +261,11 @@ console.log('\n  Lecture de la grille — seules les compensations OBSERVÉES');
      Les suivants stubbent `_crMedValeur` et ne la traversent donc pas : sans
      ce bloc, retirer le filtre des critères non observés passerait inaperçu. */
   var codeAF = bloc('function _crMedAnalyseFonc', 'function _crMedValeur');
-  function cel(txt) { return { textContent: txt }; }
+  /* `getAttribute` : la relecture interroge `data-crit` sur la cellule de
+     libelle — le role d'un critere (conditionnant ou indicatif) y voyage. */
+  function cel(txt, attrs) {
+    return { textContent: txt, getAttribute: function (a) { return (attrs || {})[a] || null; } };
+  }
   function grille(rangs, synth, mode, cotes) {
     var c = cotes || ['G', 'D'];
     var enfants = [cel('Compensation observée'), cel(c[0]), cel(c[1])];

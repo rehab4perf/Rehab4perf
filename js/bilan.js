@@ -181,7 +181,8 @@ function _crMedAnalyseFonc(el) {
       var g = /●/.test(cells[i + 1].textContent || '');
       var d = /●/.test(cells[i + 2].textContent || '');
       if (mode !== 'critere' && !g && !d) continue;
-      lignes.push({ label: (cells[i].textContent || '').replace(/\s+/g, ' ').trim(), g: g, d: d });
+      lignes.push({ label: (cells[i].textContent || '').replace(/\s+/g, ' ').trim(), g: g, d: d,
+                    acquis: cells[i].getAttribute('data-crit') === 'acquis' });
     }
   }
   /* Liste a puces de l'Overhead squat : seules les CROIX comptent — un critere
@@ -336,6 +337,32 @@ var CR_MED_ZONES = {
   'page-musculaires' : 'Tests de force'
 };
 
+/* Grille de criteres — verdict binaire pour le medecin.
+   Certains criteres CONDITIONNENT la reussite du test (`acquis:true` dans
+   `CRITERIA_REC`), les autres sont observes a titre indicatif.
+
+   Le courrier ne montre plus les conditionnants : leur detail n'apprend rien
+   au medecin, qui veut savoir si le test est passe. Ils sont resumes par
+   « Acquis » ou « Non acquis ». Les criteres indicatifs — valgus dynamique,
+   controle du tronc — restent en sous-lignes : eux orientent le travail.
+
+   LES DEUX COTES comptent. Un critere conditionnant manque d'un cote ou de
+   l'autre, et le test n'est pas acquis : c'est un test de reception, il se
+   passe sur chaque jambe. Le badge du bilan, lui, ne lit que le cote atteint —
+   ne pas s'aligner dessus sans decision du praticien.
+
+   Le bilan garde sa grille entiere et son score : c'est le praticien qui la
+   lit. Meme partage que le score sur sept de l'analyse fonctionnelle. */
+function _crMedCriteres(entree) {
+  var lignes = entree.af || [];
+  var conditionnants = lignes.filter(function (l) { return l.acquis; });
+  if (!conditionnants.length) return;          // grille sans critere conditionnant
+  var acquis = conditionnants.every(function (l) { return l.g && l.d; });
+  entree.statut = acquis ? 'Acquis' : 'Non acquis';
+  entree.af = lignes.filter(function (l) { return !l.acquis; });
+  entree.notes = [];                            // « 5/5 » ne compte plus ce qu'on montre
+}
+
 function _crMedResumeTests() {
   var out = [];
   try {
@@ -424,7 +451,7 @@ function _crMedResumeTests() {
           /* « Acquis » / « Incomplet » dit deja le resultat d'une grille de
              criteres. Le remplacer par « 2 compensations » compterait a
              l'envers : ici une pastille est un critere REUSSI. */
-          if (_entree.afMode === 'critere') { _ng = -1; _nd = -1; }
+          if (_entree.afMode === 'critere') { _ng = -1; _nd = -1; _crMedCriteres(_entree); }
           if (_ng === -1) {
             // statut d'origine conserve
           } else if (_ng || _nd) {
@@ -437,8 +464,10 @@ function _crMedResumeTests() {
           } else {
             _entree.statut = 'Aucune compensation';
           }
-          /* La synthese chiffree d'une grille de criteres — « Côté sain 2/3 » —
-             porte le denominateur du test, pas un score sur sept. Elle reste. */
+          /* La synthese chiffree — « Côté sain 5/5 » — est retiree par
+             `_crMedCriteres` sur les grilles a criteres conditionnels : elle
+             compte les cinq criteres alors que le courrier n'en montre plus
+             que deux, et « 5/5 » sous deux lignes se lit de travers. */
         }
         out.push(_entree);
       });
@@ -1009,10 +1038,19 @@ const TESTS = {
 
 };
 
+/* `acquis:true` — le critere CONDITIONNE la reussite du test. Les trois
+   premiers la conditionnent ; les deux derniers sont observes a titre
+   indicatif et ne font pas basculer le verdict.
+
+   Ce role est porte par le critere lui-meme, et non par sa POSITION dans la
+   liste : « les trois premiers » cesserait d'etre vrai le jour ou un critere
+   serait insere, et le verdict changerait sans que personne ne s'en apercoive.
+   Le CR medecin ne montre que les criteres indicatifs — les autres sont
+   resumes par la mention « Acquis / Non acquis ». */
 const CRITERIA_REC = [
-  {label:' Le talon a dépassé le repère de 80%', ref:'Critère de distance'},
-  {label:' Descente fluide sans arrêt jusqu\'à 90°', ref:'Myer 2008'},
-  {label:' Maintien statique 3s à 90°', ref:'Schmitt 2012'},
+  {label:' Le talon a dépassé le repère de 80%', ref:'Critère de distance', acquis:true},
+  {label:' Descente fluide sans arrêt jusqu\'à 90°', ref:'Myer 2008', acquis:true},
+  {label:' Maintien statique 3s à 90°', ref:'Schmitt 2012', acquis:true},
   {label:' Contrôle neuromusculaire du genou (valgus dynamique)', ref:'Hewett 2005 (AJSM)'},
   {label:' Contrôle du tronc (TSB)', ref:'Trunk Sway & Balance'},
 ];
@@ -8124,7 +8162,7 @@ function _buildAllTestsHtml() {
     CRITERIA_REC.forEach(function(c, i){
       var okCS = (document.getElementById('rec-cs-'+i)||{}).checked;
       var okCA = (document.getElementById('rec-ca-'+i)||{}).checked;
-      _recHtml += '<div>' + nl2br(c.label.trim()) + '</div>'
+      _recHtml += '<div' + (c.acquis ? ' data-crit="acquis"' : '') + '>' + nl2br(c.label.trim()) + '</div>'
         + '<div class="c ' + (okCS ? 'on' : 'off') + '">' + (okCS ? '●' : '·') + '</div>'
         + '<div class="c ' + (okCA ? 'on' : 'off') + '">' + (okCA ? '●' : '·') + '</div>';
     });

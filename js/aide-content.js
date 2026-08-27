@@ -203,6 +203,15 @@ sections: [
       { t:'Les pastilles sont vertes', x:'Ici une pastille signale une réussite, pas un défaut. Dans l\'analyse fonctionnelle elles sont rouges, parce qu\'elles signalent une compensation. Même forme, sens inverse.' },
       { t:'Le score reste, en petit', x:'« Côté sain 4/5 · Côté atteint 3/5 » figure sous la liste : le dénominateur y a un sens, contrairement au score sur sept de l\'analyse fonctionnelle.' }
     ]},
+  { id:'reception-acquis', titre:'Le Test de Réception au courrier : acquis ou non acquis',
+    intro:'Le médecin lit un verdict, pas le détail des critères qui y mènent.',
+    etapes:[
+      { t:'Trois critères décident', x:'Le talon au-delà du repère de 80 %, la descente fluide jusqu\'à 90° et le maintien statique 3 s conditionnent la réussite. S\'il en manque un, d\'un côté ou de l\'autre, le test est « Non acquis ».' },
+      { t:'Ils ne figurent plus dans le courrier', x:'Leur détail n\'apprend rien au médecin, qui veut savoir si le test est passé. La mention « Acquis » ou « Non acquis » les résume.' },
+      { t:'Le valgus et le contrôle du tronc restent', x:'Ces deux-là sont observés à titre indicatif : ils ne font pas basculer le verdict, mais ils orientent le travail. Ils restent donc en sous-lignes, avec leurs deux côtés.' },
+      { t:'Le « 5/5 » disparaît du courrier', x:'Il comptait cinq critères alors que le courrier n\'en montre plus que deux — sous deux lignes, il se lisait de travers.' },
+      { t:'Votre bilan, lui, garde tout', x:'La grille complète et le score par côté restent affichés dans le CR du bilan : c\'est vous qui les lisez. Seul le courrier au médecin tranche.' }
+    ]},
   { id:'af-inclure-cr', titre:'Faire figurer une analyse fonctionnelle parfaite',
     intro:'Un examen où tout est normal ne laissait aucune trace dans le compte-rendu.',
     etapes:[
