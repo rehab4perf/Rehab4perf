@@ -253,7 +253,14 @@ console.log('\n  Lecture de la grille — seules les compensations OBSERVÉES');
   verifie('la phrase nomme les côtés',
           'Tronc — inclinaison (gauche et droite) · Genou — valgus (droite) — Mêmes compensations.',
           r.texte);
-  verifie('la synthèse est isolée', 'Mêmes compensations.', r.synthese);
+  /* Une LISTE, jamais une phrase : « Gauche : parfait » et « Droit : pied vers
+     l'extérieur » sont deux constats. Collés, on lit deux fois avant de voir
+     où l'un finit. */
+  verifie('la synthèse est une liste', '1', String(r.synthese.length));
+  verifie('… et son contenu est intact', 'Mêmes compensations.', r.synthese[0]);
+
+  var deux = grille([['Tronc', 1, 0]], ['Gauche : parfait', 'Droit : pied vers l\'extérieur']);
+  verifie('deux observations restent deux lignes', '2', String(deux.synthese.length));
 
   var vide = grille([['Hanche — adduction', 0, 0]], []);
   verifie('aucune compensation → aucune ligne', '0', String(vide.lignes.length));
@@ -263,17 +270,17 @@ console.log('\n  Lecture de la grille — seules les compensations OBSERVÉES');
      clinique et doit rester. */
   var sc = grille([['Tronc', 1, 1]], ['Gauche 2/7 · Droite 2/7 — mêmes compensations des deux côtés']);
   verifie('le score disparaît, la phrase reste',
-          'Mêmes compensations des deux côtés', sc.synthese);
+          'Mêmes compensations des deux côtés', sc.synthese.join(' '));
 
   var diff = grille([['Tronc', 1, 0]],
     ['Gauche 3/7 · Droite 4/7 · 3 communes — profils différents (droite seulement : hanche)']);
   /* « 3 communes » n'a pas de denominateur : il se comprend seul, il reste. */
   verifie('un décompte sans dénominateur survit',
-          '3 communes — profils différents (droite seulement : hanche)', diff.synthese);
+          '3 communes — profils différents (droite seulement : hanche)', diff.synthese.join(' '));
 
   var libre = grille([['Tronc', 1, 1]], ['Talons surélevés : amélioration nette']);
   verifie('une observation libre n\'est pas touchée',
-          'Talons surélevés : amélioration nette', libre.synthese);
+          'Talons surélevés : amélioration nette', libre.synthese.join(' '));
 }
 
 console.log('\n  Analyse fonctionnelle — le score sur 7 ne sort pas du cabinet');
@@ -303,7 +310,7 @@ console.log('\n  Analyse fonctionnelle — le score sur 7 ne sort pas du cabinet
        est DANS un gabarit, il le refermerait. */
     function _crMedGeste(){ return ''; }
       function _crMedValeur(el){
-        return { texte:'…', cellules:[], af:{ lignes: lignes, synthese:'Mêmes compensations.' } };
+        return { texte:'…', cellules:[], af:{ lignes: lignes, synthese:['Mêmes compensations.'] } };
       }
       ${code2}
       return _crMedResumeTests();
@@ -322,7 +329,10 @@ console.log('\n  Analyse fonctionnelle — le score sur 7 ne sort pas du cabinet
           'Analyse fonctionnelle du membre inférieur — qualité du mouvement', sym.zone);
   verifie('deux compensations des deux côtés', '2 compensations', sym.statut);
   verifie('plus aucun « /7 »', 'false', String(/\/\d/.test(sym.statut)));
-  verifie('la synthèse passe en note', 'Mêmes compensations.', sym.note);
+  /* `note` est vide : la synthèse voyage désormais dans `notes`, une ligne par
+     observation, pour que le rendu en produise autant de sous-lignes. */
+  verifie('la synthèse passe en notes', 'Mêmes compensations.', (sym.notes || []).join(' '));
+  verifie('… et `note` reste vide', '', sym.note);
   verifie('les compensations sont transmises', '2', String((sym.af || []).length));
 
   var asym = statutDe([{ label:'Tronc', g:true, d:true }, { label:'Genou', g:false, d:true }], 'G 1/7 · D 2/7');
@@ -330,6 +340,18 @@ console.log('\n  Analyse fonctionnelle — le score sur 7 ne sort pas du cabinet
 
   var une = statutDe([{ label:'Tronc', g:true, d:true }], 'G 1/7 · D 1/7');
   verifie('une seule → singulier', '1 compensation', une.statut);
+
+  /* LE CAS QUI A ECHAPPE : un patient SANS aucune compensation. La condition
+     exigeait au moins une ligne, si bien qu'un bilan parfait gardait son score
+     « G 0/7 · D 0/7 », restait dans la section des tests chiffres, et voyait
+     ses observations par cote entassees dans la colonne des mesures. Le seul
+     bilan a rester laid etait le meilleur. */
+  var zero = statutDe([], 'G 0/7 · D 0/7');
+  verifie('aucune compensation → statut en clair', 'Aucune compensation', zero.statut);
+  verifie('… et elle rejoint quand même sa section',
+          'Analyse fonctionnelle du membre inférieur — qualité du mouvement', zero.zone);
+  verifie('… et reste reconnue comme analyse fonctionnelle', 'true',
+          String(Array.isArray(zero.af)));
 
   /* L'Overhead squat n'a pas de côtés : ses compensations sortent sans g ni d.
      Sans ce cas, le compte tomberait a zero et le statut serait vide. */

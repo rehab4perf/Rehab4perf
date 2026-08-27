@@ -753,6 +753,36 @@ destinataire à l'autre ne doit rien faire perdre.
 `crSetAudience` **régénère** le courrier affiché. Le laisser à l'écran avec le
 ton de l'ancien destinataire ferait croire qu'il a suivi la bascule.
 
+### Deux conventions de côté ne partagent pas un tableau
+
+Le bilan résout le côté **par région** : une hanche à côté atteint connu rend
+« Côté sain / Côté atteint », un genou bilatéral rend « Gauche / Droit ».
+Réunies dans une même section — « Tests de force » les mélange — elles donnaient
+**cinq colonnes dont deux restaient vides sur chaque ligne**.
+
+`_lotsParConvention` sépare : un tableau par convention, sous le même
+intertitre. On ne **traduit** pas — le CR a cessé de le faire après avoir
+désigné le mauvais membre dans un courrier.
+
+`courant` démarre sur la **première convention rencontrée**, jamais sur la
+chaîne vide : sinon l'analyse de course se scinde en deux, « Conditions » et
+« Cadence » n'ayant pas de côté et ouvrant un premier lot avant « Zone
+d'attaque ».
+
+### `v.af` présent, MÊME VIDE, veut dire « analyse fonctionnelle »
+
+La condition exigeait au moins une compensation. Un patient **sans aucune
+compensation** gardait donc son score « G 0/7 · D 0/7 », restait dans la section
+des tests chiffrés, et voyait ses observations par côté entassées dans la
+colonne des mesures. **Le seul bilan à rester laid était le meilleur.** Le même
+piège existait des deux côtés — dans `_crMedResumeTests` et dans le rendu.
+
+`synthese` est une **liste**, jamais une phrase : « Gauche : parfait » et
+« Droit : pied vers l'extérieur » sont deux constats, et collés on lit deux fois
+avant de voir où l'un finit. Le transport se fait par `[].concat(…)` et non
+`.slice()` — sur une chaîne, `.slice()` rend une chaîne, que le rendu
+parcourrait caractère par caractère.
+
 ### Une colonne n'existe qu'à partir de la moitié des lignes
 
 Le tableau du courrier n'affiche une colonne que si **la moitié au moins** des

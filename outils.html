@@ -6401,7 +6401,8 @@ _updateOutilsPatientBtns();
         lines.push({ t: 'sec', txt: _z });
       }
       lines.push({ t: 'test', label: t.label, valeur: t.valeur, cellules: t.cellules || [],
-                   note: t.note || '', statut: t.statut, niveau: t.niveau, af: t.af || null,
+                   note: t.note || '', notes: t.notes || null,
+                   statut: t.statut, niveau: t.niveau, af: t.af || null,
                    geste: t.geste || '' });
     });
     lines.push('');
@@ -6551,7 +6552,8 @@ _updateOutilsPatientBtns();
             var cote = (c.g && c.d) ? ' (gauche et droite)' : (c.g ? ' (gauche)' : (c.d ? ' (droite)' : ''));
             out.push('      - ' + c.label + cote);
           });
-          if (b.note) out.push('      ' + b.note);
+          ((b.notes && b.notes.length) ? b.notes : (b.note ? [b.note] : []))
+            .forEach(function (l) { out.push('      ' + l); });
           return;
         }
         var det = (b.cellules || []).filter(function (c) { return c.valeur; })
@@ -6575,8 +6577,58 @@ _updateOutilsPatientBtns();
        (reception, rebond) n a pas d ecart, et son statut glissait alors d une
        case vers la gauche, sous « Asym. ». Il faut connaitre TOUTES les
        lignes du groupe avant de decider des colonnes. */
+    /* Deux conventions de cotes peuvent cohabiter dans une meme section : le
+       bilan resout le cote PAR REGION, si bien qu'une hanche a cote atteint
+       connu rend « Cote sain / Cote atteint » quand un genou bilateral rend
+       « Gauche / Droit ». Reunies dans un seul tableau, elles donnaient CINQ
+       colonnes dont deux restaient vides sur chaque ligne.
+
+       On ne TRADUIT pas — le CR a cesse de le faire apres avoir designe le
+       mauvais membre dans un courrier. On separe : un tableau par convention,
+       sous le meme intertitre. */
+    function _conventionCote(t) {
+      var c = t.cellules || [];
+      for (var i = 0; i < c.length; i++) {
+        var e = String(c[i].entete || '').toLowerCase();
+        if (e.indexOf('sain') >= 0 || e.indexOf('atteint') >= 0) return 'sa';
+        if (e === 'gauche' || e === 'droit' || e === 'droite' || e === 'g' || e === 'd') return 'gd';
+      }
+      return '';
+    }
+
+    function _lotsParConvention(lst) {
+      var vues = [];
+      lst.forEach(function (t) {
+        var c = _conventionCote(t);
+        if (c && vues.indexOf(c) < 0) vues.push(c);
+      });
+      /* `courant` demarre sur la PREMIERE convention rencontree, pas sur la
+         chaine vide. C'est ce qui empeche l'analyse de course de se scinder en
+         deux : « Conditions » et « Cadence » n'ont pas de cote et ouvriraient
+         sinon un premier lot, « Zone d'attaque » un second — un examen coupe
+         en deux tableaux pour rien.
+         `|| ''` : un groupe sans aucune ligne cotee n'a pas de convention, et
+         `undefined` ferait une cle de lot bancale. */
+      var ordre = [], par = {}, courant = vues[0] || '';
+      lst.forEach(function (t) {
+        /* Une ligne sans cote rejoint le lot EN COURS ; celles qui precedent
+           toute ligne cotee rejoignent le premier lot. Elles decrivent le meme
+           examen, elles n'ont pas a ouvrir un tableau a elles. */
+        var c = _conventionCote(t) || courant;
+        courant = c;
+        if (!par[c]) { par[c] = []; ordre.push(c); }
+        par[c].push(t);
+      });
+      return ordre.map(function (c) { return par[c]; });
+    }
+
     function fermerTable() {
       if (!tampon.length) return;
+      _lotsParConvention(tampon).forEach(_ecrireTable);
+      tampon = [];
+    }
+
+    function _ecrireTable(tampon) {
       /* Une colonne n'existe que si la MOITIE AU MOINS des lignes du groupe la
          remplit. C'est la regle deja posee dans le bilan pour la colonne
          « Mesure » — une colonne qu'une seule ligne utilise fait chercher au
@@ -6668,7 +6720,11 @@ _updateOutilsPatientBtns();
            tout est dans ses sous-lignes. Sans ce cas, elle se rabattrait sur
            `valeur` — la phrase d'une seule traite, qu'on vient justement de
            remplacer — et le detail apparaitrait deux fois. */
-        if (t.af && t.af.length) {
+        /* `t.af` present, MEME VIDE, veut dire « cette ligne est une analyse
+           fonctionnelle ». Exiger au moins une compensation renvoyait le
+           patient sans compensation vers le rendu ordinaire : sa valeur brute
+           dans la colonne des mesures, et ses observations par cote perdues. */
+        if (t.af) {
           h += '<tr class="lt-af-par"><td class="lbl">' + _crEsc(t.label)
              + (t.geste ? '<span class="lt-note">' + _crEsc(t.geste) + '</span>' : '') + '</td>'
              + (entetes.length ? entetes.map(function () { return '<td class="n"></td>'; }).join('')
@@ -6677,8 +6733,14 @@ _updateOutilsPatientBtns();
                  ? '<span class="lt-chip ' + _crTagClasse(t) + '">' + _crEsc(t.statut) + '</span>' : '')
              + '</td></tr>';
           _afSousLignes(t);
-          if (t.note) h += '<tr class="lt-af-sub"><td class="lbl lt-af-sy" colspan="'
-                        + (2 + Math.max(entetes.length, 1)) + '">' + _crEsc(t.note) + '</td></tr>';
+          /* Une ligne par observation : « Gauche : parfait » et « Droit : pied
+             vers l'exterieur » sont deux constats distincts. Colles, on lit
+             deux fois avant de voir ou l'un finit. */
+          var _sy = (t.notes && t.notes.length) ? t.notes : (t.note ? [t.note] : []);
+          _sy.forEach(function (ligne) {
+            h += '<tr class="lt-af-sub"><td class="lbl lt-af-sy" colspan="'
+               + (2 + Math.max(entetes.length, 1)) + '">' + _crEsc(ligne) + '</td></tr>';
+          });
           return;
         }
         var _cols = (_vide && t.valeur)
@@ -6688,7 +6750,7 @@ _updateOutilsPatientBtns();
                   return '<td class="n">' + (par[e] ? _crEsc(par[e]) : '') + '</td>';
                 }).join('')
               : '<td class="obs"></td>');
-        h += '<tr' + (t.af && t.af.length ? ' class="lt-af-par"' : '') + '><td class="lbl">'
+        h += '<tr><td class="lbl">'
            + _crEsc(t.label)
            /* Le geste d'abord — il dit CE QU'ON A FAIT ; la note qui suit dit
               dans quelles conditions (« Repère EIAS-sol : 45 cm »). */
@@ -6701,7 +6763,6 @@ _updateOutilsPatientBtns();
 
       });
       h += '</tbody></table>';
-      tampon = [];
     }
 
     (blocs || []).forEach(function (b) {

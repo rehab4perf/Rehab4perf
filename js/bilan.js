@@ -191,8 +191,12 @@ function _crMedAnalyseFonc(el) {
     if (!l.g && !l.d) return l.label;
     return l.label + ' (' + (l.g && l.d ? 'gauche et droite' : (l.g ? 'gauche' : 'droite')) + ')';
   }).join(' · ');
+  /* `synthese` reste une LISTE. « Gauche : parfait » et « Droit : pied vers
+     l'extérieur » sont deux observations distinctes : collées en une phrase
+     elles devenaient « Gauche : Parfait Droit : Pied vers extérieur », qu'on
+     lit deux fois avant de comprendre où l'une finit. */
   return { texte: [phrase].concat(synth).filter(Boolean).join(' — '),
-           lignes: lignes, synthese: synth.join(' ') };
+           lignes: lignes, synthese: synth };
 }
 
 function _crMedValeur(el) {
@@ -316,7 +320,13 @@ function _crMedResumeTests() {
         var _entree = { cle: cle, label: _crMedLabel(cle), geste: _crMedGeste(cle),
                         valeur: val, cellules: v.cellules || [],
                         note: v.note || '', statut: tag, niveau: niveau, zone: zoneLigne };
-        if (v.af && v.af.lignes.length) {
+        /* `v.af` suffit : la ligne EST une analyse fonctionnelle, qu'on y ait
+           trouve des compensations ou non. La condition exigeait auparavant au
+           moins une compensation — un patient sans aucune compensation gardait
+           donc son score « G 0/7 · D 0/7 », restait dans la section des tests
+           chiffres, et voyait ses observations par cote entassees dans la
+           colonne des mesures. Un bilan PARFAIT etait le seul a rester laid. */
+        if (v.af) {
           _entree.af = v.af.lignes;
           /* ── Section a part ────────────────────────────────────────────
              L'analyse fonctionnelle se lit en GAUCHE / DROITE — ce sont des
@@ -332,7 +342,11 @@ function _crMedResumeTests() {
           /* Le membre est NOMME : l'analyse fonctionnelle ne porte que sur le
              membre inferieur (AF_PAGES), et rien dans le courrier ne le disait. */
           _entree.zone = 'Analyse fonctionnelle du membre inférieur — qualité du mouvement';
-          _entree.note = v.af.synthese || _entree.note;
+          // `[].concat` : une chaine deviendrait un tableau d'une ligne, la ou
+          // `.slice()` en rendrait une chaine — et le rendu la parcourrait
+          // caractere par caractere.
+          _entree.notes = [].concat(v.af.synthese || []);   // une ligne italique chacune
+          _entree.note = '';
           /* Le score « G 2/7 · D 2/7 » ne dit rien a qui ne connait pas le
              denominateur — sept criteres possibles. Le courrier annonce donc un
              NOMBRE de compensations, en toutes lettres. */
@@ -342,8 +356,11 @@ function _crMedResumeTests() {
             _entree.statut = (_ng === _nd)
               ? _ng + ' compensation' + (_ng > 1 ? 's' : '')
               : _ng + ' à gauche · ' + _nd + ' à droite';
-          } else {
+          } else if (v.af.lignes.length) {
+            // Compensations sans cote — l'Overhead squat n'en a pas.
             _entree.statut = v.af.lignes.length + ' compensation' + (v.af.lignes.length > 1 ? 's' : '');
+          } else {
+            _entree.statut = 'Aucune compensation';
           }
         }
         out.push(_entree);

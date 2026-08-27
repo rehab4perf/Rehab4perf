@@ -122,5 +122,68 @@ console.log('\n  Une cellule vide ne compte pas');
   verifie('deux lignes vides sur trois → colonnes supprimées', '', colonnes(vides).join(','));
 }
 
+/* ── Séparation des conventions de côté ────────────────────────────────────
+   Le bilan résout le côté PAR RÉGION : une hanche à côté atteint connu rend
+   « Côté sain / Côté atteint », un genou bilatéral rend « Gauche / Droit ».
+   Réunis dans un seul tableau, les deux donnaient CINQ colonnes dont deux
+   restaient vides sur chaque ligne. On ne traduit pas — le CR a cessé de le
+   faire après avoir désigné le mauvais membre. On sépare. */
+var debL = src.indexOf('    function _conventionCote(t) {');
+var finL = src.indexOf('    function fermerTable() {', debL);
+if (debL < 0 || finL < 0) {
+  console.error('Bornes du partitionnement introuvables dans outils.html.');
+  process.exit(1);
+}
+var lots = new Function('lst', src.slice(debL, finL) + '\n return _lotsParConvention(lst);');
+
+function testCote(nom, entetes) {
+  return { label: nom, cellules: (entetes || []).map(function (e) { return { entete: e, valeur: 'x' }; }) };
+}
+
+console.log('\n  Deux conventions de côté ne partagent pas un tableau');
+{
+  var mixte = [
+    testCote('Adducteurs',      ['Côté sain', 'Côté atteint', 'Asym.']),
+    testCote('Abducteurs',      ['Côté sain', 'Côté atteint', 'Asym.']),
+    testCote('Quadriceps',      ['Gauche', 'Droit', 'Asym.']),
+    testCote('Ischio-jambiers', ['Gauche', 'Droit', 'Asym.'])
+  ];
+  var r = lots(mixte);
+  verifie('deux tableaux, pas cinq colonnes', '2', String(r.length));
+  verifie('le premier garde sain/atteint', 'Adducteurs,Abducteurs',
+          r[0].map(function (t) { return t.label; }).join(','));
+  verifie('le second garde gauche/droit',  'Quadriceps,Ischio-jambiers',
+          r[1].map(function (t) { return t.label; }).join(','));
+
+  /* Une convention seule ne se coupe pas. */
+  verifie('un groupe homogène reste entier', '1',
+          String(lots([testCote('A', ['Gauche', 'Droit']), testCote('B', ['Gauche', 'Droit'])]).length));
+
+  /* Une ligne SANS côté — « Conditions », « Cadence » — rejoint le lot en
+     cours. Sans cela, chaque ligne en toutes lettres ouvrirait sa table. */
+  var course = [
+    testCote('Conditions', []),
+    testCote('Cadence', []),
+    testCote('Zone d\'attaque', ['Gauche', 'Droit'])
+  ];
+  verifie('les lignes sans côté ne fragmentent pas', '1', String(lots(course).length));
+
+  /* L'ordre de PREMIÈRE apparition est conservé : le médecin lit les tests
+     dans l'ordre où ils ont été réalisés. */
+  var inverse = [
+    testCote('Quadriceps', ['Gauche', 'Droit']),
+    testCote('Adducteurs', ['Côté sain', 'Côté atteint'])
+  ];
+  verifie('l\'ordre suit le bilan', 'Quadriceps|Adducteurs',
+          lots(inverse).map(function (l) { return l[0].label; }).join('|'));
+
+  /* Garde-fou textuel : les cas ci-dessus vérifient la fonction, pas QUI
+     l'appelle. C'est le trou où le défaut se loge à chaque fois — une règle
+     juste que personne n'invoque. */
+  var sansCom = src.replace(/\/\*[\s\S]*?\*\//g, '');
+  verifie('fermerTable passe bien par le partitionnement', 'true',
+          String(/_lotsParConvention\(tampon\)\.forEach\(_ecrireTable\)/.test(sansCom)));
+}
+
 console.log('\n  ' + (nbKo ? '✗ ' + nbKo + ' échec(s), ' : '✓ ') + nbOk + ' cas vérifiés.\n');
 process.exit(nbKo ? 1 : 0);
