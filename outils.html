@@ -6403,7 +6403,7 @@ _updateOutilsPatientBtns();
       lines.push({ t: 'test', label: t.label, valeur: t.valeur, cellules: t.cellules || [],
                    note: t.note || '', notes: t.notes || null,
                    statut: t.statut, niveau: t.niveau, af: t.af || null,
-                   geste: t.geste || '' });
+                   afCotes: t.afCotes || null, afMode: t.afMode || '', geste: t.geste || '' });
     });
     lines.push('');
   }
@@ -6467,6 +6467,7 @@ _updateOutilsPatientBtns();
     'table.lt-t td.lt-af-sy{font-style:italic;color:#9D9B96;font-size:.72rem;padding-top:2px}',
     'table.lt-t tr.lt-af-sub + tr:not(.lt-af-sub) td{border-top:1px solid #E8E6E1}',
     '.lt-af-pt{color:#C0392B;font-weight:700;font-size:.7rem}',
+    '.lt-af-pt.ok{color:#2D6A4F}',
     '.lt-note{display:block;font-size:.66rem;color:#9D9B96;font-style:italic;margin-top:1px}',
     '.lt-chip{display:inline-block;font-size:.63rem;font-weight:700;border-radius:20px;',
       'padding:2px 8px;border:1px solid;white-space:nowrap}',
@@ -6662,7 +6663,14 @@ _updateOutilsPatientBtns();
          pastilles n'auraient nulle part ou se poser. C'est aussi ce qui rend
          `_cotesSurs` vrai par construction : dans SON tableau, « Gauche » veut
          dire gauche. */
-      if (tampon.some(function (t) { return t.af && t.af.length; })) entetes = ['Gauche', 'Droit'];
+      /* Un groupe d'analyse fonctionnelle impose SES colonnes — celles de la
+         grille d'origine, relues par `_crMedAnalyseFonc`. Elles disent « G / D »
+         pour le squat unipodal et « Côté sain / Côté atteint » pour le test de
+         réception : les figer sur Gauche/Droit inverserait les côtés du patient
+         sur la seconde. */
+      var _afAvecCotes = tampon.filter(function (t) { return t.af && t.afCotes; })[0];
+      if (_afAvecCotes) entetes = _afAvecCotes.afCotes.slice();
+      else if (tampon.some(function (t) { return t.af && t.af.length; })) entetes = ['Gauche', 'Droit'];
       /* Toutes les lignes ne sont pas des mesures a deux cotes. « Conditions »,
          « Cadence », « Zone d'attaque » n'ont qu'une valeur en toutes lettres :
          le bilan la range dans `valeur`, sans `cellules`. Le tableau ne lisait
@@ -6682,11 +6690,18 @@ _updateOutilsPatientBtns();
          gauche/droite. Y poser les pastilles inverserait les cotes du patient
          dans un document medical. Le cote est alors nomme en toutes lettres. */
       var _iG = -1, _iD = -1;
-      entetes.forEach(function (e, i) {
-        var n = String(e).toLowerCase();
-        if (n === 'gauche' || n === 'g') _iG = i;
-        if (n === 'droit' || n === 'droite' || n === 'd') _iD = i;
-      });
+      if (_afAvecCotes) {
+        /* Le groupe porte SES propres colonnes : les indices sont connus, et
+           les pastilles tombent forcement au bon endroit. */
+        _iG = entetes.indexOf(_afAvecCotes.afCotes[0]);
+        _iD = entetes.indexOf(_afAvecCotes.afCotes[1]);
+      } else {
+        entetes.forEach(function (e, i) {
+          var n = String(e).toLowerCase();
+          if (n === 'gauche' || n === 'g') _iG = i;
+          if (n === 'droit' || n === 'droite' || n === 'd') _iD = i;
+        });
+      }
       var _cotesSurs = (_iG !== -1 && _iD !== -1);
 
       function _afSousLignes(t) {
@@ -6695,10 +6710,16 @@ _updateOutilsPatientBtns();
           if (_cotesSurs) {
             cells = entetes.map(function (e, i) {
               var pt = (i === _iG && c.g) || (i === _iD && c.d);
-              return '<td class="n">' + (pt ? '<span class="lt-af-pt">●</span>' : '') + '</td>';
+              /* Une pastille de COMPENSATION signale un defaut — rouge. Une
+                 pastille de CRITERE signale une reussite — verte. La meme
+                 couleur pour les deux dirait le contraire de l'un des deux. */
+              var _cls = (t.afMode === 'critere') ? 'lt-af-pt ok' : 'lt-af-pt';
+              return '<td class="n">' + (pt ? '<span class="' + _cls + '">●</span>' : '') + '</td>';
             }).join('');
           } else {
-            var cote = (c.g && c.d) ? 'gauche et droite' : (c.g ? 'gauche' : (c.d ? 'droite' : ''));
+            var nG = (t.afCotes && t.afCotes[0]) ? t.afCotes[0].toLowerCase() : 'gauche';
+            var nD = (t.afCotes && t.afCotes[1]) ? t.afCotes[1].toLowerCase() : 'droite';
+            var cote = (c.g && c.d) ? nG + ' et ' + nD : (c.g ? nG : (c.d ? nD : ''));
             cells = '<td class="n lt-libre" colspan="' + _colspan + '">' + _crEsc(cote) + '</td>';
           }
           h += '<tr class="lt-af-sub"><td class="lbl">' + _crEsc(c.label) + '</td>'

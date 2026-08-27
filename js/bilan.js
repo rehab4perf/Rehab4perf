@@ -152,15 +152,35 @@ function _crMedValeurLisible(el) {
    On la relit donc : seules les compensations PRESENTES, chacune avec ses
    cotes, puis les phrases de synthese que le CR affiche deja sous la grille. */
 function _crMedAnalyseFonc(el) {
-  var lignes = [], synth = [];
+  var lignes = [], synth = [], cotes = null, mode = 'compensation';
   var tbl = el.querySelector('.cr-af-tbl');
   if (tbl) {
+    /* `critere` : TOUTES les lignes sont montrees, validees ou non — un critere
+       non acquis est une information. `compensation` (defaut) : seules celles
+       qui sont presentes, une compensation absente ne se dit pas. */
+    mode = tbl.getAttribute('data-af-mode') || 'compensation';
     var cells = Array.prototype.slice.call(tbl.children);
-    /* Trois cellules d'en-tete, puis trois par ligne : libelle, gauche, droit. */
+    /* Trois cellules d'en-tete, puis trois par ligne : libelle, cote A, cote B.
+       Les DEUX libelles de cote sont relus : la grille du squat unipodal dit
+       « G / D », celle de la reception dit « Cote sain / Cote atteint ». Les
+       supposer gauche/droite inverserait les cotes du patient sur la seconde. */
+    if (cells.length >= 3) {
+      /* La grille abrege — « G », « D » — parce qu'elle est etroite. Le
+         courrier, lui, a la place : des en-tetes d'une lettre y sont
+         inutilement seches. On developpe. */
+      var _dev = function (t, parDefaut) {
+        var n = String(t || '').trim();
+        if (!n) return parDefaut;
+        if (n === 'G') return 'Gauche';
+        if (n === 'D') return 'Droit';
+        return n;
+      };
+      cotes = [ _dev(cells[1].textContent, 'Gauche'), _dev(cells[2].textContent, 'Droit') ];
+    }
     for (var i = 3; i + 2 < cells.length; i += 3) {
       var g = /●/.test(cells[i + 1].textContent || '');
       var d = /●/.test(cells[i + 2].textContent || '');
-      if (!g && !d) continue; // un critere non observe n'est pas une compensation
+      if (mode !== 'critere' && !g && !d) continue;
       lignes.push({ label: (cells[i].textContent || '').replace(/\s+/g, ' ').trim(), g: g, d: d });
     }
   }
@@ -187,16 +207,31 @@ function _crMedAnalyseFonc(el) {
   });
   /* Forme d'UNE SEULE PHRASE, pour la copie et le mail — un courrier colle dans
      un mail n'a pas de tableau ou loger des sous-lignes. */
+  /* Les cotes sont nommes avec les VRAIS libelles de la grille, jamais avec un
+     « gauche / droite » suppose : la grille du squat unipodal dit « G / D »,
+     celle de la reception « Cote sain / Cote atteint ».
+
+     Les abreviations sont developpees : dans un courrier, « (g et d) » se lit
+     mal — la grille peut abreger, la phrase non. */
+  function _nomCote(t, parDefaut) {
+    var n = String(t || '').trim().toLowerCase();
+    if (!n) return parDefaut;
+    if (n === 'g') return 'gauche';
+    if (n === 'd' || n === 'droit') return 'droite';
+    return n;
+  }
+  var nomG = _nomCote(cotes && cotes[0], 'gauche');
+  var nomD = _nomCote(cotes && cotes[1], 'droite');
   var phrase = lignes.map(function (l) {
-    if (!l.g && !l.d) return l.label;
-    return l.label + ' (' + (l.g && l.d ? 'gauche et droite' : (l.g ? 'gauche' : 'droite')) + ')';
+    if (!l.g && !l.d) return l.label + (mode === 'critere' ? ' (non acquis)' : '');
+    return l.label + ' (' + (l.g && l.d ? nomG + ' et ' + nomD : (l.g ? nomG : nomD)) + ')';
   }).join(' · ');
   /* `synthese` reste une LISTE. « Gauche : parfait » et « Droit : pied vers
      l'extérieur » sont deux observations distinctes : collées en une phrase
      elles devenaient « Gauche : Parfait Droit : Pied vers extérieur », qu'on
      lit deux fois avant de comprendre où l'une finit. */
   return { texte: [phrase].concat(synth).filter(Boolean).join(' — '),
-           lignes: lignes, synthese: synth };
+           lignes: lignes, synthese: synth, cotes: cotes, mode: mode };
 }
 
 function _crMedValeur(el) {
@@ -333,6 +368,8 @@ function _crMedResumeTests() {
            colonne des mesures. Un bilan PARFAIT etait le seul a rester laid. */
         if (v.af) {
           _entree.af = v.af.lignes;
+          _entree.afCotes = v.af.cotes || null;   // les vrais libelles de la grille
+          _entree.afMode  = v.af.mode || 'compensation';
           /* ── Section a part ────────────────────────────────────────────
              L'analyse fonctionnelle se lit en GAUCHE / DROITE — ce sont des
              cotes anatomiques. Les tests chiffres de la meme section se lisent
@@ -344,9 +381,17 @@ function _crMedResumeTests() {
              L'alternative — traduire gauche/droite en sain/atteint — est
              precisement ce que le CR a cesse de faire apres avoir designe le
              mauvais membre dans un courrier (voir qualite/cr-cotes-cas.js). */
-          /* Le membre est NOMME : l'analyse fonctionnelle ne porte que sur le
+          /* Seules les grilles de COMPENSATION sont l'analyse fonctionnelle :
+             Overhead squat et Squat unipodal. Le Test de Reception emprunte la
+             meme forme de grille pour lister ses criteres, mais il reste un
+             test fonctionnel — le deplacer sous « Analyse fonctionnelle » le
+             sortirait de la section ou le medecin l'attend.
+
+             Le membre est NOMME : l'analyse fonctionnelle ne porte que sur le
              membre inferieur (AF_PAGES), et rien dans le courrier ne le disait. */
-          _entree.zone = 'Analyse fonctionnelle du membre inférieur — qualité du mouvement';
+          if (_entree.afMode === 'compensation') {
+            _entree.zone = 'Analyse fonctionnelle du membre inférieur — qualité du mouvement';
+          }
           // `[].concat` : une chaine deviendrait un tableau d'une ligne, la ou
           // `.slice()` en rendrait une chaine — et le rendu la parcourrait
           // caractere par caractere.
@@ -357,7 +402,13 @@ function _crMedResumeTests() {
              NOMBRE de compensations, en toutes lettres. */
           var _ng = 0, _nd = 0;
           v.af.lignes.forEach(function (l) { if (l.g) _ng++; if (l.d) _nd++; });
-          if (_ng || _nd) {
+          /* « Acquis » / « Incomplet » dit deja le resultat d'une grille de
+             criteres. Le remplacer par « 2 compensations » compterait a
+             l'envers : ici une pastille est un critere REUSSI. */
+          if (_entree.afMode === 'critere') { _ng = -1; _nd = -1; }
+          if (_ng === -1) {
+            // statut d'origine conserve
+          } else if (_ng || _nd) {
             _entree.statut = (_ng === _nd)
               ? _ng + ' compensation' + (_ng > 1 ? 's' : '')
               : _ng + ' à gauche · ' + _nd + ' à droite';
@@ -367,6 +418,8 @@ function _crMedResumeTests() {
           } else {
             _entree.statut = 'Aucune compensation';
           }
+          /* La synthese chiffree d'une grille de criteres — « Côté sain 2/3 » —
+             porte le denominateur du test, pas un score sur sept. Elle reste. */
         }
         out.push(_entree);
       });
@@ -7964,8 +8017,30 @@ function _buildAllTestsHtml() {
   var recCrToggle = document.getElementById('rec-cr-toggle');
   if ((recCrToggle && recCrToggle.checked) || scoreCA2 > 0 || scoreCS2 > 0) {
     var rclsCA = scoreCA2===recN?'good':scoreCA2>0?'warn':'bad';
-    tfHtml += crItem('Réception — 80% Hop Test',
-      _pair('Critères validés', scoreCA2+'/'+recN, scoreCS2+'/'+recN, ''),
+    /* « 5/5 » dit l'ampleur, pas la nature : le medecin ne sait pas QUEL
+       critere manque, or c'est lui qui oriente le travail. On rend donc la
+       grille, une ligne par critere — meme forme que l'analyse fonctionnelle.
+
+       `data-af-mode="critere"` : ici TOUTES les lignes sont montrees, validees
+       ou non. Une compensation absente ne se dit pas ; un critere non acquis,
+       si. Les en-tetes portent les VRAIS libelles de cote de la section — ils
+       valent « Cote sain / Cote atteint » sur un patient a cote atteint connu,
+       et le CR medecin les relit plutot que de supposer gauche/droite. */
+    var _recHtml = '<div class="cr-af"><div class="cr-af-tbl" data-af-mode="critere">'
+      + '<div class="th">Critère</div>'
+      + '<div class="th c">' + nl2br(_labelCS) + '</div>'
+      + '<div class="th c">' + nl2br(_labelCA) + '</div>';
+    CRITERIA_REC.forEach(function(c, i){
+      var okCS = (document.getElementById('rec-cs-'+i)||{}).checked;
+      var okCA = (document.getElementById('rec-ca-'+i)||{}).checked;
+      _recHtml += '<div>' + nl2br(c.label.trim()) + '</div>'
+        + '<div class="c ' + (okCS ? 'on' : 'off') + '">' + (okCS ? '●' : '·') + '</div>'
+        + '<div class="c ' + (okCA ? 'on' : 'off') + '">' + (okCA ? '●' : '·') + '</div>';
+    });
+    _recHtml += '</div><div class="cr-af-sy">'
+      + nl2br(_labelCS) + ' ' + scoreCS2 + '/' + recN + ' · '
+      + nl2br(_labelCA) + ' ' + scoreCA2 + '/' + recN + '</div></div>';
+    tfHtml += crItem('Réception — 80% Hop Test', _recHtml,
       statCriteres(rclsCA), rclsCA, ['rec-ca-0','rec-ca-1','rec-ca-2','rec-ca-3','rec-ca-4']);
   }
   tfHtml += obsBlock('rec-obs-ca','rec-obs-cs');

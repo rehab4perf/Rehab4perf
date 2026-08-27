@@ -158,6 +158,14 @@ sections: [
       { t:'Basculez barres / radar', x:'Vue barres (par défaut) pour lire les points par composant, ou radar pour une vue d\'ensemble. Le PDF exporté reprend la vue sélectionnée.' },
       { t:'Générez le rapport PDF', x:'Score, asymétrie et profil détaillé sont inclus dans un rapport prêt à imprimer ou archiver.' }
     ]},
+  { id:'reception-criteres', titre:'Le Test de Réception détaille ses critères',
+    intro:'« 5/5 » disait l\'ampleur du déficit, pas sa nature.',
+    etapes:[
+      { t:'Ce qui change', x:'Le compte-rendu ne montre plus un score mais la LISTE des cinq critères, un par ligne, avec une pastille par côté. Le médecin voit lequel manque — et c\'est lui qui oriente le travail.' },
+      { t:'Tous les critères figurent', x:'Y compris ceux qui ne sont validés d\'aucun côté : un critère non acquis est une information. C\'est la différence avec l\'analyse fonctionnelle, où seules les compensations PRÉSENTES sont listées.' },
+      { t:'Les pastilles sont vertes', x:'Ici une pastille signale une réussite, pas un défaut. Dans l\'analyse fonctionnelle elles sont rouges, parce qu\'elles signalent une compensation. Même forme, sens inverse.' },
+      { t:'Le score reste, en petit', x:'« Côté sain 4/5 · Côté atteint 3/5 » figure sous la liste : le dénominateur y a un sens, contrairement au score sur sept de l\'analyse fonctionnelle.' }
+    ]},
   { id:'af-inclure-cr', titre:'Faire figurer une analyse fonctionnelle parfaite',
     intro:'Un examen où tout est normal ne laissait aucune trace dans le compte-rendu.',
     etapes:[

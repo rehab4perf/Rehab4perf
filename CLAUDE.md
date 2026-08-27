@@ -804,6 +804,32 @@ ligne** :
 - `_crMedResumeTests`, qui jetait toute ligne sans valeur texte — or une
   analyse fonctionnelle vide n'a pas de texte, son statut porte tout.
 
+### Deux grilles, deux modes — `data-af-mode`
+
+La même forme de grille sert à deux choses opposées, et les confondre dit le
+contraire de ce qu'on observe :
+
+- **`compensation`** (défaut, Overhead squat et Squat unipodal) : une pastille
+  signale un DÉFAUT. Seules les lignes marquées sortent — une compensation
+  absente ne se dit pas. Pastille **rouge**, statut en nombre de compensations,
+  section « Analyse fonctionnelle ».
+- **`critere`** (Test de Réception) : une pastille signale une RÉUSSITE.
+  TOUTES les lignes sortent, validées ou non — un critère non acquis est une
+  information, et « 5/5 » disait l'ampleur sans dire lequel manque. Pastille
+  **verte**, statut d'origine conservé (« Acquis » / « Incomplet »), et le test
+  **reste dans sa section** : il emprunte la grille, il ne devient pas une
+  analyse fonctionnelle.
+
+**Les libellés de côté se relisent, ils ne se supposent pas.** La grille du
+squat unipodal dit « G / D », celle de la réception « Côté sain / Côté
+atteint ». `_crMedAnalyseFonc` remonte les deux dans `cotes`, et le rendu place
+les pastilles dans CES colonnes. Les figer sur Gauche/Droit inverserait les
+côtés du patient sur la seconde — le défaut que `cr-cotes-cas.js` a déjà eu à
+refermer.
+
+Les abréviations sont **développées** : la grille écrit « G » parce qu'elle est
+étroite, le courrier a la place. « (g et d) » se lit mal dans une phrase.
+
 ### `v.af` présent, MÊME VIDE, veut dire « analyse fonctionnelle »
 
 La condition exigeait au moins une compensation. Un patient **sans aucune

@@ -229,13 +229,18 @@ console.log('\n  Lecture de la grille — seules les compensations OBSERVÉES');
      ce bloc, retirer le filtre des critères non observés passerait inaperçu. */
   var codeAF = bloc('function _crMedAnalyseFonc', 'function _crMedValeur');
   function cel(txt) { return { textContent: txt }; }
-  function grille(rangs, synth) {
-    var enfants = [cel('Compensation observée'), cel('G'), cel('D')];
+  function grille(rangs, synth, mode, cotes) {
+    var c = cotes || ['G', 'D'];
+    var enfants = [cel('Compensation observée'), cel(c[0]), cel(c[1])];
     rangs.forEach(function (r) {
       enfants.push(cel(r[0]), cel(r[1] ? '●' : '·'), cel(r[2] ? '●' : '·'));
     });
     var el = {
-      querySelector: function (sel) { return sel === '.cr-af-tbl' ? { children: enfants } : null; },
+      querySelector: function (sel) {
+        return sel === '.cr-af-tbl'
+          ? { children: enfants, getAttribute: function (n) { return n === 'data-af-mode' ? (mode || null) : null; } }
+          : null;
+      },
       querySelectorAll: function (sel) {
         if (sel === '.cr-af-sy') return (synth || []).map(function (t) { return cel(t); });
         return [];
@@ -265,6 +270,36 @@ console.log('\n  Lecture de la grille — seules les compensations OBSERVÉES');
   var vide = grille([['Hanche — adduction', 0, 0]], []);
   verifie('aucune compensation → aucune ligne', '0', String(vide.lignes.length));
 
+  /* ── Grille de CRITÈRES — le Test de Réception ────────────────────────
+     « 5/5 » dit l'ampleur, pas la nature : le médecin ne sait pas QUEL critère
+     manque. La grille les liste tous, validés ou non — un critère non acquis
+     est une information, là où une compensation absente ne se dit pas. */
+  var crit = grille([['Talon au repère 80 %', 1, 1],
+                     ['Descente fluide à 90°', 1, 0],
+                     ['Maintien 3 s à 90°',    0, 0]],
+                    ['Côté sain 2/3 · Côté atteint 1/3'],
+                    'critere', ['Côté sain', 'Côté atteint']);
+  verifie('toutes les lignes sont gardées', '3', String(crit.lignes.length));
+  verifie('un critère acquis nulle part reste visible', 'Maintien 3 s à 90°',
+          crit.lignes[2].label);
+
+  /* Les côtés portent les VRAIS libellés de la grille. Supposer gauche/droite
+     ici inverserait les côtés du patient dans un document médical. */
+  verifie('les côtés sont ceux de la grille', 'Côté sain,Côté atteint', crit.cotes.join(','));
+  verifie('la phrase les reprend',
+          'Talon au repère 80 % (côté sain et côté atteint) · '
+          + 'Descente fluide à 90° (côté sain) · '
+          + 'Maintien 3 s à 90° (non acquis) — Côté sain 2/3 · Côté atteint 1/3',
+          crit.texte);
+
+  /* Les abréviations se développent : la grille peut écrire « G », pas la
+     phrase d'un courrier. */
+  var abrev = grille([['Tronc', 1, 1]], [], null, ['G', 'D']);
+  verifie('« G » devient « gauche » dans la phrase', 'Tronc (gauche et droite)', abrev.texte);
+  /* Et « Gauche / Droit » en en-tête de colonne : la grille abrège parce
+     qu'elle est étroite, le courrier a la place. */
+  verifie('… et « Gauche / Droit » en colonne', 'Gauche,Droit', abrev.cotes.join(','));
+
   /* La phrase de synthese s'ouvre sur le meme score sur sept que le statut.
      Il ne sort pas du cabinet — mais ce qui SUIT est la vraie information
      clinique et doit rester. */
@@ -289,7 +324,7 @@ console.log('\n  Analyse fonctionnelle — le score sur 7 ne sort pas du cabinet
      compensations : « G 2/7 · D 2/7 » ne dit rien a qui ignore le
      denominateur — sept criteres possibles. Le courrier annonce un NOMBRE. */
   var code2 = bloc('var CR_MED_PAGES', 'var _SAVE_ICON');
-  function statutDe(lignes, tagInitial) {
+  function statutDe(lignes, tagInitial, mode) {
     var fauxEl = {
       getAttribute: function () { return 'page-fonctionnels'; },
       querySelector: function (sel) {
@@ -301,7 +336,7 @@ console.log('\n  Analyse fonctionnelle — le score sur 7 ne sort pas du cabinet
     };
     var doc = { createElement: function () {
       return { set innerHTML(h) {}, querySelectorAll: function () { return [fauxEl]; } }; } };
-    var res = new Function('document', 'lignes', `
+    var res = new Function('document', 'lignes', 'mode', `
       function _buildAllTestsHtml(){ return [{ title:'TESTS FONCTIONNELS', html:'' }]; }
       function _crMedLabel(c){ return c; }
     /* _crMedResumeTests appelle aussi le geste : sans ce stub elle levait, le
@@ -310,11 +345,12 @@ console.log('\n  Analyse fonctionnelle — le score sur 7 ne sort pas du cabinet
        est DANS un gabarit, il le refermerait. */
     function _crMedGeste(){ return ''; }
       function _crMedValeur(el){
-        return { texte:'…', cellules:[], af:{ lignes: lignes, synthese:['Mêmes compensations.'] } };
+        return { texte:'…', cellules:[],
+                 af:{ lignes: lignes, synthese:['Mêmes compensations.'], mode: mode || 'compensation' } };
       }
       ${code2}
       return _crMedResumeTests();
-    `)(doc, lignes);
+    `)(doc, lignes, mode);
     return res[0];
   }
 
@@ -346,6 +382,16 @@ console.log('\n  Analyse fonctionnelle — le score sur 7 ne sort pas du cabinet
      « G 0/7 · D 0/7 », restait dans la section des tests chiffres, et voyait
      ses observations par cote entassees dans la colonne des mesures. Le seul
      bilan a rester laid etait le meilleur. */
+  /* Une grille de CRITERES garde son statut d'origine et SA section. « Acquis »
+     dit deja le resultat ; le remplacer par « 2 compensations » compterait a
+     l'envers, une pastille y etant un critere REUSSI. Et le Test de Reception
+     reste un test fonctionnel : le deplacer sous « Analyse fonctionnelle » le
+     sortirait de la section ou le medecin l'attend. */
+  var critMode = statutDe([{ label:'Talon', g:true, d:true },
+                           { label:'Descente', g:true, d:false }], 'Incomplet', 'critere');
+  verifie('grille de critères → statut d\'origine', 'Incomplet', critMode.statut);
+  verifie('… et section d\'origine', 'TESTS FONCTIONNELS', critMode.zone);
+
   var zero = statutDe([], 'G 0/7 · D 0/7');
   verifie('aucune compensation → statut en clair', 'Aucune compensation', zero.statut);
   verifie('… et elle rejoint quand même sa section',
