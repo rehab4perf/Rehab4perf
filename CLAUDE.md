@@ -226,10 +226,19 @@ leurs points déjà enregistrés restent tracés — `_getMetricVal` lit les
 `ha-mob-d-obs`) : rien dans le nouveau tableau ne les remplace — le marqueur est
 par mouvement — et le CR les lit.
 
-**`_mobApRefreshAll()` doit être rejouée après tout chargement.** Elle ne
-l'était qu'à l'ouverture de la page : rouvrir un bilan laissait la colonne à
-« — » alors que les deux menus étaient renseignés — défaut préexistant sur
-l'épaule, qui se serait étendu aux deux nouveaux segments.
+**`_mobApRefreshAll()` doit être rejouée après tout chargement**, et **chaque
+appel a SON `try`**. Elle ne l'était qu'à l'ouverture de la page : rouvrir un
+bilan laissait la colonne à « — » alors que les deux menus étaient renseignés.
+
+Le second défaut est plus sournois. La cellule d'interprétation est un `<td>` :
+aucune des boucles de vidage de `_resetBilanFields` — inputs, textareas,
+selects, cases — ne l'atteint. Elle ne se nettoie **que** par cet appel. Rangé
+en fin d'un `try` partagé avec `updateAll`, `calcRec`, `calcPlioq` et
+`_epFoncRefresh`, un voisin qui échoue le sautait : au changement de patient,
+les champs repartaient vides et **les verdicts du précédent restaient à
+l'écran** — une interprétation clinique attachée à personne. Reproduit, puis
+refermé en isolant l'appel. Quatre points de nettoyage : ouverture de la page,
+`_resetBilanFields`, `_deserializeBilan`, `loadFromStorage`.
 
 **La page COUDE n'avait AUCUNE section au CR.** Douze tableaux au catalogue
 TESTS, une grille de mobilité dans la page, et rien de tout cela n'était lu : on

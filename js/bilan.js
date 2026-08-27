@@ -1843,7 +1843,8 @@ function init() {
   // Forcer le select LMA sur "Choisir" au chargement (le navigateur mémorise la dernière valeur)
   var lmaSmInit = document.getElementById('lma-sel-membre');
   if (lmaSmInit) { lmaSmInit.value = ''; _lmaUpdateMembre(); }
-  try { _mobApRefreshAll(); _epScrRefresh(); } catch(ex){}
+  try { _mobApRefreshAll(); } catch(ex){}
+  try { _epScrRefresh(); } catch(ex){}
   try { _afRefreshAll(); } catch(ex){}
   _blApplyLayout(); // disposition personnalisée (après restauration du brouillon : non-amputation correcte)
   _blMaybeInjectCustomizeBtn();
@@ -3342,7 +3343,13 @@ function _resetBilanFields(){
   try{ _afRefreshAll(); }catch(ex){}
   document.querySelectorAll('.evo-delta').forEach(function(el){ el.remove(); });
   // Recalculer TOUTES les fonctions d'affichage dérivées (LSI, RSI, déficits, badges…)
-  try{ updateAll(); calcRec(); calcPlioq(); _epFoncRefresh(); _mobApRefreshAll(); }catch(ex){}
+  try{ updateAll(); calcRec(); calcPlioq(); _epFoncRefresh(); }catch(ex){}
+  /* SON PROPRE try, et jamais partage. La cellule d'interpretation est un
+     <td> : aucune boucle de vidage ne l'atteint, elle ne se nettoie que par
+     cet appel. Range en fin d'un try commun, un voisin qui echoue laissait
+     les verdicts du patient precedent affiches au-dessus de champs vides —
+     une interpretation clinique attachee a personne. */
+  try{ _mobApRefreshAll(); }catch(ex){}
   try{ ['sls','hop','pset','set'].forEach(function(k){ calcLSI(k); }); calcDJ(); calcLunge(); calcHR(); calcMusc(); calcPiCIM(); }catch(ex){}
   try{ calcPlioq2(); calcSEBT(); calcUQYBT(); calcSideHop(); }catch(ex){}
   try{ calcGIRD(); ['ms-grip','ep-trap','ep-dent','ep-rl1','ep-rl2','ep-ri1','ep-ri2','ep-abd','ep-bht','co-f-ext','co-f-flex'].forEach(calcEpForce); ['ha-f-add','ha-f-flech','ha-f-abd','ha-f-ri','ha-f-re'].forEach(calcEpForce); ['ge-f-quad','ge-f-ij'].forEach(calcEpForce); ['pi-f-fp','pi-f-fd','pi-f-inv','pi-f-ev','pi-f-lfh'].forEach(calcEpForce); ['ra-fc-inc'].forEach(calcEpForce); }catch(ex){}
@@ -4960,7 +4967,13 @@ function _deserializeBilan(data){
     }
     try{ el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); }catch(ex){}
   });
-  try{ updateAll(); calcRec(); calcPlioq(); _epFoncRefresh(); _mobApRefreshAll(); }catch(ex){}
+  try{ updateAll(); calcRec(); calcPlioq(); _epFoncRefresh(); }catch(ex){}
+  /* SON PROPRE try, et jamais partage. La cellule d'interpretation est un
+     <td> : aucune boucle de vidage ne l'atteint, elle ne se nettoie que par
+     cet appel. Range en fin d'un try commun, un voisin qui echoue laissait
+     les verdicts du patient precedent affiches au-dessus de champs vides —
+     une interpretation clinique attachee a personne. */
+  try{ _mobApRefreshAll(); }catch(ex){}
   try{ ['sls','hop','pset','set'].forEach(function(k){ calcLSI(k); }); calcDJ(); calcLunge(); calcHR(); calcMusc(); calcPiCIM(); }catch(ex){}
   try{ calcCKC(); calcSHRT(); calcULRT(); }catch(ex){}
   try{ calcRachisStat(); calcLNF(); calcSorensen(); calcPDSLRT(); calcShirado(); }catch(ex){}

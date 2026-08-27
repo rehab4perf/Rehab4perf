@@ -296,13 +296,51 @@ console.log('\n  L\'interprétation se rejoue après chargement');
 {
   /* Elle n'etait rejouee qu'au CHARGEMENT DE LA PAGE : rouvrir un bilan
      laissait la colonne a « — » alors que les deux menus etaient renseignes.
-     Le defaut existait deja sur l'epaule. */
-  verifie('appelée après désérialisation', 'true',
-          /updateAll\(\); calcRec\(\); calcPlioq\(\); _epFoncRefresh\(\); _mobApRefreshAll\(\);/.test(sansCom) + '');
-  verifie('appelée après restauration du brouillon', 'true',
-          /_epFoncRefresh\(\);\s*try \{ _mobApRefreshAll\(\); \} catch/.test(sansCom) + '');
+     Le defaut existait deja sur l'epaule.
+
+     Les points d'appel sont verifies plus bas, un par un et par fonction :
+     s'accrocher ici a la FORME de la ligne — l'ordre exact des voisins dans un
+     try commun — a fait echouer ce cas des que ce try a ete scinde, alors que
+     l'appel etait bien la. Une assertion qui casse sur une mise en forme ne
+     protege de rien. */
   verifie('la boucle couvre tout segment ajouté', 'true',
           /Object\.keys\(MOB_AP\)\.forEach/.test(sansCom) + '');
+}
+
+
+console.log('\n  Le nettoyage entre deux patients');
+{
+  /* La cellule d'interprétation est un <td> : aucune des boucles de vidage de
+     `_resetBilanFields` — inputs, textareas, selects, cases — ne l'atteint.
+     Elle ne se nettoie QUE par `_mobApRefreshAll()`.
+
+     Rangée en fin d'un `try` partagé avec `updateAll`, `calcRec`, `calcPlioq`
+     et `_epFoncRefresh`, un voisin qui échoue la sautait : les champs
+     repartaient vides et les verdicts du patient précédent restaient à
+     l'écran — une interprétation clinique attachée à personne. Chaque appel a
+     donc SON try. */
+  var appels = js.split('\n').filter(function (l) {
+    return /_mobApRefreshAll\(\)/.test(l) && !/function _mobApRefreshAll/.test(l);
+  });
+  verifie('quatre points de nettoyage', 4, appels.length);
+  verifie('chacun dans son propre try', 4, appels.filter(function (l) {
+    return /^\s*try\s*\{\s*_mobApRefreshAll\(\);\s*\}\s*catch/.test(l);
+  }).length);
+
+  /* Les quatre chemins qui doivent la rejouer : ouverture de la page,
+     changement de patient (`_resetBilanFields`), chargement d'un bilan
+     (`_deserializeBilan`) et restauration du brouillon (`loadFromStorage`). */
+  ['function _resetBilanFields(){', 'function _deserializeBilan(data){', 'function loadFromStorage() {']
+    .forEach(function (sig) {
+      var d = js.indexOf(sig);
+      var f = js.indexOf('\nfunction ', d + 10);
+      verifie(sig.replace(/function |\(.*/g, '') + ' la rejoue', 'true',
+              String(js.slice(d, f).indexOf('_mobApRefreshAll()') !== -1));
+    });
+
+  /* Un verdict vide rend « — » : c'est ce que la cellule doit retrouver. */
+  verifie('sans rien de saisi, le verdict est un tiret', '—', verdict('', '', '')[0]);
+  verifie('et sans phrase', '', verdict('', '', '')[2]);
 }
 
 console.log('\n  ' + (nbKo ? '✗ ' + nbKo + ' échec(s), ' : '✓ ') + nbOk + ' cas vérifiés.\n');
