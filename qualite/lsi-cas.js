@@ -166,8 +166,16 @@ verifie('ratio 79 % (21 %) → rouge', 'measure-stat bad', eff(79).className);
    perte. Les deux legendes du formulaire doivent parler dans l'unite affichee. */
 console.log('\nLes légendes s\'énoncent dans l\'unité affichée');
 var html = fs.readFileSync(path.join(__dirname, '..', 'bilan.html'), 'utf8');
-var zoneCim = html.slice(html.indexOf('data-block-id="pied--cliniques"'),
-                         html.indexOf('Navicular Drop Test'));
+/* La Course interne du mollet a quitte la page Pied pour les Tests
+   Fonctionnels MI. Sans ce changement de borne, la tranche etait VIDE et les
+   deux gardes passaient a vide — un test vert qui ne teste plus rien. */
+var _debCim = html.indexOf('data-block-id="fonctionnels--cim"');
+var zoneCim = html.slice(_debCim, html.indexOf('data-block-id=', _debCim + 40));
+if (_debCim < 0 || !zoneCim.trim()) {
+  console.error('Bloc « fonctionnels--cim » introuvable dans bilan.html.');
+  process.exit(1);
+}
+verifie('la tranche contient bien le test', true, /pi-cim1-cs/.test(zoneCim));
 verifie('aucun seuil « positif si < 90% » ne subsiste', false, /positif si\s*&lt;\s*90/.test(zoneCim));
 verifie('aucune légende ne décrit encore le rapport brut', false,
         /\(1 appui \/ 2 appuis\) × 100, par côté/.test(zoneCim));

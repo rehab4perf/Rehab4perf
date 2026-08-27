@@ -3661,33 +3661,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
     <div class="block" data-block-id="pied--chopart" id="pi-bilateral-chopart" style="display:none"><div class="block-header red">Chopart</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><div class="sl-g" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ GAUCHE</div><div class="sl-d" style="background:var(--accent2);color:#fff;padding:6px 14px;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center">CÔTÉ DROIT</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)"><table class="test-table" style="margin:0;border-radius:0"><thead><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-chopart-g"></tbody></table><table class="test-table" style="margin:0;border-radius:0;background:var(--surface2)"><thead style="background:var(--accent2)"><tr><th>Test</th><th style="width:90px">Résultat</th><th>Obs.</th></tr></thead><tbody id="tb-pi-chopart-d"></tbody></table></div></div>
     <div class="block" data-block-id="pied--cliniques">
   <div class="block-header red">Tests Cliniques</div>
-  <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Asymétrie = 100 − LSI, le LSI restant min(sain,atteint)/max × 100 · Effondrement = perte du 2 appuis au 1 appui, par côté (positif si &gt; 10%) · Navicular Drop : effondrement si &gt; 10 mm</div>
-  <!-- Course interne mollet -->
-  <div class="measure-row" style="background:var(--surface2)">
-    <div class="col-header">Course interne mollet — talon/sol (cm)</div>
-    <div class="col-header sl-cs">Côté sain</div><div class="col-header sl-ca">Côté atteint</div>
-    <div class="col-header">Asym. %</div><div class="col-header">Statut</div>
-  </div>
-  <div class="measure-row">
-    <div class="measure-label" style="display:flex;flex-direction:column;align-items:flex-start;gap:3px">Distance talon-sol — 2 appuis<span style="font-size:.72rem;color:var(--text3);font-weight:400">Debout pieds joints, montée maximale sur pointes de pied</span></div>
-    <div class="measure-input"><input type="number" id="pi-cim2-cs" min="0" placeholder="— cm" oninput="calcPiCIM()"></div>
-    <div class="measure-input"><input type="number" id="pi-cim2-ca" min="0" placeholder="— cm" oninput="calcPiCIM()"></div>
-    <div class="measure-stat" id="pi-cim2-lsi">—</div>
-    <div class="measure-stat" id="pi-cim2-stat">—</div>
-  </div>
-  <div class="measure-row">
-    <div class="measure-label" style="display:flex;flex-direction:column;align-items:flex-start;gap:3px">Distance talon-sol — 1 appui<span style="font-size:.72rem;color:var(--text3);font-weight:400">Idem en appui unipodal, mesuré côté par côté</span></div>
-    <div class="measure-input"><input type="number" id="pi-cim1-cs" min="0" placeholder="— cm" oninput="calcPiCIM()"></div>
-    <div class="measure-input"><input type="number" id="pi-cim1-ca" min="0" placeholder="— cm" oninput="calcPiCIM()"></div>
-    <div class="measure-stat" id="pi-cim-lsi">—</div>
-    <div class="measure-stat" id="pi-cim-stat">—</div>
-  </div>
-  <div class="measure-row">
-    <div class="measure-label" style="display:flex;flex-direction:column;align-items:flex-start;gap:3px">Effondrement 2 → 1 appui<span style="font-size:.72rem;color:var(--text3);font-weight:400">Perte de hauteur en passant à l'appui unipodal, par côté</span></div>
-    <div class="measure-stat" id="pi-cim-eff-cs">—</div>
-    <div class="measure-stat" id="pi-cim-eff-ca">—</div>
-    <div class="measure-stat" style="grid-column:span 2" id="pi-cim-final">—</div>
-  </div>
+  <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Navicular Drop : effondrement si &gt; 10 mm</div>
   <!-- Navicular Drop Test -->
   <div class="measure-row" style="background:var(--surface2);grid-template-columns:1fr 110px 180px 110px 180px">
     <div class="col-header">Navicular Drop Test</div>
@@ -4050,6 +4024,36 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 </div>
 
 <!-- LUNGE WBLT -->
+<div class="block" data-block-id="fonctionnels--cim">
+  <div class="block-header">Course Interne du Mollet — Montée sur Pointes</div>
+  <div style="padding:4px 14px 5px;font-size:.71rem;color:var(--text3);border-bottom:1px solid var(--border)">Asymétrie = 100 − LSI, le LSI restant min(sain,atteint)/max × 100 · Effondrement = perte du 2 appuis au 1 appui, par côté (positif si &gt; 10%)</div>
+  <!-- Course interne mollet -->
+  <div class="measure-row" style="background:var(--surface2)">
+    <div class="col-header">Course interne mollet — talon/sol (cm)</div>
+    <div class="col-header sl-cs">Côté sain</div><div class="col-header sl-ca">Côté atteint</div>
+    <div class="col-header">Asym. %</div><div class="col-header">Statut</div>
+  </div>
+  <div class="measure-row">
+    <div class="measure-label" style="display:flex;flex-direction:column;align-items:flex-start;gap:3px">Distance talon-sol — 2 appuis<span style="font-size:.72rem;color:var(--text3);font-weight:400">Debout pieds joints, montée maximale sur pointes de pied</span></div>
+    <div class="measure-input"><input type="number" id="pi-cim2-cs" min="0" placeholder="— cm" oninput="calcPiCIM()"></div>
+    <div class="measure-input"><input type="number" id="pi-cim2-ca" min="0" placeholder="— cm" oninput="calcPiCIM()"></div>
+    <div class="measure-stat" id="pi-cim2-lsi">—</div>
+    <div class="measure-stat" id="pi-cim2-stat">—</div>
+  </div>
+  <div class="measure-row">
+    <div class="measure-label" style="display:flex;flex-direction:column;align-items:flex-start;gap:3px">Distance talon-sol — 1 appui<span style="font-size:.72rem;color:var(--text3);font-weight:400">Idem en appui unipodal, mesuré côté par côté</span></div>
+    <div class="measure-input"><input type="number" id="pi-cim1-cs" min="0" placeholder="— cm" oninput="calcPiCIM()"></div>
+    <div class="measure-input"><input type="number" id="pi-cim1-ca" min="0" placeholder="— cm" oninput="calcPiCIM()"></div>
+    <div class="measure-stat" id="pi-cim-lsi">—</div>
+    <div class="measure-stat" id="pi-cim-stat">—</div>
+  </div>
+  <div class="measure-row">
+    <div class="measure-label" style="display:flex;flex-direction:column;align-items:flex-start;gap:3px">Effondrement 2 → 1 appui<span style="font-size:.72rem;color:var(--text3);font-weight:400">Perte de hauteur en passant à l'appui unipodal, par côté</span></div>
+    <div class="measure-stat" id="pi-cim-eff-cs">—</div>
+    <div class="measure-stat" id="pi-cim-eff-ca">—</div>
+    <div class="measure-stat" style="grid-column:span 2" id="pi-cim-final">—</div>
+  </div>
+</div>
 <div class="block" data-block-id="fonctionnels--lunge">
   <div class="block-header">⑦ Flexion Dorsale de Cheville — Lunge Test WBLT</div>
   <div style="padding:1px 0">
@@ -5934,7 +5938,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260806i"></script>
-<script src="js/bilan.js?v=20260825v"></script>
+<script src="js/bilan.js?v=20260825w"></script>
 
 </body>
 </html>

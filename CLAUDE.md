@@ -741,13 +741,27 @@ les cellules — ces lignes s'affichaient avec leur intitulé et des colonnes vi
 colonnes de mesure (`colspan`, jamais `0` : il faut au moins une colonne pour y
 loger le texte).
 
-**Un test mesuré peut vivre sur une page articulaire.** La Course interne du
-mollet est saisie sur la page Pied — le filtre par page la laissait de côté, et
-elle manquait au CR médecin comme à l'Évolution. C'est pourtant une mesure de
-hauteur de montée sur pointes comparée entre les deux côtés, de même nature que
-le Heel Rise qui, lui, remonte déjà. `CR_MED_CLES` est une liste **explicite**,
-courte, où chaque entrée dit pourquoi elle y est — le filtre par page ne peut
-pas deviner ces cas.
+**La Course interne du mollet a changé de page.** Elle était saisie sur la page
+Pied, parmi les tests orthopédiques : le filtre par page l'écartait du CR
+médecin, et rien ne la suivait dans l'Évolution. C'est pourtant une mesure de
+hauteur de montée sur pointes comparée entre les deux côtés — de même nature
+que le Heel Rise. Elle vit désormais dans **Tests Fonctionnels MI**, juste
+après lui, et remonte donc par le filtre ordinaire.
+
+Une liste explicite (`CR_MED_CLES`) avait d'abord été posée pour la faire
+remonter depuis la page Pied. Le déplacement l'a rendue inutile : elle a été
+**retirée**, un mécanisme qui ne sert plus étant un piège pour la lecture
+suivante.
+
+**Les identifiants de champ n'ont PAS changé** (`pi-cim*`) : les bilans
+enregistrés la retrouvent telle quelle. C'est la seule chose à ne jamais
+toucher en déplaçant un test.
+
+`qualite/lsi-cas.js` découpait sa tranche entre `pied--cliniques` et
+« Navicular Drop Test ». Après le déplacement, cette tranche était **vide** et
+les deux garde-fous passaient à vide — un test vert qui ne teste plus rien. Il
+borne désormais sur `fonctionnels--cim`, et vérifie d'abord que la tranche
+contient bien le test.
 
 **Un test à plusieurs mesures sort en sous-lignes.** `_crMedValeur` ne remontait
 que la PREMIÈRE ligne du tableau : la Course interne du mollet en a trois —

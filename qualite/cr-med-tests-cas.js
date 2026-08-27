@@ -152,23 +152,37 @@ console.log('\n  Le filtre — les tests de force remontent, les orthopédiques 
   verifie('une ligne de course remonte',       'true',  String(cles.indexOf('Cadence') >= 0));
 }
 
-console.log('\n  Un test mesuré sur une page articulaire peut remonter quand même');
+/* La Course interne du mollet a QUITTE la page Pied pour les Tests Fonctionnels
+   MI. Elle remonte donc par le filtre ordinaire, et la liste explicite qui la
+   nommait — `CR_MED_CLES` — a ete retiree : un mecanisme qui ne sert plus a
+   rien est un piege pour la lecture suivante.
+
+   Les identifiants de champ n'ont PAS bouge : les bilans enregistres la
+   retrouvent telle quelle. C'est ce que verifie le premier cas. */
+console.log('\n  La Course interne du mollet vient des Tests Fonctionnels MI');
 {
-  /* La Course interne du mollet est saisie sur la page Pied : le filtre par
-     page la laissait de côté. C'est pourtant une mesure de hauteur de montée
-     sur pointes comparée entre les deux côtés — même nature que le Heel Rise,
-     qui remonte déjà. Une liste EXPLICITE, jamais devinée. */
-  var avecCim = lancerAvec([
-    section('1. BILAN ORTHOPÉDIQUE — PIED / CHEVILLE', [
-      ligne('Navicular Drop', '8 mm', 'page-pied', 'Normal'),
-      ligne('Course interne mollet', '12 / 10 cm', 'page-pied', 'Test positif')
+  var srcHtml = fs.readFileSync(path.join(__dirname, '..', 'bilan.html'), 'utf8');
+  var iCim = srcHtml.indexOf('data-block-id="fonctionnels--cim"');
+  verifie('le bloc existe', 'true', String(iCim > 0));
+  verifie('il est sur la page Tests Fonctionnels MI', 'true',
+          String(srcHtml.lastIndexOf('id="page-fonctionnels"', iCim)
+                 > srcHtml.lastIndexOf('id="page-pied"', iCim)));
+  /* Les identifiants sont l'identite des donnees : les changer perdrait tous
+     les bilans deja enregistres. */
+  ['pi-cim2-cs','pi-cim2-ca','pi-cim1-cs','pi-cim1-ca'].forEach(function (id) {
+    verifie('champ ' + id + ' conservé', 'true',
+            String(srcHtml.indexOf('id="' + id + '"') > 0));
+  });
+  verifie('plus de liste explicite CR_MED_CLES', 'false',
+          String(/CR_MED_CLES/.test(src)));
+
+  var res2 = lancerAvec([
+    section('1. TESTS FONCTIONNELS — MEMBRES INFÉRIEURS', [
+      ligne('Course interne mollet', '12 / 10 cm', 'page-fonctionnels', 'Test positif')
     ])
   ]);
-  var cles = avecCim.map(function (t) { return t.cle; });
-  verifie('le test explicite remonte',        'true',  String(cles.indexOf('Course interne mollet') >= 0));
-  verifie('le reste de la page ne suit pas',  'false', String(cles.indexOf('Navicular Drop') >= 0));
-  verifie('il porte SA zone, pas le titre de section', 'Tests de force',
-          avecCim.filter(function (t) { return t.cle === 'Course interne mollet'; })[0].zone);
+  verifie('elle remonte par le filtre ordinaire', 'true',
+          String(res2.map(function (t) { return t.cle; }).indexOf('Course interne mollet') >= 0));
 }
 
 console.log('\n  La zone — un test de force n\'est pas un bilan orthopédique');

@@ -163,7 +163,7 @@ sections: [
     etapes:[
       { t:'Dans Évolution', x:'Les hauteurs talon-sol — 2 appuis et 1 appui, chaque côté — sont désormais suivies dans « Pied/Cheville — Force », avec leurs deux graphiques Atteint vs Sain. C\'est une mesure qu\'on refait : la hauteur remonte avec la force du triceps sural.' },
       { t:'Dans le CR médecin', x:'Elle apparaît sous « Tests de force », avec ses TROIS mesures en sous-lignes : 2 appuis, 1 appui, effondrement. Auparavant, seule la première serait remontée — et c\'est l\'effondrement qui porte le verdict.' },
-      { t:'Pourquoi elle manquait', x:'Le compte-rendu médecin sélectionne les tests par leur page d\'origine. La Course interne du mollet est saisie sur la page Pied, parmi les tests orthopédiques, alors que c\'est une mesure fonctionnelle. Elle est maintenant nommée explicitement.' }
+      { t:'Elle a changé de page', x:'Elle était saisie sur la page Pied / Cheville, parmi les tests orthopédiques. Elle se trouve désormais dans « Tests Fonctionnels MI », juste après le Heel Rise — même muscle, même geste. Vos bilans déjà enregistrés la retrouvent telle quelle : seuls son emplacement et son classement changent.' }
     ]},
   { id:'force-symetrie', titre:'Les tests de force se lisent en symétrie',
     intro:'« Positif / Négatif » a laissé place au vocabulaire de la symétrie, avec un seuil à 10 %.',

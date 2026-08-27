@@ -329,18 +329,6 @@ var CR_MED_PAGES = ['page-fonctionnels','page-fonctionnelsMS','page-fonctionnels
    « Ischio-jambiers 32,6 / 35,2 kg » s'annoncait donc sous « BILAN
    ORTHOPEDIQUE ». Le medecin lisait un intitule qui ne correspond pas a
    l'examen. La page d'origine, elle, dit vrai. */
-/* Quelques tests MESURES vivent sur une page articulaire alors qu'ils sont de
-   nature fonctionnelle. Le filtre par page les laisse de cote — il ne peut pas
-   les deviner. Une liste EXPLICITE, courte, ou chaque entree dit pourquoi elle
-   y est.
-
-   `Course interne mollet` : saisie sur la page Pied, mais c'est une mesure de
-   hauteur de montee sur pointes comparee entre les deux cotes, de meme nature
-   que le Heel Rise qui, lui, remonte deja. */
-var CR_MED_CLES = {
-  'Course interne mollet': 'Tests de force'
-};
-
 var CR_MED_ZONES = {
   'page-force-mi'    : 'Tests de force',
   'page-force-ms'    : 'Tests de force',
@@ -357,16 +345,12 @@ function _crMedResumeTests() {
       tmp.innerHTML = sec.html;
       tmp.querySelectorAll('.cr-item').forEach(function (it) {
         var pgs = (it.getAttribute('data-pages') || '').split(/\s+/).filter(Boolean);
-        var _cleBrute = ((it.querySelector('.cr-key') || {}).textContent || '').trim();
-        var _cleExplicite = CR_MED_CLES[_cleBrute];
-        if (!_cleExplicite && !pgs.some(function (p) { return CR_MED_PAGES.indexOf(p) >= 0; })) return;
+        if (!pgs.some(function (p) { return CR_MED_PAGES.indexOf(p) >= 0; })) return;
         /* Une ligne peut lire des champs de plusieurs pages ; la premiere qui
            porte un intitule propre l'emporte sur le titre de section. */
-        var zoneLigne = _cleExplicite || zone;
-        if (!_cleExplicite) {
-          for (var _z = 0; _z < pgs.length; _z++) {
-            if (CR_MED_ZONES[pgs[_z]]) { zoneLigne = CR_MED_ZONES[pgs[_z]]; break; }
-          }
+        var zoneLigne = zone;
+        for (var _z = 0; _z < pgs.length; _z++) {
+          if (CR_MED_ZONES[pgs[_z]]) { zoneLigne = CR_MED_ZONES[pgs[_z]]; break; }
         }
         var cle = (it.querySelector('.cr-key') || {}).textContent || '';
         var tagEl = it.querySelector('.cr-tag');
@@ -3569,10 +3553,10 @@ var TRACKED_METRICS = [
      etait absente de l'evolution alors que c'est precisement une mesure qu'on
      refait : la hauteur remonte avec la force du triceps sural. Le 1 appui est
      le plus parlant, mais le 2 appuis sert de reference — les deux sont la. */
-  {id:'pi-cim2-ca',     label:'Course interne mollet 2 appuis (atteint)', unit:' cm', dir:'up', cat:'Pied/Cheville — Force'},
-  {id:'pi-cim2-cs',     label:'Course interne mollet 2 appuis (sain)',    unit:' cm', dir:'up', cat:'Pied/Cheville — Force'},
-  {id:'pi-cim1-ca',     label:'Course interne mollet 1 appui (atteint)',  unit:' cm', dir:'up', cat:'Pied/Cheville — Force'},
-  {id:'pi-cim1-cs',     label:'Course interne mollet 1 appui (sain)',     unit:' cm', dir:'up', cat:'Pied/Cheville — Force'},
+  {id:'pi-cim2-ca',     label:'Course interne mollet 2 appuis (atteint)', unit:' cm', dir:'up', cat:'Tests Fonctionnels MI'},
+  {id:'pi-cim2-cs',     label:'Course interne mollet 2 appuis (sain)',    unit:' cm', dir:'up', cat:'Tests Fonctionnels MI'},
+  {id:'pi-cim1-ca',     label:'Course interne mollet 1 appui (atteint)',  unit:' cm', dir:'up', cat:'Tests Fonctionnels MI'},
+  {id:'pi-cim1-cs',     label:'Course interne mollet 1 appui (sain)',     unit:' cm', dir:'up', cat:'Tests Fonctionnels MI'},
 ];
 
 /* ── Configuration des graphiques d'évolution ─────────── */
@@ -3607,8 +3591,8 @@ var CHART_GROUPS = [
   {cat:'Pied/Cheville — Force', title:'Flex. dorsale — Atteint vs Sain',   type:'dual', idA:'pi-f-fd-ca', idB:'pi-f-fd-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
   {cat:'Pied/Cheville — Force', title:'Inversion — Atteint vs Sain',       type:'dual', idA:'pi-f-inv-ca', idB:'pi-f-inv-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
   {cat:'Pied/Cheville — Force', title:'Éversion — Atteint vs Sain',        type:'dual', idA:'pi-f-ev-ca', idB:'pi-f-ev-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
-  {cat:'Pied/Cheville — Force', title:'Course interne mollet 2 appuis — Atteint vs Sain', type:'dual', idA:'pi-cim2-ca', idB:'pi-cim2-cs', unit:'cm', dir:'up', labelA:'Atteint', labelB:'Sain'},
-  {cat:'Pied/Cheville — Force', title:'Course interne mollet 1 appui — Atteint vs Sain',  type:'dual', idA:'pi-cim1-ca', idB:'pi-cim1-cs', unit:'cm', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Tests Fonctionnels MI', title:'Course interne mollet 2 appuis — Atteint vs Sain', type:'dual', idA:'pi-cim2-ca', idB:'pi-cim2-cs', unit:'cm', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Tests Fonctionnels MI', title:'Course interne mollet 1 appui — Atteint vs Sain',  type:'dual', idA:'pi-cim1-ca', idB:'pi-cim1-cs', unit:'cm', dir:'up', labelA:'Atteint', labelB:'Sain'},
   {cat:'Pied/Cheville — Force', title:'LFH — Atteint vs Sain',             type:'dual', idA:'pi-f-lfh-ca', idB:'pi-f-lfh-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
   // ─ Hanche — Mobilité ─
   {cat:'Hanche — Mobilité', title:'Flexion hanche D vs G', type:'dual', idA:'ha-mob-d-flex', idB:'ha-mob-g-flex', unit:'°', dir:'up', labelA:'Côté D', labelB:'Côté G'},
@@ -7756,44 +7740,6 @@ function _buildAllTestsHtml() {
       })();
     }
     if (sec.label === 'PIED / CHEVILLE') {
-      // Course interne mollet
-      var cim2Cs = parseFloat((document.getElementById('pi-cim2-cs')||{}).value);
-      var cim2Ca = parseFloat((document.getElementById('pi-cim2-ca')||{}).value);
-      var cim1Cs = parseFloat((document.getElementById('pi-cim1-cs')||{}).value);
-      var cim1Ca = parseFloat((document.getElementById('pi-cim1-ca')||{}).value);
-      if (!isNaN(cim2Cs) || !isNaN(cim2Ca) || !isNaN(cim1Cs) || !isNaN(cim1Ca)) {
-        var cimLblCsEl = document.querySelector('[data-block-id="pied--cliniques"] .sl-cs');
-        var cimLblCaEl = document.querySelector('[data-block-id="pied--cliniques"] .sl-ca');
-        /* Le formulaire écrit « Côté gauche » ; le CR dit « Gauche » partout
-           ailleurs. On retire le préfixe, sinon cette seule ligne porte des
-           en-têtes plus longs que les trente-sept autres. */
-        var _sansCote = function(t){
-          var v = String(t||'').replace(/^\s*côté\s+/i, '').trim();
-          return v ? v.charAt(0).toUpperCase() + v.slice(1) : v;
-        };
-        var cimLblCs = cimLblCsEl ? _sansCote(cimLblCsEl.textContent) : 'Sain';
-        var cimLblCa = cimLblCaEl ? _sansCote(cimLblCaEl.textContent) : 'Atteint';
-        var cimEffCs = document.getElementById('pi-cim-eff-cs');
-        var cimEffCa = document.getElementById('pi-cim-eff-ca');
-        var cimLsi = document.getElementById('pi-cim-lsi');
-        var cimFinal = document.getElementById('pi-cim-final');
-        var cimStatTxt = cimFinal ? cimFinal.textContent.replace(/[✅❌]\s*/,'') : '—';
-        var cimCls = cimFinal ? (cimFinal.className.includes('good') ? 'ok' : cimFinal.className.includes('bad') ? 'bad' : '') : '';
-        /* Quatre groupes de valeurs tenaient dans une seule phrase, avec trois
-           separateurs differents. Un tableau : une ligne par mesure, une
-           colonne par cote. L'asymetrie du 1 appui est celle que le test
-           produit — les deux autres lignes n'en ont pas. */
-        var _cimCm = function(v){ return isNaN(v) ? '' : v + ' cm'; };
-        var _cimTxt = function(el){ var t = el ? (el.textContent||'').trim() : ''; return (!t || t === '—' || t === '-') ? '' : t; };
-        /* Ce tableau etait le dernier ecrit a la main — donc le seul qui
-           n'heritait pas de la remise en ordre des colonnes. */
-        var cimDetail = _crMesTab([
-          { l:'2 appuis',     a:_cimCm(cim2Cs),      b:_cimCm(cim2Ca) },
-          { l:'1 appui',      a:_cimCm(cim1Cs),      b:_cimCm(cim1Ca), asym:_cimTxt(cimLsi) },
-          { l:'Effondrement', a:_cimTxt(cimEffCs),   b:_cimTxt(cimEffCa) }
-        ], cimLblCs, cimLblCa, { lbl:true });
-        secRows += crItem('Course interne mollet', cimDetail, cimStatTxt, cimCls, ['pi-cim2-cs','pi-cim2-ca','pi-cim1-cs','pi-cim1-ca'].filter(function(i){ var e=document.getElementById(i); return e&&e.value; }));
-      }
       // Navicular Drop Test
       ['g','d'].forEach(function(side) {
         var el = document.getElementById('pi-ndt-' + side);
@@ -8116,6 +8062,47 @@ function _buildAllTestsHtml() {
   tfHtml += obsBlock('rec-obs-ca','rec-obs-cs');
   if (!isNaN(hrCA)) tfHtml += crItem('Heel Rise', _pair('Répétitions', hrCA, hrCS, '', _asymOf(hrCA,hrCS)), statOf2(lsiCls2(hrCA,hrCS)), lsiCls2(hrCA,hrCS), ['hr-ca','hr-cs']);
   tfHtml += obsBlock('hr-obs-ca','hr-obs-cs');
+  /* Course interne du mollet — deplacee de la page Pied vers les Tests
+     Fonctionnels MI : c'est une mesure de hauteur de montee sur pointes
+     comparee entre les deux cotes, de meme nature que le Heel Rise juste
+     au-dessus. Sur la page Pied elle etait rangee parmi les tests
+     orthopediques, et le CR medecin — qui filtre par page — la laissait de
+     cote. Les identifiants de champ n'ont PAS change : les bilans enregistres
+     la retrouvent telle quelle. */
+  // Course interne mollet
+    var cim2Cs = parseFloat((document.getElementById('pi-cim2-cs')||{}).value);
+    var cim2Ca = parseFloat((document.getElementById('pi-cim2-ca')||{}).value);
+    var cim1Cs = parseFloat((document.getElementById('pi-cim1-cs')||{}).value);
+    var cim1Ca = parseFloat((document.getElementById('pi-cim1-ca')||{}).value);
+    if (!isNaN(cim2Cs) || !isNaN(cim2Ca) || !isNaN(cim1Cs) || !isNaN(cim1Ca)) {
+
+      /* Les libelles de cote sont ceux du membre inferieur, deja resolus
+         pour toute cette section. La version precedente les relisait dans le
+         DOM du bloc, avec un nettoyage de prefixe (« Côté gauche » →
+         « Gauche ») : le test ayant rejoint les Tests Fonctionnels MI, il
+         partage simplement les leurs. */
+      var cimLblCs = _labelCS, cimLblCa = _labelCA;
+      var cimEffCs = document.getElementById('pi-cim-eff-cs');
+      var cimEffCa = document.getElementById('pi-cim-eff-ca');
+      var cimLsi = document.getElementById('pi-cim-lsi');
+      var cimFinal = document.getElementById('pi-cim-final');
+      var cimStatTxt = cimFinal ? cimFinal.textContent.replace(/[✅❌]\s*/,'') : '—';
+      var cimCls = cimFinal ? (cimFinal.className.includes('good') ? 'ok' : cimFinal.className.includes('bad') ? 'bad' : '') : '';
+      /* Quatre groupes de valeurs tenaient dans une seule phrase, avec trois
+         separateurs differents. Un tableau : une ligne par mesure, une
+         colonne par cote. L'asymetrie du 1 appui est celle que le test
+         produit — les deux autres lignes n'en ont pas. */
+      var _cimCm = function(v){ return isNaN(v) ? '' : v + ' cm'; };
+      var _cimTxt = function(el){ var t = el ? (el.textContent||'').trim() : ''; return (!t || t === '—' || t === '-') ? '' : t; };
+      /* Ce tableau etait le dernier ecrit a la main — donc le seul qui
+         n'heritait pas de la remise en ordre des colonnes. */
+      var cimDetail = _crMesTab([
+        { l:'2 appuis',     a:_cimCm(cim2Cs),      b:_cimCm(cim2Ca) },
+        { l:'1 appui',      a:_cimCm(cim1Cs),      b:_cimCm(cim1Ca), asym:_cimTxt(cimLsi) },
+        { l:'Effondrement', a:_cimTxt(cimEffCs),   b:_cimTxt(cimEffCa) }
+      ], cimLblCs, cimLblCa, { lbl:true });
+      tfHtml += crItem('Course interne mollet', cimDetail, cimStatTxt, cimCls, ['pi-cim2-cs','pi-cim2-ca','pi-cim1-cs','pi-cim1-ca'].filter(function(i){ var e=document.getElementById(i); return e&&e.value; }));
+    }
   if (!isNaN(luCA)) {
     var luDiff2 = Math.abs(luCA-luCS); var luBad2 = luCA<10 || luDiff2>1.5;
     tfHtml += crItem('Lunge WBLT',
