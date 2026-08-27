@@ -1992,7 +1992,21 @@ function removeExo(blocId, exoId){
   var bloc = blocs.find(function(b){ return b.id===blocId; });
   if(!bloc) return;
   bloc.exos = bloc.exos.filter(function(e){ return e.id!==exoId; });
+  /* Retirer un exercice DESIGNE le bloc : on vient d'y travailler, et
+     l'exercice suivant s'y ajoute presque toujours. Sans cela il fallait
+     recliquer le bloc — ou pire, ne pas y penser et voir l'exercice partir
+     dans le dernier bloc de la seance.
+
+     L'ecoute deleguee qui rend un bloc actif au clic ne peut PAS s'en charger :
+     elle vit sur `document`, donc elle se declenche apres le `onclick` du
+     bouton, et celui-ci a deja rebati la zone. Sa garde `zone.contains(target)`
+     tombe alors sur un noeud detache et abandonne. C'est aussi pourquoi le
+     bloc actif doit etre pose AVANT `renderSession` — le rendu lit `activeBloc`
+     pour marquer l'en-tete — et confirme APRES, `updateTargetBlocSelect`
+     reconstruisant le menu « Ajouter au bloc ». */
+  activeBloc = blocId;
   renderSession();
+  setActiveBloc(blocId);
   renderLib(document.getElementById('searchInput').value.toLowerCase());
 }
 

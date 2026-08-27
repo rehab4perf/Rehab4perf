@@ -316,6 +316,7 @@ sections: [
       { t:'Paramétrez chaque exercice', x:'Répétitions ou durée, séries, récupération, tempo, option « /côté », enchaînement avec l\'exercice suivant.' },
       { t:'Ajoutez des cibles', x:'kg, RPE, RIR, %1RM ou vitesse — avec fourchette min–max possible. C\'est ce qui alimente les courbes d\'évolution de charge.' },
       { t:'Consignes et douleur EVA', x:'Une consigne spécifique par exercice, et un badge « EVA » pour noter la douleur observée (0–10) — elle rejoint les courbes de douleur.', img:true },
+      { t:'Le bloc où atterrit le prochain exercice', x:'C\'est celui qui est mis en avant, et que rappelle le menu « Ajouter au bloc ». Cliquer n\'importe où dans un bloc le choisit. Retirer un exercice le choisit aussi : on vient d\'y travailler, et le remplaçant s\'y ajoute directement — y compris lorsqu\'on vide le bloc pour le regarnir.' },
       { t:'Enregistrez la séance', x:'Elle est sauvegardée pour le patient et apparaît dans son historique de programmes.' }
     ]},
   { id:'etapes', titre:'Regrouper des blocs en étapes',
