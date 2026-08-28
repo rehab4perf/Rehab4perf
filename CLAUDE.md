@@ -1515,6 +1515,22 @@ déjà fait.
 sont cochées d'office : là, c'est le praticien qui regarde son propre écran, et
 il veut tout voir. Ici, c'est un document qui part chez un tiers.
 
+**Les règles de la section « graphiques » n'existaient QUE pour le PDF.** Les
+dix-neuf règles `.cr-evo-*` et `.evo-*` vivaient dans la chaîne CSS de la
+fenêtre d'export, et nulle part ailleurs : **l'aperçu à l'écran rendait cette
+section sans aucun style**. Le défaut était invisible tant que l'en-tête portait
+ses couleurs en `style=` inline ; dès que la mise en page a dépendu des classes,
+tout s'est écrasé sur une ligne — « Atteint24rép+71%Sain23rép… ».
+
+Elles vivent désormais dans **`CR_LETTRE_CSS`**, déjà injecté dans les DEUX
+rendus (`crInjecterCssLettre` pour l'écran, concaténation pour l'export). Une
+seule définition : ce trou-là ne peut plus se rouvrir, et le fichier de cas
+échoue si une copie réapparaît dans la chaîne d'export.
+
+**`.cr-evo-svg` ne doit jamais porter `overflow:hidden`** — il le portait. Les
+étiquettes de valeur débordent du `viewBox` par construction (`overflow:visible`
+sur le SVG), et rogner couperait le chiffre du dernier point.
+
 **Point ouvert, non corrigé** : `_robustFence` (MAD × 10) écarte du tracé toute
 valeur qu'elle juge aberrante. Sur une série stable, la MAD est minuscule — et
 une VRAIE dégradation disparaît de la courbe. Mesuré : `[45, 44, 46, 45, 44,

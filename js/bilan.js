@@ -3852,7 +3852,7 @@ function _evoStatSingle(last, first, unit, decL, dec, dir){
 
 function _evoFig(lbl, col, val, extra){
   return '<span class="evo-fig"><span class="evo-fig-lbl"'+(col?' style="color:'+col+'"':'')+'>'+lbl+'</span>'
-       +'<span class="evo-fig-val">'+val+'</span>'+(extra||'')+'</span>';
+       +'<span class="evo-fig-row"><span class="evo-fig-val">'+val+'</span>'+(extra||'')+'</span></span>';
 }
 
 function _evoStatDual(lblA, valA, extraA, lblB, valB, extraB, asymHtml){
@@ -4873,9 +4873,8 @@ function _buildEvolutionHTML(){
     + '.evo-stat-from{font-size:.68rem;color:#9D9B96;font-variant-numeric:tabular-nums;}'
     + '.evo-fig{display:inline-flex;flex-direction:column;align-items:flex-start;gap:2px;}'
     + '.evo-fig-lbl{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9D9B96;}'
+    + '.evo-fig-row{display:flex;align-items:baseline;gap:5px;}'
     + '.evo-fig-val{font-size:.95rem;font-weight:700;letter-spacing:-.02em;color:#1A1917;font-variant-numeric:tabular-nums;}'
-    + '.evo-kpi-neutral{font-size:.72rem;color:var(--text2);}'
-    + '.evo-kpi-strong{font-size:.72rem;font-weight:700;color:var(--accent2);}'
     + '.evo-kpi{font-size:.72rem;font-weight:700;padding:2px 7px;border-radius:10px;}'
     + '.evo-kpi.evo-pos{background:#E8F5EE;color:var(--green);}'
     + '.evo-kpi.evo-neg{background:#FDECEA;color:var(--red);}'

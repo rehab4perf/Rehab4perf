@@ -6573,7 +6573,48 @@ _updateOutilsPatientBtns();
     '.lt-liste-t{font-size:.79rem;font-weight:700;color:#1A1917;margin:0 0 4px}',
     '.lt-liste-w{break-inside:avoid;page-break-inside:avoid;margin:0 0 12px}',
     '.lt-fin{break-inside:avoid;page-break-inside:avoid}',
-    '.lt-fin .lt-p:last-child{margin-bottom:0}'
+    '.lt-fin .lt-p:last-child{margin-bottom:0}',
+
+    /* ── Graphiques d'evolution ────────────────────────────────────
+       Meme grammaire que le reste de la lettre : filet vertical et
+       intitule capitale pour la section, une carte par graphique. */
+    '.cr-evo-section{margin-top:22px;padding-top:16px;border-top:1px solid #E8E6E1}',
+    '.cr-evo-section-title{margin:0 0 12px;padding-left:10px;border-left:3px solid #2B5FA6;',
+      'font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#1A3A5C}',
+    '.cr-evo-chart{margin:0 0 12px;padding:12px 14px 8px;background:#fff;',
+      'border:1px solid #E8E6E1;border-radius:8px;',
+      'break-inside:avoid;page-break-inside:avoid}',
+    '.cr-evo-chart-lbl{font-size:.78rem;font-weight:700;color:#1A1917;',
+      'letter-spacing:-.01em;margin:0 0 6px}',
+    /* Pas de `overflow:hidden` : les etiquettes de valeur debordent du
+       viewBox par construction (`overflow:visible` sur le SVG), et le
+       rogner couperait le chiffre du dernier point. */
+    '.cr-evo-svg{margin-top:6px}',
+    '.cr-evo-svg svg{width:100%;height:auto;display:block}',
+
+    /* En-tete chiffre — la meme dans les trois rendus : l'application, */
+    /* l'export du bilan et cette lettre. */
+    '.evo-chart-kpis{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:0 0 2px}',
+    '.evo-stat{display:inline-flex;align-items:baseline;gap:3px}',
+    '.evo-stat-val{font-size:1.3rem;font-weight:650;letter-spacing:-.03em;color:#1A1917;',
+      'line-height:1;font-variant-numeric:tabular-nums}',
+    '.evo-stat-unit{font-size:.76rem;font-weight:500;color:#6B6860}',
+    '.evo-stat-from{font-size:.68rem;color:#9D9B96;font-variant-numeric:tabular-nums}',
+    '.evo-fig{display:inline-flex;flex-direction:column;align-items:flex-start;gap:3px}',
+    '.evo-fig-lbl{font-size:.58rem;font-weight:700;text-transform:uppercase;',
+      'letter-spacing:.07em;color:#9D9B96}',
+    '.evo-fig-row{display:flex;align-items:baseline;gap:5px}',
+    '.evo-fig-val{font-size:.9rem;font-weight:700;letter-spacing:-.02em;color:#1A1917;',
+      'font-variant-numeric:tabular-nums}',
+    '.evo-kpi{font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:10px;',
+      'white-space:nowrap;font-variant-numeric:tabular-nums}',
+    '.evo-kpi.evo-pos{background:#E8F5EE;color:#2D6A4F}',
+    '.evo-kpi.evo-neg{background:#FDECEA;color:#C0392B}',
+    '.evo-kpi.evo-neutral{background:#F1F0ED;color:#6B6860}',
+    '.evo-cond-warn{font-size:.64rem;font-weight:700;color:#D4600A}',
+    /* Les pastilles de progression par cote sont plus petites : elles */
+    /* qualifient une figure, elles ne la remplacent pas. */
+    '.evo-fig .evo-kpi{font-size:.62rem;padding:1px 6px}'
   ].join('');
 
   (function crInjecterCssLettre() {
@@ -7363,25 +7404,10 @@ _updateOutilsPatientBtns();
       + '#cr-body{line-height:1.6;padding:0 28px}'
       + CR_LETTRE_CSS
       + 'svg{max-width:100%;height:auto;display:block}'
-      + '.cr-evo-section{margin-top:24px;padding:16px 24px 0;border-top:2px solid #1A3A5C}'
-      + '.cr-evo-section-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#1A3A5C;margin-bottom:14px}'
-      + '.cr-evo-chart{margin-bottom:20px;page-break-inside:avoid}'
-      + '.cr-evo-chart-lbl{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#6B6860;margin-bottom:6px}'
-      + '.cr-evo-svg{border:1px solid #E8E6E1;border-radius:6px;overflow:hidden}'
-      + '.evo-chart-kpis{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px}'
-      + '.evo-stat{display:inline-flex;align-items:baseline;gap:3px}'
-      + '.evo-stat-val{font-size:1.45rem;font-weight:650;letter-spacing:-.03em;color:var(--text);line-height:1;font-variant-numeric:tabular-nums}'
-      + '.evo-stat-unit{font-size:.78rem;font-weight:500;color:var(--text2)}'
-      + '.evo-stat-from{font-size:.68rem;color:var(--text3);font-variant-numeric:tabular-nums}'
-      + '.evo-fig{display:inline-flex;flex-direction:column;align-items:flex-start;gap:2px}'
-      + '.evo-fig-lbl{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3)}'
-      + '.evo-fig-val{font-size:.95rem;font-weight:700;letter-spacing:-.02em;color:var(--text);font-variant-numeric:tabular-nums}'
-      + '.evo-kpi-neutral{font-size:.72rem;color:var(--text2)}'
-      + '.evo-kpi-strong{font-size:.72rem;font-weight:700;color:var(--accent2)}'
-      + '.evo-kpi{font-size:.72rem;font-weight:700;padding:2px 7px;border-radius:10px}'
-      + '.evo-kpi.evo-pos{background:var(--green-l);color:var(--green)}'
-      + '.evo-kpi.evo-neg{background:var(--red-l);color:var(--red)}'
-      + '.evo-kpi.evo-neutral{background:var(--surface2);color:var(--text2)}'
+      /* Les regles de cette section vivent dans CR_LETTRE_CSS, concatene
+         quelques lignes plus haut : une seule definition pour l'ecran et
+         pour le PDF. Elles etaient ici SEULEMENT, donc l'apercu rendait la
+         section sans aucun style. */
       + '@media print{'
       + '#cr-topbar{display:none!important}'
       + '#cr-page{margin:0!important;padding:0!important;max-width:none!important}'

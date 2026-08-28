@@ -125,7 +125,7 @@ ok('le courrier lit bien le premier <svg> de la carte',
 /* ── 6. Trois feuilles de style, jamais une seule ────────────────
  * Une règle écrite d'un seul côté ne se voit pas là où le document est lu. */
 console.log('\nLes trois feuilles');
-['evo-stat-val', 'evo-stat-unit', 'evo-stat-from', 'evo-fig-lbl', 'evo-fig-val']
+['evo-stat-val', 'evo-stat-unit', 'evo-stat-from', 'evo-fig-lbl', 'evo-fig-val', 'evo-fig-row']
 .forEach(function (cls) {
   ok(cls + ' — application, export et courrier',
      bilanHtml.indexOf('.' + cls) >= 0 &&
@@ -243,6 +243,43 @@ ok('le sélecteur du programme ne coche rien',
 ['cr-evo-toggle', 'cr-pevo-toggle'].forEach(function (id) {
   var m = outils.match(new RegExp('<input[^>]*id="' + id + '"[^>]*>'));
   ok('la bascule ' + id + ' part fermée', !!m && m[0].indexOf('checked') < 0);
+});
+
+/* ── 10. Le courrier a UNE feuille de style, pas zéro ────────────
+ * Les 19 règles de la section « graphiques » vivaient UNIQUEMENT dans la
+ * chaîne CSS de la fenêtre d'export. L'aperçu à l'écran rendait donc cette
+ * section sans aucun style — invisible tant que l'en-tête portait ses
+ * couleurs en `style=` inline, flagrant dès que la mise en page a dépendu
+ * des classes. Elles vivent maintenant dans CR_LETTRE_CSS, injecté dans les
+ * DEUX rendus. Une seule définition : le trou ne peut plus se rouvrir. */
+console.log('\nLe courrier et son aperçu partagent la feuille');
+
+var _c = outils.indexOf('var CR_LETTRE_CSS = [');
+var lettreCss = outils.slice(_c, outils.indexOf("].join('');", _c));
+['cr-evo-section', 'cr-evo-section-title', 'cr-evo-chart', 'cr-evo-chart-lbl',
+ 'cr-evo-svg', 'evo-chart-kpis', 'evo-stat-val', 'evo-fig-lbl', 'evo-fig-row',
+ 'evo-kpi'].forEach(function (cls) {
+  ok('.' + cls + ' est dans CR_LETTRE_CSS', lettreCss.indexOf("'." + cls + '{') > 0);
+});
+ok('CR_LETTRE_CSS est injecté à l\'écran',
+   /st\.textContent = CR_LETTRE_CSS/.test(outils));
+ok('… et concaténé dans l\'export', /\+ CR_LETTRE_CSS/.test(outils));
+
+/* Aucune copie ne doit subsister dans la chaîne d'export : deux définitions
+   divergent le jour où l'on ne corrige que l'une des deux. */
+var expo = outils.slice(outils.indexOf('+ CR_LETTRE_CSS'));
+ok('aucune copie résiduelle dans la chaîne d\'export',
+   !/\+ '\.(cr-)?evo-[a-z-]+\{/.test(expo));
+
+/* .cr-evo-svg ne doit pas rogner : les étiquettes débordent du viewBox par
+   construction, et couper rognerait le chiffre du dernier point. */
+ok('.cr-evo-svg ne rogne pas le débordement',
+   !/'\.cr-evo-svg\{[^']*overflow:hidden/.test(lettreCss));
+
+/* Règles mortes : plus aucune carte n'émet ces deux classes. */
+[['js/bilan.js', bilanJs], ['bilan.html', bilanHtml]].forEach(function (f) {
+  ok(f[0] + ' — plus de règle evo-kpi-neutral/strong morte',
+     f[1].indexOf('evo-kpi-neutral') < 0 && f[1].indexOf('evo-kpi-strong') < 0);
 });
 
 console.log('');
