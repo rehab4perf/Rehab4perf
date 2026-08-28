@@ -304,6 +304,7 @@ sections: [
   { id:'cr-medecin', titre:'Rédiger un CR',
     intro:'Un courrier structuré destiné au médecin, avec aperçu en temps réel pendant la saisie.',
     etapes:[
+      { t:'Deux types de courrier', x:'« Début PEC » informe le médecin de la prise en charge : il a sa propre rédaction et il est le seul à faire figurer le protocole retenu. « Suivi » couvre tout le reste. Il y en avait quatre — « Fin / RTS » et « Avis » produisaient exactement le même courrier que « Suivi », au sujet près, et « Fin / RTS » ouvrait un bloc Protocole que ce courrier ne lisait pas : ce qu\'on y saisissait était perdu.' },
       { t:'Choisissez d\'abord le destinataire', x:'Médecin ou patient — c\'est le premier geste du générateur. Les données ne changent pas : mêmes tests, mêmes tableaux, mêmes chiffres. Seuls l\'ouverture, l\'objet et la clôture s\'adaptent. Voir « Écrire au médecin ou au patient ».' },
       { t:'Renseignez le destinataire', x:'Dr, spécialité, email. Ces coordonnées sont masquées — jamais vidées — quand vous écrivez au patient.' },
       { t:'Les infos du bilan s\'associent toutes seules', x:'Côté atteint, date d\'accident, date d\'opération, début de prise en charge, médecin prescripteur et EVA sont repris du bilan dès que vous changez de patient — sans rien cliquer. Si vous corrigez une de ces valeurs à la main, elle est conservée : l\'association n\'a lieu qu\'une fois, au changement de patient. Le bouton « Associer les infos patient » reste disponible pour la relancer.', img:true },

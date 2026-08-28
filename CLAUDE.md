@@ -985,6 +985,25 @@ destinataire à l'autre ne doit rien faire perdre.
 `crSetAudience` **régénère** le courrier affiché. Le laisser à l'écran avec le
 ton de l'ancien destinataire ferait croire qu'il a suivi la bascule.
 
+### Deux types de courrier, et deux seulement
+
+`crTemplate` vaut `debut` ou `suivi`. Il y en avait quatre : « Fin / RTS » et
+« Avis » produisaient **exactement le même courrier** que « Suivi » — seul
+l'objet auto-rempli changeait. Quatre gros boutons en tête de formulaire pour
+une ligne de sujet.
+
+**Seul `debut` est un vrai type** : il a son propre constructeur
+(`crBuildDebutLetter`), sa propre ouverture, et il est le seul à rendre le bloc
+Protocole. « Fin / RTS » ouvrait ce bloc dans le formulaire sans que le
+courrier ne le lise : on remplissait trois champs dont rien ne sortait.
+`showProto` ne regarde donc plus que `debut`.
+
+**Changer de type doit régénérer le courrier.** `crSetTemplate` change de
+CONSTRUCTEUR, et `crAutoFillObjet` écrit le champ par programme, donc sans
+événement : l'écoute à la frappe ne voit rien. Le bouton « Générer » masquait
+ce trou — on cliquait dessus juste après. Depuis sa disparition, la bascule ne
+se voyait plus nulle part.
+
 ### L'aperçu se compose seul — plus de bouton « Générer »
 
 ```bash

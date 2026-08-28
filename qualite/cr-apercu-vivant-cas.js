@@ -89,7 +89,7 @@ console.log('\n  Ce qui change sans frappe doit le demander — et l\'arrivee su
           /crChargerTestsBilan\(\);[\s\S]{0,200}_crMajDifferee\(\)/.test(propre) + '');
   verifie('la remise à zéro recompose le squelette', 'true',
           /graphsDiv\.style\.display = 'none';[\s\S]{0,200}_crMajDifferee\(\)/.test(propre) + '');
-  verifie('cinq points de rafraîchissement hors frappe', 5,
+  verifie('six points de rafraîchissement hors frappe', 6,
           (propre.match(/window\._crMajDifferee\(\);/g) || []).length);
   /* LA composition initiale, sans condition. Elle était accrochée à
      `_crTenterImport`, qui ne s'exécute QUE si un import est en attente : à
@@ -159,6 +159,38 @@ console.log('\n  Les deux encadrés du courrier');
      PDF. Ecrit deux fois, il aurait derive. */
   verifie('un seul jeu de styles pour l\'écran et le PDF', 1,
           (propre.match(/var CR_LETTRE_CSS = \[/g) || []).length);
+}
+
+
+console.log('\n  Deux types de courrier, et deux seulement');
+{
+  /* « Fin / RTS » et « Avis » produisaient EXACTEMENT le même courrier que
+     « Suivi » : seul l'objet auto-rempli changeait. Quatre gros boutons en tête
+     de formulaire pour une ligne de sujet. */
+  verifie('deux pastilles', 2, (src.match(/class="cr-tpl-btn[^"]*" onclick="crSetTemplate\(/g) || []).length);
+  verifie('début et suivi', 'debut,suivi',
+          (src.match(/crSetTemplate\('(\w+)'\)/g) || []).map(function (m) {
+            return m.replace(/crSetTemplate\('|'\)/g, '');
+          }).filter(function (v, i, a) { return a.indexOf(v) === i; }).join(','));
+  verifie('la bascule ne connaît que ces deux-là', 'true',
+          /\['debut','suivi'\]\.forEach/.test(propre) + '');
+  verifie('l\'objet auto-rempli n\'a plus que deux entrées', 'true',
+          /var map = \{ debut:'Début de prise en charge', suivi:'Suivi de rééducation' \};/.test(propre) + '');
+
+  /* SEUL le courrier de début lit `cr-proto-*`. Le montrer sur « Fin / RTS »
+     laissait remplir trois champs dont rien ne sortait — une saisie perdue
+     sans le moindre signal. */
+  verifie('le bloc Protocole ne s\'ouvre que sur « Début »', 'true',
+          /var showProto = crTemplate === 'debut';/.test(propre) + '');
+
+  /* Basculer de type change de CONSTRUCTEUR, et `crAutoFillObjet` écrit le
+     champ par programme — sans événement. L'écoute à la frappe ne voit rien :
+     sans ce rafraîchissement, la bascule ne se voyait nulle part. Le bouton
+     « Générer » masquait le trou, on cliquait dessus juste après. */
+  var d = propre.indexOf('window.crSetTemplate = function(tpl)');
+  var f = propre.indexOf('\n  };', d);
+  verifie('changer de type régénère le courrier', 'true',
+          String(propre.slice(d, f).indexOf('_crMajDifferee()') !== -1));
 }
 
 console.log('\n  ' + (nbKo ? '✗ ' + nbKo + ' échec(s), ' : '✓ ') + nbOk + ' cas vérifiés.\n');

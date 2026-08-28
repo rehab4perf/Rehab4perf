@@ -1195,10 +1195,14 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
         <div style="margin-bottom:14px;">
           <div style="font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:7px;">Type de courrier</div>
           <div class="cr-tpl-row">
+            <!-- Deux types, et deux seulement. « Fin / RTS » et « Avis » ne
+                 produisaient EXACTEMENT le meme courrier que « Suivi » : seul
+                 l'objet auto-rempli changeait. Quatre gros boutons en tete de
+                 formulaire pour une ligne de sujet — et « Fin / RTS » faisait
+                 en plus apparaitre le bloc Protocole, dont aucun champ n'est
+                 lu par ce courrier. On les remplissait dans le vide. -->
             <button class="cr-tpl-btn" onclick="crSetTemplate('debut')" id="cr-tpl-debut">🏁<br>Début PEC</button>
             <button class="cr-tpl-btn active" onclick="crSetTemplate('suivi')" id="cr-tpl-suivi">📊<br>Suivi</button>
-            <button class="cr-tpl-btn" onclick="crSetTemplate('rts')" id="cr-tpl-rts">🏃<br>Fin / RTS</button>
-            <button class="cr-tpl-btn" onclick="crSetTemplate('avis')" id="cr-tpl-avis">⚠️<br>Avis</button>
           </div>
         </div>
 
@@ -7462,13 +7466,19 @@ _updateOutilsPatientBtns();
 
   window.crSetTemplate = function(tpl) {
     crTemplate = tpl;
-    ['debut','suivi','rts','avis'].forEach(function(t) {
+    ['debut','suivi'].forEach(function(t) {
       var btn = document.getElementById('cr-tpl-' + t);
       if (btn) btn.classList.toggle('active', t === tpl);
     });
     crUpdateTemplateSections();
     _objetEdited = false;   // clic sur un template = réinitialise l'objet
     crAutoFillObjet();
+    /* Le type change de CONSTRUCTEUR de courrier, pas seulement d'objet — et
+       `crAutoFillObjet` ecrit le champ par programme, donc sans evenement.
+       L'ecoute a la frappe ne voit rien : sans cet appel, la bascule ne se
+       voyait nulle part. Le bouton « Generer » masquait ce trou, on cliquait
+       dessus juste apres. */
+    try { window._crMajDifferee(); } catch (e) {}
   };
 
   var _objetEdited = false; // true si l'utilisateur a tapé manuellement dans le champ
@@ -7479,7 +7489,7 @@ _updateOutilsPatientBtns();
     if (_objetEdited && !force) return; // respecter la saisie manuelle
     var pathoLbl = crPathosLabel();
     var suffix   = pathoLbl ? ' — ' + pathoLbl : '';
-    var map = { debut:'Début de prise en charge', suivi:'Suivi de rééducation', rts:'Bilan de fin de prise en charge / RTS', avis:'Demande d\'avis médical' };
+    var map = { debut:'Début de prise en charge', suivi:'Suivi de rééducation' };
     el.value = (map[crTemplate] || '') + suffix;
   }
 
@@ -7513,7 +7523,10 @@ _updateOutilsPatientBtns();
   };
 
   function crUpdateTemplateSections() {
-    var showProto = crTemplate === 'debut' || crTemplate === 'rts';
+    /* SEUL le courrier de debut lit `cr-proto-*`. Le montrer sur « Fin / RTS »
+       laissait remplir trois champs dont rien ne sortait — une saisie perdue
+       sans le moindre signal. Le type a disparu, la condition avec lui. */
+    var showProto = crTemplate === 'debut';
     var showDispo = crTemplate === 'debut';
     ['cr-hdr-protocole','cr-block-protocole'].forEach(function(id) {
       var el = document.getElementById(id);
