@@ -6228,12 +6228,16 @@ _updateOutilsPatientBtns();
     grid.innerHTML = html;
     grid.style.display = '';
     if (status) status.style.display = 'none';
+    /* Les cartes viennent d'arriver du parent : rien d'autre ne les porterait
+       jusqu'a l'apercu. */
+    try { _crRefreshGraphiques(); } catch (ex) { console.error('graphiques CR:', ex); }
   };
 
   window._crPevoCheckAll = function(state) {
     document.querySelectorAll('#cr-pevo-checks input[type="checkbox"]').forEach(function(cb) {
       cb.checked = state;
     });
+    try { _crRefreshGraphiques(); } catch (ex) { console.error('graphiques CR:', ex); }
   };
 
   window.crOnPevoToggle = function() {
@@ -6244,6 +6248,7 @@ _updateOutilsPatientBtns();
     if (!on) {
       if (grid)   { grid.innerHTML = ''; grid.style.display = 'none'; }
       if (status) status.style.display = 'none';
+      try { _crRefreshGraphiques(); } catch (ex) { console.error('graphiques CR:', ex); }
       return;
     }
     if (!_crPatientId) {
@@ -7816,9 +7821,19 @@ _updateOutilsPatientBtns();
     document.addEventListener(evt, function (e) {
       var p = document.getElementById('panel-cr');
       if (!p || !e.target || !p.contains(e.target)) return;
-      /* Les cases de graphiques ont leur propre chemin : leur `onchange`
-         appelle `crGenerate`, qui refait aussi le dessin. */
-      if (e.target.id === 'cr-evo-toggle' || e.target.id === 'cr-pevo-toggle') return;
+      /* Les graphiques ne se redessinent PAS a la frappe — ce serait du
+         gachis, ils ne dependent que de leurs propres cases. Mais ces cases
+         doivent bien redessiner : le commentaire d'origine affirmait que leur
+         `onchange` appelait `crGenerate`, ce qui etait FAUX. Tant que le
+         bouton « Générer » existait, on cliquait dessus juste apres et le
+         trou ne se voyait pas ; depuis sa disparition, cocher une courbe ne
+         faisait plus rien du tout.
+
+         Delegation sur les deux panneaux entiers, pas sur deux identifiants :
+         une case ajoutee au selecteur demain est couverte d'office — c'est la
+         liste tenue a la main qui etait le defaut. */
+      var gp = e.target.closest && e.target.closest('#cr-evo-panel, #cr-pevo-panel');
+      if (gp) { try { _crRefreshGraphiques(); } catch (ex) { console.error('graphiques CR:', ex); } return; }
       _crMajDifferee();
     }, true);
   });
@@ -8116,6 +8131,7 @@ _updateOutilsPatientBtns();
     var on = toggle && toggle.checked;
     grid.style.display = on ? '' : 'none';
     if (on) window._crBuildEvoPicker();
+    try { _crRefreshGraphiques(); } catch (ex) { console.error('graphiques CR:', ex); }
   };
 
   window._crBuildEvoPicker = function() {
@@ -8151,6 +8167,7 @@ _updateOutilsPatientBtns();
     document.querySelectorAll('#cr-evo-checks input[type="checkbox"]').forEach(function(cb){
       cb.checked = state;
     });
+    try { _crRefreshGraphiques(); } catch (ex) { console.error('graphiques CR:', ex); }
   };
 
   function _crGetEvoSectionHtml() {

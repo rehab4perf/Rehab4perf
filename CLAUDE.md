@@ -1480,6 +1480,29 @@ moments l'appellent désormais — crochet de sous-onglet, arrivée de l'import,
 arrivée des tests par `storage`, changement de patient — et le fichier de cas
 échoue si l'un d'eux disparaît.
 
+**Cocher une courbe doit la faire APPARAÎTRE — et ce chemin n'existait pas.**
+L'aperçu se recompose à la frappe (`_crMajDifferee` → `_crRefreshLettre`), mais
+les graphiques ont volontairement leur propre chemin : ils ne dépendent que de
+leurs cases, et les redessiner à chaque caractère serait du gâchis. Le
+gestionnaire délégué écartait donc `cr-evo-toggle` et `cr-pevo-toggle` par un
+`return`, sous un commentaire affirmant que leur `onchange` appelait
+`crGenerate`. **C'était faux** : ni `_crOnEvoToggle` ni `crOnPevoToggle` ne
+l'appelaient. Tant que le bouton « Générer » existait, on cliquait dessus juste
+après et le trou ne se voyait pas ; depuis sa disparition, cocher une courbe ne
+faisait plus rien du tout. Même piège que la bascule de type de courrier et que
+la composition initiale, refermés au même endroit.
+
+La délégation porte maintenant sur **les deux panneaux entiers**
+(`#cr-evo-panel, #cr-pevo-panel`), pas sur deux identifiants : une case ajoutée
+au sélecteur demain est couverte d'office.
+
+**Et une écriture programmatique n'émet aucun événement**, donc la délégation ne
+la voit pas. Quatre chemins appellent `_crRefreshGraphiques()` à la main :
+`_crEvoCheckAll`, `_crPevoCheckAll`, `_crOnEvoToggle`, et `_crBuildPevoSelector`
+— ce dernier parce que les cartes du programme arrivent du parent par
+`postMessage`, bien après le clic. Le fichier de cas exécute le **vrai** corps du
+gestionnaire délégué, pas une copie, et vérifie les quatre appels manuels.
+
 **Point ouvert, non corrigé** : `_robustFence` (MAD × 10) écarte du tracé toute
 valeur qu'elle juge aberrante. Sur une série stable, la MAD est minuscule — et
 une VRAIE dégradation disparaît de la courbe. Mesuré : `[45, 44, 46, 45, 44,

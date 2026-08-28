@@ -164,6 +164,59 @@ var appels = (outils.match(/window\._crUpdateEvoPanel\(\)/g) || []).length;
 ok('la visibilité se réévalue aux quatre moments', appels >= 4,
    appels + ' appel(s)');
 
+/* ── 8. Cocher une courbe doit la faire APPARAÎTRE ───────────────
+ * L'aperçu se recompose à la frappe, mais les graphiques ont leur propre
+ * chemin : ils ne dépendent que de leurs cases. Ce chemin n'existait pas —
+ * un commentaire affirmait que l'`onchange` des cases appelait `crGenerate`,
+ * ce qui était faux. Tant que le bouton « Générer » existait on cliquait
+ * dessus juste après ; depuis sa disparition, cocher une courbe ne faisait
+ * plus rien. On exécute ici le VRAI routage, pas une copie. */
+console.log('\nCocher une courbe la fait apparaître');
+
+/* On extrait le CORPS du gestionnaire delegue et on l'execute tel quel :
+   un cas qui reecrirait le routage passerait au vert quoi qu'il arrive. */
+var _d = outils.indexOf('document.addEventListener(evt, function (e) {');
+var corpsRoutage = outils.slice(outils.indexOf('{', _d + 40) + 1,
+                                outils.indexOf('\n    }, true);', _d));
+var appele = [];
+/* eslint-disable no-new-func */
+var routage = new Function('e', '_crMajDifferee', '_crRefreshGraphiques',
+                           'document', corpsRoutage);
+
+function faire(cible) {
+  appele = [];
+  var doc = { getElementById: function () {
+    return { contains: function () { return true; } };
+  } };
+  routage({ target: { id: cible.id || '', closest: function () {
+    return cible.dansPanneau ? {} : null;
+  } } }, function () { appele.push('lettre'); },
+     function () { appele.push('graphiques'); }, doc);
+  return appele.join() || '(rien)';
+}
+
+ok('une case de graphique redessine les graphiques',
+   faire({ id: 'cr-evo-toggle', dansPanneau: true }) === 'graphiques',
+   faire({ id: 'cr-evo-toggle', dansPanneau: true }));
+ok('une case du programme aussi',
+   faire({ id: 'cr-pevo-toggle', dansPanneau: true }) === 'graphiques');
+ok('une case du sélecteur, sans identifiant connu, aussi',
+   faire({ id: '', dansPanneau: true }) === 'graphiques');
+ok('un champ ordinaire recompose la lettre, pas les graphiques',
+   faire({ id: 'cr-objet', dansPanneau: false }) === 'lettre');
+
+/* Une écriture programmatique n'émet aucun événement : la délégation ne la
+   voit pas. Les quatre chemins qui écrivent à la main doivent appeler. */
+[['_crEvoCheckAll', 'Tout cocher — évolution'],
+ ['_crPevoCheckAll', 'Tout cocher — programme'],
+ ['_crOnEvoToggle', 'la bascule Évolution'],
+ ['_crBuildPevoSelector', 'l\'arrivée des cartes du programme']]
+.forEach(function (p) {
+  var d = outils.indexOf(p[0] + ' = function');
+  var corps = outils.slice(d, outils.indexOf('\n  };', d));
+  ok(p[1] + ' redessine', d > 0 && corps.indexOf('_crRefreshGraphiques()') > 0);
+});
+
 console.log('');
 if (ko) { console.error(ko + ' cas en echec.'); process.exit(1); }
 console.log('Graphiques d\'evolution : tous les cas passent.');

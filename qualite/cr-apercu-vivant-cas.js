@@ -63,12 +63,25 @@ console.log('\n  La frappe régénère, les graphiques non');
   verifie('bornée à #panel-cr', 'true',
           /getElementById\('panel-cr'\);\s*if \(!p \|\| !e\.target \|\| !p\.contains\(e\.target\)\) return;/.test(propre) + '');
   /* Redessiner les graphiques a chaque frappe serait du gachis, et ils ne
-     dependent que de leurs propres cases. */
-  verifie('les deux cases de graphiques sont écartées', 'true',
-          /e\.target\.id === 'cr-evo-toggle' \|\| e\.target\.id === 'cr-pevo-toggle'/.test(propre) + '');
-  verifie('elles passent par crGenerate, qui redessine', 'true',
-          String(/id="cr-evo-toggle" onchange="_crOnEvoToggle\(\)"/.test(src) &&
-                 /id="cr-pevo-toggle" onchange="crOnPevoToggle\(\)"/.test(src)));
+     dependent que de leurs propres cases. Mais les ECARTER ne suffit pas :
+     ce cas affirmait qu'elles « passent par crGenerate » en verifiant la
+     seule presence de l'attribut `onchange` — jamais que le gestionnaire
+     redessinait. Il ne le faisait pas, et cocher une courbe ne montrait rien.
+     Meme piege que partout ailleurs : verifier la fonction, pas qui l'appelle.
+     Le detail du routage est tenu par qualite/evolution-graphiques-cas.js,
+     qui execute le vrai corps du gestionnaire delegue. */
+  verifie('les cases de graphiques ne recomposent pas la lettre', 'true',
+          /closest\('#cr-evo-panel, #cr-pevo-panel'\)/.test(propre) + '');
+  verifie('elles redessinent les graphiques', 'true',
+          /if \(gp\) \{[^}]*_crRefreshGraphiques\(\)/.test(propre) + '');
+  verifie('les deux bascules redessinent vraiment, corps verifie', 'true',
+          String(['window._crOnEvoToggle = function', 'window.crOnPevoToggle = function']
+            .every(function (nom) {
+              var d = propre.indexOf(nom);
+              if (d < 0) return false;
+              return propre.slice(d, propre.indexOf('\n  };', d))
+                           .indexOf('_crRefreshGraphiques()') > 0;
+            })));
   verifie('crGenerate fait bien les deux', 'true',
           /window\.crGenerate = function\s*\(\)\s*\{\s*_crRefreshLettre\(\);\s*_crRefreshGraphiques\(\);\s*\};/.test(propre) + '');
   /* Un delai regroupe les frappes d'un meme mot : le courrier se reconstruit
