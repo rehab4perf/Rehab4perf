@@ -1392,6 +1392,86 @@ lui, garde le score : c'est le praticien qui le lit.
 `_crBlocsTexte` (copie, mail) lisent les mêmes blocs. Un type de bloc ajouté
 d'un seul côté disparaît de l'autre sans le moindre signal.
 
+## Graphiques d'Évolution — une carte, un chiffre puis une courbe
+
+```bash
+node qualite/evolution-graphiques-cas.js
+```
+
+**Le CR du médecin ne redessine rien : il RECOPIE le SVG de la carte.**
+`_crGetEvoSectionHtml` (`outils.html`) prend `.evo-chart-kpis`, puis
+`card.querySelector('svg')` — **le premier `<svg>` de la carte**. Deux
+conséquences à ne jamais perdre de vue : toute correction apportée aux
+constructeurs part directement dans le courrier, et **l'en-tête chiffré doit
+rester du HTML**. Une sparkline glissée avant le graphique priverait le médecin
+de ses axes et de ses dates, sans le moindre signal. Le fichier de cas vérifie
+qu'aucun des trois helpers d'en-tête n'émet de `<svg>`.
+
+**L'en-tête chiffré remplace l'ancienne ligne plate.** Une mesure prise quatre à
+huit fois en six mois n'est pas une série temporelle : c'est une valeur courante
+et un sens. `_evoStatSingle` rend le chiffre du jour en grand, l'écart depuis le
+premier bilan et la valeur de départ ; `_evoStatDual` rend trois figures — les
+deux côtés et l'asymétrie. Quatre chemins les appellent (groupes standards,
+tests qualitatifs, tests personnalisés simples et doubles) : ne pas reconstruire
+une chaîne à la main, c'est la seule façon de garder la même lecture partout.
+
+**La FLÈCHE dit le sens de la VALEUR, la COULEUR dit si c'est un PROGRÈS.** Une
+EVA qui passe de 7 à 1 s'écrit « ▼ −6 » en vert. Les confondre donne « ▲ −6 »,
+qui se lit de travers — c'est l'erreur du premier jet, et un cas de référence la
+tient.
+
+**Les étiquettes ne se posent plus sur le tracé.** Elles étaient placées
+inconditionnellement au-dessus du point (`p.y - 9`, `p.y - 12`) : sur une courbe
+qui monte, celle du premier point tombe SUR la ligne. `_evoLabelDy` suit
+désormais la pente locale, et `EVO_HALO` pose un liseré blanc qui détache le
+texte de la courbe comme de la grille.
+
+**Suivre la pente ne suffisait pas, et corriger l'un sans l'autre échange une
+collision contre une autre.** Un point posé au bas du cadre envoie son étiquette
+DANS la rangée des dates ; posé en haut, il l'envoie hors du cadre. Le bord la
+renvoie donc de l'autre côté — d'où les bornes `PAD.top` / `VH-PAD.bottom`
+passées à chaque appel. Le fichier de cas échoue sur un appel sans bornes.
+
+**Les étiquettes extrêmes s'ancrent VERS L'INTÉRIEUR** — et les dates aussi.
+Centrée sur le premier point, une étiquette empiète sur la gouttière des
+graduations : la graduation la plus basse chevauchait la première date dans
+**les trois** graphiques. Centrée sur le dernier, elle sort du cadre.
+
+**Trois constructeurs, pas un.** `_buildChartB` (une série), `_buildChartD`
+(deux séries) et `_buildQualChart` (scores qualitatifs) portaient les mêmes
+défauts. Le troisième n'est apparu que parce que le patch comptait ses
+occurrences : une correction appliquée à deux d'entre eux passe inaperçue.
+
+**Dans le graphique qualitatif, les DEUX séries écrivaient au même endroit,
+dans la même encre.** Sur un score entier 0..5 les deux côtés valent souvent la
+même chose : les deux libellés se superposaient exactement. Le côté A écrit
+désormais au-dessus, le côté B en dessous ; l'en-tête de carte nomme les deux
+côtés dans leur couleur.
+
+**Le texte porte un jeton d'encre, jamais la couleur de la série** — c'est la
+pastille voisine qui porte l'identité. La légende de `_buildChartD` était écrite
+dans la couleur de sa courbe.
+
+**Les bézier ont disparu.** `_buildChartD` traçait droit, `_buildChartB` et
+`_buildQualChart` traçaient en courbe : deux grammaires pour la même donnée. Et
+une bézier invente entre deux bilans une courbure qui n'a jamais été mesurée.
+
+**Trois feuilles de style, jamais une seule** : `bilan.html` (l'application),
+la chaîne `var css` de `js/bilan.js` (l'export du bilan) et celle
+d'`outils.html` (le courrier au médecin). Une règle écrite d'un seul côté ne se
+voit pas là où le document est lu. Le fichier de cas contrôle les trois.
+
+**Toutes les courbes sont cochées à l'ouverture** (`checked`, plus de
+`evo-unselected` au rendu). Le CR n'en est pas affecté : `_crGetEvoCards`
+renvoie toutes les cartes, sélection ou non.
+
+**Point ouvert, non corrigé** : `_robustFence` (MAD × 10) écarte du tracé toute
+valeur qu'elle juge aberrante. Sur une série stable, la MAD est minuscule — et
+une VRAIE dégradation disparaît de la courbe. Mesuré : `[45, 44, 46, 45, 44,
+20]` écarte le 20, soit une perte de 55 % rendue invisible, dans l'onglet
+Évolution **et** dans le courrier. C'est une décision clinique : ne pas la
+changer sans le praticien.
+
 ## Motifs de bilan — onglet Patients
 
 ```bash

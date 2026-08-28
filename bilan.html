@@ -2094,7 +2094,17 @@ input[type=radio].bl-inherited-ghost.bl-ghost-grise {
 .evo-chart-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 16px 10px; }
 .evo-chart-header { display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
 .evo-chart-title { font-size:.82rem; font-weight:700; color:var(--text); }
-.evo-chart-kpis { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+/* En-tete chiffre d'une carte : la valeur du jour prime, l'ecart la qualifie.
+   Aligne sur la LIGNE DE BASE — en colonne, la base d'un .evo-fig est celle de
+   son intitule, ce qui aligne du meme coup toutes les valeurs entre elles. */
+.evo-chart-kpis { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+.evo-stat { display:inline-flex; align-items:baseline; gap:3px; }
+.evo-stat-val { font-size:1.45rem; font-weight:650; letter-spacing:-.03em; color:var(--text); line-height:1; font-variant-numeric:tabular-nums; }
+.evo-stat-unit { font-size:.78rem; font-weight:500; color:var(--text2); }
+.evo-stat-from { font-size:.68rem; color:var(--text3); font-variant-numeric:tabular-nums; }
+.evo-fig { display:inline-flex; flex-direction:column; align-items:flex-start; gap:2px; }
+.evo-fig-lbl { font-size:.6rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text3); }
+.evo-fig-val { font-size:.95rem; font-weight:700; letter-spacing:-.02em; color:var(--text); font-variant-numeric:tabular-nums; }
 .evo-kpi-neutral { font-size:.72rem; color:var(--text2); }
 .evo-kpi-strong { font-size:.72rem; font-weight:700; color:var(--accent2); }
 .evo-kpi { font-size:.72rem; font-weight:700; padding:2px 7px; border-radius:10px; }
@@ -6164,7 +6174,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260806i"></script>
-<script src="js/bilan.js?v=20260827w"></script>
+<script src="js/bilan.js?v=20260828a"></script>
 
 </body>
 </html>

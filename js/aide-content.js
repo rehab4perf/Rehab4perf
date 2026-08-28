@@ -155,6 +155,16 @@ sections: [
       { t:'Bilans précédents', x:'Le bouton « Bilans précédents » ouvre l\'historique daté du patient. Vous pouvez consulter n\'importe quel bilan antérieur en lecture seule, puis « ↩ Revenir au bilan actuel ».' },
       { t:'Ce que montre un bilan ancien', x:'Le bilan le plus récent est une SYNTHÈSE : il reprend tout ce qui a été fait, avec les mentions de réévaluation et les dates. Un bilan antérieur, lui, ne montre que ce que vous avez mesuré CE JOUR-LÀ, plus ce qui le précédait — en italique, avec sa date. Jamais rien de mesuré après : un bilan de juin ne peut pas afficher une valeur d\'août. Un test que vous n\'aviez pas encore mis en place à cette date apparaît donc vide — c\'est normal, et c\'est ce qui rend le bilan fidèle à ce jour-là.' },
       { t:'Voir l\'évolution', x:'La page « Évolution » du bilan compare automatiquement les points successifs (amplitudes, forces, scores) dès qu\'au moins deux bilans existent — d\'où l\'importance de passer par le bilan de suivi plutôt que par une simple modification.' }
+    ]},
+  { id:'evolution-lecture', titre:'Lire une carte d\'Évolution',
+    intro:'Chaque suivi tient dans une carte : un chiffre en tête, une courbe en dessous. Le chiffre répond à « où en est-on », la courbe à « comment y est-on arrivé ».',
+    etapes:[
+      { t:'Le chiffre du jour, en gros', x:'La valeur du dernier bilan ouvre la carte, avec son unité. À côté, l\'écart depuis le tout premier bilan, et le rappel de la valeur de départ. Une mesure prise quatre à huit fois en six mois se lit d\'abord comme une valeur courante : la courbe vient ensuite dire comment on y est arrivé.' },
+      { t:'La flèche dit le sens, la couleur dit le progrès', x:'Ce sont deux informations distinctes. Une EVA qui passe de 7 à 1 affiche « ▼ −6 » EN VERT : la valeur a baissé, et c\'est une bonne nouvelle. Une force qui passe de 120 à 90 N affiche « ▼ −30 N » en rouge. La flèche suit toujours le chiffre, jamais le jugement.' },
+      { t:'Un test à deux côtés montre trois chiffres', x:'Côté atteint, côté sain, et l\'asymétrie entre les deux. C\'est elle qui porte la question clinique — la courbe garde les deux tracés, car le médecin veut voir les deux côtés.' },
+      { t:'Les valeurs ne se posent plus sur le tracé', x:'Les chiffres du premier et du dernier point se placent au-dessus ou en dessous du point selon la pente de la courbe, et portent un liseré blanc. Ils étaient auparavant toujours posés au-dessus : sur une courbe qui monte, le chiffre tombait sur la ligne — y compris dans le courrier envoyé au médecin.' },
+      { t:'Toutes les courbes sont affichées d\'emblée', x:'Les cases sont cochées à l\'ouverture de l\'onglet. Décochez celles dont vous n\'avez pas besoin avant d\'exporter ou d\'imprimer : seules les courbes cochées partent dans le document.' },
+      { t:'Ce que le médecin reçoit', x:'Le CR médecin recopie la carte entière — le chiffre en tête ET la courbe avec ses axes et ses dates. Cochez « Graphiques d\'évolution » dans le Générateur de CR, puis choisissez les courbes à joindre.' }
     ]}
 ]},
 

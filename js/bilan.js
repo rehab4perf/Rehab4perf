@@ -3816,6 +3816,76 @@ function _robustFence(arr){
   return {lo:median-10*scale, hi:median+10*scale, median:median};
 }
 
+/* L'etiquette FUIT le trace : au-dessus quand le point domine son voisin,
+   en dessous sinon. Elle etait TOUJOURS posee au-dessus, donc posee SUR la
+   courbe des qu'elle monte — y compris dans le CR du medecin, qui recopie ce
+   SVG tel quel (outils.html, _crGetEvoSectionHtml). Le lisere blanc
+   (paint-order) la detache en plus de la grille et de la courbe voisine. */
+/* ── En-tete chiffre d'une carte d'Evolution ──────────────────────────
+   Une mesure prise 4 a 8 fois en six mois n'est pas une serie temporelle :
+   c'est une valeur courante et un sens. L'en-tete porte donc le chiffre du
+   jour en grand et l'ecart depuis le premier bilan, la courbe restant en
+   dessous. Le CR du medecin recopie les DEUX — _crGetEvoSectionHtml lit
+   .evo-chart-kpis puis le <svg> : remplacer la courbe par une sparkline
+   aurait prive le courrier de ses axes et de ses dates.
+
+   La FLECHE dit le sens de la VALEUR, la COULEUR dit si c'est un PROGRES.
+   Une EVA qui passe de 7 a 1 s'ecrit « ▼ -6 » en vert ; les confondre
+   donnerait « ▲ -6 », qui se lit de travers. */
+function _evoFleche(d){ return d>0?'▲':(d<0?'▼':'='); }
+
+function _evoStatSingle(last, first, unit, decL, dec, dir){
+  if(isNaN(last)) return '';
+  var h='<span class="evo-stat"><span class="evo-stat-val">'+last.toFixed(decL)+'</span>'
+       +(unit?'<span class="evo-stat-unit">'+unit+'</span>':'')+'</span>';
+  if(isNaN(first)) return h;
+  var d=last-first;
+  var bon=(dir==='down')?d<=0:d>=0;
+  var cls=d===0?'evo-neutral':(bon?'evo-pos':'evo-neg');
+  var pct=first!==0?d/Math.abs(first)*100:null;
+  var pctStr=pct===null?'':' ('+(Math.abs(pct)>999?(pct>0?'>':'<')+' 999%':(pct>=0?'+':'')+pct.toFixed(0)+'%')+')';
+  var decD=Math.max(dec,decL);
+  h+='<span class="evo-kpi '+cls+'">'+_evoFleche(d)+' '+(d>=0?'+':'')+d.toFixed(decD)+unit+pctStr+'</span>'
+    +'<span class="evo-stat-from">depuis '+first.toFixed(dec)+unit+'</span>';
+  return h;
+}
+
+function _evoFig(lbl, col, val, extra){
+  return '<span class="evo-fig"><span class="evo-fig-lbl"'+(col?' style="color:'+col+'"':'')+'>'+lbl+'</span>'
+       +'<span class="evo-fig-val">'+val+'</span>'+(extra||'')+'</span>';
+}
+
+function _evoStatDual(lblA, valA, extraA, lblB, valB, extraB, asymHtml){
+  return _evoFig(lblA,'var(--accent)',valA,extraA)
+       + _evoFig(lblB,'var(--green)',valB,extraB)
+       + (asymHtml?'<span class="evo-fig"><span class="evo-fig-lbl">Asymétrie</span>'+asymHtml+'</span>':'');
+}
+
+function _evoLabelDy(pts, i, haut, bas, yMin, yMax){
+  var vois=null, j;
+  for(j=i+1;j<pts.length;j++){ if(pts[j].valid){ vois=pts[j]; break; } }
+  if(!vois) for(j=i-1;j>=0;j--){ if(pts[j].valid){ vois=pts[j]; break; } }
+  var d = (!vois || pts[i].y <= vois.y) ? haut : bas;
+  /* Suivre la pente ne suffit pas : un point pose au bas du cadre envoie son
+     etiquette DANS la rangee des dates, et un point pose en haut l'envoie
+     hors du cadre. Le bord la renvoie donc de l'autre cote — corriger la
+     pente sans cela remplace une collision par une autre. */
+  if(yMax != null && pts[i].y + d > yMax - 2) d = haut;
+  if(yMin != null && pts[i].y + d < yMin + 8) d = bas;
+  return d;
+}
+/* Une date centree sur le PREMIER point deborde a gauche, dans la gouttiere
+   des graduations : la plus basse d'entre elles la chevauche a chaque fois.
+   Centree sur le DERNIER, elle sort du cadre. Les dates extremes s'ancrent
+   donc vers l'interieur, comme les etiquettes de valeur. */
+function _evoAncre(x, xMin, xMax){
+  if(x <= xMin + 1) return 'start';
+  if(x >= xMax - 1) return 'end';
+  return 'middle';
+}
+
+var EVO_HALO=' stroke="#fff" stroke-width="3.5" paint-order="stroke" stroke-linejoin="round"';
+
 function _buildChartB(valsA, dates, opts){
   var id  = opts.chartId;
   var VW  = 500, VH = 120;
@@ -3841,19 +3911,20 @@ function _buildChartB(valsA, dates, opts){
   for(var gv=Math.round(minV);gv<=maxV+step;gv+=step){
     var gy=(VH-PAD.bottom)-((gv-minV)/rangeV)*(VH-PAD.top-PAD.bottom);
     if(gy<PAD.top||gy>VH-PAD.bottom+2) continue;
-    html+='<line x1="'+PAD.left+'" y1="'+gy.toFixed(1)+'" x2="'+(VW-PAD.right)+'" y2="'+gy.toFixed(1)+'" stroke="#EBEBEB" stroke-width="1" stroke-dasharray="3,3"/>';
-    html+='<text x="'+(PAD.left-5)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="end" font-size="9" fill="#C0BDB8">'+Math.round(gv)+'</text>';
+    html+='<line x1="'+PAD.left+'" y1="'+gy.toFixed(1)+'" x2="'+(VW-PAD.right)+'" y2="'+gy.toFixed(1)+'" stroke="var(--border)" stroke-width="1"/>';
+    html+='<text x="'+(PAD.left-5)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="end" font-size="9" fill="var(--text2)" style="font-variant-numeric:tabular-nums">'+Math.round(gv)+'</text>';
   }
   // Dates X (dédupliquées)
   var shownD={};
-  pts.forEach(function(p){if(shownD[p.date])return;shownD[p.date]=true;html+='<text x="'+p.x.toFixed(1)+'" y="'+(VH-PAD.bottom+13)+'" text-anchor="middle" font-size="9" fill="#C0BDB8">'+p.date+'</text>';});
+  pts.forEach(function(p){if(shownD[p.date])return;shownD[p.date]=true;html+='<text x="'+p.x.toFixed(1)+'" y="'+(VH-PAD.bottom+13)+'" text-anchor="'+_evoAncre(p.x,PAD.left,VW-PAD.right)+'" font-size="9" fill="var(--text2)">'+p.date+'</text>';});
   // Axe X
   html+='<line x1="'+PAD.left+'" y1="'+(VH-PAD.bottom)+'" x2="'+(VW-PAD.right)+'" y2="'+(VH-PAD.bottom)+'" stroke="var(--border)" stroke-width="1"/>';
   // Courbe bezier
   var vp=pts.filter(function(p){return p.valid;});
   if(vp.length>=2){
-    var lp='M '+vp[0].x.toFixed(1)+','+vp[0].y.toFixed(1);
-    for(var i=1;i<vp.length;i++){var cx=(vp[i-1].x+vp[i].x)/2;lp+=' C '+cx.toFixed(1)+','+vp[i-1].y.toFixed(1)+' '+cx.toFixed(1)+','+vp[i].y.toFixed(1)+' '+vp[i].x.toFixed(1)+','+vp[i].y.toFixed(1);}
+    /* Segments droits : le graphique D en trace deja, et une bezier invente
+       entre deux bilans une courbure qui n'a pas ete mesuree. */
+    var lp='M '+vp.map(function(q){return q.x.toFixed(1)+','+q.y.toFixed(1);}).join(' L ');
     var by=VH-PAD.bottom;
     html+='<path d="'+lp+' L '+vp[vp.length-1].x.toFixed(1)+','+by+' L '+vp[0].x.toFixed(1)+','+by+' Z" fill="url(#gb'+id+')"/>';
     html+='<path d="'+lp+'" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
@@ -3867,14 +3938,14 @@ function _buildChartB(valsA, dates, opts){
     if(isLast){
       html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="7" fill="var(--accent)" opacity="0.15"/>';
       html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4.5" fill="var(--accent)"/>';
-      html+='<text x="'+p.x.toFixed(1)+'" y="'+(p.y-12).toFixed(1)+'" text-anchor="middle" font-size="10" font-weight="700" fill="var(--accent2)">'+p.v.toFixed(dec)+opts.unit+'</text>';
+      html+='<text x="'+(p.x-3).toFixed(1)+'" y="'+(p.y+_evoLabelDy(pts,i,-12,18,PAD.top,VH-PAD.bottom)).toFixed(1)+'" text-anchor="end" font-size="10" font-weight="700" fill="var(--accent2)"'+EVO_HALO+'>'+p.v.toFixed(dec)+opts.unit+'</text>';
     } else {
       var ptlId='ptlB'+id+'-'+i;
-      html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isFirst?3.5:3)+'" fill="#fff" stroke="var(--accent)" stroke-width="'+(isFirst?2:1.5)+'" opacity="'+(isFirst?1:0.65)+'"/>';
+      html+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isFirst?4.5:4)+'" fill="#fff" stroke="var(--accent)" stroke-width="'+(isFirst?2.5:2)+'" opacity="'+(isFirst?1:0.65)+'"/>';
       if(isFirst){
-        html+='<text x="'+p.x.toFixed(1)+'" y="'+(p.y-9).toFixed(1)+'" text-anchor="middle" font-size="9" fill="var(--text3)">'+p.v.toFixed(dec)+opts.unit+'</text>';
+        html+='<text x="'+(p.x+3).toFixed(1)+'" y="'+(p.y+_evoLabelDy(pts,i,-9,15,PAD.top,VH-PAD.bottom)).toFixed(1)+'" text-anchor="start" font-size="9" fill="var(--text2)"'+EVO_HALO+'>'+p.v.toFixed(dec)+opts.unit+'</text>';
       } else {
-        html+='<text id="'+ptlId+'" visibility="hidden" x="'+p.x.toFixed(1)+'" y="'+(p.y-9).toFixed(1)+'" text-anchor="middle" font-size="9" font-weight="600" fill="var(--accent2)">'+p.v.toFixed(dec)+opts.unit+'</text>';
+        html+='<text id="'+ptlId+'" visibility="hidden" x="'+p.x.toFixed(1)+'" y="'+(p.y+_evoLabelDy(pts,i,-9,15,PAD.top,VH-PAD.bottom)).toFixed(1)+'" text-anchor="middle" font-size="9" font-weight="600" fill="var(--accent2)"'+EVO_HALO+'>'+p.v.toFixed(dec)+opts.unit+'</text>';
       }
       html+='<circle class="evo-hit" cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="18" fill="transparent" data-tt="ttB'+id+'" data-x="'+p.x.toFixed(1)+'" data-y="'+p.y.toFixed(1)+'" data-l1="'+p.v.toFixed(dec)+opts.unit+'" data-l2="'+p.date+'"'+(isFirst?'':' data-ptl-id="'+ptlId+'"')+' style="cursor:pointer"/>';
     }
@@ -3962,8 +4033,8 @@ function _buildChartD(valsA, valsB, dates, opts){
   for(var gv=Math.round(minV);gv<=maxV+step;gv+=step){
     var gy=(VH-PAD.bottom)-((gv-minV)/rangeV)*(VH-PAD.top-PAD.bottom);
     if(gy<PAD.top||gy>VH-PAD.bottom+2)continue;
-    html+='<line x1="'+PAD.left+'" y1="'+gy.toFixed(1)+'" x2="'+(VW-PAD.right)+'" y2="'+gy.toFixed(1)+'" stroke="#EBEBEB" stroke-width="1" stroke-dasharray="3,3"/>';
-    html+='<text x="'+(PAD.left-5)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="end" font-size="9" fill="#C0BDB8">'+Math.round(gv)+'</text>';
+    html+='<line x1="'+PAD.left+'" y1="'+gy.toFixed(1)+'" x2="'+(VW-PAD.right)+'" y2="'+gy.toFixed(1)+'" stroke="var(--border)" stroke-width="1"/>';
+    html+='<text x="'+(PAD.left-5)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="end" font-size="9" fill="var(--text2)" style="font-variant-numeric:tabular-nums">'+Math.round(gv)+'</text>';
   }
   // Ligne zéro (si l'axe Y traverse 0)
   if(minV < 0 && maxV > 0){
@@ -3973,7 +4044,7 @@ function _buildChartD(valsA, valsB, dates, opts){
   }
   // Dates X
   var shownD={};
-  ptsA.forEach(function(p){if(shownD[p.date])return;shownD[p.date]=true;html+='<text x="'+p.x.toFixed(1)+'" y="'+(VH-PAD.bottom+13)+'" text-anchor="middle" font-size="9" fill="#C0BDB8">'+p.date+'</text>';});
+  ptsA.forEach(function(p){if(shownD[p.date])return;shownD[p.date]=true;html+='<text x="'+p.x.toFixed(1)+'" y="'+(VH-PAD.bottom+13)+'" text-anchor="'+_evoAncre(p.x,PAD.left,VW-PAD.right)+'" font-size="9" fill="var(--text2)">'+p.date+'</text>';});
   // Axe X
   html+='<line x1="'+PAD.left+'" y1="'+(VH-PAD.bottom)+'" x2="'+(VW-PAD.right)+'" y2="'+(VH-PAD.bottom)+'" stroke="var(--border)" stroke-width="1"/>';
   // Zone déficit
@@ -4023,16 +4094,16 @@ function _buildChartD(valsA, valsB, dates, opts){
       lyA = lastA.y + (aIsAbove ? -6 : 14);
       lyB = lastB.y + (aIsAbove ? 14 : -6);
     }
-    html+='<text data-line="A" x="'+(lastA.x-10).toFixed(1)+'" y="'+lyA.toFixed(1)+'" text-anchor="end" font-size="9" font-weight="700" fill="'+colorA+'">'+lastA.v.toFixed(decA)+opts.unit+'</text>';
-    html+='<text data-line="B" x="'+(lastB.x-10).toFixed(1)+'" y="'+lyB.toFixed(1)+'" text-anchor="end" font-size="9" font-weight="700" fill="'+colorB+'">'+lastB.v.toFixed(decB)+opts.unit+'</text>';
+    html+='<text data-line="A" x="'+(lastA.x-10).toFixed(1)+'" y="'+lyA.toFixed(1)+'" text-anchor="end" font-size="9" font-weight="700" fill="'+colorA+'"'+EVO_HALO+'>'+lastA.v.toFixed(decA)+opts.unit+'</text>';
+    html+='<text data-line="B" x="'+(lastB.x-10).toFixed(1)+'" y="'+lyB.toFixed(1)+'" text-anchor="end" font-size="9" font-weight="700" fill="'+colorB+'"'+EVO_HALO+'>'+lastB.v.toFixed(decB)+opts.unit+'</text>';
   } else {
-    if(lastA) html+='<text data-line="A" x="'+(lastA.x-10).toFixed(1)+'" y="'+(lastA.y+14).toFixed(1)+'" text-anchor="end" font-size="9" font-weight="700" fill="'+colorA+'">'+lastA.v.toFixed(decA)+opts.unit+'</text>';
-    if(lastB) html+='<text data-line="B" x="'+(lastB.x-10).toFixed(1)+'" y="'+(lastB.y-6).toFixed(1)+'" text-anchor="end" font-size="9" font-weight="700" fill="'+colorB+'">'+lastB.v.toFixed(decB)+opts.unit+'</text>';
+    if(lastA) html+='<text data-line="A" x="'+(lastA.x-10).toFixed(1)+'" y="'+(lastA.y+14).toFixed(1)+'" text-anchor="end" font-size="9" font-weight="700" fill="'+colorA+'"'+EVO_HALO+'>'+lastA.v.toFixed(decA)+opts.unit+'</text>';
+    if(lastB) html+='<text data-line="B" x="'+(lastB.x-10).toFixed(1)+'" y="'+(lastB.y-6).toFixed(1)+'" text-anchor="end" font-size="9" font-weight="700" fill="'+colorB+'"'+EVO_HALO+'>'+lastB.v.toFixed(decB)+opts.unit+'</text>';
   }
   // Légende
   var lx=VW-PAD.right+8;
-  html+='<rect data-line="A" x="'+lx+'" y="'+PAD.top+'" width="8" height="8" rx="2" fill="'+colorA+'"/><text data-line="A" x="'+(lx+11)+'" y="'+(PAD.top+7)+'" font-size="8.5" fill="'+colorA+'" font-weight="600">'+opts.labelA+'</text>';
-  html+='<rect data-line="B" x="'+lx+'" y="'+(PAD.top+14)+'" width="8" height="8" rx="2" fill="'+colorB+'"/><text data-line="B" x="'+(lx+11)+'" y="'+(PAD.top+21)+'" font-size="8.5" fill="'+colorB+'" font-weight="600">'+opts.labelB+'</text>';
+  html+='<rect data-line="A" x="'+lx+'" y="'+PAD.top+'" width="8" height="8" rx="2" fill="'+colorA+'"/><text data-line="A" x="'+(lx+11)+'" y="'+(PAD.top+7)+'" font-size="8.5" fill="var(--text2)" font-weight="600">'+opts.labelA+'</text>';
+  html+='<rect data-line="B" x="'+lx+'" y="'+(PAD.top+14)+'" width="8" height="8" rx="2" fill="'+colorB+'"/><text data-line="B" x="'+(lx+11)+'" y="'+(PAD.top+21)+'" font-size="8.5" fill="var(--text2)" font-weight="600">'+opts.labelB+'</text>';
   // Hit areas + labels click-to-show
   ptsA.forEach(function(pA,i){
     if(!pA||!pA.valid)return;
@@ -4047,8 +4118,8 @@ function _buildChartD(valsA, valsB, dates, opts){
     var ptlId='ptlD'+id+'-'+i;
     var topY=Math.min(pA.y, pB&&pB.valid?pB.y:pA.y)-9;
     html+='<g id="'+ptlId+'" visibility="hidden">'
-      +'<text x="'+pA.x.toFixed(1)+'" y="'+topY.toFixed(1)+'" text-anchor="middle" font-size="9" font-weight="600" fill="'+colorA+'">'+vA+'</text>'
-      +(pB&&pB.valid?'<text x="'+pA.x.toFixed(1)+'" y="'+(topY+11).toFixed(1)+'" text-anchor="middle" font-size="9" font-weight="600" fill="'+colorB+'">'+vB+'</text>':'')
+      +'<text x="'+pA.x.toFixed(1)+'" y="'+topY.toFixed(1)+'" text-anchor="middle" font-size="9" font-weight="600" fill="'+colorA+'"'+EVO_HALO+'>'+vA+'</text>'
+      +(pB&&pB.valid?'<text x="'+pA.x.toFixed(1)+'" y="'+(topY+11).toFixed(1)+'" text-anchor="middle" font-size="9" font-weight="600" fill="'+colorB+'"'+EVO_HALO+'>'+vB+'</text>':'')
       +'</g>';
     html+='<circle class="evo-hit-d" cx="'+pA.x.toFixed(1)+'" cy="'+midY.toFixed(1)+'" r="20" fill="transparent" data-tt="ttD'+id+'" data-x="'+pA.x.toFixed(1)+'" data-ya="'+pA.y.toFixed(1)+'" data-yb="'+(pB&&pB.valid?pB.y.toFixed(1):pA.y.toFixed(1))+'" data-la="'+opts.labelA+': '+vA+'" data-lb="'+opts.labelB+': '+vB+'" data-date="'+pA.date+'" data-ptl-id="'+ptlId+'" style="cursor:pointer"/>';
   });
@@ -4235,21 +4306,20 @@ function _buildQualChart(scoresA, scoresB, dates, opts){
   // Grille Y (0, mid, max)
   [0, Math.round(maxVal/2), maxVal].forEach(function(gv){
     var gy = (VH-PAD.bottom)-(gv/maxVal)*(VH-PAD.top-PAD.bottom);
-    html += '<line x1="'+PAD.left+'" y1="'+gy.toFixed(1)+'" x2="'+(VW-PAD.right)+'" y2="'+gy.toFixed(1)+'" stroke="#EBEBEB" stroke-width="1" stroke-dasharray="3,3"/>';
-    html += '<text x="'+(PAD.left-4)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="end" font-size="9" fill="#C0BDB8">'+gv+'</text>';
+    html += '<line x1="'+PAD.left+'" y1="'+gy.toFixed(1)+'" x2="'+(VW-PAD.right)+'" y2="'+gy.toFixed(1)+'" stroke="var(--border)" stroke-width="1"/>';
+    html += '<text x="'+(PAD.left-4)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="end" font-size="9" fill="var(--text2)" style="font-variant-numeric:tabular-nums">'+gv+'</text>';
   });
   // Axe X + dates
   html += '<line x1="'+PAD.left+'" y1="'+(VH-PAD.bottom)+'" x2="'+(VW-PAD.right)+'" y2="'+(VH-PAD.bottom)+'" stroke="var(--border)" stroke-width="1"/>';
   var shownD={};
-  scoresA.forEach(function(v,i){ var dt=dates[i]; if(shownD[dt])return; shownD[dt]=true; html+='<text x="'+pxy(i,0).x.toFixed(1)+'" y="'+(VH-PAD.bottom+12)+'" text-anchor="middle" font-size="9" fill="#C0BDB8">'+dt+'</text>'; });
+  scoresA.forEach(function(v,i){ var dt=dates[i]; if(shownD[dt])return; shownD[dt]=true; html+='<text x="'+pxy(i,0).x.toFixed(1)+'" y="'+(VH-PAD.bottom+12)+'" text-anchor="'+_evoAncre(pxy(i,0).x,PAD.left,VW-PAD.right)+'" font-size="9" fill="var(--text2)">'+dt+'</text>'; });
   // Courbe A (CS) et B (CA)
   [[scoresA,'A',colorA],[scoresB,'B',colorB]].forEach(function(row){
     var scores=row[0], side=row[1], c=row[2];
     var valid=scores.map(function(v,i){ return {v:v,i:i}; }).filter(function(p){ return !isNaN(p.v); });
     if(valid.length < 2) return;
     var vp = valid.map(function(p){ var q=pxy(p.i,p.v); return {x:q.x,y:q.y,v:p.v,date:dates[p.i]}; });
-    var lp='M '+vp[0].x.toFixed(1)+','+vp[0].y.toFixed(1);
-    for(var ii=1;ii<vp.length;ii++){ var cx=(vp[ii-1].x+vp[ii].x)/2; lp+=' C '+cx.toFixed(1)+','+vp[ii-1].y.toFixed(1)+' '+cx.toFixed(1)+','+vp[ii].y.toFixed(1)+' '+vp[ii].x.toFixed(1)+','+vp[ii].y.toFixed(1); }
+    var lp='M '+vp.map(function(q){return q.x.toFixed(1)+','+q.y.toFixed(1);}).join(' L ');
     var by=VH-PAD.bottom;
     html += '<g data-line="'+side+'">';
     html += '<path d="'+lp+' L '+vp[vp.length-1].x.toFixed(1)+','+by+' L '+vp[0].x.toFixed(1)+','+by+' Z" fill="url(#qg'+side+id+')"/>';
@@ -4260,10 +4330,10 @@ function _buildQualChart(scoresA, scoresB, dates, opts){
       if(isLast){
         html += '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="6" fill="'+c+'" opacity="0.18"/>';
         html += '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="4" fill="'+c+'"/>';
-        html += '<text x="'+p.x.toFixed(1)+'" y="'+(p.y-12).toFixed(1)+'" text-anchor="middle" font-size="10" font-weight="700" fill="var(--accent2)">'+lbl+'</text>';
+        html += '<text x="'+(p.x-3).toFixed(1)+'" y="'+(p.y+(side==='A'?-12:19)).toFixed(1)+'" text-anchor="end" font-size="10" font-weight="700" fill="var(--accent2)"'+EVO_HALO+'>'+lbl+'</text>';
       } else {
-        html += '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isFirst?3.5:3)+'" fill="#fff" stroke="'+c+'" stroke-width="'+(isFirst?2:1.5)+'"/>';
-        if(isFirst) html += '<text x="'+p.x.toFixed(1)+'" y="'+(p.y-9).toFixed(1)+'" text-anchor="middle" font-size="9" fill="var(--text3)">'+lbl+'</text>';
+        html += '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(isFirst?4.5:4)+'" fill="#fff" stroke="'+c+'" stroke-width="'+(isFirst?2.5:2)+'"/>';
+        if(isFirst) html += '<text x="'+(p.x+3).toFixed(1)+'" y="'+(p.y+(side==='A'?-9:16)).toFixed(1)+'" text-anchor="start" font-size="9" fill="var(--text2)"'+EVO_HALO+'>'+lbl+'</text>';
       }
     });
     html += '</g>';
@@ -4446,12 +4516,6 @@ function _renderEvolutionPage(){
       // Fallback : si toutes les valeurs sont hors fence (cas extrême), prendre la vraie dernière
       if(isNaN(firstA)){valsA.forEach(function(v){if(!isNaN(v)&&isNaN(firstA))firstA=v;});}
       if(isNaN(lastA)){valsA.slice().reverse().forEach(function(v){if(!isNaN(v)&&isNaN(lastA))lastA=v;});}
-      var deltaA=lastA-firstA;
-      var isGood=grp.dir==='up'?deltaA>=0:deltaA<=0;
-      var sign=deltaA>=0?'+':'';
-      var pct=firstA!==0?(deltaA/Math.abs(firstA)*100):null;
-      var pctStr=pct!==null?' ('+(Math.abs(pct)>999?(pct>0?'>':'<')+' 999%':(pct>=0?'+':'')+pct.toFixed(0)+'%')+')':'';
-      var deltaCls=deltaA===0?'evo-neutral':(isGood?'evo-pos':'evo-neg');
       var dec=grp.unit==='cm'&&firstA%1!==0?1:0;
       var decL=grp.unit==='cm'&&lastA%1!==0?1:0;
       // Chart SVG + dual stats
@@ -4469,7 +4533,7 @@ function _renderEvolutionPage(){
             : (lastB_val > 0 ? Math.round(lastA/lastB_val*100) : NaN);
           if(!isNaN(lsiVal)){
             var lsiCls=lsiVal>=90?'evo-pos':lsiVal>=75?'evo-neutral':'evo-neg';
-            lsiHtml='<span class="evo-kpi '+lsiCls+'">Asym. '+asymTxt(parseFloat(lsiVal), 0)+'</span>';
+            lsiHtml='<span class="evo-kpi '+lsiCls+'">'+asymTxt(parseFloat(lsiVal), 0)+'</span>';
           }
         }
         var _dOpts={unit:grp.unit,dir:grp.dir,labelA:grp.labelA,labelB:grp.labelB,chartId:id,colorA:'var(--accent)',colorB:'var(--green)'};
@@ -4489,17 +4553,10 @@ function _renderEvolutionPage(){
         return '<span class="evo-kpi '+cls+'" style="font-size:.65rem">'+(pct>0?'+':'')+pct+'%</span>';
       }
       var kpisHtml = grp.type==='dual'
-        ? '<span class="evo-kpi-neutral" style="color:var(--accent);font-weight:700">'+grp.labelA+' : '+lastA.toFixed(decL)+grp.unit+'</span>'
-          +_pctBadge(firstA,lastA,grp.dir,'var(--accent)')
-          +'<span class="evo-kpi-neutral" style="color:var(--border);padding:0 2px">|</span>'
-          +'<span class="evo-kpi-neutral" style="color:var(--green);font-weight:700">'+(!isNaN(lastB_val)?grp.labelB+' : '+lastB_val.toFixed(decL)+grp.unit:'—')+'</span>'
-          +(!isNaN(lastB_val)?_pctBadge(firstB_val,lastB_val,grp.dir,'var(--green)'):'')
-          +'<span class="evo-kpi-neutral" style="color:var(--border);padding:0 2px">|</span>'
-          +lsiHtml
-        : '<span class="evo-kpi-neutral">Début : '+firstA.toFixed(dec)+grp.unit+'</span>'
-          +'<span class="evo-kpi-neutral">→</span>'
-          +'<span class="evo-kpi-strong">Actuel : '+lastA.toFixed(decL)+grp.unit+'</span>'
-          +'<span class="evo-kpi '+deltaCls+'">'+sign+deltaA.toFixed(0)+grp.unit+pctStr+'</span>';
+        ? _evoStatDual(grp.labelA, lastA.toFixed(decL)+grp.unit, _pctBadge(firstA,lastA,grp.dir),
+                       grp.labelB, isNaN(lastB_val)?'—':lastB_val.toFixed(decL)+grp.unit,
+                       isNaN(lastB_val)?'':_pctBadge(firstB_val,lastB_val,grp.dir), lsiHtml)
+        : _evoStatSingle(lastA, firstA, grp.unit, decL, dec, grp.dir);
       // Pills toggle lignes (dual uniquement)
       var pillsHtml = '';
       if(grp.type === 'dual'){
@@ -4516,9 +4573,9 @@ function _renderEvolutionPage(){
         var _un=_ne.filter(function(c,i,a){return a.indexOf(c)===i;});
         if(_un.length>1) kpisHtml+=' <span class="evo-cond-warn">⚠ Conditions variables</span>';
       }
-      catHtml+='<div class="evo-chart-card evo-unselected" data-chart-id="'+id+'">'
+      catHtml+='<div class="evo-chart-card" data-chart-id="'+id+'">'
         +'<div class="evo-chart-header">'
-        +'<div class="evo-check-wrap"><input type="checkbox" class="evo-chart-check no-print" onchange="this.closest(\'.evo-chart-card\').classList.toggle(\'evo-unselected\',!this.checked)"><span class="evo-chart-title">'+grp.title+'</span></div>'
+        +'<div class="evo-check-wrap"><input type="checkbox" class="evo-chart-check no-print" checked onchange="this.closest(\'.evo-chart-card\').classList.toggle(\'evo-unselected\',!this.checked)"><span class="evo-chart-title">'+grp.title+'</span></div>'
         +'<div class="evo-chart-kpis">'+kpisHtml+'</div></div>'
         +pillsHtml
         +chartSvg+'</div>';
@@ -4543,18 +4600,16 @@ function _renderEvolutionPage(){
     var lastA = NaN, lastB = NaN;
     scoresA.slice().reverse().forEach(function(v){ if(!isNaN(v) && isNaN(lastA)) lastA = v; });
     scoresB.slice().reverse().forEach(function(v){ if(!isNaN(v) && isNaN(lastB)) lastB = v; });
-    var kpisHtml = '';
-    if(!isNaN(lastA)) kpisHtml += '<span class="evo-kpi-neutral" style="color:var(--accent);font-weight:700">'+grp.labelA+' : '+lastA+'/'+grp.count+'</span>';
-    if(!isNaN(lastA) && !isNaN(lastB)) kpisHtml += '<span class="evo-kpi-neutral" style="color:var(--border);padding:0 4px">|</span>';
-    if(!isNaN(lastB)) kpisHtml += '<span class="evo-kpi-neutral" style="color:#16A34A;font-weight:700">'+grp.labelB+' : '+lastB+'/'+grp.count+'</span>';
+    var kpisHtml = _evoFig(grp.labelA,'var(--accent)',isNaN(lastA)?'—':lastA+'/'+grp.count)
+                 + _evoFig(grp.labelB,'#16A34A',isNaN(lastB)?'—':lastB+'/'+grp.count);
     // Pills toggle lignes
     var pillsHtml = '<div class="evo-line-toggles">'
       +'<button class="evo-line-pill active" style="color:var(--accent);border-color:var(--accent)" onclick="toggleQualPill(this,\'qual'+qid+'\',\'A\')" data-line="A">● '+grp.labelA+'</button>'
       +'<button class="evo-line-pill active" style="color:#16A34A;border-color:#16A34A" onclick="toggleQualPill(this,\'qual'+qid+'\',\'B\')" data-line="B">● '+grp.labelB+'</button>'
       +'</div>';
-    qualHtml += '<div class="evo-chart-card evo-unselected" data-chart-id="qual'+qid+'">'
+    qualHtml += '<div class="evo-chart-card" data-chart-id="qual'+qid+'">'
       +'<div class="evo-chart-header">'
-      +'<div class="evo-check-wrap"><input type="checkbox" class="evo-chart-check no-print" onchange="this.closest(\'.evo-chart-card\').classList.toggle(\'evo-unselected\',!this.checked)"><span class="evo-chart-title">'+grp.title+'</span></div>'
+      +'<div class="evo-check-wrap"><input type="checkbox" class="evo-chart-check no-print" checked onchange="this.closest(\'.evo-chart-card\').classList.toggle(\'evo-unselected\',!this.checked)"><span class="evo-chart-title">'+grp.title+'</span></div>'
       +'<div class="evo-chart-kpis">'+kpisHtml+'</div></div>'
       +pillsHtml
       +chartSvg
@@ -4618,14 +4673,7 @@ function _renderEvolutionPage(){
         var firstA=NaN, lastA=NaN;
         valsA.forEach(function(v){ if(!isNaN(v)&&isNaN(firstA)) firstA=v; });
         valsA.slice().reverse().forEach(function(v){ if(!isNaN(v)&&isNaN(lastA)) lastA=v; });
-        var deltaA=lastA-firstA, signA=deltaA>=0?'+':'';
-        var pctA=firstA!==0?(deltaA/Math.abs(firstA)*100):null;
-        var pctStrA=pctA!==null?' ('+(pctA>=0?'+':'')+pctA.toFixed(0)+'%)':'';
-        var dClsA=deltaA===0?'evo-neutral':deltaA>0?'evo-pos':'evo-neg';
-        kpisHtml='<span class="evo-kpi-neutral">Début : '+firstA.toFixed(0)+'</span>'
-          +'<span class="evo-kpi-neutral">→</span>'
-          +'<span class="evo-kpi-strong">Actuel : '+lastA.toFixed(0)+'</span>'
-          +'<span class="evo-kpi '+dClsA+'">'+signA+deltaA.toFixed(0)+pctStrA+'</span>';
+        kpisHtml=_evoStatSingle(lastA, firstA, '', 0, 0, 'up');
       } else {
         var valsB = bilansAsc.map(function(b){
           var raw = (b.donnees||{})['ct-data-'+pk];
@@ -4648,7 +4696,7 @@ function _renderEvolutionPage(){
         var lsiHtml2='';
         if(!isNaN(lastA)&&!isNaN(lastB)&&Math.max(lastA,lastB)>0){
           var lsiV=bilat?Math.round(Math.min(lastA,lastB)/Math.max(lastA,lastB)*100):(lastB>0?Math.round(lastA/lastB*100):NaN);
-          if(!isNaN(lsiV)){var lC=lsiV>=90?'evo-pos':lsiV>=75?'evo-neutral':'evo-neg';lsiHtml2='<span class="evo-kpi '+lC+'">Asym. '+asymTxt(lsiV,0)+'</span>';}
+          if(!isNaN(lsiV)){var lC=lsiV>=90?'evo-pos':lsiV>=75?'evo-neutral':'evo-neg';lsiHtml2='<span class="evo-kpi '+lC+'">'+asymTxt(lsiV,0)+'</span>';}
         }
         function _pctBadgeCT(first,last){
           if(isNaN(first)||isNaN(last)||first===0)return '';
@@ -4656,13 +4704,8 @@ function _renderEvolutionPage(){
           var cls=d>0?'evo-pos':'evo-neg';
           return '<span class="evo-kpi '+cls+'" style="font-size:.65rem">'+(p>0?'+':'')+p+'%</span>';
         }
-        kpisHtml='<span class="evo-kpi-neutral" style="color:var(--accent);font-weight:700">'+ctLblA+' : '+(isNaN(lastA)?'—':lastA.toFixed(0))+'</span>'
-          +_pctBadgeCT(firstA,lastA)
-          +'<span class="evo-kpi-neutral" style="color:var(--border);padding:0 2px">|</span>'
-          +'<span class="evo-kpi-neutral" style="color:var(--green);font-weight:700">'+ctLblB+' : '+(isNaN(lastB)?'—':lastB.toFixed(0))+'</span>'
-          +_pctBadgeCT(firstB,lastB)
-          +'<span class="evo-kpi-neutral" style="color:var(--border);padding:0 2px">|</span>'
-          +lsiHtml2;
+        kpisHtml=_evoStatDual(ctLblA, isNaN(lastA)?'—':lastA.toFixed(0), _pctBadgeCT(firstA,lastA),
+                              ctLblB, isNaN(lastB)?'—':lastB.toFixed(0), _pctBadgeCT(firstB,lastB), lsiHtml2);
         pillsHtml='<div class="evo-line-toggles">'
           +'<button class="evo-line-pill active" style="color:var(--accent);border-color:var(--accent)" onclick="toggleEvoPill(this,'+cid+',\'A\')" data-line="A">● '+ctLblA+'</button>'
           +'<button class="evo-line-pill active" style="color:var(--green);border-color:var(--green)" onclick="toggleEvoPill(this,'+cid+',\'B\')" data-line="B">● '+ctLblB+'</button>'
@@ -4670,9 +4713,9 @@ function _renderEvolutionPage(){
       }
 
       var pageLabel = _ctPageLabels[pk] ? ' <span style="font-size:.7rem;color:var(--text3);font-weight:400">('+_ctPageLabels[pk]+')</span>' : '';
-      ctHtml += '<div class="evo-chart-card evo-unselected" data-chart-id="'+cid+'">'
+      ctHtml += '<div class="evo-chart-card" data-chart-id="'+cid+'">'
         +'<div class="evo-chart-header">'
-        +'<div class="evo-check-wrap"><input type="checkbox" class="evo-chart-check no-print" onchange="this.closest(\'.evo-chart-card\').classList.toggle(\'evo-unselected\',!this.checked)"><span class="evo-chart-title">'+name+pageLabel+'</span></div>'
+        +'<div class="evo-check-wrap"><input type="checkbox" class="evo-chart-check no-print" checked onchange="this.closest(\'.evo-chart-card\').classList.toggle(\'evo-unselected\',!this.checked)"><span class="evo-chart-title">'+name+pageLabel+'</span></div>'
         +'<div class="evo-chart-kpis">'+kpisHtml+'</div></div>'
         +pillsHtml+chartSvg+'</div>';
     });
@@ -4823,7 +4866,14 @@ function _buildEvolutionHTML(){
     + '.evo-chart-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 16px 10px;}'
     + '.evo-chart-header{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:10px;}'
     + '.evo-chart-title{font-size:.82rem;font-weight:700;color:#1A1917;}'
-    + '.evo-chart-kpis{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}'
+    + '.evo-chart-kpis{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;}'
+    + '.evo-stat{display:inline-flex;align-items:baseline;gap:3px;}'
+    + '.evo-stat-val{font-size:1.45rem;font-weight:650;letter-spacing:-.03em;color:#1A1917;line-height:1;font-variant-numeric:tabular-nums;}'
+    + '.evo-stat-unit{font-size:.78rem;font-weight:500;color:#6B6860;}'
+    + '.evo-stat-from{font-size:.68rem;color:#9D9B96;font-variant-numeric:tabular-nums;}'
+    + '.evo-fig{display:inline-flex;flex-direction:column;align-items:flex-start;gap:2px;}'
+    + '.evo-fig-lbl{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9D9B96;}'
+    + '.evo-fig-val{font-size:.95rem;font-weight:700;letter-spacing:-.02em;color:#1A1917;font-variant-numeric:tabular-nums;}'
     + '.evo-kpi-neutral{font-size:.72rem;color:var(--text2);}'
     + '.evo-kpi-strong{font-size:.72rem;font-weight:700;color:var(--accent2);}'
     + '.evo-kpi{font-size:.72rem;font-weight:700;padding:2px 7px;border-radius:10px;}'
