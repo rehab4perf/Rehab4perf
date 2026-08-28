@@ -6,7 +6,7 @@
    - Appels API Supabase / cross-origin  → jamais interceptés (données fraîches).
    Le cache est versionné : bump CACHE à chaque changement de logique de cache.
    ═══════════════════════════════════════════════════════════════════ */
-var CACHE = 'r4p-athlete-v30';
+var CACHE = 'r4p-athlete-v31';
 var PRECACHE = [
   '/athlete.html',
   '/fonts/fonts.css',

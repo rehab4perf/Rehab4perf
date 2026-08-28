@@ -645,6 +645,14 @@ sections: [
       { t:'Le lien de partage d\'un programme (bouton 📤)', x:'Depuis le builder ou l\'historique des programmes, le bouton 📤 copie de la même façon un lien à sens unique vers ce programme précis, avec le nom du patient inclus.' },
       { t:'Conseillez à l\'athlète de l\'ajouter à son écran d\'accueil', x:'Il retrouvera son calendrier comme une application. Un bouton « 📲 Installer » sur sa page ouvre directement un tuto pas-à-pas adapté à son téléphone (iPhone ou Android) — voir la section Notifications push ci-dessous.' }
     ]},
+  { id:'cycles-paralleles', titre:'Plusieurs cycles peuvent courir ensemble',
+    intro:'Un cycle à critères et un cycle daté ne s\'attendent plus l\'un l\'autre.',
+    etapes:[
+      { t:'Deux natures, deux voies', x:'Un cycle à critères n\'a pas de date : il dure tant qu\'il n\'est pas validé. Un cycle daté vit sa fenêtre de calendrier. L\'athlète voit désormais un bandeau par cycle en cours — le travail du tendon peut se poursuivre pendant qu\'un bloc de force tourne sur ses dates.' },
+      { t:'Chaque voie garde son ordre', x:'Deux cycles à critères ne courent pas ensemble : le second attend que le premier soit validé. Ce sont les blocages entre voies différentes qui ont sauté.' },
+      { t:'Ce que ça change dans le plan', x:'La liste « Plan de cycles complet » peut porter plusieurs « En cours ». Un cycle daté s\'affichera en cours dès que sa fenêtre s\'ouvre, même si un cycle à critères placé avant lui n\'est pas terminé — c\'est voulu.' },
+      { t:'Le calendrier ne change pas', x:'Quand deux cycles datés se chevauchent, la journée garde la teinte du premier du plan. Une bande par cycle aurait chargé la grille pour une information rare.' }
+    ]},
   { id:'vue-athlete', titre:'Ce que voit l\'athlète',
     intro:'Un calendrier épuré de ses séances, et le détail de chaque exercice avec vidéo.',
     etapes:[

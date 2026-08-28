@@ -812,17 +812,27 @@ function _cycleIsDone(c, today){
   var e = _cyEndDate(c);
   return today > e;
 }
+/* DEUX VOIES INDEPENDANTES, et non une file d'attente.
+   Un cycle a CRITERES n'a pas de date : il dure tant qu'il n'est pas valide.
+   Un cycle DATE vit sa fenetre de calendrier. Ce sont deux natures, pas deux
+   etapes — le tendon se poursuit sur criteres pendant que le bloc de force
+   tourne sur ses dates, et les deux sont vrais en meme temps.
+
+   Chaque voie garde son ordre interne : un cycle a criteres attend que le
+   precedent A CRITERES soit valide. Ce qui a saute, c'est le blocage CROISE —
+   un cycle date ne retient plus un cycle criteres, et l'inverse non plus.
+
+   Ce que l'on accepte en echange, et qui etait la raison de la regle
+   precedente : un cycle date peut desormais s'afficher « en cours » alors
+   qu'un cycle criteres place avant lui n'est pas termine. C'est exactement ce
+   qu'on veut voir. */
 function _cycleIsCurrent(cycles, idx, today){
   var c = cycles[idx];
   if(c.mode === 'criteres'){
     if(_cycleIsDone(c, today)) return false;
     for(var i=0;i<idx;i++){
-      var pc = cycles[i];
-      // Un cycle dote precedent qui n'a pas encore commence (date de debut future)
-      // ne doit pas bloquer un cycle criteres sans date : celui-ci reste en cours
-      // tant que rien n'a reellement demarre avant lui dans le plan.
-      var notYetStarted = pc.mode !== 'criteres' && pc.startDate && new Date(pc.startDate) > today;
-      if(!notYetStarted && !_cycleIsDone(pc, today)) return false;
+      if(cycles[i].mode !== 'criteres') continue;   // l'autre voie ne bloque pas
+      if(!_cycleIsDone(cycles[i], today)) return false;
     }
     return true;
   }
@@ -1287,13 +1297,17 @@ function _buildCycleBanner(){
   var today = new Date(); today.setHours(0,0,0,0);
   var MC = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
 
-  var curIdx = -1;
-  for(var i=0;i<_calCycles.length;i++){ if(_cycleIsCurrent(_calCycles, i, today)){ curIdx = i; break; } }
-  var cur = curIdx>=0 ? _calCycles[curIdx] : null;
+  /* TOUS les cycles en cours, pas le premier. La boucle s'arretait au premier
+     trouve (`break`), si bien qu'un seul bandeau s'affichait meme quand deux
+     voies tournaient ensemble — l'athlete ne voyait que la moitie de ce qu'on
+     lui demande. */
+  var courants = [];
+  for(var i=0;i<_calCycles.length;i++){ if(_cycleIsCurrent(_calCycles, i, today)) courants.push(_calCycles[i]); }
 
   var html = '';
 
-  if(cur && cur.mode === 'criteres'){
+  courants.forEach(function(cur){
+  if(cur.mode === 'criteres'){
     var phases = _cyclePhases(cur);
     var curPh = _cyclePhaseCurrentIndex(cur);
     var showIdx = curPh < 0 ? phases.length-1 : curPh;
@@ -1325,7 +1339,7 @@ function _buildCycleBanner(){
         }).join('')
       +'</ul>'
       +'</div>';
-  } else if(cur){
+  } else {
     var cyS = new Date(cur.startDate); cyS.setHours(0,0,0,0);
     var cyE = _cyEndDate(cur);
     var wk  = Math.floor((today-cyS)/(7*24*3600*1000))+1;
@@ -1351,6 +1365,7 @@ function _buildCycleBanner(){
       +'</div>'
       +'</div>';
   }
+  });
 
   // Accordéon légende complète
   html += '<div style="margin-bottom:12px;">'
@@ -1363,11 +1378,10 @@ function _buildCycleBanner(){
   _calCycles.forEach(function(cy, i){
     var col = cy.color || _cycleColor(cy.nom);
     var isDone = _cycleIsDone(cy, today);
-    // Un seul cycle « en cours » à la fois : celui identifié pour le bandeau
-    // (i===curIdx), pas un calcul indépendant par ligne — sinon un cycle
-    // durée déjà daté peut s'afficher « en cours » alors que le cycle
-    // critères qui le précède n'est pas encore terminé.
-    var isCur  = (i === curIdx);
+    /* Recalcule PAR LIGNE : plusieurs cycles peuvent etre en cours a la fois,
+       un par voie. La ligne se lisait auparavant sur le seul cycle du bandeau
+       (`i === curIdx`), ce qui n'en laissait qu'un. */
+    var isCur  = _cycleIsCurrent(_calCycles, i, today);
     var status, sBg, sTxt;
     if(isDone){ status='Terminé'; sBg='rgba(107,122,141,.1)'; sTxt='var(--muted)'; }
     else if(isCur){ status='En cours'; sBg=col+'28'; sTxt=col; }

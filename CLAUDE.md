@@ -385,6 +385,37 @@ sur un objet qui n'en a pas.
 Le brouillon suit le mode (`_draftKey()`) : sans ça, composer un template
 écraserait celui d'une séance laissée en plan.
 
+## Cycles de l'espace athlète — deux voies, pas une file
+
+```bash
+node qualite/cycles-paralleles-cas.js
+```
+
+Un cycle à **critères** n'a pas de date : il dure tant qu'il n'est pas validé.
+Un cycle **daté** vit sa fenêtre de calendrier. Ce sont deux natures, pas deux
+étapes — le tendon se poursuit sur critères pendant que le bloc de force tourne
+sur ses dates, et **les deux sont vrais en même temps**.
+
+L'espace athlète n'en montrait qu'un. Deux verrous, à deux endroits, et
+corriger l'un sans l'autre n'aurait rien changé :
+
+- `_cycleIsCurrent` faisait bloquer un cycle à critères par **tout**
+  prédécesseur non terminé, y compris d'une autre nature ;
+- le bandeau s'arrêtait au premier trouvé (`break`), et la liste du plan lisait
+  ce seul indice (`i === curIdx`) au lieu de recalculer par ligne.
+
+**Chaque voie garde son ordre interne** : un cycle à critères attend que le
+précédent À CRITÈRES soit validé. C'est le blocage **croisé** qui a sauté.
+
+**Ce qu'on accepte en échange** — et c'était la raison écrite de la règle
+précédente : un cycle daté peut désormais s'afficher « en cours » alors qu'un
+cycle à critères placé avant lui n'est pas terminé. C'est exactement ce qu'on
+veut voir.
+
+Le fond de journée du calendrier (`_dayCycleBg`) garde la **première** couleur
+qui couvre la date — décision du praticien : un chevauchement ne se voit pas
+sur la grille, et une bande par cycle l'aurait chargée.
+
 ## Empreinte de séance du builder
 
 ```bash
