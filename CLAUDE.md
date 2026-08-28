@@ -1132,6 +1132,18 @@ en-têtes « Gauche / Droit » coiffaient cinq lignes dont une seule s'y rapport
 chose à ne pas « simplifier » : le porter à 2 prive le test de force unique de
 ses colonnes, l'abaisser à 1 ramène le défaut d'origine.
 
+**Une grille d'analyse fonctionnelle n'impose ses colonnes que si elle est
+SEULE.** Un groupe qui n'est que de l'AF n'a aucune cellule de mesure : le
+filtre rendrait un tableau sans colonne et les pastilles n'auraient nulle part
+où se poser — d'où la substitution par les libellés relus de la grille. Mais
+elle s'appliquait dès qu'UNE ligne du groupe portait une grille : le Test de
+Réception emprunte celle-ci tout en restant parmi les tests chiffrés, et sa
+seule présence faisait passer « Gauche | Droit | Asym. » à « Côté sain | Côté
+atteint ». L'asymétrie disparaissait de tout le groupe, et les valeurs mesurées
+se retrouvaient sous des intitulés qui ne les décrivent pas — un côté nommé de
+travers dans un document médical. La substitution est donc conditionnée à
+l'absence totale de mesure dans le lot.
+
 Une cellule **vide ne compte pas**, sans quoi une colonne entièrement vide
 survivrait — des en-têtes au-dessus de rien. Sans colonne de côté, celle qui
 reste se nomme « Observation » et s'aligne à gauche : ce ne sont plus des

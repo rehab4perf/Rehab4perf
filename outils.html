@@ -6701,9 +6701,26 @@ _updateOutilsPatientBtns();
          pour le squat unipodal et « Côté sain / Côté atteint » pour le test de
          réception : les figer sur Gauche/Droit inverserait les côtés du patient
          sur la seconde. */
-      var _afAvecCotes = tampon.filter(function (t) { return t.af && t.afCotes; })[0];
-      if (_afAvecCotes) entetes = _afAvecCotes.afCotes.slice();
-      else if (tampon.some(function (t) { return t.af && t.af.length; })) entetes = ['Gauche', 'Droit'];
+      /* … MAIS seulement si le lot n'est QUE de l'analyse fonctionnelle.
+         Cette substitution ecrasait les en-tetes calcules des qu'UNE ligne du
+         groupe portait une grille : le Test de Reception emprunte celle-ci tout
+         en restant parmi les tests chiffres, et il suffisait de sa presence
+         pour que « Gauche | Droit | Asym. » devienne « Côté sain | Côté
+         atteint ». L'asymetrie disparaissait de tout le groupe, et les valeurs
+         mesurees se retrouvaient sous des intitules qui ne les decrivent pas —
+         un cote nomme de travers dans un document medical.
+
+         Quand le lot contient des mesures, on garde les colonnes calculees :
+         les pastilles se posent dans celles qui portent les bons libelles, et
+         `_cotesSurs` retombe sinon sur le cote nomme en toutes lettres. */
+      var _aDesMesures = tampon.some(function (t) {
+        return (t.cellules || []).some(function (c) { return c.valeur; });
+      });
+      if (!_aDesMesures) {
+        var _afAvecCotes = tampon.filter(function (t) { return t.af && t.afCotes; })[0];
+        if (_afAvecCotes) entetes = _afAvecCotes.afCotes.slice();
+        else if (tampon.some(function (t) { return t.af && t.af.length; })) entetes = ['Gauche', 'Droit'];
+      }
       /* Toutes les lignes ne sont pas des mesures a deux cotes. « Conditions »,
          « Cadence », « Zone d'attaque » n'ont qu'une valeur en toutes lettres :
          le bilan la range dans `valeur`, sans `cellules`. Le tableau ne lisait

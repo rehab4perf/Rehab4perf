@@ -122,6 +122,42 @@ console.log('\n  Une cellule vide ne compte pas');
   verifie('deux lignes vides sur trois → colonnes supprimées', '', colonnes(vides).join(','));
 }
 
+
+console.log('\n  Une grille dans un groupe de mesures ne lui vole pas ses colonnes');
+{
+  /* Le Test de Réception EMPRUNTE la grille de l'analyse fonctionnelle tout en
+     restant parmi les tests chiffrés. Sa présence suffisait à écraser les
+     en-têtes calculés du groupe entier : « Gauche | Droit | Asym. » devenait
+     « Côté sain | Côté atteint ». L'asymétrie disparaissait de toutes les
+     lignes, et les valeurs mesurées se retrouvaient sous des intitulés qui ne
+     les décrivent pas — un côté nommé de travers dans un document médical. */
+  function mesure(a, b, asym) {
+    var c = [{ entete: 'Gauche', valeur: a }, { entete: 'Droit', valeur: b }];
+    if (asym) c.push({ entete: 'Asym.', valeur: asym });
+    return { cellules: c };
+  }
+  function grille(cotes) {
+    return { cellules: [], af: [{ label: 'Valgus', g: false, d: true }], afCotes: cotes };
+  }
+
+  var melange = [mesure('43 rép.', '47 rép.', '9%'), mesure('180 cm', '175 cm', '3%'),
+                 grille(['Côté sain', 'Côté atteint']),
+                 mesure('11.5 cm', '11.5 cm', ''), mesure('11 cm', '9 cm', '18%')];
+  verifie('les colonnes mesurées survivent à la grille', 'Gauche,Droit,Asym.',
+          colonnes(melange).join(','));
+
+  /* Un groupe qui n'est QUE de l'analyse fonctionnelle garde SES colonnes :
+     ses lignes n'ont aucune cellule, le filtre rendrait un tableau sans
+     colonne et les pastilles n'auraient nulle part où se poser. */
+  verifie('une section 100 % fonctionnelle garde les siennes', 'Gauche,Droit',
+          colonnes([grille(['Gauche', 'Droit'])]).join(','));
+  verifie('… y compris en sain / atteint', 'Côté sain,Côté atteint',
+          colonnes([grille(['Côté sain', 'Côté atteint'])]).join(','));
+  /* Sans libellés relus, le repli Gauche/Droit reste. */
+  verifie('sans libellés, le repli tient', 'Gauche,Droit',
+          colonnes([{ cellules: [], af: [{ label: 'X', g: true, d: false }] }]).join(','));
+}
+
 /* ── Séparation des conventions de côté ────────────────────────────────────
    Le bilan résout le côté PAR RÉGION : une hanche à côté atteint connu rend
    « Côté sain / Côté atteint », un genou bilatéral rend « Gauche / Droit ».
