@@ -164,7 +164,7 @@ sections: [
       { t:'Un test à deux côtés montre trois chiffres', x:'Côté atteint, côté sain, et l\'asymétrie entre les deux. C\'est elle qui porte la question clinique — la courbe garde les deux tracés, car le médecin veut voir les deux côtés.' },
       { t:'Les valeurs ne se posent plus sur le tracé', x:'Les chiffres du premier et du dernier point se placent au-dessus ou en dessous du point selon la pente de la courbe, et portent un liseré blanc. Ils étaient auparavant toujours posés au-dessus : sur une courbe qui monte, le chiffre tombait sur la ligne — y compris dans le courrier envoyé au médecin.' },
       { t:'Toutes les courbes sont affichées d\'emblée', x:'Les cases sont cochées à l\'ouverture de l\'onglet. Décochez celles dont vous n\'avez pas besoin avant d\'exporter ou d\'imprimer : seules les courbes cochées partent dans le document.' },
-      { t:'Ce que le médecin reçoit', x:'Le CR médecin recopie la carte entière — le chiffre en tête ET la courbe avec ses axes et ses dates. Cochez « Graphiques d\'évolution » dans le Générateur de CR, puis choisissez les courbes à joindre.' }
+      { t:'Ce que le médecin reçoit', x:'Le CR médecin recopie la carte entière — le chiffre en tête ET la courbe avec ses axes et ses dates. Cochez « Inclure les graphiques d\'évolution » dans le Générateur de CR : la liste s\'ouvre, TOUTE VIDE. Vous cochez les courbes à joindre une à une, et chacune apparaît aussitôt dans l\'aperçu. C\'est l\'inverse de l\'onglet Évolution du bilan, où tout est affiché d\'emblée : là vous regardez votre propre écran, ici vous composez un document qui part chez un tiers — sur un patient suivi depuis un an, tout joindre reviendrait à ne rien montrer.' }
     ]}
 ]},
 

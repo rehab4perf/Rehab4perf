@@ -1503,6 +1503,18 @@ la voit pas. Quatre chemins appellent `_crRefreshGraphiques()` à la main :
 `postMessage`, bien après le clic. Le fichier de cas exécute le **vrai** corps du
 gestionnaire délégué, pas une copie, et vérifie les quatre appels manuels.
 
+**Le courrier part VIDE de graphiques.** Les deux sélecteurs — courbes du bilan
+et graphiques du programme — arrivaient tout cochés. Un patient suivi longtemps
+porte plusieurs dizaines de courbes : le courrier au médecin les emportait
+toutes, c'est-à-dire plus rien de lisible. Le sens de l'action est inversé : on
+**choisit ce qu'on joint**, on ne retranche pas d'un tout. `prev` reste consulté
+dans `_crBuildEvoPicker` — rebâtir le sélecteur ne doit pas défaire un choix
+déjà fait.
+
+À ne pas confondre avec l'onglet **Évolution du bilan**, où toutes les cartes
+sont cochées d'office : là, c'est le praticien qui regarde son propre écran, et
+il veut tout voir. Ici, c'est un document qui part chez un tiers.
+
 **Point ouvert, non corrigé** : `_robustFence` (MAD × 10) écarte du tracé toute
 valeur qu'elle juge aberrante. Sur une série stable, la MAD est minuscule — et
 une VRAIE dégradation disparaît de la courbe. Mesuré : `[45, 44, 46, 45, 44,

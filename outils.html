@@ -6219,7 +6219,7 @@ _updateOutilsPatientBtns();
     _crPevoCards.forEach(function(card, idx) {
       html += '<div style="position:relative;">'
         + '<label style="position:absolute;top:7px;right:7px;z-index:3;background:rgba(255,255,255,.95);border:1px solid #C8C6C0;border-radius:5px;padding:2px 7px;font-size:.68rem;font-weight:600;color:#1A3A5C;display:flex;align-items:center;gap:4px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.1);">'
-        + '<input type="checkbox" data-pevo-idx="' + idx + '" checked style="accent-color:#1A3A5C;cursor:pointer;width:12px;height:12px;"> Inclure'
+        + '<input type="checkbox" data-pevo-idx="' + idx + '" style="accent-color:#1A3A5C;cursor:pointer;width:12px;height:12px;"> Inclure'
         + '</label>'
         + card.html
         + '</div>';
@@ -8150,7 +8150,7 @@ _updateOutilsPatientBtns();
     cards.forEach(function(card) {
       var id    = card.dataset.chartId;
       var title = (card.querySelector('.evo-chart-title') || {}).textContent || id;
-      var isChecked = (id in prev) ? prev[id] : true;
+      var isChecked = (id in prev) ? prev[id] : false;
       var label = document.createElement('label');
       label.style.cssText = 'display:flex;align-items:center;gap:6px;cursor:pointer;padding:4px 10px;background:#fff;border-radius:6px;border:1px solid #E8E6E1;font-size:.76rem;color:#1A1917';
       var cb = document.createElement('input');

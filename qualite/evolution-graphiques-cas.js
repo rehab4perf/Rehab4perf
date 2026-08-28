@@ -217,6 +217,34 @@ ok('un champ ordinaire recompose la lettre, pas les graphiques',
   ok(p[1] + ' redessine', d > 0 && corps.indexOf('_crRefreshGraphiques()') > 0);
 });
 
+/* ── 9. Le courrier part vide de graphiques ──────────────────────
+ * Un patient suivi longtemps peut avoir plusieurs dizaines de courbes.
+ * Toutes cochées d'office, le courrier au médecin en portait autant — donc
+ * plus rien de lisible. On choisit ce qu'on joint, on ne retranche pas d'un
+ * tout. Le choix déjà fait doit survivre à une reconstruction du sélecteur. */
+console.log('\nAucune courbe jointe au départ');
+
+var pick = outils.slice(outils.indexOf('window._crBuildEvoPicker = function'));
+pick = pick.slice(0, pick.indexOf('\n  };'));
+ok('le sélecteur d\'évolution ne coche rien',
+   /\(id in prev\) \? prev\[id\] : false/.test(pick),
+   /: true/.test(pick) ? 'coche encore tout' : '');
+ok('… mais conserve un choix déjà fait', pick.indexOf('id in prev') > 0);
+
+var sel = outils.slice(outils.indexOf('_crBuildPevoSelector = window._crBuildPevoSelector'));
+sel = sel.slice(0, sel.indexOf('\n  };'));
+ok('le sélecteur du programme ne coche rien',
+   /data-pevo-idx="' \+ idx \+ '" style=/.test(sel),
+   /data-pevo-idx[^>]*checked/.test(sel) ? 'coche encore tout' : '');
+
+/* Les deux bascules maîtresses partent fermées : le balisage ne porte pas
+   `checked`. Sans cela, ouvrir le CR joindrait des graphiques sans qu'on
+   l'ait demandé. */
+['cr-evo-toggle', 'cr-pevo-toggle'].forEach(function (id) {
+  var m = outils.match(new RegExp('<input[^>]*id="' + id + '"[^>]*>'));
+  ok('la bascule ' + id + ' part fermée', !!m && m[0].indexOf('checked') < 0);
+});
+
 console.log('');
 if (ko) { console.error(ko + ' cas en echec.'); process.exit(1); }
 console.log('Graphiques d\'evolution : tous les cas passent.');
