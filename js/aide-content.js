@@ -651,6 +651,7 @@ sections: [
       { t:'Deux natures, deux voies', x:'Un cycle à critères n\'a pas de date : il dure tant qu\'il n\'est pas validé. Un cycle daté vit sa fenêtre de calendrier. L\'athlète voit désormais un bandeau par cycle en cours — le travail du tendon peut se poursuivre pendant qu\'un bloc de force tourne sur ses dates.' },
       { t:'Chaque voie garde son ordre', x:'Deux cycles à critères ne courent pas ensemble : le second attend que le premier soit validé. Ce sont les blocages entre voies différentes qui ont sauté.' },
       { t:'Ce que ça change dans le plan', x:'La liste « Plan de cycles complet » peut porter plusieurs « En cours ». Un cycle daté s\'affichera en cours dès que sa fenêtre s\'ouvre, même si un cycle à critères placé avant lui n\'est pas terminé — c\'est voulu.' },
+      { t:'Les cycles terminés sortent de la liste', x:'Le plan ne montre plus que ce qui reste à faire — en cours et à venir. Rien n\'est supprimé : les cycles terminés restent enregistrés, continuent de teinter leurs journées passées sur le calendrier, et reparaîtraient si leur état changeait. Quand tout est terminé, le plan le dit en une ligne.' },
       { t:'Le calendrier ne change pas', x:'Quand deux cycles datés se chevauchent, la journée garde la teinte du premier du plan. Une bande par cycle aurait chargé la grille pour une information rare.' }
     ]},
   { id:'vue-athlete', titre:'Ce que voit l\'athlète',

@@ -1370,23 +1370,41 @@ function _buildCycleBanner(){
   // Accordéon légende complète
   html += '<div style="margin-bottom:12px;">'
     +'<button onclick="_toggleCycleLegend()" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 14px;cursor:pointer;font-size:.74rem;font-weight:700;color:var(--navy);font-family:inherit;">'
-    +'<span>📅 Plan de cycles complet</span>'
+    +'<span>📅 Plan de cycles</span>'
     +'<span id="cycle-legend-caret" style="font-size:.62rem;color:var(--muted);transition:transform .2s;">'+(_cycleLegendOpen?'▲':'▼')+'</span>'
     +'</button>'
     +'<div id="cycle-legend-panel" style="display:'+(_cycleLegendOpen?'block':'none')+';background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;padding:4px 14px 10px;">';
 
-  _calCycles.forEach(function(cy, i){
+  /* Les cycles TERMINES ne sont plus listes : l'athlete regarde ce qu'il a a
+     faire, pas ce qu'il a deja fait. Rien n'est supprime — ils restent dans le
+     plan, teintent toujours leurs journees passees sur le calendrier, et
+     reapparaissent si leur etat change.
+
+     Les indices RESTENT ceux du tableau complet : `_cycleIsCurrent` lit les
+     cycles qui precedent pour ordonner la voie criteres. Reindexer sur la
+     liste filtree lui ferait perdre de vue les cycles termines — c'est-a-dire
+     exactement ceux qui debloquent le suivant. */
+  var _restants = [];
+  _calCycles.forEach(function(cy, i){ if(!_cycleIsDone(cy, today)) _restants.push(i); });
+
+  if(!_restants.length){
+    html += '<div style="padding:10px 2px;font-size:.75rem;color:var(--muted);text-align:center;">'
+      + 'Tous les cycles du plan sont terminés.</div>';
+  }
+
+  _restants.forEach(function(i, rang){
+    var cy = _calCycles[i];
     var col = cy.color || _cycleColor(cy.nom);
-    var isDone = _cycleIsDone(cy, today);
     /* Recalcule PAR LIGNE : plusieurs cycles peuvent etre en cours a la fois,
        un par voie. La ligne se lisait auparavant sur le seul cycle du bandeau
        (`i === curIdx`), ce qui n'en laissait qu'un. */
     var isCur  = _cycleIsCurrent(_calCycles, i, today);
     var status, sBg, sTxt;
-    if(isDone){ status='Terminé'; sBg='rgba(107,122,141,.1)'; sTxt='var(--muted)'; }
-    else if(isCur){ status='En cours'; sBg=col+'28'; sTxt=col; }
+    if(isCur){ status='En cours'; sBg=col+'28'; sTxt=col; }
     else { status='À venir'; sBg='rgba(107,122,141,.1)'; sTxt='var(--muted)'; }
-    var isLast = (i === _calCycles.length-1);
+    /* Le dernier de ce qui RESTE, pas du plan : sinon le trait de separation
+       s'arretait avant la derniere ligne visible. */
+    var isLast = (rang === _restants.length-1);
     var subLine;
     if(cy.mode === 'criteres'){
       var phs = _cyclePhases(cy);
@@ -1402,7 +1420,7 @@ function _buildCycleBanner(){
     } else {
       subLine = cy.duree+' sem.';
     }
-    html += '<div style="display:flex;align-items:center;gap:10px;padding:9px 0;'+(isLast?'':'border-bottom:1px solid var(--border);')+';opacity:'+(isDone?.55:1)+';">'
+    html += '<div style="display:flex;align-items:center;gap:10px;padding:9px 0;'+(isLast?'':'border-bottom:1px solid var(--border);')+'">'
       +'<div style="width:10px;height:10px;border-radius:50%;background:'+col+';flex-shrink:0;"></div>'
       +'<div style="flex:1;min-width:0;">'
       +'<div style="font-size:.8rem;font-weight:600;color:var(--text);">'+escH(cy.nom)+'</div>'

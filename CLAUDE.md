@@ -412,6 +412,18 @@ précédente : un cycle daté peut désormais s'afficher « en cours » alors qu
 cycle à critères placé avant lui n'est pas terminé. C'est exactement ce qu'on
 veut voir.
 
+**Les cycles TERMINÉS ne sont plus listés** dans le plan de l'athlète : il
+regarde ce qu'il a à faire, pas ce qu'il a déjà fait. Rien n'est supprimé — ils
+restent dans les données, teintent toujours leurs journées passées sur le
+calendrier, et reparaissent si leur état change. L'accordéon a perdu le mot
+« complet », qui serait devenu faux.
+
+**Les indices restent ceux du tableau entier.** `_cycleIsCurrent` lit les
+cycles qui précèdent pour ordonner la voie critères : réindexer sur la liste
+filtrée lui ferait perdre de vue les cycles terminés, c'est-à-dire exactement
+ceux qui débloquent le suivant. `_restants` porte donc des **indices**, pas des
+cycles.
+
 Le fond de journée du calendrier (`_dayCycleBg`) garde la **première** couleur
 qui couvre la date — décision du praticien : un chevauchement ne se voit pas
 sur la grille, et une bande par cycle l'aurait chargée.

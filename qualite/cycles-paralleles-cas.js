@@ -128,5 +128,37 @@ console.log('\n  Garde-fous — les deux verrous, aux deux endroits');
           /if\(cycles\[i\]\.mode !== 'criteres'\) continue;/.test(propre) + '');
 }
 
+
+console.log('\n  Les cycles terminés ne sont plus listés');
+{
+  /* L'athlète regarde ce qu'il a à faire, pas ce qu'il a déjà fait. Rien n'est
+     supprimé : les cycles terminés restent dans le plan, teintent toujours
+     leurs journées passées sur le calendrier, et reparaissent si leur état
+     change. */
+  var propre = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+  verifie('la liste écarte les terminés', 'true',
+          /if\(!_cycleIsDone\(cy, today\)\) _restants\.push\(i\)/.test(propre) + '');
+  /* LES INDICES restent ceux du tableau complet : `_cycleIsCurrent` lit les
+     cycles qui précèdent pour ordonner la voie critères. Réindexer sur la
+     liste filtrée lui ferait perdre de vue les cycles terminés — c'est-à-dire
+     exactement ceux qui débloquent le suivant. */
+  verifie('les indices restent ceux du plan entier', 'true',
+          /_restants\.forEach\(function\(i, rang\)\{[\s\S]{0,400}_cycleIsCurrent\(_calCycles, i, today\)/.test(propre) + '');
+  /* Le trait de separation se lit sur ce qui RESTE, sinon il s'arretait avant
+     la derniere ligne visible. */
+  verifie('le dernier trait suit la liste visible', 'true',
+          /var isLast = \(rang === _restants\.length-1\);/.test(propre) + '');
+  /* « Plan de cycles COMPLET » deviendrait un mensonge. */
+  verifie('l\'intitulé ne promet plus l\'exhaustivité', 'false',
+          String(/Plan de cycles complet/.test(src)));
+  /* Un plan entierement termine ne laisse pas un panneau vide. */
+  verifie('un plan tout terminé le dit', 'true',
+          /Tous les cycles du plan sont terminés/.test(src) + '');
+  /* L'attenuation des lignes terminees n'a plus d'objet : plus aucune n'est
+     rendue. Un mecanisme qui ne sert plus est un piege pour la lecture
+     suivante. */
+  verifie('plus d\'atténuation morte', 0, (propre.match(/isDone\s*\?\s*\.55/g) || []).length);
+}
+
 console.log('\n  ' + (nbKo ? '✗ ' + nbKo + ' échec(s), ' : '✓ ') + nbOk + ' cas vérifiés.\n');
 process.exit(nbKo ? 1 : 0);
