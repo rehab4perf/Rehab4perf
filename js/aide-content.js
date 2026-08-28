@@ -250,7 +250,7 @@ sections: [
   { id:'cr-apercu-vivant', titre:'Le courrier s\'écrit pendant que vous remplissez',
     intro:'Plus de bouton « Générer » : l\'aperçu suit votre saisie.',
     etapes:[
-      { t:'Il se compose tout seul', x:'À l\'ouverture du Générateur, le courrier est déjà écrit avec ce que le bilan et le dossier patient contiennent. Chaque champ que vous complétez s\'y ajoute dans la foulée.' },
+      { t:'Il se compose tout seul', x:'À l\'ouverture du Générateur, le courrier est déjà écrit avec ce que le bilan et le dossier patient contiennent — sans le moindre clic. Chaque champ que vous complétez s\'y ajoute dans la foulée.' },
       { t:'Pourquoi le bouton a disparu', x:'Il ne validait rien — il rafraîchissait un aperçu. Et l\'oublier coûtait cher : « Copier », « PDF » et « Mail » exportaient le courrier figé au dernier clic. Une phrase corrigée après coup partait chez le médecin sans y figurer, sans aucun signal.' },
       { t:'L\'export suit toujours l\'écran', x:'Ce que vous voyez et ce que vous exportez sont désormais produits ensemble. Il n\'y a plus d\'écart possible entre les deux.' },
       { t:'Les graphiques, eux, attendent leur case', x:'Ils ne se redessinent que lorsque vous cochez ou décochez « Inclure les graphiques » — inutile de les recalculer à chaque lettre tapée.' },

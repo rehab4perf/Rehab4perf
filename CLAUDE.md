@@ -1008,6 +1008,14 @@ chaque frappe serait du gâchis, et ils ne dépendent que de leurs propres cases
 `crGenerate` fait les deux et reste le point d'entrée quand il faut tout
 refaire — bascule de destinataire, cases de graphiques.
 
+**La composition INITIALE est inconditionnelle**, et vit dans
+`_outilsOngletInitial` — appelée à `DOMContentLoaded`, donc après que tout le
+script inline a fini de s'exécuter. Elle avait d'abord été accrochée à
+`_crTenterImport`, qui ne s'exécute QUE si un import est en attente : à
+l'arrivée ordinaire sur la page, rien ne composait l'aperçu. Il restait vide
+jusqu'au premier clic, lequel déclenchait l'écoute à la frappe et donnait
+l'illusion que le mécanisme fonctionnait.
+
 **Une écriture programmatique n'émet aucun événement**, donc l'écoute déléguée
 ne la voit pas. Quatre endroits appellent `_crMajDifferee()` à la main :
 association des infos patient, arrivée des tests du bilan (au chargement et sur

@@ -76,7 +76,7 @@ console.log('\n  La frappe régénère, les graphiques non');
   verifie('la régénération est différée', 'true', /setTimeout\(function \(\) \{[\s\S]{0,160}_crRefreshLettre\(\)/.test(propre) + '');
 }
 
-console.log('\n  Ce qui change sans frappe doit le demander');
+console.log('\n  Ce qui change sans frappe doit le demander — et l\'arrivee sur la page en fait partie');
 {
   /* Une ecriture programmatique n'emet aucun evenement : l'ecoute deleguee ne
      voit rien. Sans ces appels, le courrier resterait celui du patient
@@ -89,8 +89,31 @@ console.log('\n  Ce qui change sans frappe doit le demander');
           /crChargerTestsBilan\(\);[\s\S]{0,200}_crMajDifferee\(\)/.test(propre) + '');
   verifie('la remise à zéro recompose le squelette', 'true',
           /graphsDiv\.style\.display = 'none';[\s\S]{0,200}_crMajDifferee\(\)/.test(propre) + '');
-  verifie('quatre points de rafraîchissement hors frappe', 4,
+  verifie('cinq points de rafraîchissement hors frappe', 5,
           (propre.match(/window\._crMajDifferee\(\);/g) || []).length);
+  /* LA composition initiale, sans condition. Elle était accrochée à
+     `_crTenterImport`, qui ne s'exécute QUE si un import est en attente : à
+     l'arrivée ordinaire sur la page, rien ne composait l'aperçu — il restait
+     vide jusqu'au premier clic, lequel déclenchait l'écoute à la frappe et
+     donnait l'illusion que tout marchait.
+
+     Elle vit donc dans `_outilsOngletInitial`, appelée à DOMContentLoaded :
+     tout le script inline a fini de s'exécuter, la fonction existe, et le
+     panneau est dans le document. */
+  var dInit = propre.indexOf('function _outilsOngletInitial()');
+  var fInit = propre.indexOf('}', propre.indexOf('_crMajDifferee', dInit));
+  verifie('la composition initiale est inconditionnelle', 'true',
+          String(dInit !== -1 && /_crMajDifferee\(\)/.test(propre.slice(dInit, fInit + 1))));
+  verifie('elle est déclenchée à DOMContentLoaded', 'true',
+          /addEventListener\('DOMContentLoaded', _outilsOngletInitial\)/.test(propre) + '');
+  /* Elle ne doit PAS dépendre de l'attente d'import : c'était le défaut. */
+  var dImp = propre.indexOf('function _crTenterImport()');
+  var fImp = propre.indexOf('\nfunction ', dImp + 10);
+  verifie('_crTenterImport n\'est plus le seul chemin', 'true',
+          String((propre.match(/window\._crMajDifferee\(\);/g) || []).length > 1));
+  verifie('… mais il rafraîchit toujours', 'true',
+          String(propre.slice(dImp, fImp).indexOf('_crMajDifferee()') !== -1));
+
 }
 
 console.log('\n  L\'empreinte ne compte plus « un courrier existe »');

@@ -8969,6 +8969,16 @@ else renderBatteries();
    plus tot. */
 function _outilsOngletInitial(){
   try { showTab('cr'); } catch(e){ console.error('onglet initial:', e); }
+  /* PREMIERE composition du courrier, sans condition. Elle etait accrochee a
+     `_crTenterImport`, qui ne s'execute QUE si un import est en attente : a
+     l'arrivee ordinaire sur la page, rien ne composait l'apercu — il restait
+     vide jusqu'au premier clic, qui declenchait l'ecoute a la frappe.
+
+     Ici, on est a DOMContentLoaded : tout le script inline a fini de
+     s'executer, `_crMajDifferee` existe, et le panneau est dans le document.
+     Ce qui arrive plus tard — patient, tests du bilan — rafraichit par ses
+     propres crochets. */
+  try { window._crMajDifferee(); } catch(e){ console.error('aperçu initial:', e); }
 }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', _outilsOngletInitial);
 else _outilsOngletInitial();
