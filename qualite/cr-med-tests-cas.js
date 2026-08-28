@@ -222,28 +222,36 @@ console.log('\n  Le regroupement — un intertitre par zone, jamais répété');
 console.log('\n  Le lexique complète le nom du test, il ne le remplace plus');
 {
   /* « Contrôle moteur global » ne disait ni quel membre, ni quel mouvement :
-     le nom technique n'avait pas ete traduit, il avait ete SUPPRIME. */
+     le nom technique n'avait pas été traduit, il avait été SUPPRIMÉ. */
   var codeLex = bloc('var CR_MED_LEXIQUE', 'function _crMedValeurLisible');
-  var lex = new Function(codeLex + '\n return { l: _crMedLabel, g: _crMedGeste };')();
+  var lex = new Function(codeLex + '\n return { l: _crMedLabel, g: _crMedGeste, t: CR_MED_LEXIQUE };')();
 
-  verifie('le protocole suit la fonction',
-          'Contrôle moteur global (Overhead Squat)', lex.l('Overhead squat'));
+  /* Décision du praticien : le nom du protocole entre parenthèses alourdissait
+     l'intitulé sans rien apprendre au médecin. Seule la FONCTION reste en tête,
+     le GESTE la précise en petit dessous. La colonne « protocole » est partie
+     avec son unique usage — un champ que plus personne ne lit finit par être
+     recopié de travers. */
+  verifie('la table n\'a plus que trois colonnes', 'true',
+          String(lex.t.every(function (e) { return e.length === 3; })));
+  verifie('plus aucune parenthèse de protocole', 'true',
+          String(lex.t.every(function (e) { return lex.l(e[0]).indexOf('(') === -1; })));
+
+  verifie('la fonction seule', 'Contrôle moteur global', lex.l('Overhead squat'));
   verifie('… et le geste part à côté', 'squat bras levés', lex.g('Overhead squat'));
 
   verifie('le squat unipodal se nomme',
-          'Contrôle du membre inférieur (Squat unipodal)', lex.l('Squat unipodal — qualité'));
+          'Contrôle du membre inférieur', lex.l('Squat unipodal — qualité'));
+  verifie('… avec son geste', 'squat sur une jambe', lex.g('Squat unipodal — qualité'));
 
-  /* Ce qui suit le motif est conserve : les declinaisons gardent leur suffixe,
-     et le protocole se place APRES lui. */
+  /* Ce qui suit le motif est conservé : les déclinaisons gardent leur suffixe. */
   verifie('une déclinaison garde son suffixe',
-          'Contrôle postural dynamique — direction antérieure (SEBT)', lex.l('SEBT — Antérieur'));
+          'Contrôle postural dynamique — direction antérieure', lex.l('SEBT — Antérieur'));
 
-  /* Protocole vide quand il ne dirait rien de plus que la fonction. */
-  verifie('pas de parenthèse redondante',
-          'Endurance des extenseurs du cou', lex.l('Endurance Extenseurs Cervicaux'));
-  verifie('… ni de geste inventé', '', lex.g('Endurance Extenseurs Cervicaux'));
+  verifie('les cervicales aussi', 'Endurance des extenseurs du cou',
+          lex.l('Endurance Extenseurs Cervicaux'));
+  verifie('… sans geste inventé', '', lex.g('Endurance Extenseurs Cervicaux'));
 
-  /* Geste vide quand la fonction le porte deja. */
+  /* Geste vide quand la fonction le porte déjà. */
   verifie('le Hop Test n\'a rien à ajouter', '', lex.g('Hop Test'));
 
   /* Hors lexique : le nom d'origine, jamais rien de perdu. */
@@ -251,8 +259,13 @@ console.log('\n  Le lexique complète le nom du test, il ne le remplace plus');
 
   /* Le tri du plus long au plus court retire la dependance a l'ordre
      d'ecriture : « Drop Jump H » ne doit pas etre attrape par « Drop Jump ». */
+  /* Le tri du plus long au plus court reste indispensable : sans lui,
+     « Pliométrie verticale (qualitative) » serait attrapé par la clé
+     « Pliométrie verticale », et « Drop Jump — RSI » par « Drop Jump H ». */
   verifie('la clé la plus longue gagne',
-          'Qualité de rebond (Pliométrie verticale)', lex.l('Pliométrie verticale (qualitative)'));
+          'Qualité de rebond', lex.l('Pliométrie verticale (qualitative)'));
+  verifie('… et la plus courte ne la vole pas',
+          'Indice de raideur réactive', lex.l('Drop Jump — RSI'));
 }
 
 console.log('\n  Lecture de la grille — seules les compensations OBSERVÉES');

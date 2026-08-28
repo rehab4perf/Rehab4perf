@@ -43,50 +43,50 @@ var R4P_KEYS = {
      saut en longueur sur un pied » n'a rien a ajouter. */
 var CR_MED_LEXIQUE = [
   /* ── Membre inférieur ── */
-  ['SLS',                       'Force fonctionnelle du membre inférieur', 'SLS',                       'squats sur une jambe'],
-  ['Hop Test',                  'Capacité de saut en longueur sur un pied', 'Hop Test',                 ''],
-  ['Réception — 80% Hop Test',  'Qualité de réception',                   'Réception 80 % du Hop Test', 'saut en longueur sur une jambe'],
-  ['Drop Jump — Temps contact', 'Temps de contact au sol',                'Drop Jump',                 'saut depuis une marche'],
-  ['Drop Jump — RSI',           'Indice de raideur réactive',             'Drop Jump',                 'saut depuis une marche'],
-  ['Drop Jump H',               'Détente verticale',                      'Drop Jump',                 'saut depuis une marche'],
-  ['Side Hop — Explosivité',    'Explosivité latérale',                   'Side Hop',                  'sauts latéraux sur une jambe'],
-  ['Side Hop — Endurance',      'Endurance latérale',                     'Side Hop',                  'sauts latéraux sur une jambe'],
-  ['Heel Rise',                 'Endurance du triceps sural',             'Heel Rise Test',            'montées sur la pointe du pied'],
-  ['Lunge WBLT',                'Mobilité de la cheville en flexion dorsale', 'Weight Bearing Lunge Test', 'fente au mur'],
-  ['Quadriceps deficit',        'Déficit de force du quadriceps',         '',                          ''],
-  ['IJ deficit',                'Déficit de force des ischio-jambiers',   '',                          ''],
-  ['SEBT — Score composite',    'Contrôle postural dynamique — score global',        'SEBT', 'allonge du pied en équilibre sur une jambe'],
-  ['SEBT — Antérieur',          'Contrôle postural dynamique — direction antérieure', 'SEBT', 'allonge du pied en équilibre sur une jambe'],
-  ['SEBT — Postéro-médial',     'Contrôle postural dynamique — direction postéro-médiale',  'SEBT', 'allonge du pied en équilibre sur une jambe'],
-  ['SEBT — Postéro-latéral',    'Contrôle postural dynamique — direction postéro-latérale', 'SEBT', 'allonge du pied en équilibre sur une jambe'],
-  ['Single-Leg Stance Test',    'Équilibre en appui unipodal',            'Single-Leg Stance Test',    ''],
-  ['Figure-of-8 Hop Test',      'Agilité en changement de direction',     'Figure-of-8 Hop Test',      'sauts en huit sur une jambe'],
-  ['Overhead squat',            'Contrôle moteur global',                 'Overhead Squat',            'squat bras levés'],
-  ['Squat unipodal — qualité',  'Contrôle du membre inférieur',           'Squat unipodal',            'squat sur une jambe'],
+  ['SLS',                         'Force fonctionnelle du membre inférieur',                 'squats sur une jambe'],
+  ['Hop Test',                    'Capacité de saut en longueur sur un pied',                ''],
+  ['Réception — 80% Hop Test',    'Qualité de réception',                                    'saut en longueur sur une jambe'],
+  ['Drop Jump — Temps contact',   'Temps de contact au sol',                                 'saut depuis une marche'],
+  ['Drop Jump — RSI',             'Indice de raideur réactive',                              'saut depuis une marche'],
+  ['Drop Jump H',                 'Détente verticale',                                       'saut depuis une marche'],
+  ['Side Hop — Explosivité',      'Explosivité latérale',                                    'sauts latéraux sur une jambe'],
+  ['Side Hop — Endurance',        'Endurance latérale',                                      'sauts latéraux sur une jambe'],
+  ['Heel Rise',                   'Endurance du triceps sural',                              'montées sur la pointe du pied'],
+  ['Lunge WBLT',                  'Mobilité de la cheville en flexion dorsale',              'fente au mur'],
+  ['Quadriceps deficit',          'Déficit de force du quadriceps',                          ''],
+  ['IJ deficit',                  'Déficit de force des ischio-jambiers',                    ''],
+  ['SEBT — Score composite',      'Contrôle postural dynamique — score global',              'allonge du pied en équilibre sur une jambe'],
+  ['SEBT — Antérieur',            'Contrôle postural dynamique — direction antérieure',      'allonge du pied en équilibre sur une jambe'],
+  ['SEBT — Postéro-médial',       'Contrôle postural dynamique — direction postéro-médiale', 'allonge du pied en équilibre sur une jambe'],
+  ['SEBT — Postéro-latéral',      'Contrôle postural dynamique — direction postéro-latérale', 'allonge du pied en équilibre sur une jambe'],
+  ['Single-Leg Stance Test',      'Équilibre en appui unipodal',                             ''],
+  ['Figure-of-8 Hop Test',        'Agilité en changement de direction',                      'sauts en huit sur une jambe'],
+  ['Overhead squat',              'Contrôle moteur global',                                  'squat bras levés'],
+  ['Squat unipodal — qualité',    'Contrôle du membre inférieur',                            'squat sur une jambe'],
   /* Clé complète, suffixe compris : « Qualité de rebond (qualitative) »
      serait redondant, le libellé disant déjà qu'on juge une qualité. Le
      rapprochement se faisant du motif le plus long au plus court, cette
      entrée passe avant la suivante. */
-  ['Pliométrie verticale (qualitative)', 'Qualité de rebond',             'Pliométrie verticale',      'sauts verticaux enchaînés'],
-  ['Pliométrie verticale',      'Qualité de rebond',                      'Pliométrie verticale',      'sauts verticaux enchaînés'],
+  ['Pliométrie verticale (qualitative)', 'Qualité de rebond',                                       'sauts verticaux enchaînés'],
+  ['Pliométrie verticale',        'Qualité de rebond',                                       'sauts verticaux enchaînés'],
   /* ── Membre supérieur ── */
-  ['PSET',                      'Endurance des muscles postérieurs de l\'épaule', 'PSET',              'maintien du bras écarté'],
-  ['Shoulder Endurance',        'Endurance de l\'épaule',                 'Shoulder Endurance Test',   ''],
-  ['mCKCUEST',                  'Stabilité de l\'épaule en chaîne fermée', 'mCKCUEST',                 'touchers de main en appui facial'],
-  ['Side Hold Rotation',        'Endurance du tronc et de la ceinture scapulaire', 'Side Hold Rotation', 'gainage latéral avec rotation'],
-  ['ULRT',                      'Endurance rotatoire du membre supérieur', 'ULRT',                      'rotations en appui sur les mains'],
-  ['UQYBT',                     'Contrôle postural dynamique du membre supérieur', 'UQYBT',             'allonge de la main en appui facial'],
+  ['PSET',                        'Endurance des muscles postérieurs de l\'épaule',          'maintien du bras écarté'],
+  ['Shoulder Endurance',          'Endurance de l\'épaule',                                  ''],
+  ['mCKCUEST',                    'Stabilité de l\'épaule en chaîne fermée',                 'touchers de main en appui facial'],
+  ['Side Hold Rotation',          'Endurance du tronc et de la ceinture scapulaire',         'gainage latéral avec rotation'],
+  ['ULRT',                        'Endurance rotatoire du membre supérieur',                 'rotations en appui sur les mains'],
+  ['UQYBT',                       'Contrôle postural dynamique du membre supérieur',         'allonge de la main en appui facial'],
   /* ── Rachis ──
      Les endurances cervicales n'ont pas d'acronyme : leur cle EST leur nom, le
      repeter entre parentheses n'ajouterait rien. Le geste des extenseurs et des
      flechisseurs lateraux n'est volontairement pas renseigne — je ne l'invente
      pas ; le praticien le completera s'il le juge utile. */
-  ['Endurance Fléchisseurs Cervicaux', 'Endurance des fléchisseurs profonds du cou', '',               'maintien de la tête décollée'],
-  ['Endurance Extenseurs Cervicaux',   'Endurance des extenseurs du cou',            '',               ''],
-  ['Endurance Latérale Cervicale',     'Endurance des fléchisseurs latéraux du cou', '',               ''],
-  ['Test de Sørensen',          'Endurance des extenseurs lombaires',     'Test de Sørensen',          'maintien du tronc à l\'horizontale'],
-  ['Shirado',                   'Endurance des fléchisseurs du tronc',    'Test de Shirado',           'maintien tête et épaules décollées'],
-  ['PDSLRT',                    'Endurance des fléchisseurs de hanche et de la sangle abdominale', 'PDSLRT', 'maintien des jambes tendues décollées']
+  ['Endurance Fléchisseurs Cervicaux', 'Endurance des fléchisseurs profonds du cou',              'maintien de la tête décollée'],
+  ['Endurance Extenseurs Cervicaux', 'Endurance des extenseurs du cou',                         ''],
+  ['Endurance Latérale Cervicale', 'Endurance des fléchisseurs latéraux du cou',              ''],
+  ['Test de Sørensen',            'Endurance des extenseurs lombaires',                      'maintien du tronc à l\'horizontale'],
+  ['Shirado',                     'Endurance des fléchisseurs du tronc',                     'maintien tête et épaules décollées'],
+  ['PDSLRT',                      'Endurance des fléchisseurs de hanche et de la sangle abdominale', 'maintien des jambes tendues décollées']
 ];
 
 /* Traduction d'un intitulé de ligne. Les entrées sont essayées de la plus
@@ -114,12 +114,13 @@ function _crMedLabel(cle) {
   var t = _crMedEntree(k);
   if (!t) return k;   // hors lexique : le nom d'origine, jamais rien de perdu
   // Ce qui suit le motif est conservé : « UQYBT — Médial » garde « — Médial ».
-  var lbl = t.e[1] + t.reste;
-  /* Le nom du protocole suit entre parentheses — le medecin du sport le
-     reconnait, et il permet de refaire le test a l'identique. Il est omis
-     quand il ne dirait rien de plus que la fonction. */
-  if (t.e[2]) lbl += ' (' + t.e[2] + ')';
-  return lbl;
+  /* Decision du praticien : le nom du protocole entre parentheses alourdissait
+     l'intitule sans rien apprendre au medecin — « Force fonctionnelle du membre
+     inferieur (SLS) ». Seule la FONCTION reste en tete, et le GESTE la precise
+     en petit juste dessous. La colonne « protocole » a ete retiree de la table
+     avec son unique usage : un champ que plus personne ne lit finit par etre
+     recopie de travers. */
+  return t.e[1] + t.reste;
 }
 
 /* Le GESTE part en petit sous l'intitule, la ou figure deja « Repère
@@ -127,7 +128,7 @@ function _crMedLabel(cle) {
    colonne des tests. */
 function _crMedGeste(cle) {
   var t = _crMedEntree(cle);
-  return (t && t.e[3]) ? t.e[3] : '';
+  return (t && t.e[2]) ? t.e[2] : '';
 }
 
 /* Une valeur de CR est parfois un mini-tableau (`_crMesTab`) : en prendre le

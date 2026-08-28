@@ -933,16 +933,19 @@ squat » devenait « Contrôle moteur global », qui ne dit ni quel membre ni qu
 mouvement. Le médecin ne pouvait ni juger si le test répondait à sa question, ni
 le refaire, ni en discuter.
 
-Chaque entrée porte désormais **quatre champs** —
-`[clé, fonction, protocole, geste]` :
+Chaque entrée porte **deux champs utiles** — `[clé, fonction, geste]` :
 
 - la **fonction** ouvre l'intitulé : elle se comprend sans jargon ;
-- le **protocole** suit entre parenthèses, pour qui le reconnaît. Vide quand il
-  ne dirait rien de plus (endurances cervicales, déficits au dynamomètre) ;
 - le **geste** part en petit sous l'intitulé, là où figure déjà « Repère
   EIAS-sol : 45 cm ». Sur la même ligne il doublait la hauteur de la colonne.
   Vide quand la fonction le porte déjà — « Capacité de saut en longueur sur un
   pied » n'a rien à ajouter.
+
+Une colonne **protocole** a existé, qui suivait entre parenthèses : « Force
+fonctionnelle du membre inférieur (SLS) ». Décision du praticien — elle
+alourdissait l'intitulé sans rien apprendre au médecin. Elle est partie **avec
+son unique usage** : un champ que plus personne ne lit finit par être recopié
+de travers.
 
 Le tri du plus long au plus court est **conservé** : sans lui « Drop Jump H »
 serait attrapé par « Drop Jump — RSI », et « Pliométrie verticale
