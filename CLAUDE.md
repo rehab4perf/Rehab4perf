@@ -1223,11 +1223,22 @@ dans l'autre : une cellule vide, grise, sans intitulé. On ne peut pas inventer
 un champ manquant — la dernière case prend donc toute la largeur
 (`:last-child:nth-child(odd){grid-column:1/-1}`).
 
-**Conclusion et plan sont deux propos distincts.** Le plan sortait en
-paragraphes nus juste sous l'encadré de conclusion : le lecteur ne voyait plus
-où finissait l'une et où commençait l'autre. Ce sont deux encadrés **jumeaux**
-(`.lt-bloc` + `.lt-concl` / `.lt-plan`), chacun avec son intitulé. L'un dit où
-en est le patient, l'autre ce qui va être fait.
+**Synthèse et plan sont deux propos distincts.** Le plan sortait en paragraphes
+nus juste sous l'encadré de conclusion : le lecteur ne voyait plus où finissait
+l'une et où commençait l'autre. Ce sont deux encadrés **jumeaux** (`.lt-bloc` +
+`.lt-concl` / `.lt-plan`), chacun avec son intitulé. L'un dit où en est le
+patient, l'autre ce qui va être fait.
+
+Le premier s'appelle **« Synthèse clinique »** — « Conclusion » ne disait pas de
+quoi. Ce nom existe en **deux exemplaires**, le rendu HTML (écran et PDF) et le
+rendu texte (copie, mail) : changé d'un seul côté, il ne se voit pas là où
+l'autre est lu. Un cas de référence tient les deux.
+
+**Le filet vertical demeure, l'aplat de fond est parti** — décision du
+praticien. Sur papier, un aplat gris est ce qui vieillit le plus mal, et il
+alourdissait deux blocs déjà signalés par leur filet et leur intitulé. Deux
+filets horizontaux très fins les bornent à la place. Chaque bloc garde SA
+couleur de filet et de titre : c'est ce qui les distingue l'un de l'autre.
 
 **Rien ne se coupe au milieu.** `break-inside:avoid` sur la grille patient, les
 encadrés, les tableaux et leurs lignes ; `break-after:avoid` sur `.lt-sec` —

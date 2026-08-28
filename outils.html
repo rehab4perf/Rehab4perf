@@ -6508,13 +6508,19 @@ _updateOutilsPatientBtns();
        juste sous la conclusion mise en valeur — le lecteur ne voyait plus ou
        finissait l'une et ou commencait l'autre. Ce sont deux propos distincts :
        l'un dit ou en est le patient, l'autre ce qui va etre fait. */
-    '.lt-bloc{margin-top:14px;border-left:3px solid;border-radius:0 6px 6px 0;',
-      'padding:10px 14px 11px;font-size:.81rem;line-height:1.6}',
+    /* Le filet vertical demeure — c'est lui qui rattache le bloc a son titre et
+       le distingue d'un paragraphe ordinaire. L'aplat de fond est parti : sur
+       papier, un aplat gris est ce qui vieillit le plus mal, et il alourdissait
+       deux blocs deja signales par leur filet et leur intitule. Deux filets
+       horizontaux tres fins les bornent a la place. */
+    '.lt-bloc{margin-top:16px;border-left:3px solid;border-radius:0;background:#fff;',
+      'border-top:1px solid #E8E6E1;border-bottom:1px solid #E8E6E1;',
+      'padding:11px 0 12px 14px;font-size:.81rem;line-height:1.6}',
     '.lt-bloc-t{font-size:.6rem;font-weight:700;letter-spacing:.08em;',
       'text-transform:uppercase;margin:0 0 3px}',
-    '.lt-concl{background:#EEF3FB;border-left-color:#2B5FA6}',
+    '.lt-concl{border-left-color:#2B5FA6}',
     '.lt-concl .lt-bloc-t{color:#2B5FA6}',
-    '.lt-plan{background:#F1F0ED;border-left-color:#1A3A5C}',
+    '.lt-plan{border-left-color:#1A3A5C}',
     '.lt-plan .lt-bloc-t{color:#1A3A5C}',
     '.lt-concl b{color:#1A3A5C}',
     /* ── Coupures de page ──────────────────────────────────────────────
@@ -6561,7 +6567,7 @@ _updateOutilsPatientBtns();
       if (!_crEstBloc(b)) { out.push(String(b == null ? '' : b)); return; }
       if (b.t === 'sec')     { out.push(''); out.push(String(b.txt || '').toUpperCase()); return; }
       if (b.t === 'patient') { b.champs.forEach(function (c) { out.push(c[0] + ' : ' + c[1]); }); return; }
-      if (b.t === 'concl')   { out.push(''); out.push('Conclusion :'); out.push(b.txt); return; }
+      if (b.t === 'concl')   { out.push(''); out.push('Synthèse clinique :'); out.push(b.txt); return; }
       if (b.t === 'plan')    { out.push(''); out.push('Plan de traitement :'); out.push(b.txt); return; }
       if (b.t === 'fin')     { (b.lignes || []).forEach(function (l) { out.push(l); }); return; }
       if (b.t === 'liste') {
@@ -6883,7 +6889,7 @@ _updateOutilsPatientBtns();
         fermerTable();
         var _est = b.t === 'concl';
         h += '<div class="lt-bloc ' + (_est ? 'lt-concl' : 'lt-plan') + '">'
-           + '<div class="lt-bloc-t">' + (_est ? 'Conclusion' : 'Plan de traitement') + '</div>'
+           + '<div class="lt-bloc-t">' + (_est ? 'Synthèse clinique' : 'Plan de traitement') + '</div>'
            + _crEsc(b.txt).replace(/\n/g, '<br>') + '</div>';
         return;
       }

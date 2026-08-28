@@ -127,5 +127,39 @@ console.log('\n  L\'empreinte ne compte plus « un courrier existe »');
           /parts\.push\(\(el\.id \|\| el\.name\) \+ '=' \+ v\)/.test(propre) + '');
 }
 
+
+console.log('\n  Les deux encadrés du courrier');
+{
+  /* Le nom du bloc existe en DEUX exemplaires — le rendu HTML (écran et PDF)
+     et le rendu texte (copie, mail). C'est le piège déjà documenté : un
+     changement fait d'un seul côté ne se voit pas là où l'autre est lu. */
+  verifie('« Synthèse clinique » au rendu HTML', 'true',
+          /_est \? 'Synthèse clinique' : 'Plan de traitement'/.test(propre) + '');
+  verifie('… et au rendu texte', 'true',
+          /out\.push\('Synthèse clinique :'\)/.test(propre) + '');
+  verifie('plus aucune « Conclusion » dans les deux rendus', 0,
+          (propre.match(/'Conclusion'|'Conclusion :'/g) || []).length);
+
+  /* Variante A : le filet vertical demeure — il rattache le bloc à son titre —
+     mais l'aplat de fond part. Sur papier, un aplat gris est ce qui vieillit
+     le plus mal, et il alourdissait deux blocs déjà signalés par leur filet. */
+  var css = propre.slice(propre.indexOf('var CR_LETTRE_CSS = ['),
+                         propre.indexOf("].join('')", propre.indexOf('var CR_LETTRE_CSS = [')));
+  verifie('le filet vertical demeure', 'true', /\.lt-bloc\{[^}]*border-left:3px solid/.test(css) + '');
+  verifie('le fond est blanc', 'true', /\.lt-bloc\{[^}]*background:#fff/.test(css) + '');
+  verifie('deux filets horizontaux le bornent', 'true',
+          /border-top:1px solid #E8E6E1;border-bottom:1px solid #E8E6E1/.test(css) + '');
+  /* Les aplats des deux blocs sont partis, mais chacun garde SA couleur de
+     filet et de titre : c'est ce qui les distingue l'un de l'autre. */
+  verifie('plus d\'aplat sur la synthèse', 'false', String(/\.lt-concl\{[^}]*background:/.test(css)));
+  verifie('plus d\'aplat sur le plan', 'false', String(/\.lt-plan\{[^}]*background:/.test(css)));
+  verifie('la synthèse garde sa couleur', 'true', /\.lt-concl\{border-left-color:#2B5FA6\}/.test(css) + '');
+  verifie('le plan garde la sienne', 'true', /\.lt-plan\{border-left-color:#1A3A5C\}/.test(css) + '');
+  /* Le CSS du courrier n'existe qu'en UN exemplaire : il sert a l'ecran ET au
+     PDF. Ecrit deux fois, il aurait derive. */
+  verifie('un seul jeu de styles pour l\'écran et le PDF', 1,
+          (propre.match(/var CR_LETTRE_CSS = \[/g) || []).length);
+}
+
 console.log('\n  ' + (nbKo ? '✗ ' + nbKo + ' échec(s), ' : '✓ ') + nbOk + ' cas vérifiés.\n');
 process.exit(nbKo ? 1 : 0);
