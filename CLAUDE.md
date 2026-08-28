@@ -1465,6 +1465,21 @@ voit pas là où le document est lu. Le fichier de cas contrôle les trois.
 `evo-unselected` au rendu). Le CR n'en est pas affecté : `_crGetEvoCards`
 renvoie toutes les cartes, sélection ou non.
 
+**Le panneau « Inclure les graphiques d'évolution » du courrier ne se masque
+plus.** Il se cachait quand le patient n'avait pas deux bilans — et masquer est
+**indiscernable d'une panne** : le praticien ne peut pas savoir si la fonction a
+disparu ou si elle ne s'applique pas à ce patient. Il reste en place, la case
+désactivée et la raison écrite, comme le fait déjà `cr-pevo-status`.
+
+**Sa visibilité n'était calculée QU'au changement de sous-onglet.** Le seul
+appelant de `_crUpdateEvoPanel` était le crochet de `showTab` — donc une seule
+fois en pratique, à `DOMContentLoaded`, quand l'iframe du bilan n'a encore
+chargé aucun bilan. Sélectionner un patient ensuite ne la rejouait jamais : le
+panneau restait vide tant qu'on ne quittait pas l'onglet pour y revenir. Quatre
+moments l'appellent désormais — crochet de sous-onglet, arrivée de l'import,
+arrivée des tests par `storage`, changement de patient — et le fichier de cas
+échoue si l'un d'eux disparaît.
+
 **Point ouvert, non corrigé** : `_robustFence` (MAD × 10) écarte du tracé toute
 valeur qu'elle juge aberrante. Sur une série stable, la MAD est minuscule — et
 une VRAIE dégradation disparaît de la courbe. Mesuré : `[45, 44, 46, 45, 44,

@@ -1436,11 +1436,12 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
         </div>
 
         <!-- Évolution dans le PDF -->
-        <div id="cr-evo-panel" style="display:none;margin-top:14px;padding:12px 14px;background:var(--surface2,#F7F6F3);border-radius:8px;border:1px solid var(--border,#E8E6E1)">
+        <div id="cr-evo-panel" style="margin-top:14px;padding:12px 14px;background:var(--surface2,#F7F6F3);border-radius:8px;border:1px solid var(--border,#E8E6E1)">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.82rem;font-weight:600;color:var(--text,#1A1917)">
             <input type="checkbox" id="cr-evo-toggle" onchange="_crOnEvoToggle()">
             📈 Inclure les graphiques d'évolution
           </label>
+          <div id="cr-evo-status" style="display:none;margin-top:8px;font-size:.78rem;color:#9D9B96;font-style:italic"></div>
           <div id="cr-evo-grid" style="display:none;margin-top:10px">
             <div style="font-size:.72rem;font-weight:600;color:#6B6860;margin-bottom:8px">Graphiques à inclure :</div>
             <div id="cr-evo-checks" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
@@ -4826,6 +4827,8 @@ function _crTenterImport(){
      praticien. `crImportPatient` marque deja, mais le chargement des tests
      vient ensuite et deferait ce marquage. */
   try { window._crMarquerPropre(); } catch(ex){}
+  /* Les bilans du patient viennent d'arriver dans l'iframe du bilan. */
+  try { window._crUpdateEvoPanel(); } catch(ex){}
 }
 
 window.addEventListener('storage', function(e){
@@ -4836,6 +4839,7 @@ window.addEventListener('storage', function(e){
       catch(ex){ console.error('crChargerTestsBilan (storage):', ex); }
       /* Les tests arrivent du bilan, pas d'une frappe ici. */
       try { window._crMajDifferee(); } catch(ex){}
+      try { window._crUpdateEvoPanel(); } catch(ex){}
     }, 300);
     return;
   }
@@ -4894,6 +4898,7 @@ window.addEventListener('message', function(e){
          refuse et l'attente reste armee — l'ecriture du bilan la levera.
          Une seconde tentative differee couvre le cas ou le bilan finit son
          chargement sans qu'aucun evenement `storage` ne nous parvienne. */
+      try { window._crUpdateEvoPanel(); } catch(ex){}
       _crAttenteImport = !!_crNouveau;
       _crPatientAttendu = _crNouveau;
       clearTimeout(_crImportMaj);
@@ -8080,14 +8085,25 @@ _updateOutilsPatientBtns();
     } catch(e) { return false; }
   }
 
+  /* Le panneau se MASQUAIT quand le patient n'avait pas deux bilans. Masquer
+     est indiscernable d'une panne : le praticien ne peut pas savoir si la
+     fonction a disparu ou si elle ne s'applique pas a ce patient. Il reste
+     donc en place, la case desactivee et la raison ecrite. */
   window._crUpdateEvoPanel = function() {
-    var panel = document.getElementById('cr-evo-panel');
+    var panel  = document.getElementById('cr-evo-panel');
     if (!panel) return;
+    var toggle = document.getElementById('cr-evo-toggle');
+    var grid   = document.getElementById('cr-evo-grid');
+    var stat   = document.getElementById('cr-evo-status');
     var ok = _crEvoHasEnough();
-    panel.style.display = ok ? '' : 'none';
+    panel.style.display = '';
+    panel.style.opacity = ok ? '' : '.65';
+    if (toggle) toggle.disabled = !ok;
+    if (stat) {
+      stat.textContent = ok ? '' : 'Il faut au moins deux bilans pour tracer une évolution.';
+      stat.style.display = ok ? 'none' : '';
+    }
     if (!ok) {
-      var toggle = document.getElementById('cr-evo-toggle');
-      var grid   = document.getElementById('cr-evo-grid');
       if (toggle) toggle.checked = false;
       if (grid)   grid.style.display = 'none';
     }

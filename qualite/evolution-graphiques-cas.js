@@ -133,6 +133,37 @@ console.log('\nLes trois feuilles');
      outils.indexOf('.' + cls + '{') >= 0);
 });
 
+/* ── 7. Le panneau du courrier ne disparaît pas en silence ───────
+ * Il se masquait quand le patient n'avait pas deux bilans — indiscernable
+ * d'une panne. Et sa visibilité n'était calculée QU'au changement de
+ * sous-onglet, donc une seule fois, à DOMContentLoaded, quand l'iframe du
+ * bilan n'a encore chargé aucun bilan : sélectionner un patient ensuite ne
+ * la rejouait jamais. */
+console.log('\nLe panneau du courrier');
+var mkPanel = outils.slice(outils.indexOf('id="cr-evo-panel"'),
+                           outils.indexOf('id="cr-pevo-panel"'));
+ok('le panneau n\'est pas masqué dans le balisage',
+   !/id="cr-evo-panel"\s+style="display:none/.test(outils));
+ok('il porte une ligne d\'état', mkPanel.indexOf('id="cr-evo-status"') > 0);
+
+var fn = outils.slice(outils.indexOf('window._crUpdateEvoPanel = function'));
+fn = fn.slice(0, fn.indexOf('\n  };'));
+ok('la fonction ne masque plus le panneau',
+   !/panel\.style\.display\s*=\s*ok\s*\?/.test(fn) &&
+   fn.indexOf("panel.style.display = '';") > 0);
+ok('elle désactive la case au lieu de la faire disparaître',
+   /toggle\.disabled\s*=\s*!ok/.test(fn));
+ok('elle écrit la raison',
+   /stat\.textContent\s*=\s*ok\s*\?\s*''\s*:\s*'[^']+'/.test(fn) &&
+   /stat\.style\.display\s*=\s*ok\s*\?/.test(fn));
+
+var appels = (outils.match(/window\._crUpdateEvoPanel\(\)/g) || []).length;
+/* Quatre moments : crochet de sous-onglet, arrivee de l'import, arrivee des
+   tests par `storage`, changement de patient. En perdre un remet le panneau
+   dans l'etat qu'il avait au chargement de la page — vide. */
+ok('la visibilité se réévalue aux quatre moments', appels >= 4,
+   appels + ' appel(s)');
+
 console.log('');
 if (ko) { console.error(ko + ' cas en echec.'); process.exit(1); }
 console.log('Graphiques d\'evolution : tous les cas passent.');
