@@ -520,12 +520,6 @@ body.cr-resizing { cursor: col-resize; user-select: none; }
 .cr-lsi-row { display: none; gap: 5px; margin-top: 7px; }
 .cr-lsi-row.visible { display: flex; }
 .cr-lsi-row .cr-fg { flex: 1; margin-bottom: 0; }
-.cr-btn-gen {
-  width: 100%; padding: 10px 0; background: var(--accent); color: #fff;
-  border: none; border-radius: var(--radius); font-size: .86rem; font-weight: 600;
-  font-family: inherit; cursor: pointer; transition: background .15s; margin-top: 16px;
-}
-.cr-btn-gen:hover { background: var(--accent2); }
 .letter-card {
   background: #fff; border: 1px solid var(--border); border-radius: var(--radius);
   padding: 32px 36px; box-shadow: var(--shadow);
@@ -1433,8 +1427,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
           </div>
         </div>
 
-        <button class="cr-btn-gen" onclick="crGenerate()">✦ Générer le courrier</button>
-
         <!-- Évolution dans le PDF -->
         <div id="cr-evo-panel" style="display:none;margin-top:14px;padding:12px 14px;background:var(--surface2,#F7F6F3);border-radius:8px;border:1px solid var(--border,#E8E6E1)">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.82rem;font-weight:600;color:var(--text,#1A1917)">
@@ -1495,7 +1487,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
           </div>
           <div class="letter-date-bar" id="cr-letter-date"></div>
           <div class="letter-body" id="cr-letter-body">
-            <span class="letter-empty">Remplissez le formulaire et cliquez sur « ✦ Générer le courrier ».</span>
+            <span class="letter-empty">Le courrier se compose au fur et à mesure de votre saisie.</span>
           </div>
           <div id="cr-letter-graphs" style="display:none;margin-top:20px;padding-top:16px;border-top:1px dashed #C8C6C0;"></div>
         </div>
@@ -4819,6 +4811,9 @@ function _crTenterImport(){
      chargement de la page, le bilan ayant deja ecrit avant qu'on n'ecoute. */
   try { window.crChargerTestsBilan(); }
   catch(ex){ console.error('crChargerTestsBilan (auto):', ex); }
+  /* Premiere composition du courrier : le praticien doit le trouver deja
+     ecrit en arrivant, sans rien cliquer. */
+  try { window._crMajDifferee(); } catch(ex){}
   /* Remise a plat APRES les deux : rien de tout cela n'est du travail du
      praticien. `crImportPatient` marque deja, mais le chargement des tests
      vient ensuite et deferait ce marquage. */
@@ -4831,6 +4826,8 @@ window.addEventListener('storage', function(e){
     _crTestsMaj = setTimeout(function(){
       try { window.crChargerTestsBilan(); }
       catch(ex){ console.error('crChargerTestsBilan (storage):', ex); }
+      /* Les tests arrivent du bilan, pas d'une frappe ici. */
+      try { window._crMajDifferee(); } catch(ex){}
     }, 300);
     return;
   }
@@ -6015,9 +6012,10 @@ _updateOutilsPatientBtns();
     });
     var bm = document.getElementById('cr-bloc-medecin');
     if (bm) bm.style.display = (crAudience === 'patient') ? 'none' : '';
-    /* Le courrier deja genere porte le ton de l'ancien destinataire : le
-       laisser a l'ecran ferait croire qu'il a suivi la bascule. */
-    if (typeof crGenerate === 'function' && _crTexteCourant) { try { crGenerate(); } catch (e) {} }
+    /* Le courrier porte le ton de l'ancien destinataire : le laisser a l'ecran
+       ferait croire qu'il a suivi la bascule. La condition « s'il a deja ete
+       genere » a saute avec le bouton — il l'est desormais toujours. */
+    try { crGenerate(); } catch (e) {}
   };
 
   /* Prenom seul pour s'adresser au patient ; a defaut, le nom. */
@@ -7579,9 +7577,13 @@ _updateOutilsPatientBtns();
     crSetTemplate('suivi');
     var objEl = document.getElementById('cr-objet-txt'); if (objEl) objEl.value = '';
     var body = document.getElementById('cr-letter-body');
-    if (body) body.innerHTML = '<span class="letter-empty">Remplissez le formulaire et cliquez sur « ✦ Générer le courrier ».</span>';
+    if (body) body.innerHTML = '<span class="letter-empty">Le courrier se compose au fur et à mesure de votre saisie.</span>';
     var graphsDiv = document.getElementById('cr-letter-graphs');
     if (graphsDiv) { graphsDiv.innerHTML = ''; graphsDiv.style.display = 'none'; }
+    /* Le squelette se recompose aussitot : l'apercu ne reste jamais sur le
+       courrier du patient precedent, et le message d'attente ne s'affiche que
+       le temps du differe. */
+    try { window._crMajDifferee(); } catch(ex){}
 
     /* Tests fonctionnels importes du bilan : ils appartiennent au patient
        precedent. Sans ce vidage ils restaient listes et coches, et partaient
@@ -7657,7 +7659,10 @@ _updateOutilsPatientBtns();
        patient sans que personne n'ait rien saisi. */
     var _dec = Object.keys(_crTestsCoches || {}).filter(function(k){ return !_crTestsCoches[k]; });
     parts.push('F:' + _dec.sort().join(','));
-    parts.push('G:' + (_crTexteCourant ? '1' : '0'));
+    /* « Un courrier a ete genere » ne dit plus rien depuis qu'il l'est en
+       permanence : la valeur serait constante, et elle ferait passer le CR
+       pour entame des l'ouverture. Ce qui compte est deja compte — les champs
+       saisis, les pathologies, les tests decoches. */
     return parts.join('|');
   }
 
@@ -7705,7 +7710,17 @@ _updateOutilsPatientBtns();
     _crToast('Formulaire réinitialisé');
   };
 
-  window.crGenerate = function() {
+  /* Le courrier se regenere a la frappe — il n'y a plus de bouton pour le
+     demander. Ce bouton ne validait rien : il rafraichissait une vue, et son
+     oubli avait un cout reel. `Copier`, `PDF` et `Mail` ne lisent pas le
+     formulaire mais `_crTexteCourant` / `_crHtmlCourant`, fige au dernier clic :
+     une correction faite apres coup partait chez le medecin sans y figurer, et
+     rien ne le signalait.
+
+     Ces deux variables sont donc reecrites ICI, sur le meme chemin que
+     l'apercu. Les recalculer ailleurs ramenerait la peremption de l'ecran vers
+     le PDF — ou personne ne peut plus la voir. */
+  function _crRefreshLettre() {
     var blocs = crBuildLetter();
     /* La version TEXTE est conservee a part : `body.textContent` ne peut plus
        la fournir depuis que l apercu est du HTML riche — il rendrait un
@@ -7715,19 +7730,55 @@ _updateOutilsPatientBtns();
     _crHtmlCourant  = _crBlocsHtml(blocs);
     var body = document.getElementById('cr-letter-body');
     if (body) body.innerHTML = _crHtmlCourant;
+  }
+
+  /* Les graphiques sont a part : les redessiner a chaque frappe serait du
+     gachis, et ils ne dependent que de leurs propres cases. */
+  function _crRefreshGraphiques() {
     var graphsDiv = document.getElementById('cr-letter-graphs');
-    if (graphsDiv) {
-      var evoHtml  = _crGetEvoSectionHtml();
-      var pevoHtml = _crGetPevoSectionHtml();
-      if (evoHtml || pevoHtml) {
-        graphsDiv.innerHTML = evoHtml + pevoHtml;
-        graphsDiv.style.display = '';
-      } else {
-        graphsDiv.innerHTML = '';
-        graphsDiv.style.display = 'none';
-      }
+    if (!graphsDiv) return;
+    var evoHtml  = _crGetEvoSectionHtml();
+    var pevoHtml = _crGetPevoSectionHtml();
+    if (evoHtml || pevoHtml) {
+      graphsDiv.innerHTML = evoHtml + pevoHtml;
+      graphsDiv.style.display = '';
+    } else {
+      graphsDiv.innerHTML = '';
+      graphsDiv.style.display = 'none';
     }
-  };
+  }
+
+  /* Conservee : les cases de graphiques et la bascule de destinataire
+     l'appellent, et elle reste le point d'entree unique quand il faut tout
+     refaire d'un coup. */
+  window.crGenerate = function() { _crRefreshLettre(); _crRefreshGraphiques(); };
+
+  /* La frappe regenere le texte, jamais les graphiques. Ecoute deleguee sur le
+     panneau entier : un champ ajoute demain est couvert d'office — la liste
+     tenue a la main etait precisement le defaut a eviter.
+
+     Un court delai regroupe les frappes d'un meme mot : le courrier se
+     reconstruit en entier a chaque appel, et le refaire a chaque caractere
+     n'apporterait rien de plus a l'oeil. */
+  var _crMajTimer = null;
+  function _crMajDifferee() {
+    if (_crMajTimer) clearTimeout(_crMajTimer);
+    _crMajTimer = setTimeout(function () {
+      _crMajTimer = null;
+      try { _crRefreshLettre(); } catch (e) { console.error('aperçu CR:', e); }
+    }, 180);
+  }
+  window._crMajDifferee = _crMajDifferee;
+  ['input', 'change'].forEach(function (evt) {
+    document.addEventListener(evt, function (e) {
+      var p = document.getElementById('panel-cr');
+      if (!p || !e.target || !p.contains(e.target)) return;
+      /* Les cases de graphiques ont leur propre chemin : leur `onchange`
+         appelle `crGenerate`, qui refait aussi le dessin. */
+      if (e.target.id === 'cr-evo-toggle' || e.target.id === 'cr-pevo-toggle') return;
+      _crMajDifferee();
+    }, true);
+  });
 
   var _crTexteCourant = '', _crHtmlCourant = '';
 
@@ -7847,6 +7898,10 @@ _updateOutilsPatientBtns();
         try { _crMarquerPropre(); } catch(ex){}
       }
       else if (!auto) _crToast('Aucune donnée patient disponible — ouvrez un bilan d\'abord');
+      /* L'association ecrit les champs en direct : aucun evenement `input`
+         n'est emis, l'ecoute deleguee ne voit rien. Sans cet appel le courrier
+         resterait celui du patient precedent. */
+      try { window._crMajDifferee(); } catch(ex){}
     } catch(e) { console.error(e); if (!auto) _crToast('Impossible d\'associer le patient'); }
   };
 

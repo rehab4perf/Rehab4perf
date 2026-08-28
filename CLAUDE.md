@@ -985,6 +985,45 @@ destinataire à l'autre ne doit rien faire perdre.
 `crSetAudience` **régénère** le courrier affiché. Le laisser à l'écran avec le
 ton de l'ancien destinataire ferait croire qu'il a suivi la bascule.
 
+### L'aperçu se compose seul — plus de bouton « Générer »
+
+```bash
+node qualite/cr-apercu-vivant-cas.js
+```
+
+Le bouton ne validait rien : il rafraîchissait une vue. Et son oubli avait un
+coût réel — `Copier`, `PDF` et `Mail` ne lisent pas le formulaire mais
+`_crTexteCourant` / `_crHtmlCourant`, figés au dernier clic. Une correction
+faite après coup partait chez le médecin sans y figurer, et rien ne le
+signalait.
+
+**Le point de vigilance tient en une phrase : ces deux variables doivent être
+réécrites SUR LE MÊME CHEMIN que l'aperçu**, c'est-à-dire dans
+`_crRefreshLettre`. Les recalculer ailleurs ramènerait la péremption de l'écran
+vers le PDF — où personne ne peut plus la voir. Un cas de référence échoue s'il
+existe une seconde écriture.
+
+Les **graphiques** sont à part (`_crRefreshGraphiques`) : les redessiner à
+chaque frappe serait du gâchis, et ils ne dépendent que de leurs propres cases.
+`crGenerate` fait les deux et reste le point d'entrée quand il faut tout
+refaire — bascule de destinataire, cases de graphiques.
+
+**Une écriture programmatique n'émet aucun événement**, donc l'écoute déléguée
+ne la voit pas. Quatre endroits appellent `_crMajDifferee()` à la main :
+association des infos patient, arrivée des tests du bilan (au chargement et sur
+`storage`), et remise à zéro. Sans eux, l'aperçu resterait sur le patient
+précédent — le défaut même que le bouton causait.
+
+**« Associer les infos patient » RESTE.** L'association est déjà automatique au
+changement de patient ; ce bouton est la voie de rattrapage, et elle a une
+raison d'être : l'association ne s'exécute qu'une fois, exprès, pour ne pas
+écraser une correction manuelle. La rendre continue réécrirait la saisie du
+praticien en direct.
+
+**La clé `G:` a quitté `_crSignature`.** Elle disait « un courrier a été
+généré » : c'est désormais toujours vrai, la valeur serait constante, et elle
+ferait passer le CR pour entamé dès l'ouverture.
+
 ### Deux conventions de côté ne partagent pas un tableau
 
 Le bilan résout le côté **par région** : une hanche à côté atteint connu rend
