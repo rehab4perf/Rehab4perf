@@ -1110,6 +1110,24 @@ chaîne vide : sinon l'analyse de course se scinde en deux, « Conditions » et
 « Cadence » n'ayant pas de côté et ouvrant un premier lot avant « Zone
 d'attaque ».
 
+### Le ton d'une ligne n'invente pas de jugement
+
+« Aucune compensation » — le meilleur résultat possible — sortait en **orange**.
+Deux causes, à deux étages, et corriger l'une seule n'aurait rien réglé :
+
+- le bilan ne colore pas cette ligne : son ton est `muted`, ce qui veut dire
+  « rien à signaler », pas « attention ». `niveau` arrivait donc **vide** ;
+- `_crTagClasse` retombait alors sur son défaut, et **ce défaut était l'ambre**.
+
+`_crMedResumeTests` pose désormais `niveau:'ok'` en même temps que le statut
+« Aucune compensation », et le défaut de `_crTagClasse` est un ton **neutre**.
+L'ambre est un jugement : le rendre par défaut signalait au médecin une alerte
+que le praticien n'avait pas posée.
+
+La classe `neutre` a son style dans les **deux** rendus — `.lt-chip` du courrier
+et `.cr-tf-tag` de la liste à cocher. Écrite d'un seul côté, la pastille perd
+son fond sans que rien ne le signale.
+
 ### Un examen parfait doit se lire
 
 Sans case cochée ni observation, la ligne d'analyse fonctionnelle **n'apparaît

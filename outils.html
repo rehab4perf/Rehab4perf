@@ -382,6 +382,10 @@ body {
    declaration invalide, donc ignoree — la pastille serait restee sans fond. */
 .cr-tf-tag.mid { background:var(--orange-l); border-color:var(--orange-b); color:var(--orange-d); }
 .cr-tf-tag.bad { background:var(--red-l);    border-color:var(--red-b);    color:var(--red-d); }
+/* Le ton neutre suit le meme chemin que les trois autres : sans cette regle
+   la pastille perdrait son fond et sa bordure — la classe existe, le style
+   non, et rien ne le signale. */
+.cr-tf-tag.neutre { background:var(--surface2); border-color:var(--border2); color:var(--text2); }
 .cr-tf-vide { font-size:.74rem; color:var(--text3); font-style:italic; line-height:1.45; padding:4px 0; }
 .cr-tf-note { font-size:.65rem; color:var(--text3); font-style:italic; margin-top:7px; line-height:1.4; }
 
@@ -6307,11 +6311,15 @@ _updateOutilsPatientBtns();
   /* Le niveau vient du bilan, qui l'a calcule. Le deviner ici a partir des
      mots donnerait des couleurs fausses — « Facteur de risque » se lit
      rassurant pour une expression reguliere naive. Repli neutre si absent. */
+  /* Le DEFAUT est neutre, pas ambre. L'ambre est un jugement : rendre en
+     orange une ligne que le bilan n'a pas coloree, c'est signaler au medecin
+     une alerte que le praticien n'a pas posee. « Aucune compensation » — le
+     meilleur resultat possible — sortait ainsi en orange. */
   function _crTagClasse(t) {
     if (t && t.niveau === 'bad')  return 'bad';
     if (t && t.niveau === 'warn') return 'mid';
     if (t && t.niveau === 'ok')   return 'ok';
-    return 'mid';
+    return 'neutre';
   }
 
   window.crChargerTestsBilan = function () {
@@ -6507,6 +6515,10 @@ _updateOutilsPatientBtns();
     '.lt-chip.ok{background:#E8F5EE;border-color:#AECBBE;color:#1A4130}',
     '.lt-chip.mid{background:#FEF3EB;border-color:#DEB89C;color:#823903}',
     '.lt-chip.bad{background:#FDECEA;border-color:#D4AAA6;color:#752018}',
+    /* Ce que le bilan ne colore pas ne doit pas se colorer ici. L'ambre
+       etait le defaut : une ligne sans ton s'annoncait « attention » au
+       medecin alors que le bilan n'avait rien signale. */
+    '.lt-chip.neutre{background:#F1F0ED;border-color:#D3D1CB;color:#6B6860}',
     /* Conclusion et plan de traitement : deux encadres JUMEAUX, et non un
        encadre suivi de deux paragraphes nus. Le plan sortait en texte courant
        juste sous la conclusion mise en valeur — le lecteur ne voyait plus ou

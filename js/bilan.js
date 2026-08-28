@@ -492,6 +492,11 @@ function _crMedResumeTests() {
             _entree.statut = v.af.lignes.length + ' compensation' + (v.af.lignes.length > 1 ? 's' : '');
           } else {
             _entree.statut = 'Aucune compensation';
+            /* Et son NIVEAU avec : sans lui, le courrier retombe sur son ton
+               par defaut — l'ambre — et annonce en orange le meilleur resultat
+               possible. Le bilan ne colore pas cette ligne (ton « muted »),
+               ce qui ne veut pas dire « attention » mais « rien a signaler ». */
+            _entree.niveau = 'ok';
           }
           /* La synthese chiffree — « Côté sain 5/5 » — est retiree par
              `_crMedCriteres` sur les grilles a criteres conditionnels : elle

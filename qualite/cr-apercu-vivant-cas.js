@@ -193,5 +193,26 @@ console.log('\n  Deux types de courrier, et deux seulement');
           String(propre.slice(d, f).indexOf('_crMajDifferee()') !== -1));
 }
 
+
+console.log('\n  Le ton d\'une ligne n\'invente pas de jugement');
+{
+  /* « Aucune compensation » — le meilleur résultat possible — sortait en
+     ORANGE. Deux causes, à deux étages :
+
+     1. Le bilan ne colore pas cette ligne : son ton est « muted », ce qui veut
+        dire « rien à signaler », pas « attention ». `niveau` arrivait donc vide.
+     2. Le courrier retombait sur son défaut, et ce défaut était l'ambre. */
+  verifie('le défaut du ton est neutre', 'true',
+          /if \(t && t\.niveau === 'ok'\)   return 'ok';\s*return 'neutre';/.test(propre) + '');
+  verifie('l\'ambre n\'est plus le défaut', 'false',
+          /return 'ok';\s*\}\s*return 'mid';/.test(propre) + '');
+  /* La classe doit avoir son style dans les DEUX rendus — le courrier et la
+     liste à cocher — sinon la pastille perd son fond sans que rien ne le dise. */
+  verifie('le ton neutre est stylé dans le courrier', 'true',
+          /\.lt-chip\.neutre\{background:#F1F0ED/.test(propre) + '');
+  verifie('… et dans la liste à cocher', 'true',
+          /\.cr-tf-tag\.neutre \{ background:var\(--surface2\)/.test(propre) + '');
+}
+
 console.log('\n  ' + (nbKo ? '✗ ' + nbKo + ' échec(s), ' : '✓ ') + nbOk + ' cas vérifiés.\n');
 process.exit(nbKo ? 1 : 0);

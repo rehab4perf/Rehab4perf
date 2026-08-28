@@ -467,5 +467,19 @@ console.log('\n  Une seule liste de pages pour les deux lecteurs');
           String(/PAGES_TF\s*=\s*\[/.test(src)));
 }
 
+
+console.log('\n  « Aucune compensation » est un bon résultat');
+{
+  /* Le bilan laisse cette ligne sans ton — « muted » veut dire « rien à
+     signaler », pas « attention ». Sans niveau explicite, le courrier
+     retombait sur son défaut et annonçait en orange le meilleur résultat
+     possible. */
+  var propre = src.replace(/\/\*[\s\S]*?\*\//g, "");
+  var d = propre.indexOf("_entree.statut = 'Aucune compensation';");
+  verifie('le statut existe', 'true', String(d !== -1));
+  verifie('et il porte son niveau', 'true',
+          String(propre.slice(d, d + 220).indexOf("_entree.niveau = 'ok';") !== -1));
+}
+
 console.log('\n  ' + (nbKo ? '✗ ' + nbKo + ' échec(s), ' : '✓ ') + nbOk + ' cas vérifiés.\n');
 process.exit(nbKo ? 1 : 0);
