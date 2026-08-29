@@ -62,6 +62,25 @@ ok('le mot-symbole s\'efface', /\.logo-w \{[^}]*display:none/.test(m360));
 ok('le sigle, lui, reste', !/\.logo svg \{[^}]*display:none/.test(m360) &&
    !/\.logo \{[^}]*display:none/.test(m360));
 
+/* ── Le numéro de version, lisible depuis le téléphone ───────────
+ * Une correction déployée et une correction VUE sont deux choses
+ * différentes. Sans repère, impossible de distinguer « le correctif est
+ * faux » de « l'appareil sert encore l'ancien fichier » — deux tours ont été
+ * perdus faute de pouvoir trancher. Il est DÉRIVÉ de l'adresse réellement
+ * chargée par l'iframe : une constante tenue à la main aurait fini par
+ * mentir, ce qui est pire que pas de numéro du tout. */
+console.log('\nLe numéro de version se lit dans le centre d\'aide');
+ok('le pied du tiroir porte le numéro', src.indexOf('id="helpBuild"') > 0);
+ok('il est relu à chaque ouverture',
+   /_renderHelpDrawer\(\);[\s\S]{0,300}helpBuild[\s\S]{0,120}_r4pBuild\(\)/.test(src));
+var fn = src.slice(src.indexOf('function _r4pBuild'));
+fn = fn.slice(0, fn.indexOf('\n}'));
+ok('il est DÉRIVÉ de l\'iframe, pas d\'une constante',
+   /getElementById\('frame-prescription'\)/.test(fn) &&
+   /getAttribute\('src'\)/.test(fn) &&
+   !/return '20\d{6}/.test(fn));
+ok('… et il tombe sur « — » plutôt que de casser', /catch\s*\(e\)\s*\{ return '—'/.test(fn));
+
 console.log('');
 if (ko) { console.error(ko + ' cas en echec.'); process.exit(1); }
 console.log('Barre du haut : tous les cas passent.');

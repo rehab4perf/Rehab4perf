@@ -135,6 +135,15 @@ html, body { height:100%; overflow:hidden; background:#1A3A5C; }
   font-size:.8rem; font-weight:600; color:#2B5FA6; text-decoration:none;
 }
 .help-drawer-ft a:hover { text-decoration:underline; }
+/* ── Numéro de version, lisible depuis le téléphone ────────────────
+   Une correction déployée et une correction VUE sont deux choses
+   différentes : sans ce repère, on ne peut pas distinguer « le correctif
+   est faux » de « l'appareil sert encore l'ancien fichier ». Deux tours
+   ont été perdus faute de pouvoir trancher.
+   Il est DÉRIVÉ de l'adresse réellement chargée par l'iframe — pas d'une
+   constante à tenir à jour, qui aurait fini par mentir. */
+.help-drawer-ft { display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+.help-build { font-size:.68rem; color:#94a3b8; font-variant-numeric:tabular-nums; user-select:all; }
 .help-overlay {
   position:fixed; inset:0; background:rgba(10,20,35,.3); z-index:940; display:none;
 }
@@ -740,6 +749,17 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 <!-- Drawer d'aide contextuel -->
 <div class="help-overlay" id="helpOverlay" onclick="closeHelpDrawer()"></div>
+<script>
+/* Le numéro se lit sur l'adresse que l'iframe a REELLEMENT chargée : c'est le
+   seul repère qui ne peut pas diverger du fichier servi. */
+function _r4pBuild(){
+  try{
+    var f = document.getElementById('frame-prescription');
+    var m = (f && f.getAttribute('src') || '').match(/[?&]v=([\w-]+)/);
+    return m ? m[1] : '—';
+  }catch(e){ return '—'; }
+}
+</script>
 <div class="help-drawer" id="helpDrawer">
   <div class="help-drawer-hd">
     <span style="font-size:1rem;">?</span>
@@ -749,6 +769,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   <div class="help-drawer-body" id="helpDrawerBody"></div>
   <div class="help-drawer-ft">
     <a id="helpDrawerLink" href="aide.html" target="_blank" rel="noopener">Ouvrir le centre d'aide complet →</a>
+    <span class="help-build" id="helpBuild" title="Version chargée">—</span>
   </div>
 </div>
 
@@ -857,14 +878,14 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   </div>
 </div>
 <div class="frame-wrap">
-  <iframe id="frame-bilan"        src="bilan.html?v=20260829b"        class="active"></iframe>
-  <iframe id="frame-outils"       src="outils.html?v=20260829b"       ></iframe>
-  <iframe id="frame-prescription" src="programme.html?v=20260829c" ></iframe>
+  <iframe id="frame-bilan"        src="bilan.html?v=20260829d"        class="active"></iframe>
+  <iframe id="frame-outils"       src="outils.html?v=20260829d"       ></iframe>
+  <iframe id="frame-prescription" src="programme.html?v=20260829d" ></iframe>
   <iframe id="frame-patients"     src="patients.html?v=20260817b"     ></iframe>
   <iframe id="frame-account"      src="account.html?v=20260817b"      ></iframe>
 </div>
 
-<script src="js/aide-content.js?v=20260829b"></script>
+<script src="js/aide-content.js?v=20260829d"></script>
 <script>
 /* ── Constantes localStorage ─────────────────────────────────────────
    Source unique de vérité pour toutes les clés de stockage local.
@@ -1436,6 +1457,10 @@ function toggleHelpDrawer(e){
   var isOpen = drawer.classList.contains('open');
   if(isOpen){ closeHelpDrawer(); return; }
   _renderHelpDrawer();
+  /* Le numéro se relit à chaque ouverture : il suit l'iframe, donc il reste
+     juste même après un changement de version en cours de session. */
+  var b = document.getElementById('helpBuild');
+  if(b) b.textContent = 'v ' + _r4pBuild();
   drawer.classList.add('open');
   document.getElementById('helpOverlay').classList.add('open');
 }
