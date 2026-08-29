@@ -5643,10 +5643,28 @@ function _newBilanSuiviConfirm(){
   _resetBilanFields();
   document.querySelectorAll('.evo-delta').forEach(function(e){ e.remove(); });
 
+  /* Ces champs de la page Infos sont un ETAT DU JOUR, pas une histoire. Les
+     reporter ferait enregistrer dans le suivi une douleur qui n'a jamais ete
+     remesuree — et `f-eva` / `f-eva-max` alimentent les courbes d'Evolution
+     (« Douleur EVA (repos) », « EVA max (7 jours) ») ainsi que la ligne
+     « EVA repos » du courrier au medecin : le report s'y lirait comme un
+     plateau, c'est-a-dire comme une douleur stable, alors que rien n'a ete
+     mesure. Un faux signal clinique, et qui sort du cabinet.
+
+     Ils repartent donc vides. Rien n'est perdu de vue pour autant :
+     `_blShowInheritedHints` affiche l'ancienne valeur en gris derriere le
+     champ, comme partout ailleurs dans un bilan de suivi.
+
+     `f-pain-zones` n'en fait PAS partie, et c'est deliberé : les zones portent
+     le cote atteint, que le CR nomme en toutes lettres. Les vider obligerait a
+     redessiner a chaque seance et ferait perdre la resolution du cote. */
+  var A_REMESURER = { 'f-eva':1, 'f-eva-max':1, 'f-eva-obs':1, 'f-douleur':1 };
+
   // Pré-remplir uniquement les champs de page-infos (infos patient)
   var mergedDonnees = _buildMergedDonnees(_allBilans);
   var infoKeys = {};
   document.querySelectorAll('#page-infos input[id], #page-infos select[id], #page-infos textarea[id]').forEach(function(el){
+    if(A_REMESURER[el.id]) return;
     if(mergedDonnees.hasOwnProperty(el.id)) infoKeys[el.id] = mergedDonnees[el.id];
   });
   _deserializeBilan(infoKeys);

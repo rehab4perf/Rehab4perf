@@ -177,5 +177,70 @@ console.log('\n  Garde-fous — le garde d\'entrée et le style de la marque');
           String(/input\.bl-ghost-grise:not\(\[type=checkbox\]\):not\(\[type=radio\]\)/.test(css)));
 }
 
+/* ── Ce qui se REPORTE d'un bilan de suivi, et ce qui doit être remesuré ──
+ *
+ * Les champs de la page Infos étaient TOUS pré-remplis avec de vraies valeurs.
+ * La douleur en fait partie — or c'est un état du jour, pas une histoire.
+ * Reportée puis sauvegardée sans y toucher, elle entrait dans le suivi comme
+ * une mesure : `f-eva` et `f-eva-max` alimentent les courbes « Douleur EVA
+ * (repos) » et « EVA max (7 jours) », où le report se lit comme un PLATEAU —
+ * une douleur stable, alors que rien n'a été mesuré. Et la ligne « EVA repos »
+ * part au médecin. Un faux signal clinique, qui sort du cabinet.
+ *
+ * On exécute ici le VRAI bloc de pré-remplissage, avec des doublures : le
+ * réécrire ferait passer ce cas au vert quoi qu'il advienne du produit. */
+console.log('\n  Ce qui se reporte au bilan de suivi');
+{
+  var d0 = src.indexOf('var A_REMESURER');
+  var d1 = src.indexOf('_deserializeBilan(infoKeys);', d0);
+  verifie('le bloc de pré-remplissage est identifiable', 'true', String(d0 > 0 && d1 > d0));
+
+  var champs = [
+    'f-nom', 'f-motif', 'f-date-accident', 'f-atcd', 'f-mecanisme',  // histoire
+    'f-douleur', 'f-eva', 'f-eva-max', 'f-eva-obs',                  // état du jour
+    'f-pain-zones', 'f-cote'                                          // portent le côté
+  ];
+  var recu = null;
+  /* eslint-disable no-new-func */
+  new Function('document', '_buildMergedDonnees', '_deserializeBilan', '_allBilans',
+    src.slice(d0, d1) + '_deserializeBilan(infoKeys);')(
+    { querySelectorAll: function () { return champs.map(function (id) { return { id: id }; }); } },
+    function () { var o = {}; champs.forEach(function (c) { o[c] = 'ancienne valeur'; }); return o; },
+    function (k) { recu = k; },
+    []
+  );
+
+  verifie('la description de la douleur ne se reporte pas', 'false', String(recu.hasOwnProperty('f-douleur')));
+  verifie('l\'EVA du jour ne se reporte pas',              'false', String(recu.hasOwnProperty('f-eva')));
+  verifie('l\'EVA max 7 jours ne se reporte pas',          'false', String(recu.hasOwnProperty('f-eva-max')));
+  verifie('les observations douleur ne se reportent pas',  'false', String(recu.hasOwnProperty('f-eva-obs')));
+
+  /* Le reste de l'anamnèse est une histoire : la retaper à chaque séance
+     serait absurde, et l'oublier appauvrirait le dossier. */
+  ['f-nom', 'f-motif', 'f-date-accident', 'f-atcd', 'f-mecanisme'].forEach(function (id) {
+    verifie(id + ' se reporte bien', 'true', String(recu.hasOwnProperty(id)));
+  });
+
+  /* Délibéré : les zones portent le côté atteint, que le CR nomme en toutes
+     lettres. Les vider obligerait à redessiner à chaque séance. */
+  verifie('les zones de douleur se reportent (elles portent le côté)', 'true',
+          String(recu.hasOwnProperty('f-pain-zones')));
+  verifie('le côté atteint se reporte', 'true', String(recu.hasOwnProperty('f-cote')));
+
+  /* L'ancienne valeur doit rester VISIBLE, en gris : le praticien la retape,
+     il ne la devine pas. L'ordre compte — le fond gris ne se pose que sur un
+     champ vide, donc après le pré-remplissage. */
+  var iPre = src.indexOf('_deserializeBilan(infoKeys);');
+  var iFond = src.indexOf('_blShowInheritedHints(_prevDonnees, true)', iPre);
+  verifie('le fond gris est posé APRÈS le pré-remplissage', 'true', String(iFond > iPre));
+
+  /* Le motif de la règle : ces deux champs sont des métriques d'Évolution.
+     S'ils cessaient de l'être, la règle mériterait d'être rediscutée. */
+  verifie('f-eva est bien une métrique d\'Évolution', 'true',
+          String(/\{id:'f-eva',[^}]*cat:'Douleur'\}/.test(src)));
+  verifie('f-eva-max aussi', 'true',
+          String(/\{id:'f-eva-max',[^}]*cat:'Douleur'\}/.test(src)));
+}
+
 console.log('\n  ' + (nbKo ? '✗ ' + nbKo + ' échec(s), ' : '✓ ') + nbOk + ' cas vérifiés.\n');
 process.exit(nbKo ? 1 : 0);

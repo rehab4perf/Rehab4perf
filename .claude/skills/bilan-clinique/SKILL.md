@@ -324,6 +324,41 @@ porte l'information. Une perte qui arrondit à zéro ne s'écrit jamais « -0 »
 du rapport brut et le seuil « positif si < 90 % » ; sous une colonne de perte
 ils sont faux. `qualite/lsi-cas.js` échoue si l'un des deux réapparaît.
 
+## Ce qui se reporte d'un bilan de suivi — la douleur, non
+
+```bash
+node qualite/heritage-suivi-cas.js
+```
+
+Le bilan de suivi pré-remplit la page Infos depuis l'historique. Il les
+pré-remplissait **tous**, la douleur comprise — or c'est un **état du jour**,
+pas une histoire.
+
+Reportée puis sauvegardée sans qu'on y touche, elle entrait dans le suivi comme
+une mesure. `f-eva` et `f-eva-max` alimentent les courbes « Douleur EVA
+(repos) » et « EVA max (7 jours) » : le report s'y lit comme un **plateau**,
+c'est-à-dire une douleur stable, alors que rien n'a été mesuré. Et la ligne
+« EVA repos » part au médecin. Un faux signal clinique, et qui sort du cabinet.
+
+`A_REMESURER` dans `_newBilanSuiviConfirm` écarte donc `f-eva`, `f-eva-max`,
+`f-eva-obs` et `f-douleur`. Rien n'est perdu de vue : `_blShowInheritedHints`
+affiche l'ancienne valeur en gris derrière le champ, comme partout ailleurs
+dans un suivi — d'où l'ordre, le fond gris ne se posant que sur un champ vide.
+
+**`f-pain-zones` et `f-cote` n'en font PAS partie, et c'est délibéré** : les
+zones portent le côté atteint, que le CR nomme en toutes lettres. Les vider
+obligerait à redessiner à chaque séance et ferait perdre la résolution du côté.
+
+Le reste de l'anamnèse se reporte : mécanisme, antécédents, diagnostic, dates.
+Les retaper à chaque séance serait absurde, et les oublier appauvrirait le
+dossier.
+
+**Restent à trancher** — trois champs sont à la frontière : « Retentissement sur
+la vie quotidienne », « Facteurs aggravants » et « Facteurs soulageants »
+évoluent avec la récupération, mais ils décrivent un profil plus qu'une mesure
+du jour, et aucun n'alimente de courbe. Ils continuent de se reporter. C'est une
+décision clinique : ne pas la changer sans le praticien.
+
 ## Motifs de bilan — onglet Patients
 
 ```bash
