@@ -1976,6 +1976,14 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   font-variant-numeric:tabular-nums; background:var(--warn-l); border-radius:20px;
   padding:2px 8px; margin-left:2px; }
 .cal-ech[data-kind="reeduc"] .cal-ech-jm { color:var(--accent); background:var(--accent-ll); }
+/* « nouveau » : une échéance déclarée par l'athlète et pas encore prise en
+   compte. Elle ne dit pas QUI l'a saisie — une fois acceptée la source ne
+   change plus rien — mais qu'il reste un geste à faire. Elle disparaît au
+   clic, et l'athlète voit alors que c'est acté. */
+.cal-ech-neuf { font-size:var(--fs-2xs); font-weight:800; text-transform:uppercase;
+  letter-spacing:.06em; color:#fff; background:var(--accent); border-radius:20px;
+  padding:2px 7px; margin-left:2px; }
+.cal-ech:has(.cal-ech-neuf) { border-left-color:var(--accent); }
 .cal-ech-plus { font-size:var(--fs-xs); color:var(--muted); font-family:inherit;
   background:none; border:none; cursor:pointer; padding:4px 6px; }
 .cal-ech-plus:hover { color:var(--accent); }
@@ -4548,6 +4556,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 </div>
 
-<script src="js/prog-main.js?v=20260829h"></script>
+<script src="js/prog-main.js?v=20260829i"></script>
 </body>
 </html>

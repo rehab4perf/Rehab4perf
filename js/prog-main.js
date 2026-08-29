@@ -95,12 +95,46 @@ function _loadObjectifsForPatient(){
     _echTout = false;
     try{ _renderEcheances(); }catch(ex){}
     if(typeof renderCalendar === 'function') renderCalendar();
+    _chargerEcheancesAthlete(_forPatientId);
   })
   .catch(function(){
     if(!_progPatient || _progPatient.id !== _forPatientId) return;
     _patientObjectifs = [];
   });
 }
+/* Les echeances declarees par l'athlete vivent dans leur propre table
+   (`athlete_objectifs`), pas dans le bilan : ce que l'athlete ecrit n'a pas
+   ete recueilli un jour d'examen, et l'y ranger le ferait passer pour une
+   observation clinique.
+
+   TANT QUE LA MIGRATION N'EST PAS APPLIQUEE, cette table n'existe pas et la
+   requete rend une erreur : on l'avale sans bruit. L'agenda continue alors
+   d'afficher les seuls objectifs du bilan, exactement comme avant. C'est ce
+   qui permet de deployer ce code avant de toucher au schema. */
+function _chargerEcheancesAthlete(pid){
+  if(!pid) return;
+  var url = SUPA_URL_P + '/rest/v1/athlete_objectifs?patient_id=eq.' + pid
+          + '&select=id,texte,date,repris_at&order=date.asc';
+  _fetchRetry(url, { headers: _sbHeaders() })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(data){
+      if(!data || !Array.isArray(data)) return;              // table absente
+      if(!_progPatient || String(_progPatient.id) !== String(pid)) return;
+      var deja = {};
+      _patientObjectifs.forEach(function(o){ deja[o.text + '|' + o.date] = 1; });
+      data.forEach(function(e){
+        /* Une echeance reprise a souvent ete recopiee dans le bilan : sans ce
+           garde-fou elle s'afficherait deux fois, une par source. */
+        if(deja[e.texte + '|' + e.date]) return;
+        _patientObjectifs.push({ text:e.texte, date:e.date, source:'athlete',
+                                 echId:e.id, repris:!!e.repris_at });
+      });
+      try{ _renderEcheances(); }catch(ex){}
+      if(typeof _renderCalendarUI === 'function') _renderCalendarUI();
+    })
+    .catch(function(){});
+}
+
 // Repère "🎯 <objectif>" sur le jour concerné, même emplacement que le
 // libellé de cycle (avant les chips de séances).
 function _dayObjectifLabelHtml(dateStr, cls){
@@ -136,13 +170,17 @@ function _renderEcheances(){
   /* `_patientObjectifs` ne contient deja que les objectifs DATES : sans date,
      un objectif n'a rien a dire a un agenda, et il reste dans le bilan. */
   var liste = (_patientObjectifs || []).map(function(o){
-    /* Le repere du jour (.cal-day-objectif-lbl) est ambre et porte 🎯 : la
-       bande doit lui ressembler, sinon la meme echeance se presente sous deux
-       identites selon l'endroit ou on la regarde. Le filet bleu et le ⚑ sont
-       reserves a ce qui sera explicitement marque comme objectif de
-       reeducation — aujourd'hui rien ne l'est. */
+    /* Toutes les echeances portent la meme identite — 🎯 ambre, comme le
+       repere du jour : la meme echeance presentee sous deux couleurs selon
+       l'endroit ferait douter que ce soit la meme.
+
+       Ce qui se distingue n'est pas QUI l'a saisie — une fois l'echeance
+       acceptee, la source ne change plus rien — mais s'il RESTE QUELQUE CHOSE
+       A FAIRE : une echeance declaree par l'athlete et pas encore prise en
+       compte porte une marque, et disparait des qu'on l'accepte. */
     return { text:o.text, date:o.date, jours:_echJours(o.date),
-             kind:o.source === 'praticien' ? 'reeduc' : 'sport' };
+             kind:'sport', echId:o.echId,
+             aVoir:o.source === 'athlete' && !o.repris };
   }).filter(function(o){ return o.jours !== null && o.jours >= 0; })
     .sort(function(x,y){ return x.jours - y.jours; });
 
@@ -154,12 +192,14 @@ function _renderEcheances(){
   montrees.forEach(function(o){
     var jm = o.jours === 0 ? "aujourd'hui" : 'J-' + o.jours;
     h += '<button class="cal-ech" data-kind="' + o.kind + '"'
-      +  ' onclick="_echAller(\'' + o.date + '\')"'
+      +  ' onclick="' + (o.aVoir ? '_echPrendreEnCompte(' + o.echId + ',\'' + o.date + '\')' : '_echAller(\'' + o.date + '\')') + '"'
       +  ' title="' + escH(o.text) + ' — ' + o.date + '">'
       +  '<span class="cal-ech-ico">' + (o.kind === 'sport' ? '🎯' : '⚑') + '</span>'
       +  '<span class="cal-ech-txt"><b>' + escH(o.text.length > 26 ? o.text.slice(0,26) + '…' : o.text) + '</b>'
       +  '<span class="cal-ech-date">' + _echDateLisible(o.date) + '</span></span>'
-      +  '<span class="cal-ech-jm">' + jm + '</span></button>';
+      +  '<span class="cal-ech-jm">' + jm + '</span>'
+      +  (o.aVoir ? '<span class="cal-ech-neuf" title="Déclarée par l\'athlète — cliquez pour la prendre en compte">nouveau</span>' : '')
+      +  '</button>';
   });
   if(liste.length > _ECH_MAX){
     h += '<button class="cal-ech-plus" onclick="_echToutBasculer()">'
@@ -186,6 +226,25 @@ function _echAller(dateStr){
   }
   _renderCalendarUI();
 }
+/* Accepter, c'est dire a l'athlete que c'est vu : sans ce retour il declare
+   dans le vide et ne sait pas si son echeance est restee lettre morte. Et
+   cote base, `repris_at` verrouille l'edition — des cycles vont etre cales
+   dessus, la date ne doit plus bouger sous nos pieds. */
+function _echPrendreEnCompte(id, dateStr){
+  if(!id){ _echAller(dateStr); return; }
+  _fetchRetry(SUPA_URL_P + '/rest/v1/athlete_objectifs?id=eq.' + id, {
+    method:'PATCH',
+    headers: Object.assign({ 'Prefer':'return=minimal' }, _sbHeaders()),
+    body: JSON.stringify({ repris_at: new Date().toISOString() })
+  }).then(function(r){
+    if(!r.ok) return;
+    _patientObjectifs.forEach(function(o){ if(o.echId === id) o.repris = true; });
+    _renderEcheances();
+    if(typeof _showToast === 'function') _showToast('🎯 Échéance prise en compte');
+  }).catch(function(){}).then(function(){ _echAller(dateStr); });
+}
+window._echPrendreEnCompte = _echPrendreEnCompte;
+
 function _echToutBasculer(){ _echTout = !_echTout; _renderEcheances(); }
 window._echAller = _echAller;
 window._echToutBasculer = _echToutBasculer;

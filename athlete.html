@@ -694,6 +694,47 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 </head>
 <body>
 
+<style>
+/* ── Mes objectifs ───────────────────────────────────────────────────
+   L'athlete declare ses echeances lui-meme, au lieu de les annoncer en
+   seance pour que le praticien les ressaisisse. La pastille verte « pris en
+   compte » est le coeur du dispositif : sans ce retour il declare dans le
+   vide et ne sait pas si son echeance est restee lettre morte. */
+.ech-sec { margin-top:18px; }
+.ech-t { font-size:var(--fs-2xs); font-weight:700; text-transform:uppercase;
+  letter-spacing:.08em; color:var(--text3); margin:16px 2px 8px; }
+.ech { display:flex; align-items:center; gap:11px; background:var(--surface);
+  border:1px solid var(--border); border-left:3px solid var(--warn);
+  border-radius:9px; padding:11px 13px; margin-bottom:8px; }
+.ech-val { border-left-color:var(--ok); }
+.ech-ico { font-size:var(--fs-lg); line-height:1; }
+.ech-main { flex:1; min-width:0; }
+.ech-nom { font-size:var(--fs-md); font-weight:700; color:var(--text); }
+.ech-d { font-size:var(--fs-xs); color:var(--muted); margin-top:2px; }
+.ech-src { font-weight:600; color:var(--text3); }
+.ech-val .ech-src { color:var(--ok); }
+.ech-jm { font-size:var(--fs-sm); font-weight:800; color:var(--warn);
+  font-variant-numeric:tabular-nums; background:var(--warn-l); border-radius:20px;
+  padding:3px 10px; white-space:nowrap; }
+.ech-val .ech-jm { color:var(--ok); background:var(--ok-l); }
+.ech-suppr { background:none; border:none; color:var(--text3); font-size:var(--fs-lg);
+  cursor:pointer; padding:2px 4px; line-height:1; }
+.ech-ajout { background:var(--surface); border:1px dashed var(--border);
+  border-radius:9px; padding:13px; }
+.ech-ajout label { display:block; font-size:var(--fs-2xs); font-weight:700;
+  text-transform:uppercase; letter-spacing:.06em; color:var(--text3); margin:0 0 3px; }
+.ech-ajout input { width:100%; box-sizing:border-box; font-family:inherit;
+  font-size:var(--fs-md); color:var(--text); border:1px solid var(--border);
+  border-radius:7px; padding:9px 10px; background:var(--surface); outline:none; }
+.ech-ajout input:focus { border-color:var(--accent); }
+.ech-champ { margin-bottom:10px; }
+.ech-btn { width:100%; font-family:inherit; font-size:var(--fs-md); font-weight:700;
+  color:#fff; background:var(--accent); border:none; border-radius:7px;
+  padding:11px; cursor:pointer; }
+.ech-btn:disabled { opacity:.5; }
+.ech-aide { font-size:var(--fs-xs); color:var(--text3); line-height:1.5; margin-top:9px; }
+.ech-vide { font-size:var(--fs-sm); color:var(--text3); font-style:italic; padding:6px 2px 12px; }
+</style>
 <div class="app-header">
   <div class="header-left">
     <div class="header-logo"><svg viewBox="8 34 164 104" width="26" height="16" aria-hidden="true"><g stroke="#4A90D9" stroke-width="17" stroke-linecap="round" fill="none"><line x1="20" y1="118" x2="56" y2="104"/><line x1="70" y1="122" x2="100" y2="84"/><line x1="112" y1="125" x2="134" y2="66"/><line x1="158" y1="128" x2="158" y2="46"/></g></svg><span class="logo-w"><span class="logo-r">rehab<sup class="logo-e">4</sup></span><span class="logo-p">perf</span></span></div>
@@ -1473,7 +1514,103 @@ function _renderCalGrid(){
   else if(_calView === 'day') html += _buildDayHtml();
   else                        html += _buildMonthHtml();
   html += _buildUpcomingHtml();
+  html += '<div id="echSection"></div>';
   document.getElementById('mainContent').innerHTML = html;
+  _echCharger();
+}
+
+/* ── Mes objectifs ─────────────────────────────────────────────────
+   TANT QUE LA MIGRATION `20260829_athlete_objectifs.sql` N'EST PAS
+   APPLIQUEE, la table n'existe pas : la requete echoue et la section reste
+   entierement masquee. Rien ne casse, rien ne s'affiche a moitie. C'est ce
+   qui permet de deployer cet ecran avant de toucher au schema. */
+var _echListe = null;
+
+function _echJoursAth(d){
+  var dt = new Date(d + 'T00:00:00'); if(isNaN(dt)) return null;
+  var a = new Date(); a.setHours(0,0,0,0);
+  return Math.round((dt - a) / 86400000);
+}
+function _echDateLisibleAth(d){
+  var M=['janvier','février','mars','avril','mai','juin','juillet','août',
+         'septembre','octobre','novembre','décembre'];
+  var p=d.split('-'); return parseInt(p[2],10)+' '+M[parseInt(p[1],10)-1]+' '+p[0];
+}
+function _echCharger(){
+  if(!_patientId) return;
+  fetch(SUPA_URL + '/rest/v1/athlete_objectifs?patient_id=eq.' + _patientId
+        + '&select=id,texte,date,repris_at&order=date.asc',
+        { headers:{ 'apikey':SUPA_KEY, 'Content-Type':'application/json' } })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(d){ if(!Array.isArray(d)) return; _echListe = d; _echRendre(); })
+    .catch(function(){});
+}
+function _echRendre(){
+  var box = document.getElementById('echSection');
+  if(!box || _echListe === null) return;
+  var auj = [], passees = [];
+  _echListe.forEach(function(e){
+    var j = _echJoursAth(e.date);
+    if(j === null) return;
+    (j >= 0 ? auj : passees).push({ e:e, j:j });
+  });
+  auj.sort(function(a,b){ return a.j - b.j; });
+
+  var h = '<div class="ech-sec"><div class="ech-t">Mes objectifs — à venir</div>';
+  if(!auj.length) h += '<div class="ech-vide">Aucune échéance. Ajoutez-en une ci-dessous.</div>';
+  auj.forEach(function(o){
+    var pris = !!o.e.repris_at;
+    h += '<div class="ech'+(pris?' ech-val':'')+'">'
+      +  '<div class="ech-ico">🎯</div><div class="ech-main">'
+      +  '<div class="ech-nom">'+escH(o.e.texte)+'</div>'
+      +  '<div class="ech-d">'+_echDateLisibleAth(o.e.date)+' · <span class="ech-src">'
+      +  (pris ? 'pris en compte' : 'en attente de validation')+'</span></div></div>'
+      +  '<div class="ech-jm">'+(o.j===0?"aujourd'hui":'J-'+o.j)+'</div>'
+      /* Modifiable tant que ce n'est pas repris : ensuite des cycles sont
+         cales dessus, et la base refuse de toute facon l'ecriture. */
+      +  (pris ? '' : '<button class="ech-suppr" onclick="_echSupprimer('+o.e.id+')" title="Retirer">×</button>')
+      +  '</div>';
+  });
+
+  h += '<div class="ech-t">Ajouter une échéance</div><div class="ech-ajout">'
+    +  '<div class="ech-champ"><label>Intitulé</label>'
+    +  '<input type="text" id="echNom" maxlength="120" placeholder="UTMB, retour au foot, marathon…"></div>'
+    +  '<div class="ech-champ"><label>Date</label><input type="date" id="echDate"></div>'
+    +  '<button class="ech-btn" id="echBtn" onclick="_echAjouter()">Ajouter</button>'
+    +  '<p class="ech-aide">Votre kiné la verra dans son agenda et pourra caler vos cycles dessus. '
+    +  'Vous pourrez la retirer tant qu\'elle n\'est pas prise en compte.</p></div>';
+
+  if(passees.length){
+    h += '<div class="ech-t">Passées</div>';
+    passees.reverse().forEach(function(o){
+      h += '<div class="ech" style="opacity:.55"><div class="ech-ico">🎯</div>'
+        +  '<div class="ech-main"><div class="ech-nom">'+escH(o.e.texte)+'</div>'
+        +  '<div class="ech-d">'+_echDateLisibleAth(o.e.date)+'</div></div></div>';
+    });
+  }
+  box.innerHTML = h + '</div>';
+}
+function _echAjouter(){
+  var n = document.getElementById('echNom'), d = document.getElementById('echDate');
+  var b = document.getElementById('echBtn');
+  var txt = (n.value||'').trim();
+  if(!txt || !d.value){ alert('Un intitulé et une date, s\'il te plaît.'); return; }
+  b.disabled = true; b.textContent = 'Envoi…';
+  fetch(SUPA_URL + '/rest/v1/athlete_objectifs', {
+    method:'POST',
+    headers:{ 'apikey':SUPA_KEY, 'Content-Type':'application/json', 'Prefer':'return=minimal' },
+    body: JSON.stringify({ patient_id:_patientId, texte:txt, date:d.value })
+  }).then(function(r){
+    b.disabled = false; b.textContent = 'Ajouter';
+    if(!r.ok){ alert('Impossible d\'enregistrer. Réessaie.'); return; }
+    n.value=''; d.value=''; _echCharger();
+  }).catch(function(){ b.disabled=false; b.textContent='Ajouter'; alert('Erreur réseau. Réessaie.'); });
+}
+function _echSupprimer(id){
+  if(!confirm('Retirer cette échéance ?')) return;
+  fetch(SUPA_URL + '/rest/v1/athlete_objectifs?id=eq.' + id, {
+    method:'DELETE', headers:{ 'apikey':SUPA_KEY, 'Prefer':'return=minimal' }
+  }).then(function(){ _echCharger(); }).catch(function(){});
 }
 
 /* ── Vue MOIS ── */

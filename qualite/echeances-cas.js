@@ -94,8 +94,16 @@ ok('le repère du jour est ambre',
 ok('la pastille par défaut l\'est aussi',
    /\.cal-ech \{[^}]*border-left:3px solid var\(--amrap\)/.test(html.replace(/\n/g, ' ')));
 ok('… et porte le même 🎯', une.innerHTML.indexOf('🎯') > 0);
-ok('le bleu est réservé à ce qui est marqué « praticien »',
-   /kind:o\.source === 'praticien' \? 'reeduc' : 'sport'/.test(js));
+/* La distinction ne porte PAS sur qui a saisi — une fois l'échéance
+   acceptée, la source ne change plus rien — mais sur ce qui reste à faire. */
+ok('toutes les échéances portent la même identité', /kind:'sport'/.test(js));
+var neuve = rendre([{ text:'UTMB', date:jour(24), source:'athlete', echId:7, repris:false }]);
+ok('une échéance déclarée et non reprise est marquée', neuve.innerHTML.indexOf('nouveau') > 0);
+ok('… et son clic la prend en compte', neuve.innerHTML.indexOf('_echPrendreEnCompte(7') > 0);
+var reprise = rendre([{ text:'UTMB', date:jour(24), source:'athlete', echId:7, repris:true }]);
+ok('une fois reprise, plus aucune marque', reprise.innerHTML.indexOf('nouveau') < 0);
+ok('… et son clic navigue comme les autres', reprise.innerHTML.indexOf('_echAller') > 0);
+ok('un objectif du bilan n\'est jamais marqué', une.innerHTML.indexOf('nouveau') < 0);
 
 console.log('\nLe câblage');
 ok('la bande a sa place dans la page', html.indexOf('id="calEcheances"') > 0);
@@ -109,6 +117,117 @@ ok('elle se redessine à au moins trois moments',
 ok('le clic mène au mois de l\'échéance', /function _echAller\(dateStr\)/.test(js) &&
    /_calYear = parseInt/.test(js));
 
-console.log('');
-if (ko) { console.error(ko + ' cas en echec.'); process.exit(1); }
-console.log('Bande d\'echeances : tous les cas passent.');
+/* ── L'écran athlète et sa migration ─────────────────────────────
+ * L'athlète n'écrit aujourd'hui que dans `athlete_feedback`. Lui ouvrir
+ * `patients` — la table qui porte nom, prénom et date de naissance — pour
+ * qu'il déclare une date de course serait un très mauvais échange : d'où une
+ * table dédiée, et une migration NON APPLIQUÉE tant que le praticien ne l'a
+ * pas décidé.
+ *
+ * Le code est donc écrit pour vivre SANS elle : requête en échec = section
+ * entièrement masquée, agenda inchangé. C'est ce qui permet de déployer avant
+ * de toucher au schéma, et c'est le cas le plus important d'ici. */
+console.log('\nL\'écran athlète survit à l\'absence de la table');
+var ath = fs.readFileSync(path.join(R, 'athlete.html'), 'utf8');
+
+var D0 = 'var _echListe = null;', D1 = 'function _echSupprimer(id){';
+var a0 = ath.indexOf(D0), a1 = ath.indexOf(D1, a0);
+ok('le bloc de l\'écran est identifiable', a0 > 0 && a1 > a0);
+var codeAth = ath.slice(a0, a1);
+
+function rendreAth(liste) {
+  var boite = { innerHTML: '' };
+  /* eslint-disable no-new-func */
+  new Function('document', 'escH', 'SUPA_URL', 'SUPA_KEY', '_patientId', 'fetch',
+    codeAth + '\nreturn function(l){ _echListe = l; _echRendre(); };')(
+    { getElementById: function () { return boite; } },
+    function (x) { return String(x); }, '', '', '1', function () {}
+  )(liste);
+  return boite.innerHTML;
+}
+
+ok('table absente : la section reste entièrement vide', rendreAth(null) === '',
+   'une section a moitié affichée serait pire que pas de section');
+ok('… et la réponse en échec n\'écrit rien', /if\(!Array\.isArray\(d\)\) return;/.test(codeAth));
+
+var attente = rendreAth([{ id:1, texte:'UTMB', date:jour(24), repris_at:null }]);
+ok('une échéance en attente est modifiable', attente.indexOf('_echSupprimer(1)') > 0);
+ok('… et le dit', attente.indexOf('en attente de validation') > 0);
+
+var prise = rendreAth([{ id:1, texte:'UTMB', date:jour(24), repris_at:'2026-08-20T10:00:00Z' }]);
+/* Une fois reprise, des cycles sont calés dessus : la base refuse l'écriture,
+   l'interface ne doit donc pas la proposer. */
+ok('une échéance reprise n\'est plus modifiable', prise.indexOf('_echSupprimer') < 0);
+ok('… et l\'athlète voit que c\'est acté', prise.indexOf('pris en compte') > 0);
+
+/* Une échéance reprise est souvent recopiée dans le bilan par le praticien :
+   sans garde-fou elle s'afficherait deux fois, une par source. On exécute la
+   vraie fusion avec un `_fetchRetry` doublé. */
+var _fusionPromesse = Promise.resolve();
+console.log('\nLa fusion des deux sources');
+{
+  var F0 = js.indexOf('function _chargerEcheancesAthlete');
+  var F1 = js.indexOf('\n}', F0);
+  var codeFus = js.slice(F0, F1 + 2);
+  /* `_chargerEcheancesAthlete` fusionne dans un `.then` : lire la liste tout
+     de suite la trouve inchangee, et l'assertion « pas de doublon » passe pour
+     la mauvaise raison — rien n'a encore ete ajoute. On attend donc que les
+     micro-taches soient vidangees. */
+  function fusionner(bilan, athlete) {
+    var liste = bilan.slice();
+    /* eslint-disable no-new-func */
+    new Function('SUPA_URL_P', '_sbHeaders', '_fetchRetry', '_progPatient',
+      '_patientObjectifs', '_renderEcheances', '_renderCalendarUI',
+      codeFus + '\n_chargerEcheancesAthlete(1);')(
+      '', function () { return {}; },
+      function () { return Promise.resolve({ ok: true, json: function () { return athlete; } }); },
+      { id: 1 }, liste, function () {}, function () {}
+    );
+    return Promise.resolve().then(function(){ return liste; });
+  }
+  _fusionPromesse = fusionner([{ text: 'UTMB', date: '2026-08-29' }],
+                      [{ id: 9, texte: 'UTMB', date: '2026-08-29', repris_at: null }])
+    .then(function (fus) {
+      ok('une échéance présente des deux côtés n\'apparaît qu\'une fois', fus.length === 1,
+         fus.length + ' entrée(s)');
+      return fusionner([{ text: 'UTMB', date: '2026-08-29' }],
+                       [{ id: 9, texte: 'Templiers', date: '2026-10-18', repris_at: null }]);
+    })
+    .then(function (fus2) {
+      ok('… mais une échéance distincte s\'ajoute bien', fus2.length === 2,
+         fus2.length + ' entrée(s)');
+      ok('… en portant sa source', fus2.length === 2 && fus2[1].source === 'athlete');
+    });
+}
+
+console.log('\nLa migration, écrite mais NON appliquée');
+var sqlPath = path.join(R, 'supabase', 'migrations', '20260829_athlete_objectifs.sql');
+ok('le fichier existe', fs.existsSync(sqlPath));
+var sql = fs.existsSync(sqlPath) ? fs.readFileSync(sqlPath, 'utf8') : '';
+ok('elle dit en tête qu\'elle n\'est pas appliquée', /NON APPLIQU/.test(sql));
+ok('la sécurité au niveau ligne est activée', /ENABLE ROW LEVEL SECURITY/.test(sql));
+/* La seule politique réellement fermée : elle protège les données d'un
+   cabinet de celles d'un autre. */
+/* Les DEUX clauses comptent : `USING` filtre ce qu'il voit, `WITH CHECK` ce
+   qu'il écrit. Un premier jet ne vérifiait que la présence du filtre quelque
+   part dans le fichier — la régression passait au vert avec un `USING (true)`
+   tant que l'autre clause subsistait. */
+var polPrat = sql.slice(sql.indexOf('CREATE POLICY athlete_objectifs_praticien'));
+polPrat = polPrat.slice(0, polPrat.indexOf(';') + 1);
+ok('le praticien ne VOIT que ses patients',
+   /USING\s+\(EXISTS[\s\S]*?praticien_id = auth\.uid\(\)/.test(polPrat));
+ok('… et n\'ÉCRIT que sur les siens',
+   /WITH CHECK\s+\(EXISTS[\s\S]*?praticien_id = auth\.uid\(\)/.test(polPrat));
+/* S'auto-valider priverait le praticien du filtre qui l'empêche de caler des
+   cycles sur une date fantaisiste. */
+ok('l\'athlète ne peut pas se déclarer « pris en compte »',
+   /FOR INSERT TO anon WITH CHECK \(repris_at IS NULL\)/.test(sql));
+ok('… ni modifier ce qui l\'est déjà',
+   /FOR UPDATE TO anon[\s\S]{0,80}USING \(repris_at IS NULL\)/.test(sql));
+ok('l\'exposition résiduelle est écrite noir sur blanc', /EXPOSITION R/.test(sql));
+
+_fusionPromesse.then(function () {
+  console.log('');
+  if (ko) { console.error(ko + ' cas en echec.'); process.exit(1); }
+  console.log('Bande d\'echeances : tous les cas passent.');
+});

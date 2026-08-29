@@ -291,6 +291,38 @@ objectifs, patient vidé, patient absent. En perdre un laisse à l'écran les
 Seuls les objectifs **datés** y figurent — `_patientObjectifs` les filtre déjà.
 Un objectif sans date n'a rien à dire à un agenda et reste dans le bilan.
 
+## Échéances déclarées par l'athlète — table dédiée, migration non appliquée
+
+L'athlète est identifié par un simple `?patient=<id>` dans l'URL, avec la clé
+anonyme, et n'écrit aujourd'hui que dans `athlete_feedback`. **Lui ouvrir
+`patients` en écriture** — la table qui porte nom, prénom et date de naissance —
+pour qu'il déclare une date de course serait un très mauvais échange. D'où
+`athlete_objectifs`, qui isole exactement ce qu'il a le droit d'écrire.
+
+`supabase/migrations/20260829_athlete_objectifs.sql` est **écrite mais NON
+appliquée** — décision du praticien, et elle touche à la sécurité juste avant
+la migration HDS. Le code est donc écrit pour vivre sans elle : requête en
+échec = section athlète entièrement masquée, agenda inchangé. Une section à
+moitié affichée serait pire que pas de section.
+
+C'est aussi la **première politique RLS versionnée** du dépôt : l'audit HDS
+avait relevé qu'elles n'existaient nulle part dans le code.
+
+**`repris_at` est le pivot.** Non nul = le praticien a pris l'échéance en
+compte ; la base refuse alors toute écriture de l'athlète, parce que des cycles
+sont calés dessus et que la date ne doit plus bouger sous les pieds du
+praticien. L'athlète ne peut pas se déclarer « pris en compte » lui-même —
+ce serait s'auto-valider et supprimer le filtre qui protège la planification
+d'une date fantaisiste.
+
+**Une échéance reprise est souvent recopiée dans le bilan** : sans le garde-fou
+`texte|date`, elle s'afficherait deux fois, une par source.
+
+**Exposition résiduelle assumée et écrite dans la migration** : sans identité
+côté athlète, la lecture anonyme ne peut pas être restreinte par ligne. C'est
+déjà la posture des tables `athlete_*` ; le correctif est un jeton par patient
+dans le lien de partage, qui dépasse cette table.
+
 ## Générateur CAP (retour à la course)
 
 Les règles cliniques sont dans `SPEC-CAP.md` — **à lire avant toute
