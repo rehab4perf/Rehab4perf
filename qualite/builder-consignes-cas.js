@@ -37,18 +37,41 @@ var deb = data.indexOf("html += '<div class=\"exo-consigne-row\">'");
 var bloc = data.slice(deb, data.indexOf("html += '</div>';", deb));
 ok('le champ de consigne porte rows="1"', /<textarea rows="1" class="exo-consigne-ta/.test(bloc),
    bloc.indexOf('<textarea') > 0 ? 'sans rows : deux lignes par defaut' : 'textarea introuvable');
-ok('… et grandit à la frappe', bloc.indexOf('autoResizeTa(this)') > 0);
-ok('min-height d\'une ligne dans la feuille',
-   /\.exo-consigne-ta \{[^}]*min-height:24px/.test(prog.replace(/\n/g, ' ')));
+ok('… et il grandit SANS aucune mesure',
+   /class="exo-consigne-grow" data-repl=/.test(bloc) &&
+   bloc.indexOf('autoResizeTa') < 0,
+   bloc.indexOf('autoResizeTa') > 0 ? 'autoResizeTa y est encore' : 'conteneur absent');
 
-/* Le champ rempli doit être ré-agrandi AU RENDU, sinon il rouvre à une seule
-   ligne et coupe son contenu. */
-var raf = data.indexOf('requestAnimationFrame');
-var bloRaf = raf > 0 ? data.slice(raf, raf + 700) : '';
-ok('les consignes remplies sont ré-agrandies au rendu',
-   bloRaf.indexOf('.exo-consigne-ta.has-value') > 0 &&
-   bloRaf.indexOf('autoResizeTa(ta)') > 0,
-   raf < 0 ? 'aucun requestAnimationFrame' : 'la passe ne vise plus les consignes');
+/* La hauteur vient du texte recopié dans `data-repl` : il se met à jour EN
+   PREMIER. Placé en fin de chaîne, la moindre exception dans `updateField`
+   figerait la hauteur en silence — reproduit sur un banc où `updateField`
+   n'existait pas : le champ cessait de grandir. */
+var oi = (bloc.match(/oninput="([^"]*)"/) || [, ''])[1];
+ok('le texte recopié se met à jour en premier',
+   oi.indexOf('dataset.repl') >= 0 &&
+   oi.indexOf('dataset.repl') < oi.indexOf('updateField'), oi.slice(0, 70));
+
+/* La passe de mesure ne doit PLUS toucher ce champ : lui rendre une hauteur
+   en pixels casserait la grille. */
+ok('la passe de mesure laisse les consignes tranquilles',
+   !/querySelectorAll\('\.exo-consigne-ta/.test(data));
+
+console.log('\nLa boîte du champ et celle de sa doublure sont identiques');
+/* Toute divergence de police, d'interligne, de marge intérieure ou de bordure
+   fausse la hauteur : les deux sélecteurs partagent donc UNE déclaration. */
+var partage = prog.slice(prog.indexOf('.exo-consigne-grow > .exo-consigne-ta,'));
+partage = partage.slice(0, partage.indexOf('}') + 1);
+['grid-area', 'min-height:24px', 'border:1px dashed', 'padding:3px 7px',
+ 'font-size:var(--fs-sm)', 'font-family:inherit', 'line-height:1.5',
+ 'box-sizing:border-box'].forEach(function (d) {
+  ok('« ' + d +' » est partagé', partage.indexOf(d) > 0);
+});
+ok('la doublure recopie bien data-repl',
+   /\.exo-consigne-grow::after \{[\s\S]{0,200}content:attr\(data-repl\)/.test(prog));
+ok('… en conservant les retours à la ligne',
+   /\.exo-consigne-grow::after \{[\s\S]{0,200}white-space:pre-wrap/.test(prog));
+ok('le champ ne montre pas sa propre barre de défilement',
+   /\.exo-consigne-ta \{[^}]*overflow:hidden/.test(prog.replace(/\n/g, ' ')));
 
 console.log('\nPas de retrait mort sur téléphone');
 var mob = prog.slice(prog.indexOf('@media (max-width:700px)'));

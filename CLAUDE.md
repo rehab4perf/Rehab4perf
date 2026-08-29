@@ -1404,17 +1404,38 @@ deux lignes : sous **chaque** exercice, une ligne entière de vide. Sur
 téléphone, où la ligne d'exercice fait déjà ~300 px, c'est ce qui la faisait
 « descendre pour rien » — mesuré : rangée de 48 px pour un champ de 26.
 
-Corollaire à connaître : avec une seule ligne au repos, la **passe
-d'agrandissement au rendu devient critique**. `renderSession` la joue dans un
-`requestAnimationFrame` sur les seuls `.exo-consigne-ta.has-value` ; la couper
-ferait rouvrir toute consigne remplie sur une ligne, en coupant son contenu.
+**Et le champ ne se mesure plus du tout.** `autoResizeTa()` écrivait une hauteur
+en pixels, mesurée à la largeur qu'avait le champ **à cet instant**, puis plus
+rien ne la recalculait. Panneau du builder encore replié ou en cours d'ouverture
+quand la passe tirait : mesure sur quelques pixels de large, hauteur figée
+absurde. **Mesuré : un champ de 16 px de large donne 972 px de haut** — sur
+téléphone, la consigne devenait un pavé vide occupant tout l'écran.
+
+Le champ vit désormais dans `.exo-consigne-grow`, une grille d'**une seule
+cellule** où il se superpose à un pseudo-élément portant le même texte
+(`data-repl`) ; c'est ce pseudo-élément qui impose la hauteur. Aucune mesure,
+donc aucune dépendance à un `requestAnimationFrame`, à la visibilité de
+l'onglet, ni à la largeur au moment du rendu — et la hauteur suit toute rotation
+ou tout changement de largeur, gratuitement. Vérifié : la même consigne fait
+98 px à 320 px de large et 26 px à 1280, sans une ligne de JavaScript.
+
+**Les deux boîtes doivent rester identiques** — police, interligne, marge
+intérieure, bordure, `box-sizing`. Elles partagent une seule déclaration, et le
+fichier de cas échoue si l'une d'elles s'en détache : une divergence d'un seul
+pixel fausse la hauteur.
+
+**`data-repl` se met à jour EN PREMIER dans le `oninput`.** Placé en fin de
+chaîne, la moindre exception dans `updateField` figerait la hauteur en silence
+et le champ cesserait de grandir à la frappe — reproduit sur un banc où
+`updateField` n'existait pas.
 
 **`requestAnimationFrame` ne se déclenche PAS dans un onglet ou une iframe
-masqués.** Ce n'est pas un risque ici — `renderSession()` ne tourne que sur
-interaction dans un builder visible, la restauration de brouillon étant elle-même
-derrière une confirmation — mais c'est la raison pour laquelle un banc d'essai
-dans un volet en arrière-plan montre les consignes coupées alors que
-l'application est correcte. Ne pas « corriger » le produit sur cette foi.
+masqués.** Les autres zones extensibles (`.texte-ta`, `.cardio-txt`, les notes)
+dépendent encore de la mesure et gardent donc cette fragilité. Ce n'est pas un
+risque observé — `renderSession()` ne tourne que sur interaction dans un builder
+visible — mais c'est aussi la raison pour laquelle un banc d'essai dans un volet
+en arrière-plan montre ces zones coupées alors que l'application est correcte.
+Ne pas « corriger » le produit sur cette foi.
 
 **Le retrait de 34 px est annulé sur téléphone.** Il alignait la consigne sous le
 NOM, après la colonne des flèches monter/descendre — colonne masquée en dessous

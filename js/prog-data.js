@@ -1988,6 +1988,44 @@ function autoResizeTa(el){
   el.style.height = el.scrollHeight + 'px';
 }
 
+/* ── La hauteur d'une zone qui grandit est FIGEE en pixels ─────────────
+   autoResizeTa() mesure scrollHeight a la largeur qu'a l'element A CET
+   INSTANT, puis ecrit le resultat en dur. Si le panneau du builder est encore
+   replie ou en cours d'ouverture quand la passe tire, la mesure se fait sur
+   quelques pixels de large — et la hauteur figee explose. Mesure : un champ
+   de 16 px de large donne 972 px de haut. Rien ne la recalculait ensuite : la
+   consigne restait un pave vide sur tout l'ecran, et c'est ce que le
+   praticien voyait sur telephone.
+
+   La hauteur d'un texte ne depend que de sa LARGEUR : on rejoue donc la passe
+   des que la zone de travail change de largeur, et seulement alors. Changer
+   la hauteur des enfants ne change pas la largeur du conteneur, donc pas de
+   boucle. */
+function _taGrandirToutes(root){
+  if(!root) return;
+  /* Les consignes d'exercice n'y sont plus : elles grandissent par CSS
+     (.exo-consigne-grow), donc sans mesure et sans hauteur figee. Leur
+     rendre une hauteur en pixels ici casserait la grille. */
+  root.querySelectorAll('.texte-ta, .cardio-txt')
+    .forEach(function(ta){ if(ta.value) autoResizeTa(ta); });
+  var n = document.getElementById('sessionNotes');
+  if(n && n.value) autoResizeTa(n);
+}
+
+var _taObs = null, _taLargeur = 0;
+function _taSuivreLargeur(root){
+  if(!root || typeof ResizeObserver === 'undefined') return;
+  if(_taObs) _taObs.disconnect();
+  _taLargeur = 0;
+  _taObs = new ResizeObserver(function(entries){
+    var w = Math.round(entries[0].contentRect.width);
+    if(!w || w === _taLargeur) return;
+    _taLargeur = w;
+    _taGrandirToutes(root);
+  });
+  _taObs.observe(root);
+}
+
 function removeExo(blocId, exoId){
   var bloc = blocs.find(function(b){ return b.id===blocId; });
   if(!bloc) return;
@@ -2780,10 +2818,16 @@ function renderSession(){
         html += '<div class="exo-consigne-row">'
              +  '<div class="exo-consigne-inner">'
              +  '<button class="nrs-badge" data-nrs="'+b.id+'-'+e.id+'" style="color:'+nrsCol+';border-color:'+(nrsVal!==null?nrsCol:'#CBD2DB')+'" onclick="toggleNrsPop(\''+b.id+'\',\''+e.id+'\',event)" title="Douleur NRS (0-10)">'+nrsTxt+'</button>'
+             +  '<div class="exo-consigne-grow" data-repl="'+escH(consigneVal)+' ">'
              +  '<textarea rows="1" class="exo-consigne-ta'+(consigneVal?' has-value':'')+'"'
              +  ' placeholder="💬 Consignes spécifiques…"'
-             +  ' oninput="updateField(\''+b.id+'\',\''+e.id+'\',\'consigne\',this.value);this.classList.toggle(\'has-value\',!!this.value.trim());autoResizeTa(this)"'
+             /* La hauteur du champ vient du texte recopie dans `data-repl` : on
+                le met a jour EN PREMIER. Place en fin de chaine, la moindre
+                exception dans `updateField` figerait la hauteur en silence,
+                et le champ cesserait de grandir a la frappe. */
+             +  ' oninput="this.parentNode.dataset.repl=this.value+\' \';this.classList.toggle(\'has-value\',!!this.value.trim());updateField(\''+b.id+'\',\''+e.id+'\',\'consigne\',this.value)"'
              +  '>'+escH(consigneVal)+'</textarea>'
+             +  '</div>'
              +  '</div>'
              +  '</div>';
         html += '</div>';
@@ -2822,18 +2866,16 @@ function renderSession(){
   html += '<textarea class="notes-ta" id="sessionNotes" placeholder="Conseils, progressions, points d\'attention…" oninput="autoResizeTa(this);if(typeof _notes!==\'undefined\'){_notes=this.value;_draftSaveLazy();}">'+escH(getNotes())+'</textarea></div>';
   area.innerHTML = html;
   updateTargetBlocSelect();
-  // Auto-resize des consignes déjà remplies + notes
-  // Différé via rAF : le layout doit être calculé avant de mesurer scrollHeight
-  requestAnimationFrame(function(){
-    // Toutes les zones qui grandissent a la frappe doivent aussi grandir au
-    // rendu, sinon elles rouvrent a leur hauteur minimale et COUPENT leur
-    // contenu : le bloc de texte libre, les consignes d'un bloc chrono ou
-    // cardio, celles d'un exercice, et les notes de seance.
-    area.querySelectorAll('.exo-consigne-ta.has-value, .texte-ta, .cardio-txt')
-      .forEach(function(ta){ if(ta.value) autoResizeTa(ta); });
-    var notesTa = document.getElementById('sessionNotes');
-    if(notesTa && notesTa.value) autoResizeTa(notesTa);
-  });
+  /* Toutes les zones qui grandissent a la frappe doivent aussi grandir au
+     rendu, sinon elles rouvrent a leur hauteur minimale et COUPENT leur
+     contenu : le bloc de texte libre, les consignes d'un bloc chrono ou
+     cardio, celles d'un exercice, et les notes de seance.
+     Differe via rAF : le layout doit etre calcule avant de mesurer
+     scrollHeight. Mais un rAF ne garantit PAS que le panneau ait sa largeur
+     definitive — d'ou l'observateur, qui rejoue la passe a chaque changement
+     de largeur et rattrape une mesure faite trop tot. */
+  requestAnimationFrame(function(){ _taGrandirToutes(area); });
+  _taSuivreLargeur(area);
   // Auto-save brouillon après chaque rendu
   if(typeof _draftSave === 'function') _draftSave();
   // Sync état "déjà ajouté" dans le picker

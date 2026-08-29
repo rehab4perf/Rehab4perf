@@ -1190,10 +1190,33 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
    aux autres, la flèche disparaissant complètement. */
 .bloc-move-btn:disabled { opacity:.2; pointer-events:none; }
 .exo-consigne-row { grid-column:1/-1; padding:0 4px 4px 34px; }
+/* ── Le champ grandit avec son contenu, SANS aucune mesure ────────────
+   autoResizeTa() ecrivait une hauteur en pixels mesuree a la largeur qu'avait
+   le champ a cet instant. Panneau encore replie au rendu : mesure sur 16 px
+   de large, hauteur figee a 972 px, et rien ne la recalculait. Sur telephone
+   la consigne devenait un pave vide sur tout l'ecran.
+   Ici le conteneur est une grille d'UNE cellule ou le champ et un
+   pseudo-element portant le MEME texte se superposent : c'est le
+   pseudo-element qui impose la hauteur. Aucune dependance a un rAF, a la
+   visibilite de l'onglet, ni a la largeur au moment du rendu — et la hauteur
+   suit toute rotation ou changement de largeur, gratuitement. */
+.exo-consigne-grow { display:grid; flex:1; min-width:0; }
+.exo-consigne-grow::after {
+  content:attr(data-repl) ' ';
+  white-space:pre-wrap; overflow-wrap:anywhere; visibility:hidden;
+}
+/* MEME boite que le champ : toute divergence de police, d'interligne, de
+   marge interieure ou de bordure fausse la hauteur. */
+.exo-consigne-grow > .exo-consigne-ta,
+.exo-consigne-grow::after {
+  grid-area:1 / 1 / 2 / 2;
+  min-height:24px; border:1px dashed transparent; border-radius:4px;
+  padding:3px 7px; font-size:var(--fs-sm); font-family:inherit;
+  line-height:1.5; box-sizing:border-box;
+}
 .exo-consigne-ta {
-  width:100%; min-height:24px; border:1px dashed transparent; border-radius:4px;
-  padding:3px 7px; font-size:var(--fs-sm); font-family:inherit; color:var(--text2);
-  resize:none; outline:none; background:transparent; line-height:1.5;
+  width:100%; color:var(--text2);
+  resize:none; overflow:hidden; outline:none; background:transparent;
   transition:border-color .15s, background .15s;
 }
 .exo-consigne-ta:hover { border-color:var(--border2); }
@@ -3302,7 +3325,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   </div><!-- /tool-panel-drawer -->
 </div><!-- /tool-panel-overlay -->
 
-<script src="js/prog-data.js?v=20260829a"></script>
+<script src="js/prog-data.js?v=20260829b"></script>
 
 <!-- ══ CYCLES MODAL ════════════════════════════════════════════ -->
 <style>
