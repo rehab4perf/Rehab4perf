@@ -1,5 +1,11 @@
 .DS_Store
-.claude/
+.claude/*
+# Les skills du projet sont un actif du depot, pas une preference locale : non
+# versionnees, elles disparaissent au premier changement de machine et le
+# rituel de deploiement repart de zero.
+!.claude/skills/
+# Les reglages locaux, eux, restent locaux (chemins et permissions machine).
+.claude/settings.local.json
 supabase/.temp/
 
 # Banque de SVG achetee (non utilisee telle quelle par l'app)

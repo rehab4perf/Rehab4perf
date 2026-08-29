@@ -2,6 +2,27 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Skills du projet — `.claude/skills/`
+
+Trois rituels sont écrits une fois pour toutes, et se chargent **à la demande**
+plutôt qu'à chaque session :
+
+- **`deployer`** — la séquence de mise en ligne, et surtout
+  `scripts/bump-versions.js`, qui connaît la chaîne de chargement
+  (`js/bilan.js` → `bilan.html` → `index.html`) et bouge tous les numéros
+  concernés d'un coup. En oublier un laisse le navigateur sur son ancienne
+  copie : la correction est déployée mais invisible, y compris pendant les
+  tests. Le tampon choisi **suit** la lettre la plus avancée du jour, jamais un
+  trou libre — une lettre relâchée le matin reste dans le cache de qui l'a vue.
+- **`cas-de-reference`** — la méthode des `qualite/*-cas.js` : le cas d'abord,
+  le vrai code plutôt qu'une copie, et la preuve par la régression injectée.
+- **`verif-visuelle`** — le banc d'essai bâti sur les vraies fonctions et le
+  vrai CSS, la mesure des chevauchements et débordements aux quatre largeurs,
+  et l'angle mort connu : un défaut propre à WebKit mobile ne s'y reproduit pas.
+
+Ce fichier reste la mémoire du **pourquoi** de chaque décision ; les skills
+portent le **comment** des gestes répétés.
+
 ## Deployment
 
 Deployment is fully automatic: `git push origin main` triggers a Netlify build. There is no build step — this is a static site served as-is. Never use `netlify deploy` manually unless Netlify CI is broken.
