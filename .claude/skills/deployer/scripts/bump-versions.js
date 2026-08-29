@@ -78,7 +78,14 @@ modifies.forEach(function (f) {
     touchePro = true;
   }
   if (f === 'athlete.html' || f.indexOf('js/athlete') === 0) toucheAth = true;
-  if (/\.(html|js|css)$/.test(f) && f.indexOf('qualite/') !== 0 && f !== 'sw.js' && f !== 'sw-pro.js') touchePro = true;
+  /* Seul ce qui est SERVI au navigateur peut perimer un cache. Les fichiers
+     d'outillage — controles qualite, skills, notes — n'y sont jamais servis :
+     les compter ferait bouger le cache sans raison, et un bump gratuit fait
+     retelecharger l'application entiere a chaque praticien. */
+  var servi = /\.(html|js|css)$/.test(f) &&
+              ['qualite/', '.claude/', 'docs/', 'supabase/'].every(function (d) { return f.indexOf(d) !== 0; }) &&
+              f !== 'sw.js' && f !== 'sw-pro.js';
+  if (servi) touchePro = true;
 });
 
 var lignes = [];
