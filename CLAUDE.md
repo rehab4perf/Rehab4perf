@@ -1446,9 +1446,18 @@ quand la passe tirait : mesure sur quelques pixels de large, hauteur figée
 absurde. **Mesuré : un champ de 16 px de large donne 972 px de haut** — sur
 téléphone, la consigne devenait un pavé vide occupant tout l'écran.
 
-Le champ vit désormais dans `.exo-consigne-grow`, une grille d'**une seule
-cellule** où il se superpose à un pseudo-élément portant le même texte
-(`data-repl`) ; c'est ce pseudo-élément qui impose la hauteur. Aucune mesure,
+Le champ vit désormais dans `.exo-consigne-grow` : un pseudo-élément portant le
+même texte (`data-repl`) occupe le **flux normal** et impose la hauteur, le
+champ étant posé **par-dessus en absolu**.
+
+**Ne jamais revenir à la grille d'une seule cellule** — c'était la première
+version, plus courte. La largeur de la doublure dépendait alors du
+dimensionnement de la **piste** de grille, que WebKit peut calculer sur le
+contenu minimal : la doublure se repliait sur quelques caractères, une vingtaine
+de lignes au lieu de cinq, pendant que le champ gardait sa pleine largeur. Sur
+iPhone, un pavé vide sous un texte de cinq lignes — invisible sur navigateur de
+bureau, où la mesure était juste. Dans le flux normal, la largeur de la doublure
+est celle du conteneur et aucune piste n'intervient. Aucune mesure,
 donc aucune dépendance à un `requestAnimationFrame`, à la visibilité de
 l'onglet, ni à la largeur au moment du rendu — et la hauteur suit toute rotation
 ou tout changement de largeur, gratuitement. Vérifié : la même consigne fait

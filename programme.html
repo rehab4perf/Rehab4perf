@@ -1200,22 +1200,34 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
    pseudo-element qui impose la hauteur. Aucune dependance a un rAF, a la
    visibilite de l'onglet, ni a la largeur au moment du rendu — et la hauteur
    suit toute rotation ou changement de largeur, gratuitement. */
-.exo-consigne-grow { display:grid; flex:1; min-width:0; }
+/* La doublure est un bloc ORDINAIRE, le champ est posé par-dessus en
+   absolu. Une premiere version superposait les deux dans une grille d'une
+   cellule : c'est plus court, mais la largeur de la doublure dependait alors
+   du dimensionnement de la PISTE de grille. Sur WebKit cette piste peut se
+   calculer sur le contenu minimal, si bien que la doublure se repliait sur
+   quelques caracteres — vingt lignes au lieu de cinq — pendant que le champ,
+   lui, gardait sa pleine largeur : un pave vide sous un texte de cinq
+   lignes. Ici la doublure est dans le flux normal, sa largeur est celle du
+   conteneur, et aucune piste n'intervient. */
+.exo-consigne-grow { position:relative; flex:1; min-width:0; }
 .exo-consigne-grow::after {
   content:attr(data-repl) ' ';
-  white-space:pre-wrap; overflow-wrap:anywhere; visibility:hidden;
+  display:block; white-space:pre-wrap; word-break:break-word;
+  visibility:hidden; pointer-events:none;
+}
+.exo-consigne-grow > .exo-consigne-ta {
+  position:absolute; top:0; left:0; width:100%; height:100%;
 }
 /* MEME boite que le champ : toute divergence de police, d'interligne, de
    marge interieure ou de bordure fausse la hauteur. */
 .exo-consigne-grow > .exo-consigne-ta,
 .exo-consigne-grow::after {
-  grid-area:1 / 1 / 2 / 2;
   min-height:24px; border:1px dashed transparent; border-radius:4px;
   padding:3px 7px; font-size:var(--fs-sm); font-family:inherit;
   line-height:1.5; box-sizing:border-box;
 }
 .exo-consigne-ta {
-  width:100%; color:var(--text2);
+  color:var(--text2);
   resize:none; overflow:hidden; outline:none; background:transparent;
   transition:border-color .15s, background .15s;
 }

@@ -61,11 +61,28 @@ console.log('\nLa boîte du champ et celle de sa doublure sont identiques');
    fausse la hauteur : les deux sélecteurs partagent donc UNE déclaration. */
 var partage = prog.slice(prog.indexOf('.exo-consigne-grow > .exo-consigne-ta,'));
 partage = partage.slice(0, partage.indexOf('}') + 1);
-['grid-area', 'min-height:24px', 'border:1px dashed', 'padding:3px 7px',
+['min-height:24px', 'border:1px dashed', 'padding:3px 7px',
  'font-size:var(--fs-sm)', 'font-family:inherit', 'line-height:1.5',
  'box-sizing:border-box'].forEach(function (d) {
   ok('« ' + d +' » est partagé', partage.indexOf(d) > 0);
 });
+/* La doublure est un bloc ORDINAIRE et le champ est posé par-dessus en absolu.
+   Une première version les superposait dans une grille d'une cellule : la
+   largeur de la doublure dépendait alors du dimensionnement de la PISTE, que
+   WebKit peut calculer sur le contenu minimal — la doublure se repliait sur
+   quelques caractères pendant que le champ gardait sa pleine largeur, d'où un
+   pavé vide sous un texte court. Ne pas y revenir. */
+ok('le conteneur n\'utilise pas de grille',
+   /\.exo-consigne-grow \{[^}]*position:relative/.test(prog) &&
+   !/\.exo-consigne-grow \{[^}]*display:grid/.test(prog));
+ok('la doublure est dans le flux normal',
+   /\.exo-consigne-grow::after \{[^}]*display:block/.test(prog) &&
+   !/\.exo-consigne-grow::after \{[^}]*grid-area/.test(prog));
+ok('le champ est posé par-dessus',
+   /\.exo-consigne-grow > \.exo-consigne-ta \{[^}]*position:absolute/.test(prog));
+ok('… en occupant toute la boîte',
+   /\.exo-consigne-grow > \.exo-consigne-ta \{[^}]*width:100%[^}]*height:100%/.test(prog));
+
 ok('la doublure recopie bien data-repl',
    /\.exo-consigne-grow::after \{[\s\S]{0,200}content:attr\(data-repl\)/.test(prog));
 ok('… en conservant les retours à la ligne',
