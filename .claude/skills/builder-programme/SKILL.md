@@ -261,6 +261,36 @@ concaténés et compte les ouvertures **à la profondeur zéro** — compter les
 `html += '<…'` ne suffit pas, le contenu imbriqué de chaque cellule est émis de
 la même façon.
 
+## Bande d'échéances — la distance, pas la date
+
+```bash
+node qualite/echeances-cas.js
+```
+
+Le repère 🎯 sur la case du jour existait déjà (`_dayObjectifLabelHtml`), mais il
+n'apparaît qu'en **naviguant jusqu'au mois concerné** : une échéance à douze mois
+y est invisible, puisqu'il faudrait savoir qu'elle existe pour aller la chercher.
+
+La bande vit **entre l'en-tête et la grille** — le seul emplacement qui reste à
+l'écran quel que soit le mois affiché — et porte le **J-N**. C'est la distance
+qui gouverne la planification : elle donne le budget de semaines pour caler les
+cycles, ce que la date seule ne dit pas.
+
+**Une échéance passée quitte la bande dès le lendemain.** Une bande qui garde des
+dates dépassées cesse d'être lue en quelques semaines.
+
+**La bande et la grille parlent la même langue** : ambre et 🎯. La même échéance
+présentée sous deux identités selon l'endroit où on la regarde ferait douter que
+ce soit la même. Le filet bleu et le ⚑ sont réservés à ce qui portera
+`source:'praticien'` — aujourd'hui rien ne le porte.
+
+Elle se redessine à **quatre moments** : rendu de la grille, arrivée des
+objectifs, patient vidé, patient absent. En perdre un laisse à l'écran les
+échéances du patient précédent.
+
+Seuls les objectifs **datés** y figurent — `_patientObjectifs` les filtre déjà.
+Un objectif sans date n'a rien à dire à un agenda et reste dans le bilan.
+
 ## Générateur CAP (retour à la course)
 
 Les règles cliniques sont dans `SPEC-CAP.md` — **à lire avant toute

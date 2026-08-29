@@ -76,8 +76,9 @@ function _loadCyclesForPatient(){
 // bilans comme pour J0).
 var _patientObjectifs = [];
 function _loadObjectifsForPatient(){
-  if(!_progPatient){ _patientObjectifs = []; return; }
+  if(!_progPatient){ _patientObjectifs = []; try{ _renderEcheances(); }catch(ex){} return; }
   _patientObjectifs = [];
+  try{ _renderEcheances(); }catch(ex){}
   var _forPatientId = _progPatient.id;
   _fetchRetry(SUPA_URL_P + '/rest/v1/bilans?patient_id=eq.' + _forPatientId + '&select=donnees&order=date.desc&limit=1', {
     headers: _sbHeaders()
@@ -91,6 +92,8 @@ function _loadObjectifsForPatient(){
     if(raw){ try { var p = JSON.parse(raw); if(Array.isArray(p)) parsed = p; } catch(e){} }
     // Seuls les objectifs datés ont un sens dans l'agenda.
     _patientObjectifs = parsed.filter(function(o){ return o && o.date; });
+    _echTout = false;
+    try{ _renderEcheances(); }catch(ex){}
     if(typeof renderCalendar === 'function') renderCalendar();
   })
   .catch(function(){
@@ -109,6 +112,84 @@ function _dayObjectifLabelHtml(dateStr, cls){
     : (matches[0].text.length > 18 ? matches[0].text.slice(0,18)+'…' : matches[0].text);
   return '<div class="'+cls+'" title="🎯 '+escH(titleFull)+'">🎯 '+escH(label)+'</div>';
 }
+/* ── Bande d'echeances ──────────────────────────────────────────────
+   Ce qui compte au quotidien n'est pas la date, c'est la DISTANCE qui l'en
+   separe : elle donne le budget de semaines dont on dispose pour caler les
+   cycles. Le repere du jour, lui, ne se voit qu'en naviguant jusqu'au mois
+   concerne — donc jamais pour une echeance lointaine.
+
+   Une echeance PASSEE quitte la bande des le lendemain : une bande qui garde
+   des dates depassees cesse d'etre lue au bout de quelques semaines. */
+var _ECH_MAX = 3;
+var _echTout = false;
+
+function _echJours(dateStr){
+  var d = new Date(dateStr + 'T00:00:00');
+  if(isNaN(d)) return null;
+  var a = new Date(); a.setHours(0,0,0,0);
+  return Math.round((d - a) / 86400000);
+}
+
+function _renderEcheances(){
+  var box = document.getElementById('calEcheances');
+  if(!box) return;
+  /* `_patientObjectifs` ne contient deja que les objectifs DATES : sans date,
+     un objectif n'a rien a dire a un agenda, et il reste dans le bilan. */
+  var liste = (_patientObjectifs || []).map(function(o){
+    /* Le repere du jour (.cal-day-objectif-lbl) est ambre et porte 🎯 : la
+       bande doit lui ressembler, sinon la meme echeance se presente sous deux
+       identites selon l'endroit ou on la regarde. Le filet bleu et le ⚑ sont
+       reserves a ce qui sera explicitement marque comme objectif de
+       reeducation — aujourd'hui rien ne l'est. */
+    return { text:o.text, date:o.date, jours:_echJours(o.date),
+             kind:o.source === 'praticien' ? 'reeduc' : 'sport' };
+  }).filter(function(o){ return o.jours !== null && o.jours >= 0; })
+    .sort(function(x,y){ return x.jours - y.jours; });
+
+  if(!liste.length){ box.style.display = 'none'; box.innerHTML = ''; return; }
+  box.style.display = '';
+
+  var montrees = _echTout ? liste : liste.slice(0, _ECH_MAX);
+  var h = '<span class="cal-ech-lbl">Échéances</span>';
+  montrees.forEach(function(o){
+    var jm = o.jours === 0 ? "aujourd'hui" : 'J-' + o.jours;
+    h += '<button class="cal-ech" data-kind="' + o.kind + '"'
+      +  ' onclick="_echAller(\'' + o.date + '\')"'
+      +  ' title="' + escH(o.text) + ' — ' + o.date + '">'
+      +  '<span class="cal-ech-ico">' + (o.kind === 'sport' ? '🎯' : '⚑') + '</span>'
+      +  '<span class="cal-ech-txt"><b>' + escH(o.text.length > 26 ? o.text.slice(0,26) + '…' : o.text) + '</b>'
+      +  '<span class="cal-ech-date">' + _echDateLisible(o.date) + '</span></span>'
+      +  '<span class="cal-ech-jm">' + jm + '</span></button>';
+  });
+  if(liste.length > _ECH_MAX){
+    h += '<button class="cal-ech-plus" onclick="_echToutBasculer()">'
+      +  (_echTout ? '− réduire' : '+' + (liste.length - _ECH_MAX) + ' autre' + (liste.length - _ECH_MAX > 1 ? 's' : ''))
+      +  '</button>';
+  }
+  box.innerHTML = h;
+}
+
+function _echDateLisible(d){
+  var M = ['janv.','févr.','mars','avril','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+  var p = d.split('-');
+  return parseInt(p[2],10) + ' ' + M[parseInt(p[1],10)-1] + ' ' + p[0];
+}
+
+/* Amener le calendrier sur le mois de l'echeance : c'est le pont entre la
+   bande, toujours visible, et le repere du jour, qui porte le detail. */
+function _echAller(dateStr){
+  var p = dateStr.split('-');
+  _calYear = parseInt(p[0],10);
+  _calMonth = parseInt(p[1],10) - 1;
+  if(_calView === 'week' && typeof _getMondayOf === 'function'){
+    _calWeekStart = _getMondayOf(new Date(dateStr + 'T00:00:00'));
+  }
+  _renderCalendarUI();
+}
+function _echToutBasculer(){ _echTout = !_echTout; _renderEcheances(); }
+window._echAller = _echAller;
+window._echToutBasculer = _echToutBasculer;
+
 // prog-data.js s'execute avant ce fichier et a deja restaure _progPatient
 // depuis localStorage au chargement de la page — son propre appel a
 // _loadCyclesForPatient() a cet instant etait un no-op (fonction pas encore
@@ -2245,6 +2326,9 @@ function _renderCalendarUI() {
       +_buildDayChips(dateStr, cellDate)+'</div>';
   }
   grid.innerHTML = headers + cells;
+  /* La bande vit au-dessus de la grille : elle se redessine avec elle, sinon
+     un changement de patient laisserait les echeances du precedent. */
+  try{ _renderEcheances(); }catch(ex){}
   if(typeof _renderUpcoming === 'function') setTimeout(_renderUpcoming, 0);
   setTimeout(_renderBilanCharge, 0);
   setTimeout(_applyFbDots, 0);

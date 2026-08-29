@@ -1952,6 +1952,35 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   font-size:var(--fs-xs); font-weight:700; margin-bottom:4px; white-space:nowrap;
   overflow:hidden; text-overflow:ellipsis; letter-spacing:.02em;
 }
+/* ── Bande d'échéances ───────────────────────────────────────────────
+   Le repère 🎯 sur la case du jour existe (.cal-day-objectif-lbl), mais il
+   n'apparaît qu'en naviguant jusqu'au mois concerné : une échéance lointaine
+   y est donc invisible. Cette bande la garde à l'écran en permanence, et
+   surtout elle porte le J-N — c'est la distance à l'échéance qui gouverne la
+   planification, pas la date elle-même.
+   Filet ambre = échéance sportive · filet accent = objectif de rééducation. */
+.cal-echeances { display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  padding:8px 2px 10px; margin-bottom:6px; border-bottom:1px solid var(--border); }
+.cal-ech-lbl { font-size:var(--fs-2xs); font-weight:700; text-transform:uppercase;
+  letter-spacing:.08em; color:var(--text3); margin-right:2px; }
+.cal-ech { display:inline-flex; align-items:center; gap:7px; cursor:pointer; font-family:inherit;
+  background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--amrap);
+  border-radius:7px; padding:4px 10px 4px 8px; transition:border-color .15s, background .15s; }
+.cal-ech:hover { background:var(--accent-ll); border-color:var(--border2); }
+.cal-ech[data-kind="reeduc"] { border-left-color:var(--accent); }
+.cal-ech-ico { font-size:var(--fs-sm); line-height:1; }
+.cal-ech-txt { display:flex; flex-direction:column; align-items:flex-start; line-height:1.25; }
+.cal-ech-txt b { font-size:var(--fs-sm); font-weight:700; color:var(--text); }
+.cal-ech-date { font-size:var(--fs-2xs); color:var(--muted); }
+.cal-ech-jm { font-size:var(--fs-xs); font-weight:800; color:var(--amrap);
+  font-variant-numeric:tabular-nums; background:var(--warn-l); border-radius:20px;
+  padding:2px 8px; margin-left:2px; }
+.cal-ech[data-kind="reeduc"] .cal-ech-jm { color:var(--accent); background:var(--accent-ll); }
+.cal-ech-plus { font-size:var(--fs-xs); color:var(--muted); font-family:inherit;
+  background:none; border:none; cursor:pointer; padding:4px 6px; }
+.cal-ech-plus:hover { color:var(--accent); }
+@media (max-width:700px) { .cal-echeances { gap:6px; padding:6px 2px 8px; } }
+
 /* Repère "🎯 <objectif>" sur le jour cible, saisi dans le bilan (Attentes &
    objectifs du patient) — même position que le libellé de cycle. */
 .cal-day-objectif-lbl {
@@ -2838,6 +2867,11 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
       <button id="share-cal-btn" style="display:none" aria-hidden="true"></button>
     </div>
     <div class="cal-central-body">
+      <!-- Bande d'echeances : entre l'en-tete et la grille, donc visible quel
+           que soit le mois consulte. Une echeance a douze mois ne se voit
+           jamais sur la case de son jour — il faudrait naviguer jusqu'a son
+           mois pour la trouver, c'est-a-dire savoir deja qu'elle existe. -->
+      <div class="cal-echeances" id="calEcheances" style="display:none"></div>
       <div class="cal-grid" id="calGrid"></div>
       <div id="upcomingList" style="margin-top:16px;"></div>
       <div id="bilanCharge"></div>
@@ -4514,6 +4548,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 </div>
 
-<script src="js/prog-main.js?v=20260816c"></script>
+<script src="js/prog-main.js?v=20260829h"></script>
 </body>
 </html>
