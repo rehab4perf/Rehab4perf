@@ -1392,6 +1392,41 @@ lui, garde le score : c'est le praticien qui le lit.
 `_crBlocsTexte` (copie, mail) lisent les mêmes blocs. Un type de bloc ajouté
 d'un seul côté disparaît de l'autre sans le moindre signal.
 
+## Barre du haut — le nom du patient est la variable d'ajustement
+
+```bash
+node qualite/topbar-cas.js
+```
+
+Les trois contrôles — patient, cloche, centre d'aide — portent `flex-shrink:0`
+dans leur règle commune, et c'est **volontaire** : la cloche est une icône, le
+libellé d'aide est indivisible. Mais aucun ne pouvant se réduire, le dernier
+était **poussé hors de la barre** — mesuré, 29 px au-delà du bord droit à 375 px
+de large.
+
+Le **nom du patient** est le seul des trois à pouvoir se tronquer sans perdre son
+sens : il est répété juste en dessous. Il devient donc la variable d'ajustement
+sous 700 px, avec un plancher pour qu'il ne se réduise jamais à rien.
+
+Sous **360 px** ce plancher est atteint et il manque encore 34 px : c'est alors
+le **mot-symbole** du logo qui s'efface, le sigle identifiant déjà
+l'application. Ne pas masquer le libellé « Centre d'aide » à la place — un
+bouton d'aide réduit à une icône n'apprend rien à qui ne le connaît pas, et
+c'était déjà la décision inscrite dans la feuille.
+
+Vérifié à 320, 375 et 414 px : aucun débordement, bouton d'aide entier.
+
+## Rangée d'exercice sur téléphone — alignée par le HAUT
+
+`align-items:end` collait les cellules au bas de leur rangée. La cellule
+« Reps » porte un troisième élément — la bascule `/côté` — donc elle est plus
+haute : alignée par le bas, **son champ se retrouvait rehaussé de 30 px** par
+rapport à ceux de Durée et Séries. Alignées par le haut, les intitulés se posent
+sur une même ligne, donc les champs aussi, et la bascule pend sous sa colonne.
+
+La bascule prend la largeur de son texte (`align-self:start`) : étirée, elle se
+déguisait en second champ de saisie.
+
 ## Consignes d'exercice du builder — un `<textarea>` sans `rows` vaut DEUX lignes
 
 ```bash

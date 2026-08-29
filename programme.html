@@ -2171,14 +2171,23 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
      masqués par défaut) pour identifier chaque champ sans l'en-tête
      de colonnes (masqué, redondant ici). */
   .exo-col-header { display:none; }
+  /* `align-items:end` collait les cellules au BAS de leur rangée. La cellule
+     « Reps » porte un troisième élément — la bascule /côté — donc elle est
+     plus haute : alignée par le bas, son champ se retrouvait REHAUSSÉ par
+     rapport à ceux de Durée et Séries, mesuré 30 px plus haut. Alignées par
+     le HAUT, les intitulés se placent sur une même ligne, donc les champs
+     aussi, et la bascule pend sous sa colonne sans déranger personne. */
   .builder-body .exo-row {
     display:grid;
     grid-template-columns: repeat(3, 1fr);
     grid-template-rows: auto auto auto auto auto;
     gap:8px 6px;
     padding:14px 10px;
-    align-items:end;
+    align-items:start;
   }
+  /* La bascule /côté est une OPTION, pas un second champ : elle prend la
+     largeur de son texte au lieu de se déguiser en cellule pleine largeur. */
+  .builder-body .percote-toggle { align-self:start; padding:2px 8px; }
   .builder-body .exo-row > *:nth-child(1) { display:none; }                      /* monter/descendre */
   .builder-body .exo-row > *:nth-child(2) { grid-column:1 / span 2; grid-row:1; } /* nom + vidéo */
   .builder-body .exo-row > *:nth-child(3) { grid-column:1; grid-row:2; }          /* reps */
@@ -3325,7 +3334,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   </div><!-- /tool-panel-drawer -->
 </div><!-- /tool-panel-overlay -->
 
-<script src="js/prog-data.js?v=20260829b"></script>
+<script src="js/prog-data.js?v=20260829c"></script>
 
 <!-- ══ CYCLES MODAL ════════════════════════════════════════════ -->
 <style>

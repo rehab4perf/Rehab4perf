@@ -73,6 +73,23 @@ ok('… en conservant les retours à la ligne',
 ok('le champ ne montre pas sa propre barre de défilement',
    /\.exo-consigne-ta \{[^}]*overflow:hidden/.test(prog.replace(/\n/g, ' ')));
 
+console.log('\nLes champs d\'une même rangée s\'alignent');
+/* `align-items:end` collait les cellules au BAS de leur rangée. La cellule
+   « Reps » porte un troisième élément — la bascule /côté — donc elle est plus
+   haute : alignée par le bas, son champ se retrouvait rehaussé de 30 px par
+   rapport à ceux de Durée et Séries. Alignées par le HAUT, les intitulés se
+   posent sur une même ligne, donc les champs aussi. */
+/* La règle desktop porte le MÊME sélecteur et vient en premier dans le
+   fichier : chercher sans borner la zone mobile lisait la mauvaise. */
+var _mob = prog.slice(prog.indexOf('@media (max-width:700px)'));
+_mob = _mob.slice(0, _mob.indexOf('/* ── Phase 1 : agenda mobile'));
+var grille = _mob.slice(_mob.indexOf('.builder-body .exo-row {'));
+grille = grille.slice(0, grille.indexOf('}') + 1);
+ok('la rangée s\'aligne par le haut', /align-items:start/.test(grille),
+   /align-items:end/.test(grille) ? 'encore aligné par le bas' : grille.slice(0, 60));
+ok('la bascule /côté ne s\'étire plus en faux champ',
+   /\.builder-body \.percote-toggle \{[^}]*align-self:start/.test(_mob));
+
 console.log('\nPas de retrait mort sur téléphone');
 var mob = prog.slice(prog.indexOf('@media (max-width:700px)'));
 mob = mob.slice(0, mob.indexOf('/* ── Phase 1 : agenda mobile'));

@@ -408,6 +408,31 @@ iframe.active { display:block; }
   .pm-overlay { padding-top:52px; }
   .pm-card { max-width:100%; border-radius:10px 10px 0 0; }
 }
+/* ── Barre étroite : c'est le NOM DU PATIENT qui cède ────────────────
+   Les trois contrôles portaient `flex-shrink:0`. Aucun ne pouvant se
+   réduire, le dernier — le centre d'aide — était POUSSÉ HORS de la barre :
+   mesuré, 29 px au-delà du bord droit à 375 px de large, soit la moitié du
+   mot « aide » invisible.
+
+   Le nom du patient est le seul des trois qui puisse se tronquer sans
+   perdre son sens — il est répété juste en dessous, dans le bandeau. Il
+   devient donc la variable d'ajustement, avec un plancher pour qu'il ne se
+   réduise jamais à rien. Les deux autres portent un libellé ou une icône
+   indivisibles : les laisser rétrécir n'aurait rien donné. */
+@media (max-width:700px) {
+  .patient-btn { flex-shrink:1; min-width:76px; }
+  .logo { margin-right:4px; }
+  .notif-bell, .help-btn { margin-left:4px; }
+}
+/* En dessous de 360 px, le nom du patient a atteint son plancher et la barre
+   déborde encore de 34 px. C'est le MOT-SYMBOLE qui part, pas le libellé du
+   centre d'aide : le sigle identifie déjà l'application, tandis qu'un bouton
+   d'aide réduit à une icône n'apprend plus rien à qui ne le connaît pas.
+   Vérifié : plus aucun débordement à 320 px. */
+@media (max-width:360px) {
+  .logo-w { display:none; }
+  .logo { margin-right:6px; }
+}
 /* ── Bascule mobile : onglets en bas, topnav réduite ─────────── */
 @media (max-width:700px) {
   .topnav .tab { display:none; }          /* les onglets passent en bas */
@@ -834,7 +859,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 <div class="frame-wrap">
   <iframe id="frame-bilan"        src="bilan.html?v=20260829b"        class="active"></iframe>
   <iframe id="frame-outils"       src="outils.html?v=20260829b"       ></iframe>
-  <iframe id="frame-prescription" src="programme.html?v=20260829b" ></iframe>
+  <iframe id="frame-prescription" src="programme.html?v=20260829c" ></iframe>
   <iframe id="frame-patients"     src="patients.html?v=20260817b"     ></iframe>
   <iframe id="frame-account"      src="account.html?v=20260817b"      ></iframe>
 </div>
