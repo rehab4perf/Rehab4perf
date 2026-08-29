@@ -1392,6 +1392,42 @@ lui, garde le score : c'est le praticien qui le lit.
 `_crBlocsTexte` (copie, mail) lisent les mêmes blocs. Un type de bloc ajouté
 d'un seul côté disparaît de l'autre sans le moindre signal.
 
+## Consignes d'exercice du builder — un `<textarea>` sans `rows` vaut DEUX lignes
+
+```bash
+node qualite/builder-consignes-cas.js
+```
+
+Le champ de consigne n'en veut qu'**une** — son `min-height:24px` le dit, et
+`autoResizeTa` le fait grandir dès qu'on écrit. Sans l'attribut, il ouvrait à
+deux lignes : sous **chaque** exercice, une ligne entière de vide. Sur
+téléphone, où la ligne d'exercice fait déjà ~300 px, c'est ce qui la faisait
+« descendre pour rien » — mesuré : rangée de 48 px pour un champ de 26.
+
+Corollaire à connaître : avec une seule ligne au repos, la **passe
+d'agrandissement au rendu devient critique**. `renderSession` la joue dans un
+`requestAnimationFrame` sur les seuls `.exo-consigne-ta.has-value` ; la couper
+ferait rouvrir toute consigne remplie sur une ligne, en coupant son contenu.
+
+**`requestAnimationFrame` ne se déclenche PAS dans un onglet ou une iframe
+masqués.** Ce n'est pas un risque ici — `renderSession()` ne tourne que sur
+interaction dans un builder visible, la restauration de brouillon étant elle-même
+derrière une confirmation — mais c'est la raison pour laquelle un banc d'essai
+dans un volet en arrière-plan montre les consignes coupées alors que
+l'application est correcte. Ne pas « corriger » le produit sur cette foi.
+
+**Le retrait de 34 px est annulé sur téléphone.** Il alignait la consigne sous le
+NOM, après la colonne des flèches monter/descendre — colonne masquée en dessous
+de 700 px (`nth-child(1){display:none}`). Il ne calait donc plus rien et ne
+faisait que rétrécir le champ de 38 px.
+
+**L'ordre des enfants de `.exo-row` porte toute la grille mobile** : chaque
+cellule s'y place au `nth-child`. Un enfant inséré au milieu décale tout ce qui
+suit, en silence. Le fichier de cas reconstruit le balisage depuis les littéraux
+concaténés et compte les ouvertures **à la profondeur zéro** — compter les
+`html += '<…'` ne suffit pas, le contenu imbriqué de chaque cellule est émis de
+la même façon.
+
 ## Graphiques d'Évolution — une carte, un chiffre puis une courbe
 
 ```bash

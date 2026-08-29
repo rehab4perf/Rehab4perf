@@ -2166,6 +2166,9 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
   .builder-body .exo-row > *:nth-child(8) { grid-column:1 / -1; grid-row:4; }     /* cible */
   .builder-body .exo-row > *:nth-child(9) { grid-column:3; grid-row:1; justify-self:end; align-self:start; } /* retirer */
   .builder-body .exo-row > *:nth-child(10){ grid-column:1 / -1; grid-row:5; }     /* EVA + consignes */
+  /* Le retrait de 34 px alignait la consigne sous le nom, apres la colonne
+     des fleches — masquee ici. Il ne cale donc plus rien. */
+  .builder-body .exo-consigne-row { padding-left:0; padding-right:0; }
   .cell-lbl { display:block; font-size:.58rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; }
   .builder-body .cell-input { font-size:var(--fs-lg); padding:7px 6px; }
   .builder-body .exo-name { font-size:var(--fs-lg); }
@@ -3299,7 +3302,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   </div><!-- /tool-panel-drawer -->
 </div><!-- /tool-panel-overlay -->
 
-<script src="js/prog-data.js?v=20260827g"></script>
+<script src="js/prog-data.js?v=20260829a"></script>
 
 <!-- ══ CYCLES MODAL ════════════════════════════════════════════ -->
 <style>

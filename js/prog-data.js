@@ -2780,7 +2780,7 @@ function renderSession(){
         html += '<div class="exo-consigne-row">'
              +  '<div class="exo-consigne-inner">'
              +  '<button class="nrs-badge" data-nrs="'+b.id+'-'+e.id+'" style="color:'+nrsCol+';border-color:'+(nrsVal!==null?nrsCol:'#CBD2DB')+'" onclick="toggleNrsPop(\''+b.id+'\',\''+e.id+'\',event)" title="Douleur NRS (0-10)">'+nrsTxt+'</button>'
-             +  '<textarea class="exo-consigne-ta'+(consigneVal?' has-value':'')+'"'
+             +  '<textarea rows="1" class="exo-consigne-ta'+(consigneVal?' has-value':'')+'"'
              +  ' placeholder="💬 Consignes spécifiques…"'
              +  ' oninput="updateField(\''+b.id+'\',\''+e.id+'\',\'consigne\',this.value);this.classList.toggle(\'has-value\',!!this.value.trim());autoResizeTa(this)"'
              +  '>'+escH(consigneVal)+'</textarea>'

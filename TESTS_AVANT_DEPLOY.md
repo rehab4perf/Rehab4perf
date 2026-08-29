@@ -31,6 +31,7 @@ node qualite/bilan-anterieur-cas.js
 node qualite/cr-med-tests-cas.js
 node qualite/cr-colonnes-cas.js
 node qualite/evolution-graphiques-cas.js
+node qualite/builder-consignes-cas.js
 ```
 
 - [ ] Sortie verte. Une variable CSS non définie est ignorée en silence par le
