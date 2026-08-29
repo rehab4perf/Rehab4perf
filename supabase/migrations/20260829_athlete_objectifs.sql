@@ -25,9 +25,18 @@
 --   aucune donnée clinique.
 -- ═══════════════════════════════════════════════════════════════════
 
+-- `patients.id` est un **uuid**. Ce n'est trouvable nulle part dans le code :
+-- tous les ids y sont comparés en `String()`, ce qui marche pour un uuid comme
+-- pour un bigint. Un premier jet a supposé `bigint` et la migration a échoué
+-- sur « incompatible types: bigint and uuid ». Vérifier le type de la colonne
+-- référencée avant d'écrire une clé étrangère.
+--
+-- L'identifiant PROPRE de cette table reste un bigint : il transite par du
+-- JavaScript où il est injecté dans un `onclick`, et un uuid non quoté y
+-- casserait l'appel.
 CREATE TABLE IF NOT EXISTS athlete_objectifs (
   id           bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  patient_id   bigint NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+  patient_id   uuid NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
   texte        text   NOT NULL,
   date         date   NOT NULL,
   -- Horodatage de la prise en compte par le praticien. NULL = déclarée,

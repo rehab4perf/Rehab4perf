@@ -192,7 +192,10 @@ function _renderEcheances(){
   montrees.forEach(function(o){
     var jm = o.jours === 0 ? "aujourd'hui" : 'J-' + o.jours;
     h += '<button class="cal-ech" data-kind="' + o.kind + '"'
-      +  ' onclick="' + (o.aVoir ? '_echPrendreEnCompte(' + o.echId + ',\'' + o.date + '\')' : '_echAller(\'' + o.date + '\')') + '"'
+      /* L'identifiant est QUOTE : la table le donne en bigint aujourd'hui,
+         mais un uuid non quote casserait l'appel — et le type d'une cle n'est
+         pas une chose sur laquelle parier depuis le JavaScript. */
+      +  ' onclick="' + (o.aVoir ? '_echPrendreEnCompte(\'' + o.echId + '\',\'' + o.date + '\')' : '_echAller(\'' + o.date + '\')') + '"'
       +  ' title="' + escH(o.text) + ' — ' + o.date + '">'
       +  '<span class="cal-ech-ico">' + (o.kind === 'sport' ? '🎯' : '⚑') + '</span>'
       +  '<span class="cal-ech-txt"><b>' + escH(o.text.length > 26 ? o.text.slice(0,26) + '…' : o.text) + '</b>'

@@ -99,7 +99,9 @@ ok('… et porte le même 🎯', une.innerHTML.indexOf('🎯') > 0);
 ok('toutes les échéances portent la même identité', /kind:'sport'/.test(js));
 var neuve = rendre([{ text:'UTMB', date:jour(24), source:'athlete', echId:7, repris:false }]);
 ok('une échéance déclarée et non reprise est marquée', neuve.innerHTML.indexOf('nouveau') > 0);
-ok('… et son clic la prend en compte', neuve.innerHTML.indexOf('_echPrendreEnCompte(7') > 0);
+ok('… et son clic la prend en compte, identifiant quoté',
+   neuve.innerHTML.indexOf("_echPrendreEnCompte('7'") > 0,
+   'un uuid non quoté casserait l\'appel');
 var reprise = rendre([{ text:'UTMB', date:jour(24), source:'athlete', echId:7, repris:true }]);
 ok('une fois reprise, plus aucune marque', reprise.innerHTML.indexOf('nouveau') < 0);
 ok('… et son clic navigue comme les autres', reprise.innerHTML.indexOf('_echAller') > 0);

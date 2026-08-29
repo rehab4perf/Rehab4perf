@@ -41,6 +41,22 @@ Ce fichier garde la mémoire de ce qui vaut **partout** ; les skills de domaine
 portent le **pourquoi** de chaque zone, les skills de méthode le **comment** des
 gestes répétés.
 
+## Types de clés en base — à vérifier, jamais à supposer
+
+**`patients.id` est un `uuid`.** Ce n'est trouvable nulle part dans le code :
+tous les identifiants y sont comparés en `String()`, ce qui marche pour un uuid
+comme pour un bigint. Une migration écrite en supposant `bigint` a échoué sur
+« incompatible types: bigint and uuid ». Avant d'écrire une clé étrangère,
+vérifier le type de la colonne référencée — en base, pas dans le code.
+
+**`bilans.id` est un `bigint`**, et le SDK Supabase le livre tantôt en nombre,
+tantôt en chaîne : d'où les comparaisons en `String()` partout, et le piège du
+`===` strict qui retombe sur l'indice 0.
+
+Corollaire côté JavaScript : **un identifiant injecté dans un `onclick` se
+quote toujours**. Un bigint non quoté passe, un uuid casse l'appel — et le type
+d'une clé n'est pas une chose sur laquelle parier depuis le navigateur.
+
 ## Deployment
 
 Deployment is fully automatic: `git push origin main` triggers a Netlify build. There is no build step — this is a static site served as-is. Never use `netlify deploy` manually unless Netlify CI is broken.
