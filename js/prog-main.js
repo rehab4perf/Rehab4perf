@@ -6903,6 +6903,37 @@ function _renderTmplCard(p, isPhase, phaseNum, hideCat, groupe){
    reste, ils s'affichaient « BLOC » — un bloc fantome, sans exercice, a la
    place du nom de l'etape. Le titre ne vit pas sur le separateur : il est dans
    `etapes[]`, que la carte doit donc lire elle aussi. */
+/* Un bloc cardio n'a pas d'exercices : l'apercu n'affichait donc que son
+   TITRE, et un titre comme « Bloc raise » ne dit ni le sport ni la duree. Le
+   praticien voyait une ligne suivie de rien, et croyait le bloc vide.
+
+   On rend ce qui le decrit : le sport, puis la duree ou la forme du
+   fractionne, puis la distance. Le titre ne survit que s'il a ete SAISI —
+   un titre automatique (« Bloc C ») n'apporterait rien a cote du sport. */
+function _cardioResume(b){
+  var sp = (typeof CARDIO_SPORTS !== 'undefined' ? CARDIO_SPORTS : [])
+    .find(function(x){ return x.val === b.sport; });
+  var bouts = [sp ? sp.label : (b.sport || 'Cardio')];
+
+  if(b.effort_type === 'fractionne'){
+    /* Le fractionne se decrit par sa forme, pas par un total : « 8 × 30s /
+       30s » dit ce qu'on va faire, « 8 min » ne le dit pas. */
+    var r = String(b.repetitions || '').trim();
+    var e = String(b.duree_effort || '').trim();
+    var rc = String(b.duree_recup || '').trim();
+    if(r && e) bouts.push(r + ' × ' + e + (rc ? ' / ' + rc : ''));
+    else if(e) bouts.push(e);
+  }
+  var dt = parseFloat(b.duree_totale);
+  if(!isNaN(dt) && dt > 0) bouts.push(dt + ' min');
+  var km = parseFloat(b.distance);
+  if(!isNaN(km) && km > 0) bouts.push(km + ' km');
+
+  var titre = String(b.title || '').trim();
+  var auto = b._titreAuto || /^Bloc( [A-Z])?$/.test(titre);
+  return (auto || !titre ? '' : titre + ' — ') + bouts.join(' · ');
+}
+
 function _renderTmplCardTree(bl, pid, etapes){
   if(!bl.length){
     return '<div class="stmpl-card-tree"><div class="stmpl-card-tree-empty">Ce modèle est vide.</div></div>';
@@ -6923,7 +6954,7 @@ function _renderTmplCardTree(bl, pid, etapes){
     if(bloc.type==='libre'){ dansEtape = false; return; }
     var dec = dansEtape ? ' stmpl-card-tree-in' : '';
     if(bloc.type==='cardio'){
-      h += '<div class="stmpl-card-tree-row'+dec+'">'+escH(bloc.title||bloc.sport||'Cardio')+'</div>';
+      h += '<div class="stmpl-card-tree-row'+dec+'">'+escH(_cardioResume(bloc))+'</div>';
     } else if(bloc.type==='texte'){
       h += '<div class="stmpl-card-tree-row'+dec+'">'+escH(bloc.title||'Texte')+'</div>';
     } else {

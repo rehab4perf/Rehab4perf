@@ -134,6 +134,22 @@ inutile le repli « champ vide → nom déjà enregistré », qui a été retir�
 c'est un geste d'agenda. Mais elle se **déclare** (`_loadProg(…, true)`) après
 confirmation nommant le modèle : sortir en silence perdrait le travail en cours.
 
+**L'aperçu d'une phase doit décrire ses blocs cardio.** Un bloc cardio n'a pas
+d'exercices : `_renderTmplCardTree` n'affichait donc que son **titre**. Un titre
+comme « Bloc raise » ne dit ni le sport ni la durée — le praticien voyait une
+ligne suivie de rien et croyait le bloc vide, alors que l'en-tête annonçait
+« 1 cardio ».
+
+`_cardioResume(bloc)` rend ce qui le décrit : le sport (libellé de
+`CARDIO_SPORTS`), la **forme** du fractionné plutôt qu'un total — « 8 × 30s /
+30s » dit ce qu'on va faire, « 8 min » ne le dit pas — puis la durée et la
+distance.
+
+Le titre ne survit que s'il a été **saisi** : il porte alors l'intention. Un
+titre automatique n'apporte rien à côté du sport, et **la forme du titre doit
+suffire à le reconnaître** — les blocs enregistrés avant `_titreAuto` n'ont pas
+le drapeau, et afficheraient « Bloc E » sans le repli sur `/^Bloc( [A-Z])?$/`.
+
 ## Mode template — un plan de travail emprunté
 
 ```bash

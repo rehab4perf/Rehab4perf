@@ -399,6 +399,55 @@ verifie('la planification par carte n\'est pas prise pour un départ du builder'
 
 /* ── Verdict ─────────────────────────────────────────────────────────────── */
 
+/* ══════════════════════════════════════════════════════════════════════════
+   L'APERCU D'UNE PHASE DOIT DECRIRE SES BLOCS CARDIO
+
+   Un bloc cardio n'a pas d'exercices : l'apercu de la barre laterale
+   n'affichait donc que son TITRE. Un titre comme « Bloc raise » ne dit ni le
+   sport ni la duree — le praticien voyait une ligne suivie de rien et croyait
+   le bloc vide, alors que l'en-tete annoncait « 1 cardio ».
+
+   On execute le VRAI resume, avec la VRAIE table des sports.
+   ══════════════════════════════════════════════════════════════════════════ */
+console.log('\n  Aperçu d\'un bloc cardio dans la barre latérale');
+{
+  var dataSrcC = fs.readFileSync(path.join(__dirname, '..', 'js', 'prog-data.js'), 'utf8');
+  var _sp = dataSrcC.slice(dataSrcC.indexOf('var CARDIO_SPORTS'),
+                           dataSrcC.indexOf('var CARDIO_EFFORT_TYPES'));
+  var _c0 = mainSrc.indexOf('function _cardioResume');
+  var _c1 = mainSrc.indexOf('function _renderTmplCardTree');
+  if (_c0 < 0 || _c1 < _c0) { console.error('Bornes de _cardioResume introuvables.'); process.exit(1); }
+  /* eslint-disable no-new-func */
+  var resume = new Function(_sp + '\n' + mainSrc.slice(_c0, _c1) + '\nreturn _cardioResume;')();
+
+  verifie('le sport est nommé', '🚴 Vélo · 45 min',
+    resume({ sport:'velo', effort_type:'continu', duree_totale:'45', title:'Bloc C', _titreAuto:true }));
+  /* Un titre SAISI porte l'intention du praticien : on le garde. */
+  verifie('un titre saisi est conservé', 'Bloc raise — 🚴 Vélo · 20 min',
+    resume({ sport:'velo', effort_type:'continu', duree_totale:'20', title:'Bloc raise' }));
+  /* Un titre automatique n'apporte rien a cote du sport. */
+  verifie('un titre automatique s\'efface', '🏃 Course à pied · 50 min · 8 km',
+    resume({ sport:'course', effort_type:'continu', duree_totale:'50', distance:'8',
+             title:'Bloc A', _titreAuto:true }));
+  /* Les blocs enregistres AVANT `_titreAuto` n'ont pas le drapeau : la forme
+     du titre doit suffire a les reconnaitre, sinon « Bloc E » s'afficherait. */
+  verifie('… même sans le drapeau, sur un bloc ancien', '🚶 Marche · 30 min',
+    resume({ sport:'marche', effort_type:'continu', duree_totale:'30', title:'Bloc E' }));
+  /* Un fractionne se decrit par sa FORME : « 8 min » ne dit pas ce qu'on fait. */
+  verifie('un fractionné donne sa forme', '🏃 Course à pied · 8 × 30s / 30s',
+    resume({ sport:'course', effort_type:'fractionne', repetitions:'8',
+             duree_effort:'30s', duree_recup:'30s', title:'Bloc B', _titreAuto:true }));
+  verifie('un bloc sans mesure reste lisible', '🏊 Natation',
+    resume({ sport:'natation', effort_type:'continu', title:'Bloc D', _titreAuto:true }));
+  verifie('un sport vide ne casse pas la ligne', 'Cardio · 12 min',
+    resume({ sport:'', effort_type:'continu', duree_totale:'12', title:'Bloc' }));
+
+  var zoneTree = mainSrc.slice(_c1, mainSrc.indexOf('\nfunction ', _c1 + 10));
+  verifie('l\'aperçu lit bien ce résumé', true, /_cardioResume\(bloc\)/.test(zoneTree));
+  verifie('… et n\'affiche plus le seul titre', false,
+    /bloc\.title\|\|bloc\.sport\|\|'Cardio'/.test(zoneTree));
+}
+
 console.log('\n' + '─'.repeat(64));
 if (nbKo) {
   console.log('✗ ' + nbKo + ' attente(s) en échec sur ' + (nbOk + nbKo));
