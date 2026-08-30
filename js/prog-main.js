@@ -6913,7 +6913,11 @@ function _renderTmplCard(p, isPhase, phaseNum, hideCat, groupe){
 function _cardioResume(b){
   var sp = (typeof CARDIO_SPORTS !== 'undefined' ? CARDIO_SPORTS : [])
     .find(function(x){ return x.val === b.sport; });
-  var bouts = [sp ? sp.label : (b.sport || 'Cardio')];
+  // Les libelles de CARDIO_SPORTS portent un emoji pour le selecteur du builder ;
+  // l'apercu n'en veut pas. On coupe avant la premiere lettre plutot que de lister
+  // les emojis : « ❄️ Ski Erg » en porte deux, dont un selecteur de variante invisible.
+  var nom = sp ? sp.label.replace(/^[^A-Za-zÀ-ÿ]+/, '') : (b.sport || 'Cardio');
+  var bouts = [nom];
 
   if(b.effort_type === 'fractionne'){
     /* Le fractionne se decrit par sa forme, pas par un total : « 8 × 30s /

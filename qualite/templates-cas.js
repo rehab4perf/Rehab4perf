@@ -420,25 +420,32 @@ console.log('\n  Aperçu d\'un bloc cardio dans la barre latérale');
   /* eslint-disable no-new-func */
   var resume = new Function(_sp + '\n' + mainSrc.slice(_c0, _c1) + '\nreturn _cardioResume;')();
 
-  verifie('le sport est nommé', '🚴 Vélo · 45 min',
+  verifie('le sport est nommé', 'Vélo · 45 min',
     resume({ sport:'velo', effort_type:'continu', duree_totale:'45', title:'Bloc C', _titreAuto:true }));
   /* Un titre SAISI porte l'intention du praticien : on le garde. */
-  verifie('un titre saisi est conservé', 'Bloc raise — 🚴 Vélo · 20 min',
+  verifie('un titre saisi est conservé', 'Bloc raise — Vélo · 20 min',
     resume({ sport:'velo', effort_type:'continu', duree_totale:'20', title:'Bloc raise' }));
   /* Un titre automatique n'apporte rien a cote du sport. */
-  verifie('un titre automatique s\'efface', '🏃 Course à pied · 50 min · 8 km',
+  verifie('un titre automatique s\'efface', 'Course à pied · 50 min · 8 km',
     resume({ sport:'course', effort_type:'continu', duree_totale:'50', distance:'8',
              title:'Bloc A', _titreAuto:true }));
   /* Les blocs enregistres AVANT `_titreAuto` n'ont pas le drapeau : la forme
      du titre doit suffire a les reconnaitre, sinon « Bloc E » s'afficherait. */
-  verifie('… même sans le drapeau, sur un bloc ancien', '🚶 Marche · 30 min',
+  verifie('… même sans le drapeau, sur un bloc ancien', 'Marche · 30 min',
     resume({ sport:'marche', effort_type:'continu', duree_totale:'30', title:'Bloc E' }));
   /* Un fractionne se decrit par sa FORME : « 8 min » ne dit pas ce qu'on fait. */
-  verifie('un fractionné donne sa forme', '🏃 Course à pied · 8 × 30s / 30s',
+  verifie('un fractionné donne sa forme', 'Course à pied · 8 × 30s / 30s',
     resume({ sport:'course', effort_type:'fractionne', repetitions:'8',
              duree_effort:'30s', duree_recup:'30s', title:'Bloc B', _titreAuto:true }));
-  verifie('un bloc sans mesure reste lisible', '🏊 Natation',
+  verifie('un bloc sans mesure reste lisible', 'Natation',
     resume({ sport:'natation', effort_type:'continu', title:'Bloc D', _titreAuto:true }));
+  /* Les libelles portent un emoji pour le SELECTEUR du builder ; l'apercu n'en
+     veut pas. Ski Erg est le cas dur : son emoji tient en DEUX points de code,
+     dont un selecteur de variante invisible — une liste d'emojis en laisserait
+     un derriere. On coupe avant la premiere lettre. */
+  verifie('l\'emoji du sélecteur ne passe pas dans l\'aperçu', 'Ski Erg · 15 min',
+    resume({ sport:'ski_erg', effort_type:'continu', duree_totale:'15',
+             title:'Bloc F', _titreAuto:true }));
   verifie('un sport vide ne casse pas la ligne', 'Cardio · 12 min',
     resume({ sport:'', effort_type:'continu', duree_totale:'12', title:'Bloc' }));
 

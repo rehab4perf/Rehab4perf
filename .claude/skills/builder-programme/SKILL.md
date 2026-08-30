@@ -145,6 +145,12 @@ ligne suivie de rien et croyait le bloc vide, alors que l'en-tête annonçait
 30s » dit ce qu'on va faire, « 8 min » ne le dit pas — puis la durée et la
 distance.
 
+**L'emoji du sélecteur ne passe pas dans l'aperçu.** Les libellés de
+`CARDIO_SPORTS` en portent un parce qu'ils servent d'abord au **sélecteur** du
+builder ; une liste de répertoire n'en veut pas. On coupe **avant la première
+lettre** plutôt que de lister les emojis — « ❄️ Ski Erg » en porte deux, dont un
+sélecteur de variante invisible qu'une liste laisserait derrière.
+
 Le titre ne survit que s'il a été **saisi** : il porte alors l'intention. Un
 titre automatique n'apporte rien à côté du sport, et **la forme du titre doit
 suffire à le reconnaître** — les blocs enregistrés avant `_titreAuto` n'ont pas
@@ -321,6 +327,22 @@ suit, en silence. Le fichier de cas reconstruit le balisage depuis les littérau
 concaténés et compte les ouvertures **à la profondeur zéro** — compter les
 `html += '<…'` ne suffit pas, le contenu imbriqué de chaque cellule est émis de
 la même façon.
+
+## Calculateur de 1RM — le défaut est UNE répétition
+
+```bash
+node qualite/calculateur-rm-cas.js
+```
+
+Le champ ouvrait sur **5** répétitions. Le praticien qui vient de faire tester un
+maximum devait donc corriger le champ **avant** de pouvoir lire le résultat — et
+une valeur fausse s'affichait entre-temps, sur un écran qui a l'air d'un
+résultat.
+
+À une répétition, les six formules rendent le **poids lui-même** : le
+calculateur ne calcule plus rien, il rend ce qu'on a soulevé. C'est ce qui rend
+ce défaut légitime, et c'est vérifié formule par formule — si l'une cessait de
+le faire, l'ouverture afficherait un 1RM différent du poids saisi.
 
 ## Bande d'échéances — la distance, pas la date
 
