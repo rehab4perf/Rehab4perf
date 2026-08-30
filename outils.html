@@ -7401,6 +7401,19 @@ _updateOutilsPatientBtns();
     var textEsc        = _crHtmlCourant;
 
     var patNomPDF = crV('cr-pat-nom') || '';
+
+    /* Le pied courant repose sur `position:fixed`, que les moteurs de BUREAU
+       repetent sur chaque page imprimee. WebKit mobile ne le fait pas : il
+       pose l'element UNE fois, la ou il tombe — au milieu d'un tableau de
+       mesures dans le CR d'un patient, en gris, comme une ligne parasite.
+
+       Il n'existe aucun test de fonctionnalite pour « ce moteur d'impression
+       repete-t-il les elements fixes ». On identifie donc la plateforme, et
+       sur iOS on n'emet pas le pied du tout : mieux vaut une feuille sans
+       identification qu'une ligne grise en travers des resultats. iPadOS se
+       declare « Macintosh » depuis la version 13, d'ou le second test. */
+    var _sansPiedCourant = /iPad|iPhone|iPod/.test(navigator.userAgent)
+      || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     /* Sans balise `viewport`, Safari iOS suppose une page « bureau » de
        980 px de large et dezoome pour la faire entrer dans l'ecran. A
        l'impression il met ensuite cette largeur SUPPOSEE a l'echelle du
@@ -7471,9 +7484,10 @@ _updateOutilsPatientBtns();
       + 'text-align:center;font-size:7.5pt;color:#9D9B96;letter-spacing:.02em}'
       + '</style>'
       + '</head><body>'
-      + '<div id="cr-runfoot">' + _crEsc(patNomPDF ? patNomPDF.toUpperCase() : '')
-      + (letterDate ? (patNomPDF ? ' &nbsp;·&nbsp; ' : '') + _crEsc(letterDate) : '')
-      + (practName ? ' &nbsp;·&nbsp; ' + _crEsc(practName) : '') + '</div>'
+      + (_sansPiedCourant ? '' :
+          '<div id="cr-runfoot">' + _crEsc(patNomPDF ? patNomPDF.toUpperCase() : '')
+          + (letterDate ? (patNomPDF ? ' &nbsp;·&nbsp; ' : '') + _crEsc(letterDate) : '')
+          + (practName ? ' &nbsp;·&nbsp; ' + _crEsc(practName) : '') + '</div>')
       + '<div id="cr-topbar">'
       + '<button class="btn-back" onclick="window.close()">← Retour</button>'
       + '<span id="cr-scale-info"></span>'

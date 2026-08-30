@@ -90,6 +90,20 @@ colonnes, la même chose tient dans **moins de la moitié** de la hauteur (mesur
 355 px → 175 px). Une liste d'un seul item repasse sur une colonne — sinon le
 lecteur cherche ce qui manque dans la colonne vide.
 
+**Le pied courant ne s'imprime PAS sur iOS.** `position:fixed` n'est répété sur
+chaque page que par les moteurs de **bureau**. WebKit mobile pose l'élément une
+seule fois, là où il tombe — observé : une ligne grise en travers d'un tableau
+de mesures, au milieu de la page 2 du CR d'un patient.
+
+Il n'existe aucun test de fonctionnalité pour « ce moteur d'impression
+répète-t-il les éléments fixes ». On identifie donc la plateforme, et sur iOS le
+pied **n'est pas émis du tout** — pas seulement masqué : un élément masqué reste
+dans le document, et une règle d'impression peut le ramener. iPadOS se déclare
+« Macintosh » depuis la version 13, d'où le second test sur `maxTouchPoints`.
+
+Compromis assumé : une feuille sans identification vaut mieux qu'une ligne grise
+en travers des résultats.
+
 **Le pied courant ne numérote pas, il identifie.** Un `position:fixed` se répète
 sur chaque page imprimée ; c'est le seul moyen d'obtenir un pied de page. Les
 boîtes de marge `@page`, seules à savoir compter les pages, **ne sont pas

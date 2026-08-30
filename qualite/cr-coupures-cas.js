@@ -110,8 +110,12 @@ console.log('\nL\'export imprime la même chose partout');
 var _e0 = src.indexOf("'<title>CR — '");
 var _e1 = src.indexOf('var w = window.open', _e0);
 if (_e0 < 0 || _e1 < _e0) { console.error('Bornes de l\'export CR introuvables.'); process.exit(1); }
-/* On remonte jusqu'au debut de la construction du document. */
-var expo = src.slice(src.lastIndexOf('var html =', _e0), _e1);
+/* On remonte jusqu'a `patNomPDF`, unique et anterieure a TOUT ce que ce
+   bloc met en place — y compris la detection de plateforme, declaree avant la
+   construction du document. Borner sur `var html =` la laissait dehors. */
+var _e2 = src.indexOf("var patNomPDF = crV('cr-pat-nom')");
+if (_e2 < 0 || _e2 > _e0) { console.error('Borne patNomPDF introuvable.'); process.exit(1); }
+var expo = src.slice(_e2, _e1);
 ok('le document d\'export déclare son viewport',
    /<meta name="viewport" content="width=device-width,initial-scale=1">/.test(expo));
 ok('iOS ne recalcule plus les tailles de texte',
@@ -123,6 +127,29 @@ ok('la boucle d\'ajustement a un repli sans requestAnimationFrame',
    /if\(window\.requestAnimationFrame\)/.test(expo));
 ok('… et elle ne peut pas tourner sans fin', /\+\+tours>40/.test(expo));
 ok('l\'impression reste déclenchée au bout', /window\.print\(\);\},350\)/.test(expo));
+
+/* ── Le pied courant et WebKit mobile ────────────────────────────
+ * Le pied repose sur `position:fixed`, que les moteurs de BUREAU répètent sur
+ * chaque page imprimée. WebKit mobile ne le fait pas : il pose l'élément UNE
+ * fois, là où il tombe — au milieu d'un tableau de mesures, en gris, comme une
+ * ligne parasite au travers des résultats d'un patient.
+ *
+ * Il n'existe aucun test de fonctionnalité pour « ce moteur répète-t-il les
+ * éléments fixes ». On identifie donc la plateforme — c'est un compromis, et
+ * il est assumé : mieux vaut une feuille sans identification qu'une ligne
+ * grise en travers des mesures. */
+console.log('\nLe pied courant ne traverse plus les tableaux sur iPad');
+ok('la plateforme est identifiée à l\'export',
+   /_sansPiedCourant\s*=\s*\/iPad\|iPhone\|iPod\/\.test\(navigator\.userAgent\)/.test(expo));
+/* iPadOS se déclare « Macintosh » depuis la version 13 : sans ce second test,
+   l'iPad passerait à travers la détection. */
+ok('… iPadOS compris, qui se déclare « Macintosh »',
+   /navigator\.platform === 'MacIntel' && navigator\.maxTouchPoints > 1/.test(expo));
+/* On n'ÉMET pas l'élément, plutôt que de le masquer : un pied masqué par CSS
+   reste dans le document, et une règle d'impression peut le ramener. */
+ok('le pied n\'est pas émis du tout sur ces plateformes',
+   /_sansPiedCourant \? '' :\s*\n?\s*'<div id="cr-runfoot">/.test(expo));
+ok('… mais il subsiste ailleurs', /#cr-runfoot\{display:block!important\}/.test(src));
 
 console.log('');
 if (ko) { console.error(ko + ' cas en echec.'); process.exit(1); }
