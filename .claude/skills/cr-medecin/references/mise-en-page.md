@@ -37,6 +37,41 @@ alourdissait deux blocs déjà signalés par leur filet et leur intitulé. Deux
 filets horizontaux très fins les bornent à la place. Chaque bloc garde SA
 couleur de filet et de titre : c'est ce qui les distingue l'un de l'autre.
 
+**Une SECTION entière ne se coupe pas.** Le titre d'intertitre et ses tableaux
+sont **frères** dans le balisage, pas imbriqués : `break-after:avoid` sur le
+titre le retient avec la première ligne qui suit, mais rien ne retenait la
+section entière — un bloc « Tests de force » pouvait commencer en bas d'une
+page et finir sur la suivante. `_crBlocsHtml` enveloppe donc chaque intertitre
+**avec son contenu** dans un `.lt-grp`, fermé au suivant, avant le pied de
+lettre, et en fin de courrier.
+
+Contrepartie assumée : une section plus haute qu'une page est reportée en
+entier, laissant un blanc en bas de la précédente ; le navigateur la coupera
+quand même si elle ne tient sur aucune page. **Un blanc se lit mieux qu'un
+tableau coupé.** Le pied de lettre est explicitement sorti du groupe — il a
+déjà `.lt-fin`, et l'y enfermer le collerait à des mesures.
+
+**L'export doit imprimer la même chose sur iPad et sur ordinateur.** Trois
+manques faisaient diverger les deux, et ils se cumulaient :
+
+- **Aucune balise `viewport`** : Safari iOS suppose alors une page de 980 px et
+  met **cette** largeur à l'échelle du papier — le contenu, large de 680 px,
+  n'occupait que ~69 % de la feuille.
+- **Aucun `-webkit-text-size-adjust`** : iOS gonfle de lui-même les tailles
+  quand il juge la page étroite. Or la boucle d'ajustement **fixe** une taille
+  en pixels puis mesure la hauteur obtenue — le facteur appliqué par-dessus
+  rendait la mesure sans rapport avec ce qui est imprimé.
+- **La boucle avançait par `requestAnimationFrame`**, qui ne se déclenche pas
+  dans un onglet en arrière-plan — et sur iPad l'onglet d'export s'y ouvre
+  souvent. Elle s'arrêtait à mi-chemin, ou n'appelait jamais l'impression. Elle
+  garde le rAF quand il répond et retombe sur un `setTimeout` sinon, avec une
+  butée de quarante tours : une boucle d'ajustement ne doit jamais pouvoir
+  tourner sans fin sur un contenu qui ne rétrécit plus.
+
+```bash
+node qualite/cr-coupures-cas.js
+```
+
 **Rien ne se coupe au milieu.** `break-inside:avoid` sur la grille patient, les
 encadrés, les tableaux et leurs lignes ; `break-after:avoid` sur `.lt-sec` —
 un intertitre seul en pied de page annonce une section qui commence ailleurs.

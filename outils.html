@@ -6555,6 +6555,9 @@ _updateOutilsPatientBtns();
        page annonce une section qui commence ailleurs — c'est ce qui donnait
        l'impression d'un document coupe n'importe ou. */
     '.lt-pat,.lt-bloc,table.lt-t{break-inside:avoid;page-break-inside:avoid}',
+    /* Une section entiere — intertitre + ses tableaux — reste d'un seul
+       tenant. Voir _crBlocsHtml pour la contrepartie assumee. */
+    '.lt-grp{break-inside:avoid;page-break-inside:avoid}',
     'table.lt-t tr{break-inside:avoid;page-break-inside:avoid}',
     'table.lt-t thead{display:table-header-group}',
     '.lt-sec{break-after:avoid;page-break-after:avoid;break-inside:avoid}',
@@ -6675,6 +6678,23 @@ _updateOutilsPatientBtns();
   /* ── Rendu HTML — ecran, PDF ───────────────────────────────────────── */
   function _crBlocsHtml(blocs) {
     var h = '', tampon = [];
+
+    /* ── Une section ne se coupe pas en deux ───────────────────────────
+       Le titre d'intertitre et ses tableaux sont FRERES, pas imbriques :
+       `break-after:avoid` sur le titre le retient avec la premiere ligne qui
+       suit, mais rien ne retenait la section ENTIERE. Un bloc « Tests de
+       force » pouvait donc commencer en bas d'une page et finir sur la
+       suivante, ce qui oblige le medecin a tourner la page au milieu d'un
+       tableau de mesures.
+
+       On enveloppe donc chaque intertitre AVEC son contenu, jusqu'au suivant.
+       Contrepartie assumee : une section plus haute qu'une page sera reportee
+       en entier sur la page suivante, laissant un blanc en bas de la
+       precedente — le navigateur la coupera quand meme si elle ne tient sur
+       aucune page. Un blanc se lit mieux qu'un tableau coupe. */
+    var _grpOuvert = false;
+    function ouvrirGroupe(){ if(!_grpOuvert){ h += '<div class="lt-grp">'; _grpOuvert = true; } }
+    function fermerGroupe(){ if(_grpOuvert){ h += '</div>'; _grpOuvert = false; } }
 
     /* Les lignes de test sont MISES EN ATTENTE, puis ecrites d un coup.
        L en-tete se construisait auparavant sur la premiere ligne venue — or
@@ -6942,6 +6962,8 @@ _updateOutilsPatientBtns();
       }
       if (b.t === 'sec') {
         fermerTable();
+        fermerGroupe();
+        ouvrirGroupe();
         h += '<div class="lt-sec"><h3>' + _crEsc(b.txt || '') + '</h3></div>';
         return;
       }
@@ -6979,6 +7001,9 @@ _updateOutilsPatientBtns();
       }
       if (b.t === 'fin') {
         fermerTable();
+        /* Le pied de lettre a deja son propre groupe (.lt-fin) : l'enfermer
+           dans la derniere section le collerait a des mesures. */
+        fermerGroupe();
         h += '<div class="lt-fin">' + (b.lignes || []).map(function (l) {
           return l ? '<p class="lt-p">' + _crEsc(l) + '</p>' : '';
         }).join('') + '</div>';
@@ -6987,6 +7012,7 @@ _updateOutilsPatientBtns();
       if (b.t === 'test') { tampon.push(b); return; }
     });
     fermerTable();
+    fermerGroupe();
     return h;
   }
 
@@ -7375,12 +7401,25 @@ _updateOutilsPatientBtns();
     var textEsc        = _crHtmlCourant;
 
     var patNomPDF = crV('cr-pat-nom') || '';
+    /* Sans balise `viewport`, Safari iOS suppose une page « bureau » de
+       980 px de large et dezoome pour la faire entrer dans l'ecran. A
+       l'impression il met ensuite cette largeur SUPPOSEE a l'echelle du
+       papier : le contenu, large de 680 px, n'occupait donc que ~69 % de la
+       feuille. C'est le principal ecart entre l'apercu sur ordinateur et
+       celui sur iPad. */
     var html = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">'
+      + '<meta name="viewport" content="width=device-width,initial-scale=1">'
       + '<link rel="stylesheet" href="' + window.location.origin + '/fonts/fonts.css">'
       + '<title>CR — ' + (patNomPDF || practName) + '</title>'
       + '<style>'
       + ':root{--accent:#2B5FA6;--accent-l:#EEF3FB;--accent2:#1A3A5C;--navy:#1A3A5C;--text:#1A1917;--text2:#6B6860;--text3:#9D9B96;--muted:#6B6860;--border:#E8E6E1;--surface:#fff;--surface2:#F1F0ED;--bg:#F0F4F8;--green:#2D6A4F;--green-l:#E8F5EE;--red:#C0392B;--red-l:#FDECEA;--orange:#D4600A;--orange-l:#FEF3EB}'
       + '*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+      /* iOS gonfle de lui-meme la taille du texte quand il juge la page
+         etroite. La boucle d'ajustement ci-dessous FIXE une taille en pixels
+         puis mesure la hauteur obtenue : sans ce garde, iOS applique son
+         propre facteur par-dessus et la mesure ne decrit plus ce qui sera
+         imprime. */
+      + 'html{-webkit-text-size-adjust:100%;text-size-adjust:100%}'
       + 'body{font-family:"Figtree",-apple-system,"Helvetica Neue",Arial,sans-serif;font-size:13px;color:#1A1917;background:#fff}'
       + '#cr-topbar{position:fixed;top:0;left:0;right:0;height:46px;background:#1A3A5C;display:flex;align-items:center;justify-content:space-between;padding:0 22px;z-index:999;gap:12px}'
       + '#cr-topbar button{border:none;border-radius:6px;cursor:pointer;font-size:.78rem;font-weight:600;padding:6px 16px;font-family:inherit}'
@@ -7452,22 +7491,33 @@ _updateOutilsPatientBtns();
       + _crGetPevoSectionHtml()
       + '</div>'
       + '<script>'
+      /* La boucle d'ajustement reduit la police jusqu'a ce que le courrier
+         tienne sur une page. Elle avancait par requestAnimationFrame, qui ne
+         se declenche PAS dans un onglet qui n'est pas au premier plan — or sur
+         iPad l'onglet d'export s'ouvre souvent en arriere-plan. La boucle
+         s'arretait alors a mi-chemin, ou n'appelait jamais l'impression. On
+         garde le rAF quand il repond, et on retombe sur un setTimeout sinon :
+         elle aboutit dans les deux cas. Le compteur de tours est une butee —
+         une boucle d'ajustement ne doit jamais pouvoir tourner sans fin sur un
+         contenu qui ne retrecit plus. */
       + 'window.onload=function(){'
       + 'var page=document.getElementById("cr-page");'
       + 'var tbody=document.getElementById("cr-body");'
       + 'var info=document.getElementById("cr-scale-info");'
       + 'var MM=96/25.4;'
       + 'var TARGET=Math.round((297-24)*MM);'
-      + 'var fs=13,MIN=7.5;'
+      + 'var fs=13,MIN=7.5,tours=0;'
+      + 'function suivant(f){var t=setTimeout(f,32);'
+      + 'if(window.requestAnimationFrame){requestAnimationFrame(function(){clearTimeout(t);f();});}}'
       + 'function fit(){'
-      + 'if(page.scrollHeight<=TARGET||fs<=MIN){'
+      + 'if(page.scrollHeight<=TARGET||fs<=MIN||++tours>40){'
       + 'if(fs<12.5){info.textContent="Police : "+fs.toFixed(1)+"px (adaptée 1 page)";}'
       + 'setTimeout(function(){window.print();},350);return;}'
       + 'fs=Math.max(MIN,fs-0.5);'
       + 'tbody.style.fontSize=fs+"px";'
       + 'tbody.style.lineHeight=(1.38+(fs-MIN)*0.024).toFixed(2);'
-      + 'requestAnimationFrame(fit);}'
-      + 'requestAnimationFrame(fit);};'
+      + 'suivant(fit);}'
+      + 'suivant(fit);};'
       + '<\/script>'
       + '</body></html>';
 
