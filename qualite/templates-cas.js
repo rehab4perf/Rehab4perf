@@ -362,10 +362,22 @@ verifie('l\'ouverture renseigne le champ de nom', true,
 
 var zoneMaj = mainSrc.slice(mainSrc.indexOf('function _doUpdateTemplate'),
                             mainSrc.indexOf('function duplicateTemplate'));
-verifie('la mise à jour retombe sur le nom déjà enregistré', true,
-  /nomProg\s*=[\s\S]{0,220}_tRefNom[\s\S]{0,40}\.nom/.test(zoneMaj));
-verifie('elle n\'envoie plus le champ brut sans repli', false,
-  /var nomProg = \(document\.getElementById\('patientName'\)\|\|\{\}\)\.value \|\| '';/.test(zoneMaj));
+/* CE QUI A CHANGE, et pourquoi l'ancienne attente etait juste en son temps.
+   Elle exigeait que la mise a jour RETOMBE sur le nom deja enregistre quand le
+   champ etait vide — un repli qui protegeait d'un renommage en « sans nom ».
+   Le champ restait donc la source du nom, et c'etait le defaut de fond : il
+   nomme une SEANCE, si bien que charger la seance d'un patient dans un modele
+   ouvert renommait la phase au gre du contenu charge.
+
+   Decision du praticien : le nom d'un modele est son IDENTITE et ne se change
+   que par « Modifier », dans le menu « … ». La mise a jour n'envoie donc plus
+   que le contenu — ne pas ecrire une colonne qu'on ne possede pas est la seule
+   facon sure de ne jamais la corrompre, et le repli n'a plus d'objet. */
+verifie('la mise à jour n\'envoie que le contenu', true,
+  /body: JSON\.stringify\(\{ donnees: donnees \}\)/.test(zoneMaj));
+verifie('elle ne touche plus du tout au nom', false,
+  /nom:\s*nomProg|nom:\s*\(document/.test(zoneMaj));
+verifie('le repli devenu inutile a été retiré', false, /_tRefNom/.test(zoneMaj));
 
 /* ══════════════════════════════════════════════════════════════════════════
    Planifier un repertoire ne pre-coche aucun jour.

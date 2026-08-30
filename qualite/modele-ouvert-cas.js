@@ -89,6 +89,33 @@ ok('le libellé nomme le modèle', /Mettre à jour « ' \+/.test(btn));
 ok('le bouton secondaire ne fait pas doublon',
    /if\(_builderFromTemplate && !_currentSeanceId && !_currentProgId\)\{[\s\S]{0,700}if\(updBtn\) updBtn\.style\.display = 'none';[\s\S]{0,40}return;/.test(btn));
 
+/* ── Le nom de la phase est son identité ─────────────────────────
+ * Le nom d'un modèle ne se change que par « Modifier » dans le menu « … ».
+ * Charger une séance de patient écrasait le champ de nom du builder avec le
+ * nom de cette séance ; la mise à jour lisait ce champ, et renommait donc la
+ * phase au gré de ce qui avait été chargé — le nom officiel était perdu sans
+ * que rien ne le signale. */
+console.log('\nLe nom du modèle ne suit pas le contenu');
+var corps = data.slice(data.indexOf('function _loadProg('));
+corps = corps.slice(0, corps.indexOf('\nfunction '));
+ok('charger un contenu n\'écrase pas le champ de nom',
+   /if\(pnEl && !_gardeModele\) pnEl\.value = d\.nom/.test(corps),
+   'le nom du modèle serait remplacé par celui de la séance chargée');
+
+var maj = main.slice(main.indexOf('function _doUpdateTemplate'));
+maj = maj.slice(0, maj.indexOf('\nfunction '));
+ok('la mise à jour n\'envoie que le contenu',
+   /body: JSON\.stringify\(\{ donnees: donnees \}\)/.test(maj));
+/* Envoyer `nom` reprendrait le champ du builder, qui nomme une SEANCE. */
+ok('… et jamais le nom', !/nom:\s*nomProg/.test(maj) && !/nom:\s*\(/.test(maj));
+ok('plus aucun repli mort sur le nom', maj.indexOf('_tRefNom') < 0);
+
+/* Le renommage existe, et il est ailleurs : sans lui la regle enfermerait le
+   praticien avec un nom qu'il ne pourrait plus changer. */
+ok('« Modifier » reste offert dans le menu « … »',
+   /action: function\(\)\{ openEditTemplate\(id\); \}/.test(main));
+ok('… et il porte bien le nom', /_openTmplModal\(\{ editId:id, nom:t\.nom/.test(main));
+
 console.log('');
 if (ko) { console.error(ko + ' cas en echec.'); process.exit(1); }
 console.log('Modèle ouvert dans le builder : tous les cas passent.');

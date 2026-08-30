@@ -5293,17 +5293,17 @@ function _doUpdateTemplate(){
   if(!_progToken || !_progUid){ alert('Session non disponible.'); return; }
   var btn = document.getElementById('prog-update-btn');
   if(btn){ btn.disabled = true; btn.textContent = '⏳…'; }
-  /* Un champ vide ne vaut pas « efface le nom » : on retombe sur celui deja
-     enregistre. Sans ce repli, mettre a jour un repertoire dont le champ
-     n'avait pas ete rempli le laissait sans nom dans la liste. */
-  var _tRefNom = (_sidebarProgs||[]).find(function(x){ return String(x.id)===String(_builderFromTemplate); });
-  var nomProg = ((document.getElementById('patientName')||{}).value || '').trim()
-             || (_tRefNom && _tRefNom.nom) || '';
+  /* La mise a jour porte sur le CONTENU, jamais sur le nom : il se change
+     par « Modifier » dans le menu « … », et nulle part ailleurs. Elle lisait
+     le champ de nom du builder — qui sert a nommer une seance de patient —
+     et renommait donc la phase au gre de ce qui avait ete charge. */
   var donnees = JSON.stringify({ blocs: JSON.parse(JSON.stringify(blocs||[])), etapes: JSON.parse(JSON.stringify(etapes||[])), notes: getNotes() });
   _fetchRetry(SUPA_URL_P + '/rest/v1/templates?id=eq.' + _builderFromTemplate, {
     method: 'PATCH',
     headers: Object.assign({}, _sbHeaders(), {'Prefer':'return=representation'}),
-    body: JSON.stringify({ donnees: donnees, nom: nomProg })
+    /* On n'envoie QUE le contenu : ne pas ecrire une colonne qu'on ne
+       possede pas est la seule facon sure de ne jamais la corrompre. */
+    body: JSON.stringify({ donnees: donnees })
   })
   .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, status:r.status, data:d}; }); })
   .then(function(res){

@@ -5687,8 +5687,13 @@ function _loadProg(id, seanceId, quitterModele){
         });
         if (_hsrBlocInvalid) blocs = [];
       }
+      /* Le nom d'un modele est son IDENTITE, pas un reflet de son contenu :
+         il ne se change que par « Modifier » dans le menu « … ». Charger une
+         seance de patient ecrasait le champ avec le nom de cette seance, et
+         la mise a jour renommait alors la phase — le nom officiel etait perdu
+         sans que rien ne le signale. */
       var pnEl = document.getElementById('patientName');
-      if(pnEl) pnEl.value = d.nom || '';
+      if(pnEl && !_gardeModele) pnEl.value = d.nom || '';
       renderSession();
       _enterBuilderMode();
       try {

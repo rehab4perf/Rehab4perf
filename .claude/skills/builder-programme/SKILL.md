@@ -118,6 +118,18 @@ Trois choses tiennent la règle, et en perdre une ramène le défaut :
   Le secondaire est masqué dans cet état — deux boutons pour un seul geste
   laissent croire qu'ils font des choses différentes.
 
+**Le nom d'un modèle est son IDENTITÉ**, et il ne se change que par
+« Modifier », dans le menu « … ». La mise à jour n'envoie que le contenu — elle
+lisait le champ de nom du builder, qui nomme une **séance** : charger la séance
+d'un patient dans un modèle ouvert renommait donc la phase au gré du contenu
+chargé, et le nom officiel était perdu sans le moindre signal.
+
+Deux verrous, car corriger l'un sans l'autre laisse le défaut : `_loadProg`
+n'écrase plus le champ quand un modèle est ouvert, **et** `_doUpdateTemplate`
+n'envoie plus la colonne `nom` du tout. Ne pas écrire une colonne qu'on ne
+possède pas est la seule façon sûre de ne jamais la corrompre — et cela a rendu
+inutile le repli « champ vide → nom déjà enregistré », qui a été retiré.
+
 **Ouvrir une séance planifiée depuis l'agenda reste une sortie du modèle** —
 c'est un geste d'agenda. Mais elle se **déclare** (`_loadProg(…, true)`) après
 confirmation nommant le modèle : sortir en silence perdrait le travail en cours.
