@@ -5603,16 +5603,30 @@ function togglePevoFuture() {
 }
 
 var _pendingOpenFeedback = false; // true si la cloche de notifications demande l'ouverture directe du feedback
-function _loadProg(id, seanceId){
-  _currentSeanceId = seanceId || null; // null si chargé depuis l'historique ou la bibliothèque
-  _builderFromTemplate = null; // ce programme n'est pas (ou plus) un template chargé — évite le bouton "Mettre à jour le template" fantôme
+function _loadProg(id, seanceId, quitterModele){
+  /* Ouvrir un modele depuis la barre laterale, c'est declarer « je travaille
+     sur ce modele ». Ce mode doit tenir jusqu'a ce qu'on en sorte : vider,
+     charger un autre contenu, recomposer — tout cela porte sur le modele.
+     `_loadProg` coupait le lien SANS EXCEPTION, et adoptait au passage
+     l'identite du programme charge. Enregistrer ne mettait donc pas le modele
+     a jour : cela reecrivait le programme du patient, en silence.
+
+     Quand un modele est ouvert, on prend donc le CONTENU sans prendre
+     l'identite. Le programme du patient ne peut plus etre ecrit par ce
+     chemin. Ouvrir une seance planifiee depuis l'agenda reste une sortie du
+     modele — mais elle se declare (`quitterModele`), elle ne se subit pas. */
+  var _gardeModele = !!_builderFromTemplate && !quitterModele;
+  _currentSeanceId = _gardeModele ? null : (seanceId || null);
+  if(!_gardeModele) _builderFromTemplate = null;
   var url = SUPA_URL_P + '/rest/v1/programmes?id=eq.' + id + '&select=*';
   _fetchRetry(url, {method:'GET', headers:_sbHeaders()})
     .then(function(r){ return r.json(); })
     .then(function(data){
       var d = Array.isArray(data) ? data[0] : data;
       if(!d || d.code){ alert('Erreur lors du chargement.'); return; }
-      _currentProgId = d.id;
+      /* En mode modele on ne prend QUE le contenu : adopter l'identite du
+         programme ferait porter l'enregistrement sur lui. */
+      _currentProgId = _gardeModele ? null : d.id;
       // Rétrocompat : donnees peut être un tableau (ancien) ou {blocs,notes} (nouveau).
       // Et parfois une CHAINE JSON : la planification depuis la barre latérale
       // recopiait telle quelle la valeur d'un template, qui est stockee en
@@ -5708,11 +5722,19 @@ function _loadProg(id, seanceId){
 // Ouvrir un programme du calendrier dans le builder (clic sur chip)
 function _openChipInBuilder(progId, dateStr, seanceId, openFeedback){
   if(_calDragJustEnded || _calDrag) return; // pas d'ouverture en fin de drag
+  /* Ouvrir une seance planifiee est un geste d'AGENDA, pas de modele : on en
+     sort. Mais on le demande — sortir en silence perdrait le travail en cours
+     sur le modele sans le moindre signal. */
+  if(_builderFromTemplate){
+    var _nomM = (_sidebarProgs||[]).find(function(x){ return String(x.id)===String(_builderFromTemplate); });
+    if(!confirm('Vous modifiez le modèle « ' + ((_nomM && _nomM.nom) || 'sans nom')
+        + ' ».\n\nOuvrir cette séance quittera le modèle. Vos modifications non enregistrées seront perdues.\n\nContinuer ?')) return;
+  }
   _hideLibPreview();
   _builderDate = dateStr;
   _updateBuilderTitle();
   _pendingOpenFeedback = !!openFeedback;
-  _loadProg(progId, seanceId); // transmet l'ID de séance pour la détection de partage
+  _loadProg(progId, seanceId, true); // true : ouvrir une seance quitte le modele
 }
 
 function _deleteProg(id, nom){

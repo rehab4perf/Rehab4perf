@@ -89,6 +89,39 @@ bouton restait en « Enregistrer la séance » et l'enregistrement faisait un
 PATCH : on modifiait la séance déjà chez le patient, sans le moindre signal.
 `openBuilderNew()` avait le même oubli.
 
+## Un modèle ouvert reste l'objet du travail
+
+```bash
+node qualite/modele-ouvert-cas.js
+```
+
+Ouvrir une phase depuis la barre latérale, c'est déclarer « je travaille sur ce
+modèle ». Ce mode tient jusqu'à ce qu'on en sorte : vider, charger un autre
+contenu, recomposer — tout cela porte sur le modèle.
+
+Il ne tenait pas. **`_loadProg` coupait le lien sans exception** et adoptait au
+passage l'identité du programme chargé. Le praticien qui ouvrait sa phase, la
+vidait, chargeait la séance d'une patiente et enregistrait ne modifiait donc pas
+son modèle : **il réécrivait le programme de la patiente**, en silence, derrière
+un bouton qui disait « Sauvegarder ».
+
+Trois choses tiennent la règle, et en perdre une ramène le défaut :
+
+- le lien survit au chargement (`_gardeModele`) ;
+- **l'identité du programme chargé n'est PAS adoptée** — `_currentProgId` et
+  `_currentSeanceId` restent nuls, si bien que le programme du patient ne peut
+  plus être écrit par ce chemin. C'est le point qui rendait l'erreur dangereuse
+  plutôt que seulement décevante ;
+- **le bouton PRINCIPAL met à jour le modèle, et le nomme.** La mise à jour
+  n'était offerte que par un bouton secondaire, facile à ne pas voir ; le
+  principal proposait « Sauvegarder », qui ne disait pas ce qui serait écrit.
+  Le secondaire est masqué dans cet état — deux boutons pour un seul geste
+  laissent croire qu'ils font des choses différentes.
+
+**Ouvrir une séance planifiée depuis l'agenda reste une sortie du modèle** —
+c'est un geste d'agenda. Mais elle se **déclare** (`_loadProg(…, true)`) après
+confirmation nommant le modèle : sortir en silence perdrait le travail en cours.
+
 ## Mode template — un plan de travail emprunté
 
 ```bash

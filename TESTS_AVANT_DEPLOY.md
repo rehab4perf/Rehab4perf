@@ -35,6 +35,7 @@ node qualite/builder-consignes-cas.js
 node qualite/topbar-cas.js
 node qualite/echeances-cas.js
 node qualite/cr-coupures-cas.js
+node qualite/modele-ouvert-cas.js
 ```
 
 - [ ] Sortie verte. Une variable CSS non définie est ignorée en silence par le

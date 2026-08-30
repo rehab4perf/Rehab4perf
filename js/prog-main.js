@@ -5204,6 +5204,12 @@ function _builderSaveBtnClick(){
   /* La destination est connue depuis l'entree : on va droit au modal du
      modèle, sans repasser par saveProgToCloud. */
   if(_builderMode === 'template'){ openSaveTemplate(); return; }
+  /* Un modele ouvert depuis la barre laterale est l'objet du travail : le
+     bouton principal doit le mettre a jour. Il proposait « Sauvegarder », qui
+     creait un programme — le praticien croyait modifier sa phase et ne
+     modifiait rien. La mise a jour n'etait offerte que par un bouton
+     secondaire, facile a ne pas voir. */
+  if(_builderFromTemplate && !_currentSeanceId && !_currentProgId){ _doUpdateTemplate(); return; }
   if(_currentSeanceId){
     // Contexte B : modification d'un chip existant → save direct
     saveProgToCloud();
@@ -5230,6 +5236,20 @@ function _refreshSaveBtn(){
     btn.style.background = '';
     if(planBtn) planBtn.style.display = 'none';
     if(updBtn)  updBtn.style.display  = 'none';
+    return;
+  }
+  /* Le libelle nomme l'objet : « Sauvegarder » sur un modele ouvert ne
+     disait pas ce qui allait etre ecrit. */
+  if(_builderFromTemplate && !_currentSeanceId && !_currentProgId){
+    var _mRef = (_sidebarProgs||[]).find(function(x){ return String(x.id)===String(_builderFromTemplate); });
+    var _mNom = _mRef ? (_mRef.nom || 'Modèle') : 'Modèle';
+    btn.innerHTML = '🔄 Mettre à jour « ' + (_mNom.length > 22 ? _mNom.substring(0,21)+'…' : _mNom) + ' »';
+    btn.title = 'Remplace le contenu de ce modèle par la séance en cours';
+    btn.style.background = '';
+    if(planBtn) planBtn.style.display = 'none';
+    /* Le bouton secondaire ferait doublon : deux boutons pour un seul geste
+       laissent croire qu'ils font des choses differentes. */
+    if(updBtn) updBtn.style.display = 'none';
     return;
   }
   var isContexteA = _builderDate && !_currentProgId && !_currentSeanceId;
