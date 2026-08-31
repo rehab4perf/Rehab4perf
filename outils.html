@@ -474,7 +474,45 @@ body.cr-resizing { cursor: col-resize; user-select: none; }
   border-color: var(--accent); box-shadow: 0 0 0 3px rgba(43,95,166,.10);
 }
 .cr-fg select { cursor: pointer; }
-.cr-fg textarea { resize: none; min-height: 64px; line-height: 1.5; overflow-y: hidden; }
+.cr-fg textarea { resize: none; line-height: 1.5; overflow-y: hidden; }
+
+/* Un champ qui grandit sans se MESURER.
+
+   `crAutoExpand` ecrivait une hauteur en pixels, calculee a la largeur qu'avait
+   le champ A CET INSTANT — puis plus rien ne la recalculait. Panneau du CR
+   encore replie, iframe pas encore dimensionnee, fenetre redimensionnee
+   ensuite : la mesure porte sur quelques pixels de large, le texte s'y replie
+   sur des dizaines de lignes, et la hauteur figee devient un pave vide. Meme
+   defaut que les consignes du builder, referme de la meme facon.
+
+   Une doublure portant le meme texte occupe le FLUX NORMAL et impose la
+   hauteur ; le champ est pose par-dessus en absolu. Aucune mesure, donc aucune
+   dependance a la largeur du moment — et la hauteur suit tout redimensionnement
+   gratuitement.
+
+   Les deux boites doivent rester IDENTIQUES : police, corps, interligne, marge
+   interieure, bordure, `box-sizing`. Un pixel d'ecart fausse la hauteur. Elles
+   partagent donc cette declaration. */
+.cr-ta-grow { position: relative; width: 100%; }
+.cr-ta-grow::after {
+  content: attr(data-repl) ' ';
+  display: block; white-space: pre-wrap; word-break: break-word;
+  visibility: hidden; pointer-events: none;
+}
+.cr-ta-grow::after,
+.cr-ta-grow > textarea {
+  min-height: 64px; box-sizing: border-box;
+  border-width: 1.5px; border-style: solid; border-radius: var(--radius-sm);
+  padding: 7px 9px; font-size: .83rem; font-family: inherit; line-height: 1.5;
+}
+/* La bordure de la doublure est INVISIBLE mais bien la : en `border-box` elle
+   mange la largeur du contenu. La retirer replierait le texte une colonne plus
+   loin que dans le champ, et la hauteur serait fausse de justesse.
+
+   Seule sa COULEUR est neutralisee : poser `border` en bloc ici ecraserait la
+   bordure visible du champ, les deux selecteurs ayant la meme specificite. */
+.cr-ta-grow::after { border-color: transparent; }
+.cr-ta-grow > textarea { position: absolute; top: 0; left: 0; height: 100%; }
 .cr-field-group {
   background: var(--surface2); border: 1px solid var(--border);
   border-radius: var(--radius); padding: 10px; margin-bottom: 8px;
@@ -1398,13 +1436,13 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
         </div>
         <div class="cr-fg">
           <label for="cr-commentaire">Commentaire libre</label>
-          <textarea id="cr-commentaire" rows="3" placeholder="Observations particulières, contexte du patient…" oninput="crAutoExpand(this)"></textarea>
+          <div class="cr-ta-grow" data-repl=" "><textarea id="cr-commentaire" rows="3" placeholder="Observations particulières, contexte du patient…" oninput="this.parentNode.dataset.repl=this.value+' ';crAutoExpand(this)"></textarea></div>
         </div>
 
         <div class="cr-section-hdr">Plan de traitement</div>
         <div class="cr-fg">
           <label for="cr-plan">Détail du plan</label>
-          <textarea id="cr-plan" rows="4" placeholder="ex. Poursuite du renforcement isocinétique 3×/sem, travail proprioception, reprise course J+21…" oninput="crAutoExpand(this)"></textarea>
+          <div class="cr-ta-grow" data-repl=" "><textarea id="cr-plan" rows="4" placeholder="ex. Poursuite du renforcement isocinétique 3×/sem, travail proprioception, reprise course J+21…" oninput="this.parentNode.dataset.repl=this.value+' ';crAutoExpand(this)"></textarea></div>
         </div>
 
         <!-- Protocole retenu (visible: debut, rts) -->
@@ -1422,7 +1460,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
           </div>
           <div class="cr-fg">
             <label for="cr-proto-objectifs">Objectifs à J+30</label>
-            <textarea id="cr-proto-objectifs" rows="2" oninput="crAutoExpand(this)" placeholder="ex. extension 0°, flexion 120°, appui complet…"></textarea>
+            <div class="cr-ta-grow" data-repl=" "><textarea id="cr-proto-objectifs" rows="2" oninput="this.parentNode.dataset.repl=this.value+' ';crAutoExpand(this)" placeholder="ex. extension 0°, flexion 120°, appui complet…"></textarea></div>
           </div>
         </div>
 
@@ -6303,10 +6341,13 @@ _updateOutilsPatientBtns();
       stagnation:'actuellement en plateau fonctionnel, ce qui oriente vers une réévaluation des objectifs' };
     return m[v] || v;
   }
-  // Auto-expand textarea
+  /* Le champ grandit par sa DOUBLURE, plus par une mesure — voir `.cr-ta-grow`.
+     Le nom est conserve : tous les `oninput` et la remise a zero l'appellent.
+     L'espace final garde une derniere ligne vide ouverte pendant la frappe. */
   window.crAutoExpand = function(el) {
-    el.style.height = 'auto';
-    el.style.height = el.scrollHeight + 'px';
+    if (!el) return;
+    var w = el.parentNode;
+    if (w && w.classList && w.classList.contains('cr-ta-grow')) w.dataset.repl = el.value + ' ';
   };
 
   /* ── Tests fonctionnels repris du bilan ──────────────────────────────

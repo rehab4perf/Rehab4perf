@@ -158,4 +158,38 @@ console.log('\n  Asymétrie d\'un test chronométré');
 var chronos = CAT.groupes.filter(function(g){ return g.type === 'dual' && g.dir === 'down'; });
 verifie('des graphiques doubles sont chronométrés', true, chronos.length >= 2);
 
-/* On execute le V
+/* On execute le VRAI calcul, decoupe dans _renderEvolutionPage. */
+var e0 = src.indexOf('var _evoBilat = _isBilateral()');
+var e1 = src.indexOf('if(!isNaN(lsiVal))', e0);
+if (e0 < 0 || e1 < e0) { console.error('Bornes du calcul d\'asymétrie introuvables.'); process.exit(1); }
+var calcLsi = new Function('lastA', 'lastB_val', 'grp', '_isBilateral',
+  src.slice(e0, e1) + '\nreturn lsiVal;');
+var bilatNon = function(){ return false; };
+
+/* Figure-of-8 : le cote atteint met 3,0 s la ou le sain met 2,5 s. Le rapport
+   atteint/sain vaut 120 % — au-dessus de 90, donc VERT, alors que le patient
+   est 20 % plus lent du cote lese. Le rapport doit s'inverser. */
+verifie('un côté atteint plus LENT donne une asymétrie basse', 83,
+  calcLsi(3.0, 2.5, {dir:'down', labelA:'Atteint', labelB:'Sain'}, bilatNon));
+verifie('… et deux côtés égaux donnent 100', 100,
+  calcLsi(2.5, 2.5, {dir:'down', labelA:'Atteint', labelB:'Sain'}, bilatNon));
+/* Un test ou le plus est le mieux garde son sens d'origine. */
+verifie('un test « plus = mieux » n\'est pas touché', 80,
+  calcLsi(20, 25, {dir:'up', labelA:'Atteint', labelB:'Sain'}, bilatNon));
+
+/* ── Le Suivi rapide ne doit pas poser deux champs pour un meme id ────── */
+console.log('\n  Suivi rapide');
+var s0 = src.indexOf('function _renderSuiviRapide');
+var s1 = src.indexOf('\nfunction ', s0 + 10);
+if (s0 < 0 || s1 < s0) { console.error('Bornes du Suivi rapide introuvables.'); process.exit(1); }
+var zoneSR = src.slice(s0, s1);
+/* Le temps de contact etait INJECTE a la main faute de graphique. Il en a un
+   depuis : garder l'injection donnerait DEUX champs portant `dj-t-ca`. */
+verifie('le temps de contact n\'est plus injecté à la main', false,
+  /fields\.push\(\{id:'dj-t-ca'/.test(zoneSR));
+verifie('… et n\'est plus marqué couvert d\'office', false,
+  /coveredIds\['dj-t-ca'\]/.test(zoneSR));
+
+console.log('\n' + '─'.repeat(64));
+if (echecs) { console.log('✗ ' + echecs + ' attente(s) en échec'); process.exit(1); }
+console.log('✓ ' + (18 + 8) + ' attentes vérifiées');

@@ -245,4 +245,5 @@ console.log('\n  Ce qui se reporte au bilan de suivi');
           String(/\{id:'f-eva-max',[^}]*cat:'Douleur'\}/.test(src)));
 }
 
-cons
+console.log('\n  ' + (nbKo ? '✗ ' + nbKo + ' échec(s), ' : '✓ ') + nbOk + ' cas vérifiés.\n');
+process.exit(nbKo ? 1 : 0);
