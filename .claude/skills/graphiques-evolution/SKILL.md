@@ -148,6 +148,52 @@ seule définition : ce trou-là ne peut plus se rouvrir, et le fichier de cas
 étiquettes de valeur débordent du `viewBox` par construction (`overflow:visible`
 sur le SVG), et rogner couperait le chiffre du dernier point.
 
+## Toute mesure fonctionnelle doit avoir sa courbe
+
+```bash
+node qualite/evolution-couverture-cas.js
+```
+
+Le Heel Rise n'était dans **aucun** des deux catalogues : ni `CHART_GROUPS`
+(courbes de l'Évolution **et** blocs du Suivi rapide), ni `TRACKED_METRICS`
+(deltas du bilan de suivi). Il ne manquait pas seul — **onze mesures** étaient
+dans le même cas : Side Hop, Figure-of-8, temps de contact du Drop Jump, SEBT
+postéro-latéral, Single-Leg Stance, mCKCUEST, PDSLRT, Shirado.
+
+Une absence de ce genre est **indiscernable d'un patient sans données** : la
+carte n'apparaît pas, et rien ne dit pourquoi. Deux catalogues tenus à la main,
+alimentés par un formulaire qui grandit ailleurs — la dérive était inévitable.
+
+Le contrôle part donc du **formulaire**, pas du catalogue : il lit les champs
+chiffrés des trois pages de tests fonctionnels et échoue sur tout champ sans
+courbe. Un test ajouté demain sans son groupe fait échouer le contrôle.
+
+**Les ids lus par un `compute` sont récoltés en le FAISANT TOURNER** sur un
+mouchard qui note chaque clé lue. Les lister à la main dans le contrôle
+rouvrirait exactement le trou qu'il ferme.
+
+**Ce qui est volontairement hors courbe** — et nommé dans le contrôle, jamais
+implicite : conditions de passation (hauteur de boîte, charge du PSET),
+longueurs de membre qui servent à normaliser (mSEBT, UQYBT, envergure du
+mCKCUEST), et essais individuels moyennés ailleurs (ULRT, mCKCUEST S0/S1/S4).
+
+**Un sous-score absent ne vaut pas zéro.** Le SLST se lit en nombre d'erreurs :
+un bilan où le test n'a pas été passé rendrait `0` — un score parfait inventé,
+et le meilleur point de la courbe. Les deux `compute` rendent `NaN` tant
+qu'aucune des six lignes n'est renseignée.
+
+**Le premier graphique double « moins = mieux ».** Les 41 graphiques doubles
+existants étaient tous en `dir:'up'`, et l'asymétrie s'écrit `atteint / sain`.
+Sur un test **chronométré** — Figure-of-8, temps de contact — le côté atteint
+est plus **lent** : 3,0 s contre 2,5 s donnait 120 %, au-dessus du seuil de 90,
+donc **affiché en vert** pendant que le patient est 20 % plus lent du côté lésé.
+Le rapport s'inverse pour `dir:'down'`. Le cas exécute le vrai calcul.
+
+**Le Suivi rapide injectait le temps de contact à la main**, faute de graphique
+— avec un commentaire qui le disait. Il en a un désormais : garder l'injection
+poserait **deux champs portant le même id** dans le formulaire, dont un seul
+serait relu. Toute mesure qui gagne son groupe doit perdre son injection.
+
 **Point ouvert, non corrigé** : `_robustFence` (MAD × 10) écarte du tracé toute
 valeur qu'elle juge aberrante. Sur une série stable, la MAD est minuscule — et
 une VRAIE dégradation disparaît de la courbe. Mesuré : `[45, 44, 46, 45, 44,

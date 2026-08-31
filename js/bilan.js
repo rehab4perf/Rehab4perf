@@ -3666,6 +3666,15 @@ var TRACKED_METRICS = [
   {id:'pi-cim2-cs',     label:'Course interne mollet 2 appuis (sain)',    unit:' cm', dir:'up', cat:'Tests Fonctionnels MI'},
   {id:'pi-cim1-ca',     label:'Course interne mollet 1 appui (atteint)',  unit:' cm', dir:'up', cat:'Tests Fonctionnels MI'},
   {id:'pi-cim1-cs',     label:'Course interne mollet 1 appui (sain)',     unit:' cm', dir:'up', cat:'Tests Fonctionnels MI'},
+  {id:'hr-ca',          label:'Heel Rise (atteint)',                      unit:' rép', dir:'up',   cat:'Tests Fonctionnels MI'},
+  {id:'hr-cs',          label:'Heel Rise (sain)',                         unit:' rép', dir:'up',   cat:'Tests Fonctionnels MI'},
+  {id:'sh-exp-ca',      label:'Side Hop explosivité (atteint)',           unit:' sauts', dir:'up', cat:'Tests Fonctionnels MI'},
+  {id:'sh-exp-cs',      label:'Side Hop explosivité (sain)',              unit:' sauts', dir:'up', cat:'Tests Fonctionnels MI'},
+  {id:'sh-end-ca',      label:'Side Hop endurance (atteint)',             unit:' sauts', dir:'up', cat:'Tests Fonctionnels MI'},
+  {id:'sh-end-cs',      label:'Side Hop endurance (sain)',                unit:' sauts', dir:'up', cat:'Tests Fonctionnels MI'},
+  {id:'f8-ca',          label:'Figure-of-8 (atteint)',                    unit:' s',   dir:'down', cat:'Tests Fonctionnels MI'},
+  {id:'f8-cs',          label:'Figure-of-8 (sain)',                       unit:' s',   dir:'down', cat:'Tests Fonctionnels MI'},
+  {id:'rf-shirado',     label:'Shirado — Fléch. lombaires',               unit:' s',   dir:'up',   cat:'Tests Fonctionnels Rachis'},
 ];
 
 /* ── Configuration des graphiques d'évolution ─────────── */
@@ -3720,6 +3729,21 @@ var CHART_GROUPS = [
   {cat:'Tests Fonctionnels MI', title:'SET — Atteint vs Sain', type:'dual', idA:'set-ca', idB:'set-cs', unit:'s', dir:'up', labelA:'Atteint', labelB:'Sain'},
   {cat:'Tests Fonctionnels MI', title:'UQYBT Médial — D vs G', type:'dual', idA:'uqybt-med-d', idB:'uqybt-med-g', unit:'cm', dir:'up', labelA:'Côté D', labelB:'Côté G'},
   {cat:'Tests Fonctionnels MI', title:'UQYBT Inféro-latéral — D vs G', type:'dual', idA:'uqybt-il-d', idB:'uqybt-il-g', unit:'cm', dir:'up', labelA:'Côté D', labelB:'Côté G'},
+  {cat:'Tests Fonctionnels MI', title:'Heel Rise — Atteint vs Sain', type:'dual', idA:'hr-ca', idB:'hr-cs', unit:'rép', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Tests Fonctionnels MI', title:'Side Hop explosivité — Atteint vs Sain', type:'dual', idA:'sh-exp-ca', idB:'sh-exp-cs', unit:'sauts', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Tests Fonctionnels MI', title:'Side Hop endurance — Atteint vs Sain', type:'dual', idA:'sh-end-ca', idB:'sh-end-cs', unit:'sauts', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Tests Fonctionnels MI', title:'SEBT Postéro-latéral — Atteint vs Sain', type:'dual', idA:'sebt-pl-ca', idB:'sebt-pl-cs', unit:'cm', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  /* Deux tests CHRONOMETRES : le mieux est le PLUS COURT. Ce sont les premiers
+     graphiques doubles en `dir:'down'` — voir le calcul d'asymetrie plus bas,
+     qui devait etre inverse pour eux. */
+  {cat:'Tests Fonctionnels MI', title:'Figure-of-8 — Atteint vs Sain', type:'dual', idA:'f8-ca', idB:'f8-cs', unit:'s', dir:'down', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Tests Fonctionnels MI', title:'Drop Jump temps de contact — Atteint vs Sain', type:'dual', idA:'dj-t-ca', idB:'dj-t-cs', unit:'ms', dir:'down', labelA:'Atteint', labelB:'Sain'},
+  /* Le SLST se lit en NOMBRE D'ERREURS : les six lignes sont des sous-scores,
+     c'est leur somme qui a un sens clinique — et moins il y en a, mieux c'est. */
+  {cat:'Tests Fonctionnels MI', title:'Single-Leg Stance — erreurs', type:'dual',
+    computeA:function(d){var t=0,vu=false;for(var i=1;i<=6;i++){var v=parseFloat(d['slst-ca-'+i]);if(!isNaN(v)){t+=v;vu=true;}}return vu?t:NaN;},
+    computeB:function(d){var t=0,vu=false;for(var i=1;i<=6;i++){var v=parseFloat(d['slst-cs-'+i]);if(!isNaN(v)){t+=v;vu=true;}}return vu?t:NaN;},
+    unit:' err.', dir:'down', labelA:'Atteint', labelB:'Sain'},
   // ─ Tests Fonctionnels MS ─
   {cat:'Tests Fonctionnels MS', title:'PSET — Atteint vs Sain', type:'dual', idA:'pset-ca', idB:'pset-cs', unit:'rép', dir:'up', labelA:'Atteint', labelB:'Sain', condId:'pset-poids-reel', condUnit:'kg'},
   {cat:'Tests Fonctionnels MS', title:'SHRT — D vs G', type:'dual', idA:'shrt-d', idB:'shrt-g', unit:'cm', dir:'up', labelA:'Côté D', labelB:'Côté G'},
@@ -3727,11 +3751,19 @@ var CHART_GROUPS = [
     computeA:function(d){var vs=[parseFloat(d['ulrt-d1']),parseFloat(d['ulrt-d2']),parseFloat(d['ulrt-d3'])].filter(function(v){return !isNaN(v);});return vs.length?vs.reduce(function(a,b){return a+b;},0)/vs.length:NaN;},
     computeB:function(d){var vs=[parseFloat(d['ulrt-g1']),parseFloat(d['ulrt-g2']),parseFloat(d['ulrt-g3'])].filter(function(v){return !isNaN(v);});return vs.length?vs.reduce(function(a,b){return a+b;},0)/vs.length:NaN;},
     unit:'cm', dir:'up', labelA:'Côté D', labelB:'Côté G'},
+  /* Le score mCKCUEST est la MOYENNE des essais 2 et 3 ; S0 et S1 sont des
+     familiarisations, et S4 ne sert qu'au calcul du MEI. */
+  {cat:'Tests Fonctionnels MS', title:'mCKCUEST — score', type:'single',
+    computeA:function(d){var a=parseFloat(d['ckc-s2']),b=parseFloat(d['ckc-s3']);
+      if(!isNaN(a)&&!isNaN(b))return (a+b)/2; if(!isNaN(a))return a; if(!isNaN(b))return b; return NaN;},
+    unit:' touches', dir:'up', labelA:'Score'},
   // ─ Tests Fonctionnels Rachis ─
   {cat:'Tests Fonctionnels Rachis', title:'Endurance fléchisseurs cerv.', type:'single', idA:'rf-flx-cerv', unit:'s', dir:'up', labelA:'Maintien'},
   {cat:'Tests Fonctionnels Rachis', title:'Endurance extenseurs cerv.', type:'single', idA:'rf-ext-cerv', unit:'s', dir:'up', labelA:'Maintien'},
   {cat:'Tests Fonctionnels Rachis', title:'Endurance latérale cerv. D vs G', type:'dual', idA:'rf-lat-d', idB:'rf-lat-g', unit:'s', dir:'up', labelA:'Côté D', labelB:'Côté G'},
   {cat:'Tests Fonctionnels Rachis', title:'Sørensen — Ext. lombaires', type:'single', idA:'rf-sorensen', unit:'s', dir:'up', labelA:'Maintien'},
+  {cat:'Tests Fonctionnels Rachis', title:'PDSLRT — Ext. lombaires', type:'single', idA:'rf-pdslrt', unit:'s', dir:'up', labelA:'Maintien'},
+  {cat:'Tests Fonctionnels Rachis', title:'Shirado — Fléch. lombaires', type:'single', idA:'rf-shirado', unit:'s', dir:'up', labelA:'Maintien'},
 ];
 
 /* ── Helper : lire la valeur d'une métrique (simple ou calculée) ── */
@@ -4528,9 +4560,14 @@ function _renderEvolutionPage(){
           // Groupes "Atteint vs Sain" en mode non-bilatéral : LSI = A/B (peut dépasser 100)
           // Groupes "D vs G" ou mode bilatéral : min/max (toujours ≤ 100)
           var _evoBilat = _isBilateral() || (grp.labelA !== 'Atteint' && grp.labelA !== 'Sain');
+          // Sur un test CHRONOMETRE (dir 'down'), le cote atteint est plus LENT :
+          // le rapport atteint/sain depasse 100 quand tout va mal, et l'asymetrie
+          // s'affichait alors en vert. On inverse le rapport pour ces tests.
           var lsiVal = _evoBilat
             ? Math.round(Math.min(lastA,lastB_val)/Math.max(lastA,lastB_val)*100)
-            : (lastB_val > 0 ? Math.round(lastA/lastB_val*100) : NaN);
+            : (grp.dir === 'down'
+                ? (lastA > 0 ? Math.round(lastB_val/lastA*100) : NaN)
+                : (lastB_val > 0 ? Math.round(lastA/lastB_val*100) : NaN));
           if(!isNaN(lsiVal)){
             var lsiCls=lsiVal>=90?'evo-pos':lsiVal>=75?'evo-neutral':'evo-neg';
             lsiHtml='<span class="evo-kpi '+lsiCls+'">'+asymTxt(parseFloat(lsiVal), 0)+'</span>';
@@ -5760,9 +5797,6 @@ function _renderSuiviRapide(){
     if(grp.idA) coveredIds[grp.idA] = true;
     if(grp.idB) coveredIds[grp.idB] = true;
   });
-  // dj-t-ca/cs sont orphelins mais seront injectés dans le bloc Drop Jump
-  coveredIds['dj-t-ca'] = true;
-  coveredIds['dj-t-cs'] = true;
 
   /* ── 2. Construction des blocs par catégorie depuis CHART_GROUPS ── */
   var blocksByCat = {};
@@ -5793,17 +5827,8 @@ function _renderSuiviRapide(){
     if(grp.idA) fields.push({id:grp.idA, label:grp.labelA||grp.idA, unit:grp.unit||'', type:'number'});
     if(grp.idB) fields.push({id:grp.idB, label:grp.labelB||grp.idB, unit:grp.unit||'', type:'number'});
 
-    // Cas spécial Drop Jump : injecter les temps de contact si renseignés
-    if(grp.idA === 'dj-h-ca'){
-      var hasDjT = _allBilans.some(function(b){
-        var d=b.donnees||{};
-        return !isNaN(parseFloat(d['dj-t-ca']))||!isNaN(parseFloat(d['dj-t-cs']));
-      });
-      if(hasDjT){
-        fields.push({id:'dj-t-ca', label:'Tps contact (atteint)', unit:'ms', type:'number'});
-        fields.push({id:'dj-t-cs', label:'Tps contact (sain)',    unit:'ms', type:'number'});
-      }
-    }
+    // Le temps de contact du Drop Jump etait INJECTE ici faute de graphique.
+    // Il en a un depuis : l'injection ferait deux champs pour un meme id.
 
     if(!blocksByCat[grp.cat]) blocksByCat[grp.cat]=[];
     blocksByCat[grp.cat].push({title:grp.title, fields:fields, isEva: grp.idA==='f-eva'});
