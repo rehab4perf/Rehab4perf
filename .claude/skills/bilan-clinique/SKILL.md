@@ -385,6 +385,38 @@ la vie quotidienne », « Facteurs aggravants » et « Facteurs soulageants »
 du jour, et aucun n'alimente de courbe. Ils continuent de se reporter. C'est une
 décision clinique : ne pas la changer sans le praticien.
 
+## Suivi rapide — il doit rester saisissable EN MODE LECTURE
+
+```bash
+node qualite/suivi-rapide-cas.js
+```
+
+C'est sa raison d'être : mettre à jour un bilan qu'on est **en train de
+consulter**. Or le mode lecture pose `.bilan-readonly` sur `<main>` et
+verrouille `pointer-events` sur tout champ de `.page-content` — et le
+conteneur du Suivi rapide porte cette classe comme toutes les pages.
+
+Ses champs étaient donc inertes **dès qu'un patient avait un bilan
+enregistré**, c'est-à-dire toujours. Le bouton, lui, est un `<button>` : il
+restait cliquable et répondait « Aucune modification à enregistrer », puisque
+rien n'avait pu être saisi. D'où le symptôme rapporté — « il n'enregistre pas
+les nouvelles données » — qui désigne le bouton alors que le défaut est dans
+les champs.
+
+`#suivi-rapide-content` est exclu des cinq règles du verrou. `:not(#id)` ajoute
+la spécificité d'un identifiant : la règle en sort **plus** spécifique, elle ne
+risque pas de céder ailleurs. Le contrôle parcourt **toutes** les règles du
+mode lecture et échoue sur une seule qui oublierait l'exclusion — c'est
+exactement ainsi que le défaut est né.
+
+Il vérifie aussi que le conteneur porte toujours `page-content` : sans cette
+classe l'exclusion deviendrait un vestige, et personne ne le saurait.
+
+**Vider un champ chiffré n'efface rien.** Seules les notes libres se vident :
+retirer un nombre du delta effacerait un point de courbe sans qu'on l'ait
+voulu. **Le côté partenaire d'un test double suit toujours** — sinon les deux
+courbes se désalignent sur l'axe du temps.
+
 ## Motifs de bilan — onglet Patients
 
 ```bash

@@ -242,13 +242,22 @@ body {
 }
 .btn-exit-histo:hover { background: var(--yellow-l); border-color: var(--orange); }
 /* ── Mode lecture ──────────────────────────────────────────── */
-.bilan-readonly .page-content input:not([type=button]):not([type=submit]):not([type=checkbox]):not([type=radio]),
-.bilan-readonly .page-content select,
-.bilan-readonly .page-content textarea {
+/* Le Suivi rapide est EXCLU, et c'est sa raison d'etre : il existe pour mettre
+   a jour un bilan qu'on est en train de consulter. Or son conteneur porte
+   `page-content` comme toutes les pages — le verrou l'atteignait donc lui
+   aussi, et ses champs devenaient inertes. Le bouton, lui, est un <button> :
+   il restait cliquable et repondait « Aucune modification a enregistrer »,
+   puisque rien n'avait pu etre saisi.
+
+   Exclu par son identifiant : ce n'est pas une page de saisie de bilan, c'est
+   un panneau de mise a jour. */
+.bilan-readonly .page-content:not(#suivi-rapide-content) input:not([type=button]):not([type=submit]):not([type=checkbox]):not([type=radio]),
+.bilan-readonly .page-content:not(#suivi-rapide-content) select,
+.bilan-readonly .page-content:not(#suivi-rapide-content) textarea {
   pointer-events: none;
 }
-.bilan-readonly .page-content input[type=checkbox],
-.bilan-readonly .page-content input[type=radio] { pointer-events: none; }
+.bilan-readonly .page-content:not(#suivi-rapide-content) input[type=checkbox],
+.bilan-readonly .page-content:not(#suivi-rapide-content) input[type=radio] { pointer-events: none; }
 .bilan-readonly .rom-bar-wrap { pointer-events: none; }
 .bilan-readonly .pain-svg { pointer-events: none; }
 .bilan-readonly .btn-add-note,
