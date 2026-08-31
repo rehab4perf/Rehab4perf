@@ -348,10 +348,19 @@ var CR_MED_ZONES = {
    « Acquis » ou « Non acquis ». Les criteres indicatifs — valgus dynamique,
    controle du tronc — restent en sous-lignes : eux orientent le travail.
 
-   LES DEUX COTES comptent. Un critere conditionnant manque d'un cote ou de
-   l'autre, et le test n'est pas acquis : c'est un test de reception, il se
-   passe sur chaque jambe. Le badge du bilan, lui, ne lit que le cote atteint —
-   ne pas s'aligner dessus sans decision du praticien.
+   LE VERDICT EST PAR COTE. C'est un test de reception : il se passe sur chaque
+   jambe, et chaque jambe a son resultat. Un verdict unique fondu sur les deux
+   — « un critere manque d'un cote, donc non acquis » — etait la regle
+   precedente ; elle disait au medecin que le test avait echoue sans lui dire
+   OU, alors que c'est exactement ce qui oriente la reeducation. Une jambe qui
+   valide ses trois criteres conditionnants et une qui ne les valide pas
+   donnent maintenant deux mentions distinctes.
+
+   Quand les deux cotes s'accordent, la mention reste unique : deux chips
+   identiques cote a cote ne diraient rien de plus.
+
+   Decision du praticien — ne pas revenir a un verdict fondu sans lui.
+   Le badge du bilan, lui, ne lit que le cote atteint.
 
    Le bilan garde sa grille entiere et son score : c'est le praticien qui la
    lit. Meme partage que le score sur sept de l'analyse fonctionnelle. */
@@ -359,13 +368,33 @@ function _crMedCriteres(entree) {
   var lignes = entree.af || [];
   var conditionnants = lignes.filter(function (l) { return l.acquis; });
   if (!conditionnants.length) return;          // grille sans critere conditionnant
-  var acquis = conditionnants.every(function (l) { return l.g && l.d; });
-  entree.statut = acquis ? 'Acquis' : 'Non acquis';
-  /* Le NIVEAU suit le verdict, pas le decompte. Il venait de la pastille du
-     bilan — « 3/5 » y vaut `warn`, donc un badge ambre — alors que le courrier
-     ne dit plus « incomplet » mais « non acquis » : un verdict binaire ne se
-     nuance pas en orange. */
-  entree.niveau = acquis ? 'ok' : 'bad';
+  var okG = conditionnants.every(function (l) { return l.g; });
+  var okD = conditionnants.every(function (l) { return l.d; });
+  var _mot = function (ok) { return ok ? 'Acquis' : 'Non acquis'; };
+  /* Les VRAIS libelles de la grille — « Côté sain / Côté atteint » quand le
+     cote atteint est connu, gauche/droite sinon. Les deviner ici donnerait un
+     intitule different de celui de la colonne juste au-dessus. */
+  var _ct = entree.afCotes || ['Gauche', 'Droit'];
+  if (okG === okD) {
+    entree.statut = _mot(okG);
+    /* Le NIVEAU suit le verdict, pas le decompte. Il venait de la pastille du
+       bilan — « 3/5 » y vaut `warn`, donc un badge ambre — alors que le
+       courrier ne dit plus « incomplet » mais « non acquis » : un verdict
+       binaire ne se nuance pas en orange. */
+    entree.niveau = okG ? 'ok' : 'bad';
+  } else {
+    entree.statuts = [
+      { cote: _ct[0], txt: _mot(okG), niveau: okG ? 'ok' : 'bad' },
+      { cote: _ct[1], txt: _mot(okD), niveau: okD ? 'ok' : 'bad' }
+    ];
+    /* Repli en une ligne pour la copie en texte brut, qui n'a pas de chips. */
+    entree.statut = _ct[0] + ' : ' + _mot(okG).toLowerCase()
+                  + ' · ' + _ct[1] + ' : ' + _mot(okD).toLowerCase();
+    /* Ambre, et c'est le seul cas qui le merite : un cote acquis, l'autre non,
+       n'est ni une reussite ni un echec. Ce n'est plus le decompte nuance que
+       la regle precedente refusait — c'est un resultat mixte. */
+    entree.niveau = 'warn';
+  }
   /* Un critere indicatif VALIDE ne se dit pas — c'est la regle deja posee pour
      les compensations : le courrier enonce ce qui fait defaut, pas ce qui va
      bien. Ne restent donc que ceux qui manquent d'au moins un cote.

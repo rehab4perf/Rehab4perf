@@ -87,17 +87,37 @@ console.log('\n  Le verdict est binaire, et lit les DEUX côtés');
      le courrier annonce « Non acquis » : un verdict binaire ne se nuance pas. */
   verifie('acquis → badge vert', 'ok', e.niveau);
 
+  /* Le verdict est PAR JAMBE — decision du praticien, voir
+     `qualite/reception-cotes-cas.js`. Un conditionnant manquant d'un seul cote
+     ne condamne plus le test : il condamne CE cote, et l'autre garde le sien.
+     La regle precedente fondait les deux et disait au medecin que le test avait
+     echoue sans lui dire ou. */
   [0, 1, 2].forEach(function (i) {
     var etats = TOUT.map(function (p) { return p.slice(); });
     etats[i][1] = false;                       // manque du côté droit
     var x = grille(etats); crit(x);
-    verifie('critère conditionnant ' + (i + 1) + ' manquant à droite → Non acquis', 'Non acquis', x.statut);
-    verifie('non acquis → badge rouge', 'bad', x.niveau);
+    verifie('critère conditionnant ' + (i + 1) + ' manquant à droite → deux mentions',
+            2, (x.statuts || []).length);
+    verifie('… le côté gauche reste acquis', 'Acquis', x.statuts[0].txt);
+    verifie('… le côté droit ne l\'est pas', 'Non acquis', x.statuts[1].txt);
+    verifie('un résultat mixte est ambre', 'warn', x.niveau);
     var etats2 = TOUT.map(function (p) { return p.slice(); });
     etats2[i][0] = false;                      // manque du côté gauche
     var y = grille(etats2); crit(y);
-    verifie('critère conditionnant ' + (i + 1) + ' manquant à gauche → Non acquis', 'Non acquis', y.statut);
+    verifie('critère conditionnant ' + (i + 1) + ' manquant à gauche → gauche non acquis',
+            'Non acquis', y.statuts[0].txt);
+    verifie('… et droite acquis', 'Acquis', y.statuts[1].txt);
   });
+  /* Les DEUX cotes en defaut : le verdict redevient unique, et rouge. Deux
+     mentions identiques cote a cote ne diraient rien de plus. */
+  (function () {
+    var etats = TOUT.map(function (p) { return p.slice(); });
+    etats[0][0] = false; etats[0][1] = false;
+    var z = grille(etats); crit(z);
+    verifie('un conditionnant manquant des DEUX côtés → mention unique', 'Non acquis', z.statut);
+    verifie('… sans mention par côté', undefined, z.statuts);
+    verifie('… en rouge', 'bad', z.niveau);
+  })();
 
   /* Décision du praticien : un critère indicatif n'a jamais fait basculer le
      verdict, et ne doit pas commencer. */

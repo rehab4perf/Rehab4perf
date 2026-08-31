@@ -6373,6 +6373,26 @@ _updateOutilsPatientBtns();
     return 'neutre';
   }
 
+  /* Un test de reception se passe SUR CHAQUE JAMBE : il a donc un resultat par
+     cote. Quand les deux s'accordent, une mention suffit — deux chips
+     identiques cote a cote ne diraient rien de plus. Quand ils different, une
+     seule en cacherait une : on en pose deux, chacune avec SA couleur et le
+     nom de son cote.
+
+     `_crTagClasse` est appelee sur la mention elle-meme : elle ne lit que
+     `.niveau`, que porte aussi chaque entree de `statuts`. */
+  function _crStatutChips(t, classe) {
+    if (t && t.statuts && t.statuts.length) {
+      return t.statuts.map(function (st) {
+        return '<span class="' + classe + ' ' + _crTagClasse(st) + '">'
+             + _crEsc(st.cote) + ' : ' + _crEsc(st.txt) + '</span>';
+      }).join(' ');
+    }
+    return (t && t.statut)
+      ? '<span class="' + classe + ' ' + _crTagClasse(t) + '">' + _crEsc(t.statut) + '</span>'
+      : '';
+  }
+
   window.crChargerTestsBilan = function () {
     var brut = [];
     /* Le bilan en memoire est-il bien celui du patient selectionne ? Il peut
@@ -6452,7 +6472,7 @@ _updateOutilsPatientBtns();
             +     '</span>'
             +     '<span class="cr-tf-val">' + _crEsc(t.valeur) + '</span>'
             +   '</span>'
-            +   (t.statut ? '<span class="cr-tf-tag ' + _crTagClasse(t) + '">' + _crEsc(t.statut) + '</span>' : '')
+            +   _crStatutChips(t, 'cr-tf-tag')
             + '</label>';
     });
     boite.innerHTML = html;
@@ -6482,7 +6502,7 @@ _updateOutilsPatientBtns();
       }
       lines.push({ t: 'test', label: t.label, valeur: t.valeur, cellules: t.cellules || [],
                    note: t.note || '', notes: t.notes || null,
-                   statut: t.statut, niveau: t.niveau, af: t.af || null,
+                   statut: t.statut, statuts: t.statuts || null, niveau: t.niveau, af: t.af || null,
                    afCotes: t.afCotes || null, afMode: t.afMode || '',
                    mesures: t.mesures || null, geste: t.geste || '' });
     });
@@ -6926,8 +6946,7 @@ _updateOutilsPatientBtns();
              + (t.geste ? '<span class="lt-note">' + _crEsc(t.geste) + '</span>' : '') + '</td>'
              + (entetes.length ? entetes.map(function () { return '<td class="n"></td>'; }).join('')
                                : '<td class="obs"></td>')
-             + '<td class="s">' + (t.statut
-                 ? '<span class="lt-chip ' + _crTagClasse(t) + '">' + _crEsc(t.statut) + '</span>' : '')
+             + '<td class="s">' + _crStatutChips(t, 'lt-chip')
              + '</td></tr>';
           t.mesures.forEach(function (m) {
             var pm = {};
@@ -6957,8 +6976,7 @@ _updateOutilsPatientBtns();
              + (t.geste ? '<span class="lt-note">' + _crEsc(t.geste) + '</span>' : '') + '</td>'
              + (entetes.length ? entetes.map(function () { return '<td class="n"></td>'; }).join('')
                                : '<td class="obs"></td>')
-             + '<td class="s">' + (t.statut
-                 ? '<span class="lt-chip ' + _crTagClasse(t) + '">' + _crEsc(t.statut) + '</span>' : '')
+             + '<td class="s">' + _crStatutChips(t, 'lt-chip')
              + '</td></tr>';
           _afSousLignes(t);
           /* Une ligne par observation : « Gauche : parfait » et « Droit : pied
@@ -6986,8 +7004,7 @@ _updateOutilsPatientBtns();
            + (t.geste ? '<span class="lt-note">' + _crEsc(t.geste) + '</span>' : '')
            + (t.note ? '<span class="lt-note">' + _crEsc(t.note) + '</span>' : '') + '</td>'
            + _cols
-           + '<td class="s">' + (t.statut
-               ? '<span class="lt-chip ' + _crTagClasse(t) + '">' + _crEsc(t.statut) + '</span>' : '')
+           + '<td class="s">' + _crStatutChips(t, 'lt-chip')
            + '</td></tr>';
 
       });

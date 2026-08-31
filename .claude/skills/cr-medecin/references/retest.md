@@ -94,3 +94,47 @@ fusion.
 `var css = \`…\`` : le marquage était **totalement invisible dans le document
 envoyé au médecin**. Même piège que d'habitude — une règle ajoutée d'un seul
 côté ne se voit pas là où le document est lu.
+
+
+## Réception — 80 % Hop Test : un verdict PAR JAMBE
+
+```bash
+node qualite/reception-cotes-cas.js
+node qualite/reception-acquis-cas.js
+```
+
+C'est un test de réception : il se passe **sur chaque jambe**, et chaque jambe a
+son résultat. Le verdict était pourtant fondu — `conditionnants.every(l => l.g
+&& l.d)` — donc un critère manquant d'un seul côté rendait « Non acquis » tout
+court. Le médecin apprenait que le test avait échoué **sans apprendre où**,
+alors que c'est exactement ce qui oriente la rééducation.
+
+**Décision du praticien (31/08/2026) : ne pas revenir à un verdict fondu.**
+Elle remplace la décision inverse, qui était écrite au même endroit.
+
+- Les deux côtés s'accordent → **une seule mention**, comme avant. Deux chips
+  identiques côte à côte ne diraient rien de plus.
+- Ils divergent → **deux mentions**, chacune avec sa couleur et le nom de son
+  côté, portées par `entree.statuts`.
+
+**Trois des cinq critères conditionnent** la réussite (`acquis:true` dans
+`CRITERIA_REC`) — talon au repère 80 %, descente fluide, maintien 3 s. Le
+valgus dynamique et le contrôle du tronc restent **indicatifs** : ils ne pèsent
+pas sur le verdict et ressortent en sous-lignes de défaut.
+
+**Les intitulés de côté viennent de la grille** (`entree.afCotes`), jamais d'une
+supposition gauche/droite : sinon la mention nommerait un côté différent de la
+colonne juste au-dessus.
+
+**Le niveau d'ensemble d'un résultat mixte est `warn`.** Ce n'est pas le
+décompte nuancé que la règle précédente refusait — « 3/5 » en ambre — mais un
+résultat réellement mixte : un côté acquis, l'autre non n'est ni une réussite
+ni un échec.
+
+**Quatre rendus, une seule fonction.** `_crStatutChips(t, classe)` sert
+l'aperçu des tests (`cr-tf-tag`) et les **trois** rendus de la lettre
+(`lt-chip`). Et `statuts` doit être recopié dans le modèle de la lettre à côté
+de `statut` : oublié là, la lettre retombe sur la mention unique **sans rien
+signaler**. La copie en texte brut n'a pas de pastilles — elle lit le repli
+d'une ligne posé dans `statut` : « Côté sain : acquis · Côté atteint : non
+acquis ».
