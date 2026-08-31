@@ -3163,6 +3163,9 @@ function _editBilanConfirm(){
     // la dernière valeur connue AVANT ce bilan, sans jamais la pré-remplir réellement —
     // évite l'impression que « les résultats ont disparu » en passant du mode lecture
     // (vue fusionnée) au mode édition (données propres à ce bilan).
+    // Marque IDENTIQUE au bilan de suivi — gris, italique, fond teinté. Elle
+    // etait noire ici : sur un suivi rouvert, seuls les blocs NON retestes ce
+    // jour-la portaient une ombre, et ils se lisaient comme des mesures du jour.
     try{
       var _editIdx = _allBilans.findIndex(function(b){ return b.id === _currentBilanId; });
       var _inherited = _editIdx >= 0 ? _prevMergedFrom(_allBilans, _editIdx + 1) : null;
@@ -3181,9 +3184,9 @@ function _editBilanConfirm(){
    risque de compresser la largeur du champ dans un conteneur flex. Jamais soumise :
    pour les select, l'option reste de valeur "" ; pour input/textarea, un placeholder
    n'est jamais une valeur de champ. Retirée dès qu'une vraie valeur est saisie/choisie. */
-function _blShowInheritedHints(mergedData, grise){
+function _blShowInheritedHints(mergedData){
   document.querySelectorAll('.bl-inherited-ghost').forEach(function(el){
-    el.classList.remove('bl-inherited-ghost', 'bl-ghost-grise');
+    el.classList.remove('bl-inherited-ghost');
     if(el.tagName === 'SELECT'){
       var opt0 = el.options[0];
       if(opt0 && opt0.dataset.blOrigText !== undefined){ opt0.textContent = opt0.dataset.blOrigText; delete opt0.dataset.blOrigText; }
@@ -3212,10 +3215,9 @@ function _blShowInheritedHints(mergedData, grise){
       opt0.textContent = val;
       opt0.selected = true;
       el.classList.add('bl-inherited-ghost');
-      if(grise) el.classList.add('bl-ghost-grise');
       el.addEventListener('change', function _rmGhost(){
         if(opt0.dataset.blOrigText !== undefined){ opt0.textContent = opt0.dataset.blOrigText; delete opt0.dataset.blOrigText; }
-        el.classList.remove('bl-inherited-ghost', 'bl-ghost-grise');
+        el.classList.remove('bl-inherited-ghost');
         el.removeEventListener('change', _rmGhost);
       });
     } else if(el.type === 'checkbox' || el.type === 'radio'){
@@ -3231,9 +3233,8 @@ function _blShowInheritedHints(mergedData, grise){
       if(val === false || String(val) === 'false' || String(val) === '0') return;
       el.title = 'Case VIDE. L\'anneau indique qu\'elle \u00e9tait coch\u00e9e au bilan pr\u00e9c\u00e9dent. Elle ne sera pas enregistr\u00e9e tant que vous ne l\'aurez pas coch\u00e9e.';
       el.classList.add('bl-inherited-ghost');
-      if(grise) el.classList.add('bl-ghost-grise');
       el.addEventListener('change', function _rmGhost(){
-        el.classList.remove('bl-inherited-ghost', 'bl-ghost-grise');
+        el.classList.remove('bl-inherited-ghost');
         el.removeAttribute('title');
         el.removeEventListener('change', _rmGhost);
       });
@@ -3242,9 +3243,8 @@ function _blShowInheritedHints(mergedData, grise){
       el.placeholder = String(val);
       el.title = 'Champ VIDE. Texte affiché = dernière valeur connue, reprise d\'un bilan antérieur. Elle ne sera pas enregistrée tant que vous ne l\'aurez pas saisie.';
       el.classList.add('bl-inherited-ghost');
-      if(grise) el.classList.add('bl-ghost-grise');
       el.addEventListener('input', function _rmGhost(){
-        el.classList.remove('bl-inherited-ghost', 'bl-ghost-grise');
+        el.classList.remove('bl-inherited-ghost');
         el.removeEventListener('input', _rmGhost);
       });
     }
@@ -5775,10 +5775,12 @@ function _newBilanSuiviConfirm(){
   try{ _majDateSidebar(); }catch(ex){}
   try{ _reevalMajVisibilite(); }catch(ex){}
 
-  // Anciens resultats en fond, grises : on retape par-dessus. Ils ne sont pas
-  // enregistres — ce sont des placeholders, effaces des la premiere frappe —
-  // donc le snapshot ci-dessous reste bien celui d'un bilan vierge.
-  try{ _blShowInheritedHints(_prevDonnees, true); }catch(ex){}
+  // Anciens resultats en fond, grises et en italique : on retape par-dessus.
+  // Ils ne sont pas enregistres — ce sont des placeholders, effaces des la
+  // premiere frappe — donc le snapshot ci-dessous reste bien celui d'un bilan
+  // vierge. Le mode modification pose exactement la meme marque : une valeur
+  // qui n'est pas enregistree ne doit jamais avoir l'air d'une valeur saisie.
+  try{ _blShowInheritedHints(_prevDonnees); }catch(ex){}
 
   // Snapshot des valeurs héritées (pour détecter les changements au moment de la sauvegarde)
   _suiviSnapshot = _serializeBilan();

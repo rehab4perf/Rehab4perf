@@ -2011,30 +2011,23 @@ textarea { resize:none !important; overflow:hidden !important; }
    d'une vraie valeur du bilan precedent. L'infobulle le dit, et le champ
    reste vide tant qu'on n'y a pas ecrit — ce que la classe sert encore a
    savoir, cote JS. */
-/* Meme encre que partout ailleurs. Une valeur heritee reste un rappel — elle
-   n'est jamais enregistree — mais rien ne la distingue plus a l'oeil d'une
-   valeur saisie : c'est la mise en page du reste de la page qui prime. */
-input.bl-inherited-ghost::placeholder, textarea.bl-inherited-ghost::placeholder {
-  color:var(--text); opacity:1;
-}
-select.bl-inherited-ghost { color:var(--text); }
+/* UNE valeur heritee, UNE seule marque : gris, italique, fond teinte.
 
-/* Bilan de suivi : les anciens resultats restent en fond, en gris, et on
-   retape par-dessus. Ici la nuance est utile — contrairement au mode
-   modification, tous les champs de tests sont vides et l'ancienne valeur est
-   une reference a comparer, pas le contenu du bilan qu'on edite.
+   Il y avait deux styles. En mode modification l'ombre etait rendue a l'encre
+   NOIRE, au motif que la mise en page du reste de la page prime. Mais une
+   valeur heritee n'est JAMAIS enregistree : la rendre indiscernable d'une
+   valeur saisie fait croire que le bilan la contient. Sur un bilan de suivi
+   rouvert, seuls les blocs NON retestes ce jour-la portaient une ombre — Heel
+   Rise, Hop Test — et ils s'y lisaient comme des mesures du jour.
 
-   Les deux classes sont posees ensemble, et la regle noire ci-dessus a la
-   meme specificite : seul l'ordre les departageait. On la nomme donc
-   entierement, pour que le gris ne depende plus de la position dans le
-   fichier. */
-input.bl-inherited-ghost.bl-ghost-grise::placeholder,
-textarea.bl-inherited-ghost.bl-ghost-grise::placeholder {
+   Le style ne depend donc plus du chemin par lequel on arrive. */
+input.bl-inherited-ghost::placeholder,
+textarea.bl-inherited-ghost::placeholder {
   color:var(--text3); opacity:1; font-style:italic;
 }
-select.bl-inherited-ghost.bl-ghost-grise { color:var(--text3); font-style:italic; }
-input.bl-ghost-grise:not([type=checkbox]):not([type=radio]),
-textarea.bl-ghost-grise, select.bl-ghost-grise {
+select.bl-inherited-ghost { color:var(--text3); font-style:italic; }
+input.bl-inherited-ghost:not([type=checkbox]):not([type=radio]),
+textarea.bl-inherited-ghost, select.bl-inherited-ghost {
   background:var(--surface2);
 }
 
@@ -2057,8 +2050,8 @@ input[type=radio].bl-inherited-ghost {
   outline-offset:3px;
   border-radius:3px;
 }
-input[type=checkbox].bl-inherited-ghost.bl-ghost-grise,
-input[type=radio].bl-inherited-ghost.bl-ghost-grise {
+input[type=checkbox].bl-inherited-ghost,
+input[type=radio].bl-inherited-ghost {
   box-shadow:0 0 0 3px var(--surface2);
 }
 
@@ -6173,7 +6166,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260806i"></script>
-<script src="js/bilan.js?v=20260831b"></script>
+<script src="js/bilan.js?v=20260831c"></script>
 
 </body>
 </html>

@@ -345,6 +345,32 @@ c'est-à-dire une douleur stable, alors que rien n'a été mesuré. Et la ligne
 affiche l'ancienne valeur en gris derrière le champ, comme partout ailleurs
 dans un suivi — d'où l'ordre, le fond gris ne se posant que sur un champ vide.
 
+**Une valeur héritée porte UNE marque, la même partout.**
+
+```bash
+node qualite/valeur-heritee-cas.js
+```
+
+Elle n'est jamais enregistrée — c'est un placeholder, effacé à la première
+frappe. Deux styles coexistaient pourtant : gris italique à la **création** du
+bilan de suivi, et **noir** en mode **modification**, au motif que la mise en
+page du reste de la page primait.
+
+Le défaut ne se voyait donc que sur un suivi **rouvert pour correction** : là,
+les blocs retestés portent de vraies valeurs, et seuls les blocs **non
+retestés** portent une ombre — le Heel Rise et le Hop Test dans le cas signalé.
+En pleine encre au milieu de vraies mesures, ils se lisaient comme des mesures
+du jour, alors que rien ne serait enregistré.
+
+Le second paramètre de `_blShowInheritedHints` a disparu avec la classe
+`bl-ghost-grise` : gris, italique et fond teinté sont désormais portés par
+`bl-inherited-ghost` seule. **Ne jamais réintroduire de variante de style** —
+c'est le chemin d'arrivée qui changeait l'apparence, pas la nature de la
+valeur.
+
+Le cas exécute la vraie fonction sur un DOM minimal et **lit la vraie feuille
+de style** ; il échoue si une règle rend l'ombre à l'encre pleine.
+
 **`f-pain-zones` et `f-cote` n'en font PAS partie, et c'est délibéré** : les
 zones portent le côté atteint, que le CR nomme en toutes lettres. Les vider
 obligerait à redessiner à chaque séance et ferait perdre la résolution du côté.

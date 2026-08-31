@@ -76,9 +76,12 @@ function verifie(intitule, attendu, obtenu) {
   console.log('        obtenu  : ' + obtenu);
 }
 
-function joue(champs, donnees, grise) {
+/* La fonction ne prend plus de variante de style : une valeur heritee porte
+   UNE marque, quel que soit le chemin par lequel on arrive. Voir
+   `qualite/valeur-heritee-cas.js`. */
+function joue(champs, donnees) {
   var doc = faireDoc(champs);
-  new Function('document', code + '\n return _blShowInheritedHints;')(doc)(donnees, grise !== false);
+  new Function('document', code + '\n return _blShowInheritedHints;')(doc)(donnees);
   return champs;
 }
 
@@ -89,7 +92,7 @@ console.log('\n  Une case cochée au bilan précédent porte sa marque');
      avant même d'atteindre leur branche. Le cas le fixe explicitement. */
   var c = new Champ({ id: 'plioq-cs-0', type: 'checkbox', value: 'on' });
   joue([c], { 'plioq-cs-0': true });
-  verifie('anneau posé, en gris', 'bl-ghost-grise bl-inherited-ghost', c.classes());
+  verifie('anneau posé, en gris', 'bl-inherited-ghost', c.classes());
   verifie('la case reste DÉCOCHÉE — rien ne sera enregistré', 'false', String(c.checked));
   verifie('une infobulle dit ce que la marque veut dire', 'true', String(!!c.title));
 
@@ -134,7 +137,7 @@ console.log('\n  Champs texte et menus déroulants');
   joue([t], { 'sls-obs-cs': 'valgus dynamique' });
   verifie('la valeur passe en placeholder', 'valgus dynamique', t.placeholder);
   verifie('le champ reste vide', '', t.value);
-  verifie('marqué en gris italique', 'bl-ghost-grise bl-inherited-ghost', t.classes());
+  verifie('marqué en gris italique', 'bl-inherited-ghost', t.classes());
 
   var n = new Champ({ id: 'ha-f-flech-cs', type: 'number' });
   joue([n], { 'ha-f-flech-cs': 38 });
@@ -174,7 +177,7 @@ console.log('\n  Garde-fous — le garde d\'entrée et le style de la marque');
   /* Le fond gris générique poserait un `background` sur la case elle-même :
      sans effet sur une case native, et trompeur pour la lecture suivante. */
   verifie('le fond gris générique exclut les cases', 'true',
-          String(/input\.bl-ghost-grise:not\(\[type=checkbox\]\):not\(\[type=radio\]\)/.test(css)));
+          String(/input\.bl-inherited-ghost:not\(\[type=checkbox\]\):not\(\[type=radio\]\)/.test(css)));
 }
 
 /* ── Ce qui se REPORTE d'un bilan de suivi, et ce qui doit être remesuré ──
@@ -231,7 +234,7 @@ console.log('\n  Ce qui se reporte au bilan de suivi');
      il ne la devine pas. L'ordre compte — le fond gris ne se pose que sur un
      champ vide, donc après le pré-remplissage. */
   var iPre = src.indexOf('_deserializeBilan(infoKeys);');
-  var iFond = src.indexOf('_blShowInheritedHints(_prevDonnees, true)', iPre);
+  var iFond = src.indexOf('_blShowInheritedHints(_prevDonnees)', iPre);
   verifie('le fond gris est posé APRÈS le pré-remplissage', 'true', String(iFond > iPre));
 
   /* Le motif de la règle : ces deux champs sont des métriques d'Évolution.
