@@ -172,6 +172,23 @@ courbe. Un test ajouté demain sans son groupe fait échouer le contrôle.
 mouchard qui note chaque clé lue. Les lister à la main dans le contrôle
 rouvrirait exactement le trou qu'il ferme.
 
+**Les onglets de force sont couverts au même titre.** Vingt-huit champs
+chiffrés n'avaient pas de courbe : préhension, trapèze inférieur, dentelé
+antérieur, coude, force du rachis cervical et lombaire, et les six mesures
+isocinétiques (quadriceps et ischios, force / puissance / résistance, en Nm).
+
+**Le menu d'appréciation à côté des kg n'est PAS une courbe.** Chaque ligne de
+force porte un `<select>` `-apr-ca` / `-apr-cs` qui dit la qualité du test.
+C'est du texte : le praticien veut la **comparaison chiffrée des deux côtés**,
+rien d'autre. Le contrôle relève tous les `<select>` de ces pages et échoue si
+l'un devient source d'une courbe.
+
+**À ne pas confondre avec les tests fonctionnels qualitatifs.** Réception et
+Pliométrie qualitative sont des scores de critères cochés — des tests à part
+entière, pas la colonne d'appréciation d'une mesure. Décision du praticien :
+ils **gardent** leurs cartes d'Évolution, et le contrôle échoue si elles
+disparaissent.
+
 **Ce qui est volontairement hors courbe** — et nommé dans le contrôle, jamais
 implicite : conditions de passation (hauteur de boîte, charge du PSET),
 longueurs de membre qui servent à normaliser (mSEBT, UQYBT, envergure du

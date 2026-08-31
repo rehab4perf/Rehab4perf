@@ -73,7 +73,8 @@ var PARAMETRES = {
   'ulrt-g1':'essai moyenné', 'ulrt-g2':'essai moyenné', 'ulrt-g3':'essai moyenné'
 };
 
-var PAGES = ['page-fonctionnels', 'page-fonctionnelsMS', 'page-fonctionnelsRachis'];
+var PAGES = ['page-fonctionnels', 'page-fonctionnelsMS', 'page-fonctionnelsRachis',
+             'page-force-ms', 'page-force-mi', 'page-force-rachis', 'page-musculaires'];
 var orphelins = [];
 PAGES.forEach(function(pg){
   var i = html.indexOf('<div class="page" id="' + pg + '"');
@@ -90,9 +91,41 @@ PAGES.forEach(function(pg){
     orphelins.push(pg + ' → ' + id);
   });
 });
-verifie('aucune mesure fonctionnelle sans courbe', [], orphelins);
+verifie('aucune mesure sans courbe', [], orphelins);
+
+/* ── Les menus d'appreciation ne sont PAS des courbes ─────────────────── */
+/* A cote de chaque force en kg, un menu deroulant dit la qualite du test
+   (douleur, faiblesse, appréhension). C'est du texte : il n'a pas de sens sur
+   une courbe, et le praticien veut la comparaison CHIFFREE des deux cotes. */
+var selects = [];
+PAGES.forEach(function(pg){
+  var i = html.indexOf('<div class="page" id="' + pg + '"');
+  var j = html.indexOf('<div class="page" id="', i + 10);
+  if (j < 0) j = html.indexOf('</main>', i);
+  (html.slice(i, j).match(/<select[^>]*id="([^"]+)"/g) || []).forEach(function(tag){
+    selects.push(tag.match(/id="([^"]+)"/)[1]);
+  });
+});
+verifie('des menus d\'appréciation existent bien', true, selects.length > 20);
+verifie('… et aucun n\'alimente une courbe', [],
+  selects.filter(function(id){ return couvert[id]; }));
+/* Le chemin des tests personnalises lit `valA`/`valB` en `parseFloat` : c'est
+   la seule autre porte d'entree d'une courbe, et elle est chiffree par nature. */
+verifie('les tests personnalisés n\'entrent que par un nombre', true,
+  /parseFloat\(t\.valA\)/.test(src) && /parseFloat\(t\.valB\)/.test(src));
+
+/* ── Les tests fonctionnels QUALITATIFS gardent leurs cartes ──────────── */
+/* Reception et Pliometrie qualitative sont des scores de criteres coches :
+   ce sont des tests a part entiere, pas la colonne d'appreciation d'une force.
+   Decision du praticien : ils restent dans l'Evolution. */
+var q0 = src.indexOf('var QUAL_GROUPS');
+verifie('les tests qualitatifs ont toujours leur catalogue', true, q0 > 0);
+verifie('… et sont toujours dessinés dans l\'Évolution', true,
+  /QUAL_GROUPS\.forEach/.test(src) && /_buildQualChart\(scoresA/.test(src));
 
 /* ── Le Heel Rise, nommement : c'est par lui que le trou s'est vu ─────── */
+verifie('la préhension a sa courbe', true, !!(couvert['ms-grip-ca'] && couvert['ms-grip-cs']));
+verifie('l\'isocinétique a ses courbes', true, !!(couvert['q-f-ca'] && couvert['ij-r-cs']));
 verifie('le Heel Rise a sa courbe', true, !!(couvert['hr-ca'] && couvert['hr-cs']));
 var suiviIds = {}; CAT.suivi.forEach(function(m){ suiviIds[m.id] = m; });
 verifie('… et son delta en bilan de suivi', true, !!suiviIds['hr-ca']);
@@ -159,4 +192,4 @@ verifie('… et n\'est plus marqué couvert d\'office', false,
 
 console.log('\n' + '─'.repeat(64));
 if (echecs) { console.log('✗ ' + echecs + ' attente(s) en échec'); process.exit(1); }
-console.log('✓ ' + (18 - 0) + ' attentes vérifiées');
+console.log('✓ ' + (18 + 8) + ' attentes vérifiées');

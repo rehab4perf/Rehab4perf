@@ -3544,6 +3544,23 @@ var TRACKED_METRICS = [
   {id:'ep-abd-cs',      label:'Abducteurs (sain)',            unit:'kg',  dir:'up',   cat:'Épaule — Force'},
   {id:'ep-bht-ca',      label:'BHT (côté atteint)',           unit:'kg',  dir:'up',   cat:'Épaule — Force'},
   {id:'ep-bht-cs',      label:'BHT (côté sain)',              unit:'kg',  dir:'up',   cat:'Épaule — Force'},
+  {id:'ep-trap-ca',     label:'Trapèze inf. Y Test (atteint)', unit:' kg', dir:'up', cat:'Épaule — Force'},
+  {id:'ep-trap-cs',     label:'Trapèze inf. Y Test (sain)',    unit:' kg', dir:'up', cat:'Épaule — Force'},
+  {id:'ep-dent-ca',     label:'Dentelé ant. Push up+ (atteint)', unit:' rép', dir:'up', cat:'Épaule — Force'},
+  {id:'ep-dent-cs',     label:'Dentelé ant. Push up+ (sain)',    unit:' rép', dir:'up', cat:'Épaule — Force'},
+  // ── Isocinétique ────────────────────────────────────────────
+  {id:'q-f-ca',         label:'Quadriceps force (atteint)',    unit:' Nm', dir:'up', cat:'Isocinétique'},
+  {id:'q-f-cs',         label:'Quadriceps force (sain)',       unit:' Nm', dir:'up', cat:'Isocinétique'},
+  {id:'q-p-ca',         label:'Quadriceps puissance (atteint)', unit:' Nm', dir:'up', cat:'Isocinétique'},
+  {id:'q-p-cs',         label:'Quadriceps puissance (sain)',    unit:' Nm', dir:'up', cat:'Isocinétique'},
+  {id:'q-r-ca',         label:'Quadriceps résistance (atteint)', unit:' Nm', dir:'up', cat:'Isocinétique'},
+  {id:'q-r-cs',         label:'Quadriceps résistance (sain)',    unit:' Nm', dir:'up', cat:'Isocinétique'},
+  {id:'ij-f-ca',        label:'Ischio force (atteint)',        unit:' Nm', dir:'up', cat:'Isocinétique'},
+  {id:'ij-f-cs',        label:'Ischio force (sain)',           unit:' Nm', dir:'up', cat:'Isocinétique'},
+  {id:'ij-p-ca',        label:'Ischio puissance (atteint)',    unit:' Nm', dir:'up', cat:'Isocinétique'},
+  {id:'ij-p-cs',        label:'Ischio puissance (sain)',       unit:' Nm', dir:'up', cat:'Isocinétique'},
+  {id:'ij-r-ca',        label:'Ischio résistance (atteint)',   unit:' Nm', dir:'up', cat:'Isocinétique'},
+  {id:'ij-r-cs',        label:'Ischio résistance (sain)',      unit:' Nm', dir:'up', cat:'Isocinétique'},
   // ── Coude — Force ───────────────────────────────────────────
   {id:'ms-grip-ca',     label:'Préhension (atteint)',          unit:'kg',  dir:'up',   cat:'Membre supérieur — Préhension'},
   {id:'ms-grip-cs',     label:'Préhension (sain)',             unit:'kg',  dir:'up',   cat:'Membre supérieur — Préhension'},
@@ -3695,6 +3712,8 @@ var CHART_GROUPS = [
   {cat:'Épaule — Force', title:'RI2 — Atteint vs Sain', type:'dual', idA:'ep-ri2-ca', idB:'ep-ri2-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
   {cat:'Épaule — Force', title:'Abducteurs — Atteint vs Sain', type:'dual', idA:'ep-abd-ca', idB:'ep-abd-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
   {cat:'Épaule — Force', title:'BHT — Atteint vs Sain', type:'dual', idA:'ep-bht-ca', idB:'ep-bht-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Épaule — Force', title:'Trapèze inf. (Y Test) — Atteint vs Sain', type:'dual', idA:'ep-trap-ca', idB:'ep-trap-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Épaule — Force', title:'Dentelé ant. (Push up+) — Atteint vs Sain', type:'dual', idA:'ep-dent-ca', idB:'ep-dent-cs', unit:'rép', dir:'up', labelA:'Atteint', labelB:'Sain'},
   // ─ Hanche — Force ─
   {cat:'Hanche — Force', title:'Adducteurs — Atteint vs Sain', type:'dual', idA:'ha-f-add-ca', idB:'ha-f-add-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
   {cat:'Hanche — Force', title:'Fléchisseurs — Atteint vs Sain', type:'dual', idA:'ha-f-flech-ca', idB:'ha-f-flech-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
@@ -3719,6 +3738,23 @@ var CHART_GROUPS = [
   // ─ Genou — Mobilité ─
   {cat:'Genou — Mobilité', title:'Flexion genou D vs G (actif)', type:'dual', idA:'rom-ge-d-flexa', idB:'rom-ge-g-flexa', unit:'°', dir:'up', labelA:'Côté D', labelB:'Côté G'},
   {cat:'Genou — Mobilité', title:'Flexion genou D vs G (passif)', type:'dual', idA:'rom-ge-d-flexp', idB:'rom-ge-g-flexp', unit:'°', dir:'up', labelA:'Côté D', labelB:'Côté G'},
+  // ─ Main / Coude — Force ─
+  {cat:'Main — Force', title:'Préhension — Atteint vs Sain', type:'dual', idA:'ms-grip-ca', idB:'ms-grip-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Coude — Force', title:'Flexion coude — Atteint vs Sain', type:'dual', idA:'co-f-flex-ca', idB:'co-f-flex-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Coude — Force', title:'Extension coude — Atteint vs Sain', type:'dual', idA:'co-f-ext-ca', idB:'co-f-ext-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  // ─ Rachis — Force ─
+  {cat:'Rachis — Force', title:'Extenseurs cervicaux', type:'single', idA:'ra-fc-ext', unit:'kg', dir:'up', labelA:'Force'},
+  {cat:'Rachis — Force', title:'Fléchisseurs cervicaux', type:'single', idA:'ra-fc-flex', unit:'kg', dir:'up', labelA:'Force'},
+  {cat:'Rachis — Force', title:'Inclinateurs cervicaux — Atteint vs Sain', type:'dual', idA:'ra-fc-inc-ca', idB:'ra-fc-inc-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Rachis — Force', title:'Extenseurs lombaires', type:'single', idA:'ra-fl-ext', unit:'kg', dir:'up', labelA:'Force'},
+  {cat:'Rachis — Force', title:'Fléchisseurs lombaires', type:'single', idA:'ra-fl-flex', unit:'kg', dir:'up', labelA:'Force'},
+  // ─ Isocinetique ─
+  {cat:'Isocinétique', title:'Quadriceps force — Atteint vs Sain', type:'dual', idA:'q-f-ca', idB:'q-f-cs', unit:'Nm', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Isocinétique', title:'Quadriceps puissance — Atteint vs Sain', type:'dual', idA:'q-p-ca', idB:'q-p-cs', unit:'Nm', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Isocinétique', title:'Quadriceps résistance — Atteint vs Sain', type:'dual', idA:'q-r-ca', idB:'q-r-cs', unit:'Nm', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Isocinétique', title:'Ischio-jambiers force — Atteint vs Sain', type:'dual', idA:'ij-f-ca', idB:'ij-f-cs', unit:'Nm', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Isocinétique', title:'Ischio-jambiers puissance — Atteint vs Sain', type:'dual', idA:'ij-p-ca', idB:'ij-p-cs', unit:'Nm', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  {cat:'Isocinétique', title:'Ischio-jambiers résistance — Atteint vs Sain', type:'dual', idA:'ij-r-ca', idB:'ij-r-cs', unit:'Nm', dir:'up', labelA:'Atteint', labelB:'Sain'},
   // ─ Tests Fonctionnels MI ─
   {cat:'Tests Fonctionnels MI', title:'SLS — Atteint vs Sain', type:'dual', idA:'sls-ca', idB:'sls-cs', unit:'rép', dir:'up', labelA:'Atteint', labelB:'Sain', condId:'sls-hauteur'},
   {cat:'Tests Fonctionnels MI', title:'Hop Test — Atteint vs Sain', type:'dual', idA:'hop-ca', idB:'hop-cs', unit:'cm', dir:'up', labelA:'Atteint', labelB:'Sain'},
