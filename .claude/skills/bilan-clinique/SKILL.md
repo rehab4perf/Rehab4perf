@@ -222,6 +222,33 @@ passe en ambre (`.passe`) dès que le bilan consulté n'est pas celui du jour. L
 date a été **retirée de `sb-meta`** au passage : deux fois la même, dont une
 sans étiquette, ne disait rien de plus.
 
+## Le brouillon se construit en PARCOURANT LE DOM
+
+```bash
+node qualite/cr-date-pec-cas.js
+```
+
+`saveToStorage()` lit `input, textarea, select` — **un champ retiré de la page
+disparaît donc du brouillon**, en silence. C'est ce qui a fait perdre au
+compte-rendu la date de début de prise en charge quand « Date du bilan » est
+sorti du formulaire : `_serializeBilan` ajoute bien `f-date`, mais elle ne sert
+qu'à l'enregistrement en base, jamais au brouillon.
+
+**Toute valeur dérivée doit être ajoutée à la main**, après le parcours et avant
+l'écriture. Avant, elle serait écrasée ; après, elle ne partirait pas.
+
+**La prise en charge est la date du PREMIER bilan**, pas celle du bilan
+courant — décision du praticien. `f-date` aurait annoncé sur un suivi une prise
+en charge commencée *aujourd'hui*, et le CR calcule des délais à partir de là.
+`_bilanDatePEC()` prend la plus ancienne des dates de `_allBilans`, qui arrive
+du plus **récent** au plus ancien : prendre le premier élément rendrait
+l'inverse.
+
+Faute de bilan enregistré — premier examen, pas encore sauvegardé — c'est la
+date effective du jour : la prise en charge commence bien maintenant. Le
+compte-rendu garde un repli sur `f-date` pour les brouillons écrits avant que
+`f-date-pec` n'existe : mieux vaut une date approchée qu'un champ vide.
+
 ## Un bilan antérieur ne montre jamais l'avenir
 
 ```bash

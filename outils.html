@@ -8131,10 +8131,17 @@ _updateOutilsPatientBtns();
       var dob   = bilan['f-dob'] || pat.ddn || '';
       if (dobEl && dob) { dobEl.value = dob; filled++; }
 
-      // ── Date du bilan → date début prise en charge ───────────
-      var pecEl     = document.getElementById('cr-pat-date-pec');
-      var dateBilan = bilan['f-date'] || '';
-      if (pecEl && dateBilan) { pecEl.value = dateBilan; filled++; }
+      // ── Début de prise en charge = date du PREMIER bilan ─────
+      /* On lisait `f-date`, c'est-a-dire la date du bilan COURANT : sur un
+         bilan de suivi, le courrier annoncait une prise en charge commencee
+         aujourd'hui — et il calcule des delais a partir de la.
+
+         `f-date-pec` porte la plus ancienne des dates de bilan. Le repli sur
+         `f-date` couvre les brouillons ecrits avant qu'elle n'existe : mieux
+         vaut une date approchee qu'un champ vide. */
+      var pecEl  = document.getElementById('cr-pat-date-pec');
+      var datePEC = bilan['f-date-pec'] || bilan['f-date'] || '';
+      if (pecEl && datePEC) { pecEl.value = datePEC; filled++; }
 
       // ── Date accident + date opération (depuis bilan.html) ───
       var accEl = document.getElementById('cr-pat-date-accident');

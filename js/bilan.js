@@ -5585,6 +5585,32 @@ function _confirmEditBilanDate(bilanId) {
    Il a été retiré du formulaire. Tout ce qui affichait une date lit désormais
    `_currentBilanDate`, la vraie, celle de la colonne `date` — et le jour même
    quand aucun bilan n'est encore enregistré. */
+/* Date de PRISE EN CHARGE = date du PREMIER bilan de ce patient.
+
+   Le compte-rendu la lisait dans `f-date`, et ne la lit plus du tout : le
+   champ « Date du bilan » a ete retire du formulaire, or le brouillon
+   (`athletik-bilan`) se construit en PARCOURANT LE DOM — un champ absent de la
+   page est absent du brouillon. `_serializeBilan` ajoute bien `f-date`, mais
+   elle ne sert qu'a l'enregistrement en base, pas au brouillon.
+
+   Et `f-date` ne conviendrait de toute facon pas : elle porte la date du bilan
+   COURANT. Sur un bilan de suivi, le courrier aurait annonce une prise en
+   charge commencee AUJOURD'HUI — d'autant plus faux que le CR calcule des
+   delais a partir de cette date.
+
+   On prend donc la plus ancienne des dates de bilan. Faute de bilan enregistre
+   — premier examen, pas encore sauvegarde — c'est la date effective du jour :
+   la prise en charge commence bien maintenant. */
+function _bilanDatePEC() {
+  var d = null;
+  (_allBilans || []).forEach(function (b) {
+    var v = b && b.date ? String(b.date).slice(0, 10) : '';
+    if (v && (!d || v < d)) d = v;
+  });
+  if (!d) { try { d = _bilanDateEffective(); } catch (ex) { d = null; } }
+  return d || '';
+}
+
 function _bilanDateEffective() {
   if (_currentBilanDate) return String(_currentBilanDate).slice(0, 10);
   var d = new Date();
@@ -9537,6 +9563,11 @@ function saveToStorage() {
         else data[el.id] = el.value;
       }
     });
+    /* Deux dates DERIVEES, qui ne vivent dans aucun champ de la page : le
+       parcours du DOM ci-dessus ne peut donc pas les voir. Le compte-rendu les
+       lit dans ce brouillon. */
+    try { data['f-date'] = _bilanDateEffective(); } catch(e) {}
+    try { data['f-date-pec'] = _bilanDatePEC(); } catch(e) {}
     localStorage.setItem(R4P_KEYS.BILAN_DRAFT, JSON.stringify(data));
   } catch(e) {}
   /* Résumé des tests fonctionnels pour le CR médecin. Dans son propre try :
