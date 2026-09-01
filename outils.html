@@ -6124,9 +6124,22 @@ _updateOutilsPatientBtns();
      et l'apercu ne suivait plus : une pathologie choisie n'apparaissait jamais
      dans le courrier. Le nom annoncait des blocs alors qu'il ne reste qu'une
      chose a faire — refaire le courrier. Il le dit maintenant. */
+  /* EXPOSEE : tout ce bloc vit dans l'IIFE `initCR`, et un gestionnaire ecrit
+     en attribut HTML — `onchange="crUpdateAfterChange()"` — ne voit que
+     `window`. Une simple declaration y reste captive, et le clic leve une
+     ReferenceError.
+
+     C'etait deja le cas de `crUpdateBlocks` : l'erreur passait inapercue parce
+     que la fonction ne faisait rien, et que l'evenement `change` de la case
+     remontait de toute facon jusqu'a la delegation. Le defaut etait donc reel
+     et invisible — jusqu'a ce que la fonction ait quelque chose a faire.
+
+     Les autres fonctions appelees depuis un attribut sont, elles, soit
+     declarees hors de l'IIFE, soit posees en `window.x = function`. */
   function crUpdateAfterChange() {
     try { _crMajDifferee(); } catch (e) { console.error('aperçu CR:', e); }
   }
+  window.crUpdateAfterChange = crUpdateAfterChange;
   function crToggleBlock(id, show) {
     var el = document.getElementById(id);
     if (!el) return;

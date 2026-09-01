@@ -451,3 +451,30 @@ la panne étant précisément qu'un corps vide ne se remarque pas.
 **Corollaire pour la suite** : tout geste du CR qui n'est pas une frappe doit
 appeler cette fonction. La délégation ne rattrapera ni un clic, ni une écriture
 programmatique — c'est le même piège que les cases des graphiques d'évolution.
+
+
+### Un gestionnaire en attribut ne voit que `window`
+
+```bash
+node qualite/handlers-inline-cas.js
+```
+
+Tout le Générateur de CR vit dans l'IIFE **`initCR`**. Une fonction qui y est
+simplement déclarée **n'existe pas** pour un `onclick="…"` ou un
+`onchange="…"` : l'attribut est évalué au niveau global, et le geste lève une
+`ReferenceError`.
+
+C'est pourquoi tout ce qui est appelé depuis un attribut est posé en
+`window.x = function` — sauf `crUpdateBlocks`, qui ne l'était pas. L'erreur
+passait inaperçue : la fonction ne faisait rien, et l'événement `change` de la
+case remontait de toute façon jusqu'à la délégation. **Le défaut était réel et
+invisible — jusqu'à ce que la fonction ait quelque chose à faire.**
+
+`crUpdateAfterChange` reste **déclarée dans l'IIFE** — ses quatre autres
+appelants y sont, et l'en sortir lui ferait perdre `_crMajDifferee` — et elle est
+**exposée** juste après.
+
+Le contrôle relève **tous** les gestionnaires écrits en attribut, y compris ceux
+des chaînes HTML injectées par le script, et vérifie que chacun est
+atteignable : posé sur `window`, ou déclaré en colonne zéro (hors de l'IIFE — la
+convention du fichier étant que ce qui y vit est indenté).
