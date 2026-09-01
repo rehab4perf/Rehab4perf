@@ -150,9 +150,11 @@ console.log('\n  Le champ et sa case existent dans la page');
   verifie('le champ texte existe', 'true',
           String(/<input type="text" id="cr-eva-txt"/.test(sansCom)));
   /* Regenerer le courrier a la volee : sans ca, decocher ne se voit qu'apres
-     un nouveau clic sur « Generer ». */
-  verifie('cocher régénère les blocs', 'true',
-          String(/id="cr-eva-inc"[^>]*onchange="crUpdateBlocks\(\)"/.test(sansCom)));
+     un nouveau clic sur « Generer ». La fonction s'appelait `crUpdateBlocks` et
+     ne montrait plus aucun bloc — corps VIDE, appelants intacts. Renommee avec
+     un nom qui dit ce qu'elle fait, voir `qualite/cr-patho-apercu-cas.js`. */
+  verifie('cocher régénère le courrier', 'true',
+          String(/id="cr-eva-inc"[^>]*onchange="crUpdateAfterChange\(\)"/.test(sansCom)));
 }
 
 console.log('\n  Une observation ne se lit pas comme un critère');

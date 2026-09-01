@@ -421,3 +421,33 @@ repartirait dans le vide.
 
 Un refus donne le **statut** dans le message et le **motif** en console : sans
 lui, il ne reste rien à quoi se raccrocher.
+
+
+## Un clic n'émet ni `input` ni `change`
+
+```bash
+node qualite/cr-patho-apercu-cas.js
+```
+
+Une pathologie choisie n'apparaissait **jamais** dans le courrier. Deux choses
+se combinaient, et il fallait les deux :
+
+- la délégation qui reconstruit l'aperçu écoute `input` et `change` dans
+  `#panel-cr`. **Un bouton n'émet aucun des deux** — ajouter une articulation,
+  en retirer une, basculer une pathologie sont des clics ;
+- la fonction que ces trois gestes appelaient, `crUpdateBlocks`, avait un
+  **corps vide**. Elle montrait ou cachait des blocs du formulaire selon la
+  pathologie ; le dernier de ces blocs a été retiré, et elle est restée — nom,
+  appelants et commentaire intacts, effet nul.
+
+C'est la forme la plus discrète de code mort : une fonction qui **garde son nom
+et ses appelants en perdant sa raison d'être**. Rien n'échoue, rien ne se voit ;
+les cinq points d'appel continuent de l'appeler dans le vide.
+
+Elle s'appelle désormais `crUpdateAfterChange` et refait le courrier. Le nom dit
+ce qui reste à faire, et le fichier de cas échoue si son corps redevient vide —
+la panne étant précisément qu'un corps vide ne se remarque pas.
+
+**Corollaire pour la suite** : tout geste du CR qui n'est pas une frappe doit
+appeler cette fonction. La délégation ne rattrapera ni un clic, ni une écriture
+programmatique — c'est le même piège que les cases des graphiques d'évolution.

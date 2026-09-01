@@ -1391,7 +1391,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
                champ et sa case. -->
           <div class="cr-fg cr-eva-fg" style="margin-top:8px">
             <label class="cr-eva-lbl" for="cr-eva-inc">
-              <input type="checkbox" id="cr-eva-inc" checked onchange="crUpdateBlocks()">
+              <input type="checkbox" id="cr-eva-inc" checked onchange="crUpdateAfterChange()">
               <span>Douleur (EVA)</span>
             </label>
             <input type="text" id="cr-eva-txt" placeholder="EVA repos : …/10">
@@ -5329,7 +5329,7 @@ _updateOutilsPatientBtns();
     crRenderAmpFields();
     crRenderSignRows();
     crRenderTestRows();
-    crUpdateBlocks(); crUpdateAmpLabels(); crAutoFillObjet();
+    crUpdateAfterChange(); crUpdateAmpLabels(); crAutoFillObjet();
   };
 
   /* Retirer une articulation (et sa pathologie associée si non partagée) */
@@ -5347,7 +5347,7 @@ _updateOutilsPatientBtns();
     crRenderAmpFields();
     crRenderSignRows();
     crRenderTestRows();
-    crUpdateBlocks(); crUpdateAmpLabels(); crAutoFillObjet();
+    crUpdateAfterChange(); crUpdateAmpLabels(); crAutoFillObjet();
   };
 
   /* Compatibilité : crRenderPathoButtons appelé depuis crSelectPatho etc. → no-op */
@@ -6103,16 +6103,30 @@ _updateOutilsPatientBtns();
     var idx = crPathos.indexOf(key);
     if (idx !== -1) { crPathos.splice(idx, 1); btn.classList.remove('active'); }
     else            { crPathos.push(key);       btn.classList.add('active'); }
-    crUpdateBlocks(); crUpdateAmpLabels();
+    crUpdateAfterChange(); crUpdateAmpLabels();
     crAutoFillObjet();
     // Auto-ajout de l'articulation liée à la pathologie (si pas déjà sélectionnée)
     crAutoSelectArticu(btn.dataset.key);
   };
-  /* Le bloc « Force musculaire » ayant ete retire, plus aucun bloc du
-     formulaire ne depend de la pathologie choisie. La fonction est conservee
-     — elle est appelee depuis plusieurs endroits — mais n'a plus rien a
-     montrer ni a cacher. */
-  function crUpdateBlocks() {}
+  /* Elle s'appelait « update blocks » et montrait ou cachait des blocs du
+     formulaire selon la pathologie. Le dernier de ces blocs — « Force
+     musculaire » — a ete retire, et elle est restee : un corps VIDE, avec ses
+     cinq appelants intacts et un commentaire expliquant qu'elle n'avait plus
+     rien a faire.
+
+     Or ces appelants sont exactement les moments ou le courrier doit etre
+     reconstruit : on ajoute une articulation et sa pathologie, on en retire
+     une, on bascule une pathologie. Aucun d'eux n'est une frappe — ce sont des
+     clics de BOUTON, et la delegation qui rafraichit l'apercu n'ecoute que
+     `input` et `change` a l'interieur du panneau. Un bouton n'en emet aucun.
+
+     La fonction avait donc garde son nom et ses appelants en perdant son effet,
+     et l'apercu ne suivait plus : une pathologie choisie n'apparaissait jamais
+     dans le courrier. Le nom annoncait des blocs alors qu'il ne reste qu'une
+     chose a faire — refaire le courrier. Il le dit maintenant. */
+  function crUpdateAfterChange() {
+    try { _crMajDifferee(); } catch (e) { console.error('aperçu CR:', e); }
+  }
   function crToggleBlock(id, show) {
     var el = document.getElementById(id);
     if (!el) return;
@@ -7851,7 +7865,7 @@ _updateOutilsPatientBtns();
     crTestsConfig.forEach(function(t){ crTests[t.key] = 0; });
     crRenderTestRows();
 
-    crUpdateBlocks();
+    crUpdateAfterChange();
     _objetEdited = false;
     crSetTemplate('suivi');
     var objEl = document.getElementById('cr-objet-txt'); if (objEl) objEl.value = '';
