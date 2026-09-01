@@ -157,3 +157,30 @@ lui, garde le score : c'est le praticien qui le lit.
 **Trois rendus, une seule source.** `_crBlocsHtml` (écran + PDF) et
 `_crBlocsTexte` (copie, mail) lisent les mêmes blocs. Un type de bloc ajouté
 d'un seul côté disparaît de l'autre sans le moindre signal.
+
+
+## Le filet de fin d'une analyse fonctionnelle
+
+```bash
+node qualite/reception-cotes-cas.js
+```
+
+Une ligne d'analyse fonctionnelle est un **groupe** : un parent
+(`tr.lt-af-par`) suivi de ses sous-lignes (`tr.lt-af-sub`). Ni l'un ni les
+autres ne portent de filet — c'est ce qui les rattache visuellement. Le filet
+qui **ferme** le groupe est porté par la ligne **suivante** :
+`tr.lt-af-sub + tr:not(.lt-af-sub) td { border-top }`.
+
+**Un parent sans aucune sous-ligne n'est donc jamais fermé.** Cette règle ne
+s'applique pas — il n'y a pas de `.lt-af-sub` avant — et le test se colle au
+suivant, sans séparation. C'est exactement le cas de la Qualité de réception
+dès qu'aucun critère indicatif ne fait défaut, c'est-à-dire **quand tout va
+bien** : le bon résultat était le seul mal rendu.
+
+`tr.lt-af-par:not(:has(+ tr.lt-af-sub))` rend le filet **et** la marge basse —
+rognée à 1 px pour coller le parent à ses sous-lignes, elle plaquait le texte
+contre le filet en leur absence. Un moteur sans `:has()` ignore la règle et
+retrouve le rendu d'avant : jamais pire.
+
+**Ne jamais poser ce filet sur `tr.lt-af-par` tout court** : le groupe se
+couperait en deux, et deux filets se superposeraient à sa fin.

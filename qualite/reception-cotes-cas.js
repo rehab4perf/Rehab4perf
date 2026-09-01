@@ -167,6 +167,25 @@ verifie('les deux lignes parentes répartissent', 2,
 verifie('… et vident la colonne Résultat quand elles le font', 2,
   (outils.match(/_stCotes \? '' : _crStatutChips\(t, 'lt-chip'\)/g) || []).length);
 
+/* ── Le filet qui ferme la ligne ───────────────────────────────────────── */
+console.log('\n  La ligne se ferme même sans sous-ligne');
+/* Le filet de fin de groupe est porte par la ligne SUIVANTE : sans sous-ligne,
+   cette regle ne s'applique jamais et le test se collait au suivant. C'est le
+   cas de la Qualite de reception des qu'aucun critere indicatif ne fait defaut
+   — precisement le bon resultat. */
+verifie('le filet de fin de groupe existe toujours', true,
+  /tr\.lt-af-sub \+ tr:not\(\.lt-af-sub\) td\{border-top:1px/.test(outils));
+verifie('un parent sans sous-ligne porte le sien', true,
+  /tr\.lt-af-par:not\(:has\(\+ tr\.lt-af-sub\)\) td\{[\s\S]{0,80}border-bottom:1px/.test(outils));
+/* La marge basse etait rognee a 1 px pour coller le parent a ses sous-lignes ;
+   sans elles, le texte se retrouvait plaque contre le filet. */
+verifie('… et retrouve sa marge basse', true,
+  /tr\.lt-af-par:not\(:has\(\+ tr\.lt-af-sub\)\) td\{[\s\S]{0,80}padding-bottom:5px/.test(outils));
+/* Le parent AVEC sous-lignes ne doit surtout pas en porter un : le groupe se
+   couperait en deux, et deux filets se superposeraient a la fin. */
+verifie('le parent avec sous-lignes reste sans filet', true,
+  /tr\.lt-af-par td\{border-bottom:none/.test(outils));
+
 console.log('\n' + '─'.repeat(64));
 if (echecs) { console.log('✗ ' + echecs + ' attente(s) en échec'); process.exit(1); }
-console.log('✓ 34 attentes vérifiées');
+console.log('✓ 38 attentes vérifiées');

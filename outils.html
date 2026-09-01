@@ -6615,6 +6615,21 @@ _updateOutilsPatientBtns();
     'table.lt-t tr.lt-af-obs + tr.lt-af-obs td.lt-af-sy{padding-top:2px}',
     'table.lt-t td.lt-af-sy > span{display:inline-block;border-left:2px solid #DCD9D2;padding-left:8px}',
     'table.lt-t tr.lt-af-sub + tr:not(.lt-af-sub) td{border-top:1px solid #E8E6E1}',
+    /* Un parent d'analyse fonctionnelle sans AUCUNE sous-ligne ferme lui-meme
+       sa ligne. Le filet de fin de groupe est porte par la ligne SUIVANTE
+       (regle juste au-dessus) : quand il n'y a pas de sous-ligne, cette regle
+       ne s'applique jamais et le test se collait au suivant, sans separation.
+
+       C'est le cas de la Qualite de reception des qu'aucun critere indicatif ne
+       fait defaut — precisement le bon resultat. La marge basse revient aussi :
+       elle etait rognee a 1 px pour coller le parent a ses sous-lignes, et sans
+       elles le texte se retrouvait plaque contre le filet.
+
+       `:has()` porte les deux d'un coup, sur le bon element. Un moteur qui ne
+       le connait pas ignore la regle et retrouve le rendu d'avant — jamais
+       pire. */
+    'table.lt-t tr.lt-af-par:not(:has(+ tr.lt-af-sub)) td{',
+      'border-bottom:1px solid #E8E6E1;padding-bottom:5px}',
     '.lt-af-pt{color:#C0392B;font-weight:700;font-size:.7rem}',
     '.lt-af-pt.ok{color:#2D6A4F}',
     '.lt-note{display:block;font-size:.66rem;color:#9D9B96;font-style:italic;margin-top:1px}',
