@@ -7781,7 +7781,23 @@ _updateOutilsPatientBtns();
   function _crEvaRetenue() {
     var c = document.getElementById('cr-eva-inc');
     if (c && !c.checked) return '';
-    return crV('cr-eva-txt');
+    var v = crV('cr-eva-txt');
+    if (!v) return '';
+    /* Saisie a la main, la valeur arrive souvent NUE — « 4 ». Rangee sous
+       « Signes cliniques », elle s'y lit comme un signe sans nom : le medecin
+       voit un chiffre et rien qui dise ce qu'il mesure. On la nomme donc ici,
+       a la source, plutot qu'a chacun des deux endroits qui la posent.
+
+       Le prefixe ne se met QUE s'il manque. Le preremplissage depuis le bilan
+       ecrit deja « EVA repos : 4/10 », et le praticien peut ecrire sa propre
+       phrase : doubler donnerait « EVA : EVA repos : 4/10 ». */
+    if (/eva/i.test(v)) return v;
+    /* Un nombre SEUL est une note sur dix — c'est ce que dit le champ
+       (« EVA repos : …/10 »), et l'echelle n'en admet pas d'autre. Tout ce qui
+       porte deja un « /10 » ou un mot n'est pas retouche : on nomme la valeur,
+       on ne la reecrit pas. */
+    if (/^(10|\d([.,]\d)?)$/.test(v)) return 'EVA : ' + v.replace(',', '.') + '/10';
+    return 'EVA : ' + v;
   }
 
   var CR_IDENTITE = ['cr-pat-civ','cr-pat-nom','cr-pat-prenom','cr-pat-dob'];

@@ -316,3 +316,29 @@ silence et le champ cesserait de grandir à la frappe.
 Le nom `crAutoExpand` est conservé : trois `oninput` et la remise à zéro
 l'appellent, et un appel programmatique doit continuer de synchroniser la
 doublure.
+
+
+## L'EVA doit dire son nom
+
+```bash
+node qualite/cr-eva-cas.js
+```
+
+La note de douleur est rangée sous **« Signes cliniques »**. Le préremplissage
+depuis le bilan écrit « EVA repos : 4/10 » et se lit très bien ; mais **saisie
+à la main** la valeur arrive nue — « 4 » — et devient un signe clinique **sans
+nom** : le médecin voit un chiffre, et rien qui dise ce qu'il mesure.
+
+Elle est nommée **à la source**, dans `_crEvaRetenue`, jamais aux deux endroits
+qui la posent dans le courrier — médecin et patient sont construits par deux
+fonctions distinctes, et une règle écrite d'un seul côté disparaît de l'autre
+sans le moindre signal. Le fichier de cas échoue si l'un des deux se met à
+nommer l'EVA de son côté.
+
+**Le préfixe ne se met que s'il manque** (`/eva/i`) : le doubler donnerait
+« EVA : EVA repos : 4/10 ».
+
+**Un nombre SEUL devient une note sur dix** — c'est ce que dit le champ
+(« EVA repos : …/10 ») et l'échelle n'en admet pas d'autre. Tout le reste est
+**nommé sans être réécrit** : « 4/10 », « 3-4 », « 4 au repos, 7 en charge » et
+« 12 » gardent leur forme. La virgule décimale française est acceptée.

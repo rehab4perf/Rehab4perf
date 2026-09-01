@@ -65,6 +65,42 @@ console.log('\n  La case décide de ce qui part au courrier');
           String(/cr-eva-txt'\)\.value\s*=\s*''/.test(sansCom)));
 }
 
+console.log('\n  L\'EVA dit son nom');
+{
+  /* Elle est rangee sous « Signes cliniques ». Saisie A LA MAIN elle arrive
+     nue — « 4 » — et s'y lit comme un signe clinique sans nom : le medecin
+     voit un chiffre, et rien qui dise ce qu'il mesure. */
+  verifie('un chiffre seul devient une EVA sur dix', 'EVA : 4/10', lire(true, '4'));
+  verifie('… zéro compris',                          'EVA : 0/10', lire(true, '0'));
+  verifie('… et dix, la borne haute',                'EVA : 10/10', lire(true, '10'));
+  /* La virgule est la separation decimale francaise : le praticien tape « 6,5 ». */
+  verifie('une décimale à la française passe', 'EVA : 6.5/10', lire(true, '6,5'));
+
+  /* Le prefixe ne se met QUE s'il manque. Le preremplissage depuis le bilan
+     ecrit deja la mention en toutes lettres : la doubler donnerait
+     « EVA : EVA repos : 4/10 ». */
+  verifie('le préremplissage du bilan est laissé tel quel',
+          'EVA repos : 4/10 — EVA max : 7/10',
+          lire(true, 'EVA repos : 4/10 — EVA max : 7/10'));
+  verifie('… quelle que soit la casse', 'eva 3', lire(true, 'eva 3'));
+
+  /* On NOMME la valeur, on ne la reecrit pas : ce qui porte deja un « /10 »
+     ou un mot garde sa forme. */
+  verifie('une note déjà sur dix garde sa forme', 'EVA : 4/10', lire(true, '4/10'));
+  verifie('une phrase est nommée sans être réécrite',
+          'EVA : 4 au repos, 7 en charge', lire(true, '4 au repos, 7 en charge'));
+  verifie('un intervalle aussi', 'EVA : 3-4', lire(true, '3-4'));
+  /* Une valeur hors echelle n'est pas une note sur dix : on ne lui en invente
+     pas une. */
+  verifie('un nombre hors échelle ne devient pas une note sur dix',
+          'EVA : 12', lire(true, '12'));
+  /* La mention est posee A LA SOURCE, pas aux deux endroits qui l'affichent :
+     une regle ecrite d'un seul cote ne se voit pas la ou le document est lu.
+     Les deux appels sont deja comptes plus bas. */
+  verifie('aucun des deux courriers ne nomme l\'EVA de son côté', 'false',
+          String(/_itSig\.push\(\{ ic: '', txt: 'EVA/.test(sansCom)));
+}
+
 console.log('\n  L\'empreinte du formulaire ignore la case');
 {
   /* Cochee par defaut, elle ferait passer le CR pour entame des l'ouverture —
