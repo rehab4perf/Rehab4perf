@@ -1983,15 +1983,17 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .cal-ech-neuf { font-size:var(--fs-2xs); font-weight:800; text-transform:uppercase;
   letter-spacing:.06em; color:#fff; background:var(--accent); border-radius:20px;
   padding:2px 7px; margin-left:2px; }
-    /* Une puce qui fond deux sources porte un « 2 » discret. Il ne colore pas
-       la puce et ne change pas son icone : la meme echeance reste la meme
-       chose, seule sa provenance double se signale. Le detail est dans
-       l'infobulle — deux libelles, pour verifier que c'est bien une seule
-       course et non deux le meme jour. */
+    /* Le bouton « fusionner » n'apparait que sur l'echeance de l'ATHLETE quand un
+       objectif du praticien tombe le MEME JOUR. Il est pose A COTE de la puce, pas
+       dedans : un bouton imbrique dans un bouton n'est pas cliquable. Discret —
+       ce n'est une proposition, pas une alerte : deux echeances le meme jour sont
+       souvent deux choses differentes. */
     .cal-ech-fus { display:inline-flex; align-items:center; justify-content:center;
-      min-width:15px; height:15px; padding:0 4px; margin-left:5px;
-      border-radius:8px; background:var(--border); color:var(--text2);
-      font-size:var(--fs-2xs); font-weight:700; line-height:1; flex-shrink:0; }
+      width:20px; height:20px; margin-left:-4px; margin-right:2px; flex-shrink:0;
+      border:1px solid var(--border); border-radius:6px; background:var(--surface);
+      color:var(--text2); font-size:var(--fs-sm); line-height:1; cursor:pointer;
+      padding:0; }
+    .cal-ech-fus:hover { border-color:var(--accent); color:var(--accent); }
 .cal-ech:has(.cal-ech-neuf) { border-left-color:var(--accent); }
 .cal-ech-plus { font-size:var(--fs-xs); color:var(--muted); font-family:inherit;
   background:none; border:none; cursor:pointer; padding:4px 6px; }
@@ -4565,6 +4567,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 </div>
 
-<script src="js/prog-main.js?v=20260901n"></script>
+<script src="js/prog-main.js?v=20260901o"></script>
 </body>
 </html>

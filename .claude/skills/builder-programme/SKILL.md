@@ -377,36 +377,36 @@ Un objectif sans date n'a rien à dire à un agenda et reste dans le bilan.
 dans `f-objectifs` du dernier bilan **enregistré**, et le champ de date de la
 page Infos patient est facultatif.
 
-### Deux sources, un même jour : une seule puce
+### Deux échéances le même jour : les DEUX se voient
 
-Le garde-fou `texte|date` ne rapproche que les libellés **identiques**. Or le
-praticien note « UTMB » au bilan pendant que l'athlète déclare « UTMB 2026 » :
-deux puces pour une seule course, et la bande se remplit.
+**Ne jamais les fondre automatiquement.** Un premier jet le faisait — même jour,
+deux sources, une seule puce — et c'est l'inverse de ce qu'il faut : deux
+échéances le même jour sont souvent deux choses **différentes**, et les fondre
+les cachait toutes les deux derrière un libellé unique, sans aucun moyen de voir
+ce qu'il y avait dessous.
 
-`_echFondreParDate` les fond. Deux règles, et les deux comptent :
+Seul le praticien sait si c'est un doublon. La bande **montre les deux**, et
+propose de fusionner uniquement quand la configuration s'y prête : deux
+échéances, même jour, **deux sources**. Le bouton n'apparaît que sur celle de
+l'athlète — c'est sa ligne que la fusion réécrit.
 
-- **la fusion n'a lieu qu'entre sources différentes.** Deux objectifs que le
-  praticien a posés le même jour sont deux objectifs : les fondre lui cacherait
-  ce qu'il a écrit lui-même. Idem côté athlète ;
-- **le libellé retenu est celui du praticien** — c'est le nom officiel, celui
-  qui part au courrier. L'autre reste lisible en infobulle, jamais perdu.
+**Le bouton vit HORS de la puce.** Un `<button>` imbriqué dans un `<button>`
+n'est pas cliquable, et le balisage est invalide.
 
-**Ce qui reste à faire survit à la fusion** : si l'échéance de l'athlète n'est
-pas encore prise en compte, la puce fondue garde sa marque et son identifiant,
-et le clic l'accepte. Fondre ne doit jamais faire disparaître une action.
+**Fusionner écrit dans `athlete_objectifs`** : le libellé prend celui du
+praticien — le nom officiel, celui qui part au courrier — et `repris_at` marque
+la prise en compte. Deux conséquences voulues : le garde-fou `texte|date` les
+confond ensuite **d'office**, sur ce poste comme sur les autres et sans qu'aucune
+colonne soit ajoutée ; et l'athlète voit que sa déclaration a été acceptée.
 
-Au-delà de deux, seule la **première de chaque source** entre dans la fusion :
-le surnuméraire reste visible plutôt que d'être avalé en silence.
+**Le libellé de l'athlète est remplacé, donc perdu** : la confirmation le nomme
+et le dit. Un praticien doit pouvoir refuser en connaissance de cause plutôt que
+de découvrir après coup que le mot de son patient a disparu. Et rien n'est écrit
+si le libellé du praticien manque — fusionner vers rien effacerait l'échéance
+sans la remplacer.
 
-La puce fondue porte un « 2 » discret — **pas** une couleur ni une icône
-différente : la décision de n'avoir qu'une seule identité visuelle tient. Ce qui
-se signale n'est pas une autre nature, c'est une provenance double, et
-l'infobulle donne les deux libellés pour vérifier qu'il s'agit bien d'une seule
-course.
-
-**Le rendu doit APPELER la fusion** : une fonction juste que personne n'appelle
-laisse la bande se remplir comme avant, et tous les cas de la fonction restent
-verts. Le fichier de cas contrôle le point d'appel séparément.
+**On n'annonce que ce qui est fait** : un refus du serveur laisse les deux
+échéances en place, il ne se dit pas fusionné.
 
 ## Échéances déclarées par l'athlète — table dédiée, migration non appliquée
 

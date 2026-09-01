@@ -174,51 +174,30 @@ function _echJours(dateStr){
   return Math.round((d - a) / 86400000);
 }
 
-/* Deux echeances du MEME JOUR venues de DEUX SOURCES differentes sont la meme
-   echeance : le praticien l'a notee au bilan, l'athlete l'a declaree de son
-   cote, et les mots ne coincident pas au caractere pres — « UTMB » d'un cote,
-   « UTMB 2026 » de l'autre. Le garde-fou `texte|date` ne les rapproche donc
-   pas, et la bande se remplit de doublons.
+/* Deux echeances du MEME JOUR ne se fondent PAS toutes seules.
 
-   On les FOND. Deux regles, et les deux comptent :
+   Le premier jet le faisait : meme jour, deux sources, une seule puce. C'est
+   exactement ce qu'il ne faut pas — deux echeances le meme jour sont souvent
+   deux choses DIFFERENTES, et les fondre les cachait toutes les deux derriere
+   un libelle unique, sans moyen de voir ce qu'il y avait dessous.
 
-   - la fusion n'a lieu qu'ENTRE SOURCES. Deux objectifs que le praticien a
-     poses le meme jour sont deux objectifs : les fondre lui cacherait ce qu'il
-     a ecrit lui-meme. Idem cote athlete.
-   - le libelle retenu est celui du PRATICIEN. C'est le nom officiel, celui qui
-     part au courrier ; l'autre reste lisible en infobulle, jamais perdu.
+   Seul le praticien sait si c'est un doublon. On MONTRE donc les deux, et on
+   lui propose de fusionner quand la configuration s'y prete : deux echeances,
+   meme jour, deux sources.
 
-   Ce qui RESTE A FAIRE survit a la fusion : si l'echeance de l'athlete n'est
-   pas encore prise en compte, la puce fondue porte toujours sa marque et son
-   clic l'accepte. Fondre ne doit pas faire disparaitre une action. */
-function _echFondreParDate(liste){
-  var parDate = {}, ordre = [];
-  liste.forEach(function(o){
-    if(!parDate[o.date]){ parDate[o.date] = []; ordre.push(o.date); }
-    parDate[o.date].push(o);
-  });
-  var out = [];
-  ordre.forEach(function(d){
-    var g = parDate[d];
-    var prat = g.filter(function(o){ return o.source === 'praticien'; });
-    var athl = g.filter(function(o){ return o.source !== 'praticien'; });
-    /* Une seule source represente : rien a fondre. */
-    if(!prat.length || !athl.length){ out = out.concat(g); return; }
-    /* Les surnumeraires d'une meme source restent distincts : seule la
-       PREMIERE de chaque source entre dans la fusion. */
-    var base = prat[0], autre = athl[0];
-    var aVoir = athl.some(function(o){ return o.aVoir; });
-    var idAVoir = (athl.filter(function(o){ return o.aVoir; })[0] || {}).echId;
-    out.push({
-      text: base.text, date: d, jours: base.jours, kind: base.kind,
-      echId: aVoir ? idAVoir : autre.echId,
-      aVoir: aVoir,
-      autres: [autre.text].filter(function(t){ return t && t !== base.text; }),
-      fondue: true
-    });
-    out = out.concat(prat.slice(1)).concat(athl.slice(1));
-  });
-  return out.sort(function(x,y){ return x.jours - y.jours; });
+   Fusionner ecrit dans la ligne de l'athlete — son libelle prend celui du
+   praticien, et `repris_at` la marque prise en compte. Le garde-fou
+   `texte|date` de `_chargerEcheancesAthlete` les confond alors d'office, sur
+   ce poste comme sur les autres, sans qu'aucune colonne soit ajoutee. */
+function _echDoublonPossible(liste, o){
+  if(o.source !== 'athlete' || !o.echId) return false;
+  return liste.some(function(x){ return x.date === o.date && x.source === 'praticien'; });
+}
+
+/* Le libelle du praticien du meme jour : c'est celui que la fusion adopte. */
+function _echLibellePraticien(liste, date){
+  var p = liste.filter(function(x){ return x.date === date && x.source === 'praticien'; })[0];
+  return p ? p.text : '';
 }
 
 function _renderEcheances(){
@@ -240,7 +219,8 @@ function _renderEcheances(){
              aVoir:o.source === 'athlete' && !o.repris };
   }).filter(function(o){ return o.jours !== null && o.jours >= 0; })
     .sort(function(x,y){ return x.jours - y.jours; });
-  liste = _echFondreParDate(liste);
+
+  liste.forEach(function(o){ o.doublon = _echDoublonPossible(liste, o); });
 
   if(!liste.length){ box.style.display = 'none'; box.innerHTML = ''; return; }
   box.style.display = '';
@@ -261,10 +241,16 @@ function _renderEcheances(){
       +  '<span class="cal-ech-ico">' + (o.kind === 'sport' ? '🎯' : '⚑') + '</span>'
       +  '<span class="cal-ech-txt"><b>' + escH(o.text.length > 26 ? o.text.slice(0,26) + '…' : o.text) + '</b>'
       +  '<span class="cal-ech-date">' + _echDateLisible(o.date) + '</span></span>'
-      +  (o.fondue ? '<span class="cal-ech-fus" title="Praticien et athlète — même échéance">2</span>' : '')
       +  '<span class="cal-ech-jm">' + jm + '</span>'
       +  (o.aVoir ? '<span class="cal-ech-neuf" title="Déclarée par l\'athlète — cliquez pour la prendre en compte">nouveau</span>' : '')
-      +  '</button>';
+      +  '</button>'
+      /* HORS du bouton principal : un bouton imbrique dans un bouton n'est pas
+         cliquable, et le balisage est invalide. Il n'apparait que sur
+         l'echeance de l'ATHLETE — c'est elle que la fusion reecrit. */
+      +  (o.doublon
+          ? '<button class="cal-ech-fus" onclick="_echFusionner(\'' + o.echId + '\',\'' + o.date + '\')"'
+            + ' title="Même jour qu\'un objectif que vous avez noté — fusionner les deux">⇄</button>'
+          : '');
   });
   if(liste.length > _ECH_MAX){
     h += '<button class="cal-ech-plus" onclick="_echToutBasculer()">'
@@ -309,6 +295,49 @@ function _echPrendreEnCompte(id, dateStr){
   }).catch(function(){}).then(function(){ _echAller(dateStr); });
 }
 window._echPrendreEnCompte = _echPrendreEnCompte;
+
+/* FUSIONNER : le praticien declare que ces deux echeances sont la meme.
+
+   L'ecriture porte sur la ligne de l'ATHLETE — son libelle prend celui du
+   praticien, et `repris_at` la marque prise en compte. Deux consequences
+   voulues : le garde-fou `texte|date` les confond ensuite d'office, sur ce
+   poste comme sur les autres et sans qu'aucune colonne soit ajoutee ; et
+   l'athlete voit que sa declaration a ete acceptee.
+
+   Le libelle de l'athlete est REMPLACE, donc perdu : la confirmation le dit et
+   le nomme. Un praticien doit pouvoir refuser en connaissance de cause plutot
+   que de decouvrir apres coup que le mot de son patient a disparu.
+
+   Rien n'est ecrit si le libelle du praticien manque : fusionner vers rien
+   effacerait l'echeance sans la remplacer. */
+function _echFusionner(id, dateStr){
+  if(!id) return;
+  var liste = (_patientObjectifs || []);
+  var athlete = liste.filter(function(o){ return String(o.echId) === String(id); })[0];
+  var libelle = _echLibellePraticien(
+    liste.map(function(o){ return { date:o.date, source:o.source, text:o.text }; }), dateStr);
+  if(!libelle){ if(typeof _showToast === 'function') _showToast('Aucun objectif du praticien ce jour-là'); return; }
+  if(!confirm('Fusionner les deux échéances du ' + dateStr + ' ?\n\n'
+    + '« ' + (athlete ? athlete.text : '') +' » deviendra « ' + libelle + ' ».\n'
+    + 'Le libellé de l\'athlète sera remplacé, et l\'échéance marquée prise en compte.')) return;
+
+  _fetchRetry(SUPA_URL_P + '/rest/v1/athlete_objectifs?id=eq.' + id, {
+    method:'PATCH',
+    headers: Object.assign({ 'Prefer':'return=minimal' }, _sbHeaders()),
+    body: JSON.stringify({ texte: libelle, repris_at: new Date().toISOString() })
+  }).then(function(r){
+    /* On n'annonce que ce qui est FAIT : un refus laisse les deux echeances en
+       place plutot que de faire croire a une fusion. */
+    if(!r.ok){ if(typeof _showToast === 'function') _showToast('Fusion impossible (' + r.status + ')'); return; }
+    _patientObjectifs = liste.filter(function(o){ return String(o.echId) !== String(id); });
+    _renderEcheances();
+    if(typeof _renderCalendarUI === 'function') _renderCalendarUI();
+    if(typeof _showToast === 'function') _showToast('🎯 Échéances fusionnées');
+  }).catch(function(){
+    if(typeof _showToast === 'function') _showToast('Fusion impossible — erreur réseau');
+  });
+}
+window._echFusionner = _echFusionner;
 
 function _echToutBasculer(){ _echTout = !_echTout; _renderEcheances(); }
 window._echAller = _echAller;

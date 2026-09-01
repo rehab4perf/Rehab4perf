@@ -202,73 +202,85 @@ console.log('\nLa fusion des deux sources');
     });
 }
 
-console.log('\nDeux sources, un même jour : une seule puce');
+console.log('\nDeux échéances le même jour : les DEUX se voient');
 {
-  /* Le garde-fou `texte|date` ne rapproche que les libelles IDENTIQUES. Or le
-     praticien note « UTMB » au bilan et l'athlete declare « UTMB 2026 » : deux
-     puces pour une seule course, et la bande se remplit. On les fond. */
-  var G0 = js.indexOf('function _echFondreParDate');
-  var G1 = js.indexOf('\nfunction _renderEcheances', G0);
-  if (G0 < 0 || G1 < G0) { console.log('  ✗ bornes de _echFondreParDate introuvables'); ko++; }
-  var fondre = new Function(js.slice(G0, G1) + '\nreturn _echFondreParDate;')();
+  /* Le premier jet les fondait tout seul — meme jour, deux sources, une puce.
+     C'est l'inverse de ce qu'il faut : deux echeances le meme jour sont souvent
+     deux choses DIFFERENTES, et les fondre les cachait toutes les deux derriere
+     un libelle unique, sans moyen de voir ce qu'il y avait dessous. */
+  ok('plus aucune fusion automatique', !/_echFondreParDate/.test(js));
 
-  var prat = function (t, d, j) { return { text:t, date:d, jours:j, kind:'sport', source:'praticien' }; };
-  var athl = function (t, d, j, vu, id) {
-    return { text:t, date:d, jours:j, kind:'sport', source:'athlete', echId:id||'a1', aVoir:!vu };
-  };
+  var D0 = js.indexOf('function _echDoublonPossible');
+  var D1 = js.indexOf('\nfunction _renderEcheances', D0);
+  if (D0 < 0 || D1 < D0) { console.log('  ✗ bornes de _echDoublonPossible introuvables'); ko++; }
+  var aide = new Function(js.slice(D0, D1)
+    + '\nreturn { doublon:_echDoublonPossible, libelle:_echLibellePraticien };')();
 
-  var r = fondre([prat('UTMB', '2026-08-29', 120), athl('UTMB 2026', '2026-08-29', 120, true)]);
-  ok('deux sources le même jour ne font qu\'une puce', r.length === 1, r.length + ' puce(s)');
-  /* Le libelle retenu est celui du PRATICIEN : c'est le nom officiel, celui qui
-     part au courrier. */
-  ok('… au libellé du praticien', r[0] && r[0].text === 'UTMB', r[0] && r[0].text);
-  /* L'autre n'est pas perdu : il reste lisible en infobulle. */
-  ok('… l\'autre libellé reste consultable',
-     !!(r[0] && r[0].autres && r[0].autres.indexOf('UTMB 2026') >= 0));
-  ok('… et la puce se signale comme fondue', !!(r[0] && r[0].fondue));
+  var prat = function (t, d) { return { text:t, date:d, source:'praticien' }; };
+  var athl = function (t, d, id) { return { text:t, date:d, source:'athlete', echId:id||'a1' }; };
 
-  /* Ce qui RESTE A FAIRE survit a la fusion : une echeance non reprise garde sa
-     marque et son identifiant, sinon fondre ferait disparaitre une action. */
-  var r2 = fondre([prat('UTMB', '2026-08-29', 120), athl('UTMB 2026', '2026-08-29', 120, false, 'a42')]);
-  ok('une échéance non reprise reste à prendre en compte', !!(r2[0] && r2[0].aVoir));
-  ok('… et garde SON identifiant', r2[0] && r2[0].echId === 'a42', r2[0] && r2[0].echId);
+  /* La fusion n'est PROPOSEE que dans la configuration qui s'y prete : deux
+     echeances, meme jour, deux sources. */
+  var L = [prat('hyrox', '2026-10-17'), athl('hyrox V', '2026-10-17', 'a7')];
+  ok('la fusion est proposée sur l\'échéance de l\'athlète', aide.doublon(L, L[1]));
+  /* JAMAIS sur celle du praticien : c'est la ligne de l'athlete qu'on reecrit.
+     On lui donne artificiellement un identifiant — sinon le refus viendrait de
+     son absence, et le controle passerait pour une mauvaise raison. */
+  var pratAvecId = { text:'hyrox', date:'2026-10-17', source:'praticien', echId:'p1' };
+  ok('… et jamais sur celle du praticien',
+     !aide.doublon([pratAvecId, L[1]], pratAvecId));
 
-  /* Deux objectifs poses par le PRATICIEN le meme jour sont deux objectifs :
-     les fondre lui cacherait ce qu'il a ecrit lui-meme. */
-  var r3 = fondre([prat('Trail 20 km', '2026-05-10', 30), prat('Test VMA', '2026-05-10', 30)]);
-  ok('deux objectifs du praticien restent distincts', r3.length === 2, r3.length + ' puce(s)');
-  var r4 = fondre([athl('Course A', '2026-05-10', 30, true, 'x1'), athl('Course B', '2026-05-10', 30, true, 'x2')]);
-  ok('… comme deux déclarations de l\'athlète', r4.length === 2, r4.length + ' puce(s)');
+  var L2 = [prat('hyrox', '2026-10-17'), athl('trail', '2026-10-18', 'a8')];
+  ok('deux dates différentes ne proposent rien', !aide.doublon(L2, L2[1]));
+  /* Deux declarations de l'ATHLETE le meme jour ne sont pas un doublon
+     inter-sources : il n'y a rien du praticien a adopter. Sans le filtre sur la
+     source, la ligne se trouverait elle-meme et se proposerait a la fusion. */
+  var L3 = [athl('course A', '2026-10-17', 'a1'), athl('course B', '2026-10-17', 'a2')];
+  ok('deux déclarations de l\'athlète non plus', !aide.doublon(L3, L3[0]));
+  ok('… et une échéance seule ne se trouve pas elle-même',
+     !aide.doublon([L3[0]], L3[0]));
+  /* Sans identifiant, il n'y a rien a reecrire. */
+  var L4 = [prat('hyrox', '2026-10-17'), { text:'x', date:'2026-10-17', source:'athlete' }];
+  ok('une échéance sans identifiant ne se fusionne pas', !aide.doublon(L4, L4[1]));
 
-  /* Des dates differentes ne se fondent jamais, meme entre sources. */
-  var r5 = fondre([prat('UTMB', '2026-08-29', 120), athl('UTMB', '2026-08-30', 121, true)]);
-  ok('deux dates différentes restent deux puces', r5.length === 2, r5.length + ' puce(s)');
+  /* Le libelle adopte est celui du PRATICIEN — le nom officiel. */
+  ok('le libellé retenu est celui du praticien',
+     aide.libelle(L, '2026-10-17') === 'hyrox', aide.libelle(L, '2026-10-17'));
+  ok('… et rien s\'il n\'y en a pas', aide.libelle(L3, '2026-10-17') === '');
+}
 
-  /* Au-dela de deux, seule la PREMIERE de chaque source entre dans la fusion :
-     le surnumeraire reste visible plutot que d'etre avale en silence. */
-  var r6 = fondre([prat('UTMB', '2026-08-29', 120), athl('UTMB 2026', '2026-08-29', 120, true, 'a1'),
-                   athl('Autre course', '2026-08-29', 120, true, 'a2')]);
-  ok('un troisième reste visible', r6.length === 2, r6.length + ' puce(s)');
+console.log('\nFusionner : ce que le geste écrit');
+{
+  var F0 = js.indexOf('function _echFusionner');
+  var F1 = js.indexOf('\nwindow._echFusionner', F0);
+  if (F0 < 0 || F1 < F0) { console.log('  ✗ bornes de _echFusionner introuvables'); ko++; }
+  var f = js.slice(F0, F1);
+  /* Le libelle de l'athlete est REMPLACE, donc perdu : la confirmation doit le
+     nommer. Un praticien doit pouvoir refuser en connaissance de cause. */
+  ok('elle demande confirmation', /confirm\(/.test(f));
+  ok('… en nommant les deux libellés', /athlete \? athlete\.text/.test(f) && /libelle/.test(f));
+  ok('… et en disant que l\'ancien sera remplacé', /remplac/.test(f));
+  /* L'ecriture porte sur la ligne de l'ATHLETE, et pose les DEUX champs :
+     le libelle, pour que le garde-fou `texte|date` les confonde ensuite ; et
+     `repris_at`, pour que l'athlete voie que c'est acte. */
+  ok('elle écrit dans athlete_objectifs', /athlete_objectifs\?id=eq\./.test(f));
+  ok('… le libellé du praticien', /texte: libelle/.test(f));
+  ok('… et la prise en compte', /repris_at:/.test(f));
+  /* Fusionner vers rien effacerait l'echeance sans la remplacer. */
+  ok('elle refuse de fusionner vers un libellé vide', /if\(!libelle\)/.test(f));
+  /* On n'annonce que ce qui est FAIT : un refus laisse les deux en place. */
+  ok('un refus du serveur n\'annonce pas la fusion', /if\(!r\.ok\)[\s\S]{0,140}return;/.test(f));
 
-  /* La bande se lit par distance : l'ordre doit survivre a la fusion. */
-  var r7 = fondre([prat('Loin', '2027-01-01', 400), prat('Proche', '2026-09-05', 4),
-                   athl('Loin 2027', '2027-01-01', 400, true)]);
-  ok('l\'ordre par distance est conservé',
-     r7.length === 2 && r7[0].text === 'Proche', r7.map(function(x){ return x.text; }).join(' / '));
-
-  /* Le rendu doit poser la marque et l'infobulle double. */
-  ok('la puce fondue porte sa marque dans le rendu', /cal-ech-fus/.test(js));
-  ok('… stylée dans la feuille', /\.cal-ech-fus\s*\{/.test(html));
-  ok('l\'infobulle porte les deux libellés', /o\.autres && o\.autres\.length \? ' · ' \+ o\.autres\.join/.test(js));
-  /* Les objectifs du bilan doivent porter leur source, sinon rien ne se fond. */
-  ok('les objectifs du bilan portent leur source', /source:'praticien'/.test(js));
-  /* Et le RENDU doit appeler la fusion : une fonction juste que personne
-     n'appelle laisse la bande se remplir comme avant, et tous les cas
-     ci-dessus resteraient verts. */
+  /* Le bouton vit HORS de la puce : un bouton dans un bouton n'est pas
+     cliquable, et le balisage est invalide. */
   var R0 = js.indexOf('function _renderEcheances');
   var R1 = js.indexOf('\nfunction _echDateLisible', R0);
-  ok('le rendu appelle bien la fusion',
-     R0 >= 0 && R1 > R0 && /liste = _echFondreParDate\(liste\);/.test(js.slice(R0, R1)));
+  var rend = js.slice(R0, R1);
+  ok('le bouton est posé après la puce', /'<\/button>'[\s\S]{0,400}cal-ech-fus/.test(rend));
+  ok('… et n\'apparaît que sur un doublon possible', /o\.doublon[\s\S]{0,120}cal-ech-fus/.test(rend));
+  ok('… stylé dans la feuille', /\.cal-ech-fus\s*\{/.test(html));
+  /* Les objectifs du bilan doivent porter leur source, sinon rien n'est propose. */
+  ok('les objectifs du bilan portent leur source', /source:'praticien'/.test(js));
 }
 
 console.log('\nLa migration, écrite mais NON appliquée');
