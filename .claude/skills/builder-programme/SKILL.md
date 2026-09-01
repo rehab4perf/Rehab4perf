@@ -373,6 +373,40 @@ objectifs, patient vidé, patient absent. En perdre un laisse à l'écran les
 
 Seuls les objectifs **datés** y figurent — `_patientObjectifs` les filtre déjà.
 Un objectif sans date n'a rien à dire à un agenda et reste dans le bilan.
+**C'est la seule condition pour qu'un objectif du bilan apparaisse** : il vit
+dans `f-objectifs` du dernier bilan **enregistré**, et le champ de date de la
+page Infos patient est facultatif.
+
+### Deux sources, un même jour : une seule puce
+
+Le garde-fou `texte|date` ne rapproche que les libellés **identiques**. Or le
+praticien note « UTMB » au bilan pendant que l'athlète déclare « UTMB 2026 » :
+deux puces pour une seule course, et la bande se remplit.
+
+`_echFondreParDate` les fond. Deux règles, et les deux comptent :
+
+- **la fusion n'a lieu qu'entre sources différentes.** Deux objectifs que le
+  praticien a posés le même jour sont deux objectifs : les fondre lui cacherait
+  ce qu'il a écrit lui-même. Idem côté athlète ;
+- **le libellé retenu est celui du praticien** — c'est le nom officiel, celui
+  qui part au courrier. L'autre reste lisible en infobulle, jamais perdu.
+
+**Ce qui reste à faire survit à la fusion** : si l'échéance de l'athlète n'est
+pas encore prise en compte, la puce fondue garde sa marque et son identifiant,
+et le clic l'accepte. Fondre ne doit jamais faire disparaître une action.
+
+Au-delà de deux, seule la **première de chaque source** entre dans la fusion :
+le surnuméraire reste visible plutôt que d'être avalé en silence.
+
+La puce fondue porte un « 2 » discret — **pas** une couleur ni une icône
+différente : la décision de n'avoir qu'une seule identité visuelle tient. Ce qui
+se signale n'est pas une autre nature, c'est une provenance double, et
+l'infobulle donne les deux libellés pour vérifier qu'il s'agit bien d'une seule
+course.
+
+**Le rendu doit APPELER la fusion** : une fonction juste que personne n'appelle
+laisse la bande se remplir comme avant, et tous les cas de la fonction restent
+verts. Le fichier de cas contrôle le point d'appel séparément.
 
 ## Échéances déclarées par l'athlète — table dédiée, migration non appliquée
 

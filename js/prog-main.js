@@ -90,8 +90,18 @@ function _loadObjectifsForPatient(){
     var raw = arr.length && arr[0].donnees ? arr[0].donnees['f-objectifs'] : null;
     var parsed = [];
     if(raw){ try { var p = JSON.parse(raw); if(Array.isArray(p)) parsed = p; } catch(e){} }
-    // Seuls les objectifs datés ont un sens dans l'agenda.
-    _patientObjectifs = parsed.filter(function(o){ return o && o.date; });
+    /* Seuls les objectifs DATES ont un sens dans l'agenda — sans date, un
+       objectif n'a rien a dire a un calendrier et reste dans le bilan.
+
+       La SOURCE est posee ici. Elle ne change rien a l'apparence — c'est une
+       decision deja prise : la meme echeance sous deux couleurs selon l'endroit
+       ferait douter que ce soit la meme. Elle sert au REGROUPEMENT : deux
+       echeances du meme jour ne se fondent que si elles viennent de deux
+       sources differentes. */
+    _patientObjectifs = parsed.filter(function(o){ return o && o.date; })
+                              .map(function(o){
+                                return { text:o.text, date:o.date, source:'praticien' };
+                              });
     _echTout = false;
     try{ _renderEcheances(); }catch(ex){}
     if(typeof renderCalendar === 'function') renderCalendar();
@@ -164,6 +174,53 @@ function _echJours(dateStr){
   return Math.round((d - a) / 86400000);
 }
 
+/* Deux echeances du MEME JOUR venues de DEUX SOURCES differentes sont la meme
+   echeance : le praticien l'a notee au bilan, l'athlete l'a declaree de son
+   cote, et les mots ne coincident pas au caractere pres — « UTMB » d'un cote,
+   « UTMB 2026 » de l'autre. Le garde-fou `texte|date` ne les rapproche donc
+   pas, et la bande se remplit de doublons.
+
+   On les FOND. Deux regles, et les deux comptent :
+
+   - la fusion n'a lieu qu'ENTRE SOURCES. Deux objectifs que le praticien a
+     poses le meme jour sont deux objectifs : les fondre lui cacherait ce qu'il
+     a ecrit lui-meme. Idem cote athlete.
+   - le libelle retenu est celui du PRATICIEN. C'est le nom officiel, celui qui
+     part au courrier ; l'autre reste lisible en infobulle, jamais perdu.
+
+   Ce qui RESTE A FAIRE survit a la fusion : si l'echeance de l'athlete n'est
+   pas encore prise en compte, la puce fondue porte toujours sa marque et son
+   clic l'accepte. Fondre ne doit pas faire disparaitre une action. */
+function _echFondreParDate(liste){
+  var parDate = {}, ordre = [];
+  liste.forEach(function(o){
+    if(!parDate[o.date]){ parDate[o.date] = []; ordre.push(o.date); }
+    parDate[o.date].push(o);
+  });
+  var out = [];
+  ordre.forEach(function(d){
+    var g = parDate[d];
+    var prat = g.filter(function(o){ return o.source === 'praticien'; });
+    var athl = g.filter(function(o){ return o.source !== 'praticien'; });
+    /* Une seule source represente : rien a fondre. */
+    if(!prat.length || !athl.length){ out = out.concat(g); return; }
+    /* Les surnumeraires d'une meme source restent distincts : seule la
+       PREMIERE de chaque source entre dans la fusion. */
+    var base = prat[0], autre = athl[0];
+    var aVoir = athl.some(function(o){ return o.aVoir; });
+    var idAVoir = (athl.filter(function(o){ return o.aVoir; })[0] || {}).echId;
+    out.push({
+      text: base.text, date: d, jours: base.jours, kind: base.kind,
+      echId: aVoir ? idAVoir : autre.echId,
+      aVoir: aVoir,
+      autres: [autre.text].filter(function(t){ return t && t !== base.text; }),
+      fondue: true
+    });
+    out = out.concat(prat.slice(1)).concat(athl.slice(1));
+  });
+  return out.sort(function(x,y){ return x.jours - y.jours; });
+}
+
 function _renderEcheances(){
   var box = document.getElementById('calEcheances');
   if(!box) return;
@@ -179,10 +236,11 @@ function _renderEcheances(){
        A FAIRE : une echeance declaree par l'athlete et pas encore prise en
        compte porte une marque, et disparait des qu'on l'accepte. */
     return { text:o.text, date:o.date, jours:_echJours(o.date),
-             kind:'sport', echId:o.echId,
+             kind:'sport', echId:o.echId, source:o.source,
              aVoir:o.source === 'athlete' && !o.repris };
   }).filter(function(o){ return o.jours !== null && o.jours >= 0; })
     .sort(function(x,y){ return x.jours - y.jours; });
+  liste = _echFondreParDate(liste);
 
   if(!liste.length){ box.style.display = 'none'; box.innerHTML = ''; return; }
   box.style.display = '';
@@ -196,10 +254,14 @@ function _renderEcheances(){
          mais un uuid non quote casserait l'appel — et le type d'une cle n'est
          pas une chose sur laquelle parier depuis le JavaScript. */
       +  ' onclick="' + (o.aVoir ? '_echPrendreEnCompte(\'' + o.echId + '\',\'' + o.date + '\')' : '_echAller(\'' + o.date + '\')') + '"'
-      +  ' title="' + escH(o.text) + ' — ' + o.date + '">'
+      /* L'infobulle porte les DEUX libelles quand la puce en fond deux : le
+         praticien doit pouvoir verifier que c'est bien la meme echeance, et
+         non deux courses le meme jour. */
+      +  ' title="' + escH(o.text + (o.autres && o.autres.length ? ' · ' + o.autres.join(' · ') : '')) + ' — ' + o.date + '">'
       +  '<span class="cal-ech-ico">' + (o.kind === 'sport' ? '🎯' : '⚑') + '</span>'
       +  '<span class="cal-ech-txt"><b>' + escH(o.text.length > 26 ? o.text.slice(0,26) + '…' : o.text) + '</b>'
       +  '<span class="cal-ech-date">' + _echDateLisible(o.date) + '</span></span>'
+      +  (o.fondue ? '<span class="cal-ech-fus" title="Praticien et athlète — même échéance">2</span>' : '')
       +  '<span class="cal-ech-jm">' + jm + '</span>'
       +  (o.aVoir ? '<span class="cal-ech-neuf" title="Déclarée par l\'athlète — cliquez pour la prendre en compte">nouveau</span>' : '')
       +  '</button>';
