@@ -131,6 +131,21 @@ décompte nuancé que la règle précédente refusait — « 3/5 » en ambre —
 résultat réellement mixte : un côté acquis, l'autre non n'est ni une réussite
 ni un échec.
 
+**Dans la lettre, chaque mention va dans SA colonne.** Le tableau a déjà une
+colonne par côté : empiler les deux mentions dans « Résultat » les tasse l'une
+sur l'autre alors que leur place est évidente. `_crStatutsParCote` les y renvoie
+et laisse « Résultat » vide — ce qu'elle disait se lit désormais au-dessus des
+valeurs du côté.
+
+**L'appariement se fait par le NOM du côté, jamais par l'indice.** Si l'ordre
+des en-têtes différait un jour de celui des mentions, l'indice poserait
+« Acquis » sous le mauvais côté — la faute la plus grave que ce tableau puisse
+commettre. Un côté non apparié fait **renoncer** à la répartition et l'on
+retombe sur les deux chips empilées : mal placées, jamais fausses.
+
+**La colonne « Résultat » se vide quand la répartition a eu lieu**, sinon la
+mention paraît deux fois sur la même ligne.
+
 **Quatre rendus, une seule fonction.** `_crStatutChips(t, classe)` sert
 l'aperçu des tests (`cr-tf-tag`) et les **trois** rendus de la lettre
 (`lt-chip`). Et `statuts` doit être recopié dans le modèle de la lettre à côté

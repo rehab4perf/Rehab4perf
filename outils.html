@@ -6393,6 +6393,31 @@ _updateOutilsPatientBtns();
       : '';
   }
 
+  /* Le tableau de la lettre a DEJA une colonne par cote. Empiler les deux
+     mentions dans « Resultat » les tasse l'une sur l'autre alors que leur place
+     est evidente : chacune retourne dans SA colonne, et « Resultat » reste vide
+     — ce qu'elle disait se lit desormais au-dessus des valeurs du cote.
+
+     L'appariement se fait par le NOM du cote, jamais par l'indice : si l'ordre
+     des en-tetes differait un jour de celui des mentions, l'indice poserait
+     « Acquis » sous le mauvais cote — la faute la plus grave que ce tableau
+     puisse commettre. Un cote non apparie fait RENONCER a la repartition, et
+     l'on retombe sur les deux chips empilees : mal placees, jamais fausses. */
+  function _crStatutsParCote(t, entetes) {
+    if (!t || !t.statuts || !t.statuts.length || !entetes || !entetes.length) return null;
+    var manque = false;
+    var cells = entetes.map(function (e) {
+      var st = null;
+      for (var i = 0; i < t.statuts.length; i++) {
+        if (t.statuts[i].cote === e) { st = t.statuts[i]; break; }
+      }
+      if (!st) { manque = true; return ''; }
+      return '<td class="n"><span class="lt-chip ' + _crTagClasse(st) + '">'
+           + _crEsc(st.txt) + '</span></td>';
+    });
+    return manque ? null : cells.join('');
+  }
+
   window.crChargerTestsBilan = function () {
     var brut = [];
     /* Le bilan en memoire est-il bien celui du patient selectionne ? Il peut
@@ -6942,11 +6967,13 @@ _updateOutilsPatientBtns();
            en sous-lignes, chacune avec ses valeurs. Les tasser sur une ligne
            en perdait deux sur trois. */
         if (t.mesures && t.mesures.length > 1) {
+          var _stCotes = _crStatutsParCote(t, entetes);
           h += '<tr class="lt-af-par"><td class="lbl">' + _crEsc(t.label)
              + (t.geste ? '<span class="lt-note">' + _crEsc(t.geste) + '</span>' : '') + '</td>'
-             + (entetes.length ? entetes.map(function () { return '<td class="n"></td>'; }).join('')
-                               : '<td class="obs"></td>')
-             + '<td class="s">' + _crStatutChips(t, 'lt-chip')
+             + (_stCotes ? _stCotes
+                : (entetes.length ? entetes.map(function () { return '<td class="n"></td>'; }).join('')
+                                  : '<td class="obs"></td>'))
+             + '<td class="s">' + (_stCotes ? '' : _crStatutChips(t, 'lt-chip'))
              + '</td></tr>';
           t.mesures.forEach(function (m) {
             var pm = {};
@@ -6972,11 +6999,13 @@ _updateOutilsPatientBtns();
            patient sans compensation vers le rendu ordinaire : sa valeur brute
            dans la colonne des mesures, et ses observations par cote perdues. */
         if (t.af) {
+          var _stCotes = _crStatutsParCote(t, entetes);
           h += '<tr class="lt-af-par"><td class="lbl">' + _crEsc(t.label)
              + (t.geste ? '<span class="lt-note">' + _crEsc(t.geste) + '</span>' : '') + '</td>'
-             + (entetes.length ? entetes.map(function () { return '<td class="n"></td>'; }).join('')
-                               : '<td class="obs"></td>')
-             + '<td class="s">' + _crStatutChips(t, 'lt-chip')
+             + (_stCotes ? _stCotes
+                : (entetes.length ? entetes.map(function () { return '<td class="n"></td>'; }).join('')
+                                  : '<td class="obs"></td>'))
+             + '<td class="s">' + (_stCotes ? '' : _crStatutChips(t, 'lt-chip'))
              + '</td></tr>';
           _afSousLignes(t);
           /* Une ligne par observation : « Gauche : parfait » et « Droit : pied
