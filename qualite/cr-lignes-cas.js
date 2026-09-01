@@ -227,6 +227,14 @@ console.log('\n  La Contraction Flash compte des RÉPÉTITIONS');
           /Quadriceps — Répétitions max/.test(_html));
   verifie('… et le rappelle sous le tableau', 'true',
           /Contraction isométrique maximale 20s — nombre de répétitions/.test(_html));
+
+  /* Le graphique d'Evolution doit dire la MEME unite que le courrier : deux
+     unites pour une meme mesure, dans le meme produit, c'est la porte ouverte
+     a celle qui reste juste par hasard. */
+  var _g0 = src.indexOf("idA:'cf-q-ca'");
+  verifie('le graphique d\'Évolution existe', 'true', String(_g0 > 0));
+  verifie('… et compte lui aussi des répétitions', 'true',
+          /idA:'cf-q-ca'[^}]*unit:'rép'/.test(src));
 }
 
 console.log('\n' + '─'.repeat(64));

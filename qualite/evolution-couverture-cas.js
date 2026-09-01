@@ -125,6 +125,17 @@ verifie('… et sont toujours dessinés dans l\'Évolution', true,
 
 /* ── Le Heel Rise, nommement : c'est par lui que le trou s'est vu ─────── */
 verifie('la préhension a sa courbe', true, !!(couvert['ms-grip-ca'] && couvert['ms-grip-cs']));
+/* La Contraction Flash vit sur une page CLINIQUE, que le balayage ci-dessus ne
+   couvre pas : sans cette attente nommement, son absence repasserait inapercue.
+   Elle compte des REPETITIONS — la meme unite que le courrier, corrigee au
+   meme moment. */
+verifie('la Contraction Flash a sa courbe', true, !!(couvert['cf-q-ca'] && couvert['cf-q-cs']));
+var _cf = CAT.groupes.filter(function(g){ return g.idA === 'cf-q-ca'; })[0];
+verifie('… en répétitions, jamais en kilos', 'rép', _cf && _cf.unit);
+verifie('… et son delta en bilan de suivi', true, !!(function(){
+  var m = {}; CAT.suivi.forEach(function(x){ m[x.id] = 1; });
+  return m['cf-q-ca'] && m['cf-q-cs'];
+})());
 verifie('l\'isocinétique a ses courbes', true, !!(couvert['q-f-ca'] && couvert['ij-r-cs']));
 verifie('le Heel Rise a sa courbe', true, !!(couvert['hr-ca'] && couvert['hr-cs']));
 var suiviIds = {}; CAT.suivi.forEach(function(m){ suiviIds[m.id] = m; });
@@ -192,4 +203,4 @@ verifie('… et n\'est plus marqué couvert d\'office', false,
 
 console.log('\n' + '─'.repeat(64));
 if (echecs) { console.log('✗ ' + echecs + ' attente(s) en échec'); process.exit(1); }
-console.log('✓ ' + (18 + 8) + ' attentes vérifiées');
+console.log('✓ ' + (18 + 8 + 3) + ' attentes vérifiées');

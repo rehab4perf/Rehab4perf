@@ -137,6 +137,38 @@ a toujours voulu dire « bon ».
 praticien : les anciens bilans sont incomplets sur ce test, on ne rétro-note
 pas.
 
+## Analyse fonctionnelle — les CLÉS sont l'identité, pas les libellés
+
+```bash
+node qualite/af-cles-cas.js
+```
+
+Chaque critère porte une clé courte (`piedsext`, `pronation`…) qui entre dans
+l'identifiant du champ : `af-<page>-ohs-<clé>`. C'est ce que les bilans
+enregistrent. **Renommer une clé n'orpheline pas bruyamment** — la case repart
+vide, et l'ancienne valeur reste en base sans plus personne pour la lire. Même
+règle que le catalogue `TESTS{}` : on ajoute en fin de groupe, on ne réécrit
+jamais l'identité.
+
+Un **libellé**, lui, se corrige librement. « Pieds tournent en extérieur » et
+« Pronation / éversion » se disent désormais **« Pied en supination »** et
+**« Pied en pronation »** — décision du praticien : c'était deux formulations
+pour un même couple d'observations, l'une descriptive et l'autre en jargon.
+Aucun bilan n'a bougé.
+
+**Les deux restent dans leur groupe** : la supination s'observe **de face**, la
+pronation **de dos**. Les réunir demanderait de changer d'où l'on regarde.
+
+**Chaque compensation doit porter son orientation clinique** (`AF_OHS_THEME`) :
+sans thème, elle n'apparaît pas dans la synthèse — silencieusement. Les critères
+de réussite n'en portent pas, et le contrôle lit le `type:'ok'` du groupe plutôt
+qu'une liste tenue à la main.
+
+**Point laissé ouvert** : `piedsext` oriente toujours vers la *dorsiflexion de
+cheville*, thème hérité de « pieds tournent en extérieur ». Sous le nom
+« supination », l'orientation *contrôle du pied* serait peut-être plus juste —
+c'est une décision clinique, elle n'a pas été prise.
+
 ## Asymétrie affichée (bilan)
 
 ```bash
@@ -237,6 +269,21 @@ fonction, pas **qui l'appelle** — et le défaut était exactement là : une
 seconde fusion, non bornée, écrasant la première. Il échoue si
 `_enterReadOnlyMode` ou `loadBilan` réintroduit un
 `_buildMergedDonnees(_allBilans)`.
+
+## Contraction Flash 20 s — des répétitions, et une courbe
+
+Le test compte des **contractions tenues** : il ne mesure aucune charge. Le
+courrier écrivait « 20 N » — voir `.claude/skills/cr-medecin/references/`.
+
+`cf-q-ca` / `cf-q-cs` n'étaient **dans aucun des deux catalogues d'Évolution** :
+ni courbe, ni delta en bilan de suivi. Le contrôle de couverture balaie les
+pages de tests fonctionnels et de force ; celle-ci est une page **clinique**, il
+ne la voyait pas. D'où une attente qui la nomme, dans
+`qualite/evolution-couverture-cas.js`.
+
+L'unité est écrite à **trois** endroits — l'appel du courrier, le groupe de
+courbe, la métrique suivie. Rien ne les tient ensemble : `qualite/cr-lignes-cas.js`
+échoue si la courbe et le courrier cessent de dire la même.
 
 ## Un test de force se lit en symétrie, pas en « positif / négatif »
 

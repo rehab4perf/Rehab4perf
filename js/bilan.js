@@ -3613,6 +3613,8 @@ var TRACKED_METRICS = [
   {id:'ge-f-quad-cs',   label:'Quadriceps (sain)',            unit:'kg',  dir:'up',   cat:'Genou — Force'},
   {id:'ge-f-ij-ca',     label:'Ischio-jambiers (atteint)',    unit:'kg',  dir:'up',   cat:'Genou — Force'},
   {id:'ge-f-ij-cs',     label:'Ischio-jambiers (sain)',       unit:'kg',  dir:'up',   cat:'Genou — Force'},
+  {id:'cf-q-ca',        label:'Contraction Flash 20s (atteint)', unit:' rép', dir:'up', cat:'Genou — Force'},
+  {id:'cf-q-cs',        label:'Contraction Flash 20s (sain)',    unit:' rép', dir:'up', cat:'Genou — Force'},
   // ── Pied/Cheville — Force ───────────────────────────────────
   {id:'pi-f-fp-ca',     label:'Flex. plantaire (atteint)',    unit:'kg',  dir:'up',   cat:'Pied/Cheville — Force'},
   {id:'pi-f-fp-cs',     label:'Flex. plantaire (sain)',       unit:'kg',  dir:'up',   cat:'Pied/Cheville — Force'},
@@ -3752,6 +3754,10 @@ var CHART_GROUPS = [
   // ─ Genou — Force ─
   {cat:'Genou — Force', title:'Quadriceps — Atteint vs Sain', type:'dual', idA:'ge-f-quad-ca', idB:'ge-f-quad-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
   {cat:'Genou — Force', title:'Ischio-jambiers — Atteint vs Sain', type:'dual', idA:'ge-f-ij-ca', idB:'ge-f-ij-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
+  /* Des REPETITIONS, pas des kilos : la Contraction Flash compte des
+     contractions tenues et ne mesure aucune charge. Voir le courrier, qui
+     annoncait des newtons. */
+  {cat:'Genou — Force', title:'Contraction Flash 20s — Atteint vs Sain', type:'dual', idA:'cf-q-ca', idB:'cf-q-cs', unit:'rép', dir:'up', labelA:'Atteint', labelB:'Sain'},
   // ─ Pied/Cheville — Force ─
   {cat:'Pied/Cheville — Force', title:'Flex. plantaire — Atteint vs Sain', type:'dual', idA:'pi-f-fp-ca', idB:'pi-f-fp-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
   {cat:'Pied/Cheville — Force', title:'Flex. dorsale — Atteint vs Sain',   type:'dual', idA:'pi-f-fd-ca', idB:'pi-f-fd-cs', unit:'kg', dir:'up', labelA:'Atteint', labelB:'Sain'},
@@ -10739,6 +10745,16 @@ function _reevalLire(donnees){
   catch(e){ return null; }
 }
 
+/* Les CLES sont l'identite : elles sont enregistrees dans les bilans, et les
+   renommer relirait a l'envers tout ce qui est deja en base. Seuls les
+   LIBELLES se corrigent — meme regle que le catalogue TESTS.
+
+   `piedsext` et `pronation` s'appelaient « Pieds tournent en extérieur » et
+   « Pronation / éversion » : deux formulations pour un meme couple
+   d'observations du pied, l'une descriptive et l'autre en jargon. Elles se
+   disent « Pied en supination » et « Pied en pronation » — decision du
+   praticien. Les deux restent dans leur groupe : la supination s'observe de
+   FACE, la pronation de DOS. */
 var AF_OHS_GROUPS = [
   { title:'Critères de réussite', type:'ok', items:[
     ['thorax', 'Thorax parallèle au tibia ou horizontal'],
@@ -10752,12 +10768,12 @@ var AF_OHS_GROUPS = [
     ['dissoc',   'Perte dissociation lombo-pelvienne (butt wink)'],
   ]},
   { title:'Compensations — plan frontal antérieur', type:'ko', items:[
-    ['piedsext', 'Pieds tournent en extérieur'],
+    ['piedsext', 'Pied en supination'],
     ['valgus',   'Genoux en valgus'],
     ['varus',    'Genoux en varus'],
   ]},
   { title:'Compensations — plan frontal postérieur', type:'ko', items:[
-    ['pronation','Pronation / éversion'],
+    ['pronation','Pied en pronation'],
     ['asym',     'Répartition asymétrique de la charge'],
   ]},
   { title:'Compensations — autres', type:'ko', items:[
