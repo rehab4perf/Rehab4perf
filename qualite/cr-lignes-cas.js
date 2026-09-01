@@ -197,6 +197,38 @@ var css = src.slice(src.indexOf('var css = `'), src.indexOf('svg{max-width:100%'
 
 /* ── Verdict ─────────────────────────────────────────────────────────────── */
 
+console.log('\n  La Contraction Flash compte des RÉPÉTITIONS');
+{
+  /* Le formulaire le dit deux fois — « Quadriceps — Répétitions max » et
+     « nombre de répétitions » — et le courrier annoncait des newtons. Le test
+     compte des contractions tenues, il ne mesure aucune charge : une force
+     annoncee au medecin est une mesure qui n'a jamais ete faite.
+
+     On lit le VRAI appel dans `buildCR`, borne a sa ligne : chercher « N »
+     dans tout le fichier ne prouverait rien. */
+  var _b0 = src.indexOf("crItem('Contraction Flash Isométrique 20s'");
+  var _b1 = src.indexOf("['cf-q-ca','cf-q-cs']", _b0);
+  if (_b0 < 0 || _b1 < _b0) {
+    console.error('Bornes de la ligne Contraction Flash introuvables.');
+    process.exit(1);
+  }
+  var _cf = src.slice(_b0, _b1);
+  verifie('les deux côtés sont en répétitions', 2, (_cf.match(/\+\s*' rép'/g) || []).length);
+  verifie('aucun côté n\'est en newtons', 'false', /\+\s*' N'/.test(_cf));
+  /* La colonne « Mesure » ne sort qu'a partir de deux lignes, donc ce libelle
+     ne s'affiche pas ici — il doit rester juste malgre tout : c'est lui qu'on
+     lira le jour ou une seconde mesure s'ajoutera. */
+  verifie('le libellé de la mesure dit répétitions', 'true', /l:'Répétitions'/.test(_cf));
+
+  /* Le formulaire est la SOURCE : si son intitule cessait de parler de
+     repetitions, la correction du courrier n'aurait plus de fondement. */
+  var _html = fs.readFileSync(path.join(__dirname, '..', 'bilan.html'), 'utf8');
+  verifie('le formulaire compte bien des répétitions', 'true',
+          /Quadriceps — Répétitions max/.test(_html));
+  verifie('… et le rappelle sous le tableau', 'true',
+          /Contraction isométrique maximale 20s — nombre de répétitions/.test(_html));
+}
+
 console.log('\n' + '─'.repeat(64));
 if (nbKo) {
   console.log('✗ ' + nbKo + ' attente(s) en échec sur ' + (nbOk + nbKo));

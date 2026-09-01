@@ -8133,7 +8133,11 @@ function _buildAllTestsHtml() {
       var cfObs2 = (document.getElementById('cf-obs-ca')||{}).value||'';
       if (sec.label === 'GENOU' && !isNaN(cfCA2)) {
         secRows += crItem('Contraction Flash Isométrique 20s',
-          _crMesTab([{ l:'Force', a:cfCA2+' N', b:(isNaN(cfCS2)?'':cfCS2+' N'),
+          /* Des REPETITIONS, pas des newtons. Le formulaire le dit deux fois —
+             « Quadriceps — Répétitions max » et « nombre de répétitions » — et
+             le courrier annoncait tout de meme une force au medecin. Le test
+             compte des contractions tenues, il ne mesure aucune charge. */
+          _crMesTab([{ l:'Répétitions', a:cfCA2+' rép', b:(isNaN(cfCS2)?'':cfCS2+' rép'),
                        asym:(isNaN(cfCA2)||isNaN(cfCS2)||cfCS2<=0)?'':asymTxt(cfCA2/cfCS2*100, 0) }], _labelCA, _labelCS),
           statOf2(lsiCls2(cfCA2,cfCS2)), lsiCls2(cfCA2,cfCS2), ['cf-q-ca','cf-q-cs']);
       }
