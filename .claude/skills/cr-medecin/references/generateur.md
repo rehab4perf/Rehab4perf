@@ -365,10 +365,12 @@ tantôt l'autre en écrivant toujours dans la même.
 Trois choses ferment le trou, et il en faut trois :
 
 - un **ordre stable** (`order=id.asc`) et toutes les lignes, pas une au hasard ;
-- la ligne **où ce navigateur écrit** est préférée — sans cette préférence, un
-  tri stable choisirait une ligne pendant que le PATCH en viserait une autre :
-  le va-et-vient resterait, simplement plus régulier ;
-- `_crConfigSupaId` **réaligné** sur la ligne lue, ce qui ferme la boucle.
+- **le même choix pour tous les postes** — `rows[0]` après tri. Préférer « la
+  ligne où ce navigateur écrit » est tentant, et c'est l'erreur : pour une
+  configuration **globale**, chaque poste retiendrait sa ligne et deux appareils
+  afficheraient durablement deux configurations différentes ;
+- `_crConfigSupaId` **réaligné** sur la ligne lue, ce qui fait converger la
+  lecture et l'écriture.
 
 **Les doublons cessent d'être muets** : leur présence s'annonce en console avec
 l'identifiant retenu. Ils ne sont **pas supprimés** — effacer une configuration
@@ -376,3 +378,21 @@ qu'on n'a pas lue serait pire que la laisser dormir.
 
 **Une seule ligne est insérée**, et seulement faute de ligne connue : chaque
 sauvegarde qui insérerait créerait un doublon de plus, c'est-à-dire la cause.
+
+
+### Le repli local ne doit pas se faire en silence
+
+Quand aucune ligne n'existe en base, la configuration retombe sur
+`localStorage`. C'est un **repli**, pas un mode de fonctionnement :
+`localStorage` est propre à une **origine** *et* à un **appareil**. La même
+application vue sur `app.rehab4perf.com` et sur `rehab4perf.netlify.app` n'a pas
+le même stockage, et un iPad n'a pas celui d'un Mac.
+
+Deux postes affichent alors durablement deux configurations différentes — c'est
+ce qui s'est vu : l'iPad montrait les amplitudes actives et passives de l'épaule
+et douze articulations, le Mac les cinq mesures par défaut.
+
+La **sauvegarde** prévenait déjà par un toast quand elle ne pouvait pas se
+synchroniser ; la **lecture** ne prévenait de rien. Elle le dit maintenant en
+console, avec le geste qui répare : ouvrir la configuration du CR et
+l'enregistrer une fois, en étant connecté.

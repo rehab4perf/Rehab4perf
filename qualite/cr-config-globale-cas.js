@@ -38,12 +38,17 @@ verifie('… tout en restant bornée', true, /limit=20/.test(req));
 
 console.log('\n  Lecture et écriture convergent');
 var z = outils.slice(i, outils.indexOf('_crInitUI();', i));
-/* La ligne retenue est CELLE OU CE NAVIGATEUR ECRIT : sans cette preference,
-   un tri stable choisirait une ligne, et le PATCH continuerait d'en viser une
-   autre — le va-et-vient resterait, simplement plus regulier. */
-verifie('la ligne où ce navigateur écrit est préférée', true,
-  /localStorage\.getItem\('r4p-cr-config-sid'\)[\s\S]{0,400}String\(rows\[_i\]\.id\) === String\(_sid\)/.test(z));
-verifie('… avec un repli sur la première', true, /if \(!_choisie\) _choisie = rows\[0\];/.test(z));
+/* Le choix ne doit PAS dependre du poste. Preferer « la ligne ou ce navigateur
+   ecrit » etait tentant — elle contient ce qu'on vient d'y mettre — mais c'est
+   l'inverse de ce qu'il faut pour une configuration GLOBALE : chaque poste
+   retiendrait sa ligne, et deux appareils afficheraient durablement deux
+   configurations differentes. C'est exactement ce qui se voyait entre un Mac et
+   un iPad. */
+verifie('la ligne retenue est la première du tri', true, /var _choisie = rows\[0\];/.test(z));
+/* Memoriser l'identifiant retenu est legitime ; le LIRE pour choisir ne l'est
+   pas. On ne cherche donc que la lecture. */
+verifie('… et le choix ne lit pas le stockage du navigateur', false,
+  /getItem\('r4p-cr-config-sid'\)/.test(z));
 /* Realigner l'identifiant est ce qui ferme la boucle : la prochaine
    sauvegarde ira dans la ligne qu'on vient de lire. */
 verifie('l\'identifiant d\'écriture est réaligné', true,
@@ -62,6 +67,19 @@ verifie('la présence de plusieurs lignes est signalée', true,
    que la laisser dormir. */
 verifie('… mais aucune n\'est supprimée', false, /method: *'DELETE'/.test(z));
 
+console.log('\n  Le repli local ne se fait pas en silence');
+/* `localStorage` est propre a une ORIGINE et a un APPAREIL : la meme
+   application vue sur `app.rehab4perf.com` et sur `rehab4perf.netlify.app` n'a
+   pas le meme stockage, et un iPad n'a pas celui d'un Mac. Sans avertissement,
+   deux postes affichent durablement deux configurations differentes. */
+verifie('l\'absence de configuration en base est signalée', true,
+  /aucune configuration globale en base/.test(z));
+verifie('… et le repli lit bien le navigateur', true,
+  /getItem\('crAmpConfig'\)/.test(z));
+/* La sauvegarde prevenait deja quand elle ne pouvait pas se synchroniser. */
+verifie('la sauvegarde non synchronisée le dit aussi', true,
+  /Config sauvegardee localement/.test(outils));
+
 console.log('\n  L\'écriture vise toujours un identifiant explicite');
 var j = outils.indexOf('function crSaveGlobalConfig');
 var k = outils.indexOf('\n  // ── Bootstrap', j);
@@ -75,4 +93,4 @@ verifie('… et n\'insère que faute de ligne connue', true,
 
 console.log('\n' + '─'.repeat(64));
 if (echecs) { console.log('✗ ' + echecs + ' attente(s) en échec'); process.exit(1); }
-console.log('✓ 13 attentes vérifiées');
+console.log('✓ 16 attentes vérifiées');

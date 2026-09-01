@@ -8294,9 +8294,13 @@ _updateOutilsPatientBtns();
      aller et venir toute seule, et des articulations reglees a la main
      disparaissent sans qu'aucune erreur ne s'affiche.
 
-     On demande desormais un ordre STABLE et toutes les lignes, puis on retient
-     EN PRIORITE celle dans laquelle ce navigateur ecrit — lecture et ecriture
-     convergent. `_crConfigSupaId` est realigne dessus dans tous les cas.
+     On demande desormais un ordre STABLE et toutes les lignes, et l'on retient
+     la PREMIERE — le meme choix pour tous les postes. Preferer « la ligne ou ce
+     navigateur ecrit » etait tentant, mais c'est l'inverse de ce qu'il faut
+     pour une configuration GLOBALE : chaque poste retiendrait sa ligne, et deux
+     appareils afficheraient durablement deux configurations differentes.
+     `_crConfigSupaId` est realigne sur la ligne lue, ce qui fait converger la
+     lecture et l'ecriture.
 
      Et la presence de doublons cesse d'etre muette : elle s'annonce en console.
      Ils ne sont pas supprimes ici — effacer une configuration qu'on n'a pas lue
@@ -8307,15 +8311,7 @@ _updateOutilsPatientBtns();
   .then(function(r){ return r.ok ? r.json() : []; })
   .then(function(rows){
     if (rows && rows.length) {
-      var _sid = null;
-      try { _sid = localStorage.getItem('r4p-cr-config-sid'); } catch(e){}
-      var _choisie = null;
-      if (_sid) {
-        for (var _i = 0; _i < rows.length; _i++) {
-          if (String(rows[_i].id) === String(_sid)) { _choisie = rows[_i]; break; }
-        }
-      }
-      if (!_choisie) _choisie = rows[0];
+      var _choisie = rows[0];
       if (rows.length > 1) {
         console.warn('cr-config : ' + rows.length + ' configurations globales portent le nom '
           + CR_SUPA_NOM + '. Celle d\'identifiant ' + _choisie.id + ' est retenue ; les autres ne '
@@ -8326,6 +8322,19 @@ _updateOutilsPatientBtns();
       try { localStorage.setItem('r4p-cr-config-sid', String(_choisie.id)); } catch(e){}
       _crApplyConfig(_choisie.donnees);
     } else {
+      /* Aucune ligne en base : on retombe sur le navigateur. C'est un REPLI, pas
+         un mode de fonctionnement — `localStorage` est propre a une origine ET
+         a un appareil. La meme application vue sur `app.rehab4perf.com` et sur
+         `rehab4perf.netlify.app` n'a donc pas le meme stockage, et un iPad n'a
+         pas celui d'un Mac : deux postes affichent alors durablement deux
+         configurations differentes, sans que rien ne le dise.
+
+         On le dit. La sauvegarde, elle, prevenait deja par un toast quand elle
+         ne pouvait pas se synchroniser ; la LECTURE ne prevenait de rien. */
+      console.warn('cr-config : aucune configuration globale en base. Celle de ce '
+        + 'navigateur est utilisee — elle ne suivra ni sur un autre appareil, ni '
+        + 'sur une autre adresse du site. Ouvrez la configuration du CR et '
+        + 'enregistrez-la pour la rendre commune a tous les postes.');
       try { var a = JSON.parse(localStorage.getItem('crAmpConfig'));     if (a) crAmpConfig     = a; } catch(e){}
       try { var p = JSON.parse(localStorage.getItem('crPathoConfig'));   if (p) crPathoConfig   = p; } catch(e){}
       try { var s = JSON.parse(localStorage.getItem('crSignConfig'));    if (s) crSignConfig    = s; } catch(e){}
