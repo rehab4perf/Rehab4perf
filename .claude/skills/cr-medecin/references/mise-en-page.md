@@ -184,3 +184,35 @@ retrouve le rendu d'avant : jamais pire.
 
 **Ne jamais poser ce filet sur `tr.lt-af-par` tout court** : le groupe se
 couperait en deux, et deux filets se superposeraient à sa fin.
+
+
+## Le pied courant mord sur le texte — il faut lui réserver sa bande
+
+```bash
+node qualite/cr-pied-lettre-cas.js
+```
+
+La salutation et la signature disparaissaient du PDF. Le texte, lui, était bien
+là : l'aperçu et l'export lisent la **même** chaîne (`_crHtmlCourant`), et le
+pied de lettre en sort correctement fermé, **hors de tout groupe insécable** —
+le fichier de cas le vérifie en exécutant le vrai constructeur, pas en lisant le
+code.
+
+La perte se joue à la **mise en page imprimée**. `#cr-runfoot` est
+`position:fixed` : en impression paginée son bloc de référence est la **zone de
+contenu**, pas la feuille. `bottom:4mm` le pose donc 4 mm au-dessus du bas du
+**texte**, dans le flux, sur chaque page.
+
+Et la règle d'impression mettait `#cr-page` à `padding:0!important` — elle
+annulait les 40 px de marge basse de l'écran **sans rien remettre**. La bande
+occupée par le pied courant n'était réservée par personne : les dernières lignes
+s'y retrouvaient recouvertes, et là où elles tombaient sur la frontière,
+chassées de la page.
+
+`padding: 0 0 12mm` la réserve — les 4 mm de décalage, la ligne de 7,5 pt, et de
+quoi ne pas la frôler.
+
+**Vérifié par lecture et par exécution, pas par une impression réelle** : je ne
+peux pas lancer d'impression depuis ce poste. Si le défaut persistait, la
+question qui départage : la salutation manque-t-elle **déjà dans l'aperçu de la
+fenêtre d'export**, ou seulement dans le PDF produit ?

@@ -7576,7 +7576,18 @@ _updateOutilsPatientBtns();
          section sans aucun style. */
       + '@media print{'
       + '#cr-topbar{display:none!important}'
-      + '#cr-page{margin:0!important;padding:0!important;max-width:none!important}'
+      /* La marge basse de l'ecran (40px) etait mise a ZERO ici, et rien ne la
+         remplacait. Or le pied courant est `position:fixed` : en impression
+         paginee son bloc de reference est la ZONE DE CONTENU, pas la feuille —
+         `bottom:4mm` le pose donc 4 mm au-dessus du bas du TEXTE, dans le flux,
+         sur chaque page. La bande qu'il occupe n'etait reservee par personne :
+         les dernieres lignes de la lettre — salutation et signature — s'y
+         retrouvaient recouvertes, et la ou elles tombaient juste sur la
+         frontiere, chassees de la page.
+
+         On reserve la bande. 12 mm : les 4 mm de decalage, la ligne de 7,5 pt,
+         et de quoi ne pas la froler. */
+      + '#cr-page{margin:0!important;padding:0 0 12mm!important;max-width:none!important}'
       + '.cr-letter-hdr{margin:0}'
       /* La marge haute etait a ZERO sur toutes les pages, pour que le bandeau
          navy morde le bord en tete de document. Consequence : a la page 2, le
