@@ -135,9 +135,27 @@ verifie('la seconde porte Non acquis en rouge', true,
 var inverse = parCote(m, ['Côté atteint', 'Côté sain']);
 verifie('l\'ordre des en-têtes ne déplace pas les verdicts', true,
   /^<td class="n"><span class="lt-chip bad">Non acquis</.test(inverse));
-/* Un cote non apparie fait RENONCER : on retombe sur les chips empilees —
-   mal placees, jamais fausses. */
-verifie('un en-tête inconnu fait renoncer', null, parCote(m, ['Gauche', 'Droit']));
+/* Le tableau des tests CHIFFRES porte TROIS colonnes — « Asym. » en plus des
+   deux cotes. Exiger que chacune trouve sa mention faisait renoncer a tous les
+   coups, et les chips restaient empilees dans « Resultat ». C'est l'inverse
+   qu'il faut garantir : toute MENTION trouve sa colonne. */
+var trois = parCote(m, ['Côté sain', 'Côté atteint', 'Asym.']);
+verifie('une colonne « Asym. » ne fait pas renoncer', true, trois !== null);
+verifie('… elle produit trois cellules', 3, (trois.match(/<td class="n">/g) || []).length);
+verifie('… dont une vide pour l\'asymétrie', true, /<td class="n"><\/td>$/.test(trois));
+verifie('… et les deux verdicts sont places', 2, (trois.match(/lt-chip/g) || []).length);
+/* Les deux libelles ne viennent pas du meme endroit — l'en-tete du tableau de
+   MESURES d'un cote, celui de la GRILLE de criteres de l'autre — et l'un passe
+   par `nl2br`. Un retour a la ligne ne doit pas faire rater l'appariement. */
+verifie('un espace différent n\'empêche pas l\'appariement', true,
+  parCote(m, ['Côté\n sain', ' Côté atteint ', 'Asym.']) !== null);
+/* Mais le rapprochement s'arrete la : rien d'approximatif, sous peine de poser
+   un verdict sous le mauvais cote. */
+verifie('un libellé voisin ne s\'apparie pas', null,
+  parCote(m, ['Coté sain', 'Côté atteints']));
+/* Une mention sans colonne, elle, fait RENONCER : on retombe sur les chips
+   empilees — mal placees, jamais perdues. */
+verifie('une mention sans colonne fait renoncer', null, parCote(m, ['Gauche', 'Droit']));
 verifie('… comme l\'absence de colonnes de côté', null, parCote(m, []));
 /* Verdict unique : rien a repartir, la colonne « Resultat » suffit. */
 verifie('un verdict unique ne se répartit pas', null, parCote(e, ['Côté sain', 'Côté atteint']));
@@ -151,4 +169,4 @@ verifie('… et vident la colonne Résultat quand elles le font', 2,
 
 console.log('\n' + '─'.repeat(64));
 if (echecs) { console.log('✗ ' + echecs + ' attente(s) en échec'); process.exit(1); }
-console.log('✓ 28 attentes vérifiées');
+console.log('✓ 34 attentes vérifiées');

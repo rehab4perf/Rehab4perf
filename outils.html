@@ -6405,17 +6405,29 @@ _updateOutilsPatientBtns();
      l'on retombe sur les deux chips empilees : mal placees, jamais fausses. */
   function _crStatutsParCote(t, entetes) {
     if (!t || !t.statuts || !t.statuts.length || !entetes || !entetes.length) return null;
-    var manque = false;
+    /* Les deux libelles ne viennent pas du meme endroit : la colonne est lue
+       dans l'en-tete du tableau de MESURES, la mention dans celui de la GRILLE
+       de criteres. Meme chaine a la source, mais l'un passe par `nl2br`. On
+       compare donc sur un espace normalise — jamais plus loin : un
+       rapprochement approximatif poserait un verdict sous le mauvais cote. */
+    var _norm = function (x) { return String(x == null ? '' : x).replace(/\s+/g, ' ').trim(); };
+    var places = 0;
     var cells = entetes.map(function (e) {
       var st = null;
       for (var i = 0; i < t.statuts.length; i++) {
-        if (t.statuts[i].cote === e) { st = t.statuts[i]; break; }
+        if (_norm(t.statuts[i].cote) === _norm(e)) { st = t.statuts[i]; break; }
       }
-      if (!st) { manque = true; return ''; }
+      /* Une colonne SANS mention reste vide — « Asym. » en est une : le
+         tableau des tests chiffres porte trois colonnes, pas deux, et exiger
+         que chacune trouve sa mention faisait renoncer a tous les coups. */
+      if (!st) return '<td class="n"></td>';
+      places++;
       return '<td class="n"><span class="lt-chip ' + _crTagClasse(st) + '">'
            + _crEsc(st.txt) + '</span></td>';
     });
-    return manque ? null : cells.join('');
+    /* Ce qui doit etre garanti est l'inverse : TOUTE mention trouve sa
+       colonne. Il en manquerait une sinon, et personne ne le verrait. */
+    return places === t.statuts.length ? cells.join('') : null;
   }
 
   window.crChargerTestsBilan = function () {

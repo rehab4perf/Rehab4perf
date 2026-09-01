@@ -140,8 +140,21 @@ valeurs du côté.
 **L'appariement se fait par le NOM du côté, jamais par l'indice.** Si l'ordre
 des en-têtes différait un jour de celui des mentions, l'indice poserait
 « Acquis » sous le mauvais côté — la faute la plus grave que ce tableau puisse
-commettre. Un côté non apparié fait **renoncer** à la répartition et l'on
-retombe sur les deux chips empilées : mal placées, jamais fausses.
+commettre.
+
+**Ce qui est garanti : toute MENTION trouve sa colonne — pas l'inverse.** Le
+premier jet exigeait que chaque **colonne** trouve sa mention, et le tableau des
+tests chiffrés en porte **trois** : les deux côtés et « Asym. ». La répartition
+renonçait donc à tous les coups, et les chips restaient empilées — la correction
+était déployée et invisible. Une colonne sans mention reste simplement **vide**.
+Une mention sans colonne, elle, fait renoncer : on retombe sur les chips
+empilées, mal placées mais jamais perdues.
+
+**Les deux libellés ne viennent pas du même endroit** : la colonne est lue dans
+l'en-tête du tableau de **mesures**, la mention dans celui de la **grille** de
+critères — même chaîne à la source, mais l'un passe par `nl2br`. La comparaison
+se fait donc sur un espace normalisé, et **jamais plus loin** : un rapprochement
+approximatif poserait un verdict sous le mauvais côté.
 
 **La colonne « Résultat » se vide quand la répartition a eu lieu**, sinon la
 mention paraît deux fois sur la même ligne.
