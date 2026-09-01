@@ -275,3 +275,149 @@ chiffres.
 celui d'un praticien peut avoir été écrit par une version antérieure du bilan.
 Sans repli, `b.txt.toUpperCase()` levait une exception et **aucun courrier ne se
 générait** — le formulaire restait muet, sans dire pourquoi.
+
+
+## Les champs qui grandissent ne se MESURENT pas
+
+```bash
+node qualite/cr-champs-texte-cas.js
+```
+
+`crAutoExpand` écrivait une hauteur en pixels — `el.style.height =
+el.scrollHeight + 'px'` — mesurée à la largeur qu'avait le champ **à cet
+instant**, puis plus rien ne la recalculait. Une fenêtre élargie ensuite, un
+panneau pas encore dimensionné, une iframe masquée au moment de la passe : la
+hauteur figée n'a plus de rapport avec le texte, et la Synthèse clinique comme
+le Plan de traitement deviennent des pavés vides. Ils portent
+`overflow-y:hidden` et `resize:none` — rien ne permet de rattraper à la main.
+
+Exactement le défaut des consignes du builder, refermé de la **même** façon :
+`.cr-ta-grow` porte un pseudo-élément avec le même texte (`data-repl`) dans le
+**flux normal**, et le champ se pose **par-dessus en absolu**. Aucune mesure,
+donc aucune dépendance à la largeur du moment, et la hauteur suit tout
+redimensionnement gratuitement.
+
+**Les deux boîtes doivent rester identiques** — police, corps, interligne,
+marge intérieure, largeur de bordure, `box-sizing`. Elles partagent une seule
+déclaration, et le fichier de cas échoue si l'une s'en détache : un pixel
+d'écart fausse la hauteur.
+
+**Seule la COULEUR de la bordure est neutralisée sur la doublure**, jamais la
+bordure entière. En `border-box` elle mange la largeur du contenu : la retirer
+replierait le texte une colonne plus loin que dans le champ. Et écrire `border:`
+en bloc effacerait la bordure visible du champ — `.cr-fg textarea` et
+`.cr-ta-grow > textarea` ont la **même spécificité**, seul l'ordre les
+départage.
+
+**`data-repl` se met à jour EN PREMIER dans le `oninput`.** Placé après
+`crAutoExpand`, une exception dans ce qui précède figerait la hauteur en
+silence et le champ cesserait de grandir à la frappe.
+
+Le nom `crAutoExpand` est conservé : trois `oninput` et la remise à zéro
+l'appellent, et un appel programmatique doit continuer de synchroniser la
+doublure.
+
+
+## L'EVA doit dire son nom
+
+```bash
+node qualite/cr-eva-cas.js
+```
+
+La note de douleur est rangée sous **« Signes cliniques »**. Le préremplissage
+depuis le bilan écrit « EVA repos : 4/10 » et se lit très bien ; mais **saisie
+à la main** la valeur arrive nue — « 4 » — et devient un signe clinique **sans
+nom** : le médecin voit un chiffre, et rien qui dise ce qu'il mesure.
+
+Elle est nommée **à la source**, dans `_crEvaRetenue`, jamais aux deux endroits
+qui la posent dans le courrier — médecin et patient sont construits par deux
+fonctions distinctes, et une règle écrite d'un seul côté disparaît de l'autre
+sans le moindre signal. Le fichier de cas échoue si l'un des deux se met à
+nommer l'EVA de son côté.
+
+**Le préfixe ne se met que s'il manque** (`/eva/i`) : le doubler donnerait
+« EVA : EVA repos : 4/10 ».
+
+**Un nombre SEUL devient une note sur dix** — c'est ce que dit le champ
+(« EVA repos : …/10 ») et l'échelle n'en admet pas d'autre. Tout le reste est
+**nommé sans être réécrit** : « 4/10 », « 3-4 », « 4 au repos, 7 en charge » et
+« 12 » gardent leur forme. La virgule décimale française est acceptée.
+
+
+## La configuration globale — lire et écrire la MÊME ligne
+
+```bash
+node qualite/cr-config-globale-cas.js
+```
+
+Les articulations réglées à la main — les amplitudes actives et passives de
+l'épaule — disparaissaient puis revenaient, **sans qu'aucune erreur ne
+s'affiche**.
+
+La lecture demandait `templates?nom=eq.__cr_config__&is_public=eq.true&limit=1`
+**sans tri**. Postgres ne promet alors aucun ordre, et celui-ci **change dès
+qu'une ligne est réécrite** — un PATCH la déplace dans le tas. L'écriture, elle,
+visait l'identifiant mémorisé dans le navigateur (`r4p-cr-config-sid`).
+
+Dès qu'il existe **deux** lignes de configuration, on relit donc tantôt l'une
+tantôt l'autre en écrivant toujours dans la même.
+
+Trois choses ferment le trou, et il en faut trois :
+
+- un **ordre stable** (`order=id.asc`) et toutes les lignes, pas une au hasard ;
+- **le même choix pour tous les postes** — `rows[0]` après tri. Préférer « la
+  ligne où ce navigateur écrit » est tentant, et c'est l'erreur : pour une
+  configuration **globale**, chaque poste retiendrait sa ligne et deux appareils
+  afficheraient durablement deux configurations différentes ;
+- `_crConfigSupaId` **réaligné** sur la ligne lue, ce qui fait converger la
+  lecture et l'écriture.
+
+**Les doublons cessent d'être muets** : leur présence s'annonce en console avec
+l'identifiant retenu. Ils ne sont **pas supprimés** — effacer une configuration
+qu'on n'a pas lue serait pire que la laisser dormir.
+
+**Une seule ligne est insérée**, et seulement faute de ligne connue : chaque
+sauvegarde qui insérerait créerait un doublon de plus, c'est-à-dire la cause.
+
+
+### Le repli local ne doit pas se faire en silence
+
+Quand aucune ligne n'existe en base, la configuration retombe sur
+`localStorage`. C'est un **repli**, pas un mode de fonctionnement :
+`localStorage` est propre à une **origine** *et* à un **appareil**. La même
+application vue sur `app.rehab4perf.com` et sur `rehab4perf.netlify.app` n'a pas
+le même stockage, et un iPad n'a pas celui d'un Mac.
+
+Deux postes affichent alors durablement deux configurations différentes — c'est
+ce qui s'est vu : l'iPad montrait les amplitudes actives et passives de l'épaule
+et douze articulations, le Mac les cinq mesures par défaut.
+
+La **sauvegarde** prévenait déjà par un toast quand elle ne pouvait pas se
+synchroniser ; la **lecture** ne prévenait de rien. Elle le dit maintenant en
+console, avec le geste qui répare : ouvrir la configuration du CR et
+l'enregistrer une fois, en étant connecté.
+
+
+### On n'annonce que ce qui est FAIT
+
+« Config sauvegardée pour tous les utilisateurs » s'affichait **même quand rien
+n'avait été écrit**, et de deux façons :
+
+- l'**insertion** posait le message hors de tout `r.ok` : une ligne refusée se
+  disait enregistrée ;
+- la **mise à jour** se contentait de `r.ok`, or PostgREST rend `204` quand
+  l'identifiant ne correspond à **aucune** ligne. Un identifiant périmé dans le
+  navigateur, et la configuration partait dans le vide, annoncée comme sauvée.
+
+**Constaté** : la table ne contenait **aucune** ligne `__cr_config__` alors que
+la sauvegarde s'était dite réussie. C'est la même faute que le webhook Strava,
+où un `200` rendu à tort perd l'activité.
+
+`return=representation` sur les **deux** verbes rend les lignes touchées : leur
+nombre est la seule preuve du travail. Zéro ligne sur une mise à jour veut dire
+que la ligne visée n'existe plus — on insère alors, **une seule fois**, après
+avoir oublié l'identifiant périmé. Sans cet oubli, chaque sauvegarde suivante
+repartirait dans le vide.
+
+Un refus donne le **statut** dans le message et le **motif** en console : sans
+lui, il ne reste rien à quoi se raccrocher.

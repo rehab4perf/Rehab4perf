@@ -8248,26 +8248,80 @@ _updateOutilsPatientBtns();
     if (!_crToken || !_crUid) { _crToast('Config sauvegardee localement (reconnectez-vous pour sync global)'); return; }
     var donnees = { ampConfig: crAmpConfig, pathoConfig: crPathoConfig, signConfig: crSignConfig, testsConfig: crTestsConfig, statutsConfig: crStatutsConfig };
     var body = JSON.stringify({ praticien_id: _crUid, nom: CR_SUPA_NOM, type: '__meta__', is_public: true, donnees: donnees });
-    if (_crConfigSupaId) {
-      fetch(CR_SUPA_URL + '/rest/v1/templates?id=eq.' + _crConfigSupaId, {
-        method: 'PATCH', headers: _crSbHeaders(), body: body
-      }).then(function(r){
-        if (r.ok) _crToast('Config sauvegardee pour tous les utilisateurs');
-        else _crToast('Erreur Supabase (' + r.status + ')');
-      }).catch(function(){ _crToast('Erreur reseau'); });
-    } else {
-      fetch(CR_SUPA_URL + '/rest/v1/templates', {
-        method: 'POST',
+    /* « Sauvegardee pour tous les utilisateurs » s'affichait meme quand rien
+       n'avait ete ecrit — deux fois plutot qu'une :
+
+       - l'INSERTION annoncait le succes hors de tout `r.ok` : une ligne
+         refusee se disait enregistree ;
+       - la MISE A JOUR se contentait de `r.ok`, or PostgREST rend 204 quand
+         l'identifiant ne correspond a AUCUNE ligne. Un identifiant perime dans
+         le navigateur — ligne supprimee, base changee — et la configuration
+         partait dans le vide, annoncee comme sauvee.
+
+       Constate : la table ne contenait aucune ligne `__cr_config__` alors que
+       la sauvegarde s'etait dite reussie. Meme faute que le webhook Strava, ou
+       un `200` rendu a tort perd l'activite : on n'annonce que ce qui est FAIT.
+
+       `return=representation` sur les DEUX verbes rend les lignes touchees :
+       leur nombre est la seule preuve du travail. Zero ligne sur une mise a
+       jour veut dire que la ligne visee n'existe plus — on insere alors, une
+       seule fois. */
+    function _crEcrireConfig(methode, url, siEcrit) {
+      fetch(url, {
+        method: methode,
         headers: Object.assign({}, _crSbHeaders(), { 'Prefer': 'return=representation' }),
         body: body
-      }).then(function(r){ return r.ok ? r.json() : null; })
-      .then(function(rows){
-        if (rows && rows.length) {
-          _crConfigSupaId = rows[0].id;
-          try { localStorage.setItem('r4p-cr-config-sid', String(rows[0].id)); } catch(e){}
+      }).then(function(r){
+        return r.text().then(function(txt){ return { ok: r.ok, status: r.status, txt: txt }; });
+      }).then(function(res){
+        if (!res.ok) {
+          console.error('cr-config : ecriture refusee (' + res.status + ') — ' + res.txt);
+          _crToast('Config NON synchronisee — erreur ' + res.status + ' (details en console)');
+          return;
         }
-        _crToast('Config sauvegardee pour tous les utilisateurs');
-      }).catch(function(){ _crToast('Erreur reseau'); });
+        var lignes = null;
+        try { lignes = JSON.parse(res.txt); } catch(e) {}
+        siEcrit(lignes && lignes.length ? lignes[0] : null);
+      }).catch(function(e){
+        console.error('cr-config :', e);
+        _crToast('Config NON synchronisee — erreur reseau');
+      });
+    }
+
+    function _crRetenirLigne(ligne) {
+      _crConfigSupaId = ligne.id;
+      try { localStorage.setItem('r4p-cr-config-sid', String(ligne.id)); } catch(e){}
+      _crToast('Config sauvegardee pour tous les utilisateurs');
+    }
+
+    function _crInsererConfig() {
+      _crEcrireConfig('POST', CR_SUPA_URL + '/rest/v1/templates', function(ligne){
+        if (!ligne) {
+          console.error('cr-config : insertion acceptee mais aucune ligne rendue.');
+          _crToast('Config NON synchronisee — la base n\'a rien enregistre');
+          return;
+        }
+        _crRetenirLigne(ligne);
+      });
+    }
+
+    if (_crConfigSupaId) {
+      _crEcrireConfig('PATCH', CR_SUPA_URL + '/rest/v1/templates?id=eq.' + _crConfigSupaId,
+        function(ligne){
+          if (!ligne) {
+            /* La ligne visee n'existe plus : l'identifiant retenu par ce
+               navigateur est perime. On repart d'une insertion, une seule fois
+               — sans quoi chaque sauvegarde ecrirait dans le vide. */
+            console.warn('cr-config : la ligne ' + _crConfigSupaId + ' n\'existe plus. Insertion.');
+            _crConfigSupaId = null;
+            try { localStorage.removeItem('r4p-cr-config-sid'); } catch(e){}
+            _crInsererConfig();
+            return;
+          }
+          _crRetenirLigne(ligne);
+        });
+    } else {
+      _crInsererConfig();
     }
   }
 
