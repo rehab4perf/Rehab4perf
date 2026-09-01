@@ -8282,15 +8282,49 @@ _updateOutilsPatientBtns();
   }
 
   _crRefreshToken();
-  fetch(CR_SUPA_URL + '/rest/v1/templates?nom=eq.' + CR_SUPA_NOM + '&is_public=eq.true&select=id,donnees&limit=1', {
+  /* La LECTURE et l'ECRITURE ne visaient pas la meme ligne.
+
+     On lisait `nom=__cr_config__ & is_public=true` avec `limit=1` et SANS TRI :
+     Postgres ne promet alors aucun ordre, et celui-ci change des qu'une ligne
+     est reecrite — un PATCH la deplace dans le tas. On ecrivait, elle, sur
+     l'identifiant memorise dans le navigateur (`r4p-cr-config-sid`).
+
+     Des qu'il existe DEUX lignes de configuration, on relit donc tantot l'une
+     tantot l'autre pendant qu'on ecrit toujours dans la meme : la config parait
+     aller et venir toute seule, et des articulations reglees a la main
+     disparaissent sans qu'aucune erreur ne s'affiche.
+
+     On demande desormais un ordre STABLE et toutes les lignes, puis on retient
+     EN PRIORITE celle dans laquelle ce navigateur ecrit — lecture et ecriture
+     convergent. `_crConfigSupaId` est realigne dessus dans tous les cas.
+
+     Et la presence de doublons cesse d'etre muette : elle s'annonce en console.
+     Ils ne sont pas supprimes ici — effacer une configuration qu'on n'a pas lue
+     serait pire que la laisser dormir. */
+  fetch(CR_SUPA_URL + '/rest/v1/templates?nom=eq.' + CR_SUPA_NOM + '&is_public=eq.true&select=id,donnees&order=id.asc&limit=20', {
     headers: { 'apikey': CR_SUPA_KEY, 'Content-Type': 'application/json' }
   })
   .then(function(r){ return r.ok ? r.json() : []; })
   .then(function(rows){
     if (rows && rows.length) {
-      _crConfigSupaId = rows[0].id;
-      try { localStorage.setItem('r4p-cr-config-sid', String(rows[0].id)); } catch(e){}
-      _crApplyConfig(rows[0].donnees);
+      var _sid = null;
+      try { _sid = localStorage.getItem('r4p-cr-config-sid'); } catch(e){}
+      var _choisie = null;
+      if (_sid) {
+        for (var _i = 0; _i < rows.length; _i++) {
+          if (String(rows[_i].id) === String(_sid)) { _choisie = rows[_i]; break; }
+        }
+      }
+      if (!_choisie) _choisie = rows[0];
+      if (rows.length > 1) {
+        console.warn('cr-config : ' + rows.length + ' configurations globales portent le nom '
+          + CR_SUPA_NOM + '. Celle d\'identifiant ' + _choisie.id + ' est retenue ; les autres ne '
+          + 'sont plus lues. Tant qu\'elles coexistent, la configuration peut sembler changer '
+          + 'toute seule.');
+      }
+      _crConfigSupaId = _choisie.id;
+      try { localStorage.setItem('r4p-cr-config-sid', String(_choisie.id)); } catch(e){}
+      _crApplyConfig(_choisie.donnees);
     } else {
       try { var a = JSON.parse(localStorage.getItem('crAmpConfig'));     if (a) crAmpConfig     = a; } catch(e){}
       try { var p = JSON.parse(localStorage.getItem('crPathoConfig'));   if (p) crPathoConfig   = p; } catch(e){}
