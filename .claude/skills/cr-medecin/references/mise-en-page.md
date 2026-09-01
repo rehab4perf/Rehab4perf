@@ -157,3 +157,62 @@ lui, garde le score : c'est le praticien qui le lit.
 **Trois rendus, une seule source.** `_crBlocsHtml` (écran + PDF) et
 `_crBlocsTexte` (copie, mail) lisent les mêmes blocs. Un type de bloc ajouté
 d'un seul côté disparaît de l'autre sans le moindre signal.
+
+
+## Le filet de fin d'une analyse fonctionnelle
+
+```bash
+node qualite/reception-cotes-cas.js
+```
+
+Une ligne d'analyse fonctionnelle est un **groupe** : un parent
+(`tr.lt-af-par`) suivi de ses sous-lignes (`tr.lt-af-sub`). Ni l'un ni les
+autres ne portent de filet — c'est ce qui les rattache visuellement. Le filet
+qui **ferme** le groupe est porté par la ligne **suivante** :
+`tr.lt-af-sub + tr:not(.lt-af-sub) td { border-top }`.
+
+**Un parent sans aucune sous-ligne n'est donc jamais fermé.** Cette règle ne
+s'applique pas — il n'y a pas de `.lt-af-sub` avant — et le test se colle au
+suivant, sans séparation. C'est exactement le cas de la Qualité de réception
+dès qu'aucun critère indicatif ne fait défaut, c'est-à-dire **quand tout va
+bien** : le bon résultat était le seul mal rendu.
+
+`tr.lt-af-par:not(:has(+ tr.lt-af-sub))` rend le filet **et** la marge basse —
+rognée à 1 px pour coller le parent à ses sous-lignes, elle plaquait le texte
+contre le filet en leur absence. Un moteur sans `:has()` ignore la règle et
+retrouve le rendu d'avant : jamais pire.
+
+**Ne jamais poser ce filet sur `tr.lt-af-par` tout court** : le groupe se
+couperait en deux, et deux filets se superposeraient à sa fin.
+
+
+## Le pied courant mord sur le texte — il faut lui réserver sa bande
+
+```bash
+node qualite/cr-pied-lettre-cas.js
+```
+
+La salutation et la signature disparaissaient du PDF. Le texte, lui, était bien
+là : l'aperçu et l'export lisent la **même** chaîne (`_crHtmlCourant`), et le
+pied de lettre en sort correctement fermé, **hors de tout groupe insécable** —
+le fichier de cas le vérifie en exécutant le vrai constructeur, pas en lisant le
+code.
+
+La perte se joue à la **mise en page imprimée**. `#cr-runfoot` est
+`position:fixed` : en impression paginée son bloc de référence est la **zone de
+contenu**, pas la feuille. `bottom:4mm` le pose donc 4 mm au-dessus du bas du
+**texte**, dans le flux, sur chaque page.
+
+Et la règle d'impression mettait `#cr-page` à `padding:0!important` — elle
+annulait les 40 px de marge basse de l'écran **sans rien remettre**. La bande
+occupée par le pied courant n'était réservée par personne : les dernières lignes
+s'y retrouvaient recouvertes, et là où elles tombaient sur la frontière,
+chassées de la page.
+
+`padding: 0 0 12mm` la réserve — les 4 mm de décalage, la ligne de 7,5 pt, et de
+quoi ne pas la frôler.
+
+**Vérifié par lecture et par exécution, pas par une impression réelle** : je ne
+peux pas lancer d'impression depuis ce poste. Si le défaut persistait, la
+question qui départage : la salutation manque-t-elle **déjà dans l'aperçu de la
+fenêtre d'export**, ou seulement dans le PDF produit ?
