@@ -101,25 +101,3 @@ incomplète sans jamais rien casser.
 **Le membre est nommé** dans l'intertitre de l'analyse fonctionnelle : elle ne
 porte que sur le membre inférieur (`AF_PAGES`), et rien dans le courrier ne le
 disait.
-
-
-## Contraction Flash Isométrique 20 s — des RÉPÉTITIONS
-
-```bash
-node qualite/cr-lignes-cas.js
-```
-
-Le courrier écrivait « 20 N ». Le test compte des **contractions tenues** : il
-ne mesure aucune charge. Le formulaire le dit deux fois — « Quadriceps —
-Répétitions max » sur la ligne, « nombre de répétitions » sous le tableau — et
-le courrier annonçait tout de même une force au médecin, c'est-à-dire une
-mesure qui n'a jamais été faite.
-
-L'unité est écrite **dans l'appel** (`cfCA2 + ' rép'`), pas déduite du
-formulaire : rien ne les tient ensemble. Le fichier de cas contrôle donc **les
-deux** — l'appel du courrier et les deux intitulés du formulaire — et échoue si
-l'un se met à dire autre chose que l'autre.
-
-Le libellé de mesure (`l:'Répétitions'`) ne s'affiche pas : la colonne
-« Mesure » ne sort qu'à partir de deux lignes. Il doit rester juste malgré
-tout — c'est lui qu'on lira le jour où une seconde mesure s'ajoutera.

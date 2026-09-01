@@ -1,3 +1,30 @@
+# ── Une seule adresse, une seule application ────────────────────────────────
+# Le site repond sur deux adresses : `app.rehab4perf.com`, liee depuis le site
+# vitrine, et `rehab4perf.netlify.app`, l'adresse de creation. Elles servent le
+# MEME code — mais pas le meme etat : session, configuration du CR, brouillons
+# et cache de service worker sont propres a une ORIGINE. Deux adresses, deux
+# stockages qui ne se voient pas : c'est ce qui faisait afficher a un iPad une
+# configuration d'amplitudes que le Mac ignorait.
+#
+# L'adresse de creation renvoie donc vers l'adresse canonique, en 301 et en
+# conservant chemin et parametres — le `?v=` de cache-busting compris.
+#
+# `force = true` est INDISPENSABLE : sans lui la regle ne s'applique que
+# lorsqu'aucun fichier ne correspond, et `/index.html` existe.
+#
+# La regle ne vise que CET hote : les deploiements de branche
+# (`dev--rehab4perf.netlify.app`) portent un autre nom de domaine et ne sont pas
+# touches.
+#
+# A savoir : une application installee depuis l'ancienne adresse garde son
+# service worker, dont le script ne peut plus se mettre a jour a travers une
+# redirection. La reinstaller depuis la nouvelle adresse remet tout d'aplomb.
+[[redirects]]
+  from = "https://rehab4perf.netlify.app/*"
+  to = "https://app.rehab4perf.com/:splat"
+  status = 301
+  force = true
+
 [[headers]]
   for = "/*"
   [headers.values]
