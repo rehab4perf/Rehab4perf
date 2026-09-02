@@ -123,8 +123,12 @@ function _loadObjectifsForPatient(){
    qui permet de deployer ce code avant de toucher au schema. */
 function _chargerEcheancesAthlete(pid){
   if(!pid) return;
+  /* `select=*` plutot que la liste des colonnes : tant que la migration
+     `20260902` n'est pas appliquee, `fusion` n'existe pas — la nommer ferait
+     echouer la requete, et la section entiere disparaitrait. Avec `*`, la cle
+     est simplement absente et tout le reste continue. */
   var url = SUPA_URL_P + '/rest/v1/athlete_objectifs?patient_id=eq.' + pid
-          + '&select=id,texte,date,repris_at&order=date.asc';
+          + '&select=*&order=date.asc';
   _fetchRetry(url, { headers: _sbHeaders() })
     .then(function(r){ return r.ok ? r.json() : null; })
     .then(function(data){
@@ -136,8 +140,14 @@ function _chargerEcheancesAthlete(pid){
         /* Une echeance reprise a souvent ete recopiee dans le bilan : sans ce
            garde-fou elle s'afficherait deux fois, une par source. */
         if(deja[e.texte + '|' + e.date]) return;
+        /* `texte` n'est JAMAIS reecrit : la fusion vit a cote, dans `fusion`.
+           C'est ce qui permet de defusionner et de choisir lequel afficher —
+           une fusion qui detruit une des deux valeurs qu'elle relie n'est pas
+           une fusion, c'est un remplacement. */
+        var fus = e.fusion || null;
+        if (typeof fus === 'string') { try { fus = JSON.parse(fus); } catch(x){ fus = null; } }
         _patientObjectifs.push({ text:e.texte, date:e.date, source:'athlete',
-                                 echId:e.id, repris:!!e.repris_at });
+                                 echId:e.id, repris:!!e.repris_at, fusion:fus });
       });
       try{ _renderEcheances(); }catch(ex){}
       if(typeof _renderCalendarUI === 'function') _renderCalendarUI();
@@ -176,28 +186,51 @@ function _echJours(dateStr){
 
 /* Deux echeances du MEME JOUR ne se fondent PAS toutes seules.
 
-   Le premier jet le faisait : meme jour, deux sources, une seule puce. C'est
-   exactement ce qu'il ne faut pas — deux echeances le meme jour sont souvent
-   deux choses DIFFERENTES, et les fondre les cachait toutes les deux derriere
-   un libelle unique, sans moyen de voir ce qu'il y avait dessous.
+   Un premier jet le faisait : meme jour, deux sources, une seule puce. C'est
+   l'inverse de ce qu'il faut — deux echeances le meme jour sont souvent deux
+   choses DIFFERENTES, et les fondre les cachait toutes les deux derriere un
+   libelle unique, sans moyen de voir ce qu'il y avait dessous.
 
    Seul le praticien sait si c'est un doublon. On MONTRE donc les deux, et on
-   lui propose de fusionner quand la configuration s'y prete : deux echeances,
-   meme jour, deux sources.
+   lui propose de fusionner quand la configuration s'y prete.
 
-   Fusionner ecrit dans la ligne de l'athlete — son libelle prend celui du
-   praticien, et `repris_at` la marque prise en compte. Le garde-fou
-   `texte|date` de `_chargerEcheancesAthlete` les confond alors d'office, sur
-   ce poste comme sur les autres, sans qu'aucune colonne soit ajoutee. */
+   La fusion est REVERSIBLE et ne detruit rien : elle vit dans la colonne
+   `fusion` de la ligne de l'athlete, a cote de son texte, jamais a la place.
+   Elle porte le libelle du praticien — qui n'a pas d'identifiant stable, vivant
+   dans le JSON d'un bilan — et lequel des deux s'affiche. */
 function _echDoublonPossible(liste, o){
-  if(o.source !== 'athlete' || !o.echId) return false;
+  if(o.source !== 'athlete' || !o.echId || o.fusion) return false;
   return liste.some(function(x){ return x.date === o.date && x.source === 'praticien'; });
 }
 
-/* Le libelle du praticien du meme jour : c'est celui que la fusion adopte. */
+/* Le libelle du praticien du meme jour : c'est celui que la fusion relie. */
 function _echLibellePraticien(liste, date){
   var p = liste.filter(function(x){ return x.date === date && x.source === 'praticien'; })[0];
   return p ? p.text : '';
+}
+
+/* Une paire fusionnee n'occupe qu'UNE puce : on ecarte l'objectif du praticien
+   dont le libelle est repris par la fusion, et la ligne de l'athlete porte les
+   deux. L'ecart se fait sur `texte + date`, la seule facon de designer un
+   objectif de bilan. */
+function _echAppliquerFusions(liste){
+  var repris = {};
+  liste.forEach(function(o){
+    if(o.source === 'athlete' && o.fusion && o.fusion.avec){
+      repris[o.fusion.avec + '|' + o.date] = 1;
+    }
+  });
+  return liste.filter(function(o){
+    return !(o.source === 'praticien' && repris[o.text + '|' + o.date]);
+  }).map(function(o){
+    if(o.source !== 'athlete' || !o.fusion) return o;
+    /* « praticien » par defaut : c'est le nom officiel, celui du courrier. */
+    var affiche = o.fusion.affiche === 'athlete' ? o.text : (o.fusion.avec || o.text);
+    return { text:affiche, date:o.date, jours:o.jours, kind:o.kind, source:o.source,
+             echId:o.echId, aVoir:o.aVoir, fusionnee:true,
+             libPrat:o.fusion.avec || '', libAthl:o.text,
+             affiche:o.fusion.affiche === 'athlete' ? 'athlete' : 'praticien' };
+  });
 }
 
 function _renderEcheances(){
@@ -221,6 +254,7 @@ function _renderEcheances(){
     .sort(function(x,y){ return x.jours - y.jours; });
 
   liste.forEach(function(o){ o.doublon = _echDoublonPossible(liste, o); });
+  liste = _echAppliquerFusions(liste);
 
   if(!liste.length){ box.style.display = 'none'; box.innerHTML = ''; return; }
   box.style.display = '';
@@ -247,9 +281,16 @@ function _renderEcheances(){
       /* HORS du bouton principal : un bouton imbrique dans un bouton n'est pas
          cliquable, et le balisage est invalide. Il n'apparait que sur
          l'echeance de l'ATHLETE — c'est elle que la fusion reecrit. */
+      /* Deux etats, deux commandes, au MEME endroit — juste apres la puce :
+         proposer la fusion quand elle est possible, ouvrir le choix quand elle
+         est faite. Le praticien n'a qu'un seul endroit ou regarder. */
       +  (o.doublon
           ? '<button class="cal-ech-fus" onclick="_echFusionner(\'' + o.echId + '\',\'' + o.date + '\')"'
             + ' title="Même jour qu\'un objectif que vous avez noté — fusionner les deux">⇄</button>'
+          : '')
+      +  (o.fusionnee
+          ? '<button class="cal-ech-fus est-fus" onclick="_echPanneauFusion(\'' + o.echId + '\')"'
+            + ' title="Deux échéances fusionnées — choisir le libellé ou les séparer">⇄</button>'
           : '');
   });
   if(liste.length > _ECH_MAX){
@@ -296,47 +337,121 @@ function _echPrendreEnCompte(id, dateStr){
 }
 window._echPrendreEnCompte = _echPrendreEnCompte;
 
-/* FUSIONNER : le praticien declare que ces deux echeances sont la meme.
+/* Trois gestes autour d'une paire, et une seule ecriture qui les porte tous :
+   la colonne `fusion` de la ligne de l'athlete.
 
-   L'ecriture porte sur la ligne de l'ATHLETE — son libelle prend celui du
-   praticien, et `repris_at` la marque prise en compte. Deux consequences
-   voulues : le garde-fou `texte|date` les confond ensuite d'office, sur ce
-   poste comme sur les autres et sans qu'aucune colonne soit ajoutee ; et
-   l'athlete voit que sa declaration a ete acceptee.
+     fusionner  → { avec:<libelle praticien>, affiche:'praticien' }
+     choisir    → on ne change que `affiche`
+     separer    → `fusion` repasse a NULL
 
-   Le libelle de l'athlete est REMPLACE, donc perdu : la confirmation le dit et
-   le nomme. Un praticien doit pouvoir refuser en connaissance de cause plutot
-   que de decouvrir apres coup que le mot de son patient a disparu.
+   Rien n'ecrase `texte` : les deux libelles restent tels qu'ils ont ete saisis,
+   et c'est ce qui rend les deux derniers gestes possibles. Une fusion qui
+   detruit une des deux valeurs qu'elle relie n'est pas une fusion. */
+function _echEcrireFusion(id, valeur, message){
+  return _fetchRetry(SUPA_URL_P + '/rest/v1/athlete_objectifs?id=eq.' + id, {
+    method:'PATCH',
+    headers: Object.assign({ 'Prefer':'return=representation' }, _sbHeaders()),
+    body: JSON.stringify(valeur)
+  }).then(function(r){
+    return r.text().then(function(txt){ return { ok:r.ok, status:r.status, txt:txt }; });
+  }).then(function(res){
+    /* On n'annonce que ce qui est FAIT. Tant que la migration `20260902` n'est
+       pas appliquee, la colonne `fusion` n'existe pas et l'ecriture est
+       refusee : le dire vaut mieux que laisser croire a une fusion. */
+    if(!res.ok){
+      console.error('fusion d\'échéance :', res.status, res.txt);
+      if(typeof _showToast === 'function') _showToast('Impossible (' + res.status + ') — la migration « fusion » est-elle appliquée ?');
+      return false;
+    }
+    var lignes = null; try { lignes = JSON.parse(res.txt); } catch(e){}
+    if(!lignes || !lignes.length){
+      if(typeof _showToast === 'function') _showToast('Aucune échéance modifiée');
+      return false;
+    }
+    if(typeof _showToast === 'function' && message) _showToast(message);
+    return true;
+  }).catch(function(){
+    if(typeof _showToast === 'function') _showToast('Erreur réseau');
+    return false;
+  });
+}
 
-   Rien n'est ecrit si le libelle du praticien manque : fusionner vers rien
-   effacerait l'echeance sans la remplacer. */
+/* Relire plutot que rafistoler l'etat en memoire : la fusion touche DEUX
+   entrees — celle de l'athlete et celle du praticien qui disparait ou revient
+   — et les recomposer a la main a chaque geste multiplierait les occasions de
+   se tromper. */
+function _echRelire(){
+  _echFermerPanneau();
+  if(_progPatient) _chargerEcheancesAthlete(_progPatient.id);
+}
+
 function _echFusionner(id, dateStr){
   if(!id) return;
   var liste = (_patientObjectifs || []);
   var athlete = liste.filter(function(o){ return String(o.echId) === String(id); })[0];
-  var libelle = _echLibellePraticien(
-    liste.map(function(o){ return { date:o.date, source:o.source, text:o.text }; }), dateStr);
+  var libelle = _echLibellePraticien(liste, dateStr);
+  /* Fusionner vers rien relierait l'echeance a un libelle absent. */
   if(!libelle){ if(typeof _showToast === 'function') _showToast('Aucun objectif du praticien ce jour-là'); return; }
   if(!confirm('Fusionner les deux échéances du ' + dateStr + ' ?\n\n'
-    + '« ' + (athlete ? athlete.text : '') +' » deviendra « ' + libelle + ' ».\n'
-    + 'Le libellé de l\'athlète sera remplacé, et l\'échéance marquée prise en compte.')) return;
-
-  _fetchRetry(SUPA_URL_P + '/rest/v1/athlete_objectifs?id=eq.' + id, {
-    method:'PATCH',
-    headers: Object.assign({ 'Prefer':'return=minimal' }, _sbHeaders()),
-    body: JSON.stringify({ texte: libelle, repris_at: new Date().toISOString() })
-  }).then(function(r){
-    /* On n'annonce que ce qui est FAIT : un refus laisse les deux echeances en
-       place plutot que de faire croire a une fusion. */
-    if(!r.ok){ if(typeof _showToast === 'function') _showToast('Fusion impossible (' + r.status + ')'); return; }
-    _patientObjectifs = liste.filter(function(o){ return String(o.echId) !== String(id); });
-    _renderEcheances();
-    if(typeof _renderCalendarUI === 'function') _renderCalendarUI();
-    if(typeof _showToast === 'function') _showToast('🎯 Échéances fusionnées');
-  }).catch(function(){
-    if(typeof _showToast === 'function') _showToast('Fusion impossible — erreur réseau');
-  });
+    + '« ' + (athlete ? athlete.text : '') + ' » et « ' + libelle + ' » n\'occuperont plus qu\'une ligne.\n'
+    + 'Les deux libellés sont conservés : vous pourrez choisir lequel s\'affiche, ou les séparer.')) return;
+  _echEcrireFusion(id, { repris_at:new Date().toISOString(),
+                         fusion:{ avec:libelle, affiche:'praticien' } },
+                   '🎯 Échéances fusionnées')
+    .then(function(ok){ if(ok) _echRelire(); });
 }
+
+/* Le panneau : les DEUX libelles, celui qui s'affiche, et la separation. Il
+   s'ouvre sous la bande — pas dans une fenetre modale : c'est un reglage
+   d'affichage, pas une decision qui merite de bloquer l'ecran. */
+function _echFermerPanneau(){
+  var p = document.getElementById('echFusionPanneau');
+  if(p && p.parentNode) p.parentNode.removeChild(p);
+}
+window._echFermerPanneau = _echFermerPanneau;
+
+function _echPanneauFusion(id){
+  var box = document.getElementById('calEcheances');
+  var o = (_patientObjectifs || []).filter(function(x){ return String(x.echId) === String(id); })[0];
+  if(!box || !o || !o.fusion) return;
+  var deja = document.getElementById('echFusionPanneau');
+  /* Un second clic referme : le bouton est une bascule, pas un aller simple. */
+  if(deja){ _echFermerPanneau(); return; }
+  var choix = o.fusion.affiche === 'athlete' ? 'athlete' : 'praticien';
+  var d = document.createElement('div');
+  d.id = 'echFusionPanneau';
+  d.className = 'cal-ech-panneau';
+  d.innerHTML =
+      '<div class="cal-ech-pan-t">Échéance du ' + escH(_echDateLisible(o.date)) + '</div>'
+    + '<div class="cal-ech-pan-s">Deux échéances fusionnées. Laquelle afficher ?</div>'
+    + '<label class="cal-ech-pan-l"><input type="radio" name="echAff" value="praticien"'
+    +   (choix === 'praticien' ? ' checked' : '') + ' onchange="_echChoisirLibelle(\'' + id + '\',\'praticien\')">'
+    +   '<span><b>' + escH(o.fusion.avec || '—') + '</b><i>vous</i></span></label>'
+    + '<label class="cal-ech-pan-l"><input type="radio" name="echAff" value="athlete"'
+    +   (choix === 'athlete' ? ' checked' : '') + ' onchange="_echChoisirLibelle(\'' + id + '\',\'athlete\')">'
+    +   '<span><b>' + escH(o.libAthl || o.text) + '</b><i>athlète</i></span></label>'
+    + '<button class="cal-ech-pan-sep" onclick="_echSeparer(\'' + id + '\')">Séparer les deux</button>';
+  box.appendChild(d);
+}
+window._echPanneauFusion = _echPanneauFusion;
+
+function _echChoisirLibelle(id, quoi){
+  var o = (_patientObjectifs || []).filter(function(x){ return String(x.echId) === String(id); })[0];
+  if(!o || !o.fusion) return;
+  _echEcrireFusion(id, { fusion:{ avec:o.fusion.avec, affiche:quoi } }, '')
+    .then(function(ok){ if(ok) _echRelire(); });
+}
+window._echChoisirLibelle = _echChoisirLibelle;
+
+/* SEPARER : `fusion` repasse a NULL. Les deux echeances reparaissent telles
+   qu'elles ont ete saisies — aucune n'ayant ete modifiee, il n'y a rien a
+   restaurer. `repris_at` n'est PAS efface : le praticien a bien vu la
+   declaration de l'athlete, separer ne revient pas la-dessus. */
+function _echSeparer(id){
+  _echEcrireFusion(id, { fusion:null }, 'Échéances séparées')
+    .then(function(ok){ if(ok) _echRelire(); });
+}
+window._echSeparer = _echSeparer;
 window._echFusionner = _echFusionner;
 
 function _echToutBasculer(){ _echTout = !_echTout; _renderEcheances(); }

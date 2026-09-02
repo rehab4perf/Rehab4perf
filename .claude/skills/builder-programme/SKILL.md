@@ -393,17 +393,41 @@ l'athlète — c'est sa ligne que la fusion réécrit.
 **Le bouton vit HORS de la puce.** Un `<button>` imbriqué dans un `<button>`
 n'est pas cliquable, et le balisage est invalide.
 
-**Fusionner écrit dans `athlete_objectifs`** : le libellé prend celui du
-praticien — le nom officiel, celui qui part au courrier — et `repris_at` marque
-la prise en compte. Deux conséquences voulues : le garde-fou `texte|date` les
-confond ensuite **d'office**, sur ce poste comme sur les autres et sans qu'aucune
-colonne soit ajoutée ; et l'athlète voit que sa déclaration a été acceptée.
+**La fusion ne détruit RIEN.** Un premier jet écrasait `texte` avec le libellé
+du praticien : le mot de l'athlète était perdu, et l'on ne pouvait plus ni
+défusionner, ni choisir lequel afficher. **Une fusion qui détruit une des deux
+valeurs qu'elle relie n'est pas une fusion, c'est un remplacement.**
 
-**Le libellé de l'athlète est remplacé, donc perdu** : la confirmation le nomme
-et le dit. Un praticien doit pouvoir refuser en connaissance de cause plutôt que
-de découvrir après coup que le mot de son patient a disparu. Et rien n'est écrit
-si le libellé du praticien manque — fusionner vers rien effacerait l'échéance
-sans la remplacer.
+Elle vit dans la colonne `fusion` (migration `20260902`), à côté du texte et
+jamais à sa place :
+
+```json
+{ "avec": "<libellé du praticien>", "affiche": "praticien" | "athlete" }
+```
+
+`avec` recopie le **libellé** du praticien parce que celui-ci vit dans le JSON
+`f-objectifs` d'un bilan, où il n'a **pas d'identifiant stable** : on ne peut le
+désigner que par son texte et sa date. D'où l'écart sur `texte + date`, jamais
+sur le texte seul — le même libellé un autre jour serait avalé.
+
+**Trois gestes, une seule écriture** : fusionner pose `{avec, affiche}` et
+`repris_at` ; choisir ne change qu'`affiche` ; séparer remet `fusion` à `null`.
+Séparer **n'efface pas `repris_at`** — le praticien a bien vu la déclaration, se
+séparer ne revient pas là-dessus.
+
+**Deux états du même bouton, au même endroit** : ⇄ creux propose la fusion, ⇄
+plein ouvre le panneau. Le praticien n'a qu'un seul endroit où regarder. Le
+panneau s'ouvre **sous la bande**, pas en fenêtre modale : c'est un réglage
+d'affichage, pas une décision qui mérite de bloquer l'écran. Il nomme qui a
+saisi quoi — sans ça, choisir n'a pas de sens.
+
+**La lecture utilise `select=*`.** Tant que la migration n'est pas appliquée, la
+colonne n'existe pas : la nommer ferait échouer la requête et la section entière
+disparaîtrait. Avec `*`, la clé est simplement absente et tout le reste
+continue ; seule l'écriture est refusée, et elle le dit en nommant la migration.
+
+Rien n'est écrit si le libellé du praticien manque — fusionner vers rien
+relierait l'échéance à un libellé absent.
 
 **On n'annonce que ce qui est fait** : un refus du serveur laisse les deux
 échéances en place, il ne se dit pas fusionné.

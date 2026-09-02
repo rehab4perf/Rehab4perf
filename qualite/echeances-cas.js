@@ -252,35 +252,144 @@ console.log('\nDeux échéances le même jour : les DEUX se voient');
 console.log('\nFusionner : ce que le geste écrit');
 {
   var F0 = js.indexOf('function _echFusionner');
-  var F1 = js.indexOf('\nwindow._echFusionner', F0);
+  var F1 = js.indexOf('\n/* Le panneau', F0);
   if (F0 < 0 || F1 < F0) { console.log('  ✗ bornes de _echFusionner introuvables'); ko++; }
   var f = js.slice(F0, F1);
-  /* Le libelle de l'athlete est REMPLACE, donc perdu : la confirmation doit le
-     nommer. Un praticien doit pouvoir refuser en connaissance de cause. */
+  /* Le geste relie deux echeances du patient : il se confirme, et la
+     confirmation nomme les deux libelles. */
   ok('elle demande confirmation', /confirm\(/.test(f));
   ok('… en nommant les deux libellés', /athlete \? athlete\.text/.test(f) && /libelle/.test(f));
-  ok('… et en disant que l\'ancien sera remplacé', /remplac/.test(f));
-  /* L'ecriture porte sur la ligne de l'ATHLETE, et pose les DEUX champs :
-     le libelle, pour que le garde-fou `texte|date` les confonde ensuite ; et
-     `repris_at`, pour que l'athlete voie que c'est acte. */
-  ok('elle écrit dans athlete_objectifs', /athlete_objectifs\?id=eq\./.test(f));
-  ok('… le libellé du praticien', /texte: libelle/.test(f));
-  ok('… et la prise en compte', /repris_at:/.test(f));
-  /* Fusionner vers rien effacerait l'echeance sans la remplacer. */
+  /* Et elle dit que RIEN n'est perdu — c'est ce qui distingue cette version de
+     la premiere, qui ecrasait le libelle de l'athlete. */
+  ok('… et en disant que les deux sont conservés', /libellés sont conservés/.test(f));
+  /* Fusionner vers rien relierait l'echeance a un libelle absent. */
   ok('elle refuse de fusionner vers un libellé vide', /if\(!libelle\)/.test(f));
-  /* On n'annonce que ce qui est FAIT : un refus laisse les deux en place. */
-  ok('un refus du serveur n\'annonce pas la fusion', /if\(!r\.ok\)[\s\S]{0,140}return;/.test(f));
+  /* Elle pose le lien ET la prise en compte, en une seule ecriture. */
+  ok('elle pose le lien', /fusion:\{ avec:libelle/.test(f));
+  ok('… et la prise en compte', /repris_at:/.test(f));
+
+  /* L'ecriture elle-meme est partagee par les trois gestes. */
+  var W0 = js.indexOf('function _echEcrireFusion');
+  var w = js.slice(W0, js.indexOf('\n/* Relire plutot', W0));
+  ok('l\'écriture vise la ligne de l\'athlète', /athlete_objectifs\?id=eq\./.test(w));
 
   /* Le bouton vit HORS de la puce : un bouton dans un bouton n'est pas
      cliquable, et le balisage est invalide. */
   var R0 = js.indexOf('function _renderEcheances');
   var R1 = js.indexOf('\nfunction _echDateLisible', R0);
   var rend = js.slice(R0, R1);
-  ok('le bouton est posé après la puce', /'<\/button>'[\s\S]{0,400}cal-ech-fus/.test(rend));
-  ok('… et n\'apparaît que sur un doublon possible', /o\.doublon[\s\S]{0,120}cal-ech-fus/.test(rend));
+  ok('le bouton est posé après la puce',
+     rend.indexOf("+  '</button>'") >= 0
+     && rend.indexOf('cal-ech-fus') > rend.indexOf("+  '</button>'"));
+  ok('… et n\'apparaît que sur un doublon possible', /o\.doublon[\s\S]{0,160}cal-ech-fus/.test(rend));
   ok('… stylé dans la feuille', /\.cal-ech-fus\s*\{/.test(html));
   /* Les objectifs du bilan doivent porter leur source, sinon rien n'est propose. */
   ok('les objectifs du bilan portent leur source', /source:'praticien'/.test(js));
+}
+
+console.log('\nFusionner sans rien détruire');
+{
+  /* La premiere version ecrasait `texte` avec le libelle du praticien. Le mot
+     de l'athlete etait alors PERDU : on ne pouvait plus ni defusionner, ni
+     choisir lequel afficher. Une fusion qui detruit une des deux valeurs
+     qu'elle relie n'est pas une fusion, c'est un remplacement. */
+  ok('le texte de l\'athlète n\'est jamais réécrit', !/texte: *libelle/.test(js));
+  ok('la fusion vit dans sa propre colonne', /fusion:\{ *avec:/.test(js));
+  /* Tant que la migration n'est pas appliquee, la colonne n'existe pas : la
+     lecture doit survivre. `select=*` rend ce qui existe, une liste de colonnes
+     ferait echouer la requete et la section entiere disparaitrait. */
+  ok('la lecture survit à l\'absence de la colonne', /athlete_objectifs\?patient_id=eq\.' \+ pid[\s\S]{0,200}select=\*/.test(js));
+
+  var A0 = js.indexOf('function _echAppliquerFusions');
+  var A1 = js.indexOf('\nfunction _renderEcheances', A0);
+  if (A0 < 0 || A1 < A0) { console.log('  ✗ bornes de _echAppliquerFusions introuvables'); ko++; }
+  var appliquer = new Function(js.slice(A0, A1) + '\nreturn _echAppliquerFusions;')();
+
+  var prat = function (t, d) { return { text:t, date:d, jours:10, kind:'sport', source:'praticien' }; };
+  var athlF = function (t, d, avec, affiche) {
+    return { text:t, date:d, jours:10, kind:'sport', source:'athlete', echId:'a1',
+             fusion:{ avec:avec, affiche:affiche } };
+  };
+
+  var r = appliquer([prat('hyrox', '2026-10-17'), athlF('hyrox V', '2026-10-17', 'hyrox', 'praticien')]);
+  ok('une paire fusionnée n\'occupe qu\'une puce', r.length === 1, r.length + ' puce(s)');
+  ok('… au libellé choisi', r[0] && r[0].text === 'hyrox', r[0] && r[0].text);
+  /* Les DEUX libelles restent portes par la puce : c'est ce que le panneau
+     affiche pour permettre de choisir. */
+  ok('… en gardant les deux libellés', r[0] && r[0].libPrat === 'hyrox' && r[0].libAthl === 'hyrox V');
+
+  var r2 = appliquer([prat('hyrox', '2026-10-17'), athlF('hyrox V', '2026-10-17', 'hyrox', 'athlete')]);
+  ok('choisir le libellé de l\'athlète le fait afficher', r2[0] && r2[0].text === 'hyrox V', r2[0] && r2[0].text);
+  /* Une valeur inconnue ne doit pas laisser la puce sans libelle : on retombe
+     sur le nom officiel. */
+  var r3 = appliquer([prat('hyrox', '2026-10-17'), athlF('hyrox V', '2026-10-17', 'hyrox', 'nimporte')]);
+  ok('un choix inconnu retombe sur le libellé officiel', r3[0] && r3[0].text === 'hyrox');
+
+  /* Ce qui n'est PAS fusionne passe intact — y compris un objectif du praticien
+     d'un autre jour, qu'une comparaison sur le seul texte aurait avale. */
+  var r4 = appliquer([prat('hyrox', '2026-10-17'), prat('hyrox', '2026-11-02'),
+                      athlF('hyrox V', '2026-10-17', 'hyrox', 'praticien')]);
+  ok('le même libellé un autre jour reste visible', r4.length === 2, r4.length + ' puce(s)');
+  var r5 = appliquer([prat('trail', '2026-10-17'), { text:'autre', date:'2026-10-17', jours:10, source:'athlete', echId:'a2' }]);
+  ok('sans fusion, les deux restent séparées', r5.length === 2, r5.length + ' puce(s)');
+
+  /* La fusion n'est plus PROPOSEE sur une paire deja fusionnee. */
+  var D0 = js.indexOf('function _echDoublonPossible');
+  var doub = new Function(js.slice(D0, js.indexOf('\n/* Le libelle du praticien', D0))
+                          + '\nreturn _echDoublonPossible;')();
+  var dejaFus = athlF('hyrox V', '2026-10-17', 'hyrox', 'praticien');
+  ok('une paire déjà fusionnée ne se repropose pas',
+     !doub([prat('hyrox', '2026-10-17'), dejaFus], dejaFus));
+}
+
+console.log('\nDéfusionner et choisir');
+{
+  var E0 = js.indexOf('function _echEcrireFusion');
+  var E1 = js.indexOf('\nfunction _echToutBasculer', E0);
+  var z = js.slice(E0, E1);
+  /* Trois gestes, une seule ecriture qui les porte tous. */
+  ok('fusionner pose le lien et la prise en compte', /fusion:\{ avec:libelle, affiche:'praticien' \}/.test(z));
+  ok('choisir ne change QUE l\'affichage', /fusion:\{ avec:o\.fusion\.avec, affiche:quoi \}/.test(z));
+  ok('séparer remet la fusion à rien', /fusion:null/.test(z));
+  /* `repris_at` n'est pas efface : le praticien a bien vu la declaration, se
+     separer ne revient pas la-dessus. */
+  ok('séparer ne défait pas la prise en compte', !/_echSeparer[\s\S]{0,200}repris_at/.test(z));
+  /* On n'annonce que ce qui est FAIT — la colonne peut ne pas exister encore. */
+  /* Le message doit etre ATTEIGNABLE : le trouver dans le fichier ne prouve
+     rien s'il vit dans une branche que plus rien ne declenche. */
+  ok('un refus est annoncé, avec la piste',
+     /if\(!res\.ok\)\{[\s\S]{0,320}migration « fusion » est-elle appliquée/.test(z));
+  ok('… et zéro ligne touchée n\'est pas un succès', /Aucune échéance modifiée/.test(z));
+  ok('les lignes touchées sont demandées', /'return=representation'/.test(z));
+
+  /* Le panneau porte les deux libelles, dit QUI les a saisis, et separe. */
+  var P0 = js.indexOf('function _echPanneauFusion');
+  var P1 = js.indexOf('\nwindow._echPanneauFusion', P0);
+  var pan = js.slice(P0, P1);
+  ok('le panneau montre le libellé du praticien', /o\.fusion\.avec/.test(pan));
+  ok('… et celui de l\'athlète', /o\.libAthl/.test(pan));
+  ok('… en disant qui a saisi quoi', /vous<\/i>/.test(pan) && /athlète<\/i>/.test(pan));
+  ok('… et propose de séparer', /_echSeparer/.test(pan));
+  /* Un second clic referme : le bouton est une bascule, pas un aller simple. */
+  ok('un second clic referme le panneau', /if\(deja\)\{ _echFermerPanneau\(\); return; \}/.test(pan));
+
+  /* Deux etats du meme bouton, au meme endroit. */
+  var R0 = js.indexOf('function _renderEcheances');
+  var rend = js.slice(R0, js.indexOf('\nfunction _echDateLisible', R0));
+  ok('le bouton propose la fusion quand elle est possible', /o\.doublon[\s\S]{0,160}_echFusionner/.test(rend));
+  ok('… et ouvre le choix quand elle est faite', /o\.fusionnee[\s\S]{0,160}_echPanneauFusion/.test(rend));
+  ok('l\'état fusionné se distingue à l\'œil', /\.cal-ech-fus\.est-fus/.test(html));
+  ok('le panneau est stylé', /\.cal-ech-panneau\s*\{/.test(html));
+}
+
+console.log('\nLa migration de la fusion');
+{
+  var mig = '';
+  try { mig = fs.readFileSync(path.join(R, 'supabase', 'migrations', '20260902_athlete_objectifs_fusion.sql'), 'utf8'); } catch(e){}
+  ok('le fichier existe', !!mig);
+  ok('elle ajoute la colonne sans casser l\'existant', /ADD COLUMN IF NOT EXISTS fusion jsonb/.test(mig));
+  ok('elle dit pourquoi une colonne plutôt qu\'une réécriture', /pas une fusion, c'est un remplacement/.test(mig));
+  ok('elle explique comment défusionner', /repasse `fusion` à NULL|remettre `fusion` à NULL/i.test(mig));
 }
 
 console.log('\nLa migration, écrite mais NON appliquée');

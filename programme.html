@@ -1994,6 +1994,32 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
       color:var(--text2); font-size:var(--fs-sm); line-height:1; cursor:pointer;
       padding:0; }
     .cal-ech-fus:hover { border-color:var(--accent); color:var(--accent); }
+    /* Une paire DEJA fusionnee : le meme bouton, mais rempli — il n'invite
+       plus, il ouvre. Deux etats du meme geste au meme endroit : le praticien
+       n'a qu'un seul endroit ou regarder. */
+    .cal-ech-fus.est-fus { border-color:var(--accent); color:var(--accent);
+      background:var(--accent-ll); }
+
+    /* Le panneau s'ouvre SOUS la bande, pas dans une fenetre modale : c'est un
+       reglage d'affichage, pas une decision qui merite de bloquer l'ecran. */
+    .cal-ech-panneau { flex-basis:100%; margin-top:8px; padding:10px 12px;
+      border:1px solid var(--border); border-radius:8px; background:var(--surface);
+      box-shadow:0 4px 14px rgba(0,0,0,.07); max-width:340px; }
+    .cal-ech-pan-t { font-size:var(--fs-sm); font-weight:700; color:var(--text); }
+    .cal-ech-pan-s { font-size:var(--fs-xs); color:var(--text2); margin:2px 0 8px; }
+    .cal-ech-pan-l { display:flex; align-items:center; gap:8px; padding:5px 6px;
+      border-radius:6px; cursor:pointer; }
+    .cal-ech-pan-l:hover { background:var(--surface2); }
+    .cal-ech-pan-l span { display:flex; flex-direction:column; min-width:0; }
+    .cal-ech-pan-l b { font-size:var(--fs-sm); font-weight:600; color:var(--text);
+      overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    /* Qui l'a saisi se dit en clair : c'est ce qui permet de choisir. */
+    .cal-ech-pan-l i { font-size:var(--fs-2xs); font-style:normal; color:var(--text2); }
+    .cal-ech-pan-sep { margin-top:8px; width:100%; padding:6px 10px;
+      border:1px solid var(--border); border-radius:6px; background:var(--surface);
+      color:var(--text2); font-size:var(--fs-xs); font-weight:600; cursor:pointer;
+      font-family:inherit; }
+    .cal-ech-pan-sep:hover { border-color:var(--red); color:var(--red); }
 .cal-ech:has(.cal-ech-neuf) { border-left-color:var(--accent); }
 .cal-ech-plus { font-size:var(--fs-xs); color:var(--muted); font-family:inherit;
   background:none; border:none; cursor:pointer; padding:4px 6px; }
@@ -4567,6 +4593,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 </div>
 
-<script src="js/prog-main.js?v=20260901o"></script>
+<script src="js/prog-main.js?v=20260902a"></script>
 </body>
 </html>
