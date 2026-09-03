@@ -171,21 +171,33 @@ console.log('\nLa fusion des deux sources');
   var F0 = js.indexOf('function _chargerEcheancesAthlete');
   var F1 = js.indexOf('\n}', F0);
   var codeFus = js.slice(F0, F1 + 2);
-  /* `_chargerEcheancesAthlete` fusionne dans un `.then` : lire la liste tout
-     de suite la trouve inchangee, et l'assertion « pas de doublon » passe pour
-     la mauvaise raison — rien n'a encore ete ajoute. On attend donc que les
-     micro-taches soient vidangees. */
+  /* `_chargerEcheancesAthlete` fusionne au bout de DEUX sauts de micro-tache :
+     `.then(r => r.json())` puis `.then(data => …)`. Lire la liste trop tot la
+     trouve inchangee, et l'assertion « pas de doublon » passe pour la mauvaise
+     raison — rien n'a encore ete ajoute.
+
+     Un seul `Promise.resolve().then()` ne suffisait pas : il ne couvre qu'UN
+     saut, et c'est ce qui la faisait passer a tort. On attend un tour de boucle
+     d'evenements entier, qui vient apres toutes les micro-taches. */
+  /* `_patientObjectifs` est REASSIGNE par la fonction — elle remplace la part
+     athlete au lieu de l'empiler. Le passer en parametre ne suffit donc pas :
+     la reassignation rebind le parametre local, et la doublure continuerait de
+     lire le tableau d'origine, inchange. On le declare VARIABLE a l'interieur,
+     et l'on rend un accesseur pour le relire apres coup. */
   function fusionner(bilan, athlete) {
-    var liste = bilan.slice();
     /* eslint-disable no-new-func */
-    new Function('SUPA_URL_P', '_sbHeaders', '_fetchRetry', '_progPatient',
-      '_patientObjectifs', '_renderEcheances', '_renderCalendarUI',
-      codeFus + '\n_chargerEcheancesAthlete(1);')(
+    var lire = new Function('SUPA_URL_P', '_sbHeaders', '_fetchRetry', '_progPatient',
+      '_depart', '_renderEcheances', '_renderCalendarUI',
+      'var _patientObjectifs = _depart;\n' + codeFus
+      + '\n_chargerEcheancesAthlete(1);'
+      + '\nreturn function(){ return _patientObjectifs; };')(
       '', function () { return {}; },
       function () { return Promise.resolve({ ok: true, json: function () { return athlete; } }); },
-      { id: 1 }, liste, function () {}, function () {}
+      { id: 1 }, bilan.slice(), function () {}, function () {}
     );
-    return Promise.resolve().then(function(){ return liste; });
+    return new Promise(function(resoudre){
+      setTimeout(function(){ resoudre(lire()); }, 0);
+    });
   }
   _fusionPromesse = fusionner([{ text: 'UTMB', date: '2026-08-29' }],
                       [{ id: 9, texte: 'UTMB', date: '2026-08-29', repris_at: null }])
@@ -380,6 +392,67 @@ console.log('\nDéfusionner et choisir');
   ok('… et ouvre le choix quand elle est faite', /o\.fusionnee[\s\S]{0,160}_echPanneauFusion/.test(rend));
   ok('l\'état fusionné se distingue à l\'œil', /\.cal-ech-fus\.est-fus/.test(html));
   ok('le panneau est stylé', /\.cal-ech-panneau\s*\{/.test(html));
+}
+
+console.log('\nLe geste se voit tout de suite');
+{
+  /* L'ecriture reussissait — le message le disait — et la bande ne changeait
+     pas. `_chargerEcheancesAthlete` ne faisait qu'EMPILER : rejouee, elle
+     retrouvait l'ancienne entree deja en place, la voyait dans son garde-fou
+     anti-doublon, et ECARTAIT la ligne fraiche, celle qui portait la fusion. */
+  var C0 = js.indexOf('function _chargerEcheancesAthlete');
+  var C1 = js.indexOf('\n// Repère', C0);
+  var chg = js.slice(C0, C1);
+  ok('le chargement REMPLACE la part athlète',
+     /_patientObjectifs = _patientObjectifs\.filter\(function\(o\)\{ return o\.source !== 'athlete'; \}\);/.test(chg));
+  /* Et il doit le faire AVANT de construire son garde-fou anti-doublon, sinon
+     celui-ci retient encore les entrees qu'on vient de retirer. */
+  ok('… avant de construire le garde-fou anti-doublon',
+     chg.indexOf("o.source !== 'athlete'") < chg.indexOf('var deja = {}'));
+
+  /* La ligne rendue par le serveur fait foi et s'applique tout de suite : c'est
+     ce qui rend l'affichage independant d'une relecture, laquelle exige un
+     patient courant. */
+  var M0 = js.indexOf('function _echAppliquerLigne');
+  var M1 = js.indexOf('\nfunction _echRelire', M0);
+  if (M0 < 0 || M1 < M0) { console.log('  ✗ bornes de _echAppliquerLigne introuvables'); ko++; }
+  var appliquerLigne = new Function(js.slice(M0, M1) + '\nreturn _echAppliquerLigne;');
+
+  var etat = [{ text:'hyrox V', date:'2026-10-17', source:'athlete', echId:'a1', fusion:null, repris:false }];
+  var maj = new Function('_patientObjectifs', js.slice(M0, M1) + '\nreturn _echAppliquerLigne;')(etat);
+  maj({ id:'a1', fusion:{ avec:'hyrox', affiche:'praticien' }, repris_at:'2026-09-03T00:00:00Z' });
+  ok('la fusion rendue par le serveur est appliquée',
+     !!(etat[0].fusion && etat[0].fusion.avec === 'hyrox'));
+  ok('… et la prise en compte avec', etat[0].repris === true);
+
+  /* Separer rend `fusion: null` : l'entree doit repasser non fusionnee. */
+  maj({ id:'a1', fusion:null });
+  ok('séparer remet l\'entrée en clair', etat[0].fusion === null);
+
+  /* Postgres peut rendre un jsonb deja decode ou en chaine selon le client :
+     les deux formes doivent etre acceptees. */
+  var etat2 = [{ text:'x', date:'2026-10-17', source:'athlete', echId:'a2' }];
+  var maj2 = new Function('_patientObjectifs', js.slice(M0, M1) + '\nreturn _echAppliquerLigne;')(etat2);
+  maj2({ id:'a2', fusion:'{"avec":"y","affiche":"athlete"}' });
+  ok('une fusion rendue en chaîne est décodée',
+     !!(etat2[0].fusion && etat2[0].fusion.affiche === 'athlete'));
+
+  /* Une ligne qui ne concerne personne ne doit rien toucher. */
+  var etat3 = [{ text:'x', date:'2026-10-17', source:'athlete', echId:'a3', fusion:null }];
+  var maj3 = new Function('_patientObjectifs', js.slice(M0, M1) + '\nreturn _echAppliquerLigne;')(etat3);
+  maj3({ id:'zzz', fusion:{ avec:'w', affiche:'praticien' } });
+  ok('une ligne étrangère ne touche à rien', etat3[0].fusion === null);
+
+  /* Le rendu doit etre rejoue apres l'ecriture, sinon rien ne se voit. */
+  var Z0 = js.indexOf('function _echRelire');
+  var z2 = js.slice(Z0, js.indexOf('\nfunction _echFusionner', Z0));
+  ok('l\'affichage est refait après l\'écriture', /_renderEcheances\(\)/.test(z2));
+  ok('… et le calendrier aussi', /_renderCalendarUI/.test(z2));
+  ok('… et le panneau se referme', /_echFermerPanneau\(\)/.test(z2));
+  /* Les trois gestes passent par la : aucun ne doit s'en dispenser. */
+  ok('les trois gestes rafraîchissent',
+     (js.match(/if\(ok\) _echRelire\(\);/g) || []).length === 3,
+     (js.match(/if\(ok\) _echRelire\(\);/g) || []).length + ' geste(s)');
 }
 
 console.log('\nLa migration de la fusion');

@@ -421,6 +421,19 @@ panneau s'ouvre **sous la bande**, pas en fenêtre modale : c'est un réglage
 d'affichage, pas une décision qui mérite de bloquer l'écran. Il nomme qui a
 saisi quoi — sans ça, choisir n'a pas de sens.
 
+**Un chargement doit pouvoir être rejoué.** `_chargerEcheancesAthlete` ne
+faisait qu'**empiler** : rejouée après une écriture, elle retrouvait l'ancienne
+entrée déjà en place, la voyait dans son garde-fou anti-doublon, et **écartait
+la ligne fraîche** — celle qui portait justement la fusion. L'écriture
+réussissait, le message le disait, et la bande ne changeait pas. Elle **remplace**
+désormais la part athlète, avant de construire le garde-fou.
+
+**La ligne rendue par le serveur fait foi et s'applique tout de suite.**
+`return=representation` sur les trois gestes, puis `_echAppliquerLigne` recopie
+`fusion` et `repris_at` dans l'état en mémoire. L'affichage ne dépend donc
+d'aucune relecture — laquelle exige un patient courant. Le `jsonb` revient
+tantôt décodé, tantôt en chaîne : les deux formes sont acceptées.
+
 **La lecture utilise `select=*`.** Tant que la migration n'est pas appliquée, la
 colonne n'existe pas : la nommer ferait échouer la requête et la section entière
 disparaîtrait. Avec `*`, la clé est simplement absente et tout le reste
@@ -476,6 +489,23 @@ Les cas de référence partent du formulaire réel (défauts lus dans
 ```bash
 node qualite/cap-cas.js
 ```
+
+### Une doublure qui lit trop tôt passe pour la mauvaise raison
+
+`_chargerEcheancesAthlete` écrit au bout de **deux** sauts de micro-tâche —
+`.then(r => r.json())` puis `.then(data => …)`. Le fichier de cas attendait avec
+un seul `Promise.resolve().then()`, qui n'en couvre qu'**un** : il lisait la
+liste avant tout ajout, et l'assertion « pas de doublon » passait parce que
+**rien n'avait encore été ajouté**. Le commentaire du fichier annonçait
+justement ce piège, sans que l'attente le referme.
+
+On attend désormais un tour de boucle d'événements entier (`setTimeout 0`), qui
+vient après toutes les micro-tâches.
+
+**Second piège de doublure** : `_patientObjectifs` est **réassigné** par la
+fonction. Le passer en paramètre ne suffit pas — la réassignation rebind le
+paramètre local, et la doublure continue de lire le tableau d'origine, inchangé.
+Il est déclaré `var` à l'intérieur du sandbox, avec un accesseur pour le relire.
 
 Le fichier couvre la **génération** (six situations de saisie) et la
 **régression sur douleur** (proposition, application, semaines déjà vécues).

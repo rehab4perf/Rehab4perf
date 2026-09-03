@@ -134,6 +134,15 @@ function _chargerEcheancesAthlete(pid){
     .then(function(data){
       if(!data || !Array.isArray(data)) return;              // table absente
       if(!_progPatient || String(_progPatient.id) !== String(pid)) return;
+      /* On REMPLACE la part athlete, on ne l'ajoute pas. Cette fonction ne
+         faisait qu'empiler : rejouee apres une ecriture, elle retrouvait
+         l'ancienne entree deja en place, la voyait dans `deja` et ECARTAIT la
+         ligne fraiche — celle qui portait justement la fusion. L'ecriture
+         reussissait, le message le disait, et la bande ne changeait pas.
+
+         Une fonction de chargement doit pouvoir etre rejouee et donner le meme
+         resultat que la premiere fois. */
+      _patientObjectifs = _patientObjectifs.filter(function(o){ return o.source !== 'athlete'; });
       var deja = {};
       _patientObjectifs.forEach(function(o){ deja[o.text + '|' + o.date] = 1; });
       data.forEach(function(e){
@@ -368,6 +377,10 @@ function _echEcrireFusion(id, valeur, message){
       if(typeof _showToast === 'function') _showToast('Aucune échéance modifiée');
       return false;
     }
+    /* La ligne rendue par le serveur fait foi : on l'applique tout de suite,
+       plutot que d'attendre une relecture. C'est ce qui rend l'affichage
+       independant de l'etat du patient courant au moment du clic. */
+    _echAppliquerLigne(lignes[0]);
     if(typeof _showToast === 'function' && message) _showToast(message);
     return true;
   }).catch(function(){
@@ -376,13 +389,27 @@ function _echEcrireFusion(id, valeur, message){
   });
 }
 
-/* Relire plutot que rafistoler l'etat en memoire : la fusion touche DEUX
-   entrees — celle de l'athlete et celle du praticien qui disparait ou revient
-   — et les recomposer a la main a chaque geste multiplierait les occasions de
-   se tromper. */
+/* La ligne rendue par le serveur est recopiee dans l'etat en memoire. Elle fait
+   foi : c'est ce qui vient d'etre ecrit. Reconstruire l'affichage a partir de
+   la seule reponse evite de dependre d'une relecture — laquelle exige un
+   patient courant, et n'est pas garantie de rendre autre chose que ce qu'on
+   vient d'appliquer. */
+function _echAppliquerLigne(ligne){
+  if(!ligne || ligne.id === undefined) return;
+  var fus = ligne.fusion || null;
+  if (typeof fus === 'string') { try { fus = JSON.parse(fus); } catch(x){ fus = null; } }
+  (_patientObjectifs || []).forEach(function(o){
+    if(String(o.echId) !== String(ligne.id)) return;
+    o.fusion = fus;
+    if(ligne.texte !== undefined) o.text = ligne.texte;
+    if(ligne.repris_at !== undefined) o.repris = !!ligne.repris_at;
+  });
+}
+
 function _echRelire(){
   _echFermerPanneau();
-  if(_progPatient) _chargerEcheancesAthlete(_progPatient.id);
+  _renderEcheances();
+  if(typeof _renderCalendarUI === 'function') _renderCalendarUI();
 }
 
 function _echFusionner(id, dateStr){
