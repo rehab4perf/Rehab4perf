@@ -614,9 +614,9 @@ sections: [
 /* ── ⚡ CHARGE D'ENTRAÎNEMENT ────────────────────────────────── */
 { id:'charges', emoji:'⚡', titre:'Charge d\'entraînement', articles:[
   { id:'ua-foster', titre:'Les UA : comment la charge est calculée',
-    intro:'Toute la gestion de charge repose sur une unité commune : l\'UA (méthode de Foster).',
+    intro:'Toute la gestion de charge repose sur une unité commune : l\'UA (méthode de Foster « au carré »).',
     etapes:[
-      { t:'UA = RPE × durée', x:'Le ressenti d\'effort de l\'athlète (Borg 1–10) multiplié par la durée réelle en minutes. Une séance de 45 min à RPE 7 = 315 UA.' },
+      { t:'UA = RPE² × durée', x:'Le ressenti d\'effort de l\'athlète (Borg 1–10) ÉLEVÉ AU CARRÉ, multiplié par la durée réelle en minutes. Une séance de 45 min à RPE 7 = 7 × 7 × 45 = 2205 UA. C\'est la méthode de Foster « au carré » : le Foster classique multiplie simplement RPE × durée, ce qui rend 100 min à RPE 1 équivalentes à 10 min à RPE 10 — physiologiquement faux, la séance dure coûte bien davantage. Élever le RPE au carré lui redonne son poids.' },
       { t:'Sources, par ordre de priorité', x:'1) Le retour athlète d\'une séance planifiée. 2) L\'activité Strava liée à une séance CAP (FC réelle × durée). 3) Les activités Strava libres, estimées par la fréquence cardiaque. Chaque effort n\'est compté qu\'une seule fois — jamais de doublon entre retour et Strava.' },
       { t:'Où la voir', x:'Badge ⚡ sur les chips de l\'agenda, Bilan de charge sous le calendrier, carte « Charge globale » de l\'Évolution.' }
     ]},
@@ -815,7 +815,7 @@ faq: [
   { q:'Quelle différence entre note clinique et message patient ?',
     a:'La note clinique (🔒) n\'est visible que par vous. Le message patient (💬) apparaît dans le calendrier de l\'athlète via son lien. Le type se choisit en haut du formulaire de note et peut être changé après coup.' },
   { q:'C\'est quoi, les UA ?',
-    a:'Les Unités Arbitraires mesurent la charge d\'entraînement selon la méthode de Foster : RPE (effort perçu 1–10) × durée en minutes. Une séance de 45 min à RPE 7 = 315 UA. Pour les activités Strava sans retour athlète, la charge est estimée à partir de la fréquence cardiaque.' },
+    a:'Les Unités Arbitraires mesurent la charge d\'entraînement selon la méthode de Foster « au carré » : RPE (effort perçu 1–10) AU CARRÉ × durée en minutes. Une séance de 45 min à RPE 7 = 2205 UA. Attention en comparant : les seuils publiés — zone favorable ACWR 0,8–1,3, monotonie, contrainte — sont calibrés sur le Foster classique (RPE × durée), et aucune borne n\'a été publiée pour la variante au carré. Le Bilan de charge le rappelle sous le graphique.' },
   { q:'C\'est quoi, le J0 ?',
     a:'La date de référence du patient : en priorité la date d\'opération, sinon la date d\'accident, sinon celle du premier bilan. Elle alimente les étiquettes J+ de l\'agenda et le calcul des échéances de protocole (CR médecin à J+45, etc.). Renseignez-la dans la page Infos du bilan.' },
   { q:'Un cycle d\'un patient apparaît chez un autre.',

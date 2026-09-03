@@ -1686,15 +1686,51 @@ function _stravaRpeFromHr(avgHr, ddn){
     return 9;
   } catch(e){ return null; }
 }
+/* ── UA : la charge d'une seance ─────────────────────────────────
+   Methode de Foster « au carre » — decision du praticien :
+
+       UA = RPE² × duree (min)          au lieu de RPE × duree
+
+   POURQUOI. Le session-RPE est LINEAIRE en intensite : 100 min a RPE 1 et
+   10 min a RPE 10 valent tous deux 100 UA. Physiologiquement c'est faux — la
+   seance dure coute bien davantage. C'est la meme raison qui fait ponderer
+   l'intensite de facon non lineaire dans les TRIMP de Banister et d'Edwards.
+
+   CE QU'ON PERD, et il faut le savoir. Les seuils affiches — zone favorable
+   ACWR 0,8–1,3, monotonie, contrainte — sont calibres sur du sRPE LINEAIRE.
+   Ils restent affiches faute de reference publiee pour cette variante, et
+   l'ecran le dit desormais. Ne pas les presenter comme des bornes validees
+   pour cette formule.
+
+   UNE SEULE REGLE, PARTOUT. La carte de charge melange deux origines : les
+   seances avec feedback (RPE declare) et les activites Strava (RPE ESTIME
+   depuis la frequence cardiaque). Elever au carre d'un seul cote rendrait les
+   deux moities incomparables dans la meme carte, et l'ACWR melangerait deux
+   echelles. Tout passe donc par cette fonction.
+
+   Le RPE est BORNE a 10 : la charge Strava de repli (`act.charge`, issue d'un
+   suffer score) n'est pas un produit RPE × duree, on en deduit l'intensite
+   implicite — et une valeur aberrante ne doit pas exploser au carre. */
+function _uaFoster(rpe, durMin){
+  var r = parseFloat(rpe);
+  if(!isFinite(r) || r <= 0 || !isFinite(durMin) || durMin <= 0) return null;
+  if(r > 10) r = 10;
+  return Math.round(r * r * durMin);
+}
+
 function _stravaChargeEstimate(act, ddn){
   var durMin = (act.duree_s||0)/60;
   if(durMin<1) return null;
   var donnees = act.donnees||{};
-  // 1) FC → RPE estimé × durée
+  // 1) FC → RPE estimé, puis la MEME regle que les seances declarees
   var rpe = _stravaRpeFromHr(donnees.avg_hr, ddn);
-  if(rpe) return Math.round(rpe*durMin);
-  // 2) Charge pré-calculée en DB (suffer_score×5 ou durée×intensité type)
-  return act.charge||null;
+  if(rpe) return _uaFoster(rpe, durMin);
+  /* 2) Charge pre-calculee en DB (suffer_score×5 ou duree×intensite type).
+     Ce n'est pas un produit RPE × duree : on en deduit l'INTENSITE IMPLICITE
+     — charge / duree — et l'on reapplique la meme regle. Sans cela, cette
+     charge-la resterait lineaire au milieu d'une carte quadratique. */
+  if(!act.charge) return null;
+  return _uaFoster(act.charge / durMin, durMin);
 }
 
 /* ── Helpers sémantiques feedback ──────────────────────────────────
@@ -1756,7 +1792,7 @@ function _buildUaMap(){
       return;
     }
     if(_fbIsCharge(fb)){
-      map[ev.date] = (map[ev.date]||0) + fb.rpe * fb.duree_min;
+      map[ev.date] = (map[ev.date]||0) + (_uaFoster(fb.rpe, fb.duree_min) || 0);
       return; // les activites liees sont absorbees par le feedback
     }
     linkedList.forEach(function(act){
@@ -1884,7 +1920,13 @@ function _renderBilanCharge(){
     _adhHtml = '<span style="font-size:.72rem;font-weight:600;color:'+_adhCol+';margin-left:auto;">Adhérence 30j : '+_adhPct+'% ('+_adhDone+'/'+_adhPast.length+')</span>';
   }
 
-  var html = '<div class="bilan-foster"><div class="bilan-foster-title" style="display:flex;align-items:center;gap:8px;">📊 Bilan de charge'+_adhHtml+'</div>';
+  /* La formule est NOMMEE a l'ecran : les UA n'ont plus la meme grandeur
+     qu'avec le Foster classique — a RPE 8, une seance pese huit fois plus.
+     Sans cette mention, un chiffre lu ailleurs ou releve avant le changement
+     se comparerait a celui-ci sans qu'on voie qu'ils ne parlent pas de la
+     meme chose. */
+  var html = '<div class="bilan-foster"><div class="bilan-foster-title" style="display:flex;align-items:center;gap:8px;">📊 Bilan de charge'+_adhHtml+'</div>'
+    + '<div class="bilan-foster-formule">UA = RPE² × durée (min) — Foster au carré</div>';
 
   // Carte par semaine
   activeWeeks.forEach(function(mon, wi){
@@ -1958,8 +2000,13 @@ function _renderBilanCharge(){
           + '<div class="bilan-acwr-bar-wrap">'
           + '<div class="bilan-acwr-marker" style="left:'+markerPct+'%;background:'+ab.color+';"></div>'
           + '</div>'
+          /* Ces bornes viennent de la litterature du sRPE LINEAIRE. Aucune
+             n'a ete publiee pour la variante au carre : on les garde faute de
+             mieux, et on le DIT. Les afficher sans le dire les ferait passer
+             pour validees sur cette echelle. */
           + '<div class="bilan-acwr-zones"><span>Sous-charge<br>&lt;0.8</span><span>✓ Sweet spot<br>0.8–1.3</span><span>⚠ Prudence<br>1.3–1.5</span><span>🔴 Risque<br>&gt;1.5</span></div>'
           + '<div class="bilan-prog"><span class="bilan-ind-badge '+ab.cls+'">'+ab.txt+'</span></div>'
+          + '<div class="bilan-acwr-note">Bornes issues du sRPE linéaire — aucune n\'est publiée pour la variante au carré.</div>'
           + '</div>';
   }
 
