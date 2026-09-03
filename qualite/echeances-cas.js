@@ -394,6 +394,77 @@ console.log('\nDéfusionner et choisir');
   ok('le panneau est stylé', /\.cal-ech-panneau\s*\{/.test(html));
 }
 
+console.log('\nLe rendu ENTIER, de bout en bout');
+{
+  /* Les cas precedents appelaient `_echAppliquerFusions` DIRECTEMENT, avec des
+     entrees portant deja `fusion`. Ils etaient verts pendant que le produit ne
+     fusionnait rien : `_renderEcheances` reconstruit chaque entree champ par
+     champ, et `fusion` n'y etait pas recopie. La fusion etait ecrite en base,
+     relue correctement, puis jetee a la frontiere du rendu.
+
+     On execute donc le rendu COMPLET, depuis `_patientObjectifs` jusqu'au HTML
+     produit. Une fonction juste dont personne ne transmet le resultat est
+     exactement ce que les cas isoles ne peuvent pas voir. */
+  var Y0 = js.indexOf('function _echJours');
+  var Y1 = js.indexOf('\nfunction _echDateLisible', Y0);
+  if (Y0 < 0 || Y1 < Y0) { console.log('  ✗ bornes du rendu introuvables'); ko++; }
+
+  function rendre(objectifs){
+    var boite = { style:{}, innerHTML:'' };
+    new Function('_patientObjectifs', '_echTout', '_ECH_MAX', 'escH',
+                 '_echDateLisible', 'document',
+      js.slice(Y0, Y1) + '\n_renderEcheances();')(
+      objectifs, false, 3,
+      function(x){ return String(x); },
+      function(d){ return d; },
+      { getElementById: function(id){ return id === 'calEcheances' ? boite : null; } }
+    );
+    return boite.innerHTML;
+  }
+
+  /* Une date lointaine pour que le J-N reste positif quel que soit le jour. */
+  var D = '2099-10-17';
+  var paire = [
+    { text:'hyrox',   date:D, source:'praticien' },
+    { text:'hyrox V', date:D, source:'athlete', echId:'a1', repris:true,
+      fusion:{ avec:'hyrox', affiche:'praticien' } }
+  ];
+  var h = rendre(paire);
+  ok('une paire fusionnée ne rend qu\'UNE puce',
+     (h.match(/class="cal-ech"/g) || []).length === 1,
+     (h.match(/class="cal-ech"/g) || []).length + ' puce(s)');
+  ok('… au libellé choisi', h.indexOf('hyrox<') >= 0 && h.indexOf('hyrox V') < 0);
+  /* Et le bouton doit ouvrir le panneau, pas reproposer la fusion. */
+  ok('… avec le bouton qui ouvre le panneau', /_echPanneauFusion/.test(h));
+  ok('… et non celui qui la propose', !/_echFusionner/.test(h));
+
+  /* Choisir le libelle de l'athlete doit changer ce qui s'affiche. */
+  var h2 = rendre([paire[0],
+    { text:'hyrox V', date:D, source:'athlete', echId:'a1', repris:true,
+      fusion:{ avec:'hyrox', affiche:'athlete' } }]);
+  ok('choisir le libellé de l\'athlète change l\'affichage', h2.indexOf('hyrox V') >= 0);
+
+  /* Sans fusion : deux puces, et la proposition sur celle de l'athlete. */
+  var h3 = rendre([
+    { text:'hyrox',   date:D, source:'praticien' },
+    { text:'hyrox V', date:D, source:'athlete', echId:'a1', repris:true }
+  ]);
+  ok('sans fusion, les deux puces se voient',
+     (h3.match(/class="cal-ech"/g) || []).length === 2,
+     (h3.match(/class="cal-ech"/g) || []).length + ' puce(s)');
+  ok('… avec le bouton qui propose la fusion', /_echFusionner/.test(h3));
+  ok('… et pas celui du panneau', !/_echPanneauFusion/.test(h3));
+
+  /* Deux objectifs du praticien restent deux puces, sans rien proposer. */
+  var h4 = rendre([
+    { text:'trail', date:D, source:'praticien' },
+    { text:'test VMA', date:D, source:'praticien' }
+  ]);
+  ok('deux objectifs du praticien restent deux puces',
+     (h4.match(/class="cal-ech"/g) || []).length === 2);
+  ok('… sans rien proposer', !/cal-ech-fus/.test(h4));
+}
+
 console.log('\nLe geste se voit tout de suite');
 {
   /* L'ecriture reussissait — le message le disait — et la bande ne changeait

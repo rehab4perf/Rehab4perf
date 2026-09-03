@@ -421,6 +421,19 @@ panneau s'ouvre **sous la bande**, pas en fenêtre modale : c'est un réglage
 d'affichage, pas une décision qui mérite de bloquer l'écran. Il nomme qui a
 saisi quoi — sans ça, choisir n'a pas de sens.
 
+**`_renderEcheances` reconstruit chaque entrée champ par champ** : tout ce qui
+n'y figure pas est **perdu à la frontière du rendu**. `fusion` n'y était pas
+recopié — la fusion était écrite en base, relue correctement, puis jetée une
+ligne plus loin. `_echAppliquerFusions` ne fondait donc rien, et
+`_echDoublonPossible` reproposait une paire déjà fusionnée.
+
+**Le défaut ne se voyait d'aucun fichier de cas** : ils appelaient les deux
+fonctions **directement**, avec des entrées portant déjà `fusion`. Elles étaient
+justes ; c'est le **câblage** qui ne l'était pas. Une fonction correcte dont
+personne ne transmet le résultat est invisible aux cas isolés — d'où
+`rendre()`, qui exécute `_renderEcheances` **en entier**, depuis
+`_patientObjectifs` jusqu'au HTML produit, et compte les puces.
+
 **Un chargement doit pouvoir être rejoué.** `_chargerEcheancesAthlete` ne
 faisait qu'**empiler** : rejouée après une écriture, elle retrouvait l'ancienne
 entrée déjà en place, la voyait dans son garde-fou anti-doublon, et **écartait

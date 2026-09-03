@@ -256,8 +256,17 @@ function _renderEcheances(){
        acceptee, la source ne change plus rien — mais s'il RESTE QUELQUE CHOSE
        A FAIRE : une echeance declaree par l'athlete et pas encore prise en
        compte porte une marque, et disparait des qu'on l'accepte. */
+    /* `fusion` DOIT etre recopie. Cette projection reconstruit chaque entree
+       champ par champ : tout ce qui n'y figure pas est perdu a la frontiere du
+       rendu. La fusion etait ecrite en base, relue correctement, puis jetee
+       ici — le lien n'atteignait jamais `_echAppliquerFusions`, qui ne fondait
+       donc rien, et `_echDoublonPossible` reproposait une paire deja fusionnee.
+
+       Le defaut ne se voyait pas des fichiers de cas : ils appelaient les deux
+       fonctions DIRECTEMENT, avec des entrees portant `fusion`. Elles etaient
+       justes ; c'est le cablage qui ne l'etait pas. */
     return { text:o.text, date:o.date, jours:_echJours(o.date),
-             kind:'sport', echId:o.echId, source:o.source,
+             kind:'sport', echId:o.echId, source:o.source, fusion:o.fusion || null,
              aVoir:o.source === 'athlete' && !o.repris };
   }).filter(function(o){ return o.jours !== null && o.jours >= 0; })
     .sort(function(x,y){ return x.jours - y.jours; });
