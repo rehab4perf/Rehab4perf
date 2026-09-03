@@ -386,9 +386,31 @@ les cachait toutes les deux derrière un libellé unique, sans aucun moyen de vo
 ce qu'il y avait dessous.
 
 Seul le praticien sait si c'est un doublon. La bande **montre les deux**, et
-propose de fusionner uniquement quand la configuration s'y prête : deux
-échéances, même jour, **deux sources**. Le bouton n'apparaît que sur celle de
-l'athlète — c'est sa ligne que la fusion réécrit.
+propose de fusionner.
+
+**La source n'entre PAS dans la règle**, et c'est une correction. Un jet
+n'acceptait que praticien + athlète — or deux échéances du même jour viennent
+souvent des **deux déclarations de l'athlète** (« hyrox V » puis « hyrox »), et
+c'est précisément ce doublon-là qu'on veut réduire. La configuration qui compte
+est « deux échéances, un jour », pas leur origine.
+
+**Le partenaire se désigne par son IDENTIFIANT** quand il en a un. `avec` ne
+porte qu'un **libellé**, et un libellé ne désigne rien de sûr : le partenaire
+survivait dès qu'il n'était pas un objectif de bilan — deux puces malgré la
+fusion. `avecId` le nomme ; `avec` demeure comme repli, un objectif de bilan
+vivant dans un JSON sans identifiant, et fait vivre les fusions déjà écrites.
+
+**À trois échéances le même jour, rien n'est proposé** : on ne saurait pas
+laquelle absorber, et choisir à la place du praticien serait pire que ne rien
+offrir.
+
+**Le bouton n'apparaît que sur une ligne qui peut PORTER la fusion**, c'est-à-dire
+une ligne `athlete_objectifs`. Sur deux objectifs de bilan le même jour, il n'y
+a rien où inscrire le lien : mieux vaut pas de bouton qu'un bouton qui ne fait
+rien.
+
+**Une entrée qui porte une fusion n'est jamais absorbée.** Sans ce garde, deux
+fusions qui se désignent l'une l'autre videraient la bande.
 
 **Le bouton vit HORS de la puce.** Un `<button>` imbriqué dans un `<button>`
 n'est pas cliquable, et le balisage est invalide.

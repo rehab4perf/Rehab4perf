@@ -216,49 +216,42 @@ console.log('\nLa fusion des deux sources');
 
 console.log('\nDeux échéances le même jour : les DEUX se voient');
 {
-  /* Le premier jet les fondait tout seul — meme jour, deux sources, une puce.
-     C'est l'inverse de ce qu'il faut : deux echeances le meme jour sont souvent
-     deux choses DIFFERENTES, et les fondre les cachait toutes les deux derriere
-     un libelle unique, sans moyen de voir ce qu'il y avait dessous. */
   ok('plus aucune fusion automatique', !/_echFondreParDate/.test(js));
 
-  var D0 = js.indexOf('function _echDoublonPossible');
-  var D1 = js.indexOf('\nfunction _renderEcheances', D0);
-  if (D0 < 0 || D1 < D0) { console.log('  ✗ bornes de _echDoublonPossible introuvables'); ko++; }
-  var aide = new Function(js.slice(D0, D1)
-    + '\nreturn { doublon:_echDoublonPossible, libelle:_echLibellePraticien };')();
+  var D0 = js.indexOf('function _echPartenaire');
+  var D1 = js.indexOf('\n/* Une entree ABSORBEE', D0);
+  if (D0 < 0 || D1 < D0) { console.log('  ✗ bornes de _echPartenaire introuvables'); ko++; }
+  var part = new Function(js.slice(D0, D1) + '\nreturn _echPartenaire;')();
 
-  var prat = function (t, d) { return { text:t, date:d, source:'praticien' }; };
-  var athl = function (t, d, id) { return { text:t, date:d, source:'athlete', echId:id||'a1' }; };
+  var e = function (t, d, src, id, fus) {
+    return { text:t, date:d, source:src, echId:id, fusion:fus || null };
+  };
 
-  /* La fusion n'est PROPOSEE que dans la configuration qui s'y prete : deux
-     echeances, meme jour, deux sources. */
-  var L = [prat('hyrox', '2026-10-17'), athl('hyrox V', '2026-10-17', 'a7')];
-  ok('la fusion est proposée sur l\'échéance de l\'athlète', aide.doublon(L, L[1]));
-  /* JAMAIS sur celle du praticien : c'est la ligne de l'athlete qu'on reecrit.
-     On lui donne artificiellement un identifiant — sinon le refus viendrait de
-     son absence, et le controle passerait pour une mauvaise raison. */
-  var pratAvecId = { text:'hyrox', date:'2026-10-17', source:'praticien', echId:'p1' };
-  ok('… et jamais sur celle du praticien',
-     !aide.doublon([pratAvecId, L[1]], pratAvecId));
+  /* La SOURCE n'entre pas dans la regle. Deux echeances du meme jour viennent
+     souvent des DEUX declarations de l'athlete — « hyrox V » puis « hyrox » —
+     et c'est precisement ce doublon-la qu'on veut pouvoir reduire. */
+  var L = [e('hyrox', '2099-10-17', 'athlete', 5), e('hyrox V', '2099-10-17', 'athlete', 4)];
+  ok('deux déclarations de l\'athlète ont un partenaire', !!part(L, L[0]));
+  var L2 = [e('hyrox', '2099-10-17', 'praticien'), e('hyrox V', '2099-10-17', 'athlete', 4)];
+  ok('… comme un objectif du bilan et une déclaration', !!part(L2, L2[1]));
 
-  var L2 = [prat('hyrox', '2026-10-17'), athl('trail', '2026-10-18', 'a8')];
-  ok('deux dates différentes ne proposent rien', !aide.doublon(L2, L2[1]));
-  /* Deux declarations de l'ATHLETE le meme jour ne sont pas un doublon
-     inter-sources : il n'y a rien du praticien a adopter. Sans le filtre sur la
-     source, la ligne se trouverait elle-meme et se proposerait a la fusion. */
-  var L3 = [athl('course A', '2026-10-17', 'a1'), athl('course B', '2026-10-17', 'a2')];
-  ok('deux déclarations de l\'athlète non plus', !aide.doublon(L3, L3[0]));
-  ok('… et une échéance seule ne se trouve pas elle-même',
-     !aide.doublon([L3[0]], L3[0]));
-  /* Sans identifiant, il n'y a rien a reecrire. */
-  var L4 = [prat('hyrox', '2026-10-17'), { text:'x', date:'2026-10-17', source:'athlete' }];
-  ok('une échéance sans identifiant ne se fusionne pas', !aide.doublon(L4, L4[1]));
-
-  /* Le libelle adopte est celui du PRATICIEN — le nom officiel. */
-  ok('le libellé retenu est celui du praticien',
-     aide.libelle(L, '2026-10-17') === 'hyrox', aide.libelle(L, '2026-10-17'));
-  ok('… et rien s\'il n\'y en a pas', aide.libelle(L3, '2026-10-17') === '');
+  /* Une seule echeance ce jour-la : rien a fusionner. */
+  ok('une échéance seule n\'a pas de partenaire', !part([L[0]], L[0]));
+  /* Des dates differentes ne se rejoignent jamais. */
+  /* On passe l'ELEMENT de la liste, pas une copie : `_echPartenaire` s'ecarte
+     lui-meme par identite (`x !== o`), et une copie se prendrait pour sa propre
+     partenaire. */
+  var LD = [e('a', '2099-10-17', 'athlete', 1), e('b', '2099-10-18', 'athlete', 2)];
+  ok('deux dates différentes non plus', !part(LD, LD[0]));
+  /* A TROIS, on ne saurait pas laquelle absorber : on ne propose rien plutot
+     que de choisir a la place du praticien. */
+  var L3 = [e('a', '2099-10-17', 'athlete', 1), e('b', '2099-10-17', 'athlete', 2),
+            e('c', '2099-10-17', 'athlete', 3)];
+  ok('à trois, rien n\'est proposé', !part(L3, L3[0]));
+  /* Une paire deja fusionnee ne se repropose pas, ni ne sert de partenaire. */
+  var dejaFus = e('hyrox', '2099-10-17', 'athlete', 5, { avec:'hyrox V', avecId:4, affiche:'moi' });
+  ok('une échéance fusionnée ne se repropose pas', !part([dejaFus, L[1]], dejaFus));
+  ok('… et ne sert pas de partenaire', !part([dejaFus, L[1]], L[1]));
 }
 
 console.log('\nFusionner : ce que le geste écrit');
@@ -270,14 +263,17 @@ console.log('\nFusionner : ce que le geste écrit');
   /* Le geste relie deux echeances du patient : il se confirme, et la
      confirmation nomme les deux libelles. */
   ok('elle demande confirmation', /confirm\(/.test(f));
-  ok('… en nommant les deux libellés', /athlete \? athlete\.text/.test(f) && /libelle/.test(f));
+  ok('… en nommant les deux libellés', /moi\.text/.test(f) && /autre\.text/.test(f));
   /* Et elle dit que RIEN n'est perdu — c'est ce qui distingue cette version de
      la premiere, qui ecrasait le libelle de l'athlete. */
   ok('… et en disant que les deux sont conservés', /libellés sont conservés/.test(f));
-  /* Fusionner vers rien relierait l'echeance a un libelle absent. */
-  ok('elle refuse de fusionner vers un libellé vide', /if\(!libelle\)/.test(f));
-  /* Elle pose le lien ET la prise en compte, en une seule ecriture. */
-  ok('elle pose le lien', /fusion:\{ avec:libelle/.test(f));
+  /* Fusionner sans partenaire relierait l'echeance a rien. */
+  ok('elle refuse de fusionner sans partenaire', /if\(!moi \|\| !autre\)/.test(f));
+  /* Elle pose le lien ET la prise en compte, en une seule ecriture. Le
+     partenaire est designe par son IDENTIFIANT quand il en a un : un libelle ne
+     designe rien de sur. */
+  ok('elle pose le lien', /fusion:\{ avec:autre\.text/.test(f));
+  ok('… par identifiant quand il en a un', /avecId:\(autre\.echId != null \? autre\.echId : null\)/.test(f));
   ok('… et la prise en compte', /repris_at:/.test(f));
 
   /* L'ecriture elle-meme est partagee par les trois gestes. */
@@ -328,14 +324,16 @@ console.log('\nFusionner sans rien détruire');
   ok('… au libellé choisi', r[0] && r[0].text === 'hyrox', r[0] && r[0].text);
   /* Les DEUX libelles restent portes par la puce : c'est ce que le panneau
      affiche pour permettre de choisir. */
-  ok('… en gardant les deux libellés', r[0] && r[0].libPrat === 'hyrox' && r[0].libAthl === 'hyrox V');
+  ok('… en gardant les deux libellés', r[0] && r[0].libAutre === 'hyrox' && r[0].libMoi === 'hyrox V');
 
   var r2 = appliquer([prat('hyrox', '2026-10-17'), athlF('hyrox V', '2026-10-17', 'hyrox', 'athlete')]);
   ok('choisir le libellé de l\'athlète le fait afficher', r2[0] && r2[0].text === 'hyrox V', r2[0] && r2[0].text);
   /* Une valeur inconnue ne doit pas laisser la puce sans libelle : on retombe
      sur le nom officiel. */
+  /* Une valeur inconnue vaut « mon libelle » : c'est celui de la ligne qu'on
+     lit, jamais un champ vide. */
   var r3 = appliquer([prat('hyrox', '2026-10-17'), athlF('hyrox V', '2026-10-17', 'hyrox', 'nimporte')]);
-  ok('un choix inconnu retombe sur le libellé officiel', r3[0] && r3[0].text === 'hyrox');
+  ok('un choix inconnu retombe sur le libellé propre', r3[0] && r3[0].text === 'hyrox V');
 
   /* Ce qui n'est PAS fusionne passe intact — y compris un objectif du praticien
      d'un autre jour, qu'une comparaison sur le seul texte aurait avale. */
@@ -345,13 +343,7 @@ console.log('\nFusionner sans rien détruire');
   var r5 = appliquer([prat('trail', '2026-10-17'), { text:'autre', date:'2026-10-17', jours:10, source:'athlete', echId:'a2' }]);
   ok('sans fusion, les deux restent séparées', r5.length === 2, r5.length + ' puce(s)');
 
-  /* La fusion n'est plus PROPOSEE sur une paire deja fusionnee. */
-  var D0 = js.indexOf('function _echDoublonPossible');
-  var doub = new Function(js.slice(D0, js.indexOf('\n/* Le libelle du praticien', D0))
-                          + '\nreturn _echDoublonPossible;')();
-  var dejaFus = athlF('hyrox V', '2026-10-17', 'hyrox', 'praticien');
-  ok('une paire déjà fusionnée ne se repropose pas',
-     !doub([prat('hyrox', '2026-10-17'), dejaFus], dejaFus));
+  /* La proposition est verifiee plus haut, sur `_echPartenaire`. */
 }
 
 console.log('\nDéfusionner et choisir');
@@ -360,7 +352,7 @@ console.log('\nDéfusionner et choisir');
   var E1 = js.indexOf('\nfunction _echToutBasculer', E0);
   var z = js.slice(E0, E1);
   /* Trois gestes, une seule ecriture qui les porte tous. */
-  ok('fusionner pose le lien et la prise en compte', /fusion:\{ avec:libelle, affiche:'praticien' \}/.test(z));
+  ok('fusionner pose le lien et la prise en compte', /fusion:\{ avec:autre\.text,/.test(js));
   ok('choisir ne change QUE l\'affichage', /fusion:\{ avec:o\.fusion\.avec, affiche:quoi \}/.test(z));
   ok('séparer remet la fusion à rien', /fusion:null/.test(z));
   /* `repris_at` n'est pas efface : le praticien a bien vu la declaration, se
@@ -379,8 +371,11 @@ console.log('\nDéfusionner et choisir');
   var P1 = js.indexOf('\nwindow._echPanneauFusion', P0);
   var pan = js.slice(P0, P1);
   ok('le panneau montre le libellé du praticien', /o\.fusion\.avec/.test(pan));
-  ok('… et celui de l\'athlète', /o\.libAthl/.test(pan));
-  ok('… en disant qui a saisi quoi', /vous<\/i>/.test(pan) && /athlète<\/i>/.test(pan));
+  ok('… et le sien propre', /escH\(o\.text\)/.test(pan));
+  /* Qui a saisi quoi se lit en clair — sans ca, « choisir » ne veut rien dire.
+     Les deux moities pouvant venir de l'athlete, la mention se deduit de la
+     SOURCE relevee au rendu, elle ne se suppose pas. */
+  ok('… en disant qui a saisi quoi', /qui\(vue\.srcAutre\)/.test(pan) && /qui\(o\.source\)/.test(pan));
   ok('… et propose de séparer', /_echSeparer/.test(pan));
   /* Un second clic referme : le bouton est une bascule, pas un aller simple. */
   ok('un second clic referme le panneau', /if\(deja\)\{ _echFermerPanneau\(\); return; \}/.test(pan));
@@ -412,12 +407,13 @@ console.log('\nLe rendu ENTIER, de bout en bout');
   function rendre(objectifs){
     var boite = { style:{}, innerHTML:'' };
     new Function('_patientObjectifs', '_echTout', '_ECH_MAX', 'escH',
-                 '_echDateLisible', 'document',
+                 '_echDateLisible', 'document', '_dernierRenduEch',
       js.slice(Y0, Y1) + '\n_renderEcheances();')(
       objectifs, false, 3,
       function(x){ return String(x); },
       function(d){ return d; },
-      { getElementById: function(id){ return id === 'calEcheances' ? boite : null; } }
+      { getElementById: function(id){ return id === 'calEcheances' ? boite : null; } },
+      []
     );
     return boite.innerHTML;
   }
@@ -456,13 +452,41 @@ console.log('\nLe rendu ENTIER, de bout en bout');
   ok('… et pas celui du panneau', !/_echPanneauFusion/.test(h3));
 
   /* Deux objectifs du praticien restent deux puces, sans rien proposer. */
+  /* Le partenaire designe par IDENTIFIANT — la forme qu'ecrit le code actuel.
+     Le repli par libelle masquait ce chemin : ici les textes ne se ressemblent
+     pas, seul l'identifiant relie les deux. */
+  var hId = rendre([
+    { text:'hyrox V', date:D, source:'athlete', echId:4, repris:true },
+    { text:'hyrox',   date:D, source:'athlete', echId:5, repris:true,
+      fusion:{ avec:'hyrox V', avecId:4, affiche:'moi' } }
+  ]);
+  ok('le partenaire désigné par identifiant est absorbé',
+     (hId.match(/class="cal-ech"/g) || []).length === 1,
+     (hId.match(/class="cal-ech"/g) || []).length + ' puce(s)');
+  ok('… et le libellé choisi est celui qu\'on garde', hId.indexOf('hyrox<') >= 0);
+
+  /* Deux fusions qui se DESIGNENT L'UNE L'AUTRE : sans le garde, chacune
+     absorberait l'autre et la bande se viderait. */
+  var hCroise = rendre([
+    { text:'A', date:D, source:'athlete', echId:1, repris:true, fusion:{ avec:'B', avecId:2, affiche:'moi' } },
+    { text:'B', date:D, source:'athlete', echId:2, repris:true, fusion:{ avec:'A', avecId:1, affiche:'moi' } }
+  ]);
+  ok('deux fusions croisées ne vident pas la bande',
+     (hCroise.match(/class="cal-ech"/g) || []).length === 2,
+     (hCroise.match(/class="cal-ech"/g) || []).length + ' puce(s)');
+
+  /* Deux objectifs du praticien le meme jour : ils restent DEUX puces, et la
+     fusion leur est proposee comme aux autres — la source n'entre pas dans la
+     regle, c'est au praticien de dire si c'est un doublon. */
   var h4 = rendre([
     { text:'trail', date:D, source:'praticien' },
     { text:'test VMA', date:D, source:'praticien' }
   ]);
   ok('deux objectifs du praticien restent deux puces',
      (h4.match(/class="cal-ech"/g) || []).length === 2);
-  ok('… sans rien proposer', !/cal-ech-fus/.test(h4));
+  /* Sans identifiant, il n'y a rien a reecrire : le bouton ne s'affiche que sur
+     une ligne qui peut porter la fusion. */
+  ok('… mais sans identifiant, rien à proposer', !/cal-ech-fus/.test(h4));
 }
 
 console.log('\nLe geste se voit tout de suite');

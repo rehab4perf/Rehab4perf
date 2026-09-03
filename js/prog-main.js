@@ -186,6 +186,8 @@ function _dayObjectifLabelHtml(dateStr, cls){
 var _ECH_MAX = 3;
 var _echTout = false;
 
+var _dernierRenduEch = [];
+
 function _echJours(dateStr){
   var d = new Date(dateStr + 'T00:00:00');
   if(isNaN(d)) return null;
@@ -197,48 +199,69 @@ function _echJours(dateStr){
 
    Un premier jet le faisait : meme jour, deux sources, une seule puce. C'est
    l'inverse de ce qu'il faut — deux echeances le meme jour sont souvent deux
-   choses DIFFERENTES, et les fondre les cachait toutes les deux derriere un
-   libelle unique, sans moyen de voir ce qu'il y avait dessous.
+   choses DIFFERENTES. Seul le praticien sait si c'est un doublon : on MONTRE
+   les deux, et on lui propose de fusionner.
 
-   Seul le praticien sait si c'est un doublon. On MONTRE donc les deux, et on
-   lui propose de fusionner quand la configuration s'y prete.
+   LA SOURCE N'ENTRE PAS DANS LA REGLE, et c'est une correction. Le jet
+   precedent n'acceptait que praticien + athlete. Or deux echeances du meme jour
+   viennent souvent des DEUX DECLARATIONS DE L'ATHLETE — « hyrox V » puis
+   « hyrox » — et c'est precisement ce doublon-la qu'on veut pouvoir reduire. La
+   configuration qui compte est « deux echeances, un jour », pas leur origine.
 
-   La fusion est REVERSIBLE et ne detruit rien : elle vit dans la colonne
-   `fusion` de la ligne de l'athlete, a cote de son texte, jamais a la place.
-   Elle porte le libelle du praticien — qui n'a pas d'identifiant stable, vivant
-   dans le JSON d'un bilan — et lequel des deux s'affiche. */
-function _echDoublonPossible(liste, o){
-  if(o.source !== 'athlete' || !o.echId || o.fusion) return false;
-  return liste.some(function(x){ return x.date === o.date && x.source === 'praticien'; });
+   LE PARTENAIRE SE DESIGNE PAR SON IDENTIFIANT quand il en a un. `avec` ne
+   porte qu'un LIBELLE, et un libelle ne designe rien de sur : le partenaire
+   survivait quand il n'etait pas un objectif de bilan. `avecId` le nomme.
+   `avec` demeure — un objectif de bilan vit dans un JSON et n'a pas d'id — et
+   sert de repli, ce qui fait aussi vivre les fusions ecrites avant. */
+
+/* Le partenaire d'une echeance : l'AUTRE echeance du meme jour, s'il n'y en a
+   qu'une. A trois, on ne saurait pas laquelle absorber — on ne propose rien
+   plutot que de choisir a la place du praticien. */
+function _echPartenaire(liste, o){
+  if(!o || o.fusion) return null;
+  var memes = liste.filter(function(x){
+    return x !== o && x.date === o.date && !x.fusion;
+  });
+  return memes.length === 1 ? memes[0] : null;
 }
 
-/* Le libelle du praticien du meme jour : c'est celui que la fusion relie. */
-function _echLibellePraticien(liste, date){
-  var p = liste.filter(function(x){ return x.date === date && x.source === 'praticien'; })[0];
-  return p ? p.text : '';
-}
-
-/* Une paire fusionnee n'occupe qu'UNE puce : on ecarte l'objectif du praticien
-   dont le libelle est repris par la fusion, et la ligne de l'athlete porte les
-   deux. L'ecart se fait sur `texte + date`, la seule facon de designer un
-   objectif de bilan. */
+/* Une entree ABSORBEE disparait de la bande : c'est l'autre moitie de la paire.
+   `affiche` dit lequel des deux libelles porte la puce — « moi » celui de la
+   ligne qui porte la fusion, « autre » celui du partenaire. Les deux valeurs
+   d'avant, `athlete` et `praticien`, valaient exactement cela et sont relues
+   telles quelles : aucune fusion deja ecrite n'est perdue. */
 function _echAppliquerFusions(liste){
-  var repris = {};
+  var parId = {}, parTexte = {}, srcDe = {};
   liste.forEach(function(o){
-    if(o.source === 'athlete' && o.fusion && o.fusion.avec){
-      repris[o.fusion.avec + '|' + o.date] = 1;
-    }
+    if(!o.fusion) return;
+    if(o.fusion.avecId !== undefined && o.fusion.avecId !== null) parId[String(o.fusion.avecId)] = 1;
+    else if(o.fusion.avec) parTexte[o.fusion.avec + '|' + o.date] = 1;
+  });
+  /* La source du partenaire est relevee AVANT son retrait : le panneau la
+     nomme, et sans elle « choisir » ne veut rien dire. */
+  liste.forEach(function(o){
+    if(o.fusion) return;
+    var cle = (o.echId != null && parId[String(o.echId)]) ? 'id:' + o.echId
+            : (parTexte[o.text + '|' + o.date] ? 'txt:' + o.text + '|' + o.date : null);
+    if(cle) srcDe[cle] = o.source;
   });
   return liste.filter(function(o){
-    return !(o.source === 'praticien' && repris[o.text + '|' + o.date]);
+    /* Une entree qui PORTE une fusion n'est jamais absorbee — sans ce garde,
+       deux fusions qui se designent l'une l'autre videraient la bande. */
+    if(o.fusion) return true;
+    if(o.echId != null && parId[String(o.echId)]) return false;
+    return !parTexte[o.text + '|' + o.date];
   }).map(function(o){
-    if(o.source !== 'athlete' || !o.fusion) return o;
-    /* « praticien » par defaut : c'est le nom officiel, celui du courrier. */
-    var affiche = o.fusion.affiche === 'athlete' ? o.text : (o.fusion.avec || o.text);
-    return { text:affiche, date:o.date, jours:o.jours, kind:o.kind, source:o.source,
+    if(!o.fusion) return o;
+    var montrerAutre = o.fusion.affiche === 'autre' || o.fusion.affiche === 'praticien';
+    var cle = (o.fusion.avecId !== undefined && o.fusion.avecId !== null)
+            ? 'id:' + o.fusion.avecId : 'txt:' + (o.fusion.avec || '') + '|' + o.date;
+    return { text: montrerAutre ? (o.fusion.avec || o.text) : o.text,
+             date:o.date, jours:o.jours, kind:o.kind, source:o.source,
              echId:o.echId, aVoir:o.aVoir, fusionnee:true,
-             libPrat:o.fusion.avec || '', libAthl:o.text,
-             affiche:o.fusion.affiche === 'athlete' ? 'athlete' : 'praticien' };
+             libMoi:o.text, libAutre:o.fusion.avec || '',
+             srcMoi:o.source, srcAutre:srcDe[cle] || '',
+             affiche: montrerAutre ? 'autre' : 'moi' };
   });
 }
 
@@ -260,7 +283,7 @@ function _renderEcheances(){
        champ par champ : tout ce qui n'y figure pas est perdu a la frontiere du
        rendu. La fusion etait ecrite en base, relue correctement, puis jetee
        ici — le lien n'atteignait jamais `_echAppliquerFusions`, qui ne fondait
-       donc rien, et `_echDoublonPossible` reproposait une paire deja fusionnee.
+       donc rien, et le bouton reproposait une paire deja fusionnee.
 
        Le defaut ne se voyait pas des fichiers de cas : ils appelaient les deux
        fonctions DIRECTEMENT, avec des entrees portant `fusion`. Elles etaient
@@ -271,8 +294,17 @@ function _renderEcheances(){
   }).filter(function(o){ return o.jours !== null && o.jours >= 0; })
     .sort(function(x,y){ return x.jours - y.jours; });
 
-  liste.forEach(function(o){ o.doublon = _echDoublonPossible(liste, o); });
+  /* La fusion s'ECRIT dans la ligne de l'athlete : elle ne peut donc etre
+     proposee que sur une entree qui en est une. Un objectif de bilan vit dans
+     un JSON sans identifiant — il n'y a rien ou l'inscrire. Sur deux objectifs
+     du bilan le meme jour, le bouton n'apparait pas : mieux vaut pas de bouton
+     qu'un bouton qui ne fait rien. */
+  liste.forEach(function(o){ o.doublon = !!o.echId && !!_echPartenaire(liste, o); });
   liste = _echAppliquerFusions(liste);
+  /* Le panneau a besoin de la SOURCE du partenaire pour la nommer — or ce
+     partenaire vient d'etre retire de la liste. On garde donc le resultat du
+     dernier rendu, ou l'information a ete relevee avant le retrait. */
+  _dernierRenduEch = liste;
 
   if(!liste.length){ box.style.display = 'none'; box.innerHTML = ''; return; }
   box.style.display = '';
@@ -423,16 +455,26 @@ function _echRelire(){
 
 function _echFusionner(id, dateStr){
   if(!id) return;
-  var liste = (_patientObjectifs || []);
-  var athlete = liste.filter(function(o){ return String(o.echId) === String(id); })[0];
-  var libelle = _echLibellePraticien(liste, dateStr);
-  /* Fusionner vers rien relierait l'echeance a un libelle absent. */
-  if(!libelle){ if(typeof _showToast === 'function') _showToast('Aucun objectif du praticien ce jour-là'); return; }
+  var liste = (_patientObjectifs || []).filter(function(o){
+    return o.date === dateStr && _echJours(o.date) !== null && _echJours(o.date) >= 0;
+  });
+  var moi = liste.filter(function(o){ return String(o.echId) === String(id); })[0];
+  var autre = _echPartenaire(liste, moi);
+  /* Fusionner sans partenaire relierait l'echeance a rien. */
+  if(!moi || !autre){
+    if(typeof _showToast === 'function') _showToast('Aucune autre échéance ce jour-là');
+    return;
+  }
   if(!confirm('Fusionner les deux échéances du ' + dateStr + ' ?\n\n'
-    + '« ' + (athlete ? athlete.text : '') + ' » et « ' + libelle + ' » n\'occuperont plus qu\'une ligne.\n'
+    + '« ' + moi.text + ' » et « ' + autre.text + ' » n\'occuperont plus qu\'une ligne.\n'
     + 'Les deux libellés sont conservés : vous pourrez choisir lequel s\'affiche, ou les séparer.')) return;
+  /* Le libelle du PRATICIEN prend la main par defaut — c'est le nom officiel,
+     celui qui part au courrier. Entre deux declarations de l'athlete, on garde
+     celui qu'on vient de designer. */
   _echEcrireFusion(id, { repris_at:new Date().toISOString(),
-                         fusion:{ avec:libelle, affiche:'praticien' } },
+                         fusion:{ avec:autre.text,
+                                  avecId:(autre.echId != null ? autre.echId : null),
+                                  affiche:(autre.source === 'praticien' ? 'autre' : 'moi') } },
                    '🎯 Échéances fusionnées')
     .then(function(ok){ if(ok) _echRelire(); });
 }
@@ -453,19 +495,21 @@ function _echPanneauFusion(id){
   var deja = document.getElementById('echFusionPanneau');
   /* Un second clic referme : le bouton est une bascule, pas un aller simple. */
   if(deja){ _echFermerPanneau(); return; }
-  var choix = o.fusion.affiche === 'athlete' ? 'athlete' : 'praticien';
+  var vue = (_dernierRenduEch || []).filter(function(x){ return String(x.echId) === String(id); })[0] || {};
+  var choix = (o.fusion.affiche === 'athlete' || o.fusion.affiche === 'moi') ? 'moi' : 'autre';
+  var qui = function(src){ return src === 'praticien' ? 'vous' : (src === 'athlete' ? 'athlète' : ''); };
   var d = document.createElement('div');
   d.id = 'echFusionPanneau';
   d.className = 'cal-ech-panneau';
   d.innerHTML =
       '<div class="cal-ech-pan-t">Échéance du ' + escH(_echDateLisible(o.date)) + '</div>'
     + '<div class="cal-ech-pan-s">Deux échéances fusionnées. Laquelle afficher ?</div>'
-    + '<label class="cal-ech-pan-l"><input type="radio" name="echAff" value="praticien"'
-    +   (choix === 'praticien' ? ' checked' : '') + ' onchange="_echChoisirLibelle(\'' + id + '\',\'praticien\')">'
-    +   '<span><b>' + escH(o.fusion.avec || '—') + '</b><i>vous</i></span></label>'
-    + '<label class="cal-ech-pan-l"><input type="radio" name="echAff" value="athlete"'
-    +   (choix === 'athlete' ? ' checked' : '') + ' onchange="_echChoisirLibelle(\'' + id + '\',\'athlete\')">'
-    +   '<span><b>' + escH(o.libAthl || o.text) + '</b><i>athlète</i></span></label>'
+    + '<label class="cal-ech-pan-l"><input type="radio" name="echAff" value="autre"'
+    +   (choix === 'autre' ? ' checked' : '') + ' onchange="_echChoisirLibelle(\'' + id + '\',\'autre\')">'
+    +   '<span><b>' + escH(o.fusion.avec || '—') + '</b><i>' + qui(vue.srcAutre) + '</i></span></label>'
+    + '<label class="cal-ech-pan-l"><input type="radio" name="echAff" value="moi"'
+    +   (choix === 'moi' ? ' checked' : '') + ' onchange="_echChoisirLibelle(\'' + id + '\',\'moi\')">'
+    +   '<span><b>' + escH(o.text) + '</b><i>' + qui(o.source) + '</i></span></label>'
     + '<button class="cal-ech-pan-sep" onclick="_echSeparer(\'' + id + '\')">Séparer les deux</button>';
   box.appendChild(d);
 }
