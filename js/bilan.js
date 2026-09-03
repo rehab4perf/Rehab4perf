@@ -12445,4 +12445,47 @@ window.addEventListener('load', function(){
       return sbB.storage.from(IMG_BUCKET).upload(path, file, { upsert: true, contentType: file.type || undefined })
         .then(function(res){
           if(res.error) throw res.error;
-          return 
+          return { path: path, name: file.name, size: file.size, uploadedAt: new Date().toISOString() };
+        });
+    });
+    Promise.allSettled(uploads)
+      .then(function(results){
+        var failCount = 0;
+        results.forEach(function(r){
+          if(r.status === 'fulfilled') list.push(r.value);
+          else { failCount++; console.error('Erreur upload imagerie:', r.reason); }
+        });
+        _imgSetMetaList(type, list);
+        _renderImgFileBox(type);
+        if(failCount) alert(failCount+' fichier(s) n\'ont pas pu être envoyés. Réessayez.');
+      })
+      .finally(function(){ inputEl.value = ''; });
+  };
+
+  window._imgFileDownload = function(type, idx){
+    var meta = _imgMetaList(type)[idx];
+    if(!meta || !meta.path) return;
+    sbB.storage.from(IMG_BUCKET).createSignedUrl(meta.path, 120).then(function(res){
+      if(res.error || !res.data){ alert('Impossible de récupérer le fichier.'); return; }
+      window.open(res.data.signedUrl, '_blank');
+    });
+  };
+
+  window._imgFileRemove = function(type, idx){
+    var list = _imgMetaList(type);
+    var meta = list[idx];
+    if(!meta) return;
+    if(!confirm('Retirer ce fichier ?')) return;
+    sbB.storage.from(IMG_BUCKET).remove([meta.path]).finally(function(){
+      list.splice(idx, 1);
+      _imgSetMetaList(type, list);
+      _renderImgFileBox(type);
+    });
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', window._imgFileRenderAll);
+  } else {
+    window._imgFileRenderAll();
+  }
+})();

@@ -192,4 +192,15 @@ verifie('un test « plus = mieux » n\'est pas touché', 80,
 console.log('\n  Suivi rapide');
 var s0 = src.indexOf('function _renderSuiviRapide');
 var s1 = src.indexOf('\nfunction ', s0 + 10);
-if (s0 < 0 |
+if (s0 < 0 || s1 < s0) { console.error('Bornes du Suivi rapide introuvables.'); process.exit(1); }
+var zoneSR = src.slice(s0, s1);
+/* Le temps de contact etait INJECTE a la main faute de graphique. Il en a un
+   depuis : garder l'injection donnerait DEUX champs portant `dj-t-ca`. */
+verifie('le temps de contact n\'est plus injecté à la main', false,
+  /fields\.push\(\{id:'dj-t-ca'/.test(zoneSR));
+verifie('… et n\'est plus marqué couvert d\'office', false,
+  /coveredIds\['dj-t-ca'\]/.test(zoneSR));
+
+console.log('\n' + '─'.repeat(64));
+if (echecs) { console.log('✗ ' + echecs + ' attente(s) en échec'); process.exit(1); }
+console.log('✓ ' + (18 + 8 + 3) + ' attentes vérifiées');
