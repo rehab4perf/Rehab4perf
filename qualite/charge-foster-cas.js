@@ -1,15 +1,19 @@
 #!/usr/bin/env node
 /* ════════════════════════════════════════════════════════════════════════════
-   Charge d'entraînement — méthode de Foster « au carré »
+   Charge d'entraînement — méthode de Foster
 
-       UA = RPE² × durée (min)          au lieu de RPE × durée
+       UA = RPE × durée (min)
 
-   Le session-RPE est LINÉAIRE en intensité : 100 min à RPE 1 et 10 min à
-   RPE 10 valent tous deux 100 UA. Physiologiquement c'est faux — la séance
-   dure coûte bien davantage. Décision du praticien, prise en connaissance des
-   deux réserves : les seuils affichés (ACWR 0,8–1,3, monotonie, contrainte)
-   viennent du sRPE linéaire, et aucune borne n'est publiée pour cette
-   variante.
+   LA VARIANTE « AU CARRÉ » A ÉTÉ ESSAYÉE PUIS RETIRÉE. L'intuition était
+   bonne : le session-RPE est linéaire en intensité, si bien que 100 min à
+   RPE 1 et 10 min à RPE 10 valent tous deux 100 UA — physiologiquement faux.
+
+   Mais « Foster au carré » n'est pas une méthode publiée, et tous les seuils
+   dont vit ce bilan — zone favorable ACWR 0,8–1,3, monotonie, contrainte —
+   sont calibrés sur la formule linéaire. Entre une intuition juste et un
+   modèle validé, le praticien garde le modèle validé.
+
+   Ce fichier veille donc à ce que le carré ne revienne pas par inadvertance.
 
    UNE SEULE RÈGLE, PARTOUT. La carte de charge mêle deux origines — RPE
    déclaré et RPE estimé depuis la fréquence cardiaque. Élever au carré d'un
@@ -38,15 +42,16 @@ if (a < 0 || b < a) { console.error('Bornes de _uaFoster introuvables.'); proces
 /* eslint-disable no-new-func */
 var ua = new Function(js.slice(a, b) + '\nreturn _uaFoster;')();
 
-console.log('\n  L\'intensité pèse au carré');
-verifie('45 min à RPE 7', 2205, ua(7, 45));
-/* Le cas qui motive tout : a charge lineaire egale, la seance dure doit
-   ressortir bien au-dessus. */
-verifie('10 min à RPE 10 dépassent largement…', 1000, ua(10, 10));
-verifie('… 100 min à RPE 1, que Foster classique égalait', 100, ua(1, 100));
-verifie('un RPE doublé quadruple la charge', 4 * ua(3, 30), ua(6, 30));
-/* La duree, elle, reste LINEAIRE : c'est l'intensite qu'on repondere. */
-verifie('une durée doublée double la charge', 2 * ua(6, 30), ua(6, 60));
+console.log('\n  La formule publiée : RPE × durée');
+verifie('45 min à RPE 7', 315, ua(7, 45));
+/* Le produit est LINEAIRE des deux cotes — c'est la propriete meme de la
+   methode, avec sa limite connue : ces deux seances pesent pareil. */
+verifie('un RPE doublé double la charge', 2 * ua(3, 30), ua(6, 30));
+verifie('une durée doublée aussi', 2 * ua(6, 30), ua(6, 60));
+verifie('10 min à RPE 10 valent 100 UA…', 100, ua(10, 10));
+verifie('… autant que 100 min à RPE 1 — la limite assumée', 100, ua(1, 100));
+/* Le garde qui compte : que le carre ne revienne pas sans decision. */
+verifie('la charge n\'est PAS quadratique', false, /r \* r \* durMin/.test(js));
 
 console.log('\n  Les valeurs impossibles ne produisent pas de charge');
 verifie('sans RPE', null, ua(null, 45));
@@ -56,6 +61,9 @@ verifie('durée absente', null, ua(7, undefined));
 verifie('valeur non numérique', null, ua('abc', 45));
 /* Le RPE est BORNE a 10 : une intensite implicite aberrante, deduite d'une
    charge Strava pre-calculee, ne doit pas exploser au carre. */
+/* Le RPE reste borne a 10 : la charge Strava de repli n'est pas un produit
+   RPE x duree, on en deduit l'intensite implicite, et une valeur aberrante ne
+   doit pas passer telle quelle. */
 verifie('un RPE aberrant est ramené à 10', ua(10, 30), ua(37, 30));
 
 console.log('\n  La même règle des deux côtés de la carte');
@@ -81,21 +89,20 @@ verifie('… et plus par le produit linéaire', false, /fb\.rpe \* fb\.duree_min
 console.log('\n  Ce que l\'écran doit dire');
 /* Les UA n'ont plus la meme grandeur : un chiffre releve avant le changement,
    ou lu dans un autre outil, ne se compare plus au notre. */
-verifie('la formule est nommée sous le titre', true, /UA = RPE² × durée \(min\) — Foster au carré/.test(js));
+verifie('la formule est nommée sous le titre', true, /UA = RPE × durée \(min\) — méthode de Foster/.test(js));
 verifie('… et stylée', true, /\.bilan-foster-formule\s*\{/.test(html));
-/* Afficher les bornes sans dire d'ou elles viennent les ferait passer pour
-   validees sur cette echelle. */
-verifie('les bornes ACWR disent leur origine', true, /Bornes issues du sRPE linéaire/.test(js));
-verifie('… et la note est stylée', true, /\.bilan-acwr-note\s*\{/.test(html));
+/* La note qui prevenait de l'echelle n'a plus d'objet : les bornes affichees
+   sont de nouveau celles de la formule employee. */
+verifie('plus de mise en garde sur l\'échelle', false, /Bornes issues du sRPE linéaire/.test(js));
 
 console.log('\n  Le centre d\'aide suit le même lot');
 /* Une aide qui decrit une formule qui n'existe plus est pire que pas d'aide. */
-verifie('l\'article donne la nouvelle formule', true, /UA = RPE² × durée/.test(aide));
-verifie('… avec le calcul détaillé', true, /7 × 7 × 45 = 2205/.test(aide));
-verifie('la FAQ aussi', true, /45 min à RPE 7 = 2205 UA/.test(aide));
-verifie('… et prévient sur les seuils', true, /aucune borne n\\'a été publiée pour la\s*variante au carré|calibrés sur le Foster classique/.test(aide));
-verifie('plus aucune mention de l\'ancienne formule', false, /45 min à RPE 7 = 315 UA/.test(aide));
+verifie('l\'article donne la formule publiée', true, /UA = RPE × durée/.test(aide));
+verifie('la FAQ aussi', true, /45 min à RPE 7 = 315 UA/.test(aide));
+/* Plus aucune trace de la variante : une aide qui decrirait une formule qui
+   n'est pas celle du calcul est pire que pas d'aide. */
+verifie('plus aucune mention du carré', false, /RPE² × durée|au carré/.test(aide));
 
 console.log('\n' + '─'.repeat(64));
 if (echecs) { console.log('✗ ' + echecs + ' attente(s) en échec'); process.exit(1); }
-console.log('✓ 24 attentes vérifiées');
+console.log('✓ 21 attentes vérifiées');

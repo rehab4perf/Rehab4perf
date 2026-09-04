@@ -512,52 +512,38 @@ côté athlète, la lecture anonyme ne peut pas être restreinte par ligne. C'es
 déjà la posture des tables `athlete_*` ; le correctif est un jeton par patient
 dans le lien de partage, qui dépasse cette table.
 
-## Charge d'entraînement — Foster « au carré »
+## Charge d'entraînement — Foster, et pourquoi PAS le carré
 
 ```bash
 node qualite/charge-foster-cas.js
 ```
 
 ```
-UA = RPE² × durée (min)        au lieu de RPE × durée
+UA = RPE × durée (min)
 ```
 
-**Pourquoi.** Le session-RPE est **linéaire en intensité** : 100 min à RPE 1 et
-10 min à RPE 10 valent tous deux 100 UA. Physiologiquement c'est faux — la
-séance dure coûte bien davantage. C'est la même raison qui fait pondérer
-l'intensité de façon non linéaire dans les TRIMP de Banister et d'Edwards.
+**La variante « au carré » a été essayée puis retirée** — décision du praticien,
+gardée ici pour ne pas être reprise à l'aveugle.
 
-**Décision du praticien, prise en connaissance de deux réserves** — ne pas la
-défaire sans lui :
+L'intuition est bonne : le session-RPE est **linéaire en intensité**, si bien
+que 100 min à RPE 1 et 10 min à RPE 10 valent tous deux 100 UA, ce qui est
+physiologiquement faux. C'est la raison même qui fait pondérer l'intensité de
+façon non linéaire dans les TRIMP de Banister et d'Edwards.
 
-- **« Foster au carré » n'est pas une méthode publiée.** Recherché en français
-  et en anglais : la méthode de Foster est `sRPE × durée`, point. La variante
-  au carré est une décision de ce cabinet, pas une référence.
-- **Les seuils affichés viennent du sRPE linéaire** — zone favorable ACWR
-  0,8–1,3, monotonie, contrainte. Aucune borne n'est publiée pour cette
-  variante. Ils restent affichés faute de mieux, et **l'écran le dit** : ne
-  jamais les présenter comme validés sur cette échelle.
+Mais **« Foster au carré » n'est pas une méthode publiée** — recherché en
+français et en anglais, la méthode de Foster est `sRPE × durée`, point. Et
+**tous les seuils dont vit ce bilan** — zone favorable ACWR 0,8–1,3, monotonie,
+contrainte — sont calibrés sur cette formule. Les garder sous une autre échelle,
+c'est afficher des bornes qui ne veulent plus rien dire.
 
-**Une seule règle, partout — et c'était le point bloquant.** `_buildUaMap` mêle
-deux origines : les séances avec feedback (RPE **déclaré**) et les activités
-Strava (RPE **estimé** depuis la fréquence cardiaque). Élever au carré d'un seul
-côté rendrait les deux moitiés incomparables **dans la même carte**, et l'ACWR
-mélangerait deux échelles. Tout passe donc par `_uaFoster(rpe, durMin)`.
+Entre une intuition juste et un modèle validé, le praticien garde le modèle
+validé. **Ne pas réintroduire le carré sans référence publiée ET sans
+recalibrer les seuils.**
 
-La charge Strava **pré-calculée** (`act.charge`, issue d'un suffer score) n'est
-pas un produit RPE × durée : on en déduit l'**intensité implicite**
-(`charge / durée`) et l'on réapplique la règle. Sans cela elle resterait
-linéaire au milieu d'une carte quadratique.
-
-**Le RPE est borné à 10** : une intensité implicite aberrante ne doit pas
-exploser au carré.
-
-**La formule est nommée à l'écran.** Les UA n'ont plus la même grandeur — à
-RPE 8, une séance pèse huit fois plus qu'avant. Un chiffre relevé avant le
-changement, ou lu dans un autre outil, ne se compare plus au nôtre, et rien
-d'autre ne le dirait. Le centre d'aide (`js/aide-content.js`) est repris dans le
-même lot : une aide qui décrit une formule qui n'existe plus est pire que pas
-d'aide.
+`_uaFoster` demeure : c'est le **seul** endroit où la charge se calcule, et
+c'est ce qui garantit que les deux origines de la carte — RPE déclaré et RPE
+estimé depuis la fréquence cardiaque — restent sur la même échelle. Le RPE y est
+borné à 10, la charge Strava de repli n'étant pas un produit RPE × durée.
 
 ## Générateur CAP (retour à la course)
 

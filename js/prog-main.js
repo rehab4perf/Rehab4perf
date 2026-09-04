@@ -1687,35 +1687,36 @@ function _stravaRpeFromHr(avgHr, ddn){
   } catch(e){ return null; }
 }
 /* ── UA : la charge d'une seance ─────────────────────────────────
-   Methode de Foster « au carre » — decision du praticien :
+   Methode de Foster, telle que publiee :
 
-       UA = RPE² × duree (min)          au lieu de RPE × duree
+       UA = RPE × duree (min)
 
-   POURQUOI. Le session-RPE est LINEAIRE en intensite : 100 min a RPE 1 et
-   10 min a RPE 10 valent tous deux 100 UA. Physiologiquement c'est faux — la
-   seance dure coute bien davantage. C'est la meme raison qui fait ponderer
-   l'intensite de facon non lineaire dans les TRIMP de Banister et d'Edwards.
+   LA VARIANTE « AU CARRE » A ETE ESSAYEE PUIS RETIREE — decision du praticien,
+   et elle merite d'etre gardee en memoire pour ne pas etre reprise a l'aveugle.
 
-   CE QU'ON PERD, et il faut le savoir. Les seuils affiches — zone favorable
-   ACWR 0,8–1,3, monotonie, contrainte — sont calibres sur du sRPE LINEAIRE.
-   Ils restent affiches faute de reference publiee pour cette variante, et
-   l'ecran le dit desormais. Ne pas les presenter comme des bornes validees
-   pour cette formule.
+   L'intuition est bonne : le session-RPE est LINEAIRE en intensite, si bien que
+   100 min a RPE 1 et 10 min a RPE 10 valent tous deux 100 UA — ce qui est
+   physiologiquement faux. C'est la raison meme qui fait ponderer l'intensite de
+   facon non lineaire dans les TRIMP de Banister et d'Edwards.
 
-   UNE SEULE REGLE, PARTOUT. La carte de charge melange deux origines : les
-   seances avec feedback (RPE declare) et les activites Strava (RPE ESTIME
-   depuis la frequence cardiaque). Elever au carre d'un seul cote rendrait les
-   deux moities incomparables dans la meme carte, et l'ACWR melangerait deux
-   echelles. Tout passe donc par cette fonction.
+   Mais « Foster au carre » N'EST PAS UNE METHODE PUBLIEE : recherche en
+   francais et en anglais, la methode de Foster est `sRPE × duree`, point. Et
+   tous les seuils dont vit ce bilan — zone favorable ACWR 0,8–1,3, monotonie,
+   contrainte — sont calibres sur cette formule-la. Les garder sous une autre
+   echelle, c'est afficher des bornes qui ne veulent plus rien dire.
 
-   Le RPE est BORNE a 10 : la charge Strava de repli (`act.charge`, issue d'un
-   suffer score) n'est pas un produit RPE × duree, on en deduit l'intensite
-   implicite — et une valeur aberrante ne doit pas exploser au carre. */
+   Entre une intuition juste et un modele valide, le praticien garde le modele
+   valide. NE PAS reintroduire le carre sans reference publiee ET sans
+   recalibrer les seuils.
+
+   La fonction demeure : elle est le SEUL point ou la charge se calcule, et
+   c'est ce qui garantit que les deux origines de la carte — RPE declare et RPE
+   estime depuis la frequence cardiaque — restent sur la meme echelle. */
 function _uaFoster(rpe, durMin){
   var r = parseFloat(rpe);
   if(!isFinite(r) || r <= 0 || !isFinite(durMin) || durMin <= 0) return null;
   if(r > 10) r = 10;
-  return Math.round(r * r * durMin);
+  return Math.round(r * durMin);
 }
 
 function _stravaChargeEstimate(act, ddn){
@@ -1920,13 +1921,11 @@ function _renderBilanCharge(){
     _adhHtml = '<span style="font-size:.72rem;font-weight:600;color:'+_adhCol+';margin-left:auto;">Adhérence 30j : '+_adhPct+'% ('+_adhDone+'/'+_adhPast.length+')</span>';
   }
 
-  /* La formule est NOMMEE a l'ecran : les UA n'ont plus la meme grandeur
-     qu'avec le Foster classique — a RPE 8, une seance pese huit fois plus.
-     Sans cette mention, un chiffre lu ailleurs ou releve avant le changement
-     se comparerait a celui-ci sans qu'on voie qu'ils ne parlent pas de la
-     meme chose. */
+  /* La formule reste NOMMEE. Elle l'a ete pour signaler un changement d'echelle
+     ; elle le reste parce qu'un chiffre lu dans un autre outil ne se compare au
+     notre que si l'on sait comment chacun le calcule. */
   var html = '<div class="bilan-foster"><div class="bilan-foster-title" style="display:flex;align-items:center;gap:8px;">📊 Bilan de charge'+_adhHtml+'</div>'
-    + '<div class="bilan-foster-formule">UA = RPE² × durée (min) — Foster au carré</div>';
+    + '<div class="bilan-foster-formule">UA = RPE × durée (min) — méthode de Foster</div>';
 
   // Carte par semaine
   activeWeeks.forEach(function(mon, wi){
@@ -2000,13 +1999,8 @@ function _renderBilanCharge(){
           + '<div class="bilan-acwr-bar-wrap">'
           + '<div class="bilan-acwr-marker" style="left:'+markerPct+'%;background:'+ab.color+';"></div>'
           + '</div>'
-          /* Ces bornes viennent de la litterature du sRPE LINEAIRE. Aucune
-             n'a ete publiee pour la variante au carre : on les garde faute de
-             mieux, et on le DIT. Les afficher sans le dire les ferait passer
-             pour validees sur cette echelle. */
           + '<div class="bilan-acwr-zones"><span>Sous-charge<br>&lt;0.8</span><span>✓ Sweet spot<br>0.8–1.3</span><span>⚠ Prudence<br>1.3–1.5</span><span>🔴 Risque<br>&gt;1.5</span></div>'
           + '<div class="bilan-prog"><span class="bilan-ind-badge '+ab.cls+'">'+ab.txt+'</span></div>'
-          + '<div class="bilan-acwr-note">Bornes issues du sRPE linéaire — aucune n\'est publiée pour la variante au carré.</div>'
           + '</div>';
   }
 

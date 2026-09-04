@@ -4008,7 +4008,7 @@ function _buildChartB(valsA, dates, opts){
     var y=inF?(VH-PAD.bottom)-((v-minV)/rangeV)*(VH-PAD.top-PAD.bottom):(VH-PAD.bottom);
     return {x:x,y:y,v:v,date:dates[i],valid:inF};
   });
-  var html = '<defs><linearGradient id="gb'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent)" stop-opacity="0.28"/><stop offset="100%" stop-color="var(--accent)" stop-opacity="0.02"/></linearGradient></defs>';
+  var html = '';
   // Grille
   var step=Math.max(1,Math.ceil((maxV-minV)/4));
   for(var gv=Math.round(minV);gv<=maxV+step;gv+=step){
@@ -4029,7 +4029,18 @@ function _buildChartB(valsA, dates, opts){
        entre deux bilans une courbure qui n'a pas ete mesuree. */
     var lp='M '+vp.map(function(q){return q.x.toFixed(1)+','+q.y.toFixed(1);}).join(' L ');
     var by=VH-PAD.bottom;
-    html+='<path d="'+lp+' L '+vp[vp.length-1].x.toFixed(1)+','+by+' L '+vp[0].x.toFixed(1)+','+by+' Z" fill="url(#gb'+id+')"/>';
+    /* AIRE : aplat + `fill-opacity`, jamais un degrade a `stop-opacity`.
+    
+         Sur l'export PDF d'un iPad, ces aires ressortaient PLEINES : la
+         transparence portee par les `stop-opacity` d'un `<linearGradient>` etait
+         perdue au rendu d'impression, et le graphique se remplissait d'un bloc de
+         couleur qui masquait la lecture.
+    
+         `fill-opacity` est un attribut de presentation du CHEMIN lui-meme, bien
+         plus fondamental qu'une transparence de degrade — il traverse les moteurs
+         d'impression. Et l'aplat ne peut pas etre OPAQUE : la grille est tracee
+         AVANT l'aire, une couleur pleine l'effacerait. */
+    html+='<path d="'+lp+' L '+vp[vp.length-1].x.toFixed(1)+','+by+' L '+vp[0].x.toFixed(1)+','+by+' Z" fill="var(--accent)" fill-opacity="0.13"/>';
     html+='<path d="'+lp+'" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
   }
   // Points + hit areas
@@ -4085,7 +4096,7 @@ function _buildChartD(valsA, valsB, dates, opts){
   }
   var ptsA=valsA.map(function(v,i){return Object.assign(pt(valsA,i),{date:dates[i]});});
   var ptsB=valsB.map(function(v,i){return Object.assign(pt(valsB,i),{date:dates[i]});});
-  var html='<defs><linearGradient id="gd'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#C0392B" stop-opacity="0.18"/><stop offset="100%" stop-color="#C0392B" stop-opacity="0.02"/></linearGradient></defs>';
+  var html='';
   // ── Zones de condition ──
   (function(){
     var conds = opts.conditions;
@@ -4154,7 +4165,7 @@ function _buildChartD(valsA, valsB, dates, opts){
   var vpA=ptsA.filter(function(p){return p.valid;}), vpB=ptsB.filter(function(p){return p.valid;});
   if(vpA.length>=2&&vpB.length>=2){
     var aD='M '+vpB.map(function(p){return p.x.toFixed(1)+','+p.y.toFixed(1);}).join(' L ')+' L '+vpA.slice().reverse().map(function(p){return p.x.toFixed(1)+','+p.y.toFixed(1);}).join(' L ')+' Z';
-    html+='<path d="'+aD+'" fill="url(#gd'+id+')"/>';
+    html+='<path d="'+aD+'" fill="#C0392B" fill-opacity="0.11"/>';
   }
   // Courbes — groupées par data-line pour toggle
   html += '<g data-line="B">';
@@ -4398,14 +4409,9 @@ function _buildQualChart(scoresA, scoresB, dates, opts){
   var validB = scoresB.filter(function(v){ return !isNaN(v); });
   if(validA.length < 2 && validB.length < 2) return '';
   function pxy(i, v){ return { x: PAD.left+(i/Math.max(n-1,1))*(VW-PAD.left-PAD.right), y: (VH-PAD.bottom)-(v/maxVal)*(VH-PAD.top-PAD.bottom) }; }
-  var html = '<defs>';
-  ['A','B'].forEach(function(s){
-    var c = s==='A'?colorA:colorB;
-    html += '<linearGradient id="qg'+s+id+'" x1="0" y1="0" x2="0" y2="1">'
-      +'<stop offset="0%" stop-color="'+c+'" stop-opacity="0.2"/>'
-      +'<stop offset="100%" stop-color="'+c+'" stop-opacity="0.02"/></linearGradient>';
-  });
-  html += '</defs>';
+  /* Plus de `<defs>` : les aires sont des aplats a `fill-opacity`, elles ne
+     referencent plus aucun degrade. */
+  var html = '';
   // Grille Y (0, mid, max)
   [0, Math.round(maxVal/2), maxVal].forEach(function(gv){
     var gy = (VH-PAD.bottom)-(gv/maxVal)*(VH-PAD.top-PAD.bottom);
@@ -4425,7 +4431,7 @@ function _buildQualChart(scoresA, scoresB, dates, opts){
     var lp='M '+vp.map(function(q){return q.x.toFixed(1)+','+q.y.toFixed(1);}).join(' L ');
     var by=VH-PAD.bottom;
     html += '<g data-line="'+side+'">';
-    html += '<path d="'+lp+' L '+vp[vp.length-1].x.toFixed(1)+','+by+' L '+vp[0].x.toFixed(1)+','+by+' Z" fill="url(#qg'+side+id+')"/>';
+    html += '<path d="'+lp+' L '+vp[vp.length-1].x.toFixed(1)+','+by+' L '+vp[0].x.toFixed(1)+','+by+' Z" fill="'+c+'" fill-opacity="0.13"/>';
     html += '<path d="'+lp+'" fill="none" stroke="'+c+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
     vp.forEach(function(p,ii){
       var isLast=ii===vp.length-1, isFirst=ii===0;

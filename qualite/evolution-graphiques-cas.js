@@ -282,6 +282,57 @@ ok('.cr-evo-svg ne rogne pas le débordement',
      f[1].indexOf('evo-kpi-neutral') < 0 && f[1].indexOf('evo-kpi-strong') < 0);
 });
 
+console.log('\nLes aires ne dependent d\'aucun degrade');
+{
+  /* Sur l'export PDF d'un iPad, les aires ressortaient PLEINES : la
+     transparence portee par les `stop-opacity` d'un `<linearGradient>` etait
+     perdue au rendu d'impression, et le graphique se remplissait d'un bloc de
+     couleur qui masquait la lecture.
+
+     `fill-opacity` est un attribut de presentation du CHEMIN, bien plus
+     fondamental qu'une transparence de degrade. On execute les TROIS
+     constructeurs : une correction appliquee a deux d'entre eux passerait
+     inapercue — c'est deja arrive sur ce meme trio. */
+  var _stub = {
+    _evoLabelDy: function(){ return -9; }, _evoAncre: function(){ return 'middle'; },
+    EVO_HALO: '', _evoFleche: function(){ return ''; }, _robustFence: function(){ return null; },
+    asymTxt: function(x){ return x + '%'; }, escH: function(x){ return String(x); },
+    _fmtCond: function(){ return ''; }
+  };
+  var _noms = Object.keys(_stub), _vals = _noms.map(function(k){ return _stub[k]; });
+  function fabrique(nom, args){
+    var a = bilanJs.indexOf('function ' + nom), b = bilanJs.indexOf('\nfunction ', a + 10);
+    if (a < 0 || b < a) { console.error('Bornes de ' + nom + ' introuvables.'); process.exit(1); }
+    /* Forme a DEUX arguments : `new Function(params, corps)`. Passer un
+       tableau en un seul argument le stringifie comme liste de parametres, et
+       le corps disparait — la fonction se construit vide et tombe a l'appel. */
+    var f = new Function(_noms.join(','), bilanJs.slice(a, b) + '\nreturn ' + nom + ';')
+              .apply(null, _vals);
+    return f.apply(null, args);
+  }
+  var D = ['30/03','24/06','25/06','23/08'];
+  var svgs = {
+    'courbe simple': fabrique('_buildChartB', [[10,12,14,15], D, {unit:'cm', dir:'up', labelA:'Mesure', chartId:1}]),
+    'courbe double': fabrique('_buildChartD', [[24,24,23,24],[23,23,23,23], D,
+        {unit:'rép', dir:'up', labelA:'Atteint', labelB:'Sain', chartId:2,
+         colorA:'var(--accent)', colorB:'var(--green)'}]),
+    'courbe qualitative': fabrique('_buildQualChart', [[1,2,3,3],[1,2,2,2], D,
+        {maxVal:5, chartId:3, labelA:'Côté sain', labelB:'Côté atteint'}])
+  };
+  Object.keys(svgs).forEach(function(nom){
+    var g = svgs[nom];
+    ok(nom + ' : aucun degrade', (g.match(/linearGradient/g) || []).length === 0);
+    ok(nom + ' : aucune reference url(#…)', (g.match(/url\(#/g) || []).length === 0);
+    ok(nom + ' : une aire a fill-opacity', /fill-opacity="0\.1[0-9]?"/.test(g));
+  });
+  /* L'aire doit rester TRANSPARENTE : la grille est tracee AVANT elle, un
+     aplat opaque l'effacerait. */
+  ok('aucune aire opaque', !/fill-opacity="1"/.test(bilanJs));
+  /* Et plus un seul degrade dans le source — commentaires exclus. */
+  ok('plus un seul degrade dans js/bilan.js',
+     (bilanJs.replace(/\/\*[\s\S]*?\*\//g, '').match(/linearGradient/g) || []).length === 0);
+}
+
 console.log('');
 if (ko) { console.error(ko + ' cas en echec.'); process.exit(1); }
 console.log('Graphiques d\'evolution : tous les cas passent.');

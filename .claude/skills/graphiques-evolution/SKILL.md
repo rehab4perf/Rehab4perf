@@ -211,6 +211,22 @@ Le rapport s'inverse pour `dir:'down'`. Le cas exécute le vrai calcul.
 poserait **deux champs portant le même id** dans le formulaire, dont un seul
 serait relu. Toute mesure qui gagne son groupe doit perdre son injection.
 
+**Les aires ne dépendent d'aucun dégradé.** Sur l'export PDF d'un iPad, elles
+ressortaient **pleines** : la transparence portée par les `stop-opacity` d'un
+`<linearGradient>` était perdue au rendu d'impression, et le graphique se
+remplissait d'un bloc de couleur qui masquait la lecture.
+
+`fill-opacity` est un attribut de présentation du **chemin** lui-même, bien plus
+fondamental qu'une transparence de dégradé — il traverse les moteurs
+d'impression. Les trois constructeurs sont passés en aplat, et plus aucun
+`<defs>` ne subsiste.
+
+**L'aire ne peut pas être opaque** : la grille est tracée **avant** elle, une
+couleur pleine l'effacerait. Le fichier de cas échoue sur `fill-opacity="1"`.
+
+**Vérifié par exécution des TROIS constructeurs** — une correction appliquée à
+deux d'entre eux passerait inaperçue, c'est déjà arrivé sur ce même trio.
+
 **Point ouvert, non corrigé** : `_robustFence` (MAD × 10) écarte du tracé toute
 valeur qu'elle juge aberrante. Sur une série stable, la MAD est minuscule — et
 une VRAIE dégradation disparaît de la courbe. Mesuré : `[45, 44, 46, 45, 44,

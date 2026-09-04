@@ -1884,13 +1884,9 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 /* ── Bilan Foster (mensuel) ── */
 .bilan-foster { margin-top:14px; border-top:1px solid var(--border); padding-top:14px; }
 .bilan-foster-title { font-size:var(--fs-xs); font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; margin-bottom:12px; }
-/* La formule est NOMMEE sous le titre : les UA n'ont plus la meme grandeur
-   qu'avec le Foster classique. Un chiffre releve avant le changement, ou lu
-   dans un autre outil, ne se compare plus au notre — et rien ne le dirait. */
+/* La formule est NOMMEE sous le titre : un chiffre lu dans un autre outil ne
+   se compare au notre que si l'on sait comment chacun le calcule. */
 .bilan-foster-formule { font-size:var(--fs-2xs); color:var(--muted); margin:-4px 0 8px; font-variant-numeric:tabular-nums; }
-/* Les bornes ACWR viennent de la litterature du sRPE lineaire : les afficher
-   sans le dire les ferait passer pour validees sur cette echelle. */
-.bilan-acwr-note { font-size:var(--fs-2xs); color:var(--muted); margin-top:6px; line-height:1.35; }
 .bilan-week-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:11px 13px; margin-bottom:10px; }
 .bilan-wc-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:9px; }
 .bilan-wc-label { font-size:var(--fs-sm); font-weight:700; color:var(--navy); }
@@ -4600,6 +4596,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 </div>
 
-<script src="js/prog-main.js?v=20260903d"></script>
+<script src="js/prog-main.js?v=20260904a"></script>
 </body>
 </html>
