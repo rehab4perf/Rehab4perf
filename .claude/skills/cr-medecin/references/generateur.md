@@ -478,3 +478,31 @@ Le contrôle relève **tous** les gestionnaires écrits en attribut, y compris c
 des chaînes HTML injectées par le script, et vérifie que chacun est
 atteignable : posé sur `window`, ou déclaré en colonne zéro (hors de l'IIFE — la
 convention du fichier étant que ce qui y vit est indenté).
+
+
+## Un groupe MIXTE place ses pastilles dans les colonnes
+
+```bash
+node qualite/cr-colonnes-cas.js
+```
+
+La Qualité de réception vit dans un lot qui contient **aussi** des tests
+chiffrés. Ses sous-lignes — valgus dynamique, contrôle du tronc — sortaient
+alors **en toutes lettres** : « côté sain et côté atteint », au milieu d'un
+tableau qui a justement une colonne par côté.
+
+**La cause tenait à une portée.** `var _afAvecCotes` vivait à l'intérieur de
+`if (!_aDesMesures)` : dès qu'un lot portait une mesure, la variable restait
+indéfinie. Le repérage des colonnes retombait sur la recherche de
+« gauche »/« droite », qui ne trouve rien dans un tableau intitulé « Côté sain /
+Côté atteint ».
+
+La grille est désormais cherchée **dans tous les cas**. Ce qui reste conditionné
+à l'absence de mesures, c'est le fait d'**imposer** ses libellés comme
+en-têtes : quand le lot contient des mesures, les colonnes sont celles des
+mesures — les leur substituer ferait disparaître l'asymétrie et poserait les
+valeurs sous des intitulés qui ne les décrivent pas.
+
+**Le repli en toutes lettres demeure** quand aucune colonne ne correspond :
+mieux vaut un côté nommé qu'une pastille dans la mauvaise colonne — c'est
+l'erreur la plus grave que ce tableau puisse commettre.

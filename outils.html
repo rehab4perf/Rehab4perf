@@ -6960,8 +6960,24 @@ _updateOutilsPatientBtns();
       var _aDesMesures = tampon.some(function (t) {
         return (t.cellules || []).some(function (c) { return c.valeur; });
       });
+      /* La grille qui porte ses libelles de cote est cherchee DANS TOUS LES CAS.
+
+         Elle ne l'etait qu'en l'absence de mesures : `var _afAvecCotes` vivait
+         a l'interieur du `if`, si bien qu'un groupe MIXTE — des tests chiffres
+         ET une grille de criteres, ce qui est exactement le cas de la Qualite
+         de reception — la laissait indefinie. Le reperage des colonnes
+         retombait alors sur la recherche de « gauche »/« droite », qui ne
+         trouve rien dans un tableau intitule « Côté sain / Côté atteint » : les
+         pastilles ne pouvaient plus se poser, et le cote sortait EN TOUTES
+         LETTRES au milieu d'un tableau a colonnes.
+
+         Ce qui reste conditionne aux groupes SANS mesure, c'est le fait
+         d'IMPOSER ces libelles comme en-tetes : quand le lot contient des
+         mesures, les colonnes sont celles des mesures — les leur substituer
+         ferait disparaitre l'asymetrie et poserait des valeurs sous des
+         intitules qui ne les decrivent pas. */
+      var _afAvecCotes = tampon.filter(function (t) { return t.af && t.afCotes; })[0];
       if (!_aDesMesures) {
-        var _afAvecCotes = tampon.filter(function (t) { return t.af && t.afCotes; })[0];
         if (_afAvecCotes) entetes = _afAvecCotes.afCotes.slice();
         else if (tampon.some(function (t) { return t.af && t.af.length; })) entetes = ['Gauche', 'Droit'];
       }

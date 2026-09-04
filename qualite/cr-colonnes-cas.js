@@ -221,5 +221,56 @@ console.log('\n  Deux conventions de côté ne partagent pas un tableau');
           String(/_lotsParConvention\(tampon\)\.forEach\(_ecrireTable\)/.test(sansCom)));
 }
 
+console.log('\n  Un groupe MIXTE place ses pastilles dans les colonnes');
+{
+  /* La Qualite de reception vit dans un lot qui contient AUSSI des tests
+     chiffres. Le reperage des colonnes retombait alors sur la recherche de
+     « gauche »/« droite », qui ne trouve rien dans un tableau intitule « Côté
+     sain / Côté atteint » : le cote sortait EN TOUTES LETTRES au milieu d'un
+     tableau a colonnes, au lieu d'une pastille sous le bon intitule.
+
+     La cause tenait a une PORTEE : `var _afAvecCotes` vivait a l'interieur du
+     `if (!_aDesMesures)`, donc restait indefinie des qu'un lot portait une
+     mesure. On execute la vraie logique de groupement. */
+  var A0 = src.indexOf('  var compte = {}, ordre = [];');
+  var A1 = src.indexOf('var _cotesSurs = (_iG !== -1 && _iD !== -1);');
+  if (A0 < 0 || A1 < A0) { verifie('bornes du groupement', 'trouvées', 'introuvables'); }
+  /* eslint-disable no-new-func */
+  var colonnes = new Function('tampon',
+    src.slice(A0, A1) + 'var _cotesSurs = (_iG !== -1 && _iD !== -1);'
+    + '\nreturn { entetes:entetes, iG:_iG, iD:_iD, sur:_cotesSurs };');
+
+  var mesure = function (l) {
+    return { label:l, cellules:[{entete:'Côté sain',valeur:'23'},
+                                {entete:'Côté atteint',valeur:'24'},
+                                {entete:'Asym.',valeur:'-4%'}] };
+  };
+  var grille = function (l, cotes) {
+    return { label:l, cellules:[], af:[{label:'Valgus', g:true, d:true}],
+             afCotes:cotes, afMode:'compensation' };
+  };
+
+  var mixte = colonnes([mesure('Force'), grille('Réception', ['Côté sain','Côté atteint'])]);
+  verifie('un lot mixte reconnaît ses colonnes de côté', 'true', String(mixte.sur));
+  verifie('… dans le bon ordre', '0|1', mixte.iG + '|' + mixte.iD);
+  /* Les colonnes restent celles des MESURES : substituer les libelles de la
+     grille ferait disparaitre l'asymetrie et poserait les valeurs sous des
+     intitules qui ne les decrivent pas. */
+  verifie('… sans perdre la colonne d\'asymétrie',
+          'Côté sain|Côté atteint|Asym.', mixte.entetes.join('|'));
+
+  /* Un lot SANS mesure impose au contraire les libelles de la grille : sans
+     colonne, les pastilles n'auraient nulle part ou se poser. */
+  var seul = colonnes([grille('Contrôle MI', ['Gauche','Droit'])]);
+  verifie('un lot sans mesure impose les colonnes de la grille',
+          'Gauche|Droit', seul.entetes.join('|'));
+  verifie('… et les repère aussi', 'true', String(seul.sur));
+
+  /* Le repli en toutes lettres demeure quand AUCUNE colonne ne correspond —
+     mieux vaut un cote nomme qu'une pastille dans la mauvaise colonne. */
+  var inconnu = colonnes([mesure('Force'), grille('Réception', ['Côté A','Côté B'])]);
+  verifie('des libellés inconnus font retomber sur le texte', 'false', String(inconnu.sur));
+}
+
 console.log('\n  ' + (nbKo ? '✗ ' + nbKo + ' échec(s), ' : '✓ ') + nbOk + ' cas vérifiés.\n');
 process.exit(nbKo ? 1 : 0);
