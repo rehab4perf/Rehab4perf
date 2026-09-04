@@ -138,18 +138,35 @@ ok('l\'impression reste déclenchée au bout', /window\.print\(\);\},350\)/.test
  * éléments fixes ». On identifie donc la plateforme — c'est un compromis, et
  * il est assumé : mieux vaut une feuille sans identification qu'une ligne
  * grise en travers des mesures. */
-console.log('\nLe pied courant ne traverse plus les tableaux sur iPad');
-ok('la plateforme est identifiée à l\'export',
-   /_sansPiedCourant\s*=\s*\/iPad\|iPhone\|iPod\/\.test\(navigator\.userAgent\)/.test(expo));
-/* iPadOS se déclare « Macintosh » depuis la version 13 : sans ce second test,
-   l'iPad passerait à travers la détection. */
-ok('… iPadOS compris, qui se déclare « Macintosh »',
-   /navigator\.platform === 'MacIntel' && navigator\.maxTouchPoints > 1/.test(expo));
-/* On n'ÉMET pas l'élément, plutôt que de le masquer : un pied masqué par CSS
-   reste dans le document, et une règle d'impression peut le ramener. */
-ok('le pied n\'est pas émis du tout sur ces plateformes',
-   /_sansPiedCourant \? '' :\s*\n?\s*'<div id="cr-runfoot">/.test(expo));
-ok('… mais il subsiste ailleurs', /#cr-runfoot\{display:block!important\}/.test(src));
+console.log('\nPlus aucun pied courant');
+/* Il reposait sur `position:fixed`, que les moteurs de BUREAU repetent sur
+   chaque page imprimee. WebKit mobile ne le faisait pas — il posait l'element
+   UNE fois, la ou il tombait — et il avait d'abord ete supprime sur iOS seul,
+   pour cette raison.
+
+   A l'usage, le meme defaut s'est montre sur un navigateur de BUREAU : le nom
+   du patient et la date apparaissaient en gris EN PLEIN MILIEU de page, au
+   travers du courrier. Un repere qui se pose n'importe ou n'identifie plus
+   rien : il salit la feuille sans rendre le service attendu. Il est retire
+   partout.
+
+   L'en-tete du navigateur, quand l'utilisateur le laisse actif, porte deja la
+   date et le titre du document. */
+ok('l\'element n\'existe plus', !/cr-runfoot/.test(src));
+ok('… ni la detection de plateforme qui le conditionnait', !/_sansPiedCourant/.test(src));
+/* On n'EMET pas, plutot que de masquer : un pied masque par CSS reste dans le
+   document, et une regle d'impression peut le ramener. */
+ok('… et rien ne le remet a l\'impression', !/#cr-runfoot\{display:block/.test(src));
+
+console.log('\nUn intertitre n\'est jamais seul en bas de page');
+/* « Graphiques d'évolution » se retrouvait en pied de page 1 pendant que ses
+   courbes commencaient page 2. */
+ok('le titre de section retient ce qui suit',
+   /\.cr-evo-section-title\{[\s\S]{0,220}break-after:avoid/.test(src));
+ok('… et son premier graphique lui reste attache',
+   /\.cr-evo-section-title \+ \.cr-evo-chart\{break-before:avoid/.test(src));
+ok('un graphique ne se coupe pas en deux',
+   /\.cr-evo-chart\{break-inside:avoid/.test(src));
 
 console.log('');
 if (ko) { console.error(ko + ' cas en echec.'); process.exit(1); }

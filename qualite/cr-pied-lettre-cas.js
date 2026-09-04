@@ -73,20 +73,38 @@ verifie('il termine le corps', true, /<\/div>\s*$/.test(h) && h.lastIndexOf('lt-
 
 /* ── Ce que l'impression doit garantir ─────────────────────────────────── */
 console.log('\n  La mise en page imprimée lui laisse la place');
-/* Le pied courant est `position:fixed` et se repete sur chaque page. Son bloc
-   de reference est la ZONE DE CONTENU : il mord donc sur le flux. */
-verifie('le pied courant est bien fixe', true,
-  /#cr-runfoot\{display:none;position:fixed;bottom:4mm/.test(outils));
-/* La bande qu'il occupe doit etre RESERVEE. La regle d'impression mettait la
-   marge basse a zero sans rien remettre. */
-verifie('la marge basse est réservée à l\'impression', true,
-  /#cr-page\{margin:0!important;padding:0 0 12mm!important/.test(outils));
+/* PIED COURANT RETIRE. Il reposait sur `position:fixed`, que WebKit mobile ne
+   repete pas — il le posait UNE fois, la ou il tombait. A l'impression depuis un
+   navigateur de bureau il s'est revele tout aussi mal place : le nom du patient
+   et la date apparaissaient EN PLEIN MILIEU de page, en gris, au travers du
+   courrier. Un repere qui se pose n'importe ou n'identifie plus rien. */
+verifie('plus aucun pied courant', false, /cr-runfoot/.test(outils));
+verifie('… ni le drapeau qui le conditionnait', false, /_sansPiedCourant/.test(outils));
+/* La respiration basse demeure : sans elle les dernieres lignes se collent au
+   bord de la zone imprimable. */
+verifie('la marge basse reste réservée', true,
+  /#cr-page\{margin:0!important;padding:0 0 8mm!important/.test(outils));
 verifie('… et n\'est plus mise à zéro', false,
   /#cr-page\{margin:0!important;padding:0!important/.test(outils));
 /* Le pied ne se coupe pas en deux : salutation d'un cote, signature de
    l'autre, c'est une lettre qui n'a plus l'air signee. */
 verifie('le pied de lettre ne se coupe pas', true,
   /\.lt-fin\{break-inside:avoid;page-break-inside:avoid\}/.test(outils));
+
+console.log('\n  Un intertitre n\'est jamais seul en bas de page');
+/* « Graphiques d'évolution » se retrouvait en pied de page 1 pendant que ses
+   courbes commencaient page 2. Un titre annonce ce qui suit — separe de lui,
+   il n'annonce rien. */
+verifie('le titre de section ne se laisse pas couper de la suite', true,
+  /\.cr-evo-section-title\{[\s\S]{0,200}break-after:avoid/.test(outils));
+/* `break-after` ne suffit pas partout : on lie aussi le premier graphique au
+   titre, par l'autre bout. */
+verifie('… et son premier graphique lui reste attaché', true,
+  /\.cr-evo-section-title \+ \.cr-evo-chart\{break-before:avoid/.test(outils));
+/* Un graphique coupe en deux — en-tete chiffre d'un cote, courbe de l'autre —
+   ne se lit plus. */
+verifie('un graphique ne se coupe pas en deux', true,
+  /\.cr-evo-chart\{break-inside:avoid;page-break-inside:avoid/.test(outils));
 
 /* ── L'aperçu et le PDF lisent la MÊME chaîne ──────────────────────────── */
 console.log('\n  Une seule source pour l\'écran et pour le PDF');
@@ -99,4 +117,4 @@ verifie('… celui-là même que l\'aperçu affiche', true,
 
 console.log('\n' + '─'.repeat(64));
 if (echecs) { console.log('✗ ' + echecs + ' attente(s) en échec'); process.exit(1); }
-console.log('✓ 13 attentes vérifiées');
+console.log('✓ 17 attentes vérifiées');

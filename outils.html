@@ -6722,9 +6722,22 @@ _updateOutilsPatientBtns();
        Meme grammaire que le reste de la lettre : filet vertical et
        intitule capitale pour la section, une carte par graphique. */
     '.cr-evo-section{margin-top:22px;padding-top:16px;border-top:1px solid #E8E6E1}',
+    /* Un intertitre ne reste JAMAIS seul en bas de page : « Graphiques
+       d'évolution » se retrouvait en pied de page 1 pendant que ses courbes
+       commencaient page 2. Un titre annonce ce qui suit — separe de lui, il
+       n'annonce rien. */
     '.cr-evo-section-title{margin:0 0 12px;padding-left:10px;border-left:3px solid #2B5FA6;',
+      'break-after:avoid;page-break-after:avoid;',
+    /* `break-after` ne suffit pas partout : certains moteurs ne l'honorent que
+       si le bloc SUIVANT peut effectivement remonter. On lie donc le titre a
+       son premier graphique par un groupe insecable, comme le fait deja la
+       lettre pour ses sections. */
+    '.cr-evo-section-title + .cr-evo-chart{break-before:avoid;page-break-before:avoid}',
       'font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#1A3A5C}',
-    '.cr-evo-chart{margin:0 0 12px;padding:12px 14px 8px;background:#fff;',
+    /* Un graphique ne se coupe pas en deux : son en-tete chiffre d'un cote de
+       la feuille et sa courbe de l'autre ne se lisent plus ensemble. */
+    '.cr-evo-chart{break-inside:avoid;page-break-inside:avoid;',
+      'margin:0 0 12px;padding:12px 14px 8px;background:#fff;',
       'border:1px solid #E8E6E1;border-radius:8px;',
       'break-inside:avoid;page-break-inside:avoid}',
     '.cr-evo-chart-lbl{font-size:.78rem;font-weight:700;color:#1A1917;',
@@ -7543,18 +7556,6 @@ _updateOutilsPatientBtns();
 
     var patNomPDF = crV('cr-pat-nom') || '';
 
-    /* Le pied courant repose sur `position:fixed`, que les moteurs de BUREAU
-       repetent sur chaque page imprimee. WebKit mobile ne le fait pas : il
-       pose l'element UNE fois, la ou il tombe — au milieu d'un tableau de
-       mesures dans le CR d'un patient, en gris, comme une ligne parasite.
-
-       Il n'existe aucun test de fonctionnalite pour « ce moteur d'impression
-       repete-t-il les elements fixes ». On identifie donc la plateforme, et
-       sur iOS on n'emet pas le pied du tout : mieux vaut une feuille sans
-       identification qu'une ligne grise en travers des resultats. iPadOS se
-       declare « Macintosh » depuis la version 13, d'ou le second test. */
-    var _sansPiedCourant = /iPad|iPhone|iPod/.test(navigator.userAgent)
-      || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     /* Sans balise `viewport`, Safari iOS suppose une page « bureau » de
        980 px de large et dezoome pour la faire entrer dans l'ecran. A
        l'impression il met ensuite cette largeur SUPPOSEE a l'echelle du
@@ -7614,7 +7615,7 @@ _updateOutilsPatientBtns();
 
          On reserve la bande. 12 mm : les 4 mm de decalage, la ligne de 7,5 pt,
          et de quoi ne pas la froler. */
-      + '#cr-page{margin:0!important;padding:0 0 12mm!important;max-width:none!important}'
+      + '#cr-page{margin:0!important;padding:0 0 8mm!important;max-width:none!important}'
       + '.cr-letter-hdr{margin:0}'
       /* La marge haute etait a ZERO sur toutes les pages, pour que le bandeau
          navy morde le bord en tete de document. Consequence : a la page 2, le
@@ -7625,21 +7626,21 @@ _updateOutilsPatientBtns();
       + '@page :first{margin-top:0}'
       /* Le pied de lettre — salutation, signature — ne se coupe pas. */
       + '.lt-fin{break-inside:avoid;page-break-inside:avoid}'
-      /* Un element `position:fixed` se REPETE sur chaque page imprimee. C'est
-         le seul moyen d'obtenir un pied courant : les boites de marge `@page`,
-         seules a savoir compter les pages, ne sont pas implementees par les
-         navigateurs. On identifie donc chaque feuille sans la numeroter — une
-         page detachee reste rattachable a son patient et a sa date. */
-      + '#cr-runfoot{display:block!important}'
-      + '}'
-      + '#cr-runfoot{display:none;position:fixed;bottom:4mm;left:0;right:0;'
-      + 'text-align:center;font-size:7.5pt;color:#9D9B96;letter-spacing:.02em}'
+      /* PIED COURANT RETIRE.
+
+         Il reposait sur `position:fixed`, que les moteurs de bureau repetent
+         sur chaque page imprimee. Sur WebKit mobile il ne l'etait pas — il se
+         posait UNE fois, la ou il tombait — et il avait deja fallu le
+         supprimer sur iPad pour cette raison. A l'impression depuis un
+         navigateur de bureau, il s'est revele tout aussi mal place : le nom du
+         patient et la date apparaissaient EN PLEIN MILIEU de page, en gris,
+         au beau milieu du courrier.
+
+         Un repere qui se pose n'importe ou n'identifie plus rien : il salit la
+         page sans rendre le service attendu. L'en-tete du navigateur, quand il
+         est active, porte deja la date et le titre. */
       + '</style>'
       + '</head><body>'
-      + (_sansPiedCourant ? '' :
-          '<div id="cr-runfoot">' + _crEsc(patNomPDF ? patNomPDF.toUpperCase() : '')
-          + (letterDate ? (patNomPDF ? ' &nbsp;·&nbsp; ' : '') + _crEsc(letterDate) : '')
-          + (practName ? ' &nbsp;·&nbsp; ' + _crEsc(practName) : '') + '</div>')
       + '<div id="cr-topbar">'
       + '<button class="btn-back" onclick="window.close()">← Retour</button>'
       + '<span id="cr-scale-info"></span>'

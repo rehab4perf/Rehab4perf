@@ -186,6 +186,47 @@ retrouve le rendu d'avant : jamais pire.
 couperait en deux, et deux filets se superposeraient à sa fin.
 
 
+## Le pied courant a été RETIRÉ
+
+```bash
+node qualite/cr-coupures-cas.js
+node qualite/cr-pied-lettre-cas.js
+```
+
+Il reposait sur `position:fixed`, que les moteurs de **bureau** répètent sur
+chaque page imprimée. WebKit mobile ne le fait pas — il pose l'élément **une
+fois**, là où il tombe — et il avait d'abord été supprimé sur iOS seul, pour
+cette raison.
+
+À l'usage, le même défaut s'est montré sur un navigateur de **bureau** : le nom
+du patient et la date apparaissaient en gris **en plein milieu de page**, au
+travers du courrier. Un repère qui se pose n'importe où n'identifie plus rien —
+il salit la feuille sans rendre le service attendu.
+
+**Il est retiré partout**, avec la détection de plateforme qui le conditionnait.
+On n'**émet** pas l'élément plutôt que de le masquer : un pied masqué par CSS
+reste dans le document, et une règle d'impression peut le ramener.
+
+L'en-tête du navigateur, quand l'utilisateur le laisse actif, porte déjà la date
+et le titre du document.
+
+**La respiration basse demeure** — `padding: 0 0 8mm` sur `#cr-page` en
+impression. La règle mettait cette marge à zéro sans rien remettre, et les
+dernières lignes se collaient au bord de la zone imprimable. Elle valait 12 mm
+tant qu'un pied courant occupait la bande.
+
+## Un intertitre n'est jamais seul en bas de page
+
+« Graphiques d'évolution » se retrouvait en pied de page 1 pendant que ses
+courbes commençaient page 2. Un titre annonce ce qui suit — séparé de lui, il
+n'annonce rien.
+
+Trois règles, et il en faut trois : `break-after: avoid` sur le titre ;
+`break-before: avoid` sur le **premier graphique** — certains moteurs
+n'honorent `break-after` que si le bloc suivant peut effectivement remonter ; et
+`break-inside: avoid` sur chaque graphique, dont l'en-tête chiffré et la courbe
+ne se lisent plus séparés.
+
 ## Le pied courant mord sur le texte — il faut lui réserver sa bande
 
 ```bash
@@ -209,8 +250,8 @@ occupée par le pied courant n'était réservée par personne : les dernières l
 s'y retrouvaient recouvertes, et là où elles tombaient sur la frontière,
 chassées de la page.
 
-`padding: 0 0 12mm` la réserve — les 4 mm de décalage, la ligne de 7,5 pt, et de
-quoi ne pas la frôler.
+`padding: 0 0 12mm` la réservait. **Le pied a depuis été retiré** (section
+ci-dessus) et la respiration est ramenée à 8 mm.
 
 **Vérifié par lecture et par exécution, pas par une impression réelle** : je ne
 peux pas lancer d'impression depuis ce poste. Si le défaut persistait, la
