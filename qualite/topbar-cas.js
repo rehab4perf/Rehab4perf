@@ -50,17 +50,40 @@ commune = commune.slice(0, commune.indexOf('}'));
 ok('la règle commune garde flex-shrink:0', /flex-shrink:0/.test(commune));
 
 console.log('\nLe libellé d\'aide reste écrit');
-ok('le bouton porte bien son libellé',
-   />Centre d'aide<\/div>/.test(src) || src.indexOf(">Centre d'aide</div>") > 0);
-ok('il n\'est jamais masqué sur écran étroit',
-   !/\.help-btn \{[^}]*display:none/.test(m700 + bloc(600) + bloc(360)));
+/* « Centre d'aide » est devenu « Aide » — mesuré : 91 px de bouton contre 44,
+   soit 47 px rendus a la barre. Le tiroir qui s'ouvre s'intitule d'ailleurs
+   « Aide » : les deux disent enfin la meme chose. */
+ok('le bouton porte bien son libellé', src.indexOf('>Aide</div>') > 0);
+ok('… et l\'infobulle dit la même chose', src.indexOf('title="Aide"') > 0);
+/* Le libelle ne se masque JAMAIS : un bouton d'aide reduit a une icone
+   n'apprend rien a qui ne le connait pas.
 
-console.log('\nSous 360 px, c\'est le mot-symbole qui cède');
-var m360 = bloc(360);
-ok('la règle des très petits écrans existe', !!m360);
-ok('le mot-symbole s\'efface', /\.logo-w \{[^}]*display:none/.test(m360));
-ok('le sigle, lui, reste', !/\.logo svg \{[^}]*display:none/.test(m360) &&
-   !/\.logo \{[^}]*display:none/.test(m360));
+   On releve TOUTES les regles qui visent `.help-btn`, dans le fichier entier —
+   la regle de base comme chacun des blocs media. Le garde n'en inspectait que
+   trois sur cinq, choisis a la main : un `display:none` pose dans le bloc
+   « ≤900 px » passait inapercu. Une liste de blocs tenue a la main vieillit au
+   premier point de rupture ajoute. */
+var reglesAide = src.match(/\.help-btn[^{}]*\{[^}]*\}/g) || [];
+ok('des règles visent bien le bouton', reglesAide.length >= 2);
+ok('il n\'est jamais masqué, dans aucune règle',
+   !reglesAide.some(function (r) { return /display\s*:\s*none/.test(r); }),
+   reglesAide.filter(function (r) { return /display\s*:\s*none/.test(r); }).join(' | '));
+
+console.log('\nSous 340 px, c\'est le mot-symbole qui cède');
+/* Le seuil est DESCENDU de 360 a 340 px grace aux 47 px liberes.
+
+   Mesure au pire cas — cloche de notifications visible ET nom de patient long,
+   mot-symbole affiche : 414, 375 et 360 px passent avec du mou, le nom n'etant
+   meme pas rogne ; 320 px passe a 8 px pres ; 280 px deborde de 30 px. Le seuil
+   est place entre les deux configurations mesurees : un telephone de 320 px
+   garde la protection, un 360 px retrouve la marque. */
+var m340 = bloc(340);
+ok('la règle des très petits écrans existe', !!m340);
+ok('le mot-symbole s\'efface', /\.logo-w \{[^}]*display:none/.test(m340));
+ok('le sigle, lui, reste', !/\.logo svg \{[^}]*display:none/.test(m340) &&
+   !/\.logo \{[^}]*display:none/.test(m340));
+/* Et le seuil ne remonte pas : a 360 px la marque doit revenir. */
+ok('la marque revient dès 360 px', !bloc(360));
 
 /* ── Le numéro de version, lisible depuis le téléphone ───────────
  * Une correction déployée et une correction VUE sont deux choses
