@@ -425,13 +425,25 @@ function _crMedResumeTests() {
       tmp.innerHTML = sec.html;
       tmp.querySelectorAll('.cr-item').forEach(function (it) {
         var pgs = (it.getAttribute('data-pages') || '').split(/\s+/).filter(Boolean);
-        if (!pgs.some(function (p) { return CR_MED_PAGES.indexOf(p) >= 0; })) return;
+        /* Un test PERSONNALISE echappe au filtre par page. Il n'a aucun autre
+           chemin vers le courrier : les tests orthopediques y passent par les
+           signes cliniques, pas par cette liste. Le praticien qui a pris la
+           peine de creer et de nommer un test veut pouvoir le proposer, qu'il
+           l'ait pose sur l'Epaule ou sur les tests fonctionnels. */
+        var _perso = it.getAttribute('data-cr-perso') === '1';
+        if (!_perso && !pgs.some(function (p) { return CR_MED_PAGES.indexOf(p) >= 0; })) return;
         /* Une ligne peut lire des champs de plusieurs pages ; la premiere qui
            porte un intitule propre l'emporte sur le titre de section. */
         var zoneLigne = zone;
         for (var _z = 0; _z < pgs.length; _z++) {
           if (CR_MED_ZONES[pgs[_z]]) { zoneLigne = CR_MED_ZONES[pgs[_z]]; break; }
         }
+        /* Les tests personnalises sont disperses sur toutes les pages du bilan.
+           Leur laisser la zone de leur section les eparpillerait entre les
+           regions, chacun seul sous un intertitre qui ne les annonce pas. Une
+           zone commune — le nom que le bilan leur donne deja — et le
+           regroupement de fin les rassemble en un bloc. */
+        if (_perso) zoneLigne = 'Tests personnalisés';
         var cle = (it.querySelector('.cr-key') || {}).textContent || '';
         var tagEl = it.querySelector('.cr-tag');
         var tag = tagEl ? (tagEl.textContent || '').trim() : '';
@@ -7493,7 +7505,7 @@ function _buildAllTestsHtml() {
   }
 
   function nl2br(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
-  function crItem(key, val, tag, tagClass, fieldIds) {
+  function crItem(key, val, tag, tagClass, fieldIds, perso) {
     if (!val) return '';
     tag = tag || ''; tagClass = tagClass || '';
     var tagHtml = tag ? '<span class="cr-tag ' + tagClass + '">' + tag + '</span>' : '';
@@ -7515,6 +7527,7 @@ function _buildAllTestsHtml() {
       });
     }
     return '<div class="cr-item' + cls + '"' + (_pgs.length ? ' data-pages="' + _pgs.join(' ') + '"' : '')
+      + (perso ? ' data-cr-perso="1"' : '')
       + '><span class="cr-key">' + key + '</span><span class="cr-val">' + val + '</span>' + tagHtml + dateBadge + '</div>';
   }
 
@@ -7800,7 +7813,7 @@ function _buildAllTestsHtml() {
           else if (isMobBad)             { tag = val; tagCls = 'bad'; }
           else if (isFonc)               { tag = val; tagCls = isPos ? 'ok'  : 'bad'; }
           else                           { tag = val; tagCls = isPos ? 'bad' : 'ok';  }
-          secRows += crItem(tname, noteVal || '-', tag, tagCls, [selEl.id].filter(Boolean));
+          secRows += crItem(tname, noteVal || '-', tag, tagCls, [selEl.id].filter(Boolean), isCustomRow);
         }
       }
     }
@@ -8227,7 +8240,8 @@ function _buildAllTestsHtml() {
           var lmaNoteVal = lmaNoteEl ? lmaNoteEl.value : '';
           var lmaTag    = lmaVal;
           var lmaTagCls = lmaIsPos ? 'bad' : 'ok';
-          lmaHtml += crItem(lmaTname, lmaNoteVal || '-', lmaTag, lmaTagCls, lmaSelEl ? [lmaSelEl.id] : []);
+          lmaHtml += crItem(lmaTname, lmaNoteVal || '-', lmaTag, lmaTagCls, lmaSelEl ? [lmaSelEl.id] : [],
+                            !!(lmaRows[li].dataset && lmaRows[li].dataset.custom === '1'));
         }
       }
     }
@@ -10089,7 +10103,12 @@ function buildCRTF() {
     tmp.innerHTML = html;
     tmp.querySelectorAll('.cr-item').forEach(function(it){
       var pgs = (it.getAttribute('data-pages') || '').split(/\s+/).filter(Boolean);
-      var garde = pgs.some(function(p){ return PAGES_TF.indexOf(p) >= 0; });
+      /* Meme exception que dans le CR medecin, et pour la meme raison : un
+         test cree par le praticien est un test. Le laisser passer d'un cote
+         seulement rouvrirait la divergence que l'unification de PAGES_TF vient
+         de refermer. */
+      var garde = it.getAttribute('data-cr-perso') === '1'
+               || pgs.some(function(p){ return PAGES_TF.indexOf(p) >= 0; });
       if (!garde) it.remove();
     });
     /* Un intertitre de groupe vide n'a plus de raison d'etre — mais on ne
@@ -12326,7 +12345,11 @@ window.addEventListener('load', function(){
         }
       }
       var tagHtml = tag ? '<span class="cr-tag '+tagCls+'">'+tag+'</span>' : '';
-      html += '<div class="cr-item'+cls+'">'+
+      /* Sans `data-pages`, `_crMedResumeTests` ecarte la ligne : elle lit cet
+         attribut, ne trouve rien, et n'a aucun moyen de savoir d'ou elle vient.
+         C'est ce qui rendait les tests personnalises introuvables dans le CR,
+         y compris ceux poses sur une page de tests fonctionnels. */
+      html += '<div class="cr-item'+cls+'" data-pages="page-'+pk+'" data-cr-perso="1">'+
         '<span class="cr-key">'+_esc(t.name||'—')+'</span>'+
         '<span class="cr-val">'+valStr+'</span>'+
         tagHtml+dateBadge+'</div>';

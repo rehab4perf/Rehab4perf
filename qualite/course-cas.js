@@ -76,10 +76,27 @@ var pre = ''
   + 'function _crInSuiviMode(){ return false; }\n'
   + 'function _crMarquage(){ return { cls: "", badge: "" }; }\n';
 
-// crItem, extrait de _buildAllTestsHtml
-var bi = src.indexOf('function crItem(key, val, tag, tagClass, fieldIds)');
+// crItem, extrait de _buildAllTestsHtml.
+/* La borne portait la signature ENTIERE — parametres compris. Ajouter un
+   parametre a `crItem` rendait donc -1, la tranche partait du debut du fichier,
+   et le cas echouait sur « 0 avec data-pages » sans que rien n'indique que
+   c'etait la BORNE qui avait cede, pas le code. On borne sur le nom seul, et
+   on verifie que la tranche a bien ete trouvee. */
+var bi = src.indexOf('function crItem(');
+if (bi < 0) { console.error('crItem introuvable'); process.exit(1); }
 var be = src.indexOf('\n  }', bi);
-pre += src.slice(bi, be + 4) + '\n';
+if (be < 0) { console.error('fin de crItem introuvable'); process.exit(1); }
+var crItemSrc = src.slice(bi, be + 4);
+/* `js/bilan.js` porte DEUX fonctions nommees `crItem` — celle de
+   `_buildAllTestsHtml` et une autre dans `buildCR`. Renommer la premiere
+   faisait glisser la borne sur la seconde sans un mot, et le cas echouait
+   pour une raison qui n'etait pas la bonne. On verifie donc qu'on tient bien
+   celle qui pose la provenance des lignes. */
+if (crItemSrc.indexOf('data-pages') < 0) {
+  console.error('crItem trouvee, mais ce n\'est pas celle qui pose data-pages');
+  process.exit(1);
+}
+pre += crItemSrc + '\n';
 
 // La section elle-meme
 var si = src.indexOf('  var cpV   = function(id)');

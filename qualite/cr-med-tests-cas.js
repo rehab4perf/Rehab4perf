@@ -70,9 +70,13 @@ function lancer(sections) {
 
 /* Une ligne de CR telle que `crItem` la produit : un intitulé, une valeur, et
    la ou les pages dont elle lit les champs. */
-function ligne(cle, val, pages, tag) {
+function ligne(cle, val, pages, tag, perso) {
   return {
-    getAttribute: function (n) { return n === 'data-pages' ? pages : null; },
+    getAttribute: function (n) {
+      if (n === 'data-pages') return pages;
+      if (n === 'data-cr-perso') return perso ? '1' : null;
+      return null;
+    },
     querySelector: function (sel) {
       if (sel === '.cr-key') return { textContent: cle };
       if (sel === '.cr-tag') return tag ? { textContent: tag, classList: { contains: function () { return false; } } } : null;
@@ -479,6 +483,100 @@ console.log('\n  « Aucune compensation » est un bon résultat');
   verifie('le statut existe', 'true', String(d !== -1));
   verifie('et il porte son niveau', 'true',
           String(propre.slice(d, d + 220).indexOf("_entree.niveau = 'ok';") !== -1));
+}
+
+
+console.log('\n  Les tests personnalisés du praticien sont proposés');
+{
+  /* Le praticien peut créer ses propres tests dans le bilan. Ils n'étaient
+     JAMAIS proposés dans le CR — pas même ceux créés sur une page de tests
+     fonctionnels, qui passent pourtant le filtre de pages.
+
+     La cause n'est pas dans le tri mais dans ce qui l'alimente :
+     `_ctBuildSectionHtml` émettait `<div class="cr-item">` NU, sans
+     `data-pages`. Le filtre lit cet attribut, ne trouve rien, et écarte la
+     ligne. Une fonction correcte en aval d'un câblage muet — le piège qui
+     revient le plus souvent dans ce dépôt.
+
+     Le filtre par page ne peut pas non plus s'appliquer à eux tel quel : un
+     test personnalisé créé sur la page Épaule n'a AUCUN autre chemin vers le
+     courrier (les tests orthopédiques y passent par les signes cliniques, pas
+     par cette liste). Le praticien qui a pris la peine de nommer un test veut
+     pouvoir le proposer, quelle que soit la page. Ils portent donc une marque
+     propre, et le filtre les laisse passer. */
+
+  var perso = lancerAvec([
+    section('1. BILAN ORTHOPÉDIQUE — ÉPAULE', [
+      ligne('Neer', 'Négatif', 'page-epaule', 'Négatif'),
+      ligne('Mon test épaule', '12 / 14', 'page-epaule', '', true)
+    ]),
+    section('2. TESTS FONCTIONNELS — MEMBRES INFÉRIEURS', [
+      ligne('SLS', '19 / 17 rép.', 'page-fonctionnels', ''),
+      ligne('Mon test genou', '30 / 28', 'page-fonctionnels', '', true)
+    ])
+  ]);
+  var cles = perso.map(function (t) { return t.cle; });
+
+  verifie('un test perso sur une page fonctionnelle est proposé', 'true',
+          String(cles.indexOf('Mon test genou') >= 0));
+  verifie('un test perso sur une page orthopédique l\'est aussi', 'true',
+          String(cles.indexOf('Mon test épaule') >= 0));
+  verifie('le test natif orthopédique reste écarté', 'false',
+          String(cles.indexOf('Neer') >= 0));
+  verifie('le test natif fonctionnel reste proposé', 'true',
+          String(cles.indexOf('SLS') >= 0));
+
+  var zones = {};
+  perso.forEach(function (t) { zones[t.cle] = t.zone; });
+  verifie('les deux persos partagent une zone', zones['Mon test épaule'],
+          zones['Mon test genou']);
+  verifie('… nommée comme dans le bilan', 'Tests personnalisés',
+          zones['Mon test épaule']);
+
+  /* Le regroupement final rassemble une zone dispersée. Les deux persos sont
+     séparés par un test natif dans l'ordre d'entrée : s'ils ne se rejoignent
+     pas, l'intertitre « Tests personnalisés » s'ouvrirait deux fois. */
+  var iA = cles.indexOf('Mon test épaule'), iB = cles.indexOf('Mon test genou');
+  verifie('… et ils se suivent après regroupement', '1', String(Math.abs(iA - iB)));
+}
+
+console.log('\n  Le CR Tests applique la même exception');
+{
+  /* `_neGarderQueTF` filtre le document « CR Tests » avec la MEME liste de
+     pages — PAGES_TF vaut CR_MED_PAGES, unifiees pour qu'elles ne derivent
+     plus. Laisser passer les tests personnalises d'un seul cote rouvrirait
+     exactement cette divergence : le praticien les verrait proposes dans le
+     courrier, et disparus du document de tests. */
+  var d = src.indexOf('function _neGarderQueTF(');
+  verifie('_neGarderQueTF existe', 'true', String(d !== -1));
+  var corps = src.slice(d, src.indexOf('\n  }\n', d));
+  verifie('elle lit la marque de test personnalisé', 'true',
+          String(/data-cr-perso/.test(corps)));
+  verifie('… et la marque suffit à garder la ligne', 'true',
+          String(/garde\s*=\s*it\.getAttribute\('data-cr-perso'\)\s*===\s*'1'/.test(corps)));
+}
+
+console.log('\n  … et le câblage qui les alimente pose bien la marque');
+{
+  /* Le banc ci-dessus fabrique ses lignes : il prouve le TRI, pas l'émission.
+     Sans ces deux vérifications, retirer l'attribut de `_ctBuildSectionHtml`
+     laisserait les cas au vert et le défaut reviendrait entier. */
+  var d = src.indexOf('window._ctBuildSectionHtml = function');
+  verifie('_ctBuildSectionHtml existe', 'true', String(d !== -1));
+  var corps = src.slice(d, src.indexOf('\n  };', d));
+  verifie('la ligne perso porte sa page', 'true',
+          String(/data-pages="page-'\s*\+\s*pk\s*\+\s*'"/.test(corps)));
+  verifie('… et sa marque de test personnalisé', 'true',
+          String(/data-cr-perso="1"/.test(corps)));
+
+  /* Second câblage : les tests ajoutés dans un tableau existant ou dans un
+     bloc personnalisé passent par `crItem`, pas par `_ctBuildSectionHtml`. */
+  var c = src.indexOf('function crItem(');
+  var corpsItem = src.slice(c, src.indexOf('\n  }', c));
+  verifie('crItem sait poser la marque', 'true',
+          String(/data-cr-perso/.test(corpsItem)));
+  verifie('… et le rendu des lignes custom la lui passe', 'true',
+          String(/crItem\(tname, noteVal \|\| '-', tag, tagCls, \[selEl\.id\]\.filter\(Boolean\), isCustomRow\)/.test(src)));
 }
 
 console.log('\n  ' + (nbKo ? '✗ ' + nbKo + ' échec(s), ' : '✓ ') + nbOk + ' cas vérifiés.\n');
