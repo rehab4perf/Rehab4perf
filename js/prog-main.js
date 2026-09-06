@@ -155,7 +155,12 @@ function _chargerEcheancesAthlete(pid){
            une fusion, c'est un remplacement. */
         var fus = e.fusion || null;
         if (typeof fus === 'string') { try { fus = JSON.parse(fus); } catch(x){ fus = null; } }
+        /* `date_fin` est absente tant que la migration `20260906` n'est pas
+           appliquee : `select=*` la rend simplement introuvable, et l'entree
+           reste un point. Aucun autre code n'a besoin de savoir si la colonne
+           existe. */
         _patientObjectifs.push({ text:e.texte, date:e.date, source:'athlete',
+                                 dateFin:(e.date_fin && e.date_fin !== e.date) ? e.date_fin : null,
                                  echId:e.id, repris:!!e.repris_at, fusion:fus });
       });
       try{ _renderEcheances(); }catch(ex){}
@@ -167,13 +172,21 @@ function _chargerEcheancesAthlete(pid){
 // Repère "🎯 <objectif>" sur le jour concerné, même emplacement que le
 // libellé de cycle (avant les chips de séances).
 function _dayObjectifLabelHtml(dateStr, cls){
-  var matches = _patientObjectifs.filter(function(o){ return o.date === dateStr; });
+  /* Une periode marque CHAQUE jour qu'elle couvre, pas seulement son premier :
+     dans une grille mensuelle, c'est le bloc de jours marques qui se lit d'un
+     coup d'oeil — et c'est ce bloc, pas sa date de debut, qui dit au praticien
+     ou il ne peut pas caler de seance. */
+  var matches = _patientObjectifs.filter(function(o){ return _echCouvre(o, dateStr); });
   if(!matches.length) return '';
-  var titleFull = matches.map(function(o){ return o.text; }).join(' · ');
+  var tousPeriodes = matches.every(_echEstPeriode);
+  var ico = tousPeriodes ? '⏸' : '🎯';
+  var titleFull = matches.map(function(o){
+    return _echEstPeriode(o) ? o.text + ' (' + o.date + ' → ' + o.dateFin + ')' : o.text;
+  }).join(' · ');
   var label = matches.length > 1
-    ? matches.length + ' objectifs'
+    ? matches.length + (tousPeriodes ? ' périodes' : ' objectifs')
     : (matches[0].text.length > 18 ? matches[0].text.slice(0,18)+'…' : matches[0].text);
-  return '<div class="'+cls+'" title="🎯 '+escH(titleFull)+'">🎯 '+escH(label)+'</div>';
+  return '<div class="'+cls+'" title="'+ico+' '+escH(titleFull)+'">'+ico+' '+escH(label)+'</div>';
 }
 /* ── Bande d'echeances ──────────────────────────────────────────────
    Ce qui compte au quotidien n'est pas la date, c'est la DISTANCE qui l'en
@@ -193,6 +206,30 @@ function _echJours(dateStr){
   if(isNaN(d)) return null;
   var a = new Date(); a.setHours(0,0,0,0);
   return Math.round((d - a) / 86400000);
+}
+
+/* ── Periodes declarees par l'athlete ────────────────────────────────
+   Une PERIODE (vacances, deplacement, examens) n'est pas une echeance : l'une
+   est un but vers lequel on travaille, l'autre une parenthese pendant laquelle
+   on ne travaille pas. Elles partagent la table et la bande — c'est la meme
+   chose du point de vue de la planification, quelque chose de date que
+   l'athlete declare — mais jamais la meme identite visuelle.
+
+   Une periode COMMENCEE n'est pas passee : elle se juge sur sa FIN. La filtrer
+   sur son debut, comme une echeance, l'aurait fait disparaitre de la bande le
+   deuxieme jour des vacances — c'est-a-dire pile quand elle informe le plus. */
+function _echEstPeriode(o){ return !!(o && o.dateFin); }
+function _echFinDe(o){ return (o && o.dateFin) || (o && o.date) || null; }
+function _echDuree(o){
+  if(!_echEstPeriode(o)) return 0;
+  var a = new Date(o.date + 'T00:00:00'), b = new Date(o.dateFin + 'T00:00:00');
+  if(isNaN(a) || isNaN(b)) return 0;
+  return Math.round((b - a) / 86400000) + 1;      // bornes incluses
+}
+function _echCouvre(o, dateStr){
+  if(!o || !dateStr) return false;
+  return _echEstPeriode(o) ? (o.date <= dateStr && dateStr <= o.dateFin)
+                           : o.date === dateStr;
 }
 
 /* Deux echeances du MEME JOUR ne se fondent PAS toutes seules.
@@ -220,7 +257,7 @@ function _echJours(dateStr){
 function _echPartenaire(liste, o){
   if(!o || o.fusion) return null;
   var memes = liste.filter(function(x){
-    return x !== o && x.date === o.date && !x.fusion;
+    return x !== o && x.date === o.date && !x.fusion && !_echEstPeriode(x);
   });
   return memes.length === 1 ? memes[0] : null;
 }
@@ -288,10 +325,19 @@ function _renderEcheances(){
        Le defaut ne se voyait pas des fichiers de cas : ils appelaient les deux
        fonctions DIRECTEMENT, avec des entrees portant `fusion`. Elles etaient
        justes ; c'est le cablage qui ne l'etait pas. */
-    return { text:o.text, date:o.date, jours:_echJours(o.date),
-             kind:'sport', echId:o.echId, source:o.source, fusion:o.fusion || null,
+    /* `dateFin` DOIT etre recopie, pour la meme raison que `fusion` juste
+       au-dessus : cette projection reconstruit chaque entree champ par champ,
+       et tout ce qui n'y figure pas est perdu a la frontiere du rendu. */
+    return { text:o.text, date:o.date, dateFin:o.dateFin || null,
+             jours:_echJours(o.date), joursFin:_echJours(_echFinDe(o)),
+             kind:(o.dateFin ? 'periode' : 'sport'),
+             echId:o.echId, source:o.source, fusion:o.fusion || null,
              aVoir:o.source === 'athlete' && !o.repris };
-  }).filter(function(o){ return o.jours !== null && o.jours >= 0; })
+  }).filter(function(o){
+      if(o.jours === null) return false;
+      /* Une periode reste tant que sa FIN n'est pas passee. */
+      return (o.joursFin === null ? o.jours : o.joursFin) >= 0;
+    })
     .sort(function(x,y){ return x.jours - y.jours; });
 
   /* La fusion s'ECRIT dans la ligne de l'athlete : elle ne peut donc etre
@@ -299,7 +345,14 @@ function _renderEcheances(){
      un JSON sans identifiant — il n'y a rien ou l'inscrire. Sur deux objectifs
      du bilan le meme jour, le bouton n'apparait pas : mieux vaut pas de bouton
      qu'un bouton qui ne fait rien. */
-  liste.forEach(function(o){ o.doublon = !!o.echId && !!_echPartenaire(liste, o); });
+  /* Une periode ne se fond pas avec une echeance ponctuelle : ce ne sont pas
+     deux facons de dire la meme chose, et la fusion existe pour supprimer un
+     DOUBLON. Deux periodes du meme jour non plus — elles n'ont pas la meme
+     fin, et fondre « du 1er au 8 » avec « du 1er au 20 » perdrait la seconde
+     borne sans rien dire. */
+  liste.forEach(function(o){
+    o.doublon = !_echEstPeriode(o) && !!o.echId && !!_echPartenaire(liste, o);
+  });
   liste = _echAppliquerFusions(liste);
   /* Le panneau a besoin de la SOURCE du partenaire pour la nommer — or ce
      partenaire vient d'etre retire de la liste. On garde donc le resultat du
@@ -312,7 +365,14 @@ function _renderEcheances(){
   var montrees = _echTout ? liste : liste.slice(0, _ECH_MAX);
   var h = '<span class="cal-ech-lbl">Échéances</span>';
   montrees.forEach(function(o){
-    var jm = o.jours === 0 ? "aujourd'hui" : 'J-' + o.jours;
+    /* Une periode en cours n'a plus de J-N : ce qui reste a dire est le temps
+       QU'IL RESTE. Un « J-3 » sur des vacances commencees se lirait a
+       l'envers. */
+    var jm = _echEstPeriode(o)
+      ? (o.jours <= 0
+          ? (o.joursFin === 0 ? 'dernier jour' : 'encore ' + o.joursFin + ' j')
+          : 'J-' + o.jours + ' · ' + _echDuree(o) + ' j')
+      : (o.jours === 0 ? "aujourd'hui" : 'J-' + o.jours);
     h += '<button class="cal-ech" data-kind="' + o.kind + '"'
       /* L'identifiant est QUOTE : la table le donne en bigint aujourd'hui,
          mais un uuid non quote casserait l'appel — et le type d'une cle n'est
@@ -322,9 +382,12 @@ function _renderEcheances(){
          praticien doit pouvoir verifier que c'est bien la meme echeance, et
          non deux courses le meme jour. */
       +  ' title="' + escH(o.text + (o.autres && o.autres.length ? ' · ' + o.autres.join(' · ') : '')) + ' — ' + o.date + '">'
-      +  '<span class="cal-ech-ico">' + (o.kind === 'sport' ? '🎯' : '⚑') + '</span>'
+      +  '<span class="cal-ech-ico">'
+      +  (o.kind === 'periode' ? '⏸' : o.kind === 'sport' ? '🎯' : '⚑') + '</span>'
       +  '<span class="cal-ech-txt"><b>' + escH(o.text.length > 26 ? o.text.slice(0,26) + '…' : o.text) + '</b>'
-      +  '<span class="cal-ech-date">' + _echDateLisible(o.date) + '</span></span>'
+      +  '<span class="cal-ech-date">'
+      +  (_echEstPeriode(o) ? _echDateLisible(o.date) + ' → ' + _echDateLisible(o.dateFin)
+                            : _echDateLisible(o.date)) + '</span></span>'
       +  '<span class="cal-ech-jm">' + jm + '</span>'
       +  (o.aVoir ? '<span class="cal-ech-neuf" title="Déclarée par l\'athlète — cliquez pour la prendre en compte">nouveau</span>' : '')
       +  '</button>'

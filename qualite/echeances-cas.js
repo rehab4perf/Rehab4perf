@@ -95,8 +95,15 @@ ok('la pastille par défaut l\'est aussi',
    /\.cal-ech \{[^}]*border-left:3px solid var\(--amrap\)/.test(html.replace(/\n/g, ' ')));
 ok('… et porte le même 🎯', une.innerHTML.indexOf('🎯') > 0);
 /* La distinction ne porte PAS sur qui a saisi — une fois l'échéance
-   acceptée, la source ne change plus rien — mais sur ce qui reste à faire. */
-ok('toutes les échéances portent la même identité', /kind:'sport'/.test(js));
+   acceptée, la source ne change plus rien — mais sur ce qui reste à faire.
+
+   Une PÉRIODE fait exception, et c'est la seule : ce n'est pas une échéance
+   vue autrement, c'est autre chose — une parenthèse pendant laquelle on ne
+   travaille pas, là où l'échéance est un but vers lequel on travaille. */
+ok('les échéances portent toutes la même identité',
+   /kind:\(o\.dateFin \? 'periode' : 'sport'\)/.test(js));
+ok('… la période étant la seule exception',
+   (js.match(/kind:'/g) || []).length === 0);
 var neuve = rendre([{ text:'UTMB', date:jour(24), source:'athlete', echId:7, repris:false }]);
 ok('une échéance déclarée et non reprise est marquée', neuve.innerHTML.indexOf('nouveau') > 0);
 ok('… et son clic la prend en compte, identifiant quoté',
@@ -221,7 +228,14 @@ console.log('\nDeux échéances le même jour : les DEUX se voient');
   var D0 = js.indexOf('function _echPartenaire');
   var D1 = js.indexOf('\n/* Une entree ABSORBEE', D0);
   if (D0 < 0 || D1 < D0) { console.log('  ✗ bornes de _echPartenaire introuvables'); ko++; }
-  var part = new Function(js.slice(D0, D1) + '\nreturn _echPartenaire;')();
+  /* `_echPartenaire` s'appuie desormais sur `_echEstPeriode` — une periode ne
+     se fond pas. L'extraire seule la laissait sans sa dependance, et le cas
+     levait au lieu de mesurer. */
+  var P0 = js.indexOf('function _echEstPeriode');
+  var P1 = js.indexOf('\n}', js.indexOf('function _echCouvre'));
+  if (P0 < 0 || P1 < P0) { console.log('  ✗ bornes des outils de période introuvables'); ko++; }
+  var part = new Function(js.slice(P0, P1 + 2) + '\n' + js.slice(D0, D1) +
+                          '\nreturn _echPartenaire;')();
 
   var e = function (t, d, src, id, fus) {
     return { text:t, date:d, source:src, echId:id, fusion:fus || null };
@@ -585,6 +599,193 @@ ok('l\'athlète ne peut pas se déclarer « pris en compte »',
 ok('… ni modifier ce qui l\'est déjà',
    /FOR UPDATE TO anon[\s\S]{0,80}USING \(repris_at IS NULL\)/.test(sql));
 ok('l\'exposition résiduelle est écrite noir sur blanc', /EXPOSITION R/.test(sql));
+
+
+/* ── Periodes declarees par l'athlete ──────────────────────────────────────
+   Une PERIODE (vacances, deplacement, examens) partage la table et la bande
+   avec les echeances — c'est la meme chose du point de vue de la
+   planification : quelque chose de date que l'athlete declare. Mais elle ne se
+   lit pas pareil, et elle ne VIT pas pareil.
+
+   Le piege central : une periode COMMENCEE n'est pas passee. Le filtre de la
+   bande garde ce dont le jour n'est pas depasse ; applique tel quel au DEBUT
+   d'une periode, il faisait disparaitre les vacances le deuxieme jour des
+   vacances — pile quand elles informent le plus. */
+
+console.log('\nUne période se juge sur sa fin, pas sur son début');
+
+var enCours = rendre([{ text: 'Vacances', date: jour(-3), dateFin: jour(4), echId: 7 }]);
+ok('une période commencée reste dans la bande',
+   /Vacances/.test(enCours.innerHTML), enCours.innerHTML.slice(0, 120));
+ok('… et ne s\'annonce plus en J-N',
+   !/J-/.test(enCours.innerHTML), enCours.innerHTML);
+ok('… elle dit le temps qu\'il reste', /encore 4 j/.test(enCours.innerHTML));
+
+var dernier = rendre([{ text: 'Vacances', date: jour(-6), dateFin: jour(0), echId: 7 }]);
+ok('le dernier jour se nomme', /dernier jour/.test(dernier.innerHTML));
+
+var finie = rendre([{ text: 'Vacances', date: jour(-20), dateFin: jour(-1), echId: 7 }]);
+ok('une période terminée quitte la bande', !/Vacances/.test(finie.innerHTML));
+
+var aVenir = rendre([{ text: 'Vacances', date: jour(10), dateFin: jour(24), echId: 7 }]);
+ok('une période à venir garde son J-N', /J-10/.test(aVenir.innerHTML));
+ok('… et annonce sa durée, bornes incluses', /15 j/.test(aVenir.innerHTML),
+   aVenir.innerHTML);
+
+console.log('\nUne période ne se déguise pas en échéance');
+ok('elle porte son propre pictogramme', /⏸/.test(aVenir.innerHTML));
+ok('… pas celui des échéances', !/🎯/.test(aVenir.innerHTML));
+var mixte = rendre([{ text: 'Vacances', date: jour(10), dateFin: jour(24), echId: 7 },
+                    { text: 'UTMB', date: jour(40), echId: 8 }]);
+ok('les deux cohabitent, chacune avec sa marque',
+   /⏸/.test(mixte.innerHTML) && /🎯/.test(mixte.innerHTML));
+ok('la période affiche ses deux bornes', /→/.test(aVenir.innerHTML));
+
+console.log('\nLa fusion ne s\'applique pas aux périodes');
+/* La fusion existe pour supprimer un DOUBLON — la meme echeance saisie deux
+   fois. Une periode et une echeance du meme jour ne disent pas la meme chose ;
+   deux periodes non plus, puisqu'elles n'ont pas la meme fin, et fondre « du
+   1er au 8 » avec « du 1er au 20 » perdrait la seconde borne sans rien dire. */
+var memeJour = rendre([{ text: 'Vacances', date: jour(10), dateFin: jour(24), echId: 7 },
+                       { text: 'UTMB',     date: jour(10), echId: 8 }]);
+ok('les deux restent affichées',
+   /Vacances/.test(memeJour.innerHTML) && /UTMB/.test(memeJour.innerHTML));
+var nbFus = (memeJour.innerHTML.match(/_echFusionner/g) || []).length;
+ok('aucun bouton de fusion n\'est proposé', nbFus === 0, nbFus + ' proposé(s)');
+
+var deuxPer = rendre([{ text: 'Vacances', date: jour(10), dateFin: jour(24), echId: 7 },
+                      { text: 'Stage',    date: jour(10), dateFin: jour(12), echId: 8 }]);
+ok('deux périodes le même jour ne se fondent pas non plus',
+   (deuxPer.innerHTML.match(/_echFusionner/g) || []).length === 0);
+
+/* Deux ECHEANCES du meme jour, elles, doivent toujours pouvoir se fondre :
+   sans ce cas, desactiver la fusion partout passerait pour un succes. */
+var deuxEch = rendre([{ text: 'UTMB', date: jour(10), echId: 7 },
+                      { text: 'Ultra', date: jour(10), echId: 8 }]);
+ok('… mais deux échéances, si',
+   (deuxEch.innerHTML.match(/_echFusionner/g) || []).length > 0);
+
+console.log('\nLe calendrier marque chaque jour couvert');
+{
+  /* `_dayObjectifLabelHtml` vit AVANT la tranche executee ci-dessus : on la
+     prend pour elle-meme, avec les outils de periode dont elle depend. */
+  var dL = js.indexOf('function _dayObjectifLabelHtml');
+  var dO = js.indexOf('function _echEstPeriode');
+  var fO = js.indexOf('\n}', js.indexOf('function _echCouvre'));
+  if (dL < 0 || dO < 0 || fO < 0) { console.error('Bornes du repère de jour introuvables'); process.exit(1); }
+  var jourLbl = new Function('_patientObjectifs', 'escH',
+    js.slice(dO, fO + 2) + '\n' + js.slice(dL, js.indexOf('\n}', dL) + 2) +
+    '\nreturn _dayObjectifLabelHtml;')(
+      [{ text: 'Vacances', date: '2026-07-10', dateFin: '2026-07-20' },
+       { text: 'UTMB', date: '2026-08-28' }],
+      function (x) { return String(x); });
+
+  ok('le premier jour est marqué', /Vacances/.test(jourLbl('2026-07-10', 'c')));
+  ok('un jour du milieu aussi', /Vacances/.test(jourLbl('2026-07-15', 'c')));
+  ok('le dernier jour aussi', /Vacances/.test(jourLbl('2026-07-20', 'c')));
+  ok('la veille ne l\'est pas', jourLbl('2026-07-09', 'c') === '');
+  ok('le lendemain non plus', jourLbl('2026-07-21', 'c') === '');
+  ok('une période porte son pictogramme', /⏸/.test(jourLbl('2026-07-15', 'c')));
+  ok('une échéance garde le sien', /🎯/.test(jourLbl('2026-08-28', 'c')));
+  ok('… et n\'emprunte pas celui des périodes', !/⏸/.test(jourLbl('2026-08-28', 'c')));
+}
+
+console.log('\nL\'écran athlète rend vraiment ses périodes');
+{
+  /* Les cas ci-dessus lisent la SOURCE d'athlete.html. Ils ne prouvent donc
+     rien de ce qui s'affiche : une chaine mal fermee ou une variable oubliee
+     passerait tout entiere. On execute ici le vrai `_echRendre`. */
+  var ath = fs.readFileSync(path.join(R, 'athlete.html'), 'utf8');
+  var a0 = ath.indexOf('var _echListe = null;');
+  var a1 = ath.indexOf('/* ── Vue MOIS ── */');
+  if (a0 < 0 || a1 < a0) { console.log('  ✗ bloc « Mes objectifs » introuvable'); ko++; }
+
+  function rendreAth(liste, opts) {
+    opts = opts || {};
+    var boite = { innerHTML: '' };
+    var f = new Function('document', 'escH', 'fetch', 'alert', 'confirm',
+      'SUPA_URL', 'SUPA_KEY', '_patientId', 'poser',
+      ath.slice(a0, a1) +
+      '\n_echListe = poser.liste; _echPeriodesOk = poser.per; _echModePeriode = poser.mode;' +
+      '\n_echRendre(); return null;');
+    f({ getElementById: function () { return boite; } },
+      function (x) { return String(x); },
+      function () { return { then: function () { return this; }, catch: function () { return this; } }; },
+      function () {}, function () { return true; },
+      'http://x', 'k', 'p1',
+      { liste: liste, per: !!opts.per, mode: !!opts.mode });
+    return boite.innerHTML;
+  }
+
+  var h1 = rendreAth([{ id: 1, texte: 'Vacances', date: jour(-2), date_fin: jour(5) }], { per: true });
+  ok('la période commencée s\'affiche', /Vacances/.test(h1));
+  ok('… avec ses deux bornes', /du .* au /.test(h1), h1.slice(0, 200));
+  ok('… et le temps restant', /encore 5 j/.test(h1));
+  /* On vise la PASTILLE de la ligne, pas le caractere n'importe ou : le bouton
+     de bascule porte lui aussi « ⏸ Une période », et une recherche large
+     passait au vert alors que la ligne avait repris le 🎯 des echeances. */
+  ok('… sous son propre pictogramme', h1.indexOf('<div class="ech-ico">⏸</div>') > 0);
+  ok('… et pas celui des échéances', h1.indexOf('<div class="ech-ico">🎯</div>') < 0);
+
+  var h2 = rendreAth([{ id: 1, texte: 'UTMB', date: jour(30) }], { per: true });
+  ok('une échéance garde son J-N', /J-30/.test(h2));
+  ok('… et sa cible', h2.indexOf('<div class="ech-ico">🎯</div>') > 0);
+
+  var h3 = rendreAth([], { per: true, mode: true });
+  ok('le mode période propose deux dates', /id="echDate"/.test(h3) && /id="echFin"/.test(h3));
+  ok('… et la bascule marque le mode actif',
+     /⏸ Une période<\/button>/.test(h3) && /aria-pressed="true"[^>]*onclick="_echBasculerMode\(true\)/.test(h3));
+
+  var h4 = rendreAth([], { per: false });
+  ok('sans la colonne en base, aucune bascule', !/_echBasculerMode/.test(h4));
+  ok('… et un seul champ de date', /id="echDate"/.test(h4) && !/id="echFin"/.test(h4));
+  /* La bascule est le SEUL chemin vers le mode periode, donc `_echModePeriode`
+     ne peut pas etre vrai sans la sonde — aujourd'hui. Ce cas verrouille cette
+     dependance plutot que de s'y fier : un mode periode ouvert sans la colonne
+     ferait saisir une date de fin que la base refuserait. */
+  var h4b = rendreAth([], { per: false, mode: true });
+  ok('… même si le mode période était forcé', !/id="echFin"/.test(h4b));
+
+  var h5 = rendreAth([{ id: 1, texte: 'Vacances', date: jour(-20), date_fin: jour(-8) }], { per: true });
+  ok('une période finie descend dans « Passées »',
+     h5.indexOf('Passées') > 0 && h5.indexOf('Passées') < h5.indexOf('Vacances'));
+
+  /* Une periode reprise n'est plus supprimable — c'est la base qui refuse,
+     et l'ecran ne doit pas proposer un geste voue a l'echec. */
+  var h6 = rendreAth([{ id: 1, texte: 'Vacances', date: jour(3), date_fin: jour(9),
+                        repris_at: '2026-09-01T10:00:00Z' }], { per: true });
+  ok('une période reprise ne propose plus de suppression', !/_echSupprimer/.test(h6));
+  ok('… et le dit', /pris en compte/.test(h6));
+}
+
+console.log('\nLa migration se lit avant de s\'appliquer');
+{
+  var sqlP = fs.readFileSync(path.join(R, 'supabase', 'migrations',
+                             '20260906_athlete_objectifs_periode.sql'), 'utf8');
+  ok('la colonne est ajoutée sans casser l\'existant',
+     /ADD COLUMN IF NOT EXISTS date_fin date/.test(sqlP));
+  ok('une fin ne peut pas précéder le début',
+     /date_fin IS NULL OR date_fin >= date/.test(sqlP));
+  ok('la durée est bornée', /date_fin - date\) <= 366/.test(sqlP));
+  ok('elle est annoncée NON APPLIQUÉE', /NON APPLIQU/.test(sqlP));
+}
+
+console.log('\nLe code survit à la migration non appliquée');
+{
+  /* Tant que `date_fin` n'existe pas, la requete ne doit pas la NOMMER : elle
+     echouerait, et la section entiere disparaitrait au lieu de perdre un
+     champ. C'est deja la regle pour `fusion` — on verifie qu'elle tient. */
+  var ath = fs.readFileSync(path.join(R, 'athlete.html'), 'utf8');
+  ok('le praticien lit avec select=*',
+     /athlete_objectifs\?patient_id=eq\.' \+ pid[\s\S]{0,80}select=\*/.test(js));
+  ok('l\'athlète aussi', /athlete_objectifs\?patient_id=eq\.' \+ _patientId[\s\S]{0,80}select=\*/.test(ath));
+  ok('aucune requête ne nomme date_fin dans un select de liste',
+     !/select=[^'"&]*date_fin[^'"&]*,/.test(ath + js));
+  ok('la disponibilité est SONDÉE, pas déduite des lignes',
+     /select=date_fin&limit=1/.test(ath));
+  ok('le formulaire de période dépend de la sonde',
+     /_echPeriodesOk && _echModePeriode/.test(ath));
+}
 
 _fusionPromesse.then(function () {
   console.log('');

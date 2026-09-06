@@ -734,6 +734,26 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 .ech-btn:disabled { opacity:.5; }
 .ech-aide { font-size:var(--fs-xs); color:var(--text3); line-height:1.5; margin-top:9px; }
 .ech-vide { font-size:var(--fs-sm); color:var(--text3); font-style:italic; padding:6px 2px 12px; }
+/* Une PERIODE n'est pas une echeance : l'une est un but vers lequel on
+   travaille, l'autre une parenthese pendant laquelle on ne travaille pas. Les
+   afficher pareil ferait lire « vacances » comme un objectif. Le liseré
+   emprunte le gris de la structure plutot que l'ambre des echeances, et le
+   J-N cede la place a la duree — ce qui compte dans une periode. */
+.ech-per { border-left-color:var(--text3); }
+/* `--surface2` et `--accent-l` N'EXISTENT PAS dans ce fichier — sa palette
+   est la sienne, et une variable non definie rend la declaration entiere
+   invalide, ignoree en silence. On emprunte `--bg` et `--border`, qui y sont. */
+.ech-per .ech-jm { color:var(--text2); background:var(--bg); }
+.ech-encours { border-left-color:var(--accent2); }
+.ech-encours .ech-jm { color:var(--accent); background:var(--bg); }
+.ech-deux { display:flex; gap:9px; }
+.ech-deux .ech-champ { flex:1; min-width:0; }
+.ech-bascule { display:flex; gap:6px; margin-bottom:11px; }
+.ech-bascule button { flex:1; font-family:inherit; font-size:var(--fs-xs); font-weight:700;
+  color:var(--text2); background:var(--bg); border:1px solid var(--border);
+  border-radius:7px; padding:8px 6px; cursor:pointer; }
+.ech-bascule button[aria-pressed="true"] { color:#fff; background:var(--accent);
+  border-color:var(--accent); }
 </style>
 <div class="app-header">
   <div class="header-left">
@@ -1525,6 +1545,22 @@ function _renderCalGrid(){
    entierement masquee. Rien ne casse, rien ne s'affiche a moitie. C'est ce
    qui permet de deployer cet ecran avant de toucher au schema. */
 var _echListe = null;
+/* La colonne `date_fin` arrive avec la migration `20260906`. Tant qu'elle
+   n'est pas appliquee, le formulaire de periode reste masque : proposer une
+   saisie que la base refusera est pire que ne rien proposer. On SONDE la
+   colonne — une liste vide ne dit rien, et deduire son absence de l'absence de
+   lignes aurait masque la fonction sur tout patient neuf. */
+var _echPeriodesOk = false;
+
+/* Bornes d'une entree, qu'elle soit un point ou une plage. */
+function _echFin(e){ return e.date_fin || e.date; }
+function _echEstPeriode(e){ return !!e.date_fin && e.date_fin !== e.date; }
+function _echDureeJours(e){
+  if(!_echEstPeriode(e)) return 0;
+  var a = new Date(e.date + 'T00:00:00'), b = new Date(e.date_fin + 'T00:00:00');
+  if(isNaN(a) || isNaN(b)) return 0;
+  return Math.round((b - a) / 86400000) + 1;   // bornes incluses
+}
 
 function _echJoursAth(d){
   var dt = new Date(d + 'T00:00:00'); if(isNaN(dt)) return null;
@@ -1538,11 +1574,19 @@ function _echDateLisibleAth(d){
 }
 function _echCharger(){
   if(!_patientId) return;
+  var ent = { 'apikey':SUPA_KEY, 'Content-Type':'application/json' };
+  /* `select=*` plutot que la liste des colonnes — meme raison que cote
+     praticien : nommer une colonne absente fait echouer la requete, et la
+     section entiere disparaitrait au lieu de perdre un champ. */
   fetch(SUPA_URL + '/rest/v1/athlete_objectifs?patient_id=eq.' + _patientId
-        + '&select=id,texte,date,repris_at&order=date.asc',
-        { headers:{ 'apikey':SUPA_KEY, 'Content-Type':'application/json' } })
+        + '&select=*&order=date.asc', { headers:ent })
     .then(function(r){ return r.ok ? r.json() : null; })
     .then(function(d){ if(!Array.isArray(d)) return; _echListe = d; _echRendre(); })
+    .catch(function(){});
+  /* Sonde, independante du chargement : elle n'a pas a le retarder. */
+  fetch(SUPA_URL + '/rest/v1/athlete_objectifs?select=date_fin&limit=1',
+        { headers:ent })
+    .then(function(r){ if(r.ok){ _echPeriodesOk = true; _echRendre(); } })
     .catch(function(){});
 }
 function _echRendre(){
@@ -1552,7 +1596,11 @@ function _echRendre(){
   _echListe.forEach(function(e){
     var j = _echJoursAth(e.date);
     if(j === null) return;
-    (j >= 0 ? auj : passees).push({ e:e, j:j });
+    /* Une periode COMMENCEE n'est pas passee : elle se juge sur sa FIN. La
+       ranger dans « passees » des le lendemain de son debut aurait fait
+       disparaitre les vacances le deuxieme jour des vacances. */
+    var jf = _echJoursAth(_echFin(e));
+    (((jf === null ? j : jf) >= 0) ? auj : passees).push({ e:e, j:j, jf:jf });
   });
   auj.sort(function(a,b){ return a.j - b.j; });
 
@@ -1560,50 +1608,104 @@ function _echRendre(){
   if(!auj.length) h += '<div class="ech-vide">Aucune échéance. Ajoutez-en une ci-dessous.</div>';
   auj.forEach(function(o){
     var pris = !!o.e.repris_at;
-    h += '<div class="ech'+(pris?' ech-val':'')+'">'
-      +  '<div class="ech-ico">🎯</div><div class="ech-main">'
+    var per  = _echEstPeriode(o.e);
+    var encours = per && o.j <= 0;
+    /* Une periode en cours n'a plus de J-N : ce qui reste a dire est le temps
+       QU'IL RESTE. Un « J-3 » sur des vacances commencees se lirait a
+       l'envers. */
+    var jm = per
+      ? (encours ? (o.jf === 0 ? 'dernier jour' : 'encore ' + o.jf + ' j')
+                 : 'J-' + o.j + ' · ' + _echDureeJours(o.e) + ' j')
+      : (o.j === 0 ? "aujourd'hui" : 'J-' + o.j);
+    var quand = per
+      ? 'du ' + _echDateLisibleAth(o.e.date) + ' au ' + _echDateLisibleAth(o.e.date_fin)
+      : _echDateLisibleAth(o.e.date);
+    h += '<div class="ech'+(pris?' ech-val':'')+(per?' ech-per':'')
+      +  (encours?' ech-encours':'')+'">'
+      +  '<div class="ech-ico">'+(per?'⏸':'🎯')+'</div><div class="ech-main">'
       +  '<div class="ech-nom">'+escH(o.e.texte)+'</div>'
-      +  '<div class="ech-d">'+_echDateLisibleAth(o.e.date)+' · <span class="ech-src">'
+      +  '<div class="ech-d">'+quand+' · <span class="ech-src">'
       +  (pris ? 'pris en compte' : 'en attente de validation')+'</span></div></div>'
-      +  '<div class="ech-jm">'+(o.j===0?"aujourd'hui":'J-'+o.j)+'</div>'
+      +  '<div class="ech-jm">'+jm+'</div>'
       /* Modifiable tant que ce n'est pas repris : ensuite des cycles sont
          cales dessus, et la base refuse de toute facon l'ecriture. */
       +  (pris ? '' : '<button class="ech-suppr" onclick="_echSupprimer('+o.e.id+')" title="Retirer">×</button>')
       +  '</div>';
   });
 
-  h += '<div class="ech-t">Ajouter une échéance</div><div class="ech-ajout">'
+  var mp = _echPeriodesOk && _echModePeriode;
+  h += '<div class="ech-t">Ajouter</div><div class="ech-ajout">'
+    /* La bascule n'apparait que si la base sait stocker une periode. Sans
+       elle, l'ecran est exactement celui d'avant. */
+    +  (_echPeriodesOk
+        ? '<div class="ech-bascule">'
+          + '<button type="button" aria-pressed="'+(mp?'false':'true')+'"'
+          + ' onclick="_echBasculerMode(false)">🎯 Une échéance</button>'
+          + '<button type="button" aria-pressed="'+(mp?'true':'false')+'"'
+          + ' onclick="_echBasculerMode(true)">⏸ Une période</button></div>'
+        : '')
     +  '<div class="ech-champ"><label>Intitulé</label>'
-    +  '<input type="text" id="echNom" maxlength="120" placeholder="UTMB, retour au foot, marathon…"></div>'
-    +  '<div class="ech-champ"><label>Date</label><input type="date" id="echDate"></div>'
+    +  '<input type="text" id="echNom" maxlength="120" value="'+escH(_echSaisieNom)+'" placeholder="'
+    +  (mp ? 'Vacances, déplacement pro, examens…' : 'UTMB, retour au foot, marathon…')+'"></div>'
+    +  (mp
+        ? '<div class="ech-deux">'
+          + '<div class="ech-champ"><label>Du</label><input type="date" id="echDate"></div>'
+          + '<div class="ech-champ"><label>Au</label><input type="date" id="echFin"></div></div>'
+        : '<div class="ech-champ"><label>Date</label><input type="date" id="echDate"></div>')
     +  '<button class="ech-btn" id="echBtn" onclick="_echAjouter()">Ajouter</button>'
-    +  '<p class="ech-aide">Votre kiné la verra dans son agenda et pourra caler vos cycles dessus. '
-    +  'Vous pourrez la retirer tant qu\'elle n\'est pas prise en compte.</p></div>';
+    +  '<p class="ech-aide">'
+    +  (mp
+        ? 'Dites à votre kiné quand vous ne serez pas disponible — vacances, déplacement, examens. Il en tiendra compte en calant vos cycles.'
+        : 'Votre kiné la verra dans son agenda et pourra caler vos cycles dessus.')
+    +  ' Vous pourrez la retirer tant qu\'elle n\'est pas prise en compte.</p></div>';
 
   if(passees.length){
     h += '<div class="ech-t">Passées</div>';
     passees.reverse().forEach(function(o){
-      h += '<div class="ech" style="opacity:.55"><div class="ech-ico">🎯</div>'
+      var per = _echEstPeriode(o.e);
+      h += '<div class="ech'+(per?' ech-per':'')+'" style="opacity:.55">'
+        +  '<div class="ech-ico">'+(per?'⏸':'🎯')+'</div>'
         +  '<div class="ech-main"><div class="ech-nom">'+escH(o.e.texte)+'</div>'
-        +  '<div class="ech-d">'+_echDateLisibleAth(o.e.date)+'</div></div></div>';
+        +  '<div class="ech-d">'
+        +  (per ? 'du '+_echDateLisibleAth(o.e.date)+' au '+_echDateLisibleAth(o.e.date_fin)
+               : _echDateLisibleAth(o.e.date))
+        +  '</div></div></div>';
     });
   }
   box.innerHTML = h + '</div>';
 }
+/* Le mode de saisie et l'intitule en cours survivent au re-rendu : `_echRendre`
+   reecrit la boite entiere, et sans cela le texte deja tape disparaissait des
+   qu'on basculait de mode. */
+var _echModePeriode = false;
+var _echSaisieNom = '';
+function _echBasculerMode(v){
+  var n = document.getElementById('echNom');
+  _echSaisieNom = n ? (n.value||'') : '';
+  _echModePeriode = !!v;
+  _echRendre();
+  var n2 = document.getElementById('echNom'); if(n2) n2.focus();
+}
 function _echAjouter(){
   var n = document.getElementById('echNom'), d = document.getElementById('echDate');
+  var f = document.getElementById('echFin');
   var b = document.getElementById('echBtn');
   var txt = (n.value||'').trim();
+  var per = _echPeriodesOk && _echModePeriode;
   if(!txt || !d.value){ alert('Un intitulé et une date, s\'il te plaît.'); return; }
+  if(per && !(f && f.value)){ alert('Une période a besoin d\'une date de fin.'); return; }
+  if(per && f.value < d.value){ alert('La fin ne peut pas précéder le début.'); return; }
   b.disabled = true; b.textContent = 'Envoi…';
+  var corps = { patient_id:_patientId, texte:txt, date:d.value };
+  if(per) corps.date_fin = f.value;
   fetch(SUPA_URL + '/rest/v1/athlete_objectifs', {
     method:'POST',
     headers:{ 'apikey':SUPA_KEY, 'Content-Type':'application/json', 'Prefer':'return=minimal' },
-    body: JSON.stringify({ patient_id:_patientId, texte:txt, date:d.value })
+    body: JSON.stringify(corps)
   }).then(function(r){
     b.disabled = false; b.textContent = 'Ajouter';
     if(!r.ok){ alert('Impossible d\'enregistrer. Réessaie.'); return; }
-    n.value=''; d.value=''; _echCharger();
+    n.value=''; d.value=''; if(f) f.value=''; _echSaisieNom=''; _echCharger();
   }).catch(function(){ b.disabled=false; b.textContent='Ajouter'; alert('Erreur réseau. Réessaie.'); });
 }
 function _echSupprimer(id){
