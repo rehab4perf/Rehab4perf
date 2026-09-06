@@ -180,6 +180,97 @@ verifie('aucun seuil « positif si < 90% » ne subsiste', false, /positif si\s*&
 verifie('aucune légende ne décrit encore le rapport brut', false,
         /\(1 appui \/ 2 appuis\) × 100, par côté/.test(zoneCim));
 
+/* ── Le côté atteint fait MIEUX ──────────────────────────────────────────── */
+
+/* Le nombre disait deja la verite — « -30% », signe compris. C'est le MOT qui
+   mentait : « Symetrique », en vert, sur un ecart de trente pour cent.
+
+   Le critere de reussite est « LSI >= 90 % » : un cote atteint superieur le
+   franchit largement, et le test EST valide. Mais au-dela de 110 % l'ecart est
+   du meme ordre que celui qu'on appelle ailleurs « asymetrie significative »,
+   simplement INVERSE — et rien, dans un vert uni, n'invite a se demander
+   pourquoi le cote reference fait moins bien. C'est pourtant la question :
+   cote sain deconditionne, dominance preexistante, ou conditions de mesure
+   differentes d'un cote a l'autre.
+
+   Ce cas ne peut se produire QU'AVEC une lateralite renseignee. Sans elle le
+   LSI vaut min/max, donc jamais plus de 100. */
+
+console.log('\nLe côté atteint peut faire mieux — et ce n\'est pas « symétrique »');
+
+/* Les trois fonctions d'un bloc sont SOLIDAIRES — `lsiCls2` appelle
+   `lsiVal2`, et `statOf2` lit la valeur qu'elle rend. Les extraire une par une
+   les separait de leurs dependances : le cas levait une ReferenceError au lieu
+   de mesurer quoi que ce soit. On prend la tranche entiere, du premier au
+   dernier, avec le socle qui porte `lsiInverse`. */
+function paireDe(bilatNom, bilat, borneApres) {
+  var d = src.indexOf('lsiVal2 = function', borneApres || 0);
+  if (d < 0) { console.error('« lsiVal2 » introuvable'); process.exit(1); }
+  var dS = src.indexOf('statOf2 = function', d);
+  var f = src.indexOf('\n  };', dS);
+  if (dS < 0 || f < 0) { console.error('paire incomplète'); process.exit(1); }
+  var tranche = src.slice(d, f + 4);
+  /* `var` en tete : dans le fichier, le premier bloc les declare et le second
+     les REASSIGNE. Sans ce prefixe la tranche du second bloc ecrirait dans le
+     global — et les deux blocs se marcheraient dessus d'un cas a l'autre. */
+  return new Function(bilatNom, socle + '\nvar ' + tranche +
+    '\nreturn { cls: lsiCls2, val: lsiVal2, stat: statOf2 };')(bilat);
+}
+
+/* _statForce : les tests de force du CR. */
+var socle = src.slice(deb, fin);
+var dSF = src.indexOf('function _statForce(');
+var statForce = new Function(socle + '\n' + src.slice(dSF, src.indexOf('\n}', dSF) + 2) +
+                             '\nreturn _statForce;')();
+verifie('force — LSI 95 % reste symétrique', 'Symétrique', statForce(95).txt);
+verifie('force — LSI 108 % reste symétrique (dans la bande)', 'Symétrique', statForce(108).txt);
+verifie('force — LSI 130 % ne se dit plus symétrique', 'Validé — asymétrie inversée',
+        statForce(130).txt);
+verifie('… et ne se montre plus en vert', 'warn', statForce(130).cls);
+verifie('force — LSI 85 % inchangé', 'Asymétrie modérée', statForce(85).txt);
+
+/* Les deux blocs du CR ont leur propre paire lsiCls2 / statOf2 : celle des
+   sections orthopediques, et celle des tests fonctionnels MI — c'est cette
+   derniere qui porte le Hop Test. Les DEUX sont verifiees : une regle ecrite
+   d'un seul cote ne se voit pas la ou le document est lu. */
+[['ORTHO', '_isBilat', 0],
+ ['MI', '_isBilatMI', src.indexOf('lsiVal2 = function',
+                       src.indexOf('lsiVal2 = function') + 10)]].forEach(function (b) {
+  var nom = b[0], bilatNom = b[1], borne = b[2];
+  var p = paireDe(bilatNom, false, borne);
+  var cls = p.cls, val = p.val, stat = p.stat;
+
+  verifie(nom + ' — 130 % passe en ambre', 'warn', cls(130, 100));
+  verifie(nom + ' — 108 % reste vert', 'good', cls(108, 100));
+  verifie(nom + ' — 95 % reste vert', 'good', cls(95, 100));
+  verifie(nom + ' — le verdict dit l\'inversion', 'Validé — asymétrie inversée',
+          stat(cls(130, 100), val(130, 100)));
+  verifie(nom + ' — 108 % garde son verdict habituel', 'true',
+          String(stat(cls(108, 100), val(108, 100)) !== 'Validé — asymétrie inversée'));
+
+  /* Sans lateralite, le LSI vaut min/max : l'inversion est arithmetiquement
+     impossible et le libelle « Symetrique » reste juste. Si ce cas tombait,
+     c'est que la regle s'est mise a mordre la ou elle n'a rien a faire. */
+  var pB = paireDe(bilatNom, true, borne);
+  var clsB = pB.cls, valB = pB.val, statB = pB.stat;
+  verifie(nom + ' — bilatéral : le LSI ne dépasse jamais 100', 'true',
+          String(valB(130, 100) <= 100));
+  verifie(nom + ' — … donc jamais de verdict « inversé »', 'true',
+          String(statB(clsB(130, 100), valB(130, 100)) !== 'Validé — asymétrie inversée'));
+  verifie(nom + ' — bilatéral 100/100 reste symétrique', 'Symétrique',
+          statB(clsB(100, 100), valB(100, 100)));
+});
+
+/* Le cablage : chaque appel doit transmettre la valeur, sinon `statOf2` ne
+   peut pas voir l'inversion et le banc ci-dessus prouve une fonction que
+   personne n'alimente. */
+var appelsNus = (src.match(/statOf2\(lsiCls2\([^)]*\)\)/g) || []);
+verifie('aucun appel ne laisse statOf2 sans la valeur', '0', String(appelsNus.length));
+/* Les deux DEFINITIONS s'ecrivent « statOf2 = function », jamais
+   « statOf2( » : elles ne sont pas comptees ici. Le nombre est celui des
+   appels reels — treize lignes de CR plus le Drop Jump RSI. */
+verifie('les quatorze appels sont là', '14', String((src.match(/statOf2\(/g) || []).length));
+
 /* ── Verdict ─────────────────────────────────────────────────────────────── */
 
 console.log('\n' + '─'.repeat(64));

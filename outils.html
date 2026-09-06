@@ -6623,6 +6623,11 @@ _updateOutilsPatientBtns();
     'table.lt-t td.lt-libre{text-align:left;font-variant-numeric:normal;width:auto;',
       'white-space:normal;color:#1A1917}',
     'table.lt-t th.obs,table.lt-t td.obs{text-align:left;width:auto;white-space:normal}',
+    /* Colonne d'observation — meme traitement que les observations de
+       l'analyse fonctionnelle (`lt-af-sy`) : plus petite, en italique et d'un
+       gris qui recule. Un propos rapporte ne se lit pas comme une mesure. */
+    'table.lt-t--obs td.lt-libre{font-size:.72rem;font-style:italic;color:#6B6860;line-height:1.4}',
+    'table.lt-t--obs th.obs{font-size:.7rem}',
     /* Une compensation par sous-ligne : indentee, sans filet, elle se rattache
        visiblement au test au-dessus au lieu de former une ligne de plus. */
     'table.lt-t tr.lt-af-par td{border-bottom:none;padding-bottom:1px}',
@@ -7038,7 +7043,15 @@ _updateOutilsPatientBtns();
       }
       /* Sans colonne de cote, la colonne qui reste n'accueille plus des chiffres
          mais des observations : elle se nomme, et elle s'aligne a gauche. */
-      h += '<table class="lt-t"><thead><tr><th>Test</th>'
+      /* Sans colonne de mesure, l'unique colonne ne contient que de la prose —
+         les observations des tests de force, souvent longues. Elles s'y
+         affichaient a la taille du corps, cote a cote avec des lignes de
+         chiffres : le regard tombait dessus avant les mesures. La table se
+         signale donc, et sa colonne se traite comme une note. On ne peut pas
+         viser `.lt-libre` seul : la meme classe porte « Cadence 172 spm » dans
+         une table QUI a des colonnes de mesure, et cette valeur-la est une
+         mesure. */
+      h += '<table class="lt-t' + (entetes.length ? '' : ' lt-t--obs') + '"><thead><tr><th>Test</th>'
          + (entetes.length
              ? entetes.map(function (e) { return '<th class="n">' + _crEsc(e) + '</th>'; }).join('')
              : '<th class="obs">Observation</th>')

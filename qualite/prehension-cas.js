@@ -107,8 +107,16 @@ if (deb < 0 || fin < 8) {
 }
 var blocCR = src.slice(deb, fin);
 
-var bi = src.indexOf('function crItem(key, val, tag, tagClass, fieldIds)');
+/* `js/bilan.js` porte DEUX fonctions `crItem` — celle de `_buildAllTestsHtml`
+   et une autre dans `buildCR`. La borne portait la signature entiere : un
+   parametre ajoute la faisait glisser sur la seconde, en silence. On borne sur
+   le nom, et on verifie qu'on tient bien celle qui pose la provenance. */
+var bi = src.indexOf('function crItem(');
 var be = src.indexOf('\n  }', bi);
+if (bi < 0 || be < 0 || src.slice(bi, be).indexOf('data-pages') < 0) {
+  console.error('crItem attendue introuvable dans js/bilan.js');
+  process.exit(1);
+}
 var gi = src.indexOf('  function crGroup(label, rows) {');
 var ge = src.indexOf('\n  }', gi);
 
@@ -122,6 +130,12 @@ var mod = ext('_crMesTab') + '\n' + ext('asymPct') + '\n' + ext('asymTxt') + '\n
      decision clinique. Un stub ecrit a la main aurait laisse passer un
      changement de seuil — ou un retour au « positif / negatif » — sans que
      rien ne rougisse. C'est exactement ce qui est arrive au premier jet. */
+  /* `_statForce` s'appuie desormais sur `lsiInverse` — la regle de
+     l'asymetrie INVERSEE, ecrite une seule fois hors de la fonction. Sans
+     elle, le module levait une ReferenceError avant d'avoir rien mesure. */
+  + ext('lsiInverse') + '\n'
+  + "var LSI_INVERSE_TXT = " + JSON.stringify(
+      (src.match(/var LSI_INVERSE_TXT = '([^']*)'/) || [])[1] || '') + ";\n"
   + ext('_statForce') + '\n'
   + src.slice(bi, be + 4) + '\n'
   + src.slice(gi, ge + 4) + '\n'

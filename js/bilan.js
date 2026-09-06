@@ -6752,6 +6752,26 @@ function asymPct(lsi) {
   return isNaN(lsi) ? NaN : 100 - lsi;
 }
 
+/* ── Asymetrie INVERSEE — le cote atteint fait mieux que le cote sain ───────
+   Le nombre disait deja la verite : « -30% », signe compris. C'est le MOT qui
+   mentait — « Symetrique », en vert, sur un ecart de trente pour cent.
+
+   Le critere de reussite est « LSI >= 90 % » : un cote atteint superieur le
+   franchit largement, et le test EST valide. Mais au-dela de 110 % l'ecart
+   est du meme ordre que celui qu'on appelle ailleurs « asymetrie
+   significative », simplement inverse — et rien, dans un vert uni, n'invite a
+   se demander pourquoi le cote de reference fait moins bien : cote sain
+   deconditionne, dominance preexistante, ou conditions de mesure differentes.
+
+   Le seuil de 110 est le miroir exact du 90 deja en place : la bande de
+   symetrie reste +/- 10 %.
+
+   Ce cas ne peut se produire QU'AVEC une lateralite renseignee. Sans elle le
+   LSI vaut min/max, donc jamais plus de 100 — la regle ne peut pas mordre la
+   ou elle n'a rien a faire. */
+var LSI_INVERSE_TXT = 'Validé — asymétrie inversée';
+function lsiInverse(lsi) { return !isNaN(lsi) && lsi > 110; }
+
 /* Texte prêt à afficher. `dec` : décimales, AUCUNE par défaut.
    Elle valait 1, et la moitié des appels passaient explicitement 0 : le même
    CR affichait « 20% » sur les tests de force et « 20.0% » sur les tests
@@ -7432,6 +7452,7 @@ function _crPrevMerged(start){
    document ne doit pas se dire de deux facons selon la page d'ou elle vient. */
 function _statForce(lsi) {
   if (isNaN(lsi)) return { txt: '', cls: '' };
+  if (lsiInverse(lsi)) return { txt: LSI_INVERSE_TXT,     cls: 'warn' };
   if (lsi >= 90) return { txt: 'Symétrique',              cls: 'ok'   };
   if (lsi >= 80) return { txt: 'Asymétrie modérée',       cls: 'warn' };
   return         { txt: 'Asymétrie significative', cls: 'bad'  };
@@ -7543,15 +7564,22 @@ function _buildAllTestsHtml() {
     if (isNaN(v)) return '';
     return 'Asym. = ' + asymTxt(v);
   };
-  var lsiCls2 = function(ca,cs) {
-    if (isNaN(ca)||isNaN(cs)) return '';
-    var v = _isBilat
+  /* La VALEUR est extraite pour elle-meme : la couleur et le mot en ont tous
+     deux besoin, et les recalculer separement les laissait se contredire. */
+  var lsiVal2 = function(ca,cs) {
+    if (isNaN(ca)||isNaN(cs)) return NaN;
+    return _isBilat
       ? (ca > 0 && cs > 0 ? Math.min(ca,cs)/Math.max(ca,cs)*100 : NaN)
       : (cs > 0 ? ca/cs*100 : NaN);
+  };
+  var lsiCls2 = function(ca,cs) {
+    var v = lsiVal2(ca,cs);
     if (isNaN(v)) return '';
+    if (lsiInverse(v)) return 'warn';
     return v >= 90 ? 'good' : v >= 80 ? 'warn' : 'bad';
   };
-  var statOf2 = function(cls) {
+  var statOf2 = function(cls, lsi) {
+    if (lsiInverse(lsi)) return LSI_INVERSE_TXT;
     if (_isBilat) return ({good:'Symétrique', warn:'Asymétrie modérée', bad:'Asymétrie significative'}[cls])||'';
     return ({good:'OK', warn:'Acceptable', bad:'Insuffisant'}[cls])||'';
   };
@@ -8190,7 +8218,7 @@ function _buildAllTestsHtml() {
              compte des contractions tenues, il ne mesure aucune charge. */
           _crMesTab([{ l:'Répétitions', a:cfCA2+' rép', b:(isNaN(cfCS2)?'':cfCS2+' rép'),
                        asym:(isNaN(cfCA2)||isNaN(cfCS2)||cfCS2<=0)?'':asymTxt(cfCA2/cfCS2*100, 0) }], _labelCA, _labelCS),
-          statOf2(lsiCls2(cfCA2,cfCS2)), lsiCls2(cfCA2,cfCS2), ['cf-q-ca','cf-q-cs']);
+          statOf2(lsiCls2(cfCA2,cfCS2), lsiVal2(cfCA2,cfCS2)), lsiCls2(cfCA2,cfCS2), ['cf-q-ca','cf-q-cs']);
       }
       if (sec.label === 'GENOU' && cfObs2) secRows += '<div style="margin:2px 0 8px;padding:6px 10px;background:var(--surface2);border-radius:5px;font-size:.82rem;color:var(--text2);font-style:italic">' + cfObs2 + '</div>';
     }
@@ -8307,13 +8335,18 @@ function _buildAllTestsHtml() {
     if (isNaN(v)) return '';
     return 'Asym. = ' + asymTxt(v);
   };
+  lsiVal2 = function(ca,cs) {
+    if (isNaN(ca)||isNaN(cs)) return NaN;
+    return _isBilatMI ? (ca>0&&cs>0 ? Math.min(ca,cs)/Math.max(ca,cs)*100 : NaN) : (cs>0 ? ca/cs*100 : NaN);
+  };
   lsiCls2 = function(ca,cs) {
-    if (isNaN(ca)||isNaN(cs)) return '';
-    var v = _isBilatMI ? (ca>0&&cs>0 ? Math.min(ca,cs)/Math.max(ca,cs)*100 : NaN) : (cs>0 ? ca/cs*100 : NaN);
+    var v = lsiVal2(ca,cs);
     if (isNaN(v)) return '';
+    if (lsiInverse(v)) return 'warn';
     return v >= 90 ? 'good' : v >= 80 ? 'warn' : 'bad';
   };
-  statOf2 = function(cls) {
+  statOf2 = function(cls, lsi) {
+    if (lsiInverse(lsi)) return LSI_INVERSE_TXT;
     if (_isBilatMI) return ({good:'Symétrique', warn:'Asymétrie modérée', bad:'Asymétrie significative'}[cls])||'';
     return ({good:'Symétrique', warn:'Asymétrie modérée', bad:'Déficit'}[cls])||'';
   };
@@ -8411,7 +8444,7 @@ function _buildAllTestsHtml() {
   if (!isNaN(slsCA)) {
     var slsVal2 = _mesTab([{ l:'Répétitions', a:(_isBilatMI?slsCS:slsCA)+' rép.', b:(_isBilatMI?slsCA:slsCS)+' rép.', asym:_asymOf(slsCA,slsCS) }],
       { note: slsH2 ? 'Repère EIAS-sol : '+slsH2+(slsH2.indexOf('cm')===-1?' cm':'') : '' });
-    tfHtml += crItem('SLS', slsVal2, statOf2(lsiCls2(slsCA,slsCS)), lsiCls2(slsCA,slsCS), ['sls-ca','sls-cs']);
+    tfHtml += crItem('SLS', slsVal2, statOf2(lsiCls2(slsCA,slsCS), lsiVal2(slsCA,slsCS)), lsiCls2(slsCA,slsCS), ['sls-ca','sls-cs']);
   }
   tfHtml += obsBlock('sls-obs-ca','sls-obs-cs');
   if (!isNaN(hopCA)) {
@@ -8424,7 +8457,7 @@ function _buildAllTestsHtml() {
     }
     var hopDesc = _pair('Distance', hopCA, hopCS, ' cm', _asymOf(hopCA, hopCS))
                 + (hopNote.length ? '<div class="cr-mt-note">' + hopNote.join(' · ') + '</div>' : '');
-    tfHtml += crItem('Hop Test', hopDesc, statOf2(lsiCls2(hopCA, hopCS)), lsiCls2(hopCA, hopCS), ['hop-ca','hop-cs']);
+    tfHtml += crItem('Hop Test', hopDesc, statOf2(lsiCls2(hopCA, hopCS), lsiVal2(hopCA, hopCS)), lsiCls2(hopCA, hopCS), ['hop-ca','hop-cs']);
   }
   tfHtml += obsBlock('hop-obs-ca','hop-obs-cs');
   var scoreCA2 = 0; var scoreCS2 = 0; var recN = CRITERIA_REC.length;
@@ -8464,7 +8497,7 @@ function _buildAllTestsHtml() {
       statCriteres(rclsCA), rclsCA, ['rec-ca-0','rec-ca-1','rec-ca-2','rec-ca-3','rec-ca-4']);
   }
   tfHtml += obsBlock('rec-obs-ca','rec-obs-cs');
-  if (!isNaN(hrCA)) tfHtml += crItem('Heel Rise', _pair('Répétitions', hrCA, hrCS, '', _asymOf(hrCA,hrCS)), statOf2(lsiCls2(hrCA,hrCS)), lsiCls2(hrCA,hrCS), ['hr-ca','hr-cs']);
+  if (!isNaN(hrCA)) tfHtml += crItem('Heel Rise', _pair('Répétitions', hrCA, hrCS, '', _asymOf(hrCA,hrCS)), statOf2(lsiCls2(hrCA,hrCS), lsiVal2(hrCA,hrCS)), lsiCls2(hrCA,hrCS), ['hr-ca','hr-cs']);
   tfHtml += obsBlock('hr-obs-ca','hr-obs-cs');
   /* Course interne du mollet — deplacee de la page Pied vers les Tests
      Fonctionnels MI : c'est une mesure de hauteur de montee sur pointes
@@ -8515,14 +8548,14 @@ function _buildAllTestsHtml() {
       luBad2?'Deficit':'OK', luBad2?'bad':'good', ['lu-ca','lu-cs']);
   }
   tfHtml += obsBlock('lu-obs-ca','lu-obs-cs');
-  if (!isNaN(djHca)) tfHtml += crItem('Drop Jump H', _pair('Hauteur', djHca, djHcs, ' cm', _asymOf(djHca,djHcs)), statOf2(lsiCls2(djHca,djHcs)), lsiCls2(djHca,djHcs), ['dj-h-ca','dj-h-cs']);
+  if (!isNaN(djHca)) tfHtml += crItem('Drop Jump H', _pair('Hauteur', djHca, djHcs, ' cm', _asymOf(djHca,djHcs)), statOf2(lsiCls2(djHca,djHcs), lsiVal2(djHca,djHcs)), lsiCls2(djHca,djHcs), ['dj-h-ca','dj-h-cs']);
   tfHtml += obsBlock('dj-obs-ca','dj-obs-cs');
   var shExpCA2 = parseFloat((document.getElementById('sh-exp-ca')||{}).value||'');
   var shExpCS2 = parseFloat((document.getElementById('sh-exp-cs')||{}).value||'');
   var shEndCA2 = parseFloat((document.getElementById('sh-end-ca')||{}).value||'');
   var shEndCS2 = parseFloat((document.getElementById('sh-end-cs')||{}).value||'');
-  if (!isNaN(shExpCA2)) tfHtml += crItem('Side Hop — Explosivité (15s)', _pair('Sauts', shExpCA2, (isNaN(shExpCS2)?'-':shExpCS2), ' sauts', _asymOf(shExpCA2,shExpCS2)), statOf2(lsiCls2(shExpCA2,shExpCS2)), lsiCls2(shExpCA2,shExpCS2), ['sh-exp-ca','sh-exp-cs']);
-  if (!isNaN(shEndCA2)) tfHtml += crItem('Side Hop — Endurance (30s)', _pair('Sauts', shEndCA2, (isNaN(shEndCS2)?'-':shEndCS2), ' sauts', _asymOf(shEndCA2,shEndCS2)), statOf2(lsiCls2(shEndCA2,shEndCS2)), lsiCls2(shEndCA2,shEndCS2), ['sh-end-ca','sh-end-cs']);
+  if (!isNaN(shExpCA2)) tfHtml += crItem('Side Hop — Explosivité (15s)', _pair('Sauts', shExpCA2, (isNaN(shExpCS2)?'-':shExpCS2), ' sauts', _asymOf(shExpCA2,shExpCS2)), statOf2(lsiCls2(shExpCA2,shExpCS2), lsiVal2(shExpCA2,shExpCS2)), lsiCls2(shExpCA2,shExpCS2), ['sh-exp-ca','sh-exp-cs']);
+  if (!isNaN(shEndCA2)) tfHtml += crItem('Side Hop — Endurance (30s)', _pair('Sauts', shEndCA2, (isNaN(shEndCS2)?'-':shEndCS2), ' sauts', _asymOf(shEndCA2,shEndCS2)), statOf2(lsiCls2(shEndCA2,shEndCS2), lsiVal2(shEndCA2,shEndCS2)), lsiCls2(shEndCA2,shEndCS2), ['sh-end-ca','sh-end-cs']);
   tfHtml += obsBlock('sh-obs-ca','sh-obs-cs');
   var qfCA = parseFloat((document.getElementById('q-f-ca')||{}).value||'');
   var qfCS = parseFloat((document.getElementById('q-f-cs')||{}).value||'');
@@ -8533,14 +8566,15 @@ function _buildAllTestsHtml() {
   // Drop Jump — Temps contact
   var djTca = parseFloat((document.getElementById('dj-t-ca')||{}).value||'');
   var djTcs = parseFloat((document.getElementById('dj-t-cs')||{}).value||'');
-  if (!isNaN(djTca)) tfHtml += crItem('Drop Jump — Temps contact', _pair('Temps', djTca, djTcs, ' ms', _asymOf(djTca,djTcs)), statOf2(lsiCls2(djTca,djTcs)), lsiCls2(djTca,djTcs), ['dj-t-ca','dj-t-cs']);
+  if (!isNaN(djTca)) tfHtml += crItem('Drop Jump — Temps contact', _pair('Temps', djTca, djTcs, ' ms', _asymOf(djTca,djTcs)), statOf2(lsiCls2(djTca,djTcs), lsiVal2(djTca,djTcs)), lsiCls2(djTca,djTcs), ['dj-t-ca','dj-t-cs']);
   // Drop Jump — RSI (calculé, affiché en textContent)
   var djRsiCAv = ((document.getElementById('dj-rsi-ca')||{}).textContent||'').trim();
   var djRsiCSv = ((document.getElementById('dj-rsi-cs')||{}).textContent||'').trim();
   var djRsiLsiv = ((document.getElementById('dj-rsi-lsi')||{}).textContent||'').trim();
   if (djRsiCAv && djRsiCAv !== '-' && parseFloat(djRsiCAv) > 0) {
     var rsiCls = lsiCls2(parseFloat(djRsiCAv), parseFloat(djRsiCSv));
-    tfHtml += crItem('Drop Jump — RSI', _pair('RSI', djRsiCAv, djRsiCSv, '', djRsiLsiv), statOf2(rsiCls), rsiCls, ['dj-t-ca','dj-t-cs']);
+    var rsiLsi = lsiVal2(parseFloat(djRsiCAv), parseFloat(djRsiCSv));
+    tfHtml += crItem('Drop Jump — RSI', _pair('RSI', djRsiCAv, djRsiCSv, '', djRsiLsiv), statOf2(rsiCls, rsiLsi), rsiCls, ['dj-t-ca','dj-t-cs']);
   }
   // Pliométrie verticale qualitative
   var plioqCA2 = 0; var plioqCS2 = 0; var plioqTouched = false;
@@ -8574,9 +8608,9 @@ function _buildAllTestsHtml() {
   var sebtPlCS2  = parseFloat((document.getElementById('sebt-pl-cs')||{}).value||'');
   var sebtCompCA2 = ((document.getElementById('sebt-comp-ca')||{}).textContent||'').trim();
   var sebtCompCS2 = ((document.getElementById('sebt-comp-cs')||{}).textContent||'').trim();
-  if (!isNaN(sebtAntCA2)) tfHtml += crItem('SEBT — Antérieur',       _pair('Distance', sebtAntCA2, sebtAntCS2, ' cm', _asymOf(sebtAntCA2,sebtAntCS2)), statOf2(lsiCls2(sebtAntCA2,sebtAntCS2)), lsiCls2(sebtAntCA2,sebtAntCS2), ['sebt-ant-ca','sebt-ant-cs']);
-  if (!isNaN(sebtPmCA2))  tfHtml += crItem('SEBT — Postéro-médial',  _pair('Distance', sebtPmCA2, sebtPmCS2, ' cm', _asymOf(sebtPmCA2,sebtPmCS2)),   statOf2(lsiCls2(sebtPmCA2,sebtPmCS2)),   lsiCls2(sebtPmCA2,sebtPmCS2), ['sebt-pm-ca','sebt-pm-cs']);
-  if (!isNaN(sebtPlCA2))  tfHtml += crItem('SEBT — Postéro-latéral', _pair('Distance', sebtPlCA2, sebtPlCS2, ' cm', _asymOf(sebtPlCA2,sebtPlCS2)),   statOf2(lsiCls2(sebtPlCA2,sebtPlCS2)),   lsiCls2(sebtPlCA2,sebtPlCS2), ['sebt-pl-ca','sebt-pl-cs']);
+  if (!isNaN(sebtAntCA2)) tfHtml += crItem('SEBT — Antérieur',       _pair('Distance', sebtAntCA2, sebtAntCS2, ' cm', _asymOf(sebtAntCA2,sebtAntCS2)), statOf2(lsiCls2(sebtAntCA2,sebtAntCS2), lsiVal2(sebtAntCA2,sebtAntCS2)), lsiCls2(sebtAntCA2,sebtAntCS2), ['sebt-ant-ca','sebt-ant-cs']);
+  if (!isNaN(sebtPmCA2))  tfHtml += crItem('SEBT — Postéro-médial',  _pair('Distance', sebtPmCA2, sebtPmCS2, ' cm', _asymOf(sebtPmCA2,sebtPmCS2)),   statOf2(lsiCls2(sebtPmCA2,sebtPmCS2), lsiVal2(sebtPmCA2,sebtPmCS2)),   lsiCls2(sebtPmCA2,sebtPmCS2), ['sebt-pm-ca','sebt-pm-cs']);
+  if (!isNaN(sebtPlCA2))  tfHtml += crItem('SEBT — Postéro-latéral', _pair('Distance', sebtPlCA2, sebtPlCS2, ' cm', _asymOf(sebtPlCA2,sebtPlCS2)),   statOf2(lsiCls2(sebtPlCA2,sebtPlCS2), lsiVal2(sebtPlCA2,sebtPlCS2)),   lsiCls2(sebtPlCA2,sebtPlCS2), ['sebt-pl-ca','sebt-pl-cs']);
   if (sebtCompCA2 && sebtCompCA2.indexOf('CA :') === 0) {
     var _sebtA = _isBilatMI ? sebtCompCS2 : sebtCompCA2, _sebtB = _isBilatMI ? sebtCompCA2 : sebtCompCS2;
     var _lA = _isBilatMI ? _labelCS : _labelCA, _lB = _isBilatMI ? _labelCA : _labelCS;
@@ -8638,10 +8672,10 @@ function _buildAllTestsHtml() {
     var psetVal = _crMesTab([{ l:'Répétitions', a:psetCAv, b:(isNaN(psetCSv)?'':psetCSv),
                                asym:(isNaN(pl)?'':asymTxt(pl)) }], _labelCA, _labelCS,
                              { note: psetPoidsReelV ? 'Poids utilisé : ' + psetPoidsReelV + ' kg' : '' });
-    tfMsHtml += crItem('PSET', psetVal, statOf2(lsiCls2(psetCAv,psetCSv)), lsiCls2(psetCAv,psetCSv), ['pset-ca','pset-cs']);
+    tfMsHtml += crItem('PSET', psetVal, statOf2(lsiCls2(psetCAv,psetCSv), lsiVal2(psetCAv,psetCSv)), lsiCls2(psetCAv,psetCSv), ['pset-ca','pset-cs']);
   }
   tfMsHtml += obsBlock('pset-obs-ca','pset-obs-cs');
-  if (!isNaN(setCAv))  { var sl = setCSv>0?(setCAv/setCSv*100):NaN; tfMsHtml += crItem('Shoulder Endurance', _crMesTab([{ l:'Répétitions', a:setCAv, b:setCSv, asym:(isNaN(sl)?'':asymTxt(sl)) }], _labelCA, _labelCS), statOf2(lsiCls2(setCAv,setCSv)), lsiCls2(setCAv,setCSv), ['set-ca','set-cs']); }
+  if (!isNaN(setCAv))  { var sl = setCSv>0?(setCAv/setCSv*100):NaN; tfMsHtml += crItem('Shoulder Endurance', _crMesTab([{ l:'Répétitions', a:setCAv, b:setCSv, asym:(isNaN(sl)?'':asymTxt(sl)) }], _labelCA, _labelCS), statOf2(lsiCls2(setCAv,setCSv), lsiVal2(setCAv,setCSv)), lsiCls2(setCAv,setCSv), ['set-ca','set-cs']); }
   tfMsHtml += obsBlock('set-obs-ca','set-obs-cs');
   (function(){
     var s2 = parseFloat((document.getElementById('ckc-s2')||{}).value||'');
