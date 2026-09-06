@@ -22,6 +22,15 @@ var fs = require('fs');
 var path = require('path');
 
 var src = fs.readFileSync(path.join(__dirname, '..', 'js', 'bilan.js'), 'utf8');
+/* Les quatre feuilles concernees, lues UNE fois et en tete : les cas de
+   l'etiquette les comparent entre elles, et une lecture dispersee au fil du
+   fichier faisait dependre l'ordre des cas de l'ordre des declarations. */
+var outils = fs.readFileSync(path.join(__dirname, '..', 'outils.html'), 'utf8');
+var htmlB  = fs.readFileSync(path.join(__dirname, '..', 'bilan.html'), 'utf8');
+var _dC = outils.indexOf('var CR_LETTRE_CSS = [');
+var _fC = outils.indexOf('].join', _dC);
+if (_dC < 0 || _fC < _dC) { console.error('CR_LETTRE_CSS introuvable'); process.exit(1); }
+var cssLettre = new Function(outils.slice(_dC, _fC + 1) + ';\nreturn CR_LETTRE_CSS.join("");')();
 var deb = src.indexOf('/* ── Asymétrie affichée');
 var fin = src.indexOf('function setLSI');
 if (deb < 0 || fin < 0 || fin <= deb) {
@@ -32,6 +41,11 @@ if (deb < 0 || fin < 0 || fin <= deb) {
 }
 var api = new Function(src.slice(deb, fin) +
   '\nreturn { asymPct: asymPct, asymTxt: asymTxt, lsiClass: lsiClass };')();
+
+/* Le libelle du verdict est LU dans la source, jamais recopie ici : le
+   modifier ne doit pas obliger a retoucher le cas, et un cas qui porte sa
+   propre copie du libelle cesse de verifier le produit. */
+var VERDICT_COMPLET = (src.match(/var LSI_INVERSE_TXT = '([^']*)'/) || [])[1] || '';
 
 var nbOk = 0, nbKo = 0;
 function verifie(intitule, attendu, obtenu) {
@@ -224,8 +238,7 @@ var statForce = new Function(socle + '\n' + src.slice(dSF, src.indexOf('\n}', dS
                              '\nreturn _statForce;')();
 verifie('force — LSI 95 % reste symétrique', 'Symétrique', statForce(95).txt);
 verifie('force — LSI 108 % reste symétrique (dans la bande)', 'Symétrique', statForce(108).txt);
-verifie('force — LSI 130 % ne se dit plus symétrique', 'Validé — asymétrie inversée',
-        statForce(130).txt);
+verifie('force — LSI 130 % ne se dit plus symétrique', VERDICT_COMPLET, statForce(130).txt);
 /* VERT, et c'est une decision : le critere « >= 90 % » EST atteint. Un ambre
    ferait lire un resultat a surveiller la ou le test est reussi. Ce qui
    distingue la ligne n'est pas sa couleur mais son second niveau de lecture. */
@@ -246,10 +259,10 @@ verifie('force — LSI 85 % inchangé', 'Asymétrie modérée', statForce(85).tx
   verifie(nom + ' — 130 % reste vert', 'good', cls(130, 100));
   verifie(nom + ' — 108 % reste vert', 'good', cls(108, 100));
   verifie(nom + ' — 95 % reste vert', 'good', cls(95, 100));
-  verifie(nom + ' — le verdict dit l\'inversion', 'Validé — asymétrie inversée',
+  verifie(nom + ' — le verdict dit l\'inversion', VERDICT_COMPLET,
           stat(cls(130, 100), val(130, 100)));
   verifie(nom + ' — 108 % garde son verdict habituel', 'true',
-          String(stat(cls(108, 100), val(108, 100)) !== 'Validé — asymétrie inversée'));
+          String(stat(cls(108, 100), val(108, 100)) !== VERDICT_COMPLET));
 
   /* Sans lateralite, le LSI vaut min/max : l'inversion est arithmetiquement
      impossible et le libelle « Symetrique » reste juste. Si ce cas tombait,
@@ -259,7 +272,7 @@ verifie('force — LSI 85 % inchangé', 'Asymétrie modérée', statForce(85).tx
   verifie(nom + ' — bilatéral : le LSI ne dépasse jamais 100', 'true',
           String(valB(130, 100) <= 100));
   verifie(nom + ' — … donc jamais de verdict « inversé »', 'true',
-          String(statB(clsB(130, 100), valB(130, 100)) !== 'Validé — asymétrie inversée'));
+          String(statB(clsB(130, 100), valB(130, 100)) !== VERDICT_COMPLET));
   verifie(nom + ' — bilatéral 100/100 reste symétrique', 'Symétrique',
           statB(clsB(100, 100), valB(100, 100)));
 });
@@ -315,180 +328,159 @@ verifie('aucun n\'oublie l\'observation', '0', String(sansObs.length), sansObs.j
 verifie('le courrier la reçoit par .cr-mt-note', 'true',
         /querySelector\('\.cr-mt-note'\)/.test(src));
 
-/* ── La pastille se lit en deux temps ─────────────────────────────────────── */
+/* ── Le verdict et sa nuance sont SEPARES ─────────────────────────────────── */
 
-/* « Validé — asymétrie inversée » sur une seule ligne obligeait a lire
-   vingt-sept caracteres pour trouver « Validé », qui est l'essentiel. Le fait
-   d'abord, la nuance dessous, plus petite.
+/* La pastille avait ete chargee de porter une explication : elle disait
+   « Validé » ET « asymétrie inversée », sur deux lignes, dans un enclos
+   colore. Trois corrections successives ont porte sur la mise en forme de ce
+   pave sans jamais poser la vraie question — une pastille dit un ETAT, d'un
+   mot ; une explication est une NOTE.
 
-   La convention est portee par la CHAINE — « verdict — nuance » — et non par un
-   champ de plus : le libelle n'a qu'un seul endroit ou etre ecrit. Les rendus
-   la coupent sur le tiret cadratin entoure d'espaces. Aucun autre verdict n'en
-   contient : la coupe ne mord que la ou elle doit. */
+   Le tableau a deja une place pour les notes : sous le nom du test, la ou
+   vivent le geste et le repere. La nuance y descend. La colonne « Résultat »
+   redevient homogene, et l'avertissement gagne la place de dire ce qu'il veut
+   vraiment dire.
 
-console.log('\nLa pastille coupe le verdict de sa nuance');
+   Ce qu'on accepte en echange, et c'etait l'argument du choix inverse : un
+   lecteur qui ne parcourt que la colonne de droite ne verra pas la nuance. */
 
-var dTC = src.indexOf('function _crTagCorps(');
-if (dTC < 0) { console.error('_crTagCorps introuvable dans js/bilan.js'); process.exit(1); }
-var tagCorps = new Function(src.slice(dTC, src.indexOf('\n}', dTC) + 2) +
-                            '\nreturn _crTagCorps;')();
+console.log('\nLe verdict tient en un mot, la nuance descend dans les notes');
 
-verifie('le verdict reste en tête', 'true',
-        /^Validé</.test(tagCorps('Validé — asymétrie inversée')));
-verifie('… et la nuance passe dessous', 'true',
-        /asymétrie inversée<\/span>$/.test(tagCorps('Validé — asymétrie inversée')));
-/* La coupe ne doit dependre d'AUCUN style. Ce balisage traverse quatre
-   feuilles — apercu, export autonome, courrier, liste a cocher — et les
-   chemins de sortie n'en recopient pas les memes : le PDF en prend une, le
-   mail aucune, la plupart des clients de messagerie supprimant les attributs
-   `style`. Deux versions successives ont echoue au meme endroit, en
-   production : « Validéasymétrie inversée », les deux mots colles.
+verifie('le verdict porte encore sa nuance à la source', 'true',
+        String(VERDICT_COMPLET.indexOf(' — ') > 0));
 
-   Seul le BALISAGE traverse les trois chemins. Le `<br>` est donc la garantie,
-   et le style n'est plus qu'un agrement. */
-verifie('… par le balisage, non par le style', 'true',
-        /Validé<br>/.test(tagCorps('Validé — asymétrie inversée')));
-verifie('… le style restant un agrément', 'true',
-        /style="display:block"/.test(tagCorps('Validé — asymétrie inversée')));
-/* Sans le `<br>`, une feuille absente recolle les deux mots. On verifie donc
-   qu'il est bien AVANT la nuance, pas ailleurs dans la chaine. */
-verifie('… et le saut précède la nuance', 'Validé<br>',
-        tagCorps('Validé — asymétrie inversée').slice(0, 10));
-verifie('un verdict sans tiret ressort intact', 'Symétrique', tagCorps('Symétrique'));
-verifie('… y compris vide', '', tagCorps(''));
-verifie('… et une valeur absente ne lève pas', '', tagCorps(null));
-/* Un tiret NON entoure d'espaces — « Sous-maximal » — ne doit pas etre coupe :
-   la convention porte sur le tiret cadratin isole, pas sur tout tiret. */
-verifie('un mot composé n\'est pas coupé', 'Sous-maximal', tagCorps('Sous-maximal'));
+var dVN = src.indexOf('function _crVerdictNuance(');
+if (dVN < 0) { console.error('_crVerdictNuance introuvable dans js/bilan.js'); process.exit(1); }
+var vn = new Function(src.slice(dVN, src.indexOf('\n}', dVN) + 2) +
+                      '\nreturn _crVerdictNuance;')();
 
-console.log('\nLes trois rendus appliquent la coupe');
-/* Le banc ci-dessus prouve la FONCTION. Sans ces verifications, un rendu qui
-   ne l'appelle pas laisserait le cas au vert et la pastille sur une ligne —
-   le piege du cablage muet, deja rencontre deux fois dans ce depot. */
-verifie('les deux crItem de js/bilan.js l\'appellent', '2',
-        String((src.match(/_crTagCorps\(tag\) \+ '<\/span>'/g) || []).length));
-verifie('les tests personnalisés aussi', 'true',
-        /\+_crTagCorps\(tag\)\+'<\/span>'/.test(src));
-/* Les trois emetteurs posent AUSSI le verdict brut : c'est lui qui voyage. */
-verifie('les trois posent data-statut', '3',
-        String((src.match(/data-statut="'/g) || []).length));
+verifie('la tête tient en un mot', 'Validé', vn(VERDICT_COMPLET).tete);
+verifie('… et la nuance dit ce qu\'elle veut dire', 'true',
+        String(vn(VERDICT_COMPLET).nuance.indexOf('côté atteint') > 0));
+verifie('un verdict simple n\'a pas de nuance', '', vn('Symétrique').nuance);
+verifie('… et ressort entier', 'Symétrique', vn('Symétrique').tete);
+/* La coupe se fait sur le PREMIER « — » entoure d'espaces, jamais au-dela :
+   la nuance peut en contenir un. */
+verifie('la coupe ne se fait qu\'une fois', 'a', vn('a — b — c').tete);
+verifie('… le reste appartenant à la nuance', 'b — c', vn('a — b — c').nuance);
+verifie('un mot composé n\'est pas coupé', 'Sous-maximal', vn('Sous-maximal').tete);
+verifie('une valeur absente ne lève pas', '', vn(null).tete);
 
-var outils = fs.readFileSync(path.join(__dirname, '..', 'outils.html'), 'utf8');
-verifie('outils a sa propre coupe', 'true', /function _crChipCorps/.test(outils));
-verifie('… elle aussi par le balisage', 'true',
-        /'<br><span class="chip-sub"/.test(outils));
-/* DEUX emetteurs posent une mention par cote — celui de `_crStatutChips` et
-   celui de `_crStatutsParCote`. Chercher la coupe « quelque part » laissait
-   passer l'oubli de l'un des deux : c'est ce qui est arrive, et l'injection ne
-   virait pas au rouge. On les compte. */
-verifie('les deux émetteurs par côté coupent', '2',
-        String((outils.match(/_crChipCorps\(st\.txt\)/g) || []).length));
-verifie('… plus aucune mention par côté n\'est posée brute', '0',
-        String((outils.match(/lt-chip ' \+ _crTagClasse\(st\) \+ '">'\s*\+ _crEsc\(st\.txt\)/g) || []).length));
-verifie('… et la lettre l\'emploie', 'true', /_crChipCorps\(t\.statut\)/.test(outils));
-verifie('… y compris pour les mentions par côté', 'true', /_crChipCorps\(st\.txt\)/.test(outils));
-verifie('plus aucune pastille n\'échappe à la coupe', '0',
-        String((outils.match(/classe \+ '">' \+ _crEsc\(t\.statut\)/g) || []).length));
+console.log('\nLa ligne de CR place chacune à sa place');
 
-console.log('\nLe style existe dans les TROIS feuilles');
-/* Une regle ecrite d'un seul cote ne se voit pas la ou le document est lu :
-   l'apercu (bilan.html), l'export autonome (la chaine `var css` de bilan.js)
-   et le courrier (outils.html) sont trois feuilles distinctes. */
-var htmlB = fs.readFileSync(path.join(__dirname, '..', 'bilan.html'), 'utf8');
-verifie('aperçu — bilan.html', 'true', /\.cr-tag-sub \{[\s\S]{0,120}display: block/.test(htmlB));
-verifie('export autonome — la chaîne css de bilan.js', 'true',
-        /\.cr-tag-sub\{display:block/.test(src));
-/* Le courrier compte pour DEUX feuilles, et c'est le piege de ce domaine.
-   `CR_LETTRE_CSS` est la seule recopiee dans le document imprime ; le <style>
-   de la page ne sert que l'ecran. Une premiere version posait la regle a cote,
-   dans le <style> : l'apercu paraissait juste et la pastille se remettait sur
-   une ligne dans le PDF — le document que recoit le medecin. Le cas passait.
-
-   On EXECUTE ici la declaration telle qu'elle est ecrite, plutot que de la
-   chercher a la regexp : elle est coupee en dizaines de chaines, et une regle
-   a cheval sur deux d'entre elles echappe a toute recherche textuelle. */
-var dC = outils.indexOf('var CR_LETTRE_CSS = [');
-var fC = outils.indexOf('].join', dC);
-if (dC < 0 || fC < dC) { console.error('CR_LETTRE_CSS introuvable'); process.exit(1); }
-var cssLettre = new Function(outils.slice(dC, fC + 1) + ';\nreturn CR_LETTRE_CSS.join("");')();
-verifie('courrier — la feuille recopiée dans le PDF', 'true',
-        /\.lt-chip \.chip-sub\{display:block/.test(cssLettre));
-verifie('… et elle est bien celle du courrier', 'true',
-        /\.lt-chip\{display:inline-block/.test(cssLettre));
-verifie('liste à cocher — le <style> de la page', 'true',
-        /\.cr-tf-tag \.chip-sub \{[\s\S]{0,120}display:block/.test(outils));
-
-/* ── De bout en bout : du bilan jusqu'a la pastille du courrier ───────────── */
-
-/* LE CAS QUI MANQUAIT, et qui a laisse passer trois corrections successives.
-
-   Chaque cote etait verifie SEUL : le bilan produisait bien sa pastille en
-   deux lignes, outils savait bien couper une chaine sur son tiret. Mais entre
-   les deux il y a un transport, et personne ne le regardait.
-
-   `_crMedResumeTests` lisait le verdict par `textContent` — qui APLATIT le
-   balisage. Des que la pastille s'est mise a couper « Validé » de sa nuance,
-   le tiret a disparu A LA SOURCE : outils recevait « Validéasymétrie
-   inversée », une chaine sans tiret, donc rien a couper. Les deux fonctions
-   etaient justes ; c'est le cablage qui ne l'etait pas.
-
-   Le DOM est un RENDU. Il ne peut pas servir de transport. */
-
-console.log('\nLe verdict traverse le transport sans perdre son tiret');
-
-var VERDICT = 'Validé — asymétrie inversée';
-
-/* 1. Ce que le bilan ECRIT dans la ligne de CR. */
 var dCI = src.indexOf('function crItem(');
-var fCI = src.indexOf('\n  }', dCI);
-var crItem = new Function('_crTagCorps', '_blEsc', '_crMarquage', 'document',
-  src.slice(dCI, fCI + 4) + '\nreturn crItem;')(
-  tagCorps,
+var crItem = new Function('_crVerdictNuance', '_blEsc', '_crMarquage', 'document',
+  src.slice(dCI, src.indexOf('\n  }', dCI) + 4) + '\nreturn crItem;')(
+  vn,
   function (x) { return String(x == null ? '' : x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); },
   function () { return { cls: '', badge: '' }; },
   { getElementById: function () { return null; } });
 
-var ligne = crItem('Force fonctionnelle', '28 / 34 rép.', VERDICT, 'good', []);
-verifie('la pastille s\'affiche en deux lignes', 'true', String(/Validé<br>/.test(ligne)));
-verifie('… et transporte son verdict brut', 'true',
-        String(ligne.indexOf('data-statut="Validé — asymétrie inversée"') > 0));
+var ligne = crItem('Force fonctionnelle', '<table class="cr-mt"></table>', VERDICT_COMPLET, 'good', []);
+verifie('la pastille ne porte que le verdict', 'true', String(ligne.indexOf('>Validé<') > 0));
+verifie('… et plus aucune sous-ligne dedans', 'false', String(/cr-tag-sub/.test(ligne)));
+verifie('la nuance rejoint les notes', 'true', String(/cr-mt-note/.test(ligne)));
+verifie('… signalée comme un avertissement', 'true', String(/cr-mt-alerte/.test(ligne)));
+verifie('… et placée hors de la pastille', 'true',
+        String(ligne.indexOf('cr-mt-alerte') < ligne.indexOf('cr-tag ')));
+/* La ligne doit aussi ECRIRE le transport. Sans ce cas, retirer `data-nuance`
+   de `crItem` laissait tout au vert : le banc de lecture, plus bas, fabrique
+   sa propre pastille et ne prouve donc rien de ce que `crItem` produit. */
+verifie('la ligne écrit le transport de la nuance', 'true',
+        String(ligne.indexOf('data-nuance="') > 0));
+verifie('… et celui du verdict', 'true',
+        String(ligne.indexOf('data-statut="Validé"') > 0));
+verifie('un verdict simple n\'écrit aucune nuance', 'false',
+        String(/data-nuance/.test(simple0)));
 
-/* 2. Ce que `_crMedResumeTests` en RELIT. C'est la marche qui cassait. */
+var simple0 = crItem('Capacité de saut', '135 cm', 'Symétrique', 'good', []);
+var simple = simple0;
+verifie('un verdict simple ne pose aucune note', 'false', String(/cr-mt-alerte/.test(simple)));
+
+console.log('\nLe transport porte les deux, séparément');
+
 var dR = src.indexOf('var tagEl = it.querySelector');
-var lecture = src.slice(dR, src.indexOf(';', src.indexOf('var tag =', dR)) + 1);
-var relire = new Function('it', lecture + '\nreturn tag;');
-
-/* Une pastille telle que la produit `crItem` — attribut ET texte aplati. */
-function pastille(attr, texte) {
-  return { querySelector: function () {
-    return { getAttribute: function (n) { return n === 'data-statut' ? attr : null; },
-             textContent: texte };
+var lecture = src.slice(dR, src.indexOf('\n        var v =', dR));
+var relire = new Function('it', lecture + '\nreturn { tag: tag, nuance: nuance };');
+function pastille(statut, nuance, texte) {
+  return { querySelector: function (sel) {
+    if (sel !== '.cr-tag') return null;
+    return { getAttribute: function (n) {
+               return n === 'data-statut' ? statut : n === 'data-nuance' ? nuance : null; },
+             textContent: texte,
+             classList: { contains: function () { return false; } } };
   } };
 }
-verifie('le transport rend le verdict entier', VERDICT,
-        relire(pastille(VERDICT, 'Validéasymétrie inversée')));
-/* Repli : un bilan rendu par une version anterieure n'a pas l'attribut. Sans
-   ce repli, tous les verdicts deja stockes disparaitraient du courrier. */
-verifie('… et retombe sur le texte affiché quand l\'attribut manque', 'Symétrique',
-        relire(pastille(null, 'Symétrique')));
+var lu = relire(pastille('Validé', 'asymétrie inversée : le côté atteint dépasse le côté sain', 'Validé'));
+verifie('le verdict arrive seul', 'Validé', lu.tag);
+verifie('… et la nuance à côté', 'true', String(lu.nuance.indexOf('côté atteint') > 0));
 
-/* 3. Ce qu'outils en FAIT. La boucle est bouclee. */
-var dCC = outils.indexOf('function _crChipCorps');
-var dE = outils.indexOf('function _crEsc(');
-var chipCorps = new Function(
-  outils.slice(dE, outils.indexOf('\n  }', dE) + 4) + '\n' +
-  outils.slice(dCC, outils.indexOf('\n  }', dCC) + 4) + '\nreturn _crChipCorps;')();
+/* Repli : un payload ecrit par une version anterieure porte encore la chaine
+   entiere dans `statut`. Sans coupe a la relecture, la pastille du courrier
+   afficherait tout d'un bloc. */
+var dCV = outils.indexOf('function _crVerdict(');
+if (dCV < 0) { console.error('_crVerdict introuvable dans outils.html'); process.exit(1); }
+var crVerdict = new Function(
+  outils.slice(dCV, outils.indexOf('\n  }', dCV) + 4) + '\nreturn _crVerdict;')();
+verifie('outils coupe un ancien payload', 'Validé', crVerdict({ statut: VERDICT_COMPLET }).statut);
+verifie('… et en tire la nuance', 'true',
+        String(crVerdict({ statut: VERDICT_COMPLET }).nuance.indexOf('côté atteint') > 0));
+verifie('un payload neuf passe tel quel', 'Validé',
+        crVerdict({ statut: 'Validé', nuance: 'x' }).statut);
+verifie('… en gardant sa nuance', 'x', crVerdict({ statut: 'Validé', nuance: 'x' }).nuance);
 
-var recu = relire(pastille(VERDICT, 'Validéasymétrie inversée'));
-verifie('le courrier coupe ce qu\'il reçoit', 'true', String(/Validé<br>/.test(chipCorps(recu))));
-verifie('… et n\'y recolle jamais les deux mots', 'false',
-        String(/Validéasym/.test(chipCorps(recu))));
+console.log('\nL\'étiquette perd sa bordure et son arrondi');
+/* Option 5 : la pastille actuelle moins son enclos. Quatre feuilles portent la
+   regle, et une seule oubliee suffit a rendre le document incoherent. */
+[['aperçu — bilan.html', (htmlB.match(/\.cr-item \.cr-tag \{[^}]*\}/) || [''])[0]],
+ ['export autonome',     (src.match(/\.cr-tag\{[^}]*\}/) || [''])[0]],
+ ['courrier',            (cssLettre.match(/\.lt-chip\{[^}]*\}/) || [''])[0]],
+ ['liste à cocher',      (outils.match(/\.cr-tf-tag \{[^}]*\}/) || [''])[0]]
+].forEach(function (r) {
+  verifie(r[0] + ' — angle refermé', 'true', String(/border-radius: ?4px/.test(r[1])), r[1]);
+  verifie(r[0] + ' — plus de bordure', 'false', String(/border: ?1px solid/.test(r[1])), r[1]);
+});
 
-/* Le defaut EXACT, rejoue : si le transport passait par le texte affiche, la
-   pastille du courrier se recollerait. Ce cas echoue si l'on y revient. */
-var siAplati = chipCorps('Validéasymétrie inversée');
-verifie('une chaîne déjà aplatie ne peut plus être coupée — d\'où la règle',
-        'Validéasymétrie inversée', siAplati);
+console.log('\nLa nuance s\'affiche sous le nom du test, dans les deux documents');
+
+/* On RÉEND la lettre, plutot que de chercher une classe dans le fichier :
+   `lt-alerte` existe aussi dans la feuille de style, si bien qu'un rendu qui
+   cesserait de poser la nuance laissait le cas au vert. Le seul temoin fiable
+   est le HTML produit. */
+var dBH = outils.indexOf('function _crBlocsHtml');
+var fBH = outils.indexOf('\n  function ', dBH + 10);
+var dCV2 = outils.indexOf('function _crVerdict(');
+if (dBH < 0 || fBH < dBH || dCV2 < 0) { console.error('Bornes du rendu de lettre introuvables'); process.exit(1); }
+var blocsHtml = new Function('_crEsc', '_crEstBloc', '_crTagClasse', '_crStatutChips',
+                             '_crStatutsParCote', '_afSousLignes',
+  outils.slice(dCV2, outils.indexOf('\n  }', dCV2) + 4) + '\n' +
+  outils.slice(dBH, fBH) + '\nreturn _crBlocsHtml;')(
+  function (x) { return String(x == null ? '' : x); },
+  function (x) { return x && typeof x === 'object' && x.t; },
+  function () { return 'ok'; },
+  function (t) { return '<span class="lt-chip">' + String((t && t.statut) || '') + '</span>'; },
+  function () { return null; }, function () {});
+
+var lettre = blocsHtml([
+  { t: 'sec', txt: 'TESTS FONCTIONNELS' },
+  { t: 'test', label: 'Force fonctionnelle du membre inférieur', valeur: '',
+    cellules: [{ entete: 'Côté sain', valeur: '28 rép.' },
+               { entete: 'Côté atteint', valeur: '34 rép.' }],
+    statut: 'Validé', nuance: 'asymétrie inversée : le côté atteint dépasse le côté sain',
+    niveau: 'ok' }
+]);
+verifie('le courrier affiche la nuance', 'true', String(/asymétrie inversée/.test(lettre)));
+verifie('… dans la cellule de l\'intitulé', 'true', String(/lt-note lt-alerte/.test(lettre)));
+/* Et surtout PAS dans la pastille : c'est tout l'objet du changement. */
+var chipLettre = (lettre.match(/<span class="lt-chip">[^<]*<\/span>/) || [''])[0];
+verifie('… et jamais dans la pastille', 'false', String(/asymétrie/.test(chipLettre)), chipLettre);
+verifie('la nuance précède la pastille dans le balisage', 'true',
+        String(lettre.indexOf('lt-alerte') < lettre.indexOf('lt-chip')));
+
+verifie('la liste à cocher a sa règle', 'true', /cr-tf-alerte/.test(outils));
+verifie('… et la pose au rendu', 'true', /cr-tf-val cr-tf-alerte/.test(outils));
+verifie('la version texte du courrier la porte', 'true',
+        /if \(_v\.nuance\) out\.push/.test(outils));
 
 /* ── Verdict ─────────────────────────────────────────────────────────────── */
 

@@ -96,12 +96,12 @@ if (crItemSrc.indexOf('data-pages') < 0) {
   console.error('crItem trouvee, mais ce n\'est pas celle qui pose data-pages');
   process.exit(1);
 }
-/* `crItem` appelle `_crTagCorps` — la coupe « verdict / nuance » d'une
-   pastille. Un banc qui extrait `crItem` sans elle leve au premier appel.
-   C'est la troisieme dependance que cette fonction gagne : l'extraire tout
-   court ne suffit plus, il faut extraire ce dont elle depend. */
-var ti = src.indexOf('function _crTagCorps(');
-if (ti < 0) { console.error('_crTagCorps introuvable'); process.exit(1); }
+/* `crItem` appelle `_crVerdictNuance` — la separation du verdict et de sa
+   nuance. Un banc qui extrait `crItem` sans elle leve au premier appel. C'est
+   la quatrieme dependance de cette fonction : l'extraire tout court ne suffit
+   plus, il faut extraire ce dont elle depend. */
+var ti = src.indexOf('function _crVerdictNuance(');
+if (ti < 0) { console.error('_crVerdictNuance introuvable'); process.exit(1); }
 pre += src.slice(ti, src.indexOf('\n}', ti) + 2) + '\n';
 /* `crItem` depend aussi de `_blEsc` — elle echappe le verdict brut pose en
    `data-statut`. C'est la quatrieme dependance de cette fonction. */

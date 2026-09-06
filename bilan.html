@@ -1618,25 +1618,24 @@ textarea.mob-note-inp {
   font-size: .7rem;
   font-weight: 600;
   padding: 2px 8px;
-  border-radius: 20px;
+  /* Étiquette pleine, sans bordure ni arrondi prononcé. La pastille cerclée
+     enfermait un pavé qui pesait plus lourd que la mesure qu'il commente, et
+     quatre d'entre elles dans une colonne créaient une seconde colonne de
+     formes, concurrente des chiffres. Le fond teinté suffit à porter le
+     niveau — et il subsiste à l'impression en noir et blanc, là où une
+     couleur de texte disparaît. */
+  border-radius: 4px;
   white-space: nowrap;
-  text-align: center;
 }
-/* Second niveau de lecture d'une pastille : « Validé » d'abord, la nuance
-   dessous. Une seule pastille l'emploie aujourd'hui — l'asymétrie inversée —
-   et la règle est portée par la CHAÎNE (« verdict — nuance »), pas par une
-   classe : le libellé n'a qu'un endroit où être écrit.
+/* La nuance d'un verdict — « asymétrie inversée : … » — n'est PAS un second
+   étage de la pastille : c'est une note, et elle vit sous le nom du test avec
+   le geste et le repère. Elle se distingue des autres notes par sa couleur,
+   parce qu'elle avertit là où les autres décrivent.
 
    Cette feuille sert l'aperçu à l'écran ; l'export autonome a la SIENNE, dans
    la chaîne `var css` de js/bilan.js. Une règle écrite d'un seul côté ne se
    voit pas là où le document est lu. */
-.cr-tag-sub {
-  display: block;
-  font-size: .85em;
-  font-weight: 500;
-  opacity: .8;
-  letter-spacing: 0;
-}
+.cr-mt-alerte { color: var(--orange); font-weight: 600; }
 .cr-tag.pos-fonc { background: var(--green-l); color: var(--green); }
 .cr-tag.neg-fonc { background: var(--red-l); color: var(--red); }
 .cr-tag.pos-ortho { background: var(--red-l); color: var(--red); }
@@ -6191,7 +6190,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260906a"></script>
-<script src="js/bilan.js?v=20260906h"></script>
+<script src="js/bilan.js?v=20260906i"></script>
 
 </body>
 </html>

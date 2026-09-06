@@ -373,18 +373,13 @@ body {
 .cr-tf-geste { font-weight:400; color:var(--text3); }
 .cr-tf-val { font-size:.71rem; color:var(--text2); margin-top:1px; line-height:1.35; }
 .cr-tf-tag {
-  flex:none; font-size:.62rem; font-weight:700; border-radius:20px;
-  padding:1px 7px; border:1px solid; white-space:nowrap; margin-top:1px;
-  text-align:center;
+  flex:none; font-size:.62rem; font-weight:700; border-radius:4px;
+  padding:2px 7px; white-space:nowrap; margin-top:1px;
 }
-/* Second niveau de lecture d'une pastille — voir `_crChipCorps`. Ici, la LISTE
-   À COCHER seulement : elle vit dans la page et n'est jamais imprimée. La règle
-   jumelle de la lettre est dans `CR_LETTRE_CSS`, qui est la feuille recopiée
-   dans le PDF — les deux vues du même verdict doivent se lire pareil, mais
-   elles ne sont pas servies par la même feuille. */
-.cr-tf-tag .chip-sub {
-  display:block; font-size:.85em; font-weight:600; opacity:.8; letter-spacing:0;
-}
+/* La nuance du verdict, sous l'intitulé du test — jamais dans la pastille.
+   Ici la LISTE À COCHER seulement : elle vit dans la page et n'est jamais
+   imprimée ; la règle jumelle de la lettre est dans `CR_LETTRE_CSS`. */
+.cr-tf-alerte { color:var(--orange-d); font-weight:600; }
 .cr-tf-tag.ok  { background:var(--green-l);  border-color:var(--green-b);  color:var(--green-d); }
 /* Palette d'outils.html : elle n'a pas de famille `--yellow`, contrairement
    a bilan.html. Recopier un nom de variable d'un fichier a l'autre rend la
@@ -6417,33 +6412,34 @@ _updateOutilsPatientBtns();
 
      `_crTagClasse` est appelee sur la mention elle-meme : elle ne lit que
      `.niveau`, que porte aussi chaque entree de `statuts`. */
-  /* « Validé — asymétrie inversée » se lit en DEUX temps : le fait, puis la
-     nuance en dessous, plus petite. La convention est portee par la chaine que
-     le bilan transmet — « verdict — nuance » — et non par un champ de plus :
-     le libelle n'a qu'un seul endroit ou etre ecrit, dans js/bilan.js. Une
-     chaine sans tiret ressort inchangee. */
-  function _crChipCorps(txt) {
-    var t = String(txt == null ? '' : txt);
-    var i = t.indexOf(' — ');
-    if (i < 0) return _crEsc(t);
-    /* La coupe est faite par un `<br>` — voir la note jumelle dans
-       js/bilan.js. Le courrier est rendu a l'ecran, recopie dans le PDF et
-       envoye par mail ; ces trois chemins ne servent pas la meme feuille, et
-       le mail supprime le plus souvent les attributs `style`. Seul le balisage
-       traverse les trois. */
-    return _crEsc(t.slice(0, i))
-         + '<br><span class="chip-sub" style="display:block">' + _crEsc(t.slice(i + 3)) + '</span>';
+  /* Un verdict se lit en DEUX temps, et ces deux temps ne vont pas au meme
+     endroit : « Validé » est un ETAT, il tient dans la pastille ; ce qui suit
+     est une EXPLICATION, elle descend sous l'intitule du test avec le geste et
+     le repere.
+
+     Le bilan transmet desormais les deux separement (`statut` et `nuance`).
+     Le repli sur la coupe reste indispensable : un contenu de `localStorage`
+     ecrit par une version anterieure porte encore la chaine entiere dans
+     `statut`, et sans coupe la pastille l'afficherait d'un bloc. */
+  function _crVerdict(t) {
+    var st = String((t && t.statut) == null ? '' : t.statut);
+    var nu = String((t && t.nuance) || '');
+    if (!nu) {
+      var i = st.indexOf(' — ');
+      if (i >= 0) { nu = st.slice(i + 3); st = st.slice(0, i); }
+    }
+    return { statut: st, nuance: nu };
   }
 
   function _crStatutChips(t, classe) {
     if (t && t.statuts && t.statuts.length) {
       return t.statuts.map(function (st) {
         return '<span class="' + classe + ' ' + _crTagClasse(st) + '">'
-             + _crEsc(st.cote) + ' : ' + _crChipCorps(st.txt) + '</span>';
+             + _crEsc(st.cote) + ' : ' + _crEsc(_crVerdict({ statut: st.txt }).statut) + '</span>';
       }).join(' ');
     }
     return (t && t.statut)
-      ? '<span class="' + classe + ' ' + _crTagClasse(t) + '">' + _crChipCorps(t.statut) + '</span>'
+      ? '<span class="' + classe + ' ' + _crTagClasse(t) + '">' + _crEsc(_crVerdict(t).statut) + '</span>'
       : '';
   }
 
@@ -6476,10 +6472,8 @@ _updateOutilsPatientBtns();
          que chacune trouve sa mention faisait renoncer a tous les coups. */
       if (!st) return '<td class="n"></td>';
       places++;
-      /* Ce second emetteur echappait a la coupe : une mention par cote qui
-         porterait un verdict a nuance se serait affichee d'un bloc. */
       return '<td class="n"><span class="lt-chip ' + _crTagClasse(st) + '">'
-           + _crChipCorps(st.txt) + '</span></td>';
+           + _crEsc(_crVerdict({ statut: st.txt }).statut) + '</span></td>';
     });
     /* Ce qui doit etre garanti est l'inverse : TOUTE mention trouve sa
        colonne. Il en manquerait une sinon, et personne ne le verrait. */
@@ -6564,6 +6558,9 @@ _updateOutilsPatientBtns();
             +       (t.geste ? ' <span class="cr-tf-geste">— ' + _crEsc(t.geste) + '</span>' : '')
             +     '</span>'
             +     '<span class="cr-tf-val">' + _crEsc(t.valeur) + '</span>'
+            +     (_crVerdict(t).nuance
+                    ? '<span class="cr-tf-val cr-tf-alerte">' + _crEsc(_crVerdict(t).nuance) + '</span>'
+                    : '')
             +   '</span>'
             +   _crStatutChips(t, 'cr-tf-tag')
             + '</label>';
@@ -6594,7 +6591,7 @@ _updateOutilsPatientBtns();
         lines.push({ t: 'sec', txt: _z });
       }
       lines.push({ t: 'test', label: t.label, valeur: t.valeur, cellules: t.cellules || [],
-                   note: t.note || '', notes: t.notes || null,
+                   note: t.note || '', notes: t.notes || null, nuance: t.nuance || '',
                    statut: t.statut, statuts: t.statuts || null, niveau: t.niveau, af: t.af || null,
                    afCotes: t.afCotes || null, afMode: t.afMode || '',
                    mesures: t.mesures || null, geste: t.geste || '' });
@@ -6694,21 +6691,27 @@ _updateOutilsPatientBtns();
     '.lt-af-pt{color:#C0392B;font-weight:700;font-size:.7rem}',
     '.lt-af-pt.ok{color:#2D6A4F}',
     '.lt-note{display:block;font-size:.66rem;color:#9D9B96;font-style:italic;margin-top:1px}',
-    '.lt-chip{display:inline-block;font-size:.63rem;font-weight:700;border-radius:20px;text-align:center;',
-      'padding:2px 8px;border:1px solid;white-space:nowrap}',
-    /* Second niveau de lecture d'une pastille : « Validé » d'abord, la nuance
-       dessous. Cette regle DOIT vivre ici et non dans le <style> de la page :
-       `CR_LETTRE_CSS` est la seule feuille recopiee dans le document imprime.
-       Posee a cote, la pastille se remettait sur une ligne dans le PDF — le
-       document que recoit le medecin — pendant que l'apercu paraissait juste. */
-    '.lt-chip .chip-sub{display:block;font-size:.85em;font-weight:600;opacity:.8;letter-spacing:0}',
-    '.lt-chip.ok{background:#E8F5EE;border-color:#AECBBE;color:#1A4130}',
-    '.lt-chip.mid{background:#FEF3EB;border-color:#DEB89C;color:#823903}',
-    '.lt-chip.bad{background:#FDECEA;border-color:#D4AAA6;color:#752018}',
+    /* Etiquette PLEINE : fond teinte, ni bordure ni arrondi prononce. La
+       pastille cerclee enfermait un pave plus lourd que la mesure qu'elle
+       commente, et quatre d'entre elles dans une colonne formaient une seconde
+       colonne de formes, concurrente des chiffres. Le fond suffit a porter le
+       niveau, et il subsiste a l'impression en noir et blanc — la ou une
+       couleur de texte disparait.
+
+       Cette feuille est la SEULE recopiee dans le document imprime : une regle
+       posee dans le <style> de la page ne s'y retrouverait pas. */
+    '.lt-chip{display:inline-block;font-size:.63rem;font-weight:700;border-radius:4px;',
+      'padding:3px 8px;white-space:nowrap}',
+    '.lt-chip.ok{background:#E8F5EE;color:#1A4130}',
+    '.lt-chip.mid{background:#FEF3EB;color:#823903}',
+    '.lt-chip.bad{background:#FDECEA;color:#752018}',
+    /* La nuance d'un verdict AVERTIT la ou les autres notes decrivent : elle
+       se distingue par sa couleur, et laisse l'italique aux descriptions. */
+    '.lt-note.lt-alerte{color:#823903;font-style:normal;font-weight:600}',
     /* Ce que le bilan ne colore pas ne doit pas se colorer ici. L'ambre
        etait le defaut : une ligne sans ton s'annoncait « attention » au
        medecin alors que le bilan n'avait rien signale. */
-    '.lt-chip.neutre{background:#F1F0ED;border-color:#D3D1CB;color:#6B6860}',
+    '.lt-chip.neutre{background:#F1F0ED;color:#6B6860}',
     /* Conclusion et plan de traitement : deux encadres JUMEAUX, et non un
        encadre suivi de deux paragraphes nus. Le plan sortait en texte courant
        juste sous la conclusion mise en valeur — le lecteur ne voyait plus ou
@@ -6861,7 +6864,11 @@ _updateOutilsPatientBtns();
           .map(function (c) { return (c.entete ? c.entete.toLowerCase() + ' ' : '') + c.valeur; }).join(' · ');
         if (!det) det = b.valeur;
         if (b.note) det += (det ? ' — ' : '') + b.note;
-        out.push('      ' + det + (b.statut ? '   → ' + b.statut.toLowerCase() : ''));
+        var _v = _crVerdict(b);
+        out.push('      ' + det + (_v.statut ? '   → ' + _v.statut.toLowerCase() : ''));
+        /* Le texte brut n'a pas de colonne ou poser une note : la nuance suit
+           la ligne, en retrait, plutot que de disparaitre. */
+        if (_v.nuance) out.push('        ' + _v.nuance);
         return;
       }
     });
@@ -7162,7 +7169,12 @@ _updateOutilsPatientBtns();
            /* Le geste d'abord — il dit CE QU'ON A FAIT ; la note qui suit dit
               dans quelles conditions (« Repère EIAS-sol : 45 cm »). */
            + (t.geste ? '<span class="lt-note">' + _crEsc(t.geste) + '</span>' : '')
-           + (t.note ? '<span class="lt-note">' + _crEsc(t.note) + '</span>' : '') + '</td>'
+           + (t.note ? '<span class="lt-note">' + _crEsc(t.note) + '</span>' : '')
+           /* La nuance du verdict rejoint les notes : elle avertit la ou les
+              autres decrivent, d'ou sa couleur propre. */
+           + (_crVerdict(t).nuance
+               ? '<span class="lt-note lt-alerte">' + _crEsc(_crVerdict(t).nuance) + '</span>' : '')
+           + '</td>'
            + _cols
            + '<td class="s">' + _crStatutChips(t, 'lt-chip')
            + '</td></tr>';

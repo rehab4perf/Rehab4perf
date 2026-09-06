@@ -118,12 +118,12 @@ console.log('\n  Les mentions vont dans les colonnes de côté');
 var h0 = outils.indexOf('function _crStatutsParCote');
 var h1 = outils.indexOf('\n  }', h0);
 if (h0 < 0 || h1 < h0) { console.error('Bornes de _crStatutsParCote introuvables.'); process.exit(1); }
-/* `_crStatutsParCote` appelle desormais `_crChipCorps` — la coupe
-   « verdict / nuance » d'une pastille. On l'extrait AVEC, plutot que de la
-   doubler : une doublure ecrite ici aurait masque un changement de coupe. */
-var c0 = outils.indexOf('function _crChipCorps');
+/* `_crStatutsParCote` appelle desormais `_crVerdict` — la separation du
+   verdict et de sa nuance. On l'extrait AVEC, plutot que de la doubler : une
+   doublure ecrite ici aurait masque un changement de decoupe. */
+var c0 = outils.indexOf('function _crVerdict(');
 var c1 = outils.indexOf('\n  }', c0);
-if (c0 < 0 || c1 < c0) { console.error('Bornes de _crChipCorps introuvables.'); process.exit(1); }
+if (c0 < 0 || c1 < c0) { console.error('Bornes de _crVerdict introuvables.'); process.exit(1); }
 var parCote = new Function('_crTagClasse', '_crEsc',
   outils.slice(c0, c1 + 4) + '\n' + outils.slice(h0, h1 + 4) + '\nreturn _crStatutsParCote;')(
   function (x) { return x && x.niveau === 'bad' ? 'bad' : x && x.niveau === 'ok' ? 'ok' : 'mid'; },

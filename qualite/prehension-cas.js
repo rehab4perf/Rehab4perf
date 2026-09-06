@@ -137,9 +137,9 @@ var mod = ext('_crMesTab') + '\n' + ext('asymPct') + '\n' + ext('asymTxt') + '\n
   + "var LSI_INVERSE_TXT = " + JSON.stringify(
       (src.match(/var LSI_INVERSE_TXT = '([^']*)'/) || [])[1] || '') + ";\n"
   + ext('_statForce') + '\n'
-  /* `crItem` appelle `_crTagCorps` — la coupe « verdict / nuance » d'une
-     pastille. Sans elle, le module leve au premier appel. */
-  + ext('_crTagCorps') + '\n'
+  /* `crItem` appelle `_crVerdictNuance` — la separation du verdict et de sa
+     nuance. Sans elle, le module leve au premier appel. */
+  + ext('_crVerdictNuance') + '\n'
   /* `crItem` depend aussi de `_blEsc` — elle echappe le verdict brut pose
      en `data-statut`. */
   + ext('_blEsc') + '\n'

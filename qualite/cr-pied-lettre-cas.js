@@ -31,9 +31,16 @@ var a = outils.indexOf('function _crBlocsHtml');
 var b = outils.indexOf('\n  function ', a + 10);
 if (a < 0 || b < a) { console.error('Bornes de _crBlocsHtml introuvables.'); process.exit(1); }
 /* eslint-disable no-new-func */
+/* `_crBlocsHtml` appelle `_crVerdict` — la separation du verdict et de sa
+   nuance, la nuance descendant sous l'intitule du test. On l'extrait AVEC
+   plutot que de la doubler : une doublure ecrite ici aurait masque un
+   changement de decoupe. */
+var v0 = outils.indexOf('function _crVerdict(');
+var v1 = outils.indexOf('\n  }', v0);
+if (v0 < 0 || v1 < v0) { console.error('Bornes de _crVerdict introuvables.'); process.exit(1); }
 var blocsHtml = new Function('_crEsc', '_crEstBloc', '_crTagClasse', '_crStatutChips',
                              '_crStatutsParCote', '_afSousLignes',
-  outils.slice(a, b) + '\nreturn _crBlocsHtml;')(
+  outils.slice(v0, v1 + 4) + '\n' + outils.slice(a, b) + '\nreturn _crBlocsHtml;')(
   function (x) { return String(x == null ? '' : x); },
   function (x) { return x && typeof x === 'object' && x.t; },
   function () { return 'ok'; }, function () { return ''; },
