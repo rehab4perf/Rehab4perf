@@ -237,6 +237,21 @@ function _crMedAnalyseFonc(el) {
            lignes: lignes, synthese: synth, cotes: cotes, mode: mode };
 }
 
+/* Contenu d'une pastille de verdict. « Validé — asymétrie inversée » se lit en
+   DEUX temps : le fait, puis la nuance en dessous, plus petite. Sur une seule
+   ligne, il fallait lire vingt-sept caracteres pour trouver « Validé », qui est
+   l'essentiel.
+
+   La coupe se fait sur le tiret cadratin ENTOURE D'ESPACES — la convention est
+   portee par la chaine, et aucun autre verdict n'en contient. Une chaine sans
+   tiret ressort inchangee, ce qui rend l'appel sans risque partout. */
+function _crTagCorps(txt) {
+  var t = String(txt == null ? '' : txt);
+  var i = t.indexOf(' — ');
+  if (i < 0) return t;
+  return t.slice(0, i) + '<span class="cr-tag-sub">' + t.slice(i + 3) + '</span>';
+}
+
 function _crMedValeur(el) {
   if (!el) return { texte: '', cellules: [] };
   if (el.querySelector('.cr-af')) {
@@ -6763,6 +6778,16 @@ function asymPct(lsi) {
    se demander pourquoi le cote de reference fait moins bien : cote sain
    deconditionne, dominance preexistante, ou conditions de mesure differentes.
 
+   Le verdict reste VERT — decision du praticien : le critere EST atteint, et
+   un ambre l'aurait fait lire comme un resultat a surveiller alors que le test
+   est reussi. Ce qui distingue la ligne n'est donc pas sa couleur mais son
+   SECOND niveau de lecture : « asymetrie inversee » s'ecrit sous « Validé »,
+   plus petit. On garde le fait d'abord, la nuance ensuite.
+
+   Convention portee par la chaine elle-meme : « <verdict> — <nuance> ». Les
+   rendus de pastille la coupent sur ce tiret et posent la nuance en dessous.
+   Aucun autre verdict n'en porte : la coupe ne mord que la ou elle doit.
+
    Le seuil de 110 est le miroir exact du 90 deja en place : la bande de
    symetrie reste +/- 10 %.
 
@@ -7452,7 +7477,7 @@ function _crPrevMerged(start){
    document ne doit pas se dire de deux facons selon la page d'ou elle vient. */
 function _statForce(lsi) {
   if (isNaN(lsi)) return { txt: '', cls: '' };
-  if (lsiInverse(lsi)) return { txt: LSI_INVERSE_TXT,     cls: 'warn' };
+  if (lsiInverse(lsi)) return { txt: LSI_INVERSE_TXT,     cls: 'ok'   };
   if (lsi >= 90) return { txt: 'Symétrique',              cls: 'ok'   };
   if (lsi >= 80) return { txt: 'Asymétrie modérée',       cls: 'warn' };
   return         { txt: 'Asymétrie significative', cls: 'bad'  };
@@ -7529,7 +7554,7 @@ function _buildAllTestsHtml() {
   function crItem(key, val, tag, tagClass, fieldIds, perso) {
     if (!val) return '';
     tag = tag || ''; tagClass = tagClass || '';
-    var tagHtml = tag ? '<span class="cr-tag ' + tagClass + '">' + tag + '</span>' : '';
+    var tagHtml = tag ? '<span class="cr-tag ' + tagClass + '">' + _crTagCorps(tag) + '</span>' : '';
     var _mq = _crMarquage(fieldIds);
     var cls = _mq.cls; var dateBadge = _mq.badge;
     /* Chaque ligne retient la ou les PAGES d'ou viennent ses champs. C'est ce
@@ -7575,7 +7600,8 @@ function _buildAllTestsHtml() {
   var lsiCls2 = function(ca,cs) {
     var v = lsiVal2(ca,cs);
     if (isNaN(v)) return '';
-    if (lsiInverse(v)) return 'warn';
+    /* Vert : au-dela de 110 le critere « >= 90 % » est largement franchi.
+       C'est le libelle qui porte la nuance, pas la couleur. */
     return v >= 90 ? 'good' : v >= 80 ? 'warn' : 'bad';
   };
   var statOf2 = function(cls, lsi) {
@@ -8342,7 +8368,8 @@ function _buildAllTestsHtml() {
   lsiCls2 = function(ca,cs) {
     var v = lsiVal2(ca,cs);
     if (isNaN(v)) return '';
-    if (lsiInverse(v)) return 'warn';
+    /* Vert : au-dela de 110 le critere « >= 90 % » est largement franchi.
+       C'est le libelle qui porte la nuance, pas la couleur. */
     return v >= 90 ? 'good' : v >= 80 ? 'warn' : 'bad';
   };
   statOf2 = function(cls, lsi) {
@@ -9421,7 +9448,7 @@ function buildCR() {
   function crItem(key, val, tag, tagClass, fieldIds) {
     if (!val) return '';
     tag = tag || ''; tagClass = tagClass || '';
-    var tagHtml = tag ? '<span class="cr-tag ' + tagClass + '">' + tag + '</span>' : '';
+    var tagHtml = tag ? '<span class="cr-tag ' + tagClass + '">' + _crTagCorps(tag) + '</span>' : '';
     var _mq = _crMarquage(fieldIds);
     var cls = _mq.cls; var dateBadge = _mq.badge;
     return '<div class="cr-item' + cls + '"><span class="cr-key">' + key + '</span><span class="cr-val">' + val + '</span>' + tagHtml + dateBadge + '</div>';
@@ -10292,7 +10319,8 @@ function _buildBilanHTML(type) {
     .replace(/(<div class="cr-section">)(<h3>2\. Bilan)/g,  '<div class="cr-section cr-ortho">$2')
     .replace(/(<div class="cr-section">)(<h3>[345]\. Tests)/g, '<div class="cr-section cr-tests">$2');
 
-  var css = `:root{--green:#2D6A4F;--green-l:#E8F5EE;--red:#C0392B;--red-l:#FDECEA;--orange:#D4600A;--orange-l:#FEF3EB;--border:#E8E6E1;--text:#1A1917;--text2:#6B6860;--text3:#9D9B96;--accent2:#1A3A5C;--surface2:#F1F0ED;--surface:#FFFFFF;--accent:#2B5FA6;--accent-l:#EEF3FB}*{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}html{font-size:14px}body{font-family:'Figtree',-apple-system,sans-serif;background:#F5F7FA;color:#1A1917;padding:0}.page-wrap{max-width:800px;margin:0 auto;padding:0 0 48px}.doc-header{background:var(--accent2);padding:16px 28px 14px}.doc-hdr-row1{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}.doc-hdr-sep{border:none;border-top:1px solid rgba(255,255,255,.12);margin:0 0 10px}.doc-hdr-row2{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}.doc-logo{display:inline-flex;align-items:center;gap:8px;flex-shrink:0}.doc-logo svg{display:block;flex-shrink:0}.doc-logo .w{display:inline-flex;align-items:baseline;line-height:1;white-space:nowrap}.doc-logo .r{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:22px;color:#fff;letter-spacing:-.01em}.doc-logo .e{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:.44em;vertical-align:super;color:#7FA8D9;margin:0 .05em 0 .01em;line-height:0}.doc-logo .p{font-family:'Poppins',sans-serif;font-weight:800;font-size:17px;color:#fff;letter-spacing:-.025em;margin-left:.02em}.doc-type-badge{font-size:.62rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.2);border-radius:4px;padding:3px 10px}.doc-pract-name{font-size:.88rem;font-weight:700;color:#fff;letter-spacing:-.01em}.doc-pract-meta{font-size:.72rem;color:rgba(255,255,255,.7);display:flex;align-items:center;gap:10px;flex-wrap:wrap}.patient-card{background:#fff;margin:0;padding:22px 28px;border-bottom:3px solid var(--accent-l);display:flex;align-items:center;gap:18px}.patient-avatar{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:800;flex-shrink:0}.patient-name{font-size:1.35rem;font-weight:800;color:var(--accent2);margin-bottom:4px;letter-spacing:-.03em;line-height:1.1}.patient-sub{font-size:.8rem;color:var(--text2)}.patient-badges{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}.pat-badge{border-radius:6px;padding:3px 10px;font-size:.68rem;font-weight:600;letter-spacing:.01em;background:var(--accent-l);color:var(--accent)}.pat-badge.orange{background:#FEF3EB;color:#D4600A}.pat-badge.navy{background:var(--accent2);color:#fff;font-weight:700}.doc-date-bar{background:var(--accent-l);padding:7px 28px;font-size:.73rem;color:var(--accent);border-bottom:1px solid #D3D9F0;font-weight:500;letter-spacing:.01em}.doc-date-bar strong{font-weight:700;color:var(--accent2)}.doc-body{padding:20px 28px 0}.block{display:none}.cr-section{background:#fff;border-radius:10px;margin-bottom:16px;overflow:hidden;border:1px solid var(--border)}.cr-section h3{padding:11px 16px 11px 20px;font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent2);margin:0;border-left:4px solid var(--accent2);background:#F7F8FC}.cr-ortho h3{border-left-color:var(--green);color:var(--green);background:#F3FAF6}.cr-tests h3{border-left-color:var(--accent);color:var(--accent);background:#F0F4FC}.cr-alert h3{border-left-color:#D4600A;color:#D4600A;background:#FFF8F3}.cr-item{display:flex;align-items:flex-start;gap:16px;padding:10px 16px;border-bottom:1px solid #F5F4F2;line-height:1.5}.cr-item:last-child{border-bottom:none}.cr-key{font-size:.65rem;font-weight:700;color:var(--text3);min-width:175px;flex-shrink:0;padding-top:3px;text-transform:uppercase;letter-spacing:.06em}.cr-val{flex:1;font-size:.88rem;color:#1A1917;line-height:1.55}.cr-tag{display:inline-block;padding:2px 9px;border-radius:5px;font-size:.65rem;font-weight:700;white-space:nowrap;margin-left:8px;vertical-align:middle;letter-spacing:.02em}.cr-tag.ok,.cr-tag.good{background:#E8F5EE;color:var(--green)}.cr-tag.warn{background:#FEF3EB;color:#D4600A}.cr-tag.bad{background:#FDECEA;color:var(--red)}.cr-alert .cr-item{padding:10px 16px;align-items:flex-start;background:#FFFAF7}.cr-alert .cr-item:nth-child(odd){background:#fff}.cr-alert .cr-item>span:first-child{color:#D4600A;font-weight:700;font-size:.95rem;flex-shrink:0}.cr-empty{padding:40px;text-align:center;color:var(--text3);font-style:italic;font-size:.9rem}@media print{body{background:#F5F7FA!important}.doc-header{background:var(--accent2)!important}.cr-section{break-inside:avoid;page-break-inside:avoid}.doc-body{padding:12px 28px 0}}@media(max-width:640px){.doc-header{padding:13px 16px 11px}.doc-pract-name{font-size:.8rem}.doc-pract-meta{font-size:.67rem;gap:6px}.patient-card{padding:14px 16px;gap:12px}.patient-avatar{width:44px;height:44px;font-size:1rem}.patient-name{font-size:1.05rem}.pat-badge{font-size:.66rem;padding:2px 8px}.doc-date-bar{padding:6px 16px;font-size:.71rem}.doc-body{padding:10px 16px 0}.cr-section{border-radius:8px;margin-bottom:10px}.cr-section h3{padding:9px 12px 9px 14px;font-size:.65rem}.cr-item{flex-direction:column;gap:3px;padding:10px 12px}.cr-key{min-width:0;width:100%;padding-top:0;padding-bottom:1px}.cr-val{font-size:.9rem;width:100%}.cr-tag{margin-left:0;margin-top:6px}.cr-alert .cr-item{flex-direction:row;gap:10px}}.cr-mt{border-collapse:collapse;font-variant-numeric:tabular-nums}.cr-mt th{font-size:.64rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text2);text-align:right;padding:0 0 3px 14px;white-space:nowrap}.cr-mt td{font-size:.84rem;padding:2px 0 2px 14px;text-align:right;white-space:nowrap}.cr-mt th.lbl,.cr-mt td.lbl{text-align:left}.cr-mt td.lbl{color:var(--text2);font-size:.8rem}.cr-mt th:first-child,.cr-mt td:first-child{padding-left:0}.cr-mt th:not(.lbl),.cr-mt td:not(.lbl){width:86px}.cr-mt tr+tr td{border-top:1px solid #F5F4F2}.cr-mt .num{font-weight:700;color:var(--text)}.cr-mt .der{font-weight:800;color:var(--accent)}.cr-mt-note{font-size:.74rem;color:var(--text2);margin-top:4px}@media(max-width:640px){.cr-mt th,.cr-mt td{padding-left:9px}.cr-mt th:not(.lbl),.cr-mt td:not(.lbl){width:76px}.cr-mt td{font-size:.8rem}}.cr-item--anc .cr-val{font-style:italic;color:var(--text2);font-weight:400}.cr-item--reev{border-left:2px solid var(--accent);padding-left:10px}.cr-mention{font-size:.65rem;font-weight:700;border-radius:20px;padding:1px 8px;margin-left:8px;white-space:nowrap;flex-shrink:0;letter-spacing:.01em;align-self:flex-start;margin-top:2px}.cr-mention.neuf{background:var(--accent-l);color:var(--accent)}.cr-mention sup{font-size:.75em;line-height:0}.cr-mention.inch{background:var(--surface2);color:var(--text2)}.cr-mention.anc{background:transparent;color:var(--text3);border:1px solid var(--border);font-weight:600}.cr-legende{font-size:.72rem;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 13px;margin:0 28px 14px;line-height:1.55}.cr-legende em{font-style:normal;font-weight:700;color:var(--text)}.reeval-chip{display:none}svg{max-width:100%;height:auto;display:block}`;
+  var css = `:root{--green:#2D6A4F;--green-l:#E8F5EE;--red:#C0392B;--red-l:#FDECEA;--orange:#D4600A;--orange-l:#FEF3EB;--border:#E8E6E1;--text:#1A1917;--text2:#6B6860;--text3:#9D9B96;--accent2:#1A3A5C;--surface2:#F1F0ED;--surface:#FFFFFF;--accent:#2B5FA6;--accent-l:#EEF3FB}*{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}html{font-size:14px}body{font-family:'Figtree',-apple-system,sans-serif;background:#F5F7FA;color:#1A1917;padding:0}.page-wrap{max-width:800px;margin:0 auto;padding:0 0 48px}.doc-header{background:var(--accent2);padding:16px 28px 14px}.doc-hdr-row1{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}.doc-hdr-sep{border:none;border-top:1px solid rgba(255,255,255,.12);margin:0 0 10px}.doc-hdr-row2{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}.doc-logo{display:inline-flex;align-items:center;gap:8px;flex-shrink:0}.doc-logo svg{display:block;flex-shrink:0}.doc-logo .w{display:inline-flex;align-items:baseline;line-height:1;white-space:nowrap}.doc-logo .r{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:22px;color:#fff;letter-spacing:-.01em}.doc-logo .e{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:.44em;vertical-align:super;color:#7FA8D9;margin:0 .05em 0 .01em;line-height:0}.doc-logo .p{font-family:'Poppins',sans-serif;font-weight:800;font-size:17px;color:#fff;letter-spacing:-.025em;margin-left:.02em}.doc-type-badge{font-size:.62rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.2);border-radius:4px;padding:3px 10px}.doc-pract-name{font-size:.88rem;font-weight:700;color:#fff;letter-spacing:-.01em}.doc-pract-meta{font-size:.72rem;color:rgba(255,255,255,.7);display:flex;align-items:center;gap:10px;flex-wrap:wrap}.patient-card{background:#fff;margin:0;padding:22px 28px;border-bottom:3px solid var(--accent-l);display:flex;align-items:center;gap:18px}.patient-avatar{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:800;flex-shrink:0}.patient-name{font-size:1.35rem;font-weight:800;color:var(--accent2);margin-bottom:4px;letter-spacing:-.03em;line-height:1.1}.patient-sub{font-size:.8rem;color:var(--text2)}.patient-badges{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}.pat-badge{border-radius:6px;padding:3px 10px;font-size:.68rem;font-weight:600;letter-spacing:.01em;background:var(--accent-l);color:var(--accent)}.pat-badge.orange{background:#FEF3EB;color:#D4600A}.pat-badge.navy{background:var(--accent2);color:#fff;font-weight:700}.doc-date-bar{background:var(--accent-l);padding:7px 28px;font-size:.73rem;color:var(--accent);border-bottom:1px solid #D3D9F0;font-weight:500;letter-spacing:.01em}.doc-date-bar strong{font-weight:700;color:var(--accent2)}.doc-body{padding:20px 28px 0}.block{display:none}.cr-section{background:#fff;border-radius:10px;margin-bottom:16px;overflow:hidden;border:1px solid var(--border)}.cr-section h3{padding:11px 16px 11px 20px;font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent2);margin:0;border-left:4px solid var(--accent2);background:#F7F8FC}.cr-ortho h3{border-left-color:var(--green);color:var(--green);background:#F3FAF6}.cr-tests h3{border-left-color:var(--accent);color:var(--accent);background:#F0F4FC}.cr-alert h3{border-left-color:#D4600A;color:#D4600A;background:#FFF8F3}.cr-item{display:flex;align-items:flex-start;gap:16px;padding:10px 16px;border-bottom:1px solid #F5F4F2;line-height:1.5}.cr-item:last-child{border-bottom:none}.cr-key{font-size:.65rem;font-weight:700;color:var(--text3);min-width:175px;flex-shrink:0;padding-top:3px;text-transform:uppercase;letter-spacing:.06em}.cr-val{flex:1;font-size:.88rem;color:#1A1917;line-height:1.55}.cr-tag{display:inline-block;padding:2px 9px;border-radius:5px;font-size:.65rem;font-weight:700;white-space:nowrap;margin-left:8px;vertical-align:middle;letter-spacing:.02em;text-align:center}
+.cr-tag-sub{display:block;font-size:.85em;font-weight:600;opacity:.8;letter-spacing:0}.cr-tag.ok,.cr-tag.good{background:#E8F5EE;color:var(--green)}.cr-tag.warn{background:#FEF3EB;color:#D4600A}.cr-tag.bad{background:#FDECEA;color:var(--red)}.cr-alert .cr-item{padding:10px 16px;align-items:flex-start;background:#FFFAF7}.cr-alert .cr-item:nth-child(odd){background:#fff}.cr-alert .cr-item>span:first-child{color:#D4600A;font-weight:700;font-size:.95rem;flex-shrink:0}.cr-empty{padding:40px;text-align:center;color:var(--text3);font-style:italic;font-size:.9rem}@media print{body{background:#F5F7FA!important}.doc-header{background:var(--accent2)!important}.cr-section{break-inside:avoid;page-break-inside:avoid}.doc-body{padding:12px 28px 0}}@media(max-width:640px){.doc-header{padding:13px 16px 11px}.doc-pract-name{font-size:.8rem}.doc-pract-meta{font-size:.67rem;gap:6px}.patient-card{padding:14px 16px;gap:12px}.patient-avatar{width:44px;height:44px;font-size:1rem}.patient-name{font-size:1.05rem}.pat-badge{font-size:.66rem;padding:2px 8px}.doc-date-bar{padding:6px 16px;font-size:.71rem}.doc-body{padding:10px 16px 0}.cr-section{border-radius:8px;margin-bottom:10px}.cr-section h3{padding:9px 12px 9px 14px;font-size:.65rem}.cr-item{flex-direction:column;gap:3px;padding:10px 12px}.cr-key{min-width:0;width:100%;padding-top:0;padding-bottom:1px}.cr-val{font-size:.9rem;width:100%}.cr-tag{margin-left:0;margin-top:6px}.cr-alert .cr-item{flex-direction:row;gap:10px}}.cr-mt{border-collapse:collapse;font-variant-numeric:tabular-nums}.cr-mt th{font-size:.64rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text2);text-align:right;padding:0 0 3px 14px;white-space:nowrap}.cr-mt td{font-size:.84rem;padding:2px 0 2px 14px;text-align:right;white-space:nowrap}.cr-mt th.lbl,.cr-mt td.lbl{text-align:left}.cr-mt td.lbl{color:var(--text2);font-size:.8rem}.cr-mt th:first-child,.cr-mt td:first-child{padding-left:0}.cr-mt th:not(.lbl),.cr-mt td:not(.lbl){width:86px}.cr-mt tr+tr td{border-top:1px solid #F5F4F2}.cr-mt .num{font-weight:700;color:var(--text)}.cr-mt .der{font-weight:800;color:var(--accent)}.cr-mt-note{font-size:.74rem;color:var(--text2);margin-top:4px}@media(max-width:640px){.cr-mt th,.cr-mt td{padding-left:9px}.cr-mt th:not(.lbl),.cr-mt td:not(.lbl){width:76px}.cr-mt td{font-size:.8rem}}.cr-item--anc .cr-val{font-style:italic;color:var(--text2);font-weight:400}.cr-item--reev{border-left:2px solid var(--accent);padding-left:10px}.cr-mention{font-size:.65rem;font-weight:700;border-radius:20px;padding:1px 8px;margin-left:8px;white-space:nowrap;flex-shrink:0;letter-spacing:.01em;align-self:flex-start;margin-top:2px}.cr-mention.neuf{background:var(--accent-l);color:var(--accent)}.cr-mention sup{font-size:.75em;line-height:0}.cr-mention.inch{background:var(--surface2);color:var(--text2)}.cr-mention.anc{background:transparent;color:var(--text3);border:1px solid var(--border);font-weight:600}.cr-legende{font-size:.72rem;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 13px;margin:0 28px 14px;line-height:1.55}.cr-legende em{font-style:normal;font-weight:700;color:var(--text)}.reeval-chip{display:none}svg{max-width:100%;height:auto;display:block}`;
 
   var practNameStr = praticien + (cabinet ? ' — ' + cabinet : '');
   var metaItems = [];
@@ -12378,7 +12406,7 @@ window.addEventListener('load', function(){
           }
         }
       }
-      var tagHtml = tag ? '<span class="cr-tag '+tagCls+'">'+tag+'</span>' : '';
+      var tagHtml = tag ? '<span class="cr-tag '+tagCls+'">'+_crTagCorps(tag)+'</span>' : '';
       /* Sans `data-pages`, `_crMedResumeTests` ecarte la ligne : elle lit cet
          attribut, ne trouve rien, et n'a aucun moyen de savoir d'ou elle vient.
          C'est ce qui rendait les tests personnalises introuvables dans le CR,

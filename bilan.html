@@ -1620,6 +1620,22 @@ textarea.mob-note-inp {
   padding: 2px 8px;
   border-radius: 20px;
   white-space: nowrap;
+  text-align: center;
+}
+/* Second niveau de lecture d'une pastille : « Validé » d'abord, la nuance
+   dessous. Une seule pastille l'emploie aujourd'hui — l'asymétrie inversée —
+   et la règle est portée par la CHAÎNE (« verdict — nuance »), pas par une
+   classe : le libellé n'a qu'un endroit où être écrit.
+
+   Cette feuille sert l'aperçu à l'écran ; l'export autonome a la SIENNE, dans
+   la chaîne `var css` de js/bilan.js. Une règle écrite d'un seul côté ne se
+   voit pas là où le document est lu. */
+.cr-tag-sub {
+  display: block;
+  font-size: .85em;
+  font-weight: 500;
+  opacity: .8;
+  letter-spacing: 0;
 }
 .cr-tag.pos-fonc { background: var(--green-l); color: var(--green); }
 .cr-tag.neg-fonc { background: var(--red-l); color: var(--red); }
@@ -6175,7 +6191,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260906a"></script>
-<script src="js/bilan.js?v=20260906c"></script>
+<script src="js/bilan.js?v=20260906e"></script>
 
 </body>
 </html>

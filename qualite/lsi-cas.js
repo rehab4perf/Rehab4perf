@@ -226,7 +226,10 @@ verifie('force — LSI 95 % reste symétrique', 'Symétrique', statForce(95).txt
 verifie('force — LSI 108 % reste symétrique (dans la bande)', 'Symétrique', statForce(108).txt);
 verifie('force — LSI 130 % ne se dit plus symétrique', 'Validé — asymétrie inversée',
         statForce(130).txt);
-verifie('… et ne se montre plus en vert', 'warn', statForce(130).cls);
+/* VERT, et c'est une decision : le critere « >= 90 % » EST atteint. Un ambre
+   ferait lire un resultat a surveiller la ou le test est reussi. Ce qui
+   distingue la ligne n'est pas sa couleur mais son second niveau de lecture. */
+verifie('… et reste vert, le critère étant atteint', 'ok', statForce(130).cls);
 verifie('force — LSI 85 % inchangé', 'Asymétrie modérée', statForce(85).txt);
 
 /* Les deux blocs du CR ont leur propre paire lsiCls2 / statOf2 : celle des
@@ -240,7 +243,7 @@ verifie('force — LSI 85 % inchangé', 'Asymétrie modérée', statForce(85).tx
   var p = paireDe(bilatNom, false, borne);
   var cls = p.cls, val = p.val, stat = p.stat;
 
-  verifie(nom + ' — 130 % passe en ambre', 'warn', cls(130, 100));
+  verifie(nom + ' — 130 % reste vert', 'good', cls(130, 100));
   verifie(nom + ' — 108 % reste vert', 'good', cls(108, 100));
   verifie(nom + ' — 95 % reste vert', 'good', cls(95, 100));
   verifie(nom + ' — le verdict dit l\'inversion', 'Validé — asymétrie inversée',
@@ -270,6 +273,80 @@ verifie('aucun appel ne laisse statOf2 sans la valeur', '0', String(appelsNus.le
    « statOf2( » : elles ne sont pas comptees ici. Le nombre est celui des
    appels reels — treize lignes de CR plus le Drop Jump RSI. */
 verifie('les quatorze appels sont là', '14', String((src.match(/statOf2\(/g) || []).length));
+
+/* ── La pastille se lit en deux temps ─────────────────────────────────────── */
+
+/* « Validé — asymétrie inversée » sur une seule ligne obligeait a lire
+   vingt-sept caracteres pour trouver « Validé », qui est l'essentiel. Le fait
+   d'abord, la nuance dessous, plus petite.
+
+   La convention est portee par la CHAINE — « verdict — nuance » — et non par un
+   champ de plus : le libelle n'a qu'un seul endroit ou etre ecrit. Les rendus
+   la coupent sur le tiret cadratin entoure d'espaces. Aucun autre verdict n'en
+   contient : la coupe ne mord que la ou elle doit. */
+
+console.log('\nLa pastille coupe le verdict de sa nuance');
+
+var dTC = src.indexOf('function _crTagCorps(');
+if (dTC < 0) { console.error('_crTagCorps introuvable dans js/bilan.js'); process.exit(1); }
+var tagCorps = new Function(src.slice(dTC, src.indexOf('\n}', dTC) + 2) +
+                            '\nreturn _crTagCorps;')();
+
+verifie('le verdict reste en tête', 'true',
+        /^Validé<span class="cr-tag-sub">/.test(tagCorps('Validé — asymétrie inversée')));
+verifie('… et la nuance passe dessous', 'true',
+        /<span class="cr-tag-sub">asymétrie inversée<\/span>$/
+          .test(tagCorps('Validé — asymétrie inversée')));
+verifie('un verdict sans tiret ressort intact', 'Symétrique', tagCorps('Symétrique'));
+verifie('… y compris vide', '', tagCorps(''));
+verifie('… et une valeur absente ne lève pas', '', tagCorps(null));
+/* Un tiret NON entoure d'espaces — « Sous-maximal » — ne doit pas etre coupe :
+   la convention porte sur le tiret cadratin isole, pas sur tout tiret. */
+verifie('un mot composé n\'est pas coupé', 'Sous-maximal', tagCorps('Sous-maximal'));
+
+console.log('\nLes trois rendus appliquent la coupe');
+/* Le banc ci-dessus prouve la FONCTION. Sans ces verifications, un rendu qui
+   ne l'appelle pas laisserait le cas au vert et la pastille sur une ligne —
+   le piege du cablage muet, deja rencontre deux fois dans ce depot. */
+verifie('les deux crItem de js/bilan.js l\'appellent', '2',
+        String((src.match(/cr-tag ' \+ tagClass \+ '">' \+ _crTagCorps\(tag\)/g) || []).length));
+verifie('les tests personnalisés aussi', 'true',
+        /cr-tag '\+tagCls\+'">'\+_crTagCorps\(tag\)/.test(src));
+
+var outils = fs.readFileSync(path.join(__dirname, '..', 'outils.html'), 'utf8');
+verifie('outils a sa propre coupe', 'true', /function _crChipCorps/.test(outils));
+verifie('… et la lettre l\'emploie', 'true', /_crChipCorps\(t\.statut\)/.test(outils));
+verifie('… y compris pour les mentions par côté', 'true', /_crChipCorps\(st\.txt\)/.test(outils));
+verifie('plus aucune pastille n\'échappe à la coupe', '0',
+        String((outils.match(/classe \+ '">' \+ _crEsc\(t\.statut\)/g) || []).length));
+
+console.log('\nLe style existe dans les TROIS feuilles');
+/* Une regle ecrite d'un seul cote ne se voit pas la ou le document est lu :
+   l'apercu (bilan.html), l'export autonome (la chaine `var css` de bilan.js)
+   et le courrier (outils.html) sont trois feuilles distinctes. */
+var htmlB = fs.readFileSync(path.join(__dirname, '..', 'bilan.html'), 'utf8');
+verifie('aperçu — bilan.html', 'true', /\.cr-tag-sub \{[\s\S]{0,120}display: block/.test(htmlB));
+verifie('export autonome — la chaîne css de bilan.js', 'true',
+        /\.cr-tag-sub\{display:block/.test(src));
+/* Le courrier compte pour DEUX feuilles, et c'est le piege de ce domaine.
+   `CR_LETTRE_CSS` est la seule recopiee dans le document imprime ; le <style>
+   de la page ne sert que l'ecran. Une premiere version posait la regle a cote,
+   dans le <style> : l'apercu paraissait juste et la pastille se remettait sur
+   une ligne dans le PDF — le document que recoit le medecin. Le cas passait.
+
+   On EXECUTE ici la declaration telle qu'elle est ecrite, plutot que de la
+   chercher a la regexp : elle est coupee en dizaines de chaines, et une regle
+   a cheval sur deux d'entre elles echappe a toute recherche textuelle. */
+var dC = outils.indexOf('var CR_LETTRE_CSS = [');
+var fC = outils.indexOf('].join', dC);
+if (dC < 0 || fC < dC) { console.error('CR_LETTRE_CSS introuvable'); process.exit(1); }
+var cssLettre = new Function(outils.slice(dC, fC + 1) + ';\nreturn CR_LETTRE_CSS.join("");')();
+verifie('courrier — la feuille recopiée dans le PDF', 'true',
+        /\.lt-chip \.chip-sub\{display:block/.test(cssLettre));
+verifie('… et elle est bien celle du courrier', 'true',
+        /\.lt-chip\{display:inline-block/.test(cssLettre));
+verifie('liste à cocher — le <style> de la page', 'true',
+        /\.cr-tf-tag \.chip-sub \{[\s\S]{0,120}display:block/.test(outils));
 
 /* ── Verdict ─────────────────────────────────────────────────────────────── */
 

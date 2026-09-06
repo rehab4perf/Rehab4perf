@@ -137,6 +137,9 @@ var mod = ext('_crMesTab') + '\n' + ext('asymPct') + '\n' + ext('asymTxt') + '\n
   + "var LSI_INVERSE_TXT = " + JSON.stringify(
       (src.match(/var LSI_INVERSE_TXT = '([^']*)'/) || [])[1] || '') + ";\n"
   + ext('_statForce') + '\n'
+  /* `crItem` appelle `_crTagCorps` — la coupe « verdict / nuance » d'une
+     pastille. Sans elle, le module leve au premier appel. */
+  + ext('_crTagCorps') + '\n'
   + src.slice(bi, be + 4) + '\n'
   + src.slice(gi, ge + 4) + '\n'
   + 'var _labelCS = "Côté sain", _labelCA = "Côté atteint";\n'
