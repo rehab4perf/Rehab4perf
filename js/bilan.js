@@ -1626,7 +1626,7 @@ function _blTestDisplayOrder(tbodyId, cfg) {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   Quick Scan fonctionnel epaule — groupes et pistes de travail
+   Scan fonctionnel epaule — groupes et pistes de travail
 
    UNE SEULE SOURCE. Ces phrases etaient ecrites en dur dans buildCR, et nulle
    part ailleurs : le formulaire ne pouvait donc pas les montrer. Les afficher
@@ -1672,7 +1672,7 @@ function _epFoncGroupeDe(i){
   return null;
 }
 
-/* Etat vivant du Quick Scan : pastilles de groupe, bandeaux « a travailler »
+/* Etat vivant du Scan : pastilles de groupe, bandeaux « a travailler »
    et recapitulatif de bloc. Rejoue a chaque changement et apres tout
    chargement — un bilan restaure doit montrer les memes pistes qu'a la
    saisie. */
@@ -1751,7 +1751,7 @@ function init() {
     var _grpPrec = null;   // dernier groupe rendu — sert a n'inserer qu'un en-tete
     _blTestDisplayOrder(id, cfg).forEach((i) => {
       let name = cfg.items[i];
-      /* Quick Scan epaule : on intercale un en-tete DES QUE le groupe change.
+      /* Scan epaule : on intercale un en-tete DES QUE le groupe change.
          Fonde sur le changement et non sur des positions fixes, il survit a
          une reorganisation faite depuis « Personnaliser ». */
       if (id === 'tb-ep-fonc') {

@@ -46,7 +46,7 @@ var BILAN_BLOCKS = {
   },
   {
    "id": "epaule--trau",
-   "name": "Quick Scan Traumatique",
+   "name": "Scan Traumatique",
    "tests": [
     "tb-ep-trau-gh",
     "tb-ep-trau-ac",
@@ -60,7 +60,7 @@ var BILAN_BLOCKS = {
   },
   {
    "id": "epaule--irrit",
-   "name": "Quick Scan Épaule Irritable",
+   "name": "Scan Épaule Irritable",
    "tests": [
     "tb-ep-irrit",
     "tb-ep-irrit-g",
@@ -71,7 +71,7 @@ var BILAN_BLOCKS = {
   },
   {
    "id": "epaule--fonc",
-   "name": "Quick Scan Fonctionnel",
+   "name": "Scan Fonctionnel",
    "tests": [
     "tb-ep-fonc",
     "tb-ep-fonc-g",
@@ -82,7 +82,7 @@ var BILAN_BLOCKS = {
   },
   {
    "id": "epaule--ortho",
-   "name": "Quick Scan Orthopédique",
+   "name": "Scan Orthopédique",
    "tests": [
     "tb-ep-ortho-mob",
     "tb-ep-ortho-conf",
@@ -233,7 +233,7 @@ var BILAN_BLOCKS = {
   },
   {
    "id": "rachis--cervical",
-   "name": "Quick Scan Cervical",
+   "name": "Scan Cervical",
    "tests": [
     "tb-ra-cerv",
     "tb-ra-cerv-neuro-g",
@@ -244,7 +244,7 @@ var BILAN_BLOCKS = {
   },
   {
    "id": "rachis--lombaire",
-   "name": "Quick Scan Lombaire",
+   "name": "Scan Lombaire",
    "tests": [
     "tb-ra-lomb-g",
     "tb-ra-lomb-d"
