@@ -140,6 +140,9 @@ var mod = ext('_crMesTab') + '\n' + ext('asymPct') + '\n' + ext('asymTxt') + '\n
   /* `crItem` appelle `_crTagCorps` — la coupe « verdict / nuance » d'une
      pastille. Sans elle, le module leve au premier appel. */
   + ext('_crTagCorps') + '\n'
+  /* `crItem` depend aussi de `_blEsc` — elle echappe le verdict brut pose
+     en `data-statut`. */
+  + ext('_blEsc') + '\n'
   + src.slice(bi, be + 4) + '\n'
   + src.slice(gi, ge + 4) + '\n'
   + 'var _labelCS = "Côté sain", _labelCA = "Côté atteint";\n'
@@ -158,8 +161,12 @@ verifie('l\'asymétrie est affichée, pas la symétrie', /17\s*%/.test(h1),
   '38/46 = 82,6 % de symétrie → 17 % d\'asymétrie');
 /* 38/46 = 82,6 % de symetrie, soit 17 % d'asymetrie : la bande 80-90 %. Le
    verdict binaire d'avant disait « Positif » a 11 % comme a 40 % ; les trois
-   paliers distinguent ce que le praticien distingue deja. */
-verifie('17 % d\'asymétrie → modérée', /cr-tag warn">Asymétrie modérée</.test(h1),
+   paliers distinguent ce que le praticien distingue deja.
+
+   La pastille porte desormais `data-statut` — le verdict brut, pour le
+   transport vers le courrier. L'attribut s'intercale entre la classe et le
+   texte : les motifs ne peuvent plus coller les deux. */
+verifie('17 % d\'asymétrie → modérée', /cr-tag warn"[^>]*>Asymétrie modérée</.test(h1),
   '82,6 % de symétrie tombe dans la bande 80-90 %');
 verifie('la main dominante accompagne la mesure', /Main dominante : Droite/.test(h1));
 
@@ -169,21 +176,21 @@ verifie('la main dominante accompagne la mesure', /Main dominante : Droite/.test
    la bande. */
 CH = { 'ms-grip-cs': '50', 'ms-grip-ca': '39', 'ms-dom': 'Droite' };   // 78 %
 verifie('sous 80 % → significative',
-  /cr-tag bad">Asymétrie significative</.test(ligneCR()), '39/50 = 78 %');
+  /cr-tag bad"[^>]*>Asymétrie significative</.test(ligneCR()), '39/50 = 78 %');
 CH = { 'ms-grip-cs': '50', 'ms-grip-ca': '40', 'ms-dom': 'Droite' };   // 80 % pile
 verifie('80 % pile → modérée',
-  /cr-tag warn">Asymétrie modérée</.test(ligneCR()), 'la borne appartient à la bande du dessus');
+  /cr-tag warn"[^>]*>Asymétrie modérée</.test(ligneCR()), 'la borne appartient à la bande du dessus');
 CH = { 'ms-grip-cs': '50', 'ms-grip-ca': '45', 'ms-dom': 'Droite' };   // 90 % pile
 verifie('90 % pile → symétrique',
-  /cr-tag ok">Symétrique</.test(ligneCR()), '10 % d\'asymétrie reste symétrique');
+  /cr-tag ok"[^>]*>Symétrique</.test(ligneCR()), '10 % d\'asymétrie reste symétrique');
 CH = { 'ms-grip-cs': '50', 'ms-grip-ca': '44', 'ms-dom': 'Droite' };   // 88 %
 verifie('sous 90 % → modérée',
-  /cr-tag warn">Asymétrie modérée</.test(ligneCR()), '12 % d\'asymétrie dépasse le seuil');
+  /cr-tag warn"[^>]*>Asymétrie modérée</.test(ligneCR()), '12 % d\'asymétrie dépasse le seuil');
 
 console.log('\nLigne de CR — symétrie conservée');
 CH = { 'ms-grip-cs': '46', 'ms-grip-ca': '44', 'ms-dom': 'Gauche' };
 var h2 = ligneCR();
-verifie('au-dessus de 90 %, la ligne est symétrique', /cr-tag ok">Symétrique</.test(h2));
+verifie('au-dessus de 90 %, la ligne est symétrique', /cr-tag ok"[^>]*>Symétrique</.test(h2));
 verifie('la dominante suit le champ, elle n\'est pas figée', /Main dominante : Gauche/.test(h2));
 
 console.log('\nLa dominante ne corrige RIEN');

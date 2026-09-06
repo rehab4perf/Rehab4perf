@@ -489,7 +489,13 @@ function _crMedResumeTests() {
         if (_perso) zoneLigne = 'Tests personnalisés';
         var cle = (it.querySelector('.cr-key') || {}).textContent || '';
         var tagEl = it.querySelector('.cr-tag');
-        var tag = tagEl ? (tagEl.textContent || '').trim() : '';
+        /* `data-statut` d'abord : `textContent` aplatit le balisage de la
+           pastille — un verdict coupe en deux lignes en ressortait recolle,
+           tiret perdu. Repli sur le texte affiche pour les pastilles qui n'ont
+           pas encore l'attribut (un bilan rendu par une version anterieure). */
+        var tag = tagEl
+          ? ((tagEl.getAttribute('data-statut') || tagEl.textContent || '').trim())
+          : '';
         /* Le NIVEAU voyage avec le texte. `crItem` l'a déjà posé en classe —
            le redeviner dans outils.html à partir des mots (« Facteur de
            risque » lu comme rassurant…) donnerait des couleurs fausses. */
@@ -7582,7 +7588,13 @@ function _buildAllTestsHtml() {
   function crItem(key, val, tag, tagClass, fieldIds, perso) {
     if (!val) return '';
     tag = tag || ''; tagClass = tagClass || '';
-    var tagHtml = tag ? '<span class="cr-tag ' + tagClass + '">' + _crTagCorps(tag) + '</span>' : '';
+    /* `data-statut` porte le verdict BRUT, tiret compris. Le CR medecin lit
+       ce tableau par `textContent`, qui aplatit le balisage : des que la
+       pastille s'est mise a couper « Validé » de sa nuance, le tiret a disparu
+       A LA SOURCE, et outils recevait « Validéasymétrie inversée » — plus rien
+       a couper. Le DOM est un RENDU, il ne peut pas servir de transport. */
+    var tagHtml = tag ? '<span class="cr-tag ' + tagClass + '" data-statut="'
+      + _blEsc(tag) + '">' + _crTagCorps(tag) + '</span>' : '';
     var _mq = _crMarquage(fieldIds);
     var cls = _mq.cls; var dateBadge = _mq.badge;
     /* Chaque ligne retient la ou les PAGES d'ou viennent ses champs. C'est ce
@@ -9476,7 +9488,13 @@ function buildCR() {
   function crItem(key, val, tag, tagClass, fieldIds) {
     if (!val) return '';
     tag = tag || ''; tagClass = tagClass || '';
-    var tagHtml = tag ? '<span class="cr-tag ' + tagClass + '">' + _crTagCorps(tag) + '</span>' : '';
+    /* `data-statut` porte le verdict BRUT, tiret compris. Le CR medecin lit
+       ce tableau par `textContent`, qui aplatit le balisage : des que la
+       pastille s'est mise a couper « Validé » de sa nuance, le tiret a disparu
+       A LA SOURCE, et outils recevait « Validéasymétrie inversée » — plus rien
+       a couper. Le DOM est un RENDU, il ne peut pas servir de transport. */
+    var tagHtml = tag ? '<span class="cr-tag ' + tagClass + '" data-statut="'
+      + _blEsc(tag) + '">' + _crTagCorps(tag) + '</span>' : '';
     var _mq = _crMarquage(fieldIds);
     var cls = _mq.cls; var dateBadge = _mq.badge;
     return '<div class="cr-item' + cls + '"><span class="cr-key">' + key + '</span><span class="cr-val">' + val + '</span>' + tagHtml + dateBadge + '</div>';
@@ -12434,7 +12452,8 @@ window.addEventListener('load', function(){
           }
         }
       }
-      var tagHtml = tag ? '<span class="cr-tag '+tagCls+'">'+_crTagCorps(tag)+'</span>' : '';
+      var tagHtml = tag ? '<span class="cr-tag '+tagCls+'" data-statut="'+_blEsc(tag)+'">'
+        +_crTagCorps(tag)+'</span>' : '';
       /* Sans `data-pages`, `_crMedResumeTests` ecarte la ligne : elle lit cet
          attribut, ne trouve rien, et n'a aucun moyen de savoir d'ou elle vient.
          C'est ce qui rendait les tests personnalises introuvables dans le CR,

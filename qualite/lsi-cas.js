@@ -366,9 +366,12 @@ console.log('\nLes trois rendus appliquent la coupe');
    ne l'appelle pas laisserait le cas au vert et la pastille sur une ligne —
    le piege du cablage muet, deja rencontre deux fois dans ce depot. */
 verifie('les deux crItem de js/bilan.js l\'appellent', '2',
-        String((src.match(/cr-tag ' \+ tagClass \+ '">' \+ _crTagCorps\(tag\)/g) || []).length));
+        String((src.match(/_crTagCorps\(tag\) \+ '<\/span>'/g) || []).length));
 verifie('les tests personnalisés aussi', 'true',
-        /cr-tag '\+tagCls\+'">'\+_crTagCorps\(tag\)/.test(src));
+        /\+_crTagCorps\(tag\)\+'<\/span>'/.test(src));
+/* Les trois emetteurs posent AUSSI le verdict brut : c'est lui qui voyage. */
+verifie('les trois posent data-statut', '3',
+        String((src.match(/data-statut="'/g) || []).length));
 
 var outils = fs.readFileSync(path.join(__dirname, '..', 'outils.html'), 'utf8');
 verifie('outils a sa propre coupe', 'true', /function _crChipCorps/.test(outils));
@@ -414,6 +417,78 @@ verifie('… et elle est bien celle du courrier', 'true',
         /\.lt-chip\{display:inline-block/.test(cssLettre));
 verifie('liste à cocher — le <style> de la page', 'true',
         /\.cr-tf-tag \.chip-sub \{[\s\S]{0,120}display:block/.test(outils));
+
+/* ── De bout en bout : du bilan jusqu'a la pastille du courrier ───────────── */
+
+/* LE CAS QUI MANQUAIT, et qui a laisse passer trois corrections successives.
+
+   Chaque cote etait verifie SEUL : le bilan produisait bien sa pastille en
+   deux lignes, outils savait bien couper une chaine sur son tiret. Mais entre
+   les deux il y a un transport, et personne ne le regardait.
+
+   `_crMedResumeTests` lisait le verdict par `textContent` — qui APLATIT le
+   balisage. Des que la pastille s'est mise a couper « Validé » de sa nuance,
+   le tiret a disparu A LA SOURCE : outils recevait « Validéasymétrie
+   inversée », une chaine sans tiret, donc rien a couper. Les deux fonctions
+   etaient justes ; c'est le cablage qui ne l'etait pas.
+
+   Le DOM est un RENDU. Il ne peut pas servir de transport. */
+
+console.log('\nLe verdict traverse le transport sans perdre son tiret');
+
+var VERDICT = 'Validé — asymétrie inversée';
+
+/* 1. Ce que le bilan ECRIT dans la ligne de CR. */
+var dCI = src.indexOf('function crItem(');
+var fCI = src.indexOf('\n  }', dCI);
+var crItem = new Function('_crTagCorps', '_blEsc', '_crMarquage', 'document',
+  src.slice(dCI, fCI + 4) + '\nreturn crItem;')(
+  tagCorps,
+  function (x) { return String(x == null ? '' : x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); },
+  function () { return { cls: '', badge: '' }; },
+  { getElementById: function () { return null; } });
+
+var ligne = crItem('Force fonctionnelle', '28 / 34 rép.', VERDICT, 'good', []);
+verifie('la pastille s\'affiche en deux lignes', 'true', String(/Validé<br>/.test(ligne)));
+verifie('… et transporte son verdict brut', 'true',
+        String(ligne.indexOf('data-statut="Validé — asymétrie inversée"') > 0));
+
+/* 2. Ce que `_crMedResumeTests` en RELIT. C'est la marche qui cassait. */
+var dR = src.indexOf('var tagEl = it.querySelector');
+var lecture = src.slice(dR, src.indexOf(';', src.indexOf('var tag =', dR)) + 1);
+var relire = new Function('it', lecture + '\nreturn tag;');
+
+/* Une pastille telle que la produit `crItem` — attribut ET texte aplati. */
+function pastille(attr, texte) {
+  return { querySelector: function () {
+    return { getAttribute: function (n) { return n === 'data-statut' ? attr : null; },
+             textContent: texte };
+  } };
+}
+verifie('le transport rend le verdict entier', VERDICT,
+        relire(pastille(VERDICT, 'Validéasymétrie inversée')));
+/* Repli : un bilan rendu par une version anterieure n'a pas l'attribut. Sans
+   ce repli, tous les verdicts deja stockes disparaitraient du courrier. */
+verifie('… et retombe sur le texte affiché quand l\'attribut manque', 'Symétrique',
+        relire(pastille(null, 'Symétrique')));
+
+/* 3. Ce qu'outils en FAIT. La boucle est bouclee. */
+var dCC = outils.indexOf('function _crChipCorps');
+var dE = outils.indexOf('function _crEsc(');
+var chipCorps = new Function(
+  outils.slice(dE, outils.indexOf('\n  }', dE) + 4) + '\n' +
+  outils.slice(dCC, outils.indexOf('\n  }', dCC) + 4) + '\nreturn _crChipCorps;')();
+
+var recu = relire(pastille(VERDICT, 'Validéasymétrie inversée'));
+verifie('le courrier coupe ce qu\'il reçoit', 'true', String(/Validé<br>/.test(chipCorps(recu))));
+verifie('… et n\'y recolle jamais les deux mots', 'false',
+        String(/Validéasym/.test(chipCorps(recu))));
+
+/* Le defaut EXACT, rejoue : si le transport passait par le texte affiche, la
+   pastille du courrier se recollerait. Ce cas echoue si l'on y revient. */
+var siAplati = chipCorps('Validéasymétrie inversée');
+verifie('une chaîne déjà aplatie ne peut plus être coupée — d\'où la règle',
+        'Validéasymétrie inversée', siAplati);
 
 /* ── Verdict ─────────────────────────────────────────────────────────────── */
 

@@ -79,7 +79,16 @@ function ligne(cle, val, pages, tag, perso) {
     },
     querySelector: function (sel) {
       if (sel === '.cr-key') return { textContent: cle };
-      if (sel === '.cr-tag') return tag ? { textContent: tag, classList: { contains: function () { return false; } } } : null;
+      /* La vraie pastille porte `data-statut` — le verdict BRUT — en plus de
+         son texte affiche, que `_crMedResumeTests` ne lit plus qu'en repli.
+         Une doublure sans `getAttribute` faisait lever la lecture, le
+         try/catch avalait l'exception, et le tri rendait un tableau VIDE : les
+         cas tombaient tous, sans dire pourquoi. */
+      if (sel === '.cr-tag') return tag ? {
+        textContent: tag,
+        getAttribute: function (n) { return n === 'data-statut' ? tag : null; },
+        classList: { contains: function () { return false; } }
+      } : null;
       if (sel === '.cr-val') return { _val: val };
       return null;
     }
@@ -383,7 +392,13 @@ console.log('\n  Analyse fonctionnelle — le score sur 7 ne sort pas du cabinet
       getAttribute: function () { return 'page-fonctionnels'; },
       querySelector: function (sel) {
         if (sel === '.cr-key') return { textContent: 'Squat unipodal — qualité' };
-        if (sel === '.cr-tag') return { textContent: tagInitial, classList: { contains: function () { return false; } } };
+        /* Meme doublure que plus haut : `data-statut` porte le verdict brut,
+           et sans `getAttribute` la lecture leve. */
+        if (sel === '.cr-tag') return {
+          textContent: tagInitial,
+          getAttribute: function (n) { return n === 'data-statut' ? tagInitial : null; },
+          classList: { contains: function () { return false; } }
+        };
         if (sel === '.cr-val') return {};
         return null;
       }

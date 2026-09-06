@@ -103,6 +103,11 @@ if (crItemSrc.indexOf('data-pages') < 0) {
 var ti = src.indexOf('function _crTagCorps(');
 if (ti < 0) { console.error('_crTagCorps introuvable'); process.exit(1); }
 pre += src.slice(ti, src.indexOf('\n}', ti) + 2) + '\n';
+/* `crItem` depend aussi de `_blEsc` — elle echappe le verdict brut pose en
+   `data-statut`. C'est la quatrieme dependance de cette fonction. */
+var ei = src.indexOf('function _blEsc(');
+if (ei < 0) { console.error('_blEsc introuvable'); process.exit(1); }
+pre += src.slice(ei, src.indexOf('\n', ei)) + '\n';
 pre += crItemSrc + '\n';
 
 // La section elle-meme
@@ -146,8 +151,11 @@ verifie('le CR reprend le libellé du formulaire, pas « Insuffisant »',
   'attendu : ' + OPTS['cp-gct-q'].insuffisant + ' — 278 ms');
 verifie('symétrie des appuis avec écart', /Symétrie des appuis/.test(html) && /9 % écart/.test(html));
 verifie('oscillation au libellé du formulaire',
+/* La pastille porte desormais `data-statut` — le verdict brut, pour le
+   transport vers le courrier. L'attribut s'intercale entre la classe et le
+   texte : on ne peut plus coller les deux dans une meme expression. */
   /Oscillation verticale/.test(html) && html.indexOf(OPTS['cp-osc-q'].acceptable) >= 0);
-verifie('la pastille garde le statut générique', /cr-tag bad">Insuffisant</.test(html));
+verifie('la pastille garde le statut générique', /cr-tag bad"[^>]*>Insuffisant</.test(html));
 verifie('overstride nommé', /Devant le centre de masse \(overstride\)/.test(html));
 verifie('conclusion reprise', /Overstride marque avec cadence basse/.test(html));
 
