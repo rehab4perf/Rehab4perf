@@ -6426,12 +6426,13 @@ _updateOutilsPatientBtns();
     var t = String(txt == null ? '' : txt);
     var i = t.indexOf(' — ');
     if (i < 0) return _crEsc(t);
-    /* `display:block` en ligne — voir la note jumelle dans js/bilan.js. Le
-       courrier est rendu a l'ecran ET recopie dans le PDF et dans le mail, et
-       ces trois chemins ne servent pas la meme feuille. Le style en ligne les
-       traverse tous. */
+    /* La coupe est faite par un `<br>` — voir la note jumelle dans
+       js/bilan.js. Le courrier est rendu a l'ecran, recopie dans le PDF et
+       envoye par mail ; ces trois chemins ne servent pas la meme feuille, et
+       le mail supprime le plus souvent les attributs `style`. Seul le balisage
+       traverse les trois. */
     return _crEsc(t.slice(0, i))
-         + '<span class="chip-sub" style="display:block">' + _crEsc(t.slice(i + 3)) + '</span>';
+         + '<br><span class="chip-sub" style="display:block">' + _crEsc(t.slice(i + 3)) + '</span>';
   }
 
   function _crStatutChips(t, classe) {
@@ -6475,8 +6476,10 @@ _updateOutilsPatientBtns();
          que chacune trouve sa mention faisait renoncer a tous les coups. */
       if (!st) return '<td class="n"></td>';
       places++;
+      /* Ce second emetteur echappait a la coupe : une mention par cote qui
+         porterait un verdict a nuance se serait affichee d'un bloc. */
       return '<td class="n"><span class="lt-chip ' + _crTagClasse(st) + '">'
-           + _crEsc(st.txt) + '</span></td>';
+           + _crChipCorps(st.txt) + '</span></td>';
     });
     /* Ce qui doit etre garanti est l'inverse : TOUTE mention trouve sa
        colonne. Il en manquerait une sinon, et personne ne le verrait. */

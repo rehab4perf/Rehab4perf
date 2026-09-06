@@ -249,14 +249,21 @@ function _crTagCorps(txt) {
   var t = String(txt == null ? '' : txt);
   var i = t.indexOf(' — ');
   if (i < 0) return t;
-  /* `display:block` est pose EN LIGNE, pas seulement dans les feuilles. Ce
-     meme balisage traverse quatre feuilles distinctes — l'apercu, l'export
-     autonome, le courrier et la liste a cocher — et le PDF n'en recopie
-     qu'une. Une seule d'entre elles qui manque, ou qui arrive en retard depuis
-     un cache, et la nuance se recolle au verdict : « Validéasymétrie
-     inversée ». Le style en ligne rend la coupe inconditionnelle ; la classe
-     reste pour le reste — taille, graisse, opacite. */
-  return t.slice(0, i) + '<span class="cr-tag-sub" style="display:block">'
+  /* La coupe est faite par un `<br>`, pas par du style.
+
+     Ce meme balisage traverse QUATRE feuilles — l'apercu, l'export autonome,
+     le courrier et la liste a cocher — et les chemins de sortie n'en recopient
+     pas les memes : le PDF en prend une, le mail aucune (la plupart des
+     clients de messagerie suppriment les attributs `style`). Chaque version
+     precedente a echoue au meme endroit : « Validéasymétrie inversée », les
+     deux mots colles.
+
+     `<br>` casse la ligne quel que soit le contexte — feuille absente, style
+     retire, `white-space:nowrap` sur la pastille, cache en retard. La classe
+     et le style en ligne restent pour le RESTE (taille, graisse, opacite) :
+     s'ils manquent, la nuance s'affiche a taille normale sur sa propre ligne,
+     ce qui reste juste. C'est la degradation qu'on veut. */
+  return t.slice(0, i) + '<br><span class="cr-tag-sub" style="display:block">'
        + t.slice(i + 3) + '</span>';
 }
 

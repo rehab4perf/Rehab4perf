@@ -334,16 +334,26 @@ var tagCorps = new Function(src.slice(dTC, src.indexOf('\n}', dTC) + 2) +
                             '\nreturn _crTagCorps;')();
 
 verifie('le verdict reste en tête', 'true',
-        /^Validé<span class="cr-tag-sub"/.test(tagCorps('Validé — asymétrie inversée')));
+        /^Validé</.test(tagCorps('Validé — asymétrie inversée')));
 verifie('… et la nuance passe dessous', 'true',
         /asymétrie inversée<\/span>$/.test(tagCorps('Validé — asymétrie inversée')));
-/* La coupe ne doit dependre d'AUCUNE feuille. Ce meme balisage traverse quatre
-   stylesheets — apercu, export autonome, courrier, liste a cocher — et le PDF
-   n'en recopie qu'une. Une seule qui manque, ou qui arrive en retard depuis un
-   cache, et la nuance se recolle au verdict : « Validéasymétrie inversée ».
-   C'est exactement ce qui a ete observe en production. */
-verifie('… inconditionnellement, sans dépendre d\'une feuille', 'true',
+/* La coupe ne doit dependre d'AUCUN style. Ce balisage traverse quatre
+   feuilles — apercu, export autonome, courrier, liste a cocher — et les
+   chemins de sortie n'en recopient pas les memes : le PDF en prend une, le
+   mail aucune, la plupart des clients de messagerie supprimant les attributs
+   `style`. Deux versions successives ont echoue au meme endroit, en
+   production : « Validéasymétrie inversée », les deux mots colles.
+
+   Seul le BALISAGE traverse les trois chemins. Le `<br>` est donc la garantie,
+   et le style n'est plus qu'un agrement. */
+verifie('… par le balisage, non par le style', 'true',
+        /Validé<br>/.test(tagCorps('Validé — asymétrie inversée')));
+verifie('… le style restant un agrément', 'true',
         /style="display:block"/.test(tagCorps('Validé — asymétrie inversée')));
+/* Sans le `<br>`, une feuille absente recolle les deux mots. On verifie donc
+   qu'il est bien AVANT la nuance, pas ailleurs dans la chaine. */
+verifie('… et le saut précède la nuance', 'Validé<br>',
+        tagCorps('Validé — asymétrie inversée').slice(0, 10));
 verifie('un verdict sans tiret ressort intact', 'Symétrique', tagCorps('Symétrique'));
 verifie('… y compris vide', '', tagCorps(''));
 verifie('… et une valeur absente ne lève pas', '', tagCorps(null));
@@ -362,8 +372,16 @@ verifie('les tests personnalisés aussi', 'true',
 
 var outils = fs.readFileSync(path.join(__dirname, '..', 'outils.html'), 'utf8');
 verifie('outils a sa propre coupe', 'true', /function _crChipCorps/.test(outils));
-verifie('… elle aussi inconditionnelle', 'true',
-        /chip-sub" style="display:block"/.test(outils));
+verifie('… elle aussi par le balisage', 'true',
+        /'<br><span class="chip-sub"/.test(outils));
+/* DEUX emetteurs posent une mention par cote — celui de `_crStatutChips` et
+   celui de `_crStatutsParCote`. Chercher la coupe « quelque part » laissait
+   passer l'oubli de l'un des deux : c'est ce qui est arrive, et l'injection ne
+   virait pas au rouge. On les compte. */
+verifie('les deux émetteurs par côté coupent', '2',
+        String((outils.match(/_crChipCorps\(st\.txt\)/g) || []).length));
+verifie('… plus aucune mention par côté n\'est posée brute', '0',
+        String((outils.match(/lt-chip ' \+ _crTagClasse\(st\) \+ '">'\s*\+ _crEsc\(st\.txt\)/g) || []).length));
 verifie('… et la lettre l\'emploie', 'true', /_crChipCorps\(t\.statut\)/.test(outils));
 verifie('… y compris pour les mentions par côté', 'true', /_crChipCorps\(st\.txt\)/.test(outils));
 verifie('plus aucune pastille n\'échappe à la coupe', '0',
