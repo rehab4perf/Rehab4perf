@@ -249,7 +249,28 @@ function _crTagCorps(txt) {
   var t = String(txt == null ? '' : txt);
   var i = t.indexOf(' — ');
   if (i < 0) return t;
-  return t.slice(0, i) + '<span class="cr-tag-sub">' + t.slice(i + 3) + '</span>';
+  /* `display:block` est pose EN LIGNE, pas seulement dans les feuilles. Ce
+     meme balisage traverse quatre feuilles distinctes — l'apercu, l'export
+     autonome, le courrier et la liste a cocher — et le PDF n'en recopie
+     qu'une. Une seule d'entre elles qui manque, ou qui arrive en retard depuis
+     un cache, et la nuance se recolle au verdict : « Validéasymétrie
+     inversée ». Le style en ligne rend la coupe inconditionnelle ; la classe
+     reste pour le reste — taille, graisse, opacite. */
+  return t.slice(0, i) + '<span class="cr-tag-sub" style="display:block">'
+       + t.slice(i + 3) + '</span>';
+}
+
+/* Observation libre d'un test de force. Elle existait dans le formulaire —
+   un `<textarea>` sous chaque test — et n'atteignait le CR que pour le rachis.
+   Sur la hanche, le genou et le pied, le praticien ecrivait dans le vide.
+
+   Elle sort en `.cr-mt-note` : c'est la forme deja employee pour les reperes
+   (« Repère EIAS-sol : 45 cm »), petite et grise, et surtout c'est celle que
+   `_crMedValeur` releve en `note` — le courrier d'outils la rend alors en
+   `.lt-note`, petite et grise elle aussi. Un seul geste, les deux documents. */
+function _crObsNote(cle) {
+  var v = ((document.getElementById(cle + '-obs') || {}).value || '').trim();
+  return v ? '<div class="cr-mt-note">' + _blEsc(v) + '</div>' : '';
 }
 
 function _crMedValeur(el) {
@@ -7896,12 +7917,12 @@ function _buildAllTestsHtml() {
           var valStr = _crMesTab([{ l:'Force', a:csN+' kg', b:(isNaN(caN)?'':caN+' kg'),
                                     asym:(isNaN(lsiV)?'':asymTxt(lsiV, 0)) }], _labelCS, _labelCA);
           var _sf = _statForce(lsiV);
-          haForceRows += crItem(ft.label, valStr, _sf.txt, _sf.cls, [ft.key+'-cs',ft.key+'-ca']);
+          haForceRows += crItem(ft.label, valStr + _crObsNote(ft.key), _sf.txt, _sf.cls, [ft.key+'-cs',ft.key+'-ca']);
         } else if (csA || caA) {
           var _ap = _statAppreciation(csA, caA);
           if (_ap) {
             var parts = _crMesTab([{ l:'Appréciation', a:_apprTxt(csA), b:_apprTxt(caA) }], _labelCS, _labelCA);
-            haForceRows += crItem(ft.label, parts, _ap.txt, _ap.cls, [ft.key+'-apr-cs',ft.key+'-apr-ca']);
+            haForceRows += crItem(ft.label, parts + _crObsNote(ft.key), _ap.txt, _ap.cls, [ft.key+'-apr-cs',ft.key+'-apr-ca']);
           }
         }
       });
@@ -7935,12 +7956,12 @@ function _buildAllTestsHtml() {
           var valStr = _crMesTab([{ l:'Force', a:csN+' kg', b:(isNaN(caN)?'':caN+' kg'),
                                     asym:(isNaN(lsiV)?'':asymTxt(lsiV, 0)) }], _labelCS, _labelCA);
           var _sf = _statForce(lsiV);
-          geForceRows += crItem(ft.label, valStr, _sf.txt, _sf.cls, [ft.key+'-cs',ft.key+'-ca']);
+          geForceRows += crItem(ft.label, valStr + _crObsNote(ft.key), _sf.txt, _sf.cls, [ft.key+'-cs',ft.key+'-ca']);
         } else if (csA || caA) {
           var _ap = _statAppreciation(csA, caA);
           if (_ap) {
             var parts = _crMesTab([{ l:'Appréciation', a:_apprTxt(csA), b:_apprTxt(caA) }], _labelCS, _labelCA);
-            geForceRows += crItem(ft.label, parts, _ap.txt, _ap.cls, [ft.key+'-apr-cs',ft.key+'-apr-ca']);
+            geForceRows += crItem(ft.label, parts + _crObsNote(ft.key), _ap.txt, _ap.cls, [ft.key+'-apr-cs',ft.key+'-apr-ca']);
           }
         }
       });
@@ -7993,12 +8014,12 @@ function _buildAllTestsHtml() {
                                     asym: isNaN(lsiV) ? '' : asymTxt(lsiV, 0) }],
                                  _labelCS, _labelCA);
           var _sfEp = _dentInsuf ? { txt: 'Insuffisant', cls: 'bad' } : _statForce(lsiV);
-          epForceRows += crItem(ft.label, valStr, _sfEp.txt, _sfEp.cls, [ft.key+'-cs', ft.key+'-ca']);
+          epForceRows += crItem(ft.label, valStr + _crObsNote(ft.key), _sfEp.txt, _sfEp.cls, [ft.key+'-cs', ft.key+'-ca']);
         } else if (csA || caA) {
           var _ap = _statAppreciation(csA, caA);
           if (_ap) {
             var parts = _crMesTab([{ l:'Appréciation', a:_apprTxt(csA), b:_apprTxt(caA) }], _labelCS, _labelCA);
-            epForceRows += crItem(ft.label, parts, _ap.txt, _ap.cls, [ft.key+'-apr-cs', ft.key+'-apr-ca']);
+            epForceRows += crItem(ft.label, parts + _crObsNote(ft.key), _ap.txt, _ap.cls, [ft.key+'-apr-cs', ft.key+'-apr-ca']);
           }
         }
       });
@@ -8221,12 +8242,12 @@ function _buildAllTestsHtml() {
           var valStr = _crMesTab([{ l:'Force', a:csN+' kg', b:(isNaN(caN)?'':caN+' kg'),
                                     asym:(isNaN(lsiV)?'':asymTxt(lsiV, 0)) }], _labelCS, _labelCA);
           var _sf = _statForce(lsiV);
-          piForceRows += crItem(ft.label, valStr, _sf.txt, _sf.cls, [ft.key+'-cs',ft.key+'-ca']);
+          piForceRows += crItem(ft.label, valStr + _crObsNote(ft.key), _sf.txt, _sf.cls, [ft.key+'-cs',ft.key+'-ca']);
         } else if (csA || caA) {
           var _ap = _statAppreciation(csA, caA);
           if (_ap) {
             var parts = _crMesTab([{ l:'Appréciation', a:_apprTxt(csA), b:_apprTxt(caA) }], _labelCS, _labelCA);
-            piForceRows += crItem(ft.label, parts, _ap.txt, _ap.cls, [ft.key+'-apr-cs',ft.key+'-apr-ca']);
+            piForceRows += crItem(ft.label, parts + _crObsNote(ft.key), _ap.txt, _ap.cls, [ft.key+'-apr-cs',ft.key+'-apr-ca']);
           }
         }
       });

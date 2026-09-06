@@ -6426,7 +6426,12 @@ _updateOutilsPatientBtns();
     var t = String(txt == null ? '' : txt);
     var i = t.indexOf(' — ');
     if (i < 0) return _crEsc(t);
-    return _crEsc(t.slice(0, i)) + '<span class="chip-sub">' + _crEsc(t.slice(i + 3)) + '</span>';
+    /* `display:block` en ligne — voir la note jumelle dans js/bilan.js. Le
+       courrier est rendu a l'ecran ET recopie dans le PDF et dans le mail, et
+       ces trois chemins ne servent pas la meme feuille. Le style en ligne les
+       traverse tous. */
+    return _crEsc(t.slice(0, i))
+         + '<span class="chip-sub" style="display:block">' + _crEsc(t.slice(i + 3)) + '</span>';
   }
 
   function _crStatutChips(t, classe) {

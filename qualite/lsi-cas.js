@@ -274,6 +274,47 @@ verifie('aucun appel ne laisse statOf2 sans la valeur', '0', String(appelsNus.le
    appels reels — treize lignes de CR plus le Drop Jump RSI. */
 verifie('les quatorze appels sont là', '14', String((src.match(/statOf2\(/g) || []).length));
 
+/* ── Observations des tests de force ──────────────────────────────────────── */
+
+/* Chaque test de force porte un `<textarea>` d'observation dans le formulaire.
+   Seul le RACHIS le faisait remonter : sur la hanche, le genou et le pied, le
+   praticien ecrivait dans le vide — rien dans le CR, rien dans le courrier.
+
+   Elle sort en `.cr-mt-note`, la forme deja employee pour les reperes
+   (« Repère EIAS-sol : 45 cm ») : petite et grise. C'est aussi celle que
+   `_crMedValeur` releve en `note`, que le courrier rend en `.lt-note` —
+   petite et grise elle aussi. Un seul geste, les deux documents. */
+
+console.log('\nL\'observation d\'un test de force atteint les deux documents');
+
+var dObs = src.indexOf('function _crObsNote(');
+if (dObs < 0) { console.error('_crObsNote introuvable'); process.exit(1); }
+var champs = {};
+var obsNote = new Function('document', '_blEsc',
+  src.slice(dObs, src.indexOf('\n}', dObs) + 2) + '\nreturn _crObsNote;')(
+  { getElementById: function (id) { return champs[id] ? { value: champs[id] } : null; } },
+  function (x) { return String(x); });
+
+champs['ge-f-quad-obs'] = '  Douleur en fin d\'amplitude  ';
+verifie('elle sort en note grise', '<div class="cr-mt-note">Douleur en fin d\'amplitude</div>',
+        obsNote('ge-f-quad'));
+verifie('une observation vide ne pose rien', '', obsNote('ha-f-add'));
+champs['pi-f-ev-obs'] = '   ';
+verifie('… ni une observation faite d\'espaces', '', obsNote('pi-f-ev'));
+
+/* Le CABLAGE : les huit appels de test de force doivent l'ajouter. Sans cette
+   verification, la fonction serait juste et personne ne l'appellerait — le
+   piege le plus frequent de ce depot. */
+var appelsForce = src.match(/crItem\(ft\.label, (?:valStr|parts)[^;]*/g) || [];
+verifie('les huit appels de force sont là', '8', String(appelsForce.length));
+var sansObs = appelsForce.filter(function (a) { return a.indexOf('_crObsNote(ft.key)') < 0; });
+verifie('aucun n\'oublie l\'observation', '0', String(sansObs.length), sansObs.join(' | '));
+
+/* Et le RELEVE : `_crMedValeur` doit reconnaitre `.cr-mt-note` pour que le
+   courrier la recoive en `note`. C'est la marche qui relie les deux documents. */
+verifie('le courrier la reçoit par .cr-mt-note', 'true',
+        /querySelector\('\.cr-mt-note'\)/.test(src));
+
 /* ── La pastille se lit en deux temps ─────────────────────────────────────── */
 
 /* « Validé — asymétrie inversée » sur une seule ligne obligeait a lire
@@ -293,10 +334,16 @@ var tagCorps = new Function(src.slice(dTC, src.indexOf('\n}', dTC) + 2) +
                             '\nreturn _crTagCorps;')();
 
 verifie('le verdict reste en tête', 'true',
-        /^Validé<span class="cr-tag-sub">/.test(tagCorps('Validé — asymétrie inversée')));
+        /^Validé<span class="cr-tag-sub"/.test(tagCorps('Validé — asymétrie inversée')));
 verifie('… et la nuance passe dessous', 'true',
-        /<span class="cr-tag-sub">asymétrie inversée<\/span>$/
-          .test(tagCorps('Validé — asymétrie inversée')));
+        /asymétrie inversée<\/span>$/.test(tagCorps('Validé — asymétrie inversée')));
+/* La coupe ne doit dependre d'AUCUNE feuille. Ce meme balisage traverse quatre
+   stylesheets — apercu, export autonome, courrier, liste a cocher — et le PDF
+   n'en recopie qu'une. Une seule qui manque, ou qui arrive en retard depuis un
+   cache, et la nuance se recolle au verdict : « Validéasymétrie inversée ».
+   C'est exactement ce qui a ete observe en production. */
+verifie('… inconditionnellement, sans dépendre d\'une feuille', 'true',
+        /style="display:block"/.test(tagCorps('Validé — asymétrie inversée')));
 verifie('un verdict sans tiret ressort intact', 'Symétrique', tagCorps('Symétrique'));
 verifie('… y compris vide', '', tagCorps(''));
 verifie('… et une valeur absente ne lève pas', '', tagCorps(null));
@@ -315,6 +362,8 @@ verifie('les tests personnalisés aussi', 'true',
 
 var outils = fs.readFileSync(path.join(__dirname, '..', 'outils.html'), 'utf8');
 verifie('outils a sa propre coupe', 'true', /function _crChipCorps/.test(outils));
+verifie('… elle aussi inconditionnelle', 'true',
+        /chip-sub" style="display:block"/.test(outils));
 verifie('… et la lettre l\'emploie', 'true', /_crChipCorps\(t\.statut\)/.test(outils));
 verifie('… y compris pour les mentions par côté', 'true', /_crChipCorps\(st\.txt\)/.test(outils));
 verifie('plus aucune pastille n\'échappe à la coupe', '0',
