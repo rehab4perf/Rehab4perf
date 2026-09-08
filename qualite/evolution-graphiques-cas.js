@@ -297,7 +297,11 @@ console.log('\nLes aires ne dependent d\'aucun degrade');
     _evoLabelDy: function(){ return -9; }, _evoAncre: function(){ return 'middle'; },
     EVO_HALO: '', _evoFleche: function(){ return ''; }, _robustFence: function(){ return null; },
     asymTxt: function(x){ return x + '%'; }, escH: function(x){ return String(x); },
-    _fmtCond: function(){ return ''; }
+    _fmtCond: function(){ return ''; },
+    /* Les constructeurs s'appuient sur la constante du vert de serie, ecrite
+       hors de leur corps. Elle est LUE dans la source, jamais recopiee ici :
+       une copie cesserait de dire ce que le produit emploie. */
+    EVO_SERIE_B: (bilanJs.match(/var EVO_SERIE_B = '([^']*)'/) || [])[1] || ''
   };
   var _noms = Object.keys(_stub), _vals = _noms.map(function(k){ return _stub[k]; });
   function fabrique(nom, args){

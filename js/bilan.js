@@ -4138,6 +4138,27 @@ function _evoAncre(x, xMin, xMax){
   return 'middle';
 }
 
+/* ── Le vert des séries d'Évolution ──────────────────────────────────
+   Deux verts coexistaient : `var(--green)` (#2D6A4F) dans le graphique DOUBLE,
+   `#16A34A` code en dur dans le QUALITATIF. Deux cartes du meme bilan
+   dessinaient donc le meme cote dans deux verts differents — et c'est le plus
+   employe des deux qui mesurait le plus mal.
+
+   Mesure face au bleu du cote atteint (`validate_palette.js`) :
+     var(--green) #2D6A4F — plancher de chroma ECHOUE, il se lit gris ; ecart
+                            15,0 en deuteranopie mais 3,7 en TRITANOPIE, ou les
+                            deux courbes se confondent.
+     #16A34A              — tous les controles passent : 25,9 et 14,5.
+
+   La correction n'est donc pas de renoncer au vert : c'est d'unifier sur celui
+   qui mesure bien. Le praticien garde son habitude de lecture.
+
+   UN LITTERAL, jamais une variable CSS. Ces SVG sont recopies tels quels dans
+   le courrier au medecin et dans l'export autonome, qui ne servent pas les
+   memes feuilles : un `var()` non resolu rend l'attribut invalide, et la
+   courbe perd son trait — sans erreur ni signal. */
+var EVO_SERIE_B = '#16A34A';
+
 var EVO_HALO=' stroke="#fff" stroke-width="3.5" paint-order="stroke" stroke-linejoin="round"';
 
 function _buildChartB(valsA, dates, opts){
@@ -4161,18 +4182,22 @@ function _buildChartB(valsA, dates, opts){
   });
   var html = '';
   // Grille
-  var step=Math.max(1,Math.ceil((maxV-minV)/4));
+  /* DEUX graduations, pas quatre. Quatre traits pleins dans le meme gris que
+     le cadre pesaient autant que la courbe qu'ils servent — et l'axe porte
+     deja les chiffres. Le qualitatif garde les siennes : son echelle est fixe
+     de 0 a `maxVal`, la diviser n'aurait pas de sens. */
+  var step=Math.max(1,Math.ceil((maxV-minV)/2));
   for(var gv=Math.round(minV);gv<=maxV+step;gv+=step){
     var gy=(VH-PAD.bottom)-((gv-minV)/rangeV)*(VH-PAD.top-PAD.bottom);
     if(gy<PAD.top||gy>VH-PAD.bottom+2) continue;
-    html+='<line x1="'+PAD.left+'" y1="'+gy.toFixed(1)+'" x2="'+(VW-PAD.right)+'" y2="'+gy.toFixed(1)+'" stroke="var(--border)" stroke-width="1"/>';
+    html+='<line x1="'+PAD.left+'" y1="'+gy.toFixed(1)+'" x2="'+(VW-PAD.right)+'" y2="'+gy.toFixed(1)+'" stroke="var(--border)" stroke-width="1" stroke-opacity="0.55"/>';
     html+='<text x="'+(PAD.left-5)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="end" font-size="9" fill="var(--text2)" style="font-variant-numeric:tabular-nums">'+Math.round(gv)+'</text>';
   }
   // Dates X (dédupliquées)
   var shownD={};
   pts.forEach(function(p){if(shownD[p.date])return;shownD[p.date]=true;html+='<text x="'+p.x.toFixed(1)+'" y="'+(VH-PAD.bottom+13)+'" text-anchor="'+_evoAncre(p.x,PAD.left,VW-PAD.right)+'" font-size="9" fill="var(--text2)">'+p.date+'</text>';});
   // Axe X
-  html+='<line x1="'+PAD.left+'" y1="'+(VH-PAD.bottom)+'" x2="'+(VW-PAD.right)+'" y2="'+(VH-PAD.bottom)+'" stroke="var(--border)" stroke-width="1"/>';
+  html+='<line x1="'+PAD.left+'" y1="'+(VH-PAD.bottom)+'" x2="'+(VW-PAD.right)+'" y2="'+(VH-PAD.bottom)+'" stroke="var(--border)" stroke-width="1" stroke-opacity="0.55"/>';
   // Courbe bezier
   var vp=pts.filter(function(p){return p.valid;});
   if(vp.length>=2){
@@ -4221,7 +4246,10 @@ function _buildChartB(valsA, dates, opts){
 }
 
 function _buildChartD(valsA, valsB, dates, opts){
-  var id=opts.chartId, colorA=opts.colorA||'var(--accent)', colorB=opts.colorB||'var(--green)';
+  /* Le repli portait `var(--green)` — le vert terne. Un appelant qui oublie
+     `colorB` retombait donc dessus, et le reglage n'aurait tenu que tant que
+     tous les appels sont explicites. */
+  var id=opts.chartId, colorA=opts.colorA||'var(--accent)', colorB=opts.colorB||EVO_SERIE_B;
   var VW=500;
   // Déterminer si des bandes de condition seront dessinées (nécessite plus de place en bas)
   var _hasBands = (function(){
@@ -4294,11 +4322,15 @@ function _buildChartD(valsA, valsB, dates, opts){
     });
   })();
   // Grille
-  var step=Math.max(1,Math.ceil((maxV-minV)/4));
+  /* DEUX graduations, pas quatre. Quatre traits pleins dans le meme gris que
+     le cadre pesaient autant que la courbe qu'ils servent — et l'axe porte
+     deja les chiffres. Le qualitatif garde les siennes : son echelle est fixe
+     de 0 a `maxVal`, la diviser n'aurait pas de sens. */
+  var step=Math.max(1,Math.ceil((maxV-minV)/2));
   for(var gv=Math.round(minV);gv<=maxV+step;gv+=step){
     var gy=(VH-PAD.bottom)-((gv-minV)/rangeV)*(VH-PAD.top-PAD.bottom);
     if(gy<PAD.top||gy>VH-PAD.bottom+2)continue;
-    html+='<line x1="'+PAD.left+'" y1="'+gy.toFixed(1)+'" x2="'+(VW-PAD.right)+'" y2="'+gy.toFixed(1)+'" stroke="var(--border)" stroke-width="1"/>';
+    html+='<line x1="'+PAD.left+'" y1="'+gy.toFixed(1)+'" x2="'+(VW-PAD.right)+'" y2="'+gy.toFixed(1)+'" stroke="var(--border)" stroke-width="1" stroke-opacity="0.55"/>';
     html+='<text x="'+(PAD.left-5)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="end" font-size="9" fill="var(--text2)" style="font-variant-numeric:tabular-nums">'+Math.round(gv)+'</text>';
   }
   // Ligne zéro (si l'axe Y traverse 0)
@@ -4311,7 +4343,7 @@ function _buildChartD(valsA, valsB, dates, opts){
   var shownD={};
   ptsA.forEach(function(p){if(shownD[p.date])return;shownD[p.date]=true;html+='<text x="'+p.x.toFixed(1)+'" y="'+(VH-PAD.bottom+13)+'" text-anchor="'+_evoAncre(p.x,PAD.left,VW-PAD.right)+'" font-size="9" fill="var(--text2)">'+p.date+'</text>';});
   // Axe X
-  html+='<line x1="'+PAD.left+'" y1="'+(VH-PAD.bottom)+'" x2="'+(VW-PAD.right)+'" y2="'+(VH-PAD.bottom)+'" stroke="var(--border)" stroke-width="1"/>';
+  html+='<line x1="'+PAD.left+'" y1="'+(VH-PAD.bottom)+'" x2="'+(VW-PAD.right)+'" y2="'+(VH-PAD.bottom)+'" stroke="var(--border)" stroke-width="1" stroke-opacity="0.55"/>';
   // Zone déficit
   var vpA=ptsA.filter(function(p){return p.valid;}), vpB=ptsB.filter(function(p){return p.valid;});
   if(vpA.length>=2&&vpB.length>=2){
@@ -4551,7 +4583,10 @@ function _qualScore(donnees, prefix, count, scoreIdx){
 function _buildQualChart(scoresA, scoresB, dates, opts){
   opts = opts || {};
   var maxVal = opts.maxVal || 5;
-  var colorA = 'var(--accent)', colorB = '#16A34A';
+  /* Ces deux couleurs etaient reecrites en dur ici, alors que la fonction
+     recevait `colorA` et `colorB` : une correction faite chez les appelants ne
+     l'aurait JAMAIS atteinte, sans le moindre signal. */
+  var colorA = opts.colorA || 'var(--accent)', colorB = opts.colorB || EVO_SERIE_B;
   var VW=500, VH=110;
   var PAD={top:18, right:22, bottom:30, left:32};
   var id = opts.chartId || 0;
@@ -4566,11 +4601,11 @@ function _buildQualChart(scoresA, scoresB, dates, opts){
   // Grille Y (0, mid, max)
   [0, Math.round(maxVal/2), maxVal].forEach(function(gv){
     var gy = (VH-PAD.bottom)-(gv/maxVal)*(VH-PAD.top-PAD.bottom);
-    html += '<line x1="'+PAD.left+'" y1="'+gy.toFixed(1)+'" x2="'+(VW-PAD.right)+'" y2="'+gy.toFixed(1)+'" stroke="var(--border)" stroke-width="1"/>';
+    html += '<line x1="'+PAD.left+'" y1="'+gy.toFixed(1)+'" x2="'+(VW-PAD.right)+'" y2="'+gy.toFixed(1)+'" stroke="var(--border)" stroke-width="1" stroke-opacity="0.55"/>';
     html += '<text x="'+(PAD.left-4)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="end" font-size="9" fill="var(--text2)" style="font-variant-numeric:tabular-nums">'+gv+'</text>';
   });
   // Axe X + dates
-  html += '<line x1="'+PAD.left+'" y1="'+(VH-PAD.bottom)+'" x2="'+(VW-PAD.right)+'" y2="'+(VH-PAD.bottom)+'" stroke="var(--border)" stroke-width="1"/>';
+  html += '<line x1="'+PAD.left+'" y1="'+(VH-PAD.bottom)+'" x2="'+(VW-PAD.right)+'" y2="'+(VH-PAD.bottom)+'" stroke="var(--border)" stroke-width="1" stroke-opacity="0.55"/>';
   var shownD={};
   scoresA.forEach(function(v,i){ var dt=dates[i]; if(shownD[dt])return; shownD[dt]=true; html+='<text x="'+pxy(i,0).x.toFixed(1)+'" y="'+(VH-PAD.bottom+12)+'" text-anchor="'+_evoAncre(pxy(i,0).x,PAD.left,VW-PAD.right)+'" font-size="9" fill="var(--text2)">'+dt+'</text>'; });
   // Courbe A (CS) et B (CA)
@@ -4801,7 +4836,7 @@ function _renderEvolutionPage(){
             lsiHtml='<span class="evo-kpi '+lsiCls+'">'+asymTxt(parseFloat(lsiVal), 0)+'</span>';
           }
         }
-        var _dOpts={unit:grp.unit,dir:grp.dir,labelA:grp.labelA,labelB:grp.labelB,chartId:id,colorA:'var(--accent)',colorB:'var(--green)'};
+        var _dOpts={unit:grp.unit,dir:grp.dir,labelA:grp.labelA,labelB:grp.labelB,chartId:id,colorA:'var(--accent)',colorB:EVO_SERIE_B};
         if(grp.condId) _dOpts.conditions=bilansAsc.map(function(b){return _fmtCond((b.donnees||{})[grp.condId],grp);});
         chartSvg=_buildChartD(valsA,valsB,dates,_dOpts);
       } else {
@@ -4866,11 +4901,11 @@ function _renderEvolutionPage(){
     scoresA.slice().reverse().forEach(function(v){ if(!isNaN(v) && isNaN(lastA)) lastA = v; });
     scoresB.slice().reverse().forEach(function(v){ if(!isNaN(v) && isNaN(lastB)) lastB = v; });
     var kpisHtml = _evoFig(grp.labelA,'var(--accent)',isNaN(lastA)?'—':lastA+'/'+grp.count)
-                 + _evoFig(grp.labelB,'#16A34A',isNaN(lastB)?'—':lastB+'/'+grp.count);
+                 + _evoFig(grp.labelB,EVO_SERIE_B,isNaN(lastB)?'—':lastB+'/'+grp.count);
     // Pills toggle lignes
     var pillsHtml = '<div class="evo-line-toggles">'
       +'<button class="evo-line-pill active" style="color:var(--accent);border-color:var(--accent)" onclick="toggleQualPill(this,\'qual'+qid+'\',\'A\')" data-line="A">● '+grp.labelA+'</button>'
-      +'<button class="evo-line-pill active" style="color:#16A34A;border-color:#16A34A" onclick="toggleQualPill(this,\'qual'+qid+'\',\'B\')" data-line="B">● '+grp.labelB+'</button>'
+      +'<button class="evo-line-pill active" style="color:'+EVO_SERIE_B+';border-color:'+EVO_SERIE_B+'" onclick="toggleQualPill(this,\'qual'+qid+'\',\'B\')" data-line="B">● '+grp.labelB+'</button>'
       +'</div>';
     qualHtml += '<div class="evo-chart-card" data-chart-id="qual'+qid+'">'
       +'<div class="evo-chart-header">'
