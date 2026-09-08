@@ -177,9 +177,22 @@ ok('chaque segment écrit son pourcentage', /<span>\d+ %<\/span>/.test(h));
 ok('une vue tableau existe', /vol-tbl/.test(h) && /<table>/.test(h));
 ok('la légende nomme les sports', /vol-leg-i/.test(h));
 
+/* ── Ce qui se passe quand il n'y a RIEN ──────────────────────────────────
+   MASQUER EST INDISCERNABLE D'UNE PANNE — la regle est ecrite dans ce depot,
+   et le premier jet l'a enfreinte : sans activite, le bloc ne rendait rien du
+   tout. Le praticien ne pouvait pas savoir si la fonction avait disparu, si le
+   patient n'etait pas relie a Strava, ou s'il n'avait simplement pas couru. */
 var vide = rendre({ semaines: [{ debut: '2026-01-05', sports: {} }], sports: res.sports });
-egal('aucune activité → rien ne s\'affiche', '', vide);
-egal('données absentes → rien non plus', '', rendre(null));
+ok('aucune activité → le bloc reste et s\'explique', /vol-bloc/.test(vide), vide.slice(0, 90));
+ok('… et il dit qu\'il n\'y a pas d\'activité', /aucune activité/i.test(vide), vide);
+ok('… sans afficher de tuiles vides', !/vol-tuiles/.test(vide));
+
+/* `null` ne veut PAS dire « aucune activite » : il veut dire « le programme ne
+   tient pas ce patient ». Les confondre annoncerait un athlete inactif alors
+   qu'on n'en sait rien. */
+var pasSu = rendre(null);
+ok('données pas encore arrivées → rien, et c\'est voulu', pasSu === '',
+   'transitoire : la reponse n\'est pas encore la');
 
 /* ── Le câblage ───────────────────────────────────────────────────────────── */
 console.log('\nLe câblage, de bout en bout');

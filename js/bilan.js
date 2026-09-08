@@ -4812,7 +4812,17 @@ function _volHtml(){
   var actifs = defs.filter(function(sp){
     return sems.some(function(sm){ return (sm.sports[sp.cle] || vide).n > 0; });
   });
-  if(!actifs.length) return '';
+  /* MASQUER EST INDISCERNABLE D'UNE PANNE. Sans activite, un bloc absent
+     laissait le praticien sans moyen de savoir si la fonction avait disparu, si
+     le patient n'etait pas relie a Strava, ou s'il n'avait simplement pas
+     couru. Le bloc reste et dit laquelle des trois. */
+  if(!actifs.length){
+    return '<div class="vol-bloc no-print">'
+      + '<div class="vol-titre">Volume d\'entraînement <span>12 dernières semaines · Strava</span></div>'
+      + '<div class="vol-rien">Aucune activité Strava sur les 12 dernières semaines.'
+      + '<br><span>Si le patient s\'entraîne, vérifiez que son compte Strava est bien relié '
+      + 'dans l\'onglet Programme.</span></div></div>';
+  }
 
   /* ── Vue 1 : la semaine en chiffres ───────────────────────────── */
   var tuiles = actifs.slice(0, 3).map(function(sp){
