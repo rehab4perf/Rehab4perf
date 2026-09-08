@@ -38,7 +38,7 @@ var bilan = fs.readFileSync(path.join(R, 'js', 'bilan.js'), 'utf8');
 var pmain = fs.readFileSync(path.join(R, 'js', 'prog-main.js'), 'utf8');
 var pdata = fs.readFileSync(path.join(R, 'js', 'prog-data.js'), 'utf8');
 var shell = fs.readFileSync(path.join(R, 'index.html'), 'utf8');
-var html  = fs.readFileSync(path.join(R, 'bilan.html'), 'utf8');
+var html  = fs.readFileSync(path.join(R, 'programme.html'), 'utf8');
 
 var ko = 0;
 function ok(nom, cond, detail) {
@@ -87,12 +87,20 @@ ok('chaque sport porte son unité',
 /* ── L'agrégation, exécutée ───────────────────────────────────────────────── */
 console.log('\nL\'agrégation par semaine');
 
-function agrege(activites, patient) {
+/* `seances` : les evenements planifies, avec leur retour d'athlete. C'est la
+   moitie qui manquait — une seance de renforcement prescrite, faite, dont
+   l'athlete a declare la duree, s'affichait « 0 min ». */
+function agrege(activites, patient, seances) {
   var code = tranche(pmain, 'function _volLundi(', '/* ── Helpers sémantiques feedback');
-  return new Function('_stravaActivities', '_progPatient', 'R4P_SPORTS', 'R4P_SPORT_AUTRE',
-                      'r4pSportDeType', '_stravaChargeEstimate',
+  return new Function('_stravaActivities', '_cloudCalEvents', '_progPatient',
+                      'R4P_SPORTS', 'R4P_SPORT_AUTRE', 'r4pSportDeType',
+                      '_stravaChargeEstimate', '_fbIsCharge', '_evIsCap', '_uaFoster',
     code + '\nreturn _volumeParSport(4);')(
-    activites, patient, T.S, T.A, T.f, function () { return 0; });
+    activites, seances || [], patient, T.S, T.A, T.f,
+    function () { return 0; },
+    function (fb) { return !!(fb && fb.rpe != null && fb.duree_min != null && fb.duree_min > 10); },
+    function () { return false; },
+    function (rpe, min) { return Math.round((rpe || 0) * (min || 0)); });
 }
 /* Les dates du jeu d'essai sont calees sur le LUNDI de la semaine courante,
    jamais sur « aujourd'hui moins n » : un `jour(-2)` bascule dans la semaine
@@ -136,28 +144,99 @@ ok('… et elle est vide, pas absente',
    copie des noms et des couleurs — deux tables finiraient par diverger. */
 egal('les définitions partent avec les données', 6, (res.sports || []).length);
 
+/* ── Les séances prescrites comptent aussi ────────────────────────────────
+   LE DÉFAUT SIGNALÉ : « 0 minute de séance de renforcement » alors que Strava
+   a détecté les séances ET que l'athlète a déclaré leur durée.
+
+   Deux causes, et la seconde était invisible :
+
+     - Strava range dans `duree_s` le `moving_time`. Sur une séance de
+       renforcement, il n'y a quasiment pas de temps « en mouvement » : la
+       valeur y vaut souvent ZÉRO. L'activité existait, comptée, avec zéro
+       minute.
+
+     - Et surtout : les séances PLANIFIÉES, avec le retour de durée de
+       l'athlète, n'étaient comptées NULLE PART. Le praticien prescrit, le
+       patient déclare quarante-cinq minutes, et rien n'apparaissait.
+
+   La règle anti-double-comptage est celle de `_buildUaMap`, jamais recopiée :
+   un feedback de charge ABSORBE les activités Strava liées à sa séance. */
+
+console.log('\nLes séances prescrites comptent, avec la durée déclarée');
+
+var SEANCE = { id: 's1', date: lundiPlus(1),
+               athlete_feedback: { rpe: 7, duree_min: 45 } };
+
+
+var avecSeance = agrege([], { id: 'p1' }, [SEANCE]);
+var derS = avecSeance.semaines[3];
+ok('une séance prescrite crée du volume', !!derS.sports.renfo, JSON.stringify(derS.sports));
+egal('… avec la durée DÉCLARÉE, en secondes', 45 * 60, derS.sports.renfo.duree);
+egal('… et sa charge de Foster', 7 * 45, derS.sports.renfo.charge);
+egal('… comptée pour une séance', 1, derS.sports.renfo.n);
+
+/* Une seance SANS retour d'athlete n'invente aucune duree : on ne sait pas si
+   elle a ete faite. */
+var sansRetour = agrege([], { id: 'p1' }, [{ id: 's2', date: lundiPlus(1) }]);
+ok('une séance sans retour ne compte pas',
+   !sansRetour.semaines[3].sports.renfo, JSON.stringify(sansRetour.semaines[3].sports));
+
+/* LE DOUBLE COMPTAGE : une activite Strava liee a une seance dont le feedback
+   porte deja la charge serait comptee deux fois. Le feedback l'absorbe. */
+var double = agrege(
+  [{ date: lundiPlus(1), type: 'WeightTraining', distance_m: 0, duree_s: 0,
+     charge: 200, seance_id: 's1' }],
+  { id: 'p1' }, [SEANCE]);
+egal('l\'activité liée est absorbée par le retour', 1, double.semaines[3].sports.renfo.n);
+egal('… et sa durée nulle n\'écrase pas la déclarée', 45 * 60,
+     double.semaines[3].sports.renfo.duree);
+
+/* Une activite LIBRE — sans seance — compte normalement. */
+var libre = agrege(
+  [{ date: lundiPlus(2), type: 'Run', distance_m: 10000, duree_s: 3000, charge: 250 }],
+  { id: 'p1' }, [SEANCE]);
+egal('une activité libre compte à part', 10000, libre.semaines[3].sports.course.dist);
+egal('… sans effacer la séance prescrite', 45 * 60, libre.semaines[3].sports.renfo.duree);
+
+/* Une seance liee SANS feedback de charge : ce sont les activites Strava qui
+   parlent, pas une duree qu'on n'a pas. */
+var lieeSansFb = agrege(
+  [{ date: lundiPlus(1), type: 'WeightTraining', distance_m: 0, duree_s: 2700,
+     charge: 180, seance_id: 's3' }],
+  { id: 'p1' }, [{ id: 's3', date: lundiPlus(1) }]);
+egal('sans retour, l\'activité liée compte seule', 2700,
+     lieeSansFb.semaines[3].sports.renfo.duree);
+
 /* ── Le rendu, exécuté ────────────────────────────────────────────────────── */
+
 console.log('\nLes trois vues');
 
-function rendre(volume, etat) {
-  var code = tranche(bilan, 'var _volDonnees = null;', 'function _renderEvolutionPage()');
-  var boite = { innerHTML: '' };
-  /* La tranche DECLARE `_volDonnees` : le passer en parametre du meme nom le
-     ferait masquer par cette declaration, et le rendu partirait toujours de
-     `null`. On l'affecte APRES, sous un autre nom — un premier jet mesurait
-     ainsi un bloc systematiquement vide. */
-  new Function('_volEntree', '_volEtatIn', '_blEsc', 'document', 'window',
-    code + '\n_volDonnees = _volEntree; _volEtat = _volEtatIn || (_volEntree ? "ok" : "attente");\n_volRendre();')(
-    volume, etat,
-    function (x) { return String(x == null ? '' : x); },
-    { getElementById: function (id) { return id === 'vol-hote' ? boite : null; } },
-    { parent: { postMessage: function () {} }, location: { origin: 'x' } });
-  return boite.innerHTML;
+function rendre(volume) {
+  var code = tranche(pdata, "/* ── Volume d'entrainement par sport", "/* ── Sélecteur d'exercices");
+  return new Function('escH', 'V',
+    code + '\nreturn _volHtml(V);')(
+    function (x) { return String(x == null ? '' : x); }, volume);
 }
 
 var h = rendre(res);
 ok('le bloc se rend', h.indexOf('vol-bloc') > 0, h.slice(0, 120));
 ok('la semaine en chiffres est là', /vol-tuiles/.test(h));
+/* TOUS les sports pratiques ont leur tuile. L'ordre etant fixe, ne montrer que
+   les trois premiers prenait toujours les memes — et le renforcement, celui
+   dont le praticien cherchait le volume, n'y figurait jamais.
+
+   Il FAUT plus de trois sports pour que la troncature se voie : avec deux, un
+   `slice(0,3)` rend exactement la meme chose et le controle passe au vert. */
+var cinq = agrege([
+  { date: lundiPlus(0), type: 'Run',   distance_m: 12000, duree_s: 3600, charge: 300 },
+  { date: lundiPlus(1), type: 'Ride',  distance_m: 40000, duree_s: 5400, charge: 250 },
+  { date: lundiPlus(2), type: 'Swim',  distance_m:  1800, duree_s: 2400, charge: 140 },
+  { date: lundiPlus(3), type: 'Walk',  distance_m:  9000, duree_s: 5400, charge:  90 }
+], { id: 'p1' }, [SEANCE]);
+var h5 = rendre(cinq);
+egal('cinq sports pratiqués → cinq tuiles, plus le total',
+     6, (h5.match(/vol-tuile"/g) || []).length);
+ok('… dont le renforcement', /Renforcement/.test(h5.slice(0, h5.indexOf('vol-rep'))), 'absent des tuiles');
 ok('la répartition aussi', /vol-rep/.test(h));
 ok('… et les cadres par sport', /vol-cadres/.test(h));
 ok('un cadre par sport actif', (h.match(/vol-cadre"/g) || []).length === 2,
@@ -190,52 +269,22 @@ ok('… sans afficher de tuiles vides', !/vol-tuiles/.test(vide));
 /* `null` ne veut PAS dire « aucune activite » : il veut dire « le programme ne
    tient pas ce patient ». Les confondre annoncerait un athlete inactif alors
    qu'on n'en sait rien. */
-var pasSu = rendre(null);
-ok('en attente de réponse → rien, et c\'est voulu', pasSu === '',
-   'transitoire : la reponse n\'est pas encore la');
-
-/* Mais le programme peut REPONDRE qu'il ne tient pas ce patient. Cet etat-la
-   n'est pas transitoire — il dure tant qu'on n'a pas ouvert le Programme — et
-   ne rien afficher laissait croire a une fonction disparue. */
-var absent = rendre(null, 'absent');
-ok('le programme sans le patient → le bloc reste', /vol-bloc/.test(absent), absent.slice(0, 90));
-ok('… et dit quoi faire', absent.indexOf('onglet Programme') > 0, absent);
-ok('… sans annoncer une absence d\'activité', !/Aucune activité/.test(absent), absent);
+egal('données absentes → rien', '', rendre(null));
 
 /* ── Le câblage ───────────────────────────────────────────────────────────── */
-console.log('\nLe câblage, de bout en bout');
+console.log('\nLe volume vit où vivent ses données');
 
-ok('le bilan demande, il ne lit pas la base',
-   /postMessage\(\{ type:'r4p-volume-request'/.test(bilan)
-   && bilan.indexOf('strava_activities') < 0);
-ok('la coquille relaie la demande vers le programme',
-   /r4p-volume-request[\s\S]{0,220}frame-prescription/.test(shell));
-ok('… et la réponse vers le bilan',
-   /r4p-volume-response[\s\S]{0,220}frame-bilan/.test(shell));
-ok('le programme répond', /r4p-volume-response/.test(pdata));
-ok('… et ne répond QUE pour le patient qu\'il tient',
-   /_progPatient && String\(_progPatient\.id\) === String\(_vpid\)/.test(pdata));
-
-/* Une reponse tardive concernant un autre patient ne doit rien afficher : la
-   demande et la reponse sont separees par un aller-retour. */
-ok('le bilan écarte une réponse pour un autre patient',
-   /String\(_vp\) === String\(e\.data\.patientId\)/.test(bilan));
-/* Le banc pose l'etat lui-meme : il ne prouve donc rien de ce que le RECEPTEUR
-   en fait. Sans cette verification, retirer l'affectation laissait l'etat a
-   « attente » pour toujours — et le bloc muet, exactement le defaut qu'on
-   vient de fermer. */
-var dR = bilan.indexOf("if(e.data && e.data.type==='r4p-volume-response')");
-var recu = dR > 0 ? bilan.slice(dR, bilan.indexOf('\n  }', dR)) : '';
-ok('… et il pose l\'état à la réception',
-   /_volEtat\s*=\s*e\.data\.volume \? 'ok' : 'absent'/.test(recu), recu.slice(0, 200));
-ok('la demande remet l\'état en attente',
-   /_volEtat = 'attente'/.test(bilan));
-
-/* L'hote est pose par le rendu lui-meme — les TROIS branches. */
-var nbHotes = (bilan.match(/id="vol-hote"/g) || []).length;
-egal('les trois sorties de la page posent l\'hôte', 3, nbHotes);
-ok('la demande part à l\'ouverture de l\'onglet',
-   /id === 'evolution'[\s\S]{0,400}_volDemander\(\)/.test(bilan));
+/* Il a d'abord vecu dans l'onglet Evolution du bilan, alimente par un
+   aller-retour entre deux iframes. Cet ecart a coute un relais, un repondeur,
+   trois etats a distinguer et un garde-fou pour l'empecher de partir dans le
+   courrier au medecin — et c'est lui qui rendait le bloc muet quand le
+   programme n'avait pas encore le patient. Aucun de ces mecanismes ne doit
+   revenir. */
+ok('plus aucun message de transport', !/r4p-volume/.test(shell + pdata + bilan));
+ok('le bilan ne connaît plus le volume', !/_vol[A-Z]|vol-hote/.test(bilan));
+ok('le programme le rend directement', /_volHtml\(_volumeParSport\(12\)\)/.test(pdata));
+ok('… en tête du panneau des charges',
+   /var parts = \[volSectionHtml, uaSectionHtml/.test(pdata));
 
 /* ── La feuille ───────────────────────────────────────────────────────────── */
 console.log('\nLa feuille de style');

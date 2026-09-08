@@ -1636,90 +1636,6 @@ textarea.mob-note-inp {
    la chaîne `var css` de js/bilan.js. Une règle écrite d'un seul côté ne se
    voit pas là où le document est lu. */
 .cr-mt-alerte { color: var(--orange); font-weight: 600; }
-
-/* ── Volume d'entraînement — onglet Évolution ────────────────────────
-   Trois vues en tête de l'onglet. AUCUNE ne porte `evo-chart-card` : c'est la
-   classe que le courrier au médecin collecte pour joindre les courbes, et le
-   volume d'entraînement n'a rien à faire dans un compte-rendu clinique — il
-   s'y serait invité tout seul.
-
-   Les couleurs de sport viennent des DONNÉES (`R4P_SPORTS`), posées en style
-   inline : elles sont validées là-bas, une fois, et deux tables de couleurs
-   finiraient par diverger. */
-.vol-bloc { border-bottom: 1px solid var(--border); padding: 14px 16px 18px; }
-.vol-titre { font-size: .76rem; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .06em; color: var(--text2); margin-bottom: 11px; }
-.vol-titre span { font-weight: 500; text-transform: none; letter-spacing: 0;
-  color: var(--text3); margin-left: 7px; }
-.vol-pt { display: inline-block; width: 9px; height: 9px; border-radius: 2px;
-  flex: none; vertical-align: -1px; }
-
-/* Le fond du conteneur est la SURFACE, pas le filet : quand la dernière rangée
-   n'est pas pleine — quatre tuiles sur trois colonnes — la case restante
-   laissait voir un rectangle gris qui se lisait comme une donnée manquante.
-   Les filets sont portés par les tuiles elles-mêmes. */
-.vol-tuiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(136px, 1fr));
-  gap: 0; background: var(--surface); border: 1px solid var(--border);
-  border-radius: 9px; overflow: hidden; margin-bottom: 13px; }
-.vol-tuile + .vol-tuile { box-shadow: -1px 0 0 var(--border); }
-.vol-tuile { background: var(--surface); padding: 11px 13px; }
-.vol-t-lbl { display: flex; align-items: center; gap: 6px; font-size: .62rem;
-  font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
-  color: var(--text3); margin-bottom: 6px; }
-.vol-t-val { font-size: 1.4rem; font-weight: 700; letter-spacing: -.03em;
-  line-height: 1; font-variant-numeric: tabular-nums; color: var(--text); }
-.vol-t-u { font-size: .78rem; font-weight: 500; color: var(--text2); margin-left: 3px; }
-.vol-t-sub { font-size: .68rem; color: var(--text3); margin-top: 5px;
-  font-variant-numeric: tabular-nums; }
-.vol-d { font-weight: 700; padding: 1px 5px; border-radius: 3px; }
-.vol-d.haut { background: var(--green-l); color: var(--green); }
-.vol-d.bas  { background: var(--orange-l); color: var(--orange); }
-.vol-d.plat { background: var(--surface2); color: var(--text3); }
-
-/* Barre de répartition : segments séparés de 2 px, pourcentage écrit DANS
-   chaque segment — la couleur ne porte jamais seule l'information. */
-.vol-rep { display: flex; gap: 2px; height: 30px; margin-bottom: 9px; }
-.vol-seg { border-radius: 3px; display: flex; align-items: center;
-  justify-content: center; min-width: 3px; }
-.vol-seg span { font-size: .64rem; font-weight: 700; color: #fff;
-  font-variant-numeric: tabular-nums; }
-.vol-leg { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 14px;
-  font-size: .72rem; color: var(--text2); }
-.vol-leg-i { display: inline-flex; align-items: center; gap: 6px; }
-.vol-leg-i b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
-
-/* Même raison : un cadre orphelin en dernière rangée laissait une case grise. */
-.vol-cadres { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 0; background: var(--surface); border: 1px solid var(--border);
-  border-radius: 9px; overflow: hidden; }
-.vol-cadre { box-shadow: -1px 0 0 var(--border), 0 -1px 0 var(--border); }
-.vol-cadre:first-child { box-shadow: none; }
-.vol-cadre { background: var(--surface); padding: 11px 13px 8px; }
-.vol-c-tete { display: flex; align-items: baseline; justify-content: space-between;
-  gap: 8px; margin-bottom: 7px; }
-.vol-c-nom { display: inline-flex; align-items: center; gap: 6px;
-  font-size: .76rem; font-weight: 700; color: var(--text); }
-.vol-c-val { font-size: .92rem; font-weight: 700; letter-spacing: -.02em;
-  font-variant-numeric: tabular-nums; color: var(--text); }
-.vol-spark { display: block; width: 100%; height: 40px; }
-
-.vol-tbl { margin-top: 12px; }
-.vol-tbl summary { font-size: .72rem; font-weight: 600; color: var(--accent);
-  cursor: pointer; }
-.vol-tbl table { width: 100%; border-collapse: collapse; font-size: .74rem;
-  margin-top: 9px; }
-.vol-tbl th { text-align: left; font-size: .58rem; font-weight: 700;
-  text-transform: uppercase; letter-spacing: .06em; color: var(--text3);
-  padding: 4px 7px; border-bottom: 1px solid var(--border); }
-.vol-tbl th.n, .vol-tbl td.n { text-align: right; font-variant-numeric: tabular-nums; }
-.vol-tbl td { padding: 5px 7px; border-bottom: 1px solid var(--border); color: var(--text2); }
-.vol-tbl tr:last-child td { border-bottom: none; }
-/* L'état « rien à montrer » est un état, pas une absence : il porte la même
-   carte que les chiffres, et dit laquelle des trois raisons s'applique. */
-.vol-rien { font-size: .82rem; color: var(--text2); line-height: 1.55;
-  padding: 14px 15px; background: var(--surface); border: 1px solid var(--border);
-  border-radius: 9px; }
-.vol-rien span { font-size: .75rem; color: var(--text3); }
 .cr-tag.pos-fonc { background: var(--green-l); color: var(--green); }
 .cr-tag.neg-fonc { background: var(--red-l); color: var(--red); }
 .cr-tag.pos-ortho { background: var(--red-l); color: var(--red); }
@@ -6274,7 +6190,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260906a"></script>
-<script src="js/bilan.js?v=20260908g"></script>
+<script src="js/bilan.js?v=20260908h"></script>
 
 </body>
 </html>

@@ -888,9 +888,9 @@ function _r4pBuild(){
   </div>
 </div>
 <div class="frame-wrap">
-  <iframe id="frame-bilan"        src="bilan.html?v=20260908g"        class="active"></iframe>
+  <iframe id="frame-bilan"        src="bilan.html?v=20260908h"        class="active"></iframe>
   <iframe id="frame-outils"       src="outils.html?v=20260906i"       ></iframe>
-  <iframe id="frame-prescription" src="programme.html?v=20260908g" ></iframe>
+  <iframe id="frame-prescription" src="programme.html?v=20260908h" ></iframe>
   <iframe id="frame-patients"     src="patients.html?v=20260817b"     ></iframe>
   <iframe id="frame-account"      src="account.html?v=20260817b"      ></iframe>
 </div>
@@ -1415,22 +1415,6 @@ window.addEventListener('message', function(e) {
     var prescFrame = document.getElementById('frame-prescription');
     if (prescFrame && prescFrame.contentWindow) {
       prescFrame.contentWindow.postMessage(e.data, window.location.origin);
-    }
-  }
-
-  /* Le bilan demande le volume par sport au programme, et le programme lui
-     repond — la coquille ne fait que relayer, comme pour les graphiques du
-     Generateur de CR. */
-  if (e.data.type === 'r4p-volume-request') {
-    var progFrameVol = document.getElementById('frame-prescription');
-    if (progFrameVol && progFrameVol.contentWindow) {
-      progFrameVol.contentWindow.postMessage(e.data, window.location.origin);
-    }
-  }
-  if (e.data.type === 'r4p-volume-response') {
-    var bilanFrameVol = document.getElementById('frame-bilan');
-    if (bilanFrameVol && bilanFrameVol.contentWindow) {
-      bilanFrameVol.contentWindow.postMessage(e.data, window.location.origin);
     }
   }
 

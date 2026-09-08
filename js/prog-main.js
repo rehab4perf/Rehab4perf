@@ -1797,10 +1797,24 @@ function _stravaChargeEstimate(act, ddn){
   return _uaFoster(act.charge / durMin, durMin);
 }
 
-/* ── Volume par sport — agregation pour l'onglet Evolution ───────────
-   On rend des SEMAINES, pas des activites : un athlete a trois ans
-   d'historique, c'est un millier de lignes tirees pour en afficher soixante.
-   L'agregation se fait ici, une fois, sur la liste DEDOUBLONNEE. */
+/* ── Volume d'entrainement par sport ─────────────────────────────────
+   Il vivait dans l'onglet Evolution du bilan, alimente par un aller-retour
+   entre deux iframes. Cet ecart a coute un relais, un repondeur, trois etats a
+   distinguer et un garde-fou pour l'empecher de partir dans le courrier au
+   medecin — et c'est lui qui rendait le bloc muet quand le programme n'avait
+   pas encore le patient.
+
+   Il vit desormais ou vivent ses donnees. L'onglet Evolution du bilan annonce
+   « Suivi longitudinal des marqueurs cliniques — bilans sauvegardes » : le
+   volume d'entrainement n'est ni l'un ni l'autre.
+
+   ── CE QUI COMPTE, et pourquoi ──────────────────────────────────────
+   Les seances PLANIFIEES avec retour de l'athlete comptent autant que les
+   activites Strava. Elles etaient purement absentes : une seance de
+   renforcement prescrite, faite, et dont l'athlete a declare la duree
+   s'affichait « 0 min ». La regle anti-double-comptage est celle de
+   `_buildUaMap`, recopiee nulle part : un feedback de charge ABSORBE les
+   activites Strava liees a sa seance. */
 function _volLundi(d){
   var x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
   x.setDate(x.getDate() - ((x.getDay() + 6) % 7));      // lundi = 0
@@ -1830,23 +1844,61 @@ function _volumeParSport(nbSemaines){
     semaines.push({ debut:_volIso(d), sports:{} });
   }
   var ddn = _progPatient && _progPatient.ddn;
-  (_stravaActivities || []).forEach(function(a){
-    if(!a || !a.date) return;
-    var jour = new Date(String(a.date).slice(0,10) + 'T00:00:00');
+
+  function poser(dateStr, cle, dist, duree, charge){
+    if(!dateStr) return;
+    var jour = new Date(String(dateStr).slice(0,10) + 'T00:00:00');
     if(isNaN(jour)) return;
     var k = index[_volIso(_volLundi(jour))];
     if(k === undefined) return;                          // hors fenetre
-    var sp = r4pSportDeType(a.type);
-    var cel = semaines[k].sports[sp.cle]
-           || (semaines[k].sports[sp.cle] = { dist:0, duree:0, charge:0, n:0 });
-    cel.dist   += (a.distance_m || 0);
-    cel.duree  += (a.duree_s   || 0);
-    cel.charge += (_volCharge(a, ddn) || 0);
-    cel.n      += 1;
+    var cel = semaines[k].sports[cle]
+           || (semaines[k].sports[cle] = { dist:0, duree:0, charge:0, n:0 });
+    cel.dist += (dist || 0); cel.duree += (duree || 0);
+    cel.charge += (charge || 0); cel.n += 1;
+  }
+
+  /* 1. Seances planifiees. Meme partage que `_buildUaMap` : un feedback de
+        charge absorbe les activites Strava liees, sinon ce sont elles qui
+        comptent. */
+  var liees = {};
+  (_stravaActivities || []).forEach(function(a){
+    if(a && a.seance_id) (liees[String(a.seance_id)] = liees[String(a.seance_id)] || []).push(a);
   });
-  /* Les DEFINITIONS partent avec les chiffres : le bilan ne doit pas tenir sa
-     propre copie des noms, unites et couleurs — deux tables finiraient par
-     diverger, et c'est la couleur qui derive en premier. */
+  (_cloudCalEvents || []).forEach(function(ev){
+    if(!ev) return;
+    var fb = ev.athlete_feedback;
+    var list = liees[String(ev.id)] || [];
+    if(typeof _evIsCap === 'function' && _evIsCap(ev)){
+      list.forEach(function(a){
+        var sp = r4pSportDeType(a.type);
+        poser(a.date, sp.cle, a.distance_m, a.duree_s, _volCharge(a, ddn));
+      });
+      return;
+    }
+    if(typeof _fbIsCharge === 'function' && _fbIsCharge(fb)){
+      /* La duree DECLAREE par l'athlete, en minutes. C'est la seule qu'on ait
+         pour une seance de renforcement : Strava n'y compte quasiment pas de
+         temps « en mouvement », et `duree_s` y vaut souvent zero. */
+      poser(ev.date, 'renfo', 0, (fb.duree_min || 0) * 60,
+            (typeof _uaFoster === 'function' ? _uaFoster(fb.rpe, fb.duree_min) : 0) || 0);
+      return;                                            // les liees sont absorbees
+    }
+    list.forEach(function(a){
+      var sp = r4pSportDeType(a.type);
+      poser(a.date, sp.cle, a.distance_m, a.duree_s, _volCharge(a, ddn));
+    });
+  });
+
+  /* 2. Activites libres — celles qui ne repondent a aucune seance planifiee. */
+  (_stravaActivities || []).forEach(function(a){
+    if(!a || a.seance_id) return;
+    var sp = r4pSportDeType(a.type);
+    poser(a.date, sp.cle, a.distance_m, a.duree_s, _volCharge(a, ddn));
+  });
+
+  /* Les DEFINITIONS partent avec les chiffres : le rendu ne tient pas sa propre
+     copie des noms, unites et couleurs — deux tables finiraient par diverger,
+     et c'est la couleur qui derive en premier. */
   return { semaines:semaines, sports:R4P_SPORTS.concat([R4P_SPORT_AUTRE]) };
 }
 

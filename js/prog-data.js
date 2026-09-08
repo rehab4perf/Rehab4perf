@@ -3561,25 +3561,6 @@ window.addEventListener('message', function(e){
       _loadObjectifsForPatient();
     }
   }
-  /* Le bilan demande le volume par sport — meme chemin que le Generateur de CR
-     pour ses graphiques : demande → coquille → reponse.
-
-     Il ne lit PAS `strava_activities` lui-meme, et ce n'est pas doctrinal : la
-     deduplication vit ici, et une seconde requete depuis le bilan la
-     contournerait — comptant deux fois les sorties enregistrees sur deux
-     appareils. C'est le defaut que le webhook Strava a coute cher a refermer. */
-  if(e.data && e.data.type === 'r4p-volume-request'){
-    var _vpid = e.data.patientId;
-    var _vok = _progPatient && String(_progPatient.id) === String(_vpid)
-               && typeof _volumeParSport === 'function';
-    try {
-      window.parent.postMessage({ type:'r4p-volume-response', patientId:_vpid,
-        /* `null` quand ce n'est pas le patient courant : le programme n'a alors
-           PAS ses activites en memoire, et rendre des semaines vides se lirait
-           « aucun entrainement » au lieu de « pas encore su ». */
-        volume: _vok ? _volumeParSport(12) : null }, window.location.origin);
-    } catch(ex){}
-  }
   // Génère les graphiques pevo pour le CR médecin (outils.html)
   if(e.data && e.data.type==='r4p-pevo-request'){
     var _reqPatId = e.data.patientId;
@@ -5457,7 +5438,11 @@ function _renderPevoCharts(exoData, selectedKeys) {
 
   var sep = '<div style="height:32px"></div>';
   var uaSectionHtml = _buildUaTrendSection();
-  var parts = [uaSectionHtml, rmSection, dureeSectionHtml, cardioSectionHtml, capPainSectionHtml].filter(function(s){ return !!s; });
+  /* Le volume par sport ouvre le panneau : c'est la reponse a « combien cette
+     semaine ? », et elle se lit avant les courbes qui la detaillent. */
+  var volSectionHtml = '';
+  try { volSectionHtml = _volHtml(_volumeParSport(12)); } catch(ex){}
+  var parts = [volSectionHtml, uaSectionHtml, rmSection, dureeSectionHtml, cardioSectionHtml, capPainSectionHtml].filter(function(s){ return !!s; });
   body.innerHTML = _renderPevoFilterBar() + parts.join(sep);
   _attachPevoEvents();
 }
@@ -5471,6 +5456,142 @@ function togglePevoPill(btn, svgId, line) {
     el.style.display = show ? '' : 'none';
   });
 }
+
+/* ── Volume d'entrainement par sport — trois vues ─────────────────────
+   La semaine en chiffres, la repartition de l'effort, douze semaines cadre par
+   cadre. Pose en tete du panneau « Evolution des charges », a cote de la
+   charge globale : c'est de l'entrainement, pas de la clinique.
+
+   Il a d'abord vecu dans l'onglet Evolution du bilan, alimente par un
+   aller-retour entre deux iframes. Cet ecart a coute un relais, un repondeur,
+   trois etats a distinguer et un garde-fou pour l'empecher de partir dans le
+   courrier au medecin. Ici, un appel de fonction suffit. */
+
+
+function _volFmt(v, u){
+  if(u === 'km') return (v/1000).toFixed(v >= 10000 ? 0 : 1).replace('.', ',');
+  var h = Math.floor(v/3600), m = Math.round((v%3600)/60);
+  return h ? (h + ' h ' + String(m).padStart(2,'0')) : (m + ' min');
+}
+function _volValeur(cel, sp){ return sp.unite === 'km' ? cel.dist : cel.duree; }
+
+/* Vue 3 : un cadre par sport. PAS cinq couleurs empilees — cinq teintes ne se
+   distinguent pas deux a deux, c'est mesure. Separees, chaque serie n'a plus
+   qu'elle-meme a distinguer. */
+function _volBarres(vals, coul){
+  var W = 240, H = 44, max = Math.max.apply(null, vals) || 1;
+  var pas = W / vals.length, larg = Math.max(3, pas - 4), out = '';
+  vals.forEach(function(v, i){
+    var h = v > 0 ? Math.max(2, (v/max) * (H - 4)) : 0;
+    var x = i*pas + (pas-larg)/2;
+    out += '<rect x="'+x.toFixed(1)+'" y="'+(H-h).toFixed(1)+'" width="'+larg.toFixed(1)
+        +  '" height="'+h.toFixed(1)+'" rx="2" fill="'+coul+'"'
+        +  (i === vals.length-1 ? '' : ' opacity="0.4"')+'></rect>';
+  });
+  return '<svg class="vol-spark" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true">'+out+'</svg>';
+}
+
+function _volCadre(corps){
+  return '<div class="vol-bloc no-print">'
+    + '<div class="vol-titre">Volume d\'entraînement <span>12 dernières semaines · Strava</span></div>'
+    + corps + '</div>';
+}
+
+function _volHtml(_volDonnees){
+  if(!_volDonnees || !_volDonnees.semaines || !_volDonnees.semaines.length) return '';
+  var sems = _volDonnees.semaines, defs = _volDonnees.sports || [];
+  var der = sems[sems.length-1], av = sems[sems.length-2] || { sports:{} };
+  var vide = { dist:0, duree:0, charge:0, n:0 };
+
+  var chargeTot = 0;
+  defs.forEach(function(sp){ chargeTot += (der.sports[sp.cle] || vide).charge; });
+  var actifs = defs.filter(function(sp){
+    return sems.some(function(sm){ return (sm.sports[sp.cle] || vide).n > 0; });
+  });
+  /* MASQUER EST INDISCERNABLE D'UNE PANNE. Sans activite, un bloc absent
+     laissait le praticien sans moyen de savoir si la fonction avait disparu, si
+     le patient n'etait pas relie a Strava, ou s'il n'avait simplement pas
+     couru. Le bloc reste et dit laquelle des trois. */
+  if(!actifs.length){
+    return _volCadre('<div class="vol-rien">Aucune activité Strava sur les 12 dernières semaines.'
+      + '<br><span>Si le patient s\'entraîne, vérifiez que son compte Strava est bien relié '
+      + 'dans l\'onglet Programme.</span></div>');
+  }
+
+  /* ── Vue 1 : la semaine en chiffres ───────────────────────────── */
+  /* TOUS les sports pratiques, pas les trois premiers. L'ordre etant FIXE, un
+     `slice(0,3)` prenait toujours les memes — course, velo, natation — et le
+     renforcement n'apparaissait jamais en tuile, alors que c'est justement
+     celui dont le praticien cherchait le volume. La grille se replie toute
+     seule sur les ecrans etroits. */
+  var tuiles = actifs.map(function(sp){
+    var c = der.sports[sp.cle] || vide, p = av.sports[sp.cle] || vide;
+    var vc = _volValeur(c, sp), vp = _volValeur(p, sp);
+    var d = vp > 0 ? Math.round((vc - vp)/vp*100) : null;
+    var cls = d === null ? 'plat' : (d > 0 ? 'haut' : (d < 0 ? 'bas' : 'plat'));
+    return '<div class="vol-tuile"><div class="vol-t-lbl">'
+      + '<span class="vol-pt" style="background:'+sp.couleur+'"></span>'+escH(sp.nom)+'</div>'
+      + '<div class="vol-t-val">'+_volFmt(vc, sp.unite)
+      + (sp.unite === 'km' ? '<span class="vol-t-u">km</span>' : '')+'</div>'
+      + '<div class="vol-t-sub"><span class="vol-d '+cls+'">'
+      + (d === null ? '—' : (d > 0 ? '▲ +' : (d < 0 ? '▼ ' : '= ')) + d + ' %')
+      + '</span> · '+c.n+' séance'+(c.n > 1 ? 's' : '')+'</div></div>';
+  }).join('');
+  tuiles += '<div class="vol-tuile"><div class="vol-t-lbl">Charge totale</div>'
+    + '<div class="vol-t-val">'+Math.round(chargeTot)+'<span class="vol-t-u">UA</span></div>'
+    + '<div class="vol-t-sub">'+actifs.reduce(function(a,sp){ return a + (der.sports[sp.cle]||vide).n; }, 0)
+    + ' séances cette semaine</div></div>';
+
+  /* ── Vue 2 : la repartition, en CHARGE ────────────────────────────
+     Pas en kilometres : une heure de natation et dix kilometres de course ne
+     s'additionnent pas. La charge est la seule unite qui met les sports sur un
+     meme plan, et c'est deja celle de l'ACWR. */
+  var rep = '', leg = '';
+  if(chargeTot > 0){
+    actifs.forEach(function(sp){
+      var c = (der.sports[sp.cle] || vide).charge;
+      if(c <= 0) return;
+      var pct = Math.round(c/chargeTot*100);
+      rep += '<div class="vol-seg" style="flex:'+pct+';background:'+sp.couleur+'" title="'
+          +  escH(sp.nom)+' — '+Math.round(c)+' UA ('+pct+' %)"><span>'+pct+' %</span></div>';
+      leg += '<span class="vol-leg-i"><span class="vol-pt" style="background:'+sp.couleur+'"></span>'
+          +  escH(sp.nom)+' <b>'+Math.round(c)+' UA</b></span>';
+    });
+  }
+
+  /* ── Vue 3 : douze semaines, un cadre par sport ───────────────── */
+  var cadres = actifs.map(function(sp){
+    var vals = sems.map(function(sm){ return _volValeur(sm.sports[sp.cle] || vide, sp); });
+    var c = der.sports[sp.cle] || vide;
+    return '<div class="vol-cadre"><div class="vol-c-tete"><span class="vol-c-nom">'
+      + '<span class="vol-pt" style="background:'+sp.couleur+'"></span>'+escH(sp.nom)+'</span>'
+      + '<span class="vol-c-val">'+_volFmt(_volValeur(c, sp), sp.unite)
+      + (sp.unite === 'km' ? ' km' : '')+'</span></div>'
+      + _volBarres(vals, sp.couleur)+'</div>';
+  }).join('');
+
+  /* La vue TABLEAU n'est pas un supplement : la couleur ne doit jamais porter
+     seule une information, et un lecteur qui ne la distingue pas garde ici de
+     quoi lire les memes chiffres. */
+  var tbl = '<tr><th>Sport</th><th class="n">Cette semaine</th><th class="n">Charge</th><th class="n">Séances</th></tr>'
+    + actifs.map(function(sp){
+        var c = der.sports[sp.cle] || vide;
+        return '<tr><td><span class="vol-pt" style="background:'+sp.couleur+'"></span> '+escH(sp.nom)+'</td>'
+          + '<td class="n">'+_volFmt(_volValeur(c, sp), sp.unite)+(sp.unite==='km'?' km':'')+'</td>'
+          + '<td class="n">'+Math.round(c.charge)+' UA</td><td class="n">'+c.n+'</td></tr>';
+      }).join('');
+
+  return '<div class="vol-bloc no-print">'
+    + '<div class="vol-titre">Volume d\'entraînement <span>12 dernières semaines · Strava</span></div>'
+    + '<div class="vol-tuiles">'+tuiles+'</div>'
+    + (rep ? '<div class="vol-rep">'+rep+'</div><div class="vol-leg">'+leg+'</div>' : '')
+    + '<div class="vol-cadres">'+cadres+'</div>'
+    + '<details class="vol-tbl"><summary>Voir les mêmes chiffres en tableau</summary>'
+    + '<table>'+tbl+'</table></details></div>';
+}
+
+
+
 
 /* ── Sélecteur d'exercices — liste rangée, pas mur de pastilles ──────
    Vingt-six pastilles a plat, huit rangees de meme poids : l'oeil n'avait
