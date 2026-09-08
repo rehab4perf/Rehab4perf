@@ -1006,6 +1006,51 @@ var CARDIO_SPORTS = [
   {val:'rameur',   label:'🚣 Rameur'},
   {val:'ski_erg',  label:'❄️ Ski Erg'}
 ];
+/* ── Sports d'entrainement — table de correspondance Strava ──────────
+   Strava nomme `Run`, `TrailRun` et `VirtualRun` trois libelles d'un MEME
+   sport ; `WeightTraining`, `Workout` et `Crossfit` en sont un autre. Sans
+   cette table, le volume compterait cinq sports la ou il n'y en a que deux, et
+   le calendrier continuerait d'afficher le type brut.
+
+   Ecrite UNE fois : elle sert le volume de l'onglet Evolution, et rien
+   n'empeche le calendrier de s'y brancher ensuite.
+
+   LES COULEURS SONT VALIDEES, pas choisies a l'oeil — bande de clarte,
+   plancher de chroma, ecart perceptif sous les trois formes de daltonisme,
+   contraste sur la surface. Elles passent tous les controles SUR LES PAIRES
+   ADJACENTES, dans cet ordre exact.
+
+   L'ORDRE EST FIXE et ne se trie jamais par grandeur : une part qui change de
+   voisine d'une semaine a l'autre change d'ecart de couleur, et la comparaison
+   devient impossible. C'est aussi cet ordre-la qui a ete valide.
+
+   AU-DELA DE CINQ, on ne cree pas de sixieme teinte : le surplus tombe dans
+   « Autre ». Cinq series sont la limite de ce qu'un lecteur distingue — mesure,
+   pas estime. */
+var R4P_SPORTS = [
+  { cle:'course',   nom:'Course à pied', unite:'km', couleur:'#2B5FA6',
+    types:['Run','TrailRun','VirtualRun'] },
+  { cle:'velo',     nom:'Vélo',          unite:'km', couleur:'#C2410C',
+    types:['Ride','VirtualRide','GravelRide','MountainBikeRide','EBikeRide','Handcycle'] },
+  { cle:'natation', nom:'Natation',      unite:'km', couleur:'#0891B2',
+    types:['Swim'] },
+  { cle:'renfo',    nom:'Renforcement',  unite:'h',  couleur:'#7B2DBF',
+    types:['WeightTraining','Workout','Crossfit','HighIntensityIntervalTraining'] },
+  { cle:'marche',   nom:'Marche',        unite:'km', couleur:'#BE185D',
+    types:['Walk','Hike','Snowshoe'] }
+];
+/* Gris volontaire : « Autre » n'est pas un sport, c'est ce qui reste. Une
+   couleur franche lui donnerait le meme poids qu'aux cinq nommes. */
+var R4P_SPORT_AUTRE = { cle:'autre', nom:'Autre', unite:'h', couleur:'#8A96A0', types:[] };
+
+function r4pSportDeType(type){
+  var t = String(type || '');
+  for(var i=0;i<R4P_SPORTS.length;i++){
+    if(R4P_SPORTS[i].types.indexOf(t) !== -1) return R4P_SPORTS[i];
+  }
+  return R4P_SPORT_AUTRE;
+}
+
 var CARDIO_EFFORT_TYPES = [
   {val:'continu',      label:'Continu'},
   {val:'fractionne',   label:'Fractionné'},
@@ -3515,6 +3560,25 @@ window.addEventListener('message', function(e){
     if(_progPatient && String(_progPatient.id)===String(e.data.patientId) && typeof _loadObjectifsForPatient==='function'){
       _loadObjectifsForPatient();
     }
+  }
+  /* Le bilan demande le volume par sport — meme chemin que le Generateur de CR
+     pour ses graphiques : demande → coquille → reponse.
+
+     Il ne lit PAS `strava_activities` lui-meme, et ce n'est pas doctrinal : la
+     deduplication vit ici, et une seconde requete depuis le bilan la
+     contournerait — comptant deux fois les sorties enregistrees sur deux
+     appareils. C'est le defaut que le webhook Strava a coute cher a refermer. */
+  if(e.data && e.data.type === 'r4p-volume-request'){
+    var _vpid = e.data.patientId;
+    var _vok = _progPatient && String(_progPatient.id) === String(_vpid)
+               && typeof _volumeParSport === 'function';
+    try {
+      window.parent.postMessage({ type:'r4p-volume-response', patientId:_vpid,
+        /* `null` quand ce n'est pas le patient courant : le programme n'a alors
+           PAS ses activites en memoire, et rendre des semaines vides se lirait
+           « aucun entrainement » au lieu de « pas encore su ». */
+        volume: _vok ? _volumeParSport(12) : null }, window.location.origin);
+    } catch(ex){}
   }
   // Génère les graphiques pevo pour le CR médecin (outils.html)
   if(e.data && e.data.type==='r4p-pevo-request'){

@@ -1797,6 +1797,59 @@ function _stravaChargeEstimate(act, ddn){
   return _uaFoster(act.charge / durMin, durMin);
 }
 
+/* ── Volume par sport — agregation pour l'onglet Evolution ───────────
+   On rend des SEMAINES, pas des activites : un athlete a trois ans
+   d'historique, c'est un millier de lignes tirees pour en afficher soixante.
+   L'agregation se fait ici, une fois, sur la liste DEDOUBLONNEE. */
+function _volLundi(d){
+  var x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  x.setDate(x.getDate() - ((x.getDay() + 6) % 7));      // lundi = 0
+  return x;
+}
+function _volIso(d){
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0')
+       + '-' + String(d.getDate()).padStart(2,'0');
+}
+function _volCharge(a, ddn){
+  /* La charge PRE-CALCULEE prime : c'est elle qui alimente deja l'ACWR, et deux
+     chiffres de charge dans la meme application se contrediraient. */
+  if(a && a.charge) return a.charge;
+  try { return _stravaChargeEstimate(a, ddn) || 0; } catch(e){ return 0; }
+}
+
+function _volumeParSport(nbSemaines){
+  var n = nbSemaines || 12;
+  var lundi0 = _volLundi(new Date());
+  /* Les bornes des semaines sont posees D'ABORD : une semaine sans activite
+     doit exister et valoir zero, sinon la courbe saute par-dessus et donne a
+     lire une continuite qui n'a pas eu lieu. */
+  var semaines = [], index = {};
+  for(var i = n - 1; i >= 0; i--){
+    var d = new Date(lundi0); d.setDate(d.getDate() - i * 7);
+    index[_volIso(d)] = semaines.length;
+    semaines.push({ debut:_volIso(d), sports:{} });
+  }
+  var ddn = _progPatient && _progPatient.ddn;
+  (_stravaActivities || []).forEach(function(a){
+    if(!a || !a.date) return;
+    var jour = new Date(String(a.date).slice(0,10) + 'T00:00:00');
+    if(isNaN(jour)) return;
+    var k = index[_volIso(_volLundi(jour))];
+    if(k === undefined) return;                          // hors fenetre
+    var sp = r4pSportDeType(a.type);
+    var cel = semaines[k].sports[sp.cle]
+           || (semaines[k].sports[sp.cle] = { dist:0, duree:0, charge:0, n:0 });
+    cel.dist   += (a.distance_m || 0);
+    cel.duree  += (a.duree_s   || 0);
+    cel.charge += (_volCharge(a, ddn) || 0);
+    cel.n      += 1;
+  });
+  /* Les DEFINITIONS partent avec les chiffres : le bilan ne doit pas tenir sa
+     propre copie des noms, unites et couleurs — deux tables finiraient par
+     diverger, et c'est la couleur qui derive en premier. */
+  return { semaines:semaines, sports:R4P_SPORTS.concat([R4P_SPORT_AUTRE]) };
+}
+
 /* ── Helpers sémantiques feedback ──────────────────────────────────
    Colonnes dediees : douleur (0-10) et effort (Borg 1-10) pour CAP/HSR ;
    rpe + duree_min restent reserves aux seances standard (Foster).

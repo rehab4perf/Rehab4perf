@@ -1995,6 +1995,20 @@ window.addEventListener('message', function(e){
       try{ targetEl.dispatchEvent(new Event('change',{bubbles:true})); }catch(ex){}
     }
   }
+  /* Le programme repond au volume par sport. On ecarte une reponse qui ne
+     concerne plus le patient affiche : la demande et la reponse sont separees
+     par un aller-retour, et changer de patient entre les deux ferait afficher
+     le volume du precedent. */
+  if(e.data && e.data.type==='r4p-volume-response'){
+    var _vp = _bilanPatient && _bilanPatient.id;
+    if(_vp && String(_vp) === String(e.data.patientId)){
+      _volDonnees = e.data.volume || null;
+      _volPatientId = e.data.patientId;
+      try { _volRendre(); } catch(ex){}
+    }
+    return;
+  }
+
   if(e.data && e.data.type==='r4p-patient-selected'){
     var _newPat = e.data.patient;
     var _isDiff = !_bilanPatient || !_newPat || _bilanPatient.id !== _newPat.id;
@@ -4741,6 +4755,137 @@ function setEvoCustomFilter(){
   _renderEvolutionPage();
 }
 
+/* ── Volume d'entrainement par sport ─────────────────────────────────
+   Trois vues, en tete de l'onglet Evolution : la semaine en chiffres, la
+   repartition de l'effort, puis douze semaines cadre par cadre.
+
+   LES DONNEES VIENNENT DU PROGRAMME, jamais de la base directement : la
+   deduplication des activites Strava vit la-bas, et une requete d'ici la
+   contournerait — comptant deux fois les sorties enregistrees sur deux
+   appareils.
+
+   AUCUNE de ces vues ne porte `evo-chart-card` : c'est la classe que le
+   courrier au medecin collecte pour joindre les courbes. Le volume
+   d'entrainement n'a rien a faire dans un compte-rendu clinique, et il s'y
+   serait invite tout seul. */
+var _volDonnees = null;      // derniere reponse du programme
+var _volPatientId = null;    // pour qui elle vaut
+
+function _volDemander(){
+  var pid = _bilanPatient && _bilanPatient.id;
+  if(!pid) { _volDonnees = null; _volPatientId = null; return; }
+  try { window.parent.postMessage({ type:'r4p-volume-request', patientId:pid },
+                                  window.location.origin); } catch(ex){}
+}
+
+function _volFmt(v, u){
+  if(u === 'km') return (v/1000).toFixed(v >= 10000 ? 0 : 1).replace('.', ',');
+  var h = Math.floor(v/3600), m = Math.round((v%3600)/60);
+  return h ? (h + ' h ' + String(m).padStart(2,'0')) : (m + ' min');
+}
+function _volValeur(cel, sp){ return sp.unite === 'km' ? cel.dist : cel.duree; }
+
+/* Vue 3 : un cadre par sport. PAS cinq couleurs empilees — cinq teintes ne se
+   distinguent pas deux a deux, c'est mesure. Separees, chaque serie n'a plus
+   qu'elle-meme a distinguer. */
+function _volBarres(vals, coul){
+  var W = 240, H = 44, max = Math.max.apply(null, vals) || 1;
+  var pas = W / vals.length, larg = Math.max(3, pas - 4), out = '';
+  vals.forEach(function(v, i){
+    var h = v > 0 ? Math.max(2, (v/max) * (H - 4)) : 0;
+    var x = i*pas + (pas-larg)/2;
+    out += '<rect x="'+x.toFixed(1)+'" y="'+(H-h).toFixed(1)+'" width="'+larg.toFixed(1)
+        +  '" height="'+h.toFixed(1)+'" rx="2" fill="'+coul+'"'
+        +  (i === vals.length-1 ? '' : ' opacity="0.4"')+'></rect>';
+  });
+  return '<svg class="vol-spark" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true">'+out+'</svg>';
+}
+
+function _volHtml(){
+  if(!_volDonnees || !_volDonnees.semaines || !_volDonnees.semaines.length) return '';
+  var sems = _volDonnees.semaines, defs = _volDonnees.sports || [];
+  var der = sems[sems.length-1], av = sems[sems.length-2] || { sports:{} };
+  var vide = { dist:0, duree:0, charge:0, n:0 };
+
+  var chargeTot = 0;
+  defs.forEach(function(sp){ chargeTot += (der.sports[sp.cle] || vide).charge; });
+  var actifs = defs.filter(function(sp){
+    return sems.some(function(sm){ return (sm.sports[sp.cle] || vide).n > 0; });
+  });
+  if(!actifs.length) return '';
+
+  /* ── Vue 1 : la semaine en chiffres ───────────────────────────── */
+  var tuiles = actifs.slice(0, 3).map(function(sp){
+    var c = der.sports[sp.cle] || vide, p = av.sports[sp.cle] || vide;
+    var vc = _volValeur(c, sp), vp = _volValeur(p, sp);
+    var d = vp > 0 ? Math.round((vc - vp)/vp*100) : null;
+    var cls = d === null ? 'plat' : (d > 0 ? 'haut' : (d < 0 ? 'bas' : 'plat'));
+    return '<div class="vol-tuile"><div class="vol-t-lbl">'
+      + '<span class="vol-pt" style="background:'+sp.couleur+'"></span>'+_blEsc(sp.nom)+'</div>'
+      + '<div class="vol-t-val">'+_volFmt(vc, sp.unite)
+      + (sp.unite === 'km' ? '<span class="vol-t-u">km</span>' : '')+'</div>'
+      + '<div class="vol-t-sub"><span class="vol-d '+cls+'">'
+      + (d === null ? '—' : (d > 0 ? '▲ +' : (d < 0 ? '▼ ' : '= ')) + d + ' %')
+      + '</span> · '+c.n+' séance'+(c.n > 1 ? 's' : '')+'</div></div>';
+  }).join('');
+  tuiles += '<div class="vol-tuile"><div class="vol-t-lbl">Charge totale</div>'
+    + '<div class="vol-t-val">'+Math.round(chargeTot)+'<span class="vol-t-u">UA</span></div>'
+    + '<div class="vol-t-sub">'+actifs.reduce(function(a,sp){ return a + (der.sports[sp.cle]||vide).n; }, 0)
+    + ' séances cette semaine</div></div>';
+
+  /* ── Vue 2 : la repartition, en CHARGE ────────────────────────────
+     Pas en kilometres : une heure de natation et dix kilometres de course ne
+     s'additionnent pas. La charge est la seule unite qui met les sports sur un
+     meme plan, et c'est deja celle de l'ACWR. */
+  var rep = '', leg = '';
+  if(chargeTot > 0){
+    actifs.forEach(function(sp){
+      var c = (der.sports[sp.cle] || vide).charge;
+      if(c <= 0) return;
+      var pct = Math.round(c/chargeTot*100);
+      rep += '<div class="vol-seg" style="flex:'+pct+';background:'+sp.couleur+'" title="'
+          +  _blEsc(sp.nom)+' — '+Math.round(c)+' UA ('+pct+' %)"><span>'+pct+' %</span></div>';
+      leg += '<span class="vol-leg-i"><span class="vol-pt" style="background:'+sp.couleur+'"></span>'
+          +  _blEsc(sp.nom)+' <b>'+Math.round(c)+' UA</b></span>';
+    });
+  }
+
+  /* ── Vue 3 : douze semaines, un cadre par sport ───────────────── */
+  var cadres = actifs.map(function(sp){
+    var vals = sems.map(function(sm){ return _volValeur(sm.sports[sp.cle] || vide, sp); });
+    var c = der.sports[sp.cle] || vide;
+    return '<div class="vol-cadre"><div class="vol-c-tete"><span class="vol-c-nom">'
+      + '<span class="vol-pt" style="background:'+sp.couleur+'"></span>'+_blEsc(sp.nom)+'</span>'
+      + '<span class="vol-c-val">'+_volFmt(_volValeur(c, sp), sp.unite)
+      + (sp.unite === 'km' ? ' km' : '')+'</span></div>'
+      + _volBarres(vals, sp.couleur)+'</div>';
+  }).join('');
+
+  /* La vue TABLEAU n'est pas un supplement : la couleur ne doit jamais porter
+     seule une information, et un lecteur qui ne la distingue pas garde ici de
+     quoi lire les memes chiffres. */
+  var tbl = '<tr><th>Sport</th><th class="n">Cette semaine</th><th class="n">Charge</th><th class="n">Séances</th></tr>'
+    + actifs.map(function(sp){
+        var c = der.sports[sp.cle] || vide;
+        return '<tr><td><span class="vol-pt" style="background:'+sp.couleur+'"></span> '+_blEsc(sp.nom)+'</td>'
+          + '<td class="n">'+_volFmt(_volValeur(c, sp), sp.unite)+(sp.unite==='km'?' km':'')+'</td>'
+          + '<td class="n">'+Math.round(c.charge)+' UA</td><td class="n">'+c.n+'</td></tr>';
+      }).join('');
+
+  return '<div class="vol-bloc no-print">'
+    + '<div class="vol-titre">Volume d\'entraînement <span>12 dernières semaines · Strava</span></div>'
+    + '<div class="vol-tuiles">'+tuiles+'</div>'
+    + (rep ? '<div class="vol-rep">'+rep+'</div><div class="vol-leg">'+leg+'</div>' : '')
+    + '<div class="vol-cadres">'+cadres+'</div>'
+    + '<details class="vol-tbl"><summary>Voir les mêmes chiffres en tableau</summary>'
+    + '<table>'+tbl+'</table></details></div>';
+}
+
+function _volRendre(){
+  var hote = document.getElementById('vol-hote');
+  if(hote) hote.innerHTML = _volHtml();
+}
+
 function _renderEvolutionPage(){
   var container=document.getElementById('evolution-content');
   if(!container)return;
@@ -4759,11 +4904,13 @@ function _renderEvolutionPage(){
   });
   var bilansAsc = filteredBilans;
   if(bilansAll.length<2){
-    container.innerHTML=_renderEvoFilterBar()+'<div class="evo-empty">Ce patient n\'a que '+(bilansAll.length===0?'aucun':'1')+' bilan sauvegardé. Il en faut au moins 2 pour afficher l\'évolution.</div>';
+    container.innerHTML='<div id="vol-hote"></div>'+_renderEvoFilterBar()+'<div class="evo-empty">Ce patient n\'a que '+(bilansAll.length===0?'aucun':'1')+' bilan sauvegardé. Il en faut au moins 2 pour afficher l\'évolution.</div>';
+    try { _volRendre(); } catch(ex){}
     return;
   }
   if(bilansAsc.length<2){
-    container.innerHTML=_renderEvoFilterBar()+'<div class="evo-empty">Aucun graphique sur cette période — essayez un intervalle plus large.</div>';
+    container.innerHTML='<div id="vol-hote"></div>'+_renderEvoFilterBar()+'<div class="evo-empty">Aucun graphique sur cette période — essayez un intervalle plus large.</div>';
+    try { _volRendre(); } catch(ex){}
     return;
   }
   var dates=bilansAsc.map(function(b){
@@ -5024,7 +5171,15 @@ function _renderEvolutionPage(){
     html += '<div class="evo-block"><div class="evo-block-title">📋 Tests Personnalisés</div><div class="evo-chart-grid">'+ctHtml+'</div></div>';
   }
 
-  container.innerHTML=html;
+  /* Note : les deux branches « pas assez de bilans » ci-dessus posent le meme
+     hote, et appellent `_volRendre` avant de sortir. Le volume d'entrainement
+     ne depend d'AUCUN bilan enregistre — le masquer parce que le patient n'en
+     a qu'un serait indiscernable d'une panne. */
+  /* L'hote du volume est pose PAR ce rendu : la fonction reecrit `innerHTML`
+     en entier, et un bloc insere a cote disparaitrait au rendu suivant. Il est
+     rempli separement par `_volRendre`, quand la reponse du programme arrive. */
+  container.innerHTML='<div id="vol-hote"></div>'+html;
+  try { _volRendre(); } catch(ex){}
   _attachChartEvents();
 }
 
@@ -6550,7 +6705,14 @@ function showPage(id) {
   try { _afGrandirTous(); } catch(e){}
   if (id === 'cr') buildCR();
   if (id === 'cr-tf') buildCRTF();
-  if (id === 'evolution') _renderEvolutionPage();
+  if (id === 'evolution') {
+    /* La demande part a l'OUVERTURE de l'onglet, pas au changement de patient :
+       calculer douze semaines de volume pour un onglet qu'on n'ouvre pas
+       serait du gachis. Le rendu se fait a l'arrivee de la reponse. */
+    _renderEvolutionPage();
+    try { if(!_volDonnees || String(_volPatientId) !== String(_bilanPatient && _bilanPatient.id)) _volDemander();
+          else _volRendre(); } catch(ex){}
+  }
   if (id === 'suivi-rapide') _renderSuiviRapide();
   saveToStorage();
 }
