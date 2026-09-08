@@ -888,7 +888,7 @@ function _r4pBuild(){
   </div>
 </div>
 <div class="frame-wrap">
-  <iframe id="frame-bilan"        src="bilan.html?v=20260908a"        class="active"></iframe>
+  <iframe id="frame-bilan"        src="bilan.html?v=20260908b"        class="active"></iframe>
   <iframe id="frame-outils"       src="outils.html?v=20260906i"       ></iframe>
   <iframe id="frame-prescription" src="programme.html?v=20260906d" ></iframe>
   <iframe id="frame-patients"     src="patients.html?v=20260817b"     ></iframe>
@@ -1371,23 +1371,31 @@ window.addEventListener('message', function(e) {
   // bilan.html vient d'être sauvegardé → relayer à l'iframe programme pour
   // rafraîchir le repère d'objectif daté dans l'agenda (et tout ce qui
   // dépend du contenu du bilan côté calendrier).
-  /* ── Correction de la date de naissance depuis le bilan ─────────────
-     Le bilan ne fait que SIGNALER : l'ecriture se fait ici, ou vivent deja la
-     table `patients`, son cache et le rendu de la liste. Trois vues montrent
-     cette date — la liste, le bouton du haut, les autres onglets — et une
-     seule oubliee suffit a faire croire que la correction n'a pas pris. */
-  if (e.data.type === 'r4p-patient-ddn' && e.data.patientId && e.data.ddn) {
-    sb.from('patients').update({ ddn: e.data.ddn })
+  /* ── Correction d'identité venue du bilan ───────────────────────────
+     Le bilan ne fait que SIGNALER : l'ecriture dans `patients` se fait ici, ou
+     vivent deja cette table, son cache et le rendu de la liste. Trois vues
+     montrent cette identite — la liste, le bouton du haut, les autres onglets —
+     et une seule oubliee suffit a faire croire que la correction n'a pas pris.
+
+     Le message porte un NOM DE COLONNE, et c'est le seul du depot dans ce cas.
+     Sans liste blanche, un message forge atteindrait n'importe quelle colonne
+     de la table, `praticien_id` compris — c'est-a-dire le proprietaire du
+     dossier. */
+  if (e.data.type === 'r4p-patient-identite' && e.data.patientId && e.data.valeur) {
+    if (['nom', 'prenom', 'sexe', 'ddn'].indexOf(e.data.colonne) < 0) return;
+    var _patch = {}; _patch[e.data.colonne] = e.data.valeur;
+    sb.from('patients').update(_patch)
       .eq('id', e.data.patientId).select().single()
       .then(function(res) {
-        if (res.error) { alert('La date de naissance n\'a pas pu être enregistrée : ' + res.error.message); return; }
+        if (res.error) { alert('L\'identité n\'a pas pu être enregistrée : ' + res.error.message); return; }
         var idx = _allPatients.findIndex(function(x){ return String(x.id) === String(e.data.patientId); });
         if (idx !== -1) _allPatients[idx] = res.data;
+        _allPatients.sort(function(a,b){ return String(a.nom||'').localeCompare(String(b.nom||'')); });
         if (_currentPatient && String(_currentPatient.id) === String(e.data.patientId)) {
           _currentPatient = res.data;
           try { localStorage.setItem(R4P_KEYS.PATIENT, JSON.stringify(res.data)); } catch(ex){}
           /* Les autres onglets tiennent leur propre copie : sans re-diffusion,
-             le programme et les outils garderaient l'ancienne date. */
+             le programme et les outils garderaient l'ancienne identite. */
           _broadcastPatient(res.data);
           _updatePatientBtn();
         }

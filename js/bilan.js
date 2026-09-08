@@ -3390,39 +3390,99 @@ function _capInput(el){
   try{ el.setSelectionRange(pos, pos); }catch(e){}
 }
 
-/* ── La date de naissance vit à DEUX endroits ────────────────────────
-   `patients.ddn` est le registre — c'est lui que montre la liste des patients,
-   et c'est de lui que decoulent l'age et les normes qui en dependent. Le champ
-   de la page Infos en est une COPIE, posee par `_autofillPatientFields` et
-   seulement si elle est vide : rien ne la reecrivait ensuite.
+/* ── L'identité du patient vit à DEUX endroits ───────────────────────
+   `patients` est le registre — nom, prenom, sexe, date de naissance. C'est lui
+   que montre la liste, et de lui que decoulent l'age et les normes qui en
+   dependent. Les champs de la page Infos en sont des COPIES, posees par
+   `_autofillPatientFields` et seulement si elles sont vides : rien ne les
+   reecrivait ensuite.
 
-   Corriger la date dans le bilan ne corrigeait donc rien ailleurs. Les deux
-   valeurs divergeaient en silence, et une donnee d'identite qui dit deux
-   choses selon l'ecran ou on la regarde est une donnee qu'on ne peut plus
-   croire.
+   Corriger une de ces valeurs dans le bilan ne corrigeait rien ailleurs. Une
+   donnee d'identite qui dit deux choses selon l'ecran ou on la regarde est une
+   donnee qu'on ne peut plus croire.
 
-   LE SENS EST bilan → registre, et lui seul. Une date de naissance est un
-   fait, pas une mesure du jour : la corriger vaut partout. L'inverse — le
-   registre reecrivant un bilan deja enregistre — le falsifierait.
+   LA CORRECTION DESCEND AUSSI DANS LES BILANS DEJA ENREGISTRES — decision du
+   praticien : un nom, un prenom, un sexe ou une date de naissance qui change ne
+   peut venir que d'une ERREUR DE SAISIE, les vrais changements d'etat civil
+   etant assez rares pour ne pas gouverner la regle. Une faute laissee dans les
+   bilans anciens ressortirait au premier compte-rendu tire de l'un d'eux.
 
-   L'ECRITURE est faite par la coquille, qui possede deja la table `patients`,
-   son cache et le rendu de la liste. Deux endroits qui ecrivent dans la meme
-   table finissent toujours par diverger. */
-function _blSyncDdnPatient(){
-  var el = document.getElementById('f-dob');
-  var v  = el ? String(el.value || '').trim() : '';
-  /* Vider le champ n'efface JAMAIS le registre : une frappe malheureuse, ou un
-     formulaire remis a zero, effacerait sinon l'identite du patient. */
-  if(!v) return false;
+   C'est l'inverse exact de ce qu'on fait des MESURES : un bilan est un document
+   date, et sa mesure ne se reecrit jamais. L'identite n'est pas une mesure.
+
+   L'ECRITURE DANS `patients` est faite par la coquille, qui possede deja cette
+   table, son cache et le rendu de la liste. Celle des `bilans` reste ici, ou
+   vit `_allBilans`. Deux endroits qui ecrivent dans la meme table finissent
+   toujours par diverger. */
+var _BL_IDENTITE = [
+  /* Le NOM se range en CAPITALES dans le registre, alors que le bilan
+     l'affiche capitalise (`_capInput`). Sans cette normalisation, chaque
+     correction aurait reecrit la fiche en « Gentet-Ravasco » — et surtout, une
+     valeur en realite identique aurait declenche une ecriture a chaque
+     passage. */
+  { champ:'f-nom',    col:'nom',    norm:function(v){ return v.toUpperCase(); } },
+  { champ:'f-prenom', col:'prenom', norm:function(v){ return _capName(v); } },
+  /* Le menu du bilan rend deja 'H' ou 'F' — les memes valeurs que la table. */
+  { champ:'f-sexe',   col:'sexe',   norm:function(v){ return v; } },
+  { champ:'f-dob',    col:'ddn',    norm:function(v){ return v; } }
+];
+
+function _blSyncIdentite(champ){
+  var def = null;
+  for(var i=0;i<_BL_IDENTITE.length;i++){ if(_BL_IDENTITE[i].champ === champ) def = _BL_IDENTITE[i]; }
+  if(!def) return false;
+  var el = document.getElementById(champ);
+  var brut = el ? String(el.value || '').trim() : '';
+  /* Vider un champ n'efface JAMAIS le registre : une frappe malheureuse, ou un
+     formulaire remis a zero, effacerait sinon l'identite du patient en base. */
+  if(!brut) return false;
   if(!_bilanPatient || !_bilanPatient.id) return false;
-  if(String(_bilanPatient.ddn || '') === v) return false;
+  var fiche = def.norm(brut);
+  if(String(_bilanPatient[def.col] || '') === fiche) return false;
   /* La copie locale suit tout de suite : sans elle, chaque `change` suivant
      reposterait la meme correction, la comparaison se faisant contre elle. */
-  _bilanPatient.ddn = v;
-  try { window.parent.postMessage({ type:'r4p-patient-ddn', patientId:_bilanPatient.id, ddn:v },
+  _bilanPatient[def.col] = fiche;
+  try { window.parent.postMessage({ type:'r4p-patient-identite', patientId:_bilanPatient.id,
+                                    colonne:def.col, valeur:fiche },
                                   window.location.origin); } catch(ex){}
-  try { showToast('Date de naissance corrigée dans la fiche patient'); } catch(ex){}
+  /* Les bilans gardent la forme AFFICHEE, pas celle du registre : c'est elle
+     qu'ils portaient, et c'est elle que le compte-rendu relit. */
+  try { _blPropagerIdentite(champ, brut); } catch(ex){}
+  try { showToast('Identité corrigée dans la fiche patient'); } catch(ex){}
   return true;
+}
+
+/* Reecrit la valeur dans les bilans deja enregistres du patient. On ne touche
+   QUE les lignes qui portent deja la cle avec une valeur differente : ajouter
+   la cle a un bilan qui ne l'a jamais portee inventerait une donnee, et le
+   compte-rendu sait deja retomber sur la fiche patient. */
+function _blPropagerIdentite(cle, valeur){
+  if(!_bilanPatient || !_bilanPatient.id) return;
+  var pid = _bilanPatient.id;
+  _sbRetry(function(){ return sbB.from('bilans').select('id,donnees').eq('patient_id', pid); })
+    .then(function(res){
+      var lignes = (res.data || []).filter(function(b){
+        return b && b.donnees && Object.prototype.hasOwnProperty.call(b.donnees, cle)
+            && String(b.donnees[cle] || '') !== String(valeur);
+      });
+      if(!lignes.length) return;
+      lignes.forEach(function(b){
+        /* On repose l'objet ENTIER, corrige : un `update` partiel remplacerait
+           `donnees` par le seul champ modifie et perdrait tout le bilan. */
+        var d = b.donnees; d[cle] = valeur;
+        _sbRetry(function(){ return sbB.from('bilans').update({ donnees:d }).eq('id', b.id); })
+          .then(function(){}).catch(function(){});
+        /* La memoire suit : sans elle, « Bilans precedents » et la fusion des
+           donnees afficheraient l'ancienne valeur jusqu'au rechargement. */
+        (_allBilans || []).forEach(function(x){
+          if(String(x.id) === String(b.id) && x.donnees) x.donnees[cle] = valeur;
+        });
+      });
+      try { showToast('Corrigé aussi dans ' + lignes.length + ' bilan'
+                      + (lignes.length > 1 ? 's' : '') + ' enregistré'
+                      + (lignes.length > 1 ? 's' : '')); } catch(ex){}
+    })
+    .catch(function(){});
 }
 
 function _autofillPatientFields(p){
