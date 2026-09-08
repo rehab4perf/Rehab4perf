@@ -3390,6 +3390,41 @@ function _capInput(el){
   try{ el.setSelectionRange(pos, pos); }catch(e){}
 }
 
+/* ── La date de naissance vit à DEUX endroits ────────────────────────
+   `patients.ddn` est le registre — c'est lui que montre la liste des patients,
+   et c'est de lui que decoulent l'age et les normes qui en dependent. Le champ
+   de la page Infos en est une COPIE, posee par `_autofillPatientFields` et
+   seulement si elle est vide : rien ne la reecrivait ensuite.
+
+   Corriger la date dans le bilan ne corrigeait donc rien ailleurs. Les deux
+   valeurs divergeaient en silence, et une donnee d'identite qui dit deux
+   choses selon l'ecran ou on la regarde est une donnee qu'on ne peut plus
+   croire.
+
+   LE SENS EST bilan → registre, et lui seul. Une date de naissance est un
+   fait, pas une mesure du jour : la corriger vaut partout. L'inverse — le
+   registre reecrivant un bilan deja enregistre — le falsifierait.
+
+   L'ECRITURE est faite par la coquille, qui possede deja la table `patients`,
+   son cache et le rendu de la liste. Deux endroits qui ecrivent dans la meme
+   table finissent toujours par diverger. */
+function _blSyncDdnPatient(){
+  var el = document.getElementById('f-dob');
+  var v  = el ? String(el.value || '').trim() : '';
+  /* Vider le champ n'efface JAMAIS le registre : une frappe malheureuse, ou un
+     formulaire remis a zero, effacerait sinon l'identite du patient. */
+  if(!v) return false;
+  if(!_bilanPatient || !_bilanPatient.id) return false;
+  if(String(_bilanPatient.ddn || '') === v) return false;
+  /* La copie locale suit tout de suite : sans elle, chaque `change` suivant
+     reposterait la meme correction, la comparaison se faisant contre elle. */
+  _bilanPatient.ddn = v;
+  try { window.parent.postMessage({ type:'r4p-patient-ddn', patientId:_bilanPatient.id, ddn:v },
+                                  window.location.origin); } catch(ex){}
+  try { showToast('Date de naissance corrigée dans la fiche patient'); } catch(ex){}
+  return true;
+}
+
 function _autofillPatientFields(p){
   var map = {'f-nom':_capName(p.nom||''),'f-prenom':_capName(p.prenom||''),'f-dob':p.ddn||'','f-sexe':p.sexe||''};
   Object.keys(map).forEach(function(id){

@@ -888,7 +888,7 @@ function _r4pBuild(){
   </div>
 </div>
 <div class="frame-wrap">
-  <iframe id="frame-bilan"        src="bilan.html?v=20260906i"        class="active"></iframe>
+  <iframe id="frame-bilan"        src="bilan.html?v=20260908a"        class="active"></iframe>
   <iframe id="frame-outils"       src="outils.html?v=20260906i"       ></iframe>
   <iframe id="frame-prescription" src="programme.html?v=20260906d" ></iframe>
   <iframe id="frame-patients"     src="patients.html?v=20260817b"     ></iframe>
@@ -1371,6 +1371,30 @@ window.addEventListener('message', function(e) {
   // bilan.html vient d'être sauvegardé → relayer à l'iframe programme pour
   // rafraîchir le repère d'objectif daté dans l'agenda (et tout ce qui
   // dépend du contenu du bilan côté calendrier).
+  /* ── Correction de la date de naissance depuis le bilan ─────────────
+     Le bilan ne fait que SIGNALER : l'ecriture se fait ici, ou vivent deja la
+     table `patients`, son cache et le rendu de la liste. Trois vues montrent
+     cette date — la liste, le bouton du haut, les autres onglets — et une
+     seule oubliee suffit a faire croire que la correction n'a pas pris. */
+  if (e.data.type === 'r4p-patient-ddn' && e.data.patientId && e.data.ddn) {
+    sb.from('patients').update({ ddn: e.data.ddn })
+      .eq('id', e.data.patientId).select().single()
+      .then(function(res) {
+        if (res.error) { alert('La date de naissance n\'a pas pu être enregistrée : ' + res.error.message); return; }
+        var idx = _allPatients.findIndex(function(x){ return String(x.id) === String(e.data.patientId); });
+        if (idx !== -1) _allPatients[idx] = res.data;
+        if (_currentPatient && String(_currentPatient.id) === String(e.data.patientId)) {
+          _currentPatient = res.data;
+          try { localStorage.setItem(R4P_KEYS.PATIENT, JSON.stringify(res.data)); } catch(ex){}
+          /* Les autres onglets tiennent leur propre copie : sans re-diffusion,
+             le programme et les outils garderaient l'ancienne date. */
+          _broadcastPatient(res.data);
+          _updatePatientBtn();
+        }
+        try { renderPatients(_allPatients); } catch(ex){}
+      });
+  }
+
   if (e.data.type === 'r4p-bilan-saved') {
     var prescFrameBilan = document.getElementById('frame-prescription');
     if (prescFrameBilan && prescFrameBilan.contentWindow) {
