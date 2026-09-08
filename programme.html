@@ -2458,6 +2458,55 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .pevo-select-section { margin-bottom:18px; }
 .pevo-select-title { font-size:var(--fs-sm); font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--navy); margin-bottom:10px; }
 .pevo-exo-pills { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:8px; }
+
+/* ── Sélecteur d'exercices — liste rangée ────────────────────────────
+   Le mur de vingt-six pastilles traitait tous les exercices à égalité : aucun
+   ordre, aucun regroupement, et le nombre de séances — le seul signal de
+   pertinence disponible — n'était affiché nulle part. */
+.pevo-chips { display:flex; flex-wrap:wrap; gap:6px; align-items:center;
+  padding:8px 10px; background:var(--accent-ll); border:1px solid var(--border2);
+  border-radius:9px; margin-bottom:9px; }
+.pevo-chips-l { font-size:var(--fs-2xs); font-weight:700; letter-spacing:.06em;
+  text-transform:uppercase; color:var(--accent); margin-right:2px; }
+.pevo-chip { display:inline-flex; align-items:center; gap:5px; padding:3px 5px 3px 9px;
+  background:var(--surface); border:1px solid var(--border2); border-radius:20px;
+  font-size:var(--fs-sm); font-weight:600; color:var(--navy); }
+.pevo-chip button { border:none; background:none; color:var(--text3); cursor:pointer;
+  font-size:var(--fs-md); line-height:1; padding:0 2px; }
+
+.pevo-rech { display:flex; align-items:center; gap:7px; border:1px solid var(--border);
+  border-radius:7px; padding:5px 10px; background:var(--surface); margin-bottom:9px; }
+.pevo-rech svg { flex:none; opacity:.5; color:var(--text3); }
+.pevo-rech input { border:none; outline:none; background:none; font-family:inherit;
+  font-size:var(--fs-sm); color:var(--text); width:100%; }
+
+.pevo-grp { margin-bottom:2px; }
+.pevo-grp-t { display:flex; align-items:center; gap:8px; width:100%; border:none;
+  background:none; padding:7px 2px; cursor:pointer; font-family:inherit; text-align:left;
+  border-top:1px solid var(--border); }
+.pevo-grp:first-child .pevo-grp-t { border-top:none; }
+.pevo-grp-t .fl { font-size:var(--fs-xs); color:var(--text3); transition:transform .15s; }
+.pevo-grp-t[aria-expanded="false"] .fl { transform:rotate(-90deg); }
+.pevo-grp-t .nom { font-size:var(--fs-sm); font-weight:700; color:var(--text); flex:1; }
+.pevo-grp-t .cpt { font-size:var(--fs-xs); color:var(--text3); font-variant-numeric:tabular-nums; }
+.pevo-grp-t[aria-expanded="false"] + .pevo-grp-c { display:none; }
+.pevo-grp-c { padding:0 0 8px 16px; }
+
+.pevo-liste { border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+.pevo-li { display:flex; align-items:center; gap:9px; padding:6px 11px; cursor:pointer;
+  border-top:1px solid var(--border); font-size:var(--fs-sm); color:var(--text2); }
+.pevo-liste .pevo-li:first-child { border-top:none; }
+.pevo-li:hover { background:var(--surface2); }
+.pevo-li input { width:13px; height:13px; accent-color:var(--accent); cursor:pointer; flex:none; }
+.pevo-li.on { color:var(--text); font-weight:600; }
+.pevo-li-nom { flex:1; min-width:0; }
+.pevo-li-n { font-size:var(--fs-xs); color:var(--text3); font-variant-numeric:tabular-nums;
+  white-space:nowrap; }
+/* La micro-courbe dit s'il vaut la peine d'ouvrir le graphique — elle ne le
+   remplace pas, d'où sa taille. */
+.pevo-spark { display:flex; gap:1px; align-items:flex-end; height:14px; width:46px; flex:none; }
+.pevo-spark span { flex:1; background:var(--border2); border-radius:1px; }
+.pevo-li.on .pevo-spark span { background:var(--accent); }
 .pevo-pill { display:inline-flex; align-items:center; gap:5px; padding:5px 10px; border:1.5px solid var(--border2); border-radius:20px; font-size:var(--fs-sm); color:var(--text2); cursor:pointer; user-select:none; transition:all .15s; background:#fff; }
 .pevo-pill input { width:13px; height:13px; accent-color:var(--accent); cursor:pointer; }
 .pevo-pill.active { border-color:var(--accent); background:var(--accent-ll); color:var(--navy); font-weight:600; }
@@ -3428,7 +3477,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   </div><!-- /tool-panel-drawer -->
 </div><!-- /tool-panel-overlay -->
 
-<script src="js/prog-data.js?v=20260908d"></script>
+<script src="js/prog-data.js?v=20260908f"></script>
 
 <!-- ══ CYCLES MODAL ════════════════════════════════════════════ -->
 <style>

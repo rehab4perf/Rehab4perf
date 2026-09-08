@@ -5181,13 +5181,8 @@ function _renderPevoCharts(exoData, selectedKeys) {
   }
   var patId = _progPatient ? _progPatient.id : 'local';
   // Pills de sélection
-  var pillsHtml = allKeys.map(function(key){
-    var active = selectedKeys.has(key);
-    return '<label class="pevo-pill'+(active?' active':'')+'">'
-      +'<input type="checkbox" '+(active?'checked':'')+' onchange="_pevoToggle(\''+key+'\')">'
-      +escH(exoData[key].label)
-      +'</label>';
-  }).join('');
+  /* Le mur de pastilles a ete remplace par `_pevoSelecteurHtml` : deux
+     selecteurs pour la meme chose, et l'on ne saurait plus lequel fait foi. */
   var chartsHtml = '';
   _pevoChartCtr = 0;
   allKeys.forEach(function(key){
@@ -5424,10 +5419,12 @@ function _renderPevoCharts(exoData, selectedKeys) {
     rmSection = '<div class="pevo-select-section">'
       +'<div class="pevo-select-title">Exercices disponibles ('+allKeys.length+')</div>'
       +'<div class="pevo-selall-row">'
-      +'<button class="pevo-selall-btn" onclick="_pevoSelectAll(true)">✓ Tout sélectionner</button>'
       +'<button class="pevo-selall-btn" onclick="_pevoSelectAll(false)">✗ Tout désélectionner</button>'
       +'</div>'
-      +'<div class="pevo-exo-pills" id="pevoPills">'+pillsHtml+'</div>'
+      /* « Tout sélectionner » a disparu : sur vingt-six exercices il produit
+         vingt-six courbes, c'est-a-dire plus rien de lisible. Le geste utile
+         est de CHOISIR, pas de retrancher d'un tout. */
+      +'<div id="pevoPills">'+_pevoSelecteurHtml(exoData, selectedKeys, _pevoZoneIndex())+'</div>'
       +'</div>'
       +(chartsHtml ? '<div class="pevo-charts" id="pevoChartsGrid">'+chartsHtml+'</div>'
                    : '<div class="pevo-empty">Cochez un exercice ci-dessus pour afficher sa courbe.</div>');
@@ -5476,6 +5473,171 @@ function togglePevoPill(btn, svgId, line) {
   if(!svg) return;
   svg.querySelectorAll('[data-line="'+line+'"]').forEach(function(el){
     el.style.display = show ? '' : 'none';
+  });
+}
+
+/* ── Sélecteur d'exercices — liste rangée, pas mur de pastilles ──────
+   Vingt-six pastilles a plat, huit rangees de meme poids : l'oeil n'avait
+   aucun point d'entree, et rien ne disait lesquels ont assez de seances pour
+   donner une courbe interessante. Le signal existait pourtant deja —
+   `points.length` — et n'etait affiche nulle part.
+
+   Les ZONES viennent de `LIBRARY`, ou `_loadSupaLibrary` fusionne la
+   bibliotheque du praticien. Un exercice cree a la main peut n'en avoir
+   aucune : voir la regle de repli dans `_pevoGrouper`. */
+function _pevoZoneIndex(){
+  var idx = {};
+  (typeof LIBRARY !== 'undefined' ? LIBRARY : []).forEach(function(e){
+    if(!e || !e.name || !e.zone) return;
+    /* Une zone MULTIPLE — « ÉPAULE, COUDE » — se reduit a la premiere : sans
+       cela le meme exercice apparaitrait dans deux groupes. */
+    var z = String(e.zone).split(',')[0].trim();
+    if(!z) return;
+    idx[_norm(e.name).replace(/\s+/g,' ')] = z;
+  });
+  return idx;
+}
+
+var PEVO_NON_CLASSE = 'Non classé';
+
+/* Range les exercices par zone — ET DECIDE S'IL FAUT LES RANGER.
+
+   Le regroupement ne s'applique QUE s'il regroupe. Ranger vingt exercices sur
+   vingt-six sous « Non classé » serait pire que de ne pas grouper : on
+   retomberait sur le mur, avec un titre en plus. En dessous de la moitie
+   d'exercices classes, la liste reste PLATE, triee par nombre de seances. */
+function _pevoGrouper(exoData, idx){
+  var cles = Object.keys(exoData || {});
+  var items = cles.map(function(k){
+    return { cle:k, label:exoData[k].label, n:(exoData[k].points||[]).length,
+             pts:exoData[k].points||[], zone:idx[k] || null };
+  });
+  var classes = items.filter(function(i){ return !!i.zone; }).length;
+  var grouper = cles.length > 0 && classes * 2 >= cles.length;
+
+  items.sort(function(a,b){ return b.n - a.n; });
+  if(!grouper) return { grouper:false, groupes:[{ zone:null, exos:items }] };
+
+  var par = {};
+  items.forEach(function(i){
+    var z = i.zone || PEVO_NON_CLASSE;
+    (par[z] || (par[z] = [])).push(i);
+  });
+  var groupes = Object.keys(par).map(function(z){
+    return { zone:z, exos:par[z],
+             volume:par[z].reduce(function(a,i){ return a + i.n; }, 0) };
+  });
+  /* Les groupes se rangent par volume — la zone la plus travaillee se lit en
+     premier — mais « Non classé » ferme toujours la marche : ce qui n'est pas
+     range se lit apres ce qui l'est, quel que soit son volume. */
+  /* Comparateur SYMETRIQUE : la version precedente posait deux `if` separes,
+     dont l'un suffisait par accident sur les jeux courants — un comparateur
+     asymetrique rend un ordre qui depend de l'ordre d'entree et du moteur.
+     Ici le rang de « Non classé » est calcule des deux cotes. */
+  groupes.sort(function(a,b){
+    var na = (a.zone === PEVO_NON_CLASSE) ? 1 : 0;
+    var nb = (b.zone === PEVO_NON_CLASSE) ? 1 : 0;
+    if(na !== nb) return na - nb;
+    return b.volume - a.volume;
+  });
+  return { grouper:true, groupes:groupes };
+}
+
+/* Micro-courbe : les MEMES points que la courbe, en huit barres. Elle ne
+   remplace pas le graphique — elle dit s'il vaut la peine d'etre ouvert. */
+function _pevoSpark(pts){
+  var n = pts.length; if(n < 2) return '';
+  var pas = Math.max(1, Math.floor(n / 8)), ech = [];
+  for(var i = 0; i < n && ech.length < 8; i += pas) ech.push(pts[i].rm1 || 0);
+  var mx = Math.max.apply(null, ech) || 1, mn = Math.min.apply(null, ech);
+  var etendue = (mx - mn) || 1;
+  return '<span class="pevo-spark" aria-hidden="true">' + ech.map(function(v){
+    return '<span style="height:' + (18 + Math.round((v - mn) / etendue * 82)) + '%"></span>';
+  }).join('') + '</span>';
+}
+
+function _pevoLigneHtml(it, choisi){
+  return '<label class="pevo-li' + (choisi ? ' on' : '') + '">'
+    + '<input type="checkbox" ' + (choisi ? 'checked' : '')
+    + ' onchange="_pevoToggle(\'' + it.cle.replace(/'/g, "\\'") + '\')">'
+    + '<span class="pevo-li-nom">' + escH(it.label) + '</span>'
+    + _pevoSpark(it.pts)
+    + '<span class="pevo-li-n">' + it.n + ' séance' + (it.n > 1 ? 's' : '') + '</span></label>';
+}
+
+function _pevoSelecteurHtml(exoData, selection, idx){
+  var res = _pevoGrouper(exoData, idx);
+  var choisis = [];
+  res.groupes.forEach(function(g){
+    g.exos.forEach(function(i){ if(selection.has(i.cle)) choisis.push(i); });
+  });
+
+  /* La selection remonte EN HAUT, en chips : on ne la perd jamais de vue en
+     faisant defiler, et chaque chip se retire d'un clic. */
+  var chips = choisis.length
+    ? '<div class="pevo-chips"><span class="pevo-chips-l">Suivis</span>' + choisis.map(function(i){
+        return '<span class="pevo-chip">' + escH(i.label)
+          + '<button type="button" title="Retirer" onclick="_pevoToggle(\''
+          + i.cle.replace(/'/g, "\\'") + '\')">×</button></span>'; }).join('') + '</div>'
+    : '';
+
+  var corps = res.grouper
+    ? res.groupes.map(function(g, k){
+        /* SEULE la premiere zone s'ouvre — celle ou le patient a le plus
+           travaille. Ouvrir aussi celles qui contiennent une selection rendait
+           la liste PLUS HAUTE que le mur qu'elle remplace : mesure, quatre
+           zones sur sept ouvertes, 783 px contre 683. Et c'etait redondant —
+           les chips du haut portent deja la selection, et s'en retirent. */
+        var ouvert = k === 0;
+        return '<div class="pevo-grp">'
+          + '<button type="button" class="pevo-grp-t" aria-expanded="' + ouvert + '"'
+          + ' onclick="_pevoGrpBascule(this)"><span class="fl">▾</span>'
+          + '<span class="nom">' + escH(g.zone) + '</span>'
+          + '<span class="cpt">' + g.exos.length + '</span></button>'
+          + '<div class="pevo-grp-c"><div class="pevo-liste">'
+          + g.exos.map(function(i){ return _pevoLigneHtml(i, selection.has(i.cle)); }).join('')
+          + '</div></div></div>';
+      }).join('')
+    : '<div class="pevo-liste">'
+      + res.groupes[0].exos.map(function(i){ return _pevoLigneHtml(i, selection.has(i.cle)); }).join('')
+      + '</div>';
+
+  return chips
+    + '<label class="pevo-rech">'
+    + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true">'
+    + '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'
+    + '<input type="text" placeholder="Chercher un exercice…" aria-label="Chercher un exercice"'
+    + ' oninput="_pevoFiltrer(this.value)"></label>'
+    + corps;
+}
+
+/* Replier une zone. Le geste est PUREMENT visuel : il ne touche ni la
+   selection ni les courbes, donc pas de re-rendu. */
+function _pevoGrpBascule(btn){
+  btn.setAttribute('aria-expanded', btn.getAttribute('aria-expanded') === 'true' ? 'false' : 'true');
+}
+
+/* La recherche filtre l'AFFICHAGE, jamais la selection : masquer un exercice
+   coche ne doit pas retirer sa courbe — le praticien cherche un autre
+   exercice, il ne renonce pas a celui-la. */
+function _pevoFiltrer(q){
+  var t = _norm(String(q || '')).trim();
+  var boite = document.getElementById('pevoPills');
+  if(!boite) return;
+  boite.querySelectorAll('.pevo-li').forEach(function(li){
+    var nom = li.querySelector('.pevo-li-nom');
+    li.style.display = (!t || _norm(nom ? nom.textContent : '').indexOf(t) >= 0) ? '' : 'none';
+  });
+  /* Une zone dont plus rien ne correspond se replie et s'efface : un titre
+     seul au-dessus du vide se lit comme une zone sans exercice. */
+  boite.querySelectorAll('.pevo-grp').forEach(function(g){
+    var reste = Array.prototype.some.call(g.querySelectorAll('.pevo-li'), function(li){
+      return li.style.display !== 'none'; });
+    g.style.display = reste ? '' : 'none';
+    if(reste && t){
+      var bt = g.querySelector('.pevo-grp-t');
+      if(bt) bt.setAttribute('aria-expanded', 'true');
+    }
   });
 }
 
