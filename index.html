@@ -822,7 +822,7 @@ function _r4pBuild(){
           <label>Date de naissance</label>
           <div class="pm-date-wrap">
             <input type="date" id="pm-ddn">
-            <input type="text" id="pm-ddn-txt" placeholder="JJ/MM/AAAA" style="display:none" oninput="syncDateText('pm-ddn')">
+            <input type="text" id="pm-ddn-txt" placeholder="JJ/MM/AAAA" inputmode="numeric" maxlength="10" style="display:none" oninput="formatDateText(this, event);syncDateText('pm-ddn')">
             <button type="button" class="pm-date-toggle-btn" onclick="toggleDateMode('pm-ddn')" title="Saisir manuellement">✎</button>
           </div>
         </div>
@@ -860,7 +860,7 @@ function _r4pBuild(){
           <label>Date de naissance</label>
           <div class="pm-date-wrap">
             <input type="date" id="pm-edit-ddn">
-            <input type="text" id="pm-edit-ddn-txt" placeholder="JJ/MM/AAAA" style="display:none" oninput="syncDateText('pm-edit-ddn')">
+            <input type="text" id="pm-edit-ddn-txt" placeholder="JJ/MM/AAAA" inputmode="numeric" maxlength="10" style="display:none" oninput="formatDateText(this, event);syncDateText('pm-edit-ddn')">
             <button type="button" class="pm-date-toggle-btn" onclick="toggleDateMode('pm-edit-ddn')" title="Saisir manuellement">✎</button>
           </div>
         </div>
@@ -1945,6 +1945,49 @@ function resetDateField(baseId) {
     if (btn) { btn.textContent = '✎'; btn.title = 'Saisir manuellement'; }
   }
 }
+/* ── Les séparateurs d'une date saisie à la main ─────────────────────
+   `syncDateText` ne fait que LIRE une date deja complete : elle attend
+   `12/03/1988` et n'ecrit rien tant que le motif n'est pas exact. Les deux
+   barres restaient donc a taper. Sur iPad, le clavier qui s'ouvre sur ce champ
+   ne les propose pas au premier niveau — d'ou une saisie qui s'arrete au bout
+   de deux chiffres. `inputmode="numeric"` regle l'autre moitie du probleme :
+   sans lui, c'est le clavier alphabetique qui s'ouvrait.
+
+   Le CURSEUR se replace apres le meme NOMBRE DE CHIFFRES, jamais a un indice
+   de caractere : la chaine se reecrit avec un separateur en plus, et un indice
+   fige ferait sauter le curseur d'un rang a chaque barre posee. */
+function formatDateText(el, ev) {
+  var suppr = !!(ev && /^delete/.test(ev.inputType || ''));
+  var avant = String(el.value || '');
+  var caret = el.selectionStart == null ? avant.length : el.selectionStart;
+  var nAvant = avant.slice(0, caret).replace(/\D/g, '').length;
+  var d = avant.replace(/\D/g, '').slice(0, 8);
+
+  /* Effacer une BARRE doit effacer le chiffre qui la precede. Sans cela elle se
+     repose aussitot et la touche « retour » ne fait plus rien : le champ parait
+     bloque. On la reconnait a ce que le nombre de chiffres n'a PAS bouge — d'ou
+     le bloc-notes `dPrev`, seul moyen de savoir ce qu'il y avait avant. */
+  var prec = String(el.dataset ? (el.dataset.dPrev || '') : '');
+  if (suppr && prec.replace(/\D/g, '').length === d.length && nAvant > 0) {
+    d = d.slice(0, nAvant - 1) + d.slice(nAvant);
+    nAvant--;
+  }
+
+  var out = d.slice(0, 2);
+  if (d.length > 2) out += '/' + d.slice(2, 4);
+  if (d.length > 4) out += '/' + d.slice(4, 8);
+  el.value = out;
+  if (el.dataset) el.dataset.dPrev = out;
+
+  /* La boucle traverse deja les separateurs en cherchant ses chiffres : elle
+     s'arrete DERRIERE le n-ieme, ce qui est exactement ou le curseur doit
+     etre. Un saut supplementaire par-dessus une barre suivante l'aurait pousse
+     d'un rang a chaque insertion au milieu de la date. */
+  var i = 0, n = 0;
+  while (i < out.length && n < nAvant) { if (/\d/.test(out[i])) n++; i++; }
+  try { el.setSelectionRange(i, i); } catch (e) {}
+}
+
 function syncDateText(baseId) {
   var nat = document.getElementById(baseId);
   var txt = document.getElementById(baseId + '-txt');
