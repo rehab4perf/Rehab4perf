@@ -160,6 +160,36 @@ ok('les zones sont repliables', /aria-expanded/.test(h));
 /* L'ancien mur ne doit pas subsister a cote : deux selecteurs pour la meme
    chose, et l'on ne sait plus lequel fait foi. */
 ok('le mur de pastilles a disparu', pdata.indexOf('pevo-exo-pills" id="pevoPills"') < 0);
+/* Les TROIS listes — repetitions, duree, cardio — passent par le meme
+   selecteur. Un selecteur ecrit trois fois aurait diverge des la premiere
+   correction, et c'est exactement ce qui s'est produit : la duree et le cardio
+   etaient restes en pastilles. */
+egal('les trois listes emploient le même sélecteur', 3,
+     (pdata.match(/_pevoSelecteurHtml\(/g) || []).length - 1);
+ok('… avec chacune sa bascule',
+   /_pevoToggleDuree'\)/.test(pdata) && /_pevoToggleCardio'\)/.test(pdata));
+/* Le CARDIO n'est pas fait d'exercices : le grouper par zone du corps n'a pas
+   de sens, on lui passe un index VIDE. */
+ok('le cardio reste plat par construction',
+   /_pevoSelecteurHtml\(_pevoCardioData, cardioSel, \{\}/.test(pdata));
+/* Une regle CSS qui ne sert plus fait croire a un balisage qui n'existe pas. */
+ok('le style du mur ne subsiste pas',
+   !/\n\s*\.pevo-pill\s*\{/.test(html), 'regle .pevo-pill encore definie');
+
+/* Les trois listes ne rangent pas leur valeur sous le meme nom : `rm1`,
+   `secs`, `km`. Lire `rm1` seul rendait une micro-courbe PLATE — donc fausse —
+   sur deux listes sur trois. */
+var dv = pdata.indexOf('function _pevoValeurPoint(');
+ok('la valeur d\'un point est lue quel que soit son nom', dv > 0);
+if (dv > 0) {
+  var val = new Function(pdata.slice(dv, pdata.indexOf('\n}', dv) + 2) +
+                         '\nreturn _pevoValeurPoint;')();
+  egal('répétitions', 62, val({ rm1: 62 }));
+  egal('durée', 45, val({ secs: 45 }));
+  egal('cardio', 12, val({ km: 12 }));
+  egal('rien de connu → zéro, pas NaN', 0, val({ autre: 3 }));
+  egal('point absent → zéro', 0, val(null));
+}
 
 /* Un exercice a UN seul point n'a pas de courbe — il n'arrive de toute facon
    pas jusqu'ici (`pts.length >= 2`), mais la liste ne doit pas le promettre. */

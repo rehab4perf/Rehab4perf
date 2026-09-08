@@ -2003,6 +2003,7 @@ window.addEventListener('message', function(e){
     var _vp = _bilanPatient && _bilanPatient.id;
     if(_vp && String(_vp) === String(e.data.patientId)){
       _volDonnees = e.data.volume || null;
+      _volEtat = e.data.volume ? 'ok' : 'absent';
       _volPatientId = e.data.patientId;
       try { _volRendre(); } catch(ex){}
     }
@@ -4770,10 +4771,19 @@ function setEvoCustomFilter(){
    serait invite tout seul. */
 var _volDonnees = null;      // derniere reponse du programme
 var _volPatientId = null;    // pour qui elle vaut
+/* Trois etats, et ils ne disent PAS la meme chose :
+     'attente' — la demande est partie, la reponse n'est pas la ;
+     'absent'  — le programme a repondu qu'il ne tient pas ce patient ;
+     'ok'      — des donnees sont arrivees, vides ou non.
+   Les confondre est ce qui rendait le bloc muet : « aucune activite » et « je
+   ne sais pas encore » se ressemblent a l'ecran et ne se corrigent pas de la
+   meme facon. */
+var _volEtat = 'attente';
 
 function _volDemander(){
   var pid = _bilanPatient && _bilanPatient.id;
-  if(!pid) { _volDonnees = null; _volPatientId = null; return; }
+  if(!pid) { _volDonnees = null; _volPatientId = null; _volEtat = 'attente'; return; }
+  _volEtat = 'attente';
   try { window.parent.postMessage({ type:'r4p-volume-request', patientId:pid },
                                   window.location.origin); } catch(ex){}
 }
@@ -4801,7 +4811,20 @@ function _volBarres(vals, coul){
   return '<svg class="vol-spark" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true">'+out+'</svg>';
 }
 
+function _volCadre(corps){
+  return '<div class="vol-bloc no-print">'
+    + '<div class="vol-titre">Volume d\'entraînement <span>12 dernières semaines · Strava</span></div>'
+    + corps + '</div>';
+}
+
 function _volHtml(){
+  /* Le programme a repondu qu'il ne tient pas ce patient. Ne rien afficher
+     laissait croire a une fonction disparue — c'est l'etat le plus frequent
+     quand l'onglet Programme n'a pas encore charge ses activites. */
+  if(_volEtat === 'absent'){
+    return _volCadre('<div class="vol-rien">Les activités de ce patient ne sont pas encore chargées.'
+      + '<br><span>Ouvrez l\'onglet Programme une fois, puis revenez ici.</span></div>');
+  }
   if(!_volDonnees || !_volDonnees.semaines || !_volDonnees.semaines.length) return '';
   var sems = _volDonnees.semaines, defs = _volDonnees.sports || [];
   var der = sems[sems.length-1], av = sems[sems.length-2] || { sports:{} };
@@ -4817,11 +4840,9 @@ function _volHtml(){
      le patient n'etait pas relie a Strava, ou s'il n'avait simplement pas
      couru. Le bloc reste et dit laquelle des trois. */
   if(!actifs.length){
-    return '<div class="vol-bloc no-print">'
-      + '<div class="vol-titre">Volume d\'entraînement <span>12 dernières semaines · Strava</span></div>'
-      + '<div class="vol-rien">Aucune activité Strava sur les 12 dernières semaines.'
+    return _volCadre('<div class="vol-rien">Aucune activité Strava sur les 12 dernières semaines.'
       + '<br><span>Si le patient s\'entraîne, vérifiez que son compte Strava est bien relié '
-      + 'dans l\'onglet Programme.</span></div></div>';
+      + 'dans l\'onglet Programme.</span></div>');
   }
 
   /* ── Vue 1 : la semaine en chiffres ───────────────────────────── */

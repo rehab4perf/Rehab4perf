@@ -2507,9 +2507,10 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .pevo-spark { display:flex; gap:1px; align-items:flex-end; height:14px; width:46px; flex:none; }
 .pevo-spark span { flex:1; background:var(--border2); border-radius:1px; }
 .pevo-li.on .pevo-spark span { background:var(--accent); }
-.pevo-pill { display:inline-flex; align-items:center; gap:5px; padding:5px 10px; border:1.5px solid var(--border2); border-radius:20px; font-size:var(--fs-sm); color:var(--text2); cursor:pointer; user-select:none; transition:all .15s; background:#fff; }
-.pevo-pill input { width:13px; height:13px; accent-color:var(--accent); cursor:pointer; }
-.pevo-pill.active { border-color:var(--accent); background:var(--accent-ll); color:var(--navy); font-weight:600; }
+/* `.pevo-pill` a disparu avec le mur de pastilles qu'il habillait. Une règle
+   qui ne sert plus est un piège pour la lecture suivante : on la croit vivante
+   et l'on écrit du balisage pour elle. `.pevo-pill-toggles`, plus bas, est
+   autre chose — les bascules de chaque graphique. */
 .pevo-selall-row { display:flex; gap:8px; margin-bottom:14px; }
 .pevo-selall-btn { font-size:var(--fs-xs); padding:3px 10px; border:1px solid var(--border2); border-radius:6px; background:#fff; color:var(--text2); cursor:pointer; }
 .pevo-selall-btn:hover { background:var(--surface2); color:var(--navy); }
@@ -3477,7 +3478,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   </div><!-- /tool-panel-drawer -->
 </div><!-- /tool-panel-overlay -->
 
-<script src="js/prog-data.js?v=20260908f"></script>
+<script src="js/prog-data.js?v=20260908g"></script>
 
 <!-- ══ CYCLES MODAL ════════════════════════════════════════════ -->
 <style>

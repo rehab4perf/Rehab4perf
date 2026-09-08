@@ -5257,12 +5257,9 @@ function _renderPevoCharts(exoData, selectedKeys) {
   if(dureeKeys.length) {
     var patId2 = _progPatient ? _progPatient.id : 'local';
     var dureeSel = _pevoGetDureeSel(patId2);
-    var dureePillsHtml = dureeKeys.map(function(key){
-      var active = dureeSel.has(key);
-      return '<label class="pevo-pill'+(active?' active':'')+'">'
-        +'<input type="checkbox" '+(active?'checked':'')+' onchange="_pevoToggleDuree(\''+key+'\')">'
-        +escH(_pevoDureeData[key].label)+'</label>';
-    }).join('');
+    /* Meme selecteur que les repetitions : liste rangee par zone, nombre de
+       seances et micro-courbe. Les trois listes partagent une seule fonction. */
+    var dureePillsHtml = _pevoSelecteurHtml(_pevoDureeData, dureeSel, _pevoZoneIndex(), '_pevoToggleDuree');
     var dureeChartsHtml = '';
     dureeKeys.forEach(function(key){
       if(!dureeSel.has(key)) return;
@@ -5310,7 +5307,7 @@ function _renderPevoCharts(exoData, selectedKeys) {
       +'<button class="pevo-selall-btn" onclick="_pevoSelectAllDuree(true)">✓ Tout</button>'
       +'<button class="pevo-selall-btn" onclick="_pevoSelectAllDuree(false)">✗ Aucun</button>'
       +'</div>'
-      +'<div class="pevo-exo-pills">'+dureePillsHtml+'</div>'
+      +'<div>'+dureePillsHtml+'</div>'
       +'</div>'
       +(dureeChartsHtml ? '<div class="pevo-charts">'+dureeChartsHtml+'</div>' : '');
   }
@@ -5320,12 +5317,11 @@ function _renderPevoCharts(exoData, selectedKeys) {
   if(cardioKeys.length) {
     var patId3 = _progPatient ? _progPatient.id : 'local';
     var cardioSel = _pevoGetCardioSel(patId3);
-    var cardioPillsHtml = cardioKeys.map(function(key){
-      var active = cardioSel.has(key);
-      return '<label class="pevo-pill'+(active?' active':'')+'">'
-        +'<input type="checkbox" '+(active?'checked':'')+' onchange="_pevoToggleCardio(\''+key+'\')">'
-        +escH(_pevoCardioData[key].label)+'</label>';
-    }).join('');
+    /* Le cardio n'est PAS fait d'exercices : ce sont des allures, des
+       distances, des frequences. Les ranger par zone du corps n'aurait aucun
+       sens — on passe donc un index VIDE, et la liste reste plate par
+       construction, triee par nombre de seances comme les autres. */
+    var cardioPillsHtml = _pevoSelecteurHtml(_pevoCardioData, cardioSel, {}, '_pevoToggleCardio');
     var cardioChartsHtml = '';
     cardioKeys.forEach(function(key){
       if(!cardioSel.has(key)) return;
@@ -5409,7 +5405,7 @@ function _renderPevoCharts(exoData, selectedKeys) {
       +'<button class="pevo-selall-btn" onclick="_pevoSelectAllCardio(true)">✓ Tout</button>'
       +'<button class="pevo-selall-btn" onclick="_pevoSelectAllCardio(false)">✗ Aucun</button>'
       +'</div>'
-      +'<div class="pevo-exo-pills">'+cardioPillsHtml+'</div>'
+      +'<div>'+cardioPillsHtml+'</div>'
       +'</div>'
       +(cardioChartsHtml ? '<div class="pevo-charts">'+cardioChartsHtml+'</div>' : '');
   }
@@ -5545,10 +5541,20 @@ function _pevoGrouper(exoData, idx){
 
 /* Micro-courbe : les MEMES points que la courbe, en huit barres. Elle ne
    remplace pas le graphique — elle dit s'il vaut la peine d'etre ouvert. */
+/* Les trois listes ne rangent pas leur valeur sous le meme nom : `rm1` pour
+   les repetitions, `secs` pour les durees, `km` pour le cardio. Lire `rm1`
+   seul rendait une courbe PLATE — donc fausse — sur les deux autres. */
+function _pevoValeurPoint(p){
+  if(!p) return 0;
+  if(typeof p.rm1  === 'number') return p.rm1;
+  if(typeof p.secs === 'number') return p.secs;
+  if(typeof p.km   === 'number') return p.km;
+  return 0;
+}
 function _pevoSpark(pts){
   var n = pts.length; if(n < 2) return '';
   var pas = Math.max(1, Math.floor(n / 8)), ech = [];
-  for(var i = 0; i < n && ech.length < 8; i += pas) ech.push(pts[i].rm1 || 0);
+  for(var i = 0; i < n && ech.length < 8; i += pas) ech.push(_pevoValeurPoint(pts[i]));
   var mx = Math.max.apply(null, ech) || 1, mn = Math.min.apply(null, ech);
   var etendue = (mx - mn) || 1;
   return '<span class="pevo-spark" aria-hidden="true">' + ech.map(function(v){
@@ -5556,16 +5562,20 @@ function _pevoSpark(pts){
   }).join('') + '</span>';
 }
 
-function _pevoLigneHtml(it, choisi){
+function _pevoLigneHtml(it, choisi, bascule){
   return '<label class="pevo-li' + (choisi ? ' on' : '') + '">'
     + '<input type="checkbox" ' + (choisi ? 'checked' : '')
-    + ' onchange="_pevoToggle(\'' + it.cle.replace(/'/g, "\\'") + '\')">'
+    + ' onchange="' + (bascule || '_pevoToggle') + '(\'' + it.cle.replace(/'/g, "\\'") + '\')">'
     + '<span class="pevo-li-nom">' + escH(it.label) + '</span>'
     + _pevoSpark(it.pts)
     + '<span class="pevo-li-n">' + it.n + ' séance' + (it.n > 1 ? 's' : '') + '</span></label>';
 }
 
-function _pevoSelecteurHtml(exoData, selection, idx){
+/* `bascule` nomme la fonction qui coche — les trois listes (repetitions,
+   duree, cardio) ont chacune la sienne. Un selecteur ecrit trois fois aurait
+   diverge des la premiere correction. */
+function _pevoSelecteurHtml(exoData, selection, idx, bascule){
+  bascule = bascule || '_pevoToggle';
   var res = _pevoGrouper(exoData, idx);
   var choisis = [];
   res.groupes.forEach(function(g){
@@ -5577,7 +5587,7 @@ function _pevoSelecteurHtml(exoData, selection, idx){
   var chips = choisis.length
     ? '<div class="pevo-chips"><span class="pevo-chips-l">Suivis</span>' + choisis.map(function(i){
         return '<span class="pevo-chip">' + escH(i.label)
-          + '<button type="button" title="Retirer" onclick="_pevoToggle(\''
+          + '<button type="button" title="Retirer" onclick="' + bascule + '(\''
           + i.cle.replace(/'/g, "\\'") + '\')">×</button></span>'; }).join('') + '</div>'
     : '';
 
@@ -5595,11 +5605,11 @@ function _pevoSelecteurHtml(exoData, selection, idx){
           + '<span class="nom">' + escH(g.zone) + '</span>'
           + '<span class="cpt">' + g.exos.length + '</span></button>'
           + '<div class="pevo-grp-c"><div class="pevo-liste">'
-          + g.exos.map(function(i){ return _pevoLigneHtml(i, selection.has(i.cle)); }).join('')
+          + g.exos.map(function(i){ return _pevoLigneHtml(i, selection.has(i.cle), bascule); }).join('')
           + '</div></div></div>';
       }).join('')
     : '<div class="pevo-liste">'
-      + res.groupes[0].exos.map(function(i){ return _pevoLigneHtml(i, selection.has(i.cle)); }).join('')
+      + res.groupes[0].exos.map(function(i){ return _pevoLigneHtml(i, selection.has(i.cle), bascule); }).join('')
       + '</div>';
 
   return chips

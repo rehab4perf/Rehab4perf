@@ -139,16 +139,16 @@ egal('les définitions partent avec les données', 6, (res.sports || []).length)
 /* ── Le rendu, exécuté ────────────────────────────────────────────────────── */
 console.log('\nLes trois vues');
 
-function rendre(volume) {
+function rendre(volume, etat) {
   var code = tranche(bilan, 'var _volDonnees = null;', 'function _renderEvolutionPage()');
   var boite = { innerHTML: '' };
   /* La tranche DECLARE `_volDonnees` : le passer en parametre du meme nom le
      ferait masquer par cette declaration, et le rendu partirait toujours de
      `null`. On l'affecte APRES, sous un autre nom — un premier jet mesurait
      ainsi un bloc systematiquement vide. */
-  new Function('_volEntree', '_blEsc', 'document', 'window',
-    code + '\n_volDonnees = _volEntree;\n_volRendre();')(
-    volume,
+  new Function('_volEntree', '_volEtatIn', '_blEsc', 'document', 'window',
+    code + '\n_volDonnees = _volEntree; _volEtat = _volEtatIn || (_volEntree ? "ok" : "attente");\n_volRendre();')(
+    volume, etat,
     function (x) { return String(x == null ? '' : x); },
     { getElementById: function (id) { return id === 'vol-hote' ? boite : null; } },
     { parent: { postMessage: function () {} }, location: { origin: 'x' } });
@@ -191,8 +191,16 @@ ok('… sans afficher de tuiles vides', !/vol-tuiles/.test(vide));
    tient pas ce patient ». Les confondre annoncerait un athlete inactif alors
    qu'on n'en sait rien. */
 var pasSu = rendre(null);
-ok('données pas encore arrivées → rien, et c\'est voulu', pasSu === '',
+ok('en attente de réponse → rien, et c\'est voulu', pasSu === '',
    'transitoire : la reponse n\'est pas encore la');
+
+/* Mais le programme peut REPONDRE qu'il ne tient pas ce patient. Cet etat-la
+   n'est pas transitoire — il dure tant qu'on n'a pas ouvert le Programme — et
+   ne rien afficher laissait croire a une fonction disparue. */
+var absent = rendre(null, 'absent');
+ok('le programme sans le patient → le bloc reste', /vol-bloc/.test(absent), absent.slice(0, 90));
+ok('… et dit quoi faire', absent.indexOf('onglet Programme') > 0, absent);
+ok('… sans annoncer une absence d\'activité', !/Aucune activité/.test(absent), absent);
 
 /* ── Le câblage ───────────────────────────────────────────────────────────── */
 console.log('\nLe câblage, de bout en bout');
@@ -212,6 +220,16 @@ ok('… et ne répond QUE pour le patient qu\'il tient',
    demande et la reponse sont separees par un aller-retour. */
 ok('le bilan écarte une réponse pour un autre patient',
    /String\(_vp\) === String\(e\.data\.patientId\)/.test(bilan));
+/* Le banc pose l'etat lui-meme : il ne prouve donc rien de ce que le RECEPTEUR
+   en fait. Sans cette verification, retirer l'affectation laissait l'etat a
+   « attente » pour toujours — et le bloc muet, exactement le defaut qu'on
+   vient de fermer. */
+var dR = bilan.indexOf("if(e.data && e.data.type==='r4p-volume-response')");
+var recu = dR > 0 ? bilan.slice(dR, bilan.indexOf('\n  }', dR)) : '';
+ok('… et il pose l\'état à la réception',
+   /_volEtat\s*=\s*e\.data\.volume \? 'ok' : 'absent'/.test(recu), recu.slice(0, 200));
+ok('la demande remet l\'état en attente',
+   /_volEtat = 'attente'/.test(bilan));
 
 /* L'hote est pose par le rendu lui-meme — les TROIS branches. */
 var nbHotes = (bilan.match(/id="vol-hote"/g) || []).length;
