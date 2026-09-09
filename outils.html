@@ -6745,7 +6745,7 @@ _updateOutilsPatientBtns();
     });
 
     var html = '', partiels = [];
-    _crOrthoGroupes(_crTestsOrtho).forEach(function (g) {
+    _crOrthoGroupes(_crTestsOrtho).forEach(function (g, iG) {
       var sel = g.tests.filter(function (t) { return _crOrthoCoches[t.cle]; }).length;
       var n   = g.tests.length;
       /* Un bloc entierement normal se replie de lui-meme : il tient en une

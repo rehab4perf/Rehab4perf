@@ -55,11 +55,21 @@ var code = html.slice(d, f);
 
 function banc(tests, coches, opts) {
   opts = opts || {};
+  /* Une doublure de DOM assez vraie pour que le rendu s'exécute : c'est tout
+     l'objet du banc. Un contrôle qui relit le TEXTE de la fonction au lieu de
+     la faire tourner laisse passer une variable non définie — c'est
+     exactement ce qui est arrivé, et la liste est restée vide en production
+     pendant que le courrier, lui, affichait les tests. */
+  var noeuds = {};
+  function faux() {
+    return { style: {}, innerHTML: '', textContent: '', dataset: {},
+             indeterminate: false, classList: { toggle: function () {} } };
+  }
   var doc = {
-    getElementById: function () { return null; },
+    getElementById: function (id) { return (noeuds[id] = noeuds[id] || faux()); },
     querySelectorAll: function () { return []; }
   };
-  return new Function('document', 'TESTS', 'COCHES', 'OPTS', `
+  var r = new Function('document', 'TESTS', 'COCHES', 'OPTS', `
     var _crTestsOrtho = TESTS, _crOrthoCoches = COCHES;
     var _crOrthoFiltre = OPTS.filtre || 'anormaux';
     var _crOrthoResume = OPTS.resume !== false;
@@ -67,7 +77,7 @@ function banc(tests, coches, opts) {
     var window = {};
     function _crEsc(v){ return String(v == null ? '' : v); }
     function _crMajDifferee(){}
-    function _crStatutChips(){ return ''; }
+    function _crStatutChips(t, c){ return '<span class="' + c + '">' + (t.statut || '') + '</span>'; }
     /* La vraie fonction sépare le verdict de sa nuance sur le premier tiret
        cadratin — on la reprend telle quelle, elle n'est pas l'objet du test. */
     function _crVerdict(t){
@@ -81,8 +91,10 @@ function banc(tests, coches, opts) {
     _crAppendTestsOrtho(lignes);
     return { lignes: lignes, groupes: _crOrthoGroupes(_crTestsOrtho),
              anormal: _crOrthoAnormal, filtrer: window.crFiltreOrtho,
-             coches: _crOrthoCoches };
+             coches: _crOrthoCoches, rendre: _crRenderOrtho };
   `)(doc, tests, coches, opts);
+  r.noeuds = noeuds;
+  return r;
 }
 
 function t(cle, label, statut, niveau, zone, bloc, valeur) {
@@ -225,6 +237,55 @@ console.log('\nUn bloc muet n\'est pas un bloc sans particularité');
   ok('l\'interrupteur retire la ligne de résumé', txt2.indexOf('sans particularité') < 0, txt2);
   ok('… et laisse le détail en place',
      sans.lignes.some(function (l) { return l && l.t === 'test'; }));
+}
+
+/* ── 4bis. LA LISTE DU GÉNÉRATEUR S'AFFICHE VRAIMENT ────────────────────── */
+console.log('\nLa liste à cocher se dessine — vérifié en l\'exécutant');
+{
+  /* CE CAS EXISTE PARCE QU'IL A MANQUÉ. `_crRenderOrtho` employait une variable
+     de boucle jamais déclarée : elle levait au premier bloc, la liste restait
+     sur son message « aucun test renseigné », et le COURRIER — qui ne passe pas
+     par cette fonction — affichait les mêmes tests juste à côté. Rien ne le
+     signalait : l'exception mourait dans le gestionnaire d'événement.
+
+     Le contrôle d'alors relisait le TEXTE de la fonction (« l'identifiant vient
+     bien de l'indice de boucle »). Il était vert. Relire du code n'est pas
+     l'exécuter. */
+  var jeu = [
+    t('a', 'Signe du Glaçon', 'Positif', 'bad', 'Genou', 'Approche Globale'),
+    t('b', 'Flexion active',  'Réduit',  'bad', 'Genou', 'Mobilités Flexion / Extension'),
+    t('c', 'Test de Lachman', 'Positif', 'bad', 'Genou', 'LCA / LCP', 'Légère laxité'),
+    t('d', 'Varus 0°',        'Négatif', 'ok',  'Genou', 'Ligaments latéraux')
+  ];
+  var b = banc(jeu, { a: true, b: true, c: true, d: false });
+  b.rendre();
+  var liste = b.noeuds['cr-or-liste'];
+  ok('la liste n\'est pas restée sur son message de vide',
+     liste.innerHTML.indexOf('Aucun test orthopédique') < 0,
+     liste.innerHTML.slice(0, 120));
+  ok('elle porte un bloc par groupe',
+     (liste.innerHTML.split('cr-or-bloc').length - 1) === 4,
+     (liste.innerHTML.split('cr-or-bloc').length - 1) + ' bloc(s)');
+  ok('chaque test y a sa case',
+     (liste.innerHTML.split('crBasculerOrtho').length - 1) === 4);
+  ok('les noms de bloc y figurent', /LCA \/ LCP/.test(liste.innerHTML));
+  /* Les identifiants de case de bloc doivent être DISTINCTS : ils l'étaient
+     par un `indexOf` sur un tableau reconstruit, qui rendait -1 pour tous. */
+  var ids = (liste.innerHTML.match(/id="cr-or-b-[^"]*"/g) || []);
+  egal('quatre identifiants de bloc', 4, ids.length);
+  egal('… tous distincts', 4, ids.filter(function (x, i) { return ids.indexOf(x) === i; }).length);
+  /* Le compteur et les commandes suivent. */
+  egal('le compteur dit ce qui est retenu', '3 / 4 retenus',
+       b.noeuds['cr-or-compte'].textContent);
+  egal('les commandes sont montrées', 'flex', b.noeuds['cr-or-actions'].style.display);
+
+  /* Et le cas vide, lui, DOIT afficher son message : masquer serait
+     indiscernable d'une panne — c'est justement ce qu'on vient de vivre. */
+  var v = banc([], {});
+  v.rendre();
+  ok('sans test, le message explique pourquoi',
+     /Aucun test orthopédique/.test(v.noeuds['cr-or-liste'].innerHTML));
+  egal('… et les commandes se retirent', 'none', v.noeuds['cr-or-actions'].style.display);
 }
 
 /* ── 5. Le lot ───────────────────────────────────────────────────────────── */
