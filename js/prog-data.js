@@ -4962,7 +4962,7 @@ function _renderPevoFilterBar(){
   h += '<input type="date" id="pevo-date-to" value="'+(_pevoFilterTo||'')+'" onchange="setPevoCustomFilter()" style="font-size:.78rem;padding:3px 6px;border:1px solid #D3D1CB;border-radius:6px;">';
   h += '</div>';
   h += '<button class="pevo-future-toggle'+(_pevoShowFuture?' active':'')+'" onclick="togglePevoFuture()" title="Inclure les séances futures programmées">'
-    + (_pevoShowFuture ? '🔮 Programmé' : '📅 Réalisé') + '</button>';
+    + (_pevoShowFuture ? 'Programmé' : 'Réalisé') + '</button>';
   h += '</div>';
   return h;
 }
