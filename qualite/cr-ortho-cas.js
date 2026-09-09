@@ -288,6 +288,73 @@ console.log('\nLa liste à cocher se dessine — vérifié en l\'exécutant');
   egal('… et les commandes se retirent', 'none', v.noeuds['cr-or-actions'].style.display);
 }
 
+/* ── 4ter. Le bloc de saisie manuelle se replie quand il fait doublon ───── */
+console.log('\nLes « Tests cliniques » à la main se replient quand ils doublonnent');
+{
+  /* Dix des quatorze tests de la liste du praticien existaient deja au
+     catalogue du bilan : le formulaire demandait deux fois la meme chose. Le
+     bloc n'est pas supprime — il reste le seul moyen de citer un test quand le
+     courrier s'ecrit SANS bilan. */
+  var dT = html.indexOf('var _crTcOuvertManuel');
+  var fT = html.indexOf('function crRenderTestRows', dT);
+  if (dT < 0 || fT < 0) { console.error('moteur du repli introuvable'); process.exit(1); }
+  var codeT = html.slice(dT, fT);
+
+  function repli(opts) {
+    return new Function('CFG', 'VALS', 'ORTHO', 'MANUEL', 'localStorage', `
+      var crTestsConfig = CFG, crTests = VALS, _crTestsOrtho = ORTHO;
+      var window = {};
+      ${codeT}
+      _crTcOuvertManuel = MANUEL;
+      return { plie: _crTcDoitReplier(), rempli: _crTcRempli(),
+               basculer: window.crBasculerTestsCliniques,
+               etat: function(){ return _crTcOuvertManuel; } };
+    `)(opts.cfg, opts.vals, opts.ortho, opts.manuel,
+       { getItem: function () { return null; }, setItem: function () {} });
+  }
+  var CFG = [{ key: 'a', label: 'Relocation Test' }, { key: 'b', label: 'Test de Jerk' }];
+
+  var r1 = repli({ cfg: CFG, vals: {}, ortho: [1, 2, 3], manuel: null });
+  ok('avec des tests du bilan, il se replie', r1.plie);
+  /* LA SEULE RAISON QUI LE GARDE EN VIE : un courrier ecrit sans bilan. Il est
+     alors l'unique moyen de citer un test — le replier le supprimerait. */
+  var r2 = repli({ cfg: CFG, vals: {}, ortho: [], manuel: null });
+  ok('sans bilan, il reste ouvert', !r2.plie);
+
+  /* L'INVARIANT : un bloc replie n'ecrit RIEN dans le courrier. Un test deja
+     renseigne part au medecin ; le replier le rendrait invisible tout en le
+     laissant dans la lettre — l'ecart qu'un compte-rendu ne pardonne pas. */
+  var r3 = repli({ cfg: CFG, vals: { a: 1 }, ortho: [1, 2, 3], manuel: null });
+  ok('un test déjà renseigné empêche le repli', !r3.plie);
+  ok('… même si le praticien avait demandé de le replier',
+     !repli({ cfg: CFG, vals: { a: 2 }, ortho: [1, 2, 3], manuel: false }).plie);
+
+  /* Le choix du praticien l'emporte, dans les deux sens. */
+  ok('ouvert à la main, il reste ouvert',
+     !repli({ cfg: CFG, vals: {}, ortho: [1, 2, 3], manuel: true }).plie);
+  ok('replié à la main, il reste replié même sans bilan',
+     repli({ cfg: CFG, vals: {}, ortho: [], manuel: false }).plie);
+
+  /* La raison est ECRITE : masquer sans un mot serait indiscernable d'une
+     panne — la regle du depot, et le defaut vecu il y a une heure. */
+  var dR = html.indexOf('function crRenderTestRows');
+  var corpsR = html.slice(dR, dR + 1600);
+  ok('le bloc replié dit pourquoi il l\'est',
+     /cr-test-raison/.test(corpsR) && /examen orthopédique/i.test(corpsR), corpsR.slice(0, 200));
+  ok('… et la bascule est atteignable',
+     /crBasculerTestsCliniques\(\)/.test(html));
+  /* Borne sur la DEFINITION, pas sur la premiere mention : `crChargerTestsBilan`
+     est d'abord APPELEE plus haut dans le fichier, et la tranche qui partait de
+     la attrapait un `crRenderTestRows()` sans rapport — celui de la sauvegarde
+     de configuration. Le cas passait en ayant perdu les deux appels qu'il
+     devait tenir. */
+  var dC = html.indexOf('window.crChargerTestsBilan = function');
+  var fC = html.indexOf('window.crCocherTests', dC);
+  var corpsC = (dC > 0 && fC > dC) ? html.slice(dC, fC) : '';
+  egal('le repli se rejoue aux DEUX sorties du chargement', 2,
+       corpsC.split('crRenderTestRows();').length - 1);
+}
+
 /* ── 5. Le lot ───────────────────────────────────────────────────────────── */
 console.log('\nLes trois lots');
 {

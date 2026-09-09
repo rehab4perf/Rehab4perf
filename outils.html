@@ -423,6 +423,22 @@ body {
   font-size:.7rem; color:var(--text2); line-height:1.35;
 }
 .cr-or-resume input { margin:1px 0 0; flex:none; accent-color:var(--accent); cursor:pointer; }
+
+/* ── Tests cliniques : un bloc qui se replie en disant pourquoi ────── */
+.cr-tc-titre {
+  display:flex; align-items:center; gap:6px; flex:1; min-width:0;
+  background:none; border:none; padding:0; cursor:pointer; font-family:inherit;
+  font-size:inherit; font-weight:inherit; letter-spacing:inherit;
+  text-transform:inherit; color:inherit; text-align:left;
+}
+.cr-tc-chev { font-size:.58rem; transition:transform .15s; }
+#cr-test-groupe.plie .cr-tc-chev { transform:rotate(-90deg); }
+#cr-test-groupe.plie #cr-test-rows-container { display:none; }
+.cr-tc-raison {
+  font-size:.68rem; color:var(--text3); font-style:italic; line-height:1.4;
+  margin:-2px 0 6px;
+}
+.cr-tc-raison:empty { display:none; }
 .cr-tf-note { font-size:.65rem; color:var(--text3); font-style:italic; margin-top:7px; line-height:1.4; }
 
 .cr-resizer {
@@ -1462,11 +1478,22 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
           </div>
         </div>
 
-        <div class="cr-field-group">
-          <div class="cr-field-group-title" style="display:flex;align-items:center;justify-content:space-between;">
-            <span>Tests cliniques</span>
+<!-- Saisie MANUELLE des tests. Depuis que l'examen orthopedique remonte du
+             bilan, dix des quatorze tests de la liste du praticien y figurent
+             deja : le formulaire demandait deux fois la meme chose.
+
+             Le bloc n'est pas supprime — il reste le seul moyen de citer un
+             test quand le courrier s'ecrit SANS bilan (avis rapide, patient vu
+             ailleurs). Il se REPLIE, en disant pourquoi. Masquer sans un mot
+             serait indiscernable d'une panne. -->
+        <div class="cr-field-group" id="cr-test-groupe">
+          <div class="cr-field-group-title" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <button type="button" class="cr-tc-titre" onclick="crBasculerTestsCliniques()">
+              <span class="cr-tc-chev">&#9662;</span><span>Tests cliniques</span>
+            </button>
             <button class="cr-amp-cfg-btn" onclick="crOpenTestConfig()" title="Configurer les tests (admin)" style="font-size:.7rem;padding:3px 7px;">⚙</button>
           </div>
+          <div class="cr-tc-raison" id="cr-test-raison"></div>
           <div id="cr-test-rows-container"></div>
         </div>
 
@@ -5941,7 +5968,48 @@ _updateOutilsPatientBtns();
   var crTestsConfig = JSON.parse(JSON.stringify(CR_TEST_DEFAULTS));
   var crTests = {};
 
+  /* ── Le bloc se replie quand il fait doublon ────────────────────────
+     TROIS conditions, et la deuxieme porte l'invariant : UN BLOC REPLIE
+     N'ECRIT RIEN DANS LE COURRIER. Un test deja renseigne part au medecin ;
+     le replier le rendrait invisible tout en le laissant dans la lettre —
+     exactement le genre d'ecart qu'un compte-rendu ne pardonne pas. */
+  var _crTcOuvertManuel = null;      // null = pas de choix du praticien
+  try { var _o = localStorage.getItem('crTestsCliniquesOuvert');
+        if (_o === '0' || _o === '1') _crTcOuvertManuel = (_o === '1'); } catch (e) {}
+
+  function _crTcRempli() {
+    return crTestsConfig.some(function (t) { return (crTests[t.key] || 0) !== 0; });
+  }
+  function _crTcDoitReplier() {
+    if (_crTcRempli()) return false;              // jamais replier ce qui parle
+    if (_crTcOuvertManuel !== null) return !_crTcOuvertManuel;
+    /* Sans tests orthopediques remontes du bilan, ce bloc est le SEUL moyen de
+       citer un test : il reste ouvert. C'est le cas du courrier ecrit sans
+       bilan, la seule raison qui le garde en vie. */
+    return (typeof _crTestsOrtho !== 'undefined') && _crTestsOrtho.length > 0;
+  }
+  window.crBasculerTestsCliniques = function () {
+    _crTcOuvertManuel = _crTcDoitReplier();       // on ouvre ce qui etait replie
+    try { localStorage.setItem('crTestsCliniquesOuvert', _crTcOuvertManuel ? '1' : '0'); } catch (e) {}
+    crRenderTestRows();
+  };
+
   function crRenderTestRows() {
+    var groupe = document.getElementById('cr-test-groupe');
+    var raison = document.getElementById('cr-test-raison');
+    if (groupe) {
+      var plie = _crTcDoitReplier();
+      groupe.classList.toggle('plie', plie);
+      /* La raison est ECRITE. « Masquer est indiscernable d'une panne » : le
+         praticien doit pouvoir savoir si le bloc a disparu ou s'il ne
+         s'applique pas a ce patient. */
+      if (raison) {
+        raison.textContent = plie
+          ? 'Repris automatiquement : l\'examen orthopédique ci-dessus les remonte du bilan. Cliquer pour saisir à la main.'
+          : (_crTcRempli() ? 'Saisie manuelle — ces tests partent dans le courrier.' : '');
+      }
+      if (plie) return;                            // rien a dessiner sous un bloc replie
+    }
     var container = document.getElementById('cr-test-rows-container');
     if (!container) return;
     container.innerHTML = '';
@@ -6556,6 +6624,7 @@ _updateOutilsPatientBtns();
       _crOrthoCoches = {};
       _crRenderTestsFonc();
       _crRenderOrtho();
+      try { crRenderTestRows(); } catch (e) {}
       return;
     }
     try { brut = JSON.parse(localStorage.getItem('r4p-cr-med-tests') || '[]'); } catch (e) {}
@@ -6581,6 +6650,10 @@ _updateOutilsPatientBtns();
     });
     _crRenderTestsFonc();
     _crRenderOrtho();
+    /* Le bloc de saisie manuelle depend de ce qui vient d'arriver : sans ce
+       rappel, il resterait ouvert sur un patient dont le bilan couvre deja
+       tout, ou replie sur un patient qui n'en a pas. */
+    try { crRenderTestRows(); } catch (e) {}
   };
 
   window.crCocherTests = function (val) {
