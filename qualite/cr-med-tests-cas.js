@@ -75,6 +75,7 @@ function ligne(cle, val, pages, tag, perso) {
     getAttribute: function (n) {
       if (n === 'data-pages') return pages;
       if (n === 'data-cr-perso') return perso ? '1' : null;
+      if (n === 'data-bloc') return this._bloc || null;
       return null;
     },
     querySelector: function (sel) {
@@ -93,6 +94,14 @@ function ligne(cle, val, pages, tag, perso) {
       return null;
     }
   };
+}
+
+/* Meme ligne, avec son BLOC — « LCA / LCP ». C'est le grain de regroupement
+   des signes orthopediques dans le courrier. */
+function ligneBloc(cle, val, pages, tag, nomBloc) {
+  var l = ligne(cle, val, pages, tag);
+  l._bloc = nomBloc;
+  return l;
 }
 
 function section(titre, lignes) {
@@ -155,11 +164,21 @@ var SECTIONS = [
 
 var res = lancerAvec(SECTIONS);
 
-console.log('\n  Le filtre — les tests de force remontent, les orthopédiques non');
+/* LA REGLE A CHANGE, sciemment. Les signes orthopediques ne sont plus ecartes :
+   ils remontent dans une FAMILLE a part. Ce sont des verdicts binaires, cinq a
+   dix fois plus nombreux que les mesures — 560 lignes au catalogue — et normaux
+   la plupart du temps. Les cocher par defaut, comme les tests fonctionnels,
+   noierait le courrier : c'est `outils.html` qui tranche, a partir de
+   `famille`. Le bilan, lui, transmet tout et ne decide rien. */
+console.log('\n  Le filtre — deux familles, plus une exclusion');
 {
   var cles = res.map(function (t) { return t.cle; });
-  verifie('Neer (orthopédique) écarté',        'false', String(cles.indexOf('Neer') >= 0));
-  verifie('Lachman (orthopédique) écarté',     'false', String(cles.indexOf('Lachman') >= 0));
+  var fam = {}; res.forEach(function (t) { fam[t.cle] = t.famille; });
+  verifie('Neer (orthopédique) remonte',       'true',  String(cles.indexOf('Neer') >= 0));
+  verifie('… dans la famille orthopédique',    'ortho', fam['Neer']);
+  verifie('Lachman remonte aussi',             'true',  String(cles.indexOf('Lachman') >= 0));
+  verifie('un test de force est de l\'autre famille', 'fonc', fam['Ischio-jambiers']);
+  verifie('un test fonctionnel aussi',         'fonc', fam['SLS']);
   verifie('un test de force remonte',          'true',  String(cles.indexOf('Ischio-jambiers') >= 0));
   verifie('un test fonctionnel remonte',       'true',  String(cles.indexOf('SLS') >= 0));
   verifie('une ligne de course remonte',       'true',  String(cles.indexOf('Cadence') >= 0));
@@ -227,8 +246,9 @@ console.log('\n  Le regroupement — un intertitre par zone, jamais répété');
   /* L'ordre de PREMIÈRE apparition est celui du bilan : le médecin lit les
      régions dans l'ordre où elles ont été examinées. */
   verifie('ordre de première apparition conservé',
-          'Tests de force|TESTS FONCTIONNELS — MEMBRES SUPÉRIEURS|'
-          + 'TESTS FONCTIONNELS — MEMBRES INFÉRIEURS|ANALYSE DE COURSE À PIED',
+          'BILAN ORTHOPÉDIQUE — ÉPAULE|Tests de force|TESTS FONCTIONNELS — MEMBRES SUPÉRIEURS|'
+          + 'BILAN ORTHOPÉDIQUE — GENOU|TESTS FONCTIONNELS — MEMBRES INFÉRIEURS|'
+          + 'ANALYSE DE COURSE À PIED',
           zones.join('|'));
 }
 
@@ -536,8 +556,15 @@ console.log('\n  Les tests personnalisés du praticien sont proposés');
           String(cles.indexOf('Mon test genou') >= 0));
   verifie('un test perso sur une page orthopédique l\'est aussi', 'true',
           String(cles.indexOf('Mon test épaule') >= 0));
-  verifie('le test natif orthopédique reste écarté', 'false',
-          String(cles.indexOf('Neer') >= 0));
+  /* Un test PERSO pose sur une page orthopedique reste dans la famille des
+     mesures, avec les autres persos : le praticien qui a pris la peine de le
+     creer et de le nommer veut le proposer, et le deplacer aujourd'hui vers
+     l'examen orthopedique le ferait disparaitre de la ou il le cherche. */
+  var famP = {}; perso.forEach(function (t) { famP[t.cle] = t.famille; });
+  verifie('un perso orthopédique reste dans la famille des mesures', 'fonc',
+          famP['Mon test épaule']);
+  verifie('le test natif orthopédique, lui, est orthopédique', 'ortho',
+          famP['Neer']);
   verifie('le test natif fonctionnel reste proposé', 'true',
           String(cles.indexOf('SLS') >= 0));
 
@@ -592,6 +619,130 @@ console.log('\n  … et le câblage qui les alimente pose bien la marque');
           String(/data-cr-perso/.test(corpsItem)));
   verifie('… et le rendu des lignes custom la lui passe', 'true',
           String(/crItem\(tname, noteVal \|\| '-', tag, tagCls, \[selEl\.id\]\.filter\(Boolean\), isCustomRow\)/.test(src)));
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   Le BLOC, et la fusion des deux cotes
+   ════════════════════════════════════════════════════════════════════════ */
+console.log('\n  Le bloc voyage avec la ligne orthopédique');
+{
+  var b = lancerAvec([
+    section('1. BILAN ORTHOPÉDIQUE — GENOU', [
+      ligneBloc('Test de Lachman', 'Arrêt mou', 'page-genou', 'Positif', 'LCA / LCP'),
+      ligneBloc('Laxité en varus à 0°', '-', 'page-genou', 'Négatif', 'Ligaments latéraux')
+    ])
+  ]);
+  var parCle = {}; b.forEach(function (t) { parCle[t.cle] = t; });
+  verifie('le nom du bloc arrive au CR', 'LCA / LCP', parCle['Test de Lachman'].bloc);
+  verifie('… et deux blocs de la même section restent distincts',
+          'Ligaments latéraux', parCle['Laxité en varus à 0°'].bloc);
+  /* Le tiret n'est qu'un remplissage exige par `crItem` pour ne pas jeter la
+     ligne — le verdict est dans la pastille, et « - » n'apprend rien. */
+  verifie('un « - » de remplissage ne devient pas une valeur', '',
+          parCle['Laxité en varus à 0°'].valeur);
+}
+
+console.log('\n  Une ligne orthopédique sans verdict n\'est pas un test');
+{
+  /* « Marqueur », « Type », « McKenzie » sont des CHAMPS de section, rendus
+     par le meme `crItem` que les tests. La pastille est le seul critere qui
+     les separe — une liste de cles a exclure aurait vieilli au premier champ
+     ajoute a une page. */
+  var m = lancerAvec([
+    section('1. BILAN ORTHOPÉDIQUE — GENOU', [
+      ligneBloc('McKenzie', 'Préférence directionnelle en extension', 'page-genou', ''),
+      ligneBloc('Test de Lachman', '-', 'page-genou', 'Positif', 'LCA / LCP')
+    ])
+  ]);
+  var cm = m.map(function (t) { return t.cle; });
+  /* « Marqueur » ne prouverait RIEN : il est deja exclu par la liste de cles
+     (Conclusion, Marqueur, Notes). « McKenzie » ne l'est pas — c'est la
+     pastille absente, et elle seule, qui doit l'ecarter. */
+  verifie('un champ de section sans pastille est écarté', 'false',
+          String(cm.indexOf('McKenzie') >= 0));
+  verifie('… et le test voisin remonte', 'true',
+          String(cm.indexOf('Test de Lachman') >= 0));
+  /* Sur une page FONCTIONNELLE la regle ne s'applique pas : une ligne d'analyse
+     de course — « Cadence : 172 spm » — n'a pas de verdict et reste porteuse. */
+  var c = lancerAvec([
+    section('1. ANALYSE DE COURSE À PIED', [ ligne('Cadence', '172 spm', 'page-course', '') ])
+  ]);
+  verifie('une mesure sans verdict reste, elle', 'true',
+          String(c.map(function (t) { return t.cle; }).indexOf('Cadence') >= 0));
+}
+
+console.log('\n  Le nom du bloc se lit sur les TEXTES de l\'en-tête');
+{
+  /* L'en-tete porte deux ELEMENTS enfants — la pastille « réévalué » et la
+     commande « 4 à renseigner · TOUT NÉGATIF ». Lire son `textContent`
+     ramenerait ce texte dans le nom du bloc, jusque dans le courrier. */
+  var codeNom = bloc('function _crNomDuBloc', 'function _buildAllTestsHtml');
+  var nomDuBloc = new Function(codeNom + '; return _crNomDuBloc;')();
+  function faireBloc(enfants) {
+    var hd = { childNodes: enfants };
+    return { querySelector: function (sel) { return sel === '.block-header' ? hd : null; } };
+  }
+  var TXT = function (v) { return { nodeType: 3, textContent: v }; };
+  var EL  = function (v) { return { nodeType: 1, textContent: v }; };
+  verifie('un en-tête simple donne son nom', 'LCA / LCP',
+          nomDuBloc(faireBloc([TXT('LCA / LCP')])));
+  verifie('la commande de bloc ne passe pas', 'LCA / LCP',
+          nomDuBloc(faireBloc([TXT('LCA / LCP'), EL('4 à renseigner'), EL('TOUT NÉGATIF')])));
+  verifie('la pastille « réévalué » non plus', 'Ménisques',
+          nomDuBloc(faireBloc([TXT('Ménisques'), EL('réévalué le 12/03')])));
+  /* Un pictogramme d'en-tete n'apprend rien au medecin. */
+  verifie('le pictogramme est retiré', 'Imageries disponibles',
+          nomDuBloc(faireBloc([TXT('📷 Imageries disponibles')])));
+  verifie('un bloc absent ne casse rien', '', nomDuBloc(null));
+}
+
+console.log('\n  Les deux côtés ne fusionnent que s\'ils disent la même chose');
+{
+  /* Sur un patient bilateral le bilan double ses tableaux (-g / -d) : le meme
+     test sort en DEUX lignes. Elles fusionnent en « Bilatéral » — mention qui
+     n'est pas qu'un raccourci : sur un test de laxite, une positivite des deux
+     cotes se lit comme une hyperlaxite CONSTITUTIONNELLE, pas comme une
+     lesion. Le bilan l'ecrit lui-meme sous l'extension passive. */
+  var f = lancerAvec([
+    section('1. BILAN ORTHOPÉDIQUE — GENOU', [
+      ligneBloc('Laxité en valgus — Gauche', '-', 'page-genou', 'Positif', 'Ligaments latéraux'),
+      ligneBloc('Laxité en valgus — Droit',  '-', 'page-genou', 'Positif', 'Ligaments latéraux'),
+      ligneBloc('Test de Lachman — Gauche', 'Arrêt mou', 'page-genou', 'Positif', 'LCA / LCP'),
+      ligneBloc('Test de Lachman — Droit',  '-',         'page-genou', 'Positif', 'LCA / LCP')
+    ])
+  ]);
+  var cl = f.map(function (t) { return t.cle; });
+  verifie('deux côtés identiques n\'en font plus qu\'un', 'true',
+          String(cl.indexOf('Laxité en valgus — Bilatéral') >= 0));
+  verifie('… et aucun des deux ne subsiste', 'false',
+          String(cl.indexOf('Laxité en valgus — Droit') >= 0
+              || cl.indexOf('Laxité en valgus — Gauche') >= 0));
+  /* LA REGLE QUI PROTEGE : le meme verdict avec une OBSERVATION differente ne
+     fusionne pas. Fusionner perdrait l'observation d'un cote sans que rien ne
+     le signale — et un compte-rendu part du cabinet. */
+  verifie('une observation qui diffère garde les deux lignes', 'true',
+          String(cl.indexOf('Test de Lachman — Gauche') >= 0
+              && cl.indexOf('Test de Lachman — Droit') >= 0));
+  verifie('… et n\'invente pas de mention bilatérale', 'false',
+          String(cl.indexOf('Test de Lachman — Bilatéral') >= 0));
+  /* L'ordre du bilan est celui dans lequel le medecin lit les regions : la
+     ligne fusionnee prend la place du PREMIER cote rencontre. */
+  verifie('la fusion prend la place du premier côté', 'Laxité en valgus — Bilatéral',
+          cl[0]);
+  verifie('rien d\'autre n\'est perdu', '3', String(cl.length));
+
+  /* UN SEUL COTE RENSEIGNE : le patient n'a ete examine que d'un cote, ou
+     l'autre n'a rien donne. Le declarer « bilatéral » affirmerait au medecin
+     un examen qui n'a pas eu lieu. */
+  var seul = lancerAvec([
+    section('1. BILAN ORTHOPÉDIQUE — GENOU', [
+      ligneBloc('Test de Lachman — Droit', '-', 'page-genou', 'Positif', 'LCA / LCP')
+    ])
+  ]);
+  var cs = seul.map(function (t) { return t.cle; });
+  verifie('un côté seul garde son côté', 'Test de Lachman — Droit', cs[0]);
+  verifie('… et ne devient jamais bilatéral', 'false',
+          String(cs.join('|').indexOf('Bilatéral') >= 0));
 }
 
 console.log('\n  ' + (nbKo ? '✗ ' + nbKo + ' échec(s), ' : '✓ ') + nbOk + ' cas vérifiés.\n');

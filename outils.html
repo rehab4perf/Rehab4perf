@@ -391,6 +391,38 @@ body {
    non, et rien ne le signale. */
 .cr-tf-tag.neutre { background:var(--surface2); border-color:var(--border2); color:var(--text2); }
 .cr-tf-vide { font-size:.74rem; color:var(--text3); font-style:italic; line-height:1.45; padding:4px 0; }
+
+/* ── Examen orthopedique ─────────────────────────────────────────────
+   Les pastilles de lot valent mieux que six boutons : trois etats
+   mutuellement exclusifs se lisent comme un choix, pas comme des gestes. */
+.cr-or-chip {
+  padding:3px 9px; border:1px solid var(--border2); background:var(--surface);
+  border-radius:20px; font-size:.68rem; font-weight:600; font-family:inherit;
+  color:var(--text2); cursor:pointer;
+}
+.cr-or-chip:hover { border-color:var(--accent); color:var(--accent); }
+.cr-or-chip.on { background:var(--accent2); border-color:var(--accent2); color:#fff; }
+.cr-or-bloc { margin-top:8px; }
+.cr-or-hd {
+  display:flex; align-items:center; gap:7px; padding:4px 6px; border-radius:6px;
+  background:var(--surface); border:1px solid var(--border); cursor:pointer;
+}
+.cr-or-hd:hover { border-color:var(--border2); }
+.cr-or-hd input { margin:0; flex:none; accent-color:var(--accent); cursor:pointer; }
+.cr-or-nom {
+  flex:1; min-width:0; font-size:.67rem; font-weight:700; letter-spacing:.06em;
+  text-transform:uppercase; color:var(--text2);
+}
+.cr-or-cpt { font-size:.63rem; color:var(--text3); white-space:nowrap; font-variant-numeric:tabular-nums; }
+.cr-or-chev { color:var(--text3); font-size:.58rem; transition:transform .15s; }
+.cr-or-bloc.plie .cr-or-chev { transform:rotate(-90deg); }
+.cr-or-bloc.plie .cr-or-corps { display:none; }
+.cr-or-corps { padding:2px 0 0 4px; }
+.cr-or-resume {
+  display:flex; align-items:flex-start; gap:7px; margin-top:9px; cursor:pointer;
+  font-size:.7rem; color:var(--text2); line-height:1.35;
+}
+.cr-or-resume input { margin:1px 0 0; flex:none; accent-color:var(--accent); cursor:pointer; }
 .cr-tf-note { font-size:.65rem; color:var(--text3); font-style:italic; margin-top:7px; line-height:1.4; }
 
 .cr-resizer {
@@ -1381,6 +1413,30 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
           </div>
           <div id="cr-tf-liste"></div>
           <div class="cr-tf-note">Les intitulés sont traduits pour le médecin : « SLS » devient « Force fonctionnelle du membre inférieur en appui unipodal ».</div>
+        </div>
+
+        <!-- Examen orthopedique — bloc SEPARE, et pas par rangement. Ce sont
+             des verdicts binaires, cinq a dix fois plus nombreux que les
+             mesures et normaux la plupart du temps : ils n'obeissent ni au
+             meme defaut de selection, ni au meme rendu dans le courrier. Un
+             seul bloc imposerait une regle unique, donc fausse pour l'une des
+             deux familles. -->
+        <div class="cr-field-group">
+          <div class="cr-field-group-title" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>Examen orthopédique</span>
+            <button class="cr-amp-cfg-btn" onclick="crChargerTestsBilan()" title="Relire le bilan en cours" style="font-size:.7rem;padding:3px 7px;">&#8635; Actualiser</button>
+          </div>
+          <div class="cr-tf-actions" id="cr-or-actions" style="display:none">
+            <button type="button" class="cr-or-chip" data-f="anormaux" onclick="crFiltreOrtho('anormaux')">Anormaux</button>
+            <button type="button" class="cr-or-chip" data-f="tout" onclick="crFiltreOrtho('tout')">Tout</button>
+            <button type="button" class="cr-or-chip" data-f="aucun" onclick="crFiltreOrtho('aucun')">Aucun</button>
+            <span class="cr-tf-compte" id="cr-or-compte"></span>
+          </div>
+          <div id="cr-or-liste"></div>
+          <label class="cr-or-resume" id="cr-or-resume-l" style="display:none">
+            <input type="checkbox" id="cr-or-resume" checked onchange="crBasculerResumeOrtho(this.checked)">
+            <span>Mentionner en une ligne les blocs examinés sans particularité</span>
+          </label>
         </div>
 
         <div class="cr-field-group">
@@ -6389,6 +6445,11 @@ _updateOutilsPatientBtns();
      cette liste, sans qu'une ligne soit ecrite de ce cote. */
   var _crTestsFonc = [];
   var _crTestsCoches = {};
+  var _crTestsOrtho = [];
+  var _crOrthoCoches = {};
+  var _crOrthoFiltre = 'anormaux';
+  var _crOrthoResume = true;
+  var _crOrthoPlies  = {};
 
   /* Le niveau vient du bilan, qui l'a calcule. Le deviner ici a partir des
      mots donnerait des couleurs fausses — « Facteur de risque » se lit
@@ -6491,18 +6552,35 @@ _updateOutilsPatientBtns();
     if (window._crBilanEstDuPatient && !window._crBilanEstDuPatient()) {
       _crTestsFonc = [];
       _crTestsCoches = {};
+      _crTestsOrtho = [];
+      _crOrthoCoches = {};
       _crRenderTestsFonc();
+      _crRenderOrtho();
       return;
     }
     try { brut = JSON.parse(localStorage.getItem('r4p-cr-med-tests') || '[]'); } catch (e) {}
-    _crTestsFonc = Array.isArray(brut) ? brut : [];
+    var _tous = Array.isArray(brut) ? brut : [];
+    /* Un contenu ecrit par une version ANTERIEURE du bilan n'a pas de
+       `famille` : tout y est une mesure, exactement comme avant. Le repli le
+       dit explicitement — sans lui ces lignes tomberaient dans l'examen
+       orthopedique, ou leur defaut de selection est l'inverse. */
+    _crTestsFonc  = _tous.filter(function (t) { return t.famille !== 'ortho'; });
+    _crTestsOrtho = _tous.filter(function (t) { return t.famille === 'ortho'; });
     /* Tout coche par defaut : on decoche plus vite qu'on ne coche, et le
        praticien qui a fait le test veut generalement qu'il figure. Un choix
        deja pose sur une cle est conserve d'un rechargement a l'autre. */
     _crTestsFonc.forEach(function (t) {
       if (_crTestsCoches[t.cle] === undefined) _crTestsCoches[t.cle] = true;
     });
+    /* Le defaut s'INVERSE ici, et c'est tout l'objet du bloc separe. Un bilan
+       de genou renseigne produit une quarantaine de signes, en ecrasante
+       majorite normaux : tout cocher noierait le courrier. Seuls les resultats
+       ANORMAUX sont pre-poses ; les autres restent a portee de clic. */
+    _crTestsOrtho.forEach(function (t) {
+      if (_crOrthoCoches[t.cle] === undefined) _crOrthoCoches[t.cle] = _crOrthoAnormal(t);
+    });
     _crRenderTestsFonc();
+    _crRenderOrtho();
   };
 
   window.crCocherTests = function (val) {
@@ -6567,6 +6645,195 @@ _updateOutilsPatientBtns();
     });
     boite.innerHTML = html;
     _crMajCompteTests();
+  }
+
+  /* ══ Examen orthopedique ════════════════════════════════════════════
+     LE FILTRE PORTE SUR LE NIVEAU, JAMAIS SUR LE MOT. Sur les six tableaux
+     fonctionnels « Positif » veut dire REUSSI ; sur les mobilites c'est
+     « Reduit » qui alerte, sur le DN4 c'est « Oui ». Un filtre ecrit sur le
+     mot designerait le contraire de ce qu'il croit.
+
+     Le niveau clinique — ok / warn / bad — voyage DEJA depuis le bilan : c'est
+     `crItem` qui le pose en classe sur la pastille, et `_crMedResumeTests` qui
+     le transmet. On le lit, on ne le redevine pas. */
+  function _crOrthoAnormal(t) {
+    return t && (t.niveau === 'bad' || t.niveau === 'warn');
+  }
+  function _crOrthoGroupes(liste) {
+    var ordre = [], par = {};
+    (liste || []).forEach(function (t) {
+      /* La SECTION seule serait un grain trop large — un intertitre pour
+         quarante lignes. Le bloc, lui, est celui que le praticien voit dans le
+         bilan. Un contenu ecrit avant qu'il ne voyage n'en a pas : sa section
+         fait alors office de bloc, plutot que de tout regrouper sous un titre
+         vide. */
+      var z = t.zone || 'Examen orthopédique';
+      var k = t.bloc ? (z + ' — ' + t.bloc) : z;
+      if (!par[k]) { par[k] = []; ordre.push(k); }
+      par[k].push(t);
+    });
+    return ordre.map(function (k) {
+      var tests = par[k];
+      return { cle: k, titre: k, tests: tests,
+               anormaux: tests.filter(_crOrthoAnormal).length };
+    });
+  }
+
+  window.crFiltreOrtho = function (f) {
+    _crOrthoFiltre = f;
+    _crTestsOrtho.forEach(function (t) {
+      _crOrthoCoches[t.cle] = (f === 'tout') ? true
+                            : (f === 'aucun') ? false
+                            : _crOrthoAnormal(t);
+    });
+    _crRenderOrtho();
+    _crMajDifferee();
+  };
+  window.crBasculerOrtho = function (cle, coche) {
+    _crOrthoCoches[cle] = !!coche;
+    /* On ne redessine PAS la liste : elle se redessinerait sous le curseur, et
+       la case suivante changerait de noeud entre deux clics. */
+    _crMajCompteOrtho();
+    _crMajDifferee();
+  };
+  window.crCocherBlocOrtho = function (cleBloc, coche) {
+    _crOrthoGroupes(_crTestsOrtho).forEach(function (g) {
+      if (g.cle !== cleBloc) return;
+      g.tests.forEach(function (t) { _crOrthoCoches[t.cle] = !!coche; });
+    });
+    _crRenderOrtho();
+    _crMajDifferee();
+  };
+  window.crPlierBlocOrtho = function (cleBloc) {
+    _crOrthoPlies[cleBloc] = !_crOrthoPlies[cleBloc];
+    _crRenderOrtho();
+  };
+  window.crBasculerResumeOrtho = function (v) {
+    _crOrthoResume = !!v;
+    _crMajDifferee();
+  };
+
+  function _crMajCompteOrtho() {
+    var c = document.getElementById('cr-or-compte');
+    if (!c) return;
+    var nb = _crTestsOrtho.filter(function (t) { return _crOrthoCoches[t.cle]; }).length;
+    c.textContent = nb + ' / ' + _crTestsOrtho.length + ' retenus';
+  }
+
+  function _crRenderOrtho() {
+    var boite   = document.getElementById('cr-or-liste');
+    var actions = document.getElementById('cr-or-actions');
+    var resume  = document.getElementById('cr-or-resume-l');
+    if (!boite) return;
+
+    if (!_crTestsOrtho.length) {
+      if (actions) actions.style.display = 'none';
+      if (resume)  resume.style.display  = 'none';
+      /* Masquer serait indiscernable d'une panne : le praticien ne peut pas
+         savoir si la fonction a disparu ou si elle ne s'applique pas a ce
+         patient. On dit laquelle des deux. */
+      boite.innerHTML = '<div class="cr-tf-vide">Aucun test orthopédique renseigné dans le bilan en cours. '
+        + 'Remplissez-les dans l\'onglet Bilan clinique, puis revenez ici.</div>';
+      return;
+    }
+    if (actions) actions.style.display = 'flex';
+    if (resume)  resume.style.display  = 'flex';
+    document.querySelectorAll('.cr-or-chip').forEach(function (b) {
+      b.classList.toggle('on', b.dataset.f === _crOrthoFiltre);
+    });
+
+    var html = '', partiels = [];
+    _crOrthoGroupes(_crTestsOrtho).forEach(function (g) {
+      var sel = g.tests.filter(function (t) { return _crOrthoCoches[t.cle]; }).length;
+      var n   = g.tests.length;
+      /* Un bloc entierement normal se replie de lui-meme : il tient en une
+         ligne dans le courrier, il n'a pas a occuper un ecran de liste. Un
+         pli defait a la main l'emporte — sinon il se refermerait a chaque
+         coche. */
+      var plie = (_crOrthoPlies[g.cle] === undefined) ? (g.anormaux === 0)
+                                                     : _crOrthoPlies[g.cle];
+      var idCase = 'cr-or-b-' + iG;
+      if (sel && sel < n) partiels.push(idCase);
+      html += '<div class="cr-or-bloc' + (plie ? ' plie' : '') + '">'
+            +   '<div class="cr-or-hd" onclick="crPlierBlocOrtho(' + _crEsc(JSON.stringify(g.cle)) + ')">'
+            +     '<span class="cr-or-chev">&#9662;</span>'
+            +     '<input type="checkbox" id="' + idCase + '"' + (sel === n ? ' checked' : '')
+            +       ' onclick="event.stopPropagation()"'
+            +       ' onchange="crCocherBlocOrtho(' + _crEsc(JSON.stringify(g.cle)) + ', this.checked)">'
+            +     '<span class="cr-or-nom">' + _crEsc(g.titre) + '</span>'
+            +     '<span class="cr-or-cpt">' + (g.anormaux
+                    ? g.anormaux + ' anormal' + (g.anormaux > 1 ? 'ux' : '')
+                    : 'sans particularité') + '</span>'
+            +   '</div>'
+            +   '<div class="cr-or-corps">';
+      g.tests.forEach(function (t) {
+        var v = _crVerdict(t);
+        html += '<label class="cr-tf-row">'
+              +   '<input type="checkbox"' + (_crOrthoCoches[t.cle] ? ' checked' : '')
+              +     ' onchange="crBasculerOrtho(' + _crEsc(JSON.stringify(t.cle)) + ', this.checked)">'
+              +   '<span class="cr-tf-lbl"><span class="cr-tf-nom">' + _crEsc(t.label) + '</span>'
+              +     (t.valeur ? '<span class="cr-tf-val">' + _crEsc(t.valeur) + '</span>' : '')
+              +     (v.nuance ? '<span class="cr-tf-val cr-tf-alerte">' + _crEsc(v.nuance) + '</span>' : '')
+              +   '</span>'
+              +   _crStatutChips(t, 'cr-tf-tag')
+              + '</label>';
+      });
+      html += '</div></div>';
+    });
+    boite.innerHTML = html;
+    /* L'etat INTERMEDIAIRE n'est pas un attribut HTML : il ne se pose qu'en
+       JavaScript, apres l'ecriture du balisage. Sans lui, un bloc a moitie
+       retenu s'afficherait decoche — donc faux. */
+    partiels.forEach(function (id) {
+      var c = document.getElementById(id);
+      if (c) c.indeterminate = true;
+    });
+    _crMajCompteOrtho();
+  }
+
+  /* Lignes de courrier — rendu B : les blocs qui parlent gardent leur detail,
+     les blocs muets tiennent en une ligne. Le negatif ne vaut pas a l'unite ;
+     il vaut de dire au medecin ce qui a ete CHERCHE et pas trouve. */
+  function _crAppendTestsOrtho(lines) {
+    if (!_crTestsOrtho.length) return;
+    var groupes = _crOrthoGroupes(_crTestsOrtho);
+    var corps = [], muets = [];
+    groupes.forEach(function (g) {
+      var retenus = g.tests.filter(function (t) { return _crOrthoCoches[t.cle]; });
+      if (!retenus.length) {
+        /* Le resume ne porte QUE sur les blocs entierement normaux. Un bloc qui
+           porte un signe et dont rien n'est retenu n'est pas « sans
+           particularite » : l'annoncer ainsi serait un contresens medical. */
+        if (!g.anormaux) muets.push({ titre: g.titre, n: g.tests.length });
+        return;
+      }
+      var items = [], normaux = [];
+      retenus.forEach(function (t) {
+        var v = _crVerdict(t);
+        if (!_crOrthoAnormal(t)) { normaux.push(t.label); return; }
+        var txt = t.label + ' — ' + String(v.statut || '').toLowerCase();
+        if (t.valeur) txt += ' : ' + t.valeur;
+        if (v.nuance) txt += ' (' + v.nuance + ')';
+        items.push({ txt: txt });
+      });
+      /* Les resultats normaux d'un bloc qui parle se rassemblent sur une seule
+         ligne : les enumerer un par un rendrait au signe positif exactement le
+         bruit qu'on vient de lui retirer. */
+      if (normaux.length) {
+        items.push({ txt: (normaux.length > 1 ? 'Sans anomalie : ' : 'Sans anomalie : ')
+                        + normaux.join(', ') });
+      }
+      corps.push({ t: 'liste', titre: g.titre, items: items });
+    });
+    if (!corps.length && !(_crOrthoResume && muets.length)) return;
+    lines.push({ t: 'sec', txt: 'Examen orthopédique' });
+    corps.forEach(function (b) { lines.push(b); });
+    if (_crOrthoResume && muets.length) {
+      lines.push('Également examinés, sans particularité : '
+        + muets.map(function (m) { return m.titre + ' (' + m.n + ' test' + (m.n > 1 ? 's' : '') + ')'; })
+               .join(' ; ') + '.');
+    }
+    lines.push('');
   }
 
   function _crEsc(v) {
@@ -7390,6 +7657,9 @@ _updateOutilsPatientBtns();
 
     // 7b. SLS (toutes pathologies)
     _crAppendTestsFonc(lines);
+    /* L'examen orthopedique vient APRES les mesures : il repond a « qu'a-t-on
+       trouve », elles a « ou en est-on ». Le medecin lit le chiffre d'abord. */
+    _crAppendTestsOrtho(lines);
 
     // 8. Signes cliniques — 3 états groupés
     var signDefs = crSignConfig; // utilise la config dynamique
@@ -7584,6 +7854,9 @@ _updateOutilsPatientBtns();
 
     // SLS (toutes pathologies)
     _crAppendTestsFonc(lines);
+    /* L'examen orthopedique vient APRES les mesures : il repond a « qu'a-t-on
+       trouve », elles a « ou en est-on ». Le medecin lit le chiffre d'abord. */
+    _crAppendTestsOrtho(lines);
 
     var commentaire = crV('cr-commentaire');
     if (commentaire) lines.push({ t: 'concl', txt: commentaire });
@@ -7973,7 +8246,10 @@ _updateOutilsPatientBtns();
        dans le courrier du suivant. */
     _crTestsFonc = [];
     _crTestsCoches = {};
+    _crTestsOrtho = [];
+    _crOrthoCoches = {};
     _crRenderTestsFonc();
+    _crRenderOrtho();
 
     /* Courrier deja genere. Copie, mail et PDF lisent ces deux variables et
        jamais le DOM : les laisser permettrait d'exporter le courrier de

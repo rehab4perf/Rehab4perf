@@ -87,6 +87,12 @@ if (bi < 0) { console.error('crItem introuvable'); process.exit(1); }
 var be = src.indexOf('\n  }', bi);
 if (be < 0) { console.error('fin de crItem introuvable'); process.exit(1); }
 var crItemSrc = src.slice(bi, be + 4);
+/* `crItem` lit le NOM DU BLOC pour le CR medecin : sans cette dependance, le
+   banc levait une `ReferenceError` et n'executait plus rien. Un banc qui
+   n'emporte pas ce dont la fonction a besoin ne teste pas cette fonction. */
+var _nomBlocI = src.indexOf('function _crNomDuBloc');
+if (_nomBlocI < 0) { console.error('_crNomDuBloc introuvable'); process.exit(1); }
+crItemSrc = src.slice(_nomBlocI, src.indexOf('\n}', _nomBlocI) + 2) + '\n' + crItemSrc;
 /* `js/bilan.js` porte DEUX fonctions nommees `crItem` — celle de
    `_buildAllTestsHtml` et une autre dans `buildCR`. Renommer la premiere
    faisait glisser la borne sur la seconde sans un mot, et le cas echouait

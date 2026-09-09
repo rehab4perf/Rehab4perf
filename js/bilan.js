@@ -465,7 +465,19 @@ function _crMedResumeTests() {
            peine de creer et de nommer un test veut pouvoir le proposer, qu'il
            l'ait pose sur l'Epaule ou sur les tests fonctionnels. */
         var _perso = it.getAttribute('data-cr-perso') === '1';
-        if (!_perso && !pgs.some(function (p) { return CR_MED_PAGES.indexOf(p) >= 0; })) return;
+        var _fonc  = _perso || pgs.some(function (p) { return CR_MED_PAGES.indexOf(p) >= 0; });
+        /* Les signes ORTHOPEDIQUES remontent desormais eux aussi, mais dans
+           leur propre famille : ils n'obeissent pas aux memes regles que les
+           mesures. Ce sont des verdicts binaires, cinq a dix fois plus
+           nombreux (560 lignes au catalogue), et normaux la plupart du temps —
+           les cocher par defaut noierait le courrier. C'est `outils.html` qui
+           tranche, a partir de `famille`.
+
+           Une ligne orthopedique sans PASTILLE n'est pas un test : « Marqueur »,
+           « Type », « McKenzie » sont des champs de section, rendus par le meme
+           `crItem`. Le verdict est le seul critere qui les separe — une liste
+           de cles a exclure aurait vieilli au premier champ ajoute. */
+        if (!_fonc && !it.querySelector('.cr-tag')) return;
         /* Une ligne peut lire des champs de plusieurs pages ; la premiere qui
            porte un intitule propre l'emporte sur le titre de section. */
         var zoneLigne = zone;
@@ -510,11 +522,17 @@ function _crMedResumeTests() {
         if (!cle) return;
         if (!val && !(v.af && v.af.lignes)) return;
         if (/^(Conclusion|Marqueur|Notes?)$/i.test(cle)) return;
+        /* Une ligne orthopedique sans observation vaut « - » : c'est le
+           remplissage que `crItem` exige pour ne pas jeter la ligne. Ce tiret
+           n'apprend rien — le verdict est dans la pastille. */
+        var valAff = (!_fonc && val === '-') ? '' : val;
         var _entree = { cle: cle, label: _crMedLabel(cle), geste: _crMedGeste(cle),
-                        valeur: val, cellules: v.cellules || [],
+                        valeur: valAff, cellules: v.cellules || [],
                         mesures: (v.mesures && v.mesures.length > 1) ? v.mesures : null,
                         note: v.note || '', statut: tag, nuance: nuance,
-                        niveau: niveau, zone: zoneLigne };
+                        niveau: niveau, zone: zoneLigne,
+                        famille: _fonc ? 'fonc' : 'ortho',
+                        bloc: (it.getAttribute('data-bloc') || '') };
         /* `v.af` suffit : la ligne EST une analyse fonctionnelle, qu'on y ait
            trouve des compensations ou non. La condition exigeait auparavant au
            moins une compensation — un patient sans aucune compensation gardait
@@ -607,7 +625,49 @@ function _crMedResumeTests() {
   });
   var groupe = [];
   ordre.forEach(function (z) { groupe = groupe.concat(parZone[z]); });
-  return groupe;
+  return _crFusionnerCotes(groupe);
+}
+
+/* Sur un patient bilateral, le bilan double ses tableaux (`-g` / `-d`) : le
+   meme test sort en DEUX lignes, « Test de Lachman — Droit » et « — Gauche ».
+
+   Elles fusionnent en « — Bilatéral » A UNE SEULE CONDITION : que les deux
+   cotes disent EXACTEMENT la meme chose — meme verdict, meme nuance, meme
+   observation. Sinon la difference EST l'information, et deux lignes restent
+   deux lignes. Une fusion inconditionnelle perdrait l'observation d'un cote
+   sans que rien ne le signale — un compte-rendu part du cabinet.
+
+   La mention n'est pas qu'un raccourci : sur les tests de laxite, une
+   positivite des deux cotes se lit comme une hyperlaxite CONSTITUTIONNELLE,
+   pas comme une lesion — le bilan l'ecrit lui-meme sous l'extension passive.
+   Deux lignes separees obligent le medecin a refaire ce rapprochement ;
+   « bilatéral » le pose. */
+function _crFusionnerCotes(liste){
+  var out = [], parCle = {};
+  liste.forEach(function(t){
+    var m = /^(.*?)\s+—\s+(Droit|Gauche)$/.exec(t.cle || '');
+    if(!m){ out.push(t); return; }
+    var k = t.zone + '\u0000' + t.bloc + '\u0000' + m[1];
+    if(!parCle[k]) parCle[k] = [];
+    parCle[k].push({ base: m[1], cote: m[2], t: t, i: out.length });
+    out.push(t);                                   // place tenue, ordre garde
+  });
+  Object.keys(parCle).forEach(function(k){
+    var p = parCle[k];
+    if(p.length !== 2) return;
+    var a = p[0].t, b = p[1].t;
+    var memeChose = a.statut === b.statut && a.nuance === b.nuance
+                 && a.valeur === b.valeur && a.niveau === b.niveau;
+    if(!memeChose) return;
+    /* Le test fusionne prend la place du PREMIER : l'ordre du bilan est celui
+       dans lequel le medecin lit les regions. */
+    var f = {}; for(var q in a) if(Object.prototype.hasOwnProperty.call(a,q)) f[q] = a[q];
+    f.cle   = p[0].base + ' — Bilatéral';
+    f.label = String(a.label || '').replace(/\s+—\s+(Droit|Gauche)$/, '') + ' — Bilatéral';
+    out[p[0].i] = f;
+    out[p[1].i] = null;
+  });
+  return out.filter(Boolean);
 }
 var _SAVE_ICON = '<svg style="vertical-align:middle;margin-right:4px" width="16" height="16" fill="currentColor" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><g><path d="m28.702 8.564-4.273-5c-.795-.93-1.954-1.464-3.18-1.464h-14.771c-2.306 0-4.182 1.877-4.182 4.183v19.436c0 2.306 1.876 4.183 4.182 4.183h19.045c2.306 0 4.183-1.877 4.183-4.183v-14.437c-.001-.995-.357-1.96-1.004-2.718zm-6.962 19.536h-11.481v-8.173c0-.631.514-1.144 1.145-1.144h9.191c.631 0 1.145.513 1.145 1.144zm6.164-2.382c0 1.313-1.068 2.382-2.382 2.382h-1.981v-8.173c0-1.623-1.321-2.944-2.945-2.944h-9.191c-1.624 0-2.945 1.321-2.945 2.944v8.173h-1.982c-1.313 0-2.382-1.068-2.382-2.382v-19.436c0-1.313 1.069-2.382 2.382-2.382h14.771c.698 0 1.358.304 1.811.834l4.273 4.999c.369.432.571.982.571 1.549z"/><path d="m9.359 9.31h5.963c.497 0 .9-.403.9-.9s-.403-.9-.9-.9h-5.963c-.497 0-.9.403-.9.9s.403.9.9.9z"/><path d="m22.641 11.572h-13.282c-.497 0-.9.403-.9.9s.403.9.9.9h13.281c.497 0 .9-.403.9-.9s-.402-.9-.899-.9z"/></g></svg>';
 
@@ -7929,6 +7989,27 @@ function _crLabelsForCote(cote) {
                    : { cs: 'Côté sain', ca: 'Côté atteint' };
 }
 
+/* Le nom du bloc — « LCA / LCP », « Ligaments latéraux » — groupe les signes
+   orthopédiques dans le courrier. La SECTION (« GENOU ») est un grain trop
+   large : un seul intertitre pour quarante lignes.
+
+   Il se lit sur les NŒUDS DE TEXTE de l'en-tête, jamais sur son `textContent`.
+   L'en-tête porte deux éléments enfants — la pastille « réévalué » et la
+   commande « 4 à renseigner · TOUT NÉGATIF » — dont le texte partirait sinon
+   dans le nom du bloc, jusque dans le courrier au médecin. */
+function _crNomDuBloc(bloc){
+  if(!bloc) return '';
+  var hd = bloc.querySelector ? bloc.querySelector('.block-header') : null;
+  if(!hd) return '';
+  var txt = '';
+  [].slice.call(hd.childNodes || []).forEach(function(n){
+    if(n.nodeType === 3) txt += n.textContent;      // 3 = nœud de texte
+  });
+  /* Quelques en-têtes s'ouvrent sur un pictogramme (« 📷 Imageries ») : il
+     n'apprend rien au médecin et n'a rien à faire dans un intertitre. */
+  return txt.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\uFE0F]/gu, '').trim();
+}
+
 function _buildAllTestsHtml() {
   var sections = [];
   function addSec(title, html) { if (html && html.trim()) sections.push({title: title, html: html}); }
@@ -7976,15 +8057,17 @@ function _buildAllTestsHtml() {
        Necessaire parce que les tests de force ne forment PAS une section du
        CR — ils sont rendus DANS le Bilan Orthopedique, meles aux tests
        orthopediques de la meme region. */
-    var _pgs = [];
+    var _pgs = [], _bloc = '';
     if (fieldIds && fieldIds.length) {
       fieldIds.forEach(function(fid){
         var el = document.getElementById(fid);
         var pg = el && el.closest ? el.closest('.page') : null;
         if (pg && pg.id && _pgs.indexOf(pg.id) < 0) _pgs.push(pg.id);
+        if (!_bloc && el && el.closest) _bloc = _crNomDuBloc(el.closest('.block'));
       });
     }
     return '<div class="cr-item' + cls + '"' + (_pgs.length ? ' data-pages="' + _pgs.join(' ') + '"' : '')
+      + (_bloc ? ' data-bloc="' + _blEsc(_bloc) + '"' : '')
       + (perso ? ' data-cr-perso="1"' : '')
       + '><span class="cr-key">' + key + '</span><span class="cr-val">' + val + '</span>' + tagHtml + dateBadge + '</div>';
   }

@@ -137,6 +137,10 @@ var mod = ext('_crMesTab') + '\n' + ext('asymPct') + '\n' + ext('asymTxt') + '\n
   + "var LSI_INVERSE_TXT = " + JSON.stringify(
       (src.match(/var LSI_INVERSE_TXT = '([^']*)'/) || [])[1] || '') + ";\n"
   + ext('_statForce') + '\n'
+  /* `crItem` lit aussi le NOM DU BLOC pour le CR medecin. Sans cette
+     dependance le module levait une ReferenceError et n'executait plus rien :
+     un banc qui n'emporte pas ce dont la fonction a besoin ne la teste pas. */
+  + ext('_crNomDuBloc') + '\n'
   /* `crItem` appelle `_crVerdictNuance` — la separation du verdict et de sa
      nuance. Sans elle, le module leve au premier appel. */
   + ext('_crVerdictNuance') + '\n'
