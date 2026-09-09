@@ -7824,10 +7824,24 @@ _updateOutilsPatientBtns();
       else if (crTests[t.key] === 2) negatifTests.push(t.label);
     });
     if (positifTests.length || negatifTests.length) {
-      var _itTc = [];
-      positifTests.forEach(function(t){ _itTc.push({ ic: '❌', txt: t + ' — Positif' }); });
-      negatifTests.forEach(function(t){ _itTc.push({ ic: '✓', txt: t + ' — Négatif' }); });
-      lines.push({ t: 'liste', titre: 'Tests cliniques', items: _itTc });
+      /* MEME MISE EN PAGE que l'examen orthopedique : une barre de section, un
+         tableau, des pastilles de verdict. Ces tests SONT des tests — les
+         rendre en liste a puces avec des pictogrammes donnait deux grammaires
+         dans un seul courrier, la ou la donnee est de meme nature.
+
+         Et la meme regle de bruit : chaque positif garde sa ligne, les negatifs
+         tiennent sur une seule. Les enumerer un par un rendrait au signe
+         exactement le bruit qu'on vient de lui oter. */
+      lines.push({ t: 'sec', txt: 'Tests cliniques' });
+      positifTests.forEach(function (t) {
+        lines.push({ t: 'test', label: t, valeur: '', cellules: [], note: '',
+                     nuance: '', statut: 'Positif', niveau: 'bad' });
+      });
+      if (negatifTests.length) {
+        lines.push({ t: 'test', label: negatifTests.join(', '), valeur: '',
+                     cellules: [], note: '', nuance: '', statut: 'Négatif', niveau: 'ok' });
+      }
+      lines.push('');
     }
 
     // 9. Évolution
@@ -7987,10 +8001,24 @@ _updateOutilsPatientBtns();
       else if (crTests[t.key] === 2) negatifTestsD.push(t.label);
     });
     if (positifTestsD.length || negatifTestsD.length) {
-      var _itTcD = [];
-      positifTestsD.forEach(function(t){ _itTcD.push({ ic: '❌', txt: t + ' — Positif' }); });
-      negatifTestsD.forEach(function(t){ _itTcD.push({ ic: '✓', txt: t + ' — Négatif' }); });
-      lines.push({ t: 'liste', titre: 'Tests cliniques', items: _itTcD });
+      /* MEME MISE EN PAGE que l'examen orthopedique : une barre de section, un
+         tableau, des pastilles de verdict. Ces tests SONT des tests — les
+         rendre en liste a puces avec des pictogrammes donnait deux grammaires
+         dans un seul courrier, la ou la donnee est de meme nature.
+
+         Et la meme regle de bruit : chaque positif garde sa ligne, les negatifs
+         tiennent sur une seule. Les enumerer un par un rendrait au signe
+         exactement le bruit qu'on vient de lui oter. */
+      lines.push({ t: 'sec', txt: 'Tests cliniques' });
+      positifTestsD.forEach(function (t) {
+        lines.push({ t: 'test', label: t, valeur: '', cellules: [], note: '',
+                     nuance: '', statut: 'Positif', niveau: 'bad' });
+      });
+      if (negatifTestsD.length) {
+        lines.push({ t: 'test', label: negatifTestsD.join(', '), valeur: '',
+                     cellules: [], note: '', nuance: '', statut: 'Négatif', niveau: 'ok' });
+      }
+      lines.push('');
     }
 
     // SLS (toutes pathologies)

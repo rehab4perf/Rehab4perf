@@ -380,6 +380,35 @@ console.log('\nUn bouton qui change la donnée doit prévenir l\'aperçu');
      !/crRenderTestRows\(\)/.test(corpsC), corpsC.slice(0, 200));
 }
 
+/* ── 4quinquies. Les tests à la main, dans la même mise en page ─────────── */
+console.log('\nLes tests cliniques à la main sortent comme les autres');
+{
+  /* Ils sortaient en liste a puces avec des pictogrammes ❌ / ✓, en deux
+     colonnes, juste sous des tableaux a pastilles. Deux grammaires dans un
+     seul courrier, pour une donnee de meme nature. */
+  ['positifTests', 'positifTestsD'].forEach(function (nom) {
+    var d = html.indexOf('if (' + nom + '.length');
+    var corps = d > 0 ? html.slice(d, d + 1400) : '';
+    ok(nom + ' : une section, pas un titre de liste',
+       /t: 'sec', txt: 'Tests cliniques'/.test(corps), corps.slice(0, 160));
+    ok(nom + ' : des lignes de tableau', /t: 'test'/.test(corps));
+    ok(nom + ' : plus de liste à puces', !/t: 'liste'/.test(corps));
+    ok(nom + ' : plus de pictogramme dans le texte', corps.indexOf('❌') < 0 && corps.indexOf('✓') < 0);
+    /* Meme regle de bruit que l'examen orthopedique : chaque positif garde sa
+       ligne, les negatifs tiennent sur une seule. */
+    ok(nom + ' : les négatifs tiennent sur une ligne',
+       /negatifTests[D]?\.join\(', '\)/.test(corps), corps.slice(0, 400));
+    ok(nom + ' : le verdict voyage pour la pastille',
+       /statut: 'Positif', niveau: 'bad'/.test(corps)
+       && /statut: 'Négatif', niveau: 'ok'/.test(corps));
+  });
+  /* Les DEUX constructeurs de courrier — medecin et patient — doivent le
+     faire : une regle ecrite d'un seul cote ne se voit pas la ou le document
+     est lu. Le piege qui revient le plus souvent dans ce domaine. */
+  egal('les deux constructeurs rendent la même chose', 2,
+       html.split("t: 'sec', txt: 'Tests cliniques'").length - 1);
+}
+
 /* ── 5. Le lot ───────────────────────────────────────────────────────────── */
 console.log('\nLes trois lots');
 {
