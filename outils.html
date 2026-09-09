@@ -6927,12 +6927,23 @@ _updateOutilsPatientBtns();
       if (g.bloc) corps.push({ t: 'ssec', txt: g.bloc });
 
       var normaux = {};
+      /* Le regroupement des normaux protege le SIGNAL. Un bloc dont rien n'est
+         anormal n'a pas de signal a proteger : les tests que le praticien y a
+         retenus reprennent chacun leur ligne. Meme regle que les tests
+         cliniques saisis a la main — deux endroits, une seule idee. */
+      var _aUnSignal = retenus.some(_crOrthoAnormal);
       retenus.forEach(function (t) {
-        if (!_crOrthoAnormal(t)) {
+        if (!_crOrthoAnormal(t) && _aUnSignal) {
           /* Regroupes PAR VERDICT : « Négatif » et « Normal » ne disent pas la
              meme chose, et une pastille unique en couvrirait deux. */
           var st = _crVerdict(t).statut || '';
           (normaux[st] = normaux[st] || []).push(t.label);
+          return;
+        }
+        if (!_crOrthoAnormal(t)) {
+          corps.push({ t: 'test', label: t.label, valeur: t.valeur || '',
+                       cellules: [], note: t.note || '', nuance: t.nuance || '',
+                       statut: t.statut, niveau: t.niveau, geste: t.geste || '' });
           return;
         }
         corps.push({ t: 'test', label: t.label, valeur: t.valeur || '',
@@ -7220,6 +7231,34 @@ _updateOutilsPatientBtns();
     st.textContent = CR_LETTRE_CSS;
     document.head.appendChild(st);
   })();
+
+  /* Les lignes de courrier des tests cliniques SAISIS A LA MAIN. Une seule
+     fonction pour les deux constructeurs — medecin et patient : ecrite deux
+     fois, elle aurait derive, et le document lu n'aurait plus ete celui qu'on
+     croit corriger. C'est le piege le plus frequent de ce domaine.
+
+     LE REGROUPEMENT DES NEGATIFS PROTEGE LE SIGNAL, il ne gagne pas de la
+     place. Sans aucun positif il n'y a rien a proteger : chaque test reprend
+     sa ligne. Une section entiere reduite a une phrase de trois noms
+     enchaines se lisait comme une coquille, alors que le praticien les a
+     coches un par un. */
+  function _crLignesTestsManuels(positifs, negatifs) {
+    positifs = positifs || []; negatifs = negatifs || [];
+    if (!positifs.length && !negatifs.length) return [];
+    function ligne(label, statut, niveau) {
+      return { t: 'test', label: label, valeur: '', cellules: [], note: '',
+               nuance: '', statut: statut, niveau: niveau };
+    }
+    var out = [{ t: 'sec', txt: 'Tests cliniques' }];
+    positifs.forEach(function (x) { out.push(ligne(x, 'Positif', 'bad')); });
+    if (positifs.length) {
+      if (negatifs.length) out.push(ligne(negatifs.join(', '), 'Négatif', 'ok'));
+    } else {
+      negatifs.forEach(function (x) { out.push(ligne(x, 'Négatif', 'ok')); });
+    }
+    out.push('');
+    return out;
+  }
 
   function _crEstBloc(x) { return x && typeof x === 'object' && x.t; }
 
@@ -7823,26 +7862,8 @@ _updateOutilsPatientBtns();
       if (crTests[t.key] === 1) positifTests.push(t.label);
       else if (crTests[t.key] === 2) negatifTests.push(t.label);
     });
-    if (positifTests.length || negatifTests.length) {
-      /* MEME MISE EN PAGE que l'examen orthopedique : une barre de section, un
-         tableau, des pastilles de verdict. Ces tests SONT des tests — les
-         rendre en liste a puces avec des pictogrammes donnait deux grammaires
-         dans un seul courrier, la ou la donnee est de meme nature.
-
-         Et la meme regle de bruit : chaque positif garde sa ligne, les negatifs
-         tiennent sur une seule. Les enumerer un par un rendrait au signe
-         exactement le bruit qu'on vient de lui oter. */
-      lines.push({ t: 'sec', txt: 'Tests cliniques' });
-      positifTests.forEach(function (t) {
-        lines.push({ t: 'test', label: t, valeur: '', cellules: [], note: '',
-                     nuance: '', statut: 'Positif', niveau: 'bad' });
-      });
-      if (negatifTests.length) {
-        lines.push({ t: 'test', label: negatifTests.join(', '), valeur: '',
-                     cellules: [], note: '', nuance: '', statut: 'Négatif', niveau: 'ok' });
-      }
-      lines.push('');
-    }
+    _crLignesTestsManuels(positifTests, negatifTests)
+      .forEach(function (b) { lines.push(b); });
 
     // 9. Évolution
     if (commentaire) { lines.push({ t: 'concl', txt: commentaire }); lines.push(''); }
@@ -8000,26 +8021,8 @@ _updateOutilsPatientBtns();
       if (crTests[t.key] === 1) positifTestsD.push(t.label);
       else if (crTests[t.key] === 2) negatifTestsD.push(t.label);
     });
-    if (positifTestsD.length || negatifTestsD.length) {
-      /* MEME MISE EN PAGE que l'examen orthopedique : une barre de section, un
-         tableau, des pastilles de verdict. Ces tests SONT des tests — les
-         rendre en liste a puces avec des pictogrammes donnait deux grammaires
-         dans un seul courrier, la ou la donnee est de meme nature.
-
-         Et la meme regle de bruit : chaque positif garde sa ligne, les negatifs
-         tiennent sur une seule. Les enumerer un par un rendrait au signe
-         exactement le bruit qu'on vient de lui oter. */
-      lines.push({ t: 'sec', txt: 'Tests cliniques' });
-      positifTestsD.forEach(function (t) {
-        lines.push({ t: 'test', label: t, valeur: '', cellules: [], note: '',
-                     nuance: '', statut: 'Positif', niveau: 'bad' });
-      });
-      if (negatifTestsD.length) {
-        lines.push({ t: 'test', label: negatifTestsD.join(', '), valeur: '',
-                     cellules: [], note: '', nuance: '', statut: 'Négatif', niveau: 'ok' });
-      }
-      lines.push('');
-    }
+    _crLignesTestsManuels(positifTestsD, negatifTestsD)
+      .forEach(function (b) { lines.push(b); });
 
     // SLS (toutes pathologies)
     _crAppendTestsFonc(lines);

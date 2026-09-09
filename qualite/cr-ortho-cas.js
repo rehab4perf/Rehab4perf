@@ -176,6 +176,20 @@ console.log('\nLe courrier emprunte le tableau des autres tests');
        'Tiroir postérieur, Pivot shift', typ('test')[1].label);
   egal('… sous leur propre verdict', 'Négatif', typ('test')[1].statut);
 
+  /* … MAIS ce regroupement protege le SIGNAL. Un bloc sans aucun anormal n'a
+     rien a proteger : les tests que le praticien y a retenus reprennent chacun
+     leur ligne. Groupes, ils formaient une phrase de noms enchaines qui se
+     lisait comme une coquille. */
+  var calme = banc([
+    t('a', 'Varus 0°',  'Négatif', 'ok', 'Genou', 'Ligaments latéraux'),
+    t('b', 'Valgus 0°', 'Négatif', 'ok', 'Genou', 'Ligaments latéraux'),
+    t('c', 'Varus 30°', 'Négatif', 'ok', 'Genou', 'Ligaments latéraux')
+  ], { a: true, b: true, c: true });
+  var lc = calme.lignes.filter(function (l) { return l && l.t === 'test'; });
+  egal('sans signal, chaque test garde sa ligne', 3, lc.length);
+  egal('… nommés un par un', 'Varus 0°|Valgus 0°|Varus 30°',
+       lc.map(function (x) { return x.label; }).join('|'));
+
   /* La REGION ouvre la section — une barre bleue par membre, comme pour les
      tests fonctionnels. Le titre ne redit plus « Bilan Orthopedique ». */
   egal('une seule section, nommée par la région', 1, typ('sec').length);
@@ -385,28 +399,48 @@ console.log('\nLes tests cliniques à la main sortent comme les autres');
 {
   /* Ils sortaient en liste a puces avec des pictogrammes ❌ / ✓, en deux
      colonnes, juste sous des tableaux a pastilles. Deux grammaires dans un
-     seul courrier, pour une donnee de meme nature. */
-  ['positifTests', 'positifTestsD'].forEach(function (nom) {
-    var d = html.indexOf('if (' + nom + '.length');
-    var corps = d > 0 ? html.slice(d, d + 1400) : '';
-    ok(nom + ' : une section, pas un titre de liste',
-       /t: 'sec', txt: 'Tests cliniques'/.test(corps), corps.slice(0, 160));
-    ok(nom + ' : des lignes de tableau', /t: 'test'/.test(corps));
-    ok(nom + ' : plus de liste à puces', !/t: 'liste'/.test(corps));
-    ok(nom + ' : plus de pictogramme dans le texte', corps.indexOf('❌') < 0 && corps.indexOf('✓') < 0);
-    /* Meme regle de bruit que l'examen orthopedique : chaque positif garde sa
-       ligne, les negatifs tiennent sur une seule. */
-    ok(nom + ' : les négatifs tiennent sur une ligne',
-       /negatifTests[D]?\.join\(', '\)/.test(corps), corps.slice(0, 400));
-    ok(nom + ' : le verdict voyage pour la pastille',
-       /statut: 'Positif', niveau: 'bad'/.test(corps)
-       && /statut: 'Négatif', niveau: 'ok'/.test(corps));
-  });
-  /* Les DEUX constructeurs de courrier — medecin et patient — doivent le
-     faire : une regle ecrite d'un seul cote ne se voit pas la ou le document
-     est lu. Le piege qui revient le plus souvent dans ce domaine. */
-  egal('les deux constructeurs rendent la même chose', 2,
-       html.split("t: 'sec', txt: 'Tests cliniques'").length - 1);
+     seul courrier, pour une donnee de meme nature.
+
+     La decision est EXECUTEE, pas relue : le premier controle se contentait de
+     reconnaitre la forme du code, si bien qu'une condition remplacee par
+     `true` le laissait vert avec sa branche morte en place. */
+  var dM = html.indexOf('function _crLignesTestsManuels');
+  var fM = html.indexOf('\n  function ', dM + 10);
+  if (dM < 0 || fM < 0) { console.error('_crLignesTestsManuels introuvable'); process.exit(1); }
+  var manuels = new Function(html.slice(dM, fM)
+                             + '; return _crLignesTestsManuels;')();
+
+  var r = manuels(['Lachman'], ['Tiroir', 'Pivot']);
+  egal('une section, pas un titre de liste', 'sec', r[0].t);
+  egal('… nommée', 'Tests cliniques', r[0].txt);
+  egal('des lignes de tableau', 'test', r[1].t);
+  egal('le positif garde sa ligne', 'Lachman', r[1].label);
+  egal('… avec son niveau, pour la pastille', 'bad', r[1].niveau);
+  /* La colonne OBSERVATION reste vide : ces tests n'en portent pas. Y recopier
+     le nom donnerait un tableau qui se redit lui-meme. */
+  egal('la colonne observation reste vide', '', r[1].valeur);
+  /* Le regroupement des negatifs protege le SIGNAL. */
+  egal('avec un positif, les négatifs tiennent sur une ligne', 'Tiroir, Pivot', r[2].label);
+  egal('… sous leur propre verdict', 'Négatif', r[2].statut);
+
+  /* SANS aucun positif, il n'y a rien a proteger : chaque test reprend sa
+     ligne. Trois noms enchaines dans une section entiere se lisaient comme
+     une coquille, alors que le praticien les a coches un par un. */
+  var c = manuels([], ['Appréhension ant.', 'Relocation', 'Appréhension post.']).filter(
+            function (x) { return x && x.t === 'test'; });
+  egal('sans positif, chaque négatif garde sa ligne', 3, c.length);
+  egal('… nommés un par un', 'Appréhension ant.|Relocation|Appréhension post.',
+       c.map(function (x) { return x.label; }).join('|'));
+
+  egal('rien de coché, rien d\'écrit', 0, manuels([], []).length);
+
+  /* UNE SEULE fonction pour les DEUX constructeurs — medecin et patient.
+     Ecrite deux fois, elle aurait derive, et le document lu n'aurait plus ete
+     celui qu'on croit corriger : le piege le plus frequent de ce domaine. */
+  egal('les deux constructeurs passent par elle', 2,
+       html.split('_crLignesTestsManuels(positifTests').length - 1);
+  ok('plus aucune liste à puces pour ces tests',
+     html.indexOf("t: 'liste', titre: 'Tests cliniques'") < 0);
 }
 
 /* ── 5. Le lot ───────────────────────────────────────────────────────────── */
