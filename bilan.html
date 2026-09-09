@@ -1776,6 +1776,13 @@ textarea.mob-note-inp {
   pointer-events: none;
 }
 .toast.show { transform: translateY(0); opacity: 1; }
+/* Une barre ordinaire est `pointer-events:none` : un bouton posé dedans serait
+   INCLIQUABLE. Seule la variante porteuse d'une action reprend ses clics. */
+.toast--action { pointer-events: auto; display: flex; align-items: center; gap: 14px; }
+.toast-annuler { font-family: inherit; font-size: .82rem; font-weight: 700; color: #fff;
+  background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.42);
+  border-radius: 6px; padding: 4px 11px; cursor: pointer; }
+.toast-annuler:hover { background: rgba(255,255,255,.3); }
 
 /* ── Progress bar ────────────────────────────────────────── */
 .progress-bar {
@@ -6234,7 +6241,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260906a"></script>
-<script src="js/bilan.js?v=20260909b"></script>
+<script src="js/bilan.js?v=20260909c"></script>
 
 </body>
 </html>

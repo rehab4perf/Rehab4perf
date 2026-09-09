@@ -179,6 +179,49 @@ ok('elle disparaît en mode lecture',
   ok(c + ' est défini par sa propre règle', re.test(html));
 });
 
+/* ── Le menu REMPLACE, le bouton principal COMPLETE ───────────────────────── */
+console.log('\nLe menu remplace, le bouton principal complète');
+
+var dV = src.indexOf('function _blViteClic');
+var corpsV = dV > 0 ? src.slice(dV, src.indexOf('\nvar _blViteDernier', dV)) : '';
+/* Un bloc entierement negatif qu'on veut passer en positif ne doit pas avoir a
+   etre vide d'abord — c'etait deux gestes pour un seul choix. */
+ok('le geste du menu écrase les valeurs en place',
+   /remplacer\s*=\s*!btn\.classList\.contains\('primaire'\)/.test(corpsV),
+   corpsV.slice(0, 200));
+ok('… et le bouton principal, lui, ne les touche pas',
+   /_blAppliquerBloc\(bloc, val, remplacer\)/.test(corpsV));
+
+/* La valeur anodine vit AUSSI dans le menu : sans elle, un bloc a moitie saisi
+   ne pourrait jamais etre entierement repasse en negatif. */
+var corpsPose = src.slice(iDef, src.indexOf('\n}', iDef));
+ok('le menu liste toutes les valeurs du bloc, l\'anodine comprise',
+   !/vals\.filter\(function\(v\)\{ return v !== ras/.test(corpsPose));
+
+/* ── L'annulation doit être ATTEIGNABLE ──────────────────────────────────── */
+console.log('\nL\'annulation est raccordée');
+/* Elle a existe une version sans appelant : la fonction etait ecrite, testee,
+   et JAMAIS jouable. C'est elle qui autorise le menu a ecraser des saisies —
+   sans elle, le remplacement serait un geste sans retour. */
+var iAnn = src.indexOf('function _blViteAnnuler');
+var appels = src.split('_blViteAnnuler(').length - 1;
+ok('un appelant, pas seulement la définition', iAnn > 0 && appels >= 2,
+   appels + ' occurrence(s) de _blViteAnnuler(');
+ok('… porté par le message de confirmation',
+   /_blViteToast/.test(corpsV) && /toast-annuler/.test(src));
+/* Une barre de message ordinaire est `pointer-events:none` : le bouton y serait
+   INCLIQUABLE. La variante porteuse d'action doit reprendre ses clics. */
+var html1 = html.replace(/\n/g, ' ');
+ok('la barre porteuse d\'action redevient cliquable',
+   /\.toast--action[^{]*\{[^}]*pointer-events:\s*auto/.test(html1));
+ok('.toast-annuler est défini par sa propre règle',
+   /(^|[\n;}])\s*\.toast-annuler\s*\{/.test(html));
+/* Et le message SUIVANT doit retirer ce bouton : laisse en place, il annulerait
+   un geste qui n'est plus celui qu'annonce le message. */
+var dS = src.indexOf('function showToast');
+ok('un message ordinaire rend la barre inerte',
+   dS > 0 && /toast--action/.test(src.slice(dS, dS + 320)));
+
 /* Une reconstruction de disposition rebatit des lignes et en masque d'autres :
    sans ce second passage, un bloc neuf reste sans commande et un bloc ampute
    annonce un compte faux. */

@@ -1907,7 +1907,10 @@ function _blPoserCommandes(){
       + (ras ? '<button type="button" class="bl-vite-btn primaire" data-val="' + _blEsc(ras) + '"></button>' : '')
       + '<button type="button" class="bl-vite-btn bl-vite-plus" title="Autres valeurs">⋯</button>'
       + '<span class="bl-vite-pan">'
-      + vals.filter(function(v){ return v !== ras; }).map(function(v){
+      /* TOUTES les valeurs, la valeur anodine comprise : le menu REMPLACE, le
+         bouton principal COMPLETE. Un bloc entierement negatif qu'on veut
+         passer en positif n'a donc plus a etre vide d'abord. */
+      + vals.map(function(v){
           return '<button type="button" data-val="' + _blEsc(v) + '">Tout ' + _blEsc(v.toLowerCase()) + '</button>';
         }).join('')
       + '<span class="bl-vite-sep"></span>'
@@ -1946,15 +1949,37 @@ function _blViteClic(e){
   }
   w.classList.remove('ouvert');
   var val = btn.dataset.vider ? '' : btn.dataset.val;
-  var r = _blAppliquerBloc(bloc, val, !!btn.dataset.vider);
+  /* Le bouton principal est le geste RAPIDE : il ne touche pas aux lignes deja
+     saisies. Le menu est un geste DELIBERE — on l'a ouvert pour choisir — et il
+     remplace, annulation offerte dans la foulee. */
+  var remplacer = !btn.classList.contains('primaire');
+  var r = _blAppliquerBloc(bloc, val, remplacer);
   _blMajCompteur(bloc);
-  if(!r.touchees){ showToast('Rien à compléter dans ce bloc'); return; }
+  if(!r.touchees){ showToast('Rien à changer dans ce bloc'); return; }
   _blViteDernier = { bloc: bloc, avant: r.avant, val: val };
-  showToast(r.touchees + ' ligne' + (r.touchees > 1 ? 's' : '')
-            + (btn.dataset.vider ? ' vidée' + (r.touchees > 1 ? 's' : '')
-                                 : ' renseignée' + (r.touchees > 1 ? 's' : '') + ' — ' + val));
+  var n = r.touchees, pl = n > 1 ? 's' : '';
+  _blViteToast(n + ' ligne' + pl + (btn.dataset.vider ? ' vidée' + pl
+                : (remplacer ? ' — ' : ' renseignée' + pl + ' — ') + val));
 }
-var _blViteDernier = null;
+var _blViteDernier = null, _blViteToastT = null;
+
+/* Le message porte l'annulation. Sans elle, le remplacement du menu serait un
+   geste sans retour : c'est ce qui autorise le menu a ecraser des saisies. */
+function _blViteToast(msg){
+  var t = document.getElementById('toast'); if(!t) return;
+  t.innerHTML = '';
+  var txt = document.createElement('span'); txt.textContent = msg; t.appendChild(txt);
+  var b = document.createElement('button');
+  b.type = 'button'; b.className = 'toast-annuler'; b.textContent = 'Annuler';
+  b.addEventListener('click', function(){
+    if(_blViteAnnuler()) t.classList.remove('show', 'toast--action');
+  });
+  t.appendChild(b);
+  t.classList.add('show', 'toast--action');
+  clearTimeout(_blViteToastT);
+  /* Plus long qu'un message ordinaire : il y a quelque chose a y faire. */
+  _blViteToastT = setTimeout(function(){ t.classList.remove('show', 'toast--action'); }, 7000);
+}
 
 /* Annuler rend l'etat EXACT d'avant, ligne par ligne — pas « tout vider ». */
 function _blViteAnnuler(){
@@ -10027,7 +10052,8 @@ function _bilanConfirmCancel() {
 // -- TOAST ------------------------------------------------------
 function showToast(msg) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
+  t.textContent = msg;                       // efface aussi un bouton d'annulation
+  t.classList.remove('toast--action');       // …et lui retire ses clics
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 3000);
 }
