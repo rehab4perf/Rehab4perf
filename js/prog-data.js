@@ -5140,7 +5140,7 @@ function _buildUaTrendSection(){
   return '<div class="pevo-select-section">'
     +'<div class="pevo-select-title" style="color:#4A90D9">⚡ Charge globale — UA (RPE × durée)</div>'
     +'</div>'
-    +'<div class="pevo-charts"><div class="pevo-card">'
+    +'<div class="pevo-charts pevo-charts--large"><div class="pevo-card">'
     +'<div class="pevo-card-header"><span class="pevo-card-title">'+title+'</span>'
     +'<div class="pevo-card-kpis">'+kpiHtml+'</div></div>'
     +toggle
@@ -5290,7 +5290,7 @@ function _renderPevoCharts(exoData, selectedKeys) {
       +'</div>'
       +'<div>'+dureePillsHtml+'</div>'
       +'</div>'
-      +(dureeChartsHtml ? '<div class="pevo-charts">'+dureeChartsHtml+'</div>' : '');
+      +(dureeChartsHtml ? '<div class="pevo-charts"' + (_pevoUneSeule(dureeChartsHtml) ? ' pevo-charts--large' : '') + '>'+dureeChartsHtml+'</div>' : '');
   }
 
   // ── Section cardio ─────────────────────────────────────────────────────
@@ -5388,7 +5388,7 @@ function _renderPevoCharts(exoData, selectedKeys) {
       +'</div>'
       +'<div>'+cardioPillsHtml+'</div>'
       +'</div>'
-      +(cardioChartsHtml ? '<div class="pevo-charts">'+cardioChartsHtml+'</div>' : '');
+      +(cardioChartsHtml ? '<div class="pevo-charts"' + (_pevoUneSeule(cardioChartsHtml) ? ' pevo-charts--large' : '') + '>'+cardioChartsHtml+'</div>' : '');
   }
 
   var rmSection = '';
@@ -5403,7 +5403,7 @@ function _renderPevoCharts(exoData, selectedKeys) {
          est de CHOISIR, pas de retrancher d'un tout. */
       +'<div id="pevoPills">'+_pevoSelecteurHtml(exoData, selectedKeys, _pevoZoneIndex())+'</div>'
       +'</div>'
-      +(chartsHtml ? '<div class="pevo-charts" id="pevoChartsGrid">'+chartsHtml+'</div>'
+      +(chartsHtml ? '<div class="pevo-charts' + (_pevoUneSeule(chartsHtml) ? ' pevo-charts--large' : '') + '" id="pevoChartsGrid">'+chartsHtml+'</div>'
                    : '<div class="pevo-empty">Cochez un exercice ci-dessus pour afficher sa courbe.</div>');
   }
 
@@ -5422,7 +5422,7 @@ function _renderPevoCharts(exoData, selectedKeys) {
       capPainSectionHtml = '<div class="pevo-select-section">'
         + '<div class="pevo-select-title" style="color:#0d9488">🏃 CAP — Douleur à l\'effort</div>'
         + '</div>'
-        + '<div class="pevo-charts"><div class="pevo-card">'
+        + '<div class="pevo-charts pevo-charts--large"><div class="pevo-card">'
         + '<div class="pevo-card-header">'
         + '<span class="pevo-card-title">Douleur EVA (0–10)</span>'
         + '<div class="pevo-card-kpis">'
@@ -5441,7 +5441,13 @@ function _renderPevoCharts(exoData, selectedKeys) {
   /* Le volume par sport ouvre le panneau : c'est la reponse a « combien cette
      semaine ? », et elle se lit avant les courbes qui la detaillent. */
   var volSectionHtml = '';
-  try { volSectionHtml = _volHtml(_volumeParSport(12)); } catch(ex){}
+  try {
+    var _vn = _volFenetreSemaines();
+    /* On agrege DEUX fenetres d'affilee : la seconde moitie est la periode
+       choisie, la premiere sert de reference a l'ecart. Comparer une periode
+       de trois mois a la seule semaine precedente n'aurait aucun sens. */
+    volSectionHtml = _volHtml(_volumeParSport(_vn * 2), _vn);
+  } catch(ex){}
   var parts = [volSectionHtml, uaSectionHtml, rmSection, dureeSectionHtml, cardioSectionHtml, capPainSectionHtml].filter(function(s){ return !!s; });
   body.innerHTML = _renderPevoFilterBar() + parts.join(sep);
   _attachPevoEvents();
@@ -5491,31 +5497,49 @@ function _volBarres(vals, coul){
   return '<svg class="vol-spark" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true">'+out+'</svg>';
 }
 
-function _volCadre(corps){
+function _volCadre(corps, fen){
   return '<div class="vol-bloc no-print">'
-    + '<div class="vol-titre">Volume d\'entraînement <span>12 dernières semaines · Strava</span></div>'
+    + '<div class="vol-titre">Volume d\'entraînement <span>'
+    + (typeof _volLibelleFenetre === 'function' ? _volLibelleFenetre(fen || 12) : '')
+    + ' · Strava</span></div>'
     + corps + '</div>';
 }
 
-function _volHtml(_volDonnees){
+function _volHtml(_volDonnees, fenetre){
   if(!_volDonnees || !_volDonnees.semaines || !_volDonnees.semaines.length) return '';
-  var sems = _volDonnees.semaines, defs = _volDonnees.sports || [];
-  var der = sems[sems.length-1], av = sems[sems.length-2] || { sports:{} };
   var vide = { dist:0, duree:0, charge:0, n:0 };
+  var defs = _volDonnees.sports || [];
+  var toutes = _volDonnees.semaines;
+  var n = fenetre || Math.ceil(toutes.length / 2);
+  /* La seconde moitie est la periode CHOISIE, la premiere sa reference. */
+  var sems = toutes.slice(-n), avant = toutes.slice(0, toutes.length - n);
+
+  function cumul(liste, cle){
+    var t = { dist:0, duree:0, charge:0, n:0 };
+    liste.forEach(function(sm){
+      var c = sm.sports[cle] || vide;
+      t.dist += c.dist; t.duree += c.duree; t.charge += c.charge; t.n += c.n;
+    });
+    return t;
+  }
+  var der = { sports:{} }, av = { sports:{} };
+  defs.forEach(function(sp){
+    der.sports[sp.cle] = cumul(sems, sp.cle);
+    av.sports[sp.cle]  = cumul(avant, sp.cle);
+  });
 
   var chargeTot = 0;
-  defs.forEach(function(sp){ chargeTot += (der.sports[sp.cle] || vide).charge; });
-  var actifs = defs.filter(function(sp){
-    return sems.some(function(sm){ return (sm.sports[sp.cle] || vide).n > 0; });
-  });
+  defs.forEach(function(sp){ chargeTot += der.sports[sp.cle].charge; });
+  var actifs = defs.filter(function(sp){ return der.sports[sp.cle].n > 0
+                                             || sems.some(function(sm){ return (sm.sports[sp.cle] || vide).n > 0; }); });
   /* MASQUER EST INDISCERNABLE D'UNE PANNE. Sans activite, un bloc absent
      laissait le praticien sans moyen de savoir si la fonction avait disparu, si
      le patient n'etait pas relie a Strava, ou s'il n'avait simplement pas
      couru. Le bloc reste et dit laquelle des trois. */
   if(!actifs.length){
-    return _volCadre('<div class="vol-rien">Aucune activité Strava sur les 12 dernières semaines.'
+    return _volCadre('<div class="vol-rien">Aucune activité Strava sur la période choisie.'
       + '<br><span>Si le patient s\'entraîne, vérifiez que son compte Strava est bien relié '
-      + 'dans l\'onglet Programme.</span></div>');
+      + 'dans l\'onglet Programme.</span></div>', n);
   }
 
   /* ── Vue 1 : la semaine en chiffres ───────────────────────────── */
@@ -5540,7 +5564,7 @@ function _volHtml(_volDonnees){
   tuiles += '<div class="vol-tuile"><div class="vol-t-lbl">Charge totale</div>'
     + '<div class="vol-t-val">'+Math.round(chargeTot)+'<span class="vol-t-u">UA</span></div>'
     + '<div class="vol-t-sub">'+actifs.reduce(function(a,sp){ return a + (der.sports[sp.cle]||vide).n; }, 0)
-    + ' séances cette semaine</div></div>';
+    + ' séances sur la période</div></div>';
 
   /* ── Vue 2 : la repartition, en CHARGE ────────────────────────────
      Pas en kilometres : une heure de natation et dix kilometres de course ne
@@ -5573,7 +5597,7 @@ function _volHtml(_volDonnees){
   /* La vue TABLEAU n'est pas un supplement : la couleur ne doit jamais porter
      seule une information, et un lecteur qui ne la distingue pas garde ici de
      quoi lire les memes chiffres. */
-  var tbl = '<tr><th>Sport</th><th class="n">Cette semaine</th><th class="n">Charge</th><th class="n">Séances</th></tr>'
+  var tbl = '<tr><th>Sport</th><th class="n">Sur la période</th><th class="n">Charge</th><th class="n">Séances</th></tr>'
     + actifs.map(function(sp){
         var c = der.sports[sp.cle] || vide;
         return '<tr><td><span class="vol-pt" style="background:'+sp.couleur+'"></span> '+escH(sp.nom)+'</td>'
@@ -5581,13 +5605,12 @@ function _volHtml(_volDonnees){
           + '<td class="n">'+Math.round(c.charge)+' UA</td><td class="n">'+c.n+'</td></tr>';
       }).join('');
 
-  return '<div class="vol-bloc no-print">'
-    + '<div class="vol-titre">Volume d\'entraînement <span>12 dernières semaines · Strava</span></div>'
-    + '<div class="vol-tuiles">'+tuiles+'</div>'
+  return _volCadre(
+      '<div class="vol-tuiles">'+tuiles+'</div>'
     + (rep ? '<div class="vol-rep">'+rep+'</div><div class="vol-leg">'+leg+'</div>' : '')
     + '<div class="vol-cadres">'+cadres+'</div>'
     + '<details class="vol-tbl"><summary>Voir les mêmes chiffres en tableau</summary>'
-    + '<table>'+tbl+'</table></details></div>';
+    + '<table>'+tbl+'</table></details>', n);
 }
 
 
@@ -5602,6 +5625,16 @@ function _volHtml(_volDonnees){
    Les ZONES viennent de `LIBRARY`, ou `_loadSupaLibrary` fusionne la
    bibliotheque du praticien. Un exercice cree a la main peut n'en avoir
    aucune : voir la regle de repli dans `_pevoGrouper`. */
+/* Une section qui ne porte QU'UNE carte s'etale sur toute la largeur. La
+   grille du panneau est a deux colonnes : un graphique seul — la charge
+   globale en UA, notamment — n'en occupait que la moitie, et ses points s'y
+   tassaient au point d'etre illisibles. Compter les cartes plutot que d'ecrire
+   la classe a la main : une section qui en gagne une demain se remet d'office
+   sur deux colonnes. */
+function _pevoUneSeule(html){
+  return (String(html || '').match(/class="pevo-card"/g) || []).length === 1;
+}
+
 function _pevoZoneIndex(){
   var idx = {};
   (typeof LIBRARY !== 'undefined' ? LIBRARY : []).forEach(function(e){

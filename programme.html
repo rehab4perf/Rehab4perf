@@ -2598,6 +2598,13 @@ html,body { height:100%; overflow:hidden; background:var(--bg); font-family:'Fig
 .pevo-selall-btn { font-size:var(--fs-xs); padding:3px 10px; border:1px solid var(--border2); border-radius:6px; background:#fff; color:var(--text2); cursor:pointer; }
 .pevo-selall-btn:hover { background:var(--surface2); color:var(--navy); }
 .pevo-charts { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+/* Une section qui ne porte QU'UNE carte s'étale : la grille à deux colonnes
+   laissait un graphique seul — la charge globale en UA, notamment — sur la
+   moitié de la largeur, ses points tassés au point d'être illisibles. */
+.pevo-charts--large { grid-template-columns:1fr; }
+/* Et le graphique gagne en hauteur à mesure qu'il gagne en largeur : un tracé
+   deux fois plus large mais aussi plat écrase ses variations. */
+.pevo-charts--large .pevo-card svg { min-height:190px; }
 @media(max-width:600px){ .pevo-charts { grid-template-columns:1fr; } }
 .pevo-card { background:#fff; border:1px solid var(--border); border-radius:10px; padding:14px 16px 10px; }
 .pevo-card-header { display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
@@ -3561,7 +3568,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
   </div><!-- /tool-panel-drawer -->
 </div><!-- /tool-panel-overlay -->
 
-<script src="js/prog-data.js?v=20260908h"></script>
+<script src="js/prog-data.js?v=20260909a"></script>
 
 <!-- ══ CYCLES MODAL ════════════════════════════════════════════ -->
 <style>
@@ -4729,6 +4736,6 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 </div>
 
-<script src="js/prog-main.js?v=20260908h"></script>
+<script src="js/prog-main.js?v=20260909a"></script>
 </body>
 </html>

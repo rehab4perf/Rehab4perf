@@ -121,4 +121,58 @@ verifie('un test non touché reste hors du delta', false, 'hop-ca' in delta2);
 
 console.log('\n' + '─'.repeat(64));
 if (echecs) { console.log('✗ ' + echecs + ' attente(s) en échec'); process.exit(1); }
-console.log('✓ 10 attentes vérifiées');
+/* ── La valeur du bilan précédent ─────────────────────────────────────────
+   Un champ non retesté est VIDE dans le formulaire : sa valeur héritée y est
+   un placeholder gris italique, pas une valeur. Le Suivi rapide le recopiait
+   donc vide, sans rien dire — le praticien ne savait pas où il en était.
+
+   EN MODE LECTURE c'est autre chose : on ne saisit pas, on CONSULTE. La valeur
+   du dernier bilan s'y affiche en encre pleine — un gris italique y désignerait
+   une ombre alors que c'est la mesure qu'on lit. */
+
+console.log('\n  La valeur antérieure se lit comme dans le bilan');
+
+var dRF = src.indexOf('function _renderField(f){');
+if (dRF < 0) { console.log('  ✗ `_renderField` introuvable'); process.exit(1); }
+/*  : sans lui la tranche s'arrete AVANT l'accolade fermante et la
+   fonction se construit incomplete — le banc levait une SyntaxError au lieu de
+   mesurer quoi que ce soit. */
+var champ = src.slice(dRF, src.indexOf('\n  }', dRF) + 4);
+
+function rendre(valeurDom, anterieure, lecture) {
+  return new Function('f', '_srPrec', '_srLecture', '_suiviRapideInitial', '_esc2', 'document',
+    champ + '\nreturn _renderField(f);')(
+    { id: 'hop-ca', label: 'Hop', unit: 'cm', type: 'number' },
+    anterieure === null ? {} : { 'hop-ca': anterieure },
+    !!lecture, {},
+    function (x) { return String(x == null ? '' : x); },
+    { getElementById: function () { return { value: valeurDom }; } });
+}
+
+var neuf = rendre('', 142, false);
+verifie('un champ vide porte l\'antérieure en ombre', true, /placeholder="142"/.test(neuf));
+verifie('… et jamais comme valeur', true, !/value="142"/.test(neuf));
+verifie('… avec la marque grise et italique', true, /suivi-rapide-input--herite/.test(neuf));
+
+var rempli = rendre('150', 142, false);
+verifie('un champ rempli garde SA valeur', true, /value="150"/.test(rempli));
+/* Une ombre par-dessus une mesure du jour se lirait comme une seconde valeur. */
+verifie('… sans ombre par-dessus', true, !/suivi-rapide-input--herite/.test(rempli));
+
+var lecture = rendre('', 142, true);
+verifie('en lecture, l\'antérieure devient la valeur', true, /value="142"/.test(lecture));
+verifie('… en encre pleine, sans marque', true, !/suivi-rapide-input--herite/.test(lecture));
+
+var sansPrec = rendre('', null, false);
+verifie('sans antérieure, rien ne change', true, !/suivi-rapide-input--herite/.test(sansPrec));
+
+/* La marque doit exister dans la feuille, sinon elle ne se voit pas. */
+verifie('la feuille porte la marque', true, /\.suivi-rapide-input--herite::placeholder[^{]*\{[^}]*font-style:\s*italic/.test(html),
+   'regle absente de bilan.html');
+
+/* Le verdict CLOT le fichier et compte les echecs. Un premier jet l'avait
+   laisse AVANT les derniers cas : ils rougissaient a l'ecran pendant que le
+   fichier sortait 0, c'est-a-dire vert pour tout ce qui l'appelle. */
+console.log('');
+if (echecs) { console.error(echecs + ' attente(s) en echec'); process.exit(1); }
+console.log('✓ toutes les attentes sont vérifiées');

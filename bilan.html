@@ -2050,6 +2050,13 @@ textarea.bl-inherited-ghost::placeholder {
   color:var(--text3); opacity:1; font-style:italic;
 }
 select.bl-inherited-ghost { color:var(--text3); font-style:italic; }
+/* Même marque dans le Suivi rapide : une valeur héritée s'y lit comme dans le
+   bilan — gris italique, jamais en encre pleine. Elle vit dans le placeholder,
+   donc rien n'est enregistré tant qu'on n'a pas frappé.
+
+   En mode lecture il n'y a PAS d'ombre : la valeur du dernier bilan y est la
+   mesure qu'on consulte, et s'écrit en encre pleine. */
+.suivi-rapide-input--herite::placeholder { color:var(--text3); font-style:italic; opacity:1; }
 input.bl-inherited-ghost:not([type=checkbox]):not([type=radio]),
 textarea.bl-inherited-ghost, select.bl-inherited-ghost {
   background:var(--surface2);
@@ -6190,7 +6197,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260906a"></script>
-<script src="js/bilan.js?v=20260908h"></script>
+<script src="js/bilan.js?v=20260909a"></script>
 
 </body>
 </html>

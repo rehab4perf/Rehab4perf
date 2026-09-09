@@ -282,7 +282,40 @@ console.log('\nLe volume vit où vivent ses données');
    revenir. */
 ok('plus aucun message de transport', !/r4p-volume/.test(shell + pdata + bilan));
 ok('le bilan ne connaît plus le volume', !/_vol[A-Z]|vol-hote/.test(bilan));
-ok('le programme le rend directement', /_volHtml\(_volumeParSport\(12\)\)/.test(pdata));
+ok('le programme le rend directement', /_volHtml\(_volumeParSport\(_vn \* 2\), _vn\)/.test(pdata));
+
+/* ── La fenêtre suit le sélecteur de temporalité ───────────────────────────
+   La répartition portait sur la DERNIÈRE SEMAINE seule, sans que rien ne le
+   dise : deux chiffres du même écran parlaient de deux périodes différentes.
+   Elle suit désormais « 1 mois », « 3 mois »… et l'écart se mesure contre la
+   période PRÉCÉDENTE de même longueur — comparer trois mois à la seule semaine
+   d'avant n'aurait aucun sens. */
+var dF = pmain.indexOf('function _volFenetreSemaines(');
+ok('la fenêtre se calcule depuis le filtre', dF > 0);
+var codeF = pmain.slice(dF, pmain.indexOf('function _volumeParSport(', dF));
+function fenetre(jours, de, a) {
+  return new Function('_pevoFilterDays', '_pevoFilterFrom', '_pevoFilterTo',
+    codeF + '\nreturn { n:_volFenetreSemaines(), lbl:_volLibelleFenetre };')(
+    jours, de || '', a || '');
+}
+egal('1 mois → 5 semaines', 5, fenetre(30).n);
+egal('3 mois → 13 semaines', 13, fenetre(90).n);
+egal('1 an → 53 semaines', 53, fenetre(365).n);
+/* « Tout » est borne : au-dela, les barres hebdomadaires cessent d'etre
+   lisibles. Le libelle dit la fenetre REELLE — un « tout » sur une fenetre
+   bornee serait un mensonge. */
+egal('« Tout » est borné à un an', 52, fenetre(null).n);
+egal('une plage personnalisée est mesurée', 9,
+     fenetre(null, '2026-01-01', '2026-03-01').n);
+egal('… et bornée à deux ans', 104, fenetre(null, '2000-01-01', '2026-01-01').n);
+
+var lbl = fenetre(null).lbl;
+egal('le libellé dit la fenêtre, pas « 12 semaines »', '1 dernière année', lbl(52));
+egal('… en mois quand c\'est rond', '3 derniers mois', lbl(12));
+egal('… en semaines sinon', '5 dernières semaines', lbl(5));
+ok('plus aucun libellé ne dit « cette semaine »',
+   !/cette semaine|Cette semaine|12 dernières semaines/.test(pdata),
+   (pdata.match(/cette semaine|12 dernières semaines/gi) || []).join(' | '));
 ok('… en tête du panneau des charges',
    /var parts = \[volSectionHtml, uaSectionHtml/.test(pdata));
 

@@ -6184,18 +6184,44 @@ function _renderSuiviRapide(){
   /* ── 5. Capture initial depuis le DOM ── */
   _suiviRapideInitial = {};
 
+  /* ── La valeur du bilan PRECEDENT ────────────────────────────────
+     Un champ non reteste est VIDE dans le formulaire : sa valeur heritee y est
+     un placeholder gris italique, pas une valeur. Le Suivi rapide le recopiait
+     donc vide, sans rien dire — le praticien ne savait pas ou il en etait.
+
+     Elle s'affiche desormais comme dans le bilan : gris italique, en
+     placeholder, donc jamais enregistree tant qu'on n'a rien tape.
+
+     EN MODE LECTURE c'est autre chose : on ne saisit pas, on CONSULTE. La
+     valeur du dernier bilan s'y affiche en encre pleine — un gris italique y
+     designerait une ombre alors que c'est la mesure qu'on lit. */
+  var _srMain = document.querySelector('main');
+  var _srLecture = !!(_srMain && _srMain.classList.contains('bilan-readonly'));
+  var _srPrec = {};
+  try { var _srCtx = _crCtx(); _srPrec = _crPrevMerged(_srCtx ? _srCtx.prevStart : 1) || {}; }
+  catch(ex){ _srPrec = {}; }
+
   /* ── 6. Helper rendu d'un champ ── */
   function _renderField(f){
     var domEl=document.getElementById(f.id);
     var val=domEl?domEl.value:'';
     _suiviRapideInitial[f.id]=val;
+    /* L'anterieure ne sert QUE si le champ est vide : sinon la mesure du jour
+       est la, et une ombre par-dessus se lirait comme une seconde valeur. */
+    var ant = (val === '' && _srPrec[f.id] !== undefined && _srPrec[f.id] !== null
+               && _srPrec[f.id] !== '') ? String(_srPrec[f.id]) : '';
+    var valAff = (_srLecture && ant) ? ant : val;
+    var ghost  = (!_srLecture && ant) ? ant : '';
+    var cls    = ghost ? ' suivi-rapide-input--herite' : '';
     var inputEl;
     if(f.type==='text'){
-      inputEl='<input type="text" class="suivi-rapide-input suivi-rapide-input-text"'
-        +' data-metric-id="'+f.id+'" value="'+_esc2(val)+'" autocomplete="off" placeholder="ex: 45 cm">';
+      inputEl='<input type="text" class="suivi-rapide-input suivi-rapide-input-text'+cls+'"'
+        +' data-metric-id="'+f.id+'" value="'+_esc2(valAff)+'" autocomplete="off" placeholder="'
+        +_esc2(ghost || 'ex: 45 cm')+'">';
     } else {
-      inputEl='<input type="number" class="suivi-rapide-input"'
-        +' data-metric-id="'+f.id+'" value="'+_esc2(val)+'" step="any" min="0" autocomplete="off">';
+      inputEl='<input type="number" class="suivi-rapide-input'+cls+'"'
+        +' data-metric-id="'+f.id+'" value="'+_esc2(valAff)+'" step="any" min="0" autocomplete="off"'
+        +(ghost ? ' placeholder="'+_esc2(ghost)+'"' : '')+'>';
     }
     var unitSpan=(f.unit&&!f.isCond)?'<span class="suivi-rapide-unit">'+_esc2(f.unit)+'</span>':'';
     var labelCls=f.isCond?'suivi-rapide-field-label cond':'suivi-rapide-field-label';

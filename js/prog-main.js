@@ -1831,6 +1831,31 @@ function _volCharge(a, ddn){
   try { return _stravaChargeEstimate(a, ddn) || 0; } catch(e){ return 0; }
 }
 
+/* La FENETRE suit le selecteur de temporalite du panneau — « 1 mois »,
+   « 3 mois »… La repartition portait auparavant sur la DERNIERE SEMAINE seule,
+   sans que rien ne le dise : deux chiffres du meme ecran parlaient de deux
+   periodes differentes.
+
+   Le libelle annonce toujours la fenetre reellement employee : « Tout » est
+   borne a deux ans, au-dela les barres hebdomadaires cessent d'etre lisibles —
+   et un libelle qui dit « tout » sur une fenetre bornee serait un mensonge. */
+function _volFenetreSemaines(){
+  if(typeof _pevoFilterDays !== 'undefined' && _pevoFilterDays)
+    return Math.max(2, Math.ceil(_pevoFilterDays / 7));
+  if(typeof _pevoFilterFrom !== 'undefined' && (_pevoFilterFrom || _pevoFilterTo)){
+    var a = new Date((_pevoFilterFrom || '') + 'T00:00:00');
+    var b = new Date((_pevoFilterTo || '') + 'T00:00:00');
+    if(!isNaN(a) && !isNaN(b) && b > a)
+      return Math.max(2, Math.min(104, Math.ceil((b - a) / (7 * 86400000))));
+  }
+  return 52;
+}
+function _volLibelleFenetre(n){
+  if(n % 52 === 0 && n >= 52) return (n / 52) + (n === 52 ? ' dernière année' : ' dernières années');
+  if(n % 4 === 0 && n >= 8)  return (n / 4) + ' derniers mois';
+  return n + ' dernières semaines';
+}
+
 function _volumeParSport(nbSemaines){
   var n = nbSemaines || 12;
   var lundi0 = _volLundi(new Date());
