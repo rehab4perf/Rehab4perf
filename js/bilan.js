@@ -366,6 +366,17 @@ var CR_MED_PAGES = ['page-fonctionnels','page-fonctionnelsMS','page-fonctionnels
    « Ischio-jambiers 32,6 / 35,2 kg » s'annoncait donc sous « BILAN
    ORTHOPEDIQUE ». Le medecin lisait un intitule qui ne correspond pas a
    l'examen. La page d'origine, elle, dit vrai. */
+/* La REGION d'un signe orthopedique. La section du CR les rassemble toutes
+   sous « Bilan Orthopedique » : ce titre unique ne dit pas de quel membre on
+   parle, et le courrier annoncait « Bilan Orthopedique — Approche Globale »,
+   ou la moitie du titre est un doublon de l'intitule de section. La page
+   d'origine, elle, sait de quelle region il s'agit. */
+var CR_ORTHO_REGIONS = {
+  'page-epaule': 'Épaule',   'page-coude' : 'Coude',    'page-main'  : 'Poignet / Main',
+  'page-rachis': 'Rachis',   'page-hanche': 'Hanche',   'page-genou' : 'Genou',
+  'page-pied'  : 'Pied / Cheville',                     'page-lma'   : 'Lésion musculaire'
+};
+
 var CR_MED_ZONES = {
   'page-force-mi'    : 'Tests de force',
   'page-force-ms'    : 'Tests de force',
@@ -490,6 +501,14 @@ function _crMedResumeTests() {
            zone commune — le nom que le bilan leur donne deja — et le
            regroupement de fin les rassemble en un bloc. */
         if (_perso) zoneLigne = 'Tests personnalisés';
+        /* Un signe orthopedique prend sa REGION pour zone : « Genou », pas
+           « Bilan Orthopedique ». C'est elle qui ouvre la section du courrier,
+           et le nom du bloc qui la subdivise. */
+        if (!_fonc) {
+          for (var _r = 0; _r < pgs.length; _r++) {
+            if (CR_ORTHO_REGIONS[pgs[_r]]) { zoneLigne = CR_ORTHO_REGIONS[pgs[_r]]; break; }
+          }
+        }
         var cle = (it.querySelector('.cr-key') || {}).textContent || '';
         var tagEl = it.querySelector('.cr-tag');
         /* `data-statut` d'abord : `textContent` aplatit le balisage de la

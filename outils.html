@@ -6675,6 +6675,8 @@ _updateOutilsPatientBtns();
     return ordre.map(function (k) {
       var tests = par[k];
       return { cle: k, titre: k, tests: tests,
+               region: tests[0].zone || 'Examen orthopédique',
+               bloc: tests[0].bloc || '',
                anormaux: tests.filter(_crOrthoAnormal).length };
     });
   }
@@ -6793,11 +6795,16 @@ _updateOutilsPatientBtns();
 
   /* Lignes de courrier — rendu B : les blocs qui parlent gardent leur detail,
      les blocs muets tiennent en une ligne. Le negatif ne vaut pas a l'unite ;
-     il vaut de dire au medecin ce qui a ete CHERCHE et pas trouve. */
+     il vaut de dire au medecin ce qui a ete CHERCHE et pas trouve.
+
+     LA MISE EN PAGE EST CELLE DES AUTRES TESTS — le meme `t:'test'`, donc le
+     meme tableau, les memes colonnes et les memes pastilles. Une liste a puces
+     ecrite a cote aurait donne deux grammaires dans un seul courrier, et une
+     divergence de plus a entretenir. */
   function _crAppendTestsOrtho(lines) {
     if (!_crTestsOrtho.length) return;
     var groupes = _crOrthoGroupes(_crTestsOrtho);
-    var corps = [], muets = [];
+    var corps = [], muets = [], regionEnCours = null;
     groupes.forEach(function (g) {
       var retenus = g.tests.filter(function (t) { return _crOrthoCoches[t.cle]; });
       if (!retenus.length) {
@@ -6807,28 +6814,42 @@ _updateOutilsPatientBtns();
         if (!g.anormaux) muets.push({ titre: g.titre, n: g.tests.length });
         return;
       }
-      var items = [], normaux = [];
-      retenus.forEach(function (t) {
-        var v = _crVerdict(t);
-        if (!_crOrthoAnormal(t)) { normaux.push(t.label); return; }
-        var txt = t.label + ' — ' + String(v.statut || '').toLowerCase();
-        if (t.valeur) txt += ' : ' + t.valeur;
-        if (v.nuance) txt += ' (' + v.nuance + ')';
-        items.push({ txt: txt });
-      });
-      /* Les resultats normaux d'un bloc qui parle se rassemblent sur une seule
-         ligne : les enumerer un par un rendrait au signe positif exactement le
-         bruit qu'on vient de lui retirer. */
-      if (normaux.length) {
-        items.push({ txt: (normaux.length > 1 ? 'Sans anomalie : ' : 'Sans anomalie : ')
-                        + normaux.join(', ') });
+      /* La REGION ouvre la section — une barre bleue par membre examine, comme
+         pour les tests fonctionnels. Le BLOC la subdivise d'un simple
+         intertitre : une barre par bloc en donnerait six sur un seul genou. */
+      if (g.region !== regionEnCours) {
+        regionEnCours = g.region;
+        corps.push({ t: 'sec', txt: 'Examen orthopédique — ' + g.region });
       }
-      corps.push({ t: 'liste', titre: g.titre, items: items });
+      if (g.bloc) corps.push({ t: 'ssec', txt: g.bloc });
+
+      var normaux = {};
+      retenus.forEach(function (t) {
+        if (!_crOrthoAnormal(t)) {
+          /* Regroupes PAR VERDICT : « Négatif » et « Normal » ne disent pas la
+             meme chose, et une pastille unique en couvrirait deux. */
+          var st = _crVerdict(t).statut || '';
+          (normaux[st] = normaux[st] || []).push(t.label);
+          return;
+        }
+        corps.push({ t: 'test', label: t.label, valeur: t.valeur || '',
+                     cellules: [], note: t.note || '', nuance: t.nuance || '',
+                     statut: t.statut, niveau: t.niveau, geste: t.geste || '' });
+      });
+      /* Les resultats normaux d'un bloc qui parle tiennent sur UNE ligne : les
+         enumerer un par un rendrait au signe le bruit qu'on vient de lui oter. */
+      Object.keys(normaux).forEach(function (st) {
+        corps.push({ t: 'test', label: normaux[st].join(', '), valeur: '',
+                     cellules: [], note: '', nuance: '', statut: st, niveau: 'ok' });
+      });
     });
     if (!corps.length && !(_crOrthoResume && muets.length)) return;
-    lines.push({ t: 'sec', txt: 'Examen orthopédique' });
     corps.forEach(function (b) { lines.push(b); });
     if (_crOrthoResume && muets.length) {
+      /* Une seule barre bleue pour le resume quand rien n'a ete detaille :
+         sans elle, la phrase flotterait apres les mesures sans rien pour la
+         rattacher a l'examen orthopedique. */
+      if (!corps.length) lines.push({ t: 'sec', txt: 'Examen orthopédique' });
       lines.push('Également examinés, sans particularité : '
         + muets.map(function (m) { return m.titre + ' (' + m.n + ' test' + (m.n > 1 ? 's' : '') + ')'; })
                .join(' ; ') + '.');
@@ -6896,6 +6917,12 @@ _updateOutilsPatientBtns();
       'color:#9D9B96;margin:0 0 2px}',
     '.lt-pat dd{margin:0;font-size:.82rem;font-weight:600;color:#1A1917}',
     '.lt-sec{margin:18px 0 8px;padding-left:10px;border-left:3px solid #2B5FA6}',
+    /* Deux crans sous la section : pas de barre, pas de bleu — c'est la
+       graisse et l'espace qui ouvrent le bloc. Un second filet colore aurait
+       fait deux niveaux qui se disputent le meme role. */
+    '.lt-ssec{margin:12px 0 3px;font-size:.66rem;font-weight:700;letter-spacing:.06em;',
+      'text-transform:uppercase;color:#9D9B96}',
+    '.lt-ssec:first-child{margin-top:0}',
     '.lt-sec h3{margin:0;font-size:.76rem;font-weight:700;letter-spacing:.05em;',
       'text-transform:uppercase;color:#1A3A5C}',
     'table.lt-t{width:100%;border-collapse:collapse;font-size:.78rem;margin-bottom:6px}',
@@ -7099,6 +7126,9 @@ _updateOutilsPatientBtns();
     (blocs || []).forEach(function (b) {
       if (!_crEstBloc(b)) { out.push(String(b == null ? '' : b)); return; }
       if (b.t === 'sec')     { out.push(''); out.push(String(b.txt || '').toUpperCase()); return; }
+      /* Un intertitre de bloc — deux crans sous la section. En texte brut il
+         n'y a ni barre ni graisse : le retrait fait toute la hierarchie. */
+      if (b.t === 'ssec')    { out.push(''); out.push('  ' + String(b.txt || '')); return; }
       if (b.t === 'patient') { b.champs.forEach(function (c) { out.push(c[0] + ' : ' + c[1]); }); return; }
       if (b.t === 'concl')   { out.push(''); out.push('Synthèse clinique :'); out.push(b.txt); return; }
       if (b.t === 'plan')    { out.push(''); out.push('Plan de traitement :'); out.push(b.txt); return; }
@@ -7462,6 +7492,14 @@ _updateOutilsPatientBtns();
         fermerGroupe();
         ouvrirGroupe();
         h += '<div class="lt-sec"><h3>' + _crEsc(b.txt || '') + '</h3></div>';
+        return;
+      }
+      /* Un intertitre de BLOC. Il ferme la table en cours — chaque bloc a la
+         sienne — mais PAS le groupe : il appartient a la section ouverte, et
+         la fermer permettrait a une coupure de page de le separer d'elle. */
+      if (b.t === 'ssec') {
+        fermerTable();
+        h += '<div class="lt-ssec">' + _crEsc(b.txt || '') + '</div>';
         return;
       }
       if (b.t === 'patient') {

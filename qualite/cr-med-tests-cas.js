@@ -245,11 +245,17 @@ console.log('\n  Le regroupement — un intertitre par zone, jamais répété');
              .map(function (t) { return t.zone; }).join(','));
   /* L'ordre de PREMIÈRE apparition est celui du bilan : le médecin lit les
      régions dans l'ordre où elles ont été examinées. */
+  /* Un signe orthopedique prend sa REGION pour zone. La section du CR les
+     rassemble toutes sous « Bilan Orthopedique » : ce titre unique ne dit pas
+     de quel membre on parle, et le courrier annoncait « Bilan Orthopedique —
+     Approche Globale », ou la moitie du titre double l'intitule de section. */
   verifie('ordre de première apparition conservé',
-          'BILAN ORTHOPÉDIQUE — ÉPAULE|Tests de force|TESTS FONCTIONNELS — MEMBRES SUPÉRIEURS|'
-          + 'BILAN ORTHOPÉDIQUE — GENOU|TESTS FONCTIONNELS — MEMBRES INFÉRIEURS|'
+          'Épaule|Tests de force|TESTS FONCTIONNELS — MEMBRES SUPÉRIEURS|'
+          + 'Genou|TESTS FONCTIONNELS — MEMBRES INFÉRIEURS|'
           + 'ANALYSE DE COURSE À PIED',
           zones.join('|'));
+  verifie('la région remplace le titre de section', 'Épaule',
+          res.filter(function (t) { return t.cle === 'Neer'; })[0].zone);
 }
 
 console.log('\n  Le lexique complète le nom du test, il ne le remplace plus');

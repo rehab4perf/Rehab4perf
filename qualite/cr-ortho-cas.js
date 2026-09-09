@@ -137,35 +137,62 @@ console.log('\nLe grain de regroupement est le bloc, pas la section');
   egal('sans bloc, la section fait office de titre', 'GENOU', sansBloc[0].titre);
 }
 
-/* ── 3. Le courrier — rendu B ────────────────────────────────────────────── */
-console.log('\nLe courrier : les blocs qui parlent gardent leur détail');
+/* ── 3. Le courrier — rendu B, dans la mise en page des autres tests ───── */
+console.log('\nLe courrier emprunte le tableau des autres tests');
 {
   var jeu = [
-    t('a', 'Test de Lachman', 'Positif', 'bad', 'GENOU', 'LCA / LCP', 'Arrêt mou'),
-    t('b', 'Tiroir postérieur', 'Négatif', 'ok', 'GENOU', 'LCA / LCP'),
-    t('c', 'Pivot shift',       'Négatif', 'ok', 'GENOU', 'LCA / LCP'),
-    t('d', 'Varus 0°',   'Négatif', 'ok', 'GENOU', 'Ligaments latéraux'),
-    t('e', 'Valgus 0°',  'Négatif', 'ok', 'GENOU', 'Ligaments latéraux')
+    t('a', 'Test de Lachman', 'Positif', 'bad', 'Genou', 'LCA / LCP', 'Arrêt mou'),
+    t('b', 'Tiroir postérieur', 'Négatif', 'ok', 'Genou', 'LCA / LCP'),
+    t('c', 'Pivot shift',       'Négatif', 'ok', 'Genou', 'LCA / LCP'),
+    t('d', 'Varus 0°',   'Négatif', 'ok', 'Genou', 'Ligaments latéraux'),
+    t('e', 'Valgus 0°',  'Négatif', 'ok', 'Genou', 'Ligaments latéraux')
   ];
-  /* Sélection par défaut : les anormaux seuls, plus deux normaux cochés à la
-     main dans le bloc qui parle. */
   var r = banc(jeu, { a: true, b: true, c: true, d: false, e: false });
-  var listes = r.lignes.filter(function (l) { return l && l.t === 'liste'; });
-  egal('un seul bloc détaillé', 1, listes.length);
-  egal('… c\'est celui qui porte le signe', 'GENOU — LCA / LCP', listes[0].titre);
-  egal('le signe garde sa ligne, avec son observation',
-       'Test de Lachman — positif : Arrêt mou', listes[0].items[0].txt);
-  /* Les normaux d'un bloc qui parle se rassemblent sur UNE ligne : les
-     énumérer un par un rendrait au signe le bruit qu'on vient de lui ôter. */
-  egal('les normaux retenus tiennent en une ligne', 2, listes[0].items.length);
-  egal('… et sont nommés', 'Sans anomalie : Tiroir postérieur, Pivot shift',
-       listes[0].items[1].txt);
+  var typ = function (x) { return r.lignes.filter(function (l) { return l && l.t === x; }); };
+
+  /* LE POINT DE LA REPRISE : plus aucune liste a puces. Les signes sortent en
+     `t:'test'`, donc dans le MEME tableau, avec les memes colonnes et les
+     memes pastilles que les mesures. Deux grammaires dans un seul courrier,
+     c'etait une divergence de plus a entretenir. */
+  egal('aucune liste à puces ne subsiste', 0, typ('liste').length);
+  egal('les signes sortent en lignes de tableau', 2, typ('test').length);
+  egal('le signe garde son observation', 'Arrêt mou', typ('test')[0].valeur);
+  egal('… et son verdict, pour la pastille', 'Positif', typ('test')[0].statut);
+  /* Les normaux retenus tiennent sur UNE ligne, groupes par verdict :
+     « Négatif » et « Normal » ne disent pas la meme chose. */
+  egal('les normaux retenus tiennent en une ligne',
+       'Tiroir postérieur, Pivot shift', typ('test')[1].label);
+  egal('… sous leur propre verdict', 'Négatif', typ('test')[1].statut);
+
+  /* La REGION ouvre la section — une barre bleue par membre, comme pour les
+     tests fonctionnels. Le titre ne redit plus « Bilan Orthopedique ». */
+  egal('une seule section, nommée par la région', 1, typ('sec').length);
+  egal('… et elle nomme le membre', 'Examen orthopédique — Genou', typ('sec')[0].txt);
+  /* Le BLOC la subdivise d'un intertitre discret : une barre par bloc en
+     donnerait six sur un seul genou. */
+  egal('le bloc est un intertitre, pas une section', 1, typ('ssec').length);
+  egal('… nommé comme dans le bilan', 'LCA / LCP', typ('ssec')[0].txt);
 
   var texte = r.lignes.filter(function (l) { return typeof l === 'string' && l; }).join(' ');
   ok('le bloc muet est résumé en une ligne',
      /Également examinés, sans particularité[\s\S]*Ligaments latéraux \(2 tests\)/.test(texte), texte);
   ok('… et le bloc détaillé n\'y figure pas', texte.indexOf('LCA') < 0, texte);
-  ok('la section s\'ouvre', r.lignes.some(function (l) { return l && l.t === 'sec'; }));
+}
+
+console.log('\nUne section par région, jamais une par bloc');
+{
+  var jeu = [
+    t('a', 'Lachman', 'Positif', 'bad', 'Genou',  'LCA / LCP'),
+    t('b', 'Appley',  'Positif', 'bad', 'Genou',  'Ménisques'),
+    t('c', 'Neer',    'Positif', 'bad', 'Épaule', 'Conflit')
+  ];
+  var r = banc(jeu, { a: true, b: true, c: true });
+  var secs = r.lignes.filter(function (l) { return l && l.t === 'sec'; });
+  egal('deux régions, deux sections', 2, secs.length);
+  egal('… dans l\'ordre du bilan', 'Examen orthopédique — Genou|Examen orthopédique — Épaule',
+       secs.map(function (x) { return x.txt; }).join('|'));
+  egal('trois blocs, trois intertitres', 3,
+       r.lignes.filter(function (l) { return l && l.t === 'ssec'; }).length);
 }
 
 /* ── 4. LA RÈGLE QUI PROTÈGE ─────────────────────────────────────────────── */
@@ -175,9 +202,9 @@ console.log('\nUn bloc muet n\'est pas un bloc sans particularité');
      il n'est pas normal pour autant. L'annoncer « sans particularité » serait
      un contresens médical dans un document qui part chez un tiers. */
   var jeu = [
-    t('a', 'Test de Lachman', 'Positif', 'bad', 'GENOU', 'LCA / LCP'),
-    t('b', 'Tiroir postérieur', 'Négatif', 'ok', 'GENOU', 'LCA / LCP'),
-    t('c', 'Varus 0°', 'Négatif', 'ok', 'GENOU', 'Ligaments latéraux')
+    t('a', 'Test de Lachman', 'Positif', 'bad', 'Genou', 'LCA / LCP'),
+    t('b', 'Tiroir postérieur', 'Négatif', 'ok', 'Genou', 'LCA / LCP'),
+    t('c', 'Varus 0°', 'Négatif', 'ok', 'Genou', 'Ligaments latéraux')
   ];
   var r = banc(jeu, { a: false, b: false, c: false });
   var texte = r.lignes.filter(function (l) { return typeof l === 'string' && l; }).join(' ');
@@ -185,15 +212,19 @@ console.log('\nUn bloc muet n\'est pas un bloc sans particularité');
      texte.indexOf('LCA') < 0, texte);
   ok('… et le bloc réellement normal y figure',
      /Ligaments latéraux/.test(texte), texte);
+  /* Rien de detaille : la phrase de resume a tout de meme sa barre, sinon elle
+     flotterait apres les mesures sans rien qui la rattache a l'examen. */
+  ok('le résumé seul garde sa section',
+     r.lignes.some(function (l) { return l && l.t === 'sec' && l.txt === 'Examen orthopédique'; }));
   /* Rien de retenu, rien de normal à dire : pas de section vide. */
-  var vide = banc([t('a', 'Lachman', 'Positif', 'bad', 'GENOU', 'LCA / LCP')], { a: false });
+  var vide = banc([t('a', 'Lachman', 'Positif', 'bad', 'Genou', 'LCA / LCP')], { a: false });
   egal('aucune section quand il n\'y a rien à écrire', 0, vide.lignes.length);
   /* L'interrupteur retire le résumé sans toucher au détail. */
   var sans = banc(jeu, { a: true, b: false, c: false }, { resume: false });
   var txt2 = sans.lignes.filter(function (l) { return typeof l === 'string' && l; }).join(' ');
   ok('l\'interrupteur retire la ligne de résumé', txt2.indexOf('sans particularité') < 0, txt2);
   ok('… et laisse le détail en place',
-     sans.lignes.some(function (l) { return l && l.t === 'liste'; }));
+     sans.lignes.some(function (l) { return l && l.t === 'test'; }));
 }
 
 /* ── 5. Le lot ───────────────────────────────────────────────────────────── */
@@ -217,6 +248,32 @@ console.log('\nLes trois lots');
 
 /* ── 6. La feuille de style ──────────────────────────────────────────────── */
 console.log('\nLes règles de style existent');
+/* L'intertitre de bloc vit dans CR_LETTRE_CSS — la feuille injectee A LA FOIS
+   dans l'apercu et dans le PDF. Ecrite dans le `<style>` de la page, la regle
+   manquerait au document que recoit le medecin ; ecrite dans la chaine
+   d'export, elle manquerait a l'ecran. Le piege s'est deja referme ici. */
+{
+  var dCss = html.indexOf('var CR_LETTRE_CSS');
+  var fCss = html.indexOf('];', dCss);
+  var feuille = dCss > 0 ? html.slice(dCss, fCss) : '';
+  ok('.lt-ssec vit dans la feuille du courrier', /\.lt-ssec\{/.test(feuille));
+  ok('… et nulle part ailleurs',
+     html.split('.lt-ssec{').length - 1 === 1,
+     (html.split('.lt-ssec{').length - 1) + ' définition(s)');
+  /* Il ferme la table en cours — chaque bloc a la sienne — mais PAS le groupe :
+     une coupure de page le separerait de sa section. */
+  var dR = html.indexOf("if (b.t === 'ssec') {", html.indexOf('function _crBlocsHtml') > 0
+                        ? html.indexOf('function _crBlocsHtml') : 0);
+  var corpsR = dR > 0 ? html.slice(dR, dR + 400) : '';
+  ok('l\'intertitre ferme la table', /fermerTable\(\)/.test(corpsR));
+  ok('… et ne ferme pas le groupe', !/fermerGroupe\(\)/.test(corpsR), corpsR.slice(0, 200));
+  /* Le rendu TEXTE — la copie et le mail — doit le connaitre aussi : une
+     structure rendue d'un seul cote, c'est la divergence qu'on vient d'oter. */
+  ok('le rendu texte connaît l\'intertitre',
+     /b\.t === 'ssec'/.test(html.slice(html.indexOf('function _crBlocsTexte'),
+                                       html.indexOf('function _crBlocsTexte') + 2500)));
+}
+
 ['.cr-or-chip', '.cr-or-bloc', '.cr-or-hd', '.cr-or-nom', '.cr-or-corps', '.cr-or-resume']
   .forEach(function (c) {
     var re = new RegExp('(^|[\\n;}])\\s*' + c.replace('.', '\\.') + '\\s*[,{]');
