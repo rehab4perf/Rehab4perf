@@ -708,6 +708,43 @@ td.bl-row-rail button:disabled { opacity: .3 !important; cursor: default; }
 .block-header.green  { background: var(--green); }
 .block-header.red    { background: var(--red); }
 .block-header.grey   { background: var(--text2); }
+
+/* ── Renseigner un bloc d'un seul geste ──────────────────────────────
+   La commande vit dans la barre de titre du bloc. Elle n'écrit AUCUN libellé :
+   ils viennent des options du bloc — treize tableaux emploient d'autres
+   réponses, et sur les six fonctionnels « Positif » veut dire réussi. */
+.bl-vite { display: flex; align-items: center; gap: 7px; position: relative;
+  margin-left: auto; flex: none; }
+.bl-vite-cpt { font-size: .6rem; font-weight: 600; letter-spacing: 0;
+  text-transform: none; color: rgba(255,255,255,.72); white-space: nowrap; }
+.bl-vite-btn { font-family: inherit; font-size: .62rem; font-weight: 700;
+  letter-spacing: .04em; text-transform: uppercase; padding: 4px 9px;
+  border-radius: 5px; cursor: pointer; white-space: nowrap;
+  border: 1px solid rgba(255,255,255,.35); background: rgba(255,255,255,.14);
+  color: #fff; }
+.bl-vite-btn:hover { background: rgba(255,255,255,.26); }
+/* Seule la valeur « rien à signaler » est mise en avant : un bloc entièrement
+   négatif est le cas courant, entièrement positif c'est rare — et cette
+   faute-là inscrirait des signes cliniques en bloc. */
+.bl-vite-btn.primaire { background: #fff; color: var(--accent2); border-color: #fff; }
+.bl-vite-btn:disabled { opacity: .45; cursor: default; }
+.bl-vite-btn:disabled:hover { background: rgba(255,255,255,.14); }
+.bl-vite-btn.primaire:disabled:hover { background: #fff; }
+.bl-vite-pan { display: none; position: absolute; right: 0; top: calc(100% + 6px);
+  z-index: 20; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; box-shadow: 0 8px 24px -10px rgba(0,0,0,.35);
+  padding: 5px; min-width: 168px; }
+.bl-vite.ouvert .bl-vite-pan { display: block; }
+.bl-vite-pan button { display: block; width: 100%; text-align: left; border: none;
+  background: none; font-family: inherit; font-size: .76rem; font-weight: 500;
+  letter-spacing: 0; text-transform: none; color: var(--text); padding: 7px 9px;
+  border-radius: 6px; cursor: pointer; }
+.bl-vite-pan button:hover { background: var(--surface2); }
+.bl-vite-sep { display: block; height: 1px; background: var(--border); margin: 4px 0; }
+
+/* En LECTURE on ne saisit pas : la commande n'a rien à y faire. Un bouton qui
+   répond dans un formulaire verrouillé est pire qu'un bouton absent. */
+.bilan-readonly .bl-vite { display: none; }
 .cr-toggle-label { margin-left:auto; display:inline-flex; align-items:center; gap:5px; font-size:.7rem; font-weight:500; color:rgba(255,255,255,.75); cursor:pointer; white-space:nowrap; text-transform:none; letter-spacing:0; }
 .cr-toggle-label input[type=checkbox] { width:14px; height:14px; accent-color:var(--green); cursor:pointer; flex-shrink:0; }
 .cr-toggle-label:has(input:checked) { color:var(--green); font-weight:700; }
@@ -6197,7 +6234,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible,
 
 
 <script src="js/bilan-blocks.js?v=20260906a"></script>
-<script src="js/bilan.js?v=20260909a"></script>
+<script src="js/bilan.js?v=20260909b"></script>
 
 </body>
 </html>

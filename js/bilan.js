@@ -1798,6 +1798,177 @@ function _epFoncRefresh(){
   }
 }
 
+/* ── Renseigner un bloc de tests d'un seul geste ─────────────────────
+   144 des 157 tableaux du bilan repondent en `Positif / Negatif / N/A`.
+   Renseigner les quatre lignes d'un LCA/LCP normal demandait quatre menus
+   deroulants, pour dire quatre fois la meme chose.
+
+   TROIS DECISIONS, et ce sont elles qui font la surete du geste :
+
+   1. LES LIBELLES VIENNENT DES OPTIONS DU BLOC, jamais d'un « positif /
+      negatif » ecrit en dur. Treize tableaux emploient d'autres reponses, et
+      sur les six tableaux FONCTIONNELS « Positif » veut dire REUSSI : la
+      polarite s'inverse. Un bouton code en dur y dirait le contraire de ce
+      qu'il fait.
+
+   2. « TOUT POSITIF » N'EST PAS LE SYMETRIQUE DE « TOUT NEGATIF ». Un bloc
+      entierement negatif est le cas courant ; entierement positif, c'est rare.
+      Les poser cote a cote invite a la faute de clic — et cette faute inscrit
+      des signes cliniques en bloc. Seule la valeur « rien a signaler » a son
+      bouton ; les autres vivent d'un cran en dessous.
+
+   3. LE CLIC NE REMPLIT QUE LES LIGNES VIDES. Une mesure deja saisie ne
+      s'ecrase jamais par accident. */
+
+/* Les valeurs qui veulent dire « rien a signaler », par ordre de recherche.
+   Un jeu d'options qui n'en contient aucune n'a PAS de bouton principal : sur
+   « Validé / Pas validé » comme sur « Ok / Acceptable / Insuffisant », aucune
+   des reponses n'est anodine, et en designer une serait un jugement clinique
+   que le code n'a pas a porter. */
+var BL_RAS = ['Négatif', 'Normal', 'Non'];
+
+function _blValeursBloc(sels){
+  var vues = [], out = [];
+  (sels || []).forEach(function(s){
+    for(var i = 0; i < s.options.length; i++){
+      var v = s.options[i].value;
+      if(v && vues.indexOf(v) < 0){ vues.push(v); out.push(v); }
+    }
+  });
+  return out;
+}
+function _blValeurRAS(vals){
+  for(var i = 0; i < BL_RAS.length; i++){
+    if((vals || []).indexOf(BL_RAS[i]) >= 0) return BL_RAS[i];
+  }
+  return null;
+}
+function _blSelectsBloc(bloc){
+  return [].slice.call(bloc.querySelectorAll('select')).filter(function(s){
+    if(!s.id || !/^sel-/.test(s.id)) return false;
+    /* Une ligne MASQUEE par la disposition n'existe pas pour le praticien : la
+       remplir ecrirait dans le bilan un test qu'il a explicitement retire, et
+       rien a l'ecran ne le lui dirait. Elle ne compte donc ni au remplissage,
+       ni au compteur « N a renseigner ». */
+    try { if(s.closest('.bl-hidden')) return false; } catch(e){}
+    return true;
+  });
+}
+function _blCompteVides(sels){
+  return (sels || []).filter(function(s){ return !s.value; }).length;
+}
+function _blOffre(sel, val){
+  for(var i = 0; i < sel.options.length; i++) if(sel.options[i].value === val) return true;
+  return false;
+}
+
+/* Applique `val` aux lignes du bloc. `remplacer` faux = seules les lignes VIDES
+   sont touchees. Rend l'etat ANTERIEUR, ligne par ligne, pour l'annulation. */
+function _blAppliquerBloc(bloc, val, remplacer){
+  var sels = _blSelectsBloc(bloc), avant = [], touchees = 0;
+  sels.forEach(function(s){
+    avant.push(s.value);
+    /* Une valeur que la ligne n'offre pas ne s'y pose jamais : ce serait
+       inscrire une reponse impossible, que son menu ne saurait pas afficher. */
+    if(val && !_blOffre(s, val)) return;
+    if(!remplacer && s.value) return;
+    if(s.value === val) return;
+    s.value = val;
+    /* Une ecriture programmatique n'emet AUCUN evenement. Sans cette emission,
+       le verdict de la ligne, le compte-rendu et le brouillon ne verraient
+       rien — le piege le plus frequent de ce depot. */
+    try { s.dispatchEvent(new Event('change', { bubbles: true })); } catch(e){}
+    touchees++;
+  });
+  return { avant: avant, touchees: touchees, selects: sels };
+}
+
+/* Pose la commande dans l'en-tete de chaque bloc qui porte des lignes de test.
+   Elle se construit depuis les OPTIONS du bloc : aucun libelle n'est ecrit ici,
+   c'est ce qui la rend juste sur les treize tableaux aux autres reponses comme
+   sur les six fonctionnels, ou la polarite s'inverse. */
+function _blPoserCommandes(){
+  document.querySelectorAll('.block').forEach(function(bloc){
+    if(bloc.querySelector('.bl-vite')) return;              // deja posee
+    var entete = bloc.querySelector('.block-header');
+    if(!entete) return;
+    var sels = _blSelectsBloc(bloc);
+    /* Une seule ligne ne gagne rien a une commande de groupe : le menu du bloc
+       ferait exactement ce que fait deja le menu de la ligne. */
+    if(sels.length < 2) return;
+    var vals = _blValeursBloc(sels);
+    if(!vals.length) return;
+    var ras = _blValeurRAS(vals);
+
+    var w = document.createElement('span');
+    w.className = 'bl-vite no-print';
+    w.innerHTML =
+        '<span class="bl-vite-cpt"></span>'
+      + (ras ? '<button type="button" class="bl-vite-btn primaire" data-val="' + _blEsc(ras) + '"></button>' : '')
+      + '<button type="button" class="bl-vite-btn bl-vite-plus" title="Autres valeurs">⋯</button>'
+      + '<span class="bl-vite-pan">'
+      + vals.filter(function(v){ return v !== ras; }).map(function(v){
+          return '<button type="button" data-val="' + _blEsc(v) + '">Tout ' + _blEsc(v.toLowerCase()) + '</button>';
+        }).join('')
+      + '<span class="bl-vite-sep"></span>'
+      + '<button type="button" data-vider="1">↺ Vider le bloc</button></span>';
+    entete.appendChild(w);
+    _blMajCompteur(bloc);
+  });
+}
+
+/* Le compteur transforme le bouton en information : on sait ce que le clic va
+   faire AVANT de cliquer, et ce qu'il a fait apres. */
+function _blMajCompteur(bloc){
+  var w = bloc.querySelector('.bl-vite'); if(!w) return;
+  var sels = _blSelectsBloc(bloc), vides = _blCompteVides(sels);
+  var cpt = w.querySelector('.bl-vite-cpt');
+  if(cpt) cpt.textContent = vides ? vides + ' à renseigner' : 'tout renseigné';
+  var prim = w.querySelector('.bl-vite-btn.primaire');
+  if(prim){
+    var v = prim.dataset.val;
+    /* Le libelle DIT ce que le clic fait : « Tout » sur un bloc vierge,
+       « Compléter » des qu'une ligne est saisie. */
+    prim.textContent = (vides === sels.length ? 'Tout ' : 'Compléter en ') + v.toLowerCase();
+    prim.disabled = vides === 0;
+  }
+}
+
+function _blViteClic(e){
+  var btn = e.target.closest('.bl-vite button'); if(!btn) return;
+  var bloc = btn.closest('.block'); if(!bloc) return;
+  var w = bloc.querySelector('.bl-vite');
+  if(btn.classList.contains('bl-vite-plus')){
+    var ouvert = w.classList.toggle('ouvert');
+    if(ouvert) document.querySelectorAll('.bl-vite.ouvert').forEach(function(x){
+      if(x !== w) x.classList.remove('ouvert'); });
+    return;
+  }
+  w.classList.remove('ouvert');
+  var val = btn.dataset.vider ? '' : btn.dataset.val;
+  var r = _blAppliquerBloc(bloc, val, !!btn.dataset.vider);
+  _blMajCompteur(bloc);
+  if(!r.touchees){ showToast('Rien à compléter dans ce bloc'); return; }
+  _blViteDernier = { bloc: bloc, avant: r.avant, val: val };
+  showToast(r.touchees + ' ligne' + (r.touchees > 1 ? 's' : '')
+            + (btn.dataset.vider ? ' vidée' + (r.touchees > 1 ? 's' : '')
+                                 : ' renseignée' + (r.touchees > 1 ? 's' : '') + ' — ' + val));
+}
+var _blViteDernier = null;
+
+/* Annuler rend l'etat EXACT d'avant, ligne par ligne — pas « tout vider ». */
+function _blViteAnnuler(){
+  var d = _blViteDernier; if(!d) return false;
+  _blSelectsBloc(d.bloc).forEach(function(s, i){
+    if(s.value === d.avant[i]) return;
+    s.value = d.avant[i] || '';
+    try { s.dispatchEvent(new Event('change', { bubbles: true })); } catch(e){}
+  });
+  _blMajCompteur(d.bloc);
+  _blViteDernier = null;
+  return true;
+}
+
 // -- INIT ------------------------------------------------------
 function init() {
   // Build test tables (dans l'ordre d'affichage, avec les ids d'identité catalogue)
@@ -1845,6 +2016,18 @@ function init() {
         '<td class="note-cell"><input type="text" id="' + noteId + '" placeholder="Observation\u2026" data-note="' + id + '-' + i + '"></td>';
       tbody.appendChild(tr);
     });
+  });
+
+  /* Les commandes de bloc se posent APRES la construction des tableaux : elles
+     lisent les `<select>` pour en tirer leurs valeurs, et n'ont donc rien a
+     lire avant. */
+  try { _blPoserCommandes(); } catch(ex){}
+  document.addEventListener('click', function(e){
+    if(!e.target.closest('.bl-vite')){
+      document.querySelectorAll('.bl-vite.ouvert').forEach(function(x){ x.classList.remove('ouvert'); });
+      return;
+    }
+    _blViteClic(e);
   });
 
   // Mobility grids \u2014 statut qualitatif + note de marqueur
@@ -2362,6 +2545,14 @@ function _blApplyLayout(){
      apparaît. On repose les deux ici, seul point par lequel passe toute
      reconstruction de la disposition. */
   try{ _reevalRender(); }catch(e){}
+  /* Meme raison : un bloc qui vient de gagner ses lignes n'avait pas sa
+     commande, et un bloc dont on masque une ligne annonce un compte faux. */
+  try{
+    _blPoserCommandes();
+    document.querySelectorAll('.bl-vite').forEach(function(w){
+      var b = w.closest('.block'); if(b) _blMajCompteur(b);
+    });
+  }catch(e){}
   if(_blScroller){
     _blScroller.scrollTop = _blScrollTop;
     requestAnimationFrame(function(){ _blScroller.scrollTop = _blScrollTop; });
