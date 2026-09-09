@@ -337,8 +337,8 @@ console.log('\nLes « Tests cliniques » à la main se replient quand ils doublo
 
   /* La raison est ECRITE : masquer sans un mot serait indiscernable d'une
      panne — la regle du depot, et le defaut vecu il y a une heure. */
-  var dR = html.indexOf('function crRenderTestRows');
-  var corpsR = html.slice(dR, dR + 1600);
+  var dR = html.indexOf('function _crTcMajEtat');
+  var corpsR = html.slice(dR, html.indexOf('function crRenderTestRows', dR));
   ok('le bloc replié dit pourquoi il l\'est',
      /cr-test-raison/.test(corpsR) && /examen orthopédique/i.test(corpsR), corpsR.slice(0, 200));
   ok('… et la bascule est atteignable',
@@ -353,6 +353,31 @@ console.log('\nLes « Tests cliniques » à la main se replient quand ils doublo
   var corpsC = (dC > 0 && fC > dC) ? html.slice(dC, fC) : '';
   egal('le repli se rejoue aux DEUX sorties du chargement', 2,
        corpsC.split('crRenderTestRows();').length - 1);
+}
+
+/* ── 4quater. UN CLIC DE BOUTON N'EST NI `input` NI `change` ─────────────── */
+console.log('\nUn bouton qui change la donnée doit prévenir l\'aperçu');
+{
+  /* L'apercu se recompose sur une delegation `input`/`change` posee sur le
+     panneau. Un `<button>` clique n'emet NI l'un NI l'autre : les tests
+     cliniques cochés à la main ne partaient pas dans le courrier, et le PDF —
+     qui lit `_crTexteCourant`, figé — non plus. Tant que le bouton
+     « Générer » existait on cliquait dessus juste après et le trou ne se
+     voyait pas. Troisième occurrence du même piège dans ce fichier. */
+  ['crCycleTest', 'crCycleSign', 'crSaveTestConfig', 'crSaveSignConfig'].forEach(function (nom) {
+    var d = html.indexOf('window.' + nom + ' = function');
+    var f = html.indexOf('\n  };', d);
+    var corps = (d > 0 && f > d) ? html.slice(d, f) : '';
+    ok(nom + ' prévient l\'aperçu', /_crMajDifferee\(\)/.test(corps),
+       corps ? 'aucun appel dans le corps' : 'fonction introuvable');
+  });
+  /* Cocher un test interdit le repli : la ligne d'explication doit suivre,
+     sans que la liste se redessine sous le curseur entre deux clics. */
+  var dC = html.indexOf('window.crCycleTest = function');
+  var corpsC = html.slice(dC, html.indexOf('\n  };', dC));
+  ok('cocher un test met l\'état du bloc à jour', /_crTcMajEtat\(\)/.test(corpsC));
+  ok('… sans redessiner la liste sous le curseur',
+     !/crRenderTestRows\(\)/.test(corpsC), corpsC.slice(0, 200));
 }
 
 /* ── 5. Le lot ───────────────────────────────────────────────────────────── */

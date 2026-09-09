@@ -5959,6 +5959,10 @@ _updateOutilsPatientBtns();
     crSignConfig.forEach(function(s){ crSigns[s.key] = 0; });
     crRenderSignRows();
     crCloseSignConfig();
+    /* Enregistrer la configuration REMET toutes les valeurs a zero :
+       ce qui figurait dans le courrier en disparait. L'apercu doit le
+       savoir, sinon le PDF partirait avec des tests qui n'existent plus. */
+    _crMajDifferee();
     try { localStorage.setItem('crSignConfig', JSON.stringify(crSignConfig)); } catch(e) {}
     crSaveGlobalConfig();
   };
@@ -5994,22 +5998,28 @@ _updateOutilsPatientBtns();
     crRenderTestRows();
   };
 
-  function crRenderTestRows() {
+  /* L'etat du bloc — replie ou non, et POURQUOI. Separe du rendu de la liste :
+     un clic sur un test change l'etat sans que la liste ait a se redessiner
+     sous le curseur. Rend `true` si le bloc est replie. */
+  function _crTcMajEtat() {
     var groupe = document.getElementById('cr-test-groupe');
     var raison = document.getElementById('cr-test-raison');
-    if (groupe) {
-      var plie = _crTcDoitReplier();
-      groupe.classList.toggle('plie', plie);
-      /* La raison est ECRITE. « Masquer est indiscernable d'une panne » : le
-         praticien doit pouvoir savoir si le bloc a disparu ou s'il ne
-         s'applique pas a ce patient. */
-      if (raison) {
-        raison.textContent = plie
-          ? 'Repris automatiquement : l\'examen orthopédique ci-dessus les remonte du bilan. Cliquer pour saisir à la main.'
-          : (_crTcRempli() ? 'Saisie manuelle — ces tests partent dans le courrier.' : '');
-      }
-      if (plie) return;                            // rien a dessiner sous un bloc replie
+    if (!groupe) return false;
+    var plie = _crTcDoitReplier();
+    groupe.classList.toggle('plie', plie);
+    /* La raison est ECRITE. « Masquer est indiscernable d'une panne » : le
+       praticien doit pouvoir savoir si le bloc a disparu ou s'il ne s'applique
+       pas a ce patient. */
+    if (raison) {
+      raison.textContent = plie
+        ? 'Repris automatiquement : l\'examen orthopédique ci-dessus les remonte du bilan. Cliquer pour saisir à la main.'
+        : (_crTcRempli() ? 'Saisie manuelle — ces tests partent dans le courrier.' : '');
     }
+    return plie;
+  }
+
+  function crRenderTestRows() {
+    if (_crTcMajEtat()) return;                    // rien a dessiner sous un bloc replie
     var container = document.getElementById('cr-test-rows-container');
     if (!container) return;
     container.innerHTML = '';
@@ -6043,6 +6053,16 @@ _updateOutilsPatientBtns();
     var cls    = ['','st-pos','st-neg'];
     btn.textContent = labels[crTests[key]];
     btn.className   = 'cr-sign-cycle cr-test-cycle ' + cls[crTests[key]];
+    /* L'etat du bloc change AVEC la valeur : un test renseigne interdit le
+       repli, et la ligne d'explication doit le dire. On ne redessine PAS la
+       liste — elle bougerait sous le curseur entre deux clics. */
+    _crTcMajEtat();
+    /* UN CLIC DE BOUTON N'EMET NI `input` NI `change` : la delegation posee sur
+       le panneau ne le voit pas, et l'apercu — donc le PDF, la copie et le mail,
+       qui lisent `_crTexteCourant` — restait sur l'etat precedent. Tant que le
+       bouton « Générer » existait on cliquait dessus juste apres et le trou ne
+       se voyait pas. Troisieme occurrence du meme piege dans ce fichier. */
+    _crMajDifferee();
   };
 
   var _crTestDraft = null;
@@ -6135,6 +6155,10 @@ _updateOutilsPatientBtns();
     crTestsConfig.forEach(function(t){ crTests[t.key] = 0; });
     crRenderTestRows();
     crCloseTestConfig();
+    /* Enregistrer la configuration REMET toutes les valeurs a zero :
+       ce qui figurait dans le courrier en disparait. L'apercu doit le
+       savoir, sinon le PDF partirait avec des tests qui n'existent plus. */
+    _crMajDifferee();
     try { localStorage.setItem('crTestsConfig', JSON.stringify(crTestsConfig)); } catch(e) {}
     crSaveGlobalConfig();
   };
@@ -6311,6 +6335,12 @@ _updateOutilsPatientBtns();
     var cls    = ['', 'st-valide', 'st-cours'];
     btn.textContent = labels[crSigns[key]];
     btn.className   = 'cr-sign-cycle ' + cls[crSigns[key]];
+    /* UN CLIC DE BOUTON N'EMET NI `input` NI `change` : la delegation posee sur
+       le panneau ne le voit pas, et l'apercu — donc le PDF, la copie et le mail,
+       qui lisent `_crTexteCourant` — restait sur l'etat precedent. Tant que le
+       bouton « Générer » existait on cliquait dessus juste apres et le trou ne
+       se voyait pas. Troisieme occurrence du meme piege dans ce fichier. */
+    _crMajDifferee();
   };
   /* Conserve : le bouton a disparu avec le bloc, mais la fonction reste
      appelable sans dommage (les elements sont absents, elle ne fait rien). */
